@@ -43,7 +43,8 @@ Controller::Controller(NamdState *s) :
 	collection(CollectionMaster::Object()),
         startCTime(0),
         startWTime(0),
-        startBenchTime(0)
+        startBenchTime(0),
+	computeChecksum(0)
 
 {
     broadcast = new ControllerBroadcasts;
@@ -383,7 +384,12 @@ void Controller::printEnergies(int seq)
       NAMD_die("BUG ALERT: Bad global atom count!\n");
 
     reduction->require(seq, REDUCTION_COMPUTE_CHECKSUM, checksum);
-    // iout << "Computes: " << (int)checksum << "\n" << endi;
+    if ( ((int)checksum) != computeChecksum ) {
+      if ( computeChecksum )
+        NAMD_die("BUG ALERT: Bad global compute count!\n");
+      else
+        computeChecksum = ((int)checksum);
+    }
 
     reduction->require(seq, REDUCTION_BOND_CHECKSUM, checksum);
     if ( ((int)checksum) != molecule->numBonds )
@@ -623,12 +629,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1046 $	$Date: 1998/11/01 23:25:47 $
+ *	$Revision: 1.1047 $	$Date: 1998/11/18 21:17:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1047  1998/11/18 21:17:41  jim
+ * Added checksum to make sure compute objects don't go missing.
+ *
  * Revision 1.1046  1998/11/01 23:25:47  jim
  * Added basic correctness checking: atom counts, etc.
  *
