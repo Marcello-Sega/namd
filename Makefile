@@ -322,7 +322,8 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -language charm++ -tracemode all \
+	-module NeighborLB -language charm++ \
+	-tracemode projections -tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(DPMTALIB) \
