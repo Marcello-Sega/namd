@@ -14,25 +14,37 @@ reporting bugs, and detailed compilation instructions.
 
 New Features
 
+--- Improved Parallel Scaling and Serial Performance ---
+
+Load balancer and communication library improvements that allow
+NAMD to scale to 1000 or more processors on PSC's Lemieux are
+included in this release.  For more modest Linux clusters we now
+provide TCP versions that outperform traditional UDP for gigabit
+ethernet and all released Linux binaries are built with the Intel
+compiler for better performance on Pentium 4 and Xeon processors
+and no penalty for Pentium III or Athlon processors.  Finally,
+the inner loop has been optimized to incorporate pairlists that
+are saved between steps and automatically adjusted.  Pairlists
+can be disabled to save memory via the pairlistMinProcs option.
+
+--- Trajectory Reading and Interaction Energy Analysis ---
+
+A new "coorfile" command allows Tcl scripts to read coordinates
+from DCD files, allowing energies and forces to be evaluated for
+a saved trajectory.  This is most usefully combined with the new
+pair interaction feature, allowing the isolation of forces between
+two specified groups of atoms, or within a single group.
+
 --- Improved Constant Pressure Simulation and Coordinate Wrapping ---
 
 Average pressure is calculated for steps between energy outputs.
 Berendsen method uses average rather then instantaneous pressure.
+Pressure contributions due to steering forces handled consistently.
 Ratio of first two basis vectors can be fixed for flexible cells.
-Any contiguous fragment can be wrapped to the periodic cell on
+Any connected fragment can be wrapped to the periodic cell on
 output, rather than only wrapping water molecules.  Coordinates
 can be wrapped to the true nearest image for hexagonal or similar
-shaped periodic cells.
-
---- Additional Parameters Can Be Changed During a Simulation Script ---
-
-Fixed atoms can be turned off during a run.  Most pressure and
-temperature control parameters can now be changed as well.
-
---- Fixes to AMBER parm File Reader for AMBER 7 or Large Molecules ---
-
-Fixed problems reading parm files containing more than 33,333 atoms.
-Also added changes to read new format parm files from AMBER 7.
+highly faceted periodic cells.
 
 ----------------------------------------------------------------------
 
