@@ -1,5 +1,26 @@
 
 #####
+## Choose your favorite Compiler options
+####
+#CXXOPTS = -O
+#CXXOPTS = -O +DAK460 +DSK460
+# this one below leads to numerical changes!
+#CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
+#CXXOPTS = +O3 -G -z -ptn +Oentrysched
+#CXXOPTS = +O3 -G -z
+CXXOPTS = +O3 -z
+#CXXOPTS = -g -v -z -G
+#CXXOPTS = -g
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+NOWARN=-w
+# uncomment for purify during compile
+#PURIFY=-purify
+
+#####
 # Directories
 #####
 # source directory
@@ -11,13 +32,6 @@ INCDIR = inc
 # Libraries we may have changed
 LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
 
-#####
-# Flags
-#####
-# uncomment for no warnings during compile
-NOWARN=-w
-# uncomment for purify during compile
-#PURIFY=-purify
 
 #####
 # definitions for Charm routines
@@ -41,17 +55,6 @@ PVMDIR=pvm3
 PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
 
-#####
-## Choose your favorite Compiler options
-####
-#CXXOPTS = -O
-# this one below leads to numerical changes!
-#CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
-#CXXOPTS = +O3 -G -z -ptn +Oentrysched
-#CXXOPTS = +O3 -G -z
-CXXOPTS = +O3 -z
-#CXXOPTS = -O +DAK460 +DSK460
-#CXXOPTS = -g
 
 CXX = CC -Aa -D_HPUX_SOURCE
 INCLUDE = /Projects/l1/namd.2.0/charm/include
