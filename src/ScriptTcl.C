@@ -223,6 +223,10 @@ void ScriptTcl::algorithm() {
     if (code != TCL_OK) NAMD_die("TCL error in script!");
   }
 
+#else
+
+  NAMD_die("Sorry, TCL scripting not available; built without TCL.");
+
 #endif
 
   scriptBarrier.publish(barrierStep++,0);  // terminate sequencers
@@ -236,12 +240,15 @@ void ScriptTcl::algorithm() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1999/08/11 16:53:10 $
+ *	$Revision: 1.4 $	$Date: 1999/08/30 14:53:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ScriptTcl.C,v $
+ * Revision 1.4  1999/08/30 14:53:32  jim
+ * Added error messages for TCL features if TCL unavailable.
+ *
  * Revision 1.3  1999/08/11 16:53:10  jim
  * Added move command to TCL scripting.
  *

@@ -312,6 +312,10 @@ void ComputeTcl::initialize() {
 
   Tcl_DeleteCommand(interp, "addatom");
   Tcl_DeleteCommand(interp, "addgroup");
+#else
+
+  NAMD_die("Sorry, tclForces is not available; built without TCL.");
+
 #endif
 
   storedefs(msg->gdef);
@@ -372,12 +376,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.11 $	$Date: 1999/06/28 19:49:57 $
+ *	$Revision: 1.12 $	$Date: 1999/08/30 14:53:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.12  1999/08/30 14:53:31  jim
+ * Added error messages for TCL features if TCL unavailable.
+ *
  * Revision 1.11  1999/06/28 19:49:57  jim
  * Eliminated tclx.
  *
