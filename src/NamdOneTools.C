@@ -180,8 +180,8 @@ BigReal gaussian_random_number(void) {
   BigReal fac, r, v1, v2;
   
   if (iset == 0) { // we do not have an extra result ready, so 
-    r = 2.;
-    while (r >=1. || r == 0.0) { // make sure we are within unit circle
+    r = 2.;                 // r >= 1.523e-8 ensures abs result < 6
+    while (r >=1. || r < 1.523e-8) { // make sure we are within unit circle
       v1 = 2.0 * NAMD_random() - 1.0;
       v2 = 2.0 * NAMD_random() - 1.0;
       r = v1*v1 + v2*v2;
@@ -202,6 +202,16 @@ BigReal gaussian_random_number(void) {
 /*			END OF FUNCTION gaussian_random_number		*/
 
 
+Vector gaussian_random_vector(void)
+{
+	return Vector(  gaussian_random_number(),
+			gaussian_random_number(),
+			gaussian_random_number()  );
+}
+
+
+/*  This is very expensive so we'll use the above routine  */
+/*
 Vector gaussian_random_vector(void)
 {
 	int j;			//  Loop counter
@@ -229,6 +239,7 @@ Vector gaussian_random_vector(void)
 
 	return v;
 }
+*/
 
 /************************************************************************/
 /*			FUNCTION random_velocities			*/
@@ -349,13 +360,16 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: brunner $	$Locker:  $		$State: Exp $
-*	$Revision: 1.11 $	$Date: 1998/03/03 23:13:48 $
+*	$Author: jim $	$Locker:  $		$State: Exp $
+*	$Revision: 1.12 $	$Date: 1998/03/04 19:26:26 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.12  1998/03/04 19:26:26  jim
+* Switched to more efficient gaussian_random_vector implementation.
+*
 * Revision 1.11  1998/03/03 23:13:48  brunner
 * Changing include files for new charm++ includes
 *
@@ -402,4 +416,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.11 1998/03/03 23:13:48 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.12 1998/03/04 19:26:26 jim Exp $";
