@@ -334,9 +334,11 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
   BigReal bgfactor = simParams->ldbBackgroundScaling;
   BigReal pmebgfactor = simParams->ldbPMEBackgroundScaling;
+  BigReal homebgfactor = simParams->ldbHomeBackgroundScaling;
   int pmeOn = simParams->PMEOn;
   int unLoadPme = simParams->ldbUnloadPME;
   int pmeBarrier = simParams->PMEBarrier;
+  int unLoadZero = simParams->ldbUnloadZero;
   int unLoadSMP = simParams->ldbUnloadSMP;
 
   int i;
@@ -345,6 +347,8 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     processorArray[i].available = CmiTrue;
     if ( pmeOn && isPmeProcessor(i) ) {
       processorArray[i].backgroundLoad = pmebgfactor * stats[i].bg_walltime;
+    } else if (patchMap->numPatchesOnNode(i) > 0) {
+      processorArray[i].backgroundLoad = homebgfactor * stats[i].bg_walltime;
     } else {
       processorArray[i].backgroundLoad = bgfactor * stats[i].bg_walltime;
     }
@@ -388,6 +392,8 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   }
   // CkPrintf("\n");
 #endif  
+
+  if (unLoadZero) processorArray[0].available = CmiFalse;
 
   if (pmeOn && unLoadPme)
     for (i=0; i<count; i++) {

@@ -1087,10 +1087,15 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "ldbPMEBackgroundScaling",
      "PME node background load scaling", &ldbPMEBackgroundScaling);
    opts.range("ldbPMEBackgroundScaling", NOT_NEGATIVE);
+   opts.optional("main", "ldbHomeBackgroundScaling",
+     "home node background load scaling", &ldbHomeBackgroundScaling);
+   opts.range("ldbHomeBackgroundScaling", NOT_NEGATIVE);
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);
    opts.optionalB("main", "ldbUnloadSMP", "no load on one pe of SMP node",
      &ldbUnloadSMP, FALSE);
+   opts.optionalB("main", "ldbUnloadZero", "no load on pe zero",
+     &ldbUnloadZero, FALSE);
    opts.optional("main", "procsPerNode", "Number of Processor per node",
      &procsPerNode);
    opts.range("procsPerNode", POSITIVE);
@@ -1939,6 +1944,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (!opts.defined("ldbPMEBackgroundScaling")) {
      ldbPMEBackgroundScaling = ldbBackgroundScaling;
    }
+   if (!opts.defined("ldbHomeBackgroundScaling")) {
+     ldbHomeBackgroundScaling = ldbBackgroundScaling;
+   }
    if (!opts.defined("procsPerNode"))
    {
      procsPerNode=1;
@@ -2242,12 +2250,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "LDB PERIOD             " << ldbPeriod << " steps\n";
      iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep << "\n";
      iout << iINFO << "LDB BACKGROUND SCALING " << ldbBackgroundScaling << "\n";
+     iout << iINFO << "HOM BACKGROUND SCALING " << ldbHomeBackgroundScaling << "\n";
      if ( PMEOn ) {
        iout << iINFO << "PME BACKGROUND SCALING "
 				<< ldbPMEBackgroundScaling << "\n";
      if ( ldbUnloadPME )
      iout << iINFO << "REMOVING LOAD FROM PME NODES" << "\n";
      }
+     if ( ldbUnloadZero ) iout << iINFO << "REMOVING LOAD FROM NODE 0\n";
      iout << endi;
    }
 

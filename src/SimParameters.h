@@ -95,8 +95,10 @@ public:
                                         //  load-balance on.
 	BigReal ldbBackgroundScaling;	//  scaling factor for background load
 	BigReal ldbPMEBackgroundScaling;//  scaling factor for PME background
+	BigReal ldbHomeBackgroundScaling;//  scaling factor for home background
 	Bool ldbUnloadPME;		//  unload processors doing PME
 	Bool ldbUnloadSMP;		//  unload processors rank
+	Bool ldbUnloadZero;		//  unload processors rank
 	int procsPerNode;		//  number of pes per node
 	int ldbUnloadRank;		//  unload rank on a node
 	BigReal initialTemp;   		//  Initial temperature for the 
