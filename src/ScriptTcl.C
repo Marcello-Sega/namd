@@ -314,6 +314,40 @@ int ScriptTcl::Tcl_minimize(ClientData clientData,
   return TCL_OK;
 }
 
+// move all atoms by a given vector
+int ScriptTcl::Tcl_moveallby(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc != 2) {
+    Tcl_SetResult(interp, "wrong # args", TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  char **fstring;
+  int fnum;
+  double x, y, z;
+  if (Tcl_SplitList(interp, argv[1], &fnum, &fstring) != TCL_OK)
+    return TCL_ERROR;
+  if ( (fnum != 3) ||
+       (Tcl_GetDouble(interp, fstring[0],&x) != TCL_OK) ||
+       (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
+       (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
+    Tcl_SetResult(interp,"third argument not a vector",TCL_VOLATILE);
+    Tcl_Free((char*)fstring);
+    return TCL_ERROR;
+  }
+  Tcl_Free((char*)fstring);
+  int numatoms = Node::Object()->pdb->num_atoms();
+  Vector *pos = new Vector[numatoms];
+  Vector offset(x, y, z);
+  Node::Object()->pdb->get_all_positions(pos);
+  for (int i=0; i<numatoms; i++) pos[i] += offset;
+  Node::Object()->pdb->set_all_positions(pos);
+  delete [] pos;
+  script->reinitAtoms();
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_move(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -607,6 +641,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "minimize", Tcl_minimize,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "move", Tcl_move,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "moveallby", Tcl_moveallby,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
