@@ -19,8 +19,8 @@
 extern "C" {
 #include "converse.h"
 extern void CmiGrabBuffer(char **msg);
-extern void ConverseInit(char *argv[]);
-extern void ConverseExit(void);
+//extern void ConverseInit(char *argv[]);
+//extern void ConverseExit(void);
 }
 
 #include "Communicate.h"
@@ -70,8 +70,8 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: CommunicateConverse.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/20 23:53:17 $
+ *	$Author: brunner $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/04/03 17:57:43 $
  *
  ***************************************************************************/
 
