@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/02/28 16:13:54 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/11 04:07:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.1003  1997/03/11 04:07:54  jim
+ * Eliminated use of LintList for by-atom lists.
+ * Now uses little arrays managed by ObjectArena<int>.
+ *
  * Revision 1.1002  1997/02/28 16:13:54  nealk
  * Turned off debugging code.
  *
@@ -168,7 +172,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1002 1997/02/28 16:13:54 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.1003 1997/03/11 04:07:54 jim Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -183,9 +187,10 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,
 #include "Parameters.h"
 #include "PDB.h"
 #include "SimParameters.h"
+#include "Templates/UniqueSetIter.h"
 
 #define MIN_DEBUG_LEVEL 3
-// #define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 /************************************************************************/
@@ -2220,59 +2225,133 @@ void Molecule::build_lists_by_atom()
 {
    int i;			//  Loop counter
    
-   bondsByAtom = new LintList[numAtoms];
-   anglesByAtom = new LintList[numAtoms];
-   dihedralsByAtom = new LintList[numAtoms];
-   impropersByAtom = new LintList[numAtoms];
-   exclusionsByAtom = new LintList[numAtoms];
+   bondsByAtom = new intPtr[numAtoms];
+   anglesByAtom = new intPtr[numAtoms];
+   dihedralsByAtom = new intPtr[numAtoms];
+   impropersByAtom = new intPtr[numAtoms];
+   exclusionsByAtom = new intPtr[numAtoms];
 
-   if ( (bondsByAtom == NULL) || (anglesByAtom == NULL) || (dihedralsByAtom == NULL)
-       || (impropersByAtom == NULL) || (exclusionsByAtom == NULL) )
-   {
-      NAMD_die("memory allocation failed in Molecule::build_lists_by_atom");
-   }
+   int *byAtomSize = new int[numAtoms];
 
    DebugM(3,"Building bond lists.\n");
       
    //  Build the bond lists
+   for (i=0; i<numAtoms; i++)
+   {
+      byAtomSize[i] = 0;
+   }
    for (i=0; i<numBonds; i++)
    {
-      bondsByAtom[bonds[i].atom1].add(i);
-      bondsByAtom[bonds[i].atom2].add(i);
+      byAtomSize[bonds[i].atom1]++;
+      byAtomSize[bonds[i].atom2]++;
+   }
+   for (i=0; i<numAtoms; i++)
+   {
+      bondsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+      bondsByAtom[i][byAtomSize[i]] = -1;
+      byAtomSize[i] = 0;
+   }
+   for (i=0; i<numBonds; i++)
+   {
+      int a1 = bonds[i].atom1;
+      int a2 = bonds[i].atom2;
+      bondsByAtom[a1][byAtomSize[a1]++] = i;
+      bondsByAtom[a2][byAtomSize[a2]++] = i;
    }
    
    DebugM(3,"Building angle lists.\n");
       
    //  Build the angle lists
+   for (i=0; i<numAtoms; i++)
+   {
+      byAtomSize[i] = 0;
+   }
    for (i=0; i<numAngles; i++)
-   {  
-      anglesByAtom[angles[i].atom1].add(i);
-      anglesByAtom[angles[i].atom2].add(i);
-      anglesByAtom[angles[i].atom3].add(i);
+   {
+      byAtomSize[angles[i].atom1]++;
+      byAtomSize[angles[i].atom2]++;
+      byAtomSize[angles[i].atom3]++;
+   }
+   for (i=0; i<numAtoms; i++)
+   {
+      anglesByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+      anglesByAtom[i][byAtomSize[i]] = -1;
+      byAtomSize[i] = 0;
+   }
+   for (i=0; i<numAngles; i++)
+   {
+      int a1 = angles[i].atom1;
+      int a2 = angles[i].atom2;
+      int a3 = angles[i].atom3;
+      anglesByAtom[a1][byAtomSize[a1]++] = i;
+      anglesByAtom[a2][byAtomSize[a2]++] = i;
+      anglesByAtom[a3][byAtomSize[a3]++] = i;
    }
    
    DebugM(3,"Building improper lists.\n");
       
    //  Build the improper lists
+   for (i=0; i<numAtoms; i++)
+   {
+      byAtomSize[i] = 0;
+   }
    for (i=0; i<numImpropers; i++)
    {
-      impropersByAtom[impropers[i].atom1].add(i);
-      impropersByAtom[impropers[i].atom2].add(i);
-      impropersByAtom[impropers[i].atom3].add(i);
-      impropersByAtom[impropers[i].atom4].add(i);
+      byAtomSize[impropers[i].atom1]++;
+      byAtomSize[impropers[i].atom2]++;
+      byAtomSize[impropers[i].atom3]++;
+      byAtomSize[impropers[i].atom4]++;
+   }
+   for (i=0; i<numAtoms; i++)
+   {
+      impropersByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+      impropersByAtom[i][byAtomSize[i]] = -1;
+      byAtomSize[i] = 0;
+   }
+   for (i=0; i<numImpropers; i++)
+   {
+      int a1 = impropers[i].atom1;
+      int a2 = impropers[i].atom2;
+      int a3 = impropers[i].atom3;
+      int a4 = impropers[i].atom4;
+      impropersByAtom[a1][byAtomSize[a1]++] = i;
+      impropersByAtom[a2][byAtomSize[a2]++] = i;
+      impropersByAtom[a3][byAtomSize[a3]++] = i;
+      impropersByAtom[a4][byAtomSize[a4]++] = i;
    }
    
    DebugM(3,"Building dihedral lists.\n");
       
    //  Build the dihedral lists
+   for (i=0; i<numAtoms; i++)
+   {
+      byAtomSize[i] = 0;
+   }
    for (i=0; i<numDihedrals; i++)
    {
-      dihedralsByAtom[dihedrals[i].atom1].add(i);
-      dihedralsByAtom[dihedrals[i].atom2].add(i);
-      dihedralsByAtom[dihedrals[i].atom3].add(i);
-      dihedralsByAtom[dihedrals[i].atom4].add(i);
+      byAtomSize[dihedrals[i].atom1]++;
+      byAtomSize[dihedrals[i].atom2]++;
+      byAtomSize[dihedrals[i].atom3]++;
+      byAtomSize[dihedrals[i].atom4]++;
    }
-   
+   for (i=0; i<numAtoms; i++)
+   {
+      dihedralsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+      dihedralsByAtom[i][byAtomSize[i]] = -1;
+      byAtomSize[i] = 0;
+   }
+   for (i=0; i<numDihedrals; i++)
+   {
+      int a1 = dihedrals[i].atom1;
+      int a2 = dihedrals[i].atom2;
+      int a3 = dihedrals[i].atom3;
+      int a4 = dihedrals[i].atom4;
+      dihedralsByAtom[a1][byAtomSize[a1]++] = i;
+      dihedralsByAtom[a2][byAtomSize[a2]++] = i;
+      dihedralsByAtom[a3][byAtomSize[a3]++] = i;
+      dihedralsByAtom[a4][byAtomSize[a4]++] = i;
+   }
+      
    DebugM(3,"Building exclusion data.\n");
       
    //  Build the arrays of exclusions for each atom
@@ -2281,34 +2360,44 @@ void Molecule::build_lists_by_atom()
    if (exclusions != NULL)
    	delete [] exclusions;
 
-   // Now, eliminate 1-4 exclusions which are also fully excluded
-   exclusionList.sort();
-   int numOriginalExclusions = exclusionList.size();
-   for(i=1; i<numOriginalExclusions; ++i)
+   // 1-4 exclusions which are also fully excluded were eliminated by hash table
+   int numTotalExclusions = exclusionSet.size();
+   exclusions = new Exclusion[numTotalExclusions];
+   UniqueSetIter<Exclusion> exclIter(exclusionSet);
+   for ( exclIter=exclIter.begin(),i=0; exclIter != exclIter.end(); exclIter++,i++ )
    {
-     if ( exclusionList[i].atom1 == exclusionList[i-1].atom1 &&
-	  exclusionList[i].atom2 == exclusionList[i-1].atom2 )
-     {
-       // modified == 0 < modified == 1 so assign first to second
-       // this can't do any harm if they are the same but will
-       // make the modified one unmodified (full)
-       exclusionList[i].modified = exclusionList[i-1].modified;
-     }
+      exclusions[i] = *exclIter;
    }
-   exclusionList.uniq();
+   // Free exclusionSet storage
+   // exclusionSet.clear(1);
+   exclusionSet.clear();
 
    DebugM(3,"Building exclusion lists.\n");
       
-   int numTotalExclusions = exclusionList.size();
-   exclusions = exclusionList.unencap();
+   for (i=0; i<numAtoms; i++)
+   {
+      byAtomSize[i] = 0;
+   }
    for (i=0; i<numTotalExclusions; i++)
    {
-      exclusionsByAtom[exclusions[i].atom1].add(i);
-      exclusionsByAtom[exclusions[i].atom2].add(i);
+      byAtomSize[exclusions[i].atom1]++;
+      byAtomSize[exclusions[i].atom2]++;
+   }
+   for (i=0; i<numAtoms; i++)
+   {
+      exclusionsByAtom[i] = arena.getNewArray(byAtomSize[i]+1);
+      exclusionsByAtom[i][byAtomSize[i]] = -1;
+      byAtomSize[i] = 0;
+   }
+   for (i=0; i<numTotalExclusions; i++)
+   {
+      int a1 = exclusions[i].atom1;
+      int a2 = exclusions[i].atom2;
+      exclusionsByAtom[a1][byAtomSize[a1]++] = i;
+      exclusionsByAtom[a2][byAtomSize[a2]++] = i;
    }
 
-   DebugM(4,numOriginalExclusions << " exclusions, " <<
-	    numTotalExclusions << " unique\n");
+   delete [] byAtomSize;
 
 }
 /*		END OF FUNCTION build_lists_by_atom		*/
@@ -2374,7 +2463,7 @@ void Molecule::build_exclusions()
 		{
 			all_exclusions[exclusions[i].atom2].add(exclusions[i].atom1);
 		}
-		exclusionList.add(exclusions[i]);
+		exclusionSet.add(exclusions[i]);
 	}
 
 	//  Now calculate the bonded exlcusions based on the exclusion policy
@@ -2430,35 +2519,35 @@ void Molecule::build_exclusions()
 void Molecule::build12excl(IntList *lists)
    
 {
-   int current_val;	//  Current value to check
+   int *current_val;	//  Current value to check
    int i;		//  Loop counter to loop through all atoms
    
    //  Loop through all the atoms marking the bonded interactions for each one
    for (i=0; i<numAtoms; i++)
    {
-   	current_val = bondsByAtom[i].head();
+   	current_val = bondsByAtom[i];
    
 	//  Loop through all the bonds for this atom
-   	while (current_val != LIST_EMPTY)
+   	while (*current_val != -1)
    	{
-	   if (bonds[current_val].atom1 == i)
+	   if (bonds[*current_val].atom1 == i)
 	   {
-	      if (i<bonds[current_val].atom2)
+	      if (i<bonds[*current_val].atom2)
 	      {
-		 lists[i].add(bonds[current_val].atom2);
-		 exclusionList.add(Exclusion(i,bonds[current_val].atom2));
+		 lists[i].add(bonds[*current_val].atom2);
+		 exclusionSet.add(Exclusion(i,bonds[*current_val].atom2));
 	      }
 	   }
 	   else
 	   {
-	      if (i<bonds[current_val].atom1)
+	      if (i<bonds[*current_val].atom1)
 	      {
-		 lists[i].add(bonds[current_val].atom1);
-		 exclusionList.add(Exclusion(i,bonds[current_val].atom1));
+		 lists[i].add(bonds[*current_val].atom1);
+		 exclusionSet.add(Exclusion(i,bonds[*current_val].atom1));
 	      }
 	   }
 	    
-     	   current_val = bondsByAtom[i].next();
+     	   ++current_val;
    	}
    }
 }
@@ -2480,7 +2569,7 @@ void Molecule::build12excl(IntList *lists)
 void Molecule::build13excl(IntList *lists)
    
 {
-   int bond1, bond2;	//  The two bonds being checked
+   int *bond1, *bond2;	//  The two bonds being checked
    int middle_atom;	//  Common third atom
    int i;		//  Loop counter to loop through all atoms
    
@@ -2488,47 +2577,47 @@ void Molecule::build13excl(IntList *lists)
    //  for each one
    for (i=0; i<numAtoms; i++)
    {
-   	 bond1 = bondsByAtom[i].head();
+   	 bond1 = bondsByAtom[i];
    
 	 //  Loop through all the bonds directly connect to atom i
-   	 while (bond1 != LIST_EMPTY)
+   	 while (*bond1 != -1)
     	 {
-    	 	if (bonds[bond1].atom1 == i)
+    	 	if (bonds[*bond1].atom1 == i)
         	{
-			middle_atom=bonds[bond1].atom2;
+			middle_atom=bonds[*bond1].atom2;
       		}
       		else
       		{
-			middle_atom=bonds[bond1].atom1;
+			middle_atom=bonds[*bond1].atom1;
       		}
 
-      		bond2 = bondsByAtom[middle_atom].head();
+      		bond2 = bondsByAtom[middle_atom];
 
 		//  Now loop through all the bonds connect to the
 		//  middle atom
-      		while (bond2 != LIST_EMPTY)
+      		while (*bond2 != -1)
       		{
-			if (bonds[bond2].atom1 == middle_atom)
+			if (bonds[*bond2].atom1 == middle_atom)
 			{
-				if (i < bonds[bond2].atom2)
+				if (i < bonds[*bond2].atom2)
 				{
-					lists[i].add(bonds[bond2].atom2);
-					exclusionList.add(Exclusion(i,bonds[bond2].atom2));
+					lists[i].add(bonds[*bond2].atom2);
+					exclusionSet.add(Exclusion(i,bonds[*bond2].atom2));
 				}
 			}
 			else
 			{
-				if (i < bonds[bond2].atom1)
+				if (i < bonds[*bond2].atom1)
 				{
-					lists[i].add(bonds[bond2].atom1);
-					exclusionList.add(Exclusion(i,bonds[bond2].atom1));
+					lists[i].add(bonds[*bond2].atom1);
+					exclusionSet.add(Exclusion(i,bonds[*bond2].atom1));
 				}
 			}
 
-     			bond2 = bondsByAtom[middle_atom].next();
+     			++bond2;
 		}
 
-      		bond1 = bondsByAtom[i].next();
+      		++bond1;
 	}
    }
 }
@@ -2552,7 +2641,7 @@ void Molecule::build13excl(IntList *lists)
 void Molecule::build14excl(IntList *lists, int modified)
    
 {
-   int bond1, bond2, bond3;	//  The two bonds being checked
+   int *bond1, *bond2, *bond3;	//  The two bonds being checked
    int mid1, mid2;		//  Middle atoms
    int i;			//  Counter to loop through all atoms
    
@@ -2560,31 +2649,31 @@ void Molecule::build14excl(IntList *lists, int modified)
    for (i=0; i<numAtoms; i++)
    {	
         // Get all the bonds connect directly to atom i
-   	bond1 = bondsByAtom[i].head();
+   	bond1 = bondsByAtom[i];
    
-  	while (bond1 != LIST_EMPTY)
+  	while (*bond1 != -1)
         {
-      		if (bonds[bond1].atom1 == i)
+      		if (bonds[*bond1].atom1 == i)
       		{
-			mid1=bonds[bond1].atom2;
+			mid1=bonds[*bond1].atom2;
       		}
       		else
       		{
-			mid1=bonds[bond1].atom1;
+			mid1=bonds[*bond1].atom1;
       		}
 
-      		bond2 = bondsByAtom[mid1].head();
+      		bond2 = bondsByAtom[mid1];
 
 		//  Loop through all the bonds connected to atom mid1
-      		while (bond2 != LIST_EMPTY)
+      		while (*bond2 != -1)
       		{
-        		if (bonds[bond2].atom1 == mid1)
+        		if (bonds[*bond2].atom1 == mid1)
       			{
-				mid2 = bonds[bond2].atom2;
+				mid2 = bonds[*bond2].atom2;
       			}
       			else
       			{
-				mid2 = bonds[bond2].atom1;
+				mid2 = bonds[*bond2].atom1;
       			}
 
 			//  Make sure that we don't double back to where
@@ -2592,26 +2681,26 @@ void Molecule::build14excl(IntList *lists, int modified)
 			//  Trust me, I've been there . . .
 			if (mid2 == i)
 			{
-     				bond2 = bondsByAtom[mid1].next();
+     				++bond2;
 				continue;
 			}
 
-			bond3=bondsByAtom[mid2].head();
+			bond3=bondsByAtom[mid2];
 
 			//  Loop through all the bonds connected to mid2
-      			while (bond3 != LIST_EMPTY)
+      			while (*bond3 != -1)
       			{
-    		   		if (bonds[bond3].atom1 == mid2)
+    		   		if (bonds[*bond3].atom1 == mid2)
       				{
 					//  Make sure that we don't double back to where
 					//  we started from.  This causes strange behavior.
 					//  Trust me, I've been there . . .
 					//  I added this!!!  Why wasn't it there before?  -JCP
-					if (bonds[bond3].atom2 != mid1)
-					if (i<bonds[bond3].atom2)
+					if (bonds[*bond3].atom2 != mid1)
+					if (i<bonds[*bond3].atom2)
 					{
-					   lists[i].add(bonds[bond3].atom2);
-					   exclusionList.add(Exclusion(i,bonds[bond3].atom2,modified));
+					   lists[i].add(bonds[*bond3].atom2);
+					   exclusionSet.add(Exclusion(i,bonds[*bond3].atom2,modified));
 					}
 				}
 				else
@@ -2620,21 +2709,21 @@ void Molecule::build14excl(IntList *lists, int modified)
 					//  we started from.  This causes strange behavior.
 					//  Trust me, I've been there . . .
 					//  I added this!!!  Why wasn't it there before?  -JCP
-					if (bonds[bond3].atom1 != mid1)
-				   	if (i<bonds[bond3].atom1)
+					if (bonds[*bond3].atom1 != mid1)
+				   	if (i<bonds[*bond3].atom1)
 					{
-					   lists[i].add(bonds[bond3].atom1);
-					   exclusionList.add(Exclusion(i,bonds[bond3].atom1,modified));
+					   lists[i].add(bonds[*bond3].atom1);
+					   exclusionSet.add(Exclusion(i,bonds[*bond3].atom1,modified));
 					}
 				}
 
-				bond3 = bondsByAtom[mid2].next();
+				++bond3;
 			}
 
-     			bond2 = bondsByAtom[mid1].next();
+     			++bond2;
       		}
 	    
-      		bond1 = bondsByAtom[i].next();
+      		++bond1;
    	}
    }
 }

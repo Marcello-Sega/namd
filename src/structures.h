@@ -95,10 +95,13 @@ public:
 	int atom1;
 	int atom2;
 	Index modified;
+	int hash(void) const
+	{
+		return atom1 + atom2;
+	}
 	int operator==(const Exclusion &o) const
 	{
-		return atom1 == o.atom1 && atom2 == o.atom2 &&
-		modified == o.modified;
+		return atom1 == o.atom1 && atom2 == o.atom2;
 	}
 	int operator<(const Exclusion &o) const
 	{
@@ -106,8 +109,7 @@ public:
 		(
 		  ( atom1 < o.atom1 ) ||
 		  ( atom1 == o.atom1 && atom2 < o.atom2 ) ||
-		  ( atom1 == o.atom1 && atom2 == o.atom2 &&
-			modified < o.modified )
+		  ( atom1 == o.atom1 && atom2 == o.atom2 )
 		);
 	}
 };
@@ -118,11 +120,15 @@ public:
  *
  *	$RCSfile: structures.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/10 08:14:35 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/11 04:07:56 $
  *
  * REVISION HISTORY:
  *
  * $Log: structures.h,v $
+ * Revision 1.1002  1997/03/11 04:07:56  jim
+ * Eliminated use of LintList for by-atom lists.
+ * Now uses little arrays managed by ObjectArena<int>.
+ *
  * Revision 1.1001  1997/02/10 08:14:35  jim
  * Fixed problem with exclusions where both modified and unmodified
  * versions of the same exclusion could be placed in the list, causing

@@ -30,18 +30,17 @@ void BondElem::loadTuplesForAtom
       DebugM(1, "::loadTuplesForAtom - current list size " << bondList.size() << endl );
 
       /* get list of all bonds for the atom */
-      LintList *bonds = molecule->get_bonds_for_atom(atomID);
+      int *bonds = molecule->get_bonds_for_atom(atomID);
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::loadTuplesForAtom - bonds->head()" << bonds->head() << endl );
 
       /* cycle through each bond */
-      int bondNum = bonds->head();
-      while(bondNum != LIST_EMPTY)
+      int bondNum = *bonds;
+      while(bondNum != -1)
       {
         /* store bond in the list */
         DebugM(1, "::loadTuplesForAtom - loading bond " << bondNum << endl );
         bondList.add(BondElem(molecule->get_bond(bondNum)));
-        bondNum = bonds->next();
+        bondNum = *(++bonds);
       }
 }
 

@@ -29,18 +29,17 @@ void DihedralElem::loadTuplesForAtom
       DebugM(1, "::loadTuplesForAtom - current list size " << dihedralList.size() << endl );
 
       /* get list of all dihedrals for the atom */
-      LintList *dihedrals = molecule->get_dihedrals_for_atom(atomID);
+      int *dihedrals = molecule->get_dihedrals_for_atom(atomID);
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::loadTuplesForAtom - dihedrals->head()" << dihedrals->head() << endl );
 
       /* cycle through each dihedral */
-      int dihedralNum = dihedrals->head();
-      while(dihedralNum != LIST_EMPTY)
+      int dihedralNum = *dihedrals;
+      while(dihedralNum != -1)
       {
         /* store dihedral in the list */
         DebugM(1, "::loadTuplesForAtom - loading dihedral " << dihedralNum << endl );
         dihedralList.add(DihedralElem(molecule->get_dihedral(dihedralNum)));
-        dihedralNum = dihedrals->next();
+        dihedralNum = *(++dihedrals);
       }
 }
 

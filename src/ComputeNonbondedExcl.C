@@ -29,18 +29,17 @@ void NonbondedExclElem::loadTuplesForAtom
       DebugM(1, "::loadTuplesForAtom - current list size " << exclList.size() << endl );
 
       /* get list of all bonds for the atom */
-      LintList *excls = molecule->get_exclusions_for_atom(atomID);
+      int *excls = molecule->get_exclusions_for_atom(atomID);
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::loadTuplesForAtom - excls->head()" << excls->head() << endl );
 
       /* cycle through each exclusion */
-      int exclNum = excls->head();
-      while(exclNum != LIST_EMPTY)
+      int exclNum = *excls;
+      while(exclNum != -1)
       {
         /* store exclusion in the list */
         DebugM(1, "::loadTuplesForAtom - adding excl " << exclNum << endl );
         exclList.add(NonbondedExclElem(molecule->get_exclusion(exclNum)));
-        exclNum = excls->next();
+        exclNum = *(++excls);
       }
 }
 

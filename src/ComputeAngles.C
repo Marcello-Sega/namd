@@ -30,18 +30,17 @@ void AngleElem::loadTuplesForAtom
       DebugM(1, "::loadTuplesForAtom - current list size " << angleList.size() << endl );
 
       /* get list of all angles for the atom */
-      LintList *angles = molecule->get_angles_for_atom(atomID);
+      int *angles = molecule->get_angles_for_atom(atomID);
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::loadTuplesForAtom - angles->head()" << angles->head() << endl );
 
       /* cycle through each angle */
-      int angleNum = angles->head();
-      while(angleNum != LIST_EMPTY)
+      int angleNum = *angles;
+      while(angleNum != -1)
       {
         /* store angle in the list */
         DebugM(1, "::loadTuplesForAtom - loading angle " << angleNum << endl );
         angleList.add(AngleElem(molecule->get_angle(angleNum)));
-        angleNum = angles->next();
+        angleNum = *(++angles);
       }
 }
 

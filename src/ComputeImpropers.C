@@ -30,18 +30,17 @@ void ImproperElem::loadTuplesForAtom
       DebugM(1, "::loadTuplesForAtom - current list size " << improperList.size() << endl );
 
       /* get list of all impropers for the atom */
-      LintList *impropers = molecule->get_impropers_for_atom(atomID);
+      int *impropers = molecule->get_impropers_for_atom(atomID);
       DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
-      DebugM(1, "::loadTuplesForAtom - impropers->head()" << impropers->head() << endl );
 
       /* cycle through each improper */
-      int improperNum = impropers->head();
-      while(improperNum != LIST_EMPTY)
+      int improperNum = *impropers;
+      while(improperNum != -1)
       {
         /* store improper in the list */
         DebugM(1, "::loadTuplesForAtom - loading improper " << improperNum << endl );
         improperList.add(ImproperElem(molecule->get_improper(improperNum)));
-        improperNum = impropers->next();
+        improperNum = *(++impropers);
       }
 }
 

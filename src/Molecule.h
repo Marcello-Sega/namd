@@ -12,7 +12,7 @@
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/02/10 08:14:36 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/11 04:07:55 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -26,6 +26,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.1002  1997/03/11 04:07:55  jim
+ * Eliminated use of LintList for by-atom lists.
+ * Now uses little arrays managed by ObjectArena<int>.
+ *
  * Revision 1.1001  1997/02/10 08:14:36  jim
  * Fixed problem with exclusions where both modified and unmodified
  * versions of the same exclusion could be placed in the list, causing
@@ -151,12 +155,15 @@
 #include "structures.h"
 #include "ConfigList.h"
 #include "Vector.h"
-#include "Templates/SortableResizeArray.h"
+#include "Templates/UniqueSet.h"
+#include "Templates/ObjectArena.h"
 
 class SimParameters;
 class Parameters;
 class PDB;
 class Message;
+
+typedef int* intPtr;
 
 class Molecule
 {
@@ -177,20 +184,21 @@ private:
 	Bond *donors;	        //  Array of hydrogen bond donor structures
 	Bond *acceptors;	//  Array of hydrogen bond acceptor
 	Exclusion *exclusions;	//  Array of exclusion structures
-	SortableResizeArray<Exclusion> exclusionList;  //  Used for building
+	UniqueSet<Exclusion> exclusionSet;  //  Used for building
 	int *consIndexes;	//  Constraint indexes for each atom
 	ConstraintParams *consParams;
 				//  Parameters for each atom constrained
 	Real *langevinParams;   //  b values for langevin dynamics
 	Real *langForceVals;    //  Calculated values for langvin random forces
 
-	LintList *bondsByAtom;	//  List of bonds involving each atom
-	LintList *anglesByAtom;  //  List of angles involving each atom
-	LintList *dihedralsByAtom;
+	ObjectArena<int> arena;
+	int **bondsByAtom;	//  List of bonds involving each atom
+	int **anglesByAtom;  //  List of angles involving each atom
+	int **dihedralsByAtom;
 				//  List of dihedrals by atom
-	LintList *impropersByAtom;
+	int **impropersByAtom;
 				//  List of impropers by atom
-	LintList *exclusionsByAtom;
+	int **exclusionsByAtom;
 				//  List of exclusions by atom
 
 	IntList *all_exclusions;
@@ -340,15 +348,15 @@ public:
 	//  The following routines are used to get the list of bonds
 	//  for a given atom.  This is used when creating the bond lists
 	//  for the force objects
-	LintList *get_bonds_for_atom(int anum) {return (&(bondsByAtom[anum]));}
-	LintList *get_angles_for_atom(int anum) 
-			{return (&(anglesByAtom[anum]));}
-	LintList *get_dihedrals_for_atom(int anum) 
-			{return (&(dihedralsByAtom[anum]));}
-	LintList *get_impropers_for_atom(int anum) 
-			{return (&(impropersByAtom[anum]));}
-	LintList *get_exclusions_for_atom(int anum)
-			{return (&(exclusionsByAtom[anum]));}
+	int *get_bonds_for_atom(int anum) { return bondsByAtom[anum]; }
+	int *get_angles_for_atom(int anum) 
+			{ return anglesByAtom[anum]; }
+	int *get_dihedrals_for_atom(int anum) 
+			{ return dihedralsByAtom[anum]; }
+	int *get_impropers_for_atom(int anum) 
+			{ return impropersByAtom[anum]; }
+	int *get_exclusions_for_atom(int anum)
+			{ return exclusionsByAtom[anum]; }
 	
 	//  Check for exclusions, either explicit or bonded.
 	//  Inline this funcion since it is called so often
