@@ -36,7 +36,12 @@
  
 void LdbCoordinator::staticMigrateFn(LDObjHandle handle, int dest)
 {
+#if CHARM_VERSION > 050606
+   LdbCoordinator *ldbCoordinator = (LdbCoordinator *)LDOMUserData(handle.omhandle);
+   ldbCoordinator->Migrate(handle,dest);
+#else
    ((LdbCoordinator*)handle.omhandle.user_ptr)->Migrate(handle,dest);
+#endif
 }
 
 void LdbCoordinator::Migrate(LDObjHandle handle, int dest)
