@@ -1,5 +1,5 @@
 NAMD_ARCH = Linux-ia64
-CHARMARCH = net-linux-ia64-icc
+CHARMARCH = net-linux-ia64-iccstatic
 
 FLOATOPTS = -ftz -IPF_fma -IPF_fltacc -IPF_flt_eval_method0 -IPF_fp_speculationfast
 

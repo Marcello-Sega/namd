@@ -1,4 +1,4 @@
 include .rootdir/arch/Linux-ia64-icc.arch
 
-CHARMARCH = net-linux-ia64-gm-iccstatic
+CHARMARCH = mpi-linux-ia64-mpt-iccstatic
 
