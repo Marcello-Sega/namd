@@ -7,24 +7,24 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION: ComputeNonbonded.h
+ * DESCRIPTION: ComputeNonbondedSelf.h
  *
  ***************************************************************************/
 
-#ifndef COMPUTENONBONDED_H
-#define COMPUTENONBONDED_H
+#ifndef COMPUTENONBONDEDSELF_H
+#define COMPUTENONBONDEDSELF_H
 
-#include "ComputePatchPair.h"
+#include "ComputePatch.h"
 
-class ComputeNonbonded : public ComputePatchPair {
+class ComputeNonbondedSelf : public ComputePatch {
 
 public:
-  ComputeNonbonded(ComputeID c, PatchID pid[]) : ComputePatchPair(c,pid) { ; }
-  virtual ~ComputeNonbonded();
+  ComputeNonbondedSelf(ComputeID c, PatchID pid) : ComputePatch(c,pid) { ; }
+  virtual ~ComputeNonbondedSelf();
 
 protected :
-  // virtual void mapReady() { ComputePatchPair::mapReady(); }
-  virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
+  // virtual void mapReady() { ComputePatch::mapReady(); }
+  virtual void doForce(Position* p, Force* f, AtomProperties* a);
 
 };
 
@@ -34,12 +34,15 @@ protected :
  *
  *	$RCSfile: ComputeNonbondedSelf.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/10/30 01:16:32 $
+ *	$Revision: 1.4 $	$Date: 1996/10/31 21:57:41 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedSelf.h,v $
+ * Revision 1.4  1996/10/31 21:57:41  jim
+ * first incarnation as ComputeNonbondedSelf
+ *
  * Revision 1.3  1996/10/30 01:16:32  jim
  * added AtomProperties structure in Patch plus boxes, passing, etc.
  *
