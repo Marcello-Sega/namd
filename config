@@ -58,22 +58,33 @@ begin:
   echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
   echo "Creating Makearch"
-  echo include .rootdir/Make.charm >! Makearch
-  echo include .rootdir/arch/$ARCH:t.arch >> Makearch
+  if ( $ARCH:t =~ *Win32* ) then
+   cat .rootdir/Make.charm >! Makearch
+   cat .rootdir/arch/$ARCH:t.arch >> Makearch
+  else
+   echo include .rootdir/Make.charm >! Makearch
+   echo include .rootdir/arch/$ARCH:t.arch >> Makearch
+  endif
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
   if ( $ARCH:t =~ *-MPI* ) then
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)-MPI' >> Makearch
   else
     echo 'NAMD_PLATFORM = $(NAMD_ARCH)' >> Makearch
   endif
-  echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Makearch
-  if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Makearch
-  if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Makearch
-  if ( $use_debug ) then
+  if ( $ARCH:t =~ *Win32* ) then
+   cat .rootdir/arch/Win32.base >> Makearch
+   if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Makearch
+   if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Makearch
+  else
+   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Makearch
+   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Makearch
+   if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Makearch
+   if ( $use_debug ) then
     echo 'CXXOPTS = -g' >> Makearch
     echo 'CXXTHREADOPTS = -g' >> Makearch
     echo 'CXXSIMPARAMOPTS = -g' >> Makearch
     echo 'COPTS = -g' >> Makearch
+   endif
   endif
   echo "Linking Makefiles"
   ln -s .rootdir/Makefile ./Makefile
