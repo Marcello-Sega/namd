@@ -60,18 +60,25 @@ int tbsoft_sendusage(const char *program,
                      const char *miscinfo) {
 
 #ifndef NOHOSTNAME
+  iout << iINFO << "Sending usage information to NAMD developers via UDP.\n" << endi;
+
   char sendbuf[TBSOFT_TRACK_MAXLEN];
-  char host[1024];
-  char user[1024];
+  char host[128];
+  struct passwd *pw;
+  char user[128];
 
   memset(sendbuf, 0, sizeof(sendbuf));
 
-  gethostname(host, 1023);
-  strcpy(user, getpwuid(getuid())->pw_name);
+  gethostname(host, 128);  host[127] = 0;
+  pw = getpwuid(getuid());
+  if ( pw && pw->pw_name ) {
+    strncpy(user, pw->pw_name, 127);  user[127] = 0;
+  } else {
+    sprintf(user,"%d",getuid());
+  }
 
   sprintf(sendbuf, "1 %s  %s  %s  %s  %s  %s  %s", 
     program, versionnum, platform, numcpus, miscinfo, host, user);
-  iout << iINFO << "Sending usage information to NAMD developers via UDP.\n";
   iout << iINFO << "Sent data is: " << sendbuf << "\n" << endi;
   send_dgram(TBSOFT_TRACK_HOST, TBSOFT_TRACK_PORT, sendbuf, strlen(sendbuf));
 
