@@ -118,6 +118,8 @@ void ComputeDPMTA::get_FMA_cube(int resize)
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 {
+  Message *conv_msg;
+
   DebugM(2,"ComputeDPMTA creating\n");
   // comm should always be initialized by this point...
   // In the (bug) case that it isn't, then initialize it.
@@ -125,6 +127,8 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   {
     NAMD_die("Communication protocol (Converse, PVM, etc.) not initialized.");
   }
+
+  // **** NOTE: node 0 must initialized before any other nodes register.
 
   //  Set everything to 0
   totalAtoms = 0;
@@ -145,6 +149,15 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
 
   if (CMyPe() != 0)
   {
+    DebugM(2,"waiting for Init go-ahead\n");
+    do
+    {
+      // get next DPMTATAG from node 0
+      conv_msg = comm->receive(-1,DPMTATAG);
+    } while (conv_msg == NULL);
+    delete conv_msg;
+    DebugM(2,"got Init go-ahead\n");
+
     slavetids=NULL;
     if (PMTAregister() < 0)
     {
@@ -231,6 +244,20 @@ ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
   {
 	iout << "Unable to start DPMTA!\n" << endi;
   }
+
+  // tell all nodes that it is OK to register
+  Message *msg = new Message;
+  // don't actually put in data...  Nodes just need it as a flag.
+  msg->put(TRUE);
+  comm->broadcast_all(msg,DPMTATAG);
+  DebugM(2,"Init go-ahead\n");
+  do
+  {
+    // get next DPMTATAG from node 0
+    conv_msg = comm->receive(-1,DPMTATAG);
+  } while (conv_msg == NULL);
+  delete conv_msg;
+  DebugM(2,"got Init go-ahead\n");
 
   //  Register this master with the other DPMTA processes
   if (PMTAregister() < 0)
@@ -420,12 +447,17 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1034 $	$Date: 1997/03/19 18:10:10 $
+ *	$Revision: 1.1035 $	$Date: 1997/03/19 18:47:29 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1035  1997/03/19 18:47:29  nealk
+ * Added log info to Hydrogen.h
+ * Fixed ComputeDPMTA.C so node 0 initializes before any other nodes register
+ * with the DPMTA library.
+ *
  * Revision 1.1034  1997/03/19 18:10:10  nealk
  * Added sorted hydrogen group list to molecule.
  *

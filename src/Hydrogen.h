@@ -51,3 +51,24 @@ typedef UniqueSortedArray<HydrogenGroupID> HydrogenGroup ;
 
 #endif
 
+/***************************************************************************
+ * RCS INFORMATION:
+ *
+ *      $RCSfile: Hydrogen.h,v $
+ *      $Author: nealk $        $Locker:  $             $State: Exp $
+ *      $Revision: 1.2 $     $Date: 1997/03/19 18:47:30 $
+ *
+ ***************************************************************************
+ * REVISION HISTORY:
+ *
+ * $Log: Hydrogen.h,v $
+ * Revision 1.2  1997/03/19 18:47:30  nealk
+ * Added log info to Hydrogen.h
+ * Fixed ComputeDPMTA.C so node 0 initializes before any other nodes register
+ * with the DPMTA library.
+ *
+ * Revision 1.1001  1997/03/19 18:10:15  nealk
+ * Added sorted hydrogen group list to molecule.
+ *
+ ***************************************************************************
+
