@@ -8,7 +8,7 @@
 ## Choose your favorite Compiler options
 ####
 CXX = CC -Aa -D_HPUX_SOURCE
-CXXOPTS = -g
+#CXXOPTS = -g
 #CXX = CC -Aa -D_HPUX_SOURCE
 #CXXOPTS = -O -DGLOBALS
 #CXXOPTS = +O2
@@ -23,7 +23,7 @@ CXXOPTS = -g
 #CXXOPTS = +O3 -z
 #CXXOPTS = -g -v -z -G
 #CXXOPTS = -g -v
-#CXXOPTS = -g 
+CXXOPTS = -g 
 
 #####
 # Flags
@@ -31,12 +31,12 @@ CXXOPTS = -g
 # uncomment for no warnings during compile
 #NOWARN=-w
 # uncomment for purify during compile
-# PURIFY=-purify
+#PURIFY=-purify
 
 #####
 # definitions for Charm routines
 #####
-CHARM = /Projects/l1/namd.2.0/charm
+CHARM = /Projects/l1/namd.2.0/charm-96.12.09/charm/net-hp-cc
 
 #####
 # Unix commands
