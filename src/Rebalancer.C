@@ -40,7 +40,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
     //    iout << iINFO << "\n proxies on proc. " << i << " are for patches:";
     //    processorArray[i].proxies->print();
   }
-  iout << iINFO <<"\n" << endi;
+  //  iout << iINFO <<"\n" << endi;
 
   //strategy();
 
@@ -119,9 +119,9 @@ int Rebalancer::refine()
   int i;
   for (i=0; i<P; i++){
     
-    iout << iINFO << "\n Computes on processor " << i << " ";
-    processors[i].computeSet->print();
-    iout << iINFO << "\n" << endi;
+    //iout << iINFO << "\n Computes on processor " << i << " ";
+    //processors[i].computeSet->print();
+    //    iout << iINFO << "\n" << endi;
     if (processors[i].load > overLoad*averageLoad)
       heavyProcessors->insert((InfoRecord *) &(processors[i]));
     else
@@ -142,16 +142,16 @@ int Rebalancer::refine()
       lightProcessors->iterator((Iterator *) &nextProcessor);
     bestSize0 = bestSize1 = bestSize2 = 0;
     bestCompute0 = bestCompute1 = bestCompute2 = 0;
-    iout << iINFO << "Finding receiver for processor " << donor->Id << "\n" << endi;
+    // iout << iINFO << "Finding receiver for processor " << donor->Id << "\n" << endi;
     while (p){
       Iterator nextCompute;
       nextCompute.id = 0;
       computeInfo *c = (computeInfo *) donor->computeSet->iterator((Iterator *)&nextCompute);
-      iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
+      //      iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
       while (c){
 	int n=0;
 	n = numAvailable(c,p);
-	iout << iINFO << "Considering Compute : " << c->Id << " with load " << c->load << "\n" << endi;
+	// iout << iINFO << "Considering Compute : " << c->Id << " with load " << c->load << "\n" << endi;
 	switch(n){
 	case 0: if (( c->load + p->load < overLoad*averageLoad) &&
 		    (c->load > bestSize0)) {
@@ -174,7 +174,8 @@ int Rebalancer::refine()
 	  bestP = p;
 	}
 	break;
-	default: iout << iINFO << "Error. Illegal number of proxies.\n" << endi;    
+	default:
+	  iout << iINFO << "Error. Illegal number of proxies.\n" << endi;    
 	}
 	nextCompute.id++;
 	c = (computeInfo *) donor->computeSet->next((Iterator *)&nextCompute);
@@ -226,15 +227,15 @@ int i, total = 0, numBytes = 0;
 double max;
 
   for (i=0; i<P; i++){
-    iout << iINFO << "load on "<< i << " is :" << processors[i].load 
-	 << "[ " << processors[i].backgroundLoad << "," 
-	 << processors[i].computeLoad << "]. " << endl << endi;
+    // iout << iINFO << "load on "<< i << " is :" << processors[i].load 
+    //	 << "[ " << processors[i].backgroundLoad << "," 
+    //   << processors[i].computeLoad << "]. " << endl << endi;
 
     //    CPrintf("load on %d is : %f [%f,%f]\n",i,processors[i].load,
     //    processors[i].backgroundLoad,processors[i].computeLoad);
-    iout << iINFO << "# Messages received: "
-	 << processors[i].proxies->numElements() - processors[i].patchSet->numElements() 
-	 << endl << endi;
+    // iout << iINFO << "# Messages received: "
+    //	 << processors[i].proxies->numElements() - processors[i].patchSet->numElements() 
+    //	 << endl << endi;
     Iterator p;
     int count = 0;
     
@@ -247,15 +248,16 @@ double max;
       patch = (patchInfo *)processors[i].patchSet->next(&p);
    
     }
-    iout << iINFO << " # Messages sent: " << count << "\n" << endi;
+    //    iout << iINFO << " # Messages sent: " << count << "\n" << endi;
     total += count;
   }
   computeAverage();
   max = computeMax();
-  iout << "Summary: (" << strategyName << ": " << P << "," 
-       << numPatches << "," << numComputes << ") avg = " 
-       << averageLoad << " max = " << max << " messages = " 
-       << total << "[" << numBytes << " bytes]\n" << endi;
+  iout << iINFO 
+    << "Summary: (" << strategyName << ": " << P << "," 
+    << numPatches << "," << numComputes << ") avg = " 
+    << averageLoad << " max = " << max << " messages = " 
+    << total << "[" << numBytes << " bytes]\n" << endi;
 
 //   CPrintf("Summary: (%s: %d,%d,%d),avg=%lf max=%lf messages = %d [%d bytes]\n",
 // 	  strategyName,P,numPatches,numComputes,

@@ -338,7 +338,8 @@ void LdbCoordinator::analyze(LdbStatsMsg *msg)
 
 void LdbCoordinator::processStatistics(void)
 {
-  CPrintf("All statistics received\n");
+  CPrintf("LDB: All statistics received at %f, %f\n",
+	  CmiTimer(),CmiWallTimer());
 
   const int numProcessors = Node::Object()->numNodes();
   const int numPatches = patchMap->numPatches();
@@ -399,7 +400,8 @@ void LdbCoordinator::processStatistics(void)
   */
 
   // 1) Print out statistics in test format
-  printLdbReport(nMoveableComputes);
+  // printLdbReport(nMoveableComputes);
+
 
   // 2) delete messages
   cleanUpData();
@@ -412,6 +414,8 @@ void LdbCoordinator::processStatistics(void)
 
   ComputeMgr *computeMgr = CLocalBranch(ComputeMgr, group.computeMgr);
   computeMgr->updateComputes(GetEntryPtr(LdbCoordinator,updateComputesReady),thisgroup);
+  CPrintf("LDB: Done processing statistics at %f, %f\n",
+	  CmiTimer(),CmiWallTimer());
 }
 
 void LdbCoordinator::updateComputesReady(DoneMsg *msg) {
