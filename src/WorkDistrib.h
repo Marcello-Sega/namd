@@ -22,8 +22,6 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 
-#include "Debug.h"
-
 class Node;
 class DoneMsg;
 class LocalWorkMsg;
@@ -83,8 +81,6 @@ public:
     char *patchMapData = (char*)patchMap->pack(&patchMapSize);
     char *computeMapData = (char*)computeMap->pack(&computeMapSize);
     *length = sizeof(int) + patchMapSize + sizeof(int) + computeMapSize;
-    DebugM(3,iFILE << "Packing patchMapSize=" << patchMapSize <<
-	" computeMapSize=" << computeMapSize << " length=" << *length << "\n");
     char *buffer = (char*)new_packbuffer(this,*length);
     char *b = buffer;
     *((int*)b) = patchMapSize;
@@ -110,8 +106,6 @@ public:
     }
     buffer += patchMapSize;
     int computeMapSize = *((int*)buffer);
-    DebugM(3,iFILE << "Unpacking patchMapSize=" << patchMapSize <<
-	" computeMapSize=" << computeMapSize << "\n");
     buffer += sizeof(int);
     computeMap = ComputeMap::Object();
     if ( ! ( computeMap->computeData ) )
@@ -128,13 +122,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1996/12/13 22:58:01 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.17 $	$Date: 1996/12/14 00:01:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.17  1996/12/14 00:01:59  jim
+ * removed debug from .h file
+ *
  * Revision 1.16  1996/12/13 22:58:01  nealk
  * Found pack/unpack bug and corrected it.  (wrong offset!)
  *
