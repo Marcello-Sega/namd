@@ -8,7 +8,7 @@
  * This object outputs the data collected on the master node
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.5 1997/04/10 16:58:14 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Output.C,v 1.6 1997/04/10 17:28:45 brunner Exp $";
 
 #include <string.h>
 #include <stdlib.h>
@@ -198,8 +198,7 @@ void Output::energy(int timestep, BigReal *energy)
 	   namdInfo << "KINETIC       TOTAL      TEMP       |MOMENTUM|\n";
       }
 
-      sprintf(out_string, "ENERGY: %f %f %6d ",
-	      CmiTimer(), CmiWallTimer(), timestep);
+      sprintf(out_string, "ENERGY: %6d ",timestep);
 
       for (i=0; i<maxEnergyCount; i++)
       {
@@ -2506,14 +2505,15 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *	$RCSfile: Output.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/04/10 16:58:14 $
+ *	$Revision: 1.6 $	$Date: 1997/04/10 17:28:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
- * Revision 1.5  1997/04/10 16:58:14  brunner
- * Added and removed some prints
+ * Revision 1.6  1997/04/10 17:28:45  brunner
+ * Made time output in energy actually work.  The one in output doesn't do
+ * anything.
  *
  * Revision 1.4  1997/03/19 11:54:36  ari
  * Add Broadcast mechanism.

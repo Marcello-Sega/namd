@@ -198,6 +198,10 @@ void Controller::printEnergies(int seq)
 	iout << "\n";
     }
 
+    iout << iINFO
+	 << "CPU time = " << CmiTimer() << " Wall Time = " 
+	 << CmiWallTimer() << endl;
+
     iout << ETITLE(seq)
 	 << FORMAT(bondEnergy)
 	 << FORMAT(angleEnergy)
@@ -237,12 +241,16 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/04/10 09:13:56 $
+ *	$Revision: 1.1017 $	$Date: 1997/04/10 17:28:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1017  1997/04/10 17:28:43  brunner
+ * Made time output in energy actually work.  The one in output doesn't do
+ * anything.
+ *
  * Revision 1.1016  1997/04/10 09:13:56  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.
