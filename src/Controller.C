@@ -1170,6 +1170,11 @@ void Controller::outputExtendedSystem(int step)
     {
       char fname[140];
       strcpy(fname, simParams->restartFilename);
+      if ( simParams->restartSave ) {
+        char timestepstr[20];
+        sprintf(timestepstr,".%d",step);
+        strcat(fname, timestepstr);
+      }
       strcat(fname, ".xsc");
       NAMD_backup_file(fname,".old");
       ofstream xscFile(fname);

@@ -272,33 +272,22 @@ void Output::velocity(int timestep, int n, Vector *vel)
 void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
 
 {
-  static Bool first=TRUE;    //  Is this the first time function
-          //  has been called?
-  static char *restart_name,      //  filenames for restart and backup
-        *restart_bak;  //  restart files
   char comment[128];    //  Comment for header of PDB file
+  char timestepstr[20];
 
-  //  Check to see if this is the first time the function has been
-  //  called
-  if (first)
-  {
-    //  This is the first invocation of the function, so build
-    //  the restart and backup filenames
-    restart_name = new char[strlen(namdMyNode->simParams->restartFilename)+6];
-    restart_bak = new char[strlen(namdMyNode->simParams->restartFilename)+10];
+  int baselen = strlen(namdMyNode->simParams->restartFilename);
+  char *restart_name = new char[baselen+26];
+  char *restart_bak = new char[baselen+30];
 
-    if ( (restart_name == NULL) || (restart_bak == NULL) )
-    {
-      NAMD_die("memory allocation failed in Output::coordinate");
-    }
-
-    strcpy(restart_name, namdMyNode->simParams->restartFilename);
-    strcat(restart_name, ".coor");
-    strcpy(restart_bak, namdMyNode->simParams->restartFilename);
-    strcat(restart_bak, ".coor.old");
-
-    first=FALSE;
+  strcpy(restart_name, namdMyNode->simParams->restartFilename);
+  if ( namdMyNode->simParams->restartSave ) {
+    sprintf(timestepstr,".%d",timestep);
+    strcat(restart_name, timestepstr);
   }
+  strcat(restart_name, ".coor");
+  strcpy(restart_bak, restart_name);
+  strcat(restart_bak, ".old");
+
 #if defined(WIN32) && !defined(__CYGWIN__)
   remove(restart_bak);
 #endif
@@ -318,6 +307,9 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
     //  Generate a binary restart file
     write_binary_file(restart_name, n, coor);
   }
+
+  delete [] restart_name;
+  delete [] restart_bak;
 }
 /*      END OF FUNCTION output_restart_coordinates  */
 
@@ -338,34 +330,22 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
 void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 
 {
-  static Bool first=TRUE;    //  is this the first invocation
-          //  of the function?
-  static char *restart_name,      //  filenames for the restart and
-        *restart_bak;  //  backup files
-  char comment[128];    //  comment for the header of the
-          //  PDB file
+  char comment[128];    //  comment for the header of PDB file
+  char timestepstr[20];
 
-  //  Check to see if this is the first invocation
-  if (first)
-  {
-    //  This is the first call to this function, so set up
-    //  the names that are to be used for the restart and
-    //  backup files
-    restart_name = new char[strlen(namdMyNode->simParams->restartFilename)+5];
-    restart_bak = new char[strlen(namdMyNode->simParams->restartFilename)+9];
+  int baselen = strlen(namdMyNode->simParams->restartFilename);
+  char *restart_name = new char[baselen+26];
+  char *restart_bak = new char[baselen+30];
 
-    if ( (restart_name == NULL) || (restart_bak == NULL) )
-    {
-      NAMD_die("memory allocation failed in Output::output_restart_velocites");
-    }
-
-    strcpy(restart_name, namdMyNode->simParams->restartFilename);
-    strcat(restart_name, ".vel");
-    strcpy(restart_bak, namdMyNode->simParams->restartFilename);
-    strcat(restart_bak, ".vel.old");
-
-    first=FALSE;
+  strcpy(restart_name, namdMyNode->simParams->restartFilename);
+  if ( namdMyNode->simParams->restartSave ) {
+    sprintf(timestepstr,".%d",timestep);
+    strcat(restart_name, timestepstr);
   }
+  strcat(restart_name, ".vel");
+  strcpy(restart_bak, restart_name);
+  strcat(restart_bak, ".old");
+
 #if defined(WIN32) && !defined(__CYGWIN__)
   remove(restart_bak);
 #endif
@@ -388,6 +368,9 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
     //  Write the velocities to a binary file
     write_binary_file(restart_name, n, vel);
   }
+
+  delete [] restart_name;
+  delete [] restart_bak;
 }
 /*      END OF FUNCTION output_restart_velocities  */
 

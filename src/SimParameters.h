@@ -120,6 +120,7 @@ public:
 	char restartFilename[129];	//  Base name of the restart file
 	int restartFrequency;		//  How often (in timesteps) shoud the
 					//  restart files be updated
+        Bool restartSave;		//  unique filenames for restart files
 	Bool binaryRestart;		//  should restart files be
 					//  binary format rather than PDB
 	Bool binaryOutput;		//  should output files be

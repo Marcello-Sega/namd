@@ -400,6 +400,8 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.range("restartfreq", NOT_NEGATIVE);
    opts.optional("restartfreq", "restartname", "Prefix for the position and "
      "velocity PDB files used for restarting", restartFilename);
+   opts.optionalB("restartfreq", "restartsave", "Save restart files with "
+     "unique filenames rather than overwriting", &restartSave, FALSE);
 
    opts.optionalB("restartfreq", "binaryrestart", "Specify use of binary restart files ", 
        &binaryRestart, TRUE);
@@ -1025,6 +1027,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      }
    } else {
      restartFilename[0] = STRINGNULL;
+     restartSave = FALSE;
      binaryRestart = FALSE;
    }
 
@@ -2050,6 +2053,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << restartFilename << "\n";
      iout << iINFO << "RESTART FREQUENCY      " 
         << restartFrequency << "\n";
+  if (restartSave) {
+    iout << iINFO << "RESTART FILES WILL NOT BE OVERWRITTEN\n";
+  }
 
   if (binaryRestart)
   {
