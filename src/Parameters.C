@@ -82,7 +82,7 @@ struct dihedral_params
   char atom3wild;
   char atom4wild;
   int multiplicity;
-  FourBodyConsts values[4];
+  FourBodyConsts values[MAX_MULTIPLICITY];
   Index index;
   struct dihedral_params *next;
 };
@@ -100,7 +100,7 @@ struct improper_params
   char atom3name[11];
   char atom4name[11];
   int multiplicity;
-  FourBodyConsts values[4];
+  FourBodyConsts values[MAX_MULTIPLICITY];
   Index index;
   struct improper_params *next;
 };
