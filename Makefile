@@ -22,6 +22,7 @@ LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
 #####
 # definitions for Charm routines
 #####
+CHARM = /Projects/l1/namd.2.0/charm
 CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc $(PURIFY)
 
@@ -40,7 +41,6 @@ PVMDIR=pvm3
 PVMLIB=-L$(PVMDIR) -lpvmc
 PVM=-I$(PVMDIR)
 
-# CXXOPTS = -O
 #CXXOPTS = -g
 CXXOPTS = -O 
 # CXXOPTS = -O +DAK460 +DSK460
@@ -131,7 +131,7 @@ TEMPLATES = \
 	$(SRCDIR)/Templates/UniqueSortedArray.C
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
-	cd $(PVMDIR) ; $(MAKE) ; cd ..
+	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 	cd $(DPMTADIR) ; $(MAKE) ; cd ..
 	$(CHARMC) -verbose -ld++-option \
 	"-I $(INCLUDE) -I $(SRCDIR) $(CXXOPTS) " \
