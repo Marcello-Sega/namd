@@ -46,19 +46,16 @@ void AtomMap::allocateMap(int nAtomIds)
 }
 
 //----------------------------------------------------------------------
-int AtomMap::registerIDs(PatchID pid, AtomID *atomId, int nIds)
+int AtomMap::registerIDs(PatchID pid, AtomIDList al)
 {
   if (localIDTable == NULL)
     return -1;
   else 
   {
-    for(int i=0; i < nIds; i++)
+    for(int i = 0; i < al.size(); ++i)
     {
-      if ((atomId[i] >= 0) && (atomId[i] < tableSz))
-      {
-	localIDTable[atomId[i]].pid = pid;
-	localIDTable[atomId[i]].index = i;
-      }
+	localIDTable[al[i]].pid = pid;
+	localIDTable[al[i]].index = i;
     }
     cleared = false;
     return 0;
@@ -80,13 +77,16 @@ void AtomMap::clearMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/29 23:36:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/11/22 01:43:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.C,v $
+ * Revision 1.3  1996/11/22 01:43:32  jim
+ * switched to use AtomIDList
+ *
  * Revision 1.2  1996/10/29 23:36:13  ari
  * *** empty log message ***
  *

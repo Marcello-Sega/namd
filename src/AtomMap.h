@@ -27,7 +27,7 @@ public:
 
   void allocateMap(int nAtomIDs);
 
-  int registerIDs(PatchID pid, AtomID *atomid, int nIds);
+  int registerIDs(PatchID pid, AtomIDList al);
 
   LocalID localID(AtomID id);
 
@@ -59,13 +59,16 @@ inline LocalID AtomMap::localID(AtomID id)
  * RCS INFORMATION:
  *
  *	$RCSfile: AtomMap.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/10/29 23:36:13 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/11/22 01:43:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: AtomMap.h,v $
+ * Revision 1.3  1996/11/22 01:43:32  jim
+ * switched to use AtomIDList
+ *
  * Revision 1.2  1996/10/29 23:36:13  ari
  * *** empty log message ***
  *
