@@ -291,11 +291,14 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       processorArray = new processorInfo[Node::Object()->numNodes()];
   }
     
+  // It is important to call ClearLoads before checkAndGoToBarrier, or
+  // processors with no patches or computes will calculate erroneous
+  // performance data, and load balancing won't do well.
+
+  theLbdb->ClearLoads();
 
   if (nLocalPatches == 0 || nLocalComputes==0 )
   	checkAndGoToBarrier();
-
-  theLbdb->ClearLoads();
 }
 
 void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
