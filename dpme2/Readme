@@ -1,25 +1,24 @@
 ***************************************************************************
-*              		  DPME release 2.0 	                          *
+*              		  DPME-W release 2.1 	                          *
 ***************************************************************************
 Written by A. (Nour) Toukmaji (Duke University, ECE Dept.) 
 with contributions from Tom Darden (NIEHS-RTP, NC) and 
 S. Plimpton (Sandia National Labs).
-This is release 2.0 of Distributed Particle Mesh Ewald (DPME) method, an 
+This is release 2.1 of Distributed Particle Mesh Ewald (DPME) method, an 
 algorithm that  implements Ewald summation in O(N log N) in parallel - 
 for details of the method see e.g. T. Darden et al. J. Chem Phys. 
-98(12) June 1993 pp. 11089. 
+98(12) June 1993 pp. 11089.
+For details on the spatial decomp, see S. Plimpton J. Comp Phys (117)1-19 1995. 
 ***************************************************************************
-			  What's New in DPME 2.0
+			  What's New in DPME 2.1
 ***************************************************************************
 This new release of DPME will support the following features:
 1- Rectangular systems (still orthogonal) where all 3 dimensions can be different.
 
-2- All-Peer parallel model: There is no master/slave, all Processing Elements (PE)
-   perform the same tasks. Only exception is when doing a global reduction operation
-   where one PE accumulates the global value.
-
-3- The reciprocal-sum is partially parallelized. In fact, all PEs compute the 
-   recip_sum energy.
+2- Master/Worker parallel model: This release is made specifically for a 
+cluster of workstations. The absence of efficient distributed 3D FFT makes this model 
+a better approach than the all-peer model of DPME2.0. 
+Here the Master does the recip-sum while the workers do the direct-sum. 
  
 ***************************************************************************
 			  Introduction
@@ -28,9 +27,9 @@ This release includes a driver program (dpme2_test), utility routines (dpme2_uti
 parallel execution routines (dpme2_paralibs), the reciprocal-sum driver 
 (dpme2_recip_sum), and 2 archive libraries:
 
-1- pubbfft/libpubfft.a: contains the fft routines used in evaluating the 
+1- Dpub_fft/libpubfft.a: contains the fft routines used in evaluating the 
    recip_space sum.
-2- pme_recip/pme_recip.a: contains recip_space sum routines.
+2- Dpme_recip/pme_recip.a: contains recip_space sum routines.
 
 The driver program (dpme2_test.c) is provided as an example of the essential
 calls and runs under PVM in single program environment (SPMD). This means
@@ -91,44 +90,84 @@ the coordinates of each atom. Since our test system is water, ( only two unique
 charges) the charges are specified in the test program rather than the 
 data file.
 
+Important Observation: 
+Note that as you reduce  the tolerance (say from 1e-6 to 1e-8) the Ewald
+convergenc parameter (alpha) is decreased, which relastes to Ewald sum as
+followes: i- As alpha is increased, the dir-sum converges faster and thus
+it is more accurate. ii- As alpha is decreased, the recip sum converges faster
+and thus you would not need to specify a hi-interpolation order or a dense
+grid. 
+
+
 ***************************************************************************
 		              Program Flow
 ***************************************************************************
 The section illustrates the sequence of events for each the master and worker.
 (0)- Have the PVM deamon and group server running on your cluster.
 
-(1)- Once the dpme2_test is started, the process registers itself with PVM and 
+(1)- dpme_register():
+Once the dpme2_test is started, the process registers itself with PVM and 
 with the group as group_member 0, then it spawn NSLAVES processes on the cluster.
 Each of the processors registers with PVM and the group.
 
-(2)- Each process opens the coordinates file, reads in the coordinates and 
+(2)- dpme_setup():
+Each process opens the coordinates file, reads in the coordinates and 
 initializes its own data structure. Each processor performs spatial decomposition
 (every UPDATE_TIME) and prepares to swap its border atoms with neighbor PEs.
 
-(3)- The first swap of border atoms takes place West/East direction, followed
+* We will term the last registered PE the 'master' and it will do the 
+recip sum, all other PEs are 'workers' and they do the direct sum and report
+the results to the master.
+
+(3 Worker)- dpme_renieghbor()
+Decompose space, create link-list and neighbor lists. Identify your 
+neighbor PEs and then exchange border atoms.
+The first swap of border atoms takes place West/East direction, followed
 by the North/South and Up/Down if necessary.
 
-(4) Each PE broadcasts its atoms' fractional coordinates in preperation
-for the reciprocal-sum.
+(3 Master)- dpme_eval_recip() 
+Master evaluates the recip-sum.
 
-(5) Each PE  evaluates the direct-sum, while waiting for the broadcast of (4)
-to be received.
+(4W) dpme_dir_force()
+Each worker PE  evaluates the direct-sum forces and energy.
+(4M) dpme_adjust_recip():
+Master corrects the bonded interactions for this system (water in this e.g.)	
 
-(6) Now all PE receive the broadcast, perform the recip-sum.
+(5W)dpme_adjust_dir()
+Each worker corrects for the bonded interaction computed for this water system.
+(5M) dpme_rcv_dir()
+The master now is ready to recv the direct-force resutls from Nslaves and it
+stores them according to thier global tag in its own copy of direct force array.
 
-(7) Each PE performs the self sum on its particles as well as 
-bonded force corrections.
+(6W) dpme_snd_dir()
+Workers send their local atoms' direct-forces to the master PE.
+(6M) update_coordinates():
+This is not an essential routine, it basically perturbs all atoms in one direction
+and re-inserts atoms leaving the box back. This should be replaced by an integrator
+such as Verlet.
 
-(8) Each PE updates its particles' coordinates.
+(7W) dpme_self()
+While waiting for the updated coordinates, a worker performs the self sum on 
+its particles.
+(7M) dpme_snd_xyz()
+After updating all atoms coordintes, the master packs the corresponding atoms and
+ships them to their respective workers.
 
-(9) Back to (3), the cycle continues until the system is simulated TSTEPS time steps.
+(8W) dpme_rcv_xyz()
+Now workers recv the new updated xyz coordinates of their local atoms.
+
+(9 M&W) collect_ene_resutls/virials()
+Optional. Every Update_time and at the last tstep, the energies and virial are
+accumulated and printed by the master.
+
+(10 M&W) Back to (3), the cycle continues until the system is simulated TSTEPS time steps.
 
 ***************************************************************************
                 	Main Data Structures
 ***************************************************************************
 I tried to consolidate data structures to resemble those of DPMTA (ECE, Duke U.)
-for compatibility reasons. The two major data structures of interest to the user
-are the particles data and the forces data, these are defined in dpmedef.h
+for compatibility reasons. Following are the major data structures of interest to 
+the user defined in dpmedef.h
 
 1- Particles are of type pmeparticle (see below)
 
@@ -148,12 +187,16 @@ typedef struct pmevector {
    double z;
    }  PmeVector;
 
+3- AtomInfo, BoxInfo, PeInfo, SwapInfo, BndryInfo, BinInfo,and GridInfo
+are listed in detail in dpme2def.h
+
+
 NOTE:	That the direct_sum forces (directF) that result from dir_force() routine
 	are not corrected. The direct_sum forces are corrected when passed  to 
-	the routine  adjust_dir_recip().
+	the routine  adjust_dir().
 	Also, the reciprocal-sum forces (recipF) resulting from eval_recip_sum()
 	are not corrected, but can be corrected when they are added to the 
-	adjustF forces (which are passed in the adjust_dir_recip() routine.
+	adjustF forces (which are passed in the adjust_recip() routine.
 		
 	* The total system energy = 
 		direct_ene_uncorrected (namely direct_energy) +
@@ -168,7 +211,7 @@ NOTE:	That the direct_sum forces (directF) that result from dir_force() routine
  in this release:
 
  A- Direct-space (real-space) Sum: this is implemented in parallel using
-    the routine dir_force():
+    the routine dpme_dir_force():
 
    The direct_space sum is based on spatial-decomposition of the simulation box.
    There are two levels of spatial decomposition: 1- the simulation box is divided
@@ -179,14 +222,14 @@ NOTE:	That the direct_sum forces (directF) that result from dir_force() routine
   the number of atoms are < 1000 the program chooses Verlet-like approach)
   The direct-space sum is evaluated within a cutoff supplied by the user (-c flag).
   
-B-   double eval_recip_sum ():
+B-   double dpme_eval_recip ():
    The recip-space sum is based on the PME method (similar in concept to particle-mesh
    method) where charged particles are interpolated on a grid, the dimension of the grid
    in specified by the user (-n flag). Interpolation to the grid is achieved using 
    spline-interpolation the order of which is user specified (-o flag).
 
 
-C-  self()
+C-  dpme_self()
    Computes the Self-term, this affects the energy/potential but not the forces.
 
 ***************************************************************************
@@ -196,7 +239,7 @@ The above routines assume that all particles are non-bonded, however, the system
 tested in this release is a system of water (TIP3) and thus there are bindings
 between O-H1 O-H2 and H1-H2 that are subtracted back in this routine:
 
-adj_dir_recip():
+dpme_adj_dir/recip():
 to subtract the bounded interactions out of the direct-space sum, and
 recip-space sum.
 
@@ -208,7 +251,7 @@ particle systems.
 	                 	Making the Program
 ***************************************************************************
 
-This release consists of this directory and two subdirectories (pubfft and pme_recip).
+This release consists of this directory and two subdirectories (Dpubfft and Dpme_recip).
 There is a Makefile in each directory. One needs to make in pubfft and pme_recip
 first before making in this directory.
 
@@ -223,14 +266,14 @@ hardware.
 * current dir: has the test program, and the utilities for direct_sum and for
 	recip-sum.
 
-* pubfft: when made, generates an archive file libpubfft.a that basically performs FFT
+* Dpubfft: when made, generates an archive file libpubfft.a that basically performs FFT
 	routines. It can be created  by simply calling make within this directory.
 	Also available is a  FORTAN formulation of this library in (InFortran) directroy
 	for efficiency. In order to use the fortran version, you must make the file
 	seperatly in the InFortran directory and then copy the libpubfft.a file over
 	one level up (ie cp libpubfft.a ../.)
 	
-* pme_recip: includes utility routines used in evaluating the reciprocal-sum.
+* Dpme_recip: includes utility routines used in evaluating the reciprocal-sum.
 	  One can create this library  by calling make from within this directory 
 	  resulting in pme_recip.a (or use MakeAll).
 
@@ -290,7 +333,7 @@ The virial should equal (within some accuracy) -1* total energy sum
 dpme2def.h; I will be moving towards a fully dynamic memory allocation
 in future updates.   
 ***************************************************************************
-	                 	   Questions 
+	              Questions/Suggestions 
 ***************************************************************************
 I have tested this release extensively. However, nothing is perfect :-) !
 Please direct all questions / undocumented features (bugs!) / requests to:
@@ -303,4 +346,5 @@ Please direct all questions / undocumented features (bugs!) / requests to:
 
 	email: ayt@ee.duke.edu
 
+I would also welcome your suggestions and ideas to improve the code.
 ***************************************************************************

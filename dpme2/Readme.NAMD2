@@ -1,7 +1,6 @@
-March 7, 1997
-The original distribution had many compilation problems.
+April 7, 1997
+The original distribution had a few compilation problems.
 These included:
-  _ shifting with ambiguous + or -.  (Compiler warning)
   _ unused variables
   _ no make definition for needed libraries in subdirectories
 

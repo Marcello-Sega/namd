@@ -5,7 +5,7 @@
 
 MAKE   = make
 SHELL  = /bin/sh
-CC     = gcc -Wall # SGI: cc -fullwarn -g3 -lmalloc
+CC     = gcc # -Wall  sun :,sgi: cc -fullwarn -g3 
 AR     = ar
 RM     = rm -f
 
@@ -13,11 +13,9 @@ RM     = rm -f
 # where the executables will be placed.
 #
 # SUN
-#PVM_ARCH = SUN4SOL2       #DSIL
-PVM_ROOT = ../pvm3
+PVM_ARCH = SUN4SOL2       #DSIL
 # SGI 
 #PVM_ARCH = SGI64
-#PVM_ROOT = /usr/opt/pvm/pvm3
 #don't forget to change the LIBS
 
 #PVM_HOME = $(HOME)/pvm3
@@ -36,25 +34,25 @@ PVM_HOME = ../pvm3
 # Must set the WORKINGDIR and DATADIR in dpme_pvm.h
 
 #DFLAGS = -D$(PVM_ARCH) -DVIRIAL -DTIMEME -DVERBOSE -DDPME_DEBUG(2,3)
-DFLAGS = -D$(PVM_ARCH)  -DTIMEME   -DVIRIAL -DVERBOSE  
+DFLAGS = -D$(PVM_ARCH)  -DTIMEME  -DVERBOSE -DVIRIAL
 # tell the compiler where to locate the PVM include
 # files
 #
-IFLAGS = -I$(PVM_HOME)
-CFLAGS = $(IFLAGS)
+IFLAGS = -I$(PVM_HOME) -I../src -I../dpmta2 -I/Projects/l1/namd.2.0/charm/include
 
 # library flags - set the flags to point to the directories
 #   containing the PVM 
 #
-LDIR = -L. -L../pvm3
+LDIR = -L$(PVM_HOME)/lib/$(PVM_ARCH) -L. -L/Projects/l1/namd.2.0/charm/lib
 
 #  tell the linker where to which libraries to link in.
 #  this will vary by operating system
 #
 # solaris :
-# LIBS = -lpvmc -ldpme2 -lsocket -lnsl  -lm
+LIBS = -lpvmc -lm 
+
 # otherwise :
-LIBS = -lpvmc -ldpme2 -lm 
+#LIBS = -lpvm3 -lgpvm3  -lm
 ###################################################################
 #        END  OF SYSTEM CONFIGURATION SECTION   
 ###################################################################
@@ -62,30 +60,24 @@ LIBS = -lpvmc -ldpme2 -lm
 ####################################################################
 DEBUG= 
 MYCFLAGS=   $(DFLAGS) $(IFLAGS) $(DEBUG) #-O3
-LFLAGS = $(LDIR) $(LIBS)
+LFLAGS = $(LDIR)
 #FFLAGS= -O +U77 -lf -lm -lF77
 MYCC = $(CC) $(MYCFLAGS)
 ####################################################################
-testobjects = dpme2_test.o
-objects = dpme2_recip_sum.o dpme2_paralibs.o erfcfun.o dpme2_utility.o \
-	  bspline2.o charge_grid2.o fftcalls.o pmesh_kspace2.o \
-	  cfftb.o cfftb1.o cfftf.o cfftf1.o cffti.o cffti1.o \
-	  passb.o passb2.o passb3.o passb4.o passb5.o \
-	  passf.o passf2.o passf3.o passf4.o passf5.o \
-	  pub3dfft.o
-headers = dpme2.h dpme2_pvm.h dpme2def.h f2c.h protype.h
-libobjects =  libdpme2.a
+objects = dpme2_recip_sumW.o dpme2_paralibsW.o  erfcfun.o  dpme2_utilityW.o  dpme2_testW.o
+Dpme_Recip = charge_grid2.o fftcalls.o bspline2.o pmesh_kspace2.o
+Dpubfft = cfftb.o cfftf1.o passb.o passb4.o passf2.o \
+	  passf5.o cfftb1.o cffti.o passb2.o passb5.o passf3.o \
+	  cfftf.o cffti1.o  passb3.o  passf.o passf4.o pub3dfft.o
 
-all:	libdpme2.a
+all:	$(objects) $(Dpme_Recip) $(Dpubfft)
+	ar -vr libdpme.a $(objects) $(Dpme_Recip) $(Dpubfft)
 
-.c.o:	$(headers)
-	$(CC) $(CFLAGS) -c $*.c
-	ar r libdpme2.a $*.o
+.c.o:
+	$(CC) $(CFLAGS) $(DFLAGS) $(IFLAGS) -c -o $*.o  $*.c
 
-libdpme2.a:	$(objects)
-
-dpme_test:    $(objects)  $(testobjects) 
-	$(CC) $(CFLAGS) -o dpme2_test $(objects) $(testobjects) $(LDLIBS) $(LFLAGS)
+dpme_test:    $(objects)
+	$(CC) $(CFLAGS)    -o dpme2_test  $(objects)  $(libobjects) $(LDLIBS) $(LFLAGS)
 
 clean:
 	rm -f *.o *.a
