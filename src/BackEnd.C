@@ -109,8 +109,13 @@ void BackEnd::init(int argc, char **argv) {
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
   group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
   group.sync = CProxy_Sync::ckNew();
+#if CHARM_VERSION > 050402
+  CProxy_CollectionMaster coll;
+  CkChareID collectionMaster = coll.ckGetChareID();
+#else
   CProxy_CollectionMaster coll(0);
   CkChareID collectionMaster = coll.ckGetChareId();
+#endif
   SlaveInitMsg *initmsg7 = new SlaveInitMsg;
   initmsg7->master = collectionMaster;
   group.collectionMgr = CProxy_CollectionMgr::ckNew(initmsg7);
