@@ -76,11 +76,11 @@ void read_binary_file(const char *fname, Vector *data, int n)
   //  read the number of coordinates in this file
   //  check for palindromic number of atoms
   char lenbuf[4];
-  bcopy((const char *)&filen, lenbuf, 4);
+  memcpy(lenbuf, (const char *)&filen, 4);
   char tmpc;
   tmpc = lenbuf[0]; lenbuf[0] = lenbuf[3]; lenbuf[3] = tmpc;
   tmpc = lenbuf[1]; lenbuf[1] = lenbuf[2]; lenbuf[2] = tmpc;
-  if ( ! bcmp((const char *)&filen, lenbuf, 4) ) {
+  if ( ! memcmp((const char *)&filen, lenbuf, 4) ) {
     iout << iWARN << "Number of atoms in binary file " << fname <<
 		" is palindromic, assuming same endian.\n" << endi;
   }
@@ -89,7 +89,7 @@ void read_binary_file(const char *fname, Vector *data, int n)
   if (filen != n)
   {
     needToFlip = 1;
-    bcopy(lenbuf, (char *)&filen, 4);
+    memcpy((char *)&filen, lenbuf, 4);
   }
   if (filen != n)
   {

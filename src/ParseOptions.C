@@ -10,14 +10,14 @@
 */
 
 #include <iostream.h>
-#ifndef SP2
+#ifndef _AIX
 #include <string.h>
 #endif
 #include "ParseOptions.h"
 #include "ConfigList.h"
 #include "InfoStream.h"
 
-#ifdef SP2
+#ifdef _AIX
 #include "strlib.h"		//  For strcasecmp and strncasecmp
 #endif
 

@@ -18,7 +18,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef SP2
+#ifndef _AIX
 #include <strings.h>
 #endif
 #include "common.h"
@@ -38,7 +38,7 @@ void	NAMD_remove_comment(char *);	//  Remove comments at the end of
 					//  a line demarked by !
 
 //  Add definitions for missing library routines in AIX
-#ifdef SP2
+#ifdef _AIX
 int strcasecmp(const char s[], const char t[]);
 int strncasecmp(const char s[], const char t[], int n);
 #endif

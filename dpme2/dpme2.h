@@ -38,7 +38,9 @@
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #define dmin(a,b) (double)min(a,b)
 #define dmax(a,b) (double)max(a,b)
+#ifndef abs
 #define abs(x) ((x) >= 0 ? (x) : -(x))
+#endif
 #define invsign(x)  ((x) >= 0 ? -1 : 1)
 
 /* Nint is eqvlnt to rint i.e. round x to the nearest integer */

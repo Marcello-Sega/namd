@@ -3,7 +3,7 @@
  *  Copyright (c) 1996,1997 Duke University
  *  All rights reserved
  */
-/* $Id: dpme2_utilityW.c,v 1.5 1999/03/22 20:55:32 jim Exp $
+/* $Id: dpme2_utilityW.c,v 1.6 1999/11/11 00:16:46 jim Exp $
  */
 
 /*******************************************************************************
@@ -16,6 +16,7 @@
 
 #include "dpme2.h"
 #include "math.h"
+#include <time.h>
 
   extern double rint(double);
   extern double erfc(double);

@@ -386,7 +386,7 @@ void NAMD_pad(char *str, size_t length)
 //  The implementation is a modified version of the strcmp shown
 //  in the K&R C manual
 
-#ifdef SP2
+#ifdef _AIX
 int strcasecmp(const char s[], const char t[])
 
 {

@@ -547,7 +547,8 @@ void Sequencer::submitReductions(int step)
 
 void Sequencer::submitCollections(int step)
 {
-  if ( int prec = Output::coordinateNeeded(step) )
+  int prec = Output::coordinateNeeded(step);
+  if ( prec )
     collection->submitPositions(step,patch->atomIDList,patch->p,
 				patch->lattice,patch->t,prec);
   if ( Output::velocityNeeded(step) )

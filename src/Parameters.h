@@ -174,7 +174,7 @@ private:
 	int NumVdwParams;			//  Number of vdw parameters
         int NumVdwParamsAssigned;               //  Number actually assigned
 	int NumVdwPairParams;			//  Number of vdw_pair params
-	ResizeArray<const char *> error_msgs;   //  Avoids repeating warnings
+	ResizeArray<char *> error_msgs;		//  Avoids repeating warnings
 
 	int *maxDihedralMults;			//  Max multiplicity for
 						//  dihedral bonds

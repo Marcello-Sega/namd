@@ -1,10 +1,10 @@
 NAMD_ARCH = IBM-SP
 CHARMARCH = sp3
 
-CXX = mpCC -w -DPLACEMENT_NEW_GLOBAL
-CXXOPTS = -O3 -qstrict -Q -qarch=pwr -qtune=pwr -DSP2
+CXX = mpCC -w
+CXXOPTS = -O3 -qstrict -Q -qarch=pwr -qtune=pwr
 CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS)
 CC = mpcc -w 
-COPTS = -O
+COPTS = -O3
 

@@ -5,6 +5,7 @@
 **/
 
 #include "ccsinterface.h"
+#include <conv-ccs.h>
 
 #if(CMK_CCS_AVAILABLE)
 #include <stdlib.h>

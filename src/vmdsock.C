@@ -10,6 +10,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#ifdef _AIX
+#include <strings.h>
+#endif
 #include <arpa/inet.h>
 #include <fcntl.h>
 
@@ -75,7 +78,7 @@ int vmdsock_listen(void * v) {
 int  vmdsock_accept(void * v) {
   int rc;
   vmdsocket *s = (vmdsocket *) v;
-#ifdef __linux__
+#if defined __linux__ || defined _AIX
   socklen_t len;
 #else
   int len;

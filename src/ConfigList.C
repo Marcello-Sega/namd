@@ -38,7 +38,7 @@
 #include "ConfigList.h"
 #include "common.h"
 
-#ifdef SP2
+#ifdef _AIX
 #include "strlib.h"	// for strncpy, strcasecmp
 #endif
 
@@ -126,7 +126,7 @@ ConfigList::ConfigList(void)
 struct FileStack {
   FILE *file;
   int linenumber;
-  const char *filename;
+  char *filename;
   FileStack *next;
 };
 
@@ -144,8 +144,10 @@ struct FileStack {
 // a new one:  if the first character of the data is '{'
 //   then I append new keyword values for each line until I get to
 //   a line with the first non-blank character as a '}'
-ConfigList::ConfigList(const char *filename)
+ConfigList::ConfigList(const char *filename_in)
 {
+  char *filename = new char[strlen(filename_in)+1];
+  strcpy(filename,filename_in);
   FileStack *fileStack = 0;
   FILE *infile;
   
@@ -313,6 +315,7 @@ ConfigList::ConfigList(const char *filename)
   if (strcmp(filename,"-")) {  // close the input file if not stdin
     Fclose(infile);
   }
+  delete [] filename;
 }
 
 // destructor for the class - just delete a linked list

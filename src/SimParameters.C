@@ -28,7 +28,7 @@ extern "C" {
   extern double erfc(double);
 }
 
-#ifdef SP2
+#ifdef _AIX
 #include "strlib.h"    //  For strcasecmp and strncasecmp
 #endif
 
