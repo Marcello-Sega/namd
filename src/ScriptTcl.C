@@ -120,58 +120,61 @@ int ScriptTcl::Tcl_print(ClientData,
 
 int ScriptTcl::Tcl_config(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
+
+// Needs to handle the following cases as passed in by Tcl:
+//    name data #comment
+//    name=data #comment
+//    name= data #comment
+//    name =data #comment
+//    name = data #comment
+//    name data1 data2 data3 #comment
+//    name=data1 data2 data3 #comment
+//    name= data1 data2 data3 #comment
+//    name =data1 data2 data3 #comment
+//    name = data1 data2 data3 #comment
+//    name { data1 data2 data3 } #comment
+//    name { data1 data2 data3 } #comment
+//    name { data1 data2 # data3 } #comment
+//    name {data1 data2 # data3 } #comment
+// Do not try to handle "data#comment" in any form.
+// The '#' start of any comments will *always* be a new argv.
+// The name will *always* be contained in argv[1].
+
+  // allocate storage for data string
   int arglen = 1;  int ai;
   for (ai=1; ai<argc; ++ai) { arglen += strlen(argv[ai]) + 1; }
-  char *buf = new char[arglen];  *buf = 0;
-  for (ai=1; ai<argc; ++ai) { strcat(buf,argv[ai]); strcat(buf," "); }
-  ai = strlen(buf);  if ( ai ) buf[ai-1] = 0;
-  char *namestart, *nameend, *datastart, *dataend, *s;
-  namestart = nameend = datastart = dataend = NULL;
-  int spacecount = 0;
+  char *data = new char[arglen];  *data = 0;
 
-    for (s = buf; *s; s++) {    // get to the end of the line
-       if (*s == '#')                       // found a comment, so break
-          { *s = 0; break; }
-       if ( !isspace(*s) )    // dataend will always be the last non-blank char
-          dataend = s;
-       if ( !isspace(*s) && !namestart)     // found first character of name
-          {namestart = s; continue; }
-       if ( (isspace(*s)  || *s == '=') &&  // found last character of name
-                 namestart && !nameend)
-          nameend = s - 1;
-       if ( !isspace(*s) && !datastart &&   // found the next char. after name
-                 nameend) {
-          if (*s == '=' && spacecount == 0) // an equals is allowed
-             {spacecount++; continue; }     // but only once
-          else if (*s == '{') {
-            datastart = s;
-            int escape_next = 0;
-            int open_brace_count = 0;
-            for(; *s; s++) {
-              if (escape_next) { escape_next=0; continue; }
-              if (*s == '\\' && ! escape_next) { escape_next=1; }
-              if (*s == '{' && ! escape_next) { open_brace_count++; }
-              if (*s == '}' && ! escape_next) { open_brace_count--; }
-              if (! open_brace_count) { dataend = s; break; }
-            }
-            continue;
-          }
-          else
-             {datastart = s; continue; }    // otherwise, use it
-       }
-    }
+  // find the end of the name
+  char *name, *s;
+  name = argv[1];
+  for ( s = name; *s && *s != '='; ++s );
 
-    if (!namestart || !nameend || !datastart || !dataend) {
-      delete [] buf;
-      Tcl_SetResult(interp,"error parsing config file",TCL_VOLATILE);
-      return TCL_ERROR;
-    }
+  // eliminate any comment
+  for (ai=2; ai<argc; ++ai) { if (argv[ai][0] == '#') argc = ai; }
+
+  // concatenate all the data items
+  ai = 2;
+  if ( *s ) { *s = 0; ++s; strcat(data,s); }  // name=data or name=
+  else if ( ai < argc && argv[ai][0] == '=' ) {  // name =data or name =
+    strcat(data,argv[ai]+1);
+    ++ai;
+  }
+  for ( ; ai<argc; ++ai) {
+    if ( data[0] ) { strcat(data," "); }
+    strcat(data,argv[ai]);
+  }
+
+  if ( ! *name || ! *data ) {
+    delete [] data;
+    Tcl_SetResult(interp,"error parsing config file",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
 
   ScriptTcl *script = (ScriptTcl *)clientData;
-  script->config->add_element( namestart, nameend - namestart + 1,
-                               datastart, dataend - datastart + 1 );
+  script->config->add_element( name, strlen(name), data, strlen(data) );
 
-  delete [] buf;
+  delete [] data;
   return TCL_OK;
 }
 

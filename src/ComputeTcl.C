@@ -314,9 +314,8 @@ void ComputeTcl::initialize() {
 
   for ( ; script; script = script->next ) {
     int code;
-    if ( script->data[0] == '{' ) {
-       script->data[strlen(script->data)-1] = 0;
-       code = Tcl_Eval(interp,script->data+1);
+    if ( strstr(script->data,"\n") ) {
+       code = Tcl_Eval(interp,script->data);
     }
     else code = Tcl_EvalFile(interp,script->data);
     char *result = Tcl_GetStringResult(interp);

@@ -263,11 +263,12 @@ ConfigList::ConfigList(const char *filename_in)
      
    } else if (datastart[0] == '{') {
      // check if the data begins with a '{'
-     // will leave initial '{' as a flag and final '}' to match Tcl.
+     // will remove initial '{' and final '}' to match Tcl.
      ostrstream alldata;
      char newdata[1000];
      int found_end = 0;
-     int open_brace_count = 0;
+     ++datastart;  // remove initial '{'
+     int open_brace_count = 1;
      char *newline = datastart;
      strcat(newline,"\n");  // put back newline that was removed above
 
@@ -290,7 +291,7 @@ ConfigList::ConfigList(const char *filename_in)
 	 }
 	 if (newline[i] == '}' && ! escape_next) {
 	   if ( ( found_end = ! --open_brace_count ) ) {
-	     newline[i+1] = 0;
+	     newline[i] = 0;
 	     break;
 	   }
 	 }

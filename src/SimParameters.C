@@ -2323,7 +2323,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
      for ( ; current; current = current->next ) {
 
-     if ( current->data[0] == '{' ) {
+     if ( strstr(current->data,"\n") ) {
        iout << iINFO << "TCL GLOBAL FORCES SCRIPT INLINED IN CONFIG FILE\n";
        continue;
      }
@@ -2342,7 +2342,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
      for ( ; current; current = current->next ) {
 
-     if ( current->data[0] == '{' ) {
+     if ( strstr(current->data,"\n") ) {
        iout << iINFO << "MISC FORCES SCRIPT INLINED IN CONFIG FILE\n";
        continue;
      }
@@ -2361,7 +2361,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
      for ( ; current; current = current->next ) {
 
-     if ( current->data[0] == '{' ) {
+     if ( strstr(current->data,"\n") ) {
        iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT INLINED IN CONFIG FILE\n";
        continue;
      }

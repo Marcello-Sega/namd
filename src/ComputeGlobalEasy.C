@@ -120,15 +120,13 @@ void ComputeGlobalEasy::initialize() {
   config[0] = '\0';
 
   for ( ; script; script = script->next) {
-    if ( script->data[0] == '{' ) {
-      script->data[strlen(script->data)-1] = 0;
-      // this is a flag, no '}' at end so skip it at beginning
-      size_t add_len = strlen(script->data + 1);
+    if ( strstr(script->data,"\n") ) {
+      size_t add_len = strlen(script->data);
       size_t config_len = 0;
       config_len = strlen(config);
       char *new_config = new char[config_len + add_len + 2];
       strcpy(new_config,config);
-      strcat(new_config,script->data + 1);
+      strcat(new_config,script->data);
       strcat(new_config,"\n");  // just to be safe
       delete [] config;
       config = new_config;
