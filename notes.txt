@@ -136,9 +136,9 @@ described under "Individual Workstations" above, which eliminates the
 need for the nodelist file and rsh entirely.
 
 Once the nodelist file is set up, and you have your configuration file
-prepared (alanin.conf, in this example), run NAMD as follows:
+prepared, run NAMD as follows:
 
-charmrun +p<procs> namd2 alanin.conf
+  charmrun +p<procs> namd2 <configfile>
 
 -- Windows Workstation Networks ---
 
@@ -182,14 +182,14 @@ variables for poe are various and arcane, so you should consult your
 local documentation for recommended settings.  As an example, to run
 on Blue Horizon one would specify:
 
-  poe namd2 alanin.conf -nodes <procs/8> -tasks_per_node 8
+  poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
 
 -- Cray T3E --
 
 The T3E version has been tested on the Pittsburgh Supercomputer Center
 T3E.  To run on <procs> processors, use the mpprun command:
 
-  mpprun -n <procs> namd2 alanin.conf
+  mpprun -n <procs> namd2 <configfile>
 
 -- Origin 2000 --
 
@@ -198,7 +198,7 @@ If your stack size limit is unlimited, which DQS may do, you will need
 to set it with "limit stacksize 64M" to run on multiple processors.
 To run on <procs> processors call the binary directly with the +p option:
 
-  namd2 +p<procs> alanin.conf
+  namd2 +p<procs> <configfile>
 
 For better performance on larger numbers of processors we recommend
 that you use the MPI version of NAMD.  To run this version, you must
@@ -212,7 +212,7 @@ job file if you are running under a queuing system:
 
 Then run NAMD with the following command:
 
-  mpirun -np <procs> namd2 alanin.conf
+  mpirun -np <procs> namd2 <configfile>
 
 ----------------------------------------------------------------------
 
