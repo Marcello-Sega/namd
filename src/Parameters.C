@@ -259,6 +259,11 @@ Parameters::~Parameters()
 
   if (maxImproperMults != NULL)
     delete [] maxImproperMults;
+
+  for( int i = 0; i < error_msgs.size(); ++i ) {
+    delete [] error_msgs[i];
+  }
+  error_msgs.resize(0);
 }
 /*      END OF FUNCTION ~Parameters      */
 
@@ -2664,10 +2669,19 @@ void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
          /*  Found a match!				*/
          atom_ptr->vdw_type=ptr->index;
          found=1;
-         iout << "\n" << iWARN << " WARNING! VDW TYPE NAME " << atomtype 
-              << " MATCHES PARAMETER TYPE NAME " << ptr->atomname 
-              << "\n" << endi; 
-
+         char errbuf[100];
+         sprintf(errbuf,"VDW TYPE NAME %s MATCHES PARAMETER TYPE NAME %s",
+			atomtype, ptr->atomname);
+         int i;
+         for(i=0; i<error_msgs.size(); i++) {
+           if ( strcmp(errbuf,error_msgs[i]) == 0 ) break;
+         }
+         if ( i == error_msgs.size() ) {
+           char *newbuf = new char[strlen(errbuf)+1];
+           strcpy(newbuf,errbuf);
+           error_msgs.add(newbuf);
+           iout << iWARN << newbuf << "\n" << endi;
+         }
        }
        else if (comp_code < 0)
        {
@@ -4446,6 +4460,7 @@ void Parameters::convert_vdw_pairs()
    }
    
    vdw_pairp = NULL;
+
 }
 /*      END OF FUNCTION convert_vdw_pairs    */
 
