@@ -3,8 +3,9 @@
 ####
 CC = cc -DSOLARIS
 CXX = CC -DSOLARIS
-#CXXOPTS = -O -DGLOBALS
-CXXOPTS = -DGLOBALS
+CXXOPTS = -O -DGLOBALS
+#CXXOPTS = -DGLOBALS
+COPTS = -O
 
 #####
 # Flags
@@ -17,7 +18,7 @@ NOWARN=-w
 #####
 # definitions for Charm routines
 #####
-CHARM = /home/kale/milind/charm/net-sol-cc
+CHARM = /Home/p1/milind/charm/net-sol-cc
 
 #####
 # Unix commands
