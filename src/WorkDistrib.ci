@@ -1,6 +1,8 @@
 extern message InitMsg;
+message MapDistribMsg;
 
 group WorkDistrib
 {
   entry WorkDistrib(InitMsg *);
+  entry saveMaps(MapDistribMsg *);
 } ;

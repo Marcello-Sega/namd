@@ -30,6 +30,11 @@ const Position patchSize = 4.;
 
 enum { maxPatchDepends = 126 };
 
+class MapDistribMsg : public comm_object
+{
+  int mapData;  // Fill in later
+} ;
+
 class WorkDistrib : public groupmember
 {
 private:
@@ -46,6 +51,8 @@ public:
   void parentNode(Node *inode);
 
   void buildMapsFromScratch(void); 
+
+  void saveMaps(MapDistribMsg *msg);
 };
 
 #endif /* WORKDISTRIB_H */
@@ -55,12 +62,15 @@ public:
  *
  *	$RCSfile: WorkDistrib.h,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/16 21:41:11 $
+ *	$Revision: 1.4 $	$Date: 1996/08/19 20:39:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.h,v $
+ * Revision 1.4  1996/08/19 20:39:11  brunner
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/08/16 21:41:11  brunner
  * *** empty log message ***
  *

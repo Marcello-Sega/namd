@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.4 1996/08/16 21:55:56 brunner Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.5 1996/08/19 20:39:11 brunner Exp $";
 
 #include <stdio.h>
 
@@ -22,8 +22,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "WorkDistrib.top.h"
 #include "WorkDistrib.h"
 
-#include "main.h"
 #include "main.top.h"
+#include "main.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
@@ -50,13 +50,51 @@ void WorkDistrib::parentNode(Node *inode)
 //----------------------------------------------------------------------
 void WorkDistrib::buildMapsFromScratch()
 {
+  int i;
+  PatchMap *patchMap = &(node->patchMap);
+  
   CPrintf("Building maps\n");
   mapPatches();
   mapComputes();
-  node->patchMap.printPatchMap();
-  node->computeMap.printComputeMap();
-  CharmExit();
+  //  node->patchMap.printPatchMap();
+  //  node->computeMap.printComputeMap();
+  //  CharmExit();
+
+  // Send maps to other nodes.
+
+  MapDistribMsg *mapMsg = new (MsgIndex(MapDistribMsg)) MapDistribMsg ;
+
+  CBroadcastMsgBranch(WorkDistrib, saveMaps, mapMsg, thisgroup);
+
+  // Create patches on this node
+
+  for(i=0; i < patchMap->numPatches(); i++)
+  {
+    CPrintf("patchMgr->createPatch(%d,atoms,positions)\n",i);
+  }
+
+  // Move patches to the proper node
+  for(i=0;i < patchMap->numPatches(); i++)
+  {
+    if (patchMap->node(i) != node->myid())
+      CPrintf("patchMgr->movePatch(%d,%d)\n",i,patchMap->node(i));
+  }
 }
+
+//----------------------------------------------------------------------
+// saveMaps() is called when the map message is received
+void WorkDistrib::saveMaps(MapDistribMsg *msg)
+{
+  if (node->myid() != 0)
+  {
+    CPrintf("Saving patch map, compute map\n");
+  }
+  else
+  {
+    CPrintf("Node 0 patch map already built\n");
+  }
+}
+
 
 //======================================================================
 // Private functions
@@ -217,12 +255,15 @@ void WorkDistrib::mapElectComputes(void)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/16 21:55:56 $
+ *	$Revision: 1.5 $	$Date: 1996/08/19 20:39:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.5  1996/08/19 20:39:11  brunner
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/08/16 21:55:56  brunner
  * *** empty log message ***
  *
