@@ -62,14 +62,13 @@ void ComputeFreeEnergy::user_initialize() {
 //-----------------------------------------------------------------
 // get char* from the input stream.  read all the input
 //-----------------------------------------------------------------
-  char* Str;
+  char* Str = config;
 
   iout << iDEBUG << "Initializing free energy.\n"; 
   iout << iDEBUG << "***********************************\n"; 
-  config->get(*iout.rdbuf(),'\0');
+  iout << Str;
   iout << iDEBUG << "***********************************\n" << endi; 
 
-  Str = (config->rdbuf())->str();
   ReadInput(Str, m_RestraintManager, m_LambdaManager, *this, simParams->dt);
 
   // exit if there aren't enough steps to complete all pmf & mcti blocks
@@ -187,7 +186,7 @@ void ComputeFreeEnergy::initialize() {
   }
   oconfig.flush();
   char *configstr = oconfig.str();
-  config = new istrstream(configstr);
+  config = configstr;
 
   iout << iDEBUG << "Free energy perturbation - initialize()\n" << endi; 
   user_initialize();
@@ -222,12 +221,15 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1998/05/22 19:08:29 $
+ *	$Revision: 1.11 $	$Date: 1998/05/25 21:55:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.11  1998/05/25 21:55:04  jim
+ * Eliminated compile errors in KCC by avoiding use of istrstream.
+ *
  * Revision 1.10  1998/05/22 19:08:29  hurwitz
  * Do NAMD_die if there aren't enough steps to complete all pmf & mcti blocks
  *

@@ -37,7 +37,7 @@ private:
   ComputeGlobalResultsMsg *resultsMsg;
   Molecule *molecule;
   SimParameters *simParams;
-  istrstream *config;
+  char *config;
   ARestraintManager  m_RestraintManager;
   ALambdaManager     m_LambdaManager;
 public:
@@ -56,13 +56,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeFreeEnergy.h,v $
- *	$Author: hurwitz $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1998/05/21 22:37:32 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1998/05/25 21:55:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.h,v $
+ * Revision 1.8  1998/05/25 21:55:05  jim
+ * Eliminated compile errors in KCC by avoiding use of istrstream.
+ *
  * Revision 1.7  1998/05/21 22:37:32  hurwitz
  * initial check in of code for fixed and forcing restraints
  * -Dave Hurwitz
