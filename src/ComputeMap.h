@@ -9,6 +9,7 @@
 
 #include "NamdTypes.h"
 #include "ProcessorPrivate.h"
+#include "ResizeArray.h"
 
 class Compute;
 class ComputeMgr;
@@ -161,8 +162,7 @@ private:
   int nPatchBased;
   int nAtomBased;
   int nComputes;
-  int nAllocated;
-  ComputeData *computeData;
+  ResizeArray<ComputeData> computeData;
 };
 
 #endif /* COMPUTEMAP_H */

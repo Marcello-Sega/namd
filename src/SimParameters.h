@@ -96,6 +96,9 @@ public:
 	BigReal ldbBackgroundScaling;	//  scaling factor for background load
 	BigReal ldbPMEBackgroundScaling;//  scaling factor for PME background
 	BigReal ldbHomeBackgroundScaling;//  scaling factor for home background
+	int twoAwayX;			//  half-size patches in X dimension
+	int twoAwayY;			//  half-size patches in Y dimension
+	int twoAwayZ;			//  half-size patches in Z dimension
 	Bool ldbUnloadPME;		//  unload processors doing PME
 	Bool ldbUnloadSMP;		//  unload processors rank
 	Bool ldbUnloadZero;		//  unload processors rank

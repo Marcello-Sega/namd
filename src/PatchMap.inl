@@ -81,5 +81,42 @@ inline int PatchMap::downstream(int pid1, int pid2)
   return ds;
 }
 
+//----------------------------------------------------------------------
+inline int PatchMap::downstream2(int pid1, int pid2)
+{
+  register int ds;
+
+  if ( pid1 == pid2 ) { ds = pid1; }
+
+  else if ( pid1 == notUsed || pid2 == notUsed ) { ds =  notUsed; }
+
+  else {
+    register PatchData *pdat1 = &(patchData[pid1]);
+    register PatchData *pdat2 = &(patchData[pid2]);
+
+    // c
+    register int k = pdat1->cIndex;
+    register int k2 = pdat2->cIndex;
+    if ( ( k ? k : cMaxIndex ) == k2 + 1  ||
+         ( k >= cAway ? k : cMaxIndex + k ) == k2 + cAway ) k = k2;
+
+    // b
+    register int j = pdat1->bIndex;
+    register int j2 = pdat2->bIndex;
+    if ( ( j ? j : bMaxIndex ) == j2 + 1  ||
+         ( j >= bAway ? j : bMaxIndex + j ) == j2 + bAway ) j = j2;
+
+    // a
+    register int i = pdat1->aIndex;
+    register int i2 = pdat2->aIndex;
+    if ( ( i ? i : aMaxIndex ) == i2 + 1  ||
+         ( i >= aAway ? i : aMaxIndex + i ) == i2 + aAway ) i = i2;
+
+    ds = ((k*bDim)+j)*aDim + i;
+  }
+
+  return ds;
+}
+
 #endif
 

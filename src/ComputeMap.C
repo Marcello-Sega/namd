@@ -31,20 +31,17 @@ ComputeMap::ComputeMap(void)
   nComputes=0;
   nPatchBased=0;
   nAtomBased=0;
-  nAllocated=0;
-  computeData = NULL;
 }
 
 //----------------------------------------------------------------------
 ComputeMap::~ComputeMap(void)
 {
-  if (computeData != NULL)
+  if (nComputes)
   {
     for(int i=0; i<nComputes; i++)
     {
 	delete[] computeData[i].pids;	// alloced and realloced above
     }
-    delete[] computeData;	// alloced and realloced above
   }    
 }
 
@@ -90,7 +87,6 @@ void ComputeMap::pack (char *buffer)
   PACK(int,nPatchBased);
   PACK(int,nAtomBased);
   PACK(int,nComputes);
-  PACK(int,nAllocated);
   for(i=0;i<nComputes;++i)
   {
     PACK(ComputeData,computeData[i]);
@@ -105,9 +101,8 @@ void ComputeMap::pack (char *buffer)
 void ComputeMap::unpack (char *ptr)
 {
   // Must copy over the Compute * to new ComputeMap! 
-  ComputeData *oldComputeData = computeData;
+  ResizeArray<ComputeData> oldComputeData = computeData;
   int oldNComputes = nComputes;
-  computeData = NULL;
 
   DebugM(4,"Unpacking ComputeMap\n");
   int i,j;
@@ -115,8 +110,8 @@ void ComputeMap::unpack (char *ptr)
   UNPACK(int,nPatchBased);
   UNPACK(int,nAtomBased);
   UNPACK(int,nComputes);
-  UNPACK(int,nAllocated);
-  computeData = new ComputeData[nAllocated];	// deleted during ~.
+  ResizeArray<ComputeData> newComputeData(nComputes);
+  computeData = newComputeData;
   for(i=0;i<nComputes;++i)
   {
     UNPACK(ComputeData,computeData[i]);
@@ -125,7 +120,7 @@ void ComputeMap::unpack (char *ptr)
       UNPACK(PatchRec,computeData[i].pids[j]);
   }
 
-  if (oldComputeData) {
+  if (oldNComputes) {
     if (nComputes != oldNComputes) {
       NAMD_die("number of computes in new patchmap has changed!\n");
       return;
@@ -135,8 +130,6 @@ void ComputeMap::unpack (char *ptr)
       computeData[i].compute = oldComputeData[i].compute;
       delete[] oldComputeData[i].pids;
     }
-    delete[] oldComputeData;
-    oldComputeData=NULL;
   }
   DebugM(4,"Done Unpacking ComputeMap\n");
 }
@@ -163,7 +156,7 @@ int ComputeMap::numAtomBased(void)
 //----------------------------------------------------------------------
 int ComputeMap::isPatchBased(ComputeID cid)
 {
-  if (computeData != NULL)
+  if (nComputes)
     return computeData[cid].patchBased;
   else return -1;
 }
@@ -171,7 +164,7 @@ int ComputeMap::isPatchBased(ComputeID cid)
 //----------------------------------------------------------------------
 int ComputeMap::isAtomBased(ComputeID cid)
 {
-  if (computeData != NULL)
+  if (nComputes)
     return !computeData[cid].patchBased;
   else return -1;
 }
@@ -179,7 +172,7 @@ int ComputeMap::isAtomBased(ComputeID cid)
 //----------------------------------------------------------------------
 int ComputeMap::node(ComputeID cid)
 {
-  if (computeData != NULL)
+  if (nComputes)
     return computeData[cid].node;
   else return -1;
 }
@@ -201,7 +194,7 @@ void ComputeMap::setNewNode(ComputeID cid, NodeID node) {
 //----------------------------------------------------------------------
 int ComputeMap::numPids(ComputeID cid)
 {
-  if (computeData != NULL)
+  if (nComputes)
     return computeData[cid].numPids;
   else return -1;
 }
@@ -209,7 +202,7 @@ int ComputeMap::numPids(ComputeID cid)
 //----------------------------------------------------------------------
 int ComputeMap::pid(ComputeID cid,int i)
 {
-  if ((computeData != NULL) && (i < computeData[cid].numPids))
+  if ((nComputes) && (i < computeData[cid].numPids))
     return computeData[cid].pids[i].pid;
   else return -1;
 }
@@ -217,7 +210,7 @@ int ComputeMap::pid(ComputeID cid,int i)
 //----------------------------------------------------------------------
 ComputeType ComputeMap::type(ComputeID cid)
 {
-  if (computeData != NULL)
+  if (nComputes)
     return computeData[cid].type;
   else return computeErrorType;
 }
@@ -225,14 +218,14 @@ ComputeType ComputeMap::type(ComputeID cid)
 //----------------------------------------------------------------------
 int ComputeMap::partition(ComputeID cid)
 {
-  if (computeData != NULL)
+  if (nComputes)
     return computeData[cid].partition;
   else return computeErrorType;
 }
 //----------------------------------------------------------------------
 int ComputeMap::numPartitions(ComputeID cid)
 {
-  if (computeData != NULL)
+  if (nComputes)
     return computeData[cid].numPartitions;
   else return computeErrorType;
 }
@@ -240,7 +233,7 @@ int ComputeMap::numPartitions(ComputeID cid)
 //----------------------------------------------------------------------
 int ComputeMap::allocateCids(int n)
 {
-  if (computeData != NULL)
+  if (nComputes)
   {
     register int i;
     for(i=0; i<nComputes; i++)
@@ -250,16 +243,11 @@ int ComputeMap::allocateCids(int n)
 	delete [] computeData[i].pids;	// alloc in storeCompute and unpack
 	computeData[i].pids=0;
       }
-      delete [] computeData;	// delete before realloc
-
-      computeData = NULL;
     }
   }
   nComputes = nPatchBased = nAtomBased = 0;
-
-  // Constructor zero's out array elements
-  computeData = new ComputeData[n];	// realloced after delete
-  nAllocated = n;
+  computeData.resize(500);
+  computeData.resize(0);
 
   return 0;
 }
@@ -271,16 +259,9 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
 {
   int cid;
 
-  if (!computeData)
-    NAMD_die("ID's not allocated in ComputeMap::storeCompute().\n");
-    //return -1;                   // Have to allocate first
-
-  if (nComputes == nAllocated)
-    NAMD_die("Allocated ID's exceeded in ComputeMap::storeCompute().\n");
-    //return -1;                   // Used up all the allocated entries
-
   cid = nComputes;
   nComputes++;
+  computeData.resize(nComputes);
 
   computeData[cid].node=inode;
 
@@ -301,9 +282,6 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
 //----------------------------------------------------------------------
 int ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
 {
-  if (!computeData)
-    return -1;                   // Have to allocate first
-
   if ((cid < 0) || (cid >= nComputes))
     return -1;                   // Have to store the cid first
 

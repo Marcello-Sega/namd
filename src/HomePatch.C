@@ -60,6 +60,10 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   max.z = PatchMap::Object()->max_c(patchID);
   center = 0.5*(min+max);
 
+  aAway = PatchMap::Object()->numaway_a();
+  bAway = PatchMap::Object()->numaway_b();
+  cAway = PatchMap::Object()->numaway_c();
+
   migrationSuspended = false;
   allMigrationIn = false;
   marginViolations = 0;
@@ -890,9 +894,9 @@ void HomePatch::doMarginCheck()
 
   BigReal cutoff = simParams->cutoff;
 
-  BigReal margina = 0.5 * ( max.x - min.x - cutoff / sysdima );
-  BigReal marginb = 0.5 * ( max.y - min.y - cutoff / sysdimb );
-  BigReal marginc = 0.5 * ( max.z - min.z - cutoff / sysdimc );
+  BigReal margina = 0.5 * ( (max.x - min.x) * aAway - cutoff / sysdima );
+  BigReal marginb = 0.5 * ( (max.y - min.y) * bAway - cutoff / sysdimb );
+  BigReal marginc = 0.5 * ( (max.z - min.z) * cAway - cutoff / sysdimc );
 
   BigReal minx = min.x - margina;
   BigReal miny = min.y - marginb;

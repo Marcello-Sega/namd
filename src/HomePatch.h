@@ -39,6 +39,7 @@ private:
   HomePatch(PatchID, FullAtomList);
   void reinitAtoms(FullAtomList);
   ScaledPosition min, max, center;
+  int aAway, bAway, cAway;
 
 public:
   ~HomePatch();

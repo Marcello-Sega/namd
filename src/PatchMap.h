@@ -23,7 +23,8 @@ public:
   inline static PatchMap *Object() { return CpvAccess(PatchMap_instance); }
 
   void initialize(ScaledPosition xmin, ScaledPosition xmax,
-                      Lattice lattice, BigReal patchSize);
+			Lattice lattice, BigReal patchSize,
+			int asplit, int bsplit, int csplit);
   void checkMap();
 
   ~PatchMap(void);
@@ -49,6 +50,11 @@ public:
   inline int gridsize_a(void) const { return aDim; }
   inline int gridsize_b(void) const { return bDim; }
   inline int gridsize_c(void) const { return cDim; }
+
+  // returns the number of patches in each dimension
+  inline int numaway_a(void) const { return aAway; }
+  inline int numaway_b(void) const { return bAway; }
+  inline int numaway_c(void) const { return cAway; }
 
   // returns 1 if periodic in each dimension
   inline int periodic_a(void) const { return aPeriodic; }
@@ -82,6 +88,9 @@ public:
   // gives more downstream patch of pid1, pid2; handles periodicity right
   // given patches must be neighbors!!!
   inline int downstream(int pid1, int pid2);
+
+  // if not neighbors use this slower version
+  inline int downstream2(int pid1, int pid2);
 
   // returns the node where the patch currently exists.
   inline int node(int pid) const { return patchData[pid].node; }
@@ -157,6 +166,7 @@ private:
   int *nPatchesOnNode;
   PatchData *patchData;
   int aDim, bDim, cDim;
+  int aAway, bAway, cAway;
   int aPeriodic, bPeriodic, cPeriodic;
   int aMaxIndex, bMaxIndex, cMaxIndex;
   BigReal aOrigin, bOrigin, cOrigin;

@@ -470,7 +470,10 @@ void WorkDistrib::patchMapInit(void)
     node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.9);
   }
 
-  patchMap->initialize(xmin,xmax,lattice,patchSize);
+  patchMap->initialize(xmin,xmax,lattice,patchSize,
+				params->twoAwayX ? 2 : 1,
+				params->twoAwayY ? 2 : 1,
+				params->twoAwayZ ? 2 : 1);
 
 }
 
@@ -764,7 +767,7 @@ void WorkDistrib::mapComputes(void)
 		(13 * node->simParameters->maxPairPart + 
 		node->simParameters->maxSelfPart + 10) +
 	node->numNodes() * 20;
-  //iout << iINFO << "numPotentialCids: " << numPotentialCids << "\n" << endl;
+  // iout << iINFO << "numPotentialCids: " << numPotentialCids << "\n" << endi;
   computeMap->allocateCids(numPotentialCids);
 
   // Handle full electrostatics
@@ -887,24 +890,13 @@ void WorkDistrib::mapComputeNonbonded(void)
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
 
-  PatchID oneAway[PatchMap::MaxOneAway];
-  PatchID oneAwayTrans[PatchMap::MaxOneAway];
-  // PatchID twoAway[PatchMap::MaxTwoAway];
+  PatchID oneAway[PatchMap::MaxOneOrTwoAway];
+  PatchID oneAwayTrans[PatchMap::MaxOneOrTwoAway];
 
   PatchID i;
   ComputeID cid;
   int numNeighbors;
   int j;
-
-  double *pairWork = new double[node->numNodes()];
-  for (j=0; j<node->numNodes(); j++) {
-    pairWork[j] = 0.;
-  }
-
-  // const double inspectCost = 0.25;  // Constant cost for checking atoms
-  // const double computeCost = 1. - inspectCost;
-                                    // Cost for actually computing force
-  // const double weight = inspectCost + computeCost;
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
@@ -928,60 +920,14 @@ void WorkDistrib::mapComputeNonbonded(void)
       cid=computeMap->storeCompute(patchMap->node(i),1,
 				   computeNonbondedSelfType,
 				   partition,numPartitions);
-      // pairWork[patchMap->node(i)] += 
-      // weight * ((numAtoms*numAtoms)/2. - numAtoms);
-      pairWork[patchMap->node(i)] += (numAtoms*numAtoms) / numPartitions;
       computeMap->newPid(cid,i);
       patchMap->newCid(i,cid);
     }
   }
 
-//   for(i=0; i<patchMap->numPatches(); i++) // do the pairs
-//   {
-//     // one-away neighbors
-//     numNeighbors=patchMap->oneAwayNeighbors(i,oneAway,oneAwayTrans);
-//     for(j=0;j<numNeighbors;j++)
-//     {
-//       if (i < oneAway[j])
-//       {
-//         numAtoms1 = patchMap->patch(i)->getNumAtoms();
-//         numAtoms2 = patchMap->patch(oneAway[j])->getNumAtoms();
-// 	const int distance = 
-// 	  abs(patchMap->index_a(i)-patchMap->index_a(oneAway[j])) 
-// 	  + abs(patchMap->index_b(i)-patchMap->index_b(oneAway[j])) 
-// 	  + abs(patchMap->index_c(i)-patchMap->index_c(oneAway[j]));
-
-//         double weight;
-//         if(distance==1) {
-//           weight = 0.69;
-//         } else if(distance==2) {
-//           weight = 0.32;
-//         } else if(distance==3) {
-//           weight = 0.24;
-//         } else weight = 0;
-
-// 	if (pairWork[patchMap->node(i)]<pairWork[patchMap->node(oneAway[j])]) {
-// 	    cid=computeMap->storeCompute(patchMap->node(i),2,
-// 				     computeNonbondedPairType);
-// 	    pairWork[patchMap->node(i)] += weight * numAtoms1*numAtoms2;
-// 	} else {
-// 	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
-// 				     computeNonbondedPairType);
-// 	    pairWork[patchMap->node(oneAway[j])] += weight * numAtoms1*numAtoms2;
-// 	}
-	 
-// 	computeMap->newPid(cid,i);
-// 	computeMap->newPid(cid,oneAway[j],oneAwayTrans[j]);
-// 	patchMap->newCid(i,cid);
-// 	patchMap->newCid(oneAway[j],cid);
-//       }
-//     }
-//   }
-
   for(int p1=0; p1 <patchMap->numPatches(); p1++) // do the pairs
   {
-    // one-away neighbors
-    numNeighbors=patchMap->oneAwayNeighbors(p1,oneAway,oneAwayTrans);
+    numNeighbors=patchMap->oneOrTwoAwayNeighbors(p1,oneAway,oneAwayTrans);
     for(j=0;j<numNeighbors;j++)
     {
       if (p1 < oneAway[j])
@@ -1013,7 +959,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 	for(int partition=0; partition < numPartitions; partition++)
 	{
 	  cid=computeMap->storeCompute(
-		patchMap->node(patchMap->downstream(p1,p2)),
+		patchMap->node(patchMap->downstream2(p1,p2)),
 		2,computeNonbondedPairType,partition,numPartitions);
 	  computeMap->newPid(cid,p1);
 	  computeMap->newPid(cid,p2,oneAwayTrans[j]);
@@ -1026,31 +972,7 @@ void WorkDistrib::mapComputeNonbonded(void)
     }
   }
 
-  /*
-  for(i=0; i<node->numNodes(); i++) {
-    iout << iINFO << "PairWork on node(" << i << ") = " << pairWork[i] 
-      << "\n" << endi;
-  }
-  */
-  delete[] pairWork;
 }
-
-/*
-    // two-away neighbors
-    numNeighbors=patchMap->twoAwayNeighbors(i,twoAway);
-    for(j=0;j<numNeighbors;j++)
-    {
-      if (i < twoAway[j])
-      {
-	cid=computeMap->storeCompute(patchMap->node(i),2,
-				     computeNonbondedPairType);
-	computeMap->newPid(cid,i);
-	computeMap->newPid(cid,twoAway[j]);
-	patchMap->newCid(i,cid);
-	patchMap->newCid(twoAway[j],cid);
-      }
-    }
-*/
 
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {

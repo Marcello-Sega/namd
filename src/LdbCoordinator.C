@@ -4,13 +4,11 @@
 ***  All rights reserved.
 **/
 
-#include <iostream.h>
 #include <stdlib.h>
 #include <charm++.h>
 #include "NamdCentLB.h"
 #include "NamdNborLB.h"
 
-#include "ProcessorPrivate.h"
 #include "InfoStream.h"
 
 #include "HomePatch.h"

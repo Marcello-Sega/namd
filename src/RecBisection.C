@@ -250,7 +250,7 @@ void RecBisection::compute_patch_load()
      total_icompute = 0.0;
 
      PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
-     int nNeighbors = patchMap->oneOrTwoAwayNeighbors(i,neighbors);
+     int nNeighbors = patchMap->oneAwayNeighbors(i,neighbors);
      
      for(nix=0; nix<nNeighbors; nix++) {
        neighbour = neighbors[nix];

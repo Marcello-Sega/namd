@@ -1105,6 +1105,12 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "ldbUnloadRank", "no load on rank pe of a node",
      &ldbUnloadRank);
    opts.range("ldbUnloadRank", POSITIVE);
+   opts.optionalB("main", "twoAwayX", "half-size patches in 1st dimension",
+     &twoAwayX, FALSE);
+   opts.optionalB("main", "twoAwayY", "half-size patches in 1st dimension",
+     &twoAwayY, FALSE);
+   opts.optionalB("main", "twoAwayZ", "half-size patches in 1st dimension",
+     &twoAwayZ, FALSE);
 
    /////  Restart timestep option
    opts.optional("main", "firsttimestep", "Timestep to start simulation at",
