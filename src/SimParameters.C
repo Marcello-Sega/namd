@@ -2226,7 +2226,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    // outputEnergies to 1 to make NAMD not die (the other nonbonded code paths 
    // aren't defined when these options are enabled), and set nonbondedFreq to 
    // 1 to avoid getting erroneous output.  Warn the user of what we're doing.
-   if (pairInteractionOn || pressureProfileNonbonded) {
+   if (pairInteractionOn || (pressureProfileOn && pressureProfileNonbonded)) {
 	   if (outputEnergies != 1) {
 		   iout << iWARN << "Setting outputEnergies to 1 due to\n";
 		   iout << iWARN << "pairInteraction or pressure profile calculations\n" << endi;
