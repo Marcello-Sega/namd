@@ -10,6 +10,9 @@
    output, so its pretty ugly.  If you are squimish, don't look!
 */
 
+#define _LARGEFILE_SOURCE
+#define _FILE_OFFSET_BITS 64
+
 #include "dcdlib.h"
 #include "common.h" // for int32 definition
 #include <stdio.h>
@@ -31,6 +34,20 @@
 #ifdef WIN32
 #include <io.h>
 #endif
+
+#define NAMD_write NAMD_write64
+// same as write, only does error checking internally
+void NAMD_write(int fd, const void *buf, size_t count) {
+#if defined(WIN32) && !defined(__CYGWIN__)
+   if ( _write(fd,buf,count) < 0 ) {
+#else
+   if ( write(fd,buf,count) < 0 ) {
+#endif
+     // NAMD_die("NAMD_write - write to file descriptor failed.");
+     NAMD_die(strerror(errno));
+   }
+}
+
 
 /************************************************************************/
 /*									*/
