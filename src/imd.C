@@ -40,18 +40,15 @@ static int32 imd_htonl(int32 h) {
   return n;
 }
 
-typedef struct {
-  unsigned int highest : 8;
-  unsigned int high    : 8;
-  unsigned int low     : 8;
-  unsigned int lowest  : 8;
-} netint;
-
 static int32 imd_ntohl(int32 n) {
   int32 h = 0;
-  netint net;
-  net = *((netint *)&n);
-  h |= net.highest << 24 | net.high << 16 | net.low << 8 | net.lowest;
+  h |= ((unsigned char*)(&n))[0];
+  h << 8;
+  h |= ((unsigned char*)(&n))[1];
+  h << 8;
+  h |= ((unsigned char*)(&n))[2];
+  h << 8;
+  h |= ((unsigned char*)(&n))[3];
   return h;
 }
 
@@ -213,6 +210,8 @@ IMDType imd_recv_header(void *s, int32 *length) {
   IMDheader header;
   if (imd_readn(s, (char *)&header, HEADERSIZE) != HEADERSIZE)
     return IMD_IOERROR;
+  int i;
+  char *ch = (char*)(&header);
   swap_header(&header);
   *length = header.length;
   return IMDType(header.type); 
