@@ -743,6 +743,7 @@ obj/ComputeGlobal.o: \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	inc/ComputeMgr.top.h \
+	src/TclCommands.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobal.o -c src/ComputeGlobal.C
 obj/ComputeGlobalMsgs.o: \
@@ -864,6 +865,7 @@ obj/ComputeMgr.o: \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
 	src/ComputeRestraints.h \
+	src/ComputeSMD.h \
 	src/WorkDistrib.h \
 	inc/ComputeMgr.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMgr.o -c src/ComputeMgr.C
@@ -1173,6 +1175,40 @@ obj/ComputeRestraints.o: \
 	src/MStream.h \
 	src/Patch.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeRestraints.o -c src/ComputeRestraints.C
+obj/ComputeSMD.o: \
+	src/ComputeSMD.C \
+	src/ComputeSMD.h \
+	src/ComputePatch.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ReductionMgr.h \
+	src/ProcessorPrivate.h \
+	src/Node.h \
+	src/SMD.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Patch.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeSMD.o -c src/ComputeSMD.C
 obj/ComputeSphericalBC.o: \
 	src/ComputeSphericalBC.C \
 	src/ComputeSphericalBC.h \
@@ -1708,6 +1744,8 @@ obj/Node.o: \
 	src/LdbCoordinator.h \
 	src/elements.h \
 	src/Set.h \
+	src/SMD.h \
+	src/SMDMsgs.h \
 	inc/Node.bot.h
 	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
 obj/Output.o: \
@@ -2161,8 +2199,64 @@ obj/SimParameters.o: \
 	src/structures.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
+obj/SMD.o: \
+	src/SMD.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/NamdOneTools.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/PDB.h \
+	src/IntList.h \
+	src/PDBData.h \
+	src/Lattice.h \
+	src/Molecule.h \
+	src/LintList.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/Output.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/SMD.h \
+	src/SMDMsgs.h \
+	inc/Node.top.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/SMD.o -c src/SMD.C
+obj/SMDMsgs.o: \
+	src/SMDMsgs.C \
+	src/SMDMsgs.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) -o obj/SMDMsgs.o -c src/SMDMsgs.C
 obj/TclCommands.o: \
-	src/TclCommands.C
+	src/TclCommands.C \
+	src/TclCommands.h
 	$(CXX) $(CXXFLAGS) -o obj/TclCommands.o -c src/TclCommands.C
 obj/VoidTree.o: \
 	src/VoidTree.C \

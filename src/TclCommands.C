@@ -11,7 +11,7 @@
  *
  *	$RCSfile: TclCommands.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/12/19 23:48:52 $
+ *	$Revision: 1.2 $	$Date: 1998/01/06 05:42:13 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,7 +25,8 @@
 #include <stdlib.h> 
 #include <malloc.h>
 #include <errno.h>
-#include "tcl.h"
+#include <tcl.h>
+#include <tclExtend.h>
 #include "TclCommands.h"
 
 #define SIMPLE_TCL_OPT(string,result)       \

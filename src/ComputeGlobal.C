@@ -24,6 +24,7 @@
 
 #ifdef NAMD_TCL
 #include <tcl.h>
+#include <tclExtend.h>
 #include "TclCommands.h"
 #endif
 
@@ -203,6 +204,14 @@ void ComputeGlobalMaster::initialize() {
 #ifdef NAMD_TCL
   // Create interpreter
   interp = Tcl_CreateInterp();
+  if (Tcl_Init(interp) == TCL_ERROR) {
+    CPrintf("Tcl startup error: %\n", interp->result);
+    }
+  if (Tclx_Init(interp) == TCL_ERROR) {
+    CPrintf("Tcl-X startup error: %s\n", interp->result);
+    } else {
+      Tcl_StaticPackage(interp, "Tclx", Tclx_Init, Tclx_SafeInit);
+    }
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
@@ -422,12 +431,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/12/26 23:10:43 $
+ *	$Revision: 1.3 $	$Date: 1998/01/06 05:41:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.3  1998/01/06 05:41:26  jim
+ * Added tclx library.
+ *
  * Revision 1.2  1997/12/26 23:10:43  milind
  * Made namd2 to compile, link and run under linux. Merged Templates and src
  * directoriies, and removed separate definition and declaration files for
