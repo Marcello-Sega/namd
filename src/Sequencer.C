@@ -228,10 +228,9 @@ void Sequencer::integrate() {
 void Sequencer::addMovDragToPosition(BigReal timestep) {
   FullAtom *atom = patch->atom.begin();
   int numAtoms = patch->numAtoms;
-  BigReal movDragGlobVel = simParams->movDragGlobVel;
   Molecule *molecule = Node::Object()->molecule;   // need its methods
-  // the following MUST be the same as in the integrator!
-  const BigReal dt = timestep / TIMEFACTOR;
+  const BigReal movDragGlobVel = simParams->movDragGlobVel;
+  const BigReal dt = timestep / TIMEFACTOR;   // MUST be as in the integrator!
   Vector movDragVel, dragIncrement;
   for ( int i = 0; i < numAtoms; ++i )
   {
@@ -248,10 +247,9 @@ void Sequencer::addMovDragToPosition(BigReal timestep) {
 void Sequencer::addRotDragToPosition(BigReal timestep) {
   FullAtom *atom = patch->atom.begin();
   int numAtoms = patch->numAtoms;
-  BigReal rotDragGlobVel = simParams->rotDragGlobVel;
   Molecule *molecule = Node::Object()->molecule;   // need its methods
-  // the following MUST be the same as in the integrator!
-  const BigReal dt = timestep / TIMEFACTOR;
+  const BigReal rotDragGlobVel = simParams->rotDragGlobVel;
+  const BigReal dt = timestep / TIMEFACTOR;   // MUST be as in the integrator!
   BigReal rotDragVel, dAngle;
   Vector atomRadius, atomTangent, atomNormal;
   Vector rotDragUnit;
