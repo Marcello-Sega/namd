@@ -181,9 +181,15 @@ int ComputeIMD::get_vmd_forces() {
         Node::Object()->imd->set_transrate(length);
         break;
       case IMD_PAUSE:
-        if ( paused ) iout << iINFO << "Resuming IMD\n" << endi;
+        if ( paused ) {
+          iout << iINFO << "Resuming IMD\n" << endi;
+          IMDwait = Node::Object()->simParameters->IMDwait;
+        }
         paused = ! paused;
-        if ( paused ) iout << iINFO << "Pausing IMD\n" << endi;
+        if ( paused ) {
+          iout << iINFO << "Pausing IMD\n" << endi;
+          IMDwait = 1;
+        }
         break;
       case IMD_IOERROR:
         iout << iWARN << "IMD connection lost\n" << endi;
