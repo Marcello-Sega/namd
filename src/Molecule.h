@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Molecule.h,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1996/12/03 17:50:13 $
+ *	$Revision: 1.6 $	$Date: 1996/12/04 17:48:31 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.6  1996/12/04 17:48:31  nealk
+ * Nonbondedexcl now inits.
+ *
  * Revision 1.5  1996/12/03 17:50:13  nealk
  * Added nonbonded excl stuff.
  *
@@ -163,7 +166,6 @@ private:
 				//  List of impropers by atom
 	LintList *nonbondedexclsByAtom;
 				//  List of nonbonded excls involving each atom
-
 	IntList *all_exclusions;
 				//  List of all exclusions, including
 				//  explicit exclusions and those calculated
@@ -196,9 +198,9 @@ private:
 	void read_exclusions(FILE *);
 				//  Read in exclusion info from .psf
 
-	void build12excl(IntList *);
-	void build13excl(IntList *);
-	void build14excl(IntList *);
+	void build12excl(IntList *, LintList *);
+	void build13excl(IntList *, LintList *);
+	void build14excl(IntList *, LintList *);
 	void build_exclusions();
 
 	// analyze the atoms, and determine which are oxygen, hb donors, etc.
@@ -345,16 +347,15 @@ public:
 		check_int = atom2;
 		other_int = atom1;
 	   }
-
 	   //  Do the search and return the correct value
-	   if (all_exclusions[check_int].find(other_int) == INTLIST_NOTFOUND)
-	   {
-		return(FALSE);
-	   }
-	   else
-	   {
-		return(TRUE);
-	   }
+           if (all_exclusions[check_int].find(other_int) == INTLIST_NOTFOUND)
+           {
+                return(FALSE);
+           }
+           else
+           {
+                return(TRUE);
+           }
         }
 	
 	//  Check for 1-4 exclusions.  This is only valid when the
