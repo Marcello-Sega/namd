@@ -9,6 +9,7 @@
 
 #include "GlobalMaster.h"
 #include "imd.h"
+#include "ResizeArray.h"
 
 class FloatVector;
 
@@ -37,8 +38,8 @@ class GlobalMasterIMD : public GlobalMaster {
   // My server socket handle
   void *sock;
 
-  // Connected socket 
-  void *clientsock;
+  // Connected sockets
+  ResizeArray<void *>clients;
 
   // temporaries in case 3*sizeof(float) != sizeof(FloatVector)
   float *coordtmp;

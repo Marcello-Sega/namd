@@ -59,7 +59,6 @@ GlobalMasterIMD::GlobalMasterIMD() {
     NAMD_die("Unable to initialize socket interface for IMD.\n");
   }
   sock = vmdsock_create();
-  clientsock = NULL;
   int newport = find_free_port(sock, port);
   if (newport != port) {
     iout << iWARN << "Interactive MD failed to bind to port "
@@ -80,8 +79,8 @@ GlobalMasterIMD::GlobalMasterIMD() {
 GlobalMasterIMD::~GlobalMasterIMD() {
   if (sock) 
     vmdsock_destroy(sock);
-  if (clientsock)
-    vmdsock_destroy(clientsock);
+  for (int i=0; i<clients.size(); i++)
+    vmdsock_destroy(clients[i]);
   delete [] coordtmp;
 }
 
@@ -111,28 +110,24 @@ void GlobalMasterIMD::calculate() {
     modifyGroupForces().resize(0);
   }
 
-  if (!clientsock) {
-    // check for incoming connection
-    int rc;
-    if (IMDwait) {
-      iout << iINFO << "INTERACTIVE MD AWAITING CONNECTION\n" << endi;
-      do { rc = vmdsock_selread(sock, 3600); } while (rc <= 0);
+  // check for incoming connection
+  int rc;
+  if (IMDwait && !clients.size()) {
+    iout << iINFO << "INTERACTIVE MD AWAITING CONNECTION\n" << endi;
+    do { rc = vmdsock_selread(sock, 3600); } while (rc <= 0);
+  } else {
+    rc = vmdsock_selread(sock, 0);
+  } 
+  if (rc > 0) {
+    void *clientsock = vmdsock_accept(sock);
+    if (!clientsock) {
+      iout << iWARN << "GlobalMasterIMD: Accept failed\n" << endi;
     } else {
-      rc = vmdsock_selread(sock, 0);
-    } 
-    if (rc > 0) {
-      clientsock = vmdsock_accept(sock);
-      if (!clientsock) {
-        iout << iWARN << "GlobalMasterIMD: Accept failed\n" << endi;
+      if (!my_imd_connect(clientsock)) {
+        iout << iWARN << "GlobalMasterIMD: IMD handshake failed\n" << endi;
+        vmdsock_destroy(clientsock);
       } else {
-        if (!my_imd_connect(clientsock)) {
-          iout << iWARN << "GlobalMasterIMD: IMD handshake failed\n" << endi;
-          vmdsock_destroy(clientsock);
-          clientsock = NULL;
-        } else {
-          // success 
-          Node::Object()->imd->set_transrate(1);
-        }
+        clients.add(clientsock);
       }
     }
   }
@@ -142,9 +137,7 @@ void GlobalMasterIMD::calculate() {
   // parameters. ie have a specified protocol
 
   // Check/get new forces from VMD
-  if (clientsock) {
-    get_vmd_forces();
-  }
+  get_vmd_forces();
 
   // Right now I don't check to see if any new forces were obtained.
   // An optimization would be cache the results message.  However, there
@@ -177,119 +170,135 @@ void GlobalMasterIMD::get_vmd_forces() {
   int paused = 0;
   vmdforce *vtest, vnew;
 
-  while (vmdsock_selread(clientsock,0) > 0 || paused) {  // Drain the socket
-    type = imd_recv_header(clientsock, &length);
-    int i;
-    switch (type) {
-      case IMD_MDCOMM:
-        // Expect the msglength to give number of indicies, and the data
-        // message to consist of first the indicies, then the coordinates
-        // in xyz1 xyz2... format.
-        vmd_atoms = new int32[length];
-        vmd_forces = new float[3*length];
-        if (imd_recv_mdcomm(clientsock, length, vmd_atoms, vmd_forces)) {
-          NAMD_die("Error reading MDComm forces\n");
-        } 
-        if (IMDignore) {
-          iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
-        } else {
-          for (i=0; i<length; i++) {
-            vnew.index = vmd_atoms[i];
-            if ( (vtest=vmdforces.find(vnew)) != NULL) {
-              // find was successful, so overwrite the old force values
-              if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
-                  || vmd_forces[3*i+2] != 0.0f) {
-                vtest->force.x = vmd_forces[3*i];
-                vtest->force.y = vmd_forces[3*i+1];
-                vtest->force.z = vmd_forces[3*i+2];
-              } else {
-                // or delete it from the list if the new force is ZERO
-                vmdforces.del(vnew);
-              }
-            }
-            else {
-              // Create a new entry in the table if the new force isn't ZERO
-              if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
-                  || vmd_forces[3*i+2] != 0.0f) {
-                vnew.force.x = vmd_forces[3*i];
-                vnew.force.y = vmd_forces[3*i+1];
-                vnew.force.z = vmd_forces[3*i+2];
-                vmdforces.add(vnew);
-              }
-            }
+  // Loop through each socket one at a time.  By doing this, rather than 
+  // polling all sockets at once, NAMD only has to keep up with one IMD
+  // connection; if it tried to read from all of them, it could more easily
+  // fall behind and never finish draining all the sockets.
+  // It would be better to have a system where VMD couldn't DOS NAMD by 
+  // spamming it with messages, but in practice NAMD is able to keep up with 
+  // VMD's send rate.
+  for (int i=0; i<clients.size(); i++) {
+    void *clientsock = clients[i];
+    while (vmdsock_selread(clientsock,0) > 0 || paused) {  // Drain the socket
+      type = imd_recv_header(clientsock, &length);
+      int i;
+      switch (type) {
+        case IMD_MDCOMM:
+          // Expect the msglength to give number of indicies, and the data
+          // message to consist of first the indicies, then the coordinates
+          // in xyz1 xyz2... format.
+          vmd_atoms = new int32[length];
+          vmd_forces = new float[3*length];
+          if (imd_recv_mdcomm(clientsock, length, vmd_atoms, vmd_forces)) {
+            NAMD_die("Error reading MDComm forces\n");
           } 
-        }
-        delete [] vmd_atoms;
-        delete [] vmd_forces;
-        break;
-      case IMD_TRATE:
-        iout << iINFO << "Setting transfer rate to " << length<<'\n'<<endi;	
-        Node::Object()->imd->set_transrate(length);
-        break;
-      case IMD_PAUSE:
-        if (IMDignore) {
-          iout << iWARN << "Ignoring IMD pause due to IMDignore\n" << endi;
+          if (IMDignore) {
+            iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
+          } else {
+            for (i=0; i<length; i++) {
+              vnew.index = vmd_atoms[i];
+              if ( (vtest=vmdforces.find(vnew)) != NULL) {
+                // find was successful, so overwrite the old force values
+                if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
+                    || vmd_forces[3*i+2] != 0.0f) {
+                  vtest->force.x = vmd_forces[3*i];
+                  vtest->force.y = vmd_forces[3*i+1];
+                  vtest->force.z = vmd_forces[3*i+2];
+                } else {
+                  // or delete it from the list if the new force is ZERO
+                  vmdforces.del(vnew);
+                }
+              }
+              else {
+                // Create a new entry in the table if the new force isn't ZERO
+                if (vmd_forces[3*i] != 0.0f || vmd_forces[3*i+1] != 0.0f
+                    || vmd_forces[3*i+2] != 0.0f) {
+                  vnew.force.x = vmd_forces[3*i];
+                  vnew.force.y = vmd_forces[3*i+1];
+                  vnew.force.z = vmd_forces[3*i+2];
+                  vmdforces.add(vnew);
+                }
+              }
+            } 
+          }
+          delete [] vmd_atoms;
+          delete [] vmd_forces;
           break;
-        }
-        if ( paused ) {
-          iout << iINFO << "Resuming IMD\n" << endi;
-          IMDwait = Node::Object()->simParameters->IMDwait;
-        }
-        paused = ! paused;
-        if ( paused ) {
-          iout << iINFO << "Pausing IMD\n" << endi;
-          IMDwait = 1;
-        }
-        break;
-      case IMD_IOERROR:
-        iout << iWARN << "IMD connection lost\n" << endi;
-      case IMD_DISCONNECT:
-        iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
-        vmdsock_destroy(clientsock);
-        clientsock = 0;
-        goto vmdEnd;
-      case IMD_KILL:
-        if (IMDignore) {
-          iout << iWARN << "Ignoring IMD kill due to IMDignore\n" << endi;
+        case IMD_TRATE:
+          iout << iINFO << "Setting transfer rate to " << length<<'\n'<<endi;	
+          Node::Object()->imd->set_transrate(length);
           break;
-        }
-        NAMD_quit(1);
-        break;
-      case IMD_ENERGIES:
-        IMDEnergies junk;
-        imd_recv_energies(clientsock, &junk);
-        break;
-      case IMD_FCOORDS:
-        vmd_forces = new float[3*length];
-        imd_recv_fcoords(clientsock, length, vmd_forces);
-        delete [] vmd_forces;
-        break;
-      default: ;
+        case IMD_PAUSE:
+          if (IMDignore) {
+            iout << iWARN << "Ignoring IMD pause due to IMDignore\n" << endi;
+            break;
+          }
+          if ( paused ) {
+            iout << iINFO << "Resuming IMD\n" << endi;
+            IMDwait = Node::Object()->simParameters->IMDwait;
+          }
+          paused = ! paused;
+          if ( paused ) {
+            iout << iINFO << "Pausing IMD\n" << endi;
+            IMDwait = 1;
+          }
+          break;
+        case IMD_IOERROR:
+          iout << iWARN << "IMD connection lost\n" << endi;
+        case IMD_DISCONNECT:
+          iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
+          vmdsock_destroy(clientsock);
+          clients.del(i);
+          goto vmdEnd;
+        case IMD_KILL:
+          if (IMDignore) {
+            iout << iWARN << "Ignoring IMD kill due to IMDignore\n" << endi;
+            break;
+          }
+          NAMD_quit(1);
+          break;
+        case IMD_ENERGIES:
+          IMDEnergies junk;
+          imd_recv_energies(clientsock, &junk);
+          break;
+        case IMD_FCOORDS:
+          vmd_forces = new float[3*length];
+          imd_recv_fcoords(clientsock, length, vmd_forces);
+          delete [] vmd_forces;
+          break;
+        default: ;
+      }
     }
+  vmdEnd: ;
   }
-vmdEnd: ;
 }
 
 void GlobalMasterIMD::send_energies(IMDEnergies *energies) {
-  if (!clientsock || !vmdsock_selwrite(clientsock,0)) return;
-  imd_send_energies(clientsock, energies);
+  for (int i=0; i<clients.size(); i++) {
+    void *clientsock = clients[i];
+    if (!clientsock || !vmdsock_selwrite(clientsock,0)) continue;
+    imd_send_energies(clientsock, energies);
+  }
 }
 
 void GlobalMasterIMD::send_fcoords(int N, FloatVector *coords) {
-  if (!clientsock || !vmdsock_selwrite(clientsock,0)) return;
-  if (sizeof(FloatVector) == 3*sizeof(float)) {
-    imd_send_fcoords(clientsock, N, (float *)coords);
-  } else {
-    if (coordtmpsize < N) {
-      delete [] coordtmp;
-      coordtmp = new float[3*N];
-      coordtmpsize = N;
+  for (int i=0; i<clients.size(); i++) {
+    void *clientsock = clients[i];
+    if (!clientsock || !vmdsock_selwrite(clientsock,0)) continue;
+    if (sizeof(FloatVector) == 3*sizeof(float)) {
+      imd_send_fcoords(clientsock, N, (float *)coords);
+    } else {
+      if (coordtmpsize < N) {
+        delete [] coordtmp;
+        coordtmp = new float[3*N];
+        coordtmpsize = N;
+      }
+      for (int i=0; i<N; i++) {
+        coordtmp[3*i] = coords[i].x; 
+        coordtmp[3*i+1] = coords[i].y; 
+        coordtmp[3*i+2] = coords[i].z; 
+      } 
+      imd_send_fcoords(clientsock, N, coordtmp);
     }
-    for (int i=0; i<N; i++) {
-      coordtmp[3*i] = coords[i].x; 
-      coordtmp[3*i+1] = coords[i].y; 
-      coordtmp[3*i+2] = coords[i].z; 
-    } 
-    imd_send_fcoords(clientsock, N, coordtmp);
   }
 }
