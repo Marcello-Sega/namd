@@ -411,15 +411,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
 	BigReal rvab = rab.x*vab.x + rab.y*vab.y + rab.z*vab.z;
 	if ( (fabs(rvab) * dt * rabsqi) > tol ) {
 	  Vector dp = rab * (-rvab * redmass[i] * rabsqi);
-	  wc.xx += dp.x * rab.x;
-	  wc.xy += dp.x * rab.y;
-	  wc.xz += dp.x * rab.z;
-	  wc.yx += dp.y * rab.x;
-	  wc.yy += dp.y * rab.y;
-	  wc.yz += dp.y * rab.z;
-	  wc.zx += dp.z * rab.x;
-	  wc.zy += dp.z * rab.y;
-	  wc.zz += dp.z * rab.z;
+	  wc += outer(dp,rab);
 	  vel[a] += rmass[a] * dp;
 	  vel[b] -= rmass[b] * dp;
 	  done = 0;
@@ -563,6 +555,7 @@ void HomePatch::mollyMollify(Tensor *virial)
 	mollify(avg,ref,lambda,force,hgs,icnt,rmass,ial,ibl,refab);
 	// store data back to patch
 	for ( i = 0; i < hgs; ++i ) {
+	  wc += outer(force[i]-f[Results::slow][ig+i],ref[i]);
 	  f[Results::slow][ig+i] = force[i];
 	}
   }
