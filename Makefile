@@ -142,13 +142,13 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(TEMPLATES) $(LIBS)
 	# Now sit back, have a coke, and relax.
 
 dpmta2/mpole/libmpole.a:
-	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 
 dpmta2/src/libdpmta2.a:
-	cd $(DPMTADIR) ; $(MAKE) ; cd ..
+	cd $(DPMTADIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 
 pvm3/libpvmc.a:
-	cd $(PVMDIR) ; $(MAKE) ; cd ..
+	cd $(PVMDIR) ; $(MAKE) CHARM=$(CHARM) ; cd ..
 
 cifiles:	$(INCDIR) $(DSTDIR)
 	for i in $(INTERFACES); do \
