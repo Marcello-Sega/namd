@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: ParseOptions.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/11/08 17:39:58 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/12/11 00:04:23 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.3  1996/12/11 00:04:23  milind
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/11/08 17:39:58  nealk
  * Changed to use iout rather than namdError, namdWarn.
  *
@@ -51,7 +54,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.2 1996/11/08 17:39:58 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.3 1996/12/11 00:04:23 milind Exp $";
 // set the list of parameters
 #include <libc.h>
 #include <iostream.h>
@@ -154,16 +157,23 @@ BigReal convert(Units to, Units from)
    return 0.0;
 }
 
+static char *Strdup(const char *newname)
+{
+  char *tmp = new char[strlen(newname)+1];
+  strcpy(tmp, newname);
+  return tmp;
+}
+
 // Initialize a DataElement; this is called by all the constructors
 void ParseOptions::DataElement::init(const char *newname,
      const char *newparent, int optional, const char *err) {
-   name = strdup(newname);
+   name = Strdup(newname);
    index = -1;
    is_optional = optional;
    is_defined = FALSE;
-   parent = strdup(newparent);
+   parent = Strdup(newparent);
    parent_ptr = NULL;
-   error_message = strdup(err);
+   error_message = Strdup(err);
    type = UNDEF;
    has_default = FALSE;
    many_allowed = FALSE;
@@ -223,9 +233,9 @@ ParseOptions::DataElement::DataElement(const char *newname,
 
 // free up what needs to be freed
 ParseOptions::DataElement::~DataElement(void) {
-   if (name) free(name);
-   if (parent) free(parent);
-   if (error_message) free(error_message);
+   if (name) CmiFree(name);
+   if (parent) CmiFree(parent);
+   if (error_message) CmiFree(error_message);
 }
 ///////////////////////////////////////////////////// ParseOptions
 
@@ -1074,6 +1084,7 @@ int ParseOptions::num(const char *name)
 // get or set the range for the given variable
 void ParseOptions::range(const char *name, Range newrange)
 {
+   iout << "range called with " << name << " as param \n" << endi;
    DataElement *el = internal_find(name);
    if (!el) {
       iout << iERROR << "Trying to set the range of undefined variable '"
@@ -1085,6 +1096,7 @@ void ParseOptions::range(const char *name, Range newrange)
 }
 Range ParseOptions::range(const char *name)
 {
+   iout << "range called with " << name << " as param \n" << endi;
    DataElement *el = internal_find(name);
    if (!el) {
       iout << iERROR << "Trying to get the range of undefined variable '"

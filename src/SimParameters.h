@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/12/11 00:05:20 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -20,6 +20,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.3  1996/12/11 00:05:20  milind
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
@@ -418,6 +421,7 @@ public:
 
 	SimParameters() {};
 	SimParameters(ConfigList *c, char *&cwd) {
+          iout << "calling constructor...\n" << endi;
 	  initialize_config_data(c,cwd);
 	};
 	~SimParameters() {};

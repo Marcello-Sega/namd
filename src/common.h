@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/12/02 17:05:37 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/12/11 00:05:20 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -21,6 +21,9 @@
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.3  1996/12/11 00:05:20  milind
+ * *** empty log message ***
+ *
  * Revision 1.2  1996/12/02 17:05:37  nealk
  * Debugging stuff.
  *
@@ -193,10 +196,10 @@
 #include "InfoStream.h"
 
 //  Redefine new and delete if the MTS fast malloc is being used
-#ifdef MTS
+//#ifdef MTS
 void * ::operator new (size_t);
 void   ::operator delete (void *);
-#endif
+//#endif
 
 #define COLOUMB 332.0636
 #define BOLTZMAN 0.001987191

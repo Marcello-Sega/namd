@@ -54,7 +54,7 @@
 	  { \
 	    if (level >= STDERR_LEVEL)	CPrintf("ERROR (%d): ",level); \
 	    else if (level > 0) CPrintf("Debug (%d): ",level); \
-	    char debugBuf[256]; \
+	    char debugBuf[512]; \
 	    ostrstream dout(debugBuf,sizeof(debugBuf)); \
 	    dout << format << ends; \
 	    CPrintf("%s %d: %s",__FILE__,__LINE__,debugBuf); \

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/10 00:13:12 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/12/11 00:04:23 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.8  1996/12/11 00:04:23  milind
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/12/10 00:13:12  ari
  * *** empty log message ***
  *
@@ -283,7 +286,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.7 1996/12/10 00:13:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.8 1996/12/11 00:04:23 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -341,6 +344,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    daCutoffDist = 7.5;
    daOnDist = 5.5;
    daOffDist = 6.5;
+   
+iout << "called initialize config-data\n" << endi;
 
    //  So first we set up the ParseOptions objects so that it will check
    //  all of the logical rules that the configuration file must follow.

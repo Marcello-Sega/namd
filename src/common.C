@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: common.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/11 19:54:09 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/12/11 00:04:23 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: common.C,v $
+ * Revision 1.4  1996/12/11 00:04:23  milind
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/11/11 19:54:09  nealk
  * Modified to use InfoStream instead of Inform.
  *
@@ -95,7 +98,7 @@
  * Removed NAMD_warn; using Inform objects now to report information.
  * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.3 1996/11/11 19:54:09 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 1.4 1996/12/11 00:04:23 milind Exp $";
 
 #include "chare.h"
 #include "ckdefs.h"
@@ -110,6 +113,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/common.C,v 
 #ifdef MTS
 void * ::operator new (size_t t) { return malloc (t); }
 void   ::operator delete (void *p) { free (p); }
+#else
+void * ::operator new (size_t t) { return CmiAlloc (t); }
+void   ::operator delete (void *p) { CmiFree (p); }
 #endif
 
 // print out title

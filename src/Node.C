@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.20 1996/12/10 00:13:12 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.21 1996/12/11 00:04:23 milind Exp $";
 
 
 #include "ckdefs.h"
@@ -47,6 +47,8 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "SimParameters.h"
 #include "CommunicateConverse.h"
 
+extern Communicate *comm;
+
 #define DEBUGM
 #include "Debug.h"
 
@@ -58,6 +60,9 @@ Node *Node::_instance = 0;
 
 Node::Node(GroupInitMsg *msg)
 {
+    // Needed for namd.1.X components - comm is global!
+    comm = new CommunicateConverse(0,0);
+
   DebugM(1, "Node::Node() - starting\n");
   group = msg->group;
   group.node = thisgroup;
@@ -258,13 +263,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.20 $	$Date: 1996/12/10 00:13:12 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.21 $	$Date: 1996/12/11 00:04:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.21  1996/12/11 00:04:23  milind
+ * *** empty log message ***
+ *
  * Revision 1.20  1996/12/10 00:13:12  ari
  * *** empty log message ***
  *
