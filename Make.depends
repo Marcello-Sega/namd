@@ -23,12 +23,6 @@ obj/main.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	src/main.h \
-	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) -o obj/main.o -c src/main.C
 obj/mainfunc.o: \
@@ -45,19 +39,19 @@ obj/mainfunc.o: \
 	src/Tensor.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/ConfigList.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
@@ -102,21 +96,29 @@ obj/BackEnd.o: \
 	src/common.h \
 	src/Node.h \
 	src/main.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h
+	inc/BroadcastMgr.decl.h \
+	src/CollectionMgr.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) -o obj/BackEnd.o -c src/BackEnd.C
 obj/BroadcastMgr.o: \
 	src/BroadcastMgr.C \
@@ -126,23 +128,8 @@ obj/BroadcastMgr.o: \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastMgr.h \
 	src/main.h \
-	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/BroadcastClient.h \
 	src/BroadcastObject.h \
 	src/Debug.h \
@@ -152,27 +139,12 @@ obj/BroadcastClient.o: \
 	src/BroadcastClient.C \
 	src/BroadcastMgr.h \
 	src/main.h \
-	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/BroadcastClient.o -c src/BroadcastClient.C
@@ -181,23 +153,13 @@ obj/CollectionMaster.o: \
 	inc/CollectionMaster.decl.h \
 	src/CollectionMaster.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
@@ -209,6 +171,16 @@ obj/CollectionMaster.o: \
 	src/AtomMap.h \
 	src/InfoStream.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/Output.h \
 	src/packmsg.h \
 	src/Debug.h \
@@ -229,12 +201,12 @@ obj/CollectionMgr.o: \
 	inc/BroadcastMgr.decl.h \
 	src/CollectionMgr.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/BOCgroup.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
@@ -270,14 +242,8 @@ obj/Communicate.o: \
 obj/Compute.o: \
 	src/Compute.C \
 	src/main.h \
-	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
+	inc/main.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
@@ -288,6 +254,12 @@ obj/Compute.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	src/WorkDistrib.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/BOCgroup.h \
 	src/ComputeMap.h \
 	src/ProcessorPrivate.h \
 	src/PatchMap.h \
@@ -315,18 +287,6 @@ obj/ComputeAngles.o: \
 	src/structures.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -343,13 +303,25 @@ obj/ComputeAngles.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
@@ -386,18 +358,8 @@ obj/ComputeBonds.o: \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/ComputeHomeTuples.h \
 	src/Compute.h \
 	src/HomePatch.h \
@@ -415,8 +377,18 @@ obj/ComputeBonds.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
@@ -435,23 +407,11 @@ obj/ComputeCylindricalBC.o: \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -460,8 +420,20 @@ obj/ComputeCylindricalBC.o: \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
 	src/ReductionMgr.h \
+	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -483,18 +455,6 @@ obj/ComputeDihedrals.o: \
 	src/structures.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -511,13 +471,25 @@ obj/ComputeDihedrals.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
@@ -538,25 +510,25 @@ obj/ComputeDPME.o: \
 	src/ComputeDPME.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -621,28 +593,28 @@ obj/ComputeDPMTA.o: \
 	src/common.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
+	src/Vector.h \
 	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -698,18 +670,6 @@ obj/ComputeFreeEnergy.o: \
 	src/ResizeArrayRaw.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -726,11 +686,23 @@ obj/ComputeFreeEnergy.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/FreeEnergyParse.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/Molecule.h \
@@ -750,25 +722,25 @@ obj/ComputeFullDirect.o: \
 	src/ComputeFullDirect.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -821,15 +793,15 @@ obj/ComputeHomePatch.o: \
 	inc/BroadcastMgr.decl.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	src/ComputeHomePatch.h \
+	src/Compute.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/ProcessorPrivate.h \
-	src/ComputeHomePatch.h \
-	src/Compute.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -857,25 +829,25 @@ obj/ComputeHomePatches.o: \
 	src/ComputeHomePatches.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -918,18 +890,6 @@ obj/ComputeImpropers.o: \
 	src/structures.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -946,13 +906,25 @@ obj/ComputeImpropers.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
@@ -972,25 +944,25 @@ obj/ComputeGlobal.o: \
 	src/ComputeGlobal.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -1049,25 +1021,25 @@ obj/ComputeGlobalEasy.o: \
 	src/ComputeGlobalEasy.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -1113,25 +1085,25 @@ obj/ComputeGlobalMaster.o: \
 	src/ComputeGlobalMaster.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -1185,31 +1157,31 @@ obj/ComputeIMD.o: \
 	src/vmdsock.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/IMDOutput.h \
+	src/common.h \
 	src/imd.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/MStream.h \
+	src/Vector.h \
 	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/ComputeGlobal.h \
 	src/ComputeHomePatches.h \
@@ -1248,17 +1220,6 @@ obj/ComputeMap.o: \
 	src/BOCgroup.h \
 	src/Compute.h \
 	src/main.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeMap.o -c src/ComputeMap.C
 obj/ComputeMisc.o: \
@@ -1272,18 +1233,6 @@ obj/ComputeMisc.o: \
 	src/ResizeArrayRaw.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -1300,9 +1249,11 @@ obj/ComputeMisc.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/ComputeGlobalEasy.h \
 	src/ComputeGlobalMaster.h
@@ -1320,16 +1271,7 @@ obj/ComputeMgr.o: \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/ProxyMgr.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
@@ -1338,6 +1280,15 @@ obj/ComputeMgr.o: \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/ComputeMap.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -1403,25 +1354,25 @@ obj/ComputeNonbondedExcl.o: \
 	src/ComputeNonbondedExcl.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/Molecule.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -1468,23 +1419,11 @@ obj/ComputeNonbondedSelf.o: \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -1494,12 +1433,15 @@ obj/ComputeNonbondedSelf.o: \
 	src/PositionOwnerBox.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
+	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeNonbondedSelf.o -c src/ComputeNonbondedSelf.C
 obj/ComputeNonbondedPair.o: \
@@ -1508,23 +1450,11 @@ obj/ComputeNonbondedPair.o: \
 	src/ComputePatchPair.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -1534,12 +1464,15 @@ obj/ComputeNonbondedPair.o: \
 	src/PositionOwnerBox.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
+	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
@@ -1556,18 +1489,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -1575,6 +1498,16 @@ obj/ComputeNonbondedUtil.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/Molecule.h \
 	src/structures.h \
 	src/UniqueSet.h \
@@ -1601,15 +1534,15 @@ obj/ComputePatch.o: \
 	inc/BroadcastMgr.decl.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	src/ComputePatch.h \
+	src/Compute.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/ProcessorPrivate.h \
-	src/ComputePatch.h \
-	src/Compute.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -1643,15 +1576,15 @@ obj/ComputePatchPair.o: \
 	inc/BroadcastMgr.decl.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	src/ComputePatchPair.h \
+	src/Compute.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/ProcessorPrivate.h \
-	src/ComputePatchPair.h \
-	src/Compute.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -1674,25 +1607,25 @@ obj/ComputePme.o: \
 	src/ComputePme.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -1756,23 +1689,11 @@ obj/ComputeRestraints.o: \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -1781,8 +1702,20 @@ obj/ComputeRestraints.o: \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
 	src/ReductionMgr.h \
+	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/Molecule.h \
 	src/structures.h \
 	src/ConfigList.h \
@@ -1812,18 +1745,6 @@ obj/ComputeSMD.o: \
 	src/ResizeArrayRaw.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -1840,11 +1761,23 @@ obj/ComputeSMD.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -1866,23 +1799,11 @@ obj/ComputeSphericalBC.o: \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -1891,8 +1812,20 @@ obj/ComputeSphericalBC.o: \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
 	src/ReductionMgr.h \
+	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/Node.h \
+	inc/Node.decl.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
@@ -1906,27 +1839,27 @@ obj/ComputeTcl.o: \
 	src/ComputeTcl.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/ComputeTcl.h \
 	src/ComputeGlobalMaster.h \
 	src/ComputeHomePatches.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/Compute.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -1970,25 +1903,25 @@ obj/Controller.o: \
 	src/Controller.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/Molecule.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \
@@ -2084,18 +2017,6 @@ obj/FreeEnergyParse.o: \
 	src/ResizeArrayRaw.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -2112,8 +2033,10 @@ obj/FreeEnergyParse.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/FreeEnergyParse.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyParse.o -c src/FreeEnergyParse.C
@@ -2138,18 +2061,6 @@ obj/FreeEnergyRestrain.o: \
 	src/ResizeArrayRaw.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -2166,8 +2077,10 @@ obj/FreeEnergyRestrain.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRestrain.o -c src/FreeEnergyRestrain.C
 obj/FreeEnergyRMgr.o: \
@@ -2191,18 +2104,6 @@ obj/FreeEnergyRMgr.o: \
 	src/ResizeArrayRaw.h \
 	src/Compute.h \
 	src/main.h \
-	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -2219,8 +2120,10 @@ obj/FreeEnergyRMgr.o: \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h
 	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRMgr.o -c src/FreeEnergyRMgr.C
 obj/FreeEnergyVector.o: \
@@ -2272,18 +2175,18 @@ obj/HomePatch.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/main.h \
+	src/AtomMap.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/AtomMap.h \
-	src/Node.h \
 	src/PatchMap.inl \
 	src/ProxyMgr.h \
 	src/UniqueSet.h \
@@ -2317,19 +2220,19 @@ obj/IMDOutput.o: \
 	src/SortableResizeArray.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/MStream.h \
@@ -2358,12 +2261,12 @@ obj/LdbCoordinator.o: \
 	src/ResizeArrayRaw.h \
 	src/Node.h \
 	src/main.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
@@ -2404,16 +2307,12 @@ obj/LJTable.o: \
 	src/BOCgroup.h \
 	src/Node.h \
 	src/main.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -2423,10 +2322,14 @@ obj/LJTable.o: \
 	src/structures.h \
 	src/strlib.h \
 	src/MStream.h \
+	src/Vector.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/InfoStream.h \
 	src/Debug.h
@@ -2436,32 +2339,32 @@ obj/Measure.o: \
 	src/Measure.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/Parameters.h \
+	src/common.h \
 	src/structures.h \
 	src/strlib.h \
 	src/MStream.h \
+	src/Vector.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
 	src/Communicate.h \
 	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/Molecule.h \
 	src/UniqueSet.h \
@@ -2510,16 +2413,6 @@ obj/MigrateAtomsMsg.o: \
 	src/UniqueSortedArray.h \
 	src/HomePatchTypes.h \
 	src/main.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/packmsg.h
 	$(CXX) $(CXXFLAGS) -o obj/MigrateAtomsMsg.o -c src/MigrateAtomsMsg.C
 obj/Molecule.o: \
@@ -2582,19 +2475,19 @@ obj/NamdState.o: \
 	src/Controller.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/BroadcastObject.h \
@@ -2642,17 +2535,17 @@ obj/Node.o: \
 	inc/BroadcastMgr.decl.h \
 	src/Node.h \
 	src/main.h \
-	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Debug.h \
 	src/IMDOutput.h \
+	src/common.h \
 	src/imd.h \
 	src/WorkDistrib.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -2726,19 +2619,19 @@ obj/Output.o: \
 	src/SortableResizeArray.h \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/Parameters.h \
 	src/MStream.h \
 	src/SimParameters.h \
@@ -2812,19 +2705,19 @@ obj/Patch.o: \
 	src/BOCgroup.h \
 	src/Compute.h \
 	src/main.h \
+	src/ComputeMap.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ComputeMap.h \
-	src/Node.h \
 	src/Molecule.h \
 	src/structures.h \
 	src/ConfigList.h \
@@ -2868,6 +2761,7 @@ obj/PatchMgr.o: \
 	src/InfoStream.h \
 	src/HomePatchTypes.h \
 	src/main.h \
+	src/AtomMap.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -2878,7 +2772,6 @@ obj/PatchMgr.o: \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/AtomMap.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/packmsg.h \
@@ -2916,16 +2809,6 @@ obj/PatchMap.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/main.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/Debug.h
@@ -3003,23 +2886,13 @@ obj/ProxyMgr.o: \
 	src/ProxyMgr.C \
 	src/main.h \
 	src/BOCgroup.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
-	src/ProxyMgr.h \
 	src/PatchTypes.h \
 	src/Lattice.h \
 	src/Tensor.h \
@@ -3046,6 +2919,7 @@ obj/ProxyMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/packmsg.h \
 	src/Debug.h \
@@ -3065,14 +2939,13 @@ obj/ProxyPatch.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	src/main.h \
-	src/BOCgroup.h \
+	src/ProxyPatch.h \
+	src/Patch.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/ProxyPatch.h \
-	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
@@ -3088,6 +2961,7 @@ obj/ProxyPatch.o: \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/AtomMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ProxyPatch.o -c src/ProxyPatch.C
@@ -3145,12 +3019,12 @@ obj/ReductionMgr.o: \
 	src/BOCgroup.h \
 	src/Node.h \
 	src/main.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -3188,25 +3062,25 @@ obj/ScriptTcl.o: \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
+	inc/BroadcastMgr.decl.h \
+	src/BroadcastClient.h \
+	src/ConfigList.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/UniqueSetIter.h \
-	src/ProcessorPrivate.h \
-	src/BroadcastClient.h \
-	src/ConfigList.h \
-	src/Node.h \
 	src/NamdState.h \
 	src/Controller.h \
 	src/SimParameters.h \
@@ -3238,29 +3112,29 @@ obj/Sequencer.o: \
 	src/Sequencer.C \
 	src/Node.h \
 	src/main.h \
+	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/common.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
+	inc/Node.decl.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
-	src/ProcessorPrivate.h \
 	src/SimParameters.h \
 	src/ConfigList.h \
+	src/common.h \
 	src/Communicate.h \
 	src/MStream.h \
+	src/Vector.h \
 	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/Sequencer.h \
 	src/PatchTypes.h \
@@ -3320,18 +3194,8 @@ obj/SimParameters.o: \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
-	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
-	inc/BroadcastMgr.decl.h \
 	src/ProcessorPrivate.h \
+	inc/ReductionMgr.decl.h \
 	src/ConfigList.h \
 	src/SimParameters.h \
 	src/Communicate.h \

@@ -12,6 +12,8 @@
 #ifndef USETRAW_H
 #define USETRAW_H
 
+#include <new.h>
+
 template <class Elem> class EntryGlob;
 template <class Elem> class UniqueSetRaw;
 

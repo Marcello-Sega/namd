@@ -44,6 +44,15 @@ class Output;
 class LdbCoordinator;
 class ScriptTcl;
 class IMDOutput;
+class Vector;
+
+// Message to send our per processor BOC's list of groupIDs of
+// all other BOC's
+class GroupInitMsg : public CMessage_GroupInitMsg
+{
+public:
+  BOCgroup group;
+};
 
 #define MAX_SCRIPT_PARAM_SIZE 128
 class ScriptParamMsg : public CMessage_ScriptParamMsg {

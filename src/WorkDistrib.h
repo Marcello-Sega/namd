@@ -17,8 +17,15 @@
 #include "WorkDistrib.decl.h"
 
 class Node;
-class LocalWorkMsg;
+class Compute;
 class Molecule;
+
+// For Compute objects to enqueue themselves when ready to compute
+class LocalWorkMsg : public CMessage_LocalWorkMsg
+{
+public:
+  Compute *compute;
+};
 
 enum { maxPatchDepends = 126 };
 

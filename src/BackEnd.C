@@ -22,6 +22,7 @@
 #include "ReductionMgr.decl.h"
 #include "CollectionMgr.decl.h"
 #include "CollectionMaster.decl.h"
+#include "CollectionMgr.h"
 #include "BroadcastMgr.decl.h"
 #include "LdbCoordinator.decl.h"
 

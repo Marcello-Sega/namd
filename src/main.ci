@@ -7,10 +7,6 @@
 mainmodule main {
   // main - defines most of the system wide simple messages
 
-  message GroupInitMsg;
-  message SlaveInitMsg;
-  message LocalWorkMsg;
-
   mainchare main {
     entry main();
   };

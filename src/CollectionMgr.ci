@@ -6,6 +6,7 @@
 
 module CollectionMgr {
   extern module main;
+  message SlaveInitMsg;
 
   group CollectionMgr
   {

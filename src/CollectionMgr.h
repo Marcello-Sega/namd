@@ -17,6 +17,12 @@
 #include "CollectionMgr.decl.h"
 
 
+class SlaveInitMsg : public CMessage_SlaveInitMsg
+{
+public:
+  CkChareID master;
+};
+
 class CollectionMgr : public BOCclass
 {
 public:

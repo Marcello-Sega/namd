@@ -9,6 +9,7 @@ module Node {
 
   extern module main;
 
+  message GroupInitMsg;
   message ScriptParamMsg;
 
   group Node
