@@ -18,6 +18,7 @@
 #include "ComputeHomeTuples.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
+#include "ReductionMgr.h"
 #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
@@ -27,10 +28,21 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   DebugM(1, "ComputeHomeTuples::ComputeHomeTuples(%d) -- starting " << (int)c << endl );
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
+  reduction = ReductionMgr::Object();
 
   maxProxyAtoms = 0;
   dummy = NULL;
+  T::registerReductionData(reduction);
+  fake_seq = 0;
+
   DebugM(1, "ComputeHomeTuples::ComputeHomeTuples(%d) -- done " << (int)c << endl);
+}
+
+template <class T>
+ComputeHomeTuples<T>::~ComputeHomeTuples()
+{
+  delete [] dummy;
+  T::unregisterReductionData(reduction);
 }
 
 template <class T>
@@ -129,13 +141,18 @@ void ComputeHomeTuples<T>::doWork() {
     (*ap).a = (*ap).atomBox->open();
   } 
 
+  BigReal reductionData[T::reductionDataSize];
+  for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
+
   // take triplet and pass with tuple info to force eval
   DebugM(3, "ComputeHomeTuples::doWork() - size of tuple list = " << tupleList.size() << endl );
   ResizeArrayIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
-    // computeForce returns (BigReal)change in energy.  This must be used.
-    (*al).computeForce();
+    (*al).computeForce(reductionData);
   }
+
+  T::submitReductionData(reductionData,reduction,fake_seq);
+  ++fake_seq;
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).positionBox->close(&(*ap).x);

@@ -15,6 +15,7 @@
 #define COMPUTEDIHEDRALS_H
 
 #include "ComputeHomeTuples.h"
+class ReductionMgr;
 class Molecule;
 
 class DihedralElem {
@@ -24,13 +25,17 @@ public:
     AtomID atomID[size];
     int    localIndex[size];
     TuplePatchElem *p[size];
-    BigReal computeForce(void);
+    void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void addTuplesForAtom(void*, AtomID, Molecule*);
 
     // Internal data
     Index dihedralType;
 
+  enum { dihedralEnergyIndex, reductionDataSize };
+  static void registerReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,ReductionMgr*,int);
+  static void unregisterReductionData(ReductionMgr*);
 
   inline DihedralElem();
   inline DihedralElem(const Dihedral *a);
@@ -56,13 +61,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDihedrals.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/01/14 15:29:47 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1997/01/16 00:55:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDihedrals.h,v $
+ * Revision 1.3  1997/01/16 00:55:54  jim
+ * Added reduction of energies from ComputeHomeTuples objects, except
+ * for ComputeNonbondedExcl which only reports 0 energy.
+ * Some problems with ReductionMgr are apparent, but it still runs.
+ *
  * Revision 1.2  1997/01/14 15:29:47  nealk
  * Moved "inline" functions into .inl file.
  *

@@ -15,6 +15,7 @@
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
+#include "ReductionMgr.h"
 
 #include "Debug.h"
 
@@ -43,7 +44,7 @@ void BondElem::addTuplesForAtom
       }
 }
 
-BigReal BondElem::computeForce(void)
+void BondElem::computeForce(BigReal *reduction)
 {
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << endl);
@@ -83,6 +84,22 @@ BigReal BondElem::computeForce(void)
   p[1]->f[localIndex[1]] -= r12;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  return(energy);
+  if ( p[0]->patchType == HOME ) reduction[bondEnergyIndex] += energy;
+}
+
+
+void BondElem::registerReductionData(ReductionMgr *reduction)
+{
+  reduction->Register(REDUCTION_BOND_ENERGY);
+}
+
+void BondElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
+{
+  reduction->submit(seq, REDUCTION_BOND_ENERGY, data[bondEnergyIndex]);
+}
+
+void BondElem::unregisterReductionData(ReductionMgr *reduction)
+{
+  reduction->unRegister(REDUCTION_BOND_ENERGY);
 }
 

@@ -15,6 +15,7 @@
 #define COMPUTEIMPROPERS_H
 
 #include "ComputeHomeTuples.h"
+class ReductionMgr;
 class Molecule;
 
 class ImproperElem {
@@ -24,13 +25,17 @@ public:
     AtomID atomID[size];
     int    localIndex[size];
     TuplePatchElem *p[size];
-    BigReal computeForce(void);
+    void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void addTuplesForAtom(void*, AtomID, Molecule*);
 
     // Internal data
     Index improperType;
 
+  enum { improperEnergyIndex, reductionDataSize };
+  static void registerReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,ReductionMgr*,int);
+  static void unregisterReductionData(ReductionMgr*);
 
   ImproperElem() {
 	atomID[0] = -1;
@@ -92,13 +97,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeImpropers.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1996/11/26 16:33:35 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.2 $	$Date: 1997/01/16 00:55:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeImpropers.h,v $
+ * Revision 1.2  1997/01/16 00:55:59  jim
+ * Added reduction of energies from ComputeHomeTuples objects, except
+ * for ComputeNonbondedExcl which only reports 0 energy.
+ * Some problems with ReductionMgr are apparent, but it still runs.
+ *
  * Revision 1.1  1996/11/26 16:33:35  nealk
  * Initial revision
  *

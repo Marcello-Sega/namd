@@ -15,6 +15,7 @@
 #define COMPUTENONBONDEDEXCL_H
 
 #include "ComputeHomeTuples.h"
+class ReductionMgr;
 class Molecule;
 
 class NonbondedExclElem {
@@ -24,13 +25,17 @@ public:
     AtomID atomID[size];
     int    localIndex[size];
     TuplePatchElem *p[size];
-    BigReal computeForce(void);
+    void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void addTuplesForAtom(void*, AtomID, Molecule*);
 
     // Internal data
     Index modified;
 
+  enum { electEnergyIndex, vdwEnergyIndex, reductionDataSize };
+  static void registerReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,ReductionMgr*,int);
+  static void unregisterReductionData(ReductionMgr*);
 
   NonbondedExclElem() {
     atomID[0] = -1;
@@ -78,12 +83,17 @@ public:
  *
  *	$RCSfile: ComputeNonbondedExcl.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/12/06 06:56:11 $
+ *	$Revision: 1.3 $	$Date: 1997/01/16 00:56:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedExcl.h,v $
+ * Revision 1.3  1997/01/16 00:56:01  jim
+ * Added reduction of energies from ComputeHomeTuples objects, except
+ * for ComputeNonbondedExcl which only reports 0 energy.
+ * Some problems with ReductionMgr are apparent, but it still runs.
+ *
  * Revision 1.2  1996/12/06 06:56:11  jim
  * cleaned up and renamed a bit, now it works
  *

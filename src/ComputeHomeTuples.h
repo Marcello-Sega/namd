@@ -79,6 +79,7 @@ class TuplePatchElem {
 typedef UniqueSortedArray<TuplePatchElem> TuplePatchList;
 
 class AtomMap;
+class ReductionMgr;
 
 template <class T>
 class ComputeHomeTuples : public Compute {
@@ -88,16 +89,16 @@ private:
 
   PatchMap *patchMap;
   AtomMap *atomMap;
+  ReductionMgr *reduction;
+
+  int fake_seq;
 
   int maxProxyAtoms;
   Force *dummy;
   
 public:
   ComputeHomeTuples(ComputeID c);
-  virtual ~ComputeHomeTuples() {
-    delete [] dummy;
-  }
-
+  virtual ~ComputeHomeTuples();
   void mapReady();
   void doWork();
 };
@@ -108,12 +109,17 @@ public:
  *
  *	$RCSfile: ComputeHomeTuples.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.9 $	$Date: 1997/01/14 17:59:48 $
+ *	$Revision: 1.10 $	$Date: 1997/01/16 00:55:56 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.h,v $
+ * Revision 1.10  1997/01/16 00:55:56  jim
+ * Added reduction of energies from ComputeHomeTuples objects, except
+ * for ComputeNonbondedExcl which only reports 0 energy.
+ * Some problems with ReductionMgr are apparent, but it still runs.
+ *
  * Revision 1.9  1997/01/14 17:59:48  jim
  * fixed multiple force additions (no adding to proxies now)
  *

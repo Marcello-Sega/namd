@@ -15,6 +15,7 @@
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
+#include "ReductionMgr.h"
 
 #include "Debug.h"
 
@@ -43,7 +44,7 @@ void AngleElem::addTuplesForAtom
       }
 }
 
-BigReal AngleElem::computeForce(void)
+void AngleElem::computeForce(BigReal *reduction)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << endl);
@@ -134,6 +135,22 @@ BigReal AngleElem::computeForce(void)
   }
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  return(energy);
+  if ( p[0]->patchType == HOME ) reduction[angleEnergyIndex] += energy;
+}
+
+
+void AngleElem::registerReductionData(ReductionMgr *reduction)
+{
+  reduction->Register(REDUCTION_ANGLE_ENERGY);
+}
+
+void AngleElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
+{
+  reduction->submit(seq, REDUCTION_ANGLE_ENERGY, data[angleEnergyIndex]);
+}
+
+void AngleElem::unregisterReductionData(ReductionMgr *reduction)
+{
+  reduction->unRegister(REDUCTION_ANGLE_ENERGY);
 }
 

@@ -16,6 +16,7 @@
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
+#include "ReductionMgr.h"
 
 #undef DEBUGM
 #include "Debug.h"
@@ -46,10 +47,13 @@ void NonbondedExclElem::addTuplesForAtom
 }
 
 
-BigReal NonbondedExclElem::computeForce(void)
+void NonbondedExclElem::computeForce(BigReal *reduction)
 {
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << endl);
+
+  BigReal electEnergy = 0;
+  BigReal vdwEnergy = 0;
 
   ComputeNonbondedUtil::calcExcl(
 	p[0]->x[localIndex[0]], p[1]->x[localIndex[1]],
@@ -58,6 +62,29 @@ BigReal NonbondedExclElem::computeForce(void)
 	modified);
 
   DebugM(3, "::computeForce() -- ending" << endl);
-  return(0.);
+  if ( p[0]->patchType == HOME )
+  {
+    reduction[electEnergyIndex] += electEnergy;
+    reduction[vdwEnergyIndex] += vdwEnergy;
+  }
+}
+
+
+void NonbondedExclElem::registerReductionData(ReductionMgr *reduction)
+{
+  reduction->Register(REDUCTION_ELECT_ENERGY);
+  reduction->Register(REDUCTION_LJ_ENERGY);
+}
+
+void NonbondedExclElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
+{
+  reduction->submit(seq, REDUCTION_ELECT_ENERGY, data[electEnergyIndex]);
+  reduction->submit(seq, REDUCTION_LJ_ENERGY, data[vdwEnergyIndex]);
+}
+
+void NonbondedExclElem::unregisterReductionData(ReductionMgr *reduction)
+{
+  reduction->unRegister(REDUCTION_ELECT_ENERGY);
+  reduction->unRegister(REDUCTION_LJ_ENERGY);
 }
 

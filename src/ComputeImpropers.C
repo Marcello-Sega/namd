@@ -15,6 +15,7 @@
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
+#include "ReductionMgr.h"
 
 #include "Debug.h"
 
@@ -43,7 +44,7 @@ void ImproperElem::addTuplesForAtom
       }
 }
 
-BigReal ImproperElem::computeForce(void)
+void ImproperElem::computeForce(BigReal *reduction)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << " " <<
@@ -227,6 +228,21 @@ BigReal ImproperElem::computeForce(void)
   p[3]->f[localIndex[3]] += -f3;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  return(energy);
+  if ( p[0]->patchType == HOME ) reduction[improperEnergyIndex] += energy;
 }
 
+
+void ImproperElem::registerReductionData(ReductionMgr *reduction)
+{
+  reduction->Register(REDUCTION_IMPROPER_ENERGY);
+}
+
+void ImproperElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
+{
+  reduction->submit(seq, REDUCTION_IMPROPER_ENERGY, data[improperEnergyIndex]);
+}
+
+void ImproperElem::unregisterReductionData(ReductionMgr *reduction)
+{
+  reduction->unRegister(REDUCTION_IMPROPER_ENERGY);
+}

@@ -15,6 +15,7 @@
 #define COMPUTEANGLE_H
 
 #include "ComputeHomeTuples.h"
+class ReductionMgr;
 class Molecule;
 
 class AngleElem {
@@ -24,13 +25,17 @@ public:
     AtomID atomID[size];
     int    localIndex[size];
     TuplePatchElem *p[size];
-    BigReal computeForce(void);
+    void computeForce(BigReal*);
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void addTuplesForAtom(void*, AtomID, Molecule*);
 
     // Internal data
     Index angleType;
 
+  enum { angleEnergyIndex, reductionDataSize };
+  static void registerReductionData(ReductionMgr*);
+  static void submitReductionData(BigReal*,ReductionMgr*,int);
+  static void unregisterReductionData(ReductionMgr*);
 
   inline AngleElem();
   inline AngleElem(const Angle *a);
@@ -56,13 +61,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1997/01/14 15:29:47 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.9 $	$Date: 1997/01/16 00:55:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.h,v $
+ * Revision 1.9  1997/01/16 00:55:49  jim
+ * Added reduction of energies from ComputeHomeTuples objects, except
+ * for ComputeNonbondedExcl which only reports 0 energy.
+ * Some problems with ReductionMgr are apparent, but it still runs.
+ *
  * Revision 1.8  1997/01/14 15:29:47  nealk
  * Moved "include" functions into .inl file.
  *

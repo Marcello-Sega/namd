@@ -16,6 +16,7 @@
 #include "Parameters.h"
 #include "Node.h"
 #include "Debug.h"
+#include "ReductionMgr.h"
 
 void DihedralElem::addTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
@@ -42,7 +43,7 @@ void DihedralElem::addTuplesForAtom
       }
 }
 
-BigReal DihedralElem::computeForce(void)
+void DihedralElem::computeForce(BigReal *reduction)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << endl);
@@ -225,6 +226,22 @@ BigReal DihedralElem::computeForce(void)
   p[3]->f[localIndex[3]] += -f3;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
-  return(energy);
+  if ( p[0]->patchType == HOME ) reduction[dihedralEnergyIndex] += energy;
+}
+
+
+void DihedralElem::registerReductionData(ReductionMgr *reduction)
+{
+  reduction->Register(REDUCTION_DIHEDRAL_ENERGY);
+}
+
+void DihedralElem::submitReductionData(BigReal *data, ReductionMgr *reduction, int seq)
+{
+  reduction->submit(seq, REDUCTION_DIHEDRAL_ENERGY, data[dihedralEnergyIndex]);
+}
+
+void DihedralElem::unregisterReductionData(ReductionMgr *reduction)
+{
+  reduction->unRegister(REDUCTION_DIHEDRAL_ENERGY);
 }
 
