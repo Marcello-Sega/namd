@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.19 1996/11/30 21:09:15 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.20 1996/11/30 21:59:12 jim Exp $";
 
 #include <stdio.h>
 
@@ -326,17 +326,17 @@ void WorkDistrib::mapElectComputes(void)
     }
 
     // two-away neighbors
-    numNeighbors=patchMap->twoAwayNeighbors(i,oneAway);
+    numNeighbors=patchMap->twoAwayNeighbors(i,twoAway);
     for(j=0;j<numNeighbors;j++)
     {
-      if (i < oneAway[j])
+      if (i < twoAway[j])
       {
 	cid=computeMap->storeCompute(patchMap->node(i),2,
 				     computeNonbondedPairType);
 	computeMap->newPid(cid,i);
-	computeMap->newPid(cid,oneAway[j]);
+	computeMap->newPid(cid,twoAway[j]);
 	patchMap->newCid(i,cid);
-	patchMap->newCid(oneAway[j],cid);
+	patchMap->newCid(twoAway[j],cid);
       }
     }
   }
@@ -372,12 +372,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.19 $	$Date: 1996/11/30 21:09:15 $
+ *	$Revision: 1.20 $	$Date: 1996/11/30 21:59:12 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.20  1996/11/30 21:59:12  jim
+ * fixed use of wrong array in nonbonded allocation
+ *
  * Revision 1.19  1996/11/30 21:09:15  jim
  * cleaned up debug messages
  *
