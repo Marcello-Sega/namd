@@ -12,25 +12,35 @@
  ***************************************************************************/
 
 #include "Sequencer.h"
+#include "HomePatch.h"
 
-Sequencer::thread_initForce(void)
+void Sequencer_threadRun(Sequencer* arg)
 {
-	patch->positionsReady();
-	Cth_Suspend();
+	arg->threadRun();
 }
 
-Sequencer::thread_run(int number_of_cycles, int steps_per_cycle)
+void Sequencer::run(int numberOfCycles)
 {
+	this->numberOfCycles = numberOfCycles;
+	thread = CthCreate((CthVoidFn)&(Sequencer_threadRun),(void*)(this),0);
+	CthSetStrategyDefault(thread);
+	CthAwaken(thread);
+}
+
+void Sequencer::threadRun(void)
+{
+	const int stepsPerCycle = 2;
+	const int timestep = 1.0;
 	int step, cycle;
-	for ( cycle = 0; cycle < number_of_cycles; ++cycle )
+	for ( cycle = 0; cycle < numberOfCycles; ++cycle )
 	{
-		for ( step = 0; step < steps_per_cycle; ++step )
+		for ( step = 0; step < stepsPerCycle; ++step )
 		{
-			patch->addForceToMomentum(0.5*timestep);
-			patch->addVelocityToPosition(timestep);
-			patch->positionsReady();
-			Cth_Suspend();
-			patch->addForceToMomentum(0.5*timestep);
+			// patch->addForceToMomentum(0.5*timestep);
+			// patch->addVelocityToPosition(timestep);
+			// patch->positionsReady();
+			CthSuspend();
+			// patch->addForceToMomentum(0.5*timestep);
 		}
 	}
 }
