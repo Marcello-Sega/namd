@@ -446,6 +446,8 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 
 #ifdef DPME
    opts.optionalB("PME", "useDPME", "Use old DPME code?", &useDPME, FALSE);
+#else
+   useDPME = 0;
 #endif
 
 }
