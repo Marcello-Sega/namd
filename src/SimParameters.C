@@ -253,6 +253,10 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &outputTiming, 0);
    opts.range("outputTiming", NOT_NEGATIVE);
      
+   opts.optional("main", "outputPressure", "How often to print pressure data in timesteps",
+     &outputPressure, 0);
+   opts.range("outputPressure", NOT_NEGATIVE);
+     
    opts.optional("main", "MTSAlgorithm", "Multiple timestep algorithm",
     PARSE_STRING);
 
@@ -2235,6 +2239,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    {
       iout << iINFO << "TIMING OUTPUT STEPS    "
          << outputTiming << "\n";
+      iout << endi;
+   }
+   
+   if (outputPressure != 0)
+   {
+      iout << iINFO << "PRESSURE OUTPUT STEPS  "
+         << outputPressure << "\n";
       iout << endi;
    }
    

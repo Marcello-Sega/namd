@@ -336,6 +336,9 @@ public:
 	int outputTiming;		//  Number of timesteps between timing
 					//  outputs
 
+	int outputPressure;		//  Number of timesteps between pressure
+					//  tensor outputs
+
 	int firstTimestep;		//  Starting timestep.  Will be 0 unless
 					//  restarting a simulation
 

@@ -622,6 +622,15 @@ void Controller::printEnergies(int step)
            << "\n" << endi;
     }
 
+    if ( node->simParameters->outputPressure &&
+         ! ( step % node->simParameters->outputPressure ) )
+    {
+      iout << "PRESSURE: " << step << " "
+           << PRESSUREFACTOR * pressure << "\n"
+           << "GPRESSURE: " << step << " "
+           << PRESSUREFACTOR * groupPressure << "\n" << endi;
+    }
+
     if (node->simParameters->IMDon && !(step % node->simParameters->IMDfreq)) {
       IMDEnergies energies;
       energies.T = temperature;
