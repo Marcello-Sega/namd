@@ -181,6 +181,8 @@ CIFILES = 	\
 		$(INCDIR)/ProxyMgr.def.h \
 		$(INCDIR)/ReductionMgr.decl.h \
 		$(INCDIR)/ReductionMgr.def.h \
+		$(INCDIR)/Sync.decl.h \
+		$(INCDIR)/Sync.def.h \
 		$(INCDIR)/WorkDistrib.decl.h \
 		$(INCDIR)/WorkDistrib.def.h \
 		$(INCDIR)/main.decl.h \
