@@ -1,8 +1,8 @@
-CHARMC = /Projects/l1/namd.2.0/charm/net-hp/bin/charmc
-CHARMXI = /Projects/l1/namd.2.0/charm/net-hp/bin/charmxi
+CHARMC = /Projects/l1/namd.2.0/charm/bin/charmc
+CHARMXI = /Projects/l1/namd.2.0/charm/bin/charmc
 
 CXX = g++
-CXXFLAGS = -I/Projects/l1/namd.2.0/charm/net-hp/include
+CXXFLAGS = -I/Projects/l1/namd.2.0/charm/include
 
 .SUFFIXES: 	.ci
 
@@ -11,7 +11,7 @@ ECHO = echo
 MOVE = mv
 
 OBJS = \
-	main.o
+	main.o Message.o Molecule.o PDB.o PDBData.o ConfigList.o Inform.o Parameters.o common.o strlib.o SimParameters.o ParseOptions.o
 
 CXXFILES = $(OBJS:.o=.C)
 
@@ -25,7 +25,7 @@ cifiles:
 	   $(CHARMXI) $$i; \
 	done;
 
-depends:
+depends: 
 	$(ECHO) "Creating " $(DEPENDFILE) " ..."; \
 	if [ -f $(DEPENDFILE) ]; then \
 	   $(MOVE) -f $(DEPENDFILE) $(DEPENDFILE).old; \
@@ -46,3 +46,6 @@ $(INTERFACES:.ci=.top.h):	$$(@:.top.h=.ci)
 $(INTERFACES:.ci=.bot.h):	$$(@:.bot.h=.ci)
 	$(CHARMXI) $?
 
+
+clean:
+	rm -rf *.o
