@@ -85,10 +85,10 @@ class MIStream {
       return Get((char *)data,len*sizeof(double)); 
     }
     MIStream *get(int len, Vector *data) {
-      return Get((char *)data, 3*len*sizeof(double));
+      return Get((char *)data, len*sizeof(Vector));
     }
     MIStream *get(Vector *data) {
-      return Get((char *)data, 3*sizeof(double));
+      return Get((char *)data, sizeof(Vector));
     }
 };
 
@@ -164,10 +164,10 @@ class MOStream {
       return Put((char *)data,len*sizeof(double)); 
     }
     MOStream *put(Vector *data) { 
-      return Put((char *)data,3*sizeof(double)); 
+      return Put((char *)data,sizeof(Vector)); 
     }
     MOStream *put(int len, Vector *data) { 
-      return Put((char *)data,3*len*sizeof(double)); 
+      return Put((char *)data,len*sizeof(Vector)); 
     }
     MOStream *put(char *data) {
       int length = strlen(data);
