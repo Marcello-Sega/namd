@@ -16,6 +16,11 @@
 #include <fp.h>
 #endif
 
+// need macro for rint() on Windows (but it is slower)
+#ifdef WIN32
+#define rint(X) floor((X)+0.5)
+#endif
+
 typedef Vector ScaledPosition;
 
 class Lattice

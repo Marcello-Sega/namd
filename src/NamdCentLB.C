@@ -1,4 +1,7 @@
+
+#ifndef WIN32
 #include <unistd.h>
+#endif
 #include <fcntl.h>
 
 #include <charm++.h>
@@ -104,6 +107,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   return msg;
 };
 
+#ifndef WIN32
+
 void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int numComputes)
 {
   int fd = open(file, O_WRONLY|O_CREAT|O_TRUNC, 0644);
@@ -204,6 +209,8 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
 
   close(fd);
 }
+
+#endif
 
 int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
