@@ -17,6 +17,7 @@
 
 #include "Vector.h"
 #include "Templates/ResizeArray.h"
+#include "Templates/ResizeArrayIter.h"
 
 class Patch;
 class Compute;
@@ -24,12 +25,16 @@ class Compute;
 typedef Vector Position;
 typedef Vector Velocity;
 typedef Vector Force;
+typedef int AtomID;
 
 typedef double Coordinate;
 
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArray<Velocity> VelocityList;
 typedef ResizeArray<Force> ForceList;
+
+class AtomIDList : public ResizeArray<AtomID> { };
+class AtomIDListIter : public ResizeArrayIter<AtomID> { };  
 
 typedef int PatchID;
 typedef int ComputeID;
@@ -61,13 +66,16 @@ enum Boolean
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/08/19 21:37:02 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/08/23 21:36:58 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.5  1996/08/23 21:36:58  ari
+ * *** empty log message ***
+ *
  * Revision 1.4  1996/08/19 21:37:02  brunner
  * Added Coordinate
  *
