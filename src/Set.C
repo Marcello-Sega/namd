@@ -14,6 +14,15 @@ Set::Set()
   head = (listNode *) 0;
 }
 
+Set::~Set() {
+  // delete all links; don't delete the InfoRecord objects
+  listNode *tmp;
+  for (listNode *link = head; link; link = tmp) {
+    tmp = link->next;
+    delete link;
+  }
+}
+
 void Set::insert(InfoRecord *info) 
 {
   if (!find(info))

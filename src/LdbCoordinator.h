@@ -76,7 +76,6 @@ public:
   void ExecuteMigrations(void);
   void awakenSequencers(void);
   int requiredProxies(PatchID id, int []);
-  void cleanUpData(void);
   void printRequiredProxies(PatchID id, FILE *fp);
   void printLocalLdbReport(void);
 

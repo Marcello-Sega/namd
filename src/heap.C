@@ -17,6 +17,10 @@ minHeap::minHeap(int size)
   count = 0;
 }
 
+minHeap::~minHeap() {
+  delete [] h;
+}
+
 int minHeap::numElements()
 {
   return count;
@@ -107,6 +111,10 @@ maxHeap::maxHeap(int size)
   this->size = size;
   h = new heapRecord[size];
   count = 0;
+}
+
+maxHeap::~maxHeap() {
+  delete [] h;
 }
 
 int maxHeap::numElements()

@@ -504,19 +504,6 @@ void LdbCoordinator::awakenSequencers()
   }
 }
 
-void LdbCoordinator::cleanUpData(void)
-{
-  const int numPatches = patchMap->numPatches();
-  
-  int i;
-  for (i=0; i<nStatsMessagesReceived; i++)
-    delete processorArray[i].proxies;
-
-  for (i=0; i < numPatches; i++)
-    delete patchArray[i].proxiesOn;
-
-}
-
 // Figure out which proxies we will definitely create on other
 // nodes, without regard for non-bonded computes.  This code is swiped
 // from ProxyMgr, and changes there probable need to be propagated here.

@@ -57,19 +57,17 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   // loadData("data", numProcessors, numPatches, nMoveableComputes);
   // end of debug section
 
-  Rebalancer* rebalancer = 0;
-
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
-    rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
+    RefineOnly(computeArray,patchArray,processorArray,
                                 nMoveableComputes, numPatches, numProcessors);
   } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
-    rebalancer = new Alg7(computeArray,patchArray,processorArray,
+    Alg7(computeArray,patchArray,processorArray,
                           nMoveableComputes, numPatches, numProcessors);
   } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
     if (step() == 0) {
       iout << iINFO << "Load balance cycle " << step()
         << " using Alg7\n" << endi;
-      rebalancer = new Alg7(computeArray,patchArray,processorArray,
+      Alg7(computeArray,patchArray,processorArray,
                             nMoveableComputes, numPatches, numProcessors);
     } else {
       iout << iINFO << "Load balance cycle " << step()
@@ -80,7 +78,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       //	dumpDataASCII("refinedata", numProcessors, numPatches,
       //		      nMoveableComputes);
       //      }
-      rebalancer = new RefineOnly(computeArray,patchArray,processorArray,
+      RefineOnly(computeArray,patchArray,processorArray,
                                   nMoveableComputes, numPatches,
                                   numProcessors);
     }
@@ -151,31 +149,31 @@ void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int num
   // dump patchSet
   for (i=0; i< numProcessors; i++)
   {
-      int num = processorArray[i].proxies->numElements();
+      int num = processorArray[i].proxies.numElements();
       write(fd, &num, sizeof(int));
 //CkPrintf("**** Proc:%d num:%d \n", i, num);
       Iterator nextProxy;
 //      nextProxy.id = 0;
-      patchInfo *p = (patchInfo *)processorArray[i].proxies->iterator((Iterator *)&nextProxy);
+      patchInfo *p = (patchInfo *)processorArray[i].proxies.iterator((Iterator *)&nextProxy);
       while (p) 
       {
           write(fd, &p->Id, sizeof(int));
-          p = (patchInfo *)processorArray[i].proxies->next((Iterator*)&nextProxy);
+          p = (patchInfo *)processorArray[i].proxies.next((Iterator*)&nextProxy);
       }
   }
   // dump proxiesOn
   for (i=0; i<numPatches; i++)
   {
-      int num = patchArray[i].proxiesOn->numElements();
+      int num = patchArray[i].proxiesOn.numElements();
       write(fd, &num, sizeof(int));
 // CkPrintf("**** Patch:%d num:%d \n", i, num);
       Iterator nextProc;
 //      nextProc.id = 0;
-      processorInfo *p = (processorInfo *)patchArray[i].proxiesOn->iterator((Iterator *)&nextProc);
+      processorInfo *p = (processorInfo *)patchArray[i].proxiesOn.iterator((Iterator *)&nextProc);
       while (p) 
       {
           write(fd, &p->Id, sizeof(int));
-          p = (processorInfo *)patchArray[i].proxiesOn->next((Iterator*)&nextProc);
+          p = (processorInfo *)patchArray[i].proxiesOn.next((Iterator*)&nextProc);
       }
   }
 
@@ -212,27 +210,27 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
 
   // dump patchSet
   for (i=0; i< numProcessors; i++) {
-      int num = processorArray[i].proxies->numElements();
+      int num = processorArray[i].proxies.numElements();
       fprintf(fp,"%d\n",num);
       Iterator nextProxy;
-      patchInfo *p = (patchInfo *)processorArray[i].proxies->
+      patchInfo *p = (patchInfo *)processorArray[i].proxies.
 	iterator((Iterator *)&nextProxy);
       while (p) {
           fprintf(fp,"%d\n",p->Id);
-          p = (patchInfo *)processorArray[i].proxies->
+          p = (patchInfo *)processorArray[i].proxies.
 	    next((Iterator*)&nextProxy);
       }
   }
   // dump proxiesOn
   for (i=0; i<numPatches; i++)  {
-    int num = patchArray[i].proxiesOn->numElements();
+    int num = patchArray[i].proxiesOn.numElements();
     fprintf(fp,"%d\n",num);
       Iterator nextProc;
-      processorInfo *p = (processorInfo *)patchArray[i].proxiesOn->
+      processorInfo *p = (processorInfo *)patchArray[i].proxiesOn.
 	iterator((Iterator *)&nextProc);
       while (p) {
 	fprintf(fp,"%d\n",p->Id);
-	p = (processorInfo *)patchArray[i].proxiesOn->
+	p = (processorInfo *)patchArray[i].proxiesOn.
 	  next((Iterator*)&nextProc);
       }
   }
@@ -267,12 +265,11 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
       int num;
       read(fd, &num, sizeof(int));
       printf("proc: %d proxies:%d \n", i, num);
-      processorArray[i].proxies = new Set();
       for (int j=0; j<num; j++) {
           int id;
           read(fd, &id, sizeof(int));
 	  printf("%d ", id);
-          processorArray[i].proxies->insert(&patchArray[id]);
+          processorArray[i].proxies.insert(&patchArray[id]);
       }
       printf("\n");
   }
@@ -281,11 +278,10 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
       int num;
       read(fd, &num, sizeof(int));
 //      printf("patch: %d proxiesOn:%d \n", i, num);
-      patchArray[i].proxiesOn = new Set();
       for (int j=0; j<num; j++) {
           int id;
           read(fd, &id, sizeof(int));
-          patchArray[i].proxiesOn->insert(&processorArray[id]);
+          patchArray[i].proxiesOn.insert(&processorArray[id]);
       }
   }
 
@@ -307,7 +303,6 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
       processorArray[i].backgroundLoad = bg_weight * stats[i].bg_walltime;
     else 
       processorArray[i].backgroundLoad = stats[i].bg_walltime;
-    processorArray[i].proxies = new Set();
   }
 
   int nMoveableComputes=0;
@@ -325,11 +320,10 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	patchArray[pid].numAtoms = 0;
 	patchArray[pid].processor = i;
 	const int numProxies = requiredProxies(pid,neighborNodes);
-	patchArray[pid].proxiesOn = new Set();
 
 	for (int k=0; k<numProxies; k++) {
-	  processorArray[neighborNodes[k]].proxies->insert(&patchArray[pid]);
-	  patchArray[pid].proxiesOn->insert(&processorArray[neighborNodes[k]]);
+	  processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
+	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
 	const int cid = this_obj.id.id[0];

@@ -20,6 +20,8 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    numComputes = nComps;
    numPatches = nPatches;
    P = nPes;
+   pes = NULL;
+   computesHeap = NULL;
    int i;
    for (i=0; i<P; i++)
    {
@@ -28,22 +30,18 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       // End of test section
       processors[i].load = processors[i].backgroundLoad;
       processors[i].computeLoad = 0;
-      processors[i].patchSet = new Set();
-      processors[i].computeSet = new Set();
-      processors[i].computesWithBoth = NULL; // new maxHeap(numComputes);
-      processors[i].computesWithOne = NULL; // new maxHeap(numComputes);
    }
 
    InitProxyUsage();
 
    for (i=0; i<nPatches; i++)
    {
-      if (!patches[i].proxiesOn->find(&(processors[patches[i].processor]))) 
+      if (!patches[i].proxiesOn.find(&(processors[patches[i].processor]))) 
       {
-         patches[i].proxiesOn->insert(&(processors[patches[i].processor]));
-         processors[patches[i].processor].proxies->insert(&(patches[i]));
+         patches[i].proxiesOn.insert(&(processors[patches[i].processor]));
+         processors[patches[i].processor].proxies.insert(&(patches[i]));
       }
-      processors[patches[i].processor].patchSet->insert(&patches[i]);
+      processors[patches[i].processor].patchSet.insert(&patches[i]);
    }		          
 
    for (i=0; i<numComputes; i++)
@@ -75,7 +73,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    // int count1=0, count2=0;
    // for (i=0; i<nPatches; i++)
    // {
-   //    if (patches[i].proxiesOn->numElements() <= 1)
+   //    if (patches[i].proxiesOn.numElements() <= 1)
    //    count1++;
    //    else count2++;
    // }		          
@@ -97,6 +95,8 @@ Rebalancer::~Rebalancer()
 {
    for(int i=0; i<P; i++)
       delete [] processors[i].proxyUsage;
+   delete pes;
+   delete computesHeap;
 }
 
 // Added 4-29-98: array proxyUsage on each processor keeps track of 
@@ -116,7 +116,7 @@ void Rebalancer::InitProxyUsage()
       nextCompute.id = 0;
 
       computeInfo *c = (computeInfo *)
-         processors[i].computeSet->iterator((Iterator *)&nextCompute);
+         processors[i].computeSet.iterator((Iterator *)&nextCompute);
 
       while(c)
       {
@@ -131,7 +131,7 @@ void Rebalancer::InitProxyUsage()
          // << endl;
 
          nextCompute.id++;
-         c = (computeInfo *) processors[i].computeSet->next((Iterator *)&nextCompute);
+         c = (computeInfo *) processors[i].computeSet.next((Iterator *)&nextCompute);
       }
    }
 }
@@ -146,34 +146,25 @@ void Rebalancer::makeHeaps()
 {
    int i, j;
 
+   delete pes;
    pes = new minHeap(P+2);
    for (i=0; i<P; i++)
       pes->insert((InfoRecord *) &(processors[i]));
 
+   delete computesHeap;
    computesHeap = new maxHeap(numComputes+2);
    for (i=0; i<numComputes; i++)
       computesHeap->insert( (InfoRecord *) &(computes[i]));
 
    for (i=0; i<P; i++) 
    {
-      processors[i].computesWithBoth = NULL; // new maxHeap(numComputes+2);
-      processors[i].computesWithOne = NULL; // new maxHeap(numComputes+2);
       for (j=0; j<numComputes; j++) 
       {
          int count = 0;
          if ( (patches[computes[j].patch1].processor = i) ) count ++;
          if ( (patches[computes[j].patch2].processor = i) ) count ++;
-
-         // if (count ==2) processors[i].computesWithBoth->
-         //    insert( (InfoRecord *) &(computes[j]));
-         // if (count ==1) processors[i].computesWithOne->
-         //    insert( (InfoRecord *) &(computes[j]));
       }
    }
-
-   // for (int ii=0; ii<numPatches; ii++)
-   // { iout << iINFO << "(3:" << patches[ii].Id << "," << patches[ii].processor <<"]" ;}
-   //
 }
 
 void Rebalancer::assign(computeInfo *c, int processor)
@@ -184,17 +175,17 @@ void Rebalancer::assign(computeInfo *c, int processor)
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
    c->processor = p->Id;
-   p->computeSet->insert((InfoRecord *) c);
+   p->computeSet.insert((InfoRecord *) c);
    p->computeLoad += c->load;
    p->load = p->computeLoad + p->backgroundLoad;
    patchInfo* patch1 = (patchInfo *) &(patches[c->patch1]);
    patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
 
-   if (!p->proxies->find(patch1))   p->proxies->insert(patch1); 
-   if (!patch1->proxiesOn->find(p)) patch1->proxiesOn->insert(p);
+   if (!p->proxies.find(patch1))   p->proxies.insert(patch1); 
+   if (!patch1->proxiesOn.find(p)) patch1->proxiesOn.insert(p);
 
-   if (!p->proxies->find(patch2))   p->proxies->insert(patch2); 
-   if (!patch2->proxiesOn->find(p)) patch2->proxiesOn->insert(p);
+   if (!p->proxies.find(patch2))   p->proxies.insert(patch2); 
+   if (!patch2->proxiesOn.find(p)) patch2->proxiesOn.insert(p);
    
    // 4-29-98: Added the following code to keep track of how many proxies
    // on each processor are being used by a compute on that processor
@@ -212,7 +203,7 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
 void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
 {
    c->processor = -1;
-   p->computeSet->remove(c);
+   p->computeSet.remove(c);
    p->computeLoad -= c->load;
    p->load = p->computeLoad + p->backgroundLoad;
 
@@ -236,8 +227,8 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       // << endl << endl;
 
       patchInfo* patch1 = (patchInfo *) &(patches[c->patch1]);
-      p->proxies->remove(patch1);
-      patch1->proxiesOn->remove(p);
+      p->proxies.remove(patch1);
+      patch1->proxiesOn.remove(p);
    }
    if(p->proxyUsage[c->patch2] <= 0 && p->Id != patches[c->patch2].processor)
    {
@@ -246,184 +237,9 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       // << endl << endl;
 
       patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
-      p->proxies->remove(patch2);
-      patch2->proxiesOn->remove(p);
+      p->proxies.remove(patch2);
+      patch2->proxiesOn.remove(p);
    }
-}
-
-int Rebalancer::oldrefine()
-{
-   int finish = 1;
-   maxHeap *heavyProcessors = new maxHeap(P);
-
-   Set *lightProcessors = new Set();
-   int i;
-   int overloaded = 0;
-   int underloaded = 0;
-   double thresholdLoad = overLoad * averageLoad;
-   for (i=0; i<P; i++) {
-      // iout << iINFO << "\n Computes on processor " << i << " ";
-      // processors[i].computeSet->print();
-      // iout << iINFO << "\n" << endi;
-     if (processors[i].load >= thresholdLoad ) {
-       heavyProcessors->insert((InfoRecord *) &(processors[i]));
-       overloaded++;
-     } else {
-       lightProcessors->insert((InfoRecord *) &(processors[i]));
-       underloaded++;
-     }
-   }
-   iout << iINFO << overloaded << " overloaded and " 
-	<< underloaded << " underloaded processors\n" << endi;
-
-   int done = 0;
-   while (!done)
-   {
-      computeInfo *bestCompute0, *bestCompute1, *bestCompute2;
-      processorInfo *bestP0,*bestP1,*bestP2;
-    
-      processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
-      if (!donor) break;
-
-      //find the best pair (c,receiver)
-      //      iout << iINFO << "Finding receiver for processor " << donor->Id 
-      //	   << "\n" << endi;
-      selectComputeCandidates(lightProcessors, donor, thresholdLoad,
-			      &bestCompute2, &bestP2,
-			      &bestCompute1, &bestP1,
-			      &bestCompute0, &bestP0);
-
-      //we have narrowed the choice to 3 candidates.
-      processorInfo* bestP;
-
-      if (bestCompute2) {
-         deAssign(bestCompute2, donor);      
-         assign(bestCompute2, bestP2);
-         bestP = bestP2;
-      } else if (bestCompute1) {
-         deAssign(bestCompute1, donor);
-         assign(bestCompute1, bestP1);
-         bestP = bestP1;
-      } else if (bestCompute0) {
-         deAssign(bestCompute0, donor);
-         assign(bestCompute0, bestP0);
-         bestP = bestP0;
-      } else {
-         // iout << iINFO << "Refine: No receiver found" << "\n" << endl;
-         finish = 0;
-         break;
-      }
-
-      if (bestP->load > thresholdLoad) {
-         lightProcessors->remove(bestP);
-	 heavyProcessors->insert((InfoRecord*) bestP);
-      }
-    
-      if (donor->load > thresholdLoad)
-         heavyProcessors->insert((InfoRecord *) donor);
-      else lightProcessors->insert((InfoRecord *) donor);
-   }
-  
-#if 0
-   // After refining, compute min, max and avg processor load
-   double total = processors[0].load;
-   double min = processors[0].load;
-   int min_proc = 0;
-   double max = processors[0].load;
-   int max_proc = 0;
-   for (i=1; i<P; i++) {
-     total += processors[i].load;
-     if (processors[i].load < min) {
-       min = processors[i].load;
-       min_proc = i;
-     }
-     if (processors[i].load > max) {
-       max = processors[i].load;
-       max_proc = i;
-     }
-   }
-   iout << iINFO << "Refinement at overLoad=" << overLoad << "\n";
-   iout << iINFO << "  min = " << min << " processor " << min_proc << "\n";
-   iout << iINFO << "  max = " << max << " processor " << max_proc << "\n";
-   iout << iINFO << "  total = " << total << " average = " << total/P << "\n"
-	<< endi;
-   
-   if (!finish) {
-     iout << iINFO << "Refine: No solution found for overLoad = " 
-	  << overLoad << "\n" << endi;
-   }
-#endif
-
-   return finish;
-}
-
-void 
-Rebalancer::selectComputeCandidates(Set* lightProcessors,
-				    processorInfo* donor,
-				    double thresholdLoad, 
-				    computeInfo** bestCompute2,
-				    processorInfo** bestP2,
-				    computeInfo** bestCompute1,
-				    processorInfo** bestP1,
-				    computeInfo** bestCompute0,
-				    processorInfo** bestP0)
-{
-  Iterator nextProcessor;
-  processorInfo *p = (processorInfo *)lightProcessors->
-    iterator((Iterator *) &nextProcessor);
-  double bestSize0=0;
-  double bestSize1=0;
-  double bestSize2=0;
-  *bestP0 = *bestP1 = *bestP2 = 0;
-  *bestCompute0 = *bestCompute1 = *bestCompute2 = 0;
-
-
-  //  iout << iINFO << "Starting with processor " << (int)p << endi;
-  while (p) {
-    Iterator nextCompute;
-    nextCompute.id = 0;
-    computeInfo *c = (computeInfo *) donor->computeSet->
-      iterator((Iterator *)&nextCompute);
-    //    iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
-    while (c) {
-      if ( c->load + p->load < donor->load - p->load)  {
-	int n= numAvailable(c,p);
-	//	iout << iINFO << "Considering Compute : " << c->Id << " with load " 
-	//	     << c->load << "\n" << endi;
-	switch(n) {
-	case 0: 
-	  if(c->load > bestSize0 
-	     && (!(*bestP0) || p->load<(*bestP0)->load)) {
-	    bestSize0 = c->load;
-	    *bestCompute0 = c;
-	    *bestP0 = p;
-	  }
-	  break;
-	case 1: 
-	  if(c->load > bestSize1 
-	     && (!(*bestP1) || p->load< (*bestP1)->load)) {
-	    bestSize1 = c->load;
-	    *bestCompute1 = c;
-	    *bestP1 = p;
-	  }
-	  break;
-	case 2: 
-	  if(c->load > bestSize2 
-	     && (!(*bestP2) || p->load<(*bestP2)->load)) {
-	    bestSize2 = c->load;
-	    *bestCompute2 = c;
-	    *bestP2 = p;
-	  }
-	  break;
-	default:
-	  iout << iINFO <<  "Error. Illegal number of proxies.\n" << "\n";    
-	}
-      }
-      nextCompute.id++;
-      c = (computeInfo *) donor->computeSet->next((Iterator *)&nextCompute);
-    }
-    p = (processorInfo *) lightProcessors->next((Iterator *)&nextProcessor);
-  }
 }
 
 int Rebalancer::refine()
@@ -460,7 +276,7 @@ int Rebalancer::refine()
         Iterator nextCompute;
         nextCompute.id = 0;
         c = (computeInfo *) donor->
-            computeSet->iterator((Iterator *)&nextCompute);
+            computeSet.iterator((Iterator *)&nextCompute);
         if (!c) {
           iout << iINFO << "Ignoring donor " << donor->Id
                << " because no computes\n" << endi;
@@ -489,7 +305,7 @@ int Rebalancer::refine()
          Iterator nextCompute;
          nextCompute.id = 0;
          computeInfo *c = (computeInfo *) 
-            donor->computeSet->iterator((Iterator *)&nextCompute);
+            donor->computeSet.iterator((Iterator *)&nextCompute);
          // iout << iINFO << "Considering Procsessor : " << p->Id << "\n" << endi;
          while (c)
          {
@@ -514,7 +330,7 @@ int Rebalancer::refine()
 	       }
 	    }
             nextCompute.id++;
-            c = (computeInfo *) donor->computeSet->
+            c = (computeInfo *) donor->computeSet.
 	      next((Iterator *)&nextCompute);
          }
          p = (processorInfo *) 
@@ -646,7 +462,7 @@ void Rebalancer::printLoads()
       while (patch)
       {
          int myProxies;
-         myProxies = patch->proxiesOn->numElements()-1;
+         myProxies = patch->proxiesOn.numElements()-1;
          numBytes += myProxies *patch->numAtoms*bytesPerAtom;
          count += myProxies;
          patch = (patchInfo *)processors[i].patchSet->next(&p);
@@ -770,5 +586,5 @@ int Rebalancer::numPatchesAvail(computeInfo *c, processorInfo *p)
 
 int Rebalancer::isAvailableOn(patchInfo *patch, processorInfo *p)
 {
-   return  p->proxies->find(patch);
+   return  p->proxies.find(patch);
 }
