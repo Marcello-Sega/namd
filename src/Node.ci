@@ -9,6 +9,10 @@ group Node
 {
   entry Node(GroupInitMsg *);
   entry startup(InitMsg *);
+  entry messageStartup3(QuiescenceMessage *);
+  entry startup3(InitMsg *);
+  entry messageStartup4(QuiescenceMessage *);
+  entry startup4(InitMsg *);
   entry startupDone(DoneMsg *);
   entry run(RunMsg *);
   entry quiescence(QuiescenceMessage *);

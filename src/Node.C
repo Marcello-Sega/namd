@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.24 1996/12/12 20:14:50 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.25 1996/12/13 08:52:37 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -171,11 +171,49 @@ void Node::startup(InitMsg *msg)
 
 void Node::startup2(void)
 {
+  DebugM(1,"In startup2() on node " << CMyPe() << endl);
   ComputeMap::Object()->printComputeMap();
 
   DebugM(1, "workDistrib->createPatches() Pe=" << CMyPe() << "\n");
   if ( ! CMyPe() ) workDistrib->createPatches();
 
+  if ( ! CMyPe() )
+	CStartQuiescence(GetEntryPtr(Node,messageStartup3), thishandle);
+}
+
+void Node::messageStartup3(QuiescenceMessage * qm) {
+  DebugM(1,"In messageStartup3() on node " << CMyPe() << endl);
+  delete qm;
+  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
+  CBroadcastMsgBranch(Node, startup3, msg, group.node);
+}
+
+void Node::startup3(InitMsg *msg)
+{
+  DebugM(1,"In startup3() on node " << CMyPe() << endl);
+  delete msg;
+
+  // create proxies
+  proxyMgr = CLocalBranch(ProxyMgr,group.proxyMgr);
+  proxyMgr->createProxies();
+
+  if ( ! CMyPe() )
+	CStartQuiescence(GetEntryPtr(Node,messageStartup4), thishandle);
+}
+
+void Node::messageStartup4(QuiescenceMessage * qm) {
+  DebugM(1,"In messageStartup4() on node " << CMyPe() << endl);
+  delete qm;
+  InitMsg *msg = new (MsgIndex(InitMsg)) InitMsg;
+  CBroadcastMsgBranch(Node, startup4, msg, group.node);
+}
+
+void Node::startup4(InitMsg *msg)
+{
+  DebugM(1,"In startup4() on node " << CMyPe() << endl);
+  delete msg;
+
+  // create computes
   computeMgr = CLocalBranch(ComputeMgr,group.computeMgr);
   DebugM(3, "Trying to create computes.\n");
   computeMgr->createComputes(ComputeMap::Object());
@@ -277,13 +315,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.24 $	$Date: 1996/12/12 20:14:50 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.25 $	$Date: 1996/12/13 08:52:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.25  1996/12/13 08:52:37  jim
+ * staged startup implemented
+ *
  * Revision 1.24  1996/12/12 20:14:50  milind
  * *** empty log message ***
  *

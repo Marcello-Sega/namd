@@ -23,6 +23,7 @@
 #include "AtomMap.h"
 #include "ComputeMap.h"
 #include "PatchMgr.h"
+#include "ProxyMgr.h"
 
 class Molecule;
 class Parameters;
@@ -55,6 +56,10 @@ public:
   static void messageStartup();
   void startup(InitMsg *);  
   void startup2(void);  
+  void messageStartup3(QuiescenceMessage *);
+  void startup3(InitMsg *);  
+  void messageStartup4(QuiescenceMessage *);
+  void startup4(InitMsg *);  
 
   static void messageStartupDone();
   void startupDone(DoneMsg *);
@@ -93,6 +98,7 @@ private:
   WorkDistrib *workDistrib;
   PatchMgr *patchMgr;
   ComputeMgr *computeMgr;
+  ProxyMgr *proxyMgr;
 
   // Countdown for Node::startup barrier
   int numNodeStartup;
@@ -106,12 +112,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.14 $	$Date: 1996/12/12 20:14:50 $
+ *	$Revision: 1.15 $	$Date: 1996/12/13 08:52:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.15  1996/12/13 08:52:37  jim
+ * staged startup implemented
+ *
  * Revision 1.14  1996/12/12 20:14:50  milind
  * *** empty log message ***
  *
