@@ -213,10 +213,10 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(TCLLIB) \
 	$(FFTLIB)
 
-daemon.exe:  $(CHARM)\bin\daemon.exe
+daemon.exe:
 	$(COPY) $(CHARM)\bin\daemon.exe daemon.exe
 
-conv-host.exe:  $(CHARM)\bin\conv-host.exe
+conv-host.exe:
 	$(COPY) $(CHARM)\bin\conv-host.exe conv-host.exe
 
 flipdcd:	$(SRCDIR)/flipdcd.c
@@ -425,11 +425,15 @@ veryclean:	clean
 	rm -f $(BINARIES)
 
 RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
-RELEASE_FILES = .rootdir/README.txt \
-		.rootdir/announce.txt \
-		.rootdir/license.txt \
-		.rootdir/notes.txt \
-		namd2 flipdcd flipbinpdb
+
+DOC_FILES = .rootdir/README.txt \
+	.rootdir/announce.txt \
+	.rootdir/license.txt \
+	.rootdir/notes.txt
+
+RELEASE_FILES = $(DOC_FILES) namd2 flipdcd flipbinpdb
+
+WIN32_RELEASE_FILES = $(DOC_FILES) namd2.exe conv-host.exe daemon.exe $(TCLDLL)
 
 release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
@@ -443,4 +447,13 @@ release: all
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	tar cf $(RELEASE_DIR_NAME).tar $(RELEASE_DIR_NAME)
 	gzip $(RELEASE_DIR_NAME).tar
+
+winrelease: winall
+	$(ECHO) Creating release $(RELEASE_DIR_NAME)
+	mkdir $(RELEASE_DIR_NAME)
+	cp $(WIN32_RELEASE_FILES) $(RELEASE_DIR_NAME)
+	$(ECHO) "group main" > $(RELEASE_DIR_NAME)/nodelist; \
+	$(ECHO) " host localhost" >> $(RELEASE_DIR_NAME)/nodelist; \
+	chmod -R a+rX $(RELEASE_DIR_NAME)
+	zip -r $(RELEASE_DIR_NAME).zip $(RELEASE_DIR_NAME)
 
