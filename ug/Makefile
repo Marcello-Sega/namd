@@ -37,7 +37,7 @@ clean:
 	$(DELETE) $(DOCDIR)/ug.aux ; \
 	$(DELETE) $(DOCDIR)/ug.bbl ; \
 	$(DELETE) $(DOCDIR)/ug.blg ; \
+	$(DELETE) $(DOCDIR)/ug.dvi ; \
 	$(DELETE) $(DOCDIR)/ug.lof ; \
 	$(DELETE) $(DOCDIR)/ug.log ; \
 	$(DELETE) $(DOCDIR)/ug.toc
-
