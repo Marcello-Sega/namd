@@ -156,9 +156,14 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   for (i=0; i < count+1; i++) {
     LDStats &thisLDStats = ((i==count)?myStats:stats[i]);
     for (j=0; j < thisLDStats.n_objs; j++) {
-      const LDObjData this_obj = thisLDStats.objData[j];
+      const LDObjData &this_obj = thisLDStats.objData[j];
+#if CHARM_VERSION > 050405
+      if (this_obj.omID().id.idx != 1) continue;
+      if (this_obj.id().id[1] == -2) continue;
+#else
       if (this_obj.omID.id.idx != 1) continue;
       if (this_obj.id.id[1] == -2) continue;
+#endif
       if (this_obj.migratable)  nMoveableComputes++;
     }
   }
@@ -273,10 +278,15 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
     int j;
     LDStats &thisLDStats = ((i==count)?myStats:stats[i]);
     for (j=0; j < thisLDStats.n_objs; j++) {
-      const LDObjData this_obj = thisLDStats.objData[j];
+      const LDObjData &this_obj = thisLDStats.objData[j];
       // filter out non-NAMD managed objects (like PME array)
+#if CHARM_VERSION > 050405
+      if (this_obj.omID().id.idx != 1) continue;
+      if (this_obj.id().id[1] == -2) { // Its a patch
+#else
       if (this_obj.omID.id.idx != 1) continue;
       if (this_obj.id.id[1] == -2) { // Its a patch
+#endif
 /*
 	const int pid = this_obj.id.id[0];
 	int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
@@ -293,7 +303,11 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
 	}
 */
       } else if (this_obj.migratable) { // Its a compute
+#if CHARM_VERSION > 050405
+	const int cid = this_obj.id().id[0];
+#else
 	const int cid = this_obj.id.id[0];
+#endif
 	const int p0 = computeMap->pid(cid,0);
 
 	// For self-interactions, just return the same pid twice

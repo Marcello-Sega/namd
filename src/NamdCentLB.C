@@ -335,15 +335,22 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   for (i=0; i < count; i++) {
     int j;
     for (j=0; j < stats[i].n_objs; j++) {
-      const LDObjData this_obj = stats[i].objData[j];
+      const LDObjData &this_obj = stats[i].objData[j];
       // filter out non-NAMD managed objects (like PME array)
-#if CHARM_VERSION > 050403
+#if CHARM_VERSION > 050405
+      if (this_obj.omID().id.idx != 1) continue;
+#elif CHARM_VERSION > 050403
       if (this_obj.omID.id.idx != 1) continue;
 #else
       if (this_obj.omID.id != 1) continue;
 #endif
+#if CHARM_VERSION > 050405
+      if (this_obj.id().id[1] == -2) { // Its a patch
+	const int pid = this_obj.id().id[0];
+#else
       if (this_obj.id.id[1] == -2) { // Its a patch
 	const int pid = this_obj.id.id[0];
+#endif
 	int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
 
 	patchArray[pid].Id = pid;
@@ -357,7 +364,11 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
+#if CHARM_VERSION > 050405
+	const int cid = this_obj.id().id[0];
+#else
 	const int cid = this_obj.id.id[0];
+#endif
 	const int p0 = computeMap->pid(cid,0);
 
 	// For self-interactions, just return the same pid twice
