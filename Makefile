@@ -15,7 +15,7 @@ LIBS = dpmta2/mpole/libmpole.a dpmta2/src/libdpmta2.a pvm3/libpvmc.a
 # Flags
 #####
 # uncomment for no warnings during compile
-#NOWARN=-w
+NOWARN=-w
 # uncomment for purify during compile
 #PURIFY=-purify
 
@@ -48,7 +48,8 @@ PVM=-I$(PVMDIR)
 # this one below leads to numerical changes!
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched +Ofastaccess +Onofltacc +Oregionsched
 #CXXOPTS = +O3 -G -z -ptn +Oentrysched
-CXXOPTS = +O3 -G -z
+#CXXOPTS = +O3 -G -z
+CXXOPTS = +O3 -z
 #CXXOPTS = -O +DAK460 +DSK460
 #CXXOPTS = -g
 
@@ -124,7 +125,9 @@ OBJS = \
 	$(DSTDIR)/VoidTree.o \
 	$(DSTDIR)/WorkDistrib.o
 
-INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci Compute.ci \
+#Compute.ci - nolonger necessary(?)
+
+INTERFACES = main.ci Node.ci WorkDistrib.ci PatchMgr.ci \
 		ComputeMgr.ci ProxyMgr.ci ReductionMgr.ci \
 		CollectionMgr.ci CollectionMaster.ci
 
