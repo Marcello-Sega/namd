@@ -116,7 +116,7 @@ void ComputeHomeTuples<T>::doWork() {
   ResizeArrayIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
     // computeForce returns (BigReal)change in energy.  This must be used.
-    DebugM(4,"Atom 0 is " << (*al).p[0]->x[0]);
+    DebugM(4,"Atom 0 is " << (*al).p[0]->x[0] << "\n");
     (*al).computeForce();
   }
 
