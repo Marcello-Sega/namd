@@ -52,16 +52,30 @@
 #define EXCL(X)
 #endif
 
-#define NAME M14NAME(calc)
+#define NAME CLASSNAME(calc)
 
+#undef CLASSNAME
+#ifdef NBPAIR
+#define CLASSNAME(X) M14NAME( X ## _pair )
+#endif
+#ifdef NBSELF
+#define CLASSNAME(X) M14NAME( X ## _self )
+#endif
+#ifdef NBEXCL
+#define CLASSNAME(X) M14NAME( X ## _excl )
+#endif
+
+#undef M14FLAG
 #undef M14NAME
 #undef M14
 #undef NOM14
 #ifdef MODIFY14
+#define M14FLAG 1
 #define M14NAME(X) SWNAME( X ## _m14 )
 #define M14(X) X
 #define NOM14(X)
 #else
+#define M14FLAG 0
 #define M14NAME(X) SWNAME( X )
 #define M14(X)
 #define NOM14(X) X
@@ -69,18 +83,24 @@
 
 #define LAST(X) X
 
+#undef SWFLAG
 #undef SWNAME
 #undef SW
 #undef NOSW
 #ifdef SWITCHING
+#define SWFLAG 1
 #define SWNAME(X) LAST( X ## _sw )
 #define SW(X) X
 #define NOSW(X)
 #else
+#define SWFLAG 0
 #define SWNAME(X) LAST( X )
 #define SW(X)
 #define NOSW(X) X
 #endif
+
+#define NBINDEX 2 * ( M14FLAG ) + SWFLAG
+#define NBLENGTH 2 * 2
 
 #undef PLEN
 #undef I_SUB
@@ -99,10 +119,10 @@
 #define J_UPPER numAtoms[1]
 #elif defined NBSELF
 #define PLEN
-#define I_SUB [i]
+#define I_SUB i
 #define I_LOWER 0
 #define I_UPPER numAtoms
-#define J_SUB [j]
+#define J_SUB j
 #define J_LOWER i + 1
 #define J_UPPER numAtoms
 #endif
@@ -112,12 +132,15 @@
  *
  *	$RCSfile: ComputeNonbondedHack.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/08 02:37:12 $
+ *	$Revision: 1.5 $	$Date: 1996/11/20 23:16:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedHack.h,v $
+ * Revision 1.5  1996/11/20 23:16:39  jim
+ * first compiling version of generic nonbonded function
+ *
  * Revision 1.4  1996/11/08 02:37:12  jim
  * split into two files to hide some preprocessor code from user
  *

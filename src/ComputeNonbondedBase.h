@@ -18,8 +18,15 @@
 
 #include "ComputeNonbondedHack.h"
 
+#ifdef DEFINITION
+#include "Node.h"
+#include "LJTable.h"
+#include "SimParameters.h"
+#include "Molecule.h"
+#endif
+
 #if defined DECLARATION || defined DEFINITION
-void NODECL( CLASS :: ) NAME (Position* p PLEN, Force* f PLEN, AtomProperties* a PLEN) DECL( ; )
+DECL( static ) void NODECL( ComputeNonbondedUtil :: ) NAME (Position* p PLEN, Force* f PLEN, AtomProperties* a PLEN, int numAtoms PLEN) DECL( ; )
 #endif
 #ifdef DEFINITION
 {
@@ -67,7 +74,7 @@ SW
 
       Vector f_vdw = p_i - p_j;
 
-      const BigReal r2 = f_vdw.length2()
+      const BigReal r2 = f_vdw.length2();
 
       if ( r2 > cutoff2 ) continue;
 
@@ -144,7 +151,7 @@ SW
 
       const BigReal AmBterm = (A*r_6 - B) * r_6;
 
-      vdwEnergy += switchVal*AmBterm;
+      vdwEnergy += SW( switchVal * ) AmBterm;
       
       f_vdw *= ( SW( switchVal * ) 6 * (A*r_12 + AmBterm) *
 			r_1 SW( - AmBterm*dSwitchVal ) )*r_1;
@@ -161,12 +168,15 @@ SW
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/08 02:37:12 $
+ *	$Revision: 1.5 $	$Date: 1996/11/20 23:16:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.5  1996/11/20 23:16:39  jim
+ * first compiling version of generic nonbonded function
+ *
  * Revision 1.4  1996/11/08 02:37:12  jim
  * split into two files to hide some preprocessor code from user
  *
