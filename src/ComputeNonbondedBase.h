@@ -227,7 +227,8 @@ NOEXCL
 
   SELF
   (
-  int pairCount = ( i_upper * (i_upper - 1) ) / 2;
+  // N.B.  i_upper is numAtoms - 1, j_upper is numAtoms
+  int pairCount = ( i_upper * j_upper ) / 2;
   int minPairCount = ( pairCount * params->minPart ) / params->numParts;
   int maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
   pairCount = 0;
@@ -250,7 +251,7 @@ NOEXCL
   (
   {
     int opc = pairCount;
-    pairCount += i_upper - i - 1;
+    pairCount += i_upper - i;
     if ( opc < minPairCount || opc >= maxPairCount ) continue;
   }
   )
@@ -265,7 +266,7 @@ NOEXCL
     {
       int opc = pairCount;
       int nbgs = a_i.nonbondedGroupSize;
-      pairCount += nbgs * ( i_upper - i - 1 );
+      pairCount += nbgs * ( i_upper - i );
       pairCount -= nbgs * ( nbgs - 1 ) / 2;
       if ( opc < minPairCount || opc >= maxPairCount ) {
         i += nbgs - 1;
@@ -741,12 +742,15 @@ NOEXCL
  *
  *	$RCSfile: ComputeNonbondedBase.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1035 $	$Date: 1998/07/02 21:06:35 $
+ *	$Revision: 1.1036 $	$Date: 1998/07/03 22:32:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedBase.h,v $
+ * Revision 1.1036  1998/07/03 22:32:06  jim
+ * Bug fixes for compute self splitting.  N.B. i_upper is numAtoms - 1.
+ *
  * Revision 1.1035  1998/07/02 21:06:35  jim
  * Added support for splitting ComputeNonbondedSelf into multiple computes.
  *
