@@ -15,9 +15,6 @@
 #include "Molecule.h"
 #include "Parameters.h"
 #include "Node.h"
-
-
-#define DEBUGM
 #include "Debug.h"
 
 void DihedralElem::addTuplesForAtom

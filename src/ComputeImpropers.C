@@ -16,8 +16,6 @@
 #include "Parameters.h"
 #include "Node.h"
 
-
-#define DEBUGM
 #include "Debug.h"
 
 void ImproperElem::addTuplesForAtom
@@ -81,12 +79,6 @@ BigReal ImproperElem::computeForce(void)
   r12 = pos0-pos1;
   r23 = pos1-pos2;
   r34 = pos2-pos3;
-  iout << iWARN << p[0] << " " << p[1] << " " << p[2] << " " << p[3] << "\n" << endi;
-  iout << iWARN << p[0]->x[0] << " " << p[1]->x[0] << " " << p[2]->x[0] << " " << p[3]->x[0] << "\n" << endi;
-  iout << iWARN << pos0 << "\n" << endi;
-  iout << iWARN << pos1 << "\n" << endi;
-  iout << iWARN << pos2 << "\n" << endi;
-  iout << iWARN << pos3 << "\n" << endi;
 
   //  Calculate the cross products
   A = cross(r12,r23);
@@ -106,7 +98,6 @@ BigReal ImproperElem::computeForce(void)
   rB = 1.0/rB;
   B *= rB;
 
-iout << iWARN << "Calling atan2 with " << sin_phi << "," << cos_phi << "\n" << endi;
   phi= -atan2(sin_phi,cos_phi);
   CHECK_DOMAIN_ATAN(sin_phi,cos_phi);
 

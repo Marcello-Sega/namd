@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.17 1996/12/01 22:46:11 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.18 1996/12/02 19:39:26 nealk Exp $";
 
 
 #include "ckdefs.h"
@@ -43,9 +43,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 //#include "ProxyMgr.h"
 //#include "MessageComm.h"
 //#include "PatchMap.h"
-
-#define MIN_DEBUG_LEVEL 3
-#define DEBUGM
 #include "Debug.h"
 
 //======================================================================
@@ -238,13 +235,16 @@ void Node::saveMolDataPointers(Molecule *molecule,
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.17 $	$Date: 1996/12/01 22:46:11 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.18 $	$Date: 1996/12/02 19:39:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.18  1996/12/02 19:39:26  nealk
+ * Removed DEBUGM macro
+ *
  * Revision 1.17  1996/12/01 22:46:11  jim
  * switched to use simParams for number of cycles
  *

@@ -16,8 +16,6 @@
 #include "Parameters.h"
 #include "Node.h"
 
-
-#define DEBUGM
 #include "Debug.h"
 
 void AngleElem::addTuplesForAtom

@@ -17,9 +17,8 @@
 #include "ComputeHomeTuples.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
-
-#define  MIN_DEBUG_LEVEL 3
-#define  DEBUGM
+#define DEBUGM
+#define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
 
 template <class T>
@@ -103,7 +102,7 @@ void ComputeHomeTuples<T>::mapReady() {
 
 template <class T>
 void ComputeHomeTuples<T>::doWork() {
-  DebugM(1, "ComputeHomeTuples::doWork() -- started " << endl );
+  DebugM(2, "ComputeHomeTuples::doWork() -- started " << endl );
   // Open Boxes
   ResizeArrayIter<TuplePatchElem> ap(tuplePatchList);
   for (ap = ap.begin(); ap != ap.end(); ap++) {
@@ -112,11 +111,10 @@ void ComputeHomeTuples<T>::doWork() {
   } 
 
   // take triplet and pass with tuple info to force eval
-  DebugM(1, "ComputeHomeTuples::doWork() - size of atom list = " << tupleList.size() << endl );
+  DebugM(2, "ComputeHomeTuples::doWork() - size of atom list = " << tupleList.size() << endl );
   ResizeArrayIter<T> al(tupleList);
   for (al = al.begin(); al != al.end(); al++ ) {
     // computeForce returns (BigReal)change in energy.  This must be used.
-    DebugM(4,"Atom 0 is " << (*al).p[0]->x[0] << "\n");
     (*al).computeForce();
   }
 
