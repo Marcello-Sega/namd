@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1026 $  $Date: 1997/12/19 23:48:51 $
+ *  $Author: sergei $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1027 $  $Date: 1998/01/05 20:28:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1027  1998/01/05 20:28:18  sergei
+ * Introduced SMD parameters.
+ *
  * Revision 1.1026  1997/12/19 23:48:51  jim
  * Added Tcl interface for calculating forces.
  *
@@ -408,7 +411,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1026 1997/12/19 23:48:51 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1027 1998/01/05 20:28:18 sergei Exp $";
 
 
 #include "ckdefs.h"
@@ -453,6 +456,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    StringList *current; //  Pointer to config option list
    char loadStrategy[65];//  Load balancing strategy
    char filename[129];  //  Temporary file name
+
+   //****** BEGIN SMD constraints changes 
+   char chDirMethod[65]; // SMD changing direction method
+   //****** END SMD constraints changes 
+                          
 
    //  Set all variable to fallback default values.  This is not really
    //  necessary, as we give default values when we set up the ParseOptions
@@ -790,6 +798,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("constraints", "conskcol", "Column of conskfile to use "
     "for the force constants (defaults to O)", PARSE_STRING);
 
+   //****** BEGIN moving constraints changes 
+
    //// Moving Harmonic Constraints
    opts.optionalB("constraints", "movingConstraints",
       "Are some of the constraints moving?", 
@@ -799,7 +809,88 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    opts.require("movingConstraints", "movingConsAtom",
     "Index of the atom to move", 
     &movingConsAtom);
-   opts.range("movingConsAtom", NOT_NEGATIVE);
+   opts.range("movingConsAtom", POSITIVE);
+   //****** END moving constraints changes 
+
+   //****** BEGIN SMD constraints changes 
+
+   // SMD constraints
+   opts.optionalB("main", "SMD",
+      "Do we use SMD option?", 
+      &SMDOn, FALSE);
+   opts.require("SMD", "SMDexp", "Exponent for SMD (harmonic) potential",
+    &SMDExp, 2);
+   opts.range("SMDexp", POSITIVE);
+   opts.require("SMD", "SMDk", "SMD restraint force constant",
+     &SMDk);
+   opts.range("SMDk", POSITIVE);
+   opts.require("SMD", "SMDRefPos", 
+		"Initial reference position for SMD restraint",
+		&SMDRefPos);
+   opts.require("SMD", "SMDVel",
+		"Velocity of the movement, A/timestep", &SMDVel);
+   opts.range("SMDVel", NOT_NEGATIVE);
+   opts.require("SMD", "SMDDir",
+		"Direction of movement", &SMDDir);
+   opts.require("SMD", "SMDAtom",
+		"Index of the atom to move", 
+		&SMDAtom);
+   opts.range("SMDAtom", POSITIVE);
+   opts.optional("SMD", "SMDOutputFreq",
+		 "Frequency of output",
+		 &SMDOutputFreq, 0);
+   opts.range("SMDOutputFreq", NOT_NEGATIVE);
+   
+   opts.optional("SMD", "SMDTStamp",
+		 "Timestep of the last refPos change",
+		 &SMDTStamp);
+
+   //// this is only used if any of SMDChDir or SMDChForce is ON
+   opts.optional("SMD", "SMDFmin",
+		"Force value to reset constraint to, pN",
+		&SMDFmin, 0);
+   opts.range("SMDFmin", NOT_NEGATIVE);   
+
+
+   //// Changing directions with moving harmonic constraints
+   opts.optionalB("SMD", "SMDChDir",
+		  "Use changing direction function?",
+		  &SMDChDirOn, FALSE);
+   opts.require("SMDChDir", "SMDVmin",
+		"Min allowed ave velocity, A/timestep",
+		&SMDVmin);
+   opts.range("SMDVmin", NOT_NEGATIVE);
+   opts.require("SMDChDir", "SMDVminTave",
+		"Averaging time for Vmin, timesteps",
+		&SMDVminTave);
+   opts.range("SMDVminTave", POSITIVE);
+   opts.optional("SMDChDir", "SMDConeAngle",
+		 "Angle of cone to choose directions from, deg",
+		 &SMDConeAngle, 360);
+   opts.range("SMDConeAngle", NOT_NEGATIVE);
+   opts.require("SMDChDir", "SMDChDirMethod",
+		 "Distribution of directions to use", 
+		 chDirMethod);
+   opts.optional("SMDChDirMethod", "SMDGaussW",
+		 "Width of gaussian distribution for ChDir, deg",
+		 &SMDGaussW, 360);
+   opts.range("SMDGaussW", POSITIVE);
+
+   //// changing forces when the constrained atom(s) move too quickly
+   opts.optionalB("SMD", "SMDChForce",
+		  "Use changing force function?",
+		  &SMDChForceOn, FALSE);
+   opts.require("SMDChForce", "SMDVmax",
+		"Max allowed ave velocity, A/timestep",
+		&SMDVmax);
+   opts.range("SMDVmax", NOT_NEGATIVE);
+   opts.require("SMDChForce", "SMDVmaxTave",
+		"Averaging time for Vmax, timesteps",
+		&SMDVmaxTave);
+   opts.range("SMDVmaxTave", POSITIVE);
+
+   //****** END SMD constraints changes 
+
 
    ////  Global Forces / Tcl
    opts.optionalB("main", "globalForces", "Are Tcl global forces active?",
@@ -1651,11 +1742,88 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (!opts.defined("constraints"))
    {
-  constraintExp = 0;
+     constraintExp = 0;     
+
+    //****** BEGIN moving constraints changes 
+     movingConstraintsOn = FALSE;
+    //****** END moving constraints changes 
    }
 
+
+    //****** BEGIN SMD constraints changes 
+   
+   if (!opts.defined("SMD")) {     
+     SMDOn = FALSE;
+     SMDChDirOn = FALSE;
+     SMDChForceOn = FALSE;
+   }
+
+   if (SMDOn) {
+     // normalize direction
+     if (SMDDir.length2() == 0) {
+       NAMD_die("SMD direction vector must be non-zero");
+     }
+     else {
+       SMDDir = SMDDir.unit();
+     }
+
+     // convert from pdb file atom number to internal representation.
+     SMDAtom--;
+
+     if (!opts.defined("SMDTStamp")) {
+       // set the time stamp to firsttimestep
+       SMDTStamp = firstTimestep;
+     }
+
+     if (SMDOutputFreq > 0 && SMDOutputFreq < stepsPerCycle
+	 || SMDOutputFreq % stepsPerCycle != 0) {
+       NAMD_die("SMDOutputFreq must be a multiple of stepsPerCycle");
+     }
+
+     if (SMDChDirOn) {
+       if (SMDVminTave < stepsPerCycle 
+	   || SMDVminTave % stepsPerCycle != 0) {
+	 NAMD_die("SMDVminTave  must be a multiple of stepsPerCycle");
+       }
+       if (SMDConeAngle > 360.0) {
+	 NAMD_die("SMDConeAngle must be between 0 and 360 degrees");
+       }
+       else {
+	 SMDConeAngle = SMDConeAngle/2.;
+       }
+
+       if (opts.defined("SMDChDirMethod")) {
+	 if (strcasecmp(chDirMethod, "uniform") == 0) {
+	   SMDChDirMethod = SMD_UNIFORM;
+	 }
+	 else if (strcasecmp(chDirMethod, "gaussian") == 0) {
+	   SMDChDirMethod = SMD_GAUSSIAN;
+	 }
+	 else {
+	   NAMD_die("Unknown SMDChDirMethod selected");
+	 }
+       }
+       else {
+	 SMDChDirMethod = SMD_UNIFORM;
+       }
+     }
+
+     if (SMDChForceOn) {
+       if (SMDVmaxTave < stepsPerCycle 
+	   || SMDVmaxTave % stepsPerCycle != 0) {
+	 NAMD_die("SMDV(min/max)Tave  must be a multiple of stepsPerCycle");
+       }
+     }
+   }
+     
+   //****** END SMD constraints changes 
+
+   
+   
+   
+   
    if (!sphericalBCOn)
-   {
+     {
   sphericalBCr1 = 0.0;
   sphericalBCk1 = 0.0;
   sphericalBCexp1 = 0;
@@ -1941,8 +2109,91 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
       iout << iINFO << "HARMONIC CONS EXP      "
          << constraintExp << "\n";
+
+      //****** BEGIN moving constraints changes 
+
+      if (movingConstraintsOn) {
+	iout << iINFO << "MOVING HARMONIC CONSTRAINTS ACTIVE\n";
+
+	iout << iINFO << "MOVING CONSTRAINT VELOCITY    "
+	     << movingConsVel << " ANGSTROM/TIMESTEP\n";
+	
+	iout << iINFO << "MOVING CONSTRAINT ATOM NUMBER IN PDB FILE    "
+	     << movingConsAtom << "\n";
+      }
+      //****** END moving constraints changes 
    }
 
+   //****** BEGIN SMD constraints changes 
+   
+   if (SMDOn) {
+     iout << iINFO << "SMD ACTIVE\n";
+     
+     iout << iINFO << "SMD EXPONENT    "
+	  << SMDExp << "\n";
+     
+     iout << iINFO << "SMD FORCE CONSTANT    "
+	  << SMDk << " kcal/mol/A^2 =   " 
+	  << SMDk*69.479 << " pN/A\n";
+     
+     iout << iINFO << "SMD INIT REFERENCE POSITION    "
+	  << SMDRefPos << "\n";
+
+     iout << iINFO << "SMD VELOCITY    "
+	  << SMDVel << " ANGSTROM/TIMESTEP\n";
+	
+     iout << iINFO << "SMD DIRECTION   "
+	  << SMDDir << "\n";
+
+     iout << iINFO << "SMD ATOM NUMBER IN PDB FILE    "
+	  << SMDAtom << "\n";
+
+     iout << iINFO << "SMD OUTPUT FREQUENCY   "
+	  << SMDOutputFreq << " TIMESTEPS\n";
+     
+     iout << iINFO << "SMD LAST REF POSITION CHANGE TIME    "
+	  << SMDTStamp << "\n";
+     
+     iout << iINFO << "SMD RESET FORCE VALUE    "
+	  << SMDFmin << " pN\n";
+
+     if (SMDChDirOn) {
+       iout << iINFO << "SMD CHANGING DIRECTION ACTIVE\n";
+	  
+       iout << iINFO << "SMD MIN ALLOWED AVERAGE ATOM VELOCITY  "
+	    << SMDVmin << " ANGSTROM/TIMESTEP (VMIN)\n";
+       
+       iout << iINFO << "SMD VMIN AVERAGING TIME   "
+	    << SMDVminTave << " TIMESTEPS\n";
+       
+       iout << iINFO << "SMD CONE ANGLE   "
+	    << SMDConeAngle << " DEGREES\n";
+       
+       iout << iINFO << "SMD DIRECTION DISTRIBUTION   " 
+	    << chDirMethod << "\n";
+       
+       if (SMDChDirMethod == SMD_GAUSSIAN) {
+	 iout << iINFO << "SMD GAUSSIAN DISTRIBUTION WIDTH   "
+	      << SMDGaussW << " DEGREES\n";
+       }
+     }
+     
+     if (SMDChForceOn) {
+       iout << iINFO << "SMD CHANGING FORCE ACTIVE\n";
+       
+       iout << iINFO << "SMD MAX ALLOWED ATOM AVE VELOCITY    "
+	    << SMDVmax << " ANGSTROM/TIMESTEP (VMAX)\n";
+       
+       iout << iINFO << "SMD VMAX AVERAGING TIME    "
+	    << SMDVmaxTave << " TIMESTEPS\n";	  
+     }
+     
+   }
+   
+   //****** END SMD constraints changes 
+   
+   
+   
    if (globalForcesOn)
    {
      iout << iINFO << "GLOBAL FORCES ACTIVE\n";
@@ -2307,7 +2558,19 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
   msg->put(switchingDist)->put(elecswitchDist)->put(vdwswitchDist);
   msg->put(pairlistDist)->put(plMarginCheckOn)->put(constraintsOn);
   msg->put(constraintExp);
+  //****** BEGIN moving constraints changes 
   msg->put(movingConstraintsOn)->put(movingConsAtom)->put(&movingConsVel);
+  //****** END moving constraints changes 
+  //****** BEGIN SMD constraints changes 
+  msg->put(SMDOn)->put(SMDAtom)->put(SMDVel);
+  msg->put(SMDExp)->put(SMDk)->put(&SMDRefPos);
+  msg->put(&SMDDir)->put(SMDOutputFreq)->put(SMDTStamp);
+  msg->put(SMDChDirOn)->put(SMDVmin)->put(SMDVminTave);
+  msg->put(SMDConeAngle)->put(SMDChDirMethod);
+  msg->put(SMDGaussW);
+  msg->put(SMDChForceOn)->put(SMDVmax);
+  msg->put(SMDVmaxTave)->put(SMDFmin);
+  //****** END SMD constraints changes 
   msg->put(globalForcesOn);
   msg->put(FMAOn)->put(FMALevels)->put(FMAMp);
   msg->put(FMAFFTOn)->put(FMAFFTBlock)->put(minimizeOn);
@@ -2414,9 +2677,32 @@ void SimParameters::receive_SimParameters(MIStream *msg)
   msg->get(plMarginCheckOn);
   msg->get(constraintsOn);
   msg->get(constraintExp);
+  //****** BEGIN moving constraints changes 
   msg->get(movingConstraintsOn);
   msg->get(movingConsAtom);
   msg->get(&movingConsVel);
+  //****** END moving constraints changes 
+  //****** BEGIN SMD constraints changes 
+  msg->get(SMDOn);
+  msg->get(SMDAtom);
+  msg->get(SMDVel);
+  msg->get(SMDExp);
+  msg->get(SMDk);
+  msg->get(&SMDRefPos);
+  msg->get(&SMDDir);
+  msg->get(SMDOutputFreq);
+  msg->get(SMDTStamp);
+  msg->get(SMDChDirOn);
+  msg->get(SMDVmin);
+  msg->get(SMDVminTave);
+  msg->get(SMDConeAngle);
+  msg->get(SMDChDirMethod);
+  msg->get(SMDGaussW);
+  msg->get(SMDChForceOn);
+  msg->get(SMDVmax);
+  msg->get(SMDVmaxTave);
+  msg->get(SMDFmin);
+  //****** END SMD constraints changes 
   msg->get(globalForcesOn);
   msg->get(FMAOn);
   msg->get(FMALevels);
@@ -2523,12 +2809,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1026 $  $Date: 1997/12/19 23:48:51 $
+ *  $Revision: 1.1027 $  $Date: 1998/01/05 20:28:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1027  1998/01/05 20:28:18  sergei
+ * Introduced SMD parameters.
+ *
  * Revision 1.1026  1997/12/19 23:48:51  jim
  * Added Tcl interface for calculating forces.
  *

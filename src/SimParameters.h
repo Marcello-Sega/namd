@@ -52,7 +52,7 @@ typedef int  MTSChoices;
 #define C1		2
 #define SKEEL		3
 
-//  The following definitions are used to distinguish between load
+//  The following definitions are used to distinguish among load
 //  balancing strategies
 #define LDBSTRAT_NONE    0
 #define LDBSTRAT_REFINEONLY 1
@@ -64,11 +64,19 @@ typedef int  MTSChoices;
 #define SPLIT_PATCH_POSITION	0	// atom position determines patch
 #define SPLIT_PATCH_HYDROGEN	1	// hydrogen groups are not broken up
 
-// The following definitions are use to distinguish the range of rigid
+// The following definitions are used to distinguish the range of rigid
 // bond calculations: none, all bonds to hydrogen, or only water
 #define RIGID_NONE    0
 #define RIGID_ALL     1
 #define RIGID_WATER   2
+
+//****** BEGIN SMD constraints changes 
+
+// The following definitions are used to distinguish between
+// changing moving constraint direction strategies
+#define SMD_UNIFORM   0
+#define SMD_GAUSSIAN  1
+//****** END SMD constraints changes 
 
 
 class SimParameters
@@ -160,10 +168,38 @@ public:
 	Bool constraintsOn;		//  Flag TRUE-> harmonic constraints 
 					//  active
 	int constraintExp;		//  Exponent for harmonic constraints
+
+        //****** BEGIN moving constraints changes 
         Bool movingConstraintsOn;       //  Flag TRUE-> moving constraints 
                                         //  active
         Vector movingConsVel;           //  Velocity of the movement, A/timestep
         int movingConsAtom;             //  Index of the atom to be moved
+        //****** END moving constraints changes 
+        //****** BEGIN SMD constraints changes   
+        Bool SMDOn;                     //  Flag TRUE-> SMD constraints 
+                                        //  active
+        int SMDExp;                     //  Exponent for SMD constraints
+        Vector SMDRefPos;               //  Initial pos. of SMD restraint point
+        BigReal SMDk;                   //  SMD force constant (kcal/mol)
+        BigReal SMDVel;                 //  Velocity of the movement, A/timestep
+        Vector SMDDir;                  //  Direction of the movement
+        int SMDAtom;                    //  Index of the atom to be moved
+        int SMDOutputFreq;              //  Output frequency for SMD constr.
+
+        int SMDTStamp;                  //  Time of the last refPos change
+        Bool SMDChDirOn;                //  Is changing directions on?
+        BigReal SMDVmin;                //  Min allowed ave velocity 
+        int SMDVminTave;                //  Time for averaging Vmin (timesteps)
+        BigReal SMDConeAngle;           //  Angle of the cone to choose 
+                                        //    directions from
+        int SMDChDirMethod;             //  Distribution to use (uniform/gauss)
+        BigReal SMDGaussW;              //  width of gaussian distribution
+
+        Bool SMDChForceOn;              //  Is changing forces on?
+        BigReal SMDVmax;                //  Max allowed ave velocity
+        int SMDVmaxTave;                //  Time for averaging Vmax (timesteps)
+        BigReal SMDFmin;                //  Force (pN) to which to reset
+        //****** END SMD constraints changes 
 
 	Bool globalForcesOn;		//  Are global forces present?
 
@@ -314,13 +350,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: SimParameters.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/12/19 23:48:51 $
+ *	$Author: sergei $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1998/01/05 20:28:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1016  1998/01/05 20:28:20  sergei
+ * Introduced SMD parameters.
+ *
  * Revision 1.1015  1997/12/19 23:48:51  jim
  * Added Tcl interface for calculating forces.
  *
