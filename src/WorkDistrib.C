@@ -830,12 +830,9 @@ void WorkDistrib::mapComputeNonbonded(void)
       {
 	int p2 = oneAway[j];
 
-	int x = max(patchMap->index_a(p1),patchMap->index_a(p2));
-	int y = max(patchMap->index_b(p1),patchMap->index_b(p2));
-	int z = max(patchMap->index_c(p1),patchMap->index_c(p2));
-
-	cid=computeMap->storeCompute(patchMap->node(patchMap->pid(x,y,z)),2,
-				     computeNonbondedPairType);
+	cid=computeMap->storeCompute(
+		patchMap->node(patchMap->downstream(p1,p2)),
+		2,computeNonbondedPairType);
 	computeMap->newPid(cid,p1);
 	computeMap->newPid(cid,p2,oneAwayTrans[j]);
 	patchMap->newCid(p1,cid);

@@ -78,6 +78,7 @@ void HomePatch::runSequencer(void)
 { sequencer->run(); }
 
 void HomePatch::readPatchMap() {
+  iout << "Patch " << patchID << " has " << proxy.size() << " proxies.\n" << endi;
   PatchMap *p = PatchMap::Object();
   PatchID nnPatchID[PatchMap::MaxOneAway];
 
