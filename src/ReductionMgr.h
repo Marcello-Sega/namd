@@ -32,10 +32,10 @@ struct ReductionMgrData
 {
   int sequenceNum;
   int dataToSend;			// number of tags to send (not full)
-  int numRequire[REDUCTION_MAX_RESERVED]; // number of folks requiring data
   int numData[REDUCTION_MAX_RESERVED];	// number of data to expect
   BigReal tagData[REDUCTION_MAX_RESERVED];	// values in tags
   ReductionMgrData *next;	// a queue! ugly but effective.
+  int eventCounter;	// counts number of uses
 
   // for "waiting"
   CthThread threadNum;
@@ -80,6 +80,7 @@ private:
   int numSubscribed[REDUCTION_MAX_RESERVED];
   ReductionMgrData *data;	// sequence queue
   int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
+  int maxEvent;	// number of events expected per queue element
 
   ReductionMgrData *createdata();		// make new data
   void remove(int seq);				// delete (remove) a sequence
