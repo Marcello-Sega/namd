@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.4 1996/11/01 21:20:45 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.5 1996/11/07 15:21:38 nealk Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -21,6 +21,9 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.
 #include "c++interface.h"
 
 #include "ComputeMap.h"
+
+#define DEBUGM 1
+#include "Debug.h"
 
 ComputeMap *ComputeMap::_instance = 0;
 
@@ -210,28 +213,28 @@ int ComputeMap::newPid(ComputeID cid, PatchID pid)
 //----------------------------------------------------------------------
 void ComputeMap::printComputeMap(void)
 {
-  CPrintf("---------------------------------------");
-  CPrintf("---------------------------------------\n");
+  DebugM(1,"---------------------------------------");
+  DebugM(1,"---------------------------------------\n");
 
-  CPrintf("nComputes = %d\n",nComputes);
-  CPrintf("nPatchBased = %d\n",nPatchBased);
-  CPrintf("nAtomBased = %d\n",nAtomBased);
-  CPrintf("nAllocated = %d\n",nComputes);
+  DebugM(1,"nComputes = %d\n",nComputes);
+  DebugM(1,"nPatchBased = %d\n",nPatchBased);
+  DebugM(1,"nAtomBased = %d\n",nAtomBased);
+  DebugM(1,"nAllocated = %d\n",nComputes);
   for(int i=0; i < nComputes; i++)
   {
-    CPrintf("Compute %d\n",i);
-    CPrintf("  node = %d\n",computeData[i].node);
-    CPrintf("  patchBased = %d\n",computeData[i].patchBased);
-    CPrintf("  numPids = %d\n",computeData[i].numPids);
-    CPrintf("  numPidsAllocated = %d\n",computeData[i].numPidsAllocated);
+    DebugM(1,"Compute %d\n",i);
+    DebugM(1,"  node = %d\n",computeData[i].node);
+    DebugM(1,"  patchBased = %d\n",computeData[i].patchBased);
+    DebugM(1,"  numPids = %d\n",computeData[i].numPids);
+    DebugM(1,"  numPidsAllocated = %d\n",computeData[i].numPidsAllocated);
     for(int j=0; j < computeData[i].numPids; j++)
     {
-      CPrintf(" %10d ",computeData[i].pids[j]);
+      DebugM(1," %10d ",computeData[i].pids[j]);
       if (!((j+1) % 6))
-	CPrintf("\n");
+	DebugM(1,"\n");
     }
-    CPrintf("\n---------------------------------------");
-    CPrintf("---------------------------------------\n");
+    DebugM(1,"\n---------------------------------------");
+    DebugM(1,"---------------------------------------\n");
 
   }
 }
@@ -239,13 +242,16 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/11/01 21:20:45 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.5 $	$Date: 1996/11/07 15:21:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.5  1996/11/07 15:21:38  nealk
+ * Changed to use DebugM rather than CPrint.
+ *
  * Revision 1.4  1996/11/01 21:20:45  ari
  * *** empty log message ***
  *
