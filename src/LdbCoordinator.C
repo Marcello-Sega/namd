@@ -105,6 +105,7 @@ LdbCoordinator::LdbCoordinator()
   if (CkMyPe() == 0) {
     //   CreateCentralLB();
     CreateNamdCentLB();
+    //   CreateNamdNborLB();
   }
 #endif
 
