@@ -268,6 +268,18 @@ int NamdState::configFileInitCont(void) {
 
 	iout << iINFO << molecule->numHydrogenGroups << " HYDROGEN GROUPS\n";
 
+        {
+          BigReal totalMass = 0;
+          BigReal totalCharge = 0;
+          int i;
+          for ( i = 0; i < molecule->numAtoms; ++i ) {
+            totalMass += molecule->atommass(i);
+            totalCharge += molecule->atomcharge(i);
+          }
+          iout << iINFO << "TOTAL MASS = " << totalMass << " amu\n"; 
+          iout << iINFO << "TOTAL CHARGE = " << totalCharge << " e\n"; 
+        }
+
 	iout << iINFO << "*****************************\n";
 	iout << endi;
 
