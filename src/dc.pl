@@ -1,4 +1,3 @@
-#!/usr/local/bin/perl
 
 # input set of strings to match
 @dontprint = @ARGV;
