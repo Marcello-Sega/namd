@@ -34,12 +34,11 @@
 #include "Compute.h"
 #include "ComputeMap.h"
 #include "RecBisection.h"
+#include "Random.h"
 
 //#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
-
-extern "C" long int lrand48(void);
 
 //======================================================================
 // Public functions
@@ -1022,6 +1021,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
   BigReal kbT;		//  Boltzman constant * Temp
   BigReal randnum;	//  Random number from -6.0 to 6.0
   BigReal kbToverM;	//  sqrt(Kb*Temp/Mass)
+  Random vel_random(Node::Object()->simParameters->randomSeed);
 
   kbT = Temp*BOLTZMAN;
 
@@ -1042,7 +1042,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
     //  "Handbook of Mathematical Functions", pg 952.
     for (randnum=0.0, j=0; j<12; j++)
     {
-      randnum += NAMD_random();
+      randnum += vel_random.next_double();
     }
 
     randnum -= 6.0;
@@ -1051,7 +1051,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
 
     for (randnum=0.0, j=0; j<12; j++)
     {
-      randnum += NAMD_random();
+      randnum += vel_random.next_double();
     }
 
     randnum -= 6.0;
@@ -1060,7 +1060,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
 
     for (randnum=0.0, j=0; j<12; j++)
     {
-      randnum += NAMD_random();
+      randnum += vel_random.next_double();
     }
 
     randnum -= 6.0;
@@ -1125,12 +1125,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1067 $	$Date: 1999/06/08 14:52:10 $
+ *	$Revision: 1.1068 $	$Date: 1999/07/13 19:21:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1068  1999/07/13 19:21:05  jim
+ * Implemented new self contained version of rand48 random number generator.
+ *
  * Revision 1.1067  1999/06/08 14:52:10  jim
  * Incorporated Justin's faster PME code along side DPME.
  *
