@@ -56,14 +56,14 @@ class NamdState {
  *
  *	$RCSfile: NamdState.h,v $
  *	$Author: sergei $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/01/13 23:51:46 $
+ *	$Revision: 1.1007 $	$Date: 1998/01/14 01:52:54 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdState.h,v $
- * Revision 1.1006  1998/01/13 23:51:46  sergei
- * *** empty log message ***
+ * Revision 1.1007  1998/01/14 01:52:54  sergei
+ * little fixes for SMD
  *
  * Revision 1.1004  1997/03/21 23:05:39  jim
  * Added Berendsen's pressure coupling method, won't work with MTS yet.

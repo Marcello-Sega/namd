@@ -18,6 +18,8 @@
 #include "Node.top.h"
 #include "Debug.h"
 #include <math.h>
+#include "InfoStream.h"
+#include "MStream.h"
 
 /************************************************************************/
 /*									*/
@@ -31,7 +33,7 @@ SMDData::SMDData(SimParameters *simP) {
 }
 
 // initialize on node 0
-SMDData::init(PDB *pdb) {
+void SMDData::init(PDB *pdb) {
 
   timeStamp = simParams->firstTimestep;
   direction = simParams->SMDDir;

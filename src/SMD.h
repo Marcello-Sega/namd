@@ -18,9 +18,12 @@
 #define SMD_H
 
 #include "Vector.h"
+#include "common.h"
 
 class SMDDataMsg;
 class SimParameters;
+class MIStream;
+class MOStream;
 
 class SMDData {
 public:
@@ -32,7 +35,7 @@ public:
   void recvData(SMDDataMsg *msg);
                          //  receive the SMD data  
 
-  void init(void); // initialize on Node 0
+  void init(PDB *); // initialize on Node 0
 
   // these functions are for sending the initial SMDData obj
   // from Node 0 to other Nodes
