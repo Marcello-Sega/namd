@@ -3305,15 +3305,11 @@ obj/Set.o: \
 	$(CXX) $(CXXFLAGS) -o obj/Set.o -c src/Set.C
 obj/SimParameters.o: \
 	src/SimParameters.C \
-	src/ConfigList.h \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/Vector.h \
 	src/common.h \
 	src/InfoStream.h \
-	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/Vector.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/UniqueSortedArray.h \
@@ -3321,8 +3317,24 @@ obj/SimParameters.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
-	src/ParseOptions.h \
+	src/ComputeNonbondedSplitting.h \
+	src/LJTable.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/Molecule.h \
+	src/IntList.h \
+	src/LintList.h \
 	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/ObjectArena.h \
+	src/Hydrogen.h \
+	src/SimParameters.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/ParseOptions.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/SimParameters.o -c src/SimParameters.C
 obj/SMD.o: \
