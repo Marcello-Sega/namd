@@ -165,10 +165,10 @@ INCLUDE = $(CHARM)/include
 LIBS = $(DPMTALIBS) $(DPMELIBS)
 
 # CXX is platform dependent
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
-CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
-CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) -Ifftw $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
+CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
+CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
 
 # Add new executables here.
 
@@ -371,7 +371,6 @@ clean:
 	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
 	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
 	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..
-	cd fftw ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
 	rm -f $(BINARIES)
