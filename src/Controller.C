@@ -150,17 +150,18 @@ extern "C" void trace_user_event(int event);
 void Controller::algorithm(void)
 {
     int step = simParams->firstTimestep;
+    int first = 1;
 
     const int numberOfSteps = simParams->N;
 
-    for ( ; step <= numberOfSteps; ++step )
+    for ( ; step <= numberOfSteps; ++step, first = 0 )
     {
         enqueueCollections(step);
         trace_user_event(eventEndOfTimeStep);
         reassignVelocities(step);
-	langevinPiston1(step);
+	if ( ! first ) langevinPiston1(step);
 	receivePressure(step);
-	langevinPiston2(step);
+	if ( ! first ) langevinPiston2(step);
         printEnergies(step);
         rescaleVelocities(step);
 	tcoupleVelocities(step);
@@ -210,11 +211,15 @@ void Controller::langevinPiston1(int step)
     BigReal f1 = exp( -0.5 * dt * gamma );
     BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
 
+    // iout << iINFO << "strain rate: " << strainRate << "\n";
+
     strainRate *= f1;
     strainRate += f2 * gaussian_random_number();
 
     strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
 		( controlPressure - simParams->langevinPistonTarget );
+
+    // iout << iINFO << "strain rate: " << strainRate << "\n";
 
     BigReal factor = exp( dt * strainRate );
     broadcast->positionRescaleFactor.publish(step,factor);
@@ -240,6 +245,8 @@ void Controller::langevinPiston2(int step)
 
     strainRate *= f1;
     strainRate += f2 * gaussian_random_number();
+
+    // iout << iINFO << "strain rate: " << strainRate << "\n";
   }
 }
 
@@ -640,12 +647,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1048 $	$Date: 1998/11/29 22:00:58 $
+ *	$Revision: 1.1049 $	$Date: 1998/11/30 03:19:14 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1049  1998/11/30 03:19:14  jim
+ * Fixed startup bug in algorithm.
+ *
  * Revision 1.1048  1998/11/29 22:00:58  jim
  * Added group-based pressure control to work with rigidBonds.
  * New option useGroupPressure, turned on automatically if needed.
