@@ -129,6 +129,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor)
       iout << "WRITING COORDINATES TO RESTART FILE AT STEP "
 				<< timestep << "\n" << endi;
       output_restart_coordinates(coor, n, timestep);
+      iout << "FINISHED WRITING RESTART COORDINATES\n" <<endi;
     }
 
     //  Interactive MD
@@ -231,6 +232,7 @@ void Output::velocity(int timestep, int n, Vector *vel)
       iout << "WRITING VELOCITIES TO RESTART FILE AT STEP "
 				<< timestep << "\n" << endi;
       output_restart_velocities(timestep, n, vel);
+      iout << "FINISHED WRITING RESTART VELOCITIES\n" <<endi;
     }
 
   }
