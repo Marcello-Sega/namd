@@ -536,6 +536,19 @@ You only actually need the bin, include, and lib subdirectories, so
 you can copy those elsewhere and delete the whole charm directory,
 but don't forget to edit Make.charm if you do this.
 
+If you are building a non-smp, non-tcp version of net-linux with the
+Intel icc compiler you will need to disable optimization for some
+files to avoid crashes in the communication interrupt handler.  The
+smp and tcp builds use polling instead of interrupts and therefore
+are not affected.  Adding +netpoll to the namd2 command line also
+avoids the bug, but this option reduces performance in many cases.
+These commands recompile the necessary files without optmization:
+
+  cd charm/net-linux-icc
+  /bin/rm tmp/sockRoutines.o
+  /bin/rm lib/libconv-cplus-*
+  ( cd tmp; make charm++ OPTS="-O0 -DCMK_OPTIMIZE=1" )
+
 If you're building an MPI version you will probably need to edit
 compiler flags or commands in the Charm++ src/arch directory.  The
 file charm/src/arch/mpi-linux/conv-mach.sh contains the definitions
