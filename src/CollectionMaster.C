@@ -90,7 +90,7 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
     }
     delete c;
     Node::Object()->output->velocity(seq,size,data);
-    delete data;
+    delete[] data;
 }
 
 
@@ -116,6 +116,7 @@ void CollectionMaster::enqueueForces(int seq)
 void CollectionMaster::disposeForces(CollectVectorInstance *c)
 {
     DebugM(3,"Collected forces at " << c->seq << endl);
+    int seq = c->seq;
     int size = c->data.size();
     Vector *data = new Vector[size];
     for ( int i = 0; i < size; ++i )
@@ -123,8 +124,8 @@ void CollectionMaster::disposeForces(CollectVectorInstance *c)
       data[c->data[i].aid] = c->data[i].data;
     }
     delete c;
-    Node::Object()->output->all_force(c->seq,size,data);
-    delete data;
+    Node::Object()->output->all_force(seq,size,data);
+    delete[] data;
 }
 
 
@@ -165,12 +166,16 @@ void CollectVectorMsg::unpack(void *in)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/12/19 23:42:38 $
+ *	$Revision: 1.1013 $	$Date: 1998/02/26 01:51:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMaster.C,v $
+ * Revision 1.1013  1998/02/26 01:51:23  milind
+ * Fixed bugs in CollectionMaster and ReductionManager that were causing
+ * crash on Origin2000.
+ *
  * Revision 1.1012  1997/12/19 23:42:38  jim
  * Replaced assignments with memcpys and reordered memcpys for efficiency.
  *

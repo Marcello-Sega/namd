@@ -27,7 +27,7 @@
  Assumes that *only* one thread will require() a specific sequence's data.
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1022 1998/02/10 23:30:32 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ReductionMgr.C,v 1.1023 1998/02/26 01:51:25 milind Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -383,7 +383,7 @@ void	ReductionMgr::submit(int seq, ReductionTag tag, BigReal data)
     CSendMsgBranch(ReductionMgr, recvReductionData, ReductionDataMsg, m, thisgroup, myParent);
     gotAllData(current);
   }
-  if (current->numData[tag] == maxData[tag] && isRoot())
+  if (isRoot() && current->numData[tag] == maxData[tag])
   {
 	// displayData(current,tag);
 	// check if Node 0 (the collector) is suspended
@@ -483,12 +483,16 @@ void	ReductionMgr::unsubscribe(ReductionTag tag)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1022 $	$Date: 1998/02/10 23:30:32 $
+ *	$Revision: 1.1023 $	$Date: 1998/02/26 01:51:25 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.C,v $
+ * Revision 1.1023  1998/02/26 01:51:25  milind
+ * Fixed bugs in CollectionMaster and ReductionManager that were causing
+ * crash on Origin2000.
+ *
  * Revision 1.1022  1998/02/10 23:30:32  milind
  * Fixed to reflect the current changes to Charm++ translator.
  *

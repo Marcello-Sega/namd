@@ -10,7 +10,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1006 1998/01/13 17:07:03 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ParseOptions.C,v 1.1007 1998/02/26 01:51:24 milind Exp $";
 // set the list of parameters
 #ifndef GCC
 #include <libc.h>
@@ -193,9 +193,9 @@ ParseOptions::DataElement::DataElement(const char *newname,
 
 // free up what needs to be freed
 ParseOptions::DataElement::~DataElement(void) {
-   if (name) CmiFree(name);
-   if (parent) CmiFree(parent);
-   if (error_message) CmiFree(error_message);
+   if (name) delete[] name;
+   if (parent) delete[] parent;
+   if (error_message) delete[] error_message;
 }
 ///////////////////////////////////////////////////// ParseOptions
 
@@ -1135,12 +1135,16 @@ Bool ParseOptions::units(const char *name, Units *units) // set
  *
  *	$RCSfile: ParseOptions.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1998/01/13 17:07:03 $
+ *	$Revision: 1.1007 $	$Date: 1998/02/26 01:51:24 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ParseOptions.C,v $
+ * Revision 1.1007  1998/02/26 01:51:24  milind
+ * Fixed bugs in CollectionMaster and ReductionManager that were causing
+ * crash on Origin2000.
+ *
  * Revision 1.1006  1998/01/13 17:07:03  milind
  * added a prefix to the names of the units because they clashed with names
  * of some predifined constants in Solaris include files.
