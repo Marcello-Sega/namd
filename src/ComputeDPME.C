@@ -294,6 +294,9 @@ void ComputeDPMEMaster::recvData(ComputeDPMEDataMsg *msg)
 
   DebugM(4,"Returned from dpme_eval_recip().\n");
 
+  // REVERSE SIGN OF VIRIAL RETURNED BY DPME
+  for(i=0; i<6; ++i) recip_vir[i] *= -1.;
+
   // send out reductions
   int seq = host->getFlags()->seq;
   DebugM(4,"Timestep : " << seq << "\n");
@@ -370,12 +373,15 @@ void ComputeDPME::recvResults(ComputeDPMEResultsMsg *msg)
  *
  *	$RCSfile: ComputeDPME.C,v $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1999/01/06 00:56:20 $
+ *	$Revision: 1.7 $	$Date: 1999/02/12 21:55:15 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPME.C,v $
+ * Revision 1.7  1999/02/12 21:55:15  jim
+ * Fixed sign of virial from DPME.
+ *
  * Revision 1.6  1999/01/06 00:56:20  jim
  * All compute objects except DPMTA now return diagonal of virial tensor.
  *
