@@ -463,19 +463,17 @@ veryclean:	clean
 
 RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 
-DOC_FILES = .rootdir/README.txt \
-	.rootdir/announce.txt \
-	.rootdir/license.txt \
-	.rootdir/notes.txt
+DOC_FILES = README.txt announce.txt license.txt notes.txt
 
-RELEASE_FILES = $(DOC_FILES) namd2 psfgen charmrun flipdcd flipbinpdb
+RELEASE_FILES = namd2 psfgen charmrun flipdcd flipbinpdb
 
-WIN32_RELEASE_FILES = $(DOC_FILES) namd2.exe psfgen.exe charmrun.exe charmd.exe charmd_faceless.exe $(TCLDLL)
+WIN32_RELEASE_FILES = namd2.exe psfgen.exe charmrun.exe charmd.exe charmd_faceless.exe $(TCLDLL)
 
 release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
 	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
+	for f in $(DOC_FILES); do cp .rootdir/$$f $(RELEASE_DIR_NAME); done
 	if [ -r $(CHARM)/bin/charmd ]; then \
 	  $(COPY) $(CHARM)/bin/charmd $(RELEASE_DIR_NAME); \
 	fi
@@ -489,7 +487,7 @@ release: all
 winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
-	cp $(WIN32_RELEASE_FILES) $(RELEASE_DIR_NAME)
+	cp $(DOC_FILES) $(WIN32_RELEASE_FILES) $(RELEASE_DIR_NAME)
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	zip -r $(RELEASE_DIR_NAME).zip $(RELEASE_DIR_NAME)
 
