@@ -154,7 +154,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.require("main", "numsteps", "number of timesteps to perform",
     &N);
-   opts.range("numsteps", POSITIVE);
+   opts.range("numsteps", NOT_NEGATIVE);
 
    opts.optional("main", "stepspercycle",
       "Number of steps between pairlist generation and FMA execution, if active", 
@@ -1692,9 +1692,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   firstLdbStep=5*stepsPerCycle;
    }
 
-   if (firstTimestep >= N)
+   if (firstTimestep > N)
    {
-  NAMD_die("First timestep must be less than number of steps to perform!!!");
+  NAMD_die("First timestep is greater than number of steps to perform!!!");
    }
 
    if ( (firstTimestep%stepsPerCycle) != 0)
