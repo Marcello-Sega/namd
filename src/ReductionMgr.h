@@ -83,6 +83,8 @@ private:
   ReductionMgrData *find(int seq);		// find the data
   void gotAllData(ReductionMgrData *current);	// done collecting data
   void displayData(ReductionMgrData *current);	// display collected data
+  void displayData(ReductionMgrData *current, ReductionTag tag);
+						// display collected data
 
 public:
 
