@@ -7,90 +7,79 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Compute object which deals with a single patch.
  *
  ***************************************************************************/
 
 #include "WorkDistrib.top.h"
 #include "Node.h"
-#include "ComputePatchPair.h"
+#include "ComputePatch.h"
 
-ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[2]) : Compute(c) {
-  setNumPatches(2);
-  for (int i=0; i<2; i++) {
-      patchID[i] = p[i];
-      patch[i] = NULL;
-      positionBox[i] = NULL;
-      forceBox[i] = NULL;
-      atomBox[i] = NULL;
-  }
+ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
+    setNumPatches(1);
+    patchID = p;
+    patch = NULL;
+    positionBox = NULL;
+    forceBox = NULL;
+    atomBox = NULL;
 }
 
-ComputePatchPair::~ComputePatchPair() {
-  for (int i=0; i<2; i++) {
-    if (positionBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(cid,
-	 &positionBox[i]);
+ComputePatch::~ComputePatch() {
+    if (positionBox != NULL) {
+      PatchMap::Object()->patch(patchID)->unregisterPositionPickup(cid,
+	 &positionBox);
     }
-    if (forceBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterForceDeposit(cid,
-		&forceBox[i]);
+    if (forceBox != NULL) {
+      PatchMap::Object()->patch(patchID)->unregisterForceDeposit(cid,
+		&forceBox);
     }
-    if (atomBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterAtomPickup(cid,
-		&atomBox[i]);
+    if (atomBox != NULL) {
+      PatchMap::Object()->patch(patchID)->unregisterAtomPickup(cid,
+		&atomBox);
     }
-  }
-
 }
 
-void ComputePatchPair::mapReady() {
+void ComputePatch::mapReady() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
 
-    for (int i=0; i<2; i++) {
-	if (positionBox[i] == NULL) { // We have yet to get boxes
-	    patch[i] = PatchMap::Object()->patch(patchID[i]);
-	    positionBox[i] = patch[i]->registerPositionPickup(cid);
-	    forceBox[i] = patch[i]->registerForceDeposit(cid);
-	    atomBox[i] = patch[i]->registerAtomPickup(cid);
+	if (positionBox == NULL) { // We have yet to get boxes
+	    patch = PatchMap::Object()->patch(patchID);
+	    positionBox = patch->registerPositionPickup(cid);
+	    forceBox = patch->registerForceDeposit(cid);
+	    atomBox = patch->registerAtomPickup(cid);
 	}
-	numAtoms[i] = patch[i]->getNumAtoms();
-    }
+	numAtoms = patch->getNumAtoms();
 
     Compute::mapReady();
 }
 
-void ComputePatchPair::doForce(Position* p[2],
-                               Force* f[2],
-                               AtomProperties* a[2])
+void ComputePatch::doForce(Position* p,
+                               Force* f,
+                               AtomProperties* a)
 {
     CPrintf("ComputePatchPair::doForce() - Dummy eval was sent\n");
-    CPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
+    CPrintf(" %d patch 1 atoms\n", numAtoms );
 }
 
-void ComputePatchPair::doWork() {
-  Position* p[2];
-  Force* f[2];
-  AtomProperties* a[2];
+void ComputePatch::doWork() {
+  Position* p;
+  Force* f;
+  AtomProperties* a;
   int i;
 
   // Open up positionBox, forceBox, and atomBox
-  for (i=0; i<2; i++) {
-      p[i] = positionBox[i]->open();
-      f[i] = forceBox[i]->open();
-      a[i] = atomBox[i]->open();
-  }
+      p = positionBox->open();
+      f = forceBox->open();
+      a = atomBox->open();
 
   // Pass pointers to doForce
   doForce(p,f,a);
 
   // Close up boxes
-  for (i=0; i<2; i++) {
-      positionBox[i]->close(&p[i]);
-      forceBox[i]->close(&f[i]);
-      atomBox[i]->close(&a[i]);
-  }
+      positionBox->close(&p);
+      forceBox->close(&f);
+      atomBox->close(&a);
 }
 
 
@@ -99,12 +88,15 @@ void ComputePatchPair::doWork() {
  *
  *	$RCSfile: ComputePatch.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/30 01:16:32 $
+ *	$Revision: 1.5 $	$Date: 1996/10/31 22:05:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.5  1996/10/31 22:05:55  jim
+ * first incarnation as ComputePatch
+ *
  * Revision 1.4  1996/10/30 01:16:32  jim
  * added AtomProperties structure in Patch plus boxes, passing, etc.
  *

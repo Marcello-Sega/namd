@@ -7,12 +7,12 @@
 /***************************************************************************/
 
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Compute object which deals with a single patch.
  *
  ***************************************************************************/
 
-#ifndef COMPUTEPPAIR_H
-#define COMPUTEPPAIR_H
+#ifndef COMPUTEPATCH_H
+#define COMPUTEPATCH_H
 
 #include "Compute.h"
 
@@ -23,25 +23,25 @@ class Patch;
 class Node;
 class PatchMap;
 
-class ComputePatchPair : public Compute {
+class ComputePatch : public Compute {
 
 public:
-  ComputePatchPair(ComputeID c, PatchID pid[]);
-  virtual ~ComputePatchPair();
+  ComputePatch(ComputeID c, PatchID pid);
+  virtual ~ComputePatch();
 
   virtual void doWork();
 
 protected :
-  int numAtoms[2];
+  int numAtoms;
   virtual void mapReady();
-  virtual void doForce(Position* p[2], Force* f[2], AtomProperties* a[2]);
+  virtual void doForce(Position* p, Force* f, AtomProperties* a);
 
 private:
-  PatchID patchID[2];
-  Patch *patch[2];
-  Box<Patch,Position> *positionBox[2];
-  Box<Patch,Force> *forceBox[2];
-  Box<Patch,AtomProperties> *atomBox[2];
+  PatchID patchID;
+  Patch *patch;
+  Box<Patch,Position> *positionBox;
+  Box<Patch,Force> *forceBox;
+  Box<Patch,AtomProperties> *atomBox;
 
 };
 
@@ -51,12 +51,15 @@ private:
  *
  *	$RCSfile: ComputePatch.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.4 $	$Date: 1996/10/30 01:16:32 $
+ *	$Revision: 1.5 $	$Date: 1996/10/31 22:05:55 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.h,v $
+ * Revision 1.5  1996/10/31 22:05:55  jim
+ * first incarnation as ComputePatch
+ *
  * Revision 1.4  1996/10/30 01:16:32  jim
  * added AtomProperties structure in Patch plus boxes, passing, etc.
  *
