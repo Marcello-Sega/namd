@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.10 1996/11/22 00:18:51 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1.11 1996/11/22 01:02:18 ari Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -26,6 +26,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Patch.C,v 1
 #include "Node.h"
 #include "Molecule.h"
 
+#define MIN_DEBUG_LEVEL 3
 #define  DEBUGM
 #include "Debug.h"
 
@@ -38,7 +39,7 @@ Patch::Patch(PatchID pd, AtomIDList al, PositionList pl) :
 {
     if (atomIDList.size() != p.size())
     {
-      CPrintf(
+      DebugM( 10, 
          "Patch::Patch(...) : Different numbers of Coordinates and IDs!\n");
     }
     numAtoms = p.size();
@@ -140,8 +141,8 @@ void Patch::positionsReady()
    atomPtr = a.unencap();
    atomBox.open(atomPtr);
 
-   CPrintf("Patch::positionsReady() - looping over positionComputeList\n");
-   CPrintf("Patch::positionsReady() - size %d\n", positionComputeList.size());
+   DebugM(1,"Patch::positionsReady() - looping over positionComputeList" << endl);
+   DebugM(1,"Patch::positionsReady() - size " << positionComputeList.size() << endl );
    // Iterate over compute objects that need to be informed we are ready
    ComputeIDListIter cid(positionComputeList);
    for(cid = cid.begin(); cid != cid.end(); cid++)
@@ -157,12 +158,15 @@ void Patch::positionsReady()
  *
  *	$RCSfile: Patch.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.10 $	$Date: 1996/11/22 00:18:51 $
+ *	$Revision: 1.11 $	$Date: 1996/11/22 01:02:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Patch.C,v $
+ * Revision 1.11  1996/11/22 01:02:18  ari
+ * *** empty log message ***
+ *
  * Revision 1.10  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *

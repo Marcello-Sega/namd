@@ -11,7 +11,7 @@
 /*                                                                         */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.16 1996/11/22 00:18:51 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.17 1996/11/22 01:02:18 ari Exp $";
 
 #include <stdio.h>
 
@@ -34,6 +34,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "NamdTypes.h"
 #include "PDB.h"
 
+#define MIN_DEBUG_LEVEL 3
 #define DEBUGM
 #include "Debug.h"
 
@@ -370,12 +371,15 @@ void WorkDistrib::movePatchDone(DoneMsg *msg) {
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.16 $	$Date: 1996/11/22 00:18:51 $
+ *	$Revision: 1.17 $	$Date: 1996/11/22 01:02:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.17  1996/11/22 01:02:18  ari
+ * *** empty log message ***
+ *
  * Revision 1.16  1996/11/22 00:18:51  ari
  * *** empty log message ***
  *

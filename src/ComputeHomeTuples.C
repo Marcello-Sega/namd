@@ -18,18 +18,19 @@
 #include "PatchMgr.h"
 #include "Molecule.h"
 
+#define  MIN_DEBUG_LEVEL 3
 #define  DEBUGM
 #include "Debug.h"
 
 template <class T>
 ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
-  CPrintf("ComputeHomeTuples::ComputeHomeTuples(%d) -- starting\n",(int)c);
+  DebugM(1, "ComputeHomeTuples::ComputeHomeTuples(%d) -- starting " << (int)c << endl );
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
 
   maxProxyAtoms = 0;
   dummy = NULL;
-  CPrintf("ComputeHomeTuples::ComputeHomeTuples(%d) -- done\n",(int)c);
+  DebugM(1, "ComputeHomeTuples::ComputeHomeTuples(%d) -- done " << (int)c << endl);
 }
 
 template <class T>
@@ -56,28 +57,25 @@ void ComputeHomeTuples<T>::mapReady() {
 
 
   // Gather all home patches
-  CPrintf("ComputeHomeTuples::mapReady() - Starting Up\n");
+  DebugM(1, "ComputeHomeTuples::mapReady() - Starting Up" << endl );
   HomePatchList *a = patchMap->homePatchList();
   ResizeArrayIter<HomePatchElem> ai(*a);
 
   setNumPatches(a->size());
   tuplePatchList.resize(0);
-  CPrintf("ComputeHomeTuples::mapReady() - Size of the tuplePatchList %d\n",
-	tuplePatchList.size());
+  DebugM(1, "ComputeHomeTuples::mapReady() - Size of the tuplePatchList " << tuplePatchList.size() << endl );
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
     tuplePatchList.add(TuplePatchElem((*ai).p, HOME, cid));
-    CPrintf("ComputeHomeTuples::mapReady() - adding Patch %d to list\n",
-      (*ai).p->getPatchID() );
+    DebugM( 1, "ComputeHomeTuples::mapReady() - adding Patch " << (*ai).p->getPatchID() << " to list" << endl );
   }
 
   /* cycle through each patch */
-  CPrintf("ComputeHomeTuples::mapReady() - iterating over patches to get atoms\n");
+  DebugM(1, "ComputeHomeTuples::mapReady() - iterating over patches to get atoms" << endl);
   for ( ai = ai.begin(); ai != ai.end(); ai++ )
   {
     Patch *p = (*ai).p;
-    CPrintf("ComputeHomeTuples::mapReady() - looking at patch %d\n", 
-      (*ai).p->getPatchID() );
+    DebugM(1, "ComputeHomeTuples::mapReady() - looking at patch " << (*ai).p->getPatchID() << endl );
     AtomIDList &atomID = p->getAtomIDList();
 
     /* cycle through each angle in the patch */
@@ -105,7 +103,7 @@ void ComputeHomeTuples<T>::mapReady() {
 
 template <class T>
 void ComputeHomeTuples<T>::doWork() {
-  CPrintf("ComputeHomeTuples::doWork() -- started\n");
+  DebugM(1, "ComputeHomeTuples::doWork() -- started " << endl );
   // Open Boxes
   ResizeArrayIter<TuplePatchElem> ap(tuplePatchList);
   for (ap = ap.begin(); ap != ap.end(); ap++) {
@@ -125,6 +123,6 @@ void ComputeHomeTuples<T>::doWork() {
     (*ap).positionBox->close(&(*ap).x);
     (*ap).forceBox->close(&(*ap).f);
   }
-  CPrintf("ComputeHomeTuples::doWork() -- done\n");
+  DebugM(1, "ComputeHomeTuples::doWork() -- done" << endl);
 }
 

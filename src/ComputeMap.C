@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.7 1996/11/07 18:06:56 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.8 1996/11/22 01:02:18 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -22,6 +22,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.
 
 #include "ComputeMap.h"
 
+#define MIN_DEBUG_LEVEL 3
 #define DEBUGM 1
 #include "Debug.h"
 
@@ -242,13 +243,16 @@ void ComputeMap::printComputeMap(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/11/07 18:06:56 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.8 $	$Date: 1996/11/22 01:02:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.8  1996/11/22 01:02:18  ari
+ * *** empty log message ***
+ *
  * Revision 1.7  1996/11/07 18:06:56  nealk
  * Changed endl to \n
  *
