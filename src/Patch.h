@@ -16,7 +16,7 @@
 #include "Lattice.h"
 #include "PatchTypes.h"
 
-typedef UniqueSortedArray<ComputeID> ComputeIDList;
+typedef SortedArray<ComputeID> ComputeIDList;
 
 class Compute;
 class Sequencer;

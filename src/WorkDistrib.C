@@ -949,11 +949,10 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   for(int p1=0; p1 <patchMap->numPatches(); p1++) // do the pairs
   {
+    // this only returns half of neighbors, which is what we want
     numNeighbors=patchMap->oneOrTwoAwayNeighbors(p1,oneAway,oneAwayTrans);
     for(j=0;j<numNeighbors;j++)
     {
-      if (p1 < oneAway[j])
-      {
 	int p2 = oneAway[j];
 	int64 numAtoms1 = patchMap->patch(p1)->getNumAtoms();
 	int64 numAtoms2 = patchMap->patch(p2)->getNumAtoms();
@@ -989,9 +988,6 @@ void WorkDistrib::mapComputeNonbonded(void)
 	  patchMap->newCid(p1,cid);
 	  patchMap->newCid(p2,cid);
         }
-
-      }
-	 
     }
   }
 
