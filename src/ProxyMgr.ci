@@ -1,0 +1,13 @@
+extern message InitMsg;
+extern message RegisterProxyMsg;
+extern message ProxyDataMsg;
+extern message ProxyAtomsMsg;
+
+group ProxyMgr
+{
+  entry ProxyMgr(InitMsg *);
+  entry recvRegisterProxy(RegisterProxyMsg *);
+  entry recvProxyData(ProxyDataMsg *);
+  entry recvProxyAtoms(ProxyAtomsMsg *);
+};
+
