@@ -531,6 +531,7 @@ release: all
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	tar cf $(RELEASE_DIR_NAME).tar $(RELEASE_DIR_NAME)
 	gzip $(RELEASE_DIR_NAME).tar
+	file $(RELEASE_FILES)
 
 winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
