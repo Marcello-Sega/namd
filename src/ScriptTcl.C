@@ -549,10 +549,14 @@ static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
   if (ts->A <= 1 || ts->B <= 1 || ts->C <= 1) return 0;
 
   // convert from degrees to radians
-  double cosAB = cos(ts->alpha*DEG2RAD);
-  double sinAB = sin(ts->alpha*DEG2RAD);
-  double cosAC = cos(ts->beta*DEG2RAD);
-  double cosBC = cos(ts->gamma*DEG2RAD);
+  // Try to get exact results when the angles are exactly 90.
+  double epsalpha = DEG2RAD*(ts->alpha-90.0);
+  double epsbeta  = DEG2RAD*(ts->beta-90.0);
+  double epsgamma = DEG2RAD*(ts->gamma-90.0);
+  double cosAB = -sin(epsalpha);
+  double sinAB = cos(epsalpha);
+  double cosAC = -sin(epsbeta);
+  double cosBC = -sin(epsgamma);
 
   // A will lie along the positive x axis.
   // B will lie in the x-y plane
@@ -561,14 +565,14 @@ static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
   A.x = ts->A;
   B.x = ts->B*cosAB;
   B.y = ts->B*sinAB;
-  if (fabs(B.x) < UNITCELLSLOP) B.x = 0;
-  if (fabs(B.y) < UNITCELLSLOP) B.y = 0;
+  //if (fabs(B.x) < UNITCELLSLOP) B.x = 0;
+  //if (fabs(B.y) < UNITCELLSLOP) B.y = 0;
   vecC.x = ts->C * cosAC;
   vecC.y = (ts->B*ts->C*cosBC - B.x*vecC.x)/B.y;
   vecC.z = sqrt(ts->C*ts->C - vecC.x*vecC.x - vecC.y*vecC.y);
-  if (fabs(vecC.x) < UNITCELLSLOP) vecC.x = 0;
-  if (fabs(vecC.y) < UNITCELLSLOP) vecC.y = 0;
-  if (fabs(vecC.z) < UNITCELLSLOP) vecC.z = 0;
+  //if (fabs(vecC.x) < UNITCELLSLOP) vecC.x = 0;
+  //if (fabs(vecC.y) < UNITCELLSLOP) vecC.y = 0;
+  //if (fabs(vecC.z) < UNITCELLSLOP) vecC.z = 0;
   lattice->set(A, B, vecC, Vector(0));
   return 1;
 }
