@@ -14,12 +14,6 @@
   #include "ComputeNonbondedUtil.h"
 #endif // )
 
-// only define this when using hydrogen grouping code.
-// don't define this if you want the original code.
-#if 1
-  #define HGROUPING(X) X
-#endif
-
 // determining class name
 #undef NAME
 #undef CLASS
@@ -154,10 +148,7 @@ void ComputeNonbondedUtil :: NAME
   // Probably makes things slower in exclusion mode, though.
 
   register const BigReal cutoff2 = ComputeNonbondedUtil:: cutoff2;
-  HGROUPING
-  (
   register const BigReal groupcutoff2 = ComputeNonbondedUtil:: groupcutoff2;
-  )
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
 
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
@@ -209,8 +200,6 @@ NOEXCL
     if ( all_fixed ) return;
   }
 
-  HGROUPING
-  (
   SELF( int j_hgroup = 0; )
   int pairlistindex=0;
   static int pairlist_std[1001];
@@ -229,7 +218,6 @@ NOEXCL
 	pairlist = pairlist_std;
 	pairlist[1000] = 0;
 	}
-  )
 
   // for speeding up the for-loop
   const AtomProperties *a_0 = params->a[0];
@@ -266,8 +254,6 @@ NOEXCL
     FAST( Force & f_i = f_0[i]; )
     FULL( Force & fullf_i = fullf_0[i]; )
 
-  HGROUPING
-  (
   if (a_i.nonbondedGroupSize) // if hydrogen group parent
     {
     SELF
@@ -381,7 +367,6 @@ NOEXCL
     // pair-comparisions use entire list (pairlistoffset is 0)
     else pairlistoffset++;
     )
-  )
 
     const int atomfixed = ( a_i.flags & ATOM_FIXED );
 
@@ -390,23 +375,17 @@ NOEXCL
 
     register const Position *p_j = p_1;
 
-    HGROUPING
-    (
-      if ( pairlistoffset < pairlistindex ) p_j += pairlist[pairlistoffset];
-    )
+    if ( pairlistoffset < pairlistindex ) p_j += pairlist[pairlistoffset];
 
     register BigReal p_j_x = p_j->x;
     register BigReal p_j_y = p_j->y;
     register BigReal p_j_z = p_j->z;
 
-    HGROUPING
-    (
     for (int k=pairlistoffset; k<pairlistindex; k++)
     {
       j = pairlist[k];
       // don't worry about [k+1] going beyond array since array is 1 too large
       p_j += pairlist[k+1]-j; // preload
-    )
       register const BigReal p_ij_x = p_i_x - p_j_x;
       p_j_x = p_j->x;					// preload
       register const BigReal p_ij_y = p_i_y - p_j_y;
@@ -783,7 +762,7 @@ NOEXCL
 (
     } // for pairlist
   } // for i
-  HGROUPING( if (pairlist != pairlist_std) delete [] pairlist; )
+  if (pairlist != pairlist_std) delete [] pairlist;
 )
 
   FAST
