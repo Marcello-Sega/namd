@@ -733,11 +733,27 @@ void Controller::printEnergies(int step)
       xscFile << endl;
     }
 
-    if (step == 32)
-	startBenchTime = CmiWallTimer();
-    else if (step == 64)
-	iout << iINFO << "Benchmark time per step: "
-	     << (CmiWallTimer() - startBenchTime) / 32. << "\n" << endi;
+    int stepInRun = step - simParams->firstTimestep;
+    if ( stepInRun % simParams->firstLdbStep == 0 )
+    switch ( stepInRun / simParams->firstLdbStep )
+    {
+    case 0:
+      startBenchTime = CmiWallTimer();
+      break;
+    case 1:
+      iout << iINFO << "Initial time per step: "
+	   << ( (CmiWallTimer() - startBenchTime) / simParams->firstLdbStep )
+	   << "\n" << endi;
+      break;
+    case 2:
+      startBenchTime = CmiWallTimer();
+      break;
+    case 3:
+      iout << iINFO << "Benchmark time per step: "
+	   << ( (CmiWallTimer() - startBenchTime) / simParams->firstLdbStep )
+	   << "\n" << endi;
+      break;
+    }
 
     if ( simParams->outputTiming && ! ( step % simParams->outputTiming ) )
     {
