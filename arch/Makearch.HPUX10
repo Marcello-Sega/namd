@@ -34,7 +34,7 @@ CXXOPTS = -O -DGLOBALS
 #####
 # definitions for Charm routines
 #####
-CHARM = /Projects/l1/namd.2.0/charm
+CHARM = /Projects/l1/namd.2.0/charm-97.08.25/net-hp-cc
 
 #####
 # Unix commands
