@@ -929,12 +929,10 @@ void ComputePme::sendData(int numRecipPes, int firstDestRecipPe,
 
 void ComputePme::copyResults(PmeGridMsg *msg) {
 
-  // if ( CkMyPe() == 0 ) {
-    energy += msg->energy;
-    for ( int i=0; i<6; ++i ) {
-      virial[i] += msg->virial[i];
-    }
-  // }
+  energy += msg->energy;
+  for ( int j=0; j<6; ++j ) {
+    virial[j] += msg->virial[j];
+  }
   int zdim = myGrid.dim3;
   int flen = msg->len;
   int fstart = msg->start;
