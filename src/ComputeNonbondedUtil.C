@@ -71,7 +71,7 @@ extern "C" {
 extern "C" {
   extern double erfc(double);
 }
-#endif;
+#endif
 
 void ComputeNonbondedUtil::select(void)
 {
