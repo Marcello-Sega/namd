@@ -11,7 +11,7 @@
  *
  *	$RCSfile: SimParameters.C,v $
  *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/11/11 19:54:09 $
+ *	$Revision: 1.3 $	$Date: 1996/11/13 21:35:29 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.3  1996/11/13 21:35:29  nealk
+ * Corrected location of CR and iINFO statements.
+ *
  * Revision 1.2  1996/11/11 19:54:09  nealk
  * Modified to use InfoStream instead of Inform.
  *
@@ -268,7 +271,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.2 1996/11/11 19:54:09 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.3 1996/11/13 21:35:29 nealk Exp $";
 
 #include "ConfigList.h"
 #include "SimParameters.h"
@@ -1367,7 +1370,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    //  Now that we have read everything, print it out so that
    //  the user knows what is going on
    iout << iINFO << "SIMULATION PARAMETERS:\n";
-   iout << iINFO << "TIMESTEP               " << dt << endi;
+   iout << iINFO << "TIMESTEP               " << dt << "\n" << endi;
    iout << iINFO << "NUMBER OF STEPS        " << N << "\n";
    iout << iINFO << "STEPS PER CYCLE        " << stepsPerCycle << "\n";
    if (ldbStrategy==LDBSTRAT_NONE)  {
@@ -1421,11 +1424,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (comMove)
    {
-   	iout << iINFO << "YES\n";
+   	iout << "YES\n";
    }
    else
    {
-   	iout << iINFO << "NO\n";
+   	iout << "NO\n";
    }
 
    iout << iINFO << "DIELECTRIC             " 
@@ -1436,26 +1439,25 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    switch (exclude)
    {
    	case NONE:
-   		iout << iINFO << "NONE\n";
+   		iout << "NONE\n";
    		break;
    	case ONETWO:
-   		iout << iINFO << "ONETWO\n";
+   		iout << "ONETWO\n";
    		break;
    	case ONETHREE:
-   		iout << iINFO << "ONETHREE\n";
+   		iout << "ONETHREE\n";
    		break;
    	case ONEFOUR:
-   		iout << iINFO << "ONE-FOUR\n";
+   		iout << "ONE-FOUR\n";
    		break;
    	default:
-   		iout << iINFO << "SCALED ONE-FOUR\n";
+   		iout << "SCALED ONE-FOUR\n";
    		break;
    }
 
    if (exclude == SCALED14)
    {
-   	iout << iINFO << "1-4 SCALE FACTOR       " 
-   		 << scale14 << endi;
+   	iout << iINFO << "1-4 SCALE FACTOR       " << scale14 << "\n" << endi;
    }
 
    if (dcdFrequency > 0)
@@ -1731,46 +1733,45 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    iout << iINFO << "USE HYDROGEN BONDS?    ";
    if (HydrogenBonds)
    {
-	iout << iINFO << "YES" << endi;
+	iout << "YES\n" << endi;
 	iout << iINFO << "USE ANTECEDENT ATOMS?  ";
-	iout << iINFO << (useAntecedent ? "YES" : "NO");
-        iout << iINFO << "\nHB DIST CUT, ON, OFF   ";
-	iout << iINFO << daCutoffDist << " , " << daOnDist << " , " << daOffDist;
-        iout << iINFO << "\nHB ANGLE CUT, ON, OFF  ";
-	iout << iINFO << dhaCutoffAngle << " , " << dhaOnAngle << " , ";
-	iout << iINFO << dhaOffAngle;
-        iout << iINFO << "\nHB ATT, REP exponents  ";
-	iout << iINFO << distAttExp << " , " << distRepExp;
-        iout << iINFO << "\nHB AA, HA exponents    ";
-	iout << iINFO << aaAngleExp << " , " << haAngleExp;
-	iout << iINFO << endi;
+	iout << (useAntecedent ? "YES" : "NO");
+        iout << "\nHB DIST CUT, ON, OFF   ";
+	iout << daCutoffDist << " , " << daOnDist << " , " << daOffDist;
+        iout << "\nHB ANGLE CUT, ON, OFF  ";
+	iout << dhaCutoffAngle << " , " << dhaOnAngle << " , ";
+	iout << dhaOffAngle;
+        iout << "\nHB ATT, REP exponents  ";
+	iout << distAttExp << " , " << distRepExp;
+        iout << "\nHB AA, HA exponents    ";
+	iout << aaAngleExp << " , " << haAngleExp;
+	iout << "\n" << endi;
    }
    else
    {
-	iout << iINFO << "NO" << endi;
+	iout << iINFO << "NO\n" << endi;
    }
 
 
-   iout << iINFO << "Here we go config->find " << endi;
+   iout << iINFO << "Here we go config->find\n" << endi;
    current = config->find("coordinates");
-   iout << iINFO << "Here done config->find " << endi;
+   iout << iINFO << "Here done config->find\n" << endi;
 
    if ( (cwd == NULL) || (current->data[0] == '/') )
    {
         iout << iINFO << "Here cwd==NULL and current is "
-	<< current->data << endi;
+	<< current->data << '\n' << endi;
    	strcpy(filename, current->data);
    }
    else
    {
-        iout << iINFO << "cwd != NULL and not abs" << endi;
+        iout << iINFO << "cwd != NULL and not abs\n" << endi;
    	strcpy(filename, cwd);
    	strcat(filename, current->data);
    }
 
 
-   iout << iINFO << "COORDINATE PDB         " 
-   	 << filename << endi;
+   iout << iINFO << "COORDINATE PDB         " << filename << '\n' << endi;
 
    if (opts.defined("bincoordinates"))
    {
@@ -1803,7 +1804,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    }
 
    iout << iINFO << "STRUCTURE FILE         " 
-   	 << filename << endi;
+   	 << filename << "\n" << endi;
 
    current = config->find("parameters");
 
@@ -1820,14 +1821,14 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    	}
 
    	iout << iINFO << "PARAMETERS             " 
-   		 << filename << endi;
+   		 << filename << "\n" << endi;
    	current = current->next;
    }
 
    if (firstTimestep)
    {
 	iout << iINFO << "FIRST TIMESTEP         "
-		 << firstTimestep << endi;
+		 << firstTimestep << "\n" << endi;
    }
 
 
