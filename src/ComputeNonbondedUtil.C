@@ -162,7 +162,7 @@ void ComputeNonbondedUtil::select(void)
   pairInteractionOn = simParams->pairInteractionOn;
   pairInteractionSelf = simParams->pairInteractionSelf;
 
-  pressureProfileNonbonded = simParams->pressureProfileNonbonded;
+  pressureProfileNonbonded = simParams->pressureProfileOn && simParams->pressureProfileNonbonded;
   if (pressureProfileNonbonded) {
     pressureProfileSlabs = simParams->pressureProfileSlabs;
     pressureProfileThickness = simParams->pressureProfileThickness;
