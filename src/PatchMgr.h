@@ -30,22 +30,21 @@ class MovePatchesMsg : public comm_object {
 public:
     NodeID  fromNodeID;
     PatchID pid;
-    AtomIDList *aid;
-    PositionList *p;
-    VelocityList *v;
+    AtomIDList aid;
+    PositionList p;
+    VelocityList v;
+
+    MovePatchesMsg(void) { ; }
 
     MovePatchesMsg(PatchID n, AtomIDList a, PositionList pl, VelocityList vl) : 
-      pid(n) {
+      pid(n), aid(a), p(pl), v(vl)
+    {
       fromNodeID = CMyPe();
-      aid = new AtomIDList(a);
-      p = new PositionList(pl);
-      v = new VelocityList(vl);
     }
-    ~MovePatchesMsg() {
-      delete aid;
-      delete p;
-      delete v;
-    };
+
+  void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
+  void * operator new(size_t s) { return comm_object::operator new(s); }
+  void * operator new(size_t, void *ptr) { return ptr; }
 
   // pack and unpack functions
   void * pack (int *length);
@@ -177,12 +176,15 @@ private:
  *
  *	$RCSfile: PatchMgr.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/13 08:56:04 $
+ *	$Revision: 1.8 $	$Date: 1996/12/16 23:46:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.h,v $
+ * Revision 1.8  1996/12/16 23:46:01  jim
+ * added placement new and explicit destructor calls to message
+ *
  * Revision 1.7  1996/12/13 08:56:04  jim
  * move pack and unpack into C file, eliminated need for constructor
  * before unpack or destructor after pack

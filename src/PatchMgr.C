@@ -11,7 +11,7 @@
 /*								           */
 /***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.7 1996/12/13 08:56:04 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.C,v 1.8 1996/12/16 23:46:01 jim Exp $";
 
 
 #include "ckdefs.h"
@@ -114,11 +114,11 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
      DebugM(1,"received patch " << msg->pid << " from node "
 		<< msg->fromNodeID << ".\n");
      DebugM(1,"recvMovePatches() - creating patch " << msg->pid << ".\n");
-     DebugM(1,"aid.size() = " << msg->aid->size() << "\n");
-     DebugM(1,"p.size() = " << msg->p->size() << "\n");
-     DebugM(1,"v.size() = " << msg->v->size() << "\n");
+     DebugM(1,"aid.size() = " << msg->aid.size() << "\n");
+     DebugM(1,"p.size() = " << msg->p.size() << "\n");
+     DebugM(1,"v.size() = " << msg->v.size() << "\n");
     // Make a new HomePatch
-    createHomePatch(msg->pid, *(msg->aid), *(msg->p), *(msg->v));
+    createHomePatch(msg->pid, msg->aid, msg->p, msg->v);
     delete msg;
 }
     
@@ -133,45 +133,44 @@ void PatchMgr::ackMovePatches(AckMovePatchesMsg *msg)
 
 void * MovePatchesMsg::pack (int *length)
   {
-    DebugM(1,"MovePatchesMsg::pack() - aid->size() = " << aid->size() << endl);
-    DebugM(1,"MovePatchesMsg::pack() - p->size() = " << p->size() << endl);
-    DebugM(1,"MovePatchesMsg::pack() - v->size() = " << v->size() << endl);
+    DebugM(1,"MovePatchesMsg::pack() - aid.size() = " << aid.size() << endl);
+    DebugM(1,"MovePatchesMsg::pack() - p.size() = " << p.size() << endl);
+    DebugM(1,"MovePatchesMsg::pack() - v.size() = " << v.size() << endl);
     *length = sizeof(NodeID) + sizeof(PatchID) + sizeof(int) +
-		aid->size() * sizeof(AtomID) +
-		p->size() * sizeof(Position) +
-		v->size() * sizeof(Velocity);
+		aid.size() * sizeof(AtomID) +
+		p.size() * sizeof(Position) +
+		v.size() * sizeof(Velocity);
     char *buffer = (char*)new_packbuffer(this,*length);
     char *b = buffer;
     *((NodeID*)b) = fromNodeID; b += sizeof(NodeID);
     *((PatchID*)b) = pid; b += sizeof(PatchID);
-    *((int*)b) = aid->size(); b += sizeof(int);
-    for ( int i = 0; i < aid->size(); i++ )
+    *((int*)b) = aid.size(); b += sizeof(int);
+    for ( int i = 0; i < aid.size(); i++ )
     {
-      *((AtomID*)b) = (*aid)[i]; b += sizeof(AtomID);
-      *((Position*)b) = (*p)[i]; b += sizeof(Position);
-      *((Velocity*)b) = (*v)[i]; b += sizeof(Velocity);
+      *((AtomID*)b) = aid[i]; b += sizeof(AtomID);
+      *((Position*)b) = p[i]; b += sizeof(Position);
+      *((Velocity*)b) = v[i]; b += sizeof(Velocity);
     }
-    aid = NULL;
-    p = NULL;
-    v = NULL;
+    this->~MovePatchesMsg();
     return buffer;
   }
 
 void MovePatchesMsg::unpack (void *in)
   {
+    new((void*)this) MovePatchesMsg;
     char *b = (char*)in;
     fromNodeID = *((NodeID*)b); b += sizeof(NodeID);
     pid = *((PatchID*)b); b += sizeof(PatchID);
     int size = *((int*)b); b += sizeof(int);
     DebugM(1,"MovePatchesMsg::unpack() - size = " << size << endl);
-    aid = new AtomIDList; aid->resize(size);
-    p = new PositionList; p->resize(size);
-    v = new VelocityList; v->resize(size);
+    aid.resize(size);
+    p.resize(size);
+    v.resize(size);
     for ( int i = 0; i < size; i++ )
     {
-      (*aid)[i] = *((AtomID*)b); b += sizeof(AtomID);
-      (*p)[i] = *((Position*)b); b += sizeof(Position);
-      (*v)[i] = *((Velocity*)b); b += sizeof(Velocity);
+      aid[i] = *((AtomID*)b); b += sizeof(AtomID);
+      p[i] = *((Position*)b); b += sizeof(Position);
+      v[i] = *((Velocity*)b); b += sizeof(Velocity);
     }
   }
 
@@ -183,11 +182,14 @@ void MovePatchesMsg::unpack (void *in)
  *
  *	$RCSfile: PatchMgr.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1996/12/13 08:56:04 $
+ *	$Revision: 1.8 $	$Date: 1996/12/16 23:46:01 $
  *
  * REVISION HISTORY:
  *
  * $Log: PatchMgr.C,v $
+ * Revision 1.8  1996/12/16 23:46:01  jim
+ * added placement new and explicit destructor calls to message
+ *
  * Revision 1.7  1996/12/13 08:56:04  jim
  * move pack and unpack into C file, eliminated need for constructor
  * before unpack or destructor after pack
