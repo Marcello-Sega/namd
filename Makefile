@@ -102,6 +102,7 @@ OBJS = \
 	$(DSTDIR)/ComputeGlobalEasy.o \
 	$(DSTDIR)/ComputeGlobalMaster.o \
 	$(DSTDIR)/ComputeGlobalMsgs.o \
+	$(DSTDIR)/ComputeIMD.o \
 	$(DSTDIR)/ComputeMap.o \
 	$(DSTDIR)/ComputeMisc.o \
 	$(DSTDIR)/ComputeMgr.o \
@@ -133,6 +134,7 @@ OBJS = \
 	$(DSTDIR)/heap.o \
 	$(DSTDIR)/HomePatch.o \
 	$(DSTDIR)/HBondParam.o \
+	$(DSTDIR)/IMDOutput.o \
 	$(DSTDIR)/Inform.o \
 	$(DSTDIR)/InfoStream.o \
 	$(DSTDIR)/IntTree.o \
@@ -175,8 +177,9 @@ OBJS = \
 	$(DSTDIR)/TestController.o \
 	$(DSTDIR)/TestSequencer.o \
 	$(DSTDIR)/VoidTree.o \
-	$(DSTDIR)/WorkDistrib.o
-
+	$(DSTDIR)/WorkDistrib.o \
+	$(DSTDIR)/vmdsock.o \
+	$(DSTDIR)/imd.o
 # Add new modules here and also define explicit rule below.
 
 CIFILES = 	\

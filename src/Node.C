@@ -27,6 +27,7 @@
 
 #include "unistd.h"
 
+#include "IMDOutput.h"
 #include "main.decl.h"
 #include "main.h"
 #include "WorkDistrib.h"
@@ -103,6 +104,7 @@ Node::Node(GroupInitMsg *msg)
   output = NULL;
   smdData = NULL;
   script = NULL;
+  imd = NULL;
 
   Compute::setNode(this);
 
@@ -245,6 +247,10 @@ void Node::namdOneCommInit()
     CpvAccess(comm) = new Communicate();
     pvmc_init();
   }
+}
+
+void Node::IMDinit(void *v) {
+  imd = new IMDOutput(v);
 }
 
 // Namd 1.X style Send/Recv of simulation information
@@ -468,13 +474,16 @@ void Node::recvSMDData(SMDDataMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: Node.C,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1036 $	$Date: 1999/08/13 22:57:01 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1037 $	$Date: 1999/08/16 22:19:35 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1037  1999/08/16 22:19:35  jim
+ * Incorporated Justin's interactive MD code.
+ *
  * Revision 1.1036  1999/08/13 22:57:01  brunner
  * Added ccs files.  They are all currently disabled by ifdef NAMDCCS
  *

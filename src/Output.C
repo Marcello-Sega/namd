@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "IMDOutput.h"
 #include "Output.h"
 #include "dcdlib.h"
 #include "strlib.h"
@@ -342,6 +343,11 @@ int Output::coordinateNeeded(int timestep)
         }
 #endif
 
+  if (simParams->IMDon) 
+    if (( timestep % simParams->IMDfreq) ||
+        ( timestep == simParams->firstTimestep)) 
+      positionsNeeded = 1;
+ 
   return positionsNeeded;
 }
 
@@ -388,6 +394,15 @@ void Output::coordinate(int timestep, int n, Vector *coor)
     gather_vmd_coords(timestep, n, coor);
         }
 #endif
+  if (simParams->IMDon) {
+    if (( timestep % simParams->IMDfreq) ||
+        ( timestep == simParams->firstTimestep)) {
+      IMDOutput *imd = Node::Object()->imd;
+      if (imd != NULL)
+        imd->gather_coordinates(timestep, n, coor);
+      }
+  }
+
 }
 /*    END OF FUNCTION coordinate        */
 
@@ -2576,12 +2591,15 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *  $RCSfile: Output.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.20 $  $Date: 1999/06/21 16:15:33 $
+ *  $Revision: 1.21 $  $Date: 1999/08/16 22:19:40 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.21  1999/08/16 22:19:40  jim
+ * Incorporated Justin's interactive MD code.
+ *
  * Revision 1.20  1999/06/21 16:15:33  jim
  * Improved scripting, run now ends and generates output.
  *

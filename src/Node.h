@@ -44,6 +44,7 @@ class LdbCoordinator;
 class SMDData;
 class SMDDataMsg;
 class ScriptTcl;
+class IMDOutput;
 
 #define MAX_SCRIPT_PARAM_SIZE 128
 class ScriptParamMsg : public CMessage_ScriptParamMsg {
@@ -91,6 +92,9 @@ public:
   // Utility for storing away simulation data for Node
   void saveMolDataPointers(NamdState *);
 
+  // Init the socket connect for imd
+  void IMDinit(void *);
+
   // Deal with SMD data message
   void sendSMDData(SMDDataMsg *);
   void recvSMDData(SMDDataMsg *);
@@ -104,6 +108,7 @@ public:
   NamdState *state;
   Output *output;
   SMDData *smdData;
+  IMDOutput *imd;
 
   // Remove these calls?
   int myid() { return CkMyPe(); }
@@ -149,12 +154,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1014 $	$Date: 1999/06/02 15:14:21 $
+ *	$Revision: 1.1015 $	$Date: 1999/08/16 22:19:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.h,v $
+ * Revision 1.1015  1999/08/16 22:19:38  jim
+ * Incorporated Justin's interactive MD code.
+ *
  * Revision 1.1014  1999/06/02 15:14:21  jim
  * Now waits for output files to be written before halting.
  *

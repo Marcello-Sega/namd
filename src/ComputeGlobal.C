@@ -35,6 +35,7 @@
 #include "FreeEnergyParse.h"
 //----------------------------------------------------------
 #include "ComputeMDComm.h"
+#include "ComputeIMD.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
@@ -67,7 +68,8 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   if ( CkMyPe() ) master = 0;
   else {
     SimParameters * simParams = Node::Object()->simParameters;
-    if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
+    if (simParams->IMDon) master = new ComputeIMD(this);
+    else if ( simParams->tclForcesOn ) master = new ComputeTcl(this);
     else if ( simParams->miscForcesOn ) master = new ComputeMisc(this);
     else if ( simParams->freeEnergyOn ) master = new ComputeFreeEnergy(this);
 #ifdef MDCOMM
@@ -233,12 +235,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.13 $	$Date: 1999/06/03 16:50:07 $
+ *	$Revision: 1.14 $	$Date: 1999/08/16 22:19:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.14  1999/08/16 22:19:08  jim
+ * Incorporated Justin's interactive MD code.
+ *
  * Revision 1.13  1999/06/03 16:50:07  jim
  * Added simplified interface to ComputeGlobal mechanism.
  *

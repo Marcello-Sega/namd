@@ -395,6 +395,10 @@ public:
 	// on/off distances for hbond radial term switching function
 	BigReal daCutoffDist, daOnDist, daOffDist;
 
+	// IMD parameters
+	int IMDon;
+	int IMDport;
+ 	int IMDfreq;
 
 public:
 
@@ -451,12 +455,15 @@ private:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1040 $	$Date: 1999/06/17 19:03:48 $
+ *	$Revision: 1.1041 $	$Date: 1999/08/16 22:19:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1041  1999/08/16 22:19:48  jim
+ * Incorporated Justin's interactive MD code.
+ *
  * Revision 1.1040  1999/06/17 19:03:48  jim
  * SimParameters is now sent by bit-copy rather than by member.
  *

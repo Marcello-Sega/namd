@@ -1,0 +1,131 @@
+
+#include "vmdsock.h"
+#include "Node.h"
+#include "imd.h"
+#include "SimParameters.h"
+#include "ComputeGlobal.h"
+#include "ComputeGlobalMsgs.h"
+#include "ComputeIMD.h"
+#include "ComputeMgr.h"
+#include <errno.h>
+
+ComputeIMD::ComputeIMD(ComputeGlobal *h)
+: ComputeGlobalMaster(h) {
+  configMsg = 0;
+  resultsMsg = 0;
+  num_vmd_atoms = 0;
+  vmd_atoms = NULL;
+  vmd_forces = NULL;
+
+  SimParameters *simparams = Node::Object()->simParameters;
+  int port = simparams->IMDport;
+
+  sock = vmdsock_create();
+  int rc = vmdsock_bind(sock, port);
+  if (rc < 0) {
+    vmdsock_destroy(sock);
+    NAMD_die("Unable to connect to given IMDport\n");
+  }
+  else {
+    rc = vmdsock_listen(sock); 
+    // Wait for VMD to connect
+    iout << iINFO << "Waiting for VMD to bind to port "<<port<<'\n'<<endi;
+    while (!vmdsock_selread(sock));
+    errno = 0;
+    rc = vmdsock_accept(sock);
+    iout << "accept: " << strerror(errno) << '\n' << endi;
+  }
+  Node::Object()->IMDinit(sock);
+
+}
+
+ComputeIMD::~ComputeIMD() {
+  if (sock) 
+    vmdsock_destroy(sock);
+}
+
+void ComputeIMD::initialize() {
+  configMsg = new ComputeGlobalConfigMsg;
+
+  host->comm->sendComputeGlobalConfig(configMsg);
+  configMsg = 0;
+}
+
+void ComputeIMD::calculate() {
+  // Assume for now that the only thing we get from VMD is a set of forces.
+  // Later we'll want to look for and implement more sophisticated control
+  // parameters. 
+ 
+  resultsMsg = new ComputeGlobalResultsMsg;
+  resultsMsg->gforce.resize(gmass.size());
+
+  // Check/get new forces from VMD
+  if (get_vmd_forces()) {
+
+    // Copy the forces from this class' member data into a ComputeGlobalMsg
+    // and send it out.  These resize arrays are lame; if they were just 
+    // pointers I could do a memcpy and call it a day.
+
+    resultsMsg->aid.resize(num_vmd_atoms);
+    resultsMsg->f.resize(num_vmd_atoms);
+    int i;
+    AtomIDList::iterator aid_i = resultsMsg->aid.begin();
+    ForceList::iterator f_i = resultsMsg->f.begin();
+    for ( i = 0; i < num_vmd_atoms; ++i ) {
+      aid_i[i] = vmd_atoms[i];
+      f_i[i].x = vmd_forces[3*i];
+      f_i[i].y = vmd_forces[3*i+1];
+      f_i[i].z = vmd_forces[3*i+2];
+    }
+  }
+  // Send results to clients
+  host->comm->sendComputeGlobalResults(resultsMsg);
+  resultsMsg = 0;
+}
+
+int ComputeIMD::get_vmd_forces() {
+  char *buf;
+  IMDHeaderType htype;
+  int hlength;
+  int hsize; 
+  int retval = 0;
+  while (vmdsock_selread(sock))  {     // Drain the socket
+    errno = 0;
+    imd_readheader(sock, &htype, &hlength, &hsize); 
+    iout << iDEBUG << "get_vmd_forces, readheader: " << strerror(errno) 
+          << '\n' << endi;
+    iout << iDEBUG << "htype="<<htype<<"\thsize="<<hsize
+         <<"\thlength="<<hlength<<'\n'<<endi;
+    // interpret header
+    switch (htype) {
+      case MDCOMM:
+        // Expect the msglength to give number of indicies, and the data
+        // message to consist of first the indicies, then the coordinates
+        // in xyz1 xyz2... format.
+        if (num_vmd_atoms < hlength) { // need to resize
+          delete [] vmd_atoms;
+          delete [] vmd_forces;
+          vmd_atoms = new int[hlength];
+          vmd_forces = new float[hlength*3];
+          num_vmd_atoms = hlength;
+        }
+ 	errno = 0;
+        imd_blockread(sock, (char *)vmd_atoms, num_vmd_atoms * sizeof(int));
+        iout << iDEBUG << "get_vmd_forces, indicies: " << strerror(errno) 
+             << '\n' << endi;
+ 	errno = 0;
+        imd_blockread(sock, (char *)vmd_forces, num_vmd_atoms*3*sizeof(float));
+        iout << iDEBUG << "get_vmd_forces, forces: " << strerror(errno) 
+             << '\n' << endi;
+        retval = 1;
+        break;
+      default:
+        iout << iWARN << "ComputeIMD: Unsupported header received \n "<<endi;
+        buf = new char[hsize];
+        imd_blockread(sock,buf,hsize);
+        delete [] buf; 
+    }
+  }
+  return retval;
+}
+

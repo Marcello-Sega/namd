@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1074 $  $Date: 1999/08/11 16:53:12 $
+ *  $Revision: 1.1075 $  $Date: 1999/08/16 22:19:43 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1075  1999/08/16 22:19:43  jim
+ * Incorporated Justin's interactive MD code.
+ *
  * Revision 1.1074  1999/08/11 16:53:12  jim
  * Added move command to TCL scripting.
  *
@@ -1443,6 +1446,12 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("hbOffDist", POSITIVE);
    opts.units("hbOffDist", N_ANGSTROM);
 
+   // IMD options
+   opts.optionalB("main","IMDon","Connect using IMD?",&IMDon, FALSE);
+   opts.require("IMDon","IMDport", "Port to which to bind", &IMDport);
+   opts.range("IMDport",POSITIVE);
+   opts.require("IMDon","IMDfreq", "Frequency at which to report", &IMDfreq);
+   opts.range("IMDfreq",POSITIVE);
 }
 
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
@@ -2928,7 +2937,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    // Global forces configuration
 
-   globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn );
+   globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn || IMDon );
 
 #ifdef MDCOMM
    if ( vmdFrequency != -1 ) globalForcesOn = 1;
@@ -3047,6 +3056,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "TCL SCRIPT   " << filename << "\n";
 
      }
+     iout << endi;
+   }
+
+   if (IMDon)
+   {
+     iout << iINFO << "INTERACTIVE MD ACTIVE\n";
+     iout << iINFO << "INTERACTIVE MD PORT    " << IMDport << "\n";
+     iout << iINFO << "INTERACTIVE MD FREQ    " << IMDfreq << "\n";
      iout << endi;
    }
 
@@ -3532,12 +3549,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1074 $  $Date: 1999/08/11 16:53:12 $
+ *  $Revision: 1.1075 $  $Date: 1999/08/16 22:19:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1075  1999/08/16 22:19:43  jim
+ * Incorporated Justin's interactive MD code.
+ *
  * Revision 1.1074  1999/08/11 16:53:12  jim
  * Added move command to TCL scripting.
  *

@@ -1088,6 +1088,7 @@ obj/ComputeGlobal.o: \
 	src/ComputeFreeEnergy.h \
 	src/FreeEnergyParse.h \
 	src/ComputeMDComm.h \
+	src/ComputeIMD.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
 	src/MigrateAtomsMsg.h \
@@ -1257,6 +1258,55 @@ obj/ComputeGlobalMsgs.o: \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) -o obj/ComputeGlobalMsgs.o -c src/ComputeGlobalMsgs.C
+obj/ComputeIMD.o: \
+	src/ComputeIMD.C \
+	src/vmdsock.h \
+	src/Node.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
+	inc/BroadcastMgr.decl.h \
+	src/ProcessorPrivate.h \
+	src/imd.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
+	src/Lattice.h \
+	src/ComputeGlobal.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/PatchTypes.h \
+	src/ComputeGlobalMsgs.h \
+	src/ComputeIMD.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeMgr.h
+	$(CXX) $(CXXFLAGS) -o obj/ComputeIMD.o -c src/ComputeIMD.C
 obj/ComputeMap.o: \
 	src/ComputeMap.C \
 	src/ComputeMap.h \
@@ -2460,6 +2510,15 @@ obj/HBondParam.o: \
 	src/ResizeArrayPrimIter.h \
 	src/Inform.h
 	$(CXX) $(CXXFLAGS) -o obj/HBondParam.o -c src/HBondParam.C
+obj/IMDOutput.o: \
+	src/IMDOutput.C \
+	src/IMDOutput.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/imd.h \
+	src/Vector.h \
+	src/vmdsock.h
+	$(CXX) $(CXXFLAGS) -o obj/IMDOutput.o -c src/IMDOutput.C
 obj/Inform.o: \
 	src/Inform.C \
 	src/common.h \
@@ -2846,6 +2905,7 @@ obj/Node.o: \
 	src/ProcessorPrivate.h \
 	src/Namd.h \
 	src/Debug.h \
+	src/IMDOutput.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/PatchMap.h \
@@ -2908,9 +2968,10 @@ obj/Node.o: \
 	$(CXX) $(CXXFLAGS) -o obj/Node.o -c src/Node.C
 obj/Output.o: \
 	src/Output.C \
-	src/Output.h \
+	src/IMDOutput.h \
 	src/common.h \
 	src/InfoStream.h \
+	src/Output.h \
 	src/mdcomm.h \
 	src/dcdlib.h \
 	src/strlib.h \
@@ -3846,3 +3907,12 @@ obj/WorkDistrib.o: \
 	src/Debug.h \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) -o obj/WorkDistrib.o -c src/WorkDistrib.C
+obj/vmdsock.o: \
+	src/vmdsock.C \
+	src/vmdsock.h
+	$(CXX) $(CXXFLAGS) -o obj/vmdsock.o -c src/vmdsock.C
+obj/imd.o: \
+	src/imd.C \
+	src/imd.h \
+	src/vmdsock.h
+	$(CXX) $(CXXFLAGS) -o obj/imd.o -c src/imd.C
