@@ -32,8 +32,6 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processors[i].computeLoad = 0;
    }
 
-   InitProxyUsage();
-
    for (i=0; i<nPatches; i++)
    {
       if (!patches[i].proxiesOn.find(&(processors[patches[i].processor]))) 
@@ -43,6 +41,8 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       }
       processors[patches[i].processor].patchSet.insert(&patches[i]);
    }		          
+
+   InitProxyUsage();
 
    for (i=0; i<numComputes; i++)
       computeArray[i].processor = -1;
@@ -60,7 +60,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    }
 
    // iout << iINFO << "Initial load" << "\n";
-   // printLoads();
+   printLoads();
 
    for(i=0;i<P; i++)
    {
@@ -89,6 +89,11 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    // 
    // iout << iINFO <<"\n" << endi;
    // strategy();
+
+   // for (i=0; i<nPatches; i++)
+   // {
+   //    iout << "patch " << i << " on processor " << patches[i].processor << "\n" << endi;
+   // }
 }
 
 Rebalancer::~Rebalancer()
@@ -104,8 +109,9 @@ Rebalancer::~Rebalancer()
 // no computes are accessing it, the proxy can be removed in DeAssign
 void Rebalancer::InitProxyUsage()
 {
-   for(int i=0; i<P; i++)
-   {
+   int i;
+
+   for(i=0; i<P; i++) {
       processors[i].proxyUsage = new int[numPatches];
       for(int j=0; j<numPatches; j++)
       {
@@ -134,6 +140,17 @@ void Rebalancer::InitProxyUsage()
          c = (computeInfo *) processors[i].computeSet.next((Iterator *)&nextCompute);
       }
    }
+
+  for (i=0; i<numPatches; i++)
+  {
+      Iterator nextProc;
+      processorInfo *p = (processorInfo *)patches[i].proxiesOn.iterator((Iterator *)&nextProc);
+      while (p) {
+          p->proxyUsage[i] += 1;
+          p = (processorInfo *)patches[i].proxiesOn.next((Iterator*)&nextProc);
+      }
+  }
+
 }
 
 
@@ -161,8 +178,8 @@ void Rebalancer::makeHeaps()
       for (j=0; j<numComputes; j++) 
       {
          int count = 0;
-         if ( (patches[computes[j].patch1].processor = i) ) count ++;
-         if ( (patches[computes[j].patch2].processor = i) ) count ++;
+         if ( (patches[computes[j].patch1].processor == i) ) count ++;
+         if ( (patches[computes[j].patch2].processor == i) ) count ++;
       }
    }
 }
@@ -529,14 +546,14 @@ void Rebalancer::printLoads()
       Iterator p;
       int count = 0;
     
-      patchInfo *patch = (patchInfo *) processors[i].patchSet->iterator(&p);
+      patchInfo *patch = (patchInfo *) processors[i].patchSet.iterator(&p);
       while (patch)
       {
          int myProxies;
          myProxies = patch->proxiesOn.numElements()-1;
          numBytes += myProxies *patch->numAtoms*bytesPerAtom;
          count += myProxies;
-         patch = (patchInfo *)processors[i].patchSet->next(&p);
+         patch = (patchInfo *)processors[i].patchSet.next(&p);
       }
       total += count;
 

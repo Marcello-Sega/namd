@@ -37,13 +37,13 @@ void Alg7::strategy()
   computeAverage();
   //   iout << iINFO
   //	<< "Before assignment\n" << endi;
-  //   printLoads();
+     printLoads();
 	      
   numAssigned = 0;
 
   //   for (int i=0; i<numPatches; i++)
   //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
-  overLoad = 1.2;
+  overLoad = 1.1;
   for (int ic=0; ic<numComputes; ic++) {
     c = (computeInfo *) computesHeap->deleteMax();
     if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
@@ -87,13 +87,36 @@ void Alg7::strategy()
      || (p = goodP[1][0])    // One home, no proxies
      || (p = goodP[0][1])    // No home, one proxy
      || (p = goodP[0][0])    // No home, no proxies
-     || (p = poorP[2][0])    // Two home, no proxies, overload
+       ) {
+/*
+      iout << "load " << c->load << " to "
+			<< p->Id << " " << p->load << " : "
+#define PRMAP(X) ((X)?(X)->Id:-1)
+      << PRMAP(goodP[2][0]) << " "
+      << PRMAP(goodP[1][1]) << " "
+      << PRMAP(goodP[0][2]) << " "
+      << PRMAP(goodP[1][0]) << " "
+      << PRMAP(goodP[0][1]) << " "
+      << PRMAP(goodP[0][0]) << " "
+      << " "
+      << PRMAP(poorP[2][0]) << " "
+      << PRMAP(poorP[1][1]) << " "
+      << PRMAP(poorP[0][2]) << " "
+      << PRMAP(poorP[1][0]) << " "
+      << PRMAP(poorP[0][1]) << " "
+      << PRMAP(poorP[0][0]) << " "
+      << "\n" << endi;
+*/
+      assign(c,p); numAssigned++;
+   } else if (
+        (p = poorP[2][0])    // Two home, no proxies, overload
      || (p = poorP[1][1])    // One home, one proxy, overload
      || (p = poorP[0][2])    // No home, two proxies, overload
      || (p = poorP[1][0])    // One home, no proxies, overload
      || (p = poorP[0][1])    // No home, one proxy, overload
      || (p = poorP[0][0])    // No home, no proxies, overload
        ) {
+      iout << iWARN << "overload assign to " << p->Id << "\n" << endi;
       assign(c,p); numAssigned++;
     } else {
       NAMD_bug("*** Alg 7 No receiver found 1 ***");
@@ -102,9 +125,11 @@ void Alg7::strategy()
 
   }
 
+  printLoads();
 
   // binary-search refinement procedure
   multirefine();
+  printLoads();
 
   CmiPrintf("Alg7 finish time: %f.\n", CmiWallTimer()-startTime);
 }
