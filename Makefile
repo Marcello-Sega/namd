@@ -207,7 +207,8 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(DPMELIB) \
 	$(PVMLIB) \
 	$(MDCOMMLIB) \
-	$(TCLLIB)
+	$(TCLLIB) \
+	$(FFTWLIB)
 
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) -o flipdcd $(SRCDIR)/flipdcd.c
@@ -229,7 +230,8 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(DPMELIB) \
 	$(PVMLIB) \
 	$(MDCOMMLIB) \
-	$(TCLLIB)
+	$(TCLLIB) \
+	$(FFTWLIB)
 
 # Now sit back, have a coke, and relax.
 
