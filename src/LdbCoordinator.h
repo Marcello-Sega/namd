@@ -100,6 +100,7 @@ public:
   int ldbCycleNum;
   int nLdbSteps;
   int firstLdbStep;
+  int takingLdbData;
   int nodesDone;
 
   FILE *ldbStatsFP;

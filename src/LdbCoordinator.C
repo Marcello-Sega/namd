@@ -97,6 +97,7 @@ LdbCoordinator::LdbCoordinator()
   }
 
   ldbCycleNum = 1;
+  takingLdbData = 1;
   nLocalComputes = nLocalPatches = 0;
   patchNAtoms = (int *) NULL;
   sequencerThreads = (Sequencer **) NULL;
@@ -273,13 +274,17 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   // Fixup to take care of the extra timestep at startup
   // This is pretty ugly here, but it makes the count correct
-  if ((ldbCycleNum==1) || (ldbCycleNum == 2))
+  if ((ldbCycleNum==1) || (ldbCycleNum == 2) || (! takingLdbData))
   {
     nLdbSteps = firstLdbStep;
+    takingLdbData = 1;
+    theLbdb->CollectStatsOn();
   }
   else 
   {
-    nLdbSteps = stepsPerLdbCycle;
+    nLdbSteps = stepsPerLdbCycle - firstLdbStep;
+    takingLdbData = 0;
+    theLbdb->CollectStatsOff();
   }
 
   nPatchesReported = 0;

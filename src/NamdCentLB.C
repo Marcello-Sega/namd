@@ -12,6 +12,7 @@
 #include "Node.h"
 #include "PatchMap.h"
 #include "ComputeMap.h"
+#include "LdbCoordinator.h"
 
 void CreateNamdCentLB()
 {
@@ -29,7 +30,11 @@ NamdCentLB::NamdCentLB()
 CmiBool NamdCentLB::QueryBalanceNow(int _step)
 {
   //  CkPrintf("[%d] Balancing on step %d\n",CkMyPe(),_step);
-  return CmiTrue;
+  if ( LdbCoordinator::Object()->takingLdbData ) {
+    return CmiTrue;
+  } else {
+    return CmiFalse;
+  }
 }
 
 CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
