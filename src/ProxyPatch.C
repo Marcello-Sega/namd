@@ -12,7 +12,7 @@
  ***************************************************************************/
 
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1015 1997/08/26 16:26:16 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.C,v 1.1016 1997/09/28 10:19:07 milind Exp $";
 
 #include "ckdefs.h"
 #include "chare.h"
@@ -24,7 +24,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ProxyPatch.
 #include "ProxyMgr.top.h"
 #include "ProxyMgr.h"
 #include "AtomMap.h"
-#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define  DEBUGM
@@ -107,15 +106,12 @@ void ProxyPatch::sendResults(void)
 {
   DebugM(3, "sendResults(" << patchID << ")\n");
   ProxyResultMsg *msg 
-    = new (MsgIndex(ProxyResultMsg),Priorities::numBits) ProxyResultMsg;
-    // = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
+    = new (MsgIndex(ProxyResultMsg)) ProxyResultMsg;
   msg->node = CMyPe();
   msg->patch = patchID;
   register int i;
   for ( i = 0; i < Results::maxNumForces; ++i ) 
     msg->forceList[i] = f[i];
-  *CPriorityPtr(msg) = (unsigned int)Priorities::comm_high;
-  //CSetQueueing(msg, C_QUEUEING_IFIFO);
   ProxyMgr::Object()->sendResults(msg);
 }
 
@@ -123,13 +119,16 @@ void ProxyPatch::sendResults(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyPatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1015 $	$Date: 1997/08/26 16:26:16 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1016 $	$Date: 1997/09/28 10:19:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyPatch.C,v $
+ * Revision 1.1016  1997/09/28 10:19:07  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1015  1997/08/26 16:26:16  jim
  * Revamped prioritites for petter performance and easier changes.
  *

@@ -18,7 +18,6 @@
 #include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
-#include "Priorities.h"
 #include "Inform.h"
 #include "Templates/UniqueSet.h"
 #include "Templates/UniqueSetIter.h"
@@ -33,8 +32,6 @@ ComputeHomeTuples<T>::ComputeHomeTuples(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
   reduction = ReductionMgr::Object();
-  myPriority = Priorities::comp_local_large;
-
   maxProxyAtoms = 0;
   dummyForce = NULL;	// initialized to NULL -- won't harm reallocating deletes.
   T::registerReductionData(reduction);
@@ -234,13 +231,16 @@ void ComputeHomeTuples<T>::doWork() {
  * RCS INFORMATION:
  *
  *      $RCSfile: ComputeHomeTuples.C,v $
- *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1013 $     $Date: 1997/09/22 03:36:00 $
+ *      $Author: milind $  $Locker:  $             $State: Exp $
+ *      $Revision: 1.1014 $     $Date: 1997/09/28 10:19:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomeTuples.C,v $
+ * Revision 1.1014  1997/09/28 10:19:05  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1013  1997/09/22 03:36:00  jim
  * Sped up simulations involving fixed atoms.
  *

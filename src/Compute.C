@@ -24,7 +24,6 @@
 
 #include "Node.h"
 #include "Compute.h"
-#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 #define DEBUGM
@@ -35,7 +34,7 @@ PatchMap *Compute::patchMap=0;
 
 int Compute::totalComputes = 0;
 
-Compute::Compute(ComputeID c) : cid(c), myPriority(Priorities::comp_default) { 
+Compute::Compute(ComputeID c) : cid(c), basePriority(DEFPRIO){ 
   totalComputes++;
   doAtomUpdate = false;
 }
@@ -94,13 +93,16 @@ int Compute::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/08/26 16:26:11 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/09/28 10:19:03 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1014  1997/09/28 10:19:03  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1013  1997/08/26 16:26:11  jim
  * Revamped prioritites for petter performance and easier changes.
  *

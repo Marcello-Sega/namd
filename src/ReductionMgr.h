@@ -9,14 +9,6 @@
 #include "NamdTypes.h"
 #include "BOCgroup.h"
 
-// debug code to determine if I should panic
-// 1 means PANIC checking is enabled.  0 means no checking.
-#ifndef PANIC
-#define PANIC	0
-#endif
-
-// typedef Vector[3] Tensor;
-
 typedef enum
 {
   REDUCTION_ANGLE_ENERGY,
@@ -26,7 +18,6 @@ typedef enum
   REDUCTION_IMPROPER_ENERGY,
   REDUCTION_KINETIC_ENERGY,
   REDUCTION_LJ_ENERGY,
-  // REDUCTION_LONG_RANGE_ENERGY,
   REDUCTION_BC_ENERGY,
   REDUCTION_VIRIAL,
   REDUCTION_ALT_VIRIAL,
@@ -36,9 +27,6 @@ typedef enum
 struct ReductionMgrData
 {
   int sequenceNum;
-  #if PANIC > 0
-  int dataToSend;			// number of tags to send (not full)
-  #endif
   int numData[REDUCTION_MAX_RESERVED];	// number of data to expect
   int numEvents;	// number of events to expect
   BigReal tagData[REDUCTION_MAX_RESERVED];	// values in tags
@@ -50,28 +38,13 @@ struct ReductionMgrData
   int suspendFlag[REDUCTION_MAX_RESERVED];
 };
 
-// ***************** for Charm messages
-class RegisterReductionMsg : public comm_object
-{
-  public:
-    NodeID node;
-    PatchID patch;
-};
-
-class UnregisterReductionMsg : public comm_object
-{
-  public:
-    NodeID node;
-    PatchID patch;
-};
-
 class ReductionDataMsg : public comm_object {
 public:
   int seq;
-  ReductionTag tag;
-  BigReal data;
+  BigReal data[REDUCTION_MAX_RESERVED];
 };
 
+#define MAX_CHILDREN 2
 
 // ***************** for object
 class ReductionMgr : public BOCclass
@@ -79,16 +52,18 @@ class ReductionMgr : public BOCclass
 private:
   static ReductionMgr *_instance;
 
-  #if PANIC > 0
-  int panicMode;
-  char tagString[REDUCTION_MAX_RESERVED+1][40];
-  #endif
-
   int nextSequence;
   int numSubscribed[REDUCTION_MAX_RESERVED];
   ReductionMgrData *data;	// sequence queue
   int maxData[REDUCTION_MAX_RESERVED];	// number of data to expect
   int maxEvents;	// number of events to expect
+
+  int myParent;
+  int numChildren;
+  int myChildren[MAX_CHILDREN];
+
+  int isRoot(void) { return (myParent==(-1))?1:0; }
+  int isLeaf(void) { return (numChildren==0)?1:0; }
 
   ReductionMgrData *createdata();		// make new data
   void remove(int seq);				// delete (remove) a sequence
@@ -101,12 +76,7 @@ private:
 public:
 
   // Singleton Access method
-  inline static ReductionMgr *Object() {return _instance;}
-
-  // Vector and Tensor operations can eventually be defined
-  // in terms of scalar operations (I hope).
-  // For example, reserve the first two tags after a vector
-  // and the first eight after a tensor to allow storage.  -JCP
+  inline static ReductionMgr *Object(void) {return _instance;}
 
   ReductionMgr(InitMsg *);
   ~ReductionMgr();
@@ -119,14 +89,8 @@ public:
   void unRegister(ReductionTag tag);
 
   // submit data for reduction
-  // more == 1 signals immediate submission of other data
-  void submit(int seq, ReductionTag tag, BigReal data, int more=0);
-  // void submit(int seq, ReductionTag tag, Vector data, int more=0);
-  // void submit(int seq, ReductionTag tag, Tensor data, int more=0);
+  void submit(int seq, ReductionTag tag, BigReal data);
   void submit(int seq, ReductionTag tag);
-
-  // pass on submitting data
-  void submit(int seq, ReductionTag tag, int more=0);
 
   // methods for use by global sequencer
 
@@ -137,9 +101,6 @@ public:
   // suspend until this data is ready
   // should be called only from Sequencer thread
   void require(int seq, ReductionTag tag, BigReal &data);
-  // void require(int seq, ReductionTag tag, Vector &data);
-  // void require(int seq, ReductionTag tag, Tensor &data);
-  // void require(int seq, ReductionTag tag); // pass on requiring data
 
   // for receiving data from other ReductionMgr objects
   void recvReductionData(ReductionDataMsg *msg);
@@ -153,12 +114,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/27 03:16:54 $
+ *	$Revision: 1.1006 $	$Date: 1997/09/28 10:19:09 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ReductionMgr.h,v $
+ * Revision 1.1006  1997/09/28 10:19:09  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1005  1997/03/27 03:16:54  jim
  * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
  *

@@ -16,7 +16,6 @@
 #include "ComputePatch.h"
 #include "PatchMap.h"
 #include "Patch.h"
-#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -71,13 +70,11 @@ void ComputePatch::initialize() {
     int myNode = CMyPe();
     if ( PatchMap::Object()->node(patchID) != myNode )
     {
-      int p0 = patchID % Priorities::comp_nonlocal_range;
-      myPriority = Priorities::comp_nonlocal_base + p0;
+      basePriority = patchID % 64;
     }
     else
     {
-      int p0 = patchID % Priorities::comp_local_range;
-      myPriority = Priorities::comp_local_base + p0;
+      basePriority = 2 * 64 + (patchID % 64);
     }
 }
 
@@ -145,13 +142,16 @@ int ComputePatch::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/08/26 16:26:14 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/09/28 10:19:05 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatch.C,v $
+ * Revision 1.1010  1997/09/28 10:19:05  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1009  1997/08/26 16:26:14  jim
  * Revamped prioritites for petter performance and easier changes.
  *

@@ -27,6 +27,9 @@ public:
   BroadcastMsg() { msg = 0; }
 
   // Standard new overload for comm_object new
+  void * operator new(size_t s, int i, int p) {
+    return comm_object::operator new(s,i,p);
+  }
   void * operator new(size_t s, int i) {return comm_object::operator new(s,i);}
   void * operator new(size_t s) { return comm_object::operator new(s); }
   void * operator new(size_t, void *ptr) { return ptr; }
@@ -143,12 +146,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/04/04 23:34:12 $
+ *	$Revision: 1.3 $	$Date: 1997/09/28 10:19:01 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.h,v $
+ * Revision 1.3  1997/09/28 10:19:01  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.2  1997/04/04 23:34:12  milind
  * Got NAMD2 to run on Origin2000.
  * Included definitions of class static variables in C files.

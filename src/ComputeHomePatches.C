@@ -19,14 +19,12 @@
 #include "HomePatchList.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
-#include "Priorities.h"
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 
 ComputeHomePatches::ComputeHomePatches(ComputeID c) : Compute(c) {
   patchMap = PatchMap::Object();
   reduction = ReductionMgr::Object();
-  myPriority = Priorities::comp_synchronizing;
 }
 
 ComputeHomePatches::~ComputeHomePatches()
@@ -59,12 +57,15 @@ void ComputeHomePatches::atomUpdate()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/08/26 16:26:12 $
+ *	$Revision: 1.1005 $	$Date: 1997/09/28 10:19:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeHomePatches.C,v $
+ * Revision 1.1005  1997/09/28 10:19:04  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1004  1997/08/26 16:26:12  jim
  * Revamped prioritites for petter performance and easier changes.
  *

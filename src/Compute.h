@@ -36,10 +36,8 @@ private:
 protected:
   static Node* node;
   static PatchMap *patchMap;
-
+  unsigned int basePriority;
   void enqueueWork();
-  int myPriority; // execution priority for this work
-
 public:
   const ComputeID cid;
   static int totalComputes;
@@ -63,7 +61,7 @@ public:
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
   virtual int sequence(void); // returns sequence number for analysis
-  int priority(void) { return myPriority; }
+  virtual unsigned int priority(void) { return basePriority; }
 };
 
 #endif
@@ -71,13 +69,16 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/08/26 16:26:11 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1009 $	$Date: 1997/09/28 10:19:04 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1009  1997/09/28 10:19:04  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1008  1997/08/26 16:26:11  jim
  * Revamped prioritites for petter performance and easier changes.
  *

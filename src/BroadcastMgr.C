@@ -19,7 +19,6 @@
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"
 #include "BroadcastObject.h"
-#include "Priorities.h"
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
@@ -62,14 +61,12 @@ BroadcastMgr::getbuf(BroadcastClient &b, int tag) {
 
 void 
 BroadcastMgr::send(BroadcastClient &b, int tag, void *buf, size_t size) {
-  BroadcastMsg* msg =
-    new (MsgIndex(BroadcastMsg)) BroadcastMsg;
+  BroadcastMsg* msg = new (MsgIndex(BroadcastMsg)) BroadcastMsg;
   msg->msg = buf;
   msg->size = (int)size;
   msg->tag = tag;
   msg->id = b.id;
   msg->node = CMyPe();
-  //*CPriorityPtr(msg) = Priorities::comm_urgent;
   CBroadcastMsgBranch(BroadcastMgr, recvBroadcast, msg, thisgroup);
 }
 
@@ -130,12 +127,15 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1997/08/26 16:26:10 $
+ *	$Revision: 1.4 $	$Date: 1997/09/28 10:19:00 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.C,v $
+ * Revision 1.4  1997/09/28 10:19:00  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.3  1997/08/26 16:26:10  jim
  * Revamped prioritites for petter performance and easier changes.
  *

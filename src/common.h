@@ -37,6 +37,10 @@ void   ::operator delete (void *);
 #endif
 //#endif
 
+#ifndef DEFPRIO
+#define DEFPRIO (1 * 64)
+#endif
+
 #define COLOUMB 332.0636
 #define BOLTZMAN 0.001987191
 #define TIMEFACTOR 48.88821
@@ -257,13 +261,16 @@ int  Fclose(FILE *fout);
  * RCS INFORMATION:
  *
  *	$RCSfile: common.h,v $
- *	$Author: brunner $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/09/22 20:24:46 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1010 $	$Date: 1997/09/28 10:19:11 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1010  1997/09/28 10:19:11  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1009  1997/09/22 20:24:46  brunner
  * Corrected velocity PDB output by replacing conversion factor of 20 with
  * conversion for Ang/ps.  This now shoud match XPLOR.

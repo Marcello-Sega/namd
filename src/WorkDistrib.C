@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1033 1997/08/22 20:12:05 milind Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1034 1997/09/28 10:19:10 milind Exp $";
 
 #include <stdio.h>
 
@@ -34,7 +34,6 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib
 #include "Molecule.h"
 #include "NamdOneTools.h"
 #include "Compute.h"
-#include "Priorities.h"
 #include "ComputeMap.h"
 #include "RecBisection.h"
 
@@ -727,16 +726,14 @@ void WorkDistrib::mapComputeNonbonded(void)
 
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
-  // This did not work with 32 for prio (crashed!)
   LocalWorkMsg *msg 
-    = new (MsgIndex(LocalWorkMsg),Priorities::numBits) LocalWorkMsg;
-    // = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
-  msg->compute = compute; // pointer is valid since send is to local Pe
-  *CPriorityPtr(msg) = (unsigned int)compute->priority();
-  //CSetQueueing(msg, Priorities::strategy);
-  //DebugM(3, "Priority = " << (unsigned int)compute->priority() << "\n");
+    = new (MsgIndex(LocalWorkMsg), sizeof(int)*8) LocalWorkMsg;
 
   int seq = compute->sequence();
+  *CPriorityPtr(msg) = (seq %256) * 256 + compute->priority();
+
+  msg->compute = compute; // pointer is valid since send is to local Pe
+
   if ( seq < 0 ) {
    CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
   }
@@ -998,12 +995,15 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  *
  *	$RCSfile: WorkDistrib.C,v $
  *	$Author: milind $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1033 $	$Date: 1997/08/22 20:12:05 $
+ *	$Revision: 1.1034 $	$Date: 1997/09/28 10:19:10 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1034  1997/09/28 10:19:10  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1033  1997/08/22 20:12:05  milind
  * Turned on Priorities.
  *

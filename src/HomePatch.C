@@ -32,14 +32,13 @@
 #include "PatchMgr.h"
 #include "Sequencer.h"
 #include "LdbCoordinator.h"
-#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
 // avoid dissappearence of ident?
-char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1035 1997/09/19 08:55:31 jim Exp $";
+char HomePatch::ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/HomePatch.C,v 1.1036 1997/09/28 10:19:07 milind Exp $";
 
 HomePatch::HomePatch(PatchID pd, AtomIDList al, PositionList pl, 
 		     VelocityList vl) : Patch(pd,al,pl), v(vl) 
@@ -191,25 +190,19 @@ void HomePatch::positionsReady(int doMigration)
   {
     if (doMigration) {
       ProxyAllMsg *allmsg 
-	= new (MsgIndex(ProxyAllMsg),Priorities::numBits) ProxyAllMsg;
-//	= new (MsgIndex(ProxyAllMsg)) ProxyAllMsg;
+	= new (MsgIndex(ProxyAllMsg)) ProxyAllMsg;
       allmsg->patch = patchID;
       allmsg->flags = flags;
       allmsg->positionList = p;
       allmsg->atomIDList = atomIDList;
-      *CPriorityPtr(allmsg) = Priorities::comm_high;
-      //CSetQueueing(allmsg, C_QUEUEING_IFIFO);
       DebugM(1, "atomIDList.size() = " << atomIDList.size() << " p.size() = " << p.size() << "\n" );
       ProxyMgr::Object()->sendProxyAll(allmsg,pli->node);
     } else {
       ProxyDataMsg *nmsg 
-	= new (MsgIndex(ProxyDataMsg), Priorities::numBits) ProxyDataMsg;
-	// = new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
+	= new (MsgIndex(ProxyDataMsg)) ProxyDataMsg;
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;
-      *CPriorityPtr(nmsg) = Priorities::comm_high;
-      //CSetQueueing(nmsg, C_QUEUEING_IFIFO);
       ProxyMgr::Object()->sendProxyData(nmsg,pli->node);
     }   
   }
@@ -458,13 +451,16 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
  * RCS INFORMATION:
  *
  *	$RCSfile: HomePatch.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1035 $	$Date: 1997/09/19 08:55:31 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1036 $	$Date: 1997/09/28 10:19:07 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: HomePatch.C,v $
+ * Revision 1.1036  1997/09/28 10:19:07  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1035  1997/09/19 08:55:31  jim
  * Added rudimentary but relatively efficient fixed atoms.  New options
  * are fixedatoms, fixedatomsfile, and fixedatomscol (nonzero means fixed).

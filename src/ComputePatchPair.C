@@ -16,7 +16,6 @@
 #include "ComputePatchPair.h"
 #include "PatchMap.h"
 #include "Patch.h"
-#include "Priorities.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -85,22 +84,22 @@ void ComputePatchPair::initialize() {
     Compute::initialize();
 
     int myNode = CMyPe();
+    int p0 = patchID[0] % 64;
+    int p1 = patchID[1] % 64;
+    int patchPrio = ((p0<p1)?p0:p1);
     if ( PatchMap::Object()->node(patchID[0]) != myNode )
     {
-      int p0 = patchID[0] % Priorities::comp_nonlocal_range;
-      myPriority = Priorities::comp_nonlocal_base + p0;
+      basePriority = patchPrio;
     }
     else if ( PatchMap::Object()->node(patchID[1]) != myNode )
     {
-      int p1 = patchID[1] % Priorities::comp_nonlocal_range;
-      myPriority = Priorities::comp_nonlocal_base + p1;
+      basePriority = patchPrio;
     }
     else
     {
-      int p0 = patchID[0] % Priorities::comp_local_range;
-      int p1 = patchID[1] % Priorities::comp_local_range;
-      myPriority = Priorities::comp_local_base + ((p0<p1)?p0:p1);
+      basePriority = 2 * 64 + patchPrio;
     }
+
 }
 
 void ComputePatchPair::atomUpdate() {
@@ -170,13 +169,16 @@ int ComputePatchPair::sequence(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputePatchPair.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1012 $	$Date: 1997/08/26 16:26:15 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1013 $	$Date: 1997/09/28 10:19:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputePatchPair.C,v $
+ * Revision 1.1013  1997/09/28 10:19:06  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1012  1997/08/26 16:26:15  jim
  * Revamped prioritites for petter performance and easier changes.
  *

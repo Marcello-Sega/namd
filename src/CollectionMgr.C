@@ -2,7 +2,6 @@
 #include "CollectionMgr.h"
 #include "CollectionMaster.top.h"
 #include "CollectionMaster.h"
-#include "Priorities.h"
 
 #define DEBUGM
 #include "Debug.h"
@@ -31,13 +30,10 @@ void CollectionMgr::submitPositions(int seq, AtomIDList &i, PositionList &d)
   if ( c = positions.submitData(seq,i,d) )
   {
     CollectVectorMsg * msg = 
-      new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
-      // new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    *CPriorityPtr(msg) = Priorities::comm_low;
-    //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receivePositions,msg,&master);
     delete c;
   }
@@ -50,13 +46,10 @@ void CollectionMgr::submitVelocities(int seq, AtomIDList &i, VelocityList &d)
   if ( c = velocities.submitData(seq,i,d) )
   {
     CollectVectorMsg * msg =
-      new (MsgIndex(CollectVectorMsg),Priorities::numBits) CollectVectorMsg;
-      // new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    *CPriorityPtr(msg) = Priorities::comm_low;
-    //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receiveVelocities,msg,&master);
     delete c;
   }
@@ -69,13 +62,10 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
   if ( c = forces.submitData(seq,i,d) )
   {
     CollectVectorMsg * msg =
-      new (MsgIndex(CollectVectorMsg), Priorities::numBits) CollectVectorMsg;
-      // new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
+      new (MsgIndex(CollectVectorMsg)) CollectVectorMsg;
     msg->seq = c->seq;
     msg->aid = c->aid;
     msg->data = c->data;
-    *CPriorityPtr(msg) = Priorities::comm_low;
-    //CSetQueueing(msg, C_QUEUEING_IFIFO);
     CSendMsg(CollectionMaster,receiveForces,msg,&master);
     delete c;
   }
@@ -89,12 +79,15 @@ void CollectionMgr::submitForces(int seq, AtomIDList &i, ForceList &d)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1006 $	$Date: 1997/08/26 16:26:10 $
+ *	$Revision: 1.1007 $	$Date: 1997/09/28 10:19:02 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CollectionMgr.C,v $
+ * Revision 1.1007  1997/09/28 10:19:02  milind
+ * Fixed priorities, ReductionMgr etc.
+ *
  * Revision 1.1006  1997/08/26 16:26:10  jim
  * Revamped prioritites for petter performance and easier changes.
  *
