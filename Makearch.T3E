@@ -1,0 +1,32 @@
+##########################################
+##########################################
+# Makefile architecture HPUX9
+##########################################
+##########################################
+
+#####
+## Choose your favorite Compiler options
+####
+CXX = CC -DGLOBALS -DT3E
+CXXOPTS = -g
+
+#####
+# Flags
+#####
+# uncomment for no warnings during compile
+#NOWARN=-w
+# uncomment for purify during compile
+#PURIFY=-purify
+
+#####
+# definitions for Charm routines
+#####
+CHARM = /tmp/rbrunner/charm/t3e
+
+#####
+# Unix commands
+#####
+ECHO = echo
+MOVE = mv
+COPY = cp
+
