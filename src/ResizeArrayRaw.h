@@ -22,7 +22,7 @@
 #include <new.h>
 #include <stream.h>
 #include <string.h>
-#include "ckdefs.h"
+#include "charm++.h"
 
 // Undefined if src,dest overlap
 extern "C" void *memcpy(void *, const void *, size_t);

@@ -10,9 +10,8 @@
  *		run in a thread!)
  ***************************************************************************/
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
+
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
 #include "BroadcastMgr.top.h"
@@ -126,12 +125,15 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1998/02/10 23:43:01 $
+ *	$Revision: 1.8 $	$Date: 1998/03/03 23:13:46 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: BroadcastMgr.C,v $
+ * Revision 1.8  1998/03/03 23:13:46  brunner
+ * Changing include files for new charm++ includes
+ *
  * Revision 1.7  1998/02/10 23:43:01  milind
  * Fixed to reflect changes to Charm++ translator.
  *

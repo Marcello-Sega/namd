@@ -1,8 +1,6 @@
 #include <iostream.h>
 #include <stdlib.h>
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "ProcessorPrivate.h"
 

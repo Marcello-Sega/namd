@@ -12,9 +12,7 @@
 #ifndef COMPUTEGLOBALMSGS_H
 #define COMPUTEGLOBALMSGS_H
 
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "NamdTypes.h"
 
@@ -94,12 +92,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/02/16 00:24:38 $
+ *	$Revision: 1.3 $	$Date: 1998/03/03 23:13:47 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalMsgs.h,v $
+ * Revision 1.3  1998/03/03 23:13:47  brunner
+ * Changing include files for new charm++ includes
+ *
  * Revision 1.2  1998/02/16 00:24:38  jim
  * Added atom group centers of mass to Tcl interface.
  *

@@ -8,9 +8,7 @@
  *		in WorkDistrib
  *
  ***************************************************************************/
-#include "ckdefs.h"
-#include "chare.h"
-#include "c++interface.h"
+#include "charm++.h"
 
 #include "common.h"
 #include "NamdTypes.h"
@@ -351,13 +349,16 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 * RCS INFORMATION:
 *
 *	$RCSfile: NamdOneTools.C,v $
-*	$Author: sergei $	$Locker:  $		$State: Exp $
-*	$Revision: 1.10 $	$Date: 1998/01/05 20:34:08 $
+*	$Author: brunner $	$Locker:  $		$State: Exp $
+*	$Revision: 1.11 $	$Date: 1998/03/03 23:13:48 $
 *
 ***************************************************************************
 * REVISION HISTORY:
 *
 * $Log: NamdOneTools.C,v $
+* Revision 1.11  1998/03/03 23:13:48  brunner
+* Changing include files for new charm++ includes
+*
 * Revision 1.10  1998/01/05 20:34:08  sergei
 * added function BigReal gaussian_random_number(void);
 *
@@ -401,4 +402,4 @@ void remove_com_motion(Vector *vel, Molecule *structure, int n)
 *
 ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.10 1998/01/05 20:34:08 sergei Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdOneTools.C,v 1.11 1998/03/03 23:13:48 brunner Exp $";
