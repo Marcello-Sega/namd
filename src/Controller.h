@@ -38,15 +38,15 @@ protected:
     virtual void algorithm(void);	// subclasses redefine this method
 
     void receivePressure(int);
-      BigReal pressure_normal;
-      BigReal pressure_nbond;
-      BigReal pressure_slow;
-      BigReal groupPressure_normal;
-      BigReal groupPressure_nbond;
-      BigReal groupPressure_slow;
-      BigReal controlPressure_normal;
-      BigReal controlPressure_nbond;
-      BigReal controlPressure_slow;
+      Vector pressure_normal;
+      Vector pressure_nbond;
+      Vector pressure_slow;
+      Vector groupPressure_normal;
+      Vector groupPressure_nbond;
+      Vector groupPressure_slow;
+      Vector controlPressure_normal;
+      Vector controlPressure_nbond;
+      Vector controlPressure_slow;
       int nbondFreq;
       int slowFreq;
     void printEnergies(int);
@@ -54,10 +54,10 @@ protected:
       int numDegFreedom;
       BigReal kineticEnergy;
       BigReal temperature;
-      BigReal pressure;
-      BigReal groupPressure;
+      Vector pressure;
+      Vector groupPressure;
       int controlNumDegFreedom;
-      BigReal controlPressure;
+      Vector controlPressure;
     void enqueueCollections(int);
     void rescaleVelocities(int);
       BigReal rescaleVelocities_sumTemps;
@@ -67,7 +67,7 @@ protected:
     void berendsenPressure(int);
     void langevinPiston1(int);
     void langevinPiston2(int);
-      BigReal langevinPiston_strainRate;
+      Vector langevinPiston_strainRate;
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void) {
@@ -102,12 +102,15 @@ private:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1019 $	$Date: 1998/12/07 03:54:30 $
+ *	$Revision: 1.1020 $	$Date: 1999/01/06 22:50:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.h,v $
+ * Revision 1.1020  1999/01/06 22:50:31  jim
+ * Anisotropic (flexible cell) Langevin Piston pressure control finished.
+ *
  * Revision 1.1019  1998/12/07 03:54:30  jim
  * Constant pressure should work with multiple timestepping.
  * Still needs some testing.  Some debug code still enabled.

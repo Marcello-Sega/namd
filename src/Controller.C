@@ -104,7 +104,11 @@ Controller::Controller(NamdState *s) :
     reduction->subscribe(REDUCTION_MARGIN_VIOLATIONS);
 
     rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
-    langevinPiston_strainRate = 0;
+    langevinPiston_strainRate = simParams->strainRate;
+    if ( ! simParams->useFlexibleCell ) {
+      BigReal avg = (langevinPiston_strainRate * Vector(1,1,1)) / 3.;
+      langevinPiston_strainRate = Vector(avg,avg,avg);
+    }
 }
 
 Controller::~Controller(void)
@@ -235,7 +239,8 @@ void Controller::berendsenPressure(int step)
   const int freq = simParams->berendsenPressureFreq;
   if ( simParams->berendsenPressureOn && !(step%freq) )
   {
-    BigReal factor = controlPressure - simParams->berendsenPressureTarget;
+    BigReal scalarPressure = controlPressure * Vector(1,1,1) / 3.;
+    BigReal factor = scalarPressure - simParams->berendsenPressureTarget;
     factor *= simParams->berendsenPressureCompressibility;
     factor *= ( simParams->dt * freq );
     factor /= simParams->berendsenPressureRelaxationTime;
@@ -250,12 +255,13 @@ void Controller::langevinPiston1(int step)
 {
   if ( simParams->langevinPistonOn )
   {
-    BigReal &strainRate = langevinPiston_strainRate;
+    Vector &strainRate = langevinPiston_strainRate;
+    int cellDims = simParams->useFlexibleCell ? 1 : 3;
     BigReal dt = simParams->dt;
     BigReal dt_long = slowFreq * dt;
     BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
-    BigReal mass = controlNumDegFreedom * kT * tau * tau;
+    BigReal mass = controlNumDegFreedom * kT * tau * tau * cellDims;
 
     iout << iINFO << "strain rate: " << strainRate << "\n";
 
@@ -266,39 +272,44 @@ void Controller::langevinPiston1(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       iout << iINFO << "applying langevin to strain rate\n";
       strainRate *= f1;
-      strainRate += f2 * gaussian_random_number();
+      if ( simParams->useFlexibleCell )
+	strainRate += f2 * gaussian_random_vector();
+      else
+	strainRate += f2 * gaussian_random_number() * Vector(1,1,1);
     }
 
-    strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
-		( controlPressure - simParams->langevinPistonTarget );
+    strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
+	( controlPressure - Vector(1,1,1)*simParams->langevinPistonTarget );
 
     iout << iINFO << "strain rate: " << strainRate << "\n";
 
     if ( ! ( (step-1+slowFreq/2) % slowFreq ) )
     {
-      BigReal factor = exp( dt_long * strainRate );
-      broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
-      state->lattice.rescale(Vector(1,1,1)*factor);
+      Vector factor;
+      factor.x = exp( dt_long * strainRate.x );
+      factor.y = exp( dt_long * strainRate.y );
+      factor.z = exp( dt_long * strainRate.z );
+      broadcast->positionRescaleFactor.publish(step,factor);
+      state->lattice.rescale(factor);
       iout << iINFO << "rescaling by: " << factor << "\n";
     }
     else
     {
-      BigReal factor = 1.0;
-      broadcast->positionRescaleFactor.publish(step,Vector(1,1,1)*factor);
+      broadcast->positionRescaleFactor.publish(step,Vector(1,1,1));
     }
 
     // corrections to integrator
     if ( ! ( step % nbondFreq ) )
     {
       iout << iINFO << "correcting strain rate for nbond, ";
-      strainRate -= ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+      strainRate -= ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
       iout << "strain rate: " << strainRate << "\n";
     }
     if ( ! ( step % slowFreq ) )
     {
       iout << iINFO << "correcting strain rate for slow, ";
-      strainRate -= ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+      strainRate -= ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (slowFreq - 1) * controlPressure_slow );
       iout << "strain rate: " << strainRate << "\n";
     }
@@ -310,31 +321,32 @@ void Controller::langevinPiston2(int step)
 {
   if ( simParams->langevinPistonOn )
   {
-    BigReal &strainRate = langevinPiston_strainRate;
+    Vector &strainRate = langevinPiston_strainRate;
+    int cellDims = simParams->useFlexibleCell ? 1 : 3;
     BigReal dt = simParams->dt;
     BigReal dt_long = slowFreq * dt;
     BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
-    BigReal mass = controlNumDegFreedom * kT * tau * tau;
+    BigReal mass = controlNumDegFreedom * kT * tau * tau * cellDims;
 
     // corrections to integrator
     if ( ! ( step % nbondFreq ) )
     {
       iout << iINFO << "correcting strain rate for nbond, ";
-      strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+      strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (nbondFreq - 1) * controlPressure_nbond );
       iout << "strain rate: " << strainRate << "\n";
     }
     if ( ! ( step % slowFreq ) )
     {
       iout << iINFO << "correcting strain rate for slow, ";
-      strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
+      strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
 		( 0.5 * (slowFreq - 1) * controlPressure_slow );
       iout << "strain rate: " << strainRate << "\n";
     }
 
-    strainRate += ( 0.5 * dt * 3 * state->lattice.volume() / mass ) *
-		( controlPressure - simParams->langevinPistonTarget );
+    strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
+	( controlPressure - Vector(1,1,1)*simParams->langevinPistonTarget );
 
     if ( ! ( step % slowFreq ) )
     {
@@ -343,7 +355,10 @@ void Controller::langevinPiston2(int step)
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kT / mass );
       iout << iINFO << "applying langevin to strain rate\n";
       strainRate *= f1;
-      strainRate += f2 * gaussian_random_number();
+      if ( simParams->useFlexibleCell )
+	strainRate += f2 * gaussian_random_vector();
+      else
+	strainRate += f2 * gaussian_random_number() * Vector(1,1,1);
     }
 
     iout << iINFO << "strain rate: " << strainRate << "\n";
@@ -476,28 +491,20 @@ void Controller::receivePressure(int seq)
 
     if ( (volume=lattice.volume()) != 0. )
     {
-      pressure_normal = ( numAtoms * BOLTZMAN * temperature +
-	( virial_normal.x + virial_normal.y + virial_normal.z ) / 3. ) / volume;
-      Vector tmp_virial = virial_normal - intVirial_normal;
-      groupPressure_normal = ( (2./3.)*( kineticEnergy - intKineticEnergy ) +
-	( tmp_virial.x + tmp_virial.y + tmp_virial.z ) / 3. ) / volume;
+      // kinetic energy component included in virials
+      pressure_normal = virial_normal / volume;
+      groupPressure_normal = ( virial_normal - intVirial_normal ) / volume;
 
       if ( ! ( seq % nbondFreq ) )
       {
-        pressure_nbond = ( virial_nbond.x + virial_nbond.y + virial_nbond.z )
-							/ ( 3. * volume );
-	tmp_virial = virial_nbond - intVirial_nbond;
-        groupPressure_nbond = ( tmp_virial.x + tmp_virial.y + tmp_virial.z )
-							/ ( 3. * volume );
+        pressure_nbond = virial_nbond / volume;
+        groupPressure_nbond = ( virial_nbond - intVirial_nbond ) / volume;
       }
 
       if ( ! ( seq % slowFreq ) )
       {
-        pressure_slow = ( virial_slow.x + virial_slow.y + virial_slow.z )
-							/ ( 3. * volume );
-	tmp_virial = virial_slow - intVirial_slow;
-        groupPressure_slow = ( tmp_virial.x + tmp_virial.y + tmp_virial.z )
-							/ ( 3. * volume );
+        pressure_slow = virial_slow / volume;
+        groupPressure_slow = ( virial_slow - intVirial_slow ) / volume;
       }
 
 /*
@@ -513,8 +520,8 @@ void Controller::receivePressure(int seq)
     }
     else
     {
-      pressure = 0.;
-      groupPressure = 0.;
+      pressure = Vector(0.,0.,0.);
+      groupPressure = Vector(0.,0.,0.);
     }
 
     if ( simParameters->useGroupPressure )
@@ -523,7 +530,11 @@ void Controller::receivePressure(int seq)
       controlPressure_nbond = groupPressure_nbond;
       controlPressure_slow = groupPressure_slow;
       controlPressure = groupPressure;
-      controlNumDegFreedom = 3 * molecule->numHydrogenGroups;
+      controlNumDegFreedom = molecule->numHydrogenGroups;
+      if ( ! ( numFixedAtoms || molecule->numConstraints
+	|| simParameters->comMove || simParameters->langevinOn ) ) {
+        controlNumDegFreedom -= 1;
+      }
     }
     else
     {
@@ -531,7 +542,18 @@ void Controller::receivePressure(int seq)
       controlPressure_nbond = pressure_nbond;
       controlPressure_slow = pressure_slow;
       controlPressure = pressure;
-      controlNumDegFreedom = numDegFreedom;
+      controlNumDegFreedom = numDegFreedom / 3;
+    }
+
+    if ( ! simParameters->useFlexibleCell ) {
+      controlPressure_normal = ( controlPressure_normal *
+	Vector(1,1,1) / 3. ) * Vector(1,1,1);
+      controlPressure_nbond = ( controlPressure_nbond *
+	Vector(1,1,1) / 3. ) * Vector(1,1,1);
+      controlPressure_slow = ( controlPressure_slow *
+	Vector(1,1,1) / 3. ) * Vector(1,1,1);
+      controlPressure = ( controlPressure *
+	Vector(1,1,1) / 3. ) * Vector(1,1,1);
     }
 
 }
@@ -647,7 +669,7 @@ void Controller::printEnergies(int seq)
       xstFile << "# NAMD extended system trajectory file" << endl;
       xstFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
-        xstFile << " strainRate";
+        xstFile << " s_x s_y s_z";
       }
       xstFile << endl;
     }
@@ -657,7 +679,9 @@ void Controller::printEnergies(int seq)
       xstFile << seq;
       xstFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
-	xstFile << " " << langevinPiston_strainRate;
+	xstFile << " " << langevinPiston_strainRate.x;
+	xstFile << " " << langevinPiston_strainRate.y;
+	xstFile << " " << langevinPiston_strainRate.z;
       }
       xstFile << endl;
       xstFile.flush();
@@ -684,13 +708,15 @@ void Controller::printEnergies(int seq)
       xscFile << "# NAMD extended system configuration file" << endl;
       xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " strainRate";
+	xscFile << " s_x s_y s_z";
       }
       xscFile << endl;
       xscFile << seq;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " " << langevinPiston_strainRate;
+	xscFile << " " << langevinPiston_strainRate.x;
+	xscFile << " " << langevinPiston_strainRate.y;
+	xscFile << " " << langevinPiston_strainRate.z;
       }
       xscFile << endl;
     }
@@ -704,13 +730,15 @@ void Controller::printEnergies(int seq)
       xscFile << "# NAMD extended system configuration file" << endl;
       xscFile << "#$LABELS step a_x b_y c_z o_x o_y o_z";
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " strainRate";
+	xscFile << " s_x s_y s_z";
       }
       xscFile << endl;
       xscFile << seq;
       xscFile << " " << lattice.a() << " " << lattice.b() << " " << lattice.c() << " " << lattice.origin().x << " " << lattice.origin().y << " " << lattice.origin().z;
       if ( simParameters->langevinPistonOn ) {
-	xscFile << " " << langevinPiston_strainRate;
+	xscFile << " " << langevinPiston_strainRate.x;
+	xscFile << " " << langevinPiston_strainRate.y;
+	xscFile << " " << langevinPiston_strainRate.z;
       }
       xscFile << endl;
     }
@@ -773,8 +801,8 @@ void Controller::printEnergies(int seq)
 
     if ( volume != 0. )
     {
-	iout << FORMAT(pressure*PRESSUREFACTOR);
-	iout << FORMAT(groupPressure*PRESSUREFACTOR);
+	iout << FORMAT(pressure*Vector(1,1,1)*PRESSUREFACTOR/3.);
+	iout << FORMAT(groupPressure*Vector(1,1,1)*PRESSUREFACTOR/3.);
 	iout << FORMAT(volume);
     }
 
@@ -798,12 +826,15 @@ void Controller::enqueueCollections(int timestep)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1054 $	$Date: 1999/01/06 19:19:19 $
+ *	$Revision: 1.1055 $	$Date: 1999/01/06 22:50:30 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1055  1999/01/06 22:50:30  jim
+ * Anisotropic (flexible cell) Langevin Piston pressure control finished.
+ *
  * Revision 1.1054  1999/01/06 19:19:19  jim
  * Broadcast and Sequencers understand anisotropic volume rescaling factors.
  *

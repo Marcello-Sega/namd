@@ -46,6 +46,9 @@ Sequencer::Sequencer(HomePatch *p) :
     if ( simParams->rigidBonds != RIGID_NONE ) {
 	;// reduction->Register(REDUCTION_VIRIAL);
     }
+    reduction->Register(REDUCTION_VIRIAL_NORMAL_X);
+    reduction->Register(REDUCTION_VIRIAL_NORMAL_Y);
+    reduction->Register(REDUCTION_VIRIAL_NORMAL_Z);
     reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_X);
     reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Y);
     reduction->Register(REDUCTION_ALT_VIRIAL_NORMAL_Z);
@@ -87,6 +90,9 @@ Sequencer::~Sequencer(void)
     if ( simParams->rigidBonds != RIGID_NONE ) {
 	;// reduction->unRegister(REDUCTION_VIRIAL);
     }
+    reduction->unRegister(REDUCTION_VIRIAL_NORMAL_X);
+    reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Y);
+    reduction->unRegister(REDUCTION_VIRIAL_NORMAL_Z);
     reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_X);
     reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Y);
     reduction->unRegister(REDUCTION_ALT_VIRIAL_NORMAL_Z);
@@ -453,11 +459,25 @@ void Sequencer::submitReductions(int step)
   reduction->submit(step,REDUCTION_SMD_ENERGY,0.);  
 
   {
+    Vector virial(0.,0.,0.);
+    for ( int i = 0; i < patch->numAtoms; ++i ) {
+      virial.x += ( patch->a[i].mass * patch->v[i].x * patch->v[i].x );
+      virial.y += ( patch->a[i].mass * patch->v[i].y * patch->v[i].y );
+      virial.z += ( patch->a[i].mass * patch->v[i].z * patch->v[i].z );
+    }
+    reduction->submit(step,REDUCTION_VIRIAL_NORMAL_X,virial.x);
+    reduction->submit(step,REDUCTION_VIRIAL_NORMAL_Y,virial.y);
+    reduction->submit(step,REDUCTION_VIRIAL_NORMAL_Z,virial.z);
+  }
+  {
     Vector altVirial(0.,0.,0.);
     for ( int i = 0; i < patch->numAtoms; ++i ) {
       altVirial.x += ( patch->f[Results::normal][i].x * patch->p[i].x );
       altVirial.y += ( patch->f[Results::normal][i].y * patch->p[i].y );
       altVirial.z += ( patch->f[Results::normal][i].z * patch->p[i].z );
+      altVirial.x += ( patch->a[i].mass * patch->v[i].x * patch->v[i].x );
+      altVirial.y += ( patch->a[i].mass * patch->v[i].y * patch->v[i].y );
+      altVirial.z += ( patch->a[i].mass * patch->v[i].z * patch->v[i].z );
     }
     reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_X,altVirial.x);
     reduction->submit(step,REDUCTION_ALT_VIRIAL_NORMAL_Y,altVirial.y);
@@ -509,6 +529,9 @@ void Sequencer::submitReductions(int step)
       for ( j = i; j < (i+hgs); ++j ) {
         Vector dv = patch->v[j] - v_cm;
         intKineticEnergy += patch->a[j].mass * (patch->v[j] * dv);
+        intVirialNormal.x += patch->a[j].mass * (patch->v[j].x * dv.x);
+        intVirialNormal.y += patch->a[j].mass * (patch->v[j].y * dv.y);
+        intVirialNormal.z += patch->a[j].mass * (patch->v[j].z * dv.z);
         Vector dx = patch->p[j] - x_cm;
         intVirialNormal.x += patch->f[Results::normal][j].x * dx.x;
         intVirialNormal.y += patch->f[Results::normal][j].y * dx.y;
@@ -585,12 +608,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1053 $     $Date: 1999/01/06 19:19:20 $
+ *      $Revision: 1.1054 $     $Date: 1999/01/06 22:50:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1054  1999/01/06 22:50:31  jim
+ * Anisotropic (flexible cell) Langevin Piston pressure control finished.
+ *
  * Revision 1.1053  1999/01/06 19:19:20  jim
  * Broadcast and Sequencers understand anisotropic volume rescaling factors.
  *

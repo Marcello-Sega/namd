@@ -242,6 +242,8 @@ public:
 	Bool useGroupPressure;		//  Use group rather than atomic
 					//  quantities for pressure calc
 
+	Bool useFlexibleCell;		//  Use anisotropic cell fluctuations
+
 	Bool berendsenPressureOn;	//  Berendsen pressure bath
 	BigReal berendsenPressureTarget;
 	BigReal berendsenPressureCompressibility;
@@ -253,6 +255,7 @@ public:
 	BigReal langevinPistonPeriod;
 	BigReal langevinPistonDecay;
 	BigReal langevinPistonTemp;
+	Vector strainRate;
 
 	unsigned int randomSeed;	//  Seed for random number generator
 
@@ -393,12 +396,15 @@ public:
  *
  *	$RCSfile: SimParameters.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1027 $	$Date: 1998/11/29 22:01:00 $
+ *	$Revision: 1.1028 $	$Date: 1999/01/06 22:50:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.h,v $
+ * Revision 1.1028  1999/01/06 22:50:33  jim
+ * Anisotropic (flexible cell) Langevin Piston pressure control finished.
+ *
  * Revision 1.1027  1998/11/29 22:01:00  jim
  * Added group-based pressure control to work with rigidBonds.
  * New option useGroupPressure, turned on automatically if needed.

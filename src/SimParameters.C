@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1052 $  $Date: 1998/12/07 03:54:30 $
+ *  $Revision: 1.1053 $  $Date: 1999/01/06 22:50:32 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1053  1999/01/06 22:50:32  jim
+ * Anisotropic (flexible cell) Langevin Piston pressure control finished.
+ *
  * Revision 1.1052  1998/12/07 03:54:30  jim
  * Constant pressure should work with multiple timestepping.
  * Still needs some testing.  Some debug code still enabled.
@@ -894,6 +897,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       "Use group rather than atomic quantities for pressure control?",
       &useGroupPressure, FALSE);
 
+   ////  Anisotropic cell fluctuations
+   opts.optionalB("main", "useFlexibleCell",
+      "Use anisotropic cell fluctuation for pressure control?",
+      &useFlexibleCell, FALSE);
+
    ////  Berendsen pressure bath coupling
    opts.optionalB("main", "BerendsenPressure", 
       "Should Berendsen pressure bath coupling be performed?",
@@ -938,6 +946,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
       &langevinPistonTemp);
    opts.range("LangevinPistonTemp", POSITIVE);
    opts.units("langevinTemp", N_KELVIN);
+   opts.optional("LangevinPiston", "StrainRate",
+      "Initial strain rate for pressure control (x y z)",
+      &strainRate);
 
    ////  Fixed Atoms
    opts.optionalB("main", "fixedatoms", "Are there fixed atoms?",
@@ -1351,8 +1362,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
        xscFile.getline(labels,1023);
      } while ( strncmp(labels,"#$LABELS ",9) );
 
-     int a_x, b_y, c_z, o_x, o_y, o_z;
-     a_x = b_y = c_z = o_x = o_y = o_z = -1;
+     int a_x, b_y, c_z, o_x, o_y, o_z, s_x, s_y, s_z;
+     a_x = b_y = c_z = o_x = o_y = o_z = s_x = s_y = s_z = -1;
 
      int pos = 0;
      char *l_i = labels + 8;
@@ -1367,6 +1378,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 	 if (l_i[0] == 'o' && l_i[2] == 'x') o_x = pos;
 	 if (l_i[0] == 'o' && l_i[2] == 'y') o_y = pos;
 	 if (l_i[0] == 'o' && l_i[2] == 'z') o_z = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'x') s_x = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'y') s_y = pos;
+	 if (l_i[0] == 's' && l_i[2] == 'z') s_z = pos;
        }
        ++pos;
        l_i = l_i2;
@@ -1383,6 +1397,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
        if ( pos == o_x ) cellOrigin.x = tmp;
        if ( pos == o_y ) cellOrigin.y = tmp;
        if ( pos == o_z ) cellOrigin.z = tmp;
+       if ( pos == s_x ) strainRate.x = tmp;
+       if ( pos == s_y ) strainRate.y = tmp;
+       if ( pos == s_z ) strainRate.z = tmp;
      }
 
    }
@@ -2868,6 +2885,10 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
         << langevinPistonTemp << " K\n";
      iout << iINFO << "      PRESSURE CONTROL IS "
 	<< (useGroupPressure?"GROUP":"ATOM") << "-BASED\n";
+     iout << iINFO << "      CELL FLUCTUATION IS "
+	<< (useFlexibleCell?"AN":"") << "ISOTROPIC\n";
+     iout << iINFO << "   INITIAL STRAIN RATE IS "
+        << strainRate << "\n";
      iout << endi;
      langevinPistonTarget /= PRESSUREFACTOR;
    }
@@ -3405,12 +3426,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1052 $  $Date: 1998/12/07 03:54:30 $
+ *  $Revision: 1.1053 $  $Date: 1999/01/06 22:50:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1053  1999/01/06 22:50:32  jim
+ * Anisotropic (flexible cell) Langevin Piston pressure control finished.
+ *
  * Revision 1.1052  1998/12/07 03:54:30  jim
  * Constant pressure should work with multiple timestepping.
  * Still needs some testing.  Some debug code still enabled.
