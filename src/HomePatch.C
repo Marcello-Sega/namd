@@ -221,15 +221,21 @@ void HomePatch::positionsReady(int doMigration)
       *(pidi++) = pli->node;
     }
   }
+  int seq = flags.sequence;
+  int priority = 64 + (seq % 256) * 256 + (patchID % 64);
   if (doMigration) {
-      ProxyAllMsg *allmsg = new ProxyAllMsg;
+      ProxyAllMsg *allmsg = new (sizeof(int)*8) ProxyAllMsg;
+      CkSetQueueing(allmsg, CK_QUEUEING_IFIFO);
+      *((int*) CkPriorityPtr(allmsg)) = priority;
       allmsg->patch = patchID;
       allmsg->flags = flags;
       allmsg->positionList = p;
       if (flags.doMolly) allmsg->avgPositionList = p_avg;
       ProxyMgr::Object()->sendProxyAll(allmsg,proxy.size(),pids);
   } else {
-      ProxyDataMsg *nmsg = new ProxyDataMsg;
+      ProxyDataMsg *nmsg = new (sizeof(int)*8) ProxyDataMsg;
+      CkSetQueueing(nmsg, CK_QUEUEING_IFIFO);
+      *((int*) CkPriorityPtr(nmsg)) = priority;
       nmsg->patch = patchID;
       nmsg->flags = flags;
       nmsg->positionList = p;

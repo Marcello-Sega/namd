@@ -106,7 +106,10 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
 void ProxyPatch::sendResults(void)
 {
   DebugM(3, "sendResults(" << patchID << ")\n");
-  ProxyResultMsg *msg = new ProxyResultMsg;
+  ProxyResultMsg *msg = new (sizeof(int)*8) ProxyResultMsg;
+  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
+  int seq = flags.sequence;
+  *((int*) CkPriorityPtr(msg)) = 256 + (seq % 256) * 256 + (patchID % 64);
   msg->node = CkMyPe();
   msg->patch = patchID;
   register int i = 0;
