@@ -79,29 +79,55 @@ topo_mol_residue_t * topo_mol_get_res(topo_mol *mol,
 			const topo_mol_ident_t *target, int irel) {
   int iseg, nres, ires;
   topo_mol_segment_t *seg;
+  topo_mol_residue_t *res;
+  char errmsg[64 + 3*NAMEMAXLEN];
 
   if ( ! mol ) return 0;
   iseg = hasharray_index(mol->segment_hash,target->segid);
-  if ( iseg == HASHARRAY_FAIL ) return 0;
+  if ( iseg == HASHARRAY_FAIL ) {
+    sprintf(errmsg,"no segment %s",target->segid);
+    topo_mol_log_error(mol,errmsg);
+    return 0;
+  }
   seg = mol->segment_array[iseg];
 
   nres = hasharray_count(seg->residue_hash);
   ires = hasharray_index(seg->residue_hash,target->resid);
-  if ( ires == HASHARRAY_FAIL ) return 0;
-  ires += irel;
-  if ( ires < 0 || ires >= nres ) return 0;
+  if ( ires == HASHARRAY_FAIL ) {
+    sprintf(errmsg,"no residue %s of segment %s",
+					target->resid,target->segid);
+    topo_mol_log_error(mol,errmsg);
+    return 0;
+  }
+  if ( (ires+irel) < 0 || (ires+irel) >= nres ) {
+    res = seg->residue_array + ires;
+    if ( irel < 0 )
+      sprintf(errmsg,"no residue %d before %s:%s of segment %s",
+		-1*irel,res->name,res->resid,target->segid);
+    if ( irel > 0 )
+      sprintf(errmsg,"no residue %d past %s:%s of segment %s",
+		irel,res->name,res->resid,target->segid);
+    topo_mol_log_error(mol,errmsg);
+    return 0;
+  }
 
-  return (seg->residue_array + ires);
+  return (seg->residue_array + ires + irel);
 }
 
 topo_mol_atom_t * topo_mol_get_atom(topo_mol *mol,
 			const topo_mol_ident_t *target, int irel) {
   topo_mol_residue_t *res;
   topo_mol_atom_t *atom;
+  char errmsg[64 + 3*NAMEMAXLEN];
   res = topo_mol_get_res(mol,target,irel);
   if ( ! res ) return 0;
   for ( atom = res->atoms; atom; atom = atom->next ) {
     if ( ! strcmp(target->aname,atom->name) ) break;
+  }
+  if ( ! atom ) {
+    sprintf(errmsg,"no atom %s in residue %s:%s of segment %s",
+		target->aname,res->name,res->resid,target->segid);
+    topo_mol_log_error(mol,errmsg);
   }
   return atom;
 }
