@@ -30,8 +30,11 @@ typedef int AtomID;
 typedef double Coordinate;
 
 typedef ResizeArray<Position> PositionList;
+typedef ResizeArrayIter<Position> PositionListIter;
 typedef ResizeArray<Velocity> VelocityList;
+typedef ResizeArrayIter<Velocity> VelocityListIter;
 typedef ResizeArray<Force> ForceList;
+typedef ResizeArrayIter<Force> ForceListIter;
 
 typedef ResizeArray<AtomID> AtomIDList;
 typedef ResizeArrayIter<AtomID> AtomIDListIter;
@@ -41,9 +44,12 @@ typedef int ComputeID;
 typedef int NodeID;
 
 typedef ResizeArray<PatchID> PatchIDList;
+typedef ResizeArrayIter<PatchID> PatchIDListIter;
 typedef ResizeArray<Patch *> PatchList;
+typedef ResizeArrayIter<Patch *> PatchListIter;
 
 typedef ResizeArray<Compute *> ComputeList;
+typedef ResizeArrayIter<Compute *> ComputeListIter;
 
 enum ComputeType
 {
@@ -66,13 +72,16 @@ enum Boolean
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdTypes.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1996/08/29 00:52:06 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1996/09/10 04:16:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: NamdTypes.h,v $
+ * Revision 1.7  1996/09/10 04:16:28  jim
+ * Added iterators for all lists.
+ *
  * Revision 1.6  1996/08/29 00:52:06  ari
  * *** empty log message ***
  *
