@@ -142,6 +142,8 @@ private:
   int32 **dihedralsByAtom;  //  List of dihedrals owned by each atom
   int32 **impropersByAtom;  //  List of impropers owned by each atom
   int32 **exclusionsByAtom; //  List of exclusions owned by each atom
+  int32 **fullExclusionsByAtom; //  List of atoms excluded for each atom
+  int32 **modExclusionsByAtom; //  List of atoms modified for each atom
 
   ObjectArena<char> *exclArena;
   ExclusionCheck *all_exclusions;
@@ -382,12 +384,16 @@ public:
       { return impropersByAtom[anum]; }
   int32 *get_exclusions_for_atom(int anum)
       { return exclusionsByAtom[anum]; }
+  const int32 *get_full_exclusions_for_atom(int anum) const
+      { return fullExclusionsByAtom[anum]; }
+  const int32 *get_mod_exclusions_for_atom(int anum) const
+      { return modExclusionsByAtom[anum]; }
   
   //  Check for exclusions, either explicit or bonded.
         //  Returns 1 for full, 2 for 1-4 exclusions.
   int checkexcl(int atom1, int atom2) const;
 
-  ExclusionCheck *get_excl_check_for_atom(int anum) const
+  const ExclusionCheck *get_excl_check_for_atom(int anum) const
        { return &all_exclusions[anum]; }
 
   //  Return true or false based on whether the specified atom

@@ -245,6 +245,10 @@ void ComputeNonbondedUtil :: NAME
   const CompAtom *p_0 = params->p[0];
   const CompAtom *p_1 = params->p[1];
 
+  char * excl_flags_buff = 0;
+  const int32 * full_excl = 0;
+  const int32 * mod_excl = 0;
+
   plint *pairlistn_save;  int npairn;
   plint *pairlistx_save;  int npairx;
   plint *pairlistm_save;  int npairm;
@@ -366,7 +370,29 @@ void ComputeNonbondedUtil :: NAME
     const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(p_i.id);
     const int excl_min = exclcheck->min;
     const int excl_max = exclcheck->max;
-    const char * const excl_flags = exclcheck->flags - excl_min;
+    const char * excl_flags_var;
+    if ( exclcheck->flags ) excl_flags_var = exclcheck->flags - excl_min;
+    else {  // need to build list on the fly
+      if ( excl_flags_buff ) {
+        int nl,l;
+        nl = full_excl[0] + 1;
+        for ( l=1; l<nl; ++l ) excl_flags_buff[full_excl[l]] = 0;
+        nl = mod_excl[0] + 1;
+        for ( l=1; l<nl; ++l ) excl_flags_buff[mod_excl[l]] = 0;
+      } else {
+        excl_flags_buff = new char[mol->numAtoms];
+        memset( (void*) excl_flags_buff, 0, mol->numAtoms);
+      }
+      int nl,l;
+      full_excl = mol->get_full_exclusions_for_atom(p_i.id);
+      nl = full_excl[0] + 1;
+      for ( l=1; l<nl; ++l ) excl_flags_buff[full_excl[l]] = EXCHCK_FULL;
+      mod_excl = mol->get_mod_exclusions_for_atom(p_i.id);
+      nl = mod_excl[0] + 1;
+      for ( l=1; l<nl; ++l ) excl_flags_buff[mod_excl[l]] = EXCHCK_MOD;
+      excl_flags_var = excl_flags_buff;
+    }
+    const char * const excl_flags = excl_flags_var;
 
   if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom) {
 
@@ -755,5 +781,8 @@ void ComputeNonbondedUtil :: NAME
   reduction[fullElectVirialIndex_ZY] += fullElectVirial_yz;
   reduction[fullElectVirialIndex_ZZ] += fullElectVirial_zz;
   )
+
+  delete [] excl_flags_buff;
+
 }
 

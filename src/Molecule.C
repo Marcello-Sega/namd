@@ -179,6 +179,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   dihedralsByAtom=NULL;
   impropersByAtom=NULL;
   exclusionsByAtom=NULL;
+  fullExclusionsByAtom=NULL;
+  modExclusionsByAtom=NULL;
   all_exclusions=NULL;
   langevinParams=NULL;
   langForceVals=NULL;
@@ -339,6 +341,12 @@ Molecule::~Molecule()
   
   if (exclusionsByAtom != NULL)
        delete [] exclusionsByAtom;
+  
+  if (fullExclusionsByAtom != NULL)
+       delete [] fullExclusionsByAtom;
+  
+  if (modExclusionsByAtom != NULL)
+       delete [] modExclusionsByAtom;
   
   if (all_exclusions != NULL)
        delete [] all_exclusions;
@@ -2092,6 +2100,8 @@ void Molecule::receive_Molecule(MIStream *msg)
        dihedralsByAtom = new int32 *[numAtoms];
        impropersByAtom = new int32 *[numAtoms];
        exclusionsByAtom = new int32 *[numAtoms];
+       fullExclusionsByAtom = new int32 *[numAtoms];
+       modExclusionsByAtom = new int32 *[numAtoms];
 
        int32 *byAtomSize = new int32[numAtoms];
 
@@ -2345,7 +2355,55 @@ void Molecule::receive_Molecule(MIStream *msg)
          exclusionsByAtom[a1][byAtomSize[a1]++] = i;
        }
 
+       int32 *byAtomSize2 = new int32[numAtoms];
+
+       for (i=0; i<numAtoms; i++)
+       {
+         byAtomSize[i] = 0;
+         byAtomSize2[i] = 0;
+       }
+
+       for (i=0; i<numTotalExclusions; i++)
+       {
+         if ( numFixedAtoms && fixedAtomFlags[exclusions[i].atom1]
+                            && fixedAtomFlags[exclusions[i].atom2] ) continue;
+         if ( exclusions[i].modified ) {
+           byAtomSize2[exclusions[i].atom1]++;
+           byAtomSize2[exclusions[i].atom2]++;
+         } else {
+           byAtomSize[exclusions[i].atom1]++;
+           byAtomSize[exclusions[i].atom2]++;
+         }
+       }
+
+       for (i=0; i<numAtoms; i++)
+       {
+         fullExclusionsByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
+         fullExclusionsByAtom[i][0] = 0;
+         modExclusionsByAtom[i] = arena->getNewArray(byAtomSize2[i]+1);
+         modExclusionsByAtom[i][0] = 0;
+       }
+
+       for (i=0; i<numTotalExclusions; i++)
+       {
+         int a1 = exclusions[i].atom1;
+         int a2 = exclusions[i].atom2;
+         if ( numFixedAtoms && fixedAtomFlags[a1]
+                            && fixedAtomFlags[a2] ) continue;
+         int32 *l1, *l2;
+         if ( exclusions[i].modified ) {
+           l1 = modExclusionsByAtom[a1];
+           l2 = modExclusionsByAtom[a2];
+         } else {
+           l1 = fullExclusionsByAtom[a1];
+           l2 = fullExclusionsByAtom[a2];
+         }
+         l1[++(*l1)] = a2;
+         l2[++(*l2)] = a1;
+       }
+
        delete [] byAtomSize;  byAtomSize = 0;
+       delete [] byAtomSize2;  byAtomSize2 = 0;
 
 
        //  Allocate an array to hold the exclusions for each atom
@@ -2369,15 +2427,20 @@ void Molecule::receive_Molecule(MIStream *msg)
          if ( a1 > all_exclusions[a2].max ) all_exclusions[a2].max = a1;
        }
        int exclmem = 0;
+       int maxExclusionFlags = simParams->maxExclusionFlags;
        for (i=0; i<numAtoms; i++)
        {
+         int s = all_exclusions[i].max - all_exclusions[i].min + 1;
          if ( all_exclusions[i].max != -1 ) {
-           int s = all_exclusions[i].max - all_exclusions[i].min + 1;
-           char *f = all_exclusions[i].flags = exclArena->getNewArray(s);
-           for ( int k=0; k<s; ++k ) f[k] = 0;
-           exclmem += s;
+           if ( s < maxExclusionFlags ) {
+             char *f = all_exclusions[i].flags = exclArena->getNewArray(s);
+             for ( int k=0; k<s; ++k ) f[k] = 0;
+             exclmem += s;
+           } else {
+             all_exclusions[i].flags = 0;  // need to build on the fly
+           }
          } else {
-           all_exclusions[i].flags = 0;
+           all_exclusions[i].flags = (char*)-1; // should never dereference
          }
        }
        if ( 0 ) {
@@ -2391,11 +2454,15 @@ void Molecule::receive_Molecule(MIStream *msg)
          if ( numFixedAtoms && fixedAtomFlags[a1]
                             && fixedAtomFlags[a2] ) continue;
          if ( exclusions[i].modified ) {
-           all_exclusions[a1].flags[a2-all_exclusions[a1].min] = EXCHCK_MOD;
-           all_exclusions[a2].flags[a1-all_exclusions[a2].min] = EXCHCK_MOD;
+           if ( all_exclusions[a1].flags )
+             all_exclusions[a1].flags[a2-all_exclusions[a1].min] = EXCHCK_MOD;
+           if ( all_exclusions[a2].flags )
+             all_exclusions[a2].flags[a1-all_exclusions[a2].min] = EXCHCK_MOD;
          } else {
-           all_exclusions[a1].flags[a2-all_exclusions[a1].min] = EXCHCK_FULL;
-           all_exclusions[a2].flags[a1-all_exclusions[a2].min] = EXCHCK_FULL;
+           if ( all_exclusions[a1].flags )
+             all_exclusions[a1].flags[a2-all_exclusions[a1].min] = EXCHCK_FULL;
+           if ( all_exclusions[a2].flags )
+             all_exclusions[a2].flags[a1-all_exclusions[a2].min] = EXCHCK_FULL;
          }
        }
 

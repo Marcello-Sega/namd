@@ -1251,6 +1251,11 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                "maximum number of atoms in one pair compute distribution", 
                &numAtomsPair2, 400);
    opts.range("numAtomsPair2",NOT_NEGATIVE);
+
+   // Maximum exclusion flags per atom
+   opts.optional("main", "maxExclusionFlags", 
+     "maximum number of exclusion flags per atom", &maxExclusionFlags, 100);
+   opts.range("maxExclusionFlags",POSITIVE);
 }
 
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {

@@ -456,6 +456,8 @@ public:
                                         // pair-compute 
         int numAtomsPair2;              // maximum number of atoms in a single
                                         // pair-compute 
+	int maxExclusionFlags;		// maximum size of exclusion check list
+					// for any given atom
 
 	//
         // hydrogen bond simulation parameters
