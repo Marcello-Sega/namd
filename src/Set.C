@@ -97,7 +97,7 @@ int n;
   return n;
 }
 
-Set::print() 
+void Set::print() 
 {
   listNode *p = head;
   while (p){

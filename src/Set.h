@@ -29,7 +29,7 @@ public:
  InfoRecord *iterator(Iterator *);
  InfoRecord *next(Iterator *);
  int numElements();
- print();
+ void print();
 };
 
 #endif
