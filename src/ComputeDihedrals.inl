@@ -21,13 +21,13 @@ inline DihedralElem::DihedralElem()
 	p[3] = NULL;
   }
 
-inline DihedralElem::DihedralElem(const Dihedral *a)
+inline DihedralElem::DihedralElem(const Dihedral *a, const DihedralValue *v)
   {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;
     atomID[2] = a->atom3;
     atomID[3] = a->atom4;
-    dihedralType = a->dihedral_type;
+    value = &v[a->dihedral_type];
   }
 
 inline DihedralElem::DihedralElem(AtomID atom0, AtomID atom1,

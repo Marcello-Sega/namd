@@ -27,6 +27,7 @@
 #include "PatchMgr.h"
 #include "HomePatchList.h"
 #include "Molecule.h"
+#include "Parameters.h"
 #include "ReductionMgr.h"
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
@@ -86,17 +87,19 @@ typedef UniqueSetIter<TuplePatchElem> TuplePatchListIter;
 class AtomMap;
 class ReductionMgr;
 
-template <class T, class S> class ComputeHomeTuples : public Compute {
+template <class T, class S, class P> class ComputeHomeTuples : public Compute {
 
   private:
   
     virtual void loadTuples(void) {
       int numTuples;
       int **tuplesByAtom;
-      S *tupleStructs;
+      /* const (need to propagate const) */ S *tupleStructs;
+      const P *tupleValues;
     
       T::getMoleculePointers(node->molecule,
 		    &numTuples, &tuplesByAtom, &tupleStructs);
+      T::getParameterPointers(node->parameters, &tupleValues);
 
       tupleList.clear();
 
@@ -119,7 +122,7 @@ template <class T, class S> class ComputeHomeTuples : public Compute {
     
            /* cycle through each tuple */
            for( ; *curTuple != -1; ++curTuple) {
-             T t(&tupleStructs[*curTuple]);
+             T t(&tupleStructs[*curTuple],tupleValues);
              register int i;
              aid[0] = atomMap->localID(t.atomID[0]);
              int homepatch = aid[0].pid;

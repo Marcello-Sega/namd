@@ -12,6 +12,7 @@
 #include "ReductionMgr.h"
 
 class Molecule;
+class ExclusionValue;
 
 class NonbondedExclElem : public ComputeNonbondedUtil {
 public:
@@ -25,6 +26,7 @@ public:
   enum { reductionChecksumLabel = REDUCTION_EXCLUSION_CHECKSUM };
   static void loadTuplesForAtom(void*, AtomID, Molecule*) {};
   static void getMoleculePointers(Molecule*, int*, int***, Exclusion**);
+  static void getParameterPointers(Parameters*, const ExclusionValue** v) { *v=0; }
 
   int hash() const {
     return 0x7FFFFFFF & (atomID[1] << 16 + atomID[0]);
@@ -39,7 +41,7 @@ public:
     p[0] = NULL;
     p[1] = NULL;
   }
-  NonbondedExclElem(const Exclusion *a) {
+  NonbondedExclElem(const Exclusion *a, const ExclusionValue *) {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;
     modified = a->modified;
@@ -67,11 +69,11 @@ public:
   private:
 };
 
-class ComputeNonbondedExcls : public ComputeHomeTuples<NonbondedExclElem,Exclusion>
+class ComputeNonbondedExcls : public ComputeHomeTuples<NonbondedExclElem,Exclusion,ExclusionValue>
 {
 public:
 
-  ComputeNonbondedExcls(ComputeID c) : ComputeHomeTuples<NonbondedExclElem,Exclusion>(c) 
+  ComputeNonbondedExcls(ComputeID c) : ComputeHomeTuples<NonbondedExclElem,Exclusion,ExclusionValue>(c) 
   { }
 
   // void loadTuples(); //overload of the template version

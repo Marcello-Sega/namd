@@ -2533,6 +2533,30 @@ void Molecule::receive_Molecule(MIStream *msg)
          }
        }
 
+#if 0
+       for (i=0; i<numAtoms; i++) {
+	int *excl_list = all_exclusions[i];
+	int min_excl = numAtoms;
+	int max_excl = -1;
+	// scan full exclusions
+	int j;
+	for (j=0; excl_list[j] != -1; ++j) {
+	  if ( excl_list[j] < min_excl ) min_excl = excl_list[j];
+	  if ( excl_list[j] > max_excl ) max_excl = excl_list[j];
+	}
+	// scan 1-4 exclusions
+	for (++j; excl_list[j] != -1; ++j) {
+	  if ( excl_list[j] < min_excl ) min_excl = excl_list[j];
+	  if ( excl_list[j] > max_excl ) max_excl = excl_list[j];
+	}
+	int num_excl = j-1;
+	int range_size = max_excl-min_excl+1;
+	float frac = 1;
+	if ( num_excl && range_size ) { frac = (float)num_excl / (float)range_size; }
+	iout << "ExclCount: " << num_excl << " " << frac << "\n" << endi;
+       }
+#endif
+
        delete [] byAtomSize;
 
     }

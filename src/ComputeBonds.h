@@ -11,6 +11,8 @@
 #include "NamdTypes.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
+#include "ComputeHomeTuples.h"
+
 
 class TuplePatchElem;
 
@@ -25,18 +27,19 @@ public:
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int***, Bond**);
+    static void getParameterPointers(Parameters*, const BondValue**);
 
     int hash() const { return 0x7FFFFFFF & ( (atomID[0]<<16) + (atomID[1])); }
 
     // Internal data
-    Index bondType;
+    const BondValue *value;
 
   enum { bondEnergyIndex, TENSOR(virialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_BOND_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline BondElem();
-  inline BondElem(const Bond *a);
+  inline BondElem(const Bond *a, const BondValue *v);
   inline BondElem(AtomID atom0, AtomID atom1);
   ~BondElem() {};
 
@@ -44,13 +47,11 @@ public:
   inline int operator<(const BondElem &a) const;
 };
 
-#include "ComputeHomeTuples.h"
-
-class ComputeBonds : public ComputeHomeTuples<BondElem,Bond>
+class ComputeBonds : public ComputeHomeTuples<BondElem,Bond,BondValue>
 {
 public:
 
-  ComputeBonds(ComputeID c) : ComputeHomeTuples<BondElem,Bond>(c) { ; }
+  ComputeBonds(ComputeID c) : ComputeHomeTuples<BondElem,Bond,BondValue>(c) { ; }
 
 };
 

@@ -13,6 +13,7 @@
 
 #include "Debug.h"
 
+#if 0
 void BondElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
@@ -36,6 +37,7 @@ void BondElem::loadTuplesForAtom
         bondNum = *(++bonds);
       }
 }
+#endif
 
 void BondElem::getMoleculePointers
     (Molecule* mol, int* count, int*** byatom, Bond** structarray)
@@ -43,6 +45,10 @@ void BondElem::getMoleculePointers
   *count = mol->numBonds;
   *byatom = mol->bondsByAtom;
   *structarray = mol->bonds;
+}
+
+void BondElem::getParameterPointers(Parameters *p, const BondValue **v) {
+  *v = p->bond_array;
 }
 
 void BondElem::computeForce(BigReal *reduction)
@@ -57,8 +63,8 @@ void BondElem::computeForce(BigReal *reduction)
   DebugM(3, "::computeForce() -- starting with bond type " << bondType << endl);
 
   // get the bond information
-  Real k, x0;
-  Node::Object()->parameters->get_bond_params(&k,&x0,bondType);
+  Real k = value->k;
+  Real x0 = value->x0;
 
   // compute vectors between atoms and their distances
   const Lattice & lattice = p[0]->p->lattice;

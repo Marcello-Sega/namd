@@ -23,9 +23,10 @@ public:
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int***, Angle**);
+    static void getParameterPointers(Parameters*, const AngleValue**);
 
     // Internal data
-    Index angleType;
+    const AngleValue *value;
 
   int hash() const { 
     return 0x7FFFFFFF & ((atomID[0]<<22) + (atomID[1]<<11) + (atomID[2])); 
@@ -36,7 +37,7 @@ public:
   static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline AngleElem();
-  inline AngleElem(const Angle *a);
+  inline AngleElem(const Angle *a, const AngleValue *v);
   inline AngleElem(AtomID atom0, AtomID atom1, AtomID atom2);
   ~AngleElem() { };
 
@@ -44,11 +45,11 @@ public:
   inline int operator<(const AngleElem &a) const;
 };
 
-class ComputeAngles : public ComputeHomeTuples<AngleElem,Angle>
+class ComputeAngles : public ComputeHomeTuples<AngleElem,Angle,AngleValue>
 {
 public:
 
-  ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem,Angle>(c) { ; }
+  ComputeAngles(ComputeID c) : ComputeHomeTuples<AngleElem,Angle,AngleValue>(c) { ; }
 
 };
 

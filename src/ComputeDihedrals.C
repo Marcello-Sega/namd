@@ -13,6 +13,7 @@
 
 #include "Debug.h"
 
+#if 0
 void DihedralElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
@@ -36,6 +37,7 @@ void DihedralElem::loadTuplesForAtom
         dihedralNum = *(++dihedrals);
       }
 }
+#endif
 
 void DihedralElem::getMoleculePointers
     (Molecule* mol, int* count, int*** byatom, Dihedral** structarray)
@@ -43,6 +45,10 @@ void DihedralElem::getMoleculePointers
   *count = mol->numDihedrals;
   *byatom = mol->dihedralsByAtom;
   *structarray = mol->dihedrals;
+}
+
+void DihedralElem::getParameterPointers(Parameters *p, const DihedralValue **v) {
+  *v = p->dihedral_array;
 }
 
 void DihedralElem::computeForce(BigReal *reduction)
@@ -64,13 +70,11 @@ void DihedralElem::computeForce(BigReal *reduction)
   BigReal K,K1;		// energy constants
   BigReal diff;		// for periodicity
   Force f1(0,0,0),f2(0,0,0),f3(0,0,0);	// force components
-  Real k, delta;	// angle information
-  int n;		// angle information
 
   DebugM(3, "::computeForce() -- starting with dihedral type " << dihedralType << endl);
 
   // get the dihedral information
-  int multiplicity = Node::Object()->parameters->get_dihedral_multiplicity(dihedralType);
+  int multiplicity = value->multiplicity;
 
   //  Calculate the vectors between atoms
   const Position & pos0 = p[0]->x[localIndex[0]].position;
@@ -125,7 +129,9 @@ void DihedralElem::computeForce(BigReal *reduction)
   for (int mult_num=0; mult_num<multiplicity; mult_num++)
   {
     /* get angle information */
-    Node::Object()->parameters->get_dihedral_params(&k,&n,&delta,dihedralType,mult_num);
+    Real k = value->values[mult_num].k;
+    Real delta = value->values[mult_num].delta;
+    int n = value->values[mult_num].n;
 
     //  Calculate the energy
     if (n)

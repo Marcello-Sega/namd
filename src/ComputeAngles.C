@@ -20,6 +20,7 @@
 
 #include "Debug.h"
 
+#if 0
 void AngleElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
@@ -43,6 +44,7 @@ void AngleElem::loadTuplesForAtom
         angleNum = *(++angles);
       }
 }
+#endif
 
 void AngleElem::getMoleculePointers
     (Molecule* mol, int* count, int*** byatom, Angle** structarray)
@@ -50,6 +52,10 @@ void AngleElem::getMoleculePointers
   *count = mol->numAngles;
   *byatom = mol->anglesByAtom;
   *structarray = mol->angles;
+}
+
+void AngleElem::getParameterPointers(Parameters *p, const AngleValue **v) {
+  *v = p->angle_array;
 }
 
 void AngleElem::computeForce(BigReal *reduction)
@@ -76,8 +82,10 @@ void AngleElem::computeForce(BigReal *reduction)
   DebugM(3, "::computeForce() -- starting with angle type " << angleType << endl);
 
   // get the angle information
-  Real k, theta0, k_ub, r_ub;
-  Node::Object()->parameters->get_angle_params(&k,&theta0,&k_ub,&r_ub,angleType);
+  Real k = value->k;
+  Real theta0 = value->theta0;
+  Real k_ub = value->k_ub;
+  Real r_ub = value->r_ub;
 
   // compute vectors between atoms and their distances
   const Vector r12 = lattice.delta(pos1,pos2);

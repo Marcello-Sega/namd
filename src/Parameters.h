@@ -69,19 +69,19 @@ class StringList;
 //****** END CHARMM/XPLOR type changes
 
 
-typedef struct bond_val
-{
+class BondValue {
+public:
 	Real k;		//  Force constant for the bond
 	Real x0;	//  Rest distance for the bond
-} BondValue;
+};
 
-typedef struct angle_val
-{
+class AngleValue {
+public:
 	Real k;		//  Force constant for angle
 	Real theta0;	//  Rest angle for angle
 	Real k_ub;	//  Urey-Bradley force constant
 	Real r_ub;	//  Urey-Bradley distance
-} AngleValue;
+};
 
 typedef struct four_body_consts
 {
@@ -90,25 +90,25 @@ typedef struct four_body_consts
 	Real delta;	//  Phase shift
 } FourBodyConsts;
 
-typedef struct dihedral_val
-{
+class DihedralValue {
+public:
 	int multiplicity;
 	FourBodyConsts values[MAX_MULTIPLICITY];
-} DihedralValue;
+};
 
-typedef struct improper_val
-{
+class ImproperValue {
+public:
 	int multiplicity;
 	FourBodyConsts values[MAX_MULTIPLICITY];
-} ImproperValue;
+};
 
-typedef struct nonbondedexcl_val
-{
+class NonbondedExclValue {
+public:
 	// need to put parameters here...
 	// for now, copy bond
 	Real k;		//  Force constant for the bond
 	Real x0;	//  Rest distance for the bond
-} NonbondedExclValue;
+};
 
 typedef struct vdw_val
 {
@@ -160,11 +160,13 @@ private:
 	struct dihedral_params *dihedralp;      //  Linked list of dihedral par.
 	struct vdw_params *vdwp;		//  Binary tree of vdw params
 	struct vdw_pair_params *vdw_pairp;	//  Binary tree of vdw pairs
+public:
 	BondValue *bond_array;			//  Array of bond params
 	AngleValue *angle_array;		//  Array of angle params
 	DihedralValue *dihedral_array;		//  Array of dihedral params
 	ImproperValue *improper_array;		//  Array of improper params
 	VdwValue *vdw_array;			//  Array of vdw params
+private:
 	IndexedVdwPair *vdw_pair_tree;		//  Tree of vdw pair params
 	int NumBondParams;			//  Number of bond parameters
 	int NumAngleParams;			//  Number of angle parameters

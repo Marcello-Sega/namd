@@ -11,6 +11,7 @@
 #include "ReductionMgr.h"
 
 class Molecule;
+class ImproperValue;
 
 class ImproperElem {
 public:
@@ -23,9 +24,10 @@ public:
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int***, Improper**);
+    static void getParameterPointers(Parameters*, const ImproperValue**);
 
     // Internal data
-    Index improperType;
+    const ImproperValue *value;
 
   int hash() const {
     return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
@@ -44,12 +46,12 @@ public:
 	p[2] = NULL;
 	p[3] = NULL;
   }
-  ImproperElem(const Improper *a) {
+  ImproperElem(const Improper *a, const ImproperValue *v) {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;
     atomID[2] = a->atom3;
     atomID[3] = a->atom4;
-    improperType = a->improper_type;
+    value = &v[a->improper_type];
   }
 
   ImproperElem(AtomID atom0, AtomID atom1, AtomID atom2, AtomID atom3) {
@@ -81,11 +83,11 @@ public:
   }
 };
 
-class ComputeImpropers : public ComputeHomeTuples<ImproperElem,Improper>
+class ComputeImpropers : public ComputeHomeTuples<ImproperElem,Improper,ImproperValue>
 {
 public:
 
-  ComputeImpropers(ComputeID c) : ComputeHomeTuples<ImproperElem,Improper>(c) { ; }
+  ComputeImpropers(ComputeID c) : ComputeHomeTuples<ImproperElem,Improper,ImproperValue>(c) { ; }
 
 };
 

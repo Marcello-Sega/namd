@@ -17,11 +17,11 @@ inline BondElem::BondElem()
     p[1] = NULL;
   }
 
-inline BondElem::BondElem(const Bond *a)
+inline BondElem::BondElem(const Bond *a, const BondValue *v)
   {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;
-    bondType = a->bond_type;
+    value = &v[a->bond_type];
   }
 
 inline BondElem::BondElem(AtomID atom0, AtomID atom1)

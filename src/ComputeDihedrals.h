@@ -11,6 +11,7 @@
 #include "ReductionMgr.h"
 
 class Molecule;
+class DihedralValue;
 
 class DihedralElem {
 public:
@@ -23,9 +24,10 @@ public:
     // The following is evil, but the compiler chokes otherwise. (JCP)
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int***, Dihedral**);
+    static void getParameterPointers(Parameters*, const DihedralValue**);
 
     // Internal data
-    Index dihedralType;
+    const DihedralValue *value;
 
   int hash() const { 
     return 0x7FFFFFFF &((atomID[0]<<24) + (atomID[1]<<16) + (atomID[2]<<8) + atomID[3]);
@@ -36,7 +38,7 @@ public:
   static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline DihedralElem();
-  inline DihedralElem(const Dihedral *a);
+  inline DihedralElem(const Dihedral *a, const DihedralValue *v);
   inline DihedralElem(AtomID atom0, AtomID atom1, AtomID atom2, AtomID atom3);
   ~DihedralElem() {};
 
@@ -44,11 +46,11 @@ public:
   inline int operator<(const DihedralElem &a) const;
 };
 
-class ComputeDihedrals : public ComputeHomeTuples<DihedralElem,Dihedral>
+class ComputeDihedrals : public ComputeHomeTuples<DihedralElem,Dihedral,DihedralValue>
 {
 public:
 
-  ComputeDihedrals(ComputeID c) : ComputeHomeTuples<DihedralElem,Dihedral>(c) { ; }
+  ComputeDihedrals(ComputeID c) : ComputeHomeTuples<DihedralElem,Dihedral,DihedralValue>(c) { ; }
 
 };
 

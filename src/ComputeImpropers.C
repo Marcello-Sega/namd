@@ -13,6 +13,7 @@
 
 #include "Debug.h"
 
+#if 0
 void ImproperElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
@@ -36,6 +37,7 @@ void ImproperElem::loadTuplesForAtom
         improperNum = *(++impropers);
       }
 }
+#endif
 
 void ImproperElem::getMoleculePointers
     (Molecule* mol, int* count, int*** byatom, Improper** structarray)
@@ -43,6 +45,10 @@ void ImproperElem::getMoleculePointers
   *count = mol->numImpropers;
   *byatom = mol->impropersByAtom;
   *structarray = mol->impropers;
+}
+
+void ImproperElem::getParameterPointers(Parameters *p, const ImproperValue **v) {
+  *v = p->improper_array;
 }
 
 void ImproperElem::computeForce(BigReal *reduction)
@@ -65,13 +71,11 @@ void ImproperElem::computeForce(BigReal *reduction)
   BigReal K,K1;		// energy constants
   BigReal diff;		// for periodicity
   Force f1(0,0,0),f2(0,0,0),f3(0,0,0);	// force components
-  Real k, delta;	// angle information
-  int n;		// angle information
 
   DebugM(3, "::computeForce() -- starting with improper type " << improperType << endl);
 
   // get the improper information
-  int multiplicity = Node::Object()->parameters->get_improper_multiplicity(improperType);
+  int multiplicity = value->multiplicity;
 
   //  Calculate the vectors between atoms
   const Position & pos0 = p[0]->x[localIndex[0]].position;
@@ -126,7 +130,9 @@ void ImproperElem::computeForce(BigReal *reduction)
   for (int mult_num=0; mult_num<multiplicity; mult_num++)
   {
     /* get angle information */
-    Node::Object()->parameters->get_improper_params(&k,&n,&delta,improperType,mult_num);
+    Real k = value->values[mult_num].k;
+    Real delta = value->values[mult_num].delta;
+    int n = value->values[mult_num].n;
 
     //  Calculate the energy
     if (n)

@@ -19,12 +19,12 @@ inline AngleElem::AngleElem()
     p[2] = NULL;
   }
 
-inline AngleElem::AngleElem(const Angle *a)
+inline AngleElem::AngleElem(const Angle *a, const AngleValue *v)
   {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;
     atomID[2] = a->atom3;
-    angleType = a->angle_type;
+    value = &v[a->angle_type];
   }
 
 inline AngleElem::AngleElem(AtomID atom0, AtomID atom1, AtomID atom2)
