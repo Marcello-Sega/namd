@@ -1,19 +1,9 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: CommunicatePVM.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:01 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *
  * CommunicatePVM - PVM version of the Communicate object.  Allows
@@ -24,119 +14,8 @@
  * spawned yet; if no, this spawns them and confirms everthing is running
  * well.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: CommunicatePVM.C,v $
- * Revision 1.1001  1997/03/19 11:54:01  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:57:39  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:29:57  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777  1997/01/17 19:35:30  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/12/06 19:52:20  ari
- * Initial revision
- *
- * Revision 1.26  1996/01/28 21:50:08  jean
- * Attempting to make stable RCS without Mark Nelson's
- * fma/pairlist decoupling
- *
- * Revision 1.27  1995/12/04 20:46:57  brunner
- * More communication stats - message sizes
- *
- * Revision 1.26  1995/11/22 12:10:55  brunner
- * Addded simple message accounting information.
- * for Communicate:print_comm_stats
- *
- * Revision 1.25  95/10/24  14:53:24  14:53:24  nelson (Mark T. Nelson)
- * Added exclusion of pvm_setopt call for SGI power challenge
- * 
- * Revision 1.24  95/10/07  01:32:35  01:32:35  hazen (Brett Hazen)
- * Memory Allocation error-checking added
- * 
- * Revision 1.23  1995/09/19  15:55:09  nelson
- * Added ifdef's for PVMe for IBM SP1 and SP2
- *
- * Revision 1.22  95/09/19  09:09:20  09:09:20  nelson (Mark T. Nelson)
- * Fixed problem where is SPECIFY_NUM_NODES was set and the number
- * of nodes wasn't specified on the command line namd core dumped
- * 
- * Revision 1.21  95/06/20  11:34:51  11:34:51  nelson (Mark T. Nelson)
- * Added explicit int declaration to get rid of warning messages
- * 
- * Revision 1.20  95/05/23  12:34:12  12:34:12  nelson (Mark T. Nelson)
- * Added code to support T3D with much help from Tom MacFarland from IPP Rechenzentrum
- * 
- * Revision 1.19  95/04/10  11:27:36  11:27:36  nelson (Mark T. Nelson)
- * Changed handling of previously static variables
- * 
- * Revision 1.18  95/03/20  11:53:52  11:53:52  nelson (Mark T. Nelson)
- * Removed numActive flag
- * 
- * Revision 1.17  95/03/18  02:42:11  02:42:11  nelson (Mark T. Nelson)
- * Reworked extensively to improve performance
- * 
- * Revision 1.16  95/03/09  10:43:06  10:43:06  nelson (Mark T. Nelson)
- * Added code for Exemplar port
- * 
- * Revision 1.15  95/03/08  14:42:42  14:42:42  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.14  95/02/27  14:52:09  14:52:09  nelson (Mark T. Nelson)
- * Changed so that PVM errors terminate namd if the reach a max number
- * 
- * Revision 1.13  95/01/30  14:43:12  14:43:12  nelson (Mark T. Nelson)
- * Changed do_receive in vain attempt to find memory leak on master node
- * 
- * Revision 1.12  94/12/14  16:13:42  16:13:42  nelson (Mark T. Nelson)
- * Added get_tids and changed do_receive to work with FMA
- * 
- * Revision 1.11  94/11/22  13:40:30  13:40:30  nelson (Mark T. Nelson)
- * Change way that do_receive works so that it retrieves messages until
- * it either finds one that matches, or runs out of messages
- * 
- * Revision 1.10  94/10/24  09:25:58  09:25:58  nelson (Mark T. Nelson)
- * Made minor changes to MsgList definitions
- * 
- * Revision 1.9  94/09/03  18:10:53  18:10:53  billh (Bill Humphrey)
- * Changed to put data in Message object without a second copy of the data
- * (thus, we allocate storage, and put the allocated storage into the Message
- * instead of copying the data and deleting the allocated space).
- * 
- * Revision 1.8  94/08/03  21:55:34  21:55:34  nelson (Mark T. Nelson)
- * Added unsigned short, int and long
- * 
- * Revision 1.7  94/07/26  16:52:26  16:52:26  billh (Bill Humphrey)
- * (Hopefully) fixed problem with broadcast ... now just loops through nodes
- * and sends copy of message to each node, instead of having specific
- * broadcast routine in child class.
- * 
- * Revision 1.6  94/07/22  14:03:57  14:03:57  billh (Bill Humphrey)
- * Changed pvm_advise to pvm_setopt due to new PVM 3.3 version.
- * 
- * Revision 1.5  94/07/03  01:22:54  01:22:54  billh (Bill Humphrey)
- * Made Communicate enum's and MsgItem struct public members of
- * Communicate, instead of global.
- * 
- * Revision 1.4  94/07/03  00:15:00  00:15:00  billh (Bill Humphrey)
- * New format ... user creates a Message object, and given that to a
- * Communicate object; these can be kept in a list to be all sent at once
- * or sent as soon as requested.
- * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicatePVM.C,v 1.1001 1997/03/19 11:54:01 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Attic/CommunicatePVM.C,v 1.1002 1997/03/20 23:53:19 ari Exp $";
 
 #include <iostream.h>
 #include <string.h>
@@ -1130,17 +1009,124 @@ int CommunicatePVM::do_send_msg(Message *msg, int node, int tag, int delmsg)
 /***************************************************************************
  * RCS INFORMATION:
  *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:01 $
+ *	$RCSfile: CommunicatePVM.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/20 23:53:19 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CommunicatePVM.C,v $
+ * Revision 1.1002  1997/03/20 23:53:19  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1001  1997/03/19 11:54:01  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
  * Added some register variables to Molecule and ComputeNonbondedExcl.C
  *
+ * Revision 1.1000  1997/02/06 15:57:39  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:29:57  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777  1997/01/17 19:35:30  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/12/06 19:52:20  ari
+ * Initial revision
+ *
+ * Revision 1.26  1996/01/28 21:50:08  jean
+ * Attempting to make stable RCS without Mark Nelson's
+ * fma/pairlist decoupling
+ *
+ * Revision 1.27  1995/12/04 20:46:57  brunner
+ * More communication stats - message sizes
+ *
+ * Revision 1.26  1995/11/22 12:10:55  brunner
+ * Addded simple message accounting information.
+ * for Communicate:print_comm_stats
+ *
+ * Revision 1.25  95/10/24  14:53:24  14:53:24  nelson (Mark T. Nelson)
+ * Added exclusion of pvm_setopt call for SGI power challenge
+ * 
+ * Revision 1.24  95/10/07  01:32:35  01:32:35  hazen (Brett Hazen)
+ * Memory Allocation error-checking added
+ * 
+ * Revision 1.23  1995/09/19  15:55:09  nelson
+ * Added ifdef's for PVMe for IBM SP1 and SP2
+ *
+ * Revision 1.22  95/09/19  09:09:20  09:09:20  nelson (Mark T. Nelson)
+ * Fixed problem where is SPECIFY_NUM_NODES was set and the number
+ * of nodes wasn't specified on the command line namd core dumped
+ * 
+ * Revision 1.21  95/06/20  11:34:51  11:34:51  nelson (Mark T. Nelson)
+ * Added explicit int declaration to get rid of warning messages
+ * 
+ * Revision 1.20  95/05/23  12:34:12  12:34:12  nelson (Mark T. Nelson)
+ * Added code to support T3D with much help from Tom MacFarland from IPP Rechenzentrum
+ * 
+ * Revision 1.19  95/04/10  11:27:36  11:27:36  nelson (Mark T. Nelson)
+ * Changed handling of previously static variables
+ * 
+ * Revision 1.18  95/03/20  11:53:52  11:53:52  nelson (Mark T. Nelson)
+ * Removed numActive flag
+ * 
+ * Revision 1.17  95/03/18  02:42:11  02:42:11  nelson (Mark T. Nelson)
+ * Reworked extensively to improve performance
+ * 
+ * Revision 1.16  95/03/09  10:43:06  10:43:06  nelson (Mark T. Nelson)
+ * Added code for Exemplar port
+ * 
+ * Revision 1.15  95/03/08  14:42:42  14:42:42  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.14  95/02/27  14:52:09  14:52:09  nelson (Mark T. Nelson)
+ * Changed so that PVM errors terminate namd if the reach a max number
+ * 
+ * Revision 1.13  95/01/30  14:43:12  14:43:12  nelson (Mark T. Nelson)
+ * Changed do_receive in vain attempt to find memory leak on master node
+ * 
+ * Revision 1.12  94/12/14  16:13:42  16:13:42  nelson (Mark T. Nelson)
+ * Added get_tids and changed do_receive to work with FMA
+ * 
+ * Revision 1.11  94/11/22  13:40:30  13:40:30  nelson (Mark T. Nelson)
+ * Change way that do_receive works so that it retrieves messages until
+ * it either finds one that matches, or runs out of messages
+ * 
+ * Revision 1.10  94/10/24  09:25:58  09:25:58  nelson (Mark T. Nelson)
+ * Made minor changes to MsgList definitions
+ * 
+ * Revision 1.9  94/09/03  18:10:53  18:10:53  billh (Bill Humphrey)
+ * Changed to put data in Message object without a second copy of the data
+ * (thus, we allocate storage, and put the allocated storage into the Message
+ * instead of copying the data and deleting the allocated space).
+ * 
+ * Revision 1.8  94/08/03  21:55:34  21:55:34  nelson (Mark T. Nelson)
+ * Added unsigned short, int and long
+ * 
+ * Revision 1.7  94/07/26  16:52:26  16:52:26  billh (Bill Humphrey)
+ * (Hopefully) fixed problem with broadcast ... now just loops through nodes
+ * and sends copy of message to each node, instead of having specific
+ * broadcast routine in child class.
+ * 
+ * Revision 1.6  94/07/22  14:03:57  14:03:57  billh (Bill Humphrey)
+ * Changed pvm_advise to pvm_setopt due to new PVM 3.3 version.
+ * 
+ * Revision 1.5  94/07/03  01:22:54  01:22:54  billh (Bill Humphrey)
+ * Made Communicate enum's and MsgItem struct public members of
+ * Communicate, instead of global.
+ * 
+ * Revision 1.4  94/07/03  00:15:00  00:15:00  billh (Bill Humphrey)
+ * New format ... user creates a Message object, and given that to a
+ * Communicate object; these can be kept in a list to be all sent at once
+ * or sent as soon as requested.
+ * 
  ***************************************************************************/

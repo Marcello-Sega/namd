@@ -1,9 +1,7 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*     (C) Copyright 1996,1997 The Board of Trustees of the                */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
 /***************************************************************************
  * DESCRIPTION: Top of Compute hierarchy.  
@@ -83,13 +81,18 @@ void Compute::doWork() {
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/19 05:49:46 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/20 23:53:26 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.C,v $
+ * Revision 1.1006  1997/03/20 23:53:26  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1005  1997/03/19 05:49:46  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

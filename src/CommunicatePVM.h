@@ -1,20 +1,10 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: CommunicatePVM.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:02 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *
  * CommunicatePVM - PVM version of the Communicate object.  Allows
@@ -25,65 +15,8 @@
  * spawned yet; if no, this spawns them and confirms everthing is running
  * well.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: CommunicatePVM.h,v $
- * Revision 1.1001  1997/03/19 11:54:02  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:57:40  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:29:58  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777.2.1  1997/01/27 22:44:54  ari
- * Basic Atom Migration Code added.
- * Added correct magic first line to .h files for xemacs to go to C++ mode.
- * Compiles and runs without migration turned on.
- *
- * Revision 1.777  1997/01/17 19:35:31  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/12/06 19:52:20  ari
- * Initial revision
- *
- * Revision 1.11  1995/10/06 20:35:34  nelson
- * Added PVMe definition for include of pvm3.h
- *
- * Revision 1.10  95/04/10  11:27:51  11:27:51  nelson (Mark T. Nelson)
- * Changed handling of previously static variables
- * 
- * Revision 1.9  95/03/20  11:54:03  11:54:03  nelson (Mark T. Nelson)
- * Removed numActive flag
- * 
- * Revision 1.8  95/03/18  02:42:46  02:42:46  nelson (Mark T. Nelson)
- * Reworked extensively to improve performance
- * 
- * Revision 1.7  95/03/08  14:46:19  14:46:19  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.6  94/12/14  16:13:14  16:13:14  nelson (Mark T. Nelson)
- * Added get_tids for FMA interface
- * 
- * Revision 1.5  94/07/26  16:52:28  16:52:28  billh (Bill Humphrey)
- * (Hopefully) fixed problem with broadcast ... now just loops through nodes
- * and sends copy of message to each node, instead of having specific
- * broadcast routine in child class.
- * 
- * Revision 1.4  94/07/03  00:15:02  00:15:02  billh (Bill Humphrey)
- * New format ... user creates a Message object, and given that to a
- * Communicate object; these can be kept in a list to be all sent at once
- * or sent as soon as requested.
- * 
  ***************************************************************************/
+
 
 #ifndef COMMUNICATEPVM_H
 #define COMMUNICATEPVM_H
@@ -150,17 +83,71 @@ public:
 /***************************************************************************
  * RCS INFORMATION:
  *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:02 $
+ *	$RCSfile: CommunicatePVM.h,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/20 23:53:23 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: CommunicatePVM.h,v $
+ * Revision 1.1002  1997/03/20 23:53:23  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1001  1997/03/19 11:54:02  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
  * Added some register variables to Molecule and ComputeNonbondedExcl.C
  *
+ * Revision 1.1000  1997/02/06 15:57:40  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:29:58  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777.2.1  1997/01/27 22:44:54  ari
+ * Basic Atom Migration Code added.
+ * Added correct magic first line to .h files for xemacs to go to C++ mode.
+ * Compiles and runs without migration turned on.
+ *
+ * Revision 1.777  1997/01/17 19:35:31  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/12/06 19:52:20  ari
+ * Initial revision
+ *
+ * Revision 1.11  1995/10/06 20:35:34  nelson
+ * Added PVMe definition for include of pvm3.h
+ *
+ * Revision 1.10  95/04/10  11:27:51  11:27:51  nelson (Mark T. Nelson)
+ * Changed handling of previously static variables
+ * 
+ * Revision 1.9  95/03/20  11:54:03  11:54:03  nelson (Mark T. Nelson)
+ * Removed numActive flag
+ * 
+ * Revision 1.8  95/03/18  02:42:46  02:42:46  nelson (Mark T. Nelson)
+ * Reworked extensively to improve performance
+ * 
+ * Revision 1.7  95/03/08  14:46:19  14:46:19  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.6  94/12/14  16:13:14  16:13:14  nelson (Mark T. Nelson)
+ * Added get_tids for FMA interface
+ * 
+ * Revision 1.5  94/07/26  16:52:28  16:52:28  billh (Bill Humphrey)
+ * (Hopefully) fixed problem with broadcast ... now just loops through nodes
+ * and sends copy of message to each node, instead of having specific
+ * broadcast routine in child class.
+ * 
+ * Revision 1.4  94/07/03  00:15:02  00:15:02  billh (Bill Humphrey)
+ * New format ... user creates a Message object, and given that to a
+ * Communicate object; these can be kept in a list to be all sent at once
+ * or sent as soon as requested.
+ * 
  ***************************************************************************/

@@ -1,14 +1,13 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Base class for all Compute objects. Almost an abstract
+ *              class except that it does do the basic patchReady()
+ *		countdown.
  *
  ***************************************************************************/
 
@@ -26,8 +25,8 @@ class Node;
 class PatchMap;
 
 // Base class for various forms of Compute objects
-// including: <linkto class=ComputeAtoms>ComputeAtoms</linkto> 
-// and <linkto class=ComputePatches>ComputePatches</linkto>
+// for example: <linkto class=ComputeAngles>ComputeAngles</linkto> 
+// and <linkto class=ComputeNonbondedExcl>ComputeNonbondedExcl</linkto>
 class Compute {
 private:
   int patchReadyCounter;
@@ -51,7 +50,10 @@ public:
   void setNumPatches(int n) { patchReadyCounter = numPatches = n; }
   int getNumPatches() { return (numPatches); };
 
+  // registers for boxes
   virtual void initialize() {};
+  // destructor better unregister for boxes!
+
   virtual void atomUpdate() {};
   // virtual void patchReady(void);
   virtual void patchReady(PatchID pid) { if (pid > -1) patchReady(pid,0); }
@@ -65,13 +67,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: Compute.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/19 05:49:48 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/20 23:53:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Compute.h,v $
+ * Revision 1.1003  1997/03/20 23:53:27  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1002  1997/03/19 05:49:48  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

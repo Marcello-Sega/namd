@@ -1,11 +1,8 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*       (C) Copyright 1996,1997 The Board of Trustees of the              */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
  * DESCRIPTION:
  *
@@ -154,12 +151,17 @@ void ComputeFullDirect::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1010 $	$Date: 1997/03/19 11:54:07 $
+ *	$Revision: 1.1011 $	$Date: 1997/03/20 23:53:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.C,v $
+ * Revision 1.1011  1997/03/20 23:53:36  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1010  1997/03/19 11:54:07  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

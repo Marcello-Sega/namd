@@ -9,7 +9,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1009 1997/03/19 11:54:35 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.1010 1997/03/20 23:53:45 ari Exp $";
 
 #include <unistd.h>
 #include "ckdefs.h"
@@ -20,7 +20,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Namd.h"
 
 #define MIN_DEBUG_LEVEL 3
-//#define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 #include <stdio.h>
@@ -48,6 +48,7 @@ static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Node.C,v 1.
 #include "Parameters.h"
 #include "SimParameters.h"
 #include "CommunicateConverse.h"
+#include "Inform.h"
 
 extern "C" int gethostname(char *, size_t);
 extern Communicate *comm;
@@ -205,7 +206,9 @@ void Node::startup(InitMsg *msg) {
        iout << iINFO << " Starting Phase " << startupPhase << "\n" << endi;
       ComputeMap::Object()->printComputeMap();
     }
+    DebugM(4,"Creating Computes\n");
     computeMgr->createComputes(ComputeMap::Object());
+    DebugM(4,"Building Sequencers\n");
     buildSequencers();
   break;
 
@@ -427,12 +430,17 @@ void Node::saveMolDataPointers(NamdState *state)
  *
  *	$RCSfile: Node.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1009 $	$Date: 1997/03/19 11:54:35 $
+ *	$Revision: 1.1010 $	$Date: 1997/03/20 23:53:45 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Node.C,v $
+ * Revision 1.1010  1997/03/20 23:53:45  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1009  1997/03/19 11:54:35  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

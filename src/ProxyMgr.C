@@ -275,6 +275,16 @@ void ProxyMgr::createProxies(void)
 }
 
 void
+ProxyMgr::createProxy(PatchID pid) {
+  // need to rework proxyList to be resize array and then fill this
+}
+
+void
+ProxyMgr::removeProxy(PatchID pid) {
+  // need to rework proxyList and fill this
+}
+  
+void
 ProxyMgr::registerProxy(PatchID pid) {
   // determine which node gets message
   NodeID node = PatchMap::Object()->node(pid);
@@ -356,13 +366,18 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1011 $	$Date: 1997/03/12 22:06:46 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1012 $	$Date: 1997/03/20 23:53:48 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.C,v $
+ * Revision 1.1012  1997/03/20 23:53:48  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1011  1997/03/12 22:06:46  jim
  * First step towards multiple force returns and multiple time stepping.
  *

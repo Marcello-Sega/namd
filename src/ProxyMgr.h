@@ -101,6 +101,9 @@ public:
   void removeProxies(void);
   void createProxies(void);
 
+  void createProxy(PatchID pid);
+  void removeProxy(PatchID pid);
+
   void registerProxy(PatchID pid);
   void recvRegisterProxy(RegisterProxyMsg *);
 
@@ -131,13 +134,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ProxyMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/12 22:06:47 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ProxyMgr.h,v $
+ * Revision 1.1005  1997/03/20 23:53:50  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1004  1997/03/12 22:06:47  jim
  * First step towards multiple force returns and multiple time stepping.
  *

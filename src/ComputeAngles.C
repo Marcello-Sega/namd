@@ -1,13 +1,13 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*          (C) Copyright 1996,1997 The Board of Trustees of th            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION: Methods for ComputeAngles.  Main code is for
+ *		loading in the AngleElem information and
+ *		for computing forces and energies for all angles on node's.
+ *		HomePatch(es)
  *
  ***************************************************************************/
 
@@ -171,12 +171,17 @@ void AngleElem::unregisterReductionData(ReductionMgr *reduction)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/19 11:54:02 $
+ *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:27 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.C,v $
+ * Revision 1.1005  1997/03/20 23:53:27  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1004  1997/03/19 11:54:02  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

@@ -53,6 +53,7 @@ public:
   static const Molecule* mol;
   static BigReal scale14;
   static Real switchOn;
+  static BigReal switchOn_1;
   static BigReal switchOn2;
   static BigReal c0;
   static BigReal c1;
@@ -172,13 +173,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/16 22:56:31 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/20 23:53:44 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.h,v $
+ * Revision 1.1006  1997/03/20 23:53:44  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1005  1997/03/16 22:56:31  jim
  * Added virial calculation for all bonded forces.
  *

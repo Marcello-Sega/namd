@@ -1,11 +1,8 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*         (C) Copyright 1996,1997 The Board of Trustees of the            */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
  * DESCRIPTION:
  *
@@ -449,12 +446,17 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1036 $	$Date: 1997/03/20 19:45:08 $
+ *	$Revision: 1.1037 $	$Date: 1997/03/20 23:53:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1037  1997/03/20 23:53:33  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1036  1997/03/20 19:45:08  nealk
  * Moved syncronize point in doWork to fix timing problem.  (Very weird.)
  *

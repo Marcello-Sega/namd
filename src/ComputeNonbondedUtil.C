@@ -63,6 +63,7 @@ void ComputeNonbondedUtil::select(void)
   if ( simParams->switchingActive )
   {
     switchOn = simParams->switchingDist;
+    switchOn_1 = 1.0/switchOn;
     d0 = 1/(cutoff-switchOn);
     switchOn2 = switchOn*switchOn;
     c0 = 1/(cutoff2-switchOn2);
@@ -70,6 +71,7 @@ void ComputeNonbondedUtil::select(void)
   else
   {
     switchOn = cutoff;
+    switchOn_1 = 1.0/switchOn;
     d0 = 0.;  // avoid division by zero
     switchOn2 = switchOn*switchOn;
     c0 = 0.;  // avoid division by zero
@@ -340,13 +342,18 @@ void ComputeNonbondedUtil::select(void)
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeNonbondedUtil.C,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1005 $	$Date: 1997/03/16 22:56:29 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1006 $	$Date: 1997/03/20 23:53:43 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeNonbondedUtil.C,v $
+ * Revision 1.1006  1997/03/20 23:53:43  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1005  1997/03/16 22:56:29  jim
  * Added virial calculation for all bonded forces.
  *

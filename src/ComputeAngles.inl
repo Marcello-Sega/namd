@@ -1,11 +1,8 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*        (C) Copyright 1996,1997 The Board of Trustees of the             */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
  * DESCRIPTION:
  *  Inline functions for ComputeAngles.
@@ -65,13 +62,18 @@ inline int AngleElem::operator<(const AngleElem &a) const
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeAngles.inl,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1002 $	$Date: 1997/03/16 22:31:19 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1003 $	$Date: 1997/03/20 23:53:28 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeAngles.inl,v $
+ * Revision 1.1003  1997/03/20 23:53:28  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1002  1997/03/16 22:31:19  jim
  * Removed include Debug.h which was screwing up debugging in .C file.
  *

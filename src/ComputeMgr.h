@@ -36,8 +36,12 @@ public:
   ComputeMgr(InitMsg *);
   ~ComputeMgr();
   void createComputes(ComputeMap *map);
+  void updateComputes();
 
 private:
+  void createCompute(ComputeID, ComputeMap *);
+  int numNonbondedSelf;
+  int numNonbondedPair;
 
   class ComputeElem {
   public:
@@ -85,13 +89,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMgr.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1004 $	$Date: 1997/03/19 05:49:57 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1005 $	$Date: 1997/03/20 23:53:42 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMgr.h,v $
+ * Revision 1.1005  1997/03/20 23:53:42  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1004  1997/03/19 05:49:57  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

@@ -1,12 +1,9 @@
 //-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*      (C) Copyright 1995,1996,1997 The Board of Trustees of the          */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
  * DESCRIPTION:
  *
@@ -215,12 +212,17 @@ public:
  *
  *	$RCSfile: Communicate.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/04 22:37:06 $
+ *	$Revision: 1.1002 $	$Date: 1997/03/20 23:53:11 $
  */
 /***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Communicate.h,v $
+ * Revision 1.1002  1997/03/20 23:53:11  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1001  1997/03/04 22:37:06  ari
  * Clean up of code.  Debug statements removal, dead code removal.
  * Minor fixes, output fixes.

@@ -1,19 +1,9 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*								   	   */
 /***************************************************************************/
-
 /***************************************************************************
- * RCS INFORMATION:
- *
- *	$RCSfile: Communicate.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:00 $
- *
- ***************************************************************************
  * DESCRIPTION:
  *
  * Communicate - base communications object.  Allows user to establish id's
@@ -24,74 +14,9 @@
  * a message, one calls Message *receive(node, tag), which returns a message
  * if available, or NULL otherwise.
  *
- ***************************************************************************
- * REVISION HISTORY:
- *
- * $Log: Communicate.C,v $
- * Revision 1.1001  1997/03/19 11:54:00  ari
- * Add Broadcast mechanism.
- * Fixed RCS Log entries on files that did not have Log entries.
- * Added some register variables to Molecule and ComputeNonbondedExcl.C
- *
- * Revision 1.1000  1997/02/06 15:57:35  ari
- * Resetting CVS to merge branches back into the main trunk.
- * We will stick to main trunk development as suggested by CVS manual.
- * We will set up tags to track fixed points of development/release
- * as suggested by CVS manual - all praise the CVS manual.
- *
- * Revision 1.778  1997/01/28 00:29:54  ari
- * internal release uplevel to 1.778
- *
- * Revision 1.777  1997/01/17 19:35:26  ari
- * Internal CVS leveling release.  Start development code work
- * at 1.777.1.1.
- *
- * Revision 1.1  1996/12/06 19:52:20  ari
- * Initial revision
- *
- * Revision 1.10  1996/01/28 21:50:08  jean
- * Attempting to make stable RCS without Mark Nelson's
- * fma/pairlist decoupling
- *
- * Revision 1.11  1995/12/04 20:45:46  brunner
- * More communication stats - message sizes
- *
- * Revision 1.10  1995/11/22 12:10:05  brunner
- * Added print_comm_stats(), and message traffic accounting.
- *
- * Revision 1.9  95/10/06  17:54:12  17:54:12  hazen (Brett Hazen)
- * Memory Allocation error-checking added
- * 
- * Revision 1.8  1995/03/18  13:04:49  nelson
- * Fixed memory leak in do_send_queue
- *
- * Revision 1.7  95/03/18  02:42:09  02:42:09  nelson (Mark T. Nelson)
- * Reworked extensively to improve performance
- * 
- * Revision 1.6  95/03/08  14:36:32  14:36:32  nelson (Mark T. Nelson)
- * Added copyright
- * 
- * Revision 1.5  94/10/24  09:25:27  09:25:27  nelson (Mark T. Nelson)
- * Added MessageManagers to make looking for received messages much
- * more efficient
- * 
- * Revision 1.4  94/07/26  16:51:34  16:51:34  billh (Bill Humphrey)
- * (Hopefully) fixed problem with broadcast ... now just loops through nodes
- * and sends copy of message to each node, instead of having specific
- * broadcast routine in child class.
- * 
- * Revision 1.3  94/07/07  06:13:14  06:13:14  dalke (Andrew Dalke)
- * Added instances for the static members "sendList" and "recList"
- * 
- * Revision 1.2  1994/07/03  01:22:24  billh
- * Made Communicate enum's and MsgItem struct public members of
- * Communicate, instead of global.
- *
- * Revision 1.1  94/07/03  00:18:51  00:18:51  billh (Bill Humphrey)
- * Initial revision
- * 
  ***************************************************************************/
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Communicate.C,v 1.1001 1997/03/19 11:54:00 ari Exp $";
+
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Communicate.C,v 1.1002 1997/03/20 23:53:06 ari Exp $";
 
 #include "Communicate.h"
 #include "Message.h"
@@ -346,21 +271,83 @@ int Communicate::broadcast_others(Message *msg, int tag, int delmsg)
   
   return TotalNodes - 1;
 }
-
 /***************************************************************************
  * RCS INFORMATION:
  *
- *	$RCSfile $
- *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1001 $	$Date: 1997/03/19 11:54:00 $
+ *	$RCSfile: Communicate.C,v $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1002 $	$Date: 1997/03/20 23:53:06 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Communicate.C,v $
+ * Revision 1.1002  1997/03/20 23:53:06  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1001  1997/03/19 11:54:00  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.
  * Added some register variables to Molecule and ComputeNonbondedExcl.C
  *
+ * Revision 1.1000  1997/02/06 15:57:35  ari
+ * Resetting CVS to merge branches back into the main trunk.
+ * We will stick to main trunk development as suggested by CVS manual.
+ * We will set up tags to track fixed points of development/release
+ * as suggested by CVS manual - all praise the CVS manual.
+ *
+ * Revision 1.778  1997/01/28 00:29:54  ari
+ * internal release uplevel to 1.778
+ *
+ * Revision 1.777  1997/01/17 19:35:26  ari
+ * Internal CVS leveling release.  Start development code work
+ * at 1.777.1.1.
+ *
+ * Revision 1.1  1996/12/06 19:52:20  ari
+ * Initial revision
+ *
+ * Revision 1.10  1996/01/28 21:50:08  jean
+ * Attempting to make stable RCS without Mark Nelson's
+ * fma/pairlist decoupling
+ *
+ * Revision 1.11  1995/12/04 20:45:46  brunner
+ * More communication stats - message sizes
+ *
+ * Revision 1.10  1995/11/22 12:10:05  brunner
+ * Added print_comm_stats(), and message traffic accounting.
+ *
+ * Revision 1.9  95/10/06  17:54:12  17:54:12  hazen (Brett Hazen)
+ * Memory Allocation error-checking added
+ * 
+ * Revision 1.8  1995/03/18  13:04:49  nelson
+ * Fixed memory leak in do_send_queue
+ *
+ * Revision 1.7  95/03/18  02:42:09  02:42:09  nelson (Mark T. Nelson)
+ * Reworked extensively to improve performance
+ * 
+ * Revision 1.6  95/03/08  14:36:32  14:36:32  nelson (Mark T. Nelson)
+ * Added copyright
+ * 
+ * Revision 1.5  94/10/24  09:25:27  09:25:27  nelson (Mark T. Nelson)
+ * Added MessageManagers to make looking for received messages much
+ * more efficient
+ * 
+ * Revision 1.4  94/07/26  16:51:34  16:51:34  billh (Bill Humphrey)
+ * (Hopefully) fixed problem with broadcast ... now just loops through nodes
+ * and sends copy of message to each node, instead of having specific
+ * broadcast routine in child class.
+ * 
+ * Revision 1.3  94/07/07  06:13:14  06:13:14  dalke (Andrew Dalke)
+ * Added instances for the static members "sendList" and "recList"
+ * 
+ * Revision 1.2  1994/07/03  01:22:24  billh
+ * Made Communicate enum's and MsgItem struct public members of
+ * Communicate, instead of global.
+ *
+ * Revision 1.1  94/07/03  00:18:51  00:18:51  billh (Bill Humphrey)
+ * Initial revision
+ * 
  ***************************************************************************/
+

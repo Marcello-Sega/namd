@@ -48,6 +48,7 @@ public:
 
   void registerCompute(ComputeID cid, Compute *c) {
     computeData[cid].compute = c;
+    computeData[cid].moveToNode = -1;
   }
 
   // numComputes() returns the number of compute objects known
@@ -64,22 +65,28 @@ public:
 
   // isPatchBased(cid) returns true if the compute object
   // is patch based.
-  int isPatchBased(int cid);
+  int isPatchBased(ComputeID cid);
 
   // isAtomBased(cid) returns true if the compute object
   // is atom based.
-  int isAtomBased(int cid);
+  int isAtomBased(ComputeID cid);
 
   // node(cid) returns the node where the compute object currently exists.
-  int node(int cid);
+  int node(ComputeID cid);
+
+  // newNode(cid,node) sets up map to tell WorkDistrib to send 
+  // compute to new node
+  NodeID newNode(ComputeID cid);
+
+  void setNewNode(ComputeID cid, NodeID node);
 
   // numPids(cid) returns the number of patch ids which are registered
   // with this compute object.
-  int numPids(int cid);
+  int numPids(ComputeID cid);
   
   // pid(cid,i) returns the i-th patch id registered
   // with the patch.  
-  int pid(int cid, int i);
+  int pid(ComputeID cid, int i);
 
   // allocate_cids(n) tells the ComputeMap to set aside
   // room for n compute objects.  I need not use them all.
@@ -92,7 +99,7 @@ public:
 
   // newPid(cid,pid) stores the n patch ids associated with
   // compute id cid.
-  int newPid(int cid, int pid, int trans = 13);
+  int newPid(ComputeID cid, int pid, int trans = 13);
 
   void printComputeMap(void);
 
@@ -120,8 +127,14 @@ private:
 
   struct ComputeData
   {
+    ComputeData() { 
+      node = -1; moveToNode = -1; 
+      patchBased = false; numPids = 0; numPidsAllocated = 0; 
+      pids = NULL; compute = NULL; 
+    }
     Compute *compute;
     int node;
+    int moveToNode;
     ComputeType type;
     Boolean patchBased;
     int numPids;
@@ -143,13 +156,18 @@ private:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeMap.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1003 $	$Date: 1997/03/19 05:49:54 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1004 $	$Date: 1997/03/20 23:53:39 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.h,v $
+ * Revision 1.1004  1997/03/20 23:53:39  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1003  1997/03/19 05:49:54  jim
  * Added ComputeSphericalBC, cleaned up make dependencies.
  *

@@ -1,9 +1,8 @@
+//-*-c++-*-
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1995 The Board of Trustees of the            */
+/*       (C) Copyright 1995,1996,1997 The Board of Trustees of the         */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*                                                                         */
 /***************************************************************************/
        
 #include "ComputeCylindricalBC.h"
@@ -347,12 +346,17 @@ void ComputeCylindricalBC::doForce(Position* p, Results* r, AtomProperties* a)
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1997/03/19 11:54:04 $
+ *	$Revision: 1.6 $	$Date: 1997/03/20 23:53:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeCylindricalBC.C,v $
+ * Revision 1.6  1997/03/20 23:53:31  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.5  1997/03/19 11:54:04  ari
  * Add Broadcast mechanism.
  * Fixed RCS Log entries on files that did not have Log entries.

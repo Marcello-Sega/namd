@@ -1,13 +1,10 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*      (C) Copyright 1996,1997 The Board of Trustees of the               */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
- * DESCRIPTION:
+ * DESCRIPTION:  Computes electrostatics using efficient all atoms^2 calc
  *
  ***************************************************************************/
 
@@ -38,12 +35,17 @@ private:
  *
  *	$RCSfile: ComputeFullDirect.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1000 $	$Date: 1997/02/06 15:57:54 $
+ *	$Revision: 1.1001 $	$Date: 1997/03/20 23:53:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFullDirect.h,v $
+ * Revision 1.1001  1997/03/20 23:53:37  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1000  1997/02/06 15:57:54  ari
  * Resetting CVS to merge branches back into the main trunk.
  * We will stick to main trunk development as suggested by CVS manual.

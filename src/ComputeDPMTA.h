@@ -1,11 +1,8 @@
 /***************************************************************************/
-/*                                                                         */
-/*              (C) Copyright 1996 The Board of Trustees of the            */
+/*        (C) Copyright 1996,1997 The Board of Trustees of the             */
 /*                          University of Illinois                         */
 /*                           All Rights Reserved                           */
-/*									   */
 /***************************************************************************/
-
 /***************************************************************************
  * DESCRIPTION:
  *
@@ -46,13 +43,18 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1013 $	$Date: 1997/03/11 16:37:04 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1014 $	$Date: 1997/03/20 23:53:34 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1014  1997/03/20 23:53:34  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1013  1997/03/11 16:37:04  nealk
  * Difference in ElectForce with FMA and non-FMA not due to FMA.
  * (I'm finally convinced.)

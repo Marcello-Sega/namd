@@ -11,7 +11,7 @@
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1008 1997/03/14 21:40:08 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/ComputeMap.C,v 1.1009 1997/03/20 23:53:38 ari Exp $";
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -165,6 +165,16 @@ int ComputeMap::node(ComputeID cid)
   else return -1;
 }
 
+NodeID ComputeMap::newNode(ComputeID cid)
+{
+  return (computeData[cid].moveToNode);
+}
+
+
+void ComputeMap::setNewNode(ComputeID cid, NodeID node) {
+  computeData[cid].moveToNode = node;
+}
+
 //----------------------------------------------------------------------
 int ComputeMap::numPids(ComputeID cid)
 {
@@ -203,16 +213,10 @@ int ComputeMap::allocateCids(int n)
   }
   nComputes = nPatchBased = nAtomBased = 0;
 
+  // Constructor zero's out array elements
   computeData = new ComputeData[n];	// realloced after delete
   nAllocated = n;
-  for(i=0; i<n; i++)
-  {
-    computeData[i].node=0;
-    computeData[i].patchBased=false;
-    computeData[i].numPids=0;
-    computeData[i].pids=NULL;
-    computeData[i].compute = NULL;
-  }
+
   return 0;
 }
 
@@ -295,12 +299,17 @@ void ComputeMap::printComputeMap(void)
  *
  *	$RCSfile: ComputeMap.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1008 $	$Date: 1997/03/14 21:40:08 $
+ *	$Revision: 1.1009 $	$Date: 1997/03/20 23:53:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeMap.C,v $
+ * Revision 1.1009  1997/03/20 23:53:38  ari
+ * Some changes for comments. Copyright date additions.
+ * Hooks for base level update of Compute objects from ComputeMap
+ * by ComputeMgr.  Useful for new compute migration functionality.
+ *
  * Revision 1.1008  1997/03/14 21:40:08  ari
  * Reorganized startup to make possible inital load
  * balancing by changing methods in WorkDistrib.
