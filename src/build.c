@@ -532,12 +532,3 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
 
 #endif  /* NAMD_TCL */
 
-
-  topo_mol_destroy(mol);
-  topo_defs_destroy(defs);
-  stringhash_destroy(aliases);
-
-}
-
-#endif
-
