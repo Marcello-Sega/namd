@@ -18,20 +18,23 @@ Charm++/Converse 5.0, from http://charm.cs.uiuc.edu/.  The following
 table shows the version needed for each NAMD architecture.  It is
 important that the same compiler is used for both Charm++ and NAMD.
 
-    NAMD Name      Description                   Charm Version
-   ----------     ---------------------------   ---------------
-    KCC-i486       Linux with KCC 3.3 compiler   net-linux-kcc
-    g++-i486       Linux with GNU compiler       net-linux
-    Origin2000-MPI SGI Origin 2000 with MPI      mpi-origin
-    Origin2000     SGI Origin 2000 w/o MPI       origin2000
-    alpha          Tru64 Unix w/ DEC compiler    net-axp-cc
-  * g++-alpha      Tru64 Unix w/ GNU compiler    net-axp
-    T3E            SGI/Cray T3E                  t3e
-    Solaris        Solaris 2.6 or later          net-sol-cc
-  * HPUX           HP-UX 10.0 or later with CC   net-hp-cc
-  * RED            ASCI Red                      paragon-red
-  * SP3            IBM SP Series                 sp3
-  * exemplar       Convex Exemplar               mpi-exemplar
+    NAMD Arch Name     Description                   Charm Version
+   ----------------   ---------------------------   ---------------
+    Linux-i686-KCC     Linux with KCC 3.3 compiler   net-linux-kcc
+    Linux-i686-g++     Linux with GNU compiler       net-linux
+    Origin2000-MPI-CC  SGI Origin 2000 with MPI      mpi-origin
+    Origin2000-CC      SGI Origin 2000 w/o MPI       origin2000
+    Tru64-Alpha-CC     Tru64 Unix w/ DEC compiler    net-axp-cc
+  * Tru64-Alpha-g++    Tru64 Unix w/ GNU compiler    net-axp
+    T3E-CC             SGI/Cray T3E                  t3e
+    Solaris-Sparc-CC   Solaris 2.6 or later          net-sol-cc
+    Solaris-Sparc-g++  Solaris 2.6 or later          net-sol
+    Solaris-i686-g++   Solaris 2.6 or later          net-sol-x86
+  * HPUX-CC            HP-UX 10.0 or later with CC   net-hp-cc
+  * HPUX-aCC           HP-UX 10.0 or later with aCC  net-hp-acc
+    HPUX-g++           HP-UX 10.0 or later with GNU  net-hp
+  * ASCI-Red           ASCI Red                      paragon-red
+  * IBM-SP             IBM SP Series                 sp3
 
   * These architectures may fail to build or be unstable.
 
@@ -58,17 +61,24 @@ You may edit Makefile to enable or disable DPMTA and DPME.  DPMTA is
 required if you want to use the fast multipole algorithm for full
 electrostatics.  DPME is only useful for comparison with the new
 particle mesh Ewald code.  You must specify "useDPME on" in the
-simulation config file to switch to the old DPME code.  (DPMTA and
-DPME are included in the release binaries.)
+simulation config file to switch to the old DPME code.  DPMTA and
+DPME are included in the release binaries.
 
-You may edit arch/Makearch.ARCH to enable or disable linking with Tcl
-and FFTW.  Tcl is required for Tcl global forces (tclForces) and for
-Tcl scripting.  Tcl is available from www.scriptics.com.  FFTW replaces
-the slower the built-in FFT in particle mesh Ewald.  FFTW is available
-from www.fftw.org.  If you download the RPM or configure FFTW with
---enable-type-prefix you will need to make symbolic links to the double
-precision versions of the libraries and header files.  (Tcl is included
-in the release binaries, FFTW is not.)
+You may enable linking with Tcl by editing arch/BASEARCH.tcl (where
+BASEARCH is ARCH without the -CC, -g++, or -KCC compiler extension)
+and adding "tcl" to the config command line: "./config tcl ARCH"
+Tcl is required for Tcl global forces (tclForces) and for Tcl
+scripting.  Tcl is available from www.scriptics.com.  Tcl is included
+in the release binaries.
+
+You may enable linking with FFTW by editing arch/BASEARCH.fftw (where
+BASEARCH is ARCH without the -CC, -g++, or -KCC compiler extension)
+and adding "fftw" to the config command line: "./config tcl fftw ARCH"
+FFTW replaces the slower built-in FFT in particle mesh Ewald.  FFTW
+is available from www.fftw.org.  If you download the RPM or configure
+FFTW with --enable-type-prefix you will need to make symbolic links to
+the double precision versions of the libraries and header files.  FFTW
+is not included in the release binaries due to licensing issues.
 
 ----------------------------------------------------------------------
 
