@@ -305,7 +305,7 @@ loaddcd:	$(SRCDIR)/loaddcd.c
 projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-language charm++ -tracemode projections \
+	-module NeighborLB -language charm++ -tracemode projections \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
@@ -315,7 +315,7 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-language charm++ -tracemode summary \
+	-module NeighborLB -language charm++ -tracemode summary \
 	-o namd2 $(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
