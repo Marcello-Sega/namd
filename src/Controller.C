@@ -103,6 +103,7 @@ void Controller::algorithm(void)
         break;
       case SCRIPT_MINIMIZE:
         minimize();
+        BackEnd::awaken();
         continue;
       case SCRIPT_OUTPUT:
         enqueueCollections(FILE_OUTPUT);
@@ -136,8 +137,8 @@ void Controller::algorithm(void)
 
     if ( simParams->minimizeCGOn ) {
       minimize();
-      if (! simParams->tclOn) break;
       BackEnd::awaken();
+      if (! simParams->tclOn) break;
       continue;
     }
 
@@ -176,11 +177,10 @@ void Controller::algorithm(void)
         rebalanceLoad(step);
     }
 
-    if (! simParams->tclOn) break;
     BackEnd::awaken();
+    if (! simParams->tclOn) break;
   }
   if (! simParams->tclOn) {
-    BackEnd::awaken();
     if ( broadcast->scriptBarrier.get(scriptSeq++) != SCRIPT_END )
       NAMD_bug("SCRIPT_END not received properly in Controller.");
   }
@@ -192,10 +192,8 @@ void Controller::algorithm(void)
 #define CALCULATE \
   printMinimizeEnergies(step); \
   rebalanceLoad(step); \
-  if ( step == numberOfSteps ) { \
-    BackEnd::awaken(); \
-    return; \
-  } else ++step;
+  if ( step == numberOfSteps ) return; \
+  else ++step;
 
 #define MOVETO(X) \
   if ( step == numberOfSteps ) { \
