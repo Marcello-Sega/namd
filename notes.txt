@@ -349,6 +349,7 @@ important that the same C++ compiler is used for both Charm and NAMD.
   * ASCI-Red                 paragon-red              ASCI Red (Sandia)
   * Cygwin-i686-MSVC         net-win32                Microsoft compiler
   * Cygwin-i686              net-cygwin               GNU compiler
+    Darwin-PPC-c++           net-ppc-darwin           Mac OS X
     HPUX-aCC                 net-hp-acc               ANSI HP compiler
   * HPUX-CC                  net-hp-cc                Old HP compiler
     HPUX-g++                 net-hp                   GNU compiler
@@ -371,6 +372,7 @@ important that the same C++ compiler is used for both Charm and NAMD.
     Solaris-i686-g++         net-sol-x86              GNU compiler
     Solaris-Sparc-CC         net-sol-cc               Sun compiler
     Solaris-Sparc-g++        net-sol                  GNU compiler
+    Solaris-Sparc-MPI        mpi-sol-cc               Sun compiler
     T3E-CC                   t3e                      Cray compiler
     Tru64-Alpha-CC           net-axp-cc               Compaq compiler
   * Tru64-Alpha-g++          net-axp                  GNU compiler
