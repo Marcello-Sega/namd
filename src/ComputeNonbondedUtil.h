@@ -87,6 +87,8 @@ public:
   static BigReal r2_delta, r2_delta_1;
   static int r2_delta_exp;
   static BigReal *table_alloc;
+  static BigReal *table_short;
+  static BigReal *table_noshort;
   static BigReal *fast_table;
   static BigReal *scor_table;
   static BigReal *slow_table;

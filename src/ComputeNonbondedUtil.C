@@ -33,6 +33,8 @@ BigReal		ComputeNonbondedUtil::r2_delta;
 BigReal		ComputeNonbondedUtil::r2_delta_1;
 int		ComputeNonbondedUtil::r2_delta_exp;
 BigReal*	ComputeNonbondedUtil::table_alloc = 0;
+BigReal*	ComputeNonbondedUtil::table_short;
+BigReal*	ComputeNonbondedUtil::table_noshort;
 BigReal*	ComputeNonbondedUtil::fast_table;
 BigReal*	ComputeNonbondedUtil::scor_table;
 BigReal*	ComputeNonbondedUtil::slow_table;
@@ -329,16 +331,18 @@ void ComputeNonbondedUtil::select(void)
   }
 
   if ( table_alloc ) delete [] table_alloc;
-  table_alloc = new BigReal[28*n+40];
+  table_alloc = new BigReal[60*n+16];
   BigReal *table_align = table_alloc;
-  while ( ((long)table_align) % 32 ) ++table_align;
-  fast_table = table_align;
-  scor_table = table_align + 4*n;
-  slow_table = table_align + 8*n;
-  corr_table = table_align + 12*n;
-  full_table = table_align + 16*n;
-  vdwa_table = table_align + 20*n;
-  vdwb_table = table_align + 24*n;
+  while ( ((long)table_align) % 128 ) ++table_align;
+  table_short = table_align;
+  table_noshort = table_align + 16*n;
+  fast_table = table_align + 32*n;
+  scor_table = table_align + 36*n;
+  slow_table = table_align + 40*n;
+  corr_table = table_align + 44*n;
+  full_table = table_align + 48*n;
+  vdwa_table = table_align + 52*n;
+  vdwb_table = table_align + 56*n;
   BigReal *fast_i = fast_table;
   BigReal *scor_i = scor_table;
   BigReal *slow_i = slow_table;
@@ -547,6 +551,17 @@ void ComputeNonbondedUtil::select(void)
   for ( i=0; i<4*n; ++i ) {
     corr_table[i] = fast_table[i] + scor_table[i];
     full_table[i] = fast_table[i] + slow_table[i];
+  }
+
+  for ( i=0; i<n; ++i ) {
+   for ( int j=0; j<4; ++j ) {
+    table_short[16*i+j] = table_noshort[16*i+j] = vdwa_table[4*i+j];
+    table_short[16*i+4+j] = table_noshort[16*i+4+j] = vdwb_table[4*i+j];
+    table_short[16*i+8+j] = fast_table[4*i+j];
+    table_short[16*i+12+j] = scor_table[4*i+j];
+    table_noshort[16*i+8+j] = corr_table[4*i+j];
+    table_noshort[16*i+12+j] = full_table[4*i+j];
+   }
   }
 
 #if 0

@@ -27,17 +27,17 @@ NORMAL( MODIFIED( foo bar ) )
       FAST(
       const LJTable::TableEntry * lj_pars = 
 		lj_row + 2 * mol->atomvdwtype(p_j->id) MODIFIED(+ 1);
-      const BigReal* const vdwa_i = vdwa_table + 4*table_i;
+      const BigReal* const vdwa_i = table_four + 16*table_i;
       BigReal vdwa_a = vdwa_i[0];
-      const BigReal* const vdwb_i = vdwb_table + 4*table_i;
+      const BigReal* const vdwb_i = table_four + 16*table_i + 4;
       BigReal vdwb_a = vdwb_i[0];
       SHORT(
-      const BigReal* const fast_i = fast_table + 4*table_i;
+      const BigReal* const fast_i = table_four + 16*table_i + 8;
       BigReal fast_a = fast_i[0];
       )
       )
       FULL(
-      const BigReal* const scor_i = scor_table + 4*table_i;
+      const BigReal* const scor_i = table_four + 16*table_i + 8 SHORT(+ 4);
       BigReal slow_a = scor_i[0]; 
       )
 
@@ -163,14 +163,18 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal slow_c = scor_i[2];
       BigReal slow_d = scor_i[3];
       EXCLUDED(
-      const BigReal* const slow_i = slow_table + 4*table_i;
+      const BigReal* const slow_i
+		SHORT( = slow_table + 4*table_i; )
+		NOSHORT( = table_four + 12 + 16*table_i; )
       slow_a -= slow_i[0];
       slow_b -= slow_i[1];
       slow_c -= slow_i[2];
       slow_d -= slow_i[3];
       )
       MODIFIED(
-      const BigReal* const slow_i = slow_table + 4*table_i;
+      const BigReal* const slow_i
+		SHORT( = slow_table + 4*table_i; )
+		NOSHORT( = table_four + 12 + 16*table_i; )
       slow_a -= modf_mod * slow_i[0];
       slow_b -= modf_mod * slow_i[1];
       slow_c -= modf_mod * slow_i[2];
@@ -181,6 +185,13 @@ NORMAL( MODIFIED( foo bar ) )
       slow_b *= kqq;
       slow_a *= kqq;
 
+      ENERGY(
+      register BigReal slow_val =
+	( ( diffa * slow_d + slow_c ) * diffa + slow_b ) * diffa + slow_a;
+      fullElectEnergy += LAM(lambda_pair *) slow_val;
+      FEP( fullElectEnergy_s += d_lambda_pair * slow_val; )
+      )
+
       INT( {
       register BigReal slow_dir =
 	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
@@ -188,13 +199,6 @@ NORMAL( MODIFIED( foo bar ) )
       reduction[pairElectForceIndex_Y] -= 2.0 * slow_dir * p_ij_y;
       reduction[pairElectForceIndex_Z] -= 2.0 * slow_dir * p_ij_z;
       } )
-
-      ENERGY(
-      register BigReal slow_val =
-	( ( diffa * slow_d + slow_c ) * diffa + slow_b ) * diffa + slow_a;
-      fullElectEnergy += LAM(lambda_pair *) slow_val;
-      FEP( fullElectEnergy_s += d_lambda_pair * slow_val; )
-      )
 
       FAST(
       NOSHORT(

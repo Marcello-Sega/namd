@@ -198,26 +198,19 @@ void ComputeNonbondedUtil :: NAME
   LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0;
   const LJTable::TableEntry* const lj_null_pars = &ljNull;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
-  FAST
-  (
-  const BigReal* const vdwa_table = ComputeNonbondedUtil:: vdwa_table;
-  const BigReal* const vdwb_table = ComputeNonbondedUtil:: vdwb_table;
   SHORT
   (
-  const BigReal* const fast_table = ComputeNonbondedUtil:: fast_table;
-  )
+  const BigReal* const table_four = ComputeNonbondedUtil:: table_short;
   )
   FULL
   (
   SHORT
   (
-  const BigReal* const scor_table = ComputeNonbondedUtil:: scor_table;
   const BigReal* const slow_table = ComputeNonbondedUtil:: slow_table;
   )
   NOSHORT
   (
-  const BigReal* const scor_table = ComputeNonbondedUtil:: corr_table;
-  const BigReal* const slow_table = ComputeNonbondedUtil:: full_table;
+  const BigReal* const table_four = ComputeNonbondedUtil:: table_noshort;
   )
   )
   const BigReal scaling = ComputeNonbondedUtil:: scaling;
