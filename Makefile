@@ -13,7 +13,7 @@ MOVE = mv
 
 OBJS = \
 	main.o Message.o Molecule.o PDB.o PDBData.o \
-	ConfigList.o Inform.o Parameters.o common.o \
+	ConfigList.o Inform.o InfoStream.o Parameters.o common.o \
 	strlib.o SimParameters.o ParseOptions.o Namd.o \
 	NamdState.o WorkDistrib.o Node.o PatchMap.o ComputeMap.o \
 	PatchMgr.o Patch.o HomePatch.o Sequencer.o Compute.o \
@@ -43,7 +43,8 @@ depends: $(DEPENDSFILE)
 	for i in ZZZ $(CXXFILES) ; do \
 	   if [ "$$i" != "ZZZ" -a -f $$i ]; then \
 	      $(ECHO) "checking dependencies for $$i ..."; \
-	      g++ -MM $(CXXFLAGS) $$i |grep -v "/usr/include" >> $(DEPENDFILE);\
+	      g++ -MM $(CXXFLAGS) $$i |grep -v "/usr/include" \
+	      | grep -v \"$(INCLUDE)\" >> $(DEPENDFILE);\
 	   fi; \
 	done;
 
