@@ -470,6 +470,27 @@ are to be applied to the system in the z direction.}
 
 \subsection{Pressure Control}
 
+The following options affect all pressure control methods.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{useGroupPressure}{group or atomic quantities}
+{\verb!yes! or \verb!no!}{\verb!no!}
+{Pressure can be calculated using either the atomic virial and kinetic
+energy (the default) or a hydrogen-group based pseudo-molecular
+virial and kinetic energy.  The latter fluctuates less and is
+required in conjunction with rigidBonds (SHAKE).}
+
+\item
+\NAMDCONFWDEF{useFlexibleCell}{anisotropic cell fluctuations}
+{\verb!yes! or \verb!no!}{\verb!no!}
+{\NAMD\ allows the three orthogonal dimensions of the periodic cell
+to fluctuate independently when this option is enabled.
+This is not currently implemented in Berendsen's method.}
+
+\end{itemize}
+
 \subsubsection{Berendsen pressure bath coupling}
 
 \NAMD\ provides constant pressure simulation using Berendsen's method.  
@@ -531,6 +552,12 @@ If set to \verb!on!, then the parameters \verb!LangevinPistonTarget!, \verb!Lang
 \NAMDCONF{LangevinPistonTemp}{noise temperature (K)}{positive decimal}
 {Specifies barostat noise temperature for Langevin piston method.
 This should be set equal to the target temperature for the chosen method of temperature control.}
+
+\item
+\NAMDCONFWDEF{StrainRate}{initial strain rate}{decimal triple (x y z)}
+{0. 0. 0.}
+{Optionally specifies the initial strain rate for pressure control.
+Is overridden by value read from file specified with \verb!extendedSystem!.}
 
 \end{itemize}
 

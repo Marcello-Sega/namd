@@ -281,47 +281,47 @@ The number of timesteps between the writing of
 velocities to the trajectory file.  
 }
 
-\item
-\NAMDCONF{electForceDCDfile}%
-{electrostatic force trajectory file}%
-{UNIX filename prefix}%
-{%
-The binary DCD short and long range electrostatic force 
-trajectory filename prefix.  
-The short and long range electrostatic force trajectories 
-will be respectively stored in files with 
-\verb!.s! and \verb!.l! appended to this prefix.  
-If \verb!electForceDCDfile! is defined, then \verb!electForceDCDfreq! 
-must also be defined.  
-}
-
-\item
-\NAMDCONF{electForceDCDfreq}%
-{timesteps between writing electrostatic forces to trajectory file}%
-{positive integer}%
-{%
-The number of timesteps between writing 
-to the long and short range electrostatic force trajectory files.  
-}
-
-\item
-\NAMDCONF{allForceDCDfile}{total force trajectory file}{UNIX filename}
-{%
-The binary DCD total force trajectory filename.  
-This file stores the trajectory of the total forces 
-on each atom.  
-If \verb!allForceDCDfile! is defined, then 
-\verb!allForceDCDfreq! must also be defined.  
-}
-
-\item
-\NAMDCONF{allForceDCDfreq}%
-{timesteps between writing total forces to trajectory file}%
-{positive integer}%
-{%
-The number of timesteps between the writing of total forces 
-to the trajectory file.  
-}
+%\item
+%\NAMDCONF{electForceDCDfile}%
+%{electrostatic force trajectory file}%
+%{UNIX filename prefix}%
+%{%
+%The binary DCD short and long range electrostatic force 
+%trajectory filename prefix.  
+%The short and long range electrostatic force trajectories 
+%will be respectively stored in files with 
+%\verb!.s! and \verb!.l! appended to this prefix.  
+%If \verb!electForceDCDfile! is defined, then \verb!electForceDCDfreq! 
+%must also be defined.  
+%}
+%
+%\item
+%\NAMDCONF{electForceDCDfreq}%
+%{timesteps between writing electrostatic forces to trajectory file}%
+%{positive integer}%
+%{%
+%The number of timesteps between writing 
+%to the long and short range electrostatic force trajectory files.  
+%}
+%
+%\item
+%\NAMDCONF{allForceDCDfile}{total force trajectory file}{UNIX filename}
+%{%
+%The binary DCD total force trajectory filename.  
+%This file stores the trajectory of the total forces 
+%on each atom.  
+%If \verb!allForceDCDfile! is defined, then 
+%\verb!allForceDCDfreq! must also be defined.  
+%}
+%
+%\item
+%\NAMDCONF{allForceDCDfreq}%
+%{timesteps between writing total forces to trajectory file}%
+%{positive integer}%
+%{%
+%The number of timesteps between the writing of total forces 
+%to the trajectory file.  
+%}
 
 \item
 \NAMDCONFWDEF{outputEnergies}%

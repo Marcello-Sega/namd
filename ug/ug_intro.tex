@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug_intro.tex,v $
 %       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.4 $      $Date: 1998/03/06 21:06:31 $
+%       $Revision: 1.5 $      $Date: 1999/02/03 20:44:59 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug_intro.tex,v $
+% Revision 1.5  1999/02/03 20:44:59  jim
+% Fixed several configuration options.
+%
 % Revision 1.4  1998/03/06 21:06:31  jim
 % Put temperature couple back in.
 %
@@ -100,7 +103,7 @@ This new architecture also provides support for more sophisticated algorithms an
 The most noticable change to the end user is the switch from PVM to the Converse parallel message-passing system.
 \NAMD\ \NAMDVER\ has also been ported to several new platforms.
 
-New features in \NAMD\ \NAMDVER\ include periodic boundary conditions, the Berendsen constant pressure simulation method, fixed atoms, several boundary conditions, triple timestepping, full electrostatic evaluation independent of cycle length, and the ability to do on-the-fly analysis and apply forces to the system via Tcl scripts.
+New features in \NAMD\ \NAMDVER\ include periodic boundary conditions, particle-mesh Ewald electrostatic evaluation, Berendsen and Langevin Nos{\'e}-Hoover constant pressure simulation methods, fixed atoms, several boundary conditions, triple timestepping, full electrostatic evaluation independent of cycle length, and the ability to do on-the-fly analysis and apply forces to the system via Tcl scripts.
 The new multiple timestepping parameter \verb!nonbondedFreq! allows nonbonded interactions to be evaluated less frequently, leaving only bonded interactions to be calculated every timestep.
 The new spatial partitioning parameters \verb!splitPatch! and \verb!hgroupCutoff! have been added due to a change from pairlists to group-based distance checking.
 The Langevin dynamics and temperature coupling algorithms has been altered to be more suitable for temperature control with small damping coefficients.
@@ -109,9 +112,7 @@ Several options have been removed in this release.
 Multiple timestepping is currently limited to impulse methods.
 Margin checking is performed at every timestep.
 There are not separate switching and cutoff parameters for van der Waals and electrostatic potentials.
-
-Planned features which are not in this beta release include conjugate-gradient minimization, particle-mesh Ewald electrostatic evaluation, and Nos{\'e}-Hoover NPT simulation methods.
-Also unimplemented are less-used features such as an applied electric field, force DCD files, and interactive simulation.
+Less-used features such as an applied electric field and force DCD files are unimplemented.
 
 \subsection{\NAMD\ and molecular dynamics simulations}
 
