@@ -82,12 +82,38 @@ void ComputeGlobalMaster::storedata(ComputeGlobalDataMsg *msg) {
     aid.add(*a_i);
     p.add(*p_i);
   }
+  if ( ! gcom.size() ) gcom.resize(msg->gcom.size());
+  PositionList::iterator c_i, c_e;
+  c_i = msg->gcom.begin(); c_e = msg->gcom.end();
+  p_i = gcom.begin();
+  for ( ; c_i != c_e; ++c_i, ++p_i ) {
+    *p_i += *c_i;
+  }
   delete msg;
 }
 
 void ComputeGlobalMaster::cleardata() {
   aid.resize(0);
   p.resize(0);
+  gcom.resize(0);
+}
+
+void ComputeGlobalMaster::storedefs(AtomIDList newgdef) {
+  // store group definitions
+  gdef = newgdef;  // aliases, but original should be deleted
+
+  // calculate group masses
+  Molecule *mol = Node::Object()->molecule;
+  gmass.resize(0);
+  AtomIDList::iterator g_i, g_e;
+  g_i = gdef.begin(); g_e = gdef.end();
+  for ( ; g_i != g_e; ++g_i ) {
+    BigReal mass = 0;
+    for ( ; *g_i != -1; ++g_i ) {
+      mass += mol->atommass(*g_i);
+    }
+    gmass.add(mass);
+  }
 }
 
 void ComputeGlobalMaster::calculate() {
@@ -113,12 +139,15 @@ void ComputeGlobalMaster::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1998/02/10 05:35:03 $
+ *	$Revision: 1.2 $	$Date: 1998/02/16 00:24:37 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalMaster.C,v $
+ * Revision 1.2  1998/02/16 00:24:37  jim
+ * Added atom group centers of mass to Tcl interface.
+ *
  * Revision 1.1  1998/02/10 05:35:03  jim
  * Split ComputeGlobal into different classes and files.
  * Switched globalForces and globalForcesTcl to tclForces and tclForcesScript.

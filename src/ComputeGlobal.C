@@ -26,7 +26,7 @@
 #include "SimParameters.h"
 #include <stdio.h>
 
-// #define DEBUGM
+//#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
@@ -63,24 +63,38 @@ ComputeGlobal::~ComputeGlobal()
   delete master;
 }
 
-void ComputeGlobal::recvConfig(ComputeGlobalConfigMsg *msg) {
-  DebugM(4,"Receiving configuration (" <<
-			msg->aid.size() << " atoms) on client\n");
-  aid = msg->aid;
-  delete msg;
+void ComputeGlobal::configure(AtomIDList newaid, AtomIDList newgdef) {
+  DebugM(4,"Receiving configuration (" << newaid.size() <<
+	" atoms and " << newgdef.size() << " atoms/groups) on client\n");
+
+  // store data
+  aid = newaid;
+  gdef = newgdef;
+
+  // calculate group masses
+  Molecule *mol = Node::Object()->molecule;
+  gmass.resize(0);
+  AtomIDList::iterator g_i, g_e;
+  g_i = gdef.begin(); g_e = gdef.end();
+  for ( ; g_i != g_e; ++g_i ) {
+    BigReal mass = 0;
+    for ( ; *g_i != -1; ++g_i ) {
+      mass += mol->atommass(*g_i);
+    }
+    gmass.add(mass);
+  }
+
   configured = 1;
+}
+
+void ComputeGlobal::recvConfig(ComputeGlobalConfigMsg *msg) {
+  configure(msg->aid,msg->gdef);
+  delete msg;
   sendData();
 }
 
 void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   DebugM(3,"Receiving results (" << msg->aid.size() << " forces) on client\n");
-
-  // Get reconfiguration if present
-  if ( msg->reconfig ) {
-    DebugM(4,"Receiving new configuration (" <<
-			msg->newaid.size() << " atoms) on client\n");
-    aid = msg->newaid;
-  }
 
   // Store forces to patches
   PatchMap *patchMap = PatchMap::Object();
@@ -107,6 +121,10 @@ void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).forceBox->close(&((*ap).r));
   }
+
+  // Get reconfiguration if present
+  if ( msg->reconfig ) configure(msg->newaid, msg->newgdef);
+
   delete msg;
 }
 
@@ -149,6 +167,22 @@ void ComputeGlobal::sendData()
     msg->p.add(x[localID.pid][localID.index]);
   }
 
+  // calculate group centers of mass
+  Molecule *mol = Node::Object()->molecule;
+  AtomIDList::iterator g_i, g_e;
+  g_i = gdef.begin(); g_e = gdef.end();
+  ResizeArray<BigReal>::iterator gm_i = gmass.begin();
+  for ( ; g_i != g_e; ++g_i, ++gm_i ) {
+    Vector com;
+    for ( ; *g_i != -1; ++g_i ) {
+      LocalID localID = atomMap->localID(*g_i);
+      if ( localID.pid == notUsed || ! x[localID.pid] ) continue;
+      com += x[localID.pid][localID.index] * mol->atommass(*g_i);
+    }
+    com /= *gm_i;
+    msg->gcom.add(com);
+  }
+
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     (*ap).positionBox->close(&(x[(*ap).patchID]));
   }
@@ -165,12 +199,15 @@ void ComputeGlobal::sendData()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.7 $	$Date: 1998/02/10 06:45:09 $
+ *	$Revision: 1.8 $	$Date: 1998/02/16 00:23:18 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobal.C,v $
+ * Revision 1.8  1998/02/16 00:23:18  jim
+ * Added atom group centers of mass to Tcl interface.
+ *
  * Revision 1.7  1998/02/10 06:45:09  jim
  * Added class ComputeFreeEnergy.
  *

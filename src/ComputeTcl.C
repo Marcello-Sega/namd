@@ -86,6 +86,44 @@ int ComputeTcl::Tcl_addatom(ClientData clientData,
 }
 
 
+int ComputeTcl::Tcl_addgroup(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  if (argc != 2) {
+    interp->result = "wrong # args";
+    return TCL_ERROR;
+  }
+
+  AtomIDList *gdef = (AtomIDList *)clientData;
+  AtomIDList::iterator g_i, g_e;
+  g_i = gdef->begin();  g_e = gdef->end();
+  int gcount = 1;
+  for ( ; g_i != g_e; ++g_i ) if ( *g_i == -1 ) ++gcount;
+
+  int listc, i;  char **listv;
+
+  if (Tcl_SplitList(interp,argv[1],&listc,&listv) != TCL_OK) {
+    return TCL_ERROR;
+  }
+  for ( i = 0; i < listc; ++i ) {
+    int atomid;
+    if (Tcl_GetInt(interp,listv[i],&atomid) != TCL_OK) {
+      gdef->add(-1);  // sentinel - this should use a delete instead
+      free((char*) listv);
+      return TCL_ERROR;
+    }
+    gdef->add(atomid-1);
+  }
+  gdef->add(-1);  // sentinel
+  free((char*) listv);
+
+  char s[10];  sprintf(s,"g%d",gcount);
+  Tcl_SetResult(interp,s,TCL_VOLATILE);
+
+  DebugM(4,"Group " << s << " added to config list\n");
+  return TCL_OK;
+}
+
+
 int ComputeTcl::Tcl_reconfig(ClientData clientData,
 	Tcl_Interp *interp, int argc, char **) {
   if (argc != 1) {
@@ -120,6 +158,18 @@ int ComputeTcl::Tcl_loadcoords(ClientData clientData,
       return TCL_ERROR;
     }
   }
+  PositionList::iterator c_i = self->gcom.begin();
+  PositionList::iterator c_e = self->gcom.end();
+  int gcount = 1;
+  for ( ; c_i != c_e; ++c_i, ++gcount ) {
+    sprintf(cmd, "set %s(g%d) { %lg %lg %lg }", vname, gcount,
+      (double)((*c_i).x),(double)((*c_i).y),(double)((*c_i).z));
+    code = Tcl_Eval(interp,cmd);
+    if (code != TCL_OK) {
+      NAMD_die("TCL error in global force calculation!");
+      return TCL_ERROR;
+    }
+  }
   return TCL_OK;
 }
 
@@ -145,6 +195,17 @@ int ComputeTcl::Tcl_loadmasses(ClientData clientData,
       return TCL_ERROR;
     }
   }
+  ResizeArray<BigReal>::iterator g_i, g_e;
+  g_i = self->gmass.begin();  g_e = self->gmass.end();
+  int gcount = 1;
+  for ( ; g_i != g_e; ++g_i, ++gcount) {
+    sprintf(cmd, "set %s(g%d) %lg", vname, gcount, (double)(*g_i) );
+    code = Tcl_Eval(interp,cmd);
+    if (code != TCL_OK) {
+      NAMD_die("TCL error in global force calculation!");
+      return TCL_ERROR;
+    }
+  }
   return TCL_OK;
 }
 
@@ -156,8 +217,11 @@ int ComputeTcl::Tcl_addforce(ClientData clientData,
     return TCL_ERROR;
   }
   char **fstring;  int fnum;  int atomid;  double x, y, z;
+  int isgroup = 0;
   if (Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK) {
-    return TCL_ERROR;
+    if ( argv[1][0] == 'g' && Tcl_GetInt(interp,argv[1]+1,&atomid) == TCL_OK) {
+      isgroup = 1;
+    } else return TCL_ERROR;
   }
   if (Tcl_SplitList(interp, argv[2], &fnum, &fstring) != TCL_OK) {
     return TCL_ERROR;
@@ -172,8 +236,12 @@ int ComputeTcl::Tcl_addforce(ClientData clientData,
   }
   free(fstring);
   ComputeGlobalResultsMsg *msg = (ComputeGlobalResultsMsg *)clientData;
-  msg->aid.add(atomid-1);
-  msg->f.add(Vector(x,y,z));
+  if ( isgroup ) {
+    msg->gforce.item(atomid) += Vector(x,y,z);
+  } else {
+    msg->aid.add(atomid-1);
+    msg->f.add(Vector(x,y,z));
+  }
   DebugM(4,"Atom ID " << atomid << " added to force list\n");
   return TCL_OK;
 }
@@ -234,6 +302,8 @@ void ComputeTcl::initialize() {
   // Call interpreter to determine requested atoms
   Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
     (ClientData) &(msg->aid), (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "addgroup", Tcl_addgroup,
+    (ClientData) &(msg->gdef), (Tcl_CmdDeleteProc *) NULL);
 
   // Get the script
   StringList *script = Node::Object()->configList->find("tclForcesScript");
@@ -247,7 +317,10 @@ void ComputeTcl::initialize() {
   }
 
   Tcl_DeleteCommand(interp, "addatom");
+  Tcl_DeleteCommand(interp, "addgroup");
 #endif
+
+  storedefs(msg->gdef);
 
   // Send config to clients
   host->comm->sendComputeGlobalConfig(msg);
@@ -272,6 +345,8 @@ void ComputeTcl::calculate() {
     (ClientData) &(msg->reconfig), (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "addatom", Tcl_addatom,
     (ClientData) &(msg->newaid), (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "addgroup", Tcl_addgroup,
+    (ClientData) &(msg->newgdef), (Tcl_CmdDeleteProc *) NULL);
 
   char cmd[129];  int code;
   strcpy(cmd,"calcforces");  code = Tcl_Eval(interp,cmd);
@@ -283,11 +358,13 @@ void ComputeTcl::calculate() {
   Tcl_DeleteCommand(interp, "addforce");
   Tcl_DeleteCommand(interp, "reconfig");
   Tcl_DeleteCommand(interp, "addatom");
+  Tcl_DeleteCommand(interp, "addgroup");
 #endif
 
   // Send results to clients
   DebugM(3,"Sending results (" << msg->aid.size() << " forces) on master\n");
   if ( msg->reconfig ) {
+    storedefs(msg->newgdef);
     DebugM(4,"Sending new configuration (" <<
 			msg->newaid.size() << " atoms) on master\n");
   }
@@ -300,12 +377,15 @@ void ComputeTcl::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.5 $	$Date: 1998/02/14 09:55:23 $
+ *	$Revision: 1.6 $	$Date: 1998/02/16 00:23:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.C,v $
+ * Revision 1.6  1998/02/16 00:23:20  jim
+ * Added atom group centers of mass to Tcl interface.
+ *
  * Revision 1.5  1998/02/14 09:55:23  jim
  * Final changes to allow inline reading of { } delimited input.
  * Strings read this way begin with a { but do not end with a }.

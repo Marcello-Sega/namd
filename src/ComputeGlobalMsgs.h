@@ -22,6 +22,7 @@ class ComputeGlobalConfigMsg : public comm_object {
 public:
   // data members
   AtomIDList aid;
+  AtomIDList gdef;  // group definitions
 
   // constructor and destructor
   ComputeGlobalConfigMsg(void);
@@ -43,6 +44,7 @@ public:
   // data members
   AtomIDList aid;
   PositionList p;
+  PositionList gcom;  // group center of mass
 
   // constructor and destructor
   ComputeGlobalDataMsg(void);
@@ -64,8 +66,10 @@ public:
   // data members
   AtomIDList aid;
   ForceList f;
+  ForceList gforce;  // force on group
   int reconfig;
   AtomIDList newaid;
+  AtomIDList newgdef;
 
   // constructor and destructor
   ComputeGlobalResultsMsg(void);
@@ -90,12 +94,15 @@ public:
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1997/12/19 23:48:47 $
+ *	$Revision: 1.2 $	$Date: 1998/02/16 00:24:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeGlobalMsgs.h,v $
+ * Revision 1.2  1998/02/16 00:24:38  jim
+ * Added atom group centers of mass to Tcl interface.
+ *
  * Revision 1.1  1997/12/19 23:48:47  jim
  * Added Tcl interface for calculating forces.
  *

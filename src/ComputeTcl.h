@@ -36,6 +36,7 @@ private:
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_atomid(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_addatom(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_addgroup(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reconfig(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_loadcoords(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_loadmasses(ClientData, Tcl_Interp *, int, char **);
@@ -49,12 +50,15 @@ private:
  *
  *	$RCSfile: ComputeTcl.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1998/02/11 09:13:26 $
+ *	$Revision: 1.3 $	$Date: 1998/02/16 00:23:20 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeTcl.h,v $
+ * Revision 1.3  1998/02/16 00:23:20  jim
+ * Added atom group centers of mass to Tcl interface.
+ *
  * Revision 1.2  1998/02/11 09:13:26  jim
  * Added atomid command to tclForces.  Finds id from segname, resid, atomname.
  *
