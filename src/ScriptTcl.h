@@ -37,6 +37,7 @@ private:
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_param(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_run(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_output(ClientData, Tcl_Interp *, int, char **);
 #endif
 };
 
@@ -46,12 +47,15 @@ private:
  *
  *	$RCSfile: ScriptTcl.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/05/27 18:38:58 $
+ *	$Revision: 1.2 $	$Date: 1999/06/21 16:15:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ScriptTcl.h,v $
+ * Revision 1.2  1999/06/21 16:15:36  jim
+ * Improved scripting, run now ends and generates output.
+ *
  * Revision 1.1  1999/05/27 18:38:58  jim
  * Files to implement general Tcl scripting.
  *

@@ -325,7 +325,7 @@ int Output::coordinateNeeded(int timestep)
   }
 
   //  Output final coordinates
-  if (timestep == simParams->N)
+  if (timestep == 0)
   {
     positionsNeeded = 1;
   }
@@ -370,11 +370,11 @@ void Output::coordinate(int timestep, int n, Vector *coor)
   }
 
   //  Output final coordinates
-  if (timestep == simParams->N)
+  if (timestep == 0)
   {
     iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
-				<< timestep << "\n" << endi;
-    output_final_coordinates(coor, n, timestep);
+				<< simParams->N << "\n" << endi;
+    output_final_coordinates(coor, n, simParams->N);
   }
 
 #ifdef MDCOMM
@@ -430,7 +430,7 @@ int Output::velocityNeeded(int timestep)
   }
 
   //  Output final velocities
-  if (timestep == simParams->N)
+  if (timestep == 0)
   {
     velocitiesNeeded = 1;
   }
@@ -463,11 +463,11 @@ void Output::velocity(int timestep, int n, Vector *vel)
   }
 
   //  Output final velocities
-  if (timestep == simParams->N)
+  if (timestep == 0)
   {
     iout << "WRITING VELOCITIES TO OUTPUT FILE AT STEP "
-				<< timestep << "\n" << endi;
-    output_final_velocities(timestep, n, vel);
+				<< simParams->N << "\n" << endi;
+    output_final_velocities(simParams->N, n, vel);
   }
 }
 /*      END OF FUNCTION velocity      */
@@ -2576,12 +2576,15 @@ void Output::output_allforcedcdfile(int timestep, int n, Vector *forces)
  *
  *  $RCSfile: Output.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.19 $  $Date: 1999/05/25 21:48:48 $
+ *  $Revision: 1.20 $  $Date: 1999/06/21 16:15:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Output.C,v $
+ * Revision 1.20  1999/06/21 16:15:33  jim
+ * Improved scripting, run now ends and generates output.
+ *
  * Revision 1.19  1999/05/25 21:48:48  jim
  * Modified DCD code to be compatible with Quanta.
  *

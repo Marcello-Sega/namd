@@ -73,9 +73,24 @@ void Sequencer::run(int numberOfCycles)
 // when to migrate atoms, when to add forces to velocity update.
 void Sequencer::algorithm(void)
 {
+  int scriptTask;
+  int scriptSeq = 0;
+  while ( (! simParams->tclOn) ||
+		(scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) ) {
+    switch ( scriptTask ) {
+      case 1:
+	break;
+      case 2:
+	collection->submitPositions(0,patch->atomIDList,patch->p,
+					patch->lattice,patch->t);
+	continue;
+      case 3:
+	collection->submitVelocities(0,patch->atomIDList,patch->v);
+	continue;
+    }
+
     int &step = patch->flags.step;
     step = simParams->firstTimestep;
-    int scriptRun = 0;
 
     int &maxForceUsed = patch->flags.maxForceUsed;
     int &maxForceMerged = patch->flags.maxForceMerged;
@@ -107,16 +122,12 @@ void Sequencer::algorithm(void)
 
     rattle1(0.);  // enforce rigid bond constraints on initial positions
     minimizationQuenchVelocity();
-    if ( simParams->tclOn && ! scriptRun ) {
-      scriptRun = broadcast->scriptBarrier.get(step);
-    }
-    --scriptRun;
     runComputeObjects();
     addForceToMomentum(0.); // zero velocities of fixed atoms
     reassignVelocities(step);
-    rattle2(timestep,step);  // enfore rigid bonds on initial velocities
+    rattle2(timestep,step);  // enforce rigid bonds on initial velocities
     submitReductions(step);
-    submitCollections(step);
+    //submitCollections(step);
     //rescaleVelocities(step);
     //tcoupleVelocities(timestep,step);
     //berendsenPressure(step);
@@ -149,10 +160,6 @@ void Sequencer::algorithm(void)
 	if ( doNonbonded ) maxForceUsed = Results::nbond;
 	if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
-	if ( simParams->tclOn && ! scriptRun ) {
-          scriptRun = broadcast->scriptBarrier.get(step);
-	}
-	--scriptRun;
 	// Migrate Atoms on stepsPerCycle
 	runComputeObjects(!(step%stepsPerCycle));
 
@@ -185,7 +192,11 @@ void Sequencer::algorithm(void)
 	rebalanceLoad(step);
     }
 
-    terminate();
+    if (! simParams->tclOn) break;
+  }
+
+  submitCollections(0);
+  terminate();
 }
 
 void Sequencer::langevinVelocities(BigReal dt_fs)
@@ -606,12 +617,15 @@ Sequencer::terminate() {
  *
  *      $RCSfile: Sequencer.C,v $
  *      $Author: jim $  $Locker:  $             $State: Exp $
- *      $Revision: 1.1064 $     $Date: 1999/06/17 17:05:46 $
+ *      $Revision: 1.1065 $     $Date: 1999/06/21 16:15:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Sequencer.C,v $
+ * Revision 1.1065  1999/06/21 16:15:36  jim
+ * Improved scripting, run now ends and generates output.
+ *
  * Revision 1.1064  1999/06/17 17:05:46  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *

@@ -68,15 +68,47 @@ int ScriptTcl::Tcl_run(ClientData clientData,
   if (Tcl_GetInt(interp,argv[1],&numsteps) != TCL_OK) {
     return TCL_ERROR;
   }
-  if (numsteps <= 0) {
-    interp->result = "must run for at least 1 step";
+  if (numsteps < 0) {
+    interp->result = "number of steps must be non-negative";
+    return TCL_ERROR;
+  }
+  SimParameters *simParams = Node::Object()->simParameters;
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  if (numsteps % simParams->stepsPerCycle) {
+    interp->result = "number of steps must be a multiple of stepsPerCycle";
     return TCL_ERROR;
   }
   iout << "TCL: Running for " << numsteps << " steps\n" << endi;
-  ScriptTcl *script = (ScriptTcl *)clientData;
-  script->scriptBarrier.publish(script->barrierStep,numsteps);
-  script->barrierStep += numsteps;
+
+  ScriptParamMsg *msg = new ScriptParamMsg;
+  sprintf(msg->param,"numsteps");
+  sprintf(msg->value,"%d",simParams->firstTimestep + numsteps);
+  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  Node::Object()->enableScriptBarrier();
   script->suspend();
+
+  script->scriptBarrier.publish(script->barrierStep++,1);
+  script->suspend();
+
+  msg = new ScriptParamMsg;
+  sprintf(msg->param,"firsttimestep");
+  sprintf(msg->value,"%d",simParams->N);
+  CProxy_Node(CpvAccess(BOCclass_group).node).scriptParam(msg);
+  Node::Object()->enableScriptBarrier();
+  script->suspend();
+
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_output(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+
+  iout << "TCL: Triggering file output.\n" << endi;
+
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->scriptBarrier.publish(script->barrierStep++,2);
+  script->suspend();
+
   return TCL_OK;
 }
 
@@ -116,7 +148,7 @@ void ScriptTcl::run()
 void ScriptTcl::algorithm() {
   DebugM(4,"Running ScriptTcl\n");
 
-  barrierStep = Node::Object()->simParameters->firstTimestep;
+  barrierStep = 0;
 
 #ifdef NAMD_TCL
   // Create interpreter
@@ -129,6 +161,8 @@ void ScriptTcl::algorithm() {
   Tcl_CreateCommand(interp, "param", Tcl_param,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "run", Tcl_run,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 
   // Get the script
@@ -143,6 +177,10 @@ void ScriptTcl::algorithm() {
   }
 
 #endif
+
+  scriptBarrier.publish(barrierStep++,0);  // terminate sequencers
+  suspend();
+
 }
 
 
@@ -151,12 +189,15 @@ void ScriptTcl::algorithm() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 1999/05/27 18:38:58 $
+ *	$Revision: 1.2 $	$Date: 1999/06/21 16:15:36 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ScriptTcl.C,v $
+ * Revision 1.2  1999/06/21 16:15:36  jim
+ * Improved scripting, run now ends and generates output.
+ *
  * Revision 1.1  1999/05/27 18:38:58  jim
  * Files to implement general Tcl scripting.
  *

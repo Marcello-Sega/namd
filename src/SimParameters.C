@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1072 $  $Date: 1999/06/17 19:03:44 $
+ *  $Revision: 1.1073 $  $Date: 1999/06/21 16:15:38 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1073  1999/06/21 16:15:38  jim
+ * Improved scripting, run now ends and generates output.
+ *
  * Revision 1.1072  1999/06/17 19:03:44  jim
  * SimParameters is now sent by bit-copy rather than by member.
  *
@@ -630,8 +633,11 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 void SimParameters::scriptSet(const char *param, const char *value) {
 
 #define MAX_SCRIPT_PARAM_SIZE 128
+#define SCRIPT_PARSE_INT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atoi(value); return; } }
 #define SCRIPT_PARSE_FLOAT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atof(value); return; } }
 
+  SCRIPT_PARSE_INT("numsteps",N)
+  SCRIPT_PARSE_INT("firsttimestep",firstTimestep)
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
@@ -3523,12 +3529,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1072 $  $Date: 1999/06/17 19:03:44 $
+ *  $Revision: 1.1073 $  $Date: 1999/06/21 16:15:38 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1073  1999/06/21 16:15:38  jim
+ * Improved scripting, run now ends and generates output.
+ *
  * Revision 1.1072  1999/06/17 19:03:44  jim
  * SimParameters is now sent by bit-copy rather than by member.
  *

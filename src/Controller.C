@@ -88,9 +88,26 @@ extern int eventEndOfTimeStep;
 
 void Controller::algorithm(void)
 {
+  int scriptTask;
+  int scriptSeq = 0;
+  if (simParams->tclOn) Node::Object()->enableScriptBarrier();
+  while ( (! simParams->tclOn) ||
+	(scriptTask = broadcast->scriptBarrier.get(scriptSeq++)) ) {
+    switch ( scriptTask ) {
+      case 1:
+        break;
+      case 2:
+	collection->enqueuePositions(0);
+	Node::Object()->enableScriptBarrier();
+	continue;
+      case 3:
+	collection->enqueueVelocities(0);
+	Node::Object()->enableScriptBarrier();
+	continue;
+    }
+
     int step = simParams->firstTimestep;
     int first = 1;
-    int scriptRun = 0;
 
     const int numberOfSteps = simParams->N;
     const int nPatches=(PatchMap::Object())->numPatches();
@@ -106,14 +123,9 @@ void Controller::algorithm(void)
         if ( ! first ) rescaleVelocities(step);
 	if ( ! first ) tcoupleVelocities(step);
 	if ( ! first ) berendsenPressure(step);
-        enqueueCollections(step);
+        if ( ! first ) enqueueCollections(step);
         traceUserEvent(eventEndOfTimeStep);
 	if ( ! first ) langevinPiston1(step);
-	if ( simParams->tclOn && ! scriptRun ) {
-	  Node::Object()->enableScriptBarrier();
-	  scriptRun = broadcast->scriptBarrier.get(step);
-	}
-	--scriptRun;
 	receivePressure(step);
 	if ( ! first ) langevinPiston2(step);
         reassignVelocities(step);
@@ -134,7 +146,12 @@ void Controller::algorithm(void)
 	}
     }
 
-    terminate();
+    if (simParams->tclOn) Node::Object()->enableScriptBarrier();
+    else break;
+  }
+
+  enqueueCollections(0);
+  terminate();
 }
 
 void Controller::berendsenPressure(int step)
@@ -808,12 +825,15 @@ void Controller::terminate(void) {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1071 $	$Date: 1999/06/17 17:05:44 $
+ *	$Revision: 1.1072 $	$Date: 1999/06/21 16:15:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: Controller.C,v $
+ * Revision 1.1072  1999/06/21 16:15:31  jim
+ * Improved scripting, run now ends and generates output.
+ *
  * Revision 1.1071  1999/06/17 17:05:44  jim
  * Renamed seq to step in most places.  Now has meaning only to user.
  *
