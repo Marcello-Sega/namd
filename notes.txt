@@ -13,11 +13,11 @@ a list of know deficiencies, and advice for reporting bugs.
 
 New Features
 
---- First port to Windows NT ---
+--- First Port to Windows NT ---
 
 NAMD now runs on Windows NT.  Windows 2000 probably works and
 Windows 98 might but I'm not promising anything.  You can now run
-NAMD on all those NT machines sittle idle at night.  Enjoy.
+NAMD on all those NT machines sit idle at night.
 
 --- Parallel PME Reciprocal Sum ---
 
