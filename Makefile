@@ -1,6 +1,10 @@
 include .rootdir/Make.charm
 include Makearch
 
+# pass version/platform information to compile
+NAMD_VERSION = 2.1
+RELEASE=-DNAMD_VERSION=\"$(NAMD_VERSION)\" -DNAMD_PLATFORM=\"$(NAMD_PLATFORM)\"
+
 # directories
 SRCDIR = src
 DSTDIR = obj
@@ -161,10 +165,10 @@ INCLUDE = $(CHARM)/include
 LIBS = $(DPMTALIBS) $(DPMELIBS)
 
 # CXX is platform dependent
-CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS)
-CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS)
-CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS)
-GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS)
+CXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXOPTS) $(RELEASE)
+CXXTHREADFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXTHREADOPTS) $(RELEASE)
+CXXSIMPARAMFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(CXXSIMPARAMOPTS) $(RELEASE)
+GXXFLAGS = -I$(INCLUDE) -I$(SRCDIR) -I$(INCDIR) $(DPMTA) $(DPME) $(TCL) $(FFT) $(CCS) $(RELEASE)
 
 # Add new executables here.
 
@@ -358,7 +362,6 @@ clean:
 veryclean:	clean
 	rm -f $(BINARIES)
 
-NAMD_VERSION = 2.1
 RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 RELEASE_FILES = .rootdir/README.txt \
 		.rootdir/announce.txt \
