@@ -25,16 +25,16 @@ public:
     ~Sequencer(void) { };
     void run(int numberOfCycles);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
-    void suspend(void) { CthSuspend(); };
 
 protected:
+    void suspend(void) { CthSuspend(); };
     virtual void threadRun(void);  // subclasses redefine this method
     int numberOfCycles;            // stores argument to run()
     HomePatch *const patch;        // access methods in patch
 
 private:
     CthThread thread;
-    friend void Sequencer_threadRun(Sequencer*);
+    friend void SequencerThreadRun(Sequencer*);
 };
 
 #endif // SEQUENCER_H

@@ -14,7 +14,7 @@
 #include "Sequencer.h"
 #include "HomePatch.h"
 
-void Sequencer_threadRun(Sequencer* arg)
+void SequencerThreadRun(Sequencer* arg)
 {
     arg->threadRun();
 }
@@ -22,7 +22,7 @@ void Sequencer_threadRun(Sequencer* arg)
 void Sequencer::run(int numberOfCycles)
 {
     this->numberOfCycles = numberOfCycles;
-    thread = CthCreate((CthVoidFn)&(Sequencer_threadRun),(void*)(this),0);
+    thread = CthCreate((CthVoidFn)&(SequencerThreadRun),(void*)(this),0);
     CthSetStrategyDefault(thread);
     CthAwaken(thread);
 }
@@ -38,7 +38,7 @@ void Sequencer::threadRun(void)
         {
             // patch->addForceToMomentum(0.5*timestep);
             // patch->addVelocityToPosition(timestep);
-            // patch->positionsReady();
+            patch->positionsReady();
             suspend();
             // patch->addForceToMomentum(0.5*timestep);
         }
