@@ -117,6 +117,14 @@ OBJS = \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
         $(DSTDIR)/defmain.o \
+        $(DSTDIR)/FreeEnergyAssert.o \
+        $(DSTDIR)/FreeEnergyGroup.o \
+        $(DSTDIR)/FreeEnergyLambda.o \
+        $(DSTDIR)/FreeEnergyLambdMgr.o \
+        $(DSTDIR)/FreeEnergyParse.o \
+        $(DSTDIR)/FreeEnergyRestrain.o \
+        $(DSTDIR)/FreeEnergyRMgr.o \
+        $(DSTDIR)/FreeEnergyVector.o \
 	$(DSTDIR)/heap.o \
 	$(DSTDIR)/HomePatch.o \
 	$(DSTDIR)/HBondParam.o \

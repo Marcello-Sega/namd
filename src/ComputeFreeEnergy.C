@@ -8,9 +8,23 @@
  *
  ***************************************************************************/
 
+#include <string.h>
+#include <strstream.h>
+#include "InfoStream.h"
+#include "FreeEnergyEnums.h"
+#include "FreeEnergyAssert.h"
+#include "FreeEnergyGroup.h"
+#include "Vector.h"
+#include "FreeEnergyVector.h"
+#include "FreeEnergyRestrain.h"
+#include "FreeEnergyRMgr.h"
+#include "FreeEnergyLambda.h"
+#include "FreeEnergyLambdMgr.h"
+#include "ComputeFreeEnergy.h"
+#include "FreeEnergyParse.h"
+
 #include "Namd.h"
 #include "Node.h"
-#include "ComputeFreeEnergy.h"
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
 #include "Molecule.h"
@@ -25,18 +39,48 @@
 #include "Debug.h"
 
 
-void ComputeFreeEnergy::user_initialize()
-{
+void ComputeFreeEnergy::update() {
+//-----------------------------------------------------------------
+// get lambdas from LambdaManager, inform RestraintManager.
+// calculate gradients for each center-of-mass of each restraint,
+// and apply the forces to the atoms involved
+//-----------------------------------------------------------------
+  double  LambdaKf, LambdaRef;
+
+  if (m_LambdaManager.GetLambdas(LambdaKf, LambdaRef)) {
+    m_RestraintManager.SetLambdas(LambdaKf, LambdaRef);
+    m_RestraintManager.UpdateCOMs(*this);
+    m_RestraintManager.AddForces(*this);
+    if (m_LambdaManager.IsTimeToPrint(simParams->dt)) {
+      m_RestraintManager.PrintInfo();
+    }
+  }
+}
+
+
+void ComputeFreeEnergy::user_initialize() {
+//-----------------------------------------------------------------
+// get char* from the input stream.  read all the input
+//-----------------------------------------------------------------
+  char* Str;
+
   iout << iDEBUG << "Initializing free energy.\n"; 
   iout << iDEBUG << "***********************************\n"; 
   config->get(*iout.rdbuf(),'\0');
   iout << iDEBUG << "***********************************\n" << endi; 
+
+  Str = (config->rdbuf())->str();
+  ReadInput(Str, m_RestraintManager, m_LambdaManager, *this, simParams->dt);
+//  update();
 }
 
 
-void ComputeFreeEnergy::user_calculate()
-{
-  ;
+void ComputeFreeEnergy::user_calculate() {
+//-----------------------------------------------------------------
+// this is what's executed every time-step
+//-----------------------------------------------------------------
+  m_LambdaManager.IncCurrStep();
+  update();
 }
 
 
@@ -151,7 +195,7 @@ void ComputeFreeEnergy::calculate() {
 
   resultsMsg = new (MsgIndex(ComputeGlobalResultsMsg)) ComputeGlobalResultsMsg;
 
-  iout << iDEBUG << "Free energy perturbation - calculate()\n" << endi; 
+//  iout << iDEBUG << "Free energy perturbation - calculate()\n" << endi; 
   user_calculate();
 
   // Send results to clients
@@ -170,12 +214,16 @@ void ComputeFreeEnergy::calculate() {
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.8 $	$Date: 1998/04/30 04:53:22 $
+ *	$Revision: 1.9 $	$Date: 1998/05/21 22:37:31 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.C,v $
+ * Revision 1.9  1998/05/21 22:37:31  hurwitz
+ * initial check in of code for fixed and forcing restraints
+ * -Dave Hurwitz
+ *
  * Revision 1.8  1998/04/30 04:53:22  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *

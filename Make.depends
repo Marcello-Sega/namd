@@ -585,13 +585,21 @@ obj/ComputeDPMTA.o: \
 	$(CXX) $(CXXFLAGS) -o obj/ComputeDPMTA.o -c src/ComputeDPMTA.C
 obj/ComputeFreeEnergy.o: \
 	src/ComputeFreeEnergy.C \
-	src/Namd.h \
-	src/NamdState.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
+	src/InfoStream.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyGroup.h \
 	src/Vector.h \
 	src/common.h \
-	src/InfoStream.h \
+	src/FreeEnergyVector.h \
+	src/FreeEnergyRestrain.h \
+	src/FreeEnergyRMgr.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
+	src/ComputeFreeEnergy.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeHomePatches.h \
+	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/UniqueSortedArray.h \
@@ -599,24 +607,25 @@ obj/ComputeFreeEnergy.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/ResizeArrayPrimIter.h \
-	src/Node.h \
+	src/Compute.h \
 	src/main.h \
 	src/BOCgroup.h \
-	src/ProcessorPrivate.h \
-	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
-	src/ComputeFreeEnergy.h \
-	src/ComputeGlobalMaster.h \
-	src/ComputeHomePatches.h \
-	src/Compute.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
+	src/Lattice.h \
 	src/PatchTypes.h \
+	src/FreeEnergyParse.h \
+	src/Namd.h \
+	src/NamdState.h \
+	src/Node.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/ConfigList.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/ComputeGlobal.h \
 	src/ComputeGlobalMsgs.h \
 	src/Molecule.h \
@@ -867,7 +876,16 @@ obj/ComputeGlobal.o: \
 	src/ComputeGlobalMaster.h \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeTcl.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyGroup.h \
+	src/FreeEnergyVector.h \
+	src/FreeEnergyRestrain.h \
+	src/FreeEnergyRMgr.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
 	src/ComputeFreeEnergy.h \
+	src/FreeEnergyParse.h \
 	src/ComputeMDComm.h \
 	src/PatchMgr.h \
 	src/HomePatch.h \
@@ -1606,6 +1624,149 @@ obj/defmain.o: \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) -o obj/defmain.o -c src/defmain.C
+obj/FreeEnergyAssert.o: \
+	src/FreeEnergyAssert.C \
+	src/InfoStream.h \
+	src/FreeEnergyAssert.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyAssert.o -c src/FreeEnergyAssert.C
+obj/FreeEnergyGroup.o: \
+	src/FreeEnergyGroup.C \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyGroup.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyGroup.o -c src/FreeEnergyGroup.C
+obj/FreeEnergyLambda.o: \
+	src/FreeEnergyLambda.C \
+	src/InfoStream.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyLambda.h \
+	src/Vector.h \
+	src/common.h \
+	src/FreeEnergyVector.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyLambda.o -c src/FreeEnergyLambda.C
+obj/FreeEnergyLambdMgr.o: \
+	src/FreeEnergyLambdMgr.C \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
+	src/FreeEnergyGroup.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyLambdMgr.o -c src/FreeEnergyLambdMgr.C
+obj/FreeEnergyParse.o: \
+	src/FreeEnergyParse.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/Vector.h \
+	src/FreeEnergyVector.h \
+	src/FreeEnergyGroup.h \
+	src/FreeEnergyRestrain.h \
+	src/FreeEnergyRMgr.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
+	src/ComputeFreeEnergy.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeHomePatches.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h \
+	src/FreeEnergyParse.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyParse.o -c src/FreeEnergyParse.C
+obj/FreeEnergyRestrain.o: \
+	src/FreeEnergyRestrain.C \
+	src/common.h \
+	src/InfoStream.h \
+	src/FreeEnergyAssert.h \
+	src/FreeEnergyEnums.h \
+	src/Vector.h \
+	src/FreeEnergyVector.h \
+	src/FreeEnergyGroup.h \
+	src/FreeEnergyRestrain.h \
+	src/FreeEnergyRMgr.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
+	src/ComputeFreeEnergy.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeHomePatches.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRestrain.o -c src/FreeEnergyRestrain.C
+obj/FreeEnergyRMgr.o: \
+	src/FreeEnergyRMgr.C \
+	src/InfoStream.h \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/Vector.h \
+	src/common.h \
+	src/FreeEnergyVector.h \
+	src/FreeEnergyGroup.h \
+	src/FreeEnergyRestrain.h \
+	src/FreeEnergyRMgr.h \
+	src/FreeEnergyLambda.h \
+	src/FreeEnergyLambdMgr.h \
+	src/ComputeFreeEnergy.h \
+	src/ComputeGlobalMaster.h \
+	src/ComputeHomePatches.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/ResizeArrayPrimIter.h \
+	src/Compute.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/PositionOwnerBox.h \
+	src/PositionBox.h \
+	src/Lattice.h \
+	src/PatchTypes.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyRMgr.o -c src/FreeEnergyRMgr.C
+obj/FreeEnergyVector.o: \
+	src/FreeEnergyVector.C \
+	src/FreeEnergyEnums.h \
+	src/FreeEnergyAssert.h \
+	src/Vector.h \
+	src/common.h \
+	src/InfoStream.h \
+	src/FreeEnergyVector.h
+	$(CXX) $(CXXFLAGS) -o obj/FreeEnergyVector.o -c src/FreeEnergyVector.C
 obj/heap.o: \
 	src/heap.C \
 	src/heap.h \

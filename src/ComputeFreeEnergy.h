@@ -8,8 +8,8 @@
  *
  ***************************************************************************/
 
-#ifndef COMPUTEFREEENERGY_H
-#define COMPUTEFREEENERGY_H
+#if !defined(COMPUTEFREEENERGY_H)
+  #define COMPUTEFREEENERGY_H
 
 #include "ComputeGlobalMaster.h"
 #include "NamdTypes.h"
@@ -32,12 +32,15 @@ private:
   virtual void calculate();
   virtual void user_initialize();
   virtual void user_calculate();
+  void update();
   ComputeGlobalConfigMsg *configMsg;
   ComputeGlobalResultsMsg *resultsMsg;
   Molecule *molecule;
   SimParameters *simParams;
   istrstream *config;
-protected:
+  ARestraintManager  m_RestraintManager;
+  ALambdaManager     m_LambdaManager;
+public:
   // These all return -1 on error.
   int getAtomID(const char *segid, int resid, const char *aname);
   int getNumAtoms(const char* segid, int resid); // 0 on error
@@ -53,13 +56,17 @@ protected:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeFreeEnergy.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.6 $	$Date: 1998/04/30 04:53:22 $
+ *	$Author: hurwitz $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.7 $	$Date: 1998/05/21 22:37:32 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeFreeEnergy.h,v $
+ * Revision 1.7  1998/05/21 22:37:32  hurwitz
+ * initial check in of code for fixed and forcing restraints
+ * -Dave Hurwitz
+ *
  * Revision 1.6  1998/04/30 04:53:22  jim
  * Added forces from MDComm and other improvements to ComputeGlobal.
  *
