@@ -41,7 +41,7 @@ class ExtForceMsg : public CMessage_ExtForceMsg {
 public:
   BigReal energy;
   BigReal virial[3][3];
-  Force *force;
+  ExtForce *force;
 };
 
 class ComputeExtMgr : public BOCclass {
@@ -63,17 +63,21 @@ private:
   ExtCoordMsg **coordMsgs;
   int numAtoms;
   CompAtom *coord;
+  ExtForce *force;
+  ExtForceMsg *oldmsg;
 };
 
 ComputeExtMgr::ComputeExtMgr() :
   extProxy(thisgroup), extCompute(0), numSources(0), numArrived(0),
-  coordMsgs(0), coord(0), numAtoms(0) {
+  coordMsgs(0), coord(0), force(0), oldmsg(0), numAtoms(0) {
   CpvAccess(BOCclass_group).computeExtMgr = thisgroup;
 }
 
 ComputeExtMgr::~ComputeExtMgr() {
   delete [] coordMsgs;
   delete [] coord;
+  delete [] force;
+  delete oldmsg;
 }
 
 ComputeExt::ComputeExt(ComputeID c) :
@@ -164,6 +168,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
     numArrived = 0;
     numAtoms = Node::Object()->molecule->numAtoms;
     coord = new CompAtom[numAtoms];
+    force = new ExtForce[numAtoms];
   }
 
   int i;
@@ -188,10 +193,12 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
   file = fopen(simParams->extCoordFilename,"w");
   if ( ! file ) { NAMD_die(strerror(errno)); }
   for ( i=0; i<numAtoms; ++i ) {
+    int id = coord[i].id + 1;
+    double charge = coord[i].charge;
     double x = coord[i].position.x;
     double y = coord[i].position.y;
     double z = coord[i].position.z;
-    iret = fprintf(file,"%f %f %f\n",x,y,z);
+    iret = fprintf(file,"%d %f %f %f %f\n",id,charge,x,y,z);
     if ( iret < 0 ) { NAMD_die(strerror(errno)); }
   }
   // write periodic cell lattice (0 0 0 if non-periodic)
@@ -218,10 +225,13 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
   file = fopen(simParams->extForceFilename,"r");
   if ( ! file ) { NAMD_die(strerror(errno)); }
   for ( i=0; i<numAtoms; ++i ) {
+    int id, replace;
     double x, y, z;
-    iret = fscanf(file,"%lf %lf %lf\n", &x, &y, &z);
-    if ( iret != 3 ) { NAMD_die("Error reading external forces file."); }
-    coord[i].position.x = x; coord[i].position.y = y; coord[i].position.z = z;
+    iret = fscanf(file,"%d %d %lf %lf %lf\n", &id, &replace, &x, &y, &z);
+    if ( iret != 5 ) { NAMD_die("Error reading external forces file."); }
+    if ( id != i + 1 ) { NAMD_die("Atom ID error in external forces file."); }
+    force[i].force.x = x; force[i].force.y = y; force[i].force.z = z;
+    force[i].replace = replace;
   }
   // read energy and virial if they are present
   // virial used by NAMD is -'ve of normal convention, so reverse it!
@@ -256,7 +266,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
     ExtCoordMsg *cmsg = coordMsgs[j];
     ExtForceMsg *fmsg = new (cmsg->numAtoms, 0) ExtForceMsg;
     for ( int i=0; i < cmsg->numAtoms; ++i ) {
-      fmsg->force[i] = coord[cmsg->coord[i].id].position;
+      fmsg->force[i] = force[cmsg->coord[i].id];
     }
     if ( ! j ) {
       fmsg->energy = energy;
@@ -278,14 +288,15 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
 
 void ComputeExtMgr::recvForce(ExtForceMsg *msg) {
   extCompute->saveResults(msg);
-  delete msg;
+  delete oldmsg;
+  oldmsg = msg;
 }
 
 void ComputeExt::saveResults(ExtForceMsg *msg)
 {
   ResizeArrayIter<PatchElem> ap(patchList);
 
-  Force *results_ptr = msg->force;
+  ExtForce *results_ptr = msg->force;
 
   // add in forces
   for (ap = ap.begin(); ap != ap.end(); ap++) {
@@ -293,10 +304,14 @@ void ComputeExt::saveResults(ExtForceMsg *msg)
     Force *f = r->f[Results::normal];
     int numAtoms = (*ap).p->getNumAtoms();
 
+    int replace = 0;
+    ExtForce *replacementForces = results_ptr;
     for(int i=0; i<numAtoms; ++i) {
-      f[i] += *results_ptr;
+      if ( results_ptr->replace ) replace = 1;
+      else f[i] += results_ptr->force;
       ++results_ptr;
     }
+    if ( replace ) (*ap).p->replaceForces(replacementForces);
   
       (*ap).forceBox->close(&r);
     }

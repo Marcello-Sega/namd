@@ -10,7 +10,7 @@ module ComputeExtMgr {
     CompAtom coord[];
   };
   message ExtForceMsg {
-    Force force[];
+    ExtForce force[];
   };
 
   group ComputeExtMgr {

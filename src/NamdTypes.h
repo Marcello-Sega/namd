@@ -109,5 +109,11 @@ typedef int Boolean;
 #define true 1
 #endif
 
+struct ExtForce {
+  int replace;
+  Force force;
+  ExtForce() : replace(0) {;}
+};
+
 #endif /* NAMDTYPES_H */
 

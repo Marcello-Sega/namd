@@ -86,6 +86,9 @@ public:
   void checkpoint(void);
   void revert(void);
 
+  // methods for QM (ExtForces replacement)
+  void replaceForces(ExtForce *f);
+
   // patch-wise calculations
   BigReal calcKineticEnergy();
   Vector calcMomentum();
@@ -114,6 +117,7 @@ private:
   // Store of Atom-wise variables
   FullAtomList  atom;
   ForceList f_saved[Results::maxNumForces];
+  ExtForce *replacementForces;
 
   // checkpointed state
   FullAtomList  checkpoint_atom;

@@ -68,6 +68,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   flags.sequence = -1;
 
   numAtoms = atom.size();
+  replacementForces = 0;
 
   nChild = 0;	// number of proxy spanning tree children
 }
@@ -135,6 +136,15 @@ void HomePatch::boxClosed(int)
 {
   if ( ! --boxesOpen )
   {
+    if ( replacementForces ) {
+      for ( int i = 0; i < numAtoms; ++i ) {
+        if ( replacementForces[i].replace ) {
+          for ( int j = 0; j < Results::maxNumForces; ++j ) { f[j][i] = 0; }
+          f[Results::normal][i] = replacementForces[i].force;
+        }
+      }
+      replacementForces = 0;
+    }
     DebugM(1,patchID << ": " << CthSelf() << " awakening sequencer "
 	<< sequencer->thread << "(" << patchID << ") @" << CmiTimer() << "\n");
     // only awaken suspended threads.  Then say it is suspended.
@@ -320,6 +330,11 @@ void HomePatch::positionsReady(int doMigration)
 
   // gzheng
   if (useSync) Sync::Object()->PatchReady();
+}
+
+void HomePatch::replaceForces(ExtForce *f)
+{
+  replacementForces = f;
 }
 
 void HomePatch::saveForce(const int ftag)
