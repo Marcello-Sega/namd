@@ -648,7 +648,7 @@ int open_dcd_write(char *dcdname)
              return DCD_OPENFAILED;
            strcpy(newdcdname, dcdname);
            strcat(newdcdname, ".BAK");
-#ifdef WIN32
+#if defined(WIN32) && !defined(__CYGWIN__)
 	   remove(newdcdname);
 #endif
 	   if(rename(dcdname, newdcdname))

@@ -101,14 +101,7 @@ void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
       char *fname = Node::Object()->simParameters->auxFilename;
       iout << iINFO << "OPENING AUXILIARY DATA STREAM FILE "
 					<< fname << "\n" << endi;
-      char *bfname = new char[strlen(fname)+10];
-      strcpy(bfname,fname);
-      strcat(bfname,".BAK");
-#if defined(WIN32) && !defined(__CYGWIN__)
-      remove(bfname);
-#endif
-      rename(fname,bfname);
-      delete [] bfname;
+      NAMD_backup_file(fname);
       dataStreamFile = fopen(fname,"w");
       if ( ! dataStreamFile )
 		NAMD_die("Can't open auxiliary data stream file!");

@@ -117,15 +117,24 @@ void NAMD_bug(const char *err_msg)
 // move filename to filename.BAK
 void NAMD_backup_file(const char *filename, const char *extension)
 {
-  if ( ! extension ) extension = ".BAK";
-  char *backup = new char[strlen(filename)+strlen(extension)+1];
-  strcpy(backup, filename);
-  strcat(backup, extension);
-#ifdef WIN32
-  remove(backup);
+  struct stat sbuf;
+  if (stat(filename, &sbuf) == 0) {
+    if ( ! extension ) extension = ".BAK";
+    char *backup = new char[strlen(filename)+strlen(extension)+1];
+    strcpy(backup, filename);
+    strcat(backup, extension);
+#if defined(WIN32) && !defined(__CYGWIN__)
+    remove(backup);
 #endif
-  rename(filename,backup);
-  delete [] backup;
+    if ( rename(filename,backup) )
+    {
+      char errmsg[256];
+
+      sprintf(errmsg, "Error on renaming file %s to %s",filename,backup);
+      NAMD_err(errmsg);
+    }
+    delete [] backup;
+  }
 }
 
 // same as write, only does error checking internally

@@ -325,7 +325,6 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
 
   int baselen = strlen(namdMyNode->simParams->restartFilename);
   char *restart_name = new char[baselen+26];
-  char *restart_bak = new char[baselen+30];
 
   strcpy(restart_name, namdMyNode->simParams->restartFilename);
   if ( namdMyNode->simParams->restartSave ) {
@@ -333,13 +332,8 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
     strcat(restart_name, timestepstr);
   }
   strcat(restart_name, ".coor");
-  strcpy(restart_bak, restart_name);
-  strcat(restart_bak, ".old");
 
-#if defined(WIN32) && !defined(__CYGWIN__)
-  remove(restart_bak);
-#endif
-  rename(restart_name, restart_bak);
+  NAMD_backup_file(restart_name,".old");
 
   //  Check to see if we should generate a binary or PDB file
   if (!namdMyNode->simParams->binaryRestart)
@@ -357,7 +351,6 @@ void Output::output_restart_coordinates(Vector *coor, int n, int timestep)
   }
 
   delete [] restart_name;
-  delete [] restart_bak;
 }
 /*      END OF FUNCTION output_restart_coordinates  */
 
@@ -383,7 +376,6 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
 
   int baselen = strlen(namdMyNode->simParams->restartFilename);
   char *restart_name = new char[baselen+26];
-  char *restart_bak = new char[baselen+30];
 
   strcpy(restart_name, namdMyNode->simParams->restartFilename);
   if ( namdMyNode->simParams->restartSave ) {
@@ -391,13 +383,8 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
     strcat(restart_name, timestepstr);
   }
   strcat(restart_name, ".vel");
-  strcpy(restart_bak, restart_name);
-  strcat(restart_bak, ".old");
 
-#if defined(WIN32) && !defined(__CYGWIN__)
-  remove(restart_bak);
-#endif
-  rename(restart_name, restart_bak);
+  NAMD_backup_file(restart_name,".old");
 
   //  Check to see if we should write out a PDB or a binary file
   if (!namdMyNode->simParams->binaryRestart)
@@ -418,7 +405,6 @@ void Output::output_restart_velocities(int timestep, int n, Vector *vel)
   }
 
   delete [] restart_name;
-  delete [] restart_bak;
 }
 /*      END OF FUNCTION output_restart_velocities  */
 
@@ -564,13 +550,7 @@ void Output::output_final_coordinates(Vector *coor, int n, int timestep)
   strcpy(output_name, namdMyNode->simParams->outputFilename);
   strcat(output_name, ".coor");
 
-  char bfname[140];
-  strcpy(bfname,output_name);
-  strcat(bfname,".BAK");
-#if defined(WIN32) && !defined(__CYGWIN__)
-  remove(bfname);
-#endif
-  rename(output_name,bfname);
+  NAMD_backup_file(output_name);
 
   //  Check to see if we should write out a binary file or a
   //  PDB file
@@ -613,13 +593,7 @@ void Output::output_final_velocities(int timestep, int n, Vector *vel)
   strcpy(output_name, namdMyNode->simParams->outputFilename);
   strcat(output_name, ".vel");
 
-  char bfname[140];
-  strcpy(bfname,output_name);
-  strcat(bfname,".BAK");
-#if defined(WIN32) && !defined(__CYGWIN__)
-  remove(bfname);
-#endif
-  rename(output_name,bfname);
+  NAMD_backup_file(output_name);
 
   //  Check to see if we should write a PDB or binary file
   if (!(namdMyNode->simParams->binaryOutput))
