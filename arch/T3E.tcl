@@ -1,7 +1,7 @@
 
 TCLDIR=$(HOME)/tcl
 TCLINCL=-I$(TCLDIR)/include
-TCLLIB=-L$(TCLDIR)/lib -ltcl
+TCLLIB=-L$(TCLDIR)/lib -ltcl8.0
 TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
