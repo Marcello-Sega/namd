@@ -1,0 +1,106 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                          %
+%              (C) Copyright 1995 The Board of Trustees of the             %
+%                          University of Illinois                          %
+%                           All Rights Reserved                            %
+%								  	   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RCS INFORMATION:
+%
+%       $RCSfile: namd_macros.tex,v $
+%       $Author: dhardy $        $Locker:  $                $State: Exp $
+%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:26 $
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DESCRIPTION:
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REVISION HISTORY:
+%
+% $Log: namd_macros.tex,v $
+% Revision 1.1  1998/01/05 21:12:26  dhardy
+% user guide, first draft
+%
+% Revision 1.2  1995/06/23 14:35:27  nelson
+% Change mycite macro to actual cite articles.
+%
+% Revision 1.1  95/06/19  16:09:27  16:09:27  nelson (Mark T. Nelson)
+% Initial revision
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%
+% generally useful macros
+%
+\newcommand{\REFAND} {\&}
+\newcommand{\ETALNP}{\mbox{\it et al}}
+\newcommand{\ETAL}{\mbox{\ETALNP{\it.}}}
+\newcommand{\eqnref}[1] {\mbox{eq (\ref{#1})}}
+\newcommand{\mycite}[2] {\cite{#2}}
+%\newcommand{\mycite}[2] {}
+
+%
+% include name and version number of program; this is generated
+% by the 'make version' command in either the doc or src directory
+% This will define the 'NAMDNAME', 'NAMDVER', and 'NAMDDATE' macros,
+% as well as the 'NAMDAUTHORS' macro.
+% Then the 'NAMD' macro is used throughout the document to refer to
+% the program name, while the other macros as defined in the file
+% namd_version.tex are used as given.
+%
+
+\input{namd_version}
+\newcommand{\NAMD} {\mbox{{\sf \NAMDNAME}}}
+
+%
+% macros for style conventions when describing the program.
+%
+
+% name of class or object in program
+\newcommand{\OBJ}[1] {{\bf\tt#1}}
+
+% function arguments
+\newcommand{\FA}[2] {{\rm{\bf#1}\ {\it#2}}}
+
+% global function name
+\newcommand{\FN}[3] {{\rm\bf#1}\ {\tt #2(}#3{\tt)}}
+
+% class member function name
+\newcommand{\FNO}[4] {{\rm\bf#2}\ \OBJ{#1::}{\tt#3(}#4{\tt)}}
+
+% list item, for optional components, parameters, etc.
+\newcommand{\TTLISTITEM}[1] {\item {\tt #1} \\}
+\newcommand{\RMLISTITEM}[1] {\item {\rm #1} \\}
+\newcommand{\BOLDLISTITEM}[1] {\item {\bf #1} \\}
+\newcommand{\EMLISTITEM}[1] {\item {\em #1} \\}
+\newcommand{\LISTITEM}[1] {\RMLISTITEM{#1}}
+
+%
+% other generally useful macros
+%
+
+% Other program names, formatted nicely
+\newcommand{\VMD} {\mbox{{\sf vmd}}}
+\newcommand{\MDCOMM} {\mbox{MDC{\sc omm}}}
+\newcommand{\MDSCOPE} {MDScope}
+\newcommand{\CESB} {MDScope}
+\newcommand{\ALLNAMES} {MDScope}
+\newcommand{\SMALLMDSCOPE} {mdscope}
+\newcommand{\SMALLCESB} {mdscope}
+\newcommand{\SMALLALLNAMES} {mdscope}
+
+% full name for MDScope, i.e., what it stands for
+\newcommand{\MDSCOPENAME} {Molecular Dynamics computational environment}
+
+% title of MDScope paper
+\newcommand{\MDSCOPEPAPER} {MDScope: A Visual Computing Environment for
+Structural Biology}
+
+% default definitions for title and description
+\newcommand{\DOCTITLE} {Documentation Guides}
+\newcommand{\DOCDESC} {
+  This document includes the \NAMD\ Installation, Users, and
+Programmers Guides, which document how to obtain, install, use, and
+modify the molecular graphics program \NAMD.}

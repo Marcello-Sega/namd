@@ -1,0 +1,113 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                          %
+%              (C) Copyright 1995 The Board of Trustees of the             %
+%                          University of Illinois                          %
+%                           All Rights Reserved                            %
+%								  	   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RCS INFORMATION:
+%
+%       $RCSfile: ug.tex,v $
+%       $Author: dhardy $        $Locker:  $                $State: Exp $
+%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:30 $
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DESCRIPTION:
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REVISION HISTORY:
+%
+% $Log: ug.tex,v $
+% Revision 1.1  1998/01/05 21:12:30  dhardy
+% user guide, first draft
+%
+% Revision 1.4  1996/05/20 16:39:37  brunner
+% Put all necessary bib entries into ug.bib, to remove duplicate entries.
+%
+% Revision 1.3  1996/05/15 19:21:07  jean
+% ready (I hope) for 1.4 beta release
+%
+% Revision 1.2  1996/03/24 21:53:19  jean
+% failed attempt to increase subsection depth (sigh)
+%
+% Revision 1.1  1995/06/19 16:08:14  nelson
+% Initial revision
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentstyle[11pt,graphic]{article}
+
+% define margins, etc
+\topmargin	0.1in
+\oddsidemargin	0in
+\evensidemargin	0in
+\textheight	8.80in
+\textwidth	6.50in
+\marginparsep	0.25cm
+\headheight	0in
+\headsep	0in
+%\footskip	0.5in
+%\footheight	0in%
+
+% define macros
+\input{namd_macros}
+\input{ug_macros}
+
+\setcounter{secnumdepth}{3}
+%% \setcounter{tocdepth}{5} %% very detailed table of contents
+\setcounter{tocdepth}{4}
+
+%
+% the document itself
+%
+
+\begin{document}
+
+% initial pages for the guide - title, TOC, etc.
+\input{namd_begindoc}
+
+% Introduction
+\input{ug_intro}
+
+% Getting started
+\newpage
+\input{ug_start}
+
+% Input and output files
+\newpage
+\input{ug_io}
+
+% Basic simulation parameters
+\newpage
+\input{ug_basic}
+
+% Additional simulation parameters
+\newpage
+\input{ug_add}
+
+% Equivalence with X-PLOR parameters
+\newpage
+\input{ug_xplor}
+
+% Sample configuration files
+\newpage
+\input{ug_sample}
+
+% Description of how to run namd
+\newpage
+\input{ug_runit}
+
+% How to get and install namd
+\newpage
+\input{ug_avail}
+
+\newpage
+\bibliographystyle{abbrv}
+%\bibliography{group,tbpub,ug}
+\bibliography{ug}
+
+% that's all, folks
+\end{document}
+

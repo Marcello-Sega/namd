@@ -1,0 +1,318 @@
+\section{Input and Output Files}
+\label{section:files}
+\NAMD\ was developed to be compatible with existing 
+molecular dynamics packages, 
+especially the packages X-PLOR 
+\mycite{(Br\"unger, 1992)}{BRUN92b}  
+and CHARMM \mycite{(Brooks \ETAL, 1983)}{BROO83}.  
+To achieve this compatibility,
+the set of input files which \NAMD\ uses to define 
+a molecular system are identical to the input files used by X-PLOR.  
+These input files are very similar to those used by CHARMM.  
+Thus it is trivial to move an existing simulation from
+X-PLOR to \NAMD\ and requires minimal effort to convert 
+a simulation from CHARMM to \NAMD.  
+A description of these molecular system definition 
+files is given in Section \ref{section:formats}.  
+\prettypar
+In addition, the output file formats used by \NAMD\ 
+were chosen to be compatible with X-PLOR and CHARMM.  
+In this way the output from \NAMD\ can be analyzed using
+X-PLOR, CHARMM, or a variety of the other tools that have 
+been developed for the existing output file formats.  
+Descriptions of the output files formats are also given in 
+Section \ref{section:formats}.
+
+
+\subsection{File formats}
+\label{section:formats}
+
+\subsubsection{PDB files}
+The PDB (Protein Data Bank) format is used to store coordinate or velocity data 
+being input or output from \NAMD.
+This is the standard format for coordinate data
+for most other molecular dynamics programs as well, including X-PLOR and CHARMM.
+A full description of this file format can be obtained via anonymous FTP from
+\verb!ftp.pdb.bnl.gov! in \verb!/pub/format.desc.ps.Z! or \verb!/pub/format.desc.txt!.
+
+\subsubsection{X-PLOR format PSF files}
+
+\NAMD\ uses the same protein structure files that X-PLOR does.
+At this time, the
+easiest way to generate these files is using X-PLOR, although it is possible
+to build them by hand.
+
+\subsubsection{CHARMM19 and CHARMM22 parameter files}
+
+\NAMD\ supports CHARMM19 and CHARMM22 parameter files in the same format 
+that is used by X-PLOR.  
+For a full description of the format of commands 
+used in these files, see the X-PLOR User's Manual 
+\mycite{(Br\"unger, 1992)}{BRUN92b}.  
+
+\subsubsection{DCD trajectory files}
+
+\NAMD\ produces DCD trajectory files in the same format as 
+X-PLOR and CHARMM.  
+The DCD files are single precision binary FORTRAN files, 
+so are transportable between computer architectures.  
+The exact format of these files is very ugly but supported by 
+a wide range of analysis and display programs.  
+
+\subsection{\NAMD\ configuration parameters}
+\label{section:file_config}
+
+\paragraph{Input files}
+
+\begin{itemize}
+\item
+\NAMDCONF{coordinates}{coordinate PDB file}{UNIX filename}
+{\label{param:coordinates}
+%% This parameter is {\it required\/} for every simulation.  
+The PDB file containing initial position coordinate data.  
+%% This can be either an absolute or relative path name.  
+Note that path names can be either absolute or relative.  
+Only one value may be specified.}
+
+\item
+\NAMDCONF{structure}{PSF file}{UNIX filename}
+{\label{param:structure}
+%% This parameter is {\it required\/} for every simulation.
+The X-PLOR style PSF file describing the molecular 
+system to be simulated.  
+Only one value may be specified.}
+
+\item
+\NAMDCONF{parameters}{parameter file}{UNIX filename}
+{\label{param:parameters}
+%% This parameter is {\it required\/} for every simulation.  
+A CHARMM19 or CHARMM22 parameter file that defines all or part 
+of the parameters necessary for the molecular system to be simulated.  
+At least one parameter file must be specified for each simulation.  
+Multiple definitions are allowed for systems that require more 
+than one parameter file.  For example, if three files were needed, 
+lines such as:
+
+\bigskip
+
+\verb!parameters param1!
+
+\verb!parameters param2!
+
+\verb!parameters param3!
+
+\bigskip
+
+\noindent could be added to the configuration file.  
+The files will be read 
+in the order that they appear in the configuration file.  If duplicate
+parameters are read, a warning message is printed and the last
+parameter value read is used.  Thus, the order that files are read 
+can be important in cases where duplicate values appear in 
+separate files.}
+
+\item
+\NAMDCONF{velocities}{velocity PDB file}{UNIX filename}
+{\label{param:velocities}
+The PDB file containing the initial velocities for all 
+atoms in the simulation.  
+This is typically a restart file or final velocity file written 
+by \NAMD\ during a previous simulation.  
+Either the \verb!temperature! 
+or the \verb!velocities!/\verb!binvelocities! 
+option must be defined to determine an initial set of velocities.  
+Both options cannot be used together.}
+
+\item
+\NAMDCONF{binvelocities}{binary velocity file}{UNIX filename}
+{\label{param:binvelocities}
+The binary file containing initial velocities for all 
+atoms in the simulation.  
+A binary velocity file is created as output from \NAMD\ 
+by activating the \verb!binaryrestart! option.  
+The \verb!binvelocities! option should be used as 
+an alternative to \verb!velocities!.  
+Either the \verb!temperature! 
+or the \verb!velocities!/\verb!binvelocities! 
+option must be defined to determine an initial set of velocities.  
+Both options cannot be used together.  
+}
+
+\item
+\NAMDCONF{bincoordinates}{binary coordinate restart file}{UNIX filename}
+{
+The binary restart file containing initial position 
+coordinate data.  
+A binary coordinate restart file is created as output from \NAMD\ 
+by activating the \verb!binaryrestart! option.  
+Note that, in the current implementation at least, 
+the \verb!bincoordinates! option must be used in addition 
+to the \verb!coordinates! option, 
+but the positions specified by \verb!coordinates! will then be ignored.  
+}
+
+\item
+\NAMDCONF{cwd}{default directory}{UNIX directory name}
+{The default directory for input and output files.  
+If a value is given, all filenames that 
+do not begin with a / are assumed to be in this directory.  
+For example, if \verb!cwd! is set to \verb!/scr!, then a
+filename of \verb!outfile! would be modified to \verb!/scr/outfile!
+while a filename of \verb!/tmp/outfile! would remain unchanged.
+If no value for \verb!cwd! is specified, than all filenames are 
+left unchanged.}
+
+\end{itemize}
+
+\paragraph{Output files}
+
+\begin{itemize}
+\item
+\NAMDCONF{outputname}{output PDB file}{UNIX filename prefix}
+{\label{param:outputname}
+%% This parameter is {\it required\/} for every simulation.
+At the end of every simulation, \NAMD\ writes two PDB files, one 
+containing the final coordinates and another containing 
+the final velocities of all atoms in the simulation.  
+This option specifies the file prefix for these two files.  
+The position coordinates will be saved to a file named as this prefix 
+with \verb!.coor! appended.  
+The velocities will be saved to a file 
+named as this prefix with \verb!.vel! appended.  
+For example, 
+if the prefix specified using this option was \verb!/tmp/output!, 
+then the two files 
+would be \verb!/tmp/output.coor! and \verb!/tmp/output.vel!.}
+
+\item
+\NAMDCONF{restartname}{restart files}{UNIX filename prefix}
+{
+The prefix to use for restart filenames.  
+\NAMD\ produces PDB restart files 
+that store the current positions and velocities of all 
+atoms at some step of the simulation.  
+This option specifies the prefix to use for restart 
+files in the same way that \verb!outputname! 
+specifies a filename prefix for the final
+positions and velocities.  
+If \verb!restartname! is defined then
+the parameter \verb!restartfreq! must also be defined.}
+
+\item
+\NAMDCONF{restartfreq}{frequency of restart file generation}{positive integer}
+{
+The number of timesteps between the generation of restart files.  
+If \verb!restartfreq! is defined, then \verb!restartname! 
+must also be defined.}
+
+\item
+\NAMDCONFWDEF{binaryrestart}{use binary restart files?}%
+{\verb!yes! or \verb!no!}{\verb!yes!}%
+{%
+Activates the use of binary restart files.  
+%%  Should binary files be used rather than PDB files for 
+%%  restart coordinate and velocity files?  
+If this option is set to \verb!yes!, then the restart 
+files and final output files 
+will be written in binary rather than PDB format.  
+Binary files preserve more accuracy between \NAMD\ restarts 
+than ASCII PDB files, 
+but the binary files are not guaranteed to be transportable 
+between computer architectures.  
+}
+
+\item
+\NAMDCONF{DCDfile}{coordinate trajectory output file}{UNIX filename}
+{
+The binary DCD position coordinate trajectory filename.  
+This file stores the trajectory of all atom position coordinates 
+using the same format (binary DCD) as X-PLOR.  
+If \verb!DCDfile! is defined, then \verb!DCDfreq! must also be defined.  
+}
+
+\item
+\NAMDCONF{DCDfreq}%
+{timesteps between writing coordinates to trajectory file}%
+{positive integer}%
+{%
+The number of timesteps between the writing of position coordinates 
+to the trajectory file.  
+}
+
+\item
+\NAMDCONF{velDCDfile}{velocity trajectory output file}{UNIX filename}
+{
+The binary DCD velocity trajectory filename.  
+This file stores the trajectory of 
+all atom velocities using the same format (binary DCD) as X-PLOR.  
+If \verb!velDCDfile! is defined, then \verb!velDCDfreq! must also 
+be defined.  
+}
+
+\item
+\NAMDCONF{velDCDfreq}%
+{timesteps between writing velocities to trajectory file}%
+{positive integer}%
+{%
+The number of timesteps between the writing of 
+velocities to the trajectory file.  
+}
+
+\item
+\NAMDCONF{electForceDCDfile}%
+{electrostatic force trajectory file}%
+{UNIX filename prefix}%
+{%
+The binary DCD short and long range electrostatic force 
+trajectory filename prefix.  
+The short and long range electrostatic force trajectories 
+will be respectively stored in files with 
+\verb!.s! and \verb!.l! appended to this prefix.  
+If \verb!electForceDCDfile! is defined, then \verb!electForceDCDfreq! 
+must also be defined.  
+}
+
+\item
+\NAMDCONF{electForceDCDfreq}%
+{timesteps between writing electrostatic forces to trajectory file}%
+{positive integer}%
+{%
+The number of timesteps between writing 
+to the long and short range electrostatic force trajectory files.  
+}
+
+\item
+\NAMDCONF{allForceDCDfile}{total force trajectory file}{UNIX filename}
+{%
+The binary DCD total force trajectory filename.  
+This file stores the trajectory of the total forces 
+on each atom.  
+If \verb!allForceDCDfile! is defined, then 
+\verb!allForceDCDfreq! must also be defined.  
+}
+
+\item
+\NAMDCONF{allForceDCDfreq}%
+{timesteps between writing total forces to trajectory file}%
+{positive integer}%
+{%
+The number of timesteps between the writing of total forces 
+to the trajectory file.  
+}
+
+\item
+\NAMDCONFWDEF{outputEnergies}%
+{timesteps between energy output}{positive integer}{1}%
+{%
+The number of timesteps between each energy output of \NAMD.  
+This value
+specifies how often \NAMD\ should output the current energy 
+values to {\bf stdout} (which can be redirected to a file).  
+By default, this is done every step.  
+For long simulations, 
+the amount of output generated by \NAMD\ can be greatly reduced 
+by outputting the energies only occasionally.  
+}
+
+\end{itemize}
+

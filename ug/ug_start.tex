@@ -1,0 +1,138 @@
+\section{Getting Started}
+\label{section:start}
+
+\subsection{What is needed}
+
+Before running \NAMD, explained in section \ref{section:run}, 
+the following may be needed:
+\begin{itemize}
+\item
+Because \NAMD\ depends on X-PLOR for providing input files, 
+it is recommended that the user get and install X-PLOR.  
+See \verb$<URL>$ for instructions.  
+\item
+The companion \MDSCOPE\ visualization program \VMD\ is not required.  
+If desired, see \verb$<URL>$ for instructions.  
+\item
+The initial structure of the molecular system is needed in the 
+form of a PDB file.  
+(Should we cite a page number in X-PLOR manual?)  
+\item
+If \VMD\ is not being used as a GUI, then the user must provide 
+a \NAMD\ configuration file.  (check this!)  
+This is discussed in sections 
+\ref{section:config}, \ref{section:files}, 
+\ref{section:basic}, and \ref{section:add}.  
+\end{itemize}
+
+\subsection{\NAMD\ configuration file}
+\label{section:config}
+
+Besides these input and output files, \NAMD\ also uses 
+a file referred to as the {\it configuration file\/}.  
+This file specifies what dynamics options and values that 
+\NAMD\ should use, such as the number of timesteps to perform, 
+initial temperature, etc.  
+The options and values in this file control how 
+the system will be simulated.  
+The format and options used in this configuration 
+file are described in Section \ref{section:config}.  
+
+A \NAMD\ configuration file contains a set of options and values.  
+The options and values specified determine the exact behavior of
+\NAMD, what features are active or inactive, how long the simulation
+should continue, etc.  Section \ref{section:configsyntax} describes how
+options are specified within a \NAMD\ configuration file.  Section
+\ref{section:configparams} describes the various parameters that are
+available and how to use them.  Section \ref{section:xplorequiv}
+describes the relation between specific \NAMD\ and X-PLOR dynamics
+options.  Several sample \NAMD\ configuration files are shown
+in Section \ref{section:sample}
+
+
+\subsubsection{Configuration parameter syntax}
+\label{section:configsyntax}
+Each line
+in the configuration files consists of a $keyword$ identifying the option
+being specified, and a $value$ which is a parameter to be used for this
+option.  The keyword and value can be separated by only white space:
+\begin{verbatim}
+keyword            value
+\end{verbatim}
+or the keyword and value can be separated by an equal sign and white space:
+\begin{verbatim}
+keyword      =     value
+\end{verbatim}
+Blank lines in the configuration file are ignored.  Comments are prefaced by
+a \verb!#! and may appear on the end of a line with actual values:
+\begin{verbatim}
+keyword            value          #  This is a comment
+\end{verbatim}
+or may be at the beginning of a line:
+\begin{verbatim}
+#  This entire line is a comment . . . 
+\end{verbatim}
+The specification of the keywords is case insensitive 
+so that any combination of 
+upper and lower case letters will have the same meaning.  
+Hence, \verb!DCDfile! and \verb!dcdfile! 
+are equivalent.  The capitalization in the values, however, may be important.
+Some values indicate file names, in which capitalization is critical.  
+Other values such as \verb!on! or \verb!off! are case insensitive.
+
+\subsubsection{Required \NAMD\ configuration parameters}
+\label{section:configparams}
+
+The following parameters are {\em required} for every
+\NAMD\ simulation:
+
+\begin{itemize}
+
+\item
+\verb!numsteps! (page \pageref{param:numsteps}),
+
+\item
+\verb!coordinates! (page \pageref{param:coordinates}),
+
+\item
+\verb!structure! (page \pageref{param:structure}),
+
+\item
+\verb!parameters! (page \pageref{param:parameters}),
+
+\item
+\verb!exclude! (page \pageref{param:exclude}), 
+
+\item
+\verb!outputname! (page \pageref{param:outputname}), 
+
+\item
+one of the following three:
+\begin{itemize}
+\item
+\verb!temperature! (page \pageref{param:temperature}),
+
+\item
+\verb!velocities! (page \pageref{param:velocities}),
+
+\item
+\verb!binvelocities! (page \pageref{param:binvelocities}).
+\end{itemize}
+
+\end{itemize}
+
+\noindent These required parameters specify the most basic properties of
+the simulation.  %  that is to be performed.
+In addition, it is highly recommended that 
+\begin{itemize}
+\item
+\verb!pairlistdist! be specified with a 
+value at least one greater than the maximum of 
+\verb!cutoff!, \verb!vdwcutoff!, and \verb!eleccutoff!, 
+\item 
+\verb!stepspercycle! be chosen so that the product of 
+\verb!stepspercycle! and \verb!timestep! does not exceed 
+$4.0$ unless \verb!rigidBonds all! is specified, 
+in which case the upper limit is perhaps doubled.  
+\end{itemize}
+

@@ -1,0 +1,291 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                          %
+%              (C) Copyright 1995 The Board of Trustees of the             %
+%                          University of Illinois                          %
+%                           All Rights Reserved                            %
+%								  	   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RCS INFORMATION:
+%
+%       $RCSfile: ug.bib,v $
+%       $Author: dhardy $        $Locker:  $                $State: Exp $
+%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:29 $
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DESCRIPTION:
+%	Local bibliography entries for the NAMD User's Guide
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REVISION HISTORY:
+%
+% $Log: ug.bib,v $
+% Revision 1.1  1998/01/05 21:12:29  dhardy
+% user guide, first draft
+%
+% Revision 1.3  1997/08/07 16:09:43  dhardy
+% changed CHARMm to CHARMM
+%
+% Revision 1.2  1996/05/20 16:39:37  brunner
+% Now includes bib entries and abbreviations for all references
+% in ug.tex
+%
+% Revision 1.1  1995/06/19 16:12:36  nelson
+% Initial revision
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% NOTES:	1) see top of group.bib for journal abbreviations.
+%		2) article keyword should be of the form AAAANN, where
+%		   AAAA = first four characters of first author, in all-caps
+%		   NN = last two digits of year published, i.e. 94
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% New note: I am moving all bib entries here, so we don't need to read
+% other bibs.  This reduces duplicate definitions.  But we then need
+% to put all abbreviations here as well.
+% RKB 5-20-96
+%
+
+@string{JMB = "J.\ Mol.\ Biol."}
+@string{JCC = "J.\ Comp.\ Chem."}
+
+@inproceedings{CRUZ93,
+  author={Carolina Cruz-Neira and Dan J. Sandin and Thomas A. DeFanti},
+  title={Unknown},
+  year=1993,
+  pages={135},
+  booktitle={Proceedings of SIGGRAPH '93},
+  address={Anaheim, CA},
+  publisher={Association for Computing Machinery}
+}
+
+
+@inproceedings{lin:atm,
+  author={Mengjou Lin and Jenwei Hsieh and David H. C. Du and Joseph P. Thomas and James A. MacDonald},
+  title={Distributed Network Computing Over Local {ATM} Networks},
+  year=1994,
+  pages={154-163},
+  booktitle={Proceedings of Supercomputing '94},
+  address={Washington, DC},
+  publisher={IEEE Computer Society Press}
+}
+
+@manual{sun:xdr,
+  organization={Sun Microsystems},
+  title={X{D}{R}: External Data Representation Standard. {RFC}-1014},
+  year=1987
+}
+
+@techreport{duke:fma,
+  author={J. Board and Z. Hakura and W. Elliot and W. Rankin},
+  title={Scalable Variants of Multipole-Accelerated Algorithms for Molecular Dynamics Applications}, 
+  institution={Duke University, Dept. of Elec. Engr.},
+  type={Technical Report},
+  number={TR94-006},
+  year={1994}
+}
+
+@article{ZhSc93,
+  Author="G. Zhang and T. Schlick",
+  Title="{LIN}: A New Algorithm to Simulate the Dynamics of Biomolecules by Combining Implicit-Integration and Normal Mode Techniques",
+  Journal=JCC,
+  volume=14,
+  pages={1212--1233},
+  year=1993
+}
+
+@techreport{ornl:pvm,
+  author={A. Geist and A. Beguelin and J. Dongarra and W. Jiang and R. Manchek and V. Sunderam},
+  title={{PVM}~3 Users Guide and Reference Manual},
+  institution={Oak Ridge National Laboratory},
+  type={Technical Manual},
+  number={ORNL/TM-12187},
+  month={May},
+  year={1994}
+}
+
+@article{penn:npt,
+  Author={G. Martyna and D. Tobias and M. Klein},
+  Title={Constant pressure molecular dynamics algorithms},
+  Journal=JCP,
+  volume=101,
+  pages={4177--4189},
+  year=1994
+}
+
+@article{BERN77,
+  author={F. C. Bernstein and T. F. Koetzle and G. J. B. Williams and E. F. Meyer, Jr. and M. D. Brice and J. R. Rodgers and O. Kennard and T. Shimanouchi and M. Tasumi},
+  title={The Protein Data Bank: A Computer-Based Archival File For Macromolecular Structures},
+  journal=JMB,
+  volume=112,
+  pages={535--542},
+  year=1977
+}
+
+@manual{XMOL93,
+  key={MSCI},
+  title={XMol, Version 1.3.1},
+  organization={Minnesota Supercomputer Center, Inc.},
+  address={Minneapolis, MN},
+  year=1993
+}
+
+@article{CARS91,
+  author={M. Carson},
+  title={{RIBBONS} 2.0},
+  journal=JAC,
+  volume=24,
+  pages={958--961},
+  year=1991
+}
+
+@article{WEIN81,
+  author={P. K. Weiner and P. A. Kollman},
+  title={{AMBER}: Assisted Model Building With Energy Refinement.  A General Program for Modeling Molecules and Their Interactions},
+  journal=JCC,
+  volume=2,
+  pages=287,
+  year=1981
+}
+
+@incollection{CARS85,
+  author={M. Carson and J. Hermans},
+  title={The Molecular Dynamics Workshop Laboratory},
+  booktitle={Molecular Dynamics and Protein Structure},
+  editor={J. Hermans},
+  publisher={University of North Carolina},
+  address={Chapel Hill},
+  pages={165--166},
+  year=1985
+}
+
+@inproceedings{crpc:space,
+  Author={T. Clark and R. Hanxleden and J. McCammon and L. Scott},
+  Title={Parallelizing Molecular Dynamics using Spatial Decomposition},
+  month=May,
+  year=1994,
+  booktitle={Proceedings of the Scalable High Performance Computing Conference},
+  address={Knoxville, TN},
+}
+
+@techreport{sandia:decomp,
+  author={S. Plimpton and B. Hendrickson},
+  title={A New Parallel Method for Molecular Dynamics Simulation of Macromolecular Systems},
+  institution={Sandia National Laboratories},
+  type={Technical Report},
+  number={SAND94-1862},
+  month={August},
+  year={1994}
+}
+
+@article{bb:decomp,
+  author={B. R. Brooks and M. Hodoscek},
+  title={Parallelization of CHARMM for MIMD Machines},
+  journal={Chemical Design Automation News},
+  volume=7,
+  number=12,
+  pages={16--22},
+  year=1992
+}
+
+@inproceedings{kale:mdl,
+  author={L. V. Kale and A. Gursoy},
+  title={Modularity, Reuse and Efficiency with Message-Driven Libraries},
+  booktitle={Proceedings of the $7^{th}$ SIAM Parallel Processing Conference}, 
+  month =Feb,
+  year  =1995,
+  address={San Fransisco, CA}
+}
+
+@inproceedings{kale:charm,
+  author={L. V. Kale and S. Krishnan},
+  title={CHARM++ :  A Portable Concurrent Object Oriented System Based on {C++}},
+  booktitle={Proceedings of OOPSLA-93},
+  month =Sep,
+  year  =1993,
+  address={Washington, DC}
+}
+
+@article{HANE94,
+  author={S. W. Haney},
+  title={Is {C++} Fast Enough For Scientific Computing?},
+  journal=CIP,
+  volume=8,
+  number=6,
+  pages={690--694},
+  year=1994
+}
+
+@article{BERG87,
+  author={M. J. Berger and S. H. Bokhari},
+  title={A Partitioning Strategy for Nonuniform Problems on Multiprocessors},
+  journal={IEEE Transactions on Computers},
+  volume={C-36},
+  number=5,
+  pages={570--580},
+  month=May,
+  year=1987
+}
+
+@incollection{WIND95,
+  author={A. Windemut},
+  title={Advanced Algorithms for Molecular Dynamics Simulation: The Program PMD},
+  booktitle={Parallel Computing in Computational Chemistry},
+  editor={T. Mattson},
+  publisher={ACS Books},
+  year={1995 - In Press}
+}
+
+@inproceedings{EICK92,
+  author={T. von Eicken and D. E. Culler and S. C. Goldstein and K. E. Schauser},
+  title={Active messages: a mechanism for integrated communication and computation},
+  year=1992,
+  booktitle={Proceedings of the International Symposium on Computer Architecture}
+}
+
+@techreport{HUMP94,
+  author={William Humphrey and Andrew Dalke},
+  title={{VMD} User Guide ({Version} 0.94)},
+  institution={University of Illinois},
+  type={Beckman Institute Technical Report},
+  number={TB-94-07},
+  tbreference={0},
+  tbtechrep={TB-94-07},
+  year=1994
+}
+
+@book{ALLE87,
+  author={M. P. Allen and D. J. Tildesley},
+  title={Computer Simulation of Liquids},
+  publisher={Oxford University Press},
+  address={New York},
+  year=1987
+}
+
+@book{MCCA87,
+   author={J. A. McCammon and S. C. Harvey},
+   title={Dynamics of Proteins and Nucleic Acids},
+   publisher={Cambridge University Press},
+   address={Cambridge},
+   year=1987
+}
+
+@manual{BRUN92b,
+  author={Axel T. Br\"unger},
+  title={X-PLOR, Version~3.1, A System for {X}-ray Crystallography and {NMR}},
+  organization={The Howard Hughes Medical Institute and Department of Molecular Biophysics and Biochemistry, Yale University},
+  year={1992}
+}
+@article{BROO83,
+  author={Bernard R. Brooks and Robert E. Bruccoleri and Barry D. Olafson and David J. States and S. Swaminathan and Martin Karplus},
+  title={{CHARMM:} A Program for  Macromolecular Energy, Minimization, and Dynamics Calculations},
+  journal=JCC,
+  year={1983},
+  volume={4},
+  number={2},
+  pages={187--217}
+}
+ 

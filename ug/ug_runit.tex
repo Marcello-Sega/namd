@@ -1,0 +1,209 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                          %
+%              (C) Copyright 1995 The Board of Trustees of the             %
+%                          University of Illinois                          %
+%                           All Rights Reserved                            %
+%								  	   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RCS INFORMATION:
+%
+%       $RCSfile: ug_runit.tex,v $
+%       $Author: dhardy $        $Locker:  $                $State: Exp $
+%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:34 $
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DESCRIPTION:
+%	This file contains the section of the NAMD User's Guide which
+% describes how to actually run the program.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REVISION HISTORY:
+%
+% $Log: ug_runit.tex,v $
+% Revision 1.1  1998/01/05 21:12:34  dhardy
+% user guide, first draft
+%
+% Revision 1.8  1997/08/07 17:28:20  dhardy
+% minor revisions
+%
+% Revision 1.7  1997/08/07 15:54:32  dhardy
+% edit presentation style
+%
+% Revision 1.6  1997/06/23 18:29:39  nealk
+% Updated setenv stuff.
+%
+% Revision 1.5  1997/04/24 15:10:11  nealk
+% Added items for machine-specific environment settings (setenv).
+%
+% Revision 1.4  1996/05/15 19:21:07  jean
+% ready (I hope) for 1.4 beta release
+%
+% Revision 1.3  1995/06/30 15:51:43  brunner
+% More complete.  Now includes sections for everything except Exemplar
+% and Charm++.  Still needs proofreading.
+%
+% Revision 1.2  1995/06/29  16:39:04  brunner
+% Single node and PVM instructions complete.  The rest still need work.
+%
+% Revision 1.1  95/06/19  16:08:17  16:08:17  nelson (Mark T. Nelson)
+% Initial revision
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{Running \NAMD}
+\label{section:run}
+
+\subsection{Single node execution}
+
+To run \NAMD\ on a single node, type {\tt namd config-file}, where
+{\tt config-file} is the configuration file described in Section
+\ref{section:config}.
+
+\subsection{Parallel execution with PVM}
+
+Parallel execution using PVM requires that PVM version 3.x be
+installed on each machine you intend to use.  Consult the PVM
+documentation and your system administrator to determine if this is
+the case.
+\prettypar
+The command to run \NAMD\ is the same for the PVM version as for
+single-node execution.  One of the first things \NAMD\ does is call a
+PVM function to determine how many nodes are available.  If this
+function fails, the program knows it is running on a single machine,
+and runs in single-processor mode.  Otherwise it runs in parallel
+mode, using all available nodes, except for the FMA calculations,
+which use only the greatest power of two number of processors not
+greater than the total number of processors.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Maybe we need to leave this out for the time being.  RKB
+%
+%\subsection{Parallel execution with Charm++}
+%
+%Need Charm++
+%
+%Running varies according to machine.  See Charm++ docs for info.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\subsection{Platform specific notes}
+
+\subsubsection{Cluster of workstations}
+
+Before using \NAMD\ with PVM for the first time, you must:
+\begin{itemize}
+  \item Make sure that {\tt pvmd} is running on each machine you plan
+to use.
+
+  \item Have a directory called {\tt pvm3} in your home
+directory on each machine you plan to use.  If not, consult the PVM
+documentation for information on creating this directory.
+
+  \item Create a symbolic link to the {\tt namd} executable file in
+every {\tt pvm3/bin/MACHINE-TYPE} directory corresponding to the
+machine types you plan to use.  You will also need links to {\tt
+dpmta-slave} if you wish to use FMA.
+
+  \item Set any required environment variables.
+The {\tt PVM\_ARCH} environment variable defines the type of operating system.
+The {\tt PVM\_ROOT} environment variable is the location of the PVM directory.
+We will assume the PVM root directory is {\tt /home/pvm3}.
+The {\tt PVMBUFSIZE} environment variable overrides the default PVM buffer size.
+  \begin{itemize}
+    {
+    \item for HP 735's: \\
+      {\tt setenv PVM\_ARCH HPPA} \\
+      {\tt setenv PVM\_ROOT /home/pvm3}
+
+    \item for HP K-machines: \\
+      {\tt setenv PVM\_ARCH HPPAMP} \\
+      {\tt setenv PVM\_ROOT /home/pvm3} \\
+      {\tt setenv PVMBUFSIZE 16777216} \\
+      Note: PVMBUFSIZE is a variable which determines how big messages
+      can be on the HPPAMP machines.  On a 36,000 atom system, 1MB (the
+      default) was too small, so we suggest 16MB.  If your system fails
+      shortly after NAMD starts, you might try increasing the value.
+    }
+  \end{itemize}
+
+\end{itemize}
+
+To run \NAMD, you must first use the {\tt pvm} command to select which
+machines to use.  Then run {\tt namd config-file} as you would for a
+single-machine run.  When \NAMD\ is done, run {\tt pvm} again to clean
+up.  The following is an example of how to run \NAMD\ on four
+processors.
+\begin{verbatim}
+caliban(233) pvm
+pvm> add ophelia
+1 successful
+                    HOST     DTID
+                 ophelia    80000
+pvm> add romeo
+1 successful
+                    HOST     DTID
+                   romeo    c0000
+pvm> add juliet
+1 successful
+                    HOST     DTID
+                  juliet   100000
+pvm> conf
+4 hosts, 1 data format
+                    HOST     DTID     ARCH   SPEED
+                 caliban    40000     HPPA    1000
+                 ophelia    80000     HPPA    1000
+                   romeo    c0000     HPPA    1000
+                  juliet   100000     HPPA    1000
+pvm> quit
+
+pvmd still running.
+\end{verbatim}
+
+The user is logged in to caliban.  He runs {\tt pvm}, and uses the
+{\tt add machine} to select machines ophelia, romeo, and juliet in
+addition to caliban.  The command {\tt conf} shows what machines have
+been selected.
+
+\begin{verbatim}
+caliban(234) namd alanin
+[...namd output deleted...]
+Node 0:Info> TOTAL RUN TIME 24.0511
+Node 0:Info> TOTAL CPU TIME 11.78
+Node 0:Info> namd exiting
+caliban(235) pvm
+pvmd already running.
+pvm> halt
+caliban(236) 
+\end{verbatim}
+
+The user runs \NAMD\ using the configuration file {\tt alanin}.  When
+the simulation is complete, the user runs {\tt pvm} again, and issues
+the {\tt halt} command to tell PVM to free the four processors for
+another run.
+
+\subsubsection{Cray T3D}
+
+The Cray T3D implementation uses the T3D PVM library, so program
+execution is similar to running in the workstation cluster
+environment.  The main difference is that the number of processors is
+set up through environment variables and the T3D process queuing
+system, so the steps described above involving the {\tt pvm} control
+program are not necessary.  Instead, the user must set up certain
+variables as described in the Cray T3D user's manual.
+
+%\subsubsection{Convex Exemplar}
+
+\subsection{Interactive modeling with MDScope}
+
+Interactive molecular modeling can be performed using the MDScope
+environment.  MDScope consists of \NAMD; \VMD, a program for
+interactive visualization of biopolymers; and MDComm, a communications
+library for efficient network transfer of molecular dynamics
+information.  \VMD\ allows the user to view intermediate results of the
+simulation being performed by \NAMD\ while the simulation is still 
+proceeding.  For more information regarding 
+the installation or use of MDScope, 
+consult the \VMD\ documentation.  
+

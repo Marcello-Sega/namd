@@ -1,0 +1,190 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                          %
+%              (C) Copyright 1995 The Board of Trustees of the             %
+%                          University of Illinois                          %
+%                           All Rights Reserved                            %
+%								  	   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RCS INFORMATION:
+%
+%       $RCSfile: ug_avail.tex,v $
+%       $Author: dhardy $        $Locker:  $                $State: Exp $
+%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:31 $
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DESCRIPTION:
+%	This section is part of the NAMD Users Guide and describes the
+% the availability and installation of NAMD
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REVISION HISTORY:
+%
+% $Log: ug_avail.tex,v $
+% Revision 1.1  1998/01/05 21:12:31  dhardy
+% user guide, first draft
+%
+% Revision 1.13  1997/08/07 17:28:20  dhardy
+% minor revisions
+%
+% Revision 1.12  1997/08/07 15:54:32  dhardy
+% edit presentation style, add control of precision during compile
+%
+% Revision 1.11  1997/02/25 22:35:20  dalke
+% *** empty log message ***
+%
+% Revision 1.10  1996/06/06  18:02:01  dalke
+% fixed typos for 1.4 release
+%
+% Revision 1.9  1996/05/15  19:21:07  jean
+% ready (I hope) for 1.4 beta release
+%
+% Revision 1.8  1996/03/10 20:35:16  jean
+% namd -> \NAMD\
+%
+% Revision 1.7  1996/03/10 20:11:27  jean
+% minor polishing
+%
+% Revision 1.6  1995/10/04 14:41:39  nelson
+% Fixed spelling and changed status of IBM SP1 and SP2
+%
+% Revision 1.5  95/06/30  15:56:19  15:56:19  gursoy (Attila Gursoy)
+% added Power Challenge and SP2
+% 
+% Revision 1.4  95/06/30  15:49:44  15:49:44  gursoy (Attila Gursoy)
+% *** empty log message ***
+% 
+% Revision 1.3  95/06/30  15:37:43  15:37:43  gursoy (Attila Gursoy)
+% added platforms
+% 
+% Revision 1.2  95/06/28  23:55:46  23:55:46  gursoy (Attila Gursoy)
+% first draft
+% 
+% Revision 1.1  95/06/19  16:08:15  16:08:15  nelson (Mark T. Nelson)
+% Initial revision
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\section{\NAMD\ Availability and Installation}
+
+\NAMD\ is distributed freely for non-profit use.  Portability 
+across various architectures is achieved by using widely available 
+message-passing software layers.  \NAMD\ currently runs on 
+PVM, a message-passing library available for distributed and 
+parallel computers.  
+%%  Charm is an object-based parallel programming environment
+%% available from University of Illinois (\verb+http://charm.cs.uiuc.edu+).
+%% Currently, at the ftp site, only the PVM version of \NAMD\ is available.
+\prettypar
+This section describes how to obtain \NAMD\ and how to install the PVM based 
+version.  In order to compile and run this version, PVM 3.x must be 
+installed on the target machines.  
+
+\subsection{How to obtain \NAMD}
+
+\NAMD\ is available as the compressed tar file 
+{\tt namd-xxx.tar.gz} obtained via anonymous 
+FTP from the server {\tt ftp.ks.uiuc.edu} in the directory 
+{\tt pub/mdscope/namd}.  
+Directories from this release and their content are as follows: 
+\begin{tabbing}
+xxxxx \= xxxxxxxx\= \kill \\
+\> {\tt DPMTA} \>
+         DPMTA for HPUX-9.x from the Scientific Computing group at Duke \\
+\> {\tt doc} \> 
+         Documentation for \NAMD\ \\
+\> {\tt mdcomm} \> 
+         MDComm software, currently available only for HPUX-9.x and 
+IRIX-5.x \\ 
+\> {\tt src} \>
+         \NAMD\ source code \\
+\> {\tt sample} \>
+         Sample \NAMD\ configuration file and protein
+\end{tabbing}
+
+DPMTA is the Distributed Parallel Multipole Treecode Algorithm 
+developed by the scientific computing group at Duke University.  
+\NAMD\ is capable of interacting with DPMTA to provide full electrostatic 
+calculations.  A pre-compiled version of DPMTA for HP systems is included 
+with this release for convenience.  The source code, 
+which can be compiled for other platforms, 
+may be obtained directly from Duke via anonymous FTP from 
+the server {\tt ftp.ee.duke.edu} in the directory {\tt /pub/SciComp/src}.
+\prettypar
+MDComm is a library and set of daemon processes that allow \NAMD\ to 
+communicate with the graphics program \VMD\ running on a remote machine 
+via TCP/IP.  This library is currently available only for HPUX-9.x and 
+IRIX-5.x systems.  
+\prettypar
+MTS is the Memory Tuning Software from New Code, Inc\. which provides a 
+faster memory allocation scheme than that available from most UNIX 
+implementations.  On HPUX-9.x systems, it achieves an increase in overall 
+\NAMD\ performance of about 10\%.  This software is available from
+NewCode, Inc.
+\prettypar
+If any of 
+DPMTA, MDComm, or MTS are not available or desired, simply comment 
+out the corresponding 
+section of the appropriate \verb+Makedata.<architecture>+ file.  
+
+\subsection{Platforms on which \NAMD\ will currently run}
+\NAMD\ is expected to run on any parallel platform with a C++ compiler
+and PVM version 3.3.6 or later.
+Some minor tuning of system parameters or compiler flags 
+may be required.  Such parameters include PVM buffer sizes, etc.  
+\NAMD\ has been compiled and tested on the following platforms:  
+\begin{itemize}
+\item HP workstations (HPUX)
+\item SGI workstations  (IRIX5)
+\item IBM workstations (AIX)
+\item Cray T3D
+\item Convex Exemplar
+\item IBM SP1 and SP2 using PVMe
+\end{itemize}
+%% List of machines that we plan to test soon include the SGI Power
+%% Challenge and Intel Paragon.
+
+\subsection{Compiling \NAMD}
+To compile \NAMD\ for a particular machine, follow these steps:  
+%%  \begin{tabbing}
+%%  xxxxx \= xxxxx \= \kill \\
+%%  \> 1. \> Go to the {\tt src} directory. \\
+%%  \> 2. \> Edit {\tt Makefile} and change the ARCH variable to the desired 
+%%           system\\ 
+%%  \>    \> \eg, one of HPUX9, IRIX5, AIX, T3D, or Exemplar. \\
+%%  \> 3. \> Edit the \verb+Makedata.<architecture>+ file to get the 
+%%           correct options\\
+%%  \>    \>  and directory specifications for your platform.  \\
+%%  \> 4. \> Type \verb!make!.
+%%  \end{tabbing}
+\begin{enumerate}
+\item 
+Go to the {\tt src} directory. 
+\item
+Edit {\tt Makefile} and change the ARCH variable to the desired system 
+\eg, one of HPUX9, IRIX5, AIX, T3D, or Exemplar.  
+\item 
+Edit the \verb+Makedata.<architecture>+ file to get the 
+correct options and directory specifications for your platform.  
+For example, precision can be controlled at compile time 
+to yield single rather than the default double precision.  
+The \verb!ARCH_COPTS! (C compiler options) variable 
+would need to be changed 
+in \verb+Makedata.<architecture>+ 
+to define \verb!SHORTREALS! to the preprocessor.  
+\item
+Type \verb!make!.
+\end{enumerate}
+Pre-compiled binaries are provided for HP and SGI workstations.
+
+\subsection{Documentation}
+The directory {\tt doc} contains three documents:
+\begin{itemize}
+\item the \UG\ ({\tt ug.ps}, this document) describes how to use \NAMD, 
+\item the \PG\ ({\tt pg.ps}) provides a complete description of \NAMD\ and 
+  its implementation, 
+\item {\tt configsheet.ps} provides a one page summary of the 
+  configuration options for \NAMD.  
+\end{itemize}
+

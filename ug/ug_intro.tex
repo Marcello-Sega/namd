@@ -1,0 +1,304 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                          %
+%              (C) Copyright 1995 The Board of Trustees of the             %
+%                          University of Illinois                          %
+%                           All Rights Reserved                            %
+%								  	   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% RCS INFORMATION:
+%
+%       $RCSfile: ug_intro.tex,v $
+%       $Author: dhardy $        $Locker:  $                $State: Exp $
+%       $Revision: 1.1 $      $Date: 1998/01/05 21:12:32 $
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% DESCRIPTION:
+%	This is the introduction to the namd users guide
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% REVISION HISTORY:
+%
+% $Log: ug_intro.tex,v $
+% Revision 1.1  1998/01/05 21:12:32  dhardy
+% user guide, first draft
+%
+% Revision 1.10  1997/08/07 15:54:32  dhardy
+% edit presentation style
+%
+% Revision 1.9  1997/06/19 19:26:12  nealk
+% Minor text corrections.
+%
+% Revision 1.8  1996/06/06 18:02:01  dalke
+% fixed typos for 1.4 release
+%
+% Revision 1.7  1996/05/15  19:21:07  jean
+% ready (I hope) for 1.4 beta release
+%
+% Revision 1.6  1996/02/04 20:34:02  jean
+% Various grammer, spelling, punctuation fixes.
+%
+% Revision 1.5  1995/06/30 15:42:44  gursoy
+% fixed references
+%
+% Revision 1.4  95/06/28  23:55:15  23:55:15  gursoy (Attila Gursoy)
+% worked on teh format a little bit
+% 
+% Revision 1.3  95/06/26  15:52:31  15:52:31  gursoy (Attila Gursoy)
+%  load balancing paragraph still needs some work
+% 
+% Revision 1.2  95/06/22  17:09:02  17:09:02  gursoy (Attila Gursoy)
+% First attempt for introduction. still working on it.
+% 
+% Revision 1.1  95/06/21  16:28:13  16:28:13  nelson (Mark T. Nelson)
+% Initial revision
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+\section{Introduction}
+\label{section:intro}
+
+\NAMD\ is a parallel molecular dynamics program for UNIX 
+platforms designed for high-performance 
+simulations in structural biology.  This document describes how to use 
+\NAMD, its features, and the platforms on which it runs.
+The document is divided into several sections:
+\begin{description}
+\item[Section 1] gives an overview of \NAMD. 
+\item[Section 2] describes the input and output files and simulation options. 
+\item[Section 3] shows how to run \NAMD\ on various platforms.
+\item[Section 4] explains how to get \NAMD, compile and install it.
+\end{description}
+
+We have attempted to make this document and the \PG\ both
+complete and easy to understand and to make \NAMD\ itself
+easy to install and run.  Please take a moment to help us improve
+the documentation and the code by filling out the users' survey
+at the end of this section.
+
+\subsection{New features in version \NAMDVER}
+
+In addition to bug fixes, there are two new features in \NAMD\ version
+\NAMDVER:  a safety margin violation check and a new switching function.
+\prettypar
+\NAMD\ now checks for safety margin violations
+at each timestep.  Each atom's position is
+compared to its position at the beginning of the current
+cycle, and if the atom has moved a distance which
+exceeds half of the safety margin, then a report is made.
+This new feature alerts the user of a possible degradation in accuracy.
+It can be enabled or disabled with
+the configuration parameter \verb!plMarginCheck!
+(page \pageref{param:margincheck}).  The default is to have checking disabled.
+\prettypar
+The new switching function is obtained by setting the configuration
+parameter \verb!longSplitting! to \verb!c1!.  It implements the
+switching method described in \mycite{Humphreys \ETAL}{HUMP94}.
+
+\subsection{\NAMD\ and molecular dynamics simulations}
+
+Molecular dynamics (MD) simulations compute atomic trajectories by solving
+equations of motion numerically using empirical force fields, such as the 
+CHARMM force field, that approximate the actual atomic force in 
+biopolymer systems. Detailed information about MD simulations can be found in
+several books such as 
+\mycite{(Allen and Tildesley),(McCammon and Harvey)}{ALLE87,MCCA87}. 
+In order to conduct MD simulations, various computer programs have been 
+developed including
+X-PLOR \mycite{(Br\"unger, 1992)}{BRUN92b} and 
+CHARMM \mycite{(Brooks \ETAL, 1983)}{BROO83}.
+These programs were originally developed for serial machines. 
+Simulation of large molecules, however, require enormous computing power. 
+One way to achieve such simulations is to utilize parallel computers. In recent 
+years, distributed memory parallel computers have been offering
+cost-effective computational power.  \NAMD\ was designed to run efficiently
+on such parallel 
+machines for simulating large molecules. 
+\prettypar
+\NAMD\ has several important features: 
+
+\begin{itemize}
+
+\item{\bf Force Field Compatibility}\\
+The force field used by \NAMD\ is the same as that used by the programs 
+CHARMM \mycite{(Brooks \ETAL, 1983)}{BROO83} and X-PLOR 
+\mycite{(Br\"unger, 1992)}{BRUN92b}.  This force field includes local 
+interaction terms consisting of bonded interactions between 2, 3, and 4 atoms 
+and pairwise interactions including electrostatic and van der Waals forces.
+This commonality allows simulations to migrate between these three programs.
+
+\item{\bf Fast Multipole Algorithm}\\
+\NAMD\ incorporates the Distributed Parallel Multipole Tree Algorithm 
+(DPMTA) \mycite{(Board \ETAL)}{duke:fma}, which takes the full electrostatic
+interactions into account.  This algorithm reduces the computational
+complexity of electrostatic force evaluation from $O(N^2)$ to $O(N)$.
+
+\item{\bf Multiple Time Stepping:}\\
+The velocity Verlet integration method
+\mycite{M. P. Allen and D. J. Tildesley, 1987}{ALLE87}
+is used to advance the positions and velocities of the atoms in time.
+To further reduce the cost of the evaluation of 
+long-range electrostatic forces, 
+a multiple time step scheme is combined with the DPMTA method.  The local
+interactions (bonded interactions and electrostatic interactions within a
+specified distance) are calculated at each time step.  The longer range
+interactions (electrostatic interactions beyond the specified distance) are
+only computed every $k$ steps, with each set of $k$ steps called a {\em cycle}.
+This
+amortizes the cost of computing the electrostatic forces over the $k$ steps in
+the cycle.  For appropriate values of $k$, the error due to holding the long-range
+forces
+constant for a few steps is modest compared to the errors incurred from using
+a finite time step for the other forces.
+
+
+\item{\bf Input and Output Compatibility}\\
+The input and output file formats used by \NAMD\ are identical to those
+used by X-PLOR.  Input formats include coordinate files in PDB format
+\mycite{(Bernstein \ETAL, 1977)}{BERN77}, structure files in PSF format, 
+and energy parameter files in the same format used by ~CHARMM and X-PLOR.
+Output formats include PDB coordinate files and binary DCD trajectory files.
+These similarities assure that the molecular dynamics trajectories from \NAMD\ 
+can be read by CHARMM or X-PLOR and that the user can exploit the many 
+analysis algorithms of the latter packages.
+
+\item{\bf Dynamics Simulation Options}\\
+MD simulations may be carried out using several options, including
+\begin{itemize}
+  \item NVE ensemble dynamics,
+  \item NVT ensemble dynamics,
+  \item Velocity rescaling,
+  \item Langevin dynamics,
+  \item Energy minimization,
+  \item Harmonic restraints,
+  \item Spherical boundary conditions.
+\end{itemize}
+
+\item{\bf Easy to Modify and Extend}\\
+Another primary design objective for \NAMD\ is extensibility and 
+maintainability. In order to achieve this, it is designed in an 
+object-oriented style with C++. Since molecular dynamics is a new field,
+new algorithms and techniques are continually being developed.
+\NAMD's modular design allows one to integrate and test new algorithms 
+easily.  The structure and design of the program 
+is described in the \PG\ with sufficient
+detail to allow additions of such
+new algorithms.
+
+\item{\bf Interactive MD simulations}\\
+\NAMD\ is one component of \ALLNAMES, a computational environment for
+structural biology.  The two other components of \ALLNAMES\ are \VMD,
+a molecular visualization program, and \MDCOMM, a communications package.
+When combined, a system undergoing simulation in \NAMD\ may be viewed and
+altered with \VMD; for instance, forces can be applied to a set of atoms
+to alter or rearrange part of the molecular structure.  For more information
+on \ALLNAMES, see {\tt http://www.ks.uiuc.edu/Research/mdscope/}.  
+
+\item{\bf Load Balancing}\\
+An important factor in parallel applications is the equal distribution
+of computational load among the processors. In parallel molecular simulation,
+a spatial decomposition that evenly distributes the computational load
+causes the region of space mapped to each processor to become very irregular, 
+hard to compute and difficult to generalize to the evaluation of many different
+types of forces.  \NAMD\ addresses this problem by using a simple uniform 
+spatial decomposition where the entire model is split into uniform cubes of 
+space called {\em patches}. An initial load balancer assigns patches
+to processors such that the computational load is balanced as much as possible.
+During the simulation, an incremental load balancer monitors the load
+and performs necessary adjustments.
+
+\end{itemize}
+
+\subsection{User feedback}
+
+If you have problems installing or running \NAMD\ after
+reading this document, please send a
+complete description of the problem by email to {\tt namd@ks.uiuc.edu}.  If
+you discover and fix a problem not described in this manual or the
+\PG, we would
+appreciate if you would tell us about this as well, so we can alert
+other users and incorporate the fix into the public distribution.
+\prettypar
+We are interested in making \NAMD\ more useful to the molecular modeling
+community.  Please take a few minutes to complete the short survey on
+the next page and mail or fax it to
+
+\bigskip
+
+\NAMD\ Support
+
+Theoretical Biophysics Group
+
+Beckman Institute
+
+University of Illinois
+
+405 N. Mathews St.
+
+Urbana, IL  61801
+
+FAX (217) 244-6078
+
+\bigskip
+
+\noindent or email the relevant information
+to {\tt namd@ks.uiuc.edu} with subject ``Survey.''  
+This will help
+us make \NAMD\ relevant and responsive to the needs of our user
+community.
+
+\newpage
+\begin{enumerate}
+
+\item Name:
+
+\item Company/University:
+
+\item Address:
+
+\kern 0.4in
+
+\item Email address:
+
+\item Research area:
+
+\kern 0.3in
+
+\item Molecular systems to be studied with \NAMD:
+
+\kern 0.4in
+
+\item \NAMD\ features most useful for your research:
+
+\kern 0.4in
+
+\item I run \NAMD\ on the following platforms and operating systems:
+
+\kern 0.5in
+
+\item I would like to run \NAMD\ on:
+
+\kern 0.2in
+
+\item How can we improve the \NAMD\ documentation?
+
+\kern 1.2in
+
+\item Other comments:
+
+\end{enumerate}
+\newpage
+
+\subsection{Acknowledgments}
+
+This work is supported by grants from the National Science
+Foundation (BIR-9318159) and the National Institute of Health 
+(PHS 5 P41 RR05969-04).
+\prettypar
+The authors would particularly like to thank the members of the
+Theoretical Biophysics Group, past and present, who have helped
+tremendously in making suggestions, pushing for new features, and
+testing bug-ridden code.
+
