@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *  $RCSfile: SimParameters.C,v $
- *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1041 $  $Date: 1998/08/04 04:07:22 $
+ *  $Author: sergei $  $Locker:  $    $State: Exp $
+ *  $Revision: 1.1042 $  $Date: 1998/08/15 19:25:59 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,10 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1042  1998/08/15 19:25:59  sergei
+ * Fixed a bug in cylidrical boundary conditions, which
+ * was always setting the cylinder center to 0 0 0.
+ *
  * Revision 1.1041  1998/08/04 04:07:22  jim
  * Added extended system file support and fixed lack of endi in SimParameters.
  *
@@ -459,7 +463,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1041 1998/08/04 04:07:22 jim Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v 1.1042 1998/08/15 19:25:59 sergei Exp $";
 
 
 #include "charm++.h"
@@ -2131,13 +2135,13 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    if (opts.defined ("cylindricalBCCenter"))
    {
     cylindricalCenterCOM = FALSE;
-    cylindricalCenter.x = 0.0;
-    cylindricalCenter.y = 0.0;
-    cylindricalCenter.z = 0.0;
    }
    else
    {
     cylindricalCenterCOM = TRUE;
+    cylindricalCenter.x = 0.0;
+    cylindricalCenter.y = 0.0;
+    cylindricalCenter.z = 0.0;
    }
 
    if (!eFieldOn)
@@ -3218,12 +3222,16 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1041 $  $Date: 1998/08/04 04:07:22 $
+ *  $Revision: 1.1042 $  $Date: 1998/08/15 19:25:59 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1042  1998/08/15 19:25:59  sergei
+ * Fixed a bug in cylidrical boundary conditions, which
+ * was always setting the cylinder center to 0 0 0.
+ *
  * Revision 1.1041  1998/08/04 04:07:22  jim
  * Added extended system file support and fixed lack of endi in SimParameters.
  *
