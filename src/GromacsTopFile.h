@@ -536,7 +536,7 @@ class GromacsTopFile {
      Note that unlike the other types of parameters, you don't refer
      to this one by number - any two atom types define a VDWParam */
   void getVDWParams(int typea, int typeb,
-		    Real *c6, Real *c12, Real *c6pair, Real *c6) const;
+		    Real *c6, Real *c12, Real *c6pair, Real *c7) const;
     
 };
 
