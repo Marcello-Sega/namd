@@ -29,10 +29,8 @@ private:
   Vector boxcenter;	// FMA box center, set by get_FMA_cube()
   int usePBC;		// flag for PBC
   Vector initLattice;	// initial system lattice dimensions
-  int initDPMTA;	// mark DPMTA object as initialized
 
   void get_FMA_cube(int resize);
-  void init();
 
 public:
   ComputeDPMTA(ComputeID c);
@@ -47,13 +45,17 @@ public:
  * RCS INFORMATION:
  *
  *	$RCSfile: ComputeDPMTA.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1016 $	$Date: 1997/03/27 03:16:51 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1017 $	$Date: 1997/03/27 16:04:50 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.h,v $
+ * Revision 1.1017  1997/03/27 16:04:50  nealk
+ * Removed init() -- no longer necessary.  Thanks Jim!
+ * Turned off debugging.
+ *
  * Revision 1.1016  1997/03/27 03:16:51  jim
  * Added code to check virial calculation, fixed problems with DPMTA and PBC's.
  *

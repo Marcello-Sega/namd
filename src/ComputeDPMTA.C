@@ -26,66 +26,10 @@
 #include "InfoStream.h"
 
 #define MIN_DEBUG_LEVEL 2
-#define DEBUGM
+// #define DEBUGM
 #include "Debug.h"
 
 extern Communicate *comm;
-
-// init(): called by doWork when the object still needs some initialization
-void ComputeDPMTA::init()
-{
-  // determine boxSize from the PBC lattice
-  // lattice is the same on all patches, so choose first patch
-    {
-    ResizeArrayIter<PatchElem> ap(patchList);
-    DebugM(2,"init() getting first patch info for FMA box\n");
-    ap = ap.begin();
-    DebugM(2,"init() getting lattice from patch for FMA box\n");
-    initLattice = (*ap).p->lattice.dimension();
-    DebugM(2,"init() initLattice is " << initLattice << "\n");
-
-    // node 0 should configure DPMTA
-    // then tell all nodes that it is OK to continue
-    if (CMyPe() == 0)
-    {
-      if (usePBC && boxsize != initLattice)
-        {
-        // set DPMTA cube
-        PmtaVector center,size;
-        boxcenter = patchMap->Origin();
-        boxsize = initLattice;
-        center.x = boxcenter.x;
-        center.y = boxcenter.y;
-        center.z = boxcenter.z;
-        size.x = boxsize.x;
-        size.y = boxsize.y;
-        size.z = boxsize.z;
-	DebugM(2,"init() calling PMTAresize()\n");
-        PMTAresize(&size,&center);
-        DebugM(2,"init() called PMTAresize()\n");
-	}
-
-      Message *msg = new Message;
-      // don't actually put in data...  Nodes just need it as a flag.
-      msg->put(TRUE);
-      comm->broadcast_all(msg,DPMTATAG);
-      DebugM(2,"Init go-ahead\n");
-    }
-
-    // all nodes should initialize at the same time (lock-step)
-    DebugM(2,"init() waiting for Init go-ahead\n");
-    Message *conv_msg;
-    do
-    {
-        // get next DPMTATAG from node 0
-        conv_msg = comm->receive(-1,DPMTATAG);
-    } while (conv_msg == NULL);
-    delete conv_msg;
-    DebugM(2,"init() got go-ahead\n");
-  } /* end if(usePBC) */
-
-  initDPMTA = TRUE;
-}
 
 void ComputeDPMTA::get_FMA_cube(int resize)
 {
@@ -199,7 +143,6 @@ void ComputeDPMTA::initialize()
   reduction->Register(REDUCTION_VIRIAL);
 
   // Don't need any more initialization  -JCP
-  initDPMTA = TRUE;	// still needs some init when method is done
   ResizeArrayIter<PatchElem> ap(patchList);
   DebugM(2,"init() getting first patch info for FMA box\n");
   ap = ap.begin();
@@ -385,7 +328,6 @@ void ComputeDPMTA::doWork()
     return;
   }
 
-  if (!initDPMTA)	init();	// any final inits required
   DebugM(2,"DPMTA doWork() started at timestep " << patchList[0].p->flags.seq << "\n");
 
   // setup
@@ -526,12 +468,16 @@ void ComputeDPMTA::doWork()
  *
  *	$RCSfile $
  *	$Author $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1040 $	$Date: 1997/03/27 08:04:14 $
+ *	$Revision: 1.1041 $	$Date: 1997/03/27 16:04:49 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: ComputeDPMTA.C,v $
+ * Revision 1.1041  1997/03/27 16:04:49  nealk
+ * Removed init() -- no longer necessary.  Thanks Jim!
+ * Turned off debugging.
+ *
  * Revision 1.1040  1997/03/27 08:04:14  jim
  * Reworked Lattice to keep center of cell fixed during rescaling.
  *
