@@ -27,10 +27,10 @@ MAIN_UG_FILE	= $(DOCDIR)/ug
 SRCFILES = namd_begindoc.tex namd_copyright.tex namd_macros.tex \
 namd_title.tex namd_version.tex ug.tex ug_add.tex ug_avail.tex ug_basic.tex \
 ug_intro.tex ug_io.tex ug_macros.tex ug_runit.tex ug_sample.tex ug_start.tex \
-ug_xplor.tex ug_fenergy.tex ug_psfgen.tex psfgen_macros.tex
+ug_xplor.tex ug_fenergy.tex ug_psfgen.tex psfgen_macros.tex ug_alchemy.tex
 
 PDFFIGS = figures/fmaOn.pdf figures/pairlistdist.pdf \
-figures/shifting.pdf figures/switching.pdf
+figures/shifting.pdf figures/switching.pdf figures/dual_top.pdf
 
 ### latex the documentation
 doc:	$(DOCDIR)/ug.ps 
@@ -52,19 +52,24 @@ $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
 	pdflatex $(MAIN_UG_FILE); \
 	pdflatex $(MAIN_UG_FILE); \
 
+DISTILL = distill -compatlevel 2.1
+
 # need to specify page size because distill can't figure it out (yet?)
 
 figures/fmaOn.pdf: figures/fmaOn.eps
-	distill -pagesize 301 174 pts figures/fmaOn.eps
+	$(DISTILL) -pagesize 301 174 pts < $^ > $@
 
 figures/pairlistdist.pdf: figures/pairlistdist.eps
-	distill -pagesize 240 240 pts figures/pairlistdist.eps
+	$(DISTILL) -pagesize 240 240 pts < $^ > $@
 
 figures/shifting.pdf: figures/shifting.eps
-	distill -pagesize 301 165 pts figures/shifting.eps
+	$(DISTILL) -pagesize 301 165 pts < $^ > $@
 
 figures/switching.pdf: figures/switching.eps
-	distill -pagesize 310 165 pts figures/switching.eps
+	$(DISTILL) -pagesize 310 165 pts < $^ > $@
+
+figures/dual_top.pdf: figures/dual_top.eps
+	$(DISTILL) -pagesize 584 220 pts < $^ > $@
 
 $(DOCDIR)/ug.ps: $(SRCFILES)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
