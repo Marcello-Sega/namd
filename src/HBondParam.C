@@ -10,7 +10,7 @@
  *
  *	$RCSfile: HBondParam.C,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/01/28 00:51:48 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 01:04:40 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -22,6 +22,9 @@
  * REVISION HISTORY:
  *
  * $Log: HBondParam.C,v $
+ * Revision 1.778  1997/01/28 01:04:40  ari
+ * uplevel
+ *
  * Revision 1.2  1997/01/28 00:51:48  ari
  * uplevel
  *

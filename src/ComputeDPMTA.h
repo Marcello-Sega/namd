@@ -11,105 +11,37 @@
  *
  ***************************************************************************/
 
-#ifndef COMPUTEHOMEPATCHES_H
-#define COMPUTEHOMEPATCHES_H
+#ifndef COMPUTEDPMTA_H
+#define COMPUTEDPMTA_H
 
-#include "NamdTypes.h"
-#include "common.h"
-#include "Compute.h"
-#include "Patch.h"
+#include "ComputeHomePatches.h"
 
-#include "Templates/Box.h"
-#include "Templates/OwnerBox.h"
-#include "PositionBox.h"
-#include "PositionOwnerBox.h"
-
-class PatchElem {
-  public:
-    PatchID patchID;
-    Patch *p;
-    PositionBox<Patch> *positionBox;
-    Box<Patch,Force> *forceBox;
-    Box<Patch,AtomProperties> *atomBox;
-    Position *x;
-    Force *f;
-    AtomProperties *a;
-
-  PatchElem() {
-    patchID = -1;
-    p = NULL;
-    positionBox = NULL;
-    forceBox = NULL;
-    atomBox = NULL;
-    x = NULL;
-    f = NULL;
-    a = NULL;
-  }
-
-  PatchElem(PatchID p) {
-    patchID = p;
-  }
-
-  PatchElem(Patch *p, ComputeID cid) {
-    patchID = p->getPatchID();
-    this->p = p;
-    positionBox = p->registerPositionPickup(cid);
-    forceBox = p->registerForceDeposit(cid);
-    atomBox = p->registerAtomPickup(cid);
-    x = NULL;
-    f = NULL;
-    a = NULL;
-  }
-    
-  ~PatchElem() {};
-
-  int operator==(const PatchElem &a) const {
-    return (a.patchID == patchID);
-  }
-
-  int operator<(const PatchElem &a) const {
-    return (patchID < a.patchID);
-  }
-};
-
-typedef UniqueSortedArray<PatchElem> ComputeHomePatchList;
-
-class ReductionMgr;
-
-class ComputeHomePatches : public Compute {
-protected:
-  ComputeHomePatchList patchList;
-
-  PatchMap *patchMap;
-  ReductionMgr *reduction;
-
-  int fake_seq;
-
+class ComputeDPMTA : public ComputeHomePatches {
 public:
-  ComputeHomePatches(ComputeID c);
-  virtual ~ComputeHomePatches();
-  void mapReady();
+  ComputeDPMTA(ComputeID c);
+  virtual ~ComputeDPMTA();
+  void doWork();
 };
 
 #endif
 /***************************************************************************
  * RCS INFORMATION:
  *
- *	$RCSfile: ComputeHomePatches.h,v $
+ *	$RCSfile: ComputeDPMTA.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 01:04:20 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 01:00:33 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
- * $Log: ComputeHomePatches.h,v $
- * Revision 1.778  1997/01/28 01:04:20  ari
+ * $Log: ComputeDPMTA.h,v $
+ * Revision 1.778  1997/01/28 01:00:33  ari
  * uplevel
  *
- * Revision 1.2  1997/01/28 00:51:47  ari
- * uplevel
+ * Revision 1.2  1997/01/28 01:00:11  ari
+ * Adding This again
  *
- * Revision 1.1.2.1  1997/01/27 21:11:40  jim
+ * Revision 1.1.2.1  1997/01/27 21:11:36  jim
  * test
  *
  * Revision 1.777  1997/01/17 19:35:45  ari

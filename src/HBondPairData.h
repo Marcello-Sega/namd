@@ -12,7 +12,7 @@
  *
  *	$RCSfile: HBondPairData.h,v $
  *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1997/01/28 00:54:31 $
+ *	$Revision: 1.778 $	$Date: 1997/01/28 00:55:48 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: HBondPairData.h,v $
+ * Revision 1.778  1997/01/28 00:55:48  ari
+ * uplevel
+ *
  * Revision 1.2  1997/01/28 00:54:31  ari
  * Trial uplevel
  *
