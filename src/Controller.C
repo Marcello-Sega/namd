@@ -1202,7 +1202,9 @@ void Controller::rebalanceLoad(int)
     ldbSteps = LdbCoordinator::Object()->steps();
   }
   if ( ! --ldbSteps ) {
+    startBenchTime -= CmiWallTimer();
     LdbCoordinator::Object()->rebalance(this);
+    startBenchTime += CmiWallTimer();
   }
 }
 
