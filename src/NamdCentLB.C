@@ -45,7 +45,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 
   const int nMoveableComputes = buildData(stats,count);
   // gzheng debug
-  dumpData("data", numProcessors, numPatches, nMoveableComputes);
+  // dumpData("data", numProcessors, numPatches, nMoveableComputes);
   // loadData("data", numProcessors, numPatches, nMoveableComputes);
   // end of debug section
 
