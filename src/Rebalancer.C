@@ -673,7 +673,7 @@ void Rebalancer::printSummary()
 double Rebalancer::computeAverage()
 {
    int i;
-   double total = 0;
+   double total = 0.;
    for (i=0; i<numComputes; i++)
       total += computes[i].load;
 
@@ -683,7 +683,12 @@ double Rebalancer::computeAverage()
       }
    }
   
-   averageLoad = total/numPesAvailable;
+   if (numPesAvailable == 0) {
+     CmiPrintf("Warning: no processors available for load balancing!\n");
+     averageLoad = 0.0;
+   }
+   else 
+     averageLoad = total/numPesAvailable;
    return averageLoad;
 }
 

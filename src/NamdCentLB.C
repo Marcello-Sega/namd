@@ -396,11 +396,23 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
   if (unLoadZero) processorArray[0].available = CmiFalse;
 
-  if (pmeOn && unLoadPme)
+  // if all pes are Pme, disable this flag
+  if (pmeOn && unLoadPme) {
+    for (i=0; i<count; i++) {
+      if (!isPmeProcessor(i))  break;
+    }
+    if (i==count) {
+      iout << iINFO << "Turned off unLoadPme flag!\n"  << endi;
+      unLoadPme = 0;
+    }
+  }
+  
+  if (pmeOn && unLoadPme) {
     for (i=0; i<count; i++) {
       if ((pmeBarrier && i==0) || isPmeProcessor(i)) 
 	processorArray[i].available = CmiFalse;
     }
+  }
 
   if (unLoadSMP) {
     int ppn = simParams->procsPerNode;
