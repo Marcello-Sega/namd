@@ -18,12 +18,8 @@
 #include <stdlib.h>
 #include <iostream.h>
 #include <errno.h>
+#include <limits.h>
 #include "InfoStream.h"
-#include "limits.h"
-
-#ifdef T3E
-#include <fp.h>
-#endif
 
 #if ( INT_MAX == 2147483647 )
 typedef	int	int32;
@@ -285,12 +281,15 @@ int  Fclose(FILE *fout);
  *
  *	$RCSfile: common.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1021 $	$Date: 1999/07/06 20:32:46 $
+ *	$Revision: 1.1022 $	$Date: 1999/07/08 22:08:08 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: common.h,v $
+ * Revision 1.1022  1999/07/08 22:08:08  jim
+ * Eliminated rint definition from fp.h on T3E.
+ *
  * Revision 1.1021  1999/07/06 20:32:46  jim
  * Eliminated warnings from new generation of picky compilers.
  *
