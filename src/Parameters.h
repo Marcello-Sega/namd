@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.h,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.2 $	$Date: 1996/08/16 04:39:46 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.3 $	$Date: 1996/10/31 20:42:40 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,9 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.h,v $
+ * Revision 1.3  1996/10/31 20:42:40  jim
+ * small changes to support LJTable
+ *
  * Revision 1.2  1996/08/16 04:39:46  ari
  * *** empty log message ***
  *
@@ -199,6 +202,7 @@ private:
 	int NumDihedralParams;			//  Number of dihedral params
 	int NumImproperParams;			//  Number of improper params
 	int NumVdwParams;			//  Number of vdw parameters
+        int NumVdwParamsAssigned;               //  Number actually assigned
 	int NumVdwPairParams;			//  Number of vdw_pair params
 
 	int *maxDihedralMults;			//  Max multiplicity for
@@ -382,6 +386,8 @@ public:
 						//  Find a vwd_pair parameter
 
 //	HBondParam &get_hbond_params(void) { return hbondParams; }
+
+        int get_num_vdw_params(void) { return NumVdwParamsAssigned; }
 
 	//  The print_*_params are provided for debugging purposes
 	void print_bond_params();		//  Print bonds params

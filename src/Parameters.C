@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Parameters.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/08/16 04:55:30 $
+ *	$Author: jim $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/10/31 20:42:40 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Parameters.C,v $
+ * Revision 1.4  1996/10/31 20:42:40  jim
+ * small changes to support LJTable
+ *
  * Revision 1.3  1996/08/16 04:55:30  ari
  * *** empty log message ***
  *
@@ -82,7 +85,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.3 1996/08/16 04:55:30 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Parameters.C,v 1.4 1996/10/31 20:42:40 jim Exp $";
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1641,7 +1644,7 @@ void Parameters::done_reading_files()
 	//  already read in
 	index_bonds(bondp, 0);
 	index_angles(anglep, 0);
-	index_vdw(vdwp, 0);
+	NumVdwParamsAssigned = index_vdw(vdwp, 0);
 	index_dihedrals();
 	index_impropers();
 	
@@ -3322,6 +3325,7 @@ void Parameters::send_Parameters(Communicate *comm_obj)
 
 	//  Send the vdw parameters
 	msg->put(NumVdwParams);
+	msg->put(NumVdwParamsAssigned);
 
 	if (NumVdwParams)
 	{
@@ -3603,6 +3607,7 @@ void Parameters::receive_Parameters(Message *msg)
 
 	//  Get the vdw parameters
 	msg->get(NumVdwParams);
+	msg->get(NumVdwParamsAssigned);
 
 	if (NumVdwParams)
 	{
