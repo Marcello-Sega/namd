@@ -11,7 +11,7 @@
  *                                                                         
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1026 1997/04/10 09:14:14 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v 1.1027 1997/04/10 14:44:52 milind Exp $";
 
 #include <stdio.h>
 
@@ -610,8 +610,9 @@ void WorkDistrib::mapComputeNonbonded(void)
     // self-interaction
     cid=computeMap->storeCompute(patchMap->node(i),1,computeNonbondedSelfType);
     numAtoms = patchMap->patch(i)->getNumAtoms();
-    pairWork[patchMap->node(i)] += 
-      weight * ((numAtoms*numAtoms)/2. - numAtoms);
+    // pairWork[patchMap->node(i)] += 
+      // weight * ((numAtoms*numAtoms)/2. - numAtoms);
+    pairWork[patchMap->node(i)] += (numAtoms*numAtoms);
     computeMap->newPid(cid,i);
     patchMap->newCid(i,cid);
   }
@@ -631,17 +632,23 @@ void WorkDistrib::mapComputeNonbonded(void)
 	  + abs(patchMap->yIndex(i)-patchMap->yIndex(oneAway[j])) 
 	  + abs(patchMap->zIndex(i)-patchMap->zIndex(oneAway[j]));
 
-	const double weight = 
-	  inspectCost + computeCost / (double) (1 << (2 * distance));
+        double weight;
+        if(distance==1) {
+          weight = 0.69;
+        } else if(distance==2) {
+          weight = 0.32;
+        } else if(distance==3) {
+          weight = 0.24;
+        } else weight = 0;
 
 	if (pairWork[patchMap->node(i)]<pairWork[patchMap->node(oneAway[j])]) {
 	    cid=computeMap->storeCompute(patchMap->node(i),2,
 				     computeNonbondedPairType);
-	    pairWork[patchMap->node(i)] += weight * numAtoms1*numAtoms2/2;
+	    pairWork[patchMap->node(i)] += weight * numAtoms1*numAtoms2;
 	} else {
 	    cid=computeMap->storeCompute(patchMap->node(oneAway[j]),2,
 				     computeNonbondedPairType);
-	    pairWork[patchMap->node(oneAway[j])] += weight * numAtoms1*numAtoms2/2;
+	    pairWork[patchMap->node(oneAway[j])] += weight * numAtoms1*numAtoms2;
 	}
 	 
 	computeMap->newPid(cid,i);
@@ -681,11 +688,11 @@ void WorkDistrib::mapComputeNonbonded(void)
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   // This did not work with 32 for prio (crashed!)
   LocalWorkMsg *msg 
-    = new (MsgIndex(LocalWorkMsg),16) LocalWorkMsg;
+    // = new (MsgIndex(LocalWorkMsg),Priorities::numBits) LocalWorkMsg;
+    = new (MsgIndex(LocalWorkMsg)) LocalWorkMsg;
   msg->compute = compute; // pointer is valid since send is to local Pe
-  // *CPriorityPtr(msg) = (unsigned int)128;
   //*CPriorityPtr(msg) = (unsigned int)compute->priority();
-  //CSetQueueing(msg, C_QUEUEING_IFIFO);
+  //CSetQueueing(msg, Priorities::strategy);
   //DebugM(3, "Priority = " << (unsigned int)compute->priority() << "\n");
   CSendMsgBranch(WorkDistrib, enqueueWork, msg, group.workDistrib, CMyPe() );
 }
@@ -918,13 +925,16 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
  * RCS INFORMATION:
  *
  *	$RCSfile: WorkDistrib.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1026 $	$Date: 1997/04/10 09:14:14 $
+ *	$Author: milind $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.1027 $	$Date: 1997/04/10 14:44:52 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: WorkDistrib.C,v $
+ * Revision 1.1027  1997/04/10 14:44:52  milind
+ * Changed weights.
+ *
  * Revision 1.1026  1997/04/10 09:14:14  ari
  * Final debugging for compute migration / proxy creation for load balancing.
  * Lots of debug code added, mostly turned off now.
