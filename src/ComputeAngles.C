@@ -23,11 +23,13 @@
 #include "Parameters.h"
 
 ComputeAngles::ComputeAngles(ComputeID c) : Compute(c) {
+  CPrintf("ComputeAngles::ComputeAngles(%d) -- starting\n",(int)c);
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
 
   maxProxyAtoms = 0;
   dummy = NULL;
+  CPrintf("ComputeAngles::ComputeAngles(%d) -- done\n",(int)c);
 }
 
 void ComputeAngles::mapAtoms() {
@@ -99,6 +101,7 @@ void ComputeAngles::mapAtoms() {
 
 
 void ComputeAngles::doWork() {
+  CPrintf("ComputeAngles::doWork() -- started\n");
   // Open Boxes
   ResizeArrayIter<AnglePatchElem> ap(anglePatchList);
   for (ap = ap.begin(); ap != ap.end(); ap++) {
@@ -124,6 +127,7 @@ void ComputeAngles::doWork() {
     (*ap).positionBox->close(&(*ap).x);
     (*ap).forceBox->close(&(*ap).f);
   }
+  CPrintf("ComputeAngles::doWork() -- done\n");
 }
 
 
@@ -155,6 +159,8 @@ BigReal ComputeAngles::angleForce	(
   BigReal diff;		// difference between theta and theta0
   BigReal c1,c2;	// constant factors involved in force
   BigReal energy;	// energy from the angle
+
+  CPrintf("ComputeAngles::angleForce() -- starting wiht angle type %d\n",(int)angleType);
 
   // get the angle information
   Real k, theta0, k_ub, r_ub;
@@ -218,6 +224,7 @@ BigReal ComputeAngles::angleForce	(
 	*force3 -= r13;
   }
 
+  CPrintf("ComputeAngles::angleForce() -- ending with delta energy %f\n",(float)energy);
   return(energy);
 }
 
