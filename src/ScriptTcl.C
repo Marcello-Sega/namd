@@ -338,7 +338,7 @@ void ScriptTcl::algorithm() {
   // Create interpreter
   interp = Tcl_CreateInterp();
 //  if (Tcl_Init(interp) == TCL_ERROR) {
-//    CkPrintf("Tcl startup error: %\n", interp->result);
+//    CkPrintf("Tcl startup error: %s\n", interp->result);
 //  }
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);

@@ -217,10 +217,11 @@ int ComputeTcl::Tcl_addforce(ClientData clientData,
   }
   char **fstring;  int fnum;  int atomid;  double x, y, z;
   int isgroup = 0;
-  if (Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK) {
-    if ( argv[1][0] == 'g' && Tcl_GetInt(interp,argv[1]+1,&atomid) == TCL_OK) {
-      isgroup = 1;
-    } else return TCL_ERROR;
+  if ( argv[1][0] == 'g' ) {
+    isgroup = 1;
+    if ( Tcl_GetInt(interp,argv[1]+1,&atomid) != TCL_OK ) return TCL_ERROR;
+  } else {
+    if ( Tcl_GetInt(interp,argv[1],&atomid) != TCL_OK ) return TCL_ERROR;
   }
   if (Tcl_SplitList(interp, argv[2], &fnum, &fstring) != TCL_OK) {
     return TCL_ERROR;
@@ -271,9 +272,9 @@ void ComputeTcl::initialize() {
 #ifdef NAMD_TCL
   // Create interpreter
   interp = Tcl_CreateInterp();
-  if (Tcl_Init(interp) == TCL_ERROR) {
-    CkPrintf("Tcl startup error: %\n", interp->result);
-  }
+//  if (Tcl_Init(interp) == TCL_ERROR) {
+//    CkPrintf("Tcl startup error: %s\n", interp->result);
+//  }
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "atomid", Tcl_atomid,
