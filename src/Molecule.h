@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.h,v $
- *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/05 05:01:23 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/11/21 23:36:04 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -25,6 +25,9 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.h,v $
+ * Revision 1.4  1996/11/21 23:36:04  ari
+ * *** empty log message ***
+ *
  * Revision 1.3  1996/11/05 05:01:23  jim
  * added some consts
  *
@@ -166,7 +169,7 @@ private:
 				//  scaled1-4 to track 1-4 interactions that
 				//  need to be handled differently
 
-	void build_lists_by_atom();
+//	void build_lists_by_atom();
 				//  Build the list of structures by atom
 	
 
@@ -217,6 +220,11 @@ public:
 
 	Molecule(SimParameters *, Parameters *param=NULL, char *filename=NULL);
 	~Molecule();		//  Destructor
+
+	// We Did This - ari and jim
+	void build_lists_by_atom();
+				//  Build the list of structures by atom
+
 	void read_psf_file(char *, Parameters *);
 				//  Read in a .psf file given
 				//  the filename and the parameter

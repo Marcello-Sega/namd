@@ -14,8 +14,9 @@
 #include "SimParameters.h"
 #include "ConfigList.h"
 #include "PDB.h"
-
 #include "NamdState.h"
+
+#define DEBUGM
 #include "Debug.h"
 
 NamdState::NamdState()
@@ -33,31 +34,31 @@ NamdState::status()
     int ret=0;
 
     if (configList != NULL) {
-	iout << iINFO << "Config List exists\n" << endi;
+	cout << "Config List exists" << endl;
     } else {
 	ret++;
     }
 
     if (simParameters != NULL) {
-	iout << iINFO << "SimParameters exists\n" << endi;
+	cout << "SimParameters exists" << endl;
     } else {
 	ret++;
     }
 
     if (parameters != NULL) {
-	iout << iINFO << "Parameters exists\n" << endi;
+	cout << "Parameters exists" << endl;
     } else {
 	ret++;
     }
 
     if (molecule != NULL) {
-	iout << iINFO << "Molecule exists\n" << endi;
+	cout << "Molecule exists" << endl;
     } else {
 	ret++;
     }
 
     if (pdb != NULL) {
-	iout << iINFO << "PDB exists\n" << endi;
+	cout << "PDB exists" << endl;
     } else {
 	ret++;
     }
@@ -70,23 +71,23 @@ NamdState::configFileInit(char *confFile)
 {
   char *currentdir=NULL;
 
-  DebugM(1,"NamdState::configFileInit running " << confFile << "\n");
+  CPrintf("NamdState::configFileInit running %s\n",confFile);
 
   if ( NULL == confFile || NULL == (configList = new ConfigList(confFile)) ) {
-    DebugM(1,"NamdState::configFileInit() Config File is NULL\n");
+    CPrintf("NamdState::configFileInit() Config File is NULL\n");
     return(1);
   }
   if (!configList->okay()) {
-    DebugM(1,"NamdState::configFileInit() ConfigList is bad\n");
+    CPrintf("NamdState::configFileInit() ConfigList is bad\n");
     return(1);
   }
 
   StringList *moleculeFilename = configList->find("structure");
   StringList *parameterFilename = configList->find("parameters");
   StringList *coordinateFilename = configList->find("coordinates");
-  iout << iINFO << "files are : " << moleculeFilename->data << " and "
+  cout << "files are : " << moleculeFilename->data << " and "
       << parameterFilename->data << " and " << coordinateFilename->data
-      << "\n" << endi;
+      << endl;
 
   simParameters =  new SimParameters(configList,currentdir);
 
@@ -94,16 +95,24 @@ NamdState::configFileInit(char *confFile)
   parameters->print_param_summary();
 
   molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
-  iout << iINFO << "Done Reading Molecule file\n" << endi;
+  DebugM(1, "Done Reading Molecule file " << moleculeFilename->data << endl );
 
   pdb = new PDB(coordinateFilename->data);
-  iout << iINFO << "Done Reading Coordinate file\n" << endi;
+  DebugM(1, "Done Reading Coordinate file " << coordinateFilename->data << endl );
 
   if (pdb->num_atoms() != molecule->numAtoms)
   {
-    iout << iWARN << "Number of pdb and psf atoms are not the same!\n" << endi;
+    CPrintf("Number of pdb and psf atoms are not the same!");
     return(1);
   }
+  molecule->build_lists_by_atom();
+
+  molecule->print_atoms(parameters);
+  molecule->print_bonds(parameters);
+  molecule->print_exclusions();
+
+
+  DebugM(1, "::configFileInit() - done\n");
 
   return(0);
 }
@@ -112,8 +121,8 @@ NamdState::configFileInit(char *confFile)
  * RCS INFORMATION:
  *
  *	$RCSfile: NamdState.C,v $
- *	$Author: nealk $	$Locker:  $		$State: Exp $
- *	$Revision: 1.3 $	$Date: 1996/11/14 21:00:16 $
+ *	$Author: ari $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.4 $	$Date: 1996/11/21 23:34:24 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -122,8 +131,8 @@ NamdState::configFileInit(char *confFile)
  * REVISION HISTORY:
  *
  * $Log: NamdState.C,v $
- * Revision 1.3  1996/11/14 21:00:16  nealk
- * Now uses iout stream and DebugM for output.
+ * Revision 1.4  1996/11/21 23:34:24  ari
+ * *** empty log message ***
  *
  * Revision 1.2  1996/08/16 04:55:30  ari
  * *** empty log message ***
@@ -133,4 +142,4 @@ NamdState::configFileInit(char *confFile)
  *
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.3 1996/11/14 21:00:16 nealk Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/NamdState.C,v 1.4 1996/11/21 23:34:24 ari Exp $";
