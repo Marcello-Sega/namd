@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *	$RCSfile: Molecule.C,v $
- *	$Author: ari $	$Locker:  $		$State: Exp $
- *	$Revision: 1.778 $	$Date: 1997/01/28 00:30:53 $
+ *	$Author: nealk $	$Locker:  $		$State: Exp $
+ *	$Revision: 1.779 $	$Date: 1997/01/30 18:42:46 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -24,6 +24,10 @@
  * REVISION HISTORY:
  *
  * $Log: Molecule.C,v $
+ * Revision 1.779  1997/01/30 18:42:46  nealk
+ * Corrected segmentation fault with er-gre.  langForceVals was not initialized
+ * to NULL during instantiation.
+ *
  * Revision 1.778  1997/01/28 00:30:53  ari
  * internal release uplevel to 1.778
  *
@@ -141,7 +145,7 @@
  * 
  ***************************************************************************/
 
-static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.778 1997/01/28 00:30:53 ari Exp $";
+static char ident[] = "@(#)$Header: /home/cvs/namd/cvsroot/namd2/src/Molecule.C,v 1.779 1997/01/30 18:42:46 nealk Exp $";
 
 #include "Molecule.h"
 #include <stdio.h>
@@ -190,6 +194,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 	all_exclusions=NULL;
 	onefour_exclusions=NULL;
 	langevinParams=NULL;
+	langForceVals=NULL;
 	consIndexes=0;
 	consParams=0;
 	numMultipleDihedrals=0;
@@ -1835,7 +1840,8 @@ void Molecule::receive_Molecule(Message *msg)
 	//  Get the atom information
 	msg->get(numAtoms);
 
-	atoms=new Atom[numAtoms];
+	delete [] atoms;
+	atoms= new Atom[numAtoms];
 	a1   = new Real[numAtoms];
 	a2   = new Real[numAtoms];
 	ind1 = new Index[numAtoms];
@@ -1869,6 +1875,7 @@ void Molecule::receive_Molecule(Message *msg)
 
 	if (numBonds)
 	{
+		delete [] bonds;
 		bonds=new Bond[numBonds];
 		i1 = new int[numBonds];
 		i2 = new int[numBonds];
@@ -1900,6 +1907,7 @@ void Molecule::receive_Molecule(Message *msg)
 
 	if (numAngles)
 	{
+		delete [] angles;
 		angles=new Angle[numAngles];
 		i1 = new int[numAngles];
 		i2 = new int[numAngles];
@@ -1936,6 +1944,7 @@ void Molecule::receive_Molecule(Message *msg)
 
 	if (numDihedrals)
 	{
+		delete [] dihedrals;
 		dihedrals=new Dihedral[numDihedrals];
 		i1 = new int[numDihedrals];
 		i2 = new int[numDihedrals];
@@ -1976,6 +1985,7 @@ void Molecule::receive_Molecule(Message *msg)
 
 	if (numImpropers)
 	{
+		delete [] impropers;
 		impropers=new Improper[numImpropers];
 		i1 = new int[numImpropers];
 		i2 = new int[numImpropers];
@@ -2016,6 +2026,7 @@ void Molecule::receive_Molecule(Message *msg)
 
 	if (numDonors)
 	{
+		delete [] donors;
 	        donors=new Bond[numDonors];
 		i1 = new int[numDonors];
 		i2 = new int[numDonors];
@@ -2043,6 +2054,7 @@ void Molecule::receive_Molecule(Message *msg)
 
 	if (numAcceptors)
 	{
+		delete [] acceptors;
 	        acceptors=new Bond[numAcceptors];
 		i1 = new int[numAcceptors];
 		i2 = new int[numAcceptors];
@@ -2070,6 +2082,7 @@ void Molecule::receive_Molecule(Message *msg)
 
 	if (numExclusions)
 	{
+		delete [] exclusions;
 		exclusions=new Exclusion[numExclusions];
 		i1 = new int[numExclusions];
 		i2 = new int[numExclusions];
@@ -2097,6 +2110,7 @@ void Molecule::receive_Molecule(Message *msg)
 	{
 	   msg->get(numConstraints);
 
+	   delete [] consIndexes;
 	   consIndexes = new int[numAtoms];
 	   
 	   if (consIndexes == NULL)
@@ -2108,6 +2122,7 @@ void Molecule::receive_Molecule(Message *msg)
 	   
 	   if (numConstraints)
 	   {
+	      delete [] consParams;
 	      consParams = new ConstraintParams[numConstraints];
 	      a1         = new Real[numConstraints];
 	      v1         = new Vector[numConstraints];
@@ -2136,6 +2151,8 @@ void Molecule::receive_Molecule(Message *msg)
 	if (simParams->langevinOn ||
 	    simParams->tCoupleOn)
 	{
+		delete [] langevinParams;
+		delete [] langForceVals;
 		langevinParams = new Real[numAtoms];
 		langForceVals = new Real[numAtoms];
 
