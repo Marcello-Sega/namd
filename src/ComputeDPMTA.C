@@ -91,7 +91,7 @@ void ComputeDPMTA::get_FMA_cube(int usePBC)
 	PMTAresize(&size,&center);
 	DebugM(1,"called PMTAresize()\n");
 	}
-  DebugM(2,"cube center: " << boxcenter << " size=" << boxSize << "\n");
+  DebugM(2,"cube center: " << boxcenter << " size=" << boxsize << "\n");
 }
 
 ComputeDPMTA::ComputeDPMTA(ComputeID c) : ComputeHomePatches(c)
@@ -245,8 +245,15 @@ void ComputeDPMTA::doWork()
   // 1. get totalAtoms
   for (totalAtoms=0, ap = ap.begin(); ap != ap.end(); ap++)
      totalAtoms += (*ap).p->getNumAtoms();
-  // check if box has changes for PBC
-  get_FMA_cube(TRUE);	// PBC lattice should be defined
+  if (CMyPe() == 0)
+  {
+    // check if box has changes for PBC
+    get_FMA_cube(TRUE);	// PBC lattice should be defined
+  }
+  else
+  {
+    DebugM(1,"Node not resizing FMA\n");
+  }
 
   // 2. setup atom list
   int i,j;
@@ -262,26 +269,15 @@ void ComputeDPMTA::doWork()
   {
     (*ap).x = (*ap).positionBox->open();
     (*ap).a = (*ap).atomBox->open();
-    lattice = (*ap).p->lattice;
 
     // store each atom in the particle_list
     Vector pos;
     for(j=0; j<(*ap).p->getNumAtoms(); j++)
     {
-#if 0
-      // for periodic boundary condition (PBC)
-      pos = lattice.nearest((*ap).x[j],boxcenter);
-
-      // explicitly copy -- two different data structures
-      particle_list[i].p.x = pos.x;
-      particle_list[i].p.y = pos.y;
-      particle_list[i].p.z = pos.z;
-#else
       // explicitly copy -- two different data structures
       particle_list[i].p.x = (*ap).x[j].x;
       particle_list[i].p.y = (*ap).x[j].y;
       particle_list[i].p.z = (*ap).x[j].z;
-#endif
       particle_list[i].q = (*ap).a[j].charge * unitFactor;
       i++;
       if (i > totalAtoms)
