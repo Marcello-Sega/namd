@@ -11,7 +11,7 @@
  *
  *  $RCSfile: SimParameters.C,v $
  *  $Author: jim $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1059 $  $Date: 1999/03/17 21:26:34 $
+ *  $Revision: 1.1060 $  $Date: 1999/03/17 21:49:57 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -23,6 +23,9 @@
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1060  1999/03/17 21:49:57  jim
+ * Switch to fullElectFrequency for external parameter as well.
+ *
  * Revision 1.1059  1999/03/17 21:26:34  jim
  * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
  *
@@ -562,6 +565,9 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    char loadStrategy[65];//  Load balancing strategy
    char filename[129];  //  Temporary file name
 
+   // local use only
+   BigReal fmaFrequency;
+
    //****** BEGIN SMD constraints changes 
    char chDirMethod[65]; // SMD changing direction method
    //****** END SMD constraints changes 
@@ -816,9 +822,15 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    FMAFFTBlock = 0;
 #endif
 
-   opts.optional("main", "fmaFrequency",
+   opts.optional("main", "fullElectFrequency",
       "Number of steps between full electrostatic executions", 
       &fullElectFrequency);
+   opts.range("fullElectFrequency", POSITIVE);
+
+   //  USE OF THIS PARAMETER DISCOURAGED
+   opts.optional("main", "fmaFrequency",
+      "Number of steps between full electrostatic executions", 
+      &fmaFrequency);
    opts.range("fmaFrequency", POSITIVE);
 
    opts.optional("main", "fmaTheta",
@@ -2139,24 +2151,32 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    if (!FMAOn && !PMEOn && !fullDirectOn)
    {
-  fullElectFrequency = 0;
+     fullElectFrequency = 0;
    }
    else
    {
-  if (!opts.defined("fmaFrequency"))
-  {
-    fullElectFrequency = stepsPerCycle;
-  }
-  else
-  {
-    if ( (fullElectFrequency > stepsPerCycle) || ( (stepsPerCycle % fullElectFrequency) != 0) )
-    {
-      NAMD_die("stepsPerCycle must be a multiple of fmaFrequency");
-    }
-  }
+     if (!opts.defined("fullElectFrequency"))
+     {
+       if (opts.defined("fmaFrequency")) {
+         iout << iWARN << "The parameter fmaFrequency has been renamed fullElectFrequency.\n" << endi;
+         fullElectFrequency = fmaFrequency;
+       } else {
+         fullElectFrequency = stepsPerCycle;
+       }
+     }
+     else
+     {
+       if (opts.defined("fmaFrequency")) {
+         iout << iWARN << "Ignoring redundant parameter fmaFrequency in favor of fullElectFrequency.\n" << endi;
+       }
+       if ( (fullElectFrequency > stepsPerCycle) || ( (stepsPerCycle % fullElectFrequency) != 0) )
+       {
+         NAMD_die("stepsPerCycle must be a multiple of fullElectFrequency");
+       }
+     }
 
-  if (!opts.defined("fmaTheta"))
-    fmaTheta=0.715;  /* Suggested by Duke developers */
+     if (!opts.defined("fmaTheta"))
+     fmaTheta=0.715;  /* Suggested by Duke developers */
    }
 
    if (!opts.defined("constraints"))
@@ -2981,7 +3001,7 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
    {
      if ( (berendsenPressureFreq % nonbondedFrequency) || ( fullElectFrequency
 		&& (berendsenPressureFreq % fullElectFrequency) ) )
-	NAMD_die("berendsenPressureFreq must be a multiple of both fmaFrequency and nonbondedFrequency\n");
+	NAMD_die("berendsenPressureFreq must be a multiple of both fullElectFrequency and nonbondedFrequency\n");
      iout << iINFO << "BERENDSEN PRESSURE COUPLING ACTIVE\n";
      iout << iINFO << "    TARGET PRESSURE IS "
         << berendsenPressureTarget << " BAR\n";
@@ -3582,12 +3602,15 @@ void SimParameters::receive_SimParameters(MIStream *msg)
  *
  *  $RCSfile $
  *  $Author $  $Locker:  $    $State: Exp $
- *  $Revision: 1.1059 $  $Date: 1999/03/17 21:26:34 $
+ *  $Revision: 1.1060 $  $Date: 1999/03/17 21:49:57 $
  *
  ***************************************************************************
  * REVISION HISTORY:
  *
  * $Log: SimParameters.C,v $
+ * Revision 1.1060  1999/03/17 21:49:57  jim
+ * Switch to fullElectFrequency for external parameter as well.
+ *
  * Revision 1.1059  1999/03/17 21:26:34  jim
  * Switching internal nomenclature from fmaFrequency to fullElectFrequency.
  *
