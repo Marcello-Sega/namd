@@ -96,6 +96,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       int32 **tuplesByAtom;
       /* const (need to propagate const) */ S *tupleStructs;
       const P *tupleValues;
+      Node *node = Node::Object();
     
       T::getMoleculePointers(node->molecule,
 		    &numTuples, &tuplesByAtom, &tupleStructs);

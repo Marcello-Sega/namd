@@ -141,7 +141,6 @@ void ComputeMgr::updateLocalComputes() {
     computeMap->setNewNode(i,-1);
   }
  
-  DebugM(4, "updateComputes - totalComputes = "<<Compute::totalComputes<<"\n");
   if (!CkMyPe()) {
 #if CHARM_VERSION > 050402
       CkStartQD(CkIndex_ComputeMgr::updateLocalComputes2((CkQdMsg*)0), &thishandle);
@@ -429,9 +428,6 @@ ComputeMgr::createComputes(ComputeMap *map)
     createCompute(i, map);
 
   }
-
-  DebugM(4, "createComputes - total computes = "<<Compute::totalComputes<<"\n");
-
 
 }
 

@@ -14,17 +14,32 @@ CpvStaticDeclare(CmmTable, CsmMessages);
 
 static void CsmHandler(void *msg)
 {
+  if ( CmiMyRank() ) NAMD_bug("CsmHandler called on non-rank-zero Pe\n");
+  // if ( CmiMyRank() ) { CmiFree(msg); return; }
   // get start of user message
   int *m = (int *) ((char *)msg+CmiMsgHeaderSizeBytes);
   // sending node  & tag act as tags
   CmmPut(CpvAccess(CsmMessages), 2, m, msg);
 }
 
+CmiGroup rankZeroPes;
+
 Communicate::Communicate(void) 
 {
   CpvInitialize(CmmTable, CsmMessages);
   CsmHandlerIndex = CmiRegisterHandler((CmiHandler) CsmHandler);
   CpvAccess(CsmMessages) = CmmNew();
+
+  if ( CmiMyPe() == 0 ) {
+    int *pes = new int[CmiNumPes()];
+    int npes = 0;
+    for ( int i = 1; i < CmiNumPes(); ++i ) {
+      if ( CmiRankOf(i) == 0 ) { pes[npes++] = i; }
+    }
+    for ( int j = 0; j < npes; ++j ) { CmiPrintf("%d\n",pes[j]); }
+    rankZeroPes = CmiEstablishGroup(npes,pes);
+    delete [] pes;
+  }
 }
 
 
@@ -47,6 +62,7 @@ MOStream *Communicate::newOutputStream(int PE, int tag, unsigned int bufSize)
 
 void *Communicate::getMessage(int PE, int tag)
 {
+  if ( CmiMyRank() ) NAMD_bug("Communicate::getMessage called on non-rank-zero Pe\n");
   int itag[2], rtag[2];
   void *msg;
 
@@ -60,16 +76,20 @@ void *Communicate::getMessage(int PE, int tag)
 
 void Communicate::sendMessage(int PE, void *msg, int size)
 {
+  if ( CmiMyPe() ) NAMD_bug("Communicate::sendMessage not from Pe 0");
   CmiSetHandler(msg, CsmHandlerIndex);
   switch(PE) {
     case ALL:
-      CmiSyncBroadcastAll(size, (char *)msg);
+      NAMD_bug("Unexpected Communicate::sendMessage(ALL,...)");
+      //CmiSyncBroadcastAll(size, (char *)msg);
       break;
     case ALLBUTME:
-      CmiSyncBroadcast(size, (char *)msg);
+      CmiSyncMulticast(rankZeroPes, size, (char *)msg);
+      // CmiSyncBroadcast(size, (char *)msg);
       break;
     default:
-      CmiSyncSend(PE, size, (char *)msg);
+      NAMD_bug("Unexpected Communicate::sendMessage(PEL,...)");
+      //CmiSyncSend(PE, size, (char *)msg);
       break;
   }
 }

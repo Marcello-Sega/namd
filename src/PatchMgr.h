@@ -109,7 +109,6 @@ public:
   void sendMigrationMsgs(PatchID, MigrationInfo*, int);
   void recvMigrateAtoms(MigrateAtomsMsg *);
   void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
-  static void setGroup(BOCgroup g);
 
   void moveAtom(MoveAtomMsg *msg);
   void moveAllBy(MoveAllByMsg *msg);

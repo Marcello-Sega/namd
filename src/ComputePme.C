@@ -208,6 +208,7 @@ private:
   float *kgrid;
 
 #ifdef NAMD_FFTW
+  static CmiNodeLock fftw_plan_lock;
   fftw_plan forward_plan_x, backward_plan_x;
   rfftwnd_plan forward_plan_yz, backward_plan_yz;
   fftw_complex *work;
@@ -248,6 +249,10 @@ private:
   int sendTransBarrier_received;
 };
 
+#ifdef NAMD_FFTW
+  CmiNodeLock ComputePmeMgr::fftw_plan_lock;
+#endif
+
 #ifdef USE_COMM_LIB
 extern CkGroupID delegateMgr;
 #endif 
@@ -266,6 +271,12 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pm
 
 #ifdef USE_COMM_LIB
   pmeProxy.ckDelegate(delegateMgr);
+#endif
+
+#ifdef NAMD_FFTW
+  if ( CmiMyRank() == 0 ) {
+    fftw_plan_lock = CmiCreateLock();
+  }
 #endif
 
   myKSpace = 0;
@@ -538,6 +549,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
 
 #ifdef NAMD_FFTW
+  CmiLock(fftw_plan_lock);
+
   work = new fftw_complex[n[0]];
 
   if ( ! CkMyPe() ) iout << iINFO << "Optimizing 4 FFT steps.  1..." << endi;
@@ -563,6 +576,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	FFTW_MEASURE | FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
   }
   if ( ! CkMyPe() ) iout << "   Done.\n" << endi;
+
+  CmiUnlock(fftw_plan_lock);
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
@@ -575,6 +590,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 }
 
 ComputePmeMgr::~ComputePmeMgr() {
+
+#ifdef NAMD_FFTW
+  if ( CmiMyRank() == 0 ) {
+    CmiDestroyLock(fftw_plan_lock);
+  }
+#endif
+
   delete myKSpace;
   delete [] localInfo;
   delete [] gridPeMap;

@@ -104,8 +104,6 @@ Node::Node(GroupInitMsg *msg)
   output = NULL;
   imd = new IMDOutput;
 
-  Compute::setNode(this);
-
   DebugM(4,"Creating PatchMap, AtomMap, ComputeMap\n");
   patchMap = PatchMap::Instance();
   atomMap = AtomMap::Instance();
@@ -155,6 +153,9 @@ void Node::startUp(CkQdMsg *qmsg) {
   (CProxy_Node(CpvAccess(BOCclass_group).node)).startup();
 }
 
+SimParameters *node_simParameters;
+Parameters *node_parameters;
+Molecule *node_molecule;
 
 void Node::startup() {
   int gotoRun = false;
@@ -180,6 +181,11 @@ void Node::startup() {
   break;
 
   case 2:
+    // fix up one-per-node objects
+    simParameters = node_simParameters;
+    parameters = node_parameters;
+    molecule = node_molecule;
+
     // take care of inital thread setting
     threadInit();
 
@@ -273,14 +279,16 @@ void Node::namdOneCommInit()
 // Namd 1.X style Send/Recv of simulation information
 
 void Node::namdOneRecv() {
+  if ( CmiMyRank() ) return;
+
   MIStream *conv_msg;
 
   // Receive molecule and simulation parameter information
-  simParameters = new SimParameters;
+  simParameters = node_simParameters = new SimParameters;
   //****** BEGIN CHARMM/XPLOR type changes
-  parameters = new Parameters();
+  parameters = node_parameters = new Parameters();
   //****** END CHARMM/XPLOR type changes
-  molecule = new Molecule(simParameters,parameters);
+  molecule = node_molecule = new Molecule(simParameters,parameters);
 
   DebugM(4, "Getting SimParameters\n");
   conv_msg = CpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
@@ -298,6 +306,10 @@ void Node::namdOneRecv() {
 }
 
 void Node::namdOneSend() {
+  node_simParameters = simParameters;
+  node_parameters = parameters;
+  node_molecule = molecule;
+
   // I'm Pe(0) so I send what I know
   DebugM(4, "Sending SimParameters\n");
   simParameters->send_SimParameters(CpvAccess(comm));

@@ -34,21 +34,16 @@ private:
   int sequenceNumber;
 
 protected:
-  static Node* node;
-  static PatchMap *patchMap;
   unsigned int basePriority;
   void enqueueWork();
 
 public:
   const ComputeID cid;
   LocalWorkMsg *const localWorkMsg;
-  static int totalComputes;
   Compute(ComputeID);
   int type() { return computeType; };
 
   virtual ~Compute();
-
-  static void setNode(Node *n) { node = n; }
 
   void setNumPatches(int n) { patchReadyCounter = numPatches = n; }
   int getNumPatches() { return (numPatches); };
