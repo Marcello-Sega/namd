@@ -5,7 +5,7 @@ CC = cc -DSOLARIS
 CXX = CC -DSOLARIS
 CXXOPTS = -compat=4 -fast -xO5 -native -xarch=v8plusa -fsimple=2 -DGLOBALS
 #CXXOPTS = -DGLOBALS
-COPTS = -fast -xO5 -native -xarch=v8plusa -fsimple=2 
+COPTS = -fast -xO5 -native -xarch=v8plusa
 CXXTHREADOPTS = $(CXXOPTS)
 
 #####
