@@ -23,7 +23,7 @@ public:
   inline static PatchMap *Object() { return CpvAccess(PatchMap_instance); }
 
   void initialize(ScaledPosition xmin, ScaledPosition xmax,
-			Lattice lattice, BigReal patchSize,
+			const Lattice &lattice, BigReal patchSize,
 			int asplit, int bsplit, int csplit);
   void checkMap();
 

@@ -76,7 +76,7 @@ PmeKSpace::~PmeKSpace() {
   delete [] exp3;
 }
 
-double PmeKSpace::compute_energy(float *q_arr, Lattice lattice, double ewald, double *virial) {
+double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ewald, double *virial) {
   double energy = 0.0;
 
   int pad2, pad3, n;

@@ -49,7 +49,7 @@ PatchMap::PatchMap(void)
 }
 
 void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
-				Lattice lattice, BigReal patchSize,
+				const Lattice &lattice, BigReal patchSize,
 				int asplit, int bsplit, int csplit)
 {
   aPeriodic = lattice.a_p();

@@ -16,7 +16,7 @@ public:
   PmeKSpace(PmeGrid grid, int K2_start, int K2_end);
   ~PmeKSpace();
 
-  double compute_energy(float q_arr[], Lattice lattice, double ewald,
+  double compute_energy(float q_arr[], const Lattice &lattice, double ewald,
                         double virial[]);
   
 private:
