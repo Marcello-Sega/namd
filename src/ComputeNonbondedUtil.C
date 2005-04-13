@@ -335,7 +335,7 @@ void ComputeNonbondedUtil::select(void)
   r2_delta_1 = 1.0 / r2_delta;
 
   if ( ! CkMyPe() ) {
-    iout << iINFO << "COULOMB TABLE R-SQUARED SPACING: " <<
+    iout << iINFO << "NONBONDED TABLE R-SQUARED SPACING: " <<
 				r2_delta << "\n" << endi;
   }
 
@@ -347,7 +347,7 @@ void ComputeNonbondedUtil::select(void)
   int n = (r2_delta_exp + cutoff2_exp) * 64 + 1;
 
   if ( ! CkMyPe() ) {
-    iout << iINFO << "COULOMB TABLE SIZE: " <<
+    iout << iINFO << "NONBONDED TABLE SIZE: " <<
 				n << " POINTS\n" << endi;
   }
 
@@ -465,8 +465,8 @@ void ComputeNonbondedUtil::select(void)
     vdwa_energy = switchVal * r_12;
     vdwb_energy = switchVal * r_6;
 
-    vdwa_gradient = switchVal * ( dSwitchVal - 6.0 * switchVal * r_2 ) * r_12;
-    vdwb_gradient = switchVal * ( dSwitchVal - 3.0 * switchVal * r_2 ) * r_6;
+    vdwa_gradient = ( dSwitchVal - 6.0 * switchVal * r_2 ) * r_12;
+    vdwb_gradient = ( dSwitchVal - 3.0 * switchVal * r_2 ) * r_6;
 
 
     *(fast_i++) = fast_energy;
@@ -509,23 +509,29 @@ void ComputeNonbondedUtil::select(void)
 */
 
   int j;
+  const char *table_name = "XXXX";
   for ( j=0; j<5; ++j ) {
     BigReal *t0 = 0;
     switch (j) {
       case 0: 
         t0 = fast_table;
+        table_name = "FAST";
       break;
       case 1: 
         t0 = scor_table;
+        table_name = "SCOR";
       break;
       case 2: 
         t0 = slow_table;
+        table_name = "SLOW";
       break;
       case 3: 
         t0 = vdwa_table;
+        table_name = "VDWA";
       break;
       case 4: 
         t0 = vdwb_table;
+        table_name = "VDWB";
       break;
     }
     BigReal *t;
@@ -549,24 +555,37 @@ void ComputeNonbondedUtil::select(void)
       // store in the array;
       t[2] = c;  t[3] = d;
     }
+
+    if ( ! CkMyPe() ) {
     BigReal dvmax = 0;
     BigReal dgmax = 0;
-    BigReal dvmax_i = 0;
-    BigReal dgmax_i = 0;
+    BigReal dvmax_r = 0;
+    BigReal dgmax_r = 0;
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
-      BigReal x = ( r2_delta * ( 1 << (i/64) ) ) / 64.0;
+      const BigReal r2_base = r2_delta * ( 1 << (i/64) );
+      const BigReal r2_del = r2_base / 64.0;
+      const BigReal r2 = r2_base + r2_del * (i%64);
+      const BigReal r = sqrt(r2);
+      BigReal x = r2_del;
       BigReal dv = ( ( t[3] * x + t[2] ) * x + t[1] ) * x + t[0] - t[4];
       BigReal dg = ( 3.0 * t[3] * x + 2.0 * t[2] ) * x + t[1] - t[5];
-      if ( fabs(dv) > dvmax ) { dvmax = fabs(dv); dvmax_i = i; }
-      if ( fabs(dg) > dgmax ) { dgmax = fabs(dg); dgmax_i = i; }
-      // if ( dv != 0.0 ) CkPrintf("TABLE %d ENERGY ERROR %g AT %g\n",j,dv,x*i);
-      // if ( dg != 0.0 ) CkPrintf("TABLE %d FORCE ERROR %g AT %g\n",j,dg,x*i);
+      if ( fabs(dv) > dvmax ) { dvmax = fabs(dv); dvmax_r = r; }
+      if ( fabs(dg) > dgmax ) { dgmax = fabs(dg); dgmax_r = r; }
+#if 0
+      if (dv != 0.) CkPrintf("TABLE %d ENERGY ERROR %g AT %g (%d)\n",j,dv,r,i);
+      if (dg != 0.) CkPrintf("TABLE %d FORCE ERROR %g AT %g (%d)\n",j,dg,r,i);
+#endif
     }
-    if ( ( ( dvmax != 0.0 ) || ( dgmax != 0.0 ) ) && ! CkMyPe() ) {
-      iout << iINFO << "NONZERO IMPRECISION IN COULOMB TABLE: " <<
-	dvmax << " (" << dvmax_i << ") " << dgmax << " (" << dgmax_i << ")\n"
-								<< endi;
+    if ( dvmax != 0.0 ) {
+      iout << iINFO << "NONZERO IMPRECISION IN " << table_name <<
+        " TABLE ENERGY: " << dvmax << " AT " << dvmax_r << "\n" << endi;
     }
+    if ( dgmax != 0.0 ) {
+      iout << iINFO << "NONZERO IMPRECISION IN " << table_name <<
+        " TABLE FORCE: " << dgmax << " AT " << dgmax_r << "\n" << endi;
+    }
+    }
+
   }
 
   for ( i=0; i<4*n; ++i ) {
