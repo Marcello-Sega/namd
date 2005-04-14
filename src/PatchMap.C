@@ -50,6 +50,7 @@ PatchMap::PatchMap(void)
 
 void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
 				const Lattice &lattice, BigReal patchSize,
+				int maxNumPatches,
 				int asplit, int bsplit, int csplit)
 {
   aPeriodic = lattice.a_p();
@@ -59,6 +60,14 @@ void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
   aAway = asplit;
   bAway = bsplit;
   cAway = csplit;
+
+  int minNumPatches = 1;
+  if ( aPeriodic ) minNumPatches *= aAway;
+  if ( bPeriodic ) minNumPatches *= bAway;
+  if ( cPeriodic ) minNumPatches *= cAway;
+  if ( maxNumPatches < minNumPatches ) maxNumPatches = minNumPatches;
+
+  do {
 
   if ( aPeriodic ) {
     BigReal sysDim = lattice.a_r().unit() * lattice.a();
@@ -98,6 +107,8 @@ void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
   if ( aPeriodic && aDim < aAway ) aDim = aAway;
   if ( bPeriodic && bDim < bAway ) bDim = bAway;
   if ( cPeriodic && cDim < cAway ) cDim = cAway;
+
+  } while ( ( aDim*bDim*cDim > maxNumPatches ) && ( patchSize *= 1.01 ) );
 
   iout << iINFO << "PATCH GRID IS ";
   iout << aDim;

@@ -495,6 +495,12 @@ void WorkDistrib::patchMapInit(void)
   ScaledPosition xmin, xmax;
   ScaledPosition sysDim, sysMin;
 
+  int maxNumPatches = 1000000;
+  if ( params->minAtomsPerPatch > 0 )
+    maxNumPatches = node->pdb->num_atoms() / params->minAtomsPerPatch;
+  if ( maxNumPatches < 1 )
+    maxNumPatches = 1;
+
   DebugM(3,"Mapping patches\n");
   // Need to use full box for FMA to match NAMD 1.X results.
   if ( params->FMAOn ) {
@@ -519,7 +525,7 @@ void WorkDistrib::patchMapInit(void)
   xmin.z -= origin_shift;
   xmax.z -= origin_shift;
 
-  patchMap->initialize(xmin,xmax,lattice,patchSize,
+  patchMap->initialize(xmin,xmax,lattice,patchSize,maxNumPatches,
 				params->twoAwayX ? 2 : 1,
 				params->twoAwayY ? 2 : 1,
 				params->twoAwayZ ? 2 : 1);

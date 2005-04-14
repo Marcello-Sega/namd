@@ -24,6 +24,7 @@ public:
 
   void initialize(ScaledPosition xmin, ScaledPosition xmax,
 			const Lattice &lattice, BigReal patchSize,
+			int maxNumPatches,
 			int asplit, int bsplit, int csplit);
   void checkMap();
 

@@ -1270,6 +1270,10 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                "maximum number of atoms in one pair compute distribution", 
                &numAtomsPair2, 400);
    opts.range("numAtomsPair2",NOT_NEGATIVE);
+   opts.optional("main", "minAtomsPerPatch", 
+               "minimum average atoms per patch", 
+               &minAtomsPerPatch, 100);
+   opts.range("minAtomsPerPatch",NOT_NEGATIVE);
 
    // Maximum exclusion flags per atom
    opts.optional("main", "maxExclusionFlags", 
@@ -2418,6 +2422,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << iINFO << "SELF PARTITION ATOMS   " << numAtomsSelf << "\n"
         << iINFO << "PAIR PARTITION ATOMS   " << numAtomsPair << "\n"
         << iINFO << "PAIR2 PARTITION ATOMS  " << numAtomsPair2 << "\n"
+        << iINFO << "MIN ATOMS PER PATCH    " << minAtomsPerPatch << "\n"
         << endi;
    
    if (initialTemp < 0)
