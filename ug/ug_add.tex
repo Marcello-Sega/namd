@@ -1472,15 +1472,6 @@ Any other value should be a positive integer less than {\tt lesFactor}.}
 
 \end{itemize}
 
-The parameter {\tt lesFactor} may be varied between simulations to
-interpolate between full enhancement and normal simulation (although
-multiple bonded images are present at all times).  If {\tt lesFactor}
-is decreased, the images with flags greater than {\tt lesFactor} will
-be decoupled from nonbonded terms, sample based only on bonded terms,
-and should therefore be excluded from analysis.  When increasing
-{\tt lesFactor} the coordinates of these abandoned images should be
-reset to that of another image to avoid any bad initial contacts and
-the resulting instability in the simulation.
 
 \subsection{Pair Interaction Calculations}
 \label{section:pairinteraction}
