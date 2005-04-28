@@ -177,11 +177,10 @@ void GlobalMasterIMD::get_vmd_forces() {
   // It would be better to have a system where VMD couldn't DOS NAMD by 
   // spamming it with messages, but in practice NAMD is able to keep up with 
   // VMD's send rate.
-  for (int i=0; i<clients.size(); i++) {
-    void *clientsock = clients[i];
+  for (int i_client=0; i_client<clients.size(); i_client++) {
+    void *clientsock = clients[i_client];
     while (vmdsock_selread(clientsock,0) > 0 || paused) {  // Drain the socket
       type = imd_recv_header(clientsock, &length);
-      int i;
       switch (type) {
         case IMD_MDCOMM:
           // Expect the msglength to give number of indicies, and the data
@@ -195,7 +194,7 @@ void GlobalMasterIMD::get_vmd_forces() {
           if (IMDignore) {
             iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
           } else {
-            for (i=0; i<length; i++) {
+            for (int i=0; i<length; i++) {
               vnew.index = vmd_atoms[i];
               if ( (vtest=vmdforces.find(vnew)) != NULL) {
                 // find was successful, so overwrite the old force values
@@ -248,7 +247,7 @@ void GlobalMasterIMD::get_vmd_forces() {
         case IMD_DISCONNECT:
           iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
           vmdsock_destroy(clientsock);
-          clients.del(i);
+          clients.del(i_client);
           goto vmdEnd;
         case IMD_KILL:
           if (IMDignore) {
