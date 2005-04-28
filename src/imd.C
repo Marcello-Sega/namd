@@ -43,11 +43,11 @@ static int32 imd_htonl(int32 h) {
 static int32 imd_ntohl(int32 n) {
   int32 h = 0;
   h |= ((unsigned char*)(&n))[0];
-  h << 8;
+  h <<= 8;
   h |= ((unsigned char*)(&n))[1];
-  h << 8;
+  h <<= 8;
   h |= ((unsigned char*)(&n))[2];
-  h << 8;
+  h <<= 8;
   h |= ((unsigned char*)(&n))[3];
   return h;
 }
