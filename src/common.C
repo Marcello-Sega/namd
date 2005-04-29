@@ -59,22 +59,18 @@ char *NAMD_stringdup(const char *s) {
 }
 
 
-// check for messages to be printed out
-void NAMD_check_messages(void)
+// signal all nodes, it's time to quit
+void NAMD_quit(const char *err_msg)
 
 {
+   char *new_err_msg = new char[strlen(err_msg) + 20];
+   sprintf(new_err_msg,"EXITING: %s\n",err_msg);
+   CkPrintf(new_err_msg);
+   CmiAbort(new_err_msg);
+   delete [] new_err_msg;
 }
 
-
-// normal program termination
-void NAMD_quit(Bool die_hard)
-
-{
-   if ( die_hard ) CmiAbort("NAMD ABORTING DUE TO HARD NAMD_quit().\n");
-   else CmiAbort("NAMD ABORTING DUE TO SOFT NAMD_quit().\n");
-}
-
-
+ 
 // signal all nodes, it's time to quit
 void NAMD_die(const char *err_msg)
 

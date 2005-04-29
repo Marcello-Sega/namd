@@ -105,8 +105,7 @@ typedef int Bool;
 class Communicate;
 
 // global functions
-void NAMD_check_messages(void);
-void NAMD_quit(Bool die_hard=FALSE);
+void NAMD_quit(const char *);
 void NAMD_die(const char *);
 void NAMD_err(const char *);  // also prints strerror(errno)
 void NAMD_bug(const char *);
