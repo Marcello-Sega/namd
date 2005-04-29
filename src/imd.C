@@ -31,25 +31,30 @@ static void swap4(char *data, int ndata) {
   }
 }
 
+/// structure used to perform byte swapping operations
+typedef union {
+  int32 i;
+  struct {
+    unsigned int highest : 8;
+    unsigned int high    : 8;
+    unsigned int low     : 8;
+    unsigned int lowest  : 8;
+  } b;
+} netint;
+
 static int32 imd_htonl(int32 h) {
-  int32 n;
-  ((char *)&n)[0] = (h >> 24) & 0x0FF;
-  ((char *)&n)[1] = (h >> 16) & 0x0FF;
-  ((char *)&n)[2] = (h >> 8) & 0x0FF;
-  ((char *)&n)[3] = h & 0x0FF;
-  return n;
+  netint n;
+  n.b.highest = h >> 24;
+  n.b.high    = h >> 16;
+  n.b.low     = h >> 8;
+  n.b.lowest  = h;
+  return n.i;
 }
 
 static int32 imd_ntohl(int32 n) {
-  int32 h = 0;
-  h |= ((unsigned char*)(&n))[0];
-  h <<= 8;
-  h |= ((unsigned char*)(&n))[1];
-  h <<= 8;
-  h |= ((unsigned char*)(&n))[2];
-  h <<= 8;
-  h |= ((unsigned char*)(&n))[3];
-  return h;
+  netint u;
+  u.i = n;
+  return (u.b.highest << 24 | u.b.high << 16 | u.b.low << 8 | u.b.lowest);
 }
 
 static void fill_header(IMDheader *header, IMDType type, int32 length) {
