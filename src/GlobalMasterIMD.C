@@ -91,10 +91,8 @@ static int my_imd_connect(void *s) {
   }
 
   // Wait a second, then see if VMD has responded.
-  double t = CmiWallTimer();
-  while (CmiWallTimer()-t < 1.0);
   int32 length;
-  if (vmdsock_selread(s,0) != 1 || imd_recv_header(s, &length) != IMD_GO) {
+  if (vmdsock_selread(s,1) != 1 || imd_recv_header(s, &length) != IMD_GO) {
     iout << iWARN << "Incompatible Interactive MD, use VMD v1.4b2 or higher\n"
          << endi;
     return 0;
@@ -111,6 +109,7 @@ void GlobalMasterIMD::calculate() {
   }
 
   // check for incoming connection
+  do {
   int rc;
   if (IMDwait && !clients.size()) {
     iout << iINFO << "INTERACTIVE MD AWAITING CONNECTION\n" << endi;
@@ -121,16 +120,18 @@ void GlobalMasterIMD::calculate() {
   if (rc > 0) {
     void *clientsock = vmdsock_accept(sock);
     if (!clientsock) {
-      iout << iWARN << "GlobalMasterIMD: Accept failed\n" << endi;
+      iout << iWARN << "IMD socket accept failed\n" << endi;
     } else {
       if (!my_imd_connect(clientsock)) {
-        iout << iWARN << "GlobalMasterIMD: IMD handshake failed\n" << endi;
+        iout << iWARN << "IMD connection failed\n" << endi;
         vmdsock_destroy(clientsock);
       } else {
+        iout << iINFO << "IMD connection opened\n" <<endi;	
         clients.add(clientsock);
       }
     }
   }
+  } while (IMDwait && !clients.size());
 
   // Assume for now that the only thing we get from VMD is a set of forces.
   // Later we'll want to look for and implement more sophisticated control
@@ -189,7 +190,9 @@ void GlobalMasterIMD::get_vmd_forces() {
           vmd_atoms = new int32[length];
           vmd_forces = new float[3*length];
           if (imd_recv_mdcomm(clientsock, length, vmd_atoms, vmd_forces)) {
-            NAMD_die("Error reading MDComm forces\n");
+            iout << iWARN <<
+              "Error reading IMD forces, killing connection\n" << endi;
+            goto vmdDestroySocket;
           } 
           if (IMDignore) {
             iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
@@ -245,7 +248,8 @@ void GlobalMasterIMD::get_vmd_forces() {
         case IMD_IOERROR:
           iout << iWARN << "IMD connection lost\n" << endi;
         case IMD_DISCONNECT:
-          iout<<iDEBUG<<"Detaching simulation from remote connection\n" << endi;
+          iout << iINFO << "IMD connection detached\n" << endi;
+          vmdDestroySocket:
           vmdsock_destroy(clientsock);
           clients.del(i_client);
           goto vmdEnd;
@@ -254,7 +258,7 @@ void GlobalMasterIMD::get_vmd_forces() {
             iout << iWARN << "Ignoring IMD kill due to IMDignore\n" << endi;
             break;
           }
-          NAMD_quit(1);
+          NAMD_quit("Received IMD kill from client\n");
           break;
         case IMD_ENERGIES:
           IMDEnergies junk;
