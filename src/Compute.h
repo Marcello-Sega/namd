@@ -34,7 +34,7 @@ private:
   int sequenceNumber;
 
 protected:
-  unsigned int basePriority;
+  int basePriority;
   void enqueueWork();
 
 public:
@@ -57,7 +57,7 @@ public:
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
   int sequence(void) { return sequenceNumber; }
-  virtual unsigned int priority(void) { return basePriority; }
+  virtual int priority(void) { return basePriority; }
 };
 
 #endif
