@@ -152,6 +152,15 @@ LdbCoordinator::LdbCoordinator()
 #else
   theLbdb = CProxy_LBDatabase::ckLocalBranch(lbdb);
 #endif
+
+  // Set the load balancing period (in seconds).  Without this the
+  // load balancing framework will hang until 1 second has passed
+  // since the last load balancing, causing hiccups in very fast runs.
+  // Unfortunately, the clock is already set for the first load
+  // balancing, but only +LBPeriod 1.0e-5 can fix that.
+
+  theLbdb->SetLBPeriod(1.0e-5);
+
 #if CHARM_VERSION > 050403
   myOMid.id.idx = 1;
 #else
@@ -175,6 +184,7 @@ LdbCoordinator::LdbCoordinator()
   objHandles = 0;
   reg_all_objs = 1;
   migrations = 0;
+
 }
 
 LdbCoordinator::~LdbCoordinator(void)
