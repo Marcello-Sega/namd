@@ -38,6 +38,17 @@ extern "C" void enableBlockingReceives();
 extern "C" void disableBlockingReceives();
 #endif
 
+void LdbCoordinator_initproc() {
+#if CHARM_VERSION >= 50804
+  // Set the load balancing period (in seconds).  Without this the
+  // load balancing framework will hang until 1 second has passed
+  // since the last load balancing, causing hiccups in very fast runs.
+  // This is duplicated below for older versions, but putting it here
+  // also fixes the first load balance.
+  LBSetPeriod(1.0e-5);
+#endif
+}
+
 void LdbCoordinator::staticMigrateFn(LDObjHandle handle, int dest)
 {
 #if CHARM_VERSION > 050606
@@ -157,7 +168,8 @@ LdbCoordinator::LdbCoordinator()
   // load balancing framework will hang until 1 second has passed
   // since the last load balancing, causing hiccups in very fast runs.
   // Unfortunately, the clock is already set for the first load
-  // balancing, but only +LBPeriod 1.0e-5 can fix that.
+  // balancing, but only +LBPeriod 1.0e-5 can fix that in older charm.
+  // For newer versions this is handled in initproc above.
 
   theLbdb->SetLBPeriod(1.0e-5);
 

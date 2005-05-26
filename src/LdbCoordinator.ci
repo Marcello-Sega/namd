@@ -10,6 +10,8 @@ module LdbCoordinator {
     
   message LdbMigrateMsg;
 
+  initproc void LdbCoordinator_initproc(void);
+
   group LdbCoordinator
   {
     entry LdbCoordinator(void);

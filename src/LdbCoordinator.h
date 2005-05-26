@@ -30,6 +30,8 @@ enum {COMPUTEMAX = 16384};
 enum {PATCHMAX = 4096};
 enum {PROCESSORMAX = 512};
 
+void LdbCoordinator_initproc();
+
 class LdbCoordinator : public BOCclass
 {
 public:
