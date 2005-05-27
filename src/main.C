@@ -96,11 +96,9 @@ int tbsoft_sendusage(const char *program,
 
 #endif
 
-#ifndef NO_SOCKET
-  extern const char *namd_build_date;
-  extern const char *namd_build_user;
-  extern const char *namd_build_machine;
-#endif
+extern const char *namd_build_date;
+extern const char *namd_build_user;
+extern const char *namd_build_machine;
 
 class main : public Chare
 {
@@ -157,10 +155,10 @@ public:
     iout << iINFO << "Based on Charm++/Converse " << charm_version
          << " for " << CMK_MACHINE_NAME << "\n" << endi;
 
-#ifndef NO_SOCKET
     iout << iINFO << "Built " << namd_build_date << " by "
          << namd_build_user << " on " << namd_build_machine << "\n"
          << endi;
+#ifndef NO_SOCKET
     char numcpus[512];
     sprintf(numcpus,"%d",CkNumPes());
     tbsoft_sendusage("NAMD",NAMD_VERSION,NAMD_PLATFORM,numcpus,"");

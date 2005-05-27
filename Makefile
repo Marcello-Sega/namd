@@ -285,8 +285,10 @@ charmrun: $(CHARM)/bin/charmrun # XXX
 win32binaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose \
 	-module NeighborLB -module commlib -language charm++ \
+	$(BUILDINFO).o \
 	$(OBJS) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
