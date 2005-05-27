@@ -1,5 +1,0 @@
-include .rootdir/arch/AIX-RS6000-xlC.arch
-
-NAMD_ARCH = AIX-RS6000
-CHARMARCH = net-rs6k-smp
-

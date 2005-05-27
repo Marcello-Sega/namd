@@ -1,5 +1,0 @@
-include .rootdir/arch/AIX-RS6000-xlC.arch
-
-NAMD_ARCH = IBM-SP
-CHARMARCH = mpi-sp
-

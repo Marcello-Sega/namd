@@ -1,4 +1,4 @@
-NAMD_ARCH = AIX-RS6000
+NAMD_ARCH = AIX-POWER
 CHARMARCH = net-rs6k
 
 CXX = xlC_r -w -DSOCKLEN_T=socklen_t -qstaticinline
