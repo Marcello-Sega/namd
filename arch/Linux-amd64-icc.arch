@@ -1,0 +1,12 @@
+NAMD_ARCH = Linux-amd64
+CHARMARCH = net-linux-amd64-iccstatic
+
+FLOATOPTS = -ip -fno-rtti
+
+CXX = icpc -DSOCKLEN_T=socklen_t -DNO_STRSTREAM_H
+CXXOPTS = -static-libcxa -O2 $(FLOATOPTS)
+CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
+
+CC = icc
+COPTS = -static-libcxa -O2 $(FLOATOPTS)
+
