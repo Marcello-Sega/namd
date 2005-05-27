@@ -1,4 +1,0 @@
-
-PLUGINARCH=LINUX-redhat9
-include .rootdir/arch/All-Unix.plugins
-

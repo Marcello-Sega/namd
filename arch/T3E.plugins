@@ -1,7 +1,0 @@
-
-# DCD plugin broken on T3E due to 64 bit int assumed to be 32 bit.
-# Since this is the only plugin NAMD uses, disable all plugins on T3E.
-
-#PLUGINARCH=T3E
-#include .rootdir/arch/All-Unix.plugins
-

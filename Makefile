@@ -18,6 +18,8 @@ DSTDIR = obj
 INCDIR = inc
 DPMTADIR=dpmta-2.6
 DPMEDIR=dpme2
+PLUGINSRCDIR= plugins/molfile_plugin/src
+PLUGININCDIR= plugins/include
 SBSRCDIR = sb/src
 
 # comment/uncomment these lines for (D)PMTA routines
@@ -201,6 +203,11 @@ CIFILES = 	\
 
 # Add new source files here.
 
+PLUGINOBJS = \
+	$(DSTDIR)/dcdplugin.o
+
+PLUGINLIB = $(PLUGINOBJS)
+
 SBOBJS = \
 	$(DSTDIR)/tcl_main.o \
 	$(DSTDIR)/tcl_psfgen.o \
@@ -226,16 +233,18 @@ CHARMINC = $(CHARM)/include $(COPTD)CMK_OPTIMIZE=1
 CHARMLIB = $(CHARM)/lib
 
 # Libraries we may have changed
-LIBS = $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
+LIBS = $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(PLUGINS) $(TCL) $(FFT) $(CCS) $(RELEASE)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(TCL) $(FFT) $(CCS) $(RELEASE)
 CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
 CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
 CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
 CXXNOALIASFLAGS = $(CXXBASEFLAGS) $(CXXNOALIASOPTS)
 GXXFLAGS = $(CXXBASEFLAGS)
 CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE)
+PLUGINGCCFLAGS = $(COPTI)$(PLUGINSRCDIR) $(COPTI)$(PLUGININCDIR)
+PLUGINCFLAGS = $(PLUGINGCCFLAGS) $(COPTS)
 SBCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(COPTS) $(RELEASE)
 SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(RELEASE)
 
@@ -497,15 +506,25 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	      SRCFILE=$(SRCDIR)/`basename $$i .o`.C ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      g++ -MM $(GXXFLAGS) $$SRCFILE | \
-	      perl $(SRCDIR)/dc.pl $(CHARMINC) $(TCLDIR) $(FFTDIR) $(PLUGINDIR) /usr/include /usr/local >> $(DEPENDFILE); \
+	      perl $(SRCDIR)/dc.pl $(CHARMINC) $(TCLDIR) $(FFTDIR) /usr/include /usr/local >> $(DEPENDFILE); \
 	      $(ECHO) '	$$(CXX) $$(CXXFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
+		$$SRCFILE >> $(DEPENDFILE) ; \
+	done; \
+	for i in $(PLUGINOBJS) ; do \
+	      BASENAME=`basename $$i .o` ; \
+	      SRCFILE=$(PLUGINSRCDIR)/$$BASENAME.c ; \
+	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
+	      gcc -MM $(PLUGINGCCFLAGS) $$SRCFILE | \
+	      perl $(SRCDIR)/dc.pl $(PLUGINSRCDIR) $(PLUGININCDIR) /usr/include /usr/local >> $(DEPENDFILE); \
+	      $(ECHO) '	$$(CC) $$(PLUGINCFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
+		'$$(COPTD)'VMDPLUGIN=molfile_$$BASENAME \
 		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \
 	for i in $(SBOBJS) ; do \
 	      SRCFILE=$(SBSRCDIR)/`basename $$i .o`.c ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      gcc -MM $(SBGCCFLAGS) $$SRCFILE | \
-	      perl $(SRCDIR)/dc.pl $(CHARMINC) $(TCLDIR) $(FFTDIR) $(PLUGINDIR) /usr/include /usr/local >> $(DEPENDFILE); \
+	      perl $(SRCDIR)/dc.pl $(CHARMINC) $(TCLDIR) $(FFTDIR) /usr/include /usr/local >> $(DEPENDFILE); \
 	      $(ECHO) '	$$(CC) $$(SBCFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
 		$$SRCFILE >> $(DEPENDFILE) ; \
 	done; \

@@ -64,9 +64,7 @@ private:
   static int Tcl_revert(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reinitatoms(ClientData, Tcl_Interp *, int, char **);
-#ifdef NAMD_PLUGINS
   static int Tcl_coorfile(ClientData, Tcl_Interp *, int, char **);
-#endif
   static int Tcl_dumpbench(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_consForceConfig(ClientData, Tcl_Interp *, int, Tcl_Obj *const objv[]);
   static int Tcl_reloadCharges(ClientData, Tcl_Interp *, int, char **);

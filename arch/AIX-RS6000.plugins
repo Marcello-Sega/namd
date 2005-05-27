@@ -1,4 +1,0 @@
-
-PLUGINARCH=AIX4
-include .rootdir/arch/All-Unix.plugins
-

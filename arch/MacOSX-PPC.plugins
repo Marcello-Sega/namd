@@ -1,4 +1,0 @@
-
-PLUGINARCH=MACOSX
-include .rootdir/arch/All-Unix.plugins
-

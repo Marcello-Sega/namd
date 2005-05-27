@@ -1,4 +1,0 @@
-
-PLUGINARCH=LINUXAMD64
-include .rootdir/arch/All-Unix.plugins
-

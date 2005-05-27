@@ -1,4 +1,0 @@
-
-PLUGINARCH=HPUX11
-include .rootdir/arch/All-Unix.plugins
-

@@ -1,4 +1,0 @@
-
-PLUGINARCH=TRU64
-include .rootdir/arch/All-Unix.plugins
-

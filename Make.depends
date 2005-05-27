@@ -3239,6 +3239,9 @@ obj/ScriptTcl.o: \
 	src/Measure.h \
 	src/DumpBench.h \
 	src/Debug.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	plugins/include/libmolfile_plugin.h \
 	src/ComputeConsForceMsgs.h \
 	inc/ComputeMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
@@ -3490,6 +3493,8 @@ obj/imd.o: \
 	src/imd.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
+obj/dcdplugin.o:
+	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/dcdplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_dcdplugin plugins/molfile_plugin/src/dcdplugin.c
 obj/tcl_main.o: \
 	sb/src/tcl_main.c
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_main.o $(COPTC) sb/src/tcl_main.c

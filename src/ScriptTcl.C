@@ -37,8 +37,6 @@
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
-
-#ifdef NAMD_PLUGINS
 #include <molfile_plugin.h>
 #include <libmolfile_plugin.h>
 
@@ -51,7 +49,6 @@ static int numatoms;
 static void *filehandle;
 static float *coords;
 static Vector *vcoords;
-#endif
 
 
 void ScriptTcl::suspend() {
@@ -540,7 +537,6 @@ int ScriptTcl::Tcl_reinitatoms(ClientData clientData,
 #define DEG2RAD 3.14159625359/180.0
 #define UNITCELLSLOP 0.0001
 
-#ifdef NAMD_PLUGINS
 static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
 {
   // Check if valid unit cell data is contained in the timestep.  We don't
@@ -659,7 +655,6 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
   }
   return TCL_OK;
 }
-#endif  // NAMD_PLUGINS
 
 int ScriptTcl::Tcl_dumpbench(ClientData clientData,
 	Tcl_Interp *interp, int argc, char *argv[]) {
@@ -766,10 +761,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   state = new NamdState;
   barrierStep = 0;
 
-#ifdef NAMD_PLUGINS
   molfile_dcdplugin_init();
   molfile_dcdplugin_register(NULL, register_cb);
-#endif
 
   runWasCalled = 0;
 
@@ -812,12 +805,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "callback", Tcl_callback,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-
-#ifdef NAMD_PLUGINS
   Tcl_CreateCommand(interp, "coorfile", Tcl_coorfile,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-#endif
-
   Tcl_CreateCommand(interp, "dumpbench", Tcl_dumpbench,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, "consForceConfig", Tcl_consForceConfig, 
@@ -879,8 +868,6 @@ ScriptTcl::~ScriptTcl() {
   delete [] callbackname;
 #endif
 
-#ifdef NAMD_PLUGINS
   molfile_dcdplugin_fini();
-#endif
 }
 
