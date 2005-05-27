@@ -98,7 +98,7 @@ to select the waters you want to delete.  For example:
 # Load a pdb and psf file into both psfgen and VMD.
 resetpsf
 readpsf myfile.psf
-readpdb myfile.pdb
+coordpdb myfile.pdb
 mol load psf myfile.psf pdb myfile.pdb
 # Select waters that are more than 10 Angstroms from the protein.
 set badwater1 [atomselect top "name OH2 and not within 10 of protein"]
@@ -123,7 +123,7 @@ To actually run this demo requires
 \item the program \verb#psfgen# from any \NAMD\ distribution,
 \item the CHARMM topology and parameter files \verb#top_all22_prot.inp# and
 \verb#par_all22_prot.inp# from 
-{\tt https://rxsecure.umaryland.edu/research/amackere/research.html}, and
+{\tt http://www.pharmacy.umaryland.edu/faculty/amackere/force\_fields.htm}, and
 \item the BPTI PDB file \verb#6PTI.pdb# available from the Protein Data Bank at
 {\tt http://www.pdb.org/} by searching for \verb#6PTI# and downloading
 the complete structure file in PDB format.

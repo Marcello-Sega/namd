@@ -192,7 +192,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.3.3");
+  Tcl_PkgProvide(interp, "psfgen", "1.3.4");
 
   return TCL_OK;
 }
@@ -292,7 +292,7 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
   FILE *defs_file;
   const char *filename;
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
@@ -325,7 +325,7 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
   FILE *psf_file;
   int retval;
   const char *filename;
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
@@ -359,7 +359,7 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
 
 int tcl_segment(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  char msg[128];
+  char msg[2048];
   char *seg;
   psfgen_data *psf = *(psfgen_data **)data;
 
@@ -374,6 +374,11 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   }
   seg=strtoupper(argv[1]);
+  if ( strlen(seg) > 4 ) {
+    Tcl_SetResult(interp,"segment name more than 4 characters",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
 
   sprintf(msg,"building segment %s",seg);
   newhandle_msg(interp,msg);
@@ -467,7 +472,7 @@ int tcl_multiply(ClientData data, Tcl_Interp *interp,
   int i, ncopies, ierr;
   topo_mol_ident_t *targets;
   char **tmp;
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc<3 || Tcl_GetInt(interp,argv[1],&ncopies) != TCL_OK || ncopies<2 ) {
@@ -643,7 +648,7 @@ int tcl_regenerate(ClientData data, Tcl_Interp *interp,
 
 int tcl_alias(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
   int rc;
 
@@ -702,7 +707,7 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
   FILE *res_file;
   const char *filename;
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
@@ -740,7 +745,7 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
   FILE *res_file;
   const char *filename;
-  char msg[128];
+  char msg[2048];
   int rc;
   psfgen_data *psf = *(psfgen_data **)data;
 
@@ -810,15 +815,17 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
   FILE *res_file;
   const char *filename;
   int charmmfmt;
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no psf file specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 3 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   charmmfmt = 0;
@@ -828,6 +835,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
     else {
       sprintf(msg,"ERROR: Unknown psf file format %s (not charmm or x-plor).\n",argv[1]);
       Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
   }
@@ -836,6 +844,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
   if ( ! ( res_file = fopen(filename,"w") ) ) {
     sprintf(msg,"ERROR: Unable to open psf file %s to write structure\n",filename);
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   sprintf(msg,"Info: writing psf file %s",filename);
@@ -843,6 +852,7 @@ int tcl_writepsf(ClientData data, Tcl_Interp *interp,
   if ( topo_mol_write_psf(psf->mol,res_file,charmmfmt,interp,newhandle_msg) ) {
     Tcl_AppendResult(interp,"ERROR: failed on writing structure to psf file",NULL);
     fclose(res_file);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   fclose(res_file);
@@ -855,15 +865,17 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
   FILE *res_file;
   const char *filename;
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc == 1 ) {
     Tcl_SetResult(interp,"no pdb file specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 2 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   filename = argv[1];
@@ -871,6 +883,7 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
   if ( ! ( res_file = fopen(filename,"w") ) ) {
     sprintf(msg,"ERROR: Unable to open pdb file %s to write coordinates\n",filename);
     Tcl_SetResult(interp,msg,TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   sprintf(msg,"Info: writing pdb file %s",filename);
@@ -878,6 +891,7 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
   if ( topo_mol_write_pdb(psf->mol,res_file,interp,newhandle_msg) ) {
     Tcl_AppendResult(interp,"ERROR: failed on writing coordinates to pdb file",NULL);
     fclose(res_file);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   fclose(res_file);
@@ -888,12 +902,13 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
 
 int tcl_first(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  char msg[128];
+  char msg[2048];
   char *first;
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc != 2 ) {
     Tcl_SetResult(interp,"argument: presname",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   first = strtoupper(argv[1]);
@@ -903,6 +918,7 @@ int tcl_first(ClientData data, Tcl_Interp *interp,
   if ( topo_mol_segment_first(psf->mol,first) ) {
     free(first);
     Tcl_AppendResult(interp,"ERROR: failed to set patch for first residue",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   free(first);
@@ -912,12 +928,13 @@ int tcl_first(ClientData data, Tcl_Interp *interp,
 
 int tcl_last(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
-  char msg[128];
+  char msg[2048];
   char *last;
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc != 2 ) {
     Tcl_SetResult(interp,"argument: presname",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   last=strtoupper(argv[1]);
@@ -927,6 +944,7 @@ int tcl_last(ClientData data, Tcl_Interp *interp,
   if ( topo_mol_segment_last(psf->mol,last) ) {
     free(last);
     Tcl_AppendResult(interp,"ERROR: failed to set patch for last residue",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   free(last);
@@ -939,15 +957,17 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
   topo_mol_ident_t targets[10];
   char *tmp[10];
   char *pres;
-  char msg[128];
+  char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
 
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"arguments: presname segid:resid ...",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   if ( argc > 10 ) {
     Tcl_SetResult(interp,"too many targets for patch",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
   pres=strtoupper(argv[1]);
@@ -962,6 +982,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
       for (j=0; j<i-2; j++) free(tmp[j]);
       sprintf(msg,"ERROR: resid missing from patch target %s",tmp[i-2]);
       Tcl_SetResult(interp,msg,TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
   }
@@ -970,6 +991,7 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
   for (j=0; j<argc-2; j++) free(tmp[j]);
   if (rc) {
     Tcl_AppendResult(interp,"ERROR: failed to apply patch",NULL);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
@@ -993,6 +1015,7 @@ int tcl_delatom(ClientData data, Tcl_Interp *interp,
 
   if ( argc < 2 ) {
     Tcl_SetResult(interp,"arguments: segid [ resid? [ aname? ]]", TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
 
