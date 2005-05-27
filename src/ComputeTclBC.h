@@ -14,7 +14,9 @@
 #include "ComputeHomePatches.h"
 #include "ReductionMgr.h"
 #include "Tensor.h"
+#ifndef WIN32
 #include <strings.h>
+#endif
 
 class ComputeMgr;
 
