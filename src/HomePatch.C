@@ -32,6 +32,7 @@
 #include "Settle.h"
 #include "ReductionMgr.h"
 #include "Sync.h"
+#include "Random.h"
 
 #define TINY 1.0e-20;
 #define MAXHGS 10
@@ -192,6 +193,7 @@ void HomePatch::boxClosed(int)
 void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   DebugM(4, "registerProxy("<<patchID<<") - adding node " <<msg->node<<"\n");
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
+  Random((patchID + 37) * 137).reorder(proxy.begin(),proxy.size());
   delete msg;
 }
 
@@ -213,9 +215,11 @@ void HomePatch::buildSpanningTree(void)
   tree[0] = CkMyPe();
   int s=1, e=proxy.size()+1;
   ProxyListIter pli(proxy);
+  int patchNodesLast =
+    ( PatchMap::Object()->numNodesWithPatches() < ( 0.7 * CkNumPes() ) );
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
-    if ( PatchMap::Object()->numPatchesOnNode(pli->node) ) {
+    if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
       tree[--e] = pli->node;
     } else {
       tree[s++] = pli->node;
@@ -318,9 +322,11 @@ void HomePatch::positionsReady(int doMigration)
     pids = new int[npid];
     int *pidi = pids;
     int *pide = pids + proxy.size();
+    int patchNodesLast =
+      ( PatchMap::Object()->numNodesWithPatches() < ( 0.7 * CkNumPes() ) );
     for ( pli = pli.begin(); pli != pli.end(); ++pli )
     {
-      if ( PatchMap::Object()->numPatchesOnNode(pli->node) ) {
+      if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
         *(--pide) = pli->node;
       } else {
         *(pidi++) = pli->node;
