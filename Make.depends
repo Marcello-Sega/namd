@@ -2304,6 +2304,7 @@ obj/HomePatch.o: \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
+	src/Random.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/HomePatch.o $(COPTC) src/HomePatch.C
 obj/IMDOutput.o: \
