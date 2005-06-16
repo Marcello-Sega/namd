@@ -185,8 +185,6 @@ void Sequencer::integrate() {
       if ( doNonbonded ) saveForce(Results::nbond);
       if ( doFullElectrostatics ) saveForce(Results::slow);
     }
-    if (doTcl)
-      computeGlobal->saveTotalForces(patch);
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
@@ -205,6 +203,8 @@ void Sequencer::integrate() {
 		addForceToMomentum(slowstep,Results::slow,staleForces);
     }
     rattle1(timestep,1);
+    if (doTcl)  // include constraint forces
+      computeGlobal->saveTotalForces(patch);
     submitHalfstep(step);
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
@@ -264,8 +264,6 @@ void Sequencer::integrate() {
 	  if ( doNonbonded ) saveForce(Results::nbond);
 	  if ( doFullElectrostatics ) saveForce(Results::slow);
 	}
-        if (doTcl)
-          computeGlobal->saveTotalForces(patch);
 
        // reassignment based on full-step velocities
        if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
@@ -293,6 +291,8 @@ void Sequencer::integrate() {
         if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
 	rattle1(timestep,1);
+        if (doTcl)  // include constraint forces
+          computeGlobal->saveTotalForces(patch);
 
 	submitHalfstep(step);
 
