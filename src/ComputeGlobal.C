@@ -279,6 +279,7 @@ void ComputeGlobal::sendData()
 // there's no "slow" part.
 void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
 {
+  int fixedAtomsOn = Node::Object()->simParameters->fixedAtomsOn;
   int i, index, num=homePatch->numAtoms;
   FullAtomList atoms = homePatch->atom;
   ForceList f1=homePatch->f[Results::normal], f2=homePatch->f_saved[Results::nbond],
@@ -290,6 +291,7 @@ void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
     { f_sum = f1[i]+f2[i];
       if (dofull)
         f_sum += f3[i];
+      if ( fixedAtomsOn && atoms[i].atomFixed ) f_sum = 0.;
       fid->add(index);
       totalForce->add(f_sum);
     }
