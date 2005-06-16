@@ -460,6 +460,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
   Vector refab[10];  // reference vector
   Vector pos[10];  // new position
   Vector vel[10];  // new velocity
+  Vector netdp[10];  // total momentum change from constraint
   BigReal rmass[10];  // 1 / mass
   int fixed[10];  // is atom fixed?
   Tensor wc;  // constraint virial
@@ -540,6 +541,9 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
     for ( i = 0; i < icnt; ++i ) {
       refab[i] = ref[ial[i]] - ref[ibl[i]];
     }
+    for ( i = 0; i < hgs; ++i ) {
+      netdp[i] = 0.;
+    }
     int done;
     int consFailure;
     for ( iter = 0; iter < maxiter; ++iter ) {
@@ -568,8 +572,8 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
 	  pos[b] -= rmb * dp;
 	  if ( dt != 0. ) {
 	    dp /= dt;
-	    vel[a] += rma * dp;
-	    vel[b] -= rmb * dp;
+	    netdp[a] += dp;
+	    netdp[b] -= dp;
 	  }
 	  done = 0;
 	}
@@ -600,13 +604,13 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
     if ( dt == 0 ) for ( i = 0; i < hgs; ++i ) {
       atom[ig+i].position = pos[i];
     } else if ( virial == 0 ) for ( i = 0; i < hgs; ++i ) {
-      atom[ig+i].velocity = vel[i];
+      atom[ig+i].velocity = vel[i] + rmass[i] * netdp[i];
     } else for ( i = 0; i < hgs; ++i ) {
-      Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass / dt );
+      Force df = netdp[i] / dt;
       Tensor vir = outer(df, ref[i]);
       wc += vir;
       f[Results::normal][ig+i] += df;
-      atom[ig+i].velocity = vel[i];
+      atom[ig+i].velocity = vel[i] + rmass[i] * netdp[i];
       if (ppreduction) {
         if (!i) {
           BigReal z = pos[i].z;
