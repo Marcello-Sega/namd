@@ -4691,8 +4691,8 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       }
     }
 
-   cout << "To read fep data from file: " << filename << endl;
-   cout << "To read fep flag data from column: " << bcol << endl;
+   iout << iINFO << "To read fep data from file: " << filename << endi;
+   iout << iINFO << "To read fep flag data from column: " << bcol << endi;
  
    //  Allocate the array to hold all the fep data
    fepAtomFlags = new unsigned char[numAtoms];
