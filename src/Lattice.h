@@ -36,6 +36,12 @@ public:
     return 9 * (k+1) + 3 * (j+1) + (i+1);
   }
 
+  // sets lattice basis vectors but not origin (fixed center)
+  void set(Vector A, Vector B, Vector C)
+  {
+    set(A,B,C,o);
+  }
+
   // sets lattice basis vectors and origin (fixed center)
   void set(Vector A, Vector B, Vector C, Position Origin)
   {

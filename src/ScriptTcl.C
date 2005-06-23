@@ -612,8 +612,10 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
     Lattice lattice;
     if (get_lattice_from_ts(&lattice, &ts)) {
       iout << iINFO << "Updating unit cell from timestep.\n" << endi;
+      // update Controller's lattice, but don't change the origin!
+      script->state->lattice.set(lattice.a(),lattice.b(),lattice.c());
       SetLatticeMsg *msg = new SetLatticeMsg;
-      msg->lattice.set(lattice.a(),lattice.b(),lattice.c(),lattice.origin());
+      msg->lattice = script->state->lattice;
       (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).setLattice(msg);
       script->barrier();
     }

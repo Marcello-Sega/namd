@@ -261,14 +261,9 @@ void PatchMgr::moveAllBy(MoveAllByMsg *msg) {
 
 void PatchMgr::setLattice(SetLatticeMsg *msg) {
   // loop over homePatches, setting the lattice to the new value.
-  Vector a = msg->lattice.a();
-  Vector b = msg->lattice.b();
-  Vector c = msg->lattice.c();
-  Vector o = msg->lattice.origin();
-
   for (HomePatchElem *elem = homePatches.begin(); elem != homePatches.end(); elem++) {
     HomePatch *hp = elem->patch;
-    hp->lattice.set(a, b, c, o);
+    hp->lattice = msg->lattice;
   }
 }
 
