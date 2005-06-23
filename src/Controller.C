@@ -1285,6 +1285,12 @@ void Controller::printEnergies(int step, int minimize)
 
     printTiming(step);
 
+    Vector pairVDWForce, pairElectForce;
+    if ( simParameters->pairInteractionOn ) {
+      GET_VECTOR(pairVDWForce,reduction,REDUCTION_PAIR_VDW_FORCE);
+      GET_VECTOR(pairElectForce,reduction,REDUCTION_PAIR_ELECT_FORCE);
+    }
+
     // callback to Tcl with whatever we can
 #ifdef NAMD_TCL
 #define CALLBACKDATA(LABEL,VALUE) \
@@ -1318,6 +1324,10 @@ void Controller::printEnergies(int step, int minimize)
       CALLBACKLIST("CELL_O",lattice.origin());
       labels << "PERIODIC"; values << "{" << lattice.a_p() << " "
 		<< lattice.b_p() << " " << lattice.c_p() << "}";
+      if ( simParameters->pairInteractionOn ) {
+        CALLBACKLIST("VDW_FORCE",pairVDWForce);
+        CALLBACKLIST("ELECT_FORCE",pairElectForce);
+      }
 
       labels << '\0';  values << '\0';  // insane but makes Linux work
 #ifndef NO_STRSTREAM_H
@@ -1338,12 +1348,6 @@ void Controller::printEnergies(int step, int minimize)
     pressure_avg += trace(pressure)/3.;
     groupPressure_avg += trace(groupPressure)/3.;
     avg_count += 1;
-
-    Vector pairVDWForce, pairElectForce;
-    if ( simParameters->pairInteractionOn ) {
-      GET_VECTOR(pairVDWForce,reduction,REDUCTION_PAIR_VDW_FORCE);
-      GET_VECTOR(pairElectForce,reduction,REDUCTION_PAIR_ELECT_FORCE);
-    }
 
     if ( simParams->outputPairlists && pairlistWarnings &&
 				! (step % simParams->outputPairlists) ) {
