@@ -562,6 +562,13 @@ pairs.  If the {\tt exclude} parameter is set to anything but
 {\tt scaled1-4}, this parameter has no effect regardless of its value.}
 
 \item
+\NAMDCONFWDEF{vdwGeometricSigma}{use geometric mean to combine L-J sigmas}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{Use geometric mean, as required by \index{OPLS} OPLS, rather than
+traditional arithmetic mean when combining Lennard-Jones sigma parameters
+for different atom types.}
+
+\item
 \NAMDCONFWDEF{seed}{random number seed}{positive integer}
 {pseudo-random value based on current UNIX clock time}
 {Number used to seed the random number generator 

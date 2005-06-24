@@ -47,6 +47,7 @@ void LJTable::compute_vdw_params(int i, int j,
 				 LJTable::TableEntry *cur_scaled)
 {
   Parameters *params = Node::Object()->parameters;
+  int useGeom = Node::Object()->simParameters->vdwGeometricSigma;
 
   Real A, B, A14, B14;
   // BigReal sigma_max;
@@ -83,9 +84,11 @@ void LJTable::compute_vdw_params(int i, int j,
     params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
 				       &epsilon_j14,j);
   	
-    BigReal sigma_ij = 0.5 * (sigma_i+sigma_j);
+    BigReal sigma_ij =
+       useGeom ? sqrt(sigma_i*sigma_j) : 0.5*(sigma_i+sigma_j);
+    BigReal sigma_ij14 =
+       useGeom ? sqrt(sigma_i14*sigma_j14) : 0.5 * (sigma_i14+sigma_j14);
     BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
-    BigReal sigma_ij14 = 0.5 * (sigma_i14+sigma_j14);
     BigReal epsilon_ij14 = sqrt(epsilon_i14*epsilon_j14);
 
     // sigma_max = ( sigma_ij > sigma_ij14 ? sigma_ij : sigma_ij14 );

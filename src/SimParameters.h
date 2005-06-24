@@ -510,6 +510,9 @@ public:
 	// GROMACS options
 	Bool gromacsOn; // FLAG TRUE -> gromacs-style force field is used
 
+	// OPLS options
+	Bool vdwGeometricSigma;  // Lennard-J sigma uses geometric mean
+
 	// ScriptTcl argument passing
 	BigReal scriptArg1;
 	BigReal scriptArg2;

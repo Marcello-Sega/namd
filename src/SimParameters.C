@@ -538,6 +538,11 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.optional("gromacs", "grocoorfile","GROMACS coordinate file",
 		 PARSE_STRING);
 
+  // OPLS options
+   opts.optionalB("main", "vdwGeometricSigma",
+       "Use geometric mean to combine L-J sigmas, as for OPLS",
+       &vdwGeometricSigma, FALSE);
+
 }
 
 
@@ -3530,6 +3535,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        current = current->next;
      }
    }
+
+     iout << iINFO << "USING " <<
+        ( vdwGeometricSigma ? "GEOMETRIC" : "ARITHMETIC" ) <<
+        " MEAN TO COMBINE L-J SIGMA PARAMETERS\n" << endi;
 
    if (opts.defined("bincoordinates"))
    {
