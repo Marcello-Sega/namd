@@ -217,7 +217,7 @@ private:
   float *work;
 #endif
 
-  int fepOn, lesOn, lesFactor, numGrids;
+  int fepOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
 
   LocalPmeInfo *localInfo;
   int qgrid_size;
@@ -308,6 +308,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( lesOn ) {
     lesFactor = simParams->lesFactor;
     numGrids = lesFactor;
+  }
+  selfOn = 0;
+  pairOn = simParams->pairInteractionOn;
+  if ( pairOn ) {
+    selfOn = simParams->pairInteractionSelf;
+    if ( selfOn ) pairOn = 0;  // make pairOn and selfOn exclusive
+    numGrids = selfOn ? 1 : 3;
   }
 
   {  // decide how many pes to use for reciprocal sum
@@ -1056,6 +1063,13 @@ ComputePme::ComputePme(ComputeID c) :
     lesFactor = simParams->lesFactor;
     numGrids = lesFactor;
   }
+  selfOn = 0;
+  pairOn = simParams->pairInteractionOn;
+  if ( pairOn ) {
+    selfOn = simParams->pairInteractionSelf;
+    if ( selfOn ) pairOn = 0;  // make pairOn and selfOn exclusive
+    numGrids = selfOn ? 1 : 3;
+  }
 
   myGrid.K1 = simParams->PMEGridSizeX;
   myGrid.K2 = simParams->PMEGridSizeY;
@@ -1110,7 +1124,8 @@ void ComputePme::doWork()
 
   Lattice lattice = patchList[0].p->flags.lattice;
 
-  localData = new PmeParticle[numLocalAtoms*(numGrids+(numGrids>1?1:0))];
+  localData = new PmeParticle[numLocalAtoms*(numGrids+
+					((numGrids>1 || selfOn)?1:0))];
   localPartition = new char[numLocalAtoms];
 
   int g;
@@ -1159,7 +1174,40 @@ void ComputePme::doWork()
       }
       numGridAtoms[g] = nga;
     }
+  } else if ( selfOn ) {
+    if ( numGrids != 1 ) NAMD_bug("ComputePme::doWork assertion 1 failed");
+    g = 0;
+    PmeParticle *lgd = localGridData[g];
+    int nga = 0;
+    for(int i=0; i<numLocalAtoms; ++i) {
+      if ( localPartition[i] == 1 ) {
+        lgd[nga++] = localData[i];
+      }
+    }
+    numGridAtoms[g] = nga;
+  } else if ( pairOn ) {
+    if ( numGrids != 3 ) NAMD_bug("ComputePme::doWork assertion 2 failed");
+    g = 0;
+    PmeParticle *lgd = localGridData[g];
+    int nga = 0;
+    for(int i=0; i<numLocalAtoms; ++i) {
+      if ( localPartition[i] == 1 || localPartition[i] == 2 ) {
+        lgd[nga++] = localData[i];
+      }
+    }
+    numGridAtoms[g] = nga;
+    for ( g=1; g<3; ++g ) {
+      PmeParticle *lgd = localGridData[g];
+      int nga = 0;
+      for(int i=0; i<numLocalAtoms; ++i) {
+        if ( localPartition[i] == g ) {
+          lgd[nga++] = localData[i];
+        }
+      }
+      numGridAtoms[g] = nga;
+    }
   } else {
+    if ( numGrids != 1 ) NAMD_bug("ComputePme::doWork assertion 3 failed");
     localGridData[0] = localData;
     numGridAtoms[0] = numLocalAtoms;
   }
@@ -1336,15 +1384,17 @@ void ComputePme::ungridForces() {
 
     SimParameters *simParams = Node::Object()->simParameters;
 
-    Vector *localResults = new Vector[numLocalAtoms*(numGrids>1?2:1)];
+    Vector *localResults = new Vector[numLocalAtoms*
+					((numGrids>1 || selfOn)?2:1)];
     Vector *gridResults;
-    if ( fepOn || lesOn ) {
+    if ( fepOn || lesOn || selfOn || pairOn ) {
       for(int i=0; i<numLocalAtoms; ++i) { localResults[i] = 0.; }
       gridResults = localResults + numLocalAtoms;
     } else {
       gridResults = localResults;
     }
 
+    Vector pairForce = 0.;
     Lattice lattice = patchList[0].p->flags.lattice;
     int g = 0;
     for ( g=0; g<numGrids; ++g ) {
@@ -1364,6 +1414,42 @@ void ComputePme::ungridForces() {
         for(int i=0; i<numLocalAtoms; ++i) {
           if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
             localResults[i] += gridResults[nga++] * scale;
+          }
+        }
+      } else if ( selfOn ) {
+        PmeParticle *lgd = localGridData[g];
+        int nga = 0;
+        for(int i=0; i<numLocalAtoms; ++i) {
+          if ( localPartition[i] == 1 ) {
+            pairForce += gridResults[nga];  // should add up to almost zero
+            localResults[i] += gridResults[nga++];
+          }
+        }
+      } else if ( pairOn ) {
+        if ( g == 0 ) {
+          int nga = 0;
+          for(int i=0; i<numLocalAtoms; ++i) {
+            if ( localPartition[i] == 1 ) {
+              pairForce += gridResults[nga];
+            }
+            if ( localPartition[i] == 1 || localPartition[i] == 2 ) {
+              localResults[i] += gridResults[nga++];
+            }
+          }
+        } else if ( g == 1 ) {
+          int nga = 0;
+          for(int i=0; i<numLocalAtoms; ++i) {
+            if ( localPartition[i] == g ) {
+              pairForce -= gridResults[nga];  // should add up to almost zero
+              localResults[i] -= gridResults[nga++];
+            }
+          }
+        } else {
+          int nga = 0;
+          for(int i=0; i<numLocalAtoms; ++i) {
+            if ( localPartition[i] == g ) {
+              localResults[i] -= gridResults[nga++];
+            }
           }
         }
       }
@@ -1395,6 +1481,10 @@ void ComputePme::ungridForces() {
 
     delete [] localResults;
    
+    if ( pairOn || selfOn ) {
+        ADD_VECTOR_OBJECT(reduction,REDUCTION_PAIR_ELECT_FORCE,pairForce);
+    }
+
     for ( g=0; g<numGrids; ++g ) {
       double scale = 1.;
       if ( fepOn ) {
@@ -1402,6 +1492,8 @@ void ComputePme::ungridForces() {
         else if ( g == 1 ) scale = 1. - simParams->lambda;
       } else if ( lesOn ) {
         scale = 1.0 / (double)lesFactor;
+      } else if ( pairOn ) {
+        scale = ( g == 0 ? 1. : -1. );
       }
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[g][0] * scale;
       reduction->item(REDUCTION_VIRIAL_SLOW_XX) += evir[g][1] * scale;

@@ -178,6 +178,8 @@ public:
 	return(x*x+y*y+z*z);
 	}
 
+  static void calc_error(nonbonded *);
+
   static void calc_pair(nonbonded *);
   static void calc_pair_energy(nonbonded *);
   static void calc_pair_fullelect(nonbonded *);
@@ -226,7 +228,11 @@ public:
 
 //pair interaction calcualtion
   static void calc_pair_energy_int(nonbonded *);
+  static void calc_pair_energy_fullelect_int(nonbonded *);
+  static void calc_pair_energy_merge_fullelect_int(nonbonded *);
   static void calc_self_energy_int (nonbonded *);
+  static void calc_self_energy_fullelect_int(nonbonded *);
+  static void calc_self_energy_merge_fullelect_int(nonbonded *);
 
 };
 

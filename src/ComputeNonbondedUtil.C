@@ -133,10 +133,31 @@ void ComputeNonbondedUtil::submitPressureProfileData(BigReal *data,
   } 
 }
   
+void ComputeNonbondedUtil::calc_error(nonbonded *) {
+  NAMD_bug("Tried to call missing nonbonded compute routine.");
+}
   
 void ComputeNonbondedUtil::select(void)
 {
   if ( CkMyRank() ) return;
+
+  // These defaults die cleanly if nothing appropriate is assigned.
+  ComputeNonbondedUtil::calcPair = calc_error;
+  ComputeNonbondedUtil::calcPairEnergy = calc_error;
+  ComputeNonbondedUtil::calcSelf = calc_error;
+  ComputeNonbondedUtil::calcSelfEnergy = calc_error;
+  ComputeNonbondedUtil::calcFullPair = calc_error;
+  ComputeNonbondedUtil::calcFullPairEnergy = calc_error;
+  ComputeNonbondedUtil::calcFullSelf = calc_error;
+  ComputeNonbondedUtil::calcFullSelfEnergy = calc_error;
+  ComputeNonbondedUtil::calcMergePair = calc_error;
+  ComputeNonbondedUtil::calcMergePairEnergy = calc_error;
+  ComputeNonbondedUtil::calcMergeSelf = calc_error;
+  ComputeNonbondedUtil::calcMergeSelfEnergy = calc_error;
+  ComputeNonbondedUtil::calcSlowPair = calc_error;
+  ComputeNonbondedUtil::calcSlowPairEnergy = calc_error;
+  ComputeNonbondedUtil::calcSlowSelf = calc_error;
+  ComputeNonbondedUtil::calcSlowSelfEnergy = calc_error;
 
   SimParameters * simParams = Node::Object()->simParameters;
 
@@ -241,6 +262,10 @@ void ComputeNonbondedUtil::select(void)
   } else if ( pairInteractionOn || pressureProfileNonbonded ) {
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_int;
     ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_int;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_int;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_int;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_int;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_int;
   } else {
     ComputeNonbondedUtil::calcPair = calc_pair;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy;

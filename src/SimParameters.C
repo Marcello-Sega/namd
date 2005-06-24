@@ -2189,8 +2189,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( fepOn && ( FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, FEP is only implemented for PME full electrostatics.");
    }
-   if ( pairInteractionOn && ( PMEOn || FMAOn || useDPME || fullDirectOn ) ) {
-     NAMD_die("Sorry, pairInteraction not implemented for full electrostatics.");
+   if ( pairInteractionOn && FMAOn ) {
+     NAMD_die("Sorry, pairInteraction not implemented for FMA.");
+   }
+   if ( pairInteractionOn && useDPME ) {
+     NAMD_die("Sorry, pairInteraction not implemented for DPME.");
+   }
+   if ( pairInteractionOn && fullDirectOn ) {
+     NAMD_die("Sorry, pairInteraction not implemented for full direct electrostatics.");
    }
    if ( ! pairInteractionOn ) {
      pairInteractionSelf = 0;
