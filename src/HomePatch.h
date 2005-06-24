@@ -94,11 +94,6 @@ public:
   // methods for QM (ExtForces replacement)
   void replaceForces(ExtForce *f);
 
-  // patch-wise calculations
-  BigReal calcKineticEnergy();
-  Vector calcMomentum();
-  Vector calcAngularMomentum();
-
   // load-balancing trigger
   void submitLoadStats(int timestep);
 

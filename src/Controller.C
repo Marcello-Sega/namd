@@ -775,6 +775,10 @@ void Controller::receivePressure(int step, int minimize)
       numDegFreedom -= 3;
       numGroupDegFreedom -= 3;
     }
+    if (simParameters->pairInteractionOn) {
+      // this doesn't attempt to deal with fixed atoms or constraints
+      numDegFreedom = 3 * molecule->numFepInitial;
+    }
     int numRigidBonds = molecule->numRigidBonds;
     int numFixedRigidBonds =
 	( simParameters->fixedAtomsOn ? molecule->numFixedRigidBonds : 0 );

@@ -887,36 +887,6 @@ void HomePatch::revert(void) {
   lattice = checkpoint_lattice;
 }
 
-BigReal HomePatch::calcKineticEnergy()
-{
-  BigReal total = 0;
-  for ( int i = 0; i < numAtoms; ++i )
-    {
-      total += 0.5 * atom[i].mass * atom[i].velocity * atom[i].velocity;
-    }
-  return total;
-}
-
-Vector HomePatch::calcMomentum()
-{
-  Vector total(0,0,0);
-  for ( int i = 0; i < numAtoms; ++i )
-  {
-     total += atom[i].mass * atom[i].velocity;
-  }
-  return total;
-}
-
-Vector HomePatch::calcAngularMomentum()
-{
-  Vector total(0,0,0);
-  for ( int i = 0; i < numAtoms; ++i )
-  {
-     total += cross(atom[i].mass,atom[i].position,atom[i].velocity); // m r % v
-  }
-  return total;
-}
-
 void HomePatch::submitLoadStats(int timestep)
 {
   LdbCoordinator::Object()->patchLoad(patchID,numAtoms,timestep);

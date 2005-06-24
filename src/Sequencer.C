@@ -872,9 +872,19 @@ void Sequencer::submitHalfstep(int step)
   {
     BigReal kineticEnergy = 0;
     Tensor virial;
-    for ( int i = 0; i < numAtoms; ++i ) {
-      kineticEnergy += a[i].mass * a[i].velocity.length2();
-      virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
+    if ( simParams->pairInteractionOn ) {
+      if ( simParams->pairInteractionSelf ) {
+        for ( int i = 0; i < numAtoms; ++i ) {
+          if ( a[i].partition != 1 ) continue;
+          kineticEnergy += a[i].mass * a[i].velocity.length2();
+          virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
+        }
+      }
+    } else {
+      for ( int i = 0; i < numAtoms; ++i ) {
+        kineticEnergy += a[i].mass * a[i].velocity.length2();
+        virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
+      }
     }
 
     kineticEnergy *= 0.5 * 0.5;
@@ -951,12 +961,25 @@ void Sequencer::submitHalfstep(int step)
         v_cm += a[j].mass * a[j].velocity;
       }
       v_cm /= m_cm;
-      for ( j = i; j < (i+hgs); ++j ) {
-        BigReal mass = a[j].mass;
-        Vector v = a[j].velocity;
-        Vector dv = v - v_cm;
-        intKineticEnergy += mass * (v * dv);
-        intVirialNormal += mass * outer(v,dv);
+      if ( simParams->pairInteractionOn ) {
+        if ( simParams->pairInteractionSelf ) {
+          for ( j = i; j < (i+hgs); ++j ) {
+            if ( a[j].partition != 1 ) continue;
+            BigReal mass = a[j].mass;
+            Vector v = a[j].velocity;
+            Vector dv = v - v_cm;
+            intKineticEnergy += mass * (v * dv);
+            intVirialNormal += mass * outer(v,dv);
+          }
+        }
+      } else {
+        for ( j = i; j < (i+hgs); ++j ) {
+          BigReal mass = a[j].mass;
+          Vector v = a[j].velocity;
+          Vector dv = v - v_cm;
+          intKineticEnergy += mass * (v * dv);
+          intVirialNormal += mass * outer(v,dv);
+        }
       }
     }
 
@@ -975,9 +998,37 @@ void Sequencer::submitReductions(int step)
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
   reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
-  reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += patch->calcKineticEnergy();
+
+  {
+    BigReal kineticEnergy = 0;
+    Vector momentum = 0;
+    Vector angularMomentum = 0;
+    Vector o = patch->lattice.origin();
+    if ( simParams->pairInteractionOn ) {
+      if ( simParams->pairInteractionSelf ) {
+        for ( int i = 0; i < numAtoms; ++i ) {
+          if ( a[i].partition != 1 ) continue;
+          kineticEnergy += a[i].mass * a[i].velocity.length2();
+          momentum += a[i].mass * a[i].velocity;
+          angularMomentum += cross(a[i].mass,a[i].position-o,a[i].velocity);
+        }
+      }
+    } else {
+      for ( int i = 0; i < numAtoms; ++i ) {
+        kineticEnergy += a[i].mass * a[i].velocity.length2();
+        momentum += a[i].mass * a[i].velocity;
+        angularMomentum += cross(a[i].mass,a[i].position-o,a[i].velocity);
+      }
+    }
+
+    kineticEnergy *= 0.5;
+    reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += kineticEnergy;
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_MOMENTUM,momentum);
+    ADD_VECTOR_OBJECT(reduction,REDUCTION_ANGULAR_MOMENTUM,angularMomentum);  
+  }
 
 #ifdef ALTVIRIAL
+  // THIS IS NOT CORRECTED FOR PAIR INTERACTIONS
   {
     Tensor altVirial;
     for ( int i = 0; i < numAtoms; ++i ) {
@@ -1021,17 +1072,36 @@ void Sequencer::submitReductions(int step)
       }
       x_cm /= m_cm;
       v_cm /= m_cm;
-      for ( j = i; j < (i+hgs); ++j ) {
-	// net force treated as zero for fixed atoms
-        if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
-        BigReal mass = a[j].mass;
-        Vector v = a[j].velocity;
-        Vector dv = v - v_cm;
-        intKineticEnergy += mass * (v * dv);
-        Vector dx = a[j].position - x_cm;
-        intVirialNormal += outer(patch->f[Results::normal][j],dx);
-        intVirialNbond += outer(patch->f[Results::nbond][j],dx);
-        intVirialSlow += outer(patch->f[Results::slow][j],dx);
+      int fixedAtomsOn = simParams->fixedAtomsOn;
+      if ( simParams->pairInteractionOn ) {
+        int pairInteractionSelf = simParams->pairInteractionSelf;
+        for ( j = i; j < (i+hgs); ++j ) {
+          if ( a[j].partition != 1 &&
+               ( pairInteractionSelf || a[j].partition != 2 ) ) continue;
+          // net force treated as zero for fixed atoms
+          if ( fixedAtomsOn && a[j].atomFixed ) continue;
+          BigReal mass = a[j].mass;
+          Vector v = a[j].velocity;
+          Vector dv = v - v_cm;
+          intKineticEnergy += mass * (v * dv);
+          Vector dx = a[j].position - x_cm;
+          intVirialNormal += outer(patch->f[Results::normal][j],dx);
+          intVirialNbond += outer(patch->f[Results::nbond][j],dx);
+          intVirialSlow += outer(patch->f[Results::slow][j],dx);
+        }
+      } else {
+        for ( j = i; j < (i+hgs); ++j ) {
+          // net force treated as zero for fixed atoms
+          if ( fixedAtomsOn && a[j].atomFixed ) continue;
+          BigReal mass = a[j].mass;
+          Vector v = a[j].velocity;
+          Vector dv = v - v_cm;
+          intKineticEnergy += mass * (v * dv);
+          Vector dx = a[j].position - x_cm;
+          intVirialNormal += outer(patch->f[Results::normal][j],dx);
+          intVirialNbond += outer(patch->f[Results::nbond][j],dx);
+          intVirialSlow += outer(patch->f[Results::slow][j],dx);
+        }
       }
     }
 
@@ -1110,16 +1180,6 @@ void Sequencer::submitReductions(int step)
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NBOND,fixForceNbond);
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_SLOW,fixForceSlow);
   }
-
-  Vector momentum = patch->calcMomentum();
-  reduction->item(REDUCTION_MOMENTUM_X) += momentum.x;
-  reduction->item(REDUCTION_MOMENTUM_Y) += momentum.y;
-  reduction->item(REDUCTION_MOMENTUM_Z) += momentum.z;
-
-  Vector angularMomentum = patch->calcAngularMomentum();
-  reduction->item(REDUCTION_ANGULAR_MOMENTUM_X) += angularMomentum.x;  
-  reduction->item(REDUCTION_ANGULAR_MOMENTUM_Y) += angularMomentum.y;  
-  reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z) += angularMomentum.z;  
 
   reduction->submit();
   if (pressureProfileReduction) pressureProfileReduction->submit();
