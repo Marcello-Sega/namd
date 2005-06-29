@@ -119,11 +119,7 @@ int vmdsock_listen(void * v) {
 void *vmdsock_accept(void * v) {
   int rc;
   vmdsocket *new_s = NULL, *s = (vmdsocket *) v;
-#ifdef SOCKLEN_T
-  SOCKLEN_T len;
-#else
-  int len;
-#endif
+  socklen_t len;
 
   len = sizeof(s->addr);
   rc = accept(s->sd, (struct sockaddr *) &s->addr, &len);
