@@ -1,7 +1,7 @@
 NAMD_ARCH = Tru64-Alpha
 CHARMARCH = net-axp
 
-CXX = g++
+CXX = g++ -DSOCKLEN_T=int
 CXXOPTS = -O3 -ffast-math
 CC = cc
 COPTS = -O3 -ffast-math

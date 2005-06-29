@@ -1,7 +1,7 @@
 NAMD_ARCH = AIX-POWER
 CHARMARCH = net-rs6k
 
-CXX = xlC_r -w -DSOCKLEN_T=socklen_t -qstaticinline
+CXX = xlC_r -w -qstaticinline
 CXXOPTS = -O3 -qstrict -Q -qarch=com -qtune=pwr3 -qfloat=rsqrt:fltint -bmaxdata:0x80000000
 CC = xlc_r -w
 COPTS = -O4 -qinlglue -qarch=com -qtune=pwr3 -bmaxdata:0x80000000
