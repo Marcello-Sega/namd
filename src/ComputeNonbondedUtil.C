@@ -366,7 +366,7 @@ void ComputeNonbondedUtil::select(void)
 
   BigReal r2_tmp = 1.0;
   int cutoff2_exp = 0;
-  while ( cutoff2 > r2_tmp ) { r2_tmp *= 2.0; cutoff2_exp += 1; }
+  while ( (cutoff2 + r2_delta) > r2_tmp ) { r2_tmp *= 2.0; cutoff2_exp += 1; }
 
   int i;
   int n = (r2_delta_exp + cutoff2_exp) * 64 + 1;
@@ -389,18 +389,18 @@ void ComputeNonbondedUtil::select(void)
   full_table = table_align + 48*n;
   vdwa_table = table_align + 52*n;
   vdwb_table = table_align + 56*n;
-  BigReal *fast_i = fast_table;
-  BigReal *scor_i = scor_table;
-  BigReal *slow_i = slow_table;
-  BigReal *vdwa_i = vdwa_table;
-  BigReal *vdwb_i = vdwb_table;
+  BigReal *fast_i = fast_table + 4;
+  BigReal *scor_i = scor_table + 4;
+  BigReal *slow_i = slow_table + 4;
+  BigReal *vdwa_i = vdwa_table + 4;
+  BigReal *vdwb_i = vdwb_table + 4;
 
-  // fill in the rest of the table
-  for ( i=0; i<n; ++i ) {
+  // fill in the table, fix up i==0 (r2==0) below
+  for ( i=1; i<n; ++i ) {
 
     const BigReal r2_base = r2_delta * ( 1 << (i/64) );
     const BigReal r2_del = r2_base / 64.0;
-    const BigReal r2 = r2_base + r2_del * (i%64);
+    const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
 
     const BigReal r = sqrt(r2);
     const BigReal r_1 = 1.0/r;
@@ -517,22 +517,6 @@ void ComputeNonbondedUtil::select(void)
 
   }
 
-/*
-  // patch up data for i=0, in particular slow_
-  fast_table[0] = fast_table[4] - fast_table[5] * r2_delta;
-  fast_table[1] = fast_table[5];  // fast_gradient
-  fast_table[2] = 0;
-  fast_table[3] = 0;
-  scor_table[0] = scor_table[4] - scor_table[5] * r2_delta;
-  scor_table[1] = scor_table[5];  // scor_gradient
-  scor_table[2] = 0;
-  scor_table[3] = 0;
-  slow_table[0] = slow_table[4] - slow_table[5] * r2_delta;
-  slow_table[1] = slow_table[5];  // slow_gradient
-  slow_table[2] = 0;
-  slow_table[3] = 0;
-*/
-
   int j;
   const char *table_name = "XXXX";
   for ( j=0; j<5; ++j ) {
@@ -559,6 +543,11 @@ void ComputeNonbondedUtil::select(void)
         table_name = "VDWB";
       break;
     }
+    // patch up data for i=0
+    t0[0] = t0[4] - t0[5] * ( r2_delta / 64.0 );  // energy
+    t0[1] = t0[5];  // gradient
+    t0[2] = 0;
+    t0[3] = 0;
     BigReal *t;
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
       BigReal x = ( r2_delta * ( 1 << (i/64) ) ) / 64.0;
@@ -589,7 +578,7 @@ void ComputeNonbondedUtil::select(void)
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
       const BigReal r2_base = r2_delta * ( 1 << (i/64) );
       const BigReal r2_del = r2_base / 64.0;
-      const BigReal r2 = r2_base + r2_del * (i%64);
+      const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
       const BigReal r = sqrt(r2);
       BigReal x = r2_del;
       BigReal dv = ( ( t[3] * x + t[2] ) * x + t[1] ) * x + t[0] - t[4];
@@ -636,19 +625,23 @@ void ComputeNonbondedUtil::select(void)
   for ( i=0; i<(n-1); ++i ) {
     const BigReal r2_base = r2_delta * ( 1 << (i/64) );
     const BigReal r2_del = r2_base / 64.0;
-    const BigReal r2 = r2_base + r2_del * (i%64);
+    const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
     BigReal *t;
     fprintf(f,"%g",r2);
     t = fast_table + 4*i;
-    fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
+    fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);
     t = scor_table + 4*i;
-    fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
+    fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);
     t = slow_table + 4*i;
-    fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
+    fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);
     t = corr_table + 4*i;
-    fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
+    fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);
     t = full_table + 4*i;
-    fprintf(f," %g %g %g %g", t[0], t[1], t[2], t[3]);
+    fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);
+    t = vdwa_table + 4*i;
+    fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);
+    t = vdwb_table + 4*i;
+    fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);
     fprintf(f,"\n");
   }
   fclose(f);

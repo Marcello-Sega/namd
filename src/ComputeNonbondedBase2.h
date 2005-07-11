@@ -21,10 +21,10 @@ NORMAL( MODIFIED( foo bar ) )
       register const BigReal p_ij_z = p_i_z - p_j->position.z;
       r2 += p_ij_z * p_ij_z;
 
+      BigReal diffa = r2 + r2_delta;  // diffa >= r2_delta
       union { float f; int32 i; } r2f;
-      r2f.f = r2;
-      int table_i = (r2f.i >> 17) + r2_delta_expc;
-      if ( r2 < r2_delta ) { table_i = 0; r2f.f = r2_delta; }
+      r2f.f = diffa;
+      int table_i = (r2f.i >> 17) + r2_delta_expc;  // table_i >= 0
 
       FAST(
       const LJTable::TableEntry * lj_pars = 
@@ -64,7 +64,7 @@ NORMAL( MODIFIED( foo bar ) )
       */
 
       BigReal kqq = kq_i * p_j->charge;
-      const BigReal diffa = r2 - r2f.f;
+      diffa -= r2f.f;
 
       FEP(
       int jfep_type = p_j->partition;
