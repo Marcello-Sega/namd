@@ -12,11 +12,12 @@ NORMAL( MODIFIED( foo bar ) )
 #pragma ivdep
     for (k=0; k<npairi; ++k) {
 
-      int table_i = (r2flist[k].i >> 17) + r2_delta_expc;  // table_i >= 0
-      r2flist[k].i &= 0xfffe0000;
+      int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0
 
       const int j = pairlisti[k];
       register const CompAtom *p_j = p_1 + j;
+
+      BigReal diffa = r2list[k] - r2_table[table_i];
 
       FAST(
       const LJTable::TableEntry * lj_pars = 
@@ -54,7 +55,6 @@ NORMAL( MODIFIED( foo bar ) )
       */
 
       BigReal kqq = kq_i * p_j->charge;
-      BigReal diffa = r2list[k] - r2flist[k].f;
 
       FEP(
       int jfep_type = p_j->partition;

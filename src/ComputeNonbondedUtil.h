@@ -134,6 +134,7 @@ public:
   static BigReal *full_table;
   static BigReal *vdwa_table;
   static BigReal *vdwb_table;
+  static BigReal *r2_table;
   static BigReal scaling;
   static BigReal scale14;
   static BigReal switchOn;

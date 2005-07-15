@@ -43,6 +43,7 @@ BigReal*	ComputeNonbondedUtil::corr_table;
 BigReal*	ComputeNonbondedUtil::full_table;
 BigReal*	ComputeNonbondedUtil::vdwa_table;
 BigReal*	ComputeNonbondedUtil::vdwb_table;
+BigReal*	ComputeNonbondedUtil::r2_table;
 BigReal         ComputeNonbondedUtil::scaling;
 BigReal         ComputeNonbondedUtil::scale14;
 BigReal         ComputeNonbondedUtil::switchOn;
@@ -377,7 +378,7 @@ void ComputeNonbondedUtil::select(void)
   }
 
   if ( table_alloc ) delete [] table_alloc;
-  table_alloc = new BigReal[60*n+16];
+  table_alloc = new BigReal[61*n+16];
   BigReal *table_align = table_alloc;
   while ( ((long)table_align) % 128 ) ++table_align;
   table_noshort = table_align;
@@ -389,11 +390,13 @@ void ComputeNonbondedUtil::select(void)
   full_table = table_align + 48*n;
   vdwa_table = table_align + 52*n;
   vdwb_table = table_align + 56*n;
+  r2_table = table_align + 60*n;
   BigReal *fast_i = fast_table + 4;
   BigReal *scor_i = scor_table + 4;
   BigReal *slow_i = slow_table + 4;
   BigReal *vdwa_i = vdwa_table + 4;
   BigReal *vdwb_i = vdwb_table + 4;
+  BigReal *r2_i = r2_table;  *(r2_i++) = r2_delta;
 
   // fill in the table, fix up i==0 (r2==0) below
   for ( i=1; i<n; ++i ) {
@@ -514,6 +517,7 @@ void ComputeNonbondedUtil::select(void)
     *(vdwb_i++) = vdwb_gradient;
     *(vdwb_i++) = 0;
     *(vdwb_i++) = 0;
+    *(r2_i++) = r2 + r2_delta;
 
   }
 
@@ -627,6 +631,7 @@ void ComputeNonbondedUtil::select(void)
     const BigReal r2_del = r2_base / 64.0;
     const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
     BigReal *t;
+    if ( r2 + r2_delta != r2_table[i] ) fprintf(f,"r2 error! ");
     fprintf(f,"%g",r2);
     t = fast_table + 4*i;
     fprintf(f,"   %g %g %g %g", t[0], t[1], t[2], t[3]);

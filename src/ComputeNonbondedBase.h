@@ -236,7 +236,8 @@ void ComputeNonbondedUtil :: NAME
   )
   const BigReal r2_delta = ComputeNonbondedUtil:: r2_delta;
   const int r2_delta_exp = ComputeNonbondedUtil:: r2_delta_exp;
-  const int r2_delta_expc = 64 * (r2_delta_exp - 127);
+  // const int r2_delta_expc = 64 * (r2_delta_exp - 127);
+  const int r2_delta_expc = 64 * (r2_delta_exp - 1023);
 
   const int i_upper = params->numAtoms[0];
   register const int j_upper = params->numAtoms[1];
@@ -257,7 +258,10 @@ void ComputeNonbondedUtil :: NAME
 
   RESERVEARRAY(plint,pairlisti,1005,arraysize)
   RESERVEARRAY(BigReal,r2list,1005,arraysize)
-  RESERVEARRAY(floatintunion,r2flist,1005,arraysize)
+
+  union { double f; int32 i[2]; } byte_order_test;
+  byte_order_test.f = 1.0;  // should occupy high-order bits only
+  int32 *r2iilist = (int32*)r2list + ( byte_order_test.i[0] ? 0 : 1 );
 
   if ( ! ( savePairlists || ! usePairlists ) ) arraysize = 0;
 
@@ -693,7 +697,7 @@ void ComputeNonbondedUtil :: NAME
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti,
-	r2_delta, r2list, r2flist);
+	r2_delta, r2list);
 
 #define NORMAL(X) X
 #define EXCLUDED(X)
@@ -705,7 +709,7 @@ void ComputeNonbondedUtil :: NAME
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti,
-	r2_delta, r2list, r2flist);
+	r2_delta, r2list);
     exclChecksum += npairi;
 
 #define NORMAL(X)
@@ -719,7 +723,7 @@ void ComputeNonbondedUtil :: NAME
 #ifdef FULLELECT
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti,
-	r2_delta, r2list, r2flist);
+	r2_delta, r2list);
     exclChecksum += npairi;
     SELF(
     for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
