@@ -9,22 +9,14 @@ EXCLUDED( MODIFIED( foo bar ) )
 EXCLUDED( NORMAL( foo bar ) )
 NORMAL( MODIFIED( foo bar ) )
 
+#pragma ivdep
     for (k=0; k<npairi; ++k) {
+
+      int table_i = (r2flist[k].i >> 17) + r2_delta_expc;  // table_i >= 0
+      r2flist[k].i &= 0xfffe0000;
 
       const int j = pairlisti[k];
       register const CompAtom *p_j = p_1 + j;
-
-      register const BigReal p_ij_x = p_i_x - p_j->position.x;
-      register BigReal r2 = p_ij_x * p_ij_x;
-      register const BigReal p_ij_y = p_i_y - p_j->position.y;
-      r2 += p_ij_y * p_ij_y;
-      register const BigReal p_ij_z = p_i_z - p_j->position.z;
-      r2 += p_ij_z * p_ij_z;
-
-      BigReal diffa = r2 + r2_delta;  // diffa >= r2_delta
-      union { float f; int32 i; } r2f;
-      r2f.f = diffa;
-      int table_i = (r2f.i >> 17) + r2_delta_expc;  // table_i >= 0
 
       FAST(
       const LJTable::TableEntry * lj_pars = 
@@ -42,8 +34,6 @@ NORMAL( MODIFIED( foo bar ) )
       const BigReal* const scor_i = table_four + 16*table_i + 8 SHORT(+ 4);
       BigReal slow_a = scor_i[0]; 
       )
-
-      r2f.i &= 0xfffe0000;
 
       /*
       BigReal modf = 0.0;
@@ -64,7 +54,7 @@ NORMAL( MODIFIED( foo bar ) )
       */
 
       BigReal kqq = kq_i * p_j->charge;
-      diffa -= r2f.f;
+      BigReal diffa = r2list[k] - r2flist[k].f;
 
       FEP(
       int jfep_type = p_j->partition;
@@ -89,7 +79,13 @@ NORMAL( MODIFIED( foo bar ) )
       vdwEnergy += LAM(lambda_pair *) vdw_val;
       FEP( vdwEnergy_s += d_lambda_pair * vdw_val; )
       )
+#endif // FAST
 
+      register const BigReal p_ij_x = p_i_x - p_j->position.x;
+      register const BigReal p_ij_y = p_i_y - p_j->position.y;
+      register const BigReal p_ij_z = p_i_z - p_j->position.z;
+
+#if ( FAST(1+) 0 )
       INT( 
       register BigReal vdw_dir =
 	( 3.0 * diffa * vdw_d + 2.0 * vdw_c ) * diffa + vdw_b;
@@ -139,24 +135,21 @@ NORMAL( MODIFIED( foo bar ) )
       register BigReal fast_dir =
 	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
       BigReal force_r = -2.0 * LAM(lambda_pair *) fast_dir;
-      BigReal & f_j_x = f_1[j].x;
-      BigReal & f_j_y = f_1[j].y;
-      BigReal & f_j_z = f_1[j].z;
       register BigReal tmp_x = force_r * p_ij_x;
       virial_xx += tmp_x * p_ij_x;
       virial_xy += tmp_x * p_ij_y;
       virial_xz += tmp_x * p_ij_z;
       f_i_x += tmp_x;
-      f_j_x -= tmp_x;
+      f_1[j].x -= tmp_x;
       register BigReal tmp_y = force_r * p_ij_y;
       virial_yy += tmp_y * p_ij_y;
       virial_yz += tmp_y * p_ij_z;
       f_i_y += tmp_y;
-      f_j_y -= tmp_y;
+      f_1[j].y -= tmp_y;
       register BigReal tmp_z = force_r * p_ij_z;
       virial_zz += tmp_z * p_ij_z;
       f_i_z += tmp_z;
-      f_j_z -= tmp_z;
+      f_1[j].z -= tmp_z;
 
       INT(
       if (pressureProfileNonbonded) {
@@ -230,24 +223,21 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal fullforce_r = -2.0 * slow_dir LAM(* lambda_pair);
 
       {
-      BigReal & fullf_j_x = fullf_1[j].x;
-      BigReal & fullf_j_y = fullf_1[j].y;
-      BigReal & fullf_j_z = fullf_1[j].z;
       register BigReal tmp_x = fullforce_r * p_ij_x;
       fullElectVirial_xx += tmp_x * p_ij_x;
       fullElectVirial_xy += tmp_x * p_ij_y;
       fullElectVirial_xz += tmp_x * p_ij_z;
       fullf_i_x += tmp_x;
-      fullf_j_x -= tmp_x;
+      fullf_1[j].x -= tmp_x;
       register BigReal tmp_y = fullforce_r * p_ij_y;
       fullElectVirial_yy += tmp_y * p_ij_y;
       fullElectVirial_yz += tmp_y * p_ij_z;
       fullf_i_y += tmp_y;
-      fullf_j_y -= tmp_y;
+      fullf_1[j].y -= tmp_y;
       register BigReal tmp_z = fullforce_r * p_ij_z;
       fullElectVirial_zz += tmp_z * p_ij_z;
       fullf_i_z += tmp_z;
-      fullf_j_z -= tmp_z;
+      fullf_1[j].z -= tmp_z;
 
       }
       )

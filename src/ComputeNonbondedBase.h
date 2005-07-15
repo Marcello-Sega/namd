@@ -256,6 +256,8 @@ void ComputeNonbondedUtil :: NAME
   int arraysize = j_upper+5;
 
   RESERVEARRAY(plint,pairlisti,1005,arraysize)
+  RESERVEARRAY(BigReal,r2list,1005,arraysize)
+  RESERVEARRAY(floatintunion,r2flist,1005,arraysize)
 
   if ( ! ( savePairlists || ! usePairlists ) ) arraysize = 0;
 
@@ -679,18 +681,19 @@ void ComputeNonbondedUtil :: NAME
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(mol->atomvdwtype(p_i.id));
 
-    SHORT( FAST( BigReal & f_i_x = f_0[i].x; ) )
-    SHORT( FAST( BigReal & f_i_y = f_0[i].y; ) )
-    SHORT( FAST( BigReal & f_i_z = f_0[i].z; ) )
-    FULL( BigReal & fullf_i_x = fullf_0[i].x; )
-    FULL( BigReal & fullf_i_y = fullf_0[i].y; )
-    FULL( BigReal & fullf_i_z = fullf_0[i].z; )
+    SHORT( FAST( BigReal f_i_x = 0.; ) )
+    SHORT( FAST( BigReal f_i_y = 0.; ) )
+    SHORT( FAST( BigReal f_i_z = 0.; ) )
+    FULL( BigReal fullf_i_x = 0.; )
+    FULL( BigReal fullf_i_y = 0.; )
+    FULL( BigReal fullf_i_z = 0.; )
 
     int npairi;
     int k;
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti);
+	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti,
+	r2_delta, r2list, r2flist);
 
 #define NORMAL(X) X
 #define EXCLUDED(X)
@@ -701,7 +704,8 @@ void ComputeNonbondedUtil :: NAME
 #undef MODIFIED
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti);
+	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti,
+	r2_delta, r2list, r2flist);
     exclChecksum += npairi;
 
 #define NORMAL(X)
@@ -714,7 +718,8 @@ void ComputeNonbondedUtil :: NAME
 
 #ifdef FULLELECT
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti);
+	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti,
+	r2_delta, r2list, r2flist);
     exclChecksum += npairi;
     SELF(
     for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
@@ -741,6 +746,13 @@ void ComputeNonbondedUtil :: NAME
       for (k=0; k<npairx && pairlistx_save[k] < j_hgroup; ++k) --exclChecksum;
     )
 #endif
+
+    SHORT( FAST( f_0[i].x += f_i_x; ) )
+    SHORT( FAST( f_0[i].y += f_i_y; ) )
+    SHORT( FAST( f_0[i].z += f_i_z; ) )
+    FULL( fullf_0[i].x += fullf_i_x; )
+    FULL( fullf_0[i].y += fullf_i_y; )
+    FULL( fullf_0[i].z += fullf_i_z; )
 
 	// PAIR( iout << i << " " << i_upper << " end\n" << endi;)
   } // for i
