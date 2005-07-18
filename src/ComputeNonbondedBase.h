@@ -777,8 +777,11 @@ void ComputeNonbondedUtil :: NAME
 #if ( SELF( 1+ ) 0 )
   {
     Force *patch_f_0 = params->ff[0];
+#pragma ivdep
     for ( int i = 0; i < i_upper; ++i ) {
-      patch_f_0[i] += f_0[i];
+      patch_f_0[i].x += f_0[i].x;
+      patch_f_0[i].y += f_0[i].y;
+      patch_f_0[i].z += f_0[i].z;
       virial_xx += f_0[i].x * p_0[i].position.x;
       virial_xy += f_0[i].x * p_0[i].position.y;
       virial_xz += f_0[i].x * p_0[i].position.z;
@@ -796,8 +799,11 @@ void ComputeNonbondedUtil :: NAME
 #if ( SELF( 1+ ) 0 )
   {
     Force *patch_fullf_0 = params->fullf[0];
+#pragma ivdep
     for ( int i = 0; i < i_upper; ++i ) {
-      patch_fullf_0[i] += fullf_0[i];
+      patch_fullf_0[i].x += fullf_0[i].x;
+      patch_fullf_0[i].y += fullf_0[i].y;
+      patch_fullf_0[i].z += fullf_0[i].z;
       fullElectVirial_xx += fullf_0[i].x * p_0[i].position.x;
       fullElectVirial_xy += fullf_0[i].x * p_0[i].position.y;
       fullElectVirial_xz += fullf_0[i].x * p_0[i].position.z;
