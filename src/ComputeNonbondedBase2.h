@@ -136,18 +136,18 @@ NORMAL( MODIFIED( foo bar ) )
 	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
       BigReal force_r = -2.0 * LAM(lambda_pair *) fast_dir;
       register BigReal tmp_x = force_r * p_ij_x;
-      //virial_xx += tmp_x * p_ij_x;
-      //virial_xy += tmp_x * p_ij_y;
-      //virial_xz += tmp_x * p_ij_z;
+      PAIR( virial_xx += tmp_x * p_ij_x; )
+      PAIR( virial_xy += tmp_x * p_ij_y; )
+      PAIR( virial_xz += tmp_x * p_ij_z; )
       f_i_x += tmp_x;
       f_1[j].x -= tmp_x;
       register BigReal tmp_y = force_r * p_ij_y;
-      //virial_yy += tmp_y * p_ij_y;
-      //virial_yz += tmp_y * p_ij_z;
+      PAIR( virial_yy += tmp_y * p_ij_y; )
+      PAIR( virial_yz += tmp_y * p_ij_z; )
       f_i_y += tmp_y;
       f_1[j].y -= tmp_y;
       register BigReal tmp_z = force_r * p_ij_z;
-      //virial_zz += tmp_z * p_ij_z;
+      PAIR( virial_zz += tmp_z * p_ij_z; )
       f_i_z += tmp_z;
       f_1[j].z -= tmp_z;
 
@@ -224,18 +224,18 @@ NORMAL( MODIFIED( foo bar ) )
 
       {
       register BigReal tmp_x = fullforce_r * p_ij_x;
-      //fullElectVirial_xx += tmp_x * p_ij_x;
-      //fullElectVirial_xy += tmp_x * p_ij_y;
-      //fullElectVirial_xz += tmp_x * p_ij_z;
+      PAIR( fullElectVirial_xx += tmp_x * p_ij_x; )
+      PAIR( fullElectVirial_xy += tmp_x * p_ij_y; )
+      PAIR( fullElectVirial_xz += tmp_x * p_ij_z; )
       fullf_i_x += tmp_x;
       fullf_1[j].x -= tmp_x;
       register BigReal tmp_y = fullforce_r * p_ij_y;
-      //fullElectVirial_yy += tmp_y * p_ij_y;
-      //fullElectVirial_yz += tmp_y * p_ij_z;
+      PAIR( fullElectVirial_yy += tmp_y * p_ij_y; )
+      PAIR( fullElectVirial_yz += tmp_y * p_ij_z; )
       fullf_i_y += tmp_y;
       fullf_1[j].y -= tmp_y;
       register BigReal tmp_z = fullforce_r * p_ij_z;
-      //fullElectVirial_zz += tmp_z * p_ij_z;
+      PAIR( fullElectVirial_zz += tmp_z * p_ij_z; )
       fullf_i_z += tmp_z;
       fullf_1[j].z -= tmp_z;
 
