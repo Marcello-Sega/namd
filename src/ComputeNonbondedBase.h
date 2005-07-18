@@ -321,19 +321,26 @@ void ComputeNonbondedUtil :: NAME
   int pairlistindex=0;
   int pairlistoffset=0;
 
-  SHORT
-  (
-  FAST
-  (
-    Force *f_0 = params->ff[0];
-    Force *f_1 = params->ff[1];
-  )
-  )
-  FULL
-  (
-    Force *fullf_0 = params->fullf[0];
-    Force *fullf_1 = params->fullf[1];
-  )
+#if ( SHORT( FAST( 1+ ) ) 0 )
+    RESERVEARRAY(Force,f_0,1005,i_upper)
+    memset( (void*) f_0, 0, i_upper * sizeof(Force) );
+#if ( PAIR( 1+ ) 0 )
+    RESERVEARRAY(Force,f_1,1005,j_upper);
+    memset( (void*) f_1, 0, j_upper * sizeof(Force) );
+#else
+#define f_1 f_0
+#endif
+#endif
+#if ( FULL( 1+ ) 0 )
+    RESERVEARRAY(Force,fullf_0,1005,i_upper);
+    memset( (void*) fullf_0, 0, i_upper * sizeof(Force) );
+#if ( PAIR( 1+ ) 0 )
+    RESERVEARRAY(Force,fullf_1,1005,j_upper);
+    memset( (void*) fullf_1, 0, j_upper * sizeof(Force) );
+#else
+#define fullf_1 fullf_0
+#endif
+#endif
 
   SELF ( int64 pairCount = ( (i_upper-1) * (int64)j_upper ) / 2; )
   PAIR ( int64 pairCount = i_upper * (int64)j_upper; )
@@ -762,6 +769,69 @@ void ComputeNonbondedUtil :: NAME
   } // for i
 
   // PAIR(iout << "++++++++\n" << endi;)
+
+#ifdef f_1
+#undef f_1
+#endif
+#if ( SHORT( FAST( 1+ ) ) 0 )
+  {
+    Force *patch_f_0 = params->ff[0];
+    for ( int i = 0; i < i_upper; ++i ) {
+      patch_f_0[i] += f_0[i];
+      virial_xx += f_0[i].x * p_0[i].position.x;
+      virial_xy += f_0[i].x * p_0[i].position.y;
+      virial_xz += f_0[i].x * p_0[i].position.z;
+      virial_yy += f_0[i].y * p_0[i].position.y;
+      virial_yz += f_0[i].y * p_0[i].position.z;
+      virial_zz += f_0[i].z * p_0[i].position.z;
+    }
+  }
+#if ( PAIR( 1+ ) 0 )
+  {
+    Force *patch_f_1 = params->ff[1];
+    for ( int j = 0; j < j_upper; ++j ) {
+      patch_f_1[j] += f_1[j];
+      virial_xx += f_1[j].x * p_1[j].position.x;
+      virial_xy += f_1[j].x * p_1[j].position.y;
+      virial_xz += f_1[j].x * p_1[j].position.z;
+      virial_yy += f_1[j].y * p_1[j].position.y;
+      virial_yz += f_1[j].y * p_1[j].position.z;
+      virial_zz += f_1[j].z * p_1[j].position.z;
+    }
+  }
+#endif
+#endif
+#ifdef fullf_1
+#undef fullf_1
+#endif
+#if ( FULL( 1+ ) 0 )
+  {
+    Force *patch_fullf_0 = params->fullf[0];
+    for ( int i = 0; i < i_upper; ++i ) {
+      patch_fullf_0[i] += fullf_0[i];
+      fullElectVirial_xx += fullf_0[i].x * p_0[i].position.x;
+      fullElectVirial_xy += fullf_0[i].x * p_0[i].position.y;
+      fullElectVirial_xz += fullf_0[i].x * p_0[i].position.z;
+      fullElectVirial_yy += fullf_0[i].y * p_0[i].position.y;
+      fullElectVirial_yz += fullf_0[i].y * p_0[i].position.z;
+      fullElectVirial_zz += fullf_0[i].z * p_0[i].position.z;
+    }
+  }
+#if ( PAIR( 1+ ) 0 )
+  {
+    Force *patch_fullf_1 = params->fullf[1];
+    for ( int j = 0; j < j_upper; ++j ) {
+      patch_fullf_1[j] += fullf_1[j];
+      fullElectVirial_xx += fullf_1[j].x * p_1[j].position.x;
+      fullElectVirial_xy += fullf_1[j].x * p_1[j].position.y;
+      fullElectVirial_xz += fullf_1[j].x * p_1[j].position.z;
+      fullElectVirial_yy += fullf_1[j].y * p_1[j].position.y;
+      fullElectVirial_yz += fullf_1[j].y * p_1[j].position.z;
+      fullElectVirial_zz += fullf_1[j].z * p_1[j].position.z;
+    }
+  }
+#endif
+#endif
 
   reduction[exclChecksumIndex] += exclChecksum;
   FAST
