@@ -19,21 +19,10 @@ NORMAL( MODIFIED( foo bar ) )
 
       BigReal diffa = r2list[k] - r2_table[table_i];
 
+      const BigReal* const table_four_i = table_four + 16*table_i;
       FAST(
       const LJTable::TableEntry * lj_pars = 
 		lj_row + 2 * mol->atomvdwtype(p_j->id) MODIFIED(+ 1);
-      const BigReal* const vdwa_i = table_four + 16*table_i;
-      BigReal vdwa_a = vdwa_i[0];
-      const BigReal* const vdwb_i = table_four + 16*table_i + 4;
-      BigReal vdwb_a = vdwb_i[0];
-      SHORT(
-      const BigReal* const fast_i = table_four + 16*table_i + 8;
-      BigReal fast_a = fast_i[0];
-      )
-      )
-      FULL(
-      const BigReal* const scor_i = table_four + 16*table_i + 8 SHORT(+ 4);
-      BigReal slow_a = scor_i[0]; 
       )
 
       /*
@@ -68,10 +57,10 @@ NORMAL( MODIFIED( foo bar ) )
       const BigReal A = scaling * lj_pars->A;
       const BigReal B = scaling * lj_pars->B;
 
-      BigReal vdw_a = A * vdwa_a - B * vdwb_a;
-      BigReal vdw_d = A * vdwa_i[3] - B * vdwb_i[3];
-      BigReal vdw_c = A * vdwa_i[2] - B * vdwb_i[2];
-      BigReal vdw_b = A * vdwa_i[1] - B * vdwb_i[1];
+      BigReal vdw_d = A * table_four_i[0] - B * table_four_i[1];
+      BigReal vdw_c = A * table_four_i[2] - B * table_four_i[3];
+      BigReal vdw_b = A * table_four_i[4] - B * table_four_i[5];
+      BigReal vdw_a = A * table_four_i[6] - B * table_four_i[7];
 
       ENERGY(
       register BigReal vdw_val =
@@ -97,17 +86,17 @@ NORMAL( MODIFIED( foo bar ) )
 
 #if ( SHORT(1+) 0 )
       NORMAL(
-      fast_a *= kqq;
-      BigReal fast_d = kqq * fast_i[3];
-      BigReal fast_c = kqq * fast_i[2];
-      BigReal fast_b = kqq * fast_i[1];
+      BigReal fast_d = kqq * table_four_i[8];
+      BigReal fast_c = kqq * table_four_i[9];
+      BigReal fast_b = kqq * table_four_i[10];
+      BigReal fast_a = kqq * table_four_i[11];
       )
       MODIFIED(
       BigReal modfckqq = (1.0-modf_mod) * kqq;
-      fast_a *= modfckqq;
-      BigReal fast_d = modfckqq * fast_i[3];
-      BigReal fast_c = modfckqq * fast_i[2];
-      BigReal fast_b = modfckqq * fast_i[1];
+      BigReal fast_d = modfckqq * table_four_i[8];
+      BigReal fast_c = modfckqq * table_four_i[9];
+      BigReal fast_b = modfckqq * table_four_i[10];
+      BigReal fast_a = modfckqq * table_four_i[11];
       )
 
       {
@@ -168,26 +157,39 @@ NORMAL( MODIFIED( foo bar ) )
 #endif // FAST
 
       FULL(
-      BigReal slow_b = scor_i[1];
-      BigReal slow_c = scor_i[2];
-      BigReal slow_d = scor_i[3];
+      BigReal slow_d = table_four_i[8 SHORT(+ 4)];
+      BigReal slow_c = table_four_i[9 SHORT(+ 4)];
+      BigReal slow_b = table_four_i[10 SHORT(+ 4)];
+      BigReal slow_a = table_four_i[11 SHORT(+ 4)];
       EXCLUDED(
-      const BigReal* const slow_i
-		SHORT( = slow_table + 4*table_i; )
-		NOSHORT( = table_four + 12 + 16*table_i; )
+      SHORT(
+      const BigReal* const slow_i = slow_table + 4*table_i;
       slow_a -= slow_i[0];
       slow_b -= slow_i[1];
       slow_c -= slow_i[2];
       slow_d -= slow_i[3];
       )
+      NOSHORT(
+      slow_d -= table_four_i[12];
+      slow_c -= table_four_i[13];
+      slow_b -= table_four_i[14];
+      slow_a -= table_four_i[15];
+      )
+      )
       MODIFIED(
-      const BigReal* const slow_i
-		SHORT( = slow_table + 4*table_i; )
-		NOSHORT( = table_four + 12 + 16*table_i; )
+      SHORT(
+      const BigReal* const slow_i = slow_table + 4*table_i;
       slow_a -= modf_mod * slow_i[0];
       slow_b -= modf_mod * slow_i[1];
       slow_c -= modf_mod * slow_i[2];
       slow_d -= modf_mod * slow_i[3];
+      )
+      NOSHORT(
+      slow_d -= modf_mod * table_four_i[12];
+      slow_c -= modf_mod * table_four_i[13];
+      slow_b -= modf_mod * table_four_i[14];
+      slow_a -= modf_mod * table_four_i[15];
+      )
       )
       slow_d *= kqq;
       slow_c *= kqq;

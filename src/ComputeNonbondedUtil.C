@@ -613,12 +613,12 @@ void ComputeNonbondedUtil::select(void)
 
   for ( i=0; i<n; ++i ) {
    for ( int j=0; j<4; ++j ) {
-    table_short[16*i+j] = table_noshort[16*i+j] = vdwa_table[4*i+j];
-    table_short[16*i+4+j] = table_noshort[16*i+4+j] = vdwb_table[4*i+j];
-    table_short[16*i+8+j] = fast_table[4*i+j];
-    table_short[16*i+12+j] = scor_table[4*i+j];
-    table_noshort[16*i+8+j] = corr_table[4*i+j];
-    table_noshort[16*i+12+j] = full_table[4*i+j];
+    table_short[16*i+6-2*j] = table_noshort[16*i+6-2*j] = vdwa_table[4*i+j];
+    table_short[16*i+7-2*j] = table_noshort[16*i+7-2*j] = vdwb_table[4*i+j];
+    table_short[16*i+8+3-j] = fast_table[4*i+j];
+    table_short[16*i+12+3-j] = scor_table[4*i+j];
+    table_noshort[16*i+8+3-j] = corr_table[4*i+j];
+    table_noshort[16*i+12+3-j] = full_table[4*i+j];
    }
   }
 
