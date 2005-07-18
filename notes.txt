@@ -75,6 +75,16 @@ The provided charmrun program for these platforms is only a script
 that attempts to translate charmrun options into mpirun options, but
 due to the diversity of MPI libraries it often fails to work.
 
+-- Mac OS X Users Must Install the IBM XL C/C++ Run-Time Library --
+
+The IBM XL C/C++ compiler provides a significant performance boost
+to NAMD on PowerPC G4 and G5 processors.  Unfortunately, the runtime
+library cannot be statically linked, so you must download it from
+http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/
+and install it based on the the README file in that directory.  If
+the library is not installed, running NAMD will product this error:
+dyld: ./namd2 can't open library: /opt/ibmcmp/lib/libibmc++.A.dylib
+
 -- Individual Windows, Linux, Mac OS X, or Other Unix Workstations --
 
 Individual workstations use the same version of NAMD as workstation
