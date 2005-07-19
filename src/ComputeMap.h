@@ -13,6 +13,7 @@
 
 class Compute;
 class ComputeMgr;
+template<class Type> class ObjectArena;
 
 enum ComputeType
 {
@@ -107,9 +108,7 @@ public:
   int partition(ComputeID cid);
   int numPartitions(ComputeID cid);
 
-  // allocate_cids(n) tells the ComputeMap to set aside
-  // room for n compute objects.  I need not use them all.
-  int allocateCids(int n);
+  int allocateCids();
 
   // storeCompute(cid,node,maxPids) tells the ComputeMap to store
   // information about the indicated patch, and allocate space
@@ -119,7 +118,7 @@ public:
 
   // newPid(cid,pid) stores the n patch ids associated with
   // compute id cid.
-  int newPid(ComputeID cid, int pid, int trans = 13);
+  void newPid(ComputeID cid, int pid, int trans = 13);
 
   void printComputeMap(void);
 
@@ -166,6 +165,7 @@ private:
   int nAtomBased;
   int nComputes;
   ResizeArray<ComputeData> computeData;
+  ObjectArena<PatchRec> *patchArena;
 };
 
 #endif /* COMPUTEMAP_H */

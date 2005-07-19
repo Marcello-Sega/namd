@@ -11,6 +11,7 @@
 
 #include "ComputeMap.h"
 #include "Compute.h"
+#include "ObjectArena.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -31,18 +32,13 @@ ComputeMap::ComputeMap(void)
   nComputes=0;
   nPatchBased=0;
   nAtomBased=0;
+  patchArena=0;
 }
 
 //----------------------------------------------------------------------
 ComputeMap::~ComputeMap(void)
 {
-  if (nComputes)
-  {
-    for(int i=0; i<nComputes; i++)
-    {
-	delete[] computeData[i].pids;	// alloced and realloced above
-    }
-  }    
+  delete patchArena;
 }
 
 void
@@ -102,6 +98,9 @@ void ComputeMap::unpack (char *ptr)
 {
   // Must copy over the Compute * to new ComputeMap! 
   ResizeArray<ComputeData> oldComputeData = computeData;
+  delete patchArena;  // oldComputeData[i].pids now invalid!
+  patchArena = new ObjectArena<PatchRec>;  // use for computeData[i].pids
+  patchArena->setBlockSize(256);
   int oldNComputes = nComputes;
 
   DebugM(4,"Unpacking ComputeMap\n");
@@ -115,7 +114,8 @@ void ComputeMap::unpack (char *ptr)
   for(i=0;i<nComputes;++i)
   {
     UNPACK(ComputeData,computeData[i]);
-    computeData[i].pids = new PatchRec[computeData[i].numPidsAllocated]; // deleted during ~
+    computeData[i].pids =
+		 patchArena->getNewArray(computeData[i].numPidsAllocated);
     for(j=0;j<computeData[i].numPidsAllocated;++j)
       UNPACK(PatchRec,computeData[i].pids[j]);
   }
@@ -128,7 +128,6 @@ void ComputeMap::unpack (char *ptr)
 
     for (int i=0; i<nComputes; i++) {
       computeData[i].compute = oldComputeData[i].compute;
-      delete[] oldComputeData[i].pids;
     }
   }
   DebugM(4,"Done Unpacking ComputeMap\n");
@@ -156,25 +155,19 @@ int ComputeMap::numAtomBased(void)
 //----------------------------------------------------------------------
 int ComputeMap::isPatchBased(ComputeID cid)
 {
-  if (nComputes)
     return computeData[cid].patchBased;
-  else return -1;
 }
 
 //----------------------------------------------------------------------
 int ComputeMap::isAtomBased(ComputeID cid)
 {
-  if (nComputes)
     return !computeData[cid].patchBased;
-  else return -1;
 }
 
 //----------------------------------------------------------------------
 int ComputeMap::node(ComputeID cid)
 {
-  if (nComputes)
     return computeData[cid].node;
-  else return -1;
 }
 
 void ComputeMap::setNode(ComputeID cid, NodeID node) {
@@ -194,24 +187,18 @@ void ComputeMap::setNewNode(ComputeID cid, NodeID node) {
 //----------------------------------------------------------------------
 int ComputeMap::numPids(ComputeID cid)
 {
-  if (nComputes)
     return computeData[cid].numPids;
-  else return -1;
 }
 
 //----------------------------------------------------------------------
 int ComputeMap::pid(ComputeID cid,int i)
 {
-  if ((nComputes) && (i < computeData[cid].numPids))
     return computeData[cid].pids[i].pid;
-  else return -1;
 }
 
 int ComputeMap::trans(ComputeID cid,int i)
 {
-  if ((nComputes) && (i < computeData[cid].numPids))
     return computeData[cid].pids[i].trans;
-  else return -1;
 }
 
 //----------------------------------------------------------------------
@@ -238,20 +225,11 @@ int ComputeMap::numPartitions(ComputeID cid)
 }
 
 //----------------------------------------------------------------------
-int ComputeMap::allocateCids(int n)
+int ComputeMap::allocateCids()
 {
-  if (nComputes)
-  {
-    register int i;
-    for(i=0; i<nComputes; i++)
-    {
-      if (computeData[i].pids != NULL)
-      {
-	delete [] computeData[i].pids;	// alloc in storeCompute and unpack
-	computeData[i].pids=0;
-      }
-    }
-  }
+  delete patchArena;  // oldComputeData[i].pids now invalid!
+  patchArena = new ObjectArena<PatchRec>;  // use for computeData[i].pids
+  patchArena->setBlockSize(256);
   nComputes = nPatchBased = nAtomBased = 0;
   computeData.resize(500);
   computeData.resize(0);
@@ -280,25 +258,22 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
   nPatchBased++;
 
   computeData[cid].numPids = 0;
-  computeData[cid].pids = new PatchRec[maxPids]; // delete in allocCids and ~
+  computeData[cid].pids = patchArena->getNewArray(maxPids);
+
   computeData[cid].numPidsAllocated = maxPids;
 
   return cid;
 }
 
 //----------------------------------------------------------------------
-int ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
+void ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
 {
-  if ((cid < 0) || (cid >= nComputes))
-    return -1;                   // Have to store the cid first
-
   if (computeData[cid].numPids == computeData[cid].numPidsAllocated)
-    return -1;                   // Out of space for dependents
+    computeData[cid].pids = 0;  // crash if out of space for dependents
 
   computeData[cid].pids[computeData[cid].numPids].pid=pid;
   computeData[cid].pids[computeData[cid].numPids].trans=trans;
   computeData[cid].numPids++;
-  return 0;
 }
 
 //----------------------------------------------------------------------

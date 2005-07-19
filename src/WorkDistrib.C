@@ -808,26 +808,7 @@ void WorkDistrib::mapComputes(void)
 
   DebugM(3,"Mapping computes\n");
 
-  // We need to allocate computes for self, 1 and 2 away pairs for
-  // electrostatics, and 1 angleForce for each node.  Then I might
-  // throw in a few extras, in case I forget some.
-
-#define MAX_SELF_PARTITIONS 100
-#define MAX_PAIR_PARTITIONS 10
-
-/*
-  int numPotentialCids =
-	patchMap->numPatches() *
-		(13 * MAX_PAIR_PARTITIONS + MAX_SELF_PARTITIONS + 10) +
-	node->numNodes() * 20;
-*/
-  int numPotentialCids =
-	patchMap->numPatches() *
-		(13 * node->simParameters->maxPairPart + 
-		node->simParameters->maxSelfPart + 10) +
-	node->numNodes() * 20;
-  // iout << iINFO << "numPotentialCids: " << numPotentialCids << "\n" << endi;
-  computeMap->allocateCids(numPotentialCids);
+  computeMap->allocateCids();
 
   // Handle full electrostatics
   if ( node->simParameters->fullDirectOn )
@@ -908,7 +889,7 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
 
   for(int i=0; i<numNodes; i++) {
     if ( patchMap->numPatchesOnNode(i) ) {
-      cid[i]=computeMap->storeCompute(i,numPatches,type);
+      cid[i]=computeMap->storeCompute(i,patchMap->numPatchesOnNode(i),type);
     }
   }
 

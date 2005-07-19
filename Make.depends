@@ -1083,6 +1083,7 @@ obj/ComputeMap.o: \
 	src/BOCgroup.h \
 	src/Compute.h \
 	src/main.h \
+	src/ObjectArena.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMap.o $(COPTC) src/ComputeMap.C
 obj/ComputeMgr.o: \
