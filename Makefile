@@ -583,6 +583,9 @@ release: all
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	tar cf $(RELEASE_DIR_NAME).tar $(RELEASE_DIR_NAME)
 	gzip $(RELEASE_DIR_NAME).tar
+	echo $(CHARM)
+	ls -l $(CHARM)/lib
+	echo $(CHARM)
 	file $(RELEASE_FILES)
 
 winrelease: winall
@@ -590,5 +593,8 @@ winrelease: winall
 	mkdir $(RELEASE_DIR_NAME)
 	cp $(DOC_FILES) $(WIN32_RELEASE_FILES) $(RELEASE_DIR_NAME)
 	chmod -R a+rX $(RELEASE_DIR_NAME)
+	echo $(CHARM)
+	ls -l $(CHARM)/lib
+	echo $(CHARM)
 	zip -r $(RELEASE_DIR_NAME).zip $(RELEASE_DIR_NAME)
 
