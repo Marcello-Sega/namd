@@ -59,20 +59,20 @@ DISTILL = distill -compatlevel 2.1
 
 # need to specify page size because distill can't figure it out (yet?)
 
-figures/fmaOn.pdf: figures/fmaOn.eps
-	$(DISTILL) -pagesize 301 174 pts < $^ > $@
+#figures/fmaOn.pdf: figures/fmaOn.eps
+#	$(DISTILL) -pagesize 301 174 pts < $^ > $@
 
-figures/pairlistdist.pdf: figures/pairlistdist.eps
-	$(DISTILL) -pagesize 240 240 pts < $^ > $@
+#figures/pairlistdist.pdf: figures/pairlistdist.eps
+#	$(DISTILL) -pagesize 240 240 pts < $^ > $@
 
-figures/shifting.pdf: figures/shifting.eps
-	$(DISTILL) -pagesize 301 165 pts < $^ > $@
+#figures/shifting.pdf: figures/shifting.eps
+#	$(DISTILL) -pagesize 301 165 pts < $^ > $@
 
-figures/switching.pdf: figures/switching.eps
-	$(DISTILL) -pagesize 310 165 pts < $^ > $@
+#figures/switching.pdf: figures/switching.eps
+#	$(DISTILL) -pagesize 310 165 pts < $^ > $@
 
-figures/dual_top.pdf: figures/dual_top.eps
-	$(DISTILL) -pagesize 584 220 pts < $^ > $@
+#figures/dual_top.pdf: figures/dual_top.eps
+#	$(DISTILL) -pagesize 584 220 pts < $^ > $@
 
 $(DOCDIR)/ug.ps: $(SRCFILES)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
