@@ -11,7 +11,7 @@
 #
 # 	$RCSfile: vectors.tcl,v $
 # 	$Author: jim $	$Locker:  $		$State: Exp $
-#	$Revision: 1.1 $	$Date: 2005/07/21 16:23:27 $
+#	$Revision: 1.2 $	$Date: 2005/07/21 20:46:02 $
 #
 ############################################################################
 # DESCRIPTION:
@@ -27,6 +27,7 @@
 #   4 elements, in row major form
 #
 
+package provide vectors 1.0.0
 
 set M_PI 3.14159265358979323846
 

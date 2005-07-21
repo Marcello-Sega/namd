@@ -133,7 +133,7 @@ A particular feature of the
 instantaneous force, $F_\xi$,
 is its tendency to fluctuate
 significantly.
-As a result, in the beginning of an ABF \ simulation,
+As a result, in the beginning of an ABF simulation,
 the accumulated average in each bin will generally
 take large, inaccurate
 values. Under these circumstances,
@@ -181,7 +181,7 @@ in \namd\ can be found in~\cite{heni_04_1}.
 \subsubsection{Using the \namd\ implementation of the adaptive biasing force method}
 
 
-The ABF \ method has been implemented as a suite of \tcl \
+The ABF method has been implemented as a suite of \tcl \
 routines that can be invoked from the main configuration file used
 to run molecular dynamics simulations with \namd.
 
@@ -189,13 +189,34 @@ The routines can be invoked by including the following
 command in the configuration file:
 
 \begin{verbatim}
-source              <path to> abf.tcl
+source <path to>/lib/abf/abf.tcl
 \end{verbatim}
 
-
-where \texttt{<path to> abf.tcl} is the complete path to
+where \texttt{<path to>/lib/abf/abf.tcl} is the complete path to
 the main ABF file. The other \tcl\ files of the ABF
 package must be located in the same directory.
+
+A second option for loading the ABF module is to source the
+\texttt{lib/init.tcl} file distributed with NAMD, and then use the
+Tcl package facility.  The file may be sourced in the config file:
+
+\begin{verbatim}
+source <path to>/lib/init.tcl
+package require abf
+\end{verbatim}
+
+Or, to make the config file portable, the init file may be the
+first config file passed to NAMD:
+
+\begin{verbatim}
+namd2 <path to>/lib/init.tcl myconfig.namd
+\end{verbatim}
+
+and then the config file need only contain:
+
+\begin{verbatim}
+package require abf
+\end{verbatim}
 
 Note that the ABF code makes use of the {\tt TclForces} and
 {\tt TclForcesScript} commands.
@@ -204,7 +225,7 @@ should not call the latter directly when running ABF.
 
 
 
-\subsubsection{Parameters for ABF \ simulations}
+\subsubsection{Parameters for ABF simulations}
 
 
 The following parameters have been defined to control ABF \
@@ -375,7 +396,7 @@ Keywords are not case--sensitive.
 
 
 \item
-\NAMDCONFWDEF{outFile}{Output file of an ABF \ calculation}
+\NAMDCONFWDEF{outFile}{Output file of an ABF calculation}
 {\unix \ filename}
 {\texttt{abf.dat}}
 {Output file containing, for each value of the reaction
@@ -397,11 +418,11 @@ profile.}
 
 
 \item
-\NAMDCONFWDEF{inFiles}{Input files for an ABF \ calculation}
+\NAMDCONFWDEF{inFiles}{Input files for an ABF calculation}
 {\tcl\ list of \unix\ filenames}
 {empty list}
 {Input files containing the same data as in {\tt outFileName}, and
- that may, therefore, be used to restart an ABF \ simulation. The
+ that may, therefore, be used to restart an ABF simulation. The
  new free energies and forces will then be written out based on the
  original information supplied by these files. This command may also
  be used to combine data obtained from separate runs.}
@@ -478,7 +499,7 @@ profile.}
 {\yes \ or \no}
 {\yes}
 {By default, a biasing force is applied along the reaction coordinate,
- $\xi$, in ABF \ calculations. It may be, however, desirable to set
+ $\xi$, in ABF calculations. It may be, however, desirable to set
  this option to \no \ to monitor the evolution of the system along
  $\xi$ and collect the forces and the free energy, yet,
  without introducing any bias in the simulation.}
@@ -493,7 +514,7 @@ profile.}
  is performed, supplying a probability distribution
  for the reaction coordinate, $\xi$. As an initial
  guess of the biases required to overcome the free energy
- barriers, use can be made of a previous ABF \ simulation ---
+ barriers, use can be made of a previous ABF simulation ---
  \cf {\tt inFiles}. In addition, specific restraints may
  be defined using the {\tt restraintList} feature described below.}
 
@@ -501,7 +522,7 @@ profile.}
 
 
 
-\subsubsection{Including restraints in ABF \ simulations}
+\subsubsection{Including restraints in ABF simulations}
 
 
 In close connection with the possibility to run umbrella sampling simulations, the
@@ -567,7 +588,7 @@ name {harm atom {kx ky kz} {x0 y0 z0} }
 
 
 
-\subsubsection{Important recommendations when running ABF \ simulations}
+\subsubsection{Important recommendations when running ABF simulations}
 
 
 The formalism implemented in \namd \ had been originally devised in the

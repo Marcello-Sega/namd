@@ -7,6 +7,7 @@
 # Startup  #
 ############
 
+package provide abf 1.4.0
 
 #########################
 # Parameter definitions #
@@ -17,8 +18,6 @@ namespace eval ::ABF {
 set version "1.4"
 
 if {! [info exists ABFdir]} { set ABFdir [file dirname [info script]] }
-# If it fails, try the local directory
-if { $ABFdir == "" } { set ABFdir "." }
 
 TclForces		on
 TclForcesScript		$ABFdir/abf_script.tcl
