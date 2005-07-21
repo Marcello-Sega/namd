@@ -574,6 +574,7 @@ release: all
 	mkdir $(RELEASE_DIR_NAME)
 	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
 	for f in $(DOC_FILES); do cp .rootdir/$$f $(RELEASE_DIR_NAME); done
+	cp -r .rootdir/lib $(RELEASE_DIR_NAME)
 	if [ -r $(CHARM)/bin/charmd ]; then \
 	  $(COPY) $(CHARM)/bin/charmd $(RELEASE_DIR_NAME); \
 	fi
@@ -592,6 +593,7 @@ winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
 	cp $(DOC_FILES) $(WIN32_RELEASE_FILES) $(RELEASE_DIR_NAME)
+	cp -r lib $(RELEASE_DIR_NAME)
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	echo $(CHARM)
 	ls -l $(CHARM)/lib

@@ -127,8 +127,11 @@ begin:
   endif
   if ( $ARCH =~ *Win32* ) then
    echo "Converting text files"
-   foreach f ( .rootdir/*.txt )
-     perl -p -i -e 's/(?<!\r)\n$/\r\n/' < $f > $f:t
+   mkdir lib; mkdir lib/abf
+   foreach d ( . lib lib/abf )
+     foreach f ( .rootdir/$d/*.txt .rootdir/$d/*.tcl )
+       perl -p -i -e 's/(?<!\r)\n$/\r\n/' < $f > $d/$f:t
+     end
    end
   endif
   echo "Linking src, plugins, and psfgen"
