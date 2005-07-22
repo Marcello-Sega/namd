@@ -482,7 +482,7 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.optional("DCDfreq", "DCDfile", "DCD trajectory output file name",
      dcdFilename);
    opts.optionalB("DCDfreq", "DCDunitcell", "Store unit cell in dcd timesteps?",
-       &dcdUnitCell, FALSE);
+       &dcdUnitCell);
 
    opts.optional("main", "velDCDfreq", "Frequency of velocity "
     "DCD output, in timesteps", &velDcdFrequency, 0);
@@ -1512,6 +1512,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    lattice.set(cellBasisVector1,cellBasisVector2,cellBasisVector3,cellOrigin);
 
+   if (! opts.defined("DCDunitcell")) {
+      dcdUnitCell = lattice.a_p() && lattice.b_p() && lattice.c_p();
+   }
+
    char s[129];
 
    ///// cylindricalBC stuff
@@ -2507,9 +2511,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << dcdFilename << "\n";
      iout << iINFO << "DCD FREQUENCY          " 
         << dcdFrequency << "\n";
-     if ( ! firstTimestep ) {
-       iout << iWARN << "INITIAL COORDINATES WILL NOT BE WRITTEN TO DCD FILE\n";
-     }
+     iout << iINFO << "DCD FIRST STEP         " 
+        << ( firstTimestep + dcdFrequency ) << "\n";
      if ( dcdUnitCell ) {
        iout << iINFO << "DCD FILE WILL CONTAIN UNIT CELL DATA\n";
      }
@@ -2539,9 +2542,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         << velDcdFilename << "\n";
      iout << iINFO << "VELOCITY DCD FREQUENCY " 
         << velDcdFrequency << "\n";
-     if ( ! firstTimestep ) {
-       iout << iWARN << "INITIAL VELOCITIES WILL NOT BE WRITTEN TO DCD FILE\n";
-     }
+     iout << iINFO << "VELOCITY DCD FIRST STEP         " 
+        << ( firstTimestep + velDcdFrequency ) << "\n";
    }
    else
    {

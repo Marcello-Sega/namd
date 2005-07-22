@@ -279,10 +279,12 @@ The initial positions will not be included in the trajectory file.
 
 \item
 \NAMDCONFWDEF{DCDUnitCell}{write unit cell data to dcd file?}
-{{\tt yes} or {\tt no}}{{\tt no}}
+{{\tt yes} or {\tt no}}{{\tt yes} if periodic cell}
 {
 If this option is set to {\tt yes}, then DCD files will contain unit
 cell information in the style of Charmm DCD files.
+By default this option is enabled if the simulation cell is periodic
+in all three dimensions and disabled otherwise.
 }
 
 \item
