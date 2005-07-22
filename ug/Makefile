@@ -1,7 +1,7 @@
 #####
 # define version
 #####
-NAMD_VERSION = 2.5
+NAMD_VERSION = 2.6b1
 
 #####
 # specific names of programs used in make commands
@@ -87,7 +87,7 @@ $(DOCDIR)/ug.ps: $(SRCFILES)
 
 namd_version.tex:
 	$(DELETE) namd_version.tex ; \
-	echo '\\newcommand{\\NAMDVER}' "{$(NAMD_VERSION)}" > namd_version.tex
+	csh -c "echo \\\\newcommand\{\\\\NAMDVER\} \{$(NAMD_VERSION)\} > namd_version.tex"
 
 psfgen_macros.tex: ../psfgen/doc/ug_macros.tex
 	$(DELETE) psfgen_macros.tex ; \

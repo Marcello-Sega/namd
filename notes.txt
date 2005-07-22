@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                       NAMD 2.5 Release Notes                       |
+|                      NAMD 2.6b1 Release Notes                      |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -472,20 +472,20 @@ Download TCL, FFTW, and plugins libraries:
   tar xzf tcl-linux.tar.gz
 
 Unpack NAMD and matching Charm++ source code and enter directory:
-  tar xzf NAMD_2.5_Source.tar.gz
-  cd NAMD_2.5_Source
-  tar xf charm.tar
-  cd charm
+  tar xzf NAMD_2.6b1_Source.tar.gz
+  cd NAMD_2.6b1_Source
+  tar xf charm-5.9.tar
+  cd charm-5.9
 
 Build and test the Charm++/Converse library:
-  ./build charm++ net-linux -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux --no-shared -O -DCMK_OPTIMIZE=1
   cd net-linux/pgms/charm++/megatest/
   make pgm
   ./charmrun ++local +p4 ./pgm    (also try running on multiple nodes)
   cd ../../../../..
 
 Edit various configuration files:
-  vi Make.charm  (set CHARMBASE to .rootdir/charm or full path to charm)
+  vi Make.charm  (set CHARMBASE to .rootdir/charm-5.9 or full path to charm)
   vi arch/Linux-i686.fftw     (fix library name and path to files)
   vi arch/All-Unix.plugins    (fix path to files)
   vi arch/Linux-i686.tcl      (fix library version and path to TCL files)
@@ -510,10 +510,10 @@ contains a directory with the name of the platform, and the plugins
 platform names are different from fftw and tcl.  These libraries don't
 change very often, so you should find a permanent home for them.
 
-Unpack the NAMD source code and the enclosed charm.tar archive.  This
+Unpack the NAMD source code and the enclosed charm-5.9.tar archive.  This
 version of Charm++ is the same one used to build the released binaries
 and is more likely to work and be bug free than any other we know of.
-Edit Make.charm to point at .rootdir/charm or the full path to the
+Edit Make.charm to point at .rootdir/charm-5.9 or the full path to the
 charm directory if you unpacked outside of the NAMD source directory.
 
 Run the config script without arguments to list the available builds,
@@ -535,11 +535,11 @@ be listed.  Any options or compiler tags are listed separately and
 must be separated by spaces on the build command line.  Run the build
 command for your platform as:
 
-  ./build charm++ comm-OS-cpu options compiler -O -DCMK_OPTIMIZE=1
+  ./build charm++ comm-OS-cpu options compiler --no-shared -O -DCMK_OPTIMIZE=1
 
 For this specific example:
 
-  ./build charm++ net-linux clustermatic tcp icc -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux clustermatic tcp icc --no-shared -O -DCMK_OPTIMIZE=1
 
 The README distributed with Charm++ contains a complete explanation.
 You only actually need the bin, include, and lib subdirectories, so
@@ -568,7 +568,7 @@ choices are defined by files in charm/src/arch/common/.
 If you want to run NAMD on Myrinet one option is to build a Myrinet 
 GM library network version by specifying the "gm" option as in:
 
-  ./build charm++ net-linux gm icc -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux gm icc --no-shared -O -DCMK_OPTIMIZE=1
 
 You would then change "net-linux-icc" to "net-linux-gm-icc" in your
 namd2/arch/Linux-i686-icc.arch file (or create a new .arch file).
