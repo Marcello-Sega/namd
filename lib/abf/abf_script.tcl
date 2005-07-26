@@ -151,6 +151,7 @@ if { $historyFile != "none" } {
 }
 
 
+
 ##################################################
 # Read previous results if available             #
 ##################################################
@@ -233,6 +234,7 @@ if { $timestep == 0 } {
 if { ($xi >= $xiMin) && ($xi < $xiMax) } {
 # To do only if we're in the right range of xi
 # Force data is from previous timestep
+# Same thing for coordinates
 	
     set fxi [expr {($timeStored == $timestep - 1)? \
 	    [ABForce] - $storedForce : [ABForce]}]
@@ -250,6 +252,10 @@ if { ($xi >= $xiMin) && ($xi < $xiMax) } {
     # we need it anyway if we use SFM
     set fxi [expr {($timeStored == $timestep - 1)? \
 	    [ABForce] - $storedForce : [ABForce]}]
+}
+
+if { $writeFxiFreq && [expr {$timestep % $writeFxiFreq} ] == 0 } {
+	print "ABF> Fxi at timestep $timestep : $fxi"
 }
 
 # Get coord data for current timestep
@@ -285,11 +291,9 @@ if { $xi >= $xiMin && $xi < $xiMax && ($applyBias != "no")} {
   if {![info exists SFM]} {
     # We're inside the reaction coordinate range : try to apply ABF
     set F [fSmoothed]
-    if { $F != 0 } {
-	ABFapply bias $F
-	set storedForce $F
-	set timeStored $timestep
-    }
+
+    set storedForce [ABFapply $F]
+    set timeStored $timestep
 
   } else {
     # now we're doing SFM
@@ -313,9 +317,8 @@ if { $xi >= $xiMin && $xi < $xiMax && ($applyBias != "no")} {
     
     set FL [ expr {$sigma * $random - $friction * $vxi} ]
 
-    ABFapply bias [expr {$FL - $fxi}]
     # Langevin force minus (approximate) force along xi
-    set storedForce [expr {$FL - $fxi}]
+    set storedForce [ABFapply [expr {$FL - $fxi}] ]
     set timeStored $timestep
   }
   
@@ -333,17 +336,17 @@ if { $xi >= $xiMin && $xi < $xiMax && ($applyBias != "no")} {
         # if we are closer to xiMax, restrain down towards xiMax
         # else restrain up towards xiMin
         set rest  [expr {($dm > $dM) ? -$forceConst * $dM : $forceConst * $dm}]
-        ABFapply bound $rest
+        ABFapply $rest
 
     } else {
         if { ($xi < $xiMin) && ($forceConst > 0.0) } {
                 set rest  [expr {$forceConst * ($xiMin - $xi)}]
-                ABFapply bound $rest
+                ABFapply $rest
         }
 
         if { ($xi > $xiMax ) && ($forceConst > 0.0) } {
                 set rest  [expr {$forceConst * ($xiMax - $xi)}]
-                ABFapply bound $rest
+                ABFapply $rest
         }
     }
 }

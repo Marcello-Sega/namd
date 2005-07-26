@@ -73,26 +73,24 @@ proc ABForce {} {
 # ABFapply : applies the force given as a parameter along reaction coordinate #
 ###############################################################################
 
-proc ABFapply {type force} {
+proc ABFapply {force} {
 
-    set ABFcoord::type $type
     set ABFcoord::force $force
 
     namespace eval ABFcoord {
-	# We wouldn't need type, if we didn't cheat on the Jacobian term
 
 	set dr  [vecsub $coords($group2) $coords($group1)]
 	set r	[veclength $dr]
 	set nv	[vecnorm $dr] ;# unity vector group1 -> group2
 
-	if { $type == "bias" } {
-		# compensate for the Jacobian term 2kT/r
-		set force [expr {$force - 2.0 * 0.001986 * $::ABF::temp / $r}]
-	}
+	# compensate for the Jacobian term 2kT/r
+	set force [expr {$force - 2.0 * 0.001986 * $::ABF::temp / $r}]
 
 	set F2 [vecscale  $force $nv]
 
 	addforce $group1 [vecinvert $F2]
 	addforce $group2 $F2
+
+	return $force
     }
 }

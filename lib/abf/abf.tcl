@@ -7,7 +7,7 @@
 # Startup  #
 ############
 
-package provide abf 1.4.0
+package provide abf 1.6.0
 
 #########################
 # Parameter definitions #
@@ -15,9 +15,11 @@ package provide abf 1.4.0
 
 namespace eval ::ABF {
 
-set version "1.4"
+set version "1.6"
 
 if {! [info exists ABFdir]} { set ABFdir [file dirname [info script]] }
+# If it fails, try the local directory
+if { $ABFdir == "" } { set ABFdir "." }
 
 TclForces		on
 TclForcesScript		$ABFdir/abf_script.tcl
@@ -34,13 +36,15 @@ df              1.0
 fMax            60.0
 dSmooth         0.0
 writeXiFreq     0
+writeFxiFreq    0
 usMode		no
 applyBias       yes
 moveBoundary    0
 temp		300.0
+abf2		{}
 }
 
-set mandatory "coordinate xiMin xiMax dxi abf1 abf2"
+set mandatory "coordinate xiMin xiMax dxi abf1"
 
 # these settings are not displayed at startup
 set silent "restraintList usMode SFM applyBias direction"

@@ -55,8 +55,8 @@ proc ABFcoord {} {
 proc ABForce {} {
     namespace eval ABFcoord {
 	
-	# Assume that ABFcoord has already been called
-	# vx vy vz is set
+	# ABFcoord has already been called (last timestep)
+	# vx vy vz are set
 
 	set nv	[vecnorm "$vx $vy 0."] ;# unity vector
 
@@ -67,7 +67,7 @@ proc ABForce {} {
 	set f2 0.0
 	foreach a $abf2 { set f2 [expr {$f2 + [vecdot $forces($a) $nv]} ]}
 
-	return [expr ($f2 - $f1) / 2.0]
+	return [expr {($f2 - $f1) / 2.0}]
     }
 }
 
@@ -76,28 +76,23 @@ proc ABForce {} {
 # ABFapply : applies the force given as a parameter along reaction coordinate #
 ###############################################################################
 
-proc ABFapply {type force} {
-    set ABFcoord::type $type
+proc ABFapply {force} {
     set ABFcoord::force $force
 
     namespace eval ABFcoord {
-	# We wouldn't need type, if we didn't cheat on the Jacobian term
-
-	# Assume that ABFcoord and ABFthermoForce have been called
-	# i.e. {vx vy vz} and r are set
+	# ABFcoord and ABFthermoForce have been called
+	# {vx vy vz} and r are set
 
 	set nv	[vecnorm "$vx $vy 0."] ;# unity vector
 
-	if { $type == "bias" } {
-		# compensate for the Jacobian term kT/r
-		set force [expr {$force - 0.001986 * $::ABF::temp / $r}]
-	}
+	# compensate for the Jacobian term kT/r
+	set force [expr {$force - 0.001986 * $::ABF::temp / $r}]
 
 	set F2 [vecscale $force $nv]
 
 	addforce $g1 [vecinvert $F2]
 	addforce $g2 $F2
 
-	return
+	return $force
     }
 }

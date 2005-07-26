@@ -9,6 +9,6 @@
 # script is sourced, the variable $dir must contain the
 # full path name of this file's directory.
 
-package ifneeded abf 1.4.0 [list source [file join $dir abf.tcl]]
+package ifneeded abf 1.6.0 [list source [file join $dir abf.tcl]]
 package ifneeded vectors 1.0.0 [list source [file join $dir vectors.tcl]]
 

@@ -63,7 +63,7 @@ proc ABForce {} {
 # ABFapply : applies the force given as a parameter along reaction coordinate #
 ###############################################################################
 
-proc ABFapply {type force} {
+proc ABFapply {force} {
     set ABFcoord::force $force
     
     namespace eval ABFcoord {
@@ -73,4 +73,6 @@ proc ABFapply {type force} {
 	addforce $g [vecinvert $F2]
 	addforce $abf2 $F2
     }
+
+    return $force
 }

@@ -8,7 +8,7 @@ set ABFcoordID "Distance between two atoms (beware of constraints!)"
 # Define coordinate-specific optional parameters with default values
 array set ABFoptions {
 temp		300.0
-dxi			0.1
+dxi		0.1
 dSmooth		0.3
 }
 
@@ -29,6 +29,7 @@ proc ABFstartup {} {
 	
 ################################################################
 # ABFcoord : reads coord, returns value of reaction coordinate #
+# called first						       #
 ################################################################
 
 proc ABFcoord {} {
@@ -43,6 +44,7 @@ proc ABFcoord {} {
 
 ############################################################
 # ABForce : returns force along reaction coordinate        #
+# called third     					   #
 ############################################################
 
 proc ABForce {} {
@@ -66,28 +68,24 @@ proc ABForce {} {
 # ABFapply : applies the force given as a parameter along reaction coordinate #
 ###############################################################################
 
-proc ABFapply {type force} {
-    set ABFcoord::type $type
+proc ABFapply {force} {
+
     set ABFcoord::force $force
 
     namespace eval ABFcoord {
-
-	# We wouldn't need type, if we didn't cheat on the Jacobian term
 
 	set dr  [vecsub $coords($abf2) $coords($abf1)]
 	set r	[veclength $dr]
 	set nv	[vecnorm $dr] ;# unity vector abf1 -> abf2
 
-	if { $type == "bias" } {
-		set force [expr {$force - 2.0 * 0.001986 * $::ABF::temp / $r}]
-		# compensate for the Jacobian term
-	}
+	set force [expr {$force - 2.0 * 0.001986 * $::ABF::temp / $r}]
+	# compensate for the Jacobian term
 
 	set F2 [vecscale $force $nv]
 
 	addforce $abf1 [vecinvert $F2]
 	addforce $abf2 $F2
 
-	return
+	return $force
     }
 }
