@@ -325,6 +325,11 @@ This parameter is valid only if {\tt reassignIncr} has been set.}
 
 \subsection{Boundary Conditions}
 
+In addition to periodic boundary conditions, NAMD provides spherical and
+cylindrical boundary potentials to contain atoms in a given volume.
+To apply more general boundary potentials written in Tcl, use
+{\tt tclBC} as described in Sec.~\ref{section:tclBC}.
+
 \subsubsection{Spherical harmonic boundary conditions}
 
 \NAMD\ provides spherical harmonic boundary conditions.  These 
@@ -1108,11 +1113,13 @@ a simulation to be monitored without the possibility of perturbing it.}
 \end{itemize}
 
 
-\subsubsection{Tcl interface}
+\subsubsection{Tcl Forces and Analysis}
 
 \NAMD\ provides a limited Tcl scripting interface designed for applying forces and performing on-the-fly analysis.
 This interface is efficient if only a few coordinates, either of individual atoms or centers of mass of groups of atoms, are needed.
 In addition, information must be requested one timestep in advance.
+To apply forces individually to a potentially large number of atoms, use
+{\tt tclBC} instead as described in Sec.~\ref{section:tclBC}.
 The following configuration parameters are used to enable the Tcl interface:
 
 \begin{itemize}
@@ -1336,6 +1343,201 @@ tclForcesScript {
   }
 }
 \end{verbatim}
+
+
+\subsubsection{Tcl Boundary Forces}
+\label{section:tclBC}
+
+While the {\tt tclForces} interface described above is very flexible, it is only
+efficient for applying forces to a small number of pre-selected atoms.
+Applying forces individually to a potentially large number of atoms, such
+as applying boundary conditions, is much more efficient with the {\tt tclBC}
+facility described below.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{tclBC}{are Tcl boundary forces active?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not Tcl interface is active.  If it 
+is set to {\tt off}, then no Tcl code is executed.  
+If it is set to {\tt on}, then Tcl code specified in
+the {\tt tclBCScript} parameter is executed.}
+
+\item
+\NAMDCONF{tclBCScript}{input for Tcl interface}{\{script\}}
+{Must contain the script 
+itself between \{ and \} (may include multiple lines).
+This parameter may occur only once.
+The script(s) should perform any required initialization on the Tcl interpreter and define a procedure {\tt calcforces <step> <unique> [args...]} to be called every timestep.
+}
+
+\item
+\NAMDCONF{tclBCArgs}{extra args for tclBC calcforces command}{\{args...\}}
+{The string (or Tcl list) provided by this option is appended to the
+tclBC calcforces command arguments.
+This parameter may appear multiple times during a run in order to alter
+the parameters of the boundary potential function.
+}
+
+\end{itemize}
+
+The script provided in {\tt tclBCScript} and the {\tt calcforces} procedure
+it defines are executed in multiple Tcl interpreters, one for every
+processor that owns patches.
+These {\tt tclBC} interpreters do not share state with the Tcl interpreter used
+for {\tt tclForces} or config file parsing.
+The {\tt calcforces} procedure is passed as arguments
+the current timestep, a ``unique'' flag which is non-zero for exactly
+one Tcl interpreter in the simulation (that on the processor of patch zero),
+and any arguments provided to the most recent {\tt tclBCArgs} option.
+The ``unique'' flag is useful to limit printing of messages, since the
+command is invoked on multiple processors.
+
+The {\tt print}, {\tt vecadd}, {\tt vecsub}, {\tt vecscale},
+{\tt getbond}, {\tt getangle}, {\tt getdihedral},
+{\tt anglegrad}, and {\tt dihedralgrad} commands described under
+{\tt tclForces} are available at all times.
+
+The {\tt wrapmode <mode>} command, available in the {\tt tclBCScript} or the
+{\tt calcforces} procedure, determines how coordinates obtained in the
+calcforces procedure are wrapped around periodic boundaries.  The options
+are:
+
+\begin{itemize}
+
+\item
+{\tt patch}, (default) the position in NAMD's internal patch data structure,
+requires no extra calculation and is almost the same as {\tt cell}
+
+\item
+{\tt input}, the position corresponding to the input files of the simulation
+
+\item
+{\tt cell}, the equivalent position in the unit cell centered on the {\tt cellOrigin}
+
+\item
+{\tt nearest}, the equivalent position nearest to the {\tt cellOrigin}
+
+\end{itemize}
+
+The following commands are available from within the {\tt calcforces} procedure:
+
+\begin{itemize}
+
+\item
+{\tt nextatom} \\
+Sets the internal counter to a new atom and return 1, or return 0
+if all atoms have been processed (this may even happen the first call).
+This should be called as the condition of a while loop, i.e.,
+{\tt while \{[nextatom]\} \{ ... \}} to iterate over all atoms.
+One one atom may be accessed at a time.
+
+\item
+{\tt dropatom} \\
+Excludes the current atom from future iterations on this processor
+until {\tt cleardrops} is called.  Use this to eliminate extra work
+when an atom will not be needed for future force calculations.
+If the atom migrates to another processor it may reappear, so this
+call should be used only as an optimization.
+
+\item
+{\tt cleardrops} \\
+All available atoms will be iterated over by {\tt nextatom} as if
+{\tt dropatom} had never been called.
+
+\item
+{\tt getcoord} \\
+Returns a list \{x y z\} of the position of the current atom wrapped
+in the periodic cell (if there is one) in the current wrapping mode
+as specified by {\tt wrapmode}.
+
+\item
+{\tt getcell} \\
+Returns a list of 1--4 vectors containing the cell origin (center)
+and as many basis vectors as exist, i.e.,
+{\tt \{\{ox oy oz\} \{ax ay az\} \{bx by bz\} \{cx cy cz\}\}}.
+It is more efficient to set the wrapping mode than to do periodic image
+calculations in Tcl.
+
+\item
+{\tt getmass} \\
+Returns the mass of the current atom.
+
+\item
+{\tt getcharge} \\
+Returns the charge of the current atom.
+
+\item
+{\tt getid} \\
+Returns the 1-based ID of the current atom.
+
+\item
+{\tt addforce \{<fx> <fy> <fz>\}} \\
+Adds the specified force to the current atom for this step.
+
+\item
+{\tt addenergy <energy>} \\
+Adds potential energy to the BOUNDARY column of NAMD output.
+
+\end{itemize}
+
+
+As an example, these spherical boundary condition forces:
+
+\begin{verbatim}
+sphericalBC        on
+sphericalBCcenter  0.0,0.0,0.0
+sphericalBCr1      48
+sphericalBCk1      10
+sphericalBCexp1    2
+\end{verbatim}
+
+Are replicated in the following script:
+
+\begin{verbatim}
+tclBC on
+tclBCScript {
+  proc veclen2 {v1} {
+    foreach {x1 y1 z1} $v1 { break }
+    return [expr $x1*$x1 + $y1*$y1 + $z1*$z1]
+  }
+
+  # wrapmode input
+  # wrapmode cell
+  # wrapmode nearest
+  # wrapmode patch ;# the default
+
+  proc calcforces {step unique R K} {
+    if { $step % 20 == 0 } {
+      cleardrops
+      # if $unique { print "clearing dropped atom list at step $step" }
+    }
+    set R [expr 1.*$R]
+    set R2 [expr $R*$R]
+    set tol 2.0
+    set cut2 [expr ($R-$tol)*($R-$tol)]
+
+    while {[nextatom]} {
+      # addenergy 1 ; # monitor how many atoms are checked
+      set rvec [getcoord]
+      set r2 [veclen2 $rvec]
+      if { $r2 < $cut2 } {
+        dropatom
+        continue
+      }
+      if { $r2 > $R2 } {
+        # addenergy 1 ; # monitor how many atoms are affected
+        set r [expr sqrt($r2)]
+        addenergy [expr $K*($r - $R)*($r - $R)]
+        addforce [vecscale $rvec [expr -2.*$K*($r-$R)/$r]]
+      }
+    }
+  }
+}
+
+tclBCArgs {48.0 10.0}
+\end{verbatim}
+
 
 \subsection{Free Energy of Conformational Change Calculations}
 \label{section:fenergy}
