@@ -235,6 +235,14 @@ public:
   static void calc_self_energy_fullelect_int(nonbonded *);
   static void calc_self_energy_merge_fullelect_int(nonbonded *);
 
+//pressure profile calcualtion
+  static void calc_pair_energy_pprof(nonbonded *);
+  static void calc_pair_energy_fullelect_pprof(nonbonded *);
+  static void calc_pair_energy_merge_fullelect_pprof(nonbonded *);
+  static void calc_self_energy_pprof(nonbonded *);
+  static void calc_self_energy_fullelect_pprof(nonbonded *);
+  static void calc_self_energy_merge_fullelect_pprof(nonbonded *);
+
 };
 
 #endif

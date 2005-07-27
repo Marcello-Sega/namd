@@ -91,11 +91,13 @@
 #undef FEP
 #undef LES
 #undef INT
+#undef PPROF
 #undef LAM
 #define FEPNAME(X) LAST( X )
 #define FEP(X)
 #define LES(X)
 #define INT(X)
+#define PPROF(X)
 #define LAM(X)
 #ifdef FEPFLAG
   #undef FEPNAME
@@ -118,6 +120,14 @@
   #undef INT
   #define FEPNAME(X) LAST( X ## _int )
   #define INT(X) X
+#endif
+#ifdef PPROFFLAG
+  #undef FEPNAME
+  #undef INT
+  #undef PPROF
+  #define FEPNAME(X) LAST( X ## _pprof )
+  #define INT(X) X
+  #define PPROF(X) X
 #endif
 
 #define LAST(X) X
@@ -146,7 +156,7 @@ void ComputeNonbondedUtil :: NAME
   // speedup variables
   BigReal *reduction = params->reduction;
 
-  INT(
+  PPROF(
   BigReal *pressureProfileReduction = params->pressureProfileReduction;
   )
 

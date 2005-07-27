@@ -87,3 +87,30 @@
 #undef CALCENERGY
 #undef INTFLAG
 
+
+#define PPROFFLAG
+#define CALCENERGY
+
+#define NBTYPE NBPAIR
+#include "ComputeNonbondedBase.h"
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
+#undef FULLELECT
+#undef  NBTYPE
+
+#define NBTYPE NBSELF
+#include "ComputeNonbondedBase.h"
+#define FULLELECT
+#include "ComputeNonbondedBase.h"
+#define MERGEELECT
+#include "ComputeNonbondedBase.h"
+#undef MERGEELECT
+#undef FULLELECT
+#undef  NBTYPE
+
+#undef CALCENERGY
+#undef PPROFFLAG
+

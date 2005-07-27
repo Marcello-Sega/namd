@@ -260,7 +260,14 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_les;
-  } else if ( pairInteractionOn || pressureProfileNonbonded ) {
+  } else if ( pressureProfileNonbonded ) {
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_pprof;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_pprof;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_pprof;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_pprof;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_pprof;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_pprof;
+  } else if ( pairInteractionOn ) {
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_int;
     ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_int;
     ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_int;
