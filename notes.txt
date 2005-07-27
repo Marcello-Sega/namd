@@ -14,37 +14,42 @@ reporting bugs, and detailed compilation instructions.
 
 New Features
 
---- Improved Parallel Scaling and Serial Performance ---
+--- Ports to Itanium, Altix, and Opteron/Athlon64/EMT64 ---
 
-Load balancer and communication library improvements that allow
-NAMD to scale to 1000 or more processors on PSC's Lemieux are
-included in this release.  For more modest Linux clusters we now
-provide TCP versions that outperform traditional UDP for gigabit
-ethernet and all released Linux binaries are built with the Intel
-compiler for better performance on Pentium 4 and Xeon processors
-and no penalty for Pentium III or Athlon processors.  Finally,
-the inner loop has been optimized to incorporate pairlists that
-are saved between steps and automatically adjusted.  Pairlists
-can be disabled to save memory via the pairlistMinProcs option.
+NAMD runs very fast on the Itanium processor under Linux, including
+the SGI Altix.  Native binaries for 64-bit x86 processors such as
+AMD Opteron and Intel EMT64 are 25% faster than 32-bit binaries.
 
---- Trajectory Reading and Interaction Energy Analysis ---
+--- Improved Serial Performance on POWER and PowerPC ---
 
-A new "coorfile" command allows Tcl scripts to read coordinates
-from DCD files, allowing energies and forces to be evaluated for
-a saved trajectory.  This is most usefully combined with the new
-pair interaction feature, allowing the isolation of forces between
-two specified groups of atoms, or within a single group.
+Tuning of the NAMD inner loop has provided a 30% performance boost
+with the IBM XL compiler.  New Mac OS X binaries are up to 70%
+faster, but users must download the IBM XL runtime library from
+http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/
 
---- Improved Constant Pressure Simulation and Coordinate Wrapping ---
+--- Adaptive Biasing Force Free Energy Calculations ---
 
-Average pressure is calculated for steps between energy outputs.
-Berendsen method uses average rather then instantaneous pressure.
-Pressure contributions due to steering forces handled consistently.
-Ratio of first two basis vectors can be fixed for flexible cells.
-Any connected fragment can be wrapped to the periodic cell on
-output, rather than only wrapping water molecules.  Coordinates
-can be wrapped to the true nearest image for hexagonal or similar
-highly faceted periodic cells.
+A new method, implemented in Tcl, efficiently calculates the
+potential of mean force along a reaction coordinate by applying
+adaptive biasing forces to provide uniform sampling.
+
+--- Tcl-Based Boundary Potentials ---
+
+Tcl-scripted forces may be efficiently applied individually to
+large numbers of atoms to implement boundaries and similar forces.
+
+--- Reduced Memory Usage for Unusual Simulations ---
+
+Memory usage for simulations of large, highly bonded structures
+such as covalent crystals and for sparse simulations such as
+coarse-grained models has been greatly reduced without affecting
+the performance of typical biopolymer simulations.
+
+--- Support for OPLS Force Field ---
+
+Geometric combining of Lennard-Jones sigma (radius) parameters
+(sigma_ij = sqrt(sigma_i*sigma_j), as required by the OPLS force
+field, is available with the option vdwGeometricSigma.
 
 ----------------------------------------------------------------------
 
@@ -230,6 +235,13 @@ assigned to nodes round-robin as with other network versions, or the
 ++ppn option can be used to specify the number of processes per node.
 To limit the master node to one process use the ++singlemaster option.
 
+-- SGI Altix --
+
+Be sure that the MPI_DSM_DISTRIBUTE environment variable is set, then
+use the Linux-ia64-MPT version of NAMD along with the system mpirun:
+
+  mpirun -np <procs> <configfile>
+
 -- Compaq AlphaServer SC --
 
 If your machine as a Quadrics interconnect you should use the Elan
@@ -240,7 +252,7 @@ case, parallel jobs are run using the "prun" command as follows:
 
 There are additional options.  Consult your local documentation.
 
--- IBM RS/6000 SP --
+-- IBM POWER Clusters --
 
 Run the MPI version of NAMD as you would any POE program.  The options
 and environment variables for poe are various and arcane, so you should
@@ -248,13 +260,6 @@ consult your local documentation for recommended settings.  As an
 example, to run on Blue Horizon one would specify:
 
   poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
-
--- Cray T3E --
-
-The T3E version has been tested on the Pittsburgh Supercomputer Center
-T3E.  To run on <procs> processors, use the mpprun command:
-
-  mpprun -n <procs> namd2 <configfile>
 
 -- Origin 2000 --
 

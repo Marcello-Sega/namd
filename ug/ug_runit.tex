@@ -34,6 +34,18 @@ The provided charmrun program for these platforms is only a script
 that attempts to translate charmrun options into mpirun options, but
 due to the diversity of MPI libraries it often fails to work.
 
+\subsection{Mac OS X Users Must Install the IBM XL C/C++ Run-Time Library}
+
+The IBM XL C/C++ compiler provides a significant performance boost
+to NAMD on PowerPC G4 and G5 processors.  Unfortunately, the runtime
+library cannot be statically linked, so you must download it from
+{\tt http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/}
+and install it based on the the README file in that directory.  If
+the library is not installed, running NAMD will product this error:
+\begin{verbatim}
+dyld: ./namd2 can't open library: /opt/ibmcmp/lib/libibmc++.A.dylib
+\end{verbatim}
+
 \subsection{Individual Windows, Linux, Mac OS X, or Other Unix Workstations}
 
 Individual workstations use the same version of NAMD as workstation
@@ -197,6 +209,15 @@ assigned to nodes round-robin as with other network versions, or the
 ++ppn option can be used to specify the number of processes per node.
 To limit the master node to one process use the ++singlemaster option.
 
+\subsection{SGI Altix}
+
+Be sure that the {\tt MPI\_DSM\_DISTRIBUTE} environment variable is set, then
+use the Linux-ia64-MPT version of NAMD along with the system mpirun:
+
+\begin{verbatim}
+mpirun -np <procs> <configfile>
+\end{verbatim}
+
 \subsection{Compaq AlphaServer SC}
 
 If your machine as a Quadrics interconnect you should use the Elan
@@ -209,7 +230,7 @@ case, parallel jobs are run using the ``prun'' command as follows:
 
 There are additional options.  Consult your local documentation.
 
-\subsection{IBM RS/6000 SP}
+\subsection{IBM POWER Clusters}
 
 Run the MPI version of NAMD as you would any POE program.  The options
 and environment variables for poe are various and arcane, so you should
@@ -218,15 +239,6 @@ example, to run on Blue Horizon one would specify:
 
 \begin{verbatim}
   poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
-\end{verbatim}
-
-\subsection{Cray T3E}
-
-The T3E version has been tested on the Pittsburgh Supercomputer Center
-T3E.  To run on <procs> processors, use the mpprun command:
-
-\begin{verbatim}
-  mpprun -n <procs> namd2 <configfile>
 \end{verbatim}
 
 \subsection{Origin 2000}
