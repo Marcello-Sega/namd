@@ -586,6 +586,10 @@ void ComputeNonbondedUtil::select(void)
     BigReal dgmax = 0;
     BigReal dvmax_r = 0;
     BigReal dgmax_r = 0;
+    BigReal fdvmax = 0;
+    BigReal fdgmax = 0;
+    BigReal fdvmax_r = 0;
+    BigReal fdgmax_r = 0;
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
       const BigReal r2_base = r2_delta * ( 1 << (i/64) );
       const BigReal r2_del = r2_base / 64.0;
@@ -594,20 +598,38 @@ void ComputeNonbondedUtil::select(void)
       BigReal x = r2_del;
       BigReal dv = ( ( t[3] * x + t[2] ) * x + t[1] ) * x + t[0] - t[4];
       BigReal dg = ( 3.0 * t[3] * x + 2.0 * t[2] ) * x + t[1] - t[5];
-      if ( fabs(dv) > dvmax ) { dvmax = fabs(dv); dvmax_r = r; }
-      if ( fabs(dg) > dgmax ) { dgmax = fabs(dg); dgmax_r = r; }
+      if ( t[4] != 0. && fabs(dv/t[4]) > fdvmax ) {
+        fdvmax = fabs(dv/t[4]); fdvmax_r = r;
+      }
+      if ( fabs(dv) > dvmax ) {
+        dvmax = fabs(dv); dvmax_r = r;
+      }
+      if ( t[5] != 0. && fabs(dg/t[5]) > fdgmax ) {
+        fdgmax = fabs(dg/t[5]); fdgmax_r = r;
+      }
+      if ( fabs(dg) > dgmax ) {
+        dgmax = fabs(dg); dgmax_r = r;
+      }
 #if 0
       if (dv != 0.) CkPrintf("TABLE %d ENERGY ERROR %g AT %g (%d)\n",j,dv,r,i);
       if (dg != 0.) CkPrintf("TABLE %d FORCE ERROR %g AT %g (%d)\n",j,dg,r,i);
 #endif
     }
     if ( dvmax != 0.0 ) {
-      iout << iINFO << "NONZERO IMPRECISION IN " << table_name <<
+      iout << iINFO << "ABSOLUTE IMPRECISION IN " << table_name <<
         " TABLE ENERGY: " << dvmax << " AT " << dvmax_r << "\n" << endi;
     }
+    if ( fdvmax != 0.0 ) {
+      iout << iINFO << "RELATIVE IMPRECISION IN " << table_name <<
+        " TABLE ENERGY: " << fdvmax << " AT " << fdvmax_r << "\n" << endi;
+    }
     if ( dgmax != 0.0 ) {
-      iout << iINFO << "NONZERO IMPRECISION IN " << table_name <<
+      iout << iINFO << "ABSOLUTE IMPRECISION IN " << table_name <<
         " TABLE FORCE: " << dgmax << " AT " << dgmax_r << "\n" << endi;
+    }
+    if ( fdgmax != 0.0 ) {
+      iout << iINFO << "RELATIVE IMPRECISION IN " << table_name <<
+        " TABLE FORCE: " << fdgmax << " AT " << fdgmax_r << "\n" << endi;
     }
     }
 
