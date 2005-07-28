@@ -4,7 +4,6 @@ CHARMARCH = net-ppc-darwin-xlc
 CXX = xlc++_r  -qstaticinline -D_NO_MALLOC_H  -DNO_STRSTREAM_H
 CXXOPTS = -O3 -qaggrcopy=nooverlap -qalias=addrtaken:typeptr:ansi
 CXXNOALIASOPTS = -O3 -qaggrcopy=nooverlap -qalias=addrtaken:allptrs:typeptr:ansi
-CXXTHREADOPTS = 
 CC = cc
 COPTS = -O
 
