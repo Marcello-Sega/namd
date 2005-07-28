@@ -21,6 +21,7 @@ template <class Type> class ObjectArena {
       for( i = 0; i < blocks.size(); ++i ) delete [] blocks[i];
     }
     void setBlockSize(int n) { blockSize = n; }
+/*
     void setAlignment(int n) { alignment = n; }
 
     inline Type* getNewArray(int n) {
@@ -43,8 +44,8 @@ template <class Type> class ObjectArena {
       }
       return rpos;
     }
+*/
 
-/*
     inline Type* getNewArray(int n) {
       Type *rpos = pos;
       if ( n > (blockSize/2) ) {
@@ -58,7 +59,6 @@ template <class Type> class ObjectArena {
       }
       return rpos;
     }
-*/
 
   private:
     int blockSize;
