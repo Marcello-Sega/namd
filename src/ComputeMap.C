@@ -108,7 +108,12 @@ void ComputeMap::unpack (char *ptr)
   char *b = (char*)ptr;
   UNPACK(int,nPatchBased);
   UNPACK(int,nAtomBased);
-  UNPACK(int,nComputes);
+  {
+    // defeat some over-zealous compilers
+    int nComputes_tmp;
+    UNPACK(int,nComputes_tmp);
+    nComputes = nComputes_tmp;
+  }
   ResizeArray<ComputeData> newComputeData(nComputes);
   computeData = newComputeData;
   for(i=0;i<nComputes;++i)
