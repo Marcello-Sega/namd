@@ -7,9 +7,9 @@
 module ComputePmeMgr {
 
   message PmeGridMsg {
+    float qgrid[];
     int zlist[];
     char fgrid[];
-    float qgrid[];
     PmeReduction evir[];
   };
   message PmeTransMsg {
