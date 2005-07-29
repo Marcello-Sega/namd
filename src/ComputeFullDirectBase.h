@@ -56,7 +56,7 @@
 
 #ifdef FULLDIRECT_PERIODIC
       Vector p_ij(p_ij_x,p_ij_y,p_ij_z);
-      p_ij -= ( a1*rint(b1*p_ij) + a2*rint(b2*p_ij) + a3*rint(b3*p_ij) );
+      p_ij -= ( a1*floor(0.5+b1*p_ij) + a2*floor(0.5+b2*p_ij) + a3*floor(0.5+b3*p_ij) );
       p_ij_x = p_ij.x;
       p_ij_y = p_ij.y;
       p_ij_z = p_ij.z;
