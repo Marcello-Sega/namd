@@ -12,7 +12,8 @@ class InfoRecord;
 class listNode {
 public:
 listNode *next;
-InfoRecord *info;
+InfoRecord *const info;
+listNode(InfoRecord *i) : info(i) {;}
 };
 
 class Iterator{

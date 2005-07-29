@@ -6,13 +6,7 @@
 
 #include "Set.h"
 #include "elements.h"
-#ifndef NO_STRSTREAM_H
-#include <iostream.h>
-#else
-#include <iostream>
-using namespace std;
-#endif
-
+#include "InfoStream.h"
 
 Set::Set() 
 {
@@ -32,8 +26,7 @@ void Set::insert(InfoRecord *info)
 {
   if (!find(info))
   {
-    listNode *node = new listNode();
-    node->info = info;
+    listNode *node = new listNode(info);
     node->next = head;
     head = node;
   }
@@ -51,17 +44,18 @@ void Set::myRemove(listNode **n, InfoRecord *r)
 
 void Set::remove(InfoRecord * r) 
 {
-  listNode *p = head;
   if (!head)
     return;
 
-  listNode *q = head->next;
+  listNode *p = head;
+  listNode *q = p->next;
 
   if (p->info == r){
-    head = head->next;
+    head = q;
+    delete p;
     return;
   }
-     
+
   while (q){
     if (q->info == r){
       p->next = q->next;
@@ -123,7 +117,8 @@ void Set::print()
 {
   listNode *p = head;
   while (p){
-    cout << p->info->Id << " ";
+    if ( p->info ) iout << p->info->Id << " ";
+    else iout << "NULL ";
     p = p->next;
   }
 }
