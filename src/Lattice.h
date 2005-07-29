@@ -11,15 +11,8 @@
 #include <math.h>
 #include "Tensor.h"
 
-// need fp.h for rint() on T3E
-#ifdef _CRAYT3E
-#include <fp.h>
-#endif
-
-// need macro for rint() on Windows (but it is slower)
-#ifdef WIN32
-#define rint(X) floor((X)+0.5)
-#endif
+// Use floor(0.5 + X) instead of rint(X) because rint() is sensitive
+// to the current rounding mode and floor() is not.  It's just safer.
 
 typedef Vector ScaledPosition;
 
@@ -100,16 +93,13 @@ public:
   {
     ScaledPosition sn = scale(data);
     if ( p1 ) {
-      BigReal tmp = sn.x - ref.x;
-      sn.x = ref.x + tmp - rint(tmp);
+      sn.x -= floor(0.5 + sn.x - ref.x);
     }
     if ( p2 ) {
-      BigReal tmp = sn.y - ref.y;
-      sn.y = ref.y + tmp - rint(tmp);
+      sn.y -= floor(0.5 + sn.y - ref.y);
     }
     if ( p3 ) {
-      BigReal tmp = sn.z - ref.z;
-      sn.z = ref.z + tmp - rint(tmp);
+      sn.z -= floor(0.5 + sn.z - ref.z);
     }
     return unscale(sn);
   }
@@ -121,20 +111,20 @@ public:
     ScaledPosition sn = scale(data);
     if ( p1 ) {
       BigReal tmp = sn.x - ref.x;
-      BigReal rit = rint(tmp);
-      sn.x = ref.x + tmp - rit;
+      BigReal rit = floor(0.5 + tmp);
+      sn.x -= rit;
       t->i -= (int) rit;
     }
     if ( p2 ) {
       BigReal tmp = sn.y - ref.y;
-      BigReal rit = rint(tmp);
-      sn.y = ref.y + tmp - rit;
+      BigReal rit = floor(0.5 + tmp);
+      sn.y -= rit;
       t->j -= (int) rit;
     }
     if ( p3 ) {
       BigReal tmp = sn.z - ref.z;
-      BigReal rit = rint(tmp);
-      sn.z = ref.z + tmp - rit;
+      BigReal rit = floor(0.5 + tmp);
+      sn.z -= rit;
       t->k -= (int) rit;
     }
     return unscale(sn);
@@ -157,9 +147,9 @@ public:
   {
     Vector diff = pos1 - pos2;
     Vector result = diff;
-    if ( p1 ) result -= a1*rint(b1*diff);
-    if ( p2 ) result -= a2*rint(b2*diff);
-    if ( p3 ) result -= a3*rint(b3*diff);
+    if ( p1 ) result -= a1*floor(0.5 + b1*diff);
+    if ( p2 ) result -= a2*floor(0.5 + b2*diff);
+    if ( p3 ) result -= a3*floor(0.5 + b3*diff);
     return result;
   }
 
@@ -168,9 +158,9 @@ public:
   {
     Vector diff = pos1 - o;
     Vector result = diff;
-    if ( p1 ) result -= a1*rint(b1*diff);
-    if ( p2 ) result -= a2*rint(b2*diff);
-    if ( p3 ) result -= a3*rint(b3*diff);
+    if ( p1 ) result -= a1*floor(0.5 + b1*diff);
+    if ( p2 ) result -= a2*floor(0.5 + b2*diff);
+    if ( p3 ) result -= a3*floor(0.5 + b3*diff);
     return result;
   }
 
@@ -179,9 +169,9 @@ public:
   {
     Vector diff = pos1 - o;
     Vector result(0.,0.,0.);
-    if ( p1 ) result -= a1*rint(b1*diff);
-    if ( p2 ) result -= a2*rint(b2*diff);
-    if ( p3 ) result -= a3*rint(b3*diff);
+    if ( p1 ) result -= a1*floor(0.5 + b1*diff);
+    if ( p2 ) result -= a2*floor(0.5 + b2*diff);
+    if ( p3 ) result -= a3*floor(0.5 + b3*diff);
     return result;
   }
 
@@ -190,9 +180,9 @@ public:
   {
     Vector diff = pos1 - o;
     Vector result0(0.,0.,0.);
-    if ( p1 ) result0 -= a1*rint(b1*diff);
-    if ( p2 ) result0 -= a2*rint(b2*diff);
-    if ( p3 ) result0 -= a3*rint(b3*diff);
+    if ( p1 ) result0 -= a1*floor(0.5 + b1*diff);
+    if ( p2 ) result0 -= a2*floor(0.5 + b2*diff);
+    if ( p3 ) result0 -= a3*floor(0.5 + b3*diff);
     diff += result0;
     BigReal dist = diff.length2();
     Vector result(0.,0.,0.);
