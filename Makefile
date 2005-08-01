@@ -575,6 +575,7 @@ release: all
 	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
 	for f in $(DOC_FILES); do cp .rootdir/$$f $(RELEASE_DIR_NAME); done
 	cp -r .rootdir/lib $(RELEASE_DIR_NAME)
+	/bin/rm -rf $(RELEASE_DIR_NAME)/lib/CVS $(RELEASE_DIR_NAME)/lib/*/CVS
 	if [ -r $(CHARM)/bin/charmd ]; then \
 	  $(COPY) $(CHARM)/bin/charmd $(RELEASE_DIR_NAME); \
 	fi
