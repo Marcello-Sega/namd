@@ -2194,6 +2194,36 @@ void Molecule::receive_Molecule(MIStream *msg)
          int a1 = bonds[i].atom1;
          bondsByAtom[a1][byAtomSize[a1]++] = i;
        }
+       for (i=0; i<numBonds; ++i) {
+         int a1 = bonds[i].atom1;
+         int a2 = bonds[i].atom2;
+         int j;
+         if ( a1 == a2 ) {
+           char buff[512];
+           sprintf(buff,"Atom %d is bonded to itself", a1+1);
+           NAMD_die(buff);
+         }
+         for ( j = 0; j < byAtomSize[a1]; ++j ) {
+           int b = bondsByAtom[a1][j];
+           int ba1 = bonds[b].atom1;
+           int ba2 = bonds[b].atom2;
+           if ( b != i && ( (ba1==a1 && ba2==a2) || (ba1==a2 && ba2==a1) ) ) {
+             char buff[512];
+             sprintf(buff,"Duplicate bond from atom %d to atom %d", a1+1, a2+1);
+             NAMD_die(buff);
+           }
+         }
+         for ( j = 0; j < byAtomSize[a2]; ++j ) {
+           int b = bondsByAtom[a2][j];
+           int ba1 = bonds[b].atom1;
+           int ba2 = bonds[b].atom2;
+           if ( b != i && ( (ba1==a1 && ba2==a2) || (ba1==a2 && ba2==a1) ) ) {
+             char buff[512];
+             sprintf(buff,"Duplicate bond from atom %d to atom %d", a1+1, a2+1);
+             NAMD_die(buff);
+           }
+         }
+       }
        
        DebugM(3,"Building angle lists.\n");
     
@@ -5031,6 +5061,29 @@ void Molecule::build_atom_status(void) {
     else ++numHydrogenGroups;
   }
   hydrogenGroup.sort();
+
+  // sanity checking
+  int parentid = -1;
+  int hgs = 0;
+  for(i=0; i<numAtoms; ++i, --hgs) {
+    if ( ! hgs ) {  // expect group parent
+      if ( hg[i].isGP ) {
+        hgs = hg[i].atomsInGroup;
+        parentid = hg[i].atomID;
+      } else {
+        char buff[512];
+        sprintf(buff,"Atom %d has bad group size.  Check for duplicate bonds.",parentid+1);
+        NAMD_die(buff);
+      }
+    } else {  // don't expect group parent
+      if ( hg[i].isGP ) {
+        char buff[512];
+        sprintf(buff,"Atom %d has bad group size.  Check for duplicate bonds.",parentid+1);
+        NAMD_die(buff);
+      }
+    }
+
+  }
 
   // finally, add the indexing from atoms[] to hydrogenGroup[]
   waterIndex = numAtoms;
