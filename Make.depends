@@ -227,9 +227,6 @@ obj/CollectionMaster.o: \
 	inc/Node.decl.h \
 	src/Output.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/packmsg.h \
 	src/Debug.h \
 	inc/CollectionMaster.def.h
@@ -268,8 +265,6 @@ obj/CollectionMgr.o: \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Debug.h \
 	inc/CollectionMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CollectionMgr.o $(COPTC) src/CollectionMgr.C
@@ -339,18 +334,17 @@ obj/ComputeAngles.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
+	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
 	src/ComputeSelfTuples.h \
@@ -407,13 +401,12 @@ obj/ComputeBonds.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Parameters.h \
 	src/strlib.h \
+	src/MStream.h \
 	src/UniqueSetIter.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
@@ -427,10 +420,7 @@ obj/ComputeBonds.o: \
 obj/ComputeConsForce.o: \
 	src/ComputeConsForce.C \
 	src/SimParameters.h \
-	src/ConfigList.h \
 	src/common.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -452,6 +442,7 @@ obj/ComputeConsForce.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -507,9 +498,6 @@ obj/ComputeCylindricalBC.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
@@ -554,18 +542,17 @@ obj/ComputeDihedrals.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
+	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
 	src/ComputeSelfTuples.h \
@@ -628,8 +615,6 @@ obj/ComputeDPME.o: \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
@@ -656,9 +641,6 @@ obj/ComputeDPMTA.o: \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -694,10 +676,13 @@ obj/ComputeDPMTA.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPMTA.o $(COPTC) src/ComputeDPMTA.C
 obj/ComputeEField.o: \
@@ -724,9 +709,6 @@ obj/ComputeEField.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
@@ -795,8 +777,6 @@ obj/ComputeExt.o: \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
@@ -980,18 +960,17 @@ obj/ComputeImpropers.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
+	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
 	src/ComputeSelfTuples.h \
@@ -1055,8 +1034,6 @@ obj/ComputeGlobal.o: \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobal.o $(COPTC) src/ComputeGlobal.C
 obj/ComputeGlobalMsgs.o: \
@@ -1142,16 +1119,15 @@ obj/ComputeMgr.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
+	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/Parameters.h \
 	src/strlib.h \
+	src/MStream.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -1284,9 +1260,6 @@ obj/ComputeNonbondedUtil.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Node.h \
@@ -1294,6 +1267,7 @@ obj/ComputeNonbondedUtil.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -1316,9 +1290,6 @@ obj/ComputeNonbondedStd.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Node.h \
@@ -1326,6 +1297,7 @@ obj/ComputeNonbondedStd.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -1351,9 +1323,6 @@ obj/ComputeNonbondedFEP.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Node.h \
@@ -1361,6 +1330,7 @@ obj/ComputeNonbondedFEP.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -1386,9 +1356,6 @@ obj/ComputeNonbondedLES.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Node.h \
@@ -1396,6 +1363,7 @@ obj/ComputeNonbondedLES.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -1533,8 +1501,6 @@ obj/ComputePme.o: \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
@@ -1575,8 +1541,6 @@ obj/ComputeRestraints.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
@@ -1608,9 +1572,6 @@ obj/ComputeSphericalBC.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
@@ -1640,9 +1601,6 @@ obj/ComputeStir.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
@@ -1660,6 +1618,7 @@ obj/ComputeStir.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -1704,12 +1663,10 @@ obj/ComputeTclBC.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -1745,8 +1702,6 @@ obj/Controller.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Controller.h \
@@ -1814,10 +1769,7 @@ obj/DumpBench.o: \
 	src/DumpBench.C \
 	src/DumpBench.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
 	src/common.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -1833,6 +1785,7 @@ obj/DumpBench.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -2019,10 +1972,7 @@ obj/GlobalMasterIMD.o: \
 	src/IMDOutput.h \
 	src/imd.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
 	src/common.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -2139,8 +2089,6 @@ obj/GlobalMasterFreeEnergy.o: \
 	src/GromacsTopFile.h \
 	src/ReductionMgr.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/Debug.h
@@ -2249,10 +2197,7 @@ obj/heap.o: \
 obj/HomePatch.o: \
 	src/HomePatch.C \
 	src/SimParameters.h \
-	src/ConfigList.h \
 	src/common.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -2292,6 +2237,7 @@ obj/HomePatch.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/PatchMgr.h \
@@ -2349,9 +2295,6 @@ obj/LdbCoordinator.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/RefineOnly.h \
 	src/elements.h \
 	src/Set.h \
@@ -2406,8 +2349,6 @@ obj/LJTable.o: \
 	src/MStream.h \
 	src/Vector.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
@@ -2433,8 +2374,6 @@ obj/Measure.o: \
 	src/MStream.h \
 	src/Vector.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
@@ -2442,6 +2381,7 @@ obj/Measure.o: \
 	src/Tensor.h \
 	src/GromacsTopFile.h \
 	src/Molecule.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
@@ -2541,9 +2481,6 @@ obj/NamdCentLB.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/RefineOnly.h \
 	src/elements.h \
 	src/Set.h \
@@ -2580,9 +2517,6 @@ obj/NamdNborLB.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/AlgNbor.h \
 	src/Rebalancer.h \
 	src/elements.h \
@@ -2616,7 +2550,6 @@ obj/NamdState.o: \
 	src/strlib.h \
 	src/MStream.h \
 	src/SimParameters.h \
-	src/Communicate.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PDB.h \
@@ -2779,11 +2712,11 @@ obj/Output.o: \
 	src/Parameters.h \
 	src/MStream.h \
 	src/SimParameters.h \
-	src/Communicate.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/PDB.h \
 	src/PDBData.h \
+	src/Communicate.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
@@ -2809,8 +2742,6 @@ obj/Parameters.o: \
 	src/MStream.h \
 	src/Vector.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
@@ -2818,6 +2749,8 @@ obj/Parameters.o: \
 	src/Tensor.h \
 	src/GromacsTopFile.h \
 	src/InfoStream.h \
+	src/Communicate.h \
+	src/ConfigList.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Parameters.o $(COPTC) src/Parameters.C
 obj/ParseOptions.o: \
@@ -2866,8 +2799,6 @@ obj/Patch.o: \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/ResizeArrayPrimIter.h \
 	src/InfoStream.h \
 	src/Sync.h \
@@ -3164,9 +3095,6 @@ obj/ReductionMgr.o: \
 	src/main.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	inc/ReductionMgr.decl.h \
 	src/ReductionMgr.h \
 	src/Debug.h \
@@ -3217,8 +3145,6 @@ obj/ScriptTcl.o: \
 	src/NamdState.h \
 	src/Controller.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Thread.h \
 	src/PatchMgr.h \
 	src/SortedArray.h \
@@ -3255,10 +3181,7 @@ obj/Sequencer.o: \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
 	src/common.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Vector.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
@@ -3300,6 +3223,7 @@ obj/Sequencer.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/NamdOneTools.h \
@@ -3324,7 +3248,8 @@ obj/Sequencer.o: \
 obj/Set.o: \
 	src/Set.C \
 	src/Set.h \
-	src/elements.h
+	src/elements.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Set.o $(COPTC) src/Set.C
 obj/Settle.o: \
 	src/Settle.C \
@@ -3348,12 +3273,12 @@ obj/SimParameters.o: \
 	src/ProcessorPrivate.h \
 	src/ConfigList.h \
 	src/SimParameters.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/ParseOptions.h \
 	src/structures.h \
+	src/Communicate.h \
+	src/MStream.h \
 	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
@@ -3460,11 +3385,9 @@ obj/WorkDistrib.o: \
 	src/GromacsTopFile.h \
 	src/PDBData.h \
 	src/SimParameters.h \
-	src/ConfigList.h \
-	src/Communicate.h \
-	src/MStream.h \
 	src/Molecule.h \
 	src/structures.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
