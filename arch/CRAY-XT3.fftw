@@ -1,6 +1,5 @@
 
-#FFTDIR=/home/users/clee/fftw-2.1.5
-FFTDIR=/Projects/namd2/fftw/linux
+FFTDIR=/usr/local/packages/fftw
 FFTINCL=-I$(FFTDIR)/include -I$(HOME)/fftw/include
 FFTLIB=-L$(FFTDIR)/lib -L$(HOME)/fftw/lib -lsrfftw -lsfftw
 FFTFLAGS=-DNAMD_FFTW
