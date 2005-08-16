@@ -7,13 +7,14 @@
 #ifndef SIMPARAMETERS_H
 #define SIMPARAMETERS_H
 
-#include "ConfigList.h"
 #include "common.h"
-#include "Communicate.h"
 #include "Vector.h"
 #include "Lattice.h"
 
 class ParseOptions;
+class Communicate;
+class ConfigList;
+class MIStream;
 
 //  The class SimParameters is really just a glorified structure used to
 //  maintain the global simulation parameters.  The only functions
