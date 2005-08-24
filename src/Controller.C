@@ -307,6 +307,7 @@ void Controller::minimize() {
 
   int minSeq = 0;
   int atStart = 2;
+  int errorFactor = 10;
   BigReal old_f_dot_f = min_f_dot_f;
   broadcast->minimizeCoefficient.publish(minSeq++,0.);
   broadcast->minimizeCoefficient.publish(minSeq++,0.); // v = f
@@ -406,7 +407,10 @@ void Controller::minimize() {
     BigReal c = min_f_dot_f / old_f_dot_f;
     c = ( c > 1.5 ? 1.5 : c );
     if ( atStart ) { c = 0; --atStart; }
-    if ( c*c*min_v_dot_v > 100*min_f_dot_f ) { c = 0; }
+    if ( c*c*min_v_dot_v > errorFactor*min_f_dot_f ) {
+      c = 0;
+      if ( errorFactor < 100 ) errorFactor += 10;
+    }
     if ( c == 0 ) {
       iout << "RESTARTING CONJUGATE GRADIENT ALGORITHM\n" << endi;
     } else {
