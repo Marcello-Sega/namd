@@ -404,6 +404,7 @@ void ComputeNonbondedUtil::select(void)
   BigReal *vdwa_i = vdwa_table + 4;
   BigReal *vdwb_i = vdwb_table + 4;
   BigReal *r2_i = r2_table;  *(r2_i++) = r2_delta;
+  int r2_delta_i = 0;  // entry for r2 == r2_delta
 
   // fill in the table, fix up i==0 (r2==0) below
   for ( i=1; i<n; ++i ) {
@@ -411,6 +412,8 @@ void ComputeNonbondedUtil::select(void)
     const BigReal r2_base = r2_delta * ( 1 << (i/64) );
     const BigReal r2_del = r2_base / 64.0;
     const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
+
+    if ( r2 == r2_delta ) r2_delta_i = i;
 
     const BigReal r = sqrt(r2);
     const BigReal r_1 = 1.0/r;
@@ -528,30 +531,43 @@ void ComputeNonbondedUtil::select(void)
 
   }
 
+  if ( ! r2_delta_i ) {
+    NAMD_bug("Failed to find table entry for r2 == r2_delta\n");
+  }
+  if ( r2_table[r2_delta_i] != 2*r2_delta ) {
+    NAMD_bug("Found bad table entry for r2 == r2_delta\n");
+  }
+
   int j;
   const char *table_name = "XXXX";
+  int smooth_short = 0;
   for ( j=0; j<5; ++j ) {
     BigReal *t0 = 0;
     switch (j) {
       case 0: 
         t0 = fast_table;
         table_name = "FAST";
+        smooth_short = 1;
       break;
       case 1: 
         t0 = scor_table;
         table_name = "SCOR";
+        smooth_short = 1;
       break;
       case 2: 
         t0 = slow_table;
         table_name = "SLOW";
+        smooth_short = 0;
       break;
       case 3: 
         t0 = vdwa_table;
         table_name = "VDWA";
+        smooth_short = 1;
       break;
       case 4: 
         t0 = vdwb_table;
         table_name = "VDWB";
+        smooth_short = 1;
       break;
     }
     // patch up data for i=0
@@ -559,9 +575,26 @@ void ComputeNonbondedUtil::select(void)
     t0[1] = t0[5];  // gradient
     t0[2] = 0;
     t0[3] = 0;
+    if ( smooth_short ) {
+      BigReal energy0 = t0[4*r2_delta_i];
+      BigReal gradient0 = t0[4*r2_delta_i+1];
+      BigReal r20 = r2_table[r2_delta_i];
+      t0[0] = energy0 - gradient0 * (r20 - r2_table[0]);  // energy
+      t0[1] = gradient0;  // gradient
+    }
     BigReal *t;
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
       BigReal x = ( r2_delta * ( 1 << (i/64) ) ) / 64.0;
+      if ( r2_table[i+1] != r2_table[i] + x ) {
+        NAMD_bug("Bad table delta calculation.\n");
+      }
+      if ( smooth_short && i+1 < r2_delta_i ) {
+        BigReal energy0 = t0[4*r2_delta_i];
+        BigReal gradient0 = t0[4*r2_delta_i+1];
+        BigReal r20 = r2_table[r2_delta_i];
+        t[4] = energy0 - gradient0 * (r20 - r2_table[i+1]);  // energy
+        t[5] = gradient0;  // gradient
+      }
       BigReal v1 = t[0];
       BigReal g1 = t[1];
       BigReal v2 = t[4];
