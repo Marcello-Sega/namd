@@ -223,6 +223,7 @@ PDBAtom::PDBAtom( void) : PDBData( PDBData:: ATOM)
   temperaturefactor(default_temperaturefactor);
   footnote(no_footnote);
   segmentname("");
+  element("");
 }
 
 
@@ -316,6 +317,9 @@ void PDBAtom::parse_column_data( const char *data)
    // this is for XPLOR style PDBs which have a segment name
  scan(data, len, SSEGNAME, LSEGNAME, tempstr);
  segmentname( tempstr);
+
+ scan(data, len, SELEMENT, LELEMENT, tempstr);
+ element( tempstr);
 }
 
 void PDBAtom::parse_field_data( const char *data)
@@ -367,6 +371,9 @@ void PDBAtom::parse_field_data( const char *data)
   
   field(data, 16, tempstr);
   segmentname( tempstr[0] != '#' ? tempstr : "");
+  
+  field(data, 17, tempstr);
+  element( tempstr[0] != '#' ? tempstr : "");
 }
 
   // get/ set the serial number
@@ -459,6 +466,12 @@ const char* PDBAtom:: segmentname( void)
 void PDBAtom:: segmentname( const char *newsegmentname)
 { strncpy(mysegmentname, newsegmentname, LSEGNAME); mysegmentname[LSEGNAME]=0;}
 
+  // get/ set the element name
+const char* PDBAtom:: element( void)
+{ return myelement; }
+void PDBAtom:: element( const char *newelement)
+{ strncpy(myelement, newelement, LELEMENT); myelement[LELEMENT]=0;}
+
  
 // the function to print out an ATOM or HETATM
 // size or outstr must be >= 80!
@@ -510,6 +523,10 @@ void PDBAtom::sprint_columns( char *outstr)
    else
     sprintcol(outstr, SFOOT, LFOOT, footnote() );         
   sprintcol(outstr, SSEGNAME, LSEGNAME, segmentname());
+  // world's lamest right-justify
+  int lelement = strlen(element());
+  lelement = ( lelement > LELEMENT ? LELEMENT : lelement );
+  sprintcol(outstr, SELEMENT+(LELEMENT-lelement), lelement, element());
 }
 
 /// Print the output by fields; if the values are not known/ are defaults - put a #
@@ -587,6 +604,11 @@ void PDBAtom::sprint_fields( char *outstr)
      else
       sprintf(tmpstr, " %s", segmentname());
   strcat(outstr, tmpstr);
+  if (element()[0] == 0)
+      sprintf(tmpstr, " #");
+     else
+      sprintf(tmpstr, " %s", element());
+  strcat(outstr, tmpstr);
 
 }
 
@@ -654,6 +676,7 @@ main()
   cout << "temperature factor: " << atom.temperaturefactor() << "\n";
   cout << "footnote      : " << atom.footnote()              << "\n";
   cout << "segment name  : '" << atom.segmentname()          << "'\n";
+  cout << "element       : '" << atom.element()              << "'\n";
   cout << '\n';
   
   PDBAtomRecord atom2("# ATOM 6312 CB T ALA 3 235 I 24.681 54.463 137.827 1.00 51.30 # VP3");
@@ -675,6 +698,7 @@ main()
   cout << "temperature factor: " << atom2.temperaturefactor() << "\n";
   cout << "footnote      : " << atom2.footnote()              << "\n";
   cout << "segment name  : '" << atom2.segmentname()          << "'\n";
+  cout << "element       : '" << atom2.element()              << "'\n";
   cout << '\n';
   
 
@@ -697,6 +721,7 @@ main()
   cout << "temperature factor: " << atom3.temperaturefactor() << "\n";
   cout << "footnote      : " << atom3.footnote()              << "\n";
   cout << "segment name  : '" << atom3.segmentname()          << "'\n";
+  cout << "element       : '" << atom3.element()              << "'\n";
   cout << '\n';
   
 }

@@ -125,7 +125,7 @@ class PDBAtom : public PDBData {
       // starting location for each record element
     enum Start {STYPE=1,SSERIAL=7, SNAME=13, SALT=17, SRESNAME=18, SCHAIN=22, 
                 SRESSEQ=23, SINSERT=27, SX=31, SY=39, SZ=47,
-                SOCC=55, STEMPF=61, SFOOT=68, SSEGNAME=73};
+                SOCC=55, STEMPF=61, SFOOT=68, SSEGNAME=73, SELEMENT=77};
       // length of each element, the PREC is the number of digits
       // in the output after the decimal
 // NOTE: The PDB says the length of the residue name is only 3 characters
@@ -135,7 +135,7 @@ class PDBAtom : public PDBData {
     enum Length {LTYPE=6, LSERIAL=5, LNAME=4, LALT=1, LRESNAME=4, LCHAIN=1, 
                  LRESSEQ=4, LINSERT=1, LCOOR=8,
                  LCOORPREC=3, LOCC=6, LOCCPREC=2, LTEMPF=6, 
-                 LTEMPFPREC=2, LFOOT=3, LSEGNAME=4};
+                 LTEMPFPREC=2, LFOOT=3, LSEGNAME=4, LELEMENT=2};
 
     static const int default_serial;         // some default values
     static const int default_residueseq;     // these are set in the .C file
@@ -156,6 +156,7 @@ class PDBAtom : public PDBData {
     BigReal mytemperaturefactor;           // temperature factor
     int myfootnote;                     // footnote number
     char mysegmentname[LSEGNAME+1];     // XPLOR-type segment name
+    char myelement[LELEMENT+1];         // element
 
     void parse_field_data( const char *data);
     void parse_column_data( const char *data);
@@ -216,6 +217,9 @@ class PDBAtom : public PDBData {
       // the chain identifier (see XPLOR 3.1 manual, p 104)
     const char*segmentname( void);
     void segmentname( const char *newsegmentname);
+
+    const char* element( void);
+    void element( const char *newelement);
 };
 
 // The two sub-classes of PDB Atom
