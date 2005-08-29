@@ -192,7 +192,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.3.4");
+  Tcl_PkgProvide(interp, "psfgen", "1.3.5");
 
   return TCL_OK;
 }

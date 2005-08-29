@@ -34,8 +34,8 @@ void get_pdb_coordinates(char *record, float *x, float *y, float *z,
    necessary space to store the atom name, residue name, and segment name.
    Character strings will be null-terminated.  Returns the atom serial number. */
 int get_pdb_fields(char *record, char *name, char *resname, char *chain, 
-		   char *segname, char *resid, char *insertion, float *x, 
-		   float *y, float *z, float *occup, float *beta);
+		char *segname, char *element, char *resid, char *insertion,
+		float *x, float *y, float *z, float *occup, float *beta);
 
 /* Write a remark to a pdb file. */
 
@@ -49,7 +49,8 @@ void write_pdb_end(FILE *outfile);
 
 void write_pdb_atom(FILE *outfile,
     int index,char *atomname,char *resname,int resid, char *insertion, float x,
-    float y, float z, float occ, float beta, char *chain, char *segname);
+    float y, float z, float occ, float beta, char *chain, char *segname,
+    char *element);
 
 #endif
 

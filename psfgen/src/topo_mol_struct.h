@@ -59,6 +59,7 @@ typedef struct topo_mol_atom_t {
   topo_mol_conformation_t *conformations;
   char name[NAMEMAXLEN];
   char type[NAMEMAXLEN];
+  char element[NAMEMAXLEN];
   double mass;
   double charge;
   double x,y,z;

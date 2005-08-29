@@ -10,6 +10,7 @@
 
 typedef struct topo_defs_type_t {
   char name[NAMEMAXLEN];
+  char element[NAMEMAXLEN];
   int id;
   double mass;
 } topo_defs_type_t;

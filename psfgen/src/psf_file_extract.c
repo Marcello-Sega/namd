@@ -321,6 +321,7 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
       atomtmp->conformations = 0;
       strcpy(atomtmp->name, atomlist[i].name);
       strcpy(atomtmp->type, atomlist[i].atype);
+      strcpy(atomtmp->element,"");
       atomtmp->mass = atomlist[i].mass; 
       atomtmp->charge = atomlist[i].charge;
       atomtmp->x = 0;       

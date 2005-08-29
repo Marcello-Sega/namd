@@ -123,8 +123,8 @@ void get_pdb_coordinates(char *record, float *x, float *y, float *z,
    Character strings will be null-terminated.  Returns the atom serial number.
 */
 int get_pdb_fields(char *record, char *name, char *resname, char *chain,
-		   char *segname, char *resid, char *insertion, float *x,
-		   float *y, float *z, float *occup, float *beta) {
+		char *segname, char *element, char *resid, char *insertion,
+		float *x, float *y, float *z, float *occup, float *beta) {
   int i,len, num, base;
   
   num=0;
@@ -192,6 +192,20 @@ int get_pdb_fields(char *record, char *name, char *resname, char *chain,
     strcpy(segname,"");
   }
    
+  /* get element name	*/
+  if(strlen(record) >= 77) {
+    strncpy(element, record + 76, 2);
+    element[2] = '\0';
+    while((len = strlen(element)) > 0 && element[len-1] == ' ')
+      element[len-1] = '\0';
+    while(len > 0 && element[0] == ' ') {
+      for(i=0; i < len; i++)  element[i] = element[i+1];
+      len--;
+    }
+  } else {
+    strcpy(element,"");
+  }
+   
   return num;
 }  
 
@@ -210,7 +224,8 @@ void write_pdb_end(FILE *outfile) {
 
 void write_pdb_atom(FILE *outfile,
     int index,char *atomname,char *resname,int resid, char *insertion, float x,
-    float y, float z, float occ, float beta, char *chain, char *segname) {
+    float y, float z, float occ, float beta, char *chain, char *segname,
+    char *element) {
 
   char name[6];
   char chainc, insertionc;
@@ -234,14 +249,14 @@ void write_pdb_atom(FILE *outfile,
 
   if (index < 100000) {
     fprintf(outfile,
-      "%s%5d %4s%c%-4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f      %-4s\n",
+      "%s%5d %4s%c%-4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f      %-4s%2s\n",
           "ATOM  ", index, atomname, ' ', resname, chainc, resid,
-          insertionc, x, y, z, occ, beta, segname);
+          insertionc, x, y, z, occ, beta, segname, element);
   } else {
     fprintf(outfile,
-      "%s***** %4s%c%-4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f      %-4s\n",
+      "%s***** %4s%c%-4s%c%4d%c   %8.3f%8.3f%8.3f%6.2f%6.2f      %-4s%2s\n",
           "ATOM  ", atomname, ' ', resname, chainc, resid,
-          insertionc, x, y, z, occ, beta, segname);
+          insertionc, x, y, z, occ, beta, segname, element);
   }
 }
 

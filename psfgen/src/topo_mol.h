@@ -43,6 +43,9 @@ void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target);
 int topo_mol_multiply_atoms(topo_mol *mol, const topo_mol_ident_t *targets,
 					int ntargets, int ncopies);
 
+int topo_mol_set_element(topo_mol *mol, const topo_mol_ident_t *target,
+					const char *element, int replace);
+
 int topo_mol_set_xyz(topo_mol *mol, const topo_mol_ident_t *target,
 					double x, double y, double z);
 

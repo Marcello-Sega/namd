@@ -311,6 +311,7 @@ static int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
   atomtmp->next = *atoms;
   atomtmp->charge = atomdef->charge;
   strcpy(atomtmp->type,atomdef->type);
+  strcpy(atomtmp->element,"");
   atomtmp->typeid = 0;
   atomtmp->mass = 0;
   idef = hasharray_index(mol->defs->type_hash,atomtmp->type);
@@ -321,6 +322,7 @@ static int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
   } else {
     atype = &(mol->defs->type_array[idef]);
     atomtmp->typeid = atype->id;
+    strcpy(atomtmp->element,atype->element);
     atomtmp->mass = atype->mass;
   }
   *atoms = atomtmp;
@@ -1652,6 +1654,25 @@ void topo_mol_delete_atom(topo_mol *mol, const topo_mol_ident_t *target) {
   }
   /* Just delete one atom */
   topo_mol_destroy_atom(topo_mol_unlink_atom(&(res->atoms),target->aname));
+}
+
+int topo_mol_set_element(topo_mol *mol, const topo_mol_ident_t *target,
+                                        const char *element, int replace) {
+  topo_mol_residue_t *res;
+  topo_mol_atom_t *atom;
+  if ( ! mol ) return -1;
+  if ( ! target ) return -2;
+  res = topo_mol_get_res(mol,target,0);
+  if ( ! res ) return -3;
+  for ( atom = res->atoms; atom; atom = atom->next ) {
+    if ( ! strcmp(target->aname,atom->name) ) break;
+  }
+  if ( ! atom ) return -3;
+
+  if ( replace || ! strlen(atom->element) ) {
+    strcpy(atom->element,element);
+  }
+  return 0;
 }
 
 int topo_mol_set_xyz(topo_mol *mol, const topo_mol_ident_t *target,

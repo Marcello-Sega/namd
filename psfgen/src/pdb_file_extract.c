@@ -16,7 +16,7 @@ int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
   int indx;
   float x,y,z,o,b;
   char name[8], resname[8], chain[8];
-  char segname[8], resid[8], insertion[8];
+  char segname[8], element[8], resid[8], insertion[8];
   char oldresid[8];
   const char *realres;
   char msg[128];
@@ -28,7 +28,7 @@ int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
   do {
     if((indx = read_pdb_record(file, record)) == PDB_ATOM) {
       get_pdb_fields(record, name, resname, chain,
-                   segname, resid, insertion, &x, &y, &z, &o, &b);
+                   segname, element, resid, insertion, &x, &y, &z, &o, &b);
       if ( strcmp(oldresid,resid) ) {
         strcpy(oldresid,resid);
         ++rcount;
@@ -55,7 +55,7 @@ int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
   int indx;
   float x,y,z,o,b;
   char name[8], resname[8], chain[8];
-  char segname[8], resid[8], insertion[8];
+  char segname[8], element[8], resid[8], insertion[8];
   topo_mol_ident_t target;
   char msg[128];
 
@@ -64,7 +64,7 @@ int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
   do {
     if((indx = read_pdb_record(file, record)) == PDB_ATOM) {
       get_pdb_fields(record, name, resname, chain,
-                   segname, resid, insertion, &x, &y, &z, &o, &b);
+                   segname, element, resid, insertion, &x, &y, &z, &o, &b);
       target.resid = resid;
       strtoupper(resname);
       strtoupper(name);
@@ -75,6 +75,10 @@ int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
       }
       if ( topo_mol_set_xyz(mol,&target,x,y,z) ) {
         sprintf(msg,"Warning: failed to set coordinate for atom %s\t %s:%s\t  %s",name,resname,resid,segid ? segid : segname);
+        print_msg(v,msg);
+      }
+      if ( strlen(element) && topo_mol_set_element(mol,&target,element,0) ) {
+        sprintf(msg,"Warning: failed to set element for atom %s\t %s:%s\t  %s",name,resname,resid,segid ? segid : segname);
         print_msg(v,msg);
       }
     }

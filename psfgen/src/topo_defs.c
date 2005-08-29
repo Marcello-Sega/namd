@@ -106,23 +106,25 @@ void topo_defs_auto_dihedrals(topo_defs *defs, int autogen) {
   if ( defs ) defs->auto_dihedrals = ! ! autogen;
 }
 
-int topo_defs_type(topo_defs *defs, const char *atype, double mass, int id) {
+int topo_defs_type(topo_defs *defs, const char *atype, const char *element, double mass, int id) {
   int i;
   topo_defs_type_t *newitem;
   char errmsg[64 + NAMEMAXLEN];
   if ( ! defs ) return -1;
   if ( NAMETOOLONG(atype) ) return -2;
+  if ( NAMETOOLONG(element) ) return -3;
   if ( ( i = hasharray_index(defs->type_hash,atype) ) != HASHARRAY_FAIL ) {
     sprintf(errmsg,"duplicate type key %s",atype);
     topo_defs_log_error(defs,errmsg);
     newitem = &defs->type_array[i];
   } else {
     i = hasharray_insert(defs->type_hash,atype);
-    if ( i == HASHARRAY_FAIL ) return -3;
+    if ( i == HASHARRAY_FAIL ) return -4;
     newitem = &defs->type_array[i];
     strcpy(newitem->name,atype);
   }
   newitem->id = id;
+  strcpy(newitem->element,element);
   newitem->mass = mass;
   return 0;
 }

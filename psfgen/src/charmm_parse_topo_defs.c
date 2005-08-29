@@ -143,7 +143,7 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
     }
     else if ( ! strncmp("MASS",tok[0],4) ) {
       debug_msg("Recognized mass statement.");
-      if ( ntok < 4 || topo_defs_type(defs,tok[2],atof(tok[3]),atoi(tok[1])) ) {
+      if ( ntok < 4 || topo_defs_type(defs,tok[2],(ntok>4?tok[4]:""),atof(tok[3]),atoi(tok[1])) ) {
         print_msg(v,"ERROR!  Failed to parse mass statement.");
       }
     }
