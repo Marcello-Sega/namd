@@ -10,7 +10,6 @@
 #include "elements.h"
 #include "heap.h"
 
-
 class Rebalancer {
 private:
   int bytesPerAtom;
@@ -65,5 +64,8 @@ public:
   ~Rebalancer();
 };
 
+#if CMK_VERSION_BLUEGENE
+#include "bgltorous.h"
+#endif
 
 #endif

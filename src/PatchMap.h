@@ -15,6 +15,7 @@
 class Patch;
 class PatchMgr;
 class HomePatch;
+template<class Type> class ObjectArena;
 
 class PatchMap
 {
@@ -166,6 +167,7 @@ private:
   int nNodesWithPatches;
   int *nPatchesOnNode;
   PatchData *patchData;
+  ObjectArena<ComputeID> *computeIdArena;
   int aDim, bDim, cDim;
   int aAway, bAway, cAway;
   int aPeriodic, bPeriodic, cPeriodic;

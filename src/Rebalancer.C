@@ -425,10 +425,22 @@ int Rebalancer::refine()
             donor->computeSet.iterator((Iterator *)&nextCompute);
          while (c)
          {
-	    refine_togrid(grid, thresholdLoad, p, c);
-            nextCompute.id++;
-            c = (computeInfo *) donor->computeSet.
-	      next((Iterator *)&nextCompute);
+#if CMK_VERSION_BLUEGENE
+	   BGLTorousManager *tmgr = BGLTorousManager::getObject();
+	   /*
+	     if(tmgr->neighbors(p->Id, patches[c->patch1].processor) ||
+	     tmgr->neighbors(p->Id, patches[c->patch2].processor)) 
+	   */
+
+	   if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
+				     patches[c->patch2].processor, 1))
+#endif
+	     {	     
+	       refine_togrid(grid, thresholdLoad, p, c);
+	     }
+	   nextCompute.id++;
+	   c = (computeInfo *) donor->computeSet.
+	     next((Iterator *)&nextCompute);
          }
          p = (processorInfo *) 
 	   lightProcessors->next((Iterator *) &nextProcessor);

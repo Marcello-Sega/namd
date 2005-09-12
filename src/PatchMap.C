@@ -12,6 +12,7 @@
 
 #include "charm++.h"
 
+#include "ObjectArena.h"
 #include "PatchMgr.h"
 #include "PatchMap.inl"
 #include "Patch.h"
@@ -42,6 +43,7 @@ PatchMap::PatchMap(void)
     nPatchesOnNode[i] = 0;
   }
   patchData = NULL;
+  computeIdArena = NULL;
   aDim = bDim = cDim = 0;
   aAway = bAway = cAway = 1;
   aPeriodic = bPeriodic = cPeriodic = 0;
@@ -193,7 +195,7 @@ PatchMap::~PatchMap(void)
     nPatches=0;
   }
   delete [] nPatchesOnNode;
-  
+  delete computeIdArena;
 }
 
 #undef PACK
@@ -261,6 +263,11 @@ void PatchMap::unpack (char *ptr)
   UNPACK(int,nNodesWithPatches);
   UNPACKN(int,nPatchesOnNode,CkNumPes());
   patchData = new PatchData[nPatches];
+
+  delete computeIdArena;
+  computeIdArena = new ObjectArena<ComputeID>;
+  computeIdArena->setBlockSize(256);
+
   for(i=0;i<nPatches;++i)
   {
     UNPACK(PatchData,patchData[i]);
@@ -270,7 +277,8 @@ void PatchMap::unpack (char *ptr)
     }
     DebugM(3,"Unpacking Patch " << i << " is on node " << patchData[i].node << 
 	" with " << patchData[i].numCidsAllocated << " allocated.\n");
-    patchData[i].cids = new ComputeID[patchData[i].numCidsAllocated];
+    patchData[i].cids = computeIdArena->getNewArray(patchData[i].numCidsAllocated);
+    //    patchData[i].cids = new ComputeID[patchData[i].numCidsAllocated];
     for(j=0;j<patchData[i].numCidsAllocated;++j)
       UNPACK(ComputeID,patchData[i].cids[j]);
   }

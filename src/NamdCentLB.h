@@ -24,6 +24,9 @@ private:
   CLBMigrateMsg* Strategy(CentralLB::LDStats* stats, int count);
   int buildData(CentralLB::LDStats* stats, int count);
   int requiredProxies(PatchID id, int neighborNodes[]);
+#if CMK_VERSION_BLUEGENE
+  int requiredProxiesOnProcGrid(PatchID id, int neighborNodes[]);
+#endif
   void dumpData(char *file, int numProcessors, int numPatches,
 		int numComputes);
   void dumpDataASCII(char *file, int numProcessors, int numPatches,

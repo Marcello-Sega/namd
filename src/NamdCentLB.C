@@ -493,7 +493,13 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 #else
 	patchArray[pid].processor = i;
 #endif
-	const int numProxies = requiredProxies(pid,neighborNodes);
+	const int numProxies = 
+#if CMK_VERSION_BLUEGENE
+	  requiredProxiesOnProcGrid(pid,neighborNodes);
+#else
+	requiredProxies(pid, neighborNodes);
+#endif
+
         nProxies += numProxies;
 
 	for (int k=0; k<numProxies; k++) {
@@ -647,3 +653,137 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   return nProxyNodes;
 }
 
+#if CMK_VERSION_BLUEGENE
+// Figure out which proxies we will definitely create on other nodes,
+// without regard for non-bonded computes.  This code is swiped from
+// ProxyMgr, and changes there probable need to be propagated here.
+// The proxies are placed on nearby processors on the 3d-grid along
+// the X,Y,Z dimensions
+
+ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
+{
+  enum proxyHere { No, Yes };
+  int numNodes = CkNumPes();
+  proxyHere *proxyNodes = new proxyHere[numNodes];
+  int nProxyNodes;
+  int i,j,k;
+
+  int xsize = 0, ysize = 0, zsize = 0;
+  int my_x =0, my_y = 0, my_z = 0;
+
+  PatchMap* patchMap = PatchMap::Object();
+  int myNode = patchMap->node(id);
+    
+  BGLTorousManager *tmanager = BGLTorousManager::getObject();
+  xsize = tmanager->getXSize();
+  ysize = tmanager->getYSize();
+  zsize = tmanager->getZSize();
+  
+  tmanager->getCoordinatesByRank(myNode, my_x, my_y, my_z);
+  
+  if(xsize * ysize * zsize != CkNumPes()) {
+    delete [] proxyNodes;
+    return requiredProxies(id, neighborNodes);
+  }  
+
+
+  // Note all home patches.
+  for ( i = 0; i < numNodes; ++i )
+  {
+    proxyNodes[i] = No;
+  }
+  nProxyNodes=0;
+
+  // Check all two-away neighbors.
+  // This is really just one-away neighbors, since 
+  // two-away always returns zero: RKB
+  PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+
+  //Assign a proxy to all your neighbors. But dont increment counter
+  //because these have to be there anyway.
+  
+  int numNeighbors = patchMap->downstreamNeighbors(id,neighbors);
+  for ( i = 0; i < numNeighbors; ++i )
+  {
+    int proxyNode = patchMap->node(neighbors[i]);
+    
+    if (proxyNode != myNode)
+      if (proxyNodes[proxyNode] == No)
+	{
+	  proxyNodes[proxyNode] = Yes;
+	  neighborNodes[nProxyNodes] = proxyNode;
+	  nProxyNodes++;
+	}
+    /*
+    int px, py, pz;
+    tmanager->getCoordinatesByRank(proxyNode, px, py, pz);
+    
+    //Place proxy in the mid point processor
+    proxyNode = tmanager->coords2rank((my_x+px)/2, (my_y+py)/2, (my_z+pz)/2);
+    
+    if (proxyNode != myNode)
+      if (proxyNodes[proxyNode] == No)
+	{
+	  proxyNodes[proxyNode] = Yes;
+	  neighborNodes[nProxyNodes] = proxyNode;
+	  nProxyNodes++;
+	}
+    */
+  }
+  
+  //Place numNodesPerPatch proxies on the 3d torous neighbors of a processor
+
+  int numPatches = patchMap->numPatches();
+  int emptyNodes = numNodes - numPatches;
+  //if ( emptyNodes > numPatches ) {
+  
+  int nodesPerPatch = nProxyNodes + 16 * (emptyNodes-1) / numPatches;
+  int proxyNode = 0 ;
+  int proxy_x=0, proxy_y=0, proxy_z=0;
+  
+  //Choose from the 26 neighbors of mynode.
+  //CkAssert(nodesPerPatch - nProxyNodes <= 26);  
+  //Too few patches otherwise, try twoaway?
+  
+  for(k=-1; k<= 1; k++) {
+    proxy_z = (my_z + k + zsize) % zsize;
+    for(j=-1; j <= 1; j++) {
+      proxy_y = (my_y + j + ysize) % ysize;
+      for(i = -1; i <= 1; i++) {
+	if(i == 0 && j == 0 && k == 0)
+	  continue;
+	
+	proxy_x = (my_x + i + xsize) % xsize;
+	proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
+
+	if(! patchMap->numPatchesOnNode(proxyNode) &&
+	   proxyNodes[proxyNode] == No) {
+	  proxyNodes[proxyNode] = Yes;
+	  neighborNodes[nProxyNodes] = proxyNode;
+	  nProxyNodes++;
+	}
+	
+	if(nProxyNodes >= nodesPerPatch || 
+	   nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	  break;	  
+      }
+      
+      if(nProxyNodes >= nodesPerPatch || 
+	 nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	break;	  
+    }
+    if(nProxyNodes >= nodesPerPatch || 
+       nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+      break;	  
+  }        
+  //  } 
+  //else
+  //CkAbort("NumPes < 2*numpatches\n\n");
+
+  CkPrintf("Returning %d proxies\n", nProxyNodes);
+
+  delete [] proxyNodes;
+  return nProxyNodes;
+}
+
+#endif

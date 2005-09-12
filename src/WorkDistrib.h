@@ -76,6 +76,8 @@ private:
   void assignPatchesRecursiveBisection(void);
   void assignPatchesRoundRobin(void);
   void assignPatchesBitReversal(void);
+  void assignPatchesTopoGridRecBisection();
+
   void sortNodesAndAssign(int *assignedNode);
   void velocities_from_PDB(char *filename, 
 			   Vector *v, int totalAtoms);
@@ -91,6 +93,7 @@ private:
   int saveComputeMapReturnEP;
   CkGroupID saveComputeMapReturnChareID;
   int saveComputeMapCount;
+
 };
 
 #endif /* WORKDISTRIB_H */

@@ -22,6 +22,8 @@ PACK_MSG(MyMsg,
 
 */
 
+#include "converse.h"
+
 #define PACKMSG_CHECKSUM(X)
 
 template<class T> class ResizeArray;
@@ -58,7 +60,7 @@ void *MSGTYPE::pack(MSGTYPE *packmsg_msg) { \
     for ( int i=sizeof(packmsg_checksum); i < packmsg_size; i++ ) { \
       packmsg_checksum += (unsigned char) packmsg_cur[i]; \
     } \
-    memcpy(packmsg_buf,(void *)&packmsg_checksum,sizeof(packmsg_checksum)); \
+    CmiMemcpy(packmsg_buf,(void *)&packmsg_checksum,sizeof(packmsg_checksum)); \
   ) \
   delete packmsg_msg; \
   return packmsg_buf; \
@@ -76,7 +78,7 @@ MSGTYPE *MSGTYPE::unpack(void *packmsg_buf) { \
   { \
     const int packmsg_pass = 2; \
     PACKMSG_CHECKSUM( \
-      memcpy((void *)&packmsg_checksum_orig,(void *)packmsg_cur, \
+      CmiMemcpy((void *)&packmsg_checksum_orig,(void *)packmsg_cur, \
 				sizeof(packmsg_checksum)); \
       packmsg_cur += sizeof(packmsg_checksum); \
       PACK_MEMORY(&packmsg_size,sizeof(packmsg_size)); \
@@ -103,11 +105,11 @@ MSGTYPE *MSGTYPE::unpack(void *packmsg_buf) { \
     packmsg_size += (SIZE); \
     break; \
   case 1: \
-    memcpy((void *)packmsg_cur,(void *)(BUF),(SIZE)); \
+    CmiMemcpy((void *)packmsg_cur,(void *)(BUF),(SIZE)); \
     packmsg_cur += (SIZE); \
     break; \
   case 2: \
-    memcpy((void *)(BUF),(void *)packmsg_cur,(SIZE)); \
+    CmiMemcpy((void *)(BUF),(void *)packmsg_cur,(SIZE)); \
     packmsg_cur += (SIZE); \
     break; \
   default: \

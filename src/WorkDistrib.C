@@ -539,15 +539,21 @@ void WorkDistrib::assignNodeToPatch()
 
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
+
+#if CMK_VERSION_BLUEGENE
   if (nNodes > patchMap->numPatches())
-    assignPatchesBitReversal();
+    assignPatchesTopoGridRecBisection();
+  else
+#endif
+    if (nNodes > patchMap->numPatches())
+      assignPatchesBitReversal();
   // else if (nNodes == patchMap->numPatches())
   //   assignPatchesRoundRobin();
-  else if (method==1)
-    assignPatchesRecursiveBisection();
-  else
-    assignPatchesToLowestLoadNode();
-
+    else if (method==1)
+      assignPatchesRecursiveBisection();
+    else
+      assignPatchesToLowestLoadNode();
+  
   int *nAtoms = new int[nNodes];
   int numAtoms=0;
   int i;
@@ -1387,6 +1393,43 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 
 }
 /*			END OF FUNCTION remove_com_motion		*/
+
+#if CMK_VERSION_BLUEGENE
+#include "bgltorous.h"
+
+//Specifically designed for BGL and other 3d Tori architectures
+//Partition Torous and Patch grid together using recursive bisection.
+void WorkDistrib::assignPatchesTopoGridRecBisection() {
+  
+  //CkPrintf("In topology based patch assignment scheme\n");
+  
+  PatchMap *patchMap = PatchMap::Object();
+  int *assignedNode = new int[patchMap->numPatches()];
+  int numNodes = Node::Object()->numNodes();
+  SimParameters *simParams = Node::Object()->simParameters;
+  int usedNodes = numNodes;
+  
+  if ( simParams->noPatchesOnZero && numNodes > 1 ) usedNodes -= 1;
+  RecBisection recBisec(patchMap->numPatches(), PatchMap::Object());
+  
+  int xsize = 0, ysize = 0, zsize = 0;
+  
+#if CMK_VERSION_BLUEGENE
+  BGLTorousManager *tmanager = BGLTorousManager::getObject();
+  xsize = tmanager->getXSize();
+  ysize = tmanager->getYSize();
+  zsize = tmanager->getZSize();
+  
+#else
+  CkAbort("Topology based patch distribution not defined for this architecture\n");
+#endif
+  
+  //Fix to not assign patches to processor 0
+  recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
+
+  delete [] assignedNode;
+}
+#endif
 
 #include "WorkDistrib.def.h"
 

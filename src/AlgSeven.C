@@ -43,16 +43,85 @@ void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 	iout << iERROR << "Too many proxies: " << nProxies << "\n" << endi;
 
       if (c->load + p->load < overLoad*averageLoad) {
-        processorInfo* &altp = goodP[nPatches][nProxies];
-        if (!altp || p->load < altp->load ) {
-	    altp = p;
-        }
-      }
+        processorInfo* &altp = goodP[nPatches][nProxies];	
 
+#if CMK_VERSION_BLUEGENE
+	if(!altp)
+	  altp = p;
+	else {
+	  //Find processors that are patch neighbors on the BGL torous
+	  int neighbor = 0, neighbor_alt = 0;
+	  
+	  BGLTorousManager *tmgr = BGLTorousManager::getObject();
+	  /*
+	    if((tmgr->isNeighbor(altp->Id, patches[c->patch1].processor) ||
+	    tmgr->isNeighbor(altp->Id, patches[c->patch2].processor)))
+	    neighbor_alt = 1;
+	    
+	    if(tmgr->isNeighbor(p->Id, patches[c->patch1].processor) ||
+	    tmgr->isNeighbor(p->Id, patches[c->patch2].processor))
+	    neighbor = 1;
+	  */
+	  
+	  if(tmgr->isNeighborOfBoth(altp->Id, patches[c->patch1].processor,
+				    patches[c->patch2].processor, 1))
+	    neighbor_alt = 1;
+	  
+	  if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
+				    patches[c->patch2].processor, 1))
+	    neighbor = 1;
+	  
+	  if(neighbor_alt == 1 && neighbor == 1) {
+	    //Both are neighbors, only replace if lighter
+	    if (p->load < altp->load ) {
+	      altp = p;
+	    }
+	  }
+	  else if(neighbor_alt == 0 && neighbor == 1)
+	    //Previous was not a neighbor, kick him out
+	    altp = p;
+	  else if(neighbor_alt == 1 && neighbor == 0)
+	    ;      //Give preference to good neighbors
+	  else {
+	    //Both not neighbors, choose nearby node to minimize hop bytes
+	    /*
+	      if (!altp || p->load < altp->load ) {
+	      altp = p;
+	      }
+	    */
+
+	    int alt_dist = 0, dist = 0;	    
+	    int ax,ay,az, x,y,z, p1x,p1y,p1z, p2x,p2y,p2z;
+	    
+	    tmgr->getCoordinatesByRank(altp->Id, ax,ay,az);
+	    tmgr->getCoordinatesByRank(p->Id, x,y,z);
+	    
+	    tmgr->getCoordinatesByRank(patches[c->patch1].processor, p1x,p1y,p1z);
+	    tmgr->getCoordinatesByRank(patches[c->patch2].processor, p2x,p2y,p2z);
+	    
+	    alt_dist = abs(p1x - ax) + abs(p2x - ax) +
+	      abs(p1y - ay) + abs(p1z - az) +
+	      abs(p2y - ay) + abs(p2z - az);
+	    
+	    dist = abs(p1x - x) + abs(p2x - x) +
+	      abs(p1y - y) + abs(p1z - z) +
+	      abs(p2y - y) + abs(p2z - z);
+	    
+	    if(alt_dist > dist)
+	      altp = p;	  
+	  }
+	}
+#else 
+        if (!altp || p->load < altp->load ) {	
+	  altp = p;
+        }
+#endif	  
+      }
+      
       {
         processorInfo* &altp = poorP[nPatches][nProxies];
         if (!altp || p->load < altp->load ) {
-	    altp = p;
+	  altp = p;
         }
       }
 }

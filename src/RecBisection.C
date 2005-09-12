@@ -5,6 +5,8 @@
 **/
 
 #include <math.h>
+#include <stdlib.h>
+
 #include "RecBisection.h"
 #include "PatchMap.inl"
 #include "Patch.h"
@@ -31,19 +33,19 @@ RecBisection::RecBisection(int numpartitions, PatchMap *thePatchMap)
     // the cost coeffiencients that is used to compute the load introduced
     // to the processor by a patch
 
-    //    c_local0    = 0.1;
-    //    c_local1    = 0.015;
-    //    c_edge0     = 0.001;
-    //    c_edge1     = 0.001;
-    //    c_icompute0 = 0.001;
-    //    c_icompute1 = 0.000035;
+    c_local0    = 1;
+    c_local1    = 0.015;
+    c_edge0     = 0.001;
+    c_edge1     = 0.001;
+    c_icompute0 = 0.001;
+    c_icompute1 = 0.000035;
 
-    c_local0    = 0.;
-    c_local1    = 1.0;
-    c_edge0     = 0.;
-    c_edge1     = 0.;
-    c_icompute0 = 0.;
-    c_icompute1 = 0.;
+    //c_local0    = 1.0;
+    //c_local1    = 0.;
+    //c_edge0     = 0.;
+    //c_edge1     = 0.;
+    //c_icompute0 = 0.;
+    //c_icompute1 = 0.;
 }
 
 
@@ -153,6 +155,7 @@ void RecBisection::rec_divide(int n, const Partition &p)
                {currentload=prevload; break;}
         k++;
       }
+
     posi[ZDIR] = i; posj[ZDIR] = j; posk[ZDIR] = k;
     loadarray[ZDIR] = currentload; 
     if (k == p.origin.z) p1_empty[ZDIR] = 1;
@@ -275,7 +278,7 @@ void RecBisection::compute_patch_load()
 /* Partitions a 3D space. First a recursive algorithm divides the initial */
 /* space into rectangular prisms with approximately equal loads.          */
 /* Then these rectangular prisms ar emodified to firther increase the     */
-/* load balance and redice communication cost                             */
+/* load balance and reduce communication cost                             */
 /* *********************************************************************  */
 
 int RecBisection::partition(int *dest_arr)
@@ -293,7 +296,6 @@ int RecBisection::partition(int *dest_arr)
     // calculate estimated computational load due to each patch
     compute_patch_load();
 
-
     for(i=0; i<numPatches; i++) top_partition.load += patchload[i].total;
 
     // divide into rectangular prisms with load as equal as possible
@@ -303,9 +305,9 @@ int RecBisection::partition(int *dest_arr)
           return 0;
     else  {
       if (dest_arr==NULL)
-	assignNodes();
+	  assignNodes();
       else
-	assign_nodes_arr(dest_arr);
+	  assign_nodes_arr(dest_arr);
     }
 
     return 1;
@@ -400,3 +402,379 @@ int RecBisection::prev_better(float prev, float current, float load1)
    return (diff1 <= diff2);
 }
 
+#if CMK_VERSION_BLUEGENE
+
+/* *********************************************************************  */
+/* Partitions a 3D processor into rectangular prisms of different
+   sizes corresponding to the patches. Then a processor in the prism
+   is assigned to hold the patch.
+*************************************/
+
+int RecBisection::partitionProcGrid(int X, int Y, int Z, int *dest_arr) {
+    
+    int i = 0;
+    top_partition.origin.x = 0; 
+    top_partition.origin.y = 0; 
+    top_partition.origin.z = 0; 
+    top_partition.corner.x  = patchMap->gridsize_a()-1;
+    top_partition.corner.y  = patchMap->gridsize_b()-1;
+    top_partition.corner.z  = patchMap->gridsize_c()-1;
+    top_partition.load      = 0.0;
+
+    // calculate estimated computational load due to each patch
+    compute_patch_load();
+   
+    for(i=0; i<numPatches; i++) top_partition.load += patchload[i].total;
+    
+    int new_X = X, new_Y = Y, new_Z = Z;
+    DimensionMap dm;
+
+    dm.x = 0; dm.y = 1; dm.z = 2;
+    findOptimalDimensions(X, Y, Z, new_X, new_Y, new_Z, dm);
+    
+    Partition proc_p;
+    
+    proc_p.origin.x = 0;
+    proc_p.corner.x = new_X - 1;
+    
+    proc_p.origin.y = 0;
+    proc_p.corner.y = new_Y - 1;
+    
+    proc_p.origin.z = 0;
+    proc_p.corner.z = new_Z - 1;
+    
+    CkPrintf("\n\nPartitioning Proc Grid of size %d, %d, %d\n\n", X, Y, Z);
+
+    // divide processor grid into rectangular prisms whose sizes
+    // corrspond to the computation load of the patches. Moreover
+    // neoghboring should also be on nearby processors on the grid
+    topogrid_rec_divide(proc_p, top_partition);
+
+    assignPatchesToProcGrid(dest_arr, X, Y, Z, dm);
+    
+    return 1;
+}
+
+//Partition both a processor grid and a patch grid. Only useful when
+//number of processors is 2 times greater than number of patches. It
+//returns a processor partition for each patch.
+
+void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
+  
+    Partition proc_p1, proc_p2, patch_p1, patch_p2;
+    int i=0, j=0, k=0;
+    int posi[3],posj[3],posk[3];  // division points along x,y,z direction
+    int       mindir;                   // the best direction
+    int       p1_empty[3], p2_empty[3]; // true if a subpartition is empty
+    double     loadarray[3];            // actual loads of p1 (for each x,y,z
+    // division)
+    double    diff;                    // load diffenrence (actual - desired)
+    double    mindiff;                 // minimum difference (among directions)
+    
+    proc_p1 = proc_p2 = proc_p;
+    patch_p1 = patch_p2 = patch_p;
+
+    p1_empty[0] = p1_empty[1] = p1_empty[2] = 0;
+    p2_empty[0] = p2_empty[1] = p2_empty[2] = 0;    
+    /*
+    CkPrintf("topo rec divide pe grid = (%d,%d,%d) to (%d,%d,%d) and patch grid = (%d,%d,%d) to (%d,%d,%d)\n", proc_p.origin.x, proc_p.origin.y, 
+	     proc_p.origin.z, proc_p.corner.x, proc_p.corner.y, proc_p.corner.z, 
+	     patch_p.origin.x, patch_p.origin.y, patch_p.origin.z, patch_p.corner.x, 
+	     patch_p.corner.y, patch_p.corner.z);
+    */
+
+    //We have just one patch left in the partition
+    if(patch_p.origin.x == patch_p.corner.x && 
+       patch_p.origin.y == patch_p.corner.y && 
+       patch_p.origin.z == patch_p.corner.z) {
+	
+        int pid = patchMap->pid(patch_p.origin.x,
+				patch_p.origin.y, patch_p.origin.z);
+      
+	//This patch owns all processors in the partition proc_p
+	partitions[pid] = proc_p;
+	
+	//CkPrintf("Assigning patch %d to partition with origin at %d,%d,%d\n", pid, 
+	// proc_p.origin.x, 
+	// proc_p.origin.y, proc_p.origin.z);
+
+	return;
+    }  
+    
+    
+    if(proc_p.origin.x == proc_p.corner.x && 
+       proc_p.origin.y == proc_p.corner.y && 
+       proc_p.origin.z == proc_p.corner.z) {
+	
+        CkPrintf("\n\n\n WARNING !!!!Problem, more than one patch allocated to one processor\n\n\n");
+	
+	for(k = patch_p.origin.z; k < patch_p.corner.z; k++) 
+	  for(j = patch_p.origin.y; j < patch_p.corner.y; j++) 
+	    for(i = patch_p.origin.x; i < patch_p.corner.x; i++) {
+		    
+		  partitions[patchMap->pid(i,j,k)] = proc_p;
+		}
+	
+	return;
+    }
+    
+    double load_x, load_y, load_z;
+    load_x = (int) (proc_p.corner.x - proc_p.origin.x + 1)/2;
+    load_x /= proc_p.corner.x - proc_p.origin.x + 1;
+    load_x *= patch_p.load;
+    
+    
+    load_y = (int) (proc_p.corner.y - proc_p.origin.y + 1)/2;
+    load_y /= proc_p.corner.y - proc_p.origin.y + 1;
+    load_y *= patch_p.load;
+    
+    load_z = (int) (proc_p.corner.z - proc_p.origin.z + 1)/2;
+    load_z /= proc_p.corner.z - proc_p.origin.z + 1;
+    load_z *= patch_p.load;
+    
+    //CkPrintf("Chosen loads = %g, %g, %g\n", load_x, load_y, load_z);
+
+    loadarray[XDIR] = loadarray[YDIR] = loadarray[ZDIR] = 10.0 * patch_p.load;
+    
+    double currentload = 0;
+    double prevload = 0;
+    if(load_x > 0 && patch_p.origin.x != patch_p.corner.x) { 
+	//Split the processors in X dimension
+	//Also split patches in X dimension
+	
+	currentload = 0.0;
+	i = patch_p.origin.x;
+	
+	while(currentload < load_x && i <= patch_p.corner.x) {
+	    prevload = currentload;
+	    for(j=patch_p.origin.y; j<=patch_p.corner.y; j++)
+		for(k=patch_p.origin.z; k<=patch_p.corner.z; k++)
+		    currentload += patchload[patchMap->pid(i,j,k)].total;
+	    
+	    if (currentload > load_x)
+		if ( prev_better(prevload,currentload,load_x) ) { 
+		    currentload=prevload; 
+		    break;
+		}
+	    i++; 
+	}
+	
+	posi[XDIR] = i; posj[XDIR] = j; posk[XDIR] = k;
+	loadarray[XDIR] = currentload; 
+	if (i == patch_p.origin.x) p1_empty[XDIR] = 1;
+	if (i > patch_p.corner.x)  p2_empty[XDIR] = 1;
+    }
+
+    if(load_z > 0 && patch_p.origin.z != patch_p.corner.z) { //Split patches in Z dimension
+        //Also split patches in Z dimension
+	
+	// z axis
+	currentload = 0.0;
+	k = patch_p.origin.z;
+	while(currentload < load_z && k <= patch_p.corner.z){
+	    prevload = currentload;
+	    for(i=patch_p.origin.x; i<=patch_p.corner.x; i++)
+		for(j=patch_p.origin.y; j<=patch_p.corner.y; j++)
+		    currentload += patchload[patchMap->pid(i,j,k)].total;
+	    
+	    if (currentload > load_z)
+		if ( prev_better(prevload,currentload,load_z) )
+		    {currentload=prevload; break;}
+	    k++;
+	}
+	
+	posi[ZDIR] = i; posj[ZDIR] = j; posk[ZDIR] = k;
+	loadarray[ZDIR] = currentload; 
+	if (k == patch_p.origin.z) p1_empty[ZDIR] = 1;
+	if (k > patch_p.corner.z)  p2_empty[ZDIR] = 1;
+    }
+    
+    if(load_y > 0 && patch_p.origin.y != patch_p.corner.y) { //Y dimension
+	
+	// y axis
+	currentload = 0.0;
+	j = patch_p.origin.y;
+	while(currentload < load_y && j <= patch_p.corner.y) {
+	    prevload = currentload;
+	    for(i=patch_p.origin.x; i<=patch_p.corner.x; i++)
+		for(k=patch_p.origin.z; k<=patch_p.corner.z; k++)
+		    currentload += patchload[patchMap->pid(i,j,k)].total;
+	    
+	    if (currentload > load_y)
+		if ( prev_better(prevload,currentload,load_y) )
+		    {currentload=prevload; break;}
+	    j++; 
+	}
+	posi[YDIR] = i; posj[YDIR] = j; posk[YDIR] = k;
+	loadarray[YDIR] = currentload; 
+	if (j == patch_p.origin.y) p1_empty[YDIR] = 1;
+	if (j > patch_p.corner.y)  p2_empty[YDIR] = 1;
+    }
+    
+    //Need to choose the best division. Need to be careful because the
+    //processor grid may not be partitionable in all dimensions
+    
+    mindiff  = 10.0 * patch_p.load;
+    mindir   = -1;
+    for(i=ZDIR; i >= XDIR; i--) { 
+	
+	double load1 = 0;
+	if(i == XDIR)
+	    load1 = load_x;
+	else if(i == YDIR)
+	    load1 = load_y;
+	else if(i == ZDIR)
+	    load1= load_z;
+	
+	diff =  load1 - loadarray[i];
+	if (diff < 0.0) diff = -diff;
+	if (mindiff > diff) {mindiff = diff; mindir = i;}
+    }
+
+    int pdir = 0;
+
+    //Give up on loads and divide it some way.  Later change to the
+    //max of the differences along processors and patches
+    if(mindiff >= patch_p.load) {
+	if(patch_p.origin.x != patch_p.corner.x) {
+	    mindir = XDIR;
+	    posi[XDIR] = (patch_p.origin.x + patch_p.corner.x + 1)/2;
+	}
+	else if(patch_p.origin.y != patch_p.corner.y) {
+	    mindir = YDIR;
+	    posj[YDIR] = (patch_p.origin.y + patch_p.corner.y + 1)/2;
+	}
+	else {
+	    mindir = ZDIR;
+	    posk[ZDIR] = (patch_p.origin.z + patch_p.corner.z + 1)/2;
+	}
+	
+	if(load_x > 0) 
+	  pdir = XDIR;
+	else if(load_y > 0) 
+	  pdir = YDIR;
+	else 	
+	  pdir = ZDIR;
+	    	
+	loadarray[mindir] = 0.5 * patch_p.load;
+	loadarray[pdir] = 0.5 * patch_p.load;
+	
+	CkPrintf("Inefficient patch allocation\n");
+
+	//CkAbort("Cant Find Partitions\n\n");
+    }
+    else {
+	pdir = mindir;
+    }
+
+    int n1 = 0, n2 = 0;
+
+    // divide processor along pdir
+    switch (pdir) {
+    case XDIR: 
+        n1 = loadarray[XDIR] * (proc_p.corner.x - proc_p.origin.x) / patch_p.load;
+	n2 = proc_p.corner.x - proc_p.origin.x - n1;
+	
+	proc_p1.corner.x = proc_p.origin.x + n1;
+	proc_p2.origin.x = proc_p.origin.x + n1 + 1;
+	
+	break;
+    case YDIR: 
+	
+	n1 = loadarray[YDIR] * (proc_p.corner.y - proc_p.origin.y) / patch_p.load;
+	n2 = proc_p.corner.y - proc_p.origin.y - n1;
+	
+	proc_p1.corner.y = proc_p.origin.y + n1;
+	proc_p2.origin.y = proc_p.origin.y + n1 + 1;	
+	break;
+	
+    case ZDIR: 
+	n1 = loadarray[ZDIR] * (proc_p.corner.z - proc_p.origin.z) / patch_p.load;
+	n2 = proc_p.corner.z - proc_p.origin.z - n1;
+	
+	proc_p1.corner.z = proc_p.origin.z + n1;
+	proc_p2.origin.z = proc_p.origin.z + n1 + 1;
+	
+	break;
+    default:   NAMD_bug("RecBisection failing horribly!");
+    }    
+
+    // divide PATCH along mindir
+    switch (mindir) {
+    case XDIR: 
+	patch_p1.corner.x = posi[XDIR] - 1;
+	patch_p2.origin.x = posi[XDIR];
+    
+	break;
+    case YDIR: 
+	patch_p1.corner.y = posj[YDIR] - 1;
+	patch_p2.origin.y = posj[YDIR];
+	break;
+	
+    case ZDIR: 
+	patch_p1.corner.z = posk[ZDIR] - 1;
+	patch_p2.origin.z = posk[ZDIR];
+	break;
+
+    default:   NAMD_bug("RecBisection failing horribly!");
+    }
+  
+    patch_p1.load = loadarray[mindir];
+    patch_p2.load = patch_p.load - patch_p1.load;
+
+    /*
+    CkPrintf("Calling Topo Rec Divide along %d direction with pe grid = (%d,%d,%d) to (%d,%d,%d) and patch grid = (%d,%d,%d) to (%d,%d,%d)\n", mindir, proc_p1.origin.x, proc_p1.origin.y, 
+	     proc_p1.origin.z, proc_p1.corner.x, proc_p1.corner.y, proc_p1.corner.z, 
+	     patch_p1.origin.x, patch_p1.origin.y, patch_p1.origin.z, patch_p1.corner.x, 
+	     patch_p1.corner.y, patch_p1.corner.z);
+    
+    CkPrintf("Calling Topo Rec Divide along %d direction with pe grid = (%d,%d,%d) to (%d,%d,%d) and patch grid = (%d,%d,%d) to (%d,%d,%d)\n\n\n", mindir, proc_p2.origin.x, proc_p2.origin.y, 
+	     proc_p2.origin.z, proc_p2.corner.x, proc_p2.corner.y, proc_p2.corner.z, 
+	     patch_p2.origin.x, patch_p2.origin.y, patch_p2.origin.z, patch_p2.corner.x, 
+	     patch_p2.corner.y, patch_p2.corner.z);
+    */
+
+    if (!p1_empty[mindir]) topogrid_rec_divide(proc_p1, patch_p1); 
+    else
+	CkAbort("Error empty processor partition\n");
+
+    if (!p2_empty[mindir]) topogrid_rec_divide(proc_p2, patch_p2);
+    else
+	CkAbort("Error empty processor partition\n");
+}
+
+
+//Assign all patches to their corresponding processors
+void RecBisection::assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z,
+					   DimensionMap dm)
+{
+    int pix;
+    Partition p;
+    
+    srand(CkNumPes() * 1000);
+    
+    int coord[3];
+
+    //Naive scheme where I just choose the origin of the proc grie
+    for(pix=0; pix<npartition; pix++) {
+        p = partitions[pix];
+	//Get the actual origin of that processor prism and assign it
+	//to this patch
+	
+	int xdiff, ydiff, zdiff;
+
+	xdiff = p.corner.x - p.origin.x + 1;
+	ydiff = p.corner.y - p.origin.y + 1;
+	zdiff = p.corner.z - p.origin.z + 1;
+
+	coord[0] = p.origin.x + rand() % xdiff;
+	coord[1] = p.origin.y + rand() % ydiff;
+	coord[2] = p.origin.z + rand() % zdiff;
+	
+	int pe = coord[dm.x] + coord[dm.y]*X + coord[dm.z]*X*Y;
+	patchMap->assignNode(pix, pe);  
+	dest_arr[pix] = pe;  
+    }
+}
+
+#endif

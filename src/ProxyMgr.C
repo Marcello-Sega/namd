@@ -25,6 +25,7 @@
 int proxySendSpanning = 0;
 int proxyRecvSpanning = 0;
 
+
 PACK_MSG(ProxyAtomsMsg,
   PACK(patch);
   PACK_RESIZE(atomIDList);
@@ -72,13 +73,13 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
   void *msg_buf = CkAllocBuffer(msg,msg_size);
   char *msg_cur = (char *)msg_buf;
 
-  memcpy((void*)msg_cur,(void*)(&(msg->node)),sizeof(msg->node));
+  CmiMemcpy((void*)msg_cur,(void*)(&(msg->node)),sizeof(msg->node));
   msg_cur += sizeof(msg->node);
-  memcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
+  CmiMemcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
   for ( j = 0; j < Results::maxNumForces; ++j ) {
     int array_size = msg->forceList[j].size();
-    memcpy((void*)msg_cur,(void*)(&array_size),sizeof(array_size));
+    CmiMemcpy((void*)msg_cur,(void*)(&array_size),sizeof(array_size));
     msg_cur += sizeof(array_size);
     char *nonzero = msg_cur;
     msg_cur += array_size * sizeof(char);
@@ -86,7 +87,7 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
         nonzero[i] = 1;
-        memcpy((void*)msg_cur,(void*)(f+i),sizeof(Force));
+        CmiMemcpy((void*)msg_cur,(void*)(f+i),sizeof(Force));
         msg_cur += sizeof(Force);
       } else {
         nonzero[i] = 0;
@@ -103,14 +104,14 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
   ProxyResultMsg *msg = new (vmsg) ProxyResultMsg;
   char *msg_cur = (char*)ptr;
 
-  memcpy((void*)(&(msg->node)),(void*)msg_cur,sizeof(msg->node));
+  CmiMemcpy((void*)(&(msg->node)),(void*)msg_cur,sizeof(msg->node));
   msg_cur += sizeof(msg->node);
-  memcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
+  CmiMemcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
   int j;
   for ( j = 0; j < Results::maxNumForces; ++j ) {
     int array_size;
-    memcpy((void*)(&array_size),(void*)msg_cur,sizeof(array_size));
+    CmiMemcpy((void*)(&array_size),(void*)msg_cur,sizeof(array_size));
     msg_cur += sizeof(array_size);
     msg->forceList[j].resize(array_size);
     char *nonzero = msg_cur;
@@ -118,7 +119,7 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
     Force* f = msg->forceList[j].begin();
     for ( int i = 0; i < array_size; ++i ) {
       if ( nonzero[i] ) {
-        memcpy((void*)(f+i),(void*)msg_cur,sizeof(Force));
+        CmiMemcpy((void*)(f+i),(void*)msg_cur,sizeof(Force));
         msg_cur += sizeof(Force);
       } else {
         f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;
@@ -153,17 +154,17 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
   char *msg_cur = (char *)msg_buf;
 
   int nodeSize = msg->nodes.size();
-  memcpy((void*)msg_cur,(void*)(&nodeSize), sizeof(nodeSize));
+  CmiMemcpy((void*)msg_cur,(void*)(&nodeSize), sizeof(nodeSize));
   msg_cur += sizeof(nodeSize);
   for (int i=0; i<nodeSize; i++) {
-    memcpy((void*)msg_cur,(void*)(&msg->nodes[i]), sizeof(NodeID));
+    CmiMemcpy((void*)msg_cur,(void*)(&msg->nodes[i]), sizeof(NodeID));
     msg_cur += sizeof(NodeID);
   }
-  memcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
+  CmiMemcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
   for ( j = 0; j < Results::maxNumForces; ++j ) {
     int array_size = msg->forceList[j].size();
-    memcpy((void*)msg_cur,(void*)(&array_size),sizeof(array_size));
+    CmiMemcpy((void*)msg_cur,(void*)(&array_size),sizeof(array_size));
     msg_cur += sizeof(array_size);
     char *nonzero = msg_cur;
     msg_cur += array_size * sizeof(char);
@@ -171,7 +172,7 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
         nonzero[i] = 1;
-        memcpy((void*)msg_cur,(void*)(f+i),sizeof(Force));
+        CmiMemcpy((void*)msg_cur,(void*)(f+i),sizeof(Force));
         msg_cur += sizeof(Force);
       } else {
         nonzero[i] = 0;
@@ -189,18 +190,18 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
   char *msg_cur = (char*)ptr;
 
   int nodeSize;
-  memcpy((void*)(&nodeSize),(void*)msg_cur,sizeof(nodeSize));
+  CmiMemcpy((void*)(&nodeSize),(void*)msg_cur,sizeof(nodeSize));
   msg_cur += sizeof(nodeSize);
   for (int i=0; i<nodeSize; i++) {
     msg->nodes.add(*(int *)msg_cur);
     msg_cur += sizeof(NodeID);
   }
-  memcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
+  CmiMemcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
   int j;
   for ( j = 0; j < Results::maxNumForces; ++j ) {
     int array_size;
-    memcpy((void*)(&array_size),(void*)msg_cur,sizeof(array_size));
+    CmiMemcpy((void*)(&array_size),(void*)msg_cur,sizeof(array_size));
     msg_cur += sizeof(array_size);
     msg->forceList[j].resize(array_size);
     char *nonzero = msg_cur;
@@ -208,7 +209,7 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
     Force* f = msg->forceList[j].begin();
     for ( int i = 0; i < array_size; ++i ) {
       if ( nonzero[i] ) {
-        memcpy((void*)(f+i),(void*)msg_cur,sizeof(Force));
+        CmiMemcpy((void*)(f+i),(void*)msg_cur,sizeof(Force));
         msg_cur += sizeof(Force);
       } else {
         f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;
@@ -224,7 +225,7 @@ ProxyMgr::ProxyMgr() {
   if (CpvAccess(ProxyMgr_instance)) {
     NAMD_bug("Tried to create ProxyMgr twice.");
   }
-  CpvAccess(ProxyMgr_instance) = this;
+  CkpvAccess(ProxyMgr_instance) = this;
 }
 
 ProxyMgr::~ProxyMgr() { 
@@ -539,6 +540,7 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
       ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
     }
   }
+
   proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
