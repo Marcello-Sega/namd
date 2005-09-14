@@ -1,14 +1,15 @@
 NAMD_ARCH = BlueGeneL
 CHARMARCH = mpi-bluegenel
 
-BGL_INC=/BlueLight/floor/bglsys/include
-BGL_LIB=/BlueLight/floor/bglsys/lib
-BGL_BIN=/BlueLight/floor/blrts-gnu/bin
+BGL_INC=/bgl/BlueLight/floor/bglsys/include
+BGL_LIB=/bgl/BlueLight/floor/bglsys/lib
+BGL_BIN=/bgl/BlueLight/floor/blrts-gnu/bin
 
-BGL_CFLAGS=-I$(BGL_INC) -gdwarf-2 -Wno-deprecated
+BGL_CFLAGS=-I$(BGL_INC) 
 
 CXX = $(BGL_BIN)/powerpc-bgl-blrts-gnu-g++ $(BGL_CFLAGS) -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_STRSTREAM_H -DNO_GETPWUID
-#CXXOPTS = -O3 -ffast-math 
+
+#-O3 is unstable with NAMD
 CXXOPTS = -O1 -ffast-math 
 CC = $(BGL_BIN)/powerpc-bgl-blrts-gnu-gcc $(BGL_CFLAGS)
 COPTS = -O4 

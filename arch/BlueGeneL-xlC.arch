@@ -1,0 +1,13 @@
+NAMD_ARCH = BlueGeneL
+CHARMARCH = bluegenel-xlc
+
+BGL_INC = $(BGL_INSTALL)/bglsys/include
+
+CXX = /opt/ibmcmp/vacpp/7.0/bin/blrts_xlC  -qstaticinline -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID -I$(BGL_INC) 
+
+CXXOPTS = -O3 -qhot -Q -qarch=440 -qtune=440 
+CXXNOALIASOPTS = -O3 -Q -qarch=440 -qtune=440 -qfloat=rsqrt:fltint -qalias=allp:addr 
+
+CXXTHREADOPTS = -O3 -qarch=440 -qtune=440 -qstrict
+CC = /opt/ibmcmp/vacpp/7.0/bin/blrts_xlc
+COPTS = -O4 -qhot
