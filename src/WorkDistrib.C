@@ -953,16 +953,13 @@ void WorkDistrib::mapComputeNonbonded(void)
   {
     int64 numAtoms = patchMap->patch(i)->getNumAtoms();  // avoid overflow
     int64 numFixed = patchMap->patch(i)->getNumFixedAtoms();  // avoid overflow
-    int numPartitions;
-    if (node->simParameters->numAtomsSelf == 0) {
-      numPartitions = 1 + (numAtoms*numAtoms-numFixed*numFixed > 2500) +
-	(numAtoms*numAtoms-numFixed*numFixed)/50000;
+    int numPartitions = 0;
+    int divide = node->simParameters->numAtomsSelf;
+    if (divide > 0) {
+      numPartitions = (int) ( 0.5 +
+        (numAtoms*numAtoms-numFixed*numFixed) / (double)(2*divide*divide) );
     }
-    else {
-      numPartitions = (int) (
-        (numAtoms*numAtoms-numFixed*numFixed) / (double)(node->simParameters->numAtomsSelf*node->simParameters->numAtomsSelf) + 0.5 );
-      if (numPartitions < 1) numPartitions = 1;
-    }
+    if (numPartitions < 1) numPartitions = 1;
     if ( numPartitions > node->simParameters->maxSelfPart )
 			numPartitions = node->simParameters->maxSelfPart;
     // self-interaction
@@ -989,25 +986,39 @@ void WorkDistrib::mapComputeNonbonded(void)
 	int64 numAtoms2 = patchMap->patch(p2)->getNumAtoms();
 	int64 numFixed1 = patchMap->patch(p1)->getNumFixedAtoms();
 	int64 numFixed2 = patchMap->patch(p2)->getNumFixedAtoms();
-	const int distance =
- 	  ( patchMap->index_a(p1) == patchMap->index_a(p2) ? 0 : 1 ) +
- 	  ( patchMap->index_b(p1) == patchMap->index_b(p2) ? 0 : 1 ) +
- 	  ( patchMap->index_c(p1) == patchMap->index_c(p2) ? 0 : 1 );
-        int numPartitions;
+        const int twoAwayX = node->simParameters->twoAwayX;
+        const int twoAwayY = node->simParameters->twoAwayY;
+        const int twoAwayZ = node->simParameters->twoAwayZ;
+        const int ia1 = patchMap->index_a(p1);
+        const int ia2 = patchMap->index_a(p2);
+        const int ib1 = patchMap->index_b(p1);
+        const int ib2 = patchMap->index_b(p2);
+        const int ic1 = patchMap->index_c(p1);
+        const int ic2 = patchMap->index_c(p2);
+	int distance = 3;
+ 	if ( ia1 == ia2 ) --distance;
+ 	else if ( twoAwayX && ia1 == ia2 + 1 ) --distance;
+ 	else if ( twoAwayX && ia1 + 1 == ia2 ) --distance;
+ 	if ( ib1 == ib2 ) --distance;
+ 	else if ( twoAwayY && ib1 == ib2 + 1 ) --distance;
+ 	else if ( twoAwayY && ib1 + 1 == ib2 ) --distance;
+ 	if ( ic1 == ic2 ) --distance;
+ 	else if ( twoAwayZ && ic1 == ic2 + 1 ) --distance;
+ 	else if ( twoAwayZ && ic1 + 1 == ic2 ) --distance;
 	int divide = 0;
-        if (distance <= 1) {
+	if ( distance == 0 ) {
+	  divide = node->simParameters->numAtomsSelf;
+        } else if (distance == 1) {
 	  divide = node->simParameters->numAtomsPair;
 	} else {
 	  divide = node->simParameters->numAtomsPair2;
 	}
-	if (divide == 0) {
-          numPartitions = 1 + (numAtoms1*numAtoms2-numFixed1*numFixed2 > 2500) + (numAtoms1*numAtoms2-numFixed1*numFixed2)/100000;
+        int numPartitions = 0;
+	if (divide > 0) {
+          numPartitions = (int) ( 0.5 +
+	    (numAtoms1*numAtoms2-numFixed1*numFixed2)/(double)(divide*divide) );
 	}
-	else {
-          numPartitions = (int) (
-		(numAtoms1*numAtoms2-numFixed1*numFixed2)/(double)(divide*divide) + 0.5 );
-          if ( numPartitions < 1 ) numPartitions = 1;
-	}
+        if ( numPartitions < 1 ) numPartitions = 1;
         if ( numPartitions > node->simParameters->maxPairPart )
 			numPartitions = node->simParameters->maxPairPart;
 //	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
