@@ -24,6 +24,10 @@ PACK_MSG(MyMsg,
 
 #include "converse.h"
 
+#if CHARM_VERSION <= 50900
+#define CmiMemcpy(D,S,N) memcpy(D,S,N)
+#endif
+
 #define PACKMSG_CHECKSUM(X)
 
 template<class T> class ResizeArray;
