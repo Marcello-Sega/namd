@@ -12,6 +12,7 @@
 #include "ComputeMap.h"
 #include "Compute.h"
 #include "ObjectArena.h"
+#include "InfoStream.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -284,6 +285,7 @@ void ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
 //----------------------------------------------------------------------
 void ComputeMap::printComputeMap(void)
 {
+  iout << iINFO << "CREATING " << nComputes << " COMPUTE OBJECTS\n" << endi;
   DebugM(2,"---------------------------------------");
   DebugM(2,"---------------------------------------\n");
 
