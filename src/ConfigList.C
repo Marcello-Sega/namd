@@ -65,7 +65,9 @@ void ConfigList::add_element(const char *s1, int len1, const char *s2, int len2)
     {
       NAMD_die("new failed in ConfigList::add_element");
     }
+#ifndef NAMD_NO_STDOUT_FLUSH
     fflush(stdout);
+#endif
     strncpy(temps, s1, len1);
     temps[len1] = 0;                   //       terminate the string
     ConfigListNode *tmpList;

@@ -27,11 +27,15 @@ void infostream::endi() {
   *this << ends;
 #ifndef NO_STRSTREAM_H
   CkPrintf("%s",iBuffer);
+#ifndef NAMD_NO_STDOUT_FLUSH
   fflush(stdout);  // since CkPrintf doesn't always flush
+#endif
   (*this).seekp(0);   // clear buffer
 #else
   CkPrintf("%s",str().c_str());
+#ifndef NAMD_NO_STDOUT_FLUSH
   fflush(stdout);  // since CkPrintf doesn't always flush
+#endif
   (*this).seekp(0, ios_base::beg);
 #endif
 }

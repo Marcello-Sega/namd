@@ -101,14 +101,18 @@ char *Ambertoppar::get(int size)
 
 #ifdef DEBUG
 	printf("malloc %d\n", size);
+#ifndef NAMD_NO_STDOUT_FLUSH
 	fflush(stdout);
+#endif
 #endif
 	if (size ==0)
 		return((char *) NULL);
 
 	if ((ptr = (char *) malloc((unsigned)size)) == NULL) {
 		printf("malloc %d", size);
+#ifndef NAMD_NO_STDOUT_FLUSH
 		fflush(stdout);
+#endif
 		NAMD_die("Memory allocation error in Ambertoppar::get()");
 	}
 	return(ptr);
@@ -1083,7 +1087,9 @@ int Ambertoppar::readparm(char *name)
 	genclose(file);
         if (debug) {
 		printf("rdprm done\n");
+#ifndef NAMD_NO_STDOUT_FLUSH
 		fflush(stdout);
+#endif
 	}
 	data_read = 1;
 	return(1);
@@ -1104,7 +1110,9 @@ int Ambertoppar::firstwat()
 		  printf("first water: res = %d, atom = %d (%.4s)\n", 
 					res+1, Ipres[res],
 					&AtomNames[Ipres[res]]);
+#ifndef NAMD_NO_STDOUT_FLUSH
 		  fflush(stdout);
+#endif
 		  return(Ipres[res]-1);
 		}
 		res++;
