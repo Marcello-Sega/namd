@@ -674,7 +674,7 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   PatchMap* patchMap = PatchMap::Object();
   int myNode = patchMap->node(id);
     
-  BGLTorousManager *tmanager = BGLTorousManager::getObject();
+  BGLTorusManager *tmanager = BGLTorusManager::getObject();
   xsize = tmanager->getXSize();
   ysize = tmanager->getYSize();
   zsize = tmanager->getZSize();
@@ -731,13 +731,13 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
     */
   }
   
-  //Place numNodesPerPatch proxies on the 3d torous neighbors of a processor
+  //Place numNodesPerPatch proxies on the 3d torus neighbors of a processor
 
   int numPatches = patchMap->numPatches();
   int emptyNodes = numNodes - numPatches;
   //if ( emptyNodes > numPatches ) {
   
-  int nodesPerPatch = nProxyNodes + 16 * (emptyNodes-1) / numPatches;
+  int nodesPerPatch = nProxyNodes + 8 * (emptyNodes-1) / numPatches + 1;
   int proxyNode = 0 ;
   int proxy_x=0, proxy_y=0, proxy_z=0;
   

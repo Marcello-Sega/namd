@@ -401,7 +401,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
     if (specialTracing) {
       if (ldbCycleNum == 4) traceBegin();
-      if (ldbCycleNum == 6) traceEnd();
+      if (ldbCycleNum == 8) traceEnd();
     }
   }
 #endif

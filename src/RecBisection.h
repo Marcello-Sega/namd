@@ -28,6 +28,9 @@ struct DimensionMap {
 inline void findOptimalDimensions(int X, int Y, int Z, 
 				 int & new_X, int & new_Y, int &new_Z,
 				 DimensionMap &dm) {
+    if(X == Y && Y == Z)
+	return;
+    
     if(X >= Y) {
 	if(X >= Z) {
 	    new_X = X;

@@ -173,7 +173,7 @@ void generatePmePeList2(int *gridPeMap, int numGridPes, int *transPeMap, int num
 
 #if CMK_VERSION_BLUEGENE
 
-//Use prime numbers to minimize contention on Torous
+//Use prime numbers to minimize contention on Torus
 void generatePmePeListPrime(int *pemap, int numPes);
 void generatePmePeListPrime2(int *pemap, int numPes);
 
@@ -1634,7 +1634,7 @@ void generatePmePeListPrime(int *pemap, int numPes) {
   delete [] pmemap;
 }
 
-#include "bgltorous.h"
+#include "bgltorus.h"
 #include "RecBisection.h"
 
 void generateBGLORBPmePeList(int *pemap, int numPes) {
@@ -1652,7 +1652,7 @@ void generateBGLORBPmePeList(int *pemap, int numPes) {
 
   int xsize = 0, ysize = 0, zsize = 0;
 
-  BGLTorousManager *tmanager = BGLTorousManager::getObject();
+  BGLTorusManager *tmanager = BGLTorusManager::getObject();
   xsize = tmanager->getXSize();
   ysize = tmanager->getYSize();
   zsize = tmanager->getZSize();

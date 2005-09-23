@@ -430,6 +430,7 @@ int RecBisection::partitionProcGrid(int X, int Y, int Z, int *dest_arr) {
     DimensionMap dm;
 
     dm.x = 0; dm.y = 1; dm.z = 2;
+    
     findOptimalDimensions(X, Y, Z, new_X, new_Y, new_Z, dm);
     
     Partition proc_p;

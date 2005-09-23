@@ -288,11 +288,68 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
     if (! pair->c) {
 	 pair->c = c;
 	 pair->p = p;
-    } else if (p->load <= pair->p->load && c->load >= pair->c->load) {
-	 pair->c = c;
-	 pair->p = p;
-    }
+    } else {
+#if 0 //CMK_VERSION_BLUEGENE
+        int neighbor_old=0, neighbor=0;
+	processorInfo* oldp = pair->p;
+	if(oldp != NULL) {	    
+	    BGLTorusManager *tmgr = BGLTorusManager::getObject();
+	    //Check to see if neighbor of midpoint
+	    if(tmgr->isNeighborOfBoth(oldp->Id, patches[c->patch1].processor,
+				      patches[c->patch2].processor, 1))
+		neighbor_old = 1;	    
+	    if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
+				      patches[c->patch2].processor, 1))
+		neighbor = 1;
 
+	    if(neighbor_old == 1 && neighbor == 1) {
+		if (p->load <= pair->p->load && c->load >= pair->c->load) {
+		    pair->c = c;
+		    pair->p = p;
+		}
+	    }
+	    else if(neighbor_old == 0 && neighbor == 1) {
+		//Previous was not a neighbor, kick him out
+		pair->c = c;
+		pair->p = p;
+	    }
+	    else if(neighbor_old == 1 && neighbor == 0)
+		;      //Give preference to good neighbors
+	    else {
+		//Both not neighbors, choose nearby node to minimize hop bytes
+		
+		int old_dist = 0, dist = 0;	    
+		int ax,ay,az, x,y,z, p1x,p1y,p1z, p2x,p2y,p2z;
+	    
+		tmgr->getCoordinatesByRank(oldp->Id, ax,ay,az);
+		tmgr->getCoordinatesByRank(p->Id, x,y,z);
+		
+		tmgr->getCoordinatesByRank(patches[c->patch1].processor, 
+					   p1x,p1y,p1z);
+		tmgr->getCoordinatesByRank(patches[c->patch2].processor, 
+					   p2x,p2y,p2z);
+		
+		old_dist = abs(p1x - ax) + abs(p2x - ax) +
+		    abs(p1y - ay) + abs(p1z - az) +
+		    abs(p2y - ay) + abs(p2z - az);
+		
+		dist = abs(p1x - x) + abs(p2x - x) +
+		    abs(p1y - y) + abs(p1z - z) +
+		    abs(p2y - y) + abs(p2z - z);
+		
+		if(old_dist > dist) {
+		    pair->c = c;
+		    pair->p = p;
+		}
+	    }
+	}
+#else
+	  if (p->load <= pair->p->load && c->load >= pair->c->load) {
+	    pair->c = c;
+	    pair->p = p;
+	  }
+#endif
+    }
   }
 }
 
@@ -426,12 +483,7 @@ int Rebalancer::refine()
          while (c)
          {
 #if CMK_VERSION_BLUEGENE
-	   BGLTorousManager *tmgr = BGLTorousManager::getObject();
-	   /*
-	     if(tmgr->neighbors(p->Id, patches[c->patch1].processor) ||
-	     tmgr->neighbors(p->Id, patches[c->patch2].processor)) 
-	   */
-
+	   BGLTorusManager *tmgr = BGLTorusManager::getObject();
 	   if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
 				     patches[c->patch2].processor, 1))
 #endif
@@ -501,7 +553,7 @@ int Rebalancer::refine()
 
 // this binary search refinement procedure assume you already assigned computes
 // to their processors before calling this!!
-void Rebalancer::multirefine()
+void Rebalancer::multirefine(double overload_start)
 {
   // The New refinement procedure.  This is identical to the code in
   // RefineOnly.C, and probably should be merged with that code to form
@@ -511,10 +563,10 @@ void Rebalancer::multirefine()
   double max = computeMax();
 
   const double overloadStep = 0.01;
-  const double overloadStart = 1.02;
+  const double overloadStart = overload_start;       //1.05;
   double dCurOverload = max / avg;
-
-  int minOverload = 0;
+  
+  int minOverload = 0;   //Min overload should be 1.05 ?
   int maxOverload = (int)((dCurOverload - overloadStart)/overloadStep + 1);
   double dMinOverload = minOverload * overloadStep + overloadStart;
   double dMaxOverload = maxOverload * overloadStep + overloadStart;

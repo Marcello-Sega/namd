@@ -1406,10 +1406,10 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 /*			END OF FUNCTION remove_com_motion		*/
 
 #if CMK_VERSION_BLUEGENE
-#include "bgltorous.h"
+#include "bgltorus.h"
 
 //Specifically designed for BGL and other 3d Tori architectures
-//Partition Torous and Patch grid together using recursive bisection.
+//Partition Torus and Patch grid together using recursive bisection.
 void WorkDistrib::assignPatchesTopoGridRecBisection() {
   
   //CkPrintf("In topology based patch assignment scheme\n");
@@ -1426,7 +1426,7 @@ void WorkDistrib::assignPatchesTopoGridRecBisection() {
   int xsize = 0, ysize = 0, zsize = 0;
   
 #if CMK_VERSION_BLUEGENE
-  BGLTorousManager *tmanager = BGLTorousManager::getObject();
+  BGLTorusManager *tmanager = BGLTorusManager::getObject();
   xsize = tmanager->getXSize();
   ysize = tmanager->getYSize();
   zsize = tmanager->getZSize();

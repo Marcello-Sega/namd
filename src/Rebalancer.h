@@ -49,7 +49,7 @@ protected:
   void assign(computeInfo *c, int p);
   void deAssign(computeInfo *c, processorInfo *pRec);
   int refine();
-  void multirefine();
+  void multirefine(double overload_start=1.02);
   void printSummary();
   void printResults();
   void printLoads();
@@ -65,7 +65,7 @@ public:
 };
 
 #if CMK_VERSION_BLUEGENE
-#include "bgltorous.h"
+#include "bgltorus.h"
 #endif
 
 #endif
