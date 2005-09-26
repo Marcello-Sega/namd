@@ -549,6 +549,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     }
   }
 #endif
+  stats->clear();
   return nMoveableComputes;
 }
 
