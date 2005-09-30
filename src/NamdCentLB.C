@@ -66,8 +66,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
   //  CmiTimer(),CmiWallTimer());
 
-  const int numProcessors = count;
-  const int numPatches = PatchMap::Object()->numPatches();
+  int numProcessors = count;
+  int numPatches = PatchMap::Object()->numPatches();
   const int numComputes = ComputeMap::Object()->numComputes();
   const SimParameters* simParams = Node::Object()->simParameters;
 
@@ -76,10 +76,11 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
   if ( ! computeArray ) computeArray = new computeInfo[numComputes];
 
-  const int nMoveableComputes = buildData(stats,count);
+  int nMoveableComputes = buildData(stats,count);
+
   // gzheng debug
-  // dumpData("data", numProcessors, numPatches, nMoveableComputes);
-  // loadData("data", numProcessors, numPatches, nMoveableComputes);
+  // dumpDataASCII("data", numProcessors, numPatches, nMoveableComputes);
+  // loadDataASCII("data", numProcessors, numPatches, nMoveableComputes);
   // end of debug section
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
@@ -184,6 +185,7 @@ void NamdCentLB::dumpData(char *file, int numProcessors, int numPatches, int num
   write(fd, &numProcessors, sizeof(int));
   write(fd, &numPatches, sizeof(int));
   write(fd, &numComputes, sizeof(int));
+
   write(fd, processorArray, sizeof(processorInfo)*numProcessors);
   write(fd, patchArray, sizeof(patchInfo)*numPatches);
   write(fd, computeArray, sizeof(computeInfo)*numComputes);
@@ -278,6 +280,7 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
   }
 
   fclose(fp);
+  CkExit();
 }
 
 void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &numComputes)
@@ -288,6 +291,7 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
      return;
   }
 
+  CkPrintf("***** Load data from file: %s ***** \n", file);
   read(fd, &numProcessors, sizeof(int));
   read(fd, &numPatches, sizeof(int));
   read(fd, &numComputes, sizeof(int));
@@ -299,6 +303,12 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
   computeInfo *computes = new computeInfo[numComputes];
   patchInfo *patchs = new patchInfo [numPatches];
 */
+  delete [] processorArray;
+  delete [] patchArray;
+  delete [] computeArray;
+  processorArray = new processorInfo[numProcessors];
+  patchArray = new patchInfo[numPatches];
+  computeArray = new computeInfo[numComputes];
 
   read(fd, processorArray, sizeof(processorInfo)*numProcessors);
   read(fd, patchArray, sizeof(patchInfo)*numPatches);
@@ -313,7 +323,7 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
       for (int j=0; j<num; j++) {
           int id;
           read(fd, &id, sizeof(int));
-	  printf("%d ", id);
+//	  printf("%d ", id);
           processorArray[i].proxies.insert(&patchArray[id]);
       }
       printf("\n");
@@ -333,6 +343,68 @@ void NamdCentLB::loadData(char *file, int &numProcessors, int &numPatches, int &
   close(fd);
 }
 
+void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
+			       int &numPatches, int &numComputes)
+{
+  FILE* fp = fopen(file, "r");
+  if (fp == NULL){
+     perror("loadDataASCII");
+     return;
+  }
+
+  CkPrintf("***** Load ascii data from file: %s ***** \n", file);
+
+  fscanf(fp,"%d %d %d",&numProcessors,&numPatches,&numComputes);
+
+  printf("numProcs: %d numPatches: %d numComputes: %d\n", numProcessors,numPatches, numComputes);
+
+  delete [] processorArray;
+  delete [] patchArray;
+  delete [] computeArray;
+  processorArray = new processorInfo[numProcessors];
+  patchArray = new patchInfo[numPatches];
+  computeArray = new computeInfo[numComputes];
+
+  int i;
+  for(i=0;i<numProcessors;i++) {
+    processorInfo* p = processorArray + i;
+    fscanf(fp,"%d %le %le %le\n",&p->Id,&p->load,&p->backgroundLoad,&p->computeLoad);
+  }
+
+  for(i=0;i < numPatches; i++) {
+    patchInfo* p = patchArray + i;
+    fscanf(fp,"%d %le %d %d\n",&p->Id,&p->load,&p->processor,&p->numAtoms);
+  }
+    
+  for(i=0; i < numComputes; i++) {
+    computeInfo* c = computeArray + i;
+    fscanf(fp,"%d %le %d %d %d %d\n",&c->Id,&c->load,&c->patch1,&c->patch2,
+	    &c->processor,&c->oldProcessor);
+  }
+
+  // dump patchSet
+  for (i=0; i< numProcessors; i++) {
+      int num = processorArray[i].proxies.numElements();
+      fscanf(fp,"%d",&num);
+      for (int j=0; j<num; j++) {
+          int id;
+          fscanf(fp,"%d",&id);
+          processorArray[i].proxies.insert(&patchArray[id]);
+      }
+  }
+  // dump proxiesOn
+  for (i=0; i<numPatches; i++)  {
+      int num;
+      fscanf(fp,"%d",&num);
+      for (int j=0; j<num; j++) {
+          int id;
+	  fscanf(fp,"%d",&id);
+          patchArray[i].proxiesOn.insert(&processorArray[id]);
+      }
+  }
+
+  fclose(fp);
+}
 #endif
 
 extern int isPmeProcessor(int); 
