@@ -79,8 +79,13 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   int nMoveableComputes = buildData(stats,count);
 
   // gzheng debug
-  // dumpDataASCII("data", numProcessors, numPatches, nMoveableComputes);
-  // loadDataASCII("data", numProcessors, numPatches, nMoveableComputes);
+//#define DUMPDATA 1
+//#define LOADDATA 1
+#if DUMPDATA 
+  dumpDataASCII("data", numProcessors, numPatches, nMoveableComputes);
+#elif LOADDATA
+  loadDataASCII("data", numProcessors, numPatches, nMoveableComputes);
+#endif
   // end of debug section
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
@@ -123,6 +128,11 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
                                   numProcessors);
     }
   }
+
+#if LOADDATA
+  dumpDataASCII("data.out", numProcessors, numPatches, nMoveableComputes);
+  CkExit();
+#endif
 
   // For error checking:
   // Count up computes, to see if somebody doesn't have any computes
@@ -169,6 +179,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     delete item;
     migrateInfo[i] = 0;
   }
+
   return msg;
 };
 
@@ -238,7 +249,7 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
   int i;
   for(i=0;i<numProcessors;i++) {
     processorInfo* p = processorArray + i;
-    fprintf(fp,"%d %e %e %e\n",p->Id,p->load,p->backgroundLoad,p->computeLoad);
+    fprintf(fp,"%d %e %e %e %e\n",p->Id,p->load,p->backgroundLoad,p->computeLoad,p->idleTime);
   }
 
   for(i=0;i < numPatches; i++) {
@@ -248,8 +259,12 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
     
   for(i=0; i < numComputes; i++) {
     computeInfo* c = computeArray + i;
-    fprintf(fp,"%d %e %d %d %d %d\n",c->Id,c->load,c->patch1,c->patch2,
+    fprintf(fp,"%d %e %d %d %d %d",c->Id,c->load,c->patch1,c->patch2,
 	    c->processor,c->oldProcessor);
+#if CHARM_VERSION > 50910
+    fprintf(fp, " %e %e", c->minTime, c->maxTime);
+#endif
+    fprintf(fp, "\n");
   }
 
   // dump patchSet
@@ -368,18 +383,28 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
   int i;
   for(i=0;i<numProcessors;i++) {
     processorInfo* p = processorArray + i;
-    fscanf(fp,"%d %le %le %le\n",&p->Id,&p->load,&p->backgroundLoad,&p->computeLoad);
+    fscanf(fp,"%d %le %le %le", &p->Id, &p->load, &p->backgroundLoad, &p->computeLoad);
+    fscanf(fp,"%le\n", &p->idleTime);
+    if (p->Id != i) CmiAbort("Reading processorArray error!");
   }
 
   for(i=0;i < numPatches; i++) {
     patchInfo* p = patchArray + i;
     fscanf(fp,"%d %le %d %d\n",&p->Id,&p->load,&p->processor,&p->numAtoms);
+    if (p->Id != i || p->processor > numProcessors || p->processor < 0) 
+      CmiAbort("Reading patchArray error!");
   }
     
   for(i=0; i < numComputes; i++) {
     computeInfo* c = computeArray + i;
-    fscanf(fp,"%d %le %d %d %d %d\n",&c->Id,&c->load,&c->patch1,&c->patch2,
+    fscanf(fp,"%d %le %d %d %d %d",&c->Id,&c->load,&c->patch1,&c->patch2,
 	    &c->processor,&c->oldProcessor);
+#if CHARM_VERSION > 50910
+    fscanf(fp, " %le %le", &c->minTime, &c->maxTime);
+#endif
+    if (c->patch1 < 0 || c->patch1 > numPatches || c->patch2 < 0 || c->patch2 > numPatches)
+      CmiAbort("Reading computeArray error!");
+//  printf("%d %e %d %d %d %d %e %e\n", c->Id,c->load,c->patch1,c->patch2,c->processor,c->oldProcessor,c->minTime,c->maxTime);
   }
 
   // dump patchSet
@@ -448,6 +473,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
       processorArray[i].backgroundLoad = bgfactor * stats[i].bg_walltime;
 #endif
     }
+    processorArray[i].idleTime = stats->procs[i].idletime;
   }
 
 #if 0
@@ -532,14 +558,16 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies
 #if CHARM_VERSION > 050607
-    int j;
-    for (j=0; j < stats->n_objs; j++) {
+  int j;
+  for (j=0; j < stats->n_objs; j++) {
       const LDObjData &this_obj = stats->objData[j];
+      int frompe = stats->from_proc[j];
 #else
   for (i=0; i < count; i++) {
     int j;
     for (j=0; j < stats[i].n_objs; j++) {
       const LDObjData &this_obj = stats[i].objData[j];
+      int frompe = i;
 #endif
       // filter out non-NAMD managed objects (like PME array)
 #if CHARM_VERSION > 050405
@@ -602,6 +630,10 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	computeArray[nMoveableComputes].patch2 = p1;
 	computeArray[nMoveableComputes].handle = this_obj.handle;
 	computeArray[nMoveableComputes].load = this_obj.wallTime;
+#if CHARM_VERSION > 50910
+	computeArray[nMoveableComputes].minTime = this_obj.minWall;
+	computeArray[nMoveableComputes].maxTime = this_obj.maxWall;
+#endif
 	nMoveableComputes++;
       }
     }

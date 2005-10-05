@@ -23,6 +23,7 @@ public:
    int patch1, patch2;
    int processor; // caller to ReBalancer MAY leave this field -1, 
    int oldProcessor; // stores the current assignment of the compute object.
+   double minTime, maxTime;       // min and max compute time
    LDObjHandle handle;
 };
 
@@ -37,6 +38,7 @@ class processorInfo: public InfoRecord {
 public:
    // int processorNum; replaced by inherited "Id".
    double backgroundLoad; // background work pre-assigned to the processor.
+   double idleTime;       // idle time
    double computeLoad;    //load due to computes. The total load is computed
                           // by adding these two.		     
    // Added 10/22/01:  indicate if this processor will migrate its objs.   
@@ -49,7 +51,7 @@ public:
    // each proxy on a processor
    int *proxyUsage;
 public:
-   processorInfo(): backgroundLoad(0.), computeLoad(0.), available(CmiTrue) {}
+   processorInfo(): backgroundLoad(0.), idleTime(0.), computeLoad(0.), available(CmiTrue) {}
 };
 
 #endif
