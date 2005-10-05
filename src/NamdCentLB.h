@@ -27,10 +27,6 @@ private:
 #if CMK_VERSION_BLUEGENE
   int requiredProxiesOnProcGrid(PatchID id, int neighborNodes[]);
 #endif
-  void dumpData(char *file, int numProcessors, int numPatches,
-		int numComputes);
-  void loadData(char *file, int &numProcessors, int &numPatches,
-		int &numComputes);
   void dumpDataASCII(char *file, int numProcessors, int numPatches,
 		int numComputes);
   void loadDataASCII(char *file, int &numProcessors, int &numPatches,
