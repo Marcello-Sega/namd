@@ -85,6 +85,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   dumpDataASCII("data", numProcessors, numPatches, nMoveableComputes);
 #elif LOADDATA
   loadDataASCII("data", numProcessors, numPatches, nMoveableComputes);
+//  dumpDataASCII("data.out", numProcessors, numPatches, nMoveableComputes);
+//  CkExit();
 #endif
   // end of debug section
 
@@ -95,7 +97,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     Alg7(computeArray,patchArray,processorArray,
                           nMoveableComputes, numPatches, numProcessors);
   } else if (simParams->ldbStrategy == LDBSTRAT_ALGORB) {
-    if (step() == 0) {
+    if (step() == 1) {
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using RecBisection\n" << endi;
       AlgRecBisection(computeArray,patchArray,processorArray,
@@ -188,12 +190,14 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
 			       int numPatches, int numComputes)
 {
-  FILE* fp = fopen(file,"w");
+  char filename[128];
+  sprintf(filename, "%s.%d", file, step());
+  FILE* fp = fopen(filename,"w");
   if (fp == NULL){
      perror("dumpLDStatsASCII");
      return;
   }
-  CkPrintf("***** DUMP data to file: %s ***** \n", file);
+  CkPrintf("***** DUMP data to file: %s ***** \n", filename);
   fprintf(fp,"%d %d %d\n",numProcessors,numPatches,numComputes);
 
   int i;
@@ -251,13 +255,16 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
 void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
 			       int &numPatches, int &numComputes)
 {
-  FILE* fp = fopen(file, "r");
+  char filename[128];
+  sprintf(filename, "%s.%d", file, step());
+
+  CkPrintf("***** Load ascii data from file: %s ***** \n", filename);
+
+  FILE* fp = fopen(filename, "r");
   if (fp == NULL){
      perror("loadDataASCII");
      return;
   }
-
-  CkPrintf("***** Load ascii data from file: %s ***** \n", file);
 
   fscanf(fp,"%d %d %d",&numProcessors,&numPatches,&numComputes);
 
@@ -276,6 +283,7 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
     fscanf(fp,"%d %le %le %le", &p->Id, &p->load, &p->backgroundLoad, &p->computeLoad);
     fscanf(fp,"%le\n", &p->idleTime);
     if (p->Id != i) CmiAbort("Reading processorArray error!");
+//    p->backgroundLoad = 0.0;
   }
 
   for(i=0;i < numPatches; i++) {
