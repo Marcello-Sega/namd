@@ -25,6 +25,7 @@ public:
   int node, mapped;
 public:
   Partition(): refno(0), load(0.0), node(-1), mapped(0) {};
+  inline int operator==(const Partition &p) const { return origin[0]==p.origin[0] && origin[1]==p.origin[1] && origin[2]==p.origin[2] && corner[0]==p.corner[0] && corner[1]==p.corner[1] && corner[2]==p.corner[2]; }
 };
 
 typedef struct {

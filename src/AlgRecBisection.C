@@ -8,6 +8,8 @@
 #include "InfoStream.h"
 #include "AlgRecBisection.h"
 
+//#define DEBUG
+
 //
 //   load balancing computes using recursion of bisection algorithm
 //
@@ -125,6 +127,7 @@ void AlgRecBisection::rec_divide(int n, Partition &p)
   CmiPrintf("p1: n:%d count:%d load:%f\n", n1, p1.count, p1.load);
   CmiPrintf("p2: n:%d count:%d load:%f\n", n2, p2.count, p2.load);
 #endif
+  CmiAssert(! (p1 == p2));
   rec_divide(n1, p1);
   rec_divide(n2, p2);
 }
@@ -213,8 +216,10 @@ void AlgRecBisection::mapPartitionsToNodes()
     for (j=0; j<P; j++)
       if (computeLoad[i].refno == partitions[j].refno) 
       {
-	int node1 = patchMap->node(computes[i].patch1);
-	int node2 = patchMap->node(computes[i].patch2);
+	//int node1 = patchMap->node(computes[i].patch1);
+	//int node2 = patchMap->node(computes[i].patch2);
+        int node1 = patches[computes[i].patch1].processor;
+        int node2 = patches[computes[i].patch2].processor;
 	pool[j][node1]++;
 	pool[j][node2]++;
       }
@@ -262,15 +267,25 @@ void AlgRecBisection::strategy()
 
   CmiPrintf("AlgRecBisection: numComputes:%d\n", numComputes);
 
+  int size_x = patchMap->gridsize_a();
+  int size_y = patchMap->gridsize_b();
+  int size_z = patchMap->gridsize_c();
+
   // v[0] = XDIR  v[1] = YDIR v[2] = ZDIR
   // vArray[XDIR] is an array holding the x vector for all computes
   for (i=0; i<numComputes; i++) {
     int pid1 = computes[i].patch1;
     int pid2 = computes[i].patch2;
     computeLoad[i].id = i;
-    computeLoad[i].v[0] = patchMap->index_a(pid1) + patchMap->index_a(pid2);
-    computeLoad[i].v[1] = patchMap->index_b(pid1) + patchMap->index_b(pid2);
-    computeLoad[i].v[2] = patchMap->index_c(pid1) + patchMap->index_c(pid2);
+    int a1 = patchMap->index_a(pid1);
+    int b1 = patchMap->index_b(pid1);
+    int c1 = patchMap->index_c(pid1);
+    int a2 = patchMap->index_a(pid2);
+    int b2 = patchMap->index_b(pid2);
+    int c2 = patchMap->index_c(pid1);
+    computeLoad[i].v[0] = a1 + a2;
+    computeLoad[i].v[1] = b1 + b2;
+    computeLoad[i].v[2] = c1 + c2;
 //    CmiPrintf("(%d %d %d)", computeLoad[i].x, computeLoad[i].y, computeLoad[i].z);
     computeLoad[i].load = computes[i].load;
     computeLoad[i].refno = 0;
@@ -295,9 +310,9 @@ void AlgRecBisection::strategy()
   top_partition.origin[XDIR] = 0;
   top_partition.origin[YDIR] = 0;
   top_partition.origin[ZDIR] = 0;
-  top_partition.corner[XDIR] = 2*(patchMap->gridsize_a()-1);
-  top_partition.corner[YDIR] = 2*(patchMap->gridsize_b()-1);
-  top_partition.corner[ZDIR] = 2*(patchMap->gridsize_c()-1);
+  top_partition.corner[XDIR] = 2*(size_x-1);
+  top_partition.corner[YDIR] = 2*(size_y-1);
+  top_partition.corner[ZDIR] = 2*(size_z-1);
 
   top_partition.refno = 0;
   top_partition.load = 0.0;
@@ -351,15 +366,18 @@ void AlgRecBisection::strategy()
     assign((computeInfo *) &(computes[i]),
 	   (processorInfo *) &(processors[computes[i].processor]));
 	 
-#if 0
+  printLoads();
+
+#if 1
   multirefine();
 #else
   printSummary();
 #endif
 
+  printLoads();
+
   CmiPrintf("AlgRecBisection finished time: %f\n", CmiWallTimer() - t);
 
-  // printLoads();
 }
 
 
