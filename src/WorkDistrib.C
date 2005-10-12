@@ -541,7 +541,7 @@ void WorkDistrib::assignNodeToPatch()
   int nNodes = Node::Object()->numNodes();
 
 #if CMK_VERSION_BLUEGENE
-  if (nNodes > patchMap->numPatches())
+  if (nNodes > 2 * patchMap->numPatches())
     assignPatchesTopoGridRecBisection();
   else
 #endif
