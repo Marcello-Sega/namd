@@ -185,10 +185,10 @@ PatchMap::~PatchMap(void)
   {
     int i;
 
-    for (i=0; i<nPatches;i++)
-    {
-      delete [] patchData[i].cids;
-      patchData[i].cids=NULL;
+    if ( ! computeIdArena ) {
+      for (i=0; i<nPatches; i++) {
+        delete [] patchData[i].cids;
+      }
     }
     delete [] patchData;
     patchData=NULL;
@@ -252,7 +252,12 @@ void PatchMap::unpack (char *ptr)
   DebugM(4,"Unpacking PatchMap on node " << CkMyPe() << endl);
   int i,j;
   char *b = (char*)ptr;
-  UNPACK(int,nPatches);
+  {
+    // defeat some over-zealous compilers
+    int nPatches_tmp;
+    UNPACK(int,nPatches_tmp);
+    nPatches = nPatches_tmp;
+  }
   DebugM(3,"nPatches = " << nPatches << endl);
   UNPACK(int,aDim); UNPACK(int,bDim); UNPACK(int,cDim);
   UNPACK(int,aAway); UNPACK(int,bAway); UNPACK(int,cAway);
@@ -343,7 +348,7 @@ void PatchMap::newCid(int pid, int cid)
     	patchData[pid].cids[i] = old[i];
     for (i=patchData[pid].numCids; i<patchData[pid].numCidsAllocated; i++) 
 	patchData[pid].cids[i] = -1;
-    delete old;
+    delete [] old;
   }
   patchData[pid].cids[patchData[pid].numCids]=cid;
   patchData[pid].numCids++;
