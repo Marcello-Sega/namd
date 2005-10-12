@@ -10,16 +10,12 @@
 */
 
 #include <stdlib.h>
-#ifndef _AIX
 #include <string.h>
-#endif
 #include "ParseOptions.h"
 #include "ConfigList.h"
 #include "InfoStream.h"
 
-#ifdef _AIX
 #include "strlib.h"		//  For strcasecmp and strncasecmp
-#endif
 
 // given the range, return the string
 const char *rstring(Range r)

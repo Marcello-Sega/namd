@@ -380,35 +380,3 @@ void NAMD_pad(char *str, size_t length)
 }
 /*			END OF FUNCTION NAMD_pad			*/
 
-//  For AIX, implement the library routines strcasecmp and strncasecmp, since
-//  for some bizarre reason, IBM hasn't seen fit to!
-
-//  The implementation is a modified version of the strcmp shown
-//  in the K&R C manual
-
-#ifdef _AIX
-int strcasecmp(const char s[], const char t[])
-
-{
-	int i=0;
-
-	while (tolower(s[i]) == tolower(t[i]))
-		if (s[i++] == STRINGNULL)
-			return(0);
-
-	return(tolower(s[i]) - tolower(t[i]));
-}
-
-int strncasecmp(const char s[], const char t[], int n)
-
-{
-	int i=0;
-
-	while (tolower(s[i]) == tolower(t[i]))
-		if ( (s[i++] == STRINGNULL) || (i==n) )
-			return(0);
-
-	return(tolower(s[i]) - tolower(t[i]));
-}
-#endif
-

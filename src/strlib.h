@@ -18,9 +18,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
-#ifndef _AIX
 #include <strings.h>
-#endif
 #include "common.h"
 
 void	NAMD_truncate(char *);		//  Remove trailing spaces from
@@ -36,12 +34,6 @@ int	NAMD_read_int(FILE *, const char *);  //  Read an integer from a file
 void	NAMD_pad(char *, size_t);	//  Pad a string with leading spaces
 void	NAMD_remove_comment(char *);	//  Remove comments at the end of
 					//  a line demarked by !
-
-//  Add definitions for missing library routines in AIX
-#ifdef _AIX
-int strcasecmp(const char s[], const char t[]);
-int strncasecmp(const char s[], const char t[], int n);
-#endif
 
 #endif
 

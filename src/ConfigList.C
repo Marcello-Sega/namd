@@ -36,9 +36,7 @@
 #include "ConfigList.h"
 #include "common.h"
 
-#ifdef _AIX
 #include "strlib.h"	// for strncpy, strcasecmp
-#endif
 
 // given a key word, find the element of theList that matches
 // This is a private function.

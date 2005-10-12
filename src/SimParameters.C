@@ -50,9 +50,7 @@ extern "C" {
 }
 #endif
 
-#ifdef _AIX
 #include "strlib.h"    //  For strcasecmp and strncasecmp
-#endif
 
 // #define DEBUGM
 #include "Debug.h"

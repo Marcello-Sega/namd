@@ -27,9 +27,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <string.h>
-#ifdef _AIX
 #include "strlib.h"             //  For strcasecmp and strncasecmp
-#endif
 
 #include "common.h"
 #include "InfoStream.h"

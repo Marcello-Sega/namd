@@ -23,9 +23,7 @@
 //   the class PDBHetAtm, derived from PDBAtom - contains only HETATM records
 //   the function new_PDBData, which creates the right pdb class given a string
 
-#ifndef _AIX
 #include <strings.h>
-#endif
 #include "common.h"
 #include <string.h>
 
