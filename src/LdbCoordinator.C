@@ -646,13 +646,14 @@ int LdbCoordinator::requiredProxies(PatchID id, int neighborNodes[])
   // Check all two-away neighbors.
   // This is really just one-away neighbors, since 
   // two-away always returns zero: RKB
-  PatchID neighbors[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+  PatchID neighbors[1 + PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
 
   int myNode = patchMap->node(id);
-  int numNeighbors = patchMap->downstreamNeighbors(id,neighbors);
+  neighbors[0] = id;
+  int numNeighbors = 1 + patchMap->downstreamNeighbors(id,neighbors+1);
   for ( i = 0; i < numNeighbors; ++i )
   {
-    const int proxyNode = patchMap->node(neighbors[i]);
+    const int proxyNode = patchMap->basenode(neighbors[i]);
     if (proxyNode != myNode)
       if (proxyNodes[proxyNode] == No)
       {

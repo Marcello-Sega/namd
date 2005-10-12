@@ -41,6 +41,7 @@ public:
 
   HomePatchList *homePatchList();
   void homePatchIDList(PatchIDList &);  // expensive - for startup only
+  void basePatchIDList(int pe, PatchIDList &);  // use for required proxies
   int numHomePatches(void);
 
   // returns the number of patches being managed 
@@ -96,6 +97,9 @@ public:
 
   // returns the node where the patch currently exists.
   inline int node(int pid) const { return patchData[pid].node; }
+
+  // returns the node where the patch's upstream proxies exist.
+  inline int basenode(int pid) const { return patchData[pid].basenode; }
 
   // numCids(pid) returns the number of compute ids which are registered
   inline int numCids(int pid) const { return patchData[pid].numCids; }
@@ -154,7 +158,7 @@ protected:
 private:
   struct PatchData
   {
-    int node;
+    int node, basenode;
     int aIndex, bIndex, cIndex;
     Coordinate aMin, aMax, bMin, bMax, cMin, cMax;
     int numCids;

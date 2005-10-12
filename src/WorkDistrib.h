@@ -71,6 +71,7 @@ public:
 private:
   void mapComputeNonbonded(void);
   void mapComputeHomePatches(ComputeType);
+  void mapComputeHomeTuples(ComputeType);
   void mapComputePatch(ComputeType);
   void assignPatchesToLowestLoadNode(void);
   void assignPatchesRecursiveBisection(void);

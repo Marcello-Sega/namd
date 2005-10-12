@@ -280,11 +280,14 @@ void ProxyMgr::createProxies(void)
 
   // Add all upstream neighbors.
   PatchID neighbors[PatchMap::MaxOneAway];
-  for ( i = 0; i < numPatches; ++i )
+  PatchIDList basepids;
+  patchMap->basePatchIDList(myNode,basepids);
+  for ( i = 0; i < basepids.size(); ++i )
   {
-    if ( patchMap->node(i) != myNode ) 
-      continue;
-    int numNeighbors = patchMap->upstreamNeighbors(i,neighbors);
+    if ( patchMap->node(basepids[i]) != myNode ) {
+	patchFlag[basepids[i]] = NeedProxy;
+    }
+    int numNeighbors = patchMap->upstreamNeighbors(basepids[i],neighbors);
     for ( j = 0; j < numNeighbors; ++j )
     {
       if ( ! patchFlag[neighbors[j]] ) {

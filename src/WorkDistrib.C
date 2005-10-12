@@ -851,10 +851,10 @@ void WorkDistrib::mapComputes(void)
   // But if we're doing within-group interactions, we do need them.
   if ( !node->simParameters->pairInteractionOn || 
       node->simParameters->pairInteractionSelf) { 
-    mapComputeHomePatches(computeBondsType);
-    mapComputeHomePatches(computeAnglesType);
-    mapComputeHomePatches(computeDihedralsType);
-    mapComputeHomePatches(computeImpropersType);
+    mapComputeHomeTuples(computeBondsType);
+    mapComputeHomeTuples(computeAnglesType);
+    mapComputeHomeTuples(computeDihedralsType);
+    mapComputeHomeTuples(computeImpropersType);
     mapComputePatch(computeSelfBondsType);
     mapComputePatch(computeSelfAnglesType);
     mapComputePatch(computeSelfDihedralsType);
@@ -879,6 +879,31 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeConsForceType);
   if ( node->simParameters->consTorqueOn )
     mapComputePatch(computeConsTorqueType);
+}
+
+//----------------------------------------------------------------------
+void WorkDistrib::mapComputeHomeTuples(ComputeType type)
+{
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+
+  int numNodes = node->numNodes();
+  int numPatches = patchMap->numPatches();
+  ComputeID cid;
+  PatchIDList basepids;
+
+  for(int i=0; i<numNodes; i++) {
+    patchMap->basePatchIDList(i,basepids);
+    if ( basepids.size() ) {
+      cid=computeMap->storeCompute(i,basepids.size(),type);
+      for(int j=0; j<basepids.size(); ++j) {
+        patchMap->newCid(basepids[j],cid);
+        computeMap->newPid(cid,basepids[j]);
+      }
+    }
+  }
 }
 
 //----------------------------------------------------------------------
@@ -1025,7 +1050,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 	for(int partition=0; partition < numPartitions; partition++)
 	{
 	  cid=computeMap->storeCompute(
-		patchMap->node(patchMap->downstream2(p1,p2)),
+		patchMap->basenode(patchMap->downstream2(p1,p2)),
 		2,computeNonbondedPairType,partition,numPartitions);
 	  computeMap->newPid(cid,p1);
 	  computeMap->newPid(cid,p2,oneAwayTrans[j]);

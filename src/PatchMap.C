@@ -307,10 +307,26 @@ void PatchMap::homePatchIDList(PatchIDList &pids) {
 }
 
 //----------------------------------------------------------------------
+void PatchMap::basePatchIDList(int pe, PatchIDList &pids) {
+  pids.resize(0);
+  int i;
+  for ( i=0; i<nPatches; ++i ) {
+    if ( patchData[i].basenode == pe ) {
+      pids.add(i);
+    }
+  }
+}
+
+//----------------------------------------------------------------------
 void PatchMap::assignNode(PatchID pid, NodeID node) {
   patchData[pid].node=node;
   if ( nPatchesOnNode[node] == 0 ) nNodesWithPatches += 1;
   nPatchesOnNode[node] += 1;
+  if ( CkNumPes() > 2*nPatches+1 ) {
+    patchData[pid].basenode = ( CkNumPes() + node - 1 ) % CkNumPes();
+  } else {
+    patchData[pid].basenode=node;
+  }
 }
 
 //----------------------------------------------------------------------

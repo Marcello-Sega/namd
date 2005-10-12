@@ -258,25 +258,25 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	c->initialize();
 	break;
       case computeBondsType:
-	PatchMap::Object()->homePatchIDList(pids);
+	PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
 	c = new ComputeBonds(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeAnglesType:
-	PatchMap::Object()->homePatchIDList(pids);
+	PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
 	c = new ComputeAngles(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeDihedralsType:
-	PatchMap::Object()->homePatchIDList(pids);
+	PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
 	c = new ComputeDihedrals(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
       case computeImpropersType:
-	PatchMap::Object()->homePatchIDList(pids);
+	PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
 	c = new ComputeImpropers(i,pids); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
