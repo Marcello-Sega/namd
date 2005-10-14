@@ -4,12 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include "charm++.h"
-#include "InfoStream.h"
-#include "memusage.h"
-
-#include "main.decl.h"
-#include "main.h"
 
 #ifdef WIN32
 #ifndef NO_SOCKET
@@ -35,6 +29,11 @@
 #include <netinet/in.h>
 #include <pwd.h>
 
+#include "InfoStream.h"
+#include "memusage.h"
+
+#include "main.decl.h"
+#include "main.h"
 
 int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
   struct sockaddr_in addr;

@@ -8,10 +8,10 @@
    Forwards atoms to master node for force evaluation.
 */
 
+#include "InfoStream.h"
 #include "NamdTypes.h"
 #include "GlobalMaster.h"
 #include "GlobalMasterMisc.h"
-#include "InfoStream.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 1

@@ -4,8 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include "charm++.h"
-
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
 #include "BroadcastMgr.decl.h"

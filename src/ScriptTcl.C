@@ -8,6 +8,7 @@
    Modifies SimParameters settings during run.
 */
 
+#include "InfoStream.h"
 #include "BackEnd.h"
 #include "ScriptTcl.h"
 #include "Broadcasts.h"

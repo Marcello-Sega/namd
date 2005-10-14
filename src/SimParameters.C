@@ -10,8 +10,7 @@
    are read in from the configuration file.
 */
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "ComputeNonbondedUtil.h"
 #include "ConfigList.h"
 #include "SimParameters.h"
@@ -20,7 +19,6 @@
 #include "Communicate.h"
 #include "MStream.h"
 #include <stdio.h>
-#include "InfoStream.h"
 #include <time.h>
 #ifdef NAMD_FFTW
 #include <sfftw.h>

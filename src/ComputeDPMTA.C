@@ -5,6 +5,7 @@
 **/
 
 #include "common.h"
+#include "InfoStream.h"
 #include "Node.h"
 #include "SimParameters.h"
 #include "ComputeNonbondedUtil.h"

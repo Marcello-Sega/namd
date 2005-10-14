@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "memusage.h"
 #include "Node.h"
 #include "Molecule.h"
@@ -27,7 +28,6 @@
 #include "Random.h"
 #include "imd.h"
 #include "IMDOutput.h"
-#include "InfoStream.h"
 #include "BackEnd.h"
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)

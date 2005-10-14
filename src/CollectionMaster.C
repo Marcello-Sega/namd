@@ -8,16 +8,14 @@
 #define _FILE_OFFSET_BITS 64
 #define _LARGE_FILE
 
-#include "charm++.h"
-#include "CollectionMaster.decl.h"
-#include "CollectionMaster.h"
 #include "InfoStream.h"
+#include "CollectionMaster.h"
 #include "Node.h"
 #include "Output.h"
 #include "ProcessorPrivate.h"
 #include "SimParameters.h"
 #include "packmsg.h"
-#include <stdio.h>
+#include "CollectionMaster.decl.h"
 
 // #define DEBUGM
 #include "Debug.h"

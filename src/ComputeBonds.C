@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "ComputeBonds.h"
 #include "Molecule.h"
 #include "Parameters.h"

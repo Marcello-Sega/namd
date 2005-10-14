@@ -9,6 +9,7 @@
 #include <srfftw.h>
 #endif
 
+#include "InfoStream.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"

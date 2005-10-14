@@ -1,5 +1,6 @@
 
 #include <stdio.h>
+#include "InfoStream.h"
 #include "DumpBench.h"
 #include "SimParameters.h"
 #include "ComputeNonbondedUtil.h"

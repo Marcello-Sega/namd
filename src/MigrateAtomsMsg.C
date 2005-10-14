@@ -8,8 +8,7 @@
    Methods are primarily for pack(ing) and unpack(ing) messages for Charm.
 */
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "Migration.h"
 #include "MigrateAtomsMsg.h"
 #include "NamdTypes.h"

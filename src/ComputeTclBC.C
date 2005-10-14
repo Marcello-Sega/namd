@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "ComputeTclBC.h"
 #include "Node.h"
 #include "SimParameters.h"

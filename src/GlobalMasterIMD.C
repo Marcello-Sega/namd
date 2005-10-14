@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "vmdsock.h"
 #include "Node.h"
 #include "IMDOutput.h"
@@ -13,7 +14,6 @@
 #include "GlobalMaster.h"
 #include "GlobalMasterIMD.h"
 #include "Vector.h"
-#include "InfoStream.h"
 
 #include <errno.h>
 

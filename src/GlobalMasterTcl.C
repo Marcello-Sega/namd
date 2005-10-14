@@ -4,13 +4,13 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "Node.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
 #include "ScriptTcl.h"
 #include <stdio.h>
 
-#include "InfoStream.h"
 #include "GlobalMaster.h"
 #include "GlobalMasterTcl.h"
 

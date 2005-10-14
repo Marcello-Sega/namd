@@ -4,8 +4,7 @@
 ***  All rights reserved.
 **/
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "Patch.h"
 #include "PatchMap.h"
 #include "Compute.h"
@@ -16,7 +15,6 @@
 #include "Molecule.h"
 #include "SimParameters.h"
 #include "ResizeArrayPrimIter.h"
-#include "InfoStream.h"
 
 #include "Sync.h"
 

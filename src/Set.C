@@ -4,9 +4,9 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "Set.h"
 #include "elements.h"
-#include "InfoStream.h"
 
 Set::Set() 
 {

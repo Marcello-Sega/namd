@@ -9,7 +9,7 @@
 */
 
 #include "InfoStream.h"
-#include <charm++.h>
+#include "charm++.h"
 #include "Vector.h"
 #include "Tensor.h"
 #include <stdio.h>

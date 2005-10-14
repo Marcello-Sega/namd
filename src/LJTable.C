@@ -4,10 +4,10 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "LJTable.h"
 #include "Node.h"
 #include "Parameters.h"
-#include "InfoStream.h"
 // #define DEBUGM
 #include "Debug.h"
 

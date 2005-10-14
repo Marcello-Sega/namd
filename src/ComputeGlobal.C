@@ -8,6 +8,7 @@
    Forwards atoms to master node for force evaluation.
 */
 
+#include "InfoStream.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"

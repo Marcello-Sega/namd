@@ -4,11 +4,11 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "Settle.h"
 #include <string.h>
 #include <math.h>
 #include <charm++.h> // for CkPrintf
-#include "InfoStream.h"
 
 static int settlec(const Vector *ref, BigReal mO, BigReal mH, Vector *pos, 
             BigReal ra, BigReal rb, BigReal rc) {

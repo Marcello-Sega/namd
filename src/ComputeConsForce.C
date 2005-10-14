@@ -1,4 +1,5 @@
 
+#include "InfoStream.h"
 #include "SimParameters.h"
 #include "ComputeConsForce.h"
 #include "Molecule.h"

@@ -4,11 +4,11 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "Measure.h"
 #include "Node.h"
 #include "Parameters.h"
 #include "Molecule.h"
-#include "InfoStream.h"
 
 #ifdef NAMD_TCL
 

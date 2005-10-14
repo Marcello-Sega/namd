@@ -4,7 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include "charm++.h"
 #include "CollectionMgr.decl.h"
 #include "CollectionMgr.h"
 #include "CollectionMaster.decl.h"

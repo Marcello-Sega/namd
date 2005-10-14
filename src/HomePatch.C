@@ -14,8 +14,8 @@
 */
 
 #include <math.h>
-#include "charm++.h"
 
+#include "InfoStream.h"
 #include "SimParameters.h"
 #include "HomePatch.h"
 #include "AtomMap.h"

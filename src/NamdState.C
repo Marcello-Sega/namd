@@ -8,10 +8,8 @@
    Holds pointers to large molecule data structure, simulation parameters...
 */
 
-#include "charm++.h"
-
-#include "common.h"
 #include "InfoStream.h"
+#include "common.h"
 #include "Molecule.h"
 #include "Parameters.h"
 #include "SimParameters.h"

@@ -8,9 +8,6 @@
    global functions as declared in common.h
 */
 
-#include "charm++.h"
-#include "converse.h"
-
 #if !defined(WIN32) || defined(__CYGWIN__)
 #include <unistd.h>
 #endif
@@ -21,6 +18,8 @@
 
 #include "common.h"
 #include "InfoStream.h"
+
+#include "charm++.h"
 
 #ifdef WIN32
 #include <io.h>

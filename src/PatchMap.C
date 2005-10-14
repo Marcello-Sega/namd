@@ -10,8 +10,7 @@
 #endif
 #include <stdio.h>
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "ObjectArena.h"
 #include "PatchMgr.h"
 #include "PatchMap.inl"

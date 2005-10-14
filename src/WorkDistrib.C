@@ -12,10 +12,8 @@
 
 #include <stdio.h>
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "ProcessorPrivate.h"
-
 #include "BOCgroup.h"
 #include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"

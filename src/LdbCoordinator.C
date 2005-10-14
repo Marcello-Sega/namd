@@ -5,11 +5,10 @@
 **/
 
 #include <stdlib.h>
-#include <charm++.h>
-#include "NamdCentLB.h"
-#include "NamdNborLB.h"
 
 #include "InfoStream.h"
+#include "NamdCentLB.h"
+#include "NamdNborLB.h"
 
 #include "HomePatch.h"
 #include "LdbCoordinator.decl.h"

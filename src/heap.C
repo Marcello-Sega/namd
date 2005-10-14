@@ -6,13 +6,13 @@
 
 class manheap;
 class maxHeap;
-#include "heap.h"
 #ifndef NO_STRSTREAM_H
 #include <iostream.h>
 #else
 #include <iostream>
 using namespace std;
 #endif
+#include "heap.h"
 // Heap of pointers. The field to be compared is:
 
 minHeap::minHeap(int size)

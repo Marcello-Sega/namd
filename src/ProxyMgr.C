@@ -4,8 +4,7 @@
 ***  All rights reserved.
 **/
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "main.h"
 #include "BOCgroup.h"
 #include "ProxyMgr.decl.h"

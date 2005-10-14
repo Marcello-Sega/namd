@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "charm++.h"
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"

@@ -8,7 +8,7 @@
    Compute object which deals with a single patch.
 */
 
-#include "charm++.h"
+#include "InfoStream.h"
 #include "WorkDistrib.decl.h"
 #include "Node.h"
 #include "ComputeHomePatch.h"

@@ -12,7 +12,7 @@
 #if !defined(WIN32) || defined(__CYGWIN__)
 #include <unistd.h>
 #endif
-#include <charm++.h>
+#include "InfoStream.h"
 #include "Node.decl.h"
 #include "Node.h"
 #ifdef DPMTA

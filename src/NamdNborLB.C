@@ -4,8 +4,7 @@
 #endif
 #include <fcntl.h>
 
-#include <charm++.h>
-
+#include "InfoStream.h"
 #include "NamdNborLB.h"
 #include "NamdNborLB.def.h"
 #include "Node.h"

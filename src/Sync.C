@@ -13,8 +13,8 @@
 #include <unistd.h>
 #endif
 #include <stdio.h>
-#include <charm++.h>
 
+#include "InfoStream.h"
 #include "Patch.h"
 #include "PatchMap.h"
 #include "ProxyMgr.h"
@@ -27,7 +27,6 @@
 //#define DEBUGM
 #include "Debug.h"
 
-#include "InfoStream.h"
 
 extern int proxySendSpanning, proxyRecvSpanning;
 

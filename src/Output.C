@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
+#include "InfoStream.h"
 #include "IMDOutput.h"
 #include "Output.h"
 #include "dcdlib.h"
@@ -27,7 +28,6 @@
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "ScriptTcl.h"
-#include "InfoStream.h"
 #include "Lattice.h"
 
 // These make the NAMD 1 names work in NAMD 2

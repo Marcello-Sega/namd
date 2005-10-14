@@ -4,7 +4,7 @@
 ***  All rights reserved.
 **/
 
-#include "charm++.h"
+#include "InfoStream.h"
 
 #ifdef USE_COMM_LIB
 #include "ComlibManager.h"

@@ -6,6 +6,7 @@
 
 /* Barry Isralewitz, July 2001 */
 
+#include "InfoStream.h" 
 #include "ComputeStir.h"
 #include "Node.h"
 #include "SimParameters.h"
@@ -13,7 +14,6 @@
 #include "DataStream.h"
 #include "Molecule.h"
 #include "CollectionMgr.h" //for error corr of buffer problem
-#include "InfoStream.h" 
 
 
 ComputeStir::ComputeStir(ComputeID c, PatchID pid)

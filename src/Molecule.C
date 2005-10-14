@@ -12,14 +12,14 @@
    information is then stored in arrays for use.
 */
 
-#include "Molecule.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include "charm++.h"
-#include "strlib.h"
+
 #include "InfoStream.h"
+#include "Molecule.h"
+#include "strlib.h"
 #include "MStream.h"
 #include "Communicate.h"
 // #include "Node.h"
@@ -29,6 +29,7 @@
 #include "SimParameters.h"
 #include "Hydrogen.h"
 #include "UniqueSetIter.h"
+#include "charm++.h"
 
 
 #define MIN_DEBUG_LEVEL 3

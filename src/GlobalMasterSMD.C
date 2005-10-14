@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "Node.h"
 #include "Molecule.h"
 #include "NamdTypes.h"
@@ -12,7 +13,6 @@
 #include "GlobalMasterSMD.h"
 #include "PDB.h"
 #include "PDBData.h"
-#include "InfoStream.h"
 
 /* XXX necessary?
 #include <iostream.h>

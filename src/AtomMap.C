@@ -8,10 +8,7 @@
    Tracks location of Atoms on node.  Singleton.
 */
 
-#include "charm++.h"
-
 #include "ProcessorPrivate.h"
-
 #include "AtomMap.h"
 
 #define MIN_DEBUG_LEVEL 4

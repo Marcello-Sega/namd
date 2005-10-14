@@ -11,6 +11,7 @@
    HomePatch(es)
 */
 
+#include "InfoStream.h"
 #include "ComputeAngles.h"
 #include "Molecule.h"
 #include "Parameters.h"

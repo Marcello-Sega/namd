@@ -5,8 +5,6 @@
 **/
 
 #include "BackEnd.h"
-
-#include "converse.h"
 #include "ProcessorPrivate.h"
 #include "common.h"
 #include "Node.h"
@@ -18,7 +16,6 @@
 #include <new>
 using namespace std;
 #endif
-#include <charm++.h>
 
 #ifdef USE_COMM_LIB
 #include "ComlibManager.h"

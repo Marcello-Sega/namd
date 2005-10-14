@@ -18,9 +18,9 @@
 #ifndef WIN32
 #include <strings.h>
 #endif
+#include "InfoStream.h"
 #include <charm++.h>
 #include "Parameters.h"
-#include "InfoStream.h"
 #include "Communicate.h"
 #include "ConfigList.h"
 //****** BEGIN CHARMM/XPLOR type changes

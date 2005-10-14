@@ -14,13 +14,13 @@ extern "C" {
 }
 #endif
 
+#include "InfoStream.h"
 #include "ComputeNonbondedUtil.h"
 #include "SimParameters.h"
 #include "Node.h"
 #include "Molecule.h"
 #include "LJTable.h"
 #include "ReductionMgr.h"
-#include "InfoStream.h"
 #include <stdio.h>
 
 Bool		ComputeNonbondedUtil::commOnly;

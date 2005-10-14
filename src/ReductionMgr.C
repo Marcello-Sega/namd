@@ -23,8 +23,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "charm++.h"
-
 #include "InfoStream.h"
 #include "PatchMap.h"	// for patchMap
 

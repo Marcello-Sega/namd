@@ -8,15 +8,13 @@
    NAMD 1.X functions copied without change for use primarily in WorkDistrib
 */
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "common.h"
 #include "NamdTypes.h"
 #include "NamdOneTools.h"
 #include "Vector.h"
 #include "PDB.h"
 #include "Molecule.h"
-#include "InfoStream.h"
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"

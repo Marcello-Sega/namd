@@ -7,12 +7,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "charm++.h"
-
+#include "InfoStream.h"
 #include "ComputeMap.h"
 #include "Compute.h"
 #include "ObjectArena.h"
-#include "InfoStream.h"
+
+#include "charm++.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM

@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "ComputeEField.h"
 #include "Node.h"
 #include "SimParameters.h"

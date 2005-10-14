@@ -4,7 +4,6 @@
 ***  All rights reserved.
 **/
 
-#include "charm++.h"
 #include "WorkDistrib.decl.h"
 #include "Node.h"
 #include "ComputePatchPair.h"

@@ -4,6 +4,7 @@
 ***  All rights reserved.
 **/
 
+#include "InfoStream.h"
 #include "Node.h"
 #include "PatchMap.h"
 #include "PatchMap.inl"
