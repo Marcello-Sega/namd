@@ -1131,6 +1131,7 @@ void Parameters::add_dihedral_param(char *buf, FILE *fd)
   new_node->atom3wild = ! strcasecmp(atom3name, "X");
   new_node->atom4wild = ! strcasecmp(atom4name, "X");
   new_node->multiplicity = multiplicity;
+  if (paramType == paraXplor && periodicity != 0) phase_shift *= -1;
   new_node->values[0].k = forceconstant;
   new_node->values[0].n = periodicity;
   new_node->values[0].delta = phase_shift;
@@ -1172,6 +1173,7 @@ void Parameters::add_dihedral_param(char *buf, FILE *fd)
         NAMD_die(err_msg);
       }
 
+      if (paramType == paraXplor && periodicity != 0) phase_shift *= -1;
       new_node->values[i].k = forceconstant;
       new_node->values[i].n = periodicity;
       new_node->values[i].delta = phase_shift;
@@ -1642,6 +1644,7 @@ void Parameters::add_improper_param(char *buf, FILE *fd)
   strcpy(new_node->atom3name, atom3name);
   strcpy(new_node->atom4name, atom4name);
   new_node->multiplicity = multiplicity;
+  if (paramType == paraXplor && periodicity != 0) phase_shift *= -1;
   new_node->values[0].k = forceconstant;
   new_node->values[0].n = periodicity;
   new_node->values[0].delta = phase_shift;
@@ -1685,6 +1688,7 @@ void Parameters::add_improper_param(char *buf, FILE *fd)
         NAMD_die(err_msg);
       }
 
+      if (paramType == paraXplor && periodicity != 0) phase_shift *= -1;
       new_node->values[i].k = forceconstant;
       new_node->values[i].n = periodicity;
       new_node->values[i].delta = phase_shift;

@@ -145,8 +145,8 @@ void ImproperElem::computeForce(BigReal *reduction,
     if (n)
     {
       //  Periodicity is greater than 0, so use cos form
-      K = k*(1+cos(n*phi + delta));
-      K1 = -n*k*sin(n*phi + delta);
+      K = k*(1+cos(n*phi - delta));
+      K1 = -n*k*sin(n*phi - delta);
     }
     else
     {
