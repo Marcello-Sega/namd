@@ -75,6 +75,7 @@ ComputeExtMgr::ComputeExtMgr() :
 }
 
 ComputeExtMgr::~ComputeExtMgr() {
+  for ( int i=0; i<numSources; ++i ) { delete coordMsgs[i]; }
   delete [] coordMsgs;
   delete [] coord;
   delete [] force;
@@ -163,7 +164,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
   if ( ! numSources ) {
     numSources = (PatchMap::Object())->numNodesWithPatches();
     coordMsgs = new ExtCoordMsg*[numSources];
-    for ( int i=0; i<CkNumPes(); ++i ) { coordMsgs[i] = 0; }
+    for ( int i=0; i<numSources; ++i ) { coordMsgs[i] = 0; }
     numArrived = 0;
     numAtoms = Node::Object()->molecule->numAtoms;
     coord = new CompAtom[numAtoms];
@@ -263,6 +264,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
 
   for ( int j=0; j < numSources; ++j ) {
     ExtCoordMsg *cmsg = coordMsgs[j];
+    coordMsgs[j] = 0;
     ExtForceMsg *fmsg = new (cmsg->numAtoms, 0) ExtForceMsg;
     for ( int i=0; i < cmsg->numAtoms; ++i ) {
       fmsg->force[i] = force[cmsg->coord[i].id];
@@ -281,6 +283,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
 #else
     extProxy.recvForce(fmsg,cmsg->sourceNode);
 #endif
+    delete cmsg;
   }
 
 }
