@@ -360,17 +360,8 @@ void ComputeNonbondedUtil :: NAME
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
-                    
-#if CHARM_VERSION > 50800
-      CmiNetworkProgress();
-#endif
-
-    // PAIR( iout << i << " " << i_upper << " start\n" << endi;)
     const CompAtom &p_i = p_0[i];
-    register const BigReal p_i_x = p_i.position.x;
-    register const BigReal p_i_y = p_i.position.y;
-    register const BigReal p_i_z = p_i.position.z;
-
+                    
     if ( p_i.hydrogenGroupSize ) {
       int64 opc = pairCount;
       int hgs = p_i.hydrogenGroupSize;
@@ -388,6 +379,14 @@ void ComputeNonbondedUtil :: NAME
         continue;
       }
     }
+
+#if CHARM_VERSION > 50800
+    CmiNetworkProgress();
+#endif
+
+    register const BigReal p_i_x = p_i.position.x;
+    register const BigReal p_i_y = p_i.position.y;
+    register const BigReal p_i_z = p_i.position.z;
 
   SELF ( if ( p_i.hydrogenGroupSize ) j_hgroup = i + p_i.hydrogenGroupSize; )
 
