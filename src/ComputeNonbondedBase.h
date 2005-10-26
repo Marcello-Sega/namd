@@ -364,17 +364,12 @@ void ComputeNonbondedUtil :: NAME
                     
     if ( p_i.hydrogenGroupSize ) {
       int64 opc = pairCount;
+      if ( opc >= maxPairCount ) break;
       int hgs = p_i.hydrogenGroupSize;
-      SELF
-      (
-      pairCount += hgs * ( i_upper - 1 - i );
-      pairCount -= hgs * ( hgs - 1 ) / 2;
-      )
-      PAIR
-      (
-      pairCount += hgs * j_upper;
-      )
-      if ( opc < minPairCount || opc >= maxPairCount ) {
+      pairCount +=
+        SELF( hgs * ( i_upper - i ) - hgs * ( hgs + 1 ) / 2; )
+        PAIR( hgs * j_upper; )
+      if ( opc < minPairCount ) {
         i += hgs - 1;
         continue;
       }
