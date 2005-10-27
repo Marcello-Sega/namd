@@ -139,7 +139,7 @@ public:
          << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
 #endif
 << iINFO << "\n"
-<< iINFO << "Please cite Kale et al., J. Comp. Phys. 151:283-312 (1999)\n"
+<< iINFO << "Please cite Phillips et al., J. Comp. Chem. 26:1781-1802 (2005)\n"
 << iINFO << "in all publications reporting results obtained with NAMD.\n"
 << iINFO << "\n"
          << endi;
