@@ -95,10 +95,10 @@ follows:
 
 Any published work which utilizes NAMD shall include the following reference:
 
-"Laxmikant Kale, Robert Skeel, Milind Bhandarkar, Robert Brunner,
- Attila Gursoy, Neal Krawetz, James Phillips, Aritomo Shinozaki,
- Krishnan Varadarajan, and Klaus Schulten. NAMD2: Greater scalability
- for parallel molecular dynamics.  J. Comp. Phys., 151:283-312, 1999."
+"James C. Phillips, Rosemary Braun, Wei Wang, James Gumbart,
+ Emad Tajkhorshid, Elizabeth Villa, Christophe Chipot, Robert D. Skeel,
+ Laxmikant Kale, and Klaus Schulten. Scalable molecular dynamics with NAMD.
+ Journal of Computational Chemistry, 26:1781-1802, 2005."
 
 Electronic documents will include a direct link to the official NAMD page  
 at http://www.ks.uiuc.edu/Research/namd/
