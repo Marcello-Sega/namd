@@ -56,8 +56,8 @@ Controller::Controller(NamdState *s) :
         startWTime(0),
         firstWTime(CmiWallTimer()),
         startBenchTime(0),
-	ldbSteps(0)
-
+	ldbSteps(0),
+	fflush_count(3)
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
@@ -1462,6 +1462,10 @@ void Controller::printEnergies(int step, int minimize)
     groupPressure_avg = 0;
     avg_count = 0;
 
+    if ( fflush_count ) {
+      --fflush_count;
+      fflush(stdout);
+    }
 }
 
 void Controller::writeExtendedSystemLabels(ofstream &file) {
@@ -1683,6 +1687,7 @@ void Controller::rebalanceLoad(int)
     startBenchTime -= CmiWallTimer();
     LdbCoordinator::Object()->rebalance(this);
     startBenchTime += CmiWallTimer();
+    fflush_count = 3;
   }
 }
 

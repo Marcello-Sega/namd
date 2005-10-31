@@ -176,6 +176,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor,
       wrap_coor(coor,lattice,&coor_wrapped);
       output_restart_coordinates(coor, n, timestep);
       iout << "FINISHED WRITING RESTART COORDINATES\n" <<endi;
+      fflush(stdout);
     }
 
     //  Interactive MD
@@ -203,6 +204,7 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor,
   {
     iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
 				<< simParams->N << "\n" << endi;
+    fflush(stdout);
     wrap_coor(coor,lattice,&coor_wrapped);
     output_final_coordinates(coor, n, simParams->N);
   }
@@ -283,6 +285,7 @@ void Output::velocity(int timestep, int n, Vector *vel)
 				<< timestep << "\n" << endi;
       output_restart_velocities(timestep, n, vel);
       iout << "FINISHED WRITING RESTART VELOCITIES\n" <<endi;
+      fflush(stdout);
     }
 
   }
@@ -292,6 +295,7 @@ void Output::velocity(int timestep, int n, Vector *vel)
   {
     iout << "WRITING VELOCITIES TO OUTPUT FILE AT STEP "
 				<< simParams->N << "\n" << endi;
+    fflush(stdout);
     output_final_velocities(simParams->N, n, vel);
   }
 
@@ -521,6 +525,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   //  Write out the values for this timestep
   iout << "WRITING COORDINATES TO DCD FILE AT STEP "
 	<< timestep << "\n" << endi;
+  fflush(stdout);
   if (lattice) {
     double unitcell[6];
     if (lattice->a_p() && lattice->b_p() && lattice->c_p()) {
@@ -754,6 +759,7 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
   //  Write out the values for this timestep
   iout << "WRITING VELOCITIES TO DCD FILE AT STEP "
 	<< timestep << "\n" << endi;
+  fflush(stdout);
   ret_code = write_dcdstep(fileid, n, x, y, z, NULL);
 
   if (ret_code < 0)

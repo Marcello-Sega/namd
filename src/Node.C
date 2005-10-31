@@ -163,6 +163,7 @@ void Node::startup() {
   if (!CkMyPe()) {
      iout << iINFO << "Entering startup phase " << startupPhase << " with " <<
 	(memusage()/1024) << " kB of memory in use.\n" << endi;
+     fflush(stdout);
   }
   
   switch (startupPhase) {

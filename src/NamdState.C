@@ -88,6 +88,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
   char *currentdir = 0;
   simParameters =  new SimParameters(configList,currentdir);
+  fflush(stdout);
   lattice = simParameters->lattice;
   
   // If it's AMBER force field, read the AMBER style files;
@@ -147,6 +148,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
     molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
   }
+  fflush(stdout);
 
   
   StringList *coordinateFilename = configList->find("coordinates");
@@ -401,12 +403,14 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
 	iout << iINFO << "*****************************\n";
 	iout << endi;
+        fflush(stdout);
 
   DebugM(4, "::configFileInit() - printing Molecule Information\n");
 
   molecule->print_atoms(parameters);
   molecule->print_bonds(parameters);
   molecule->print_exclusions();
+  fflush(stdout);
 
   DebugM(4, "::configFileInit() - done printing Molecule Information\n");
   DebugM(1, "::configFileInit() - done\n");

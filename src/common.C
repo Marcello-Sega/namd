@@ -65,6 +65,7 @@ void NAMD_quit(const char *err_msg)
    char *new_err_msg = new char[strlen(err_msg) + 20];
    sprintf(new_err_msg,"EXITING: %s\n",err_msg);
    CkPrintf(new_err_msg);
+   fflush(stdout);
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }
@@ -77,6 +78,7 @@ void NAMD_die(const char *err_msg)
    char *new_err_msg = new char[strlen(err_msg) + 20];
    sprintf(new_err_msg,"FATAL ERROR: %s\n",err_msg);
    CkPrintf(new_err_msg);
+   fflush(stdout);
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }
@@ -91,6 +93,7 @@ void NAMD_err(const char *err_msg)
    char *new_err_msg = new char[strlen(err_msg) + 20 + strlen(sys_err_msg)];
    sprintf(new_err_msg,"FATAL ERROR: %s: %s\n",err_msg, sys_err_msg);
    CkPrintf(new_err_msg);
+   fflush(stdout);
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }
@@ -105,6 +108,7 @@ void NAMD_bug(const char *err_msg)
    char *new_err_msg = new char[strlen(err_msg) + 20 + strlen(bug_msg)];
    sprintf(new_err_msg,"FATAL ERROR: %s\n%s\n",err_msg,bug_msg);
    CkPrintf(new_err_msg);
+   fflush(stdout);
    CmiAbort(new_err_msg);
    delete [] new_err_msg;
 }

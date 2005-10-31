@@ -112,6 +112,7 @@ protected:
 
     int ldbSteps;
     void rebalanceLoad(int);
+      int fflush_count;
     void cycleBarrier(int,int);
 
     // void suspend(void) { CthSuspend(); };
