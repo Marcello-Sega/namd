@@ -17,7 +17,6 @@
 #define TBSOFT_TRACK_PORT   3141              /* UDP port 3141   */
 #define TBSOFT_TRACK_MAXLEN 1024              /* maximum message length */
 
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -29,11 +28,15 @@
 #include <netinet/in.h>
 #include <pwd.h>
 
+#endif
+
 #include "InfoStream.h"
 #include "memusage.h"
 
 #include "main.decl.h"
 #include "main.h"
+
+#ifndef NO_SOCKET
 
 int send_dgram(const char *host_addr, int port, const char *buf, int buflen) {
   struct sockaddr_in addr;
