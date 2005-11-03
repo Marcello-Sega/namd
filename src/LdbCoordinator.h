@@ -96,6 +96,7 @@ public:
   ComputeMap *computeMap;
   PatchMap *patchMap;
   int *patchNAtoms;
+  int  nPatches;
   Controller *controllerThread;
   Sequencer **sequencerThreads;
 
@@ -113,6 +114,7 @@ public:
   LDOMid myOMid;
   LDOMHandle myHandle;
   LDObjHandle* objHandles;
+  int   numComputes;
   int nRegisteredObjs;
   LDBarrierClient ldBarrierHandle;
   int reg_all_objs;

@@ -257,8 +257,10 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   nStatsMessagesExpected = Node::Object()->numNodes();
   nStatsMessagesReceived = 0;
 
-  delete [] patchNAtoms;  // Depends on delete NULL to do nothing
+  if (patchNAtoms) 
+    delete [] patchNAtoms;  // Depends on delete NULL to do nothing
   patchNAtoms = new int[pMap->numPatches()];
+  nPatches = pMap->numPatches();
 
   typedef Sequencer *seqPtr;
 
@@ -331,6 +333,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     // Allocate new object handles
     if (objHandles == 0) {
       objHandles = new LDObjHandle[cMap->numComputes()];
+      numComputes = cMap->numComputes();
       for(i=0;i<cMap->numComputes();i++)
 	objHandles[i].id.id[0] = -1; // Use -1 to mark unused entries
 
@@ -427,6 +430,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
 void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 {
+  CmiAssert( id >=0 && id < nPatches);
   if (patchNAtoms[id] != -1) {
     patchNAtoms[id] = nAtoms;
     nPatchesReported++;
@@ -437,11 +441,13 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 
 void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 {
+  CmiAssert(id >=0 && id < numComputes);
   theLbdb->ObjectStart(objHandles[id]);
 }
 
 void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
 {
+  CmiAssert(id >=0 && id < numComputes);
   theLbdb->ObjectStop(objHandles[id]);
   nComputesReported++;
 }
