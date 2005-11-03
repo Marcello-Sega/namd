@@ -662,7 +662,7 @@ int open_dcd_write(char *dcdname)
 				_S_IREAD|_S_IWRITE)) < 0)
 #else
 #ifdef NAMD_NO_O_EXCL
-	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_LARGEFILE,
+	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_TRUNC|O_LARGEFILE,
 #else
 	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_LARGEFILE,
 #endif
