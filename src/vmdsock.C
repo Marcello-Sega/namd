@@ -45,8 +45,8 @@ int vmdsock_selwrite(void *v, int sec) { return 0; }
 
 #include "vmdsock.h"
 
-#ifdef SOCKLEN_T
-typedef SOCKLEN_T socklen_t;
+#ifdef NAMD_SOCKLEN_T
+typedef NAMD_SOCKLEN_T socklen_t;
 #endif
 
 int vmdsock_init(void) {
