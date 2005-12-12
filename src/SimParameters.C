@@ -21,8 +21,13 @@
 #include <stdio.h>
 #include <time.h>
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_NO_TYPE_PREFIX
+#include <fftw.h>
+#include <rfftw.h>
+#else
 #include <sfftw.h>
 #include <srfftw.h>
+#endif
 #endif
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <direct.h>

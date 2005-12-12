@@ -5,8 +5,13 @@
 **/
 
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_NO_TYPE_PREFIX
+#include <fftw.h>
+#include <rfftw.h>
+#else
 #include <sfftw.h>
 #include <srfftw.h>
+#endif
 #endif
 
 #include "InfoStream.h"
