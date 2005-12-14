@@ -78,14 +78,14 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   int nMoveableComputes = buildData(stats,count);
 
   // gzheng debug
-//#define DUMPDATA 1
-//#define LOADDATA 1
+  //#define DUMPDATA 1
+  //#define LOADDATA 1
 #if DUMPDATA 
   dumpDataASCII("data", numProcessors, numPatches, nMoveableComputes);
 #elif LOADDATA
   loadDataASCII("data", numProcessors, numPatches, nMoveableComputes);
-//  dumpDataASCII("data.out", numProcessors, numPatches, nMoveableComputes);
-//  CkExit();
+  //  dumpDataASCII("data.out", numProcessors, numPatches, nMoveableComputes);
+  //  CkExit();
 #endif
   // end of debug section
 
@@ -663,7 +663,7 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
 // The proxies are placed on nearby processors on the 3d-grid along
 // the X,Y,Z dimensions
 
- int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
+int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 {
   enum proxyHere { No, Yes };
   int numNodes = CkNumPes();
@@ -705,34 +705,32 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   //Assign a proxy to all your neighbors. But dont increment counter
   //because these have to be there anyway.
   
-  neighbors[0] = id;
+  neighbors[0] = id;  
   int numNeighbors = 1 + patchMap->downstreamNeighbors(id,neighbors+1);
-  for ( i = 0; i < numNeighbors; ++i )
-  {
-    int proxyNode = patchMap->basenode(neighbors[i]);
-    
-    if (proxyNode != myNode)
-      if (proxyNodes[proxyNode] == No)
-	{
-	  proxyNodes[proxyNode] = Yes;
-	  neighborNodes[nProxyNodes] = proxyNode;
-	  nProxyNodes++;
-	}
-    /*
-    int px, py, pz;
-    tmanager->getCoordinatesByRank(proxyNode, px, py, pz);
-    
-    //Place proxy in the mid point processor
-    proxyNode = tmanager->coords2rank((my_x+px)/2, (my_y+py)/2, (my_z+pz)/2);
-    
-    if (proxyNode != myNode)
-      if (proxyNodes[proxyNode] == No)
-	{
-	  proxyNodes[proxyNode] = Yes;
-	  neighborNodes[nProxyNodes] = proxyNode;
-	  nProxyNodes++;
-	}
-    */
+  
+  //Small Flag chooses between different loadbalancing schemes.
+  //Small Flag == true, patches are close to each other
+  //false, patches are far from each other
+  CmiBool smallFlag = CmiFalse;
+  double pnodes = CkNumPes();
+  pnodes *= 0.3;    
+  smallFlag = (patchMap->numPatches() > pnodes )?1:0;
+
+  //If there are lot of patches its likely they will all be neighbors, 
+  //so all we need to do is to place proxies on downstream patches.
+  if(smallFlag) {
+    for ( i = 1; i < numNeighbors; ++i )
+      {
+	int proxyNode = patchMap->node(neighbors[i]);
+	
+	if (proxyNode != myNode)
+	  if (proxyNodes[proxyNode] == No)
+	    {
+	      proxyNodes[proxyNode] = Yes;
+	      neighborNodes[nProxyNodes] = proxyNode;
+	      nProxyNodes++;
+	    }
+      }
   }
   
   //Place numNodesPerPatch proxies on the 3d torus neighbors of a processor
@@ -756,11 +754,11 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
       for(i = -1; i <= 1; i++) {
 	if(i == 0 && j == 0 && k == 0)
 	  continue;
-	
+
 	proxy_x = (my_x + i + xsize) % xsize;
 	proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
 
-	if(! patchMap->numPatchesOnNode(proxyNode) &&
+	if((! patchMap->numPatchesOnNode(proxyNode) || !smallFlag) &&
 	   proxyNodes[proxyNode] == No) {
 	  proxyNodes[proxyNode] = Yes;
 	  neighborNodes[nProxyNodes] = proxyNode;
@@ -784,8 +782,64 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   //else
   //CkAbort("NumPes < 2*numpatches\n\n");
 
-  CkPrintf("Returning %d proxies\n", nProxyNodes);
+  //srand(myNode);
 
+  const SimParameters* params = Node::Object()->simParameters;
+
+  if(!smallFlag) {
+    //Add two-away proxies
+    if(params->twoAwayX) {
+      proxy_y = (my_y + 2) % ysize;
+      proxy_x = my_x  % xsize;
+      proxy_z = my_z  % zsize;
+      
+      proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
+      if(proxyNodes[proxyNode] == No) {
+	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
+	nProxyNodes++;
+      }
+      
+      proxy_y = (my_y - 2 + ysize) % ysize;
+      proxy_x = my_x  % xsize;
+      proxy_z = my_z % zsize;
+      
+      proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
+      if(proxyNodes[proxyNode] == No) {
+	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
+	nProxyNodes++;
+      }
+    }
+    
+    //Add two away proxies
+    if(params->twoAwayY) {
+      proxy_y = my_y  % ysize;
+      proxy_x = my_x  % xsize;
+      proxy_z = (my_z + 2) % zsize;
+      
+      proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
+      if(proxyNodes[proxyNode] == No) {
+	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
+	nProxyNodes++;
+      }
+      
+      proxy_y = my_y  % ysize;
+      proxy_x = my_x  % xsize;
+      proxy_z = (my_z - 2 + zsize) % zsize;
+      
+      proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
+      if(proxyNodes[proxyNode] == No) {
+	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
+	nProxyNodes++;
+      }
+    }
+  }
+  
+  CkPrintf("Returning %d proxies\n", nProxyNodes);
+  
   delete [] proxyNodes;
   return nProxyNodes;
 }

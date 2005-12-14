@@ -27,6 +27,7 @@ class ProxyPatch : public Patch
      void setSpanningTree(int, int*, int);
      int  getSpanningTreeParent() { return parent; }
      int  getSpanningTreeChild(int *);
+     inline int getSpanningTreeNChild(void) { return nChild; }
      ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
 
 #if CMK_PERSISTENT_COMM

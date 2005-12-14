@@ -490,11 +490,16 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
   ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
   if (cMsg) {
     CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    int destPe = patch->getSpanningTreeParent();
+    if(destPe != CkMyPe()) {
 #if CHARM_VERSION > 050402
-    cp[patch->getSpanningTreeParent()].recvResults(cMsg);
+      cp[destPe].recvImmediateResults(cMsg);
 #else
-    cp.recvResults(cMsg, patch->getSpanningTreeParent());
+      cp.recvImmediateResults(cMsg, destPe);
 #endif
+    }
+    else 
+      cp[destPe].recvResults(cMsg);
   }
 }
 
@@ -502,7 +507,23 @@ void
 ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
   HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
   if (home) {
+    //printf("Home got a message\n");
     home->receiveResults(msg); // delete done in HomePatch::receiveResults()
+  }
+  else {
+    CkAbort("I am not home\n\n");
+  }
+}
+
+void ProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg) {
+  HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
+  if (home) {
+    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+#if CHARM_VERSION > 050402
+    cp[CkMyPe()].recvResults(msg);
+#else
+    cp.recvResults(msg, CkMyPe());
+#endif
   }
   else {
     ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
@@ -510,9 +531,9 @@ ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
     if (cMsg) {
       CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
 #if CHARM_VERSION > 050402
-      cp[patch->getSpanningTreeParent()].recvResults(cMsg);
+      cp[patch->getSpanningTreeParent()].recvImmediateResults(cMsg);
 #else
-      cp.recvResults(cMsg, patch->getSpanningTreeParent());
+      cp.recvImmediateResults(cMsg, patch->getSpanningTreeParent());
 #endif
     }
   }
@@ -521,11 +542,17 @@ ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
-  cp.recvProxyData(msg,pcnt,pids);
+  cp.recvImmediateProxyData(msg,pcnt,pids);
+}
+
+void 
+ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
 void
-ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
+ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
@@ -542,18 +569,25 @@ ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
       ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
     }
   }
-
-  proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms()
+  /* send to self via EP method to preserve priority */
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp[CkMyPe()].recvProxyData(msg);
 }
 
 void
 ProxyMgr::sendProxyAll(ProxyAllMsg *msg, int pcnt, int *pids) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
-  cp.recvProxyAll(msg,pcnt,pids);
+  cp.recvImmediateProxyAll(msg,pcnt,pids);
+}
+
+void 
+ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  proxy->receiveAll(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
 void
-ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
+ProxyMgr::recvImmediateProxyAll(ProxyAllMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
@@ -570,7 +604,9 @@ ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
       ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
     }
   }
-  proxy->receiveAll(msg); // delete done in ProxyPatch::receiveAll()
+  /* send to self via EP method to preserve priority */
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp[CkMyPe()].recvProxyAll(msg);
 }
 
 #include "ProxyMgr.def.h"

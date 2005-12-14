@@ -22,9 +22,12 @@ module ProxyMgr {
     entry void recvRegisterProxy(RegisterProxyMsg *);
     entry void recvUnregisterProxy(UnregisterProxyMsg *);
     entry void recvProxyData(ProxyDataMsg *);
+    entry void recvImmediateProxyData(ProxyDataMsg *);
     entry void recvProxyAll(ProxyAllMsg *);
+    entry void recvImmediateProxyAll(ProxyAllMsg *);
     entry void recvResults(ProxyResultMsg *);
     entry void recvResults(ProxyCombinedResultMsg *);
+    entry void recvImmediateResults(ProxyCombinedResultMsg *);
     entry void recvSpanningTree(ProxySpanningTreeMsg *);
   };
 }

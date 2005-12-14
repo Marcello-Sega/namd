@@ -286,69 +286,13 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
     pcpair *pair = &grid[nPatches][nProxies];
 
     if (! pair->c) {
-	 pair->c = c;
-	 pair->p = p;
+      pair->c = c;
+      pair->p = p;
     } else {
-#if 0 //CMK_VERSION_BLUEGENE
-        int neighbor_old=0, neighbor=0;
-	processorInfo* oldp = pair->p;
-	if(oldp != NULL) {	    
-	    BGLTorusManager *tmgr = BGLTorusManager::getObject();
-	    //Check to see if neighbor of midpoint
-	    if(tmgr->isNeighborOfBoth(oldp->Id, patches[c->patch1].processor,
-				      patches[c->patch2].processor, 1))
-		neighbor_old = 1;	    
-	    if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
-				      patches[c->patch2].processor, 1))
-		neighbor = 1;
-
-	    if(neighbor_old == 1 && neighbor == 1) {
-		if (p->load <= pair->p->load && c->load >= pair->c->load) {
-		    pair->c = c;
-		    pair->p = p;
-		}
-	    }
-	    else if(neighbor_old == 0 && neighbor == 1) {
-		//Previous was not a neighbor, kick him out
-		pair->c = c;
-		pair->p = p;
-	    }
-	    else if(neighbor_old == 1 && neighbor == 0)
-		;      //Give preference to good neighbors
-	    else {
-		//Both not neighbors, choose nearby node to minimize hop bytes
-		
-		int old_dist = 0, dist = 0;	    
-		int ax,ay,az, x,y,z, p1x,p1y,p1z, p2x,p2y,p2z;
-	    
-		tmgr->getCoordinatesByRank(oldp->Id, ax,ay,az);
-		tmgr->getCoordinatesByRank(p->Id, x,y,z);
-		
-		tmgr->getCoordinatesByRank(patches[c->patch1].processor, 
-					   p1x,p1y,p1z);
-		tmgr->getCoordinatesByRank(patches[c->patch2].processor, 
-					   p2x,p2y,p2z);
-		
-		old_dist = abs(p1x - ax) + abs(p2x - ax) +
-		    abs(p1y - ay) + abs(p1z - az) +
-		    abs(p2y - ay) + abs(p2z - az);
-		
-		dist = abs(p1x - x) + abs(p2x - x) +
-		    abs(p1y - y) + abs(p1z - z) +
-		    abs(p2y - y) + abs(p2z - z);
-		
-		if(old_dist > dist) {
-		    pair->c = c;
-		    pair->p = p;
-		}
-	    }
-	}
-#else
-	  if (p->load <= pair->p->load && c->load >= pair->c->load) {
-	    pair->c = c;
-	    pair->p = p;
-	  }
-#endif
+      if (p->load <= pair->p->load && c->load >= pair->c->load) {
+	pair->c = c;
+	pair->p = p;
+      }
     }
   }
 }
@@ -485,7 +429,7 @@ int Rebalancer::refine()
 #if CMK_VERSION_BLUEGENE
 	   BGLTorusManager *tmgr = BGLTorusManager::getObject();
 	   if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
-				     patches[c->patch2].processor, 1))
+				     patches[c->patch2].processor, 2))
 #endif
 	     {	     
 	       refine_togrid(grid, thresholdLoad, p, c);

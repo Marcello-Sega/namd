@@ -102,6 +102,11 @@ public:
 
   // build spanning tree for proxy nodes
   void buildSpanningTree(void);
+
+#if CMK_VERSION_BLUEGENE
+  int findSubroots(int dim, int* subroots, int psize, int* pidscopy);
+#endif
+
 protected:
   virtual void boxClosed(int);
 

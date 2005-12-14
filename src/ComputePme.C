@@ -184,7 +184,8 @@ void generatePmePeListPrime(int *pemap, int numPes);
 void generatePmePeListPrime2(int *pemap, int numPes);
 
 //Topology aware PME allocation
-void generateBGLORBPmePeList(int *pemap, int numPes);
+void generateBGLORBPmePeList(int *pemap, int numPes, int *block_pes=0, 
+			     int nbpes=0);
 
 #endif
 
@@ -279,7 +280,12 @@ int ComputePmeMgr::isPmeProcessor(int p){
   return isPmeFlag[p];
 }
 
-ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pmeCompute(0) {
+#if CMK_VERSION_BLUEGENE
+#include "bgltorus.h"
+#endif
+
+ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
+				 pmeProxyDir(thisgroup), pmeCompute(0) {
 
   CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
 
@@ -301,7 +307,6 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), pmeProxyDir(thisgroup), pm
   gridPeOrder = new int[CkNumPes()];
   transPeOrder = new int[CkNumPes()];
   isPmeFlag = new char[CkNumPes()];
-  qgrid = 0;
   kgrid = 0;
   work = 0;
   grid_count = 0;
@@ -387,11 +392,30 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   //generatePmePeList2(gridPeMap, numGridPes, transPeMap, numTransPes);
 
+  int sum_npes = numTransPes + numGridPes;
   int max_npes = (numTransPes > numGridPes)?numTransPes:numGridPes;
 
 #if CMK_VERSION_BLUEGENE
   PatchMap * pmap = PatchMap::Object();
-  if(CkNumPes() > max_npes + pmap->numNodesWithPatches()) {
+  
+  int patch_pes = pmap->numNodesWithPatches();
+  BGLTorusManager *tmanager = BGLTorusManager::getObject();
+  if(tmanager->isVnodeMode())
+    patch_pes *= 2;
+  
+  if(CkNumPes() > 2*sum_npes + patch_pes) {    
+    generateBGLORBPmePeList(transPeMap, numTransPes);
+    generateBGLORBPmePeList(gridPeMap, numGridPes, transPeMap, numTransPes);
+    
+    if(CkMyPe() == 0) 
+      CkPrintf("GRID PES  %d,%d,%d,%d ............\n", gridPeMap[0], 
+	       gridPeMap[1], gridPeMap[2], gridPeMap[3]);
+    
+    if(CkMyPe() == 0) 
+      CkPrintf("TRANS PES  %d,%d,%d,%d ............\n", transPeMap[0],
+	       transPeMap[1],transPeMap[2],transPeMap[3]);
+  }
+  else if(CkNumPes() > 2 *max_npes + patch_pes) {
     //generatePmePeListPrime(transPeMap, max_npes);
     generateBGLORBPmePeList(transPeMap, max_npes);
     gridPeMap = transPeMap;
@@ -1640,15 +1664,33 @@ void generatePmePeListPrime(int *pemap, int numPes) {
   delete [] pmemap;
 }
 
-#include "bgltorus.h"
 #include "RecBisection.h"
 
-void generateBGLORBPmePeList(int *pemap, int numPes) {
+void generateBGLORBPmePeList(int *pemap, int numPes, 
+			     int *block_pes, int nbpes) {
 
   PatchMap *pmap = PatchMap::Object();
   int *pmemap = new int [CkNumPes()];
+  BGLTorusManager *tmanager = BGLTorusManager::getObject();
 
   memset(pmemap, 0, sizeof(int) * CkNumPes());
+
+  for(int count = 0; count < CkNumPes(); count++) {
+    if(count < nbpes)
+      pmemap[block_pes[count]] = 1;
+    
+    if(pmap->numPatchesOnNode(count)) {
+      pmemap[count] = 1;
+      
+      //Assumes an XYZT mapping !!
+      if(tmanager->isVnodeMode()) {
+	pmemap[(count + CkNumPes()/2)% CkNumPes()] = 1;
+      }
+    }
+  }
+
+  if(numPes + nbpes + pmap->numNodesWithPatches() > CkNumPes())
+    CkAbort("Too Few Processor\n\n");
 
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
@@ -1658,11 +1700,10 @@ void generateBGLORBPmePeList(int *pemap, int numPes) {
 
   int xsize = 0, ysize = 0, zsize = 0;
 
-  BGLTorusManager *tmanager = BGLTorusManager::getObject();
   xsize = tmanager->getXSize();
   ysize = tmanager->getYSize();
   zsize = tmanager->getZSize();
-
+  
   int nx = xsize, ny = ysize, nz = zsize;
   DimensionMap dm;
   
@@ -1713,9 +1754,13 @@ void generateBGLORBPmePeList(int *pemap, int numPes) {
       int destPe = coord[dm.x] + coord[dm.y] * xsize + 
 	coord[dm.z] * xsize* ysize;
       
-      if(pmap->numPatchesOnNode(destPe) == 0 && pmemap[destPe] == 0) {
+      if(pmemap[destPe] == 0) {
         pemap[gcount++] = destPe;
         pmemap[destPe] = 1;
+
+	if(tmanager->isVnodeMode())
+	  pmemap[(destPe + CkNumPes()/2) % CkNumPes()] = 1;	
+
         npme_pes ++;
       }
       else {
@@ -1727,12 +1772,16 @@ void generateBGLORBPmePeList(int *pemap, int numPes) {
           coord[2] = coord[2] % nz;
           coord[1] = coord[1] % ny;       
           
-          int newdest = coord[dm.x] + coord[dm.y] * xsize + coord[dm.z] * xsize*
-	    ysize;
+          int newdest = coord[dm.x] + coord[dm.y] * xsize + 
+	    coord[dm.z] * xsize * ysize;
           
-          if(pmap->numPatchesOnNode(newdest) == 0 && pmemap[newdest] == 0) {
+          if(pmemap[newdest] == 0) {
             pemap[gcount++] = newdest;
             pmemap[newdest] = 1;
+	    
+	    if(tmanager->isVnodeMode())
+	      pmemap[(newdest + CkNumPes()/2) % CkNumPes()] = 1;	
+	    
             npme_pes ++;
             break;
           }
@@ -1747,11 +1796,9 @@ void generateBGLORBPmePeList(int *pemap, int numPes) {
       break;
   }
   
-  CkPrintf("PME work allocated to %d procesors \n", npme_pes);
-
   if(npme_pes != numPes)
     CkAbort("ORB PME allocator failed\n");
-
+  
   delete [] pmemap;
 }
 

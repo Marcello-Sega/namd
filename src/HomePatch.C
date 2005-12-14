@@ -14,8 +14,8 @@
 */
 
 #include <math.h>
+#include "charm++.h"
 
-#include "InfoStream.h"
 #include "SimParameters.h"
 #include "HomePatch.h"
 #include "AtomMap.h"
@@ -206,38 +206,123 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   delete msg;
 }
 
+#if CMK_VERSION_BLUEGENE 
+#include "bgltorus.h"
+
+int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
+  int nChild = 0;
+  int cones[6][PROXY_SPAN_DIM*PROXY_SPAN_DIM+PROXY_SPAN_DIM];
+  int conesizes[6] = {0,0,0,0,0,0};
+  int conecounters[6] = {0,0,0,0,0,0};
+  int childcounter = 0;
+  nChild = (psize>PROXY_SPAN_DIM)?PROXY_SPAN_DIM:psize;
+  for(int i=0;i<psize;i++){
+    int cone = BGLTorusManager::getObject()->getConeNumberForRank(pidscopy[i]);
+    cones[cone][conesizes[cone]++] = pidscopy[i];
+  }
+  while(childcounter<nChild){
+    for(int i=0;i<6;i++){
+      if(conecounters[i]<conesizes[i]){
+        subroots[childcounter++] = cones[i][conecounters[i]++];
+      }
+    }
+  }
+  for(int i=nChild;i<PROXY_SPAN_DIM;i++)
+    subroots[i] = -1;
+  return nChild;
+}
+#endif // CMK_VERSION_BLUEGENE 
+
 void HomePatch::buildSpanningTree(void)
 {
   nChild = 0;
-  if (proxy.size() == 0) return;
+  int psize = proxy.size();
+  if (psize == 0) return;
   NodeIDList tree;
-  tree.resize(proxy.size()+1);
+  tree.resize(psize + 1);
   tree[0] = CkMyPe();
-  int s=1, e=proxy.size()+1;
+  int s=1, e=psize+1;
   ProxyListIter pli(proxy);
   int patchNodesLast =
     ( PatchMap::Object()->numNodesWithPatches() < ( 0.7 * CkNumPes() ) );
+  int nNonPatch = 0;
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
     if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
       tree[--e] = pli->node;
     } else {
       tree[s++] = pli->node;
+      nNonPatch++;
     }
   }
+
+  //CkPrintf("home: %d:(%d) %d %d %d %d %d\n", patchID, tree.size(),tree[0],tree[1],tree[2],tree[3],tree[4]);
+
+#if CMK_VERSION_BLUEGENE && USE_SPANNING_TREE
   
-//CkPrintf("home: %d:(%d) %d %d %d %d %d\n", patchID, tree.size(),tree[0],tree[1],tree[2],tree[3],tree[4]);
+  //Right now only works for spanning trees with two levels
+  int *treecopy = new int [psize];
+  int subroots[PROXY_SPAN_DIM];
+  int subsizes[PROXY_SPAN_DIM];
+  int subtrees[PROXY_SPAN_DIM][PROXY_SPAN_DIM];
+  int idxes[PROXY_SPAN_DIM];
+  int i = 0;
+
+  for(i=0;i<PROXY_SPAN_DIM;i++){
+    subsizes[i] = 0;
+    idxes[i] = i;
+  }
+  
+  for(i=0;i<psize;i++){
+    treecopy[i] = tree[i+1];
+  }
+  
+  BGLTorusManager::getObject()->sortRanksByHops(treecopy,nNonPatch);
+  BGLTorusManager::getObject()->sortRanksByHops(treecopy+nNonPatch,
+						psize-nNonPatch);  
+  
+  /* build tree and subtrees */
+  nChild = findSubroots(PROXY_SPAN_DIM,subroots,psize,treecopy);
+  delete [] treecopy;
+  
+  for(int i=1;i<psize+1;i++){
+    int isSubroot=0;
+    for(int j=0;j<nChild;j++)
+      if(tree[i]==subroots[j]){
+        isSubroot=1;
+	break;
+      }
+    if(isSubroot) continue;
+    
+    int bAdded = 0;
+    BGLTorusManager::getObject()->sortIndexByHops(tree[i], subroots,
+						  idxes, PROXY_SPAN_DIM);
+    for(int j=0;j<PROXY_SPAN_DIM;j++){
+      if(subsizes[idxes[j]]<PROXY_SPAN_DIM){
+        subtrees[idxes[j]][(subsizes[idxes[j]])++] = tree[i];
+	bAdded = 1; 
+        break;
+      }
+    }
+    if( psize > PROXY_SPAN_DIM && ! bAdded ) {
+      CkAbort("Couldn't find subtree for leaf\n");
+    }
+  }
+
+#else /* CMK_VERSION_BLUEGENE && USE_SPANNING_TREE */
+  
   for (int i=1; i<=PROXY_SPAN_DIM; i++) {
     if (tree.size() <= i) break;
     child[i-1] = tree[i];
     nChild++;
   }
+#endif
+  
   ProxySpanningTreeMsg *msg = new ProxySpanningTreeMsg;
   msg->patch = patchID;
   msg->node = CkMyPe();
   msg->tree = tree;
-  ProxyMgr::Object()->sendSpanningTree(msg);
-
+  ProxyMgr::Object()->sendSpanningTree(msg);  
 }
 
 void HomePatch::receiveResults(ProxyResultMsg *msg)
@@ -341,10 +426,10 @@ void HomePatch::positionsReady(int doMigration)
   if (npid) {
 #if CMK_PERSISTENT_COMM
     if (phsReady == 0)
-    {
+      {
 //CmiPrintf("Build on %d phs0:%d\n", CkMyPe(), localphs[0]);
      for (int i=0; i<npid; i++) {
-       localphs[i] = CmiCreatePersistent(pids[i], 300000);
+       localphs[i] = CmiCreatePersistent(pids[i], 30000);
      }
      nphs = npid;
      phsReady = 1;

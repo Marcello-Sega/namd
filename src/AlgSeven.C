@@ -64,11 +64,11 @@ void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
 	  */
 	  
 	  if(tmgr->isNeighborOfBoth(altp->Id, patches[c->patch1].processor,
-				    patches[c->patch2].processor, 1))
+				    patches[c->patch2].processor, 2))
 	    neighbor_alt = 1;
 	  
 	  if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
-				    patches[c->patch2].processor, 1))
+				    patches[c->patch2].processor, 2))
 	    neighbor = 1;
 	  
 	  if(neighbor_alt == 1 && neighbor == 1) {
@@ -117,7 +117,7 @@ void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
         }
 #endif	  
       }
-      
+
       {
         processorInfo* &altp = poorP[nPatches][nProxies];
         if (!altp || p->load < altp->load ) {
@@ -150,8 +150,10 @@ void Alg7::strategy()
   overLoad = 1.2;
   for (int ic=0; ic<numComputes; ic++) {
     c = (computeInfo *) computesHeap->deleteMax();
-    if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
+
     if (c->processor != -1) continue; // skip to the next compute;
+
+    if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
     int i,j;
     for(i=0;i<3;i++)
       for(j=0;j<3;j++) {
@@ -233,13 +235,12 @@ void Alg7::strategy()
       NAMD_bug("*** Alg 7 No receiver found 1 ***");
       break;
     }
-
   }
 
   printLoads();
 
   // binary-search refinement procedure
-  multirefine();
+  multirefine(1.05);
   printLoads();
 
   // CmiPrintf("Alg7 finish time: %f.\n", CmiWallTimer()-startTime);

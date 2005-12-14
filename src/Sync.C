@@ -67,8 +67,11 @@ void Sync::openSync(void)
   if (useSync) {
     // if use proxy spanning tree, proxy sync is forced
     if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
+#if !CMK_IMMEDIATE_MSG
+      //Dont need proxy sync when immediate messges are turned on
       CmiPrintf("[%d] useProxySync is turned on. \n", CmiMyPe());
       useProxySync = 1;
+#endif
     }
     // no proxies on this node, no need to use proxy sync.
     if (useProxySync && ProxyMgr::Object()->numProxies() == 0) {

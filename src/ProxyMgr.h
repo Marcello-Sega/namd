@@ -132,11 +132,14 @@ public:
   void recvResults(ProxyResultMsg *);
   void sendResults(ProxyCombinedResultMsg *);
   void recvResults(ProxyCombinedResultMsg *);
+  void recvImmediateResults(ProxyCombinedResultMsg *);
 
   void sendProxyData(ProxyDataMsg *, int, int*);
+  void recvImmediateProxyData(ProxyDataMsg *);
   void recvProxyData(ProxyDataMsg *);
 
   void sendProxyAll(ProxyAllMsg *, int, int*);
+  void recvImmediateProxyAll(ProxyAllMsg *);
   void recvProxyAll(ProxyAllMsg *);
 
   static ProxyMgr *Object() { return CpvAccess(ProxyMgr_instance); }

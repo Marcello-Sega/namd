@@ -530,6 +530,10 @@ void WorkDistrib::patchMapInit(void)
 
 }
 
+#if CMK_VERSION_BLUEGENE
+#include "bgltorus.h"
+#endif
+
 //----------------------------------------------------------------------
 void WorkDistrib::assignNodeToPatch()
 {
@@ -539,7 +543,11 @@ void WorkDistrib::assignNodeToPatch()
   int nNodes = Node::Object()->numNodes();
 
 #if CMK_VERSION_BLUEGENE
-  if (nNodes > 2 * patchMap->numPatches())
+  BGLTorusManager *tmanager = BGLTorusManager::getObject();
+  int nBGLNodes = tmanager->getXNodeSize() * tmanager->getYNodeSize() 
+    * tmanager->getZNodeSize();
+
+  if (nBGLNodes > 2 * patchMap->numPatches())
     assignPatchesTopoGridRecBisection();
   else
 #endif
@@ -1429,7 +1437,6 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 /*			END OF FUNCTION remove_com_motion		*/
 
 #if CMK_VERSION_BLUEGENE
-#include "bgltorus.h"
 
 //Specifically designed for BGL and other 3d Tori architectures
 //Partition Torus and Patch grid together using recursive bisection.
@@ -1445,22 +1452,27 @@ void WorkDistrib::assignPatchesTopoGridRecBisection() {
   
   if ( simParams->noPatchesOnZero && numNodes > 1 ) usedNodes -= 1;
   RecBisection recBisec(patchMap->numPatches(), PatchMap::Object());
+  /*
+  int testarr[1024];
+  recBisec.partitionProcGrid(32, 16, 16, testarr);
+  FILE *fp = fopen("patchdump", "w+");
+  for(int count = 0; count < patchMap->numPatches(); count++) 
+    fprintf(fp, "%d\n", testarr[count]);
+  fclose(fp);
   
+  CkExit();
+  */
   int xsize = 0, ysize = 0, zsize = 0;
   
-#if CMK_VERSION_BLUEGENE
+  //Right now assumes an ***T (e.g. XYZT) mapping
   BGLTorusManager *tmanager = BGLTorusManager::getObject();
   xsize = tmanager->getXSize();
   ysize = tmanager->getYSize();
   zsize = tmanager->getZSize();
   
-#else
-  CkAbort("Topology based patch distribution not defined for this architecture\n");
-#endif
-  
   //Fix to not assign patches to processor 0
   recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
-
+  
   delete [] assignedNode;
 }
 #endif
