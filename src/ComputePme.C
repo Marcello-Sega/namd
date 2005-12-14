@@ -402,7 +402,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   BGLTorusManager *tmanager = BGLTorusManager::getObject();
   if(tmanager->isVnodeMode())
     patch_pes *= 2;
-  
+
+#ifndef USE_COMM_LIB  
   if(CkNumPes() > 2*sum_npes + patch_pes) {    
     generateBGLORBPmePeList(transPeMap, numTransPes);
     generateBGLORBPmePeList(gridPeMap, numGridPes, transPeMap, numTransPes);
@@ -415,7 +416,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       CkPrintf("TRANS PES  %d,%d,%d,%d ............\n", transPeMap[0],
 	       transPeMap[1],transPeMap[2],transPeMap[3]);
   }
-  else if(CkNumPes() > 2 *max_npes + patch_pes) {
+  else 
+#endif
+  if(CkNumPes() > 2 *max_npes + patch_pes) {
     //generatePmePeListPrime(transPeMap, max_npes);
     generateBGLORBPmePeList(transPeMap, max_npes);
     gridPeMap = transPeMap;
