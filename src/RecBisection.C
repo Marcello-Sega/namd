@@ -660,9 +660,7 @@ void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
 	loadarray[mindir] = 0.5 * patch_p.load;
 	loadarray[pdir] = 0.5 * patch_p.load;
 	
-	CkPrintf("Inefficient patch allocation\n");
-
-	//CkAbort("Cant Find Partitions\n\n");
+	//CkPrintf("Inefficient patch allocation\n");
     }
     else {
 	pdir = mindir;
@@ -737,11 +735,11 @@ void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
 
     if (!p1_empty[mindir]) topogrid_rec_divide(proc_p1, patch_p1); 
     else
-	CkAbort("Error empty processor partition\n");
+	NAMD_bug("Recbisection BGL Torus Allocator found empty processor partition\n");
 
     if (!p2_empty[mindir]) topogrid_rec_divide(proc_p2, patch_p2);
     else
-	CkAbort("Error empty processor partition\n");
+	NAMD_bug("Recbisection BGL Torus Allocator found empty processor partition\n");
 }
 
 

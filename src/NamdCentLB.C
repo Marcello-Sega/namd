@@ -778,11 +778,6 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
        nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
       break;	  
   }        
-  //  } 
-  //else
-  //CkAbort("NumPes < 2*numpatches\n\n");
-
-  //srand(myNode);
 
   const SimParameters* params = Node::Object()->simParameters;
 

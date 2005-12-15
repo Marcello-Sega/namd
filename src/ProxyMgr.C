@@ -511,7 +511,7 @@ ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
     home->receiveResults(msg); // delete done in HomePatch::receiveResults()
   }
   else {
-    CkAbort("I am not home\n\n");
+    NAMD_bug("ProxyMgr should receive result message on home processor");
   }
 }
 

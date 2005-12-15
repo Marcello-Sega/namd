@@ -1635,7 +1635,7 @@ void generatePmePeListPrime(int *pemap, int numPes) {
   //We have to share processors with patches and this scheme isnt
   //reall optimized for that
   if(CkNumPes() <= numPes + pmap->numNodesWithPatches())
-    CkAbort("Too Few Processors\n");
+    NAMD_Bug("Too Few Processors\n");
 
   int *pmemap = new int [CkNumPes()];
   memset(pmemap, 0, CkNumPes() * sizeof(int));
@@ -1660,7 +1660,7 @@ void generatePmePeListPrime(int *pemap, int numPes) {
         }
       }
       if(pos == CkNumPes())
-        CkAbort("Error: PME Allocation Failed\n");
+        NAMD_bug("PME Prime Allocator: Allocation Failed\n");
     }
   }
 
@@ -1693,7 +1693,7 @@ void generateBGLORBPmePeList(int *pemap, int numPes,
   }
 
   if(numPes + nbpes + pmap->numNodesWithPatches() > CkNumPes())
-    CkAbort("Too Few Processor\n\n");
+    NAMD_bug("PME ORB Allocator: Processors Unavailable\n");
 
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
@@ -1800,7 +1800,7 @@ void generateBGLORBPmePeList(int *pemap, int numPes,
   }
   
   if(npme_pes != numPes)
-    CkAbort("ORB PME allocator failed\n");
+    NAMD_bug("ORB PME allocator failed\n");
   
   delete [] pmemap;
 }
@@ -1830,7 +1830,7 @@ void generatePmePeListPrime2(int *pemap1, int numPes1,
   //We have to share processors with patches and this scheme isnt
   //reall optimized for that
   if(CkNumPes() <= numPes1 + numPes2 + pmap->numNodesWithPatches())
-    CkAbort("Too Few Processors\n");
+    NAMD_bug("Prime2 PME allocator: Too Few Processors passed in\n");
 
   int *pmemap = new int [CkNumPes()];
   memset(pmemap, 0, CkNumPes() * sizeof(int));
@@ -1855,7 +1855,7 @@ void generatePmePeListPrime2(int *pemap1, int numPes1,
         }
       }
       if(pos == CkNumPes())
-        CkAbort("Error: PME Allocation Failed\n");
+        NAMD_bug("Prime2 PME Allocation Failed for the first array\n");
     }
   }
 
@@ -1879,7 +1879,7 @@ void generatePmePeListPrime2(int *pemap1, int numPes1,
         }
       }
       if(pos == CkNumPes())
-        CkAbort("Error: PME Allocation Failed\n");
+        NAMD_bug("Prime2 PME Allocation Failed for second array\n");
     }
   }
 

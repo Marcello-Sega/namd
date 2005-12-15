@@ -305,7 +305,7 @@ void HomePatch::buildSpanningTree(void)
       }
     }
     if( psize > PROXY_SPAN_DIM && ! bAdded ) {
-      CkAbort("Couldn't find subtree for leaf\n");
+      NAMD_bug("HomePatch BGL Spanning Tree error: Couldn't find subtree for leaf\n");
     }
   }
 
