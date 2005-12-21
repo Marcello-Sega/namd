@@ -24,7 +24,7 @@ PACK_MSG(MyMsg,
 
 #include "converse.h"
 
-#if CHARM_VERSION <= 50899
+#if CHARM_VERSION <= 50900
 #ifndef CmiMemcpy
 #define CmiMemcpy(D,S,N) memcpy(D,S,N)
 #endif
