@@ -373,6 +373,29 @@ For a complete description of the non-bonded force parameters see
 Section \ref{section:electdesc}.}
 
 \item
+\NAMDCONFWDEF{limitdist}
+{maximum distance between pairs for limiting interaction strength(\AA)}
+{non-negative decimal}
+{{\tt 0.}}
+{
+The electrostatic and van der Waals potential functions diverge
+as the distance between two atoms approaches zero.
+The potential for atoms closer than {\tt limitdist} is instead
+treated as $a r^2 + c$ with parameters chosen to match the
+force and potential at {\tt limitdist}.
+This option should primarily be useful for alchemical free energy
+perturbation calculations, since it makes the process of creating
+and destroying atoms far less drastic energetically.
+The larger the value of {\tt limitdist} the more the maximum force
+between atoms will be reduced.
+In order to not alter the other interactions in the simulation,
+{\tt limitdist} should be less than the closest approach
+of any non-bonded pair of atoms; 1.3\,\AA\ appears to satisfy this
+for typical simulations but the user is encouraged to experiment.
+There should be no performance impact from enabling this feature.
+}
+
+\item
 \NAMDCONFWDEF{pairlistdist}
 {distance between pairs for inclusion in pair lists (\AA)}
 {positive decimal $\geq$ {\tt cutoff}}

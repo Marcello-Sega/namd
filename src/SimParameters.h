@@ -153,6 +153,8 @@ public:
 					//  pairlistDist+margin depending on
 					//  whether or not switching is on
 					//  or not
+	BigReal limitDist;		//  Distance below which nonbonded
+					//  forces between atoms are limited
 	Bool switchingActive;		//  Flag TRUE->using switching function
 					//  for electrostatics and vdw
 	BigReal switchingDist;		//  Distance at which switching

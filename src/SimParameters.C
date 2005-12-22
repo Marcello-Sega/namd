@@ -267,6 +267,10 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &nonbondedScaling, 1.0);
    opts.range("nonbondedScaling", POSITIVE);
 
+   opts.optional("main", "limitDist", "limit nonbonded below this distance",
+     &limitDist, 0.0);
+   opts.range("limitDist", NOT_NEGATIVE);
+
    opts.require("main", "exclude", "Electrostatic exclusion policy",
     PARSE_STRING);
 

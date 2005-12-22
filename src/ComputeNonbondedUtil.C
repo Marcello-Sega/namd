@@ -404,6 +404,8 @@ void ComputeNonbondedUtil::select(void)
   BigReal *vdwa_i = vdwa_table + 4;
   BigReal *vdwb_i = vdwb_table + 4;
   BigReal *r2_i = r2_table;  *(r2_i++) = r2_delta;
+  BigReal r2_limit = simParams->limitDist * simParams->limitDist;
+  if ( r2_limit < r2_delta ) r2_limit = r2_delta;
   int r2_delta_i = 0;  // entry for r2 == r2_delta
 
   // fill in the table, fix up i==0 (r2==0) below
@@ -413,7 +415,7 @@ void ComputeNonbondedUtil::select(void)
     const BigReal r2_del = r2_base / 64.0;
     const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
 
-    if ( r2 == r2_delta ) r2_delta_i = i;
+    if ( r2 <= r2_limit ) r2_delta_i = i;
 
     const BigReal r = sqrt(r2);
     const BigReal r_1 = 1.0/r;
@@ -532,10 +534,10 @@ void ComputeNonbondedUtil::select(void)
   }
 
   if ( ! r2_delta_i ) {
-    NAMD_bug("Failed to find table entry for r2 == r2_delta\n");
+    NAMD_bug("Failed to find table entry for r2 == r2_limit\n");
   }
-  if ( r2_table[r2_delta_i] != 2*r2_delta ) {
-    NAMD_bug("Found bad table entry for r2 == r2_delta\n");
+  if ( r2_table[r2_delta_i] > r2_limit + r2_delta ) {
+    NAMD_bug("Found bad table entry for r2 == r2_limit\n");
   }
 
   int j;
@@ -552,7 +554,7 @@ void ComputeNonbondedUtil::select(void)
       case 1: 
         t0 = scor_table;
         table_name = "SCOR";
-        smooth_short = 1;
+        smooth_short = 0;
       break;
       case 2: 
         t0 = slow_table;
