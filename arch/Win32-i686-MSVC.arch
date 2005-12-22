@@ -1,7 +1,7 @@
 NAMD_ARCH = Win32-i686
 CHARMARCH = net-win32
 
-CXX = cl /nologo /MT /TP /DWIN32 /DNAMD_SOCKLEN_T=int /D_AIX /D_CONSOLE /Zp4
+CXX = cl /nologo /MT /TP /DWIN32 /DNAMD_SOCKLEN_T=int /D_CONSOLE /Zp4
 CC = cl /nologo /MT /DWIN32 /D_CONSOLE
 LINK = link /nologo /subsystem:console /incremental:no \
   kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \

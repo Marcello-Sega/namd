@@ -18,7 +18,14 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <string.h>
+
+#ifdef WIN32
+#define strcasecmp(s,t) stricmp(s,t)
+#define strncasecmp(s,t,n) strnicmp(s,t,n)
+#else
 #include <strings.h>
+#endif
+
 #include "common.h"
 
 void	NAMD_truncate(char *);		//  Remove trailing spaces from
