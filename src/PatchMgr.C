@@ -23,6 +23,8 @@
 
 #include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
+#include "Node.h"
+#include "SimParameters.h"
 
 #include "packmsg.h"
 
@@ -264,6 +266,8 @@ void PatchMgr::setLattice(SetLatticeMsg *msg) {
     HomePatch *hp = elem->patch;
     hp->lattice = msg->lattice;
   }
+  // Must also do this for SimParameters in order for pressure profile to work!
+  Node::Object()->simParameters->lattice = msg->lattice;
 }
 
 PACK_MSG(MovePatchesMsg,
