@@ -764,7 +764,7 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     int atom_type_num;
     if ( sscanf(atom_type, "%d", &atom_type_num) > 0 )
     {
-      NAMD_die("Structure (psf) file is in CHARMM format; XPLOR format required.");
+      NAMD_die("Structure (psf) file is either in CHARMM format (with numbers for atoms types, the X-PLOR format using names is required) or the segment name field is empty.");
     }
 
     /*  Make sure the atoms were in sequence    */
