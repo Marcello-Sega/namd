@@ -4,10 +4,10 @@ CHARMARCH = net-linux-iccstatic
 FLOATOPTS = -march=pentiumpro -mcpu=pentium4 -ip -fno-rtti
 
 CXX = icpc -DNO_STRSTREAM_H
-CXXOPTS = -static-libcxa -O2 $(FLOATOPTS)
+CXXOPTS = -i-static -static-libcxa -O2 $(FLOATOPTS)
 CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
 
 CC = icc
-COPTS = -static-libcxa -O2 $(FLOATOPTS)
+COPTS = -i-static -static-libcxa -O2 $(FLOATOPTS)
 
 
