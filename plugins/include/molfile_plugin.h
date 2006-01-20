@@ -11,7 +11,7 @@
  *
  *      $RCSfile: molfile_plugin.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2005/05/27 19:32:42 $
+ *      $Revision: 1.2 $       $Date: 2006/01/20 20:23:49 $
  *
  ***************************************************************************/
 
@@ -43,54 +43,71 @@
 #define MOLFILE_NUMATOMS_UNKNOWN -1   /**< unknown number of atoms      */
 #define MOLFILE_NUMATOMS_NONE     0   /**< no atoms in this file type   */
 
+
+/**
+ * File level comments, origin information, and annotations.
+ */
+typedef struct {
+  char database[81];   /**< database of origin, if any        */
+  char accession[81];  /**< database accession code, if any   */
+  char date[81];       /**< date/time stamp for this data     */
+  char title[81];      /**< brief title for this data         */
+  int remarklen;       /**< length of remarks string          */
+  char *remarks;       /**< free-form remarks about data      */
+} molfile_metadata_t;
+
+
 /* 
- * Define a structure for specifying atoms in a molecular structure.  The 
- * first six are required, the rest are optional and their presence is 
+ * Struct for specifying atoms in a molecular structure.  The first 
+ * six components are required, the rest are optional and their presence is 
  * indicating by setting the corresponding bit in optsflag.  When omitted,
- * the application (for read_structure) or plugin
- * for write_structure) must be able to supply default values if the missing
- * parameters are part of its internal data structure.
+ * the application (for read_structure) or plugin (for write_structure) 
+ * must be able to supply default values if the missing parameters are 
+ * part of its internal data structure.
  * Note that it is not possible to specify coordinates with this structure.
  * This is intentional; all coordinate I/O is done with the read_timestep and 
  * write_timestep functions. 
  */
 
-/*@{*/
-/** Plugin optional data field availability flag */
-#define MOLFILE_NOOPTIONS 0
-#define MOLFILE_INSERTION 0x01
-#define MOLFILE_OCCUPANCY 0x02
-#define MOLFILE_BFACTOR   0x04
-#define MOLFILE_MASS      0x08
-#define MOLFILE_CHARGE    0x10
-#define MOLFILE_RADIUS    0x20
-/*@}*/
-
+/**
+ * Per-atom attributes and information.
+ */
 typedef struct {
-  char name[8];       /**< required atom name string      */
-  char type[8];       /**< required atom type string      */
-  char resname[8];    /**< required residue name string   */
-  int resid;          /**< required integer residue ID    */
-  /** required chain name string.
-   *  This should be set to the empty string when not present.
-   */
-  char chain[8];
-  /** required segment name string.
-   *  This should be set to the empty string when not present.
-   */
-  char segid[8];
+  /* these fields absolutely must be set or initialized to empty */
+  char name[8];       /**< required atom name string             */
+  char type[8];       /**< required atom type string             */
+  char resname[8];    /**< required residue name string          */
+  int resid;          /**< required integer residue ID           */
+  char segid[8];      /**< required segment name string, or ""   */
+  char chain[2];      /**< required chain name, or ""            */
 
-  /* rest are optional; use optflags to specify what's present */
-  char insertion[8];  /**< optional insertion code string */
-  float occupancy;    /**< optional occupancy value       */
-  float bfactor;      /**< optional B-factor value        */
-  float mass;         /**< optional mass value            */
-  float charge;       /**< optional charge value          */
-  float radius;       /**< optional radius value          */
+  /* rest are optional; use optflags to specify what's present   */
+  char altloc[2];     /**< optional PDB alternate location code  */
+  char insertion[2];  /**< optional PDB insertion code           */
+  float occupancy;    /**< optional occupancy value              */
+  float bfactor;      /**< optional B-factor value               */
+  float mass;         /**< optional mass value                   */
+  float charge;       /**< optional charge value                 */
+  float radius;       /**< optional radius value                 */
+  int atomicnumber;   /**< optional element atomic number        */
 } molfile_atom_t;
 
+/*@{*/
+/** Plugin optional data field availability flag */
+#define MOLFILE_NOOPTIONS     0x0000
+#define MOLFILE_INSERTION     0x0001
+#define MOLFILE_OCCUPANCY     0x0002
+#define MOLFILE_BFACTOR       0x0004
+#define MOLFILE_MASS          0x0008
+#define MOLFILE_CHARGE        0x0010
+#define MOLFILE_RADIUS        0x0020
+#define MOLFILE_ALTLOC        0x0040
+#define MOLFILE_ATOMICNUMBER  0x0080
+/*@}*/
+
+
 /*
- * Timestep information
+ * Per-timestep atom coordinates and periodic cell information
  */ 
 typedef struct {
   float *coords;  /**< space for coordinates of all atoms, arranged xyzxyzxyz */
@@ -98,12 +115,15 @@ typedef struct {
   /*@{*/   
   /**
    * Unit cell specification of the form A, B, C, alpha, beta, gamma.
-   * A, B, and C are the lengths of the vectors.  alpha is angle between A and
-   * B, beta between A and C, and gamma between B and C.
+   * notes: A, B, C are side lengths of the unit cell
+   * alpha = angle between b and c
+   *  beta = angle between a and c
+   * gamma = angle between a and b
    */ 
   float A, B, C, alpha, beta, gamma; 
   /*@}*/   
 } molfile_timestep_t;
+
 
 /**
  * Metadata for volumetric datasets, read initially and used for subsequent
@@ -140,6 +160,7 @@ typedef struct {
   int has_color;      /**< flag indicating presence of voxel color data   */
 } molfile_volumetric_t;
 
+
 /**
  *  Enumeration of all of the supported graphics objects that can be read
  *  from graphics file reader plugins.
@@ -159,6 +180,7 @@ typedef struct {
   float size;           /* A general size parameter     */
   float data[9];        /* All data for the element     */
 } molfile_graphics_t;
+
 
 /*
  * Types for raw graphics elements stored in files.  Data for each type
@@ -182,6 +204,7 @@ sphere      x1,y1,z1                                 resolution  radius
 text        x, y, z, up to 24 bytes of text                      pixel size
 color       r, g, b
 */
+
 
 /**
  * Main file reader API.  Any function in this struct may be NULL
@@ -223,11 +246,23 @@ typedef struct {
   /**
    * Read bond information for the molecule.  On success the arrays from
    * and to should point to the (one-based) indices of bonded atoms.
+   * Each unique bond should be specified only once, so file formats that list
+   * bonds twice will need post-processing before the results are returned to
+   * the caller.
+   * If the plugin provides bond information, but the file loaded doesn't 
+   * actually contain any bond info, the nbonds parameter should be
+   * set to 0 and from/to should be set to NULL to indicate that no bond
+   * information was actually present, and automatic bond search should be
+   * performed.  
+   * If the plugin provides bond order information, the bondorder array
+   * will contain the bond order for each from/to pair.  If not, the bondorder
+   * pointer should be set to NULL, in which case the caller will provide a 
+   * default bond order value of 1.0.
    * These arrays must be freed by the plugin in the close_file_read function.
-   * This function can be called only after read_structure().  Return 
-   * MOLFILE_SUCCESS if no errors occur. 
+   * This function can be called only after read_structure().  
+   * Return MOLFILE_SUCCESS if no errors occur. 
    */
-  int (*read_bonds)(void *, int *nbonds, int **from, int **to);
+  int (*read_bonds)(void *, int *nbonds, int **from, int **to, float **bondorder);
 
   /**
    * Read the next timestep from the file.  Return MOLFILE_SUCCESS, or 
@@ -301,8 +336,28 @@ typedef struct {
    * pointer provided by the application.  The plugin is responsible for 
    * freeing the data when the file is closed.
    */
-  int (* read_rawgraphics)(void *, int *nelem, 
-      const molfile_graphics_t **data);
+  int (* read_rawgraphics)(void *, int *nelem, const molfile_graphics_t **data);
+
+  /**
+   * Read molecule metadata such as what database (if any) this file/data
+   * came from, what the accession code for the database is, textual remarks
+   * and other notes pertaining to the contained structure/trajectory/volume
+   * and anything else that's informative at the whole file level.
+   */ 
+  int (* read_molecule_metadata)(void *, molfile_metadata_t **metadata);
+  
+  /**
+   * Write bond information for the molecule.  The arrays from
+   * and to point to the (one-based) indices of bonded atoms.
+   * Each unique bond will be specified only once by the caller. 
+   * File formats that list bonds twice will need to emit both the 
+   * from/to and to/from versions of each.
+   * This function must be called before write_structure().  
+   * Unlike the read_bonds() routine, the bondorder information
+   * will always be provided (each bondorder can be set to 1 if unknown).
+   * Return MOLFILE_SUCCESS if no errors occur. 
+   */
+  int (* write_bonds)(void *, int nbonds, int *from, int *to, float *bondorder);
 
 } molfile_plugin_t;
 

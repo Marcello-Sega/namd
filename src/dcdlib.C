@@ -10,9 +10,7 @@
    output, so its pretty ugly.  If you are squimish, don't look!
 */
 
-#define _LARGEFILE_SOURCE
-#define _FILE_OFFSET_BITS 64
-#define _LARGE_FILE
+#include "largefiles.h"
 
 #include "dcdlib.h"
 #include "common.h" // for int32 definition
@@ -613,10 +611,10 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 }
 #endif
 
-#define NFILE_POS 8L
-#define NPRIV_POS 12L
-#define NSAVC_POS 16L
-#define NSTEP_POS 20L
+#define NFILE_POS (off_t) 8
+#define NPRIV_POS (off_t) 12
+#define NSAVC_POS (off_t) 16
+#define NSTEP_POS (off_t) 20
 
 /*********************************************************************/
 /*								     */

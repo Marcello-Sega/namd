@@ -11,7 +11,7 @@
  *
  *      $RCSfile: vmdplugin.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2005/05/27 19:32:42 $
+ *      $Revision: 1.2 $       $Date: 2006/01/20 20:23:49 $
  *
  ***************************************************************************/
 
@@ -121,6 +121,7 @@ VMDPLUGIN_EXTERN int VMDPLUGIN_init(void);
   int abiversion; \
   const char *type; \
   const char *name; \
+  const char *prettyname; \
   const char *author; \
   int majorv; \
   int minorv; \
@@ -139,7 +140,7 @@ typedef struct {
 /**
  * Use this macro to initialize the abiversion member of each plugin
  */
-#define vmdplugin_ABIVERSION 2
+#define vmdplugin_ABIVERSION   8
 
 /*@{*/
 /** Use this macro to indicate a plugin's thread-safety at registration time */

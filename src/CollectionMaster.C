@@ -4,9 +4,7 @@
 ***  All rights reserved.
 **/
 
-#define _LARGEFILE_SOURCE
-#define _FILE_OFFSET_BITS 64
-#define _LARGE_FILE
+#include "largefiles.h"
 
 #include "InfoStream.h"
 #include "CollectionMaster.h"

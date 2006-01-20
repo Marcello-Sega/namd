@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2005 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2006 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -10,7 +10,7 @@
  *
  *      $RCSfile: fastio.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2005/05/27 19:32:46 $
+ *      $Revision: 1.2 $       $Date: 2006/01/20 20:23:55 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -111,7 +111,7 @@ typedef int fio_fd;
 typedef ssize_t fio_size_t;
 
 /* enable use of kernel readv() if available */
-#if defined(__sun)
+#if defined(__sun) || defined(__APPLE_CC__) || defined(__linux)
 #define USE_KERNEL_READV 1
 #endif
 
@@ -144,9 +144,9 @@ static int fio_open(const char *filename, int mode, fio_fd *fd) {
     oflag = O_RDONLY;
 
   if (mode == FIO_WRITE) 
-    oflag = O_WRONLY | O_CREAT;
+    oflag = O_WRONLY | O_CREAT | O_TRUNC;
 
-  nfd = open(filename, oflag, 0777);
+  nfd = open(filename, oflag, 0666);
   if (nfd < 0) {
     return -1;
   } else {
