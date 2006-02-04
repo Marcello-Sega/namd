@@ -5,6 +5,7 @@
 **/
 
 #include "memusage.h"
+#include "converse.h"
 #ifndef WIN32
 #include <unistd.h>
 #else
@@ -56,9 +57,16 @@ long memusage_mallinfo() { return 0; }
 
 long memusage() {
 
-  long memtotal = memusage_mallinfo();
+  long memtotal = 0;
+
+#if CHARM_VERSION > 50911
+  if (CmiMemoryIs(CMI_MEMORY_IS_GNU) ) memtotal = CmiMemoryUsage();
+#endif
+
+  if ( ! memtotal ) memtotal = memusage_mallinfo();
 
   if ( ! memtotal ) memtotal = memusageinit::memusage_sbrk();
+
 
   return memtotal;
 
