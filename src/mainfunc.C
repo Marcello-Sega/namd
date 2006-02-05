@@ -84,7 +84,7 @@ int main(int argc, char **argv) {
 #endif
 
   CHDIR(oldcwd);
-  free(oldcwd);
+//  free(oldcwd);
 
 #ifdef NAMD_TCL
 }
