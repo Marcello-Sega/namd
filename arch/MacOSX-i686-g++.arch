@@ -1,0 +1,8 @@
+NAMD_ARCH = MacOSX-i686
+CHARMARCH = net-darwin-x86
+
+CXX = g++ -DNO_STRSTREAM_H -D_NO_MALLOC_H
+CXXOPTS = -O3 
+CC = gcc
+COPTS = -O3 
+
