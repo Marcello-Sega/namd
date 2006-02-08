@@ -31,19 +31,29 @@ long memusageinit::memusage_sbrk() {
 #define MEMUSAGE_USE_SBRK
 #endif
 
-#ifdef _NO_MALLOC_H
+#if defined(_NO_MALLOC_H) && !defined(MAC_OSX)
 #define MEMUSAGE_USE_SBRK
 #endif
 
 #ifndef MEMUSAGE_USE_SBRK
 
+#ifdef MAC_OSX
+#include <malloc/malloc.h>
+#else
 #include <malloc.h>
+#endif
 
 long memusage_mallinfo() {
 
+#ifndef MAC_OSX 
   struct mallinfo mi = mallinfo();
 
   long memtotal = mi.usmblks + mi.uordblks + mi.hblkhd;
+#else
+  struct mstats ms = mstats();
+
+  long memtotal = ms.bytes_used;
+#endif
 
   return memtotal;
 
