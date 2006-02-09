@@ -1,0 +1,4 @@
+include .rootdir/arch/MacOSX-i686-g++.arch
+
+CHARMARCH = net-darwin-x86-tcp
+
