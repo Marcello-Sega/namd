@@ -613,8 +613,16 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
     Lattice lattice;
     if (get_lattice_from_ts(&lattice, &ts)) {
       iout << iINFO << "Updating unit cell from timestep.\n" << endi;
+      if ( lattice.a_p() && ! script->state->lattice.a_p() ||
+           lattice.b_p() && ! script->state->lattice.b_p() ||
+           lattice.c_p() && ! script->state->lattice.c_p() ) {
+        iout << iWARN << "Cell basis vectors should be specified before reading trajectory.\n" << endi;
+      }
       // update Controller's lattice, but don't change the origin!
-      script->state->lattice.set(lattice.a(),lattice.b(),lattice.c());
+      Vector a(0.);  if ( script->state->lattice.a_p() ) a = lattice.a();
+      Vector b(0.);  if ( script->state->lattice.b_p() ) b = lattice.b();
+      Vector c(0.);  if ( script->state->lattice.c_p() ) c = lattice.c();
+      script->state->lattice.set(a,b,c);
       SetLatticeMsg *msg = new SetLatticeMsg;
       msg->lattice = script->state->lattice;
       (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).setLattice(msg);
