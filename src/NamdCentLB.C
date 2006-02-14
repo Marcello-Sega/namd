@@ -833,7 +833,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
     }
   }
   
-  CkPrintf("Returning %d proxies\n", nProxyNodes);
+  // CkPrintf("Returning %d proxies\n", nProxyNodes);
   
   delete [] proxyNodes;
   return nProxyNodes;
