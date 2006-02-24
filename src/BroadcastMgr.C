@@ -91,12 +91,15 @@ BroadcastMgr::recvBroadcast(BroadcastMsg *msg) {
     // add message to taggedMsg container
     counter = b->broadcastSet->size();
     if (msg->node == CkMyPe()) counter--; // get rid of sender
-    b->taggedMsg->add(TaggedMsg(msg->tag,msg->size,counter,msg->msg));
+    if ( counter < 0 ) NAMD_bug("BroadcastMgr::recvBroadcast counter < 0");
+    else if ( counter > 0 ) {
+      b->taggedMsg->add(TaggedMsg(msg->tag,msg->size,counter,msg->msg));
 
-    // inform all registrants of mew message
-    UniqueSetIter<BroadcastClientElem> bcIter(*(b->broadcastSet));
-    for (bcIter = bcIter.begin(); bcIter != bcIter.end(); bcIter++) {
-      bcIter->broadcastClient->awaken(msg->id, msg->tag);
+      // inform all registrants of mew message
+      UniqueSetIter<BroadcastClientElem> bcIter(*(b->broadcastSet));
+      for (bcIter = bcIter.begin(); bcIter != bcIter.end(); bcIter++) {
+        bcIter->broadcastClient->awaken(msg->id, msg->tag);
+      }
     }
   }
   delete msg;
