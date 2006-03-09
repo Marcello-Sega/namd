@@ -456,22 +456,19 @@ Problems?  Found a bug?
 Compiling NAMD
 
 Building a complete NAMD binary from source code requires working
-C and C++ compilers, Charm++/Converse, TCL, FFTW, and the VMD molfile
-plugins.  NAMD will compile without TCL, FFTW or plugins but certain
-features will be disabled.  Fortunately, precompiled libraries are
-available from http://www.ks.uiuc.edu/Research/namd/libraries/.  You
-must enable these options by specifying "tcl fftw plugins" as options
-when you run the config script and some files in arch may need editing.
+C and C++ compilers, Charm++/Converse, TCL, and FFTW.  NAMD will
+compile without TCL or FFTW but certain features will be disabled.
+Fortunately, precompiled libraries are available from
+http://www.ks.uiuc.edu/Research/namd/libraries/.  You must enable
+these options by specifying "tcl fftw" as options when you run the
+config script and some files in arch may need editing.
 
 As an example, here is the build sequence for Linux workstations:
 
-Download TCL, FFTW, and plugins libraries:
+Download TCL and FFTW libraries:
   mkdir fftw;  cd fftw
   wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux.tar.gz
   tar xzf fftw-linux.tar.gz
-  cd ..;  mkdir plugins;  cd plugins
-  wget http://www.ks.uiuc.edu/Research/namd/libraries/plugins-LINUX.tar.gz
-  tar xzf plugins-LINUX.tar.gz
   cd ..;  mkdir tcl;  cd tcl
   wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl-linux.tar.gz
   tar xzf tcl-linux.tar.gz
@@ -492,11 +489,10 @@ Build and test the Charm++/Converse library:
 Edit various configuration files:
   vi Make.charm  (set CHARMBASE to .rootdir/charm-5.9 or full path to charm)
   vi arch/Linux-i686.fftw     (fix library name and path to files)
-  vi arch/All-Unix.plugins    (fix path to files)
   vi arch/Linux-i686.tcl      (fix library version and path to TCL files)
 
 Set up build directory and compile:
-  ./config tcl fftw plugins Linux-i686-g++
+  ./config tcl fftw Linux-i686-g++
   cd Linux-i686-g++ 
   make
 
@@ -509,11 +505,10 @@ Quick tests using one and two processes:
 That's it.  A more complete explanation of the build process follows.
 Note that you will need Cygwin to compile NAMD on Windows.
 
-Download and unpack fftw, plugins, and tcl libraries for your platform
-from http://www.ks.uiuc.edu/Research/namd/libraries/.  Each tar file
-contains a directory with the name of the platform, and the plugins
-platform names are different from fftw and tcl.  These libraries don't
-change very often, so you should find a permanent home for them.
+Download and unpack fftw and tcl libraries for your platform from
+http://www.ks.uiuc.edu/Research/namd/libraries/.  Each tar file
+contains a directory with the name of the platform.  These libraries
+don't change very often, so you should find a permanent home for them.
 
 Unpack the NAMD source code and the enclosed charm-5.9.tar archive.  This
 version of Charm++ is the same one used to build the released binaries
@@ -527,12 +522,12 @@ which have names like Linux-i686-Clustermatic-TCP-icc.  Each build or
 most generic name for a platform, like Linux-i686.  The options are
 things like Scyld, TCP, SMP, or Elan.
 
-Edit arch/BASEARCH.fftw, arch/All-Unix.plugins or arch/Win32.plugins,
-and arch/BASEARCH.tcl to point to the libraries you downloaded.  Find
-a line something like "CHARMARCH = net-linux-clustermatic-tcp-icc" in
-arch/ARCH.arch find out what Charm++ platform you need to build.  The
-CHARMARCH name is of the format comm-OS-cpu-options-compiler.  It is
-important that Charm++ and NAMD be built with the same C++ compiler.
+Edit arch/BASEARCH.fftw and arch/BASEARCH.tcl to point to the libraries
+you downloaded.  Find a line something like
+"CHARMARCH = net-linux-clustermatic-tcp-icc" in arch/ARCH.arch to tell
+what Charm++ platform you need to build.  The CHARMARCH name is of the
+format comm-OS-cpu-options-compiler.  It is important that Charm++ and
+NAMD be built with the same C++ compiler.
 
 Enter the charm directory and run the build script without options
 to see a list of available platforms.  Only the comm-OS-cpu part will
@@ -601,11 +596,11 @@ at ppl@cs.uiuc.edu on your email.
 
 Now you can run the NAMD config script to set up a build directory:
 
-  ./config tcl fftw plugins ARCH
+  ./config tcl fftw ARCH
 
 For this specific example:
 
-  ./config tcl fftw plugins Linux-i686-Clustermatic-TCP-icc
+  ./config tcl fftw Linux-i686-Clustermatic-TCP-icc
 
 This will create a build directory Linux-i686-Clustermatic-TCP-icc.
 If you wish to create this directory elsewhere use config DIR/ARCH,
@@ -614,7 +609,7 @@ A symbolic link to the remote directory will be created as well.  You
 can create multiple build directories for the same ARCH by adding a
 suffix.  These can be combined, of course, as in:
 
-  ./config tcl fftw plugins /tmp/Linux-i686-Clustermatic-TCP-icc.test1
+  ./config tcl fftw /tmp/Linux-i686-Clustermatic-TCP-icc.test1
 
 Now cd to your build directory and type make.  The namd2 binary and
 a number of utilities will be created.
