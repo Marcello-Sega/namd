@@ -1635,7 +1635,7 @@ void generatePmePeListPrime(int *pemap, int numPes) {
   //We have to share processors with patches and this scheme isnt
   //reall optimized for that
   if(CkNumPes() <= numPes + pmap->numNodesWithPatches())
-    NAMD_Bug("Too Few Processors\n");
+    NAMD_bug("Too few processors for ComputePme::generatePmePeListPrime().\n");
 
   int *pmemap = new int [CkNumPes()];
   memset(pmemap, 0, CkNumPes() * sizeof(int));
