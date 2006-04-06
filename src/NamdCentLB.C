@@ -624,6 +624,7 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
       proxyNode = (proxyNode - 1 + numNodes) % numNodes;
     }
     proxyNode = (myNode + 1) % numNodes;
+    int count = 0;
     while ( nProxyNodes < nodesPerPatch ) {
       if ( ! patchMap->numPatchesOnNode(proxyNode) &&
            proxyNode != myNode && proxyNodes[proxyNode] == No) {
@@ -632,6 +633,7 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
         nProxyNodes++;
       }
       proxyNode = (proxyNode + 1) % numNodes;
+      count ++; if (count == numNodes) break;   // we looped all
     }
   } else {
     int proxyNode = myNode - 1;
