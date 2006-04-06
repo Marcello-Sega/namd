@@ -21,7 +21,10 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    numPatches = nPatches;
    P = nPes;
    pes = NULL;
-   computesHeap = NULL;
+   computePairHeap = NULL;
+   computeSelfHeap = NULL;
+   computeBgPairHeap = NULL;
+   computeBgSelfHeap = NULL;
    overLoad = 0.;
    numPesAvailable = 0;
    int i;
@@ -106,7 +109,10 @@ Rebalancer::~Rebalancer()
    for(int i=0; i<P; i++)
       delete [] processors[i].proxyUsage;
    delete pes;
-   delete computesHeap;
+   delete computePairHeap;
+   delete computeSelfHeap;
+   delete computeBgPairHeap;
+   delete computeBgSelfHeap;
 }
 
 // Added 4-29-98: array proxyUsage on each processor keeps track of 
@@ -175,10 +181,99 @@ void Rebalancer::makeHeaps()
    for (i=0; i<P; i++)
       pes->insert((InfoRecord *) &(processors[i]));
 
-   delete computesHeap;
-   computesHeap = new maxHeap(numComputes+2);
+   delete computePairHeap;
+   delete computeSelfHeap;
+   delete computeBgPairHeap;
+   delete computeBgSelfHeap;
+
+   double bgLoadLimit = 0.5 * averageLoad;
+   /*
+   iout << iINFO << "Background load limit = " << bgLoadLimit << "\n";
+   for (i=0; i<P; i++)
+     if ( processors[i].backgroundLoad > bgLoadLimit )
+       iout << iINFO << "Processor " << i << " background load = "
+            << processors[i].backgroundLoad << "\n";
+   iout << endi;
+   */
+
+   int numSelfComputes, numPairComputes, numBgSelfComputes, numBgPairComputes;
+
+   while ( 1 ) {
+    numSelfComputes = 0;
+    numPairComputes = 0;
+    numBgSelfComputes = 0;
+    numBgPairComputes = 0;
+    for (i=0; i<numComputes; i++) {
+     int pa1 = computes[i].patch1;
+     int pa2 = computes[i].patch2;
+     if ( pa1 == pa2 ) {
+        if ( processors[patches[pa1].processor].backgroundLoad > bgLoadLimit) {
+          ++numBgSelfComputes;
+        } else {
+          ++numSelfComputes;
+        }
+     } else {
+        if ( processors[patches[pa1].processor].backgroundLoad > bgLoadLimit
+          || processors[patches[pa2].processor].backgroundLoad > bgLoadLimit) {
+          ++numBgPairComputes;
+        } else {
+          ++numPairComputes;
+        }
+     }
+    }
+
+    int numBgComputes = numBgPairComputes + numBgSelfComputes;
+
+    if ( numBgComputes ) {
+        iout << iINFO << numBgComputes << " of " << numComputes
+        << " computes have background load > " << bgLoadLimit << "\n" << endi;
+    }
+
+    if ( numBgComputes < 0.3 * numComputes ) break;
+    else bgLoadLimit += 0.1 * averageLoad;
+   }
+
+   computePairHeap = new maxHeap(numPairComputes+2);
+   computeSelfHeap = new maxHeap(numSelfComputes+2);
+   computeBgPairHeap = new maxHeap(numBgPairComputes+2);
+   computeBgSelfHeap = new maxHeap(numBgSelfComputes+2);
+
+   for (i=0; i<numComputes; i++) {
+     int pa1 = computes[i].patch1;
+     int pa2 = computes[i].patch2;
+     if ( pa1 == pa2 ) {
+        if ( processors[patches[pa1].processor].backgroundLoad > bgLoadLimit) {
+          computeBgSelfHeap->insert( (InfoRecord *) &(computes[i]));
+        } else {
+          computeSelfHeap->insert( (InfoRecord *) &(computes[i]));
+        }
+     } else {
+        if ( processors[patches[pa1].processor].backgroundLoad > bgLoadLimit
+          || processors[patches[pa2].processor].backgroundLoad > bgLoadLimit) {
+          computeBgPairHeap->insert( (InfoRecord *) &(computes[i]));
+        } else {
+          computePairHeap->insert( (InfoRecord *) &(computes[i]));
+        }
+     }
+   }
+
+/*
+   delete computePairHeap;
+   delete computeSelfHeap;
+
+   int numSelfComputes = 0;
    for (i=0; i<numComputes; i++)
-      computesHeap->insert( (InfoRecord *) &(computes[i]));
+      if ( computes[i].patch1 == computes[i].patch2 ) ++numSelfComputes;
+
+   computeSelfHeap = new maxHeap(numSelfComputes+2);
+   computePairHeap = new maxHeap(numComputes-numSelfComputes+2);
+
+   for (i=0; i<numComputes; i++)
+      if ( computes[i].patch1 == computes[i].patch2 )
+         computeSelfHeap->insert( (InfoRecord *) &(computes[i]));
+      else
+         computePairHeap->insert( (InfoRecord *) &(computes[i]));
+*/
 }
 
 void Rebalancer::assign(computeInfo *c, int processor)
@@ -264,32 +359,26 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
   if(p->available == CmiFalse) return;
 
   if ( c->load + p->load < thresholdLoad) {
-    int nPatches = numPatchesAvail(c,p);
-    int nProxies = numProxiesAvail(c,p);
-    if ( nProxies < 0 ) { nPatches = nProxies = 0; }
-    if ( nPatches + nProxies < 2 && p->proxies.numElements() > 6 &&
-          p->proxies.numElements() >
-                ((double)numProxies / (double)numPesAvailable + 3) ) {
-      nPatches = nProxies = 0;
-    }
-	       
-    if (nPatches < 0 || nPatches > 2)
-	 iout << iERROR << "Too many patches: " << nPatches 
-	      << "\n" << endi;
-    if (nProxies < 0 || nProxies > 2)
-	 iout << iERROR << "Too many proxies: " << nProxies 
-	      << "\n" << endi;
-    if (nProxies + nPatches > 2)
-	 iout << iERROR << "Too many patches (" << nPatches
-	      << ") + proxies (" << nProxies << ")\n" << endi;
+    int nPatches, nProxies, badForComm;
+    numAvailable(c,p,&nPatches,&nProxies,&badForComm);
 
-    pcpair *pair = &grid[nPatches][nProxies];
+    // if ( badForComm ) return;
+
+    pcpair *pair = &grid[nPatches][nProxies][badForComm];
 
     if (! pair->c) {
       pair->c = c;
       pair->p = p;
     } else {
-      if (p->load <= pair->p->load && c->load >= pair->c->load) {
+      double newval = p->load - c->load;
+      if ( c->load + p->load < averageLoad ) {
+         newval -= averageLoad;
+      }
+      double oldval = pair->p->load - pair->c->load;
+      if ( pair->c->load + pair->p->load < averageLoad ) {
+         oldval -= averageLoad;
+      }
+      if (newval < oldval) {
 	pair->c = c;
 	pair->p = p;
       }
@@ -300,6 +389,7 @@ void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
 int Rebalancer::refine()
 {
    int finish = 1;
+   int no_new_proxies = 0;  // set to true if new proxies are futile
    maxHeap *heavyProcessors = new maxHeap(P);
 
    Set *lightProcessors = new Set();
@@ -317,7 +407,7 @@ int Rebalancer::refine()
    int done = 0;
    while (!done)
    {
-      processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
+      // processorInfo *donor = (processorInfo *) heavyProcessors->deleteMax();
       /* Keep selecting new donors, until we find one with some compute to
        * migrate
        */
@@ -335,11 +425,19 @@ int Rebalancer::refine()
         }
       };
 */
-      while (donor) {
+
+      processorInfo *donor;
+      while (donor = (processorInfo*)heavyProcessors->deleteMax()) {
 	if (donor->computeSet.numElements()) break;
-        // iout << iINFO << "Ignoring donor " << donor->Id
-        //       << " because no computes\n" << endi;
-	 donor = (processorInfo*)heavyProcessors->deleteMax();
+        if ( ! no_new_proxies ) {
+          /*
+          iout << iINFO << "Most-loaded processor " << donor->Id
+               << " (" << donor->patchSet.numElements() << " patches, "
+               << donor->proxies.numElements() << " proxies)"
+               << " has no migratable work.\n" << endi;
+          */
+          no_new_proxies = 1;  // New proxies would not improve load balance.
+        }
       }
   
       if (!donor) break;  // No donors found at all! Give up 
@@ -395,13 +493,17 @@ int Rebalancer::refine()
 	    next((Iterator *)&nextCompute);
         }
         processorInfo* bestP = 0;
-	REASSIGN(grid[2][0])
-	else REASSIGN(grid[1][1])
-	else REASSIGN(grid[0][2])
-	else REASSIGN(grid[1][0])
-	else REASSIGN(grid[0][1])
-	else REASSIGN(grid[0][0])
-	// else { finish = 0; break; }
+        // prefer proxies to home patches
+	REASSIGN(grid[0][2][0])
+	else REASSIGN(grid[1][1][0])
+	else REASSIGN(grid[2][0][0])
+        else if ( no_new_proxies ) { finish = 0; break; }
+	else REASSIGN(grid[0][1][0])
+	else REASSIGN(grid[1][0][0])
+	else REASSIGN(grid[0][0][0])
+	// else REASSIGN(grid[0][1][1])
+	// else REASSIGN(grid[1][0][1])
+	// else REASSIGN(grid[0][0][1])
         if (bestP) {
 	  if (bestP->load > averageLoad) lightProcessors->remove(bestP);
 	  if (donor->load > thresholdLoad)
@@ -410,6 +512,9 @@ int Rebalancer::refine()
 	  continue;
         }
       }
+
+      if ( no_new_proxies ) iout << iINFO
+         << "ERROR: Rebalancer::refine() algorithm is broken.\n" << endi;
 
       // no luck, do it the long way
 
@@ -443,14 +548,18 @@ int Rebalancer::refine()
       }
 
       //we have narrowed the choice to 6 candidates.
+      // prefer proxies to home patches
       {
         processorInfo* bestP = 0;
-	REASSIGN(grid[2][0])
-	else REASSIGN(grid[1][1])
-	else REASSIGN(grid[0][2])
-	else REASSIGN(grid[1][0])
-	else REASSIGN(grid[0][1])
-	else REASSIGN(grid[0][0])
+	REASSIGN(grid[0][2][0])
+	else REASSIGN(grid[1][1][0])
+	else REASSIGN(grid[2][0][0])
+	else REASSIGN(grid[0][1][0])
+	else REASSIGN(grid[1][0][0])
+	else REASSIGN(grid[0][0][0])
+	// else REASSIGN(grid[0][1][1])
+	// else REASSIGN(grid[1][0][1])
+	// else REASSIGN(grid[0][0][1])
 	else { finish = 0; break; }
 	if (bestP->load > averageLoad) lightProcessors->remove(bestP);
 	if (donor->load > thresholdLoad)
@@ -506,6 +615,15 @@ void Rebalancer::multirefine(double overload_start)
   double avg = computeAverage();
   double max = computeMax();
 
+  int numOverloaded = 0;
+  for (int ip=0; ip<P; ip++) {
+    if ( processors[ip].backgroundLoad > averageLoad ) ++numOverloaded;
+  }
+  if ( numOverloaded ) {
+    iout << iWARN << numOverloaded
+      << " processors are overloaded due to high background load.\n" << endi;
+  }
+
   const double overloadStep = 0.01;
   const double overloadStart = overload_start;       //1.05;
   double dCurOverload = max / avg;
@@ -545,10 +663,12 @@ void Rebalancer::multirefine(double overload_start)
       curOverload = (maxOverload + minOverload ) / 2;
 
       overLoad = curOverload * overloadStep + overloadStart;
+      /*
       iout << iINFO << "Testing curOverload " << curOverload 
 	   << "=" << overLoad << " [min,max]=" 
 	   << minOverload << ", " << maxOverload
 	   << "\n" << endi;
+      */
       if (refine())
 	maxOverload = curOverload;
       else
@@ -721,76 +841,75 @@ double Rebalancer::computeMax()
    return max;
 }
 
-
-int Rebalancer::numAvailable(computeInfo *c, processorInfo *p)
-{
-   //return the number of proxy/home patches available on p for c (0,1,2)
-   int p1, p2;
-   p1 = c->patch1;
-   p2 = c->patch2;
-   int count = 0;
-   if (isAvailableOn((patchInfo *)&(patches[p1]), p))
-      count++;
-   // self computes get one patch for free here
-   if (p1 == p2 || isAvailableOn((patchInfo *)&(patches[p2]), p))
-      count++;
-   return count;   
-}
-
-int Rebalancer::numProxiesAvail(computeInfo *c, processorInfo *p)
-{
-   //return the number of proxy/home patches available on p for c (0,1,2)
-   int p1, p2;
-   p1 = c->patch1;
-   p2 = c->patch2;
-   int count = 0;
-   int bad = 0;
-   if (isAvailableOn((patchInfo *)&(patches[p1]), p) ) {
-     if ( patches[p1].processor != p->Id ) count++;
-   } else {
-     if ( patches[p1].proxiesOn.numElements() > 6 &&
-          patches[p1].proxiesOn.numElements() >
-	  ( (double)numProxies / (double)numPatches + 3 ) ) bad = 10;
-   }
-   if (p1 != p2) {  // self computes get one patch for free so don't allow 2
-     if ( isAvailableOn((patchInfo *)&(patches[p2]), p) ) {
-       if ( patches[p2].processor != p->Id ) count++;
-     } else {
-       if ( patches[p2].proxiesOn.numElements() > 6 &&
-            patches[p2].proxiesOn.numElements() >
-	  ( (double)numProxies / (double)numPatches + 3 ) ) bad = 10;
-     }
-   }
-
-   //iout << iINFO << "Returning " << count << " proxies\n" << endi;
-   return ( count - bad );
-}
-
-int Rebalancer::numPatchesAvail(computeInfo *c, processorInfo *p)
-{
-   //return the number of proxy/home patches available on p for c (0,1,2)
-   const int p1 = c->patch1;
-   const int p2 = c->patch2;
-
-   int count = 0;
-
-   if (patches[p1].processor == p->Id) {
-     count++;
-     //iout << iINFO << "Patch " << patches[p1].Id << " is on " 
-     //  << patches[p1].processor << "\n" << endi;
-   }
-   // self computes get one patch for free here
-   if (p1 == p2 || patches[p2].processor == p->Id) {
-     count++;
-     //iout << iINFO << "Patch " << patches[p2].Id << " is on " 
-     //  << patches[p2].processor << "\n" << endi;
-   }
-     
-   //iout << iINFO << "Returning " << count << " patches\n" << endi;
-   return count;   
-}
-
 int Rebalancer::isAvailableOn(patchInfo *patch, processorInfo *p)
 {
    return  p->proxies.find(patch);
 }
+
+void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
+           int *nPatches, int *nProxies, int *isBadForCommunication)
+{
+   //return the number of proxy/home patches available on p for c (0,1,2)
+
+   int patch_count = 0;
+   int proxy_count = 0;
+
+   patchInfo &pa1 = patches[c->patch1];
+   patchInfo &pa2 = patches[c->patch2];
+
+   int pa1_avail = 1;
+   int pa2_avail = 1;
+
+   if (pa1.processor == p->Id) {
+     patch_count++;
+   } else if ( p->proxies.find(&pa1) ) {
+     proxy_count++;
+   } else {
+     pa1_avail = 0;
+   }
+
+   // self computes get one patch for free here
+   if (c->patch1 == c->patch2 || pa2.processor == p->Id) {
+     patch_count++;
+   } else if ( p->proxies.find(&pa2) ) {
+     proxy_count++;
+   } else {
+     pa2_avail = 0;
+   }
+
+   *nPatches = patch_count;
+   *nProxies = proxy_count;
+
+   int bad = 0;
+
+   if ( patch_count + proxy_count < 2 ) {
+
+     double bgLoadLimit = 0.8 * averageLoad;
+
+     if ( p->backgroundLoad > bgLoadLimit ) bad = 1;
+     else {
+
+      int proxiesPerPeLimit = numProxies / numPesAvailable + 3;
+      if ( proxiesPerPeLimit < 6 ) proxiesPerPeLimit = 6;
+
+      if ( p->proxies.numElements() > proxiesPerPeLimit ) bad = 1;
+
+      int proxiesPerPatchLimit = numProxies / numPatches + 3;
+      if ( proxiesPerPatchLimit < 6 ) proxiesPerPatchLimit = 6;
+
+      if ( ! bad && ! pa1_avail ) {
+        if ( processors[pa1.processor].backgroundLoad > bgLoadLimit) bad = 1;
+        else if ( pa1.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
+      }
+      if ( ! bad && ! pa2_avail ) {
+        if ( processors[pa2.processor].backgroundLoad > bgLoadLimit) bad = 1;
+        else if ( pa2.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
+      }
+
+     }
+   }
+
+   *isBadForCommunication = bad;
+}
+
+

@@ -87,8 +87,8 @@ void AlgNbor::strategy()
       while (c) {
       
 	if (c->load + p->load < processors[mype].load - c->load) {
-	  int nPatches = numPatchesAvail(c,p);
-	  int nProxies = numProxiesAvail(c,p);
+          int nPatches, nProxies, badForComm;
+          numAvailable(c,p,&nPatches,&nProxies,&badForComm);
 
 	  if ( c->load > goodSize[nPatches][nProxies] ) {
 	    goodSize[nPatches][nProxies] = c->load;
@@ -171,8 +171,8 @@ void AlgNbor::strategy()
 
 
   //   iout << iINFO  << "calling makeHeaps. \n";
-  makeHeaps();
   computeAverage();
+  makeHeaps();
   //   iout << iINFO
   //	<< "Before assignment\n" << endi;
   //   printLoads();

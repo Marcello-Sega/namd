@@ -24,26 +24,15 @@ strategy();
 
 extern int isPmeProcessor(int);
 
-void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
+void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
 			processorInfo *p, computeInfo *c) {
       if(p->available == CmiFalse) return;
 
-      int nPatches = numPatchesAvail(c,p);
-      int nProxies = numProxiesAvail(c,p);
-      if ( nProxies < 0 ) { nPatches = nProxies = 0; }
-      if ( nPatches + nProxies < 2 && p->proxies.numElements() > 6 &&
-          p->proxies.numElements() >
-		((double)numProxies / (double)numPesAvailable + 3) ) {
-        nPatches = nProxies = 0;
-      }
-
-      if (nPatches < 0 || nPatches > 2)
-	iout << iERROR << "Too many patches: " << nPatches << "\n" << endi;
-      if (nProxies < 0 || nProxies > 2)
-	iout << iERROR << "Too many proxies: " << nProxies << "\n" << endi;
+      int nPatches, nProxies, badForComm;
+      numAvailable(c,p,&nPatches,&nProxies,&badForComm);
 
       if (c->load + p->load < overLoad*averageLoad) {
-        processorInfo* &altp = goodP[nPatches][nProxies];	
+        processorInfo* &altp = goodP[nPatches][nProxies][badForComm];	
 
 #if CMK_VERSION_BLUEGENE
 	if(!altp)
@@ -119,7 +108,7 @@ void Alg7::togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
       }
 
       {
-        processorInfo* &altp = poorP[nPatches][nProxies];
+        processorInfo* &altp = poorP[nPatches][nProxies][badForComm];
         if (!altp || p->load < altp->load ) {
 	  altp = p;
         }
@@ -131,17 +120,28 @@ void Alg7::strategy()
   // double bestSize0, bestSize1, bestSize2;
   computeInfo *c;
   int numAssigned;
-  processorInfo* goodP[3][3];  // goodP[# of real patches][# of proxies]
-  processorInfo* poorP[3][3];  // fallback option
+  processorInfo* goodP[3][3][2];  // goodP[# of real patches][# of proxies]
+  processorInfo* poorP[3][3][2];  // fallback option
 
   double startTime = CmiWallTimer();
 
   //   iout << iINFO  << "calling makeHeaps. \n";
-  makeHeaps();
   computeAverage();
+  makeHeaps();
   //   iout << iINFO
   //	<< "Before assignment\n" << endi;
   //   printLoads();
+
+  /*
+  int numOverloaded = 0;
+  for (int ip=0; ip<P; ip++) {
+    if ( processors[ip].backgroundLoad > averageLoad ) ++numOverloaded;
+  }
+  if ( numOverloaded ) {
+    iout << iWARN << numOverloaded
+      << " processors are overloaded due to background load.\n" << endi;
+  }
+  */
 	      
   numAssigned = 0;
 
@@ -149,16 +149,24 @@ void Alg7::strategy()
   //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
   overLoad = 1.2;
   for (int ic=0; ic<numComputes; ic++) {
-    c = (computeInfo *) computesHeap->deleteMax();
+
+    // place computes w/ patches on heavily background loaded nodes first
+    // place pair before self, because self is more flexible
+    c = (computeInfo *) computeBgPairHeap->deleteMax();
+    if ( ! c ) c = (computeInfo *) computeBgSelfHeap->deleteMax();
+    if ( ! c ) c = (computeInfo *) computePairHeap->deleteMax();
+    if ( ! c ) c = (computeInfo *) computeSelfHeap->deleteMax();
 
     if (c->processor != -1) continue; // skip to the next compute;
 
     if ( ! c ) NAMD_bug("Alg7: computesHeap empty!");
-    int i,j;
+    int i,j,k;
     for(i=0;i<3;i++)
       for(j=0;j<3;j++) {
-	goodP[i][j]=0;
-	poorP[i][j]=0;
+        for(k=0;k<2;k++) {
+	  goodP[i][j][k]=0;
+	  poorP[i][j][k]=0;
+        }
       }
 
     // first try for at least one proxy
@@ -188,12 +196,16 @@ void Alg7::strategy()
                             proxiesOn.next((Iterator*)&nextProc);
       }
       p = 0;
-      if ((p = goodP[1][1])    // One home, one proxy
-       || (p = goodP[2][0])    // Two home, no proxies
-       || (p = goodP[0][2])    // No home, two proxies
-       || (p = goodP[1][0])    // One home, no proxies
-       || (p = goodP[0][1])    // No home, one proxy
-       || (p = goodP[0][0])    // No home, no proxies
+      // prefer to place compute with existing proxies over home patches
+      if ((p = goodP[0][2][0])    // No home, two proxies
+       || (p = goodP[1][1][0])    // One home, one proxy
+       || (p = goodP[2][0][0])    // Two home, no proxies
+       || (p = goodP[0][1][0])    // No home, one proxy
+       || (p = goodP[1][0][0])    // One home, no proxies
+       || (p = goodP[0][0][0])    // No home, no proxies
+       || (p = goodP[0][1][1])    // No home, one proxy
+       || (p = goodP[1][0][1])    // One home, no proxies
+       || (p = goodP[0][0][1])    // No home, no proxies
          ) {
         assign(c,p); numAssigned++;
         continue;
@@ -213,21 +225,28 @@ void Alg7::strategy()
     //    if (numAssigned >= 0) {  Else is commented out below
 
     p = 0;
-    if ((p = goodP[1][1])    // One home, one proxy
-     || (p = goodP[2][0])    // Two home, no proxies
-     || (p = goodP[0][2])    // No home, two proxies
-     || (p = goodP[1][0])    // One home, no proxies
-     || (p = goodP[0][1])    // No home, one proxy
-     || (p = goodP[0][0])    // No home, no proxies
+      // prefer to place compute with existing proxies over home patches
+      if ((p = goodP[0][2][0])    // No home, two proxies
+       || (p = goodP[1][1][0])    // One home, one proxy
+       || (p = goodP[2][0][0])    // Two home, no proxies
+       || (p = goodP[0][1][0])    // No home, one proxy
+       || (p = goodP[1][0][0])    // One home, no proxies
+       || (p = goodP[0][0][0])    // No home, no proxies
+       || (p = goodP[0][1][1])    // No home, one proxy
+       || (p = goodP[1][0][1])    // One home, no proxies
+       || (p = goodP[0][0][1])    // No home, no proxies
        ) {
       assign(c,p); numAssigned++;
-   } else if (
-        (p = poorP[2][0])    // Two home, no proxies, overload
-     || (p = poorP[1][1])    // One home, one proxy, overload
-     || (p = poorP[0][2])    // No home, two proxies, overload
-     || (p = poorP[1][0])    // One home, no proxies, overload
-     || (p = poorP[0][1])    // No home, one proxy, overload
-     || (p = poorP[0][0])    // No home, no proxies, overload
+   } else if (   // overloaded processors
+          (p = poorP[0][2][0])    // No home, two proxies
+       || (p = poorP[1][1][0])    // One home, one proxy
+       || (p = poorP[2][0][0])    // Two home, no proxies
+       || (p = poorP[0][1][0])    // No home, one proxy
+       || (p = poorP[1][0][0])    // One home, no proxies
+       || (p = poorP[0][0][0])    // No home, no proxies
+       || (p = poorP[0][1][1])    // No home, one proxy
+       || (p = poorP[1][0][1])    // One home, no proxies
+       || (p = poorP[0][0][1])    // No home, no proxies
        ) {
       iout << iWARN << "overload assign to " << p->Id << "\n" << endi;
       assign(c,p); numAssigned++;

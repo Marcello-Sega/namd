@@ -14,7 +14,7 @@ class Alg7 : public Rebalancer
 {
 private: 
 void strategy();
-void togrid(processorInfo* goodP[3][3], processorInfo* poorP[3][3],
+void togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
                         processorInfo *p, computeInfo *c);
 
 public:

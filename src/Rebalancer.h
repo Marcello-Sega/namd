@@ -20,7 +20,7 @@ private:
     computeInfo *c;
     pcpair() : p(0),c(0) {;}
   };
-  typedef pcpair pcgrid[3][3];
+  typedef pcpair pcgrid[3][3][2];
 
   void refine_togrid(pcgrid &grid, double thresholdLoad,
                         processorInfo *p, computeInfo *c);
@@ -31,7 +31,10 @@ protected:
   patchInfo *patches;
   processorInfo *processors;
   minHeap *pes;
-  maxHeap *computesHeap;
+  maxHeap *computePairHeap;
+  maxHeap *computeSelfHeap;
+  maxHeap *computeBgPairHeap;
+  maxHeap *computeBgSelfHeap;
   int P;
   int numPatches;
   int numComputes;
@@ -39,9 +42,8 @@ protected:
   int numPesAvailable;
   double averageLoad;
   int isAvailableOn(patchInfo *patch, processorInfo *p);
-  int numAvailable(computeInfo *c, processorInfo *p);
-  int numPatchesAvail(computeInfo *c, processorInfo *p);
-  int numProxiesAvail(computeInfo *c, processorInfo *p);
+  void numAvailable(computeInfo *c, processorInfo *p,
+           int *nPatches, int *nProxies, int *isBadForCommunication);
 
   void strategy();
   void makeHeaps();
