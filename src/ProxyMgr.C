@@ -346,7 +346,7 @@ ProxyMgr::removeProxy(PatchID pid) {
     PatchMap::Object()->unregisterPatch(pid,p->proxyPatch);
     delete p->proxyPatch;
     proxySet.del(ProxyElem(pid));
-    iout << iINFO << "Removing unused proxy " << pid << " on " << iPE << ".\n" << endi;
+    // iout << iINFO << "Removing unused proxy " << pid << " on " << iPE << ".\n" << endi;
   }
 }
   
