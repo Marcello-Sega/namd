@@ -56,6 +56,7 @@ protected:
   void printResults();
   void printLoads();
   double computeAverage();
+  void adjustBackgroundLoadAndComputeAverage();
   double computeMax();
   double overLoad;
 

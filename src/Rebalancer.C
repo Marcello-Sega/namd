@@ -283,6 +283,11 @@ void Rebalancer::assign(computeInfo *c, int processor)
 
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
+#ifdef LDB_VERBOSE
+   int nPatches, nProxies, badForComm;
+   numAvailable(c,p,&nPatches,&nProxies,&badForComm);
+#endif
+
    c->processor = p->Id;
    p->computeSet.insert((InfoRecord *) c);
    p->computeLoad += c->load;
@@ -307,6 +312,16 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    // << "\tproxyUsage[" << c->patch1 << "]: " << n1 << " --> " << n1+1 << "\n"
    // << "\tproxyUsage[" << c->patch2 << "]: " << n2 << " --> " << n2+1 << "\n"
    // << endl;
+
+#ifdef LDB_VERBOSE
+   iout << "Assign " << c->Id << " patches " << c->patch1 << " " << c->patch2
+        << " load " << c->load << " to " << p->Id << " new load "
+        << p->load << " background " << p->backgroundLoad
+        << " nPatches " << nPatches << " nProxies " << nProxies;
+   if ( nPatches + nProxies < 2 ) iout << " addProxy";
+   if ( badForComm ) iout << " badForComm";
+   iout << "\n" << endi;
+#endif
 }
 
 void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
@@ -686,11 +701,15 @@ void Rebalancer::printResults()
 
 void Rebalancer::printLoads()
 {
-#if 1  // Something evil in these print statements.  -JCP
 
    int i, total = 0, numBytes = 0;
    double max;
 
+#ifdef LDB_VERBOSE
+   iout << iINFO << "Proc  Total  Background  Compute\n" << endi;
+#endif
+
+// Something evil in these print statements.  -JCP
 #if 0
    iout << iINFO << "\n" << iINFO;
    for(i=0; i<3; i++) iout << "     TOTAL  BACKGRD COMPUTE | ";
@@ -709,6 +728,12 @@ void Rebalancer::printLoads()
    int maxpatchproxies = 0;
    for (i=0; i<P; i++)
    {
+#ifdef LDB_VERBOSE
+   iout << iINFO << i << " "
+           << processors[i].load << " "
+           << processors[i].backgroundLoad << " "
+           << processors[i].computeLoad << "\n" << endi;
+#endif
 #if 0
       if (i == 0 ) iout << iINFO;
       if (i != 0 && i % 3 == 0) iout << "\n" << endi << iINFO;
@@ -773,7 +798,6 @@ void Rebalancer::printLoads()
      << "  MSGS: TOTAL " << total
      << " MAXC " << maxproxies << " MAXP " << maxpatchproxies
      << "  " << strategyName << "\n" << endi;
-#endif
 
 #endif
 
@@ -827,6 +851,40 @@ double Rebalancer::computeAverage()
    else 
      averageLoad = total/numPesAvailable;
    return averageLoad;
+}
+
+void Rebalancer::adjustBackgroundLoadAndComputeAverage()
+{
+  // useful for AlgSeven when some loads start out as zero
+
+   if (numPesAvailable == 0) {
+     computeAverage();  // because otherwise someone will forget
+     return;
+   }
+  
+   int i;
+   double bgtotal = 0.;
+   for (i=0; i<P; i++) {
+      if (processors[i].available) {
+        bgtotal += processors[i].backgroundLoad;
+      }
+   }
+   double bgavg = bgtotal / numPesAvailable;
+
+   int nadjusted = 0;
+   for (i=0; i<P; i++) {
+      if (processors[i].available) {
+        double bgload = processors[i].backgroundLoad;
+        if ( bgload < bgavg ) {
+          processors[i].backgroundLoad = bgavg;
+          ++nadjusted;
+        }
+      }
+   }
+   iout << iINFO << "Adjusted background load on " << nadjusted
+        << " nodes.\n" << endi;
+
+   computeAverage();  // because otherwise someone will forget
 }
 
 double Rebalancer::computeMax()
