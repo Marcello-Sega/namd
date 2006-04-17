@@ -282,7 +282,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
 
-win32binaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
+windowsbinaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
