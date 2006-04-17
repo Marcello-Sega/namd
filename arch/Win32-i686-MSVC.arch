@@ -13,5 +13,5 @@ CXXTHREADOPTS = /G6
 COPTS = /O2 /G6
 LINKOPTS = /OPT:REF
 
-winall: win32binaries
+winall: windowsbinaries
 

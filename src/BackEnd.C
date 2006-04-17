@@ -13,8 +13,12 @@
 #ifndef NO_STRSTREAM_H
 #include <new.h>
 #else
+#ifdef WIN32
+#include <new.h>
+#else
 #include <new>
 using namespace std;
+#endif
 #endif
 
 #ifdef USE_COMM_LIB

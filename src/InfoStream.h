@@ -21,7 +21,10 @@
 using namespace std;
 #endif
 #else
-#include <strstrea.h>
+#include <iostream>
+#include <sstream>
+#include <strstream>
+using namespace std;
 #endif
 class Vector;
 class Tensor;

@@ -78,7 +78,7 @@ begin:
   echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
   echo "Creating Makearch"
-  if ( $ARCH =~ *Win32* ) then
+  if ( $ARCH =~ *Win* ) then
    cat .rootdir/Make.charm >! Makearch
    cat .rootdir/arch/$ARCH.arch >> Makearch
   else
@@ -105,6 +105,10 @@ begin:
    cat .rootdir/arch/Win32.base >> Makearch
    if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Makearch
    if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Makearch
+  else if ( $ARCH =~ *Win64* ) then
+   cat .rootdir/arch/Win64.base >> Makearch
+   if ( $use_tcl ) cat .rootdir/arch/Win64.tcl >> Makearch
+   if ( $use_fftw ) cat .rootdir/arch/Win64.fftw >> Makearch
   else
    echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).base' >> Makearch
    if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).tcl' >> Makearch
@@ -118,14 +122,14 @@ begin:
    endif
   endif
   echo "Linking Makefiles"
-  if ( $ARCH =~ *Win32* ) then
+  if ( $ARCH =~ *Win* ) then
    cp .rootdir/Makefile ./Makefile
    cp .rootdir/Make.depends ./Make.depends
   else
    ln -s .rootdir/Makefile ./Makefile
    ln -s .rootdir/Make.depends ./Make.depends
   endif
-  if ( $ARCH =~ *Win32* ) then
+  if ( $ARCH =~ *Win* ) then
    echo "Converting text files"
    mkdir lib; mkdir lib/abf
    foreach d ( . lib lib/abf )
