@@ -1342,13 +1342,14 @@ void Controller::printEnergies(int step, int minimize)
 #ifndef NO_STRSTREAM_H
       char *labelstr = labels.str();
       char *valuestr = values.str();
-#else
-      const char *labelstr = labels.str().c_str();
-      const char *valuestr = values.str().c_str();
-#endif
       node->getScript()->doCallback(labelstr,valuestr);
       delete [] labelstr;
       delete [] valuestr;
+#else
+      string labelstring = labels.str();
+      string valuestring = values.str();
+      node->getScript()->doCallback(labelstring.c_str(),valuestring.c_str());
+#endif
     }
 #undef CALLBACKDATA
 #endif
