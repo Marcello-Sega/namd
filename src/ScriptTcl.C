@@ -348,7 +348,7 @@ int ScriptTcl::Tcl_moveallby(ClientData clientData,
        (Tcl_GetDouble(interp, fstring[0],&x) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[1],&y) != TCL_OK) ||
        (Tcl_GetDouble(interp, fstring[2],&z) != TCL_OK) ) {
-    Tcl_SetResult(interp,"third argument not a vector",TCL_VOLATILE);
+    Tcl_SetResult(interp,"argument not a vector",TCL_VOLATILE);
     Tcl_Free((char*)fstring);
     return TCL_ERROR;
   }
