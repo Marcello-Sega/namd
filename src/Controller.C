@@ -29,6 +29,7 @@
 #include "imd.h"
 #include "IMDOutput.h"
 #include "BackEnd.h"
+#include <iomanip>
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 extern "C" void CApplicationDepositNode0Data(char *);
@@ -1312,6 +1313,7 @@ void Controller::printEnergies(int step, int minimize)
 #else
       ostringstream labels, values;
 #endif
+      values << setprecision(16);
       CALLBACKDATA("TS",step);
       CALLBACKDATA("BOND",bondEnergy);
       CALLBACKDATA("ANGLE",angleEnergy);
