@@ -1333,8 +1333,8 @@ void Controller::printEnergies(int step, int minimize)
       CALLBACKLIST("CELL_B",lattice.b());
       CALLBACKLIST("CELL_C",lattice.c());
       CALLBACKLIST("CELL_O",lattice.origin());
-      labels << "PERIODIC"; values << "{" << lattice.a_p() << " "
-		<< lattice.b_p() << " " << lattice.c_p() << "}";
+      labels << "PERIODIC "; values << "{" << lattice.a_p() << " "
+		<< lattice.b_p() << " " << lattice.c_p() << "} ";
       if ( simParameters->pairInteractionOn ) {
         CALLBACKLIST("VDW_FORCE",pairVDWForce);
         CALLBACKLIST("ELECT_FORCE",pairElectForce);
