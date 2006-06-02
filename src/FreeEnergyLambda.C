@@ -440,9 +440,9 @@ void ALambdaControl::PrintLambdaHeader(double dT) {
 iout << "FreeEnergy: ";
 #if !defined(_VERBOSE_PMF)
   iout << "nstep  time(ps)  ";
-  iout << "    task  lambdaKf  lambdaRef     delta-G  #steps  n*{value  target |}" << endl;
+  iout << "    task  lambdaKf  lambdaRef     delta-G  #steps  n*{value  target |}" << std::endl;
   iout << "FreeEnergy: -----  --------  ";
-  iout << "--------  --------  ---------  ----------  ------  -------------------" << endl;
+  iout << "--------  --------  ---------  ----------  ------  -------------------" << std::endl;
   iout << endi;
 #endif
 }
@@ -459,7 +459,7 @@ void ALambdaControl::PrintHeader(double dT) {
   Time = (double)m_CurrStep * dT;
 
 #if defined(_VERBOSE_PMF)
-  iout << "FreeEnergy: " << endl << endi;
+  iout << "FreeEnergy: " << std::endl << endi;
   iout << "FreeEnergy: ";
   iout << "Time Step = "  << m_CurrStep            <<    ",  ";
   iout << "Time = ";
@@ -469,11 +469,11 @@ void ALambdaControl::PrintHeader(double dT) {
   iout << "Lambda_Ref = " << m_LambdaRef           <<     "  ";
   GetTaskStr(Str);
   iout << "(" << Str << ")";
-  iout << endl << endi;
+  iout << std::endl << endi;
   iout << "FreeEnergy: ";
   iout << "------------------------------------------------";
   iout << "-------------------";
-  iout << endl << endi;
+  iout << std::endl << endi;
 #else
   sprintf(Str, "%5d", m_CurrStep);
   // write out time in ps

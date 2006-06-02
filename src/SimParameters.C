@@ -40,12 +40,8 @@
 #define PATHSEP '/'
 #define PATHSEPSTR "/"
 #endif
-#ifndef NO_STRSTREAM_H
-#include <fstream.h>
-#else
 #include <fstream>
 using namespace std;
-#endif
 
 #ifdef WIN32
 extern "C" {

@@ -13,35 +13,22 @@
 
 #include "InfoStream.h"
 
-#ifndef NO_STRSTREAM_H
-class datastream : public ostrstream
-#else
-class datastream : public ostringstream
-#endif
+class datastream : public std::ostringstream
 {
-#ifndef NO_STRSTREAM_H
-  private:
-  char dBuffer[16384];
-#endif
-
   public:
-#ifndef NO_STRSTREAM_H
-  datastream() : ostrstream(dBuffer,sizeof(dBuffer)) {;}
-#else
-  datastream() : ostringstream() {}
-#endif
+  datastream() : std::ostringstream() {}
   ~datastream() {;}
 
   void endd();
 
   /* define how to use the remaining << args */
   /** datastream<<ostream (hot to handle inherited modifiers) **/
-  datastream& operator<<(ostream& (*f)(ostream&)) { f(*this); return(*this); }
+  datastream& operator<<(std::ostream& (*f)(std::ostream&)) { f(*this); return(*this); }
   /** datastream<<datastream (how to handle class modifiers) **/
   datastream& operator<<(datastream& (*f)(datastream&)) { return f(*this); }
 
   #define LOCALMOD(type) datastream& operator<<(type x) \
-		{ (ostream&)(*this) << x; return(*this); }
+		{ (std::ostream&)(*this) << x; return(*this); }
   /** << characters **/
   LOCALMOD(char);
   LOCALMOD(unsigned char);
@@ -58,7 +45,7 @@ class datastream : public ostringstream
   LOCALMOD(double);
   /** << pointers **/
   LOCALMOD(void *);
-  LOCALMOD(streambuf *);
+  LOCALMOD(std::streambuf *);
   #undef LOCALMOD
 };
 

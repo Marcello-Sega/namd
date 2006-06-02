@@ -258,11 +258,7 @@ ConfigList::ConfigList(const char *filename_in)
    } else if (datastart[0] == '{') {
      // check if the data begins with a '{'
      // will remove initial '{' and final '}' to match Tcl.
-#ifndef NO_STRSTREAM_H
-     ostrstream alldata;
-#else
-     ostringstream alldata;
-#endif
+     std::ostringstream alldata;
      char newdata[1000];
      int found_end = 0;
      ++datastart;  // remove initial '{'
@@ -300,11 +296,8 @@ ConfigList::ConfigList(const char *filename_in)
        if ( ! fgets(newdata, 999, infile) ) break;
        linenumber ++;
      }
-#ifndef NO_STRSTREAM_H
-     add_element(namestart, nameend-namestart+1, alldata.str(), alldata.pcount());
-#else
-     add_element(namestart, nameend-namestart+1, alldata.str().c_str(), alldata.str().length());
-#endif
+     std::string alldatastr = alldata.str();
+     add_element(namestart, nameend-namestart+1, alldatastr.c_str(), alldata.str().length());
      // delete string?
      if (!found_end) {
        *(nameend+1) = 0;

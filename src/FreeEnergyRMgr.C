@@ -150,7 +150,7 @@ void ARestraintManager::PrintEnergyInfo() {
   for (int i=0; i<m_NumRestraints; i++) {
     PrintPreInfo(i);
     iout << "Energy = ";
-    iout << m_ppRestraints[i]->GetEnergy() << endl << endi;
+    iout << m_ppRestraints[i]->GetEnergy() << std::endl << endi;
   }
 #endif
 }
@@ -167,7 +167,7 @@ void ARestraintManager::PrintRestraintInfo() {
     m_ppRestraints[i]->PrintInfo();
   }
 #if !defined(_VERBOSE_PMF)
-  iout << endl << endi;
+  iout << std::endl << endi;
 #endif
 }
 
@@ -181,7 +181,7 @@ void ARestraintManager::Print_dU_dLambda_Info() {
     if (m_ppRestraints[i]->IsForcing()) {
       PrintPreInfo(i);
       iout << "dU/dLambda = ";
-      iout << m_ppRestraints[i]->Get_dU_dLambda() << endl << endi;
+      iout << m_ppRestraints[i]->Get_dU_dLambda() << std::endl << endi;
     }
   }
 #endif

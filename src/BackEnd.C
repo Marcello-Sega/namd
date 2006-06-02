@@ -10,16 +10,7 @@
 #include "Node.h"
 #include "memusage.h"
 
-#ifndef NO_STRSTREAM_H
-#include <new.h>
-#else
-#ifdef WIN32
-#include <new.h>
-#else
 #include <new>
-using namespace std;
-#endif
-#endif
 
 #ifdef USE_COMM_LIB
 #include "ComlibManager.h"
@@ -85,7 +76,7 @@ void all_init(int argc, char **argv)
 #if defined(WIN32) && !defined(__CYGWIN__)
   _set_new_handler(NAMD_new_handler);
 #else
-  set_new_handler(NAMD_new_handler);
+  std::set_new_handler(NAMD_new_handler);
 #endif
   ProcessorPrivateInit();
   register_exit_sched();

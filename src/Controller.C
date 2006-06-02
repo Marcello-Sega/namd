@@ -1308,11 +1308,7 @@ void Controller::printEnergies(int step, int minimize)
 #define CALLBACKLIST(LABEL,VALUE) \
 		labels << (LABEL) << " "; values << "{" << (VALUE) << "} ";
     if (node->getScript() && node->getScript()->doCallback()) {
-#ifndef NO_STRSTREAM_H
-      ostrstream labels, values;
-#else
-      ostringstream labels, values;
-#endif
+      std::ostringstream labels, values;
       values << std::setprecision(16);
       CALLBACKDATA("TS",step);
       CALLBACKDATA("BOND",bondEnergy);
@@ -1341,17 +1337,9 @@ void Controller::printEnergies(int step, int minimize)
       }
 
       labels << '\0';  values << '\0';  // insane but makes Linux work
-#ifndef NO_STRSTREAM_H
-      char *labelstr = labels.str();
-      char *valuestr = values.str();
-      node->getScript()->doCallback(labelstr,valuestr);
-      delete [] labelstr;
-      delete [] valuestr;
-#else
-      string labelstring = labels.str();
-      string valuestring = values.str();
+      std::string labelstring = labels.str();
+      std::string valuestring = values.str();
       node->getScript()->doCallback(labelstring.c_str(),valuestring.c_str());
-#endif
     }
 #undef CALLBACKDATA
 #endif
@@ -1472,7 +1460,7 @@ void Controller::printEnergies(int step, int minimize)
     }
 }
 
-void Controller::writeExtendedSystemLabels(ofstream &file) {
+void Controller::writeExtendedSystemLabels(std::ofstream &file) {
   Lattice &lattice = state->lattice;
   file << "#$LABELS step";
   if ( lattice.a_p() ) file << " a_x a_y a_z";
@@ -1485,7 +1473,7 @@ void Controller::writeExtendedSystemLabels(ofstream &file) {
   file << endl;
 }
 
-void Controller::writeExtendedSystemData(int step, ofstream &file) {
+void Controller::writeExtendedSystemData(int step, std::ofstream &file) {
   Lattice &lattice = state->lattice;
   file << step;
     if ( lattice.a_p() ) file << " " << lattice.a().x << " " << lattice.a().y << " " << lattice.a().z;
@@ -1571,7 +1559,7 @@ void Controller::outputFepEnergy(int step) {
  }
 }
 
-void Controller::writeFepEnergyData(int step, ofstream &file) {
+void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   BigReal eeng = electEnergy+electEnergySlow;
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
   BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
@@ -1629,7 +1617,7 @@ void Controller::outputExtendedSystem(int step)
       }
       strcat(fname, ".xsc");
       NAMD_backup_file(fname,".old");
-      ofstream xscFile(fname);
+      std::ofstream xscFile(fname);
       if (!xscFile) {
         char err_msg[257];
         sprintf(err_msg, "Error opening XSC restart file %s",fname);
@@ -1656,7 +1644,7 @@ void Controller::outputExtendedSystem(int step)
     strcpy(fname, simParams->outputFilename);
     strcat(fname, ".xsc");
     NAMD_backup_file(fname);
-    ofstream xscFile(fname);
+    std::ofstream xscFile(fname);
     if (!xscFile) {
       char err_msg[257];
       sprintf(err_msg, "Error opening XSC output file %s",fname);

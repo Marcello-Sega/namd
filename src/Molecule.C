@@ -82,14 +82,14 @@ ResidueLookupElem* ResidueLookupElem::append(
 	iout << iWARN << "Residue " << resid <<
 	  " out of order in segment " << segid <<
 	  ", lookup for additional residues in this segment disabled.\n" << endi;
-	rval = next = new(ResidueLookupElem);
+	rval = next = new ResidueLookupElem;
 	next->append(segid,resid,aid);
       } else {  // new resid
         for ( ; lastResid < resid; ++lastResid ) atomIndex.add(aid);
         atomIndex[lastResid - firstResid + 1] = aid + 1;
       }
     } else {  // new segid
-      rval = next = new(ResidueLookupElem);
+      rval = next = new ResidueLookupElem;
       next->append(segid,resid,aid);
     }
     return rval;

@@ -205,11 +205,11 @@ void ALambdaManager::Print_dU_dLambda_Summary(double Sum_dU_dLambdas) {
 #if defined(_VERBOSE_PMF)
   iout << "FreeEnergy: ";
   iout << "For all forcing restraints, dU/dLambda  = ";
-  iout << Sum_dU_dLambdas << endl << endi;
+  iout << Sum_dU_dLambdas << std::endl << endi;
   iout << "FreeEnergy: ";
   iout << "For all forcing restraints, Free Energy = ";
   iout << GetAccumulation();
-  iout << " for " << GetNum_dU_dLambda() << " steps" << endl << endi;
+  iout << " for " << GetNum_dU_dLambda() << " steps" << std::endl << endi;
 #else
   sprintf(Str, "%10.2e", GetAccumulation());
   iout << Str << "  ";
@@ -226,7 +226,7 @@ void ALambdaManager::Print_MCTI_Integration() {
   iout << "FreeEnergy: ";
   iout << "For MCTI, Free Energy Integral = ";
   iout << GetIntegration();
-  iout << " for " << GetNumAccumStepsSoFar() << " steps" << endl << endi;
+  iout << " for " << GetNumAccumStepsSoFar() << " steps" << std::endl << endi;
 }
 
 

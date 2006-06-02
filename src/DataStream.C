@@ -16,14 +16,10 @@
 
 /* output using CkPrintf() (end by inform) */
 void datastream::endd() {
-  *this << ends;
-#ifndef NO_STRSTREAM_H
-  CollectionMgr::Object()->sendDataStream(dBuffer);
-  (*this).seekp(0);   // clear buffer
-#else
-  CollectionMgr::Object()->sendDataStream(str().c_str());
+  *this << std::ends;
+  std::string datastr = str();
+  CollectionMgr::Object()->sendDataStream(datastr.c_str());
   (*this).seekp(0, ios_base::beg);
-#endif
 }
 
 datastream& operator<<(datastream& strm, const Vector &v1) {

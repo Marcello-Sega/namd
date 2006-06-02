@@ -9,12 +9,7 @@
 
 #include "charm++.h"
 #include "main.h"
-#ifndef NO_STRSTREAM_H
-#include "new.h"
-#else
 #include <new>
-using namespace std;
-#endif
 
 #include "NamdTypes.h"
 #include "BOCgroup.h"

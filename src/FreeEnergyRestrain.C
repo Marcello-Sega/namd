@@ -67,12 +67,12 @@ void ARestraint::EarlyExit(char* Str, int AtomID) {
 //-----------------------------------------------------------------
   char  NumStr[40];
 
-  iout << "FreeEnergy: " << endl << endi;
+  iout << "FreeEnergy: " << std::endl << endi;
   sprintf(NumStr, "%d", AtomID);
   strcat(Str, " for AtomID: ");
   strcat(Str, NumStr);
   iout << "FreeEnergy: " << Str;
-  iout << endl << endi;
+  iout << std::endl << endi;
   NAMD_die("FreeEnergy: Fatal Error with Fixed or Forcing Restraints");
 }
 
@@ -284,7 +284,7 @@ void APosRestraint::PrintInfo() {
   GetPosTarget().Out();
   iout << "  Distance = ";
   iout << Str;
-  iout << endl << endi;
+  iout << std::endl << endi;
 #else
   m_pCOMs[0].Out();
   iout << "  ";
@@ -361,7 +361,7 @@ void ADistRestraint::PrintInfo() {
   iout << Str1;
   iout << "  Target = ";
   iout << Str2;
-  iout << endl << endi;
+  iout << std::endl << endi;
 #else
   iout << Str1;
   iout << "  ";
@@ -451,7 +451,7 @@ void AnAngleRestraint::PrintInfo() {
   iout << "  Target = ";
   iout << Str2;
   iout << " degrees";
-  iout << endl << endi;
+  iout << std::endl << endi;
 #else
   iout << Str1;
   iout << "  ";
@@ -574,7 +574,7 @@ void ADiheRestraint::PrintInfo() {
     iout << Str3;
     iout << " degrees";
   }
-  iout << endl << endi;
+  iout << std::endl << endi;
 #else
   iout << Str1;
   iout << "  ";

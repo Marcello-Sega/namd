@@ -11,35 +11,13 @@
 #ifndef INFOSTREAM_H
 #define INFOSTREAM_H
 
-#if !defined(WIN32) || defined(__CYGWIN__)
-#ifndef NO_STRSTREAM_H
-#include <iostream.h>
-#include <strstream.h>
-#else
 #include <iostream>
 #include <sstream>
-using namespace std;
-#endif
-#else
-#include <iostream>
-#include <sstream>
-#include <strstream>
-using namespace std;
-#endif
 class Vector;
 class Tensor;
 
-#ifndef NO_STRSTREAM_H
-class infostream : public ostrstream
-#else
-class infostream : public ostringstream
-#endif
+class infostream : public std::ostringstream
 {
-#ifndef NO_STRSTREAM_H
-  private:
-  char iBuffer[16384];
-#endif
-
   public:
   infostream();
   ~infostream();
@@ -47,7 +25,7 @@ class infostream : public ostringstream
 
   /* define how to use the remaining << args */
   /** infostream<<ostream (hot to handle inherited modifiers) **/
-  infostream& operator<<(ostream& (*f)(ostream&));
+  infostream& operator<<(std::ostream& (*f)(std::ostream&));
   /** infostream<<infostream (how to handle class modifiers) **/
   infostream& operator<<(infostream& (*f)(infostream&));
 
@@ -68,14 +46,14 @@ class infostream : public ostringstream
   LOCALMOD(double);
   /** << pointers **/
   LOCALMOD(void *);
-  LOCALMOD(streambuf *);
+  LOCALMOD(std::streambuf *);
   #undef LOCALMOD
 };
 
-ostream& operator<<(ostream& strm, const Vector &v1);
+std::ostream& operator<<(std::ostream& strm, const Vector &v1);
 infostream& operator<<(infostream& strm, const Vector &v1);
 
-ostream& operator<<(ostream& strm, const Tensor &t1);
+std::ostream& operator<<(std::ostream& strm, const Tensor &t1);
 infostream& operator<<(infostream& strm, const Tensor &t1);
 
 /** modifiers **/
@@ -85,11 +63,11 @@ infostream& endi(infostream& s);
 /** iINFO, iWARN, iERROR, iDEBUG provide initial headings. **/
 /** iINFOF, iWARNF, iERRORF, iDEBUGF provide initial headings with file name
     and line numbers. **/
-ostream& iINFO (ostream& s);
-ostream& iWARN (ostream& s);
-ostream& iERROR(ostream& s);
-ostream& iDEBUG(ostream& s);
-ostream& iPE(ostream& s);  // outlined because of CkMyPe()
+std::ostream& iINFO (std::ostream& s);
+std::ostream& iWARN (std::ostream& s);
+std::ostream& iERROR(std::ostream& s);
+std::ostream& iDEBUG(std::ostream& s);
+std::ostream& iPE(std::ostream& s);  // outlined because of CkMyPe()
 
 #define iFILE __FILE__<<'('<<__LINE__<<"): "
 #define iINFOF  iINFO << iFILE

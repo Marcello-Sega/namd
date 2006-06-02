@@ -10,12 +10,7 @@
 #include "converse.h"
 #include "Node.h"
 #include "common.h"
-#ifndef NO_STRSTREAM_H
-#include <fstream.h>
-#else
 #include <fstream>
-using namespace std;
-#endif
 
 class ControllerBroadcasts;
 class NamdState;
@@ -126,15 +121,15 @@ protected:
     BigReal *pressureProfileAverage;  // cumulative average
     CollectionMaster *const collection;
     ControllerBroadcasts * broadcast;
-    ofstream xstFile;
+    std::ofstream xstFile;
     void outputExtendedSystem(int step);
-    void writeExtendedSystemLabels(ofstream &file);
-    void writeExtendedSystemData(int step, ofstream &file);
+    void writeExtendedSystemLabels(std::ofstream &file);
+    void writeExtendedSystemData(int step, std::ofstream &file);
 
 //fepb
-    ofstream fepFile;
+    std::ofstream fepFile;
     void outputFepEnergy(int step);
-    void writeFepEnergyData(int step, ofstream &file);
+    void writeFepEnergyData(int step, std::ofstream &file);
 //fepe
 
     // for checkpoint/revert

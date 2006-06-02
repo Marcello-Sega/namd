@@ -129,7 +129,7 @@ void AlgNbor::strategy()
          assign(goodCompute[0][0], goodP[0][0]);
          bestP = goodP[0][0];
     } else {
-         iout << iINFO << "AlgNbor: No receiver found" << "\n" << endl;
+         iout << iINFO << "AlgNbor: No receiver found" << "\n" << endi;
          break;
     }
     if (bestP->load > processors[mype].load) 

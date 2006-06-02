@@ -8,8 +8,8 @@
 #include "FreeEnergyAssert.h"
 
 void my_assert(const char* Condition, const char* FileName, int LineNumber) {
-  iout << endl << endi;
-  iout << "Assertion: " << "(" << Condition << ")," << " failed" << endl << endi;
-  iout << "   in: " << FileName << ", " << "line: " << LineNumber << endl << endi;
-  iout << endl << endi;
+  iout << std::endl << endi;
+  iout << "Assertion: " << "(" << Condition << ")," << " failed" << std::endl << endi;
+  iout << "   in: " << FileName << ", " << "line: " << LineNumber << std::endl << endi;
+  iout << std::endl << endi;
 }

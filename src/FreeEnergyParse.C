@@ -32,19 +32,19 @@ void ProblemParsing(const char* Message, const char* Str, Bool_t Terminate) {
 //----------------------------------------------------------------------------
 // print this message if there's a problem parsing
 //----------------------------------------------------------------------------
-  iout << "FreeEnergy: " << endl << endi;
+  iout << "FreeEnergy: " << std::endl << endi;
   iout << "FreeEnergy: ";
-  iout << "Problem parsing input parameters" << endl << endi;
+  iout << "Problem parsing input parameters" << std::endl << endi;
   iout << "FreeEnergy: ";
   if (Terminate) {
-    iout << "  Error:       " << Message << endl << endi;
+    iout << "  Error:       " << Message << std::endl << endi;
   }
   else {
-    iout << "  Warning:     " << Message << endl << endi;
+    iout << "  Warning:     " << Message << std::endl << endi;
   }
   iout << "FreeEnergy: ";
-  iout << "  Read Until:  " << Str << endl << endi;
-  iout << "FreeEnergy: " << endl << endi;
+  iout << "  Read Until:  " << Str << std::endl << endi;
+  iout << "FreeEnergy: " << std::endl << endi;
   if (Terminate) {
     NAMD_die("FreeEnergy: Fatal Parsing Error");
   }

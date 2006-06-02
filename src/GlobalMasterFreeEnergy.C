@@ -111,9 +111,9 @@ void GlobalMasterFreeEnergy::user_initialize() {
   // exit if there aren't enough steps to complete all pmf & mcti blocks
   int Total = m_LambdaManager.GetTotalNumSteps();
   if (Total > simParams->N) {
-    iout << "FreeEnergy: Not enough steps to complete pfm & mcti blocks" << endl;
-    iout << "FreeEnergy:   Num Steps Needed =    " << Total << endl;
-    iout << "FreeEnergy:   Num Steps Requested = " << simParams->N << endl << endi;
+    iout << "FreeEnergy: Not enough steps to complete pfm & mcti blocks" << std::endl;
+    iout << "FreeEnergy:   Num Steps Needed =    " << Total << std::endl;
+    iout << "FreeEnergy:   Num Steps Requested = " << simParams->N << std::endl << endi;
     NAMD_die("FreeEnergy: Fatal Run-Time Error");
   }
 }
