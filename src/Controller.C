@@ -1313,7 +1313,7 @@ void Controller::printEnergies(int step, int minimize)
 #else
       ostringstream labels, values;
 #endif
-      values << setprecision(16);
+      values << std::setprecision(16);
       CALLBACKDATA("TS",step);
       CALLBACKDATA("BOND",bondEnergy);
       CALLBACKDATA("ANGLE",angleEnergy);
