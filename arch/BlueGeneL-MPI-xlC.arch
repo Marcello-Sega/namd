@@ -3,7 +3,7 @@ CHARMARCH = mpi-bluegenel-xlc
 
 # blrts_xlC is usually in /opt/ibmcmp/vacpp/7.0/bin/
 
-CXX = blrts_xlC -qstaticinline -DNO_SOCKET -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_STRSTREAM_H -DNO_GETPWUID -I/bgl/BlueLight/ppcfloor/bglsys/include/
+CXX = blrts_xlC -qstaticinline -DNO_SOCKET -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_GETPWUID -I/bgl/BlueLight/ppcfloor/bglsys/include/
 
 CXXOPTS = -O3 -Q -qarch=440 -qtune=440 -qhot
 CXXNOALIASOPTS =  $(CXXOPTS) -qfloat=rsqrt:fltint -qalias=allptr:addrtaken 

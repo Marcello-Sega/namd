@@ -3,7 +3,7 @@ CHARMARCH = net-linux-iccstatic
 
 FLOATOPTS = -march=pentiumpro -mcpu=pentium4 -ip -fno-rtti
 
-CXX = icpc -DNO_STRSTREAM_H
+CXX = icpc
 CXXOPTS = -i-static -static-libcxa -O2 $(FLOATOPTS)
 CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
 
