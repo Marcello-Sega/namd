@@ -1470,7 +1470,7 @@ void Controller::writeExtendedSystemLabels(std::ofstream &file) {
   if ( simParams->langevinPistonOn ) {
     file << " s_x s_y s_z s_u s_v s_w";
   }
-  file << endl;
+  file << std::endl;
 }
 
 void Controller::writeExtendedSystemData(int step, std::ofstream &file) {
@@ -1490,7 +1490,7 @@ void Controller::writeExtendedSystemData(int step, std::ofstream &file) {
     file << " " << strainRate2.y;
     file << " " << strainRate2.z;
   }
-  file << endl;
+  file << std::endl;
 }
 
 void Controller::enqueueCollections(int timestep)
@@ -1524,7 +1524,7 @@ void Controller::outputFepEnergy(int step) {
   if (stepInRun == fepEquilSteps) {
     fepFile << "#" << fepEquilSteps << " STEPS OF EQUILIBRATION AT "
             << "LAMBDA " << simParams->lambda << " COMPLETED\n"
-            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << endl;
+            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
   }
   BigReal dE = electEnergy_f + electEnergySlow_f + ljEnergy_f
 		- (electEnergy + electEnergySlow + ljEnergy);
@@ -1542,11 +1542,11 @@ void Controller::outputFepEnergy(int step) {
       fepFile << "#            STEP                 Elec                            "
               << "vdW                    dE           dE_avg         Temp             dG\n"
               << "#                           l             l+dl      "
-              << "       l            l+dl         E(l+dl)-E(l)" << endl;
+              << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
     }
     if (stepInRun == 0) {
       fepFile << "#NEW FEP WINDOW: "
-              << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2 << endl;
+              << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2 << std::endl;
     }
     writeFepEnergyData(step, fepFile);
     fepFile.flush();
@@ -1554,7 +1554,7 @@ void Controller::outputFepEnergy(int step) {
   if (step == simParams->N) {
     fepSum = fepSum + dG;
     fepFile << "#Free energy change for lambda window [ " << lambda
-	    << " " << lambda2 << " ] is " << dG << " ; net change until now is " << fepSum << endl;
+	    << " " << lambda2 << " ] is " << dG << " ; net change until now is " << fepSum << std::endl;
   }
  }
 }
@@ -1575,7 +1575,7 @@ void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   fepFile << FORMAT(dE_avg);
   fepFile << FORMAT(temperature);
   fepFile << FORMAT(dG);
-  fepFile << endl;
+  fepFile << std::endl;
 }
 //fepe
 
@@ -1593,7 +1593,7 @@ void Controller::outputExtendedSystem(int step)
         NAMD_backup_file(simParams->xstFilename);
         xstFile.open(simParams->xstFilename);
         iout << "OPENING EXTENDED SYSTEM TRAJECTORY FILE\n" << endi;
-        xstFile << "# NAMD extended system trajectory file" << endl;
+        xstFile << "# NAMD extended system trajectory file" << std::endl;
         writeExtendedSystemLabels(xstFile);
       }
       writeExtendedSystemData(step,xstFile);
@@ -1623,7 +1623,7 @@ void Controller::outputExtendedSystem(int step)
         sprintf(err_msg, "Error opening XSC restart file %s",fname);
         NAMD_err(err_msg);
       } 
-      xscFile << "# NAMD extended system configuration restart file" << endl;
+      xscFile << "# NAMD extended system configuration restart file" << std::endl;
       writeExtendedSystemLabels(xscFile);
       writeExtendedSystemData(step,xscFile);
       if (!xscFile) {
@@ -1650,7 +1650,7 @@ void Controller::outputExtendedSystem(int step)
       sprintf(err_msg, "Error opening XSC output file %s",fname);
       NAMD_err(err_msg);
     } 
-    xscFile << "# NAMD extended system configuration output file" << endl;
+    xscFile << "# NAMD extended system configuration output file" << std::endl;
     writeExtendedSystemLabels(xscFile);
     writeExtendedSystemData(simParams->N,xscFile);
     if (!xscFile) {

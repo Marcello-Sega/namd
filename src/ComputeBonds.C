@@ -18,22 +18,22 @@
 void BondElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
       UniqueSet<BondElem> &bondList =
                   *( (UniqueSet<BondElem>*) voidlist );
 
-      DebugM(1, "::loadTuplesForAtom - current list size " << bondList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << bondList.size() << std::endl );
 
       /* get list of all bonds for the atom */
       int *bonds = molecule->get_bonds_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
 
       /* cycle through each bond */
       int bondNum = *bonds;
       while(bondNum != -1)
       {
         /* store bond in the list */
-        DebugM(1, "::loadTuplesForAtom - loading bond " << bondNum << endl );
+        DebugM(1, "::loadTuplesForAtom - loading bond " << bondNum << std::endl );
         bondList.add(BondElem(molecule->get_bond(bondNum)));
         bondNum = *(++bonds);
       }
@@ -61,13 +61,13 @@ void BondElem::computeForce(BigReal *reduction,
                             BigReal *pressureProfileData)
 {
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
-               << localIndex[1] << endl);
+               << localIndex[1] << std::endl);
 
   BigReal r;		// Distance between atoms
   BigReal diff;		// difference between theta and theta0
   BigReal energy;	// energy from the bond
 
-  DebugM(3, "::computeForce() -- starting with bond type " << bondType << endl);
+  DebugM(3, "::computeForce() -- starting with bond type " << bondType << std::endl);
 
   // get the bond information
   Real k = value->k * scale;
@@ -95,7 +95,7 @@ void BondElem::computeForce(BigReal *reduction,
   p[0]->f[localIndex[0]] += f12;
   p[1]->f[localIndex[1]] -= f12;
 
-  DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
+  DebugM(3, "::computeForce() -- ending with delta energy " << energy << std::endl);
   reduction[bondEnergyIndex] += energy;
   reduction[virialIndex_XX] += f12.x * r12.x;
   reduction[virialIndex_XY] += f12.x * r12.y;

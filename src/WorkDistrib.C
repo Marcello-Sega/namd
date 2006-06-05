@@ -995,7 +995,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 			numPartitions = node->simParameters->maxSelfPart;
     // self-interaction
     DebugM(4,"Mapping " << numPartitions << " ComputeNonbondedSelf objects for patch " << i << "\n");
-//    iout <<"Self numPartitions = " <<numPartitions <<" numAtoms " <<numAtoms <<endl;
+//    iout <<"Self numPartitions = " <<numPartitions <<" numAtoms " <<numAtoms <<std::endl;
     for(int partition=0; partition < numPartitions; partition++)
     {
       cid=computeMap->storeCompute(patchMap->node(i),1,

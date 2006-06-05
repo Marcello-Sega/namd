@@ -180,7 +180,7 @@ void AlgNbor::strategy()
   numAssigned = 0;
 
   //   for (int i=0; i<numPatches; i++)
-  //     { cout << "(" << patches[i].Id << "," << patches[i].processor ;}
+  //     { std::cout << "(" << patches[i].Id << "," << patches[i].processor ;}
   overLoad = 1.2;
   for (int ic=0; ic<numComputes; ic++) {
     c = (computeInfo *) computesHeap->deleteMax();

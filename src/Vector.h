@@ -223,28 +223,28 @@ main()
   Vector v2(-1, 55, 32.1);
   Vector v3(v1+2*v2);
   Vector v4;
-  cout << v1 << "  " << v2 << "  " << v3 << "  " << v4 << '\n';
-  cout << v1*v2 << "  "  << v3-v1-2*v2 <<"  "<< v2 * v3 <<"  "<< v3*v2 <<'\n';
+  std::cout << v1 << "  " << v2 << "  " << v3 << "  " << v4 << '\n';
+  std::cout << v1*v2 << "  "  << v3-v1-2*v2 <<"  "<< v2 * v3 <<"  "<< v3*v2 <<'\n';
   v4 = v3*5 - v2/4;
-  cout << v4 << "  " << v3*5.0 - v2/4.0 << '\n';
-  cout << v4[0] << "  "  << v4[1] << "  " << v4[2] << '\n';
-//  cout.flush();
-//  cout << v4[3];
-  cout << cross(v1, v2) << '\n';
-  cout << v1 << '\n';  
+  std::cout << v4 << "  " << v3*5.0 - v2/4.0 << '\n';
+  std::cout << v4[0] << "  "  << v4[1] << "  " << v4[2] << '\n';
+//  std::cout.flush();
+//  std::cout << v4[3];
+  std::cout << cross(v1, v2) << '\n';
+  std::cout << v1 << '\n';  
   v1 += v2;
-  cout << v1 << '\n';
+  std::cout << v1 << '\n';
   v1 -= v2;
-  cout << v1 << '\n';
+  std::cout << v1 << '\n';
   {
     Vector v1(1.0, 2.0, 3.0);  // some more examples, but I was too lazy to
     Vector v2 = v1.unit();     // fix the names
-    cout << v2 << '\n';
-    cout << v2.dot(v1) << '\n';
-    cout << v1.length() << '\n';
+    std::cout << v2 << '\n';
+    std::cout << v2.dot(v1) << '\n';
+    std::cout << v1.length() << '\n';
     v1 *= -1;
     v1 += v2*14;
-    cout << v1 << '\n';
+    std::cout << v1 << '\n';
   }
 }
 #endif

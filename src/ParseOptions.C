@@ -84,8 +84,8 @@ static BigReal scaling_factors[N_UNITS_UNDEFINED+1] = {
 // or return 0 of there is an error
 BigReal convert(Units to, Units from)
 {
-// cout << "Converting from " << string(from) << " to " << string(to) << endl;
-// cout << scaling_factors[from] << " <--> " << scaling_factors[to] << endl;
+// cout << "Converting from " << string(from) << " to " << string(to) << std::endl;
+// cout << scaling_factors[from] << " <--> " << scaling_factors[to] << std::endl;
    if (from == N_UNIT && to == N_UNIT) { return 1.0; }
    if ((from == N_NSEC || from == N_FSEC || from == N_SEC || from == N_MIN || 
         from == N_HOUR) &&
@@ -499,7 +499,7 @@ Bool ParseOptions::scan_float(DataElement *data, const char *s)
                  << data->name << "'" << "\n" << endi;
 	 return FALSE;
       }
-//      cout << "fval == " << fval << "  scale == " << scale << endl;
+//      cout << "fval == " << fval << "  scale == " << scale << std::endl;
       data->fdata = fval * scale;
       return TRUE;
    }

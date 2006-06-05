@@ -53,7 +53,7 @@ void CollectionMaster::enqueuePositions(int seq, Lattice &lattice)
 
 void CollectionMaster::disposePositions(CollectVectorInstance *c)
 {
-    DebugM(3,"Collected positions at " << c->seq << endl);
+    DebugM(3,"Collected positions at " << c->seq << std::endl);
     int seq = c->seq;
     int size = c->data.size();
     if ( ! size ) size = c->fdata.size();
@@ -84,7 +84,7 @@ void CollectionMaster::enqueueVelocities(int seq)
 
 void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 {
-    DebugM(3,"Collected velocities at " << c->seq << endl);
+    DebugM(3,"Collected velocities at " << c->seq << std::endl);
     int seq = c->seq;
     int size = c->data.size();
     Vector *data = c->data.begin();

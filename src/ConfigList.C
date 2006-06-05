@@ -23,7 +23,7 @@
    Once that is read in, all data associated with "name" can be retreived as
     StringList *strList = configFile.find("fullname");
     for (StringList *tmp=strList; tmp!=NULL; tmp = tmp -> next)
-        cout << tmp->data << '\n';
+        std::cout << tmp->data << '\n';
    Note:
      The returned StringList * is NOT new'ed.  Do NOT free it.
      Keywords are case INsensitive
@@ -359,14 +359,14 @@ main()
   
   if (!dat.okay())
     NAMD_die("Can't continue - cannot get info from file.");
-  cout << "Searching for: 'fullname'\n";
+  std::cout << "Searching for: 'fullname'\n";
   strings = dat.find("fullname");
   if (!strings) {
     NAMD_die("Couldn't find fullname.\n");
   }
   i=0;
   while (strings) {   // write all the data associated with 'fullname'
-    cout << i << " = " << strings->data << '\n';
+    std::cout << i << " = " << strings->data << '\n';
     strings = strings -> next;
     i++;
   }

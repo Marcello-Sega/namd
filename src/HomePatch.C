@@ -842,7 +842,7 @@ void HomePatch::mollyAverage()
   int numLambdas = 0;
   HGArrayInt fixed;  // is atom fixed?
 
-  //  iout<<iINFO << "mollyAverage: "<<endl<<endi;
+  //  iout<<iINFO << "mollyAverage: "<<std::endl<<endi;
   p_avg.resize(numAtoms);
   for ( i=0; i<numAtoms; ++i ) p_avg[i] = p[i];
 
@@ -880,7 +880,7 @@ void HomePatch::mollyAverage()
 	for ( i = 0; i < icnt; ++i ) {
 	  refab[i] = ref[ial[i]] - ref[ibl[i]];
 	}
-	//	iout<<iINFO<<"hgs="<<hgs<<" m="<<icnt<<endl<<endi;
+	//	iout<<iINFO<<"hgs="<<hgs<<" m="<<icnt<<std::endl<<endi;
 	iter=average(avg,ref,lambda,hgs,icnt,rmass,dsq,ial,ibl,refab,tol,maxiter);
 	if ( iter == maxiter ) {
 	  iout << iWARN << "Exceeded maximum number of iterations in mollyAverage().\n"<<endi;
@@ -1426,7 +1426,7 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
   HGMatrixVector auxrhs;
   HGMatrixVector glhs;
 
-  //  iout <<iINFO << "average: n="<<n<<" m="<<m<<endl<<endi;
+  //  iout <<iINFO << "average: n="<<n<<" m="<<m<<std::endl<<endi;
   tolx=tolf; 
   
   // initialize lambda, globalGrhs
@@ -1471,7 +1471,7 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
       avgab[i] = qtilde[ial[i]].position - qtilde[ibl[i]].position;
     }
 
-    //  iout<<iINFO << "Calling Jac" << endl<<endi;
+    //  iout<<iINFO << "Calling Jac" << std::endl<<endi;
     //  Jac(qtilde, q0, fjac,n,water);
     {
       //  Vector glhs[3*n+3];
@@ -1480,9 +1480,9 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
 
       G_q(avgab,glhs,n,m,ial,ibl);
 #ifdef DEBUG0
-      iout<<iINFO << "G_q:" << endl<<endi;
+      iout<<iINFO << "G_q:" << std::endl<<endi;
       for (i=0;i<m;i++) {
-	iout<<iINFO << glhs[i*n+0] << " " << glhs[i*n+1] << " " << glhs[i*n+2] << endl<<endi;
+	iout<<iINFO << glhs[i*n+0] << " " << glhs[i*n+1] << " " << glhs[i*n+2] << std::endl<<endi;
       }
 #endif
       //      G_q(refab,grhs2,m,ial,ibl);
@@ -1508,21 +1508,21 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
       for(i=0;i<9;i++) {
 	iout<<iINFO << glhs[i] << ","<<endi;
       }
-      iout<<iINFO << endl<<endi;
+      iout<<iINFO << std::endl<<endi;
       for(i=0;i<9;i++) {
 	iout<<iINFO << grhs2[i] << ","<<endi;
       }
-      iout<<iINFO << endl<<endi;
+      iout<<iINFO << std::endl<<endi;
 #endif
       //      delete[] grhs2;
     }
     // end of Jac calculation
 #ifdef DEBUG0
-    iout<<iINFO << "Jac" << endl<<endi;
+    iout<<iINFO << "Jac" << std::endl<<endi;
     for (i=0;i<m;i++) 
       for (j=0;j<m;j++)
 	iout<<iINFO << fjac[i][j] << " "<<endi;
-    iout<< endl<<endi;
+    iout<< std::endl<<endi;
 #endif
     // calculate constraints in gij for n constraints this being a water
     //  G(qtilde, gij, n, water);
@@ -1530,12 +1530,12 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
       gij[i]=avgab[i]*avgab[i]-length2[i];
     }
 #ifdef DEBUG0
-    iout<<iINFO << "G" << endl<<endi;
+    iout<<iINFO << "G" << std::endl<<endi;
     iout<<iINFO << "( "<<endi;
     for(i=0;i<m-1;i++) {
       iout<<iINFO << gij[i] << ", "<<endi;
     }
-    iout<<iINFO << gij[m-1] << ")" << endl<<endi;
+    iout<<iINFO << gij[m-1] << ")" << std::endl<<endi;
 #endif
     // fill the return vector
     for(i=0;i<m;i++) {
@@ -1547,13 +1547,13 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
     errf=0.0;
     for (i=0;i<m;i++) errf += fabs(fvec[i]);
 #ifdef DEBUG0
-    iout<<iINFO << "errf: " << errf << endl<<endi;
+    iout<<iINFO << "errf: " << errf << std::endl<<endi;
 #endif
     if (errf <= tolf) {
       break;
     }
     for (i=0;i<m;i++) p[i] = -fvec[i];
-    //    iout<<iINFO << "Doing dcmp in average " << endl<<endi;
+    //    iout<<iINFO << "Doing dcmp in average " << std::endl<<endi;
     ludcmp(fjac,m,indx,&d);
     lubksb(fjac,m,indx,p);
 
@@ -1566,17 +1566,17 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
 
 #ifdef DEBUG0
     iout<<iINFO << "lambda:" << lambda[0] 
-	 << " " << lambda[1] << " " << lambda[2] << endl<<endi;
-    iout<<iINFO << "errx: " << errx << endl<<endi;
+	 << " " << lambda[1] << " " << lambda[2] << std::endl<<endi;
+    iout<<iINFO << "errx: " << errx << std::endl<<endi;
 #endif
     if (errx <= tolx) break;
 #ifdef DEBUG0
-    iout<<iINFO << "Qtilde:" << endl<<endi;
-    iout<<iINFO << qtilde[0].position << " " << qtilde[1].position << " " << qtilde[2].position << endl<<endi; 
+    iout<<iINFO << "Qtilde:" << std::endl<<endi;
+    iout<<iINFO << qtilde[0].position << " " << qtilde[1].position << " " << qtilde[2].position << std::endl<<endi; 
 #endif
   }
 #ifdef DEBUG
-  iout<<iINFO << "LAMBDA:" << lambda[0] << " " << lambda[1] << " " << lambda[2] << endl<<endi;
+  iout<<iINFO << "LAMBDA:" << lambda[0] << " " << lambda[1] << " " << lambda[2] << std::endl<<endi;
 #endif
 
   return k; // 

@@ -87,7 +87,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    // }		          
    // iout << iINFO << "Count1 = " << count1
    //      << "Count2 = " << count2
-   //      << "\n" << endl;
+   //      << "\n" << std::endl;
    // 
    // for (i=0; i <P; i++) 
    // {
@@ -146,7 +146,7 @@ void Rebalancer::InitProxyUsage()
          // << " to processor " << processors[i].Id << "\n"
          // << "\tproxyUsage[" << c->patch1 << "]: " << n1 << " --> " << n1+1 << "\n";
          // << "\tproxyUsage[" << c->patch2 << "]: " << n2 << " --> " << n2+1 << "\n";
-         // << endl;
+         // << std::endl;
 
          nextCompute.id++;
          c = (computeInfo *) processors[i].computeSet.next((Iterator *)&nextCompute);
@@ -311,7 +311,7 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    // << " to processor " << p->Id << "\n"
    // << "\tproxyUsage[" << c->patch1 << "]: " << n1 << " --> " << n1+1 << "\n"
    // << "\tproxyUsage[" << c->patch2 << "]: " << n2 << " --> " << n2+1 << "\n"
-   // << endl;
+   // << std::endl;
 
 #ifdef LDB_VERBOSE
    iout << "Assign " << c->Id << " patches " << c->patch1 << " " << c->patch2
@@ -342,13 +342,13 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    // << "De-assigning compute " << c->Id << " from processor " << p->Id << "\n"
    // << "\tproxyUsage[" << c->patch1 << "]: " << n1 << " --> " << n1-1 << "\n"
    // << "\tproxyUsage[" << c->patch2 << "]: " << n2 << " --> " << n2-1 << "\n"
-   // << endl;
+   // << std::endl;
 
    if(p->proxyUsage[c->patch1] <= 0 && p->Id != patches[c->patch1].processor)
    {
       // iout << iINFO 
       // << "REMOVING PROXY " << c->patch1 << " FROM PROCESSOR " << p->Id 
-      // << endl << endl;
+      // << std::endl << endl;
 
       patchInfo* patch1 = (patchInfo *) &(patches[c->patch1]);
       p->proxies.remove(patch1);
@@ -359,7 +359,7 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    {
       // iout << iINFO
       // << "REMOVING PROXY " << c->patch1 << " FROM PROCESSOR " << p->Id 
-      // << endl << endl;
+      // << std::endl << endl;
 
       patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
       p->proxies.remove(patch2);
@@ -745,7 +745,7 @@ void Rebalancer::printLoads()
       // iout << iINFO << "# Messages received: "
       //	     << processors[i].proxies->numElements() - 
       //         processors[i].patchSet->numElements() 
-      //	     << endl << endi;
+      //	     << std::endl << endi;
       // iout << iINFO << "load on "<< i << " is :" << processors[i].load 
       //      << "[ " << processors[i].backgroundLoad << "," 
       //	     << processors[i].computeLoad << "]. ";

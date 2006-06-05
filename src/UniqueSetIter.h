@@ -96,7 +96,7 @@ template <class T> class UniqueSetIter {
     }
   
     void status(void) {
-      cout << "Index is " << index << " addr is " << eg << endl;
+      std::cout << "Index is " << index << " addr is " << eg << std::endl;
     }
   
     void gotoUsed(void) {

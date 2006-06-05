@@ -25,22 +25,22 @@
 void AngleElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
       UniqueSet<AngleElem> &angleList =
                   *( (UniqueSet<AngleElem>*) voidlist );
 
-      DebugM(1, "::loadTuplesForAtom - current list size " << angleList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << angleList.size() << std::endl );
 
       /* get list of all angles for the atom */
       int *angles = molecule->get_angles_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
 
       /* cycle through each angle */
       int angleNum = *angles;
       while(angleNum != -1)
       {
         /* store angle in the list */
-        DebugM(1, "::loadTuplesForAtom - loading angle " << angleNum << endl );
+        DebugM(1, "::loadTuplesForAtom - loading angle " << angleNum << std::endl );
         angleList.add(AngleElem(molecule->get_angle(angleNum)));
         angleNum = *(++angles);
       }
@@ -67,7 +67,7 @@ void AngleElem::getParameterPointers(Parameters *p, const AngleValue **v) {
 void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
-               << localIndex[1] << " " << localIndex[2] << endl);
+               << localIndex[1] << " " << localIndex[2] << std::endl);
 
   const Position & pos1 = p[0]->x[localIndex[0]].position;
   const Lattice & lattice = p[0]->p->lattice;
@@ -138,7 +138,7 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   p[1]->f[localIndex[1]] += force2;
   p[2]->f[localIndex[2]] += force3;
 
-  DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
+  DebugM(3, "::computeForce() -- ending with delta energy " << energy << std::endl);
   reduction[angleEnergyIndex] += energy;
   reduction[virialIndex_XX] += ( force1.x * r12.x + force3.x * r32.x );
   reduction[virialIndex_XY] += ( force1.x * r12.y + force3.x * r32.y );

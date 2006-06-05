@@ -18,22 +18,22 @@
 void ImproperElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
       UniqueSet<ImproperElem> &improperList =
                   *( (UniqueSet<ImproperElem>*) voidlist );
 
-      DebugM(1, "::loadTuplesForAtom - current list size " << improperList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << improperList.size() << std::endl );
 
       /* get list of all impropers for the atom */
       int *impropers = molecule->get_impropers_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
 
       /* cycle through each improper */
       int improperNum = *impropers;
       while(improperNum != -1)
       {
         /* store improper in the list */
-        DebugM(1, "::loadTuplesForAtom - loading improper " << improperNum << endl );
+        DebugM(1, "::loadTuplesForAtom - loading improper " << improperNum << std::endl );
         improperList.add(ImproperElem(molecule->get_improper(improperNum)));
         improperNum = *(++impropers);
       }
@@ -62,7 +62,7 @@ void ImproperElem::computeForce(BigReal *reduction,
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << " " << localIndex[2] << " " <<
-	       localIndex[3] << endl);
+	       localIndex[3] << std::endl);
 
   // Vector r12, r23, r34;	// vector between atoms
   Vector A,B,C;		// cross products
@@ -79,7 +79,7 @@ void ImproperElem::computeForce(BigReal *reduction,
   BigReal diff;		// for periodicity
   Force f1(0,0,0),f2(0,0,0),f3(0,0,0);	// force components
 
-  DebugM(3, "::computeForce() -- starting with improper type " << improperType << endl);
+  DebugM(3, "::computeForce() -- starting with improper type " << improperType << std::endl);
 
   // get the improper information
   int multiplicity = value->multiplicity;
@@ -225,7 +225,7 @@ void ImproperElem::computeForce(BigReal *reduction,
   p[2]->f[localIndex[2]] += f3 - f2;
   p[3]->f[localIndex[3]] += -f3;
 
-  DebugM(3, "::computeForce() -- ending with delta energy " << energy << endl);
+  DebugM(3, "::computeForce() -- ending with delta energy " << energy << std::endl);
   reduction[improperEnergyIndex] += energy;
   reduction[virialIndex_XX] += ( f1.x * r12.x + f2.x * r23.x + f3.x * r34.x );
   reduction[virialIndex_XY] += ( f1.x * r12.y + f2.x * r23.y + f3.x * r34.y );

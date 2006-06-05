@@ -216,13 +216,13 @@ int PatchMap::packSize(void)
 
 void PatchMap::pack (char *buffer)
 {
-  DebugM(4,"Packing PatchMap on node " << CkMyPe() << endl);
+  DebugM(4,"Packing PatchMap on node " << CkMyPe() << std::endl);
   int i,j;
 
   // fill in the data
   char *b = buffer;
   PACK(int,nPatches);
-  DebugM(3,"nPatches = " << nPatches << endl);
+  DebugM(3,"nPatches = " << nPatches << std::endl);
   PACK(int,aDim); PACK(int,bDim); PACK(int,cDim);
   PACK(int,aAway); PACK(int,bAway); PACK(int,cAway);
   PACK(int,aPeriodic); PACK(int,bPeriodic); PACK(int,cPeriodic);
@@ -239,7 +239,7 @@ void PatchMap::pack (char *buffer)
     for(j=0;j<patchData[i].numCidsAllocated;++j)
       PACK(ComputeID,patchData[i].cids[j]);
   }
-  DebugM(3,buffer + size - b << " == 0 ?" << endl);
+  DebugM(3,buffer + size - b << " == 0 ?" << std::endl);
 }
 
 #undef UNPACK
@@ -248,7 +248,7 @@ void PatchMap::pack (char *buffer)
 
 void PatchMap::unpack (char *ptr)
 {
-  DebugM(4,"Unpacking PatchMap on node " << CkMyPe() << endl);
+  DebugM(4,"Unpacking PatchMap on node " << CkMyPe() << std::endl);
   int i,j;
   char *b = (char*)ptr;
   {
@@ -257,7 +257,7 @@ void PatchMap::unpack (char *ptr)
     UNPACK(int,nPatches_tmp);
     nPatches = nPatches_tmp;
   }
-  DebugM(3,"nPatches = " << nPatches << endl);
+  DebugM(3,"nPatches = " << nPatches << std::endl);
   UNPACK(int,aDim); UNPACK(int,bDim); UNPACK(int,cDim);
   UNPACK(int,aAway); UNPACK(int,bAway); UNPACK(int,cAway);
   UNPACK(int,aPeriodic); UNPACK(int,bPeriodic); UNPACK(int,cPeriodic);

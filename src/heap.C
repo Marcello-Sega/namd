@@ -36,7 +36,7 @@ int minHeap::insert(InfoRecord *x)
   count++;
 
   if (count >= size) {
-    cout << "minHeap overflow. \n" ; 
+    std::cout << "minHeap overflow. \n" ; 
     return -1;}
 
   int parent = (current - 1)/2;
@@ -131,7 +131,7 @@ int maxHeap::insert(InfoRecord *x)
   count++;
 
   if (count >= size) {
-    cout << "maxHeap overflow. \n" ; 
+    std::cout << "maxHeap overflow. \n" ; 
     return -1;}
 
   int parent = (current - 1)/2;

@@ -259,18 +259,18 @@ template <class Elem> class UniqueSetRaw {
       int count = 0;
       for (int i=0; i < tableLength; i++) {
         Entry<Elem> *e = table[i];
-        cout << "Table entry [" << i << "]" << endl;
+        cout << "Table entry [" << i << "]" << std::endl;
         while (e) {
           if (e->isUsed())  { 
 	      count++;
 	      e->obj.status();
           } else {
-	      cout << "Entry is not used" << endl;
+	      cout << "Entry is not used" << std::endl;
           }
           e = e->next();
         }
       }
-      cout << "===== COUNT = " << count << endl;
+      cout << "===== COUNT = " << count << std::endl;
     }
 #endif
   

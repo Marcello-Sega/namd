@@ -90,11 +90,11 @@ InfoRecord * Set::iterator(Iterator *iter)
 
 InfoRecord * Set::next(Iterator *iter)
 {
-  //  cout << "set::next: " << iter->next << "\n";
+  //  std::cout << "set::next: " << iter->next << "\n";
   if (!iter->next)
     { return 0;
     }
-  //  cout << "set::next: iter->next->info=" << iter->next->info << "\n";
+  //  std::cout << "set::next: iter->next->info=" << iter->next->info << "\n";
   InfoRecord *temp = iter->next->info;
   iter->next = iter->next->next;
   return temp;

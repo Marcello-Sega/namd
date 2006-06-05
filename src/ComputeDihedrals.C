@@ -18,22 +18,22 @@
 void DihedralElem::loadTuplesForAtom
   (void *voidlist, AtomID atomID, Molecule *molecule)
 {
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
       UniqueSet<DihedralElem> &dihedralList =
                   *( (UniqueSet<DihedralElem>*) voidlist );
 
-      DebugM(1, "::loadTuplesForAtom - current list size " << dihedralList.size() << endl );
+      DebugM(1, "::loadTuplesForAtom - current list size " << dihedralList.size() << std::endl );
 
       /* get list of all dihedrals for the atom */
       int *dihedrals = molecule->get_dihedrals_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << endl );
+      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
 
       /* cycle through each dihedral */
       int dihedralNum = *dihedrals;
       while(dihedralNum != -1)
       {
         /* store dihedral in the list */
-        DebugM(1, "::loadTuplesForAtom - loading dihedral " << dihedralNum << endl );
+        DebugM(1, "::loadTuplesForAtom - loading dihedral " << dihedralNum << std::endl );
         dihedralList.add(DihedralElem(molecule->get_dihedral(dihedralNum)));
         dihedralNum = *(++dihedrals);
       }
@@ -61,7 +61,7 @@ void DihedralElem::computeForce(BigReal *reduction,
                                 BigReal *pressureProfileData)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
-               << localIndex[1] << " " << localIndex[2] << endl);
+               << localIndex[1] << " " << localIndex[2] << std::endl);
 
   //  Calculate the vectors between atoms
   const Position & pos0 = p[0]->x[localIndex[0]].position;
@@ -204,7 +204,7 @@ void DihedralElem::computeForce(BigReal *reduction,
   p[2]->f[localIndex[2]] += f3 - f2;
   p[3]->f[localIndex[3]] += -f3;
 
-  DebugM(3, "::computeForce() -- ending with delta energy " << K << endl);
+  DebugM(3, "::computeForce() -- ending with delta energy " << K << std::endl);
   reduction[dihedralEnergyIndex] += K;
   reduction[virialIndex_XX] += ( f1.x * r12.x + f2.x * r23.x + f3.x * r34.x );
   reduction[virialIndex_XY] += ( f1.x * r12.y + f2.x * r23.y + f3.x * r34.y );

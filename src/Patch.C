@@ -41,7 +41,7 @@ PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
    //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid << "\n");
    if (positionComputeList.add(cid) < 0)
    {
-     DebugM(7, "registerPositionPickup() failed for cid " << cid << endl);
+     DebugM(7, "registerPositionPickup() failed for cid " << cid << std::endl);
      return NULL;
    }
    return positionBox.checkOut(trans);
@@ -72,8 +72,8 @@ Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
 {
    if (forceComputeList.add(cid) < 0)
    {
-     DebugM(7, "registerForceDeposit() failed for cid " << cid << endl);
-     DebugM(7, "  size of forceCompueList " << forceComputeList.size() << endl);
+     DebugM(7, "registerForceDeposit() failed for cid " << cid << std::endl);
+     DebugM(7, "  size of forceCompueList " << forceComputeList.size() << std::endl);
      return NULL;
    }
    return forceBox.checkOut();
@@ -81,7 +81,7 @@ Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
 
 void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box)
 {
-   DebugM(4, "unregisterForceDeposit() computeID("<<cid<<")"<<endl);
+   DebugM(4, "unregisterForceDeposit() computeID("<<cid<<")"<<std::endl);
    forceComputeList.del(cid);
    forceBox.checkIn(*box);
    *box = 0;
@@ -113,7 +113,7 @@ void Patch::avgPositionBoxClosed(void)
 
 void Patch::positionsReady(int doneMigration)
 {
-   DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<endl );
+   DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<std::endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
    if ( doneMigration ) AtomMap::Object()->registerIDs(patchID,p.begin(),p.end());
