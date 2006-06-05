@@ -378,6 +378,7 @@ ECHO = echo
 MOVE = mv
 COPY = cp
 RM = rm -f
+LDD = ldd
 
 include Makearch
 
@@ -565,7 +566,7 @@ RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 
 DOC_FILES = README.txt announce.txt license.txt notes.txt
 
-RELEASE_FILES = namd2 psfgen charmrun flipdcd flipbinpdb
+RELEASE_FILES = flipdcd flipbinpdb psfgen charmrun namd2
 
 WIN32_RELEASE_FILES = namd2.exe psfgen.exe charmrun.exe charmd.exe charmd_faceless.exe $(TCLDLL)
 
@@ -587,8 +588,7 @@ release: all
 	gzip $(RELEASE_DIR_NAME).tar
 	echo $(CHARM)
 	ls -l $(CHARM)/lib
-	echo $(CHARM)
-	file $(RELEASE_FILES)
+	$(LDD) $(RELEASE_FILES)
 
 winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
