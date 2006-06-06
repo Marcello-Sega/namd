@@ -11,6 +11,9 @@
 #include "memusage.h"
 
 #include <new>
+#if defined(WIN32) && !defined(__CYGWIN__)
+#include <new.h>
+#endif
 
 #ifdef USE_COMM_LIB
 #include "ComlibManager.h"
