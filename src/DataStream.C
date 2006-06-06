@@ -19,7 +19,7 @@ void datastream::endd() {
   *this << std::ends;
   std::string datastr = str();
   CollectionMgr::Object()->sendDataStream(datastr.c_str());
-  (*this).seekp(0, ios_base::beg);
+  str("");
 }
 
 datastream& operator<<(datastream& strm, const Vector &v1) {

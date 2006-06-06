@@ -26,7 +26,7 @@ void infostream::endi() {
 #ifndef NAMD_NO_STDOUT_FLUSH
   fflush(stdout);  // since CkPrintf doesn't always flush
 #endif
-  (*this).seekp(0, ios_base::beg);
+  str("");
 }
 
 infostream& endi(infostream& s)  { s.endi(); return s; }
