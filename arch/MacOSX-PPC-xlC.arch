@@ -1,7 +1,7 @@
 NAMD_ARCH = MacOSX-PPC
 CHARMARCH = net-ppc-darwin-xlc
 
-CXX = xlc++_r  -qstaticinline -D_NO_MALLOC_H 
+CXX = xlc++_r  -D_NO_MALLOC_H 
 CXXOPTS = -O3 -qaggrcopy=nooverlap -qalias=addrtaken:typeptr:ansi
 CXXNOALIASOPTS = -O3 -qaggrcopy=nooverlap -qalias=addrtaken:allptrs:typeptr:ansi
 CC = cc
