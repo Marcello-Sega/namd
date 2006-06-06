@@ -588,7 +588,7 @@ release: all
 	gzip $(RELEASE_DIR_NAME).tar
 	echo $(CHARM)
 	ls -l $(CHARM)/lib
-	$(LDD) $(RELEASE_FILES)
+	for f in $(RELEASE_FILES); do echo $$f; $(LDD) $$f; done
 
 winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
