@@ -16,7 +16,7 @@
 class datastream : public std::ostringstream
 {
   public:
-  datastream() : std::ostringstream() {}
+  datastream() {}
   ~datastream() {;}
 
   void endd();
