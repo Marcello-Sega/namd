@@ -96,8 +96,10 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
     if ( ! dataStreamFile ) {
       char *fname = Node::Object()->simParameters->auxFilename;
-      iout << iINFO << "OPENING AUXILIARY DATA STREAM FILE "
-					<< fname << "\n" << endi;
+      // iout has large file linking issues on AIX
+      // iout << iINFO << "OPENING AUXILIARY DATA STREAM FILE "
+      // 				<< fname << "\n" << endi;
+      CkPrintf("Info: OPENING AUXILIARY DATA STREAM FILE %s\n", fname);
       NAMD_backup_file(fname);
       dataStreamFile = fopen(fname,"w");
       if ( ! dataStreamFile )
