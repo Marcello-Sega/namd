@@ -101,18 +101,6 @@ struct LocalID
 
 typedef ResizeArray<NodeID> NodeIDList;
 
-// HP compiler complains that true, false "Will be" future reserved words.
-//enum Boolean
-//{
-//  false=0,
-//  true=1
-//};
-#ifndef BOOLTYPE
-typedef int Boolean;
-#define false 0
-#define true 1
-#endif
-
 struct ExtForce {
   int replace;
   Force force;

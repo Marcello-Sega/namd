@@ -87,8 +87,8 @@ private:
 			 Vector *v, int totalAtoms);
   void remove_com_motion(Vector *vel, Molecule *structure, int n);
 
-  Boolean mapsArrived;
-  Boolean awaitingMaps;
+  bool mapsArrived;
+  bool awaitingMaps;
   CthThread awaitingMapsTh;
 
   int saveComputeMapReturnEP;

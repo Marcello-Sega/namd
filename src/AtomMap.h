@@ -37,7 +37,7 @@ private:
 
   LocalID *localIDTable;
   int tableSz;
-  Boolean cleared;
+  bool cleared;
 
 };
 

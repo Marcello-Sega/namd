@@ -147,7 +147,7 @@ public:
     ComputeType type;
     int partition;
     int numPartitions;
-    Boolean patchBased;
+    int patchBased;
     int numPids;
     int numPidsAllocated;
     PatchRec *pids;
