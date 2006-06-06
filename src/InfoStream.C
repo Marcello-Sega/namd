@@ -14,7 +14,7 @@
 #include "Tensor.h"
 #include <stdio.h>
 
-infostream::infostream() : std::ostringstream() {}
+infostream::infostream() {}
 
 infostream::~infostream() {;}
 
