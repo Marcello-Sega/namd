@@ -62,6 +62,7 @@
 #include "GlobalMasterIMD.h"
 #include "GlobalMasterTcl.h"
 #include "GlobalMasterSMD.h"
+#include "GlobalMasterTMD.h"
 #include "GlobalMasterEasy.h"
 #include "GlobalMasterMisc.h"
 #include "GlobalMasterFreeEnergy.h"
@@ -411,6 +412,8 @@ ComputeMgr::createComputes(ComputeMap *map)
 			  simParams->firstTimestep, simParams->SMDFile,
 			  node->molecule->numAtoms)
 		  );
+    if (simParams->TMDOn)
+      masterServerObject->addClient(new GlobalMasterTMD());
     if(simParams->miscForcesOn)
       masterServerObject->addClient(new GlobalMasterMisc());
     if ( simParams->freeEnergyOn )

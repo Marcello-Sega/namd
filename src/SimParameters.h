@@ -244,6 +244,14 @@ public:
         int SMDOutputFreq;              //  Output frequency for SMD constr.
         //****** END SMD constraints changes 
 
+        // TMD
+        Bool TMDOn;
+        BigReal TMDk;
+        char TMDFile[128];
+        int TMDOutputFreq;
+        int TMDFirstStep, TMDLastStep;
+        BigReal TMDInitialRMSD, TMDFinalRMSD;
+
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
 //   Begin FEP flags

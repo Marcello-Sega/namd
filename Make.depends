@@ -12,6 +12,10 @@ obj/dcdlib.o: \
 obj/erf.o: \
 	src/erf.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/erf.o $(COPTC) src/erf.C
+obj/fitrms.o: \
+	src/fitrms.C \
+	src/common.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/fitrms.o $(COPTC) src/fitrms.C
 obj/main.o: \
 	src/main.C \
 	src/InfoStream.h \
@@ -1189,6 +1193,7 @@ obj/ComputeMgr.o: \
 	src/imd.h \
 	src/GlobalMasterTcl.h \
 	src/GlobalMasterSMD.h \
+	src/GlobalMasterTMD.h \
 	src/GlobalMasterEasy.h \
 	src/GlobalMasterMisc.h \
 	src/GlobalMasterFreeEnergy.h \
@@ -2069,6 +2074,38 @@ obj/GlobalMasterSMD.o: \
 	src/Tensor.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterSMD.o $(COPTC) src/GlobalMasterSMD.C
+obj/GlobalMasterTMD.o: \
+	src/GlobalMasterTMD.C \
+	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/GlobalMasterTMD.h \
+	src/GlobalMaster.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/fitrms.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTMD.o $(COPTC) src/GlobalMasterTMD.C
 obj/GlobalMasterFreeEnergy.o: \
 	src/GlobalMasterFreeEnergy.C \
 	src/InfoStream.h \

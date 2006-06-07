@@ -49,6 +49,7 @@ OBJS = \
 	$(DSTDIR)/common.o \
 	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/erf.o \
+	$(DSTDIR)/fitrms.o \
 	$(DSTDIR)/main.o \
 	$(DSTDIR)/mainfunc.o \
 	$(DSTDIR)/memusage.o \
@@ -115,6 +116,7 @@ OBJS = \
 	$(DSTDIR)/GlobalMasterIMD.o \
 	$(DSTDIR)/GlobalMasterTcl.o \
 	$(DSTDIR)/GlobalMasterSMD.o \
+	$(DSTDIR)/GlobalMasterTMD.o \
 	$(DSTDIR)/GlobalMasterFreeEnergy.o \
 	$(DSTDIR)/GlobalMasterEasy.o \
 	$(DSTDIR)/GlobalMasterMisc.o \

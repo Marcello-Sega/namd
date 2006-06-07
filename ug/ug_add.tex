@@ -978,6 +978,81 @@ through the pivot point.}
 
 \end{itemize}
 
+\subsubsection{Targeted Molecular Dynamics (TMD)}
+
+In TMD, subset of atoms in the simulation is guided towards a 
+final 'target' structure by means of steering forces.  At each timestep, 
+the RMS distance between
+the current coordinates and the target structure is computed (after
+first aligning the target structure to the current coordinates).
+The force on each atom is given by the gradient of the potential
+\begin{equation}
+U_{TMD} = \frac{1}{2} \frac{k}{N} \left[ RMS(t) - RMS^*(t) \right]^2
+\label{eq:tmdpotential}
+\end{equation}
+where $RMS(t)$ is the instantaneous best-fit RMS distance of the current
+coordinates from the target coordinates, and $RMS^*(t)$ evolves linearly
+from the initial RMSD at the first TMD step to the final RMSD at the last 
+TMD step.  The spring constant $k$ is scaled down by the number $N$ of targeted
+atoms.  
+
+\begin{itemize}
+\item
+\NAMDCONFWDEF{TMD}{Is TMD active}{{\tt on} or {\tt off}}{{\tt off}}
+{Should TMD steering forces be applied to the system.  If TMD is enabled,
+{\tt TMDk}, {\tt TMDFile}, and {\tt TMDLastStep} must be defined in the 
+input file as well.}
+
+\item
+\NAMDCONF{TMDk}{Elastic constant for TMD forces}
+{Positive value in $kcal/mol/$\AA$^2$.}
+{The value of $k$ in Eq.~\ref{eq:tmdpotential}.  A value of 200 seems to work
+well in many cases.}
+
+\item
+\NAMDCONFWDEF{TMDOutputFreq}{How often to print TMD output}{Positive integer}
+{1} 
+{ TMD output consists of lines of the form {\tt TMD  ts  targetRMS  currentRMS}
+where {\tt ts} is the timestep, {\tt targetRMS} is the target RMSD at that 
+timestep, and {\tt currentRMS} is the actual RMSD.}
+
+\item
+\NAMDCONF{TMDFile}{File for TMD information}
+{Path to PDB file}
+{
+Target atoms are those whose occupancy (O) is nonzero in the TMD PDB file.
+The file must contain the same number of atoms as the structure file.  The
+coordinates for the target structure are also taken from the targeted
+atoms in this file.  Non-targeted atoms are ignored.
+}
+
+\item
+\NAMDCONFWDEF{TMDFirstStep}{first TMD timestep}{Positive integer}{0} {}
+\item
+\NAMDCONF{TMDLastStep}{last TMD timestep}{Positive integer}
+{ TMD forces are applied only between {\tt TMDFirstStep} and {\tt TMDLastStep}.
+The target RMSD evolves linearly in time from the initial to the final target 
+value.  }
+
+\item
+\NAMDCONFWDEF{TMDInitialRMSD}{target RMSD at first TMD step}
+{Non-negative value in \AA}{from coordinates}{
+In order to perform TMD calculations that involve restarting a previous
+NAMD run, be sure to specify {\tt TMDInitialRMSD} with the same value
+in each NAMD input file, and use the NAMD parameter {\tt firstTimestep}
+in the continuation runs so that the target RMSD continues from where the
+last run left off.
+}
+\item
+\NAMDCONFWDEF{TMDFinalRMSD}{target RMSD at last TMD step}
+{Non-negative value in \AA}{0}
+{If no {\tt TMDInitialRMSD} is given, the initial RMSD will be calculated at the
+first TMD step.  {\tt TMDFinalRMSD} may be less than or greater than
+{\tt TMDInitialRMSD}, depending on whether the system is to be steered 
+towards or away from a target structure, respectively.  Forces are applied
+only if $RMS(t)$ is betwween {\tt TMDInitialRMSD} and $RMS*(t)$; in other
+words, only if the current RMSD fails to keep pace with the target value.}
+\end{itemize}
 
 \subsubsection{Steered Molecular Dynamics (SMD)}
 

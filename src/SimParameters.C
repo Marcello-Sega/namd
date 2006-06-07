@@ -971,6 +971,23 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    
    //****** END SMD constraints changes 
 
+   // TMD parameters
+   opts.optionalB("main", "TMD", "Perform Targeted MD?", &TMDOn, FALSE);
+   opts.require("TMD", "TMDk", "Elastic constant for TMD", &TMDk);
+   opts.range("TMDk", NOT_NEGATIVE);
+   opts.require("TMD", "TMDFile", "File for TMD information", TMDFile);
+   opts.optional("TMD", "TMDOutputFreq", "Frequency of TMD output", 
+       &TMDOutputFreq, 1);
+   opts.range("TMDOutputFreq", POSITIVE);
+   opts.require("TMD", "TMDLastStep", "Last TMD timestep", &TMDLastStep);
+   opts.range("TMDLastStep", POSITIVE);
+   opts.optional("TMD", "TMDFirstStep", "First TMD step (default 0)", &TMDFirstStep, 0);
+   opts.optional("TMD", "TMDInitialRMSD", "Target RMSD at first TMD step (default 0 to use initial coordinates)", &TMDInitialRMSD);
+   opts.optional("TMD", "TMDFinalRMSD", "Target RMSD at last TMD step (default 0 )", &TMDFinalRMSD, 0);
+   opts.range("TMDInitialRMSD", NOT_NEGATIVE);
+
+   // End of TMD parameters
+
    ////  Global Forces / Tcl
    opts.optionalB("main", "tclForces", "Are Tcl global forces active?",
      &tclForcesOn, FALSE);
@@ -2817,6 +2834,22 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
    
    //****** END SMD constraints changes 
+
+   if (TMDOn) {
+     iout << iINFO << "TMD ACTIVE BETWEEN STEPS " << TMDFirstStep 
+          << " and " << TMDLastStep << "\n";
+     iout << iINFO << "TMD K  " << TMDk << "\n";
+     iout << iINFO << "TMD FILE  " << TMDFile << "\n";
+     iout << iINFO << "TMD OUTPUT FREQUENCY  " << TMDOutputFreq << "\n";
+     if (TMDInitialRMSD) {
+       iout << iINFO << "TMD TARGET RMSD AT FIRST STEP  " << TMDInitialRMSD << "\n";
+     } else {
+       iout << iINFO << "TMD TARGET RMSD AT FIRST STEP COMPUTED FROM INITIAL COORDINATES\n";
+     }
+     iout << iINFO << "TMD TARGET RMSD AT FINAL STEP  " << TMDFinalRMSD << "\n";
+     iout << endi;
+   }
+
    
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
@@ -2884,7 +2917,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    // Global forces configuration
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
-                      (IMDon) || SMDOn);
+                      (IMDon) || SMDOn || TMDOn);
 
    if (tclForcesOn)
    {
