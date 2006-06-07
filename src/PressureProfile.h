@@ -12,11 +12,11 @@
  * between them.
  */
 
-#define pp_clamp(n, nslabs) do { \
-  int a = n < 0 ? nslabs : 0; \
-  int b = n >= nslabs ? nslabs : 0; \
-  n += a-b;  \
-} while (0)
+inline void pp_clamp(int &n, int nslabs) {
+  int a = n < 0 ? nslabs : 0;
+  int b = n >= nslabs ? nslabs : 0;
+  n += a-b;
+}
 
 
 inline void pp_reduction(int nslabs, int n1, int n2, 
