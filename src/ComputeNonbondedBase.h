@@ -158,6 +158,7 @@ void ComputeNonbondedUtil :: NAME
 
   PPROF(
   BigReal *pressureProfileReduction = params->pressureProfileReduction;
+  const BigReal invThickness = 1.0 / pressureProfileThickness;
   )
 
   Pairlists &pairlists = *(params->pairlists);
@@ -361,7 +362,7 @@ void ComputeNonbondedUtil :: NAME
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
     const CompAtom &p_i = p_0[i];
-                    
+
     if ( p_i.hydrogenGroupSize ) {
       int64 opc = pairCount;
       if ( opc >= maxPairCount ) break;
@@ -382,6 +383,12 @@ void ComputeNonbondedUtil :: NAME
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
+
+    PPROF(
+        const int p_i_partition = p_i.partition;
+        int n1 = (int)floor((p_i_z-pressureProfileMin)*invThickness);
+        pp_clamp(n1, pressureProfileSlabs);
+        )
 
   SELF ( if ( p_i.hydrogenGroupSize ) j_hgroup = i + p_i.hydrogenGroupSize; )
 

@@ -162,8 +162,9 @@ public:
   static Bool pairInteractionOn;
   static Bool pairInteractionSelf;
 
-  static Bool pressureProfileNonbonded;
+  static Bool pressureProfileOn;
   static int pressureProfileSlabs;
+  static int pressureProfileAtomTypes;
   static BigReal pressureProfileThickness;
   static BigReal pressureProfileMin;
 
@@ -236,13 +237,22 @@ public:
   static void calc_self_energy_merge_fullelect_int(nonbonded *);
 
 //pressure profile calcualtion
+  static void calc_pair_pprof(nonbonded *);
   static void calc_pair_energy_pprof(nonbonded *);
+  static void calc_pair_fullelect_pprof(nonbonded *);
   static void calc_pair_energy_fullelect_pprof(nonbonded *);
+  static void calc_pair_merge_fullelect_pprof(nonbonded *);
   static void calc_pair_energy_merge_fullelect_pprof(nonbonded *);
+  static void calc_pair_slow_fullelect_pprof(nonbonded *);
+  static void calc_pair_energy_slow_fullelect_pprof(nonbonded *);
+  static void calc_self_pprof(nonbonded *);
   static void calc_self_energy_pprof(nonbonded *);
-  static void calc_self_energy_fullelect_pprof(nonbonded *);
-  static void calc_self_energy_merge_fullelect_pprof(nonbonded *);
-
+  static void calc_self_fullelect_pprof (nonbonded *);
+  static void calc_self_energy_fullelect_pprof (nonbonded *);
+  static void calc_self_merge_fullelect_pprof (nonbonded *);
+  static void calc_self_energy_merge_fullelect_pprof (nonbonded *);
+  static void calc_self_slow_fullelect_pprof (nonbonded *);
+  static void calc_self_energy_slow_fullelect_pprof (nonbonded *);
 };
 
 #endif

@@ -34,6 +34,7 @@ enum ComputeType
   computeDPMEType,
 #endif
   computePmeType,
+  computeEwaldType,
   computeFullDirectType,
   computeGlobalType,
   computeExtType,

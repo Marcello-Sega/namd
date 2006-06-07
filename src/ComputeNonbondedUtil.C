@@ -71,8 +71,9 @@ BigReal*	ComputeNonbondedUtil::lambda_table = 0;
 Bool            ComputeNonbondedUtil::pairInteractionOn;
 Bool            ComputeNonbondedUtil::pairInteractionSelf;
 
-Bool            ComputeNonbondedUtil::pressureProfileNonbonded;
+Bool            ComputeNonbondedUtil::pressureProfileOn;
 int             ComputeNonbondedUtil::pressureProfileSlabs;
+int             ComputeNonbondedUtil::pressureProfileAtomTypes;
 BigReal         ComputeNonbondedUtil::pressureProfileThickness;
 BigReal         ComputeNonbondedUtil::pressureProfileMin;
 
@@ -127,11 +128,32 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
 void ComputeNonbondedUtil::submitPressureProfileData(BigReal *data,
   SubmitReduction *reduction)
 {
-  if (reduction) {
-    for (int i=0; i<3*pressureProfileSlabs; i++) {
-      reduction->item(i) += data[i];
+  if (!reduction) return;
+  int numAtomTypes = pressureProfileAtomTypes;
+  // For ease of calculation we stored interactions between types
+  // i and j in (ni+j).  For efficiency now we coalesce the
+  // cross interactions so that just i<=j are stored.
+  const int arraysize = 3*pressureProfileSlabs;
+  size_t nelems = arraysize*(numAtomTypes*(numAtomTypes+1))/2;
+  BigReal *arr = new BigReal[nelems];
+  memset(arr, 0, nelems*sizeof(BigReal));
+
+  int i, j;
+  for (i=0; i<numAtomTypes; i++) {
+    for (j=0; j<numAtomTypes; j++) {
+      int ii=i;
+      int jj=j;
+      if (ii > jj) { int tmp=ii; ii=jj; jj=tmp; }
+      const int reductionOffset = (ii*numAtomTypes - (ii*(ii+1))/2 + jj)*arraysize;
+      for (int k=0; k<arraysize; k++) {
+        arr[reductionOffset+k] += data[k];
+      }
+      data += arraysize;
     }
-  } 
+  }
+  // copy into reduction
+  reduction->add(nelems, arr);
+  delete [] arr;
 }
   
 void ComputeNonbondedUtil::calc_error(nonbonded *) {
@@ -179,11 +201,7 @@ void ComputeNonbondedUtil::select(void)
 
   pairInteractionOn = simParams->pairInteractionOn;
   pairInteractionSelf = simParams->pairInteractionSelf;
-
-  pressureProfileNonbonded = simParams->pressureProfileOn && simParams->pressureProfileNonbonded;
-  if (pressureProfileNonbonded) {
-    pressureProfileSlabs = simParams->pressureProfileSlabs;
-  }
+  pressureProfileOn = simParams->pressureProfileOn;
 
   if ( fepOn ) {
     lambda = simParams->lambda;
@@ -260,13 +278,26 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_les;
-  } else if ( pressureProfileNonbonded ) {
+  } else if ( pressureProfileOn) {
+    pressureProfileSlabs = simParams->pressureProfileSlabs;
+    pressureProfileAtomTypes = simParams->pressureProfileAtomTypes;
+
+    ComputeNonbondedUtil::calcPair = calc_pair_pprof;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_pprof;
+    ComputeNonbondedUtil::calcSelf = calc_self_pprof;
     ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_pprof;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_pprof;
     ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_pprof;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_pprof;
     ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_pprof;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_pprof;
     ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_pprof;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_pprof;
     ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_pprof;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_pprof;
+    ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_pprof;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_pprof;
+    ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_pprof;
   } else if ( pairInteractionOn ) {
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_int;
     ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_int;

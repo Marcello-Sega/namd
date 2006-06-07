@@ -49,6 +49,7 @@ void AngleElem::loadTuplesForAtom
 
 // static initialization
 int AngleElem::pressureProfileSlabs = 0;
+int AngleElem::pressureProfileAtomTypes = 1;
 BigReal AngleElem::pressureProfileThickness = 0;
 BigReal AngleElem::pressureProfileMin = 0;
 
@@ -157,12 +158,19 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
     int n1 = (int)floor((z1-pressureProfileMin)/pressureProfileThickness);
     int n2 = (int)floor((z2-pressureProfileMin)/pressureProfileThickness);
     int n3 = (int)floor((z3-pressureProfileMin)/pressureProfileThickness);
-    pp_reduction(pressureProfileThickness, pressureProfileMin, 
-                pressureProfileSlabs, z1, z2, n1, n2, 
+    pp_clamp(n1, pressureProfileSlabs);
+    pp_clamp(n2, pressureProfileSlabs);
+    pp_clamp(n3, pressureProfileSlabs);
+    int p1 = p[0]->x[localIndex[0]].partition;
+    int p2 = p[1]->x[localIndex[1]].partition;
+    int p3 = p[2]->x[localIndex[2]].partition;
+    int pn = pressureProfileAtomTypes;
+    pp_reduction(pressureProfileSlabs, n1, n2, 
+                p1, p2, pn,
                 force1.x * r12.x, force1.y * r12.y, force1.z * r12.z,
                 pressureProfileData);
-    pp_reduction(pressureProfileThickness, pressureProfileMin,
-                pressureProfileSlabs, z3, z2, n3, n2, 
+    pp_reduction(pressureProfileSlabs, n3, n2, 
+                p3, p2, pn,
                 force3.x * r32.x, force3.y * r32.y, force3.z * r32.z,
                 pressureProfileData);
   }

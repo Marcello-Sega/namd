@@ -38,6 +38,7 @@
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
 #include "ComputePme.h"
+#include "ComputeEwald.h"
 #include "ComputeEField.h"
 #include "ComputeStir.h"
 #include "ComputeSphericalBC.h"
@@ -320,6 +321,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeEwaldType:
+	c = computeEwaldObject = new ComputeEwald(i,this); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
       case computeFullDirectType:
 	c = new ComputeFullDirect(i); // unknown delete
 	map->registerCompute(i,c);
@@ -491,6 +497,43 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
   }
   else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
   else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
+}
+
+/*
+ * Begin Ewald messages
+ */
+void ComputeMgr:: sendComputeEwaldData(ComputeEwaldMsg *msg)
+{
+  if (computeEwaldObject) {
+    int node = computeEwaldObject->getMasterNode();
+    CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+#if CHARM_VERSION > 050402
+    cm[node].recvComputeEwaldData(msg);
+#else
+    cm.recvComputeEwaldData(msg, node);
+#endif
+  } else if (!PatchMap::Object()->numHomePatches()) {
+    CkPrintf("skipping message on Pe(%d)\n", CkMyPe());
+    delete msg;
+  } else NAMD_die("ComputeMgr::computeEwaldObject is NULL!");
+}
+
+void ComputeMgr:: recvComputeEwaldData(ComputeEwaldMsg *msg)
+{
+  if (computeEwaldObject) 
+    computeEwaldObject->recvData(msg);
+  else NAMD_die("ComputeMgr::computeEwaldObject in recvData is NULL!");
+}
+
+void ComputeMgr:: sendComputeEwaldResults(ComputeEwaldMsg *msg) {
+  (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeEwaldResults(msg);
+}
+
+void ComputeMgr::recvComputeEwaldResults(ComputeEwaldMsg *msg) {
+  if (computeEwaldObject)
+    computeEwaldObject->recvResults(msg);
+  else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
+  else NAMD_die("ComputeMgr::computeEwaldObject in recvResults is NULL!");
 }
 
 void ComputeMgr:: sendComputeDPMEData(ComputeDPMEDataMsg *msg)

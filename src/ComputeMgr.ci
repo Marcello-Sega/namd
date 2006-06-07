@@ -14,6 +14,10 @@ module ComputeMgr {
 
   message [packed] ComputeConsForceMsg;
 
+  message ComputeEwaldMsg {
+    float eik[];
+  };
+
   group ComputeMgr
   {
     entry ComputeMgr(void);
@@ -34,6 +38,9 @@ module ComputeMgr {
     entry void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
 
     entry void recvComputeConsForceMsg(ComputeConsForceMsg *);
+
+    entry void recvComputeEwaldData(ComputeEwaldMsg *);
+    entry void recvComputeEwaldResults(ComputeEwaldMsg *);
   } ;
 }
 

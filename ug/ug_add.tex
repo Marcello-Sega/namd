@@ -1820,22 +1820,29 @@ for group 2.
 
 \subsection{Pressure Profile Calculations}
 \NAMD\ supports the calculation of lateral pressure profiles as a function of
-the z-coordinate in the system.  The algorithm is essentially that described
-by Lindahl and Edholm.  The simulation space is partitioned into slabs, and
-the virial due to the interaction between two particles is distributed across 
-the slabs containing the particles as well as the slabs that lie between the
-particles (taking periodic boundary conditions into account).  The diagonal
-components of the pressure tensor for each slab are recorded in the 
-\NAMD\ output file.  The units of pressure are the same as in the regular 
-\NAMD\ pressure output; i.e., bar.
+the z-coordinate in the system.  The algorithm is based on that of 
+Lindahl and Edholm (JCP 2000), with modifications to enable Ewald sums based on
+Sonne et al (JCP 122, 2005). 
 
-The total virial contains contributions from three components: kinetic energy,
-bonded interactions, and nonbonded interactions.  The kinetic and bonded 
-components are easily calculated every timestep, and thus may be computed 
-during a normal simulation run.  The nonbonded component, however, adds 
-significant overhead and has not been implemented for PME calculations.  
-The calculation of the nonbonded contribution should be performed offline,
-using the saved frames of the trajectory file and a long nonbonded cutoff.
+The simulation space is partitioned into slabs, and half the virial
+due to the interaction between two particles is assigned to each
+of the slabs containing the particles.  This amounts to employing
+the Harasima contour, rather than the Irving-Kirkwood contour, as
+was done in \NAMD\ 2.5.  The diagonal components of the pressure
+tensor for each slab, averaged over all timesteps since the previous
+output, are recorded in the \NAMD\ output file.  The
+units of pressure are the same as in the regular \NAMD\ pressure
+output; i.e., bar.
+
+The total virial contains contributions from up to four components: 
+kinetic energy, bonded interactions, nonbonded interactions, and an Ewald
+sum.  All but the Ewald sums are computed online during a normal simulation
+run (this is a change from \NAMD\ 2.5, when nonbonded contributions to the
+Ewald sum were always computed offline).  If the simulations are performed
+using PME, the Ewald contribution should be estimated using a separate,
+offline calculation based on the saved trajectory files.  The nonbonded
+contribution using a cutoff different from the one used in the simulation
+may also be computed offline in the same fashion as for Ewald, if desired.
 
 Pressure profile calculations may be performed in either constant volume 
 or constant pressure conditions.  If constant pressure is enabled, the
@@ -1843,25 +1850,35 @@ slabs thickness will be rescaled along with the unit cell; the dcdUnitCell
 option will also be switched on so that unit cell information is stored in
 the trajectory file.
 
-Periodic boundary conditions must also be enabled.
+\NAMD\ 2.6 now reports the lateral pressure partitioned by interaction type.
+Three groups are reported: kinetic + rigid bond restraints (referred to as 
+``internal", bonded, and nonbonded.  If Ewald pressure profile calculations
+are active, the Ewald contribution is reported in the nonbonded section, and
+no other contributions are reported.
 
+\NAMD\ 2.6 also permits the pressure profile to be partitioned by atom type.
+Up to 15 atom groups may be assigned, and individual contribution of each
+group (for the ``internal" pressures) and the pairwise contributions of
+interactions within and between groups (for the nonbonded and bonded pressures)
+are reported in the output file.
 
 \item
 \NAMDCONFWDEF{pressureProfile}{compute pressure profile}{{\tt on} or {\tt off}}{{\tt off}}
 {
-When active, NAMD will compute kinetic and bonded contributions to the 
+When active, NAMD will compute kinetic, bonded and nonbonded (but not 
+reciprocal space) contributions to the 
 pressure profile.  Results will be recorded in the \NAMD\ output file
 in lines with the format
 {\tt PRESSUREPROFILE: ts Axx Ayy Azz Bxx Byy Bzz ... }, where {\tt ts} is the
 timestep, followed by the three diagonal components of the pressure tensor 
 in the first
 slab (the slab with lowest {\it z}), then the next lowest slab, and so forth.
-NAMD will also output the pressure profile averaged over all the steps since
-the last output.  The format of this line is 
-{\tt PRESSUREPROFILEAVG: ts Axx Ayy Azz ... }; i.e., exactly as for the
-instantaneous pressure.  It is recommended to use the averaged pressure profile
-instead of the instantaneous value as this will give better statistics and
-may prevent artifacts when using multiple timestepping.
+The output will reflect the pressure profile averaged over all the steps since
+the last output.  
+
+\NAMD\ also reports kinetic, bonded and nonbonded contributions separately,
+using the same format as the total pressure, but on lines beginning with
+{\tt PPROFILEINTERNAL}, {\tt PPROFILEBONDED}, and {\tt PPROFILENONBONDED}.
 }
 \item
 \NAMDCONFWDEF{pressureProfileSlabs}{Number of slabs in the spatial partition}{Positive integer}{10}{
@@ -1876,44 +1893,95 @@ Specifies the number of timesteps between output of pressure profile data.
 }
 
 \item
-\NAMDCONFWDEF{pressureProfileNonbonded}{Compute nonbonded pressure profile
-contribution}{{\tt on} or {\tt off}}{{\tt off}}{
-When enabled, only the nonbonded contribution to the pressure profile will be
+\NAMDCONFWDEF{pressureProfileEwald}{Enable pressure profile Ewald sums}{{\tt on} or {\tt off}}{{\tt off}}{
+When enabled, only the Ewald contribution to the pressure profile will be
 computed.  For trajectory analysis the 
 recommended way to use this option is to use the \NAMD\ Tcl scripting 
 interface as described in Sec.~\ref{section:tclscripting} to run for
 0 steps, so that NAMD prints the pressure profile without performing any 
 dynamics.
+
+The Ewald sum method is as described in Sonne et al. (JCP 122, 2005).  The
+number of $k$ vectors to use along each periodic cell dimension is specified
+by the {\tt pressureProfileEwald}$n$ parameters described below.
 }
+\item
+\NAMDCONFWDEF{pressureProfileEwaldX}{Ewald grid size along X}
+{Positive integer}{10}{}
+\item
+\NAMDCONFWDEF{pressureProfileEwaldY}{Ewald grid size along Y}
+{Positive integer}{10}{}
+\item
+\NAMDCONFWDEF{pressureProfileEwaldZ}{Ewald grid size along Z}
+{Positive integer}{10}{}
+
+\item
+\NAMDCONFWDEF{pressureProfileAtomTypes}{Number of atom type partitions}{Positive integer}{1}{
+If {\tt pressureProfileAtomTypes} is greater than 1, \NAMD\ will calculate
+the separate contributions of each type of atom to the internal, bonded, 
+nonbonded, and total pressure.  In the case of the internal contribution,
+there will be $n$ pressure profile data sets reported on each 
+{\tt PPROFILEINTERNAL} line, where $n$ is the number of atom types. All the 
+partial pressures for atom type 1 will be followed by those for atom type 2,
+and so forth.  The other three pressure profile reports will contain 
+$n(n+1)/2$ data sets.  For example, if there are $n=3$ atom types, the
+six data sets arising from the three inter-partition and the three 
+intra-partition interactions will be reported in the following order:
+1--1, 1--2, 1--3, 2--2, 2--3, 3--3.  The total pressure profile, reported
+on the {\tt PRESSUREPROFILE} line, will contain the internal contributions 
+in the data sets corresponding to 1--1, 2--2, etc.  
+}
+
+\item
+\NAMDCONFWDEF{pressureProfileAtomTypesFile}{Atom type partition assignments}
+{PDB file}{coordinate file}{
+If {\tt pressureProfileAtomTypes} is greater than 1, NAMD will assign
+atoms to types based on the corresponding value in {\tt pressureProfileAtomTypesCol}.  The type for each atom must be strictly less than 
+{\tt pressureProfileAtomTypes}!}
+
+\item
+\NAMDCONFWDEF{pressureProfileAtomTypesCol}{{\tt pressureProfileAtomTypesFile}
+PDB column}{PDB file}{B}{}
+
 \end{itemize}
 
 Here is an example snippet from a \NAMD\ input that can be used to compute
-the nonbonded component of the pressure profile.  It assumes that the 
-coordinates were saved in three dcd files ({\tt pp01.dcd}, {\tt pp02.dcd},
-and {\tt pp03.dcd}) every 500 timesteps.  The {\tt pressureProfileSlabs}
-must be the same as was used for the calculation of the bonded part of
-the pressure.  Note the use of no switching function; this way the calculated
-electrostatic energy will be closest to what would be calculated by PME.
+the Ewald component of the pressure profile.  It assumes that the 
+coordinates were saved in the dcd file {\tt pp03.dcd}) every 500 timesteps.  
 \begin{verbatim}
-switching	     off
-cutoff		     20.0
-pairlistdist   20.5
 
-pressureProfile	on
-pressureProfileSlabs 60 
-pressureProfileFreq 100 
-pressureProfileNonbonded on
+Pme             on
+PmeGridSizeX    64
+PmeGridSizeY    64
+PmeGridSizeZ    64
 
-# Assume that coordinates were written to the dcd files every 500 timesteps.
-set ts 500
-foreach dcd { pp01.dcd pp02.dcd pp03.dcd } {
-  coorfile open dcd $dcd
-  while { [coorfile read] != -1 } {
-    firstTimestep $ts 
-    run 0 
-    incr ts 500
-  }
-  coorfile close
+exclude         scaled1-4
+1-4scaling      1.0  
+
+switching on
+switchdist      9
+cutoff          10
+pairlistdist    11
+
+pressureProfile        on
+pressureProfileSlabs   30
+pressureProfileFreq    100
+pressureProfileAtomTypes 6
+pressureProfileAtomTypesFile atomtypes.pdb
+pressureProfileEwald  on
+pressureProfileEwaldX  16
+pressureProfileEwaldY  16
+pressureProfileEwaldZ  16
+
+set ts 0
+firstTimestep $ts
+
+coorfile open dcd pp03.dcd
+while { [coorfile read] != -1 } {
+  incr ts 500
+  firstTimestep $ts
+  run 0
 }
+coorfile close
 \end{verbatim}
 

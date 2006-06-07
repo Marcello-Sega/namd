@@ -42,6 +42,7 @@ void BondElem::loadTuplesForAtom
 
 // static initialization
 int BondElem::pressureProfileSlabs = 0;
+int BondElem::pressureProfileAtomTypes = 1;
 BigReal BondElem::pressureProfileThickness = 0;
 BigReal BondElem::pressureProfileMin = 0;
 
@@ -112,9 +113,15 @@ void BondElem::computeForce(BigReal *reduction,
     BigReal z2 = p[1]->x[localIndex[1]].position.z;
     int n1 = (int)floor((z1-pressureProfileMin)/pressureProfileThickness);
     int n2 = (int)floor((z2-pressureProfileMin)/pressureProfileThickness);
-    pp_reduction(pressureProfileThickness, pressureProfileMin, 
-                pressureProfileSlabs,
-                z1, z2, n1, n2, f12.x * r12.x, f12.y * r12.y, f12.z * r12.z,
+    pp_clamp(n1, pressureProfileSlabs);
+    pp_clamp(n2, pressureProfileSlabs);
+    int p1 = p[0]->x[localIndex[0]].partition;
+    int p2 = p[1]->x[localIndex[1]].partition;
+    int pn = pressureProfileAtomTypes;
+    pp_reduction(pressureProfileSlabs,
+                n1, n2, 
+                p1, p2, pn, 
+                f12.x * r12.x, f12.y * r12.y, f12.z * r12.z,
                 pressureProfileData);
   } 
 }

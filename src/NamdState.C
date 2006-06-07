@@ -283,6 +283,10 @@ int NamdState::configListInit(ConfigList *cfgList) {
            molecule->build_fep_flags(configList->find("pairInteractionFile"),
                 configList->find("pairInteractionCol"), pdb, NULL);
         }      
+        if (simParameters->pressureProfileAtomTypes > 1) {
+          molecule->build_fep_flags(configList->find("pressureProfileAtomTypesFile"),
+                configList->find("pressureProfileAtomTypesCol"), pdb, NULL);
+        }
 
 	iout << iINFO << "****************************\n";
 	iout << iINFO << "STRUCTURE SUMMARY:\n";

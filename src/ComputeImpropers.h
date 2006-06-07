@@ -30,6 +30,7 @@ public:
 
     // pressure profile parameters
     static int pressureProfileSlabs;
+    static int pressureProfileAtomTypes;
     static BigReal pressureProfileThickness;
     static BigReal pressureProfileMin;
 

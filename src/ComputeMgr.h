@@ -33,6 +33,9 @@ class ComputeDPMEDataMsg;
 class ComputeDPMEResultsMsg;
 class ComputeConsForceMsg;
 
+class ComputeEwald;
+class ComputeEwaldMsg;
+
 class ComputeMgr : public BOCclass
 {
 public:
@@ -62,6 +65,11 @@ public:
   void sendComputeDPMEResults(ComputeDPMEResultsMsg *, int);
   void recvComputeDPMEResults(ComputeDPMEResultsMsg *);
 
+  void sendComputeEwaldData(ComputeEwaldMsg *);
+  void recvComputeEwaldData(ComputeEwaldMsg *);
+  void sendComputeEwaldResults(ComputeEwaldMsg *);
+  void recvComputeEwaldResults(ComputeEwaldMsg *);
+
   void recvComputeConsForceMsg(ComputeConsForceMsg *);
 
   // Made public in order to access the ComputeGlobal on the node
@@ -74,6 +82,8 @@ private:
 
   GlobalMasterServer *masterServerObject; /* master part of global computes */
   ComputeDPME *computeDPMEObject;
+
+  ComputeEwald *computeEwaldObject;
 
   int updateComputesCount;
   int updateComputesReturnEP;

@@ -39,7 +39,6 @@
 //fepe
 
         SIMPARAM(Bool,pressureProfileOn,0);         // Compute lateral pressure profile?
-        SIMPARAM(Bool,pressureProfileNonbonded,0);  // Compute only nonbonded contribution?
         SIMPARAM(int,pressureProfileSlabs,0);       // Number of slabs
         SIMPARAM(int,pressureProfileFreq,0);        // How often to store profile data
 

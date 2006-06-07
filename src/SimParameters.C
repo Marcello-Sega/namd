@@ -855,13 +855,31 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    //// Pressure Profile calculations
    opts.optionalB("main", "pressureprofile", "Compute pressure profile?",
      &pressureProfileOn, FALSE);
-   opts.optionalB("pressureprofile", "pressureprofilenonbonded",
-     "Compute only nonbonded pressure profile contribution?",
-     &pressureProfileNonbonded, FALSE);
    opts.require("pressureprofile", "pressureprofileslabs", 
      "Number of pressure profile slabs", &pressureProfileSlabs, 10);
    opts.optional("pressureprofile", "pressureprofilefreq",
      "How often to store profile data", &pressureProfileFreq, 1);
+   opts.optional("pressureprofile", "pressureProfileAtomTypes", 
+     "Number of pressure profile atom types", &pressureProfileAtomTypes, 1);
+   opts.range("pressureProfileAtomTypes", POSITIVE);
+   opts.optional("pressureProfile", "pressureProfileAtomTypesFile", 
+	"PDB files with pressure profile atom types" "default is the input PDB file", 
+	PARSE_STRING);
+   opts.optional("pressureProfile", "pressureProfileAtomTypesCol", 
+	"Column in the pressureProfileAtomTypesFile with the atom types ",
+	PARSE_STRING);
+   opts.optionalB("pressureProfile", "pressureProfileEwald", 
+       "Compute Ewald contribution to pressure profile",
+       &pressureProfileEwaldOn, FALSE);
+   opts.optional("pressureProfile", "pressureProfileEwaldX",
+       "Ewald grid size X", &pressureProfileEwaldX, 10);
+   opts.range("pressureProfileEwaldX", POSITIVE);
+   opts.optional("pressureProfile", "pressureProfileEwaldY",
+       "Ewald grid size Y", &pressureProfileEwaldY, 10);
+   opts.range("pressureProfileEwaldY", POSITIVE);
+   opts.optional("pressureProfile", "pressureProfileEwaldZ",
+       "Ewald grid size Z", &pressureProfileEwaldZ, 10);
+   opts.range("pressureProfileEwaldZ", POSITIVE);
 }
 
 void SimParameters::config_parser_constraints(ParseOptions &opts) {
@@ -2366,16 +2384,18 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        NAMD_die("Hydrogen bond cutoff distance must be <= pairlist distance");
    }
 
-   // If we're doing pair interaction or nonbonded pressure profile, set 
+   // If we're doing pair interaction, set 
    // outputEnergies to 1 to make NAMD not die (the other nonbonded code paths 
    // aren't defined when these options are enabled), and set nonbondedFreq to 
    // 1 to avoid getting erroneous output.  Warn the user of what we're doing.
-   if (pairInteractionOn || (pressureProfileOn && pressureProfileNonbonded)) {
+   if (pairInteractionOn) {
 	   if (outputEnergies != 1) {
 		   iout << iWARN << "Setting outputEnergies to 1 due to\n";
-		   iout << iWARN << "pairInteraction or pressure profile calculations\n" << endi;
+		   iout << iWARN << "pairInteraction calculations\n" << endi;
 		   outputEnergies  = 1;
 	   }
+   }
+   if (pairInteractionOn || pressureProfileOn) {
 	   if (nonbondedFrequency != 1) {
 		   iout << iWARN << "Setting nonbondedFreq to 1 due to\n";
 		   iout << iWARN << "pairInteraction or pressure profile calculations\n" << endi;
@@ -3260,26 +3280,26 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    if (pressureProfileOn) {
      if ((berendsenPressureOn || langevinPistonOn) && !dcdUnitCell) {
-#if 0
+#if 1
        iout << iWARN << "Turning on dcdUnitCell so that trajectory files contain unit cell data.\n" << endi;
        dcdUnitCell = 1;
 #else
        NAMD_die("Sorry, pressure profile not implemented for constant pressure.");
 #endif
      }
+     // if Ewald is on, only calculate Ewald
+     if (pressureProfileEwaldOn)
+       pressureProfileOn = 0;
+
      if (pressureProfileSlabs < 1) 
        NAMD_die("pressureProfileSlabs must be positive.");
      iout << iINFO << "PRESSURE PROFILE CALCULATIONS ACTIVE\n";
-     if (pressureProfileNonbonded) {
-       iout << iINFO << "      ONLY NONBONDED CONTRIBUTION WILL BE CALCULATED." << "\n";
-     } else {
-       iout << iINFO << "      ONLY BONDED AND KINETIC CONTRIBUTION WILL BE CALCULATED." << "\n";
-     }
      iout << iINFO << "      NUMBER OF SLABS: " << pressureProfileSlabs << "\n";
      iout << iINFO << "      SLAB THICKNESS: " << cellBasisVector3.z / pressureProfileSlabs
                    << "\n";
      iout << iINFO << "      TIMESTEPS BETWEEN DATA OUTPUT: " 
                    << pressureProfileFreq << "\n";
+     iout << iINFO << "      NUMBER OF ATOM TYPES: " << pressureProfileAtomTypes << "\n";
      iout << endi;
    }
 

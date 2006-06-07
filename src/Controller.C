@@ -47,6 +47,72 @@ extern "C" void CApplicationDepositNode0Data(char *);
 
 #define XXXBIGREAL 1.0e32
 
+class PressureProfileReduction {
+private:
+  RequireReduction *reduction;
+  const int nslabs;
+  const int freq;
+  int nelements;
+  int count;
+  char *name;
+
+  BigReal *average;
+
+public:
+  PressureProfileReduction(int rtag, int numslabs, int numpartitions,
+      const char *myname, int outputfreq)
+  : nslabs(numslabs), freq(outputfreq) {
+    reduction = ReductionMgr::Object()->willRequire(rtag);
+    name = strdup(myname);
+    nelements = 3*nslabs * numpartitions;
+
+    average = new BigReal[nelements];
+    count = 0;
+  }
+  ~PressureProfileReduction() {
+    delete [] average;
+    delete reduction;
+    free(name);
+  }
+  // 
+  void getData(int firsttimestep, int step, const Lattice &lattice, 
+      BigReal *total) {
+    reduction->require();
+
+    int i;
+    double inv_volume = 1.0 / lattice.volume();
+    // accumulate the pressure profile computed for this step into the average.
+    int arraysize = 3*nslabs;
+    for (i=0; i<nelements; i++) {
+      BigReal val = reduction->item(i) * inv_volume;
+      average[i] += val;
+      total[i % arraysize] += val;
+    }
+    count++;
+    if (!(step % freq)) {
+      // convert NAMD internal virial to pressure in units of bar 
+      BigReal scalefac = PRESSUREFACTOR * nslabs;
+ 
+      iout << "PPROFILE" << name << ": " << step << " ";
+      if (step == firsttimestep) {
+        // output pressure profile for this step
+        for (i=0; i<nelements; i++) 
+          iout << reduction->item(i)*scalefac*inv_volume << " ";
+      } else {
+        // output pressure profile averaged over the last Freq steps.
+        scalefac /= count;
+        for (i=0; i<nelements; i++) 
+          iout << average[i]*scalefac << " ";
+      }
+      iout << "\n" << endi; 
+      // Clear the average for the next block
+      memset(average, 0, nelements*sizeof(BigReal));
+      count = 0;
+    }
+  }
+};
+
+
 Controller::Controller(NamdState *s) :
 	computeChecksum(0), marginViolations(0), pairlistWarnings(0),
 	simParams(Node::Object()->simParameters),
@@ -62,15 +128,31 @@ Controller::Controller(NamdState *s) :
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
-    if (simParams->pressureProfileOn) {
-      pressureProfileReduction = 
-        ReductionMgr::Object()->willRequire(REDUCTIONS_PPROFILE);
-      pressureProfileAverage = new BigReal[3*simParams->pressureProfileSlabs];
-      memset(pressureProfileAverage, 0, 
-          3*simParams->pressureProfileSlabs*sizeof(BigReal));
-    } else {
-      pressureProfileReduction = NULL;
-      pressureProfileAverage = NULL;
+    // pressure profile reductions
+    pressureProfileSlabs = 0;
+    pressureProfileCount = 0;
+    ppbonded = ppnonbonded = ppint = NULL;
+    if (simParams->pressureProfileOn || simParams->pressureProfileEwaldOn) {
+      int ntypes = simParams->pressureProfileAtomTypes;
+      int nslabs = pressureProfileSlabs = simParams->pressureProfileSlabs;
+      // number of partitions for pairwise interactions
+      int npairs = (ntypes * (ntypes+1))/2;
+      pressureProfileAverage = new BigReal[3*nslabs];
+      memset(pressureProfileAverage, 0, 3*nslabs*sizeof(BigReal));
+      int freq = simParams->pressureProfileFreq;
+      if (simParams->pressureProfileOn) {
+        ppbonded = new PressureProfileReduction(REDUCTIONS_PPROF_BONDED, 
+            nslabs, npairs, "BONDED", freq);
+        ppnonbonded = new PressureProfileReduction(REDUCTIONS_PPROF_NONBONDED, 
+            nslabs, npairs, "NONBONDED", freq);
+        // internal partitions by atom type, but not in a pairwise fashion
+        ppint = new PressureProfileReduction(REDUCTIONS_PPROF_INTERNAL, 
+            nslabs, ntypes, "INTERNAL", freq);
+      } else {
+        // just doing Ewald, so only need nonbonded
+        ppnonbonded = new PressureProfileReduction(REDUCTIONS_PPROF_NONBONDED, 
+            nslabs, npairs, "NONBONDED", freq);
+      }
     }
     random = new Random(simParams->randomSeed);
     random->split(0,PatchMap::Object()->numPatches()+1);
@@ -104,7 +186,9 @@ Controller::~Controller(void)
 {
     delete broadcast;
     delete reduction;
-    delete pressureProfileReduction;
+    delete ppbonded;
+    delete ppnonbonded;
+    delete ppint;
     delete [] pressureProfileAverage;
     delete random;
 }
@@ -745,9 +829,6 @@ void Controller::receivePressure(int step, int minimize)
     Lattice &lattice = state->lattice;
 
     reduction->require();
-    if (pressureProfileReduction) 
-      pressureProfileReduction->require();
-
 
     Tensor virial;
     Tensor virial_normal;
@@ -932,37 +1013,6 @@ void Controller::receivePressure(int step, int minimize)
       controlPressure_nbond << " + " << controlPressure_slow << "\n" << endi;
 #endif
 
-  if (pressureProfileReduction) {
-    int i;
-
-    // accumulate the pressure profile computed for this step into the average.
-    for (i=0; i<3*simParameters->pressureProfileSlabs; i++)
-      pressureProfileAverage[i] += pressureProfileReduction->item(i);
-    if (!(step % simParameters->pressureProfileFreq)) {
-      // convert NAMD internal virial to pressure in units of bar by 
-      // multiplying by PRESSUREFACTOR and dividing by the volume of one slab.
-      BigReal scalefac = PRESSUREFACTOR * 
-        simParameters->pressureProfileSlabs / lattice.volume();
-
-      // output pressure profile for this step
-      iout << "PRESSUREPROFILE: " << step << " ";
-      for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
-        iout << pressureProfileReduction->item(i)*scalefac << " ";
-      iout << "\n" << endi; 
-
-      if (step != simParameters->firstTimestep) {
-        scalefac /= simParameters->pressureProfileFreq;
-      }
-      // output pressure profile averaged over the last Freq steps.
-      iout << "PRESSUREPROFILEAVG: " << step << " ";
-      for (i=0; i<3*simParameters->pressureProfileSlabs; i++) 
-        iout << pressureProfileAverage[i]*scalefac << " ";
-      iout << "\n" << endi; 
-      // Clear the average for the next block
-      memset(pressureProfileAverage, 0, 
-          3*simParameters->pressureProfileSlabs*sizeof(BigReal));
-    }
-  }
 }
 
 void Controller::compareChecksums(int step, int forgiving) {
@@ -1256,6 +1306,46 @@ void Controller::printEnergies(int step, int minimize)
       }
     }
 
+    // pressure profile reductions
+    if (pressureProfileSlabs) {
+      const int freq = simParams->pressureProfileFreq;
+      const int arraysize = 3*pressureProfileSlabs;
+      
+      BigReal *total = new BigReal[arraysize];
+      memset(total, 0, arraysize*sizeof(BigReal));
+      const int first = simParams->firstTimestep;
+
+      if (ppbonded)    ppbonded->getData(first, step, lattice, total);
+      if (ppnonbonded) ppnonbonded->getData(first, step, lattice, total);
+      if (ppint)       ppint->getData(first, step, lattice, total);
+      for (int i=0; i<arraysize; i++) pressureProfileAverage[i] += total[i];
+      pressureProfileCount++;
+
+      if (!(step % freq)) {
+        // convert NAMD internal virial to pressure in units of bar 
+        BigReal scalefac = PRESSUREFACTOR * pressureProfileSlabs;
+   
+        iout << "PRESSUREPROFILE: " << step << " ";
+        if (step == first) {
+          // output pressure profile for this step
+          for (int i=0; i<arraysize; i++) {
+            iout << total[i] * scalefac << " ";
+          }
+        } else {
+          // output pressure profile averaged over the last count steps.
+          scalefac /= pressureProfileCount;
+          for (int i=0; i<arraysize; i++) 
+            iout << pressureProfileAverage[i]*scalefac << " ";
+        }
+        iout << "\n" << endi; 
+       
+        // Clear the average for the next block
+        memset(pressureProfileAverage, 0, arraysize*sizeof(BigReal));
+        pressureProfileCount = 0;
+      }
+      delete [] total;
+    }
+  
     if (simParameters->IMDon && !(step % simParameters->IMDfreq)) {
       IMDEnergies energies;
       energies.tstep = step;

@@ -131,7 +131,10 @@ typedef enum
 // Later this can be dynamic
 enum {
   REDUCTIONS_BASIC,
-  REDUCTIONS_PPROFILE,
+  REDUCTIONS_PPROF_BONDED,
+  REDUCTIONS_PPROF_NONBONDED,
+  REDUCTIONS_PPROF_INTERNAL,
+  REDUCTIONS_PPROF_KINETIC,
   REDUCTIONS_USER1,
   REDUCTIONS_USER2,
  // semaphore (must be last)
@@ -216,6 +219,12 @@ public:
       delete [] oldData;
     }
     return data[i];
+  }
+  void add(int nitems, const BigReal *arr) {
+    if (nitems < 1) return;
+    // bump the size up
+    this->item(nitems-1) += 0;
+    for (int i=0; i<nitems; i++) data[i] += arr[i];
   }
   void submit(void) {
     master->submit(this);

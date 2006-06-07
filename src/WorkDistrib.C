@@ -248,6 +248,8 @@ FullAtomList *WorkDistrib::createAtomLists(void)
   
     Bool pairInteractionOn = params->pairInteractionOn;
 
+    Bool pressureProfileTypes = (params->pressureProfileAtomTypes > 1);
+
     Transform mother_transform;
     for(j=0; j < n; j++)
     {
@@ -282,7 +284,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
-      if ( fepOn || lesOn || pairInteractionOn ) {
+      if ( fepOn || lesOn || pairInteractionOn || pressureProfileTypes) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {
@@ -837,9 +839,13 @@ void WorkDistrib::mapComputes(void)
       mapComputeHomePatches(computeDPMEType);
     else {
       mapComputeHomePatches(computePmeType);
+      if ( node->simParameters->pressureProfileEwaldOn )
+        mapComputeHomePatches(computeEwaldType);
     }
 #else
     mapComputeHomePatches(computePmeType);
+    if ( node->simParameters->pressureProfileEwaldOn )
+      mapComputeHomePatches(computeEwaldType);
 #endif
   }
 

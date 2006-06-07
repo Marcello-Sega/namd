@@ -36,9 +36,9 @@ Sequencer::Sequencer(HomePatch *p) :
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-    if (simParams->pressureProfileOn && !simParams->pressureProfileNonbonded) {
+    if (simParams->pressureProfileOn) {
       pressureProfileReduction = 
-        ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROFILE);
+        ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROF_INTERNAL);
     } else {
       pressureProfileReduction = NULL;
     }
@@ -913,8 +913,10 @@ void Sequencer::submitHalfstep(int step)
     // gets called twice per timestep.
     int hgs;
     for (int i=0; i<numAtoms; i += hgs) {
-      int j, slab;
+      int j, ppoffset;
       hgs = a[i].hydrogenGroupSize;
+      int partition = a[i].partition;
+
       BigReal m_cm = 0;
       Velocity v_cm(0,0,0);
       for (j=i; j< i+hgs; ++j) {
@@ -926,9 +928,10 @@ void Sequencer::submitHalfstep(int step)
         BigReal mass = a[j].mass;
         if (! (useGroupPressure && j != i)) {
           BigReal z = a[j].position.z;
-          slab = (int)floor((z-zmin)*idz);
+          int slab = (int)floor((z-zmin)*idz);
           if (slab < 0) slab += nslabs;
           else if (slab >= nslabs) slab -= nslabs;
+          ppoffset = 3*(slab + partition*nslabs);
         }
         BigReal wxx, wyy, wzz;
         if (useGroupPressure) {
@@ -940,9 +943,9 @@ void Sequencer::submitHalfstep(int step)
           wyy = 0.5*mass * a[j].velocity.y * a[j].velocity.y;
           wzz = 0.5*mass * a[j].velocity.z * a[j].velocity.z;
         }
-        pressureProfileReduction->item(3*slab  ) += wxx;
-        pressureProfileReduction->item(3*slab+1) += wyy;
-        pressureProfileReduction->item(3*slab+2) += wzz;
+        pressureProfileReduction->item(ppoffset  ) += wxx;
+        pressureProfileReduction->item(ppoffset+1) += wyy;
+        pressureProfileReduction->item(ppoffset+2) += wzz;
       }
     }
   } 
@@ -1137,6 +1140,8 @@ void Sequencer::submitReductions(int step)
       int slab = (int)floor((z-zmin)*idz);
       if (slab < 0) slab += nslabs;
       else if (slab >= nslabs) slab -= nslabs;
+      int partition = a[i].partition;
+      int ppoffset = 3*(slab + nslabs*partition);
       for (j=i; j < i+hgs; ++j) {
         BigReal mass = a[j].mass;
         Vector dx = a[j].position - x_cm;
@@ -1146,9 +1151,9 @@ void Sequencer::submitReductions(int step)
         BigReal wxx = (fnormal.x + fnbond.x + fslow.x) * dx.x;
         BigReal wyy = (fnormal.y + fnbond.y + fslow.y) * dx.y;
         BigReal wzz = (fnormal.z + fnbond.z + fslow.z) * dx.z;
-        pressureProfileReduction->item(3*slab  ) -= wxx;
-        pressureProfileReduction->item(3*slab+1) -= wyy;
-        pressureProfileReduction->item(3*slab+2) -= wzz;
+        pressureProfileReduction->item(ppoffset  ) -= wxx;
+        pressureProfileReduction->item(ppoffset+1) -= wyy;
+        pressureProfileReduction->item(ppoffset+2) -= wzz;
       }
     }
   }

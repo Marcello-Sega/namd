@@ -85,6 +85,7 @@ struct dihedral_params
   FourBodyConsts values[MAX_MULTIPLICITY];
   Index index;
   struct dihedral_params *next;
+  dihedral_params() { memset(this, 0, sizeof(dihedral_params)); }
 };
 
 //  struct improper_params is used to form a linked list of the improper

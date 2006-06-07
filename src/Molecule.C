@@ -4790,6 +4790,8 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
       } else {
         fepAtomFlags[i] = 0;
       }
+    } else if (simParams->pressureProfileAtomTypes > 1) {
+      fepAtomFlags[i] = (int) bval;
     }
   }
 

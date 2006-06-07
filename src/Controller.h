@@ -18,6 +18,7 @@ class SimParameters;
 class RequireReduction;
 class CollectionMaster;
 class Random;
+class PressureProfileReduction;
 
 class Controller
 {
@@ -117,8 +118,15 @@ protected:
     SimParameters *const simParams;	// for convenience
     NamdState *const state;		// access data in state
     RequireReduction *reduction;
-    RequireReduction *pressureProfileReduction;
-    BigReal *pressureProfileAverage;  // cumulative average
+
+    // data for pressure profile reductions and output
+    PressureProfileReduction *ppbonded;
+    PressureProfileReduction *ppnonbonded;
+    PressureProfileReduction *ppint;
+    int pressureProfileSlabs;
+    int pressureProfileCount;
+    BigReal *pressureProfileAverage;
+
     CollectionMaster *const collection;
     ControllerBroadcasts * broadcast;
     std::ofstream xstFile;

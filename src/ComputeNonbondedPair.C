@@ -20,9 +20,10 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-  if (pressureProfileNonbonded) {
-    pressureProfileReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROFILE);
-    pressureProfileData = new BigReal[3*pressureProfileSlabs];
+  if (pressureProfileOn) {
+    pressureProfileReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROF_NONBONDED);
+    int n = pressureProfileAtomTypes; 
+    pressureProfileData = new BigReal[3*n*n*pressureProfileSlabs];
   } else {
     pressureProfileReduction = NULL;
     pressureProfileData = NULL;
@@ -65,9 +66,10 @@ int ComputeNonbondedPair::noWork() {
     BigReal reductionData[reductionDataSize];
     int i;
     for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
-    if (pressureProfileNonbonded) 
-      memset(pressureProfileData, 0, 3*pressureProfileSlabs*sizeof(BigReal));
-
+    if (pressureProfileOn) {
+      int n = pressureProfileAtomTypes;
+      memset(pressureProfileData, 0, 3*n*n*pressureProfileSlabs*sizeof(BigReal));
+    }
     CompAtom* p[2];
     CompAtom* p_avg[2];
     Results* r[2];
@@ -87,14 +89,14 @@ int ComputeNonbondedPair::noWork() {
     }
 
     submitReductionData(reductionData,reduction);
-    if (pressureProfileNonbonded)
+    if (pressureProfileOn)
       submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
     // Inform load balancer
     LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
 
     reduction->submit();
-    if (pressureProfileNonbonded) 
+    if (pressureProfileOn) 
       pressureProfileReduction->submit();
 
     return 1;  // no work to do, do not enqueue
@@ -115,8 +117,9 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
 
   BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
-  if (pressureProfileNonbonded) {
-    memset(pressureProfileData, 0, 3*pressureProfileSlabs*sizeof(BigReal));
+  if (pressureProfileOn) {
+    int n = pressureProfileAtomTypes; 
+    memset(pressureProfileData, 0, 3*n*n*pressureProfileSlabs*sizeof(BigReal));
     // adjust lattice dimensions to allow constant pressure
     const Lattice &lattice = patch[0]->lattice;
     pressureProfileThickness = lattice.c().z / pressureProfileSlabs;
@@ -201,14 +204,14 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
   }
 
   submitReductionData(reductionData,reduction);
-  if (pressureProfileNonbonded)
+  if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
 
   reduction->submit();
-  if (pressureProfileNonbonded)
+  if (pressureProfileOn)
     pressureProfileReduction->submit();
 }
 

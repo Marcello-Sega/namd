@@ -339,9 +339,13 @@ public:
         BigReal surfaceTensionTarget;
 
         Bool pressureProfileOn;         // Compute lateral pressure profile?
-        Bool pressureProfileNonbonded;  // Compute only nonbonded contribution?
         int pressureProfileSlabs;       // Number of slabs
         int pressureProfileFreq;        // How often to store profile data
+        int pressureProfileAtomTypes;
+        Bool pressureProfileEwaldOn;    // Compute Ewald contribution?
+        int pressureProfileEwaldX;
+        int pressureProfileEwaldY;
+        int pressureProfileEwaldZ;
         
 	zVector strainRate;
 	zVector strainRate2; // off diagonal elements (xy, xz, yz)

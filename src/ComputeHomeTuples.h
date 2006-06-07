@@ -189,12 +189,14 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       
       SimParameters *params = Node::Object()->simParameters;
-      if (params->pressureProfileOn && !params->pressureProfileNonbonded) {
+      if (params->pressureProfileOn) {
         pressureProfileSlabs = T::pressureProfileSlabs = 
           params->pressureProfileSlabs;
         pressureProfileReduction = ReductionMgr::Object()->willSubmit(
-          REDUCTIONS_PPROFILE);
-        pressureProfileData = new BigReal[3*pressureProfileSlabs];
+          REDUCTIONS_PPROF_BONDED);
+        int n = T::pressureProfileAtomTypes = params->pressureProfileAtomTypes;
+        int numAtomTypePairs = n*n;
+        pressureProfileData = new BigReal[3*pressureProfileSlabs*numAtomTypePairs];
       } else {
         pressureProfileReduction = NULL;
         pressureProfileData = NULL;
@@ -208,12 +210,14 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       atomMap = AtomMap::Object();
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       SimParameters *params = Node::Object()->simParameters;
-      if (params->pressureProfileOn && !params->pressureProfileNonbonded) {
+      if (params->pressureProfileOn) {
         pressureProfileSlabs = T::pressureProfileSlabs = 
           params->pressureProfileSlabs;
         pressureProfileReduction = ReductionMgr::Object()->willSubmit(
-          REDUCTIONS_PPROFILE);
-        pressureProfileData = new BigReal[3*pressureProfileSlabs];
+          REDUCTIONS_PPROF_BONDED);
+        int n = T::pressureProfileAtomTypes = params->pressureProfileAtomTypes;
+        int numAtomTypePairs = n*n;
+        pressureProfileData = new BigReal[3*pressureProfileSlabs*numAtomTypePairs];
       } else {
         pressureProfileReduction = NULL;
         pressureProfileData = NULL;
@@ -304,8 +308,10 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       BigReal reductionData[T::reductionDataSize];
       for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
       int tupleCount = 0;
+      int numAtomTypes = T::pressureProfileAtomTypes;
+      int numAtomTypePairs = numAtomTypes*numAtomTypes;
       if (pressureProfileData) {
-        memset(pressureProfileData, 0, 3*pressureProfileSlabs*sizeof(BigReal));
+        memset(pressureProfileData, 0, 3*pressureProfileSlabs*numAtomTypePairs*sizeof(BigReal));
         // Silly variable hiding of the previous iterator
         UniqueSetIter<TuplePatchElem> newap(tuplePatchList);
         newap = newap.begin();
@@ -334,8 +340,24 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       reduction->submit();
 
       if (pressureProfileReduction) {
-        for (int i=0; i<3*pressureProfileSlabs; i++) 
-          pressureProfileReduction->item(i) += pressureProfileData[i];
+        // For ease of calculation we stored interactions between types
+        // i and j in (ni+j).  For efficiency now we coalesce the
+        // cross interactions so that just i<=j are stored.
+        const int arraysize = 3*pressureProfileSlabs;
+        const BigReal *data = pressureProfileData;
+        for (int i=0; i<numAtomTypes; i++) {
+          for (int j=0; j<numAtomTypes; j++) {
+            int ii=i;
+            int jj=j;
+            if (ii > jj) { int tmp=ii; ii=jj; jj=tmp; }
+            const int reductionOffset = 
+              (ii*numAtomTypes - (ii*(ii+1))/2 + jj)*arraysize;
+            for (int k=0; k<arraysize; k++) {
+              pressureProfileReduction->item(reductionOffset+k) += data[k];
+            }
+            data += arraysize;
+          }
+        }
         pressureProfileReduction->submit();
       }
     

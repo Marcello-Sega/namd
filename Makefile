@@ -75,6 +75,7 @@ OBJS = \
 	$(DSTDIR)/ComputeDPMEMsgs.o \
 	$(DSTDIR)/ComputeDPMTA.o \
 	$(DSTDIR)/ComputeEField.o \
+	$(DSTDIR)/ComputeEwald.o \
 	$(DSTDIR)/ComputeExt.o \
 	$(DSTDIR)/ComputeFullDirect.o \
 	$(DSTDIR)/ComputeHomePatch.o \
@@ -90,6 +91,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedStd.o \
 	$(DSTDIR)/ComputeNonbondedFEP.o \
 	$(DSTDIR)/ComputeNonbondedLES.o \
+	$(DSTDIR)/ComputeNonbondedPProf.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \

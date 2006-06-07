@@ -584,7 +584,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
                 mol->rigid_bond_length(atom[ig+1].id));
         // which slab the hydrogen group will belong to
         // for pprofile calculations.
-        int slab;  
+        int ppoffset, partition;
         if ( dt == 0 ) for ( i = 0; i < 3; ++i ) {
           atom[ig+i].position = pos[i];
         } else if ( virial == 0 ) for ( i = 0; i < 3; ++i ) {
@@ -600,13 +600,15 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
             // should be the parent atom.
             if (!i) {
               BigReal z = pos[i].z;
-              slab = (int)floor((z-zmin)*idz);
+              partition = atom[ig].partition;
+              int slab = (int)floor((z-zmin)*idz);
               if (slab < 0) slab += nslabs;
               else if (slab >= nslabs) slab -= nslabs;
+              ppoffset = 3*(slab + nslabs*partition);
             }
-            ppreduction->item(3*slab) += vir.xx;
-            ppreduction->item(3*slab+1) += vir.yy;
-            ppreduction->item(3*slab+2) += vir.zz;
+            ppreduction->item(ppoffset  ) += vir.xx;
+            ppreduction->item(ppoffset+1) += vir.yy;
+            ppreduction->item(ppoffset+2) += vir.zz;
           }
         }
         continue;
@@ -685,7 +687,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       }
     }
     // store data back to patch
-    int slab;
+    int ppoffset, partition;
     if ( dt == 0 ) for ( i = 0; i < hgs; ++i ) {
       atom[ig+i].position = pos[i];
     } else if ( virial == 0 ) for ( i = 0; i < hgs; ++i ) {
@@ -699,13 +701,15 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       if (ppreduction) {
         if (!i) {
           BigReal z = pos[i].z;
-          slab = (int)floor((z-zmin)*idz);
+          int partition = atom[ig].partition;
+          int slab = (int)floor((z-zmin)*idz);
           if (slab < 0) slab += nslabs;
           else if (slab >= nslabs) slab -= nslabs;
+          ppoffset = 3*(slab + nslabs*partition);
         }
-        ppreduction->item(3*slab) += vir.xx;
-        ppreduction->item(3*slab+1) += vir.yy;
-        ppreduction->item(3*slab+2) += vir.zz;
+        ppreduction->item(ppoffset  ) += vir.xx;
+        ppreduction->item(ppoffset+1) += vir.yy;
+        ppreduction->item(ppoffset+2) += vir.zz;
       }
     }
   }

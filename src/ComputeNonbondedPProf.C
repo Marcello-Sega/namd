@@ -10,111 +10,57 @@
 
 #include "ComputeNonbondedInl.h"
 
-#define NBTYPE NBPAIR
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#define MERGEELECT
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#undef MERGEELECT
-#define SLOWONLY
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#undef SLOWONLY
-#undef FULLELECT
-#undef  NBTYPE
-
-#define NBTYPE NBSELF
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#define MERGEELECT
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#undef MERGEELECT
-#define SLOWONLY
-#include "ComputeNonbondedBase.h"
-#define CALCENERGY
-#include "ComputeNonbondedBase.h"
-#undef CALCENERGY
-#undef SLOWONLY
-#undef FULLELECT
-#undef  NBTYPE
-
-
-#define INTFLAG
-#define CALCENERGY
-
-#define NBTYPE NBPAIR
-#include "ComputeNonbondedBase.h"
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#define MERGEELECT
-#include "ComputeNonbondedBase.h"
-#undef MERGEELECT
-#undef FULLELECT
-#undef  NBTYPE
-
-#define NBTYPE NBSELF
-#include "ComputeNonbondedBase.h"
-#define FULLELECT
-#include "ComputeNonbondedBase.h"
-#define MERGEELECT
-#include "ComputeNonbondedBase.h"
-#undef MERGEELECT
-#undef FULLELECT
-#undef  NBTYPE
-
-#undef CALCENERGY
-#undef INTFLAG
-
-// moved to ComputeNonbondedPprof.C
-#if 0
-
 #define PPROFFLAG
-#define CALCENERGY
 
 #define NBTYPE NBPAIR
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define MERGEELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef MERGEELECT
+#define SLOWONLY
+#include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
+#undef SLOWONLY
 #undef FULLELECT
 #undef  NBTYPE
 
 #define NBTYPE NBSELF
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define FULLELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #define MERGEELECT
 #include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
 #undef MERGEELECT
+#define SLOWONLY
+#include "ComputeNonbondedBase.h"
+#define CALCENERGY
+#include "ComputeNonbondedBase.h"
+#undef CALCENERGY
+#undef SLOWONLY
 #undef FULLELECT
 #undef  NBTYPE
 
-#undef CALCENERGY
 #undef PPROFFLAG
-
-#endif
 
