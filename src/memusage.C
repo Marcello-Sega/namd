@@ -65,7 +65,11 @@ inline long memusage_mstats() { return 0; }
 
 long memusage_mallinfo() {
   struct mallinfo mi = mallinfo();
-  long memtotal = mi.usmblks + mi.uordblks + mi.hblkhd;
+  // long memtotal = mi.usmblks + mi.uordblks + mi.hblkhd;
+  long memtotal = mi.uordblks;
+
+  // printf("mallinfo %d %d %d\n", mi.usmblks, mi.uordblks, mi.hblkhd);
+
   return memtotal;
 }
 
