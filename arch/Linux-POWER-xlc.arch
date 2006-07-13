@@ -1,0 +1,10 @@
+NAMD_ARCH = Linux-POWER
+CHARMARCH = net-linux-ppc-xlc
+
+CXX = xlC_r -w -qstaticinline -DMEMUSAGE_USE_SBRK
+CXXOPTS = -O3 -Q  -qhot
+CXXNOALIASOPTS= -O3 -Q -qhot -qalias=noallptrs:notypeptr
+
+CC = xlc_r -w
+COPTS = -O4 -qinlglue -qarch=pwr3 -qtune=pwr3 
+
