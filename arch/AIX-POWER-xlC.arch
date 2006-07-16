@@ -3,8 +3,8 @@ CHARMARCH = net-rs6k
 
 # need to define MEMUSAGE_USE_SBRK because mallinfo appears to cause crashes
 CXX = xlC_r -w -qstaticinline -DMEMUSAGE_USE_SBRK
-CXXOPTS = -O3 -qstrict -qaggrcopy=nooverlap -qalias=ansi -Q -qarch=com -qtune=pwr3 -qfloat=rsqrt:fltint -bmaxdata:0x80000000
-CXXNOALIASOPTS = -O3 -qaggrcopy=nooverlap -qalias=addr:allp:ansi:typ -Q -qarch=com -qtune=pwr3 -qfloat=rsqrt:fltint -bmaxdata:0x80000000
+CXXOPTS = -O3 -qstrict -qaggrcopy=nooverlap -qalias=ansi -Q -qarch=com -qtune=pwr3 -qfloat=rsqrt:fltint -bmaxdata:0x80000000 -DARCH_POWERPC
+CXXNOALIASOPTS = -O3 -qaggrcopy=nooverlap -qalias=addr:allp:ansi:typ -Q -qarch=com -qtune=pwr3 -qfloat=rsqrt:fltint -bmaxdata:0x80000000 -DARCH_POWERPC
 CC = xlc_r -w
 COPTS = -O4 -qinlglue -qarch=com -qtune=pwr3 -bmaxdata:0x80000000
 

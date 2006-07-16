@@ -7,8 +7,8 @@ BGL_INC = $(BGL_INSTALL)/bglsys/include
 
 CXX = blrts_xlC -qstaticinline -DNO_SOCKET -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_GETPWUID -I$(BGL_INC) 
 
-CXXOPTS = -O3 -qhot -Q -qarch=440 -qtune=440 
-CXXNOALIASOPTS = -O3 -Q -qarch=440 -qtune=440 -qfloat=rsqrt:fltint -qalias=allp:addr 
+CXXOPTS = -O3 -qhot -Q -qarch=440 -qtune=440 -DARCH_POWERPC 
+CXXNOALIASOPTS = -O3 -Q -qhot -qarch=440 -qtune=440 -qalias=noallptrs:notypeptr -DARCH_POWERPC
 
 CXXTHREADOPTS = -O3 -qarch=440 -qtune=440 -qstrict
 CC = blrts_xlc
