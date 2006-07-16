@@ -9,21 +9,48 @@ EXCLUDED( MODIFIED( foo bar ) )
 EXCLUDED( NORMAL( foo bar ) )
 NORMAL( MODIFIED( foo bar ) )
 
+
+#ifdef ARCH_POWERPC
+     __alignx(16, table_four);
+     __alignx(16, p_1);
+#endif
+
 #pragma ivdep
-    for (k=0; k<npairi; ++k) {
+    for (k=0; k<npairi; ++k) {      
 
-      int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0
-
+      int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
       const int j = pairlisti[k];
       register const CompAtom *p_j = p_1 + j;
-
+      
       BigReal diffa = r2list[k] - r2_table[table_i];
-
       const BigReal* const table_four_i = table_four + 16*table_i;
+
       FAST(
       const LJTable::TableEntry * lj_pars = 
-		lj_row + 2 * mol->atomvdwtype(p_j->id) MODIFIED(+ 1);
+              lj_row + 2 * vdwtype_array[j]  MODIFIED(+ 1);
       )
+	
+#ifdef ARCH_POWERPC
+#if ( SHORT( FAST( 1+ ) ) 0 ) 
+#pragma disjoint (*table_four_i, *f_1)
+#pragma disjoint (*p_j,          *f_1)
+#endif
+	
+#if ( FULL( 1+ ) 0 )
+#pragma disjoint (*table_four_i, *fullf_1)
+#pragma disjoint (*p_j,          *fullf_1)
+#ifdef f_1
+#pragma disjoint (*f_1    , *fullf_1)
+#pragma disjoint (*fullf_1, *f_1)
+#endif
+#endif
+
+      __alignx(16, table_four_i);
+      __alignx(16, p_j);
+      FAST (
+      __alignx(16, lj_pars);
+      )
+#endif
 
       /*
       BigReal modf = 0.0;
@@ -57,16 +84,16 @@ NORMAL( MODIFIED( foo bar ) )
       const BigReal A = scaling * lj_pars->A;
       const BigReal B = scaling * lj_pars->B;
 
-      BigReal vdw_d = A * table_four_i[0] - B * table_four_i[1];
-      BigReal vdw_c = A * table_four_i[2] - B * table_four_i[3];
-      BigReal vdw_b = A * table_four_i[4] - B * table_four_i[5];
-      BigReal vdw_a = A * table_four_i[6] - B * table_four_i[7];
+      BigReal vdw_d = A * table_four_i[0] - B * table_four_i[2];
+      BigReal vdw_c = A * table_four_i[1] - B * table_four_i[3];
+      BigReal vdw_b = A * table_four_i[4] - B * table_four_i[6];
+      BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
 
       ENERGY(
       register BigReal vdw_val =
-        ( ( diffa * vdw_d + vdw_c ) * diffa + vdw_b ) * diffa + vdw_a;
-      vdwEnergy += LAM(lambda_pair *) vdw_val;
-      FEP( vdwEnergy_s += d_lambda_pair * vdw_val; )
+        ( ( diffa * vdw_d * (1/6.)+ vdw_c * (1/4.)) * diffa + vdw_b *(1/2.)) * diffa + vdw_a;
+      vdwEnergy -= LAM(lambda_pair *) vdw_val;
+      FEP( vdwEnergy_s -= d_lambda_pair * vdw_val; )
       )
 #endif // FAST
 
@@ -77,11 +104,11 @@ NORMAL( MODIFIED( foo bar ) )
 #if ( FAST(1+) 0 )
       INT( 
       register BigReal vdw_dir =
-	( 3.0 * diffa * vdw_d + 2.0 * vdw_c ) * diffa + vdw_b;
-      // BigReal force_r = -1.0 * LAM(lambda_pair *) vdw_dir;
-      reduction[pairVDWForceIndex_X] -= 2.0 * force_sign * vdw_dir * p_ij_x;
-      reduction[pairVDWForceIndex_Y] -= 2.0 * force_sign * vdw_dir * p_ij_y;
-      reduction[pairVDWForceIndex_Z] -= 2.0 * force_sign * vdw_dir * p_ij_z;
+      ( diffa * vdw_d + vdw_c ) * diffa + vdw_b;
+      //BigReal force_r =  LAM(lambda_pair *) vdw_dir;
+      reduction[pairVDWForceIndex_X] += force_sign * vdw_dir * p_ij_x;
+      reduction[pairVDWForceIndex_Y] += force_sign * vdw_dir * p_ij_y;
+      reduction[pairVDWForceIndex_Z] += force_sign * vdw_dir * p_ij_z;
       )
 
 #if ( SHORT(1+) 0 )
@@ -101,19 +128,19 @@ NORMAL( MODIFIED( foo bar ) )
 
       {
       ENERGY(
-      register BigReal fast_val =
-	( ( diffa * fast_d + fast_c ) * diffa + fast_b ) * diffa + fast_a;
-      electEnergy += LAM(lambda_pair *) fast_val;
-      FEP( electEnergy_s += d_lambda_pair * fast_val; )
+	     register BigReal fast_val =
+	( ( diffa * fast_d * (1/6.)+ fast_c * (1/4.)) * diffa + fast_b *(1/2.)) * diffa + fast_a;
+      electEnergy -=  LAM(lambda_pair *) fast_val;
+      FEP( electEnergy_s -=  d_lambda_pair * fast_val; )
       )
 
       INT(
       register BigReal fast_dir =
-	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
-      // force_r -= LAM(lambda_pair *) fast_dir;
-      reduction[pairElectForceIndex_X] -= 2.0 * force_sign * fast_dir * p_ij_x;
-      reduction[pairElectForceIndex_Y] -= 2.0 * force_sign * fast_dir * p_ij_y;
-      reduction[pairElectForceIndex_Z] -= 2.0 * force_sign * fast_dir * p_ij_z;
+      ( diffa * fast_d + fast_c ) * diffa + fast_b;
+      // force_r -= -1.0 * LAM(lambda_pair *) fast_dir;
+      reduction[pairElectForceIndex_X] +=  force_sign * fast_dir * p_ij_x;
+      reduction[pairElectForceIndex_Y] +=  force_sign * fast_dir * p_ij_y;
+      reduction[pairElectForceIndex_Z] +=  force_sign * fast_dir * p_ij_z;
       )
       }
 
@@ -122,19 +149,22 @@ NORMAL( MODIFIED( foo bar ) )
       fast_b += vdw_b;
       fast_a += vdw_a;
       register BigReal fast_dir =
-	( 3.0 * diffa * fast_d + 2.0 * fast_c ) * diffa + fast_b;
-      BigReal force_r = -2.0 * LAM(lambda_pair *) fast_dir;
+	( diffa * fast_d + fast_c ) * diffa + fast_b;
+      BigReal force_r =  LAM(lambda_pair *) fast_dir;
       register BigReal tmp_x = force_r * p_ij_x;
       PAIR( virial_xx += tmp_x * p_ij_x; )
       PAIR( virial_xy += tmp_x * p_ij_y; )
       PAIR( virial_xz += tmp_x * p_ij_z; )
+
       f_i_x += tmp_x;
       f_1[j].x -= tmp_x;
+
       register BigReal tmp_y = force_r * p_ij_y;
       PAIR( virial_yy += tmp_y * p_ij_y; )
       PAIR( virial_yz += tmp_y * p_ij_z; )
       f_i_y += tmp_y;
       f_1[j].y -= tmp_y;
+      
       register BigReal tmp_z = force_r * p_ij_z;
       PAIR( virial_zz += tmp_z * p_ij_z; )
       f_i_z += tmp_z;
@@ -164,10 +194,10 @@ NORMAL( MODIFIED( foo bar ) )
       EXCLUDED(
       SHORT(
       const BigReal* const slow_i = slow_table + 4*table_i;
-      slow_a -= slow_i[0];
-      slow_b -= slow_i[1];
-      slow_c -= slow_i[2];
-      slow_d -= slow_i[3];
+      slow_a +=    slow_i[0];
+      slow_b += 2.*slow_i[1];
+      slow_c += 4.*slow_i[2];
+      slow_d += 6.*slow_i[3];
       )
       NOSHORT(
       slow_d -= table_four_i[12];
@@ -179,10 +209,10 @@ NORMAL( MODIFIED( foo bar ) )
       MODIFIED(
       SHORT(
       const BigReal* const slow_i = slow_table + 4*table_i;
-      slow_a -= modf_mod * slow_i[0];
-      slow_b -= modf_mod * slow_i[1];
-      slow_c -= modf_mod * slow_i[2];
-      slow_d -= modf_mod * slow_i[3];
+      slow_a +=    modf_mod * slow_i[0];
+      slow_b += 2.*modf_mod * slow_i[1];
+      slow_c += 4.*modf_mod * slow_i[2];
+      slow_d += 6.*modf_mod * slow_i[3];
       )
       NOSHORT(
       slow_d -= modf_mod * table_four_i[12];
@@ -198,17 +228,17 @@ NORMAL( MODIFIED( foo bar ) )
 
       ENERGY(
       register BigReal slow_val =
-	( ( diffa * slow_d + slow_c ) * diffa + slow_b ) * diffa + slow_a;
-      fullElectEnergy += LAM(lambda_pair *) slow_val;
-      FEP( fullElectEnergy_s += d_lambda_pair * slow_val; )
+	( ( diffa * slow_d *(1/6.)+ slow_c * (1/4.)) * diffa + slow_b *(1/2.)) * diffa + slow_a;
+      fullElectEnergy -= LAM(lambda_pair *) slow_val;
+      FEP( fullElectEnergy_s -= d_lambda_pair * slow_val; )
       )
 
       INT( {
       register BigReal slow_dir =
-	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
-      reduction[pairElectForceIndex_X] -= 2.0 * force_sign * slow_dir * p_ij_x;
-      reduction[pairElectForceIndex_Y] -= 2.0 * force_sign * slow_dir * p_ij_y;
-      reduction[pairElectForceIndex_Z] -= 2.0 * force_sign * slow_dir * p_ij_z;
+	( diffa * slow_d + slow_c ) * diffa + slow_b;
+      reduction[pairElectForceIndex_X] += force_sign * slow_dir * p_ij_x;
+      reduction[pairElectForceIndex_Y] += force_sign * slow_dir * p_ij_y;
+      reduction[pairElectForceIndex_Z] += force_sign * slow_dir * p_ij_z;
       } )
 
       FAST(
@@ -221,8 +251,8 @@ NORMAL( MODIFIED( foo bar ) )
       )
 
       register BigReal slow_dir =
-	( 3.0 * diffa * slow_d + 2.0 * slow_c ) * diffa + slow_b;
-      BigReal fullforce_r = -2.0 * slow_dir LAM(* lambda_pair);
+	( diffa * slow_d + slow_c ) * diffa + slow_b;
+      BigReal fullforce_r = slow_dir LAM(* lambda_pair);
 
       {
       register BigReal tmp_x = fullforce_r * p_ij_x;
@@ -257,5 +287,5 @@ NORMAL( MODIFIED( foo bar ) )
       }
       )
 
-    } // for pairlist
+   } // for pairlist
 

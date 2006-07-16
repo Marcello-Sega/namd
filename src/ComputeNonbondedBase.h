@@ -8,6 +8,10 @@
 //   NBTYPE: exclusion method (NBPAIR, NBSELF -- mutually exclusive)
 //   FULLELECT full electrostatics calculation?
 
+#ifdef ARCH_POWERPC
+#include <builtins.h>
+#endif
+
 #ifdef DEFINITION // (
   #include "LJTable.h"
   #include "Molecule.h"
@@ -284,6 +288,11 @@ void ComputeNonbondedUtil :: NAME
   RESERVEARRAY(plint,pairlist,1005,arraysize);
   RESERVEARRAY(plint,pairlist2,1005,arraysize);
 
+  RESERVEARRAY(short,vdwtype_array,1005,j_upper+5);
+  for (j = 0; j < j_upper; ++j)
+    vdwtype_array [j] = mol->atomvdwtype(p_1[j].id);
+
+
   int fixg_upper = 0;
   int g_upper = 0;
 
@@ -332,6 +341,8 @@ void ComputeNonbondedUtil :: NAME
   int pairlistindex=0;
   int pairlistoffset=0;
 
+  
+
 #if ( SHORT( FAST( 1+ ) ) 0 )
 #if ( PAIR( 1+ ) 0 )
     Force *f_0 = params->ff[0];
@@ -352,6 +363,7 @@ void ComputeNonbondedUtil :: NAME
     memset( (void*) fullf_0, 0, i_upper * sizeof(Force) );
 #endif
 #endif
+    
 
   SELF ( int64 pairCount = ( (i_upper-1) * (int64)j_upper ) / 2; )
   PAIR ( int64 pairCount = i_upper * (int64)j_upper; )
@@ -376,9 +388,9 @@ void ComputeNonbondedUtil :: NAME
       }
     }
 
-#if CHARM_VERSION > 50800
-    CmiNetworkProgress();
-#endif
+    //#if CHARM_VERSION > 50800
+    //CmiNetworkProgress();
+    //#endif
 
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
@@ -461,39 +473,102 @@ void ComputeNonbondedUtil :: NAME
       SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
       const int gu = ( groupfixed ? fixg_upper : g_upper );
       register int g = PAIR(0) SELF(gl);
-      if ( g < gu ) {
-       int j2 = glist[g];
-       BigReal p_j_x = p_1[j2].position.x;
-       BigReal p_j_y = p_1[j2].position.y;
-       BigReal p_j_z = p_1[j2].position.z;
-       while ( g < gu ) {
-        j = j2;
-        j2 = glist[++g];
-	BigReal r2 = p_i_x - p_j_x;
-	r2 *= r2;
-        p_j_x = p_1[j2].position.x;
-	BigReal t2 = p_i_y - p_j_y;
-	r2 += t2 * t2;
-        p_j_y = p_1[j2].position.y;
-	t2 = p_i_z - p_j_z;
-	r2 += t2 * t2;
-        p_j_z = p_1[j2].position.z;
-	// use a slightly large cutoff to include hydrogens
-	if ( r2 <= groupplcutoff2 ) { *gli = j; ++gli; }
-       }
 
-       int hu = gli - goodglist;
-       for ( int h=0; h<hu; ++h ) {
+      if ( g < gu ) {
+	int hu = 0;
+	if ( gu - g  >  2 ) { 
+
+	  register  int jprev0 = glist[g];
+	  register  int jprev1 = glist[g + 1];
+	  
+	  register  int j0; 
+	  register  int j1; 
+	  
+	  register  BigReal pj_x_0, pj_x_1; 
+	  register  BigReal pj_y_0, pj_y_1; 
+	  register  BigReal pj_z_0, pj_z_1; 
+	  register  BigReal t_0, t_1, r2_0, r2_1;
+	  
+	  pj_x_0 = p_1[jprev0].position.x;
+	  pj_x_1 = p_1[jprev1].position.x;  
+	  
+	  pj_y_0 = p_1[jprev0].position.y; 
+	  pj_y_1 = p_1[jprev1].position.y;  
+	  
+	  pj_z_0 = p_1[jprev0].position.z; 
+	  pj_z_1 = p_1[jprev1].position.z;
+	  
+	  g += 2;
+	  for ( ; g < gu - 2; g +=2 ) {
+	    // compute 1d distance, 2-way parallel	 
+	    j0     =  jprev0;
+	    j1     =  jprev1;
+	    
+	    t_0    =  p_i_x - pj_x_0;
+	    t_1    =  p_i_x - pj_x_1;
+	    r2_0   =  t_0 * t_0 + r2_delta;
+	    r2_1   =  t_1 * t_1 + r2_delta;
+	    
+	    t_0    =  p_i_y - pj_y_0;
+	    t_1    =  p_i_y - pj_y_1;
+	    r2_0  +=  t_0 * t_0;
+	    r2_1  +=  t_1 * t_1;
+	    
+	    t_0    =  p_i_z - pj_z_0;
+	    t_1    =  p_i_z - pj_z_1;
+	    r2_0  +=  t_0 * t_0;
+	    r2_1  +=  t_1 * t_1;
+	    
+	    jprev0     =  glist[g];
+	    jprev1     =  glist[g+1];
+	    
+	    pj_x_0     =  p_1[jprev0].position.x;
+	    pj_x_1     =  p_1[jprev1].position.x;
+	    pj_y_0     =  p_1[jprev0].position.y; 
+	    pj_y_1     =  p_1[jprev1].position.y;
+	    pj_z_0     =  p_1[jprev0].position.z; 
+	    pj_z_1     =  p_1[jprev1].position.z;
+	    
+	    bool test0 = ( r2_0 < groupplcutoff2 );
+	    bool test1 = ( r2_1 < groupplcutoff2 ); 
+	    
+	    //removing ifs benefits on many architectures
+	    //as the extra stores will only warm the cache up
+	    goodglist [ hu ] = j0;
+	    goodglist [ hu + test0 ] = j1;
+	    
+	    hu += test0 + test1;
+	  }
+	  g-=2;
+	}
+	
+	for (; g < gu; g++) {
+	  int j = glist[g];
+	  BigReal p_j_x = p_1[j].position.x;
+	  BigReal p_j_y = p_1[j].position.y;
+	  BigReal p_j_z = p_1[j].position.z;
+	  
+	  BigReal r2 = p_i_x - p_j_x;
+	  r2 *= r2;
+	  BigReal t2 = p_i_y - p_j_y;
+	  r2 += t2 * t2;
+	  t2 = p_i_z - p_j_z;
+	  r2 += t2 * t2;
+	  
+	  if ( r2 <= groupplcutoff2 ) 
+	    goodglist[hu ++] = j; 
+	}
+	
+	for ( int h=0; h<hu; ++h ) {
           int j = goodglist[h];
           int hgs = ( p_1[j].nonbondedGroupIsAtom ? 1 :
-					p_1[j].hydrogenGroupSize );
+		      p_1[j].hydrogenGroupSize );
 	  pli[0] = j;   // copy over the next four in any case
 	  pli[1] = j+1;
 	  pli[2] = j+2;
 	  pli[3] = j+3; // assume hgs <= 4
           pli += hgs;
-       }
-
+	}
       }
     }
 
@@ -724,6 +799,11 @@ void ComputeNonbondedUtil :: NAME
 #undef NORMAL
 #undef EXCLUDED
 #undef MODIFIED
+
+#if CHARM_VERSION > 50800
+    CmiNetworkProgress();
+#endif
+
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti,

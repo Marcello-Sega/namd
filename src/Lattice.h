@@ -11,6 +11,11 @@
 #include <math.h>
 #include "Tensor.h"
 
+#ifdef ARCH_POWERPC
+extern "builtin" double __tanint(double); //IEEE round
+#define floor(x)  __tanint(x-0.5)
+#endif
+
 // Use floor(0.5 + X) instead of rint(X) because rint() is sensitive
 // to the current rounding mode and floor() is not.  It's just safer.
 

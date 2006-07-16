@@ -706,6 +706,7 @@ void ComputeNonbondedUtil::select(void)
     full_table[i] = fast_table[i] + slow_table[i];
   }
 
+#if 0  
   for ( i=0; i<n; ++i ) {
    for ( int j=0; j<4; ++j ) {
     table_short[16*i+6-2*j] = table_noshort[16*i+6-2*j] = vdwa_table[4*i+j];
@@ -715,6 +716,39 @@ void ComputeNonbondedUtil::select(void)
     table_noshort[16*i+8+3-j] = corr_table[4*i+j];
     table_noshort[16*i+12+3-j] = full_table[4*i+j];
    }
+  }
+#endif 
+
+  for ( i=0; i<n; ++i ) {
+    table_short[16*i+ 0] = table_noshort[16*i+0] = -6.*vdwa_table[4*i+3];
+    table_short[16*i+ 2] = table_noshort[16*i+2] = -6.*vdwb_table[4*i+3];
+    table_short[16*i+ 4] = table_noshort[16*i+4] = -2.*vdwa_table[4*i+1];
+    table_short[16*i+ 6] = table_noshort[16*i+6] = -2.*vdwb_table[4*i+1];
+    
+    table_short[16*i+1] = table_noshort[16*i+1] = -4.*vdwa_table[4*i+2];
+    table_short[16*i+3] = table_noshort[16*i+3] = -4.*vdwb_table[4*i+2];
+    table_short[16*i+5] = table_noshort[16*i+5] = -1.*vdwa_table[4*i+0];
+    table_short[16*i+7] = table_noshort[16*i+7] = -1.*vdwb_table[4*i+0];
+    
+    table_short[16*i+8]  = -6.*fast_table[4*i+3];
+    table_short[16*i+9]  = -4.*fast_table[4*i+2];
+    table_short[16*i+10] = -2.*fast_table[4*i+1];
+    table_short[16*i+11] = -1.*fast_table[4*i+0];
+
+    table_noshort[16*i+8]  = -6.*corr_table[4*i+3];
+    table_noshort[16*i+9]  = -4.*corr_table[4*i+2];
+    table_noshort[16*i+10] = -2.*corr_table[4*i+1];
+    table_noshort[16*i+11] = -1.*corr_table[4*i+0];
+
+    table_short[16*i+12] = -6.*scor_table[4*i+3];
+    table_short[16*i+13] = -4.*scor_table[4*i+2];
+    table_short[16*i+14] = -2.*scor_table[4*i+1];
+    table_short[16*i+15] = -1.*scor_table[4*i+0];
+
+    table_noshort[16*i+12] = -6.*full_table[4*i+3];
+    table_noshort[16*i+13] = -4.*full_table[4*i+2];
+    table_noshort[16*i+14] = -2.*full_table[4*i+1];
+    table_noshort[16*i+15] = -1.*full_table[4*i+0];
   }
 
 #if 0
