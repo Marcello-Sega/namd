@@ -344,6 +344,7 @@ void Controller::integrate() {
 
 #define CALCULATE \
   printMinimizeEnergies(step); \
+  outputExtendedSystem(step); \
   rebalanceLoad(step); \
   if ( step == numberOfSteps ) return; \
   else ++step;
