@@ -411,7 +411,7 @@ void Sequencer::minimize() {
 
     runComputeObjects(1,0);
     submitMinimizeReductions(step);
-    submitCollections(step);
+    submitCollections(step, 1);  // write out zeros for velocities
     rebalanceLoad(step);
   }
   quenchVelocities();  // zero out bogus velocity
@@ -1293,13 +1293,13 @@ void Sequencer::submitMinimizeReductions(int step)
   reduction->submit();
 }
 
-void Sequencer::submitCollections(int step)
+void Sequencer::submitCollections(int step, int zeroVel)
 {
   int prec = Output::coordinateNeeded(step);
   if ( prec )
     collection->submitPositions(step,patch->atom,patch->lattice,prec);
   if ( Output::velocityNeeded(step) )
-    collection->submitVelocities(step,patch->atom);
+    collection->submitVelocities(step,zeroVel,patch->atom);
 }
 
 void Sequencer::runComputeObjects(int migration, int pairlists)

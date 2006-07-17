@@ -57,14 +57,15 @@ void CollectionMgr::submitPositions(int seq, FullAtomList &a,
 }
 
 
-void CollectionMgr::submitVelocities(int seq, FullAtomList &a)
+void CollectionMgr::submitVelocities(int seq, int zero, FullAtomList &a)
 {
   int numAtoms = a.size();
   AtomIDList aid(numAtoms);
   PositionList d(numAtoms);
   for ( int i=0; i<numAtoms; ++i ) {
     aid[i] = a[i].id;
-    d[i] = a[i].velocity;
+    if ( zero ) d[i] = 0.;
+    else d[i] = a[i].velocity;
   }
   CollectVectorInstance *c;
   if ( ( c = velocities.submitData(seq,aid,d) ) )

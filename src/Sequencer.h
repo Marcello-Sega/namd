@@ -41,7 +41,7 @@ protected:
     void submitReductions(int);
     void submitHalfstep(int);
     void submitMinimizeReductions(int);
-    void submitCollections(int);
+    void submitCollections(int step, int zeroVel = 0);
 
     void saveForce(const int ftag = Results::normal);
     void addForceToMomentum(BigReal, const int ftag = Results::normal,

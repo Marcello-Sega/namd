@@ -34,7 +34,7 @@ public:
   ~CollectionMgr(void);
 
   void submitPositions(int seq, FullAtomList &a, Lattice l, int prec);
-  void submitVelocities(int seq, FullAtomList &a);
+  void submitVelocities(int seq, int zero, FullAtomList &a);
   void sendDataStream(const char *);
 
   class CollectVectorInstance
