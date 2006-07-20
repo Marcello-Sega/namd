@@ -371,7 +371,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.range("outputMomenta", NOT_NEGATIVE);
      
    opts.optional("main", "outputTiming", "How often to print timing data in timesteps",
-     &outputTiming, 0);
+     &outputTiming);
    opts.range("outputTiming", NOT_NEGATIVE);
      
    opts.optional("main", "outputPressure", "How often to print pressure data in timesteps",
@@ -2401,6 +2401,15 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 		   iout << iWARN << "pairInteraction or pressure profile calculations\n" << endi;
 	   }
    }
+
+   // print timing at a reasonable interval by default
+   if (!opts.defined("outputTiming"))
+   {
+      outputTiming = firstLdbStep;
+      int ot2 = 10 * outputEnergies;
+      if ( outputTiming < ot2 ) outputTiming = ot2;
+   }
+
 }
 
 void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
