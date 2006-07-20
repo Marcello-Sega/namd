@@ -420,12 +420,13 @@ will be output to {\bf stdout}.
 
 \item
 \NAMDCONFWDEF{outputTiming}
-{timesteps between timing output}{nonnegative integer}{0}
+{timesteps between timing output}{nonnegative integer}
+{the greater of {\tt firstLdbStep} or $10 \times$ {\tt outputEnergies}}
 {
 The number of timesteps between each timing output of \NAMD.
-If specified and nonzero, CPU and wallclock times will be
+If nonzero, CPU and wallclock times and memory usage will be
 output to {\bf stdout}.
-These data are from node 0 only; CPU times for other nodes
+These data are from node 0 only; CPU times and memory usage for other nodes
 may vary.
 }
 
