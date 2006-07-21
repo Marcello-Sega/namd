@@ -155,9 +155,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
   if (coordinateFilename != NULL)
     pdb = new PDB(coordinateFilename->data);
   if (pdb->num_atoms() != molecule->numAtoms) {
-    iout << iERRORF 
-      << "Number of pdb and psf atoms are not the same!" << "\n" << endi;
-    return(1);
+    NAMD_die("Number of pdb and psf atoms are not the same!");
   }
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
