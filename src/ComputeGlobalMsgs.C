@@ -37,6 +37,7 @@ ComputeGlobalDataMsg::~ComputeGlobalDataMsg(void) {
 }
 
 PACK_MSG(ComputeGlobalDataMsg,
+  PACK(step);
   PACK_RESIZE(aid);
   PACK_RESIZE(p);
   PACK_RESIZE(gcom);

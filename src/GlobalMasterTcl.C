@@ -174,6 +174,20 @@ int GlobalMasterTcl::Tcl_clearconfig(ClientData clientData,
   return TCL_OK;
 }
 
+int GlobalMasterTcl::Tcl_getstep(ClientData clientData,
+	Tcl_Interp *interp, int argc, char **) {
+  DebugM(2,"Tcl_reconfig called\n");
+  if (argc != 1) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  GlobalMasterTcl *self = (GlobalMasterTcl *)clientData;
+  
+  char s[16];  sprintf(s,"%d",self->step);
+  Tcl_SetResult(interp,s,TCL_VOLATILE);
+  return TCL_OK;
+}
+
 int GlobalMasterTcl::Tcl_loadforces(ClientData clientData,
 	Tcl_Interp *interp, int objc, Tcl_Obj * const objv[]) {
   DebugM(1,"Making tcl force array\n");
@@ -524,6 +538,8 @@ void GlobalMasterTcl::initialize() {
   Tcl_CreateCommand(interp, (char *)"addatom", Tcl_addatom,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, (char *)"addgroup", Tcl_addgroup,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, (char *)"getstep", Tcl_getstep,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #else
 

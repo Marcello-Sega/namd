@@ -25,6 +25,8 @@ void GlobalMasterServer::addClient(GlobalMaster *newClient) {
 void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
   DebugM(3,"Storing data (" << msg->aid.size() << " positions) on master\n");
 
+  if ( msg->step != -1 ) step = msg->step;
+
   /* get the beginning and end of the lists */
   AtomIDList::iterator a_i = msg->aid.begin();
   AtomIDList::iterator a_e = msg->aid.end();
@@ -66,6 +68,7 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
     callClients();
 
     /* now restart */
+    step = -1;
     receivedAtomIDs.resize(0);
     receivedAtomPositions.resize(0);
     receivedGroupPositions.resize(totalGroupsRequested);
@@ -234,6 +237,7 @@ void GlobalMasterServer::callClients() {
 
     /* update this master */
     master->clearChanged();
+    master->step = step;
     master->processData(a_i,a_i+num_atoms_requested,
 			p_i,g_i,g_i+num_groups_requested,
 			forced_atoms_i,forced_atoms_e,forces_i,
@@ -286,6 +290,7 @@ GlobalMasterServer::GlobalMasterServer(ComputeMgr *m,
   numDataSenders = theNumDataSenders;
   recvCount = 0; /* we haven't gotten any messages yet */
   firstTime = 1; /* XXX temporary */
+  step = -1;
   totalAtomsRequested = 0;
   totalGroupsRequested = 0;
   DebugM(3,"done constructing\n");

@@ -31,6 +31,7 @@ public:
 class ComputeGlobalDataMsg : public CMessage_ComputeGlobalDataMsg {
 public:
   // data members
+  int step;
   AtomIDList aid;
   PositionList p;
   PositionList gcom;  // group center of mass

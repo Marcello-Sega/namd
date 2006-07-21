@@ -88,6 +88,7 @@ void GlobalMaster::calculate() {
 }
 
 GlobalMaster::GlobalMaster() {
+  step = -1;
   clearChanged();
 }
 

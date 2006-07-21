@@ -214,12 +214,16 @@ void ComputeGlobal::sendData()
   FullAtom **t = new FullAtom*[numPatches];
   for ( int i = 0; i < numPatches; ++i ) { x[i] = 0; t[i] = 0; }
 
+  int step = -1;
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     x[(*ap).patchID] = (*ap).positionBox->open();
     t[(*ap).patchID] = (*ap).p->getAtomList().begin();
+    step = (*ap).p->flags.step;
   }
 
   ComputeGlobalDataMsg *msg = new  ComputeGlobalDataMsg;
+
+  msg->step = step;
 
   AtomIDList::iterator a = aid.begin();
   AtomIDList::iterator a_e = aid.end();

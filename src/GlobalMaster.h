@@ -43,6 +43,8 @@ class GlobalMaster {
 		   AtomIDList::iterator,
 		   ForceList::iterator);
 
+  int step;  // set by server to current timestep before processData
+
   bool changedAtoms(); // false if the atom IDs haven't changed
   const AtomIDList &requestedAtoms(); // the atom ids requested
   bool changedForces(); // false if the forces haven't changed

@@ -53,6 +53,8 @@ class GlobalMasterServer {
   AtomIDList receivedForceIDs;
   ForceList receivedTotalForces;
 
+  int step;  // current timestep received from patches
+
   /* the compute manager responsible for my message delivery */
   ComputeMgr *myComputeManager;
 

@@ -29,6 +29,7 @@ class GlobalMasterTcl : public GlobalMaster {
   Tcl_Interp *interp;
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_atomid(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_getstep(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_addatom(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_addgroup(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_reconfig(ClientData, Tcl_Interp *, int, char **);
