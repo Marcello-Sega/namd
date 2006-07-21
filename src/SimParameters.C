@@ -656,10 +656,10 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("langevinTemp", NOT_NEGATIVE);
    opts.units("langevinTemp", N_KELVIN);
    opts.optional("Langevin", "langevinDamping", "Damping coefficient (1/ps)",
-      &langevinDamping, 0.0);
-   opts.range("langevinDamping", NOT_NEGATIVE);
+      &langevinDamping);
+   opts.range("langevinDamping", POSITIVE);
    opts.optionalB("Langevin", "langevinHydrogen", "Should Langevin dynamics be applied to hydrogen atoms?",
-      &langevinHydrogen, TRUE);
+      &langevinHydrogen);
    opts.optional("Langevin", "langevinFile", "PDB file with temperature "
      "coupling terms (B(i)) (default is the PDB input file)",
      PARSE_STRING);
@@ -1920,6 +1920,16 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       maximumMove = 0.75 * pairlistDist/stepsPerCycle;
    }
 
+   if (langevinOn) {
+     if ( ! opts.defined("langevinDamping") ) langevinDamping = 0.0;
+     if ( ! opts.defined("langevinHydrogen") ) langevinHydrogen = TRUE;
+     if ( (opts.defined("langevinDamping") || opts.defined("langevinHydrogen"))
+       && (opts.defined("langevinFile") || opts.defined("langevinCol")) )
+       NAMD_die("To specify Langevin dynamics parameters, use either langevinDamping and langevinHydrogen or langevinFile and langevinCol.  Do not combine them.");
+     if ( opts.defined("langevinHydrogen") && langevinDamping == 0.0 )
+       NAMD_die("langevinHydrogen requires langevinDamping to be set.");
+   }
+
    if (opts.defined("rescaleFreq"))
    {
   if (!opts.defined("rescaleTemp"))
@@ -3135,6 +3145,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 		iout << iINFO << "LANGEVIN DYNAMICS NOT APPLIED TO HYDROGENS\n";
       } else {
 	iout << iINFO << "LANGEVIN DAMPING COEFFICIENTS DETERMINED FROM FILES\n";
+        current = config->find("langevinFile");
+	if ( current ) iout << iINFO << "LANGEVIN DAMPING FILE:  " <<
+          current->data << "\n";
+        else iout << iINFO << "LANGEVIN DAMPING FILE IS COORDINATE PDB\n";
+        current = config->find("langevinCol");
+	if ( current ) iout << iINFO << "LANGEVIN DAMPING COLUMN:  " <<
+          current->data << "\n";
+        else iout << iINFO << "LANGEVIN DAMPING COLUMN:  DEFAULT (4TH, O)\n";
       }
       iout << endi;
    }
