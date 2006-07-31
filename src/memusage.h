@@ -7,16 +7,16 @@
 #ifndef MEMUSAGE_H
 #define MEMUSAGE_H
 
-long memusage();
+unsigned long memusage(const char **source = 0);
 
 class memusageinit {
 public:
   memusageinit();
 private:
   static int initialized;
-  static long sbrkval;
-  static long memusage_sbrk();
-  friend long memusage();
+  static unsigned long sbrkval;
+  static unsigned long memusage_sbrk();
+  friend unsigned long memusage(const char **source);
 };
 
 static memusageinit memusageinitobject;

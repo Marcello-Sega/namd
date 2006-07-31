@@ -170,7 +170,9 @@ public:
     iout << iINFO << "Running on BigSim using " << CmiNumPes() << " real processors.\n" << endi;
 #endif
     iout << iINFO << "Running on " << CkNumPes() << " processors.\n" << endi;
-    iout << iINFO << (memusage()/1024) << " kB of memory in use.\n" << endi;
+    const char* memsource;
+    iout << iINFO << (memusage(&memsource)/1024) << " kB of memory in use.\n" << endi;
+    iout << iINFO << "Memory usage based on " << memsource << "\n" << endi;
   }
 };
 

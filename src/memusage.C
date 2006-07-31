@@ -15,17 +15,17 @@ int sbrk(int) { return 0; }
 #endif
 
 int memusageinit::initialized;
-long memusageinit::sbrkval;
+unsigned long memusageinit::sbrkval;
 
 memusageinit::memusageinit() {
   if ( initialized == 0 ) {
-    sbrkval = (long) sbrk(0);
+    sbrkval = (unsigned long) sbrk(0);
     initialized = 1;
   }
 }
 
-long memusageinit::memusage_sbrk() {
-  long newval = (long) sbrk(0);
+unsigned long memusageinit::memusage_sbrk() {
+  unsigned long newval = (unsigned long) sbrk(0);
   return ( newval - memusageinit::sbrkval );
 }
 
@@ -48,14 +48,14 @@ long memusageinit::memusage_sbrk() {
 
 #include <malloc/malloc.h>
 
-long memusage_mstats() {
+unsigned long memusage_mstats() {
   struct mstats ms = mstats();
-  long memtotal = ms.bytes_used;
+  unsigned long memtotal = ms.bytes_used;
   return memtotal;
 }
 
 #else
-inline long memusage_mstats() { return 0; }
+inline unsigned long memusage_mstats() { return 0; }
 #endif
 
 
@@ -63,10 +63,13 @@ inline long memusage_mstats() { return 0; }
 
 #include <malloc.h>
 
-long memusage_mallinfo() {
+unsigned long memusage_mallinfo() {
   struct mallinfo mi = mallinfo();
-  // long memtotal = mi.usmblks + mi.uordblks + mi.hblkhd;
-  long memtotal = mi.uordblks;
+  // unsigned long memtotal = mi.usmblks + mi.uordblks + mi.hblkhd;
+  unsigned long memtotal = (unsigned int) mi.uordblks;
+  unsigned long memtotal2 = (unsigned int) mi.usmblks;
+  memtotal2 += (unsigned int) mi.hblkhd;
+  if ( memtotal2 > memtotal ) memtotal = memtotal2;
 
   // printf("mallinfo %d %d %d\n", mi.usmblks, mi.uordblks, mi.hblkhd);
 
@@ -74,44 +77,50 @@ long memusage_mallinfo() {
 }
 
 #else
-inline long memusage_mallinfo() { return 0; }
+inline unsigned long memusage_mallinfo() { return 0; }
 #endif
 
 
 #ifndef NO_PS
 
-inline long memusage_ps() {
+inline unsigned long memusage_ps() {
   char pscmd[100];
   sprintf(pscmd, "/bin/ps -o vsz= -p %d", getpid());
-  long vsz = 0;
+  unsigned long vsz = 0;
   FILE *p = popen(pscmd, "r");
   if ( p ) {
     fscanf(p, "%ld", &vsz);
     pclose(p);
   }
-  return ( vsz * 1024 );
+  return ( vsz * (unsigned long) 1024 );
 }
 
 #else
-inline long memusage_ps() { return 0; }
+inline unsigned long memusage_ps() { return 0; }
 #endif
 
 
-long memusage() {
+unsigned long memusage(const char **source) {
 
-  long memtotal = 0;
+  unsigned long memtotal = 0;
+  const char* s = "ERROR";
 
 #if CHARM_VERSION > 50911
   if (CmiMemoryIs(CMI_MEMORY_IS_GNU) ) memtotal = CmiMemoryUsage();
+  s = "CmiMemoryUsage";
 #endif
 
-  if ( ! memtotal ) memtotal = memusage_mstats();
+  if ( ! memtotal ) { memtotal = memusage_mstats(); s = "mstats"; }
 
-  if ( ! memtotal ) memtotal = memusage_mallinfo();
+  if ( ! memtotal ) { memtotal = memusage_mallinfo(); s = "mallinfo"; }
 
-  if ( ! memtotal ) memtotal = memusageinit::memusage_sbrk();
+  if ( ! memtotal ) { memtotal = memusageinit::memusage_sbrk(); s = "sbrk"; }
 
-  if ( ! memtotal ) memtotal = memusage_ps();
+  if ( ! memtotal ) { memtotal = memusage_ps(); s = "ps"; }
+
+  if ( ! memtotal ) s = "nothing";
+
+  if ( source ) *source = s;
 
   return memtotal;
 
