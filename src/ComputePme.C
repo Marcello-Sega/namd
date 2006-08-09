@@ -37,7 +37,8 @@
 #include "varsizemsg.h"
 #include "Random.h"
 
-#define USE_COMM_LIB 1
+// commlib has been observed to cause hangs when starting load balancing
+// #define USE_COMM_LIB 1
 #ifdef USE_COMM_LIB
 #include "EachToManyMulticastStrategy.h"
 #endif
