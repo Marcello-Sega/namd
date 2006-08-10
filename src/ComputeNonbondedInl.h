@@ -25,6 +25,47 @@
 
 #include "PressureProfile.h"
 
+#ifdef SIMPLE_PAIRLIST
+// unrolled pairlist code crashes icc on x86, so use this instead
+
+inline int pairlist_from_pairlist(BigReal cutoff2,
+	BigReal p_i_x, BigReal p_i_y, BigReal p_i_z,
+	const CompAtom *p_j,
+	const plint *list, int list_size, plint *newlist,
+	BigReal r2_delta, BigReal *r2list) {
+
+  BigReal cutoff2_delta = cutoff2 + r2_delta;
+  plint *nli = newlist;
+  BigReal *r2i = r2list;
+  if ( list_size > 0 ) {
+    int j2 = list[0];
+    BigReal p_j_x = p_j[j2].position.x;
+    BigReal p_j_y = p_j[j2].position.y;
+    BigReal p_j_z = p_j[j2].position.z;
+    int g = 0;
+    while ( g < list_size ) {
+      int j = j2;
+      j2 = list[++g];
+      BigReal t2 = p_i_x - p_j_x;
+      BigReal r2 = t2 * t2 + r2_delta;
+      p_j_x = p_j[j2].position.x;
+      t2 = p_i_y - p_j_y;
+      r2 += t2 * t2;
+      p_j_y = p_j[j2].position.y;
+      t2 = p_i_z - p_j_z;
+      r2 += t2 * t2;
+      p_j_z = p_j[j2].position.z;
+      if ( r2 <= cutoff2_delta ) {
+        *nli= j; ++nli;
+        *r2i = r2; ++r2i;
+      }
+    }
+  }
+  return nli - newlist;
+}
+
+#else // SIMPlE_PAIRLIST not defined
+
 inline int pairlist_from_pairlist(BigReal cutoff2,
 	BigReal p_i_x, BigReal p_i_y, BigReal p_i_z,
 	const CompAtom *p_j,
@@ -164,6 +205,7 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
   return jout;
 }
 
+#endif // SIMPLE_PAIRLIST
 
 // clear all
 // define interaction type (pair or self)
