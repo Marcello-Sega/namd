@@ -13,6 +13,9 @@
    function arguments.
 */
 
+#if 0
+//  No longer in use and probably not the best solution anyway.
+
 #ifndef RESERVEARRAY_H
 #define RESERVEARRAY_H
 
@@ -44,6 +47,8 @@ template <class Elem, int reservedSize> class ReserveArray {
   }
 
 };
+
+#endif
 
 #endif
 
