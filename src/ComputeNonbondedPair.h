@@ -14,6 +14,7 @@ class ComputeNonbondedPair : public ComputePatchPair, private ComputeNonbondedUt
 
 public:
   ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[],
+	ComputeNonbondedWorkArrays* _workArrays,
 	int minPartition = 0, int maxPartition = 1, int numPartitions = 1);
   ~ComputeNonbondedPair();
 
@@ -27,6 +28,8 @@ protected :
   SubmitReduction *reduction;
   SubmitReduction *pressureProfileReduction;
   BigReal *pressureProfileData;
+
+  ComputeNonbondedWorkArrays* const workArrays;
 
   Pairlists pairlists;
   int pairlistsValid;

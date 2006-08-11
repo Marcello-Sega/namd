@@ -15,8 +15,9 @@
 #include "Debug.h"
 
 ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans[],
+		ComputeNonbondedWorkArrays* _workArrays,
 		int minPartition, int maxPartition, int numPartitions)
-  : ComputePatchPair(c,pid,trans),
+  : ComputePatchPair(c,pid,trans), workArrays(_workArrays),
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
@@ -134,6 +135,8 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2],
     params.minPart = minPart;
     params.maxPart = maxPart;
     params.numParts = numParts;
+
+    params.workArrays = workArrays;
 
     params.pairlists = &pairlists;
     params.savePairlists = 0;

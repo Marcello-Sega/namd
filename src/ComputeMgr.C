@@ -73,11 +73,12 @@ ComputeMgr::ComputeMgr()
   CpvAccess(BOCclass_group).computeMgr = thisgroup;
   computeGlobalObject = 0;
   computeDPMEObject = 0;
+  computeNonbondedWorkArrays = new ComputeNonbondedWorkArrays;
 }
 
 ComputeMgr::~ComputeMgr(void)
 {
-  ;
+  delete computeNonbondedWorkArrays;
 }
 
 void ComputeMgr::updateComputes(int ep, CkGroupID chareID) {
@@ -240,6 +241,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     {
       case computeNonbondedSelfType:
 	c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
+				     computeNonbondedWorkArrays,
 				     map->partition(i),map->partition(i)+1,
 				     map->numPartitions(i)); // unknown delete
 	++numNonbondedSelf;
@@ -252,6 +254,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	pid2[1] = map->computeData[i].pids[1].pid;
 	trans2[1] = map->computeData[i].pids[1].trans;
 	c = new ComputeNonbondedPair(i,pid2,trans2,
+				     computeNonbondedWorkArrays,
 				     map->partition(i),map->partition(i)+1,
 				     map->numPartitions(i)); // unknown delete
 	++numNonbondedPair;

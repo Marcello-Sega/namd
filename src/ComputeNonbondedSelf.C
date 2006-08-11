@@ -14,8 +14,9 @@
 #include "Debug.h"
 
 ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
+		ComputeNonbondedWorkArrays* _workArrays,
 		int minPartition, int maxPartition, int numPartitions)
-  : ComputePatch(c,pid),
+  : ComputePatch(c,pid), workArrays(_workArrays),
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
@@ -84,6 +85,8 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
     params.minPart = minPart;
     params.maxPart = maxPart;
     params.numParts = numParts;
+
+    params.workArrays = workArrays;
 
     params.pairlists = &pairlists;
     params.savePairlists = 0;

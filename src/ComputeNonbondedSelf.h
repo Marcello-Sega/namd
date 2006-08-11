@@ -14,6 +14,7 @@ class ComputeNonbondedSelf : public ComputePatch, private ComputeNonbondedUtil {
 
 public:
   ComputeNonbondedSelf(ComputeID c, PatchID pid,
+	ComputeNonbondedWorkArrays* _workArrays,
 	int minPartition = 0, int maxPartition = 1, int numPartitions = 1);
   virtual ~ComputeNonbondedSelf();
 
@@ -26,6 +27,8 @@ protected :
   SubmitReduction *reduction;
   SubmitReduction *pressureProfileReduction;
   BigReal *pressureProfileData;
+
+  ComputeNonbondedWorkArrays* const workArrays;
 
   Pairlists pairlists;
   int pairlistsValid;

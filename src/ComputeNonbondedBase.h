@@ -269,10 +269,12 @@ void ComputeNonbondedUtil :: NAME
   plint *pairlistx_save;  int npairx;
   plint *pairlistm_save;  int npairm;
 
+  NBWORKARRAYSINIT(params->workArrays);
+
   int arraysize = j_upper+5;
 
-  RESERVEARRAY(plint,pairlisti,1005,arraysize)
-  RESERVEARRAY(BigReal,r2list,1005,arraysize)
+  NBWORKARRAY(plint,pairlisti,arraysize)
+  NBWORKARRAY(BigReal,r2list,arraysize)
 
   union { double f; int32 i[2]; } byte_order_test;
   byte_order_test.f = 1.0;  // should occupy high-order bits only
@@ -280,15 +282,15 @@ void ComputeNonbondedUtil :: NAME
 
   if ( ! ( savePairlists || ! usePairlists ) ) arraysize = 0;
 
-  RESERVEARRAY(plint,grouplist,1005,arraysize);
-  RESERVEARRAY(plint,fixglist,1005,arraysize);
-  RESERVEARRAY(plint,goodglist,1005,arraysize);
-  RESERVEARRAY(plint,pairlistx,1005,arraysize);
-  RESERVEARRAY(plint,pairlistm,1005,arraysize);
-  RESERVEARRAY(plint,pairlist,1005,arraysize);
-  RESERVEARRAY(plint,pairlist2,1005,arraysize);
+  NBWORKARRAY(plint,grouplist,arraysize);
+  NBWORKARRAY(plint,fixglist,arraysize);
+  NBWORKARRAY(plint,goodglist,arraysize);
+  NBWORKARRAY(plint,pairlistx,arraysize);
+  NBWORKARRAY(plint,pairlistm,arraysize);
+  NBWORKARRAY(plint,pairlist,arraysize);
+  NBWORKARRAY(plint,pairlist2,arraysize);
 
-  RESERVEARRAY(short,vdwtype_array,1005,j_upper+5);
+  NBWORKARRAY(short,vdwtype_array,j_upper+5);
   for (j = 0; j < j_upper; ++j)
     vdwtype_array [j] = mol->atomvdwtype(p_1[j].id);
 
@@ -349,7 +351,7 @@ void ComputeNonbondedUtil :: NAME
     Force *f_1 = params->ff[1];
 #else
 #define f_1 f_0
-    RESERVEARRAY(Force,f_0,1005,i_upper)
+    NBWORKARRAY(Force,f_0,i_upper)
     memset( (void*) f_0, 0, i_upper * sizeof(Force) );
 #endif
 #endif
@@ -359,7 +361,7 @@ void ComputeNonbondedUtil :: NAME
     Force *fullf_1 = params->fullf[1];
 #else
 #define fullf_1 fullf_0
-    RESERVEARRAY(Force,fullf_0,1005,i_upper);
+    NBWORKARRAY(Force,fullf_0,i_upper);
     memset( (void*) fullf_0, 0, i_upper * sizeof(Force) );
 #endif
 #endif

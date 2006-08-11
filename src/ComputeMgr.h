@@ -36,6 +36,8 @@ class ComputeConsForceMsg;
 class ComputeEwald;
 class ComputeEwaldMsg;
 
+class ComputeNonbondedWorkArrays;
+
 class ComputeMgr : public BOCclass
 {
 public:
@@ -84,6 +86,8 @@ private:
   ComputeDPME *computeDPMEObject;
 
   ComputeEwald *computeEwaldObject;
+
+  ComputeNonbondedWorkArrays *computeNonbondedWorkArrays;
 
   int updateComputesCount;
   int updateComputesReturnEP;

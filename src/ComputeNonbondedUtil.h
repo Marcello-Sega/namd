@@ -52,6 +52,27 @@ public:
   }
 };
 
+#define NBWORKARRAYSINIT(ARRAYS) \
+  ComputeNonbondedWorkArrays* const computeNonbondedWorkArrays = ARRAYS;
+
+#define NBWORKARRAY(TYPE,NAME,SIZE) \
+  computeNonbondedWorkArrays->NAME.resize(SIZE); \
+  TYPE * NAME = computeNonbondedWorkArrays->NAME.begin();
+
+struct ComputeNonbondedWorkArrays {
+  ResizeArray<plint> pairlisti;
+  ResizeArray<BigReal> r2list;
+  ResizeArray<plint> grouplist;
+  ResizeArray<plint> fixglist;
+  ResizeArray<plint> goodglist;
+  ResizeArray<plint> pairlistx;
+  ResizeArray<plint> pairlistm;
+  ResizeArray<plint> pairlist;
+  ResizeArray<plint> pairlist2;
+  ResizeArray<short> vdwtype_array;
+  ResizeArray<Force> f_0;
+  ResizeArray<Force> fullf_0;
+};
 
 // function arguments
 struct nonbonded {
@@ -64,6 +85,8 @@ struct nonbonded {
 
   BigReal *reduction;
   BigReal *pressureProfileReduction;
+
+  ComputeNonbondedWorkArrays *workArrays;
 
   Pairlists *pairlists;
   int savePairlists;
