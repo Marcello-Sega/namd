@@ -73,6 +73,7 @@ ComputeMgr::ComputeMgr()
   CpvAccess(BOCclass_group).computeMgr = thisgroup;
   computeGlobalObject = 0;
   computeDPMEObject = 0;
+  computeEwaldObject = 0;
   computeNonbondedWorkArrays = new ComputeNonbondedWorkArrays;
 }
 

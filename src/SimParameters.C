@@ -3328,6 +3328,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
                    << pressureProfileFreq << "\n";
      iout << iINFO << "      NUMBER OF ATOM TYPES: " << pressureProfileAtomTypes << "\n";
      iout << endi;
+   } else {
+     pressureProfileEwaldOn = 0;
+     pressureProfileAtomTypes = 1;
    }
 
    if (FMAOn)
