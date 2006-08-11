@@ -59,7 +59,8 @@ public:
   computeNonbondedWorkArrays->NAME.resize(SIZE); \
   TYPE * NAME = computeNonbondedWorkArrays->NAME.begin();
 
-struct ComputeNonbondedWorkArrays {
+class ComputeNonbondedWorkArrays {
+public:
   ResizeArray<plint> pairlisti;
   ResizeArray<BigReal> r2list;
   ResizeArray<plint> grouplist;
