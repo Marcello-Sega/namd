@@ -31,7 +31,7 @@ public:
   plint *newlist(int max_size) {  // get a new list w/ room for max_size
     int reqnewsize = curpos + max_size + 1;
     int newsize = size;
-    while ( newsize < reqnewsize ) { newsize *= 1.5; }
+    while ( newsize < reqnewsize ) { newsize += newsize >> 1; }
     if ( newsize > size ) {
       plint *newdata = new plint[newsize];
       memcpy(newdata,data,curpos*sizeof(plint));
