@@ -305,9 +305,9 @@ void CrosstermElem::computeForce(BigReal *reduction,
   }
 
   /* return accumulated values */
-  U = f;
-  U_phi = fx;
-  U_psi = fy;
+  U = f * scale;
+  U_phi = fx * scale;
+  U_psi = fy * scale;
 
 /*
 CkPrintf("crossterm %d-%d-%d-%d %d-%d-%d-%d %lf %lf %d %d %lf %lf %lf\n",
