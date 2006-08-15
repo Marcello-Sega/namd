@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.6b1 Release Announcement                   |
+|                  NAMD 2.6b2 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                       July 30, 2005
+                                                     August 17, 2006
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
@@ -13,17 +13,23 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.6b1 has several advantages over NAMD 2.5:
+NAMD 2.6b2 has several advantages over NAMD 2.5:
 
 - Ports to Itanium, Altix, and Opteron/Athlon64/EMT64.
 
-- Improved serial performance on POWER and PowerPC.
+- Port to Mac OS X for Intel processors.
+
+- Ports to Cray XT3 and IBM BlueGene/L (source code only).
+
+- Improved serial performance, especially on POWER and PowerPC.
 
 - Adaptive biasing force free energy calculations.
 
 - Tcl-based boundary potentials.
 
 - Reduced memory usage for unusual simulations.
+
+- Support for CHARMM 31 stream files and CMAP crossterms.
 
 - Support for OPLS force field.
 

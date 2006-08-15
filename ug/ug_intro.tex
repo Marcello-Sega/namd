@@ -42,7 +42,21 @@ NAMD runs very fast on the Itanium processor under Linux, including
 the SGI Altix.  Native binaries for 64-bit x86 processors such as
 AMD Opteron and Intel EMT64 are 25\% faster than 32-bit binaries.
 
-\subsubsection*{Improved Serial Performance on POWER and PowerPC}
+\subsubsection*{Port to Mac OS X for Intel Processors}
+
+NAMD has been ported to the new Intel-based Macintosh platform.
+Binaries are only 32-bit, but should run on newer 64-bit machines.
+
+\subsubsection*{Ports to Cray XT3 and IBM BlueGene/L (source code only)}
+
+These two large, scalable, but immature platforms are now
+supported.  Neither platform supports dynamic linking and our
+experience shows that binaries would be quickly out of date, so
+only source code is released.  Also, BlueGene/L requires the
+latest development version of Charm++, rather than charm-5.9
+as shipped with the NAMD source code.
+
+\subsubsection*{Improved Serial Performance, Especially on POWER and PowerPC}
 
 Tuning of the NAMD inner loop has provided a 30\% performance boost
 with the IBM XL compiler.  New Mac OS X binaries are up to 70\%
@@ -66,6 +80,12 @@ Memory usage for simulations of large, highly bonded structures
 such as covalent crystals and for sparse simulations such as
 coarse-grained models has been greatly reduced without affecting
 the performance of typical biopolymer simulations.
+
+\subsubsection*{Support for CHARMM 31 Stream Files and CMAP Crossterms}
+
+Both NAMD and psfgen (standalone or VMD plug) read and interpret
+the new CHARMM 31 stream files (combining topology and parameters)
+and the new CMAP crossterm (dihedral-dihedral) potential function.
 
 \subsubsection*{Support for OPLS Force Field}
 
