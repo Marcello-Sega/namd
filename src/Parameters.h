@@ -106,6 +106,14 @@ public:
 	FourBodyConsts values[MAX_MULTIPLICITY];
 };
 
+struct CrosstermData { BigReal d00,d01,d10,d11; };
+
+class CrosstermValue {
+public:
+	enum {dim=25};
+	CrosstermData c[dim][dim];  // bicubic interpolation coefficients
+};
+
 class NonbondedExclValue {
 public:
 	// need to put parameters here...
@@ -143,6 +151,7 @@ struct bond_params;
 struct angle_params;
 struct improper_params;
 struct dihedral_params;
+struct crossterm_params;
 struct vdw_params;
 struct vdw_pair_params;
 
@@ -164,6 +173,7 @@ private:
 	struct angle_params *anglep;		//  Binary tree of angle params
 	struct improper_params *improperp;	//  Linked list of improper par.
 	struct dihedral_params *dihedralp;      //  Linked list of dihedral par.
+	struct crossterm_params *crosstermp;	//  Linked list of cross-term par.
 	struct vdw_params *vdwp;		//  Binary tree of vdw params
 	struct vdw_pair_params *vdw_pairp;	//  Binary tree of vdw pairs
 public:
@@ -171,6 +181,7 @@ public:
 	AngleValue *angle_array;		//  Array of angle params
 	DihedralValue *dihedral_array;		//  Array of dihedral params
 	ImproperValue *improper_array;		//  Array of improper params
+	CrosstermValue *crossterm_array;	//  Array of crossterm params
 	VdwValue *vdw_array;			//  Array of vdw params
 private:
 	IndexedVdwPair *vdw_pair_tree;		//  Tree of vdw pair params
@@ -178,6 +189,7 @@ private:
 	int NumAngleParams;			//  Number of angle parameters
 	int NumDihedralParams;			//  Number of dihedral params
 	int NumImproperParams;			//  Number of improper params
+	int NumCrosstermParams;			//  Number of cross-term params
 	int NumVdwParams;			//  Number of vdw parameters
         int NumVdwParamsAssigned;               //  Number actually assigned
 	int NumVdwPairParams;			//  Number of vdw_pair params
@@ -203,6 +215,9 @@ private:
 	void add_improper_param(char *, FILE *); //  Add an improper parameter
 	void add_to_improper_list(struct improper_params *);
 
+	void add_crossterm_param(char *, FILE *); //  Add an cross-term parameter
+	void add_to_crossterm_list(struct crossterm_params *);
+
 	void add_vdw_param(char *);		//  Add a vdw parameter
 	struct vdw_params *add_to_vdw_tree(struct vdw_params *, 
 				     struct vdw_params *);
@@ -218,6 +233,7 @@ private:
 	void traverse_vdw_params(struct vdw_params *);
 	void traverse_dihedral_params(struct dihedral_params *);
 	void traverse_improper_params(struct improper_params *);
+	void traverse_crossterm_params(struct crossterm_params *);
 	void traverse_angle_params(struct angle_params *);
 	void traverse_bond_params(struct bond_params *);
 
@@ -229,6 +245,7 @@ private:
 	Index index_vdw(struct vdw_params *, Index);
 	void index_dihedrals();
 	void index_impropers();
+	void index_crossterms();
 	
 	void convert_vdw_pairs();
 	IndexedVdwPair *add_to_indexed_vdw_pairs(IndexedVdwPair *, IndexedVdwPair *);
@@ -242,6 +259,7 @@ private:
 	void free_angle_tree(struct angle_params *);
 	void free_dihedral_list(struct dihedral_params *);
 	void free_improper_list(struct improper_params *);
+	void free_crossterm_list(struct crossterm_params *);
 	void free_vdw_tree(struct vdw_params *);
 	void free_vdw_pair_tree(IndexedVdwPair *);
 	void free_vdw_pair_list();
@@ -309,6 +327,7 @@ public:
 	void assign_improper_index(char *, char*, char*, char *, Improper *, int);
 						//  Assign an improper index
 						//  to an improper
+	void assign_crossterm_index(char *, char*, char*, char *, char *, char*, char*, char *, Crossterm *);
 
 	//  send_parameters is used by the master process to
 	//  communicate the paramters to all the other processors
@@ -398,6 +417,7 @@ public:
 	void print_angle_params();		//  Print angle params
 	void print_dihedral_params();		//  Print dihedral params
 	void print_improper_params();		//  Print improper params
+	void print_crossterm_params();		//  Print cross-term params
 	void print_vdw_params();		//  Print vdw params
 	void print_vdw_pair_params();		//  Print vdw_pair params
 	void print_param_summary();		//  Print a summary of params

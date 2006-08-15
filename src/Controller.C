@@ -1021,7 +1021,7 @@ void Controller::compareChecksums(int step, int forgiving) {
     Molecule *molecule = node->molecule;
 
     // Some basic correctness checking
-    BigReal checksum;
+    BigReal checksum, checksum_b;
 
     checksum = reduction->item(REDUCTION_ATOM_CHECKSUM);
     if ( ((int)checksum) != molecule->numAtoms )
@@ -1035,32 +1035,39 @@ void Controller::compareChecksums(int step, int forgiving) {
         computeChecksum = ((int)checksum);
     }
 
-    checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcBonds) ) {
+    checksum_b = checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
+    if ( checksum_b && (((int)checksum) != molecule->numCalcBonds) ) {
       if ( forgiving && (((int)checksum) < molecule->numCalcBonds) )
         iout << iWARN << "Bad global bond count!\n" << endi;
       else NAMD_bug("Bad global bond count!\n");
     }
 
     checksum = reduction->item(REDUCTION_ANGLE_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcAngles) ) {
+    if ( checksum_b && (((int)checksum) != molecule->numCalcAngles) ) {
       if ( forgiving && (((int)checksum) < molecule->numCalcAngles) )
         iout << iWARN << "Bad global angle count!\n" << endi;
       else NAMD_bug("Bad global angle count!\n");
     }
 
     checksum = reduction->item(REDUCTION_DIHEDRAL_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcDihedrals) ) {
+    if ( checksum_b && (((int)checksum) != molecule->numCalcDihedrals) ) {
       if ( forgiving && (((int)checksum) < molecule->numCalcDihedrals) )
         iout << iWARN << "Bad global dihedral count!\n" << endi;
       else NAMD_bug("Bad global dihedral count!\n");
     }
 
     checksum = reduction->item(REDUCTION_IMPROPER_CHECKSUM);
-    if ( checksum && (((int)checksum) != molecule->numCalcImpropers) ) {
+    if ( checksum_b && (((int)checksum) != molecule->numCalcImpropers) ) {
       if ( forgiving && (((int)checksum) < molecule->numCalcImpropers) )
         iout << iWARN << "Bad global improper count!\n" << endi;
       else NAMD_bug("Bad global improper count!\n");
+    }
+
+    checksum = reduction->item(REDUCTION_CROSSTERM_CHECKSUM);
+    if ( checksum_b && (((int)checksum) != molecule->numCalcCrossterms) ) {
+      if ( forgiving && (((int)checksum) < molecule->numCalcCrossterms) )
+        iout << iWARN << "Bad global crossterm count!\n" << endi;
+      else NAMD_bug("Bad global crossterm count!\n");
     }
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
@@ -1142,58 +1149,12 @@ void Controller::printMinimizeEnergies(int step) {
 
     printEnergies(step,1);
 
-/*
-    BigReal bondEnergy;
-    BigReal angleEnergy;
-    BigReal dihedralEnergy;
-    BigReal improperEnergy;
-    BigReal boundaryEnergy;
-    BigReal miscEnergy;
-    BigReal totalEnergy;
-
-    bondEnergy = reduction->item(REDUCTION_BOND_ENERGY);
-    angleEnergy = reduction->item(REDUCTION_ANGLE_ENERGY);
-    dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
-    improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
-    boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
-    miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
-    electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
-    ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
-    electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
-
-    totalEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy +
-	electEnergy + electEnergySlow + ljEnergy + boundaryEnergy + miscEnergy;
-*/
-
     min_energy = totalEnergy;
     min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);
     min_f_dot_v = reduction->item(REDUCTION_MIN_F_DOT_V);
     min_v_dot_v = reduction->item(REDUCTION_MIN_V_DOT_V);
     min_huge_count = reduction->item(REDUCTION_MIN_HUGE_COUNT);
 
-/*
-    if ( ( step % 10 ) == 0 ) {
-	iout << "ETITLE:     TS    BOND        ANGLE       "
-	     << "DIHED       IMPRP       ELECT       VDW       "
-	     << "BOUNDARY    MISC        TOTAL       GRADIENT\n" << endi;
-    }
-
-    // N.B.  HP's aCC compiler merges FORMAT calls in the same expression.
-    //       Need separate statements because data returned in static array.
-
-    iout << ETITLE(step);
-    iout << FORMAT(bondEnergy);
-    iout << FORMAT(angleEnergy);
-    iout << FORMAT(dihedralEnergy);
-    iout << FORMAT(improperEnergy);
-    iout << FORMAT(electEnergy+electEnergySlow);
-    iout << FORMAT(ljEnergy);
-    iout << FORMAT(boundaryEnergy);
-    iout << FORMAT(miscEnergy);
-    iout << FORMAT(totalEnergy);
-    iout << FORMAT(sqrt(min_f_dot_f));
-    iout << "\n" << endi;
-*/
 }
 
 void Controller::printDynamicsEnergies(int step) {
@@ -1222,6 +1183,7 @@ void Controller::printEnergies(int step, int minimize)
     BigReal angleEnergy;
     BigReal dihedralEnergy;
     BigReal improperEnergy;
+    BigReal crosstermEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
     BigReal potentialEnergy;
@@ -1235,6 +1197,7 @@ void Controller::printEnergies(int step, int minimize)
     angleEnergy = reduction->item(REDUCTION_ANGLE_ENERGY);
     dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
     improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
+    crosstermEnergy = reduction->item(REDUCTION_CROSSTERM_ENERGY);
     boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
     miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
 
@@ -1265,7 +1228,7 @@ void Controller::printEnergies(int step, int minimize)
 
     potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy +
 	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
-	boundaryEnergy + miscEnergy;
+	crosstermEnergy + boundaryEnergy + miscEnergy;
     totalEnergy = potentialEnergy + kineticEnergy;
     flatEnergy = totalEnergy +
         (1.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
@@ -1357,7 +1320,7 @@ void Controller::printEnergies(int step, int minimize)
       energies.Eelec = electEnergy + electEnergySlow;
       energies.Ebond = bondEnergy;
       energies.Eangle = angleEnergy;
-      energies.Edihe = dihedralEnergy;
+      energies.Edihe = dihedralEnergy + crosstermEnergy;
       energies.Eimpr = improperEnergy;
       Node::Object()->imd->gather_energies(&energies);
     }
@@ -1405,11 +1368,13 @@ void Controller::printEnergies(int step, int minimize)
       CALLBACKDATA("BOND",bondEnergy);
       CALLBACKDATA("ANGLE",angleEnergy);
       CALLBACKDATA("DIHED",dihedralEnergy);
+      CALLBACKDATA("CROSS",crosstermEnergy);
       CALLBACKDATA("IMPRP",improperEnergy);
       CALLBACKDATA("ELECT",electEnergy+electEnergySlow);
       CALLBACKDATA("VDW",ljEnergy);
       CALLBACKDATA("BOUNDARY",boundaryEnergy);
       CALLBACKDATA("MISC",miscEnergy);
+      CALLBACKDATA("POTENTIAL",potentialEnergy);
       CALLBACKDATA("KINETIC",kineticEnergy);
       CALLBACKDATA("TOTAL",totalEnergy);
       CALLBACKDATA("TEMP",temperature);
@@ -1464,6 +1429,7 @@ void Controller::printEnergies(int step, int minimize)
 	iout << FORMAT("BOND");
 	iout << FORMAT("ANGLE");
 	iout << FORMAT("DIHED");
+	if ( ! simParameters->mergeCrossterms ) iout << FORMAT("CROSS");
 	iout << FORMAT("IMPRP");
         iout << "     ";
 	iout << FORMAT("ELECT");
@@ -1494,7 +1460,12 @@ void Controller::printEnergies(int step, int minimize)
     iout << ETITLE(step);
     iout << FORMAT(bondEnergy);
     iout << FORMAT(angleEnergy);
-    iout << FORMAT(dihedralEnergy);
+    if ( simParameters->mergeCrossterms ) {
+      iout << FORMAT(dihedralEnergy+crosstermEnergy);
+    } else {
+      iout << FORMAT(dihedralEnergy);
+      iout << FORMAT(crosstermEnergy);
+    }
     iout << FORMAT(improperEnergy);
     iout << "     ";
     iout << FORMAT(electEnergy+electEnergySlow);

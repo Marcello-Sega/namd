@@ -106,6 +106,28 @@ struct improper_params
   struct improper_params *next;
 };
 
+struct crossterm_params
+{
+  crossterm_params(int dim) : dimension(dim) {
+    values = new double[dimension*dimension];
+  }
+  ~crossterm_params() {
+    delete [] values;
+  }
+  char atom1name[11];
+  char atom2name[11];
+  char atom3name[11];
+  char atom4name[11];
+  char atom5name[11];
+  char atom6name[11];
+  char atom7name[11];
+  char atom8name[11];
+  int dimension;  // usually 24
+  double *values;  // dimension * dimension data
+  Index index;
+  struct crossterm_params *next;
+};
+
 //  struct vdw_params is used to form a binary serach tree of the
 //  vdw paramters for a single atom.
 
@@ -150,6 +172,7 @@ void Parameters::initialize() {
   anglep=NULL;
   improperp=NULL;
   dihedralp=NULL;
+  crosstermp=NULL;
   vdwp=NULL;
   vdw_pairp=NULL;
   bond_array=NULL;
@@ -166,6 +189,7 @@ void Parameters::initialize() {
   NumAngleParams=0;
   NumDihedralParams=0;
   NumImproperParams=0;
+  NumCrosstermParams=0;
   NumVdwParams=0;
   NumVdwPairParams=0;
 }
@@ -252,6 +276,9 @@ Parameters::~Parameters()
   if (improperp != NULL)
     free_improper_list(improperp);
 
+  if (crosstermp != NULL)
+    free_crossterm_list(crosstermp);
+
   if (vdwp != NULL)
     free_vdw_tree(vdwp);
 
@@ -269,6 +296,9 @@ Parameters::~Parameters()
 
   if (improper_array != NULL)
     delete [] improper_array;
+
+  if (crossterm_array != NULL)
+    delete [] crossterm_array;
 
   if (vdw_array != NULL)
     delete [] vdw_array;
@@ -516,6 +546,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         par_type=7; skipline=1;
       }
+      else if (strncasecmp(first_word, "cmap", 4)==0)
+      {
+        par_type=8; skipline=1;
+      }
       else if ((strncasecmp(first_word, "nbxm", 4) == 0) ||
                (strncasecmp(first_word, "grou", 4) == 0) ||
                (strncasecmp(first_word, "cdie", 4) == 0) ||
@@ -607,6 +641,11 @@ void Parameters::read_charmm_parameter_file(char *fname)
       else if (par_type == 7)
       {
         add_hb_pair_param(buffer);                  
+      }
+      else if (par_type == 8)
+      {
+        add_crossterm_param(buffer, pfile);                  
+        NumCrosstermParams++;
       }
       else
       {
@@ -1847,6 +1886,245 @@ void Parameters::add_to_improper_list(struct improper_params *new_node)
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION add_crossterm_param      */
+/*                  */
+/*   INPUTS:                */
+/*  buf - line from paramter file with crossterm parameters    */
+/*                  */
+/*  this function adds an crossterm parameter.  It parses up the     */
+/*   input line and then adds it to the binary tree used to store the   */
+/*   crossterm parameters.            */
+/*                  */
+/************************************************************************/
+
+void Parameters::add_crossterm_param(char *buf, FILE *fd)
+
+{
+  char atom1name[11];       //  Atom 1 type
+  char atom2name[11];       //  Atom 2 type
+  char atom3name[11];       //  Atom 3 type
+  char atom4name[11];       //  Atom 4 type
+  char atom5name[11];       //  Atom 1 type
+  char atom6name[11];       //  Atom 2 type
+  char atom7name[11];       //  Atom 3 type
+  char atom8name[11];       //  Atom 4 type
+  int dimension;
+  int read_count;         //  Count from sscanf
+  struct crossterm_params *new_node;  //  New node
+  char buffer[513];       //  Buffer for new line
+  int ret_code;         //  Return code
+
+  /* read CHARMM format */
+  read_count=sscanf(buf, "%s %s %s %s %s %s %s %s %d\n", 
+     atom1name, atom2name, atom3name, atom4name,  
+     atom5name, atom6name, atom7name, atom8name,  
+     &dimension); 
+
+  if ( (read_count != 9) || dimension < 1 || dimension > 1000 )
+  {
+    char err_msg[512];
+
+    sprintf(err_msg, "BAD CMAP FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
+    NAMD_die(err_msg);
+  }
+
+  /*  Allocate a new node            */
+  new_node = new crossterm_params(dimension);
+
+  /*  Assign the values for this bond.  As with the dihedrals,    */
+  /*  the atom order doesn't matter        */
+  strcpy(new_node->atom1name, atom1name);
+  strcpy(new_node->atom2name, atom2name);
+  strcpy(new_node->atom3name, atom3name);
+  strcpy(new_node->atom4name, atom4name);
+  strcpy(new_node->atom5name, atom5name);
+  strcpy(new_node->atom6name, atom6name);
+  strcpy(new_node->atom7name, atom7name);
+  strcpy(new_node->atom8name, atom8name);
+
+  new_node->next = NULL;
+
+  int nterms = dimension * dimension;
+  int nread = 0;
+
+  //  Loop through and read the other values
+  while ( nread < nterms ) {
+    ret_code = NAMD_read_line(fd, buffer);
+
+    //  Strip off comments at the end of the line
+    if (ret_code == 0) {
+      NAMD_remove_comment(buffer);
+    }
+
+    //  Skip blank lines
+    while ( (ret_code == 0) && (NAMD_blank_string(buffer)) ) {
+      ret_code = NAMD_read_line(fd, buffer);
+      if (ret_code == 0) {
+        NAMD_remove_comment(buffer);
+      }
+    }
+
+    if (ret_code != 0) {
+      NAMD_die("EOF encoutner in middle of CMAP");
+    }
+
+    //  Get the values from the line
+    read_count=sscanf(buffer, "%lf %lf %lf %lf %lf %lf %lf %lf\n",
+	new_node->values + nread,
+	new_node->values + nread+1,
+	new_node->values + nread+2,
+	new_node->values + nread+3,
+	new_node->values + nread+4,
+	new_node->values + nread+5,
+	new_node->values + nread+6,
+	new_node->values + nread+7);
+
+    nread += read_count;
+
+    if (read_count == 0 || nread > nterms) {
+      char err_msg[512];
+
+      sprintf(err_msg, "BAD CMAP FORMAT IN PARAMETER FILE\nLINE=*%s*\n", buffer);
+      NAMD_die(err_msg);
+    }
+  }
+
+  /*  Add the paramter to the list        */
+  add_to_crossterm_list(new_node);
+
+  return;
+}
+/*      END OF FUNCTION add_crossterm_param    */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION add_to_crossterm_list      */
+/*                  */
+/*   INPUTS:                */
+/*  new_node - node that is to be added to crossterm_list    */
+/*                  */
+/*  this function adds a new crossterm parameter to the linked list  */
+/*   of crossterm parameters.  First, it checks for duplicates.  If a    */
+/*   duplicate is found, a warning message is printed, the old values   */
+/*   are replaced with the new values, and the new node is freed.  If   */
+/*   Otherwise, the node is added to the list.  This list is arranged   */
+/*   so that bods with wildcards are placed at the tail of the list.    */
+/*   This will guarantee that if we just do a linear search, we will    */
+/*   always find an exact match before a wildcard match.    */
+/*                  */
+/************************************************************************/
+
+void Parameters::add_to_crossterm_list(struct crossterm_params *new_node)
+
+{
+  int i;              //  Loop counter
+  static struct crossterm_params *ptr;   //  position within list
+  static struct crossterm_params *tail;  //  Pointer to the end of 
+                //  the list so we can add
+                //  entries to the end of the
+                //  list in constant time
+
+  /*  If the list is currently empty, then the new node is the list*/
+  if (crosstermp == NULL)
+  {
+    crosstermp=new_node;
+    tail=new_node;
+
+    return;
+  }
+
+  /*  The list isn't empty, so check for a duplicate    */
+  ptr=crosstermp;
+
+  while (ptr != NULL)
+  {
+    if ( ( (strcasecmp(new_node->atom1name, ptr->atom1name) == 0) &&
+           (strcasecmp(new_node->atom2name, ptr->atom2name) == 0) &&
+           (strcasecmp(new_node->atom3name, ptr->atom3name) == 0) &&
+           (strcasecmp(new_node->atom4name, ptr->atom4name) == 0) &&
+           (strcasecmp(new_node->atom5name, ptr->atom5name) == 0) &&
+           (strcasecmp(new_node->atom6name, ptr->atom6name) == 0) &&
+           (strcasecmp(new_node->atom7name, ptr->atom7name) == 0) &&
+           (strcasecmp(new_node->atom8name, ptr->atom8name) == 0) ) )
+    {
+      /*  Found a duplicate        */
+      /* we do not care about identical replacement */
+      int echoWarn=0;  // echo warning messages ?
+
+      if (ptr->dimension != new_node->dimension) {echoWarn=1;}
+      
+      if (!echoWarn)
+      {
+        int nvals = ptr->dimension * ptr->dimension;
+        for (i=0; i<nvals; i++)
+        {
+          if (ptr->values[i] != new_node->values[i]) {echoWarn=1; break;}
+        }
+      }
+
+      if (echoWarn)
+      {
+        iout << "\n" << iWARN << "DUPLICATE CMAP ENTRY FOR "
+          << ptr->atom1name << "-"
+          << ptr->atom2name << "-"
+          << ptr->atom3name << "-"
+          << ptr->atom4name << " "
+          << ptr->atom5name << "-"
+          << ptr->atom6name << "-"
+          << ptr->atom7name << "-"
+          << ptr->atom8name << ", USING NEW VALUES\n";
+        
+        iout << endi;
+
+        ptr->dimension = new_node->dimension;
+
+        BigReal *tmpvalues = ptr->values;
+        ptr->values = new_node->values;
+        new_node->values = tmpvalues;
+      }
+
+      delete new_node;
+
+      return;
+    }
+
+    ptr=ptr->next;
+  }
+
+  /*  Check to see if we have any wildcards.  Since specific  */
+  /*  entries are to take precedence, we'll put anything without  */
+  /*  wildcards at the begining of the list and anything with     */
+  /*  wildcards at the end of the list.  Then, we can just do a   */
+  /*  linear search for a bond and be guaranteed to have specific */
+  /*  entries take precendence over over wildcards          */
+  if ( (strcasecmp(new_node->atom1name, "X") == 0) ||
+       (strcasecmp(new_node->atom2name, "X") == 0) ||
+       (strcasecmp(new_node->atom3name, "X") == 0) ||
+       (strcasecmp(new_node->atom4name, "X") == 0) ||
+       (strcasecmp(new_node->atom5name, "X") == 0) ||
+       (strcasecmp(new_node->atom6name, "X") == 0) ||
+       (strcasecmp(new_node->atom7name, "X") == 0) ||
+       (strcasecmp(new_node->atom8name, "X") == 0) )
+  {
+    /*  add to the end of the list        */
+    tail->next=new_node;
+    tail=new_node;
+
+    return;
+  }
+  else
+  {
+    /*  add to the head of the list        */
+    new_node->next=crosstermp;
+    crosstermp=new_node;
+
+    return;
+  }
+}
+/*    END OF FUNCTION add_to_crossterm_list      */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION add_vdw_param        */
 /*                  */
 /*  INPUTS:                */
@@ -2322,6 +2600,12 @@ void Parameters::done_reading_files()
     memset(improper_array, 0, NumImproperParams*sizeof(ImproperValue));
   }
 
+  if (NumCrosstermParams)
+  {
+    crossterm_array = new CrosstermValue[NumCrosstermParams];
+    memset(crossterm_array, 0, NumCrosstermParams*sizeof(CrosstermValue));
+  }
+
   if (NumVdwParams)
   {
           atomTypeNames = new char[NumVdwParams*(MAX_ATOMTYPE_CHARS+1)];
@@ -2341,6 +2625,7 @@ void Parameters::done_reading_files()
   NumVdwParamsAssigned = index_vdw(vdwp, 0);
   index_dihedrals();
   index_impropers();
+  index_crossterms();
   
   //  Convert the vdw pairs
   convert_vdw_pairs();
@@ -2593,6 +2878,65 @@ void Parameters::index_impropers()
   }
 }
 /*      END OF FUNCTION index_impropers      */
+
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION index_crossterms      */
+/*                  */
+/*  This function walks down the linked list of crossterm parameters */
+/*  and assigns an index to each one.  It also copies the data from this*/
+/*  linked list to the arrays that will be used from here on out  */
+/*                  */
+/************************************************************************/
+
+void crossterm_setup(CrosstermData *);
+
+void Parameters::index_crossterms()
+
+{
+  struct crossterm_params *ptr;  //  Current place in list
+  Index index=0;      //  Current index value
+  int i,j,k;        //  Loop counter
+
+  //  Start at the head
+  ptr = crosstermp;
+
+  while (ptr != NULL)
+  {
+    //  Copy data to array and assign index
+
+    int N = CrosstermValue::dim - 1;
+
+    if ( ptr->dimension != N ) {
+      NAMD_die("Sorry, only CMAP dimension of 24 is supported");
+    }
+
+    k = 0;
+    for (i=0; i<N; i++) {
+      for (j=0; j<N; j++) {
+        crossterm_array[index].c[i][j].d00 = ptr->values[k];
+        ++k;
+      }
+    }
+    for (i=0; i<N; i++) {
+        crossterm_array[index].c[i][N].d00 = 
+				crossterm_array[index].c[i][0].d00;
+        crossterm_array[index].c[N][i].d00 = 
+				crossterm_array[index].c[0][i].d00;
+    }
+    crossterm_array[index].c[N][N].d00 = 
+				crossterm_array[index].c[0][0].d00;
+
+    crossterm_setup(&crossterm_array[index].c[0][0]);
+
+    ptr->index=index;
+
+    index++;
+    ptr=ptr->next;
+  }
+}
+/*      END OF FUNCTION index_crossterms      */
 
 /************************************************************************/
 /*                  */
@@ -3267,6 +3611,112 @@ void Parameters::assign_improper_index(char *atom1, char *atom2, char *atom3,
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION assign_crossterm_index      */
+/*                  */
+/************************************************************************/
+
+void Parameters::assign_crossterm_index(char *atom1, char *atom2, char *atom3,
+        char *atom4, char *atom5, char *atom6, char *atom7,
+        char *atom8, Crossterm *crossterm_ptr)
+{
+  struct crossterm_params *ptr;  //  Current position in list
+  int found=0;      //  Flag 1->found a match
+
+  /*  Start at the head of the list        */
+  ptr=crosstermp;
+
+  /*  While we haven't fuond a match and haven't reached the end  */
+  /*  of the list, keep looking          */
+  while (!found && (ptr!=NULL))
+  {
+    /*  Do a linear search through the linked list of   */
+    /*  crossterm parameters.  Since the list is arranged    */
+    /*  with wildcard paramters at the end of the list, we  */
+    /*  can simply do a linear search and be guaranteed that*/
+    /*  we will find exact matches before wildcard matches. */
+    /*  Also, we must check for an exact match, and a match */
+    /*  in reverse, since they are really the same          */
+    /*  physically.            */
+    if ( ( (strcasecmp(ptr->atom1name, atom1)==0) || 
+           (strcasecmp(ptr->atom1name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom2name, atom2)==0) || 
+           (strcasecmp(ptr->atom2name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom3name, atom3)==0) || 
+           (strcasecmp(ptr->atom3name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom4name, atom4)==0) || 
+           (strcasecmp(ptr->atom4name, "X")==0) ) )
+    {
+      /*  Found an exact match      */
+      found=1;
+    }
+    else if ( ( (strcasecmp(ptr->atom4name, atom1)==0) || 
+           (strcasecmp(ptr->atom4name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom3name, atom2)==0) || 
+           (strcasecmp(ptr->atom3name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom2name, atom3)==0) || 
+           (strcasecmp(ptr->atom2name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom1name, atom4)==0) || 
+           (strcasecmp(ptr->atom1name, "X")==0) ) )
+    {
+      /*  Found a reverse match      */
+      found=1;
+    }
+    if ( ! found ) {
+      /*  Didn't find a match, go to the next node  */
+      ptr=ptr->next;
+      continue;
+    }
+    found = 0;
+    if ( ( (strcasecmp(ptr->atom5name, atom5)==0) || 
+           (strcasecmp(ptr->atom5name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom6name, atom6)==0) || 
+           (strcasecmp(ptr->atom6name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom7name, atom7)==0) || 
+           (strcasecmp(ptr->atom7name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom8name, atom8)==0) || 
+           (strcasecmp(ptr->atom8name, "X")==0) ) )
+    {
+      /*  Found an exact match      */
+      found=1;
+    }
+    else if ( ( (strcasecmp(ptr->atom8name, atom5)==0) || 
+           (strcasecmp(ptr->atom8name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom7name, atom6)==0) || 
+           (strcasecmp(ptr->atom7name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom6name, atom7)==0) || 
+           (strcasecmp(ptr->atom6name, "X")==0) ) &&
+       ( (strcasecmp(ptr->atom5name, atom8)==0) || 
+           (strcasecmp(ptr->atom5name, "X")==0) ) )
+    {
+      /*  Found a reverse match      */
+      found=1;
+    }
+    if ( ! found ) {
+      /*  Didn't find a match, go to the next node  */
+      ptr=ptr->next;
+    }
+  }
+
+  /*  Make sure we found a match          */
+  if (!found)
+  {
+    char err_msg[128];
+
+    sprintf(err_msg, "CAN'T FIND CROSSTERM PARAMETERS FOR %s  %s  %s  %s  %s  %s  %s  %s",
+       atom1, atom2, atom3, atom4, atom5, atom6, atom7, atom8);
+    
+    NAMD_die(err_msg);
+  }
+
+  /*  Assign the constants          */
+  crossterm_ptr->crossterm_type = ptr->index;
+
+  return;
+}
+/*      END OF FUNCTION assign_improper_index    */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION free_bond_tree        */
 /*                  */
 /*   INPUTS:                */
@@ -3393,7 +3843,37 @@ void Parameters::free_improper_list(struct improper_params *imp_ptr)
 }
 /*      END OF FUNCTION free_improper_list    */
     
+/************************************************************************/
+/*                  */
+/*      FUNCTION free_crossterm_list      */
+/*                  */
+/*   INPUTS:                */
+/*  imp_ptr - pointer to the list to free        */
+/*                  */
+/*  this function frees a linked list of crossterm parameters.  It   */
+/*   is only called by the destructor.          */
+/*                  */
+/************************************************************************/
 
+void Parameters::free_crossterm_list(struct crossterm_params *imp_ptr)
+
+{
+  struct crossterm_params *ptr;  //  Current position in list
+  struct crossterm_params *next; //  Next position in list
+
+  ptr=imp_ptr;
+
+  while (ptr != NULL)
+  {
+    next=ptr->next;
+    delete ptr;
+    ptr=next;
+  }
+
+  return;
+}
+/*      END OF FUNCTION free_crossterm_list    */
+    
 /************************************************************************/
 /*                  */
 /*      FUNCTION free_vdw_tree        */
@@ -3816,6 +4296,7 @@ void Parameters::print_param_summary()
        << iINFO << NumAngleParams << " ANGLES\n"
        << iINFO << NumDihedralParams << " DIHEDRAL\n"
        << iINFO << NumImproperParams << " IMPROPER\n"
+       << iINFO << NumCrosstermParams << " CROSSTERM\n"
        << iINFO << NumVdwParams << " VDW\n"
        << iINFO << NumVdwPairParams << " VDW_PAIRS\n" << endi;
 }
@@ -3851,6 +4332,9 @@ void Parameters::done_reading_structure()
   if (improperp != NULL)
     free_improper_list(improperp);
 
+  if (crosstermp != NULL)
+    free_crossterm_list(crosstermp);
+
   if (vdwp != NULL)
     free_vdw_tree(vdwp);
 
@@ -3866,6 +4350,7 @@ void Parameters::done_reading_structure()
   anglep=NULL;
   dihedralp=NULL;
   improperp=NULL;
+  crosstermp=NULL;
   vdwp=NULL;
   maxImproperMults=NULL;
   maxDihedralMults=NULL;
@@ -4069,6 +4554,17 @@ void Parameters::send_Parameters(Communicate *comm_obj)
     delete [] kvals;
     delete [] nvals;
     delete [] deltavals;
+  }
+
+  //  Send the crossterm parameters
+  msg->put(NumCrosstermParams);
+
+  if (NumCrosstermParams)
+  {
+    for (i=0; i<NumCrosstermParams; ++i) {
+      int nvals = CrosstermValue::dim * CrosstermValue::dim * 2 * 2;
+      msg->put(nvals,&crossterm_array[i].c[0][0].d00);
+    }
   }
 
   //  Send the vdw parameters
@@ -4347,6 +4843,19 @@ void Parameters::receive_Parameters(MIStream *msg)
     delete [] kvals;
     delete [] nvals;
     delete [] deltavals;
+  }
+
+  //  Get the crossterm parameters
+  msg->get(NumCrosstermParams);
+
+  if (NumCrosstermParams)
+  {
+    crossterm_array = new CrosstermValue[NumCrosstermParams];
+
+    for (i=0; i<NumCrosstermParams; ++i) {
+      int nvals = CrosstermValue::dim * CrosstermValue::dim * 2 * 2;
+      msg->get(nvals,&crossterm_array[i].c[0][0].d00);
+    }
   }
 
   //  Get the vdw parameters

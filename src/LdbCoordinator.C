@@ -295,6 +295,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	      || (cMap->type(i) == computeSelfAnglesType)
 	      || (cMap->type(i) == computeSelfDihedralsType)
 	      || (cMap->type(i) == computeSelfImpropersType)
+	      || (cMap->type(i) == computeSelfCrosstermsType)
 	      || (cMap->type(i) == computeNonbondedSelfType) ) ) {
       nLocalComputes++;
     }
@@ -345,6 +346,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	          || (cMap->type(i) == computeSelfAnglesType)
 	          || (cMap->type(i) == computeSelfDihedralsType)
 	          || (cMap->type(i) == computeSelfImpropersType)
+	          || (cMap->type(i) == computeSelfCrosstermsType)
 		  || (cMap->type(i) == computeNonbondedSelfType) ) ) {
 	  // Register the object with the load balancer
 	  // Store the depended patch IDs in the rest of the element ID

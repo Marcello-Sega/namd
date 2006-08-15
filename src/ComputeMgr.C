@@ -29,6 +29,7 @@
 #include "ComputeAngles.h"
 #include "ComputeDihedrals.h"
 #include "ComputeImpropers.h"
+#include "ComputeCrossterms.h"
 #include "ComputeBonds.h"
 #include "ComputeFullDirect.h"
 #include "ComputeGlobal.h"
@@ -286,6 +287,12 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      case computeCrosstermsType:
+	PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+	c = new ComputeCrossterms(i,pids); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
       case computeSelfBondsType:
 	c = new ComputeSelfBonds(i,map->computeData[i].pids[0].pid);
 	map->registerCompute(i,c);
@@ -303,6 +310,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	break;
       case computeSelfImpropersType:
 	c = new ComputeSelfImpropers(i,map->computeData[i].pids[0].pid);
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      case computeSelfCrosstermsType:
+	c = new ComputeSelfCrossterms(i,map->computeData[i].pids[0].pid);
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
@@ -386,6 +398,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         c->initialize();
         break;
       default:
+	NAMD_bug("Unknown compute type in ComputeMgr::createCompute().");
 	break;
     }
 }

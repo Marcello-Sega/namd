@@ -293,6 +293,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	iout << iINFO << molecule->numAngles << " ANGLES\n";
 	iout << iINFO << molecule->numDihedrals << " DIHEDRALS\n";
 	iout << iINFO << molecule->numImpropers << " IMPROPERS\n";
+	iout << iINFO << molecule->numCrossterms << " CROSSTERMS\n";
 	iout << iINFO << molecule->numExclusions << " EXCLUSIONS\n";
 
         //****** BEGIN CHARMM/XPLOR type changes

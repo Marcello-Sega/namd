@@ -401,6 +401,15 @@ by outputting the energies only occasionally.
 }
 
 \item
+\NAMDCONFWDEF{mergeCrossterms}{add crossterm energy to dihedral?}{yes or no}{yes}
+{
+If crossterm (or CMAP) terms are present in the potential,
+the energy is added to the dihedral energy to avoid altering
+the energy output format.
+Disable this feature to add a separate ``CROSS'' field to the output.
+}
+
+\item
 \NAMDCONFWDEF{outputMomenta}
 {timesteps between momentum output}{nonnegative integer}{0}
 {

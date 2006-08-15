@@ -38,6 +38,7 @@ class BondElem;
 class AngleElem;
 class DihedralElem;
 class ImproperElem;
+class CrosstermElem;
 class ResidueLookupElem;
 template<class Type> class ObjectArena;
 
@@ -90,6 +91,7 @@ friend class BondElem;
 friend class AngleElem;
 friend class DihedralElem;
 friend class ImproperElem;
+friend class CrosstermElem;
 
 private:
   void initialize(SimParameters *, Parameters *param);
@@ -104,6 +106,7 @@ private:
   Angle *angles;    //  Array of angle structures
   Dihedral *dihedrals;  //  Array of dihedral structures
   Improper *impropers;  //  Array of improper structures
+  Crossterm *crossterms;  //  Array of cross-term structures
   Bond *donors;         //  Array of hydrogen bond donor structures
   Bond *acceptors;  //  Array of hydrogen bond acceptor
   Exclusion *exclusions;  //  Array of exclusion structures
@@ -140,6 +143,7 @@ private:
   int32 **anglesByAtom;     //  List of angles owned by each atom
   int32 **dihedralsByAtom;  //  List of dihedrals owned by each atom
   int32 **impropersByAtom;  //  List of impropers owned by each atom
+  int32 **crosstermsByAtom;  //  List of crossterms owned by each atom
   int32 **exclusionsByAtom; //  List of exclusions owned by each atom
   int32 **fullExclusionsByAtom; //  List of atoms excluded for each atom
   int32 **modExclusionsByAtom; //  List of atoms modified for each atom
@@ -165,6 +169,8 @@ private:
         //  Read in dihedral info from .psf
   void read_impropers(FILE *, Parameters *);
         //  Read in improper info from .psf
+  void read_crossterms(FILE *, Parameters *);
+        //  Read in cross-term info from .psf
   void read_donors(FILE *);
         //  Read in hydrogen bond donors from .psf
   void read_acceptors(FILE *);
@@ -195,6 +201,7 @@ public:
   int numAngles;    //  Number of angles
   int numDihedrals; //  Number of dihedrals
   int numImpropers; //  Number of impropers
+  int numCrossterms; //  Number of cross-terms
   int numDonors;          //  Number of hydrogen bond donors
   int numAcceptors; //  Number of hydrogen bond acceptors
   int numExclusions;  //  Number of exclusions
@@ -229,6 +236,7 @@ public:
   int numCalcAngles;  //  Number of angles requiring calculation
   int numCalcDihedrals; //  Number of dihedrals requiring calculation
   int numCalcImpropers; //  Number of impropers requiring calculation
+  int numCalcCrossterms; //  Number of cross-terms requiring calculation
   int numCalcExclusions;  //  Number of exclusions requiring calculation
 
   //  Number of dihedrals with multiple periodicity
@@ -343,6 +351,9 @@ public:
   //  Retrieve a dihedral structure
   Dihedral *get_dihedral(int dnum) const {return (&(dihedrals[dnum]));}
 
+  //  Retrieve a cross-term strutcure
+  Crossterm *get_crossterm(int inum) const {return (&(crossterms[inum]));}
+
   //  Retrieve a hydrogen bond donor structure
   Bond *get_donor(int dnum) const {return (&(donors[dnum]));}
 
@@ -383,6 +394,8 @@ public:
       { return dihedralsByAtom[anum]; }
   int32 *get_impropers_for_atom(int anum) 
       { return impropersByAtom[anum]; }
+  int32 *get_crossterms_for_atom(int anum) 
+      { return crosstermsByAtom[anum]; }
   int32 *get_exclusions_for_atom(int anum)
       { return exclusionsByAtom[anum]; }
   const int32 *get_full_exclusions_for_atom(int anum) const

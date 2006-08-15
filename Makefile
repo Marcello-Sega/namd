@@ -69,6 +69,7 @@ OBJS = \
 	$(DSTDIR)/ComputeBonds.o \
 	$(DSTDIR)/ComputeConsForce.o \
 	$(DSTDIR)/ComputeConsForceMsgs.o \
+	$(DSTDIR)/ComputeCrossterms.o \
 	$(DSTDIR)/ComputeCylindricalBC.o \
 	$(DSTDIR)/ComputeDihedrals.o \
 	$(DSTDIR)/ComputeDPME.o \

@@ -218,6 +218,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numAngles=0;
   numDihedrals=0;
   numImpropers=0;
+  numCrossterms=0;
   numDonors=0;
   numAcceptors=0;
   numExclusions=0;
@@ -238,6 +239,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numCalcAngles=0;
   numCalcDihedrals=0;
   numCalcImpropers=0;
+  numCalcCrossterms=0;
   numCalcExclusions=0;
 
 //fepb
@@ -318,6 +320,9 @@ Molecule::~Molecule()
   if (impropers != NULL)
     delete [] impropers;
 
+  if (crossterms != NULL)
+    delete [] crossterms;
+
   if (donors != NULL)
     delete [] donors;
 
@@ -338,6 +343,9 @@ Molecule::~Molecule()
   
   if (impropersByAtom != NULL)
        delete [] impropersByAtom;
+  
+  if (crosstermsByAtom != NULL)
+       delete [] crosstermsByAtom;
   
   if (exclusionsByAtom != NULL)
        delete [] exclusionsByAtom;
@@ -678,9 +686,31 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   if (numExclusions)
     read_exclusions(psf_file);
 
-  /*  Close the .psf file.  There is a Group section in the .psf  */
-  /*  file after the NNB section, but currently, NAMD does not    */
-  /*  use this section for anything.        */
+  /*  look for the cross-term section.     */
+  int crossterms_present = 1;
+  while (!NAMD_find_word(buffer, "NCRTERM"))
+  {
+    ret_code = NAMD_read_line(psf_file, buffer);
+
+    if (ret_code != 0)
+    {
+      // hit EOF before finding cross-term section
+      crossterms_present = 0;
+      break;
+    }
+  }
+
+  if ( crossterms_present) {
+
+    /*  Read in the number of cross-terms and then the cross-terms*/
+    sscanf(buffer, "%d", &numCrossterms);
+
+    if (numCrossterms)
+      read_crossterms(psf_file, params);
+
+  }
+
+  /*  Close the .psf file.  */
   Fclose(psf_file);
 
   //  analyze the data and find the status of each atom
@@ -1268,6 +1298,121 @@ void Molecule::read_impropers(FILE *fd, Parameters *params)
 
 /************************************************************************/
 /*                  */
+/*        FUNCTION read_crossterms      */
+/*                  */
+/*   INPUTS:                */
+/*  fd - file descriptor for .psf file        */
+/*  params - parameter object          */
+/*                  */
+/*   This section is identical to the dihedral section in that it is    */
+/*   made up of a list of quartets of atom indexes that define the      */
+/*   atoms that are bonded together.          */
+/*                  */
+/************************************************************************/
+
+void Molecule::read_crossterms(FILE *fd, Parameters *params)
+
+{
+  int atom_nums[8];  //  Atom indexes for the 4 atoms
+  int last_atom_nums[8];  //  Atom indexes from previous bond
+  char atom1name[11];  //  Atom type for atom 1
+  char atom2name[11];  //  Atom type for atom 2
+  char atom3name[11];  //  Atom type for atom 3
+  char atom4name[11];  //  Atom type for atom 4
+  char atom5name[11];  //  Atom type for atom 5
+  char atom6name[11];  //  Atom type for atom 6
+  char atom7name[11];  //  Atom type for atom 7
+  char atom8name[11];  //  Atom type for atom 8
+  register int j;      //  Loop counter
+  int num_read=0;    //  Number of items read so far
+  Bool duplicate_bond;  // Is this a duplicate of the last bond
+
+  //  Initialize the array used to look for duplicate crossterm
+  //  entries.  Set them all to -1 so we know nothing will match
+  for (j=0; j<8; j++)
+    last_atom_nums[j] = -1;
+
+  /*  Allocate the array to hold the cross-terms */
+  crossterms=new Crossterm[numCrossterms];
+
+  if (crossterms == NULL)
+  {
+    NAMD_die("memory allocation failed in Molecule::read_crossterms");
+  }
+
+  /*  Loop through and read all the cross-terms      */
+  while (num_read < numCrossterms)
+  {
+    duplicate_bond = TRUE;
+
+    /*  Loop through the 8 indexes for this cross-term */
+    for (j=0; j<8; j++)
+    {
+      /*  Read the atom number from the file.         */
+      /*  Subtract 1 to convert the index from the    */
+      /*  1 to NumAtoms used in the file to the       */
+      /*  0 to NumAtoms-1 that we need    */
+      atom_nums[j]=NAMD_read_int(fd, "CROSS-TERMS")-1;
+
+      /*  Check to make sure the index isn't too big  */
+      if (atom_nums[j] >= numAtoms)
+      {
+        char err_msg[128];
+
+        sprintf(err_msg, "CROSS-TERM INDEX %d GREATER THAN NATOM %d IN CROSS-TERMS # %d IN PSF FILE", atom_nums[j]+1, numAtoms, num_read+1);
+        NAMD_die(err_msg);
+      }
+
+      if (atom_nums[j] != last_atom_nums[j])
+      {
+        duplicate_bond = FALSE;
+      }
+
+      last_atom_nums[j] = atom_nums[j];
+    }
+
+    /*  Get the atom types so we can look up the parameters */
+    strcpy(atom1name, atomNames[atom_nums[0]].atomtype);
+    strcpy(atom2name, atomNames[atom_nums[1]].atomtype);
+    strcpy(atom3name, atomNames[atom_nums[2]].atomtype);
+    strcpy(atom4name, atomNames[atom_nums[3]].atomtype);
+    strcpy(atom5name, atomNames[atom_nums[4]].atomtype);
+    strcpy(atom6name, atomNames[atom_nums[5]].atomtype);
+    strcpy(atom7name, atomNames[atom_nums[6]].atomtype);
+    strcpy(atom8name, atomNames[atom_nums[7]].atomtype);
+
+    //  Check to see if this is a duplicate term
+    if (duplicate_bond)
+    {
+      iout << iWARN << "Duplicate cross-term detected.\n" << endi;
+    }
+
+    /*  Look up the constants for this bond      */
+    params->assign_crossterm_index(atom1name, atom2name, 
+       atom3name, atom4name, atom5name, atom6name,
+       atom7name, atom8name, &(crossterms[num_read]));
+
+    /*  Assign the atom indexes        */
+    crossterms[num_read].atom1=atom_nums[0];
+    crossterms[num_read].atom2=atom_nums[1];
+    crossterms[num_read].atom3=atom_nums[2];
+    crossterms[num_read].atom4=atom_nums[3];
+    crossterms[num_read].atom5=atom_nums[4];
+    crossterms[num_read].atom6=atom_nums[5];
+    crossterms[num_read].atom7=atom_nums[6];
+    crossterms[num_read].atom8=atom_nums[7];
+
+    num_read++;
+  }
+
+  numCrossterms = num_read;
+
+  return;
+}
+/*      END OF FUNCTION read_impropers      */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION read_donors        */
 /*                  */
 /*  read_donors reads in the bond section of the .psf file.  This   */
@@ -1693,6 +1838,14 @@ void Molecule::send_Molecule(Communicate *com_obj)
         msg->put(numImpropers*sizeof(Improper), (char*)impropers);
       }
 
+      //  Send the crossterm information
+      msg->put(numCrossterms);
+
+      if (numCrossterms)
+      {
+        msg->put(numCrossterms*sizeof(Crossterm), (char*)crossterms);
+      }
+
       // send the hydrogen bond donor information
       msg->put(numDonors);
 
@@ -1883,6 +2036,17 @@ void Molecule::receive_Molecule(MIStream *msg)
         impropers=new Improper[numImpropers];
 
         msg->get(numImpropers*sizeof(Improper), (char*)impropers);
+      }
+
+      //  Get the crossterm information
+      msg->get(numCrossterms);
+
+      if (numCrossterms)
+      {
+        delete [] crossterms;
+        crossterms=new Crossterm[numCrossterms];
+
+        msg->get(numCrossterms*sizeof(Crossterm), (char*)crossterms);
       }
 
       //  Get the hydrogen bond donors
@@ -2095,6 +2259,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        anglesByAtom = new int32 *[numAtoms];
        dihedralsByAtom = new int32 *[numAtoms];
        impropersByAtom = new int32 *[numAtoms];
+       crosstermsByAtom = new int32 *[numAtoms];
        exclusionsByAtom = new int32 *[numAtoms];
        fullExclusionsByAtom = new int32 *[numAtoms];
        modExclusionsByAtom = new int32 *[numAtoms];
@@ -2327,6 +2492,49 @@ void Molecule::receive_Molecule(MIStream *msg)
          if ( pair_self && fepAtomFlags[dihedrals[i].atom1] != 1) continue;
          int a1 = dihedrals[i].atom1;
          dihedralsByAtom[a1][byAtomSize[a1]++] = i;
+       }
+    
+       DebugM(3,"Building crossterm lists.\n");
+    
+       //  Build the crossterm lists
+       for (i=0; i<numAtoms; i++)
+       {
+         byAtomSize[i] = 0;
+       }
+       numCalcCrossterms = 0;
+       for (i=0; i<numCrossterms; i++)
+       {
+         if ( numFixedAtoms && fixedAtomFlags[crossterms[i].atom1]
+                            && fixedAtomFlags[crossterms[i].atom2]
+                            && fixedAtomFlags[crossterms[i].atom3]
+                            && fixedAtomFlags[crossterms[i].atom4]
+                            && fixedAtomFlags[crossterms[i].atom5]
+                            && fixedAtomFlags[crossterms[i].atom6]
+                            && fixedAtomFlags[crossterms[i].atom7]
+                            && fixedAtomFlags[crossterms[i].atom8] ) continue;
+         if ( pair_self && fepAtomFlags[crossterms[i].atom1] != 1) continue;
+         byAtomSize[crossterms[i].atom1]++;
+         numCalcCrossterms++;
+       }
+       for (i=0; i<numAtoms; i++)
+       {
+         crosstermsByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
+         crosstermsByAtom[i][byAtomSize[i]] = -1;
+         byAtomSize[i] = 0;
+       }
+       for (i=0; i<numCrossterms; i++)
+       {
+         if ( numFixedAtoms && fixedAtomFlags[crossterms[i].atom1]
+                            && fixedAtomFlags[crossterms[i].atom2]
+                            && fixedAtomFlags[crossterms[i].atom3]
+                            && fixedAtomFlags[crossterms[i].atom4]
+                            && fixedAtomFlags[crossterms[i].atom5]
+                            && fixedAtomFlags[crossterms[i].atom6]
+                            && fixedAtomFlags[crossterms[i].atom7]
+                            && fixedAtomFlags[crossterms[i].atom8] ) continue;
+         if ( pair_self && fepAtomFlags[crossterms[i].atom1] != 1) continue;
+         int a1 = crossterms[i].atom1;
+         crosstermsByAtom[a1][byAtomSize[a1]++] = i;
        }
     
        DebugM(3,"Building exclusion data.\n");

@@ -378,6 +378,9 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &outputPressure, 0);
    opts.range("outputPressure", NOT_NEGATIVE);
      
+   opts.optionalB("main", "mergeCrossterms", "merge crossterm energy with dihedral when printing?",
+      &mergeCrossterms, TRUE);
+
    opts.optional("main", "MTSAlgorithm", "Multiple timestep algorithm",
     PARSE_STRING);
 
@@ -2696,6 +2699,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << iINFO << "ENERGY OUTPUT STEPS    "
          << outputEnergies << "\n";
       iout << endi;
+   }
+
+   if (mergeCrossterms) {
+      iout << iINFO << "CROSSTERM ENERGY INCLUDED IN DIHEDRAL" << endi;
    }
    
    if (outputMomenta != 0)

@@ -867,10 +867,12 @@ void WorkDistrib::mapComputes(void)
     mapComputeHomeTuples(computeAnglesType);
     mapComputeHomeTuples(computeDihedralsType);
     mapComputeHomeTuples(computeImpropersType);
+    mapComputeHomeTuples(computeCrosstermsType);
     mapComputePatch(computeSelfBondsType);
     mapComputePatch(computeSelfAnglesType);
     mapComputePatch(computeSelfDihedralsType);
     mapComputePatch(computeSelfImpropersType);
+    mapComputePatch(computeSelfCrosstermsType);
   }
 
 
@@ -1123,6 +1125,14 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     wdProxy.enqueueImpropers(msg,CkMyPe());
 #endif
     break;
+  case computeCrosstermsType:
+  case computeSelfCrosstermsType:
+#if CHARM_VERSION > 050402
+    wdProxy[CkMyPe()].enqueueCrossterms(msg);
+#else
+    wdProxy.enqueueCrossterms(msg,CkMyPe());
+#endif
+    break;
   case computeNonbondedSelfType:
     switch ( seq % 2 ) {
     case 0:
@@ -1215,6 +1225,12 @@ void WorkDistrib::enqueueDihedrals(LocalWorkMsg *msg) {
 }
 
 void WorkDistrib::enqueueImpropers(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueueCrossterms(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");

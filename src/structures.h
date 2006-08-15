@@ -73,6 +73,19 @@ typedef struct improper
 	Index improper_type;
 } Improper;
 
+typedef struct crossterm
+{
+	int32 atom1;
+	int32 atom2;
+	int32 atom3;
+	int32 atom4;
+	int32 atom5;
+	int32 atom6;
+	int32 atom7;
+	int32 atom8;
+	Index crossterm_type;
+} Crossterm;
+
 class Exclusion
 {
 public:

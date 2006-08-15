@@ -438,6 +438,8 @@ public:
 	int outputPressure;		//  Number of timesteps between pressure
 					//  tensor outputs
 
+	Bool mergeCrossterms;		//  Merge crossterm energy w/ dihedrals
+
 	int firstTimestep;		//  Starting timestep.  Will be 0 unless
 					//  restarting a simulation
 
