@@ -384,6 +384,15 @@ doubling stepspercycle from 10 to 20, may increase parallel scaling,
 but it is important to measure.  When increasing stepspercycle, also
 try increasing pairlistspercycle by the same proportion.
 
+NAMD should scale very well when the number of patches (multiply the
+dimensions of the patch grid) is larger or rougly the same as the
+number of processors.  If this is not the case, it may be possible
+to improve scaling by adding ``twoAwayX yes'' to the config file,
+which roughly doubles the number of patches.  (Similar options
+twoAwayY and twoAwayZ also exist, and may be used in combination,
+but this greatly increases the number of compute objects.  twoAwayX
+has the unique advantage of also improving the scalability of PME.)
+
 ----------------------------------------------------------------------
 
 Automated Usage Reporting
