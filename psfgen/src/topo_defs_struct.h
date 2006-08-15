@@ -2,6 +2,7 @@
 #ifndef TOPO_DEFS_STRUCT_H
 #define TOPO_DEFS_STRUCT_H
 
+#include "memarena.h"
 #include "hasharray.h"
 #include "topo_defs.h"
 
@@ -70,6 +71,13 @@ typedef struct topo_defs_improper_t {
   int del;
 } topo_defs_improper_t;
 
+typedef struct topo_defs_cmap_t {
+  struct topo_defs_cmap_t *next;
+  char atoml[8][NAMEMAXLEN];
+  int resl[8], rell[8];
+  int del;
+} topo_defs_cmap_t;
+
 typedef struct topo_defs_conformation_t {
   struct topo_defs_conformation_t *next;
   char atom1[NAMEMAXLEN];
@@ -93,18 +101,28 @@ typedef struct topo_defs_residue_t {
   topo_defs_angle_t *angles;
   topo_defs_dihedral_t *dihedrals;
   topo_defs_improper_t *impropers;
+  topo_defs_cmap_t *cmaps;
   topo_defs_conformation_t *conformations;
   char pfirst[NAMEMAXLEN];
   char plast[NAMEMAXLEN];
 } topo_defs_residue_t;
+
+typedef struct topo_defs_topofile_t {
+/*   struct topo_defs_topofile_t *next; */
+  char filename[256];
+} topo_defs_topofile_t;
 
 struct topo_defs {
   void *newerror_handler_data;
   void (*newerror_handler)(void *, const char *);
   int auto_angles;
   int auto_dihedrals;
+  int cmaps_present;
   char pfirst[NAMEMAXLEN];
   char plast[NAMEMAXLEN];
+
+  topo_defs_topofile_t *topo_array;
+  hasharray *topo_hash;
 
   topo_defs_type_t *type_array;
   hasharray *type_hash;
@@ -113,6 +131,7 @@ struct topo_defs {
   hasharray *residue_hash;
   topo_defs_residue_t *buildres;
   int buildres_no_errors;
+  memarena *arena;
 };
 
 #endif

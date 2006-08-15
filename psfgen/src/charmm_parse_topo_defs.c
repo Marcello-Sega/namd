@@ -37,26 +37,74 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
   int ntok;
   int itok;
   int first;
+  int skip;
+  int skipall;
+  int stream;
   char *s1, *s2, *s3, *s4;
   int i1, i2, i3, i4; 
   int j1, j2, j3, j4; 
+  unsigned int utmp;
 
   first = 1;
+  skip = 0;
+  skipall = 0;
+  stream = 0;
 
   if ( ! defs ) return -1;
   if ( ! file ) return -2;
   if ( print_msg == 0 ) print_msg = null_print_msg;
 
   while ( (ntok = charmm_get_tokens(tok,TOKLEN,sbuf,BUFLEN,file)) ) {
-    if ( ! tok[0][0] ) print_msg(v,tok[1]);
-    else if ( first ) {
-      if ( ntok == 2 ) {
+    if ( ! tok[0][0] ) {
+      print_msg(v,tok[1]);
+      continue;
+    }
+    if ( skipall ) {
+      print_msg (v, "skipping statements at end of file due to end or return statement");
+      break;
+    }
+    if ( first ) {
+      first = 0;
+      if ( ! strncmp("READ",tok[0],4) && ! strncmp("RTF",tok[1],4) ) {
+        print_msg (v, "reading topology from stream file");
+        first = 1;
+        stream = 1;
+        continue;
+      } else if ( ! strncmp("READ",tok[0],4) && ! strncmp("PARA",tok[1],4) ) {
+        print_msg (v, "skipping parameters in stream file");
+        skip = 1;
+        continue;
+      } else if ( ! strncmp("READ",tok[0],4) ) {
+        print_msg (v, "skipping unknown section in stream file");
+        skip = 1;
+        continue;
+      } else if ( ntok == 2 && sscanf(tok[0],"%u",&utmp) == 1
+                          && sscanf(tok[1],"%u",&utmp) == 1 ) {
         sprintf(msgbuf,"Created by CHARMM version %s %s",tok[0],tok[1]);
         print_msg(v,msgbuf);
-      } else {
-        print_msg(v,"ERROR!  Unusual CHARMM version record.");
+        continue;
       }
-      first = 0;
+    }
+
+    if ( skip ) {
+      if ( ! strncmp("END",tok[0],4) ) {
+        debug_msg("Recognized file end statement in skipped section.");
+        skip = 0;
+        first = 1;
+      }
+    }
+    else if ( ! strncmp("END",tok[0],4) ) {
+      debug_msg("Recognized file end statement.");
+      if ( stream ) {
+        stream = 0;
+        first = 1;
+      } else {
+        skipall = 1;
+      }
+    }
+    else if ( ! strncmp("RETURN",tok[0],4) ) {
+      debug_msg("Recognized return statement.");
+        skipall = 1;
     }
     else if ( ! strncmp("ACCE",tok[0],4) ) {
       debug_msg("Recognized acceptor statement.");
@@ -125,6 +173,19 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         }
       }
     }
+    else if ( ! strncmp("CMAP",tok[0],4) ) {
+      debug_msg("Recognized CMAP statement.");
+      if ( ntok != 9 ) {
+        print_msg(v,"ERROR!  Failed to parse CMAP statement.");
+      } else {
+        const char* s[8]; int i[8], j[8];
+        for ( itok = 0; itok < 8; ++itok ) {
+          s[itok] = parse_atom(tok[itok+1],&i[itok],&j[itok]);
+        }
+        if (topo_defs_cmap(defs,0,0,s,i,j))
+            print_msg(v,"ERROR!  Failed to parse CMAP statement.");
+      }
+    }
     else if ( ! strncmp("DECL",tok[0],4) ) {
       debug_msg("Recognized atom declaration statement.");
     }
@@ -133,7 +194,7 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
       if ( ntok < 4 ) {
         print_msg(v,"ERROR!  Failed to parse atom statement.");
       } else if ( ntok > 4 ) {
-        print_msg(v,"ERROR!  Explicit exclustions not supported, atom ignored.");
+        print_msg(v,"ERROR!  Explicit exclusions or fluctuating charges not supported, atom ignored.");
       } else {
         s1 = parse_atom(tok[1],&i1,&j1);
         if ( topo_defs_atom(defs,0,0, s1,i1,j1,tok[2],atof(tok[3])) ) {
@@ -285,12 +346,6 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         } else {
           print_msg(v,"ERROR!  Failed to parse delete statement.");
         }
-      }
-    }
-    else if ( ! strncmp("END",tok[0],4) ) {
-      debug_msg("Recognized file end statement.");
-      if ( topo_defs_end(defs) ) {
-        print_msg(v,"ERROR!  Failed to parse file end statement.");
       }
     }
     else if ( ! strncmp("GROU",tok[0],4) ) {

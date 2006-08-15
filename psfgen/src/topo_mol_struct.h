@@ -36,6 +36,12 @@ typedef struct topo_mol_improper_t {
   int del;
 } topo_mol_improper_t;
 
+typedef struct topo_mol_cmap_t {
+  struct topo_mol_cmap_t *next[8];
+  struct topo_mol_atom_t *atom[8];
+  int del;
+} topo_mol_cmap_t;
+
 typedef struct topo_mol_conformation_t {
   struct topo_mol_conformation_t *next[4];
   struct topo_mol_atom_t *atom[4];
@@ -56,6 +62,7 @@ typedef struct topo_mol_atom_t {
   topo_mol_angle_t *angles;
   topo_mol_dihedral_t *dihedrals;
   topo_mol_improper_t *impropers;
+  topo_mol_cmap_t *cmaps;
   topo_mol_conformation_t *conformations;
   char name[NAMEMAXLEN];
   char type[NAMEMAXLEN];
@@ -72,6 +79,7 @@ typedef struct topo_mol_atom_t {
 typedef struct topo_mol_residue_t {
   char resid[NAMEMAXLEN];
   char name[NAMEMAXLEN];
+  char chain[NAMEMAXLEN];
   topo_mol_atom_t *atoms;
 } topo_mol_residue_t;
 
@@ -86,11 +94,29 @@ typedef struct topo_mol_segment_t {
   char plast[NAMEMAXLEN];
 } topo_mol_segment_t;
 
+typedef struct topo_mol_patchres_t {
+  struct topo_mol_patchres_t *next;
+  char segid[NAMEMAXLEN];
+  char resid[NAMEMAXLEN];
+} topo_mol_patchres_t;
+
+typedef struct topo_mol_patch_t {
+  struct topo_mol_patch_t *next;
+  char pname[NAMEMAXLEN];
+  int npres;
+  int deflt;
+  topo_mol_patchres_t *patchresids;
+} topo_mol_patch_t;
+
 struct topo_mol {
   void *newerror_handler_data;
   void (*newerror_handler)(void *, const char *);
   
   topo_defs *defs;
+
+  int npatch;
+  topo_mol_patch_t *patches;
+  topo_mol_patch_t *curpatch;
 
   topo_mol_segment_t **segment_array;
   hasharray *segment_hash;
@@ -110,6 +136,9 @@ topo_mol_dihedral_t * topo_mol_dihedral_next(
 
 topo_mol_improper_t * topo_mol_improper_next(
                 topo_mol_improper_t *tuple, topo_mol_atom_t *atom);
+
+topo_mol_cmap_t * topo_mol_cmap_next(
+                topo_mol_cmap_t *tuple, topo_mol_atom_t *atom);
 
 #endif
 

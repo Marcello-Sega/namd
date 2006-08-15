@@ -160,7 +160,8 @@ int get_pdb_fields(char *record, char *name, char *resname, char *chain,
   }
 
   chain[0] = record[21];
-  chain[1] = 0;
+  if ( chain[0] == ' ' ) chain[0] = 0;
+  else chain[1] = 0;
 
   /* get residue id number */
   strncpy(resid,record + 22, 4);

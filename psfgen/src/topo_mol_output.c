@@ -1,4 +1,5 @@
 
+#include <string.h>
 #include <stdlib.h>
 #include "topo_mol_output.h"
 #include "topo_mol_struct.h"
@@ -49,8 +50,8 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
         }
         b = atom->partition;
         write_pdb_atom(file,atomid,atom->name,res->name,atoi(res->resid),
-		"",(float)x,(float)y,(float)z,(float)o,(float)b,"",seg->segid,
-		atom->element);
+		"",(float)x,(float)y,(float)z,(float)o,(float)b,res->chain,
+		seg->segid,atom->element);
       }
     }
   }
@@ -63,8 +64,8 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
   return 0;
 }
 
-int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v, 
-                                void (*print_msg)(void *, const char *)) {
+int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
+                      void *v, void (*print_msg)(void *, const char *)) {
 
   char buf[128];
   int iseg,nseg,ires,nres,atomid;
@@ -79,22 +80,27 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   int ndihes;
   topo_mol_improper_t *impr;
   int nimprs;
+  topo_mol_cmap_t *cmap;
+  int ncmaps;
   int numinline;
+  int npres,ipres,ntopo,itopo;
+  topo_defs_topofile_t *topo;
+  topo_mol_patch_t *patch;
+  topo_mol_patchres_t *patchres;
+  char defpatch[10];
+  fpos_t ntitle_pos, save_pos;
+  const char *ntitle_fmt;
+  int ntitle_count;
+  strcpy(defpatch,"");
 
   if ( ! mol ) return -1;
-
-  fprintf(file,"PSF\n\n%8d !NTITLE\n",1);
-  if ( charmmfmt ) 
-   fprintf(file," REMARKS %s\n","original generated structure charmm psf file");
-  else
-   fprintf(file," REMARKS %s\n","original generated structure x-plor psf file");
-  fprintf(file,"\n");
 
   atomid = 0;
   nbonds = 0;
   nangls = 0;
   ndihes = 0;
   nimprs = 0;
+  ncmaps = 0;
   nseg = hasharray_count(mol->segment_hash);
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
@@ -128,6 +134,12 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
             ++nimprs;
           }
         }
+        for ( cmap = atom->cmaps; cmap;
+                cmap = topo_mol_cmap_next(cmap,atom) ) {
+          if ( cmap->atom[0] == atom && ! cmap->del ) {
+            ++ncmaps;
+          }
+        }
       }
     }
   }
@@ -141,6 +153,82 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
   print_msg(v,buf);
   sprintf(buf,"total of %d impropers",nimprs);
   print_msg(v,buf);
+
+  ntitle_fmt = "PSF\n\n%8d !NTITLE\n";
+  if ( nocmap ) {
+    sprintf(buf,"total of %d cross-terms (not written to file)",ncmaps);
+  } else {
+    sprintf(buf,"total of %d cross-terms",ncmaps);
+    if ( ncmaps ) {
+      ntitle_fmt = "PSF CMAP\n\n%8d !NTITLE\n";
+    } else {
+      nocmap = 1;
+    }
+  }
+  print_msg(v,buf);
+
+  fgetpos(file,&ntitle_pos);
+  fprintf(file,ntitle_fmt,1);
+  ntitle_count = 1;
+  if ( charmmfmt ) 
+   fprintf(file," REMARKS %s\n","original generated structure charmm psf file");
+  else
+   fprintf(file," REMARKS %s\n","original generated structure x-plor psf file");
+  
+  if (mol->npatch) {
+    ntitle_count++;
+    fprintf(file," REMARKS %i patches were applied to the molecule.\n", mol->npatch);
+  }
+
+  ntopo = hasharray_count(mol->defs->topo_hash);
+  for ( itopo=0; itopo<ntopo; ++itopo ) {
+    topo = &(mol->defs->topo_array[itopo]);
+    ntitle_count++;
+    fprintf(file," REMARKS topology %s \n", topo->filename);
+  }
+
+  nseg = hasharray_count(mol->segment_hash);
+  for ( iseg=0; iseg<nseg; ++iseg ) {
+    char angles[20], diheds[20];
+    seg = mol->segment_array[iseg];
+    if (! seg) continue;
+    strcpy(angles,"none");
+    strcpy(diheds,"");
+    if (seg->auto_angles)    strcpy(angles,"angles");
+    if (seg->auto_dihedrals) strcpy(diheds,"dihedrals");
+    ntitle_count++;
+    fprintf(file," REMARKS segment %s { first %s; last %s; auto %s %s }\n", seg->segid, seg->pfirst, seg->plast, angles, diheds);
+  }
+
+  for ( patch = mol->patches; patch; patch = patch->next ) {
+    strcpy(defpatch,"");
+    if (patch->deflt) strcpy(defpatch,"default");
+    npres = patch->npres;
+    ipres = 0;
+    for ( patchres = patch->patchresids; patchres; patchres = patchres->next ) {
+      /* Test the existence of segid:resid for the patch */
+      if (!topo_mol_validate_patchres(mol,patch->pname,patchres->segid, patchres->resid)) {
+	break;
+      };
+
+      if (ipres==0) {
+        ntitle_count++;
+        fprintf(file," REMARKS %spatch %s ", defpatch, patch->pname);
+      }
+      if (ipres>0 && !ipres%6) {
+        ntitle_count++;
+        fprintf(file,"\n REMARKS patch ---- ");
+      }
+      fprintf(file,"%s:%s  ", patchres->segid, patchres->resid);
+      if (ipres==npres-1) fprintf(file,"\n");
+      ipres++;
+     }
+  }
+  fprintf(file,"\n");
+  fgetpos(file,&save_pos);
+  fsetpos(file,&ntitle_pos);
+  fprintf(file,ntitle_fmt,ntitle_count);
+  fsetpos(file,&save_pos);
 
   fprintf(file,"%8d !NATOM\n",atomid);
   for ( iseg=0; iseg<nseg; ++iseg ) {
@@ -275,6 +363,31 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, void *v,
 
   fprintf(file,"%8d %7d !NGRP\n%8d%8d%8d\n",1,0,0,0,0);
   fprintf(file,"\n");
+
+  if ( ! nocmap ) {
+    fprintf(file,"%8d !NCRTERM: cross-terms\n",ncmaps);
+    for ( iseg=0; iseg<nseg; ++iseg ) {
+      seg = mol->segment_array[iseg];
+      if (! seg) continue;
+      nres = hasharray_count(seg->residue_hash);
+      for ( ires=0; ires<nres; ++ires ) {
+        res = &(seg->residue_array[ires]);
+        for ( atom = res->atoms; atom; atom = atom->next ) {
+          for ( cmap = atom->cmaps; cmap;
+                  cmap = topo_mol_cmap_next(cmap,atom) ) {
+            if ( cmap->atom[0] == atom && ! cmap->del ) {
+              fprintf(file," %7d %7d %7d %7d %7d %7d %7d %7d\n",atom->atomid,
+                  cmap->atom[1]->atomid,cmap->atom[2]->atomid,
+                  cmap->atom[3]->atomid,cmap->atom[4]->atomid,
+                  cmap->atom[5]->atomid,cmap->atom[6]->atomid,
+                  cmap->atom[7]->atomid);
+            }
+          }
+        }
+      }
+    }
+    fprintf(file,"\n");
+  }
 
   return 0;
 }

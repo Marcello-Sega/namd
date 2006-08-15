@@ -12,15 +12,19 @@ topo_defs * topo_defs_create(void) {
     defs->newerror_handler = 0;
     defs->auto_angles = 0;
     defs->auto_dihedrals = 0;
+    defs->cmaps_present = 0;
     strcpy(defs->pfirst,"");
     strcpy(defs->plast,"");
     defs->buildres = 0;
     defs->buildres_no_errors = 0;
+    defs->topo_hash = hasharray_create(
+	(void**) &(defs->topo_array), sizeof(topo_defs_topofile_t));
     defs->type_hash = hasharray_create(
 	(void**) &(defs->type_array), sizeof(topo_defs_type_t));
     defs->residue_hash = hasharray_create(
 	(void**) &(defs->residue_array), sizeof(topo_defs_residue_t));
-    if ( ! defs->type_hash || ! defs->residue_hash ||
+    defs->arena = memarena_create();
+    if ( ! defs->type_hash || ! defs->residue_hash || ! defs->arena || ! defs->topo_hash ||
 			topo_defs_residue(defs,"NONE",1) ) {
       topo_defs_destroy(defs);
       return 0;
@@ -37,9 +41,11 @@ void topo_defs_destroy(topo_defs *defs) {
   struct topo_defs_angle_t *an, *an2;
   struct topo_defs_dihedral_t *di, *di2;
   struct topo_defs_improper_t *im, *im2;
+  struct topo_defs_cmap_t *cm, *cm2;
   struct topo_defs_conformation_t *c, *c2;
   
   if ( ! defs ) return;
+  hasharray_destroy(defs->topo_hash);
   hasharray_destroy(defs->type_hash);
   n = hasharray_count(defs->residue_hash);
   for ( i=0; i<n; ++i ) {
@@ -73,6 +79,12 @@ void topo_defs_destroy(topo_defs *defs) {
       free((void*)im);
       im = im2;
     }
+    cm = defs->residue_array[i].cmaps;
+    while ( cm ) {
+      cm2 = cm->next;
+      free((void*)cm);
+      cm = cm2;
+    }
     c = defs->residue_array[i].conformations;
     while ( c ) {
       c2 = c->next;
@@ -81,6 +93,7 @@ void topo_defs_destroy(topo_defs *defs) {
     }
   }
   hasharray_destroy(defs->residue_hash);
+  memarena_destroy(defs->arena);
   free((void*)defs);
 }
 
@@ -155,6 +168,7 @@ int topo_defs_residue(topo_defs *defs, const char *rname, int patch) {
   newitem->angles = 0;
   newitem->dihedrals = 0;
   newitem->impropers = 0;
+  newitem->cmaps = 0;
   newitem->conformations = 0;
   strcpy(newitem->pfirst,defs->pfirst);
   strcpy(newitem->plast,defs->plast);
@@ -336,6 +350,40 @@ int topo_defs_improper(topo_defs *defs, const char *rname, int del,
   return 0;
 }
 
+int topo_defs_cmap(topo_defs *defs, const char *rname, int del,
+	const char* const anamel[8], const int aresl[8], const int arell[8]) {
+  int i;
+  topo_defs_cmap_t *newitem;
+  if ( ! defs ) return -1;
+  if ( ! defs->buildres ) {
+    if ( defs->buildres_no_errors ) return 0;
+    topo_defs_log_error(defs,"no residue in progress for cmap");
+    return -1;
+  }
+  for ( i=0; i<8; ++i ) {
+    if ( NAMETOOLONG(anamel[i]) ) return -2-i;
+  }
+  if ( del && ! defs->buildres->patch ) return -10;
+  if ( ( aresl[0] || aresl[1] || aresl[2] || aresl[3] ||
+         aresl[4] || aresl[5] || aresl[6] || aresl[7] ) &&
+			! defs->buildres->patch ) return -11;
+  newitem = (topo_defs_cmap_t*) malloc(sizeof(topo_defs_cmap_t));
+  if ( ! newitem )  return -12;
+  for ( i=0; i<8; ++i ) {
+    newitem->resl[i] = aresl[i];
+    newitem->rell[i] = arell[i];
+    strcpy(newitem->atoml[i],anamel[i]);
+  }
+  newitem->del = del;
+  newitem->next = defs->buildres->cmaps;
+  defs->buildres->cmaps = newitem;
+  if ( ! defs->cmaps_present ) {
+    topo_defs_log_error(defs,"cross-term entries present in topology definitions");
+  }
+  defs->cmaps_present = 1;
+  return 0;
+}
+
 int topo_defs_conformation(topo_defs *defs, const char *rname, int del,
 	const char *a1name, int a1res, int a1rel,
 	const char *a2name, int a2res, int a2rel,
@@ -424,4 +472,58 @@ int topo_defs_patching_last(topo_defs *defs, const char *rname,
   return 0;
 }
 
+/* int topo_defs_add_topofile(topo_defs *defs, const char *filename) { */
+/*   topo_defs_topofile_t **topofiles; */
+/*   topo_defs_topofile_t *topofiletmp; */
+/*   if ( ! defs ) return -1; */
+/*   if ( strlen(filename)>=256 ) return -2; */
+/*   topofiles = &(defs->topofiles); */
+/*   topofiletmp = 0; */
+/*   topofiletmp = memarena_alloc(defs->arena,sizeof(topo_defs_topofile_t)); */
+/*   if ( ! topofiletmp ) return -3; */
+  
+/*   strcpy(topofiletmp->filename,filename); */
+
+/*   printf("add_topo %i %s;\n", defs->ntopo, topofiletmp->filename);  */
+/*   defs->ntopo++; */
+/*   topofiletmp->next = *topofiles; */
+/*   *topofiles = topofiletmp; */
+/*   return 0; */
+/* } */
+
+int topo_defs_add_topofile(topo_defs *defs, const char *filename) {
+/*   topo_defs_topofile_t **topofiles; */
+/*   topo_defs_topofile_t *topofiletmp; */
+/*   if ( ! defs ) return -1; */
+/*   if ( strlen(filename)>=256 ) return -2; */
+/*   topofiles = &(defs->topofiles); */
+/*   topofiletmp = 0; */
+/*   topofiletmp = memarena_alloc(defs->arena,sizeof(topo_defs_topofile_t)); */
+/*   if ( ! topofiletmp ) return -3; */
+  
+/*   strcpy(topofiletmp->filename,filename); */
+
+/*   printf("add_topo %i %s;\n", defs->ntopo, topofiletmp->filename);  */
+/*   defs->ntopo++; */
+/*   topofiletmp->next = *topofiles; */
+/*   *topofiles = topofiletmp; */
+/*   return 0; */
+
+  int i;
+  topo_defs_topofile_t *newitem;
+  char errmsg[64 + NAMEMAXLEN];
+  if ( ! defs ) return -1;
+  if ( strlen(filename)>=256 ) return -2;
+  if ( ( i = hasharray_index(defs->type_hash,filename) ) != HASHARRAY_FAIL ) {
+    sprintf(errmsg,"duplicate type key %s",filename);
+    topo_defs_log_error(defs,errmsg);
+    newitem = &defs->topo_array[i];
+  } else {
+    i = hasharray_insert(defs->topo_hash,filename);
+    if ( i == HASHARRAY_FAIL ) return -4;
+    newitem = &defs->topo_array[i];
+    strcpy(newitem->filename,filename);
+  }
+  return 0;
+}
 

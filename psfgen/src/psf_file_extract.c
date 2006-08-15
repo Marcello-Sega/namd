@@ -25,7 +25,112 @@ struct psfatom {
 };
 typedef struct psfatom psfatom;
 
+#define PSF_RECORD_LENGTH 	80
+
+
+static int extract_patches(FILE *file, topo_mol *mol) { 
+  char inbuf[PSF_RECORD_LENGTH+2];
+  int npatch = 0;
   
+  /* Read comments; get patch info */
+  while (!feof(file)) {
+    if (inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
+      /* EOF with no NATOM */
+      return -1;  
+    }
+    if (strlen(inbuf) > 0) {
+      if (strstr(inbuf, "REMARKS")) {
+	char *pbuf;
+	if (strstr(inbuf, "REMARKS topology ")) {
+	  char topofile[256];
+	  pbuf = strstr(inbuf, "topology");
+	  pbuf=pbuf+strlen("topology");
+	  sscanf(pbuf, "%s", topofile);	  
+	  topo_defs_add_topofile(mol->defs, topofile);
+	}
+	if (strstr(inbuf, "REMARKS patch ") || strstr(inbuf, "REMARKS defaultpatch ")) {
+	  char pres[NAMEMAXLEN], segres[2*NAMEMAXLEN];
+	  char s[NAMEMAXLEN], r[NAMEMAXLEN];
+	  topo_mol_ident_t target;
+	  pbuf = strstr(inbuf, "patch");
+	  pbuf=pbuf+5;
+	  sscanf(pbuf, "%s", pres);
+	  if (strcmp(pres,"----")) {
+	    if (strstr(inbuf, "REMARKS defaultpatch")) {
+	      topo_mol_add_patch(mol,pres,1);
+	    } else {
+	      topo_mol_add_patch(mol,pres,0);
+	    }
+	  }
+	  pbuf = strstr(pbuf, pres)+strlen(pres);
+	  while (sscanf(pbuf, "%s", segres)==1) { 
+	    int slen;
+	    slen = strcspn(segres,":");
+	    strncpy(s, segres, slen);
+	    s[slen] = '\0';
+	    strcpy(r, strchr(segres,':')+1);
+	    target.segid = s;
+	    target.resid = r;
+	    topo_mol_add_patchres(mol,&target);
+	    pbuf = strstr(pbuf,segres)+strlen(segres);
+	  }
+	  npatch++;
+	}
+      } else {
+	if (strstr(inbuf, "NATOM")) {
+          rewind(file);
+	  return npatch;
+        }
+      }
+    }
+  } ;
+  return npatch;
+}
+
+
+static int extract_segment_extra_data(FILE *file, topo_mol *mol) {
+  char inbuf[PSF_RECORD_LENGTH+2];
+  
+  /* Read comments; get patch info */
+  while (!feof(file)) {
+    if (inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
+      /* EOF with no NATOM */
+      return -1;  
+    }
+    if (strlen(inbuf) > 0) {
+      if (strstr(inbuf, "REMARKS")) {
+	char *pbuf;
+	if (strstr(inbuf, "REMARKS segment ")) {
+	  char segid[NAMEMAXLEN], pfirst[NAMEMAXLEN], plast[NAMEMAXLEN];
+	  char angles[20], diheds[20], tmp[NAMEMAXLEN];
+	  topo_mol_segment_t *seg = NULL;
+	  int id;
+	  pbuf = strstr(inbuf, "segment");
+	  pbuf += strlen("segment");
+	  sscanf(pbuf, "%s %s %s %s %s %s %s %s %s", segid, tmp, tmp, pfirst, tmp, plast, tmp, angles, diheds);
+	  if ( (id = hasharray_index(mol->segment_hash, segid)) != HASHARRAY_FAIL) {
+	    /* Then the segment exists.  Look it up and return it. */
+	    seg = mol->segment_array[id];
+	    strcpy(strchr(pfirst,';'),"");
+	    strcpy(strchr(plast, ';'),"");
+	    strcpy(seg->pfirst,pfirst);
+	    strcpy(seg->plast, plast);
+	    seg->auto_angles = 0; 
+	    if (!strcmp(diheds,"angles")) {
+	      seg->auto_angles = 1; 
+	    }
+	    seg->auto_dihedrals = 0; 
+	    if (!strcmp(diheds,"dihedrals")) {
+	      seg->auto_dihedrals = 1; 
+	    }
+	  } 
+	}
+      }
+    }
+  }
+  return 0;
+}
+
 static int extract_bonds(FILE *file, topo_mol *mol, int natoms, 
                          topo_mol_atom_t **molatomlist) {
 
@@ -202,6 +307,43 @@ static int extract_impropers(FILE *file, topo_mol *mol, int natoms,
   return 0;
 }
 
+static int extract_cmaps(FILE *file, topo_mol *mol, int natoms,
+                         topo_mol_atom_t **molatomlist) {
+
+  int i, j, ncmaps;
+  int *cmaps;
+  
+  ncmaps = psf_start_cmaps(file);
+  if (ncmaps < 0) {
+    return 1;
+  }
+  cmaps = (int *)malloc(8*ncmaps*sizeof(int));
+
+  if (psf_get_cmaps(file, ncmaps, cmaps)) {
+    free(cmaps); 
+    return -1;
+  } 
+    
+  for (i=ncmaps-1; i >= 0; i--) {
+    topo_mol_atom_t *atoml[8];
+    topo_mol_cmap_t *tuple;
+
+    tuple = memarena_alloc(mol->arena,sizeof(topo_mol_cmap_t));
+    for ( j = 0; j < 8; ++j ) {
+      atoml[j] = molatomlist[cmaps[8*i+j]-1];
+      tuple->next[j] = atoml[j]->cmaps;
+      tuple->atom[j] = atoml[j];
+    }
+    tuple->del = 0;
+    for ( j = 0; j < 8; ++j ) {
+      atoml[j]->cmaps = tuple; 
+    }
+  }
+
+  free(cmaps);
+  return 0;
+}
+
 /* Return the segment corresponding to the given segname.  If the segname
    doesn't exist, add it.  Return NULL on error.
 */
@@ -257,10 +399,13 @@ static topo_mol_residue_t *get_residue(topo_mol_segment_t *seg,
 
 int psf_file_extract(topo_mol *mol, FILE *file, void *v,
                                 void (*print_msg)(void *, const char *)) {
-
-  int i, natoms;
+  int i, natoms, npatch;
   psfatom *atomlist;
   topo_mol_atom_t **molatomlist;
+  long filepos;
+
+  /* Read patch info from REMARKS */
+  npatch = extract_patches(file, mol);
 
   natoms = psf_start_atoms(file);
   if (natoms < 0) {
@@ -301,13 +446,14 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
     if (!res) {
       char *buf;
       int len = strlen(resid) + strlen(segname);
-      buf = (char *)malloc((30 + len)*sizeof(char));
-      sprintf(buf, "Unable to add residue %s:%s", segname, resid);
+      buf = (char *)malloc((50 + len)*sizeof(char));
+      sprintf(buf, "Unable to add (duplicate?) residue %s:%s", segname, resid);
       print_msg(v,buf);
       free(buf);
       break;
     }
     strcpy(res->name, atomlist[i].resname);
+    strcpy(res->chain, "");
     res->atoms = 0;
     firstatom = i;
     while (i<natoms && !strcmp(resid, atomlist[i].resid) &&
@@ -318,6 +464,7 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
       atomtmp->angles = 0;
       atomtmp->dihedrals = 0;
       atomtmp->impropers = 0;
+      atomtmp->cmaps = 0;
       atomtmp->conformations = 0;
       strcpy(atomtmp->name, atomlist[i].name);
       strcpy(atomtmp->type, atomlist[i].atype);
@@ -348,7 +495,15 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
       res->atoms = atomtmp;
     }  
   }  
-  
+
+  /* Get the segment patch first,last and auto angles,dihedrals info from psf */
+  /* We have to rewind the file and read the info now since it has to be added to */
+  /* the existing segments which have just been read. */
+  filepos = ftell(file);
+  rewind(file);
+  extract_segment_extra_data(file, mol);
+  fseek(file, filepos, SEEK_SET);
+
   /* Check to see if we broke out of the loop prematurely */
   if (i != natoms) {
     free(atomlist);
@@ -379,6 +534,19 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
 
   if (extract_impropers(file, mol, natoms, molatomlist)) {
     print_msg(v,"Error processing impropers");
+    free(atomlist);
+    free(molatomlist);
+    return -1;
+  }
+
+  switch (extract_cmaps(file, mol, natoms, molatomlist)) {
+  case 0:
+    break;
+  case 1:
+    print_msg(v,"psf file does not contain cross-terms");
+    break;
+  default:
+    print_msg(v,"Error processing cross-terms");
     free(atomlist);
     free(molatomlist);
     return -1;

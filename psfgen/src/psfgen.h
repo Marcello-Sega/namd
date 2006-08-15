@@ -13,7 +13,7 @@
 
 /* psfgen-specific data */
 struct psfgen_data {
-  int id;
+  int id, in_use;
   topo_defs *defs;
   topo_mol *mol;
   stringhash *aliases;

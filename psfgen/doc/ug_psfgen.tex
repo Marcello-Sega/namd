@@ -400,9 +400,12 @@ proc addwater { psffile pdbfile watpsf watpdb } {
 
 \begin{itemize}
 
-\item \COMMAND{\IKEY{topology} \ARG{file name}}
+\item \COMMAND{\IKEY{topology} \OKEY{list} \ARG{file name}}
 {Read in molecular topology definitions from file.}
-{\ARGDEF{file name}{CHARMM format topology file.}}
+{\ARGDEF{file name}{CHARMM format topology file.}\\
+\KEYDEF{list}{Lists all currently specified topology files.}\\
+\KEYDEF{residues}{Return a list of the known residue topologies.}\\
+\KEYDEF{patches}{Return a list of the known residue patches.}}
 {Beginning of script, before segment.  May call multiple times.}
 
 \item \COMMAND{\IKEY{pdbalias residue} \ARG{alternate name} \ARG{real name}}
@@ -414,11 +417,24 @@ This command also exists under the deprecated name \IKEY{alias}.}
 \ARGDEF{real name}{Residue name found in topology file.}}
 {Before reading sequence with pdb.  May call multiple times.}
 
-\item \COMMAND{\IKEY{segment} \ARG{segment ID} \{ \ARG{commands} \}}
+\item \COMMAND{\IKEY{segment} \OKEY{segids} \OKEY{resids} \OKEY{residue} 
+\OKEY{first} \OKEY{last} \ARG{segment ID} \OARG{resid} \OARG{atom name} \{ \ARG{commands} \}}
 {Build a segment of the molecule.  A segment is typically a single
 chain of protein or DNA, with default patches applied to the termini.
-Segments may also contain pure solvent or lipid.}
-{\ARGDEF{segment ID}{Unique name for segment, 1--4 characters.}\\
+Segments may also contain pure solvent or lipid. Options \OKEY{segids} 
+\OKEY{resids} \OKEY{residue} \OKEY{first} \OKEY{last} are used to query 
+information about the specified segment.} 
+{\KEYDEF{segids}{Return a list of segids for the molecule in the current context.}\\
+\KEYDEF{resids}{Return a list of resids for the molecule in the current context.}\\
+\KEYDEF{residue}{Return the residue name of the residue in
+the given segment with the given resid.}\\
+\KEYDEF{atoms}{Return a list of atoms for the given segment with the given resid.}\\
+\KEYDEF{coordinates}{Return x, y, z coordinates for the given atom.}\\
+\KEYDEF{first}{Returns the name of the patch that was applied 
+to the beginning of the specified segment.}\\
+\KEYDEF{last}{Returns the name of the patch that was applied 
+to the end of the specified segment.}\\
+\ARGDEF{segment ID}{Unique name for segment, 1--4 characters.}\\
 \ARGDEF{commands}{Sequence of commands in Tcl syntax to build the primary
 structure of the segment, including auto, first, last, residue, pdb, etc.}}
 {After topology definitions and residue aliases.  May call multiple times.
@@ -444,10 +460,11 @@ Default is read from topology file and may be residue-specific.}
 {\ARGDEF{patch name}{Single-target patch residue name or \KEY{none}.}}
 {Anywhere within segment, does not affect later segments.}
 
-\item \COMMAND{\IKEY{residue} \ARG{resid} \ARG{resname}}
+\item \COMMAND{\IKEY{residue} \ARG{resid} \ARG{resname} \OARG{chain}}
 {Add a single residue to the end of the current segment.}
 {\ARGDEF{resid}{Unique name for residue, 1--5 characters, usually numeric.}
-\ARGDEF{resname}{Residue type name from topology file.}}
+\ARGDEF{resname}{Residue type name from topology file.}
+\ARGDEF{chain}{Single-character chain identifier.}}
 {Anywhere within segment.}
 
 \item \COMMAND{\IKEY{pdb} \ARG{file name}}
@@ -463,11 +480,13 @@ the topology file or should be aliased before pdb is called.}
 \ARGDEF{resname}{New residue type name from topology file.}}
 {Within segment, after target residue has been created.}
 
-\item \COMMAND{\IKEY{patch} \ARG{patch residue name} \ARG{segid:resid} \OARG{...}}
+\item \COMMAND{\IKEY{patch} \OKEY{list} \ARG{patch residue name} \ARG{segid:resid} \OARG{...}}
 {Apply a patch to one or more residues.  Patches make small modifications to
 the structure of residues such as converting one to a terminus, changing the
 protonation state, or creating disulphide bonds between a pair of residues.}
-{\ARGDEF{patch residue name}{Name of patch residue from topology definition file.}\\
+{\KEYDEF{list}{Lists all patches applied explicitey using the command 'patch'.}\\
+\KEYDEF{listall}{Lists all currently applied patches including default patches.}\\
+\ARGDEF{patch residue name}{Name of patch residue from topology definition file.}\\
 \ARGDEF{segid:resid}{List of segment and residue pairs to which patch should be applied.}}
 {After one or more segments have been built.}
 
@@ -499,8 +518,9 @@ single atom will be removed.}
 {After all segments have been built and patched.}
 
 \item \COMMAND{\IKEY{resetpsf}}
-{Delete all segments in from the structure.  The topology definitions and 
-aliases are left intact.}
+{Delete all segments in the structure.  The topology definitions and 
+aliases are left intact.  If you want to clear the topology and aliases
+as well, use \KEY{psfcontext reset} instead.}
 {}
 {After one or more segments have been built.}
 
@@ -510,16 +530,57 @@ aliases are left intact.}
 and aliases.  If no arguments are provided, the current context is returned.
 If \ARG{context} or \KEY{new} is specified, a new context is entered and
 the old context is returned.  If \KEY{delete} is also specified, the old
-context is destroyed and ``deleted \ARG{old context}'' is returned.  An error is
-returned if the specified context does not exist or if \KEY{delete} was
-specified and the specified context is the same as the current context.}
+context is destroyed and ``deleted \ARG{old context}'' is returned.  An error
+is returned if the specified context does not exist or if \KEY{delete} was
+specified and the current context would still be in use.
+{\em It may be possible to write robust, error-tolerant code with this
+interface, but it would not be easy.  Please employ the following revised
+\KEY{psfcontext} usage instead.}}
 {\ARGDEF{context}{Context ID returned by psfcontext.}}
 {At any time.}
 
-\item \COMMAND{\IKEY{writepsf} \OKEY{charmm} \OKEY{x-plor} \ARG{file name}}
-{Write out structure information as PSF file.}
+\item \COMMAND{\IKEY{psfcontext reset}}
+{Clears the structure, topology definitions, and aliases, creating
+clean environment just like a new context.}
+{}
+{At any time.}
+
+\item \COMMAND{\IKEY{psfcontext create}}
+{Creates a new context and returns its ID, but does not switch to it.
+This is different from \KEY{psfcontext new} above, which switches to
+the newly created context and returns the current context's ID.}
+{}
+{At any time.}
+
+\item \COMMAND{\IKEY{psfcontext delete} \ARG{context} }
+{Deletes the specified context.  An error is returned if the
+specified context does not exist or would still be in use.
+This is different from \KEY{psfcontext \ARG{context} delete} above,
+which switches to the specified context and deletes the current one.}
+{\ARGDEF{context}{Context ID returned by psfcontext.}}
+{At any time.}
+
+\item \COMMAND{\IKEY{psfcontext eval} \ARG{context} \{ \ARG{commands} \}}
+{Evaluates \ARG{commands} in the specified context, returning to the current
+context on exit.  This should be totally robust, returning to the orignal
+context in case of errors and preventing its deletion when nested.}
+{\ARGDEF{context}{Context ID returned by \KEY{psfcontext create}.}\\
+\ARGDEF{commands}{Script to be executed in the specified context.}}
+{At any time.}
+
+\item \COMMAND{\IKEY{psfcontext stats}}
+{Returns the total numbers of contexts that have been created and destroyed.
+This is useful for checking if a script is leaking contexts.}
+{}
+{At any time.}
+
+\item \COMMAND{\IKEY{writepsf} \OKEY{charmm} \OKEY{x-plor} \OKEY{cmap} \OKEY{nocmap} \ARG{file name}}
+{Write out structure information as PSF file. A simplified session log is listed in the REMARKS 
+section of the PSF file.}
 { \KEYDEF{charmm}{Use CHARMM format (numbers for atom types).}\\
 \KEYDEF{x-plor}{Use X-PLOR format (names for atom types), the default format required by NAMD.}\\
+\KEYDEF{cmap}{Write cross-term entries to PSF file if present, the default.}\\
+\KEYDEF{nocmap}{Do not write cross-term entries to PSF file, even if present.}\\
 \ARGDEF{file name}{PSF file to be generated.}}
 {After all segments have been built and patched.}
 
@@ -571,3 +632,36 @@ available (coordinates are set to 0 for these atoms).}
 {After structure and coordinates are complete.}
 
 \end{itemize}
+
+\section{Example of a Session Log}
+The command  ``writepsf'' prints a simple session log as ``REMARKS'' 
+at the beginning of the PSF file. The log contains information about applied patches 
+and used topology files which not stored in the standard records of PSF files.
+These informations are also available after a PSF file was read by command ``readpsf''.
+Here'a a simple axample:
+
+\begin{verbatim}
+PSF
+
+       1 !NTITLE
+ REMARKS original generated structure x-plor psf file
+ REMARKS 4 patches were applied to the molecule.
+ REMARKS topology 1LOV_autopsf-temp.top
+ REMARKS segment P1 { first NTER; last CTER; auto angles dihedrals }
+ REMARKS segment O1 { first NONE; last NONE; auto none  }
+ REMARKS segment W1 { first NONE; last NONE; auto none  }
+ REMARKS defaultpatch NTER P1:1
+ REMARKS defaultpatch CTER P1:104
+ REMARKS patch DISU P1:10  P1:2
+ REMARKS patch DISU P1:103  P1:6
+
+    1704 !NATOM
+       1 P1   1    ALA  N    NH3   -0.300000       14.0070           0
+...
+\end{verbatim}
+
+All patches that were applied explicitely using the ``patch'' command are 
+listed following the keyword  ``patch'', but the patches that
+result from default patching like the first and last patches of a segment 
+are marked as ``defaultpatch''. Further the segment based patching rules are
+listed along with the angle/dihedral autogeneration rules.

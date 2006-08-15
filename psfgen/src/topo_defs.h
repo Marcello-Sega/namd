@@ -44,6 +44,9 @@ int topo_defs_improper(topo_defs *defs, const char *rname, int del,
 	const char *a3name, int a3res, int a3rel,
 	const char *a4name, int a4res, int a4rel);
 
+int topo_defs_cmap(topo_defs *defs, const char *rname, int del,
+	const char* const anamel[8], const int aresl[8], const int arell[8]);
+
 int topo_defs_conformation(topo_defs *defs, const char *rname, int del,
 	const char *a1name, int a1res, int a1rel,
 	const char *a2name, int a2res, int a2rel,
@@ -61,6 +64,8 @@ int topo_defs_patching_first(topo_defs *defs, const char *rname,
 
 int topo_defs_patching_last(topo_defs *defs, const char *rname,
         const char *pname);
+
+int topo_defs_add_topofile(topo_defs *defs, const char *filename);
 
 #endif
 

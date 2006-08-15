@@ -19,7 +19,7 @@ memarena * memarena_create(void) {
   memarena * a;
   if ( (a = (memarena*) malloc(sizeof(memarena))) ) {
     a->stack = 0;
-    a->newblocksize = 128;
+    a->newblocksize = 128000;
     a->size = 0;
     a->used = 0;
   }

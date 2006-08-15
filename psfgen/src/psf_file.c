@@ -3,9 +3,10 @@
 
 #include "psf_file.h"
 
-#define PSF_RECORD_LENGTH 	80
+#define PSF_RECORD_LENGTH 	160
 
 /* return # of atoms, or negative if error */
+
 
 int psf_start_atoms(FILE *file) {
  
@@ -219,5 +220,27 @@ int psf_get_impropers(FILE *f, int n, int *impropers) {
   return psf_get_dihedrals(f, n, impropers);
 }
 
+int psf_start_cmaps(FILE *file) {
+
+  char inbuf[PSF_RECORD_LENGTH+2];
+  int nbond = -1;
+
+  /* keep reading the next line until a line with NBOND appears */
+  do {
+    if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
+      /* EOF encountered with no NBOND line found ==> error, return (-1) */
+      return (-1);
+    }
+    if(strlen(inbuf) > 0 && strstr(inbuf,"NCRTERM"))
+      nbond = atoi(inbuf);
+  } while (nbond == -1);
+
+  return nbond;
+}
+    
+int psf_get_cmaps(FILE *f, int n, int *cmaps) {
   
+  /* Same format */
+  return psf_get_dihedrals(f, 2*n, cmaps);
+}
 
