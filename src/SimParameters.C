@@ -2702,7 +2702,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
    if (mergeCrossterms) {
-      iout << iINFO << "CROSSTERM ENERGY INCLUDED IN DIHEDRAL" << endi;
+      iout << iINFO << "CROSSTERM ENERGY INCLUDED IN DIHEDRAL\n" << endi;
    }
    
    if (outputMomenta != 0)
