@@ -466,6 +466,7 @@ void Parameters::read_charmm_parameter_file(char *fname)
   int  par_type=0;         //  What type of parameter are we currently
                            //  dealing with? (vide infra)
   int  skipline;           //  skip this line?
+  int  skipall = 0;        //  skip rest of file;
   char buffer[512];           //  Buffer to store each line of the file
   char first_word[512];           //  First word of the current line
   FILE *pfile;                   //  File descriptor for the parameter file
@@ -501,6 +502,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
          (strncmp(first_word, "*", 1) != 0) &&
         (strncasecmp(first_word, "END", 3) != 0))
     {
+      if ( skipall ) {
+	iout << iWARN << "SKIPPING PART OF PARAMETER FILE AFTER RETURN STATEMENT\n" << endi;
+        break;
+      }
       /*  Now, determine the apropriate parameter type.   */
       if (strncasecmp(first_word, "bond", 4)==0)
       {
@@ -549,6 +554,14 @@ void Parameters::read_charmm_parameter_file(char *fname)
       else if (strncasecmp(first_word, "cmap", 4)==0)
       {
         par_type=8; skipline=1;
+      }
+      else if (strncasecmp(first_word, "read", 4)==0)
+      {
+        skip_stream_read(buffer, pfile);  skipline=1;
+      }
+      else if (strncasecmp(first_word, "return", 4)==0)
+      {
+        skipall=1;  skipline=1;
       }
       else if ((strncasecmp(first_word, "nbxm", 4) == 0) ||
                (strncasecmp(first_word, "grou", 4) == 0) ||
@@ -667,6 +680,36 @@ void Parameters::read_charmm_parameter_file(char *fname)
 }
 /*                        END OF FUNCTION read_charmm_paramter_file                */
 //****** END CHARMM/XPLOR type changes
+
+
+void Parameters::skip_stream_read(char *buf, FILE *fd) {
+
+  char buffer[513];
+  char first_word[513];
+  char s1[128];
+  char s2[128];
+  int rval = sscanf(buf, "%s %s", s1, s2);
+  if (rval != 2) {
+        char err_msg[512];
+        sprintf(err_msg, "BAD FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
+        NAMD_die(err_msg);
+  }
+  if ( ! strncasecmp(s2,"PARA",4) ) return;  // read parameters
+  
+  iout << iINFO << "SKIPPING " << s2 << " SECTION IN STREAM FILE\n" << endi;
+
+  while (NAMD_read_line(fd, buffer) != -1)
+  {
+    // read until we find "END"
+    NAMD_find_first_word(buffer, first_word);
+    if (!NAMD_blank_string(buffer) &&
+        (strncmp(first_word, "!", 1) != 0) &&
+         (strncmp(first_word, "*", 1) != 0) &&
+         (strncasecmp(first_word, "END", 3) == 0) ) return;
+  }
+
+}
+
 
 /************************************************************************/
 /*                  */

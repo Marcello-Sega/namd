@@ -200,6 +200,8 @@ private:
 	int *maxImproperMults;			//  Max multiplicity for
 						//  improper bonds
 
+	void skip_stream_read(char *, FILE *);  // skip part of stream file
+
 	void add_bond_param(char *);		//  Add a bond parameter
 	struct bond_params *add_to_bond_tree(struct bond_params * , 
 				     struct bond_params *);
