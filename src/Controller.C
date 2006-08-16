@@ -1363,7 +1363,12 @@ void Controller::printEnergies(int step, int minimize)
 		labels << (LABEL) << " "; values << "{" << (VALUE) << "} ";
     if (node->getScript() && node->getScript()->doCallback()) {
       std::ostringstream labels, values;
+#if CMK_VERSION_BLUEGENE
+      // the normal version below gives a compiler error
+      values.precision(16);
+#else
       values << std::setprecision(16);
+#endif
       CALLBACKDATA("TS",step);
       CALLBACKDATA("BOND",bondEnergy);
       CALLBACKDATA("ANGLE",angleEnergy);
