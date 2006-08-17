@@ -261,7 +261,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    
    opts.optional("main", "nonbondedScaling", "nonbonded scaling factor",
      &nonbondedScaling, 1.0);
-   opts.range("nonbondedScaling", POSITIVE);
+   opts.range("nonbondedScaling", NOT_NEGATIVE);
 
    opts.optional("main", "limitDist", "limit nonbonded below this distance",
      &limitDist, 0.0);
@@ -915,7 +915,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
     "for the force constants", PARSE_STRING);
    opts.require("constraints", "constraintScaling", "constraint scaling factor",
      &constraintScaling, 1.0);
-   opts.range("nonbondedScaling", POSITIVE);
+   opts.range("constraintScaling", NOT_NEGATIVE);
 
 
 
