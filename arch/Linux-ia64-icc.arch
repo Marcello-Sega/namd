@@ -4,10 +4,10 @@ CHARMARCH = net-linux-ia64-iccstatic
 FLOATOPTS = -ftz -IPF_fma -IPF_fltacc -IPF_flt_eval_method0 -IPF_fp_speculationfast
 
 CXX = icpc -D_IA64 -I/usr/local/gnu/include
-CXXOPTS = -O2 $(FLOATOPTS)
+CXXOPTS = -static-libcxa -O2 $(FLOATOPTS)
 CXXNOALIASOPTS = -O2 -fno-alias -DSIMPLE_PAIRLIST $(FLOATOPTS) -opt_report \
 	 -opt_report_levelmin -opt_report_routinecalc_
 
 CC = icc
-COPTS = -O2 $(FLOATOPTS)
+COPTS = -static-libcxa -O2 $(FLOATOPTS)
 
