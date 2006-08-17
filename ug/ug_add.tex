@@ -55,6 +55,13 @@ Otherwise, the value specified is used as the force constant for
 that atom's restraining potential.}
 
 \item
+\NAMDCONFWDEF{constraintScaling}{scaling factor for harmonic constraint energy function}{positive}{1.0}
+{The harmonic constraint energy function is multiplied by this parameter,
+making it possible to gradually turn off constraints during equilibration.
+This parameter is used only if {\tt constraints} is set to 
+{\tt on}.}
+
+\item
 \NAMDCONFWDEF{selectConstraints}{Restrain only selected Cartesian components of the coordinates?}{{\tt on} or {\tt off}}{{\tt off}}
 {This option is useful to restrain the positions of atoms to a plane or a line in space. If active,
  this option will ensure that only selected Cartesian components of the coordinates are restrained.
