@@ -4877,6 +4877,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
      // use the pdb file with the initial coordinates
      if (fepfile == NULL) {
        bPDB = initial_pdb;
+       strcpy(filename, "coordinate pdb file (default)");
      }
      else {
        if (fepfile->next != NULL) {
