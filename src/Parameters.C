@@ -179,6 +179,7 @@ void Parameters::initialize() {
   angle_array=NULL;
   dihedral_array=NULL;
   improper_array=NULL;
+  crossterm_array=NULL;
   vdw_array=NULL;
   vdw_pair_tree=NULL;
   maxDihedralMults=NULL;

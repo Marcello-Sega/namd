@@ -170,6 +170,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   angles=NULL;
   dihedrals=NULL;
   impropers=NULL;
+  crossterms=NULL;
   donors=NULL;
   acceptors=NULL;
   exclusions=NULL;
@@ -179,6 +180,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   anglesByAtom=NULL;
   dihedralsByAtom=NULL;
   impropersByAtom=NULL;
+  crosstermsByAtom=NULL;
   exclusionsByAtom=NULL;
   fullExclusionsByAtom=NULL;
   modExclusionsByAtom=NULL;
