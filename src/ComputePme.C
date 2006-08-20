@@ -1197,7 +1197,9 @@ void ComputePme::doWork()
 				* ComputeNonbondedUtil::dielectric_1 );
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
+#ifdef NETWORK_PROGRESS
     CmiNetworkProgress();
+#endif
 
     CompAtom *x = (*ap).positionBox->open();
     if ( patchList[0].p->flags.doMolly ) {
@@ -1224,7 +1226,9 @@ void ComputePme::doWork()
   // copy to other grids if needed
   if ( fepOn || lesOn ) {
     for ( g=0; g<numGrids; ++g ) {
+#ifdef NETWORK_PROGRESS
       CmiNetworkProgress();
+#endif
 
       PmeParticle *lgd = localGridData[g];
       int nga = 0;
@@ -1278,7 +1282,9 @@ void ComputePme::doWork()
   // calculate self energy
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
   for ( g=0; g<numGrids; ++g ) {
+#ifdef NETWORK_PROGRESS
     CmiNetworkProgress();
+#endif
 
     evir[g] = 0;
     BigReal selfEnergy = 0;
@@ -1372,7 +1378,9 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       }
     }
 
+#ifdef NETWORK_PROGRESS
     CmiNetworkProgress();
+#endif
 
     if ( ! recipPeDest[pe] ) continue;
 
@@ -1463,7 +1471,9 @@ void ComputePme::ungridForces() {
     Lattice lattice = patchList[0].p->flags.lattice;
     int g = 0;
     for ( g=0; g<numGrids; ++g ) {
+#ifdef NETWORK_PROGRESS
       CmiNetworkProgress();
+#endif
 
       myRealSpace[g]->compute_forces(q_arr+g*fsize, localGridData[g], gridResults);
       delete myRealSpace[g];

@@ -390,10 +390,6 @@ void ComputeNonbondedUtil :: NAME
       }
     }
 
-    //#if CHARM_VERSION > 50800
-    //CmiNetworkProgress();
-    //#endif
-
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
@@ -802,7 +798,7 @@ void ComputeNonbondedUtil :: NAME
 #undef EXCLUDED
 #undef MODIFIED
 
-#if CHARM_VERSION > 50800
+#ifdef NETWORK_PROGRESS
     CmiNetworkProgress();
 #endif
 

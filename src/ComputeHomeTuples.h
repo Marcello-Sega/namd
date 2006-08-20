@@ -322,7 +322,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       // take triplet and pass with tuple info to force eval
       UniqueSetIter<T> al(tupleList);
       if ( Node::Object()->simParameters->commOnly ) {
-#if CMK_VERSION_BLUEGENE
+#ifdef NETWORK_PROGRESS
 	CmiNetworkProgress();
 #endif
         for (al = al.begin(); al != al.end(); al++ ) {

@@ -166,7 +166,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
         }
       } else {
         for (al = al.begin(); al != al.end(); al++ ) {
-#if CMK_VERSION_BLUEGENE
+#ifdef NETWORK_PROGRESS
 	  CmiNetworkProgress();
 #endif	  
           al->computeForce(reductionData);

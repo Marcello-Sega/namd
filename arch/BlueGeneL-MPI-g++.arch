@@ -7,7 +7,7 @@ BGL_BIN=/bgl/BlueLight/floor/blrts-gnu/bin
 
 BGL_CFLAGS=-I$(BGL_INC) 
 
-CXX = $(BGL_BIN)/powerpc-bgl-blrts-gnu-g++ $(BGL_CFLAGS) -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_GETPWUID
+CXX = $(BGL_BIN)/powerpc-bgl-blrts-gnu-g++ $(BGL_CFLAGS) -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_GETPWUID -DNETWORK_PROGRESS
 
 #-O3 is unstable with NAMD
 CXXOPTS = -O1 -ffast-math 
