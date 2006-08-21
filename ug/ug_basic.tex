@@ -557,7 +557,7 @@ option must be defined to determine an initial set of velocities.
 Both options cannot be used together.}
 
 \item
-\NAMDCONFWDEF{COMmotion}{allow center of mass motion?}
+\NAMDCONFWDEF{COMmotion}{allow initial center of mass motion?}
 {{\tt yes} or {\tt no}}{{\tt no}}
 {
 Specifies whether or not motion of 
@@ -567,6 +567,24 @@ will be adjusted to remove center of mass motion of the system.
 Note that this does not preclude later center-of-mass motion due to 
 external forces such as random noise in Langevin dynamics, boundary
 potentials, and harmonic restraints.}
+
+\item
+\NAMDCONFWDEF{zeroMomentum}{remove center of mass drift due to PME}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{
+If enabled, the net momentum of the simulation and any resultant drift
+is removed before every full electrostatics step.
+This correction should conserve energy and have minimal impact on
+parallel scaling.
+This feature should only be used for simulations that would
+conserve momentum except for the slight errors in PME.
+(Features such as fixed atoms, harmonic restraints, steering forces,
+and Langevin dynamics do not conserve momentum; use in combination
+with these features should be considered experimental.)
+Since the momentum correction is delayed, enabling outputMomenta 
+will show a slight nonzero linear momentum but there should be no
+center of mass drift.
+}
 
 \item
 \NAMDCONFWDEF{dielectric}{dielectric constant for system}

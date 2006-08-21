@@ -164,6 +164,8 @@ void Sequencer::integrate() {
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
+
+    int zeroMomentum = simParams->zeroMomentum;
     
     // Do we need to return forces to TCL script?
     int doTcl = simParams->tclForcesOn;
@@ -207,6 +209,7 @@ void Sequencer::integrate() {
     if (doTcl)  // include constraint forces
       computeGlobal->saveTotalForces(patch);
     submitHalfstep(step);
+    if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
@@ -248,10 +251,15 @@ void Sequencer::integrate() {
 	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
 	minimizationQuenchVelocity();
-	submitHalfstep(step);
 
 	doNonbonded = !(step%nonbondedFrequency);
 	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
+
+        if ( zeroMomentum && doFullElectrostatics )
+					correctMomentum(step,slowstep);
+
+	submitHalfstep(step);
+
 	doMolly = simParams->mollyOn && doFullElectrostatics;
 
         maxForceUsed = Results::normal;
@@ -296,6 +304,7 @@ void Sequencer::integrate() {
           computeGlobal->saveTotalForces(patch);
 
 	submitHalfstep(step);
+        if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
        if ( ! commOnly ) {
 	addForceToMomentum(-0.5*timestep);
@@ -450,6 +459,55 @@ void Sequencer::quenchVelocities() {
   for ( int i = 0; i < numAtoms; ++i ) {
     a[i].velocity = 0;
   }
+}
+
+void Sequencer::submitMomentum(int step) {
+
+  FullAtom *a = patch->atom.begin();
+  const int numAtoms = patch->numAtoms;
+
+  Vector momentum = 0;
+  BigReal mass = 0;
+if ( simParams->zeroMomentumAlt ) {
+  for ( int i = 0; i < numAtoms; ++i ) {
+    momentum += a[i].mass * a[i].velocity;
+    mass += 1.;
+  }
+} else {
+  for ( int i = 0; i < numAtoms; ++i ) {
+    momentum += a[i].mass * a[i].velocity;
+    mass += a[i].mass;
+  }
+}
+
+  ADD_VECTOR_OBJECT(reduction,REDUCTION_HALFSTEP_MOMENTUM,momentum);
+  reduction->item(REDUCTION_MOMENTUM_MASS) += mass;
+}
+
+void Sequencer::correctMomentum(int step, BigReal drifttime) {
+
+  if ( simParams->fixedAtomsOn )
+    NAMD_die("Cannot zero momentum when fixed atoms are present.");
+
+  const Vector dv = broadcast->momentumCorrection.get(step);
+  const Vector dx = dv * ( drifttime / TIMEFACTOR );
+
+  FullAtom *a = patch->atom.begin();
+  const int numAtoms = patch->numAtoms;
+
+if ( simParams->zeroMomentumAlt ) {
+  for ( int i = 0; i < numAtoms; ++i ) {
+    BigReal rmass = 1. / a[i].mass;
+    a[i].velocity += dv * rmass;
+    a[i].position += dx * rmass;
+  }
+} else {
+  for ( int i = 0; i < numAtoms; ++i ) {
+    a[i].velocity += dv;
+    a[i].position += dx;
+  }
+}
+
 }
 
 void Sequencer::langevinVelocities(BigReal dt_fs)

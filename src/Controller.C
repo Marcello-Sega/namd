@@ -285,6 +285,8 @@ void Controller::integrate() {
     const int numberOfSteps = simParams->N;
     const int stepsPerCycle = simParams->stepsPerCycle;
 
+    const int zeroMomentum = simParams->zeroMomentum;
+
     nbondFreq = simParams->nonbondedFrequency;
     const int dofull = ( simParams->fullDirectOn ||
 			simParams->FMAOn || simParams->PMEOn );
@@ -295,6 +297,8 @@ void Controller::integrate() {
 
     reassignVelocities(step);  // only for full-step velecities
     receivePressure(step);
+    if ( zeroMomentum && dofull && ! (step % slowFreq) )
+						correctMomentum(step);
     printFepMessage(step);
     printDynamicsEnergies(step);
     outputFepEnergy(step);
@@ -316,6 +320,8 @@ void Controller::integrate() {
 	langevinPiston1(step);
 	enqueueCollections(step);  // after lattice scaling!
 	receivePressure(step);
+        if ( zeroMomentum && dofull && ! (step % slowFreq) )
+						correctMomentum(step);
 	langevinPiston2(step);
         reassignVelocities(step);
         printDynamicsEnergies(step);
@@ -748,6 +754,24 @@ void Controller::rescaleVelocities(int step)
       rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
     }
   }
+}
+
+void Controller::correctMomentum(int step) {
+
+    Vector momentum;
+    momentum.x = reduction->item(REDUCTION_HALFSTEP_MOMENTUM_X);
+    momentum.y = reduction->item(REDUCTION_HALFSTEP_MOMENTUM_Y);
+    momentum.z = reduction->item(REDUCTION_HALFSTEP_MOMENTUM_Z);
+    const BigReal mass = reduction->item(REDUCTION_MOMENTUM_MASS);
+
+    if ( momentum.length2() == 0. )
+      iout << iERROR << "Momentum is exactly zero; probably a bug.\n" << endi;
+    if ( mass == 0. )
+      NAMD_die("Total mass is zero in Controller::correctMomentum");
+
+    momentum *= (-1./mass);
+
+    broadcast->momentumCorrection.publish(step+slowFreq,momentum);
 }
 
 //Modifications for alchemical fep

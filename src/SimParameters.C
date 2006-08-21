@@ -341,8 +341,13 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.range("temperature", NOT_NEGATIVE);
    opts.units("temperature", N_KELVIN);
 
-   opts.optionalB("main", "COMmotion", "should the center of mass move?",
+   opts.optionalB("main", "COMmotion", "allow initial center of mass movement",
       &comMove, FALSE);
+
+   opts.optionalB("main", "zeroMomentum", "constrain center of mass",
+      &zeroMomentum, FALSE);
+   opts.optionalB("zeroMomentum", "zeroMomentumAlt", "constrain center of mass",
+      &zeroMomentumAlt, FALSE);
 
    opts.optionalB("main", "wrapWater", "wrap waters around periodic boundaries on output",
       &wrapWater, FALSE);
@@ -2518,7 +2523,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
    iout << endi;
 
-   iout << iINFO << "CENTER OF MASS MOVING? ";
+   iout << iINFO << "CENTER OF MASS MOVING INITIALLY? ";
 
    if (comMove)
    {
@@ -2529,6 +2534,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << "NO\n";
    }
    iout << endi;
+
+   if ( zeroMomentum ) {
+     iout << iINFO << "REMOVING CENTER OF MASS DRIFT DURING SIMULATION";
+     if ( zeroMomentumAlt ) iout << " (ALT METHOD)";
+     iout << "\n" << endi;
+   }
 
    iout << iINFO << "DIELECTRIC             " 
       << dielectric << "\n";

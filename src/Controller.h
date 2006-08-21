@@ -94,6 +94,7 @@ protected:
       int controlNumDegFreedom;
       Tensor controlPressure;
     void enqueueCollections(int);
+    void correctMomentum(int step);
     void rescaleVelocities(int);
       BigReal rescaleVelocities_sumTemps;
       int rescaleVelocities_numTemps;

@@ -43,6 +43,9 @@ protected:
     void submitMinimizeReductions(int);
     void submitCollections(int step, int zeroVel = 0);
 
+    void submitMomentum(int step);
+    void correctMomentum(int step, BigReal drifttime);
+
     void saveForce(const int ftag = Results::normal);
     void addForceToMomentum(BigReal, const int ftag = Results::normal,
 						const int useSaved = 0);

@@ -111,6 +111,8 @@ public:
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 
 					//  able to move
+	Bool zeroMomentum;		//  remove momentum drift from PME
+	Bool zeroMomentumAlt;		//  alternate method for testing
 	Bool wrapWater;			//  Wrap water around on output
 	Bool wrapAll;			//  Wrap clusters around on output
 	Bool wrapNearest;		//  Wrap to closest image to origin
