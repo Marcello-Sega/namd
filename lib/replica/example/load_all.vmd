@@ -1,0 +1,8 @@
+
+foreach f { fold_alanin.conf restart_1.conf } {
+  source $f
+  source ../show_replicas.vmd
+}
+
+source ../clone_reps.vmd
+
