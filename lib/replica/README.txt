@@ -2,6 +2,9 @@
 This directory contains Tcl scripts that implement replica exchange
 for NAMD, using a Tcl server and socket connections to drive a
 separate NAMD process for every replica used in the simulation.
+Replica exchanges and energies are recorded in the potenergy.dat,
+realtemp.dat, and targtemp.dat files written in the output directory.
+These can be viewed with, e.g., "xmgrace -nxy ....potenergy.dat"
 There is also a script to load the output into VMD and color each
 frame according to target temperature.  An example simulation folds
 a 66-atom model of a deca-alanine helix in about 10 ns.
