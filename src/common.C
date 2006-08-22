@@ -127,10 +127,14 @@ void NAMD_backup_file(const char *filename, const char *extension)
 #endif
     if ( rename(filename,backup) )
     {
-      char errmsg[256];
-
-      sprintf(errmsg, "Error on renaming file %s to %s",filename,backup);
-      NAMD_err(errmsg);
+      char *sys_err_msg = strerror(errno);
+      if ( ! sys_err_msg ) sys_err_msg = "(unknown error)";
+      iout << iERROR << "Error on renaming file " << filename
+	<< " to " << backup << ": " << sys_err_msg << "\n" << endi;
+      fflush(stdout);
+      // char errmsg[256];
+      // sprintf(errmsg, "Error on renaming file %s to %s",filename,backup);
+      // NAMD_err(errmsg);
     }
     delete [] backup;
   }
