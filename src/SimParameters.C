@@ -2177,11 +2177,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   for ( int minSize = 1; minSize < 300; ++minSize ) {
 #endif
 	int bestSize = 10 * (minSize + 10);  // make sure it's big
-        int max2 = (int)(log(minSize)/log(2) + 2);
-        int max3 = (int)(log(minSize)/log(3) + 2);
-        int max5 = 2; // (int)(log(minSize)/log(5) + 2);
-        int max7 = 1; // (int)(log(minSize)/log(7) + 2);
-        int max11 = 1; // (int)(log(minSize)/log(11) + 2);
+        int max2 = (int)(log((double)minSize)/log((double)2) + 2);
+        int max3 = (int)(log((double)minSize)/log((double)3) + 2);
+        int max5 = 2; // (int)(log((double)minSize)/log((double)5) + 2);
+        int max7 = 1; // (int)(log((double)minSize)/log((double)7) + 2);
+        int max11 = 1; // (int)(log((double)minSize)/log((double)11) + 2);
 	for ( int i2 = 0; i2 <= max2; ++i2 ) {
 	for ( int i3 = 0; i3 <= max3; ++i3 ) {
 	for ( int i5 = 0; i5 <= max5; ++i5 ) {
