@@ -770,6 +770,14 @@ None of the parameters should affect energy conservation, although they may affe
 {Charges are interpolated onto the grid and forces are interpolated off using this many points, equal to the order of the interpolation function plus one.}
 
 \item
+\NAMDCONF{PMEGridSpacing}{maximum space between grid points}{positive real}
+{The grid spacing partially determines the accuracy and efficiency of PME.
+If any of the grid sizes below are not set, then PMEGridSpacing must be set
+(recommended value is 1.0 \AA ) and will be used to calculate them.
+If a grid size is set, then the grid spacing must be
+at least PMEGridSpacing (if set, or a very large default of 1.5).}
+
+\item
 \NAMDCONF{PMEGridSizeX}{number of grid points in x dimension}{positive integer}
 {The grid size partially determines the accuracy and efficiency of PME.
 For speed, {\tt PMEGridSizeX} should have only small integer factors (2, 3 and 5).}

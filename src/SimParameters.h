@@ -370,6 +370,7 @@ public:
 	int PMEGridSizeX;		//  No. of grid points in x dim
 	int PMEGridSizeY;		//  No. of grid points in y dim
 	int PMEGridSizeZ;		//  No. of grid points in z dim
+	BigReal PMEGridSpacing;		//  Maximum spacing between points
 	int PMEProcessors;		//  No. of processors to use
 	Bool PMEBarrier;		//  Use barrier before sendTrans
 

@@ -609,12 +609,15 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 	&PMETolerance, 1.e-6);
    opts.optional("PME", "PMEInterpOrder", "PME interpolation order",
 	&PMEInterpOrder, 4);  // cubic interpolation is default
-   opts.require("PME", "PMEGridSizeX", "PME grid in x dimension",
-	&PMEGridSizeX);
-   opts.require("PME", "PMEGridSizeY", "PME grid in y dimension",
-	&PMEGridSizeY);
-   opts.require("PME", "PMEGridSizeZ", "PME grid in z dimension",
-	&PMEGridSizeZ);
+   opts.optional("PME", "PMEGridSizeX", "PME grid in x dimension",
+	&PMEGridSizeX, 0);
+   opts.optional("PME", "PMEGridSizeY", "PME grid in y dimension",
+	&PMEGridSizeY, 0);
+   opts.optional("PME", "PMEGridSizeZ", "PME grid in z dimension",
+	&PMEGridSizeZ, 0);
+   opts.optional("PME", "PMEGridSpacing", "Maximum PME grid spacing (Angstroms)",
+	&PMEGridSpacing, 0.);
+   opts.range("PMEGridSpacing", NOT_NEGATIVE);
    opts.optional("PME", "PMEProcessors",
 	"PME FFT and reciprocal sum processor count", &PMEProcessors, 0);
    opts.optionalB("main", "PMEBarrier", "Use barrier in PME?",
@@ -2148,6 +2151,70 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if ( lattice.volume() == 0. ) {
 	NAMD_die("PME requires periodic boundary conditions.");
      }
+     if ( PMEGridSpacing == 0. ) {
+       if ( PMEGridSizeX * PMEGridSizeY * PMEGridSizeZ == 0 )
+	 NAMD_die("Either PMEGridSpacing or PMEGridSizeX, PMEGridSizeY, and PMEGridSizeZ must be specified.");
+       else PMEGridSpacing = 1.5;  // only exit in very bad cases
+     }
+#ifndef TEST_PME_GRID
+     for ( int idim = 0; idim < 3; ++idim ) {
+        int *gridSize;
+        BigReal cellLength;
+        const char *direction;
+        switch ( idim ) {
+        case 0:  direction = "X";
+           gridSize = &PMEGridSizeX;  cellLength = lattice.a().length();
+           break;
+        case 1:  direction = "Y";
+           gridSize = &PMEGridSizeY;  cellLength = lattice.b().length();
+           break;
+        case 2:  direction = "Z";
+           gridSize = &PMEGridSizeZ;  cellLength = lattice.c().length();
+           break;
+        }
+	int minSize = (int) ceil(cellLength/PMEGridSpacing);
+#else
+  for ( int minSize = 1; minSize < 300; ++minSize ) {
+#endif
+	int bestSize = 10 * (minSize + 10);  // make sure it's big
+        int max2 = (int)(log(minSize)/log(2) + 2);
+        int max3 = (int)(log(minSize)/log(3) + 2);
+        int max5 = 2; // (int)(log(minSize)/log(5) + 2);
+        int max7 = 1; // (int)(log(minSize)/log(7) + 2);
+        int max11 = 1; // (int)(log(minSize)/log(11) + 2);
+	for ( int i2 = 0; i2 <= max2; ++i2 ) {
+	for ( int i3 = 0; i3 <= max3; ++i3 ) {
+	for ( int i5 = 0; i5 <= max5; ++i5 ) {
+	for ( int i7 = 0; i7 <= max7; ++i7 ) {
+	for ( int i11 = 0; i11 <= max11; ++i11 ) {
+	   if ( i5 + i7 + i11 > i2 ) continue;
+           int testSize = 2;  // must be even
+	   for ( int j2 = 0; j2 < i2; ++j2 ) testSize *= 2;
+	   if ( testSize > bestSize ) continue;
+	   for ( int j3 = 0; j3 < i3; ++j3 ) testSize *= 3;
+	   if ( testSize > bestSize ) continue;
+	   for ( int j5 = 0; j5 < i5; ++j5 ) testSize *= 5;
+	   if ( testSize > bestSize ) continue;
+	   for ( int j7 = 0; j7 < i7; ++j7 ) testSize *= 7;
+	   if ( testSize > bestSize ) continue;
+	   for ( int j11 = 0; j11 < i11; ++j11 ) testSize *= 11;
+	   if ( testSize > bestSize ) continue;
+	   if ( testSize >= minSize ) bestSize = testSize;
+        } } } } }
+#ifdef TEST_PME_GRID
+  iout << minSize << " " << bestSize << "\n" << endi;
+#else
+	if ( ! *gridSize ) {   // set it
+	   *gridSize = bestSize;
+        }
+	if ( *gridSize * PMEGridSpacing < cellLength ) {
+	   char errmsg[512];
+	   sprintf(errmsg, "PMEGridSize%s %d is too small for cell length %f and PMEGridSpacing %f\n",
+		direction, *gridSize, cellLength, PMEGridSpacing);
+	   NAMD_die(errmsg);
+	}
+#endif
+     }
      if ( PMEGridSizeX < 5 ) {
 	NAMD_die("PMEGridSizeX (number of grid points) is very small.");
      }
@@ -2176,6 +2243,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      PMEGridSizeX = 0;
      PMEGridSizeY = 0;
      PMEGridSizeZ = 0;
+     PMEGridSpacing = 1000.;
      PMEEwaldCoefficient = 0;
    }
 
@@ -3373,6 +3441,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	<< PMEGridSizeX << " "
 	<< PMEGridSizeY << " "
 	<< PMEGridSizeZ << "\n";
+     iout << iINFO << "PME MAXIMUM GRID SPACING    "
+	<< PMEGridSpacing << "\n";
      if ( PMEBarrier ) {
        iout << iINFO << "PME BARRIER ENABLED\n";
      }
