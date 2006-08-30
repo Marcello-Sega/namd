@@ -627,10 +627,12 @@ even using the same seed will {\it not} guarantee reproducible results.
 \item
 \NAMDCONFWDEF{rigidBonds}{controls if and how ShakeH is used}{{\tt none},
 {\tt water}, {\tt all}}{{\tt none}} 
-{When {\tt rigidBonds} is {\tt all}, the bond between each hydrogen
-and its mother atom is fixed to the nominal bond length given in the
-parameter file.  When {\tt water} is selected, only the bonds between
-the hydrogens and the oxygen in water molecules are constrained.  
+{When {\tt water} is selected, the hydrogen-oxygen and hydrogen-hydrogen
+distances in waters are constrained to the nominal length or angle given
+in the parameter file, making the molecules completely rigid.
+When {\tt rigidBonds} is {\tt all}, waters are made rigid as described above
+and the bond between each hydrogen and the (one) atom to which
+it is bonded is similarly constrained.
 For the default case {\tt none}, no lengths are constrained.
 }
 
