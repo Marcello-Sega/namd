@@ -69,6 +69,12 @@ A new method, implemented in Tcl, efficiently calculates the
 potential of mean force along a reaction coordinate by applying
 adaptive biasing forces to provide uniform sampling.
 
+\subsubsection*{Customizable Replica Exchange Simulations}
+
+The replica exchange method is implemented as a set of Tcl scripts
+that use socket connections to drive a set of NAMD jobs, exchanging
+temperatures (or any other scriptable parameter) based on energy.
+
 \subsubsection*{Tcl-Based Boundary Potentials}
 
 Tcl-scripted forces may be efficiently applied individually to
