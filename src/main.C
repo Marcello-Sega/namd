@@ -68,9 +68,11 @@ int tbsoft_sendusage(const char *program,
                      const char *miscinfo) {
 
 #ifndef NOHOSTNAME
+#ifdef TRACK_USERS
   iout << iINFO <<
      "Sending usage information to NAMD developers via UDP.  Sent data is:\n"
      << endi;
+#endif
 
   char sendbuf[TBSOFT_TRACK_MAXLEN];
   char host[128];
@@ -90,7 +92,9 @@ int tbsoft_sendusage(const char *program,
   sprintf(sendbuf, "1 %s  %s  %s  %s  %s  %s  %s", 
     program, versionnum, platform, numcpus, miscinfo, host, user);
   iout << iINFO << sendbuf << "\n" << endi;
+#ifdef TRACK_USERS
   send_dgram(TBSOFT_TRACK_HOST, TBSOFT_TRACK_PORT, sendbuf, strlen(sendbuf));
+#endif
 
 #endif
   return 0;
