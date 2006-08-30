@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                      NAMD 2.6b2 Release Notes                      |
+|                       NAMD 2.6 Release Notes                       |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -46,6 +46,12 @@ http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/
 A new method, implemented in Tcl, efficiently calculates the
 potential of mean force along a reaction coordinate by applying
 adaptive biasing forces to provide uniform sampling.
+
+--- Customizable Replica Exchange Simulations ---
+
+The replica exchange method is implemented as a set of Tcl scripts
+that use socket connections to drive a set of NAMD jobs, exchanging
+temperatures (or any other scriptable parameter) based on energy.
 
 --- Tcl-Based Boundary Potentials ---
 
@@ -503,8 +509,8 @@ Download TCL and FFTW libraries:
   tar xzf tcl-linux.tar.gz
 
 Unpack NAMD and matching Charm++ source code and enter directory:
-  tar xzf NAMD_2.6b2_Source.tar.gz
-  cd NAMD_2.6b2_Source
+  tar xzf NAMD_2.6_Source.tar.gz
+  cd NAMD_2.6_Source
   tar xf charm-5.9.tar
   cd charm-5.9
 

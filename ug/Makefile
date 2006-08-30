@@ -1,7 +1,7 @@
 #####
 # define version
 #####
-NAMD_VERSION = 2.6b2
+NAMD_VERSION = 2.6
 
 #####
 # specific names of programs used in make commands
@@ -85,7 +85,7 @@ $(DOCDIR)/ug.ps: $(SRCFILES)
 	latex $(MAIN_UG_FILE); \
 	dvips -t letter -o ug.ps ug.dvi
 
-namd_version.tex:
+namd_version.tex: Makefile
 	$(DELETE) namd_version.tex ; \
 	csh -c "echo \\\\newcommand\{\\\\NAMDVER\} \{$(NAMD_VERSION)\} > namd_version.tex"
 
