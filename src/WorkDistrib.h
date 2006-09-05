@@ -78,7 +78,7 @@ private:
   void assignPatchesRecursiveBisection(void);
   void assignPatchesRoundRobin(void);
   void assignPatchesBitReversal(void);
-  void assignPatchesTopoGridRecBisection();
+  int  assignPatchesTopoGridRecBisection();
 
   void sortNodesAndAssign(int *assignedNode);
   void velocities_from_PDB(char *filename, 

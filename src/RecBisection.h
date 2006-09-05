@@ -163,7 +163,7 @@ class RecBisection
 						 //processor grid
       void assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z, 
 				   DimensionMap dm);
-      void topogrid_rec_divide(Partition &proc_p, Partition &patch_p);     
+      int topogrid_rec_divide(Partition &proc_p, Partition &patch_p);     
       int partitionProcGrid(int X, int Y, int Z, int *dest_arr);
 #endif
 };

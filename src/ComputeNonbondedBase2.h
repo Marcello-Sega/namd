@@ -13,6 +13,7 @@ NORMAL( MODIFIED( foo bar ) )
 #ifdef ARCH_POWERPC
      __alignx(16, table_four);
      __alignx(16, p_1);
+#pragma unroll(1)
 #endif
 
 #pragma ivdep

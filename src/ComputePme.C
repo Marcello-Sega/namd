@@ -38,7 +38,7 @@
 #include "Random.h"
 
 // commlib has been observed to cause hangs when starting load balancing
-// #define USE_COMM_LIB 1
+#define USE_COMM_LIB 1
 #ifdef USE_COMM_LIB
 #include "EachToManyMulticastStrategy.h"
 #endif
@@ -179,15 +179,9 @@ void generatePmePeList2(int *gridPeMap, int numGridPes, int *transPeMap, int num
 }
 
 #if CMK_VERSION_BLUEGENE
-
-//Use prime numbers to minimize contention on Torus
-void generatePmePeListPrime(int *pemap, int numPes);
-void generatePmePeListPrime2(int *pemap, int numPes);
-
 //Topology aware PME allocation
-void generateBGLORBPmePeList(int *pemap, int numPes, int *block_pes=0, 
+bool generateBGLORBPmePeList(int *pemap, int numPes, int *block_pes=0, 
 			     int nbpes=0);
-
 #endif
 
 class ComputePmeMgr : public BOCclass {
@@ -403,28 +397,21 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   BGLTorusManager *tmanager = BGLTorusManager::getObject();
   if(tmanager->isVnodeMode())
     patch_pes *= 2;
-
+  
+  bool done = false;
 #ifndef USE_COMM_LIB  
   if(CkNumPes() > 2*sum_npes + patch_pes) {    
-    generateBGLORBPmePeList(transPeMap, numTransPes);
-    generateBGLORBPmePeList(gridPeMap, numGridPes, transPeMap, numTransPes);
-    
-    if(CkMyPe() == 0) 
-      CkPrintf("GRID PES  %d,%d,%d,%d ............\n", gridPeMap[0], 
-	       gridPeMap[1], gridPeMap[2], gridPeMap[3]);
-    
-    if(CkMyPe() == 0) 
-      CkPrintf("TRANS PES  %d,%d,%d,%d ............\n", transPeMap[0],
-	       transPeMap[1],transPeMap[2],transPeMap[3]);
+    done = generateBGLORBPmePeList(transPeMap, numTransPes);
+    done &= generateBGLORBPmePeList(gridPeMap, numGridPes, transPeMap, numTransPes);    
   }
   else 
 #endif
-  if(CkNumPes() > 2 *max_npes + patch_pes) {
-    //generatePmePeListPrime(transPeMap, max_npes);
-    generateBGLORBPmePeList(transPeMap, max_npes);
-    gridPeMap = transPeMap;
-  }
-  else 
+    if(CkNumPes() > 2 *max_npes + patch_pes) {
+      done = generateBGLORBPmePeList(transPeMap, max_npes);
+      gridPeMap = transPeMap;
+    }
+
+  if (!done)
 #endif
     {
       generatePmePeList(transPeMap, max_npes);
@@ -1595,10 +1582,6 @@ void ComputePme::ungridForces() {
 
 #if CMK_VERSION_BLUEGENE
 
-/* Use smart PME allocation scheme where PME work is allocated to
-   processors multiples of primes making them scattered on the
-   processor grid to get maximum bisection bandwidth */
-
 #define NPRIMES 8
 const static unsigned int NAMDPrimes[] = {
   3,
@@ -1622,69 +1605,23 @@ const static unsigned int NAMDPrimes[] = {
   1217                  //This should b enough for 64K nodes of BGL. 
 };
 
-
-void generatePmePeListPrime(int *pemap, int numPes) {
-  int my_prime = NAMDPrimes[0];
-  int density = CkNumPes()/numPes + 1;
-  int count = 0;
-  
-  //Choose a suitable prime Number
-  for(count = 0; count < NPRIMES; count ++) {
-    //Find a prime just greater than the density
-    if(density < NAMDPrimes[count]) {
-      my_prime = NAMDPrimes[count];
-      break;
-    }      
-  }
-  
-  if(count == NPRIMES)
-    my_prime = NAMDPrimes[NPRIMES-1];
-
-  PatchMap *pmap = PatchMap::Object();
-  int pos = 0;
-  
-  //We have to share processors with patches and this scheme isnt
-  //reall optimized for that
-  if(CkNumPes() <= numPes + pmap->numNodesWithPatches())
-    NAMD_bug("Too few processors for ComputePme::generatePmePeListPrime().\n");
-
-  int *pmemap = new int [CkNumPes()];
-  memset(pmemap, 0, CkNumPes() * sizeof(int));
-  
-  for(count = 0; count < numPes; count ++) {
-    int destPe = (count + 1) * my_prime;
-    destPe = destPe % CkNumPes();
-    
-    if(pmap->numPatchesOnNode(destPe) == 0 && pmemap[destPe] == 0) {
-      pemap[count] = destPe;
-      pmemap[destPe] = 1;
-    }
-    else {
-      for(pos = 1; pos < CkNumPes(); pos++) {
-        int newdest =  destPe + pos;
-        newdest = newdest % CkNumPes();
-        
-        if(pmap->numPatchesOnNode(newdest) == 0 && pmemap[newdest] == 0) {
-          pemap[count] = newdest;
-          pmemap[newdest] = 1;
-          break;
-        }
-      }
-      if(pos == CkNumPes())
-        NAMD_bug("PME Prime Allocator: Allocation Failed\n");
-    }
-  }
-
-  delete [] pmemap;
-}
-
 #include "RecBisection.h"
 
-void generateBGLORBPmePeList(int *pemap, int numPes, 
+/***-----------------------------------------------------**********
+    The Orthogonal Recursive Bisection strategy, which allocates PME
+    objects close to the patches they communicate, and at the same
+    time spreads them around the grid 
+****----------------------------------------------------------****/
+
+bool generateBGLORBPmePeList(int *pemap, int numPes, 
 			     int *block_pes, int nbpes) {
 
   PatchMap *pmap = PatchMap::Object();
   int *pmemap = new int [CkNumPes()];
+
+  if (pemap == NULL)
+    return false;
+
   BGLTorusManager *tmanager = BGLTorusManager::getObject();
 
   memset(pmemap, 0, sizeof(int) * CkNumPes());
@@ -1704,7 +1641,8 @@ void generateBGLORBPmePeList(int *pemap, int numPes,
   }
 
   if(numPes + nbpes + pmap->numNodesWithPatches() > CkNumPes())
-    NAMD_bug("PME ORB Allocator: Processors Unavailable\n");
+    //NAMD_bug("PME ORB Allocator: Processors Unavailable\n");
+    return false;
 
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
@@ -1811,90 +1749,11 @@ void generateBGLORBPmePeList(int *pemap, int numPes,
   }
   
   if(npme_pes != numPes)
-    NAMD_bug("ORB PME allocator failed\n");
+    //NAMD_bug("ORB PME allocator failed\n");
+    return false;
   
   delete [] pmemap;
-}
-
-
-void generatePmePeListPrime2(int *pemap1, int numPes1,
-                             int *pemap2, int numPes2) {
-  
-  CkPrintf("In generatePmePeListPrime2!!!\n\n");
-
-  int my_prime = NAMDPrimes[0];
-  int density = CkNumPes()/(numPes1 + numPes2) + 1;
-  int count = 0;
-  
-  //Choose a suitable prime Number
-  for(count = 0; count < NPRIMES; count ++) {
-    //Find a prime just greater than the density
-    if(density < NAMDPrimes[count]) {
-      my_prime = NAMDPrimes[count];
-      break;
-    }      
-  }
-  
-  PatchMap *pmap = PatchMap::Object();
-  int pos = 0;
-  
-  //We have to share processors with patches and this scheme isnt
-  //reall optimized for that
-  if(CkNumPes() <= numPes1 + numPes2 + pmap->numNodesWithPatches())
-    NAMD_bug("Prime2 PME allocator: Too Few Processors passed in\n");
-
-  int *pmemap = new int [CkNumPes()];
-  memset(pmemap, 0, CkNumPes() * sizeof(int));
-  
-  for(count = 0; count < numPes1; count ++) {
-    int destPe = (count + 1) * my_prime;
-    destPe = destPe % CkNumPes();
-    
-    if(pmap->numPatchesOnNode(destPe) == 0 && pmemap[destPe] == 0) {
-      pemap1[count] = destPe;
-      pmemap[destPe] = 1;
-    }
-    else {
-      for(pos = 1; pos < CkNumPes(); pos++) {
-        int newdest =  destPe + pos;
-        newdest = newdest % CkNumPes();
-        
-        if(pmap->numPatchesOnNode(newdest) == 0 && pmemap[newdest] == 0) {
-          pemap1[count] = newdest;
-          pmemap[newdest] = 1;
-          break;
-        }
-      }
-      if(pos == CkNumPes())
-        NAMD_bug("Prime2 PME Allocation Failed for the first array\n");
-    }
-  }
-
-  for(count = numPes1; count < numPes1 + numPes2; count ++) {
-    int destPe = (count + 1) * my_prime;
-    destPe = destPe % CkNumPes();
-    
-    if(pmap->numPatchesOnNode(destPe) == 0 && pmemap[destPe] == 0) {
-      pemap2[count - numPes1] = destPe;
-      pmemap[destPe] = 1;
-    }
-    else {
-      for(pos = 1; pos < CkNumPes(); pos++) {
-        int newdest =  destPe + pos;
-        newdest = newdest % CkNumPes();
-        
-        if(pmap->numPatchesOnNode(newdest) == 0 && pmemap[newdest] == 0) {
-          pemap2[count - numPes1] = newdest;
-          pmemap[newdest] = 1;
-          break;
-        }
-      }
-      if(pos == CkNumPes())
-        NAMD_bug("Prime2 PME Allocation Failed for second array\n");
-    }
-  }
-
-  delete [] pmemap;
+  return true;
 }
 
 #endif

@@ -549,8 +549,9 @@ void WorkDistrib::assignNodeToPatch()
   int nBGLNodes = tmanager->getXNodeSize() * tmanager->getYNodeSize() 
     * tmanager->getZNodeSize();
 
-  if (nBGLNodes > 2 * patchMap->numPatches())
-    assignPatchesTopoGridRecBisection();
+  if (nBGLNodes >  patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
+    CkPrintf ("Blue Gene/L topology partitioner finished successfully \n");
+  }
   else
 #endif
     if (nNodes > patchMap->numPatches())
@@ -1462,9 +1463,7 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 
 //Specifically designed for BGL and other 3d Tori architectures
 //Partition Torus and Patch grid together using recursive bisection.
-void WorkDistrib::assignPatchesTopoGridRecBisection() {
-  
-  //CkPrintf("In topology based patch assignment scheme\n");
+int WorkDistrib::assignPatchesTopoGridRecBisection() {
   
   PatchMap *patchMap = PatchMap::Object();
   int *assignedNode = new int[patchMap->numPatches()];
@@ -1474,16 +1473,7 @@ void WorkDistrib::assignPatchesTopoGridRecBisection() {
   
   if ( simParams->noPatchesOnZero && numNodes > 1 ) usedNodes -= 1;
   RecBisection recBisec(patchMap->numPatches(), PatchMap::Object());
-  /*
-  int testarr[1024];
-  recBisec.partitionProcGrid(32, 16, 16, testarr);
-  FILE *fp = fopen("patchdump", "w+");
-  for(int count = 0; count < patchMap->numPatches(); count++) 
-    fprintf(fp, "%d\n", testarr[count]);
-  fclose(fp);
   
-  CkExit();
-  */
   int xsize = 0, ysize = 0, zsize = 0;
   
   //Right now assumes an ***T (e.g. XYZT) mapping
@@ -1493,9 +1483,11 @@ void WorkDistrib::assignPatchesTopoGridRecBisection() {
   zsize = tmanager->getZSize();
   
   //Fix to not assign patches to processor 0
-  recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
+  int rc = recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
   
   delete [] assignedNode;
+
+  return rc;
 }
 #endif
 

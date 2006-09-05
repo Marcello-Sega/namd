@@ -449,7 +449,10 @@ int RecBisection::partitionProcGrid(int X, int Y, int Z, int *dest_arr) {
     // divide processor grid into rectangular prisms whose sizes
     // corrspond to the computation load of the patches. Moreover
     // neoghboring should also be on nearby processors on the grid
-    topogrid_rec_divide(proc_p, top_partition);
+    int rc = topogrid_rec_divide(proc_p, top_partition);
+    
+    if (rc < 0)
+      return rc;
 
     assignPatchesToProcGrid(dest_arr, X, Y, Z, dm);
     
@@ -460,7 +463,7 @@ int RecBisection::partitionProcGrid(int X, int Y, int Z, int *dest_arr) {
 //number of processors is 2 times greater than number of patches. It
 //returns a processor partition for each patch.
 
-void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
+int RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
   
     Partition proc_p1, proc_p2, patch_p1, patch_p2;
     int i=0, j=0, k=0;
@@ -499,24 +502,24 @@ void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
 	// proc_p.origin.x, 
 	// proc_p.origin.y, proc_p.origin.z);
 
-	return;
+	return 1;
     }  
     
     
     if(proc_p.origin.x == proc_p.corner.x && 
        proc_p.origin.y == proc_p.corner.y && 
        proc_p.origin.z == proc_p.corner.z) {
-	
-        CkPrintf("\n\n\n WARNING !!!!Problem, more than one patch allocated to one processor\n\n\n");
-	
+      
+      return -1;
+      /*
 	for(k = patch_p.origin.z; k < patch_p.corner.z; k++) 
-	  for(j = patch_p.origin.y; j < patch_p.corner.y; j++) 
-	    for(i = patch_p.origin.x; i < patch_p.corner.x; i++) {
-		    
-		  partitions[patchMap->pid(i,j,k)] = proc_p;
-		}
+	for(j = patch_p.origin.y; j < patch_p.corner.y; j++) 
+	for(i = patch_p.origin.x; i < patch_p.corner.x; i++) {
 	
+	partitions[patchMap->pid(i,j,k)] = proc_p;
+	}	
 	return;
+      */
     }
     
     double load_x, load_y, load_z;
@@ -533,8 +536,6 @@ void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
     load_z /= proc_p.corner.z - proc_p.origin.z + 1;
     load_z *= patch_p.load;
     
-    //CkPrintf("Chosen loads = %g, %g, %g\n", load_x, load_y, load_z);
-
     loadarray[XDIR] = loadarray[YDIR] = loadarray[ZDIR] = 10.0 * patch_p.load;
     
     double currentload = 0;
@@ -659,8 +660,6 @@ void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
 	    	
 	loadarray[mindir] = 0.5 * patch_p.load;
 	loadarray[pdir] = 0.5 * patch_p.load;
-	
-	//CkPrintf("Inefficient patch allocation\n");
     }
     else {
 	pdir = mindir;
@@ -733,13 +732,25 @@ void RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
 	     patch_p2.corner.y, patch_p2.corner.z);
     */
 
-    if (!p1_empty[mindir]) topogrid_rec_divide(proc_p1, patch_p1); 
-    else
-	NAMD_bug("Recbisection BGL Torus Allocator found empty processor partition\n");
+    int rc = 0;
 
-    if (!p2_empty[mindir]) topogrid_rec_divide(proc_p2, patch_p2);
+    if (!p1_empty[mindir]) 
+      rc = topogrid_rec_divide(proc_p1, patch_p1); 
     else
-	NAMD_bug("Recbisection BGL Torus Allocator found empty processor partition\n");
+      return -1;
+
+    if (rc < 0)
+      return rc;
+
+    if (!p2_empty[mindir]) 
+      rc = topogrid_rec_divide(proc_p2, patch_p2);
+    else
+      return -1;
+
+    if (rc < 0)
+      return rc;    
+
+    return 1;
 }
 
 
