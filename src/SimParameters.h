@@ -147,8 +147,6 @@ public:
 	Bool binaryOutput;		//  should output files be
 					//  binary format rather than PDB
 	BigReal cutoff;			//  Cutoff distance
-	BigReal eleccutoff;		//  electrostatic Cutoff distance
-	BigReal vdwcutoff;		//  vdw Cutoff distance
 	BigReal margin;			//  Fudge factor on patch size
 	BigReal patchDimension;		//  Dimension of each side of a patch
 					//  This is either cutoff+margin or
@@ -161,10 +159,6 @@ public:
 					//  for electrostatics and vdw
 	BigReal switchingDist;		//  Distance at which switching
 					//  becomes active
-	BigReal vdwswitchDist;		//  Distance at which vdw switching
-					//  becomes active
-	BigReal elecswitchDist;		//  Distance at which electrostatic
-					//  switching becomes active
 	BigReal pairlistDist;		//  Distance within which atom pairs 
 					//  should be added to pairlist
 	int pairlistMinProcs;		//  Minimum number of processors

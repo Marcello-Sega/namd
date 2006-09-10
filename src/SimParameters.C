@@ -254,7 +254,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
       &stepsPerCycle, 20);
    opts.range("stepspercycle", POSITIVE);
 
-   opts.optional("main", "cutoff", "local electrostatic and Vdw distance", 
+   opts.require("main", "cutoff", "local electrostatic and Vdw distance", 
       &cutoff);
    opts.range("cutoff", POSITIVE);
    opts.units("cutoff", N_ANGSTROM);
@@ -282,30 +282,6 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &switchingDist);
    opts.range("switchdist", POSITIVE);
    opts.units("switchdist", N_ANGSTROM);
-
-   opts.optional("switching", "elecswitchdist",
-     "Distance for electrostatic switching function activation",
-     &elecswitchDist);
-   opts.range("elecswitchdist", POSITIVE);
-   opts.units("elecswitchdist", N_ANGSTROM);
-
-   opts.optional("switching", "eleccutoff",
-     "Distance for electrostatic cutoff",
-     &eleccutoff);
-   opts.range("eleccutoff", POSITIVE);
-   opts.units("eleccutoff", N_ANGSTROM);
-
-   opts.optional("switching", "vdwswitchdist",
-     "Distance for vdw switching function activation",
-     &vdwswitchDist);
-   opts.range("vdwswitchdist", POSITIVE);
-   opts.units("vdwswitchdist", N_ANGSTROM);
-
-   opts.optional("switching", "vdwcutoff",
-     "Distance for vdw cutoff",
-     &vdwcutoff);
-   opts.range("vdwcutoff", POSITIVE);
-   opts.units("vdwcutoff", N_ANGSTROM);
 
    opts.optional("main", "pairlistdist",  "Pairlist inclusion distance",
      &pairlistDist);
@@ -1742,99 +1718,19 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (switchingActive)
    {
 
-     if (opts.defined("cutoff") && opts.defined("eleccutoff") &&
-   opts.defined("vdwcutoff")) {
-       iout << iWARN
-   << "PARAMETERS cutoff, eleccutoff, and vdwcutoff\n"
-   << "all defined -- cutoff ignored\n" 
-   << endi;
+     if (!opts.defined("switchDist")) {
+       NAMD_die("switchDist must be defined when switching is enabled");
      }
 
-     if (opts.defined("switchDist") && opts.defined("elecswitchDist") &&
-   opts.defined("vdwswitchDist")) {
-       iout << iWARN
-   << "PARAMETERS switchDist, elecswitchDist, and vdwswitchDist\n"
-   << "all defined -- switchDist ignored\n" 
-   << endi;
-     }
-
-     // Check if enough things are defined
-
-     if (!opts.defined("eleccutoff")) {
-       if (opts.defined("cutoff"))
-   eleccutoff=cutoff;
-       else {
-   char err_msg[129];
-
-   sprintf(err_msg,
-     "Either cutoff or eleccutoff must be defined");
-   NAMD_die(err_msg);
-       }
-     }
-
-     if (!opts.defined("vdwcutoff")) {
-       if (opts.defined("cutoff"))
-   vdwcutoff=cutoff;
-       else {
-   char err_msg[129];
-
-   sprintf(err_msg,
-     "Either cutoff or vdwcutoff must be defined");
-   NAMD_die(err_msg);
-       }
-     }
-
-     if (!opts.defined("elecswitchDist")) {
-       if (opts.defined("switchDist"))
-   elecswitchDist=switchingDist;
-       else {
-   char err_msg[129];
-
-   sprintf(err_msg,
-     "Either switchDist or elecswitchDist must be defined");
-   NAMD_die(err_msg);
-       }
-     }
-
-     if (!opts.defined("vdwswitchDist")) {
-       if (opts.defined("switchDist"))
-   vdwswitchDist=switchingDist;
-       else {
-   char err_msg[129];
-
-   sprintf(err_msg,
-     "Either switchDist or vdwswitchDist must be defined");
-   NAMD_die(err_msg);
-       }
-     }
-
-     // Let cutoff be the max of vdw and elec.
-     if (eleccutoff > vdwcutoff)
-       cutoff = eleccutoff;
-     else cutoff = vdwcutoff;
-
-     // Let switchDist be the min of vdw and elec.
-     if (elecswitchDist < vdwswitchDist)
-       switchingDist = elecswitchDist;
-     else switchingDist = vdwswitchDist;
-
-     if ( (elecswitchDist>cutoff) || (elecswitchDist<0) )
+     if ( (switchingDist>cutoff) || (switchingDist<0) )
      {
        char err_msg[129];
 
        sprintf(err_msg, 
-         "Switching distance 'elecswitchDist' muct be between 0 and the eleccutoff, which is %f", eleccutoff);
+         "switchDist muct be between 0 and cutoff, which is %f", cutoff);
        NAMD_die(err_msg);
      }
 
-     if ( (vdwswitchDist>cutoff) || (vdwswitchDist<0) )
-     {
-       char err_msg[129];
-
-       sprintf(err_msg, 
-         "Switching distance 'vdwswitchDist' muct be between 0 and the vdwcutoff, which is %f", vdwcutoff);
-       NAMD_die(err_msg);
-     }
    }
 
    if (!opts.defined("pairlistDist"))
@@ -2726,22 +2622,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
                << switchingDist << "\n";
       iout << iINFO << "SWITCHING OFF          "
                << cutoff << "\n";
-      if ( elecswitchDist != switchingDist ||
-           vdwswitchDist  != switchingDist ||
-           eleccutoff     != cutoff        ||
-           vdwcutoff      != cutoff         ) {
-        NAMD_die("Separate elect and vdw switching parameters not supported\n");
-      }
-    /*
-      iout << iINFO << "E-SWITCHING ON         "
-               << elecswitchDist << "\n";
-      iout << iINFO << "E-SWITCHING OFF        "
-               << eleccutoff << "\n";
-      iout << iINFO << "VDW-SWITCHING ON       "
-               << vdwswitchDist << "\n";
-      iout << iINFO << "VDW-SWITCHING OFF      "
-               << vdwcutoff << "\n";
-    */
    }
    else
    {
