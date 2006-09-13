@@ -1625,6 +1625,59 @@ tclBCArgs {48.0 10.0}
 \end{verbatim}
 
 
+\subsubsection{External Program Forces}
+\label{section:extForces}
+
+This feature allows an external program to be called to calculate forces
+at every force evaluation, taking all atom coordinates as input.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{extForces}{Apply external program forces?}{yes or no}{no}
+{Specifies whether or not external program forces are applied.}
+
+\item
+\NAMDCONF{extForcesCommand}{Force calculation command}{UNIX shell command}
+{This string is the argument to the system() function at every forces
+evaluation and should
+read coordinates from the file specified by extCoordFilename and
+write forces to the file specified by extForceFilename.
+}
+
+\item
+\NAMDCONF{extCoordFilename}{Temporary coordinate file}{UNIX filename}
+{
+Atom coordinates are written to this file, which should be read by
+the extForcesCommand.  The format is one line of ``atomid charge x y z''
+for every atom followed by three lines with the periodic cell basis
+vectors ``a.x a.y a.z'', ``b.x b.y b.z'', and ``c.x c.y c.z''.
+The atomid starts at 1 (not 0).
+For best performance the file should be in /tmp and not on a
+network-mounted filesystem.
+}
+
+\item
+\NAMDCONF{extForceFilename}{Temporary force file}{UNIX filename}
+{
+Atom forces are read from this file after extForcesCommand in run.
+The format is one line of ``atomid replace fx fy fz'' for every
+atom followed by the energy on a line by itself and then, optionally,
+three lines of the virial ``v.xx v.xy v.xz'', ``v.yx v.yy v.yz'',
+``v.zx v.zy v.zz'' where, e.g., v.xy = - fx * y for a non-periodic force.
+The atomid starts at 1 (not 0) and all atoms must be present and in order.
+The energy is added to the MISC output field.
+The replace flag should be 1 if the external program force should replace the
+forces calculated by NAMD for that atom and 0 if the forces should be added.
+For best performance the file should be in /tmp and not on a
+network-mounted filesystem.
+}
+
+\end{itemize}
+
+
+
+
 \subsection{Free Energy of Conformational Change Calculations}
 \label{section:fenergy}
 
