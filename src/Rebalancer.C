@@ -798,7 +798,7 @@ void Rebalancer::printLoads()
      << "  MSGS: TOTAL " << total
      << " MAXC " << maxproxies << " MAXP " << maxpatchproxies
      << "  " << strategyName << "\n" << endi;
-
+   fflush(stdout);
 #endif
 
 }
