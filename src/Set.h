@@ -32,7 +32,7 @@ public:
  ~Set();
  void insert(InfoRecord *);
  int find(InfoRecord *) ;
- void remove(InfoRecord *);
+ int remove(InfoRecord *);
  void myRemove(listNode **n, InfoRecord *r);
  InfoRecord *iterator(Iterator *);
  InfoRecord *next(Iterator *);

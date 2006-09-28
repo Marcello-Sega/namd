@@ -42,10 +42,10 @@ void Set::myRemove(listNode **n, InfoRecord *r)
     myRemove(&((*n)->next), r);
 }
 
-void Set::remove(InfoRecord * r) 
+int Set::remove(InfoRecord * r) 
 {
   if (!head)
-    return;
+    return 0;
 
   listNode *p = head;
   listNode *q = p->next;
@@ -53,20 +53,21 @@ void Set::remove(InfoRecord * r)
   if (p->info == r){
     head = q;
     delete p;
-    return;
+    return 1;
   }
 
   while (q){
     if (q->info == r){
       p->next = q->next;
       delete q;
-      return;
+      return 1;
     }
     else {
       p = q;
       q = q->next;
     }
   }
+  return 0;
 }
 
 int Set::find(InfoRecord * r) 
