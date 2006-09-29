@@ -326,8 +326,12 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
 
 void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
 {
+   if (!p->computeSet.remove(c))  {
+      iout << iINFO << "ERROR: Rebalancer tried to deAssign an object that is not on the processor.\n" << endi;
+      return;
+   }
+
    c->processor = -1;
-   p->computeSet.remove(c);
    p->computeLoad -= c->load;
    p->load = p->computeLoad + p->backgroundLoad;
 
