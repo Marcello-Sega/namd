@@ -83,7 +83,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 #if DUMPDATA 
   dumpDataASCII("data", numProcessors, numPatches, nMoveableComputes);
 #elif LOADDATA
-  loadDataASCII("data", numProcessors, numPatches, nMoveableComputes);
+  loadDataASCII("data.2", numProcessors, numPatches, nMoveableComputes);
   //  dumpDataASCII("data.out", numProcessors, numPatches, nMoveableComputes);
   //  CkExit();
 #endif
@@ -248,14 +248,15 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
   }
 
   fclose(fp);
-  CkExit();
+  //CkExit();
 }
 
 void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
 			       int &numPatches, int &numComputes)
 {
   char filename[128];
-  sprintf(filename, "%s.%d", file, step());
+  //sprintf(filename, "%s.%d", file, step());
+  sprintf(filename, "%s", file);
 
   CkPrintf("***** Load ascii data from file: %s ***** \n", filename);
 
