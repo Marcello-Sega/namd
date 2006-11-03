@@ -73,13 +73,13 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   const Position & pos1 = p[0]->x[localIndex[0]].position;
   const Lattice & lattice = p[0]->p->lattice;
   const Position & pos2 = p[1]->x[localIndex[1]].position;
-  const Vector r12 = lattice.delta(pos1,pos2);
-  BigReal d12 = r12.length();
+  Vector r12 = lattice.delta(pos1,pos2);
+  register BigReal d12inv = r12.rlength();
   const Position & pos3 = p[2]->x[localIndex[2]].position;
-  const Vector r32 = lattice.delta(pos3,pos2);
-  BigReal d32 = r32.length();
+  Vector r32 = lattice.delta(pos3,pos2);
+  register BigReal d32inv = r32.rlength();
 
-  BigReal cos_theta = (r12*r32)/(d12*d32);
+  BigReal cos_theta = (r12*r32)*(d12inv*d32inv);
   //  This code is useless because below we divide by sin_theta!  -JCP
   //  Make sure that the cosine value is acceptable.  With roundoff, you
   //  can get values like 1.0+2e-16, which makes acos puke.  So instead,
@@ -100,8 +100,8 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   BigReal energy = k *diff*diff;
 
   //  Normalize vector r12 and r32
-  BigReal d12inv = 1. / d12;
-  BigReal d32inv = 1. / d32;
+  //BigReal d12inv = 1. / d12;
+  //BigReal d32inv = 1. / d32;
 
   //  Calculate constant factor 2k(theta-theta0)/sin(theta)
   BigReal sin_theta = sqrt(1.0 - cos_theta*cos_theta);
@@ -134,12 +134,21 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
 	force1 += r13;
 	force3 -= r13;
   }
+  
+  p[0]->f[localIndex[0]].x += force1.x;
+  p[0]->f[localIndex[0]].y += force1.y;
+  p[0]->f[localIndex[0]].z += force1.z;
 
-  p[0]->f[localIndex[0]] += force1;
-  p[1]->f[localIndex[1]] += force2;
-  p[2]->f[localIndex[2]] += force3;
+  p[1]->f[localIndex[1]].x += force2.x;
+  p[1]->f[localIndex[1]].y += force2.y;
+  p[1]->f[localIndex[1]].z += force2.z;
+
+  p[2]->f[localIndex[2]].x += force3.x;
+  p[2]->f[localIndex[2]].y += force3.y;
+  p[2]->f[localIndex[2]].z += force3.z;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << std::endl);
+
   reduction[angleEnergyIndex] += energy;
   reduction[virialIndex_XX] += ( force1.x * r12.x + force3.x * r32.x );
   reduction[virialIndex_XY] += ( force1.x * r12.y + force3.x * r32.y );

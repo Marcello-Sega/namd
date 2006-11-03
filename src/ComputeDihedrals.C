@@ -76,15 +76,15 @@ void DihedralElem::computeForce(BigReal *reduction,
 
   //  Calculate the cross products and distances
   Vector A = cross(r12,r23);
-  BigReal rA = A.length();
+  register  BigReal rAinv = A.rlength();
   Vector B = cross(r23,r34);
-  BigReal rB = B.length();
+  register  BigReal rBinv = B.rlength();
   Vector C = cross(r23,A);
-  BigReal rC = C.length();
+  register  BigReal rCinv = C.rlength();
 
   //  Calculate the sin and cos
-  BigReal cos_phi = (A*B)/(rA*rB);
-  BigReal sin_phi = (C*B)/(rC*rB);
+  BigReal cos_phi = (A*B)*(rAinv*rBinv);
+  BigReal sin_phi = (C*B)*(rCinv*rBinv);
 
   BigReal phi= -atan2(sin_phi,cos_phi);
 
@@ -126,8 +126,8 @@ void DihedralElem::computeForce(BigReal *reduction,
   Force f1,f2,f3;
 
   //  Normalize B
-  rB = 1.0/rB;
-  B *= rB;
+  //rB = 1.0/rB;
+  B *= rBinv;
 
     //  Next, we want to calculate the forces.  In order
     //  to do that, we first need to figure out whether the
@@ -138,27 +138,34 @@ void DihedralElem::computeForce(BigReal *reduction,
       //  use the sin version to avoid 1/cos terms
 
       //  Normalize A
-      rA = 1.0/rA;
-      A *= rA;
-      Vector dcosdA = rA*(cos_phi*A-B);
-      Vector dcosdB = rB*(cos_phi*B-A);
+      A *= rAinv;
+      Vector dcosdA;
+      Vector dcosdB;
+
+      dcosdA.x = rAinv*(cos_phi*A.x-B.x);
+      dcosdA.y = rAinv*(cos_phi*A.y-B.y);
+      dcosdA.z = rAinv*(cos_phi*A.z-B.z);
+	    
+      dcosdB.x = rBinv*(cos_phi*B.x-A.x);
+      dcosdB.y = rBinv*(cos_phi*B.y-A.y);
+      dcosdB.z = rBinv*(cos_phi*B.z-A.z);
 
       K1 = K1/sin_phi;
 
       f1.x = K1*(r23.y*dcosdA.z - r23.z*dcosdA.y);
       f1.y = K1*(r23.z*dcosdA.x - r23.x*dcosdA.z);
       f1.z = K1*(r23.x*dcosdA.y - r23.y*dcosdA.x);
-
+			     		      
       f3.x = K1*(r23.z*dcosdB.y - r23.y*dcosdB.z);
       f3.y = K1*(r23.x*dcosdB.z - r23.z*dcosdB.x);
       f3.z = K1*(r23.y*dcosdB.x - r23.x*dcosdB.y);
-
+			     		      
       f2.x = K1*(r12.z*dcosdA.y - r12.y*dcosdA.z
                + r34.y*dcosdB.z - r34.z*dcosdB.y);
       f2.y = K1*(r12.x*dcosdA.z - r12.z*dcosdA.x
                + r34.z*dcosdB.x - r34.x*dcosdB.z);
       f2.z = K1*(r12.y*dcosdA.x - r12.x*dcosdA.y
-             + r34.x*dcosdB.y - r34.y*dcosdB.x);
+	       + r34.x*dcosdB.y - r34.y*dcosdB.x);
     }
     else
     {
@@ -166,10 +173,19 @@ void DihedralElem::computeForce(BigReal *reduction,
       //  90, so use the cos version to avoid 1/sin terms
 
       //  Normalize C
-      rC = 1.0/rC;
-      C *= rC;
-      Vector dsindC = rC*(sin_phi*C-B);
-      Vector dsindB = rB*(sin_phi*B-C);
+      //      rC = 1.0/rC;
+      C *= rCinv;
+      
+      Vector dsindC;
+      Vector dsindB;
+
+      dsindC.x = rCinv*(sin_phi*C.x-B.x);
+      dsindC.y = rCinv*(sin_phi*C.y-B.y);
+      dsindC.z = rCinv*(sin_phi*C.z-B.z);
+
+      dsindB.x = rBinv*(sin_phi*B.x-C.x);
+      dsindB.y = rBinv*(sin_phi*B.y-C.y);
+      dsindB.z = rBinv*(sin_phi*B.z-C.z);
 
       K1 = -K1/cos_phi;
 
@@ -200,10 +216,26 @@ void DihedralElem::computeForce(BigReal *reduction,
     }
 
   /* store the forces */
-  p[0]->f[localIndex[0]] += f1;
-  p[1]->f[localIndex[1]] += f2 - f1;
-  p[2]->f[localIndex[2]] += f3 - f2;
-  p[3]->f[localIndex[3]] += -f3;
+  //  p[0]->f[localIndex[0]] += f1;
+  //  p[1]->f[localIndex[1]] += f2 - f1;
+  //  p[2]->f[localIndex[2]] += f3 - f2;
+  //  p[3]->f[localIndex[3]] += -f3;
+
+  p[0]->f[localIndex[0]].x += f1.x;
+  p[0]->f[localIndex[0]].y += f1.y;
+  p[0]->f[localIndex[0]].z += f1.z;
+
+  p[1]->f[localIndex[1]].x += f2.x - f1.x;
+  p[1]->f[localIndex[1]].y += f2.y - f1.y;
+  p[1]->f[localIndex[1]].z += f2.z - f1.z;
+
+  p[2]->f[localIndex[2]].x += f3.x - f2.x;
+  p[2]->f[localIndex[2]].y += f3.y - f2.y;
+  p[2]->f[localIndex[2]].z += f3.z - f2.z;
+
+  p[3]->f[localIndex[3]].x += -f3.x;
+  p[3]->f[localIndex[3]].y += -f3.y;
+  p[3]->f[localIndex[3]].z += -f3.z;  
 
   DebugM(3, "::computeForce() -- ending with delta energy " << K << std::endl);
   reduction[dihedralEnergyIndex] += K;

@@ -20,6 +20,35 @@ class FloatVector {
   inline FloatVector(const Vector &v);
 };
 
+#ifdef ARCH_POWERPC
+
+#include "builtins.h"
+
+inline double namd_rsqrt(double x)
+{
+  double r0, r1, r2;
+
+  /*------------------------------------------*/
+  /* use reciprocal sqrt estimate instruction */
+  /*------------------------------------------*/
+  r0 = __frsqrte(x);
+
+  /*----------------------*/
+  /* 1st newton iteration */
+  /*----------------------*/
+  r1 = r0 + 0.5*r0*(1.0 - x*r0*r0);
+
+  /*----------------------*/
+  /* 2nd newton iteration */
+  /*----------------------*/
+  r2 = r1 + 0.5*r1*(1.0 - x*r1*r1);
+
+  return r2;
+}
+
+#else
+#define namd_rsqrt(x)  (1.0 / sqrt (x))
+#endif
 
 class Vector {
    public:
@@ -27,7 +56,7 @@ class Vector {
      
      inline Vector(void) : x(-99999), y(-99999), z(-99999) { ; }
 //     inline Vector(void) { ; }
-
+     
      inline Vector( BigReal newx, BigReal newy, BigReal newz)
        : x(newx), y(newy), z(newz) { ; }
 
@@ -128,6 +157,10 @@ class Vector {
      
      inline BigReal length2(void) const {
        return (x*x + y*y + z*z);
+     }
+
+     inline BigReal rlength (void) {
+       return namd_rsqrt (x*x + y*y + z*z);
      }
 
      // return the unit vector in the same direction

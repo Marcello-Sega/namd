@@ -148,18 +148,33 @@ public:
   }
 
   // calculates shortest vector from p2 to p1 (equivalent to p1 - p2)
-  Vector delta(Position pos1, Position pos2) const
+  Vector delta(const Position &pos1, const Position &pos2) const
   {
     Vector diff = pos1 - pos2;
     Vector result = diff;
-    if ( p1 ) result -= a1*floor(0.5 + b1*diff);
-    if ( p2 ) result -= a2*floor(0.5 + b2*diff);
-    if ( p3 ) result -= a3*floor(0.5 + b3*diff);
+    if ( p1 ) {
+      BigReal fval = floor(0.5 + b1*diff); 
+      result.x -= a1.x *fval;    
+      result.y -= a1.y *fval;    
+      result.z -= a1.z *fval;    
+    }
+    if ( p2 ) {
+      BigReal fval = floor(0.5 + b2*diff);
+      result.x -= a2.x * fval;
+      result.y -= a2.y * fval;
+      result.z -= a2.z * fval;
+    }
+    if ( p3 ) {
+      BigReal fval = floor(0.5 + b3*diff);
+      result.x -= a3.x * fval;
+      result.y -= a3.y * fval;
+      result.z -= a3.z * fval;
+    }
     return result;
   }
 
   // calculates shortest vector from origin to p1 (equivalent to p1 - o)
-  Vector delta(Position pos1) const
+  Vector delta(const Position &pos1) const
   {
     Vector diff = pos1 - o;
     Vector result = diff;
@@ -170,7 +185,7 @@ public:
   }
 
   // calculates vector to bring p1 closest to origin
-  Vector wrap_delta(Position pos1) const
+  Vector wrap_delta(const Position &pos1) const
   {
     Vector diff = pos1 - o;
     Vector result(0.,0.,0.);

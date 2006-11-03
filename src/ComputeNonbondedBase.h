@@ -390,6 +390,10 @@ void ComputeNonbondedUtil :: NAME
       }
     }
 
+#ifdef NETWORK_PROGRESS
+    CmiNetworkProgress();
+#endif
+
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
     register const BigReal p_i_z = p_i.position.z;
@@ -797,11 +801,6 @@ void ComputeNonbondedUtil :: NAME
 #undef NORMAL
 #undef EXCLUDED
 #undef MODIFIED
-
-#ifdef NETWORK_PROGRESS
-    CmiNetworkProgress();
-#endif
-
 
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistm_save, npairm, pairlisti,
