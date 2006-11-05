@@ -716,25 +716,25 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
   //false, patches are far from each other
   CmiBool smallFlag = CmiFalse;
   double pnodes = CkNumPes();
-  pnodes *= 0.3;    
+  pnodes *= 0.25;    
   smallFlag = (patchMap->numPatches() > pnodes )?1:0;
 
   //If there are lot of patches its likely they will all be neighbors, 
   //so all we need to do is to place proxies on downstream patches.
-  if(smallFlag) {
-    for ( i = 1; i < numNeighbors; ++i )
-      {
-	int proxyNode = patchMap->node(neighbors[i]);
-	
-	if (proxyNode != myNode)
-	  if (proxyNodes[proxyNode] == No)
-	    {
-	      proxyNodes[proxyNode] = Yes;
-	      neighborNodes[nProxyNodes] = proxyNode;
-	      nProxyNodes++;
-	    }
-      }
-  }
+  //if (smallFlag) {
+  for ( i = 1; i < numNeighbors; ++i )
+    {
+      int proxyNode = patchMap->basenode(neighbors[i]);
+      
+      if (proxyNode != myNode)
+	if (proxyNodes[proxyNode] == No)
+	  {
+	    proxyNodes[proxyNode] = Yes;
+	    neighborNodes[nProxyNodes] = proxyNode;
+	    nProxyNodes++;
+	  }
+    }
+  //}
   
   //Place numNodesPerPatch proxies on the 3d torus neighbors of a processor
 
@@ -742,7 +742,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
   int emptyNodes = numNodes - numPatches;
   //if ( emptyNodes > numPatches ) {
   
-  int nodesPerPatch = nProxyNodes + 8 * (emptyNodes-1) / numPatches + 1;
+  int nodesPerPatch = nProxyNodes + 4 * (emptyNodes-1) / numPatches + 1;
   int proxyNode = 0 ;
   int proxy_x=0, proxy_y=0, proxy_z=0;
   
@@ -826,6 +826,31 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       proxy_y = my_y  % ysize;
       proxy_x = my_x  % xsize;
       proxy_z = (my_z - 2 + zsize) % zsize;
+      
+      proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
+      if(proxyNodes[proxyNode] == No) {
+	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
+	nProxyNodes++;
+      }
+    }
+
+    //Add two away proxies
+    if(params->twoAwayZ) {
+      proxy_y = my_y  % ysize;
+      proxy_x = (my_x + 2) % xsize;
+      proxy_z = my_z  % zsize;
+      
+      proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
+      if(proxyNodes[proxyNode] == No) {
+	proxyNodes[proxyNode] = Yes;
+	neighborNodes[nProxyNodes] = proxyNode;
+	nProxyNodes++;
+      }
+      
+      proxy_y = my_y  % ysize;
+      proxy_x = (my_x  - 2 + xsize) % xsize;
+      proxy_z = my_z % zsize;
       
       proxyNode = tmanager->coords2rank(proxy_x, proxy_y, proxy_z);
       if(proxyNodes[proxyNode] == No) {

@@ -326,8 +326,24 @@ void PatchMap::assignNode(PatchID pid, NodeID node) {
   patchData[pid].node=node;
   if ( nPatchesOnNode[node] == 0 ) nNodesWithPatches += 1;
   nPatchesOnNode[node] += 1;
+}
+
+
+void PatchMap::assignBaseNode(PatchID pid) {
+  
+  int i = 1;
+
+  NodeID node = patchData[pid].node;
+
   if ( CkNumPes() > 2*nPatches+1 ) {
-    patchData[pid].basenode = ( CkNumPes() + node - 1 ) % CkNumPes();
+
+    int newnode =  ( CkNumPes() + node - 1 ) % CkNumPes();    
+    while ( nPatchesOnNode[newnode] > 0  &&   i < CkNumPes() ) {
+      newnode = ( CkNumPes() + node - i - 1 ) % CkNumPes();
+      i ++;
+    }
+    patchData[pid].basenode = newnode;
+
   } else {
     patchData[pid].basenode=node;
   }

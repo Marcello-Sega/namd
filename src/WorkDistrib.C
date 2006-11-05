@@ -768,6 +768,9 @@ void WorkDistrib::sortNodesAndAssign(int *assignedNode) {
     // iout << pid << " " <<  allnodes[assignedNode[pid]].node << "\n" << endi;
     patchMap->assignNode(pid, allnodes[assignedNode[pid]].node);
   }
+  
+  for (pid=0; pid<npatches; ++pid ) 
+    patchMap->assignBaseNode(pid);
 }
 
 //----------------------------------------------------------------------

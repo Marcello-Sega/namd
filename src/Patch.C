@@ -122,6 +122,10 @@ void Patch::positionsReady(int doneMigration)
    if ( flags.doMolly ) boxesOpen++;
    _hasNewAtoms = (doneMigration != 0);
 
+#if CMK_VERSION_BLUEGENE
+   CmiNetworkProgressAfter (0);
+#endif
+
    // Give all position pickup boxes access to positions
    positionPtr = p.begin();
    positionBox.open(positionPtr,numAtoms,&lattice);
@@ -130,15 +134,19 @@ void Patch::positionsReady(int doneMigration)
      avgPositionBox.open(avgPositionPtr,numAtoms,&lattice);
    }
 
+#if CMK_VERSION_BLUEGENE
+   CmiNetworkProgressAfter (0);
+#endif
+   
    // Give all force deposit boxes access to forces
    Force *forcePtr;
    for ( int j = 0; j < Results::maxNumForces; ++j )
-   {
+    {
       f[j].resize(numAtoms);
       forcePtr = f[j].begin();
-      for(register int i=0; i<numAtoms; i++) forcePtr[i] = 0.;
+      memset (forcePtr, 0, sizeof (Force) * numAtoms);
       results.f[j] = forcePtr;
-   }
+    }
    forceBox.open(&results);
 
    // Iterate over compute objects that need to be informed we are ready
