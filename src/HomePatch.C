@@ -1,3 +1,4 @@
+
 /**
 ***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
 ***  The Board of Trustees of the University of Illinois.
@@ -493,20 +494,30 @@ void HomePatch::saveForce(const int ftag)
   }
 }
 
+
 void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
 							const int useSaved)
 {
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
   const ForceList *f_use = ( useSaved ? f_saved : f );
+
   if ( simParams->fixedAtomsOn ) {
     for ( int i = 0; i < numAtoms; ++i ) {
       if ( atom[i].atomFixed ) atom[i].velocity = 0;
-      else atom[i].velocity += f_use[ftag][i] * ( dt / atom[i].mass );
+      else atom[i].velocity += f_use[ftag][i] * ( dt * namd_reciprocal (atom[i].mass) );
     }
   } else {
+    FullAtom *atom_arr  = atom.begin();
+    const Force    *force_arr = f_use[ftag].const_begin();
+#ifdef ARCH_POWERPC
+#pragma disjoint (*force_arr, *atom_arr)
+#endif
     for ( int i = 0; i < numAtoms; ++i ) {
-      atom[i].velocity += f_use[ftag][i] * ( dt / atom[i].mass );
+      BigReal recip_val = dt * namd_reciprocal( atom[i].mass );
+      atom_arr[i].velocity.x += force_arr[i].x * recip_val;
+      atom_arr[i].velocity.y += force_arr[i].y * recip_val;
+      atom_arr[i].velocity.z += force_arr[i].z * recip_val;
     }
   }
 }
@@ -520,8 +531,11 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
       if ( ! atom[i].atomFixed ) atom[i].position += atom[i].velocity * dt;
     }
   } else {
+    FullAtom *atom_arr  = atom.begin();
     for ( int i = 0; i < numAtoms; ++i ) {
-      atom[i].position += atom[i].velocity * dt;
+      atom_arr[i].position.x  +=  atom_arr[i].velocity.x * dt;
+      atom_arr[i].position.y  +=  atom_arr[i].velocity.y * dt;
+      atom_arr[i].position.z  +=  atom_arr[i].velocity.z * dt;
     }
   }
 }

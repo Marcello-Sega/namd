@@ -46,8 +46,19 @@ inline double namd_rsqrt(double x)
   return r2;
 }
 
+inline double namd_reciprocal (double x) {
+  register double rx;
+  
+  rx = __fres(x);             // 0th estimate (13 bits)
+  rx = rx + rx*(1.0 - x*rx);  // 1st Newton iteration (26 bits)
+  rx = rx + rx*(1.0 - x*rx);  // 2nd Newton iteration (52 bits = full mantissa for a double)
+
+  return rx;
+}
+
 #else
-#define namd_rsqrt(x)  (1.0 / sqrt (x))
+#define namd_rsqrt(x)        (1.0 / sqrt (x))
+#define namd_reciprocal(x)   (1.0 / x)
 #endif
 
 class Vector {
