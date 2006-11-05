@@ -7,6 +7,7 @@
 #ifndef LATTICE_H
 #define LATTICE_H
 
+#include <stdlib.h>
 #include "NamdTypes.h"
 #include <math.h>
 #include "Tensor.h"
@@ -225,12 +226,17 @@ public:
   {
     CompAtom *dt;
     if ( i != 13 )
-    {
-      dt = new CompAtom[n];
+    {       
+      dt = (CompAtom *) malloc (sizeof(CompAtom) *n);  
       Vector shift = (i%3-1) * a1 + ((i/3)%3-1) * a2 + (i/9-1) * a3;
       for( int j = 0; j < n; ++j ) {
+#ifdef ARCH_POWERPC
+#pragma disjoint (d, dt)
+#endif
         dt[j] = d[j];
-        dt[j].position += shift;
+        dt[j].position.x  += shift.x;
+        dt[j].position.y  += shift.y;
+        dt[j].position.z  += shift.z;
       }
     }
     else
@@ -242,7 +248,7 @@ public:
 
   void destroy(CompAtom **d, int i) const
   {
-    if ( i != 13 ) delete [] *d;
+    if ( i != 13 ) free (*d);  
     *d = NULL;
   }
 
