@@ -332,6 +332,10 @@ void RecBisection::assignNodes()
              for(k=p.origin.z; k<=p.corner.z; k++)
                 patchMap->assignNode(patchMap->pid(i,j,k),pix);  
     }
+
+    int npatches = patchMap->numPatches();
+    for (int pid=0; pid<npatches; ++pid ) 
+      patchMap->assignBaseNode(pid);
 }
 
 /* ********************************************************************* */
@@ -785,6 +789,10 @@ void RecBisection::assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z,
 	patchMap->assignNode(pix, pe);  
 	dest_arr[pix] = pe;  
     }
+
+    int npatches = patchMap->numPatches();
+    for (int pid=0; pid<npatches; ++pid ) 
+      patchMap->assignBaseNode(pid);
 }
 
 #endif
