@@ -236,26 +236,62 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
 
 void HomePatch::buildSpanningTree(void)
 {
+  if (patchID == 0) {
+    if (proxySendSpanning) CkPrintf("Info: Using send spanning tree\n");
+    if (proxyRecvSpanning) CkPrintf("Info: Using recv spanning tree\n");
+  }
+
   nChild = 0;
   int psize = proxy.size();
   if (psize == 0) return;
-  NodeIDList tree;
+  NodeIDList oldtree = tree;
+  int oldsize = oldtree.size();
   tree.resize(psize + 1);
+  tree.setall(-1);
   tree[0] = CkMyPe();
   int s=1, e=psize+1;
   ProxyListIter pli(proxy);
   int patchNodesLast =
     ( PatchMap::Object()->numNodesWithPatches() < ( 0.7 * CkNumPes() ) );
   int nNonPatch = 0;
-  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+#if 0
+  int* pelists = new int[psize];
+  for (int i=0; i<psize; i++) pelists[i] = -1;
+  for ( pli = pli.begin(); pli != pli.end(); ++pli ) {
+    int idx = rand()%psize;
+    while (pelists[idx] != -1) { idx++; if (idx == psize) idx = 0; }
+    pelists[idx] = pli->node;
+  }
+  for ( int i=0; i<psize; i++)
   {
-    if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
-      tree[--e] = pli->node;
+    if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pelists[i]) ) {
+      tree[--e] = pelists[i];
     } else {
-      tree[s++] = pli->node;
+      tree[s++] = pelists[i];
       nNonPatch++;
     }
   }
+  delete [] pelists;
+#else
+  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  {
+      // try to put it to the same old tree
+    int oldindex = oldtree.find(pli->node);
+    if (oldindex != -1 && oldindex < psize) {
+      tree[oldindex] = pli->node;
+      continue;
+    }
+    int s=1, e=psize;
+    if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
+      while (tree[e] != -1) { e--; if (e==-1) e = psize; }
+      tree[e] = pli->node;
+    } else {
+      while (tree[s] != -1) { s++; if (s==psize+1) s = 1; }
+      tree[s] = pli->node;
+      nNonPatch++;
+    }
+  }
+#endif
 
   //CkPrintf("home: %d:(%d) %d %d %d %d %d\n", patchID, tree.size(),tree[0],tree[1],tree[2],tree[3],tree[4]);
 
@@ -319,6 +355,14 @@ void HomePatch::buildSpanningTree(void)
   }
 #endif
   
+#if 0
+  // for debugging
+  CkPrintf("[%d] Spanning tree for %d with %d children\n", CkMyPe(), patchID, psize);
+  for (int i=0; i<psize+1; i++) {
+    CkPrintf("%d ", tree[i]);
+  }
+  CkPrintf("\n");
+#endif
   ProxySpanningTreeMsg *msg = new ProxySpanningTreeMsg;
   msg->patch = patchID;
   msg->node = CkMyPe();

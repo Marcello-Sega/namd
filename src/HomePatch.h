@@ -154,7 +154,8 @@ private:
   MigrationInfo realInfo[PatchMap::MaxOneAway];
   MigrationInfo *mInfo[3][3][3];
 
-  int child[PROXY_SPAN_DIM];	// spanning tree of proxies
+  NodeIDList tree;              // the whole tree
+  int child[PROXY_SPAN_DIM];	// spanning tree of proxies - immediate children
   int nChild;
 
 #if CMK_PERSISTENT_COMM
