@@ -234,6 +234,18 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
 }
 #endif // CMK_VERSION_BLUEGENE 
 
+static int compDistance(const void *a, const void *b)
+{
+  int d1 = abs(*(int *)a - CkMyPe());
+  int d2 = abs(*(int *)b - CkMyPe());
+  if (d1 < d2) 
+    return 1;
+  else if (d1 == d2) 
+    return 0;
+  else 
+    return -1;
+}
+
 void HomePatch::buildSpanningTree(void)
 {
   nChild = 0;
@@ -288,6 +300,12 @@ void HomePatch::buildSpanningTree(void)
       nNonPatch++;
     }
   }
+#if 1
+  if (oldsize == 0) {
+    // first time, sort by distance
+    qsort(tree.begin()+1, nNonPatch, sizeof(int), compDistance);
+  }
+#endif
 #endif
 
   //CkPrintf("home: %d:(%d) %d %d %d %d %d\n", patchID, tree.size(),tree[0],tree[1],tree[2],tree[3],tree[4]);
