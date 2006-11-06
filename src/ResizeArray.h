@@ -129,6 +129,7 @@ template <class Elem> class ResizeArray {
     // reduce storage size
     void reduce(void) { rep->reduce(); }
 
+    inline int find(const Elem &e) { return rep->find(e); }
 };
 
 #endif

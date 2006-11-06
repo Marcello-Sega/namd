@@ -212,6 +212,12 @@ template <class Elem> class ResizeArrayRaw {
       } else
         arraySize++;
     }
+
+    inline int find(const Elem &e) {
+      for (int i=0; i<arraySize; i++)
+        if (array[i] == e) return i;
+      return -1;
+    }
 };	// end template definition
 
 #endif
