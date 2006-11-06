@@ -936,13 +936,13 @@ void Sequencer::submitHalfstep(int step)
         for ( int i = 0; i < numAtoms; ++i ) {
           if ( a[i].partition != 1 ) continue;
           kineticEnergy += a[i].mass * a[i].velocity.length2();
-          virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
+          virial.outerAdd(a[i].mass, a[i].velocity, a[i].velocity);
         }
       }
     } else {
       for ( int i = 0; i < numAtoms; ++i ) {
         kineticEnergy += a[i].mass * a[i].velocity.length2();
-        virial += ( a[i].mass * outer(a[i].velocity,a[i].velocity) );
+        virial.outerAdd(a[i].mass, a[i].velocity, a[i].velocity);
       }
     }
 
@@ -1031,7 +1031,7 @@ void Sequencer::submitHalfstep(int step)
             Vector v = a[j].velocity;
             Vector dv = v - v_cm;
             intKineticEnergy += mass * (v * dv);
-            intVirialNormal += mass * outer(v,dv);
+            intVirialNormal.outerAdd (mass, v, dv);
           }
         }
       } else {
@@ -1040,7 +1040,7 @@ void Sequencer::submitHalfstep(int step)
           Vector v = a[j].velocity;
           Vector dv = v - v_cm;
           intKineticEnergy += mass * (v * dv);
-          intVirialNormal += mass * outer(v,dv);
+          intVirialNormal.outerAdd(mass, v, dv);
         }
       }
     }
@@ -1094,21 +1094,21 @@ void Sequencer::submitReductions(int step)
   {
     Tensor altVirial;
     for ( int i = 0; i < numAtoms; ++i ) {
-      altVirial += outer(patch->f[Results::normal][i],a[i].position);
+      altVirial.outerAdd(1.0, patch->f[Results::normal][i], a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NORMAL,altVirial);
   }
   {
     Tensor altVirial;
     for ( int i = 0; i < numAtoms; ++i ) {
-      altVirial += outer(patch->f[Results::nbond][i],a[i].position);
+      altVirial.outerAdd(1.0, patch->f[Results::nbond][i], a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_NBOND,altVirial);
   }
   {
     Tensor altVirial;
     for ( int i = 0; i < numAtoms; ++i ) {
-      altVirial += outer(patch->f[Results::slow][i],a[i].position);
+      altVirial.outerAdd(1.0, patch->f[Results::slow][i], a[i].position);
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_ALT_VIRIAL_SLOW,altVirial);
   }
@@ -1147,9 +1147,9 @@ void Sequencer::submitReductions(int step)
           Vector dv = v - v_cm;
           intKineticEnergy += mass * (v * dv);
           Vector dx = a[j].position - x_cm;
-          intVirialNormal += outer(patch->f[Results::normal][j],dx);
-          intVirialNbond += outer(patch->f[Results::nbond][j],dx);
-          intVirialSlow += outer(patch->f[Results::slow][j],dx);
+          intVirialNormal.outerAdd(1.0, patch->f[Results::normal][j], dx);
+          intVirialNbond.outerAdd(1.0, patch->f[Results::nbond][j], dx);
+          intVirialSlow.outerAdd(1.0, patch->f[Results::slow][j], dx);
         }
       } else {
         for ( j = i; j < (i+hgs); ++j ) {
@@ -1160,9 +1160,9 @@ void Sequencer::submitReductions(int step)
           Vector dv = v - v_cm;
           intKineticEnergy += mass * (v * dv);
           Vector dx = a[j].position - x_cm;
-          intVirialNormal += outer(patch->f[Results::normal][j],dx);
-          intVirialNbond += outer(patch->f[Results::nbond][j],dx);
-          intVirialSlow += outer(patch->f[Results::slow][j],dx);
+          intVirialNormal.outerAdd(1.0, patch->f[Results::normal][j], dx);
+          intVirialNbond.outerAdd(1.0, patch->f[Results::nbond][j], dx);
+          intVirialSlow.outerAdd(1.0, patch->f[Results::slow][j], dx);
         }
       }
     }
@@ -1228,9 +1228,9 @@ void Sequencer::submitReductions(int step)
       if ( simParams->fixedAtomsOn && a[j].atomFixed ) {
         Vector dx = a[j].fixedPosition;
         // all negative because fixed atoms cancels these forces
-        fixVirialNormal -= outer(patch->f[Results::normal][j],dx);
-        fixVirialNbond -= outer(patch->f[Results::nbond][j],dx);
-        fixVirialSlow -= outer(patch->f[Results::slow][j],dx);
+        fixVirialNormal.outerAdd(-1.0, patch->f[Results::normal][j], dx);
+        fixVirialNbond.outerAdd(-1.0, patch->f[Results::nbond][j], dx);
+        fixVirialSlow.outerAdd(-1.0, patch->f[Results::slow][j], dx);
         fixForceNormal -= patch->f[Results::normal][j];
         fixForceNbond -= patch->f[Results::nbond][j];
         fixForceSlow -= patch->f[Results::slow][j];
@@ -1308,9 +1308,9 @@ void Sequencer::submitMinimizeReductions(int step)
 	// net force treated as zero for fixed atoms
         if ( simParams->fixedAtomsOn && a[j].atomFixed ) continue;
         Vector dx = a[j].position - x_cm;
-        intVirialNormal += outer(patch->f[Results::normal][j],dx);
-        intVirialNbond += outer(patch->f[Results::nbond][j],dx);
-        intVirialSlow += outer(patch->f[Results::slow][j],dx);
+        intVirialNormal.outerAdd(1.0, patch->f[Results::normal][j], dx);
+        intVirialNbond.outerAdd(1.0, patch->f[Results::nbond][j], dx);
+        intVirialSlow.outerAdd(1.0, patch->f[Results::slow][j], dx);
       }
     }
 
@@ -1331,9 +1331,9 @@ void Sequencer::submitMinimizeReductions(int step)
       if ( a[j].atomFixed ) {
         Vector dx = a[j].fixedPosition;
         // all negative because fixed atoms cancels these forces
-        fixVirialNormal -= outer(patch->f[Results::normal][j],dx);
-        fixVirialNbond -= outer(patch->f[Results::nbond][j],dx);
-        fixVirialSlow -= outer(patch->f[Results::slow][j],dx);
+        fixVirialNormal.outerAdd(-1.0, patch->f[Results::normal][j],dx);
+        fixVirialNbond.outerAdd(-1.0, patch->f[Results::nbond][j],dx);
+        fixVirialSlow.outerAdd(-1.0, patch->f[Results::slow][j],dx);
         fixForceNormal -= patch->f[Results::normal][j];
         fixForceNbond -= patch->f[Results::nbond][j];
         fixForceSlow -= patch->f[Results::slow][j];

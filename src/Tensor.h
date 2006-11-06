@@ -100,6 +100,8 @@ class Tensor {
        return *this;
      }
 
+     inline void outerAdd (BigReal scale, const Vector &v1, const Vector &v2);
+
      inline friend int operator==(const Tensor &t1, const Tensor &t2) {
        return (
        t1.xx == t2.xx && t1.xy == t2.xy && t1.xz == t2.xz &&
@@ -236,7 +238,7 @@ class Tensor {
 
 };
 
-     inline Tensor outer(const Vector &v1, const Vector &v2) {
+inline Tensor outer(const Vector &v1, const Vector &v2) {
        Tensor tmp;
        tmp.xx = v1.x * v2.x;
        tmp.xy = v1.x * v2.y;
@@ -248,7 +250,19 @@ class Tensor {
        tmp.zy = v1.z * v2.y;
        tmp.zz = v1.z * v2.z;
        return tmp;
-     }
+}
+
+inline void Tensor::outerAdd (BigReal scale, const Vector &v1, const Vector &v2) {
+  xx += v1.x * v2.x * scale;
+  xy += v1.x * v2.y * scale;
+  xz += v1.x * v2.z * scale;
+  yx += v1.y * v2.x * scale;
+  yy += v1.y * v2.y * scale;
+  yz += v1.y * v2.z * scale;
+  zx += v1.z * v2.x * scale;
+  zy += v1.z * v2.y * scale;
+  zz += v1.z * v2.z * scale;
+}
 
 #endif
 
