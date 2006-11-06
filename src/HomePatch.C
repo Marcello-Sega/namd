@@ -236,11 +236,6 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
 
 void HomePatch::buildSpanningTree(void)
 {
-  if (patchID == 0) {
-    if (proxySendSpanning) CkPrintf("Info: Using send spanning tree\n");
-    if (proxyRecvSpanning) CkPrintf("Info: Using recv spanning tree\n");
-  }
-
   nChild = 0;
   int psize = proxy.size();
   if (psize == 0) return;
@@ -273,15 +268,17 @@ void HomePatch::buildSpanningTree(void)
   }
   delete [] pelists;
 #else
+    // try to put it to the same old tree
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
-      // try to put it to the same old tree
     int oldindex = oldtree.find(pli->node);
     if (oldindex != -1 && oldindex < psize) {
       tree[oldindex] = pli->node;
-      continue;
     }
-    int s=1, e=psize;
+  }
+  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  {
+    if (tree.find(pli->node) != -1) continue;    // already assigned
     if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
       while (tree[e] != -1) { e--; if (e==-1) e = psize; }
       tree[e] = pli->node;
