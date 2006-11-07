@@ -30,6 +30,8 @@ PACK_MSG(MyMsg,
 #endif
 #endif
 
+#define ALIGN_8(x)   (((unsigned long)x + 7) & (~7))
+
 #define PACKMSG_CHECKSUM(X)
 
 template<class T> class ResizeArray;
@@ -106,17 +108,18 @@ MSGTYPE *MSGTYPE::unpack(void *packmsg_buf) { \
 }
 
 #define PACK_MEMORY(BUF,SIZE) { \
+  int ASIZE = ALIGN_8(SIZE); \
   switch ( packmsg_pass ) { \
   case 0: \
-    packmsg_size += (SIZE); \
+    packmsg_size += (ASIZE); \
     break; \
   case 1: \
     CmiMemcpy((void *)packmsg_cur,(void *)(BUF),(SIZE)); \
-    packmsg_cur += (SIZE); \
+    packmsg_cur += (ASIZE); \
     break; \
   case 2: \
     CmiMemcpy((void *)(BUF),(void *)packmsg_cur,(SIZE)); \
-    packmsg_cur += (SIZE); \
+    packmsg_cur += (ASIZE); \
     break; \
   default: \
     break; \

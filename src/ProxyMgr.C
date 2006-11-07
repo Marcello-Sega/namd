@@ -56,11 +56,13 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
   int msg_size = 0;
   msg_size += sizeof(msg->node);
   msg_size += sizeof(msg->patch);
+
   int j;
   for ( j = 0; j < Results::maxNumForces; ++j ) {
     int array_size = msg->forceList[j].size();
     msg_size += sizeof(array_size);
-    msg_size += array_size * sizeof(char);
+    msg_size += array_size * sizeof(char);    
+    msg_size = ALIGN_8 (msg_size);
     Force* f = msg->forceList[j].begin();
     int nonzero_count = 0;
     for ( int i = 0; i < array_size; ++i ) {
@@ -78,20 +80,25 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
   msg_cur += sizeof(msg->patch);
   for ( j = 0; j < Results::maxNumForces; ++j ) {
     int array_size = msg->forceList[j].size();
-    CmiMemcpy((void*)msg_cur,(void*)(&array_size),sizeof(array_size));
-    msg_cur += sizeof(array_size);
+    *(int *) msg_cur = array_size;
+    msg_cur += sizeof(int);
     char *nonzero = msg_cur;
     msg_cur += array_size * sizeof(char);
+    msg_cur = (char *)ALIGN_8 (msg_cur);
+
+    Force *farr = (Force *)msg_cur;
     Force* f = msg->forceList[j].begin();
+
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
         nonzero[i] = 1;
-        CmiMemcpy((void*)msg_cur,(void*)(f+i),sizeof(Force));
-        msg_cur += sizeof(Force);
+	*farr = f[i];
+	farr ++;
       } else {
         nonzero[i] = 0;
       }
     }
+    msg_cur = (char *) farr;	  
   }
 
   delete msg;
@@ -109,21 +116,24 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
   msg_cur += sizeof(msg->patch);
   int j;
   for ( j = 0; j < Results::maxNumForces; ++j ) {
-    int array_size;
-    CmiMemcpy((void*)(&array_size),(void*)msg_cur,sizeof(array_size));
+    int array_size = *(int *) msg_cur;
     msg_cur += sizeof(array_size);
     msg->forceList[j].resize(array_size);
     char *nonzero = msg_cur;
-    msg_cur += array_size * sizeof(char);
+    msg_cur += array_size * sizeof(char);    
+    msg_cur = (char *)ALIGN_8 (msg_cur);
+
+    Force* farr = (Force *) msg_cur;
     Force* f = msg->forceList[j].begin();
     for ( int i = 0; i < array_size; ++i ) {
       if ( nonzero[i] ) {
-        CmiMemcpy((void*)(f+i),(void*)msg_cur,sizeof(Force));
-        msg_cur += sizeof(Force);
+	f[i] = *farr;
+	farr++;
       } else {
         f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;
       }
-    }
+    }    
+    msg_cur = (char *) farr;
   }
 
   CkFreeMsg(ptr);
@@ -141,6 +151,7 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
     int array_size = msg->forceList[j].size();
     msg_size += sizeof(array_size);
     msg_size += array_size * sizeof(char);
+
     Force* f = msg->forceList[j].begin();
     int nonzero_count = 0;
     for ( int i = 0; i < array_size; ++i ) {
