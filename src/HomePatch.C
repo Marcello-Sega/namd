@@ -239,11 +239,11 @@ static int compDistance(const void *a, const void *b)
   int d1 = abs(*(int *)a - CkMyPe());
   int d2 = abs(*(int *)b - CkMyPe());
   if (d1 < d2) 
-    return 1;
+    return -1;
   else if (d1 == d2) 
     return 0;
   else 
-    return -1;
+    return 1;
 }
 
 void HomePatch::buildSpanningTree(void)
@@ -301,7 +301,7 @@ void HomePatch::buildSpanningTree(void)
     }
   }
 #if 1
-  if (oldsize == 0) {
+  if (oldsize == 0 && nNonPatch) {
     // first time, sort by distance
     qsort(tree.begin()+1, nNonPatch, sizeof(int), compDistance);
   }
@@ -372,7 +372,7 @@ void HomePatch::buildSpanningTree(void)
   
 #if 0
   // for debugging
-  CkPrintf("[%d] Spanning tree for %d with %d children\n", CkMyPe(), patchID, psize);
+  CkPrintf("[%d] Spanning tree for %d with %d children %d nNonPatch %d\n", CkMyPe(), patchID, psize, nNonPatch);
   for (int i=0; i<psize+1; i++) {
     CkPrintf("%d ", tree[i]);
   }
