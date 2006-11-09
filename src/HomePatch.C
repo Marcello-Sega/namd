@@ -280,12 +280,14 @@ void HomePatch::buildSpanningTree(void)
   }
   delete [] pelists;
 #else
+  int dosort = oldsize==0?1:0;
     // try to put it to the same old tree
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
     int oldindex = oldtree.find(pli->node);
     if (oldindex != -1 && oldindex < psize) {
       tree[oldindex] = pli->node;
+      dosort = 0;
     }
   }
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
@@ -301,9 +303,9 @@ void HomePatch::buildSpanningTree(void)
     }
   }
 #if 1
-  if (oldsize == 0 && nNonPatch) {
+  if (dosort && nNonPatch) {
     // first time, sort by distance
-    qsort(tree.begin()+1, nNonPatch, sizeof(int), compDistance);
+    qsort(&tree[1], nNonPatch, sizeof(int), compDistance);
   }
 #endif
 #endif
