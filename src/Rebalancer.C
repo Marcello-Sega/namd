@@ -333,6 +333,7 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
 
    c->processor = -1;
    p->computeLoad -= c->load;
+   CmiAssert(p->computeLoad >= 0.0);
    p->load = p->computeLoad + p->backgroundLoad;
 
    // 4-29-98: Added the following code to keep track of how many proxies 
