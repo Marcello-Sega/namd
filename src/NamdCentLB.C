@@ -181,6 +181,14 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     migrateInfo[i] = 0;
   }
 
+  delete [] processorArray;
+  delete [] patchArray;
+  delete [] computeArray;
+
+  processorArray = NULL;
+  patchArray = NULL;
+  computeArray = NULL;
+  
   return msg;
 };
 
