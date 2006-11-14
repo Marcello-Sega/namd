@@ -288,6 +288,7 @@ void HomePatch::buildSpanningTree(void)
       tree[oldindex] = pli->node;
     }
   }
+  s=1; e=psize;
   for ( pli = pli.begin(); pli != pli.end(); ++pli )
   {
     if (tree.find(pli->node) != -1) continue;    // already assigned
