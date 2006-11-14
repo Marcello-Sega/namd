@@ -68,7 +68,7 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) { ++nonzero_count; }
     }
-    msg_size += nonzero_count * sizeof(Force);
+    msg_size += nonzero_count * sizeof(Vector);
   }
 
   void *msg_buf = CkAllocBuffer(msg,msg_size);
@@ -85,14 +85,15 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
     char *nonzero = msg_cur;
     msg_cur += array_size * sizeof(char);
     msg_cur = (char *)ALIGN_8 (msg_cur);
-
-    Force *farr = (Force *)msg_cur;
+    Vector *farr = (Vector *)msg_cur;
     Force* f = msg->forceList[j].begin();
 
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
         nonzero[i] = 1;
-	*farr = f[i];
+	farr->x = f[i].x;
+	farr->y = f[i].y;
+	farr->z = f[i].z;
 	farr ++;
       } else {
         nonzero[i] = 0;
@@ -122,12 +123,13 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
     char *nonzero = msg_cur;
     msg_cur += array_size * sizeof(char);    
     msg_cur = (char *)ALIGN_8 (msg_cur);
-
-    Force* farr = (Force *) msg_cur;
+    Vector* farr = (Vector *) msg_cur;
     Force* f = msg->forceList[j].begin();
     for ( int i = 0; i < array_size; ++i ) {
       if ( nonzero[i] ) {
-	f[i] = *farr;
+	f[i].x = farr->x;
+	f[i].y = farr->y;
+	f[i].z = farr->z;
 	farr++;
       } else {
         f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;

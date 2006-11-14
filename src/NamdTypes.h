@@ -16,7 +16,13 @@ class Compute;
 
 typedef Vector Position;
 typedef Vector Velocity;
+
+#ifdef ARCH_POWERPC
+typedef AlignVector Force;
+#else
 typedef Vector Force;
+#endif
+
 typedef int AtomID;
 typedef int AtomType;
 typedef float Mass;

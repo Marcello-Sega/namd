@@ -9,7 +9,6 @@ EXCLUDED( MODIFIED( foo bar ) )
 EXCLUDED( NORMAL( foo bar ) )
 NORMAL( MODIFIED( foo bar ) )
 
-
 #ifdef ARCH_POWERPC
      __alignx(16, table_four);
      __alignx(16, p_1);
@@ -18,7 +17,6 @@ NORMAL( MODIFIED( foo bar ) )
 
 #pragma ivdep
     for (k=0; k<npairi; ++k) {      
-
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
       const int j = pairlisti[k];
       register const CompAtom *p_j = p_1 + j;
@@ -29,29 +27,42 @@ NORMAL( MODIFIED( foo bar ) )
       FAST(
       const LJTable::TableEntry * lj_pars = 
               lj_row + 2 * vdwtype_array[j]  MODIFIED(+ 1);
-      )
-	
-#ifdef ARCH_POWERPC
+      )	
+
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*table_four_i, *f_1)
-#pragma disjoint (*p_j,          *f_1)
+      Force *f_j = f_1 + j;
 #endif
 	
 #if ( FULL( 1+ ) 0 )
-#pragma disjoint (*table_four_i, *fullf_1)
-#pragma disjoint (*p_j,          *fullf_1)
-#ifdef f_1
-#pragma disjoint (*f_1    , *fullf_1)
-#pragma disjoint (*fullf_1, *f_1)
-#endif
+      Force *fullf_j = fullf_1 + j;
 #endif
 
+#ifdef ARCH_POWERPC
       __alignx(16, table_four_i);
       __alignx(16, p_j);
       FAST (
       __alignx(16, lj_pars);
       )
-#endif
+
+#if ( SHORT( FAST( 1+ ) ) 0 ) 
+#pragma disjoint (*table_four_i, *f_j)
+#pragma disjoint (*p_j,          *f_j)
+#pragma disjoint (*lj_pars,      *f_j)
+      __alignx(16, f_j);
+#endif //Short + Fast
+      
+#if ( FULL( 1+ ) 0 )
+      __alignx(16, fullf_j);
+#pragma disjoint (*table_four_i, *fullf_j)
+#pragma disjoint (*p_j,          *fullf_j)
+
+#if ( SHORT( FAST( 1+ ) ) 0 ) 
+#pragma disjoint (*f_j    , *fullf_j)
+#pragma disjoint (*fullf_j, *f_j)
+#endif   //Short + fast
+
+#endif   //Full
+#endif   //PowerPC
 
       /*
       BigReal modf = 0.0;
@@ -158,18 +169,18 @@ NORMAL( MODIFIED( foo bar ) )
       PAIR( virial_xz += tmp_x * p_ij_z; )
 
       f_i_x += tmp_x;
-      f_1[j].x -= tmp_x;
+      f_j->x -= tmp_x;
 
       register BigReal tmp_y = force_r * p_ij_y;
       PAIR( virial_yy += tmp_y * p_ij_y; )
       PAIR( virial_yz += tmp_y * p_ij_z; )
       f_i_y += tmp_y;
-      f_1[j].y -= tmp_y;
+      f_j->y -= tmp_y;
       
       register BigReal tmp_z = force_r * p_ij_z;
       PAIR( virial_zz += tmp_z * p_ij_z; )
       f_i_z += tmp_z;
-      f_1[j].z -= tmp_z;
+      f_j->z -= tmp_z;
 
       PPROF(
         const BigReal p_j_z = p_j->position.z;
@@ -187,6 +198,23 @@ NORMAL( MODIFIED( foo bar ) )
 #endif // SHORT
 #endif // FAST
 
+#if ( FULL (EXCLUDED( SHORT ( 1+ ) ) ) 0 ) 
+      const BigReal* const slow_i = slow_table + 4*table_i;
+#ifdef ARCH_POWERPC
+      __alignx (16, slow_i);
+#pragma disjoint (*slow_i, *fullf_j)
+#endif
+#endif      
+
+
+#if ( FULL (MODIFIED( SHORT ( 1+ ) ) ) 0 ) 
+      const BigReal* const slow_i = slow_table + 4*table_i;
+#ifdef ARCH_POWERPC
+      __alignx (16, slow_i);
+#pragma disjoint (*slow_i, *fullf_j)
+#endif
+#endif      
+      
       FULL(
       BigReal slow_d = table_four_i[8 SHORT(+ 4)];
       BigReal slow_c = table_four_i[9 SHORT(+ 4)];
@@ -194,7 +222,6 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal slow_a = table_four_i[11 SHORT(+ 4)];
       EXCLUDED(
       SHORT(
-      const BigReal* const slow_i = slow_table + 4*table_i;
       slow_a +=    slow_i[0];
       slow_b += 2.*slow_i[1];
       slow_c += 4.*slow_i[2];
@@ -209,7 +236,6 @@ NORMAL( MODIFIED( foo bar ) )
       )
       MODIFIED(
       SHORT(
-      const BigReal* const slow_i = slow_table + 4*table_i;
       slow_a +=    modf_mod * slow_i[0];
       slow_b += 2.*modf_mod * slow_i[1];
       slow_c += 4.*modf_mod * slow_i[2];
@@ -261,16 +287,16 @@ NORMAL( MODIFIED( foo bar ) )
       PAIR( fullElectVirial_xy += tmp_x * p_ij_y; )
       PAIR( fullElectVirial_xz += tmp_x * p_ij_z; )
       fullf_i_x += tmp_x;
-      fullf_1[j].x -= tmp_x;
+      fullf_j->x -= tmp_x;
       register BigReal tmp_y = fullforce_r * p_ij_y;
       PAIR( fullElectVirial_yy += tmp_y * p_ij_y; )
       PAIR( fullElectVirial_yz += tmp_y * p_ij_z; )
       fullf_i_y += tmp_y;
-      fullf_1[j].y -= tmp_y;
+      fullf_j->y -= tmp_y;
       register BigReal tmp_z = fullforce_r * p_ij_z;
       PAIR( fullElectVirial_zz += tmp_z * p_ij_z; )
       fullf_i_z += tmp_z;
-      fullf_1[j].z -= tmp_z;
+      fullf_j->z -= tmp_z;
 
       PPROF(
         const BigReal p_j_z = p_j->position.z;

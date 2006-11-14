@@ -1050,7 +1050,7 @@ void WorkDistrib::mapComputeNonbonded(void)
  	else if ( twoAwayZ && ic1 + 1 == ic2 ) --distance;
 	int divide = 0;
 	if ( distance == 0 ) {
-	  divide = node->simParameters->numAtomsSelf;
+	  divide = node->simParameters->numAtomsSelf2;
         } else if (distance == 1) {
 	  divide = node->simParameters->numAtomsPair;
 	} else {

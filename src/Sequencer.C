@@ -836,11 +836,17 @@ void Sequencer::saveForce(const int ftag)
 void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
 						const int useSaved)
 {
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter (0);
+#endif
   patch->addForceToMomentum(dt,ftag,useSaved);
 }
 
 void Sequencer::addVelocityToPosition(BigReal dt)
 {
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter (0);
+#endif
   patch->addVelocityToPosition(dt);
 }
 
@@ -928,6 +934,10 @@ void Sequencer::submitHalfstep(int step)
   FullAtom *a = patch->atom.begin();
   int numAtoms = patch->numAtoms;
 
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter (0);
+#endif
+
   {
     BigReal kineticEnergy = 0;
     Tensor virial;
@@ -1014,6 +1024,11 @@ void Sequencer::submitHalfstep(int step)
 
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
+
+#if CMK_VERSION_BLUEGENE
+      CmiNetworkProgress ();
+#endif
+
       hgs = a[i].hydrogenGroupSize;
       int j;
       BigReal m_cm = 0;
@@ -1057,6 +1072,10 @@ void Sequencer::submitReductions(int step)
 {
   FullAtom *a = patch->atom.begin();
   int numAtoms = patch->numAtoms;
+
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter(0);
+#endif
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
   reduction->item(REDUCTION_MARGIN_VIOLATIONS) += patch->marginViolations;
@@ -1122,6 +1141,9 @@ void Sequencer::submitReductions(int step)
 
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
+#if CMK_VERSION_BLUEGENE
+      CmiNetworkProgress();
+#endif
       hgs = a[i].hydrogenGroupSize;
       int j;
       BigReal m_cm = 0;

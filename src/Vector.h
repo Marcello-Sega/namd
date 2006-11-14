@@ -115,9 +115,10 @@ class Vector {
 
      // v1 /= const
      inline void operator/=(const BigReal& v2) {
-       x /= v2;
-       y /= v2;
-       z /= v2;
+       BigReal v2_recip = namd_reciprocal(v2);
+       x *= v2_recip;
+       y *= v2_recip;
+       z *= v2_recip;
      }
 
      inline friend int operator == (const Vector& v1, const Vector& v2) {
@@ -256,6 +257,23 @@ class zVector : public Vector {
      inline zVector(void) : Vector(0,0,0) { ; }
      inline zVector(const Vector &v) : Vector(v) { ; }
 };
+
+
+class AlignVector : public Vector {
+ public:
+  BigReal pad;
+  inline AlignVector(void) : Vector(0,0,0) { pad = 0.0; }
+  inline AlignVector(const Vector &v) : Vector(v) { pad = 0.0; }
+
+  inline AlignVector( BigReal newx, BigReal newy, BigReal newz)
+    : Vector (newx, newy, newz) { pad = 0.0; }
+  
+  inline AlignVector( BigReal newv )  // allow Vector v = 0; etc.
+    : Vector (newv) { pad = 0.0; }
+  
+  inline AlignVector(const FloatVector &v) : Vector (v) { pad = 0.0; }
+};
+
 
 inline FloatVector::FloatVector(const Vector &v) : x(v.x), y(v.y), z(v.z) { ; }
 

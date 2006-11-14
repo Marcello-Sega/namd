@@ -1287,12 +1287,18 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      "maximum number of pair partitions in one patch", &maxPairPart, 20);
    opts.range("maxPairPart",POSITIVE);
    opts.optional("main", "numAtomsSelf", 
-               "maximum number of atoms in one self compute distribution", 
-               &numAtomsSelf, 125);
+		 "maximum number of atoms in one self compute distribution", 
+		 &numAtomsSelf, 125);
    opts.range("numAtomsSelf",NOT_NEGATIVE);
+
+   opts.optional("main", "numAtomsSelf2", 
+		 "maximum number of atoms in one self compute distribution", 
+		 &numAtomsSelf2, numAtomsSelf);
+   opts.range("numAtomsSelf2",NOT_NEGATIVE);
+
    opts.optional("main", "numAtomsPair", 
-               "maximum number of atoms in one pair compute distribution", 
-               &numAtomsPair, 200);
+		 "maximum number of atoms in one pair compute distribution", 
+		 &numAtomsPair, 200);
    opts.range("numAtomsPair",NOT_NEGATIVE);
    opts.optional("main", "numAtomsPair2", 
                "maximum number of atoms in one pair compute distribution", 
@@ -2465,6 +2471,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
         << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n"
         << iINFO << "SELF PARTITION ATOMS   " << numAtomsSelf << "\n"
+        << iINFO << "SELF2 PARTITION ATOMS   " << numAtomsSelf2 << "\n"
         << iINFO << "PAIR PARTITION ATOMS   " << numAtomsPair << "\n"
         << iINFO << "PAIR2 PARTITION ATOMS  " << numAtomsPair2 << "\n"
         << iINFO << "MIN ATOMS PER PATCH    " << minAtomsPerPatch << "\n"

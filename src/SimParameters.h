@@ -472,6 +472,8 @@ public:
                                         // that a patch can be split into
         int numAtomsSelf;               // maximum number of atoms in a single
                                         // self-compute 
+        int numAtomsSelf2;              // maximum number of atoms in a pair compute
+                                        // in the presence of twoAwayX,Y,Z options
         int numAtomsPair;               // maximum number of atoms in a single
                                         // pair-compute 
         int numAtomsPair2;              // maximum number of atoms in a single
