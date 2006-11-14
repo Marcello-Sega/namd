@@ -551,7 +551,7 @@ int Rebalancer::refine()
             donor->computeSet.iterator((Iterator *)&nextCompute);
          while (c)
          {
-#if CMK_VERSION_BLUEGENE
+#if 0 //CMK_VERSION_BLUEGENE
 	   BGLTorusManager *tmgr = BGLTorusManager::getObject();
 	   if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
 				     patches[c->patch2].processor, 3))
@@ -947,7 +947,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
 
    if ( patch_count + proxy_count < 2 ) {
 
-     double bgLoadLimit = 0.8 * averageLoad;
+     double bgLoadLimit = 1.2 * averageLoad;
 
      if ( p->backgroundLoad > bgLoadLimit ) bad = 1;
      else {
