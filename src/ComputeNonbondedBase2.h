@@ -48,11 +48,11 @@ NORMAL( MODIFIED( foo bar ) )
 #pragma disjoint (*table_four_i, *f_j)
 #pragma disjoint (*p_j,          *f_j)
 #pragma disjoint (*lj_pars,      *f_j)
-      __alignx(16, f_j);
+          //__alignx(16, f_j);
 #endif //Short + Fast
       
 #if ( FULL( 1+ ) 0 )
-      __alignx(16, fullf_j);
+          //__alignx(16, fullf_j);
 #pragma disjoint (*table_four_i, *fullf_j)
 #pragma disjoint (*p_j,          *fullf_j)
 
@@ -201,7 +201,7 @@ NORMAL( MODIFIED( foo bar ) )
 #if ( FULL (EXCLUDED( SHORT ( 1+ ) ) ) 0 ) 
       const BigReal* const slow_i = slow_table + 4*table_i;
 #ifdef ARCH_POWERPC
-      __alignx (16, slow_i);
+      //__alignx (16, slow_i);
 #pragma disjoint (*slow_i, *fullf_j)
 #endif
 #endif      
@@ -210,7 +210,7 @@ NORMAL( MODIFIED( foo bar ) )
 #if ( FULL (MODIFIED( SHORT ( 1+ ) ) ) 0 ) 
       const BigReal* const slow_i = slow_table + 4*table_i;
 #ifdef ARCH_POWERPC
-      __alignx (16, slow_i);
+      //__alignx (16, slow_i);
 #pragma disjoint (*slow_i, *fullf_j)
 #endif
 #endif      
