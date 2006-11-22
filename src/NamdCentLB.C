@@ -12,6 +12,9 @@
 #include "ComputeMap.h"
 #include "LdbCoordinator.h"
 
+// #define DUMP_LDBDATA 1
+// #define LOAD_LDBDATA 1
+
 void CreateNamdCentLB()
 {
   // CkPrintf("[%d] creating NamdCentLB %d\n",CkMyPe(),loadbalancer);
@@ -77,17 +80,14 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 
   int nMoveableComputes = buildData(stats,count);
 
-  // gzheng debug
-  //#define DUMPDATA 1
-  //#define LOADDATA 1
-#if DUMPDATA 
-  dumpDataASCII("data", numProcessors, numPatches, nMoveableComputes);
-#elif LOADDATA
-  loadDataASCII("data.2", numProcessors, numPatches, nMoveableComputes);
-  //  dumpDataASCII("data.out", numProcessors, numPatches, nMoveableComputes);
-  //  CkExit();
+// load balancing debugging
+#if DUMP_LDBDATA 
+  dumpDataASCII("ldbd_before", numProcessors, numPatches, nMoveableComputes);
+#elif LOAD_LDBDATA
+  loadDataASCII("ldbd_before.5", numProcessors, numPatches, nMoveableComputes);
+  // CkExit();
 #endif
-  // end of debug section
+// end of debug section
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
     RefineOnly(computeArray,patchArray,processorArray,
@@ -130,9 +130,12 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     }
   }
 
-#if LOADDATA
-  dumpDataASCII("data.out", numProcessors, numPatches, nMoveableComputes);
-  CkExit();
+#if DUMP_LDBDATA
+  dumpDataASCII("ldbd_after", numProcessors, numPatches, nMoveableComputes);
+#elif LOAD_LDBDATA
+  dumpDataASCII("ldbd_after.5", numProcessors, numPatches, nMoveableComputes);
+  // loadDataASCII("ldbd_after", numProcessors, numPatches, nMoveableComputes);
+  // CkExit();
 #endif
 
   // For error checking:
