@@ -8,6 +8,7 @@
 #include "Node.h"
 #include "Rebalancer.h"
 
+// #define LDB_DEBUG
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
@@ -424,6 +425,12 @@ int Rebalancer::refine()
          heavyProcessors->insert((InfoRecord *) &(processors[i]));
       else lightProcessors->insert((InfoRecord *) &(processors[i]));
    }
+
+#ifdef LDB_DEBUG
+   iout << "\nBefore Refinement Summary" << "\n";
+   printSummary();
+#endif
+
    int done = 0;
    while (!done)
    {
@@ -588,30 +595,11 @@ int Rebalancer::refine()
       }
 
    }  
-#if 0
-   // After refining, compute min, max and avg processor load
-   double total = processors[0].load;
-   double min = processors[0].load;
-   int min_proc = 0;
-   double max = processors[0].load;
-   int max_proc = 0;
-   for (i=1; i<P; i++) {
-     total += processors[i].load;
-     if (processors[i].load < min) {
-       min = processors[i].load;
-       min_proc = i;
-     }
-     if (processors[i].load > max) {
-       max = processors[i].load;
-       max_proc = i;
-     }
-   }
-   iout << iINFO << "Refinement at overLoad=" << overLoad << "\n";
-   iout << iINFO << "  min = " << min << " processor " << min_proc << "\n";
-   iout << iINFO << "  max = " << max << " processor " << max_proc << "\n";
-   iout << iINFO << "  total = " << total << " average = " << total/P << "\n"
-	<< endi;
-   
+
+#ifdef LDB_DEBUG
+   iout << "After Refinement Summary" << "\n";
+   printSummary();
+
    if (!finish) {
      iout << iINFO << "Refine: No solution found for overLoad = " 
 	  << overLoad << "\n" << endi;
@@ -635,14 +623,26 @@ void Rebalancer::multirefine(double overload_start)
   double avg = computeAverage();
   double max = computeMax();
 
+#ifdef LDB_DEBUG
+  iout << "******** Processors with background load > average load ********" << "\n";
+#endif
+
   int numOverloaded = 0;
   for (int ip=0; ip<P; ip++) {
-    if ( processors[ip].backgroundLoad > averageLoad ) ++numOverloaded;
+    if ( processors[ip].backgroundLoad > averageLoad ) {
+      ++numOverloaded;
+#ifdef LDB_DEBUG
+      iout << iINFO << "Info about proc " << ip << ": Load: " << processors[ip].load << " Bg Load: " << processors[ip].backgroundLoad << " Compute Load: " << processors[ip].computeLoad << " No of computes: " << processors[ip].computeSet.numElements() << "\n";
+#endif
+    }
   }
   if ( numOverloaded ) {
     iout << iWARN << numOverloaded
       << " processors are overloaded due to high background load.\n" << endi;
   }
+#ifdef LDB_DEBUG
+  iout << "******** Processor List Ends ********" << "\n\n";
+#endif
 
   const double overloadStep = 0.01;
   const double overloadStart = overload_start;       //1.05;
@@ -653,7 +653,7 @@ void Rebalancer::multirefine(double overload_start)
   double dMinOverload = minOverload * overloadStep + overloadStart;
   double dMaxOverload = maxOverload * overloadStep + overloadStart;
 
-#if 0
+#ifdef LDB_DEBUG 
   iout << iINFO
        << "Balancing from " << minOverload << " = " << dMinOverload 
        << " to " << maxOverload << "=" << dMaxOverload 
@@ -683,12 +683,12 @@ void Rebalancer::multirefine(double overload_start)
       curOverload = (maxOverload + minOverload ) / 2;
 
       overLoad = curOverload * overloadStep + overloadStart;
-      /*
+#ifdef LDB_DEBUG 
       iout << iINFO << "Testing curOverload " << curOverload 
 	   << "=" << overLoad << " [min,max]=" 
 	   << minOverload << ", " << maxOverload
 	   << "\n" << endi;
-      */
+#endif     
       if (refine())
 	maxOverload = curOverload;
       else
@@ -799,7 +799,7 @@ void Rebalancer::printLoads()
    iout << endi;
    iout.unsetf(ios::right);
 #else
-   iout << "LDB:  LOAD: AVG " << averageLoad << " MAX " << max
+   iout << "Load Balancing: Time " << CmiWallTimer() << " Load: Average " << averageLoad << " Max " << max
      << "  MSGS: TOTAL " << total
      << " MAXC " << maxproxies << " MAXP " << maxpatchproxies
      << "  " << strategyName << "\n" << endi;
@@ -828,12 +828,10 @@ void Rebalancer::printSummary()
        max_proc = i;
      }
    }
-   iout << iINFO << "SUMMARY" << "\n";
    iout << iINFO << "  min = " << min << " processor " << min_proc << "\n";
    iout << iINFO << "  max = " << max << " processor " << max_proc << "\n";
-   iout << iINFO << "  total = " << total << " average = " << total/P << "\n"
-	<< endi;
-   
+   iout << iINFO << "  total = " << total << " average = " << total/P << "\n";
+   iout << iINFO << "Info about most overloaded processor " << max_proc << ": Load: " << processors[max_proc].load << " Bg Load: " << processors[max_proc].backgroundLoad << " Compute Load: " << processors[max_proc].computeLoad << " No of computes: " << processors[max_proc].computeSet.numElements() << "\n" << endi; 
 }
 
 double Rebalancer::computeAverage()
