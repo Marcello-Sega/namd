@@ -80,14 +80,17 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 
   int nMoveableComputes = buildData(stats,count);
 
-// load balancing debugging
+#ifdef LDB_DEBUG
+#define DUMP_LDBDATA 1
+#define LOAD_LDBDATA 1
+#endif
+
 #if DUMP_LDBDATA 
   dumpDataASCII("ldbd_before", numProcessors, numPatches, nMoveableComputes);
 #elif LOAD_LDBDATA
   loadDataASCII("ldbd_before.5", numProcessors, numPatches, nMoveableComputes);
   // CkExit();
 #endif
-// end of debug section
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
     RefineOnly(computeArray,patchArray,processorArray,
