@@ -10,6 +10,8 @@
 #include "elements.h"
 #include "heap.h"
 
+#define LDB_DEBUG
+
 class Rebalancer {
 private:
   int bytesPerAtom;
