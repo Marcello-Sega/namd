@@ -8,8 +8,6 @@
 #include "Node.h"
 #include "Rebalancer.h"
 
-// #define LDB_DEBUG
-
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
 {
