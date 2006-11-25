@@ -386,8 +386,10 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 #endif
     }
     processorArray[i].idleTime = stats->procs[i].idletime;
+    processorArray[i].load = processorArray[i].computeLoad = 0.0;
   }
 
+/* *********** this code is defunct *****************
 #if 0
   double bgfactor = 1.0 + 1.0 * CkNumPes()/1000.0;
   if ( bgfactor > 2.0 ) bgfactor = 2.0;
@@ -434,6 +436,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   }
   // CkPrintf("\n");
 #endif  
+*********** end of defunct code *********** */
 
   if (unLoadZero) processorArray[0].available = CmiFalse;
   if (unLoadRankZero) {
@@ -534,8 +537,10 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	computeArray[nMoveableComputes].Id = cid;
 #if CHARM_VERSION > 050607
 	computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
+	processorArray[stats->from_proc[j]].computeLoad += this_obj.wallTime;
 #else
 	computeArray[nMoveableComputes].oldProcessor = i;
+	processorArray[i].computeLoad += this_obj.wallTime;
 #endif
 	computeArray[nMoveableComputes].processor = -1;
 	computeArray[nMoveableComputes].patch1 = p0;
@@ -552,6 +557,8 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 #if ! ( CHARM_VERSION > 050607 )
   }
 #endif
+
+/* *********** this code is defunct *****************
 #if 0
   int averageProxy = nProxies / count;
   CkPrintf("total proxies: %d, avervage: %d\n", nProxies, averageProxy);
@@ -565,6 +572,10 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     }
   }
 #endif
+        *********** end of defunct code *********** */
+  for (i=0; i<count; i++) {
+    processorArray[i].load = processorArray[i].backgroundLoad + processorArray[i].computeLoad;
+  }
   stats->clear();
   return nMoveableComputes;
 }
