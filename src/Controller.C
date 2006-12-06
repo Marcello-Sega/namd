@@ -263,6 +263,9 @@ void Controller::algorithm(void)
   }
   enqueueCollections(END_OF_RUN);
   outputExtendedSystem(END_OF_RUN);
+  // note: this is a Converse interface call that gets translated to a
+  // null method call if CMK_OPTIMIZE is set.
+  traceClose();
   terminate();
 }
 
