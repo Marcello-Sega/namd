@@ -375,6 +375,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   // Fixup to take care of the extra timestep at startup
   // This is pretty ugly here, but it makes the count correct
+  
+  // iout << "LDB Cycle Num: " << ldbCycleNum << "\n";
+
   if (ldbCycleNum==1)
   {
     nLdbSteps = firstLdbStep;
@@ -394,11 +397,34 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     theLbdb->CollectStatsOff();
   }
 
-  // in the case when trace is off at the beginning,
-  // only turn trace of from after the first LB to the firstLdbStep after 
-  // the second LB.
-  // 1    2   3     4     5          6   7
-  // off on Alg7 refine refine ...  on
+/*------------------------------------------------------------------------*
+ * ---------------------------------------------------------------------- *
+ * Comments inserted by Abhinav to clarify relation between ldbCycleNum,  *
+ * load balancing step numbers (printed by the step() function) and       *
+ * tracing of the steps						    	  *
+ * ---------------------------------------------------------------------- *
+ * If trace is turned off in the beginning, then tracing is turned on     *
+ * at ldbCycleNum = 4 and turned off at ldbCycleNum =8. ldbCycleNum can   *
+ * be adjusted by specifying firstLdbStep and ldbPeriod which are set by  *
+ * default to 5*stepspercycle and 200*stepspercycle if not specified.     *
+ * 									  *
+ * If we choose firstLdbStep = 20 and ldbPeriod = 100, we have the        *
+ * following timeline (for these particular numbers):                     *
+ *									  *
+ * Tracing	   :  <---- off ----><------------ on -----------><-- off *
+ * ldbCycleNum     :  1    2    3    4    5        6     7        8     9 *
+ * Iteration Steps : 00===20===40===60===80======160===180======260===280 *
+ * Ldb Step() No   :            1    2    3        4     5        6     7 *
+ * Ldb Strategy    :         Alg7  Ref  Ref     Inst   Ref     Inst   Ref *
+ *                           Alg7					  *
+ *									  *
+ * Alg7 = AlgSeven							  *
+ * Ref  = Refine (NamdCentLB.C, Rebalancer.C)				  *
+ * Inst = Instrumentation Phase (no real load balancing)		  *
+ * ---------------------------------------------------------------------- *
+ *------------------------------------------------------------------------*
+ */
+
 #if CHARM_VERSION >= 050606
   if (traceAvailable()) {
     static int specialTracing = 0;
