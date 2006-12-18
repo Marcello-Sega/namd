@@ -152,6 +152,9 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_VECTOR("eField",eField)
   SCRIPT_PARSE_VECTOR("stirAxis",stirAxis)
   SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
+  /* BEGIN gf */
+  SCRIPT_PARSE_VECTOR("gridforcescale",gridforceScale)
+  /* END gf */
 
   if ( ! strncasecmp(param,"fixedatoms",MAX_SCRIPT_PARAM_SIZE) ) {
     if ( ! fixedAtomsOn )
@@ -226,6 +229,9 @@ void SimParameters::config_parser(ParseOptions &opts) {
    config_parser_fullelect(opts);
    config_parser_methods(opts);
    config_parser_constraints(opts);
+   /* BEGIN gf */
+   config_parser_gridforce(opts);
+   /* END gf */
    config_parser_movdrag(opts);
    config_parser_rotdrag(opts);
    config_parser_constorque(opts);
@@ -1027,6 +1033,25 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.optional("constantforce", "consForceFile",
        "Configuration file for constant forces", PARSE_STRING);
 }
+
+
+/* BEGIN gf */
+void SimParameters::config_parser_gridforce(ParseOptions &opts) {
+    //// Gridforce
+    opts.optionalB("main","gridforce", "Is GridForce active?",
+		   &gridforceOn, FALSE);
+    opts.require("gridforce","gridforcescale", "Scale factor by which to multiply "
+		 "grid forces", &gridforceScale);
+    opts.require("gridforce","gridforcefile", "PDB file containing force "
+		 "multipliers in one of the columns", PARSE_STRING);
+    opts.require("gridforce","gridforcecol", "Column of gridforcefile to "
+		 "use for force multiplier", PARSE_STRING);
+    opts.require("gridforce","gridforcepotenfile", "Gridforce potential file",
+		 PARSE_STRING);
+}
+/* END gf */
+
+
 
 void SimParameters::config_parser_movdrag(ParseOptions &opts) {
    //// moving drag
@@ -2237,6 +2262,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      fixedAtomsForces = 0;
    }
 
+   /* BEGIN gf */
+   if (!opts.defined("gridforce"))
+   {
+      gridforceScale = Vector(0);
+   }
+   /* END gf */
+
    if (!opts.defined("constraints"))
    {
      constraintExp = 0;     
@@ -2823,6 +2855,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
    
+   /* BEGIN gf */
+   if (gridforceOn) {
+     iout << iINFO << "GRID FORCE ACTIVE\n";
+     
+     iout << iINFO << "GRID FORCE SCALING     " << gridforceScale.x << " "
+	  << gridforceScale.y << " " << gridforceScale.z << "\n";
+   }
+   /* END gf */
 
    //****** BEGIN SMD constraints changes 
    

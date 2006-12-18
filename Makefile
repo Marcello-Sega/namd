@@ -84,6 +84,7 @@ OBJS = \
 	$(DSTDIR)/ComputeImpropers.o \
 	$(DSTDIR)/ComputeGlobal.o \
 	$(DSTDIR)/ComputeGlobalMsgs.o \
+	$(DSTDIR)/ComputeGridForce.o \
 	$(DSTDIR)/ComputeMap.o \
 	$(DSTDIR)/ComputeMgr.o \
 	$(DSTDIR)/ComputeNonbondedSelf.o \

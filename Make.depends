@@ -969,6 +969,14 @@ obj/ComputeFullDirect.o: \
 	src/Debug.h \
 	src/ComputeFullDirectBase.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/ComputeFullDirect.o $(COPTC) src/ComputeFullDirect.C
+obj/ComputeGridForce.o: \
+	src/ComputeGridForce.C \
+	src/ComputeGridForce.h \
+	src/HomePatch.h \
+	src/Molecule.h \
+	src/Node.h \
+	src/SimParameters.h
+	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/ComputeGridForce.o $(COPTC) src/ComputeGridForce.C
 obj/ComputeHomePatch.o: \
 	src/ComputeHomePatch.C \
 	src/InfoStream.h \

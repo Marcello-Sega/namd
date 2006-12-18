@@ -175,6 +175,11 @@ public:
 					//  active
 	int constraintExp;		//  Exponent for harmonic constraints
 
+	/* BEGIN gf */
+	Bool gridforceOn;               //  Flag TRUE -> gridforce active
+	Vector gridforceScale;          //  GridForce scale factor
+	/* END gf */
+
         //****** BEGIN selective restraints (X,Y,Z) changes 
         Bool selectConstraintsOn;       //  Flag TRUE-> selective restraints  
                                         //  active
@@ -567,6 +572,9 @@ private:
 	void config_parser_fullelect(ParseOptions &opts);
 	void config_parser_methods(ParseOptions &opts);
 	void config_parser_constraints(ParseOptions &opts);
+	/* BEGIN gf */
+	void config_parser_gridforce(ParseOptions &opts);
+	/* END gf */
 	void config_parser_movdrag(ParseOptions &opts);
 	void config_parser_rotdrag(ParseOptions &opts);
 	void config_parser_constorque(ParseOptions &opts);

@@ -191,6 +191,17 @@ int NamdState::configListInit(ConfigList *cfgList) {
 					pdb,
 					NULL);
 	}
+	
+	/* BEGIN gf */
+	if (simParameters->gridforceOn)
+	{
+	    molecule->build_gridforce_params(configList->find("gridforcefile"),
+					     configList->find("gridforcecol"),
+					     configList->find("gridforcepotenfile"),
+					     pdb,
+					     NULL);
+	}
+	/* END gf */
 
 	// If constant forces are active, read the forces necessary
 	if (simParameters->consForceOn) {
@@ -343,6 +354,13 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	   iout << iINFO << molecule->numFixedRigidBonds <<
 			" RIGID BONDS BETWEEN FIXED ATOMS\n";
 	}
+	
+	/* BEGIN gf */
+	if (simParameters->gridforceOn)
+	{
+	    iout << iINFO << molecule->numGridforces << " GRID FORCES\n";
+	}
+	/* END gf */
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy

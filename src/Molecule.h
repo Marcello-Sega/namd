@@ -61,6 +61,14 @@ typedef struct constraint_params
 
 
 
+/* BEGIN gf */
+typedef struct gridfrc_params
+{
+  Real k;   // force multiplier
+} GridforceParams;
+/* END gf */
+
+
 typedef struct stir_params
 {
   Real startTheta;
@@ -113,6 +121,20 @@ private:
   UniqueSet<Exclusion> exclusionSet;  //  Used for building
   int32 *consIndexes; //  Constraint indexes for each atom
   ConstraintParams *consParams;
+
+/* BEGIN gf */
+  int32 *gridfrcIndexes;
+  GridforceParams *gridfrcParams;
+  int gridfrcK1;          // Grid dimensions
+  int gridfrcK2;
+  int gridfrcK3;
+  int gridfrcSize;
+  Vector gridfrcOrigin;   // Grid origin
+  Vector gridfrcE[3];     // Grid unit vectors
+  Vector gridfrcInv[3];   // Inverse of unit vectors
+  float *gridfrcGrid;     // Grid itself -- now grid of forces
+/* END gf */
+
         //  Parameters for each atom constrained
   int32 *stirIndexes; //Stirring indexes for each atoms
   StirParams *stirParams;
@@ -207,6 +229,9 @@ public:
   int numExclusions;  //  Number of exclusions
   int numTotalExclusions; //  Real Total Number of Exclusions // hack
   int numConstraints; //  Number of atoms constrained
+/* BEGIN gf */
+  int numGridforces;  //  Number of atoms in gridforce file
+/* END gf */
   int numMovDrag;         //  Number of atoms moving-dragged
   int numRotDrag;         //  Number of atoms rotating-dragged
   int numConsTorque;  //  Number of atoms "constant"-torqued
@@ -247,6 +272,14 @@ public:
   HydrogenGroup hydrogenGroup;
   int waterIndex;
 
+/* BEGIN gf */
+  typedef struct gridfrc_gridbox
+  {
+    Force f[8];
+    Vector inv[3];
+  } GridforceGridbox;
+/* END gf */
+
   Molecule(SimParameters *, Parameters *param);
   Molecule(SimParameters *, Parameters *param, char *filename);
   
@@ -272,6 +305,11 @@ public:
              PDB *, char *);
         //  Build the set of harmonic constraint 
         // parameters
+
+/* BEGIN gf */
+  void build_gridforce_params(StringList *, StringList *, StringList *, PDB *, char *);
+        //  Build the set of gridForce-style force pars
+/* END gf */
 
   void build_movdrag_params(StringList *, StringList *, StringList *, 
           PDB *, char *);
@@ -410,6 +448,22 @@ public:
   const ExclusionCheck *get_excl_check_for_atom(int anum) const
        { return &all_exclusions[anum]; }
 
+/* BEGIN gf */
+  // Return true or false based on whether or not the atom
+  // is subject to grid force
+  Bool is_atom_gridforced(int atomnum) const
+  {
+      if (numGridforces)
+      {
+	  return(gridfrcIndexes[atomnum] != -1);
+      }
+      else
+      {
+	  return(FALSE);
+      }
+  }
+/* END gf */
+
   //  Return true or false based on whether the specified atom
   //  is constrained or not.
   Bool is_atom_constrained(int atomnum) const
@@ -480,6 +534,15 @@ public:
     k = consParams[consIndexes[atomnum]].k;
     refPos = consParams[consIndexes[atomnum]].refPos;
   }
+
+/* BEGIN gf */
+  void get_gridfrc_params(Real &k, int atomnum) const
+  {
+    k = gridfrcParams[gridfrcIndexes[atomnum]].k;
+  }
+
+  int get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) const;
+/* END gf */
 
   Real langevin_param(int atomnum) const
   {

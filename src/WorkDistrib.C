@@ -882,6 +882,10 @@ void WorkDistrib::mapComputes(void)
 
   if ( node->simParameters->eFieldOn )
     mapComputePatch(computeEFieldType);
+  /* BEGIN gf */
+  if ( node->simParameters->gridforceOn )
+    mapComputePatch(computeGridForceType);
+  /* END gf */
   if ( node->simParameters->stirOn )
     mapComputePatch(computeStirType);
   if ( node->simParameters->sphericalBCOn )

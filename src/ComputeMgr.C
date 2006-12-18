@@ -41,6 +41,9 @@
 #include "ComputePme.h"
 #include "ComputeEwald.h"
 #include "ComputeEField.h"
+/* BEGIN gf */
+#include "ComputeGridForce.h"
+/* END gf */
 #include "ComputeStir.h"
 #include "ComputeSphericalBC.h"
 #include "ComputeCylindricalBC.h"
@@ -367,6 +370,13 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
+      /* BEGIN gf */
+      case computeGridForceType:
+	c = new ComputeGridForce(i,map->computeData[i].pids[0].pid);
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+      /* END gf */
       case computeSphericalBCType:
 	c = new ComputeSphericalBC(i,map->computeData[i].pids[0].pid); // unknown delete
 	map->registerCompute(i,c);

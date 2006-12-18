@@ -41,6 +41,9 @@ enum ComputeType
   computeGlobalType,
   computeExtType,
   computeEFieldType,
+/* BEGIN gf */
+  computeGridForceType,
+/* END gf */
   computeStirType,
   computeSphericalBCType,
   computeCylindricalBCType,

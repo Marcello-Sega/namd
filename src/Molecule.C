@@ -193,6 +193,16 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   rigidBondLengths=NULL;
   consIndexes=NULL;
   consParams=NULL;
+  /* BEGIN gf */
+  gridfrcIndexes=NULL;
+  gridfrcParams=NULL;
+  gridfrcK1 = 0;
+  gridfrcK2 = 0;
+  gridfrcK3 = 0;
+  gridfrcSize = 0;
+  gridfrcOrigin = Vector(0);
+  gridfrcGrid = NULL;
+  /* END gf */
   stirIndexes=NULL;
   stirParams=NULL;
   movDragIndexes=NULL;
@@ -1885,6 +1895,36 @@ void Molecule::send_Molecule(Communicate *com_obj)
          }
       }
       
+      /* BEGIN gf */
+      // Send the gridforce information, if used
+      if (simParams->gridforceOn)
+      {
+	 DebugM(0, "Copying gridforce info ... ");
+	 msg->put(numGridforces);
+	 
+	 msg->put(numAtoms, gridfrcIndexes);
+
+	 msg->put(gridfrcK1);
+	 msg->put(gridfrcK2);
+	 msg->put(gridfrcK3);
+	 msg->put(gridfrcSize);
+	 msg->put(gridfrcOrigin.x);
+	 msg->put(gridfrcOrigin.y);
+	 msg->put(gridfrcOrigin.z);
+	 msg->put(3*sizeof(Vector), (char*)gridfrcE);
+	 msg->put(3*sizeof(Vector), (char*)gridfrcInv);
+	 
+	 if (numGridforces)
+	 {
+	     msg->put(numGridforces*sizeof(GridforceParams), (char*)gridfrcParams);
+	 }
+	 if (gridfrcSize) {
+	     msg->put(gridfrcSize*sizeof(float), (char*)gridfrcGrid);
+	 }
+	 DebugM(0, "done.\n");
+      }
+      /* END gf */
+
       //  Send the stirring information, if used
       if (simParams->stirOn)
       {
@@ -2103,6 +2143,42 @@ void Molecule::receive_Molecule(MIStream *msg)
          }
       }
 
+      /* BEGIN gf */
+      if (simParams->gridforceOn)
+      {
+	 msg->get(numGridforces);
+	 
+	 delete [] gridfrcIndexes;
+	 gridfrcIndexes = new int32[numAtoms];
+	 
+	 msg->get(numAtoms, gridfrcIndexes);
+	 
+	 msg->get(gridfrcK1);
+	 msg->get(gridfrcK2);
+	 msg->get(gridfrcK3);
+	 msg->get(gridfrcSize);
+	 msg->get(gridfrcOrigin.x);
+	 msg->get(gridfrcOrigin.y);
+	 msg->get(gridfrcOrigin.z);
+	 msg->get(3*sizeof(Vector), (char*)gridfrcE);
+	 msg->get(3*sizeof(Vector), (char*)gridfrcInv);
+	 
+	 if (numGridforces)
+	 {
+	    delete [] gridfrcParams;
+	    gridfrcParams = new GridforceParams[numGridforces];
+	    
+	    msg->get(numGridforces*sizeof(GridforceParams), (char*)gridfrcParams);
+	 }
+	 if (gridfrcSize) {
+	     delete [] gridfrcGrid;
+	     
+	     gridfrcGrid = new float[gridfrcSize];
+	     
+	     msg->get(gridfrcSize*sizeof(float), (char*)gridfrcGrid);
+	 }
+      }
+      /* END gf */
             
       //  Get the stirring information, if stirring is  active
       if (simParams->stirOn)
@@ -3054,6 +3130,446 @@ void Molecule::receive_Molecule(MIStream *msg)
 
   }
     /*      END OF FUNCTION stripFepExcl      */
+
+
+
+/* BEGIN gf */
+    /************************************************************************/
+    /*                                                                      */
+    /*      FUNCTION build_gridforce_params                                 */
+    /*                                                                      */
+    /*   INPUTS:                                                            */
+    /*  gridfrcfile - Value of gffile from config file                      */
+    /*  gridfrccol - Value of gfcol from config file                        */
+    /*  potfile - Value of gfpotentialfile from config file                 */
+    /*  initial_pdb - PDB object that contains initial positions            */
+    /*  cwd - Current working directory                                     */
+    /*                                                                      */
+    // This function builds all the parameters that are necessary to
+    // do gridforcing. This involves looking through a PDB object to
+    // determine which atoms are to be gridforced, and what the force
+    // multiplier is for each atom.  This information is then stored
+    // in the arrays gridfrcIndexes and gridfrcParams.
+    /************************************************************************/
+
+void Molecule::build_gridforce_params(StringList *gridfrcfile,
+				      StringList *gridfrccol,
+				      StringList *potfile,
+				      PDB *initial_pdb,
+				      char *cwd)
+{
+    PDB *kPDB;
+    register int i;      //  Loop counters
+    register int j;
+    register int k;
+    int current_index=0;    //  Index into values used
+    int kcol = 4;      //  Column to look for force constant in
+    Real kval = 0;      //  Force constant value retreived
+    char filename[129];    //  PDB filename
+    char potfilename[129]; // Potential file name
+    FILE *poten;
+    
+    //iout << "[DEBUG] Entered build_gridforce_params ...\n";
+    //iout << "\tgridfrcfile = " << gridfrcfile->data << endi;
+    //iout << "\tgridfrccol = " << gridfrccol->data << endi;
+
+    if (gridfrcfile == NULL)
+    {
+	kPDB = initial_pdb;
+    }
+    else
+    {
+	if (gridfrcfile->next != NULL)
+	{
+	    NAMD_die("Multiple definitions of grid force file in configuration file");
+	}
+	 
+	if ( (cwd == NULL) || (gridfrcfile->data[0] == '/') )
+	{
+	    strcpy(filename, gridfrcfile->data);
+	}
+	else
+	{
+	    strcpy(filename, cwd);
+	    strcat(filename, gridfrcfile->data);
+	}
+	
+	kPDB = new PDB(filename);
+	if ( kPDB == NULL )
+	{
+	    NAMD_die("Memory allocation failed in Molecule::build_gridforce_params");
+	}
+	   
+	if (kPDB->num_atoms() != numAtoms)
+	{
+	    NAMD_die("Number of atoms in grid force PDB doesn't match coordinate PDB");
+	}
+    }
+
+    //  Get the column that the force constant is going to be in.  It
+    //  can be in any of the 5 floating point fields in the PDB, according
+    //  to what the user wants.  The allowable fields are X, Y, Z, O, or
+    //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+    //  The default is the 4th field, which is the occupancy
+    if (gridfrccol == NULL)
+    {
+	kcol = 4;
+    }
+    else
+    {
+	if (gridfrccol->next != NULL)
+	{
+	    NAMD_die("Multiple definitions of grid force column in config file");
+	}
+    
+	if (strcasecmp(gridfrccol->data, "X") == 0)
+	{
+	    kcol=1;
+	}
+	else if (strcasecmp(gridfrccol->data, "Y") == 0)
+	{
+	    kcol=2;
+	}
+	else if (strcasecmp(gridfrccol->data, "Z") == 0)
+	{
+	    kcol=3;
+	}
+	else if (strcasecmp(gridfrccol->data, "O") == 0)
+	{
+	    kcol=4;
+	}
+	else if (strcasecmp(gridfrccol->data, "B") == 0)
+	{
+	    kcol=5;
+	}
+	else
+	{
+	    NAMD_die("gridfrccol must have value of X, Y, Z, O, or B");
+	}
+    }
+    
+    //  Allocate an array that will store an index into the constraint
+    //  parameters for each atom.  If the atom is not constrained, its
+    //  value will be set to -1 in this array.
+    gridfrcIndexes = new int32[numAtoms];
+       
+    if (gridfrcIndexes == NULL)
+    {
+	NAMD_die("memory allocation failed in Molecule::build_gridforce_params()");
+    }
+
+    //  Loop through all the atoms and find out which ones are constrained
+    for (i=0; i<numAtoms; i++)
+    {
+	//  Get the k value based on where we were told to find it
+	switch (kcol)
+	{
+	case 1:
+	    kval = (kPDB->atom(i))->xcoor();
+	    break;
+	case 2:
+	    kval = (kPDB->atom(i))->ycoor();
+	    break;
+	case 3:
+	    kval = (kPDB->atom(i))->zcoor();
+	    break;
+	case 4:
+	    kval = (kPDB->atom(i))->occupancy();
+	    break;
+	case 5:
+	    kval = (kPDB->atom(i))->temperaturefactor();
+	    break;
+	}
+	   
+	if (kval > 0.0)
+	{
+	    //  This atom is constrained
+	    gridfrcIndexes[i] = current_index;
+	    current_index++;
+	}
+	else
+	{
+	    //  This atom is not constrained
+	    gridfrcIndexes[i] = -1;
+	}
+    }
+    
+    if (current_index == 0)
+    {
+	//  Constraints were turned on, but there weren't really any constrained
+	iout << iWARN << "NO GRIDFORCE ATOMS WERE FOUND, BUT GRIDFORCE IS ON . . .\n" << endi;
+    }
+    else
+    {
+	//  Allocate an array to hold the constraint parameters
+        gridfrcParams = new GridforceParams[current_index];
+	if (gridfrcParams == NULL)
+	{
+	    NAMD_die("memory allocation failed in Molecule::build_gridforce_params");
+	}
+    }
+    
+    numGridforces = current_index;
+
+    //  Loop through all the atoms and assign the parameters for those
+    //  that are constrained
+    for (i=0; i<numAtoms; i++)
+    {
+	if (gridfrcIndexes[i] != -1)
+	{
+	    //  This atom has grid force, so get the k value again
+	    switch (kcol)
+	    {
+	    case 1:
+		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->xcoor();
+		break;
+	    case 2:
+		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->ycoor();
+		break;
+	    case 3:
+		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->zcoor();
+		break;
+	    case 4:
+		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->occupancy();
+		break;
+	    case 5:
+		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->temperaturefactor();
+		break;
+	    }
+	}
+    }
+       
+    //  If we had to create new PDB objects, delete them now
+    if (gridfrcfile != NULL)
+    {
+	delete kPDB;
+    }
+    
+    //  Now we fill in our grid information
+    
+    // Open potential file
+    if ( (cwd == NULL) || (potfile->data[0] == '/') )
+    {
+	strcpy(potfilename, potfile->data);
+    }
+    else
+    {
+	strcpy(potfilename, cwd);
+	strcat(potfilename, potfile->data);
+    }
+    poten = Fopen(potfilename, "r");
+    if (!poten) {
+	NAMD_die("Problem reading grid force potential file");
+    }
+    
+    char junk[128];
+    BigReal tmp[3];   // Temporary storage
+    float tmp2;
+    
+    fgets(junk, 128, poten);        // Read first line
+    for (i = 0; i < 5; i++) {       // Read some text we don't care about
+	fscanf(poten, "%s", junk);
+    }
+    fscanf(poten, "%d %d %d\n", &gridfrcK1, &gridfrcK2, &gridfrcK3);
+    
+    int gridfrcSize_V = gridfrcK1 * gridfrcK2 * gridfrcK3;
+    gridfrcSize = 3 * gridfrcSize_V;
+    
+    // Read origin
+    fscanf(poten, "origin %lf %lf %lf\n", tmp, tmp+1, tmp+2);
+    for (i = 0; i < 3; i++) gridfrcOrigin[i] = tmp[i];
+    
+    // Read delta (unit vectors)
+    for (i = 0; i < 3; i++) {
+	fscanf(poten, "delta %lf %lf %lf\n", tmp, tmp+1, tmp+2);
+	for (j = 0; j < 3; j++) gridfrcE[i][j] = tmp[j];
+    }
+    
+    for (i = 0; i < 2; i++) fgets(junk, 128, poten);   // More junk lines
+    
+    // Calculate inverse unit vectors
+    BigReal det;
+    Tensor e; // shorthand -- makes following formulae easier read
+    e.xx = gridfrcE[0][0]; e.xy = gridfrcE[0][1]; e.xz = gridfrcE[0][2];
+    e.yx = gridfrcE[1][0]; e.yy = gridfrcE[1][1]; e.yz = gridfrcE[1][2];
+    e.zx = gridfrcE[2][0]; e.zy = gridfrcE[2][1]; e.zz = gridfrcE[2][2];
+    
+    det = e.xx*(e.yy*e.zz - e.yz*e.zy)
+	- e.xy*(e.yx*e.zz - e.yz*e.zx)
+	+ e.xz*(e.yx*e.zy - e.yy*e.zx);
+    
+    gridfrcInv[0][0] = (e.yy*e.zz - e.yz*e.zy)/det;
+    gridfrcInv[0][1] = -(e.xy*e.zz - e.xz*e.zy)/det;
+    gridfrcInv[0][2] = (e.xy*e.yz - e.xz*e.yy)/det;
+    gridfrcInv[1][0] = -(e.yx*e.zz - e.yz*e.zx)/det;
+    gridfrcInv[1][1] = (e.xx*e.zz - e.xz*e.zx)/det;
+    gridfrcInv[1][2] = -(e.xx*e.yz - e.xz*e.yx)/det;
+    gridfrcInv[2][0] = (e.yx*e.zy - e.yy*e.zx)/det;
+    gridfrcInv[2][1] = -(e.xx*e.zy - e.xy*e.zx)/det;
+    gridfrcInv[2][2] = (e.xx*e.yy - e.xy*e.yx)/det;
+    
+    // Allocate storage for potential
+    float *gridfrcGrid_V;
+    gridfrcGrid_V = new float[gridfrcSize_V];
+    //iout << "[DEBUG] gridfrcSize_V = " << gridfrcSize_V << "\n" << endi;
+    
+    // Now read the potential
+    float factor = 1.0/0.0434;  // ? need to convert units? eV -> kcal/mol
+    int count = 0;
+    
+    // *** MODIFIED 1 DEC 2006 *** //
+    //while (fscanf(poten, "%f", &tmp2) != EOF) {
+    for (int count = 0; count < gridfrcSize_V; count++) {
+	int err = fscanf(poten, "%f", &tmp2);
+	if (err == EOF || err == 0) {
+	    NAMD_die("Grid force potential file incorrectly formatted");
+	}
+	gridfrcGrid_V[count] = tmp2 * factor;
+    }
+    
+    //iout << "[DEBUG] Read from potential file:\n";
+    //iout << "\tgridfrcK1 = " << gridfrcK1 << "\n" << endi;
+    //iout << "\tgridfrcK2 = " << gridfrcK2 << "\n" << endi;
+    //iout << "\tgridfrcK3 = " << gridfrcK3 << "\n" << endi;
+    //iout << "\tgridfrcSize_V = " << gridfrcSize_V << "\n" << endi;
+    //iout << "\tgridfrcOrigin = " << gridfrcOrigin.x << " " << gridfrcOrigin.y << " " << gridfrcOrigin.z << "\n" << endi;
+    //iout << "\tgridfrcE[0] = " << gridfrcE[0].x << " " << gridfrcE[0].y << " " << gridfrcE[0].z << "\n" << endi;
+    //iout << "\tgridfrcE[1] = " << gridfrcE[1].x << " " << gridfrcE[1].y << " " << gridfrcE[1].z << "\n" << endi;
+    //iout << "\tgridfrcE[2] = " << gridfrcE[2].x << " " << gridfrcE[2].y << " " << gridfrcE[2].z << "\n" << endi;
+    //iout << "\tgridfrcInv[0] = " << gridfrcInv[0].x << " " << gridfrcInv[0].y << " " << gridfrcInv[0].z << "\n" << endi;
+    //iout << "\tgridfrcInv[1] = " << gridfrcInv[1].x << " " << gridfrcInv[1].y << " " << gridfrcInv[1].z << "\n" << endi;
+    //iout << "\tgridfrcInv[2] = " << gridfrcInv[2].x << " " << gridfrcInv[2].y << " " << gridfrcInv[2].z << "\n" << endi;
+    
+    // Now calculate the grid of forces as symmetric derivatives at each
+    // point, then all we have to do during the actual simulation is
+    // compute three averages, one for each direction
+    
+    gridfrcGrid = new float[gridfrcSize];
+    int i1, i2, j1, j2, k1, k2;
+    int dk0, dk1, dk2, dk3, ind;
+    
+    // Shortcuts for accessing 1-D array with four indices
+    dk0 = gridfrcK1 * gridfrcK2 * gridfrcK3;
+    dk1 = gridfrcK2 * gridfrcK3;
+    dk2 = gridfrcK3;
+    dk3 = 1;
+    
+    // Loop through every grid point
+    for (i = 0; i < gridfrcK1; i++) {
+	for (j = 0; j < gridfrcK2; j++) {
+	    for (k = 0; k < gridfrcK3; k++) {
+		// Edges are special cases -- instead of taking e.g.
+		// -(V(i+1)-V(i-1))/2 for the force at grid i, we take
+		// instead -(V(i+1)-V(i)) if i = 0, etc.
+		
+		ind = i*dk1 + j*dk2 + k*dk3;
+		
+		// K1 direction
+		if (i == 0) {
+		    gridfrcGrid[0*dk0 + ind] =
+			-1.0 * (gridfrcGrid_V[ind+dk1] - gridfrcGrid_V[ind]);
+		}
+		else if (i == gridfrcK1-1) {
+		    gridfrcGrid[0*dk0 + ind] =
+			-1.0 * (gridfrcGrid_V[ind] - gridfrcGrid_V[ind-dk1]);
+		}
+		else {
+		    gridfrcGrid[0*dk0 + ind] =
+			-0.5 * (gridfrcGrid_V[ind+dk1] - gridfrcGrid_V[ind-dk1]);
+		}
+		
+		// K2 direction
+		if (j == 0) {
+		    gridfrcGrid[1*dk0 + ind] =
+			-1.0 * (gridfrcGrid_V[ind+dk2] - gridfrcGrid_V[ind]);
+		}
+		else if (j == gridfrcK2-1) {
+		    gridfrcGrid[1*dk0 + ind] =
+			-1.0 * (gridfrcGrid_V[ind] - gridfrcGrid_V[ind-dk2]);
+		}
+		else {
+		    gridfrcGrid[1*dk0 + ind] =
+			-0.5 * (gridfrcGrid_V[ind+dk2] - gridfrcGrid_V[ind-dk2]);
+		}
+
+		// K3 direction
+		if (k == 0) {
+		    gridfrcGrid[2*dk0 + ind] =
+			-1.0 * (gridfrcGrid_V[ind+dk3] - gridfrcGrid_V[ind]);
+		}
+		else if (k == gridfrcK3-1) {
+		    gridfrcGrid[2*dk0 + ind] =
+			-1.0 * (gridfrcGrid_V[ind] - gridfrcGrid_V[ind-dk3]);
+		}
+		else {
+		    gridfrcGrid[2*dk0 + ind] =
+			-0.5 * (gridfrcGrid_V[ind+dk3] - gridfrcGrid_V[ind-dk3]);
+		}
+	    }
+	}
+    }
+    
+    // Finally, clean up our garbage
+    delete[] gridfrcGrid_V;
+}
+
+
+int Molecule::get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) const
+{
+    Vector p = pos - gridfrcOrigin;
+    int ind[3];
+    register int i;
+    BigReal g;
+    
+    
+    DebugM(3, "pos = " << pos.x << " " << pos.y << " " << pos.z << "\n" <<
+	   "gridfrcOrigin = " << gridfrcOrigin.x << " " << gridfrcOrigin.y << " " << gridfrcOrigin.z << "\n" <<
+	   "p = " << p.x << " " << p.y << " " << p.z << "\n" << endi);
+    
+    // Set position within box, and set inverse vector
+    for (i = 0; i < 3; i++) {
+	g = p.dot(gridfrcInv[i]);
+	DebugM(3, "g = " << g << "\n" << endi);
+	ind[i] = (int)floor(g);
+	DebugM(3, "ind[" << i << "] = " << ind[i] << "\n" << endi);
+	dg[i] = g - ind[i];
+    }
+    DebugM(4, "dg = " << dg[0] << " " << dg[1] << " " << dg[2] << "\n" << endi);
+    
+    //DebugM(4, "ind = " << ind[0] << " " << ind[1] << " " << ind[2] << "\n" << endi);
+    DebugM(4, "ind + dg = " << ind[0]+dg[0] << " " << ind[1]+dg[1] << " "
+	   << ind[2]+dg[2] << "\n" << endi);
+    
+    // Set force values at corners
+    int k1, k2, k3;
+    int dk0 = gridfrcK1*gridfrcK2*gridfrcK3;
+    if (ind[0] > 0 && ind[0] < gridfrcK1-1 && ind[1] > 0 && ind[1] < gridfrcK2-1 && ind[2] > 0 && ind[2] < gridfrcK3-1) {
+	for (i = 0; i < 3; i++) {
+	    gbox.inv[i] = gridfrcInv[i];
+	}
+	for (i = 0; i < 8; i++) {
+	    k1 = ind[0] + ((i & 4) ? 1 : 0);
+	    k2 = ind[1] + ((i & 2) ? 1 : 0);
+	    k3 = ind[2] + ((i & 1) ? 1 : 0);
+	    //iout << "[DEBUG] k = " << k1 << ", " << k2 << ", " << k3 << "\n" << endi;
+	    int ind = k1*gridfrcK2*gridfrcK3 + k2*gridfrcK3 + k3;
+	    //iout << "[DEBUG] q = " << q << ", gridfrcGrid = " << gridfrcGrid[q] << "\n" << endi;
+	    gbox.f[i].x = gridfrcGrid[0*dk0 + ind];
+	    gbox.f[i].y = gridfrcGrid[1*dk0 + ind];
+	    gbox.f[i].z = gridfrcGrid[2*dk0 + ind];
+	}
+	return 0;
+    }
+    else {
+	return 1;
+    }
+}
+
+
+
+/* END gf */
+
+
 
     /************************************************************************/
     /*                  */
