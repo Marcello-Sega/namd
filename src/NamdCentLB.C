@@ -760,7 +760,12 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 	  }
     }
   //}
-  
+ 
+  if (step() > 2) {
+    delete [] proxyNodes;
+    return nProxyNodes;
+  }
+ 
   //Place numNodesPerPatch proxies on the 3d torus neighbors of a processor
 
   int numPatches = patchMap->numPatches();
