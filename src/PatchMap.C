@@ -140,6 +140,7 @@ void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
   for(int i=0; i<nPatches; ++i)
   {
     PatchData &p = patchData[i];
+    p.basenode = -1;
     p.numCids = 0;
     p.aIndex = index_a(i);
     p.bIndex = index_b(i);
@@ -338,7 +339,22 @@ void PatchMap::assignBaseNode(PatchID pid) {
   if ( CkNumPes() > 2*nPatches+1 ) {
 
     int newnode =  ( CkNumPes() + node - 1 ) % CkNumPes();    
-    while ( nPatchesOnNode[newnode] > 0  &&   i < CkNumPes() ) {
+    bool success = 0;
+
+    while ( i < CkNumPes() && !success) {
+      if ( nPatchesOnNode[newnode] == 0 )
+	success = 1;
+
+      //we know till pid, we have assigned all base nodes
+      for (int count = 0; count < pid; count ++)
+	if (patchData[count].basenode > 0 && patchData[count].basenode == newnode) {
+	  success = 0;
+	  break;
+	}
+	  
+      //no patch or a patche's base node on this newnode. this is a good node
+      if (success) break;
+
       newnode = ( CkNumPes() + node - i - 1 ) % CkNumPes();
       i ++;
     }
