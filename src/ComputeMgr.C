@@ -172,6 +172,8 @@ ComputeMgr::updateLocalComputes3() {
   CProxy_ProxyMgr pm(CpvAccess(BOCclass_group).proxyMgr);
   ProxyMgr *proxyMgr = pm.ckLocalBranch();
 
+  ProxyMgr::nodecount = 0;
+
   for (int i=0; i<computeMap->numComputes(); i++) {
     if (1 == computeFlag[i]) {
       DebugM(4, "updateLocalCompute3() - create computeID(" << i << ")\n");
@@ -214,7 +216,13 @@ ComputeMgr::updateLocalComputes4(CkQdMsg *msg) {
 void
 ComputeMgr::updateLocalComputes5() {
   if (proxySendSpanning || proxyRecvSpanning )
+  {
+#if 1
     ProxyMgr::Object()->buildProxySpanningTree();
+#else
+    ProxyMgr::Object()->buildProxySpanningTree2();
+#endif
+  }
   if (!CkMyPe()) 
 #if CHARM_VERSION > 050402
     CkStartQD(CkIndex_ComputeMgr::doneUpdateLocalComputes(), &thishandle);
