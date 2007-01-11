@@ -125,8 +125,14 @@ public:
   void recvUnregisterProxy(UnregisterProxyMsg *);
 
   void buildProxySpanningTree();
+  void sendSpanningTreeToHomePatch(int pid, int *tree, int n);
+  void recvSpanningTreeOnHomePatch(int pid, int *tree, int n);
   void sendSpanningTree(ProxySpanningTreeMsg *);
   void recvSpanningTree(ProxySpanningTreeMsg *);
+  void buildProxySpanningTree2();               // centralized version
+  void sendProxies(int pid, int *list, int n);
+  void recvProxies(int pid, int *list, int n);
+  void buildSpanningTree0();
 
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);
@@ -145,9 +151,28 @@ public:
   static ProxyMgr *Object() { return CpvAccess(ProxyMgr_instance); }
   
   int numProxies() { return proxySet.size(); }
+
+  static int nodecount;
 private:
 
   ProxySet proxySet;
+
+  class ProxyTree {       // keep track of the spanning trees
+  public:
+    int proxyMsgCount;
+    NodeIDList *proxylist;
+    NodeIDList *trees;
+  public:
+    ProxyTree() {
+      proxyMsgCount = 0;
+      proxylist = NULL;
+      trees = NULL;
+    }
+    ~ProxyTree() {
+    }
+  };
+
+  ProxyTree  ptree;
 };
 
 #endif /* PATCHMGR_H */

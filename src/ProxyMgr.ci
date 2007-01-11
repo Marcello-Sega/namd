@@ -28,7 +28,10 @@ module ProxyMgr {
     entry void recvResults(ProxyResultMsg *);
     entry void recvResults(ProxyCombinedResultMsg *);
     entry void recvImmediateResults(ProxyCombinedResultMsg *);
+    entry void recvSpanningTreeOnHomePatch(int, int tree[n], int n);
     entry void recvSpanningTree(ProxySpanningTreeMsg *);
+    entry void buildProxySpanningTree2();
+    entry void recvProxies(int pid, int list[n], int n);
   };
 }
 

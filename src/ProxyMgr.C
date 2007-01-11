@@ -247,6 +247,9 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
   return msg;
 }
 
+// class static
+int ProxyMgr::nodecount = 0;
+
 ProxyMgr::ProxyMgr() { 
   if (CpvAccess(ProxyMgr_instance)) {
     NAMD_bug("Tried to create ProxyMgr twice.");
@@ -439,6 +442,191 @@ ProxyMgr::buildProxySpanningTree()
 }
 
 void 
+ProxyMgr::buildProxySpanningTree2()
+{
+  PatchIDList pids;
+  PatchMap::Object()->homePatchIDList(pids);
+  for (int i=0; i<pids.size(); i++) {
+    HomePatch *home = PatchMap::Object()->homePatch(pids[i]);
+    if (home == NULL) CkPrintf("ERROR: homepatch NULL\n");
+    home->sendProxies();
+  }
+}
+
+void 
+ProxyMgr::sendProxies(int pid, int *list, int n)
+{
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  cp[0].recvProxies(pid, list, n);
+}
+
+// only on PE 0
+void 
+ProxyMgr::recvProxies(int pid, int *list, int n)
+{
+  int nPatches = PatchMap::Object()->numPatches();
+  if (ptree.proxylist == NULL)
+    ptree.proxylist = new NodeIDList[nPatches];
+  ptree.proxylist[pid].resize(n);
+  for (int i=0; i<n; i++)
+    ptree.proxylist[pid][i] = list[i];
+  ptree.proxyMsgCount ++;
+  if (ptree.proxyMsgCount == nPatches) {
+    ptree.proxyMsgCount = 0;
+    // build tree now
+    buildSpanningTree0();
+  }
+}
+
+#define MAX_INTERNODE 2
+
+extern double *cpuloads;
+static int *procidx = NULL;
+static double averageLoad = 0.0;
+
+static int compLoad(const void *a, const void *b)
+{
+  int i1 = *(int *)a;
+  int i2 = *(int *)b;
+  double d1 = cpuloads[i1];
+  double d2 = cpuloads[i2];
+  if (d1 < d2) 
+    return 1;
+  else if (d1 == d2) 
+    return 0;
+  else 
+    return -1;
+  // sort from high to low
+}
+
+static void processCpuLoad()
+{
+  int i;
+  if (!procidx) {
+    procidx = new int[CkNumPes()];
+  }
+  for (i=0; i<CkNumPes(); i++) procidx[i] = i;
+  qsort(procidx, CkNumPes(), sizeof(int), compLoad);
+
+  double averageLoad = 0.0;
+  for (i=0; i<CkNumPes(); i++) averageLoad += cpuloads[i];
+  averageLoad /= CkNumPes();
+//  iout << "buildSpanningTree1: no intermediate node on " << procidx[0] << " " << procidx[1] << endi;
+
+}
+
+static int noInterNode(int p)
+{
+  for (int i=0; i<40; i++) if (procidx[i] == p) return 1;
+//  if (cpuloads[p] > averageLoad) return 1;
+  return 0;
+}
+
+
+// only on PE 0
+void 
+ProxyMgr::buildSpanningTree0()
+{
+  int i;
+
+  processCpuLoad();
+
+  int *numPatchesOnNode = new int[CkNumPes()];
+  int numNodesWithPatches = 0;
+  for (i=0; i<CkNumPes(); i++) numPatchesOnNode[i] = 0;
+  int numPatches = PatchMap::Object()->numPatches();
+  for (i=0; i<numPatches; i++) {
+    int node = PatchMap::Object()->node(i);
+    numPatchesOnNode[node]++;
+    if (numPatchesOnNode[node] == 1)
+      numNodesWithPatches ++;
+  }
+  int patchNodesLast =
+    ( numNodesWithPatches < ( 0.7 * CkNumPes() ) );
+  int *ntrees = new int[CkNumPes()];
+  for (i=0; i<CkNumPes(); i++) ntrees[i] = 0;
+  if (ptree.trees == NULL) ptree.trees = new NodeIDList[numPatches];
+  for (int pid=0; pid<numPatches; pid++) 
+  {
+    int numProxies = ptree.proxylist[pid].size();
+    if (numProxies == 0) {
+      ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, NULL, 0);
+      return;
+    }
+    NodeIDList &tree = ptree.trees[pid];   // spanning tree
+    NodeIDList oldtree = tree;
+    tree.resize(numProxies+1);
+    tree.setall(-1);
+    tree[0] = PatchMap::Object()->node(pid);
+    int s=1, e=numProxies;
+    int nNonPatch = 0;
+    int treesize = 1;
+    int pp;
+      // keep tree persistent for non-intermediate nodes
+    for (pp=0; pp<numProxies; pp++) {
+      int p = ptree.proxylist[pid][pp];
+      int oldindex = oldtree.find(p);
+      if (oldindex != -1 && oldindex <= numProxies) {
+        int isIntermediate = (oldindex*PROXY_SPAN_DIM+1 <= numProxies);
+        if (!isIntermediate) {
+          tree[oldindex] = p;
+        }
+        else if (ntrees[p] < MAX_INTERNODE) {
+          tree[oldindex] = p;
+          ntrees[p] ++;
+        }
+      }
+    }
+    for (pp=0; pp<numProxies; pp++) {
+      int p = ptree.proxylist[pid][pp];              // processor number
+      if (tree.find(p) != -1) continue;        // already used
+      treesize++;
+      if (patchNodesLast && numPatchesOnNode[p] ) {
+        while (tree[e] != -1) { e--; if (e==-1) e = numProxies; }
+        tree[e] = p;
+        int isIntermediate = (e*PROXY_SPAN_DIM+1 <= numProxies);
+        if (isIntermediate) ntrees[p]++;
+      }
+      else {
+        while (tree[s] != -1) { s++; if (s==numProxies+1) s = 1; }
+        int isIntermediate = (s*PROXY_SPAN_DIM+1 <= numProxies);
+        if (isIntermediate && (ntrees[p] >= MAX_INTERNODE || noInterNode(p))) {   // TOO MANY INTERMEDIATE TREES
+        //if (isIntermediate && ntrees[p] >= MAX_INTERNODE) {   // TOO MANY INTERMEDIATE TREES
+          while (tree[e] != -1) { e--; if (e==-1) e = numProxies; }
+          tree[e] = p;
+          isIntermediate = (e*PROXY_SPAN_DIM+1 <= numProxies);
+          if (isIntermediate) ntrees[p]++;
+        }
+        else {
+          tree[s] = p;
+          nNonPatch++;
+          if (isIntermediate) ntrees[p]++;
+        }
+      }
+    }
+    // send homepatch's proxy tree
+    ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, &tree[0], treesize);
+  }
+  for (i=0; i<CkNumPes(); i++) {
+    if (ntrees[i] > MAX_INTERNODE) iout << "Processor " << i << "has (guess) " << ntrees[i] << " intermediate nodes." << endi;
+  }
+  delete [] ntrees;
+  delete [] numPatchesOnNode;
+}
+
+void ProxyMgr::sendSpanningTreeToHomePatch(int pid, int *tree, int n)
+{
+  CProxy_ProxyMgr cp(thisgroup);
+  cp[PatchMap::Object()->node(pid)].recvSpanningTreeOnHomePatch(pid, tree, n);
+}
+
+void ProxyMgr::recvSpanningTreeOnHomePatch(int pid, int *tree, int n)
+{
+  HomePatch *p = PatchMap::Object()->homePatch(pid);
+  p->recvSpanningTree(tree, n);
+}
+
+void 
 ProxyMgr::sendSpanningTree(ProxySpanningTreeMsg *msg) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
 #if CHARM_VERSION > 050402
@@ -464,6 +652,11 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
 
   // build subtree and pass down
   if (nChild == 0) return;
+
+  nodecount ++;
+  if (nodecount > MAX_INTERNODE) 
+    iout << "Processor " << CkMyPe() << "has (actual) " << nodecount << " intermediate nodes." << endi;
+
 //CkPrintf("[%d] %d:(%d) %d %d %d %d %d\n", CkMyPe(), msg->patch, size, msg->tree[0], msg->tree[1], msg->tree[2], msg->tree[3], msg->tree[4]);
   NodeIDList tree[PROXY_SPAN_DIM];
   int level = 1, index=1;
