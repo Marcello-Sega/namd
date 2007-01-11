@@ -246,6 +246,47 @@ static int compDistance(const void *a, const void *b)
     return 1;
 }
 
+// recv a spanning tree from load balancer
+void HomePatch::recvSpanningTree(int *t, int n)
+{
+  int i;
+  nChild=0;
+  tree.resize(n);
+  for (i=0; i<n; i++) {
+    tree[i] = t[i];
+  }
+
+  for (i=1; i<=PROXY_SPAN_DIM; i++) {
+    if (tree.size() <= i) break;
+    child[i-1] = tree[i];
+    nChild++;
+  }
+
+  // send down to children
+  sendSpanningTree();
+}
+
+void HomePatch::sendProxies()
+{
+  ProxyListIter pli(proxy);
+  NodeIDList list;
+  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  {
+    list.add(pli->node);
+  }
+  ProxyMgr::Object()->sendProxies(patchID, &list[0], list.size());  
+}
+
+void HomePatch::sendSpanningTree()
+{
+  if (tree.size() == 0) return;
+  ProxySpanningTreeMsg *msg = new ProxySpanningTreeMsg;
+  msg->patch = patchID;
+  msg->node = CkMyPe();
+  msg->tree = tree;
+  ProxyMgr::Object()->sendSpanningTree(msg);  
+}
+
 void HomePatch::buildSpanningTree(void)
 {
   nChild = 0;
@@ -379,11 +420,8 @@ void HomePatch::buildSpanningTree(void)
   }
   CkPrintf("\n");
 #endif
-  ProxySpanningTreeMsg *msg = new ProxySpanningTreeMsg;
-  msg->patch = patchID;
-  msg->node = CkMyPe();
-  msg->tree = tree;
-  ProxyMgr::Object()->sendSpanningTree(msg);  
+  // send to children nodes
+  sendSpanningTree();
 }
 
 void HomePatch::receiveResults(ProxyResultMsg *msg)

@@ -102,6 +102,9 @@ public:
 
   // build spanning tree for proxy nodes
   void buildSpanningTree(void);
+  void sendSpanningTree();
+  void recvSpanningTree(int *t, int n);
+  void sendProxies();
 
 #if CMK_VERSION_BLUEGENE
   int findSubroots(int dim, int* subroots, int psize, int* pidscopy);
