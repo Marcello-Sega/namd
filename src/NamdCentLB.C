@@ -15,11 +15,15 @@
 // #define DUMP_LDBDATA 1
 // #define LOAD_LDBDATA 1
 
+double *cpuloads = NULL;
+
 void CreateNamdCentLB()
 {
   // CkPrintf("[%d] creating NamdCentLB %d\n",CkMyPe(),loadbalancer);
   loadbalancer = CProxy_NamdCentLB::ckNew();
   // CkPrintf("[%d] created NamdCentLB %d\n",CkMyPe(),loadbalancer);
+  cpuloads = new double[CkNumPes()];
+  for (int i=0; i<CkNumPes(); i++) cpuloads[i] = 0.0;
 }
 
 #if CHARM_VERSION > 050610
@@ -185,6 +189,10 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     msg->moves[i] = *item;
     delete item;
     migrateInfo[i] = 0;
+  }
+
+  for (i=0; i<numProcessors; i++) {
+    cpuloads[i] = processorArray[i].load;
   }
 
   delete [] processorArray;
