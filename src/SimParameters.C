@@ -1306,14 +1306,14 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    // Maximum Partition options
    opts.optional("main", "maxSelfPart", 
-     "maximum number of self partitions in one patch", &maxSelfPart, 50);
+     "maximum number of self partitions in one patch", &maxSelfPart, 20);
    opts.range("maxSelfPart",POSITIVE);
    opts.optional("main", "maxPairPart", 
-     "maximum number of pair partitions in one patch", &maxPairPart, 20);
+     "maximum number of pair partitions in one patch", &maxPairPart, 8);
    opts.range("maxPairPart",POSITIVE);
    opts.optional("main", "numAtomsSelf", 
 		 "maximum number of atoms in one self compute distribution", 
-		 &numAtomsSelf, 125);
+		 &numAtomsSelf, 154);
    opts.range("numAtomsSelf",NOT_NEGATIVE);
 
    opts.optional("main", "numAtomsSelf2", 
@@ -1323,11 +1323,11 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    opts.optional("main", "numAtomsPair", 
 		 "maximum number of atoms in one pair compute distribution", 
-		 &numAtomsPair, 200);
+		 &numAtomsPair, 318);
    opts.range("numAtomsPair",NOT_NEGATIVE);
    opts.optional("main", "numAtomsPair2", 
                "maximum number of atoms in one pair compute distribution", 
-               &numAtomsPair2, 400);
+               &numAtomsPair2, 637);
    opts.range("numAtomsPair2",NOT_NEGATIVE);
    opts.optional("main", "minAtomsPerPatch", 
                "minimum average atoms per patch", 
