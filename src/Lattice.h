@@ -152,26 +152,13 @@ public:
   Vector delta(const Position &pos1, const Position &pos2) const
   {
     Vector diff = pos1 - pos2;
-    Vector result = diff;
-    if ( p1 ) {
-      BigReal fval = floor(0.5 + b1*diff); 
-      result.x -= a1.x *fval;    
-      result.y -= a1.y *fval;    
-      result.z -= a1.z *fval;    
-    }
-    if ( p2 ) {
-      BigReal fval = floor(0.5 + b2*diff);
-      result.x -= a2.x * fval;
-      result.y -= a2.y * fval;
-      result.z -= a2.z * fval;
-    }
-    if ( p3 ) {
-      BigReal fval = floor(0.5 + b3*diff);
-      result.x -= a3.x * fval;
-      result.y -= a3.y * fval;
-      result.z -= a3.z * fval;
-    }
-    return result;
+    BigReal f1 = p1 ? floor(0.5 + b1*diff) : 0.;
+    BigReal f2 = p2 ? floor(0.5 + b2*diff) : 0.;
+    BigReal f3 = p3 ? floor(0.5 + b3*diff) : 0.;
+    diff.x -= f1*a1.x + f2*a2.x + f3*a3.x;
+    diff.y -= f1*a1.y + f2*a2.y + f3*a3.y;
+    diff.z -= f1*a1.z + f2*a2.z + f3*a3.z;
+    return diff;
   }
 
   // calculates shortest vector from origin to p1 (equivalent to p1 - o)
