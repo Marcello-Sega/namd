@@ -367,25 +367,17 @@ void ComputeNonbondedUtil :: NAME
 #endif
     
 
-  SELF ( int64 pairCount = ( (i_upper-1) * (int64)j_upper ) / 2; )
-  PAIR ( int64 pairCount = i_upper * (int64)j_upper; )
-  int64 minPairCount = ( pairCount * params->minPart ) / params->numParts;
-  int64 maxPairCount = ( pairCount * params->maxPart ) / params->numParts;
-  pairCount = 0;
+  int numParts = params->numParts;
+  int myPart = params->minPart;
+  int groupCount = 0;
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
     const CompAtom &p_i = p_0[i];
 
     if ( p_i.hydrogenGroupSize ) {
-      int64 opc = pairCount;
-      if ( opc >= maxPairCount ) break;
-      int hgs = p_i.hydrogenGroupSize;
-      pairCount +=
-        SELF( hgs * ( i_upper - i ) - hgs * ( hgs + 1 ) / 2; )
-        PAIR( hgs * j_upper; )
-      if ( opc < minPairCount ) {
-        i += hgs - 1;
+      if ( groupCount++ % numParts != myPart ) {
+        i += p_i.hydrogenGroupSize - 1;
         continue;
       }
     }
