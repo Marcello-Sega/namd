@@ -34,7 +34,7 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
       if (c->load + p->load < overLoad*averageLoad) {
         processorInfo* &altp = goodP[nPatches][nProxies][badForComm];	
 
-#if CMK_VERSION_BLUEGENE
+#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
 	if(!altp)
 	  altp = p;
 	else {
@@ -262,6 +262,5 @@ void Alg7::strategy()
   multirefine(1.05);
   printLoads();
 
-  // CmiPrintf("Alg7 finish time: %f.\n", CmiWallTimer()-startTime);
 }
 
