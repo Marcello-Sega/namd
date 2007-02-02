@@ -69,8 +69,9 @@ public:
   ~Rebalancer();
 };
 
-#if CMK_VERSION_BLUEGENE
+#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
 #include "bgltorus.h"
+#endif
 #endif
 
 #endif
