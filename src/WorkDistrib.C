@@ -532,7 +532,7 @@ void WorkDistrib::patchMapInit(void)
 
 }
 
-#if CMK_VERSION_BLUEGENE
+#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
 #include "bgltorus.h"
 #endif
 
@@ -544,7 +544,7 @@ void WorkDistrib::assignNodeToPatch()
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
 
-#if CMK_VERSION_BLUEGENE
+#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
   BGLTorusManager *tmanager = BGLTorusManager::getObject();
   int nBGLNodes = tmanager->getXNodeSize() * tmanager->getYNodeSize() 
     * tmanager->getZNodeSize();
@@ -1466,7 +1466,7 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 }
 /*			END OF FUNCTION remove_com_motion		*/
 
-#if CMK_VERSION_BLUEGENE
+#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
 
 //Specifically designed for BGL and other 3d Tori architectures
 //Partition Torus and Patch grid together using recursive bisection.
