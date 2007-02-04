@@ -73,5 +73,3 @@ public:
 #include "bgltorus.h"
 #endif
 #endif
-
-#endif
