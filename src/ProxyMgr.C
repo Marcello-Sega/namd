@@ -478,7 +478,7 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
   }
 }
 
-#define MAX_INTERNODE 2
+#define MAX_INTERNODE 1 
 
 extern double *cpuloads;
 static int *procidx = NULL;
@@ -517,7 +517,7 @@ static void processCpuLoad()
 
 static int noInterNode(int p)
 {
-  for (int i=0; i<40; i++) if (procidx[i] == p) return 1;
+  for (int i=0; i<20; i++) if (procidx[i] == p) return 1;
 //  if (cpuloads[p] > averageLoad) return 1;
   return 0;
 }
@@ -654,8 +654,8 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   if (nChild == 0) return;
 
   nodecount ++;
-  if (nodecount > MAX_INTERNODE) 
-    iout << "Processor " << CkMyPe() << "has (actual) " << nodecount << " intermediate nodes." << endi;
+  //if (nodecount > MAX_INTERNODE) 
+  //  iout << "Processor " << CkMyPe() << "has (actual) " << nodecount << " intermediate nodes." << endi;
 
 //CkPrintf("[%d] %d:(%d) %d %d %d %d %d\n", CkMyPe(), msg->patch, size, msg->tree[0], msg->tree[1], msg->tree[2], msg->tree[3], msg->tree[4]);
   NodeIDList tree[PROXY_SPAN_DIM];
