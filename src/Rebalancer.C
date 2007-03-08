@@ -223,10 +223,10 @@ void Rebalancer::makeHeaps()
 
     int numBgComputes = numBgPairComputes + numBgSelfComputes;
 
-    if ( numBgComputes ) {
+    /*if ( numBgComputes ) {
         iout << iINFO << numBgComputes << " of " << numComputes
         << " computes have background load > " << bgLoadLimit << "\n" << endi;
-    }
+    }*/
 
     if ( numBgComputes < 0.3 * numComputes ) break;
     else bgLoadLimit += 0.1 * averageLoad;

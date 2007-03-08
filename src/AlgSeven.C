@@ -248,7 +248,7 @@ void Alg7::strategy()
        || (p = poorP[1][0][1])    // One home, no proxies
        || (p = poorP[0][0][1])    // No home, no proxies
        ) {
-      iout << iWARN << "overload assign to " << p->Id << "\n" << endi;
+      //iout << iWARN << "overload assign to " << p->Id << "\n" << endi;
       assign(c,p); numAssigned++;
     } else {
       NAMD_bug("*** Alg 7 No receiver found 1 ***");
