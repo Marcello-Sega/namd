@@ -372,6 +372,7 @@ public:
 	BigReal PMEGridSpacing;		//  Maximum spacing between points
 	int PMEProcessors;		//  No. of processors to use
 	Bool PMEBarrier;		//  Use barrier before sendTrans
+	int PMEPencils;			//  Size of pencil grid in each dim
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
 

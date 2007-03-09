@@ -20,11 +20,107 @@ module ComputePmeMgr {
     PmeReduction evir[];
   };
 
+  message PmePencilInitMsg;
+
+  array [3D] PmeZPencil {
+    entry PmeZPencil();
+    entry void recvGrid(PmeGridMsg *);
+    entry void recvUntrans(PmeUntransMsg *);
+    entry void dummyRecvGrid(int done = 0);
+    entry void init(PmePencilInitMsg *initmsg) {
+      atomic { base_init(initmsg); delete initmsg; fft_init(); }
+      // now count how many nodes send us data
+      atomic { imsg = 0; grid_msgs.resize(0); }
+      while ( ! imsg ) {
+        when dummyRecvGrid(int done) atomic {
+          if ( done ) imsg = 1;
+          else grid_msgs.add(0);  // increment size
+        }
+      }
+      atomic { CkPrintf("pencil %d %d receiving from %d nodes\n",
+               thisIndex.x, thisIndex.y, grid_msgs.size()); }
+      // ready to go
+      while ( 1 ) {
+        for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+          when recvGrid(PmeGridMsg *msg) atomic {
+            recv_grid(msg); grid_msgs[imsg] = msg;
+          }
+        }
+        atomic { forward_fft(); }
+        /* for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) */ atomic {
+          send_trans(imsg);
+        }
+        for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
+          when recvUntrans(PmeUntransMsg *msg) atomic {
+            recv_untrans(msg); delete msg;
+          }
+        }
+        atomic { backward_fft(); }
+        for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) atomic {
+          send_ungrid(grid_msgs[imsg]);
+        }
+      }
+    };
+  };
+
+  array [3D] PmeYPencil {
+    entry PmeYPencil();
+    entry void recvTrans(PmeTransMsg *);
+    entry void recvUntrans(PmeUntransMsg *);
+    entry void init(PmePencilInitMsg *initmsg) {
+      atomic { base_init(initmsg); delete initmsg; fft_init(); }
+      while ( 1 ) {
+        for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
+          when recvTrans(PmeTransMsg *msg) atomic {
+            recv_trans(msg); delete msg;
+          }
+        }
+        atomic { forward_fft(); }
+        /* for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) */ atomic {
+          send_trans(imsg);
+        }
+        for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
+          when recvUntrans(PmeUntransMsg *msg) atomic {
+            recv_untrans(msg); delete msg;
+          }
+        }
+        atomic { backward_fft(); }
+        /* for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) */ atomic {
+          send_untrans(imsg);
+        }
+      }
+    };
+  };
+
+  array [3D] PmeXPencil {
+    entry PmeXPencil();
+    entry void recvTrans(PmeTransMsg *);
+    entry void init(PmePencilInitMsg *initmsg) {
+      atomic { base_init(initmsg); delete initmsg; fft_init(); }
+      while ( 1 ) {
+        for ( imsg=0; imsg < initdata.xBlocks; ++imsg ) {
+          when recvTrans(PmeTransMsg *msg) atomic {
+            recv_trans(msg); delete msg;
+          }
+        }
+        atomic { forward_fft(); }
+        atomic { pme_kspace(); }
+        atomic { backward_fft(); }
+        /* for ( imsg=0; imsg < initdata.xBlocks; ++imsg ) */ atomic {
+          send_untrans(imsg);
+        }
+      }
+    };
+  };
+
+
   group ComputePmeMgr {
 
     entry ComputePmeMgr(void);
 
     entry void initialize(CkQdMsg *);
+    entry void initialize_pencils(CkQdMsg *);
+    entry void activate_pencils(CkQdMsg *);
     entry void sendGrid(void);
     entry void recvGrid(PmeGridMsg *);
     entry void gridCalc1(void);
@@ -39,6 +135,9 @@ module ComputePmeMgr {
     entry void recvUngrid(PmeGridMsg *);
     entry void ungridCalc(void);
 
+    entry void recvArrays(
+		CProxy_PmeXPencil, CProxy_PmeYPencil, CProxy_PmeZPencil);
   };
+
 }
 

@@ -84,6 +84,24 @@ public:
 
 };
 
+
+// use this idiom since messages don't have copy constructors
+struct PmePencilInitMsgData {
+  PmeGrid grid;
+  int xBlocks, yBlocks, zBlocks;
+  CProxy_PmeXPencil xPencil;
+  CProxy_PmeYPencil yPencil;
+  CProxy_PmeZPencil zPencil;
+  CProxy_ComputePmeMgr pmeProxy;
+};
+
+class PmePencilInitMsg : public CMessage_PmePencilInitMsg {
+public:
+   PmePencilInitMsg(PmePencilInitMsgData &d) { data = d; }
+   PmePencilInitMsgData data;
+};
+
+
 struct LocalPmeInfo {
   int nx, x_start;
   int ny_after_transpose, y_start_after_transpose;
@@ -191,6 +209,9 @@ public:
   ~ComputePmeMgr();
 
   void initialize(CkQdMsg*);
+  void initialize_pencils(CkQdMsg*);
+  void activate_pencils(CkQdMsg*);
+  void recvArrays(CProxy_PmeXPencil, CProxy_PmeYPencil, CProxy_PmeZPencil);
 
   void sendGrid(void);
   void recvGrid(PmeGridMsg *);
@@ -211,6 +232,10 @@ public:
   //Tells if the current processor is a PME processor or not. Called by NamdCentralLB
   int isPmeProcessor(int p);  
 
+#ifdef NAMD_FFTW
+  static CmiNodeLock fftw_plan_lock;
+#endif
+
 private:
   CProxy_ComputePmeMgr pmeProxy;
   CProxy_ComputePmeMgr pmeProxyDir;
@@ -222,7 +247,6 @@ private:
   float *kgrid;
 
 #ifdef NAMD_FFTW
-  static CmiNodeLock fftw_plan_lock;
   fftw_plan forward_plan_x, backward_plan_x;
   rfftwnd_plan forward_plan_yz, backward_plan_yz;
   fftw_complex *work;
@@ -261,6 +285,14 @@ private:
 
   int useBarrier;
   int sendTransBarrier_received;
+
+  int usePencils;
+  int xBlocks, yBlocks, zBlocks;
+  CProxy_PmeXPencil xPencil;
+  CProxy_PmeYPencil yPencil;
+  CProxy_PmeZPencil zPencil;
+  char *pencilActive;
+  int numPencilsActive;
 };
 
 #ifdef NAMD_FFTW
@@ -272,7 +304,7 @@ int isPmeProcessor(int p){
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
-  return isPmeFlag[p];
+  return ( usePencils ? 0 : isPmeFlag[p] );
 }
 
 #if CMK_VERSION_BLUEGENE
@@ -311,7 +343,15 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
   gridmsg_reuse= new PmeGridMsg*[CkNumPes()];
   useBarrier = 0;
   sendTransBarrier_received = 0;
+  usePencils = 0;
 }
+
+
+void ComputePmeMgr::recvArrays(
+	CProxy_PmeXPencil x, CProxy_PmeYPencil y, CProxy_PmeZPencil z) {
+  xPencil = x;  yPencil = y;  zPencil = z;
+}
+
 
 void ComputePmeMgr::initialize(CkQdMsg *msg) {
   delete msg;
@@ -333,6 +373,30 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( selfOn ) pairOn = 0;  // make pairOn and selfOn exclusive
     numGrids = selfOn ? 1 : 3;
   }
+
+  if ( numGrids == 1 && simParams->PMEPencils != 0 ) usePencils = 1;
+
+  if ( usePencils ) {
+    xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
+
+    int dimx = simParams->PMEGridSizeX;
+    int bx = 1 + ( dimx - 1 ) / xBlocks;
+    xBlocks = 1 + ( dimx - 1 ) / bx;
+
+    int dimy = simParams->PMEGridSizeY;
+    int by = 1 + ( dimy - 1 ) / yBlocks;
+    yBlocks = 1 + ( dimy - 1 ) / by;
+
+    int dimz = simParams->PMEGridSizeZ / 2 + 1;  // complex
+    int bz = 1 + ( dimz - 1 ) / zBlocks;
+    zBlocks = 1 + ( dimz - 1 ) / bz;
+
+    if ( ! CkMyPe() ) {
+      iout << iINFO << "PME using " << xBlocks << " x " <<
+        yBlocks << " x " << zBlocks <<
+        " pencil grid for FFT and reciprocal sum.\n" << endi;
+    }
+  } else { // usePencils
 
   {  // decide how many pes to use for reciprocal sum
 
@@ -464,14 +528,47 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     iout << "\n" << endi;
   }
 
+  } // ! usePencils
+
   myGrid.K1 = simParams->PMEGridSizeX;
   myGrid.K2 = simParams->PMEGridSizeY;
   myGrid.K3 = simParams->PMEGridSizeZ;
   myGrid.order = simParams->PMEInterpOrder;
   myGrid.dim2 = myGrid.K2;
   myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
-  myGrid.block1 = ( myGrid.K1 + numGridPes - 1 ) / numGridPes;
-  myGrid.block2 = ( myGrid.K2 + numTransPes - 1 ) / numTransPes;
+
+  if ( ! usePencils ) {
+    myGrid.block1 = ( myGrid.K1 + numGridPes - 1 ) / numGridPes;
+    myGrid.block2 = ( myGrid.K2 + numTransPes - 1 ) / numTransPes;
+    myGrid.block3 = myGrid.dim3 / 2;  // complex
+  }
+
+  if ( usePencils ) {
+    myGrid.block1 = ( myGrid.K1 + xBlocks - 1 ) / xBlocks;
+    myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
+    myGrid.block3 = ( myGrid.K3/2 + 1 + zBlocks - 1 ) / zBlocks;  // complex
+
+    if ( CkMyPe() == 0 ) {
+      zPencil = CProxy_PmeZPencil::ckNew(xBlocks,yBlocks,1);
+      yPencil = CProxy_PmeYPencil::ckNew(xBlocks,1,zBlocks);
+      xPencil = CProxy_PmeXPencil::ckNew(1,yBlocks,zBlocks);
+      pmeProxy.recvArrays(xPencil,yPencil,zPencil);
+      PmePencilInitMsgData msgdata;
+      msgdata.grid = myGrid;
+      msgdata.xBlocks = xBlocks;
+      msgdata.yBlocks = yBlocks;
+      msgdata.zBlocks = zBlocks;
+      msgdata.xPencil = xPencil;
+      msgdata.yPencil = yPencil;
+      msgdata.zPencil = zPencil;
+      msgdata.pmeProxy = pmeProxyDir;
+      xPencil.init(new PmePencilInitMsg(msgdata));
+      yPencil.init(new PmePencilInitMsg(msgdata));
+      zPencil.init(new PmePencilInitMsg(msgdata));
+    }
+    return;  // continue in initialize_pencils() at next startup stage
+  }
+
 
   int pe;
   int nx = 0;
@@ -570,7 +667,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( myTransPe >= 0 ) {
       int k2_start = localInfo[myTransPe].y_start_after_transpose;
       int k2_end = k2_start + localInfo[myTransPe].ny_after_transpose;
-      myKSpace = new PmeKSpace(myGrid, k2_start, k2_end);
+      myKSpace = new PmeKSpace(myGrid, k2_start, k2_end, 0, myGrid.dim3/2);
   }
 
   int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
@@ -637,6 +734,82 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
   trans_count = numGridPes;
 }
+
+
+void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
+  delete msg;
+  if ( ! usePencils ) return;
+
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  PatchMap *patchMap = PatchMap::Object();
+  Lattice lattice = simParams->lattice;
+  BigReal sysdima = lattice.a_r().unit() * lattice.a();
+  BigReal sysdimb = lattice.b_r().unit() * lattice.b();
+  BigReal cutoff = simParams->cutoff;
+  BigReal patchdim = simParams->patchDimension;
+  int numPatches = patchMap->numPatches();
+
+  pencilActive = new char[xBlocks*yBlocks];
+  for ( int i=0; i<xBlocks; ++i ) {
+    for ( int j=0; j<yBlocks; ++j ) {
+      pencilActive[i*yBlocks+j] = 0;
+    }
+  }
+
+  for ( int pid=0; pid < numPatches; ++pid ) {
+    int pnode = patchMap->node(pid);
+    if ( pnode != CkMyPe() ) continue;
+
+    BigReal minx = patchMap->min_a(pid);
+    BigReal maxx = patchMap->max_a(pid);
+    BigReal margina = 0.5 * ( patchdim - cutoff ) / sysdima;
+    // min1 (max1) is smallest (largest) grid line for this patch
+    int min1 = ((int) floor(myGrid.K1 * (minx - margina))) - myGrid.order + 1;
+    int max1 = ((int) floor(myGrid.K1 * (maxx + margina)));
+
+    BigReal miny = patchMap->min_b(pid);
+    BigReal maxy = patchMap->max_b(pid);
+    BigReal marginb = 0.5 * ( patchdim - cutoff ) / sysdimb;
+    // min2 (max2) is smallest (largest) grid line for this patch
+    int min2 = ((int) floor(myGrid.K2 * (miny - marginb))) - myGrid.order + 1;
+    int max2 = ((int) floor(myGrid.K2 * (maxy + marginb)));
+
+    for ( int i=min1; i<=max1; ++i ) {
+      int ix = i;
+      while ( ix >= myGrid.K1 ) ix -= myGrid.K1;
+      while ( ix < 0 ) ix += myGrid.K1;
+      for ( int j=min2; j<=max2; ++j ) {
+        int jy = j;
+        while ( jy >= myGrid.K2 ) jy -= myGrid.K2;
+        while ( jy < 0 ) jy += myGrid.K2;
+        pencilActive[(ix / myGrid.block1)*yBlocks + (jy / myGrid.block2)] = 1;
+      }
+    }
+  }
+
+  numPencilsActive = 0;
+  for ( int i=0; i<xBlocks; ++i ) {
+    for ( int j=0; j<yBlocks; ++j ) {
+      if ( pencilActive[i*yBlocks+j] ) {
+        ++numPencilsActive;
+        zPencil(i,j,0).dummyRecvGrid(0);
+      }
+    }
+  }
+  if ( numPencilsActive ) {
+    CkPrintf("node %d sending to %d pencils\n", CkMyPe(), numPencilsActive);
+  }
+
+  ungrid_count = numPencilsActive;
+}
+
+
+void ComputePmeMgr::activate_pencils(CkQdMsg *msg) {
+  if ( ! usePencils ) return;
+  if ( CkMyPe() == 0 ) zPencil.dummyRecvGrid(1);
+}
+
 
 ComputePmeMgr::~ComputePmeMgr() {
 
@@ -1000,7 +1173,8 @@ void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
     NAMD_bug("Message order failure in ComputePmeMgr::recvUngrid\n");
   }
 
-  pmeCompute->copyResults(msg);
+  if ( usePencils ) pmeCompute->copyPencils(msg);
+  else pmeCompute->copyResults(msg);
   delete msg;
   --ungrid_count;
 
@@ -1018,7 +1192,7 @@ void ComputePmeMgr::ungridCalc(void) {
 
   pmeCompute->ungridForces();
 
-  ungrid_count = numDestRecipPes;
+  ungrid_count = (usePencils ? numPencilsActive : numDestRecipPes );
 }
 
 
@@ -1299,6 +1473,9 @@ void ComputePme::doWork()
     myRealSpace[g]->fill_charges(q, f, fz_arr, localGridData[g]);
   }
 
+  if ( myMgr->usePencils ) {
+    sendPencils();
+  } else {
 #if 0
   CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
 #if CHARM_VERSION > 050402
@@ -1310,7 +1487,167 @@ void ComputePme::doWork()
   sendData(myMgr->numGridPes,myMgr->gridPeOrder,
 		myMgr->recipPeDest,myMgr->gridPeMap);
 #endif
+  }
 }
+
+
+void ComputePme::sendPencils() {
+
+  // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
+
+  int xBlocks = myMgr->xBlocks;
+  int yBlocks = myMgr->yBlocks;
+  int zBlocks = myMgr->zBlocks;
+  myGrid.block1 = ( myGrid.K1 + xBlocks - 1 ) / xBlocks;
+  myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
+  int K1 = myGrid.K1;
+  int K2 = myGrid.K2;
+  int dim2 = myGrid.dim2;
+  int dim3 = myGrid.dim3;
+  int block1 = myGrid.block1;
+  int block2 = myGrid.block2;
+
+  Lattice lattice = patchList[0].p->flags.lattice;
+
+  resultsRemaining = myMgr->numPencilsActive;
+  const char *pencilActive = myMgr->pencilActive;
+
+  strayChargeErrors = 0;
+
+  for (int ib=0; ib<xBlocks; ++ib) {
+   for (int jb=0; jb<yBlocks; ++jb) {
+    int ibegin = ib*block1;
+    int iend = ibegin + block1;  if ( iend > K1 ) iend = K1;
+    int jbegin = jb*block2;
+    int jend = jbegin + block2;  if ( jend > K2 ) jend = K2;
+    int flen = numGrids * (iend - ibegin) * (jend - jbegin);
+    int fcount = 0;
+
+    for ( int g=0; g<numGrids; ++g ) {
+      char *f = f_arr + g*fsize;
+      int fcount_g = 0;
+      for ( int i=ibegin; i<iend; ++i ) {
+       for ( int j=jbegin; j<jend; ++j ) {
+        fcount_g += ( f[i*dim2+j] ? 1 : 0 );
+       }
+      }
+      fcount += fcount_g;
+      if ( ! pencilActive[ib*yBlocks+jb] ) {
+        if ( fcount_g ) {
+          ++strayChargeErrors;
+          iout << iERROR << "Stray PME grid charges detected: "
+		<< CkMyPe() << " sending to (x,y)";
+          for ( int i=ibegin; i<iend; ++i ) {
+           for ( int j=jbegin; j<jend; ++j ) {
+            if ( f[i*dim2+j] ) { iout << " (" << i << "," << j << ")"; }
+           }
+          }
+          iout << "\n" << endi;
+        }
+      }
+    }
+
+#ifdef NETWORK_PROGRESS
+    CmiNetworkProgress();
+#endif
+
+    if ( ! pencilActive[ib*yBlocks+jb] ) continue;
+
+    int zlistlen = 0;
+    for ( int i=0; i<myGrid.K3; ++i ) {
+      if ( fz_arr[i] ) ++zlistlen;
+    }
+
+    PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen,
+	numGrids, 0) PmeGridMsg;
+    msg->sourceNode = CkMyPe();
+    msg->lattice = lattice;
+#if 0
+    msg->start = fstart;
+    msg->len = flen;
+#else
+    msg->start = -1;   // obsolete?
+    msg->len = -1;   // obsolete?
+#endif
+    msg->zlistlen = zlistlen;
+    int *zlist = msg->zlist;
+    zlistlen = 0;
+    for ( int i=0; i<myGrid.K3; ++i ) {
+      if ( fz_arr[i] ) zlist[zlistlen++] = i;
+    }
+    char *fmsg = msg->fgrid;
+    float *qmsg = msg->qgrid;
+    for ( int g=0; g<numGrids; ++g ) {
+      char *f = f_arr + g*fsize;
+      double **q = q_arr + g*fsize;
+      for ( int i=ibegin; i<iend; ++i ) {
+       for ( int j=jbegin; j<jend; ++j ) {
+        *(fmsg++) = f[i*dim2+j];
+        if( f[i*dim2+j] ) {
+          for ( int k=0; k<zlistlen; ++k ) {
+            *(qmsg++) = q[i*dim2+j][zlist[k]];
+          }
+        }
+       }
+      }
+    }
+
+    myMgr->zPencil(ib,jb,0).recvGrid(msg);
+   }
+  }
+
+  for (int i=0; i<fsize; ++i) {
+    if ( q_arr[i] ) {
+      memset( (void*) (q_arr[i]), -1, myGrid.dim3 * sizeof(double) );
+    }
+  }
+
+}
+
+
+void ComputePme::copyPencils(PmeGridMsg *msg) {
+
+  int xBlocks = myMgr->xBlocks;
+  int yBlocks = myMgr->yBlocks;
+  int zBlocks = myMgr->zBlocks;
+  myGrid.block1 = ( myGrid.K1 + xBlocks - 1 ) / xBlocks;
+  myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
+  int K1 = myGrid.K1;
+  int K2 = myGrid.K2;
+  int dim2 = myGrid.dim2;
+  int dim3 = myGrid.dim3;
+  int block1 = myGrid.block1;
+  int block2 = myGrid.block2;
+
+  // msg->sourceNode = thisIndex.x * initdata.yBlocks + thisIndex.y;
+  int ib = msg->sourceNode / yBlocks;
+  int jb = msg->sourceNode % yBlocks;
+
+  int ibegin = ib*block1;
+  int iend = ibegin + block1;  if ( iend > K1 ) iend = K1;
+  int jbegin = jb*block2;
+  int jend = jbegin + block2;  if ( jend > K2 ) jend = K2;
+
+  int zlistlen = msg->zlistlen;
+  int *zlist = msg->zlist;
+  float *qmsg = msg->qgrid;
+  int g;
+  for ( g=0; g<numGrids; ++g ) {
+    evir[g] += msg->evir[g];
+    char *f = f_arr + g*fsize;
+    double **q = q_arr + g*fsize;
+    for ( int i=ibegin; i<iend; ++i ) {
+     for ( int j=jbegin; j<jend; ++j ) {
+      if( f[i*dim2+j] ) {
+        for ( int k=0; k<zlistlen; ++k ) {
+          q[i*dim2+j][zlist[k]] = *(qmsg++);
+        }
+      }
+     }
+    }
+  }
+}
+
 
 void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
 				int *recipPeDest, int *gridPeMap) {
@@ -1757,6 +2094,573 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
 }
 
 #endif
+
+template <class T> class PmePencil : public T {
+public:
+  PmePencil() {
+    data = 0;
+    work = 0;
+  }
+  ~PmePencil() {
+    delete [] data;
+    delete [] work;
+  }
+  void base_init(PmePencilInitMsg *msg) {
+    initdata = msg->data;
+    CkPrintf("init %d %d %d on %d\n", thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+  }
+  PmePencilInitMsgData initdata;
+  Lattice lattice;
+  PmeReduction evir;
+  int imsg;  // used in sdag code
+  float *data;
+  float *work;
+};
+
+class PmeZPencil : public PmePencil<CBase_PmeZPencil> {
+public:
+    PmeZPencil_SDAG_CODE;
+    PmeZPencil() { __sdag_init(); }
+    PmeZPencil(CkMigrateMessage *) { __sdag_init(); }
+    void fft_init();
+    void recv_grid(const PmeGridMsg *);
+    void forward_fft();
+    void send_trans(int dest);
+    void recv_untrans(const PmeUntransMsg *);
+    void backward_fft();
+    void send_ungrid(PmeGridMsg *);
+private:
+    ResizeArray<PmeGridMsg *> grid_msgs;
+#ifdef NAMD_FFTW
+    rfftwnd_plan forward_plan, backward_plan;
+#endif
+    int nx, ny;
+};
+
+class PmeYPencil : public PmePencil<CBase_PmeYPencil> {
+public:
+    PmeYPencil_SDAG_CODE;
+    PmeYPencil() { __sdag_init(); }
+    PmeYPencil(CkMigrateMessage *) { __sdag_init(); }
+    void fft_init();
+    void recv_trans(const PmeTransMsg *);
+    void forward_fft();
+    void send_trans(int dest);
+    void recv_untrans(const PmeUntransMsg *);
+    void backward_fft();
+    void send_untrans(int dest);
+private:
+#ifdef NAMD_FFTW
+    fftw_plan forward_plan, backward_plan;
+#endif
+    int nx, nz;
+};
+
+class PmeXPencil : public PmePencil<CBase_PmeXPencil> {
+public:
+    PmeXPencil_SDAG_CODE;
+    PmeXPencil() { __sdag_init();  myKSpace = 0; }
+    PmeXPencil(CkMigrateMessage *) { __sdag_init(); }
+    void fft_init();
+    void recv_trans(const PmeTransMsg *);
+    void forward_fft();
+    void pme_kspace();
+    void backward_fft();
+    void send_untrans(int dest);
+#ifdef NAMD_FFTW
+    fftw_plan forward_plan, backward_plan;
+#endif
+    int ny, nz;
+    PmeKSpace *myKSpace;
+};
+
+void PmeZPencil::fft_init() {
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  SimParameters *simParams = node->simParameters;
+
+  int K1 = initdata.grid.K1;
+  int K2 = initdata.grid.K2;
+  int K3 = initdata.grid.K3;
+  int dim3 = initdata.grid.dim3;
+  int block1 = initdata.grid.block1;
+  int block2 = initdata.grid.block2;
+
+  nx = block1;
+  if ( (thisIndex.x + 1) * block1 > K1 ) nx = K1 - thisIndex.x * block1;
+  ny = block2;
+  if ( (thisIndex.y + 1) * block2 > K2 ) ny = K2 - thisIndex.y * block2;
+
+  data = new float[nx*ny*dim3];
+  work = new float[dim3];
+
+#ifdef NAMD_FFTW
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+
+  forward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_REAL_TO_COMPLEX,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, data, 1, work, 1);
+  backward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_COMPLEX_TO_REAL,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, data, 1, work, 1);
+
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
+#else
+  NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+#endif
+}
+
+void PmeYPencil::fft_init() {
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  SimParameters *simParams = node->simParameters;
+
+  int K1 = initdata.grid.K1;
+  int K2 = initdata.grid.K2;
+  int dim2 = initdata.grid.dim2;
+  int dim3 = initdata.grid.dim3;
+  int block1 = initdata.grid.block1;
+  int block3 = initdata.grid.block3;
+
+  nx = block1;
+  if ( (thisIndex.x + 1) * block1 > K1 ) nx = K1 - thisIndex.x * block1;
+  nz = block3;
+  if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
+
+  data = new float[nx*dim2*nz*2];
+  work = new float[2*K2];
+
+#ifdef NAMD_FFTW
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+
+  forward_plan = fftw_create_plan_specific(K2, FFTW_FORWARD,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+	nz, (fftw_complex *) work, 1);
+  backward_plan = fftw_create_plan_specific(K2, FFTW_BACKWARD,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+	nz, (fftw_complex *) work, 1);
+
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
+#else
+  NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+#endif
+}
+
+void PmeXPencil::fft_init() {
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  SimParameters *simParams = node->simParameters;
+
+  int K1 = initdata.grid.K1;
+  int K2 = initdata.grid.K2;
+  int dim3 = initdata.grid.dim3;
+  int block2 = initdata.grid.block2;
+  int block3 = initdata.grid.block3;
+
+  ny = block2;
+  if ( (thisIndex.y + 1) * block2 > K2 ) ny = K2 - thisIndex.y * block2;
+  nz = block3;
+  if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
+
+  data = new float[K1*block2*block3*2];
+  work = new float[2*K1];
+
+#ifdef NAMD_FFTW
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+
+  forward_plan = fftw_create_plan_specific(K1, FFTW_FORWARD,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+	ny*nz, (fftw_complex *) work, 1);
+  backward_plan = fftw_create_plan_specific(K1, FFTW_BACKWARD,
+	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
+	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
+	ny*nz, (fftw_complex *) work, 1);
+
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
+#else
+  NAMD_die("Sorry, FFTW must be compiled in to use PME.");
+#endif
+
+  myKSpace = new PmeKSpace(initdata.grid,
+		thisIndex.y*block2, thisIndex.y*block2 + ny,
+		thisIndex.z*block3, thisIndex.z*block3 + nz);
+}
+
+// #define FFTCHECK   // run a grid of integers through the fft
+// #define ZEROCHECK  // check for suspicious zeros in fft
+
+void PmeZPencil::recv_grid(const PmeGridMsg *msg) {
+
+  int dim3 = initdata.grid.dim3;
+  if ( imsg == 0 ) {
+    lattice = msg->lattice;
+    memset(data, 0, sizeof(float) * nx*ny*dim3);
+  }
+
+  int zlistlen = msg->zlistlen;
+  int *zlist = msg->zlist;
+  char *fmsg = msg->fgrid;
+  float *qmsg = msg->qgrid;
+  float *d = data;
+  int numGrids = 1;  // pencil FFT doesn't support multiple grids
+  for ( int g=0; g<numGrids; ++g ) {
+    for ( int i=0; i<nx; ++i ) {
+     for ( int j=0; j<ny; ++j, d += dim3 ) {
+      if( *(fmsg++) ) {
+        for ( int k=0; k<zlistlen; ++k ) {
+          d[zlist[k]] += *(qmsg++);
+        }
+      }
+     }
+    }
+  }
+}
+
+void PmeZPencil::forward_fft() {
+#ifdef FFTCHECK
+  int dim3 = initdata.grid.dim3;
+  int K3 = initdata.grid.K3;
+  float std_base = 100. * (thisIndex.x+1.) + 10. * (thisIndex.y+1.);
+  float *d = data;
+  for ( int i=0; i<nx; ++i ) {
+   for ( int j=0; j<ny; ++j, d += dim3 ) {
+    for ( int k=0; k<dim3; ++k ) {
+      d[k] = 10. * (10. * (10. * std_base + i) + j) + k;
+    }
+   }
+  }
+#endif
+#ifdef NAMD_FFTW
+  rfftwnd_real_to_complex(forward_plan, nx*ny,
+	data, 1, initdata.grid.dim3, (fftw_complex *) work, 1, 0);
+#endif
+#ifdef ZEROCHECK
+  int dim3 = initdata.grid.dim3;
+  int K3 = initdata.grid.K3;
+  float *d = data;
+  for ( int i=0; i<nx; ++i ) {
+   for ( int j=0; j<ny; ++j, d += dim3 ) {
+    for ( int k=0; k<dim3; ++k ) {
+      if ( d[k] == 0. ) CkPrintf("0 in Z at %d %d %d %d %d %d %d %d %d\n",
+	thisIndex.x, thisIndex.y, i, j, k, nx, ny, dim3);
+    }
+   }
+  }
+#endif
+}
+
+void PmeZPencil::send_trans(int dest) {
+  int zBlocks = initdata.zBlocks;
+  int block3 = initdata.grid.block3;
+  int dim3 = initdata.grid.dim3;
+  for ( int kb=0; kb<zBlocks; ++kb ) {
+    int nz = block3;
+    if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
+    PmeTransMsg *msg = new (nx*ny*nz*2,0) PmeTransMsg;
+    msg->lattice = lattice;
+    msg->sourceNode = thisIndex.y;
+    msg->nx = ny;
+    float *md = msg->qgrid;
+    const float *d = data;
+    for ( int i=0; i<nx; ++i ) {
+     for ( int j=0; j<ny; ++j, d += dim3 ) {
+      for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+        *(md++) = d[2*k];
+        *(md++) = d[2*k+1];
+      }
+     }
+    }
+    initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
+  }
+}
+
+void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
+  if ( imsg == 0 ) { lattice = msg->lattice; }
+  int block2 = initdata.grid.block2;
+  int K2 = initdata.grid.K2;
+  int jb = msg->sourceNode;
+  int ny = msg->nx;
+  const float *md = msg->qgrid;
+  float *d = data;
+  for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+   for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+    for ( int k=0; k<nz; ++k ) {
+#ifdef ZEROCHECK
+      if ( (*md) == 0. ) CkPrintf("0 in ZY at %d %d %d %d %d %d %d %d %d\n",
+	thisIndex.x, jb, thisIndex.z, i, j, k, nx, ny, nz);
+#endif
+      d[2*(j*nz+k)] = *(md++);
+      d[2*(j*nz+k)+1] = *(md++);
+    }
+   }
+  }
+}
+
+void PmeYPencil::forward_fft() {
+#ifdef NAMD_FFTW
+  for ( int i=0; i<nx; ++i ) {
+    fftw(forward_plan, nz,
+	((fftw_complex *) data) + i * nz * initdata.grid.K2,
+	nz, 1, (fftw_complex *) work, 1, 0);
+  }
+#endif
+}
+
+void PmeYPencil::send_trans(int dest) {
+  int yBlocks = initdata.yBlocks;
+  int block2 = initdata.grid.block2;
+  int K2 = initdata.grid.K2;
+  for ( int jb=0; jb<yBlocks; ++jb ) {
+    int ny = block2;
+    if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+    PmeTransMsg *msg = new (nx*ny*nz*2,0) PmeTransMsg;
+    msg->lattice = lattice;
+    msg->sourceNode = thisIndex.x;
+    msg->nx = nx;
+    float *md = msg->qgrid;
+    const float *d = data;
+    for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+     for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+      for ( int k=0; k<nz; ++k ) {
+        *(md++) = d[2*(j*nz+k)];
+        *(md++) = d[2*(j*nz+k)+1];
+#ifdef ZEROCHECK
+        if ( *(md-2) == 0. ) CkPrintf("send 0 in YX at %d %d %d %d %d %d %d %d %d\n",
+	thisIndex.x, jb, thisIndex.z, i, j, k, nx, ny, nz);
+#endif
+      }
+     }
+    }
+    if ( md != msg->qgrid + nx*ny*nz*2 ) CkPrintf("error in YX at %d %d %d\n",
+	thisIndex.x, jb, thisIndex.z);
+    initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
+  }
+}
+
+void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
+  if ( imsg == 0 ) { lattice = msg->lattice; }
+  int block1 = initdata.grid.block1;
+  int K1 = initdata.grid.K1;
+  int ib = msg->sourceNode;
+  int nx = msg->nx;
+  const float *md = msg->qgrid;
+  for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+   float *d = data + i*ny*nz*2;
+   for ( int j=0; j<ny; ++j, d += nz*2 ) {
+    for ( int k=0; k<nz; ++k ) {
+#ifdef ZEROCHECK
+      if ( (*md) == 0. ) CkPrintf("0 in YX at %d %d %d %d %d %d %d %d %d\n",
+	ib, thisIndex.y, thisIndex.z, i, j, k, nx, ny, nz);
+#endif
+      d[2*k] = *(md++);
+      d[2*k+1] = *(md++);
+    }
+   }
+  }
+}
+
+void PmeXPencil::forward_fft() {
+#ifdef NAMD_FFTW
+  fftw(forward_plan, ny*nz,
+	((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+#endif
+}
+
+void PmeXPencil::pme_kspace() {
+
+  evir = 0.;
+
+#ifdef FFTCHECK
+  return;
+#endif
+
+  BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
+
+  int numGrids = 1;
+  for ( int g=0; g<numGrids; ++g ) {
+    evir[0] = myKSpace->compute_energy(data+0*g,
+		lattice, ewaldcof, &(evir[1]));
+  }
+
+}
+
+void PmeXPencil::backward_fft() {
+#ifdef NAMD_FFTW
+  fftw(backward_plan, ny*nz,
+	((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+#endif
+}
+
+void PmeXPencil::send_untrans(int dest) {
+  int xBlocks = initdata.xBlocks;
+  int block1 = initdata.grid.block1;
+  int K1 = initdata.grid.K1;
+  for ( int ib=0; ib<xBlocks; ++ib ) {
+    int nx = block1;
+    if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,(ib==0?1:0),0) PmeUntransMsg;
+    if ( ib == 0 ) msg->evir[0] = evir;
+    msg->sourceNode = thisIndex.y;
+    msg->ny = ny;
+    float *md = msg->qgrid;
+    for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+     float *d = data + i*ny*nz*2;
+     for ( int j=0; j<ny; ++j, d += nz*2 ) {
+      for ( int k=0; k<nz; ++k ) {
+        *(md++) = d[2*k];
+        *(md++) = d[2*k+1];
+      }
+     }
+    }
+    initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
+  }
+}
+
+void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
+  if ( imsg == 0 ) evir = 0.;
+  if ( thisIndex.x == 0 ) evir += msg->evir[0];
+  int block2 = initdata.grid.block2;
+  int K2 = initdata.grid.K2;
+  int jb = msg->sourceNode;
+  int ny = msg->ny;
+  const float *md = msg->qgrid;
+  float *d = data;
+  for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+   for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+    for ( int k=0; k<nz; ++k ) {
+#ifdef ZEROCHECK
+      if ( (*md) == 0. ) CkPrintf("0 in XY at %d %d %d %d %d %d %d %d %d\n",
+	thisIndex.x, jb, thisIndex.z, i, j, k, nx, ny, nz);
+#endif
+      d[2*(j*nz+k)] = *(md++);
+      d[2*(j*nz+k)+1] = *(md++);
+    }
+   }
+  }
+}
+
+void PmeYPencil::backward_fft() {
+#ifdef NAMD_FFTW
+  for ( int i=0; i<nx; ++i ) {
+    fftw(backward_plan, nz,
+	((fftw_complex *) data) + i * nz * initdata.grid.K2,
+	nz, 1, (fftw_complex *) work, 1, 0);
+  }
+#endif
+}
+
+void PmeYPencil::send_untrans(int dest) {
+  int yBlocks = initdata.yBlocks;
+  int block2 = initdata.grid.block2;
+  int K2 = initdata.grid.K2;
+  for ( int jb=0; jb<yBlocks; ++jb ) {
+    int ny = block2;
+    if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,(jb==0?1:0),0) PmeUntransMsg;
+    if ( jb == 0 ) msg->evir[0] = evir;
+    msg->sourceNode = thisIndex.z;
+    msg->ny = nz;
+    float *md = msg->qgrid;
+    const float *d = data;
+    for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+     for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+      for ( int k=0; k<nz; ++k ) {
+        *(md++) = d[2*(j*nz+k)];
+        *(md++) = d[2*(j*nz+k)+1];
+      }
+     }
+    }
+    initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
+  }
+}
+
+void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
+  if ( imsg == 0 ) evir = 0.;
+  if ( thisIndex.y == 0 ) evir += msg->evir[0];
+  int block3 = initdata.grid.block3;
+  int dim3 = initdata.grid.dim3;
+  int kb = msg->sourceNode;
+  int nz = msg->ny;
+  const float *md = msg->qgrid;
+  float *d = data;
+  for ( int i=0; i<nx; ++i ) {
+   for ( int j=0; j<ny; ++j, d += dim3 ) {
+    for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+#ifdef ZEROCHECK
+      if ( (*md) == 0. ) CkPrintf("0 in YZ at %d %d %d %d %d %d %d %d %d\n",
+	thisIndex.x, thisIndex.y, kb, i, j, k, nx, ny, nz);
+#endif
+      d[2*k] = *(md++);
+      d[2*k+1] = *(md++);
+    }
+   }
+  }
+}
+
+void PmeZPencil::backward_fft() {
+#ifdef NAMD_FFTW
+  rfftwnd_complex_to_real(backward_plan, nx*ny,
+	(fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
+#endif
+#ifdef FFTCHECK
+  int dim3 = initdata.grid.dim3;
+  int K1 = initdata.grid.K1;
+  int K2 = initdata.grid.K2;
+  int K3 = initdata.grid.K3;
+  float scale = 1. / (1. * K1 * K2 * K3);
+  float maxerr = 0.;
+  float maxstd = 0.;
+  int mi, mj, mk;  mi = mj = mk = -1;
+  float std_base = 100. * (thisIndex.x+1.) + 10. * (thisIndex.y+1.);
+  const float *d = data;
+  for ( int i=0; i<nx; ++i ) {
+   for ( int j=0; j<ny; ++j, d += dim3 ) {
+    for ( int k=0; k<K3; ++k ) {
+      float std = 10. * (10. * (10. * std_base + i) + j) + k;
+      float err = scale * d[k] - std;
+      if ( fabsf(err) > fabsf(maxerr) ) {
+        maxerr = err;
+        maxstd = std;
+        mi = i;  mj = j;  mk = k;
+      }
+    }
+   }
+  }
+  CkPrintf("pencil %d %d max error %f at %d %d %d (should be %f)\n",
+		thisIndex.x, thisIndex.y, maxerr, mi, mj, mk, maxstd);
+#endif
+}
+
+void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
+  if ( imsg == 0 ) msg->evir[0] = evir; else msg->evir[0] = 0.;
+
+  int pe = msg->sourceNode;
+  msg->sourceNode = thisIndex.x * initdata.yBlocks + thisIndex.y;
+  int dim3 = initdata.grid.dim3;
+  int zlistlen = msg->zlistlen;
+  int *zlist = msg->zlist;
+  char *fmsg = msg->fgrid;
+  float *qmsg = msg->qgrid;
+  float *d = data;
+  int numGrids = 1;  // pencil FFT doesn't support multiple grids
+  for ( int g=0; g<numGrids; ++g ) {
+    for ( int i=0; i<nx; ++i ) {
+     for ( int j=0; j<ny; ++j, d += dim3 ) {
+      if( *(fmsg++) ) {
+        for ( int k=0; k<zlistlen; ++k ) {
+          *(qmsg++) = d[zlist[k]];
+        }
+      }
+     }
+    }
+  }
+
+  initdata.pmeProxy[pe].recvUngrid(msg);
+}
+
 
 #include "ComputePmeMgr.def.h"
 

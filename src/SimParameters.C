@@ -602,6 +602,8 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.range("PMEGridSpacing", NOT_NEGATIVE);
    opts.optional("PME", "PMEProcessors",
 	"PME FFT and reciprocal sum processor count", &PMEProcessors, 0);
+   opts.optional("PME", "PMEPencils",
+	"PME FFT and reciprocal sum pencil grid size", &PMEPencils, 0);
    opts.optionalB("main", "PMEBarrier", "Use barrier in PME?",
 	&PMEBarrier, FALSE);
 

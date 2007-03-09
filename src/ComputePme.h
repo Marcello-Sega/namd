@@ -26,7 +26,9 @@ public:
   virtual ~ComputePme();
   void doWork();
   void sendData(int, int*, int*, int*);
+  void sendPencils();
   void copyResults(PmeGridMsg *);
+  void copyPencils(PmeGridMsg *);
   void ungridForces();
   void setMgr(ComputePmeMgr *mgr) { myMgr = mgr; }
 

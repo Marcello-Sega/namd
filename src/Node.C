@@ -218,12 +218,20 @@ void Node::startup() {
   break;
 
   case 5:
+    if ( simParameters->PMEOn ) {
+      CProxy_ComputePmeMgr pme(CpvAccess(BOCclass_group).computePmeMgr);
+      pme[CkMyPe()].initialize_pencils(new CkQdMsg);
+    }
     if (!CkMyPe()) {
       workDistrib->distributeHomePatches();
     }
   break;
 
   case 6: 
+    if ( simParameters->PMEOn ) {
+      CProxy_ComputePmeMgr pme(CpvAccess(BOCclass_group).computePmeMgr);
+      pme[CkMyPe()].activate_pencils(new CkQdMsg);
+    }
     proxyMgr->createProxies();  // need Home patches before this
     if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
   break;

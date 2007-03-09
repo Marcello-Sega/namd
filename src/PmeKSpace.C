@@ -48,8 +48,11 @@ static void compute_b_moduli(double *bm, int K, int order) {
   delete [] M;
 }
 
-PmeKSpace::PmeKSpace(PmeGrid grid, int K2_start, int K2_end) 
-  : myGrid(grid), k2_start(K2_start), k2_end(K2_end) {
+PmeKSpace::PmeKSpace(PmeGrid grid,
+		int K2_start, int K2_end, int K3_start, int K3_end) 
+  : myGrid(grid),
+	k2_start(K2_start), k2_end(K2_end),
+	k3_start(K3_start), k3_end(K3_end) {
   int K1, K2, K3, order;
   K1=myGrid.K1; K2=myGrid.K2, K3=myGrid.K3; order=myGrid.order;
 
@@ -79,14 +82,11 @@ PmeKSpace::~PmeKSpace() {
 double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ewald, double *virial) {
   double energy = 0.0;
 
-  int pad2, pad3, n;
+  int n;
   int k1, k2, k3, ind;
   int K1, K2, K3;
 
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3;
-  // pad2 = (myGrid.dim2-K2)*myGrid.dim3;
-  pad2 = 0;
-  pad3 = myGrid.dim3-K3-(K3 & 1 ? 1 : 2);
 
   i_pi_volume = 1.0/(M_PI * lattice.volume());
   piob = M_PI/ewald;
@@ -119,14 +119,13 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
         m2 = k2_s*recipy;
         m22 = m2*m2;
         xp2 = exp2[abs(k2_s)]*xp1;
-        if ( k1==0 && k2==0 ) {
+        k3 = k3_start;
+        if ( k1==0 && k2==0 && k3==0 ) {
           q_arr[ind++] = 0.0;
           q_arr[ind++] = 0.0;
-          k3 = 1;
-        } else {
-          k3 = 0;
+          ++k3;
         }
-        for ( ; k3<=K3/2; ++k3 ) {
+        for ( ; k3<k3_end; ++k3 ) {
           double m3, m33, xp3, msq, imsq, vir, fac;
           double theta3, theta, q2, qr, qc, C;
           theta3 = bm3[k3] *b1b2;
@@ -153,9 +152,7 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
           virial[5] += fac*(1.0+vir*m33);
           ind += 2;
         }
-        ind += pad3;
       }
-      ind += pad2;
     }
 
   } else if ( cross(lattice.a(),lattice.b()).unit() == lattice.c().unit() ) {
@@ -185,14 +182,13 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
         m2_z = m1.z + k2_s*recip2.z;
         // xp2 = exp2[abs(k2_s)]*xp1;
         xp2 = i_pi_volume*exp(-piob*(m2_x*m2_x+m2_y*m2_y+m2_z*m2_z));
-        if ( k1==0 && k2==0 ) {
+        k3 = k3_start;
+        if ( k1==0 && k2==0 && k3==0 ) {
           q_arr[ind++] = 0.0;
           q_arr[ind++] = 0.0;
-          k3 = 1;
-        } else {
-          k3 = 0;
+          ++k3;
         }
-        for ( ; k3<=K3/2; ++k3 ) {
+        for ( ; k3<k3_end; ++k3 ) {
           double xp3, msq, imsq, vir, fac;
           double theta3, theta, q2, qr, qc, C;
           double m_x, m_y, m_z;
@@ -221,9 +217,7 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
           virial[5] += fac*(1.0+vir*m_z*m_z);
           ind += 2;
         }
-        ind += pad3;
       }
-      ind += pad2;
     }
 
   } else {
@@ -250,14 +244,13 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
         m2_y = m1.y + k2_s*recip2.y;
         m2_z = m1.z + k2_s*recip2.z;
         // xp2 = exp2[abs(k2_s)]*xp1;
-        if ( k1==0 && k2==0 ) {
+        k3 = k3_start;
+        if ( k1==0 && k2==0 && k3==0 ) {
           q_arr[ind++] = 0.0;
           q_arr[ind++] = 0.0;
-          k3 = 1;
-        } else {
-          k3 = 0;
+          ++k3;
         }
-        for ( ; k3<=K3/2; ++k3 ) {
+        for ( ; k3<k3_end; ++k3 ) {
           double xp3, msq, imsq, vir, fac;
           double theta3, theta, q2, qr, qc, C;
           double m_x, m_y, m_z;
@@ -287,9 +280,7 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
           virial[5] += fac*(1.0+vir*m_z*m_z);
           ind += 2;
         }
-        ind += pad3;
       }
-      ind += pad2;
     }
 
   }
