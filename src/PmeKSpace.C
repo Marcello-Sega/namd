@@ -81,6 +81,12 @@ PmeKSpace::~PmeKSpace() {
 
 double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ewald, double *virial) {
   double energy = 0.0;
+  double v0 = 0.;
+  double v1 = 0.;
+  double v2 = 0.;
+  double v3 = 0.;
+  double v4 = 0.;
+  double v5 = 0.;
 
   int n;
   int k1, k2, k3, ind;
@@ -91,8 +97,6 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
   i_pi_volume = 1.0/(M_PI * lattice.volume());
   piob = M_PI/ewald;
   piob *= piob;
-
-  for (n=0; n<6; virial[n++] = 0.0);
 
   if ( lattice.orthogonal() ) {
   // if ( 0 ) { // JCP FOR TESTING
@@ -144,12 +148,12 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
           vir = -2*(piob+imsq);
           fac = q2*C;
           energy += fac;
-          virial[0] += fac*(1.0+vir*m11);
-          virial[1] += fac*vir*m1*m2;
-          virial[2] += fac*vir*m1*m3;
-          virial[3] += fac*(1.0+vir*m22);
-          virial[4] += fac*vir*m2*m3;
-          virial[5] += fac*(1.0+vir*m33);
+          v0 += fac*(1.0+vir*m11);
+          v1 += fac*vir*m1*m2;
+          v2 += fac*vir*m1*m3;
+          v3 += fac*(1.0+vir*m22);
+          v4 += fac*vir*m2*m3;
+          v5 += fac*(1.0+vir*m33);
           ind += 2;
         }
       }
@@ -209,12 +213,12 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
           vir = -2*(piob+imsq);
           fac = q2*C;
           energy += fac;
-          virial[0] += fac*(1.0+vir*m_x*m_x);
-          virial[1] += fac*vir*m_x*m_y;
-          virial[2] += fac*vir*m_x*m_z;
-          virial[3] += fac*(1.0+vir*m_y*m_y);
-          virial[4] += fac*vir*m_y*m_z;
-          virial[5] += fac*(1.0+vir*m_z*m_z);
+          v0 += fac*(1.0+vir*m_x*m_x);
+          v1 += fac*vir*m_x*m_y;
+          v2 += fac*vir*m_x*m_z;
+          v3 += fac*(1.0+vir*m_y*m_y);
+          v4 += fac*vir*m_y*m_z;
+          v5 += fac*(1.0+vir*m_z*m_z);
           ind += 2;
         }
       }
@@ -272,12 +276,12 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
           vir = -2*(piob+imsq);
           fac = q2*C;
           energy += fac;
-          virial[0] += fac*(1.0+vir*m_x*m_x);
-          virial[1] += fac*vir*m_x*m_y;
-          virial[2] += fac*vir*m_x*m_z;
-          virial[3] += fac*(1.0+vir*m_y*m_y);
-          virial[4] += fac*vir*m_y*m_z;
-          virial[5] += fac*(1.0+vir*m_z*m_z);
+          v0 += fac*(1.0+vir*m_x*m_x);
+          v1 += fac*vir*m_x*m_y;
+          v2 += fac*vir*m_x*m_z;
+          v3 += fac*(1.0+vir*m_y*m_y);
+          v4 += fac*vir*m_y*m_z;
+          v5 += fac*(1.0+vir*m_z*m_z);
           ind += 2;
         }
       }
@@ -285,7 +289,12 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
 
   }
 
-  for (n=0; n<6; ++n) virial[n] *= 0.5;
+  virial[0] = 0.5 * v0;
+  virial[1] = 0.5 * v1;
+  virial[2] = 0.5 * v2;
+  virial[3] = 0.5 * v3;
+  virial[4] = 0.5 * v4;
+  virial[5] = 0.5 * v5;
   return 0.5*energy;
 }
 
