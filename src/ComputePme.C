@@ -549,9 +549,33 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     myGrid.block3 = ( myGrid.K3/2 + 1 + zBlocks - 1 ) / zBlocks;  // complex
 
     if ( CkMyPe() == 0 ) {
-      zPencil = CProxy_PmeZPencil::ckNew(xBlocks,yBlocks,1);
-      yPencil = CProxy_PmeYPencil::ckNew(xBlocks,1,zBlocks);
-      xPencil = CProxy_PmeXPencil::ckNew(1,yBlocks,zBlocks);
+      int basepe = 0;  int npe = CkNumPes();
+      if ( npe > xBlocks*yBlocks &&
+		npe > xBlocks*zBlocks &&
+		npe > yBlocks*zBlocks ) {
+        ++basepe;
+        --npe;
+      }
+      int pe = 0;
+
+      zPencil = CProxy_PmeZPencil::ckNew();  // (xBlocks,yBlocks,1);
+      for ( int i=0; i<xBlocks; ++i )
+       for ( int j=0; j<yBlocks; ++j )
+        zPencil(i,j,0).insert(basepe + pe++ % npe);
+      zPencil.doneInserting();
+
+      yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
+      for ( int i=0; i<xBlocks; ++i )
+       for ( int k=0; k<zBlocks; ++k )
+        yPencil(i,0,k).insert(basepe + pe++ % npe);
+      yPencil.doneInserting();
+
+      xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
+      for ( int j=0; j<yBlocks; ++j )
+       for ( int k=0; k<zBlocks; ++k )
+        xPencil(0,j,k).insert(basepe + pe++ % npe);
+      xPencil.doneInserting();
+
       pmeProxy.recvArrays(xPencil,yPencil,zPencil);
       PmePencilInitMsgData msgdata;
       msgdata.grid = myGrid;
