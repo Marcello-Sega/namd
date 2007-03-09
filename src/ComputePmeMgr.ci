@@ -26,15 +26,24 @@ module ComputePmeMgr {
     entry PmeZPencil();
     entry void recvGrid(PmeGridMsg *);
     entry void recvUntrans(PmeUntransMsg *);
-    entry void dummyRecvGrid(int done = 0);
+    entry void dummyRecvGrid(int pe, int done = 0);
     entry void init(PmePencilInitMsg *initmsg) {
-      atomic { base_init(initmsg); delete initmsg; fft_init(); }
+      atomic {
+      CkPrintf("z pencil init %d %d %d on %d\n",
+		thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+      base_init(initmsg); delete initmsg;
+      fft_init();
       // now count how many nodes send us data
-      atomic { imsg = 0; grid_msgs.resize(0); }
+      imsg = 0; grid_msgs.resize(0);
+      }
       while ( ! imsg ) {
-        when dummyRecvGrid(int done) atomic {
+        when dummyRecvGrid(int pe, int done) atomic {
           if ( done ) imsg = 1;
-          else grid_msgs.add(0);  // increment size
+          else {
+            grid_msgs.add(0);  // increment size
+            CkPrintf("pencil %d %d on node %d receive from node %d\n",
+			thisIndex.x, thisIndex.y, CkMyPe(), pe);
+          }
         }
       }
       atomic { CkPrintf("pencil %d %d receiving from %d nodes\n",
@@ -68,7 +77,12 @@ module ComputePmeMgr {
     entry void recvTrans(PmeTransMsg *);
     entry void recvUntrans(PmeUntransMsg *);
     entry void init(PmePencilInitMsg *initmsg) {
-      atomic { base_init(initmsg); delete initmsg; fft_init(); }
+      atomic {
+      CkPrintf("y pencil init %d %d %d on %d\n",
+		thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+      base_init(initmsg); delete initmsg;
+      fft_init();
+      }
       while ( 1 ) {
         for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
           when recvTrans(PmeTransMsg *msg) atomic {
@@ -96,7 +110,12 @@ module ComputePmeMgr {
     entry PmeXPencil();
     entry void recvTrans(PmeTransMsg *);
     entry void init(PmePencilInitMsg *initmsg) {
-      atomic { base_init(initmsg); delete initmsg; fft_init(); }
+      atomic {
+      CkPrintf("x pencil init %d %d %d on %d\n",
+		thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+      base_init(initmsg); delete initmsg;
+      fft_init();
+      }
       while ( 1 ) {
         for ( imsg=0; imsg < initdata.xBlocks; ++imsg ) {
           when recvTrans(PmeTransMsg *msg) atomic {

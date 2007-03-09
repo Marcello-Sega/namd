@@ -377,7 +377,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( numGrids == 1 && simParams->PMEPencils != 0 ) usePencils = 1;
 
   if ( usePencils ) {
-    xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
+    if ( simParams->PMEPencils > 1 ) {
+      xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
+    } else {
+      int nb = (int) sqrt(CkNumPes());
+      xBlocks = zBlocks = nb;
+      yBlocks = CkNumPes() / nb;
+    }
 
     int dimx = simParams->PMEGridSizeX;
     int bx = 1 + ( dimx - 1 ) / xBlocks;
@@ -817,7 +823,7 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
     for ( int j=0; j<yBlocks; ++j ) {
       if ( pencilActive[i*yBlocks+j] ) {
         ++numPencilsActive;
-        zPencil(i,j,0).dummyRecvGrid(0);
+        zPencil(i,j,0).dummyRecvGrid(CkMyPe(),0);
       }
     }
   }
@@ -831,7 +837,7 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
 
 void ComputePmeMgr::activate_pencils(CkQdMsg *msg) {
   if ( ! usePencils ) return;
-  if ( CkMyPe() == 0 ) zPencil.dummyRecvGrid(1);
+  if ( CkMyPe() == 0 ) zPencil.dummyRecvGrid(CkMyPe(),1);
 }
 
 
@@ -2131,7 +2137,6 @@ public:
   }
   void base_init(PmePencilInitMsg *msg) {
     initdata = msg->data;
-    CkPrintf("init %d %d %d on %d\n", thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
   }
   PmePencilInitMsgData initdata;
   Lattice lattice;
