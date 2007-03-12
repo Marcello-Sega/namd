@@ -104,9 +104,9 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
     double recipx = lattice.a_r().x;
     double recipy = lattice.b_r().y;
     double recipz = lattice.c_r().z;
-    init_exp(exp1, K1, recipx);
-    init_exp(exp2, K2, recipy);
-    init_exp(exp3, K3, recipz);
+    init_exp(exp1, K1, 0, K1, recipx);
+    init_exp(exp2, K2, k2_start, k2_end, recipy);
+    init_exp(exp3, K3, k3_start, k3_end, recipz);
 
     ind = 0;
     for ( k1=0; k1<K1; ++k1 ) {
@@ -168,7 +168,7 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
     double recip3_x = recip3.x;
     double recip3_y = recip3.y;
     double recip3_z = recip3.z;
-    init_exp(exp3, K3, recip3.length());
+    init_exp(exp3, K3, k3_start, k3_end, recip3.length());
 
     ind = 0;
     for ( k1=0; k1<K1; ++k1 ) {
@@ -299,10 +299,21 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
 }
 
 
-void PmeKSpace::init_exp(double *xp, int K, double recip) {
+void PmeKSpace::init_exp(double *xp, int K, int k_start, int k_end, double recip) {
   int i;
   double fac;
   fac = -piob*recip*recip;
-  for (i=0; i<= K/2; i++)
+  int i_start = k_start;
+  int i_end = k_end;
+  if ( k_start > K/2 ) {
+    i_start = K - k_end + 1;
+    i_end = K - k_start + 1;
+  } else if ( k_end > K/2 ) {
+    i_end = K/2 + 1;
+    i_start = K - k_end + 1;
+    if ( k_start < i_start ) i_start = k_start;
+  }
+
+  for (i=i_start; i < i_end; i++)
     xp[i] = exp(fac*i*i);
 } 

@@ -28,7 +28,7 @@ private:
   const PmeGrid myGrid;
   const int k2_start, k2_end, k3_start, k3_end;
 
-  void init_exp(double *xp, int K, double recip);
+  void init_exp(double *xp, int K, int k_start, int k_end, double recip);
 };
 
 #endif
