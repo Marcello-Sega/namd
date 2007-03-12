@@ -2138,12 +2138,19 @@ public:
   void base_init(PmePencilInitMsg *msg) {
     initdata = msg->data;
   }
+  void order_init(int nBlocks) {
+    send_order = new int[nBlocks];
+    for ( int i=0; i<nBlocks; ++i ) send_order[i] = i;
+    Random rand(CkMyPe());
+    rand.reorder(send_order,nBlocks);
+  }
   PmePencilInitMsgData initdata;
   Lattice lattice;
   PmeReduction evir;
   int imsg;  // used in sdag code
   float *data;
   float *work;
+  int *send_order;
 };
 
 class PmeZPencil : public PmePencil<CBase_PmeZPencil> {
@@ -2223,6 +2230,8 @@ void PmeZPencil::fft_init() {
   data = new float[nx*ny*dim3];
   work = new float[dim3];
 
+  order_init(initdata.zBlocks);
+
 #ifdef NAMD_FFTW
   CmiLock(ComputePmeMgr::fftw_plan_lock);
 
@@ -2258,6 +2267,8 @@ void PmeYPencil::fft_init() {
 
   data = new float[nx*dim2*nz*2];
   work = new float[2*K2];
+
+  order_init(initdata.yBlocks);
 
 #ifdef NAMD_FFTW
   CmiLock(ComputePmeMgr::fftw_plan_lock);
@@ -2295,6 +2306,8 @@ void PmeXPencil::fft_init() {
 
   data = new float[K1*block2*block3*2];
   work = new float[2*K1];
+
+  order_init(initdata.xBlocks);
 
 #ifdef NAMD_FFTW
   CmiLock(ComputePmeMgr::fftw_plan_lock);
@@ -2385,7 +2398,8 @@ void PmeZPencil::send_trans(int dest) {
   int zBlocks = initdata.zBlocks;
   int block3 = initdata.grid.block3;
   int dim3 = initdata.grid.dim3;
-  for ( int kb=0; kb<zBlocks; ++kb ) {
+  for ( int isend=0; isend<zBlocks; ++isend ) {
+    int kb = send_order[isend];
     int nz = block3;
     if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
     PmeTransMsg *msg = new (nx*ny*nz*2,0) PmeTransMsg;
@@ -2442,7 +2456,8 @@ void PmeYPencil::send_trans(int dest) {
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
-  for ( int jb=0; jb<yBlocks; ++jb ) {
+  for ( int isend=0; isend<yBlocks; ++isend ) {
+    int jb = send_order[isend];
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
     PmeTransMsg *msg = new (nx*ny*nz*2,0) PmeTransMsg;
@@ -2527,7 +2542,8 @@ void PmeXPencil::send_untrans(int dest) {
   int xBlocks = initdata.xBlocks;
   int block1 = initdata.grid.block1;
   int K1 = initdata.grid.K1;
-  for ( int ib=0; ib<xBlocks; ++ib ) {
+  for ( int isend=0; isend<xBlocks; ++isend ) {
+    int ib = send_order[isend];
     int nx = block1;
     if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
     PmeUntransMsg *msg = new (nx*ny*nz*2,(ib==0?1:0),0) PmeUntransMsg;
@@ -2585,7 +2601,8 @@ void PmeYPencil::send_untrans(int dest) {
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
-  for ( int jb=0; jb<yBlocks; ++jb ) {
+  for ( int isend=0; isend<yBlocks; ++isend ) {
+    int jb = send_order[isend];
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
     PmeUntransMsg *msg = new (nx*ny*nz*2,(jb==0?1:0),0) PmeUntransMsg;
