@@ -47,6 +47,8 @@
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
 
+char *pencilPMEProcessors;
+
 
 class PmeGridMsg : public CMessage_PmeGridMsg {
 public:
@@ -304,7 +306,7 @@ int isPmeProcessor(int p){
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
-  return ( usePencils ? 0 : isPmeFlag[p] );
+  return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
 }
 
 #if CMK_VERSION_BLUEGENE
@@ -559,28 +561,99 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       if ( npe > xBlocks*yBlocks &&
 		npe > xBlocks*zBlocks &&
 		npe > yBlocks*zBlocks ) {
+        // avoid node 0
         ++basepe;
         --npe;
       }
-      int pe = 0;
 
       zPencil = CProxy_PmeZPencil::ckNew();  // (xBlocks,yBlocks,1);
+      yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
+      xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
+      
+#if 1
+
+      PatchMap *pmap = PatchMap::Object();
+      int npatches = pmap->numHomePatches();
+
+      int *pmemap = new int [npe];
+      memset (pmemap, 0, sizeof (int) * npe);
+      
+      //Use max of x*y, y*z, z*x 
+      int n_pme_pes = xBlocks * yBlocks; 
+      if ( n_pme_pes < xBlocks * zBlocks ) n_pme_pes = xBlocks * zBlocks;
+      if ( n_pme_pes < yBlocks * zBlocks ) n_pme_pes = yBlocks * zBlocks;
+      int n_avail_pes = 0;
+      
+      //Grab all processors where we can store pme chares
+      if (npe > npatches + 2 * n_pme_pes) {
+	//Use non patch processors to assign pme chares as we have
+	//many processors, check base nodes later
+	for (int count = 0; count < npe; count++)
+	  if(pmap->numPatchesOnNode(basepe + count) == 0)
+	    pmemap[n_avail_pes++] = basepe + count;      
+      }
+      else {  //Use all processors to assign pme chares
+	for (int count = 0; count < npe; count++)
+	  pmemap [n_avail_pes ++] = basepe + count;
+      }
+
+      double pe = 0.0;
+      double stride = 1.0; 
+            
+      int x,y,z;      
+      stride = (1.0 * n_avail_pes) / (n_pme_pes);
+
+      pencilPMEProcessors = new char [CkNumPes()];
+      memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
+
+      for (pe=0.0, x = 0; x < xBlocks; x ++)
+	for (y = 0; y < yBlocks; y ++) {
+	  if (pe >= n_avail_pes) pe = 0.0;    
+	  zPencil(x,y,0).insert (pmemap[(int) pe]);
+	  pencilPMEProcessors [pmemap[(int) pe]] = 1;
+	  pe += stride;
+	}
+      zPencil.doneInserting();
+      
+      for (pe=1.0, z = 0; z < zBlocks; z ++)
+	for (x = 0; x < xBlocks; x ++) {
+	  if (pe >= n_avail_pes) pe = 1.0;
+	  yPencil(x,0,z).insert (pmemap[(int) pe]);
+	  pencilPMEProcessors [pmemap[(int) pe]] = 1;
+	  pe += stride;
+	}
+      yPencil.doneInserting();
+      
+      for (pe=0.0, y = 0; y < yBlocks; y ++)	
+	for (z = 0; z < zBlocks; z ++) {
+	  if (pe >= n_avail_pes) pe = 0.0;
+	  xPencil(0,y,z).insert (pmemap[(int) pe]);
+	  pencilPMEProcessors [pmemap[(int) pe]] = 1;
+	  pe += stride;
+	}
+      xPencil.doneInserting();      
+	
+      delete [] pmemap;
+
+#else
+      int pe = 0;
+
       for ( int i=0; i<xBlocks; ++i )
        for ( int j=0; j<yBlocks; ++j )
         zPencil(i,j,0).insert(basepe + pe++ % npe);
       zPencil.doneInserting();
 
-      yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
       for ( int i=0; i<xBlocks; ++i )
        for ( int k=0; k<zBlocks; ++k )
         yPencil(i,0,k).insert(basepe + pe++ % npe);
       yPencil.doneInserting();
 
-      xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
       for ( int j=0; j<yBlocks; ++j )
        for ( int k=0; k<zBlocks; ++k )
         xPencil(0,j,k).insert(basepe + pe++ % npe);
       xPencil.doneInserting();
+
+#endif
 
       pmeProxy.recvArrays(xPencil,yPencil,zPencil);
       PmePencilInitMsgData msgdata;
@@ -952,6 +1025,10 @@ void ComputePmeMgr::sendTrans(void) {
   cinst1.beginIteration();
 #endif
 
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter (0);
+#endif
+
   for (int j=0; j<numTransPes; j++) {
     int pe = transPeOrder[j];  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
@@ -1015,6 +1092,10 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
 void ComputePmeMgr::gridCalc2(void) {
   // CkPrintf("gridCalc2 on Pe(%d)\n",CkMyPe());
 
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter (0);
+#endif
+
   int zdim = myGrid.dim3;
   // int y_start = localInfo[myTransPe].y_start_after_transpose;
   int ny = localInfo[myTransPe].ny_after_transpose;
@@ -1057,6 +1138,10 @@ void ComputePmeMgr::sendUntrans(void) {
   cinst2.beginIteration();
 #endif  
 
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter (0);
+#endif
+
   // send data for reverse transpose
   for (int j=0; j<numGridPes; j++) {
     int pe = gridPeOrder[j];  // different order on each node
@@ -1098,6 +1183,10 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
       recip_evir[g] = 0.;
     }
   }
+
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgressAfter (0);
+#endif
 
   int g;
   for ( g=0; g<numGrids; ++g ) {
@@ -2076,7 +2165,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
       if(pmemap[destPe] == 0) {
         pemap[gcount++] = destPe;
         pmemap[destPe] = 1;
-
+	
 	if(tmanager->isVnodeMode())
 	  pmemap[(destPe + CkNumPes()/2) % CkNumPes()] = 1;	
 
@@ -2156,8 +2245,8 @@ public:
 class PmeZPencil : public PmePencil<CBase_PmeZPencil> {
 public:
     PmeZPencil_SDAG_CODE;
-    PmeZPencil() { __sdag_init(); }
-    PmeZPencil(CkMigrateMessage *) { __sdag_init(); }
+    PmeZPencil() { __sdag_init(); setMigratable(false); }
+    PmeZPencil(CkMigrateMessage *) { __sdag_init();  setMigratable (false); }
     void fft_init();
     void recv_grid(const PmeGridMsg *);
     void forward_fft();
@@ -2176,7 +2265,7 @@ private:
 class PmeYPencil : public PmePencil<CBase_PmeYPencil> {
 public:
     PmeYPencil_SDAG_CODE;
-    PmeYPencil() { __sdag_init(); }
+    PmeYPencil() { __sdag_init(); setMigratable(false); }
     PmeYPencil(CkMigrateMessage *) { __sdag_init(); }
     void fft_init();
     void recv_trans(const PmeTransMsg *);
@@ -2195,7 +2284,7 @@ private:
 class PmeXPencil : public PmePencil<CBase_PmeXPencil> {
 public:
     PmeXPencil_SDAG_CODE;
-    PmeXPencil() { __sdag_init();  myKSpace = 0; }
+    PmeXPencil() { __sdag_init();  myKSpace = 0; setMigratable(false); }
     PmeXPencil(CkMigrateMessage *) { __sdag_init(); }
     void fft_init();
     void recv_trans(const PmeTransMsg *);
@@ -2574,22 +2663,29 @@ void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
   const float *md = msg->qgrid;
   float *d = data;
   for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
-   for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
-    for ( int k=0; k<nz; ++k ) {
+#if CMK_VERSION_BLUEGENE
+    CmiNetworkProgress();
+#endif   
+    for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+      for ( int k=0; k<nz; ++k ) {
 #ifdef ZEROCHECK
-      if ( (*md) == 0. ) CkPrintf("0 in XY at %d %d %d %d %d %d %d %d %d\n",
-	thisIndex.x, jb, thisIndex.z, i, j, k, nx, ny, nz);
+	if ( (*md) == 0. ) CkPrintf("0 in XY at %d %d %d %d %d %d %d %d %d\n",
+				    thisIndex.x, jb, thisIndex.z, i, j, k, nx, ny, nz);
 #endif
-      d[2*(j*nz+k)] = *(md++);
-      d[2*(j*nz+k)+1] = *(md++);
+	d[2*(j*nz+k)] = *(md++);
+	d[2*(j*nz+k)+1] = *(md++);
+      }
     }
-   }
   }
 }
 
 void PmeYPencil::backward_fft() {
 #ifdef NAMD_FFTW
   for ( int i=0; i<nx; ++i ) {
+#if CMK_VERSION_BLUEGENE
+    CmiNetworkProgress();
+#endif
+
     fftw(backward_plan, nz,
 	((fftw_complex *) data) + i * nz * initdata.grid.K2,
 	nz, 1, (fftw_complex *) work, 1, 0);
@@ -2633,24 +2729,32 @@ void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
   const float *md = msg->qgrid;
   float *d = data;
   for ( int i=0; i<nx; ++i ) {
-   for ( int j=0; j<ny; ++j, d += dim3 ) {
-    for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+#if CMK_VERSION_BLUEGENE
+    CmiNetworkProgress();
+#endif   
+    for ( int j=0; j<ny; ++j, d += dim3 ) {
+      for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
 #ifdef ZEROCHECK
-      if ( (*md) == 0. ) CkPrintf("0 in YZ at %d %d %d %d %d %d %d %d %d\n",
-	thisIndex.x, thisIndex.y, kb, i, j, k, nx, ny, nz);
+	if ( (*md) == 0. ) CkPrintf("0 in YZ at %d %d %d %d %d %d %d %d %d\n",
+				    thisIndex.x, thisIndex.y, kb, i, j, k, nx, ny, nz);
 #endif
-      d[2*k] = *(md++);
-      d[2*k+1] = *(md++);
+	d[2*k] = *(md++);
+	d[2*k+1] = *(md++);
+      }
     }
-   }
   }
 }
 
 void PmeZPencil::backward_fft() {
 #ifdef NAMD_FFTW
   rfftwnd_complex_to_real(backward_plan, nx*ny,
-	(fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
+	    (fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
 #endif
+  
+#if CMK_VERSION_BLUEGENE
+  CmiNetworkProgress();
+#endif
+
 #ifdef FFTCHECK
   int dim3 = initdata.grid.dim3;
   int K1 = initdata.grid.K1;
@@ -2693,14 +2797,17 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
   float *d = data;
   int numGrids = 1;  // pencil FFT doesn't support multiple grids
   for ( int g=0; g<numGrids; ++g ) {
+#if CMK_VERSION_BLUEGENE
+    CmiNetworkProgress();
+#endif    
     for ( int i=0; i<nx; ++i ) {
-     for ( int j=0; j<ny; ++j, d += dim3 ) {
-      if( *(fmsg++) ) {
-        for ( int k=0; k<zlistlen; ++k ) {
-          *(qmsg++) = d[zlist[k]];
-        }
+      for ( int j=0; j<ny; ++j, d += dim3 ) {
+	if( *(fmsg++) ) {
+	  for ( int k=0; k<zlistlen; ++k ) {
+	    *(qmsg++) = d[zlist[k]];
+	  }
+	}
       }
-     }
     }
   }
 
