@@ -559,7 +559,7 @@ int Rebalancer::refine()
 #if 0 //CMK_VERSION_BLUEGENE
 	   BGLTorusManager *tmgr = BGLTorusManager::getObject();
 	   if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
-				     patches[c->patch2].processor, 3))
+				     patches[c->patch2].processor, 6))
 #endif
 	     {	     
 	       refine_togrid(grid, thresholdLoad, p, c);

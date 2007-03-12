@@ -53,11 +53,11 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
 	  */
 	  
 	  if(tmgr->isNeighborOfBoth(altp->Id, patches[c->patch1].processor,
-				    patches[c->patch2].processor, 2))
+				    patches[c->patch2].processor, 4))
 	    neighbor_alt = 1;
 	  
 	  if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
-				    patches[c->patch2].processor, 2))
+				    patches[c->patch2].processor, 4))
 	    neighbor = 1;
 	  
 	  if(neighbor_alt == 1 && neighbor == 1) {
