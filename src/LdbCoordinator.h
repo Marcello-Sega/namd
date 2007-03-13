@@ -67,14 +67,6 @@ public:
   void ExpectMigrate(LdbMigrateMsg*);
   void ResumeFromSync(void);
 
-private:
-  struct Migration {
-    int id;
-    int from;
-    int to;
-    Migration* next;
-  };
-
 public:
   void ExecuteMigrations(void);
   void awakenSequencers(void);
@@ -119,7 +111,6 @@ public:
   LDBarrierClient ldBarrierHandle;
   int reg_all_objs;
   LDObjHandle* patchHandles;
-  Migration* migrations;
 };
 
 class LdbMigrateMsg : public CMessage_LdbMigrateMsg

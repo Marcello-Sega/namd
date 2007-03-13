@@ -194,7 +194,6 @@ LdbCoordinator::LdbCoordinator()
 			  (void*)this);
   objHandles = 0;
   reg_all_objs = 1;
-  migrations = 0;
 
 }
 
@@ -527,14 +526,6 @@ void LdbCoordinator::nodeDone(void)
 
 void LdbCoordinator::ExecuteMigrations(void)
 {
-
-  while (migrations) {
-    computeMap->setNewNode(migrations->id,migrations->to);
-    Migration *const next = migrations->next;
-    delete migrations;
-    migrations = next;
-  }
- 
  // computeMgr->updateComputes() call only on Node(0) i.e. right here
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
@@ -553,34 +544,11 @@ void LdbCoordinator::ExecuteMigrations(void)
 void LdbCoordinator::RecvMigrate(LdbMigrateMsg* m)
 {
   // This method receives the migration from the framework,
-  // unregisters it, and
-  // sends it to PE 0, which is where NAMD coordinates all of the
-  // load balancing
+  // unregisters it, and sends it to the destination PE
   const int id = m->handle.id.id[0];
 
   theLbdb->UnregisterObj(objHandles[id]);
   objHandles[id].id.id[0] = -1;
-
-#if CHARM_VERSION > 050402
-  CProxy_LdbCoordinator ldbProxy(thisgroup);
-  ldbProxy[0].ProcessMigrate(m);
-#else
-  CProxy_LdbCoordinator(thisgroup).ProcessMigrate(m,0);
-#endif
-}
-
-void LdbCoordinator::ProcessMigrate(LdbMigrateMsg* m)
-{
-  // On PE 0, we store the migration, and then forward it on to the
-  // destination PE
-
-  Migration* new_migration = new Migration;
-
-  new_migration->id = m->handle.id.id[0];
-  new_migration->from = m->from;
-  new_migration->to = m->to;
-  new_migration->next = migrations;
-  migrations = new_migration;
 
 #if CHARM_VERSION > 050402
   CProxy_LdbCoordinator  ldbProxy(thisgroup);

@@ -74,7 +74,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 
   int numProcessors = count;
   int numPatches = PatchMap::Object()->numPatches();
-  const int numComputes = ComputeMap::Object()->numComputes();
+  ComputeMap *computeMap = ComputeMap::Object();
+  const int numComputes = computeMap->numComputes();
   const SimParameters* simParams = Node::Object()->simParameters;
 
   // these sizes should never change
@@ -173,6 +174,10 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       migrateMe->from_pe = computeArray[i].oldProcessor;
       migrateMe->to_pe = computeArray[i].processor;
       migrateInfo.insertAtEnd(migrateMe);
+
+      // sneak in updates to ComputeMap
+      computeMap->setNewNode(computeArray[i].handle.id.id[0],
+				computeArray[i].processor);
     }
   }
   

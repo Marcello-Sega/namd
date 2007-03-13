@@ -21,7 +21,6 @@ module LdbCoordinator {
     entry void resumeReady(CkQdMsg *);
     entry void resume2(void);
     entry void RecvMigrate(LdbMigrateMsg*);
-    entry void ProcessMigrate(LdbMigrateMsg*);
     entry void ExpectMigrate(LdbMigrateMsg*);
     entry void updateComputesReady(void);
   };
