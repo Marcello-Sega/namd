@@ -3362,15 +3362,14 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	NAMD_die("Problem reading grid force potential file");
     }
     
-    char junk[128];
+    char line[256];
     BigReal tmp[3];   // Temporary storage
     float tmp2;
     
-    fgets(junk, 128, poten);        // Read first line
-    for (i = 0; i < 5; i++) {       // Read some text we don't care about
-	fscanf(poten, "%s", junk);
-    }
-    fscanf(poten, "%d %d %d\n", &gridfrcK1, &gridfrcK2, &gridfrcK3);
+    do {
+	fgets(line, 256, poten);	// Read comment lines
+    } while (line[0] == '#');
+    sscanf(line, "object 1 class gridpositions counts %d %d %d\n", &gridfrcK1, &gridfrcK2, &gridfrcK3);
     
     int gridfrcSize_V = gridfrcK1 * gridfrcK2 * gridfrcK3;
     gridfrcSize = 3 * gridfrcSize_V;
@@ -3385,11 +3384,12 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	for (j = 0; j < 3; j++) gridfrcE[i][j] = tmp[j];
     }
     
-    for (i = 0; i < 2; i++) fgets(junk, 128, poten);   // More junk lines
+    fscanf(poten, "object 2 class gridconnections counts %lf %lf %lf\n", tmp, tmp+1, tmp+2);
+    fscanf(poten, "object 3 class array type double rank 0 items %lf data follows\n", tmp);
     
     // Calculate inverse unit vectors
     BigReal det;
-    Tensor e; // shorthand -- makes following formulae easier read
+    Tensor e; // shorthand -- makes following formulae easier to read
     e.xx = gridfrcE[0][0]; e.xy = gridfrcE[0][1]; e.xz = gridfrcE[0][2];
     e.yx = gridfrcE[1][0]; e.yy = gridfrcE[1][1]; e.yz = gridfrcE[1][2];
     e.zx = gridfrcE[2][0]; e.zy = gridfrcE[2][1]; e.zz = gridfrcE[2][2];
