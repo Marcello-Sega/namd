@@ -300,7 +300,8 @@ int NAMD_read_int(FILE *fd, const char *msg)
 	int i;			//  Loop counter
 	int c;			//  Character read in from file
 	char tmp_string[11];	//  Temporary string for integer
-
+	int isNeg;
+    
 	/*  Skip white space				*/
 	while ( ((c=fgetc(fd)) == '\n') || isspace(c) )
 	{
@@ -317,7 +318,17 @@ int NAMD_read_int(FILE *fd, const char *msg)
 
 	/*  Now read in the integer itself		*/
 	i=0;
-	
+
+	/* Modified to read an integer with '-' or '+' sign --Chao Mei */
+	isNeg = 0;
+	if(c=='-'){
+	    c = fgetc(fd);
+	    isNeg = 1;
+	}
+	if(c=='+')
+	    c = fgetc(fd);
+		
+
 	while (!isspace(c))
 	{
 		/*  Check to make sure we only get #'s  */
@@ -347,7 +358,10 @@ int NAMD_read_int(FILE *fd, const char *msg)
 	tmp_string[i]=STRINGNULL;
 
 	/*  Convert the string to an integer and return its value	*/
-	return(atoi(tmp_string));
+	if(isNeg)
+	    return(-atoi(tmp_string));
+	else
+	   return(atoi(tmp_string));
 }
 /*			END OF FUNCTION NAMD_read_int			*/
 
