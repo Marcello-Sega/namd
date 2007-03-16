@@ -3055,9 +3055,11 @@ Index Parameters::index_vdw(struct vdw_params *tree, Index index)
 /*   found, then NAMD terminates.          */
 /*                  */
 /************************************************************************/
-
+#ifdef MEM_OPT_VERSION
+void Parameters::assign_vdw_index(char *atomtype, AtomCstInfo *atom_ptr)
+#else    
 void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
-
+#endif
 {
   struct vdw_params *ptr;    //  Current position in trees
   int found=0;      //  Flag 1->found match
@@ -5018,7 +5020,11 @@ void Parameters::receive_Parameters(MIStream *msg)
 void Parameters::convert_vdw_pairs()
    
 {
+   #ifdef MEM_OPT_VERSION
+   AtomCstInfo atom_struct;
+   #else
    Atom atom_struct;    //  Dummy structure for getting indexes
+   #endif
    Index index1, index2;  //  Indexes for the two atoms
    IndexedVdwPair *new_node;  //  New node for tree
    struct vdw_pair_params *ptr, *next;  //  Pointers for traversing list

@@ -310,12 +310,16 @@ public:
 	//  Signal the parameter object that the
 	//  structure file has been read in
 	void done_reading_structure();
-
+    
 	//  The assign_*_index routines are used to assign
 	//  an index to atoms or bonds.  If an specific atom
 	//  or bond type can't be found, then the program 
 	//  terminates
+    #ifdef MEM_OPT_VERSION
+    void assign_vdw_index(char *, AtomCstInfo *);
+    #else
 	void assign_vdw_index(char *, Atom *);	//  Assign a vdw index to
+    #endif
 						//  an atom
 	void assign_bond_index(char *, char *, Bond *); 
 						//  Assign a bond index
