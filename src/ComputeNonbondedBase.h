@@ -402,12 +402,22 @@ void ComputeNonbondedUtil :: NAME
 
     if ( ! savePairlists ) pairlists.reset();  // limit space usage
 
+    #ifdef MEM_OPT_VERSION
+    const ExclusionCheck *exclcheck = mol->get_excl_check_for_idx(p_i.exclId);        
+    const int excl_min = p_i.id + exclcheck->min;
+    const int excl_max = p_i.id + exclcheck->max;
+    #else
     const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(p_i.id);
     const int excl_min = exclcheck->min;
     const int excl_max = exclcheck->max;
+    #endif
     const char * excl_flags_var;
     if ( exclcheck->flags ) excl_flags_var = exclcheck->flags - excl_min;
     else {  // need to build list on the fly
+
+    //TODO: Should change later!!!!!!!!!! --Chao Mei
+    //Now just for the sake of passing compilation
+    #ifndef MEM_OPT_VERSION 
       if ( excl_flags_buff ) {
         int nl,l;
         nl = full_excl[0] + 1;
@@ -426,6 +436,8 @@ void ComputeNonbondedUtil :: NAME
       nl = mod_excl[0] + 1;
       for ( l=1; l<nl; ++l ) excl_flags_buff[mod_excl[l]] = EXCHCK_MOD;
       excl_flags_var = excl_flags_buff;
+    #endif
+
     }
     const char * const excl_flags = excl_flags_var;
 
