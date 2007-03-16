@@ -9,6 +9,7 @@ module Node {
 
   message GroupInitMsg;
   message ScriptParamMsg;
+  message AllCharmArrsMsg;
 
   group Node
   {
@@ -33,6 +34,9 @@ module Node {
     // clean early exit after quiescence
     entry void recvEnableEarlyExit(CkQdMsg *);
     entry void earlyExit(CkQdMsg *);
+      
+    entry void sendCharmArrProxies(AllCharmArrsMsg *);
+    
   };
 }
 

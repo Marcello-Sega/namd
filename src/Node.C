@@ -66,6 +66,8 @@
 extern "C" void CApplicationInit();
 #endif
 
+#include "DumpBench.h"
+
 //======================================================================
 // Public Functions
 
@@ -76,7 +78,7 @@ int eventEndOfTimeStep;
 //----------------------------------------------------------------------
 // BOC constructor
 Node::Node(GroupInitMsg *msg)
-{
+{    
   DebugM(4,"Creating Node\n");
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
   CApplicationInit();
@@ -121,12 +123,6 @@ Node::Node(GroupInitMsg *msg)
   CProxy_LdbCoordinator lc(CpvAccess(BOCclass_group).ldbCoordinator);
   ldbCoordinator = lc.ckLocalBranch();
 
-// #if !defined(NOHOSTNAME)
-//   // Where are we?
-//   char host[1024];
-//   gethostname(host, 1024);
-//   iout << iINFO << iPE << " Starting out on host: " << host << "\n" << endi;
-// #endif
 }
 
 //----------------------------------------------------------------------
@@ -169,6 +165,10 @@ void Node::startup() {
   switch (startupPhase) {
 
   case 0:
+    #ifdef CHARMIZE_NAMD
+    populateAtomDisArrs(startupPhase);
+    #endif
+
     namdOneCommInit(); // Namd1.X style
   break;
 
@@ -179,6 +179,15 @@ void Node::startup() {
     } else {
       namdOneSend();
     }
+
+    #ifdef CHARMIZE_NAMD
+    //send charm array proxies
+    if(!CkMyPe()){
+        AllCharmArrsMsg *arrsMsg = new AllCharmArrsMsg;
+        arrsMsg->atomsDis = atomDisArr;
+        ((CProxy_Node)thisgroup).sendCharmArrProxies(arrsMsg);        
+    }    
+    #endif
   break;
 
   case 2:
@@ -194,7 +203,7 @@ void Node::startup() {
     AtomMap::Object()->allocateMap(molecule->numAtoms);
   break;
 
-  case 3:
+  case 3:     
     if (!CkMyPe()) {
       output = new Output; // create output object just on PE(0)
       workDistrib->patchMapInit(); // create space division
@@ -252,6 +261,20 @@ void Node::startup() {
   break;
 
   case 8:
+    {
+	//For debugging
+	/*if(!CkMyPe()){
+	FILE *dumpFile = fopen("/tmp/NAMD_Bench.dump", "w");
+	dumpbench(dumpFile);
+	NAMD_die("Normal execution\n");
+	}*/
+    }
+    #ifdef MEM_OPT_VERSION
+    if(!CkMyPe()){
+	molecule->delEachAtomSigs();
+	molecule->delMassChargeSpace();
+    }
+    #endif
     gotoRun = true;
   break;
 
@@ -284,6 +307,34 @@ void Node::namdOneCommInit()
 #endif
   }
 }
+
+#ifdef CHARMIZE_NAMD
+//It is only executed on pe(0) and called at startup phase 0
+void Node::populateAtomDisArrs(int startupPhase){
+    if(CkMyPe()) return;
+    if(startupPhase) return;
+
+    int disArrSize = molecule->numAtoms/AtomsDisInfo::ATOMDISNUM;
+    int remainAtoms = molecule->numAtoms%AtomsDisInfo::ATOMDISNUM;
+
+    int totalArrSize = disArrSize + (remainAtoms!=0);
+    atomDisArr = CProxy_AtomsDisInfo::ckNew(totalArrSize);
+
+    int atomIndex = 0;
+    Atom *allAtoms = molecule->getAllAtoms();
+    for(int i=0; i<totalArrSize; i++){
+        int actualAtomCnt = AtomsDisInfo::ATOMDISNUM;
+        if(i==disArrSize) actualAtomCnt = remainAtoms;
+
+        AtomStaticInfoMsg *staticMsg = new(actualAtomCnt, 0)AtomStaticInfoMsg;
+        staticMsg->actualNumAtoms = actualAtomCnt;
+        for(int j=0; j<actualAtomCnt; j++, atomIndex++){
+            staticMsg->atoms[j] = allAtoms[atomIndex];
+        }       
+        atomDisArr[i].recvStaticInfo(staticMsg);
+    }    
+}
+#endif
 
 // Namd 1.X style Send/Recv of simulation information
 
@@ -326,6 +377,17 @@ void Node::namdOneSend() {
   parameters->send_Parameters(CpvAccess(comm));
   DebugM(4, "Sending Molecule\n");
   molecule->send_Molecule(CpvAccess(comm));
+}
+
+void Node::sendCharmArrProxies(AllCharmArrsMsg *msg){
+#ifdef CHARMIZE_NAMD
+    if(CkMyPe()){
+        atomDisArr = msg->atomsDis;        
+    }
+    delete msg;
+#else
+    NAMD_die("sendCharmArrProxies should not be called in this case!");
+#endif
 }
 
 // Initial thread setup

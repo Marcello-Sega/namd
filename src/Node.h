@@ -17,6 +17,10 @@
 
 #include "main.h"
 
+#ifdef CHARMIZE_NAMD
+#include "AtomsDisInfo.h"
+#endif
+
 #ifdef SOLARIS
 extern "C" int gethostname( char *name, int namelen);
 #endif
@@ -52,6 +56,14 @@ class GroupInitMsg : public CMessage_GroupInitMsg
 {
 public:
   BOCgroup group;
+};
+
+class AllCharmArrsMsg : public CMessage_AllCharmArrsMsg
+{
+#ifdef CHARMIZE_NAMD
+public:
+  CProxy_AtomsDisInfo atomsDis;
+#endif
 };
 
 #define MAX_SCRIPT_PARAM_SIZE 128
@@ -106,6 +118,11 @@ public:
   // Utility for storing away simulation data for Node
   void saveMolDataPointers(NamdState *);
 
+  //#ifdef CHARMIZE_NAMD  
+  //It is an entry method which has to be declared
+  void sendCharmArrProxies(AllCharmArrsMsg *msg);
+  //#endif
+
   // Made public for pmeAid;
   WorkDistrib *workDistrib;
 
@@ -123,6 +140,11 @@ public:
   IMDOutput *imd;
   Vector *coords;  // Only exists during measure from Tcl
 
+  #ifdef CHARMIZE_NAMD
+  CProxy_AtomsDisInfo atomDisArr;
+  #endif
+
+
   // Remove these calls?
   int myid() { return CkMyPe(); }
   int numNodes() { return CkNumPes(); }
@@ -138,6 +160,10 @@ protected:
   LdbCoordinator *ldbCoordinator;
 
 private:
+  #ifdef CHARMIZE_NAMD  
+  void populateAtomDisArrs(int startupPhase);
+  #endif
+  
   void namdOneCommInit();
   void namdOneRecv();
   void namdOneSend();
@@ -150,7 +176,7 @@ private:
   ScriptTcl *script;
 
   // Startup phase
-  int startupPhase;
+  int startupPhase;  
 };
 
 #endif /* _NODE_H */
