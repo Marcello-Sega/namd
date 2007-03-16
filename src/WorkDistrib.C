@@ -207,6 +207,10 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       a.id = aid;
       a.position = positions[aid];
       a.velocity = velocities[aid];
+      #ifdef MEM_OPT_VERSION
+      a.sigId = molecule->getAtomSigId(aid);
+      a.exclId = molecule->getAtomExclSigId(aid);
+      #endif
       atoms[pid].add(a);
       }
     }
@@ -224,6 +228,10 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       a.id = i;
       a.position = positions[i];
       a.velocity = velocities[i];
+      #ifdef MEM_OPT_VERSION
+      a.sigId = molecule->getAtomSigId(i);
+      a.exclId = molecule->getAtomExclSigId(i);
+      #endif
       atoms[pid].add(a);
       }
     }
@@ -325,7 +333,6 @@ FullAtomList *WorkDistrib::createAtomLists(void)
            << " fixed_groups " << numAtomsInFixedGroupsInPatch
            << "\n" << endi;
     }
-
   }
 
   return atoms;
@@ -346,6 +353,14 @@ void WorkDistrib::createHomePatches(void)
   int numPatches = patchMap->numPatches();
 
   FullAtomList *atoms = createAtomLists();
+    
+#ifdef MEM_OPT_VERSION
+/*  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  node->molecule->delEachAtomSigs();
+  node->molecule->delMassChargeSpace();
+*/
+#endif
 
   int maxAtoms = -1;
   int maxPatch = -1;
