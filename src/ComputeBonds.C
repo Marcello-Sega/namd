@@ -49,9 +49,13 @@ BigReal BondElem::pressureProfileMin = 0;
 void BondElem::getMoleculePointers
     (Molecule* mol, int* count, int32*** byatom, Bond** structarray)
 {
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Should not be called in BondElem::getMoleculePointers in memory optimized version!");
+#else
   *count = mol->numBonds;
   *byatom = mol->bondsByAtom;
   *structarray = mol->bonds;
+#endif
 }
 
 void BondElem::getParameterPointers(Parameters *p, const BondValue **v) {

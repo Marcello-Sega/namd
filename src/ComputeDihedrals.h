@@ -27,6 +27,10 @@ public:
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int32***, Dihedral**);
     static void getParameterPointers(Parameters*, const DihedralValue**);
+    static void getTupleInfo(AtomSignature* sig, int *count, TupleSignature** t) {
+	*count = sig->dihedralCnt;
+	*t = sig->dihedralSigs;
+    }
 
     // pressure profile parameters
     static int pressureProfileSlabs;
@@ -46,6 +50,7 @@ public:
   static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline DihedralElem();
+  inline DihedralElem(AtomID atom0, const TupleSignature *sig, const DihedralValue *v);
   inline DihedralElem(const Dihedral *a, const DihedralValue *v);
   inline DihedralElem(AtomID atom0, AtomID atom1, AtomID atom2, AtomID atom3);
   ~DihedralElem() {};

@@ -62,9 +62,13 @@ BigReal CrosstermElem::pressureProfileMin = 0;
 void CrosstermElem::getMoleculePointers
     (Molecule* mol, int* count, int32*** byatom, Crossterm** structarray)
 {
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Should not be called in CrosstermElem::getMoleculePointers in memory optimized version!");
+#else
   *count = mol->numCrossterms;
   *byatom = mol->crosstermsByAtom;
   *structarray = mol->crossterms;
+#endif
 }
 
 void CrosstermElem::getParameterPointers(Parameters *p, const CrosstermValue **v) {

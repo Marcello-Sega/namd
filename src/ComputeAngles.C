@@ -56,9 +56,13 @@ BigReal AngleElem::pressureProfileMin = 0;
 void AngleElem::getMoleculePointers
     (Molecule* mol, int* count, int32*** byatom, Angle** structarray)
 {
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Should not be called in AngleElem::getMoleculePointers in memory optimized version!");
+#else
   *count = mol->numAngles;
   *byatom = mol->anglesByAtom;
   *structarray = mol->angles;
+#endif
 }
 
 void AngleElem::getParameterPointers(Parameters *p, const AngleValue **v) {

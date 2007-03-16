@@ -17,6 +17,12 @@ inline BondElem::BondElem()
     p[1] = NULL;
   }
 
+inline BondElem::BondElem(AtomID atom0, const TupleSignature *sig, const BondValue *v){
+    atomID[0] = atom0;
+    atomID[1] = atom0 + sig->offset[0];
+    value = &v[sig->tupleParamType];
+}
+
 inline BondElem::BondElem(const Bond *a, const BondValue *v)
   {
     atomID[0] = a->atom1;

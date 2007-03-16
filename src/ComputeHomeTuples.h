@@ -93,13 +93,24 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
   
     virtual void loadTuples(void) {
       int numTuples;
+
+      #ifdef MEM_OPT_VERSION
+      AtomSignature *allSigs;      
+      #else
       int32 **tuplesByAtom;
       /* const (need to propagate const) */ S *tupleStructs;
+      #endif
+      
       const P *tupleValues;
       Node *node = Node::Object();
-    
+
+      #ifdef MEM_OPT_VERSION
+      allSigs = node->molecule->atomSigPool;
+      #else      
       T::getMoleculePointers(node->molecule,
-		    &numTuples, &tuplesByAtom, &tupleStructs);
+		    &numTuples, &tuplesByAtom, &tupleStructs);      
+      #endif
+      
       T::getParameterPointers(node->parameters, &tupleValues);
 
       tupleList.clear();
@@ -122,14 +133,20 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
     
         // cycle through each atom in the patch and load up tuples
         for (int j=0; j < numAtoms; j++)
-        {
+        {              
+           /* cycle through each tuple */
+           #ifdef MEM_OPT_VERSION
+           AtomSignature *thisAtomSig = &allSigs[atom[j].sigId];
+           TupleSignature *allTuples;
+           T::getTupleInfo(thisAtomSig, &numTuples, &allTuples);
+           for(int k=0; k<numTuples; k++) {
+               T t(atom[j].id, &allTuples[k], tupleValues);
+           #else
            /* get list of all tuples for the atom */
            int32 *curTuple = tuplesByAtom[atom[j].id];
-    
-           /* cycle through each tuple */
-           for( ; *curTuple != -1; ++curTuple) {
+           for( ; *curTuple != -1; ++curTuple) {             
              T t(&tupleStructs[*curTuple],tupleValues);
-             
+           #endif            
              register int i;
              aid[0] = atomMap->localID(t.atomID[0]);
              int homepatch = aid[0].pid;
@@ -150,7 +167,11 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
 	         TuplePatchElem *p;
 	         t.p[i] = p = tuplePatchList.find(TuplePatchElem(aid[i].pid));
 	         if ( ! p ) {
+               #ifdef MEM_OPT_VERSION
+               iout << iWARN << "Tuple with atoms ";
+               #else
 	           iout << iWARN << "Tuple " << *curTuple << " with atoms ";
+               #endif
 	           int erri;
 	           for( erri = 0; erri < T::size; erri++ ) {
 	             iout << t.atomID[erri] << "(" <<  aid[erri].pid << ") ";

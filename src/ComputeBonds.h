@@ -30,6 +30,10 @@ public:
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int32***, Bond**);
     static void getParameterPointers(Parameters*, const BondValue**);
+    static void getTupleInfo(AtomSignature* sig, int *count, TupleSignature** t) {
+	*count = sig->bondCnt;
+	*t = sig->bondSigs;
+    }
 
     // pressure profile parameters
     static int pressureProfileSlabs;
@@ -47,6 +51,7 @@ public:
   static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline BondElem();
+  inline BondElem(AtomID atom0, const TupleSignature *sig, const BondValue *v);
   inline BondElem(const Bond *a, const BondValue *v);
   inline BondElem(AtomID atom0, AtomID atom1);
   ~BondElem() {};

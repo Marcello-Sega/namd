@@ -27,7 +27,11 @@ public:
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int32***, Crossterm**);
     static void getParameterPointers(Parameters*, const CrosstermValue**);
-
+    static void getTupleInfo(AtomSignature* sig, int *count, TupleSignature** t) {
+	*count = sig->crosstermCnt;
+	*t = sig->crosstermSigs;
+    }
+    
     // pressure profile parameters
     static int pressureProfileSlabs;
     static int pressureProfileAtomTypes;
@@ -62,6 +66,20 @@ public:
 	p[6] = NULL;
 	p[7] = NULL;
   }
+
+  CrosstermElem(AtomID atom0, const TupleSignature *sig, const CrosstermValue *v){
+    atomID[0] = atom0;
+    atomID[1] = atom0 + sig->offset[0];
+    atomID[2] = atom0 + sig->offset[1];
+    atomID[3] = atom0 + sig->offset[2];
+    atomID[4] = atom0 + sig->offset[3];
+    atomID[5] = atom0 + sig->offset[4];
+    atomID[6] = atom0 + sig->offset[5];
+    atomID[7] = atom0 + sig->offset[6];
+    value = &v[sig->tupleParamType];
+
+  }  
+
   CrosstermElem(const Crossterm *a, const CrosstermValue *v) {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;

@@ -21,6 +21,14 @@ inline DihedralElem::DihedralElem()
 	p[3] = NULL;
   }
 
+inline DihedralElem::DihedralElem(AtomID atom0, const TupleSignature *sig, const DihedralValue *v){
+    atomID[0] = atom0;
+    atomID[1] = atom0 + sig->offset[0];
+    atomID[2] = atom0 + sig->offset[1];
+    atomID[3] = atom0 + sig->offset[2];
+    value = &v[sig->tupleParamType];
+}
+
 inline DihedralElem::DihedralElem(const Dihedral *a, const DihedralValue *v)
   {
     atomID[0] = a->atom1;

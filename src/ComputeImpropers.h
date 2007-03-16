@@ -27,6 +27,10 @@ public:
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int32***, Improper**);
     static void getParameterPointers(Parameters*, const ImproperValue**);
+    static void getTupleInfo(AtomSignature* sig, int *count, TupleSignature** t) {
+	*count = sig->improperCnt;
+	*t = sig->improperSigs;
+    }
 
     // pressure profile parameters
     static int pressureProfileSlabs;
@@ -54,6 +58,15 @@ public:
 	p[2] = NULL;
 	p[3] = NULL;
   }
+
+  ImproperElem(AtomID atom0, const TupleSignature *sig, const ImproperValue *v){
+      atomID[0] = atom0;
+      atomID[1] = atom0 + sig->offset[0];
+      atomID[2] = atom0 + sig->offset[1];
+      atomID[3] = atom0 + sig->offset[2];
+      value = &v[sig->tupleParamType];
+  }
+
   ImproperElem(const Improper *a, const ImproperValue *v) {
     atomID[0] = a->atom1;
     atomID[1] = a->atom2;

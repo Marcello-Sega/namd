@@ -19,6 +19,13 @@ inline AngleElem::AngleElem()
     p[2] = NULL;
   }
 
+inline AngleElem::AngleElem(AtomID atom0, const TupleSignature *sig, const AngleValue *v){
+    atomID[0] = atom0;
+    atomID[1] = atom0 + sig->offset[0];
+    atomID[2] = atom0 + sig->offset[1];
+    value = &v[sig->tupleParamType];
+}
+
 inline AngleElem::AngleElem(const Angle *a, const AngleValue *v)
   {
     atomID[0] = a->atom1;

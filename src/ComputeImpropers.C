@@ -49,9 +49,13 @@ BigReal ImproperElem::pressureProfileMin = 0;
 void ImproperElem::getMoleculePointers
     (Molecule* mol, int* count, int32*** byatom, Improper** structarray)
 {
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Should not be called in ImproperElem::getMoleculePointers in memory optimized version!");
+#else
   *count = mol->numImpropers;
   *byatom = mol->impropersByAtom;
   *structarray = mol->impropers;
+#endif
 }
 
 void ImproperElem::getParameterPointers(Parameters *p, const ImproperValue **v) {

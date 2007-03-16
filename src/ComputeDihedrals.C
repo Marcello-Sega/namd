@@ -49,9 +49,13 @@ BigReal DihedralElem::pressureProfileMin = 0;
 void DihedralElem::getMoleculePointers
     (Molecule* mol, int* count, int32*** byatom, Dihedral** structarray)
 {
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Should not be called in DihedralElem::getMoleculePointers in memory optimized version!");
+#else
   *count = mol->numDihedrals;
   *byatom = mol->dihedralsByAtom;
   *structarray = mol->dihedrals;
+#endif
 }
 
 void DihedralElem::getParameterPointers(Parameters *p, const DihedralValue **v) {

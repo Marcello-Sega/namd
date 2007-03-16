@@ -26,6 +26,10 @@ public:
     static void loadTuplesForAtom(void*, AtomID, Molecule*);
     static void getMoleculePointers(Molecule*, int*, int32***, Angle**);
     static void getParameterPointers(Parameters*, const AngleValue**);
+    static void getTupleInfo(AtomSignature* sig, int *count, TupleSignature** t) {
+	*count = sig->angleCnt;
+	*t = sig->angleSigs;
+    }
 
     // pressure profile parameters
     static int pressureProfileSlabs;
@@ -45,6 +49,7 @@ public:
   static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline AngleElem();
+  inline AngleElem(AtomID atom0, const TupleSignature *sig, const AngleValue *v);
   inline AngleElem(const Angle *a, const AngleValue *v);
   inline AngleElem(AtomID atom0, AtomID atom1, AtomID atom2);
   ~AngleElem() { };
