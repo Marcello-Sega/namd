@@ -382,7 +382,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( simParams->PMEPencils > 1 ) {
       xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
     } else {
-      int nb = (int) sqrt(CkNumPes());
+      int nb = (int) sqrt((float)CkNumPes());
       xBlocks = zBlocks = nb;
       yBlocks = CkNumPes() / nb;
     }
