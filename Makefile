@@ -36,10 +36,13 @@ SBSRCDIR = sb/src
 #DPME=$(DPMEINCL) $(DPMEFLAGS)
 #DPMELIBS= $(DPMEDIR)/libdpme.a
 
+
+#MEMOPTDEF=-DMEM_OPT_VERSION
+
 # defaults for special cases
-CXXTHREADOPTS = $(CXXOPTS)
-CXXSIMPARAMOPTS = $(CXXOPTS)
-CXXNOALIASOPTS = $(CXXOPTS)
+CXXTHREADOPTS = $(CXXOPTS) 
+CXXSIMPARAMOPTS = $(CXXOPTS) 
+CXXNOALIASOPTS = $(CXXOPTS) 
 
 include Makearch
 
@@ -169,7 +172,9 @@ OBJS = \
 	$(DSTDIR)/pub3dfft.o \
 	$(DSTDIR)/vmdsock.o \
 	$(DSTDIR)/parm.o \
-	$(DSTDIR)/imd.o
+	$(DSTDIR)/imd.o \
+	$(DSTDIR)/CompressPsf.o \
+	$(DSTDIR)/AtomsDisInfo.o
 
 # Add new modules here and also define explicit rule below.
 
@@ -205,7 +210,9 @@ CIFILES = 	\
 		$(INCDIR)/WorkDistrib.decl.h \
 		$(INCDIR)/WorkDistrib.def.h \
 		$(INCDIR)/main.decl.h \
-		$(INCDIR)/main.def.h
+		$(INCDIR)/main.def.h \
+		$(INCDIR)/AtomsDisInfo.decl.h \
+		$(INCDIR)/AtomsDisInfo.def.h
 
 # Add new source files here.
 
@@ -242,17 +249,17 @@ CHARMLIB = $(CHARM)/lib
 LIBS = $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(TCL) $(FFT) $(CCS) $(RELEASE)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(TCL) $(FFT) $(CCS) $(RELEASE) $(MEMOPTDEF)
 CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
 CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
 CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
 CXXNOALIASFLAGS = $(CXXBASEFLAGS) $(CXXNOALIASOPTS)
 GXXFLAGS = $(CXXBASEFLAGS) -DNO_STRSTREAM_H
-CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE)
+CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE) $(MEMOPTDEF)
 PLUGINGCCFLAGS = $(COPTI)$(PLUGINSRCDIR) $(COPTI)$(PLUGININCDIR)
 PLUGINCFLAGS = $(PLUGINGCCFLAGS) $(COPTS)
-SBCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(COPTS) $(RELEASE)
-SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(RELEASE)
+SBCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(COPTS) $(RELEASE) $(MEMOPTDEF)
+SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(RELEASE) $(MEMOPTDEF)
 
 # Add new executables here.
 
@@ -501,6 +508,13 @@ $(INCDIR)/main.decl.h: $(SRCDIR)/main.ci
 	$(CHARMXI) $(SRCDIR)/main.ci
 	$(MOVE) main.def.h $(INCDIR)
 	$(MOVE) main.decl.h $(INCDIR)
+
+$(INCDIR)/AtomsDisInfo.def.h: $(INCDIR)/AtomsDisInfo.decl.h
+
+$(INCDIR)/AtomsDisInfo.decl.h: $(SRCDIR)/AtomsDisInfo.ci
+	$(CHARMXI) $(SRCDIR)/AtomsDisInfo.ci
+	$(MOVE) AtomsDisInfo.def.h $(INCDIR)
+	$(MOVE) AtomsDisInfo.decl.h $(INCDIR)
 
 DEPENDFILE = .rootdir/Make.depends
 
