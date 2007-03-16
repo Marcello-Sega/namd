@@ -550,10 +550,10 @@ static int get_lattice_from_ts(Lattice *lattice, const molfile_timestep_t *ts)
   double epsalpha = DEG2RAD*(ts->alpha-90.0);
   double epsbeta  = DEG2RAD*(ts->beta-90.0);
   double epsgamma = DEG2RAD*(ts->gamma-90.0);
-  double cosAB = -sin(epsalpha);
-  double sinAB = cos(epsalpha);
+  double cosAB = -sin(epsgamma);
+  double sinAB = cos(epsgamma);
   double cosAC = -sin(epsbeta);
-  double cosBC = -sin(epsgamma);
+  double cosBC = -sin(epsalpha);
 
   // A will lie along the positive x axis.
   // B will lie in the x-y plane
