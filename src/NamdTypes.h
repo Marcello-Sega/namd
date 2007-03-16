@@ -28,6 +28,11 @@ typedef int AtomType;
 typedef float Mass;
 typedef float Charge;
 
+#ifdef MEM_OPT_VERSION
+typedef unsigned short AtomSigID;
+typedef unsigned short ExclSigID;
+#endif
+
 typedef double Coordinate;
 
 struct Transform
@@ -46,6 +51,11 @@ struct CompAtom {
   unsigned int groupFixed : 1;
   unsigned int partition : 4;
 
+#ifdef MEM_OPT_VERSION
+  AtomSigID sigId;
+  ExclSigID exclId;
+#endif
+
   CompAtom() { ; }
 
   // Needed for IBM's xlC compiler
@@ -54,8 +64,12 @@ struct CompAtom {
     id(a.id), hydrogenGroupSize(a.hydrogenGroupSize),
     nonbondedGroupIsAtom(a.nonbondedGroupIsAtom),
     atomFixed(a.atomFixed), groupFixed(a.groupFixed),
-    partition(a.partition) {
-    ;
+    partition(a.partition){
+      #ifdef MEM_OPT_VERSION
+      sigId = a.sigId;
+      exclId = a.exclId;
+      #endif
+      ;
   }
 
   // Needed for IBM's xlC compiler
@@ -68,6 +82,12 @@ struct CompAtom {
     atomFixed = a.atomFixed;
     groupFixed = a.groupFixed;
     partition = a.partition;
+
+    #ifdef MEM_OPT_VERSION
+    sigId = a.sigId;
+    exclId = a.exclId;
+    #endif
+    
     return *this;
   }
 

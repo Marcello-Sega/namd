@@ -36,6 +36,15 @@
 // #define DEBUGM
 #include "Debug.h"
 
+#include "CompressPsf.h"
+#include <deque>
+#include <algorithm>
+using namespace std;
+
+#ifdef MEM_OPT_VERSION
+template int lookupCstPool<AtomSignature>(const vector<AtomSignature>&, const AtomSignature&);
+template int lookupCstPool<ExclusionSignature>(const vector<ExclusionSignature>&, const ExclusionSignature&);
+#endif
 
 class ResidueLookupElem
 {
@@ -109,7 +118,12 @@ int Molecule::get_atom_from_name(
   int end = 0;
   if ( resLookup->lookup(segid,resid,&i,&end) ) return -1;
   for ( ; i < end; ++i ) {
+    #ifdef MEM_OPT_VERSION    
+    Index idx = atomNames[i].atomnameIdx;
+    if(!strcasecmp(aname, atomNamePool[idx])) return i;
+    #else
     if ( ! strcasecmp(aname,atomNames[i].atomname) ) return i;
+    #endif
   }
   return -1;
 }
@@ -166,25 +180,52 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   if ( simParams->globalForcesOn ) {
     resLookup = new ResidueLookupElem;
   }
+
+  #ifdef MEM_OPT_VERSION
+  eachAtomSig = NULL;
+  atomSigPoolSize = 0;
+  atomSigPool = NULL;
+  massPoolSize = 0;
+  atomMassPool = NULL;
+  eachAtomMass = NULL;
+  chargePoolSize = 0;
+  atomChargePool = NULL;
+  eachAtomCharge = NULL;
+  #else
   bonds=NULL;
   angles=NULL;
   dihedrals=NULL;
   impropers=NULL;
   crossterms=NULL;
+  #endif
+
   donors=NULL;
   acceptors=NULL;
-  exclusions=NULL;
+  
   tmpArena=NULL;
+
+  #ifndef MEM_OPT_VERSION      
+  exclusions=NULL;
   bondsWithAtom=NULL;
   bondsByAtom=NULL;
   anglesByAtom=NULL;
   dihedralsByAtom=NULL;
   impropersByAtom=NULL;
   crosstermsByAtom=NULL;
+  #endif
+
+  #ifdef MEM_OPT_VERSION
+  exclSigPool = NULL;
+  exclChkSigPool = NULL;
+  exclSigPoolSize = 0;
+  eachAtomExclSig = NULL;
+  #else
   exclusionsByAtom=NULL;
   fullExclusionsByAtom=NULL;
   modExclusionsByAtom=NULL;
   all_exclusions=NULL;
+  #endif
+
   langevinParams=NULL;
   fixedAtomFlags=NULL;
   cluster=NULL;
@@ -221,7 +262,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   // nameArena->setAlignment(8);
   arena = new ObjectArena<int32>;
   // arena->setAlignment(32);
+  #ifndef MEM_OPT_VERSION
   exclArena = new ObjectArena<char>;
+  #endif
   // exclArena->setAlignment(32);
 
   /*  Initialize counts to 0 */
@@ -288,7 +331,13 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
 {
   initialize(simParams,param);
 
-  read_psf_file(filename, param);
+  if(simParams->useCompressedPsf)
+      read_compressed_psf_file(filename, param);
+  else if(simParams->genCompressedPsf){      
+      compress_psf_file(this, filename, param, simParams);
+  }      
+  else
+      read_psf_file(filename, param);
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -320,6 +369,10 @@ Molecule::~Molecule()
   if (resLookup != NULL)
     delete resLookup;
 
+  #ifdef MEM_OPT_VERSION
+  if(eachAtomSig) delete [] eachAtomSig;
+  if(atomSigPool) delete [] atomSigPool;
+  #else
   if (bonds != NULL)
     delete [] bonds;
 
@@ -335,15 +388,21 @@ Molecule::~Molecule()
   if (crossterms != NULL)
     delete [] crossterms;
 
+  if (exclusions != NULL)
+    delete [] exclusions;
+  #endif
+
   if (donors != NULL)
     delete [] donors;
 
   if (acceptors != NULL)
-    delete [] acceptors;
+    delete [] acceptors;  
 
-  if (exclusions != NULL)
-    delete [] exclusions;
-  
+  #ifdef MEM_OPT_VERSION
+  if(exclSigPool) delete [] exclSigPool;
+  if(exclChkSigPool) delete [] exclChkSigPool;
+  if(eachAtomExclSig) delete [] eachAtomExclSig;
+  #else
   if (bondsByAtom != NULL)
        delete [] bondsByAtom;
   
@@ -357,8 +416,8 @@ Molecule::~Molecule()
        delete [] impropersByAtom;
   
   if (crosstermsByAtom != NULL)
-       delete [] crosstermsByAtom;
-  
+       delete [] crosstermsByAtom;  
+
   if (exclusionsByAtom != NULL)
        delete [] exclusionsByAtom;
   
@@ -370,7 +429,9 @@ Molecule::~Molecule()
   
   if (all_exclusions != NULL)
        delete [] all_exclusions;
-  
+  #endif
+
+
   if (fixedAtomFlags != NULL)
        delete [] fixedAtomFlags;
 
@@ -397,7 +458,10 @@ Molecule::~Molecule()
 //fepe
 
   delete arena;
+
+  #ifndef MEM_OPT_VERSION
   delete exclArena;
+  #endif
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -421,6 +485,9 @@ Molecule::~Molecule()
 void Molecule::read_psf_file(char *fname, Parameters *params)
 
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   char err_msg[512];  //  Error message for NAMD_die
   char buffer[512];  //  Buffer for file reading
   int i;      //  Loop counter
@@ -729,8 +796,316 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   build_atom_status();
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_psf_file      */
+
+/************************************************************************/
+/*                  */
+/*        FUNCTION read_compressed_psf_file      */
+/*                  */
+/*   INPUTS:                */
+/*  fname - Name of the compressed .psf file to read        */
+/*  params - pointer to Parameters object to use to obtain          */
+/*     parameters for vdWs, bonds, etc.      */
+/*                  */
+/*  This function reads a compressed .psf file in.  This is where just about   */
+/*   all of the structural information for this class comes from.  The  */
+/*   .psf file contains descriptions of the atom, bonds, angles,        */
+/*   dihedrals, impropers, and exclusions.  The parameter object is     */
+/*   used to look up parameters for each of these entities.    */
+/*                  */
+/************************************************************************/
+void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
+#ifndef MEM_OPT_VERSION
+    return;
+#else
+    FILE *psf_file;    //  pointer to .psf file
+    int ret_code;    //  ret_code from NAMD_read_line calls
+    char buffer[512];
+
+    /* Try and open the .psf file           */
+    if ( (psf_file = Fopen(fname, "r")) == NULL)
+    {
+        char err_msg[512];
+        sprintf(err_msg, "UNABLE TO OPEN THE COMPRESSED .psf FILE %s", fname);
+        NAMD_die(err_msg);
+    }     
+
+    char strBuf[12];
+
+    //Begin reading constant pools for atoms' basic information
+    //1. segment names
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NSEGMENTNAMES"))
+        NAMD_die("UNABLE TO FIND NSEGMENTNAMES");
+    sscanf(buffer, "%d", &segNamePoolSize);
+    if(segNamePoolSize!=0)
+        segNamePool = new (char *)[segNamePoolSize];
+    for(int i=0; i<segNamePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        segNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(segNamePool[i], strBuf);        
+    }    
+
+    //2. residue names
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NRESIDUENAMES"))
+        NAMD_die("UNABLE TO FIND NRESIDUENAMES");
+    sscanf(buffer, "%d", &resNamePoolSize);
+    if(resNamePoolSize!=0)
+        resNamePool = new (char *)[resNamePoolSize];
+    for(int i=0; i<resNamePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        resNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(resNamePool[i], strBuf);
+    }
+
+    //3. atom names
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NATOMNAMES"))
+        NAMD_die("UNABLE TO FIND NATOMNAMES");
+    sscanf(buffer, "%d", &atomNamePoolSize);
+    if(atomNamePoolSize!=0)
+        atomNamePool = new (char *)[atomNamePoolSize];
+    for(int i=0; i<atomNamePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        atomNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(atomNamePool[i], strBuf);
+    }
+
+    //4. atom types
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NATOMTYPES"))
+        NAMD_die("UNABLE TO FIND NATOMTYPES");
+    sscanf(buffer, "%d", &atomTypePoolSize);
+    if(atomTypePoolSize!=0)
+        atomTypePool = new (char *)[atomTypePoolSize];
+    for(int i=0; i<atomTypePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        atomTypePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(atomTypePool[i], strBuf);
+    }
+
+    //5. charges
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NCHARGES"))
+        NAMD_die("UNABLE TO FIND NCHARGES");
+    sscanf(buffer, "%d", &chargePoolSize);
+    if(chargePoolSize!=0)
+        atomChargePool = new Real[chargePoolSize];
+    for(int i=0; i<chargePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%f", atomChargePool+i);        
+    }
+
+    //6. masses
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NMASSES"))
+        NAMD_die("UNABLE TO FIND NMASSES");
+    sscanf(buffer, "%d", &massPoolSize);
+    if(massPoolSize!=0)
+        atomMassPool = new Real[massPoolSize];
+    for(int i=0; i<massPoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%f", atomMassPool+i);        
+    }
+
+    //Begin reading of atom signatures
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "ATOMSIGS"))
+        NAMD_die("UNABLE TO FIND ATOMSIGS");
+    sscanf(buffer, "%d", &atomSigPoolSize);
+    atomSigPool = new AtomSignature[atomSigPoolSize];
+    int typeCnt;
+    int tmp1, tmp2, tmp3;
+    int ttype;
+    for(int i=0; i<atomSigPoolSize; i++){
+        //BOND SIGS
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NBONDSIGS"))
+            NAMD_die("UNABLE TO FIND NBONDSIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].bondCnt = typeCnt;
+            atomSigPool[i].bondSigs = new TupleSignature[typeCnt];
+        }            
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);            
+            sscanf(buffer, "%d | %d", &tmp1, &ttype);
+            TupleSignature oneSig(1, BOND, (Index)ttype);
+            oneSig.offset[0] = tmp1;
+            atomSigPool[i].bondSigs[j]=oneSig;
+        }
+
+        //ANGLE SIGS
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NTHETASIGS"))
+            NAMD_die("UNABLE TO FIND NTHETASIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].angleCnt = typeCnt;
+            atomSigPool[i].angleSigs = new TupleSignature[typeCnt];
+        }            
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);            
+            sscanf(buffer, "%d %d | %d", &tmp1, &tmp2, &ttype);
+            TupleSignature oneSig(2,ANGLE,(Index)ttype);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            atomSigPool[i].angleSigs[j] = oneSig;
+        }
+        //DIHEDRAL SIGS
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NPHISIGS"))
+            NAMD_die("UNABLE TO FIND NPHISIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].dihedralCnt = typeCnt;
+            atomSigPool[i].dihedralSigs = new TupleSignature[typeCnt];
+        }            
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);            
+            sscanf(buffer, "%d %d %d | %d", &tmp1, &tmp2, &tmp3, &ttype);
+            TupleSignature oneSig(3,DIHEDRAL,(Index)ttype);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            oneSig.offset[2] = tmp3;
+            atomSigPool[i].dihedralSigs[j] = oneSig;
+        }
+        //IMPROPER SIGS
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NIMPHISIGS"))
+            NAMD_die("UNABLE TO FIND NIMPHISIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].improperCnt = typeCnt;
+            atomSigPool[i].improperSigs = new TupleSignature[typeCnt];
+        }            
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);            
+            sscanf(buffer, "%d %d %d | %d", &tmp1, &tmp2, &tmp3, &ttype);
+            TupleSignature oneSig(3,IMPROPER,(Index)ttype);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            oneSig.offset[2] = tmp3;
+            atomSigPool[i].improperSigs[j] = oneSig;
+        }        
+    }
+
+    //Reading exclusions' signatures    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NEXCLSIGS")){
+        NAMD_die("UNABLE TO FIND NEXCLSIGS");
+    }
+    sscanf(buffer, "%d", &exclSigPoolSize);
+    if(exclSigPoolSize>0) exclSigPool = new ExclusionSignature[exclSigPoolSize];
+    vector<int> fullExcls;
+    vector<int> modExcls;
+    for(int i=0; i<exclSigPoolSize; i++){
+        int fullExclCnt = NAMD_read_int(psf_file, buffer);
+        for(int j=0; j<fullExclCnt; j++)
+            fullExcls.push_back(NAMD_read_int(psf_file, buffer));
+        int modExclCnt = NAMD_read_int(psf_file, buffer);
+        for(int j=0; j<modExclCnt; j++)
+            modExcls.push_back(NAMD_read_int(psf_file, buffer));
+
+        //The integers in both vectors should be in the increasing the order
+        //since they have been sorted during the compression of psf file
+        exclSigPool[i].setOffsets(fullExcls, modExcls);
+
+        fullExcls.clear();
+        modExcls.clear();
+    }
+
+    //Now begin to read atoms
+    //This part could be read in the batch mode. All the above information
+    //can be stored in memory which only occupies several KBs.
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NATOM"))
+        NAMD_die("UNABLE TO FIND NATOM");
+    sscanf(buffer, "%d", &numAtoms);
+    if(numAtoms>0){
+        atoms = new AtomCstInfo[numAtoms];
+        atomNames = new AtomNameIdx[numAtoms];
+        eachAtomMass = new Index[numAtoms];
+        eachAtomCharge = new Index[numAtoms];
+        eachAtomSig = new Index[numAtoms];
+	eachAtomExclSig = new Index[numAtoms];
+
+        hydrogenGroup.resize(0);
+        ResidueLookupElem *tmpResLookup = resLookup;
+
+        int residue_number; //for residue number
+        char *segment_name;
+        int read_count;
+        int idx[9];
+        for(int i=0; i<numAtoms; i++){
+            NAMD_read_line(psf_file, buffer);
+            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d",
+                                idx, idx+1, idx+2, idx+3, idx+4,
+                                idx+5, idx+6, idx+7, idx+8);
+            if(read_count!=9){
+                char err_msg[128];
+                sprintf(err_msg, "BAD ATOM LINE FORMAT IN COMPRESSED PSF FILE IN ATOM LINE %d\nLINE=%s",i+1, buffer);
+                NAMD_die(err_msg);
+            }
+
+            segment_name = segNamePool[idx[0]];
+            residue_number = idx[1];            
+            atomNames[i].resnameIdx = (Index)idx[2];
+            atomNames[i].atomnameIdx = (Index)idx[3];
+            atomNames[i].atomtypeIdx = (Index)idx[4];
+            eachAtomCharge[i] = (Index)idx[5];
+            eachAtomMass[i] = (Index)idx[6];
+            eachAtomSig[i] = (Index)idx[7];
+	    eachAtomExclSig[i] = (Index)idx[8];
+
+            //Add this atom to residue lookup table
+            if(tmpResLookup) tmpResLookup =
+                tmpResLookup->append(segment_name, residue_number, i);
+            //Determine the type of the atom (H or O)
+            Real thisAtomMass = atomMassPool[eachAtomMass[i]];
+            if(thisAtomMass <= 3.5){
+                atoms[i].status = HydrogenAtom;
+            }else if(atomNamePool[atomNames[i].atomnameIdx][0]=='O' &&
+                     (thisAtomMass >= 14.0) && (thisAtomMass <= 18.0)){
+                atoms[i].status = OxygenAtom;
+            }
+
+            //Look up the vdw constants for this atom
+            params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
+                                     &(atoms[i]));
+        }
+    }
+    //build up information for numBonds/numDihedrals.. etc
+    numBonds=0;
+    numAngles=0;
+    numDihedrals=0;
+    numImpropers=0;
+    numCrossterms=0;
+    numTotalExclusions=0;
+    for(int i=0; i<numAtoms; i++){
+        AtomSignature *thisSig = &atomSigPool[eachAtomSig[i]];
+        numBonds += thisSig->bondCnt;
+        numAngles += thisSig->angleCnt;
+        numDihedrals += thisSig->dihedralCnt;
+        numImpropers += thisSig->improperCnt;
+        numCrossterms += thisSig->crosstermCnt;
+
+        ExclusionSignature *exclSig = &exclSigPool[eachAtomExclSig[i]];
+        numTotalExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
+    }
+    
+    Fclose(psf_file);
+    build_atom_status();
+#endif
+}
+/*      END OF FUNCTION read_compressed_psf_file      */
 
 /************************************************************************/
 /*                  */
@@ -752,6 +1127,9 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
 void Molecule::read_atoms(FILE *fd, Parameters *params)
 
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   char buffer[512];  // Buffer for reading from file
   int atom_number=0;  // Atom number 
   int last_atom_number=0; // Last atom number, used to assure
@@ -864,6 +1242,7 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
         }
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_atoms      */
 
@@ -882,6 +1261,9 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
 void Molecule::read_bonds(FILE *fd, Parameters *params)
 
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int atom_nums[2];  // Atom indexes for the bonded atoms
   char atom1name[11];  // Atom type for atom #1
   char atom2name[11];  // Atom type for atom #2
@@ -959,6 +1341,7 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
   }
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_bonds      */
 
@@ -981,6 +1364,9 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
 void Molecule::read_angles(FILE *fd, Parameters *params)
 
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int atom_nums[3];  //  Atom numbers for the three atoms
   char atom1name[11];  //  Atom type for atom 1
   char atom2name[11];  //  Atom type for atom 2
@@ -1062,6 +1448,7 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
   }
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_angles      */
 
@@ -1081,8 +1468,10 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
 /************************************************************************/
 
 void Molecule::read_dihedrals(FILE *fd, Parameters *params)
-
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int atom_nums[4];  // The 4 atom indexes
   int last_atom_nums[4];  // Atom numbers from previous bond
   char atom1name[11];  // Atom type for atom 1
@@ -1181,6 +1570,7 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
   numDihedrals = num_unique;
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_dihedral      */
 
@@ -1200,8 +1590,10 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
 /************************************************************************/
 
 void Molecule::read_impropers(FILE *fd, Parameters *params)
-
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int atom_nums[4];  //  Atom indexes for the 4 atoms
   int last_atom_nums[4];  //  Atom indexes from previous bond
   char atom1name[11];  //  Atom type for atom 1
@@ -1305,6 +1697,7 @@ void Molecule::read_impropers(FILE *fd, Parameters *params)
   numImpropers = num_unique;
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_impropers      */
 
@@ -1325,6 +1718,9 @@ void Molecule::read_impropers(FILE *fd, Parameters *params)
 void Molecule::read_crossterms(FILE *fd, Parameters *params)
 
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int atom_nums[8];  //  Atom indexes for the 4 atoms
   int last_atom_nums[8];  //  Atom indexes from previous bond
   char atom1name[11];  //  Atom type for atom 1
@@ -1420,6 +1816,7 @@ void Molecule::read_crossterms(FILE *fd, Parameters *params)
   numCrossterms = num_read;
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_impropers      */
 
@@ -1441,8 +1838,10 @@ void Molecule::read_crossterms(FILE *fd, Parameters *params)
 /************************************************************************/
 
 void Molecule::read_donors(FILE *fd)
-
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int d[2];               // temporary storage of donor atom index
   register int j;      // Loop counter
   int num_read=0;    // Number of bonds read so far
@@ -1493,6 +1892,7 @@ void Molecule::read_donors(FILE *fd)
   }
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_donors      */
 
@@ -1516,8 +1916,10 @@ void Molecule::read_donors(FILE *fd)
 /************************************************************************/
 
 void Molecule::read_acceptors(FILE *fd)
-
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int d[2];               // temporary storage of atom index
   register int j;      // Loop counter
   int num_read=0;    // Number of bonds read so far
@@ -1566,6 +1968,7 @@ void Molecule::read_acceptors(FILE *fd)
   }
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_acceptors      */
 
@@ -1600,6 +2003,9 @@ void Molecule::read_acceptors(FILE *fd)
 void Molecule::read_exclusions(FILE *fd)
 
 {
+#ifdef MEM_OPT_VERSION
+    return;
+#else
   int *exclusion_atoms;  //  Array of indexes of excluded atoms
   register int num_read=0;    //  Number fo exclusions read in
   int current_index;  //  Current index value
@@ -1692,6 +2098,7 @@ void Molecule::read_exclusions(FILE *fd)
   delete [] exclusion_atoms;
 
   return;
+#endif
 }
 /*      END OF FUNCTION read_exclusions      */
 
@@ -1755,6 +2162,26 @@ void Molecule::print_bonds(Parameters *params)
       << "ATOM1 ATOM2 TYPE1 TYPE2      k        x0" \
       << endi);
 
+  #ifdef MEM_OPT_VERSION
+  for(i=0; i<numAtoms; i++){
+      AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
+      int bCnt = sig->bondCnt;
+      TupleSignature *bSigs = sig->bondSigs;
+      for(int j=0; j<bCnt; j++){
+          Bond aBond;
+          aBond.atom1 = i;
+          aBond.atom2 = i+bSigs[j].offset[0];
+          aBond.bond_type = bSigs[j].tupleParamType;
+          params->get_bond_params(&k, &x0, aBond.bond_type);
+
+          DebugM(2,aBond.atom1+1 << " " \
+             << aBond.atom2+1 << " "   \
+             << atomNames[aBond.atom1].atomtype << " "  \
+             << atomNames[aBond.atom2].atomtype << " " << k \
+             << " " << x0 << endi);
+      }
+  }
+  #else
   for (i=0; i<numBonds; i++)
   {
     params->get_bond_params(&k, &x0, bonds[i].bond_type);
@@ -1765,6 +2192,7 @@ void Molecule::print_bonds(Parameters *params)
        << atomNames[bonds[i].atom2].atomtype << " " << k \
        << " " << x0 << endi);
   }
+  #endif
 }
 /*      END OF FUNCTION print_bonds      */
 
@@ -1808,6 +2236,12 @@ void Molecule::print_exclusions()
 void Molecule::send_Molecule(Communicate *com_obj)
 
 {
+    #ifdef MEM_OPT_VERSION
+    //  Now build arrays of indexes into these arrays by atom      
+    //generating all the new atom signatures and exclusion signatures only on pe0
+    build_lists_by_atom();
+    #endif
+      
   //  Message to send to clients
   MOStream *msg=com_obj->newOutputStream(ALLBUTME, MOLECULETAG, BUFSIZE);
   if ( msg == NULL )
@@ -1815,48 +2249,87 @@ void Molecule::send_Molecule(Communicate *com_obj)
     NAMD_die("Memory allocation failed in Molecule::send_Molecule");
   }
 
+  #ifdef MEM_OPT_VERSION
+      msg->put(numAtoms);
+      //mass and charge pool needed to be sent to other processors
+      //for the sake of function call: build_atom_status
+      msg->put(massPoolSize);
+      msg->put(massPoolSize, atomMassPool);
+      msg->put(numAtoms*sizeof(Index), (char *)eachAtomMass);
+
+      msg->put(chargePoolSize);
+      msg->put(chargePoolSize, atomChargePool);
+      msg->put(numAtoms*sizeof(Index), (char *)eachAtomCharge);
+
+      //vdw_type, partner etc.
+      msg->put(numAtoms*sizeof(AtomCstInfo), (char *)atoms);
+
+      //put atoms' signatures
+      msg->put(atomSigPoolSize);
+      for(int i=0; i<atomSigPoolSize; i++)
+          atomSigPool[i].pack(msg);
+
+      //put atom's exclusion signatures
+      msg->put(exclSigPoolSize);
+      for(int i=0; i<exclSigPoolSize; i++)
+          exclSigPool[i].pack(msg);
+
+      //put eachAtomSig and eachAtomExclSig
+      msg->put(numAtoms*sizeof(Index), (char *)eachAtomSig);
+      msg->put(numAtoms*sizeof(Index), (char *)eachAtomExclSig);
+  #else
       msg->put(numAtoms);
       msg->put(numAtoms*sizeof(Atom), (char*)atoms);
-
+  #endif
       //  Send the bond information
       msg->put(numBonds);
 
+      #ifndef MEM_OPT_VERSION
       if (numBonds)
       {
         msg->put(numBonds*sizeof(Bond), (char*)bonds);
       }
+      #endif
 
       //  Send the angle information
       msg->put(numAngles);
 
+      #ifndef MEM_OPT_VERSION
       if (numAngles)
       {
         msg->put(numAngles*sizeof(Angle), (char*)angles);
       }
+      #endif
 
       //  Send the dihedral information
       msg->put(numDihedrals);
 
+      #ifndef MEM_OPT_VERSION
       if (numDihedrals)
       {
         msg->put(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
       }
+      #endif
 
       //  Send the improper information
       msg->put(numImpropers);
 
+      #ifndef MEM_OPT_VERSION
       if (numImpropers)
       {
         msg->put(numImpropers*sizeof(Improper), (char*)impropers);
       }
+      #endif
 
       //  Send the crossterm information
       msg->put(numCrossterms);
 
+      #ifndef MEM_OPT_VERSION
       if (numCrossterms)
       {
         msg->put(numCrossterms*sizeof(Crossterm), (char*)crossterms);
       }
+      #endif
 
       // send the hydrogen bond donor information
       msg->put(numDonors);
@@ -1875,12 +2348,14 @@ void Molecule::send_Molecule(Communicate *com_obj)
       }
 
       //  Send the exclusion information
+      #ifndef MEM_OPT_VERSION
       msg->put(numExclusions);
 
       if (numExclusions)
       {
         msg->put(numExclusions*sizeof(Exclusion), (char*)exclusions);
       }
+      #endif
       
       //  Send the constraint information, if used
       if (simParams->constraintsOn)
@@ -2010,9 +2485,14 @@ void Molecule::send_Molecule(Communicate *com_obj)
       // Broadcast the message to the other nodes
       msg->end();
       delete msg;
-      
-      //  Now build arrays of indexes into these arrays by atom
+
+      #ifdef MEM_OPT_VERSION
+      build_excl_check_signatures();
+      #else      
+      //  Now build arrays of indexes into these arrays by atom      
       build_lists_by_atom();
+      #endif
+
 }
     /*      END OF FUNCTION send_Molecule      */
 
@@ -2031,14 +2511,61 @@ void Molecule::receive_Molecule(MIStream *msg)
       //  Get the atom information
       msg->get(numAtoms);
 
+  #ifdef MEM_OPT_VERSION   
+      //are mass and charge pool needed to be sent to other processors???
+      msg->get(massPoolSize);
+      if(atomMassPool) delete [] atomMassPool;
+      atomMassPool = new Real[massPoolSize];
+      msg->get(massPoolSize, atomMassPool);
+      if(eachAtomMass) delete [] eachAtomMass;
+      eachAtomMass = new Index[numAtoms];
+      msg->get(numAtoms*sizeof(Index), (char *)eachAtomMass);
+      
+      msg->get(chargePoolSize);
+      if(atomChargePool) delete [] atomChargePool;
+      atomChargePool = new Real[chargePoolSize];
+      msg->get(chargePoolSize, atomChargePool);
+      if(eachAtomCharge) delete [] eachAtomCharge;
+      eachAtomCharge = new Index[numAtoms];
+      msg->get(numAtoms*sizeof(Index), (char *)eachAtomCharge);
+
+      //vdw_type, partner etc.
+      if(atoms) delete [] atoms;
+      atoms = new AtomCstInfo[numAtoms];
+      msg->get(numAtoms*sizeof(AtomCstInfo), (char *)atoms);
+
+      //get atoms' signatures
+      msg->get(atomSigPoolSize);
+      if(atomSigPool) delete [] atomSigPool;
+      atomSigPool = new AtomSignature[atomSigPoolSize];
+      for(int i=0; i<atomSigPoolSize; i++)
+          atomSigPool[i].unpack(msg);
+
+      //get exclusions' signatures
+      msg->get(exclSigPoolSize);
+      if(exclSigPool) delete [] exclSigPool;
+      exclSigPool = new ExclusionSignature[exclSigPoolSize];
+      for(int i=0; i<exclSigPoolSize; i++)
+          exclSigPool[i].unpack(msg);
+
+      //get eachAtomSig and eachAtomExclSig
+      if(eachAtomSig) delete [] eachAtomSig;
+      eachAtomSig = new Index[numAtoms];
+      msg->get(numAtoms*sizeof(Index), (char *)eachAtomSig);
+      if(eachAtomExclSig) delete [] eachAtomExclSig;
+      eachAtomExclSig = new Index[numAtoms];
+      msg->get(numAtoms*sizeof(Index), (char *)eachAtomExclSig);
+  #else
       delete [] atoms;
       atoms= new Atom[numAtoms];
 
       msg->get(numAtoms*sizeof(Atom), (char*)atoms);
+  #endif
 
       //  Get the bond information
       msg->get(numBonds);
 
+      #ifndef MEM_OPT_VERSION
       if (numBonds)
       {
         delete [] bonds;
@@ -2046,10 +2573,12 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numBonds*sizeof(Bond), (char*)bonds);
       }
+      #endif
 
       //  Get the angle information
       msg->get(numAngles);
 
+      #ifndef MEM_OPT_VERSION
       if (numAngles)
       {
         delete [] angles;
@@ -2057,10 +2586,12 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numAngles*sizeof(Angle), (char*)angles);
       }
+      #endif
 
       //  Get the dihedral information
       msg->get(numDihedrals);
 
+      #ifndef MEM_OPT_VERSION
       if (numDihedrals)
       {
         delete [] dihedrals;
@@ -2068,10 +2599,12 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
       }
+      #endif
 
       //  Get the improper information
       msg->get(numImpropers);
 
+      #ifndef MEM_OPT_VERSION
       if (numImpropers)
       {
         delete [] impropers;
@@ -2079,10 +2612,12 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numImpropers*sizeof(Improper), (char*)impropers);
       }
+      #endif
 
       //  Get the crossterm information
       msg->get(numCrossterms);
 
+      #ifndef MEM_OPT_VERSION
       if (numCrossterms)
       {
         delete [] crossterms;
@@ -2090,6 +2625,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numCrossterms*sizeof(Crossterm), (char*)crossterms);
       }
+      #endif
 
       //  Get the hydrogen bond donors
       msg->get(numDonors);
@@ -2114,6 +2650,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       }
 
       //  Get the exclusion information
+      #ifndef MEM_OPT_VERSION
       msg->get(numExclusions);
 
       if (numExclusions)
@@ -2123,6 +2660,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numExclusions*sizeof(Exclusion), (char*)exclusions);
       }
+      #endif
       
       //  Get the constraint information, if they are active
       if (simParams->constraintsOn)
@@ -2299,9 +2837,79 @@ void Molecule::receive_Molecule(MIStream *msg)
       build_atom_status();
 
       //  Now build arrays of indexes into these arrays by atom
-      build_lists_by_atom();
+      #ifdef MEM_OPT_VERSION
+      build_excl_check_signatures();
+      #else
+      build_lists_by_atom();      
+      #endif
+
+      #ifdef MEM_OPT_VERSION
+      delEachAtomSigs();
+      delMassChargeSpace();
+      #endif
     }
     /*      END OF FUNCTION receive_Molecule    */
+
+
+#ifdef MEM_OPT_VERSION
+    //Well, the exclusion check signatures could also done on PE0 and
+    //sent to other processors through send_Molecule/receive_Molecule 
+    //two procedures.
+    void Molecule::build_excl_check_signatures(){
+       exclChkSigPool = new ExclusionCheck[exclSigPoolSize];
+       for(int i=0; i<exclSigPoolSize; i++){
+           ExclusionSignature *sig = &exclSigPool[i];
+           ExclusionCheck *sigChk = &exclChkSigPool[i];
+           if(sig->fullExclCnt){
+               if(!sig->modExclCnt){ //only having fullExclusion
+                   sigChk->min = sig->fullOffset[0];
+                   sigChk->max = sig->fullOffset[sig->fullExclCnt-1];
+               }else{ //have both full and modified exclusion
+                   int fullMin, fullMax, modMin, modMax;
+                   
+                   fullMin = sig->fullOffset[0];
+                   fullMax = sig->fullOffset[sig->fullExclCnt-1];
+               
+                   modMin = sig->modOffset[0];
+                   modMax = sig->modOffset[sig->modExclCnt-1];
+                   
+                   if(fullMin < modMin)
+                       sigChk->min = fullMin;
+                   else
+                       sigChk->min = modMin;
+                   if(fullMax < modMax)
+                       sigChk->max = modMax;
+                   else
+                       sigChk->max = fullMax;
+               }        
+           }else{
+               if(sig->modExclCnt){
+                   sigChk->min = sig->modOffset[0];
+                   sigChk->max = sig->modOffset[sig->modExclCnt-1];
+               }else{ //both count are 0
+                   if(CkMyPe()==0)
+                       printf("Warning: an empty exclusion signature with index %d!\n", i);               
+                   continue;
+               }
+           }           
+
+           if((sigChk->max-sigChk->min) > simParams->maxExclusionFlags){
+               NAMD_die("Currently not supporting building exclusion check on the fly for memory optimized version!\n");
+           }
+
+           sigChk->flags = new char[sigChk->max-sigChk->min+1];
+           memset(sigChk->flags, 0, sizeof(char)*(sigChk->max-sigChk->min+1));
+           for(int j=0; j<sig->fullExclCnt; j++){
+               int dist = sig->fullOffset[j] - sigChk->min;
+               sigChk->flags[dist] = EXCHCK_FULL;
+           }
+           for(int j=0; j<sig->modExclCnt; j++){
+               int dist = sig->modOffset[j] - sigChk->min;
+               sigChk->flags[dist] = EXCHCK_MOD;
+           }
+       }
+    }
+#endif
 
     /************************************************************************/
     /*                  */
@@ -2314,7 +2922,311 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*  thing!                */
     /*                  */
     /************************************************************************/
+#ifdef MEM_OPT_VERSION
 
+    //In memory optimized version, this function is only performed on PE0 since other nodes
+    //may have less memory than the master node.
+    //3 tasks is performed in the function: 1) cluster building 2) atom signatures changed due to
+    // fixed atoms and fep atoms 3) exclusion signatures (in the format of offset) changed due to
+    //hydrogen group/fep/fixed atoms.
+    void Molecule::build_lists_by_atom()
+       
+    {
+       register int i;      //  Loop counter
+
+       register int numFixedAtoms = this->numFixedAtoms;
+       // if we want forces on fixed atoms then just pretend
+       // there are none for the purposes of this routine;
+       if ( simParams->fixedAtomsForces ) numFixedAtoms = 0;
+       
+       cluster = new int32 [numAtoms];
+       clusterSize = new int32 [numAtoms];
+       
+       const int pair_self = 
+         simParams->pairInteractionOn ? simParams->pairInteractionSelf : 0;
+
+       DebugM(3,"Building cluster.\n");       
+       for(i=0; i<numAtoms; i++){
+           cluster[i] = -1;
+       }       
+       for(i=0; i<numAtoms; i++){
+           if(cluster[i]!=-1){
+               //indicating that this atom has been visited
+               continue;
+           }
+	   //The reason not to use recursive call is that there are may be an
+	   //atom chain of thousands of atoms. In such case, the program's the stack
+	   //will blow up. So use a breadth-first search instead
+           //int curClusterIdx = i;
+           //markClusterIdx(curClusterIdx, i);
+	   deque<int> toVisitAtoms;
+	   toVisitAtoms.push_back(i);
+	   while(!toVisitAtoms.empty()){
+	       int visAtomID = toVisitAtoms.front();
+	       toVisitAtoms.pop_front();
+	       if(cluster[visAtomID]!=-1) continue;
+	       cluster[visAtomID] = i;
+	       AtomSignature *sig = &atomSigPool[eachAtomSig[visAtomID]];
+	       TupleSignature *bondSigs = sig->bondSigs;
+	       for(int j=0; j<sig->bondCnt; j++){
+		   int otherAtom = visAtomID + bondSigs[j].offset[0];
+		   toVisitAtoms.push_back(otherAtom);
+	       }
+	   }
+       }
+       memset(clusterSize, 0, sizeof(int32)*numAtoms);
+       for (i=0; i<numAtoms; i++) {
+         clusterSize[cluster[i]] += 1;
+       }
+
+
+       //The safety check for bonds has been already done
+       //in the period of generating compressed psf file
+       DebugM(3, "Building the atom list for each signature.\n");
+
+       //build up tuplesByAtom structure where each atom's signature may be updated
+       //because of fixed atoms, atom signature pool will be changed.       
+       //The method to update the current signature pool:
+
+       //For each atom signature, go through those atoms that belong to this signature
+       //and split the current signature correspondingly. 
+       // Note: 1.The splitted signatures originating from the same atom signature will always
+       // be different. But two splitted signatures may be same if they originate from two different
+       // atom signatures. Currently, this redundancy is not handled for the sake of convenience
+       // and simplicity. I believe practically this will not blow up memory since
+       // the space for atom signatures will always remain very low (~10K) 
+       //       2. This method is used under the assumption that chance of splitting a current
+       // atom signature is small
+
+       // There is another way to do this: (The following code is an implementation of this
+       // 1. Finding all the tuples that are not needed to be considered either for 
+       // fixed number or for pair_self
+       // 2. Build atom signatures for them
+       // 3. Add these new signatures to the existing atom signature pool
+       // -- Chao Mei       
+
+       numCalcBonds = numBonds;
+       numCalcAngles = numAngles;
+       numCalcDihedrals = numDihedrals;
+       numCalcImpropers = numImpropers;
+       numCalcCrossterms = numCrossterms;
+       if(numFixedAtoms || pair_self){ //either condition holds                            
+           vector<AtomSignature> newAtomSigPool;
+           //we assume there are always one empty atom signature which is indexed
+           //at 0 in the newAtomSigPool but with atomSigPoolSize in the final combined
+           //atom signature pool
+           AtomSignature emptyAtomSig;
+           newAtomSigPool.push_back(emptyAtomSig);
+
+           //begin to building new atom signatures for those atoms
+           //affected by fixed atoms and fepAtomFlags. Besides,
+           //the affected atoms' signature index should be updated too
+           AtomSignature newAtomSig;           
+           for(i=0; i<numAtoms; i++){ //"i" is the id of atom
+               AtomSignature *curAtomSig = &atomSigPool[eachAtomSig[i]];
+
+               //deal with fep atoms
+               if(pair_self && fepAtomFlags[i]!=1){
+                   //all tuples associated with this atom are gone                   
+                   //update the number of calculated tuples
+                   numCalcBonds -= curAtomSig->bondCnt;
+                   numCalcAngles -= curAtomSig->angleCnt;
+                   numCalcDihedrals -= curAtomSig->dihedralCnt;
+                   numCalcImpropers -= curAtomSig->improperCnt;
+                   numCalcCrossterms -= curAtomSig->crosstermCnt;
+
+                   //update this atom's signature
+                   eachAtomSig[i] = (Index)atomSigPoolSize;                   
+                   
+                   continue;
+               }
+
+               //deal with fixed atoms
+               int sigChanged = 0;
+               if(numFixedAtoms && fixedAtomFlags[i]){
+                   //examine all the tuples associated with this atom                   
+                   newAtomSig = *curAtomSig;
+
+                   //1. bonds
+                   int tupleCnt = curAtomSig->bondCnt;
+                   TupleSignature *tupleSigs = curAtomSig->bondSigs;
+                   for(int j=0; j<tupleCnt; j++){
+                       int atom2 = i+tupleSigs[j].offset[0];
+                       if(fixedAtomFlags[atom2]){ // find a fixed tuple                           
+                           newAtomSig.bondSigs[j].setEmpty();
+                           numCalcBonds--;
+                           sigChanged = 1;
+                       }
+                   }
+
+                   //2. angles
+                   tupleCnt = curAtomSig->angleCnt;
+                   tupleSigs = curAtomSig->angleSigs;
+                   for(int j=0; j<tupleCnt; j++){
+                       int atom2 = i+tupleSigs[j].offset[0];
+                       int atom3 = i+tupleSigs[j].offset[1];
+                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]){ // find a fixed tuple                           
+                           newAtomSig.angleSigs[j].setEmpty();
+                           numCalcAngles--;
+                           sigChanged = 1;
+                       }
+                   }
+
+                   //3. dihedrals
+                   tupleCnt = curAtomSig->dihedralCnt;
+                   tupleSigs = curAtomSig->dihedralSigs;
+                   for(int j=0; j<tupleCnt; j++){
+                       int atom2 = i+tupleSigs[j].offset[0];
+                       int atom3 = i+tupleSigs[j].offset[1];
+                       int atom4 = i+tupleSigs[j].offset[2];
+                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]
+                          && fixedAtomFlags[atom4]){ // find a fixed tuple                           
+                           newAtomSig.dihedralSigs[j].setEmpty();
+                           numCalcDihedrals--;
+                           sigChanged = 1;
+                       }
+                   }
+
+                   //4. impropers
+                   tupleCnt = curAtomSig->improperCnt;
+                   tupleSigs = curAtomSig->improperSigs;
+                   for(int j=0; j<tupleCnt; j++){
+                       int atom2 = i+tupleSigs[j].offset[0];
+                       int atom3 = i+tupleSigs[j].offset[1];
+                       int atom4 = i+tupleSigs[j].offset[2];
+                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]
+                          && fixedAtomFlags[atom4]){ // find a fixed tuple                           
+                           newAtomSig.improperSigs[j].setEmpty();
+                           numCalcImpropers--;
+                           sigChanged = 1;
+                       }
+                   }
+
+                   //5. crossterms
+                   tupleCnt = curAtomSig->crosstermCnt;
+                   tupleSigs = curAtomSig->crosstermSigs;
+                   for(int j=0; j<tupleCnt; j++){
+                       int atom2 = i+tupleSigs[j].offset[0];
+                       int atom3 = i+tupleSigs[j].offset[1];
+                       int atom4 = i+tupleSigs[j].offset[2];
+                       int atom5 = i+tupleSigs[j].offset[3];
+                       int atom6 = i+tupleSigs[j].offset[4];
+                       int atom7 = i+tupleSigs[j].offset[5];
+                       int atom8 = i+tupleSigs[j].offset[6];
+
+                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]
+                          && fixedAtomFlags[atom4] && fixedAtomFlags[atom5]
+                          && fixedAtomFlags[atom6] && fixedAtomFlags[atom7]
+                          && fixedAtomFlags[atom8]){ // find a fixed tuple                           
+                           newAtomSig.crosstermSigs[j].setEmpty();
+                           numCalcCrossterms--;
+                           sigChanged = 1;
+                       }
+                   }
+
+                   //update the newAtomSig to remove all empty tuple signatures
+                   if(sigChanged){
+                       newAtomSig.removeEmptyTupleSigs();
+
+                       //add the new atom signature to the newAtomSigPool if it is not in it
+                       int poolIndex = lookupCstPool(newAtomSigPool, newAtomSig);
+                       if(poolIndex==-1){
+                           poolIndex = newAtomSigPool.size();
+                           newAtomSigPool.push_back(newAtomSig);
+                       }
+                       eachAtomSig[i] = (Index)(poolIndex+atomSigPoolSize);
+                   }
+               }
+           }
+           //update the atom signature pool from the new one                      
+           AtomSignature *tmpAtomSigPool = new AtomSignature[atomSigPoolSize+newAtomSigPool.size()];
+           for(i=0; i<atomSigPoolSize; i++)
+               tmpAtomSigPool[i] = atomSigPool[i];           
+           for(i=0; i<newAtomSigPool.size(); i++)
+               tmpAtomSigPool[atomSigPoolSize+i] = newAtomSigPool[i];
+
+           delete [] atomSigPool;
+           atomSigPoolSize += newAtomSigPool.size();
+           atomSigPool = tmpAtomSigPool;
+           newAtomSigPool.clear();
+
+           if(CkMyPe()==0){
+               printf("Current number of atom signatures: %d\n", atomSigPoolSize);
+           }
+       }
+          
+       DebugM(3,"Building exclusion data.\n");
+
+
+       //  Build the arrays of exclusions for each atom       
+       //inside this function call, unnecessary exclusions are eliminated in the
+       //case of fep atoms and fixed atoms
+       if(CkMyPe()==0){
+           CkPrintf("Current exclusion signatures: %d\n", exclSigPoolSize);
+       }
+       build_exclusions();       
+       
+       if(CkMyPe()==0){
+           CkPrintf("After stripping, exclusion signatures: %d\n", exclSigPoolSize);
+       }
+       
+       //Finally build the exclChkSigPool of type ExclusionCheck
+
+       /* //The following code has been moved to build_excl_check_signature
+       exclChkSigPool = new ExclusionCheck[exclSigPoolSize];
+       for(i=0; i<exclSigPoolSize; i++){
+           ExclusionSignature *sig = &exclSigPool[i];
+           ExclusionCheck *sigChk = &exclChkSigPool[i];
+           if(sig->fullExclCnt){
+               if(!sig->modExclCnt){ //only having fullExclusion
+                   sigChk->min = sig->fullOffset[0];
+                   sigChk->max = sig->fullOffset[sig->fullExclCnt-1];
+               }else{ //have both full and modified exclusion
+                   int fullMin, fullMax, modMin, modMax;
+                   
+                   fullMin = sig->fullOffset[0];
+                   fullMax = sig->fullOffset[sig->fullExclCnt-1];
+               
+                   modMin = sig->modOffset[0];
+                   modMax = sig->modOffset[sig->modExclCnt-1];
+                   
+                   if(fullMin < modMin)
+                       sigChk->min = fullMin;
+                   else
+                       sigChk->min = modMin;
+                   if(fullMax < modMax)
+                       sigChk->max = modMax;
+                   else
+                       sigChk->max = fullMax;
+               }        
+           }else{
+               if(sig->modExclCnt){
+                   sigChk->min = sig->modOffset[0];
+                   sigChk->max = sig->modOffset[sig->modExclCnt-1];
+               }else{ //both count are 0
+                   if(CkMyPe()==0)
+                       printf("Warning: an empty exclusion signature with index %d!\n", i);               
+                   continue;
+               }
+           }           
+
+           if((sigChk->max-sigChk->min) > simParams->maxExclusionFlags){
+               NAMD_die("Currently not supporting building exclusion check on the fly for memory optimized version!\n");
+           }
+
+           sigChk->flags = new char[sigChk->max-sigChk->min+1];
+           memset(sigChk->flags, 0, sizeof(char)*(sigChk->max-sigChk->min+1));
+           for(int j=0; j<sig->fullExclCnt; j++){
+               int dist = sig->fullOffset[j] - sigChk->min;
+               sigChk->flags[dist] = EXCHCK_FULL;
+           }
+           for(int j=0; j<sig->modExclCnt; j++){
+               int dist = sig->modOffset[j] - sigChk->min;
+               sigChk->flags[dist] = EXCHCK_MOD;
+           }
+       }*/       
+    }
+#else
     void Molecule::build_lists_by_atom()
        
     {
@@ -2333,11 +3245,13 @@ void Molecule::receive_Molecule(MIStream *msg)
        bondsWithAtom = new int32 *[numAtoms];
        cluster = new int32 [numAtoms];
        clusterSize = new int32 [numAtoms];
+
        bondsByAtom = new int32 *[numAtoms];
        anglesByAtom = new int32 *[numAtoms];
        dihedralsByAtom = new int32 *[numAtoms];
        impropersByAtom = new int32 *[numAtoms];
        crosstermsByAtom = new int32 *[numAtoms];
+
        exclusionsByAtom = new int32 *[numAtoms];
        fullExclusionsByAtom = new int32 *[numAtoms];
        modExclusionsByAtom = new int32 *[numAtoms];
@@ -2779,6 +3693,8 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
 
     }
+#endif
+
     /*    END OF FUNCTION build_lists_by_atom    */
 
     /****************************************************************/
@@ -2805,6 +3721,34 @@ void Molecule::receive_Molecule(MIStream *msg)
 
     void Molecule::build_exclusions()
     {
+#ifdef MEM_OPT_VERSION
+        //stripHGroupExcl() is not needed because the function purpose 
+        //is to reduce the memory usage of exclusions. Since now the exclusion
+        //signature is used, such function is not critical now
+        //What about the following function? Need to be confirmed --Chao Mei
+        
+        ExclusionSettings exclude_flag;    //  Exclusion policy
+		exclude_flag = simParams->exclude;
+		int stripHGroupExclFlag = (simParams->splitPatch == SPLIT_PATCH_HYDROGEN);
+        if (!simParams->amberOn || !simParams->readExclusions){         	
+	        switch (exclude_flag)
+	        {
+	         case NONE:	           
+	         case ONETWO:           
+	           break;
+	          case ONETHREE:            		    	
+	          case ONEFOUR:		    	
+	          case SCALED14:            
+		    	if ( stripHGroupExclFlag ) stripHGroupExcl();
+	            break;
+	        }
+		}
+		else if (stripHGroupExclFlag && exclude_flag!=NONE && exclude_flag!=ONETWO)
+			stripHGroupExcl();        
+                
+        stripFepFixedExcl();
+        return;
+#else
       register int i;          //  Loop counter
       ExclusionSettings exclude_flag;    //  Exclusion policy
 
@@ -2852,6 +3796,7 @@ void Molecule::receive_Molecule(MIStream *msg)
         stripHGroupExcl();
 
       stripFepExcl();
+#endif
     }
     /*      END OF FUNCTION build_exclusions    */
 
@@ -2864,6 +3809,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     void Molecule::build12excl(void)
        
     {
+#ifndef MEM_OPT_VERSION
        int32 *current_val;  //  Current value to check
        register int i;    //  Loop counter to loop through all atoms
        
@@ -2893,6 +3839,7 @@ void Molecule::receive_Molecule(MIStream *msg)
          ++current_val;
       }
        }
+#endif
     }
     /*      END OF FUNCTION build12excl      */
 
@@ -2905,6 +3852,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     void Molecule::build13excl(void)
        
     {
+#ifndef MEM_OPT_VERSION
        int32 *bond1, *bond2;  //  The two bonds being checked
        int middle_atom;  //  Common third atom
        register int i;    //  Loop counter to loop through all atoms
@@ -2954,6 +3902,7 @@ void Molecule::receive_Molecule(MIStream *msg)
         ++bond1;
       }
        }
+#endif
     }
     /*      END OF FUNCTION build13excl      */
 
@@ -2967,6 +3916,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     void Molecule::build14excl(int modified)
        
     {
+#ifndef MEM_OPT_VERSION
        int32 *bond1, *bond2, *bond3;  //  The two bonds being checked
        int mid1, mid2;    //  Middle atoms
        register int i;      //  Counter to loop through all atoms
@@ -3050,6 +4000,7 @@ void Molecule::receive_Molecule(MIStream *msg)
         ++bond1;
       }
        }
+#endif
     }
     /*      END OF FUNCTION build14excl      */
 
@@ -3066,7 +4017,78 @@ void Molecule::receive_Molecule(MIStream *msg)
 
   void Molecule::stripHGroupExcl(void)
   {
+#ifdef MEM_OPT_VERSION
+	UniqueSet<Exclusion> strippedExcls;
+	HydrogenGroup::iterator h_i, h_e, h_j;
+    h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    for( ; h_i != h_e; ++h_i ) {
+      for ( h_j = h_i + 1; h_j != h_e && ! h_j->isGP; ++h_j ) {
+		if ( h_i->atomID < h_j->atomID )
+	  		strippedExcls.add(Exclusion(h_i->atomID,h_j->atomID));
+		else
+	  		strippedExcls.add(Exclusion(h_j->atomID,h_i->atomID));
+      }
+    }
+    
+    vector<int> *strippedList = new vector<int>[numAtoms];
+    UniqueSetIter<Exclusion> iter(strippedExcls);
+    for(iter=iter.begin(); iter!=iter.end(); iter++){
+    	int atom1 = iter->atom1;
+    	int atom2 = iter->atom2;
+    	strippedList[atom1].push_back(atom2);
+    	strippedList[atom2].push_back(atom1);
+    }
+    
+    vector<ExclusionSignature> newExclSigPool;
+    for(int i=0; i<numAtoms; i++){
+    	ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[i]];
+    	sort(strippedList[i].begin(), strippedList[i].end());    	
+    	//eliminate the atoms in the strippedList from the atom signature    	    	
+    	int fullOrMod = 0; //0: full; 1: mod    	
+        vector<int> whichOffs;
+        vector<int> changedOffs;
+    	for(int j=0; j<strippedList[i].size(); j++){
+    		int atom2 = strippedList[i][j];
+    		int offset = atom2-i;
+            //fullOffset and modOffset should be in increasing order
+            //for findOffset to be correct. So that assignment has
+            //to be done later
+    		int idx = a1Sig.findOffset(offset, &fullOrMod);
+    		if(idx==-1) continue;
+    			//NAMD_die("Something wrong in Molecule::stripHGroupExcl!\n");			
+			whichOffs.push_back(fullOrMod);
+            changedOffs.push_back(idx);
+    	}
 
+        for(int j=0; j<whichOffs.size(); j++){
+            if(whichOffs[j]==0){ //full exclusion             
+				a1Sig.fullOffset[changedOffs[j]] = 0;
+			}else{
+				a1Sig.modOffset[changedOffs[j]] = 0;
+			}
+        }
+        whichOffs.clear();
+        changedOffs.clear();
+
+		if(strippedList[i].size()){
+			//indicating a1Sig has changed
+			a1Sig.removeEmptyOffset();
+			int poolIndex = lookupCstPool(newExclSigPool, a1Sig);
+			if(poolIndex==-1){
+				poolIndex = newExclSigPool.size();
+				newExclSigPool.push_back(a1Sig);
+			}
+			eachAtomExclSig[i] = poolIndex + exclSigPoolSize;			
+		}		   		    		    		    
+    	strippedList[i].clear();
+    }
+    
+    addNewExclSigPool(newExclSigPool);
+
+    newExclSigPool.clear();
+           
+    delete [] strippedList;        
+#else
     HydrogenGroup::iterator h_i, h_e, h_j;
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
     for( ; h_i != h_e; ++h_i ) {
@@ -3077,7 +4099,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 	  exclusionSet.del(Exclusion(h_j->atomID,h_i->atomID));
       }
     }
-
+#endif
   }
     /*      END OF FUNCTION stripHGroupExcl      */
 
@@ -3087,8 +4109,148 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*                                                                      */
     /************************************************************************/
 
-  void Molecule::stripFepExcl(void)
+#ifdef MEM_OPT_VERSION
+  void Molecule::stripFepFixedExcl(void)
   {
+      vector<ExclusionSignature> newExclSigPool;
+      if(simParams->fepOn || simParams->lesOn){
+          for(int i=0; i<numAtoms; i++){
+              int atom1 = i;
+              int t1 = get_fep_type(atom1);
+              if(t1==0) continue;
+              ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[atom1]];
+              int sigChanged = 0;
+              for(int j=0; j<a1Sig.fullExclCnt; j++){
+                  int atom2 = atom1 + a1Sig.fullOffset[j];
+                  int t2 = get_fep_type(atom2);
+                  if(t2 && t1!=t2){
+                      a1Sig.fullOffset[j] = 0;
+                      sigChanged = 1;
+                  }                  
+              }
+              for(int j=0; j<a1Sig.modExclCnt; j++){
+                  int atom2 = atom1 + a1Sig.modOffset[j];
+                  int t2 = get_fep_type(atom2);
+                  if(t2 && t1!=t2){
+                      a1Sig.modOffset[j] = 0;
+                      sigChanged = 1;
+                  }
+              }
+
+              //deal with the new signature
+              if(sigChanged){
+                  a1Sig.removeEmptyOffset();
+                  int poolIndex = lookupCstPool(newExclSigPool, a1Sig);
+                  if(poolIndex==-1){
+                      poolIndex = newExclSigPool.size();
+                      newExclSigPool.push_back(a1Sig);
+                  }
+                  eachAtomExclSig[atom1] = poolIndex + exclSigPoolSize;
+              }                            
+          }
+          //integerate new exclusion signatures into the old one
+          addNewExclSigPool(newExclSigPool);
+          newExclSigPool.clear();
+      }else if(simParams->pairInteractionOn){
+          for(int i=0; i<numAtoms; i++){
+              int atom1 = i;
+              int t1 = get_fep_type(atom1);              
+              ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[atom1]];
+              int sigChanged = 0;
+              for(int j=0; j<a1Sig.fullExclCnt; j++){
+                  int atom2 = atom1 + a1Sig.fullOffset[j];
+                  int t2 = get_fep_type(atom2);
+
+                  int cond1 = simParams->pairInteractionSelf && (t1!=1 || t2!=1);
+                  int cond2 = (t1!=1 || t2!=2) && (t1!=2 || t2!=1);
+                  if(cond1 || cond2){                                   
+                      a1Sig.fullOffset[j] = 0;
+                      sigChanged = 1;
+                  }                  
+              }
+              for(int j=0; j<a1Sig.modExclCnt; j++){
+                  int atom2 = atom1 + a1Sig.modOffset[j];
+                  int t2 = get_fep_type(atom2);
+                  int cond1 = simParams->pairInteractionSelf && (t1!=1 || t2!=1);
+                  int cond2 = (t1!=1 || t2!=2) && (t1!=2 || t2!=1);
+                  if(cond1 || cond2){                  
+                      a1Sig.modOffset[j] = 0;
+                      sigChanged = 1;
+                  }
+              }
+
+              //deal with the new signature
+              if(sigChanged){
+                  a1Sig.removeEmptyOffset();
+                  int poolIndex = lookupCstPool(newExclSigPool, a1Sig);
+                  if(poolIndex==-1){
+                      poolIndex = newExclSigPool.size();
+                      newExclSigPool.push_back(a1Sig);
+                  }
+                  eachAtomExclSig[atom1] = poolIndex + exclSigPoolSize;
+              }                            
+          }
+          //integerate new exclusion signatures into the old one
+          addNewExclSigPool(newExclSigPool);
+          newExclSigPool.clear();
+      }
+
+      //deal with fixed atoms
+      numCalcExclusions = 0;
+      if(!numFixedAtoms){
+    	for(int i=0; i<numAtoms; i++){
+    	    ExclusionSignature *a1Sig = &exclSigPool[eachAtomExclSig[i]];
+    	    numCalcExclusions += (a1Sig->fullExclCnt + a1Sig->modExclCnt);
+    	}
+      }else{
+          for(int i=0; i<numAtoms; i++){
+              int atom1 = i;
+              int t1 = fixedAtomFlags[atom1];
+              ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[atom1]];
+              if(t1==0){
+                  numCalcExclusions += (a1Sig.fullExclCnt + a1Sig.modExclCnt);
+                  continue;
+              }              
+              int sigChanged = 0;
+              for(int j=0; j<a1Sig.fullExclCnt; j++){
+                  int atom2 = atom1 + a1Sig.fullOffset[j];
+                  int t2 = fixedAtomFlags[atom2];
+                  if(t2){
+                      a1Sig.fullOffset[j] = 0;
+                      sigChanged = 1;
+                  }                  
+              }
+              for(int j=0; j<a1Sig.modExclCnt; j++){
+                  int atom2 = atom1 + a1Sig.modOffset[j];
+                  int t2 = fixedAtomFlags[atom2];
+                  if(t2){
+                      a1Sig.modOffset[j] = 0;
+                      sigChanged = 1;
+                  }
+              }
+
+              //deal with the new signature
+              if(sigChanged){
+                  a1Sig.removeEmptyOffset();
+                  int poolIndex = lookupCstPool(newExclSigPool, a1Sig);
+                  if(poolIndex==-1){
+                      poolIndex = newExclSigPool.size();
+                      newExclSigPool.push_back(a1Sig);
+                  }
+                  eachAtomExclSig[atom1] = poolIndex + exclSigPoolSize;
+              }              
+              numCalcExclusions += (a1Sig.fullExclCnt + a1Sig.modExclCnt);                            
+          }
+          //integerate new exclusion signatures into the old one
+          addNewExclSigPool(newExclSigPool);
+          newExclSigPool.clear();
+      }
+      numCalcExclusions /= 2;
+      printf("numCalcExclusions: %d\n", numCalcExclusions);
+  }
+#else
+  void Molecule::stripFepExcl(void)
+  {      
     UniqueSet<Exclusion> fepExclusionSet;
     UniqueSetIter<Exclusion> exclIter(exclusionSet);
 
@@ -3127,8 +4289,8 @@ void Molecule::receive_Molecule(MIStream *msg)
     {
       exclusionSet.del(*fepIter);
     }
-
   }
+#endif
     /*      END OF FUNCTION stripFepExcl      */
 
 
@@ -5491,7 +6653,12 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
         if ( bval > simParams->lesFactor ) 
           NAMD_die("LES flag must be less than or equal to lesFactor.");
         fepAtomFlags[i] = (int) bval;
-        atoms[i].mass *= lesMassFactor;
+      #ifdef MEM_OPT_VERSION
+        Real newMass = atomMassPool[eachAtomMass[i]]*lesMassFactor;
+        eachAtomMass[i] = insert_new_mass(newMass);
+      #else
+        atoms[i].mass *= lesMassFactor;     
+      #endif
         numFepFinal++;
         numFepInitial++;
       } else {
@@ -5666,7 +6833,32 @@ void Molecule::reloadCharges(float charge[], int n){
   if ( n != numAtoms )
     NAMD_die("Incorrect number of atoms in Molecule::reloadCharges().");
 
-  for ( int i=0; i<n; ++i ) atoms[i].charge = charge[i];
+#ifdef MEM_OPT_VERSION
+    delete [] atomChargePool;
+    vector<Real> tmpCharges;
+    for(int i=0; i<numAtoms; i++){
+        int foundIdx=-1;
+        //naive searching, better to be binary searching but requiring 
+        //inserting charges in increasing/decreasing order
+        for(int j=0; j<tmpCharges.size();j++){
+        	if(tmpCharges[j] == charge[i]){
+        	    foundIdx = j;
+        	    break;
+        	}
+        }
+        if(foundIdx==-1){
+        	tmpCharges.push_back(charge[i]);
+        	foundIdx = tmpCharges.size()-1;
+        }
+        eachAtomCharge[i] = (Index)foundIdx;
+    }
+    chargePoolSize = tmpCharges.size();
+    atomChargePool = new Real[chargePoolSize];
+    for(int i=0; i<chargePoolSize; i++)
+        atomChargePool[i] = tmpCharges[i];
+#else
+  for( int i=0; i<n; ++i ) atoms[i].charge = charge[i];
+#endif
 }
 
 // go through the molecular structure, analyze the status of each atom,
@@ -5682,11 +6874,24 @@ void Molecule::build_atom_status(void) {
   // if any atoms have a mass of zero set to 0.001 and warn user
   int numZeroMassAtoms = 0;
   for (i=0; i < numAtoms; i++) {
+    #ifdef MEM_OPT_VERSION
+    if(atomMassPool[eachAtomMass[i]]<=0){
+        ++numZeroMassAtoms;
+    }
+    #else
     if ( atoms[i].mass <= 0. ) {
       atoms[i].mass = 0.001;
       ++numZeroMassAtoms;
-    }
+    }    
+    #endif
   }
+  #ifdef MEM_OPT_VERSION
+  for(i=0; i<massPoolSize; i++){
+      if(atomMassPool[i]<=0.)
+          atomMassPool[i] = 0.001;
+  }
+  #endif
+
   if ( numZeroMassAtoms && ! CkMyPe() ) {
     iout << iWARN << "FOUND " << numZeroMassAtoms <<
 	" ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
@@ -5708,6 +6913,26 @@ void Molecule::build_atom_status(void) {
   // deal with H-H bonds in a sane manner
   // this information will be rewritten later if bonded elsewhere
   int hhbondcount = 0;
+#ifdef MEM_OPT_VERSION
+  for(i=0; i<numAtoms; i++){
+    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
+    TupleSignature *bSigs = sig->bondSigs;
+    for(int j=0; j<sig->bondCnt; j++){
+	a1 = i;
+	a2 = i+bSigs[j].offset[0];
+	if (is_hydrogen(a1) && is_hydrogen(a2)) {
+	    ++hhbondcount;
+	    // make H atoms point at each other for now
+	    atoms[a1].partner = a2;
+	    atoms[a2].partner = a1;
+	    hg[a1].atomsInGroup++;
+	    hg[a1].GPID = a2;
+	    hg[a2].atomsInGroup++;
+	    hg[a2].GPID = a1;
+	}
+    }
+  }
+#else
   for (i=0; i < numBonds; i++) {
     a1 = bonds[i].atom1;
     a2 = bonds[i].atom2;
@@ -5722,12 +6947,42 @@ void Molecule::build_atom_status(void) {
       hg[a2].GPID = a1;
     }
   }
+#endif
   if ( hhbondcount && ! CkMyPe() ) {
     iout << iWARN << "Found " << hhbondcount << " H-H bonds.\n" << endi;
   }
 
   // find which atom each hydrogen is bound to
   // also determine number of atoms in each group
+#ifdef MEM_OPT_VERSION
+  for(i=0; i<numAtoms; i++){
+    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
+    TupleSignature *bSigs = sig->bondSigs;
+    for(int j=0; j<sig->bondCnt; j++){
+	a1 = i;
+	a2 = i+bSigs[j].offset[0];
+	if (is_hydrogen(a1)) {
+	    if (is_hydrogen(a2)) continue;
+	    atoms[a1].partner = a2;
+	    hg[a2].atomsInGroup++;
+	    hg[a1].atomsInGroup = 0;
+	    hg[a1].GPID = a2;
+	    hg[a1].isGP = 0;
+	    // check for waters (put them in their own groups: OH or OHH)
+	    if (is_oxygen(a2))  hg[a2].sortVal++;
+	}
+	if (is_hydrogen(a2)) {
+	    atoms[a2].partner = a1;
+	    hg[a1].atomsInGroup++;
+	    hg[a2].atomsInGroup = 0;
+	    hg[a2].GPID = a1;
+	    hg[a2].isGP = 0;
+	    // check for waters (put them in their own groups: OH or OHH)
+	    if (is_oxygen(a1))  hg[a1].sortVal++;
+        }
+    }
+  }
+#else
   for (i=0; i < numBonds; i++) {
     a1 = bonds[i].atom1;
     a2 = bonds[i].atom2;
@@ -5751,6 +7006,7 @@ void Molecule::build_atom_status(void) {
       if (is_oxygen(a1))  hg[a1].sortVal++;
     }
   }
+#endif
 
   // check up on our H-H bonds and general sanity check
   int hGPcount = 0;
@@ -5849,11 +7105,24 @@ void Molecule::build_atom_status(void) {
     if ( simParams->mollyOn ) mode = RIGID_ALL;
 
     // add H-mother lengths or 0 if not constrained
+#ifdef MEM_OPT_VERSION
+  for(i=0; i<numAtoms; i++){
+    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
+    TupleSignature *bSigs = sig->bondSigs;
+    for(int j=0; j<sig->bondCnt; j++){
+	a1 = i;
+	a2 = i+bSigs[j].offset[0];
+#else
     for (i=0; i < numBonds; i++) {
       a1 = bonds[i].atom1;
       a2 = bonds[i].atom2;
+#endif
       Real dum, x0;
+    #ifdef MEM_OPT_VERSION
+      params->get_bond_params(&dum,&x0,bSigs[j].tupleParamType);
+    #else
       params->get_bond_params(&dum,&x0,bonds[i].bond_type);
+    #endif
       if (is_hydrogen(a2)) { int tmp = a1;  a1 = a2;  a2 = tmp; } // swap
       if (is_hydrogen(a1)) {
         if ( is_hydrogen(a2) ) {  // H-H
@@ -5867,6 +7136,9 @@ void Molecule::build_atom_status(void) {
 	  rigidBondLengths[a1] = 0.;
         }
       }
+#ifdef MEM_OPT_VERSION
+    }
+#endif
     }
 
     // zero out H-H lengths - water handled below
@@ -5877,6 +7149,24 @@ void Molecule::build_atom_status(void) {
     }
 
     // fill in H-H lengths for water by searching angles - yuck
+#ifdef MEM_OPT_VERSION
+  for(i=0; i<numAtoms; i++){
+    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
+    TupleSignature *aSigs = sig->angleSigs;
+    for(int j=0; j<sig->angleCnt; j++){
+	a1 = i;
+	a2 = i+aSigs[j].offset[0];
+	if(!is_water(a2)) continue;
+	a3 = i+aSigs[j].offset[1];
+	if ( rigidBondLengths[a1] != rigidBondLengths[a3] ) {
+	    NAMD_die("Asymmetric water molecule found???  This can't be right.\n");
+	}
+	Real dum, t0;
+	params->get_angle_params(&dum,&t0,&dum,&dum,aSigs[j].tupleParamType);
+	rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
+    }
+}
+#else
     for (i=0; i < numAngles; i++) {
       a2 = angles[i].atom2;
       if ( ! is_water(a2) ) continue;
@@ -5889,14 +7179,24 @@ void Molecule::build_atom_status(void) {
       params->get_angle_params(&dum,&t0,&dum,&dum,angles[i].angle_type);
       rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
     }
+#endif
 
     // fill in H-H lengths for waters that are missing angles
     int numBondWaters = 0;
     int numFailedWaters = 0;
 
+#ifdef MEM_OPT_VERSION
+  for(i=0; i<numAtoms; i++){
+    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
+    TupleSignature *bSigs = sig->bondSigs;
+    for(int j=0; j<sig->bondCnt; j++){
+	a1 = i;
+	a2 = i+bSigs[j].offset[0];
+#else
     for (i=0; i < numBonds; i++) {
       a1 = bonds[i].atom1;
       a2 = bonds[i].atom2;
+#endif
       if ( ! is_hydrogen(a1) ) continue;
       if ( ! is_hydrogen(a2) ) continue;
       int ma1 = get_mother_atom(a1);
@@ -5905,9 +7205,16 @@ void Molecule::build_atom_status(void) {
       if ( ! is_water(ma1) ) continue;
       if ( rigidBondLengths[ma1] != 0. ) continue;
       Real dum, x0;
+    #ifdef MEM_OPT_VERSION
+      params->get_bond_params(&dum,&x0,bSigs[j].tupleParamType);
+    #else
       params->get_bond_params(&dum,&x0,bonds[i].bond_type);
+    #endif
       rigidBondLengths[ma1] = x0;
     }
+#ifdef MEM_OPT_VERSION
+    }
+#endif
 
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
     for( ; h_i != h_e; ++h_i ) {
@@ -5972,6 +7279,19 @@ void Molecule::build_atom_status(void) {
 }
 
 
+#ifdef MEM_OPT_VERSION
+//idx1: atom1's exclusion check signature
+//to check whether atom1 and atom2 are excluded from each other
+int Molecule::checkExclByIdx(int idx1, int atom1, int atom2) const {
+
+  int amin = exclChkSigPool[idx1].min;
+  int amax = exclChkSigPool[idx1].max;
+  int dist21 = atom2 - atom1;
+  if ( dist21 < amin || dist21 > amax ) return 0;
+  else return exclChkSigPool[idx1].flags[dist21-amin];
+
+}
+#else
 int Molecule::checkexcl(int atom1, int atom2) const {
 
   int amin = all_exclusions[atom1].min;
@@ -5980,6 +7300,7 @@ int Molecule::checkexcl(int atom1, int atom2) const {
   else return all_exclusions[atom1].flags[atom2-amin];
 
 }
+#endif
 
 
 /************************************************************************/
@@ -6013,6 +7334,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
 
 void Molecule::read_parm(Ambertoppar *amber_data)
 {
+#ifdef MEM_OPT_VERSION
+    NAMD_die("When reading a compressed file or using the memory-optimized version, amber data is not supported!");    
+#else
   int i,j,ntheth,nphih,current_index,a1,a2,
       max,min,index,found;
 
@@ -6288,7 +7612,7 @@ void Molecule::read_parm(Ambertoppar *amber_data)
   
   //  analyze the data and find the status of each atom
   build_atom_status();
-
+#endif
 }
 /*      END OF FUNCTION read_parm    */
 
@@ -6323,6 +7647,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
 /************************************************************************/
 
 void Molecule::read_parm(const GromacsTopFile *gf) {
+#ifdef MEM_OPT_VERSION
+    NAMD_die("When reading a compressed file or using the memory-optimized version, amber data is not supported!");    
+#else
   /*  int i,j,ntheth,nphih,current_index,a1,a2,
       max,min,index,found;*/
   int i;
@@ -6545,6 +7872,370 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
   //  analyze the data and find the status of each atom
 
   build_atom_status();
-
+#endif
 }
 /*      END OF FUNCTION read_parm    */
+
+#ifndef MEM_OPT_VERSION
+/*
+int32 *Molecule::get_bonds_for_atom(int anum){
+    NAMD_die("In bonds for atom!");
+    return bondsByAtom[anum];
+}
+
+Bond *Molecule::get_bond(int bnum){
+    NAMD_die("In get_bond!");
+    return &bonds[bnum];
+}
+*/
+#endif
+
+#ifdef MEM_OPT_VERSION
+//return the index of the new mass in the mass pool
+Index Molecule::insert_new_mass(Real newMass){
+    //first search
+    for(int i=massPoolSize-1; i>=0; i--){
+        if(fabs(atomMassPool[i]-newMass)<=1e-6)
+            return i;
+    }
+    //otherwise increase one entry for the new mass
+    Real *tmp = new Real[massPoolSize+1];
+    tmp[massPoolSize] = newMass;
+    memcpy((void *)tmp, (const void *)atomMassPool, sizeof(Real)*massPoolSize);
+    delete [] atomMassPool;
+    atomMassPool = tmp;
+    massPoolSize++;
+    return (Index)(massPoolSize-1);
+}
+
+/*void Molecule::markClusterIdx(int curClusterIdx, int startAtomID){
+    if(cluster[startAtomID] == curClusterIdx) return;
+    AtomSignature *sig = &atomSigPool[startAtomID];
+    for(int i=0; i<sig->bondCnt; i++){
+        TupleSignature *tsig = &(sig->bondSigs[i]);
+        int newStartAtomID = startAtomID+tsig->offset[0];
+        markClusterIdx(curClusterIdx, newStartAtomID);
+    }
+}*/
+
+void Molecule::addNewExclSigPool(const vector<ExclusionSignature>& newExclSigPool){
+    ExclusionSignature *tmpExclSigPool = new ExclusionSignature[exclSigPoolSize+newExclSigPool.size()];
+    for(int i=0; i<exclSigPoolSize; i++)
+        tmpExclSigPool[i] = exclSigPool[i];
+    for(int i=0; i<newExclSigPool.size(); i++)
+        tmpExclSigPool[i+exclSigPoolSize] = newExclSigPool[i];
+
+    exclSigPoolSize += newExclSigPool.size();
+    exclSigPool = tmpExclSigPool;
+}
+#endif
+
+void TupleSignature::pack(MOStream *msg){
+    msg->put((short)tupleType);
+    msg->put(numOffset);
+    msg->put(numOffset, offset);
+    msg->put(tupleParamType);
+}
+
+void TupleSignature::unpack(MIStream *msg){
+    short ttype;
+    msg->get(ttype);
+    tupleType = (TupleSigType)ttype;
+
+    msg->get(numOffset);
+    delete [] offset;
+    offset = new int[numOffset];
+    msg->get(numOffset*sizeof(int), (char *)offset);
+
+    msg->get(tupleParamType);
+}
+
+void AtomSignature::pack(MOStream *msg){
+    msg->put(bondCnt);
+    for(int i=0; i<bondCnt; i++)
+        bondSigs[i].pack(msg);
+
+    msg->put(angleCnt);
+    for(int i=0; i<angleCnt; i++)
+        angleSigs[i].pack(msg);
+
+    msg->put(dihedralCnt);
+    for(int i=0; i<dihedralCnt; i++)
+        dihedralSigs[i].pack(msg);
+
+    msg->put(improperCnt);
+    for(int i=0; i<improperCnt; i++)
+        improperSigs[i].pack(msg);
+}
+
+void AtomSignature::unpack(MIStream *msg){
+    msg->get(bondCnt);
+    delete [] bondSigs;
+    bondSigs = NULL;
+    if(bondCnt>0){
+        bondSigs = new TupleSignature[bondCnt];
+        for(int i=0; i<bondCnt; i++)
+            bondSigs[i].unpack(msg);
+    }
+
+    msg->get(angleCnt);
+    delete [] angleSigs;
+    angleSigs = NULL;
+    if(angleCnt>0){
+        angleSigs = new TupleSignature[angleCnt];
+        for(int i=0; i<angleCnt; i++)
+            angleSigs[i].unpack(msg);
+    }
+
+    msg->get(dihedralCnt);
+    delete [] dihedralSigs;
+    dihedralSigs = NULL;
+    if(dihedralCnt>0){
+        dihedralSigs = new TupleSignature[dihedralCnt];
+        for(int i=0; i<dihedralCnt; i++)
+            dihedralSigs[i].unpack(msg);
+    }
+
+    msg->get(improperCnt);
+    delete [] improperSigs;
+    improperSigs = NULL;
+    if(improperCnt>0){
+        improperSigs = new TupleSignature[improperCnt];
+        for(int i=0; i<improperCnt; i++)
+            improperSigs[i].unpack(msg);
+    }
+}
+
+void AtomSignature::removeEmptyTupleSigs(){
+    int origTupleCnt;
+    int idx;
+    TupleSignature *tupleSigs;
+    TupleSignature *newTupleSigs;
+
+    //bonds
+    origTupleCnt = bondCnt;
+    tupleSigs= bondSigs;
+    for(int i=0; i<origTupleCnt; i++){
+        if(tupleSigs[i].isEmpty())
+            bondCnt--;
+    }
+    if(bondCnt==0){
+        delete [] tupleSigs;
+        bondSigs = NULL;
+    }else if(bondCnt!=origTupleCnt){
+        newTupleSigs = new TupleSignature[bondCnt];
+        idx=0;
+        for(int i=0; i<origTupleCnt; i++){
+            if(!tupleSigs[i].isEmpty()){
+                newTupleSigs[idx] = tupleSigs[i];
+                idx++;
+            }
+        }
+        delete [] tupleSigs;
+        bondSigs = newTupleSigs;
+    }
+
+    //angles
+    origTupleCnt = angleCnt;
+    tupleSigs = angleSigs;
+    for(int i=0; i<origTupleCnt; i++){
+        if(tupleSigs[i].isEmpty())
+            angleCnt--;
+    }
+    if(angleCnt==0){
+        delete [] tupleSigs;
+        angleSigs = NULL;
+    }else if(angleCnt!=origTupleCnt){
+        newTupleSigs = new TupleSignature[angleCnt];
+        idx=0;
+        for(int i=0; i<origTupleCnt; i++){
+            if(!tupleSigs[i].isEmpty()){
+                newTupleSigs[idx] = tupleSigs[i];
+                idx++;
+            }
+        }
+        delete [] tupleSigs;
+        angleSigs = newTupleSigs;
+    }
+
+    //dihedrals
+    origTupleCnt = dihedralCnt;
+    tupleSigs = dihedralSigs;
+    for(int i=0; i<origTupleCnt; i++){
+        if(tupleSigs[i].isEmpty())
+            dihedralCnt--;
+    }
+    if(dihedralCnt==0){
+        delete [] tupleSigs;
+        dihedralSigs = NULL;
+    }else if(dihedralCnt!=origTupleCnt){
+        newTupleSigs = new TupleSignature[dihedralCnt];
+        idx=0;
+        for(int i=0; i<origTupleCnt; i++){
+            if(!tupleSigs[i].isEmpty()){
+                newTupleSigs[idx] = tupleSigs[i];
+                idx++;
+            }
+        }
+        delete [] tupleSigs;
+        dihedralSigs = newTupleSigs;        
+    }
+
+
+    //impropers
+    origTupleCnt = improperCnt;
+    tupleSigs = improperSigs;
+    for(int i=0; i<origTupleCnt; i++){
+        if(tupleSigs[i].isEmpty())
+            improperCnt--;
+    }
+    if(improperCnt==0){
+        delete [] tupleSigs;
+        improperSigs = NULL;
+    }else if(improperCnt!=origTupleCnt){
+        newTupleSigs = new TupleSignature[improperCnt];
+        idx=0;
+        for(int i=0; i<origTupleCnt; i++){
+            if(!tupleSigs[i].isEmpty()){
+                newTupleSigs[idx] = tupleSigs[i];
+                idx++;
+            }
+        }
+        delete [] tupleSigs;
+        improperSigs = newTupleSigs;
+    }    
+
+    //crossterms
+    origTupleCnt = crosstermCnt;
+    tupleSigs = crosstermSigs;
+    for(int i=0; i<origTupleCnt; i++){
+        if(tupleSigs[i].isEmpty())
+            crosstermCnt--;
+    }
+    if(crosstermCnt==0){
+        delete [] tupleSigs;
+        crosstermSigs = NULL;
+    }else if(crosstermCnt!=origTupleCnt){
+        newTupleSigs = new TupleSignature[crosstermCnt];
+        idx=0;
+        for(int i=0; i<origTupleCnt; i++){
+            if(!tupleSigs[i].isEmpty()){
+                newTupleSigs[idx] = tupleSigs[i];
+                idx++;
+            }
+        }
+        delete [] tupleSigs;
+        crosstermSigs = newTupleSigs;
+    }    
+}
+
+void ExclusionSignature::removeEmptyOffset(){
+	int newCnt=0;
+	for(int i=0; i<fullExclCnt; i++){
+	    if(fullOffset[i]==0) continue;
+	    newCnt++;
+	}
+    if(newCnt==0){
+        fullExclCnt = 0;
+        delete [] fullOffset;
+        fullOffset = NULL;
+    }else if(newCnt!=fullExclCnt){
+        int *tmpOffset = new int[newCnt];
+    	newCnt=0;
+    	for(int i=0; i<fullExclCnt; i++){
+    	    if(fullOffset[i]==0) continue;
+    	    tmpOffset[newCnt] = fullOffset[i];
+    	    newCnt++;
+    	}
+    	delete [] fullOffset;
+    	fullOffset = tmpOffset;
+        fullExclCnt = newCnt;
+    }
+	
+	
+	newCnt=0;
+	for(int i=0; i<modExclCnt; i++){
+	    if(modOffset[i]==0) continue;
+	    newCnt++;
+	}
+    if(newCnt==0){
+        modExclCnt = 0;
+        delete [] modOffset;
+        modOffset = NULL;
+    }else if(newCnt!=modExclCnt){
+        int *tmpOffset = new int[newCnt];
+        newCnt=0;
+        for(int i=0; i<modExclCnt; i++){
+            if(modOffset[i]==0) continue;
+            tmpOffset[newCnt] = modOffset[i];
+            newCnt++;
+        }
+        delete [] modOffset;
+        modOffset = tmpOffset;
+        modExclCnt = newCnt;
+    }	
+}
+
+//returns the index of the offset. If not found, -1 is returned
+//fullOrMod indicates where is the offset found. 0 indicates in
+//the full exclusion lists, 1 indicates in the modified exclusion
+//lists
+int ExclusionSignature::findOffset(int offset, int *fullOrMod){
+	//assuming all offsets have been sorted increasingly
+	//so that binary search could be used	
+	int retidx = -1;
+	
+	*fullOrMod = 0;	
+	int low = 0;
+	int high = fullExclCnt-1;
+	int mid = (low+high)/2;
+	while(low<=high){
+		if(offset<fullOffset[mid]){
+			high = mid-1;
+			mid = (high+low)/2;						
+		}else if(offset>fullOffset[mid]){
+			low = mid+1;
+			mid = (high+low)/2;
+		}else{
+			retidx = mid;
+			break;
+		}		
+	}
+	if(retidx!=-1) return retidx;
+	
+	*fullOrMod = 1;	
+	low = 0;
+	high = modExclCnt-1;
+	mid = (low+high)/2;
+	while(low<=high){
+		if(offset<modOffset[mid]){
+			high = mid-1;
+			mid = (high+low)/2;						
+		}else if(offset>modOffset[mid]){
+			low = mid+1;
+			mid = (high+low)/2;
+		}else{
+			retidx = mid;
+			break;
+		}		
+	}
+	return retidx;	
+}
+
+void ExclusionSignature::pack(MOStream *msg){
+    msg->put(fullExclCnt);    
+    msg->put(fullExclCnt, fullOffset);
+    msg->put(modExclCnt);    
+    msg->put(modExclCnt, modOffset);
+}
+
+void ExclusionSignature::unpack(MIStream *msg){    
+    msg->get(fullExclCnt);
+    delete [] fullOffset;
+    fullOffset = new int[fullExclCnt];
+    msg->get(fullExclCnt*sizeof(int), (char *)fullOffset);    
+    msg->get(modExclCnt);
+    delete [] modOffset;
+    modOffset = new int[modExclCnt];
+    msg->get(modExclCnt*sizeof(int), (char *)modOffset);    
+}

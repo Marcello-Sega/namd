@@ -28,6 +28,9 @@
 #include "Hydrogen.h"
 #include "GromacsTopFile.h"
 
+#include <vector>
+using namespace std;
+
 class SimParameters;
 class Parameters;
 class PDB;
@@ -46,6 +49,22 @@ class ExclusionCheck {
 public:
   int32 min,max;
   char *flags;
+
+  ExclusionCheck(){
+      min=0;
+      max=-1;
+      flags = NULL;
+  }
+  ExclusionCheck(const ExclusionCheck& chk){
+      min = chk.min;
+      max = chk.max;
+      if(flags) delete [] flags;
+      flags = new char[max-min+1];
+      memcpy(flags, chk.flags, sizeof(char)*(max-min+1));
+  }
+  ~ExclusionCheck(){
+      if(flags) delete [] flags;
+  }
 };
 #define EXCHCK_FULL 1
 #define EXCHCK_MOD 2
@@ -105,20 +124,39 @@ private:
   void initialize(SimParameters *, Parameters *param);
             // Sets most data to zero
 
+  #ifdef MEM_OPT_VERSION 
+  //Indexing to constant pools to save space
+  AtomCstInfo *atoms;
+  Index *eachAtomMass; //after initialization, this could be freed (possibly)
+  Index *eachAtomCharge; //after initialization, this could be freed (possibly)
+  AtomNameIdx *atomNames;
+  ObjectArena<char> *nameArena; //the space for names to be allocated  
+  #else
   Atom *atoms;    //  Array of atom structures
   ObjectArena<char> *nameArena;
-  AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained
-        //  on node 0 for VMD interface
+  AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained on node 0 for VMD interface
+  #endif
+
   ResidueLookupElem *resLookup; // find residues by name
+
+  #ifndef MEM_OPT_VERSION
+  //replaced by atom signatures
   Bond *bonds;    //  Array of bond structures
   Angle *angles;    //  Array of angle structures
   Dihedral *dihedrals;  //  Array of dihedral structures
-  Improper *impropers;  //  Array of improper structures
+  Improper *impropers;  //  Array of improper structures                          
   Crossterm *crossterms;  //  Array of cross-term structures
+  #endif
+  
   Bond *donors;         //  Array of hydrogen bond donor structures
   Bond *acceptors;  //  Array of hydrogen bond acceptor
+
+  #ifndef MEM_OPT_VERSION
+  //These will be replaced by exclusion signatures
   Exclusion *exclusions;  //  Array of exclusion structures
   UniqueSet<Exclusion> exclusionSet;  //  Used for building
+  #endif
+
   int32 *consIndexes; //  Constraint indexes for each atom
   ConstraintParams *consParams;
 
@@ -161,17 +199,24 @@ private:
   int32 **bondsWithAtom;  //  List of bonds involving each atom
 
   ObjectArena<int32> *arena;
+
+#ifdef MEM_OPT_VERSION
+  Index *eachAtomSig;
+  Index *eachAtomExclSig;
+#else
+//function is replaced by atom signatures
   int32 **bondsByAtom;  //  List of bonds owned by each atom
   int32 **anglesByAtom;     //  List of angles owned by each atom
   int32 **dihedralsByAtom;  //  List of dihedrals owned by each atom
   int32 **impropersByAtom;  //  List of impropers owned by each atom
   int32 **crosstermsByAtom;  //  List of crossterms owned by each atom
+    
   int32 **exclusionsByAtom; //  List of exclusions owned by each atom
   int32 **fullExclusionsByAtom; //  List of atoms excluded for each atom
   int32 **modExclusionsByAtom; //  List of atoms modified for each atom
-
   ObjectArena<char> *exclArena;
   ExclusionCheck *all_exclusions;
+#endif
         //  List of all exclusions, including
         //  explicit exclusions and those calculated
         //  from the bonded structure based on the
@@ -204,7 +249,12 @@ private:
   void build13excl(void);
   void build14excl(int);
   void stripHGroupExcl(void);
+  #ifdef MEM_OPT_VERSION
+  void stripFepFixedExcl(void);
+  #else
   void stripFepExcl(void);
+  #endif
+
   void build_exclusions();
 
   // analyze the atoms, and determine which are oxygen, hb donors, etc.
@@ -215,10 +265,11 @@ private:
   SimParameters *simParams;
   Parameters *params;
 
-  void read_parm(const GromacsTopFile *);
+  void read_parm(const GromacsTopFile *);  
 
 public:
-  int numAtoms;   //  Number of atoms 
+  int numAtoms;   //  Number of atoms                   
+
   int numBonds;   //  Number of bonds
   int numAngles;    //  Number of angles
   int numDihedrals; //  Number of dihedrals
@@ -228,6 +279,7 @@ public:
   int numAcceptors; //  Number of hydrogen bond acceptors
   int numExclusions;  //  Number of exclusions
   int numTotalExclusions; //  Real Total Number of Exclusions // hack
+  
   int numConstraints; //  Number of atoms constrained
 /* BEGIN gf */
   int numGridforces;  //  Number of atoms in gridforce file
@@ -293,7 +345,8 @@ public:
   void read_psf_file(char *, Parameters *);
         //  Read in a .psf file given
         //  the filename and the parameter
-        //  object to use
+        //  object to use  
+
   void send_Molecule(Communicate *);
         //  send the molecular structure 
         //  from the master to the clients
@@ -359,24 +412,40 @@ public:
   int get_cluster(int anum) const { return cluster[anum]; }
   int get_clusterSize(int anum) const { return clusterSize[anum]; }
 
+
+  #ifdef CHARMIZE_NAMD
+  Atom *getAllAtoms() {
+      return atoms;
+  }
+  #endif
+
   //  Get the mass of an atom
   Real atommass(int anum) const
   {
+    #ifdef MEM_OPT_VERSION
+    return atomMassPool[eachAtomMass[anum]];
+    #else
     return(atoms[anum].mass);
+    #endif
   }
 
   //  Get the charge of an atom
   Real atomcharge(int anum) const
   {
+    #ifdef MEM_OPT_VERSION
+    return atomChargePool[eachAtomCharge[anum]];
+    #else
     return(atoms[anum].charge);
+    #endif
   }
   
   //  Get the vdw type of an atom
   Index atomvdwtype(int anum) const
-  {
+  {      
       return(atoms[anum].vdw_type);
   }
 
+  #ifndef MEM_OPT_VERSION
   //  Retrieve a bond structure
   Bond *get_bond(int bnum) const {return (&(bonds[bnum]));}
 
@@ -391,6 +460,7 @@ public:
 
   //  Retrieve a cross-term strutcure
   Crossterm *get_crossterm(int inum) const {return (&(crossterms[inum]));}
+  #endif
 
   //  Retrieve a hydrogen bond donor structure
   Bond *get_donor(int dnum) const {return (&(donors[dnum]));}
@@ -399,7 +469,9 @@ public:
   Bond *get_acceptor(int dnum) const {return (&(acceptors[dnum]));}
 
   //  Retrieve an exclusion structure
+  #ifndef MEM_OPT_VERSION
   Exclusion *get_exclusion(int ex) const {return (&(exclusions[ex]));}
+  #endif
 
   //  Retrieve an atom type
   const char *get_atomtype(int anum) const
@@ -409,7 +481,11 @@ public:
       NAMD_die("Tried to find atom type on node other than node 0");
     }
 
+    #ifdef MEM_OPT_VERSION    
+    return atomNamePool[atomNames[anum].atomtypeIdx];
+    #else
     return(atomNames[anum].atomtype);
+    #endif
   }
 
   //  Lookup atom id from segment, residue, and name
@@ -424,29 +500,41 @@ public:
   
   //  The following routines are used to get the list of bonds
   //  for a given atom.  This is used when creating the bond lists
-  //  for the force objects
-  int32 *get_bonds_for_atom(int anum) { return bondsByAtom[anum]; }
+  //  for the force objects  
+
+  #ifndef MEM_OPT_VERSION
+  int32 *get_bonds_for_atom(int anum)
+      { return bondsByAtom[anum]; } 
   int32 *get_angles_for_atom(int anum) 
       { return anglesByAtom[anum]; }
   int32 *get_dihedrals_for_atom(int anum) 
       { return dihedralsByAtom[anum]; }
   int32 *get_impropers_for_atom(int anum) 
-      { return impropersByAtom[anum]; }
+      { return impropersByAtom[anum]; }  
   int32 *get_crossterms_for_atom(int anum) 
-      { return crosstermsByAtom[anum]; }
+      { return crosstermsByAtom[anum]; }  
   int32 *get_exclusions_for_atom(int anum)
       { return exclusionsByAtom[anum]; }
   const int32 *get_full_exclusions_for_atom(int anum) const
       { return fullExclusionsByAtom[anum]; }
   const int32 *get_mod_exclusions_for_atom(int anum) const
       { return modExclusionsByAtom[anum]; }
+  #endif
   
   //  Check for exclusions, either explicit or bonded.
         //  Returns 1 for full, 2 for 1-4 exclusions.
+  #ifdef MEM_OPT_VERSION
+  int checkExclByIdx(int idx1, int atom1, int atom2) const;
+  const ExclusionCheck *get_excl_check_for_idx(int idx) const{      
+      return &exclChkSigPool[idx];
+  }
+  #else
   int checkexcl(int atom1, int atom2) const;
 
-  const ExclusionCheck *get_excl_check_for_atom(int anum) const
-       { return &all_exclusions[anum]; }
+  const ExclusionCheck *get_excl_check_for_atom(int anum) const{      
+      return &all_exclusions[anum];             
+  }
+  #endif
 
 /* BEGIN gf */
   // Return true or false based on whether or not the atom
@@ -640,6 +728,77 @@ public:
   void print_bonds(Parameters *); 
         //  Print out list of bonds
   void print_exclusions();//  Print out list of exclusions
+
+private:
+  //Read in a compressed .psf file (whose format is not standard) for
+  //the sake of very very large simulations (say, 100M atoms system)
+  void read_compressed_psf_file(char *, Parameters *);   
+
+#ifdef MEM_OPT_VERSION
+public:  
+  int atomSigPoolSize;
+  AtomSignature *atomSigPool;
+
+  /* All the following are temporary variables for reading the compressed psf file */
+  //declarations for atoms' constant information  
+  int segNamePoolSize; //Its value is usually less than 5
+  char **segNamePool; //This seems not to be important, but it only occupied very little space.
+
+  int resNamePoolSize;
+  char **resNamePool;
+
+  int atomNamePoolSize;
+  char **atomNamePool;
+
+  int atomTypePoolSize;
+  char **atomTypePool;
+
+  int chargePoolSize;
+  Real *atomChargePool;
+
+  int massPoolSize;
+  Real *atomMassPool;
+
+  AtomSigID getAtomSigId(int aid) {
+      return eachAtomSig[aid]; 
+  }
+  ExclSigID getAtomExclSigId(int aid) const {
+      return eachAtomExclSig[aid];
+  }
+
+  //Indicates the size of both exclSigPool and exclChkSigPool
+  int exclSigPoolSize;
+  //this will be deleted after build_lists_by_atom
+  ExclusionSignature *exclSigPool;
+  //This is the final data structure we want to store  
+  ExclusionCheck *exclChkSigPool;
+
+  void addNewExclSigPool(const vector<ExclusionSignature>&);
+
+  void build_excl_check_signatures();
+
+  void delEachAtomSigs(){      
+      delete [] eachAtomSig;
+      delete [] eachAtomExclSig;
+      eachAtomSig = NULL;
+      eachAtomExclSig = NULL;
+  }
+
+  void delMassChargeSpace(){
+      delete [] atomChargePool;
+      delete [] atomMassPool;
+      delete [] eachAtomMass;
+      delete [] eachAtomCharge;
+      atomChargePool = NULL;
+      atomMassPool = NULL;
+      eachAtomMass = NULL;
+      eachAtomCharge = NULL;
+  }
+
+private:
+  Index insert_new_mass(Real newMass);
+  //void markClusterIdx(int curClusterIdx, int startAtomID);  
+#endif
 
 };
 
