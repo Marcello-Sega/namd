@@ -541,6 +541,9 @@ public:
 	BigReal scriptArg3;
 	BigReal scriptArg4;
 	BigReal scriptArg5;
+
+    Bool useCompressedPsf;
+    Bool genCompressedPsf;
 	
 public:
 

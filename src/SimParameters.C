@@ -534,6 +534,11 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
        "Use geometric mean to combine L-J sigmas, as for OPLS",
        &vdwGeometricSigma, FALSE);
 
+   opts.optionalB("main", "useCompressedPsf", "The structure file psf is in the compressed format",
+                  &useCompressedPsf, FALSE);
+   opts.optionalB("main", "genCompressedPsf", "Generate the compressed version of the psf file",
+                  &genCompressedPsf, FALSE);
+
 }
 
 
