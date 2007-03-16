@@ -143,10 +143,17 @@ int NamdState::configListInit(ConfigList *cfgList) {
     //****** BEGIN CHARMM/XPLOR type changes
     // For AMBER use different constructor based on parm_struct!!!  -JCP
     parameters = new Parameters(simParameters, parameterFilename);
-    //****** END CHARMM/XPLOR type changes
-    parameters->print_param_summary();
+    //****** END CHARMM/XPLOR type changes    
 
-    molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+    if(simParameters->genCompressedPsf){
+        molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+        iout << "Finished Compressing psf file!\n" <<endi;
+        CkExit();
+    }
+    else{
+        parameters->print_param_summary();
+        molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+    }    
   }
   fflush(stdout);
 
