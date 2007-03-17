@@ -1615,11 +1615,6 @@ void Controller::outputFepEnergy(int step) {
     exp_dE_ByRT = 0.0;
     net_dE = 0.0;
   }
-  if (stepInRun == fepEquilSteps) {
-    fepFile << "#" << fepEquilSteps << " STEPS OF EQUILIBRATION AT "
-            << "LAMBDA " << simParams->lambda << " COMPLETED\n"
-            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
-  }
   BigReal dE = electEnergy_f + electEnergySlow_f + ljEnergy_f
 		- (electEnergy + electEnergySlow + ljEnergy);
   BigReal RT = BOLTZMAN * simParams->fepTemp;
@@ -1627,7 +1622,7 @@ void Controller::outputFepEnergy(int step) {
   exp_dE_ByRT += exp(-dE/RT);
   net_dE += dE;
  
- if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
+  if (stepInRun == 0) {
     if (!fepFile.rdbuf()->is_open()) {
       fepSum = 0.0;
       NAMD_backup_file(simParams->fepOutFile);
@@ -1638,10 +1633,15 @@ void Controller::outputFepEnergy(int step) {
               << "#                           l             l+dl      "
               << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
     }
-    if (stepInRun == 0) {
-      fepFile << "#NEW FEP WINDOW: "
-              << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2 << std::endl;
-    }
+    fepFile << "#NEW FEP WINDOW: "
+            << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2 << std::endl;
+  }
+  if (stepInRun == fepEquilSteps) {
+    fepFile << "#" << fepEquilSteps << " STEPS OF EQUILIBRATION AT "
+            << "LAMBDA " << simParams->lambda << " COMPLETED\n"
+            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
+  }
+  if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
     writeFepEnergyData(step, fepFile);
     fepFile.flush();
   }
