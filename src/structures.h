@@ -371,6 +371,8 @@ for(int i=0; i<sig1.TUPLE##Cnt; i++){ \
     CMPSIGS(dihedral)
     CMPSIGS(improper)
     CMPSIGS(crossterm)
+
+    return 1;
 }
 
 struct AtomNameIdx{
