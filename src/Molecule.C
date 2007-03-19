@@ -4018,6 +4018,37 @@ void Molecule::receive_Molecule(MIStream *msg)
   void Molecule::stripHGroupExcl(void)
   {
 #ifdef MEM_OPT_VERSION
+   //don't eliminate the exclusion signatures but only adjusting numCalcExclusions
+   //which is related to the checksum in reductions. HGroupExcl are not calculated
+   //at all
+    numCalcExclusions = 0;
+    UniqueSet<Exclusion> strippedExcls;
+    HydrogenGroup::iterator h_i, h_e, h_j;
+    h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    for( ; h_i != h_e; ++h_i ) {
+      for ( h_j = h_i + 1; h_j != h_e && ! h_j->isGP; ++h_j ) {
+		if ( h_i->atomID < h_j->atomID )
+	  		strippedExcls.add(Exclusion(h_i->atomID,h_j->atomID));
+		else
+	  		strippedExcls.add(Exclusion(h_j->atomID,h_i->atomID));
+      }
+    }
+    
+    UniqueSetIter<Exclusion> iter(strippedExcls);
+    for(iter=iter.begin(); iter!=iter.end(); iter++){
+    	int atom1 = iter->atom1;
+    	int atom2 = iter->atom2;
+	ExclusionSignature *a1Sig = &exclSigPool[eachAtomExclSig[atom1]];
+	int fullOrMod, idx;
+	idx = a1Sig->findOffset(atom2-atom1, &fullOrMod);
+	if(idx==-1) continue;
+
+	numCalcExclusions -= 2;
+    }
+
+    return;
+
+#if 0
 	UniqueSet<Exclusion> strippedExcls;
 	HydrogenGroup::iterator h_i, h_e, h_j;
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
@@ -4087,7 +4118,8 @@ void Molecule::receive_Molecule(MIStream *msg)
 
     newExclSigPool.clear();
            
-    delete [] strippedList;        
+    delete [] strippedList;     
+#endif   
 #else
     HydrogenGroup::iterator h_i, h_e, h_j;
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
@@ -4196,7 +4228,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       }
 
       //deal with fixed atoms
-      numCalcExclusions = 0;
+    //numCalcExclusions has to be calculated in stripHGroupExcl
+      //numCalcExclusions = 0;
       if(!numFixedAtoms){
     	for(int i=0; i<numAtoms; i++){
     	    ExclusionSignature *a1Sig = &exclSigPool[eachAtomExclSig[i]];
