@@ -160,6 +160,22 @@ public:
         tupleParamType = oneSig.tupleParamType;
         return *this;
     }
+    int operator==(const TupleSignature& sig) const{
+	    if(tupleType!=sig.tupleType)
+	        return 0;
+	
+	    if(tupleParamType != sig.tupleParamType)
+	        return 0;
+	
+		if(numOffset != sig.numOffset) return 0;
+		
+	    int equalCnt=0;
+	    	    
+	    for(int i=0; i<numOffset; i++){
+	        equalCnt += (offset[i]==sig.offset[i]);      
+	    }
+	    return equalCnt==numOffset;
+	}
     ~TupleSignature(){
         if(offset) delete[] offset;
     }
@@ -208,21 +224,6 @@ public:
     void pack(MOStream *msg);
     void unpack(MIStream *msg);
 };
-
-int operator==(const TupleSignature &sig1, const TupleSignature& sig2){
-    if(sig1.tupleType!=sig2.tupleType)
-        return 0;
-
-    if(sig1.tupleParamType != sig2.tupleParamType)
-        return 0;
-
-    int equalCnt=0;
-    int numOffset = sig1.numOffset;
-    for(int i=0; i<numOffset; i++){
-        equalCnt += (sig1.offset[i]==sig2.offset[i]);      
-    }
-    return equalCnt==numOffset;
-}
 
 //represents the signatures for atoms
 class AtomSignature{
@@ -341,6 +342,26 @@ public:
 
         return *this;
     }
+    int operator==(const AtomSignature& sig) const{
+	    if(bondCnt!=sig.bondCnt) return 0;
+	    if(angleCnt!=sig.angleCnt) return 0;
+	    if(dihedralCnt!=sig.dihedralCnt) return 0;
+	    if(improperCnt!=sig.improperCnt) return 0;
+	    if(crosstermCnt!=sig.crosstermCnt) return 0;
+	
+	#define CMPSIGS(TUPLE) \
+	for(int i=0; i<sig.TUPLE##Cnt; i++){ \
+	    if(!(TUPLE##Sigs[i]==sig.TUPLE##Sigs[i])) return 0; \
+	} \
+	
+	    CMPSIGS(bond)
+	    CMPSIGS(angle)
+	    CMPSIGS(dihedral)
+	    CMPSIGS(improper)
+	    CMPSIGS(crossterm)
+	
+	    return 1;
+	}
     ~AtomSignature(){
         if(bondSigs) delete[] bondSigs;
         if(angleSigs) delete[] angleSigs;
@@ -353,27 +374,6 @@ public:
     void pack(MOStream *msg);
     void unpack(MIStream *msg);
 };
-
-int operator==(const AtomSignature &sig1, const AtomSignature& sig2){
-    if(sig1.bondCnt!=sig2.bondCnt) return 0;
-    if(sig1.angleCnt!=sig2.angleCnt) return 0;
-    if(sig1.dihedralCnt!=sig2.dihedralCnt) return 0;
-    if(sig1.improperCnt!=sig2.improperCnt) return 0;
-    if(sig1.crosstermCnt!=sig2.crosstermCnt) return 0;
-
-#define CMPSIGS(TUPLE) \
-for(int i=0; i<sig1.TUPLE##Cnt; i++){ \
-    if(!(sig1.TUPLE##Sigs[i]==sig2.TUPLE##Sigs[i])) return 0; \
-} \
-
-    CMPSIGS(bond)
-    CMPSIGS(angle)
-    CMPSIGS(dihedral)
-    CMPSIGS(improper)
-    CMPSIGS(crossterm)
-
-    return 1;
-}
 
 struct AtomNameIdx{
     Index resnameIdx;
@@ -439,7 +439,18 @@ struct ExclusionSignature{
 
         return *this;
     }
-
+	int operator==(const ExclusionSignature& sig) const{
+	    if(fullExclCnt!=sig.fullExclCnt) return 0;
+	    if(modExclCnt!=sig.modExclCnt) return 0;
+	    
+	    for(int i=0; i<fullExclCnt; i++){
+			if(fullOffset[i]!=sig.fullOffset[i]) return 0;
+	    }
+	    for(int i=0; i<modExclCnt; i++){
+			if(modOffset[i]!=sig.modOffset[i]) return 0;
+	    }
+	    return 1;
+	}
     //both input should be sorted in increasing order
     void setOffsets(vector<int>& fullVec, vector<int>& modVec){
     	fullExclCnt = fullVec.size();
@@ -463,18 +474,6 @@ struct ExclusionSignature{
     void pack(MOStream *msg);
     void unpack(MIStream *msg);
 };
-int operator==(const ExclusionSignature& sig1, const ExclusionSignature& sig2){
-    if(sig1.fullExclCnt!=sig2.fullExclCnt) return 0;
-    if(sig1.modExclCnt!=sig2.modExclCnt) return 0;
-    
-    for(int i=0; i<sig1.fullExclCnt; i++){
-	if(sig1.fullOffset[i]!=sig2.fullOffset[i]) return 0;
-    }
-    for(int i=0; i<sig1.modExclCnt; i++){
-	if(sig1.modOffset[i]!=sig2.modOffset[i]) return 0;
-    }
-    return 1;
-}
 
 #endif
 
