@@ -841,7 +841,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         NAMD_die("UNABLE TO FIND NSEGMENTNAMES");
     sscanf(buffer, "%d", &segNamePoolSize);
     if(segNamePoolSize!=0)
-        segNamePool = new (char *)[segNamePoolSize];
+        segNamePool = new char *[segNamePoolSize];
     for(int i=0; i<segNamePoolSize; i++){
         NAMD_read_line(psf_file, buffer);
         sscanf(buffer, "%s", strBuf);
@@ -855,7 +855,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         NAMD_die("UNABLE TO FIND NRESIDUENAMES");
     sscanf(buffer, "%d", &resNamePoolSize);
     if(resNamePoolSize!=0)
-        resNamePool = new (char *)[resNamePoolSize];
+        resNamePool = new char *[resNamePoolSize];
     for(int i=0; i<resNamePoolSize; i++){
         NAMD_read_line(psf_file, buffer);
         sscanf(buffer, "%s", strBuf);
@@ -869,7 +869,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         NAMD_die("UNABLE TO FIND NATOMNAMES");
     sscanf(buffer, "%d", &atomNamePoolSize);
     if(atomNamePoolSize!=0)
-        atomNamePool = new (char *)[atomNamePoolSize];
+        atomNamePool = new char *[atomNamePoolSize];
     for(int i=0; i<atomNamePoolSize; i++){
         NAMD_read_line(psf_file, buffer);
         sscanf(buffer, "%s", strBuf);
@@ -883,7 +883,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         NAMD_die("UNABLE TO FIND NATOMTYPES");
     sscanf(buffer, "%d", &atomTypePoolSize);
     if(atomTypePoolSize!=0)
-        atomTypePool = new (char *)[atomTypePoolSize];
+        atomTypePool = new char *[atomTypePoolSize];
     for(int i=0; i<atomTypePoolSize; i++){
         NAMD_read_line(psf_file, buffer);
         sscanf(buffer, "%s", strBuf);
