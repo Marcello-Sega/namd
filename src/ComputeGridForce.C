@@ -44,16 +44,18 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     Force extForce = 0.;
     Tensor extVirial;
     
-    Real scale;                      // Scaling factor
-    Molecule::GridforceGridbox gbox; // Structure with potential info
-    Vector loc;                      // Fractional location within box
-    Vector inv;                      // Inverse vector
+    Real scale;				// Scaling factor
+    Charge charge;			// Charge
+    Molecule::GridforceGridbox gbox;	// Structure with potential info
+    Vector loc;				// Fractional location within box
+    Vector inv;				// Inverse vector
     Force ftemp[2][2], f;
+    float v;
     
     //  Loop through and check each atom
     for (int i = 0; i < numAtoms; i++) {
 	if (mol->is_atom_gridforced(p[i].id)) {
-	    mol->get_gridfrc_params(scale, p[i].id);
+	    mol->get_gridfrc_params(scale, charge, p[i].id);
 	    
 	    // Get wrapped position
 	    Vector pos = p[i].position;
@@ -66,6 +68,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 	    }
 	    
 	    f = 0;
+	    v = 0;
 	    for (int j = 0; j < 8; j++) {
 		// This is simply the shortest possible way of writing
 		// this that I could think of, sorry if it's
@@ -79,12 +82,15 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		// the forces we apply are nice and continuous cube to
 		// cube.
 		
-		f += ((j & 4) ? loc[0] : 1-loc[0])
+		float factor = ((j & 4) ? loc[0] : 1-loc[0])
 		    * ((j & 2) ? loc[1] : 1-loc[1])
-		    * ((j & 1) ? loc[2] : 1-loc[2]) * gbox.f[j];
+		    * ((j & 1) ? loc[2] : 1-loc[2]);
+		
+		f += factor * gbox.f[j];
+		v += factor * gbox.v[j];
 	    }
 	    
-	    Force force = p[i].charge * scale * simParams->gridforceScale;
+	    Force force = charge * scale * simParams->gridforceScale;
 	    for (int j = 0; j < 3; j++) force[j] *= f.dot(gbox.inv[j]);
 	    
 	    DebugM(4, "force = " << force[0] << " " <<  force[1] << " " <<  force[2] << "\n" << endi);
@@ -93,7 +99,8 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 	    extForce += force;
 	    Position vpos = homePatch->lattice.reverse_transform(
 		p[i].position, p[i].transform );
-	    energy -= force * (vpos - homePatch->lattice.origin());
+	    //energy -= force * (vpos - homePatch->lattice.origin());
+	    //energy += v * scale * simParams->gridforceScale.x		// only makes sense when scaling is isotropic
 	    extVirial += outer(force,vpos);
 	}
     }

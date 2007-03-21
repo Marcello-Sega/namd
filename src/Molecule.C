@@ -241,8 +241,10 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   gridfrcK2 = 0;
   gridfrcK3 = 0;
   gridfrcSize = 0;
+  gridfrcSize_V = 0;
   gridfrcOrigin = Vector(0);
   gridfrcGrid = NULL;
+  gridfrcGrid_V = NULL;
   /* END gf */
   stirIndexes=NULL;
   stirParams=NULL;
@@ -2383,6 +2385,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 	 msg->put(gridfrcK2);
 	 msg->put(gridfrcK3);
 	 msg->put(gridfrcSize);
+	 msg->put(gridfrcSize_V);
 	 msg->put(gridfrcOrigin.x);
 	 msg->put(gridfrcOrigin.y);
 	 msg->put(gridfrcOrigin.z);
@@ -2395,6 +2398,9 @@ void Molecule::send_Molecule(Communicate *com_obj)
 	 }
 	 if (gridfrcSize) {
 	     msg->put(gridfrcSize*sizeof(float), (char*)gridfrcGrid);
+	 }
+	 if (gridfrcSize_V) {
+	     msg->put(gridfrcSize_V*sizeof(float), (char*)gridfrcGrid_V);
 	 }
 	 DebugM(0, "done.\n");
       }
@@ -2695,6 +2701,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 	 msg->get(gridfrcK2);
 	 msg->get(gridfrcK3);
 	 msg->get(gridfrcSize);
+	 msg->get(gridfrcSize_V);
 	 msg->get(gridfrcOrigin.x);
 	 msg->get(gridfrcOrigin.y);
 	 msg->get(gridfrcOrigin.z);
@@ -2714,6 +2721,13 @@ void Molecule::receive_Molecule(MIStream *msg)
 	     gridfrcGrid = new float[gridfrcSize];
 	     
 	     msg->get(gridfrcSize*sizeof(float), (char*)gridfrcGrid);
+	 }
+	 if (gridfrcSize_V) {
+	     delete [] gridfrcGrid_V;
+	     
+	     gridfrcGrid_V = new float[gridfrcSize_V];
+	     
+	     msg->get(gridfrcSize_V*sizeof(float), (char*)gridfrcGrid_V);
 	 }
       }
       /* END gf */
@@ -4334,9 +4348,10 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*      FUNCTION build_gridforce_params                                 */
     /*                                                                      */
     /*   INPUTS:                                                            */
-    /*  gridfrcfile - Value of gffile from config file                      */
-    /*  gridfrccol - Value of gfcol from config file                        */
-    /*  potfile - Value of gfpotentialfile from config file                 */
+    /*  gridfrcfile - Value of gridforcefile from config file               */
+    /*  gridfrccol - Value of gridforcecol from config file                 */
+    /*  gridfrcchrgcol - Value of gridforcechargecol from config file	    */
+    /*  potfile - Value of gridforcevfile from config file                  */
     /*  initial_pdb - PDB object that contains initial positions            */
     /*  cwd - Current working directory                                     */
     /*                                                                      */
@@ -4349,19 +4364,21 @@ void Molecule::receive_Molecule(MIStream *msg)
 
 void Molecule::build_gridforce_params(StringList *gridfrcfile,
 				      StringList *gridfrccol,
+				      StringList *gridfrcchrgcol,
 				      StringList *potfile,
 				      PDB *initial_pdb,
 				      char *cwd)
 {
     PDB *kPDB;
-    register int i;      //  Loop counters
+    register int i;		//  Loop counters
     register int j;
     register int k;
-    int current_index=0;    //  Index into values used
-    int kcol = 4;      //  Column to look for force constant in
-    Real kval = 0;      //  Force constant value retreived
-    char filename[129];    //  PDB filename
-    char potfilename[129]; // Potential file name
+    int current_index=0;	//  Index into values used
+    int kcol = 5;		//  Column to look for force constant in
+    int qcol = 0;		//  Column for charge (default 0: use electric charge)
+    Real kval = 0;		//  Force constant value retreived
+    char filename[129];		//  PDB filename
+    char potfilename[129];	//  Potential file name
     FILE *poten;
     
     //iout << "[DEBUG] Entered build_gridforce_params ...\n";
@@ -4376,7 +4393,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     {
 	if (gridfrcfile->next != NULL)
 	{
-	    NAMD_die("Multiple definitions of grid force file in configuration file");
+	    NAMD_die("Multiple definitions of gridforcefile in configuration file");
 	}
 	 
 	if ( (cwd == NULL) || (gridfrcfile->data[0] == '/') )
@@ -4405,10 +4422,10 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     //  can be in any of the 5 floating point fields in the PDB, according
     //  to what the user wants.  The allowable fields are X, Y, Z, O, or
     //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
-    //  The default is the 4th field, which is the occupancy
+    //  The default is the 5th field, which is beta (temperature factor)
     if (gridfrccol == NULL)
     {
-	kcol = 4;
+	kcol = 5;
     }
     else
     {
@@ -4439,9 +4456,52 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	}
 	else
 	{
-	    NAMD_die("gridfrccol must have value of X, Y, Z, O, or B");
+	    NAMD_die("gridforcecol must have value of X, Y, Z, O, or B");
 	}
     }
+    
+    //  Get the column that the charge is going to be in.
+    if (gridfrcchrgcol == NULL)
+    {
+	qcol = 0;	// Default: don't read charge from file, use electric charge
+    }
+    else
+    {
+	if (gridfrcchrgcol->next != NULL)
+	{
+	    NAMD_die("Multiple definitions of grid force column in config file");
+	}
+    
+	if (strcasecmp(gridfrcchrgcol->data, "X") == 0)
+	{
+	    qcol=1;
+	}
+	else if (strcasecmp(gridfrcchrgcol->data, "Y") == 0)
+	{
+	    qcol=2;
+	}
+	else if (strcasecmp(gridfrcchrgcol->data, "Z") == 0)
+	{
+	    qcol=3;
+	}
+	else if (strcasecmp(gridfrcchrgcol->data, "O") == 0)
+	{
+	    qcol=4;
+	}
+	else if (strcasecmp(gridfrcchrgcol->data, "B") == 0)
+	{
+	    qcol=5;
+	}
+	else
+	{
+	    NAMD_die("gridforceqcol must have value of X, Y, Z, O, or B");
+	}
+    }
+    
+    if (kcol == qcol) {
+	NAMD_die("gridforcecol and gridforceqcol cannot have same value");
+    }
+
     
     //  Allocate an array that will store an index into the constraint
     //  parameters for each atom.  If the atom is not constrained, its
@@ -4531,6 +4591,29 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->temperaturefactor();
 		break;
 	    }
+	    
+	    //  Also get charge column
+	    switch (qcol)
+	    {
+	    case 0:
+		gridfrcParams[gridfrcIndexes[i]].q = atoms[i].charge;
+		break;
+	    case 1:
+		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->xcoor();
+		break;
+	    case 2:
+		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->ycoor();
+		break;
+	    case 3:
+		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->zcoor();
+		break;
+	    case 4:
+		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->occupancy();
+		break;
+	    case 5:
+		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->temperaturefactor();
+		break;
+	    }
 	}
     }
        
@@ -4566,7 +4649,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     } while (line[0] == '#');
     sscanf(line, "object 1 class gridpositions counts %d %d %d\n", &gridfrcK1, &gridfrcK2, &gridfrcK3);
     
-    int gridfrcSize_V = gridfrcK1 * gridfrcK2 * gridfrcK3;
+    gridfrcSize_V = gridfrcK1 * gridfrcK2 * gridfrcK3;
     gridfrcSize = 3 * gridfrcSize_V;
     
     // Read origin
@@ -4604,12 +4687,16 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     gridfrcInv[2][2] = (e.xx*e.yy - e.xy*e.yx)/det;
     
     // Allocate storage for potential
-    float *gridfrcGrid_V;
     gridfrcGrid_V = new float[gridfrcSize_V];
     //iout << "[DEBUG] gridfrcSize_V = " << gridfrcSize_V << "\n" << endi;
     
     // Now read the potential
-    float factor = 1.0/0.0434;  // ? need to convert units? eV -> kcal/mol
+    float factor;
+    if (simParams->gridforceVolts) {
+	factor = 1.0/0.0434;  // convert V -> kcal/mol*e
+    } else {
+	factor = 1.0;
+    }
     int count = 0;
     
     // *** MODIFIED 1 DEC 2006 *** //
@@ -4705,7 +4792,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     }
     
     // Finally, clean up our garbage
-    delete[] gridfrcGrid_V;
+    //delete[] gridfrcGrid_V;
 }
 
 
@@ -4752,6 +4839,8 @@ int Molecule::get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) c
 	    gbox.f[i].x = gridfrcGrid[0*dk0 + ind];
 	    gbox.f[i].y = gridfrcGrid[1*dk0 + ind];
 	    gbox.f[i].z = gridfrcGrid[2*dk0 + ind];
+	    
+	    gbox.v[i] = gridfrcGrid_V[ind];
 	}
 	return 0;
     }

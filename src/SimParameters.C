@@ -1045,15 +1045,19 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 /* BEGIN gf */
 void SimParameters::config_parser_gridforce(ParseOptions &opts) {
     //// Gridforce
-    opts.optionalB("main","gridforce", "Is GridForce active?",
+    opts.optionalB("main", "gridforce", "Is Gridforce active?", 
 		   &gridforceOn, FALSE);
-    opts.require("gridforce","gridforcescale", "Scale factor by which to multiply "
+    opts.optionalB("gridforce", "gridforcevolts", "Is Gridforce using Volts/eV as units?",
+		   &gridforceVolts, FALSE);
+    opts.require("gridforce", "gridforcescale", "Scale factor by which to multiply "
 		 "grid forces", &gridforceScale);
-    opts.require("gridforce","gridforcefile", "PDB file containing force "
+    opts.require("gridforce", "gridforcefile", "PDB file containing force "
 		 "multipliers in one of the columns", PARSE_STRING);
-    opts.require("gridforce","gridforcecol", "Column of gridforcefile to "
+    opts.require("gridforce", "gridforcecol", "Column of gridforcefile to "
 		 "use for force multiplier", PARSE_STRING);
-    opts.require("gridforce","gridforcepotenfile", "Gridforce potential file",
+    opts.optional("gridforce", "gridforceqcol", "Column of gridforcefile to "
+		  "use for charge", PARSE_STRING);
+    opts.require("gridforce", "gridforcevfile", "Gridforce potential file",
 		 PARSE_STRING);
 }
 /* END gf */
@@ -2865,6 +2869,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    /* BEGIN gf */
    if (gridforceOn) {
      iout << iINFO << "GRID FORCE ACTIVE\n";
+     
+     if (gridforceVolts) {
+	 iout << iINFO << "GRID FORCE UNITS ARE VOLTS\n";
+     }
      
      iout << iINFO << "GRID FORCE SCALING     " << gridforceScale.x << " "
 	  << gridforceScale.y << " " << gridforceScale.z << "\n";

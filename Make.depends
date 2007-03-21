@@ -36,6 +36,7 @@ obj/main.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
+	inc/AtomsDisInfo.decl.h \
 	src/main.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/main.o $(COPTC) src/main.C
@@ -2669,7 +2670,8 @@ obj/Molecule.o: \
 	src/PDB.h \
 	src/PDBData.h \
 	src/UniqueSetIter.h \
-	src/Debug.h
+	src/Debug.h \
+	src/CompressPsf.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
 obj/NamdCentLB.o: \
 	src/NamdCentLB.C \
@@ -3654,6 +3656,20 @@ obj/imd.o: \
 	src/imd.h \
 	src/vmdsock.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/imd.o $(COPTC) src/imd.C
+obj/CompressPsf.o: \
+	src/CompressPsf.C \
+	src/CompressPsf.h \
+	src/strlib.h \
+	src/Molecule.h \
+	src/Parameters.h \
+	src/SimParameters.h \
+	src/InfoStream.h \
+	src/UniqueSet.h \
+	src/UniqueSetIter.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/CompressPsf.o $(COPTC) src/CompressPsf.C
+obj/AtomsDisInfo.o: \
+	src/AtomsDisInfo.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/AtomsDisInfo.o $(COPTC) src/AtomsDisInfo.C
 obj/dcdplugin.o:
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/dcdplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_dcdplugin plugins/molfile_plugin/src/dcdplugin.c
 obj/tcl_main.o: \

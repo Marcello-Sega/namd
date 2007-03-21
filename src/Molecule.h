@@ -83,7 +83,8 @@ typedef struct constraint_params
 /* BEGIN gf */
 typedef struct gridfrc_params
 {
-  Real k;   // force multiplier
+    Real k;	// force multiplier
+    Charge q;	// charge
 } GridforceParams;
 /* END gf */
 
@@ -163,14 +164,16 @@ private:
 /* BEGIN gf */
   int32 *gridfrcIndexes;
   GridforceParams *gridfrcParams;
-  int gridfrcK1;          // Grid dimensions
+  int gridfrcK1;		// Grid dimensions
   int gridfrcK2;
   int gridfrcK3;
   int gridfrcSize;
-  Vector gridfrcOrigin;   // Grid origin
-  Vector gridfrcE[3];     // Grid unit vectors
-  Vector gridfrcInv[3];   // Inverse of unit vectors
-  float *gridfrcGrid;     // Grid itself -- now grid of forces
+  int gridfrcSize_V;
+  Vector gridfrcOrigin;		// Grid origin
+  Vector gridfrcE[3];		// Grid unit vectors
+  Vector gridfrcInv[3];		// Inverse of unit vectors
+  float *gridfrcGrid;		// Grid of forces (soon to be gone)
+  float *gridfrcGrid_V;		// Potential grid
 /* END gf */
 
         //  Parameters for each atom constrained
@@ -327,8 +330,9 @@ public:
 /* BEGIN gf */
   typedef struct gridfrc_gridbox
   {
-    Force f[8];
-    Vector inv[3];
+      Force f[8];
+      float v[8];
+      Vector inv[3];
   } GridforceGridbox;
 /* END gf */
 
@@ -360,7 +364,7 @@ public:
         // parameters
 
 /* BEGIN gf */
-  void build_gridforce_params(StringList *, StringList *, StringList *, PDB *, char *);
+  void build_gridforce_params(StringList *, StringList *, StringList *, StringList *, PDB *, char *);
         //  Build the set of gridForce-style force pars
 /* END gf */
 
@@ -624,9 +628,10 @@ public:
   }
 
 /* BEGIN gf */
-  void get_gridfrc_params(Real &k, int atomnum) const
+  void get_gridfrc_params(Real &k, Charge &q, int atomnum) const
   {
     k = gridfrcParams[gridfrcIndexes[atomnum]].k;
+    q = gridfrcParams[gridfrcIndexes[atomnum]].q;
   }
 
   int get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) const;

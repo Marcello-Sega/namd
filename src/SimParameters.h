@@ -176,8 +176,9 @@ public:
 	int constraintExp;		//  Exponent for harmonic constraints
 
 	/* BEGIN gf */
-	Bool gridforceOn;               //  Flag TRUE -> gridforce active
-	Vector gridforceScale;          //  GridForce scale factor
+	Bool gridforceOn;		//  Flag TRUE -> gridforce active
+	Bool gridforceVolts;		//  Flag TRUE -> gridforce using volts as units
+	zVector gridforceScale;		//  Gridforce scale factor
 	/* END gf */
 
         //****** BEGIN selective restraints (X,Y,Z) changes 
