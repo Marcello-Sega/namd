@@ -4595,8 +4595,12 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	    //  Also get charge column
 	    switch (qcol)
 	    {
-	    case 0:
+        case 0:
+#ifdef MEM_OPT_VERSION
+        gridfrcParams[gridfrcIndexes[i]].q = atomChargePool[eachAtomCharge[i]];
+#else            
 		gridfrcParams[gridfrcIndexes[i]].q = atoms[i].charge;
+#endif
 		break;
 	    case 1:
 		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->xcoor();
