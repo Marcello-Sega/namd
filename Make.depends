@@ -153,7 +153,6 @@ obj/BackEnd.o: \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -164,13 +163,7 @@ obj/BackEnd.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
-	inc/WorkDistrib.decl.h \
-	inc/ProxyMgr.decl.h \
-	inc/PatchMgr.decl.h \
-	inc/ComputeMgr.decl.h \
-	inc/ReductionMgr.decl.h \
-	inc/CollectionMgr.decl.h \
-	inc/CollectionMaster.decl.h \
+	inc/AtomsDisInfo.decl.h \
 	src/CollectionMgr.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -182,10 +175,7 @@ obj/BackEnd.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/Lattice.h \
-	src/Tensor.h \
-	inc/BroadcastMgr.decl.h \
-	inc/LdbCoordinator.decl.h \
-	inc/Sync.decl.h
+	src/Tensor.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BackEnd.o $(COPTC) src/BackEnd.C
 obj/BroadcastMgr.o: \
 	src/BroadcastMgr.C \
@@ -970,14 +960,6 @@ obj/ComputeFullDirect.o: \
 	src/Debug.h \
 	src/ComputeFullDirectBase.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/ComputeFullDirect.o $(COPTC) src/ComputeFullDirect.C
-obj/ComputeGridForce.o: \
-	src/ComputeGridForce.C \
-	src/ComputeGridForce.h \
-	src/HomePatch.h \
-	src/Molecule.h \
-	src/Node.h \
-	src/SimParameters.h
-	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/ComputeGridForce.o $(COPTC) src/ComputeGridForce.C
 obj/ComputeHomePatch.o: \
 	src/ComputeHomePatch.C \
 	src/InfoStream.h \
@@ -1190,6 +1172,53 @@ obj/ComputeGlobalMsgs.o: \
 	src/packmsg.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobalMsgs.o $(COPTC) src/ComputeGlobalMsgs.C
+obj/ComputeGridForce.o: \
+	src/ComputeGridForce.C \
+	src/ComputeGridForce.h \
+	src/ComputeHomePatch.h \
+	src/Compute.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	src/PositionBox.h \
+	src/PositionOwnerBox.h \
+	src/ReductionMgr.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/SimParameters.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/GromacsTopFile.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGridForce.o $(COPTC) src/ComputeGridForce.C
 obj/ComputeMap.o: \
 	src/ComputeMap.C \
 	src/InfoStream.h \
@@ -1280,6 +1309,7 @@ obj/ComputeMgr.o: \
 	src/ComputeDihedrals.h \
 	src/ComputeDihedrals.inl \
 	src/ComputeImpropers.h \
+	src/ComputeCrossterms.h \
 	src/ComputeBonds.h \
 	src/ComputeBonds.inl \
 	src/ComputeFullDirect.h \
@@ -1297,6 +1327,7 @@ obj/ComputeMgr.o: \
 	src/ComputeEwald.h \
 	src/ComputeEField.h \
 	src/ComputeHomePatch.h \
+	src/ComputeGridForce.h \
 	src/ComputeStir.h \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
@@ -2530,8 +2561,6 @@ obj/LdbCoordinator.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	inc/LdbCoordinator.decl.h \
-	inc/NamdCentLB.decl.h \
-	inc/NamdNborLB.decl.h \
 	src/LdbCoordinator.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -2707,7 +2736,6 @@ obj/NamdCentLB.o: \
 	src/ComputeMap.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
-	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdCentLB.o $(COPTC) src/NamdCentLB.C
 obj/NamdNborLB.o: \
@@ -2742,8 +2770,7 @@ obj/NamdNborLB.o: \
 	src/ComputeMap.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
-	inc/NamdCentLB.decl.h \
-	inc/NamdNborLB.decl.h
+	inc/NamdCentLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdNborLB.o $(COPTC) src/NamdNborLB.C
 obj/NamdState.o: \
 	src/NamdState.C \
@@ -2827,7 +2854,6 @@ obj/Node.o: \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -2838,6 +2864,7 @@ obj/Node.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
+	inc/AtomsDisInfo.decl.h \
 	src/WorkDistrib.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -2845,7 +2872,6 @@ obj/Node.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
-	inc/WorkDistrib.decl.h \
 	src/PatchMgr.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -2864,7 +2890,6 @@ obj/Node.o: \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/Compute.h \
 	src/ComputeMgr.h \
@@ -2885,7 +2910,6 @@ obj/Node.o: \
 	src/Output.h \
 	src/ProxyMgr.h \
 	src/UniqueSetIter.h \
-	inc/ProxyMgr.decl.h \
 	src/PatchMap.inl \
 	src/Parameters.h \
 	src/strlib.h \
@@ -2893,19 +2917,15 @@ obj/Node.o: \
 	src/SimParameters.h \
 	src/Communicate.h \
 	src/LdbCoordinator.h \
-	inc/LdbCoordinator.decl.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
-	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	inc/ComputeMgr.decl.h \
-	inc/ComputePmeMgr.decl.h \
 	src/Sync.h \
-	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
 	src/BackEnd.h \
+	src/DumpBench.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Node.o $(COPTC) src/Node.C
 obj/Output.o: \
@@ -3066,7 +3086,6 @@ obj/PatchMgr.o: \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
-	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
 	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
@@ -3079,11 +3098,10 @@ obj/PatchMgr.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
-	inc/WorkDistrib.decl.h \
+	inc/AtomsDisInfo.decl.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/Node.h \
-	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/packmsg.h \
 	src/Debug.h \
@@ -3236,6 +3254,7 @@ obj/ProxyPatch.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
+	inc/AtomsDisInfo.decl.h \
 	src/main.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
@@ -3254,7 +3273,6 @@ obj/ProxyPatch.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/PatchTypes.h \
-	inc/ProxyMgr.decl.h \
 	src/ProxyMgr.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -3402,9 +3420,7 @@ obj/ScriptTcl.o: \
 	src/Debug.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	plugins/include/libmolfile_plugin.h \
-	src/ComputeConsForceMsgs.h \
-	inc/ComputeMgr.decl.h
+	plugins/include/libmolfile_plugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
 obj/Sequencer.o: \
 	src/Sequencer.C \
@@ -3578,7 +3594,6 @@ obj/WorkDistrib.o: \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
 	inc/main.decl.h \
-	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
@@ -3593,8 +3608,8 @@ obj/WorkDistrib.o: \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
+	inc/AtomsDisInfo.decl.h \
 	src/Node.h \
-	inc/Node.decl.h \
 	src/PatchMgr.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -3613,7 +3628,6 @@ obj/WorkDistrib.o: \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -3659,16 +3673,36 @@ obj/imd.o: \
 obj/CompressPsf.o: \
 	src/CompressPsf.C \
 	src/CompressPsf.h \
+	src/structures.h \
+	src/common.h \
 	src/strlib.h \
 	src/Molecule.h \
-	src/Parameters.h \
-	src/SimParameters.h \
-	src/InfoStream.h \
+	src/parm.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ConfigList.h \
 	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/Parameters.h \
+	src/MStream.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/InfoStream.h \
 	src/UniqueSetIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CompressPsf.o $(COPTC) src/CompressPsf.C
 obj/AtomsDisInfo.o: \
-	src/AtomsDisInfo.h
+	src/AtomsDisInfo.C \
+	src/AtomsDisInfo.h \
+	src/structures.h \
+	src/common.h \
+	inc/AtomsDisInfo.decl.h \
+	inc/AtomsDisInfo.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AtomsDisInfo.o $(COPTC) src/AtomsDisInfo.C
 obj/dcdplugin.o:
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/dcdplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_dcdplugin plugins/molfile_plugin/src/dcdplugin.c
@@ -3685,6 +3719,10 @@ obj/tcl_psfgen.o: \
 	sb/src/topo_mol_output.h \
 	sb/src/pdb_file_extract.h \
 	sb/src/psf_file_extract.h \
+	sb/src/topo_defs_struct.h \
+	sb/src/memarena.h \
+	sb/src/hasharray.h \
+	sb/src/topo_mol_struct.h \
 	sb/src/extract_alias.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_psfgen.o $(COPTC) sb/src/tcl_psfgen.c
 obj/charmm_file.o: \
@@ -3747,16 +3785,17 @@ obj/psf_file_extract.o: \
 obj/topo_defs.o: \
 	sb/src/topo_defs.c \
 	sb/src/topo_defs_struct.h \
+	sb/src/memarena.h \
 	sb/src/hasharray.h \
 	sb/src/topo_defs.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_defs.o $(COPTC) sb/src/topo_defs.c
 obj/topo_mol.o: \
 	sb/src/topo_mol.c \
 	sb/src/topo_defs_struct.h \
+	sb/src/memarena.h \
 	sb/src/hasharray.h \
 	sb/src/topo_defs.h \
 	sb/src/topo_mol_struct.h \
-	sb/src/memarena.h \
 	sb/src/topo_mol.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol.o $(COPTC) sb/src/topo_mol.c
 obj/topo_mol_output.o: \
