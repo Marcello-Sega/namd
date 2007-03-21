@@ -58,9 +58,21 @@ public:
   ExclusionCheck(const ExclusionCheck& chk){
       min = chk.min;
       max = chk.max;
-      if(flags) delete [] flags;
-      flags = new char[max-min+1];
-      memcpy(flags, chk.flags, sizeof(char)*(max-min+1));
+      if(max>min){ 
+	flags = new char[max-min+1];
+	memcpy(flags, chk.flags, sizeof(char)*(max-min+1));
+      }
+  }
+  ExclusionCheck &operator=(const ExclusionCheck& chk){
+    min = chk.min;
+    max = chk.max;
+    if(flags) delete [] flags;
+    flags = NULL;
+    if(max>min){
+	flags = new char[max-min+1];
+	memcpy(flags, chk.flags, sizeof(char)*(max-min+1));
+    }
+    return *this;
   }
   ~ExclusionCheck(){
       if(flags) delete [] flags;
