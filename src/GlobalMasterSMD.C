@@ -65,7 +65,11 @@ void GlobalMasterSMD::parseAtoms(const char *file, int numTotalAtoms) {
   BigReal imass = 0; 
 
   for (int i=0; i<numatoms; i++) {
+#ifdef MEM_OPT_VERSION
+    PDBCoreData *atom = smdpdb.atom(i);
+#else
     PDBAtom *atom = smdpdb.atom(i); // get an atom from the file
+#endif    
     if (atom->occupancy()) { // if occupancy is not 0, then add it!
       // add the atom to the list
       modifyRequestedGroups()[0].add(i);

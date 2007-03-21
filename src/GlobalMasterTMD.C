@@ -115,7 +115,11 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms) {
   tmdpdb.get_all_positions(atompos);
   int i;
   for (i=0; i<numatoms; i++) {
+#ifdef MEM_OPT_VERSION
+    PDBCoreData *atom = tmdpdb.atom(i);
+#else
     PDBAtom *atom = tmdpdb.atom(i); // get an atom from the file
+#endif
     if (atom->occupancy()) { // if occupancy is not 0, then add it!
       target[3*numTMDatoms  ] = atompos[i].x;
       target[3*numTMDatoms+1] = atompos[i].y;
