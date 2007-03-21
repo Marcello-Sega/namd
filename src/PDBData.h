@@ -29,23 +29,28 @@
 #include "common.h"
 #include <string.h>
 
+
 class PDBData {  // at the basic level, a PDB record only knows its type
    public:
-// These data types come from the Protein Data Bank format
-// description located via anon. ftp to pdb.pdb.bnl.gov
-// in the file /pub/format.desc.ps
-//  In addition, I define an extra type, UNKNOWN.  If I can't
-// figure out what's going on, I store the complete string
-// and return it when asked.
+
+  // These data types come from the Protein Data Bank format
+  // description located via anon. ftp to pdb.pdb.bnl.gov
+  // in the file /pub/format.desc.ps
+  //  In addition, I define an extra type, UNKNOWN.  If I can't
+  // figure out what's going on, I store the complete string
+  // and return it when asked.
    enum PDBType {HEADER, OBSLTE, COMPND, SOURCE, EXPDTA, AUTHOR,
      REVDAT, SPRSDE, JRNL, REMARK, SEQRES, FTNOTE, HET, FORMUL,
      HELIX, SHEET, TURN, SSBOND, SITE, CRYST1, ORIGX, SCALE,
      MTRIX, TVECT, MODEL, ATOM, HETATM, SIGATM, ANISOU, SIGUIJ,
      TER, ENDMDL, CONECT, MASTER, END, UNKNOWN};
 
-    static const char *PDBNames[UNKNOWN+1]; // string descriptors for each field
+     enum PDBFormatStyle { COLUMNS, FIELDS };  // used to specify if the
 
-    enum PDBFormatStyle { COLUMNS, FIELDS };  // used to specify if the
+
+
+    static const char *PDBNames[UNKNOWN+1]; // string descriptors for each field
+    
        // output should be based on columns (FORTRAN style) or
        // fields (C/ awk style).
  // See, there are two different types of formats that this program
@@ -62,7 +67,12 @@ class PDBData {  // at the basic level, a PDB record only knows its type
    private:
     PDBType mytype;
 
+#ifdef MEM_OPT_VERSION
+//for the sake of pruning PDBData
+public:
+#else
    protected:
+#endif
         // some parsing routines to get info from a line of text
     static void scan( const char *data, int len, int start, int size, 
                          int *ans, int defalt);
@@ -119,9 +129,11 @@ class PDBUnknown : public PDBData {
    }
 };
 
+
 ////************* routines used for ATOM and HETATM **********/////
 class PDBAtom : public PDBData {
-  private:
+public:
+    //extract them out from PDBAtom for the sake of pruning PDBData
       // starting location for each record element
     enum Start {STYPE=1,SSERIAL=7, SNAME=13, SALT=17, SRESNAME=18, SCHAIN=22, 
                 SRESSEQ=23, SINSERT=27, SX=31, SY=39, SZ=47,
@@ -137,6 +149,7 @@ class PDBAtom : public PDBData {
                  LCOORPREC=3, LOCC=6, LOCCPREC=2, LTEMPF=6, 
                  LTEMPFPREC=2, LFOOT=3, LSEGNAME=4, LELEMENT=2};
 
+  public:
     static const int default_serial;         // some default values
     static const int default_residueseq;     // these are set in the .C file
     static const BigReal default_coor;
@@ -144,6 +157,7 @@ class PDBAtom : public PDBData {
     static const BigReal default_temperaturefactor;
     static const int no_footnote;
 
+  private:
     int myserialnumber;                 // atom serial number
     char myname[LNAME+1];               // atom name
     char myalternatelocation[LALT+1];   // alternamte location identifier
@@ -241,6 +255,24 @@ class PDBHetatm : public PDBAtom {
     }
 };
 
+
+#ifdef MEM_OPT_VERSION
+struct PDBCoreData{
+    BigReal coor[3];              // X, Y, and Z orthogonal A coordinates
+    BigReal myoccupancy;          // occupancy
+    BigReal tempfactor;           // temperature factor
+
+    //These functions are added for fewer changes in the src code when
+    //pruning the PDBData
+    BigReal occupancy() { return myoccupancy;   }
+    BigReal xcoor() { return coor[0];  }
+    BigReal ycoor() { return coor[1];  }
+    BigReal zcoor() { return coor[2];  }
+    BigReal temperaturefactor() { return tempfactor; }
+
+    void  sprint( char *s, PDBData::PDBFormatStyle usestyle = PDBData::COLUMNS);// write to string
+};
+#endif
 
 ////********* Wrap up everything in one function call ***********//////
 // somehow I need the base class to figure out which derived class
