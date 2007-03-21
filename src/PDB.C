@@ -69,6 +69,33 @@ PDB::PDB( const char *pdbfilename) {
  // that's got pretty slow access time for ramdom fetches, so
  // I'll turn it into an array
  {
+
+#ifdef MEM_OPT_VERSION
+//pruning the PDBData structure into PDBCoreData by only leaving X/Y/Z, occupancy and temperaturefactor
+     atomArray = new PDBCoreData[atomCount];
+     if(atomArray == NULL)
+         NAMD_die("memory allocation failed in PDB::PDB");
+
+     PDBAtomList *tmp = atomListHead;
+     for(int i=0; tmp!=NULL; tmp=tmp->next, i++){
+         const BigReal *coor = tmp->data->coordinates();
+         atomArray[i].coor[0] = coor[0];
+         atomArray[i].coor[1] = coor[1];
+         atomArray[i].coor[2] = coor[2];
+         atomArray[i].myoccupancy = tmp->data->occupancy();
+         atomArray[i].tempfactor = tmp->data->temperaturefactor();
+     }
+
+     //free the PDBAtomList
+     tmp = atomListHead;
+     while(tmp!=NULL){
+         PDBAtomList *nextTmp = tmp->next;
+         delete tmp->data;
+         delete tmp;
+         tmp = nextTmp;
+     }
+     atomListHead = atomListTail = NULL;
+#else
   atomArray = new PDBAtomPtr[atomCount];
   if ( atomArray == NULL )
   {
@@ -79,13 +106,14 @@ PDB::PDB( const char *pdbfilename) {
   for (i=0, tmp = atomListHead; tmp != NULL; tmp = tmp -> next, i++) {
     atomArray[i] = tmp -> data;
   }
-     // now delete the linked list (w/o deleting the data)
+  // now delete the linked list (w/o deleting the data)
   PDBAtomList *tmp2;
   for (tmp2 = tmp = atomListHead; tmp != NULL; tmp = tmp2) {
     tmp2 = tmp->next;
     delete tmp;
   }
   atomListHead = atomListTail = NULL;
+#endif 
  }  // everything converted
  
 }
@@ -94,9 +122,11 @@ PDB::PDB( const char *pdbfilename) {
 //   and then delete the array
 PDB::~PDB( void )
 {
+#ifndef MEM_OPT_VERSION
 	int i;
 	for (i=atomCount-1; i>=0; i--)
 	   delete atomArray[i];
+#endif
 	delete [] atomArray;
 	atomArray = NULL;
 	atomCount = 0;
@@ -123,7 +153,11 @@ void PDB::write(const char *outfilename, const char *commentline)
 	}
 
 	for (i=0; i<atomCount; i++){ // I only contain ATOM/HETATM records
+#ifdef MEM_OPT_VERSION    
+      atomArray[i].sprint(s, PDBData::COLUMNS);  
+#else
 	  atomArray[i]->sprint(s, PDBData::COLUMNS);
+#endif
 	  if ( (fputs(s, outfile)    == EOF) || 
 	       (fputs("\n", outfile) == EOF)    ) {
 	    sprintf(s, "EOF in PDB::write line %d - file system full?", i);
@@ -171,6 +205,13 @@ int PDB::num_atoms( void)
 // output in cases like the restart files, etc.
 void PDB::set_all_positions(Vector *pos)
 {
+#ifdef MEM_OPT_VERSION
+    for(int i=0; i<atomCount; i++){
+        atomArray[i].coor[0] = pos[i].x;
+        atomArray[i].coor[1] = pos[i].y;
+        atomArray[i].coor[2] = pos[i].z;
+    }
+#else
 	int i;
 	PDBAtomPtr *atomptr;
 
@@ -180,11 +221,19 @@ void PDB::set_all_positions(Vector *pos)
 		(*atomptr)->ycoor(pos[i].y);
 		(*atomptr)->zcoor(pos[i].z);
 	}
+#endif
 }
 
 //  Get all the atom positions into a list of Vectors
 void PDB::get_all_positions(Vector *pos)
 {
+#ifdef MEM_OPT_VERSION
+    for(int i=0; i<atomCount; i++){
+        pos[i].x = atomArray[i].coor[0];
+        pos[i].y = atomArray[i].coor[1];
+        pos[i].z = atomArray[i].coor[2];        
+    }
+#else
 	int i;
 	PDBAtomPtr *atomptr;
 
@@ -194,15 +243,23 @@ void PDB::get_all_positions(Vector *pos)
 		pos[i].y = (*atomptr)->ycoor();
 		pos[i].z = (*atomptr)->zcoor();
 	}
+#endif
 }
 
 //  given an index, return that atom
+#ifdef MEM_OPT_VERSION
+PDBCoreData *PDB::atom(int place){
+    if(place<0 || place>=atomCount) return NULL;
+    return &atomArray[place];
+}
+#else
 PDBAtom *PDB::atom(int place)
 {
   if (place <0 || place >= atomCount)
     return NULL;
   return atomArray[place];
 }
+#endif
 
 
 // find the lowest and highest bounds based on a fraction of the atoms
@@ -211,14 +268,22 @@ void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) co
     SortableResizeArray<BigReal> coor;
     coor.resize(atomCount);
     SortableResizeArray<BigReal>::iterator c_i = coor.begin();
+#ifdef MEM_OPT_VERSION
+    PDBCoreData *atomptr = atomArray;
+    for(int i=0; i<atomCount; i++, atomptr++){
+        Vector pos(atomptr->xcoor(),atomptr->ycoor(),atomptr->zcoor());
+        c_i[i] = rec*pos;
+    }
+#else
     PDBAtomPtr *atomptr = atomArray;
     for (int i=0; i<atomCount; ++i, ++atomptr) {
       PDBAtom *atom = *atomptr;
       Vector pos(atom->xcoor(),atom->ycoor(),atom->zcoor());
       c_i[i] = rec*pos;
     }
+#endif
     coor.sort();
-    int ilow = (1.0 - frac) * atomCount;
+    int ilow = (int)((1.0 - frac) * atomCount);
     if ( ilow < 0 ) ilow = 0;
     if ( ilow > atomCount/2 ) ilow = atomCount/2;
     int ihigh = atomCount - ilow - 1;
@@ -306,7 +371,12 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
     NAMD_die("Num of atoms in coordinate file is different from that in parm file!");
   readtoeoln(infile);
 
+#ifdef MEM_OPT_VERSION
+  atomArray = new PDBCoreData[atomCount];
+#else
   atomArray = new PDBAtomPtr[atomCount];
+#endif
+
   if ( atomArray == NULL )
   {
     NAMD_die("memory allocation failed in PDB::PDB");
@@ -327,6 +397,13 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
     }
     if (i%2 == 1)
       readtoeoln(infile);
+#ifdef MEM_OPT_VERSION
+    atomArray[i].coor[0] = coor[0];
+    atomArray[i].coor[1] = coor[1];
+    atomArray[i].coor[2] = coor[2];
+    atomArray[i].myoccupancy = PDBAtom::default_occupancy;
+    atomArray[i].tempfactor = PDBAtom::default_temperaturefactor;
+#else
     // Copy name, resname and resid from "amber_data"
     for (j=0; j<4; ++j)
     { resname[j] = amber_data->ResNames[amber_data->AtomRes[i]*4+j];
@@ -341,6 +418,7 @@ PDB::PDB( const char *filename, Ambertoppar *amber_data)
     pdb->residueseq(amber_data->AtomRes[i]+1);
     pdb->coordinates(coor);
     atomArray[i] = pdb;  // Include the new record into the array
+#endif
   }
 }
 
@@ -370,10 +448,33 @@ PDB::PDB(const char *filename, const GromacsTopFile *topology) {
     NAMD_die("Num of atoms in coordinate file is different from that in topology file!");
 
   /* read in the atoms */
+#ifdef MEM_OPT_VERSION
+  atomArray = new PDBCoreData[atomCount];
+#else
   atomArray = new PDBAtomPtr[atomCount];
+#endif
   if ( atomArray == NULL )
     NAMD_die("memory allocation failed in PDB::PDB");
 
+#ifdef MEM_OPT_VERSION
+  for(i=0; i<atomCount; i++){
+      fgets(buf,LINESIZE-1,infile); // get a line
+      char *buf2 = buf+20; // skip three fields to get to the coordinates
+      BigReal coor[3];
+      if(3 != sscanf(buf2,"%lf%lf%lf", &coor[0],&coor[1],&coor[2]))
+          NAMD_die("Couldn't get three coordinates from file.");
+
+      coor[0] *= 10; // convert to angstroms from nanometers
+      coor[1] *= 10;
+      coor[2] *= 10;
+
+      atomArray[i].coor[0] = coor[0];
+      atomArray[i].coor[1] = coor[1];
+      atomArray[i].coor[2] = coor[2];
+      atomArray[i].myoccupancy = PDBAtom::default_occupancy;
+      atomArray[i].tempfactor = PDBAtom::default_temperaturefactor;
+  }
+#else
   for (i=0;i<atomCount;i++) {
     char *buf2, resname[11], atomname[11], atmtype[11];
     int resnum, typenum;
@@ -400,5 +501,45 @@ PDB::PDB(const char *filename, const GromacsTopFile *topology) {
     
     atomArray[i] = pdb;  // Include the new record into the array
   }
+#endif
 }
+
+#ifdef MEM_OPT_VERSION
+void PDBCoreData::sprint( char *outstr, PDBData::PDBFormatStyle usestyle){
+    if(usestyle == PDBData::COLUMNS){
+        //sprint_columns copied from PDBAtom::sprint_columns
+        for(int i=0; i<79; i++) outstr[i] = 32;
+        outstr[79] = 0;
+        PDBData::sprintcol(outstr, PDBAtom::SX, PDBAtom::LCOOR, PDBAtom::LCOORPREC, xcoor());
+        PDBData::sprintcol(outstr, PDBAtom::SY, PDBAtom::LCOOR, PDBAtom::LCOORPREC, ycoor());
+        PDBData::sprintcol(outstr, PDBAtom::SZ, PDBAtom::LCOOR, PDBAtom::LCOORPREC, zcoor());
+        PDBData::sprintcol(outstr, PDBAtom::SOCC, PDBAtom::LOCC, PDBAtom::LOCCPREC, occupancy());
+        PDBData::sprintcol(outstr, PDBAtom::STEMPF, PDBAtom::LTEMPF, PDBAtom::LTEMPFPREC, temperaturefactor());
+    }else{
+        //sprint_fields
+        char tmpstr[50];        
+        if (xcoor() == PDBAtom::default_coor)
+            sprintf(tmpstr, " #");
+           else
+            sprintf(tmpstr, " %*.*f", PDBAtom::LCOOR, PDBAtom::LCOORPREC, xcoor());
+        strcat(outstr, tmpstr);
+        if (ycoor() == PDBAtom::default_coor)
+            sprintf(tmpstr, " #");
+           else
+            sprintf(tmpstr, " %*.*f", PDBAtom::LCOOR, PDBAtom::LCOORPREC, ycoor());
+        strcat(outstr, tmpstr);
+        if (zcoor() == PDBAtom::default_coor)
+            sprintf(tmpstr, " #");
+           else
+            sprintf(tmpstr, " %*.*f", PDBAtom::LCOOR, PDBAtom::LCOORPREC, zcoor());
+        strcat(outstr, tmpstr);
+      
+        sprintf(tmpstr, " %*.*f",  PDBAtom::LOCC, PDBAtom::LOCCPREC, occupancy());
+        strcat(outstr, tmpstr);
+      
+        sprintf(tmpstr, " %*.*f", PDBAtom::LTEMPF, PDBAtom::LTEMPFPREC, temperaturefactor());
+        strcat(outstr, tmpstr);        
+    }
+}
+#endif
 

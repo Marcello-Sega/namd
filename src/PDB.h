@@ -34,7 +34,12 @@ typedef struct PAL {
 class PDB {
   private:
     PDBAtomList *atomListHead, *atomListTail;
+
+#ifdef MEM_OPT_VERSION
+    PDBCoreData *atomArray;
+#else
     PDBAtom **atomArray;
+#endif
       // this doesn't create a copy 
     void add_atom_element(PDBAtom *newAtom); 
     int atomCount;
@@ -54,7 +59,11 @@ class PDB {
        // the following deals only with ATOMs and HETATMs
     int num_atoms( void);
 
+#ifdef MEM_OPT_VERSION
+    PDBCoreData *atom(int place);           
+#else
     PDBAtom *atom(int place); // get the nth atom in the PDB file
+#endif    
          // return linked list containing all atoms
     PDBAtomList *atoms(void ) { return atomListHead; }  
          
