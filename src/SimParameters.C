@@ -2511,6 +2511,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
+   // adjust minimum patch size when 2-away is enabled
+   if ( twoAwayX ) minAtomsPerPatch /= 2;
+   if ( twoAwayY ) minAtomsPerPatch /= 2;
+   if ( twoAwayZ ) minAtomsPerPatch /= 2;
+
    iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
         << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n"
         << iINFO << "SELF PARTITION ATOMS   " << numAtomsSelf << "\n"
