@@ -33,6 +33,11 @@ void ComputeEField::doForce(FullAtom* p, Results* r) {
 
   SimParameters *simParams = Node::Object()->simParameters;
   Vector eField = simParams->eField;
+  // Calculate the angular frequency in 1/fs.
+  BigReal omega = TWOPI * simParams->eFieldFreq / 1000.;
+  BigReal phi = PI/180.* simParams->eFieldPhase;
+  BigReal t = patch->flags.step * simParams->dt;
+  Vector eField1 = cos(omega * t - phi) * eField;
 
   Force *forces = r->f[Results::normal];
   BigReal energy = 0;
@@ -41,7 +46,7 @@ void ComputeEField::doForce(FullAtom* p, Results* r) {
 
   //  Loop through and check each atom
   for (int i=0; i<numAtoms; i++) {
-    Force force = p[i].charge * eField;
+    Force force = p[i].charge * eField1;
     forces[i] += force;
     extForce += force;
     Position vpos = homePatch->lattice.reverse_transform(

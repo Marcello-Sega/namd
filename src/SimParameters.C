@@ -150,6 +150,8 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_STRING("outputname",outputFilename)
   SCRIPT_PARSE_STRING("tclBCArgs",tclBCArgs)
   SCRIPT_PARSE_VECTOR("eField",eField)
+  SCRIPT_PARSE_FLOAT("eFieldFreq",eFieldFreq)
+  SCRIPT_PARSE_FLOAT("eFieldPhase",eFieldPhase)
   SCRIPT_PARSE_VECTOR("stirAxis",stirAxis)
   SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
   /* BEGIN gf */
@@ -1193,9 +1195,11 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
    opts.range("cylindricalBCexp2", POSITIVE);
 
    ///////////////  Electric field options
-   opts.optionalB("main", "eFieldOn", "Should and electric field be applied",
+   opts.optionalB("main", "eFieldOn", "Should an electric field be applied",
                  &eFieldOn, FALSE);
    opts.require("eFieldOn", "eField", "Electric field vector", &eField);
+   opts.optional("eFieldOn", "eFieldFreq", "Electric field frequency", &eFieldFreq);
+   opts.optional("eFieldOn", "eFieldPhase", "Electric field phase", &eFieldPhase);
 
       ///////////////  Stir options
    opts.optionalB("main", "stirOn", "Should stirring torque be applied",
@@ -2384,6 +2388,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
         eField.x = 0.0;
         eField.y = 0.0;
         eField.z = 0.0;
+	eFieldFreq = 0.0;
+	eFieldPhase = 0.0;
+   }
+   else
+   {
+   	if (!opts.defined("eFieldFreq")) eFieldFreq = 0.0;
+	if (!opts.defined("eFieldPhase")) eFieldPhase = 0.0;
    }
 
    if (!stirOn)
@@ -3141,6 +3152,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << iINFO << "E-FIELD VECTOR         ("
          << eField.x << ", " << eField.y
          << ", " << eField.z << ")\n";
+      iout << iINFO << "E-FIELD FREQUENCY IS (1/ps) " << eFieldFreq << "\n";
+      iout << iINFO << "E-FIELD PHASE IS     (deg)  " << eFieldPhase << "\n";
+
       iout << endi;
    }
 
