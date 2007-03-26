@@ -46,7 +46,7 @@ void ComputeEField::doForce(FullAtom* p, Results* r) {
 
   //  Loop through and check each atom
   for (int i=0; i<numAtoms; i++) {
-    Force force = p[i].charge * eField1;
+    Force force = p[i].charge * eField1; 
     forces[i] += force;
     extForce += force;
     Position vpos = homePatch->lattice.reverse_transform(
