@@ -151,7 +151,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_STRING("tclBCArgs",tclBCArgs)
   SCRIPT_PARSE_VECTOR("eField",eField)
   SCRIPT_PARSE_FLOAT("eFieldFreq",eFieldFreq)
-  SCRIPT_PARSE_FLOAT("eFieldPhase",eFieldPhase)
+  SCRIPT_PARSE_FLOAT("eFieldPhase",eFieldPhase) 
   SCRIPT_PARSE_VECTOR("stirAxis",stirAxis)
   SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
   /* BEGIN gf */

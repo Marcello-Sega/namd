@@ -418,7 +418,7 @@ public:
 	Bool eFieldOn;                  //  Should a electric field be applied
 	zVector eField;                 //  Electric field vector to be applied
 	BigReal eFieldFreq;		// Frequency of the electric field
-	BigReal eFieldPhase;		// Phase phi, cos(w*t-phi*PI/180)
+	BigReal eFieldPhase;		// Phase phi, cos(w*t-phi*PI/180) 
 
 	Bool stirOn;                   // Should a stirring torque be applied
 	char stirFilename[128];	       // Stirring filename (atoms marked)
