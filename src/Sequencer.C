@@ -894,7 +894,7 @@ void Sequencer::maximumMove(BigReal timestep)
     }
   } else {
     const BigReal dt = timestep / TIMEFACTOR;
-    const BigReal maxvel = 10.0 / dt;
+    const BigReal maxvel = simParams->cutoff / dt;
     const BigReal maxvel2 = maxvel * maxvel;
     int killme = 0;
     for ( int i=0; i<numAtoms; ++i ) {
