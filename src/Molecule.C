@@ -2287,6 +2287,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
       msg->put(numAtoms*sizeof(Atom), (char*)atoms);
   #endif
       //  Send the bond information
+      msg->put(numRealBonds);
       msg->put(numBonds);
 
       #ifndef MEM_OPT_VERSION
@@ -2572,6 +2573,7 @@ void Molecule::receive_Molecule(MIStream *msg)
   #endif
 
       //  Get the bond information
+      msg->get(numRealBonds);
       msg->get(numBonds);
 
       #ifndef MEM_OPT_VERSION
