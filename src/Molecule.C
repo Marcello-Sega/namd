@@ -341,8 +341,6 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   }      
   else
       read_psf_file(filename, param);
-
-  numRealBonds = numBonds;
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -798,6 +796,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   Fclose(psf_file);
 
   //  analyze the data and find the status of each atom
+  numRealBonds = numBonds;
   build_atom_status();
 
   return;
@@ -1107,6 +1106,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     }
     
     Fclose(psf_file);
+    numRealBonds = numBonds;
     build_atom_status();
 #endif
 }
@@ -7243,7 +7243,7 @@ void Molecule::build_atom_status(void) {
     }
   }
 #else
-  for (i=0; i < numBonds; i++) {
+  for (i=0; i < numRealBonds; i++) {
     a1 = bonds[i].atom1;
     a2 = bonds[i].atom2;
     if (is_hydrogen(a1) && is_hydrogen(a2)) {
@@ -7293,7 +7293,7 @@ void Molecule::build_atom_status(void) {
     }
   }
 #else
-  for (i=0; i < numBonds; i++) {
+  for (i=0; i < numRealBonds; i++) {
     a1 = bonds[i].atom1;
     a2 = bonds[i].atom2;
     if (is_hydrogen(a1)) {
@@ -7423,7 +7423,7 @@ void Molecule::build_atom_status(void) {
 	a1 = i;
 	a2 = i+bSigs[j].offset[0];
 #else
-    for (i=0; i < numBonds; i++) {
+    for (i=0; i < numRealBonds; i++) {
       a1 = bonds[i].atom1;
       a2 = bonds[i].atom2;
 #endif
@@ -7503,7 +7503,7 @@ void Molecule::build_atom_status(void) {
 	a1 = i;
 	a2 = i+bSigs[j].offset[0];
 #else
-    for (i=0; i < numBonds; i++) {
+    for (i=0; i < numRealBonds; i++) {
       a1 = bonds[i].atom1;
       a2 = bonds[i].atom2;
 #endif
@@ -7626,8 +7626,6 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   initialize(simParams,param);
 
   read_parm(amber_data);
-
-  numRealBonds = numBonds;
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -7923,6 +7921,7 @@ void Molecule::read_parm(Ambertoppar *amber_data)
   }
   
   //  analyze the data and find the status of each atom
+  numRealBonds = numBonds;
   build_atom_status();
 #endif
 }
@@ -7943,8 +7942,6 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
   initialize(simParams,param);
 
   read_parm(gromacsTopFile);
-
-  numRealBonds = numBonds;
 }
 /*      END OF FUNCTION Molecule      */
 
