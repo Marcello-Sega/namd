@@ -190,6 +190,10 @@ int NamdState::configListInit(ConfigList *cfgList) {
 				       NULL);
 	}
 
+	if (simParameters->extraBondsOn) {
+	   molecule->build_extra_bonds(parameters,
+				configList->find("extraBondsFile"));
+	}
 	
 	if (simParameters->fixedAtomsOn)
 	{

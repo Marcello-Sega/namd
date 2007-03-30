@@ -271,6 +271,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
 
   /*  Initialize counts to 0 */
   numAtoms=0;
+  numRealBonds=0;
   numBonds=0;
   numAngles=0;
   numDihedrals=0;
@@ -340,6 +341,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
   }      
   else
       read_psf_file(filename, param);
+
+  numRealBonds = numBonds;
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -3282,7 +3285,7 @@ void Molecule::receive_Molecule(MIStream *msg)
        {
          byAtomSize[i] = 0;
        }
-       for (i=0; i<numBonds; i++)
+       for (i=0; i<numRealBonds; i++)
        {
          byAtomSize[bonds[i].atom1]++;
          byAtomSize[bonds[i].atom2]++;
@@ -3293,7 +3296,7 @@ void Molecule::receive_Molecule(MIStream *msg)
          bondsWithAtom[i][byAtomSize[i]] = -1;
          byAtomSize[i] = 0;
        }
-       for (i=0; i<numBonds; i++)
+       for (i=0; i<numRealBonds; i++)
        {
          int a1 = bonds[i].atom1;
          int a2 = bonds[i].atom2;
@@ -6646,6 +6649,185 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
     /*      END OF FUNCTION build_stirred_atoms    */
 
+
+
+void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
+  char err_msg[512];
+  int a1,a2,a3,a4; float k, ref;
+  ResizeArray<Bond> bonds;
+  ResizeArray<Angle> angles;
+  ResizeArray<Dihedral> dihedrals;
+  ResizeArray<Improper> impropers;
+  ResizeArray<BondValue> bond_params;
+  ResizeArray<AngleValue> angle_params;
+  ResizeArray<DihedralValue> dihedral_params;
+  ResizeArray<ImproperValue> improper_params;
+
+  if ( ! file ) {
+    NAMD_die("NO EXTRA BONDS FILES SPECIFIED");
+  }
+
+  for ( ; file; file = file->next ) {  // loop over files
+    FILE *f = fopen(file->data,"r");
+    if ( ! f ) {
+      sprintf(err_msg, "UNABLE TO OPEN EXTRA BONDS FILE %s", file->data);
+      NAMD_err(err_msg);
+    } else {
+      iout << iINFO << "READING EXTRA BONDS FILE " << file->data <<"\n"<<endi;
+    }
+    
+    while ( 1 ) {
+      char buffer[512];
+      int ret_code;
+      do {
+        ret_code = NAMD_read_line(f, buffer);
+      } while ( (ret_code==0) && (NAMD_blank_string(buffer)) );
+      if (ret_code!=0) break;
+
+      char type[512];
+      sscanf(buffer,"%s",type);
+
+      int badline = 0;
+      if ( ! strncasecmp(type,"bond",4) ) {
+        if ( sscanf(buffer, "%s %d %d %f %f %s",
+	    type, &a1, &a2, &k, &ref, err_msg) != 5 ) badline = 1;
+        Bond tmp;
+        tmp.bond_type = parameters->NumBondParams + bonds.size();
+        tmp.atom1 = a1;  tmp.atom2 = a2;
+        BondValue tmpv;
+        tmpv.k = k;  tmpv.x0 = ref;
+        bonds.add(tmp);  bond_params.add(tmpv);
+      } else if ( ! strncasecmp(type,"angle",4) ) {
+        if ( sscanf(buffer, "%s %d %d %d %f %f %s",
+	    type, &a1, &a2, &a3, &k, &ref, err_msg) != 6 ) badline = 1;
+        Angle tmp;
+        tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;
+        tmp.angle_type = parameters->NumAngleParams + angles.size();
+        AngleValue tmpv;
+        tmpv.k = k;  tmpv.theta0 = ref;  tmpv.k_ub = 0;  tmpv.r_ub = 0;
+        angles.add(tmp);  angle_params.add(tmpv);
+      } else if ( ! strncasecmp(type,"dihedral",4) ) {
+        if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
+	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
+        Dihedral tmp;
+        tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;  tmp.atom4 = a4;
+        tmp.dihedral_type = parameters->NumDihedralParams + dihedrals.size();
+        DihedralValue tmpv;
+        tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
+        tmpv.values[0].k = k;  tmpv.values[0].delta = ref;
+        dihedrals.add(tmp);  dihedral_params.add(tmpv);
+      } else if ( ! strncasecmp(type,"improper",4) ) {
+        if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
+	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
+        Improper tmp;
+        tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;  tmp.atom4 = a4;
+        tmp.improper_type = parameters->NumImproperParams + impropers.size();
+        ImproperValue tmpv;
+        tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
+        tmpv.values[0].k = k;  tmpv.values[0].delta = ref;
+        impropers.add(tmp);  improper_params.add(tmpv);
+      } else if ( ! strncasecmp(type,"#",1) ) {
+        continue;  // comment
+      } else {
+        badline = 1;
+      }
+      if ( badline ) {
+        sprintf(err_msg, "BAD LINE IN EXTRA BONDS FILE %s: %s",
+						file->data, buffer);
+        NAMD_err(err_msg);
+      }
+    }
+    fclose(f);
+  }  // loop over files
+
+  // append to parameters and molecule data structures
+  if ( bonds.size() ) {
+    iout << iINFO << "READ " << bonds.size() << " EXTRA BONDS\n" << endi;
+
+    Bond *newbonds = new Bond[numBonds+bonds.size()];
+    memcpy(newbonds, this->bonds, numBonds*sizeof(Bond));
+    memcpy(newbonds+numBonds, bonds.begin(), bonds.size()*sizeof(Bond));
+    delete [] this->bonds;
+    this->bonds = newbonds;
+    numBonds += bonds.size();
+
+    BondValue *newbondp = new BondValue[
+			parameters->NumBondParams + bonds.size()];
+    memcpy(newbondp, parameters->bond_array,
+			parameters->NumBondParams * sizeof(BondValue));
+    memcpy(newbondp+parameters->NumBondParams, bond_params.begin(),
+			bonds.size() * sizeof(BondValue));
+    delete [] parameters->bond_array;
+    parameters->bond_array = newbondp;
+    parameters->NumBondParams += bonds.size();
+  }
+
+  if ( angles.size() ) {
+    iout << iINFO << "READ " << angles.size() << " EXTRA ANGLES\n" << endi;
+
+    Angle *newangles = new Angle[numAngles+angles.size()];
+    memcpy(newangles, this->angles, numAngles*sizeof(Angle));
+    memcpy(newangles+numAngles, angles.begin(), angles.size()*sizeof(Angle));
+    delete [] this->angles;
+    this->angles = newangles;
+    numAngles += angles.size();
+
+    AngleValue *newanglep = new AngleValue[
+			parameters->NumAngleParams + angles.size()];
+    memcpy(newanglep, parameters->angle_array,
+			parameters->NumAngleParams * sizeof(AngleValue));
+    memcpy(newanglep+parameters->NumAngleParams, angle_params.begin(),
+			angles.size() * sizeof(AngleValue));
+    delete [] parameters->angle_array;
+    parameters->angle_array = newanglep;
+    parameters->NumAngleParams += angles.size();
+  }
+
+  if ( dihedrals.size() ) {
+    iout << iINFO << "READ " << dihedrals.size() << " EXTRA DIHEDRALS\n" << endi;
+
+    Dihedral *newdihedrals = new Dihedral[numDihedrals+dihedrals.size()];
+    memcpy(newdihedrals, this->dihedrals, numDihedrals*sizeof(Dihedral));
+    memcpy(newdihedrals+numDihedrals, dihedrals.begin(), dihedrals.size()*sizeof(Dihedral));
+    delete [] this->dihedrals;
+    this->dihedrals = newdihedrals;
+    numDihedrals += dihedrals.size();
+
+    DihedralValue *newdihedralp = new DihedralValue[
+			parameters->NumDihedralParams + dihedrals.size()];
+    memcpy(newdihedralp, parameters->dihedral_array,
+			parameters->NumDihedralParams * sizeof(DihedralValue));
+    memcpy(newdihedralp+parameters->NumDihedralParams, dihedral_params.begin(),
+			dihedrals.size() * sizeof(DihedralValue));
+    delete [] parameters->dihedral_array;
+    parameters->dihedral_array = newdihedralp;
+    parameters->NumDihedralParams += dihedrals.size();
+  }
+
+  if ( impropers.size() ) {
+    iout << iINFO << "READ " << impropers.size() << " EXTRA IMPROPERS\n" << endi;
+
+    Improper *newimpropers = new Improper[numImpropers+impropers.size()];
+    memcpy(newimpropers, this->impropers, numImpropers*sizeof(Improper));
+    memcpy(newimpropers+numImpropers, impropers.begin(), impropers.size()*sizeof(Improper));
+    delete [] this->impropers;
+    this->impropers = newimpropers;
+    numImpropers += impropers.size();
+
+    ImproperValue *newimproperp = new ImproperValue[
+			parameters->NumImproperParams + impropers.size()];
+    memcpy(newimproperp, parameters->improper_array,
+			parameters->NumImproperParams * sizeof(ImproperValue));
+    memcpy(newimproperp+parameters->NumImproperParams, improper_params.begin(),
+			impropers.size() * sizeof(ImproperValue));
+    delete [] parameters->improper_array;
+    parameters->improper_array = newimproperp;
+    parameters->NumImproperParams += impropers.size();
+  }
+
+}  // Molecule::build_extra_bonds()
+
+
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
    //
@@ -7442,6 +7624,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   initialize(simParams,param);
 
   read_parm(amber_data);
+
+  numRealBonds = numBonds;
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -7757,6 +7941,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
   initialize(simParams,param);
 
   read_parm(gromacsTopFile);
+
+  numRealBonds = numBonds;
 }
 /*      END OF FUNCTION Molecule      */
 

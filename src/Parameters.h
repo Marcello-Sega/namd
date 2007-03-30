@@ -183,13 +183,13 @@ public:
 	ImproperValue *improper_array;		//  Array of improper params
 	CrosstermValue *crossterm_array;	//  Array of crossterm params
 	VdwValue *vdw_array;			//  Array of vdw params
-private:
 	IndexedVdwPair *vdw_pair_tree;		//  Tree of vdw pair params
 	int NumBondParams;			//  Number of bond parameters
 	int NumAngleParams;			//  Number of angle parameters
 	int NumDihedralParams;			//  Number of dihedral params
 	int NumImproperParams;			//  Number of improper params
 	int NumCrosstermParams;			//  Number of cross-term params
+private:
 	int NumVdwParams;			//  Number of vdw parameters
         int NumVdwParamsAssigned;               //  Number actually assigned
 	int NumVdwPairParams;			//  Number of vdw_pair params

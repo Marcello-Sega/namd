@@ -429,6 +429,8 @@ public:
         zVector stirAxis;              // Direction of stir axis
         zVector stirPivot;             // Pivot point of stir axis
 
+	Bool extraBondsOn;		// read extra bonded forces
+
 	Bool consForceOn;		//  Should constant force be applied
   char consForceFile[128];
 

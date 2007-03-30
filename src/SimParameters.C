@@ -1216,6 +1216,15 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
    opts.require("stirOn", "stirVel", "Stir angular velocity (deg/timestep)", &stirVel);
    opts.require("stirOn", "stirAxis", "Stir axis (direction vector)", &stirAxis);
    opts.require("stirOn", "stirPivot", "Stir pivot point (coordinate)", &stirPivot);
+
+    //////////  Extra bonds options
+   opts.optionalB("main", "extraBonds",
+		"Should extra bonded forces be applied",
+                 &extraBondsOn, FALSE);
+   opts.optional("extraBonds", "extraBondsFile",
+		"file with list of extra bonds",
+		 PARSE_MULTIPLES);
+
 }
 
 void SimParameters::config_parser_misc(ParseOptions &opts) {
