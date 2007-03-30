@@ -6706,7 +6706,8 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
         tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;
         tmp.angle_type = parameters->NumAngleParams + angles.size();
         AngleValue tmpv;
-        tmpv.k = k;  tmpv.theta0 = ref;  tmpv.k_ub = 0;  tmpv.r_ub = 0;
+        tmpv.k = k;  tmpv.theta0 = ref / 180. * PI;
+        tmpv.k_ub = 0;  tmpv.r_ub = 0;
         angles.add(tmp);  angle_params.add(tmpv);
       } else if ( ! strncasecmp(type,"dihedral",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
@@ -6716,7 +6717,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
         tmp.dihedral_type = parameters->NumDihedralParams + dihedrals.size();
         DihedralValue tmpv;
         tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
-        tmpv.values[0].k = k;  tmpv.values[0].delta = ref;
+        tmpv.values[0].k = k;  tmpv.values[0].delta = ref / 180. * PI;
         dihedrals.add(tmp);  dihedral_params.add(tmpv);
       } else if ( ! strncasecmp(type,"improper",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
@@ -6726,7 +6727,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
         tmp.improper_type = parameters->NumImproperParams + impropers.size();
         ImproperValue tmpv;
         tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
-        tmpv.values[0].k = k;  tmpv.values[0].delta = ref;
+        tmpv.values[0].k = k;  tmpv.values[0].delta = ref / 180. * PI;
         impropers.add(tmp);  improper_params.add(tmpv);
       } else if ( ! strncasecmp(type,"#",1) ) {
         continue;  // comment
