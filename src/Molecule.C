@@ -6654,6 +6654,9 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
 
 void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
+#ifdef MEM_OPT_VERSION
+    NAMD_die("Not allowed in memory-optimized namd version!");
+#else
   char err_msg[512];
   int a1,a2,a3,a4; float k, ref;
   ResizeArray<Bond> bonds;
@@ -6827,7 +6830,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
     parameters->improper_array = newimproperp;
     parameters->NumImproperParams += impropers.size();
   }
-
+#endif
 }  // Molecule::build_extra_bonds()
 
 
