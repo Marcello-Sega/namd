@@ -946,7 +946,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
      double bgLoadLimit = 1.2 * averageLoad;
 
      if ( p->backgroundLoad > bgLoadLimit ) bad = 1;
-#if 0
+#if 1
      else {
 
       int proxiesPerPeLimit = numProxies / numPesAvailable + 3;
