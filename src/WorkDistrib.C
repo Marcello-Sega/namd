@@ -510,11 +510,9 @@ void WorkDistrib::patchMapInit(void)
   ScaledPosition xmin, xmax;
   ScaledPosition sysDim, sysMin;
 
-  int maxNumPatches = 1000000;
+  double maxNumPatches = 1000000;  // need to adjust fractional values
   if ( params->minAtomsPerPatch > 0 )
     maxNumPatches = node->pdb->num_atoms() / params->minAtomsPerPatch;
-  if ( maxNumPatches < 1 )
-    maxNumPatches = 1;
 
   DebugM(3,"Mapping patches\n");
   // Need to use full box for FMA to match NAMD 1.X results.
@@ -540,10 +538,35 @@ void WorkDistrib::patchMapInit(void)
   xmin.z -= origin_shift;
   xmax.z -= origin_shift;
 
-  patchMap->initialize(xmin,xmax,lattice,patchSize,maxNumPatches,
-				params->twoAwayX ? 2 : 1,
-				params->twoAwayY ? 2 : 1,
-				params->twoAwayZ ? 2 : 1);
+  // SimParameters default is -1 for unset
+  int twoAwayX = params->twoAwayX;
+  int twoAwayY = params->twoAwayY;
+  int twoAwayZ = params->twoAwayZ;
+
+  int numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
+  if ( numPatches > (CkNumPes() - 1) && twoAwayZ < 0 ) {
+    twoAwayZ = 0;
+    numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
+  }
+  if ( numPatches > (CkNumPes() - 1) && twoAwayY < 0 ) {
+    twoAwayY = 0;
+    numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
+  }
+  if ( numPatches > (CkNumPes() - 1) && twoAwayX < 0 ) {
+    twoAwayX = 0;
+    numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
+  }
+
+  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
 
 }
 
@@ -1048,9 +1071,9 @@ void WorkDistrib::mapComputeNonbonded(void)
 	int64 numAtoms2 = patchMap->patch(p2)->getNumAtoms();
 	int64 numFixed1 = patchMap->patch(p1)->getNumFixedAtoms();
 	int64 numFixed2 = patchMap->patch(p2)->getNumFixedAtoms();
-        const int twoAwayX = node->simParameters->twoAwayX;
-        const int twoAwayY = node->simParameters->twoAwayY;
-        const int twoAwayZ = node->simParameters->twoAwayZ;
+        const int nax = patchMap->numaway_a();  // 1 or 2
+        const int nay = patchMap->numaway_b();  // 1 or 2
+        const int naz = patchMap->numaway_c();  // 1 or 2
         const int ia1 = patchMap->index_a(p1);
         const int ia2 = patchMap->index_a(p2);
         const int ib1 = patchMap->index_b(p1);
@@ -1059,14 +1082,14 @@ void WorkDistrib::mapComputeNonbonded(void)
         const int ic2 = patchMap->index_c(p2);
 	int distance = 3;
  	if ( ia1 == ia2 ) --distance;
- 	else if ( twoAwayX && ia1 == ia2 + 1 ) --distance;
- 	else if ( twoAwayX && ia1 + 1 == ia2 ) --distance;
+ 	else if ( ia1 == ia2 + nax - 1 ) --distance;
+ 	else if ( ia1 + nax - 1 == ia2 ) --distance;
  	if ( ib1 == ib2 ) --distance;
- 	else if ( twoAwayY && ib1 == ib2 + 1 ) --distance;
- 	else if ( twoAwayY && ib1 + 1 == ib2 ) --distance;
+ 	else if ( ib1 == ib2 + nay - 1 ) --distance;
+ 	else if ( ib1 + nay - 1 == ib2 ) --distance;
  	if ( ic1 == ic2 ) --distance;
- 	else if ( twoAwayZ && ic1 == ic2 + 1 ) --distance;
- 	else if ( twoAwayZ && ic1 + 1 == ic2 ) --distance;
+ 	else if ( ic1 == ic2 + naz - 1 ) --distance;
+ 	else if ( ic1 + naz - 1 == ic2 ) --distance;
 	int divide = 0;
 	if ( distance == 0 ) {
 	  divide = node->simParameters->numAtomsSelf2;

@@ -610,7 +610,7 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.optional("PME", "PMEProcessors",
 	"PME FFT and reciprocal sum processor count", &PMEProcessors, 0);
    opts.optional("PME", "PMEPencils",
-	"PME FFT and reciprocal sum pencil grid size", &PMEPencils, 0);
+	"PME FFT and reciprocal sum pencil grid size", &PMEPencils, -1);
    opts.optionalB("main", "PMEBarrier", "Use barrier in PME?",
 	&PMEBarrier, FALSE);
 
@@ -1265,11 +1265,11 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      &ldbUnloadRank);
    opts.range("ldbUnloadRank", POSITIVE);
    opts.optionalB("main", "twoAwayX", "half-size patches in 1st dimension",
-     &twoAwayX, FALSE);
+     &twoAwayX, -1);
    opts.optionalB("main", "twoAwayY", "half-size patches in 1st dimension",
-     &twoAwayY, FALSE);
+     &twoAwayY, -1);
    opts.optionalB("main", "twoAwayZ", "half-size patches in 1st dimension",
-     &twoAwayZ, FALSE);
+     &twoAwayZ, -1);
 
    /////  Restart timestep option
    opts.optional("main", "firsttimestep", "Timestep to start simulation at",
@@ -2530,11 +2530,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if ( ldbUnloadRankZero ) iout << iINFO << "REMOVING LOAD FROM RANK 0\n";
      iout << endi;
    }
-
-   // adjust minimum patch size when 2-away is enabled
-   if ( twoAwayX ) minAtomsPerPatch /= 2;
-   if ( twoAwayY ) minAtomsPerPatch /= 2;
-   if ( twoAwayZ ) minAtomsPerPatch /= 2;
 
    iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
         << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n"

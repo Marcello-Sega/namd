@@ -49,9 +49,9 @@ PatchMap::PatchMap(void)
   aMaxIndex = bMaxIndex = cMaxIndex = 0;
 }
 
-void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
+int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 				const Lattice &lattice, BigReal patchSize,
-				int maxNumPatches,
+				double maxNumPatches,
 				int asplit, int bsplit, int csplit)
 {
   aPeriodic = lattice.a_p();
@@ -61,6 +61,8 @@ void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
   aAway = asplit;
   bAway = bsplit;
   cAway = csplit;
+
+  maxNumPatches *= aAway * bAway * cAway;
 
   int minNumPatches = 1;
   if ( aPeriodic ) minNumPatches *= aAway;
@@ -98,7 +100,7 @@ void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
   }
 
   if ( aDim < 0 || bDim < 0 || cDim < 0 ) {
-    NAMD_die("Bug in PatchMap::initialize - negative grid dimension.");
+    NAMD_die("Bug in PatchMap::sizeGrid - negative grid dimension.");
   }
 
   if ( aDim == 0 ) aDim = 1;
@@ -110,6 +112,16 @@ void PatchMap::initialize(ScaledPosition xmin, ScaledPosition xmax,
   if ( cPeriodic && cDim < cAway ) cDim = cAway;
 
   } while ( ( aDim*bDim*cDim > maxNumPatches ) && ( patchSize *= 1.01 ) );
+
+  return aDim*bDim*cDim;
+}
+
+void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
+				const Lattice &lattice, BigReal patchSize,
+				double maxNumPatches,
+				int asplit, int bsplit, int csplit)
+{
+  sizeGrid(xmin,xmax,lattice,patchSize,maxNumPatches,asplit,bsplit,csplit);
 
   iout << iINFO << "PATCH GRID IS ";
   iout << aDim;
@@ -428,57 +440,6 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_id
   return n;
 }
 
-//----------------------------------------------------------------------
-int PatchMap::twoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_ids)
-{
-  int xi, yi, zi;
-  int xinc, yinc, zinc;
-  int n=0;
-
-  for(zinc=-cAway;zinc<=cAway;zinc++)
-  {
-    zi = patchData[pid].cIndex + zinc;
-    if ((zi < 0) || (zi >= cDim))
-      if ( ! cPeriodic ) continue;
-    for(yinc=-bAway;yinc<=bAway;yinc++)
-    {
-      yi = patchData[pid].bIndex + yinc;
-      if ((yi < 0) || (yi >= bDim))
-	if ( ! bPeriodic ) continue;
-      for(xinc=-aAway;xinc<=aAway;xinc++)
-      {
-	if (!((xinc>1) || (yinc>1) || (zinc>1) ||
-	    (xinc<-1) || (yinc<-1) || (zinc<-1)))
-	  continue;
-
-	xi = patchData[pid].aIndex + xinc;
-	if ((xi < 0) || (xi >= aDim))
-	  if ( ! aPeriodic ) continue;
-
-	neighbor_ids[n]=this->pid(xi,yi,zi);
-	if ( transform_ids )
-	{
-	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
-	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= bDim ) yt = 1;
-	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
-	  transform_ids[n] = Lattice::index(xt,yt,zt);
-	}
-	n++;
-      }
-    }
-  }
-  DebugM(3,"Patch " << pid << " has " << n << " second neighbors.\n");
-  return n;
-}
-
-//----------------------------------------------------------------------
-// int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids)
-// {
-//   int numOneAway = oneAwayNeighbors(pid,neighbor_ids,transform_ids);
-//   int numTwoAway = twoAwayNeighbors(pid,neighbor_ids+numOneAway,
-// 			transform_ids?transform_ids+numOneAway:0);
-//   return numOneAway + numTwoAway;
-// }
 
 //----------------------------------------------------------------------
 // Only returns half of neighbors!

@@ -829,7 +829,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 
   if(!smallFlag) {
     //Add two-away proxies
-    if(params->twoAwayX) {
+    if(patchMap->numaway_a() == 2) {
       proxy_y = (my_y + 2) % ysize;
       proxy_x = my_x  % xsize;
       proxy_z = my_z  % zsize;
@@ -854,7 +854,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
     }
     
     //Add two away proxies
-    if(params->twoAwayY) {
+    if(patchMap->numaway_b() == 2) {
       proxy_y = my_y  % ysize;
       proxy_x = my_x  % xsize;
       proxy_z = (my_z + 2) % zsize;
@@ -879,7 +879,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
     }
 
     //Add two away proxies
-    if(params->twoAwayZ) {
+    if(patchMap->numaway_c() == 2) {
       proxy_y = my_y  % ysize;
       proxy_x = (my_x + 2) % xsize;
       proxy_z = my_z  % zsize;

@@ -23,9 +23,13 @@ public:
   static PatchMap *Instance();
   inline static PatchMap *Object() { return CpvAccess(PatchMap_instance); }
 
-  void initialize(ScaledPosition xmin, ScaledPosition xmax,
+  int sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 			const Lattice &lattice, BigReal patchSize,
-			int maxNumPatches,
+			double maxNumPatches,
+			int asplit, int bsplit, int csplit);
+  void makePatches(ScaledPosition xmin, ScaledPosition xmax,
+			const Lattice &lattice, BigReal patchSize,
+			double maxNumPatches,
 			int asplit, int bsplit, int csplit);
   void checkMap();
 
@@ -120,12 +124,6 @@ public:
   // sufficient storage for the neighbors.
 
   int oneAwayNeighbors(int pid, PatchID *neighbor_ids=0, int *transform_ids=0);
-
-  // twoAwayNeighbors(pid, &n, neighbor_ids) returns the number 
-  // and ids of all patches exactely two steps distant.  
-  // The caller is expected to provide sufficient storage for the neighbors.
-
-  int twoAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids = 0);
 
   int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids,
 			    int *transform_ids = 0);
