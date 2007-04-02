@@ -869,7 +869,10 @@ void ComputeNonbondedUtil :: NAME
 #if ( SELF( 1+ ) 0 )
   {
     Force *patch_f_0 = params->ff[0];
+
+#ifndef ARCH_POWERPC 
 #pragma ivdep
+#endif
     for ( int i = 0; i < i_upper; ++i ) {
       patch_f_0[i].x += f_0[i].x;
       patch_f_0[i].y += f_0[i].y;
@@ -891,7 +894,9 @@ void ComputeNonbondedUtil :: NAME
 #if ( SELF( 1+ ) 0 )
   {
     Force *patch_fullf_0 = params->fullf[0];
+#ifndef ARCH_POWERPC 
 #pragma ivdep
+#endif
     for ( int i = 0; i < i_upper; ++i ) {
       patch_fullf_0[i].x += fullf_0[i].x;
       patch_fullf_0[i].y += fullf_0[i].y;
