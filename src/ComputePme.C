@@ -900,9 +900,9 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
       }
     }
   }
-  if ( numPencilsActive ) {
-    CkPrintf("node %d sending to %d pencils\n", CkMyPe(), numPencilsActive);
-  }
+  //if ( numPencilsActive ) {
+  //  CkPrintf("node %d sending to %d pencils\n", CkMyPe(), numPencilsActive);
+  //}
 
   ungrid_count = numPencilsActive;
 }

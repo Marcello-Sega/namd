@@ -29,8 +29,8 @@ module ComputePmeMgr {
     entry void dummyRecvGrid(int pe, int done = 0);
     entry void init(PmePencilInitMsg *initmsg) {
       atomic {
-      CkPrintf("z pencil init %d %d %d on %d\n",
-		thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+      //CkPrintf("z pencil init %d %d %d on %d\n",
+	//	thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
       base_init(initmsg); delete initmsg;
       fft_init();
       // now count how many nodes send us data
@@ -41,13 +41,13 @@ module ComputePmeMgr {
           if ( done ) imsg = 1;
           else {
             grid_msgs.add(0);  // increment size
-            CkPrintf("pencil %d %d on node %d receive from node %d\n",
-			thisIndex.x, thisIndex.y, CkMyPe(), pe);
+            //CkPrintf("pencil %d %d on node %d receive from node %d\n",
+		//	thisIndex.x, thisIndex.y, CkMyPe(), pe);
           }
         }
       }
-      atomic { CkPrintf("pencil %d %d receiving from %d nodes\n",
-               thisIndex.x, thisIndex.y, grid_msgs.size()); }
+      //atomic { CkPrintf("pencil %d %d receiving from %d nodes\n",
+      //         thisIndex.x, thisIndex.y, grid_msgs.size()); }
       // ready to go
       while ( 1 ) {
         for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
@@ -78,8 +78,8 @@ module ComputePmeMgr {
     entry void recvUntrans(PmeUntransMsg *);
     entry void init(PmePencilInitMsg *initmsg) {
       atomic {
-      CkPrintf("y pencil init %d %d %d on %d\n",
-		thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+      //CkPrintf("y pencil init %d %d %d on %d\n",
+	//	thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
       base_init(initmsg); delete initmsg;
       fft_init();
       }
@@ -111,8 +111,8 @@ module ComputePmeMgr {
     entry void recvTrans(PmeTransMsg *);
     entry void init(PmePencilInitMsg *initmsg) {
       atomic {
-      CkPrintf("x pencil init %d %d %d on %d\n",
-		thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+      //CkPrintf("x pencil init %d %d %d on %d\n",
+	//	thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
       base_init(initmsg); delete initmsg;
       fft_init();
       }
