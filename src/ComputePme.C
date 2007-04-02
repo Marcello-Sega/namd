@@ -359,6 +359,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   delete msg;
 
   SimParameters *simParams = Node::Object()->simParameters;
+  PatchMap *patchMap = PatchMap::Object();
 
   fepOn = simParams->fepOn;
   numGrids = fepOn ? 2 : 1;
@@ -376,15 +377,29 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     numGrids = selfOn ? 1 : 3;
   }
 
-  if ( numGrids == 1 && simParams->PMEPencils != 0 ) usePencils = 1;
+  if ( numGrids != 1 || simParams->PMEPencils == 0 ) usePencils = 0;
+  else if ( simParams->PMEPencils > 0 ) usePencils = 1;
+  else {
+    int dimx = simParams->PMEGridSizeX;
+    int dimy = simParams->PMEGridSizeY;
+    int maxslabs = 1 + (dimx - 1) / simParams->PMEMinSlices;
+    if ( maxslabs > CkNumPes() ) maxslabs = CkNumPes();
+    int maxpencils = 4 * patchMap->gridsize_a() * patchMap->gridsize_b();
+    if ( maxpencils > CkNumPes() ) maxpencils = CkNumPes();
+    if ( maxpencils > 3 * maxslabs ) usePencils = 1;
+    else usePencils = 0;
+  }
 
   if ( usePencils ) {
     if ( simParams->PMEPencils > 1 ) {
       xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
     } else {
       int nb = (int) sqrt((float)CkNumPes());
+      if ( nb > 2 * patchMap->gridsize_a() ) nb = 2 * patchMap->gridsize_a();
       xBlocks = zBlocks = nb;
       yBlocks = CkNumPes() / nb;
+      if ( yBlocks > 2 * patchMap->gridsize_b() )
+		yBlocks = 2 * patchMap->gridsize_b();
     }
 
     int dimx = simParams->PMEGridSizeX;
