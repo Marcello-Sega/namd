@@ -21,6 +21,64 @@
 #include "SortableResizeArray.h"
 
 
+#ifdef MEM_OPT_VERSION
+//read in PDB from a file and eliminate the temporary memory usage of pdb atom list    
+PDB::PDB(const char *pdbfilename, int expectedNumAtoms){
+  FILE *infile;
+  char buf[160];
+
+  atomArray = new PDBCoreData[expectedNumAtoms];
+
+  atomCount = 0;
+  atomListHead = atomListTail = NULL;
+  infile = Fopen(pdbfilename, "r");
+  if (! infile) {
+     char s[500];
+     sprintf(s, "Cannot open file '%s' for input in PDB::PDB.", pdbfilename);
+     NAMD_err(s);
+  }
+  
+    // loop through each line in the file and get a record
+  while ( fgets(buf, 150, infile) ) {
+   PDBData *newelement;
+   char *s;
+   for (s=buf; *s && *s!='\n'; s++)  // chop off the '\n'
+    ;
+   *s = 0;
+   if ( s == (buf + 149) ) {
+     char s[500];
+     sprintf( s, "Line too long in pdbfile %s:\n%s\n", pdbfilename, buf);
+     NAMD_die(s);
+   }
+   *(s+1) = 0;  // just to be on the safe side
+
+     // I now have a string; make a PDBData element out of it
+   newelement = new_PDBData(buf);
+   if (!newelement) {
+      NAMD_die("Could not allocate PDBData.\n");
+   }
+     // I only know how to deal with ATOM and HETATM types; and
+     //  I want to throw away the unknown data types; so
+   if (newelement -> type() != PDBData::ATOM && 
+           newelement -> type() != PDBData::HETATM) {
+       delete newelement;
+   } else {
+       PDBAtom *thisAtom = (PDBAtom *)newelement;
+       const BigReal *coor = thisAtom->coordinates();
+       atomArray[atomCount].coor[0] = coor[0];
+       atomArray[atomCount].coor[1] = coor[1];
+       atomArray[atomCount].coor[2] = coor[2];
+       atomArray[atomCount].myoccupancy = thisAtom->occupancy();
+       atomArray[atomCount].tempfactor = thisAtom->temperaturefactor();
+       atomCount++;
+       delete newelement;
+       if(atomCount > expectedNumAtoms) NAMD_die("Number of pdb and psf atoms are not the same!");       
+   }
+  }  // input while loop
+ Fclose(infile);
+}
+#endif
+
 // read in a file and stick all the elements on the appropriate list
 PDB::PDB( const char *pdbfilename) {
   FILE *infile;

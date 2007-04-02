@@ -46,6 +46,12 @@ class PDB {
     
   public:
     PDB(const char *pdbfilename);   // read in PDB from a file
+
+#ifdef MEM_OPT_VERSION
+    //read in PDB from a file and eliminate the temporary memory usage of pdb atom list    
+    PDB(const char *pdbfilename, int expectedNumAtoms); 
+#endif
+    
     PDB(const char *, Ambertoppar *);  // read AMBER coordinate file
 
     /* This constructor initializes the PDB data using a Gromacs

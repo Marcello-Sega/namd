@@ -156,14 +156,19 @@ int NamdState::configListInit(ConfigList *cfgList) {
     }    
   }
   fflush(stdout);
-
   
   StringList *coordinateFilename = configList->find("coordinates");
+
+#ifdef MEM_OPT_VERSION
+  if (coordinateFilename != NULL)
+    pdb = new PDB(coordinateFilename->data, molecule->numAtoms);
+#else
   if (coordinateFilename != NULL)
     pdb = new PDB(coordinateFilename->data);
   if (pdb->num_atoms() != molecule->numAtoms) {
     NAMD_die("Number of pdb and psf atoms are not the same!");
   }
+#endif
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
   if ( binCoordinateFilename ) {
