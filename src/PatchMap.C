@@ -132,7 +132,12 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
   iout << " BY ";
   iout << cDim;
   if ( cPeriodic ) iout << " (PERIODIC)";
-  iout << "\n" << endi;
+  iout << "\n";
+  iout << iINFO << "PATCH GRID IS ";
+  iout << aAway << "-AWAY BY ";
+  iout << bAway << "-AWAY BY ";
+  iout << cAway << "-AWAY\n";
+  iout << endi;
 
   aMaxIndex = ( ! aPeriodic || aDim == 2 ) ? 10000 : aDim;
   bMaxIndex = ( ! bPeriodic || bDim == 2 ) ? 10000 : bDim;
