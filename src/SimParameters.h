@@ -372,6 +372,7 @@ public:
 	int PMEGridSizeZ;		//  No. of grid points in z dim
 	BigReal PMEGridSpacing;		//  Maximum spacing between points
 	int PMEProcessors;		//  No. of processors to use
+	int PMEMinSlices;		//  Min slices per PME slab
 	Bool PMEBarrier;		//  Use barrier before sendTrans
 	int PMEPencils;			//  Size of pencil grid in each dim
 

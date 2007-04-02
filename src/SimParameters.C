@@ -609,6 +609,9 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.range("PMEGridSpacing", NOT_NEGATIVE);
    opts.optional("PME", "PMEProcessors",
 	"PME FFT and reciprocal sum processor count", &PMEProcessors, 0);
+   opts.optional("PME", "PMEMinSlices",
+	"minimum thickness of PME reciprocal sum slab", &PMEMinSlices, 2);
+   opts.range("PMEMinSlices", NOT_NEGATIVE);
    opts.optional("PME", "PMEPencils",
 	"PME FFT and reciprocal sum pencil grid size", &PMEPencils, -1);
    opts.optionalB("main", "PMEBarrier", "Use barrier in PME?",
@@ -3434,7 +3437,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        int nrp = 1;
 
        // rules based on work available
-       int minslices = 1;
+       int minslices = PMEMinSlices;
        int dimx = PMEGridSizeX;
        int nrpx = ( dimx + minslices - 1 ) / minslices;
        if ( nrpx > nrp ) nrp = nrpx;

@@ -409,7 +409,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   {  // decide how many pes to use for reciprocal sum
 
     // rules based on work available
-    int minslices = 1;
+    int minslices = simParams->PMEMinSlices;
     int dimx = simParams->PMEGridSizeX;
     int nrpx = ( dimx + minslices - 1 ) / minslices;
     int dimy = simParams->PMEGridSizeY;
