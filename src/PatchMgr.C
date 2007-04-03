@@ -66,6 +66,11 @@ PatchMgr::~PatchMgr()
     delete [] combineMigrationMsgs;
 }
 
+void PatchMgr::preCreateHomePatch(PatchID pid, int atomCnt){
+    HomePatch *patch = new HomePatch(pid, atomCnt);
+    homePatches.load(HomePatchElem(pid, patch));
+    patchMap->registerPatch(pid, patch);
+}
 
 void PatchMgr::createHomePatch(PatchID pid, FullAtomList a) 
 {
@@ -82,6 +87,26 @@ void PatchMgr::movePatch(PatchID pid, NodeID nodeID)
     move.load(MovePatch(pid,nodeID));
 }
 
+void PatchMgr::sendOneHomePatch(int patchId, int nodeId){
+    HomePatch *p = homePatch(patchId);
+    patchMap->unregisterPatch(patchId, p);
+
+    MovePatchesMsg *msg = new MovePatchesMsg(patchId, p->atom);
+
+    // Sending to PatchMgr::recvMovePatches on remote node
+    CProxy_PatchMgr cp(thisgroup);
+#if CHARM_VERSION > 050402
+    cp[nodeId].recvMovePatches(msg);
+#else
+    cp.recvMovePatches(msg, nodeId);
+#endif
+
+    // Deleting the HomePatchElem will call a destructor for clean up
+    // but the msg elements are safe since they use a container template
+    // that uses ref counting.
+    delete p;
+    homePatches.del(HomePatchElem(patchId)); 
+}
 
 // Uses list constructed by movePatch() and dispatches
 // HomePatch(es) to new nodes

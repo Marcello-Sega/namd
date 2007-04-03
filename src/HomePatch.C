@@ -51,6 +51,51 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
 
 void mollify(CompAtom *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab);
 
+HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd){
+  min.x = PatchMap::Object()->min_a(patchID);
+  min.y = PatchMap::Object()->min_b(patchID);
+  min.z = PatchMap::Object()->min_c(patchID);
+  max.x = PatchMap::Object()->max_a(patchID);
+  max.y = PatchMap::Object()->max_b(patchID);
+  max.z = PatchMap::Object()->max_c(patchID);
+  center = 0.5*(min+max);
+
+  aAway = PatchMap::Object()->numaway_a();
+  bAway = PatchMap::Object()->numaway_b();
+  cAway = PatchMap::Object()->numaway_c();
+
+  migrationSuspended = false;
+  allMigrationIn = false;
+  marginViolations = 0;
+  patchMapRead = 0; // We delay read of PatchMap data
+		    // to make sure it is really valid
+  inMigration = false;
+  numMlBuf = 0;
+  flags.sequence = -1;
+
+  numAtoms = atomCnt;
+  replacementForces = 0;
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  doPairlistCheck_newTolerance = 
+	0.5 * ( simParams->pairlistDist - simParams->cutoff );
+
+
+  numFixedAtoms = 0;
+  if ( simParams->fixedAtomsOn ) {
+    for ( int i = 0; i < numAtoms; ++i ) {
+      numFixedAtoms += ( atom[i].atomFixed ? 1 : 0 );
+    }
+  }
+
+  nChild = 0;	// number of proxy spanning tree children
+#if CMK_PERSISTENT_COMM
+  phsReady = 0;
+  nphs = 0;
+  localphs = new PersistentHandle[CkNumPes()];
+  for (int i=0; i<CkNumPes(); i++) localphs[i] = 0;
+#endif
+}
 
 HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 { 

@@ -207,7 +207,14 @@ void Node::startup() {
     if (!CkMyPe()) {
       output = new Output; // create output object just on PE(0)
       workDistrib->patchMapInit(); // create space division
+
+      #ifdef MEM_OPT_VERSION
+      //create patches without populating them with atoms
+      workDistrib->preCreateHomePatches();
+      #else      
       workDistrib->createHomePatches(); // load atoms into HomePatch(es)
+      #endif
+      
       workDistrib->assignNodeToPatch();
       workDistrib->mapComputes();
       ComputeMap::Object()->printComputeMap();
@@ -232,7 +239,11 @@ void Node::startup() {
       pme[CkMyPe()].initialize_pencils(new CkQdMsg);
     }
     if (!CkMyPe()) {
-      workDistrib->distributeHomePatches();
+    #ifdef MEM_OPT_VERSION
+      workDistrib->initAndSendHomePatch();
+    #else
+      workDistrib->distributeHomePatches();      
+    #endif
     }
   break;
 

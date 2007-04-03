@@ -92,6 +92,9 @@ public:
   
   void createHomePatch(PatchID pid, FullAtomList a);
 
+  //atomCnt is the number of atoms patch pid has
+  void preCreateHomePatch(PatchID pid, int atomCnt);
+
   void movePatch(PatchID, NodeID);
   void sendMovePatches();
   void recvMovePatches(MovePatchesMsg *msg);
@@ -113,9 +116,9 @@ public:
   void moveAtom(MoveAtomMsg *msg);
   void moveAllBy(MoveAllByMsg *msg);
   void setLattice(SetLatticeMsg *msg);
- 
-private:
 
+
+private:
   friend class PatchMap;
   PatchMap *patchMap;
 
@@ -132,6 +135,14 @@ private:
   // data for combining migration messages
   MigrateAtomsCombinedMsg ** combineMigrationMsgs;
   int migrationCountdown;
+
+public:
+  void fillHomePatchAtomList(int patchId, FullAtomList *al){
+      HomePatch *thisHomePatch = patchMap->homePatch(patchId);
+      thisHomePatch->setAtomList(al);
+  }
+
+  void sendOneHomePatch(int patchId, int nodeId);
 };
 
 

@@ -80,6 +80,8 @@ class PDB {
     void set_all_positions(Vector *);	//  Reset all the positions in PDB
 
     void get_all_positions(Vector *);	//  Get all positions in PDB
+
+    void get_position_for_atom(Vector *, int); //Get the position for an atom
 };
 
 #endif // PDB_H

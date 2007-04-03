@@ -130,6 +130,63 @@ void WorkDistrib::doneSaveComputeMap() {
 }
 
 
+//only called on node 0
+int *WorkDistrib::caclNumAtomsInEachPatch(){
+    StringList *current;
+    int i;
+    CProxy_Node nd(CpvAccess(BOCclass_group).node);
+    Node *node = nd.ckLocalBranch();
+    PatchMap *patchMap = PatchMap::Object();
+    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+    PatchMgr *patchMgr = pm.ckLocalBranch();
+    SimParameters *params = node->simParameters;
+    Molecule *molecule = node->molecule;
+    PDB *pdb = node->pdb;
+
+    int numPatches = patchMap->numPatches();
+    int numAtoms = pdb->num_atoms();    
+
+    vector<int> *eachPatchAtomList = patchMap->getTmpPatchAtomsList();
+
+    int *patchAtomCnt = new int[numPatches];    
+    memset(patchAtomCnt, 0, sizeof(int)*numPatches);
+
+    const Lattice lattice = params->lattice;
+
+    Position eachAtomPos;
+    if (params->splitPatch == SPLIT_PATCH_HYDROGEN)
+      {
+      // split atoms into patched based on helix-group and position
+      int aid, pid=0;
+      for(i=0; i < numAtoms; i++)
+        {        
+        // Assign atoms to patches without splitting hydrogen groups.
+        // We know that the hydrogenGroup array is sorted with group parents
+        // listed first.  Thus, only change the pid if an atom is a group parent.
+        aid = molecule->hydrogenGroup[i].atomID;
+        pdb->get_position_for_atom(&eachAtomPos, aid);
+        if (molecule->hydrogenGroup[i].isGP)            
+            pid = patchMap->assignToPatch(eachAtomPos,lattice);
+        // else: don't change pid        
+        patchAtomCnt[pid]++;
+        eachPatchAtomList[pid].push_back(aid);
+        }
+      }
+    else
+      {
+      // split atoms into patched based on position
+      for(i=0; i < numAtoms; i++)
+        {
+        pdb->get_position_for_atom(&eachAtomPos, i);
+        int pid = patchMap->assignToPatch(eachAtomPos,lattice);        
+        patchAtomCnt[pid]++;
+        eachPatchAtomList[pid].push_back(i);
+        }
+      }   
+
+    return patchAtomCnt;    
+}
+
 //----------------------------------------------------------------------
 // This should only be called on node 0.
 //----------------------------------------------------------------------
@@ -339,6 +396,44 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 
 }
 
+//This should only be called on node 0
+//This differs from creatHomePatches in: create home patches
+//without populating them with actual atoms' data. The only field
+//set is the number of atoms each patch contains.
+void WorkDistrib::preCreateHomePatches(){
+
+  PatchMap *patchMap = PatchMap::Object();
+  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  PatchMgr *patchMgr = pm.ckLocalBranch();
+
+  int numPatches = patchMap->numPatches();
+
+  patchMap->initTmpPatchAtomsList();
+
+  int *patchAtomCnt = caclNumAtomsInEachPatch();
+
+  int maxAtoms = -1;
+  int maxPatch = -1;
+  for(int i=0; i < numPatches; i++) {
+    int numAtoms = patchAtomCnt[i];
+    if ( numAtoms > maxAtoms ) { maxAtoms = numAtoms; maxPatch = i; }
+  }
+  iout << iINFO << "LARGEST PATCH (" << maxPatch <<
+	") HAS " << maxAtoms << " ATOMS\n" << endi;
+
+  for(int i=0; i < numPatches; i++)
+  {
+    if ( ! ( i % 100 ) )
+    {
+      DebugM(3,"Pre-created " << i << " patches so far.\n");
+    }
+
+    patchMgr->preCreateHomePatch(i,patchAtomCnt[i]);
+  }
+
+  delete [] patchAtomCnt;
+}
+
 
 //----------------------------------------------------------------------
 // This should only be called on node 0.
@@ -382,6 +477,200 @@ void WorkDistrib::createHomePatches(void)
   }
 
   delete [] atoms;
+}
+
+void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Vector *velocities){
+    // ref BOC
+    CProxy_Node nd(CpvAccess(BOCclass_group).node);
+    Node *node = nd.ckLocalBranch();
+    PDB *pdb = node->pdb;
+    SimParameters *params = node->simParameters;
+    Molecule *molecule = node->molecule;
+
+    const Lattice lattice = params->lattice;
+
+    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+    PatchMgr *patchMgr = pm.ckLocalBranch();
+    // ref singleton
+    PatchMap *patchMap = PatchMap::Object();
+
+    vector<int> *eachPatchAtomsList = patchMap->getTmpPatchAtomsList();
+    vector<int> *thisPatchAtomsList = &eachPatchAtomsList[patchId];
+
+    for(int i=0; i<thisPatchAtomsList->size(); i++){
+        int aid = thisPatchAtomsList->at(i);
+        FullAtom a;
+        a.id = aid;
+        Position pos;
+        pdb->get_position_for_atom(&pos, aid);
+        a.position = pos;
+        a.velocity = velocities[aid];
+        #ifdef MEM_OPT_VERSION
+        a.sigId = molecule->getAtomSigId(aid);
+        a.exclId = molecule->getAtomExclSigId(aid);
+        #endif
+        onePatchAtoms->add(a);
+    }
+
+    ScaledPosition center(0.5*(patchMap->min_a(patchId)+patchMap->max_a(patchId)),
+                          0.5*(patchMap->min_b(patchId)+patchMap->max_b(patchId)),
+                          0.5*(patchMap->min_c(patchId)+patchMap->max_c(patchId)));
+    int n = onePatchAtoms->size();
+    FullAtom *a = onePatchAtoms->begin();
+    int j;
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+    Bool fepOn = params->fepOn;
+//fepe
+    Bool lesOn = params->lesOn;
+  
+    Bool pairInteractionOn = params->pairInteractionOn;
+
+    Bool pressureProfileTypes = (params->pressureProfileAtomTypes > 1);
+
+    Transform mother_transform;
+    for(j=0; j < n; j++)
+    {
+      int aid = a[j].id;
+
+      if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
+        if ( molecule->is_hydrogenGroupParent(aid) ) {
+          a[j].hydrogenGroupSize = molecule->get_groupSize(aid);
+        } else {
+          a[j].hydrogenGroupSize = 0;
+        }
+      } else {
+        a[j].hydrogenGroupSize = 1;
+      }
+
+      a[j].nonbondedGroupIsAtom = 0;
+
+      a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
+      a[j].fixedPosition = a[j].position;
+
+      if ( a[j].hydrogenGroupSize ) {
+        a[j].position = lattice.nearest(
+		a[j].position, center, &(a[j].transform));
+        mother_transform = a[j].transform;
+      } else {
+        a[j].position = lattice.apply_transform(a[j].position,mother_transform);
+        a[j].transform = mother_transform;
+      }
+
+      a[j].mass = molecule->atommass(aid);
+      a[j].charge = molecule->atomcharge(aid);
+
+//Modifications for alchemical fep
+//SD & CC, CNRS - LCTN, Nancy
+      if ( fepOn || lesOn || pairInteractionOn || pressureProfileTypes) {
+        a[j].partition = molecule->get_fep_type(aid);
+      } 
+      else {
+        a[j].partition = 0;
+      }
+//fepe
+    }
+
+    int size, allfixed, k;
+    for(j=0; j < n; j+=size) {
+      size = a[j].hydrogenGroupSize;
+      if ( ! size ) {
+        NAMD_bug("Mother atom with hydrogenGroupSize of 0!");
+      }
+      allfixed = 1;
+      for ( k = 0; k < size; ++k ) {
+        allfixed = ( allfixed && (a[j+k].atomFixed) );
+      }
+      for ( k = 0; k < size; ++k ) {
+        a[j+k].groupFixed = allfixed ? 1 : 0;
+      }
+    }
+
+    if ( params->outputPatchDetails ) {    
+      int numAtomsInPatch = n;
+      int numFixedAtomsInPatch = 0;
+      int numAtomsInFixedGroupsInPatch = 0;
+      for(j=0; j < n; j++) {
+        numFixedAtomsInPatch += ( a[j].atomFixed ? 1 : 0 );
+        numAtomsInFixedGroupsInPatch += ( a[j].groupFixed ? 1 : 0 );
+      }
+      iout << "PATCH_DETAILS:"
+           << " patch " << patchId
+           << " atoms " << numAtomsInPatch
+           << " fixed_atoms " << numFixedAtomsInPatch
+           << " fixed_groups " << numAtomsInFixedGroupsInPatch
+           << "\n" << endi;
+    }
+}
+
+//should be called only on node 0
+void WorkDistrib::initAndSendHomePatch(){
+  StringList *current;
+  // ref BOC
+  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  Molecule *molecule = node->molecule;
+  PDB *pdb = node->pdb;
+  SimParameters *params = node->simParameters;
+
+  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  PatchMgr *patchMgr = pm.ckLocalBranch();
+  // ref singleton
+  PatchMap *patchMap = PatchMap::Object();
+
+  int numAtoms = pdb->num_atoms();
+
+  //1. create atoms' velocities
+  Vector *velocities = new Velocity[numAtoms];
+  if ( params->initialTemp < 0.0 ) {
+    Bool binvels=FALSE;
+
+    //  Reading the veolcities from a PDB
+    current = node->configList->find("velocities");
+
+    if (current == NULL) {
+      current = node->configList->find("binvelocities");
+      binvels = TRUE;
+    }
+
+    if (!binvels) {
+      velocities_from_PDB(current->data, velocities, numAtoms);
+    }
+    else {
+      velocities_from_binfile(current->data, velocities, numAtoms);
+    }
+  }
+  else {
+    // Random velocities for a given temperature
+    random_velocities(params->initialTemp, molecule, velocities, numAtoms);
+  }
+
+  //  If COMMotion == no, remove center of mass motion
+  if (!(params->comMove)) {
+    remove_com_motion(velocities, molecule, numAtoms);
+  }
+
+
+  for(int i=0; i<patchMap->numPatches(); i++){
+      //2. fill each patch with actual atom data
+      //the work flow should looks like the createAtomList
+      FullAtomList *onePatchAtoms = new FullAtomList;
+      fillOnePatchAtoms(i, onePatchAtoms, velocities);
+      
+      patchMgr->fillHomePatchAtomList(i, onePatchAtoms);
+
+      delete onePatchAtoms;
+
+      //distribute this home patch
+      if(patchMap->node(i) != node->myid()){
+          //need to move to other nodes
+          patchMgr->sendOneHomePatch(i, patchMap->node(i));
+      }
+      
+  }  
+
+  delete [] velocities;
+  patchMap->delTmpPatchAtomsList();
 }
 
 void WorkDistrib::distributeHomePatches() {

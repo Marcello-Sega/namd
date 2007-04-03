@@ -12,6 +12,10 @@
 #include "Lattice.h"
 #include "ProcessorPrivate.h"
 
+#include <vector>
+using namespace std;
+
+
 class Patch;
 class PatchMgr;
 class HomePatch;
@@ -145,7 +149,6 @@ public:
   void registerPatch(PatchID pid, Patch *pptr);
   void unregisterPatch(PatchID pid, Patch *pptr);
 
-
 protected:
   friend class WorkDistrib;
   int packSize(void);
@@ -177,6 +180,27 @@ private:
   int aMaxIndex, bMaxIndex, cMaxIndex;
   BigReal aOrigin, bOrigin, cOrigin;
   BigReal aLength, bLength, cLength;
+
+private:
+  //It is used to store the atom ids that each patch has
+  //we need this structure because we want to create and distribute
+  //each patch one by one rather than creat all home patches at a time and then
+  //send them later
+  vector<int> *tmpPatchAtomsList;
+public:
+  void initTmpPatchAtomsList(){
+      tmpPatchAtomsList = new vector<int>[nPatches];
+  }
+  void delTmpPatchAtomsList() {
+      for(int i=0; i<nPatches; i++){
+          tmpPatchAtomsList[i].clear();
+      }
+      delete [] tmpPatchAtomsList;
+      tmpPatchAtomsList = NULL;
+  }
+  vector<int> *getTmpPatchAtomsList(){
+      return tmpPatchAtomsList;
+  }
 
 };
 

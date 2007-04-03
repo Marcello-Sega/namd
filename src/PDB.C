@@ -282,6 +282,19 @@ void PDB::set_all_positions(Vector *pos)
 #endif
 }
 
+void PDB::get_position_for_atom(Vector *pos, int aid){
+#ifdef MEM_OPT_VERSION
+    pos->x = atomArray[aid].coor[0];
+    pos->y = atomArray[aid].coor[1];
+    pos->z = atomArray[aid].coor[2];
+#else
+    PDBAtomPtr *atomptr = &atomArray[aid];
+    pos->x = (*atomptr)->xcoor();
+    pos->y = (*atomptr)->ycoor();
+    pos->z = (*atomptr)->zcoor();
+#endif
+}
+
 //  Get all the atom positions into a list of Vectors
 void PDB::get_all_positions(Vector *pos)
 {

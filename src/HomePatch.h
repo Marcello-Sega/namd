@@ -39,6 +39,9 @@ class HomePatch : public Patch {
 private: 
   // for PatchMgr to use only
   HomePatch(PatchID, FullAtomList);
+
+  HomePatch(PatchID, int atomCnt);
+
   void reinitAtoms(FullAtomList);
   ScaledPosition min, max, center;
   int aAway, bAway, cAway;
@@ -99,6 +102,10 @@ public:
 
   // for ComputeHomePatches
   FullAtomList &getAtomList() { return (atom); }
+  // set home patch's atom list
+  void setAtomList(FullAtomList *al) {
+      atom = *al;
+  }
 
   // build spanning tree for proxy nodes
   void buildSpanningTree(void);
@@ -159,7 +166,7 @@ private:
 
   NodeIDList tree;              // the whole tree
   int child[PROXY_SPAN_DIM];	// spanning tree of proxies - immediate children
-  int nChild;
+  int nChild;  
 
 #if CMK_PERSISTENT_COMM
   PersistentHandle *localphs;
