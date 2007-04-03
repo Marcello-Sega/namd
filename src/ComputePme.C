@@ -394,12 +394,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( simParams->PMEPencils > 1 ) {
       xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
     } else {
-      int nb = (int) sqrt((float)CkNumPes());
-      if ( nb > 2 * patchMap->gridsize_a() ) nb = 2 * patchMap->gridsize_a();
+      int nb2 = 4 * patchMap->gridsize_a() * patchMap->gridsize_b();
+      if ( nb2 > CkNumPes() ) nb2 = CkNumPes();
+      int nb = (int) sqrt((float)nb2);
       xBlocks = zBlocks = nb;
-      yBlocks = CkNumPes() / nb;
-      if ( yBlocks > 2 * patchMap->gridsize_b() )
-		yBlocks = 2 * patchMap->gridsize_b();
+      yBlocks = nb2 / nb;
     }
 
     int dimx = simParams->PMEGridSizeX;
