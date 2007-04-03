@@ -614,6 +614,9 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.range("PMEMinSlices", NOT_NEGATIVE);
    opts.optional("PME", "PMEPencils",
 	"PME FFT and reciprocal sum pencil grid size", &PMEPencils, -1);
+   opts.optional("PME", "PMEMinPoints",
+	"minimum points per PME reciprocal sum pencil", &PMEMinPoints, 10000);
+   opts.range("PMEMinPoints", NOT_NEGATIVE);
    opts.optionalB("main", "PMEBarrier", "Use barrier in PME?",
 	&PMEBarrier, FALSE);
 

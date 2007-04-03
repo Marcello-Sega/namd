@@ -384,7 +384,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     int dimy = simParams->PMEGridSizeY;
     int maxslabs = 1 + (dimx - 1) / simParams->PMEMinSlices;
     if ( maxslabs > CkNumPes() ) maxslabs = CkNumPes();
-    int maxpencils = dimx * dimy * simParams->PMEGridSizeZ / 10000;
+    int maxpencils = ( simParams->PMEGridSizeX * simParams->PMEGridSizeY
+		* simParams->PMEGridSizeZ ) / simParams->PMEMinPoints;
     if ( maxpencils > CkNumPes() ) maxpencils = CkNumPes();
     if ( maxpencils > 3 * maxslabs ) usePencils = 1;
     else usePencils = 0;
@@ -394,8 +395,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( simParams->PMEPencils > 1 ) {
       xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
     } else {
-      int nb2 = (simParams->PMEGridSizeX * simParams->PMEGridSizeY
-		 * simParams->PMEGridSizeZ) / 10000;
+      int nb2 = ( simParams->PMEGridSizeX * simParams->PMEGridSizeY
+		* simParams->PMEGridSizeZ ) / simParams->PMEMinPoints;
       if ( nb2 > CkNumPes() ) nb2 = CkNumPes();
       int nb = (int) sqrt((float)nb2);
       xBlocks = zBlocks = nb;

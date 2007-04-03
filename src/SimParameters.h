@@ -373,6 +373,7 @@ public:
 	BigReal PMEGridSpacing;		//  Maximum spacing between points
 	int PMEProcessors;		//  No. of processors to use
 	int PMEMinSlices;		//  Min slices per PME slab
+	int PMEMinPoints;		//  Min points per PME pencil
 	Bool PMEBarrier;		//  Use barrier before sendTrans
 	int PMEPencils;			//  Size of pencil grid in each dim
 
