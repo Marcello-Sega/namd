@@ -31,6 +31,7 @@ typedef float Charge;
 #ifdef MEM_OPT_VERSION
 typedef unsigned short AtomSigID;
 typedef unsigned short ExclSigID;
+typedef unsigned short VDW_TYPE;
 #endif
 
 typedef double Coordinate;
@@ -54,6 +55,7 @@ struct CompAtom {
 #ifdef MEM_OPT_VERSION
   AtomSigID sigId;
   ExclSigID exclId;
+  VDW_TYPE vdwType;
 #endif
 
   CompAtom() { ; }
@@ -68,6 +70,7 @@ struct CompAtom {
       #ifdef MEM_OPT_VERSION
       sigId = a.sigId;
       exclId = a.exclId;
+      vdwType = a.vdwType;
       #endif
       ;
   }
@@ -86,6 +89,7 @@ struct CompAtom {
     #ifdef MEM_OPT_VERSION
     sigId = a.sigId;
     exclId = a.exclId;
+    vdwType = a.vdwType;
     #endif
     
     return *this;

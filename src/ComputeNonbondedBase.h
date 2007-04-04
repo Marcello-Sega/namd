@@ -291,9 +291,13 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(plint,pairlist2,arraysize);
 
   NBWORKARRAY(short,vdwtype_array,j_upper+5);
-  for (j = 0; j < j_upper; ++j)
+  for (j = 0; j < j_upper; ++j){
+#ifdef MEM_OPT_VERSION
+    vdwtype_array[j] = p_1[j].vdwType;
+#else
     vdwtype_array [j] = mol->atomvdwtype(p_1[j].id);
-
+#endif  
+  }
 
   int fixg_upper = 0;
   int g_upper = 0;
@@ -781,8 +785,13 @@ void ComputeNonbondedUtil :: NAME
     )
 
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
+#ifdef MEM_OPT_VERSION
+    const LJTable::TableEntry * const lj_row =
+		ljTable->table_row(p_i.vdwType);
+#else
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(mol->atomvdwtype(p_i.id));
+#endif
 
     SHORT( FAST( BigReal f_i_x = 0.; ) )
     SHORT( FAST( BigReal f_i_y = 0.; ) )
