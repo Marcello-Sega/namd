@@ -67,6 +67,8 @@ class PDB {
 
 #ifdef MEM_OPT_VERSION
     PDBCoreData *atom(int place);           
+    
+    void delPDBCoreData() { delete [] atomArray; atomArray=NULL; } 
 #else
     PDBAtom *atom(int place); // get the nth atom in the PDB file
 #endif    

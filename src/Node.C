@@ -61,6 +61,7 @@
 #include "ComputePmeMgr.decl.h"
 #include "Sync.h"
 #include "BackEnd.h"
+#include "PDB.h"
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 extern "C" void CApplicationInit();
@@ -285,6 +286,9 @@ void Node::startup() {
 	molecule->delEachAtomSigs();
 	molecule->delMassChargeSpace();
 	molecule->delOtherEachAtomStructs();
+	//we can free the pdb data here to save memory. This may cause
+	//an error when intermediate output for coordinates is required
+	pdb->delPDBCoreData();
     }
     #endif
     gotoRun = true;
