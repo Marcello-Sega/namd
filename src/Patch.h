@@ -56,6 +56,7 @@ class Patch
 
      int getNumAtoms() { return numAtoms; }
      int getNumFixedAtoms() { return numFixedAtoms; }  // not updated
+     void setNumFixedAtoms(int numFixed) { numFixedAtoms=numFixed; }  // not updated
      PatchID getPatchID() { return patchID; }
      int getNumComputes() { return positionComputeList.size(); }
 

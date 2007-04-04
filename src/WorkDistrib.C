@@ -267,6 +267,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       #ifdef MEM_OPT_VERSION
       a.sigId = molecule->getAtomSigId(aid);
       a.exclId = molecule->getAtomExclSigId(aid);
+      a.vdwType = molecule->atomvdwtype(aid);
       #endif
       atoms[pid].add(a);
       }
@@ -288,6 +289,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       #ifdef MEM_OPT_VERSION
       a.sigId = molecule->getAtomSigId(i);
       a.exclId = molecule->getAtomExclSigId(i);
+      a.vdwType = molecule->atomvdwtype(i);
       #endif
       atoms[pid].add(a);
       }
@@ -508,6 +510,7 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
         #ifdef MEM_OPT_VERSION
         a.sigId = molecule->getAtomSigId(aid);
         a.exclId = molecule->getAtomExclSigId(aid);
+        a.vdwType = molecule->atomvdwtype(aid);
         #endif
         onePatchAtoms->add(a);
     }
@@ -585,6 +588,13 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
         a[j+k].groupFixed = allfixed ? 1 : 0;
       }
     }
+
+    if(params->fixedAtomsOn){
+	int fixedCnt=0;
+	for(j=0; j<n; j++)
+	    fixedCnt += (a[j].atomFixed ? 1:0);
+	patchMgr->setHomePatchFixedAtomNum(patchId, fixedCnt);
+    }    
 
     if ( params->outputPatchDetails ) {    
       int numAtomsInPatch = n;

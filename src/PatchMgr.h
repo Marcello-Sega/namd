@@ -141,6 +141,10 @@ public:
       HomePatch *thisHomePatch = patchMap->homePatch(patchId);
       thisHomePatch->setAtomList(al);
   }
+  void setHomePatchFixedAtomNum(int patchId, int numFixed){
+      HomePatch *thisHomePatch = patchMap->homePatch(patchId);
+      thisHomePatch->setNumFixedAtoms(numFixed);
+  }
 
   void sendOneHomePatch(int patchId, int nodeId);
 };
