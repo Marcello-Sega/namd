@@ -284,6 +284,7 @@ void Node::startup() {
     if(!CkMyPe()){
 	molecule->delEachAtomSigs();
 	molecule->delMassChargeSpace();
+	molecule->delOtherEachAtomStructs();
     }
     #endif
     gotoRun = true;

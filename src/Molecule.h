@@ -210,10 +210,11 @@ private:
         unsigned char *fepAtomFlags; 
 //fepe
 
+#ifndef MEM_OPT_VERSION
   ObjectArena<int32> *tmpArena;
   int32 **bondsWithAtom;  //  List of bonds involving each atom
-
   ObjectArena<int32> *arena;
+#endif
 
 #ifdef MEM_OPT_VERSION
   Index *eachAtomSig;
@@ -815,6 +816,8 @@ public:
       eachAtomMass = NULL;
       eachAtomCharge = NULL;
   }
+  
+  void delOtherEachAtomStructs();
 
 private:
   Index insert_new_mass(Real newMass);

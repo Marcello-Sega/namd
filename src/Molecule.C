@@ -202,9 +202,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   donors=NULL;
   acceptors=NULL;
   
-  tmpArena=NULL;
 
   #ifndef MEM_OPT_VERSION      
+  tmpArena=NULL;
   exclusions=NULL;
   bondsWithAtom=NULL;
   bondsByAtom=NULL;
@@ -262,9 +262,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
 
   nameArena = new ObjectArena<char>;
   // nameArena->setAlignment(8);
-  arena = new ObjectArena<int32>;
   // arena->setAlignment(32);
   #ifndef MEM_OPT_VERSION
+  arena = new ObjectArena<int32>;
   exclArena = new ObjectArena<char>;
   #endif
   // exclArena->setAlignment(32);
@@ -460,9 +460,9 @@ Molecule::~Molecule()
        delete [] fepAtomFlags;
 //fepe
 
-  delete arena;
 
   #ifndef MEM_OPT_VERSION
+  delete arena;
   delete exclArena;
   #endif
 }
@@ -2865,6 +2865,8 @@ void Molecule::receive_Molecule(MIStream *msg)
       #ifdef MEM_OPT_VERSION
       delEachAtomSigs();
       delMassChargeSpace();
+      delete [] atoms;
+      atoms = NULL;
       #endif
     }
     /*      END OF FUNCTION receive_Molecule    */
@@ -8206,6 +8208,15 @@ Bond *Molecule::get_bond(int bnum){
 #endif
 
 #ifdef MEM_OPT_VERSION
+
+void Molecule::delOtherEachAtomStructs(){
+    delete [] fixedAtomFlags;
+    fixedAtomFlags = NULL;
+    hydrogenGroup.resize(0);
+    delete [] atoms;
+    atoms = NULL;
+}
+
 //return the index of the new mass in the mass pool
 Index Molecule::insert_new_mass(Real newMass){
     //first search
