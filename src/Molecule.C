@@ -1048,6 +1048,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         char *segment_name;
         int read_count;
         int idx[9];
+
+	//int debugExclNum=0;
+
         for(int i=0; i<numAtoms; i++){
             NAMD_read_line(psf_file, buffer);
             read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d",
@@ -1069,6 +1072,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             eachAtomSig[i] = (Index)idx[7];
 	    eachAtomExclSig[i] = (Index)idx[8];
 
+	    //debugExclNum += (exclSigPool[idx[8]].fullExclCnt+exclSigPool[idx[8]].modExclCnt);
+
             //Add this atom to residue lookup table
             if(tmpResLookup) tmpResLookup =
                 tmpResLookup->append(segment_name, residue_number, i);
@@ -1085,6 +1090,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
                                      &(atoms[i]));
         }
+
+	//printf("debugExclNum: %d\n", debugExclNum);
     }
     //build up information for numBonds/numDihedrals.. etc
     numBonds=0;
@@ -1105,7 +1112,26 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         numTotalExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
     }
     
+    numTotalExclusions /= 2;
+
+    //read DIHEDRALPARAMARRAY and IMPROPERPARAMARRAY    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "DIHEDRALPARAMARRAY"))
+        NAMD_die("UNABLE TO FIND DIHEDRALPARAMARRAY");
+    for(int i=0; i<params->NumDihedralParams; i++){
+        params->dihedral_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
+    }
+
+    NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line 
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "IMPROPERPARAMARRAY"))
+        NAMD_die("UNABLE TO FIND IMPROPERPARAMARRAY");
+    for(int i=0; i<params->NumImproperParams; i++){
+        params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
+    }
+
     Fclose(psf_file);
+
     numRealBonds = numBonds;
     build_atom_status();
 #endif
@@ -3191,61 +3217,9 @@ void Molecule::receive_Molecule(MIStream *msg)
            CkPrintf("After stripping, exclusion signatures: %d\n", exclSigPoolSize);
        }
        
-       //Finally build the exclChkSigPool of type ExclusionCheck
-
-       /* //The following code has been moved to build_excl_check_signature
-       exclChkSigPool = new ExclusionCheck[exclSigPoolSize];
-       for(i=0; i<exclSigPoolSize; i++){
-           ExclusionSignature *sig = &exclSigPool[i];
-           ExclusionCheck *sigChk = &exclChkSigPool[i];
-           if(sig->fullExclCnt){
-               if(!sig->modExclCnt){ //only having fullExclusion
-                   sigChk->min = sig->fullOffset[0];
-                   sigChk->max = sig->fullOffset[sig->fullExclCnt-1];
-               }else{ //have both full and modified exclusion
-                   int fullMin, fullMax, modMin, modMax;
-                   
-                   fullMin = sig->fullOffset[0];
-                   fullMax = sig->fullOffset[sig->fullExclCnt-1];
-               
-                   modMin = sig->modOffset[0];
-                   modMax = sig->modOffset[sig->modExclCnt-1];
-                   
-                   if(fullMin < modMin)
-                       sigChk->min = fullMin;
-                   else
-                       sigChk->min = modMin;
-                   if(fullMax < modMax)
-                       sigChk->max = modMax;
-                   else
-                       sigChk->max = fullMax;
-               }        
-           }else{
-               if(sig->modExclCnt){
-                   sigChk->min = sig->modOffset[0];
-                   sigChk->max = sig->modOffset[sig->modExclCnt-1];
-               }else{ //both count are 0
-                   if(CkMyPe()==0)
-                       printf("Warning: an empty exclusion signature with index %d!\n", i);               
-                   continue;
-               }
-           }           
-
-           if((sigChk->max-sigChk->min) > simParams->maxExclusionFlags){
-               NAMD_die("Currently not supporting building exclusion check on the fly for memory optimized version!\n");
-           }
-
-           sigChk->flags = new char[sigChk->max-sigChk->min+1];
-           memset(sigChk->flags, 0, sizeof(char)*(sigChk->max-sigChk->min+1));
-           for(int j=0; j<sig->fullExclCnt; j++){
-               int dist = sig->fullOffset[j] - sigChk->min;
-               sigChk->flags[dist] = EXCHCK_FULL;
-           }
-           for(int j=0; j<sig->modExclCnt; j++){
-               int dist = sig->modOffset[j] - sigChk->min;
-               sigChk->flags[dist] = EXCHCK_MOD;
-           }
-       }*/       
+       //Finally build the exclChkSigPool of type ExclusionCheck which is separated
+       //from this function for saving memory
+       //build_excl_check_signature();
     }
 #else
     void Molecule::build_lists_by_atom()
@@ -3743,6 +3717,8 @@ void Molecule::receive_Molecule(MIStream *msg)
     void Molecule::build_exclusions()
     {
 #ifdef MEM_OPT_VERSION
+        numCalcExclusions = numTotalExclusions*2;        
+
         //stripHGroupExcl() is not needed because the function purpose 
         //is to reduce the memory usage of exclusions. Since now the exclusion
         //signature is used, such function is not critical now
@@ -3765,8 +3741,8 @@ void Molecule::receive_Molecule(MIStream *msg)
 	        }
 		}
 		else if (stripHGroupExclFlag && exclude_flag!=NONE && exclude_flag!=ONETWO)
-			stripHGroupExcl();        
-                
+			stripHGroupExcl();               
+
         stripFepFixedExcl();
         return;
 #else
@@ -4042,7 +4018,7 @@ void Molecule::receive_Molecule(MIStream *msg)
    //don't eliminate the exclusion signatures but only adjusting numCalcExclusions
    //which is related to the checksum in reductions. HGroupExcl are not calculated
    //at all
-    numCalcExclusions = 0;
+    int delExclCnt=0;
     UniqueSet<Exclusion> strippedExcls;
     HydrogenGroup::iterator h_i, h_e, h_j;
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
@@ -4059,13 +4035,16 @@ void Molecule::receive_Molecule(MIStream *msg)
     for(iter=iter.begin(); iter!=iter.end(); iter++){
     	int atom1 = iter->atom1;
     	int atom2 = iter->atom2;
-	ExclusionSignature *a1Sig = &exclSigPool[eachAtomExclSig[atom1]];
-	int fullOrMod, idx;
-	idx = a1Sig->findOffset(atom2-atom1, &fullOrMod);
-	if(idx==-1) continue;
-
-	numCalcExclusions -= 2;
+    	ExclusionSignature *a1Sig = &exclSigPool[eachAtomExclSig[atom1]];
+    	int fullOrMod, idx;
+    	idx = a1Sig->findOffset(atom2-atom1, &fullOrMod);
+    	if(idx==-1) continue;
+        delExclCnt++;
+        if(!exclStrippedByFepOrFixedAtoms(atom1, atom2))
+            numCalcExclusions -= 2;
     }
+
+    numTotalExclusions -= delExclCnt;    
 
     return;
 
@@ -4144,14 +4123,16 @@ void Molecule::receive_Molecule(MIStream *msg)
 #else
     HydrogenGroup::iterator h_i, h_e, h_j;
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
+    int tmpmei=0;
     for( ; h_i != h_e; ++h_i ) {
       for ( h_j = h_i + 1; h_j != h_e && ! h_j->isGP; ++h_j ) {
 	if ( h_i->atomID < h_j->atomID )
-	  exclusionSet.del(Exclusion(h_i->atomID,h_j->atomID));
+	  tmpmei += exclusionSet.del(Exclusion(h_i->atomID,h_j->atomID));
 	else
-	  exclusionSet.del(Exclusion(h_j->atomID,h_i->atomID));
+	  tmpmei += exclusionSet.del(Exclusion(h_j->atomID,h_i->atomID));
       }
     }
+    printf("===========%d\n", tmpmei);
 #endif
   }
     /*      END OF FUNCTION stripHGroupExcl      */
@@ -4165,6 +4146,8 @@ void Molecule::receive_Molecule(MIStream *msg)
 #ifdef MEM_OPT_VERSION
   void Molecule::stripFepFixedExcl(void)
   {
+      int delExclCnt=0;
+
       vector<ExclusionSignature> newExclSigPool;
       if(simParams->fepOn || simParams->lesOn){
           for(int i=0; i<numAtoms; i++){
@@ -4179,6 +4162,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                   if(t2 && t1!=t2){
                       a1Sig.fullOffset[j] = 0;
                       sigChanged = 1;
+                      delExclCnt++;
                   }                  
               }
               for(int j=0; j<a1Sig.modExclCnt; j++){
@@ -4187,6 +4171,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                   if(t2 && t1!=t2){
                       a1Sig.modOffset[j] = 0;
                       sigChanged = 1;
+                      delExclCnt++;
                   }
               }
 
@@ -4219,6 +4204,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                   if(cond1 || cond2){                                   
                       a1Sig.fullOffset[j] = 0;
                       sigChanged = 1;
+                      delExclCnt++;
                   }                  
               }
               for(int j=0; j<a1Sig.modExclCnt; j++){
@@ -4229,6 +4215,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                   if(cond1 || cond2){                  
                       a1Sig.modOffset[j] = 0;
                       sigChanged = 1;
+                      delExclCnt++;
                   }
               }
 
@@ -4248,13 +4235,15 @@ void Molecule::receive_Molecule(MIStream *msg)
           newExclSigPool.clear();
       }
 
+      numTotalExclusions -= (delExclCnt/2); 
+
       //deal with fixed atoms
     //numCalcExclusions has to be calculated in stripHGroupExcl
       //numCalcExclusions = 0;
       if(!numFixedAtoms){
     	for(int i=0; i<numAtoms; i++){
     	    ExclusionSignature *a1Sig = &exclSigPool[eachAtomExclSig[i]];
-    	    numCalcExclusions += (a1Sig->fullExclCnt + a1Sig->modExclCnt);
+    	    //numCalcExclusions += (a1Sig->fullExclCnt + a1Sig->modExclCnt);
     	}
       }else{
           for(int i=0; i<numAtoms; i++){
@@ -4262,7 +4251,7 @@ void Molecule::receive_Molecule(MIStream *msg)
               int t1 = fixedAtomFlags[atom1];
               ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[atom1]];
               if(t1==0){
-                  numCalcExclusions += (a1Sig.fullExclCnt + a1Sig.modExclCnt);
+                  //numCalcExclusions += (a1Sig.fullExclCnt + a1Sig.modExclCnt);
                   continue;
               }              
               int sigChanged = 0;
@@ -4272,6 +4261,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                   if(t2){
                       a1Sig.fullOffset[j] = 0;
                       sigChanged = 1;
+                      delExclCnt++;
                   }                  
               }
               for(int j=0; j<a1Sig.modExclCnt; j++){
@@ -4280,6 +4270,7 @@ void Molecule::receive_Molecule(MIStream *msg)
                   if(t2){
                       a1Sig.modOffset[j] = 0;
                       sigChanged = 1;
+                      delExclCnt++;
                   }
               }
 
@@ -4293,14 +4284,14 @@ void Molecule::receive_Molecule(MIStream *msg)
                   }
                   eachAtomExclSig[atom1] = poolIndex + exclSigPoolSize;
               }              
-              numCalcExclusions += (a1Sig.fullExclCnt + a1Sig.modExclCnt);                            
+              //numCalcExclusions += (a1Sig.fullExclCnt + a1Sig.modExclCnt);                            
           }
           //integerate new exclusion signatures into the old one
           addNewExclSigPool(newExclSigPool);
           newExclSigPool.clear();
-      }
-      numCalcExclusions /= 2;
-      printf("numCalcExclusions: %d\n", numCalcExclusions);
+      }      
+
+      numCalcExclusions = (numCalcExclusions - delExclCnt)/2;      
   }
 #else
   void Molecule::stripFepExcl(void)
@@ -8243,6 +8234,31 @@ Index Molecule::insert_new_mass(Real newMass){
         markClusterIdx(curClusterIdx, newStartAtomID);
     }
 }*/
+
+//if the exclusion indicated by atom1 and atom2 will be stripped
+//by stripFepExcl function or fixedAtoms, then return 1. Otherwise return 0
+int Molecule::exclStrippedByFepOrFixedAtoms(int atom1, int atom2){
+    //first test for stripFepExcl
+    if(simParams->fepOn || simParams->lesOn){
+        int t1 = get_fep_type(atom1);
+        int t2 = get_fep_type(atom2);
+        if(t1 && t2 && t1!=t2) return 1;
+    }else if(simParams->pairInteractionOn){
+        int t1 = get_fep_type(atom1);
+        int t2 = get_fep_type(atom2);
+        if(simParams->pairInteractionSelf){
+            if(t1!=1 || t2!=1) return 1;
+        }else{
+            if((t1!=1 || t2!=2) && (t1!=2 || t2!=1))
+                return 1;
+        }
+    }
+
+    if(numFixedAtoms && fixedAtomFlags[atom1] && fixedAtomFlags[atom2])
+        return 1;
+
+    return 0;
+}
 
 void Molecule::addNewExclSigPool(const vector<ExclusionSignature>& newExclSigPool){
     ExclusionSignature *tmpExclSigPool = new ExclusionSignature[exclSigPoolSize+newExclSigPool.size()];

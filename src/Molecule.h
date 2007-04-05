@@ -822,6 +822,14 @@ public:
 private:
   Index insert_new_mass(Real newMass);
   //void markClusterIdx(int curClusterIdx, int startAtomID);  
+
+  //This function checks whether the exclusion (atom1 and atom2) will
+  //be stripped by the original stripFepExcl function and by the fixed atoms.
+  //When stripping exclusions in the stripHGroupExcl function (where we actually
+  //not performing stripping but only deducting numCalcExclusions), we use
+  //this function to avoid the repeated deduction. Only exclusions that are only
+  //stripped due to hydrogen group is counted
+  int exclStrippedByFepOrFixedAtoms(int atom1, int atom2);
 #endif
 
 };

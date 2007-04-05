@@ -8,6 +8,25 @@
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
 
+
+/**
+ * Very tricky part: 
+ * 
+ * Generating the tuple type affects the Parameter object.
+ * Particularly, the "multiplicity" field in the TUPLE_array 
+ * will be changed in the function assign_TUPLE_index. 
+ * TUPLE=dihedral, improper.
+ * 
+ * And when we read the compressed psf files, assign_TUPLE_index
+ * functions will not be called so that the value of "multiplicity"
+ * will not be updated. This results in the incorrect energy from bonded
+ * interaction.
+ * 
+ * Therefore, we need to store its value in the compressed psf
+ * file. When it comes to read them, we need to update the Parameter object
+ * with these values.
+ */
+
 //global variables recording compressed psf file information
 Molecule *g_mol = NULL;
 Parameters *g_param = NULL;
@@ -659,9 +678,21 @@ void outputPsfFile(FILE *ofp){
 		fprintf(ofp, "%d %d %d %d %d %d %d %d %d\n", one.segNameIdx, one.resID, one.resNameIdx, one.atomNameIdx,
 				one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx);        
 	}
-	fprintf(ofp, "\n");
+	//fprintf(ofp, "\n");
 
-	delete[] atomData;	
+	delete[] atomData;
+
+    //4. Output the "multiplicity" field TUPLE_array of the Parameter object
+    fprintf(ofp, "!DIHEDRALPARAMARRAY\n");
+    for(int i=0; i<g_param->NumDihedralParams; i++){
+        fprintf(ofp, "%d ", g_param->dihedral_array[i].multiplicity);
+    }
+    fprintf(ofp, "\n");
+    fprintf(ofp, "!IMPROPERPARAMARRAY\n");
+    for(int i=0; i<g_param->NumImproperParams; i++){
+        fprintf(ofp, "%d ", g_param->improper_array[i].multiplicity);
+    }
+    fprintf(ofp, "\n");
 }
 
 void getAtomData(FILE *ifp)
