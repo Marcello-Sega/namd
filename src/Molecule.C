@@ -4123,16 +4123,14 @@ void Molecule::receive_Molecule(MIStream *msg)
 #else
     HydrogenGroup::iterator h_i, h_e, h_j;
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
-    int tmpmei=0;
     for( ; h_i != h_e; ++h_i ) {
       for ( h_j = h_i + 1; h_j != h_e && ! h_j->isGP; ++h_j ) {
 	if ( h_i->atomID < h_j->atomID )
-	  tmpmei += exclusionSet.del(Exclusion(h_i->atomID,h_j->atomID));
+	  exclusionSet.del(Exclusion(h_i->atomID,h_j->atomID));
 	else
-	  tmpmei += exclusionSet.del(Exclusion(h_j->atomID,h_i->atomID));
+	  exclusionSet.del(Exclusion(h_j->atomID,h_i->atomID));
       }
     }
-    printf("===========%d\n", tmpmei);
 #endif
   }
     /*      END OF FUNCTION stripHGroupExcl      */
