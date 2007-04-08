@@ -251,6 +251,8 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
 int ProxyMgr::nodecount = 0;
 
 ProxyMgr::ProxyMgr() { 
+  if(CkNumPes()>500)
+    proxySendSpanning = 1;
   if (CpvAccess(ProxyMgr_instance)) {
     NAMD_bug("Tried to create ProxyMgr twice.");
   }
@@ -517,7 +519,18 @@ static void processCpuLoad()
 
 static int noInterNode(int p)
 {
-  for (int i=0; i<20; i++) if (procidx[i] == p) return 1;
+  int exclude = 0;
+  if(CkNumPes()<1025)
+    exclude = 5;
+  else if(CkNumPes()<4097)
+    exclude = 10;
+  else if(CkNumPes()<8193)
+    exclude = 20;
+  else if(CkNumPes()<16385)
+    exclude = 40;
+  else
+    exclude = 80;
+  for (int i=0; i<exclude; i++) if (procidx[i] == p) return 1;
 //  if (cpuloads[p] > averageLoad) return 1;
   return 0;
 }
