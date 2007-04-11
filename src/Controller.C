@@ -1337,21 +1337,6 @@ void Controller::printEnergies(int step, int minimize)
       delete [] total;
     }
   
-    if (simParameters->IMDon && !(step % simParameters->IMDfreq)) {
-      IMDEnergies energies;
-      energies.tstep = step;
-      energies.T = temperature;
-      energies.Etot = totalEnergy;
-      energies.Epot = potentialEnergy;
-      energies.Evdw = ljEnergy;
-      energies.Eelec = electEnergy + electEnergySlow;
-      energies.Ebond = bondEnergy;
-      energies.Eangle = angleEnergy;
-      energies.Edihe = dihedralEnergy + crosstermEnergy;
-      energies.Eimpr = improperEnergy;
-      Node::Object()->imd->gather_energies(&energies);
-    }
-  
     int stepInRun = step - simParams->firstTimestep;
     if ( stepInRun % simParams->firstLdbStep == 0 ) {
      int benchPhase = stepInRun / simParams->firstLdbStep;
@@ -1448,6 +1433,21 @@ void Controller::printEnergies(int step, int minimize)
     // NO CALCULATIONS OR REDUCTIONS BEYOND THIS POINT!!!
     if ( ! minimize &&  step % simParameters->outputEnergies ) return;
     // ONLY OUTPUT SHOULD OCCUR BELOW THIS LINE!!!
+
+    if (simParameters->IMDon && !(step % simParameters->IMDfreq)) {
+      IMDEnergies energies;
+      energies.tstep = step;
+      energies.T = temp_avg/avg_count;
+      energies.Etot = totalEnergy;
+      energies.Epot = potentialEnergy;
+      energies.Evdw = ljEnergy;
+      energies.Eelec = electEnergy + electEnergySlow;
+      energies.Ebond = bondEnergy;
+      energies.Eangle = angleEnergy;
+      energies.Edihe = dihedralEnergy + crosstermEnergy;
+      energies.Eimpr = improperEnergy;
+      Node::Object()->imd->gather_energies(&energies);
+    }
 
     if ( marginViolations ) {
       iout << iERROR << marginViolations <<
