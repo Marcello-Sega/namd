@@ -234,9 +234,10 @@ void compress_psf_file(Molecule *mol, char *psfFileName, Parameters *param, SimP
     buildExclusions();
     
 
-    char outFileName[strlen(psfFileName)+6];
+    char *outFileName = new char[strlen(psfFileName)+10];
     sprintf(outFileName, "%s.inter", psfFileName);
     FILE *ofp = fopen(outFileName, "w");    
+    delete [] outFileName;
     //output compressed psf file
     outputPsfFile(ofp);
     fclose(ofp);    
@@ -557,10 +558,10 @@ void readPsfFile(char *fname){
 }
 
 void integrateAllAtomSigs(){
-    printf("Bond sigs:  %d\n", sigsOfBonds.size()); 
-    printf("Angle sigs:  %d\n", sigsOfAngles.size());
-    printf("Dihedral sigs:  %d\n", sigsOfDihedrals.size());
-    printf("Improper sigs:  %d\n", sigsOfImpropers.size());
+    printf("Bond sigs:  %d\n", (int)sigsOfBonds.size()); 
+    printf("Angle sigs:  %d\n", (int)sigsOfAngles.size());
+    printf("Dihedral sigs:  %d\n", (int)sigsOfDihedrals.size());
+    printf("Improper sigs:  %d\n", (int)sigsOfImpropers.size());
 
 
     for(int i=0; i<g_mol->numAtoms; i++){
@@ -573,7 +574,7 @@ void integrateAllAtomSigs(){
         atomData[i].atomSigIdx = poolIndex;
     }
 
-    printf("Atom's sigs: %d\n", atomSigPool.size());
+    printf("Atom's sigs: %d\n", (int)atomSigPool.size());
 
     delete[] eachAtomSigs;
 }
@@ -1531,7 +1532,7 @@ void buildExclusions(){
     }
     delete [] eachAtomExclSigs;
     eachAtomExclSigs = NULL;
-    printf("Exclusion signatures: %d\n", sigsOfExclusions.size());   
+    printf("Exclusion signatures: %d\n", (int)sigsOfExclusions.size());   
 }
 
 void build12Excls(UniqueSet<Exclusion>& allExcls, vector<int> *eachAtomNeighbors){
