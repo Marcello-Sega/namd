@@ -71,6 +71,13 @@ void ComputeNonbondedSelf::doForce(CompAtom* p,
   }
   if ( patch->flags.doNonbonded )
   {
+    plint maxa = (plint)(-1);
+    if ( numAtoms > maxa ) {
+      char estr[1024];
+      sprintf(estr,"patch has %d atoms, maximum allowed is %d",numAtoms,maxa);
+      NAMD_die(estr); 
+    }
+
     int doEnergy = patch->flags.doEnergy;
     nonbonded params;
     params.p[0] = p;
