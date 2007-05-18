@@ -34,14 +34,14 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
       if (c->load + p->load < overLoad*averageLoad) {
         processorInfo* &altp = goodP[nPatches][nProxies][badForComm];	
 
-#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
+#if CHARM_VERSION > 50913 && USE_TOPOMAP 
 	if(!altp)
 	  altp = p;
 	else {
 	  //Find processors that are patch neighbors on the BGL torus
 	  int neighbor = 0, neighbor_alt = 0;
 	  
-	  BGLTorusManager *tmgr = BGLTorusManager::getObject();
+	  TopoManager *tmgr = new TopoManager();
 	  /*
 	    if((tmgr->isNeighbor(altp->Id, patches[c->patch1].processor) ||
 	    tmgr->isNeighbor(altp->Id, patches[c->patch2].processor)))
@@ -52,11 +52,11 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
 	    neighbor = 1;
 	  */
 	  
-	  if(tmgr->isNeighborOfBoth(altp->Id, patches[c->patch1].processor,
+	  if(tmgr->areNeighbors(altp->Id, patches[c->patch1].processor,
 				    patches[c->patch2].processor, 4))
 	    neighbor_alt = 1;
 	  
-	  if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
+	  if(tmgr->areNeighbors(p->Id, patches[c->patch1].processor, 
 				    patches[c->patch2].processor, 4))
 	    neighbor = 1;
 	  
@@ -82,11 +82,10 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
 	    int alt_dist = 0, dist = 0;	    
 	    int ax,ay,az, x,y,z, p1x,p1y,p1z, p2x,p2y,p2z;
 	    
-	    tmgr->getCoordinatesByRank(altp->Id, ax,ay,az);
-	    tmgr->getCoordinatesByRank(p->Id, x,y,z);
-	    
-	    tmgr->getCoordinatesByRank(patches[c->patch1].processor, p1x,p1y,p1z);
-	    tmgr->getCoordinatesByRank(patches[c->patch2].processor, p2x,p2y,p2z);
+	    tmgr->rankToCoordinates(altp->Id, ax,ay,az);
+	    tmgr->rankToCoordinates(p->Id, x,y,z);
+	    tmgr->rankToCoordinates(patches[c->patch1].processor, p1x, p1y, p1z);
+	    tmgr->rankToCoordinates(patches[c->patch2].processor, p2x, p2y, p2z);
 	    
 	    alt_dist = abs(p1x - ax) + abs(p2x - ax) +
 	      abs(p1y - ay) + abs(p1z - az) +
