@@ -556,8 +556,8 @@ int Rebalancer::refine()
             donor->computeSet.iterator((Iterator *)&nextCompute);
          while (c)
          {
-#if 0 //CMK_VERSION_BLUEGENE
-	   BGLTorusManager *tmgr = BGLTorusManager::getObject();
+#if 0 // USE_TOPOMAP
+	   TopoManager *tmgr = new TopoManager();
 	   if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
 				     patches[c->patch2].processor, 6))
 #endif
