@@ -869,9 +869,6 @@ void WorkDistrib::patchMapInit(void)
 
 }
 
-#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
-#include "bgltorus.h"
-#endif
 
 //----------------------------------------------------------------------
 void WorkDistrib::assignNodeToPatch()
@@ -881,10 +878,10 @@ void WorkDistrib::assignNodeToPatch()
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
 
-#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
-  BGLTorusManager *tmanager = BGLTorusManager::getObject();
-  int nBGLNodes = tmanager->getXNodeSize() * tmanager->getYNodeSize() 
-    * tmanager->getZNodeSize();
+#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+  TopoManager *tmgr = new TopoManager();
+  int nBGLNodes = tmgr->getDimNX() * tmgr->getDimNY() 
+    * tmgr->getDimNZ();
 
   if (nBGLNodes >  patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
     CkPrintf ("Blue Gene/L topology partitioner finished successfully \n");
@@ -1803,7 +1800,7 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 }
 /*			END OF FUNCTION remove_com_motion		*/
 
-#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
+#if CHARM_VERSION > 50913 && USE_TOPOMAP 
 
 //Specifically designed for BGL and other 3d Tori architectures
 //Partition Torus and Patch grid together using recursive bisection.
@@ -1821,10 +1818,10 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   int xsize = 0, ysize = 0, zsize = 0;
   
   //Right now assumes an ***T (e.g. XYZT) mapping
-  BGLTorusManager *tmanager = BGLTorusManager::getObject();
-  xsize = tmanager->getXSize();
-  ysize = tmanager->getYSize();
-  zsize = tmanager->getZSize();
+  TopoManager *tmgr = new TopoManager();
+  xsize = tmgr->getDimX();
+  ysize = tmgr->getDimY();
+  zsize = tmgr->getDimZ();
   
   //Fix to not assign patches to processor 0
   int rc = recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
