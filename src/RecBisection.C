@@ -406,7 +406,7 @@ int RecBisection::prev_better(float prev, float current, float load1)
    return (diff1 <= diff2);
 }
 
-#if CMK_VERSION_BLUEGENE
+#if USE_TOPOMAP 
 
 /* *********************************************************************  */
 /* Partitions a 3D processor into rectangular prisms of different
