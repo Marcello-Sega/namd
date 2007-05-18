@@ -252,8 +252,7 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   delete msg;
 }
 
-#if CMK_VERSION_BLUEGENE 
-#include "bgltorus.h"
+#if USE_TOPOMAP && USE_SPANNING_TREE
 
 int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
   int nChild = 0;
@@ -262,8 +261,9 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
   int conecounters[6] = {0,0,0,0,0,0};
   int childcounter = 0;
   nChild = (psize>PROXY_SPAN_DIM)?PROXY_SPAN_DIM:psize;
+  TopoManager *tmgr = new TopoManager();
   for(int i=0;i<psize;i++){
-    int cone = BGLTorusManager::getObject()->getConeNumberForRank(pidscopy[i]);
+    int cone = tmgr->getConeNumberForRank(pidscopy[i]);
     cones[cone][conesizes[cone]++] = pidscopy[i];
   }
   while(childcounter<nChild){
@@ -277,7 +277,7 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
     subroots[i] = -1;
   return nChild;
 }
-#endif // CMK_VERSION_BLUEGENE 
+#endif // USE_TOPOMAP 
 
 static int compDistance(const void *a, const void *b)
 {
@@ -397,7 +397,7 @@ void HomePatch::buildSpanningTree(void)
 
   //CkPrintf("home: %d:(%d) %d %d %d %d %d\n", patchID, tree.size(),tree[0],tree[1],tree[2],tree[3],tree[4]);
 
-#if CMK_VERSION_BLUEGENE && USE_SPANNING_TREE
+#if USE_TOPOMAP && USE_SPANNING_TREE
   
   //Right now only works for spanning trees with two levels
   int *treecopy = new int [psize];
@@ -416,8 +416,9 @@ void HomePatch::buildSpanningTree(void)
     treecopy[i] = tree[i+1];
   }
   
-  BGLTorusManager::getObject()->sortRanksByHops(treecopy,nNonPatch);
-  BGLTorusManager::getObject()->sortRanksByHops(treecopy+nNonPatch,
+  TopoManager *tmgr = new TopoManager();
+  tmgr->sortRanksByHops(treecopy,nNonPatch);
+  tmgr->sortRanksByHops(treecopy+nNonPatch,
 						psize-nNonPatch);  
   
   /* build tree and subtrees */
@@ -434,7 +435,7 @@ void HomePatch::buildSpanningTree(void)
     if(isSubroot) continue;
     
     int bAdded = 0;
-    BGLTorusManager::getObject()->sortIndexByHops(tree[i], subroots,
+    tmgr->sortIndexByHops(tree[i], subroots,
 						  idxes, PROXY_SPAN_DIM);
     for(int j=0;j<PROXY_SPAN_DIM;j++){
       if(subsizes[idxes[j]]<PROXY_SPAN_DIM){
@@ -448,7 +449,7 @@ void HomePatch::buildSpanningTree(void)
     }
   }
 
-#else /* CMK_VERSION_BLUEGENE && USE_SPANNING_TREE */
+#else /* USE_TOPOMAP && USE_SPANNING_TREE */
   
   for (int i=1; i<=PROXY_SPAN_DIM; i++) {
     if (tree.size() <= i) break;
