@@ -198,7 +198,7 @@ void generatePmePeList2(int *gridPeMap, int numGridPes, int *transPeMap, int num
     transPeMap[i] = seq2[i];
 }
 
-#if CMK_VERSION_BLUEGENE
+#if USE_TOPOMAP 
 //Topology aware PME allocation
 bool generateBGLORBPmePeList(int *pemap, int numPes, int *block_pes=0, 
 			     int nbpes=0);
@@ -308,10 +308,6 @@ int isPmeProcessor(int p){
 int ComputePmeMgr::isPmeProcessor(int p){ 
   return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
 }
-
-#if CMK_VERSION_BLUEGENE
-#include "bgltorus.h"
-#endif
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
 				 pmeProxyDir(thisgroup), pmeCompute(0) {
@@ -478,12 +474,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   int sum_npes = numTransPes + numGridPes;
   int max_npes = (numTransPes > numGridPes)?numTransPes:numGridPes;
 
-#if CMK_VERSION_BLUEGENE
+#if USE_TOPOMAP
   PatchMap * pmap = PatchMap::Object();
   
   int patch_pes = pmap->numNodesWithPatches();
-  BGLTorusManager *tmanager = BGLTorusManager::getObject();
-  if(tmanager->isVnodeMode())
+  TopoManager *tmgr = new TopoManager();
+  if(tmgr->hasMultipleProcsPerNode())
     patch_pes *= 2;
   
   bool done = false;
@@ -2052,7 +2048,7 @@ void ComputePme::ungridForces() {
 
 }
 
-#if CMK_VERSION_BLUEGENE
+#if USE_TOPOMAP 
 
 #define NPRIMES 8
 const static unsigned int NAMDPrimes[] = {
@@ -2094,7 +2090,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
   if (pemap == NULL)
     return false;
 
-  BGLTorusManager *tmanager = BGLTorusManager::getObject();
+  TopoManager *tmgr = new TopoManager();
 
   memset(pmemap, 0, sizeof(int) * CkNumPes());
 
@@ -2106,7 +2102,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
       pmemap[count] = 1;
       
       //Assumes an XYZT mapping !!
-      if(tmanager->isVnodeMode()) {
+      if(tmgr->hasMultipleProcsPerNode()) {
 	pmemap[(count + CkNumPes()/2)% CkNumPes()] = 1;
       }
     }
@@ -2124,9 +2120,9 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
 
   int xsize = 0, ysize = 0, zsize = 0;
 
-  xsize = tmanager->getXSize();
-  ysize = tmanager->getYSize();
-  zsize = tmanager->getZSize();
+  xsize = tmgr->getDimX();
+  ysize = tmgr->getDimY();
+  zsize = tmgr->getDimZ();
   
   int nx = xsize, ny = ysize, nz = zsize;
   DimensionMap dm;
@@ -2182,7 +2178,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
         pemap[gcount++] = destPe;
         pmemap[destPe] = 1;
 	
-	if(tmanager->isVnodeMode())
+	if(tmgr->hasMultipleProcsPerNode())
 	  pmemap[(destPe + CkNumPes()/2) % CkNumPes()] = 1;	
 
         npme_pes ++;
@@ -2203,7 +2199,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
             pemap[gcount++] = newdest;
             pmemap[newdest] = 1;
 	    
-	    if(tmanager->isVnodeMode())
+	    if(tmgr->hasMultipleProcsPerNode())
 	      pmemap[(newdest + CkNumPes()/2) % CkNumPes()] = 1;	
 	    
             npme_pes ++;
