@@ -18,6 +18,9 @@
 #include "MigrateAtomsMsg.h"
 #include "PatchMgr.decl.h"
 
+#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#include "TopoManager.h"
+#endif
 
 class HomePatch;
 
