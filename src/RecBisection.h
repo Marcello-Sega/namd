@@ -11,7 +11,7 @@
 
 class PatchMap;
 
-#if CMK_VERSION_BLUEGENE
+#if USE_TOPOMAP 
 /******
        NAMD likes the X dimension to be the largest, followed by Y and
        then Z. This structure stores the relationsip between x,y,z and
@@ -158,7 +158,7 @@ class RecBisection
 					       // results in patchDistrib,
 					       // otherwise, store in array
       
-#if CMK_VERSION_BLUEGENE
+#if USE_TOPOMAP 
       RecBisection(int, int , int, PatchMap *);  //Pass in a 3d
 						 //processor grid
       void assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z, 
