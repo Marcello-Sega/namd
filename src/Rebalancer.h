@@ -69,7 +69,7 @@ public:
   ~Rebalancer();
 };
 
-#if CHARM_VERSION > 50911 && CMK_VERSION_BLUEGENE
-#include "bgltorus.h"
+#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#include "TopoManager.h"
 #endif
 #endif
