@@ -113,7 +113,7 @@ public:
   void recvSpanningTree(int *t, int n);
   void sendProxies();
 
-#if CMK_VERSION_BLUEGENE
+#if USE_TOPOMAP 
   int findSubroots(int dim, int* subroots, int psize, int* pidscopy);
 #endif
 
