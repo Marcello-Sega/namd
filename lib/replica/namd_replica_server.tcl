@@ -2,11 +2,12 @@
 namespace eval namd_replica_server {
 
   variable verbose 1
+  variable use_sockets 1
 
   proc start_replicas {cmd host port num filebase} {
     variable replica_response_field null
     variable num_replicas $num
-    start_server $port
+    if { $port } { start_server $port } else { variable use_sockets 0 }
     for { set i 0 } { $i < $num_replicas } { incr i } {
       foreach {confname logname} [write_config $filebase $i $host $port] {}
       lappend conflist $confname
@@ -33,16 +34,47 @@ namespace eval namd_replica_server {
     }
   }
 
+
   proc write_config {filebase replica_id server_host server_port} {
     set logname "[format $filebase $replica_id]"
     if [file exists $logname] {error "log file $logname already exists"}
+    if { ! $server_port } {
+      variable replica_data
+      set replica_data($replica_id.ichannel) "${logname}.ichannel"
+      poll_file_channel $replica_id "${logname}.ochannel"
+    }
     set confname "${logname}.nrc"
     set f [open $confname "w"]
     puts $f "set replica_id $replica_id"
+    puts $f "set verbose 1"
+    if { ! $server_port } {
+    puts $f "set logname [file tail $logname]"
+    puts $f {
+      set logname [file join [pwd] $logname]
+      set f [open "${logname}.ochannel.tmp" "w"]
+      puts $f "replica $replica_id"
+      close $f
+      file rename "${logname}.ochannel.tmp" "${logname}.ochannel"
+      print "${logname}.ochannel written"
+      while { 1 } {
+        while { ! [file exists "${logname}.ichannel"] } { after 100 }
+        set f [open "${logname}.ichannel" "r"]
+        set cmd [read -nonewline $f]
+        close $f
+        file delete "${logname}.ichannel"
+        if {$verbose > 0} { print "SERVER: $cmd" }
+        set response [eval $cmd]
+        if {$verbose > 0} { print "CLIENT: $response" }
+        set f [open "${logname}.ochannel.tmp" "w"]
+        puts $f $response
+        close $f
+        file rename "${logname}.ochannel.tmp" "${logname}.ochannel"
+      }
+    }
+    } else {
     puts $f "set server_host $server_host"
     puts $f "set server_port $server_port"
     puts $f {
-      set verbose 1
       set server_channel [socket $server_host $server_port]
       fconfigure $server_channel -buffering line
       print "SERVER CONNECTED"
@@ -50,7 +82,6 @@ namespace eval namd_replica_server {
       set server_buffer {}
       while { 1 } {
         while [catch {gets $server_channel cmd} rval] {
-puts $errorCode
           if {![string match "POSIX EINTR*" $errorCode]} {
             error $rval $errorInfo $errorCode
           }
@@ -68,6 +99,7 @@ puts $errorCode
           puts $server_channel $response
         }
       }
+    }
     }
     close $f
     return [list $confname $logname]
@@ -98,6 +130,27 @@ puts $errorCode
     }
     variable all_replicas_barrier_var
     vwait [namespace which -variable all_replicas_barrier_var]
+  }
+
+
+  proc poll_file_channel {replica_id filename} {
+    if { [file exists $filename] } {
+      variable replica_data
+      variable replica_response_field
+      set f [open $filename "r"]
+      set response [read -nonewline $f]
+      close $f
+      file delete $filename
+      if [catch {replica_ready $replica_id}] {
+        error "replica $replica_id unexpected data: $response"
+      }
+      variable verbose
+      if {$verbose > 1} {
+        puts "CLIENT: [list $replica_id.$replica_response_field $response]"
+      }
+      set replica_data($replica_id.$replica_response_field) $response
+    }
+    after 1000 [namespace code "poll_file_channel $replica_id $filename"]
   }
 
   proc start_server {port} {
@@ -154,6 +207,20 @@ puts $errorCode
     set replica_data($replica_id.$replica_response_field) $response
   }
 
+  proc replica_send {replica_id cmd} {
+    variable replica_data
+    variable use_sockets
+    if { $use_sockets } {
+      puts $replica_data($replica_id.channel) $cmd
+    } else {
+      set filename $replica_data($replica_id.ichannel)
+      set f [open "${filename}.tmp" "w"]
+      puts $f $cmd
+      close $f
+      file rename "${filename}.tmp" $filename
+    }
+  }
+
   proc replica_eval {field script} {
     variable replica_response_field $field
     variable num_replicas
@@ -163,7 +230,7 @@ puts $errorCode
       puts "SERVER: $script"
     }
     for { set i 0 } { $i < $num_replicas } { incr i } {
-      puts $replica_data($i.channel) "eval \{$script\n\}"
+      replica_send $i "eval \{$script\n\}"
     }
     wait_all
   }
@@ -177,7 +244,7 @@ puts $errorCode
       puts "SERVER: replica_push $field $var"
     }
     for { set i 0 } { $i < $num_replicas } { incr i } {
-      puts $replica_data($i.channel) "eval \{set $var $replica_data($i.$field)\n\}"
+      replica_send $i "eval \{set $var $replica_data($i.$field)\n\}"
     }
     wait_all
   }
