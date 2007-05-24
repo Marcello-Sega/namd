@@ -778,11 +778,11 @@ There are two parameters that control this feature.
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{constantforce}{Apply constant forces?}{yes or no}{no}
+\NAMDCONFWDEF{constantForce}{Apply constant forces?}{yes or no}{no}
 {Specifies whether or not constant forces are applied.}
 
 \item
-\NAMDCONF{consforcefile}{PDB file containing forces to be applied}{UNIX filename}
+\NAMDCONF{consForceFile}{PDB file containing forces to be applied}{UNIX filename}
 {
 The X, Y, Z and occupancy (O) fields of this file are read to
 determine the constant force vector of each atom, which is
@@ -795,6 +795,10 @@ Zero forces are ignored.
 Specifying {\tt consforcefile} is optional; constant forces may be specifed
 or updated between runs by using the consForceConfig command.
 }
+
+\item
+\NAMDCONFWDEF{consForceScaling}{Scaling factor for constant forces}{decimal}{1.0}
+{Scaling factor by which constant forces are multiplied.  May be changed between run commands.}
 
 \end{itemize}
 
