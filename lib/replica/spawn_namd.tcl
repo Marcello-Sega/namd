@@ -70,7 +70,7 @@ proc spawn_namd_parallel {namd hosts procs_per_host conffiles logfiles} {
   foreach hlist $host_lists conf $conffiles log $logfiles {
     set host [lindex $hlist 0]
     set nfile "$conf.nodelist"
-    crease_nodelist_file $nfile $hlist
+    create_nodelist_file $nfile $hlist
     set nprocs [llength $hlist]
     puts "SPAWNING $conf on $host"
     lappend channels [open \
@@ -79,7 +79,71 @@ proc spawn_namd_parallel {namd hosts procs_per_host conffiles logfiles} {
   return $channels
 }
 
-namespace export spawn_namd_simple spawn_namd_ssh spawn_namd_parallel
+proc pdb_nidlist_to_tcl {pbslist} { ;# convert 15:17..19 to {15 17 18 19}
+  foreach range [split $pbslist :] {
+    switch [scan $range {%d..%d} lower upper] {
+      2 { for { } { $lower <= $upper } { incr lower } { lappend nids $lower } }
+      1 { lappend nids $lower }
+      default { error "bad nidlist element $range" }
+    }
+  }
+  return $nids
+}
+
+proc tcl_nidlist_to_yod {tcllist} { ;# convert {15 17 18 19} to 15,17..19
+  set lower [lindex $tcllist 0]
+  set upper $lower
+  foreach nid [lrange $tcllist 1 end] {
+    if { $nid == $upper + 1 } {
+      set upper $nid
+    } else {
+      if { $lower == $upper } {
+        lappend ranges $lower
+      } else {
+        lappend ranges "$lower..$upper"
+      }
+      set lower $nid
+      set upper $lower
+    }
+  }
+  if { $lower == $upper } {
+    lappend ranges $lower
+  } else {
+    lappend ranges "$lower..$upper"
+  }
+  return [join $ranges ,]
+}
+
+proc spawn_namd_crayxt {namd conffiles logfiles} {
+  global env
+  set njobs [llength $conffiles]
+  set procs_per_node [expr $env(PBS_NPROCS) / $env(PBS_NNODES)]
+  set nids [pdb_nidlist_to_tcl $env(YOD_NIDLIST)]
+  set nnodes [llength $nids]
+  if { $nnodes != $env(PBS_NNODES) } {
+    error "PBS_NNODES=$env(PBS_NNODES) does not match node count in YOD_NIDLIST=$env(YOD_NIDLIST)"
+  }
+  set nodes_per_job [expr $nnodes/$njobs]
+  if { $nodes_per_job < 1 } {
+    error "only $nnodes nodes for $njobs jobs"
+  }
+  for {set i 0} {$i < $njobs} {incr i} {
+    set first [expr $i*$nodes_per_job]
+    set last [expr $first + $nodes_per_job - 1]
+    lappend node_lists [lrange $nids $first $last]
+  }
+  # set procs_per_job [expr $procs_per_node * $nodes_per_job]
+  foreach nidlist $node_lists conf $conffiles log $logfiles {
+    set yodlist [tcl_nidlist_to_yod $nidlist]
+    puts "SPAWNING $conf on $yodlist"
+    lappend channels [open \
+      "| csh -c \"yod -list $yodlist $namd $conf > $log\" << {} |& cat" "r"]
+  }
+  return $channels
+}
+
+namespace export spawn_namd_simple spawn_namd_ssh spawn_namd_parallel \
+	 spawn_namd_crayxt
 
 }
 
