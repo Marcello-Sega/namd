@@ -6683,10 +6683,17 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       char type[512];
       sscanf(buffer,"%s",type);
 
+#define CHECKATOMID(ATOMID) if ( ATOMID < 0 || ATOMID >= numAtoms ) badatom = 1;
+
       int badline = 0;
+      int badatom = 0;
       if ( ! strncasecmp(type,"bond",4) ) {
         if ( sscanf(buffer, "%s %d %d %f %f %s",
 	    type, &a1, &a2, &k, &ref, err_msg) != 5 ) badline = 1;
+        else {
+          CHECKATOMID(a1)
+          CHECKATOMID(a2)
+        }
         Bond tmp;
         tmp.bond_type = parameters->NumBondParams + bonds.size();
         tmp.atom1 = a1;  tmp.atom2 = a2;
@@ -6696,6 +6703,11 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       } else if ( ! strncasecmp(type,"angle",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %f %f %s",
 	    type, &a1, &a2, &a3, &k, &ref, err_msg) != 6 ) badline = 1;
+        else {
+          CHECKATOMID(a1)
+          CHECKATOMID(a2)
+          CHECKATOMID(a3)
+        }
         Angle tmp;
         tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;
         tmp.angle_type = parameters->NumAngleParams + angles.size();
@@ -6706,6 +6718,12 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       } else if ( ! strncasecmp(type,"dihedral",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
 	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
+        else {
+          CHECKATOMID(a1)
+          CHECKATOMID(a2)
+          CHECKATOMID(a3)
+          CHECKATOMID(a4)
+        }
         Dihedral tmp;
         tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;  tmp.atom4 = a4;
         tmp.dihedral_type = parameters->NumDihedralParams + dihedrals.size();
@@ -6716,6 +6734,12 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       } else if ( ! strncasecmp(type,"improper",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
 	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
+        else {
+          CHECKATOMID(a1)
+          CHECKATOMID(a2)
+          CHECKATOMID(a3)
+          CHECKATOMID(a4)
+        }
         Improper tmp;
         tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;  tmp.atom4 = a4;
         tmp.improper_type = parameters->NumImproperParams + impropers.size();
@@ -6728,10 +6752,16 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       } else {
         badline = 1;
       }
+#undef CHECKATOMID
       if ( badline ) {
         sprintf(err_msg, "BAD LINE IN EXTRA BONDS FILE %s: %s",
 						file->data, buffer);
-        NAMD_err(err_msg);
+        NAMD_die(err_msg);
+      }
+      if ( badatom ) {
+        sprintf(err_msg, "BAD ATOM ID IN EXTRA BONDS FILE %s: %s",
+						file->data, buffer);
+        NAMD_die(err_msg);
       }
     }
     fclose(f);
