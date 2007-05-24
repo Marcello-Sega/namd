@@ -150,7 +150,7 @@ namespace eval namd_replica_server {
       }
       set replica_data($replica_id.$replica_response_field) $response
     }
-    after 1000 [namespace code "poll_file_channel $replica_id $filename"]
+    after 100 [namespace code "poll_file_channel $replica_id $filename"]
   }
 
   proc start_server {port} {
