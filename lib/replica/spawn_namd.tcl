@@ -183,3 +183,12 @@ namespace export spawn_namd_simple spawn_namd_ssh spawn_namd_parallel \
 # 	[info hostname] $port_number \
 # 	$num_replicas $replogfile
 
+# run on Cray XT3
+# set namd_bin_dir /usr/users/7/jphillip/NAMD_2.6_CRAY-XT3/
+# set server_port 0  ;# use file-based transport
+# start_replicas \
+#	[list spawn_namd_crayxt \
+#		"-small_pages [file join $namd_bin_dir namd2]" ] \
+#	localhost 0 \
+#	$num_replicas $replogfile
+
