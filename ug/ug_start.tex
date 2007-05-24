@@ -123,10 +123,12 @@ Additional features include:
     BerendsenPressure, BerendsenPressureTarget,
     BerendsenPressureCompressibility, and BerendsenPressureRelaxationTime
     parameters may be changed to allow pressure equilibration.
-    The fixedAtoms and constraintScaling parameters may be changed to
-    preserve macromolecular conformation during minimization and
+    The fixedAtoms, constraintScaling, and nonbondedScaling parameters may be
+    changed to preserve macromolecular conformation during minimization and
     equilibration (fixedAtoms may only be disabled, and requires that
     fixedAtomsForces is enabled to do this).
+    The consForceScaling parameter may be changed to vary steering forces
+    or to implement a time-varying electric field that affects specific atoms.
  \item The ``\icommand{checkpoint}'' and ``revert'' commands (no arguments) allow
     a scripted simulation to save and restore to a prior state.
  \item The ``\icommand{reinitvels}'' command reinitializes velocities to a
