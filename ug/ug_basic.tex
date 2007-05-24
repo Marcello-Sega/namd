@@ -594,6 +594,14 @@ of the electrostatic interactions.  Any larger value will lessen the
 electrostatic forces acting in the system.}
 
 \item
+\NAMDCONFWDEF{nonbondedScaling}{scaling factor for nonbonded forces}
+{decimal $\geq$ 0.0}{1.0}
+{Scaling factor for electrostatic and van der Waals forces.
+A value of 1.0 implies no modification of the interactions.
+Any smaller value will lessen the
+nonbonded forces acting in the system.}
+
+\item
 \NAMDCONFWDEF{1-4scaling}{scaling factor for 1-4 interactions}
 {0 $\leq$ decimal $\leq$ 1}{1.0}
 {Scaling factor for 1-4 interactions.  This factor is only used when the
