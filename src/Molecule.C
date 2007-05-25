@@ -2274,7 +2274,10 @@ void Molecule::send_Molecule(Communicate *com_obj)
     #endif
       
   //  Message to send to clients
-  MOStream *msg=com_obj->newOutputStream(ALLBUTME, MOLECULETAG, BUFSIZE);
+  int bufSize = BUFSIZE;
+  // When the simulation system is very large, then the buffer size should be expanded to reduce the number of one-to-all broadcasts.
+  if(numAtoms>=1000000) bufSize=4096*1024;
+  MOStream *msg=com_obj->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
   if ( msg == NULL )
   {
     NAMD_die("Memory allocation failed in Molecule::send_Molecule");
