@@ -178,11 +178,18 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	//  If constraints are active, build the parameters necessary
 	if (simParameters->constraintsOn)
 	{
-	   molecule->build_constraint_params(configList->find("consref"),
-					      configList->find("conskfile"),
-					      configList->find("conskcol"),
-					      pdb,
-					      NULL);
+           StringList *consRefFile = configList->find("consref");
+           StringList *consKFile = configList->find("conskfile");
+
+           if(strcasecmp(coordinateFilename->data, consRefFile->data)==0)
+                consRefFile = NULL;
+           if(strcasecmp(coordinateFilename->data, consKFile->data)==0)
+                consKFile = NULL;
+
+           molecule->build_constraint_params(consRefFile, consKFile,
+                                             configList->find("conskcol"),
+                                             pdb,
+                                             NULL);
 	}
 	//CkPrintf ("DEBUG--check if StirOn to build stir params..\n");
 	if (simParameters->stirOn)
