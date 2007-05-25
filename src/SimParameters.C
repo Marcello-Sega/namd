@@ -147,6 +147,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("BerendsenPressureRelaxationTime",
 				berendsenPressureRelaxationTime)
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
+  SCRIPT_PARSE_FLOAT("consForceScaling",consForceScaling)
   SCRIPT_PARSE_STRING("outputname",outputFilename)
   SCRIPT_PARSE_STRING("tclBCArgs",tclBCArgs)
   SCRIPT_PARSE_VECTOR("eField",eField)
@@ -1047,6 +1048,8 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
      &consForceOn, FALSE);
    opts.optional("constantforce", "consForceFile",
        "Configuration file for constant forces", PARSE_STRING);
+   opts.require("constantforce", "consForceScaling",
+       "Scaling factor for constant forces", &consForceScaling, 1.0);
 }
 
 
@@ -2983,8 +2986,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }
    }
 
-   if (consForceOn)
+   if (consForceOn) {
      iout << iINFO << "CONSTANT FORCE ACTIVE\n";
+     if ( consForceScaling != 1.0 ) {
+       iout << iINFO << "CONSTANT FORCE SCALING   "
+				<< consForceScaling << "\n" << endi;
+     }
+   }
+
 
    // external command forces
 

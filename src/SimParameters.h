@@ -435,6 +435,7 @@ public:
 
 	Bool consForceOn;		//  Should constant force be applied
   char consForceFile[128];
+	BigReal consForceScaling;
 
 	int outputEnergies;		//  Number of timesteps between energy
 					//  outputs

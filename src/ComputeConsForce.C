@@ -22,6 +22,7 @@ ComputeConsForce::~ComputeConsForce()
 void ComputeConsForce::doForce(FullAtom* p, Results* r)
 { int localID,forceID;
   Molecule *molecule = Node::Object()->molecule;
+  BigReal scaling = Node::Object()->simParameters->consForceScaling;
   int32 *index = molecule->consForceIndexes;  // Indexes into the force array
   Vector *cf = molecule->consForce;  // Force array
   Vector *forces = r->f[Results::normal];
@@ -31,11 +32,12 @@ void ComputeConsForce::doForce(FullAtom* p, Results* r)
   for (localID=0; localID<numAtoms; ++localID) {
     // When the index is -1, it means there's no constant force on this atom
     if ((forceID=index[p[localID].id]) != -1) {
-      forces[localID] += cf[forceID];
-      extForce += cf[forceID];
+      Vector sf = scaling * cf[forceID];
+      forces[localID] += sf;
+      extForce += sf;
       Position vpos = homePatch->lattice.reverse_transform(
 		p[localID].position, p[localID].transform );
-      extVirial += outer(cf[forceID],vpos);
+      extVirial += outer(sf,vpos);
     }
   }
 
