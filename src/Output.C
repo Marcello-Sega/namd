@@ -121,26 +121,26 @@ void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
   Molecule *molecule = Node::Object()->molecule;
   int n = molecule->numAtoms;
 #ifdef MEM_OPT_VERSION
-  //iterate over every cluster  
-  for(int idx=0; idx<molecule->get_num_clusters(); idx++){
+  //iterate over every cluster
+  for(int aid=0; aid<n;){
+      int curClusterSize = molecule->get_cluster_size(aid);
+      if(curClusterSize<0) NAMD_bug("Cluster size is less than 0 at wrap_coor_int");
+      //we encountered the beginning of a cluster, and aid is the current cluster id          
       Position curClusterCon = 0;
-      int curClusterSize = molecule->get_cluster_list_size(idx);
-      int curClusterID = molecule->get_cluster_list_id(idx);
-      int *curClusterList = molecule->get_cluster_list(idx);
-      for(int i=0; i<curClusterSize; i++){
-          int aid = curClusterList[i];
-          curClusterCon += coor[aid];
+      //This cluster begins from atom "aid" to atom "aid+curClusterSize-1"
+      for(int i=aid; i<aid+curClusterSize; i++){
+          curClusterCon += coor[i];
       }
-      if(wrapAll || molecule->is_water(curClusterID)){
+      if(wrapAll || molecule->is_water(aid)){
           Vector coni = curClusterCon/curClusterSize;
           Vector trans = ( wrapNearest ? lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni));
           curClusterCon = trans;
       }
-      for(int i=0; i<curClusterSize; i++){
-          int aid = curClusterList[i];
-          if(!wrapAll && !molecule->is_water(aid)) continue;
-          coor[aid] = coor[aid] + curClusterCon;
+      for(int i=aid; i<aid+curClusterSize; i++){
+          if(!wrapAll && !molecule->is_water(i)) continue;
+          coor[i] = coor[i] + curClusterCon;
       }
+      aid += curClusterSize;
   }
 #else
   int i;

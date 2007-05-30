@@ -203,9 +203,12 @@ private:
   int32 *fixedAtomFlags;  //  1 for fixed, -1 for fixed group, else 0
   int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
 
-  #ifdef MEM_OPT_VERSION
-  int32 numClusters;
-  int32 **clusterList; //the clusterList[i][0] indicates the size of this cluster
+  #ifdef MEM_OPT_VERSION  
+  //Assumption: all atoms are arranged in the order of clusters. In other words,
+  //all atoms for a cluster must appear before/after any atoms in other clusters
+  //The first atom in the cluster (which has the lowest atom id) stores the cluster size
+  //other atoms in the cluster stores -1
+  int32 *clusterSigs;
   #else
         int32 *cluster;   //  first atom of connected cluster
         int32 *clusterSize; //  size of connected cluster or 0
@@ -438,10 +441,7 @@ public:
         int get_mother_atom(int);  // return mother atom of a hydrogen
 
   #ifdef MEM_OPT_VERSION
-  int get_num_clusters() const { return numClusters; }
-  int *get_cluster_list(int idx) const { return &clusterList[idx][1]; }
-  int get_cluster_list_id(int idx) const { return clusterList[idx][1]; }
-  int get_cluster_list_size(int idx) const { return clusterList[idx][0]; }  
+  int get_cluster_size(int idx) const { return clusterSigs[idx]; }  
   #else
   int get_cluster(int anum) const { return cluster[anum]; }
   int get_clusterSize(int anum) const { return clusterSize[anum]; }

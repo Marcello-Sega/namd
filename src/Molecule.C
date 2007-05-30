@@ -229,9 +229,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   langevinParams=NULL;
   fixedAtomFlags=NULL;
 
-  #ifdef MEM_OPT_VERSION
-  numClusters=0;
-  clusterList=NULL;
+  #ifdef MEM_OPT_VERSION  
+  clusterSigs=NULL;
   #else
   cluster=NULL;
   clusterSize=NULL;
@@ -450,10 +449,8 @@ Molecule::~Molecule()
 
 
   #ifdef MEM_OPT_VERSION
-  if(clusterList != NULL){
-      for(int i=0; i<numClusters; i++)
-          delete [] clusterList[i];
-      delete [] clusterList;
+  if(clusterSigs != NULL){      
+      delete [] clusterSigs;
   }  
   #else
   if (cluster != NULL)
@@ -1046,8 +1043,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     if(!NAMD_find_word(buffer, "NATOM"))
         NAMD_die("UNABLE TO FIND NATOM");
     sscanf(buffer, "%d", &numAtoms);
-
-    int *eachAtomClusterID=NULL;
+    
     if(numAtoms>0){
         atoms = new AtomCstInfo[numAtoms];
         atomNames = new AtomNameIdx[numAtoms];
@@ -1056,7 +1052,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         eachAtomSig = new Index[numAtoms];
         eachAtomExclSig = new Index[numAtoms];
 
-        eachAtomClusterID = new int[numAtoms];
+        clusterSigs = new int[numAtoms];
 
         hydrogenGroup.resize(0);
         ResidueLookupElem *tmpResLookup = resLookup;
@@ -1088,7 +1084,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             eachAtomSig[i] = (Index)idx[7];
             eachAtomExclSig[i] = (Index)idx[8];
 
-            eachAtomClusterID[i] = idx[9];
+            clusterSigs[i] = idx[9];
 
 	    //debugExclNum += (exclSigPool[idx[8]].fullExclCnt+exclSigPool[idx[8]].modExclCnt);
 
@@ -1147,31 +1143,6 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     for(int i=0; i<params->NumImproperParams; i++){
         params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
-
-
-    NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line 
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NUMCLUSTER"))
-        NAMD_die("UNABLE TO FIND NUMCLUSTER");
-    numClusters = NAMD_read_int(psf_file, buffer);    
-    clusterList = new int32 *[numClusters];
-    for(int i=0; i<numClusters; i++){
-        int curClusterSize = NAMD_read_int(psf_file, buffer);
-        clusterList[i] = new int32[curClusterSize+1];
-        clusterList[i][0] = curClusterSize;
-    }        
-
-    int curClusterIdx=0;    
-    for(int i=0; i<numAtoms;){
-        int32 *curCluster = clusterList[curClusterIdx];
-        int clusterSize = curCluster[0];        
-        for(int j=0; j<clusterSize; j++, i++)
-            curCluster[j+1] = i;
-        
-        curClusterIdx++;
-    }        
-
-    delete [] eachAtomClusterID;
 
     Fclose(psf_file);
 

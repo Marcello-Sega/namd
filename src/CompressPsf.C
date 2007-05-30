@@ -700,12 +700,12 @@ void outputPsfFile(FILE *ofp){
     }
     fprintf(ofp, "\n");
 
-    //5. Output the number of clusters and the size of each cluster
+    /*//5. Output the number of clusters and the size of each cluster
     fprintf(ofp, "!NUMCLUSTER\n");
     fprintf(ofp, "%d\n", eachClusterSize.size());
     for(int i=0; i<eachClusterSize.size(); i++)
         fprintf(ofp, "%d ", eachClusterSize[i]);
-    fprintf(ofp, "\n");
+    fprintf(ofp, "\n");*/
 }
 
 void getAtomData(FILE *ifp)
@@ -1017,13 +1017,27 @@ void getBondData(FILE *fd){
   }
   eachClusterSize.push_back(curClusterSize); //record the last sequence of cluster
 
+  //Now iterate over the cluster size again to filter out the repeating cluster size.
+  //Since the cluster id of atoms is monotonically increasing, the size of the cluster can be used
+  //as this cluster's signature.
+  //After this, eachAtomClusterID will store the cluster signature. Only the atom whose id is "clustersize"
+  //will store the size. Others will be -1
+
+  int aid=0;
+  for(int clusterIdx=0; clusterIdx<eachClusterSize.size(); clusterIdx++){
+      int curSize = eachClusterSize[clusterIdx];
+      eachAtomClusterID[aid] = curSize;
+      for(int i=aid+1; i<aid+curSize; i++) eachAtomClusterID[i] = -1;
+      aid += curSize;
+  }
 
   //check whether cluster is built correctly
-/*  printf("num clusters: %d\n", eachClusterSize.size());
+  /*printf("num clusters: %d\n", eachClusterSize.size());
   FILE *checkFile = fopen("cluster.opt", "w");
   for(int i=0; i<g_mol->numAtoms; i++)  fprintf(checkFile, "%d\n", eachAtomClusterID[i]);
-  fclose(checkFile); */
+  fclose(checkFile);*/
 
+  eachClusterSize.clear();
   for(int i=0; i<g_mol->numAtoms; i++) atomListOfBonded[i].clear();
   delete [] atomListOfBonded;      
 }
