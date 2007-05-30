@@ -173,7 +173,9 @@ vector<Real> massPool;
 vector<AtomSigInfo> atomSigPool;
 BasicAtomInfo *atomData;
 
-
+//Recording cluster information after reading all bonds info
+int *eachAtomClusterID = NULL;
+vector<int> eachClusterSize;
 
 vector<TupleSignature> sigsOfBonds;
 vector<TupleSignature> sigsOfAngles;
@@ -217,6 +219,8 @@ void clearGlobalVectors(){
     sigsOfDihedrals.clear();
     sigsOfImpropers.clear();
     sigsOfExclusions.clear();
+
+    eachClusterSize.clear();
 }
 
 void compress_psf_file(Molecule *mol, char *psfFileName, Parameters *param, SimParameters *simParam){
@@ -676,12 +680,13 @@ void outputPsfFile(FILE *ofp){
     fprintf(ofp, "%d !NATOM\n", g_mol->numAtoms);
 	for(int i=0; i<g_mol->numAtoms; i++){
 		BasicAtomInfo &one = atomData[i];
-		fprintf(ofp, "%d %d %d %d %d %d %d %d %d\n", one.segNameIdx, one.resID, one.resNameIdx, one.atomNameIdx,
-				one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx);        
+		fprintf(ofp, "%d %d %d %d %d %d %d %d %d %d\n", one.segNameIdx, one.resID, one.resNameIdx, one.atomNameIdx,
+				one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx, eachAtomClusterID[i]);        
 	}
 	//fprintf(ofp, "\n");
 
 	delete[] atomData;
+    delete[] eachAtomClusterID;
 
     //4. Output the "multiplicity" field TUPLE_array of the Parameter object
     fprintf(ofp, "!DIHEDRALPARAMARRAY\n");
@@ -693,6 +698,13 @@ void outputPsfFile(FILE *ofp){
     for(int i=0; i<g_param->NumImproperParams; i++){
         fprintf(ofp, "%d ", g_param->improper_array[i].multiplicity);
     }
+    fprintf(ofp, "\n");
+
+    //5. Output the number of clusters and the size of each cluster
+    fprintf(ofp, "!NUMCLUSTER\n");
+    fprintf(ofp, "%d\n", eachClusterSize.size());
+    for(int i=0; i<eachClusterSize.size(); i++)
+        fprintf(ofp, "%d ", eachClusterSize[i]);
     fprintf(ofp, "\n");
 }
 
@@ -940,7 +952,80 @@ void getBondData(FILE *fd){
       }
   }
 
-  delete [] bonds;    
+  //building clusters for this simulation system in two steps
+  //1. create a list for each atom where each atom in the list is bonded with that atom  
+  vector<int> *atomListOfBonded = new (vector<int>)[g_mol->numAtoms];
+
+  for(int i=0; i<numBonds; i++){
+      Bond *b=bonds+i;
+      int atom1 = b->atom1;
+      int atom2 = b->atom2;      
+      atomListOfBonded[atom1].push_back(atom2);      
+      atomListOfBonded[atom2].push_back(atom1);      
+  }
+
+  delete [] bonds;
+
+  //2. using breadth-first-search to build the clusters. Here, we avoid recursive call 
+  // because the depth of calls may be of thousands which will blow up the stack, and
+  //recursive call is slower than the stack-based BFS.
+  //Considering such structure
+  //1->1245; 7->1243; 1243->1245
+  eachAtomClusterID = new int[g_mol->numAtoms];
+  for(int i=0; i<g_mol->numAtoms; i++)
+      eachAtomClusterID[i] = -1;
+  
+  for(int i=0; i<g_mol->numAtoms; i++){            
+      int curClusterID=eachAtomClusterID[i];
+      if(curClusterID==-1){
+          curClusterID=i;          
+      }             
+
+      deque<int> toVisitAtoms;
+      toVisitAtoms.push_back(i);
+      while(!toVisitAtoms.empty()){
+          int visAtomID = toVisitAtoms.front();
+          toVisitAtoms.pop_front();                         
+          eachAtomClusterID[visAtomID] = curClusterID;
+          for(int j=0; j<atomListOfBonded[visAtomID].size(); j++){
+              int otherAtom = atomListOfBonded[visAtomID][j];
+              if(eachAtomClusterID[otherAtom]!=curClusterID)
+                  toVisitAtoms.push_back(otherAtom);
+          }
+      }      
+  }
+
+  //Now the clusterID of each atom should be in the non-decreasing order, otherwise
+  //report a psf format error. Well, it's not a real problem, it can be fixed the problem
+  //later. Here, such assumption is made for the ease of programming
+  int curClusterID;
+  int prevClusterID=eachAtomClusterID[0];
+  int curClusterSize=1;
+  for(int i=1; i<g_mol->numAtoms; i++){
+      curClusterID = eachAtomClusterID[i];
+      if(curClusterID > prevClusterID){
+          eachClusterSize.push_back(curClusterSize);
+          curClusterSize=1;
+      }else if(curClusterID == prevClusterID){
+          curClusterSize++;
+      }else{ //psf format error
+          char errMsg[256];
+          sprintf(errMsg, "Cluster ID of each atom should be in increasing order (error for atom %d)!\n", i+1);
+          NAMD_die(errMsg);
+      }
+      prevClusterID = curClusterID;
+  }
+  eachClusterSize.push_back(curClusterSize); //record the last sequence of cluster
+
+
+  //check whether cluster is built correctly
+/*  printf("num clusters: %d\n", eachClusterSize.size());
+  FILE *checkFile = fopen("cluster.opt", "w");
+  for(int i=0; i<g_mol->numAtoms; i++)  fprintf(checkFile, "%d\n", eachAtomClusterID[i]);
+  fclose(checkFile); */
+
+  for(int i=0; i<g_mol->numAtoms; i++) atomListOfBonded[i].clear();
+  delete [] atomListOfBonded;      
 }
 
 void getAngleData(FILE *fd){

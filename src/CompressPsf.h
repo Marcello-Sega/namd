@@ -3,6 +3,7 @@
 
 #include "structures.h"
 #include <string>
+#include <deque>
 using namespace std;
 
 class Molecule;
