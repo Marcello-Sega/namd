@@ -14,6 +14,7 @@
 
 #include "dcdlib.h"
 #include "common.h" // for int32 definition
+#include "Vector.h"
 #include <stdio.h>
 #include <string.h>
 #ifndef _NO_MALLOC_H
@@ -717,6 +718,98 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 	NAMD_write(fd, (char *) Z, out_integer);
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+
+#ifdef WIN32
+#define LSEEK _lseek
+#define READ _read
+#else
+#define LSEEK lseek
+#define READ read
+#endif
+
+	/* don't update header until after write succeeds */
+	LSEEK(fd,NSAVC_POS,SEEK_SET);
+	READ(fd,(void*) &NSAVC,sizeof(int32));
+	LSEEK(fd,NSTEP_POS,SEEK_SET);
+	READ(fd,(void*) &NSTEP,sizeof(int32));
+	LSEEK(fd,NFILE_POS,SEEK_SET);
+	READ(fd,(void*) &NFILE,sizeof(int32));
+	NSTEP += NSAVC;
+	NFILE += 1;
+	LSEEK(fd,NSTEP_POS,SEEK_SET);
+	NAMD_write(fd,(char*) &NSTEP,sizeof(int32));
+	LSEEK(fd,NFILE_POS,SEEK_SET);
+	NAMD_write(fd,(char*) &NFILE,sizeof(int32));
+	LSEEK(fd,0,SEEK_END);
+
+	return(0);
+}
+
+/* The version of writing coordinates in the format of FloatVector */
+int write_dcdstep(int fd, int N, FloatVector *coor, double *cell)
+
+{
+	int32 NSAVC,NSTEP,NFILE;
+	int32 out_integer;
+
+  /* Unit cell */
+  if (cell) {
+    out_integer = 48;
+    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+    NAMD_write(fd, (char *) cell, out_integer);
+    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  }
+
+  /* Coordinates */
+#define FBUFSIZE 4096
+    float fBuf[FBUFSIZE];
+
+    int32 remains = N;
+    int32 coorstart = 0;
+
+	out_integer = N*4;
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+    //writing X-coor in batch mode
+    while(remains>0){
+        int32 writesize = FBUFSIZE;
+        if(remains<FBUFSIZE) writesize=remains;
+        for(int i=0; i<writesize; i++)
+            fBuf[i] = coor[i+coorstart].x;
+        NAMD_write(fd, (char *)fBuf, writesize*4);
+        coorstart += writesize;
+        remains -= N;
+    }    
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+    //writing Y-coor in batch mode
+    remains = N;
+    coorstart = 0;
+    while(remains>0){
+        int32 writesize = FBUFSIZE;
+        if(remains<FBUFSIZE) writesize=remains;
+        for(int i=0; i<writesize; i++)
+            fBuf[i] = coor[i+coorstart].y;
+        NAMD_write(fd, (char *)fBuf, writesize*4);
+        coorstart += writesize;
+        remains -= N;
+    }    
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+
+	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+    //writing Z-coor in batch mode
+    remains = N;
+    coorstart = 0;
+    while(remains>0){
+        int32 writesize = FBUFSIZE;
+        if(remains<FBUFSIZE) writesize=remains;
+        for(int i=0; i<writesize; i++)
+            fBuf[i] = coor[i+coorstart].z;
+        NAMD_write(fd, (char *)fBuf, writesize*4);
+        coorstart += writesize;
+        remains -= N;
+    }	
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
 #ifdef WIN32

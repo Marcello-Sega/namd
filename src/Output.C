@@ -461,7 +461,11 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
 {
   static Bool first=TRUE;  //  Flag indicating first call
   static int fileid;  //  File id for the dcd file
+
+#ifndef MEM_OPT_VERSION
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
+#endif
+  
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
   SimParameters *simParams = namdMyNode->simParams;
@@ -480,6 +484,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
 
   if (first)
   {
+#ifndef MEM_OPT_VERSION
     //  Allocate x, y, and z arrays since the DCD file routines
     //  need them passed as three independant arrays to be
     //  efficient
@@ -491,6 +496,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     {
       NAMD_err("memory allocation failed in Output::output_dcdfile");
     }
+#endif
 
     //  Open the DCD file
     iout << "OPENING COORDINATE DCD FILE\n" << endi;
@@ -538,6 +544,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     first = FALSE;
   }
 
+#ifndef MEM_OPT_VERSION
   //  Copy the coordinates for output
   for (i=0; i<n; i++)
   {
@@ -545,6 +552,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     y[i] = coor[i].y;
     z[i] = coor[i].z;
   }
+#endif
 
   //  Write out the values for this timestep
   iout << "WRITING COORDINATES TO DCD FILE AT STEP "
@@ -572,9 +580,17 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
       unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
       unitcell[1] = unitcell[3] = unitcell[4] = 0.0;
     }
+#ifdef MEM_OPT_VERSION
+    ret_code = write_dcdstep(fileid, n, coor, unitcell);
+#else
     ret_code = write_dcdstep(fileid, n, x, y, z, unitcell);
+#endif
   } else {
+#ifdef MEM_OPT_VERSION
+    ret_code = write_dcdstep(fileid, n, coor, NULL);
+#else
     ret_code = write_dcdstep(fileid, n, x, y, z, NULL);
+#endif
   }
   if (ret_code < 0)
   {

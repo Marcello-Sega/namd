@@ -13,6 +13,8 @@
 #ifndef DCDLIB_H
 #define DCDLIB_H
 
+#include "Vector.h"
+
 /*  DEFINE ERROR CODES THAT MAY BE RETURNED BY DCD ROUTINES		*/
 #define DCD_DNE		-2	/*  DCD file does not exist		*/
 #define DCD_OPENFAILED	-3	/*  Open of DCD file failed		*/
@@ -31,6 +33,7 @@ int read_dcdstep(int, int, float*, float*, float*, int, int, int*);
 				/*  Read a timestep's values		*/
 int open_dcd_write(char *);     /*  Open a DCD file for writing		*/
 int write_dcdstep(int, int, float *, float *, float *, double *unitcell);
+int write_dcdstep(int, int, FloatVector *, double *unitcell);
 				/*  Write out a timesteps values	*/
 int write_dcdheader(int, char*, int, int, int, int, int, double, int);	
 				/*  Write a dcd header			*/
