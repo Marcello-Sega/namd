@@ -1154,7 +1154,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     if(!NAMD_find_word(buffer, "NUMCLUSTER"))
         NAMD_die("UNABLE TO FIND NUMCLUSTER");
     numClusters = NAMD_read_int(psf_file, buffer);    
-    clusterList = new (int32 *)[numClusters];
+    clusterList = new int32 *[numClusters];
     for(int i=0; i<numClusters; i++){
         int curClusterSize = NAMD_read_int(psf_file, buffer);
         clusterList[i] = new int32[curClusterSize+1];

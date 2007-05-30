@@ -954,7 +954,7 @@ void getBondData(FILE *fd){
 
   //building clusters for this simulation system in two steps
   //1. create a list for each atom where each atom in the list is bonded with that atom  
-  vector<int> *atomListOfBonded = new (vector<int>)[g_mol->numAtoms];
+  vector<int> *atomListOfBonded = new vector<int>[g_mol->numAtoms];
 
   for(int i=0; i<numBonds; i++){
       Bond *b=bonds+i;
