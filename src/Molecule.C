@@ -3321,10 +3321,6 @@ void Molecule::receive_Molecule(MIStream *msg)
          }
          if ( allok ) break;
        }
-	//check whether cluster is built correctly
-	FILE *checkFile = fopen("cluster.orig", "w");
-	for(i=0; i<numAtoms; i++)  fprintf(checkFile, "%d\n", cluster[i]);
-        fclose(checkFile); 
        
        for (i=0; i<numAtoms; i++) {
          clusterSize[i] = 0;
