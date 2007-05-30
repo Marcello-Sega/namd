@@ -202,9 +202,16 @@ private:
   Real *langevinParams;   //  b values for langevin dynamics
   int32 *fixedAtomFlags;  //  1 for fixed, -1 for fixed group, else 0
   int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
+
+  #ifdef MEM_OPT_VERSION
+  int32 numClusters;
+  int32 **clusterList; //the clusterList[i][0] indicates the size of this cluster
+  #else
         int32 *cluster;   //  first atom of connected cluster
         int32 *clusterSize; //  size of connected cluster or 0
-  Real *rigidBondLengths;  //  if H, length to parent or 0. or
+  #endif
+                            // 
+        Real *rigidBondLengths;  //  if H, length to parent or 0. or
         //  if not H, length between children or 0.
 //fepb
         unsigned char *fepAtomFlags; 
@@ -430,9 +437,15 @@ public:
   int  get_groupSize(int);     // return # atoms in (hydrogen) group
         int get_mother_atom(int);  // return mother atom of a hydrogen
 
+  #ifdef MEM_OPT_VERSION
+  int get_num_clusters() const { return numClusters; }
+  int *get_cluster_list(int idx) const { return &clusterList[idx][1]; }
+  int get_cluster_list_id(int idx) const { return clusterList[idx][1]; }
+  int get_cluster_list_size(int idx) const { return clusterList[idx][0]; }  
+  #else
   int get_cluster(int anum) const { return cluster[anum]; }
   int get_clusterSize(int anum) const { return clusterSize[anum]; }
-
+  #endif
 
   #ifdef CHARMIZE_NAMD
   Atom *getAllAtoms() {

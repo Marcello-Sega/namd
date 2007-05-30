@@ -228,8 +228,15 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
 
   langevinParams=NULL;
   fixedAtomFlags=NULL;
+
+  #ifdef MEM_OPT_VERSION
+  numClusters=0;
+  clusterList=NULL;
+  #else
   cluster=NULL;
   clusterSize=NULL;
+  #endif
+
   exPressureAtomFlags=NULL;
   rigidBondLengths=NULL;
   consIndexes=NULL;
@@ -441,13 +448,19 @@ Molecule::~Molecule()
   if (stirIndexes != NULL)
     delete [] stirIndexes;
 
-  
+
+  #ifdef MEM_OPT_VERSION
+  if(clusterList != NULL){
+      for(int i=0; i<numClusters; i++)
+          delete [] clusterList[i];
+      delete [] clusterList;
+  }  
+  #else
   if (cluster != NULL)
        delete [] cluster;
-
-
   if (clusterSize != NULL)
        delete [] clusterSize;
+  #endif
 
   if (exPressureAtomFlags != NULL)
        delete [] exPressureAtomFlags;
@@ -1033,13 +1046,17 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     if(!NAMD_find_word(buffer, "NATOM"))
         NAMD_die("UNABLE TO FIND NATOM");
     sscanf(buffer, "%d", &numAtoms);
+
+    int *eachAtomClusterID=NULL;
     if(numAtoms>0){
         atoms = new AtomCstInfo[numAtoms];
         atomNames = new AtomNameIdx[numAtoms];
         eachAtomMass = new Index[numAtoms];
         eachAtomCharge = new Index[numAtoms];
         eachAtomSig = new Index[numAtoms];
-	eachAtomExclSig = new Index[numAtoms];
+        eachAtomExclSig = new Index[numAtoms];
+
+        eachAtomClusterID = new int[numAtoms];
 
         hydrogenGroup.resize(0);
         ResidueLookupElem *tmpResLookup = resLookup;
@@ -1047,16 +1064,15 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         int residue_number; //for residue number
         char *segment_name;
         int read_count;
-        int idx[9];
-
-	//int debugExclNum=0;
+        int idx[10];
+        
 
         for(int i=0; i<numAtoms; i++){
             NAMD_read_line(psf_file, buffer);
-            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d",
+            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d %d",
                                 idx, idx+1, idx+2, idx+3, idx+4,
-                                idx+5, idx+6, idx+7, idx+8);
-            if(read_count!=9){
+                                idx+5, idx+6, idx+7, idx+8, idx+9);
+            if(read_count!=10){
                 char err_msg[128];
                 sprintf(err_msg, "BAD ATOM LINE FORMAT IN COMPRESSED PSF FILE IN ATOM LINE %d\nLINE=%s",i+1, buffer);
                 NAMD_die(err_msg);
@@ -1070,7 +1086,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             eachAtomCharge[i] = (Index)idx[5];
             eachAtomMass[i] = (Index)idx[6];
             eachAtomSig[i] = (Index)idx[7];
-	    eachAtomExclSig[i] = (Index)idx[8];
+            eachAtomExclSig[i] = (Index)idx[8];
+
+            eachAtomClusterID[i] = idx[9];
 
 	    //debugExclNum += (exclSigPool[idx[8]].fullExclCnt+exclSigPool[idx[8]].modExclCnt);
 
@@ -1129,6 +1147,31 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     for(int i=0; i<params->NumImproperParams; i++){
         params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
+
+
+    NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line 
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NUMCLUSTER"))
+        NAMD_die("UNABLE TO FIND NUMCLUSTER");
+    numClusters = NAMD_read_int(psf_file, buffer);    
+    clusterList = new (int32 *)[numClusters];
+    for(int i=0; i<numClusters; i++){
+        int curClusterSize = NAMD_read_int(psf_file, buffer);
+        clusterList[i] = new int32[curClusterSize+1];
+        clusterList[i][0] = curClusterSize;
+    }        
+
+    int curClusterIdx=0;    
+    for(int i=0; i<numAtoms;){
+        int32 *curCluster = clusterList[curClusterIdx];
+        int clusterSize = curCluster[0];        
+        for(int j=0; j<clusterSize; j++, i++)
+            curCluster[j+1] = i;
+        
+        curClusterIdx++;
+    }        
+
+    delete [] eachAtomClusterID;
 
     Fclose(psf_file);
 
@@ -2988,48 +3031,12 @@ void Molecule::receive_Molecule(MIStream *msg)
        // if we want forces on fixed atoms then just pretend
        // there are none for the purposes of this routine;
        if ( simParams->fixedAtomsForces ) numFixedAtoms = 0;
-       
-       cluster = new int32 [numAtoms];
-       clusterSize = new int32 [numAtoms];
-       
+                     
        const int pair_self = 
          simParams->pairInteractionOn ? simParams->pairInteractionSelf : 0;
 
-       DebugM(3,"Building cluster.\n");       
-       for(i=0; i<numAtoms; i++){
-           cluster[i] = -1;
-       }       
-       for(i=0; i<numAtoms; i++){
-           if(cluster[i]!=-1){
-               //indicating that this atom has been visited
-               continue;
-           }
-	   //The reason not to use recursive call is that there are may be an
-	   //atom chain of thousands of atoms. In such case, the program's the stack
-	   //will blow up. So use a breadth-first search instead
-           //int curClusterIdx = i;
-           //markClusterIdx(curClusterIdx, i);
-	   deque<int> toVisitAtoms;
-	   toVisitAtoms.push_back(i);
-	   while(!toVisitAtoms.empty()){
-	       int visAtomID = toVisitAtoms.front();
-	       toVisitAtoms.pop_front();
-	       if(cluster[visAtomID]!=-1) continue;
-	       cluster[visAtomID] = i;
-	       AtomSignature *sig = &atomSigPool[eachAtomSig[visAtomID]];
-	       TupleSignature *bondSigs = sig->bondSigs;
-	       for(int j=0; j<sig->bondCnt; j++){
-		   int otherAtom = visAtomID + bondSigs[j].offset[0];
-		   toVisitAtoms.push_back(otherAtom);
-	       }
-	   }
-       }
-       memset(clusterSize, 0, sizeof(int32)*numAtoms);
-       for (i=0; i<numAtoms; i++) {
-         clusterSize[cluster[i]] += 1;
-       }
-
-
+       //Cluster building is done when compressing the psf file
+       
        //The safety check for bonds has been already done
        //in the period of generating compressed psf file
        DebugM(3, "Building the atom list for each signature.\n");
@@ -3314,13 +3321,24 @@ void Molecule::receive_Molecule(MIStream *msg)
          }
          if ( allok ) break;
        }
+	//check whether cluster is built correctly
+	FILE *checkFile = fopen("cluster.orig", "w");
+	for(i=0; i<numAtoms; i++)  fprintf(checkFile, "%d\n", cluster[i]);
+        fclose(checkFile); 
+       
        for (i=0; i<numAtoms; i++) {
          clusterSize[i] = 0;
-       }
-       for (i=0; i<numAtoms; i++) {
+       }       
+       for (i=0; i<numAtoms; i++) {           
          clusterSize[cluster[i]] += 1;
        }
-       
+
+       int numClusters=0;
+       for(int i=0; i<numAtoms; i++){
+           if(clusterSize[i]!=0) numClusters++;
+       }
+       printf("Num of clusters: %d\n", numClusters);
+
        //  Build the bond lists
        for (i=0; i<numAtoms; i++)
        {
