@@ -120,6 +120,29 @@ void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
   const int wrapAll = simParams->wrapAll;
   Molecule *molecule = Node::Object()->molecule;
   int n = molecule->numAtoms;
+#ifdef MEM_OPT_VERSION
+  //iterate over every cluster  
+  for(int idx=0; idx<molecule->get_num_clusters(); idx++){
+      Position curClusterCon = 0;
+      int curClusterSize = molecule->get_cluster_list_size(idx);
+      int curClusterID = molecule->get_cluster_list_id(idx);
+      int *curClusterList = molecule->get_cluster_list(idx);
+      for(int i=0; i<curClusterSize; i++){
+          int aid = curClusterList[i];
+          curClusterCon += coor[aid];
+      }
+      if(wrapAll || molecule->is_water(curClusterID)){
+          Vector coni = curClusterCon/curClusterSize;
+          Vector trans = ( wrapNearest ? lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni));
+          curClusterCon = trans;
+      }
+      for(int i=0; i<curClusterSize; i++){
+          int aid = curClusterList[i];
+          if(!wrapAll && !molecule->is_water(aid)) continue;
+          coor[aid] = coor[aid] + curClusterCon;
+      }
+  }
+#else
   int i;
   Position *con = new Position[n];
   for ( i = 0; i < n; ++i ) {
@@ -139,6 +162,7 @@ void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
     coor[i] = coor[i] + con[ci];
   }
   delete [] con;
+#endif
 }
 
 void wrap_coor(Vector *coor, Lattice &lattice, double *done) {
