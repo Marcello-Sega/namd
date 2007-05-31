@@ -110,6 +110,18 @@ int Output::coordinateNeeded(int timestep)
   return positionsNeeded;
 }
 
+/*
+ * In order to reduce memory usage, the conditions for calling
+ * Molecule::get_cluster_size and Molecule::is_water are very important. 
+ *
+ * 1. If get_cluster_size is called (wrapAll==true or wrapWater==true), the cluster
+ * information has to be maintained. And it is only needed to store on pe 1 (where CollectionMaster resides on)
+ * if namd runs with more than 1 processors.
+ *
+ * 2. If is_water is called (wrapAll==false and wrapWater==true), the "hydrogenGroup" 
+ * and "atoms" fields in Molecule object have to be maintained. And such fields are only needed to store on
+ * pe 1 (where CollectionMaster resides on) if namd runs with more than 1 processors.
+ */
 template <class xVector, class xDone>
 void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
   SimParameters *simParams = Node::Object()->simParameters;
@@ -131,6 +143,12 @@ void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
       for(int i=aid; i<aid+curClusterSize; i++){
           curClusterCon += coor[i];
       }
+
+      //The order of evaluating the following if-condition is very important since it
+      //is related with reducting memory usage. Two points worth noting:
+      //1. molecule->is_water is more expensive to evaluate, so evaluatte wrapAll first
+      //2. if molecule->is_water is actually called, we have to reserve a memory space (O(numAtoms)) 
+      //   for its correctness
       if(wrapAll || molecule->is_water(aid)){
           Vector coni = curClusterCon/curClusterSize;
           Vector trans = ( wrapNearest ? lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni));
