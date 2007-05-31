@@ -830,6 +830,11 @@ public:
       eachAtomCharge = NULL;
   }
   
+  void delClusterSigs() {
+      delete [] clusterSigs;
+      clusterSigs = NULL;
+  }
+
   void delOtherEachAtomStructs();
 
 private:

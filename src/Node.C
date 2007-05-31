@@ -290,6 +290,15 @@ void Node::startup() {
 	//an error when intermediate output for coordinates is required
 	pdb->delPDBCoreData();
     }
+    //decide whether to free memory space for cluster information
+    //the condition could be referred to comment for function
+    //wrap_coor_int in Output.C
+    if(simParameters->wrapAll || simParameters->wrapWater){
+	if(CkNumPes()>1 && CkMyPe()!=PEOFCOLLECTIONMASTER)
+	    molecule->delClusterSigs();	
+    }else{
+	molecule->delClusterSigs();
+    }
     #endif
     gotoRun = true;
   break;

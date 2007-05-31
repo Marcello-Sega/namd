@@ -2325,6 +2325,8 @@ void Molecule::send_Molecule(Communicate *com_obj)
       //put eachAtomSig and eachAtomExclSig
       msg->put(numAtoms*sizeof(Index), (char *)eachAtomSig);
       msg->put(numAtoms*sizeof(Index), (char *)eachAtomExclSig);
+
+      msg->put(numAtoms*sizeof(int32), (char *)clusterSigs);
   #else
       msg->put(numAtoms);
       msg->put(numAtoms*sizeof(Atom), (char*)atoms);
@@ -2608,6 +2610,10 @@ void Molecule::receive_Molecule(MIStream *msg)
       if(eachAtomExclSig) delete [] eachAtomExclSig;
       eachAtomExclSig = new Index[numAtoms];
       msg->get(numAtoms*sizeof(Index), (char *)eachAtomExclSig);
+
+      if(clusterSigs) delete [] clusterSigs;
+      clusterSigs = new int32[numAtoms];
+      msg->get(numAtoms*sizeof(int32), (char *)clusterSigs); 
   #else
       delete [] atoms;
       atoms= new Atom[numAtoms];
@@ -2908,8 +2914,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       #ifdef MEM_OPT_VERSION
       delEachAtomSigs();
       delMassChargeSpace();
-      delete [] atoms;
-      atoms = NULL;
+      delOtherEachAtomStructs();
       #endif
     }
     /*      END OF FUNCTION receive_Molecule    */
@@ -8219,9 +8224,24 @@ Bond *Molecule::get_bond(int bnum){
 void Molecule::delOtherEachAtomStructs(){
     delete [] fixedAtomFlags;
     fixedAtomFlags = NULL;
-    hydrogenGroup.resize(0);
-    delete [] atoms;
-    atoms = NULL;
+
+    //decide whether to free space for hydrogenGroup and atoms fields
+    //the condition can be referred to the comment before wrap_coor_int
+    //in Output.C
+    if(CkNumPes()==1 && simParams->wrapWater && !simParams->wrapAll){
+	//considering namd runs on a single processor
+	return;
+    }else if(CkMyPe()==PEOFCOLLECTIONMASTER){
+	if(simParams->wrapAll || !simParams->wrapWater){
+	    hydrogenGroup.resize(0);
+	    delete [] atoms;
+	    atoms = NULL;
+	} 
+    }else{	      
+	hydrogenGroup.resize(0);
+	delete [] atoms;
+	atoms = NULL;
+    }
 }
 
 //return the index of the new mass in the mass pool
