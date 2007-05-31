@@ -30,6 +30,7 @@
 #include "CollectionMgr.decl.h"
 #include "CollectionMaster.decl.h"
 #include "CollectionMgr.h"
+#include "CollectionMaster.h"
 #include "BroadcastMgr.decl.h"
 #include "LdbCoordinator.decl.h"
 #include "Sync.decl.h"
@@ -117,7 +118,20 @@ void BackEnd::init(int argc, char **argv) {
   group.sync = CProxy_Sync::ckNew();
 
 #if CHARM_VERSION > 050402
+#ifdef MEM_OPT_VERSION
+  int numProcs = CkNumPes();
+  CkChareID collectionMaster;
+  if(numProcs>1) 
+    //shift the output work to processor PEOFCOLLECTIONMASTER to reduce memory pressure
+    collectionMaster = CProxy_CollectionMaster::ckNew(PEOFCOLLECTIONMASTER);
+  else
+    collectionMaster = CProxy_CollectionMaster::ckNew(0);
+  MasterHandlerInitMsg *initmsg8 = new MasterHandlerInitMsg;
+  initmsg8->master = collectionMaster;
+  CkChareID collectionMasterHanlder = CProxy_CollectionMasterHandler::ckNew(initmsg8, 0);
+#else
   CkChareID collectionMaster = CProxy_CollectionMaster::ckNew(0);
+#endif
 #else
   CProxy_CollectionMaster coll(0);
   CkChareID collectionMaster = coll.ckGetChareId();

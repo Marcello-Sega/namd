@@ -19,6 +19,7 @@
 
 class CollectVectorMsg;
 class DataStreamMsg;
+class EnqueueDataMsg;
 
 class CollectionMaster : public Chare
 {
@@ -37,6 +38,9 @@ public:
 
   void enqueuePositions(int seq, Lattice &lattice);
   void enqueueVelocities(int seq);
+
+  void enqueuePositionsFromHandler(EnqueueDataMsg *msg);
+  void enqueueVelocitiesFromHandler(int seq);
 
   class CollectVectorInstance;
   void disposePositions(CollectVectorInstance *c);
@@ -149,6 +153,36 @@ private:
 };
 
 
+/* 
+ * This class is used as a proxy to the CollectionMaster classi.
+ * In the memory optimized version, the instance of CollectionMaster is 
+ * moved to other processors. However, this instance is assumed to be on pe 0
+ * and the Controller object contains the pointer to the instance. As a
+ * result, a proxy class is needed to bridge the gap between the Controller
+ * object on pe0 and the CollectionMaster object (which handles outputing
+ * coordinates/velocities) on the other processor.
+ */
+class CollectionMasterHandler : public Chare
+{
+public:
+
+  static CollectionMasterHandler *Object() { 
+    return CpvAccess(CollectionMasterHandler_instance); 
+  }
+  CollectionMasterHandler(MasterHandlerInitMsg *);
+  ~CollectionMasterHandler(void);
+
+  void enqueuePositions(EnqueueDataMsg *msg);
+  void enqueueVelocities(int seq);
+  void enqueuePositions(CkQdMsg *msg);
+  void enqueueVelocities(CkQdMsg *msg);
+
+  void setRealMaster(CkChareID m) { realMaster = m ;}
+private:
+  CkChareID realMaster;
+  int enqueuePhase;
+};
+
 class CollectVectorMsg : public CMessage_CollectVectorMsg
 {
 public:
@@ -172,6 +206,19 @@ public:
   static void* pack(DataStreamMsg* msg);
   static DataStreamMsg* unpack(void *ptr);
 
+};
+
+class EnqueueDataMsg: public CMessage_EnqueueDataMsg {
+public:
+  int timestep;
+  Lattice l;
+  static void* pack(EnqueueDataMsg* msg);
+  static EnqueueDataMsg* unpack(void *ptr);
+};
+
+class MasterHandlerInitMsg: public CMessage_MasterHandlerInitMsg {
+public:
+    CkChareID master;
 };
 
 #endif

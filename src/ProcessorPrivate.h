@@ -14,6 +14,7 @@
 class AtomMap;
 class BroadcastMgr;
 class CollectionMaster;
+class CollectionMasterHandler;
 class CollectionMgr;
 class ComputeMap;
 class LdbCoordinator;
@@ -30,6 +31,7 @@ class Sync;
 CpvExtern(AtomMap*, AtomMap_instance);
 CpvExtern(BroadcastMgr*, BroadcastMgr_instance);
 CpvExtern(CollectionMaster*, CollectionMaster_instance);
+CpvExtern(CollectionMasterHandler*, CollectionMasterHandler_instance);
 CpvExtern(CollectionMgr*, CollectionMgr_instance);
 CpvExtern(ComputeMap*, ComputeMap_instance);
 CpvExtern(LdbCoordinator*, LdbCoordinator_instance);

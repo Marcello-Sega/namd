@@ -7,13 +7,27 @@
 module CollectionMaster {
   message [packed] CollectVectorMsg;
   message [packed] DataStreamMsg;
-  
+  message [packed] EnqueueDataMsg;  
+  message MasterHandlerInitMsg;
+
   chare CollectionMaster
   {
     entry CollectionMaster(void);
     entry void receivePositions(CollectVectorMsg *);
     entry void receiveVelocities(CollectVectorMsg *);
     entry void receiveDataStream(DataStreamMsg *);
+    
+    entry void enqueuePositionsFromHandler(EnqueueDataMsg *);
+    entry void enqueueVelocitiesFromHandler(int);
+  };
+
+  chare CollectionMasterHandler
+  {
+    entry CollectionMasterHandler(MasterHandlerInitMsg *);
+    entry void enqueuePositions(EnqueueDataMsg *);
+    entry void enqueueVelocities(int);
+    entry void enqueuePositions(CkQdMsg *);
+    entry void enqueueVelocities(CkQdMsg *);
   };
 }
 

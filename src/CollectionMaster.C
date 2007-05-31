@@ -18,6 +18,69 @@
 // #define DEBUGM
 #include "Debug.h"
 
+//CollectionMasterHandler should always be on processor 0
+CollectionMasterHandler::CollectionMasterHandler(MasterHandlerInitMsg *msg): realMaster(msg->master)
+{
+  delete msg;
+  if (CpvAccess(CollectionMasterHandler_instance) == 0) {
+    CpvAccess(CollectionMasterHandler_instance) = this;
+  } else {
+    DebugM(1, "CollectionMasterHandler::CollectionMasterHandler() - another instance of CollectionMasterHandler exists!\n");
+  }
+  enqueuePhase = 0;
+}
+
+
+CollectionMasterHandler::~CollectionMasterHandler(void)
+{
+}
+
+void CollectionMasterHandler::enqueuePositions(EnqueueDataMsg *msg){
+    if(enqueuePhase==0){
+	CProxy_CollectionMaster cm(realMaster);
+	EnqueueDataMsg *newmsg = new EnqueueDataMsg;
+	newmsg->timestep = msg->timestep;
+	newmsg->l = msg->l;
+	cm.enqueuePositionsFromHandler(newmsg);
+	delete msg;
+    }else if(enqueuePhase==1){
+	enqueuePhase = 0;
+	#if CHARM_VERSION>050402
+	CkStartQD(CkIndex_CollectionMasterHandler::enqueuePositions((CkQdMsg*)0), &thishandle);
+	#else
+	CkStartQD(CProxy_CollectionMasterHandler::ckIdx_enqueuePositions((CkQdMsg*)0), &thishandle);
+	#endif
+    }else{
+	NAMD_die("Enqueue phase at enqueuePositions in the CollectionMasterHandler has wrong value!\n");
+    }
+}
+
+void CollectionMasterHandler::enqueueVelocities(int seq){
+    if(enqueuePhase==0){
+	CProxy_CollectionMaster cm(realMaster);
+	cm.enqueueVelocitiesFromHandler(seq);
+    }else if(enqueuePhase==1){
+	enqueuePhase = 0;
+	#if CHARM_VERSION>050402
+	CkStartQD(CkIndex_CollectionMasterHandler::enqueueVelocities((CkQdMsg*)0), &thishandle);
+	#else
+	CkStartQD(CProxy_CollectionMasterHandler::ckIdx_enqueueVelocities((CkQdMsg*)0), &thishandle);
+	#endif
+    }else{
+	NAMD_die("Enqueue phase at enqueueVelocities in the CollectionMasterHandler has wrong value!\n");
+    }
+}
+
+void CollectionMasterHandler::enqueuePositions(CkQdMsg *qmsg){
+    delete qmsg;
+    Object()->enqueuePositions((EnqueueDataMsg *)NULL);
+}
+
+void CollectionMasterHandler::enqueueVelocities(CkQdMsg *qmsg){
+    delete qmsg;
+    Object()->enqueueVelocities(0);
+}
+
 CollectionMaster::CollectionMaster()
 {
   if (CpvAccess(CollectionMaster_instance) == 0) {
@@ -51,6 +114,11 @@ void CollectionMaster::enqueuePositions(int seq, Lattice &lattice)
   while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
 }
 
+void CollectionMaster::enqueuePositionsFromHandler(EnqueueDataMsg *msg){
+    enqueuePositions(msg->timestep, msg->l);
+    delete msg;
+}
+
 void CollectionMaster::disposePositions(CollectVectorInstance *c)
 {
     DebugM(3,"Collected positions at " << c->seq << std::endl);
@@ -80,6 +148,10 @@ void CollectionMaster::enqueueVelocities(int seq)
 
   CollectVectorInstance *c;
   while ( ( c = velocities.removeReady() ) ) { disposeVelocities(c); }
+}
+
+void CollectionMaster::enqueueVelocitiesFromHandler(int seq){
+    enqueueVelocities(seq);
 }
 
 void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
@@ -122,6 +194,10 @@ PACK_MSG(DataStreamMsg,
   PACK_RESIZE(data);
 )
 
+PACK_MSG(EnqueueDataMsg,
+  PACK(timestep);
+  PACK(l);
+)
 
 #include "CollectionMaster.def.h"
 

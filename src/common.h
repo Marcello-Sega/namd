@@ -131,5 +131,7 @@ int  Fclose(FILE *fout);
 
 #define USE_BARRIER   (CYCLE_BARRIER || PME_BARRIER)
 
+// for CollectionMaster instance which handles output
+#define PEOFCOLLECTIONMASTER 1
 #endif
 
