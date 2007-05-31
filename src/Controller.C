@@ -117,7 +117,11 @@ Controller::Controller(NamdState *s) :
 	computeChecksum(0), marginViolations(0), pairlistWarnings(0),
 	simParams(Node::Object()->simParameters),
 	state(s),
+#ifdef MEM_OPT_VERSION
+	collection(CollectionMasterHandler::Object()),	
+#else
 	collection(CollectionMaster::Object()),
+#endif
         startCTime(0),
         firstCTime(CmiTimer()),
         startWTime(0),
@@ -1589,8 +1593,16 @@ void Controller::writeExtendedSystemData(int step, std::ofstream &file) {
 
 void Controller::enqueueCollections(int timestep)
 {
-  if ( Output::coordinateNeeded(timestep) )
+  if ( Output::coordinateNeeded(timestep) ){
+    #ifdef MEM_OPT_VERSION
+    EnqueueDataMsg *msg = new EnqueueDataMsg;
+    msg->timestep = timestep;
+    msg->l = state->lattice;
+    collection->enqueuePositions(msg);
+    #else
     collection->enqueuePositions(timestep,state->lattice);
+    #endif
+  }
   if ( Output::velocityNeeded(timestep) )
     collection->enqueueVelocities(timestep);
 }

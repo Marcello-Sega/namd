@@ -16,7 +16,13 @@ class ControllerBroadcasts;
 class NamdState;
 class SimParameters;
 class RequireReduction;
+
+#ifdef MEM_OPT_VERSION
+class CollectionMasterHandler;
+#else
 class CollectionMaster;
+#endif
+
 class Random;
 class PressureProfileReduction;
 
@@ -128,7 +134,11 @@ protected:
     int pressureProfileCount;
     BigReal *pressureProfileAverage;
 
+    #ifdef MEM_OPT_VERSION
+    CollectionMasterHandler *const collection;
+    #else
     CollectionMaster *const collection;
+    #endif
     ControllerBroadcasts * broadcast;
     std::ofstream xstFile;
     void outputExtendedSystem(int step);
