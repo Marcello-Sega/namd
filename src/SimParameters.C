@@ -2672,6 +2672,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    {
      iout << iINFO << "BINARY OUTPUT FILES WILL BE USED\n" << endi;
    }
+#ifdef MEM_OPT_VERSION
+    if(!binaryOutput){
+	iout << iWARN <<"SINCE MEMORY OPTIMIZED VERSION IS USED, OUTPUT IN TEXT FORMAT IS DISABLED!\n" << endi;
+	binaryOutput = TRUE;
+    }
+#endif
 
    if (! restartFrequency)
    {

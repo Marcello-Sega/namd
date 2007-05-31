@@ -286,8 +286,8 @@ void Node::startup() {
 	molecule->delEachAtomSigs();
 	molecule->delMassChargeSpace();
 	molecule->delOtherEachAtomStructs();
-	//we can free the pdb data here to save memory. This may cause
-	//an error when intermediate output for coordinates is required
+	//we can free the pdb data here to save memory because output
+	//is always in the binary format thus saving 3 doubles * numAtoms bytes.
 	pdb->delPDBCoreData();
     }
     //decide whether to free memory space for cluster information
