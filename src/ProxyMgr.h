@@ -55,6 +55,11 @@ public:
   Flags flags;
   CompAtomList positionList;
   CompAtomList avgPositionList;
+
+#ifdef MEM_OPT_VERSION
+  CompAtomExtList extInfoList;
+#endif
+
   static void* pack(ProxyAllMsg *msg);
   static ProxyAllMsg* unpack(void *ptr);
 };

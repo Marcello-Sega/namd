@@ -42,6 +42,15 @@ struct Transform
   Transform(void) { i=0; j=0; k=0; }
 };
 
+/*
+ * 1. "position" field in this structure is very important since it
+ * needs to be sent to every patch after every timestep.
+ * 2. Anything that is static (value is decided before computation)
+ * or only changes after atom migration should be put into the CompAtomExt structure
+ * 3. This data structure is 32-byte long which is particularly optimized for some machines
+ * (including BG/L) for better cache and message performance. Therefore, changes
+ * to this structure should be cautioned for the sake of performance.
+ */
 struct CompAtom {
   Position position;
   Charge charge;
@@ -52,12 +61,6 @@ struct CompAtom {
   unsigned int groupFixed : 1;
   unsigned int partition : 4;
 
-#ifdef MEM_OPT_VERSION
-  AtomSigID sigId;
-  ExclSigID exclId;
-  VDW_TYPE vdwType;
-#endif
-
   CompAtom() { ; }
 
   // Needed for IBM's xlC compiler
@@ -67,11 +70,6 @@ struct CompAtom {
     nonbondedGroupIsAtom(a.nonbondedGroupIsAtom),
     atomFixed(a.atomFixed), groupFixed(a.groupFixed),
     partition(a.partition){
-      #ifdef MEM_OPT_VERSION
-      sigId = a.sigId;
-      exclId = a.exclId;
-      vdwType = a.vdwType;
-      #endif
       ;
   }
 
@@ -86,18 +84,41 @@ struct CompAtom {
     groupFixed = a.groupFixed;
     partition = a.partition;
 
-    #ifdef MEM_OPT_VERSION
-    sigId = a.sigId;
-    exclId = a.exclId;
-    vdwType = a.vdwType;
-    #endif
-    
     return *this;
   }
 
 };
 
+#ifdef MEM_OPT_VERSION
+struct CompAtomExt {
+  AtomSigID sigId;
+  ExclSigID exclId;
+  VDW_TYPE vdwType;
+
+  CompAtomExt(){;}
+
+  // Needed for IBM's xlC compiler
+  inline CompAtomExt(const CompAtomExt &a) :
+    sigId(a.sigId), exclId(a.exclId), vdwType(a.vdwType){
+  }
+
+  // Needed for IBM's xlC compiler
+  inline CompAtomExt& operator=(const CompAtomExt &a) {
+    sigId = a.sigId;
+    exclId = a.exclId;
+    vdwType = a.vdwType;
+
+    return *this;
+  }
+
+};
+#endif
+
+#ifdef MEM_OPT_VERSION
+struct FullAtom : CompAtom, CompAtomExt{
+#else
 struct FullAtom : CompAtom {
+#endif
   Velocity velocity;
   Position fixedPosition;
   Mass mass;
@@ -105,6 +126,11 @@ struct FullAtom : CompAtom {
 };
 
 typedef ResizeArray<CompAtom> CompAtomList;
+
+#ifdef MEM_OPT_VERSION
+typedef ResizeArray<CompAtomExt> CompAtomExtList;
+#endif
+
 typedef ResizeArray<FullAtom> FullAtomList;
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArray<Velocity> VelocityList;

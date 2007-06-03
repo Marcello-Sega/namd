@@ -30,7 +30,6 @@ PACK_MSG(ProxyAtomsMsg,
   PACK_RESIZE(atomIDList);
 )
   
-
 PACK_MSG(ProxyDataMsg,
   PACK(patch);
   PACK(flags);
@@ -39,12 +38,22 @@ PACK_MSG(ProxyDataMsg,
 )
 
 
+#ifdef MEM_OPT_VERSION
+PACK_MSG(ProxyAllMsg,
+  PACK(patch);
+  PACK(flags);
+  PACK_RESIZE(positionList);
+  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
+  PACK_RESIZE(extInfoList);
+)
+#else
 PACK_MSG(ProxyAllMsg,
   PACK(patch);
   PACK(flags);
   PACK_RESIZE(positionList);
   if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
 )
+#endif
 
 PACK_MSG(ProxySpanningTreeMsg,
   PACK(patch);
@@ -834,6 +843,9 @@ ProxyMgr::recvImmediateProxyAll(ProxyAllMsg *msg) {
       newmsg->flags = msg->flags;
       newmsg->positionList = msg->positionList;
       newmsg->avgPositionList = msg->avgPositionList;
+#ifdef MEM_OPT_VERSION
+      newmsg->extInfoList = msg->extInfoList;
+#endif
       ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
     }
   }
