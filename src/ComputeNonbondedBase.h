@@ -260,6 +260,10 @@ void ComputeNonbondedUtil :: NAME
   register int i;
   const CompAtom *p_0 = params->p[0];
   const CompAtom *p_1 = params->p[1];
+#ifdef MEM_OPT_VERSION
+  const CompAtomExt *pExt_0 = params->pExt[0];
+  const CompAtomExt *pExt_1 = params->pExt[1];
+#endif
 
   char * excl_flags_buff = 0;
   const int32 * full_excl = 0;
@@ -293,7 +297,7 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(short,vdwtype_array,j_upper+5);
   for (j = 0; j < j_upper; ++j){
 #ifdef MEM_OPT_VERSION
-    vdwtype_array[j] = p_1[j].vdwType;
+    vdwtype_array[j] = pExt_1[j].vdwType;
 #else
     vdwtype_array [j] = mol->atomvdwtype(p_1[j].id);
 #endif  
@@ -378,7 +382,9 @@ void ComputeNonbondedUtil :: NAME
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
     const CompAtom &p_i = p_0[i];
-
+#ifdef MEM_OPT_VERSION
+    const CompAtomExt &pExt_i = pExt_0[i];
+#endif
     if ( p_i.hydrogenGroupSize ) {
       if ( groupCount++ % numParts != myPart ) {
         i += p_i.hydrogenGroupSize - 1;
@@ -407,7 +413,7 @@ void ComputeNonbondedUtil :: NAME
     if ( ! savePairlists ) pairlists.reset();  // limit space usage
 
     #ifdef MEM_OPT_VERSION
-    const ExclusionCheck *exclcheck = mol->get_excl_check_for_idx(p_i.exclId);        
+    const ExclusionCheck *exclcheck = mol->get_excl_check_for_idx(pExt_i.exclId);        
     const int excl_min = p_i.id + exclcheck->min;
     const int excl_max = p_i.id + exclcheck->max;
     #else
@@ -787,7 +793,7 @@ void ComputeNonbondedUtil :: NAME
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
 #ifdef MEM_OPT_VERSION
     const LJTable::TableEntry * const lj_row =
-		ljTable->table_row(p_i.vdwType);
+		ljTable->table_row(pExt_i.vdwType);
 #else
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(mol->atomvdwtype(p_i.id));

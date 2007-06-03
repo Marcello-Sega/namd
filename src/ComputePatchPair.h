@@ -36,7 +36,11 @@ public:
 
 protected :
   int numAtoms[2];
+#ifdef MEM_OPT_VERSION
+  virtual void doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results* r[2]);
+#else
   virtual void doForce(CompAtom* p[2], Results* r[2]);
+#endif
   Patch *patch[2];
 
 // private: // hack for ComputeNonbondedPair::noWork()

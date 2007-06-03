@@ -20,8 +20,11 @@ public:
 
 protected :
   virtual void initialize();
+#ifdef MEM_OPT_VERSION
+  virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r);
+#else
   virtual void doForce(CompAtom* p, Results* r);
-
+#endif
   PositionBox<Patch> *avgPositionBox;
 
   SubmitReduction *reduction;

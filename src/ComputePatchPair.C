@@ -102,9 +102,11 @@ void ComputePatchPair::atomUpdate() {
 }
 
 
-
-void ComputePatchPair::doForce(CompAtom* p[2],
-                               Results* r[2])
+#ifdef MEM_OPT_VERSION
+void ComputePatchPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results* r[2])
+#else
+void ComputePatchPair::doForce(CompAtom* p[2], Results* r[2])
+#endif
 {
     CkPrintf("ComputePatchPair::doForce() - Dummy eval was sent\n");
     CkPrintf(" %d patch 1 atoms and %d patch 2 atoms\n", numAtoms[0], numAtoms[1] );
@@ -132,7 +134,14 @@ void ComputePatchPair::doWork() {
   }
 
   // Pass pointers to doForce
+#ifdef MEM_OPT_VERSION
+  CompAtomExt *pExt[2];
+  pExt[0] = patch[0]->getCompAtomExtInfo();
+  pExt[1] = patch[1]->getCompAtomExtInfo();
+  doForce(p, pExt, r);
+#else
   doForce(p,r);
+#endif
 
   // Close up boxes
   for (i=0; i<2; i++) {

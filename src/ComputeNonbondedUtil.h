@@ -78,6 +78,9 @@ public:
 // function arguments
 struct nonbonded {
   CompAtom* p[2];
+#ifdef MEM_OPT_VERSION
+  CompAtomExt *pExt[2];
+#endif
   Force* ff[2];
   // for full electrostatics
   Force* fullf [2];

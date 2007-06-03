@@ -28,9 +28,11 @@ private:
 public:
 	ComputeSphericalBC(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeSphericalBC();			//  Destructor
-
+#ifdef MEM_OPT_VERSION
+	virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r);
+#else
 	virtual void doForce(CompAtom* p, Results* r);
-
+#endif
 	SubmitReduction *reduction;
 
 };

@@ -35,9 +35,11 @@ private:
 public:
 	ComputeRestraints(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeRestraints();			//  Destructor
-
+#ifdef MEM_OPT_VERSION
+	virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r);
+#else
 	virtual void doForce(CompAtom* p, Results* r);
-
+#endif
 	SubmitReduction *reduction;
 
 };
