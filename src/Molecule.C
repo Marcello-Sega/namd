@@ -3305,11 +3305,14 @@ void Molecule::receive_Molecule(MIStream *msg)
          clusterSize[cluster[i]] += 1;
        }
 
+/*
+       //Getting number of clusters for debugging
        int numClusters=0;
        for(int i=0; i<numAtoms; i++){
            if(clusterSize[i]!=0) numClusters++;
        }
        printf("Num of clusters: %d\n", numClusters);
+*/
 
        //  Build the bond lists
        for (i=0; i<numAtoms; i++)
