@@ -56,12 +56,15 @@ template <class T, class S, class P> class ComputeSelfTuples :
         CompAtom *atom = (*ai).x;
         Patch *patch = (*ai).p;
         int numAtoms = patch->getNumAtoms();
+	#ifdef MEM_OPT_VERSION
+	CompAtomExt *atomExt = (*ai).xExt; //patch->getCompAtomExtInfo();
+	#endif
     
         // cycle through each atom in the patch and load up tuples
         for (int j=0; j < numAtoms; j++)
         {
            #ifdef MEM_OPT_VERSION
-           AtomSignature *thisAtomSig = &allSigs[atom[j].sigId];
+           AtomSignature *thisAtomSig = &allSigs[atomExt[j].sigId];
            TupleSignature *allTuples;
            T::getTupleInfo(thisAtomSig, &numTuples, &allTuples);
            for(int k=0; k<numTuples; k++) {
