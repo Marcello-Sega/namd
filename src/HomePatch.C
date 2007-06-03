@@ -534,9 +534,18 @@ void HomePatch::positionsReady(int doMigration)
   // Copy information needed by computes and proxys to Patch::p.
   p.resize(numAtoms);
   CompAtom *p_i = p.begin();
+#ifdef MEM_OPT_VERSION
+  pExt.resize(numAtoms);
+  CompAtomExt *pExt_i = pExt.begin();
+#endif
   FullAtom *a_i = atom.begin();
   int i; int n = numAtoms;
-  for ( i=0; i<n; ++i ) { p_i[i] = a_i[i]; }
+  for ( i=0; i<n; ++i ) { 
+    p_i[i] = a_i[i]; 
+    #ifdef MEM_OPT_VERSION
+    pExt_i[i] = a_i[i];
+    #endif
+  }
 
   // Measure atom movement to test pairlist validity
   doPairlistCheck();
@@ -590,6 +599,9 @@ void HomePatch::positionsReady(int doMigration)
         allmsg->flags = flags;
         allmsg->positionList = p;
         if (flags.doMolly) allmsg->avgPositionList = p_avg;
+	#ifdef MEM_OPT_VERSION
+	allmsg->extInfoList = pExt;
+	#endif
 #if CMK_PERSISTENT_COMM
 //        CmiUsePersistentHandle(localphs, npid);
 #endif

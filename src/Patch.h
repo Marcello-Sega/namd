@@ -60,6 +60,10 @@ class Patch
      PatchID getPatchID() { return patchID; }
      int getNumComputes() { return positionComputeList.size(); }
 
+#ifdef MEM_OPT_VERSION
+     CompAtomExt* getCompAtomExtInfo() { return pExt.begin(); }
+#endif
+
      Lattice &lattice;
      Flags flags;
 
@@ -70,6 +74,11 @@ class Patch
      int           numFixedAtoms;
      CompAtomList  p;
      CompAtomList  p_avg;
+
+#ifdef MEM_OPT_VERSION
+     CompAtomExtList pExt;
+#endif     
+
      CompAtom      *positionPtr;
      CompAtom      *avgPositionPtr;
      ForceList     f[Results::maxNumForces];

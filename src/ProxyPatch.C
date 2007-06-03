@@ -114,6 +114,10 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   numAtoms = p.size();
   p_avg = msg->avgPositionList;
 
+#ifdef MEM_OPT_VERSION
+  pExt = msg->extInfoList;
+#endif
+
   delete msg;
 
   positionsReady(1);
