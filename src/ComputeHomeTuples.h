@@ -359,7 +359,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       UniqueSetIter<T> al(tupleList);
       if ( Node::Object()->simParameters->commOnly ) {
 #ifdef NETWORK_PROGRESS
-	CmiNetworkProgress();
+	CkNetworkProgress();
 #endif
         for (al = al.begin(); al != al.end(); al++ ) {
           tupleCount += 1;

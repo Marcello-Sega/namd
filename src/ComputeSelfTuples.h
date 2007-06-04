@@ -188,7 +188,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
       } else {
         for (al = al.begin(); al != al.end(); al++ ) {
 #ifdef NETWORK_PROGRESS
-	  CmiNetworkProgress();
+	  CkNetworkProgress();
 #endif	  
           al->computeForce(reductionData);
           tupleCount += 1;
