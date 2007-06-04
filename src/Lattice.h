@@ -152,6 +152,28 @@ public:
   Vector delta(const Position &pos1, const Position &pos2) const
   {
     Vector diff = pos1 - pos2;
+#ifdef ARCH_POWERPC   //Prevents stack temporaries
+    Vector result = diff;
+    if ( p1 ) {
+      BigReal fval = floor(0.5 + b1*diff); 
+      result.x -= a1.x *fval;    
+      result.y -= a1.y *fval;    
+      result.z -= a1.z *fval;    
+    }
+    if ( p2 ) {
+      BigReal fval = floor(0.5 + b2*diff);
+      result.x -= a2.x * fval;
+      result.y -= a2.y * fval;
+      result.z -= a2.z * fval;
+    }
+    if ( p3 ) {
+      BigReal fval = floor(0.5 + b3*diff);
+      result.x -= a3.x * fval;
+      result.y -= a3.y * fval;
+      result.z -= a3.z * fval;
+    }
+    return result;
+#else
     BigReal f1 = p1 ? floor(0.5 + b1*diff) : 0.;
     BigReal f2 = p2 ? floor(0.5 + b2*diff) : 0.;
     BigReal f3 = p3 ? floor(0.5 + b3*diff) : 0.;
@@ -159,6 +181,7 @@ public:
     diff.y -= f1*a1.y + f2*a2.y + f3*a3.y;
     diff.z -= f1*a1.z + f2*a2.z + f3*a3.z;
     return diff;
+#endif
   }
 
   // calculates shortest vector from origin to p1 (equivalent to p1 - o)
@@ -216,14 +239,29 @@ public:
     {       
       dt = (CompAtom *) malloc (sizeof(CompAtom) *n);  
       Vector shift = (i%3-1) * a1 + ((i/3)%3-1) * a2 + (i/9-1) * a3;
-      for( int j = 0; j < n; ++j ) {
+
 #ifdef ARCH_POWERPC
-#pragma disjoint (d, dt)
+#pragma disjoint (*d, *dt)
+#pragma unroll(2)
 #endif
-        dt[j] = d[j];
-        dt[j].position.x  += shift.x;
-        dt[j].position.y  += shift.y;
-        dt[j].position.z  += shift.z;
+      for( int j = 0; j < n; ++j ) {			
+	dt[j].position.x           = d[j].position.x + shift.x;	
+	dt[j].position.y           = d[j].position.y + shift.y;	
+	dt[j].position.z           = d[j].position.z + shift.z;	
+	  			    
+	dt[j].charge               = d[j].charge;
+	dt[j].id                   = d[j].id;
+        dt[j].hydrogenGroupSize    = d[j].hydrogenGroupSize;
+	dt[j].nonbondedGroupIsAtom = d[j].nonbondedGroupIsAtom;
+	dt[j].atomFixed            = d[j].atomFixed;
+	dt[j].groupFixed           = d[j].groupFixed;
+	dt[j].partition            = d[j].partition;
+
+#ifdef MEM_OPT_VERSION
+	dt[j].sigId   = d[j].sigId;
+	dt[j].exclId  = d[j].exclId;
+       	dt[j].vdwType = d[j].vdwType;
+#endif	
       }
     }
     else

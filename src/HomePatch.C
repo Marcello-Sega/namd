@@ -505,7 +505,18 @@ void HomePatch::receiveResults(ProxyCombinedResultMsg *msg)
         register ForceList::iterator f_i, f_e;
         f_i = msg->forceList[k].begin();
         f_e = msg->forceList[k].end();
-        for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
+        //for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
+
+	int nf = f_e - f_i;
+#ifdef ARCH_POWERPC
+#pragma disjoint (*f_i, *f)
+#pragma unroll(4)
+#endif
+	for (int count = 0; count < nf; count++) {
+	  f[count].x += f_i[count].x;      
+	  f[count].y += f_i[count].y;      
+	  f[count].z += f_i[count].z;
+	}
       }
     }
     pe->forceBox->close(&r);
