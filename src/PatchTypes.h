@@ -33,6 +33,12 @@ public:
 
   Lattice lattice;		// rather than shipping around separately
 
+  inline Flags& operator= (const Flags &flags) 
+    {
+      CmiMemcpy (this, &flags, sizeof(Flags));
+      return *this;
+    }
+
 };
 
 class Results
