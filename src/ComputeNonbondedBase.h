@@ -408,7 +408,7 @@ void ComputeNonbondedUtil :: NAME
         i += p_i.hydrogenGroupSize - 1;
 	
 	//Power PC alignment constraint
-#if defined(ARCH_POWERPC) & !defined(MEM_OPT_VERSION)
+#ifdef ARCH_POWERPC
 	__dcbt((void *) &(p_0[i+1]));
 #endif
         continue;
@@ -961,7 +961,7 @@ void ComputeNonbondedUtil :: NAME
     CkNetworkProgress();
 #endif
 
-#if defined(ARCH_POWERPC) & !defined(MEM_OPT_VERSION)
+#ifdef ARCH_POWERPC
     //data cache block touch the position structure
     __dcbt ((void *) &(p_0[i+1]));
     __prefetch_by_load ((void *)&(groupCount));

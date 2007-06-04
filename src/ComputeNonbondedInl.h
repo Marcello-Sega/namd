@@ -84,7 +84,7 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
       jcur0  =  list[g    ];    jcur1  =  list[g + 1];
       jcur2  =  list[g + 2];    jcur3  =  list[g + 3];
 
-#if defined(ARCH_POWERPC) & !defined(MEM_OPT_VERSION)
+#ifdef ARCH_POWERPC
       __dcbt ((void *) &p_j[jcur0]);
 #endif      
 
