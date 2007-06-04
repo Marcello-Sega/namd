@@ -24,7 +24,6 @@
 int proxySendSpanning = 0;
 int proxyRecvSpanning = 0;
 
-
 PACK_MSG(ProxyAtomsMsg,
   PACK(patch);
   PACK_RESIZE(atomIDList);
@@ -61,6 +60,7 @@ PACK_MSG(ProxySpanningTreeMsg,
   PACK_RESIZE(tree);
 )
 
+
 void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
   int msg_size = 0;
   msg_size += sizeof(msg->node);
@@ -74,8 +74,13 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
     msg_size = ALIGN_8 (msg_size);
     Force* f = msg->forceList[j].begin();
     int nonzero_count = 0;
+
+    BigReal tmp_x = f[0].x;
     for ( int i = 0; i < array_size; ++i ) {
-      if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) { ++nonzero_count; }
+      if ( tmp_x != 0. || f[i].y != 0. || f[i].z != 0. ) { 
+	++nonzero_count; 
+	tmp_x = f[i+1].x;
+      }
     }
     msg_size += nonzero_count * sizeof(Vector);
   }
@@ -97,15 +102,19 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
     Vector *farr = (Vector *)msg_cur;
     Force* f = msg->forceList[j].begin();
 
+    BigReal tmp_x = f[0].x;
     for ( int i = 0; i < array_size; ++i ) {
-      if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
+      if ( tmp_x != 0. || f[i].y != 0. || f[i].z != 0. ) {
         nonzero[i] = 1;
 	farr->x = f[i].x;
 	farr->y = f[i].y;
 	farr->z = f[i].z;
 	farr ++;
+
+	tmp_x = f[i+1].x;
       } else {
         nonzero[i] = 0;
+	tmp_x = f[i+1].x;
       }
     }
     msg_cur = (char *) farr;	  
@@ -114,6 +123,8 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
   delete msg;
   return msg_buf;
 }
+
+
 
 ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
   void *vmsg = CkAllocBuffer(ptr,sizeof(ProxyResultMsg));
@@ -134,12 +145,22 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
     msg_cur = (char *)ALIGN_8 (msg_cur);
     Vector* farr = (Vector *) msg_cur;
     Force* f = msg->forceList[j].begin();
+
+    register BigReal tmp_x, tmp_y, tmp_z;
+    tmp_x = farr->x;
+    tmp_y = farr->y;
+    tmp_z = farr->z;
     for ( int i = 0; i < array_size; ++i ) {
       if ( nonzero[i] ) {
-	f[i].x = farr->x;
-	f[i].y = farr->y;
-	f[i].z = farr->z;
 	farr++;
+	f[i].x = tmp_x;
+	f[i].y = tmp_y;
+	f[i].z = tmp_z;
+	
+	tmp_x =	farr->x;
+	tmp_y =	farr->y;
+	tmp_z =	farr->z;
+	
       } else {
         f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;
       }
@@ -150,6 +171,8 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
   CkFreeMsg(ptr);
   return msg;
 }
+
+//static int msgcount = 0;
 
 
 // for spanning tree
@@ -166,11 +189,19 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
 
     Force* f = msg->forceList[j].begin();
     int nonzero_count = 0;
+
+    BigReal tmp_x = f[0].x;
     for ( int i = 0; i < array_size; ++i ) {
-      if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) { ++nonzero_count; }
+      if ( tmp_x != 0. || f[i].y != 0. || f[i].z != 0. ) { 
+	++nonzero_count; 
+	tmp_x = f[i+1].x;
+      }
     }
     msg_size += nonzero_count * sizeof(Force);
   }
+
+  //if (msgcount ++ == 1000)
+  //CkPrintf ("Reduction message size = %d, nforces = %d\n", msg_size, msg->forceList[0].size());
 
   void *msg_buf = CkAllocBuffer(msg,msg_size);
   char *msg_cur = (char *)msg_buf;
@@ -194,18 +225,22 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
     Vector *farr = (Vector *) msg_cur; 
     Force* f = msg->forceList[j].begin();
 
+    BigReal tmp_x = f[0].x;
     for ( int i = 0; i < array_size; ++i ) {
-      if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
-        nonzero[i] = 1;
-	farr->x  =  f[i].x;
-        farr->y  =  f[i].y;
-        farr->z  =  f[i].z;
+      if ( tmp_x != 0. || f[i].y != 0. || f[i].z != 0. ) {
+	nonzero[i] = 1;
+	farr->x = tmp_x;
+	farr->y = f[i].y;
+	farr->z = f[i].z;
+	farr ++;
 
-        farr ++;
+	tmp_x = f[i+1].x;
       } else {
         nonzero[i] = 0;
+	tmp_x = f[i+1].x;
       }
     }
+    
     msg_cur = (char *) farr;
   }
 
@@ -239,17 +274,26 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
     Vector* farr = (Vector *) msg_cur;
     Force* f = msg->forceList[j].begin();
 
+    register BigReal tmp_x, tmp_y, tmp_z;
+    tmp_x = farr->x;
+    tmp_y = farr->y;
+    tmp_z = farr->z;
+    farr++;	
     for ( int i = 0; i < array_size; ++i ) {
       if ( nonzero[i] ) {
-	f[i].x = farr->x;
-	f[i].y = farr->y;
-	f[i].z = farr->z;
-	farr++;
+	f[i].x = tmp_x;
+	f[i].y = tmp_y;
+	f[i].z = tmp_z;
+
+	tmp_x =	farr->x;
+	tmp_y =	farr->y;
+	tmp_z =	farr->z;
+	farr++;		
       } else {
         f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;
       }
-    }
-    msg_cur = (char *) farr;
+    }    
+    msg_cur = (char *) (farr - 1); 
   }
 
   CkFreeMsg(ptr);
@@ -260,8 +304,6 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
 int ProxyMgr::nodecount = 0;
 
 ProxyMgr::ProxyMgr() { 
-  if(CkNumPes()>500)
-    proxySendSpanning = 1;
   if (CpvAccess(ProxyMgr_instance)) {
     NAMD_bug("Tried to create ProxyMgr twice.");
   }
@@ -272,6 +314,24 @@ ProxyMgr::~ProxyMgr() {
   removeProxies();
   CpvAccess(ProxyMgr_instance) = NULL;
 }
+
+
+void ProxyMgr::setSendSpanning() {
+  proxySendSpanning = 1;
+}
+
+int ProxyMgr::getSendSpanning() {
+  return proxySendSpanning;
+}
+
+void ProxyMgr::setRecvSpanning() {
+  proxySendSpanning = 1;
+}
+
+int ProxyMgr::getRecvSpanning() {
+  return proxySendSpanning;
+}
+
 
 void ProxyMgr::removeProxies(void)
 {
@@ -489,7 +549,7 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
   }
 }
 
-#define MAX_INTERNODE 1 
+#define MAX_INTERNODE 1
 
 extern double *cpuloads;
 static int *procidx = NULL;
@@ -523,7 +583,6 @@ static void processCpuLoad()
   for (i=0; i<CkNumPes(); i++) averageLoad += cpuloads[i];
   averageLoad /= CkNumPes();
 //  iout << "buildSpanningTree1: no intermediate node on " << procidx[0] << " " << procidx[1] << endi;
-
 }
 
 static int noInterNode(int p)
@@ -540,7 +599,8 @@ static int noInterNode(int p)
   else
     exclude = 80;
   for (int i=0; i<exclude; i++) if (procidx[i] == p) return 1;
-//  if (cpuloads[p] > averageLoad) return 1;
+
+  //  if (cpuloads[p] > averageLoad) return 1;
   return 0;
 }
 
@@ -808,7 +868,11 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
       newmsg->flags = msg->flags;
       newmsg->positionList = msg->positionList;
       newmsg->avgPositionList = msg->avgPositionList;
-      ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
+      //ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
+
+      //At the second level of the tree immediate messages are not needed
+      CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+      cp.recvProxyData(newmsg,npid,pids);
     }
   }
   /* send to self via EP method to preserve priority */

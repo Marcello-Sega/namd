@@ -129,6 +129,12 @@ public:
   void unregisterProxy(PatchID pid);
   void recvUnregisterProxy(UnregisterProxyMsg *);
 
+  void setSendSpanning();
+  int  getSendSpanning();
+
+  void setRecvSpanning();
+  int  getRecvSpanning();
+
   void buildProxySpanningTree();
   void sendSpanningTreeToHomePatch(int pid, int *tree, int n);
   void recvSpanningTreeOnHomePatch(int pid, int *tree, int n);

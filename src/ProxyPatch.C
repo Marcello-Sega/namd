@@ -193,7 +193,19 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
     register ForceList::iterator f_i, f_e;
     f_i = msg->forceList[k].begin();
     f_e = msg->forceList[k].end();
-    for ( ; f_i != f_e; ++f_i, ++r_i ) *r_i += *f_i;
+    //    for ( ; f_i != f_e; ++f_i, ++r_i ) *r_i += *f_i;
+
+    int nf = f_e - f_i;
+#ifdef ARCH_POWERPC
+#pragma disjoint (*f_i, *r_i)
+#pragma unroll(4)
+#endif
+    for (int count = 0; count < nf; count++) {
+      r_i[count].x += f_i[count].x;      
+      r_i[count].y += f_i[count].y;      
+      r_i[count].z += f_i[count].z;
+    }
+
     }
     delete msg;
   }
