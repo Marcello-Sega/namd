@@ -59,7 +59,7 @@ template <class Elem> class ResizeArrayRaw {
       //Elem *tmpa = (Elem *)((((long)tmpv)+31L)&(-32L));
       // Someday we might need this alternate form.
       Elem *tmpa = (Elem *)(tmpv+31 - (((long)(tmpv+31))&(31L)));
-      memcpy((void *)tmpa, (void *)array, sizeof(Elem)*arraySize);
+      CmiMemcpy((void *)tmpa, (void *)array, sizeof(Elem)*arraySize);
   
       if (allocSize) delete[] varray;
       varray = tmpv;
@@ -93,7 +93,7 @@ template <class Elem> class ResizeArrayRaw {
       minSize = rar.minSize;
       // We want rar.size() slots, but no constructor run on the elements
       resizeRaw(rar.size());
-      memcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
+      CmiMemcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
       arraySize = rar.size();
     }
   
@@ -133,7 +133,7 @@ template <class Elem> class ResizeArrayRaw {
       resize(0);
       resizeRaw(rar.size());
   
-      memcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
+      CmiMemcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
       arraySize = rar.size();
       return *this;
     }
