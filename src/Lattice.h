@@ -256,12 +256,6 @@ public:
 	dt[j].atomFixed            = d[j].atomFixed;
 	dt[j].groupFixed           = d[j].groupFixed;
 	dt[j].partition            = d[j].partition;
-
-#ifdef MEM_OPT_VERSION
-	dt[j].sigId   = d[j].sigId;
-	dt[j].exclId  = d[j].exclId;
-       	dt[j].vdwType = d[j].vdwType;
-#endif	
       }
     }
     else
