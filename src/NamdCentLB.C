@@ -825,6 +825,42 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       break;	  
   }        
 
+#if 1
+  if(!smallFlag) {
+    for(k=-2; k<= 2; k+=2) {
+      proxy_z = (my_z + k + zsize) % zsize;
+      for(j=-2; j <= 2; j+=2) {
+	proxy_y = (my_y + j + ysize) % ysize;
+	for(i = -2; i <= 2; i+=2) {
+	  if(i == 0 && j == 0 && k == 0)
+	    continue;
+	  
+	  proxy_x = (my_x + i + xsize) % xsize;
+	  proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+	  
+	  if((! patchMap->numPatchesOnNode(proxyNode) || !smallFlag) &&
+	     proxyNodes[proxyNode] == No) {
+	    proxyNodes[proxyNode] = Yes;
+	    neighborNodes[nProxyNodes] = proxyNode;
+	    nProxyNodes++;
+	  }
+	  
+	  if(nProxyNodes >= nodesPerPatch || 
+	     nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	    break;	  
+	}
+	
+	if(nProxyNodes >= nodesPerPatch || 
+	   nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	  break;	  
+      }
+      if(nProxyNodes >= nodesPerPatch || 
+	 nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	break;	  
+    }        
+  }
+
+#else
   const SimParameters* params = Node::Object()->simParameters;
 
   if(!smallFlag) {
@@ -838,7 +874,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
-	nProxyNodes++;
+      nProxyNodes++;
       }
       
       proxy_y = (my_y - 2 + ysize) % ysize;
@@ -877,7 +913,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 	nProxyNodes++;
       }
     }
-
+    
     //Add two away proxies
     if(patchMap->numaway_c() == 2) {
       proxy_y = my_y  % ysize;
@@ -888,7 +924,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
-	nProxyNodes++;
+      nProxyNodes++;
       }
       
       proxy_y = my_y  % ysize;
@@ -903,6 +939,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       }
     }
   }
+#endif
   
   // CkPrintf("Returning %d proxies\n", nProxyNodes);
   
