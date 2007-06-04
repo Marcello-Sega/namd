@@ -266,6 +266,8 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
     int cone = tmgr->getConeNumberForRank(pidscopy[i]);
     cones[cone][conesizes[cone]++] = pidscopy[i];
   }
+  delete tmgr;
+
   while(childcounter<nChild){
     for(int i=0;i<6;i++){
       if(conecounters[i]<conesizes[i]){
@@ -437,6 +439,7 @@ void HomePatch::buildSpanningTree(void)
     int bAdded = 0;
     tmgr->sortIndexByHops(tree[i], subroots,
 						  idxes, PROXY_SPAN_DIM);
+    delete tmgr;
     for(int j=0;j<PROXY_SPAN_DIM;j++){
       if(subsizes[idxes[j]]<PROXY_SPAN_DIM){
         subtrees[idxes[j]][(subsizes[idxes[j]])++] = tree[i];

@@ -727,6 +727,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
   
   if(xsize * ysize * zsize != CkNumPes()) {
     delete [] proxyNodes;
+    delete tmgr;
     return requiredProxies(id, neighborNodes);
   }  
 
@@ -776,6 +777,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
  
   if (step() > 2) {
     delete [] proxyNodes;
+    delete tmgr;
     return nProxyNodes;
   }
  
@@ -942,7 +944,8 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 #endif
   
   // CkPrintf("Returning %d proxies\n", nProxyNodes);
-  
+
+  delete tmgr; 
   delete [] proxyNodes;
   return nProxyNodes;
 }

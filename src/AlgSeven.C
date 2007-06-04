@@ -86,7 +86,8 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
 	    tmgr->rankToCoordinates(p->Id, x,y,z);
 	    tmgr->rankToCoordinates(patches[c->patch1].processor, p1x, p1y, p1z);
 	    tmgr->rankToCoordinates(patches[c->patch2].processor, p2x, p2y, p2z);
-	    
+	    delete tmgr;
+ 
 	    alt_dist = abs(p1x - ax) + abs(p2x - ax) +
 	      abs(p1y - ay) + abs(p1z - az) +
 	      abs(p2y - ay) + abs(p2z - az);

@@ -481,7 +481,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   TopoManager *tmgr = new TopoManager();
   if(tmgr->hasMultipleProcsPerNode())
     patch_pes *= 2;
-  
+  delete tmgr;
+ 
   bool done = false;
 #ifndef USE_COMM_LIB  
   if(CkNumPes() > 2*sum_npes + patch_pes) {    
@@ -2216,11 +2217,13 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
       break;
   }
   
+  delete tmgr; 
+  delete [] pmemap;
+  
   if(npme_pes != numPes)
     //NAMD_bug("ORB PME allocator failed\n");
     return false;
-  
-  delete [] pmemap;
+
   return true;
 }
 

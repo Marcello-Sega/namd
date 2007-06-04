@@ -891,7 +891,7 @@ void WorkDistrib::assignNodeToPatch()
   TopoManager *tmgr = new TopoManager();
   int nBGLNodes = tmgr->getDimNX() * tmgr->getDimNY() 
     * tmgr->getDimNZ();
-
+  delete tmgr;
   if (nBGLNodes >  patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
     CkPrintf ("Blue Gene/L topology partitioner finished successfully \n");
   }
@@ -1834,7 +1834,8 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   
   //Fix to not assign patches to processor 0
   int rc = recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
-  
+ 
+  delete tmgr; 
   delete [] assignedNode;
 
   return rc;

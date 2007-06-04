@@ -558,8 +558,10 @@ int Rebalancer::refine()
          {
 #if USE_TOPOMAP
 	   TopoManager *tmgr = new TopoManager();
-	   if(tmgr->areNeighbors(p->Id, patches[c->patch1].processor, 
-				     patches[c->patch2].processor, 8))
+           int flag = tmgr->areNeighbors(p->Id, patches[c->patch1].processor, 
+				     patches[c->patch2].processor, 8);
+	   delete tmgr;
+	   if(flag)
 #endif
 	     {	     
 	       refine_togrid(grid, thresholdLoad, p, c);
