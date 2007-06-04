@@ -17,7 +17,9 @@ NORMAL( MODIFIED( foo bar ) )
 #pragma unroll(1)
 #endif
 
+#ifndef ARCH_POWERPC
 #pragma ivdep
+#endif
     for (k=0; k<npairi; ++k) {      
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
       const int j = pairlisti[k];
