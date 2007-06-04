@@ -22,14 +22,6 @@ PACK_MSG(MyMsg,
 
 */
 
-#include "converse.h"
-
-#if CHARM_VERSION <= 50900
-#ifndef CmiMemcpy
-#define CmiMemcpy(D,S,N) memcpy(D,S,N)
-#endif
-#endif
-
 #define ALIGN_8(x)   (((unsigned long)x + 7) & (~7))
 
 #define PACKMSG_CHECKSUM(X)
