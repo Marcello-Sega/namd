@@ -37,6 +37,7 @@
 #include "RecBisection.h"
 #include "Random.h"
 #include "varsizemsg.h"
+#include "ProxyMgr.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
@@ -748,6 +749,10 @@ void WorkDistrib::sendMaps(void)
     return;
   }
 
+  //Automatically enable spanning tree
+  if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+    ProxyMgr::Object()->setSendSpanning();
+
   int sizes[2];
   sizes[0] = PatchMap::Object()->packSize();
   sizes[1] = ComputeMap::Object()->packSize();
@@ -777,6 +782,10 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   if ( mapsArrived && CkMyPe() ) {
     PatchMap::Object()->unpack(msg->patchMapData);
     ComputeMap::Object()->unpack(msg->computeMapData);
+
+    //Automatically enable spanning tree
+    if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+      ProxyMgr::Object()->setSendSpanning();
   }
   if ( mapsArrived ) {
     delete msg;
