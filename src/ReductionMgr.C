@@ -328,8 +328,13 @@ void ReductionMgr::mergeAndDeliver(
 
   // merge in this submission
   data->resize(size);  // extend as needed
+  BigReal *curData = data->data;
+#ifdef ARCH_POWERPC
+#pragma disjoint (*curData,  *newData)
+#pragma unroll(4)
+#endif
   for ( int i = 0; i < size; ++i ) {
-    data->data[i] += newData[i];
+    curData[i] += newData[i];
   }
   data->eventsRemaining--;
 
