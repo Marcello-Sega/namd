@@ -294,6 +294,11 @@ private:
   void read_parm(const GromacsTopFile *);  
 
 public:
+
+#ifndef MEM_OPT_VERSION
+  Atom *getAtoms () const { return atoms; }
+#endif
+
   int numAtoms;   //  Number of atoms                   
 
   int numRealBonds;   //  Number of bonds for exclusion determination
