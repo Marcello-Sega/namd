@@ -123,7 +123,7 @@ void Rebalancer::InitProxyUsage()
    numProxies = 0;
 
    for(i=0; i<P; i++) {
-      processors[i].proxyUsage = new int[numPatches];
+      processors[i].proxyUsage = new unsigned char [numPatches];
       for(int j=0; j<numPatches; j++)
       {
          processors[i].proxyUsage[j] = 0;
@@ -556,10 +556,10 @@ int Rebalancer::refine()
             donor->computeSet.iterator((Iterator *)&nextCompute);
          while (c)
          {
-#if 0 // USE_TOPOMAP
+#if USE_TOPOMAP
 	   TopoManager *tmgr = new TopoManager();
-	   if(tmgr->isNeighborOfBoth(p->Id, patches[c->patch1].processor, 
-				     patches[c->patch2].processor, 6))
+	   if(tmgr->areNeighbors(p->Id, patches[c->patch1].processor, 
+				     patches[c->patch2].processor, 8))
 #endif
 	     {	     
 	       refine_togrid(grid, thresholdLoad, p, c);
