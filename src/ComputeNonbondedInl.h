@@ -25,66 +25,27 @@
 
 #include "PressureProfile.h"
 
-#ifdef SIMPLE_PAIRLIST
-// unrolled pairlist code crashes icc on x86, so use this instead
-
 inline int pairlist_from_pairlist(BigReal cutoff2,
-	BigReal p_i_x, BigReal p_i_y, BigReal p_i_z,
-	const CompAtom *p_j,
-	const plint *list, int list_size, plint *newlist,
-	BigReal r2_delta, BigReal *r2list) {
-
+				  BigReal p_i_x, BigReal p_i_y, BigReal p_i_z,
+				  const CompAtom *p_j,
+				  const plint *list, int list_size, plint *newlist,
+				  BigReal r2_delta, BigReal *r2list) {
+  
   BigReal cutoff2_delta = cutoff2 + r2_delta;
   plint *nli = newlist;
   BigReal *r2i = r2list;
-  if ( list_size > 0 ) {
-    int j2 = list[0];
-    BigReal p_j_x = p_j[j2].position.x;
-    BigReal p_j_y = p_j[j2].position.y;
-    BigReal p_j_z = p_j[j2].position.z;
-    int g = 0;
-    while ( g < list_size ) {
-      int j = j2;
-      j2 = list[++g];
-      BigReal t2 = p_i_x - p_j_x;
-      BigReal r2 = t2 * t2 + r2_delta;
-      p_j_x = p_j[j2].position.x;
-      t2 = p_i_y - p_j_y;
-      r2 += t2 * t2;
-      p_j_y = p_j[j2].position.y;
-      t2 = p_i_z - p_j_z;
-      r2 += t2 * t2;
-      p_j_z = p_j[j2].position.z;
-      if ( r2 <= cutoff2_delta ) {
-        *nli= j; ++nli;
-        *r2i = r2; ++r2i;
-      }
-    }
-  }
-  return nli - newlist;
-}
-
-#else // SIMPlE_PAIRLIST not defined
-
-inline int pairlist_from_pairlist(BigReal cutoff2,
-	BigReal p_i_x, BigReal p_i_y, BigReal p_i_z,
-	const CompAtom *p_j,
-	const plint *list, int list_size, plint *newlist,
-	BigReal r2_delta, BigReal *r2list) {
-
-  BigReal cutoff2_delta = cutoff2 + r2_delta;
-  plint *nli = newlist;
-  BigReal *r2i = r2list;
-
-  //***************************************************************
-  //* 4-way unrolled and software-pipelined 
-  //***************************************************************
 
   if ( list_size <= 0) return 0;
 
   int g = 0;
+
+#ifndef SIMPLE_PAIRLIST
+  //***************************************************************
+  //* 4-way unrolled and software-pipelined 
+  //***************************************************************
+
   int jout = 0;
-  if ( list_size > 4) {
+  if ( list_size > 16) {
     // prefetch
     int jcur0 = list[g];
     int jcur1 = list[g + 1];
@@ -122,7 +83,11 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
       
       jcur0  =  list[g    ];    jcur1  =  list[g + 1];
       jcur2  =  list[g + 2];    jcur3  =  list[g + 3];
-      
+
+#if defined(ARCH_POWERPC) & !defined(MEM_OPT_VERSION)
+      __dcbt ((void *) &p_j[jcur0]);
+#endif      
+
       //Compute X distance
       t_0   =  p_i_x - pj_x_0;   t_1   =  p_i_x - pj_x_1;
       t_2   =  p_i_x - pj_x_2;   t_3   =  p_i_x - pj_x_3;
@@ -180,32 +145,34 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
     g -= 4;
   }
 
-  // tail iterations
-  for ( ; g<list_size; g++) {
-    int j = list[g];
-    BigReal p_j_x = p_j[j].position.x;
-    BigReal p_j_y = p_j[j].position.y;
-    BigReal p_j_z = p_j[j].position.z;
-    
-    BigReal tx = p_i_x - p_j_x;
-    BigReal ty = p_i_y - p_j_y;
-    BigReal tz = p_i_z - p_j_z;
-    
-    BigReal r2  = r2_delta;
-    r2 += tx * tx;
-    r2 += ty * ty;
-    r2 += tz * tz;
-    
+  nli += jout;
+  r2i += jout;  
+#endif
+
+  int j2 = list[g];
+  BigReal p_j_x = p_j[j2].position.x;
+  BigReal p_j_y = p_j[j2].position.y;
+  BigReal p_j_z = p_j[j2].position.z;
+  while ( g < list_size ) {
+    int j = j2;
+    j2 = list[++g];
+    BigReal t2 = p_i_x - p_j_x;
+    BigReal r2 = t2 * t2 + r2_delta;
+    p_j_x = p_j[j2].position.x;
+    t2 = p_i_y - p_j_y;
+    r2 += t2 * t2;
+    p_j_y = p_j[j2].position.y;
+    t2 = p_i_z - p_j_z;
+    r2 += t2 * t2;
+    p_j_z = p_j[j2].position.z;
     if ( r2 <= cutoff2_delta ) {
-      nli[ jout    ] = j;
-      r2i[ jout ++ ] = r2;
+      *nli= j; ++nli;
+      *r2i = r2; ++r2i;
     }
   }
-  
-  return jout;
-}
 
-#endif // SIMPLE_PAIRLIST
+  return nli - newlist;
+}
 
 // clear all
 // define interaction type (pair or self)

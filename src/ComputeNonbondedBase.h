@@ -295,13 +295,23 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(plint,pairlist2,arraysize);
 
   NBWORKARRAY(short,vdwtype_array,j_upper+5);
-  for (j = 0; j < j_upper; ++j){
+
 #ifdef MEM_OPT_VERSION
+  for (j = 0; j < j_upper; ++j){
     vdwtype_array[j] = pExt_1[j].vdwType;
-#else
-    vdwtype_array [j] = mol->atomvdwtype(p_1[j].id);
-#endif  
   }
+#else
+  const Atom *atomlist = mol->getAtoms();
+#ifdef ARCH_POWERPC
+#pragma disjoint (*atomlist, *vdwtype_array)
+#pragma disjoint (*p_1, *vdwtype_array)
+#pragma unroll(4)
+#endif
+  for (j = 0; j < j_upper; ++j) {
+    int id = p_1[j].id;
+    vdwtype_array [j] = atomlist[id].vdw_type;
+  }
+#endif
 
   int fixg_upper = 0;
   int g_upper = 0;
@@ -386,15 +396,24 @@ void ComputeNonbondedUtil :: NAME
     const CompAtomExt &pExt_i = pExt_0[i];
 #endif
     if ( p_i.hydrogenGroupSize ) {
-      if ( groupCount++ % numParts != myPart ) {
+      //save current group count
+      int curgrpcount = groupCount;      
+      //increment group count
+      groupCount ++;
+
+      if (groupCount >= numParts)
+	groupCount = 0;
+      
+      if ( curgrpcount != myPart ) {
         i += p_i.hydrogenGroupSize - 1;
+	
+	//Power PC alignment constraint
+#if defined(ARCH_POWERPC) & !defined(MEM_OPT_VERSION)
+	__dcbt((void *) &(p_0[i+1]));
+#endif
         continue;
       }
     }
-
-#ifdef NETWORK_PROGRESS
-    CmiNetworkProgress();
-#endif
 
     register const BigReal p_i_x = p_i.position.x;
     register const BigReal p_i_y = p_i.position.y;
@@ -492,7 +511,7 @@ void ComputeNonbondedUtil :: NAME
 
       if ( g < gu ) {
 	int hu = 0;
-	if ( gu - g  >  2 ) { 
+	if ( gu - g  >  6 ) { 
 
 	  register  int jprev0 = glist[g];
 	  register  int jprev1 = glist[g + 1];
@@ -574,7 +593,7 @@ void ComputeNonbondedUtil :: NAME
 	  if ( r2 <= groupplcutoff2 ) 
 	    goodglist[hu ++] = j; 
 	}
-	
+
 	for ( int h=0; h<hu; ++h ) {
           int j = goodglist[h];
           int hgs = ( p_1[j].nonbondedGroupIsAtom ? 1 :
@@ -679,29 +698,102 @@ void ComputeNonbondedUtil :: NAME
       int k = pairlistoffset;
       int ku = pairlistindex;
       if ( k < ku ) {
-       int j2 = pairlist[k];
-       BigReal p_j_x = p_1[j2].position.x;
-       BigReal p_j_y = p_1[j2].position.y;
-       BigReal p_j_z = p_1[j2].position.z;
-       int atom2 = p_1[j2].id;
-       while ( k < ku ) {
-        j = j2;
-        j2 = pairlist[++k];
-	BigReal r2 = p_i_x - p_j_x;
-	r2 *= r2;
-        p_j_x = p_1[j2].position.x;
-	BigReal t2 = p_i_y - p_j_y;
-	r2 += t2 * t2;
-        p_j_y = p_1[j2].position.y;
-	t2 = p_i_z - p_j_z;
-	r2 += t2 * t2;
-        p_j_z = p_1[j2].position.z;
-	if (r2 <= plcutoff2) {
-          if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
-          else *(plin++) = j;
-        }
-        atom2 = p_1[j2].id;
-       }
+	if ( ku - k  >  6 ) { 	   
+	  register  int jprev0 = pairlist [k];
+	  register  int jprev1 = pairlist [k + 1];
+	  
+	  register  int j0; 
+	  register  int j1; 
+	  
+	  register  BigReal pj_x_0, pj_x_1; 
+	  register  BigReal pj_y_0, pj_y_1; 
+	  register  BigReal pj_z_0, pj_z_1; 
+	  register  BigReal t_0, t_1, r2_0, r2_1;
+	  
+	  pj_x_0 = p_1[jprev0].position.x;
+	  pj_x_1 = p_1[jprev1].position.x;  
+	  
+	  pj_y_0 = p_1[jprev0].position.y; 
+	  pj_y_1 = p_1[jprev1].position.y;  
+	  
+	  pj_z_0 = p_1[jprev0].position.z; 
+	  pj_z_1 = p_1[jprev1].position.z;
+	  
+	  int atom2_0 = p_1[jprev0].id;
+	  int atom2_1 = p_1[jprev1].id;
+	  
+	  k += 2;
+	  for ( ; k < ku - 2; k +=2 ) {
+	    // compute 1d distance, 2-way parallel	 
+	    j0     =  jprev0;
+	    j1     =  jprev1;
+	    
+	    t_0    =  p_i_x - pj_x_0;
+	    t_1    =  p_i_x - pj_x_1;
+	    r2_0   =  t_0 * t_0 + r2_delta;
+	    r2_1   =  t_1 * t_1 + r2_delta;
+	    
+	    t_0    =  p_i_y - pj_y_0;
+	    t_1    =  p_i_y - pj_y_1;
+	    r2_0  +=  t_0 * t_0;
+	    r2_1  +=  t_1 * t_1;
+	    
+	    t_0    =  p_i_z - pj_z_0;
+	    t_1    =  p_i_z - pj_z_1;
+	    r2_0  +=  t_0 * t_0;
+	    r2_1  +=  t_1 * t_1;
+	    
+	    jprev0     =  pairlist[k];
+	    jprev1     =  pairlist[k+1];
+	    
+	    pj_x_0     =  p_1[jprev0].position.x;
+	    pj_x_1     =  p_1[jprev1].position.x;
+	    pj_y_0     =  p_1[jprev0].position.y; 
+	    pj_y_1     =  p_1[jprev1].position.y;
+	    pj_z_0     =  p_1[jprev0].position.z; 
+	    pj_z_1     =  p_1[jprev1].position.z;
+	    
+	    if (r2_0 <= plcutoff2) {
+	      if ( atom2_0 >= excl_min && atom2_0 <= excl_max ) 
+		*(pli++) = j0;
+	      else 
+		*(plin++) = j0;
+	    }
+	    atom2_0 = p_1[jprev0].id;
+	    
+	    if (r2_1 <= plcutoff2) {
+	      if ( atom2_1 >= excl_min && atom2_1 <= excl_max ) 
+		*(pli++) = j1;
+	      else 
+		*(plin++) = j1;
+	     }
+	    atom2_1 = p_1[jprev1].id;	    
+	  }
+	  k-=2;
+	}       
+
+	for (; k < ku; k++) {
+	  int j = pairlist[k];
+	  int atom2 = p_1[j].id;
+	  
+	  BigReal p_j_x = p_1[j].position.x;
+	  BigReal p_j_y = p_1[j].position.y;
+	  BigReal p_j_z = p_1[j].position.z;
+	  
+	  BigReal r2 = p_i_x - p_j_x;
+	  r2 *= r2;
+	  BigReal t2 = p_i_y - p_j_y;
+	  r2 += t2 * t2;
+	  t2 = p_i_z - p_j_z;
+	  r2 += t2 * t2;
+	  
+	  if (r2 <= plcutoff2) {
+	    if ( atom2 >= excl_min && atom2 <= excl_max ) 
+	      *(pli++) = j;
+	    else 
+	      *(plin++) = j;
+	  }
+	}
       }
     }
     int npair2 = pli - pairlist2;
@@ -863,6 +955,16 @@ void ComputeNonbondedUtil :: NAME
     SELF(
       for (k=0; k<npairx && pairlistx_save[k] < j_hgroup; ++k) --exclChecksum;
     )
+#endif
+
+#ifdef NETWORK_PROGRESS
+    CkNetworkProgress();
+#endif
+
+#if defined(ARCH_POWERPC) & !defined(MEM_OPT_VERSION)
+    //data cache block touch the position structure
+    __dcbt ((void *) &(p_0[i+1]));
+    __prefetch_by_load ((void *)&(groupCount));
 #endif
 
     SHORT( FAST( f_0[i].x += f_i_x; ) )

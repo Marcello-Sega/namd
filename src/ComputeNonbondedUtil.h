@@ -34,7 +34,7 @@ public:
     while ( newsize < reqnewsize ) { newsize += newsize >> 1; }
     if ( newsize > size ) {
       plint *newdata = new plint[newsize];
-      memcpy(newdata,data,curpos*sizeof(plint));
+      CmiMemcpy(newdata,data,curpos*sizeof(plint));
       delete [] data;
       data = newdata;
       size = newsize;

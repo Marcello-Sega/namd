@@ -11,7 +11,9 @@ NORMAL( MODIFIED( foo bar ) )
 
 #ifdef ARCH_POWERPC
      __alignx(16, table_four);
+#ifndef MEM_OPT_VERSION
      __alignx(16, p_1);
+#endif
 #pragma unroll(1)
 #endif
 
@@ -37,32 +39,33 @@ NORMAL( MODIFIED( foo bar ) )
       Force *fullf_j = fullf_1 + j;
 #endif
 
+      //Power PC aliasing and alignment constraints
 #ifdef ARCH_POWERPC
       __alignx(16, table_four_i);
-      __alignx(16, p_j);
       FAST (
       __alignx(16, lj_pars);
       )
+#ifndef MEM_OPT_VERSION
+      __alignx(16, p_j);
+#endif
+      
+#if ( FULL( 1+ ) 0 )
+#pragma disjoint (*table_four_i, *fullf_j)
+#pragma disjoint (*p_j,          *fullf_j)
+#if ( SHORT( FAST( 1+ ) ) 0 ) 
+#pragma disjoint (*f_j    , *fullf_j)
+#pragma disjoint (*fullf_j, *f_j)
+#endif   //Short + fast
+#endif   //Full
 
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
 #pragma disjoint (*table_four_i, *f_j)
 #pragma disjoint (*p_j,          *f_j)
 #pragma disjoint (*lj_pars,      *f_j)
-          //__alignx(16, f_j);
+      __prefetch_by_load ((void *)&f_j->x);
 #endif //Short + Fast
-      
-#if ( FULL( 1+ ) 0 )
-          //__alignx(16, fullf_j);
-#pragma disjoint (*table_four_i, *fullf_j)
-#pragma disjoint (*p_j,          *fullf_j)
 
-#if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*f_j    , *fullf_j)
-#pragma disjoint (*fullf_j, *f_j)
-#endif   //Short + fast
-
-#endif   //Full
-#endif   //PowerPC
+#endif   //ARCH_POWERPC
 
       /*
       BigReal modf = 0.0;
@@ -200,20 +203,30 @@ NORMAL( MODIFIED( foo bar ) )
 
 #if ( FULL (EXCLUDED( SHORT ( 1+ ) ) ) 0 ) 
       const BigReal* const slow_i = slow_table + 4*table_i;
-#ifdef ARCH_POWERPC
-      //__alignx (16, slow_i);
-#pragma disjoint (*slow_i, *fullf_j)
+
+#ifdef ARCH_POWERPC  //Alignment and aliasing constraints
+      __alignx (16, slow_i);
+#if ( SHORT( FAST( 1+ ) ) 0 ) 
+#pragma disjoint (*slow_i, *f_j)
 #endif
-#endif      
+#pragma disjoint (*slow_i, *fullf_j)
+#endif  //ARCH_POWERPC
+
+#endif //FULL 
 
 
 #if ( FULL (MODIFIED( SHORT ( 1+ ) ) ) 0 ) 
       const BigReal* const slow_i = slow_table + 4*table_i;
-#ifdef ARCH_POWERPC
-      //__alignx (16, slow_i);
-#pragma disjoint (*slow_i, *fullf_j)
+
+#ifdef ARCH_POWERPC //Alignment and aliasing constraints
+      __alignx (16, slow_i);
+#if ( SHORT( FAST( 1+ ) ) 0 ) 
+#pragma disjoint (*slow_i, *f_j)
 #endif
-#endif      
+#pragma disjoint (*slow_i, *fullf_j)
+#endif //ARCH_POWERPC
+
+#endif //FULL
       
       FULL(
       BigReal slow_d = table_four_i[8 SHORT(+ 4)];
