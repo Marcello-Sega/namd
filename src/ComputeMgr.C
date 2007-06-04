@@ -217,7 +217,7 @@ void
 ComputeMgr::updateLocalComputes5() {
   if (proxySendSpanning || proxyRecvSpanning )
   {
-#if 1
+#if 0 
     ProxyMgr::Object()->buildProxySpanningTree();
 #else
     ProxyMgr::Object()->buildProxySpanningTree2();
