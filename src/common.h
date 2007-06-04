@@ -131,6 +131,13 @@ int  Fclose(FILE *fout);
 
 #define USE_BARRIER   (CYCLE_BARRIER || PME_BARRIER)
 
+#include "converse.h"
+#if CHARM_VERSION <= 50900
+#ifndef CmiMemcpy
+#define CmiMemcpy(D,S,N) memcpy(D,S,N)
+#endif
+#endif
+
 // for CollectionMaster instance which handles output
 #define PEOFCOLLECTIONMASTER 1
 #endif
