@@ -1054,7 +1054,7 @@ void ComputePmeMgr::sendTrans(void) {
       float *q = qgrid + qgrid_size * g + li.y_start_after_transpose * zdim;
       float *qmsg = newmsg->qgrid + nx * cpylen * g;
       for ( int x = 0; x < nx; ++x ) {
-        memcpy((void*)qmsg, (void*)q, cpylen*sizeof(float));
+        CmiMemcpy((void*)qmsg, (void*)q, cpylen*sizeof(float));
         q += slicelen;
         qmsg += cpylen;
       }
@@ -1085,7 +1085,7 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   int x_start = msg->x_start;
   int nx = msg->nx;
   for ( int g=0; g<numGrids; ++g ) {
-    memcpy((void*)(kgrid + qgrid_size * g + x_start*ny*zdim),
+    CmiMemcpy((void*)(kgrid + qgrid_size * g + x_start*ny*zdim),
 	(void*)(msg->qgrid + nx*ny*zdim*g), nx*ny*zdim*sizeof(float));
   }
 
@@ -1170,7 +1170,7 @@ void ComputePmeMgr::sendUntrans(void) {
       } else {
         newmsg->evir[g] = 0.;
       }
-      memcpy((void*)(newmsg->qgrid+nx*ny*zdim*g),
+      CmiMemcpy((void*)(newmsg->qgrid+nx*ny*zdim*g),
 		(void*)(kgrid + qgrid_size*g + x_start*ny*zdim),
 		nx*ny*zdim*sizeof(float));
     }
@@ -1216,7 +1216,7 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
     float *q = qgrid + qgrid_size * g + y_start * zdim;
     float *qmsg = msg->qgrid + nx * cpylen * g;
     for ( int x = 0; x < nx; ++x ) {
-      memcpy((void*)q, (void*)qmsg, cpylen*sizeof(float));
+      CmiMemcpy((void*)q, (void*)qmsg, cpylen*sizeof(float));
       q += slicelen;
       qmsg += cpylen;
     }
@@ -1859,7 +1859,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
     float *qmsg = msg->qgrid;
     for ( g=0; g<numGrids; ++g ) {
       char *f = f_arr + fstart + g*fsize;
-      memcpy((void*)(msg->fgrid+g*flen),(void*)f,flen*sizeof(char));
+      CmiMemcpy((void*)(msg->fgrid+g*flen),(void*)f,flen*sizeof(char));
       double **q = q_arr + fstart + g*fsize;
       for ( i=0; i<flen; ++i ) {
         if ( f[i] ) {
