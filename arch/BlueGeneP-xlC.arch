@@ -1,14 +1,14 @@
 NAMD_ARCH = BlueGeneP
-CHARMARCH = bluegenep-xlc
+CHARMARCH = bluegenep
 
-BGL_INC = -I$(BGL_INSTALL)/bglsys/include 
+BGP_INC = -I$(BGP_INSTALL)/comm/include 
 
-CXX = bgxlC -qstaticinline -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID $(BGL_INC) -DARCH_POWERPC  
+CXX = bgxlC -qstaticinline -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID $(BGP_INC) -DARCH_POWERPC -DUSE_TOPOMAP=1 
 
 CXXOPTS = -O3 -Q -qhot -qarch=440 -qtune=440 -DFFTW_ENABLE_FLOAT
 CXXNOALIASOPTS = -O3 -Q -qhot -qarch=440d -qtune=440 -qalias=noallptrs:notypeptr -DFFTW_ENABLE_FLOAT
 
 CXXTHREADOPTS = -O3 -Q -qarch=440 -qtune=440 -DFFTW_ENABLE_FLOAT
 
-CC = blrts_xlc 
+CC = bgxlc 
 COPTS = -O3 -qhot
