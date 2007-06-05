@@ -18,6 +18,7 @@
 
 #include <new>
 #include <string.h>
+#include "common.h"
 
 #define GrowthFactor 1.5
 #define MinSize 8
