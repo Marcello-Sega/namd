@@ -11,9 +11,7 @@ NORMAL( MODIFIED( foo bar ) )
 
 #ifdef ARCH_POWERPC
      __alignx(16, table_four);
-#ifndef MEM_OPT_VERSION
      __alignx(16, p_1);
-#endif
 #pragma unroll(1)
 #endif
 
@@ -47,9 +45,7 @@ NORMAL( MODIFIED( foo bar ) )
       FAST (
       __alignx(16, lj_pars);
       )
-#ifndef MEM_OPT_VERSION
       __alignx(16, p_j);
-#endif
       
 #if ( FULL( 1+ ) 0 )
 #pragma disjoint (*table_four_i, *fullf_j)
