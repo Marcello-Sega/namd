@@ -750,8 +750,8 @@ void WorkDistrib::sendMaps(void)
   }
 
   //Automatically enable spanning tree
-  //if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
-  //  ProxyMgr::Object()->setSendSpanning();
+  if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+    ProxyMgr::Object()->setSendSpanning();
 
   int sizes[2];
   sizes[0] = PatchMap::Object()->packSize();
@@ -784,8 +784,8 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
     ComputeMap::Object()->unpack(msg->computeMapData);
 
     //Automatically enable spanning tree
-    //if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
-    //  ProxyMgr::Object()->setSendSpanning();
+    if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+      ProxyMgr::Object()->setSendSpanning();
   }
   if ( mapsArrived ) {
     delete msg;
