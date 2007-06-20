@@ -478,10 +478,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   PatchMap * pmap = PatchMap::Object();
   
   int patch_pes = pmap->numNodesWithPatches();
-  TopoManager *tmgr = new TopoManager();
-  if(tmgr->hasMultipleProcsPerNode())
+  TopoManager tmgr;
+  if(tmgr.hasMultipleProcsPerNode())
     patch_pes *= 2;
-  delete tmgr;
  
   bool done = false;
 #ifndef USE_COMM_LIB  
@@ -2091,7 +2090,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
   if (pemap == NULL)
     return false;
 
-  TopoManager *tmgr = new TopoManager();
+  TopoManager tmgr;
 
   memset(pmemap, 0, sizeof(int) * CkNumPes());
 
@@ -2103,7 +2102,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
       pmemap[count] = 1;
       
       //Assumes an XYZT mapping !!
-      if(tmgr->hasMultipleProcsPerNode()) {
+      if(tmgr.hasMultipleProcsPerNode()) {
 	pmemap[(count + CkNumPes()/2)% CkNumPes()] = 1;
       }
     }
@@ -2121,9 +2120,9 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
 
   int xsize = 0, ysize = 0, zsize = 0;
 
-  xsize = tmgr->getDimX();
-  ysize = tmgr->getDimY();
-  zsize = tmgr->getDimZ();
+  xsize = tmgr.getDimX();
+  ysize = tmgr.getDimY();
+  zsize = tmgr.getDimZ();
   
   int nx = xsize, ny = ysize, nz = zsize;
   DimensionMap dm;
@@ -2179,7 +2178,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
         pemap[gcount++] = destPe;
         pmemap[destPe] = 1;
 	
-	if(tmgr->hasMultipleProcsPerNode())
+	if(tmgr.hasMultipleProcsPerNode())
 	  pmemap[(destPe + CkNumPes()/2) % CkNumPes()] = 1;	
 
         npme_pes ++;
@@ -2200,7 +2199,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
             pemap[gcount++] = newdest;
             pmemap[newdest] = 1;
 	    
-	    if(tmgr->hasMultipleProcsPerNode())
+	    if(tmgr.hasMultipleProcsPerNode())
 	      pmemap[(newdest + CkNumPes()/2) % CkNumPes()] = 1;	
 	    
             npme_pes ++;
@@ -2217,7 +2216,6 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
       break;
   }
   
-  delete tmgr; 
   delete [] pmemap;
   
   if(npme_pes != numPes)

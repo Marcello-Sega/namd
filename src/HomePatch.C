@@ -261,12 +261,11 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
   int conecounters[6] = {0,0,0,0,0,0};
   int childcounter = 0;
   nChild = (psize>PROXY_SPAN_DIM)?PROXY_SPAN_DIM:psize;
-  TopoManager *tmgr = new TopoManager();
+  TopoManager tmgr;
   for(int i=0;i<psize;i++){
-    int cone = tmgr->getConeNumberForRank(pidscopy[i]);
+    int cone = tmgr.getConeNumberForRank(pidscopy[i]);
     cones[cone][conesizes[cone]++] = pidscopy[i];
   }
-  delete tmgr;
 
   while(childcounter<nChild){
     for(int i=0;i<6;i++){
@@ -418,9 +417,9 @@ void HomePatch::buildSpanningTree(void)
     treecopy[i] = tree[i+1];
   }
   
-  TopoManager *tmgr = new TopoManager();
-  tmgr->sortRanksByHops(treecopy,nNonPatch);
-  tmgr->sortRanksByHops(treecopy+nNonPatch,
+  TopoManager tmgr;
+  tmgr.sortRanksByHops(treecopy,nNonPatch);
+  tmgr.sortRanksByHops(treecopy+nNonPatch,
 						psize-nNonPatch);  
   
   /* build tree and subtrees */
@@ -437,9 +436,8 @@ void HomePatch::buildSpanningTree(void)
     if(isSubroot) continue;
     
     int bAdded = 0;
-    tmgr->sortIndexByHops(tree[i], subroots,
+    tmgr.sortIndexByHops(tree[i], subroots,
 						  idxes, PROXY_SPAN_DIM);
-    delete tmgr;
     for(int j=0;j<PROXY_SPAN_DIM;j++){
       if(subsizes[idxes[j]]<PROXY_SPAN_DIM){
         subtrees[idxes[j]][(subsizes[idxes[j]])++] = tree[i];

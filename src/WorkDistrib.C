@@ -750,8 +750,8 @@ void WorkDistrib::sendMaps(void)
   }
 
   //Automatically enable spanning tree
-  if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
-    ProxyMgr::Object()->setSendSpanning();
+  //if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+  //  ProxyMgr::Object()->setSendSpanning();
 
   int sizes[2];
   sizes[0] = PatchMap::Object()->packSize();
@@ -784,8 +784,8 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
     ComputeMap::Object()->unpack(msg->computeMapData);
 
     //Automatically enable spanning tree
-    if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
-      ProxyMgr::Object()->setSendSpanning();
+    //if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+    //  ProxyMgr::Object()->setSendSpanning();
   }
   if ( mapsArrived ) {
     delete msg;
@@ -888,10 +888,9 @@ void WorkDistrib::assignNodeToPatch()
   int nNodes = Node::Object()->numNodes();
 
 #if CHARM_VERSION > 50913 && USE_TOPOMAP 
-  TopoManager *tmgr = new TopoManager();
-  int nBGLNodes = tmgr->getDimNX() * tmgr->getDimNY() 
-    * tmgr->getDimNZ();
-  delete tmgr;
+  TopoManager tmgr;
+  int nBGLNodes = tmgr.getDimNX() * tmgr.getDimNY() 
+    * tmgr.getDimNZ();
   if (nBGLNodes >  patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
     CkPrintf ("Blue Gene/L topology partitioner finished successfully \n");
   }
@@ -1827,15 +1826,14 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   int xsize = 0, ysize = 0, zsize = 0;
   
   //Right now assumes an ***T (e.g. XYZT) mapping
-  TopoManager *tmgr = new TopoManager();
-  xsize = tmgr->getDimX();
-  ysize = tmgr->getDimY();
-  zsize = tmgr->getDimZ();
+  TopoManager tmgr;
+  xsize = tmgr.getDimX();
+  ysize = tmgr.getDimY();
+  zsize = tmgr.getDimZ();
   
   //Fix to not assign patches to processor 0
   int rc = recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
  
-  delete tmgr; 
   delete [] assignedNode;
 
   return rc;

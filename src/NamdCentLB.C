@@ -718,16 +718,15 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
   PatchMap* patchMap = PatchMap::Object();
   int myNode = patchMap->node(id);
     
-  TopoManager *tmgr = new TopoManager();
-  xsize = tmgr->getDimX();
-  ysize = tmgr->getDimY();
-  zsize = tmgr->getDimZ();
+  TopoManager tmgr;
+  xsize = tmgr.getDimX();
+  ysize = tmgr.getDimY();
+  zsize = tmgr.getDimZ();
   
-  tmgr->rankToCoordinates(myNode, my_x, my_y, my_z);
+  tmgr.rankToCoordinates(myNode, my_x, my_y, my_z);
   
   if(xsize * ysize * zsize != CkNumPes()) {
     delete [] proxyNodes;
-    delete tmgr;
     return requiredProxies(id, neighborNodes);
   }  
 
@@ -777,7 +776,6 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
  
   if (step() > 2) {
     delete [] proxyNodes;
-    delete tmgr;
     return nProxyNodes;
   }
  
@@ -804,7 +802,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 	  continue;
 
 	proxy_x = (my_x + i + xsize) % xsize;
-	proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+	proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
 
 	if((! patchMap->numPatchesOnNode(proxyNode) || !smallFlag) &&
 	   proxyNodes[proxyNode] == No) {
@@ -838,7 +836,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 	    continue;
 	  
 	  proxy_x = (my_x + i + xsize) % xsize;
-	  proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+	  proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
 	  
 	  if((! patchMap->numPatchesOnNode(proxyNode) || !smallFlag) &&
 	     proxyNodes[proxyNode] == No) {
@@ -872,7 +870,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       proxy_x = my_x  % xsize;
       proxy_z = my_z  % zsize;
       
-      proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+      proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
@@ -883,7 +881,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       proxy_x = my_x  % xsize;
       proxy_z = my_z % zsize;
       
-      proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+      proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
@@ -897,7 +895,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       proxy_x = my_x  % xsize;
       proxy_z = (my_z + 2) % zsize;
       
-      proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+      proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
@@ -908,7 +906,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       proxy_x = my_x  % xsize;
       proxy_z = (my_z - 2 + zsize) % zsize;
       
-      proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+      proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
@@ -922,7 +920,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       proxy_x = (my_x + 2) % xsize;
       proxy_z = my_z  % zsize;
       
-      proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+      proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
@@ -933,7 +931,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       proxy_x = (my_x  - 2 + xsize) % xsize;
       proxy_z = my_z % zsize;
       
-      proxyNode = tmgr->coordinatesToRank(proxy_x, proxy_y, proxy_z);
+      proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
       if(proxyNodes[proxyNode] == No) {
 	proxyNodes[proxyNode] = Yes;
 	neighborNodes[nProxyNodes] = proxyNode;
@@ -945,7 +943,6 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
   
   // CkPrintf("Returning %d proxies\n", nProxyNodes);
 
-  delete tmgr; 
   delete [] proxyNodes;
   return nProxyNodes;
 }

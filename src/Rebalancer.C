@@ -557,10 +557,9 @@ int Rebalancer::refine()
          while (c)
          {
 #if USE_TOPOMAP
-	   TopoManager *tmgr = new TopoManager();
-           int flag = tmgr->areNeighbors(p->Id, patches[c->patch1].processor, 
+	   TopoManager tmgr;
+           int flag = tmgr.areNeighbors(p->Id, patches[c->patch1].processor, 
 				     patches[c->patch2].processor, 8);
-	   delete tmgr;
 	   if(flag)
 #endif
 	     {	     
