@@ -778,7 +778,7 @@ int write_dcdstep(int fd, int N, FloatVector *coor, double *cell)
             fBuf[i] = coor[i+coorstart].x;
         NAMD_write(fd, (char *)fBuf, writesize*4);
         coorstart += writesize;
-        remains -= N;
+        remains -= FBUFSIZE;
     }    
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
@@ -793,7 +793,7 @@ int write_dcdstep(int fd, int N, FloatVector *coor, double *cell)
             fBuf[i] = coor[i+coorstart].y;
         NAMD_write(fd, (char *)fBuf, writesize*4);
         coorstart += writesize;
-        remains -= N;
+        remains -= FBUFSIZE;
     }    
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
@@ -808,7 +808,7 @@ int write_dcdstep(int fd, int N, FloatVector *coor, double *cell)
             fBuf[i] = coor[i+coorstart].z;
         NAMD_write(fd, (char *)fBuf, writesize*4);
         coorstart += writesize;
-        remains -= N;
+        remains -= FBUFSIZE;
     }	
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
