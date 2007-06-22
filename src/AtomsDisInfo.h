@@ -26,7 +26,7 @@ class AtomsForcesMsg: public CMessage_AtomsForcesMsg{
 class AtomsDisInfo : public CBase_AtomsDisInfo
 {
 public:
-    static const int ATOMDISNUM = 500;
+    enum { ATOMDISNUM = 500 };
 
     /* 
      * Blindly returns the array index of the atom (specified by atomId).
