@@ -103,10 +103,12 @@ public:
 	Bool ldbUnloadPME;		//  unload processors doing PME
 	Bool ldbUnloadSMP;		//  unload processors rank
 	Bool ldbUnloadZero;		//  unload processor 0
+	Bool ldbUnloadOne;		//  unload processor 1 
 	Bool ldbUnloadRankZero;		//  unload processors rank
 	int procsPerNode;		//  number of pes per node
 	int ldbUnloadRank;		//  unload rank on a node
 	Bool noPatchesOnZero;		//  no patches on processor 0
+	Bool noPatchesOnOne;		//  no patches on processor 1
 	BigReal initialTemp;   		//  Initial temperature for the 
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 

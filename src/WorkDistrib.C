@@ -987,7 +987,11 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   }
 
   int defaultNode = 0;
-  if ( simParams->noPatchesOnZero && node->numNodes() > 1 ) defaultNode = 1;
+  if ( simParams->noPatchesOnZero && node->numNodes() > 1 ){
+    defaultNode = 1;
+    if( simParams->noPatchesOnOne && node->numNodes() > 2)
+      defaultNode = 2;
+  }
   // Assign patch to node with least atoms assigned.
   for(pid=0; pid < patchMap->numPatches(); pid++) {
     assignedNode = defaultNode;
@@ -1140,22 +1144,33 @@ void WorkDistrib::assignPatchesRecursiveBisection()
   int numNodes = Node::Object()->numNodes();
   SimParameters *simParams = Node::Object()->simParameters;
   int usedNodes = numNodes;
-  if ( simParams->noPatchesOnZero && numNodes > 1 ) usedNodes -= 1;
+  int unusedNodes = 0;
+  if ( simParams->noPatchesOnZero && numNodes > 1 ){
+    usedNodes -= 1;
+    if(simParams->noPatchesOnOne && numNodes > 2)
+      usedNodes -= 1;
+  }  
+  unusedNodes = numNodes - usedNodes;
   RecBisection recBisec(usedNodes,PatchMap::Object());
   if ( recBisec.partition(assignedNode) ) {
-    if ( usedNodes != numNodes ) {
+    if ( unusedNodes !=0 ) {
       for ( int i=0; i<patchMap->numPatches(); ++i ) {
-        assignedNode[i] += 1;
+        assignedNode[i] += unusedNodes;
       }
     }
     sortNodesAndAssign(assignedNode);
+    delete [] assignedNode;
   } else {
+    //free the array here since a same array will be allocated
+    //in assignPatchesToLowestLoadNode function, thus reducting
+    //temporary memory usage
+    delete [] assignedNode; 
+    
     iout << iWARN 
 	 << "WorkDistrib: Recursive bisection fails,"
 	 << "invoking least-load algorithm\n";
     assignPatchesToLowestLoadNode();
   }
-  delete [] assignedNode;
 }
 
 //----------------------------------------------------------------------

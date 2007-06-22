@@ -1263,10 +1263,14 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      &ldbUnloadSMP, FALSE);
    opts.optionalB("main", "ldbUnloadZero", "no load on pe zero",
      &ldbUnloadZero, FALSE);
+   opts.optionalB("main", "ldbUnloadOne", "no load on pe one",
+     &ldbUnloadOne, FALSE);
    opts.optionalB("main", "ldbUnloadRankZero", "no load on rank zero",
      &ldbUnloadRankZero, FALSE);
    opts.optionalB("main", "noPatchesOnZero", "no patches on pe zero",
      &noPatchesOnZero, FALSE);
+   opts.optionalB("main", "noPatchesOnOne", "no patches on pe one",
+     &noPatchesOnOne, FALSE);
    opts.optional("main", "procsPerNode", "Number of Processor per node",
      &procsPerNode);
    opts.range("procsPerNode", POSITIVE);
@@ -2531,10 +2535,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }
      if ( ldbUnloadZero ) iout << iINFO << "REMOVING LOAD FROM NODE 0\n";
      iout << endi;
+     if ( ldbUnloadOne ) iout << iINFO << "REMOVING LOAD FROM NODE 1\n";
+     iout << endi;
      if ( CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
        noPatchesOnZero = TRUE;
      }
-     if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM NODE 0\n";
+     if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
+     iout << endi;
+     if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";
      iout << endi;
      if ( ldbUnloadRankZero ) iout << iINFO << "REMOVING LOAD FROM RANK 0\n";
      iout << endi;

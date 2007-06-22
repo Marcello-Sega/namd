@@ -372,6 +372,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int unLoadPme = simParams->ldbUnloadPME;
   int pmeBarrier = simParams->PMEBarrier;
   int unLoadZero = simParams->ldbUnloadZero;
+  int unLoadOne = simParams->ldbUnloadOne;
   int unLoadRankZero = simParams->ldbUnloadRankZero;
   int unLoadSMP = simParams->ldbUnloadSMP;
 
@@ -452,6 +453,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 *********** end of defunct code *********** */
 
   if (unLoadZero) processorArray[0].available = CmiFalse;
+  if (unLoadOne) processorArray[1].available = CmiFalse;
   if (unLoadRankZero) {
     for (int i=0; i<count; i+=4) 
       processorArray[i].available = CmiFalse;
