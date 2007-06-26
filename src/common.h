@@ -138,7 +138,5 @@ int  Fclose(FILE *fout);
 #endif
 #endif
 
-// for CollectionMaster instance which handles output
-#define PEOFCOLLECTIONMASTER 1
 #endif
 
