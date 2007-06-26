@@ -69,6 +69,13 @@ extern "C" void CApplicationInit();
 
 #include "DumpBench.h"
 
+#ifdef MEM_OPT_VERSION
+#include "CollectionMgr.h"
+#include "CollectionMaster.h"
+#include "CollectionMgr.decl.h"
+#include "CollectionMaster.decl.h"
+#endif
+
 //======================================================================
 // Public Functions
 
@@ -197,6 +204,24 @@ void Node::startup() {
     parameters = node_parameters;
     molecule = node_molecule;
 
+    #ifdef MEM_OPT_VERSION
+    //Allocate CollectionMaster which handles I/O depending on the shiftIOToOne parameter
+    if(!CkMyPe()){
+	CkChareID collectionMaster;
+	if(CkNumPes()>1 && simParameters->shiftIOToOne)
+	    collectionMaster = CProxy_CollectionMaster::ckNew(1);
+	else
+	    collectionMaster = CProxy_CollectionMaster::ckNew(0);
+	
+	//set CollectionMgr and CollectionMasterHandler's field for CollectionMaster
+	CollectionMasterHandler::Object()->setRealMaster(collectionMaster);
+	CProxy_CollectionMgr cmgr(CpvAccess(BOCclass_group).collectionMgr);
+	SlaveInitMsg *bcmaster = new SlaveInitMsg;
+	bcmaster->master = collectionMaster;
+	cmgr.setCollectionMaster(bcmaster);
+    }
+    #endif
+
     // take care of inital thread setting
     threadInit();
 
@@ -294,7 +319,9 @@ void Node::startup() {
     //the condition could be referred to comment for function
     //wrap_coor_int in Output.C
     if(simParameters->wrapAll || simParameters->wrapWater){
-	if(CkNumPes()>1 && CkMyPe()!=PEOFCOLLECTIONMASTER)
+	int peOfCollectionMaster = 0;
+	if(CkNumPes()>1 && simParameters->shiftIOToOne) peOfCollectionMaster = 1;
+	if(CkNumPes()>1 && CkMyPe()!=peOfCollectionMaster)
 	    molecule->delClusterSigs();	
     }else{
 	molecule->delClusterSigs();
