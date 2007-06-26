@@ -121,6 +121,11 @@ private:
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
 
+public:
+  void setCollectionMaster(SlaveInitMsg *msg){ 
+    master = msg->master; 
+    delete msg;
+  }
 };
 
 #endif
