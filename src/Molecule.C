@@ -8231,10 +8231,12 @@ void Molecule::delOtherEachAtomStructs(){
     //decide whether to free space for hydrogenGroup and atoms fields
     //the condition can be referred to the comment before wrap_coor_int
     //in Output.C
+    int peOfCollectionMaster = 0;
+    if(CkNumPes()>1 && simParams->shiftIOToOne) peOfCollectionMaster = 1;
     if(CkNumPes()==1 && simParams->wrapWater && !simParams->wrapAll){
 	//considering namd runs on a single processor
 	return;
-    }else if(CkMyPe()==PEOFCOLLECTIONMASTER){
+    }else if(CkMyPe()==peOfCollectionMaster){
 	if(simParams->wrapAll || !simParams->wrapWater){
 	    hydrogenGroup.resize(0);
 	    delete [] atoms;
