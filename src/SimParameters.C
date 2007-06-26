@@ -1271,6 +1271,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      &noPatchesOnZero, FALSE);
    opts.optionalB("main", "noPatchesOnOne", "no patches on pe one",
      &noPatchesOnOne, FALSE);
+   opts.optionalB("main", "shiftIOToOne", "shift I/O operation to pe one",
+     &shiftIOToOne, FALSE);
    opts.optional("main", "procsPerNode", "Number of Processor per node",
      &procsPerNode);
    opts.range("procsPerNode", POSITIVE);
@@ -2543,6 +2545,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
      iout << endi;
      if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";
+     iout << endi;
+     if ( shiftIOToOne ) iout << iINFO << "SHIFTING I/O OPERATION TO PROCESSOR 1\n";
      iout << endi;
      if ( ldbUnloadRankZero ) iout << iINFO << "REMOVING LOAD FROM RANK 0\n";
      iout << endi;

@@ -109,6 +109,7 @@ public:
 	int ldbUnloadRank;		//  unload rank on a node
 	Bool noPatchesOnZero;		//  no patches on processor 0
 	Bool noPatchesOnOne;		//  no patches on processor 1
+	Bool shiftIOToOne;		//  shift I/O operation (say, DCD output) to proc 1
 	BigReal initialTemp;   		//  Initial temperature for the 
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 
