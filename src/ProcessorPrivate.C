@@ -44,7 +44,7 @@ void ProcessorPrivateInit(void)
   CpvAccess(BroadcastMgr_instance) = 0;
   CpvInitialize(CollectionMaster*, CollectionMaster_instance);
   CpvAccess(CollectionMaster_instance) = 0;
-  CpvInitialize(CollectionMasterHanlder*, CollectionMasterHandler_instance);
+  CpvInitialize(CollectionMasterHandler*, CollectionMasterHandler_instance);
   CpvAccess(CollectionMasterHandler_instance) = 0;
   CpvInitialize(CollectionMgr*, CollectionMgr_instance);
   CpvAccess(CollectionMgr_instance) = 0;
