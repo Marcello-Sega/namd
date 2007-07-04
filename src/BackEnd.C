@@ -131,7 +131,9 @@ void BackEnd::init(int argc, char **argv) {
 #endif
 
   SlaveInitMsg *initmsg7 = new SlaveInitMsg;
-  //initmsg7->master = collectionMaster;
+#ifndef MEM_OPT_VERSION
+  initmsg7->master = collectionMaster;
+#endif
   group.collectionMgr = CProxy_CollectionMgr::ckNew(initmsg7);
   group.broadcastMgr = CProxy_BroadcastMgr::ckNew();
   group.ldbCoordinator = CProxy_LdbCoordinator::ckNew();
