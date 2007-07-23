@@ -124,8 +124,7 @@ void Alg7::strategy()
   double startTime = CmiWallTimer();
 
   //   iout << iINFO  << "calling makeHeaps. \n";
-  //adjustBackgroundLoadAndComputeAverage();
-  computeAverage();
+  adjustBackgroundLoadAndComputeAverage();
   makeHeaps();
   //   iout << iINFO
   //	<< "Before assignment\n" << endi;
