@@ -105,8 +105,8 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 
 Rebalancer::~Rebalancer()
 {
-   for(int i=0; i<P; i++)
-      delete [] processors[i].proxyUsage;
+  //for(int i=0; i<P; i++)
+  //  delete [] processors[i].proxyUsage;
    delete pes;
    delete computePairHeap;
    delete computeSelfHeap;
@@ -123,11 +123,11 @@ void Rebalancer::InitProxyUsage()
    numProxies = 0;
 
    for(i=0; i<P; i++) {
-      processors[i].proxyUsage = new unsigned char [numPatches];
-      for(int j=0; j<numPatches; j++)
-      {
-         processors[i].proxyUsage[j] = 0;
-      }
+     //processors[i].proxyUsage = new unsigned char [numPatches];
+     //for(int j=0; j<numPatches; j++)
+     //{
+     //  processors[i].proxyUsage[j] = 0;
+     //}
 
       Iterator nextCompute;
       nextCompute.id = 0;
@@ -137,8 +137,10 @@ void Rebalancer::InitProxyUsage()
 
       while(c)
       {
-         /* int n1 = */ processors[i].proxyUsage[c->patch1]++;
-         /* int n2 = */ processors[i].proxyUsage[c->patch2]++;
+	/* int n1 = */ //processors[i].proxyUsage[c->patch1]++;
+	proxyUsage.increment (i, c->patch1); 
+	/* int n2 = */ //processors[i].proxyUsage[c->patch2]++;
+	proxyUsage.increment (i, c->patch2); 
 
          // iout << iINFO  
          // << "Assigning compute " << c->Id << " with work = " << c->load 
@@ -158,7 +160,8 @@ void Rebalancer::InitProxyUsage()
       Iterator nextProc;
       processorInfo *p = (processorInfo *)patches[i].proxiesOn.iterator((Iterator *)&nextProc);
       while (p) {
-          p->proxyUsage[i] += 1;
+	  //p->proxyUsage[i] += 1;
+	  proxyUsage.increment (p->Id, i);
           p = (processorInfo *)patches[i].proxiesOn.next((Iterator*)&nextProc);
       }
   }
@@ -302,8 +305,10 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    
    // 4-29-98: Added the following code to keep track of how many proxies
    // on each processor are being used by a compute on that processor
-   /* int n1 = */ p->proxyUsage[c->patch1]++;
-   /* int n2 = */ p->proxyUsage[c->patch2]++;
+   /* int n1 = */ //p->proxyUsage[c->patch1]++;
+   proxyUsage.increment (p->Id, c->patch1);
+   /* int n2 = */ //p->proxyUsage[c->patch2]++;
+   proxyUsage.increment (p->Id, c->patch2);
 
    // iout << iINFO  
    // << "Assigning compute " << c->Id << " with work = " << c->load 
@@ -339,8 +344,10 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    // on each processor are being used by a compute on that processor.
    // If no computes are using the proxy, it should be removed if it is not
    // on the processor that its patch is on.
-   /* int n1 = */ p->proxyUsage[c->patch1]--;
-   /* int n2 = */ p->proxyUsage[c->patch2]--;
+   /* int n1 = */ //p->proxyUsage[c->patch1]--;
+   proxyUsage.decrement (p->Id, c->patch1);
+   /* int n2 = */ //p->proxyUsage[c->patch2]--;
+   proxyUsage.decrement (p->Id, c->patch2);
 
    // iout << iINFO
    // << "De-assigning compute " << c->Id << " from processor " << p->Id << "\n"
@@ -348,7 +355,8 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    // << "\tproxyUsage[" << c->patch2 << "]: " << n2 << " --> " << n2-1 << "\n"
    // << std::endl;
 
-   if(p->proxyUsage[c->patch1] <= 0 && p->Id != patches[c->patch1].processor)
+   //if(p->proxyUsage[c->patch1] <= 0 && p->Id != patches[c->patch1].processor)
+   if(proxyUsage.getVal(p->Id, c->patch1) <= 0 && p->Id != patches[c->patch1].processor)
    {
       // iout << iINFO 
       // << "REMOVING PROXY " << c->patch1 << " FROM PROCESSOR " << p->Id 
@@ -359,7 +367,9 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       patch1->proxiesOn.remove(p);
       numProxies--;
    }
-   if(p->proxyUsage[c->patch2] <= 0 && p->Id != patches[c->patch2].processor)
+   
+   //if(p->proxyUsage[c->patch2] <= 0 && p->Id != patches[c->patch2].processor)
+   if(proxyUsage.getVal(p->Id, c->patch2) <= 0 && p->Id != patches[c->patch2].processor)
    {
       // iout << iINFO
       // << "REMOVING PROXY " << c->patch1 << " FROM PROCESSOR " << p->Id 
@@ -557,7 +567,6 @@ int Rebalancer::refine()
          while (c)
          {
 #if USE_TOPOMAP
-	   TopoManager tmgr;
            int flag = tmgr.areNeighbors(p->Id, patches[c->patch1].processor, 
 				     patches[c->patch2].processor, 8);
 	   if(flag)

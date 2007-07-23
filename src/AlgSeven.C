@@ -41,7 +41,6 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
 	  //Find processors that are patch neighbors on the BGL torus
 	  int neighbor = 0, neighbor_alt = 0;
 	  
-	   TopoManager tmgr;
 	  /*
 	    if((tmgr->isNeighbor(altp->Id, patches[c->patch1].processor) ||
 	    tmgr->isNeighbor(altp->Id, patches[c->patch2].processor)))
@@ -125,7 +124,8 @@ void Alg7::strategy()
   double startTime = CmiWallTimer();
 
   //   iout << iINFO  << "calling makeHeaps. \n";
-  adjustBackgroundLoadAndComputeAverage();
+  //adjustBackgroundLoadAndComputeAverage();
+  computeAverage();
   makeHeaps();
   //   iout << iINFO
   //	<< "Before assignment\n" << endi;

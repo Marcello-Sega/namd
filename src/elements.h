@@ -49,7 +49,7 @@ public:
    
    // Added 4-29-98: Array to keep track of number of computes that are using
    // each proxy on a processor
-   unsigned char *proxyUsage;
+   // unsigned char *proxyUsage;
 public:
    processorInfo(): backgroundLoad(0.), idleTime(0.), computeLoad(0.), available(CmiTrue) {}
 };

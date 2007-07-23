@@ -12,6 +12,79 @@
 
 // #define LDB_DEBUG
 
+#include "ckhashtable.h"
+
+#if USE_TOPOMAP
+#include "TopoManager.h"
+#endif
+
+class ProxyUsageKey {
+ protected:
+  int      processor;
+  int      patch;
+  
+ public:
+  ProxyUsageKey (int pe, int patch) {
+    this->processor = pe;
+    this->patch     = patch;
+  }
+
+  CkHashCode hash (void) const {
+    return (patch << 16) + processor;
+  }
+
+  static CkHashCode  staticHash (const void *x, size_t size) {
+    return ((ProxyUsageKey *)x)->hash();
+  }
+
+  int compare (const ProxyUsageKey &in) const {
+    if ((in.patch == patch) && (in.processor == processor))
+      return 1;
+    
+    return 0;
+  }
+   
+  static int staticCompare (const void *a, const void *b, size_t size) {
+    return ((ProxyUsageKey *)a)->compare(* (ProxyUsageKey *)b);
+  }
+};
+
+class ProxyUsage {
+ protected:
+  CkHashtableT <ProxyUsageKey, int>  htable;
+  
+ public:
+  
+  ProxyUsage () : htable (1217, 0.5) {}   //pass in a large prime close to 
+                                          //1k processors
+
+  void increment (int pe, int patch) {
+    ProxyUsageKey  pkey (pe, patch);
+
+    int val = htable.get (pkey);
+    htable.put (pkey) =  val + 1;      
+  }
+
+  void decrement (int pe, int patch) {
+    ProxyUsageKey  pkey (pe, patch);
+    
+    int val = htable.get (pkey);
+    CkAssert (val > 0);
+    val --;
+
+    if (val == 0)
+      htable.remove (pkey);
+    else 
+      htable.put (pkey) = val; 
+  }
+     
+  int getVal (int pe, int patch) {
+    ProxyUsageKey  pkey (pe, patch);  
+    return htable.get (pkey);
+  }
+};
+  
+
 class Rebalancer {
 private:
   int bytesPerAtom;
@@ -26,6 +99,9 @@ private:
 
   void refine_togrid(pcgrid &grid, double thresholdLoad,
                         processorInfo *p, computeInfo *c);
+
+  ProxyUsage  proxyUsage;
+
 
 protected: 
   const char *strategyName;
@@ -61,6 +137,10 @@ protected:
   void adjustBackgroundLoadAndComputeAverage();
   double computeMax();
   double overLoad;
+
+#if USE_TOPOMAP
+  TopoManager   tmgr;
+#endif
 
 public:
   Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
