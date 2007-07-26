@@ -99,9 +99,11 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
     RefineOnly(computeArray,patchArray,processorArray,
+//    RefineTorusLB(computeArray,patchArray,processorArray,
                                 nMoveableComputes, numPatches, numProcessors);
   } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
     Alg7(computeArray,patchArray,processorArray,
+//    TorusLB(computeArray,patchArray,processorArray,
                           nMoveableComputes, numPatches, numProcessors);
   } else if (simParams->ldbStrategy == LDBSTRAT_ALGORB) {
     if (step() == 1) {
@@ -113,8 +115,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using RefineOnly\n" << endi;
       RefineOnly(computeArray,patchArray,processorArray,
-                                  nMoveableComputes, numPatches,
-                                  numProcessors);
+//      RefineTorusLB(computeArray,patchArray,processorArray,
+                                  nMoveableComputes, numPatches, numProcessors);
     }
   } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
     // if (step() == 0) {
@@ -122,7 +124,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using Alg7\n" << endi;
       Alg7(computeArray,patchArray,processorArray,
-                            nMoveableComputes, numPatches, numProcessors);
+//      TorusLB(computeArray,patchArray,processorArray,
+	      nMoveableComputes, numPatches, numProcessors);
     } else {
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using RefineOnly\n" << endi;
@@ -133,10 +136,25 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       //		      nMoveableComputes);
       //      }
       RefineOnly(computeArray,patchArray,processorArray,
-                                  nMoveableComputes, numPatches,
-                                  numProcessors);
+//      RefineTorusLB(computeArray,patchArray,processorArray,
+                                  nMoveableComputes, numPatches, numProcessors);
     }
   }
+
+#ifdef LDB_DEBUG
+  TopoManager tmgr;
+  int pe1, pe2, pe3, hops=0;
+  for(int i=0; i<nMoveableComputes; i++)
+  {
+    pe1 = computeArray[i].processor;
+    pe2 = patchArray[computeArray[i].patch1].processor;
+    pe3 = patchArray[computeArray[i].patch2].processor;
+    hops += tmgr.getHopsBetweenRanks(pe1, pe2);
+    if(computeArray[i].patch1 != computeArray[i].patch2)
+      hops += tmgr.getHopsBetweenRanks(pe1, pe3);  
+  }
+  CkPrintf("Load Balancing: Number of Hops: %d\n", hops);
+#endif
 
 #if DUMP_LDBDATA
   dumpDataASCII("ldbd_after", numProcessors, numPatches, nMoveableComputes);
@@ -524,7 +542,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	patchArray[pid].processor = i;
 #endif
 	const int numProxies = 
-#if USE_TOPOMAP 
+#if USE_TOPOMAP
 	requiredProxiesOnProcGrid(pid,neighborNodes);
 #else
 	requiredProxies(pid, neighborNodes);
@@ -639,7 +657,11 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   // Distribute initial default proxies across empty processors.
   // This shouldn't be necessary, but may constrain the load balancer
   // and avoid placing too many proxies on a single processor.  -JCP
+  
+  // This code needs to be turned off when the creation of ST is
+  // shifted to the load balancers -ASB
 
+#if 1
   int numPatches = patchMap->numPatches();
   int emptyNodes = numNodes - numPatches;
   if ( emptyNodes > numPatches ) {
@@ -694,6 +716,7 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
       }
     }
   }
+#endif
 
   delete [] proxyNodes;
   return nProxyNodes;
