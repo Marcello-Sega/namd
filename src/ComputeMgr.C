@@ -213,16 +213,30 @@ ComputeMgr::updateLocalComputes4(CkQdMsg *msg) {
   CProxy_ComputeMgr(thisgroup).updateLocalComputes5();
 }
 
+int firstphase = 1;
+
 void
 ComputeMgr::updateLocalComputes5() {
-  if (proxySendSpanning || proxyRecvSpanning )
-  {
-#if 0 
-    ProxyMgr::Object()->buildProxySpanningTree();
-#else
+  // we always use the centralized building of spanning tree
+  // distributed building of ST called in Node.C only
+  if(proxySendSpanning || proxyRecvSpanning)
     ProxyMgr::Object()->buildProxySpanningTree2();
-#endif
+ 
+  // this code needs to be turned on if we want to 
+  // shift the creation of ST to the load balancer
+ 
+#if 0
+  if(proxySendSpanning || proxyRecvSpanning) {
+  if (firstphase)
+    ProxyMgr::Object()->buildProxySpanningTree2();
+  else
+    if(CkMyPe() == 0)
+      ProxyMgr::Object()->sendSpanningTrees();
+
+  firstphase = 0;
   }
+#endif
+
   if (!CkMyPe()) 
 #if CHARM_VERSION > 050402
     CkStartQD(CkIndex_ComputeMgr::doneUpdateLocalComputes(), &thishandle);
