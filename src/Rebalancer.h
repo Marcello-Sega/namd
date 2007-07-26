@@ -9,6 +9,11 @@
 
 #include "elements.h"
 #include "heap.h"
+#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#include "TopoManager.h"
+#endif
+#include "ProxyMgr.decl.h"
+#include "ProxyMgr.h"
 
 // #define LDB_DEBUG
 
@@ -86,15 +91,17 @@ class ProxyUsage {
   
 
 class Rebalancer {
-private:
-  int bytesPerAtom;
-  void InitProxyUsage();
-
+public:
   struct pcpair {
     processorInfo *p;
     computeInfo *c;
     pcpair() : p(0),c(0) {;}
+    void reset () { p = 0; c = 0; }
   };
+
+private:
+  int bytesPerAtom;
+  
   typedef pcpair pcgrid[3][3][2];
 
   void refine_togrid(pcgrid &grid, double thresholdLoad,
@@ -125,6 +132,7 @@ protected:
 
   void strategy();
   void makeHeaps();
+  void makeTwoHeaps();
   void assign(computeInfo *c, processorInfo *pRec);
   void assign(computeInfo *c, int p);
   void deAssign(computeInfo *c, processorInfo *pRec);
@@ -137,9 +145,12 @@ protected:
   void adjustBackgroundLoadAndComputeAverage();
   double computeMax();
   double overLoad;
-
+  void createSpanningTree();
+  void decrSTLoad();
+  void incrSTLoad();
+  void InitProxyUsage();
 #if USE_TOPOMAP
-  TopoManager   tmgr;
+  TopoManager tmgr;
 #endif
 
 public:
@@ -149,7 +160,4 @@ public:
   ~Rebalancer();
 };
 
-#if CHARM_VERSION > 50913 && USE_TOPOMAP 
-#include "TopoManager.h"
-#endif
 #endif
