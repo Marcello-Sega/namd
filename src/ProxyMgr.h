@@ -109,9 +109,25 @@ struct ProxyElem {
 typedef UniqueSet<ProxyElem> ProxySet;
 typedef UniqueSetIter<ProxyElem> ProxySetIter;
 
+class ProxyTree {       // keep track of the spanning trees
+  public:
+    int proxyMsgCount;
+    NodeIDList *proxylist;
+    NodeIDList *trees;
+    int *sizes;
+  public:
+    ProxyTree() {
+      proxyMsgCount = 0;
+      proxylist = NULL;
+      trees = NULL;
+      sizes = NULL;
+    }
+    ~ProxyTree() {
+    }
+};
+
 class ProxyMgr : public BOCclass
 {
-
 public:
   ProxyMgr();
   ~ProxyMgr();
@@ -136,6 +152,7 @@ public:
   int  getRecvSpanning();
 
   void buildProxySpanningTree();
+  void sendSpanningTrees();
   void sendSpanningTreeToHomePatch(int pid, int *tree, int n);
   void recvSpanningTreeOnHomePatch(int pid, int *tree, int n);
   void sendSpanningTree(ProxySpanningTreeMsg *);
@@ -164,26 +181,12 @@ public:
   int numProxies() { return proxySet.size(); }
 
   static int nodecount;
+  ProxyTree &getPtree();
+ 
 private:
-
   ProxySet proxySet;
+  ProxyTree ptree;
 
-  class ProxyTree {       // keep track of the spanning trees
-  public:
-    int proxyMsgCount;
-    NodeIDList *proxylist;
-    NodeIDList *trees;
-  public:
-    ProxyTree() {
-      proxyMsgCount = 0;
-      proxylist = NULL;
-      trees = NULL;
-    }
-    ~ProxyTree() {
-    }
-  };
-
-  ProxyTree  ptree;
 };
 
 #endif /* PATCHMGR_H */
