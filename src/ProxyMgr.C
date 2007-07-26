@@ -288,6 +288,9 @@ int ProxyMgr::getRecvSpanning() {
   return proxySendSpanning;
 }
 
+ProxyTree &ProxyMgr::getPtree() {
+  return ptree;
+}
 
 void ProxyMgr::removeProxies(void)
 {
@@ -307,6 +310,7 @@ void ProxyMgr::removeUnusedProxies(void)
   {
     if ( pi->proxyPatch->getNumComputes() == 0 ) {
       toDelete.add(pi->patchID);
+      //fprintf(stderr, "Proxy Deleted Patch %d Proc %d", pi->patchID, CkMyPe());
     }
   }
   PatchID *pidi = toDelete.begin();
@@ -500,8 +504,10 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
   ptree.proxyMsgCount ++;
   if (ptree.proxyMsgCount == nPatches) {
     ptree.proxyMsgCount = 0;
-    // build tree now
+    // building and sending of trees is done in two steps now
+    // so that the building step can be shifted to the load balancer
     buildSpanningTree0();
+    sendSpanningTrees();
   }
 }
 
@@ -550,7 +556,7 @@ static int noInterNode(int p)
   else if(CkNumPes()<4097)
     exclude = 10;
   else if(CkNumPes()<8193)
-    exclude = 20;
+    exclude = 40;
   else if(CkNumPes()<16385)
     exclude = 40;
   else
@@ -588,7 +594,8 @@ ProxyMgr::buildSpanningTree0()
   {
     int numProxies = ptree.proxylist[pid].size();
     if (numProxies == 0) {
-      ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, NULL, 0);
+      CkPrintf ("This is sheer evil!\n\n");
+      //ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, NULL, 0);
       return;
     }
     NodeIDList &tree = ptree.trees[pid];   // spanning tree
@@ -600,7 +607,8 @@ ProxyMgr::buildSpanningTree0()
     int nNonPatch = 0;
     int treesize = 1;
     int pp;
-      // keep tree persistent for non-intermediate nodes
+
+    // keep tree persistent for non-intermediate nodes
     for (pp=0; pp<numProxies; pp++) {
       int p = ptree.proxylist[pid][pp];
       int oldindex = oldtree.find(p);
@@ -615,6 +623,7 @@ ProxyMgr::buildSpanningTree0()
         }
       }
     }
+
     for (pp=0; pp<numProxies; pp++) {
       int p = ptree.proxylist[pid][pp];              // processor number
       if (tree.find(p) != -1) continue;        // already used
@@ -629,7 +638,7 @@ ProxyMgr::buildSpanningTree0()
         while (tree[s] != -1) { s++; if (s==numProxies+1) s = 1; }
         int isIntermediate = (s*PROXY_SPAN_DIM+1 <= numProxies);
         if (isIntermediate && (ntrees[p] >= MAX_INTERNODE || noInterNode(p))) {   // TOO MANY INTERMEDIATE TREES
-        //if (isIntermediate && ntrees[p] >= MAX_INTERNODE) {   // TOO MANY INTERMEDIATE TREES
+        //if (isIntermediate && ntrees[p] >= MAX_INTERNODE)    // TOO MANY INTERMEDIATE TREES
           while (tree[e] != -1) { e--; if (e==-1) e = numProxies; }
           tree[e] = p;
           isIntermediate = (e*PROXY_SPAN_DIM+1 <= numProxies);
@@ -643,13 +652,31 @@ ProxyMgr::buildSpanningTree0()
       }
     }
     // send homepatch's proxy tree
-    ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, &tree[0], treesize);
+    if(ptree.sizes)
+      ptree.sizes[pid] = treesize;
+    //ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, &tree[0], treesize);
   }
-  for (i=0; i<CkNumPes(); i++) {
+  /*for (i=0; i<CkNumPes(); i++) {
     if (ntrees[i] > MAX_INTERNODE) iout << "Processor " << i << "has (guess) " << ntrees[i] << " intermediate nodes." << endi;
-  }
+  }*/
   delete [] ntrees;
   delete [] numPatchesOnNode;
+}
+
+void ProxyMgr::sendSpanningTrees()
+{
+  int numPatches = PatchMap::Object()->numPatches();
+  for (int pid=0; pid<numPatches; pid++) {
+    int numProxies = ptree.proxylist[pid].size();
+    if (numProxies == 0)
+      ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, NULL, 0);
+    else {
+      /*if(ptree.sizes)
+        ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, ptree.trees[pid].begin(), ptree.sizes[pid]);
+      else*/
+        ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, ptree.trees[pid].begin(), ptree.trees[pid].size());
+    }
+  }
 }
 
 void ProxyMgr::sendSpanningTreeToHomePatch(int pid, int *tree, int n)
