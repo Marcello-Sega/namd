@@ -516,7 +516,7 @@ Unpack NAMD and matching Charm++ source code and enter directory:
 
 Build and test the Charm++/Converse library:
   ./build charm++ net-linux --no-shared -O -DCMK_OPTIMIZE=1
-  cd net-linux/pgms/charm++/megatest/
+  cd net-linux/tests/charm++/megatest/
   make pgm
   ./charmrun ++local +p4 ./pgm    (also try running on multiple nodes)
   cd ../../../../..
@@ -615,11 +615,11 @@ or equivalently you can edit charm/arch/mpi-linux/conv-mach.h to set
 "--with-device=ch_gm:-disable-registration" when configuring MPICH-GM
 (at least according to the Myrinet FAQ at www.myri.com).
 
-Run make in charm/CHARMARCH/pgms/charm++/megatest/ and run the
+Run make in charm/CHARMARCH/tests/charm++/megatest/ and run the
 resulting binary "pgm" as you would run NAMD on your platform.  You
 should try running on several processors if possible.  For example:
 
-  cd net-linux-clustermatic-tcp-icc/pgms/charm++/megatest/
+  cd net-linux-clustermatic-tcp-icc/tests/charm++/megatest/
   make pgm
   ./charmrun +p16 ./pgm
 
