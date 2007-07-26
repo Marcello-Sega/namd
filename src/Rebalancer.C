@@ -7,6 +7,10 @@
 #include "InfoStream.h"
 #include "Node.h"
 #include "Rebalancer.h"
+#include "ProxyMgr.h"
+#include "PatchMap.h"
+
+#define ST_NODE_LOAD 0.005
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
@@ -276,6 +280,46 @@ void Rebalancer::makeHeaps()
       else
          computePairHeap->insert( (InfoRecord *) &(computes[i]));
 */
+}
+
+void Rebalancer::makeTwoHeaps()
+{
+   int i, j;
+
+   delete pes;
+   pes = new minHeap(P+2);
+   for (i=0; i<P; i++)
+      pes->insert((InfoRecord *) &(processors[i]));
+
+   delete computePairHeap;
+   delete computeSelfHeap;
+   delete computeBgPairHeap;
+   delete computeBgSelfHeap;
+
+   int numSelfComputes, numPairComputes;
+
+   numSelfComputes = 0;
+   numPairComputes = 0;
+   for (i=0; i<numComputes; i++) {
+     int pa1 = computes[i].patch1;
+     int pa2 = computes[i].patch2;
+     if (pa1 == pa2)
+       ++numSelfComputes;
+     else
+       ++numPairComputes;
+   }
+
+   computePairHeap = new maxHeap(numPairComputes+2);
+   computeSelfHeap = new maxHeap(numSelfComputes+2);
+
+   for (i=0; i<numComputes; i++) {
+     int pa1 = computes[i].patch1;
+     int pa2 = computes[i].patch2;
+     if ( pa1 == pa2 )
+       computeSelfHeap->insert( (InfoRecord *) &(computes[i]));
+     else
+       computePairHeap->insert( (InfoRecord *) &(computes[i]));
+   }
 }
 
 void Rebalancer::assign(computeInfo *c, int processor)
@@ -983,4 +1027,64 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
    *isBadForCommunication = bad;
 }
 
+void Rebalancer::createSpanningTree() {
+  ProxyTree &pt = ProxyMgr::Object()->getPtree();
+  Iterator nextP;
+  processorInfo *p;
+  if(pt.sizes==NULL)
+    pt.sizes = new int[numPatches];
+ 
+  if (pt.proxylist == NULL)
+    pt.proxylist = new NodeIDList[numPatches];
+  for(int i=0; i<numPatches; i++)
+  {
+    pt.proxylist[i].resize(patches[i].proxiesOn.numElements());
+    nextP.id = 0;
+    p = (processorInfo *)(patches[i].proxiesOn.iterator((Iterator *)&nextP));
+    int j = 0;
+    while(p) {
+      //if (p->Id < 0)
+      //  printf ("Inserting proxy on -ve processor %d for patch %d\n", p->Id, i);
+
+      if (p->Id == (PatchMap::Object()->node(i))) {
+        p = (processorInfo *)(patches[i].proxiesOn.next((Iterator *)&nextP));
+        continue;
+      }
+
+      pt.proxylist[i][j] = p->Id;
+      nextP.id++;
+      p = (processorInfo *)(patches[i].proxiesOn.next((Iterator *)&nextP));
+      j++;
+    }
+    pt.proxylist[i].resize(j);
+  }
+  CkPrintf("Done intialising\n");
+  ProxyMgr::Object()->buildSpanningTree0();
+}
+
+void Rebalancer::decrSTLoad() {
+  int pe;
+  ProxyTree &pt = ProxyMgr::Object()->getPtree();
+  for(int i=0; i<numPatches; i++)
+    for(int j=1; j<pt.proxylist[i].size() && j<PROXY_SPAN_DIM; j++) {
+      pe = pt.proxylist[i][j];
+      processors[pe].load -= ST_NODE_LOAD;
+      processors[pe].backgroundLoad -= ST_NODE_LOAD;
+      if(processors[pe].load < 0.0)
+        processors[pe].load = 0.0;
+      if(processors[pe].backgroundLoad < 0.0)
+        processors[pe].backgroundLoad = 0.0;
+    }
+}
+
+void Rebalancer::incrSTLoad() {
+  int pe;
+  ProxyTree &pt = ProxyMgr::Object()->getPtree();
+  for(int i=0; i<numPatches; i++)
+    for(int j=1; j<pt.proxylist[i].size() && j<PROXY_SPAN_DIM; j++) {
+      pe = pt.proxylist[i][j];
+      processors[pe].load += ST_NODE_LOAD;
+      processors[pe].backgroundLoad += ST_NODE_LOAD;
+    }
+}
 
