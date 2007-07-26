@@ -11,6 +11,8 @@
 #include "Alg7.h"
 #include "AlgRecBisection.h"
 #include "InfoStream.h"
+#include "TorusLB.h"
+#include "RefineTorusLB.h"
 
 void CreateNamdCentLB();
 
