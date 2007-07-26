@@ -14,8 +14,23 @@ Rebalancer(computeArray, patchArray,
 	   processorArray, nComps, 
 	   nPatches, nPes)
 {
-strategyName = "Refine";
-strategy();
+  strategyName = "Refine";
+  strategy();
+#if 0
+    if(proxySendSpanning || proxyRecvSpanning) {
+      decrSTLoad();
+      computeAverage();
+      createSpanningTree();
+      incrSTLoad();
+      for(int i=0; i<P; i++)
+        delete [] processors[i].proxyUsage; 
+      InitProxyUsage();
+      multirefine(); 
+      printLoads();
+      //createSpanningTree();
+    }
+#endif
+
 }
 
 void RefineOnly::strategy()
