@@ -1,0 +1,471 @@
+/** \file RefineTorusLB.C
+ *  Author: Abhinav S Bhatele
+ *  Date Created: June 12th, 2007 
+ *
+ *  Replacement for RefineOnly.C
+ */
+
+#include "RefineTorusLB.h"
+#define EXPAND_INNER_BRICK 2
+
+RefineTorusLB::RefineTorusLB(computeInfo *cs, patchInfo *pas, processorInfo *pes, int ncs, 
+int npas, int npes, int flag) : Rebalancer(cs, pas, pes, ncs, npas, npes)
+{
+  if(flag==1) {
+    strategyName = "RefineTorusLB";
+    strategy();
+    // CREATE THE SPANNING TREE IN THE LOAD BALANCER
+#if 0
+    if(proxySendSpanning || proxyRecvSpanning) {
+    for(int i=0; i<4; i++) {
+      decrSTLoad();
+      computeAverage();
+      createSpanningTree();
+      incrSTLoad();
+      for(int i=0; i<P; i++)
+        delete [] processors[i].proxyUsage; 
+      InitProxyUsage();
+      binaryRefine();
+      computeAverage();
+      printLoads();
+      //createSpanningTree();
+    }
+    }
+#endif
+  }
+}
+
+RefineTorusLB::~RefineTorusLB() { }
+
+void RefineTorusLB::strategy() {
+  for(int i=0; i<numComputes; i++)
+    assign((computeInfo *) &(computes[i]), (processorInfo *) &(processors[computes[i].oldProcessor]));
+
+  binaryRefine();
+  
+  computeAverage();
+  printLoads();
+}
+
+void RefineTorusLB::binaryRefine() {
+  CkPrintf("Inside binary refine\n");
+  double avg = computeAverage();
+  double max = computeMax();
+
+  double step = 0.01, start = 1.1;
+  double dCurLoad = max/avg;
+  int minLoad = 0;
+  int maxLoad = (int)((dCurLoad - start)/step + 1);
+  double dMinLoad = minLoad * step + start;
+  double dMaxLoad = maxLoad * step + start;
+  int curLoad;
+ 
+  int done=0;
+  overLoad = dMinLoad;
+  if(newRefine())
+    done = 1;
+  else {
+    overLoad = dMaxLoad;
+    if(!newRefine()) {
+      CkPrintf("Error: Could not refine at max overload\n");
+      done = 1;
+    }
+  } 
+
+  while(!done) {
+    CkPrintf("in multi refine %d %d\n", minLoad, maxLoad);
+    if(maxLoad - minLoad <= 1)
+      done = 1;
+    else {
+      curLoad = (maxLoad + minLoad)/2;
+      overLoad = curLoad * step + start;
+      if(newRefine())
+        maxLoad = curLoad;
+      else
+        minLoad = curLoad;
+    }
+  }
+}
+
+int RefineTorusLB::newRefine() {
+  CkPrintf("Inside new refine %f\n", overLoad);
+  int done = 1;
+  maxHeap *heavyPes = new maxHeap(P);
+  Set *lightPes = new Set();
+  processorInfo *donor, *p, *bestP;
+  computeInfo *c;
+  Iterator nextC, nextP;
+  pcpair good;
+
+  for(int i=0; i<P; i++) {
+    if (processors[i].load > overLoad*averageLoad)
+      heavyPes->insert((InfoRecord *) &(processors[i]));
+    else
+      lightPes->insert((InfoRecord *) &(processors[i]));
+  }
+
+  CkPrintf("%d %d\n", heavyPes->numElements(), lightPes->numElements());
+ 
+  pcpair pcpairarray[12];
+     
+  for(int j=0; j<6; j++) {
+    bestPe[j] = &pcpairarray[j]; //new pcpair();
+    goodPe[j] = &pcpairarray[j+6];  //new pcpair();
+    //CkPrintf("AllocatE\n");
+  }
+
+  while(1) {
+    while(donor = (processorInfo*)heavyPes->deleteMax())
+      if(donor->computeSet.numElements())
+	break;
+    
+    if(!donor) break;
+
+    for(int j=0; j<6; j++) {
+      bestPe[j]->reset();
+      goodPe[j]->reset();
+      //CkPrintf("AllocatE\n");
+    }
+
+    nextC.id = 0;
+    c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
+
+    while(c) {
+      // Look at the processors which have the compute's patches first
+      p = &processors[patches[c->patch1].processor];        // patch 1
+      selectPes(p, c);
+      p = &processors[patches[c->patch2].processor];        // patch 2
+      selectPes(p, c);
+
+      // Try the processors which have the patches' proxies
+      p = (processorInfo *)(patches[c->patch1].proxiesOn.iterator((Iterator *)&nextP));
+      while(p) {                                            // patch 1
+	selectPes(p, c);
+	p = (processorInfo *)(patches[c->patch1].proxiesOn.next((Iterator *)&nextP));
+      }
+  
+      p = (processorInfo *)(patches[c->patch2].proxiesOn.iterator((Iterator *)&nextP));
+      while(p) {                                            //patch 2
+        selectPes(p, c);
+        p = (processorInfo *)(patches[c->patch2].proxiesOn.next((Iterator *)&nextP));
+      }
+      
+      nextC.id++;
+      c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
+    } // end of compute loop
+
+#define REASSIGN(GRID) if (GRID->c) { deAssign(GRID->c, donor); \
+        assign(GRID->c, GRID->p); bestP = GRID->p; }
+
+    bestP = 0;
+    REASSIGN(bestPe[3])
+    else REASSIGN(bestPe[4])
+    else REASSIGN(bestPe[5])
+    else REASSIGN(goodPe[3])
+    else REASSIGN(goodPe[4])
+    else REASSIGN(goodPe[5])
+    else REASSIGN(bestPe[1])
+    else REASSIGN(bestPe[2])
+    else REASSIGN(bestPe[0])
+    else REASSIGN(goodPe[1])
+    else REASSIGN(goodPe[2])
+    else REASSIGN(goodPe[0])
+
+    if(bestP) {
+      if(bestP->load > averageLoad) lightPes->remove(bestP);
+      if(donor->load > overLoad*averageLoad)
+        heavyPes->insert((InfoRecord *) donor);
+      else
+	lightPes->insert((InfoRecord *) donor);
+      //CkPrintf("1st try succeeded\n");
+      
+      continue;
+    }
+    //else
+      //CkPrintf("1st try failed\n");
+
+    // if this fails, look at the inner brick
+    int found = 0;
+    int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
+    double minLoad;
+
+    good.c = 0; good.p = 0;
+    minLoad = overLoad*averageLoad;
+    nextC.id = 0;
+    c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
+ 
+    while(c) {    
+      p1 = patches[c->patch1].processor;
+      p2 = patches[c->patch2].processor;
+
+      tmgr.rankToCoordinates(p1, x1, y1, z1);
+      tmgr.rankToCoordinates(p2, x2, y2, z2);
+
+      if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
+      if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
+      if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
+
+#if 0
+      if(xm>=EXPAND_INNER_BRICK) xm=xm-EXPAND_INNER_BRICK; else xm=0;
+      if(ym>=EXPAND_INNER_BRICK) ym=ym-EXPAND_INNER_BRICK; else ym=0;
+      if(zm>=EXPAND_INNER_BRICK) zm=zm-EXPAND_INNER_BRICK; else zm=0;
+
+      if(xM<tmgr.getDimX()-EXPAND_INNER_BRICK) xM=xM+EXPAND_INNER_BRICK; else xM=tmgr.getDimX()-1;
+      if(yM<tmgr.getDimY()-EXPAND_INNER_BRICK) yM=yM+EXPAND_INNER_BRICK; else yM=tmgr.getDimY()-1;
+      if(zM<tmgr.getDimZ()-EXPAND_INNER_BRICK) zM=zM+EXPAND_INNER_BRICK; else zM=tmgr.getDimZ()-1;
+#endif
+
+      for(int i=xm; i<=xM; i++)
+        for(int j=ym; j<=yM; j++)
+	  for(int k=zm; k<=zM; k++)
+	  {
+	    pe = tmgr.coordinatesToRank(i, j, k);
+	    p = &processors[pe];
+	    if(c->load + p->load < minLoad) {
+              minLoad = c->load + p->load;
+	      good.c = c;
+	      good.p = p;
+	    }
+	  }
+      nextC.id++;
+      c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
+    }
+
+    if(good.c) {
+      found = 1;
+      //CkPrintf("2nd try succeeded\n");
+    }
+    else {
+      found = 0;
+      //CkPrintf("2nd try failed\n");
+    }
+
+    /*p = (processorInfo *)lightPes->iterator((Iterator *) &nextP);
+    // if that also fails, look at the outer brick
+    if(found == 0) {
+     while (p)
+      {
+        nextC.id = 0;
+        c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
+        while (c)
+        {
+          if(c->load + p->load < overLoad*averageLoad)
+          {
+	    good.c = c;
+	    good.p = p;
+            found = 1;
+            break;
+          }
+          nextC.id++;
+          c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
+        }
+        if(found == 1)
+          break;
+        p = (processorInfo *)lightPes->next((Iterator *) &nextP);
+      }
+      if(found==1)
+        CkPrintf("3rd try succeeded\n");
+      else
+        CkPrintf("3rd try failed\n");
+    }*/
+
+    // if that also fails, look at the outer brick
+    minLoad = overLoad * averageLoad;
+    int xmi, ymi, zmi, xMi, yMi, zMi;
+    xmi = ymi = zmi = xMi = yMi = zMi = 0;
+    if(found==0) {
+      good.c = 0; good.p = 0;
+      p = 0;
+
+      nextC.id = 0;
+      c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
+      while(c) {
+        p1 = patches[c->patch1].processor;
+        p2 = patches[c->patch2].processor;
+
+        tmgr.rankToCoordinates(p1, x1, y1, z1);
+        tmgr.rankToCoordinates(p2, x2, y2, z2);
+
+        if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
+        if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
+        if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
+
+        while(xm!=0 || ym!=0 || zm!=0 || xM!=tmgr.getDimX()-1 || yM!=tmgr.getDimY()-1 || zM!=tmgr.getDimZ()-1) {
+          if(xM<tmgr.getDimX()-1) { xM++; xMi=1; } if(xm>0) { xm--; xmi=1; }
+          if(yM<tmgr.getDimY()-1) { yM++; yMi=1; } if(ym>0) { ym--; ymi=1; }
+          if(zM<tmgr.getDimZ()-1) { zM++; zMi=1; } if(zm>0) { zm--; zmi=1; }
+
+          if(zmi==1) {
+            for(int i=xm; i<=xM; i++)
+              for(int j=ym; j<=yM; j++)
+              {
+                pe = tmgr.coordinatesToRank(i, j, zm);
+                p = &processors[pe];
+	        if(c->load + p->load < minLoad) {
+                  good.c = c; good.p = p;
+                  found = 1;
+	          break;
+                }
+              }
+          }
+          if(found==1) break;
+
+          if(zMi==1) {
+            for(int i=xm; i<=xM; i++)
+              for(int j=ym; j<=yM; j++)
+              {
+                pe = tmgr.coordinatesToRank(i, j, zM);
+                p = &processors[pe];
+                if(c->load + p->load < minLoad) {
+                  good.c = c; good.p = p;
+                  found = 1;
+	          break;
+                }
+ 	      }
+          }
+          if(found==1) break;
+
+          if(ymi==1) {
+            for(int i=xm; i<=xM; i++)
+              for(int k=zm; k<=zM; k++)
+              {
+                pe = tmgr.coordinatesToRank(i, ym, k);
+                p = &processors[pe];
+                if(c->load + p->load < minLoad) {
+                  good.c = c; good.p = p;
+                  found = 1;
+	          break;
+                }
+              }
+          }
+          if(found==1) break;
+
+          if(yMi==1) {
+            for(int i=xm; i<=xM; i++)
+              for(int k=zm; k<=zM; k++)
+              {
+                pe = tmgr.coordinatesToRank(i, yM, k);
+                p = &processors[pe];
+                if(c->load + p->load < minLoad) {
+                  good.c = c; good.p = p;
+                  found = 1;
+	          break;
+                }
+              }
+          }
+          if(found==1) break;
+
+          if(xmi==1) {
+            for(int j=ym; j<=yM; j++)
+              for(int k=zm; k<=zM; k++)
+              {
+                pe = tmgr.coordinatesToRank(xm, j, k);
+                p = &processors[pe];
+                if(c->load + p->load < minLoad) {
+                  good.c = c; good.p = p;
+                  found = 1;
+	          break;
+                }
+              }
+          }
+          if(found==1) break;
+
+          if(xMi==1) {
+            for(int j=ym; j<=yM; j++)
+              for(int k=zm; k<=zM; k++)
+              {
+                pe = tmgr.coordinatesToRank(xM, j, k);
+                p = &processors[pe];
+                if(c->load + p->load < minLoad) {
+                  good.c = c; good.p = p;
+                  found = 1;
+	          break;
+                }
+              }
+          }
+          if(found==1) break;
+
+          xmi = ymi = zmi = xMi = yMi = zMi = 0; found = 0;
+        }
+	nextC.id++;
+	c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
+      } 
+    }
+
+    if(found == 1) {
+      deAssign(good.c, donor);
+      assign(good.c, good.p);
+      if (good.p->load > averageLoad) lightPes->remove(good.p);
+      if (donor->load > overLoad*averageLoad)
+        heavyPes->insert((InfoRecord *) donor);
+      else
+        lightPes->insert((InfoRecord *) donor);
+    }
+    else {
+      done = 0;
+      break;
+    } 
+
+  } // end of while loop
+
+  //for(int j=0; j<6; j++) {
+  //  delete bestPe[j];
+  //  delete goodPe[j];
+  // CkPrintf("DeletE\n");
+  //}
+  delete heavyPes;
+  delete lightPes;
+
+  return done;
+}
+
+void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
+  if(p->available == CmiFalse)
+    return;
+
+  int x, y, z;
+  int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
+  double minLoad;
+  p1 = patches[c->patch1].processor;
+  p2 = patches[c->patch2].processor;
+
+  tmgr.rankToCoordinates(p1, x1, y1, z1);
+  tmgr.rankToCoordinates(p2, x2, y2, z2);
+
+  if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
+  if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
+  if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
+
+  // HP HP HP HP HP HP
+  // 02 11 20 01 10 00
+  //  5  4  3  2  1  0
+  int numPatches, numProxies, badForComm, index;
+  numAvailable(c, p, &numPatches, &numProxies, &badForComm); 
+  index = ((numPatches==2) ? (numPatches+1) : numPatches) + (numProxies * 2 + 1);
+
+  if(numPatches==0 && numProxies==1)
+    index--;
+  if(numProxies==0)
+    index--; 
+
+  if(p->load + c->load < overLoad * averageLoad) {
+    tmgr.rankToCoordinates(p->Id, x, y, z);
+    if( (x>=xm && x<=xM) && (y>=ym && y<=yM) && (z>=zm && z<=zM) ) {
+      pcpair* &newp = bestPe[index];
+
+      if (!(newp->c) || ((p->load + c->load) < (newp->p->load + newp->c->load))) {
+        newp->p = p;
+        newp->c = c;
+      } 
+    } else {
+      pcpair* &newp = goodPe[index];
+
+      if (!(newp->c) || ((p->load + c->load) < (newp->p->load + newp->c->load))) {
+        newp->p = p;
+        newp->c = c;
+
+      }
+    }
+  }
+}
+
