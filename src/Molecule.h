@@ -33,6 +33,7 @@ using namespace std;
 
 class SimParameters;
 class Parameters;
+class ConfigList;
 class PDB;
 class MIStream;
 class MOStream;
@@ -366,7 +367,7 @@ public:
 /* END gf */
 
   Molecule(SimParameters *, Parameters *param);
-  Molecule(SimParameters *, Parameters *param, char *filename);
+  Molecule(SimParameters *, Parameters *param, char *filename, ConfigList *cfgList=NULL);  
   
   Molecule(SimParameters *, Parameters *, Ambertoppar *);
   void read_parm(Ambertoppar *);

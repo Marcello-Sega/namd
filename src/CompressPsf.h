@@ -9,8 +9,9 @@ using namespace std;
 class Molecule;
 class Parameters;
 class SimParameters;
+class ConfigList;
 
-void compress_psf_file(Molecule *mol, char *psfFileName, Parameters *param, SimParameters *simParam);
+void compress_psf_file(Molecule *mol, char *psfFileName, Parameters *param, SimParameters *simParam, ConfigList* cfgList);
 
 template <typename T>
 int lookupCstPool(const vector<T>& pool, const T& val)

@@ -336,14 +336,14 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param)
 /*                  */
 /************************************************************************/
 
-Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename)
+Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, ConfigList *cfgList)
 {
   initialize(simParams,param);
 
   if(simParams->useCompressedPsf)
       read_compressed_psf_file(filename, param);
   else if(simParams->genCompressedPsf){      
-      compress_psf_file(this, filename, param, simParams);
+      compress_psf_file(this, filename, param, simParams, cfgList);
   }      
   else
       read_psf_file(filename, param);
@@ -1127,6 +1127,64 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     }
     
     numTotalExclusions /= 2;
+
+    //read extra bond parameters if there is an input of extra bonds (extraBondsOn is true)
+    if(simParams->extraBondsOn){
+        int numExtraParams=0;
+
+        //read extra bond params
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NEXTRABONDPARAMS")){
+            NAMD_die("UNABLE TO FIND NEXTRABONDPARAMS");
+        }
+        sscanf(buffer, "%d", &numExtraParams);
+        if(numExtraParams>0){
+            BondValue *newParams = new BondValue[params->NumBondParams+numExtraParams];
+            memcpy(newParams, params->bond_array, params->NumBondParams*sizeof(BondValue));
+            delete [] params->bond_array;            
+
+            int curNumPs = params->NumBondParams;
+            for(int i=0; i<numExtraParams; i++){
+                Real k, x0;
+                NAMD_read_line(psf_file, buffer);
+                sscanf(buffer, "%f %f", &k, &x0);
+                newParams[curNumPs+i].k = k;
+                newParams[curNumPs+i].x0 = x0;
+            }
+            params->bond_array = newParams;
+            params->NumBondParams += numExtraParams;
+        }
+
+        //read extra angle params
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NEXTRAANGLEPARAMS")){
+            NAMD_die("UNABLE TO FIND NEXTRAANGLEPARAMS");
+        }
+        sscanf(buffer, "%d", &numExtraParams);
+        if(numExtraParams>0){
+            NAMD_die("CURRENTLY NOT SUPPORT EXTRA ANGLES");
+        }
+
+        //read extra diheral params
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NEXTRADIHEDRALPARAMS")){
+            NAMD_die("UNABLE TO FIND NEXTRADIHEDRALPARAMS");
+        }
+        sscanf(buffer, "%d", &numExtraParams);
+        if(numExtraParams>0){
+            NAMD_die("CURRENTLY NOT SUPPORT EXTRA DIHEDRALS");
+        }
+
+        //read extra improper params
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NEXTRAIMPROPERPARAMS")){
+            NAMD_die("UNABLE TO FIND NEXTRAIMPROPERPARAMS");
+        }
+        sscanf(buffer, "%d", &numExtraParams);
+        if(numExtraParams>0){
+            NAMD_die("CURRENTLY NOT SUPPORT EXTRA IMPROPERS");
+        }
+    }
 
     //read DIHEDRALPARAMARRAY and IMPROPERPARAMARRAY    
     NAMD_read_line(psf_file, buffer);
