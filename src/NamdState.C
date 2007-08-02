@@ -146,7 +146,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
     //****** END CHARMM/XPLOR type changes    
 
     if(simParameters->genCompressedPsf){
-        molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+        molecule = new Molecule(simParameters, parameters, moleculeFilename->data, configList);
         iout << "Finished Compressing psf file!\n" <<endi;
         CkExit();
     }
@@ -203,8 +203,12 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 
 	if (simParameters->extraBondsOn) {
+       #ifdef MEM_OPT_VERSION
+       iout << "Information about the extra bonds have been already integrated into the compressed psf file!\n" <<endi;
+       #else
 	   molecule->build_extra_bonds(parameters,
 				configList->find("extraBondsFile"));
+       #endif
 	}
 	
 	if (simParameters->fixedAtomsOn)
