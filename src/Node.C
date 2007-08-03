@@ -309,7 +309,9 @@ void Node::startup() {
     #ifdef MEM_OPT_VERSION
     if(!CkMyPe()){
 	molecule->delEachAtomSigs();
-	molecule->delMassChargeSpace();
+	molecule->delChargeSpace();
+	if(!simParameters->freeEnergyOn)
+	    molecule->delMassSpace();
 	molecule->delOtherEachAtomStructs();
 	//we can free the pdb data here to save memory because output
 	//is always in the binary format thus saving 3 doubles * numAtoms bytes.

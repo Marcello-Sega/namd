@@ -2971,7 +2971,8 @@ void Molecule::receive_Molecule(MIStream *msg)
 
       #ifdef MEM_OPT_VERSION
       delEachAtomSigs();
-      delMassChargeSpace();
+      delChargeSpace();
+      delMassSpace();
       delOtherEachAtomStructs();
       #endif
     }

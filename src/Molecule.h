@@ -825,15 +825,18 @@ public:
       eachAtomExclSig = NULL;
   }
 
-  void delMassChargeSpace(){
+  void delChargeSpace(){
       delete [] atomChargePool;
-      delete [] atomMassPool;
-      delete [] eachAtomMass;
       delete [] eachAtomCharge;
       atomChargePool = NULL;
+      eachAtomCharge = NULL;
+  }
+  
+  void delMassSpace(){
+      delete [] atomMassPool;
+      delete [] eachAtomMass;
       atomMassPool = NULL;
       eachAtomMass = NULL;
-      eachAtomCharge = NULL;
   }
   
   void delClusterSigs() {
