@@ -802,7 +802,7 @@ void outputPsfFile(FILE *ofp)
 
         // 2) output extra params for angles
         numExtraParams = extraAngleParams.size();
-        fprintf(ofp, "%d!NEXTRABONDPARAMS\n", numExtraParams);
+        fprintf(ofp, "%d!NEXTRAANGLEPARAMS\n", numExtraParams);
         if(numExtraParams>0)
         {
             NAMD_die("Output extra angle params not implemented!");
@@ -810,7 +810,7 @@ void outputPsfFile(FILE *ofp)
 
         // 3) output extra params for dihedrals
         numExtraParams = extraDihedralParams.size();
-        fprintf(ofp, "%d!NEXTRABONDPARAMS\n", numExtraParams);
+        fprintf(ofp, "%d!NEXTRADIHEDRALPARAMS\n", numExtraParams);
         if(numExtraParams>0)
         {
             NAMD_die("Output extra dihedral params not implemented!");
@@ -818,7 +818,7 @@ void outputPsfFile(FILE *ofp)
 
         // 4) output extra params for impropers
         numExtraParams = extraImproperParams.size();
-        fprintf(ofp, "%d!NEXTRABONDPARAMS\n", numExtraParams);
+        fprintf(ofp, "%d!NEXTRAIMPROPERPARAMS\n", numExtraParams);
         if(numExtraParams>0)
         {
             NAMD_die("Output extra improper params not implemented!");
