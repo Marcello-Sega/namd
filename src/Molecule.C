@@ -937,6 +937,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     atomSigPool = new AtomSignature[atomSigPoolSize];
     int typeCnt;
     int tmp1, tmp2, tmp3;
+    int tisReal;
     int ttype;
     for(int i=0; i<atomSigPoolSize; i++){
         //BOND SIGS
@@ -950,10 +951,11 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         }            
         for(int j=0; j<typeCnt; j++){
             NAMD_read_line(psf_file, buffer);            
-            sscanf(buffer, "%d | %d", &tmp1, &ttype);
-            TupleSignature oneSig(1, BOND, (Index)ttype);
-            oneSig.offset[0] = tmp1;
+            sscanf(buffer, "%d | %d | %d", &tmp1, &ttype, &tisReal);
+            TupleSignature oneSig(1, BOND, (Index)ttype, (char)tisReal);
+            oneSig.offset[0] = tmp1;            
             atomSigPool[i].bondSigs[j]=oneSig;
+            if(tisReal) numRealBonds++;
         }
 
         //ANGLE SIGS
@@ -967,10 +969,10 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         }            
         for(int j=0; j<typeCnt; j++){
             NAMD_read_line(psf_file, buffer);            
-            sscanf(buffer, "%d %d | %d", &tmp1, &tmp2, &ttype);
-            TupleSignature oneSig(2,ANGLE,(Index)ttype);
+            sscanf(buffer, "%d %d | %d | %d", &tmp1, &tmp2, &ttype, &tisReal);
+            TupleSignature oneSig(2,ANGLE,(Index)ttype, (char)tisReal);
             oneSig.offset[0] = tmp1;
-            oneSig.offset[1] = tmp2;
+            oneSig.offset[1] = tmp2;            
             atomSigPool[i].angleSigs[j] = oneSig;
         }
         //DIHEDRAL SIGS
@@ -984,8 +986,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         }            
         for(int j=0; j<typeCnt; j++){
             NAMD_read_line(psf_file, buffer);            
-            sscanf(buffer, "%d %d %d | %d", &tmp1, &tmp2, &tmp3, &ttype);
-            TupleSignature oneSig(3,DIHEDRAL,(Index)ttype);
+            sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
+            TupleSignature oneSig(3,DIHEDRAL,(Index)ttype, (char)tisReal);
             oneSig.offset[0] = tmp1;
             oneSig.offset[1] = tmp2;
             oneSig.offset[2] = tmp3;
@@ -1002,8 +1004,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         }            
         for(int j=0; j<typeCnt; j++){
             NAMD_read_line(psf_file, buffer);            
-            sscanf(buffer, "%d %d %d | %d", &tmp1, &tmp2, &tmp3, &ttype);
-            TupleSignature oneSig(3,IMPROPER,(Index)ttype);
+            sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
+            TupleSignature oneSig(3,IMPROPER,(Index)ttype, (char)tisReal);
             oneSig.offset[0] = tmp1;
             oneSig.offset[1] = tmp2;
             oneSig.offset[2] = tmp3;
@@ -1204,7 +1206,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
 
     Fclose(psf_file);
 
-    numRealBonds = numBonds;
+    //numRealBonds is set when reading bondSignatures from compressed psf file
+    
     build_atom_status();
 #endif
 }
@@ -7310,6 +7313,7 @@ void Molecule::build_atom_status(void) {
     for(int j=0; j<sig->bondCnt; j++){
 	a1 = i;
 	a2 = i+bSigs[j].offset[0];
+    if(!bSigs[j].isReal) continue;
 	if (is_hydrogen(a1) && is_hydrogen(a2)) {
 	    ++hhbondcount;
 	    // make H atoms point at each other for now
@@ -7351,6 +7355,7 @@ void Molecule::build_atom_status(void) {
     for(int j=0; j<sig->bondCnt; j++){
 	a1 = i;
 	a2 = i+bSigs[j].offset[0];
+    if(!bSigs[j].isReal) continue;
 	if (is_hydrogen(a1)) {
 	    if (is_hydrogen(a2)) continue;
 	    atoms[a1].partner = a2;
@@ -7502,6 +7507,7 @@ void Molecule::build_atom_status(void) {
     for(int j=0; j<sig->bondCnt; j++){
 	a1 = i;
 	a2 = i+bSigs[j].offset[0];
+    if(!bSigs[j].isReal) continue;
 #else
     for (i=0; i < numRealBonds; i++) {
       a1 = bonds[i].atom1;
@@ -7582,6 +7588,7 @@ void Molecule::build_atom_status(void) {
     for(int j=0; j<sig->bondCnt; j++){
 	a1 = i;
 	a2 = i+bSigs[j].offset[0];
+    if(!bSigs[j].isReal) continue;
 #else
     for (i=0; i < numRealBonds; i++) {
       a1 = bonds[i].atom1;
@@ -8375,8 +8382,9 @@ void Molecule::addNewExclSigPool(const vector<ExclusionSignature>& newExclSigPoo
 void TupleSignature::pack(MOStream *msg){
     msg->put((short)tupleType);
     msg->put(numOffset);
-    msg->put(numOffset, offset);
+    msg->put(numOffset, offset);    
     msg->put(tupleParamType);
+    msg->put(isReal);
 }
 
 void TupleSignature::unpack(MIStream *msg){
@@ -8388,8 +8396,9 @@ void TupleSignature::unpack(MIStream *msg){
     delete [] offset;
     offset = new int[numOffset];
     msg->get(numOffset*sizeof(int), (char *)offset);
-
+    
     msg->get(tupleParamType);
+    msg->get(isReal);
 }
 
 void AtomSignature::pack(MOStream *msg){

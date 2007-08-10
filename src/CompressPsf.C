@@ -1247,6 +1247,7 @@ void getBondData(FILE *fd)
     }
 
     //copy extra bonds to bonds structure
+    int numRealBonds = numBonds;
     for(int i=0; i<extraBonds.size(); i++)
         bonds[numBonds+i] = extraBonds[i];
     numBonds += extraBonds.size();
@@ -1260,6 +1261,7 @@ void getBondData(FILE *fd)
         Bond *b = bonds+i;
         TupleSignature oneSig(1,BOND,b->bond_type);
         oneSig.offset[0] = b->atom2 - b->atom1;
+        oneSig.isReal = (i<numRealBonds );
 
         int poolIndex = lookupCstPool(sigsOfBonds, oneSig);
         int newSig=0;
@@ -1300,13 +1302,13 @@ void getBondData(FILE *fd)
                 NAMD_die(err_msg);
             }
         }
-    }
+    }      
 
     //building clusters for this simulation system in two steps
     //1. create a list for each atom where each atom in the list is bonded with that atom
     vector<int> *atomListOfBonded = new vector<int>[g_mol->numAtoms];
 
-    for(int i=0; i<numBonds; i++)
+    for(int i=0; i<numRealBonds; i++)
     {
         Bond *b=bonds+i;
         int atom1 = b->atom1;
@@ -1957,13 +1959,14 @@ void buildExclusions()
     // 2. this function's main purpose is to reduce memory usage. Since exclusion
     // signatures are used, this function could be overlooked  --Chao Mei
 
-    vector<int> *eachAtomNeighbors = new vector<int>[g_mol->numAtoms];
+    vector<int> *eachAtomNeighbors = new vector<int>[g_mol->numAtoms];   
     for(int atom1=0; atom1<g_mol->numAtoms; atom1++)
     {
         AtomSigInfo *aSig = &atomSigPool[atomData[atom1].atomSigIdx];
         for(int j=0; j<aSig->bondSigIndices.size(); j++)
         {
             TupleSignature *tSig = &sigsOfBonds[aSig->bondSigIndices[j]];
+            if(!tSig->isReal) continue;
             int atom2 = atom1+tSig->offset[0];
             eachAtomNeighbors[atom1].push_back(atom2);
             eachAtomNeighbors[atom2].push_back(atom1);

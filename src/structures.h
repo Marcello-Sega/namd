@@ -127,46 +127,58 @@ public:
     TupleSigType tupleType;
     int numOffset;
     //the relative offset from the atom index
-    int *offset;
+    int *offset;   
 
     //This type is determined by the Parameter object
     //for Exclusion, this indicates the modified field
     Index tupleParamType;
 
+    //indicate this tuple is specified in the psf file, not from other files.
+    //this is added due to the extraBonds feature. All tuples from extraBonds
+    //are not real!
+    char isReal;
+
 public:
     TupleSignature(){        
         offset = NULL;
+        isReal = 1;
     }
 
-    TupleSignature(int n, TupleSigType t, Index paramType){
+    TupleSignature(int n, TupleSigType t, Index paramType, char ir=1){
         tupleType = t;
         numOffset = n;
-        offset = new int[n];
+        offset = new int[n];        
         tupleParamType = paramType;
+        isReal = ir;
     }
     TupleSignature(const TupleSignature& oneSig){
         tupleType = oneSig.tupleType;
         numOffset = oneSig.numOffset;
         offset = new int[numOffset];
-        setOffsets(oneSig.offset);
+        setOffsets(oneSig.offset);        
         tupleParamType = oneSig.tupleParamType;
+        isReal = oneSig.isReal;
     }
     TupleSignature &operator=(const TupleSignature& oneSig){
         tupleType = oneSig.tupleType;
         numOffset = oneSig.numOffset;
         if(offset) delete [] offset;
         offset = new int[numOffset];
-        setOffsets(oneSig.offset);
+        setOffsets(oneSig.offset);        
         tupleParamType = oneSig.tupleParamType;
+        isReal = oneSig.isReal;
         return *this;
     }
     int operator==(const TupleSignature& sig) const{
 	    if(tupleType!=sig.tupleType)
 	        return 0;
-	
+
 	    if(tupleParamType != sig.tupleParamType)
 	        return 0;
-	
+
+        if(isReal != sig.isReal)
+            return 0;
+
 		if(numOffset != sig.numOffset) return 0;
 		
 	    int equalCnt=0;
@@ -219,7 +231,7 @@ public:
     void output(FILE *ofp){
         for(int i=0; i<numOffset; i++)
             fprintf(ofp, "%d ", offset[i]);
-        fprintf(ofp, "| %d\n", tupleParamType);         
+        fprintf(ofp, "| %d | %d\n", tupleParamType, isReal);         
     }
     void pack(MOStream *msg);
     void unpack(MIStream *msg);
