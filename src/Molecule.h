@@ -27,6 +27,9 @@
 #include "UniqueSet.h"
 #include "Hydrogen.h"
 #include "GromacsTopFile.h"
+/* BEGIN gf */
+#include "Tensor.h"
+/* END gf */
 
 #include <vector>
 using namespace std;
@@ -182,11 +185,21 @@ private:
   int gridfrcK3;
   int gridfrcSize;
   int gridfrcSize_V;
-  Vector gridfrcOrigin;		// Grid origin
-  Vector gridfrcE[3];		// Grid unit vectors
-  Vector gridfrcInv[3];		// Inverse of unit vectors
+  Position gridfrcOrigin;	// Grid origin
+  Position gridfrcCenter;	// Center of grid (for wrapping)
+  Tensor gridfrcE;		// Grid unit vectors
+  Tensor gridfrcInv;		// Inverse of unit vectors
   float *gridfrcGrid;		// Grid of forces (soon to be gone)
   float *gridfrcGrid_V;		// Potential grid
+  float *gridfrcGrid_V_tmp;
+  int gridfrcSize_V_tmp;
+  
+  Bool gridfrcK1_wrap, gridfrcK2_wrap, gridfrcK3_wrap;
+  Bool gridfrcK1_overlap, gridfrcK2_overlap, gridfrcK3_overlap;
+  float gridfrcK1_voff, gridfrcK2_voff, gridfrcK3_voff;
+  float gridfrcK1m_pad, gridfrcK2m_pad, gridfrcK3m_pad;
+  float gridfrcK1p_pad, gridfrcK2p_pad, gridfrcK3p_pad;
+  float gridfrcK1_gap, gridfrcK2_gap, gridfrcK3_gap;
 /* END gf */
 
         //  Parameters for each atom constrained
@@ -362,7 +375,7 @@ public:
   {
       Force f[8];
       float v[8];
-      Vector inv[3];
+      float v2[4][4][4];
   } GridforceGridbox;
 /* END gf */
 
@@ -666,11 +679,18 @@ public:
 /* BEGIN gf */
   void get_gridfrc_params(Real &k, Charge &q, int atomnum) const
   {
-    k = gridfrcParams[gridfrcIndexes[atomnum]].k;
-    q = gridfrcParams[gridfrcIndexes[atomnum]].q;
+      k = gridfrcParams[gridfrcIndexes[atomnum]].k;
+      q = gridfrcParams[gridfrcIndexes[atomnum]].q;
   }
-
+  
+  void get_gridfrc_info(Position &center, Tensor &inv) const
+  {
+      center = gridfrcCenter;
+      inv = gridfrcInv;
+  }
+  
   int get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) const;
+  int get_gridfrc_mgradv(FullAtom p, Vector &mgradv, float &v) const;
 /* END gf */
 
   Real langevin_param(int atomnum) const
