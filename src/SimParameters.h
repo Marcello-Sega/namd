@@ -182,6 +182,8 @@ public:
 	Bool gridforceOn;		//  Flag TRUE -> gridforce active
 	Bool gridforceVolts;		//  Flag TRUE -> gridforce using volts as units
 	zVector gridforceScale;		//  Gridforce scale factor
+	Bool gridforceCont[3];		//  Flag TRUE -> grid continuous in ith direction
+	zVector gridforceVOffset;	//  Gridforce potential offsets
 	/* END gf */
 
         //****** BEGIN selective restraints (X,Y,Z) changes 

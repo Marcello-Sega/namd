@@ -157,6 +157,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
   /* BEGIN gf */
   SCRIPT_PARSE_VECTOR("gridforcescale",gridforceScale)
+  SCRIPT_PARSE_VECTOR("gridforcevoff",gridforceVOffset)
   /* END gf */
 
   if ( ! strncasecmp(param,"fixedatoms",MAX_SCRIPT_PARAM_SIZE) ) {
@@ -1070,6 +1071,14 @@ void SimParameters::config_parser_gridforce(ParseOptions &opts) {
 		  "use for charge", PARSE_STRING);
     opts.require("gridforce", "gridforcevfile", "Gridforce potential file",
 		 PARSE_STRING);
+    opts.optionalB("gridforce", "gridforcecont1", "Use continuous grid "
+		   "in K1 direction?", &gridforceCont[0], FALSE);
+    opts.optionalB("gridforce", "gridforcecont2", "Use continuous grid "
+		   "in K2 direction?", &gridforceCont[1], FALSE);
+    opts.optionalB("gridforce", "gridforcecont3", "Use continuous grid "
+		   "in K3 direction?", &gridforceCont[2], FALSE);
+    opts.optional("gridforce", "gridforcevoff", "Gridforce potential offsets",
+		  &gridforceVOffset);
 }
 /* END gf */
 
@@ -2305,6 +2314,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (!opts.defined("gridforce"))
    {
       gridforceScale = Vector(0);
+      gridforceVOffset = Vector(0);
    }
    /* END gf */
 
@@ -2921,8 +2931,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	 iout << iINFO << "GRID FORCE UNITS ARE VOLTS\n";
      }
      
-     iout << iINFO << "GRID FORCE SCALING     " << gridforceScale.x << " "
-	  << gridforceScale.y << " " << gridforceScale.z << "\n";
+     iout << iINFO << "GRID FORCE SCALING     " << gridforceScale.x << ", "
+	  << gridforceScale.y << ", " << gridforceScale.z << "\n";
+     
+     iout << iINFO << "GRID FORCE OFFSET      " << gridforceVOffset.x << ", "
+	  << gridforceVOffset.y << ", " << gridforceVOffset.z << "\n";
    }
    /* END gf */
 
