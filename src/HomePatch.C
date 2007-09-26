@@ -1233,6 +1233,10 @@ void HomePatch::doPairlistCheck()
     doPairlistCheck_newTolerance *= (1. + simParams->pairlistGrow);
   }
 
+  if ( max_tol > doPairlistCheck_newTolerance ) {
+    doPairlistCheck_newTolerance = max_tol / (1. - simParams->pairlistTrigger);
+  }
+
 }
 
 void HomePatch::doGroupSizeCheck()
