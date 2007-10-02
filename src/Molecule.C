@@ -2245,6 +2245,16 @@ void Molecule::print_atoms(Parameters *params)
     params->get_vdw_params(&sigma, &epsilon, &sigma14, &epsilon14, 
         atoms[i].vdw_type);
 
+#ifdef MEM_OPT_VERSION
+     DebugM(2,i+1 << " " << atomNamePool[atomNames[i].atomnameIdx]  \
+              << " " << atomTypePool[atomNames[i].atomtypeIdx] << " " \
+              << resNamePool[atomNames[i].resnameIdx]  << " "  \
+	    << atommass(i)  \
+        << " " << atomcharge(i) << " " << sigma \
+        << " " << epsilon << " " << sigma14 \
+        << " " << epsilon14 << "\n" \
+        << endi);
+#else
     DebugM(2,i+1 << " " << atomNames[i].atomname  \
               << " " << atomNames[i].atomtype << " " \
               << atomNames[i].resname  << " " << atoms[i].mass  \
@@ -2252,6 +2262,7 @@ void Molecule::print_atoms(Parameters *params)
         << " " << epsilon << " " << sigma14 \
         << " " << epsilon14 << "\n" \
         << endi);
+#endif
   }
 }
 /*      END OF FUNCTION print_atoms      */
@@ -2290,8 +2301,8 @@ void Molecule::print_bonds(Parameters *params)
 
           DebugM(2,aBond.atom1+1 << " " \
              << aBond.atom2+1 << " "   \
-             << atomNames[aBond.atom1].atomtype << " "  \
-             << atomNames[aBond.atom2].atomtype << " " << k \
+             << get_atomtype(aBond.atom1) << " "  \
+             << get_atomtype(aBond.atom2) << " " << k \
              << " " << x0 << endi);
       }
   }
@@ -2321,6 +2332,9 @@ void Molecule::print_bonds(Parameters *params)
 
 void Molecule::print_exclusions()
 {
+#ifdef MEM_OPT_VERSION
+    DebugM(2, "WARNING: this function is not availabe in memory optimized version!\n" << endi);
+#else
   register int i;
 
   DebugM(2,"EXPLICIT EXCLUSION LIST\n" \
@@ -2333,6 +2347,7 @@ void Molecule::print_exclusions()
     DebugM(2,exclusions[i].atom1+1 << "  " \
        << exclusions[i].atom2+1 << endi);
   }
+#endif
 }
 /*      END OF FUNCTION print_exclusions    */
 
