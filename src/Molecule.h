@@ -543,7 +543,7 @@ public:
     }
 
     #ifdef MEM_OPT_VERSION    
-    return atomNamePool[atomNames[anum].atomtypeIdx];
+    return atomTypePool[atomNames[anum].atomtypeIdx];
     #else
     return(atomNames[anum].atomtype);
     #endif
