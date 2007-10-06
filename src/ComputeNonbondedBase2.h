@@ -18,6 +18,7 @@ NORMAL( MODIFIED( foo bar ) )
 #ifndef ARCH_POWERPC
 #pragma ivdep
 #endif
+  
     for (k=0; k<npairi; ++k) {      
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
       const int j = pairlisti[k];
@@ -93,6 +94,10 @@ NORMAL( MODIFIED( foo bar ) )
 
       LES( BigReal lambda_pair = lambda_table_i[p_j->partition]; )
 
+      register const BigReal p_ij_x = p_i_x - p_j->position.x;
+      register const BigReal p_ij_y = p_i_y - p_j->position.y;
+      register const BigReal p_ij_z = p_i_z - p_j->position.z;
+      
 #if ( FAST(1+) 0 )
       const BigReal A = scaling * lj_pars->A;
       const BigReal B = scaling * lj_pars->B;
@@ -102,17 +107,47 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal vdw_b = A * table_four_i[4] - B * table_four_i[6];
       BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
 
+      FEP (
+        // Yes this could be made faster using lookup tables, but 
+        // we're aiming for clarity here...
+        // Writing the equations in terms of real physical quantities
+        // makes it easier for others to later adapt the FEP functions
+        const BigReal r2 = p_ij_x*p_ij_x + p_ij_y* p_ij_y + p_ij_z*p_ij_z;
+
+        // The VdW parameters with the _1 and _2 suffix correspond to 
+        // lambda1 and lambda2, respectively, and are used to construct
+        // the scaled FEP VdW potential
+        const BigReal r2_1 = r2;
+        const BigReal r6_1 = r2_1*r2_1*r2_1;
+        const BigReal A_1 = A;
+        const BigReal B_1 = B;
+        
+        const BigReal r2_2 = r2;
+        const BigReal r6_2 = r2_2*r2_2*r2_2;
+        const BigReal A_2 = A;
+        const BigReal B_2 = B;
+      )   
+          
       ENERGY(
+      NOT_FEP (
       register BigReal vdw_val =
         ( ( diffa * vdw_d * (1/6.)+ vdw_c * (1/4.)) * diffa + vdw_b *(1/2.)) * diffa + vdw_a;
       vdwEnergy -= LAM(lambda_pair *) vdw_val;
-      FEP( vdwEnergy_s -= d_lambda_pair * vdw_val; )
       )
+      FEP(
+        // switching function (this is correct whether switching is active or not)
+        const BigReal switchmul = r2 > switchdist2? \
+                 switchfactor*(cutoff2 - r2)*(cutoff2 - r2)*(cutoff2 - 3.*switchdist2 + 2.*r2) \
+                 : 1.;
+        
+        const BigReal fep_vdw_energy = (A_1/(r6_1*r6_1) - B_1/r6_1); // needed later
+           
+        // modified FEP potential for vdW
+        vdwEnergy   +=   lambda_pair * fep_vdw_energy * switchmul;
+        vdwEnergy_s += d_lambda_pair * (A_2/(r6_2*r6_2) - B_2/r6_2) * switchmul;
+      )
+      ) // ENERGY
 #endif // FAST
-
-      register const BigReal p_ij_x = p_i_x - p_j->position.x;
-      register const BigReal p_ij_y = p_i_y - p_j->position.y;
-      register const BigReal p_ij_z = p_i_z - p_j->position.z;
 
 #if ( FAST(1+) 0 )
       INT( 
@@ -124,7 +159,8 @@ NORMAL( MODIFIED( foo bar ) )
       reduction[pairVDWForceIndex_Z] += force_sign * vdw_dir * p_ij_z;
       )
 
-#if ( SHORT(1+) 0 )
+#if ( SHORT(1+) 0 ) // Short-range electrostatics
+
       NORMAL(
       BigReal fast_d = kqq * table_four_i[8];
       BigReal fast_c = kqq * table_four_i[9];
@@ -138,14 +174,20 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal fast_b = modfckqq * table_four_i[10];
       BigReal fast_a = modfckqq * table_four_i[11];
       )
-
-      {
+    
+      {  
       ENERGY(
-	     register BigReal fast_val =
+      register BigReal fast_val =
 	( ( diffa * fast_d * (1/6.)+ fast_c * (1/4.)) * diffa + fast_b *(1/2.)) * diffa + fast_a;
-      electEnergy -=  LAM(lambda_pair *) fast_val;
-      FEP( electEnergy_s -=  d_lambda_pair * fast_val; )
+      
+      NOT_FEP (
+        electEnergy -=  LAM(lambda_pair *) fast_val;
       )
+      FEP(
+        electEnergy   -=   lambda_pair * fast_val;
+        electEnergy_s -= d_lambda_pair * fast_val; 
+      )
+      ) //ENERGY
 
       INT(
       register BigReal fast_dir =
@@ -157,13 +199,30 @@ NORMAL( MODIFIED( foo bar ) )
       )
       }
 
-      fast_d += vdw_d;
-      fast_c += vdw_c;
-      fast_b += vdw_b;
-      fast_a += vdw_a;
-      register BigReal fast_dir =
-	( diffa * fast_d + fast_c ) * diffa + fast_b;
-      BigReal force_r =  LAM(lambda_pair *) fast_dir;
+      // Combined short-range electrostatics and VdW force:
+      NOT_FEP(
+        fast_d += vdw_d;
+        fast_c += vdw_c;
+        fast_b += vdw_b;
+        fast_a += vdw_a;
+        register BigReal fast_dir =
+                    (diffa * fast_d + fast_c) * diffa + fast_b;
+        BigReal force_r =  LAM(lambda_pair *) fast_dir;
+      )
+      FEP(
+        // Note: switching has such a minor effect on the magnitude of the
+        // force (~10ppm) that's it's not clear whether it's worth computing...
+        // but we do it anyways!
+        const BigReal switchmul2 = (r2 > switchdist2)? \
+                 12.*switchfactor*(cutoff2 - r2)*(r2 - switchdist2) : 0.;
+      
+        // FEP force for Coulomb and vdW
+        register BigReal fast_elect_dir = (diffa * fast_d + fast_c) * diffa + fast_b;
+        const BigReal force_r = lambda_pair * ( fast_elect_dir   \
+                            + (12.*fep_vdw_energy + 6.*B_1/r6_1)/r2_1 * switchmul \
+                            + fep_vdw_energy * switchmul2);
+      )
+          
       register BigReal tmp_x = force_r * p_ij_x;
       PAIR( virial_xx += tmp_x * p_ij_x; )
       PAIR( virial_xy += tmp_x * p_ij_y; )
@@ -266,10 +325,17 @@ NORMAL( MODIFIED( foo bar ) )
 
       ENERGY(
       register BigReal slow_val =
-	( ( diffa * slow_d *(1/6.)+ slow_c * (1/4.)) * diffa + slow_b *(1/2.)) * diffa + slow_a;
-      fullElectEnergy -= LAM(lambda_pair *) slow_val;
-      FEP( fullElectEnergy_s -= d_lambda_pair * slow_val; )
+	        ( ( diffa * slow_d *(1/6.)+ slow_c * (1/4.)) * diffa + slow_b *(1/2.)) * diffa + slow_a;
+      
+      NOT_FEP (
+        fullElectEnergy -= LAM(lambda_pair *) slow_val;
       )
+          
+      FEP(
+        fullElectEnergy   -=   lambda_pair * slow_val;
+        fullElectEnergy_s -= d_lambda_pair * slow_val; 
+      )
+      ) // ENERGY
 
       INT( {
       register BigReal slow_dir =
@@ -288,10 +354,14 @@ NORMAL( MODIFIED( foo bar ) )
       )
       )
 
-      register BigReal slow_dir =
-	( diffa * slow_d + slow_c ) * diffa + slow_b;
-      BigReal fullforce_r = slow_dir LAM(* lambda_pair);
-
+      register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
+      NOT_FEP ( 
+        BigReal fullforce_r = slow_dir LAM(* lambda_pair);
+      )
+      FEP ( 
+        BigReal fullforce_r = slow_dir * lambda_pair;
+      )
+          
       {
       register BigReal tmp_x = fullforce_r * p_ij_x;
       PAIR( fullElectVirial_xx += tmp_x * p_ij_x; )

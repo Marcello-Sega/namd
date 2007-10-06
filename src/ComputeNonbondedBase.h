@@ -91,25 +91,37 @@
   #define NOFULL(X) X
 #endif
 
+// Here are what these macros stand for:
+// FEP/NOT_FEP: FEP free energy perturbation is active/inactive 
+//      (does NOT use LAM)
+// LES: locally-enhanced sampling is active
+// LAM: scale the potential by a factor lambda (except FEP)
+// INT: measure interaction energies
+// PPROF: pressure profiling
+// Since the lambda scaling is different for FEP than for others,
+//  we need to define a NOT_FEP macro to distinguish the two cases 
+
 #undef FEPNAME
 #undef FEP
 #undef LES
 #undef INT
 #undef PPROF
 #undef LAM
+#undef NOT_FEP
 #define FEPNAME(X) LAST( X )
 #define FEP(X)
 #define LES(X)
 #define INT(X)
 #define PPROF(X)
 #define LAM(X)
+#define NOT_FEP(X) X
 #ifdef FEPFLAG
   #undef FEPNAME
   #undef FEP
-  #undef LAM
+  #undef NOT_FEP
   #define FEPNAME(X) LAST( X ## _fep )
   #define FEP(X) X
-  #define LAM(X) X
+  #define NOT_FEP(X)
 #endif
 #ifdef LESFLAG
   #undef FEPNAME
@@ -869,7 +881,15 @@ void ComputeNonbondedUtil :: NAME
 
   } // if ( savePairlists || ! usePairlists )
 
-    FEP( BigReal *lambda_table_i = lambda_table + 6 * p_i.partition; )
+    FEP(
+      BigReal *lambda_table_i = lambda_table + 6 * p_i.partition;
+    
+      // Current FEP implementation computes switching on-the-fly, 
+      // intead of using a lookup table (slower but easy to modify)
+      const BigReal switchdist2 = ComputeNonbondedUtil::switchOn2;
+      const BigReal cutoff2 = ComputeNonbondedUtil::cutoff2;
+      const BigReal switchfactor = 1./((cutoff2 - switchdist2)*(cutoff2 - switchdist2)*(cutoff2 - switchdist2));
+    )
 
     LES( BigReal *lambda_table_i =
 			lambda_table + (lesFactor+1) * p_i.partition; )
