@@ -87,6 +87,16 @@ public:
 };
 
 
+#define SET_PRIORITY(MSG,PRIO) { \
+  CkSetQueueing(MSG, CK_QUEUEING_IFIFO); \
+  *((int*) CkPriorityPtr(MSG)) = (PRIO); }
+
+#define recvGridPriority    16
+#define recvTransPriority   17
+#define recvUntransPriority 18
+#define recvUngridPriority  19
+
+
 // use this idiom since messages don't have copy constructors
 struct PmePencilInitMsgData {
   PmeGrid grid;
@@ -1045,7 +1055,8 @@ void ComputePmeMgr::sendTrans(void) {
     int pe = transPeOrder[j];  // different order on each node
     LocalPmeInfo &li = localInfo[pe];
     int cpylen = li.ny_after_transpose * zdim;
-    PmeTransMsg *newmsg = new (nx * cpylen * numGrids,0) PmeTransMsg;
+    PmeTransMsg *newmsg = new (nx * cpylen * numGrids,
+				(int) sizeof(int)*8) PmeTransMsg;
     newmsg->sourceNode = myGridPe;
     newmsg->lattice = lattice;
     newmsg->x_start = x_start;
@@ -1059,6 +1070,7 @@ void ComputePmeMgr::sendTrans(void) {
         qmsg += cpylen;
       }
     }
+    SET_PRIORITY(newmsg,recvTransPriority)
 #if CHARM_VERSION > 050402
     pmeProxy[transPeMap[pe]].recvTrans(newmsg);
 #else
@@ -1160,7 +1172,8 @@ void ComputePmeMgr::sendUntrans(void) {
     LocalPmeInfo &li = localInfo[pe];
     int x_start =li.x_start;
     int nx = li.nx;
-    PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,numGrids,0) PmeUntransMsg;
+    PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,numGrids,
+				(int) sizeof(int)*8) PmeUntransMsg;
     newmsg->sourceNode = myTransPe;
     newmsg->y_start = y_start;
     newmsg->ny = ny;
@@ -1174,6 +1187,7 @@ void ComputePmeMgr::sendUntrans(void) {
 		(void*)(kgrid + qgrid_size*g + x_start*ny*zdim),
 		nx*ny*zdim*sizeof(float));
     }
+    SET_PRIORITY(newmsg,recvUntransPriority)
 #if CHARM_VERSION > 050402
     pmeProxy[gridPeMap[pe]].recvUntrans(newmsg);
 #else
@@ -1288,6 +1302,7 @@ void ComputePmeMgr::sendUngrid(void) {
     }
     newmsg->sourceNode = myGridPe;
 
+    SET_PRIORITY(newmsg,recvUngridPriority)
 #if CHARM_VERSION > 050402
     pmeProxyDir[pe].recvUngrid(newmsg);
 #else
@@ -1845,7 +1860,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
     }
 
     PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen*numGrids,
-	numGrids, 0) PmeGridMsg;
+				numGrids, (int) sizeof(int)*8) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
     msg->start = fstart;
@@ -1870,6 +1885,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       }
     }
 
+    SET_PRIORITY(msg,recvGridPriority)
 #if CHARM_VERSION > 050402
     pmeProxy[gridPeMap[pe]].recvGrid(msg);
 #else
