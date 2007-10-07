@@ -87,9 +87,9 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal kqq = kq_i * p_j->charge;
 
       FEP(
-      int jfep_type = p_j->partition;
-      BigReal lambda_pair = lambda_table_i[2*jfep_type];
-      BigReal d_lambda_pair = lambda_table_i[2*jfep_type+1];
+        const int jfep_table_index = 2*p_j->partition;
+        const BigReal lambda_pair = lambda_table_i[jfep_table_index];
+        const BigReal d_lambda_pair = lambda_table_i[jfep_table_index+1];
       )
 
       LES( BigReal lambda_pair = lambda_table_i[p_j->partition]; )
@@ -112,20 +112,20 @@ NORMAL( MODIFIED( foo bar ) )
         // we're aiming for clarity here...
         // Writing the equations in terms of real physical quantities
         // makes it easier for others to later adapt the FEP functions
-        const BigReal r2 = p_ij_x*p_ij_x + p_ij_y* p_ij_y + p_ij_z*p_ij_z;
+        const BigReal r2 = p_ij_x*p_ij_x + p_ij_y*p_ij_y + p_ij_z*p_ij_z;
 
         // The VdW parameters with the _1 and _2 suffix correspond to 
         // lambda1 and lambda2, respectively, and are used to construct
         // the scaled FEP VdW potential
-        const BigReal r2_1 = r2;
+        const BigReal r2_1 = r2 + lambda_shift_table_i[jfep_table_index];
         const BigReal r6_1 = r2_1*r2_1*r2_1;
-        const BigReal A_1 = A;
-        const BigReal B_1 = B;
+        const BigReal A_1 = A * lambda_scale_table_i[jfep_table_index] * lambda_scale_table_i[jfep_table_index];
+        const BigReal B_1 = B * lambda_scale_table_i[jfep_table_index];
         
-        const BigReal r2_2 = r2;
+        const BigReal r2_2 = r2 + lambda_shift_table_i[jfep_table_index+1];
         const BigReal r6_2 = r2_2*r2_2*r2_2;
-        const BigReal A_2 = A;
-        const BigReal B_2 = B;
+        const BigReal A_2 = A * lambda_scale_table_i[jfep_table_index+1] * lambda_scale_table_i[jfep_table_index+1];
+        const BigReal B_2 = B * lambda_scale_table_i[jfep_table_index+1];
       )   
           
       ENERGY(
@@ -140,7 +140,7 @@ NORMAL( MODIFIED( foo bar ) )
                  switchfactor*(cutoff2 - r2)*(cutoff2 - r2)*(cutoff2 - 3.*switchdist2 + 2.*r2) \
                  : 1.;
         
-        const BigReal fep_vdw_energy = (A_1/(r6_1*r6_1) - B_1/r6_1); // needed later
+        const BigReal fep_vdw_energy = A_1/(r6_1*r6_1) - B_1/r6_1; // needed later
            
         // modified FEP potential for vdW
         vdwEnergy   +=   lambda_pair * fep_vdw_energy * switchmul;

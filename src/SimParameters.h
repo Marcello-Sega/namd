@@ -259,19 +259,25 @@ public:
         int TMDFirstStep, TMDLastStep;
         BigReal TMDInitialRMSD, TMDFinalRMSD;
 
-//Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-//   Begin FEP flags
-	Bool fepOn;			//  Doing alchemical FEP?
-	BigReal lambda;			//  lambda for dynamics
-	BigReal lambda2;		//  lambda for comparison
-        BigReal fepTemp;                //  temperature for fep calculation
-	int fepOutFreq;			//  freq of fep output
-	char fepOutFile[128];		//  fep output filename
-	int fepEquilSteps;		//  no of eqlb steps in the window
-//   End FEP flags
+        
+// Modifications for alchemical fep
+// SD & CC, CNRS - LCTN, Nancy
+// Begin FEP flags
+  Bool fepOn;               //  Doing alchemical FEP?
+  BigReal lambda;           //  lambda for dynamics
+  BigReal lambda2;          //  lambda for comparison
+  BigReal fepTemp;          //  temperature for FEP calculation
+  int fepOutFreq;           //  freq. of FEP output
+  char fepOutFile[128];     //  FEP output filename
+  int fepEquilSteps;        //  # of equil. steps in the window
+  BigReal fepVdwShiftCoeff; //  r2 shift coeff used for generating  
+                            //  the FEP altered vdW interactions
+  BigReal fepVdwScaleExp;   //  A/B scaling exponent used for generating  
+                            //  the FEP altered vdW interactions
+// End FEP flags
 //fepe
 
+  
 	Bool lesOn;			//  Locally enhanced sampling?
 	int lesFactor;			//  local enhancement factor
 	Bool lesReduceTemp;		//  Reduce enhanced atom temperature?

@@ -266,6 +266,23 @@ void ComputeNonbondedUtil :: NAME
   // const int r2_delta_expc = 64 * (r2_delta_exp - 127);
   const int r2_delta_expc = 64 * (r2_delta_exp - 1023);
 
+  FEP(
+    const BigReal switchdist2 = ComputeNonbondedUtil::switchOn2;
+    const BigReal cutoff2 = ComputeNonbondedUtil::cutoff2;
+    const BigReal switchfactor = 1./((cutoff2 - switchdist2)*(cutoff2 - switchdist2)*(cutoff2 - switchdist2));
+    
+    BigReal lambda_shift_table[2*3*3]; // r2 shifting
+    BigReal lambda_scale_table[2*3*3]; // A/B scaling
+    
+    for (int table_i=0; table_i < 2*3*3; table_i++) {
+      lambda_shift_table[table_i] = ComputeNonbondedUtil::fepVdwShiftCoeff \
+                                    * (1. - lambda_table[table_i]);
+      lambda_scale_table[table_i] = pow(lambda_table[table_i], \
+                                    ComputeNonbondedUtil::fepVdwScaleExp);
+    }
+  )
+        
+        
   const int i_upper = params->numAtoms[0];
   register const int j_upper = params->numAtoms[1];
   register int j;
@@ -883,12 +900,8 @@ void ComputeNonbondedUtil :: NAME
 
     FEP(
       BigReal *lambda_table_i = lambda_table + 6 * p_i.partition;
-    
-      // Current FEP implementation computes switching on-the-fly, 
-      // intead of using a lookup table (slower but easy to modify)
-      const BigReal switchdist2 = ComputeNonbondedUtil::switchOn2;
-      const BigReal cutoff2 = ComputeNonbondedUtil::cutoff2;
-      const BigReal switchfactor = 1./((cutoff2 - switchdist2)*(cutoff2 - switchdist2)*(cutoff2 - switchdist2));
+      BigReal *lambda_shift_table_i = lambda_shift_table + 6 * p_i.partition;
+      BigReal *lambda_scale_table_i = lambda_scale_table + 6 * p_i.partition;
     )
 
     LES( BigReal *lambda_table_i =

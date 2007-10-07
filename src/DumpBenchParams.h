@@ -35,7 +35,9 @@
 	SIMPARAM(BigReal,lambda2,0);		//  lambda for comparison
 	SIMPARAM(int,fepOutFreq,0);			//  freq of fep output
 	SIMPARAM(int,fepEquilSteps,0);		//  no of eqlb steps in the window
-//   End FEP flags
+  SIMPARAM(BigReal,fepVdwShiftCoeff,0);	// r2 shifting coeff
+  SIMPARAM(BigReal,fepVdwScaleExp,0);	// L-J A/B scaling exponent
+  //   End FEP flags
 //fepe
 
         SIMPARAM(Bool,pressureProfileOn,0);         // Compute lateral pressure profile?

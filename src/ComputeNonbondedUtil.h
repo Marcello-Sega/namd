@@ -179,6 +179,8 @@ public:
   static Bool fepOn;
   static BigReal lambda;
   static BigReal lambda2;
+  static BigReal fepVdwShiftCoeff;
+  static BigReal fepVdwScaleExp;
 //sd-de
   static Bool lesOn;
   static int lesFactor;

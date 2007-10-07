@@ -691,6 +691,12 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("fep", "fepEquilSteps", "Equilibration steps, before "
      "data collection in the fep window", &fepEquilSteps, 0);
    opts.range("fepEquilSteps", NOT_NEGATIVE);
+   opts.optional("fep", "fepVdwShiftCoeff", "Coeff used for generating"
+     "the altered FEP vDW interactions", &fepVdwShiftCoeff, 5.);
+   opts.range("fepVdwShiftCoeff", NOT_NEGATIVE);
+   opts.optional("fep", "fepVdwScaleExp", "Exponent used for generating"
+     "the altered FEP vDW interactions", &fepVdwScaleExp, 0.);
+   
 // end FEP options
 //fepe
 
@@ -2987,10 +2993,14 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (fepOn)
    {
      iout << iINFO << "ALCHEMICAL FEP ON\n";
-     iout << iINFO << "CURRENT LAMBDA VALUE     "
+     iout << iINFO << "FEP CURRENT LAMBDA VALUE     "
           << lambda << "\n";
-     iout << iINFO << "COMPARISON LAMBDA VALUE  "
+     iout << iINFO << "FEP COMPARISON LAMBDA VALUE  "
           << lambda2 << "\n";
+     iout << iINFO << "FEP VDW SHIFTING COEFFICIENT "
+          << fepVdwShiftCoeff << "\n";
+     iout << iINFO << "FEP VDW SCALING EXPONENT     "
+          << fepVdwScaleExp << "\n";
    }
 
 //fepe

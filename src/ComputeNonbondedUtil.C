@@ -61,6 +61,8 @@ BigReal         ComputeNonbondedUtil::c8;
 Bool            ComputeNonbondedUtil::fepOn;
 BigReal         ComputeNonbondedUtil::lambda;
 BigReal         ComputeNonbondedUtil::lambda2;
+BigReal         ComputeNonbondedUtil::fepVdwShiftCoeff;
+BigReal         ComputeNonbondedUtil::fepVdwScaleExp;
 //fepe
 Bool            ComputeNonbondedUtil::lesOn;
 int             ComputeNonbondedUtil::lesFactor;
@@ -195,7 +197,9 @@ void ComputeNonbondedUtil::select(void)
   lambda = lambda2 = 0;
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
-
+  fepVdwShiftCoeff = simParams->fepVdwShiftCoeff;
+  fepVdwScaleExp   = simParams->fepVdwScaleExp;
+  
   delete [] lambda_table;
   lambda_table = 0;
 
