@@ -195,8 +195,14 @@ void generatePmePeList2(int *gridPeMap, int numGridPes, int *transPeMap, int num
   }
   seq.resize(numGridPes);
   seq.sort();
-  if ( ncpus > numTransPes ) {
-    seq2.del(0);  // node 0 should be first in list
+  int firstTransPe = ncpus - numGridPes - numTransPes;
+  if ( firstTransPe < 0 ) {
+    firstTransPe = 0;
+    // 0 should be first in list, skip if possible
+    if ( ncpus > numTransPes ) firstTransPe = 1;
+  }
+  for ( i=0; i<numTransPes; ++i ) {
+    seq2[i] = seq2[firstTransPe + i];
   }
   seq2.resize(numTransPes);
   seq2.sort();
@@ -479,8 +485,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     rand.reorder(transPeOrder,numTransPes);
   }
 
-  //generatePmePeList2(gridPeMap, numGridPes, transPeMap, numTransPes);
-
   int sum_npes = numTransPes + numGridPes;
   int max_npes = (numTransPes > numGridPes)?numTransPes:numGridPes;
 
@@ -508,8 +512,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if (!done)
 #endif
     {
-      generatePmePeList(transPeMap, max_npes);
-      gridPeMap = transPeMap;
+      //generatePmePeList(transPeMap, max_npes);
+      //gridPeMap = transPeMap;
+      generatePmePeList2(gridPeMap, numGridPes, transPeMap, numTransPes);
     }
   
 #ifdef USE_COMM_LIB  
