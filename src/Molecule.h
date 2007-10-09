@@ -200,9 +200,11 @@ private:
 //float gridfrcK1_voff, gridfrcK2_voff, gridfrcK3_voff;
   float gridfrc_pad_n[3];
   float gridfrc_pad_p[3];
+  Bool gridfrc_cont[3];
+  float gridfrc_voff[3];
   Vector gridfrc_gap;
   
-//Bool gridfrc_cont[3]; replaced by gridforceCont[] array in SimParameters.h
+//Bool gridfrc_cont[3]; replaced by gridforceCont[] array in SimParameters.h -- now returns!!
 /* END gf */
 
         //  Parameters for each atom constrained

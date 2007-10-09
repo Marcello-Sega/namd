@@ -10,7 +10,7 @@
 #include "HomePatch.h"
 #include "Molecule.h"
 
-#define DEBUGM
+//#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
@@ -226,7 +226,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		+ gbox.b[56] + gbox.b[57] + gbox.b[58] + gbox.b[59] + gbox.b[60] + gbox.b[61] + gbox.b[62] + gbox.b[63];
 	    
 	    //for (int j = 0; j < 64; j++) DebugM(4, "a[" << j << "] = " << a[j] << "\n" << endi);
-	    for (int j = 0; j < 64; j++) DebugM(4, "b[" << j << "] = " << gbox.b[j] << "\n" << endi);
+	    //for (int j = 0; j < 64; j++) DebugM(4, "b[" << j << "] = " << gbox.b[j] << "\n" << endi);
 	    
 	    // Calculate powers of x, y, z for later use
 	    // e.g. x[2] = x^2
@@ -253,8 +253,10 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		}
 	    }
 	    
-	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (inv * f);
+// 	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (inv * f);
+	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (f * inv);	// Must multiply ON THE RIGHT by inv tensor
 	    
+	    DebugM(4, "f4 = " << f << "\n" << endi);
 	    DebugM(4, "force4 = " << force << "\n" << endi);
 	    DebugM(4, "v4 = " << v << "\n" << endi);
 	    

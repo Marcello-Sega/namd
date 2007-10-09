@@ -33,7 +33,7 @@
 
 
 #define MIN_DEBUG_LEVEL 4
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 #include "CompressPsf.h"
@@ -257,6 +257,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   for (int i = 0; i < 3; i++) {
       gridfrc_pad_n[i] = 0.0;
       gridfrc_pad_p[i] = 0.0;
+      gridfrc_cont[i] = FALSE;
+      gridfrc_voff[i] = 0.0;
   }
   gridfrc_gap = Vector(0);
   /* END gf */
@@ -4740,11 +4742,6 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     int gridfrcK1_tmp, gridfrcK2_tmp, gridfrcK3_tmp;
     sscanf(line, "object 1 class gridpositions counts %d %d %d\n", &gridfrcK1_tmp, &gridfrcK2_tmp, &gridfrcK3_tmp);
     
-    gridfrcB = 3;
-    gridfrcK1 = (simParams->gridforceCont[0]) ? gridfrcK1_tmp : gridfrcK1_tmp + 2*gridfrcB;
-    gridfrcK2 = (simParams->gridforceCont[1]) ? gridfrcK2_tmp : gridfrcK2_tmp + 2*gridfrcB;
-    gridfrcK3 = (simParams->gridforceCont[2]) ? gridfrcK3_tmp : gridfrcK3_tmp + 2*gridfrcB;
-    gridfrcSize_V = gridfrcK1 * gridfrcK2 * gridfrcK3;
     //gridfrcSize = 3 * gridfrcK1_tmp * gridfrcK2_tmp * gridfrcK3_tmp;
     
     // Read origin
@@ -4819,9 +4816,57 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     dk2 = gridfrcK3_tmp;
     dk3 = 1;
     
-    // Loop through every grid point
+    // Parameters which probably ought to be somewhere else
+    BigReal modThresh = 1.0;
+    gridfrcB = 3;
+    
+    Vector K_tmp[3];
+    K_tmp[0] = gridfrcE * Position(gridfrcK1_tmp-1, 0, 0);
+    K_tmp[1] = gridfrcE * Position(0, gridfrcK2_tmp-1, 0);
+    K_tmp[2] = gridfrcE * Position(0, 0, gridfrcK3_tmp-1);
+    Vector A[3];
+    A[0] = simParams->lattice.a();
+    A[1] = simParams->lattice.b();
+    A[2] = simParams->lattice.c();
+    
+    // Decide whether we're wrapping
+    for (i = 0; i < 3; i++) {
+	if (simParams->gridforceCont[i]) {
+	    for (j = 0; j < 3; j++) {
+		if (cross(A[i], K_tmp[j]) == 0) {
+		    gridfrc_cont[j] = TRUE;
+		    gridfrc_voff[j] = simParams->gridforceVOffset[i];
+		    gridfrc_gap[j] = (gridfrcInv * (A[i] - K_tmp[j])).length();	// want in grid-point units (normal = 1)
+		    
+		    if (gridfrc_gap[j] < 0) {
+			NAMD_die("Gridforce Grid overlap!");
+		    }
+		    
+		    DebugM(4, "gridfrc_cont[" << j << "] = " << gridfrc_cont[j] << "\n" << endi);
+		    
+		}
+	    }
+	    
+	    if (!(gridfrc_cont[0] || gridfrc_cont[1] || gridfrc_cont[2])) {
+		NAMD_die("No Gridforce unit vector found parallel to requested continuous grid direction!");
+	    }
+	}
+	else {
+	    // TO DO: must check for grid overlap in non-wrapping
+	    // dimensions taking non-orthogonal unit vectors into
+	    // consideration
+	}
+    }
+    
+    // Figure out size of true grid (padded on non-periodic sides)
+    gridfrcK1 = (gridfrc_cont[0]) ? gridfrcK1_tmp : gridfrcK1_tmp + 2*gridfrcB;
+    gridfrcK2 = (gridfrc_cont[1]) ? gridfrcK2_tmp : gridfrcK2_tmp + 2*gridfrcB;
+    gridfrcK3 = (gridfrc_cont[2]) ? gridfrcK3_tmp : gridfrcK3_tmp + 2*gridfrcB;
+    gridfrcSize_V = gridfrcK1 * gridfrcK2 * gridfrcK3;
+    
     gridfrcGrid_V = new float[gridfrcSize_V];
     
+    // Fill in most of new grid (all except pad areas)
     BigReal k1m_sum = 0, k1p_sum = 0;
     BigReal k2m_sum = 0, k2p_sum = 0;
     BigReal k3m_sum = 0, k3p_sum = 0;
@@ -4833,9 +4878,9 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 		// boundary
 		
 		ind = i*dk1 + j*dk2 + k*dk3;
-		int i2 = (simParams->gridforceCont[0]) ? i : i + gridfrcB;
-		int j2 = (simParams->gridforceCont[1]) ? j : j + gridfrcB;
-		int k2 = (simParams->gridforceCont[2]) ? k : k + gridfrcB;
+		int i2 = (gridfrc_cont[0]) ? i : i + gridfrcB;
+		int j2 = (gridfrc_cont[1]) ? j : j + gridfrcB;
+		int k2 = (gridfrc_cont[2]) ? k : k + gridfrcB;
 		int ind2 = i2*gridfrcK2*gridfrcK3 + j2*gridfrcK3 + k2;
 		
 		if (i == 0)			k1m_sum += gridfrcGrid_V_tmp[ind];
@@ -4859,6 +4904,9 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     v_avg_p[2] = k3p_sum / (gridfrcK1_tmp * gridfrcK2_tmp);
     
     for (i = 0; i < 3; i++) {
+	if (gridfrc_cont[i] && fabs(gridfrc_voff[i] - (v_avg_p[i]-v_avg_n[i])) > modThresh) {
+	    iout << iWARN << "GRID FORCE POTENTIAL DIFFERENCE IN K" << i << " DIRECTION IS GREATER THAN " << modThresh << " KCAL/MOL*E\n" << endi;
+	}
 	DebugM(4, "v_avg_n[i] = " << v_avg_n[i] << "\n" << endi);
 	DebugM(4, "v_avg_p[i] = " << v_avg_p[i] << "\n" << endi);
     }
@@ -4886,40 +4934,6 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     // 2)	Same as above, but if the averages are not within the threshold.
     // 3)	If the ghost points don't overlap.
     
-    Vector K[3];
-    Vector K_tmp[3];
-    Vector A[3];
-    K[0] = gridfrcE * Position(gridfrcK1-1, 0, 0);
-    K[1]  = gridfrcE * Position(0, gridfrcK2-1, 0);
-    K[2] = gridfrcE * Position(0, 0, gridfrcK3-1);
-    K_tmp[0] = gridfrcE * Position(gridfrcK1_tmp-1, 0, 0);
-    K_tmp[1] = gridfrcE * Position(0, gridfrcK2_tmp-1, 0);
-    K_tmp[2] = gridfrcE * Position(0, 0, gridfrcK3_tmp-1);
-    A[0] = simParams->lattice.a();
-    A[1] = simParams->lattice.b();
-    A[2] = simParams->lattice.c();
-    BigReal modThresh = 1.0;
-    
-    for (i = 0; i < 3; i++) {
-	if (cross(K[i], A[i]) != 0) NAMD_die("Lattice vectors for Gridforce potential not parallel to those of unit cell!");
-    }
-    
-    // Decide whether we're wrapping
-    Bool gridfrc_cont[3];
-    float gridfrc_voff[3];
-    for (i = 0; i < 3; i++) {
-	gridfrc_cont[i] = simParams->gridforceCont[i];
-	gridfrc_voff[i] = simParams->gridforceVOffset[i];
-	
-	DebugM(4, "gridfrc_cont[" << i << "] = " << gridfrc_cont[i] << "\n" << endi);
-	
-	if ((!gridfrc_cont[i] && K[i].length() > A[i].length()) || K_tmp[i].length() > A[i].length()) {
-	    NAMD_die("Gridforce Grid overlap!");
-	}
-	if (gridfrc_cont[i] && fabs(gridfrc_voff[i] - (v_avg_p[i]-v_avg_n[i])) > modThresh) {
-	    iout << iWARN << "GRID FORCE POTENTIAL DIFFERENCE IN K" << i << " DIRECTION IS GREATER THAN " << modThresh << " KCAL/MOL*E\n" << endi;
-	}
-    }
     
     // Following true iff exactly one NON-wrapped side
     Bool twoPadVals = (gridfrc_cont[0] + gridfrc_cont[1] + gridfrc_cont[2] == 2);
@@ -4947,11 +4961,6 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	gridfrc_pad_n[i] = (gridfrc_cont[i]) ? 0.0 : (twoPadVals) ? v_avg_n[i] : padVal;
 	gridfrc_pad_p[i] = (gridfrc_cont[i]) ? 0.0 : (twoPadVals) ? v_avg_p[i] : padVal;
     }
-    
-    // Set gap lengths (with which to scale forces in irregular spaces, i.e. between grids)
-    gridfrc_gap[0] = (gridfrcInv * A[0] - Position(gridfrcK1_tmp-1, 0, 0)).length();
-    gridfrc_gap[1] = (gridfrcInv * A[1] - Position(0, gridfrcK2_tmp-1, 0)).length();
-    gridfrc_gap[2] = (gridfrcInv * A[2] - Position(0, 0, gridfrcK3_tmp-1)).length();
     
     if (gridfrc_cont[0] && gridfrc_cont[1] && gridfrc_cont[2]) {
 	// Nothing to do
@@ -4987,7 +4996,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 			gridfrcGrid_V[ind] = gridfrc_pad_p[dir];
 		}
 		
-		DebugM(4, "gridfrcGrid_V[" << ind << "; " << i << ", " << j << ", " << k << "] = " << gridfrcGrid_V[ind] << endl << endi);
+		DebugM(3, "gridfrcGrid_V[" << ind << "; " << i << ", " << j << ", " << k << "] = " << gridfrcGrid_V[ind] << endl << endi);
 	    }
 	}
     }
@@ -5018,12 +5027,12 @@ int Molecule::get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) c
 	inds[i] = (int)floor(g[i]);
 	dg[i] = g[i] - inds[i];
     }
-    DebugM(4, "dg = " << dg << "\n" << endi);
-    DebugM(4, "ind + dg = " << inds[0]+dg[0] << " " << inds[1]+dg[1] << " " << inds[2]+dg[2] << "\n" << endi);
+    DebugM(3, "dg = " << dg << "\n" << endi);
+    DebugM(3, "ind + dg = " << inds[0]+dg[0] << " " << inds[1]+dg[1] << " " << inds[2]+dg[2] << "\n" << endi);
     
     for (i = 0; i < 3; i++) {
 	if (inds[i] < 0 || inds[i] >= gridfrcK[i]-1) {
-	    if (simParams->gridforceCont[i]) inds[i] = gridfrcK[i]-1;
+	    if (gridfrc_cont[i]) inds[i] = gridfrcK[i]-1;
 	    else return -1;	// Outside potential and grid is not continuous
 	}
     }
@@ -5046,7 +5055,7 @@ int Molecule::get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) c
 	    ind2 += inds2[j] * dk[j];
 	}
 	
-	DebugM(4, "inds2 = " << inds2[0] << " " << inds2[1] << " " << inds2[2] << "\n" << endi);
+	DebugM(3, "inds2 = " << inds2[0] << " " << inds2[1] << " " << inds2[2] << "\n" << endi);
 	
 	// NOTE: leaving everything in terms of unit cell coordinates for now,
 	// eventually will multiply by inv tensor when applying the force
@@ -5070,14 +5079,14 @@ int Molecule::get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) c
 	int dk_lo[3];
 	for (j = 0; j < 3; j++) {
 	    if (inds2[j] == 0) {
-		if (simParams->gridforceCont[j]) {
+		if (gridfrc_cont[j]) {
 		    dk_hi[j] = dk[j];
 		    dk_lo[j] = -(gridfrcK[j]-1) * dk[j];
 		}
 		else zero_derivs = TRUE;
 	    }
 	    else if (inds2[j] == gridfrcK[j]-1) {
-		if (simParams->gridforceCont[j]) {
+		if (gridfrc_cont[j]) {
 		    dk_hi[j] = -(gridfrcK[j]-1) * dk[j];
 		    dk_lo[j] = dk[j];
 		}
@@ -5089,10 +5098,10 @@ int Molecule::get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) c
 	    }
 	}
 	DebugM(4, "zero_derivs = " << zero_derivs << "\n" << endi);
-// 	DebugM(4, "gridforceCont = " << simParams->gridforceCont[0] << " " << simParams->gridforceCont[1] << " " << simParams->gridforceCont[2] << "\n" << endi);
+// 	DebugM(4, "gridforce_cont = " << simParams->gridforceCont[0] << " " << simParams->gridforceCont[1] << " " << simParams->gridforceCont[2] << "\n" << endi);
 	
-// 	DebugM(4, "dk_hi = " << dk_hi[0] << " " << dk_hi[1] << " " << dk_hi[2] << "\n" << endi);
-// 	DebugM(4, "dk_lo = " << dk_lo[0] << " " << dk_lo[1] << " " << dk_lo[2] << "\n" << endi);
+	DebugM(4, "dk_hi = " << dk_hi[0] << " " << dk_hi[1] << " " << dk_hi[2] << "\n" << endi);
+	DebugM(4, "dk_lo = " << dk_lo[0] << " " << dk_lo[1] << " " << dk_lo[2] << "\n" << endi);
 	
 	// PROBLEM: simply setting the derivatives to zero DOES NOT guarantee that the
 	// interpolant has zero derivative EVERYWHERE along a given boundary. Given that
@@ -5135,14 +5144,14 @@ int Molecule::get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) c
 		     + gridfrcGrid_V[ind2 + dk_hi[0] - dk_lo[1] - dk_lo[2]] + gridfrcGrid_V[ind2 - dk_lo[0] + dk_hi[1] - dk_lo[2]]
 		     + gridfrcGrid_V[ind2 - dk_lo[0] - dk_lo[1] + dk_hi[2]] - gridfrcGrid_V[ind2 - dk_lo[0] - dk_lo[1] - dk_lo[2]]);
 	
-// 	DebugM(4, "V = " << gbox.b[i] << "\n");
+	DebugM(4, "V = " << gbox.b[i] << "\n");
 	DebugM(4, "dV/dx = " << gbox.b[8+i] << "\n");
 	DebugM(4, "dV/dy = " << gbox.b[16+i] << "\n");
 	DebugM(4, "dV/dz = " << gbox.b[24+i] << "\n");
-// 	DebugM(4, "d2V/dxdy = " << gbox.b[32+i] << "\n");
-// 	DebugM(4, "d2V/dxdz = " << gbox.b[40+i] << "\n");
-// 	DebugM(4, "d2V/dydz = " << gbox.b[48+i] << "\n");
-// 	DebugM(4, "d3V/dxdydz = " << gbox.b[56+i] << "\n" << endi);
+	DebugM(4, "d2V/dxdy = " << gbox.b[32+i] << "\n");
+	DebugM(4, "d2V/dxdz = " << gbox.b[40+i] << "\n");
+	DebugM(4, "d2V/dydz = " << gbox.b[48+i] << "\n");
+	DebugM(4, "d3V/dxdydz = " << gbox.b[56+i] << "\n" << endi);
     }
     
     return 0;
