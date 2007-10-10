@@ -93,8 +93,12 @@ public:
 
 #define recvGridPriority    16
 #define recvTransPriority   17
-#define recvUntransPriority 18
-#define recvUngridPriority  19
+#define recvZYTransPriority   17
+#define recvYXTransPriority   18
+#define recvXYUntransPriority 19
+#define recvYZUntransPriority 20
+#define recvUntransPriority 20
+#define recvUngridPriority  21
 
 
 // use this idiom since messages don't have copy constructors
@@ -1710,7 +1714,7 @@ void ComputePme::sendPencils() {
     }
 
     PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen,
-	numGrids, 0) PmeGridMsg;
+	numGrids, (int) sizeof(int)*8) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
 #if 0
@@ -1743,6 +1747,7 @@ void ComputePme::sendPencils() {
       }
     }
 
+    SET_PRIORITY(msg,recvGridPriority)
     myMgr->zPencil(ib,jb,0).recvGrid(msg);
    }
   }
@@ -2525,7 +2530,7 @@ void PmeZPencil::send_trans(int dest) {
     int kb = send_order[isend];
     int nz = block3;
     if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
-    PmeTransMsg *msg = new (nx*ny*nz*2,0) PmeTransMsg;
+    PmeTransMsg *msg = new (nx*ny*nz*2,(int) sizeof(int)*8) PmeTransMsg;
     msg->lattice = lattice;
     msg->sourceNode = thisIndex.y;
     msg->nx = ny;
@@ -2539,6 +2544,7 @@ void PmeZPencil::send_trans(int dest) {
       }
      }
     }
+    SET_PRIORITY(msg,recvZYTransPriority)
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
   }
 }
@@ -2583,7 +2589,7 @@ void PmeYPencil::send_trans(int dest) {
     int jb = send_order[isend];
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeTransMsg *msg = new (nx*ny*nz*2,0) PmeTransMsg;
+    PmeTransMsg *msg = new (nx*ny*nz*2,(int) sizeof(int)*8) PmeTransMsg;
     msg->lattice = lattice;
     msg->sourceNode = thisIndex.x;
     msg->nx = nx;
@@ -2603,6 +2609,7 @@ void PmeYPencil::send_trans(int dest) {
     }
     if ( md != msg->qgrid + nx*ny*nz*2 ) CkPrintf("error in YX at %d %d %d\n",
 	thisIndex.x, jb, thisIndex.z);
+    SET_PRIORITY(msg,recvYXTransPriority)
     initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
   }
 }
@@ -2669,7 +2676,7 @@ void PmeXPencil::send_untrans(int dest) {
     int ib = send_order[isend];
     int nx = block1;
     if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,(ib==0?1:0),0) PmeUntransMsg;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,(ib==0?1:0),(int) sizeof(int)*8) PmeUntransMsg;
     if ( ib == 0 ) msg->evir[0] = evir;
     msg->sourceNode = thisIndex.y;
     msg->ny = ny;
@@ -2683,6 +2690,7 @@ void PmeXPencil::send_untrans(int dest) {
       }
      }
     }
+    SET_PRIORITY(msg,recvXYUntransPriority)
     initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
   }
 }
@@ -2735,7 +2743,7 @@ void PmeYPencil::send_untrans(int dest) {
     int jb = send_order[isend];
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,(jb==0?1:0),0) PmeUntransMsg;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,(jb==0?1:0),(int) sizeof(int)*8) PmeUntransMsg;
     if ( jb == 0 ) msg->evir[0] = evir;
     msg->sourceNode = thisIndex.z;
     msg->ny = nz;
@@ -2749,6 +2757,7 @@ void PmeYPencil::send_untrans(int dest) {
       }
      }
     }
+    SET_PRIORITY(msg,recvYZUntransPriority)
     initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
   }
 }
@@ -2845,6 +2854,7 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
     }
   }
 
+  SET_PRIORITY(msg,recvUngridPriority)
   initdata.pmeProxy[pe].recvUngrid(msg);
 }
 
