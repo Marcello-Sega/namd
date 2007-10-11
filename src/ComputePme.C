@@ -36,6 +36,7 @@
 #include "WorkDistrib.h"
 #include "varsizemsg.h"
 #include "Random.h"
+#include "Priorities.h"
 
 // commlib has been observed to cause hangs when starting load balancing
 // #define USE_COMM_LIB 1
@@ -54,6 +55,7 @@ class PmeGridMsg : public CMessage_PmeGridMsg {
 public:
 
   int sourceNode;
+  int sequence;
   Lattice lattice;
   PmeReduction *evir;
   int start;
@@ -68,6 +70,7 @@ class PmeTransMsg : public CMessage_PmeTransMsg {
 public:
 
   int sourceNode;
+  int sequence;
   Lattice lattice;
   int x_start;
   int nx;
@@ -85,20 +88,6 @@ public:
   float *qgrid;
 
 };
-
-
-#define SET_PRIORITY(MSG,PRIO) { \
-  CkSetQueueing(MSG, CK_QUEUEING_IFIFO); \
-  *((int*) CkPriorityPtr(MSG)) = (PRIO); }
-
-#define recvGridPriority    16
-#define recvTransPriority   17
-#define recvZYTransPriority   17
-#define recvYXTransPriority   18
-#define recvXYUntransPriority 19
-#define recvYZUntransPriority 20
-#define recvUntransPriority 20
-#define recvUngridPriority  21
 
 
 // use this idiom since messages don't have copy constructors
@@ -305,6 +294,7 @@ private:
   PmeReduction recip_evir[PME_MAX_EVALS];
   PmeReduction recip_evir2[PME_MAX_EVALS];
 
+  int sequence;  // used for priorities
   int useBarrier;
   int sendTransBarrier_received;
 
@@ -978,6 +968,7 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   }
   if ( grid_count == numSources ) {
     lattice = msg->lattice;
+    sequence = msg->sequence;
   }
 
   int zdim = myGrid.dim3;
@@ -1065,7 +1056,7 @@ void ComputePmeMgr::sendTrans(void) {
     LocalPmeInfo &li = localInfo[pe];
     int cpylen = li.ny_after_transpose * zdim;
     PmeTransMsg *newmsg = new (nx * cpylen * numGrids,
-				(int) sizeof(int)*8) PmeTransMsg;
+				PRIORITY_SIZE) PmeTransMsg;
     newmsg->sourceNode = myGridPe;
     newmsg->lattice = lattice;
     newmsg->x_start = x_start;
@@ -1079,7 +1070,8 @@ void ComputePmeMgr::sendTrans(void) {
         qmsg += cpylen;
       }
     }
-    SET_PRIORITY(newmsg,recvTransPriority)
+    newmsg->sequence = sequence;
+    SET_PRIORITY(newmsg,sequence,PME_TRANS_PRIORITY)
 #if CHARM_VERSION > 050402
     pmeProxy[transPeMap[pe]].recvTrans(newmsg);
 #else
@@ -1098,6 +1090,7 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   // CkPrintf("recvTrans on Pe(%d)\n",CkMyPe());
   if ( trans_count == numGridPes ) {
     lattice = msg->lattice;
+    sequence = msg->sequence;
   }
 
   int zdim = myGrid.dim3;
@@ -1182,7 +1175,7 @@ void ComputePmeMgr::sendUntrans(void) {
     int x_start =li.x_start;
     int nx = li.nx;
     PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,numGrids,
-				(int) sizeof(int)*8) PmeUntransMsg;
+				PRIORITY_SIZE) PmeUntransMsg;
     newmsg->sourceNode = myTransPe;
     newmsg->y_start = y_start;
     newmsg->ny = ny;
@@ -1196,7 +1189,7 @@ void ComputePmeMgr::sendUntrans(void) {
 		(void*)(kgrid + qgrid_size*g + x_start*ny*zdim),
 		nx*ny*zdim*sizeof(float));
     }
-    SET_PRIORITY(newmsg,recvUntransPriority)
+    SET_PRIORITY(newmsg,sequence,PME_UNTRANS_PRIORITY)
 #if CHARM_VERSION > 050402
     pmeProxy[gridPeMap[pe]].recvUntrans(newmsg);
 #else
@@ -1311,7 +1304,7 @@ void ComputePmeMgr::sendUngrid(void) {
     }
     newmsg->sourceNode = myGridPe;
 
-    SET_PRIORITY(newmsg,recvUngridPriority)
+    SET_PRIORITY(newmsg,sequence,PME_UNGRID_PRIORITY)
 #if CHARM_VERSION > 050402
     pmeProxyDir[pe].recvUngrid(newmsg);
 #else
@@ -1714,7 +1707,7 @@ void ComputePme::sendPencils() {
     }
 
     PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen,
-	numGrids, (int) sizeof(int)*8) PmeGridMsg;
+	numGrids, PRIORITY_SIZE) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
 #if 0
@@ -1747,7 +1740,8 @@ void ComputePme::sendPencils() {
       }
     }
 
-    SET_PRIORITY(msg,recvGridPriority)
+    msg->sequence = sequence();
+    SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
     myMgr->zPencil(ib,jb,0).recvGrid(msg);
    }
   }
@@ -1870,7 +1864,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
     }
 
     PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen*numGrids,
-				numGrids, (int) sizeof(int)*8) PmeGridMsg;
+				numGrids, PRIORITY_SIZE) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
     msg->start = fstart;
@@ -1895,7 +1889,8 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       }
     }
 
-    SET_PRIORITY(msg,recvGridPriority)
+    msg->sequence = sequence();
+    SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
 #if CHARM_VERSION > 050402
     pmeProxy[gridPeMap[pe]].recvGrid(msg);
 #else
@@ -2275,6 +2270,7 @@ public:
   PmePencilInitMsgData initdata;
   Lattice lattice;
   PmeReduction evir;
+  int sequence;  // used for priorities
   int imsg;  // used in sdag code
   float *data;
   float *work;
@@ -2467,6 +2463,7 @@ void PmeZPencil::recv_grid(const PmeGridMsg *msg) {
   int dim3 = initdata.grid.dim3;
   if ( imsg == 0 ) {
     lattice = msg->lattice;
+    sequence = msg->sequence;
     memset(data, 0, sizeof(float) * nx*ny*dim3);
   }
 
@@ -2530,7 +2527,7 @@ void PmeZPencil::send_trans(int dest) {
     int kb = send_order[isend];
     int nz = block3;
     if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
-    PmeTransMsg *msg = new (nx*ny*nz*2,(int) sizeof(int)*8) PmeTransMsg;
+    PmeTransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
     msg->lattice = lattice;
     msg->sourceNode = thisIndex.y;
     msg->nx = ny;
@@ -2544,13 +2541,17 @@ void PmeZPencil::send_trans(int dest) {
       }
      }
     }
-    SET_PRIORITY(msg,recvZYTransPriority)
+    msg->sequence = sequence;
+    SET_PRIORITY(msg,sequence,PME_TRANS_PRIORITY)
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
   }
 }
 
 void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
-  if ( imsg == 0 ) { lattice = msg->lattice; }
+  if ( imsg == 0 ) {
+    lattice = msg->lattice;
+    sequence = msg->sequence;
+  }
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
   int jb = msg->sourceNode;
@@ -2589,7 +2590,7 @@ void PmeYPencil::send_trans(int dest) {
     int jb = send_order[isend];
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeTransMsg *msg = new (nx*ny*nz*2,(int) sizeof(int)*8) PmeTransMsg;
+    PmeTransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
     msg->lattice = lattice;
     msg->sourceNode = thisIndex.x;
     msg->nx = nx;
@@ -2609,13 +2610,17 @@ void PmeYPencil::send_trans(int dest) {
     }
     if ( md != msg->qgrid + nx*ny*nz*2 ) CkPrintf("error in YX at %d %d %d\n",
 	thisIndex.x, jb, thisIndex.z);
-    SET_PRIORITY(msg,recvYXTransPriority)
+    msg->sequence = sequence;
+    SET_PRIORITY(msg,sequence,PME_TRANS2_PRIORITY)
     initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
   }
 }
 
 void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
-  if ( imsg == 0 ) { lattice = msg->lattice; }
+  if ( imsg == 0 ) {
+    lattice = msg->lattice;
+    sequence = msg->sequence;
+  }
   int block1 = initdata.grid.block1;
   int K1 = initdata.grid.K1;
   int ib = msg->sourceNode;
@@ -2676,7 +2681,7 @@ void PmeXPencil::send_untrans(int dest) {
     int ib = send_order[isend];
     int nx = block1;
     if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,(ib==0?1:0),(int) sizeof(int)*8) PmeUntransMsg;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,(ib==0?1:0),PRIORITY_SIZE) PmeUntransMsg;
     if ( ib == 0 ) msg->evir[0] = evir;
     msg->sourceNode = thisIndex.y;
     msg->ny = ny;
@@ -2690,7 +2695,7 @@ void PmeXPencil::send_untrans(int dest) {
       }
      }
     }
-    SET_PRIORITY(msg,recvXYUntransPriority)
+    SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
     initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
   }
 }
@@ -2743,7 +2748,7 @@ void PmeYPencil::send_untrans(int dest) {
     int jb = send_order[isend];
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,(jb==0?1:0),(int) sizeof(int)*8) PmeUntransMsg;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,(jb==0?1:0),PRIORITY_SIZE) PmeUntransMsg;
     if ( jb == 0 ) msg->evir[0] = evir;
     msg->sourceNode = thisIndex.z;
     msg->ny = nz;
@@ -2757,7 +2762,7 @@ void PmeYPencil::send_untrans(int dest) {
       }
      }
     }
-    SET_PRIORITY(msg,recvYZUntransPriority)
+    SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
     initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
   }
 }
@@ -2854,7 +2859,7 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
     }
   }
 
-  SET_PRIORITY(msg,recvUngridPriority)
+  SET_PRIORITY(msg,sequence,PME_UNGRID_PRIORITY)
   initdata.pmeProxy[pe].recvUngrid(msg);
 }
 

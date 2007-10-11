@@ -136,11 +136,11 @@ template <class T, class S, class P> class ComputeSelfTuples :
       int myNode = CkMyPe();
       if ( PatchMap::Object()->node(patchID) != myNode )
       {
-        this->basePriority = 64 + patchID % 64;
+        this->basePriority = COMPUTE_PROXY_PRIORITY + PATCH_PRIORITY(patchID);
       }
       else
       {
-        this->basePriority = 2 * 64 + (patchID % 64);
+        this->basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
       }
     }
 

@@ -14,6 +14,7 @@
 #include "ComputeHomePatch.h"
 #include "PatchMap.inl"
 #include "HomePatch.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -65,11 +66,11 @@ void ComputeHomePatch::initialize() {
     int myNode = CkMyPe();
     if ( PatchMap::Object()->node(patchID) != myNode )
     {
-      basePriority = 64 + patchID % 64;
+      basePriority = COMPUTE_PROXY_PRIORITY + PATCH_PRIORITY(patchID);
     }
     else
     {
-      basePriority = 2 * 64 + (patchID % 64);
+      basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
     }
 }
 

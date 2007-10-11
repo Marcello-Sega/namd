@@ -16,6 +16,7 @@
 #include <string.h>
 #include "ProcessorPrivate.h"
 #include "packmsg.h"
+#include "Priorities.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -844,7 +845,7 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
     int pids[PROXY_SPAN_DIM];
     int npid = proxy->getSpanningTreeChild(pids);
     if (npid) {
-      ProxyDataMsg *newmsg = new(sizeof(int)*8) ProxyDataMsg;
+      ProxyDataMsg *newmsg = new(PRIORITY_SIZE) ProxyDataMsg;
       CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
       *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
       newmsg->patch = msg->patch;
@@ -883,7 +884,7 @@ ProxyMgr::recvImmediateProxyAll(ProxyAllMsg *msg) {
     int pids[PROXY_SPAN_DIM];
     int npid = proxy->getSpanningTreeChild(pids);
     if (npid) {
-      ProxyAllMsg *newmsg = new(sizeof(int)*8) ProxyAllMsg;
+      ProxyAllMsg *newmsg = new(PRIORITY_SIZE) ProxyAllMsg;
       CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
       *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
       newmsg->patch = msg->patch;

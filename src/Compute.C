@@ -22,14 +22,15 @@
 
 #include "Node.h"
 #include "Compute.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 #include "Debug.h"
 
 
-Compute::Compute(ComputeID c) : basePriority(63), cid(c),
-	localWorkMsg(new (sizeof(int)*8) LocalWorkMsg) { 
+Compute::Compute(ComputeID c) : basePriority(0), cid(c),
+	localWorkMsg(new (PRIORITY_SIZE) LocalWorkMsg) { 
   doAtomUpdate = false;
   computeType = ComputeMap::Object()->type(c);
 }

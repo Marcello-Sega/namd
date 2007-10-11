@@ -31,6 +31,7 @@
 #include "ReductionMgr.h"
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
+#include "Priorities.h"
 
 class TuplePatchElem {
   public:
@@ -305,7 +306,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       setNumPatches(tuplePatchList.size());
       doLoadTuples = true;
 
-      basePriority = 1;
+      basePriority = COMPUTE_PROXY_PRIORITY;  // no patch dependence
     }
 
     //======================================================================

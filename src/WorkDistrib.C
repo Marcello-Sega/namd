@@ -38,6 +38,7 @@
 #include "Random.h"
 #include "varsizemsg.h"
 #include "ProxyMgr.h"
+#include "Priorities.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
@@ -1444,13 +1445,12 @@ void WorkDistrib::mapComputeNonbonded(void)
 //----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   LocalWorkMsg *msg = compute->localWorkMsg;
-  CkSetQueueing(msg, CK_QUEUEING_IFIFO);
   int seq = compute->sequence();
 
   if ( seq < 0 ) {
-    *((int*) CkPriorityPtr(msg)) = 128 + compute->priority();
+    NAMD_bug("compute->sequence() < 0 in WorkDistrib::messageEnqueueWork");
   } else {
-    *((int*) CkPriorityPtr(msg)) = 128 + (seq %256) * 256 + compute->priority();
+    SET_PRIORITY(msg,seq,compute->priority());
   }
 
   msg->compute = compute; // pointer is valid since send is to local Pe

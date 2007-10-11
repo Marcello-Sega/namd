@@ -17,6 +17,7 @@
 #include "ProxyMgr.h"
 #include "AtomMap.h"
 #include "PatchMap.h"
+#include "Priorities.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define  DEBUGM
@@ -141,10 +142,9 @@ void ProxyPatch::sendResults(void)
 //  CmiUsePersistentHandle(&localphs, 1);
 #endif
   if (proxyRecvSpanning == 0) {
-    ProxyResultMsg *msg = new (sizeof(int)*8) ProxyResultMsg;
-    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-    int seq = flags.sequence;
-    *((int*) CkPriorityPtr(msg)) = 256 + (seq % 256) * 256 + (patchID % 64);
+    ProxyResultMsg *msg = new (PRIORITY_SIZE) ProxyResultMsg;
+    SET_PRIORITY(msg,flags.sequence,
+		PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
     msg->node = CkMyPe();
     msg->patch = patchID;
     for ( i = 0; i < Results::maxNumForces; ++i ) 
@@ -152,10 +152,9 @@ void ProxyPatch::sendResults(void)
     ProxyMgr::Object()->sendResults(msg);
   }
   else {
-    ProxyCombinedResultMsg *msg = new (sizeof(int)*8) ProxyCombinedResultMsg;
-    CkSetQueueing(msg, CK_QUEUEING_IFIFO);
-    int seq = flags.sequence;
-    *((int*) CkPriorityPtr(msg)) = 256 + (seq % 256) * 256 + (patchID % 64);
+    ProxyCombinedResultMsg *msg = new (PRIORITY_SIZE) ProxyCombinedResultMsg;
+    SET_PRIORITY(msg,flags.sequence,
+		PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
     msg->nodes.add(CkMyPe());
     msg->patch = patchID;
     for ( i = 0; i < Results::maxNumForces; ++i ) 

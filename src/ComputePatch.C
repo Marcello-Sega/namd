@@ -11,6 +11,7 @@
 #include "WorkDistrib.decl.h"
 #include "Node.h"
 #include "ComputePatch.h"
+#include "Priorities.h"
 #include "PatchMap.inl"
 #include "Patch.h"
 
@@ -60,11 +61,11 @@ void ComputePatch::initialize() {
     int myNode = CkMyPe();
     if ( PatchMap::Object()->node(patchID) != myNode )
     {
-      basePriority = 64 + patchID % 64;
+      basePriority = COMPUTE_PROXY_PRIORITY + PATCH_PRIORITY(patchID);
     }
     else
     {
-      basePriority = 2 * 64 + (patchID % 64);
+      basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
     }
 }
 

@@ -7,6 +7,7 @@
 #include "WorkDistrib.decl.h"
 #include "Node.h"
 #include "ComputePatchPair.h"
+#include "Priorities.h"
 #include "PatchMap.inl"
 #include "Patch.h"
 
@@ -70,22 +71,21 @@ void ComputePatchPair::initialize() {
 
     Compute::initialize();
 
+    // proxies are more urgent (lower priority) than patches
     int myNode = CkMyPe();
-    int p0 = patchID[0] % 64;
-    int p1 = patchID[1] % 64;
-    int patchPrio = ((p0<p1)?p0:p1);
-    if ( PatchMap::Object()->node(patchID[0]) != myNode )
-    {
-      basePriority = 64 + patchPrio;
+    int p0 = PATCH_PRIORITY(patchID[0]);
+    if ( PatchMap::Object()->node(patchID[0]) == myNode ) {
+      p0 += COMPUTE_HOME_PRIORITY;
+    } else {
+      p0 += COMPUTE_PROXY_PRIORITY;
     }
-    else if ( PatchMap::Object()->node(patchID[1]) != myNode )
-    {
-      basePriority = 64 + patchPrio;
+    int p1 = PATCH_PRIORITY(patchID[1]);
+    if ( PatchMap::Object()->node(patchID[1]) == myNode ) {
+      p1 += COMPUTE_HOME_PRIORITY;
+    } else {
+      p1 += COMPUTE_PROXY_PRIORITY;
     }
-    else
-    {
-      basePriority = 2 * 64 + patchPrio;
-    }
+    basePriority = ((p0<p1)?p0:p1);   // most urgent wins
 
 }
 

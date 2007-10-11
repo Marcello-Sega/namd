@@ -34,6 +34,7 @@
 #include "ReductionMgr.h"
 #include "Sync.h"
 #include "Random.h"
+#include "Priorities.h"
 
 #define TINY 1.0e-20;
 #define MAXHGS 10
@@ -602,11 +603,10 @@ void HomePatch::positionsReady(int doMigration)
     }
 #endif
     int seq = flags.sequence;
-    int priority = 64 + (seq % 256) * 256 + (patchID % 64);
+    int priority = PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);
     if (doMigration) {
-        ProxyAllMsg *allmsg = new (sizeof(int)*8) ProxyAllMsg;
-        CkSetQueueing(allmsg, CK_QUEUEING_IFIFO);
-        *((int*) CkPriorityPtr(allmsg)) = priority;
+        ProxyAllMsg *allmsg = new (PRIORITY_SIZE) ProxyAllMsg;
+        SET_PRIORITY(allmsg,seq,priority);
         allmsg->patch = patchID;
         allmsg->flags = flags;
         allmsg->positionList = p;
@@ -622,9 +622,8 @@ void HomePatch::positionsReady(int doMigration)
         CmiUsePersistentHandle(NULL, 0);
 #endif
     } else {
-        ProxyDataMsg *nmsg = new (sizeof(int)*8) ProxyDataMsg;
-        CkSetQueueing(nmsg, CK_QUEUEING_IFIFO);
-        *((int*) CkPriorityPtr(nmsg)) = priority;
+        ProxyDataMsg *nmsg = new (PRIORITY_SIZE) ProxyDataMsg;
+        SET_PRIORITY(nmsg,seq,priority);
         nmsg->patch = patchID;
         nmsg->flags = flags;
         nmsg->positionList = p;
