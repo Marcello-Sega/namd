@@ -57,9 +57,7 @@ module ComputePmeMgr {
           }
         }
         atomic { forward_fft(); }
-        /* for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) */ atomic {
-          send_trans(imsg);
-        }
+        atomic { send_trans(); }
         for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
           when recvUntrans(PmeUntransMsg *msg) atomic {
             recv_untrans(msg); delete msg;
@@ -91,18 +89,14 @@ module ComputePmeMgr {
           }
         }
         atomic { forward_fft(); }
-        /* for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) */ atomic {
-          send_trans(imsg);
-        }
+        atomic { send_trans(); }
         for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
           when recvUntrans(PmeUntransMsg *msg) atomic {
             recv_untrans(msg); delete msg;
           }
         }
         atomic { backward_fft(); }
-        /* for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) */ atomic {
-          send_untrans(imsg);
-        }
+        atomic { send_untrans(); }
       }
     };
   };
@@ -126,9 +120,7 @@ module ComputePmeMgr {
         atomic { forward_fft(); }
         atomic { pme_kspace(); }
         atomic { backward_fft(); }
-        /* for ( imsg=0; imsg < initdata.xBlocks; ++imsg ) */ atomic {
-          send_untrans(imsg);
-        }
+        atomic { send_untrans(); }
       }
     };
   };

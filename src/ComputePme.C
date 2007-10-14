@@ -2253,10 +2253,12 @@ public:
   PmePencil() {
     data = 0;
     work = 0;
+    send_order = 0;
   }
   ~PmePencil() {
     delete [] data;
     delete [] work;
+    delete [] send_order;
   }
   void base_init(PmePencilInitMsg *msg) {
     initdata = msg->data;
@@ -2285,7 +2287,7 @@ public:
     void fft_init();
     void recv_grid(const PmeGridMsg *);
     void forward_fft();
-    void send_trans(int dest);
+    void send_trans();
     void recv_untrans(const PmeUntransMsg *);
     void backward_fft();
     void send_ungrid(PmeGridMsg *);
@@ -2305,10 +2307,10 @@ public:
     void fft_init();
     void recv_trans(const PmeTransMsg *);
     void forward_fft();
-    void send_trans(int dest);
+    void send_trans();
     void recv_untrans(const PmeUntransMsg *);
     void backward_fft();
-    void send_untrans(int dest);
+    void send_untrans();
 private:
 #ifdef NAMD_FFTW
     fftw_plan forward_plan, backward_plan;
@@ -2326,7 +2328,7 @@ public:
     void forward_fft();
     void pme_kspace();
     void backward_fft();
-    void send_untrans(int dest);
+    void send_untrans();
 #ifdef NAMD_FFTW
     fftw_plan forward_plan, backward_plan;
 #endif
@@ -2519,7 +2521,7 @@ void PmeZPencil::forward_fft() {
 #endif
 }
 
-void PmeZPencil::send_trans(int dest) {
+void PmeZPencil::send_trans() {
   int zBlocks = initdata.zBlocks;
   int block3 = initdata.grid.block3;
   int dim3 = initdata.grid.dim3;
@@ -2582,7 +2584,7 @@ void PmeYPencil::forward_fft() {
 #endif
 }
 
-void PmeYPencil::send_trans(int dest) {
+void PmeYPencil::send_trans() {
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
@@ -2673,7 +2675,7 @@ void PmeXPencil::backward_fft() {
 #endif
 }
 
-void PmeXPencil::send_untrans(int dest) {
+void PmeXPencil::send_untrans() {
   int xBlocks = initdata.xBlocks;
   int block1 = initdata.grid.block1;
   int K1 = initdata.grid.K1;
@@ -2740,7 +2742,7 @@ void PmeYPencil::backward_fft() {
 #endif
 }
 
-void PmeYPencil::send_untrans(int dest) {
+void PmeYPencil::send_untrans() {
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
