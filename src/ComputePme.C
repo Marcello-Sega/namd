@@ -1467,6 +1467,10 @@ void ComputePme::doWork()
 {
   DebugM(4,"Entering ComputePme::doWork().\n");
 
+#ifdef TRACE_COMPUTE_OBJECTS
+    double traceObjStartTime = CmiWallTimer();
+#endif
+
   ResizeArrayIter<PatchElem> ap(patchList);
 
   // Skip computations if nothing to do.
@@ -1620,6 +1624,10 @@ void ComputePme::doWork()
     scale_coordinates(localGridData[g], numGridAtoms[g], lattice, myGrid);
     myRealSpace[g]->fill_charges(q, f, fz_arr, localGridData[g]);
   }
+
+#ifdef TRACE_COMPUTE_OBJECTS
+    traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+this->cid, traceObjStartTime, CmiWallTimer());
+#endif
 
   if ( myMgr->usePencils ) {
     sendPencils();

@@ -147,7 +147,15 @@ template <class T, class S, class P> class ComputeSelfTuples :
     void doWork(void) {
       LdbCoordinator::Object()->startWork(this->cid,0); // Timestep not used
 
+#ifdef TRACE_COMPUTE_OBJECTS
+    double traceObjStartTime = CmiWallTimer();
+#endif
+
       ComputeHomeTuples<T,S,P>::doWork();
+
+#ifdef TRACE_COMPUTE_OBJECTS
+    traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+this->cid, traceObjStartTime, CmiWallTimer());
+#endif
 
       LdbCoordinator::Object()->endWork(this->cid,0); // Timestep not used
     }

@@ -57,6 +57,10 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
   // I assume no threads will suspend until endWork is called
   LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
 
+#ifdef TRACE_COMPUTE_OBJECTS
+  double traceObjStartTime = CmiWallTimer();
+#endif
+
   DebugM(2,"doForce() called.\n");
   DebugM(1,numAtoms << " patch 1 atoms\n");
   DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms*numAtoms << "\n");
@@ -156,6 +160,10 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
   submitReductionData(reductionData,reduction);
   if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
+
+#ifdef TRACE_COMPUTE_OBJECTS
+    traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+cid, traceObjStartTime, CmiWallTimer());
+#endif
 
   // Inform load balancer
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used

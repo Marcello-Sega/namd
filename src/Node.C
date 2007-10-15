@@ -161,6 +161,8 @@ SimParameters *node_simParameters;
 Parameters *node_parameters;
 Molecule *node_molecule;
 
+extern void registerUserEventsForAllComputeObjs(void);
+
 void Node::startup() {
   int gotoRun = false;
 
@@ -244,6 +246,9 @@ void Node::startup() {
       workDistrib->assignNodeToPatch();
       workDistrib->mapComputes();
       ComputeMap::Object()->printComputeMap();
+
+      registerUserEventsForAllComputeObjs();
+
       workDistrib->sendMaps();
     }
   break;

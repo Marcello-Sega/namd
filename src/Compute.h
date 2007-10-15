@@ -39,6 +39,7 @@ protected:
 
 public:
   const ComputeID cid;
+
   LocalWorkMsg *const localWorkMsg;
   Compute(ComputeID);
   int type() { return computeType; };
@@ -59,6 +60,12 @@ public:
   int sequence(void) { return sequenceNumber; }
   virtual int priority(void) { return basePriority; }
 };
+
+/* For projection's usage: each compute object's work is associated 
+ * with a user event in projections. This macro indicates the offset 
+ * of the event ID that those compute objects' user events begin with.
+ */ 
+#define TRACE_COMPOBJ_IDOFFSET 10000
 
 #endif
 
