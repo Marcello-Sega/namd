@@ -51,22 +51,42 @@ module ComputePmeMgr {
 
       // ready to go
       while ( 1 ) {
+        atomic { hasData = 0; }
         for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
           when recvGrid(PmeGridMsg *msg) atomic {
+            if ( msg->hasData ) hasData = 1;
             recv_grid(msg); grid_msgs[imsg] = msg;
           }
         }
+       if ( hasData ) {
         atomic { forward_fft(); }
+       }
         atomic { send_trans(); }
+       if ( hasData ) {
         for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
           when recvUntrans(PmeUntransMsg *msg) atomic {
             recv_untrans(msg); delete msg;
           }
         }
         atomic { backward_fft(); }
-        for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) atomic {
-          send_ungrid(grid_msgs[imsg]);
+       }
+       atomic {
+        int send_evir = 1;
+        for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+          PmeGridMsg *msg = grid_msgs[imsg];
+          if ( msg->hasData ) {
+            if ( send_evir ) {
+              msg->evir[0] = evir;
+              send_evir = 0;
+            } else {
+               msg->evir[0] = 0.;
+            }
+            send_ungrid(msg);
+          } else {
+            delete msg;
+          }
         }
+       }
       }
     };
   };
@@ -83,13 +103,19 @@ module ComputePmeMgr {
       fft_init();
       }
       while ( 1 ) {
+        atomic { hasData = 0; }
         for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
           when recvTrans(PmeTransMsg *msg) atomic {
+            if ( msg->hasData ) hasData = 1;
+            needs_reply[msg->sourceNode] = msg->hasData;
             recv_trans(msg); delete msg;
           }
         }
+       if ( hasData ) {
         atomic { forward_fft(); }
+       }
         atomic { send_trans(); }
+       if ( hasData ) {
         for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
           when recvUntrans(PmeUntransMsg *msg) atomic {
             recv_untrans(msg); delete msg;
@@ -97,6 +123,7 @@ module ComputePmeMgr {
         }
         atomic { backward_fft(); }
         atomic { send_untrans(); }
+       }
       }
     };
   };
@@ -112,15 +139,20 @@ module ComputePmeMgr {
       fft_init();
       }
       while ( 1 ) {
+        atomic { hasData = 0; }
         for ( imsg=0; imsg < initdata.xBlocks; ++imsg ) {
           when recvTrans(PmeTransMsg *msg) atomic {
+            if ( msg->hasData ) hasData = 1;
+            needs_reply[msg->sourceNode] = msg->hasData;
             recv_trans(msg); delete msg;
           }
         }
+       if ( hasData ) {
         atomic { forward_fft(); }
         atomic { pme_kspace(); }
         atomic { backward_fft(); }
         atomic { send_untrans(); }
+       }
       }
     };
   };

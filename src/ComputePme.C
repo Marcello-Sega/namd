@@ -56,6 +56,7 @@ public:
 
   int sourceNode;
   int sequence;
+  int hasData;
   Lattice lattice;
   PmeReduction *evir;
   int start;
@@ -71,6 +72,7 @@ public:
 
   int sourceNode;
   int sequence;
+  int hasData;
   Lattice lattice;
   int x_start;
   int nx;
@@ -82,6 +84,7 @@ class PmeUntransMsg : public CMessage_PmeUntransMsg {
 public:
 
   int sourceNode;
+  int has_evir;
   PmeReduction *evir;
   int y_start;
   int ny;
@@ -1644,6 +1647,11 @@ void ComputePme::doWork()
 		myMgr->recipPeDest,myMgr->gridPeMap);
 #endif
   }
+
+  if ( myMgr->ungrid_count == 0 ) {
+    myMgr->pmeProxyDir[CkMyPe()].ungridCalc();
+  }
+
 }
 
 
@@ -1669,6 +1677,7 @@ void ComputePme::sendPencils() {
   const char *pencilActive = myMgr->pencilActive;
 
   strayChargeErrors = 0;
+  // int savedMessages = 0;
 
   for (int ib=0; ib<xBlocks; ++ib) {
    for (int jb=0; jb<yBlocks; ++jb) {
@@ -1714,10 +1723,15 @@ void ComputePme::sendPencils() {
       if ( fz_arr[i] ) ++zlistlen;
     }
 
-    PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen,
-	numGrids, PRIORITY_SIZE) PmeGridMsg;
+    int hd = ( fcount? 1 : 0 );  // has data?
+    // if ( ! hd ) ++savedMessages;
+
+    PmeGridMsg *msg = new (hd*fcount*zlistlen, hd*zlistlen, hd*flen,
+	hd*numGrids, PRIORITY_SIZE) PmeGridMsg;
     msg->sourceNode = CkMyPe();
+    msg->hasData = hd;
     msg->lattice = lattice;
+   if ( hd ) {
 #if 0
     msg->start = fstart;
     msg->len = flen;
@@ -1747,12 +1761,19 @@ void ComputePme::sendPencils() {
        }
       }
     }
+   } else { // no data no reply
+     myMgr->ungrid_count--;
+   }
 
     msg->sequence = sequence();
     SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
     myMgr->zPencil(ib,jb,0).recvGrid(msg);
    }
   }
+
+  // if ( savedMessages ) {
+  //   CkPrintf("Pe %d eliminated %d PME messages\n",CkMyPe(),savedMessages);
+  // }
 
   for (int i=0; i<fsize; ++i) {
     if ( q_arr[i] ) {
@@ -2262,11 +2283,13 @@ public:
     data = 0;
     work = 0;
     send_order = 0;
+    needs_reply = 0;
   }
   ~PmePencil() {
     delete [] data;
     delete [] work;
     delete [] send_order;
+    delete [] needs_reply;
   }
   void base_init(PmePencilInitMsg *msg) {
     initdata = msg->data;
@@ -2276,15 +2299,18 @@ public:
     for ( int i=0; i<nBlocks; ++i ) send_order[i] = i;
     Random rand(CkMyPe());
     rand.reorder(send_order,nBlocks);
+    needs_reply = new int[nBlocks];
   }
   PmePencilInitMsgData initdata;
   Lattice lattice;
   PmeReduction evir;
   int sequence;  // used for priorities
   int imsg;  // used in sdag code
+  int hasData;  // used in message elimination
   float *data;
   float *work;
   int *send_order;
+  int *needs_reply;
 };
 
 class PmeZPencil : public PmePencil<CBase_PmeZPencil> {
@@ -2477,6 +2503,8 @@ void PmeZPencil::recv_grid(const PmeGridMsg *msg) {
     memset(data, 0, sizeof(float) * nx*ny*dim3);
   }
 
+  if ( ! msg->hasData ) return;
+
   int zlistlen = msg->zlistlen;
   int *zlist = msg->zlist;
   char *fmsg = msg->fgrid;
@@ -2537,10 +2565,13 @@ void PmeZPencil::send_trans() {
     int kb = send_order[isend];
     int nz = block3;
     if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
-    PmeTransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
+    int hd = ( hasData ? 1 : 0 );
+    PmeTransMsg *msg = new (hd*nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
     msg->lattice = lattice;
     msg->sourceNode = thisIndex.y;
+    msg->hasData = hasData;
     msg->nx = ny;
+   if ( hasData ) {
     float *md = msg->qgrid;
     const float *d = data;
     for ( int i=0; i<nx; ++i ) {
@@ -2551,6 +2582,7 @@ void PmeZPencil::send_trans() {
       }
      }
     }
+   }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS_PRIORITY)
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
@@ -2566,6 +2598,7 @@ void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
   int K2 = initdata.grid.K2;
   int jb = msg->sourceNode;
   int ny = msg->nx;
+ if ( msg->hasData ) {
   const float *md = msg->qgrid;
   float *d = data;
   for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
@@ -2580,6 +2613,17 @@ void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
     }
    }
   }
+ } else {
+  float *d = data;
+  for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+   for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+    for ( int k=0; k<nz; ++k ) {
+      d[2*(j*nz+k)] = 0;
+      d[2*(j*nz+k)+1] = 0;
+    }
+   }
+  }
+ }
 }
 
 void PmeYPencil::forward_fft() {
@@ -2600,10 +2644,13 @@ void PmeYPencil::send_trans() {
     int jb = send_order[isend];
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeTransMsg *msg = new (nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
+    int hd = ( hasData ? 1 : 0 );
+    PmeTransMsg *msg = new (hd*nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
     msg->lattice = lattice;
     msg->sourceNode = thisIndex.x;
+    msg->hasData = hasData;
     msg->nx = nx;
+   if ( hasData ) {
     float *md = msg->qgrid;
     const float *d = data;
     for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
@@ -2620,6 +2667,7 @@ void PmeYPencil::send_trans() {
     }
     if ( md != msg->qgrid + nx*ny*nz*2 ) CkPrintf("error in YX at %d %d %d\n",
 	thisIndex.x, jb, thisIndex.z);
+   }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS2_PRIORITY)
     initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
@@ -2635,6 +2683,7 @@ void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
   int K1 = initdata.grid.K1;
   int ib = msg->sourceNode;
   int nx = msg->nx;
+ if ( msg->hasData ) {
   const float *md = msg->qgrid;
   for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
    float *d = data + i*ny*nz*2;
@@ -2649,6 +2698,17 @@ void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
     }
    }
   }
+ } else {
+  for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+   float *d = data + i*ny*nz*2;
+   for ( int j=0; j<ny; ++j, d += nz*2 ) {
+    for ( int k=0; k<nz; ++k ) {
+      d[2*k] = 0;
+      d[2*k+1] = 0;
+    }
+   }
+  }
+ }
 }
 
 void PmeXPencil::forward_fft() {
@@ -2687,12 +2747,20 @@ void PmeXPencil::send_untrans() {
   int xBlocks = initdata.xBlocks;
   int block1 = initdata.grid.block1;
   int K1 = initdata.grid.K1;
+  int send_evir = 1;
   for ( int isend=0; isend<xBlocks; ++isend ) {
     int ib = send_order[isend];
+    if ( ! needs_reply[ib] ) continue;
     int nx = block1;
     if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,(ib==0?1:0),PRIORITY_SIZE) PmeUntransMsg;
-    if ( ib == 0 ) msg->evir[0] = evir;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,send_evir,PRIORITY_SIZE) PmeUntransMsg;
+    if ( send_evir ) {
+      msg->evir[0] = evir;
+      msg->has_evir = 1;
+      send_evir = 0;
+    } else {
+      msg->has_evir = 0;
+    }
     msg->sourceNode = thisIndex.y;
     msg->ny = ny;
     float *md = msg->qgrid;
@@ -2712,7 +2780,7 @@ void PmeXPencil::send_untrans() {
 
 void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
   if ( imsg == 0 ) evir = 0.;
-  if ( thisIndex.x == 0 ) evir += msg->evir[0];
+  if ( msg->has_evir ) evir += msg->evir[0];
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
   int jb = msg->sourceNode;
@@ -2754,12 +2822,20 @@ void PmeYPencil::send_untrans() {
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
+  int send_evir = 1;
   for ( int isend=0; isend<yBlocks; ++isend ) {
     int jb = send_order[isend];
+    if ( ! needs_reply[jb] ) continue;
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,(jb==0?1:0),PRIORITY_SIZE) PmeUntransMsg;
-    if ( jb == 0 ) msg->evir[0] = evir;
+    PmeUntransMsg *msg = new (nx*ny*nz*2,send_evir,PRIORITY_SIZE) PmeUntransMsg;
+    if ( send_evir ) {
+      msg->evir[0] = evir;
+      msg->has_evir = 1;
+      send_evir = 0;
+    } else {
+      msg->has_evir = 0;
+    }
     msg->sourceNode = thisIndex.z;
     msg->ny = nz;
     float *md = msg->qgrid;
@@ -2779,7 +2855,7 @@ void PmeYPencil::send_untrans() {
 
 void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
   if ( imsg == 0 ) evir = 0.;
-  if ( thisIndex.y == 0 ) evir += msg->evir[0];
+  if ( msg->has_evir ) evir += msg->evir[0];
   int block3 = initdata.grid.block3;
   int dim3 = initdata.grid.dim3;
   int kb = msg->sourceNode;
@@ -2843,8 +2919,6 @@ void PmeZPencil::backward_fft() {
 }
 
 void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
-  if ( imsg == 0 ) msg->evir[0] = evir; else msg->evir[0] = 0.;
-
   int pe = msg->sourceNode;
   msg->sourceNode = thisIndex.x * initdata.yBlocks + thisIndex.y;
   int dim3 = initdata.grid.dim3;
