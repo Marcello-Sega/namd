@@ -36,7 +36,6 @@ SBSRCDIR = sb/src
 #DPME=$(DPMEINCL) $(DPMEFLAGS)
 #DPMELIBS= $(DPMEDIR)/libdpme.a
 
-
 #MEMOPTDEF=-DMEM_OPT_VERSION
 
 # defaults for special cases
@@ -345,7 +344,14 @@ dumpdcd:	$(SRCDIR)/dumpdcd.c
 loaddcd:	$(SRCDIR)/loaddcd.c
 	$(CC) $(CFLAGS) -o loaddcd $(SRCDIR)/loaddcd.c
 
-projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+updatefiles:
+	touch ../src/ComputeSelfTuples.h
+	rm -f obj/ComputeNonbondedPair.o
+	rm -f obj/ComputeNonbondedSelf.o
+	rm -f obj/ComputePme.o
+
+#To compile tracecomputes, type the command "make tracecomputes CXXOPTS=-DTRACE_COMPUTE_OBJECTS $(CXXOPTS)"
+tracecomputes: updatefiles $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
@@ -361,7 +367,23 @@ projections:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMOPTS) \
 	-lm -o namd2
 
-summary:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(MAKEBUILDINFO)
+	$(CHARMC) -verbose -ld++-option \
+	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
+	-module NeighborLB -module commlib -language charm++ \
+	-tracemode projections -tracemode summary \
+	$(BUILDINFO).o \
+	$(OBJS) \
+	$(DPMTALIB) \
+	$(DPMELIB) \
+	$(TCLLIB) \
+	$(FFTLIB) \
+	$(PLUGINLIB) \
+	$(CHARMOPTS) \
+	-lm -o namd2
+
+summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
