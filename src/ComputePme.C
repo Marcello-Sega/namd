@@ -594,91 +594,113 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
       xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
       
-#if 1
-
+      // decide which pes to use by bit reversal and patch use
+      int i;
+      int ncpus = CkNumPes();
+  
+      // find next highest power of two
+      int npow2 = 1;  int nbits = 0;
+      while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+  
+      // build bit reversal sequence
+      SortableResizeArray<int> patches, nopatches, pmeprocs;
       PatchMap *pmap = PatchMap::Object();
-      int npatches = pmap->numHomePatches();
-
-      int *pmemap = new int [npe];
-      memset (pmemap, 0, sizeof (int) * npe);
-      
-      //Use max of x*y, y*z, z*x 
-      int n_pme_pes = xBlocks * yBlocks; 
-      if ( n_pme_pes < xBlocks * zBlocks ) n_pme_pes = xBlocks * zBlocks;
-      if ( n_pme_pes < yBlocks * zBlocks ) n_pme_pes = yBlocks * zBlocks;
-      int n_avail_pes = 0;
-      
-      //Grab all processors where we can store pme chares
-      if (npe > npatches + 2 * n_pme_pes) {
-	//Use non patch processors to assign pme chares as we have
-	//many processors, check base nodes later
-	for (int count = 0; count < npe; count++)
-	  if(pmap->numPatchesOnNode(basepe + count) == 0)
-	    pmemap[n_avail_pes++] = basepe + count;      
-      }
-      else {  //Use all processors to assign pme chares
-	for (int count = 0; count < npe; count++)
-	  pmemap [n_avail_pes ++] = basepe + count;
+      i = 0;
+      for ( int icpu=0; icpu<ncpus; ++icpu ) {
+        int ri;
+        for ( ri = ncpus; ri >= ncpus; ++i ) {
+          ri = 0;
+          int pow2 = 1;
+          int rpow2 = npow2 / 2;
+          for ( int j=0; j<nbits; ++j ) {
+            ri += rpow2 * ( ( i / pow2 ) % 2 );
+            pow2 *= 2;  rpow2 /= 2;
+          }
+        }
+        // seq[icpu] = ri;
+        if ( ri ) { // keep 0 for special case
+          if ( pmap->numPatchesOnNode(ri) ) patches.add(ri);
+          else nopatches.add(ri);
+        }
       }
 
-      double pe = 0.0;
-      double stride = 1.0; 
-            
-      int x,y,z;      
-      stride = (1.0 * n_avail_pes) / (n_pme_pes);
+      // only use zero if it eliminates overloading or has patches
+      int useZero = 0;
+      int npens = xBlocks*yBlocks;
+      if ( npens % ncpus == 0 ) useZero = 1;
+      if ( npens == nopatches.size() + 1 ) useZero = 1;
+      npens += xBlocks*zBlocks;
+      if ( npens % ncpus == 0 ) useZero = 1;
+      if ( npens == nopatches.size() + 1 ) useZero = 1;
+      npens += yBlocks*zBlocks;
+      if ( npens % ncpus == 0 ) useZero = 1;
+      if ( npens == nopatches.size() + 1 ) useZero = 1;
+
+      // add nopatches then patches in reversed order
+      for ( i=nopatches.size()-1; i>=0; --i ) pmeprocs.add(nopatches[i]);
+      if ( useZero && ! pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
+      for ( i=patches.size()-1; i>=0; --i ) pmeprocs.add(patches[i]);
+      if ( pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
+  
+      int pe = 0;
+      int npes = pmeprocs.size();
+      SortableResizeArray<int> zprocs(xBlocks*yBlocks);
+      for ( i=0; i<xBlocks*yBlocks; ++i, ++pe ) zprocs[i] = pmeprocs[pe%npes];
+      zprocs.sort();
+      SortableResizeArray<int> yprocs(xBlocks*zBlocks);
+      for ( i=0; i<xBlocks*zBlocks; ++i, ++pe ) yprocs[i] = pmeprocs[pe%npes];
+      yprocs.sort();
+      SortableResizeArray<int> xprocs(yBlocks*zBlocks);
+      for ( i=0; i<yBlocks*zBlocks; ++i, ++pe ) xprocs[i] = pmeprocs[pe%npes];
+      xprocs.sort();
 
       pencilPMEProcessors = new char [CkNumPes()];
       memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
 
-      for (pe=0.0, x = 0; x < xBlocks; x ++)
-	for (y = 0; y < yBlocks; y ++) {
-	  if (pe >= n_avail_pes) pe = 0.0;    
-	  zPencil(x,y,0).insert (pmemap[(int) pe]);
-	  pencilPMEProcessors [pmemap[(int) pe]] = 1;
-	  pe += stride;
+      int x,y,z;
+
+      iout << iINFO << "PME Z PENCIL LOCATIONS:";
+      for ( i=0; i<zprocs.size() && i<10; ++i ) {
+        iout << " " << zprocs[i];
+      }
+      if ( i < zprocs.size() ) iout << " ...";
+      iout << "\n" << endi;
+
+      for (pe=0, x = 0; x < xBlocks; ++x)
+	for (y = 0; y < yBlocks; ++y, ++pe ) {
+	  zPencil(x,y,0).insert(zprocs[pe]);
+	  pencilPMEProcessors[zprocs[pe]] = 1;
 	}
       zPencil.doneInserting();
       
-      for (pe=1.0, z = 0; z < zBlocks; z ++)
-	for (x = 0; x < xBlocks; x ++) {
-	  if (pe >= n_avail_pes) pe = 1.0;
-	  yPencil(x,0,z).insert (pmemap[(int) pe]);
-	  pencilPMEProcessors [pmemap[(int) pe]] = 1;
-	  pe += stride;
+      iout << iINFO << "PME Y PENCIL LOCATIONS:";
+      for ( i=0; i<yprocs.size() && i<10; ++i ) {
+        iout << " " << yprocs[i];
+      }
+      if ( i < yprocs.size() ) iout << " ...";
+      iout << "\n" << endi;
+
+      for (pe=0, z = 0; z < zBlocks; ++z )
+	for (x = 0; x < xBlocks; ++x, ++pe ) {
+	  yPencil(x,0,z).insert(yprocs[pe]);
+	  pencilPMEProcessors[yprocs[pe]] = 1;
 	}
       yPencil.doneInserting();
       
-      for (pe=0.0, y = 0; y < yBlocks; y ++)	
-	for (z = 0; z < zBlocks; z ++) {
-	  if (pe >= n_avail_pes) pe = 0.0;
-	  xPencil(0,y,z).insert (pmemap[(int) pe]);
-	  pencilPMEProcessors [pmemap[(int) pe]] = 1;
-	  pe += stride;
+      iout << iINFO << "PME X PENCIL LOCATIONS:";
+      for ( i=0; i<xprocs.size() && i<10; ++i ) {
+        iout << " " << xprocs[i];
+      }
+      if ( i < xprocs.size() ) iout << " ...";
+      iout << "\n" << endi;
+
+      for (pe=0, y = 0; y < yBlocks; ++y )	
+	for (z = 0; z < zBlocks; ++z, ++pe ) {
+	  xPencil(0,y,z).insert(xprocs[pe]);
+	  pencilPMEProcessors[xprocs[pe]] = 1;
 	}
       xPencil.doneInserting();      
 	
-      delete [] pmemap;
-
-#else
-      int pe = 0;
-
-      for ( int i=0; i<xBlocks; ++i )
-       for ( int j=0; j<yBlocks; ++j )
-        zPencil(i,j,0).insert(basepe + pe++ % npe);
-      zPencil.doneInserting();
-
-      for ( int i=0; i<xBlocks; ++i )
-       for ( int k=0; k<zBlocks; ++k )
-        yPencil(i,0,k).insert(basepe + pe++ % npe);
-      yPencil.doneInserting();
-
-      for ( int j=0; j<yBlocks; ++j )
-       for ( int k=0; k<zBlocks; ++k )
-        xPencil(0,j,k).insert(basepe + pe++ % npe);
-      xPencil.doneInserting();
-
-#endif
-
       pmeProxy.recvArrays(xPencil,yPencil,zPencil);
       PmePencilInitMsgData msgdata;
       msgdata.grid = myGrid;
