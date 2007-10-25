@@ -274,6 +274,10 @@ void Controller::algorithm(void)
 }
 
 
+//
+// XXX static and global variables are unsafe for shared memory builds.
+// The use of global and static vars should be eliminated.
+//
 extern int eventEndOfTimeStep;
 
 // Handle SIGINT so that restart files get written completely.
