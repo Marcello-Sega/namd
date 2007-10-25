@@ -52,6 +52,11 @@ typedef NAMD_SOCKLEN_T socklen_t;
 int vmdsock_init(void) {
 #if defined(WIN32) && !defined(__CYGWIN__)
   int rc = 0;
+
+/*
+** XXX static and global variables are unsafe for shared memory builds.
+** The global and static vars should be eliminated.
+*/
   static int initialized=0;
 
   if (!initialized) {
