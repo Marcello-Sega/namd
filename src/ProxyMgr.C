@@ -514,6 +514,12 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
 
 #define MAX_INTERNODE 1
 
+//
+// XXX static and global variables are unsafe for shared memory builds.
+// The global and static vars should be eliminated.  
+// Unfortunately, the routines that use these below are actually 
+// in use in NAMD.
+//
 extern double *cpuloads;
 static int *procidx = NULL;
 static double averageLoad = 0.0;
@@ -566,7 +572,6 @@ static int noInterNode(int p)
 //  if (cpuloads[p] > averageLoad) return 1;
   return 0;
 }
-
 
 // only on PE 0
 void 
