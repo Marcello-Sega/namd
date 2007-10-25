@@ -4,6 +4,11 @@
 ***  All rights reserved.
 **/
 
+//
+// XXX static and global variables are unsafe for shared memory builds.
+// This FFT module cannot safely be used by multithreaded builds of NAMD.
+//
+
 #include <math.h>
 #include "pub3dfft.h"
 #ifndef M_PI
