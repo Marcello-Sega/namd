@@ -34,6 +34,10 @@ struct vmdforce {
   }  
 };
 
+//
+// XXX static and global variables are unsafe for shared memory builds.
+// The use of global and static vars should be eliminated.
+//
 static UniqueSortedArray<vmdforce> vmdforces;
 
 // Search for a free port in the range 1025-4096; return the successful port,

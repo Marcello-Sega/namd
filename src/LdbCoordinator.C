@@ -231,7 +231,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   const SimParameters *simParams = Node::Object()->simParameters;
 
 #if 0
-  static int lbcreated = 0;
+  static int lbcreated = 0; // XXX static variables are unsafe for SMP
   // PE0 first time Create a load balancer
   if (CkMyPe() == 0 && !lbcreated) {
     if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
@@ -426,7 +426,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
 #if CHARM_VERSION >= 050606
   if (traceAvailable()) {
-    static int specialTracing = 0;
+    static int specialTracing = 0; // XXX static variables are unsafe for SMP
     if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
     if (specialTracing) {
       if (ldbCycleNum == 4) traceBegin();
