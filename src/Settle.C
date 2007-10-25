@@ -171,6 +171,13 @@ static int settlev(const Vector *pos, BigReal ma, BigReal mb, Vector *vel,
   return 0;
 }
 
+
+//
+// XXX static and global variables are unsafe for shared memory builds.
+// The global and static vars should be eliminated.
+// Unfortunately, the routines that use these below are actually
+// in use in NAMD.
+//
 static BigReal ra, rb, rc;
 static int settle_first_time = 1;
 

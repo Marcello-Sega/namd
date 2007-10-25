@@ -46,6 +46,10 @@ static int register_cb(void *v, vmdplugin_t *p) {
 	dcdplugin = (molfile_plugin_t *)p;
 	return 0;
 }
+
+//
+// XXX static and global variables are unsafe for shared memory builds.
+//
 static int numatoms;
 static void *filehandle;
 static float *coords;
