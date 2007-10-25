@@ -669,6 +669,7 @@ void integrateAllAtomSigs()
     printf("Angle sigs:  %d\n", (int)sigsOfAngles.size());
     printf("Dihedral sigs:  %d\n", (int)sigsOfDihedrals.size());
     printf("Improper sigs:  %d\n", (int)sigsOfImpropers.size());
+    printf("Crossterm sigs:  %d\n", (int)sigsOfCrossterms.size());
 
 
     for(int i=0; i<g_mol->numAtoms; i++)
