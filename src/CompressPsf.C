@@ -1929,10 +1929,20 @@ void getExclusionData(FILE *fd)
 {
     //reading explicit exclusions from PSF file
     //TODO: Implement it
+    //currently just abort saying it is not supported
+    printf("ERROR: The current compression doesn't support explicit exclusions!\n");
+    NAMD_die("Compressing .psf file is not finished!\n");  
 }
 
 void getCrosstermData(FILE *fd)
-{}
+{
+    //reading crossterms from PSF file
+    //TODO: Implement it
+    //currently just abort saying it is not supported
+    printf("ERROR: The current compression doesn't support crossterms!\n");
+    NAMD_die("Compressing .psf file is not finished!\n");  
+
+}
 
 void buildExclusions()
 {
