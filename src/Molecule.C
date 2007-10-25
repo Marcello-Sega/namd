@@ -946,7 +946,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     sscanf(buffer, "%d", &atomSigPoolSize);
     atomSigPool = new AtomSignature[atomSigPoolSize];
     int typeCnt;
-    int tmp1, tmp2, tmp3;
+    int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
     int tisReal;
     int ttype;
     for(int i=0; i<atomSigPoolSize; i++){
@@ -1020,6 +1020,28 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             oneSig.offset[1] = tmp2;
             oneSig.offset[2] = tmp3;
             atomSigPool[i].improperSigs[j] = oneSig;
+        }        
+        //CROSSTERM SIGS
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NCRTERMSIGS"))
+            NAMD_die("UNABLE TO FIND NCRTERMSIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].crosstermCnt = typeCnt;
+            atomSigPool[i].crosstermSigs = new TupleSignature[typeCnt];
+        }            
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);            
+            sscanf(buffer, "%d %d %d %d %d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &tmp7, &ttype, &tisReal);
+            TupleSignature oneSig(7,CROSSTERM,(Index)ttype, (char)tisReal);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            oneSig.offset[2] = tmp3;
+            oneSig.offset[3] = tmp4;
+            oneSig.offset[4] = tmp5;
+            oneSig.offset[5] = tmp6;
+            oneSig.offset[6] = tmp7;
+            atomSigPool[i].crosstermSigs[j] = oneSig;
         }        
     }
 
@@ -8667,6 +8689,10 @@ void AtomSignature::pack(MOStream *msg){
     msg->put(improperCnt);
     for(int i=0; i<improperCnt; i++)
         improperSigs[i].pack(msg);
+
+    msg->put(crosstermCnt);
+    for(int i=0; i<crosstermCnt; i++)
+        crosstermSigs[i].pack(msg);
 }
 
 void AtomSignature::unpack(MIStream *msg){
@@ -8704,6 +8730,15 @@ void AtomSignature::unpack(MIStream *msg){
         improperSigs = new TupleSignature[improperCnt];
         for(int i=0; i<improperCnt; i++)
             improperSigs[i].unpack(msg);
+    }
+
+    msg->get(crosstermCnt);
+    delete [] crosstermSigs;
+    crosstermSigs = NULL;
+    if(crosstermCnt>0){
+        crosstermSigs = new TupleSignature[crosstermCnt];
+        for(int i=0; i<crosstermCnt; i++)
+            crosstermSigs[i].unpack(msg);
     }
 }
 

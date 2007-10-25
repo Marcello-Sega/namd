@@ -53,6 +53,7 @@ struct AtomSigInfo
     vector<short> angleSigIndices;
     vector<short> dihedralSigIndices;
     vector<short> improperSigIndices;
+    vector<short> crosstermSigIndices;
 
     AtomSigInfo()
     {}
@@ -73,6 +74,10 @@ struct AtomSigInfo
         improperSigIndices.clear();
         for(int i=0; i<sig.improperSigIndices.size(); i++)
             improperSigIndices.push_back(sig.improperSigIndices[i]);
+
+        crosstermSigIndices.clear();
+        for(int i=0; i<sig.crosstermSigIndices.size(); i++)
+            crosstermSigIndices.push_back(sig.crosstermSigIndices[i]);
     }
 
     ~AtomSigInfo()
@@ -81,6 +86,7 @@ struct AtomSigInfo
         angleSigIndices.clear();
         dihedralSigIndices.clear();
         improperSigIndices.clear();
+        crosstermSigIndices.clear();
     }
 
     void sortTupleSigIndices()
@@ -89,6 +95,7 @@ struct AtomSigInfo
         sort(angleSigIndices.begin(), angleSigIndices.end());
         sort(dihedralSigIndices.begin(), dihedralSigIndices.end());
         sort(improperSigIndices.begin(), improperSigIndices.end());
+        sort(crosstermSigIndices.begin(), crosstermSigIndices.end());
     }
 };
 
@@ -101,6 +108,8 @@ int operator==(const AtomSigInfo &s1, const AtomSigInfo& s2)
     if(s1.dihedralSigIndices.size() != s2.dihedralSigIndices.size())
         return 0;
     if(s1.improperSigIndices.size() != s2.improperSigIndices.size())
+        return 0;
+    if(s1.crosstermSigIndices.size() != s2.crosstermSigIndices.size())
         return 0;
 
     int equalCnt;
@@ -132,6 +141,12 @@ int operator==(const AtomSigInfo &s1, const AtomSigInfo& s2)
     if(equalCnt!=improperSigCnt)
         return 0;
 
+    equalCnt=0;
+    int crosstermSigCnt = s1.crosstermSigIndices.size();
+    for(int i=0; i<crosstermSigCnt; i++)
+        equalCnt += (s1.crosstermSigIndices[i]==s2.crosstermSigIndices[i]);
+    if(equalCnt!=crosstermSigCnt)
+        return 0;
 
     return 1;
 }
@@ -205,6 +220,7 @@ vector<TupleSignature> sigsOfBonds;
 vector<TupleSignature> sigsOfAngles;
 vector<TupleSignature> sigsOfDihedrals;
 vector<TupleSignature> sigsOfImpropers;
+vector<TupleSignature> sigsOfCrossterms;
 AtomSigInfo *eachAtomSigs;
 
 vector<ExclSigInfo> sigsOfExclusions;
@@ -749,6 +765,15 @@ void outputPsfFile(FILE *ofp)
         {
             short idx = oneAtomSig.improperSigIndices[j];
             TupleSignature& tSig = sigsOfImpropers[idx];
+            tSig.output(ofp);
+        }
+
+        oneTypeCnt = oneAtomSig.crosstermSigIndices.size();
+        fprintf(ofp, "%d !%sSIGS\n", oneTypeCnt, "NCRTERM");
+        for(int j=0; j<oneTypeCnt; j++)
+        {
+            short idx = oneAtomSig.crosstermSigIndices[j];
+            TupleSignature& tSig = sigsOfCrossterms[idx];
             tSig.output(ofp);
         }
     }
@@ -1936,12 +1961,135 @@ void getExclusionData(FILE *fd)
 
 void getCrosstermData(FILE *fd)
 {
-    //reading crossterms from PSF file
-    //TODO: Implement it
-    //currently just abort saying it is not supported
-    printf("ERROR: The current compression doesn't support crossterms!\n");
-    NAMD_die("Compressing .psf file is not finished!\n");  
+  int atom_nums[8];  //  Atom indexes for the 4 atoms
+  int last_atom_nums[8];  //  Atom indexes from previous bond
+  char atom1name[11];  //  Atom type for atom 1
+  char atom2name[11];  //  Atom type for atom 2
+  char atom3name[11];  //  Atom type for atom 3
+  char atom4name[11];  //  Atom type for atom 4
+  char atom5name[11];  //  Atom type for atom 5
+  char atom6name[11];  //  Atom type for atom 6
+  char atom7name[11];  //  Atom type for atom 7
+  char atom8name[11];  //  Atom type for atom 8
+  int j;      //  Loop counter
+  int num_read=0;    //  Number of items read so far
+  Bool duplicate_bond;  // Is this a duplicate of the last bond
 
+  //  Initialize the array used to look for duplicate crossterm
+  //  entries.  Set them all to -1 so we know nothing will match
+  for (j=0; j<8; j++)
+    last_atom_nums[j] = -1;
+
+  int numCrossterms = g_mol->numCrossterms;
+  int numAtoms = g_mol->numAtoms;
+
+  /*  Allocate the array to hold the cross-terms */
+  Crossterm* crossterms=new Crossterm[numCrossterms];
+
+  if (crossterms == NULL)
+  {
+    NAMD_die("memory allocation failed in getCrosstermData when compressing psf file");
+  }
+
+  /*  Loop through and read all the cross-terms      */
+  while (num_read < numCrossterms)
+  {
+    duplicate_bond = TRUE;
+
+    /*  Loop through the 8 indexes for this cross-term */
+    for (j=0; j<8; j++)
+    {
+      /*  Read the atom number from the file.         */
+      /*  Subtract 1 to convert the index from the    */
+      /*  1 to NumAtoms used in the file to the       */
+      /*  0 to NumAtoms-1 that we need    */
+      atom_nums[j]=NAMD_read_int(fd, "CROSS-TERMS")-1;
+
+      /*  Check to make sure the index isn't too big  */
+      if (atom_nums[j] >= numAtoms)
+      {
+        char err_msg[128];
+
+        sprintf(err_msg, "CROSS-TERM INDEX %d GREATER THAN NATOM %d IN CROSS-TERMS # %d IN PSF FILE", atom_nums[j]+1, numAtoms, num_read+1);
+        NAMD_die(err_msg);
+      }
+      
+      if (atom_nums[j] != last_atom_nums[j]){
+        duplicate_bond = FALSE;
+      }
+      
+      last_atom_nums[j] = atom_nums[j];
+    }
+    
+    /*  Get the atom types so we can look up the parameters */
+    const char *atom1Type = atomTypePool[atomData[atom_nums[0]].atomTypeIdx].c_str();
+    const char *atom2Type = atomTypePool[atomData[atom_nums[1]].atomTypeIdx].c_str();
+    const char *atom3Type = atomTypePool[atomData[atom_nums[2]].atomTypeIdx].c_str();
+    const char *atom4Type = atomTypePool[atomData[atom_nums[3]].atomTypeIdx].c_str();
+    const char *atom5Type = atomTypePool[atomData[atom_nums[4]].atomTypeIdx].c_str();
+    const char *atom6Type = atomTypePool[atomData[atom_nums[5]].atomTypeIdx].c_str();
+    const char *atom7Type = atomTypePool[atomData[atom_nums[6]].atomTypeIdx].c_str();
+    const char *atom8Type = atomTypePool[atomData[atom_nums[7]].atomTypeIdx].c_str();
+    strcpy(atom1name, atom1Type);
+    strcpy(atom2name, atom2Type);
+    strcpy(atom3name, atom3Type);
+    strcpy(atom4name, atom4Type);
+    strcpy(atom5name, atom5Type);
+    strcpy(atom6name, atom6Type);
+    strcpy(atom7name, atom7Type);
+    strcpy(atom8name, atom8Type);
+
+    //  Check to see if this is a duplicate term
+    if (duplicate_bond)
+    {
+      iout << iWARN << "Duplicate cross-term detected.\n" << endi;
+    }
+
+    /*  Look up the constants for this bond      */
+    g_param->assign_crossterm_index(atom1name, atom2name, 
+       atom3name, atom4name, atom5name, atom6name,
+       atom7name, atom8name, &(crossterms[num_read]));
+
+    /*  Assign the atom indexes        */
+    crossterms[num_read].atom1=atom_nums[0];
+    crossterms[num_read].atom2=atom_nums[1];
+    crossterms[num_read].atom3=atom_nums[2];
+    crossterms[num_read].atom4=atom_nums[3];
+    crossterms[num_read].atom5=atom_nums[4];
+    crossterms[num_read].atom6=atom_nums[5];
+    crossterms[num_read].atom7=atom_nums[6];
+    crossterms[num_read].atom8=atom_nums[7];
+
+    num_read++;
+  }
+
+  numCrossterms = num_read;
+
+  //create crossterm's tupleSignature
+  for(int i=0; i<numCrossterms; i++)
+  {
+    Crossterm *tuple = crossterms+i;
+    TupleSignature oneSig(7, CROSSTERM, tuple->crossterm_type);
+    int offset[7];
+    offset[0] = tuple->atom2 - tuple->atom1;
+    offset[1] = tuple->atom3 - tuple->atom1;
+    offset[2] = tuple->atom4 - tuple->atom1;
+    offset[3] = tuple->atom5 - tuple->atom1;
+    offset[4] = tuple->atom6 - tuple->atom1;
+    offset[5] = tuple->atom7 - tuple->atom1;
+    offset[6] = tuple->atom8 - tuple->atom1;
+    oneSig.setOffsets(offset);
+   
+    int poolIndex = lookupCstPool(sigsOfCrossterms, oneSig);
+    if(poolIndex == -1)
+    {
+      sigsOfCrossterms.push_back(oneSig);
+      poolIndex = (short)sigsOfCrossterms.size()-1;
+    }
+    eachAtomSigs[tuple->atom1].crosstermSigIndices.push_back(poolIndex);
+  }
+  
+  delete[] crossterms;
 }
 
 void buildExclusions()
