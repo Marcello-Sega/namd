@@ -239,21 +239,17 @@ public:
 
 //represents the signatures for atoms
 class AtomSignature{
-    //Missing crossterms (which is usually not presented in psf file)
-    //Missing exclusions (which is very important!!!)
 public:
     int bondCnt;
     int angleCnt;
     int dihedralCnt;
     int improperCnt;
-    //TODO: support crossterm!!!!
     int crosstermCnt;
 
     TupleSignature *bondSigs;
     TupleSignature *angleSigs;
     TupleSignature *dihedralSigs;
     TupleSignature *improperSigs;
-    //TODO: support crossterm!!!
     TupleSignature *crosstermSigs;
 
     AtomSignature(){
