@@ -716,6 +716,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
   const int fixedAtomsOn = simParams->fixedAtomsOn;
   const int useSettle = simParams->useSettle;
   const BigReal dt = timestep / TIMEFACTOR;
+  const BigReal invdt = (dt == 0.) ? 0. : 1.0 / dt; // precalc 1/dt
   BigReal tol2 = 2.0 * simParams->rigidTol;
   int maxiter = simParams->rigidIter;
   int dieOnError = simParams->rigidDie;
@@ -730,7 +731,6 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
   BigReal rmass[10];  // 1 / mass
   int fixed[10];  // is atom fixed?
   Tensor wc;  // constraint virial
-  
   BigReal idz, zmin;
   int nslabs;
 
@@ -758,20 +758,21 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       if ( hgs != 3 ) {
         NAMD_bug("Hydrogen group error caught in rattle1().");
       }
-      // Use SETTLE for water unless some of the water atoms are fixed
-      if (useSettle && !fixed[0] && !fixed[1] && !fixed[2]) {
+      // Use SETTLE for water unless some of the water atoms are fixed,
+      // for speed we test groupFixed rather than the individual atoms
+      if (useSettle && !atom[ig].groupFixed) {
         settle1(ref, atom[ig].mass, atom[ig+1].mass, pos, vel, dt,
                 mol->rigid_bond_length(atom[ig].id),
                 mol->rigid_bond_length(atom[ig+1].id));
         // which slab the hydrogen group will belong to
         // for pprofile calculations.
         int ppoffset, partition;
-        if ( dt == 0 ) for ( i = 0; i < 3; ++i ) {
+        if ( invdt == 0 ) for ( i = 0; i < 3; ++i ) {
           atom[ig+i].position = pos[i];
         } else if ( virial == 0 ) for ( i = 0; i < 3; ++i ) {
           atom[ig+i].velocity = vel[i];
         } else for ( i = 0; i < 3; ++i ) {
-          Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass / dt );
+          Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass * invdt );
           Tensor vir = outer(df, ref[i]);
           wc += vir;
           f[Results::normal][ig+i] += df;
@@ -838,8 +839,8 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
 	  Vector dp = rab * gab;
 	  pos[a] += rma * dp;
 	  pos[b] -= rmb * dp;
-	  if ( dt != 0. ) {
-	    dp /= dt;
+	  if ( invdt != 0. ) {
+	    dp *= invdt;
 	    netdp[a] += dp;
 	    netdp[b] -= dp;
 	  }
@@ -848,6 +849,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       }
       if ( done ) break;
     }
+
     if ( consFailure ) {
       if ( dieOnError ) {
 	iout << iERROR << "Constraint failure in RATTLE algorithm for atom "
@@ -867,14 +869,15 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
 			<< (atom[ig].id + 1) << "!\n" << endi;
       }
     }
+
     // store data back to patch
     int ppoffset, partition;
-    if ( dt == 0 ) for ( i = 0; i < hgs; ++i ) {
+    if ( invdt == 0 ) for ( i = 0; i < hgs; ++i ) {
       atom[ig+i].position = pos[i];
     } else if ( virial == 0 ) for ( i = 0; i < hgs; ++i ) {
       atom[ig+i].velocity = vel[i] + rmass[i] * netdp[i];
     } else for ( i = 0; i < hgs; ++i ) {
-      Force df = netdp[i] / dt;
+      Force df = netdp[i] * invdt;
       Tensor vir = outer(df, ref[i]);
       wc += vir;
       f[Results::normal][ig+i] += df;
@@ -895,8 +898,8 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
     }
   }
   if ( dt && virial ) *virial += wc;
-  return 0;
 
+  return 0;
 }
 
 //  RATTLE algorithm from Allen & Tildesley
