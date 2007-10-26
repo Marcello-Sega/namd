@@ -183,7 +183,7 @@ static int settle_first_time = 1;
 
 int settle1(const Vector *ref, BigReal mO, BigReal mH, 
                   Vector *pos, Vector *vel,
-                  BigReal dt, BigReal hhdist, BigReal ohdist) {
+                  BigReal invdt, BigReal hhdist, BigReal ohdist) {
 
   if (settle_first_time) {
     settle_first_time = 0;
@@ -196,11 +196,12 @@ int settle1(const Vector *ref, BigReal mO, BigReal mH,
 
   settlec(ref, mO, mH, pos, ra, rb, rc);
   
-  if (dt != 0) {  // dt can be negative during startup!
-    vel[0] = (pos[0]-ref[0])/dt;
-    vel[1] = (pos[1]-ref[1])/dt;
-    vel[2] = (pos[2]-ref[2])/dt;
+  if (invdt != 0) {  // invdt can be negative during startup!
+    vel[0] = (pos[0]-ref[0])*invdt;
+    vel[1] = (pos[1]-ref[1])*invdt;
+    vel[2] = (pos[2]-ref[2])*invdt;
   }
+
   return 0;
 }
 

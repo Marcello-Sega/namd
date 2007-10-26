@@ -761,7 +761,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       // Use SETTLE for water unless some of the water atoms are fixed,
       // for speed we test groupFixed rather than the individual atoms
       if (useSettle && !atom[ig].groupFixed) {
-        settle1(ref, atom[ig].mass, atom[ig+1].mass, pos, vel, dt,
+        settle1(ref, atom[ig].mass, atom[ig+1].mass, pos, vel, invdt,
                 mol->rigid_bond_length(atom[ig].id),
                 mol->rigid_bond_length(atom[ig+1].id));
         // which slab the hydrogen group will belong to
