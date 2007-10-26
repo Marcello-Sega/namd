@@ -10,17 +10,50 @@
 #include <math.h>
 #include <charm++.h> // for CkPrintf
 
-static int settlec(const Vector *ref, BigReal mO, BigReal mH, Vector *pos, 
-            BigReal ra, BigReal rb, BigReal rc) {
 
+//
+// XXX static and global variables are unsafe for shared memory builds.
+// The global and static vars should be eliminated.
+// Unfortunately, the routines that use these below are actually
+// in use in NAMD.
+//
+static BigReal ra, rb, rc;
+static BigReal rra;
+static BigReal mO, mH, rmT;
+static int settle_first_time = 1;
+
+
+int settle1isinitted(void) {
+  return !settle_first_time;
+}
+
+// Initialize various properties of the waters
+// settle1() assumes all waters are identical, 
+// and will generate bad results if they are not.
+int settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist) {
+  if (settle_first_time) {
+    settle_first_time = 0;
+    mO = pmO;
+    mH = pmH;
+    rmT = 1.0 / (pmO+pmH+pmH);
+    BigReal t1 = 0.5*pmO/pmH;
+    rc = 0.5*hhdist;
+    ra = sqrt(ohdist*ohdist-rc*rc)/(1.0+t1);
+    rb = t1*ra;
+    rra = 1.0 / ra;
+  }
+
+  return 0;
+}
+
+
+int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   // vectors in the plane of the original positions
   Vector b0 = ref[1]-ref[0];
   Vector c0 = ref[2]-ref[0];
   
   // new center of mass
-  Vector d0 = (pos[0]*mO + pos[1]*mH + pos[2]*mH)/(mO+mH+mH);
-  
-  //iout << iINFO << "old CM: " << d0 << "\n" << endi;
+  Vector d0 = (pos[0]*mO + (pos[1] + pos[2])*mH) * rmT;
  
   Vector a1 = pos[0] - d0;
   Vector b1 = pos[1] - d0;
@@ -43,23 +76,11 @@ static int settlec(const Vector *ref, BigReal mO, BigReal mH, Vector *pos,
   c1 = Vector(n1*c1, n2*c1, n0*c1);
 
   // now we can compute positions of canonical water 
-  BigReal sinphi = a1.z/ra;
+  BigReal sinphi = a1.z * rra;
   BigReal tmp = 1.0-sinphi*sinphi;
-/*
-  if (tmp < 0) {
-    CkPrintf("Got sinphi=%f\n", sinphi);
-    tmp=0;
-  }
-*/
   BigReal cosphi = sqrt(tmp);
   BigReal sinpsi = (b1.z - c1.z)/(2.0*rc*cosphi);
   tmp = 1.0-sinpsi*sinpsi;
-/*
-  if (tmp < 0) {
-    CkPrintf("Got sinpsi=%f\n", sinpsi);
-    tmp=0;
-  }
-*/
   BigReal cospsi = sqrt(tmp);
 
   BigReal rbphi = -rb*cosphi;
@@ -113,10 +134,17 @@ static int settlec(const Vector *ref, BigReal mO, BigReal mH, Vector *pos,
   pos[1] = Vector(b3*m1, b3*m2, b3*m0) + d0;
   pos[2] = Vector(c3*m1, c3*m2, c3*m0) + d0;
 
-  //iout << iINFO << "new CM: " << (pos[0]*mO+pos[1]*mH+pos[2]*mH)/(mO+mH+mH)
-       //<< "\n" << endi;
+  // dt can be negative during startup!
+  if (invdt != 0) {
+    vel[0] = (pos[0]-ref[0])*invdt;
+    vel[1] = (pos[1]-ref[1])*invdt;
+    vel[2] = (pos[2]-ref[2])*invdt;
+  }
+
   return 0;
 }
+
+
 
 static int settlev(const Vector *pos, BigReal ma, BigReal mb, Vector *vel,
 				   BigReal dt, Tensor *virial) {
@@ -171,39 +199,6 @@ static int settlev(const Vector *pos, BigReal ma, BigReal mb, Vector *vel,
   return 0;
 }
 
-
-//
-// XXX static and global variables are unsafe for shared memory builds.
-// The global and static vars should be eliminated.
-// Unfortunately, the routines that use these below are actually
-// in use in NAMD.
-//
-static BigReal ra, rb, rc;
-static int settle_first_time = 1;
-
-int settle1(const Vector *ref, BigReal mO, BigReal mH, 
-                  Vector *pos, Vector *vel,
-                  BigReal invdt, BigReal hhdist, BigReal ohdist) {
-
-  if (settle_first_time) {
-    settle_first_time = 0;
-    BigReal t1 = 0.5*mO/mH;
-    rc = 0.5*hhdist;
-    ra = sqrt(ohdist*ohdist-rc*rc)/(1.0+t1);
-    rb = t1*ra;
-    //CkPrintf("Got ra=%f, rb=%f, rc=%f\n", ra, rb, rc);
-  }
-
-  settlec(ref, mO, mH, pos, ra, rb, rc);
-  
-  if (invdt != 0) {  // invdt can be negative during startup!
-    vel[0] = (pos[0]-ref[0])*invdt;
-    vel[1] = (pos[1]-ref[1])*invdt;
-    vel[2] = (pos[2]-ref[2])*invdt;
-  }
-
-  return 0;
-}
 
 int settle2(BigReal mO, BigReal mH, const Vector *pos,
                   Vector *vel, BigReal dt, Tensor *virial) {

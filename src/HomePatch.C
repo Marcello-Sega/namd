@@ -734,6 +734,24 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
   BigReal idz, zmin;
   int nslabs;
 
+  // Initialize the settle algorithm with water parameters
+  // settle1() assumes all waters are identical,
+  // and will generate bad results if they are not.
+  // XXX this will move to Molecule::build_atom_status when that 
+  // version is debugged
+  if (!settle1isinitted()) {
+    for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
+      // find a water
+      if (mol->rigid_bond_length(atom[ig].id) > 0) {
+        // initialize settle water parameters
+        settle1init(atom[ig].mass, atom[ig+1].mass, 
+                    mol->rigid_bond_length(atom[ig].id), 
+                    mol->rigid_bond_length(atom[ig+1].id));
+        break; // done with init
+      }
+    }
+  }
+
   if (ppreduction) {
     nslabs = simParams->pressureProfileSlabs;
     idz = nslabs/lattice.c().z;
@@ -761,9 +779,8 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       // Use SETTLE for water unless some of the water atoms are fixed,
       // for speed we test groupFixed rather than the individual atoms
       if (useSettle && !atom[ig].groupFixed) {
-        settle1(ref, atom[ig].mass, atom[ig+1].mass, pos, vel, invdt,
-                mol->rigid_bond_length(atom[ig].id),
-                mol->rigid_bond_length(atom[ig+1].id));
+        settle1(ref, pos, vel, invdt);
+
         // which slab the hydrogen group will belong to
         // for pprofile calculations.
         int ppoffset, partition;
