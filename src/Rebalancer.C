@@ -1062,6 +1062,23 @@ void Rebalancer::createSpanningTree() {
   ProxyMgr::Object()->buildSpanningTree0();
 }
 
+void Rebalancer::brickDim(int a, int b, int dim, int &min, int &max)
+{
+  int x1, x2, x3, x4, temp, i;
+  if(a < b)
+    { x1 = a; x2 = b; } 
+  else
+    { x1 = b; x2 = a; }
+
+  x3 = x2 - x1;
+  x4 = dim - x3;
+  if(x3 < x4) {
+    min = x1; max = x2;
+  } else {
+    min = x2; max = x1 + dim;
+  }
+}
+
 void Rebalancer::decrSTLoad() {
   int pe;
   ProxyTree &pt = ProxyMgr::Object()->getPtree();

@@ -146,6 +146,7 @@ protected:
   double computeMax();
   double overLoad;
   void createSpanningTree();
+  void brickDim(int a, int b, int dim, int &min, int &max);
   void decrSTLoad();
   void incrSTLoad();
   void InitProxyUsage();

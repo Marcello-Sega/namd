@@ -48,18 +48,20 @@ void RefineTorusLB::strategy() {
 }
 
 void RefineTorusLB::binaryRefine() {
-  CkPrintf("Inside binary refine\n");
+  // CkPrintf("Inside binary refine\n");
+  // compute the max and average load
   double avg = computeAverage();
   double max = computeMax();
 
   double step = 0.01, start = 1.1;
   double dCurLoad = max/avg;
+  int curLoad;
   int minLoad = 0;
   int maxLoad = (int)((dCurLoad - start)/step + 1);
   double dMinLoad = minLoad * step + start;
   double dMaxLoad = maxLoad * step + start;
-  int curLoad;
- 
+
+  // check the two limits of the search: 1.1 and dMaxLoad
   int done=0;
   overLoad = dMinLoad;
   if(newRefine())
@@ -72,8 +74,9 @@ void RefineTorusLB::binaryRefine() {
     }
   } 
 
+  // do a binary search between 1.1 and dMaxLoad until we succeed
   while(!done) {
-    CkPrintf("in multi refine %d %d\n", minLoad, maxLoad);
+    //CkPrintf("in multi refine %d %d\n", minLoad, maxLoad);
     if(maxLoad - minLoad <= 1)
       done = 1;
     else {
@@ -88,7 +91,7 @@ void RefineTorusLB::binaryRefine() {
 }
 
 int RefineTorusLB::newRefine() {
-  CkPrintf("Inside new refine %f\n", overLoad);
+  //CkPrintf("Inside new refine %f\n", overLoad);
   int done = 1;
   maxHeap *heavyPes = new maxHeap(P);
   Set *lightPes = new Set();
@@ -97,6 +100,7 @@ int RefineTorusLB::newRefine() {
   Iterator nextC, nextP;
   pcpair good;
 
+  // create a heap and set of heavy and light pes respectively
   for(int i=0; i<P; i++) {
     if (processors[i].load > overLoad*averageLoad)
       heavyPes->insert((InfoRecord *) &(processors[i]));
@@ -104,13 +108,11 @@ int RefineTorusLB::newRefine() {
       lightPes->insert((InfoRecord *) &(processors[i]));
   }
 
-  CkPrintf("%d %d\n", heavyPes->numElements(), lightPes->numElements());
- 
   pcpair pcpairarray[12];
      
   for(int j=0; j<6; j++) {
-    bestPe[j] = &pcpairarray[j]; //new pcpair();
-    goodPe[j] = &pcpairarray[j+6];  //new pcpair();
+    bestPe[j] = &pcpairarray[j];    // new pcpair();
+    goodPe[j] = &pcpairarray[j+6];  // new pcpair();
     //CkPrintf("AllocatE\n");
   }
 
@@ -158,6 +160,7 @@ int RefineTorusLB::newRefine() {
         assign(GRID->c, GRID->p); bestP = GRID->p; }
 
     bestP = 0;
+    // see if we have found a compute processor pair
     REASSIGN(bestPe[3])
     else REASSIGN(bestPe[4])
     else REASSIGN(bestPe[5])
@@ -187,6 +190,7 @@ int RefineTorusLB::newRefine() {
     // if this fails, look at the inner brick
     int found = 0;
     int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
+    int dimX, dimY, dimZ;
     double minLoad;
 
     good.c = 0; good.p = 0;
@@ -200,10 +204,17 @@ int RefineTorusLB::newRefine() {
 
       tmgr.rankToCoordinates(p1, x1, y1, z1);
       tmgr.rankToCoordinates(p2, x2, y2, z2);
+      dimX = tmgr.getDimX();
+      dimY = tmgr.getDimY();
+      dimZ = tmgr.getDimZ();
 
-      if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
-      if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
-      if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
+      //if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
+      //if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
+      //if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
+
+      brickDim(x1, x2, dimX, xm, xM);
+      brickDim(y1, y2, dimY, ym, yM);
+      brickDim(z1, z2, dimZ, zm, zM);
 
 #if 0
       if(xm>=EXPAND_INNER_BRICK) xm=xm-EXPAND_INNER_BRICK; else xm=0;
@@ -219,7 +230,7 @@ int RefineTorusLB::newRefine() {
         for(int j=ym; j<=yM; j++)
 	  for(int k=zm; k<=zM; k++)
 	  {
-	    pe = tmgr.coordinatesToRank(i, j, k);
+	    pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
 	    p = &processors[pe];
 	    if(c->load + p->load < minLoad) {
               minLoad = c->load + p->load;
@@ -271,8 +282,6 @@ int RefineTorusLB::newRefine() {
 
     // if that also fails, look at the outer brick
     minLoad = overLoad * averageLoad;
-    int xmi, ymi, zmi, xMi, yMi, zMi;
-    xmi = ymi = zmi = xMi = yMi = zMi = 0;
     if(found==0) {
       good.c = 0; good.p = 0;
       p = 0;
@@ -285,108 +294,33 @@ int RefineTorusLB::newRefine() {
 
         tmgr.rankToCoordinates(p1, x1, y1, z1);
         tmgr.rankToCoordinates(p2, x2, y2, z2);
+        dimX = tmgr.getDimX();
+        dimY = tmgr.getDimY();
+        dimZ = tmgr.getDimZ();
 
-        if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
-        if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
-        if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
+        //if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
+        //if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
+        //if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
 
-        while(xm!=0 || ym!=0 || zm!=0 || xM!=tmgr.getDimX()-1 || yM!=tmgr.getDimY()-1 || zM!=tmgr.getDimZ()-1) {
-          if(xM<tmgr.getDimX()-1) { xM++; xMi=1; } if(xm>0) { xm--; xmi=1; }
-          if(yM<tmgr.getDimY()-1) { yM++; yMi=1; } if(ym>0) { ym--; ymi=1; }
-          if(zM<tmgr.getDimZ()-1) { zM++; zMi=1; } if(zm>0) { zm--; zmi=1; }
+        brickDim(x1, x2, dimX, xm, xM);
+        brickDim(y1, y2, dimY, ym, yM);
+        brickDim(z1, z2, dimZ, zm, zM);
 
-          if(zmi==1) {
-            for(int i=xm; i<=xM; i++)
-              for(int j=ym; j<=yM; j++)
-              {
-                pe = tmgr.coordinatesToRank(i, j, zm);
-                p = &processors[pe];
-	        if(c->load + p->load < minLoad) {
-                  good.c = c; good.p = p;
-                  found = 1;
-	          break;
-                }
-              }
-          }
-          if(found==1) break;
+        for(int i=xM+1; i<xm+dimX; i++)
+          for(int j=yM+1; j<ym=dimY; j++)
+	    for(int k=zM+1; k<zm+dimZ; k++)
+	    {
+	      pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
+	      p = &processors[pe];
+	      if(c->load + p->load < minLoad) {
+	        good.c = c;
+	        good.p = p;
+		found = 1; break;
+	      }
+	    }
 
-          if(zMi==1) {
-            for(int i=xm; i<=xM; i++)
-              for(int j=ym; j<=yM; j++)
-              {
-                pe = tmgr.coordinatesToRank(i, j, zM);
-                p = &processors[pe];
-                if(c->load + p->load < minLoad) {
-                  good.c = c; good.p = p;
-                  found = 1;
-	          break;
-                }
- 	      }
-          }
-          if(found==1) break;
-
-          if(ymi==1) {
-            for(int i=xm; i<=xM; i++)
-              for(int k=zm; k<=zM; k++)
-              {
-                pe = tmgr.coordinatesToRank(i, ym, k);
-                p = &processors[pe];
-                if(c->load + p->load < minLoad) {
-                  good.c = c; good.p = p;
-                  found = 1;
-	          break;
-                }
-              }
-          }
-          if(found==1) break;
-
-          if(yMi==1) {
-            for(int i=xm; i<=xM; i++)
-              for(int k=zm; k<=zM; k++)
-              {
-                pe = tmgr.coordinatesToRank(i, yM, k);
-                p = &processors[pe];
-                if(c->load + p->load < minLoad) {
-                  good.c = c; good.p = p;
-                  found = 1;
-	          break;
-                }
-              }
-          }
-          if(found==1) break;
-
-          if(xmi==1) {
-            for(int j=ym; j<=yM; j++)
-              for(int k=zm; k<=zM; k++)
-              {
-                pe = tmgr.coordinatesToRank(xm, j, k);
-                p = &processors[pe];
-                if(c->load + p->load < minLoad) {
-                  good.c = c; good.p = p;
-                  found = 1;
-	          break;
-                }
-              }
-          }
-          if(found==1) break;
-
-          if(xMi==1) {
-            for(int j=ym; j<=yM; j++)
-              for(int k=zm; k<=zM; k++)
-              {
-                pe = tmgr.coordinatesToRank(xM, j, k);
-                p = &processors[pe];
-                if(c->load + p->load < minLoad) {
-                  good.c = c; good.p = p;
-                  found = 1;
-	          break;
-                }
-              }
-          }
-          if(found==1) break;
-
-          xmi = ymi = zmi = xMi = yMi = zMi = 0; found = 0;
-        }
+	if(found==1) break;
+ 
 	nextC.id++;
 	c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
       } 
