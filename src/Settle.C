@@ -17,9 +17,10 @@
 // Unfortunately, the routines that use these below are actually
 // in use in NAMD.
 //
+
+static BigReal mOrmT, mHrmT;
 static BigReal ra, rb, rc;
 static BigReal rra;
-static BigReal mO, mH, rmT;
 static int settle_first_time = 1;
 
 
@@ -33,9 +34,9 @@ int settle1isinitted(void) {
 int settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist) {
   if (settle_first_time) {
     settle_first_time = 0;
-    mO = pmO;
-    mH = pmH;
-    rmT = 1.0 / (pmO+pmH+pmH);
+    BigReal rmT = 1.0 / (pmO+pmH+pmH);
+    mOrmT = pmO * rmT;
+    mHrmT = pmH * rmT;
     BigReal t1 = 0.5*pmO/pmH;
     rc = 0.5*hhdist;
     ra = sqrt(ohdist*ohdist-rc*rc)/(1.0+t1);
@@ -53,7 +54,7 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   Vector c0 = ref[2]-ref[0];
   
   // new center of mass
-  Vector d0 = (pos[0]*mO + (pos[1] + pos[2])*mH) * rmT;
+  Vector d0 = pos[0]*mOrmT + ((pos[1] + pos[2])*mHrmT);
  
   Vector a1 = pos[0] - d0;
   Vector b1 = pos[1] - d0;
@@ -68,9 +69,12 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   n1 = n1.unit();
   n2 = n2.unit();
 
+  // this is wasteful, as b0.z is never referenced again
   b0 = Vector(n1*b0, n2*b0, n0*b0);
+  // this is wasteful, as c0.z is never referenced again
   c0 = Vector(n1*c0, n2*c0, n0*c0);
-  
+ 
+  // this is wasteful, as a1.x and a1.y are never referenced again
   a1 = Vector(n1*a1, n2*a1, n0*a1);
   b1 = Vector(n1*b1, n2*b1, n0*b1);
   c1 = Vector(n1*c1, n2*c1, n0*c1);
