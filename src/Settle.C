@@ -10,6 +10,9 @@
 #include <math.h>
 #include <charm++.h> // for CkPrintf
 
+#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#include <dvec.h>  // SSE2
+#endif
 
 //
 // XXX static and global variables are unsafe for shared memory builds.
@@ -22,7 +25,6 @@ static BigReal mOrmT, mHrmT;
 static BigReal ra, rb, rc;
 static BigReal rra;
 static int settle_first_time = 1;
-
 
 int settle1isinitted(void) {
   return !settle_first_time;
@@ -65,27 +67,82 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   Vector n0 = cross(b0, c0);
   Vector n1 = cross(a1, n0); 
   Vector n2 = cross(n0, n1); 
-  n0 = n0.unit();
-  n1 = n1.unit();
-  n2 = n2.unit();
 
-  // this is wasteful, as b0.z is never referenced again
-  b0 = Vector(n1*b0, n2*b0, n0*b0);
-  // this is wasteful, as c0.z is never referenced again
-  c0 = Vector(n1*c0, n2*c0, n0*c0);
+#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+  // SSE acceleration of some of the costly parts of settle using
+  // the Intel C/C++ classes.  This implementation uses the SSE units
+  // less efficiency than is potentially possible, but in order to do
+  // better, the settle algorithm will have to be vectorized and operate
+  // on multiple waters at a time.  Doing so could give us the ability to
+  // do two (double precison) or four (single precision) waters at a time.
+  // This code achieves a modest speedup without the need to reorganize
+  // the NAMD structure.  Once we have water molecules sorted in a single
+  // block we can do far better.
+  F64vec2 l1(n0.x, n0.y);
+  double l1xy0 = add_horizontal(l1*l1);             // n0.x^2 + n0.y^2
+
+  F64vec2 l3(n1.y, n1.z);
+  double l3yz1 = add_horizontal(l3*l3);             // n1.y^2 + n1.z^2
+
+  F64vec2 l2(n1.x, n0.z);
+  F64vec2 ts01 = F64vec2(l3yz1, l1xy0) + (l2 * l2); // len(n1)^2 and len(n0)^2 
+
+  F64vec2 l4(n2.x, n2.y);
+  double l4xy2 = add_horizontal(l4*l4);             // n2.x^2 + n2.y^2
+  double  ts2 = l4xy2 + (n2.z * n2.z);              // len(n2)^2
+
+  double  invlens[4];
+  // since rsqrt_nr() doesn't work with current compiler
+  // this is the next best option 
+  static const F64vec2 fvecd1p0(1.0);
+  F64vec2 invlen12 = fvecd1p0 / sqrt(ts01);         // 1/len(n1) and 1/len(n0)
+  storeu(invlens, invlen12);     // invlens[0]=1/len(n0), invlens[1]=1/len(n1)
+  n0 = n0 * invlens[0];
+
+  // shuffle the order of operations around from the normal algorithm so
+  // that we can double pump sqrt() with n2 and cosphi at the same time
+  // these components are usually computed down in the canonical water block
+  BigReal A1Z = n0 * a1;
+  BigReal sinphi = A1Z * rra;
+  BigReal tmp = 1.0-sinphi*sinphi;
+
+  F64vec2 n2cosphi = sqrt(F64vec2(tmp, ts2));
+  storeu(invlens+2, n2cosphi);   // invlens[2] = 1/len(n2), invlens[3] = cosphi
+
+  n1 = n1 * invlens[1];
+  n2 = n2 * (1.0 / invlens[2]);
+  BigReal cosphi = invlens[3];
+
+  b0 = Vector(n1*b0, n2*b0, n0*b0); // note: b0.z is never referenced again
+  c0 = Vector(n1*c0, n2*c0, n0*c0); // note: c0.z is never referenced again
  
-  // this is wasteful, as a1.x and a1.y are never referenced again
-  a1 = Vector(n1*a1, n2*a1, n0*a1);
   b1 = Vector(n1*b1, n2*b1, n0*b1);
   c1 = Vector(n1*c1, n2*c1, n0*c1);
 
   // now we can compute positions of canonical water 
-  BigReal sinphi = a1.z * rra;
+  BigReal sinpsi = (b1.z - c1.z)/(2.0*rc*cosphi);
+  tmp = 1.0-sinpsi*sinpsi;
+  BigReal cospsi = sqrt(tmp);
+#else
+  n0 = n0.unit();
+  n1 = n1.unit();
+  n2 = n2.unit();
+
+  b0 = Vector(n1*b0, n2*b0, n0*b0); // note: b0.z is never referenced again
+  c0 = Vector(n1*c0, n2*c0, n0*c0); // note: c0.z is never referenced again
+ 
+  BigReal A1Z = n0 * a1;
+  b1 = Vector(n1*b1, n2*b1, n0*b1);
+  c1 = Vector(n1*c1, n2*c1, n0*c1);
+
+  // now we can compute positions of canonical water 
+  BigReal sinphi = A1Z * rra;
   BigReal tmp = 1.0-sinphi*sinphi;
   BigReal cosphi = sqrt(tmp);
   BigReal sinpsi = (b1.z - c1.z)/(2.0*rc*cosphi);
   tmp = 1.0-sinpsi*sinpsi;
   BigReal cospsi = sqrt(tmp);
+#endif
 
   BigReal rbphi = -rb*cosphi;
   BigReal tmp1 = rc*sinpsi*sinphi;
@@ -119,7 +176,7 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
 #else
   Vector a3( -a2.y*sintheta, 
               a2.y*costheta,
-              a1.z);
+              A1Z);
   Vector b3(b2.x*costheta - b2.y*sintheta,
               b2.x*sintheta + b2.y*costheta,
               b1.z);
