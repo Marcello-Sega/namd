@@ -12,7 +12,7 @@
 #include "InfoStream.h"
 #include "common.h"
 
-#define MIN_DEBUG_LEVEL 2
+#define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
 
@@ -45,6 +45,8 @@ GridforceGrid::~GridforceGrid() {
 
 void GridforceGrid::pack(MOStream *msg) const
 {
+    DebugM(2, "Packing message\n" << endi);
+    
     msg->put(3*sizeof(int), (char*)k);
     msg->put(size);
     msg->put(3*sizeof(int), (char*)dk);
@@ -65,6 +67,8 @@ void GridforceGrid::pack(MOStream *msg) const
 
 void GridforceGrid::unpack(MIStream *msg)
 {
+    DebugM(2, "Unpacking message\n" << endi);
+    
     msg->get(3*sizeof(int), (char*)k);
     msg->get(size);
     msg->get(3*sizeof(int), (char*)dk);
@@ -85,6 +89,20 @@ void GridforceGrid::unpack(MIStream *msg)
 	grid = new float[size];
 	msg->get(size*sizeof(float), (char*)grid);
     }
+    
+//     DebugM(2, "grid[0] = " << grid[0] << "\n");
+//     DebugM(2, "k = " << k[0] << " " << k[1] << " " << k[2] << "\n");
+//     DebugM(2, "size = " << size << "\n");
+//     DebugM(2, "dk = " << dk[0] << " " << dk[1] << " " << dk[2] << "\n");
+//     DebugM(2, "origin = " << origin << "\n");
+//     DebugM(2, "center = " << center << "\n");
+//     DebugM(2, "e = " << e << "\n");
+//     DebugM(2, "inv = " << inv << "\n");
+//     DebugM(2, "pad_p = " << pad_p[0] << " " << pad_p[1] << " " << pad_p[2] << "\n");
+//     DebugM(2, "pad_n = " << pad_n[0] << " " << pad_n[1] << " " << pad_n[2] << "\n");
+//     DebugM(2, "cont = " << cont[0] << " " << cont[1] << " " << cont[2] << "\n");
+//     DebugM(2, "offset = " << offset[0] << " " << offset[1] << " " << offset[2] << "\n");
+//     DebugM(2, "gap = " << gap[0] << " " << gap[1] << " " << gap[2] << endi << "\n");
 }
 
 void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)

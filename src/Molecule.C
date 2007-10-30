@@ -32,7 +32,7 @@
 #include "charm++.h"
 
 
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
 
@@ -2516,13 +2516,14 @@ void Molecule::send_Molecule(Communicate *com_obj)
       // Send the gridforce information, if used
       if (simParams->gridforceOn)
       {
-	 DebugM(0, "Copying gridforce info ... \n");
+	 DebugM(3, "Sending gridforce info\n");
 	 msg->put(numGridforces);
-	 
 	 msg->put(numAtoms, gridfrcIndexes);
-
+	 if (numGridforces)
+	 {
+	     msg->put(numGridforces*sizeof(GridforceParams), (char*)gridfrcParams);
+	 }
 	 gridfrcGrid->pack(msg);	// grid object writes its private data to message itself
-	 DebugM(0, "done \n");
       }
       /* END gf */
 
@@ -2815,17 +2816,22 @@ void Molecule::receive_Molecule(MIStream *msg)
       /* BEGIN gf */
       if (simParams->gridforceOn)
       {
-	 DebugM(0, "Receiving gridforce info ... ");
+	 DebugM(3, "Receiving gridforce info\n");
 	 msg->get(numGridforces);
 	 
 	 delete [] gridfrcIndexes;
 	 gridfrcIndexes = new int32[numAtoms];
-	 
 	 msg->get(numAtoms, gridfrcIndexes);
+	 
+	 if (numGridforces)
+	 {
+	     delete [] gridfrcParams;
+	     gridfrcParams = new GridforceParams[numGridforces];
+	     msg->get(numGridforces*sizeof(GridforceParams), (char*)gridfrcParams);
+	 }
 	 
 	 gridfrcGrid = new GridforceGrid();
 	 gridfrcGrid->unpack(msg);
-	 DebugM(0, "done \n");
       }
       /* END gf */
       
