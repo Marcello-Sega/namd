@@ -782,10 +782,72 @@ void ComputeNonbondedUtil :: NAME
         }
       }
     } else {
-// XXX SSE opportunities 
       int k = pairlistoffset;
       int ku = pairlistindex;
       if ( k < ku ) {
+#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+	if ( ku - k  >  6 ) { 	   
+	  register  int jprev0 = pairlist [k    ];
+	  register  int jprev1 = pairlist [k + 1];
+	  
+	  register  int j0; 
+	  register  int j1; 
+
+          F64vec2 PJ_X_01(p_1[jprev1].position.x, p_1[jprev0].position.x);
+          F64vec2 PJ_Y_01(p_1[jprev1].position.y, p_1[jprev0].position.y);
+          F64vec2 PJ_Z_01(p_1[jprev1].position.z, p_1[jprev0].position.z);
+
+          // these don't change here, so we could move them into outer scope
+          const F64vec2 R2_DELTA(r2_delta);
+          const F64vec2 P_I_X(p_i_x);
+          const F64vec2 P_I_Y(p_i_y);
+          const F64vec2 P_I_Z(p_i_z);
+	  
+	  int atom2_0 = p_1[jprev0].id;
+	  int atom2_1 = p_1[jprev1].id;
+	  
+	  k += 2;
+	  for ( ; k < ku - 2; k +=2 ) {
+	    // compute 1d distance, 2-way parallel	 
+	    j0     =  jprev0;
+	    j1     =  jprev1;
+	    
+            F64vec2 T_01 = P_I_X - PJ_X_01;
+            F64vec2 R2_01 = (T_01 * T_01) + R2_DELTA;
+            T_01 = P_I_Y - PJ_Y_01;
+            R2_01 += T_01 * T_01;
+            T_01 = P_I_Z - PJ_Z_01;
+            R2_01 += T_01 * T_01;
+	    
+	    jprev0     =  pairlist[k];
+	    jprev1     =  pairlist[k+1];
+	    
+            PJ_X_01 = F64vec2(p_1[jprev1].position.x, p_1[jprev0].position.x);
+            PJ_Y_01 = F64vec2(p_1[jprev1].position.y, p_1[jprev0].position.y);
+            PJ_Z_01 = F64vec2(p_1[jprev1].position.z, p_1[jprev0].position.z);
+
+            double r2_01[2];
+            storeu(r2_01, R2_01);
+	    
+	    if (r2_01[0] <= plcutoff2) {
+	      if ( atom2_0 >= excl_min && atom2_0 <= excl_max ) 
+		*(pli++) = j0;
+	      else 
+		*(plin++) = j0;
+	    }
+	    atom2_0 = p_1[jprev0].id;
+	    
+	    if (r2_01[1] <= plcutoff2) {
+	      if ( atom2_1 >= excl_min && atom2_1 <= excl_max ) 
+		*(pli++) = j1;
+	      else 
+		*(plin++) = j1;
+	     }
+	    atom2_1 = p_1[jprev1].id;	    
+	  }
+	  k-=2;
+	}       
+#else
 	if ( ku - k  >  6 ) { 	   
 	  register  int jprev0 = pairlist [k];
 	  register  int jprev1 = pairlist [k + 1];
@@ -859,6 +921,7 @@ void ComputeNonbondedUtil :: NAME
 	  }
 	  k-=2;
 	}       
+#endif
 
 	for (; k < ku; k++) {
 	  int j = pairlist[k];
