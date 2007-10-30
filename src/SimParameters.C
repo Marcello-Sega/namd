@@ -51,7 +51,7 @@ extern "C" {
 
 #include "strlib.h"    //  For strcasecmp and strncasecmp
 
-// #define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 #define XXXBIGREAL 1.0e32

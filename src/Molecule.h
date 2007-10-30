@@ -28,6 +28,7 @@
 #include "Hydrogen.h"
 #include "GromacsTopFile.h"
 /* BEGIN gf */
+#include "GridForceGrid.h"
 #include "Tensor.h"
 /* END gf */
 
@@ -180,31 +181,7 @@ private:
 /* BEGIN gf */
   int32 *gridfrcIndexes;
   GridforceParams *gridfrcParams;
-  int gridfrcK1;		// Grid dimensions
-  int gridfrcK2;
-  int gridfrcK3;
-  int gridfrcSize;
-  int gridfrcSize_V;
-  int gridfrcB;			// Size of border (for generality)
-  Position gridfrcOrigin;	// Grid origin
-  Position gridfrcCenter;	// Center of grid (for wrapping)
-  Tensor gridfrcE;		// Grid unit vectors
-  Tensor gridfrcInv;		// Inverse of unit vectors
-//float *gridfrcGrid;		// NEW -- grid of (V, dV/dx, dV/dy, dV/dz,
-				//   d2V/dxdy, d2V/dxdz, d2V/dydz, d3V/dxdydz)
-				//   at each grid point (MAYBE in the future)
-  float *gridfrcGrid_V;		// Potential grid
-  
-//Bool gridfrcK1_wrap, gridfrcK2_wrap, gridfrcK3_wrap;
-//Bool gridfrcK1_overlap, gridfrcK2_overlap, gridfrcK3_overlap;
-//float gridfrcK1_voff, gridfrcK2_voff, gridfrcK3_voff;
-  float gridfrc_pad_n[3];
-  float gridfrc_pad_p[3];
-  Bool gridfrc_cont[3];
-  float gridfrc_voff[3];
-  Vector gridfrc_gap;
-  
-//Bool gridfrc_cont[3]; replaced by gridforceCont[] array in SimParameters.h -- now returns!!
+  GridforceGrid *gridfrcGrid;
 /* END gf */
 
         //  Parameters for each atom constrained
@@ -374,20 +351,6 @@ public:
   // indexes of "atoms" sorted by hydrogen groups
   HydrogenGroup hydrogenGroup;
   int waterIndex;
-
-/* BEGIN gf */
-  typedef struct gridfrc_gridbox
-  {
-      float b[64];	// b[0 .. 7] = V (eight corners)
-			// b[8 ..15] = dV/dx
-			// b[16..23] = dV/dy
-			// b[24..31] = dV/dz
-			// b[32..39] = d2V/dxdy
-			// b[40..47] = d2V/dxdz
-			// b[48..55] = d2V/dydz
-			// b[56..63] = d3V/dxdydz
-  } GridforceGridbox;
-/* END gf */
 
   Molecule(SimParameters *, Parameters *param);
   Molecule(SimParameters *, Parameters *param, char *filename, ConfigList *cfgList=NULL);  
@@ -693,13 +656,10 @@ public:
       q = gridfrcParams[gridfrcIndexes[atomnum]].q;
   }
   
-  void get_gridfrc_info(Position &center, Tensor &inv) const
+  const GridforceGrid* get_gridfrc_grid(void) const
   {
-      center = gridfrcCenter;
-      inv = gridfrcInv;
+      return gridfrcGrid;
   }
-  
-  int get_gridfrc_grid(GridforceGridbox &gbox, Vector &dg, Vector pos) const;
 /* END gf */
 
   Real langevin_param(int atomnum) const
