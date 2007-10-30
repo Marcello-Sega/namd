@@ -2423,6 +2423,17 @@ obj/GlobalMasterMisc.o: \
 	src/GlobalMasterEasy.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterMisc.o $(COPTC) src/GlobalMasterMisc.C
+obj/GridForceGrid.o: \
+	src/GridForceGrid.C \
+	src/GridForceGrid.h \
+	src/Vector.h \
+	src/Tensor.h \
+	src/NamdTypes.h \
+	src/MStream.h \
+	src/SimParameters.h \
+	src/InfoStream.h \
+	src/common.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GridForceGrid.o $(COPTC) src/GridForceGrid.C
 obj/GromacsTopFile.o: \
 	src/GromacsTopFile.C \
 	src/common.h \

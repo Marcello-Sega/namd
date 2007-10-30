@@ -126,6 +126,7 @@ OBJS = \
 	$(DSTDIR)/GlobalMasterFreeEnergy.o \
 	$(DSTDIR)/GlobalMasterEasy.o \
 	$(DSTDIR)/GlobalMasterMisc.o \
+	$(DSTDIR)/GridForceGrid.o \
         $(DSTDIR)/GromacsTopFile.o \
 	$(DSTDIR)/heap.o \
 	$(DSTDIR)/HomePatch.o \
