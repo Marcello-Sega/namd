@@ -1175,6 +1175,7 @@ obj/ComputeGlobalMsgs.o: \
 obj/ComputeGridForce.o: \
 	src/ComputeGridForce.C \
 	src/ComputeGridForce.h \
+	src/GridForceGrid.h \
 	src/ComputeHomePatch.h \
 	src/Compute.h \
 	src/main.h \
@@ -2711,7 +2712,8 @@ obj/Molecule.o: \
 	src/PDBData.h \
 	src/UniqueSetIter.h \
 	src/Debug.h \
-	src/CompressPsf.h
+	src/CompressPsf.h \
+	src/GridForceGrid.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
 obj/NamdCentLB.o: \
 	src/NamdCentLB.C \
