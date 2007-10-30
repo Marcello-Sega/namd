@@ -36,7 +36,6 @@
 	SIMPARAM(int,fepOutFreq,0);			//  freq of fep output
 	SIMPARAM(int,fepEquilSteps,0);		//  no of eqlb steps in the window
   SIMPARAM(BigReal,fepVdwShiftCoeff,0);	// r2 shifting coeff
-  SIMPARAM(BigReal,fepVdwScaleExp,0);	// L-J A/B scaling exponent
   //   End FEP flags
 //fepe
 

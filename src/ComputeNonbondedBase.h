@@ -274,15 +274,29 @@ void ComputeNonbondedUtil :: NAME
     const BigReal switchdist2 = ComputeNonbondedUtil::switchOn2;
     const BigReal cutoff2 = ComputeNonbondedUtil::cutoff2;
     const BigReal switchfactor = 1./((cutoff2 - switchdist2)*(cutoff2 - switchdist2)*(cutoff2 - switchdist2));
+    const BigReal fepElecLambdaStart = ComputeNonbondedUtil::fepElecLambdaStart;
+    const BigReal fepVdwLambdaEnd = ComputeNonbondedUtil::fepVdwLambdaEnd;
     
     BigReal lambda_shift_table[2*3*3]; // r2 shifting
-    BigReal lambda_scale_table[2*3*3]; // A/B scaling
+    BigReal lambda_elec_table[2*3*3];  // "delayed" lambda
+    BigReal lambda_vdw_table[2*3*3];  // "truncated" lambda
     
+    // Cache these computations outside of the inner loop
     for (int table_i=0; table_i < 2*3*3; table_i++) {
+      BigReal lambda_i = lambda_table[table_i];
+      
+      // vdw shifting coeff
       lambda_shift_table[table_i] = ComputeNonbondedUtil::fepVdwShiftCoeff \
-                                    * (1. - lambda_table[table_i]);
-      lambda_scale_table[table_i] = pow(lambda_table[table_i], \
-                                    ComputeNonbondedUtil::fepVdwScaleExp);
+                                    * (1. - lambda_i);
+      
+      // electrostatics "delayed" lambda
+      lambda_elec_table[table_i] = \
+          (lambda_i <= fepElecLambdaStart)? 0. : \
+          (lambda_i - fepElecLambdaStart) / (1. - fepElecLambdaStart);
+
+      // vdW "truncated" lambdas
+      lambda_vdw_table[table_i] = (lambda_i >= fepVdwLambdaEnd)? \
+          1. : lambda_i / fepVdwLambdaEnd; 
     }
   )
         
@@ -1024,7 +1038,8 @@ void ComputeNonbondedUtil :: NAME
     FEP(
       BigReal *lambda_table_i = lambda_table + 6 * p_i.partition;
       BigReal *lambda_shift_table_i = lambda_shift_table + 6 * p_i.partition;
-      BigReal *lambda_scale_table_i = lambda_scale_table + 6 * p_i.partition;
+      BigReal *lambda_elec_table_i  = lambda_elec_table + 6 * p_i.partition;
+      BigReal *lambda_vdw_table_i  = lambda_vdw_table + 6 * p_i.partition;
     )
 
     LES( BigReal *lambda_table_i =

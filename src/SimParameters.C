@@ -694,9 +694,14 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("fep", "fepVdwShiftCoeff", "Coeff used for generating"
      "the altered FEP vDW interactions", &fepVdwShiftCoeff, 5.);
    opts.range("fepVdwShiftCoeff", NOT_NEGATIVE);
-   opts.optional("fep", "fepVdwScaleExp", "Exponent used for generating"
-     "the altered FEP vDW interactions", &fepVdwScaleExp, 0.);
    
+   opts.optional("fep", "fepElecLambdaStart", "Lambda at which to start"
+      "electrostatics scaling", &fepElecLambdaStart, 0.); 
+   opts.range("fepElecLambdaStart", NOT_NEGATIVE);
+   
+   opts.optional("fep", "fepVdwLambdaEnd", "Lambda at which to end"
+      "Vdw scaling", &fepVdwLambdaEnd, 1.); 
+   opts.range("fepVdwLambdaEnd", NOT_NEGATIVE);  
 // end FEP options
 //fepe
 
@@ -2999,8 +3004,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
           << lambda2 << "\n";
      iout << iINFO << "FEP VDW SHIFTING COEFFICIENT "
           << fepVdwShiftCoeff << "\n";
-     iout << iINFO << "FEP VDW SCALING EXPONENT     "
-          << fepVdwScaleExp << "\n";
+     iout << iINFO << "FEP ELEC. ACTIVE BETWEEN LAMBDA = "
+          << fepElecLambdaStart << " AND LAMBDA = 1\n";
+     iout << iINFO << "FEP VDW ACTIVE BETWEEN LAMBDA = 0 AND LAMBDA = "
+          << fepVdwLambdaEnd << "\n";
    }
 
 //fepe

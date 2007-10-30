@@ -272,8 +272,8 @@ public:
   int fepEquilSteps;        //  # of equil. steps in the window
   BigReal fepVdwShiftCoeff; //  r2 shift coeff used for generating  
                             //  the FEP altered vdW interactions
-  BigReal fepVdwScaleExp;   //  A/B scaling exponent used for generating  
-                            //  the FEP altered vdW interactions
+  BigReal fepElecLambdaStart;  //  lambda "delay" for electrostatics
+  BigReal fepVdwLambdaEnd;  //  lambda "delay" for vdW 
 // End FEP flags
 //fepe
 

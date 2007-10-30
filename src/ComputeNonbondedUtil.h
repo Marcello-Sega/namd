@@ -180,7 +180,8 @@ public:
   static BigReal lambda;
   static BigReal lambda2;
   static BigReal fepVdwShiftCoeff;
-  static BigReal fepVdwScaleExp;
+  static BigReal fepElecLambdaStart;
+  static BigReal fepVdwLambdaEnd;
 //sd-de
   static Bool lesOn;
   static int lesFactor;

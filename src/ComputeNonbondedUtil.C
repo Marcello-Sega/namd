@@ -58,15 +58,16 @@ BigReal         ComputeNonbondedUtil::c7;
 BigReal         ComputeNonbondedUtil::c8;
 // BigReal         ComputeNonbondedUtil::d0;
 // fepb
-Bool            ComputeNonbondedUtil::fepOn;
-BigReal         ComputeNonbondedUtil::lambda;
-BigReal         ComputeNonbondedUtil::lambda2;
-BigReal         ComputeNonbondedUtil::fepVdwShiftCoeff;
-BigReal         ComputeNonbondedUtil::fepVdwScaleExp;
+Bool      ComputeNonbondedUtil::fepOn;
+BigReal   ComputeNonbondedUtil::lambda;
+BigReal   ComputeNonbondedUtil::lambda2;
+BigReal   ComputeNonbondedUtil::fepVdwShiftCoeff;
+BigReal   ComputeNonbondedUtil::fepVdwLambdaEnd;
+BigReal   ComputeNonbondedUtil::fepElecLambdaStart;
 //fepe
-Bool            ComputeNonbondedUtil::lesOn;
-int             ComputeNonbondedUtil::lesFactor;
-BigReal         ComputeNonbondedUtil::lesScaling;
+Bool      ComputeNonbondedUtil::lesOn;
+int       ComputeNonbondedUtil::lesFactor;
+BigReal   ComputeNonbondedUtil::lesScaling;
 
 BigReal*	ComputeNonbondedUtil::lambda_table = 0;
 
@@ -198,8 +199,9 @@ void ComputeNonbondedUtil::select(void)
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
   fepVdwShiftCoeff = simParams->fepVdwShiftCoeff;
-  fepVdwScaleExp   = simParams->fepVdwScaleExp;
-  
+  fepVdwLambdaEnd = simParams->fepVdwLambdaEnd;
+  fepElecLambdaStart = simParams->fepElecLambdaStart;
+
   delete [] lambda_table;
   lambda_table = 0;
 
