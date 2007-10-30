@@ -12,6 +12,10 @@
 #include <builtins.h>
 #endif
 
+#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#include <dvec.h>  // SSE2
+#endif
+
 #ifdef DEFINITION // (
   #include "LJTable.h"
   #include "Molecule.h"
@@ -540,9 +544,62 @@ void ComputeNonbondedUtil :: NAME
 
       if ( g < gu ) {
 	int hu = 0;
+#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
 	if ( gu - g  >  6 ) { 
+	  register  int jprev0 = glist[g    ];
+	  register  int jprev1 = glist[g + 1];
+	  
+	  register  int j0;
+	  register  int j1;
 
-	  register  int jprev0 = glist[g];
+          F64vec2 PJ_X_01(p_1[jprev1].position.x, p_1[jprev0].position.x);
+          F64vec2 PJ_Y_01(p_1[jprev1].position.y, p_1[jprev0].position.y);
+          F64vec2 PJ_Z_01(p_1[jprev1].position.z, p_1[jprev0].position.z);
+
+          // these don't change here, so we could move them into outer scope
+          const F64vec2 R2_DELTA(r2_delta);	 
+          const F64vec2 P_I_X(p_i_x);
+          const F64vec2 P_I_Y(p_i_y);
+          const F64vec2 P_I_Z(p_i_z);
+ 
+	  g += 2;
+	  for ( ; g < gu - 2; g +=2 ) {
+	    // compute 1d distance, 2-way parallel	 
+	    j0     =  jprev0;
+	    j1     =  jprev1;
+
+            F64vec2 T_01 = P_I_X - PJ_X_01;
+            F64vec2 R2_01 = (T_01 * T_01) + R2_DELTA;
+            T_01 = P_I_Y - PJ_Y_01;
+            R2_01 += T_01 * T_01;
+            T_01 = P_I_Z - PJ_Z_01;
+            R2_01 += T_01 * T_01;
+	    
+	    jprev0     =  glist[g  ];
+	    jprev1     =  glist[g+1];
+	    
+            PJ_X_01 = F64vec2(p_1[jprev1].position.x, p_1[jprev0].position.x);
+            PJ_Y_01 = F64vec2(p_1[jprev1].position.y, p_1[jprev0].position.y);
+            PJ_Z_01 = F64vec2(p_1[jprev1].position.z, p_1[jprev0].position.z);
+
+            double r2_01[2];
+            storeu(r2_01, R2_01);
+	    
+	    bool test0 = ( r2_01[0] < groupplcutoff2 );
+	    bool test1 = ( r2_01[1] < groupplcutoff2 ); 
+	    
+	    //removing ifs benefits on many architectures
+	    //as the extra stores will only warm the cache up
+	    goodglist [ hu         ] = j0;
+	    goodglist [ hu + test0 ] = j1;
+	    
+	    hu += test0 + test1;
+	  }
+	  g-=2;
+	}
+#else
+	if ( gu - g  >  6 ) { 
+	  register  int jprev0 = glist[g    ];
 	  register  int jprev1 = glist[g + 1];
 	  
 	  register  int j0; 
@@ -598,13 +655,14 @@ void ComputeNonbondedUtil :: NAME
 	    
 	    //removing ifs benefits on many architectures
 	    //as the extra stores will only warm the cache up
-	    goodglist [ hu ] = j0;
+	    goodglist [ hu         ] = j0;
 	    goodglist [ hu + test0 ] = j1;
 	    
 	    hu += test0 + test1;
 	  }
 	  g-=2;
 	}
+#endif
 	
 	for (; g < gu; g++) {
 	  int j = glist[g];
@@ -724,6 +782,7 @@ void ComputeNonbondedUtil :: NAME
         }
       }
     } else {
+// XXX SSE opportunities 
       int k = pairlistoffset;
       int ku = pairlistindex;
       if ( k < ku ) {
