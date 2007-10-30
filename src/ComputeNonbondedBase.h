@@ -584,7 +584,8 @@ void ComputeNonbondedUtil :: NAME
 
             double r2_01[2];
             storeu(r2_01, R2_01);
-	    
+
+            // XXX these could possibly benefit from SSE-based conditionals
 	    bool test0 = ( r2_01[0] < groupplcutoff2 );
 	    bool test1 = ( r2_01[1] < groupplcutoff2 ); 
 	    
@@ -842,7 +843,7 @@ void ComputeNonbondedUtil :: NAME
 		*(pli++) = j1;
 	      else 
 		*(plin++) = j1;
-	     }
+	    }
 	    atom2_1 = p_1[jprev1].id;	    
 	  }
 	  k-=2;
