@@ -5,6 +5,7 @@
 **/
 
 #include "ComputeGridForce.h"
+#include "GridForceGrid.h"
 #include "Node.h"
 #include "SimParameters.h"
 #include "HomePatch.h"
@@ -54,7 +55,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     for (int i = 0; i < numAtoms; i++) {
 	if (mol->is_atom_gridforced(p[i].id)) {
 	    mol->get_gridfrc_params(scale, charge, p[i].id);
-
+	    
 	    // Wrap coordinates using grid center
 	    Position pos = p[i].position;
 	    pos += homePatch->lattice.wrap_delta(p[i].position);

@@ -30,7 +30,9 @@
 #include "Hydrogen.h"
 #include "UniqueSetIter.h"
 #include "charm++.h"
-
+/* BEGIN gf */
+#include "GridForceGrid.h"
+/* END gf */
 
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
