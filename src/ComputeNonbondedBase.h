@@ -285,10 +285,6 @@ void ComputeNonbondedUtil :: NAME
     for (int table_i=0; table_i < 2*3*3; table_i++) {
       BigReal lambda_i = lambda_table[table_i];
       
-      // vdw shifting coeff
-      lambda_shift_table[table_i] = ComputeNonbondedUtil::fepVdwShiftCoeff \
-                                    * (1. - lambda_i);
-      
       // electrostatics "delayed" lambda
       lambda_elec_table[table_i] = \
           (lambda_i <= fepElecLambdaStart)? 0. : \
@@ -297,6 +293,10 @@ void ComputeNonbondedUtil :: NAME
       // vdW "truncated" lambdas
       lambda_vdw_table[table_i] = (lambda_i >= fepVdwLambdaEnd)? \
           1. : lambda_i / fepVdwLambdaEnd; 
+      
+      // vdw shifting coeff
+      lambda_shift_table[table_i] = ComputeNonbondedUtil::fepVdwShiftCoeff \
+                                    * (1. - lambda_vdw_table[table_i]);
     }
   )
         
