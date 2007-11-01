@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 18:38:59 $
- * $Revision: 1.78 $
+ * $Date: 2007/11/01 21:39:41 $
+ * $Revision: 1.79 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -568,7 +568,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	patchArray[pid].processor = i;
 #endif
 	const int numProxies = 
-#if USE_TOPOMAP
+#if USE_TOPOMAP && !USE_NEW_LDBS
 	requiredProxiesOnProcGrid(pid,neighborNodes);
 #else
 	requiredProxies(pid, neighborNodes);
