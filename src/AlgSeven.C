@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/AlgSeven.C,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 17:39:53 $
+ * $Revision: 1.55 $
+ *****************************************************************************/
+
 #include "common.h"
 #include "InfoStream.h"
 #include "Node.h"
@@ -34,7 +41,7 @@ void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
       if (c->load + p->load < overLoad*averageLoad) {
         processorInfo* &altp = goodP[nPatches][nProxies][badForComm];	
 
-#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#if USE_TOPOMAP 
 	if(!altp)
 	  altp = p;
 	else {
