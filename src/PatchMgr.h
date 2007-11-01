@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 17:42:35 $
+ * $Revision: 1.1024 $
+ *****************************************************************************/
+
 #ifndef PATCHMGR_H
 #define PATCHMGR_H
 
@@ -18,7 +25,7 @@
 #include "MigrateAtomsMsg.h"
 #include "PatchMgr.decl.h"
 
-#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#if USE_TOPOMAP 
 #include "TopoManager.h"
 #endif
 

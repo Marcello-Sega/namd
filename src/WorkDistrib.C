@@ -4,11 +4,18 @@
 ***  All rights reserved.
 **/
 
-/*
-   Currently, WorkDistrib generates the layout of the Patches,
-   directs the construction and distribution of Computes and
-   associates Computes with Patches.
-*/
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 17:42:35 $
+ * $Revision: 1.1174 $
+ *****************************************************************************/
+
+/** \file WorkDistrib.C
+ *  Currently, WorkDistrib generates the layout of the Patches,
+ *  directs the construction and distribution of Computes and
+ *  associates Computes with Patches.
+ */
 
 #include <stdio.h>
 
@@ -888,7 +895,7 @@ void WorkDistrib::assignNodeToPatch()
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
 
-#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#if USE_TOPOMAP 
   TopoManager tmgr;
   int nBGLNodes = tmgr.getDimNX() * tmgr.getDimNY() 
     * tmgr.getDimNZ();
@@ -1823,7 +1830,7 @@ void WorkDistrib::remove_com_motion(Vector *vel, Molecule *structure, int n)
 }
 /*			END OF FUNCTION remove_com_motion		*/
 
-#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#if USE_TOPOMAP 
 
 //Specifically designed for BGL and other 3d Tori architectures
 //Partition Torus and Patch grid together using recursive bisection.

@@ -4,12 +4,19 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 17:42:35 $
+ * $Revision: 1.26 $
+ *****************************************************************************/
+
 #ifndef REFINEONLY_DEFS_H
 #define REFINEONLY_DEFS_H
 
 #include "elements.h"
 #include "heap.h"
-#if CHARM_VERSION > 50913 && USE_TOPOMAP 
+#if USE_TOPOMAP 
 #include "TopoManager.h"
 #endif
 #include "ProxyMgr.decl.h"
@@ -19,9 +26,6 @@
 
 #include "ckhashtable.h"
 
-#if USE_TOPOMAP
-#include "TopoManager.h"
-#endif
 
 class ProxyUsageKey {
  protected:
