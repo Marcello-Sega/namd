@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 21:40:35 $
+ * $Revision: 1.3 $
+ *****************************************************************************/
+
 /** \file RefineTorusLB.C
  *  Author: Abhinav S Bhatele
  *  Date Created: June 12th, 2007 
@@ -164,15 +171,19 @@ int RefineTorusLB::newRefine() {
     REASSIGN(bestPe[3])
     else REASSIGN(bestPe[4])
     else REASSIGN(bestPe[5])
+#if USE_TOPOMAP
     else REASSIGN(goodPe[3])
     else REASSIGN(goodPe[4])
     else REASSIGN(goodPe[5])
+#endif
     else REASSIGN(bestPe[1])
     else REASSIGN(bestPe[2])
     else REASSIGN(bestPe[0])
+#if USE_TOPOMAP
     else REASSIGN(goodPe[1])
     else REASSIGN(goodPe[2])
     else REASSIGN(goodPe[0])
+#endif
 
     if(bestP) {
       if(bestP->load > averageLoad) lightPes->remove(bestP);
@@ -187,6 +198,7 @@ int RefineTorusLB::newRefine() {
     //else
       //CkPrintf("1st try failed\n");
 
+#if USE_TOPOMAP
     // if this fails, look at the inner brick
     int found = 0;
     int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
@@ -207,10 +219,6 @@ int RefineTorusLB::newRefine() {
       dimX = tmgr.getDimX();
       dimY = tmgr.getDimY();
       dimZ = tmgr.getDimZ();
-
-      //if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
-      //if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
-      //if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
 
       brickDim(x1, x2, dimX, xm, xM);
       brickDim(y1, y2, dimY, ym, yM);
@@ -251,35 +259,6 @@ int RefineTorusLB::newRefine() {
       //CkPrintf("2nd try failed\n");
     }
 
-    /*p = (processorInfo *)lightPes->iterator((Iterator *) &nextP);
-    // if that also fails, look at the outer brick
-    if(found == 0) {
-     while (p)
-      {
-        nextC.id = 0;
-        c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
-        while (c)
-        {
-          if(c->load + p->load < overLoad*averageLoad)
-          {
-	    good.c = c;
-	    good.p = p;
-            found = 1;
-            break;
-          }
-          nextC.id++;
-          c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
-        }
-        if(found == 1)
-          break;
-        p = (processorInfo *)lightPes->next((Iterator *) &nextP);
-      }
-      if(found==1)
-        CkPrintf("3rd try succeeded\n");
-      else
-        CkPrintf("3rd try failed\n");
-    }*/
-
     // if that also fails, look at the outer brick
     minLoad = overLoad * averageLoad;
     if(found==0) {
@@ -297,10 +276,6 @@ int RefineTorusLB::newRefine() {
         dimX = tmgr.getDimX();
         dimY = tmgr.getDimY();
         dimZ = tmgr.getDimZ();
-
-        //if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
-        //if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
-        //if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
 
         brickDim(x1, x2, dimX, xm, xM);
         brickDim(y1, y2, dimY, ym, yM);
@@ -325,6 +300,38 @@ int RefineTorusLB::newRefine() {
 	c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
       } 
     }
+#else
+
+    int found=0;
+    // find the first processor to place the compute on
+    p = (processorInfo *)lightPes->iterator((Iterator *) &nextP);
+    if(found == 0) {
+     while (p)
+      {
+        nextC.id = 0;
+        c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
+        while (c)
+        {
+          if(c->load + p->load < overLoad*averageLoad)
+          {
+	    good.c = c;
+	    good.p = p;
+            found = 1;
+            break;
+          }
+          nextC.id++;
+          c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
+        }
+        if(found == 1)
+          break;
+        p = (processorInfo *)lightPes->next((Iterator *) &nextP);
+      }
+      /*if(found==1)
+        CkPrintf("3rd try succeeded\n");
+      else
+        CkPrintf("3rd try failed\n");*/
+    }
+#endif // USE_TOPOMAP
 
     if(found == 1) {
       deAssign(good.c, donor);
@@ -357,19 +364,7 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
   if(p->available == CmiFalse)
     return;
 
-  int x, y, z;
-  int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
-  double minLoad;
-  p1 = patches[c->patch1].processor;
-  p2 = patches[c->patch2].processor;
-
-  tmgr.rankToCoordinates(p1, x1, y1, z1);
-  tmgr.rankToCoordinates(p2, x2, y2, z2);
-
-  if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
-  if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
-  if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
-
+  // find the position in bestPe/goodPe to place this pair
   // HP HP HP HP HP HP
   // 02 11 20 01 10 00
   //  5  4  3  2  1  0
@@ -382,15 +377,38 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
   if(numProxies==0)
     index--; 
 
+#if USE_TOPOMAP
+  int x, y, z;
+  int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
+  int dimX, dimY, dimZ;
+  double minLoad;
+  p1 = patches[c->patch1].processor;
+  p2 = patches[c->patch2].processor;
+
+  tmgr.rankToCoordinates(p1, x1, y1, z1);
+  tmgr.rankToCoordinates(p2, x2, y2, z2);
+  dimX = tmgr.getDimX();
+  dimY = tmgr.getDimY();
+  dimZ = tmgr.getDimZ();
+
+  brickDim(x1, x2, dimX, xm, xM);
+  brickDim(y1, y2, dimY, ym, yM);
+  brickDim(z1, z2, dimZ, zm, zM);
+#endif
+
   if(p->load + c->load < overLoad * averageLoad) {
+#if USE_TOPOMAP
     tmgr.rankToCoordinates(p->Id, x, y, z);
-    if( (x>=xm && x<=xM) && (y>=ym && y<=yM) && (z>=zm && z<=zM) ) {
+    int wB = withinBrick(x, y, z, xm, xM, dimX, ym, yM, dimY, zm, zM, dimZ);
+    if(wB) {
+#endif
       pcpair* &newp = bestPe[index];
 
       if (!(newp->c) || ((p->load + c->load) < (newp->p->load + newp->c->load))) {
         newp->p = p;
         newp->c = c;
       } 
+#if USE_TOPOMAP
     } else {
       pcpair* &newp = goodPe[index];
 
@@ -400,6 +418,7 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
 
       }
     }
+#endif
   }
 }
 

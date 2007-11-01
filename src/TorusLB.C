@@ -1,3 +1,10 @@
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 21:40:35 $
+ * $Revision: 1.3 $
+ *****************************************************************************/
+ 
 /** \file TorusLB.C
  *  Author: Abhinav S Bhatele
  *  Date Created: June 05th, 2007 
@@ -70,20 +77,28 @@ void TorusLB::strategy() {
   if((p = bestPe[3])
   || (p = bestPe[4])
   || (p = bestPe[5])
+#if USE_TOPOMAP
   || (p = goodPe[3])
   || (p = goodPe[4])
   || (p = goodPe[5])
+#endif
   || (p = bestPe[1])
   || (p = bestPe[2])
   || (p = bestPe[0])
+#if USE_TOPOMAP
   || (p = goodPe[1])
   || (p = goodPe[2])
-  || (p = goodPe[0])) {
+  || (p = goodPe[0])
+#endif
+  ) {
     assign(c, p);
     continue;
   }
  
+#if USE_TOPOMAP
   // If no processor found, go through the whole list in a topological fashion
+  // first try the inner brick
+  int found = 0;
   int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
   int dimX, dimY, dimZ;
   double minLoad;
@@ -95,10 +110,6 @@ void TorusLB::strategy() {
   dimX = tmgr.getDimX();
   dimY = tmgr.getDimY();
   dimZ = tmgr.getDimZ();
-
-  //if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
-  //if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
-  //if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
 
   brickDim(x1, x2, dimX, xm, xM);
   brickDim(y1, y2, dimY, ym, yM);
@@ -128,14 +139,14 @@ void TorusLB::strategy() {
         if(c->load + p->load < minLoad) { 
           minLoad = c->load + p->load;
           minp = p;
+	  found = 1;
         }
       }
 
-  // if no success, then go through the remaining torus and pick first
-  // underloaded one
+  // if no success, then go through the remaining torus (outer brick)
+  // and pick the first underloaded one
   minLoad = overLoad * averageLoad;
-  int found = 0;
-  if(!minp) {
+  if(found == 0) {
     p = 0; minp = 0;
     for(int i=xM+1; i<xm+dimX; i++)
       for(int j=yM+1; j<ym+dimY; j++)
@@ -149,8 +160,9 @@ void TorusLB::strategy() {
           }
         }
   }
-
-  /*if(!minp) {
+#else
+  int found = 0;
+  if(!minp) {
     heapIterator nextp;
     processorInfo *p = (processorInfo *)(pes->iterator((heapIterator *) &nextp));
     while (p) {
@@ -165,11 +177,13 @@ void TorusLB::strategy() {
     || (p = bestPe[1])
     || (p = bestPe[0])) {
       assign(c, p);
+      found = 1;
       continue;
     }
-  }*/
+  }
+#endif
 
-  if(!minp)
+  if(found == 0)
      CkAbort("TorusLB: No receiver found\n");
   else  
     assign(c, minp);
@@ -182,19 +196,7 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
   if(p->available == CmiFalse)
     return;
 
-  int x, y, z;
-  int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
-  double minLoad;
-  p1 = patches[c->patch1].processor;
-  p2 = patches[c->patch2].processor;
-
-  tmgr.rankToCoordinates(p1, x1, y1, z1);
-  tmgr.rankToCoordinates(p2, x2, y2, z2);
-
-  if(x1>x2) { xm = x2; xM = x1;} else { xm = x1; xM = x2; }
-  if(y1>y2) { ym = y2; yM = y1;} else { ym = y1; yM = y2; }
-  if(z1>z2) { zm = z2; zM = z1;} else { zm = z1; zM = z2; }
-
+  // find the position in bestPe/goodPe to place this pair
   // HP HP HP HP HP HP
   // 02 11 20 01 10 00
   //  5  4  3  2  1  0
@@ -207,18 +209,42 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
   if(numProxies==0)
     index--; 
 
+#if USE_TOPOMAP
+  int x, y, z;
+  int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
+  int dimX, dimY, dimZ;
+  double minLoad;
+  p1 = patches[c->patch1].processor;
+  p2 = patches[c->patch2].processor;
+
+  tmgr.rankToCoordinates(p1, x1, y1, z1);
+  tmgr.rankToCoordinates(p2, x2, y2, z2);
+  dimX = tmgr.getDimX();
+  dimY = tmgr.getDimY();
+  dimZ = tmgr.getDimZ();
+
+  brickDim(x1, x2, dimX, xm, xM);
+  brickDim(y1, y2, dimY, ym, yM);
+  brickDim(z1, z2, dimZ, zm, zM);
+#endif
+
   if(p->load + c->load < overLoad * averageLoad) {
+#if USE_TOPOMAP
     tmgr.rankToCoordinates(p->Id, x, y, z);
-    if( (x>=xm && x<=xM) && (y>=ym && y<=yM) && (z>=zm && z<=zM) )  {
+    int wB = withinBrick(x, y, z, xm, xM, dimX, ym, yM, dimY, zm, zM, dimZ);
+    if(wB)  {
+#endif
       processorInfo* &newp = bestPe[index];
       if (!(newp) || p->load < newp->load )
         newp = p;
+#if USE_TOPOMAP
     }
     else {
       processorInfo* &newp = goodPe[index];
       if (!(newp) || p->load < newp->load )
         newp = p;
     }
+#endif
   }
 }
 
