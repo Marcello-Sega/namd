@@ -4,11 +4,11 @@
 ***  All rights reserved.
 **/
 
-#include "InfoStream.h"
+//#include "InfoStream.h"
 #include "Settle.h"
 #include <string.h>
 #include <math.h>
-#include <charm++.h> // for CkPrintf
+//#include <charm++.h> // for CkPrintf
 
 #if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
 #include <dvec.h>  // SSE2
@@ -51,6 +51,77 @@ int settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist) {
 
 
 int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
+#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+  // SSE acceleration of some of the costly parts of settle using
+  // the Intel C/C++ classes.  This implementation uses the SSE units
+  // less efficiency than is potentially possible, but in order to do
+  // better, the settle algorithm will have to be vectorized and operate
+  // on multiple waters at a time.  Doing so could give us the ability to
+  // do two (double precison) or four (single precision) waters at a time.
+  // This code achieves a modest speedup without the need to reorganize
+  // the NAMD structure.  Once we have water molecules sorted in a single
+  // block we can do far better.
+
+  // vectors in the plane of the original positions
+  Vector b0, c0;
+
+  F64vec2 REF0xy;
+  loadu(REF0xy, (double *) &ref[0].x);            // ref0.y and ref0.x
+
+  F64vec2 REF1xy;
+  loadu(REF1xy, (double *) &ref[1].x);            // ref1.y and ref1.x
+
+  F64vec2 B0xy = REF1xy - REF0xy;
+  storeu((double *) &b0.x, B0xy);
+  b0.z = ref[1].z - ref[0].z;
+
+  F64vec2 REF2xy;
+  loadu(REF2xy, (double *) &ref[2].x);            // ref2.y and ref2.x
+
+  F64vec2 C0xy = REF2xy - REF0xy;
+  storeu((double *) &c0.x, C0xy);
+  c0.z = ref[2].z - ref[0].z;
+
+  // new center of mass
+  // Vector d0 = pos[0] * mOrmT + ((pos[1] + pos[2]) * mHrmT);
+  __declspec(align(16)) Vector a1;
+  __declspec(align(16)) Vector b1;
+  __declspec(align(16)) Vector c1;
+  __declspec(align(16)) Vector d0;
+
+  F64vec2 POS1xy;
+  loadu(POS1xy, (double *) &pos[1].x);
+  F64vec2 POS2xy;
+  loadu(POS2xy, (double *) &pos[2].x);
+  F64vec2 PMHrmTxy = (POS1xy + POS2xy) * F64vec2(mHrmT);
+
+  F64vec2 POS0xy;
+  loadu(POS0xy, (double *) &pos[0].x);
+  F64vec2 PMOrmTxy = POS0xy * F64vec2(mOrmT);
+  F64vec2 D0xy = PMOrmTxy + PMHrmTxy;
+
+  d0.z = pos[0].z * mOrmT + ((pos[1].z + pos[2].z) * mHrmT);
+  a1.z = pos[0].z - d0.z;
+  b1.z = pos[1].z - d0.z;
+  c1.z = pos[2].z - d0.z;
+
+  F64vec2 A1xy = POS0xy - D0xy;
+  _mm_store_pd((double *) &a1.x, (__m128d) A1xy); // must be aligned
+
+  F64vec2 B1xy = POS1xy - D0xy;
+  _mm_store_pd((double *) &b1.x, (__m128d) B1xy); // must be aligned
+
+  F64vec2 C1xy = POS2xy - D0xy;
+  _mm_store_pd((double *) &c1.x, (__m128d) C1xy); // must be aligned
+
+  _mm_store_pd((double *) &d0.x, (__m128d) D0xy); // must be aligned
+  
+  // Vectors describing transformation from original coordinate system to
+  // the 'primed' coordinate system as in the diagram.  
+  Vector n0 = cross(b0, c0);
+  Vector n1 = cross(a1, n0); 
+  Vector n2 = cross(n0, n1); 
+#else
   // vectors in the plane of the original positions
   Vector b0 = ref[1]-ref[0];
   Vector c0 = ref[2]-ref[0];
@@ -67,17 +138,9 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   Vector n0 = cross(b0, c0);
   Vector n1 = cross(a1, n0); 
   Vector n2 = cross(n0, n1); 
+#endif
 
 #if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
-  // SSE acceleration of some of the costly parts of settle using
-  // the Intel C/C++ classes.  This implementation uses the SSE units
-  // less efficiency than is potentially possible, but in order to do
-  // better, the settle algorithm will have to be vectorized and operate
-  // on multiple waters at a time.  Doing so could give us the ability to
-  // do two (double precison) or four (single precision) waters at a time.
-  // This code achieves a modest speedup without the need to reorganize
-  // the NAMD structure.  Once we have water molecules sorted in a single
-  // block we can do far better.
   F64vec2 l1(n0.x, n0.y);
   double l1xy0 = add_horizontal(l1*l1);             // n0.x^2 + n0.y^2
 
