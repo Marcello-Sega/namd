@@ -1,3 +1,35 @@
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.h,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 18:41:40 $
+ * $Revision: 1.11 $
+ *****************************************************************************/
+
+/** \file NamdCentLB.h
+ *  This class decides which load balancers to invoke.
+ *  By default if nothing is specified in the config file,
+ *  AlgSeven and RefineOnly are used. This is when each gets
+ *  invoked:
+ *
+ *  If we choose firstLdbStep = 20 and ldbPeriod = 100, we have the
+ *  following timeline (for these particular numbers): 
+ *           
+ *  Tracing	    :  <---- off ----><------------ on -----------><-- off
+ *  ldbCycleNum     :  1    2    3    4    5        6     7        8     9
+ *  Iteration Steps : 00===20===40===60===80======160===180======260===280
+ *  Ldb Step() No   :            1    2    3        4     5        6     7
+ *  Ldb Strategy    :         Alg7  Ref  Ref     Inst   Ref     Inst   Ref
+ *                            Alg7					  
+ *									  
+ *  Alg7 = AlgSeven							  
+ *  Ref  = Refine (NamdCentLB.C, Rebalancer.C)				  
+ *  Inst = Instrumentation Phase (no real load balancing)		  
+ * 
+ *  This class also fills in the NAMD load balancing data structures
+ *  from the Charm LDBStats
+ */
+
+
 #ifndef _NAMDCENTLB_H_
 #define _NAMDCENTLB_H_
 
