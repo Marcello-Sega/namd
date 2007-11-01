@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 18:38:59 $
- * $Revision: 1.27 $
+ * $Date: 2007/11/01 21:37:53 $
+ * $Revision: 1.28 $
  *****************************************************************************/
 
 /** \file Rebalancer.h
@@ -162,6 +162,8 @@ protected:
   double overLoad;
   void createSpanningTree();
   void brickDim(int a, int b, int dim, int &min, int &max);
+  int withinBrick(int x, int y, int z, int xm, int xM, int dimX, 
+		  int ym, int yM, int dimY, int zm, int zM, int dimZ);
   void decrSTLoad();
   void incrSTLoad();
   void InitProxyUsage();

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 18:38:59 $
- * $Revision: 1.74 $
+ * $Date: 2007/11/01 21:37:53 $
+ * $Revision: 1.75 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1069,6 +1069,11 @@ void Rebalancer::createSpanningTree() {
   ProxyMgr::Object()->buildSpanningTree0();
 }
 
+/** \function brickDim
+ *  This function returns the coordinates of the inner brick
+ *  between any two points on the torus. The coordinates need
+ *  to be seen modulo the dimension in that direction
+ */
 void Rebalancer::brickDim(int a, int b, int dim, int &min, int &max)
 {
   int x1, x2, x3, x4, temp, i;
@@ -1084,6 +1089,23 @@ void Rebalancer::brickDim(int a, int b, int dim, int &min, int &max)
   } else {
     min = x2; max = x1 + dim;
   }
+}
+
+/** \function withinBrick
+ *  This function returns whether a particular coordinate is
+ *  within the region defined by xm, xM, ym, yM, zm, zM
+ */
+int Rebalancer::withinBrick(int x, int y, int z, int xm, int xM, int dimX,
+			    int ym, int yM, int dimY, int zm, int zM, int dimZ)
+{
+  int wbX, wbY, wbZ;
+  if( ((x >= xm) && (x <= xM)) || ((x < xm) && (x+dimX <= xM)) ) wbX = 1;
+  if( ((y >= ym) && (y <= yM)) || ((y < ym) && (y+dimY <= yM)) ) wbY = 1;
+  if( ((z >= zm) && (z <= zM)) || ((z < zm) && (z+dimZ <= zM)) ) wbZ = 1;
+  if( wbX && wbY && wbZ)
+    return 1;
+  else
+    return 0;
 }
 
 void Rebalancer::decrSTLoad() {
