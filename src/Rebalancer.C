@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 18:38:59 $
+ * $Revision: 1.74 $
+ *****************************************************************************/
+
 #include "InfoStream.h"
 #include "Node.h"
 #include "Rebalancer.h"
@@ -478,7 +485,7 @@ int Rebalancer::refine()
       else lightProcessors->insert((InfoRecord *) &(processors[i]));
    }
 
-#ifdef LDB_DEBUG
+#if LDB_DEBUG
    iout << "\nBefore Refinement Summary" << "\n";
    printSummary();
 #endif
@@ -648,7 +655,7 @@ int Rebalancer::refine()
 
    }  
 
-#ifdef LDB_DEBUG
+#if LDB_DEBUG
    iout << "After Refinement Summary" << "\n";
    printSummary();
 
@@ -675,7 +682,7 @@ void Rebalancer::multirefine(double overload_start)
   double avg = computeAverage();
   double max = computeMax();
 
-#ifdef LDB_DEBUG
+#if LDB_DEBUG
   iout << "******** Processors with background load > average load ********" << "\n";
 #endif
 
@@ -683,7 +690,7 @@ void Rebalancer::multirefine(double overload_start)
   for (int ip=0; ip<P; ip++) {
     if ( processors[ip].backgroundLoad > averageLoad ) {
       ++numOverloaded;
-#ifdef LDB_DEBUG
+#if LDB_DEBUG
       iout << iINFO << "Info about proc " << ip << ": Load: " << processors[ip].load << " Bg Load: " << processors[ip].backgroundLoad << " Compute Load: " << processors[ip].computeLoad << " No of computes: " << processors[ip].computeSet.numElements() << "\n";
 #endif
     }
@@ -692,7 +699,7 @@ void Rebalancer::multirefine(double overload_start)
     iout << iWARN << numOverloaded
       << " processors are overloaded due to high background load.\n" << endi;
   }
-#ifdef LDB_DEBUG
+#if LDB_DEBUG
   iout << "******** Processor List Ends ********" << "\n\n";
 #endif
 
@@ -705,7 +712,7 @@ void Rebalancer::multirefine(double overload_start)
   double dMinOverload = minOverload * overloadStep + overloadStart;
   double dMaxOverload = maxOverload * overloadStep + overloadStart;
 
-#ifdef LDB_DEBUG 
+#if LDB_DEBUG 
   iout << iINFO
        << "Balancing from " << minOverload << " = " << dMinOverload 
        << " to " << maxOverload << "=" << dMaxOverload 
@@ -735,7 +742,7 @@ void Rebalancer::multirefine(double overload_start)
       curOverload = (maxOverload + minOverload ) / 2;
 
       overLoad = curOverload * overloadStep + overloadStart;
-#ifdef LDB_DEBUG 
+#if LDB_DEBUG 
       iout << iINFO << "Testing curOverload " << curOverload 
 	   << "=" << overLoad << " [min,max]=" 
 	   << minOverload << ", " << maxOverload

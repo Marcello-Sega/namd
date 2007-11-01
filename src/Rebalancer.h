@@ -7,9 +7,19 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 17:42:35 $
- * $Revision: 1.26 $
+ * $Date: 2007/11/01 18:38:59 $
+ * $Revision: 1.27 $
  *****************************************************************************/
+
+/** \file Rebalancer.h
+ *  This class is a super class for all the load balancing classes 
+ *  which define new strategies. It has common functions like makeHeaps,
+ *  makeTwoHeaps, refine_togrid and others which are used by different
+ *  LDBs.
+ *
+ *  NOTE: Confusingly, this class also houses the strategy for RefineOnly
+ *  in the function "refine".
+ */
 
 #ifndef REFINEONLY_DEFS_H
 #define REFINEONLY_DEFS_H
@@ -22,7 +32,8 @@
 #include "ProxyMgr.decl.h"
 #include "ProxyMgr.h"
 
-// #define LDB_DEBUG
+#define LDB_DEBUG	0	// for verbose LDB output
+#define USE_NEW_LDBS	0	// to try TorusLB and RefineTorusLB
 
 #include "ckhashtable.h"
 

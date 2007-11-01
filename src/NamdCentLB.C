@@ -1,3 +1,9 @@
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
+ * $Author: bhatele $
+ * $Date: 2007/11/01 18:38:59 $
+ * $Revision: 1.78 $
+ *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
 #include <unistd.h>
@@ -85,7 +91,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 
   int nMoveableComputes = buildData(stats,count);
 
-#ifdef LDB_DEBUG
+#if LDB_DEBUG
 #define DUMP_LDBDATA 1
 #define LOAD_LDBDATA 1
 #endif
@@ -98,34 +104,50 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 #endif
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
-    RefineOnly(computeArray,patchArray,processorArray,
-//    RefineTorusLB(computeArray,patchArray,processorArray,
-                                nMoveableComputes, numPatches, numProcessors);
+#if USE_NEW_LDBS
+    RefineTorusLB(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors, 1);
+#else
+    RefineOnly(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors);
+#endif
   } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
-    Alg7(computeArray,patchArray,processorArray,
-//    TorusLB(computeArray,patchArray,processorArray,
-                          nMoveableComputes, numPatches, numProcessors);
+#if USE_NEW_LDBS
+    TorusLB(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors);
+#else
+    Alg7(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors);
+#endif
   } else if (simParams->ldbStrategy == LDBSTRAT_ALGORB) {
     if (step() == 1) {
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using RecBisection\n" << endi;
       AlgRecBisection(computeArray,patchArray,processorArray,
-                            nMoveableComputes, numPatches, numProcessors);
+                  nMoveableComputes, numPatches, numProcessors);
     } else {
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using RefineOnly\n" << endi;
+#if USE_NEW_LDBS
+      RefineTorusLB(computeArray,patchArray,processorArray,
+                  nMoveableComputes, numPatches, numProcessors, 1);
+#else
       RefineOnly(computeArray,patchArray,processorArray,
-//      RefineTorusLB(computeArray,patchArray,processorArray,
-                                  nMoveableComputes, numPatches, numProcessors);
+                  nMoveableComputes, numPatches, numProcessors);
+#endif
     }
   } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
     // if (step() == 0) {
     if (step() < 2) {
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using Alg7\n" << endi;
-      Alg7(computeArray,patchArray,processorArray,
-//      TorusLB(computeArray,patchArray,processorArray,
-	      nMoveableComputes, numPatches, numProcessors);
+#if USE_NEW_LDBS
+      TorusLB(computeArray, patchArray, processorArray,
+	          nMoveableComputes, numPatches, numProcessors);
+#else
+      Alg7(computeArray, patchArray, processorArray,
+	          nMoveableComputes, numPatches, numProcessors);
+#endif
     } else {
       // iout << iINFO << "Load balance cycle " << step()
       //   << " using RefineOnly\n" << endi;
@@ -135,13 +157,17 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
       //	dumpDataASCII("refinedata", numProcessors, numPatches,
       //		      nMoveableComputes);
       //      }
-      RefineOnly(computeArray,patchArray,processorArray,
-//      RefineTorusLB(computeArray,patchArray,processorArray,
-                                  nMoveableComputes, numPatches, numProcessors);
+#if USE_NEW_LDBS
+      RefineTorusLB(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors, 1);
+#else
+      RefineOnly(computeArray, patchArray, processorArray, 
+                  nMoveableComputes, numPatches, numProcessors);
+#endif
     }
   }
 
-#ifdef LDB_DEBUG
+#if LDB_DEBUG && USE_TOPOMAP
   TopoManager tmgr;
   int pe1, pe2, pe3, hops=0;
   for(int i=0; i<nMoveableComputes; i++)
