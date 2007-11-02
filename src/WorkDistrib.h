@@ -91,7 +91,7 @@ private:
   void assignPatchesBitReversal(void);
   int  assignPatchesTopoGridRecBisection();
 
-  void sortNodesAndAssign(int *assignedNode);
+  void sortNodesAndAssign(int *assignedNode, int baseNodes = 0);
   void velocities_from_PDB(char *filename, 
 			   Vector *v, int totalAtoms);
   void velocities_from_binfile(char *fname, Vector *vels, int n);

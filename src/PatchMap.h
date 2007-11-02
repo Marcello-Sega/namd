@@ -116,6 +116,7 @@ public:
   inline int cid(int pid, int i) const { return patchData[pid].cids[i]; }
 
   void assignNode(PatchID, NodeID);
+  void assignBaseNode(PatchID, NodeID);
   void assignBaseNode(PatchID);
 
   // newCid(pid,cid) stores a compute id associated with

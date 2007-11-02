@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: bhatele $
- * $Date: 2007/11/01 17:42:35 $
- * $Revision: 1.1174 $
+ * $Author: jim $
+ * $Date: 2007/11/02 22:26:37 $
+ * $Revision: 1.1175 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1051,10 +1051,8 @@ void WorkDistrib::assignPatchesBitReversal()
   }
 
   // extract and sort patch locations
-  seq.resize(npatches);
-  seq.sort();
-
   sortNodesAndAssign(seq.begin());
+  if ( ncpus > 2*npatches ) sortNodesAndAssign(seq.begin()+npatches, 1);
 }
 
 //----------------------------------------------------------------------
@@ -1086,7 +1084,10 @@ struct nodesort {
   }
 };
 
-void WorkDistrib::sortNodesAndAssign(int *assignedNode) {
+
+void WorkDistrib::sortNodesAndAssign(int *assignedNode, int baseNodes) {
+  // if baseNodes is zero (default) then set both nodes and basenodes
+  // if baseNodes is nonzero then this is a second call to set basenodes only
   int i, pid; 
   PatchMap *patchMap = PatchMap::Object();
   CProxy_Node nd(CpvAccess(BOCclass_group).node);
@@ -1120,11 +1121,11 @@ void WorkDistrib::sortNodesAndAssign(int *assignedNode) {
 
   for ( pid=0; pid<npatches; ++pid ) {
     // iout << pid << " " <<  allnodes[assignedNode[pid]].node << "\n" << endi;
-    patchMap->assignNode(pid, allnodes[assignedNode[pid]].node);
+    if ( ! baseNodes ) {
+      patchMap->assignNode(pid, allnodes[assignedNode[pid]].node);
+    }
+    patchMap->assignBaseNode(pid, allnodes[assignedNode[pid]].node);
   }
-  
-  for (pid=0; pid<npatches; ++pid ) 
-    patchMap->assignBaseNode(pid);
 }
 
 //----------------------------------------------------------------------

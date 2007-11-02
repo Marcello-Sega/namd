@@ -346,6 +346,10 @@ void PatchMap::assignNode(PatchID pid, NodeID node) {
   nPatchesOnNode[node] += 1;
 }
 
+//----------------------------------------------------------------------
+void PatchMap::assignBaseNode(PatchID pid, NodeID node) {
+  patchData[pid].basenode=node;
+}
 
 void PatchMap::assignBaseNode(PatchID pid) {
   
