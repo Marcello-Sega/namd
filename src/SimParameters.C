@@ -696,11 +696,11 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("fepVdwShiftCoeff", NOT_NEGATIVE);
    
    opts.optional("fep", "fepElecLambdaStart", "Lambda at which to start"
-      "electrostatics scaling", &fepElecLambdaStart, 0.); 
+      "electrostatics scaling", &fepElecLambdaStart, 0.5); 
    opts.range("fepElecLambdaStart", NOT_NEGATIVE);
    
    opts.optional("fep", "fepVdwLambdaEnd", "Lambda at which to end"
-      "Vdw scaling", &fepVdwLambdaEnd, 1.); 
+      "Vdw scaling", &fepVdwLambdaEnd, 0.5); 
    opts.range("fepVdwLambdaEnd", NOT_NEGATIVE);  
 // end FEP options
 //fepe
