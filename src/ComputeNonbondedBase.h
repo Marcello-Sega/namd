@@ -596,8 +596,8 @@ void ComputeNonbondedUtil :: NAME
             PJ_Y_01 = F64vec2(p_1[jprev1].position.y, p_1[jprev0].position.y);
             PJ_Z_01 = F64vec2(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
-            double r2_01[2];
-            storeu(r2_01, R2_01);
+            __declspec(align(16)) double r2_01[2];
+            _mm_store_pd(r2_01, R2_01); // 16-byte-aligned store
 
             // XXX these could possibly benefit from SSE-based conditionals
 	    bool test0 = ( r2_01[0] < groupplcutoff2 );
@@ -841,8 +841,8 @@ void ComputeNonbondedUtil :: NAME
             PJ_Y_01 = F64vec2(p_1[jprev1].position.y, p_1[jprev0].position.y);
             PJ_Z_01 = F64vec2(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
-            double r2_01[2];
-            storeu(r2_01, R2_01);
+            __declspec(align(16)) double r2_01[2];
+            _mm_store_pd(r2_01, R2_01); // 16-byte-aligned store
 	    
 	    if (r2_01[0] <= plcutoff2) {
 	      if ( atom2_0 >= excl_min && atom2_0 <= excl_max ) 
