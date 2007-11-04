@@ -11,7 +11,7 @@
 //#include <charm++.h> // for CkPrintf
 
 #if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
-#include <dvec.h>  // SSE2
+#include <emmintrin.h>  // SSE2
 #endif
 
 //
@@ -65,21 +65,17 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   // vectors in the plane of the original positions
   Vector b0, c0;
 
-  F64vec2 REF0xy;
-  loadu(REF0xy, (double *) &ref[0].x);            // ref0.y and ref0.x
+  __m128d REF0xy = _mm_loadu_pd((double *) &ref[0].x);  // ref0.y and ref0.x
+  __m128d REF1xy = _mm_loadu_pd((double *) &ref[1].x);  // ref1.y and ref1.x
 
-  F64vec2 REF1xy;
-  loadu(REF1xy, (double *) &ref[1].x);            // ref1.y and ref1.x
-
-  F64vec2 B0xy = REF1xy - REF0xy;
-  storeu((double *) &b0.x, B0xy);
+  __m128d B0xy = _mm_sub_pd(REF1xy, REF0xy);
+  _mm_storeu_pd((double *) &b0.x, B0xy);
   b0.z = ref[1].z - ref[0].z;
 
-  F64vec2 REF2xy;
-  loadu(REF2xy, (double *) &ref[2].x);            // ref2.y and ref2.x
+  __m128d REF2xy = _mm_loadu_pd((double *) &ref[2].x);  // ref2.y and ref2.x
 
-  F64vec2 C0xy = REF2xy - REF0xy;
-  storeu((double *) &c0.x, C0xy);
+  __m128d C0xy = _mm_sub_pd(REF2xy, REF0xy);
+  _mm_storeu_pd((double *) &c0.x, C0xy);
   c0.z = ref[2].z - ref[0].z;
 
   // new center of mass
@@ -89,32 +85,29 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   __declspec(align(16)) Vector c1;
   __declspec(align(16)) Vector d0;
 
-  F64vec2 POS1xy;
-  loadu(POS1xy, (double *) &pos[1].x);
-  F64vec2 POS2xy;
-  loadu(POS2xy, (double *) &pos[2].x);
-  F64vec2 PMHrmTxy = (POS1xy + POS2xy) * F64vec2(mHrmT);
+  __m128d POS1xy = _mm_loadu_pd((double *) &pos[1].x);
+  __m128d POS2xy = _mm_loadu_pd((double *) &pos[2].x);
+  __m128d PMHrmTxy = _mm_mul_pd(_mm_add_pd(POS1xy, POS2xy), _mm_set1_pd(mHrmT));
 
-  F64vec2 POS0xy;
-  loadu(POS0xy, (double *) &pos[0].x);
-  F64vec2 PMOrmTxy = POS0xy * F64vec2(mOrmT);
-  F64vec2 D0xy = PMOrmTxy + PMHrmTxy;
+  __m128d POS0xy = _mm_loadu_pd((double *) &pos[0].x);
+  __m128d PMOrmTxy = _mm_mul_pd(POS0xy, _mm_set1_pd(mOrmT));
+  __m128d D0xy = _mm_add_pd(PMOrmTxy, PMHrmTxy);
 
   d0.z = pos[0].z * mOrmT + ((pos[1].z + pos[2].z) * mHrmT);
   a1.z = pos[0].z - d0.z;
   b1.z = pos[1].z - d0.z;
   c1.z = pos[2].z - d0.z;
 
-  F64vec2 A1xy = POS0xy - D0xy;
-  _mm_store_pd((double *) &a1.x, (__m128d) A1xy); // must be aligned
+  __m128d A1xy = _mm_sub_pd(POS0xy, D0xy);
+  _mm_store_pd((double *) &a1.x, A1xy); // must be aligned
 
-  F64vec2 B1xy = POS1xy - D0xy;
-  _mm_store_pd((double *) &b1.x, (__m128d) B1xy); // must be aligned
+  __m128d B1xy = _mm_sub_pd(POS1xy, D0xy);
+  _mm_store_pd((double *) &b1.x, B1xy); // must be aligned
 
-  F64vec2 C1xy = POS2xy - D0xy;
-  _mm_store_pd((double *) &c1.x, (__m128d) C1xy); // must be aligned
+  __m128d C1xy = _mm_sub_pd(POS2xy, D0xy);
+  _mm_store_pd((double *) &c1.x, C1xy); // must be aligned
 
-  _mm_store_pd((double *) &d0.x, (__m128d) D0xy); // must be aligned
+  _mm_store_pd((double *) &d0.x, D0xy); // must be aligned
   
   // Vectors describing transformation from original coordinate system to
   // the 'primed' coordinate system as in the diagram.  
@@ -141,25 +134,37 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
 #endif
 
 #if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
-  F64vec2 l1(n0.x, n0.y);
-  double l1xy0 = add_horizontal(l1*l1);             // n0.x^2 + n0.y^2
+  __m128d l1 = _mm_set_pd(n0.x, n0.y);
+  l1 = _mm_mul_pd(l1, l1);
+  // n0.x^2 + n0.y^2
+  double l1xy0 = _mm_cvtsd_f64(_mm_add_sd(l1, _mm_shuffle_pd(l1, l1, 1)));
 
-  F64vec2 l3(n1.y, n1.z);
-  double l3yz1 = add_horizontal(l3*l3);             // n1.y^2 + n1.z^2
+  __m128d l3 = _mm_set_pd(n1.y, n1.z);
+  l3 = _mm_mul_pd(l3, l3);
+  // n1.y^2 + n1.z^2
+  double l3yz1 = _mm_cvtsd_f64(_mm_add_sd(l3, _mm_shuffle_pd(l3, l3, 1)));
 
-  F64vec2 l2(n1.x, n0.z);
-  F64vec2 ts01 = F64vec2(l3yz1, l1xy0) + (l2 * l2); // len(n1)^2 and len(n0)^2 
+  __m128d l2 = _mm_set_pd(n1.x, n0.z);
+  // len(n1)^2 and len(n0)^2 
+  __m128d ts01 = _mm_add_pd(_mm_set_pd(l3yz1, l1xy0), _mm_mul_pd(l2, l2));
 
-  F64vec2 l4(n2.x, n2.y);
-  double l4xy2 = add_horizontal(l4*l4);             // n2.x^2 + n2.y^2
-  double  ts2 = l4xy2 + (n2.z * n2.z);              // len(n2)^2
+  __m128d l4 = _mm_set_pd(n2.x, n2.y);
+  l4 = _mm_mul_pd(l4, l4);
+  // n2.x^2 + n2.y^2
+  double l4xy2 = _mm_cvtsd_f64(_mm_add_sd(l4, _mm_shuffle_pd(l4, l4, 1)));
+  double ts2 = l4xy2 + (n2.z * n2.z);              // len(n2)^2
 
   double  invlens[4];
   // since rsqrt_nr() doesn't work with current compiler
   // this is the next best option 
-  static const F64vec2 fvecd1p0(1.0);
-  F64vec2 invlen12 = fvecd1p0 / sqrt(ts01);         // 1/len(n1) and 1/len(n0)
-  storeu(invlens, invlen12);     // invlens[0]=1/len(n0), invlens[1]=1/len(n1)
+  static const __m128d fvecd1p0 = _mm_set1_pd(1.0);
+
+  // 1/len(n1) and 1/len(n0)
+  __m128d invlen12 = _mm_div_pd(fvecd1p0, _mm_sqrt_pd(ts01));
+
+  // invlens[0]=1/len(n0), invlens[1]=1/len(n1)
+  _mm_storeu_pd(invlens, invlen12);
+
   n0 = n0 * invlens[0];
 
   // shuffle the order of operations around from the normal algorithm so
@@ -169,8 +174,9 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   BigReal sinphi = A1Z * rra;
   BigReal tmp = 1.0-sinphi*sinphi;
 
-  F64vec2 n2cosphi = sqrt(F64vec2(tmp, ts2));
-  storeu(invlens+2, n2cosphi);   // invlens[2] = 1/len(n2), invlens[3] = cosphi
+  __m128d n2cosphi = _mm_sqrt_pd(_mm_set_pd(tmp, ts2));
+  // invlens[2] = 1/len(n2), invlens[3] = cosphi
+  _mm_storeu_pd(invlens+2, n2cosphi);
 
   n1 = n1 * invlens[1];
   n2 = n2 * (1.0 / invlens[2]);

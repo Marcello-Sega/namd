@@ -13,7 +13,7 @@
 #endif
 
 #if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
-#include <dvec.h>  // SSE2
+#include <emmintrin.h>  // We're using SSE2 intrinsics
 #endif
 
 #ifdef DEFINITION // (
@@ -566,15 +566,15 @@ void ComputeNonbondedUtil :: NAME
 	  register  int j0;
 	  register  int j1;
 
-          F64vec2 PJ_X_01(p_1[jprev1].position.x, p_1[jprev0].position.x);
-          F64vec2 PJ_Y_01(p_1[jprev1].position.y, p_1[jprev0].position.y);
-          F64vec2 PJ_Z_01(p_1[jprev1].position.z, p_1[jprev0].position.z);
+          __m128d PJ_X_01 = _mm_set_pd(p_1[jprev1].position.x, p_1[jprev0].position.x);
+          __m128d PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
+          __m128d PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
           // these don't change here, so we could move them into outer scope
-          const F64vec2 R2_DELTA(r2_delta);	 
-          const F64vec2 P_I_X(p_i_x);
-          const F64vec2 P_I_Y(p_i_y);
-          const F64vec2 P_I_Z(p_i_z);
+          const __m128d R2_DELTA = _mm_set1_pd(r2_delta);	 
+          const __m128d P_I_X = _mm_set1_pd(p_i_x);
+          const __m128d P_I_Y = _mm_set1_pd(p_i_y);
+          const __m128d P_I_Z = _mm_set1_pd(p_i_z);
  
 	  g += 2;
 	  for ( ; g < gu - 2; g +=2 ) {
@@ -582,19 +582,19 @@ void ComputeNonbondedUtil :: NAME
 	    j0     =  jprev0;
 	    j1     =  jprev1;
 
-            F64vec2 T_01 = P_I_X - PJ_X_01;
-            F64vec2 R2_01 = (T_01 * T_01) + R2_DELTA;
-            T_01 = P_I_Y - PJ_Y_01;
-            R2_01 += T_01 * T_01;
-            T_01 = P_I_Z - PJ_Z_01;
-            R2_01 += T_01 * T_01;
+            __m128d T_01 = _mm_sub_pd(P_I_X, PJ_X_01);
+            __m128d R2_01 = _mm_add_pd(_mm_mul_pd(T_01, T_01), R2_DELTA);
+            T_01 = _mm_sub_pd(P_I_Y, PJ_Y_01);
+            R2_01 = _mm_add_pd(R2_01, _mm_mul_pd(T_01, T_01));
+            T_01 = _mm_sub_pd(P_I_Z, PJ_Z_01);
+            R2_01 = _mm_add_pd(R2_01, _mm_mul_pd(T_01, T_01));
 	    
 	    jprev0     =  glist[g  ];
 	    jprev1     =  glist[g+1];
-	    
-            PJ_X_01 = F64vec2(p_1[jprev1].position.x, p_1[jprev0].position.x);
-            PJ_Y_01 = F64vec2(p_1[jprev1].position.y, p_1[jprev0].position.y);
-            PJ_Z_01 = F64vec2(p_1[jprev1].position.z, p_1[jprev0].position.z);
+	   
+            PJ_X_01 = _mm_set_pd(p_1[jprev1].position.x, p_1[jprev0].position.x);
+            PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
+            PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
             __declspec(align(16)) double r2_01[2];
             _mm_store_pd(r2_01, R2_01); // 16-byte-aligned store
@@ -808,15 +808,15 @@ void ComputeNonbondedUtil :: NAME
 	  register  int j0; 
 	  register  int j1; 
 
-          F64vec2 PJ_X_01(p_1[jprev1].position.x, p_1[jprev0].position.x);
-          F64vec2 PJ_Y_01(p_1[jprev1].position.y, p_1[jprev0].position.y);
-          F64vec2 PJ_Z_01(p_1[jprev1].position.z, p_1[jprev0].position.z);
+          __m128d PJ_X_01 = _mm_set_pd(p_1[jprev1].position.x, p_1[jprev0].position.x);
+          __m128d PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
+          __m128d PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
           // these don't change here, so we could move them into outer scope
-          const F64vec2 R2_DELTA(r2_delta);
-          const F64vec2 P_I_X(p_i_x);
-          const F64vec2 P_I_Y(p_i_y);
-          const F64vec2 P_I_Z(p_i_z);
+          const __m128d R2_DELTA = _mm_set1_pd(r2_delta);
+          const __m128d P_I_X = _mm_set1_pd(p_i_x);
+          const __m128d P_I_Y = _mm_set1_pd(p_i_y);
+          const __m128d P_I_Z = _mm_set1_pd(p_i_z);
 	  
 	  int atom2_0 = p_1[jprev0].id;
 	  int atom2_1 = p_1[jprev1].id;
@@ -827,19 +827,19 @@ void ComputeNonbondedUtil :: NAME
 	    j0     =  jprev0;
 	    j1     =  jprev1;
 	    
-            F64vec2 T_01 = P_I_X - PJ_X_01;
-            F64vec2 R2_01 = (T_01 * T_01) + R2_DELTA;
-            T_01 = P_I_Y - PJ_Y_01;
-            R2_01 += T_01 * T_01;
-            T_01 = P_I_Z - PJ_Z_01;
-            R2_01 += T_01 * T_01;
+            __m128d T_01 = _mm_sub_pd(P_I_X, PJ_X_01);
+            __m128d R2_01 = _mm_add_pd(_mm_mul_pd(T_01, T_01), R2_DELTA);
+            T_01 = _mm_sub_pd(P_I_Y, PJ_Y_01);
+            R2_01 = _mm_add_pd(R2_01, _mm_mul_pd(T_01, T_01));
+            T_01 = _mm_sub_pd(P_I_Z, PJ_Z_01);
+            R2_01 = _mm_add_pd(R2_01, _mm_mul_pd(T_01, T_01));
 	    
 	    jprev0     =  pairlist[k];
 	    jprev1     =  pairlist[k+1];
 	    
-            PJ_X_01 = F64vec2(p_1[jprev1].position.x, p_1[jprev0].position.x);
-            PJ_Y_01 = F64vec2(p_1[jprev1].position.y, p_1[jprev0].position.y);
-            PJ_Z_01 = F64vec2(p_1[jprev1].position.z, p_1[jprev0].position.z);
+            PJ_X_01 = _mm_set_pd(p_1[jprev1].position.x, p_1[jprev0].position.x);
+            PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
+            PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
             __declspec(align(16)) double r2_01[2];
             _mm_store_pd(r2_01, R2_01); // 16-byte-aligned store
