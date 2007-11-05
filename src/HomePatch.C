@@ -52,7 +52,25 @@ int average(CompAtom *qtilde,const HGArrayVector &q,BigReal *lambda,const int n,
 
 void mollify(CompAtom *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGArrayVector &force,const int n, const int m, const HGArrayBigReal &imass,const HGArrayInt &ial,const HGArrayInt &ibl,const HGArrayVector &refab);
 
-HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd){
+
+// DMK - Atom Separation (water vs. non-water)
+#if NAMD_SeparateWaters != 0
+
+// Macro to test if a hydrogen group represents a water molecule.
+// NOTE: This test is the same test in Molecule.C for setting the
+//   OxygenAtom flag in status.
+#define IS_HYDROGEN_GROUP_WATER(hgs, mass)                 \
+  ((hgs == 3) && ((mass >= 14.0) && (mass <= 18.0)))
+
+#endif
+
+
+HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
+// DMK - Atom Separation (water vs. non-water)
+#if NAMD_SeparateWaters != 0
+  ,tempAtom()
+#endif
+{
   min.x = PatchMap::Object()->min_a(patchID);
   min.y = PatchMap::Object()->min_b(patchID);
   min.z = PatchMap::Object()->min_c(patchID);
@@ -96,9 +114,23 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd){
   localphs = new PersistentHandle[CkNumPes()];
   for (int i=0; i<CkNumPes(); i++) localphs[i] = 0;
 #endif
+
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+
+    // Create the scratch memory for separating atoms
+    tempAtom.resize(numAtoms);
+    numWaterAtoms = -1;
+
+  #endif
 }
 
 HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
+// DMK - Atom Separation (water vs. non-water)
+#if NAMD_SeparateWaters != 0
+  ,tempAtom()
+#endif
 { 
   min.x = PatchMap::Object()->min_a(patchID);
   min.y = PatchMap::Object()->min_b(patchID);
@@ -143,11 +175,35 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   localphs = new PersistentHandle[CkNumPes()];
   for (int i=0; i<CkNumPes(); i++) localphs[i] = 0;
 #endif
+
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+
+    // Create the scratch memory for separating atoms
+    tempAtom.resize(numAtoms);
+    numWaterAtoms = -1;
+
+    // Separate the current list of atoms
+    separateAtoms();
+
+  #endif
 }
 
 void HomePatch::reinitAtoms(FullAtomList al) {
   atom = al;
   numAtoms = atom.size();
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+
+    // Reset the numWaterAtoms value
+    numWaterAtoms = -1;
+
+    // Separate the atoms
+    separateAtoms();
+
+  #endif
 }
 
 // Bind a Sequencer to this HomePatch
@@ -1169,12 +1225,22 @@ void HomePatch::mollyMollify(Tensor *virial)
 void HomePatch::checkpoint(void) {
   FullAtomList tmp_a(&atom); checkpoint_atom = tmp_a;
   checkpoint_lattice = lattice;
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    checkpoint_numWaterAtoms = numWaterAtoms;
+  #endif
 }
 
 void HomePatch::revert(void) {
   FullAtomList tmp_a(&checkpoint_atom); atom = tmp_a;
   numAtoms = atom.size();
   lattice = checkpoint_lattice;
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    numWaterAtoms = checkpoint_numWaterAtoms;
+  #endif
 }
 
 void HomePatch::submitLoadStats(int timestep)
@@ -1404,6 +1470,13 @@ HomePatch::doAtomMigration()
 
   FullAtomList::iterator atom_i = atom.begin();
   FullAtomList::iterator atom_e = atom.end();
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    FullAtomList::iterator atom_first = atom_i;
+    int numLostWaterAtoms = 0;
+  #endif
+
   while ( atom_i != atom_e ) {
     if ( atom_i->hydrogenGroupSize ) {
 
@@ -1435,6 +1508,22 @@ HomePatch::doAtomMigration()
 
       ++delnum;
 
+
+      // DMK - Atom Separation (water vs. non-water)
+      #if NAMD_SeparateWaters != 0
+        // Check to see if this atom is part of a water molecule.  If
+        //   so, numWaterAtoms needs to be adjusted to refect the lost of
+        //   this atom.
+        // NOTE: The atom separation code assumes that if the oxygen
+        //   atom of the hydrogen group making up the water molecule is
+        //   migrated to another HomePatch, the hydrogens will also
+        //   move!!!
+        int atomIndex = atom_i - atom_first;
+        if (atomIndex < numWaterAtoms)
+          numLostWaterAtoms++;
+      #endif
+
+
     } else {
 
       if ( delnum ) { *(atom_i-delnum) = *atom_i; }
@@ -1442,8 +1531,13 @@ HomePatch::doAtomMigration()
     }
 
     ++atom_i;
-
   }
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    numWaterAtoms -= numLostWaterAtoms;
+  #endif
+
 
   int delpos = numAtoms - delnum;
   DebugM(4,"numAtoms " << numAtoms << " deleted " << delnum << "\n");
@@ -1485,24 +1579,45 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
     return;
   } 
 
-  {
-    MigrationList &migrationList = msg->migrationList;
-    MigrationList::iterator mi;
-    Transform mother_transform;
-    for (mi = migrationList.begin(); mi != migrationList.end(); mi++) {
-      DebugM(1,"Migrating atom " << mi->atomID << " to patch "
-		<< patchID << " with position " << mi->pos << "\n"); 
-      if ( mi->hydrogenGroupSize ) {
-        mi->position = lattice.nearest(mi->position,center,&(mi->transform));
-        mother_transform = mi->transform;
-      } else {
-        mi->position = lattice.reverse_transform(mi->position,mi->transform);
-        mi->position = lattice.apply_transform(mi->position,mother_transform);
-        mi->transform = mother_transform;
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+
+
+    // Merge the incoming list of atoms with the current list of
+    //   atoms.  Note that mergeSeparatedAtomList() will apply any
+    //   required transformations to the incoming atoms as it is
+    //   separating them.
+    mergeAtomList(msg->migrationList);
+
+
+  #else
+
+    // Merge the incoming list of atoms with the current list of
+    // atoms.  Apply transformations to the incoming atoms as they are
+    // added to this patch's list.
+    {
+      MigrationList &migrationList = msg->migrationList;
+      MigrationList::iterator mi;
+      Transform mother_transform;
+      for (mi = migrationList.begin(); mi != migrationList.end(); mi++) {
+        DebugM(1,"Migrating atom " << mi->atomID << " to patch "
+		  << patchID << " with position " << mi->pos << "\n"); 
+        if ( mi->hydrogenGroupSize ) {
+          mi->position = lattice.nearest(mi->position,center,&(mi->transform));
+          mother_transform = mi->transform;
+        } else {
+          mi->position = lattice.reverse_transform(mi->position,mi->transform);
+          mi->position = lattice.apply_transform(mi->position,mother_transform);
+          mi->transform = mother_transform;
+        }
+        atom.add(*mi);
       }
-      atom.add(*mi);
     }
-  }
+
+
+  #endif // if (NAMD_SeparateWaters != 0)
+
 
   numAtoms = atom.size();
   delete msg;
@@ -1523,6 +1638,306 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
     }
   }
 }
+
+
+
+// DMK - Atom Separation (water vs. non-water)
+#if NAMD_SeparateWaters != 0
+
+// This function will separate waters from non-waters in the current
+//   atom list (regardless of whether or not the atom list is has been
+//   sorted yet or not).
+void HomePatch::separateAtoms() {
+
+  // Basic Idea:  Iterate through all the atoms in the current list
+  //   of atoms.  Pack the waters in the current atoms list and move
+  //   the non-waters to the scratch list.  Once the atoms have all
+  //   been separated, copy the non-waters to the end of the waters.
+  // NOTE:  This code does not assume that the atoms list has been
+  //   separated in any manner.
+
+  // NOTE: Sanity check - Doesn't look like the default constructor actually
+  //   adds any atoms but does set numAtoms. ???
+  if (atom.size() < 0) return;  // Nothing to do.
+
+  // Resize the scratch FullAtomList (tempAtom)
+  tempAtom.resize(numAtoms);  // NOTE: Worst case: all non-water
+
+  // Iterate through all the atoms
+  int i = 0;
+  int waterIndex = 0;
+  int nonWaterIndex = 0;
+  while (i < numAtoms) {
+
+    FullAtom &atom_i = atom[i];
+    Mass mass = atom_i.mass;
+    int hgs = atom_i.hydrogenGroupSize;
+
+    // Check to see if this hydrogen group is a water molecule
+    if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
+
+      // Move this hydrogen group up in the current atom list
+      if (waterIndex != i) {
+        atom[waterIndex    ] = atom[i    ];  // Oxygen
+        atom[waterIndex + 1] = atom[i + 1];  // Hydrogen
+        atom[waterIndex + 2] = atom[i + 2];  // Hydrogen
+      }
+
+      waterIndex += 3;
+      i += 3;
+
+    } else {
+
+      // Move this hydrogen group into non-water (scratch) atom list
+      for (int j = 0; j < hgs; j++)
+        tempAtom[nonWaterIndex + j] = atom[i + j];
+
+      nonWaterIndex += hgs;
+      i += hgs;
+    }
+
+  } // end iterating through atoms
+
+  // Iterate through the non-water (scratch) atom list, adding the
+  //   atoms to the end of the atom list.
+  // NOTE: This could be done with a straight memcpy if the internal
+  //   data structures of ResizeArray could be accessed directly.
+  //   Or, perhaps add a member to ResizeArray that can add a consecutive
+  //   list of elements starting at a particular index (would be cleaner).
+  for (i = 0; i < nonWaterIndex; i++)
+    atom[waterIndex + i] = tempAtom[i];
+
+  // Set numWaterAtoms
+  numWaterAtoms = waterIndex;
+}
+
+
+// This function will merge the given list of atoms (not assumed to
+//   be separated) with the current list of atoms (already assumed
+//   to be separated).
+// NOTE: This function applies the transformations to the incoming
+//   atoms as it is separating them.
+void HomePatch::mergeAtomList(FullAtomList &al) {
+
+  // Sanity check
+  if (al.size() <= 0) return;  // Nothing to do
+
+  const int orig_atomSize = atom.size();
+  const int orig_alSize = al.size();
+
+  // Resize the atom list (will eventually hold contents of both lists)
+  atom.resize(orig_atomSize + orig_alSize); // NOTE: Will have contents of both
+
+
+  #if 0  // version where non-waters are moved to scratch first
+
+  
+  // Basic Idea:  The current list is separated already so copy the
+  //   non-water atoms out of it into the scratch atom array.  Then
+  //   separate the incoming/given list (al), adding the waters to the
+  //   end of the waters in atom list and non-waters to the end of the
+  //   scratch list.  At this point, all waters are in atom list and all
+  //   non-waters are in the scratch list so just copy the scratch list
+  //   to the end of the atom list.
+  // NOTE: If al is already separated and the number of waters in it
+  //   is know, could simply move the non-waters in atoms back by that
+  //   amount and directly copy the waters in al into the created gap
+  //   and the non-waters in al to the end.  Leave this as an
+  //   optimization for later since I'm not sure if this would actually
+  //   do better as the combining code (for combining migration
+  //   messages) would also have to merge the contents of the atom lists
+  //   they carry.  Generally speaking, there is probably a faster way
+  //   to do this, but this will get it working.
+
+  // Copy all the non-waters in the current atom list into the
+  //   scratch atom list.
+  const int orig_atom_numNonWaters = orig_atomSize - numWaterAtoms;
+  tempAtom.resize(orig_atom_numNonWaters + al.size()); // NOTE: Worst case
+  for (int i = 0; i < orig_atom_numNonWaters; i++)
+    tempAtom[i] = atom[numWaterAtoms + i];
+
+  // Separate the contents of the given atom list (applying the
+  // transforms as needed)
+  int atom_waterIndex = numWaterAtoms;
+  int atom_nonWaterIndex = orig_atom_numNonWaters;
+  int i = 0;
+  while (i < orig_alSize) {
+
+    FullAtom &atom_i = al[i];
+    int hgs = atom_i.hydrogenGroupSize;
+    Mass mass = atom_i.mass;
+
+    if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
+
+      // Apply the transforms
+
+      // Oxygen (@ +0)
+      al[i].position = lattice.nearest(al[i].position, center, &(al[i].transform));
+      Transform mother_transform = al[i].transform;
+
+      // Hydrogen (@ +1)
+      al[i+1].position = lattice.reverse_transform(al[i+1].position, al[i+1].transform);
+      al[i+1].position = lattice.apply_transform(al[i+1].position, mother_transform);
+      al[i+1].transform = mother_transform;
+
+      // Hydrogen (@ +2)
+      al[i+2].position = lattice.reverse_transform(al[i+2].position, al[i+2].transform);
+      al[i+2].position = lattice.apply_transform(al[i+2].position, mother_transform);
+      al[i+2].transform = mother_transform;
+
+      // Add to the end of the waters in the current list of atoms
+      atom[atom_waterIndex    ] = al[i    ];
+      atom[atom_waterIndex + 1] = al[i + 1];
+      atom[atom_waterIndex + 2] = al[i + 2];
+
+      atom_waterIndex += 3;
+      i += 3;
+
+    } else {
+
+      // Apply the transforms
+
+      // Non-Hydrogen (@ +0)
+      al[i].position = lattice.nearest(al[i].position, center, &(al[i].transform));
+      Transform mother_transform = al[i].transform;
+
+      // Hydrogens (@ +1 -> +(hgs-1))
+      for (int j = 1; j < hgs; j++) {
+        al[i+j].position = lattice.reverse_transform(al[i+j].position, al[i+j].transform);
+        al[i+j].position = lattice.apply_transform(al[i+j].position, mother_transform);
+        al[i+j].transform = mother_transform;
+      }
+
+      // Add to the end of the non-waters (scratch) atom list
+      for (int j = 0; j < hgs; j++)
+        tempAtom[atom_nonWaterIndex + j] = al[i + j];
+
+      atom_nonWaterIndex += hgs;
+      i += hgs;
+    }
+
+  } // end while iterating through given atom list
+
+  // Copy all the non-waters to the end of the current atom list
+  for (int i = 0; i < atom_nonWaterIndex; i++)
+    atom[atom_waterIndex + i] = tempAtom[i];
+
+  // Set numWaterAtoms and numAtoms
+  numWaterAtoms = atom_waterIndex;
+  numAtoms = atom.size();
+
+
+  #else
+
+
+  // Basic Idea:  Count the number of water atoms in the incoming atom
+  //   list then move the non-waters back in the current atom list to
+  //   make room for the incoming waters.  Once there is room in the
+  //   current list, separate the incoming list as the atoms are being
+  //   added to the current list.
+  // NOTE:  Since the incoming atom list is likely to be small,
+  //   iterating over its hydrogen groups twice should not be too bad.
+  // NOTE:  This code assumes the current list is already separated,
+  //   the incoming list may not be separated, and the transforms are
+  //   applied to the incoming atoms as the separation occurs.
+
+  // Count the number of waters in the given atom list
+  int al_numWaterAtoms = 0;
+  int i = 0;
+  while (i < orig_alSize) {
+
+    FullAtom &atom_i = al[i];
+    int hgs = atom_i.hydrogenGroupSize;
+    Mass mass = atom_i.mass;
+
+    if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
+      al_numWaterAtoms += 3;
+    }
+
+    i += hgs;
+  }
+
+  // Move all of the non-waters in the current atom list back (to a
+  //   higher index) by the number of waters in the given list.
+  if (al_numWaterAtoms > 0) {
+    for (i = orig_atomSize - 1; i >= numWaterAtoms; i--) {
+      atom[i + al_numWaterAtoms] = atom[i];
+    }
+  }
+
+  // Separte the atoms in the given atom list.  Perform the
+  //   transformations on them and then add them to the appropriate
+  //   location in the current atom list.
+  int atom_waterIndex = numWaterAtoms;
+  int atom_nonWaterIndex = orig_atomSize + al_numWaterAtoms;
+  i = 0;
+  while (i < orig_alSize) {
+
+    FullAtom &atom_i = al[i];
+    int hgs = atom_i.hydrogenGroupSize;
+    Mass mass = atom_i.mass;
+
+    if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
+
+      // Apply the transforms
+
+      // Oxygen (@ +0)
+      al[i].position = lattice.nearest(al[i].position, center, &(al[i].transform));
+      Transform mother_transform = al[i].transform;
+
+      // Hydrogen (@ +1)
+      al[i+1].position = lattice.reverse_transform(al[i+1].position, al[i+1].transform);
+      al[i+1].position = lattice.apply_transform(al[i+1].position, mother_transform);
+      al[i+1].transform = mother_transform;
+
+      // Hydrogen (@ +2)
+      al[i+2].position = lattice.reverse_transform(al[i+2].position, al[i+2].transform);
+      al[i+2].position = lattice.apply_transform(al[i+2].position, mother_transform);
+      al[i+2].transform = mother_transform;
+
+      // Add to the end of the waters in the current list of atoms
+      atom[atom_waterIndex    ] = al[i    ];
+      atom[atom_waterIndex + 1] = al[i + 1];
+      atom[atom_waterIndex + 2] = al[i + 2];
+
+      atom_waterIndex += 3;
+      i += 3;
+
+    } else {
+
+      // Apply the transforms
+
+      // Non-Hydrogen (@ +0)
+      al[i].position = lattice.nearest(al[i].position, center, &(al[i].transform));
+      Transform mother_transform = al[i].transform;
+
+      // Hydrogens (@ +1 -> +(hgs-1))
+      for (int j = 1; j < hgs; j++) {
+        al[i+j].position = lattice.reverse_transform(al[i+j].position, al[i+j].transform);
+        al[i+j].position = lattice.apply_transform(al[i+j].position, mother_transform);
+        al[i+j].transform = mother_transform;
+      }
+
+      // Add to the end of the non-waters (scratch) atom list
+      for (int j = 0; j < hgs; j++)
+        atom[atom_nonWaterIndex + j] = al[i + j];
+
+      atom_nonWaterIndex += hgs;
+      i += hgs;
+    }
+
+  } // end while iterating through given atom list
+
+  // Set numWaterAtoms and numAtoms
+  numWaterAtoms = atom_waterIndex;
+  numAtoms = atom_nonWaterIndex;
+
+  #endif
+}
+
+#endif
+
+
 
 inline void lubksb(HGMatrixBigReal &a, int n, HGArrayInt &indx,
                                               HGArrayBigReal &b)

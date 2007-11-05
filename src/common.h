@@ -131,6 +131,14 @@ int  Fclose(FILE *fout);
 
 #define USE_BARRIER   (CYCLE_BARRIER || PME_BARRIER)
 
+// DMK - Atom Separation (water vs. non-water)
+//   Setting this define to a non-zero value will cause the
+//   HomePatches to separate the hydrogen groups in their
+//   HomePatch::atom lists (all water molecules first, in arbitrary
+//   order, followed by all non-waters, in arbitrary order).
+#define NAMD_SeparateWaters   0
+
+
 #include "converse.h"
 #if CHARM_VERSION <= 50900
 #ifndef CmiMemcpy
