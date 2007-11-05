@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 21:40:35 $
- * $Revision: 1.3 $
+ * $Date: 2007/11/05 20:23:49 $
+ * $Revision: 1.4 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -300,6 +300,22 @@ int RefineTorusLB::newRefine() {
 	c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
       } 
     }
+
+    if(found == 1) {
+      deAssign(good.c, donor);
+      assign(good.c, good.p);
+      if (good.p->load > averageLoad) lightPes->remove(good.p);
+      if (donor->load > overLoad*averageLoad)
+        heavyPes->insert((InfoRecord *) donor);
+      else
+        lightPes->insert((InfoRecord *) donor);
+      continue;
+    }
+    else {
+      done = 0;
+      break;
+    }
+
 #else
 
     int found=0;
@@ -312,48 +328,47 @@ int RefineTorusLB::newRefine() {
         c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
         while (c)
         {
-          if(c->load + p->load < overLoad*averageLoad)
+          /*if(c->load + p->load < overLoad*averageLoad)
           {
 	    good.c = c;
 	    good.p = p;
             found = 1;
             break;
-          }
+          }*/
+	  selectPes(p, c);
           nextC.id++;
           c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
         }
-        if(found == 1)
-          break;
+        //if(found == 1)
+        //  break;
         p = (processorInfo *)lightPes->next((Iterator *) &nextP);
       }
-      /*if(found==1)
-        CkPrintf("3rd try succeeded\n");
-      else
-        CkPrintf("3rd try failed\n");*/
-    }
-#endif // USE_TOPOMAP
 
-    if(found == 1) {
-      deAssign(good.c, donor);
-      assign(good.c, good.p);
-      if (good.p->load > averageLoad) lightPes->remove(good.p);
-      if (donor->load > overLoad*averageLoad)
+      bestP = 0;
+      REASSIGN(bestPe[3])
+      else REASSIGN(bestPe[4])
+      else REASSIGN(bestPe[5])
+      else REASSIGN(bestPe[1])
+      else REASSIGN(bestPe[2])
+      else REASSIGN(bestPe[0])
+    }
+
+    if(bestP) {
+      if(bestP->load > averageLoad) lightPes->remove(bestP);
+      if(donor->load > overLoad*averageLoad)
         heavyPes->insert((InfoRecord *) donor);
       else
-        lightPes->insert((InfoRecord *) donor);
+	lightPes->insert((InfoRecord *) donor);
+      continue;
     }
     else {
       done = 0;
       break;
-    } 
-
+    }
+#endif // USE_TOPOMAP
+ 
   } // end of while loop
 
-  //for(int j=0; j<6; j++) {
-  //  delete bestPe[j];
-  //  delete goodPe[j];
-  // CkPrintf("DeletE\n");
-  //}
   delete heavyPes;
   delete lightPes;
 

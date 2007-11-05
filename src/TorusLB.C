@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 21:40:35 $
- * $Revision: 1.3 $
+ * $Date: 2007/11/05 20:23:48 $
+ * $Revision: 1.4 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -22,6 +22,8 @@ int npas, int npes) : RefineTorusLB(cs, pas, pes, ncs, npas, npes, 0)
   strategyName = "TorusLB";
   strategy();
   binaryRefine();
+  computeAverage();
+  printLoads();
   // CREATE THE SPANNING TREE IN THE LOAD BALANCER
   //if(proxySendSpanning || proxyRecvSpanning)
   //  createSpanningTree();
@@ -38,7 +40,7 @@ void TorusLB::strategy() {
   computeInfo *c;
   processorInfo *p, *minp;
   Iterator nextP;
-  overLoad = 1.2;
+  overLoad = 1.1;
 
   for(int I=0; I<numComputes; I++) {
 
@@ -160,6 +162,11 @@ void TorusLB::strategy() {
           }
         }
   }
+  
+  if(found == 0)
+    CkAbort("TorusLB: No receiver found\n");
+  else  
+    assign(c, minp);
 #else
   int found = 0;
   if(!minp) {
@@ -181,14 +188,14 @@ void TorusLB::strategy() {
       continue;
     }
   }
-#endif
 
   if(found == 0)
      CkAbort("TorusLB: No receiver found\n");
-  else  
-    assign(c, minp);
+#endif
+ 
   } // end of computes for-loop
 
+  computeAverage();
   printLoads();
 }
 
