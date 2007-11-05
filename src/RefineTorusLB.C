@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/05 20:23:49 $
- * $Revision: 1.4 $
+ * $Date: 2007/11/05 20:27:49 $
+ * $Revision: 1.5 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -282,7 +282,7 @@ int RefineTorusLB::newRefine() {
         brickDim(z1, z2, dimZ, zm, zM);
 
         for(int i=xM+1; i<xm+dimX; i++)
-          for(int j=yM+1; j<ym=dimY; j++)
+          for(int j=yM+1; j<ym+dimY; j++)
 	    for(int k=zM+1; k<zm+dimZ; k++)
 	    {
 	      pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
