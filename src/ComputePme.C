@@ -2011,9 +2011,6 @@ void ComputePme::ungridForces() {
         if ( fepOn ) {
           if ( g == 0 ) scale = simParams->lambda;
           else if ( g == 1 ) scale = 1. - simParams->lambda;
-          BigReal fepElecLambdaStart = simParams->fepElecLambdaStart;
-          scale = (scale <= fepElecLambdaStart)? 0. : \
-             (scale - fepElecLambdaStart) / (1. - fepElecLambdaStart);
         } else if ( lesOn ) {
           scale = 1.0 / (double)lesFactor;
         }
@@ -2097,9 +2094,6 @@ void ComputePme::ungridForces() {
       if ( fepOn ) {
         if ( g == 0 ) scale = simParams->lambda;
         else if ( g == 1 ) scale = 1. - simParams->lambda;
-        BigReal fepElecLambdaStart = simParams->fepElecLambdaStart;
-        scale = (scale <= fepElecLambdaStart)? 0. : \
-             (scale - fepElecLambdaStart) / (1. - fepElecLambdaStart);
       } else if ( lesOn ) {
         scale = 1.0 / (double)lesFactor;
       } else if ( pairOn ) {
@@ -2117,13 +2111,8 @@ void ComputePme::ungridForces() {
       reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += evir[g][6] * scale;
 
       double scale2 = 0.;
-      if ( fepOn ) {
-        if (g == 0 ) scale2 = simParams->lambda2;
-        else if ( g == 1 ) scale2 = 1. - simParams->lambda2;
-        BigReal fepElecLambdaStart = simParams->fepElecLambdaStart;
-        scale2 = (scale2 <= fepElecLambdaStart)? 0. : \
-             (scale2 - fepElecLambdaStart) / (1. - fepElecLambdaStart);
-      }          
+      if ( fepOn && g == 0 ) scale2 = simParams->lambda2;
+      else if ( fepOn && g == 1 ) scale2 = 1. - simParams->lambda2;
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[g][0] * scale2;
     }
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
