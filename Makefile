@@ -161,6 +161,7 @@ OBJS = \
 	$(DSTDIR)/RecBisection.o \
 	$(DSTDIR)/ReductionMgr.o \
 	$(DSTDIR)/RefineOnly.o \
+	$(DSTDIR)/RefineTorusLB.o \
 	$(DSTDIR)/ScriptTcl.o \
 	$(DSTDIR)/Sequencer.o \
 	$(DSTDIR)/Set.o \
@@ -168,6 +169,7 @@ OBJS = \
 	$(DSTDIR)/SimParameters.o \
 	$(DSTDIR)/Sync.o \
 	$(DSTDIR)/TclCommands.o \
+	$(DSTDIR)/TorusLB.o \
 	$(DSTDIR)/WorkDistrib.o \
 	$(DSTDIR)/pub3dfft.o \
 	$(DSTDIR)/vmdsock.o \
