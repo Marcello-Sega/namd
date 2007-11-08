@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/05 20:23:48 $
- * $Revision: 1.4 $
+ * $Date: 2007/11/08 20:55:07 $
+ * $Revision: 1.5 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -40,7 +40,7 @@ void TorusLB::strategy() {
   computeInfo *c;
   processorInfo *p, *minp;
   Iterator nextP;
-  overLoad = 1.1;
+  overLoad = 1.2;
 
   for(int I=0; I<numComputes; I++) {
 
@@ -169,7 +169,7 @@ void TorusLB::strategy() {
     assign(c, minp);
 #else
   int found = 0;
-  if(!minp) {
+  if(found == 0) {
     heapIterator nextp;
     processorInfo *p = (processorInfo *)(pes->iterator((heapIterator *) &nextp));
     while (p) {
@@ -177,11 +177,11 @@ void TorusLB::strategy() {
       p = (processorInfo *)(pes->next(&nextp));
     }
     p = 0;
-    if((p = bestPe[5])
+    if((p = bestPe[3])
     || (p = bestPe[4])
-    || (p = bestPe[3])
-    || (p = bestPe[2])
+    || (p = bestPe[5])
     || (p = bestPe[1])
+    || (p = bestPe[2])
     || (p = bestPe[0])) {
       assign(c, p);
       found = 1;
