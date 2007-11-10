@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 21:39:41 $
- * $Revision: 1.79 $
+ * $Date: 2007/11/10 19:45:58 $
+ * $Revision: 1.80 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -294,28 +294,30 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
   // dump patchSet
   for (i=0; i< numProcessors; i++) {
       int num = processorArray[i].proxies.numElements();
-      fprintf(fp,"%d\n",num);
+      fprintf(fp, "%d %d: ", i, num);
       Iterator nextProxy;
       patchInfo *p = (patchInfo *)processorArray[i].proxies.
 	iterator((Iterator *)&nextProxy);
       while (p) {
-          fprintf(fp,"%d\n",p->Id);
+          fprintf(fp, "%d ", p->Id);
           p = (patchInfo *)processorArray[i].proxies.
 	    next((Iterator*)&nextProxy);
       }
+      fprintf(fp, "\n");
   }
   // dump proxiesOn
   for (i=0; i<numPatches; i++)  {
     int num = patchArray[i].proxiesOn.numElements();
-    fprintf(fp,"%d\n",num);
+    fprintf(fp, "%d %d: ", i, num);
       Iterator nextProc;
       processorInfo *p = (processorInfo *)patchArray[i].proxiesOn.
 	iterator((Iterator *)&nextProc);
       while (p) {
-	fprintf(fp,"%d\n",p->Id);
+	fprintf(fp, "%d ", p->Id);
 	p = (processorInfo *)patchArray[i].proxiesOn.
 	  next((Iterator*)&nextProc);
       }
+      fprintf(fp, "\n");
   }
 
   fclose(fp);
