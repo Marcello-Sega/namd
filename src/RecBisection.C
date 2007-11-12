@@ -10,6 +10,7 @@
 #include "RecBisection.h"
 #include "PatchMap.inl"
 #include "Patch.h"
+#include "PatchMgr.h"
 
 /* ********************************************************************* */
 /* Constructor for the RecBisection Class                                */
@@ -77,8 +78,8 @@ RecBisection::~RecBisection()
 /* it is not always possible to find a bisection point where the load      */
 /* is equally divided.                                                     */
 /* The following strategy is used to get a good partitioning:              */
-/* We divide the initial partition along  x,y, and z directions tentatively*/
-/* and chose the one that gives the best division                          */
+/* We divide the initial partition along x, y and z directions tentatively */
+/* and choose the one that gives the best division                          */
 /* *********************************************************************** */
 
 void RecBisection::rec_divide(int n, const Partition &p)
@@ -472,12 +473,11 @@ int RecBisection::topogrid_rec_divide(Partition &proc_p, Partition &patch_p) {
     Partition proc_p1, proc_p2, patch_p1, patch_p2;
     int i=0, j=0, k=0;
     int posi[3],posj[3],posk[3];  // division points along x,y,z direction
-    int       mindir;                   // the best direction
-    int       p1_empty[3], p2_empty[3]; // true if a subpartition is empty
-    double     loadarray[3];            // actual loads of p1 (for each x,y,z
-    // division)
-    double    diff;                    // load diffenrence (actual - desired)
-    double    mindiff;                 // minimum difference (among directions)
+    int mindir;                   // the best direction
+    int p1_empty[3], p2_empty[3]; // true if a subpartition is empty
+    double loadarray[3];          // actual loads of p1 (for each x,y,z division)
+    double diff;                  // load diffenrence (actual - desired)
+    double mindiff;               // minimum difference (among directions)
     
     proc_p1 = proc_p2 = proc_p;
     patch_p1 = patch_p2 = patch_p;
@@ -764,7 +764,8 @@ void RecBisection::assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z,
 {
     int pix;
     Partition p;
-    
+    TopoManager tmgr;
+ 
     srand(CkNumPes() * 1000);
     
     int coord[3];
@@ -785,7 +786,7 @@ void RecBisection::assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z,
 	coord[1] = p.origin.y + rand() % ydiff;
 	coord[2] = p.origin.z + rand() % zdiff;
 	
-	int pe = coord[dm.x] + coord[dm.y]*X + coord[dm.z]*X*Y;
+	int pe = tmgr.coordinatesToRank(coord[dm.x], coord[dm.y], coord[dm.z], 0);
 	patchMap->assignNode(pix, pe);  
 	dest_arr[pix] = pe;  
     }
@@ -795,4 +796,4 @@ void RecBisection::assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z,
       patchMap->assignBaseNode(pid);
 }
 
-#endif
+#endif //USE_TOPOMAP

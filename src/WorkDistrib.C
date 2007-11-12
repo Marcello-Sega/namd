@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2007/11/02 22:26:37 $
- * $Revision: 1.1175 $
+ * $Author: bhatele $
+ * $Date: 2007/11/12 07:06:25 $
+ * $Revision: 1.1176 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -897,9 +897,8 @@ void WorkDistrib::assignNodeToPatch()
 
 #if USE_TOPOMAP 
   TopoManager tmgr;
-  int nBGLNodes = tmgr.getDimNX() * tmgr.getDimNY() 
-    * tmgr.getDimNZ();
-  if (nBGLNodes >  patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
+  int nBGLNodes = tmgr.getDimNX() * tmgr.getDimNY() * tmgr.getDimNZ();
+  if (nBGLNodes > patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
     CkPrintf ("Blue Gene/L topology partitioner finished successfully \n");
   }
   else
@@ -1848,11 +1847,11 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   
   int xsize = 0, ysize = 0, zsize = 0;
   
-  //Right now assumes an ***T (e.g. XYZT) mapping
+  // Right now assumes a T*** (e.g. TXYZ) mapping
   TopoManager tmgr;
-  xsize = tmgr.getDimX();
-  ysize = tmgr.getDimY();
-  zsize = tmgr.getDimZ();
+  xsize = tmgr.getDimNX();
+  ysize = tmgr.getDimNY();
+  zsize = tmgr.getDimNZ();
   
   //Fix to not assign patches to processor 0
   int rc = recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);
