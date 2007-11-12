@@ -7,6 +7,7 @@ obj/dcdlib.o: \
 	src/dcdlib.C \
 	src/largefiles.h \
 	src/dcdlib.h \
+	src/Vector.h \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/dcdlib.o $(COPTC) src/dcdlib.C
 obj/erf.o: \
@@ -91,7 +92,19 @@ obj/AlgSeven.o: \
 	src/Rebalancer.h \
 	src/elements.h \
 	src/Set.h \
-	src/heap.h
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgSeven.o $(COPTC) src/AlgSeven.C
 obj/AlgRecBisection.o: \
 	src/AlgRecBisection.C \
@@ -114,7 +127,14 @@ obj/AlgRecBisection.o: \
 	src/Rebalancer.h \
 	src/elements.h \
 	src/Set.h \
-	src/heap.h
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/main.h \
+	src/PatchTypes.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgRecBisection.o $(COPTC) src/AlgRecBisection.C
 obj/AlgNbor.o: \
 	src/AlgNbor.C \
@@ -124,7 +144,22 @@ obj/AlgNbor.o: \
 	src/Rebalancer.h \
 	src/elements.h \
 	src/Set.h \
-	src/heap.h
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AlgNbor.o $(COPTC) src/AlgNbor.C
 obj/AtomMap.o: \
 	src/AtomMap.C \
@@ -153,6 +188,7 @@ obj/BackEnd.o: \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -164,6 +200,13 @@ obj/BackEnd.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/WorkDistrib.decl.h \
+	inc/ProxyMgr.decl.h \
+	inc/PatchMgr.decl.h \
+	inc/ComputeMgr.decl.h \
+	inc/ReductionMgr.decl.h \
+	inc/CollectionMgr.decl.h \
+	inc/CollectionMaster.decl.h \
 	src/CollectionMgr.h \
 	src/NamdTypes.h \
 	src/Vector.h \
@@ -175,7 +218,13 @@ obj/BackEnd.o: \
 	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/Lattice.h \
-	src/Tensor.h
+	src/Tensor.h \
+	src/CollectionMaster.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	inc/BroadcastMgr.decl.h \
+	inc/LdbCoordinator.decl.h \
+	inc/Sync.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BackEnd.o $(COPTC) src/BackEnd.C
 obj/BroadcastMgr.o: \
 	src/BroadcastMgr.C \
@@ -272,7 +321,9 @@ obj/CollectionMgr.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
 	src/SimParameters.h \
+	src/MStream.h \
 	src/Debug.h \
 	inc/CollectionMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CollectionMgr.o $(COPTC) src/CollectionMgr.C
@@ -301,6 +352,7 @@ obj/Compute.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/Compute.h \
+	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Compute.o $(COPTC) src/Compute.C
 obj/ComputeAngles.o: \
@@ -350,11 +402,13 @@ obj/ComputeAngles.o: \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
+	src/Priorities.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -382,6 +436,11 @@ obj/ComputeBonds.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -394,8 +453,6 @@ obj/ComputeBonds.o: \
 	src/Box.h \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
 	src/PatchTypes.h \
@@ -408,14 +465,13 @@ obj/ComputeBonds.o: \
 	src/HomePatchTypes.h \
 	src/Node.h \
 	inc/Node.decl.h \
-	src/SimParameters.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
 	src/UniqueSetIter.h \
+	src/Priorities.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -457,6 +513,8 @@ obj/ComputeConsForce.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/HomePatch.h \
@@ -529,11 +587,13 @@ obj/ComputeCrossterms.o: \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
+	src/Priorities.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -618,11 +678,13 @@ obj/ComputeDihedrals.o: \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
+	src/Priorities.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -682,7 +744,9 @@ obj/ComputeDPME.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
 	src/SimParameters.h \
+	src/MStream.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
@@ -749,8 +813,9 @@ obj/ComputeDPMTA.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
-	src/Communicate.h \
+	src/GridForceGrid.h \
 	src/MStream.h \
+	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPMTA.o $(COPTC) src/ComputeDPMTA.C
 obj/ComputeEField.o: \
@@ -838,12 +903,14 @@ obj/ComputeEwald.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
 	src/ComputeNonbondedUtil.h \
-	src/SimParameters.h \
 	src/PmeBase.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeEwald.o $(COPTC) src/ComputeEwald.C
@@ -894,13 +961,15 @@ obj/ComputeExt.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
-	src/SimParameters.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
@@ -955,8 +1024,10 @@ obj/ComputeFullDirect.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
-	src/Communicate.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
 	src/MStream.h \
+	src/Communicate.h \
 	src/Debug.h \
 	src/ComputeFullDirectBase.h
 	$(CXX) $(CXXTHREADFLAGS) $(COPTO)obj/ComputeFullDirect.o $(COPTC) src/ComputeFullDirect.C
@@ -997,6 +1068,7 @@ obj/ComputeHomePatch.o: \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
+	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeHomePatch.o $(COPTC) src/ComputeHomePatch.C
 obj/ComputeHomePatches.o: \
@@ -1042,6 +1114,9 @@ obj/ComputeHomePatches.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeHomePatches.o $(COPTC) src/ComputeHomePatches.C
@@ -1092,11 +1167,13 @@ obj/ComputeImpropers.o: \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
+	src/Priorities.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -1153,11 +1230,13 @@ obj/ComputeGlobal.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
-	src/SimParameters.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGlobal.o $(COPTC) src/ComputeGlobal.C
 obj/ComputeGlobalMsgs.o: \
@@ -1175,7 +1254,6 @@ obj/ComputeGlobalMsgs.o: \
 obj/ComputeGridForce.o: \
 	src/ComputeGridForce.C \
 	src/ComputeGridForce.h \
-	src/GridForceGrid.h \
 	src/ComputeHomePatch.h \
 	src/Compute.h \
 	src/main.h \
@@ -1194,9 +1272,11 @@ obj/ComputeGridForce.o: \
 	src/ReductionMgr.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/Node.h \
 	inc/Node.decl.h \
-	src/SimParameters.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
@@ -1298,9 +1378,11 @@ obj/ComputeMgr.o: \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
+	src/Priorities.h \
 	src/ComputeSelfTuples.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -1451,6 +1533,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/LJTable.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputeNonbondedStd.o: \
@@ -1480,6 +1564,8 @@ obj/ComputeNonbondedStd.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -1513,6 +1599,8 @@ obj/ComputeNonbondedFEP.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -1546,6 +1634,8 @@ obj/ComputeNonbondedLES.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -1579,6 +1669,8 @@ obj/ComputeNonbondedPProf.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -1607,6 +1699,7 @@ obj/ComputePatch.o: \
 	src/OwnerBox.h \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
+	src/Priorities.h \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -1640,6 +1733,7 @@ obj/ComputePatchPair.o: \
 	src/OwnerBox.h \
 	src/PositionBox.h \
 	src/PositionOwnerBox.h \
+	src/Priorities.h \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -1705,17 +1799,20 @@ obj/ComputePme.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
-	src/SimParameters.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
 	src/varsizemsg.h \
 	src/Random.h \
+	src/Priorities.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
 obj/ComputeRestraints.o: \
@@ -1750,7 +1847,9 @@ obj/ComputeRestraints.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
 	src/SimParameters.h \
+	src/MStream.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
@@ -1833,6 +1932,8 @@ obj/ComputeStir.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/CollectionMgr.h \
 	inc/CollectionMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeStir.o $(COPTC) src/ComputeStir.C
@@ -1881,6 +1982,8 @@ obj/ComputeTclBC.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/TclCommands.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeTclBC.o $(COPTC) src/ComputeTclBC.C
 obj/ConfigList.o: \
@@ -1913,9 +2016,11 @@ obj/Controller.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
 	src/SimParameters.h \
 	src/Lattice.h \
-	src/Tensor.h \
+	src/MStream.h \
 	src/Controller.h \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
@@ -2003,6 +2108,8 @@ obj/DumpBench.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMap.h \
@@ -2142,6 +2249,11 @@ obj/GlobalMaster.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MStream.h \
 	src/GlobalMaster.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMaster.o $(COPTC) src/GlobalMaster.C
@@ -2220,11 +2332,14 @@ obj/GlobalMasterTcl.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/UniqueSetIter.h \
@@ -2257,12 +2372,15 @@ obj/GlobalMasterSMD.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MStream.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterSMD.h \
 	src/PDB.h \
 	src/PDBData.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterSMD.o $(COPTC) src/GlobalMasterSMD.C
 obj/GlobalMasterTMD.o: \
@@ -2287,9 +2405,11 @@ obj/GlobalMasterTMD.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
 	src/SimParameters.h \
 	src/Lattice.h \
-	src/Tensor.h \
+	src/MStream.h \
 	src/GlobalMasterTMD.h \
 	src/GlobalMaster.h \
 	src/PDB.h \
@@ -2330,10 +2450,12 @@ obj/GlobalMasterFreeEnergy.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
-	src/ReductionMgr.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
 	src/SimParameters.h \
 	src/Lattice.h \
-	src/Tensor.h \
+	src/MStream.h \
+	src/ReductionMgr.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterFreeEnergy.o $(COPTC) src/GlobalMasterFreeEnergy.C
 obj/GlobalMasterEasy.o: \
@@ -2381,6 +2503,9 @@ obj/GlobalMasterEasy.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/ReductionMgr.h \
 	src/ComputeMgr.h \
 	src/GlobalMasterServer.h \
@@ -2428,12 +2553,16 @@ obj/GridForceGrid.o: \
 	src/GridForceGrid.C \
 	src/GridForceGrid.h \
 	src/Vector.h \
+	src/common.h \
 	src/Tensor.h \
-	src/NamdTypes.h \
-	src/MStream.h \
 	src/SimParameters.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/MStream.h \
 	src/InfoStream.h \
-	src/common.h
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GridForceGrid.o $(COPTC) src/GridForceGrid.C
 obj/GromacsTopFile.o: \
 	src/GromacsTopFile.C \
@@ -2494,6 +2623,8 @@ obj/HomePatch.o: \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/PatchMgr.h \
 	src/Sequencer.h \
 	src/LdbCoordinator.h \
@@ -2506,6 +2637,7 @@ obj/HomePatch.o: \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
 	src/Random.h \
+	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/HomePatch.o $(COPTC) src/HomePatch.C
 obj/IMDOutput.o: \
@@ -2555,8 +2687,16 @@ obj/LdbCoordinator.o: \
 	src/Set.h \
 	src/Rebalancer.h \
 	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/PatchTypes.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
 	src/Alg7.h \
 	src/AlgRecBisection.h \
+	src/TorusLB.h \
+	src/RefineTorusLB.h \
 	src/NamdNborLB.h \
 	inc/NamdNborLB.decl.h \
 	src/AlgNbor.h \
@@ -2567,12 +2707,13 @@ obj/LdbCoordinator.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/UniqueSortedArray.h \
-	src/PatchTypes.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
 	src/LdbCoordinator.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -2640,7 +2781,8 @@ obj/Measure.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
-	src/SortableResizeArray.h
+	src/SortableResizeArray.h \
+	src/GridForceGrid.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Measure.o $(COPTC) src/Measure.C
 obj/MStream.o: \
 	src/MStream.C \
@@ -2700,20 +2842,20 @@ obj/Molecule.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
-	src/strlib.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
 	src/MStream.h \
+	src/strlib.h \
 	src/Communicate.h \
 	src/ObjectArena.h \
 	src/Parameters.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/UniqueSetIter.h \
 	src/Debug.h \
-	src/CompressPsf.h \
-	src/GridForceGrid.h
+	src/CompressPsf.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
 obj/NamdCentLB.o: \
 	src/NamdCentLB.C \
@@ -2743,12 +2885,21 @@ obj/NamdCentLB.o: \
 	src/Set.h \
 	src/Rebalancer.h \
 	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/PatchTypes.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
 	src/Alg7.h \
 	src/AlgRecBisection.h \
+	src/TorusLB.h \
+	src/RefineTorusLB.h \
 	inc/NamdCentLB.def.h \
 	src/ComputeMap.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdCentLB.o $(COPTC) src/NamdCentLB.C
 obj/NamdNborLB.o: \
@@ -2779,11 +2930,18 @@ obj/NamdNborLB.o: \
 	src/elements.h \
 	src/Set.h \
 	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/PatchTypes.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
 	inc/NamdNborLB.def.h \
 	src/ComputeMap.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
-	inc/NamdCentLB.decl.h
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdNborLB.o $(COPTC) src/NamdNborLB.C
 obj/NamdState.o: \
 	src/NamdState.C \
@@ -2802,12 +2960,13 @@ obj/NamdState.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
-	src/Parameters.h \
-	src/strlib.h \
-	src/MStream.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
 	src/SimParameters.h \
 	src/Lattice.h \
-	src/Tensor.h \
+	src/MStream.h \
+	src/Parameters.h \
+	src/strlib.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/NamdState.h \
@@ -2848,6 +3007,9 @@ obj/NamdOneTools.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdOneTools.o $(COPTC) src/NamdOneTools.C
 obj/Node.o: \
@@ -2867,6 +3029,7 @@ obj/Node.o: \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
+	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -2885,6 +3048,7 @@ obj/Node.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
 	src/PatchMgr.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -2903,6 +3067,7 @@ obj/Node.o: \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/Compute.h \
 	src/ComputeMgr.h \
@@ -2916,6 +3081,9 @@ obj/Node.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MStream.h \
 	src/AtomMap.h \
 	src/Sequencer.h \
 	src/Controller.h \
@@ -2923,21 +3091,27 @@ obj/Node.o: \
 	src/Output.h \
 	src/ProxyMgr.h \
 	src/UniqueSetIter.h \
+	inc/ProxyMgr.decl.h \
 	src/PatchMap.inl \
 	src/Parameters.h \
 	src/strlib.h \
-	src/MStream.h \
-	src/SimParameters.h \
 	src/Communicate.h \
 	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
+	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	inc/ComputeMgr.decl.h \
+	inc/ComputePmeMgr.decl.h \
 	src/Sync.h \
+	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
 	src/BackEnd.h \
+	src/PDB.h \
+	src/PDBData.h \
 	src/DumpBench.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Node.o $(COPTC) src/Node.C
@@ -2949,11 +3123,11 @@ obj/Output.o: \
 	src/Output.h \
 	src/common.h \
 	src/dcdlib.h \
+	src/Vector.h \
 	src/strlib.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
@@ -2963,16 +3137,17 @@ obj/Output.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MStream.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
 	src/Parameters.h \
-	src/MStream.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/Communicate.h \
@@ -3058,7 +3233,9 @@ obj/Patch.o: \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
 	src/SimParameters.h \
+	src/MStream.h \
 	src/ResizeArrayPrimIter.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
@@ -3099,6 +3276,7 @@ obj/PatchMgr.o: \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
+	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
 	inc/Node.decl.h \
 	inc/LdbCoordinator.decl.h \
@@ -3112,9 +3290,11 @@ obj/PatchMgr.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/WorkDistrib.decl.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	src/Node.h \
+	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/packmsg.h \
 	src/Debug.h \
@@ -3126,10 +3306,10 @@ obj/PatchMap.o: \
 	src/ObjectArena.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/common.h \
 	src/PatchMgr.h \
 	src/NamdTypes.h \
 	src/Vector.h \
-	src/common.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/HomePatch.h \
@@ -3245,6 +3425,7 @@ obj/ProxyMgr.o: \
 	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/packmsg.h \
+	src/Priorities.h \
 	src/Debug.h \
 	inc/ProxyMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProxyMgr.o $(COPTC) src/ProxyMgr.C
@@ -3286,6 +3467,7 @@ obj/ProxyPatch.o: \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
 	src/PatchTypes.h \
+	inc/ProxyMgr.decl.h \
 	src/ProxyMgr.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
@@ -3296,6 +3478,7 @@ obj/ProxyPatch.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
+	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProxyPatch.o $(COPTC) src/ProxyPatch.C
 obj/Rebalancer.o: \
@@ -3309,7 +3492,25 @@ obj/Rebalancer.o: \
 	src/Rebalancer.h \
 	src/elements.h \
 	src/Set.h \
-	src/heap.h
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Rebalancer.o $(COPTC) src/Rebalancer.C
 obj/RecBisection.o: \
 	src/RecBisection.C \
@@ -3336,7 +3537,15 @@ obj/RecBisection.o: \
 	src/PositionOwnerBox.h \
 	src/PositionBox.h \
 	src/UniqueSortedArray.h \
-	src/PatchTypes.h
+	src/PatchTypes.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/main.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/RecBisection.o $(COPTC) src/RecBisection.C
 obj/ReductionMgr.o: \
 	src/ReductionMgr.C \
@@ -3371,8 +3580,49 @@ obj/RefineOnly.o: \
 	src/elements.h \
 	src/Set.h \
 	src/Rebalancer.h \
-	src/heap.h
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/RefineOnly.o $(COPTC) src/RefineOnly.C
+obj/RefineTorusLB.o: \
+	src/RefineTorusLB.C \
+	src/RefineTorusLB.h \
+	src/Rebalancer.h \
+	src/elements.h \
+	src/Set.h \
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/InfoStream.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/RefineTorusLB.o $(COPTC) src/RefineTorusLB.C
 obj/ScriptTcl.o: \
 	src/ScriptTcl.C \
 	src/InfoStream.h \
@@ -3433,7 +3683,9 @@ obj/ScriptTcl.o: \
 	src/Debug.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	plugins/include/libmolfile_plugin.h
+	plugins/include/libmolfile_plugin.h \
+	src/ComputeConsForceMsgs.h \
+	inc/ComputeMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
 obj/Sequencer.o: \
 	src/Sequencer.C \
@@ -3488,6 +3740,8 @@ obj/Sequencer.o: \
 	src/ConfigList.h \
 	src/Hydrogen.h \
 	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
 	src/PDBData.h \
@@ -3515,7 +3769,6 @@ obj/Set.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Set.o $(COPTC) src/Set.C
 obj/Settle.o: \
 	src/Settle.C \
-	src/InfoStream.h \
 	src/Settle.h \
 	src/Vector.h \
 	src/common.h \
@@ -3592,6 +3845,32 @@ obj/TclCommands.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/TclCommands.o $(COPTC) src/TclCommands.C
+obj/TorusLB.o: \
+	src/TorusLB.C \
+	src/TorusLB.h \
+	src/Rebalancer.h \
+	src/elements.h \
+	src/Set.h \
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/main.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/common.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/PatchTypes.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/InfoStream.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/RefineTorusLB.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/TorusLB.o $(COPTC) src/TorusLB.C
 obj/WorkDistrib.o: \
 	src/WorkDistrib.C \
 	src/InfoStream.h \
@@ -3607,6 +3886,7 @@ obj/WorkDistrib.o: \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
 	inc/main.decl.h \
+	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
@@ -3623,6 +3903,7 @@ obj/WorkDistrib.o: \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
 	src/Node.h \
+	inc/Node.decl.h \
 	src/PatchMgr.h \
 	src/SortedArray.h \
 	src/SortableResizeArray.h \
@@ -3641,6 +3922,7 @@ obj/WorkDistrib.o: \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/HomePatchTypes.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -3655,11 +3937,17 @@ obj/WorkDistrib.o: \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
+	src/GridForceGrid.h \
+	src/MStream.h \
 	src/NamdOneTools.h \
 	src/Compute.h \
 	src/RecBisection.h \
 	src/Random.h \
 	src/varsizemsg.h \
+	src/ProxyMgr.h \
+	src/UniqueSetIter.h \
+	inc/ProxyMgr.decl.h \
+	src/Priorities.h \
 	src/Debug.h \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/WorkDistrib.o $(COPTC) src/WorkDistrib.C
@@ -3701,11 +3989,12 @@ obj/CompressPsf.o: \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
-	src/Parameters.h \
-	src/MStream.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
 	src/SimParameters.h \
 	src/Lattice.h \
-	src/Tensor.h \
+	src/MStream.h \
+	src/Parameters.h \
 	src/InfoStream.h \
 	src/UniqueSetIter.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/CompressPsf.o $(COPTC) src/CompressPsf.C
