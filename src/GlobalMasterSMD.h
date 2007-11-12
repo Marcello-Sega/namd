@@ -15,7 +15,9 @@ public:
      with speed <velocity>.  Must also be passed the desired rate of
      output <output_frequency> and the inital timestep # of the
      simulation <first_timestep> */
-  GlobalMasterSMD(BigReal spring_constant, BigReal velocity,
+  GlobalMasterSMD(BigReal spring_constant,
+		  BigReal transverse_spring_constant,
+		  BigReal velocity,
 		  const Vector direction, int output_frequency,
 		  int first_timestep, const char *filename, int);
   ~GlobalMasterSMD();
@@ -31,6 +33,7 @@ private:
   void parseAtoms(const char *file, int);
  
   BigReal k;
+  BigReal k2;
   BigReal moveVel;   // A/timestep
   Vector moveDir;
   int outputFreq;

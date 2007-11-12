@@ -999,7 +999,10 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 		"Direction of movement", &SMDDir);
    opts.require("SMD", "SMDk",
                 "Elastic constant for SMD", &SMDk);
+   opts.optional("SMD", "SMDk2",
+                "Transverse elastic constant for SMD", &SMDk2, 0);
    opts.range("SMDk", NOT_NEGATIVE);
+   opts.range("SMDk2", NOT_NEGATIVE);
    opts.require("SMD", "SMDFile",
 		"File for SMD information",
                  SMDFile);
@@ -2963,6 +2966,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
  
      iout << iINFO << "SMD K   " 
           << SMDk << "\n";
+
+     iout << iINFO << "SMD K2  " 
+          << SMDk2 << "\n";
 
      iout << iINFO << "SMD OUTPUT FREQUENCY   "
 	  << SMDOutputFreq << " TIMESTEPS\n";

@@ -28,7 +28,8 @@
 #define MIN_DEBUG_LEVEL 1
 #include "Debug.h"
 
-GlobalMasterSMD::GlobalMasterSMD(BigReal spring_constant, BigReal velocity,
+GlobalMasterSMD::GlobalMasterSMD(BigReal spring_constant,
+	       BigReal transverse_spring_constant, BigReal velocity,
                const Vector direction, int output_frequency,
 	       int first_timestep, const char *filename,
 	       int numAtoms) {
@@ -37,6 +38,7 @@ GlobalMasterSMD::GlobalMasterSMD(BigReal spring_constant, BigReal velocity,
   moveDir = direction;
   outputFreq = output_frequency;
   k = spring_constant;
+  k2 = transverse_spring_constant;
   currentTime = first_timestep;
 
   parseAtoms(filename,numAtoms);
@@ -103,7 +105,9 @@ void GlobalMasterSMD::calculate() {
   Position curcm = *getGroupPositionBegin(); // get the center of mass
   DebugM(1,"Current CM "<<cm<<"\n");
   BigReal diff = (curcm - cm)*moveDir;
-  Force f = k*(moveVel*currentTime - diff)*moveDir;
+  // second term below is along transverse direction: -diff*moveDir + (diff*moveDir - (curcm-cm)) = -(curcm-cm)
+  // so if k = k2 and moveVel = 0, we see that f = -k * (curcm - cm), the desired result
+  Force f = k*(moveVel*currentTime - diff)*moveDir + k2*(diff*moveDir - (curcm - cm));
   modifyGroupForces()[0] = f;
 
   // print some output sometimes

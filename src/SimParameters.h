@@ -247,6 +247,7 @@ public:
         BigReal SMDVel;                 //  Velocity of the movement, A/timestep
         zVector SMDDir;                  //  Direction of the movement
         BigReal SMDk; 			//  Elastic constant for SMD
+	BigReal SMDk2;			//  Transverse elastic constant for SMD
  	char SMDFile[128];		//  File for SMD information
         int SMDOutputFreq;              //  Output frequency for SMD constr.
         //****** END SMD constraints changes 

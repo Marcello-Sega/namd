@@ -604,7 +604,8 @@ ComputeMgr::createComputes(ComputeMap *map)
 
         if (simParams->SMDOn)
             masterServerObject->addClient(
-                new GlobalMasterSMD(simParams->SMDk, simParams->SMDVel,
+                new GlobalMasterSMD(simParams->SMDk, simParams->SMDk2,
+				    simParams->SMDVel,
                                     simParams->SMDDir, simParams->SMDOutputFreq,
                                     simParams->firstTimestep, simParams->SMDFile,
                                     node->molecule->numAtoms)
