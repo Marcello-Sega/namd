@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/08 20:55:07 $
- * $Revision: 1.5 $
+ * $Date: 2007/11/12 02:37:25 $
+ * $Revision: 1.6 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -123,9 +123,9 @@ void TorusLB::strategy() {
   if(ym>=EXPAND_INNER_BRICK) ym=ym-EXPAND_INNER_BRICK; else ym=0;
   if(zm>=EXPAND_INNER_BRICK) zm=zm-EXPAND_INNER_BRICK; else zm=0;
 
-  if(xM<tmgr.getDimX()-EXPAND_INNER_BRICK) xM=xM+EXPAND_INNER_BRICK; else xM=tmgr.getDimX()-1;
-  if(yM<tmgr.getDimY()-EXPAND_INNER_BRICK) yM=yM+EXPAND_INNER_BRICK; else yM=tmgr.getDimY()-1;
-  if(zM<tmgr.getDimZ()-EXPAND_INNER_BRICK) zM=zM+EXPAND_INNER_BRICK; else zM=tmgr.getDimZ()-1;
+  xM=xM+EXPAND_INNER_BRICK;
+  yM=yM+EXPAND_INNER_BRICK;
+  zM=zM+EXPAND_INNER_BRICK;
 #endif
 
   // first go over the processors inside the brick and choose the least 
