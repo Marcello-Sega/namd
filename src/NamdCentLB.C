@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/10 19:45:58 $
- * $Revision: 1.80 $
+ * $Date: 2007/11/20 05:04:39 $
+ * $Revision: 1.81 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -170,6 +170,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 #if LDB_DEBUG && USE_TOPOMAP
   TopoManager tmgr;
   int pe1, pe2, pe3, hops=0;
+  /* This is double counting the hops
   for(int i=0; i<nMoveableComputes; i++)
   {
     pe1 = computeArray[i].processor;
@@ -178,6 +179,17 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     hops += tmgr.getHopsBetweenRanks(pe1, pe2);
     if(computeArray[i].patch1 != computeArray[i].patch2)
       hops += tmgr.getHopsBetweenRanks(pe1, pe3);  
+  }*/
+  for (int i=0; i<numPatches; i++)  {
+    //int num = patchArray[i].proxiesOn.numElements();
+    pe1 = patchArray[i].processor;
+    Iterator nextProc;
+    processorInfo *p = (processorInfo *)patchArray[i].proxiesOn.iterator((Iterator *)&nextProc);
+    while (p) {
+      pe2 = p->Id;
+      hops += tmgr.getHopsBetweenRanks(pe1, pe2);
+      p = (processorInfo *)patchArray[i].proxiesOn.next((Iterator*)&nextProc);
+    }
   }
   CkPrintf("Load Balancing: Number of Hops: %d\n", hops);
 #endif
