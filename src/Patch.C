@@ -32,6 +32,11 @@ Patch::Patch(PatchID pd) :
    avgPositionBox(this,&Patch::avgPositionBoxClosed),
    forceBox(this,&Patch::forceBoxClosed),
    boxesOpen(0), _hasNewAtoms(0)
+
+   // DMK - Atom Separation (water vs. non-water)
+   #if NAMD_SeparateWaters != 0
+     ,numWaterAtoms(-1)
+   #endif
 {
   lattice = Node::Object()->simParameters->lattice;
 }

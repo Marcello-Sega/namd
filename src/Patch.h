@@ -55,6 +55,12 @@ class Patch
      void avgPositionBoxClosed(void);
 
      int getNumAtoms() { return numAtoms; }
+
+     // DMK - Atom Separation (water vs. non-water)
+     #if NAMD_SeparateWaters != 0
+       int getNumWaterAtoms() { return numWaterAtoms; }
+     #endif
+
      int getNumFixedAtoms() { return numFixedAtoms; }  // not updated
      void setNumFixedAtoms(int numFixed) { numFixedAtoms=numFixed; }  // not updated
      PatchID getPatchID() { return patchID; }
@@ -74,6 +80,14 @@ class Patch
      int           numFixedAtoms;
      CompAtomList  p;
      CompAtomList  p_avg;
+
+     // DMK - Atom Separation (water vs. non-water)
+     #if NAMD_SeparateWaters != 0
+       int numWaterAtoms;  // Set numWaters to the number of water atoms at
+                           //   the lead of the atoms list.  If numWaters is
+                           //   set to -1, this should indicate that
+                           //   atoms has not been separated yet.
+     #endif
 
 #ifdef MEM_OPT_VERSION
      CompAtomExtList pExt;

@@ -8,6 +8,7 @@
 
 #define NAMDTYPES_H
 
+#include "common.h"
 #include "Vector.h"
 #include "ResizeArray.h"
 
@@ -162,6 +163,18 @@ struct ExtForce {
   Force force;
   ExtForce() : replace(0) {;}
 };
+
+
+// DMK - Atom Sort
+#if NAMD_ComputeNonbonded_SortAtoms != 0
+
+  typedef struct __sort_entry {
+    unsigned int index;  // Index of atom in CompAtom array
+    BigReal sortValue;   // Distance of PAp from P0 (see calculation code)
+  } SortEntry;
+
+#endif
+
 
 #endif /* NAMDTYPES_H */
 

@@ -670,6 +670,12 @@ void HomePatch::positionsReady(int doMigration)
 	#ifdef MEM_OPT_VERSION
 	allmsg->extInfoList = pExt;
 	#endif
+
+        // DMK - Atom Separation (water vs. non-water)
+        #if NAMD_SeparateWaters != 0
+	  allmsg->numWaterAtoms = numWaterAtoms;
+        #endif
+
 #if CMK_PERSISTENT_COMM
 //        CmiUsePersistentHandle(localphs, npid);
 #endif
@@ -684,6 +690,12 @@ void HomePatch::positionsReady(int doMigration)
         nmsg->flags = flags;
         nmsg->positionList = p;
         if (flags.doMolly) nmsg->avgPositionList = p_avg;
+
+        // DMK - Atom Separation (water vs. non-water)
+        #if NAMD_SeparateWaters != 0
+	  nmsg->numWaterAtoms = numWaterAtoms;
+        #endif
+
 #if CMK_PERSISTENT_COMM
 //        CmiUsePersistentHandle(localphs, npid);
 #endif

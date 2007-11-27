@@ -63,6 +63,22 @@ class ComputeNonbondedWorkArrays {
 public:
   ResizeArray<plint> pairlisti;
   ResizeArray<BigReal> r2list;
+
+  // DMK - Atom Sort
+  // NOTE : TODO : For pair nonbonded compute objects, these arrays are needed
+  //   for the atom sorting code.  However, grouplist and fixglist will not be
+  //   used if these arrays are so they could overlap in memory.  TODO: Find a
+  //   way to allow them to use the same memory.  For now, it's not much memory
+  //   so just keep them separate because of the type differences.  I haven't
+  //   looked through all the details yet, but could probably just use the
+  //   larger type and cast the pointer type as needed for the other one to
+  //   ensure there is enough memory in both cases.
+  #if NAMD_ComputeNonbonded_SortAtoms != 0
+    ResizeArray<SortEntry> atomSort_0_sortValues__;
+    ResizeArray<SortEntry> atomSort_1_sortValues__;
+    ResizeArray<BigReal> p_0_sortValues;
+  #endif
+
   ResizeArray<plint> grouplist;
   ResizeArray<plint> fixglist;
   ResizeArray<plint> goodglist;
@@ -86,6 +102,11 @@ struct nonbonded {
   Force* fullf [2];
 
   int numAtoms[2];
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    int numWaterAtoms[2];
+  #endif
 
   BigReal *reduction;
   BigReal *pressureProfileReduction;

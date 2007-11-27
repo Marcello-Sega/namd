@@ -333,8 +333,474 @@ void ComputeNonbondedUtil :: NAME
 
   if ( ! ( savePairlists || ! usePairlists ) ) arraysize = 0;
 
-  NBWORKARRAY(plint,grouplist,arraysize);
-  NBWORKARRAY(plint,fixglist,arraysize);
+
+  // DMK - Atom Sort
+  // 
+  // Basic Idea: Determine the line between the center of masses of
+  //   the two patches.  Project and then sort the lists of atoms
+  //   along this line.  Then, as the pairlists are being generated
+  //   for the atoms in the first atom list, use the sorted
+  //   list to only add atoms from the second list that are between
+  //   +/- ~cutoff from the atoms position on the line.
+  #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR( + 1 ) )
+
+  // NOTE: For the first atom list, just the sort values themselves need to be
+  // calculated (a BigReal vs. SortEntry data structure).  However, a second
+  // SortEntry array is needed to perform the merge sort on the second list of
+  // atoms.  Use the atomSort_[0/1]_sortValues__ arrays to sort the second
+  // list of atoms and then use the left over array to make a version of the
+  // list that only includes non-fixed groups (fixg).
+
+  NBWORKARRAY(SortEntry, atomSort_0_sortValues__, arraysize);
+  NBWORKARRAY(SortEntry, atomSort_1_sortValues__, arraysize);
+  NBWORKARRAY(BigReal, p_0_sortValues, arraysize);
+
+  register SortEntry* p_1_sortValues = atomSort_0_sortValues__;
+  register SortEntry* p_1_sortValues_fixg = atomSort_1_sortValues__;
+
+  int p_0_sortValues_len = 0;
+  int p_1_sortValues_len = 0;
+  int p_1_sortValues_fixg_len = 0;
+
+  BigReal atomSort_windowRadius = 0.0;
+
+  if (savePairlists || !usePairlists) {
+
+    /// Determine the two points to that will define the line ///
+
+    // Center of mass for the first patch's atoms
+    register BigReal p_0_avgX = 0.0;
+    register BigReal p_0_avgY = 0.0;
+    register BigReal p_0_avgZ = 0.0;
+    {
+      register int atomCount = 0;
+      register int i = 0;
+
+      register BigReal p_x = p_0->position.x;
+      register BigReal p_y = p_0->position.y;
+      register BigReal p_z = p_0->position.z;
+      register int hgs = p_0->hydrogenGroupSize;
+
+      while (i < i_upper) {
+
+	i += hgs;
+        register const CompAtom* p_i = p_0 + i;
+        hgs = p_i->hydrogenGroupSize;
+
+        p_0_avgX += p_x;
+        p_0_avgY += p_y;
+        p_0_avgZ += p_z;
+        p_x = p_i->position.x;
+        p_y = p_i->position.y;
+        p_z = p_i->position.z;
+
+        atomCount++;
+      }
+
+      p_0_avgX = p_0_avgX / ((double)atomCount);
+      p_0_avgY = p_0_avgY / ((double)atomCount);
+      p_0_avgZ = p_0_avgZ / ((double)atomCount);
+    }
+
+    // Center of mass for the second patch's atoms
+    register BigReal p_1_avgX = 0.0;
+    register BigReal p_1_avgY = 0.0;
+    register BigReal p_1_avgZ = 0.0;
+    {
+      register int atomCount = 0;
+      register int i = 0;
+
+      register BigReal p_x = p_1->position.x;
+      register BigReal p_y = p_1->position.y;
+      register BigReal p_z = p_1->position.z;
+      register int hgs = p_1->hydrogenGroupSize;
+
+      while (i < j_upper) {
+
+	i += hgs;
+        register const CompAtom* p_i = p_1 + i;
+        hgs = p_i->hydrogenGroupSize;
+
+        p_1_avgX += p_x;
+        p_1_avgY += p_y;
+        p_1_avgZ += p_z;
+        p_x = p_i->position.x;
+        p_y = p_i->position.y;
+        p_z = p_i->position.z;
+
+        atomCount++;
+      }
+
+      p_1_avgX = p_1_avgX / ((double)atomCount);
+      p_1_avgY = p_1_avgY / ((double)atomCount);
+      p_1_avgZ = p_1_avgZ / ((double)atomCount);
+    }
+
+    // Need to move the points away from each other (so all of the
+    // projected positions are between the two points).
+    //   P0 = ( p_0_avgX, p_0_avgY, p_0_avgZ )
+    //   P1 = ( p_1_avgX, p_1_avgY, p_1_avgZ )
+    // P1 - P0 = V... so, V points from P0 towards P1
+    //   Scale V so that |V| > corner to opposite corner distance of Patch
+    //   NOTE: For now, scale to cutoff * 3
+    register BigReal V_length;   // = |V|    (length of V)
+    register BigReal V_length2;  // = |V|^2  (length of V squared)
+    {
+      register BigReal V_X = p_1_avgX - p_0_avgX;
+      register BigReal V_Y = p_1_avgY - p_0_avgY;
+      register BigReal V_Z = p_1_avgZ - p_0_avgZ;
+      V_length2 = (V_X * V_X) + (V_Y * V_Y) + (V_Z * V_Z);
+      V_length = sqrt(V_length2);
+      register BigReal cutoff = ComputeNonbondedUtil::cutoff;
+      register BigReal scaleFactor = (3.0 * cutoff) / V_length;
+      V_X *= scaleFactor;
+      V_Y *= scaleFactor;
+      V_Z *= scaleFactor;
+
+      // Move the points away from each other (P0 -= V, P1 += V)
+      p_0_avgX -= V_X;
+      p_0_avgY -= V_Y;
+      p_0_avgZ -= V_Z;
+      p_1_avgX += V_X;
+      p_1_avgY += V_Y;
+      p_1_avgZ += V_Z;
+
+      // Recalculate V_length2 and V_length now that the points have moved
+      V_length += 2.0 * (scaleFactor * V_length);
+      V_length2 = V_length * V_length;
+    }
+
+    /// Create the list of sort values for each list of atoms (sort the second list) ///
+
+    // For every atom, determine the sort value (i.e., the distance
+    //   along 'the line, L, between P0 and P1' from P0 to the projection of
+    //   the atom on L).
+    // Let PA = position of atom in the patch space
+    //   a = | P0 - PA |
+    //   b = | P1 - PA |
+    //   c = | P0 - P1 | = V_length
+    // Case:  Triangle formed by P0, P1, and PA (position of atom).
+    //   Projection of PA on the line L  between P0 and P1 (call this point
+    //   PAp, note that line between P0 and P1 is perpendicular to the
+    //   line between PA and PAp AND PAp is between P0 and P1 on L).
+    // then ... 'distance between P0 and PAp' = (a^2 - b^2 + c^2) / (2 * c)
+    // NOTE:  The '1 / (2 * c)' portion of this is constant since P0 and P1
+    //   are now fixed.  Place this constant in a register to avoid repeating
+    //   the divide calculation.
+    register const BigReal V_length_multiplier = (1.0 / (2.0 * V_length));
+
+    // NOTE: The actual test below is 'distance^2 + r2_delta < groupplcutoff2'
+    //  or... 'distance^2 < groupplcutoff2 - r2_delta'
+    //  so... window radius needs to be 'distance < sqrt(groupplcutoff2 - r2_delta)'
+    atomSort_windowRadius = sqrt(groupplcutoff2 - r2_delta);
+
+    // Atom list 1
+    {
+      register int i = 0;
+      register unsigned int ngia = p_1->nonbondedGroupIsAtom;
+      register unsigned int hgs = p_1->hydrogenGroupSize;
+      register BigReal p_x = p_1->position.x;
+      register BigReal p_y = p_1->position.y;
+      register BigReal p_z = p_1->position.z;
+      register int index = 0;
+
+      // Try to take advantage of multiply-add instructions by pulling out the
+      //   'V_length2 * V_length_multiplier' term in the sortVal calculation.
+      //   So...  '(a2 - b2 + V_length2) * V_length_multiplier' becomes...
+      //          '((a2 - b2) * V_length_multiplier) + (V_length2 * V_length_multiplier)'
+      register const BigReal sortVal_addAmmount = V_length2 * V_length_multiplier;
+
+      while (i < j_upper) {
+
+	// Advance i... NOTE: ngia is either 0 or 1 so if ngia is set '1' is
+	//   added to 'i'.  Otherwise, the value of 'hgs' is added to 'i'.
+	i += (ngia) + ((1 - ngia) * hgs);
+
+	// Update p_i_next to point to the atom for the next iteration and begin
+	//   loading the 'ngia' and 'hgs' values for that atom.
+        register const CompAtom* p_i_next = p_1 + i;
+        ngia = p_i_next->nonbondedGroupIsAtom;
+        hgs = p_i_next->hydrogenGroupSize;
+
+        // Use the position values then start loading the next atom's position values.
+        register BigReal a_x_diff = (p_0_avgX - p_x);
+        register BigReal a_y_diff = (p_0_avgY - p_y);
+        register BigReal a_z_diff = (p_0_avgZ - p_z);
+        register BigReal b_x_diff = (p_1_avgX - p_x);
+        register BigReal b_y_diff = (p_1_avgY - p_y);
+        register BigReal b_z_diff = (p_1_avgZ - p_z);
+        p_x = p_i_next->position.x;
+        p_y = p_i_next->position.y;
+        p_z = p_i_next->position.z;
+
+        // Calculate and store the sort value for this atom (NOTE: c = V_length and c^2 = V_length2)
+        register BigReal a2 = (a_x_diff * a_x_diff) + (a_y_diff * a_y_diff) + (a_z_diff * a_z_diff);
+        register BigReal b2 = (b_x_diff * b_x_diff) + (b_y_diff * b_y_diff) + (b_z_diff * b_z_diff);
+        register BigReal sortVal = (a2 - b2) * V_length_multiplier + sortVal_addAmmount;
+	register SortEntry* p_1_sortValStorePtr = p_1_sortValues + p_1_sortValues_len;
+        p_1_sortValStorePtr->index = index;
+        p_1_sortValStorePtr->sortValue = sortVal;
+        p_1_sortValues_len++;
+        index = i;
+      }
+    }
+
+    // NOTE: This list and another version of it with only non-fixed
+    //   atoms will be used in place of grouplist and fixglist.
+    {
+      #if 0   // Selection Sort
+
+        for (int i = 0; i < p_1_sortValues_len; i++) {
+
+          // Search through the remaining elements, finding the lowest
+          //   value, and then swap it with the first remaining element.
+          //   Start by assuming the first element is the smallest.
+          register int smallestIndex = i;
+          register BigReal smallestValue = p_1_sortValues[i].sortValue;
+          for (int j = i + 1; j < p_1_sortValues_len; j++) {
+            register BigReal currentValue = p_1_sortValues[j].sortValue;
+            if (currentValue < smallestValue) {
+              smallestIndex = j;
+              smallestValue = currentValue;
+	    }
+          }
+
+          // Swap the first remaining element with the smallest element
+          if (smallestIndex != i) {
+            register SortEntry* entryA = p_1_sortValues + i;
+            register SortEntry* entryB = p_1_sortValues + smallestIndex;
+            register unsigned int tmpIndex = entryA->index;
+            register BigReal tmpSortValue = entryA->sortValue;
+            entryA->index = entryB->index;
+            entryA->sortValue = entryB->sortValue;
+            entryB->index = tmpIndex;
+            entryB->sortValue = tmpSortValue;
+	  }
+        }
+
+      #elif 0   // Bubble Sort
+
+        register int keepSorting = 0;
+        do {
+
+          // Reset the keepSorting flag (assume no swaps will occur)
+          keepSorting = 0;
+
+          // Loop through the pairs and swap if needed
+          register SortEntry* sortEntry1 = p_1_sortValues;
+          for (int i = 1; i < p_1_sortValues_len; i++) {
+            register SortEntry* sortEntry0 = sortEntry1;
+            sortEntry1 = p_1_sortValues + i;
+            register BigReal sortEntry0_sortValue = sortEntry0->sortValue;
+            register BigReal sortEntry1_sortValue = sortEntry1->sortValue;
+            if (sortEntry0_sortValue > sortEntry1_sortValue) {
+              register int sortEntry0_index = sortEntry0->index;
+              register int sortEntry1_index = sortEntry1->index;
+              sortEntry0->index = sortEntry1_index;
+              sortEntry0->sortValue = sortEntry1_sortValue;
+              sortEntry1->index = sortEntry0_index;
+              sortEntry1->sortValue = sortEntry0_sortValue;
+              keepSorting = 1;
+	    }
+	  }
+
+        } while (keepSorting != 0);  // Loop again if at least one set of
+			             //   elements was swapped.
+      #else   // Merge Sort
+
+        register SortEntry* srcArray = p_1_sortValues;
+        register SortEntry* dstArray = p_1_sortValues_fixg; //tmpArray;
+
+        // Start with each element being a separate list.  Start
+        //   merging the "lists" into larger lists.
+        register int subListSize = 1;
+        while (subListSize < p_1_sortValues_len) {
+
+          // NOTE: This iteration consumes sublists of length
+          //   subListSize and produces sublists of length
+          //   (2*subListSize).  So, keep looping while the length of a
+          //   single sorted sublist is not the size of the entire array.
+
+          // Iterate through the lists, merging each consecutive pair of lists.
+          register int firstListOffset = 0;
+          while (firstListOffset < p_1_sortValues_len) {
+
+            /// Setup pointers and counts for sublists in the pair. ///
+            register int numElements = min(2 * subListSize, p_1_sortValues_len - firstListOffset);
+            register int list0len;
+            register int list1len;
+            if (numElements > subListSize) {
+              list0len = subListSize;                // First list full
+              list1len = numElements - subListSize;  // 1+ elements in second list
+	    } else {
+              list0len = numElements;                // 1+ elements in first list
+              list1len = 0;                          // Zero elements in second list
+	    }
+
+            register SortEntry* list0ptr = srcArray + firstListOffset;
+            register SortEntry* list1ptr = list0ptr + subListSize;
+            register SortEntry* dstptr = dstArray + firstListOffset;
+
+            /// Merge the sublists ///
+
+            // While there are elements in both lists, pick from one
+            while (list0len > 0 && list1len > 0) {
+
+              register BigReal sortValue0 = list0ptr->sortValue;
+              register BigReal sortValue1 = list1ptr->sortValue;
+
+              if (sortValue0 < sortValue1) {  // choose first list (list0)
+
+                // Copy the value from srcArray to dstArray
+                register int index0 = list0ptr->index;
+                dstptr->sortValue = sortValue0;
+                dstptr->index = index0;
+
+                // Move the pointers forward for the sublists
+                dstptr++;
+                list0ptr++;
+                list0len--;
+
+              } else {                        // choose second list (list1)
+
+                // Copy the value from srcArray to dstArray
+                register int index1 = list1ptr->index;
+                dstptr->sortValue = sortValue1;
+                dstptr->index = index1;
+
+                // Move the pointers forward for the sublists
+                dstptr++;
+                list1ptr++;
+                list1len--;
+              }
+
+	    } // end while (list0len > 0 && list1len > 0)
+
+            // NOTE: Either list0len or list1len is zero at this point
+            //   so only one of the following loops should execute.
+
+            // Drain remaining elements from the first list (list0)
+            while (list0len > 0) {
+
+              // Copy the value from srcArray to dstArray
+              register BigReal sortValue0 = list0ptr->sortValue;
+              register int index0 = list0ptr->index;
+              dstptr->sortValue = sortValue0;
+              dstptr->index = index0;
+
+              // Move the pointers forward for the sublists
+              dstptr++;
+              list0ptr++;
+              list0len--;
+
+	    } // end while (list0len > 0)
+
+            // Drain remaining elements from the first list (list1)
+            while (list1len > 0) {
+
+              // Copy the value from srcArray to dstArray
+              register BigReal sortValue1 = list1ptr->sortValue;
+              register int index1 = list1ptr->index;
+              dstptr->sortValue = sortValue1;
+              dstptr->index = index1;
+
+              // Move the pointers forward for the sublists
+              dstptr++;
+              list1ptr++;
+              list1len--;
+
+	    } // end while (list1len > 0)
+
+            // Move forward to the next pair of sub-lists
+            firstListOffset += (2 * subListSize);
+
+	  } // end while (firstListOffset < p_1_sortValues_len) {
+
+          // Swap the dstArray and srcArray pointers
+          register SortEntry* tmpPtr = dstArray;
+          dstArray = srcArray;
+          srcArray = tmpPtr;
+
+          // Double the subListSize
+          subListSize <<= 1;
+
+	}  // end while (subListSize < p_1_sortValues_len)
+
+        // Set the sort values pointers (NOTE: srcArray and dstArray are
+        //   swapped at the end of each iteration of the merge sort outer-loop).
+        p_1_sortValues_fixg = dstArray;
+        p_1_sortValues = srcArray;
+
+      #endif
+    }
+
+
+    // Atom list 0
+    {
+      // Loop through the first list of atoms (p[0])
+      // NOTE: This list will NOT be sorted, so the indexes into p_0
+      //   and p_0_sortValues match up.  Also, all atoms in this list
+      //   (the outer-loop list, need a sort value so do all atoms).
+
+      register int i = 0;
+      register unsigned int ngia = p_0->nonbondedGroupIsAtom;
+      register unsigned int hgs = p_0->hydrogenGroupSize;
+      register BigReal p_x = p_0->position.x;
+      register BigReal p_y = p_0->position.y;
+      register BigReal p_z = p_0->position.z;
+
+      // Try to take advantage of multiply-add instructions by pulling out the
+      //   'V_length2 * V_length_multiplier' term in the sortVal calculation.
+      //   So...  '(a2 - b2 + V_length2) * V_length_multiplier' becomes...
+      //          '((a2 - b2) * V_length_multiplier) + (V_length2 * V_length_multiplier)'
+      register const BigReal sortVal_addAmmount = V_length2 * V_length_multiplier;
+
+      while (i < i_upper) {
+
+	// Advance i... NOTE: ngia is either 0 or 1 so if ngia is set '1' is
+	//   added to 'i'.  Otherwise, the value of 'hgs' is added to 'i'.
+	register BigReal* p_0_sortValStorePtr = p_0_sortValues + i;
+	i += (ngia) + ((1 - ngia) * hgs);
+
+	// Update p_i_next to point to the atom for the next iteration and begin
+	//   loading the 'ngia' and 'hgs' values for that atom.
+        register const CompAtom* p_i_next = p_0 + i;
+        ngia = p_i_next->nonbondedGroupIsAtom;
+        hgs = p_i_next->hydrogenGroupSize;
+
+        // Use the position values then start loading the next atom's position values.
+        register BigReal a_x_diff = (p_0_avgX - p_x);
+        register BigReal a_y_diff = (p_0_avgY - p_y);
+        register BigReal a_z_diff = (p_0_avgZ - p_z);
+        register BigReal b_x_diff = (p_1_avgX - p_x);
+        register BigReal b_y_diff = (p_1_avgY - p_y);
+        register BigReal b_z_diff = (p_1_avgZ - p_z);
+        p_x = p_i_next->position.x;
+        p_y = p_i_next->position.y;
+        p_z = p_i_next->position.z;
+
+        // Calculate and store the sort value for this atom (NOTE: c = V_length and c^2 = V_length2)
+        register BigReal a2 = (a_x_diff * a_x_diff) + (a_y_diff * a_y_diff) + (a_z_diff * a_z_diff);
+        register BigReal b2 = (b_x_diff * b_x_diff) + (b_y_diff * b_y_diff) + (b_z_diff * b_z_diff);
+        register BigReal sortVal = (a2 - b2) * V_length_multiplier + sortVal_addAmmount;
+        *p_0_sortValStorePtr = sortVal;
+      }
+
+      p_0_sortValues_len = i_upper;
+    }
+
+  }  // end if (savePairlists || !usePairlists)
+  #endif
+
+
+  // DMK - Atom Sort
+  // NOTE: These arrays aren't used for pair computes that are spacially
+  //   sorting atoms.
+  #if ! (NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR( + 1 ) ) )
+    NBWORKARRAY(plint,grouplist,arraysize);
+    NBWORKARRAY(plint,fixglist,arraysize);
+  #endif
+
   NBWORKARRAY(plint,goodglist,arraysize);
   NBWORKARRAY(plint,pairlistx,arraysize);
   NBWORKARRAY(plint,pairlistm,arraysize);
@@ -365,30 +831,52 @@ void ComputeNonbondedUtil :: NAME
 
   if ( savePairlists || ! usePairlists ) {
 
-  register int g = 0;
-  for ( j = 0; j < j_upper; ++j ) {
-    if ( p_1[j].hydrogenGroupSize || p_1[j].nonbondedGroupIsAtom ) {
-      grouplist[g++] = j;
-    }
-  }
-  g_upper = g;
-  if ( g_upper ) grouplist[g_upper] = grouplist[g_upper-1];
-  int fixg = 0;
 
-  if ( fixedAtomsOn ) {
-    for ( g = 0; g < g_upper; ++g ) {
-      j = grouplist[g];
-      if ( ! p_1[j].groupFixed ) {
-        fixglist[fixg++] = j;
+    // DMK - Atom Sort
+    #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+
+      // Create a sorted list of non-fixed groups
+      register int fixg = 0;
+      for (int tmpI = 0; tmpI < p_1_sortValues_len; tmpI++) {
+        register SortEntry* p_1_sortEntry = p_1_sortValues + tmpI;
+        register int p_1_index = p_1_sortEntry->index;
+        if (!p_1[p_1_index].groupFixed) {
+          register SortEntry* p_1_sortEntry_fixg = p_1_sortValues_fixg + p_1_sortValues_fixg_len;
+          p_1_sortEntry_fixg->index = p_1_sortEntry->index;
+          p_1_sortEntry_fixg->sortValue = p_1_sortEntry->sortValue;
+          p_1_sortValues_fixg_len++;
+	}
       }
-    }
-  }
 
-  fixg_upper = fixg;
-  if ( fixg_upper ) fixglist[fixg_upper] = fixglist[fixg_upper-1];
+    #else
 
-  *(pairlists.newlist(1)) = i_upper;
-  pairlists.newsize(1);
+      register int g = 0;
+      for ( j = 0; j < j_upper; ++j ) {
+        if ( p_1[j].hydrogenGroupSize || p_1[j].nonbondedGroupIsAtom ) {
+          grouplist[g++] = j;
+        }
+      }
+      g_upper = g;
+      if ( g_upper ) grouplist[g_upper] = grouplist[g_upper-1];
+      int fixg = 0;
+
+      if ( fixedAtomsOn ) {
+        for ( g = 0; g < g_upper; ++g ) {
+          j = grouplist[g];
+          if ( ! p_1[j].groupFixed ) {
+            fixglist[fixg++] = j;
+          }
+        }
+      }
+
+      fixg_upper = fixg;
+      if ( fixg_upper ) fixglist[fixg_upper] = fixglist[fixg_upper-1];
+
+    #endif // NAMD_ComputeNonbonded_AtomSort != 0
+
+
+    *(pairlists.newlist(1)) = i_upper;
+    pairlists.newsize(1);
 
   } else { // if ( savePairlists || ! usePairlists )
 
@@ -550,21 +1038,59 @@ void ComputeNonbondedUtil :: NAME
     register plint *pli = pairlist + pairlistindex;
 
     {
-      register plint *gli = goodglist;
-      const plint *glist = ( groupfixed ? fixglist : grouplist );
-      SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
-      const int gu = ( groupfixed ? fixg_upper : g_upper );
-      register int g = PAIR(0) SELF(gl);
+      // DMK - Atom Sort
+      // Modify the values of g and gu based on the added information
+      //   of the linear projections (sort values) information.
+      #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+
+        register SortEntry* sortValues = ( groupfixed ? p_1_sortValues_fixg : p_1_sortValues );
+        register int g = 0;
+        const int gu = ( groupfixed ? p_1_sortValues_fixg_len : p_1_sortValues_len );
+
+        register BigReal p_i_sortValue = p_0_sortValues[i];
+        const BigReal p_i_sortValue_plus_windowRadius = p_i_sortValue + atomSort_windowRadius;
+
+      #else
+
+        register plint *gli = goodglist;
+        const plint *glist = ( groupfixed ? fixglist : grouplist );
+        SELF( const int gl = ( groupfixed ? fixg_lower : g_lower ); )
+        const int gu = ( groupfixed ? fixg_upper : g_upper );
+        register int g = PAIR(0) SELF(gl);
+
+      #endif
+
 
       if ( g < gu ) {
 	int hu = 0;
 #if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
 	if ( gu - g  >  6 ) { 
-	  register  int jprev0 = glist[g    ];
-	  register  int jprev1 = glist[g + 1];
+
+	  // DMK - Atom Sort
+          #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+
+	    register SortEntry* sortEntry0 = sortValues + g;
+	    register SortEntry* sortEntry1 = sortValues + g + 1;
+            register int jprev0 = sortEntry0->index;
+	    register int jprev1 = sortEntry1->index;
+
+            // Test if we need to loop again
+            // Only if both of the atoms in the next iteration are
+            //   outside of the bounds.  If one is within, it must
+            //   be added to goodglist next iteration so keep going.
+            bool test2 = ((p_i_sortValue_plus_windowRadius < sortEntry0->sortValue)
+                       && (p_i_sortValue_plus_windowRadius < sortEntry1->sortValue));
+            g += (test2 * gu);  // Either add '0' or 'gu'
+
+          #else
+
+            register int jprev0 = glist[g    ];
+	    register int jprev1 = glist[g + 1];
+
+          #endif
 	  
-	  register  int j0;
-	  register  int j1;
+	  register int j0;
+	  register int j1;
 
           __m128d PJ_X_01 = _mm_set_pd(p_1[jprev1].position.x, p_1[jprev0].position.x);
           __m128d PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
@@ -589,8 +1115,28 @@ void ComputeNonbondedUtil :: NAME
             T_01 = _mm_sub_pd(P_I_Z, PJ_Z_01);
             R2_01 = _mm_add_pd(R2_01, _mm_mul_pd(T_01, T_01));
 	    
-	    jprev0     =  glist[g  ];
-	    jprev1     =  glist[g+1];
+            // DMK - Atom Sort
+            #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+
+	      sortEntry0 = sortValues + g;
+	      sortEntry1 = sortValues + g + 1;
+              jprev0 = sortEntry0->index;
+	      jprev1 = sortEntry1->index;
+
+              // Test if we need to loop again
+              // Only if both of the atoms in the next iteration are
+              //   outside of the bounds.  If one is within, it must
+              //   be added to goodglist next iteration so keep going.
+              bool test2 = ((p_i_sortValue_plus_windowRadius < sortEntry0->sortValue)
+                         && (p_i_sortValue_plus_windowRadius < sortEntry1->sortValue));
+              g += (test2 * gu);  // Either add '0' or 'gu'
+
+            #else
+
+	      jprev0     =  glist[g  ];
+	      jprev1     =  glist[g+1];
+
+            #endif
 	   
             PJ_X_01 = _mm_set_pd(p_1[jprev1].position.x, p_1[jprev0].position.x);
             PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
@@ -614,8 +1160,29 @@ void ComputeNonbondedUtil :: NAME
 	}
 #else
 	if ( gu - g  >  6 ) { 
-	  register  int jprev0 = glist[g    ];
-	  register  int jprev1 = glist[g + 1];
+
+	  // DMK - Atom Sort
+          #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+
+	    register SortEntry* sortEntry0 = sortValues + g;
+	    register SortEntry* sortEntry1 = sortValues + g + 1;
+            register int jprev0 = sortEntry0->index;
+	    register int jprev1 = sortEntry1->index;
+
+            // Test if we need to loop again
+            // Only if both of the atoms in the next iteration are
+            //   outside of the bounds.  If one is within, it must
+            //   be added to goodglist next iteration so keep going.
+            bool test2 = ((p_i_sortValue_plus_windowRadius < sortEntry0->sortValue)
+                       && (p_i_sortValue_plus_windowRadius < sortEntry1->sortValue));
+            g += (test2 * gu);  // Either add '0' or 'gu'
+
+          #else
+
+            register int jprev0 = glist[g    ];
+	    register int jprev1 = glist[g + 1];
+
+          #endif
 	  
 	  register  int j0; 
 	  register  int j1; 
@@ -655,8 +1222,28 @@ void ComputeNonbondedUtil :: NAME
 	    r2_0  +=  t_0 * t_0;
 	    r2_1  +=  t_1 * t_1;
 	    
-	    jprev0     =  glist[g];
-	    jprev1     =  glist[g+1];
+            // DMK - Atom Sort
+            #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+
+	      sortEntry0 = sortValues + g;
+	      sortEntry1 = sortValues + g + 1;
+              jprev0 = sortEntry0->index;
+	      jprev1 = sortEntry1->index;
+
+              // Test if we need to loop again
+              // Only if both of the atoms in the next iteration are
+              //   outside of the bounds.  If one is within, it must
+              //   be added to goodglist next iteration so keep going.
+              bool test2 = ((p_i_sortValue_plus_windowRadius < sortEntry0->sortValue)
+                         && (p_i_sortValue_plus_windowRadius < sortEntry1->sortValue));
+              g += (test2 * gu);  // Either add '0' or 'gu'
+
+            #else
+
+	      jprev0     =  glist[g  ];
+	      jprev1     =  glist[g+1];
+
+            #endif
 	    
 	    pj_x_0     =  p_1[jprev0].position.x;
 	    pj_x_1     =  p_1[jprev1].position.x;
@@ -680,7 +1267,27 @@ void ComputeNonbondedUtil :: NAME
 #endif
 	
 	for (; g < gu; g++) {
-	  int j = glist[g];
+
+          // DMK - Atom Sort
+          #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+
+	    register SortEntry* sortEntry = sortValues + g;
+            register int j = sortEntry->index;
+
+            // Test if we need to loop again
+            // NOTE: To avoid a branch, always do this iteration's distance
+            //   calculation and just test this sort value to see if the
+            //   rest of the iterations can be skiped (vs. a 'break' if
+            //   this one can be skiped).
+            bool test = (p_i_sortValue_plus_windowRadius < sortEntry->sortValue);
+            g += (test * gu);  // Either add '0' or 'gu'
+
+          #else
+
+	    int j = glist[g];
+
+          #endif
+
 	  BigReal p_j_x = p_1[j].position.x;
 	  BigReal p_j_y = p_1[j].position.y;
 	  BigReal p_j_z = p_1[j].position.z;
@@ -691,7 +1298,7 @@ void ComputeNonbondedUtil :: NAME
 	  r2 += t2 * t2;
 	  t2 = p_i_z - p_j_z;
 	  r2 += t2 * t2;
-	  
+
 	  if ( r2 <= groupplcutoff2 ) 
 	    goodglist[hu ++] = j; 
 	}

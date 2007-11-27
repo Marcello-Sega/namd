@@ -73,6 +73,11 @@ void ComputePatch::atomUpdate() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
     numAtoms = patch->getNumAtoms();
+
+    // DMK - Atom Separation (water vs. non-water)
+    #if NAMD_SeparateWaters != 0
+      numWaterAtoms = patch->getNumWaterAtoms();
+    #endif
 }
 
 void ComputePatch::doWork() {

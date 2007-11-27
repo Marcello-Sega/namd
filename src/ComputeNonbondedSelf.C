@@ -96,6 +96,13 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
     params.ff[1] = r->f[Results::nbond];
     params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
+
+    // DMK - Atom Separation (water vs. non-water)
+    #if NAMD_SeparateWaters != 0
+      params.numWaterAtoms[0] = numWaterAtoms;
+      params.numWaterAtoms[1] = numWaterAtoms;
+    #endif
+
     params.reduction = reductionData;
     params.pressureProfileReduction = pressureProfileData;
 

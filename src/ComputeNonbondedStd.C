@@ -8,6 +8,14 @@
    Common operations for ComputeNonbonded classes
 */
 
+// DMK - CHECK/DEBUG - Atom Separation (water vs. non-water)
+#include "common.h"
+#include "NamdTypes.h"
+#if NAMD_SeparateWaters != 0
+  #define DEFINE_CHECK_WATER_SEPARATION
+#endif
+
+
 #include "ComputeNonbondedInl.h"
 
 #define NBTYPE NBPAIR

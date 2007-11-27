@@ -45,6 +45,13 @@ public:
   Flags flags;
   CompAtomList positionList;
   CompAtomList avgPositionList;
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    int numWaterAtoms;  // Number of atoms in positionList (from start)
+	                //   that are part of water hydrogen groups.
+  #endif
+
   static void* pack(ProxyDataMsg *msg);
   static ProxyDataMsg* unpack(void *ptr);
 };
@@ -55,6 +62,12 @@ public:
   Flags flags;
   CompAtomList positionList;
   CompAtomList avgPositionList;
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    int numWaterAtoms;  // Number of atoms in positionList (from start)
+	                //   that are part of water hydrogen groups.
+  #endif
 
 #ifdef MEM_OPT_VERSION
   CompAtomExtList extInfoList;

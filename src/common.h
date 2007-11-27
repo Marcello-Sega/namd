@@ -136,7 +136,8 @@ int  Fclose(FILE *fout);
 //   HomePatches to separate the hydrogen groups in their
 //   HomePatch::atom lists (all water molecules first, in arbitrary
 //   order, followed by all non-waters, in arbitrary order).
-#define NAMD_SeparateWaters   0
+#define NAMD_SeparateWaters                0
+#define NAMD_ComputeNonbonded_SortAtoms    0
 
 
 #include "converse.h"

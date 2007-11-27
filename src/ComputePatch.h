@@ -35,6 +35,12 @@ public:
 
 protected :
   int numAtoms;
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    int numWaterAtoms;
+  #endif
+
 #ifdef MEM_OPT_VERSION
   virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r) = 0;
 #else

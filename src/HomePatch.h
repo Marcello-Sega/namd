@@ -140,12 +140,7 @@ private:
   #if NAMD_SeparateWaters != 0
     FullAtomList tempAtom;  // A temporary array used to sort waters
                             //   from non-waters in the atom array
-    int numWaterAtoms;  // Set numWaters to the number of water atoms at
-		        //   the lead of the atoms list.  If numWaters is
-		        //   set to -1, this should indicate that
-		        //   atoms has not been separated yet.
-
-    void separateAtoms();  // Function to separate the atoms currently in atoms.
+    void separateAtoms();   // Function to separate the atoms currently in atoms.
     void mergeAtomList(FullAtomList &al);  // Function to combine and separate
                                            //   the atoms in al with atoms.
   #endif

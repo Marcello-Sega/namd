@@ -95,8 +95,16 @@ void ComputePatchPair::atomUpdate() {
 
     // DebugM(4,"atomUpdate() - positionBox[0] is " << positionBox[0] << "\n");
     for (int i=0; i<2; i++) {
+
 	numAtoms[i] = patch[i]->getNumAtoms();
+
+        // DMK - Atom Separation (water vs. non-water)
+        #if NAMD_SeparateWaters != 0
+	  numWaterAtoms[i] = patch[i]->getNumWaterAtoms();
+        #endif
     }
+
+
 
     // Compute::atomUpdate();
 }

@@ -36,6 +36,11 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   localphs = 0;
   localphs = CmiCreatePersistent(PatchMap::Object()->node(patchID), 300000);
 #endif
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    numWaterAtoms = -1;
+  #endif
 }
 
 ProxyPatch::~ProxyPatch()
@@ -92,6 +97,12 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   delete msg;
   if ( numAtoms == -1 ) { // for new proxies since receiveAtoms is not called
     numAtoms = p.size();
+
+    // DMK - Atom Separation (water vs. non-water)
+    #if NAMD_SeparateWaters != 0
+      numWaterAtoms = msg->numWaterAtoms;
+    #endif
+
     positionsReady(1);
   } else {
     positionsReady(0);
@@ -114,6 +125,11 @@ void ProxyPatch::receiveAll(ProxyAllMsg *msg)
   p = msg->positionList;
   numAtoms = p.size();
   p_avg = msg->avgPositionList;
+
+  // DMK - Atom Separation (water vs. non-water)
+  #if NAMD_SeparateWaters != 0
+    numWaterAtoms = msg->numWaterAtoms;
+  #endif
 
 #ifdef MEM_OPT_VERSION
   pExt = msg->extInfoList;

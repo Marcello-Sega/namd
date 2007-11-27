@@ -30,7 +30,21 @@ PACK_MSG(ProxyAtomsMsg,
   PACK(patch);
   PACK_RESIZE(atomIDList);
 )
+
+
+// DMK - Atom Separation (water vs. non-water)
+#if NAMD_SeparateWaters != 0
   
+PACK_MSG(ProxyDataMsg,
+  PACK(patch);
+  PACK(flags);
+  PACK_RESIZE(positionList);
+  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
+  PACK(numWaterAtoms);
+)
+
+#else // NAMD_SeparateWaters == 0
+
 PACK_MSG(ProxyDataMsg,
   PACK(patch);
   PACK(flags);
@@ -38,6 +52,32 @@ PACK_MSG(ProxyDataMsg,
   if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
 )
 
+#endif
+
+
+// DMK - Atom Separation (water vs. non-water)
+#if NAMD_SeparateWaters != 0
+
+#ifdef MEM_OPT_VERSION
+PACK_MSG(ProxyAllMsg,
+  PACK(patch);
+  PACK(flags);
+  PACK_RESIZE(positionList);
+  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
+  PACK_RESIZE(extInfoList);
+  PACK(numWaterAtoms);
+)
+#else
+PACK_MSG(ProxyAllMsg,
+  PACK(patch);
+  PACK(flags);
+  PACK_RESIZE(positionList);
+  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
+  PACK(numWaterAtoms);
+)
+#endif
+
+#else // NAMD_SeparateWaters == 0
 
 #ifdef MEM_OPT_VERSION
 PACK_MSG(ProxyAllMsg,
@@ -55,6 +95,9 @@ PACK_MSG(ProxyAllMsg,
   if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
 )
 #endif
+
+#endif
+
 
 PACK_MSG(ProxySpanningTreeMsg,
   PACK(patch);
