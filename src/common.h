@@ -131,13 +131,27 @@ int  Fclose(FILE *fout);
 
 #define USE_BARRIER   (CYCLE_BARRIER || PME_BARRIER)
 
+
 // DMK - Atom Separation (water vs. non-water)
 //   Setting this define to a non-zero value will cause the
 //   HomePatches to separate the hydrogen groups in their
 //   HomePatch::atom lists (all water molecules first, in arbitrary
 //   order, followed by all non-waters, in arbitrary order).
-#define NAMD_SeparateWaters                0
-#define NAMD_ComputeNonbonded_SortAtoms    0
+#define NAMD_SeparateWaters    0
+
+// DMK - Atom Sort
+//   Setting this define to a non-zero value will cause the nonbonded compute
+//   objects (pairs, not selfs) to sort the atoms along a line connecting the
+//   center of masses of the two patches.  This is only done during timesteps
+//   where the pairlists are being generated.  As the pairlist is being
+//   generated, once an atom that is far enough away along the line is found,
+//   the remaining atoms are automatically skipped (avoiding a distance
+//   calculation/check for them).
+// NOTE: The "less branches" flag toggles between two versions of merge sort.
+//   When it is non-zero, a version that has fewer branches (but more integer
+//   math) is used.  This version may or may not be faster or some architectures.
+#define NAMD_ComputeNonbonded_SortAtoms                   0
+  #define NAMD_ComputeNonbonded_SortAtoms_LessBranches    1
 
 
 #include "converse.h"
