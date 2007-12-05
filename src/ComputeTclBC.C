@@ -12,6 +12,7 @@
 #include "Molecule.h"
 
 #ifdef NAMD_TCL
+#define USE_COMPAT_CONST
 #include <tcl.h>
 #endif
 #include "TclCommands.h"
@@ -60,10 +61,10 @@ ComputeTclBC::ComputeTclBC(ComputeID c)
   // run script to define calcforces, etc.
   if ( simParams->tclBCScript ) {
     int code = Tcl_Eval(interp,simParams->tclBCScript);
-    char *result = Tcl_GetStringResult(interp);
+    const char *result = Tcl_GetStringResult(interp);
     if (result && *result != 0) CkPrintf("TCL: %s\n",result);
     if (code != TCL_OK) {
-      char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+      const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
       NAMD_die(errorInfo);
     }
   } else NAMD_bug("tclBCScript pointer was NULL");
@@ -119,7 +120,7 @@ void ComputeTclBC::doWork() {
   sprintf(cmd,"calcforces %d %d %s",step,hasPatchZero,simParams->tclBCArgs);
   int code = Tcl_Eval(interp,cmd);
   if (code != TCL_OK) {
-    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
   if (n_atom != -2) {

@@ -15,6 +15,7 @@
 
 #ifdef NAMD_TCL
 
+#define USE_COMPAT_CONST
 #include <tcl.h>
 
 #define SIMPLE_TCL_OPT(string,result)       \

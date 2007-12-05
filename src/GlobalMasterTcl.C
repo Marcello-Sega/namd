@@ -15,6 +15,7 @@
 #include "GlobalMasterTcl.h"
 
 #ifdef NAMD_TCL
+#define USE_COMPAT_CONST
 #include <tcl.h>
 #endif
 #include "TclCommands.h"
@@ -505,12 +506,12 @@ void GlobalMasterTcl::initialize() {
     }
     else code = Tcl_EvalFile(interp,script->data);
     DebugM(1,"here\n");
-    char *result = Tcl_GetStringResult(interp);
+    const char *result = Tcl_GetStringResult(interp);
     DebugM(1,"here\n");
     if (*result != 0) CkPrintf("TCL: %s\n",result);
     DebugM(1,"here\n");
     if (code != TCL_OK) {
-      char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+      const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
       NAMD_die(errorInfo);
     }
   }
@@ -563,10 +564,10 @@ void GlobalMasterTcl::calculate() {
 
   char cmd[129];  int code;
   strcpy(cmd,"calcforces");  code = Tcl_Eval(interp,cmd);
-  char *result = Tcl_GetStringResult(interp);
+  const char *result = Tcl_GetStringResult(interp);
   if (*result != 0) CkPrintf("TCL: %s\n",result);
   if (code != TCL_OK) {
-    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
 #endif

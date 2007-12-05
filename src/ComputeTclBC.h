@@ -8,6 +8,7 @@
 #define COMPUTETCLBC_H
 
 #ifdef NAMD_TCL
+#define USE_COMPAT_CONST
 #include <tcl.h>
 #endif
 

@@ -12,6 +12,7 @@
 #define MEASURE_H
 
 #ifdef NAMD_TCL
+#define USE_COMPAT_CONST
 #include <tcl.h>
 
 class Measure {

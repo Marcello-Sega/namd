@@ -31,6 +31,7 @@
 #endif
 
 #ifdef NAMD_TCL
+#define USE_COMPAT_CONST
 #include <tcl.h>
 #endif
 
@@ -519,7 +520,7 @@ void ScriptTcl::doCallback(const char *labels, const char *data) {
   int rval = Tcl_Eval(interp,cmd);
   delete [] cmd;
   if (rval != TCL_OK) {
-    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
 }
@@ -836,10 +837,10 @@ void ScriptTcl::load(char *scriptFile) {
 
 #ifdef NAMD_TCL
   int code = Tcl_EvalFile(interp,scriptFile);
-  char *result = Tcl_GetStringResult(interp);
+  const char *result = Tcl_GetStringResult(interp);
   if (*result != 0) CkPrintf("TCL: %s\n",result);
   if (code != TCL_OK) {
-    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
 #else
@@ -852,10 +853,10 @@ void ScriptTcl::run(char *scriptFile) {
 
 #ifdef NAMD_TCL
   int code = Tcl_EvalFile(interp,scriptFile);
-  char *result = Tcl_GetStringResult(interp);
+  const char *result = Tcl_GetStringResult(interp);
   if (*result != 0) CkPrintf("TCL: %s\n",result);
   if (code != TCL_OK) {
-    char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
     NAMD_die(errorInfo);
   }
 

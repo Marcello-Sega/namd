@@ -9,6 +9,7 @@
 
 #ifdef NAMD_TCL
 
+#define USE_COMPAT_CONST
 #include <tcl.h>
 
 int proc_vecadd(ClientData, Tcl_Interp *interp, int argc, char *argv[]);
