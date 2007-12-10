@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/12 02:37:25 $
- * $Revision: 1.6 $
+ * $Date: 2007/12/10 22:06:35 $
+ * $Revision: 1.7 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -14,7 +14,7 @@
 
 #include "TorusLB.h"
 #include "ProxyMgr.h"
-#define EXPAND_INNER_BRICK 2
+#define SHRINK_INNER_BRICK 1
 
 TorusLB::TorusLB(computeInfo *cs, patchInfo *pas, processorInfo *pes, int ncs, 
 int npas, int npes) : RefineTorusLB(cs, pas, pes, ncs, npas, npes, 0)
@@ -117,15 +117,15 @@ void TorusLB::strategy() {
   brickDim(y1, y2, dimY, ym, yM);
   brickDim(z1, z2, dimZ, zm, zM);
 
-  // to expand the inner brick by some hops
+  // to shrink the inner brick by some hops
 #if 0
-  if(xm>=EXPAND_INNER_BRICK) xm=xm-EXPAND_INNER_BRICK; else xm=0;
-  if(ym>=EXPAND_INNER_BRICK) ym=ym-EXPAND_INNER_BRICK; else ym=0;
-  if(zm>=EXPAND_INNER_BRICK) zm=zm-EXPAND_INNER_BRICK; else zm=0;
+  xm=xm+SHRINK_INNER_BRICK;
+  ym=ym+SHRINK_INNER_BRICK;
+  zm=zm+SHRINK_INNER_BRICK;
 
-  xM=xM+EXPAND_INNER_BRICK;
-  yM=yM+EXPAND_INNER_BRICK;
-  zM=zM+EXPAND_INNER_BRICK;
+  xM=xM-SHRINK_INNER_BRICK;
+  yM=yM-SHRINK_INNER_BRICK;
+  zM=zM-SHRINK_INNER_BRICK;
 #endif
 
   // first go over the processors inside the brick and choose the least 
@@ -151,8 +151,36 @@ void TorusLB::strategy() {
   if(found == 0) {
     p = 0; minp = 0;
     for(int i=xM+1; i<xm+dimX; i++)
-      for(int j=yM+1; j<ym+dimY; j++)
-        for(int k=zM+1; k<zm+dimZ; k++)
+      for(int j=0; j<dimY; j++)
+	for(int k=0; k<dimZ; k++)
+        {
+          pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
+          p = &processors[pe];
+          if(c->load + p->load < minLoad) { 
+            minp = p;
+	    found = 1; break;
+          }
+        }
+  }
+
+  if(found == 0) {
+    for(int j=yM+1; j<ym+dimY; j++)
+      for(int i=xm; i<=xM; i++)
+	for(int k=0; k<dimZ; k++)
+        {
+          pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
+          p = &processors[pe];
+          if(c->load + p->load < minLoad) { 
+            minp = p;
+	    found = 1; break;
+          }
+        }
+  }
+
+  if(found == 0) {
+    for(int k=zM+1; k<zm+dimZ; k++)
+      for(int i=xm; i<=xM; i++)
+        for(int j=ym; j<=yM; j++)
         {
           pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
           p = &processors[pe];
@@ -189,8 +217,10 @@ void TorusLB::strategy() {
     }
   }
 
-  if(found == 0)
+  if(found == 0) {
+     CkPrintf("TorusLB: No receiver found average %f overload %f\n", averageLoad, overLoad);
      CkAbort("TorusLB: No receiver found\n");
+  }
 #endif
  
   } // end of computes for-loop
