@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/12 02:37:25 $
- * $Revision: 1.6 $
+ * $Date: 2007/12/10 21:59:57 $
+ * $Revision: 1.7 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -30,12 +30,12 @@ int npas, int npes, int flag) : Rebalancer(cs, pas, pes, ncs, npas, npes)
       createSpanningTree();
       incrSTLoad();
       for(int i=0; i<P; i++)
-        delete [] processors[i].proxyUsage; 
+<     	delete [] processors[i].proxyUsage;
       InitProxyUsage();
       binaryRefine();
       computeAverage();
       printLoads();
-      //createSpanningTree();
+      createSpanningTree();
     }
     }
 #endif
@@ -284,8 +284,8 @@ int RefineTorusLB::newRefine() {
         brickDim(z1, z2, dimZ, zm, zM);
 
         for(int i=xM+1; i<xm+dimX; i++)
-          for(int j=yM+1; j<ym+dimY; j++)
-	    for(int k=zM+1; k<zm+dimZ; k++)
+          for(int j=0; j<dimY; j++)
+	    for(int k=0; k<dimZ; k++)
 	    {
 	      pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
 	      p = &processors[pe];
@@ -296,8 +296,42 @@ int RefineTorusLB::newRefine() {
 	      }
 	    }
 
-	if(found==1) break;
+	if(found==1)
+	  break;
+	else {
+          for(int j=yM+1; j<ym+dimY; j++)
+	    for(int i=xm; i<=xM; i++)
+	      for(int k=0; k<dimZ; k++)
+	      {
+		pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
+		p = &processors[pe];
+		if(c->load + p->load < minLoad) {
+		  good.c = c;
+		  good.p = p;
+		  found = 1; break;
+		}
+	      }
+	}
  
+	if(found==1)
+	  break;
+	else {
+	  for(int k=zM+1; k<zm+dimZ; k++)
+	    for(int i=xm; i<=xM; i++)
+	      for(int j=ym; j<=yM; j++)
+	      {
+		pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
+		p = &processors[pe];
+		if(c->load + p->load < minLoad) {
+		  good.c = c;
+		  good.p = p;
+		  found = 1; break;
+		}
+	      }
+	}
+
+	if(found==1) break;
+
 	nextC.id++;
 	c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
       } 
