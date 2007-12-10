@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 21:37:53 $
- * $Revision: 1.75 $
+ * $Date: 2007/12/10 23:06:17 $
+ * $Revision: 1.76 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -18,6 +18,8 @@
 #include "PatchMap.h"
 
 #define ST_NODE_LOAD 0.005
+#define PROXY_LOAD              0.00001
+#define PROXY_CORRECTION        0
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
@@ -349,10 +351,24 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
 
    if (!p->proxies.find(patch1))   p->proxies.insert(patch1); 
-   if (!patch1->proxiesOn.find(p)) {patch1->proxiesOn.insert(p); numProxies++;}
+   if (!patch1->proxiesOn.find(p)) {
+    patch1->proxiesOn.insert(p); 
+    numProxies++;
+#if PROXY_CORRECTION
+    processors[p->Id].load += PROXY_LOAD;
+    processors[p->Id].backgroundLoad += PROXY_LOAD;
+#endif
+   }
 
    if (!p->proxies.find(patch2))   p->proxies.insert(patch2); 
-   if (!patch2->proxiesOn.find(p)) {patch2->proxiesOn.insert(p); numProxies++;}
+   if (!patch2->proxiesOn.find(p)) {
+    patch2->proxiesOn.insert(p);
+    numProxies++;
+#if PROXY_CORRECTION
+    processors[p->Id].load += PROXY_LOAD;
+    processors[p->Id].backgroundLoad += PROXY_LOAD;
+#endif
+   }
    
    // 4-29-98: Added the following code to keep track of how many proxies
    // on each processor are being used by a compute on that processor
@@ -417,6 +433,14 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       p->proxies.remove(patch1);
       patch1->proxiesOn.remove(p);
       numProxies--;
+#if PROXY_CORRECTION
+      processors[p->Id].load -= PROXY_LOAD;
+      processors[p->Id].backgroundLoad -= PROXY_LOAD;
+      if(processors[p->Id].backgroundLoad < 0) {
+        processors[p->Id].backgroundLoad = 0;
+        processors[p->Id].load += PROXY_LOAD;
+      }
+#endif
    }
    
    //if(p->proxyUsage[c->patch2] <= 0 && p->Id != patches[c->patch2].processor)
@@ -430,6 +454,14 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       p->proxies.remove(patch2);
       patch2->proxiesOn.remove(p);
       numProxies--;
+#if PROXY_CORRECTION
+      processors[p->Id].load -= PROXY_LOAD;
+      processors[p->Id].backgroundLoad -= PROXY_LOAD;
+      if(processors[p->Id].backgroundLoad < 0) {
+        processors[p->Id].backgroundLoad = 0;
+        processors[p->Id].load += PROXY_LOAD;
+      }
+#endif
    }
 }
 
