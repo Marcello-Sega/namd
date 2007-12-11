@@ -807,7 +807,14 @@ public:
 
   void build_excl_check_signatures();
 
-  void delEachAtomSigs(){      
+  void delEachAtomSigs(){    
+      //for NAMD-smp version, only one Molecule object is held
+      //on each node, therefore, only one deletion operation should
+      //be taken on a node, otherwise, there possibly would be some
+      //wierd memory problems. The same reason applies to other deletion
+      //operations inside the Molecule object.   
+      if(CmiMyRank()) return;
+
       delete [] eachAtomSig;
       delete [] eachAtomExclSig;
       eachAtomSig = NULL;
@@ -815,6 +822,8 @@ public:
   }
 
   void delChargeSpace(){
+      if(CmiMyRank()) return;
+
       delete [] atomChargePool;
       delete [] eachAtomCharge;
       atomChargePool = NULL;
@@ -822,6 +831,8 @@ public:
   }
   
   void delMassSpace(){
+      if(CmiMyRank()) return;
+
       delete [] atomMassPool;
       delete [] eachAtomMass;
       atomMassPool = NULL;
@@ -829,6 +840,8 @@ public:
   }
   
   void delClusterSigs() {
+      if(CmiMyRank()) return;      
+
       delete [] clusterSigs;
       clusterSigs = NULL;
   }

@@ -8070,6 +8070,8 @@ Bond *Molecule::get_bond(int bnum){
 #ifdef MEM_OPT_VERSION
 
 void Molecule::delOtherEachAtomStructs(){
+    if(CmiMyRank()) return;
+
     delete [] fixedAtomFlags;
     fixedAtomFlags = NULL;
 
