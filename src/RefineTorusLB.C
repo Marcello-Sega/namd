@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/12/10 21:59:57 $
- * $Revision: 1.7 $
+ * $Date: 2007/12/13 04:57:02 $
+ * $Revision: 1.8 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -201,8 +201,8 @@ int RefineTorusLB::newRefine() {
 #if USE_TOPOMAP
     // if this fails, look at the inner brick
     int found = 0;
-    int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
-    int dimX, dimY, dimZ;
+    int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
+    int dimNX, dimNY, dimNZ, dimNT;
     double minLoad;
 
     good.c = 0; good.p = 0;
@@ -214,15 +214,16 @@ int RefineTorusLB::newRefine() {
       p1 = patches[c->patch1].processor;
       p2 = patches[c->patch2].processor;
 
-      tmgr.rankToCoordinates(p1, x1, y1, z1);
-      tmgr.rankToCoordinates(p2, x2, y2, z2);
-      dimX = tmgr.getDimX();
-      dimY = tmgr.getDimY();
-      dimZ = tmgr.getDimZ();
+      tmgr.rankToCoordinates(p1, x1, y1, z1, t1);
+      tmgr.rankToCoordinates(p2, x2, y2, z2, t2);
+      dimNX = tmgr.getDimNX();
+      dimNY = tmgr.getDimNY();
+      dimNZ = tmgr.getDimNZ();
+      dimNT = tmgr.getDimNT();
 
-      brickDim(x1, x2, dimX, xm, xM);
-      brickDim(y1, y2, dimY, ym, yM);
-      brickDim(z1, z2, dimZ, zm, zM);
+      brickDim(x1, x2, dimNX, xm, xM);
+      brickDim(y1, y2, dimNY, ym, yM);
+      brickDim(z1, z2, dimNZ, zm, zM);
 
       // to expand the inner brick by some hops
 #if 0
@@ -239,15 +240,16 @@ int RefineTorusLB::newRefine() {
       for(int i=xm; i<=xM; i++)
         for(int j=ym; j<=yM; j++)
 	  for(int k=zm; k<=zM; k++)
-	  {
-	    pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
-	    p = &processors[pe];
-	    if(c->load + p->load < minLoad) {
-              minLoad = c->load + p->load;
-	      good.c = c;
-	      good.p = p;
+	    for(int l=0; l<dimNT; l++)
+	    {
+	      pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
+	      p = &processors[pe];
+	      if(c->load + p->load < minLoad) {
+                minLoad = c->load + p->load;
+	        good.c = c;
+	        good.p = p;
+	      }
 	    }
-	  }
       nextC.id++;
       c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
     }
@@ -273,61 +275,65 @@ int RefineTorusLB::newRefine() {
         p1 = patches[c->patch1].processor;
         p2 = patches[c->patch2].processor;
 
-        tmgr.rankToCoordinates(p1, x1, y1, z1);
-        tmgr.rankToCoordinates(p2, x2, y2, z2);
-        dimX = tmgr.getDimX();
-        dimY = tmgr.getDimY();
-        dimZ = tmgr.getDimZ();
+        tmgr.rankToCoordinates(p1, x1, y1, z1, t1);
+        tmgr.rankToCoordinates(p2, x2, y2, z2, t2);
+        dimNX = tmgr.getDimNX();
+        dimNY = tmgr.getDimNY();
+        dimNZ = tmgr.getDimNZ();
+        dimNT = tmgr.getDimNT();
 
-        brickDim(x1, x2, dimX, xm, xM);
-        brickDim(y1, y2, dimY, ym, yM);
-        brickDim(z1, z2, dimZ, zm, zM);
+        brickDim(x1, x2, dimNX, xm, xM);
+        brickDim(y1, y2, dimNY, ym, yM);
+        brickDim(z1, z2, dimNZ, zm, zM);
 
-        for(int i=xM+1; i<xm+dimX; i++)
-          for(int j=0; j<dimY; j++)
-	    for(int k=0; k<dimZ; k++)
-	    {
-	      pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
-	      p = &processors[pe];
-	      if(c->load + p->load < minLoad) {
-	        good.c = c;
-	        good.p = p;
-		found = 1; break;
+        for(int i=xM+1; i<xm+dimNX; i++)
+          for(int j=0; j<dimNY; j++)
+	    for(int k=0; k<dimNZ; k++)
+	      for(int l=0; l<dimNT; l++)
+	      {
+	        pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
+	        p = &processors[pe];
+	        if(c->load + p->load < minLoad) {
+	          good.c = c;
+	          good.p = p;
+		  found = 1; break;
+	        }
 	      }
-	    }
 
 	if(found==1)
 	  break;
 	else {
-          for(int j=yM+1; j<ym+dimY; j++)
+          for(int j=yM+1; j<ym+dimNY; j++)
 	    for(int i=xm; i<=xM; i++)
-	      for(int k=0; k<dimZ; k++)
-	      {
-		pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
-		p = &processors[pe];
-		if(c->load + p->load < minLoad) {
-		  good.c = c;
-		  good.p = p;
-		  found = 1; break;
-		}
-	      }
+	      for(int k=0; k<dimNZ; k++)
+	        for(int l=0; l<dimNT; l++)
+	        {
+		  pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
+		  p = &processors[pe];
+		  if(c->load + p->load < minLoad) {
+		    good.c = c;
+		    good.p = p;
+		    found = 1; break;
+		  }
+	        }
 	}
  
 	if(found==1)
 	  break;
 	else {
-	  for(int k=zM+1; k<zm+dimZ; k++)
+	  for(int k=zM+1; k<zm+dimNZ; k++)
 	    for(int i=xm; i<=xM; i++)
 	      for(int j=ym; j<=yM; j++)
-	      {
-		pe = tmgr.coordinatesToRank(i%dimX, j%dimY, k%dimZ);
-		p = &processors[pe];
-		if(c->load + p->load < minLoad) {
-		  good.c = c;
-		  good.p = p;
-		  found = 1; break;
-		}
-	      }
+	        for(int l=0; l<dimNT; l++)
+	        {
+		  pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ);
+		  p = &processors[pe];
+		  if(c->load + p->load < minLoad) {
+		    good.c = c;
+		    good.p = p;
+		    found = 1; break;
+		  }
+	        }
 	}
 
 	if(found==1) break;
@@ -430,27 +436,28 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
 
 #if USE_TOPOMAP
   int x, y, z;
-  int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM;
-  int dimX, dimY, dimZ;
+  int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
+  int dimNX, dimNY, dimNZ, dimNT;
   double minLoad;
   p1 = patches[c->patch1].processor;
   p2 = patches[c->patch2].processor;
 
-  tmgr.rankToCoordinates(p1, x1, y1, z1);
-  tmgr.rankToCoordinates(p2, x2, y2, z2);
-  dimX = tmgr.getDimX();
-  dimY = tmgr.getDimY();
-  dimZ = tmgr.getDimZ();
+  tmgr.rankToCoordinates(p1, x1, y1, z1, t1);
+  tmgr.rankToCoordinates(p2, x2, y2, z2, t2);
+  dimNX = tmgr.getDimNX();
+  dimNY = tmgr.getDimNY();
+  dimNZ = tmgr.getDimNZ();
+  dimNT = tmgr.getDimNT();
 
-  brickDim(x1, x2, dimX, xm, xM);
-  brickDim(y1, y2, dimY, ym, yM);
-  brickDim(z1, z2, dimZ, zm, zM);
+  brickDim(x1, x2, dimNX, xm, xM);
+  brickDim(y1, y2, dimNY, ym, yM);
+  brickDim(z1, z2, dimNZ, zm, zM);
 #endif
 
   if(p->load + c->load < overLoad * averageLoad) {
 #if USE_TOPOMAP
-    tmgr.rankToCoordinates(p->Id, x, y, z);
-    int wB = withinBrick(x, y, z, xm, xM, dimX, ym, yM, dimY, zm, zM, dimZ);
+    tmgr.rankToCoordinates(p->Id, x, y, z, t);
+    int wB = withinBrick(x, y, z, xm, xM, dimNX, ym, yM, dimNY, zm, zM, dimNZ);
     if(wB) {
 #endif
       pcpair* &newp = bestPe[index];
