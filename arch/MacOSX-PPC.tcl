@@ -2,6 +2,6 @@
 TCLDIR=/Projects/namd2/tcl/macosx-ppc
 TCLINCL=-I$(TCLDIR)/include -I$(HOME)/tcl/include
 TCLLIB=-L$(TCLDIR)/lib -L$(HOME)/tcl/lib -lnamdtcl8.3
-TCLFLAGS=-DNAMD_TCL -DUSE_NON_CONST
+TCLFLAGS=-DNAMD_TCL
 TCL=$(TCLINCL) $(TCLFLAGS)
 
