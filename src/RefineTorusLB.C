@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/12/13 04:57:02 $
- * $Revision: 1.8 $
+ * $Date: 2007/12/20 16:02:20 $
+ * $Revision: 1.9 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -435,7 +435,7 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
     index--; 
 
 #if USE_TOPOMAP
-  int x, y, z;
+  int x, y, z, t;
   int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
   int dimNX, dimNY, dimNZ, dimNT;
   double minLoad;
