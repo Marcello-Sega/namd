@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/12/13 04:57:02 $
- * $Revision: 1.8 $
+ * $Date: 2007/12/28 23:27:58 $
+ * $Revision: 1.9 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -53,6 +53,7 @@ void TorusLB::strategy() {
   for(int j=0; j<6; j++) {
     bestPe[j] = 0;
     goodPe[j] = 0;
+    badPe[j] = 0;
   }
 
   // Look at the processors which have the compute's patches first
@@ -195,11 +196,13 @@ void TorusLB::strategy() {
             }
           }
   }
+
   
-  if(found == 0)
-    CkAbort("TorusLB: No receiver found\n");
-  else  
+  if(found == 1) {
     assign(c, minp);
+    continue;
+  }
+
 #else
   int found = 0;
   if(found == 0) {
@@ -216,6 +219,21 @@ void TorusLB::strategy() {
     || (p = bestPe[1])
     || (p = bestPe[2])
     || (p = bestPe[0])) {
+      assign(c, p);
+      found = 1;
+      continue;
+    }
+  }
+#endif
+
+  if(found == 0) {
+    p = 0;
+    if((p = badPe[3])
+    || (p = badPe[4])
+    || (p = badPe[5])
+    || (p = badPe[1])
+    || (p = badPe[2])
+    || (p = badPe[0])) {
       assign(c, p);
       found = 1;
       continue;
@@ -288,6 +306,11 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
         newp = p;
     }
 #endif
+  }
+  else {
+    processorInfo* &newp = badPe[index];
+    if (!(newp) || p->load < newp->load )
+      newp = p;
   }
 }
 
