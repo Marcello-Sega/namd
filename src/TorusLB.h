@@ -16,6 +16,7 @@ class TorusLB : public RefineTorusLB
   private:
     processorInfo *bestPe[6];
     processorInfo *goodPe[6];
+    processorInfo *badPe[6];
 
     void strategy();
     void selectPes(processorInfo *p, computeInfo *c);
