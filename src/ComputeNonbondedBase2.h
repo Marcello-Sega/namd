@@ -87,6 +87,8 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal kqq = kq_i * p_j->charge;
 
       FEP(
+        const BigReal lambda_1 = lambda_table_i[2*p_j->partition];
+        const BigReal lambda_2 = lambda_table_i[2*p_j->partition+1];
         const BigReal lambda_vdw_1 = lambda_vdw_table_i[2*p_j->partition];
         const BigReal lambda_vdw_2 = lambda_vdw_table_i[2*p_j->partition+1];
         const BigReal lambda_elec_1 = lambda_elec_table_i[2*p_j->partition];
@@ -330,8 +332,9 @@ NORMAL( MODIFIED( foo bar ) )
       )
           
       FEP(
-        fullElectEnergy   -= lambda_elec_1 * slow_val;
-        fullElectEnergy_s -= lambda_elec_2 * slow_val; 
+        // PME is not scaled, so we use "lambda", not lambda_elec
+        fullElectEnergy   -= lambda_1 * slow_val;
+        fullElectEnergy_s -= lambda_2 * slow_val; 
       )
       ) // ENERGY
 
@@ -357,8 +360,9 @@ NORMAL( MODIFIED( foo bar ) )
         BigReal fullforce_r = slow_dir LAM(* lambda_pair);
       )
       FEP ( 
+        // PME is not scaled, so we use "lambda", not lambda_elec
         register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
-        BigReal fullforce_r = lambda_elec_1 * slow_dir;
+        BigReal fullforce_r = lambda_1 * slow_dir;
           
         FAST( NOSHORT(
           const BigReal switchmul2 = (r2 > switchdist2)? \
