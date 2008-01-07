@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/12/28 23:27:58 $
- * $Revision: 1.9 $
+ * $Date: 2008/01/07 22:15:20 $
+ * $Revision: 1.10 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -244,7 +244,6 @@ void TorusLB::strategy() {
      CkPrintf("TorusLB: No receiver found average %f overload %f\n", averageLoad, overLoad);
      CkAbort("TorusLB: No receiver found\n");
   }
-#endif
  
   } // end of computes for-loop
 
