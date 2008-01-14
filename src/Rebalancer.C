@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2007/12/10 23:06:17 $
- * $Revision: 1.76 $
+ * $Date: 2008/01/14 19:30:41 $
+ * $Revision: 1.77 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -16,10 +16,6 @@
 #include "Rebalancer.h"
 #include "ProxyMgr.h"
 #include "PatchMap.h"
-
-#define ST_NODE_LOAD 0.005
-#define PROXY_LOAD              0.00001
-#define PROXY_CORRECTION        0
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
@@ -39,6 +35,8 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    computeBgSelfHeap = NULL;
    overLoad = 0.;
    numPesAvailable = 0;
+   firstAssignInRefine = 0;
+
    int i;
    for (i=0; i<P; i++)
    {
@@ -338,11 +336,6 @@ void Rebalancer::assign(computeInfo *c, int processor)
 
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
-#ifdef LDB_VERBOSE
-   int nPatches, nProxies, badForComm;
-   numAvailable(c,p,&nPatches,&nProxies,&badForComm);
-#endif
-
    c->processor = p->Id;
    p->computeSet.insert((InfoRecord *) c);
    p->computeLoad += c->load;
@@ -352,21 +345,25 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
 
    if (!p->proxies.find(patch1))   p->proxies.insert(patch1); 
    if (!patch1->proxiesOn.find(p)) {
-    patch1->proxiesOn.insert(p); 
-    numProxies++;
+     patch1->proxiesOn.insert(p); 
+     numProxies++;
 #if PROXY_CORRECTION
-    processors[p->Id].load += PROXY_LOAD;
-    processors[p->Id].backgroundLoad += PROXY_LOAD;
+     if(firstAssignInRefine) {
+       processors[p->Id].load += PROXY_LOAD;
+       processors[p->Id].backgroundLoad += PROXY_LOAD;
+     }
 #endif
    }
 
    if (!p->proxies.find(patch2))   p->proxies.insert(patch2); 
    if (!patch2->proxiesOn.find(p)) {
-    patch2->proxiesOn.insert(p);
-    numProxies++;
+     patch2->proxiesOn.insert(p);
+     numProxies++;
 #if PROXY_CORRECTION
-    processors[p->Id].load += PROXY_LOAD;
-    processors[p->Id].backgroundLoad += PROXY_LOAD;
+     if(firstAssignInRefine) {
+       processors[p->Id].load += PROXY_LOAD;
+       processors[p->Id].backgroundLoad += PROXY_LOAD;
+     }
 #endif
    }
    
@@ -384,7 +381,7 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    // << "\tproxyUsage[" << c->patch2 << "]: " << n2 << " --> " << n2+1 << "\n"
    // << std::endl;
 
-#ifdef LDB_VERBOSE
+#if LDB_DEBUG
    iout << "Assign " << c->Id << " patches " << c->patch1 << " " << c->patch2
         << " load " << c->load << " to " << p->Id << " new load "
         << p->load << " background " << p->backgroundLoad
@@ -434,11 +431,13 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       patch1->proxiesOn.remove(p);
       numProxies--;
 #if PROXY_CORRECTION
-      processors[p->Id].load -= PROXY_LOAD;
-      processors[p->Id].backgroundLoad -= PROXY_LOAD;
-      if(processors[p->Id].backgroundLoad < 0) {
-        processors[p->Id].backgroundLoad = 0;
-        processors[p->Id].load += PROXY_LOAD;
+      if(firstAssignInRefine) {
+	processors[p->Id].load -= PROXY_LOAD;
+	processors[p->Id].backgroundLoad -= PROXY_LOAD;
+	if(processors[p->Id].backgroundLoad < 0) {
+	  processors[p->Id].backgroundLoad = 0;
+	  processors[p->Id].load += PROXY_LOAD;
+	}
       }
 #endif
    }
@@ -455,11 +454,13 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       patch2->proxiesOn.remove(p);
       numProxies--;
 #if PROXY_CORRECTION
-      processors[p->Id].load -= PROXY_LOAD;
-      processors[p->Id].backgroundLoad -= PROXY_LOAD;
-      if(processors[p->Id].backgroundLoad < 0) {
-        processors[p->Id].backgroundLoad = 0;
-        processors[p->Id].load += PROXY_LOAD;
+      if(firstAssignInRefine) {
+	processors[p->Id].load -= PROXY_LOAD;
+	processors[p->Id].backgroundLoad -= PROXY_LOAD;
+	if(processors[p->Id].backgroundLoad < 0) {
+	  processors[p->Id].backgroundLoad = 0;
+	  processors[p->Id].load += PROXY_LOAD;
+	}
       }
 #endif
    }
@@ -800,60 +801,15 @@ void Rebalancer::printLoads()
 
    int i, total = 0, numBytes = 0;
    double max;
-
-#ifdef LDB_VERBOSE
-   iout << iINFO << "Proc  Total  Background  Compute\n" << endi;
-#endif
-
-// Something evil in these print statements.  -JCP
-#if 0
-   iout << iINFO << "\n" << iINFO;
-   for(i=0; i<3; i++) iout << "     TOTAL  BACKGRD COMPUTE | ";
-   iout << "\n" << iINFO;
-   for(i=0; i<3; i++) iout << " P#  LOAD    LOAD    LOAD   | ";
-   iout << "\n" << iINFO;
-   for(i=0; i<3; i++) iout << "--- ------- ------- ------- | ";
-   iout << "\n" << endi;
-#endif
-
-#if 0
-   iout.setf(ios::right | ios::fixed);
-   iout.precision(3);
-#endif
    int maxproxies = 0;
    int maxpatchproxies = 0;
-   for (i=0; i<P; i++)
-   {
-#ifdef LDB_VERBOSE
-   iout << iINFO << i << " "
-           << processors[i].load << " "
-           << processors[i].backgroundLoad << " "
-           << processors[i].computeLoad << "\n" << endi;
-#endif
-#if 0
-      if (i == 0 ) iout << iINFO;
-      if (i != 0 && i % 3 == 0) iout << "\n" << endi << iINFO;
-      iout << setw(3) << i << " "
-           << setw(7) << processors[i].load << " "
-           << setw(7) << processors[i].backgroundLoad << " "
-           << setw(7) << processors[i].computeLoad << " | ";
+   double avgBgLoad =0.0;
 
-      // iout << iINFO << "# Messages received: "
-      //	     << processors[i].proxies->numElements() - 
-      //         processors[i].patchSet->numElements() 
-      //	     << std::endl << endi;
-      // iout << iINFO << "load on "<< i << " is :" << processors[i].load 
-      //      << "[ " << processors[i].backgroundLoad << "," 
-      //	     << processors[i].computeLoad << "]. ";
-      // iout << iINFO << "# Messages received: " 
-      //      << processors[i].proxies->numElements() - 
-      //         processors[i].patchSet->numElements();
-#endif
-
+   for (i=0; i<P; i++) {
       int nproxies = processors[i].proxies.numElements() - 
 			processors[i].patchSet.numElements();
       if ( nproxies > maxproxies ) maxproxies = nproxies;
-
+      avgBgLoad += processors[i].backgroundLoad;
       Iterator p;
       int count = 0;
     
@@ -868,34 +824,17 @@ void Rebalancer::printLoads()
          patch = (patchInfo *)processors[i].patchSet.next(&p);
       }
       total += count;
-
-      // iout << iINFO << " # Messages sent: " << count << "\n" << endi;
    }
 
+   avgBgLoad /= P;
    computeAverage();
    max = computeMax();
 
-#if 0
-   // iout << iINFO << "------------------------------------------------------------\n" << endi; 
-   iout << iINFO << "          LOAD SUMMARY FOR STRATEGY \"" << strategyName << "\"\n" << endi;
-   // iout << iINFO << "Processors = " << setw(5) << P << "\t"
-   //      << "  Overload = " ; setw(7); iout << overLoad << "\n";
-   iout << iINFO << "Patches    = " << setw(5) << numPatches << "\t"
-        << "  Avg load = " ; setw(7); iout << averageLoad << "\n";
-   iout << iINFO << "Computes   = " << setw(5) << numComputes << "\t"
-        << "  Max load = " ; setw(7); iout << max << "\n";
-   iout << iINFO << "Messages   = " << setw(5) << total << "\t"
-        << "  Max msgs = " << maxproxies << ", " << maxpatchproxies << "\n";
-   // iout << iINFO << "------------------------------------------------------------\n" << endi; 
-   iout << endi;
-   iout.unsetf(ios::right);
-#else
-   iout << "Load Balancing: Time " << CmiWallTimer() << " Load: Average " << averageLoad << " Max " << max
-     << "  MSGS: TOTAL " << total
-     << " MAXC " << maxproxies << " MAXP " << maxpatchproxies
-     << "  " << strategyName << "\n" << endi;
+   iout << "LDB: TIME " << CmiWallTimer() << " LOAD: AVG " << averageLoad 
+     << " MAX " << max << "  PROXIES: TOTAL " << total << " MAXPE " << 
+     maxproxies << " MAXPATCH " << maxpatchproxies << " " << strategyName 
+     << " " << avgBgLoad << "\n" << endi;
    fflush(stdout);
-#endif
 
 }
 

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/12/20 16:02:20 $
- * $Revision: 1.9 $
+ * $Date: 2008/01/14 19:30:41 $
+ * $Revision: 1.10 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -45,8 +45,10 @@ int npas, int npes, int flag) : Rebalancer(cs, pas, pes, ncs, npas, npes)
 RefineTorusLB::~RefineTorusLB() { }
 
 void RefineTorusLB::strategy() {
+  firstAssignInRefine = 0;
   for(int i=0; i<numComputes; i++)
     assign((computeInfo *) &(computes[i]), (processorInfo *) &(processors[computes[i].oldProcessor]));
+  firstAssignInRefine = 1;
 
   binaryRefine();
   

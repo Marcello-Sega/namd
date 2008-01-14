@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
  * $Author: bhatele $
- * $Date: 2007/11/01 21:37:53 $
- * $Revision: 1.28 $
+ * $Date: 2008/01/14 19:30:41 $
+ * $Revision: 1.29 $
  *****************************************************************************/
 
 /** \file Rebalancer.h
@@ -32,8 +32,11 @@
 #include "ProxyMgr.decl.h"
 #include "ProxyMgr.h"
 
-#define LDB_DEBUG	0	// for verbose LDB output
-#define USE_NEW_LDBS	0	// to try TorusLB and RefineTorusLB
+#define LDB_DEBUG		0	// for verbose LDB output
+#define USE_NEW_LDBS		0	// to try TorusLB and RefineTorusLB
+#define PROXY_CORRECTION        0
+#define ST_NODE_LOAD 		0.005
+#define PROXY_LOAD              0.0003
 
 #include "ckhashtable.h"
 
@@ -114,18 +117,15 @@ public:
     void reset () { p = 0; c = 0; }
   };
 
-private:
-  int bytesPerAtom;
-  
-  typedef pcpair pcgrid[3][3][2];
-
-  void refine_togrid(pcgrid &grid, double thresholdLoad,
-                        processorInfo *p, computeInfo *c);
-
-  ProxyUsage  proxyUsage;
-
+  Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
+             processorInfo *processorArray,
+             int nComps, int nPatches, int nPes);
+  ~Rebalancer();
 
 protected: 
+  int bytesPerAtom;
+  typedef pcpair pcgrid[3][3][2];
+  ProxyUsage  proxyUsage;
   const char *strategyName;
   computeInfo *computes;
   patchInfo *patches;
@@ -141,10 +141,16 @@ protected:
   int numProxies;
   int numPesAvailable;
   double averageLoad;
+  int firstAssignInRefine;
+#if USE_TOPOMAP
+  TopoManager tmgr;
+#endif
+
   int isAvailableOn(patchInfo *patch, processorInfo *p);
   void numAvailable(computeInfo *c, processorInfo *p,
-           int *nPatches, int *nProxies, int *isBadForCommunication);
-
+	      int *nPatches, int *nProxies, int *isBadForCommunication);
+  void refine_togrid(pcgrid &grid, double thresholdLoad,
+	      processorInfo *p, computeInfo *c);
   void strategy();
   void makeHeaps();
   void makeTwoHeaps();
@@ -163,19 +169,11 @@ protected:
   void createSpanningTree();
   void brickDim(int a, int b, int dim, int &min, int &max);
   int withinBrick(int x, int y, int z, int xm, int xM, int dimX, 
-		  int ym, int yM, int dimY, int zm, int zM, int dimZ);
+	      int ym, int yM, int dimY, int zm, int zM, int dimZ);
   void decrSTLoad();
   void incrSTLoad();
   void InitProxyUsage();
-#if USE_TOPOMAP
-  TopoManager tmgr;
-#endif
 
-public:
-  Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
-             processorInfo *processorArray,
-             int nComps, int nPatches, int nPes);
-  ~Rebalancer();
 };
 
 #endif
