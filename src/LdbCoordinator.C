@@ -217,12 +217,10 @@ void LdbCoordinator::createLoadBalancer()
 {
   if (CkMyPe()==0) CkPrintf("Measuring processor speeds...");
   const SimParameters *simParams = Node::Object()->simParameters;
-  if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
+  /*if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
     CreateNamdNborLB();
-  else {
-    //   CreateCentralLB();
+  else {*/
     CreateNamdCentLB();
-  }
   if (CkMyPe()==0) CkPrintf(" Done.\n");
 }
 
@@ -429,8 +427,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     static int specialTracing = 0; // XXX static variables are unsafe for SMP
     if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
     if (specialTracing) {
-      if (ldbCycleNum == 4) traceBegin();
-      if (ldbCycleNum == 8) traceEnd();
+      if (ldbCycleNum == 10) traceBegin();
+      if (ldbCycleNum == 18) traceEnd();
     }
   }
 #endif

@@ -48,12 +48,11 @@ typedef int  MTSChoices;
 
 //  The following definitions are used to distinguish among load
 //  balancing strategies
-#define LDBSTRAT_NONE    0
-#define LDBSTRAT_REFINEONLY 1
-#define LDBSTRAT_ALG7 2
-#define LDBSTRAT_ALGORB 3
-#define LDBSTRAT_ALGNBOR 4
-#define LDBSTRAT_OTHER  99
+#define LDBSTRAT_NONE		0
+#define LDBSTRAT_REFINEONLY	1
+#define LDBSTRAT_ALG7		2
+#define LDBSTRAT_NEW		3
+#define LDBSTRAT_OTHER		99
 
 // The following definitions are used to distinguish between patch-splitting
 // strategies

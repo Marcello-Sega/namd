@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2007/12/10 23:04:48 $
- * $Revision: 1.82 $
+ * $Date: 2008/01/17 23:21:58 $
+ * $Revision: 1.83 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -104,67 +104,25 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 #endif
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
-#if USE_NEW_LDBS
-    RefineTorusLB(computeArray, patchArray, processorArray,
-                  nMoveableComputes, numPatches, numProcessors, 1);
-#else
     RefineOnly(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors);
-#endif
   } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
-#if USE_NEW_LDBS
-    TorusLB(computeArray, patchArray, processorArray,
-                  nMoveableComputes, numPatches, numProcessors);
-#else
     Alg7(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors);
-#endif
-  } else if (simParams->ldbStrategy == LDBSTRAT_ALGORB) {
-    if (step() == 1) {
-      // iout << iINFO << "Load balance cycle " << step()
-      //   << " using RecBisection\n" << endi;
-      AlgRecBisection(computeArray,patchArray,processorArray,
-                  nMoveableComputes, numPatches, numProcessors);
-    } else {
-      // iout << iINFO << "Load balance cycle " << step()
-      //   << " using RefineOnly\n" << endi;
-#if USE_NEW_LDBS
-      RefineTorusLB(computeArray,patchArray,processorArray,
-                  nMoveableComputes, numPatches, numProcessors, 1);
-#else
-      RefineOnly(computeArray,patchArray,processorArray,
-                  nMoveableComputes, numPatches, numProcessors);
-#endif
-    }
-  } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
-    // if (step() == 0) {
-    if (step() < 2) {
-      // iout << iINFO << "Load balance cycle " << step()
-      //   << " using Alg7\n" << endi;
-#if USE_NEW_LDBS
+  } else if (simParams->ldbStrategy == LDBSTRAT_NEW) {
+    if (step() < 2)
       TorusLB(computeArray, patchArray, processorArray,
 	          nMoveableComputes, numPatches, numProcessors);
-#else
-      Alg7(computeArray, patchArray, processorArray,
-	          nMoveableComputes, numPatches, numProcessors);
-#endif
-    } else {
-      // iout << iINFO << "Load balance cycle " << step()
-      //   << " using RefineOnly\n" << endi;
-      // To save the data to a file, uncomment the following lines -RKB
-      //      if (step() == 1) {
-      //	iout << iINFO << "Dumping data\n" << endi;
-      //	dumpDataASCII("refinedata", numProcessors, numPatches,
-      //		      nMoveableComputes);
-      //      }
-#if USE_NEW_LDBS
+    else
       RefineTorusLB(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors, 1);
-#else
+  } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
+    if (step() < 2)
+      Alg7(computeArray, patchArray, processorArray,
+	          nMoveableComputes, numPatches, numProcessors);
+    else
       RefineOnly(computeArray, patchArray, processorArray, 
                   nMoveableComputes, numPatches, numProcessors);
-#endif
-    }
   }
 
 #if LDB_DEBUG && USE_TOPOMAP
