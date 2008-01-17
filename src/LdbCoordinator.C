@@ -427,8 +427,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     static int specialTracing = 0; // XXX static variables are unsafe for SMP
     if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
     if (specialTracing) {
-      if (ldbCycleNum == 10) traceBegin();
-      if (ldbCycleNum == 18) traceEnd();
+      if (ldbCycleNum == 4) traceBegin();
+      if (ldbCycleNum == 8) traceEnd();
     }
   }
 #endif

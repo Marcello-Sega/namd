@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
  * $Author: bhatele $
- * $Date: 2008/01/14 19:30:41 $
- * $Revision: 1.29 $
+ * $Date: 2008/01/17 23:30:10 $
+ * $Revision: 1.30 $
  *****************************************************************************/
 
 /** \file Rebalancer.h
@@ -33,10 +33,11 @@
 #include "ProxyMgr.h"
 
 #define LDB_DEBUG		0	// for verbose LDB output
-#define USE_NEW_LDBS		0	// to try TorusLB and RefineTorusLB
 #define PROXY_CORRECTION        0
+#define COMPUTE_CORRECTION	0
 #define ST_NODE_LOAD 		0.005
-#define PROXY_LOAD              0.0003
+#define PROXY_LOAD              0.0004
+#define COMPUTE_LOAD            0.0001
 
 #include "ckhashtable.h"
 

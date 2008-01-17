@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2008/01/14 19:30:41 $
- * $Revision: 1.77 $
+ * $Date: 2008/01/17 23:30:09 $
+ * $Revision: 1.78 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -338,7 +338,13 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
    c->processor = p->Id;
    p->computeSet.insert((InfoRecord *) c);
-   p->computeLoad += c->load;
+#if COMPUTE_CORRECTION
+   if(firstAssignInRefine)
+     p->computeLoad += c->load + COMPUTE_LOAD;
+   else
+#endif
+     p->computeLoad += c->load;
+     
    p->load = p->computeLoad + p->backgroundLoad;
    patchInfo* patch1 = (patchInfo *) &(patches[c->patch1]);
    patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
