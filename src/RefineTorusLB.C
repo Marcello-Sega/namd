@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/01/14 19:30:41 $
- * $Revision: 1.10 $
+ * $Date: 2008/01/20 21:07:53 $
+ * $Revision: 1.11 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -29,8 +29,8 @@ int npas, int npes, int flag) : Rebalancer(cs, pas, pes, ncs, npas, npes)
       computeAverage();
       createSpanningTree();
       incrSTLoad();
-      for(int i=0; i<P; i++)
-<     	delete [] processors[i].proxyUsage;
+      // for(int i=0; i<P; i++)
+      //   delete [] processors[i].proxyUsage;
       InitProxyUsage();
       binaryRefine();
       computeAverage();
