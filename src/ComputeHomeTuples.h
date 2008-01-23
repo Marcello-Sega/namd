@@ -337,16 +337,18 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         ap->f = ap->r->f[Results::normal];
       } 
     
+      BigReal reductionData[T::reductionDataSize];
+      int tupleCount = 0;
+      int numAtomTypes = T::pressureProfileAtomTypes;
+      int numAtomTypePairs = numAtomTypes*numAtomTypes;
+
+      if ( ! Node::Object()->simParameters->commOnly ) {
       if ( doLoadTuples ) {
         loadTuples();
         doLoadTuples = false;
       }
     
-      BigReal reductionData[T::reductionDataSize];
       for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
-      int tupleCount = 0;
-      int numAtomTypes = T::pressureProfileAtomTypes;
-      int numAtomTypePairs = numAtomTypes*numAtomTypes;
       if (pressureProfileData) {
         memset(pressureProfileData, 0, 3*pressureProfileSlabs*numAtomTypePairs*sizeof(BigReal));
         // Silly variable hiding of the previous iterator
@@ -358,20 +360,12 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       }
       // take triplet and pass with tuple info to force eval
       UniqueSetIter<T> al(tupleList);
-      if ( Node::Object()->simParameters->commOnly ) {
-#ifdef NETWORK_PROGRESS
-	CkNetworkProgress();
-#endif
-        for (al = al.begin(); al != al.end(); al++ ) {
-          tupleCount += 1;
-        }
-      } else {
-        for (al = al.begin(); al != al.end(); al++ ) {
-          al->computeForce(reductionData, pressureProfileData);
-          tupleCount += 1;
-        }
+      for (al = al.begin(); al != al.end(); al++ ) {
+        al->computeForce(reductionData, pressureProfileData);
+        tupleCount += 1;
       }
-    
+      }
+ 
       T::submitReductionData(reductionData,reduction);
       reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
       reduction->submit();

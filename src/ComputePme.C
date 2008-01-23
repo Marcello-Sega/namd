@@ -1997,6 +1997,7 @@ void ComputePme::ungridForces() {
     Vector pairForce = 0.;
     Lattice lattice = patchList[0].p->flags.lattice;
     int g = 0;
+    if(!simParams->commOnly) {
     for ( g=0; g<numGrids; ++g ) {
 #ifdef NETWORK_PROGRESS
       CmiNetworkProgress();
@@ -2058,6 +2059,7 @@ void ComputePme::ungridForces() {
         }
       }
     }
+    }
 
     delete [] localData;
     delete [] localPartition;
@@ -2071,7 +2073,7 @@ void ComputePme::ungridForces() {
       Force *f = r->f[Results::slow];
       int numAtoms = (*ap).p->getNumAtoms();
 
-      if ( ! strayChargeErrors ) {
+      if ( ! strayChargeErrors && ! simParams->commOnly ) {
         for(int i=0; i<numAtoms; ++i) {
           f[i].x += results_ptr->x;
           f[i].y += results_ptr->y;
