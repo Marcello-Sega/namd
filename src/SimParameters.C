@@ -2069,8 +2069,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        ldbStrategy=LDBSTRAT_REFINEONLY;
      else if (strcasecmp(loadStrategy, "alg7") == 0)
        ldbStrategy=LDBSTRAT_ALG7;
-     else if (strcasecmp(loadStrategy, "new") == 0)
-       ldbStrategy=LDBSTRAT_NEW;
+     else if (strcasecmp(loadStrategy, "asb8") == 0)
+       ldbStrategy=LDBSTRAT_ASB8;
      else if (strcasecmp(loadStrategy, "other") == 0)
        ldbStrategy=LDBSTRAT_OTHER;
      else
@@ -2540,8 +2540,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        iout << iINFO << "LOAD BALANCE STRATEGY  Refine-only\n";
      } else if (ldbStrategy==LDBSTRAT_ALG7)  {
        iout << iINFO << "LOAD BALANCE STRATEGY  Alg7\n";
-     } else if (ldbStrategy==LDBSTRAT_NEW)  {
-       iout << iINFO << "LOAD BALANCE STRATEGY  New Load Balancers\n";
+     } else if (ldbStrategy==LDBSTRAT_ASB8)  {
+       iout << iINFO << "LOAD BALANCE STRATEGY  New Load Balancers -- ASB\n";
      } else if (ldbStrategy==LDBSTRAT_OTHER)  {
        iout << iINFO << "LOAD BALANCE STRATEGY  Other\n";
      }

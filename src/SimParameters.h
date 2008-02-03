@@ -51,7 +51,7 @@ typedef int  MTSChoices;
 #define LDBSTRAT_NONE		0
 #define LDBSTRAT_REFINEONLY	1
 #define LDBSTRAT_ALG7		2
-#define LDBSTRAT_NEW		3
+#define LDBSTRAT_ASB8		3
 #define LDBSTRAT_OTHER		99
 
 // The following definitions are used to distinguish between patch-splitting
