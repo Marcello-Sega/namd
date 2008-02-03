@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2008/01/17 23:30:09 $
- * $Revision: 1.78 $
+ * $Date: 2008/02/03 02:26:10 $
+ * $Revision: 1.79 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -16,6 +16,10 @@
 #include "Rebalancer.h"
 #include "ProxyMgr.h"
 #include "PatchMap.h"
+
+#define ST_NODE_LOAD 		0.005
+#define PROXY_LOAD              0.0004
+#define COMPUTE_LOAD            0.00005
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processorInfo *processorArray, int nComps, int nPatches, int nPes)
@@ -387,7 +391,7 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    // << "\tproxyUsage[" << c->patch2 << "]: " << n2 << " --> " << n2+1 << "\n"
    // << std::endl;
 
-#if LDB_DEBUG
+#if 0
    iout << "Assign " << c->Id << " patches " << c->patch1 << " " << c->patch2
         << " load " << c->load << " to " << p->Id << " new load "
         << p->load << " background " << p->backgroundLoad

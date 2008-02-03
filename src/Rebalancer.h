@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
  * $Author: bhatele $
- * $Date: 2008/01/17 23:30:10 $
- * $Revision: 1.30 $
+ * $Date: 2008/02/03 02:26:10 $
+ * $Revision: 1.31 $
  *****************************************************************************/
 
 /** \file Rebalancer.h
@@ -35,12 +35,8 @@
 #define LDB_DEBUG		0	// for verbose LDB output
 #define PROXY_CORRECTION        0
 #define COMPUTE_CORRECTION	0
-#define ST_NODE_LOAD 		0.005
-#define PROXY_LOAD              0.0004
-#define COMPUTE_LOAD            0.0001
 
 #include "ckhashtable.h"
-
 
 class ProxyUsageKey {
  protected:

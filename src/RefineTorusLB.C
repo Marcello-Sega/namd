@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/01/20 21:07:53 $
- * $Revision: 1.11 $
+ * $Date: 2008/02/03 02:26:10 $
+ * $Revision: 1.12 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -33,7 +33,6 @@ int npas, int npes, int flag) : Rebalancer(cs, pas, pes, ncs, npas, npes)
       //   delete [] processors[i].proxyUsage;
       InitProxyUsage();
       binaryRefine();
-      computeAverage();
       printLoads();
       createSpanningTree();
     }
@@ -51,26 +50,23 @@ void RefineTorusLB::strategy() {
   firstAssignInRefine = 1;
 
   binaryRefine();
-  
-  computeAverage();
   printLoads();
 }
 
 void RefineTorusLB::binaryRefine() {
-  // CkPrintf("Inside binary refine\n");
   // compute the max and average load
-  double avg = computeAverage();
+  computeAverage();
   double max = computeMax();
 
-  double step = 0.01, start = 1.1;
-  double dCurLoad = max/avg;
+  double step = 0.01, start = 1.05;
+  double dCurLoad = max/averageLoad;
   int curLoad;
   int minLoad = 0;
   int maxLoad = (int)((dCurLoad - start)/step + 1);
   double dMinLoad = minLoad * step + start;
   double dMaxLoad = maxLoad * step + start;
 
-  // check the two limits of the search: 1.1 and dMaxLoad
+  // check the two limits of the search: start and dMaxLoad
   int done=0;
   overLoad = dMinLoad;
   if(newRefine())
@@ -83,9 +79,8 @@ void RefineTorusLB::binaryRefine() {
     }
   } 
 
-  // do a binary search between 1.1 and dMaxLoad until we succeed
+  // do a binary search between start and dMaxLoad until we succeed
   while(!done) {
-    //CkPrintf("in multi refine %d %d\n", minLoad, maxLoad);
     if(maxLoad - minLoad <= 1)
       done = 1;
     else {
@@ -100,7 +95,6 @@ void RefineTorusLB::binaryRefine() {
 }
 
 int RefineTorusLB::newRefine() {
-  //CkPrintf("Inside new refine %f\n", overLoad);
   int done = 1;
   maxHeap *heavyPes = new maxHeap(P);
   Set *lightPes = new Set();
@@ -122,7 +116,6 @@ int RefineTorusLB::newRefine() {
   for(int j=0; j<6; j++) {
     bestPe[j] = &pcpairarray[j];    // new pcpair();
     goodPe[j] = &pcpairarray[j+6];  // new pcpair();
-    //CkPrintf("AllocatE\n");
   }
 
   while(1) {
@@ -135,7 +128,6 @@ int RefineTorusLB::newRefine() {
     for(int j=0; j<6; j++) {
       bestPe[j]->reset();
       goodPe[j]->reset();
-      //CkPrintf("AllocatE\n");
     }
 
     nextC.id = 0;
@@ -188,12 +180,20 @@ int RefineTorusLB::newRefine() {
 #endif
 
     if(bestP) {
-      if(bestP->load > averageLoad) lightPes->remove(bestP);
-      if(donor->load > overLoad*averageLoad)
+      if(bestP->load > averageLoad) {
+	// CkPrintf("Acceptor %d became heavy%f %f\n", bestP->Id, bestP->load, overLoad*averageLoad);
+	lightPes->remove(bestP);
+      } else {
+	// CkPrintf("Acceptor %d still light %f %f\n", bestP->Id, bestP->load, overLoad*averageLoad);
+      }
+      if(donor->load > overLoad*averageLoad) {
+	// CkPrintf("Donor %d still heavy %f %f\n", donor->Id, donor->load, overLoad*averageLoad);
         heavyPes->insert((InfoRecord *) donor);
-      else
+      }
+      else {
+	// CkPrintf("Donor %d became light %f %f\n", donor->Id, donor->load, overLoad*averageLoad);
 	lightPes->insert((InfoRecord *) donor);
-      //CkPrintf("1st try succeeded\n");
+      }
       
       continue;
     }
@@ -372,19 +372,10 @@ int RefineTorusLB::newRefine() {
         c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
         while (c)
         {
-          /*if(c->load + p->load < overLoad*averageLoad)
-          {
-	    good.c = c;
-	    good.p = p;
-            found = 1;
-            break;
-          }*/
 	  selectPes(p, c);
           nextC.id++;
           c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
         }
-        //if(found == 1)
-        //  break;
         p = (processorInfo *)lightPes->next((Iterator *) &nextP);
       }
 
