@@ -182,7 +182,7 @@ private:
   MigrationInfo *mInfo[3][3][3];
 
   NodeIDList tree;              // the whole tree
-  int child[PROXY_SPAN_DIM];	// spanning tree of proxies - immediate children
+  int *child;	// spanning tree of proxies - immediate children
   int nChild;  
 
 #if CMK_PERSISTENT_COMM

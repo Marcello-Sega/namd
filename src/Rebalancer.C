@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2008/02/03 02:26:10 $
- * $Revision: 1.79 $
+ * $Date: 2008/02/03 05:08:37 $
+ * $Revision: 1.80 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1093,7 +1093,7 @@ void Rebalancer::decrSTLoad() {
   int pe;
   ProxyTree &pt = ProxyMgr::Object()->getPtree();
   for(int i=0; i<numPatches; i++)
-    for(int j=1; j<pt.proxylist[i].size() && j<PROXY_SPAN_DIM; j++) {
+    for(int j=1; j<pt.proxylist[i].size() && j<proxySpanDim; j++) {
       pe = pt.proxylist[i][j];
       processors[pe].load -= ST_NODE_LOAD;
       processors[pe].backgroundLoad -= ST_NODE_LOAD;
@@ -1108,7 +1108,7 @@ void Rebalancer::incrSTLoad() {
   int pe;
   ProxyTree &pt = ProxyMgr::Object()->getPtree();
   for(int i=0; i<numPatches; i++)
-    for(int j=1; j<pt.proxylist[i].size() && j<PROXY_SPAN_DIM; j++) {
+    for(int j=1; j<pt.proxylist[i].size() && j<proxySpanDim; j++) {
       pe = pt.proxylist[i][j];
       processors[pe].load += ST_NODE_LOAD;
       processors[pe].backgroundLoad += ST_NODE_LOAD;

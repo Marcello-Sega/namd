@@ -27,9 +27,6 @@
 //#define DEBUGM
 #include "Debug.h"
 
-
-extern int proxySendSpanning, proxyRecvSpanning;
-
 // make sure all HomePatches get their positions data and sendProxyData to 
 // their proxies before computes get positionsReady.
 int useSync = 1;

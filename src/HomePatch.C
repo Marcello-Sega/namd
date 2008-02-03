@@ -107,6 +107,7 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   //  }
   //}
 
+  child =  new int[proxySpanDim];
   nChild = 0;	// number of proxy spanning tree children
 #if CMK_PERSISTENT_COMM
   phsReady = 0;
@@ -168,6 +169,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
     }
   }
 
+  child =  new int[proxySpanDim];
   nChild = 0;	// number of proxy spanning tree children
 #if CMK_PERSISTENT_COMM
   phsReady = 0;
@@ -265,6 +267,7 @@ void HomePatch::readPatchMap() {
 
 HomePatch::~HomePatch()
 {
+  delete [] child;
 }
 
 
@@ -313,11 +316,11 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
 
 int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
   int nChild = 0;
-  int cones[6][PROXY_SPAN_DIM*PROXY_SPAN_DIM+PROXY_SPAN_DIM];
+  int cones[6][proxySpanDim*proxySpanDim+proxySpanDim];
   int conesizes[6] = {0,0,0,0,0,0};
   int conecounters[6] = {0,0,0,0,0,0};
   int childcounter = 0;
-  nChild = (psize>PROXY_SPAN_DIM)?PROXY_SPAN_DIM:psize;
+  nChild = (psize>proxySpanDim)?proxySpanDim:psize;
   TopoManager tmgr;
   for(int i=0;i<psize;i++){
     int cone = tmgr.getConeNumberForRank(pidscopy[i]);
@@ -331,7 +334,7 @@ int HomePatch::findSubroots(int dim, int* subroots, int psize, int* pidscopy){
       }
     }
   }
-  for(int i=nChild;i<PROXY_SPAN_DIM;i++)
+  for(int i=nChild;i<proxySpanDim;i++)
     subroots[i] = -1;
   return nChild;
 }
@@ -359,7 +362,7 @@ void HomePatch::recvSpanningTree(int *t, int n)
     tree[i] = t[i];
   }
 
-  for (i=1; i<=PROXY_SPAN_DIM; i++) {
+  for (i=1; i<=proxySpanDim; i++) {
     if (tree.size() <= i) break;
     child[i-1] = tree[i];
     nChild++;
@@ -459,13 +462,13 @@ void HomePatch::buildSpanningTree(void)
   
   //Right now only works for spanning trees with two levels
   int *treecopy = new int [psize];
-  int subroots[PROXY_SPAN_DIM];
-  int subsizes[PROXY_SPAN_DIM];
-  int subtrees[PROXY_SPAN_DIM][PROXY_SPAN_DIM];
-  int idxes[PROXY_SPAN_DIM];
+  int subroots[proxySpanDim];
+  int subsizes[proxySpanDim];
+  int subtrees[proxySpanDim][proxySpanDim];
+  int idxes[proxySpanDim];
   int i = 0;
 
-  for(i=0;i<PROXY_SPAN_DIM;i++){
+  for(i=0;i<proxySpanDim;i++){
     subsizes[i] = 0;
     idxes[i] = i;
   }
@@ -480,7 +483,7 @@ void HomePatch::buildSpanningTree(void)
 						psize-nNonPatch);  
   
   /* build tree and subtrees */
-  nChild = findSubroots(PROXY_SPAN_DIM,subroots,psize,treecopy);
+  nChild = findSubroots(proxySpanDim,subroots,psize,treecopy);
   delete [] treecopy;
   
   for(int i=1;i<psize+1;i++){
@@ -494,22 +497,22 @@ void HomePatch::buildSpanningTree(void)
     
     int bAdded = 0;
     tmgr.sortIndexByHops(tree[i], subroots,
-						  idxes, PROXY_SPAN_DIM);
-    for(int j=0;j<PROXY_SPAN_DIM;j++){
-      if(subsizes[idxes[j]]<PROXY_SPAN_DIM){
+						  idxes, proxySpanDim);
+    for(int j=0;j<proxySpanDim;j++){
+      if(subsizes[idxes[j]]<proxySpanDim){
         subtrees[idxes[j]][(subsizes[idxes[j]])++] = tree[i];
 	bAdded = 1; 
         break;
       }
     }
-    if( psize > PROXY_SPAN_DIM && ! bAdded ) {
+    if( psize > proxySpanDim && ! bAdded ) {
       NAMD_bug("HomePatch BGL Spanning Tree error: Couldn't find subtree for leaf\n");
     }
   }
 
 #else /* USE_TOPOMAP && USE_SPANNING_TREE */
   
-  for (int i=1; i<=PROXY_SPAN_DIM; i++) {
+  for (int i=1; i<=proxySpanDim; i++) {
     if (tree.size() <= i) break;
     child[i-1] = tree[i];
     nChild++;
@@ -643,7 +646,7 @@ void HomePatch::positionsReady(int doMigration)
   }
   else {
     npid = nChild;
-    pids = new int[PROXY_SPAN_DIM];
+    pids = new int[proxySpanDim];
     for (int i=0; i<nChild; i++) pids[i] = child[i];
   }
   if (npid) {

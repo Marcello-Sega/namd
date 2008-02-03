@@ -46,7 +46,7 @@ class ProxyPatch : public Patch
 
      // for spanning tree
      ProxyCombinedResultMsg *msgCBuffer;
-     int parent, child[PROXY_SPAN_DIM]; // spanning tree for recvResults()
+     int parent, *child; // spanning tree for recvResults()
      int nChild, nWait;
 };
 

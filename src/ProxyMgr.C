@@ -22,9 +22,9 @@
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
-int proxySendSpanning = 0;
-int proxyRecvSpanning = 0;
-
+int proxySendSpanning	= 0;
+int proxyRecvSpanning	= 0;
+int proxySpanDim	= 9;
 
 PACK_MSG(ProxyAtomsMsg,
   PACK(patch);
@@ -662,7 +662,7 @@ ProxyMgr::buildSpanningTree0()
       int p = ptree.proxylist[pid][pp];
       int oldindex = oldtree.find(p);
       if (oldindex != -1 && oldindex <= numProxies) {
-        int isIntermediate = (oldindex*PROXY_SPAN_DIM+1 <= numProxies);
+        int isIntermediate = (oldindex*proxySpanDim+1 <= numProxies);
         if (!isIntermediate) {
           tree[oldindex] = p;
         }
@@ -680,17 +680,17 @@ ProxyMgr::buildSpanningTree0()
       if (patchNodesLast && numPatchesOnNode[p] ) {
         while (tree[e] != -1) { e--; if (e==-1) e = numProxies; }
         tree[e] = p;
-        int isIntermediate = (e*PROXY_SPAN_DIM+1 <= numProxies);
+        int isIntermediate = (e*proxySpanDim+1 <= numProxies);
         if (isIntermediate) ntrees[p]++;
       }
       else {
         while (tree[s] != -1) { s++; if (s==numProxies+1) s = 1; }
-        int isIntermediate = (s*PROXY_SPAN_DIM+1 <= numProxies);
+        int isIntermediate = (s*proxySpanDim+1 <= numProxies);
         if (isIntermediate && (ntrees[p] >= MAX_INTERNODE || noInterNode(p))) {   // TOO MANY INTERMEDIATE TREES
         //if (isIntermediate && ntrees[p] >= MAX_INTERNODE)    // TOO MANY INTERMEDIATE TREES
           while (tree[e] != -1) { e--; if (e==-1) e = numProxies; }
           tree[e] = p;
-          isIntermediate = (e*PROXY_SPAN_DIM+1 <= numProxies);
+          isIntermediate = (e*proxySpanDim+1 <= numProxies);
           if (isIntermediate) ntrees[p]++;
         }
         else {
@@ -753,11 +753,11 @@ ProxyMgr::sendSpanningTree(ProxySpanningTreeMsg *msg) {
 void 
 ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   int size = msg->tree.size();
-  int child[PROXY_SPAN_DIM];
+  int child[proxySpanDim];
   int nChild = 0;
   int i;
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
-  for (i=0; i<PROXY_SPAN_DIM; i++) {
+  for (i=0; i<proxySpanDim; i++) {
     if (size > i+1) { child[i] = msg->tree[i+1]; nChild++; }
   }
   if (!PatchMap::Object()->homePatch(msg->patch)) {
@@ -772,7 +772,7 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   //  iout << "Processor " << CkMyPe() << "has (actual) " << nodecount << " intermediate nodes." << endi;
 
 //CkPrintf("[%d] %d:(%d) %d %d %d %d %d\n", CkMyPe(), msg->patch, size, msg->tree[0], msg->tree[1], msg->tree[2], msg->tree[3], msg->tree[4]);
-  NodeIDList tree[PROXY_SPAN_DIM];
+  NodeIDList *tree = new NodeIDList[proxySpanDim];
   int level = 1, index=1;
   int done = 0;
   while (!done) {
@@ -784,11 +784,11 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
        index++;
       }
     }
-    level *=PROXY_SPAN_DIM;
+    level *=proxySpanDim;
   }
 
   ProxyMgr *proxyMgr = ProxyMgr::Object();
-  for (i=0; i<PROXY_SPAN_DIM; i++) {
+  for (i=0; i<proxySpanDim; i++) {
     if (tree[i].size()) {
       ProxySpanningTreeMsg *cmsg = new ProxySpanningTreeMsg;
       cmsg->patch = msg->patch;
@@ -798,6 +798,7 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
     }
   }
 
+  delete [] tree;
   delete msg;
 }
 
@@ -890,7 +891,7 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int pids[PROXY_SPAN_DIM];
+    int pids[proxySpanDim];
     int npid = proxy->getSpanningTreeChild(pids);
     if (npid) {
       ProxyDataMsg *newmsg = new(PRIORITY_SIZE) ProxyDataMsg;
@@ -929,7 +930,7 @@ ProxyMgr::recvImmediateProxyAll(ProxyAllMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int pids[PROXY_SPAN_DIM];
+    int pids[proxySpanDim];
     int npid = proxy->getSpanningTreeChild(pids);
     if (npid) {
       ProxyAllMsg *newmsg = new(PRIORITY_SIZE) ProxyAllMsg;

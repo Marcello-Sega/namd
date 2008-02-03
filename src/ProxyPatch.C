@@ -31,6 +31,7 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   numAtoms = -1;
   parent = -1;
   nChild = 0;
+  child = new int[proxySpanDim];
 
 #if CMK_PERSISTENT_COMM
   localphs = 0;
@@ -48,6 +49,7 @@ ProxyPatch::~ProxyPatch()
   DebugM(4, "ProxyPatch(" << pd << ") deleted at " << this << "\n");
   ProxyMgr::Object()->unregisterProxy(patchID);
   AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+  delete [] child;
 #if CMK_PERSISTENT_COMM
   CmiDestoryPersistent(localphs);
   localphs = 0;
