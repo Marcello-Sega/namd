@@ -100,6 +100,7 @@ void GlobalMasterFreeEnergy::user_initialize() {
   } else {
     char *new_config = new char[10000 + 10];
     strncpy(new_config,config,10000);
+    new_config[10000] = 0;
     strcat(new_config,"\n...\n");
     iout << new_config;
     delete [] new_config;
