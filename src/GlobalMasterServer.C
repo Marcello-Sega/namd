@@ -235,6 +235,12 @@ void GlobalMasterServer::callClients() {
     if(a_i+num_atoms_requested > a_e)
       NAMD_die("GlobalMasterServer ran out of atom IDs!");
 
+    /* check for condition that will exercise bug */
+    if ( CkNumPes() > 1 &&
+         num_atoms_requested && a_i+num_atoms_requested != a_e ) {
+      NAMD_die("Due to a design error, GlobalMasterServer does not support individual atom requests from multiple global force clients on parallel runs.");
+    }
+
     /* update this master */
     master->clearChanged();
     master->step = step;
@@ -256,6 +262,8 @@ void GlobalMasterServer::callClients() {
 
     /* go to next master */
     m_i++;
+
+// XXX Completely wrong if multiple clients request atoms in parallel! XXX
 
     /* next atoms/groups start farther down the lists */
     a_i += num_atoms_requested;
