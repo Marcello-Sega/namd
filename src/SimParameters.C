@@ -3598,6 +3598,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "FULL ELECTROSTATIC EVALUATION FREQUENCY      "
 	<< fullElectFrequency << "\n";
      iout << endi;
+
+     if ( ( outputEnergies % fullElectFrequency ) &&
+          ( fullElectFrequency % outputEnergies ) )
+	NAMD_die("Either outputEnergies must be a multiple of fullElectFrequency or vice versa.\n");
    }
 
   if (MTSAlgorithm == NAIVE)
