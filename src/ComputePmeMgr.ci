@@ -29,25 +29,25 @@ module ComputePmeMgr {
     entry void dummyRecvGrid(int pe, int done = 0);
     entry void init(PmePencilInitMsg *initmsg) {
       atomic {
-      //CkPrintf("z pencil init %d %d %d on %d\n",
-		//thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
-      base_init(initmsg); delete initmsg;
-      fft_init();
-      // now count how many nodes send us data
-      imsg = 0; grid_msgs.resize(0);
+	// CkPrintf("z pencil init %d %d %d on %d\n",
+	// thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+	base_init(initmsg); delete initmsg;
+	fft_init();
+	// now count how many nodes send us data
+	imsg = 0; grid_msgs.resize(0);
       }
       while ( ! imsg ) {
         when dummyRecvGrid(int pe, int done) atomic {
           if ( done ) imsg = 1;
           else {
             grid_msgs.add(0);  // increment size
-            //CkPrintf("pencil %d %d on node %d receive from node %d\n",
-		//	thisIndex.x, thisIndex.y, CkMyPe(), pe);
+            // CkPrintf("pencil %d %d on node %d receive from node %d\n",
+	    // thisIndex.x, thisIndex.y, CkMyPe(), pe);
           }
         }
       }
-      //atomic { CkPrintf("pencil %d %d receiving from %d nodes\n",
-      //       thisIndex.x, thisIndex.y, grid_msgs.size()); }
+      // atomic CkPrintf("pencil %d %d receiving from %d nodes\n",
+      //       thisIndex.x, thisIndex.y, grid_msgs.size());
 
       // ready to go
       while ( 1 ) {
@@ -58,35 +58,35 @@ module ComputePmeMgr {
             recv_grid(msg); grid_msgs[imsg] = msg;
           }
         }
-       if ( hasData ) {
-        atomic { forward_fft(); }
-       }
+	if ( hasData ) {
+	  atomic { forward_fft(); }
+	}
         atomic { send_trans(); }
-       if ( hasData ) {
-        for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
-          when recvUntrans(PmeUntransMsg *msg) atomic {
-            recv_untrans(msg); delete msg;
-          }
-        }
-        atomic { backward_fft(); }
-       }
-       atomic {
-        int send_evir = 1;
-        for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
-          PmeGridMsg *msg = grid_msgs[imsg];
-          if ( msg->hasData ) {
-            if ( send_evir ) {
-              msg->evir[0] = evir;
-              send_evir = 0;
-            } else {
-               msg->evir[0] = 0.;
-            }
-            send_ungrid(msg);
-          } else {
-            delete msg;
-          }
-        }
-       }
+	if ( hasData ) {
+	  for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
+	    when recvUntrans(PmeUntransMsg *msg) atomic {
+	      recv_untrans(msg); delete msg;
+	    }
+	  }
+	  atomic { backward_fft(); }
+	}
+	atomic {
+	  int send_evir = 1;
+	  for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+	    PmeGridMsg *msg = grid_msgs[imsg];
+	    if ( msg->hasData ) {
+	      if ( send_evir ) {
+		msg->evir[0] = evir;
+		send_evir = 0;
+	      } else {
+		msg->evir[0] = 0.;
+	      }
+	      send_ungrid(msg);
+	    } else {
+	      delete msg;
+	    }
+	  }
+	}
       }
     };
   };
