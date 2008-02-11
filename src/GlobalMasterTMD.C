@@ -107,6 +107,8 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms) {
     NAMD_die("No atoms found in TMDFile\n");
   if (numatoms != numTotalAtoms)
     NAMD_die("The number of atoms in TMDFile must be equal to the total number of atoms in the structure!");
+  if ( modifyRequestedAtoms().size() )
+    NAMD_bug("GlobalMasterTMD::parseAtoms() modifyRequestedAtoms() not empty");
 
   numTMDatoms = 0;
   target = new BigReal[3*numatoms];
@@ -130,11 +132,16 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms) {
     }
   }
   delete [] atompos;
+  target_aid = new int[numTMDatoms];
+  for (i=0; i<numTMDatoms; ++i) {
+    target_aid[i] = modifyRequestedAtoms()[i];
+  }
   DebugM(1,"done with parseAtoms\n");
 }
 
 GlobalMasterTMD::~GlobalMasterTMD() { 
   delete [] target;
+  delete [] target_aid;
   delete [] aidmap;
 }
 
@@ -174,6 +181,8 @@ void GlobalMasterTMD::calculate() {
                             (lastStep-firstStep);
   BigReal targetRMS = initialRMS * (1-frac) + frac * finalRMS;
 
+  BigReal maxforce2 = 0.;
+
   if ((finalRMS < initialRMS && targetRMS <= curRMS) ||
       (finalRMS >= initialRMS && targetRMS > curRMS)) {
     BigReal prefac = k * (targetRMS / curRMS - 1); 
@@ -193,7 +202,6 @@ void GlobalMasterTMD::calculate() {
     result.translate(post);
   
     // compute forces on each atom
-    a_i = getAtomIdBegin();
     BigReal myrms = 0;
     for (int i=0; i<numTMDatoms; i++) {
       result.multpoint(target+3*i);
@@ -203,13 +211,16 @@ void GlobalMasterTMD::calculate() {
   
       BigReal fvec[3] = { dx, dy, dz };
       Vector force(fvec[0]*prefac, fvec[1]*prefac, fvec[2]*prefac);
-      modifyForcedAtoms().add(*a_i++);
+      modifyForcedAtoms().add(target_aid[i]);
       modifyAppliedForces().add(force);
+      BigReal force2 = force.length2();
+      if ( force2 > maxforce2 ) maxforce2 = force2;
     }
   }
   // write output if needed
   if (currentStep % outputFreq == 0) {
     iout << "TMD  " << currentStep << " " << targetRMS << ' ' << curRMS << '\n' << endi;
+    // iout << "TMD  " << currentStep << " " << targetRMS << ' ' << curRMS << ' ' << sqrt(maxforce2) << '\n' << endi;
   }
   currentStep++;
   delete [] curpos;

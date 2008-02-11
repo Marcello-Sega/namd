@@ -24,6 +24,7 @@ private:
   int outputFreq;
   int currentStep, firstStep, lastStep;
   BigReal *target;
+  int *target_aid;
 
   // mapping of atom id's to array positions
   int *aidmap;
