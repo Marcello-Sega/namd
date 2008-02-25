@@ -73,6 +73,8 @@ public:
 //  MAKE SURE THAT THIS CLASS CAN BE BIT COPIED OR YOU WILL HAVE TO
 //  ADD SPECIAL CODE TO send_SimParameters() and receive_SimParameters()
 
+  int watmodel; // integer code for the water model in use
+                // choices are defined in common.h
   char dummy;
 	BigReal dt;	   		//  Timestep size
 	int N;		   		//  Number of steps to be performed

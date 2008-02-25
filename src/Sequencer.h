@@ -48,7 +48,7 @@ protected:
 
     void saveForce(const int ftag = Results::normal);
     void addForceToMomentum(BigReal, const int ftag = Results::normal,
-						const int useSaved = 0);
+						const int useSaved = 0, const int pressure = 0);
     void addVelocityToPosition(BigReal);
 
     void addRotDragToPosition(BigReal);
@@ -103,5 +103,4 @@ private:
     LdbCoordinator *ldbCoordinator;
 };
 
-#endif // SEQUENCER_H
-
+#endif

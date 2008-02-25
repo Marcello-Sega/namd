@@ -191,7 +191,7 @@ void Sequencer::integrate() {
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
-		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
+		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
       if (staleForces || doFullElectrostatics)
 		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
     }
@@ -201,9 +201,9 @@ void Sequencer::integrate() {
     if ( ! commOnly ) {
       addForceToMomentum(timestep);
       if (staleForces || doNonbonded)
-		addForceToMomentum(nbondstep,Results::nbond,staleForces);
+		addForceToMomentum(nbondstep,Results::nbond,staleForces,0);
       if (staleForces || doFullElectrostatics)
-		addForceToMomentum(slowstep,Results::slow,staleForces);
+		addForceToMomentum(slowstep,Results::slow,staleForces,0);
     }
     rattle1(timestep,1);
     if (doTcl)  // include constraint forces
@@ -213,106 +213,107 @@ void Sequencer::integrate() {
     if ( ! commOnly ) {
       addForceToMomentum(-0.5*timestep);
       if (staleForces || doNonbonded)
-		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
+		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
       if (staleForces || doFullElectrostatics)
-		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
     }
     submitReductions(step);
     rebalanceLoad(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
-	rescaleVelocities(step);
-	tcoupleVelocities(timestep,step);
-	berendsenPressure(step);
 
-       if ( ! commOnly ) {
-	addForceToMomentum(0.5*timestep);
-	if (staleForces || doNonbonded)
-		addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces);
-	if (staleForces || doFullElectrostatics)
-		addForceToMomentum(0.5*slowstep,Results::slow,staleForces);
-       }
+      rescaleVelocities(step);
+      tcoupleVelocities(timestep,step);
+      berendsenPressure(step);
 
-       /* reassignment based on half-step velocities
-       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
-	addVelocityToPosition(0.5*timestep);
-        reassignVelocities(timestep,step);
-	addVelocityToPosition(0.5*timestep);
-	rattle1(0.,0);
-	rattle1(-timestep,0);
-	addVelocityToPosition(-1.0*timestep);
-	rattle1(timestep,0);
-       } */
+      if ( ! commOnly ) {
+        addForceToMomentum(0.5*timestep);
+        if (staleForces || doNonbonded)
+          addForceToMomentum(0.5*nbondstep,Results::nbond,staleForces,1);
+        if (staleForces || doFullElectrostatics)
+          addForceToMomentum(0.5*slowstep,Results::slow,staleForces,1);
+      }
 
-	maximumMove(timestep);
-	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
-	langevinPiston(step);
-	if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+      /* reassignment based on half-step velocities
+         if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
+         addVelocityToPosition(0.5*timestep);
+         reassignVelocities(timestep,step);
+         addVelocityToPosition(0.5*timestep);
+         rattle1(0.,0);
+         rattle1(-timestep,0);
+         addVelocityToPosition(-1.0*timestep);
+         rattle1(timestep,0);
+         } */
 
-	minimizationQuenchVelocity();
+      maximumMove(timestep);
+      if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+      langevinPiston(step);
+      if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
-	doNonbonded = !(step%nonbondedFrequency);
-	doFullElectrostatics = (dofull && !(step%fullElectFrequency));
+      minimizationQuenchVelocity();
 
-        if ( zeroMomentum && doFullElectrostatics )
-					correctMomentum(step,slowstep);
+      doNonbonded = !(step%nonbondedFrequency);
+      doFullElectrostatics = (dofull && !(step%fullElectFrequency));
 
-	submitHalfstep(step);
+      if ( zeroMomentum && doFullElectrostatics )
+        correctMomentum(step,slowstep);
 
-	doMolly = simParams->mollyOn && doFullElectrostatics;
+      submitHalfstep(step);
 
-        maxForceUsed = Results::normal;
-	if ( doNonbonded ) maxForceUsed = Results::nbond;
-	if ( doFullElectrostatics ) maxForceUsed = Results::slow;
+      doMolly = simParams->mollyOn && doFullElectrostatics;
 
-	// Migrate Atoms on stepsPerCycle
-        doEnergy = ! ( step % energyFrequency );
-	runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
-	if ( staleForces || doTcl ) {
-	  if ( doNonbonded ) saveForce(Results::nbond);
-	  if ( doFullElectrostatics ) saveForce(Results::slow);
-	}
+      maxForceUsed = Results::normal;
+      if ( doNonbonded ) maxForceUsed = Results::nbond;
+      if ( doFullElectrostatics ) maxForceUsed = Results::slow;
 
-       // reassignment based on full-step velocities
-       if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
+      // Migrate Atoms on stepsPerCycle
+      doEnergy = ! ( step % energyFrequency );
+      runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
+      if ( staleForces || doTcl ) {
+        if ( doNonbonded ) saveForce(Results::nbond);
+        if ( doFullElectrostatics ) saveForce(Results::slow);
+      }
+
+      // reassignment based on full-step velocities
+      if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
         reassignVelocities(timestep,step);
         addForceToMomentum(-0.5*timestep);
         if (staleForces || doNonbonded)
-		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
+          addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,0);
         if (staleForces || doFullElectrostatics)
-		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
+          addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,0);
         rattle1(-timestep,0);
-       }
+      }
 
-       if ( ! commOnly ) {
-	langevinVelocitiesBBK1(timestep);
-	addForceToMomentum(timestep);
-	if (staleForces || doNonbonded)
-		addForceToMomentum(nbondstep,Results::nbond,staleForces);
-	if (staleForces || doFullElectrostatics)
-		addForceToMomentum(slowstep,Results::slow,staleForces);
-	langevinVelocitiesBBK2(timestep);
-       }
+      if ( ! commOnly ) {
+        langevinVelocitiesBBK1(timestep);
+        addForceToMomentum(timestep);
+        if (staleForces || doNonbonded)
+          addForceToMomentum(nbondstep,Results::nbond,staleForces,1);
+        if (staleForces || doFullElectrostatics)
+          addForceToMomentum(slowstep,Results::slow,staleForces,1);
+        langevinVelocitiesBBK2(timestep);
+      }
 
-        // add drag to each atom's positions
-        if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
-        if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
+      // add drag to each atom's positions
+      if ( ! commOnly && movDragOn ) addMovDragToPosition(timestep);
+      if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
-	rattle1(timestep,1);
-        if (doTcl)  // include constraint forces
-          computeGlobal->saveTotalForces(patch);
+      rattle1(timestep,1);
+      if (doTcl)  // include constraint forces
+        computeGlobal->saveTotalForces(patch);
 
-	submitHalfstep(step);
-        if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
+      submitHalfstep(step);
+      if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
 
-       if ( ! commOnly ) {
-	addForceToMomentum(-0.5*timestep);
-	if (staleForces || doNonbonded)
-		addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces);
-	if (staleForces || doFullElectrostatics)
-		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces);
-       }
+      if ( ! commOnly ) {
+        addForceToMomentum(-0.5*timestep);
+        if (staleForces || doNonbonded)
+          addForceToMomentum(-0.5*nbondstep,Results::nbond,staleForces,1);
+        if (staleForces || doFullElectrostatics)
+          addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
+      }
 
 	// rattle2(timestep,step);
 
@@ -497,7 +498,7 @@ void Sequencer::correctMomentum(int step, BigReal drifttime) {
 
 if ( simParams->zeroMomentumAlt ) {
   for ( int i = 0; i < numAtoms; ++i ) {
-    BigReal rmass = 1. / a[i].mass;
+    BigReal rmass = (a[i].mass > 0. ? 1. / a[i].mass : 0.);
     a[i].velocity += dv * rmass;
     a[i].position += dx * rmass;
   }
@@ -761,7 +762,7 @@ void Sequencer::reassignVelocities(BigReal timestep, int step)
 
     for ( int i = 0; i < numAtoms; ++i )
     {
-      a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed ) ? Vector(0,0,0) :
+      a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed && a[i].mass > 0.) ? Vector(0,0,0) :
         sqrt( kbT * ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass )
           * random->gaussian_vector() );
     }
@@ -782,7 +783,7 @@ void Sequencer::reinitVelocities(void)
 
   for ( int i = 0; i < numAtoms; ++i )
   {
-    a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed ) ? Vector(0,0,0) :
+    a[i].velocity = ( ( simParams->fixedAtomsOn && a[i].atomFixed && a[i].mass > 0.) ? Vector(0,0,0) :
       sqrt( kbT * ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass )
         * random->gaussian_vector() );
   }
@@ -834,12 +835,15 @@ void Sequencer::saveForce(const int ftag)
 }
 
 void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
-						const int useSaved)
+						const int useSaved, int pressure)
 {
 #if CMK_VERSION_BLUEGENE
   CmiNetworkProgressAfter (0);
 #endif
-  patch->addForceToMomentum(dt,ftag,useSaved);
+  Tensor virial;
+  Tensor *vp = ( pressure ? &virial : 0 );
+  patch->addForceToMomentum(dt,ftag,useSaved,vp);
+  if (simParams->watmodel == WAT_TIP4) ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
 }
 
 void Sequencer::addVelocityToPosition(BigReal dt)
@@ -951,6 +955,7 @@ void Sequencer::submitHalfstep(int step)
       }
     } else {
       for ( int i = 0; i < numAtoms; ++i ) {
+        if (a[i].mass < 0.01) continue;
         kineticEnergy += a[i].mass * a[i].velocity.length2();
         virial.outerAdd(a[i].mass, a[i].velocity, a[i].velocity);
       }

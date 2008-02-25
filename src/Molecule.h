@@ -307,6 +307,7 @@ public:
   int numAcceptors; //  Number of hydrogen bond acceptors
   int numExclusions;  //  Number of exclusions
   int numTotalExclusions; //  Real Total Number of Exclusions // hack
+  int numLP; // Number of lone pairs
   
   int numConstraints; //  Number of atoms constrained
 /* BEGIN gf */
@@ -425,6 +426,7 @@ public:
 
   void reloadCharges(float charge[], int n);
 
+        Bool is_lp(int);     // return true if atom is a lone pair
         Bool is_hydrogen(int);     // return true if atom is hydrogen
         Bool is_oxygen(int);       // return true if atom is oxygen
   Bool is_hydrogenGroupParent(int); // return true if atom is group parent

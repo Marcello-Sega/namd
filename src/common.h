@@ -150,6 +150,10 @@ int  Fclose(FILE *fout);
 #define NAMD_ComputeNonbonded_SortAtoms                   0
   #define NAMD_ComputeNonbonded_SortAtoms_LessBranches    1
 
+// plf -- alternate water models
+#define WAT_TIP3 0
+#define WAT_TIP4 1
+
 
 #include "converse.h"
 #if CHARM_VERSION <= 50900

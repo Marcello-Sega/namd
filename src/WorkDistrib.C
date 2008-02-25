@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: bhatele $
- * $Date: 2007/11/12 07:06:25 $
- * $Revision: 1.1176 $
+ * $Author: petefred $
+ * $Date: 2008/02/25 23:58:12 $
+ * $Revision: 1.1177 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1752,9 +1752,13 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
   //  the x, y and z directions for each one
   for (i=0; i<totalAtoms; i++)
   {
-    kbToverM = sqrt(kbT *
-      ( lesOn && structure->get_fep_type(i) ? tempFactor : 1.0 ) /
-			structure->atommass(i) );
+    if (structure->atommass(i) <= 0.) {
+      kbToverM = 0.;
+    } else {
+      kbToverM = sqrt(kbT *
+        ( lesOn && structure->get_fep_type(i) ? tempFactor : 1.0 ) /
+			  structure->atommass(i) );
+    }
 
     //  The following comment was stolen from X-PLOR where
     //  the following section of code was adapted from.

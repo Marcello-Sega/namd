@@ -77,7 +77,7 @@ public:
   // methods to implement integration
   void saveForce(const int ftag = Results::normal);
   void addForceToMomentum(const BigReal, const int ftag = Results::normal,
-				const int useSaved = 0);
+				const int useSaved = 0, Tensor* virial = NULL);
   void addVelocityToPosition(const BigReal);
 
   // methods for rigidBonds
@@ -184,6 +184,11 @@ private:
   NodeIDList tree;              // the whole tree
   int *child;	// spanning tree of proxies - immediate children
   int nChild;  
+  // PLF -- for TIP4P
+  void redistrib_tip4p_forces(Vector&, Vector&, Vector&, Vector&, int, Tensor*);
+  void tip4_omrepos(Vector*, Vector*, Vector*, BigReal);
+  void init_tip4();
+  BigReal r_om, r_ohc;
 
 #if CMK_PERSISTENT_COMM
   PersistentHandle *localphs;

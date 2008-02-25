@@ -281,6 +281,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numDonors=0;
   numAcceptors=0;
   numExclusions=0;
+  numLP=0;
   numConstraints=0;
   numStirredAtoms=0;
   numMovDrag=0;
@@ -1112,7 +1113,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
                 tmpResLookup->append(segment_name, residue_number, i);
             //Determine the type of the atom (H or O)
             Real thisAtomMass = atomMassPool[eachAtomMass[i]];
-            if(thisAtomMass <= 3.5){
+            if (thisAtomMass < 0.1) {
+              atoms[i].status = LonepairAtom;
+            } else if(thisAtomMass <= 3.5){
                 atoms[i].status = HydrogenAtom;
             }else if(atomNamePool[atomNames[i].atomnameIdx][0]=='O' &&
                      (thisAtomMass >= 14.0) && (thisAtomMass <= 18.0)){
@@ -1351,7 +1354,9 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
 	tmpResLookup->append(segment_name, atoi(residue_number), atom_number-1);
 
     /*  Determine the type of the atom (H or O) */
-    if (atoms[atom_number-1].mass <=3.5) {
+    if (atoms[atom_number-1].mass < 0.1) {
+      atoms[atom_number-1].status |= LonepairAtom;
+    } else if (atoms[atom_number-1].mass <=3.5) {
       atoms[atom_number-1].status |= HydrogenAtom;
     } else if ((atomNames[atom_number-1].atomname[0] == 'O') && 
          (atoms[atom_number-1].mass >= 14.0) && 
@@ -5922,6 +5927,7 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     BigReal bval = coupling;
 
     if ( (! doHydrogen) && is_hydrogen(i) ) bval = 0;
+    if ( is_lp(i) ) bval = 0;
 
     //  Assign the b value
     langevinParams[i] = bval;
@@ -6969,6 +6975,10 @@ void Molecule::build_exPressure_atoms(StringList *fixedfile,
 }
 
 
+    Bool Molecule::is_lp(int anum) {
+      return ((atoms[anum].status & LonepairAtom) != 0);
+    }
+
     Bool Molecule::is_hydrogen(int anum)
     {
   return ((atoms[anum].status & HydrogenAtom) != 0);
@@ -7052,8 +7062,12 @@ void Molecule::build_atom_status(void) {
     }
     #else
     if ( atoms[i].mass <= 0. ) {
-      atoms[i].mass = 0.001;
-      ++numZeroMassAtoms;
+      if (simParams->watmodel == WAT_TIP4) {
+        ++numLP;
+      } else {
+        atoms[i].mass = 0.001;
+        ++numZeroMassAtoms;
+      }
     }    
     #endif
   }
@@ -7064,9 +7078,13 @@ void Molecule::build_atom_status(void) {
   }
   #endif
 
-  if ( numZeroMassAtoms && ! CkMyPe() ) {
-    iout << iWARN << "FOUND " << numZeroMassAtoms <<
-	" ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
+  if (simParams->watmodel == WAT_TIP4) {
+    iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF BECAUSE LONE PAIRS ARE USED\n" << endi;
+  } else {
+    if ( numZeroMassAtoms && ! CkMyPe() ) {
+      iout << iWARN << "FOUND " << numZeroMassAtoms <<
+        " ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
+    }
   }
 
   // initialize information for each atom (note that the status has
@@ -7179,7 +7197,29 @@ void Molecule::build_atom_status(void) {
       // check for waters (put them in their own groups: OH or OHH)
       if (is_oxygen(a1))  hg[a1].sortVal++;
     }
+    // If we have TIP4P water, check for lone pairs
+    if (simParams->watmodel == WAT_TIP4) {
+
+      if (is_lp(a1)) {
+        atoms[a1].partner = a2;
+        hg[a2].atomsInGroup++;
+        hg[a1].atomsInGroup = 0;
+        hg[a1].GPID = a2;
+        hg[a1].isGP = 0;
+      }
+
+      if (is_lp(a2)) {
+        atoms[a2].partner = a1;
+        hg[a1].atomsInGroup++;
+        hg[a2].atomsInGroup = 0;
+        hg[a2].GPID = a1;
+        hg[a2].isGP = 0;
+      }
+
+
+    }
   }
+
 #endif
 
   // check up on our H-H bonds and general sanity check
@@ -7311,6 +7351,21 @@ void Molecule::build_atom_status(void) {
 	  rigidBondLengths[a1] = 0.;
         }
       }
+      // Handle lone pairs if they're allowed
+      if (simParams->watmodel == WAT_TIP4) {
+        if (is_lp(a2)) { int tmp = a1;  a1 = a2;  a2 = tmp; } // swap
+        if (is_lp(a1)) {
+          if (! is_water(a2) ) {
+            // Currently, lonepairs are only allowed on waters, although this may change in the future
+            char err_msg[128];
+            sprintf(err_msg, "ILLEGAL LONE PAIR AT INDEX %i\nLONEPAIRS ARE ONLY CURRENTLY ALLOWED ON WATER MOLECULES\n", a1);
+            NAMD_die(err_msg);
+          } else {
+            rigidBondLengths[a1] = x0;
+          }
+        }
+      }
+
 #ifdef MEM_OPT_VERSION
     }
 #endif
@@ -7347,8 +7402,13 @@ void Molecule::build_atom_status(void) {
       if ( ! is_water(a2) ) continue;
       a1 = angles[i].atom1;
       a3 = angles[i].atom3;
+      if (is_lp(a2) || is_lp(a1) || is_lp(a3)) continue;
       if ( rigidBondLengths[a1] != rigidBondLengths[a3] ) {
-	NAMD_die("Asymmetric water molecule found???  This can't be right.\n");
+        if (rigidBondLengths[a1] >0.3 && rigidBondLengths[a3] >0.3) {
+          printf("length1: %f length2: %f\n", rigidBondLengths[a1], rigidBondLengths[a3]);
+
+          NAMD_die("Asymmetric water molecule found???  This can't be right.\n");
+        }
       }
       Real dum, t0;
       params->get_angle_params(&dum,&t0,&dum,&dum,angles[i].angle_type);
@@ -7552,7 +7612,9 @@ void Molecule::read_parm(Ambertoppar *amber_data)
 
     /*  Determine the type of the atom (H or O) */
     atoms[i].status = UnknownAtom; // the default
-    if (atoms[i].mass <=3.5) {
+    if (atoms[i].mass <= 0.1) {
+      atoms[i].status |= LonepairAtom;
+    } else if (atoms[i].mass <=3.5) {
       atoms[i].status |= HydrogenAtom;
     } else if ((atomNames[i].atomname[0] == 'O') && 
          (atoms[i].mass >= 14.0) && 
@@ -7870,7 +7932,9 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     // For example, in dppc LO2 appears to be an oxygen.
     // And how do the hydrogens in CH3 etc factor in to this?
     atoms[i].status = UnknownAtom; // the default
-    if (atoms[i].mass <=3.5) {
+    if (atoms[i].mass <= 0.1) {
+      atoms[i].status |= LonepairAtom;
+    } else if (atoms[i].mass <=3.5) {
       atoms[i].status |= HydrogenAtom;
     } else if ((atomNames[i].atomname[0] == 'O') && 
          (atoms[i].mass >= 14.0) && 

@@ -20,6 +20,7 @@ using namespace std;
 #define HBAcceptorAtom   0x08
 #define HBAntecedentAtom 0x10
 #define HBHydrogenAtom   0x20
+#define LonepairAtom     0x40
 
 
 typedef unsigned short Index;		//  Used for index into arrays

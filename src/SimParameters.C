@@ -421,6 +421,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.optionalB("main", "outputPatchDetails", "print number of atoms in each patch",
       &outputPatchDetails, FALSE);
+   opts.optional("main", "waterModel", "Water model to use", PARSE_STRING);
 }
 
 void SimParameters::config_parser_fileio(ParseOptions &opts) {
@@ -1723,6 +1724,22 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    {
       iout << iWARN << "Exclude is not scaled1-4; 1-4scaling ignored.\n" << endi;
    }
+
+   // water model stuff
+   if (!opts.defined("waterModel")) {
+     watmodel = WAT_TIP3;
+   } else {
+     opts.get("waterModel", s);
+     if (!strncasecmp(s, "tip4", 4)) {
+       iout << iINFO << "Using TIP4P water model.\n" << endi;
+       watmodel = WAT_TIP4;
+     } else {
+       char err_msg[128];
+       sprintf(err_msg, "Illegal value %s for 'waterModel' in configuration file", s);
+       NAMD_die(err_msg);
+     }
+   }
+
 
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))

@@ -889,8 +889,10 @@ void Controller::receivePressure(int step, int minimize)
     int numGroupDegFreedom = 3 * molecule->numHydrogenGroups;
     int numFixedAtoms =
 	( simParameters->fixedAtomsOn ? molecule->numFixedAtoms : 0 );
+    int numLP = molecule->numLP;
     int numFixedGroups = ( numFixedAtoms ? molecule->numFixedGroups : 0 );
     if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
+    if (numLP) numDegFreedom -= 3 * numLP;
     if ( numFixedGroups ) numGroupDegFreedom -= 3 * numFixedGroups;
     if ( ! ( numFixedAtoms || molecule->numConstraints
 	|| simParameters->comMove || simParameters->langevinOn ) ) {
@@ -904,7 +906,7 @@ void Controller::receivePressure(int step, int minimize)
     int numRigidBonds = molecule->numRigidBonds;
     int numFixedRigidBonds =
 	( simParameters->fixedAtomsOn ? molecule->numFixedRigidBonds : 0 );
-    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
+    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds - numLP);
 
     kineticEnergyHalfstep = reduction->item(REDUCTION_HALFSTEP_KINETIC_ENERGY);
     kineticEnergyCentered = reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY);
@@ -923,13 +925,15 @@ void Controller::receivePressure(int step, int minimize)
     BigReal groupTempCentered = 2.0 * groupKineticEnergyCentered
 					/ ( numGroupDegFreedom * BOLTZMAN );
 
-    /*  test code for comparing different temperatures
+    /*  test code for comparing different temperatures  
     iout << "TEMPTEST: " << step << " " << 
 	atomTempHalfstep << " " <<
 	atomTempCentered << " " <<
 	groupTempHalfstep << " " <<
 	groupTempCentered << "\n" << endi;
-    */
+  iout << "Number of degrees of freedom: " << numDegFreedom << " " <<
+    numGroupDegFreedom << "\n" << endi;
+     */
 
     GET_TENSOR(virial_normal,reduction,REDUCTION_VIRIAL_NORMAL);
     GET_TENSOR(virial_nbond,reduction,REDUCTION_VIRIAL_NBOND);

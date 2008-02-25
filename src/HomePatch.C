@@ -59,8 +59,12 @@ void mollify(CompAtom *qtilde,const HGArrayVector &q0,const BigReal *lambda, HGA
 // Macro to test if a hydrogen group represents a water molecule.
 // NOTE: This test is the same test in Molecule.C for setting the
 //   OxygenAtom flag in status.
+// hgtype should be the number of atoms in a water hydrogen group
+// It must now be set based on simulation parameters because we might
+// be using tip4p
+
 #define IS_HYDROGEN_GROUP_WATER(hgs, mass)                 \
-  ((hgs == 3) && ((mass >= 14.0) && (mass <= 18.0)))
+  ((hgs >= 3) && ((mass >= 14.0) && (mass <= 18.0)))
 
 #endif
 
@@ -125,6 +129,8 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
     numWaterAtoms = -1;
 
   #endif
+  // Handle unusual water models here
+  if (simParams->watmodel == WAT_TIP4) init_tip4();
 }
 
 HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
@@ -190,6 +196,56 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
     separateAtoms();
 
   #endif
+    
+  // Handle unusual water models here
+  if (simParams->watmodel == WAT_TIP4) init_tip4();
+}
+
+void ::HomePatch::init_tip4() {
+  // initialize the distances needed for the tip4p water model
+
+  Molecule *mol = Node::Object()->molecule;
+
+  int ig;
+  for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
+    // find a water
+    if (mol->rigid_bond_length(atom[ig].id) > 0) {
+
+      int oatm = ig+1;
+
+      r_om = 0.0;
+      r_ohc = 0.0;
+      BigReal r_oh, r_hh;
+
+      // Avoid using the Om site to set hh/oh distance by mistake
+      if (atom[ig].mass < 0.5 || atom[ig+1].mass < 0.5) {
+        r_om = mol->rigid_bond_length(atom[oatm].id);
+        oatm += 1;
+      }
+
+      if (r_om == 0.0) {
+        int omatm = ig;
+        while (atom[omatm].mass >= 0.5 && omatm < atom[ig].hydrogenGroupSize) omatm++;
+        if (atom[omatm].mass < 0.5) r_om = mol->rigid_bond_length(atom[omatm].id);
+      }
+
+      if (r_om == 0.0) {
+        char errmsg[128];
+        sprintf(errmsg, "Couldn't find bond length for OM distance!\n");
+        NAMD_die(errmsg);
+      }
+
+      // Now initialize r_ohc = r_oh^2 - 0.25 r_hh^2
+      r_hh = mol->rigid_bond_length(atom[ig].id);
+      r_oh = mol->rigid_bond_length(atom[oatm].id);
+      //printf("Other values %f %f\n", r_oh, r_hh);
+      r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
+      //printf("r_om and r_ohc initialized to %f and %f\n", r_om, r_ohc);
+
+
+    }
+    if (r_om > 0) break;
+  }
 }
 
 void HomePatch::reinitAtoms(FullAtomList al) {
@@ -732,17 +788,164 @@ void HomePatch::saveForce(const int ftag)
   }
 }
 
+/* Redistribute forces from the massless tip4p charge particle onto the other
+   atoms of the water
+
+   This is done using the same algorithm as charmm users for TIP4P lonepairs
+
+   Arguments are pointers to the currently considered forces on each of the four
+   atoms in the tip4p, and the index of the oxygen
+*/
+void HomePatch::redistrib_tip4p_forces(Vector& f_ox, Vector& f_h1, Vector& f_h2, Vector& f_om, int oxind, Tensor *virial) {
+
+  Tensor wc; // virial for force redistribution
+
+#if 0
+
+  // Debug information to check against results at end
+
+  // total force and torque relative to origin
+  Vector totforce(0.0, 0.0, 0.0);
+  Vector tottorque(0.0, 0.0, 0.0);
+
+  totforce = f_ox + f_h1 + f_h2 + f_om;
+
+  tottorque += cross(f_ox, atom[oxind].position);
+  tottorque += cross(f_h1, atom[oxind + 1].position);
+  tottorque += cross(f_h2, atom[oxind + 2].position);
+  //printf("Torque without om is %f/%f/%f\n", tottorque.x, tottorque.y, tottorque.z);
+  tottorque += cross(f_om, atom[oxind + 3].position);
+  //printf("Torque with om is %f/%f/%f\n", tottorque.x, tottorque.y, tottorque.z);
+
+#endif
+
+  // Positions of the four sites
+  const Vector p_ox = atom[oxind].position;
+  const Vector p_h1 = atom[oxind + 1].position;
+  const Vector p_h2 = atom[oxind + 2].position;
+  const Vector p_om = atom[oxind + 3].position;
+
+  // Calculate the radial component of the force and add it to the oxygen
+  Vector r_ox_om = p_om - p_ox;
+  BigReal rad_factor = (f_om * r_ox_om) * r_ox_om.rlength() * r_ox_om.rlength();
+  Vector f_rad = r_ox_om * rad_factor;
+
+  Tensor vir = outer(f_rad, atom[oxind].position);
+  wc += vir;
+
+  f_ox = f_ox + f_rad;
+
+  // Calculate the angular component
+  Vector r_hcom_ox = p_ox - ( (p_h1 + p_h2) * 0.5 );
+  Vector r_h2_h1_2 = (p_h1 - p_h2) * 0.5; // half of r_h2_h1
+
+  Vector r_oop = cross(r_ox_om, r_hcom_ox); // deviation from collinearity of charge site
+  Vector r_perp = cross(r_hcom_ox, r_h2_h1_2); // vector out of o-h-h plane
+
+  // Here we assume that Ox/Om/Hcom are linear
+  // If you want to correct for deviations, this is the place
+
+  //printf("Deviation from linearity: %f/%f/%f\n", r_oop.x, r_oop.y, r_oop.z);
+
+  Vector f_ang = f_om - f_rad; // leave the angular component
+
+  // now split this component onto the other atoms
+  BigReal oxcomp = (r_hcom_ox.length() - r_ox_om.length()) * r_hcom_ox.rlength();
+  BigReal hydcomp = 0.5 * r_ox_om.length() * r_hcom_ox.rlength();
+
+  f_ox = f_ox + (f_ang * oxcomp);
+  f_h1 = f_h1 + (f_ang * hydcomp);
+  f_h2 = f_h2 + (f_ang * hydcomp);
+
+  // Add virial contributions
+  vir = outer(f_ang * oxcomp, atom[oxind].position);
+  wc += vir;
+  vir = outer(f_ang * hydcomp, atom[oxind + 1].position);
+  wc += vir;
+  vir = outer(f_ang * hydcomp, atom[oxind + 2].position);
+  wc += vir;
+  vir = outer(-1.0 * f_om, atom[oxind + 3].position);
+  wc += vir;
+
+  if ( virial ) *virial += wc;
+
+  Vector zerovec(0.0, 0.0, 0.0);
+  f_om = zerovec;
+
+#if 0
+
+  // Check that the total force and torque come out right
+  Vector newforce(0.0, 0.0, 0.0);
+  Vector newtorque(0.0, 0.0, 0.0);
+
+  totforce = f_ox + f_h1 + f_h2;
+
+  newtorque += cross(f_ox, atom[oxind].position);
+  newtorque += cross(f_h1, atom[oxind + 1].position);
+  newtorque += cross(f_h2, atom[oxind + 2].position);
+
+  if (newforce.length()  - totforce.length() > 0.0001) {
+     printf("Error: Force redistribution for tip4p water %i exceeded force tolerance (%f vs. %f)\n", oxind, newforce.length(), totforce.length());
+  }
+
+  if (newtorque.length() - tottorque.length() > 0.0001) {
+     printf("Error: Force redistribution for tip4p water %i exceeded torque tolerance (%f vs. %f)\n", oxind, newtorque.length(), tottorque.length());
+  }
+
+#endif
+}
+
+void ::HomePatch::tip4_omrepos(Vector* ref, Vector* pos, Vector* vel, BigReal invdt) {
+  /* Reposition the om particle of a tip4p water
+   * A little geometry shows that the appropriate position is given by
+   * R_O + (1 / 2 r_ohc) * ( 0.5 (R_H1 + R_H2) - R_O ) 
+   * Here r_om is the distance from the oxygen to Om site, and r_ohc
+   * is the altitude from the oxygen to the hydrogen center of mass
+   * Those quantities are precalculated upon initialization of HomePatch
+   */
+
+  pos[3] = pos[0] + (0.5 * (pos[1] + pos[2]) - pos[0]) * (r_om / r_ohc); 
+
+  // Now, adjust the velocity of the particle to get it to the appropriate place
+  if (invdt != 0) {
+    vel[3] = (pos[3] - ref[3]) * invdt;
+  }
+
+  // No virial correction needed, since this is a massless particle
+
+  return;
+
+}
+
+
 
 void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
-							const int useSaved)
+							const int useSaved, Tensor *virial)
 {
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
-  const ForceList *f_use = ( useSaved ? f_saved : f );
+  ForceList *f_use;
+
+  // Apply corrections for massless particles
+  // For now this is specific to TIP4P water
+  if (simParams->watmodel == WAT_TIP4) {
+
+    ForceList *f_mod =  ( useSaved ? f_saved : f );
+    for (int i=0; i<numAtoms; i++) {
+      if (atom[i].mass < 0.01) {
+        redistrib_tip4p_forces( f_mod[ftag][i-3], f_mod[ftag][i-2], f_mod[ftag][i-1], f_mod[ftag][i], i-3 , virial);
+      }
+    }
+
+    f_use = f_mod;
+
+  } else {
+    f_use = ( useSaved ? f_saved : f );
+  }
 
   if ( simParams->fixedAtomsOn ) {
     for ( int i = 0; i < numAtoms; ++i ) {
-      if ( atom[i].atomFixed ) atom[i].velocity = 0;
+      if ( atom[i].atomFixed || atom[i].mass <= 0. ) atom[i].velocity = 0;
       else atom[i].velocity += f_use[ftag][i] * ( dt * namd_reciprocal (atom[i].mass) );
     }
   } else {
@@ -752,7 +955,9 @@ void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
 #pragma disjoint (*force_arr, *atom_arr)
 #endif
     for ( int i = 0; i < numAtoms; ++i ) {
-      BigReal recip_val = dt * namd_reciprocal( atom[i].mass );
+      if (atom[i].mass == 0.) continue;
+      BigReal recip_val = ( atom[i].mass > 0. ? dt * namd_reciprocal( atom[i].mass ) : 0.); 
+      //printf("Taking reciprocal of mass %f\n", atom[i].mass);
       atom_arr[i].velocity.x += force_arr[i].x * recip_val;
       atom_arr[i].velocity.y += force_arr[i].y * recip_val;
       atom_arr[i].velocity.z += force_arr[i].z * recip_val;
@@ -814,10 +1019,17 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
     for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
       // find a water
       if (mol->rigid_bond_length(atom[ig].id) > 0) {
+        int oatm = ig+1;
+
+        // Avoid using the Om site to set this by mistake
+        if (atom[ig].mass < 0.5 || atom[ig+1].mass < 0.5) {
+          oatm += 1;
+        }
+
         // initialize settle water parameters
-        settle1init(atom[ig].mass, atom[ig+1].mass, 
+        settle1init(atom[ig].mass, atom[oatm].mass, 
                     mol->rigid_bond_length(atom[ig].id), 
-                    mol->rigid_bond_length(atom[ig+1].id));
+                    mol->rigid_bond_length(atom[oatm].id));
         break; // done with init
       }
     }
@@ -828,6 +1040,11 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
     idz = nslabs/lattice.c().z;
     zmin = lattice.origin().z - 0.5*lattice.c().z;
   }
+
+  // Size of a hydrogen group for water
+  int wathgsize = 3;
+  int watmodel = simParams->watmodel;
+  if (watmodel == WAT_TIP4) wathgsize = 4;
   
   for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
     int hgs = atom[ig].hydrogenGroupSize;
@@ -837,29 +1054,31 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       ref[i] = atom[ig+i].position;
       pos[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
-      rmass[i] = 1. / atom[ig+i].mass;
+      rmass[i] = (atom[ig+1].mass > 0. ? 1. / atom[ig+i].mass : 0.);
+      //printf("rmass of %i is %f\n", ig+i, rmass[i]);
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
       // undo addVelocityToPosition to get proper reference coordinates
       if ( fixed[i] ) rmass[i] = 0.; else pos[i] += vel[i] * dt;
     }
     int icnt = 0;
     if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) > 0 ) {  // for water
-      if ( hgs != 3 ) {
+      if (hgs != wathgsize) {
         NAMD_bug("Hydrogen group error caught in rattle1().");
       }
       // Use SETTLE for water unless some of the water atoms are fixed,
       // for speed we test groupFixed rather than the individual atoms
       if (useSettle && !atom[ig].groupFixed) {
         settle1(ref, pos, vel, invdt);
+        if (simParams->watmodel == WAT_TIP4) tip4_omrepos(ref, pos, vel, invdt);
 
         // which slab the hydrogen group will belong to
         // for pprofile calculations.
         int ppoffset, partition;
-        if ( invdt == 0 ) for ( i = 0; i < 3; ++i ) {
+        if ( invdt == 0 ) for ( i = 0; i < wathgsize; ++i ) {
           atom[ig+i].position = pos[i];
-        } else if ( virial == 0 ) for ( i = 0; i < 3; ++i ) {
+        } else if ( virial == 0 ) for ( i = 0; i < wathgsize; ++i ) {
           atom[ig+i].velocity = vel[i];
-        } else for ( i = 0; i < 3; ++i ) {
+        } else for ( i = 0; i < wathgsize; ++i ) {
           Force df = (vel[i] - atom[ig+i].velocity) * ( atom[ig+i].mass * invdt );
           Tensor vir = outer(df, ref[i]);
           wc += vir;
@@ -1011,6 +1230,10 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
   BigReal rmass[10];  // 1 / mass
   BigReal redmass[10];  // reduced mass
   int fixed[10];  // is atom fixed?
+  
+  // Size of a hydrogen group for water
+  int wathgsize = 3;
+  if (simParams->watmodel == WAT_TIP4) wathgsize = 4;
 
   //  CkPrintf("In rattle2!\n");
   for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
@@ -1021,13 +1244,13 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
     for ( i = 0; i < hgs; ++i ) {
       ref[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
-      rmass[i] = 1. / atom[ig+i].mass;
+      rmass[i] = atom[ig+i].mass > 0. ? 1. / atom[ig+i].mass : 0.;
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
       if ( fixed[i] ) rmass[i] = 0.;
     }
     int icnt = 0;
     if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) > 0 ) {  // for water
-      if ( hgs != 3 ) {
+      if ( wathgsize != 4 ) {
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
       // Use SETTLE for water unless some of the water atoms are fixed
@@ -1678,6 +1901,10 @@ void HomePatch::separateAtoms() {
   // Resize the scratch FullAtomList (tempAtom)
   tempAtom.resize(numAtoms);  // NOTE: Worst case: all non-water
 
+  // Define size of a water hydrogen group
+  int wathgsize = 3;
+  if (simParams->watmodel == WAT_TIP4) wathgsize = 4;
+
   // Iterate through all the atoms
   int i = 0;
   int waterIndex = 0;
@@ -1686,8 +1913,7 @@ void HomePatch::separateAtoms() {
 
     FullAtom &atom_i = atom[i];
     Mass mass = atom_i.mass;
-    int hgs = atom_i.hydrogenGroupSize;
-
+    int hgs = atom_i.hydrogenGroupSize; 
     // Check to see if this hydrogen group is a water molecule
     if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
 
@@ -1696,10 +1922,11 @@ void HomePatch::separateAtoms() {
         atom[waterIndex    ] = atom[i    ];  // Oxygen
         atom[waterIndex + 1] = atom[i + 1];  // Hydrogen
         atom[waterIndex + 2] = atom[i + 2];  // Hydrogen
+        if (wathgsize > 3) atom[waterIndex + 3] = atom[i + 3];  // lonepair
       }
 
-      waterIndex += 3;
-      i += 3;
+      waterIndex += wathgsize;
+      i += wathgsize;
 
     } else {
 
@@ -1856,6 +2083,10 @@ void HomePatch::mergeAtomList(FullAtomList &al) {
   //   the incoming list may not be separated, and the transforms are
   //   applied to the incoming atoms as the separation occurs.
 
+  // size of a water hydrogen group
+  int wathgsize = 3;
+  if (simParams->watmodel == WAT_TIP4) wathgsize = 4;
+
   // Count the number of waters in the given atom list
   int al_numWaterAtoms = 0;
   int i = 0;
@@ -1866,7 +2097,7 @@ void HomePatch::mergeAtomList(FullAtomList &al) {
     Mass mass = atom_i.mass;
 
     if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
-      al_numWaterAtoms += 3;
+      al_numWaterAtoms += wathgsize;
     }
 
     i += hgs;
@@ -1915,8 +2146,10 @@ void HomePatch::mergeAtomList(FullAtomList &al) {
       atom[atom_waterIndex + 1] = al[i + 1];
       atom[atom_waterIndex + 2] = al[i + 2];
 
-      atom_waterIndex += 3;
-      i += 3;
+      if (wathgsize > 3) atom[atom_waterIndex + 3] = al[i + 3];
+
+      atom_waterIndex += wathgsize;
+      i += wathgsize;
 
     } else {
 
