@@ -29,12 +29,6 @@ typedef int AtomType;
 typedef float Mass;
 typedef float Charge;
 
-#ifdef MEM_OPT_VERSION
-typedef unsigned short AtomSigID;
-typedef unsigned short ExclSigID;
-typedef unsigned short VDW_TYPE;
-#endif
-
 typedef double Coordinate;
 
 struct Transform
@@ -90,7 +84,22 @@ struct CompAtom {
 
 };
 
-#ifdef MEM_OPT_VERSION
+//CompAtomExt is now needed even in normal case
+//for changing the packed msg type related to
+//ProxyPatch into varsize msg type where
+// two types of proxy msgs (originally, the msg 
+// for the step where atoms migrate (ProxyAllMsg), 
+// and  the msg for normal steps (ProxyDataMsg))
+// are declared as the same class (ProxyDataMsg).
+// Note that in normal case, the class is needed
+// just for passing the compilation, but not involved
+// in the actual force calculation.
+// --Chao Mei
+
+typedef unsigned short AtomSigID;
+typedef unsigned short ExclSigID;
+typedef unsigned short VDW_TYPE;
+
 struct CompAtomExt {
   AtomSigID sigId;
   ExclSigID exclId;
@@ -113,7 +122,6 @@ struct CompAtomExt {
   }
 
 };
-#endif
 
 #ifdef MEM_OPT_VERSION
 struct FullAtom : CompAtom, CompAtomExt{
