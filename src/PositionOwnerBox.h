@@ -45,6 +45,10 @@ template <class Owner> class PositionOwnerBox {
     int isOpen() {
       return (closeCount != numberUsers || openCount != numberUsers);
     }
+
+    Owner *getOwner() {
+        return owner;
+    }
   
   private:
     Owner *owner;

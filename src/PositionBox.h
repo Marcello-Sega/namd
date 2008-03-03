@@ -58,6 +58,10 @@ template <class Owner> class PositionBox {
       }
     }
 
+    Owner *getOwner(){
+        return ownerBox->getOwner();
+    }
+
 };
 
 #endif // BOX_H
