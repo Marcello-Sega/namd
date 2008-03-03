@@ -143,6 +143,15 @@ void ComputePatchPair::doWork() {
 
   // Pass pointers to doForce
 #ifdef MEM_OPT_VERSION
+
+  //Just for debugging
+/*
+  Patch *patch0 = positionBox[0]->getOwner();
+  Patch *patch1 = positionBox[1]->getOwner();
+  CmiAssert(patch0 == patch[0]);
+  CmiAssert(patch1 == patch[1]);
+*/
+
   CompAtomExt *pExt[2];
   pExt[0] = patch[0]->getCompAtomExtInfo();
   pExt[1] = patch[1]->getCompAtomExtInfo();
