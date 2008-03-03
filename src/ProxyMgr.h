@@ -7,6 +7,7 @@
 #ifndef PROXYMGR_H
 #define PROXYMGR_H
 
+
 #include "charm++.h"
 
 #include "main.h"
@@ -39,12 +40,41 @@ public:
   static ProxyAtomsMsg* unpack(void *ptr);
 };
 
+//1. This class represents for both msg types: one that
+//is originally known as ProxyAllMsg which is sent
+//at the step where atoms migrate; and the other is
+//sent during the steps between two migrations.
+//2. In the case of memory optimized version, the scenario
+//becomes tricky as load balancer will move compute objects
+//around so that new ProxyPatches will be created where
+//the CompAtomExt list information is not available. If
+//the step immediately after the load balancing is a normal
+//step, then the CompAtomExt list info has to be resent by
+//the HomePatch. Because of the current Proxy msg communication
+//scheme where msg is sent to ProxyMgr first, and then retransmitted
+//to ProxyPatches, there's overhead when we want to resend CompAtomExt
+//list as not all the ProxyPatches that are managed by ProxyMgr are
+//newly created ProxyPatches. 
+//--Chao Mei
 class ProxyDataMsg : public CMessage_ProxyDataMsg {
 public:
   PatchID patch;
   Flags flags;
-  CompAtomList positionList;
-  CompAtomList avgPositionList;
+
+  int plLen;
+  CompAtom *positionList;
+  int avgPlLen;
+  CompAtom *avgPositionList;
+
+  //1. The following field will be only
+  //useful for memory optimized version.
+  //2. In normal case, adding this field only
+  //increases the msg length by 4 bytes which
+  //can be ignored considering the current fast
+  //communication network
+  //--Chao Mei
+  int plExtLen;
+  CompAtomExt *positionExtList;
 
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
@@ -52,29 +82,6 @@ public:
 	                //   that are part of water hydrogen groups.
   #endif
 
-  static void* pack(ProxyDataMsg *msg);
-  static ProxyDataMsg* unpack(void *ptr);
-};
-
-class ProxyAllMsg : public CMessage_ProxyAllMsg {
-public:
-  PatchID patch;
-  Flags flags;
-  CompAtomList positionList;
-  CompAtomList avgPositionList;
-
-  // DMK - Atom Separation (water vs. non-water)
-  #if NAMD_SeparateWaters != 0
-    int numWaterAtoms;  // Number of atoms in positionList (from start)
-	                //   that are part of water hydrogen groups.
-  #endif
-
-#ifdef MEM_OPT_VERSION
-  CompAtomExtList extInfoList;
-#endif
-
-  static void* pack(ProxyAllMsg *msg);
-  static ProxyAllMsg* unpack(void *ptr);
 };
 
 class ProxyResultMsg : public CMessage_ProxyResultMsg {
@@ -185,9 +192,9 @@ public:
   void recvImmediateProxyData(ProxyDataMsg *);
   void recvProxyData(ProxyDataMsg *);
 
-  void sendProxyAll(ProxyAllMsg *, int, int*);
-  void recvImmediateProxyAll(ProxyAllMsg *);
-  void recvProxyAll(ProxyAllMsg *);
+  void sendProxyAll(ProxyDataMsg *, int, int*);
+  void recvImmediateProxyAll(ProxyDataMsg *);
+  void recvProxyAll(ProxyDataMsg *);
 
   static ProxyMgr *Object() { return CpvAccess(ProxyMgr_instance); }
   

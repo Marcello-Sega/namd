@@ -24,7 +24,8 @@
 #include "Debug.h"
 
 ProxyPatch::ProxyPatch(PatchID pd) : 
-  Patch(pd), msgBuffer(NULL), msgAllBuffer(NULL)
+  Patch(pd), proxyMsgBufferStatus(PROXYMSGNOTBUFFERED), 
+  curProxyMsg(NULL), prevProxyMsg(NULL)
 {
   DebugM(4, "ProxyPatch(" << pd << ") at " << this << "\n");
   ProxyMgr::Object()->registerProxy(patchID);
@@ -48,8 +49,23 @@ ProxyPatch::~ProxyPatch()
 {
   DebugM(4, "ProxyPatch(" << pd << ") deleted at " << this << "\n");
   ProxyMgr::Object()->unregisterProxy(patchID);
-  AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+
+  // ProxyPatch may be freed because of load balancing if the compute object
+  // it corresponds to no longer exist on this specific processor.
+  CmiAssert(prevProxyMsg!=NULL);
+  if(prevProxyMsg!=NULL) {
+      //AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+      AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin, positionPtrEnd);
+      delete prevProxyMsg;
+      prevProxyMsg = NULL;
+  }
+
   delete [] child;
+
+#ifdef MEM_OPT_VERSION
+  pExt.resize(0);
+#endif
+
 #if CMK_PERSISTENT_COMM
   CmiDestoryPersistent(localphs);
   localphs = 0;
@@ -58,21 +74,28 @@ ProxyPatch::~ProxyPatch()
 
 void ProxyPatch::boxClosed(int box)
 {
-  if ( box == 1 ) {
+  if ( box == 1 ) {	
+    // Note: delay the deletion of proxyDataMsg (of the 
+    // current step) until the next step. This is done 
+    // for the sake of atom migration (ProxyDataMsg) 
+    // as the ProxyPatch has to  unregister the atoms 
+    // of the previous step in the AtomMap data structure. 
     sendResults();
   }
   if ( ! --boxesOpen ) {
-    DebugM(2,patchID << ": " << "Checking message buffer.\n");
-    if ( msgBuffer ) {
-      DebugM(3,"Patch " << patchID << " processing buffered proxy data.\n");
-      receiveData(msgBuffer);
-    } else if (msgAllBuffer ) {
-      DebugM(3,"Patch " << patchID << " processing buffered proxy ALL data.\n");
-      receiveAll(msgAllBuffer);
+    DebugM(2,patchID << ": " << "Checking message buffer.\n");    
+    
+    if(proxyMsgBufferStatus == PROXYALLMSGBUFFERED) {
+          CmiAssert(curProxyMsg != NULL);
+          DebugM(3,"Patch " << patchID << " processing buffered proxy ALL data.\n");
+          receiveAll(curProxyMsg);          
+    }else if(proxyMsgBufferStatus == PROXYDATAMSGBUFFERED) {
+          CmiAssert(curProxyMsg != NULL);
+          DebugM(3,"Patch " << patchID << " processing buffered proxy data.\n");
+          receiveData(curProxyMsg);
     }
-  }
-  else {
-    DebugM(3,"ProxyPatch " << patchID << ": " << boxesOpen << " boxes left to close.\n");
+  } else {
+       DebugM(3,"ProxyPatch " << patchID << ": " << boxesOpen << " boxes left to close.\n");
   }
 }
 
@@ -86,19 +109,48 @@ void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
 void ProxyPatch::receiveData(ProxyDataMsg *msg)
 {
   DebugM(3, "receiveData(" << patchID << ")\n");
+
+  //delete the ProxyDataMsg of the previous step
+  delete prevProxyMsg;
+  prevProxyMsg = NULL;
+
   if ( boxesOpen )
   {
+      proxyMsgBufferStatus = PROXYDATAMSGBUFFERED;
     // store message in queue (only need one element, though)
-    msgBuffer = msg;
+    curProxyMsg = msg;
     return;
   }
-  msgBuffer = NULL;
+
+  //Reuse position arrays inside proxyDataMsg --Chao Mei
+  curProxyMsg = msg;
+  prevProxyMsg = curProxyMsg;
   flags = msg->flags;
-  p = msg->positionList;
-  p_avg = msg->avgPositionList;
-  delete msg;
+  
+  //We could set them to 0 for the sake of easy debugging
+  //if there are something wrong in the "reuse position arrays" code
+  //--Chao Mei
+  //p.resize(0);
+  //p_avg.resize(0);
+  
+  positionPtrBegin = msg->positionList;
+  positionPtrEnd = msg->positionList + msg->plLen;
+
+  avgPositionPtrBegin = msg->avgPositionList;
+  avgPositionPtrEnd = msg->avgPositionList + msg->avgPlLen;
+
+  
   if ( numAtoms == -1 ) { // for new proxies since receiveAtoms is not called
-    numAtoms = p.size();
+      //numAtoms = p.size();
+      numAtoms = msg->plLen;
+
+#ifdef MEM_OPT_VERSION
+      //Retrieve the CompAtomExt list
+      CmiAssert(msg->plExtLen!=0);
+      pExt.resize(msg->plExtLen);
+      memcpy(pExt.begin(), msg->positionExtList, sizeof(CompAtomExt)*(msg->plExtLen));
+#endif
+
 
     // DMK - Atom Separation (water vs. non-water)
     #if NAMD_SeparateWaters != 0
@@ -111,33 +163,58 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   }
 }
 
-void ProxyPatch::receiveAll(ProxyAllMsg *msg)
+void ProxyPatch::receiveAll(ProxyDataMsg *msg)
 {
   DebugM(3, "receiveAll(" << patchID << ")\n");
+
   if ( boxesOpen )
   {
-    // store message in queue (only need one element, though)
-    msgAllBuffer = msg;
+    proxyMsgBufferStatus = PROXYALLMSGBUFFERED;    
+    curProxyMsg = msg;
     return;
-  }
-  msgAllBuffer = NULL;
+  }  
 
-  AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+  //The prevProxyMsg has to be deleted after this if-statement because
+  // positionPtrBegin points to the space inside the prevProxyMsg
+  if(prevProxyMsg!=NULL) {
+      AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin,positionPtrEnd);
+  }
+  //Now delete the ProxyDataMsg of the previous step
+  delete prevProxyMsg;
+  curProxyMsg = msg;
+  prevProxyMsg = curProxyMsg;
+
   flags = msg->flags;
-  p = msg->positionList;
-  numAtoms = p.size();
-  p_avg = msg->avgPositionList;
+
+  positionPtrBegin = msg->positionList;
+  positionPtrEnd = msg->positionList + msg->plLen;
+  numAtoms = msg->plLen;
+  //numAtoms = p.size();
+  
+  avgPositionPtrBegin = msg->avgPositionList;
+  avgPositionPtrEnd = msg->avgPositionList + msg->avgPlLen;
+
+  //We could set them to 0 for the sake of easy debugging
+  //if there are something wrong in the "reuse position arrays" code
+  //--Chao Mei
+  p.resize(0);
+  p_avg.resize(0);
+
+#ifdef MEM_OPT_VERSION
+  //We cannot reuse the CompAtomExt list inside the msg because
+  //the information is needed at every step. In the current implementation
+  //scheme, the ProxyDataMsg msg will be deleted for every step.
+  //In order to keep this information, we have to do the extra copy. But
+  //this overhead is amortized among the steps that atoms don't migrate
+  // --Chao Mei
+  pExt.resize(msg->plExtLen);
+  memcpy(pExt.begin(), msg->positionExtList, sizeof(CompAtomExt)*(msg->plExtLen));
+#endif
 
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
     numWaterAtoms = msg->numWaterAtoms;
   #endif
-
-#ifdef MEM_OPT_VERSION
-  pExt = msg->extInfoList;
-#endif
-
-  delete msg;
 
   positionsReady(1);
 }

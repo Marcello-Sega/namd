@@ -10,11 +10,16 @@ module ProxyMgr {
   message RegisterProxyMsg;
   message UnregisterProxyMsg;
   message [packed] ProxyAtomsMsg;
-  message [packed] ProxyDataMsg;
-  message [packed] ProxyAllMsg;
+
   message [packed] ProxyResultMsg;
   message [packed] ProxySpanningTreeMsg;
   message [packed] ProxyCombinedResultMsg;
+
+  message ProxyDataMsg{
+    CompAtom positionList[];
+    CompAtom avgPositionList[];
+    CompAtomExt positionExtList[];
+  };
 
   group ProxyMgr
   {
@@ -23,8 +28,8 @@ module ProxyMgr {
     entry void recvUnregisterProxy(UnregisterProxyMsg *);
     entry void recvProxyData(ProxyDataMsg *);
     entry void recvImmediateProxyData(ProxyDataMsg *);
-    entry void recvProxyAll(ProxyAllMsg *);
-    entry void recvImmediateProxyAll(ProxyAllMsg *);
+    entry void recvProxyAll(ProxyDataMsg *);
+    entry void recvImmediateProxyAll(ProxyDataMsg *);
     entry void recvResults(ProxyResultMsg *);
     entry void recvResults(ProxyCombinedResultMsg *);
     entry void recvImmediateResults(ProxyCombinedResultMsg *);

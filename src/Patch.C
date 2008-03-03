@@ -27,7 +27,8 @@ typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 Patch::Patch(PatchID pd) :
    lattice(flags.lattice),
    patchID(pd), numAtoms(0), numFixedAtoms(0),
-   positionPtr(0), avgPositionPtr(0),
+   positionPtrBegin(0), avgPositionPtrBegin(0),
+    positionPtrEnd(0), avgPositionPtrEnd(0),
    positionBox(this,&Patch::positionBoxClosed),
    avgPositionBox(this,&Patch::avgPositionBoxClosed),
    forceBox(this,&Patch::forceBoxClosed),
@@ -94,7 +95,7 @@ void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box
 
 void Patch::positionBoxClosed(void)
 {
-   positionPtr = 0;
+   //positionPtrBegin = 0;
    this->boxClosed(0);
 }
 
@@ -110,7 +111,7 @@ void Patch::forceBoxClosed(void)
 
 void Patch::avgPositionBoxClosed(void)
 {
-   avgPositionPtr = 0;
+   avgPositionPtrBegin = 0;
    this->boxClosed(3);
 }
 
@@ -121,7 +122,7 @@ void Patch::positionsReady(int doneMigration)
    DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<std::endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
-   if ( doneMigration ) AtomMap::Object()->registerIDs(patchID,p.begin(),p.end());
+   if ( doneMigration ) AtomMap::Object()->registerIDs(patchID,positionPtrBegin,positionPtrEnd);
 
    boxesOpen = 2;
    if ( flags.doMolly ) boxesOpen++;
@@ -132,11 +133,11 @@ void Patch::positionsReady(int doneMigration)
 #endif
 
    // Give all position pickup boxes access to positions
-   positionPtr = p.begin();
-   positionBox.open(positionPtr,numAtoms,&lattice);
+   //positionPtrBegin = p.begin();
+   positionBox.open(positionPtrBegin,numAtoms,&lattice);
    if ( flags.doMolly ) {
-     avgPositionPtr = p_avg.begin();
-     avgPositionBox.open(avgPositionPtr,numAtoms,&lattice);
+     //avgPositionPtrBegin = p_avg.begin();
+     avgPositionBox.open(avgPositionPtrBegin,numAtoms,&lattice);
    }
 
 #if CMK_VERSION_BLUEGENE

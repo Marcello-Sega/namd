@@ -131,6 +131,10 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   #endif
   // Handle unusual water models here
   if (simParams->watmodel == WAT_TIP4) init_tip4();
+
+#ifdef MEM_OPT_VERSION
+  isNewProxyAdded = 0;
+#endif
 }
 
 HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
@@ -199,6 +203,11 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
     
   // Handle unusual water models here
   if (simParams->watmodel == WAT_TIP4) init_tip4();
+
+#ifdef MEM_OPT_VERSION
+  isNewProxyAdded = 0;
+#endif
+
 }
 
 void ::HomePatch::init_tip4() {
@@ -355,6 +364,11 @@ void HomePatch::boxClosed(int)
 void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   DebugM(4, "registerProxy("<<patchID<<") - adding node " <<msg->node<<"\n");
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
+
+#ifdef MEM_OPT_VERSION
+  isNewProxyAdded = 1;
+#endif
+
   Random((patchID + 37) * 137).reorder(proxy.begin(),proxy.size());
   delete msg;
 }
@@ -719,53 +733,62 @@ void HomePatch::positionsReady(int doMigration)
 #endif
     int seq = flags.sequence;
     int priority = PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);
-    if (doMigration) {
-        ProxyAllMsg *allmsg = new (PRIORITY_SIZE) ProxyAllMsg;
-        SET_PRIORITY(allmsg,seq,priority);
-        allmsg->patch = patchID;
-        allmsg->flags = flags;
-        allmsg->positionList = p;
-        if (flags.doMolly) allmsg->avgPositionList = p_avg;
-	#ifdef MEM_OPT_VERSION
-	allmsg->extInfoList = pExt;
-	#endif
-
-        // DMK - Atom Separation (water vs. non-water)
-        #if NAMD_SeparateWaters != 0
-	  allmsg->numWaterAtoms = numWaterAtoms;
-        #endif
-
-#if CMK_PERSISTENT_COMM
-//        CmiUsePersistentHandle(localphs, npid);
+    //begin to prepare proxy msg and send it
+    int pdMsgPLLen = p.size();
+    int pdMsgAvgPLLen = 0;
+    if(flags.doMolly) {
+        pdMsgAvgPLLen = p_avg.size();
+    }
+    int pdMsgPLExtLen = 0;
+#ifdef MEM_OPT_VERSION
+    if(doMigration || isNewProxyAdded) {
+        pdMsgPLExtLen = pExt.size();
+    }
 #endif
-        ProxyMgr::Object()->sendProxyAll(allmsg,npid,pids);
-#if CMK_PERSISTENT_COMM
-        CmiUsePersistentHandle(NULL, 0);
+    ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgPLExtLen, PRIORITY_SIZE) ProxyDataMsg;
+    SET_PRIORITY(nmsg,seq,priority);
+    nmsg->patch = patchID;
+    nmsg->flags = flags;
+    nmsg->plLen = pdMsgPLLen;                
+    //copying data to the newly created msg
+    memcpy(nmsg->positionList, p.begin(), sizeof(CompAtom)*pdMsgPLLen);
+    nmsg->avgPlLen = pdMsgAvgPLLen;        
+    if(flags.doMolly) {
+        memcpy(nmsg->avgPositionList, p_avg.begin(), sizeof(CompAtom)*pdMsgAvgPLLen);
+    }
+    nmsg->plExtLen = pdMsgPLExtLen;
+#ifdef MEM_OPT_VERSION
+    if(doMigration || isNewProxyAdded){     
+        memcpy(nmsg->positionExtList, pExt.begin(), sizeof(CompAtomExt)*pdMsgPLExtLen);
+    }
 #endif
-    } else {
-        ProxyDataMsg *nmsg = new (PRIORITY_SIZE) ProxyDataMsg;
-        SET_PRIORITY(nmsg,seq,priority);
-        nmsg->patch = patchID;
-        nmsg->flags = flags;
-        nmsg->positionList = p;
-        if (flags.doMolly) nmsg->avgPositionList = p_avg;
-
-        // DMK - Atom Separation (water vs. non-water)
-        #if NAMD_SeparateWaters != 0
-	  nmsg->numWaterAtoms = numWaterAtoms;
-        #endif
-
-#if CMK_PERSISTENT_COMM
-//        CmiUsePersistentHandle(localphs, npid);
+    
+#if NAMD_SeparateWaters != 0
+    //DMK - Atom Separation (water vs. non-water)
+    nmsg->numWaterAtoms = numWaterAtoms;
 #endif
+
+    if(doMigration) {
+        ProxyMgr::Object()->sendProxyAll(nmsg,npid,pids);
+    }else{
         ProxyMgr::Object()->sendProxyData(nmsg,npid,pids);
+    }
 #if CMK_PERSISTENT_COMM
-        CmiUsePersistentHandle(NULL, 0);
+    CmiUsePersistentHandle(NULL, 0);
 #endif
-    }   
+#ifdef MEM_OPT_VERSION
+    isNewProxyAdded = 0;
+#endif
   }
   delete [] pids;
   DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");
+  
+  positionPtrBegin = p.begin();
+  positionPtrEnd = p.end();
+  if(flags.doMolly) {
+      avgPositionPtrBegin = p_avg.begin();
+      avgPositionPtrEnd = p_avg.end();
+  }
   Patch::positionsReady(doMigration);
 
   patchMapRead = 1;

@@ -11,7 +11,11 @@
 
 class ProxyDataMsg;
 class ProxyAtomsMsg;
-class ProxyAllMsg;
+//class ProxyAllMsg;
+
+#define PROXYMSGNOTBUFFERED 0
+#define PROXYDATAMSGBUFFERED 1
+#define PROXYALLMSGBUFFERED 2
 
 class ProxyPatch : public Patch
 {
@@ -22,7 +26,7 @@ class ProxyPatch : public Patch
 
      void receiveAtoms(ProxyAtomsMsg*);
      void receiveData(ProxyDataMsg*);
-     void receiveAll(ProxyAllMsg*);
+     void receiveAll(ProxyDataMsg*);
 
      void setSpanningTree(int, int*, int);
      int  getSpanningTreeParent() { return parent; }
@@ -41,8 +45,13 @@ class ProxyPatch : public Patch
   private:
 
      void sendResults(void);
-     ProxyDataMsg* msgBuffer;
-     ProxyAllMsg* msgAllBuffer;
+
+     //"proxyMsgBufferStatus" indicates whether there's a ProxyDataMsg buffered
+     // and waiting to be processed, while "curProxyMsg" points to 
+     // the actual msg. This msg will be freed at the next step. --Chao Mei  
+     int proxyMsgBufferStatus;
+     ProxyDataMsg* curProxyMsg;
+     ProxyDataMsg* prevProxyMsg;
 
      // for spanning tree
      ProxyCombinedResultMsg *msgCBuffer;

@@ -46,6 +46,17 @@ private:
   ScaledPosition min, max, center;
   int aAway, bAway, cAway;
 
+#ifdef MEM_OPT_VERSION
+  //Note: If new proxies are added to this HomePatch
+  // after load balancing, and it is not the immediate step
+  // after atom migration (where ProxyAllMsg will be sent), 
+  // then the CompAtomExt list has to be resent with the 
+  // ProxyDataMsg (the normal proxy msg when atoms don't 
+  // migrate), otherwise, program will crash without such 
+  // information when doing force calculations --Chao Mei
+  Bool isNewProxyAdded;
+#endif
+
 public:
   ~HomePatch();
 

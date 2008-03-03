@@ -31,74 +31,6 @@ PACK_MSG(ProxyAtomsMsg,
   PACK_RESIZE(atomIDList);
 )
 
-
-// DMK - Atom Separation (water vs. non-water)
-#if NAMD_SeparateWaters != 0
-  
-PACK_MSG(ProxyDataMsg,
-  PACK(patch);
-  PACK(flags);
-  PACK_RESIZE(positionList);
-  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
-  PACK(numWaterAtoms);
-)
-
-#else // NAMD_SeparateWaters == 0
-
-PACK_MSG(ProxyDataMsg,
-  PACK(patch);
-  PACK(flags);
-  PACK_RESIZE(positionList);
-  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
-)
-
-#endif
-
-
-// DMK - Atom Separation (water vs. non-water)
-#if NAMD_SeparateWaters != 0
-
-#ifdef MEM_OPT_VERSION
-PACK_MSG(ProxyAllMsg,
-  PACK(patch);
-  PACK(flags);
-  PACK_RESIZE(positionList);
-  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
-  PACK_RESIZE(extInfoList);
-  PACK(numWaterAtoms);
-)
-#else
-PACK_MSG(ProxyAllMsg,
-  PACK(patch);
-  PACK(flags);
-  PACK_RESIZE(positionList);
-  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
-  PACK(numWaterAtoms);
-)
-#endif
-
-#else // NAMD_SeparateWaters == 0
-
-#ifdef MEM_OPT_VERSION
-PACK_MSG(ProxyAllMsg,
-  PACK(patch);
-  PACK(flags);
-  PACK_RESIZE(positionList);
-  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
-  PACK_RESIZE(extInfoList);
-)
-#else
-PACK_MSG(ProxyAllMsg,
-  PACK(patch);
-  PACK(flags);
-  PACK_RESIZE(positionList);
-  if (packmsg_msg->flags.doMolly) PACK_RESIZE(avgPositionList);
-)
-#endif
-
-#endif
-
-
 PACK_MSG(ProxySpanningTreeMsg,
   PACK(patch);
   PACK(node);
@@ -106,6 +38,7 @@ PACK_MSG(ProxySpanningTreeMsg,
 )
 
 void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
+
   int msg_size = 0;
   msg_size += sizeof(msg->node);
   msg_size += sizeof(msg->patch);
@@ -160,6 +93,7 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
 }
 
 ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
+
   void *vmsg = CkAllocBuffer(ptr,sizeof(ProxyResultMsg));
   ProxyResultMsg *msg = new (vmsg) ProxyResultMsg;
   char *msg_cur = (char*)ptr;
@@ -893,15 +827,8 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
     // copy the message and send to spanning children
     int pids[proxySpanDim];
     int npid = proxy->getSpanningTreeChild(pids);
-    if (npid) {
-      ProxyDataMsg *newmsg = new(PRIORITY_SIZE) ProxyDataMsg;
-      CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
-      *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
-      newmsg->patch = msg->patch;
-      newmsg->flags = msg->flags;
-      newmsg->positionList = msg->positionList;
-      newmsg->avgPositionList = msg->avgPositionList;
-      //ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
+    if (npid) {        
+        ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);     
 
       //At the second level of the tree immediate messages are not needed
       CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
@@ -914,35 +841,26 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
 }
 
 void
-ProxyMgr::sendProxyAll(ProxyAllMsg *msg, int pcnt, int *pids) {
+ProxyMgr::sendProxyAll(ProxyDataMsg *msg, int pcnt, int *pids) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
   cp.recvImmediateProxyAll(msg,pcnt,pids);
 }
 
 void 
-ProxyMgr::recvProxyAll(ProxyAllMsg *msg) {
+ProxyMgr::recvProxyAll(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveAll(msg); // deleted in ProxyPatch::receiveAtoms()
 }
 
 void
-ProxyMgr::recvImmediateProxyAll(ProxyAllMsg *msg) {
+ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
     int pids[proxySpanDim];
     int npid = proxy->getSpanningTreeChild(pids);
     if (npid) {
-      ProxyAllMsg *newmsg = new(PRIORITY_SIZE) ProxyAllMsg;
-      CkSetQueueing(newmsg, CK_QUEUEING_IFIFO);
-      *((int*) CkPriorityPtr(newmsg)) = *((int*) CkPriorityPtr(msg));
-      newmsg->patch = msg->patch;
-      newmsg->flags = msg->flags;
-      newmsg->positionList = msg->positionList;
-      newmsg->avgPositionList = msg->avgPositionList;
-#ifdef MEM_OPT_VERSION
-      newmsg->extInfoList = msg->extInfoList;
-#endif
+        ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);      
       ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
     }
   }
