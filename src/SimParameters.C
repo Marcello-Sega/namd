@@ -2111,6 +2111,20 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
     NAMD_die("ldbPeriod must greater than firstLdbStep.");
   }
 
+#ifdef MEM_OPT_VERSION
+  //Some constraints on the values of load balancing parameters.
+  //The reason is related to communication schemes used in sending proxy
+  //data. If the step immediately after the load balancing is not a step
+  //for atom migration, then it's possible there are some necessary information 
+  // missing inside the ProxyPatch which will crash the program. Therefore,
+  // It's better that the step immediately after the load balancing be a step
+  // for atom migration so that the some overhead in Proxy msgs are removed. 
+  // --Chao Mei
+  if(ldbPeriod%stepsPerCycle!=0 || firstLdbStep%stepsPerCycle!=0) {
+      iout << iWARN << "In memory optimized version, the ldbPeriod parameter or firstLdbStep parameter is better set to be a multiple of stepsPerCycle parameter!\n";
+  }
+#endif
+
    if (N < firstTimestep) { N = firstTimestep; }
 
    if ( (firstTimestep%stepsPerCycle) != 0)
