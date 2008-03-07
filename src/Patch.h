@@ -93,17 +93,22 @@ class Patch
      CompAtomExtList pExt;
 #endif     
 
-     //Those fields are declared for reusing position info
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+     //1. Those fields are declared for reusing position info
      //inside the ProxyDataMsg msg at every step so that the
      //extra copy is avoided.
      //Regarding the CompAtomExt list inside the msg of ProxyAllMsg type
      //we cannot avoid the copy in the current scheme because this information
      //will be lost as the msg will be deleted at the next timestep. But the
      //overhead is amortized among the steps that atoms don't migrate
-     //--Chao Mei
+     //2. positionPtrBegin is better to be made 32-byte aligned so we could
+     // have better cache performance in the force calculation part. This
+     // is especially needed for BG/L machine.
+     // --Chao Mei
      CompAtom      *positionPtrBegin;
+     CompAtom      *positionPtrEnd;     
+#endif
      CompAtom      *avgPositionPtrBegin;
-     CompAtom      *positionPtrEnd;
      CompAtom      *avgPositionPtrEnd;
 
      ForceList     f[Results::maxNumForces];

@@ -27,8 +27,7 @@ typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 Patch::Patch(PatchID pd) :
    lattice(flags.lattice),
    patchID(pd), numAtoms(0), numFixedAtoms(0),
-   positionPtrBegin(0), avgPositionPtrBegin(0),
-    positionPtrEnd(0), avgPositionPtrEnd(0),
+   avgPositionPtrBegin(0), avgPositionPtrEnd(0),
    positionBox(this,&Patch::positionBoxClosed),
    avgPositionBox(this,&Patch::avgPositionBoxClosed),
    forceBox(this,&Patch::forceBoxClosed),
@@ -39,6 +38,10 @@ Patch::Patch(PatchID pd) :
      ,numWaterAtoms(-1)
    #endif
 {
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+    positionPtrBegin = 0;
+    positionPtrEnd = 0;
+#endif
   lattice = Node::Object()->simParameters->lattice;
 }
 
@@ -122,7 +125,13 @@ void Patch::positionsReady(int doneMigration)
    DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<std::endl );
    ComputeMap *computeMap = ComputeMap::Object();
 
-   if ( doneMigration ) AtomMap::Object()->registerIDs(patchID,positionPtrBegin,positionPtrEnd);
+   if ( doneMigration ){
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+       AtomMap::Object()->registerIDs(patchID,positionPtrBegin,positionPtrEnd);       
+#else
+       AtomMap::Object()->registerIDs(patchID,p.begin(),p.end());
+#endif
+   }
 
    boxesOpen = 2;
    if ( flags.doMolly ) boxesOpen++;
@@ -134,7 +143,11 @@ void Patch::positionsReady(int doneMigration)
 
    // Give all position pickup boxes access to positions
    //positionPtrBegin = p.begin();
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
    positionBox.open(positionPtrBegin,numAtoms,&lattice);
+#else
+   positionBox.open(p.begin(),numAtoms,&lattice);
+#endif
    if ( flags.doMolly ) {
      //avgPositionPtrBegin = p_avg.begin();
      avgPositionBox.open(avgPositionPtrBegin,numAtoms,&lattice);
