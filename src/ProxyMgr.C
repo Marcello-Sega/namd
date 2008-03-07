@@ -129,6 +129,51 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
   return msg;
 }
 
+ProxyResultVarsizeMsg *ProxyResultVarsizeMsg::getANewMsg(NodeID nid, PatchID pid, int prioSize, ForceList *fls){
+    //1. decide the length of forceArr and iszero field.
+    int tmpLen[Results::maxNumForces];
+    int iszeroLen = 0;
+    for (int i=0; i<Results::maxNumForces; i++){
+        tmpLen[i] = fls[i].size();
+        iszeroLen += tmpLen[i];
+    }
+    char *tmpIszero = new char[iszeroLen];
+    char *iszeroPtr = tmpIszero;
+    int fArrLen = 0;
+    for(int i=0; i<Results::maxNumForces; i++) {        
+        Force *fiPtr = fls[i].begin();
+        for(int j=0; j<tmpLen[i]; j++, fiPtr++, iszeroPtr++) {
+            if(fiPtr[i].x!=0.0 || fiPtr[i].y!=0.0 || fiPtr[i].z!=0) {
+                *iszeroPtr=0;
+                fArrLen++;
+            }else{
+                *iszeroPtr=1;
+            }            
+        }
+    }
+
+    //2. Ready to create the msg, and set all fields
+    ProxyResultVarsizeMsg *retmsg = new(fArrLen, iszeroLen, prioSize)ProxyResultVarsizeMsg;
+    retmsg->node = nid;
+    retmsg->patch = pid;
+    memcpy(retmsg->flLen, tmpLen, sizeof(int)*Results::maxNumForces);
+    iszeroPtr = tmpIszero;
+    Force *forcePtr = retmsg->forceArr;
+    for(int i=0; i<Results::maxNumForces; i++) {        
+        Force *fiPtr = fls[i].begin();
+        for(int j=0; j<tmpLen[i]; j++, fiPtr++, iszeroPtr++) {
+            if((*iszeroPtr)!=1) {
+                forcePtr->x = fiPtr->x;
+                forcePtr->y = fiPtr->y;
+                forcePtr->z = fiPtr->z;
+                forcePtr++;
+            }            
+        }
+    }
+    memcpy(retmsg->isZero, tmpIszero, sizeof(char)*iszeroLen);
+    delete [] tmpIszero;
+    return retmsg;
+}
 
 // for spanning tree
 void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
@@ -736,8 +781,23 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   delete msg;
 }
 
-void
-ProxyMgr::sendResults(ProxyResultMsg *msg) {
+
+void ProxyMgr::sendResults(ProxyResultVarsizeMsg *msg) {
+    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    NodeID node = PatchMap::Object()->node(msg->patch);
+  #if CHARM_VERSION > 050402
+    cp[node].recvResults(msg);
+  #else
+    cp.recvResults(msg, node);
+  #endif
+}
+
+void ProxyMgr::recvResults(ProxyResultVarsizeMsg *msg) {
+    HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
+    home->receiveResults(msg); // delete done in HomePatch::receiveResults()
+}
+
+void ProxyMgr::sendResults(ProxyResultMsg *msg) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
   NodeID node = PatchMap::Object()->node(msg->patch);
 #if CHARM_VERSION > 050402
@@ -747,8 +807,7 @@ ProxyMgr::sendResults(ProxyResultMsg *msg) {
 #endif
 }
 
-void
-ProxyMgr::recvResults(ProxyResultMsg *msg) {
+void ProxyMgr::recvResults(ProxyResultMsg *msg) {
   HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
   home->receiveResults(msg); // delete done in HomePatch::receiveResults()
 }

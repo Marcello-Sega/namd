@@ -62,6 +62,7 @@ public:
   Flags flags;
 
   int plLen;
+
   CompAtom *positionList;
   int avgPlLen;
   CompAtom *avgPositionList;
@@ -81,8 +82,25 @@ public:
     int numWaterAtoms;  // Number of atoms in positionList (from start)
 	                //   that are part of water hydrogen groups.
   #endif
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+  //Adding padding bytes to make sure that positionList is
+  //32-byte aligned which usually gives better cache performance,
+  //especially on BlueGene/L machine. Otherwise, we have to
+  //do the extra copy.
+  //The basic method to calculate padding is to add up
+  //the size of all the fields so far, including
+  //the message header (the envelope) , then mod (alignment)
+  // --Chao Mei
+ #if NAMD_SeparateWaters != 0
+  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+4*sizeof(int)+3*sizeof(void *))%32)%32];
+ #else
+  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+3*sizeof(int)+3*sizeof(void *))%32)%32];
+ #endif
+#endif
 
 };
+
+
 
 class ProxyResultMsg : public CMessage_ProxyResultMsg {
 public:
@@ -91,6 +109,27 @@ public:
   ForceList forceList[Results::maxNumForces];
   static void* pack(ProxyResultMsg *msg);
   static ProxyResultMsg* unpack(void *ptr);
+};
+
+class ProxyResultVarsizeMsg: public CMessage_ProxyResultVarsizeMsg{
+public:
+    NodeID node;
+    PatchID patch;
+    int flLen[Results::maxNumForces];   
+
+    Force *forceArr;
+    //Indicate the position of the force list that has zero value
+    //which is not recorded in the above force array.
+    char *isZero;
+
+    //add padding bytes to make sure the beginning 
+    //of force arrays is 8-byte aligned as it is originally.
+    //Therefore, we have to put the forceArr field as
+    //the first variable of varsize array type
+    char padding[(8-(sizeof(envelope)+sizeof(NodeID)+sizeof(PatchID)+sizeof(int)*Results::maxNumForces+2*sizeof(void *))%8)%8];   
+
+    //The length of "fls" is Results::maxNumForces
+    static ProxyResultVarsizeMsg *getANewMsg(NodeID nid, PatchID pid, int prioSize, ForceList *fls); 
 };
 
 class ProxyCombinedResultMsg : public CMessage_ProxyCombinedResultMsg {
@@ -182,6 +221,8 @@ public:
   void recvProxies(int pid, int *list, int n);
   void buildSpanningTree0();
 
+  void sendResults(ProxyResultVarsizeMsg *);
+  void recvResults(ProxyResultVarsizeMsg *);
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);
   void sendResults(ProxyCombinedResultMsg *);

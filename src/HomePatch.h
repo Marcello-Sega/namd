@@ -26,6 +26,7 @@
 
 class RegisterProxyMsg;
 class UnregisterProxyMsg;
+class ProxyResultVarsizeMsg;
 class ProxyResultMsg;
 class ProxyCombinedResultMsg;
 class Sequencer;
@@ -65,8 +66,10 @@ public:
   // opposite of above
   void unregisterProxy(UnregisterProxyMsg *);
 
-  // ProxyPatch sends Forces back to here (via ProxyMgr)
-  void receiveResults(ProxyResultMsg *msg);
+  // ProxyPatch sends Forces back to here (via ProxyMgr)  
+  void receiveResults(ProxyResultVarsizeMsg *msg);
+  void receiveResults(ProxyResultMsg *msg);     
+
   void receiveResults(ProxyCombinedResultMsg *msg);
 
   // AtomMigration messages passes from neighbor HomePatches to here.

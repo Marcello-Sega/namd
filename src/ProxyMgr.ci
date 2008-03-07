@@ -16,9 +16,18 @@ module ProxyMgr {
   message [packed] ProxyCombinedResultMsg;
 
   message ProxyDataMsg{
+    //Make sure positionList is the first varsize type declaration
+    //in this message type as it needs alignment
     CompAtom positionList[];
     CompAtom avgPositionList[];
     CompAtomExt positionExtList[];
+  };
+
+  message ProxyResultVarsizeMsg{
+    //Make sure forceArr is the first varsize type declaration
+    //in this message type as it needs alignment
+    Force forceArr[];    
+    char isZero[];    
   };
 
   group ProxyMgr
@@ -30,6 +39,7 @@ module ProxyMgr {
     entry void recvImmediateProxyData(ProxyDataMsg *);
     entry void recvProxyAll(ProxyDataMsg *);
     entry void recvImmediateProxyAll(ProxyDataMsg *);
+    entry void recvResults(ProxyResultVarsizeMsg *);       
     entry void recvResults(ProxyResultMsg *);
     entry void recvResults(ProxyCombinedResultMsg *);
     entry void recvImmediateResults(ProxyCombinedResultMsg *);

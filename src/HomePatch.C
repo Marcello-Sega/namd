@@ -601,6 +601,31 @@ void HomePatch::buildSpanningTree(void)
   sendSpanningTree();
 }
 
+
+void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg){
+    DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
+    int n = msg->node;
+    ProxyListElem *pe = proxy.begin();
+    for ( ; pe->node != n; ++pe );
+    Results *r = pe->forceBox->open();
+
+    char *iszeroPtr = msg->isZero;
+    Force *msgFPtr = msg->forceArr;
+
+    for ( int k = 0; k < Results::maxNumForces; ++k )
+    {
+      Force *rfPtr = r->f[k];
+      for(int i=0; i<msg->flLen[k]; i++, rfPtr++, iszeroPtr++) {
+          if((*iszeroPtr)!=1) {
+              *rfPtr += *msgFPtr;
+              msgFPtr++;
+          }
+      }      
+    }
+    pe->forceBox->close(&r);
+    delete msg;
+}
+
 void HomePatch::receiveResults(ProxyResultMsg *msg)
 {
   DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
@@ -782,9 +807,12 @@ void HomePatch::positionsReady(int doMigration)
   }
   delete [] pids;
   DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");
-  
+
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
   positionPtrBegin = p.begin();
   positionPtrEnd = p.end();
+#endif
+
   if(flags.doMolly) {
       avgPositionPtrBegin = p_avg.begin();
       avgPositionPtrEnd = p_avg.end();

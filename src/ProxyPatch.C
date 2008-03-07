@@ -54,13 +54,18 @@ ProxyPatch::~ProxyPatch()
   // it corresponds to no longer exist on this specific processor.
   CmiAssert(prevProxyMsg!=NULL);
   if(prevProxyMsg!=NULL) {
-      //AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
       AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin, positionPtrEnd);
+#else
+      AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+#endif      
       delete prevProxyMsg;
       prevProxyMsg = NULL;
   }
 
   delete [] child;
+
+  p.resize(0);
 
 #ifdef MEM_OPT_VERSION
   pExt.resize(0);
@@ -126,16 +131,20 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   curProxyMsg = msg;
   prevProxyMsg = curProxyMsg;
   flags = msg->flags;
-  
+
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
   //We could set them to 0 for the sake of easy debugging
   //if there are something wrong in the "reuse position arrays" code
   //--Chao Mei
   //p.resize(0);
-  //p_avg.resize(0);
-  
+  //p_avg.resize(0);  
   positionPtrBegin = msg->positionList;
   positionPtrEnd = msg->positionList + msg->plLen;
-
+#else
+  p.resize(msg->plLen);
+  memcpy(p.begin(), msg->positionList, sizeof(CompAtom)*(msg->plLen));
+#endif
+  
   avgPositionPtrBegin = msg->avgPositionList;
   avgPositionPtrEnd = msg->avgPositionList + msg->avgPlLen;
 
@@ -177,7 +186,11 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   //The prevProxyMsg has to be deleted after this if-statement because
   // positionPtrBegin points to the space inside the prevProxyMsg
   if(prevProxyMsg!=NULL) {
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
       AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin,positionPtrEnd);
+#else
+      AtomMap::Object()->unregisterIDs(patchID, p.begin(), p.end());
+#endif
   }
   //Now delete the ProxyDataMsg of the previous step
   delete prevProxyMsg;
@@ -186,19 +199,24 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
 
   flags = msg->flags;
 
+#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+  //We could set them to 0 for the sake of easy debugging
+  //if there are something wrong in the "reuse position arrays" code
+  //--Chao Mei
+  //p.resize(0);
+  //p_avg.resize(0);  
   positionPtrBegin = msg->positionList;
   positionPtrEnd = msg->positionList + msg->plLen;
+#else
+  p.resize(msg->plLen);
+  memcpy(p.begin(), msg->positionList, sizeof(CompAtom)*(msg->plLen));
+#endif
+
   numAtoms = msg->plLen;
   //numAtoms = p.size();
   
   avgPositionPtrBegin = msg->avgPositionList;
   avgPositionPtrEnd = msg->avgPositionList + msg->avgPlLen;
-
-  //We could set them to 0 for the sake of easy debugging
-  //if there are something wrong in the "reuse position arrays" code
-  //--Chao Mei
-  p.resize(0);
-  p_avg.resize(0);
 
 #ifdef MEM_OPT_VERSION
   //We cannot reuse the CompAtomExt list inside the msg because
@@ -237,13 +255,16 @@ void ProxyPatch::sendResults(void)
 //  CmiUsePersistentHandle(&localphs, 1);
 #endif
   if (proxyRecvSpanning == 0) {
-    ProxyResultMsg *msg = new (PRIORITY_SIZE) ProxyResultMsg;
-    SET_PRIORITY(msg,flags.sequence,
-		PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
+#ifdef REMOVE_PROXYRESULTMSG_EXTRACOPY
+    ProxyResultVarsizeMsg *msg = ProxyResultVarsizeMsg::getANewMsg(CkMyPe(), patchID, PRIORITY_SIZE, f);   
+#else
+    ProxyResultMsg *msg = new (PRIORITY_SIZE) ProxyResultMsg;    
     msg->node = CkMyPe();
     msg->patch = patchID;
     for ( i = 0; i < Results::maxNumForces; ++i ) 
       msg->forceList[i] = f[i];
+#endif
+    SET_PRIORITY(msg,flags.sequence,PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
     ProxyMgr::Object()->sendResults(msg);
   }
   else {
