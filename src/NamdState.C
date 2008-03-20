@@ -181,10 +181,12 @@ int NamdState::configListInit(ConfigList *cfgList) {
            StringList *consRefFile = configList->find("consref");
            StringList *consKFile = configList->find("conskfile");
 
+          if (coordinateFilename != NULL) {
            if(strcasecmp(coordinateFilename->data, consRefFile->data)==0)
                 consRefFile = NULL;
            if(strcasecmp(coordinateFilename->data, consKFile->data)==0)
                 consKFile = NULL;
+          }
 
            molecule->build_constraint_params(consRefFile, consKFile,
                                              configList->find("conskcol"),
