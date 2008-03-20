@@ -50,6 +50,7 @@ $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
 	$(CD) $(DOCDIR); \
 	pdflatex $(MAIN_UG_FILE); \
 	bibtex $(MAIN_UG_FILE); \
+	bibtex ug_alchemy; \
 	makeindex $(MAIN_UG_FILE).idx; \
 	pdflatex $(MAIN_UG_FILE); \
 	makeindex $(MAIN_UG_FILE).idx; \
