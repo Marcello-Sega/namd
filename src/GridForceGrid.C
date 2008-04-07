@@ -13,7 +13,7 @@
 #include "common.h"
 
 #define MIN_DEBUG_LEVEL 3
-//#define DEBUGM
+#define DEBUGM
 #include "Debug.h"
 
 
@@ -196,7 +196,7 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 	    for (int i1 = 0; i1 < 3; i1++) {
 		if (cross(Avec[i0], Kvec[i1]) == 0) {
 		    cont[i1] = TRUE;
-		    offset[i1] = simParams->gridforceVOffset[i0];
+		    offset[i1] = simParams->gridforceVOffset[i0] * factor;
 		    gap[i1] = (inv * (Avec[i0] - Kvec[i1])).length();	// want in grid-point units (normal = 1)
 		    
 		    if (gap[i1] < 0) {
@@ -277,7 +277,7 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 	
 	if (cont[i0] && fabs(offset[i0] - (p_avg[i0]-n_avg[i0])) > modThresh) {
 	    iout << iWARN << "GRID FORCE POTENTIAL DIFFERENCE IN K" << i0
-		 << " DIRECTION IS GREATER THAN " << modThresh << " KCAL/MOL*E\n" << endi;
+		 << " DIRECTION IS " << offset[i0] - (p_avg[i0]-n_avg[i0]) << " KCAL/MOL*E\n" << endi;
 	}
 	DebugM(3, "n_avg[" << i0 << "] = " << n_avg[i0] << "\n" << endi);
 	DebugM(3, "p_avg[" << i0 << "] = " << p_avg[i0] << "\n" << endi);
@@ -378,10 +378,18 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 	int inds2[3];
 	int ind2 = 0;
 	
+	float voff = 0.0;
 	int bit = 1;	// bit = 2^i1 in the below loop
 	for (int i1 = 0; i1 < 3; i1++) {
 	    inds2[i1] = (inds[i1] + ((i0 & bit) ? 1 : 0)) % k[i1];
 	    ind2 += inds2[i1] * dk[i1];
+	    
+	    // Deal with voltage offsets
+	    if (cont[i1] && inds[i1] == (k[i1]-1) && inds2[i1] == 0) {
+		voff += offset[i1];
+		DebugM(3, "offset[" << i1 << "] = " << offset[i1] << "\n" << endi);
+	    }
+	    
 	    bit <<= 1;	// i.e. multiply by 2
 	}
 	
@@ -402,11 +410,13 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 	Bool zero_derivs = FALSE;
 	int dk_hi[3];
 	int dk_lo[3];
+	float voffs[3];
 	for (int i1 = 0; i1 < 3; i1++) {
 	    if (inds2[i1] == 0) {
 		if (cont[i1]) {
 		    dk_hi[i1] = dk[i1];
 		    dk_lo[i1] = -(k[i1]-1) * dk[i1];
+		    voffs[i1] = offset[i1];
 		}
 		else zero_derivs = TRUE;
 	    }
@@ -414,12 +424,14 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 		if (cont[i1]) {
 		    dk_hi[i1] = -(k[i1]-1) * dk[i1];
 		    dk_lo[i1] = dk[i1];
+		    voffs[i1] = offset[i1];
 		}
 		else zero_derivs = TRUE;
 	    }
 	    else {
 		dk_hi[i1] = dk[i1];
 		dk_lo[i1] = dk[i1];
+		voffs[i1] = 0.0;
 	    }
 	}
 	
@@ -433,39 +445,33 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 	box->loc = dg;
 	
 	// V
-	box->b[i0] = grid[ind2];
+	box->b[i0] = grid[ind2] + voff;
 	
-	// First derivatives
-	//  dV/dx
-	box->b[8+i0] = (zero_derivs) ? 0.0 :
-	    0.5 * (grid[ind2 + dk_hi[0]] - grid[ind2 - dk_lo[0]]);
-	//  dV/dy
-	box->b[16+i0] = (zero_derivs) ? 0.0 :
-	    0.5 * (grid[ind2 + dk_hi[1]] - grid[ind2 - dk_lo[1]]);
-	//  dV/dz
-	box->b[24+i0] = (zero_derivs) ? 0.0 :
-	    0.5 * (grid[ind2 + dk_hi[2]] - grid[ind2 - dk_lo[2]]);
+	if (zero_derivs) {
+	    box->b[8+i0] = 0.0;
+	    box->b[16+i0] = 0.0;
+	    box->b[24+i0] = 0.0;
+	    box->b[32+i0] = 0.0;
+	    box->b[40+i0] = 0.0;
+	    box->b[48+i0] = 0.0;
+	    box->b[56+i0] = 0.0;
+	} else {
+	    box->b[8+i0] = 0.5 * (grid[ind2 + dk_hi[0]] - grid[ind2 - dk_lo[0]] + voffs[0]);	//  dV/dx
+	    box->b[16+i0] = 0.5 * (grid[ind2 + dk_hi[1]] - grid[ind2 - dk_lo[1]] + voffs[1]);	//  dV/dy
+	    box->b[24+i0] = 0.5 * (grid[ind2 + dk_hi[2]] - grid[ind2 - dk_lo[2]] + voffs[2]);	//  dV/dz
+	    box->b[32+i0] = 0.25 * (grid[ind2 + dk_hi[0] + dk_hi[1]] - grid[ind2 - dk_lo[0] + dk_hi[1]]
+		    - grid[ind2 + dk_hi[0] - dk_lo[1]] + grid[ind2 - dk_lo[0] - dk_lo[1]]);	//  d2V/dxdy
+	    box->b[40+i0] = 0.25 * (grid[ind2 + dk_hi[0] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[2]]
+		    - grid[ind2 + dk_hi[0] - dk_lo[2]] + grid[ind2 - dk_lo[0] - dk_lo[2]]);	//  d2V/dxdz
+	    box->b[48+i0] = 0.25 * (grid[ind2 + dk_hi[1] + dk_hi[2]] - grid[ind2 - dk_lo[1] + dk_hi[2]]
+		    - grid[ind2 + dk_hi[1] - dk_lo[2]] + grid[ind2 - dk_lo[1] - dk_lo[2]]);	//  d2V/dydz
 	
-	// Mixed second derivatives
-	//  d2V/dxdy
-	box->b[32+i0] = (zero_derivs) ? 0.0 :
-	    0.25 * (grid[ind2 + dk_hi[0] + dk_hi[1]] - grid[ind2 - dk_lo[0] + dk_hi[1]]
-		    - grid[ind2 + dk_hi[0] - dk_lo[1]] + grid[ind2 - dk_lo[0] - dk_lo[1]]);
-	//  d2V/dxdz
-	box->b[40+i0] = (zero_derivs) ? 0.0 :
-	    0.25 * (grid[ind2 + dk_hi[0] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[2]]
-		    - grid[ind2 + dk_hi[0] - dk_lo[2]] + grid[ind2 - dk_lo[0] - dk_lo[2]]);
-	//  d2V/dydz
-	box->b[48+i0] = (zero_derivs) ? 0.0 :
-	    0.25 * (grid[ind2 + dk_hi[1] + dk_hi[2]] - grid[ind2 - dk_lo[1] + dk_hi[2]]
-		    - grid[ind2 + dk_hi[1] - dk_lo[2]] + grid[ind2 - dk_lo[1] - dk_lo[2]]);
-	
-	// d3V/dxdydz
-	box->b[56+i0] = (zero_derivs) ? 0.0 :
-	    0.125 * (grid[ind2 + dk_hi[0] + dk_hi[1] + dk_hi[2]] - grid[ind2 + dk_hi[0] + dk_hi[1] - dk_lo[2]]
-		     - grid[ind2 + dk_hi[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[1] + dk_hi[2]]
-		     + grid[ind2 + dk_hi[0] - dk_lo[1] - dk_lo[2]] + grid[ind2 - dk_lo[0] + dk_hi[1] - dk_lo[2]]
-		     + grid[ind2 - dk_lo[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] - dk_lo[1] - dk_lo[2]]);
+	    box->b[56+i0] =									// d3V/dxdydz
+		0.125 * (grid[ind2 + dk_hi[0] + dk_hi[1] + dk_hi[2]] - grid[ind2 + dk_hi[0]+ dk_hi[1] - dk_lo[2]]
+			 - grid[ind2 + dk_hi[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[1] + dk_hi[2]]
+			 + grid[ind2 + dk_hi[0] - dk_lo[1] - dk_lo[2]] + grid[ind2 - dk_lo[0] + dk_hi[1] - dk_lo[2]]
+			 + grid[ind2 - dk_lo[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] - dk_lo[1] - dk_lo[2]]);
+	}
 	
 	DebugM(2, "V = " << box->b[i0] << "\n");
 	
