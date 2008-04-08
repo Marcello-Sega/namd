@@ -130,6 +130,7 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
 }
 
 ProxyResultVarsizeMsg *ProxyResultVarsizeMsg::getANewMsg(NodeID nid, PatchID pid, int prioSize, ForceList *fls){
+
     //1. decide the length of forceArr and iszero field.
     int tmpLen[Results::maxNumForces];
     int iszeroLen = 0;
@@ -142,8 +143,8 @@ ProxyResultVarsizeMsg *ProxyResultVarsizeMsg::getANewMsg(NodeID nid, PatchID pid
     int fArrLen = 0;
     for(int i=0; i<Results::maxNumForces; i++) {        
         Force *fiPtr = fls[i].begin();
-        for(int j=0; j<tmpLen[i]; j++, fiPtr++, iszeroPtr++) {
-            if(fiPtr[i].x!=0.0 || fiPtr[i].y!=0.0 || fiPtr[i].z!=0) {
+        for(int j=0; j<tmpLen[i]; j++, fiPtr++, iszeroPtr++) {         
+            if(fiPtr->x!=0.0 || fiPtr->y!=0.0 || fiPtr->z!=0) {
                 *iszeroPtr=0;
                 fArrLen++;
             }else{
