@@ -6,5 +6,5 @@ CXXOPTS = -O3 -Q  -qhot -DARCH_POWERPC
 CXXNOALIASOPTS= -O3 -Q -qhot -qalias=noallptrs:notypeptr -DARCH_POWERPC
 
 CC = xlc_r -w
-COPTS = -O4 -qinlglue -qarch=pwr3 -qtune=pwr3 
+COPTS = -O4 -qinlglue
 

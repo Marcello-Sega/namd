@@ -18,7 +18,8 @@
 #include "ProcessorPrivate.h"
 #include "ProxyMgr.decl.h"
 
-extern int proxySendSpanning, proxyRecvSpanning, proxySpanDim;
+extern int proxySendSpanning, proxyRecvSpanning;
+extern const int proxySpanDim;
 
 class RegisterProxyMsg : public CMessage_RegisterProxyMsg {
 public:

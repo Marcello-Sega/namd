@@ -59,7 +59,7 @@ private:
     float offset[3];	// Potential offset in each dimension
     float gap[3];	// Gap between images of grid in grid units for each dimension
     
-    static const int border = 3; // Size of border (for generality)
+    enum {border = 3}; // Size of border (for generality)
 };
 
 

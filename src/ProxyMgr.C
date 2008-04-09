@@ -24,7 +24,7 @@
 
 int proxySendSpanning	= 0;
 int proxyRecvSpanning	= 0;
-int proxySpanDim	= 9;
+const int proxySpanDim	= 9;
 
 PACK_MSG(ProxyAtomsMsg,
   PACK(patch);

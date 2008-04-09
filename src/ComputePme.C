@@ -2339,7 +2339,7 @@ public:
 
 class PmeZPencil : public PmePencil<CBase_PmeZPencil> {
 public:
-    PmeZPencil_SDAG_CODE;
+    PmeZPencil_SDAG_CODE
     PmeZPencil() { __sdag_init(); setMigratable(false); }
     PmeZPencil(CkMigrateMessage *) { __sdag_init();  setMigratable (false); }
     void fft_init();
@@ -2359,7 +2359,7 @@ private:
 
 class PmeYPencil : public PmePencil<CBase_PmeYPencil> {
 public:
-    PmeYPencil_SDAG_CODE;
+    PmeYPencil_SDAG_CODE
     PmeYPencil() { __sdag_init(); setMigratable(false); }
     PmeYPencil(CkMigrateMessage *) { __sdag_init(); }
     void fft_init();
@@ -2378,7 +2378,7 @@ private:
 
 class PmeXPencil : public PmePencil<CBase_PmeXPencil> {
 public:
-    PmeXPencil_SDAG_CODE;
+    PmeXPencil_SDAG_CODE
     PmeXPencil() { __sdag_init();  myKSpace = 0; setMigratable(false); }
     PmeXPencil(CkMigrateMessage *) { __sdag_init(); }
     void fft_init();
