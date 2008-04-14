@@ -13,7 +13,7 @@
 #include "common.h"
 
 #define MIN_DEBUG_LEVEL 3
-#define DEBUGM
+//#define DEBUGM
 #include "Debug.h"
 
 
