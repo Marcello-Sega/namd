@@ -48,16 +48,7 @@ public:
   enum { reductionChecksumLabel = REDUCTION_IMPROPER_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);
 
-  ImproperElem() {
-	atomID[0] = -1;
-	atomID[1] = -1;
-	atomID[2] = -1;
-	atomID[3] = -1;
-	p[0] = NULL;
-	p[1] = NULL;
-	p[2] = NULL;
-	p[3] = NULL;
-  }
+  ImproperElem() { ; }
 
   ImproperElem(AtomID atom0, const TupleSignature *sig, const ImproperValue *v){
       atomID[0] = atom0;

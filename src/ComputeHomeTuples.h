@@ -123,7 +123,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       
       T::getParameterPointers(node->parameters, &tupleValues);
 
-      tupleList.clear();
+      tupleList.resize(0);
 
       LocalID aid[T::size];
 
@@ -195,7 +195,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
 	         }
 	         t.localIndex[i] = aid[i].index;
                }
-               tupleList.load(t);
+               tupleList.add(t);
              }
            }
         }
@@ -206,7 +206,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
   
   protected:
   
-    UniqueSet<T> tupleList;
+    ResizeArray<T> tupleList;
     TuplePatchList tuplePatchList;
   
     PatchMap *patchMap;
@@ -359,11 +359,12 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         T::pressureProfileMin = lattice.origin().z - 0.5*lattice.c().z;
       }
       // take triplet and pass with tuple info to force eval
-      UniqueSetIter<T> al(tupleList);
-      for (al = al.begin(); al != al.end(); al++ ) {
-        al->computeForce(reductionData, pressureProfileData);
-        tupleCount += 1;
+      T *al = tupleList.begin();
+      const int ntuple = tupleList.size();
+      for (int i=0; i<ntuple; ++i) {
+        al[i].computeForce(reductionData, pressureProfileData);
       }
+      tupleCount += ntuple;
       }
  
       T::submitReductionData(reductionData,reduction);

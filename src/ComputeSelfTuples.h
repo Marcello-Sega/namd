@@ -37,7 +37,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
       
       T::getParameterPointers(node->parameters, &tupleValues);
 
-      this->tupleList.clear();
+      this->tupleList.resize(0);
 
       LocalID aid[T::size];
 
@@ -94,7 +94,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
 	         t.p[i] = p;
 	         t.localIndex[i] = aid[i].index;
                }
-               this->tupleList.load(t);
+               this->tupleList.add(t);
              }
            }
         }
@@ -159,63 +159,6 @@ template <class T, class S, class P> class ComputeSelfTuples :
 
       LdbCoordinator::Object()->endWork(this->cid,0); // Timestep not used
     }
-
-#if 0
-//-------------------------------------------------------------------
-// Routine which is called by enqueued work msg.  It wraps
-// actualy Force computation with the apparatus needed
-// to get access to atom positions, return forces etc.
-//-------------------------------------------------------------------
-    void doWork(void) {
-
-      // Open Boxes - register that we are using Positions
-      // and will be depositing Forces.
-      UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
-      for (ap = ap.begin(); ap != ap.end(); ap++) {
-        ap->x = ap->positionBox->open();
-        if ( ap->p->flags.doMolly ) ap->x_avg = ap->avgPositionBox->open();
-        ap->r = ap->forceBox->open();
-        ap->f = ap->r->f[Results::normal];
-      } 
-    
-      if ( doLoadTuples ) {
-        loadTuples();
-        doLoadTuples = false;
-      }
-    
-      BigReal reductionData[T::reductionDataSize];
-      for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
-      int tupleCount = 0;
-    
-      // take triplet and pass with tuple info to force eval
-      UniqueSetIter<T> al(tupleList);
-      if ( Node::Object()->simParameters->commOnly ) {
-        for (al = al.begin(); al != al.end(); al++ ) {
-          tupleCount += 1;
-        }
-      } else {
-        for (al = al.begin(); al != al.end(); al++ ) {
-#ifdef NETWORK_PROGRESS
-	  CkNetworkProgress();
-#endif	  
-          al->computeForce(reductionData);
-          tupleCount += 1;
-        }
-      }
-    
-      T::submitReductionData(reductionData,reduction);
-      reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
-      reduction->submit();
-    
-      // Close boxes - i.e. signal we are done with Positions and
-      // AtomProperties and that we are depositing Forces
-      for (ap = ap.begin(); ap != ap.end(); ap++) {
-        ap->positionBox->close(&(ap->x));
-        if ( ap->p->flags.doMolly ) ap->avgPositionBox->close(&(ap->x_avg));
-        ap->forceBox->close(&(ap->r));
-      }
-    }
-#endif
 
 };
 

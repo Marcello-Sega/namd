@@ -9,13 +9,7 @@
 
 #include "ComputeBonds.h"
 
-inline BondElem::BondElem()
-  {
-    atomID[0] = -1;
-    atomID[1] = -1;
-    p[0] = NULL;
-    p[1] = NULL;
-  }
+inline BondElem::BondElem() { ; }
 
 inline BondElem::BondElem(AtomID atom0, const TupleSignature *sig, const BondValue *v){
     atomID[0] = atom0;

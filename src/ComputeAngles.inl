@@ -9,15 +9,7 @@
 
 #include "ComputeAngles.h"
 
-inline AngleElem::AngleElem()
-  {
-    atomID[0] = -1;
-    atomID[1] = -1;
-    atomID[2] = -1;
-    p[0] = NULL;
-    p[1] = NULL;
-    p[2] = NULL;
-  }
+inline AngleElem::AngleElem() { ; }
 
 inline AngleElem::AngleElem(AtomID atom0, const TupleSignature *sig, const AngleValue *v){
     atomID[0] = atom0;
