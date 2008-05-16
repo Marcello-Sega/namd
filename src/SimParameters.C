@@ -1087,11 +1087,11 @@ void SimParameters::config_parser_gridforce(ParseOptions &opts) {
     opts.require("gridforce", "gridforcevfile", "Gridforce potential file",
 		 PARSE_STRING);
     opts.optionalB("gridforce", "gridforcecont1", "Use continuous grid "
-		   "in K1 direction?", &gridforceCont[0], FALSE);
+		   "in A1 direction?", &gridforceContA1, FALSE);
     opts.optionalB("gridforce", "gridforcecont2", "Use continuous grid "
-		   "in K2 direction?", &gridforceCont[1], FALSE);
+		   "in A2 direction?", &gridforceContA2, FALSE);
     opts.optionalB("gridforce", "gridforcecont3", "Use continuous grid "
-		   "in K3 direction?", &gridforceCont[2], FALSE);
+		   "in A3 direction?", &gridforceContA3, FALSE);
     opts.optional("gridforce", "gridforcevoff", "Gridforce potential offsets",
 		  &gridforceVOffset);
 }
@@ -2974,6 +2974,16 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      
      iout << iINFO << "GRID FORCE SCALING     " << gridforceScale.x << ", "
 	  << gridforceScale.y << ", " << gridforceScale.z << "\n";
+     
+     if (gridforceContA1) {
+	 iout << iINFO << "GRID FORCE GRID CONTINUOUS IN A1 DIRECTION\n";
+     }
+     if (gridforceContA2) {
+	 iout << iINFO << "GRID FORCE GRID CONTINUOUS IN A2 DIRECTION\n";
+     }
+     if (gridforceContA3) {
+	 iout << iINFO << "GRID FORCE GRID CONTINUOUS IN A3 DIRECTION\n";
+     }
      
      iout << iINFO << "GRID FORCE OFFSET      " << gridforceVOffset.x << ", "
 	  << gridforceVOffset.y << ", " << gridforceVOffset.z << "\n";

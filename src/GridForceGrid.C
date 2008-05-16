@@ -191,10 +191,15 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
     Avec[2] = simParams->lattice.c();
     
     // Decide whether we're wrapping
+    Bool gridforceCont[3];
+    gridforceCont[0] = simParams->gridforceContA1;
+    gridforceCont[1] = simParams->gridforceContA2;
+    gridforceCont[2] = simParams->gridforceContA3;
+    
     for (int i0 = 0; i0 < 3; i0++) {
-	if (simParams->gridforceCont[i0]) {
+	if (gridforceCont[i0]) {
 	    for (int i1 = 0; i1 < 3; i1++) {
-		if (cross(Avec[i0], Kvec[i1]) == 0) {
+		if (cross(Avec[i0], Kvec[i1]).length() < 1e-4) {
 		    cont[i1] = TRUE;
 		    offset[i1] = simParams->gridforceVOffset[i0] * factor;
 		    gap[i1] = (inv * (Avec[i0] - Kvec[i1])).length();	// want in grid-point units (normal = 1)

@@ -183,7 +183,9 @@ public:
 	Bool gridforceOn;		//  Flag TRUE -> gridforce active
 	Bool gridforceVolts;		//  Flag TRUE -> gridforce using volts as units
 	zVector gridforceScale;		//  Gridforce scale factor
-	Bool gridforceCont[3];		//  Flag TRUE -> grid continuous in ith direction
+	Bool gridforceContA1;		//  Flag TRUE -> grid continuous in A1 direction
+	Bool gridforceContA2;		//  Flag TRUE -> grid continuous in A2 direction
+	Bool gridforceContA3;		//  Flag TRUE -> grid continuous in A3 direction
 	zVector gridforceVOffset;	//  Gridforce potential offsets
 	/* END gf */
 
