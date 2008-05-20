@@ -2,11 +2,67 @@
 goto begin
 syntax:
   echo ''
-  echo 'Usage: config [debug] [tcl] [fftw] [<build_dir>/]<arch>[.comment] [suffix]'
-  echo 'Environment variable NAMD_BUILD_BASE may point to scratch directory.'
+  echo 'This script will create a build directory for NAMD.'
   echo ''
-  echo '<arch>: ' 
-  ( cd arch ; ls -1 *.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -2 -t)
+  echo 'Usage: config [<build_dir>/]<arch>[.comment] [options]'
+  echo ''
+  echo 'Options (defaults are set in arch subdirectory):'
+  echo '  --tcl-prefix <directory containing lib and include>'
+  echo '  --with-tcl (default)  --without-tcl'
+  echo '  --fftw-prefix <directory containing lib and include>'
+  echo '  --with-fftw (default)  --without-fftw'
+  echo '  --charm-base <Charm++ base build directory containing src>'
+  echo '  --charm-arch <subdirectory of Charm++ base build directory>'
+  echo '  --charm-opts <options to pass to charmc (quote list)>'
+  echo '  --cxx <C++ compiler command>'
+  echo '  --cxx-opts <C++ compiler options (quote list)>'
+  echo '  --cxx-noalias-opts <C++ compiler options (quote list)>'
+  echo '  --cxx-thread-opts <C++ compiler options (quote list)>'
+  echo '  --cc <C compiler command>'
+  echo '  --cc-opts <C compiler options (quote list)>'
+  echo '  --with-debug  (sets all opts to -g)'
+  echo '  --arch-suffix <suffix for NAMD platform printed at startup>'
+  echo ''
+  if ( $?PRINT_ARCH_LIST ) then
+    set ARCH_PAT = ''
+    set ARCH_PAT2 = 'XXX'
+    switch ( `uname -s` )
+      case Linux:
+        set ARCH_PAT = Linux
+        switch ( `uname -p` )
+          case i686:
+            set ARCH_PAT = Linux-i686
+          breaksw
+          case x86_64:
+            set ARCH_PAT = Linux-amd64
+            set ARCH_PAT2 = CRAY-XT
+          breaksw
+          case ppc:
+            set ARCH_PAT2 = BlueGene
+          breaksw
+          case ppc64:
+            set ARCH_PAT2 = BlueGene
+          breaksw
+        endsw
+      breaksw
+      case SunOS:
+        set ARCH_PAT = Solaris
+        switch ( `uname -p` )
+          case sparc:
+            set ARCH_PAT = Solaris-Sparc
+          breaksw
+        endsw
+      breaksw
+    endsw
+    echo 'Possible options for <arch> on this machine: ' 
+    ( cd arch ; ls -1 $ARCH_PAT*.arch $ARCH_PAT2*.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -2 -t)
+    if ( XX$ARCH_PAT != XX ) then
+      echo ''
+      echo 'ls arch/*.arch to see all known platforms'
+    endif
+  else
+    echo 'config with no arguments lists available <arch> options.'
+  endif
   echo ''
   exit 1
 
@@ -18,28 +74,31 @@ exists:
 
 begin:
 
-  if ($#argv < 1) goto syntax
+  # defaults
+  set use_debug = 0
+  set use_tcl = 1
+  set use_fftw = 1
+
+  if ($#argv < 1) then
+    set PRINT_ARCH_LIST
+    goto syntax
+  endif
+
   if ( $1 == debug ) then
     set use_debug = 1
     shift
-  else
-    set use_debug = 0
   endif
 
   if ($#argv < 1) goto syntax
   if ( $1 == tcl ) then
-    set use_tcl = 1
+    echo 'The "tcl" flag is not needed; use of tcl is assumed.'
     shift
-  else
-    set use_tcl = 0
   endif
 
   if ($#argv < 1) goto syntax
   if ( $1 == fftw ) then
-    set use_fftw = 1
+    echo 'The "fftw" flag is not needed; use of fftw is assumed.'
     shift
-  else
-    set use_fftw = 0
   endif
 
   if ($#argv < 1) goto syntax
@@ -49,24 +108,154 @@ begin:
   endif
 
   if ($#argv < 1) goto syntax
+  if ( $1 =~ --* ) goto syntax
+
   set BUILD_DIR=$1 ; shift
   if ( x$BUILD_DIR == x ) goto syntax
-  set DIR=`pwd`;
+
+  if ( -e $BUILD_DIR ) goto exists
 
   set ARCH=$BUILD_DIR:t
   if ( ! -f arch/$ARCH.arch ) set ARCH=$ARCH:r
-  if ( ! -f arch/$ARCH.arch ) goto syntax
+  if ( ! -f arch/$ARCH.arch ) then
+    echo "ERROR: Platform $ARCH not found in directory arch"
+    set PRINT_ARCH_LIST
+    goto syntax
+  else
+    echo ''
+    echo "Selected arch file arch/$ARCH.arch contains:"
+    echo ''
+    cat arch/$ARCH.arch
+  endif
+
+  endif
+
+  if ( $#argv > 0 && $1 !~ --* ) then
+    set ARCH_SUFFIX = -$1
+    shift
+  endif
+
+  while ( $#argv > 0 )
+    if ( $1 !~ --* ) then
+      echo "ERROR: Expected an option beginning with -- but found $1"
+      goto syntax
+    endif
+    switch ( $1 )
+
+      case --arch-suffix:
+        shift
+        set ARCH_SUFFIX = -$1
+      breaksw
+
+      case --with-debug:
+        set use_debug = 1
+      breaksw
+
+      case --with-tcl:
+        set use_tcl = 1
+      breaksw
+      case --without-tcl:
+        set use_tcl = 0
+      breaksw
+      case --tcl-prefix:
+        shift
+        if ( ! -d $1 ) then
+          echo "ERROR: No such directory $1"
+          goto syntax
+        endif
+        set TCL_PREFIX=$1
+      breaksw
+
+      case --with-fftw:
+        set use_fftw = 1
+      breaksw
+      case --without-fftw:
+        set use_fftw = 0
+      breaksw
+      case --fftw-prefix:
+        shift
+        if ( ! -d $1 ) then
+          echo "ERROR: No such directory $1"
+          goto syntax
+        endif
+        set FFTW_PREFIX=$1
+      breaksw
+
+      case --charm-base:
+        shift
+        if ( ! -d $1 ) then
+          echo "ERROR: No such directory $1"
+          goto syntax
+        endif
+        set CHARM_BASE=$1
+      breaksw
+      case --charm-arch:
+        shift
+        set CHARM_ARCH=$1
+      breaksw
+      case --charm-opts:
+        shift
+        set CHARM_OPTS=$1
+      breaksw
+
+      case --cxx:
+        shift
+        set CXX=$1
+      breaksw
+      case --cxx-opts:
+        shift
+        set CXX_OPTS=$1
+      breaksw
+      case --cxx-noalias-opts:
+        shift
+        set CXX_NOALIAS_OPTS=$1
+      breaksw
+      case --cxx-thread-opts:
+        shift
+        set CXX_THREAD_OPTS=$1
+      breaksw
+      case --cc:
+        shift
+        set CC=$1
+      breaksw
+      case --cc-opts:
+        shift
+        set CC_OPTS=$1
+      breaksw
+
+      default
+        echo "ERROR: unknown option $1"
+        goto syntax
+      breaksw
+    endsw
+
+    shift
+  end
+
+  if ( $?CHARM_BASE && $?CHARM_ARCH ) then
+    if ( ! -d $CHARM_BASE/$CHARM_ARCH ) then
+      echo "ERROR: No such directory $CHARM_BASE/$CHARM_ARCH"
+      goto syntax
+    endif
+  endif
+
+  if ( $?CHARM_BASE ) then
+    if ( $CHARM_BASE !~ /* ) set CHARM_BASE = .rootdir/$CHARM_BASE
+  endif
+
+  set DIR=`pwd`;
 
   set BUILD_LINK = $BUILD_DIR
+  # Environment variable NAMD_BUILD_BASE may point to scratch directory.
   if ( $BUILD_DIR:t == $BUILD_DIR && $?NAMD_BUILD_BASE ) then
-    if ( -d $BUILD_DIR:t ) goto exists
+    if ( -e $BUILD_DIR ) goto exists
     set UNIQ = `date '+%Y-%b-%d'`-$$
     set BUILD_DIR = $NAMD_BUILD_BASE/${UNIQ}_$BUILD_DIR
     echo "Creating link: $BUILD_DIR to $BUILD_LINK"
     ln -s $BUILD_DIR $BUILD_LINK
   endif
 
-  if ( -d $BUILD_DIR ) goto exists
+  if ( -e $BUILD_DIR ) goto exists
   echo "Creating directory: $BUILD_DIR"
   mkdir $BUILD_DIR
   cd $BUILD_DIR
@@ -77,50 +266,111 @@ begin:
 
   echo "Creating link: $ROOTDIR to .rootdir"
   ln -s $ROOTDIR .rootdir
-  echo "Creating Makearch"
+
+  echo "Writing build options to $BUILD_LINK/Make.config"
   if ( $ARCH =~ *Win* ) then
-   cat .rootdir/Make.charm >! Makearch
-   cat .rootdir/arch/$ARCH.arch >> Makearch
+   cat .rootdir/Make.charm >! Make.config
+   cat .rootdir/arch/$ARCH.arch >> Make.config
   else
-   echo include .rootdir/Make.charm >! Makearch
-   echo include .rootdir/arch/$ARCH.arch >> Makearch
+   echo include .rootdir/Make.charm >! Make.config
+   echo include .rootdir/arch/$ARCH.arch >> Make.config
   endif
-  echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Makearch
-  set ARCH_SUFFIX = ""
-  if ( $ARCH =~ *-Scyld* ) set ARCH_SUFFIX = -Scyld
-  if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = -Clustermatic
-  if ( $ARCH =~ *-MPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
-  if ( $ARCH =~ *-CMPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CMPI
-  if ( $ARCH =~ *-MPT* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPT
-  if ( $ARCH =~ *-VMI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
-  if ( $ARCH =~ *-TCP* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
-  if ( $ARCH =~ *-GM* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
-  if ( $ARCH =~ *-Elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
-  if ($#argv > 0) then
-    set ARCH_SUFFIX = -$1
-    shift
+  if ( $?CHARM_BASE ) then
+    echo "CHARMBASE = $CHARM_BASE" >> Make.config
+  else if ( -de .rootdir/charm-6.0 ) then
+    echo "Using Charm++ 6.0 build found in main build directory"
+    echo 'CHARMBASE = .rootdir/charm-6.0' >> Make.config
+  else if ( -de $HOME/charm-6.0 ) then
+    echo "Using Charm++ 6.0 build found in $HOME/charm-6.0"
+    echo 'CHARMBASE = $(HOME)/charm-6.0' >> Make.config
   endif
-  echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Makearch
+  if ( $?CHARM_ARCH ) then
+    echo "CHARMARCH = $CHARM_ARCH" >> Make.config
+  endif
+  if ( $?CHARM_OPTS ) then
+    echo "CHARMOPTS = $CHARM_OPTS" >> Make.config
+  endif
+  echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Make.config
+  if ( ! $?ARCH_SUFFIX ) then
+    set ARCH_SUFFIX = ""
+    if ( $ARCH =~ *-Scyld* ) set ARCH_SUFFIX = -Scyld
+    if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = -Clustermatic
+    if ( $ARCH =~ *-MPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
+    if ( $ARCH =~ *-CMPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CMPI
+    if ( $ARCH =~ *-MPT* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPT
+    if ( $ARCH =~ *-VMI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
+    if ( $ARCH =~ *-TCP* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
+    if ( $ARCH =~ *-GM* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
+    if ( $ARCH =~ *-MX* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MX
+    if ( $ARCH =~ *-Elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
+  endif
+  echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
+
   if ( $ARCH =~ *Win32* ) then
-   cat .rootdir/arch/Win32.base >> Makearch
-   if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Makearch
-   if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Makearch
+   cat .rootdir/arch/Win32.base >> Make.config
+   if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Make.config
+   if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Make.config
   else if ( $ARCH =~ *Win64* ) then
-   cat .rootdir/arch/Win64.base >> Makearch
-   if ( $use_tcl ) cat .rootdir/arch/Win64.tcl >> Makearch
-   if ( $use_fftw ) cat .rootdir/arch/Win64.fftw >> Makearch
+   cat .rootdir/arch/Win64.base >> Make.config
+   if ( $use_tcl ) cat .rootdir/arch/Win64.tcl >> Make.config
+   if ( $use_fftw ) cat .rootdir/arch/Win64.fftw >> Make.config
   else
-   echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).base' >> Makearch
-   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).tcl' >> Makearch
-   if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH)$(NAMD_SUBARCH).fftw' >> Makearch
-   if ( $use_debug ) then
-    echo 'CXXOPTS = -g' >> Makearch
-    echo 'CXXTHREADOPTS = -g' >> Makearch
-    echo 'CXXSIMPARAMOPTS = -g' >> Makearch
-    echo 'CXXNOALIASOPTS = -g' >> Makearch
-    echo 'COPTS = -g' >> Makearch
-   endif
+   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Make.config
+   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Make.config
+   if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
   endif
+
+  if ( $use_tcl ) then
+    if ( $?TCL_PREFIX ) then
+      echo "TCLDIR = $TCL_PREFIX" >> Make.config
+    else if ( -de .rootdir/tcl/lib && -de .rootdir/tcl/include ) then
+      echo "Using Tcl build found in main build directory"
+      echo 'TCLDIR = .rootdir/tcl' >> Make.config
+    else if ( -de $HOME/tcl/lib && -de $HOME/tcl/include ) then
+      echo "Using Tcl build found in $HOME/tcl"
+      echo 'TCLDIR = $(HOME)/tcl' >> Make.config
+    endif
+  endif
+
+  if ( $use_fftw ) then
+    if ( $?FFTW_PREFIX ) then
+      echo "FFTDIR = $FFTW_PREFIX" >> Make.config
+    else if ( -de .rootdir/fftw/lib && -de .rootdir/fftw/include ) then
+      echo "Using FFTW build found in main build directory"
+      echo 'FFTDIR = .rootdir/fftw' >> Make.config
+    else if ( -de $HOME/fftw/lib && -de $HOME/fftw/include ) then
+      echo "Using FFTW build found in $HOME/fftw"
+      echo 'FFTDIR = $(HOME)/fftw' >> Make.config
+    endif
+  endif
+
+  if ( $?CXX ) then
+    echo "CXX = $CXX" >> Make.config
+  endif
+  if ( $?CXX_OPTS ) then
+    echo "CXXOPTS = $CXX_OPTS" >> Make.config
+  endif
+  if ( $?CXX_NOALIAS_OPTS ) then
+    echo "CXXNOALIASOPTS = $CXX_NOALIAS_OPTS" >> Make.config
+  endif
+  if ( $?CXX_THREAD_OPTS ) then
+    echo "CXXTHREADOPTS = $CXX_THREAD_OPTS" >> Make.config
+  endif
+  if ( $?CC ) then
+    echo "CC = $CC" >> Make.config
+  endif
+  if ( $?CC_OPTS ) then
+    echo "COPTS = $CC_OPTS" >> Make.config
+  endif
+
+  if ( $use_debug ) then
+    echo 'CXXOPTS = -g' >> Make.config
+    echo 'CXXTHREADOPTS = -g' >> Make.config
+    echo 'CXXSIMPARAMOPTS = -g' >> Make.config
+    echo 'CXXNOALIASOPTS = -g' >> Make.config
+    echo 'COPTS = -g' >> Make.config
+  endif
+
   echo "Linking Makefiles"
   if ( $ARCH =~ *Win* ) then
    cp .rootdir/Makefile ./Makefile
@@ -148,22 +398,11 @@ begin:
     ln -s .rootdir/plugins ./plugins
     ln -s .rootdir/psfgen ./sb
   endif
-  echo "Creating dpme2 and linking files"
-  (cd $DIR/dpme2;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
-  (cd $DIR/dpme2;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
-  awk '{print "mkdir dpme2"$1;}' < temp.d > temp.m
-  awk '{print "ln -s ../.rootdir dpme2"$1;}' < temp.d >> temp.m
-  awk '{print "ln -s .rootdir/dpme2"$1" dpme2"$1;}' < temp.f > temp.l
-  sh temp.m
-  sh temp.l
-  rm -f temp.d temp.f temp.m temp.l
-  echo "Creating dpmta-2.6 and linking files"
-  (cd $DIR/dpmta-2.6;find . -name CVS -prune -o -type d -print )|sed -e s@.@@> temp.d
-  (cd $DIR/dpmta-2.6;find . -name CVS -prune -o -type f -print )|sed -e s@.@@> temp.f
-  awk '{print "mkdir dpmta-2.6"$1;}' < temp.d > temp.m
-  awk '{print "ln -s ../.rootdir dpmta-2.6"$1;}' < temp.d >> temp.m
-  awk '{print "ln -s .rootdir/dpmta-2.6"$1" dpmta-2.6"$1;}' < temp.f > temp.l
-  sh temp.m
-  sh temp.l
-  rm -f temp.d temp.f temp.m temp.l
+
+  echo ''
+  echo "Generated $BUILD_LINK/Make.config contains the following:"
+  echo ''
+  cat Make.config
+
+  echo ''
   echo "You are ready to do a make in directory $BUILD_LINK now."

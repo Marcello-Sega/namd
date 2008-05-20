@@ -7,7 +7,7 @@ COPTC = -c
 COPTD = -D
 COPTO = -o $(SPACE)
 
-include Makearch
+include Make.config
 
 # pass version/platform information to compile
 RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\" $(SCYLDFLAGS)
@@ -47,7 +47,7 @@ CXXTHREADOPTS = $(CXXOPTS)
 CXXSIMPARAMOPTS = $(CXXOPTS) 
 CXXNOALIASOPTS = $(CXXOPTS) 
 
-include Makearch
+include Make.config
 
 # Add new source files here.
 
@@ -422,7 +422,7 @@ COPY = cp
 RM = rm -f
 LDD = ldd
 
-include Makearch
+include Make.config
 
 # Explicit rules for modules.
 
