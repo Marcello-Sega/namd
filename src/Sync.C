@@ -66,8 +66,11 @@ void Sync::openSync(void)
     if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
 #if !CMK_IMMEDIATE_MSG
       //Dont need proxy sync when immediate messges are turned on
+      //If on BG/P, useProxySync should not be turned on for better performance
+      #if !CMK_BLUEGENEP
       CmiPrintf("[%d] useProxySync is turned on. \n", CmiMyPe());
       useProxySync = 1;
+      #endif
 #endif
     }
     // no proxies on this node, no need to use proxy sync.
