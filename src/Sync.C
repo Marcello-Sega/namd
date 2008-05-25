@@ -65,23 +65,23 @@ void Sync::openSync(void)
     // if use proxy spanning tree, proxy sync is forced
     if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
 #if !CMK_IMMEDIATE_MSG
-      //Dont need proxy sync when immediate messges are turned on
-      //If on BG/P, useProxySync should not be turned on for better performance
+      // Dont need proxy sync when immediate messges are turned on
+      // If on BG/P, useProxySync should not be turned on for better performance
       #if !CMK_BLUEGENEP
-      CmiPrintf("[%d] useProxySync is turned on. \n", CmiMyPe());
+      // CmiPrintf("[%d] useProxySync is turned on. \n", CmiMyPe());
       useProxySync = 1;
       #endif
 #endif
     }
     // no proxies on this node, no need to use proxy sync.
     if (useProxySync && ProxyMgr::Object()->numProxies() == 0) {
-      CmiPrintf("[%d] useProxySync is turned off because no proxy. \n", CmiMyPe());
+      // CmiPrintf("[%d] useProxySync is turned off because no proxy. \n", CmiMyPe());
       useProxySync = 0;
     }
     // if no proxy sync and no home patch, then disable home patch sync as well
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
-//CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CmiMyPe(), useSync, useProxySync);
+  // CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CmiMyPe(), useSync, useProxySync);
 }    
 
 // called from Patch::positionsReady()
