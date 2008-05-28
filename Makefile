@@ -605,8 +605,6 @@ $(INCDIR):
 
 clean:
 	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
-	cd $(DPMTADIR) ; $(MAKE) clean ; cd ..
-	cd $(DPMEDIR) ; $(MAKE) clean ; cd ..
 
 veryclean:	clean
 	rm -f $(BINARIES)
