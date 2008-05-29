@@ -1,5 +1,5 @@
 NAMD_ARCH = BlueGeneP
-CHARMARCH = bluegenep
+CHARMARCH = bluegenep-xlc
 
 BGP_INC = -I$(BGP_INSTALL)/comm/include 
 
