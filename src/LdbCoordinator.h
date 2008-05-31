@@ -106,7 +106,7 @@ public:
   LDOMid myOMid;
   LDOMHandle myHandle;
   LDObjHandle* objHandles;
-  int   numComputes;
+  int numComputes;
   int nRegisteredObjs;
   LDBarrierClient ldBarrierHandle;
   int reg_all_objs;

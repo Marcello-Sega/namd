@@ -256,22 +256,22 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   if (patchNAtoms) 
     delete [] patchNAtoms;  // Depends on delete NULL to do nothing
-  patchNAtoms = new int[pMap->numPatches()];
-  nPatches = pMap->numPatches();
+  nPatches = patchMap->numPatches();
+  patchNAtoms = new int[nPatches];
 
   typedef Sequencer *seqPtr;
 
   if ( ! reinit ) {
     delete [] sequencerThreads;  // Depends on delete NULL to do nothing
-    sequencerThreads = new seqPtr[pMap->numPatches()];
+    sequencerThreads = new seqPtr[nPatches];
   }
 
   nLocalPatches=0;
 
   int i;
-  for(i=0;i<pMap->numPatches();i++)
+  for(i=0;i<nPatches;i++)
   {
-    if (pMap->node(i) == Node::Object()->myid())
+    if (patchMap->node(i) == Node::Object()->myid())
     {
       nLocalPatches++;
       patchNAtoms[i]=0;
@@ -281,19 +281,21 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     if ( ! reinit ) sequencerThreads[i]=NULL;
   }
   if ( ! reinit ) controllerThread = NULL;
-  if (nLocalPatches != pMap->numHomePatches())
+  if (nLocalPatches != patchMap->numHomePatches())
     NAMD_die("Disaggreement in patchMap data.\n");
  
   nLocalComputes = 0;
-  for(i=0;i<cMap->numComputes();i++)  {
-    if ( (cMap->node(i) == Node::Object()->myid())
-	 && ( (cMap->type(i) == computeNonbondedPairType)
-	      || (cMap->type(i) == computeSelfBondsType)
-	      || (cMap->type(i) == computeSelfAnglesType)
-	      || (cMap->type(i) == computeSelfDihedralsType)
-	      || (cMap->type(i) == computeSelfImpropersType)
-	      || (cMap->type(i) == computeSelfCrosstermsType)
-	      || (cMap->type(i) == computeNonbondedSelfType) ) ) {
+  numComputes = cMap->numComputes();
+
+  for(i=0;i<numComputes;i++)  {
+    if ( (computeMap->node(i) == Node::Object()->myid())
+	 && ( (computeMap->type(i) == computeNonbondedPairType)
+	      || (computeMap->type(i) == computeSelfBondsType)
+	      || (computeMap->type(i) == computeSelfAnglesType)
+	      || (computeMap->type(i) == computeSelfDihedralsType)
+	      || (computeMap->type(i) == computeSelfImpropersType)
+	      || (computeMap->type(i) == computeSelfCrosstermsType)
+	      || (computeMap->type(i) == computeNonbondedSelfType) ) ) {
       nLocalComputes++;
     }
   }
@@ -312,8 +314,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     patchHandles = new LDObjHandle[nLocalPatches];
     int patch_count=0;
     int i;
-    for(i=0;i<pMap->numPatches();i++)
-      if (pMap->node(i) == Node::Object()->myid()) {
+    for(i=0;i<nPatches;i++)
+      if (patchMap->node(i) == Node::Object()->myid()) {
 	LDObjid elemID;
 	elemID.id[0] = i;
 	elemID.id[1] = elemID.id[2] = elemID.id[3] = -2;
@@ -330,21 +332,20 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   
     // Allocate new object handles
     if (objHandles == 0) {
-      objHandles = new LDObjHandle[cMap->numComputes()];
-      numComputes = cMap->numComputes();
-      for(i=0;i<cMap->numComputes();i++)
+      objHandles = new LDObjHandle[numComputes];
+      for(i=0; i<numComputes; i++)
 	objHandles[i].id.id[0] = -1; // Use -1 to mark unused entries
 
       // Register computes
-      for(i=0;i<cMap->numComputes();i++)  {
-	if ( (cMap->node(i) == Node::Object()->myid())
-	     && ( (cMap->type(i) == computeNonbondedPairType)
-	          || (cMap->type(i) == computeSelfBondsType)
-	          || (cMap->type(i) == computeSelfAnglesType)
-	          || (cMap->type(i) == computeSelfDihedralsType)
-	          || (cMap->type(i) == computeSelfImpropersType)
-	          || (cMap->type(i) == computeSelfCrosstermsType)
-		  || (cMap->type(i) == computeNonbondedSelfType) ) ) {
+      for(i=0; i<numComputes; i++)  {
+	if ( (computeMap->node(i) == Node::Object()->myid())
+	     && ( (computeMap->type(i) == computeNonbondedPairType)
+	          || (computeMap->type(i) == computeSelfBondsType)
+	          || (computeMap->type(i) == computeSelfAnglesType)
+	          || (computeMap->type(i) == computeSelfDihedralsType)
+	          || (computeMap->type(i) == computeSelfImpropersType)
+	          || (computeMap->type(i) == computeSelfCrosstermsType)
+		  || (computeMap->type(i) == computeNonbondedSelfType) ) ) {
 	  // Register the object with the load balancer
 	  // Store the depended patch IDs in the rest of the element ID
 	  LDObjid elemID;
@@ -443,9 +444,9 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   if (CkMyPe() == 0)
   {
     if (computeArray == NULL)
-      computeArray = new computeInfo[computeMap->numComputes()];
+      computeArray = new computeInfo[numComputes];
     if (patchArray == NULL)
-      patchArray = new patchInfo[patchMap->numPatches()];
+      patchArray = new patchInfo[nPatches];
     if (processorArray == NULL)
       processorArray = new processorInfo[CkNumPes()];
   }
