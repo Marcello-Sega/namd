@@ -71,7 +71,9 @@ public:
 
   // numComputes() returns the number of compute objects known
   // by the map.
-  int numComputes(void);
+  inline int numComputes(void) {
+    return nComputes;
+  }
 
   // numPatchBased() returns the number of compute objects
   // that are patch-based
@@ -90,15 +92,23 @@ public:
   int isAtomBased(ComputeID cid);
 
   // node(cid) returns the node where the compute object currently exists.
-  int node(ComputeID cid);
+  inline int node(ComputeID cid) {
+    return computeData[cid].node;
+  }
 
-  void setNode(ComputeID cid, NodeID node);
+  inline void setNode(ComputeID cid, NodeID node) {
+    computeData[cid].node = node;
+  }
 
   // newNode(cid,node) sets up map to tell WorkDistrib to send 
   // compute to new node
-  NodeID newNode(ComputeID cid);
+  inline NodeID newNode(ComputeID cid) {
+    return (computeData[cid].moveToNode);
+  }
 
-  void setNewNode(ComputeID cid, NodeID node);
+  inline void setNewNode(ComputeID cid, NodeID node) {
+    computeData[cid].moveToNode = node;
+  }
 
   // numPids(cid) returns the number of patch ids which are registered
   // with this compute object.

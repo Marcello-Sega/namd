@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: petefred $
- * $Date: 2008/02/25 23:58:12 $
- * $Revision: 1.1177 $
+ * $Author: bhatele $
+ * $Date: 2008/06/01 02:32:40 $
+ * $Revision: 1.1178 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -94,16 +94,15 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
   ComputeMap *computeMap = ComputeMap::Object();
 
   int i;
-  for (i=0; i<computeMap->numComputes(); i++) {
+  int nc = computeMap->numComputes();
+  for (i=0; i<nc; i++) {
     DebugM(3, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << "\n");
   }
   
-  int nnn = computeMap->numComputes();
-  ComputeMapChangeMsg *mapMsg 
-    = new (nnn,0) ComputeMapChangeMsg ;
+  ComputeMapChangeMsg *mapMsg = new (nc, 0) ComputeMapChangeMsg ;
 
-  mapMsg->numNewNodes = nnn;
-  for(i=0; i<nnn; i++)
+  mapMsg->numNewNodes = nc;
+  for(i=0; i<nc; i++)
     mapMsg->newNodes[i] = computeMap->newNode(i);
 
   CProxy_WorkDistrib(thisgroup).recvComputeMapChanges(mapMsg);

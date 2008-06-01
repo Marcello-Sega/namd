@@ -139,13 +139,6 @@ void ComputeMap::unpack (char *ptr)
   DebugM(4,"Done Unpacking ComputeMap\n");
 }
 
-
-//----------------------------------------------------------------------
-int ComputeMap::numComputes(void)
-{
-  return nComputes;
-}
-
 //----------------------------------------------------------------------
 int ComputeMap::numPatchBased(void)
 {
@@ -168,26 +161,6 @@ int ComputeMap::isPatchBased(ComputeID cid)
 int ComputeMap::isAtomBased(ComputeID cid)
 {
     return !computeData[cid].patchBased;
-}
-
-//----------------------------------------------------------------------
-int ComputeMap::node(ComputeID cid)
-{
-    return computeData[cid].node;
-}
-
-void ComputeMap::setNode(ComputeID cid, NodeID node) {
-  computeData[cid].node = node;
-}
-
-NodeID ComputeMap::newNode(ComputeID cid)
-{
-  return (computeData[cid].moveToNode);
-}
-
-
-void ComputeMap::setNewNode(ComputeID cid, NodeID node) {
-  computeData[cid].moveToNode = node;
 }
 
 //----------------------------------------------------------------------
