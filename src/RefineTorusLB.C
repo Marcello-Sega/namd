@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/02/03 02:26:10 $
- * $Revision: 1.12 $
+ * $Date: 2008/06/03 19:41:12 $
+ * $Revision: 1.13 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -102,10 +102,11 @@ int RefineTorusLB::newRefine() {
   computeInfo *c;
   Iterator nextC, nextP;
   pcpair good;
+  double thresholdLoad = overLoad * averageLoad;
 
   // create a heap and set of heavy and light pes respectively
   for(int i=0; i<P; i++) {
-    if (processors[i].load > overLoad*averageLoad)
+    if (processors[i].load > thresholdLoad)
       heavyPes->insert((InfoRecord *) &(processors[i]));
     else
       lightPes->insert((InfoRecord *) &(processors[i]));
