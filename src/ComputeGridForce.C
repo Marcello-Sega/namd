@@ -11,7 +11,7 @@
 #include "HomePatch.h"
 #include "Molecule.h"
 
-#define MIN_DEBUG_LEVEL 2
+#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
@@ -251,7 +251,8 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 	    }
 	    
 // 	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (inv * f);
-	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (f * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
+//	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (f * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
+	    Force force = scale * box.scale * charge * (f * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
 	    
 	    DebugM(4, "f4 = " << f << "\n" << endi);
 	    DebugM(4, "force4 = " << force << "\n" << endi);
@@ -269,7 +270,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		&& simParams->gridforceScale.x == simParams->gridforceScale.z)
 	    {
 		// only makes sense when scaling is isotropic
-		energy += v * scale * simParams->gridforceScale.x;
+		energy += v * charge * scale * simParams->gridforceScale.x;
 	    }
 	    extVirial += outer(force,vpos);
 	}

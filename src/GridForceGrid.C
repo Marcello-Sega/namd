@@ -8,6 +8,7 @@
 
 #include "GridForceGrid.h"
 #include "Vector.h"
+#include "Node.h"
 #include "SimParameters.h"
 #include "InfoStream.h"
 #include "common.h"
@@ -61,6 +62,7 @@ void GridforceGrid::pack(MOStream *msg) const
     msg->put(3*sizeof(Bool), (char*)cont);
     msg->put(3*sizeof(float), (char*)offset);
     msg->put(3*sizeof(float), (char*)gap);
+    msg->put(3*sizeof(float), (char*)gapinv);
     
     msg->put(size*sizeof(float), (char*)grid);
 }
@@ -83,6 +85,7 @@ void GridforceGrid::unpack(MIStream *msg)
     msg->get(3*sizeof(Bool), (char*)cont);
     msg->get(3*sizeof(float), (char*)offset);
     msg->get(3*sizeof(float), (char*)gap);
+    msg->get(3*sizeof(float), (char*)gapinv);
     
     if (size) {
 	delete [] grid;
@@ -203,13 +206,14 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 		    cont[i1] = TRUE;
 		    offset[i1] = simParams->gridforceVOffset[i0] * factor;
 		    gap[i1] = (inv * (Avec[i0] - Kvec[i1])).length();	// want in grid-point units (normal = 1)
+		    gapinv[i1] = 1.0/gap[i1];
 		    
 		    if (gap[i1] < 0) {
 			NAMD_die("Gridforce Grid overlap!");
 		    }
 		    
-		    DebugM(3, "cont[" << i1 << "] = " << cont[i1] << "\n" << endi);
-		    
+		    DebugM(4, "cont[" << i1 << "] = " << cont[i1] << "\n" << endi);
+		    DebugM(4, "gap[" << i1 << "] = " << gap[i1] << "\n" << endi);
 		}
 	    }
 	    
@@ -234,7 +238,7 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 	    delta[i] -= border;
 	}
     }
-    DebugM(3, "delta = " << e * delta << " (" << delta << ")\n");
+    DebugM(4, "delta = " << e * delta << " (" << delta << ")\n");
     origin += e * delta;
     
     size = k[0] * k[1] * k[2];
@@ -284,8 +288,8 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 	    iout << iWARN << "GRID FORCE POTENTIAL DIFFERENCE IN K" << i0
 		 << " DIRECTION IS " << offset[i0] - (p_avg[i0]-n_avg[i0]) << " KCAL/MOL*E\n" << endi;
 	}
-	DebugM(3, "n_avg[" << i0 << "] = " << n_avg[i0] << "\n" << endi);
-	DebugM(3, "p_avg[" << i0 << "] = " << p_avg[i0] << "\n" << endi);
+	DebugM(4, "n_avg[" << i0 << "] = " << n_avg[i0] << "\n" << endi);
+	DebugM(4, "p_avg[" << i0 << "] = " << p_avg[i0] << "\n" << endi);
     }
     
     
@@ -312,6 +316,8 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
     for (int i = 0; i < 3; i++) {
 	pad_n[i] = (cont[i]) ? 0.0 : (twoPadVals) ? n_avg[i] : padVal;
 	pad_p[i] = (cont[i]) ? 0.0 : (twoPadVals) ? p_avg[i] : padVal;
+	DebugM(4, "pad_n[" << i << "] = " << pad_n[i] << "\n" << endi);
+	DebugM(4, "pad_p[" << i << "] = " << pad_p[i] << "\n" << endi);
     }
     
     if (cont[0] && cont[1] && cont[2]) {
@@ -355,10 +361,12 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 
 int GridforceGrid::get_box(Box *box, Vector pos) const
 {
+    SimParameters *simParams = Node::Object()->simParameters;
     Vector p = pos - origin;
     int inds[3];
     int ind;
     Vector g, dg;
+    Vector scale = simParams->gridforceScale;
     
     DebugM(3, "pos = " << pos << "\n" << "origin = " << origin << "\n" << "p = " << p << "\n" << endi);
     
@@ -367,15 +375,25 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 	inds[i] = (int)floor(g[i]);
 	dg[i] = g[i] - inds[i];
     }
-    DebugM(3, "dg = " << dg << "\n" << endi);
-    DebugM(3, "ind + dg = " << inds[0]+dg[0] << " " << inds[1]+dg[1] << " " << inds[2]+dg[2] << "\n" << endi);
     
     for (int i = 0; i < 3; i++) {
 	if (inds[i] < 0 || inds[i] >= k[i]-1) {
 	    if (cont[i]) inds[i] = k[i]-1;
 	    else return -1;	// Outside potential and grid is not continuous
 	}
+	if (cont[i] && inds[i] == k[i]-1) {
+	    // Correct for non-unit spacing between continuous grid images
+	    scale[i] *= gapinv[i];
+	    if (g[i] < 0.0) dg[i] = 1.0 + g[i]*gapinv[i]; // = (gap[i] + g[i]) * gapinv[i]
+	    else dg[i] = (g[i] - inds[i]) * gapinv[i];
+	}
     }
+    
+    DebugM(3, "scale = " << scale << "\n" << endi);
+    box->scale = Tensor::diagonal(scale);
+    
+    DebugM(3, "dg = " << dg << "\n" << endi);
+    DebugM(3, "ind + dg = " << inds[0]+dg[0] << " " << inds[1]+dg[1] << " " << inds[2]+dg[2] << "\n" << endi);
     
     ind = inds[0]*dk[0] + inds[1]*dk[1] + inds[2]*dk[2];
     
@@ -416,12 +434,14 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 	int dk_hi[3];
 	int dk_lo[3];
 	float voffs[3];
+	float dscales[3] = {0.5, 0.5, 0.5};
 	for (int i1 = 0; i1 < 3; i1++) {
 	    if (inds2[i1] == 0) {
 		if (cont[i1]) {
 		    dk_hi[i1] = dk[i1];
 		    dk_lo[i1] = -(k[i1]-1) * dk[i1];
 		    voffs[i1] = offset[i1];
+		    dscales[i1] = 1.0/(1.0 + gap[i1]) * simParams->gridforceScale[i1]/scale[i1];
 		}
 		else zero_derivs = TRUE;
 	    }
@@ -430,6 +450,7 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 		    dk_hi[i1] = -(k[i1]-1) * dk[i1];
 		    dk_lo[i1] = dk[i1];
 		    voffs[i1] = offset[i1];
+		    dscales[i1] = 1.0/(1.0 + gap[i1]) * simParams->gridforceScale[i1]/scale[i1];
 		}
 		else zero_derivs = TRUE;
 	    }
@@ -461,21 +482,24 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 	    box->b[48+i0] = 0.0;
 	    box->b[56+i0] = 0.0;
 	} else {
-	    box->b[8+i0] = 0.5 * (grid[ind2 + dk_hi[0]] - grid[ind2 - dk_lo[0]] + voffs[0]);	//  dV/dx
-	    box->b[16+i0] = 0.5 * (grid[ind2 + dk_hi[1]] - grid[ind2 - dk_lo[1]] + voffs[1]);	//  dV/dy
-	    box->b[24+i0] = 0.5 * (grid[ind2 + dk_hi[2]] - grid[ind2 - dk_lo[2]] + voffs[2]);	//  dV/dz
-	    box->b[32+i0] = 0.25 * (grid[ind2 + dk_hi[0] + dk_hi[1]] - grid[ind2 - dk_lo[0] + dk_hi[1]]
-		    - grid[ind2 + dk_hi[0] - dk_lo[1]] + grid[ind2 - dk_lo[0] - dk_lo[1]]);	//  d2V/dxdy
-	    box->b[40+i0] = 0.25 * (grid[ind2 + dk_hi[0] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[2]]
-		    - grid[ind2 + dk_hi[0] - dk_lo[2]] + grid[ind2 - dk_lo[0] - dk_lo[2]]);	//  d2V/dxdz
-	    box->b[48+i0] = 0.25 * (grid[ind2 + dk_hi[1] + dk_hi[2]] - grid[ind2 - dk_lo[1] + dk_hi[2]]
-		    - grid[ind2 + dk_hi[1] - dk_lo[2]] + grid[ind2 - dk_lo[1] - dk_lo[2]]);	//  d2V/dydz
+	    box->b[8+i0] = dscales[0] * (grid[ind2 + dk_hi[0]] - grid[ind2 - dk_lo[0]] + voffs[0]);	//  dV/dx
+	    box->b[16+i0] = dscales[1] * (grid[ind2 + dk_hi[1]] - grid[ind2 - dk_lo[1]] + voffs[1]);	//  dV/dy
+	    box->b[24+i0] = dscales[2] * (grid[ind2 + dk_hi[2]] - grid[ind2 - dk_lo[2]] + voffs[2]);	//  dV/dz
+	    box->b[32+i0] = dscales[0] * dscales[1]
+		* (grid[ind2 + dk_hi[0] + dk_hi[1]] - grid[ind2 - dk_lo[0] + dk_hi[1]]
+		   - grid[ind2 + dk_hi[0] - dk_lo[1]] + grid[ind2 - dk_lo[0] - dk_lo[1]]);	//  d2V/dxdy
+	    box->b[40+i0] = dscales[0] * dscales[2]
+		* (grid[ind2 + dk_hi[0] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[2]]
+		   - grid[ind2 + dk_hi[0] - dk_lo[2]] + grid[ind2 - dk_lo[0] - dk_lo[2]]);	//  d2V/dxdz
+	    box->b[48+i0] = dscales[1] * dscales[2]
+		* (grid[ind2 + dk_hi[1] + dk_hi[2]] - grid[ind2 - dk_lo[1] + dk_hi[2]]
+		   - grid[ind2 + dk_hi[1] - dk_lo[2]] + grid[ind2 - dk_lo[1] - dk_lo[2]]);	//  d2V/dydz
 	
-	    box->b[56+i0] =									// d3V/dxdydz
-		0.125 * (grid[ind2 + dk_hi[0] + dk_hi[1] + dk_hi[2]] - grid[ind2 + dk_hi[0]+ dk_hi[1] - dk_lo[2]]
-			 - grid[ind2 + dk_hi[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[1] + dk_hi[2]]
-			 + grid[ind2 + dk_hi[0] - dk_lo[1] - dk_lo[2]] + grid[ind2 - dk_lo[0] + dk_hi[1] - dk_lo[2]]
-			 + grid[ind2 - dk_lo[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] - dk_lo[1] - dk_lo[2]]);
+	    box->b[56+i0] = dscales[0] * dscales[1] * dscales[2]			// d3V/dxdydz
+		* (grid[ind2 + dk_hi[0] + dk_hi[1] + dk_hi[2]] - grid[ind2 + dk_hi[0]+ dk_hi[1] - dk_lo[2]]
+		   - grid[ind2 + dk_hi[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] + dk_hi[1] + dk_hi[2]]
+		   + grid[ind2 + dk_hi[0] - dk_lo[1] - dk_lo[2]] + grid[ind2 - dk_lo[0] + dk_hi[1] - dk_lo[2]]
+		   + grid[ind2 - dk_lo[0] - dk_lo[1] + dk_hi[2]] - grid[ind2 - dk_lo[0] - dk_lo[1] - dk_lo[2]]);
 	}
 	
 	DebugM(2, "V = " << box->b[i0] << "\n");

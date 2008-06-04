@@ -31,6 +31,7 @@ public:
 			// b[40..47] = d2V/dxdz
 			// b[48..55] = d2V/dydz
 			// b[56..63] = d3V/dxdydz
+	Tensor scale;
     } Box;
     
     void initialize(char *potfilename, SimParameters *simParams);
@@ -58,6 +59,7 @@ private:
     Bool cont[3];	// Whether grid is continuous in each dimension
     float offset[3];	// Potential offset in each dimension
     float gap[3];	// Gap between images of grid in grid units for each dimension
+    float gapinv[3];	// 1.0/gap
     
     enum {border = 3}; // Size of border (for generality)
 };
