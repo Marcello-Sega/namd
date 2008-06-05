@@ -36,9 +36,6 @@
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
-// Later this can be dynamic
-#define REDUCTION_MAX_CHILDREN 4
-
 // Used to register and unregister reductions to downstream nodes
 class ReductionRegisterMsg : public CMessage_ReductionRegisterMsg {
 public:
@@ -74,59 +71,6 @@ public:
     return me;
   }
 
-};
-
-// Queue element which stores data for a particular sequence number
-struct ReductionSetData {
-  int sequenceNumber;
-  int eventsRemaining;  // includes delivery, NOT suspend
-  int dataSize;
-  BigReal *data;
-  ReductionSetData *next;
-  ReductionSetData(int seqNum, int events) {
-    sequenceNumber = seqNum;
-    eventsRemaining = events;
-    dataSize = 0;
-    data = 0;
-    next = 0;
-  }
-  ~ReductionSetData(void) {
-    delete [] data;
-  }
-  void resize(int size) {
-    if ( size > dataSize ) {
-      BigReal *oldData = data;
-      data = new BigReal[size];
-      int i = 0;
-      for ( ; i < dataSize; ++i ) { data[i] = oldData[i]; }
-      for ( ; i < size; ++i ) { data[i] = 0; }
-      dataSize = size;
-      delete [] oldData;
-    }
-  }
-};
-
-// Stores the submit queue for a particular set of reductions
-struct ReductionSet {
-  int reductionSetID;
-  int nextSequenceNumber;
-  int eventsRegistered;
-  ReductionSetData *dataQueue;
-  ReductionSetData* getData(int seqNum);
-  void delData(int seqNum);
-  int requireRegistered;  // is a thread subscribed on this node?
-  int threadIsWaiting;  // is there a thread waiting on this?
-  int waitingForSequenceNumber;  // sequence number waited for
-  CthThread waitingThread;
-  ReductionSet(int setID) {
-    reductionSetID = setID;
-    nextSequenceNumber = 0;
-    eventsRegistered = 0;
-    dataQueue = 0;
-    requireRegistered = 0;
-    threadIsWaiting = 0;
-  }
-  int addToRemoteSequenceNumber[REDUCTION_MAX_CHILDREN];
 };
 
 // possibly create and return data for a particular seqNum

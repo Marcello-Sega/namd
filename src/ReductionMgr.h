@@ -145,11 +145,68 @@ enum {
   REDUCTION_MAX_SET_ID
 };
 
+// Later this can be dynamic
+#define REDUCTION_MAX_CHILDREN 4
+
 class ReductionRegisterMsg;
 class ReductionSubmitMsg;
-class ReductionSet;
 class SubmitReduction;
 class RequireReduction;
+
+// Queue element which stores data for a particular sequence number
+class ReductionSetData {
+public:
+  int sequenceNumber;
+  int eventsRemaining;  // includes delivery, NOT suspend
+  int dataSize;
+  BigReal *data;
+  ReductionSetData *next;
+  ReductionSetData(int seqNum, int events) {
+    sequenceNumber = seqNum;
+    eventsRemaining = events;
+    dataSize = 0;
+    data = 0;
+    next = 0;
+  }
+  ~ReductionSetData(void) {
+    delete [] data;
+  }
+  inline void resize(int size) {
+    if ( size > dataSize ) {
+      BigReal *oldData = data;
+      data = new BigReal[size];
+      int i = 0;
+      for ( ; i < dataSize; ++i ) { data[i] = oldData[i]; }
+      for ( ; i < size; ++i ) { data[i] = 0; }
+      dataSize = size;
+      delete [] oldData;
+    }
+  }
+};
+
+// Stores the submit queue for a particular set of reductions
+class ReductionSet {
+public:
+  int reductionSetID;
+  int nextSequenceNumber;
+  int eventsRegistered;
+  ReductionSetData *dataQueue;
+  ReductionSetData* getData(int seqNum);
+  void delData(int seqNum);
+  int requireRegistered;  // is a thread subscribed on this node?
+  int threadIsWaiting;  // is there a thread waiting on this?
+  int waitingForSequenceNumber;  // sequence number waited for
+  CthThread waitingThread;
+  ReductionSet(int setID) {
+    reductionSetID = setID;
+    nextSequenceNumber = 0;
+    eventsRegistered = 0;
+    dataQueue = 0;
+    requireRegistered = 0;
+    threadIsWaiting = 0;
+  }
+  int addToRemoteSequenceNumber[REDUCTION_MAX_CHILDREN];
+};
 
 // Top level class
 class ReductionMgr : public BOCclass
@@ -211,7 +268,7 @@ private:
   BigReal *data;
   SubmitReduction(void) { dataSize = 0; data = 0; }
 public:
-  BigReal& item(int i) {
+  inline BigReal& item(int i) {
     if ( i >= dataSize ) {
       int oldSize = dataSize;
       BigReal *oldData = data;
