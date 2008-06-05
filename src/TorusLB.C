@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/02/03 02:26:10 $
- * $Revision: 1.11 $
+ * $Date: 2008/06/05 16:42:10 $
+ * $Revision: 1.12 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -265,6 +265,10 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
     index--;
   if(numProxies==0)
     index--; 
+  /*if(numPatches == 2 || numProxies == 2) index = 5;
+  if(numPatches == 1 && numProxies == 1) index = 5;
+  else if(numPatches == 1 || numProxies == 1) index = 4;
+  else index = 3;*/
 
 #if USE_TOPOMAP
   int x, y, z, t;
