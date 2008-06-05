@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
+ * $Author: bhatele $
+ * $Date: 2008/06/05 06:23:49 $
+ * $Revision: 1.39 $
+ *****************************************************************************/
+
 #ifndef LDBCOORDINATOR_H
 #define LDBCOORDINATOR_H
 
@@ -54,7 +61,7 @@ public:
   void resume(void);
   void resumeReady(CkQdMsg *msg);
   void resume2(void);
-  int steps(void) { return nLdbSteps; }
+  int getNumStepsToRun(void) { return numStepsToRun; }
   static void staticMigrateFn(LDObjHandle handle, int dest);
   static void staticStatsFn(LDOMHandle h, int state);
   static void staticQueryEstLoadFn(LDOMHandle h);
@@ -93,8 +100,11 @@ public:
   Sequencer **sequencerThreads;
 
   int ldbCycleNum;
-  int nLdbSteps;
+  int numStepsToRun;	// tells Controller how many time steps to run 
+			// before another load balancing
   int firstLdbStep;
+  int totalStepsDone;	// keeps a count of the total number of
+			// time steps to stop load balancing
   int takingLdbData;
   int nodesDone;
 

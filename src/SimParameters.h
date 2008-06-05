@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
+ * $Author: bhatele $
+ * $Date: 2008/06/05 06:23:49 $
+ * $Revision: 1.1139 $
+ *****************************************************************************/
+
 #ifndef SIMPARAMETERS_H
 #define SIMPARAMETERS_H
 
@@ -94,6 +101,8 @@ public:
 	int ldbStrategy;                //  What type of load balancing
 	int ldbPeriod;                  //  How often to do load balancing
 	int firstLdbStep;		//  What step to do the first 
+                                        //  load-balance on.
+	int lastLdbStep;		//  What step to do the last
                                         //  load-balance on.
 	BigReal ldbBackgroundScaling;	//  scaling factor for background load
 	BigReal ldbPMEBackgroundScaling;//  scaling factor for PME background

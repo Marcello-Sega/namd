@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
+ * $Author: bhatele $
+ * $Date: 2008/06/05 06:23:49 $
+ * $Revision: 1.1162 $
+ *****************************************************************************/
+
 #include "InfoStream.h"
 #include "Node.h"
 #include "SimParameters.h"
@@ -1414,7 +1421,7 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
 
 void Sequencer::rebalanceLoad(int timestep) {
   if ( ! ldbSteps ) {
-    ldbSteps = LdbCoordinator::Object()->steps();
+    ldbSteps = LdbCoordinator::Object()->getNumStepsToRun();
   }
   if ( ! --ldbSteps ) {
     patch->submitLoadStats(timestep);

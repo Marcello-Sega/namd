@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
+ * $Author: bhatele $
+ * $Date: 2008/06/05 06:23:49 $
+ * $Revision: 1.86 $
+ *****************************************************************************/
+
 #include <stdlib.h>
 
 #include "InfoStream.h"
@@ -146,6 +153,7 @@ LdbCoordinator::LdbCoordinator()
 
   ldbCycleNum = 1;
   takingLdbData = 1;
+  totalStepsDone = 0;
   nLocalComputes = nLocalPatches = 0;
   patchNAtoms = (int *) NULL;
   sequencerThreads = (Sequencer **) NULL;
@@ -245,6 +253,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   //  DebugM(10,"stepsPerLdbCycle initialized\n");
   stepsPerLdbCycle = simParams->ldbPeriod;
   firstLdbStep = simParams->firstLdbStep;
+  int lastLdbStep = simParams->lastLdbStep;
 
   computeMap = cMap;
   patchMap = pMap;
@@ -378,49 +387,64 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   if (ldbCycleNum==1)
   {
-    nLdbSteps = firstLdbStep;
+    totalStepsDone += firstLdbStep;
+    numStepsToRun = firstLdbStep;
     takingLdbData = 0;
     theLbdb->CollectStatsOff();
   }
-  else if ((ldbCycleNum<=4) || (! takingLdbData))
+  else if ( (ldbCycleNum <= 4) || !takingLdbData )
   {
-    nLdbSteps = firstLdbStep;
-    takingLdbData = 1;
-    theLbdb->CollectStatsOn();
+    totalStepsDone += firstLdbStep;
+    if(lastLdbStep != -1 && totalStepsDone > lastLdbStep) {
+      numStepsToRun = -1;
+      takingLdbData = 0;
+      theLbdb->CollectStatsOff();
+    } else {
+      numStepsToRun = firstLdbStep;
+      takingLdbData = 1;
+      theLbdb->CollectStatsOn();
+    }
   }
   else 
   {
-    nLdbSteps = stepsPerLdbCycle - firstLdbStep;
-    takingLdbData = 0;
-    theLbdb->CollectStatsOff();
+    totalStepsDone += stepsPerLdbCycle - firstLdbStep;
+    if(lastLdbStep != -1 && totalStepsDone > lastLdbStep) {
+      numStepsToRun = -1;
+      takingLdbData = 0;
+      theLbdb->CollectStatsOff();
+    } else {
+      numStepsToRun = stepsPerLdbCycle - firstLdbStep;
+      takingLdbData = 0;
+      theLbdb->CollectStatsOff();
+    }
   }
 
-/*------------------------------------------------------------------------*
- * ---------------------------------------------------------------------- *
- * Comments inserted by Abhinav to clarify relation between ldbCycleNum,  *
- * load balancing step numbers (printed by the step() function) and       *
- * tracing of the steps						    	  *
- * ---------------------------------------------------------------------- *
- * If trace is turned off in the beginning, then tracing is turned on     *
- * at ldbCycleNum = 4 and turned off at ldbCycleNum =8. ldbCycleNum can   *
- * be adjusted by specifying firstLdbStep and ldbPeriod which are set by  *
- * default to 5*stepspercycle and 200*stepspercycle if not specified.     *
- * 									  *
- * If we choose firstLdbStep = 20 and ldbPeriod = 100, we have the        *
- * following timeline (for these particular numbers):                     *
- *									  *
- * Tracing	   :  <---- off ----><------------ on -----------><-- off *
- * ldbCycleNum     :  1    2    3    4    5        6     7        8     9 *
- * Iteration Steps : 00===20===40===60===80======160===180======260===280 *
- * Ldb Step() No   :            1    2    3        4     5        6     7 *
- * Ldb Strategy    :         Alg7  Ref  Ref     Inst   Ref     Inst   Ref *
- *                           Alg7					  *
- *									  *
- * Alg7 = AlgSeven							  *
- * Ref  = Refine (NamdCentLB.C, Rebalancer.C)				  *
- * Inst = Instrumentation Phase (no real load balancing)		  *
- * ---------------------------------------------------------------------- *
- *------------------------------------------------------------------------*
+/*------------------------------------------------------------------------------*
+ * ---------------------------------------------------------------------------- *
+ * Comments inserted by Abhinav to clarify relation between ldbCycleNum,  	*
+ * load balancing step numbers (printed by the step() function) and       	*
+ * tracing of the steps						    	 	*
+ * ---------------------------------------------------------------------------- *
+ * If trace is turned off in the beginning, then tracing is turned on     	*
+ * at ldbCycleNum = 4 and turned off at ldbCycleNum = 8. ldbCycleNum can   	*
+ * be adjusted by specifying firstLdbStep and ldbPeriod which are set by  	*
+ * default to 5*stepspercycle and 200*stepspercycle if not specified.     	*
+ * 									  	*
+ * If we choose firstLdbStep = 20 and ldbPeriod = 100, we have the        	*
+ * following timeline (for these particular numbers):                     	*
+ *									  	*
+ * Tracing	   :  <------ off ------><------------- on ------------><-- off	*
+ * Ldb Step() No   :              1     2     3        4      5        6      7 *
+ * Iteration Steps : 00====20====40====60====80======160====180======260====280 *
+ * ldbCycleNum     :  1     2     3     4     5        6      7        8      9 *
+ * Instrumention   :          Inst  Inst  Inst           Inst            Inst   *
+ * LDB Strategy    :             Alg7  Ref   Ref             Ref            Ref *
+ *									  	*
+ * Alg7 = AlgSeven							  	*
+ * Ref  = Refine (NamdCentLB.C, Rebalancer.C)				  	*
+ * Inst = Instrumentation Phase (no real load balancing)		  	*
+ * ---------------------------------------------------------------------------- *
+ *------------------------------------------------------------------------------*
  */
 
 #if CHARM_VERSION >= 050606
@@ -437,7 +461,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   nPatchesReported = 0;
   nPatchesExpected = nLocalPatches;
   nComputesReported = 0;
-  nComputesExpected = nLocalComputes * nLdbSteps;
+  nComputesExpected = nLocalComputes * numStepsToRun;
   controllerReported = 0;
   controllerExpected = ! CkMyPe();
 

@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
+ * $Author: bhatele $
+ * $Date: 2008/06/05 06:23:49 $
+ * $Revision: 1.1219 $
+ *****************************************************************************/
+
 #include "InfoStream.h"
 #include "memusage.h"
 #include "Node.h"
@@ -1787,7 +1794,7 @@ void Controller::outputExtendedSystem(int step)
 void Controller::rebalanceLoad(int)
 {
   if ( ! ldbSteps ) { 
-    ldbSteps = LdbCoordinator::Object()->steps();
+    ldbSteps = LdbCoordinator::Object()->getNumStepsToRun();
   }
   if ( ! --ldbSteps ) {
     startBenchTime -= CmiWallTimer();

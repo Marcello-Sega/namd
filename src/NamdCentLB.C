@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/02/03 05:21:50 $
- * $Revision: 1.84 $
+ * $Date: 2008/06/05 06:23:49 $
+ * $Revision: 1.85 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -102,6 +102,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   loadDataASCII("ldbd_before.5", numProcessors, numPatches, nMoveableComputes);
   // CkExit();
 #endif
+
+  // iout << "LDB step no: " << step() << "\n";
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
     RefineOnly(computeArray, patchArray, processorArray,

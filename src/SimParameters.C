@@ -4,11 +4,18 @@
 ***  All rights reserved.
 **/
 
-/*
-   SimParameters is just a glorified structure to hold the global
-   static simulation parameters such as timestep size, cutoff, etc. that
-   are read in from the configuration file.
-*/
+/*****************************************************************************
+ * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
+ * $Author: bhatele $
+ * $Date: 2008/06/05 06:23:49 $
+ * $Revision: 1.1252 $
+ *****************************************************************************/
+
+/** \file SimParameters.C
+ * SimParameters is just a glorified structure to hold the global
+ * static simulation parameters such as timestep size, cutoff, etc. that
+ * are read in from the configuration file.
+ **/
 
 #include "InfoStream.h"
 #include "ComputeNonbondedUtil.h"
@@ -1265,13 +1272,15 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    ///////////////  Load balance options
    opts.optional("main", "ldbStrategy", "Load balancing strategy",
      loadStrategy);
-   opts.optional("main", "ldbPeriod",
-     "steps between load balancing", &ldbPeriod);
+   opts.optional("main", "ldbPeriod", "steps between load balancing", 
+     &ldbPeriod);
    opts.range("ldbPeriod", POSITIVE);
-   opts.optional("main", "firstLdbStep", 
-     "when to start load balancing",
+   opts.optional("main", "firstLdbStep", "when to start load balancing",
      &firstLdbStep);
    opts.range("firstLdbStep", POSITIVE);
+   opts.optional("main", "lastLdbStep", "when to stop load balancing",
+     &lastLdbStep);
+   opts.range("lastLdbStep", POSITIVE);
    opts.optional("main", "ldbBackgroundScaling",
      "background load scaling", &ldbBackgroundScaling);
    opts.range("ldbBackgroundScaling", NOT_NEGATIVE);
@@ -2077,8 +2086,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("Sorry, pair interactions may not be calculated when LES or FEP is enabled.");
 
    //  Set up load balancing variables
-   if (opts.defined("ldbStrategy"))
-   {
+   if (opts.defined("ldbStrategy")) {
      //  Assign the load balancing strategy
      if (strcasecmp(loadStrategy, "none") == 0)
        ldbStrategy=LDBSTRAT_NONE;
@@ -2093,22 +2101,24 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      else
        NAMD_die("Unknown ldbStrategy selected");
    } else {
-     ldbStrategy=LDBSTRAT_OTHER;
+     ldbStrategy=LDBSTRAT_ASB8;
    }
 
-  if (!opts.defined("ldbPeriod"))
-  {
+  if (!opts.defined("ldbPeriod")) {
     ldbPeriod=200*stepsPerCycle;
   }
 
   //  Set default values
-  if (!opts.defined("firstLdbStep"))
-  {
+  if (!opts.defined("firstLdbStep")) {
     firstLdbStep=5*stepsPerCycle;
   }
 
   if (ldbPeriod <= firstLdbStep) {
     NAMD_die("ldbPeriod must greater than firstLdbStep.");
+  }
+
+  if (!opts.defined("lastLdbStep")) {
+    lastLdbStep = -1;
   }
 
 #ifdef MEM_OPT_VERSION
@@ -2578,6 +2588,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }
      iout << iINFO << "LDB PERIOD             " << ldbPeriod << " steps\n";
      iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep << "\n";
+     iout << iINFO << "LAST LDB TIMESTEP     " << lastLdbStep << "\n";
      iout << iINFO << "LDB BACKGROUND SCALING " << ldbBackgroundScaling << "\n";
      iout << iINFO << "HOM BACKGROUND SCALING " << ldbHomeBackgroundScaling << "\n";
      if ( PMEOn ) {
