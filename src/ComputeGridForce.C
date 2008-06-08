@@ -252,7 +252,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 	    
 // 	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (inv * f);
 //	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (f * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
-	    Force force = scale * box.scale * charge * (f * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
+	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * ((box.scale * f) * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
 	    
 	    DebugM(4, "f4 = " << f << "\n" << endi);
 	    DebugM(4, "force4 = " << force << "\n" << endi);

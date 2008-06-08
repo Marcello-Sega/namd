@@ -366,7 +366,7 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
     int inds[3];
     int ind;
     Vector g, dg;
-    Vector scale = simParams->gridforceScale;
+    Vector gapscale = Vector(1, 1, 1);
     
     DebugM(3, "pos = " << pos << "\n" << "origin = " << origin << "\n" << "p = " << p << "\n" << endi);
     
@@ -383,14 +383,14 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 	}
 	if (cont[i] && inds[i] == k[i]-1) {
 	    // Correct for non-unit spacing between continuous grid images
-	    scale[i] *= gapinv[i];
+	    gapscale[i] *= gapinv[i];
 	    if (g[i] < 0.0) dg[i] = 1.0 + g[i]*gapinv[i]; // = (gap[i] + g[i]) * gapinv[i]
 	    else dg[i] = (g[i] - inds[i]) * gapinv[i];
 	}
     }
     
-    DebugM(3, "scale = " << scale << "\n" << endi);
-    box->scale = Tensor::diagonal(scale);
+    DebugM(3, "gapscale = " << gapscale << "\n" << endi);
+    box->scale = Tensor::diagonal(gapscale);
     
     DebugM(3, "dg = " << dg << "\n" << endi);
     DebugM(3, "ind + dg = " << inds[0]+dg[0] << " " << inds[1]+dg[1] << " " << inds[2]+dg[2] << "\n" << endi);
@@ -441,7 +441,7 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 		    dk_hi[i1] = dk[i1];
 		    dk_lo[i1] = -(k[i1]-1) * dk[i1];
 		    voffs[i1] = offset[i1];
-		    dscales[i1] = 1.0/(1.0 + gap[i1]) * simParams->gridforceScale[i1]/scale[i1];
+		    dscales[i1] = 1.0/(1.0 + gap[i1]) * 1.0/gapscale[i1];
 		}
 		else zero_derivs = TRUE;
 	    }
@@ -450,7 +450,7 @@ int GridforceGrid::get_box(Box *box, Vector pos) const
 		    dk_hi[i1] = -(k[i1]-1) * dk[i1];
 		    dk_lo[i1] = dk[i1];
 		    voffs[i1] = offset[i1];
-		    dscales[i1] = 1.0/(1.0 + gap[i1]) * simParams->gridforceScale[i1]/scale[i1];
+		    dscales[i1] = 1.0/(1.0 + gap[i1]) * 1.0/gapscale[i1];
 		}
 		else zero_derivs = TRUE;
 	    }
