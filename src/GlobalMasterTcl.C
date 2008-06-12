@@ -203,19 +203,42 @@ int GlobalMasterTcl::Tcl_loadforces(ClientData clientData,
   AtomIDList::const_iterator forced_ids_e = self->getLastAtomsForcedEnd();
   ForceList::const_iterator forces_i = self->getLastForcesBegin();
 
+  // plf -- changed 06/12/2008 to check for more than one force on each atom
+
   // now make a Tcl array containing all of the requested atoms and
   // their forces
   DebugM(1,"Making Tcl array\n");
   while(forced_ids_i != forced_ids_e) {
     Tcl_Obj *array_key = Tcl_NewIntObj((int)((*forced_ids_i)+1)); // the id
 
+    // Check if the element is already defined, and if so, add to it
+    Tcl_Obj *oldlist = Tcl_ObjGetVar2(interp, force_array_name, array_key, 0);
     Tcl_Obj *newlist = Tcl_NewListObj(0,NULL); // the list <fx,fy,fz>
-    Tcl_ListObjAppendElement(interp, newlist,
-      Tcl_NewDoubleObj((double)((*forces_i).x)));
-    Tcl_ListObjAppendElement(interp, newlist, 
-      Tcl_NewDoubleObj((double)((*forces_i).y)));
-    Tcl_ListObjAppendElement(interp, newlist, 
-      Tcl_NewDoubleObj((double)((*forces_i).z)));
+    if (oldlist == NULL) {
+      Tcl_ListObjAppendElement(interp, newlist,
+        Tcl_NewDoubleObj((double)((*forces_i).x)));
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj((double)((*forces_i).y)));
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj((double)((*forces_i).z)));
+    } else {
+      Tcl_Obj** old_elems;
+      int num_old_elems;
+      double currval = 0.0;
+      Tcl_ListObjGetElements(interp, oldlist, &num_old_elems, &old_elems);
+      if (num_old_elems != 3) {
+        NAMD_die("TCL error in loadforces! Force list doesn't have 3 elements!");
+      }
+      Tcl_GetDoubleFromObj(interp, old_elems[0], &currval);
+      Tcl_ListObjAppendElement(interp, newlist,
+        Tcl_NewDoubleObj((double)((*forces_i).x) + currval));
+      Tcl_GetDoubleFromObj(interp, old_elems[1], &currval);
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj((double)((*forces_i).y + currval)));
+      Tcl_GetDoubleFromObj(interp, old_elems[2], &currval);
+      Tcl_ListObjAppendElement(interp, newlist, 
+        Tcl_NewDoubleObj((double)((*forces_i).z + currval)));
+    }
 
     // add the pair (id,F) to the array
     if (!Tcl_ObjSetVar2(interp, force_array_name, array_key, newlist, 0)) {
