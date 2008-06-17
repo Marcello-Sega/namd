@@ -26,6 +26,10 @@ class ReductionMgr;
 class Communicate;
 class Sync;
 
+#ifdef PROCTRACE_DEBUG
+class DebugFileTrace;
+#endif
+
 // Instance Variables that maintain singletonness of classes
 
 CpvExtern(AtomMap*, AtomMap_instance);
@@ -41,6 +45,10 @@ CpvExtern(PatchMgr*, PatchMgr_instance);
 CpvExtern(ProxyMgr*, ProxyMgr_instance);
 CpvExtern(ReductionMgr*, ReductionMgr_instance);
 CpvExtern(Sync*, Sync_instance);
+
+#ifdef PROCTRACE_DEBUG
+CpvExtern(DebugFileTrace*, DebugFileTrace_instance);
+#endif
 
 // Other static Variables
 

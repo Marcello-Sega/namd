@@ -5,6 +5,7 @@
 **/
 
 #include "ProcessorPrivate.h"
+#include "Debug.h"
 
 /*
  * Variable Definitions
@@ -24,6 +25,10 @@ CpvDeclare(PatchMap*, PatchMap_instance);
 CpvDeclare(PatchMgr*, PatchMgr_instance);
 CpvDeclare(ProxyMgr*, ProxyMgr_instance);
 CpvDeclare(ReductionMgr*, ReductionMgr_instance);
+
+#ifdef PROCTRACE_DEBUG
+CpvDeclare(DebugFileTrace*, DebugFileTrace_instance);
+#endif
 
 // Other static variables
 
@@ -69,5 +74,11 @@ void ProcessorPrivateInit(void)
   CpvAccess(comm) = 0;
   CpvInitialize(Sync*, Sync_instance);
   CpvAccess(Sync_instance) = 0;
+
+#ifdef PROCTRACE_DEBUG
+  CpvInitialize(DebugFileTrace*, DebugFileTrace_instance);
+  CpvAccess(DebugFileTrace_instance) = 0;
+#endif
+
 }
 

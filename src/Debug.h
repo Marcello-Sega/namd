@@ -34,6 +34,7 @@
  *  No parameters to this function should have a side effect!
  *  No functions should be passed as parameters!  (including inline)
  *****************************************************************/
+
  #ifdef DEBUGM
 
 #include "InfoStream.h"
@@ -58,6 +59,66 @@
   #define DebugM(x,y)	;
 
  #endif /* DEBUGM */
+
+#ifdef PROCTRACE_DEBUG
+#include "charm++.h"
+#include <stdarg.h>
+#include "ProcessorPrivate.h"
+class DebugFileTrace{
+private:
+    char *fname;
+    FILE *fp;
+public:
+    inline static DebugFileTrace *Instance(char *fn){
+        if(CpvAccess(DebugFileTrace_instance)==0){
+            CpvAccess(DebugFileTrace_instance) = new DebugFileTrace(fn);
+        }
+        return CpvAccess(DebugFileTrace_instance);
+    }
+    inline static DebugFileTrace *Object(){
+        return CpvAccess(DebugFileTrace_instance);
+    }
+    DebugFileTrace(char *fn){
+        if(fn==NULL) {
+            fname = NULL;
+            fp = stdout;
+            return;
+        }else{
+            char tmp[128];
+            memset(tmp, 0, 128*sizeof(char));
+            sprintf(tmp, "%s.%d", fn, CkMyPe());
+            fname = new char[strlen(tmp)+1];
+            memcpy(fname, tmp, strlen(tmp)+1);
+            fp = fopen(fname, "w");
+            fclose(fp);
+        }
+    }
+    ~DebugFileTrace(){
+        delete [] fname;
+    }
+    inline void writeTrace(const char *msg, ...){
+        va_list argList;
+        va_start(argList, msg);
+        vfprintf(fp, msg, argList);
+        va_end(argList);
+    }   
+    inline int openTrace(){ 
+        if(fname==NULL)  return 0;
+        fp = fopen(fname, "a"); 
+        if(fp==NULL)
+            return 1;
+        else
+            return 0;
+    }
+    inline int closeTrace(){ 
+        if(fname==NULL)  return 0;
+        return fclose(fp); 
+    }
+    inline int flushTrace(){
+        return fflush(fp);
+    }
+};
+#endif
 
 #endif /* DEBUG_H */
 
