@@ -257,7 +257,7 @@ void PatchMap::pack (char *buffer)
     for(j=0;j<patchData[i].numCidsAllocated;++j)
       PACK(ComputeID,patchData[i].cids[j]);
   }
-  DebugM(3,buffer + size - b << " == 0 ?" << std::endl);
+  //DebugM(3,buffer + size - b << " == 0 ?" << std::endl);
 }
 
 #undef UNPACK
