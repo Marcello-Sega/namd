@@ -98,7 +98,7 @@ void CrosstermElem::computeForce(BigReal *reduction,
   Force f1(0,0,0),f2(0,0,0),f3(0,0,0);	// force components
   Force f4(0,0,0),f5(0,0,0),f6(0,0,0);	// force components
 
-  DebugM(3, "::computeForce() -- starting with crossterm type " << crosstermType << std::endl);
+  //DebugM(3, "::computeForce() -- starting with crossterm type " << crosstermType << std::endl);
 
   //  Calculate the vectors between atoms
   const Position & pos0 = p[0]->x[localIndex[0]].position;

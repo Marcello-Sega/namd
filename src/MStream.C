@@ -69,7 +69,7 @@ static int checkSum(StreamMessage *msg)
     checksum += (unsigned char) msg->data[i];
   }
   if ( checksum != msg->checksum ) {
-    DebugM(5,"Error on " << tag << ":" << msg->index <<
+    DebugM(5,"Error on " << msg->tag << ":" << msg->index <<
           " of length " << msg->len <<
           " with checksum " << ((int)checksum) <<
           " vs " << ((int)(msg->checksum)) <<"\n");

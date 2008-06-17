@@ -84,7 +84,7 @@ void ImproperElem::computeForce(BigReal *reduction,
   BigReal diff;		// for periodicity
   Force f1(0,0,0),f2(0,0,0),f3(0,0,0);	// force components
 
-  DebugM(3, "::computeForce() -- starting with improper type " << improperType << std::endl);
+  //DebugM(3, "::computeForce() -- starting with improper type " << improperType << std::endl);
 
   // get the improper information
   int multiplicity = value->multiplicity;

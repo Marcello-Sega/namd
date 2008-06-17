@@ -72,7 +72,7 @@ void BondElem::computeForce(BigReal *reduction,
   BigReal diff;		// difference between theta and theta0
   BigReal energy;	// energy from the bond
 
-  DebugM(3, "::computeForce() -- starting with bond type " << bondType << std::endl);
+  //DebugM(3, "::computeForce() -- starting with bond type " << bondType << std::endl);
 
   // get the bond information
   Real k = value->k * scale;
