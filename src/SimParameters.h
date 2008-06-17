@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: bhatele $
- * $Date: 2008/06/05 06:23:49 $
- * $Revision: 1.1139 $
+ * $Author: chaomei2 $
+ * $Date: 2008/06/17 20:30:37 $
+ * $Revision: 1.1140 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -576,6 +576,9 @@ public:
 
     Bool useCompressedPsf;
     Bool genCompressedPsf;
+
+    Bool enableProxySendST;
+    Bool enableProxyRecvST;
 	
 public:
 

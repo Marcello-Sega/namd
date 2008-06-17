@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: bhatele $
- * $Date: 2008/06/05 06:23:49 $
- * $Revision: 1.1252 $
+ * $Author: chaomei2 $
+ * $Date: 2008/06/17 20:30:37 $
+ * $Revision: 1.1253 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -545,12 +545,6 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.optionalB("main", "vdwGeometricSigma",
        "Use geometric mean to combine L-J sigmas, as for OPLS",
        &vdwGeometricSigma, FALSE);
-
-   opts.optionalB("main", "useCompressedPsf", "The structure file psf is in the compressed format",
-                  &useCompressedPsf, FALSE);
-   opts.optionalB("main", "genCompressedPsf", "Generate the compressed version of the psf file",
-                  &genCompressedPsf, FALSE);
-
 }
 
 
@@ -1304,8 +1298,16 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      &noPatchesOnZero, FALSE);
    opts.optionalB("main", "noPatchesOnOne", "no patches on pe one",
      &noPatchesOnOne, FALSE);
+   opts.optionalB("main", "useCompressedPsf", "The structure file psf is in the compressed format",
+                  &useCompressedPsf, FALSE);
+   opts.optionalB("main", "genCompressedPsf", "Generate the compressed version of the psf file",
+                  &genCompressedPsf, FALSE);
    opts.optionalB("main", "shiftIOToOne", "shift I/O operation to pe one",
      &shiftIOToOne, FALSE);
+   opts.optionalB("main", "sendProxySpanningTree", "using spanning tree to send proxies",
+                  &enableProxySendST, FALSE);
+   opts.optionalB("main", "recvProxySpanningTree", "using spanning tree to receive proxies",
+                  &enableProxyRecvST, FALSE);
    opts.optional("main", "procsPerNode", "Number of Processor per node",
      &procsPerNode);
    opts.range("procsPerNode", POSITIVE);
