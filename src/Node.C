@@ -232,6 +232,16 @@ void Node::startup() {
   break;
 
   case 3:     
+    if(simParameters->enableProxySendST) {
+        ProxyMgr::Object()->setSendSpanning();
+    }
+    if(simParameters->enableProxyRecvST) {
+        ProxyMgr::Object()->setRecvSpanning();
+    }
+    #ifdef PROCTRACE_DEBUG
+    DebugFileTrace::Instance("procTrace");
+    #endif
+
     if (!CkMyPe()) {
       output = new Output; // create output object just on PE(0)
       workDistrib->patchMapInit(); // create space division
