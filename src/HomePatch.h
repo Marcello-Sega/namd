@@ -32,6 +32,8 @@ class ProxyCombinedResultMsg;
 class Sequencer;
 class SubmitReduction;
 
+class ProxyNodeAwareSpanningTreeMsg;
+
 class HomePatch : public Patch {
   friend class PatchMgr;
   friend class Sequencer;
@@ -121,10 +123,22 @@ public:
       atom = *al;
   }
 
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
   // build spanning tree for proxy nodes
+  void buildNodeAwareSpanningTree(void);
+  void setupChildrenFromProxySpanningTree();
+#else
+    // build spanning tree for proxy nodes
   void buildSpanningTree(void);
+#endif
+
+  void sendNodeAwareSpanningTree();
+  void recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg);
+
   void sendSpanningTree();
   void recvSpanningTree(int *t, int n);
+
+
   void sendProxies();
 
 #if USE_TOPOMAP 
@@ -195,9 +209,20 @@ private:
   MigrationInfo realInfo[PatchMap::MaxOneAway];
   MigrationInfo *mInfo[3][3][3];
 
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  //the whole spanning tree for all the proxies this home patch has
+  proxyTreeNodeList ptnTree;
+  //the immediate children (recording pe ids) containing two parts: 
+  //one part of them all belong to the physical node this home patch
+  // resides on; the other part of pes belong to all external nodes.
+  int *children;
+  int numChild;
+#else
   NodeIDList tree;              // the whole tree
   int *child;	// spanning tree of proxies - immediate children
-  int nChild;  
+  int nChild;
+#endif
+
   // PLF -- for TIP4P
   void redistrib_tip4p_forces(Vector&, Vector&, Vector&, Vector&, int, Tensor*);
   void tip4_omrepos(Vector*, Vector*, Vector*, BigReal);

@@ -31,7 +31,13 @@ class ProxyPatch : public Patch
      void setSpanningTree(int, int*, int);
      int  getSpanningTreeParent() { return parent; }
      int  getSpanningTreeChild(int *);
-     inline int getSpanningTreeNChild(void) { return nChild; }
+     inline int getSpanningTreeNChild(void) {
+        #ifdef NODEAWARE_PROXY_SPANNINGTREE
+            return numChild;
+        #else
+            return nChild; 
+        #endif
+     }
      ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
 
 #if CMK_PERSISTENT_COMM
@@ -55,8 +61,15 @@ class ProxyPatch : public Patch
 
      // for spanning tree
      ProxyCombinedResultMsg *msgCBuffer;
-     int parent, *child; // spanning tree for recvResults()
-     int nChild, nWait;
+     int parent;
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+     int *children;
+     int numChild;
+#else
+     int *child; // spanning tree for recvResults()
+     int nChild;
+#endif
+     int nWait;
 };
 
 

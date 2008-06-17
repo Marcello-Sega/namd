@@ -38,7 +38,7 @@
 
 #define TINY 1.0e-20;
 #define MAXHGS 10
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 2
 //#define DEBUGM
 #include "Debug.h"
 
@@ -111,8 +111,15 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   //  }
   //}
 
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  ptnTree.resize(0);
+  children = NULL;
+  numChild = 0;
+#else
   child =  new int[proxySpanDim];
   nChild = 0;	// number of proxy spanning tree children
+#endif
+
 #if CMK_PERSISTENT_COMM
   phsReady = 0;
   nphs = 0;
@@ -179,8 +186,15 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
     }
   }
 
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  ptnTree.resize(0);
+  children = NULL;
+  numChild = 0;
+#else
   child =  new int[proxySpanDim];
   nChild = 0;	// number of proxy spanning tree children
+#endif
+
 #if CMK_PERSISTENT_COMM
   phsReady = 0;
   nphs = 0;
@@ -332,7 +346,12 @@ void HomePatch::readPatchMap() {
 
 HomePatch::~HomePatch()
 {
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+    ptnTree.resize(0);
+    delete [] children;
+#else
   delete [] child;
+#endif
 }
 
 
@@ -422,6 +441,144 @@ static int compDistance(const void *a, const void *b)
     return 1;
 }
 
+void HomePatch::sendProxies()
+{
+  ProxyListIter pli(proxy);
+  NodeIDList list;
+  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  {
+    list.add(pli->node);
+  }
+  ProxyMgr::Object()->sendProxies(patchID, &list[0], list.size());  
+}
+
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+void HomePatch::buildNodeAwareSpanningTree(void){
+    //build the naive spanning tree for this home patch    
+    int *proxyNodeMap = new int[CkNumNodes()]; //each element indiates the number of proxies residing on this node 
+    NodeIDList proxyPeList;
+    int proxyCnt = proxy.size();
+    if(proxyCnt==0) {
+        //this case will not happen in practice.
+        //In debugging state where spanning tree is enforced, then this could happen
+        //Chao Mei        
+        #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
+        DebugFileTrace *dft = DebugFileTrace::Object();
+        dft->openTrace();
+        dft->writeTrace("HomePatch[%d] has 0 proxy on proc[%d] node[%d]\n", patchID, CkMyPe(), CkMyNode());
+        dft->closeTrace();
+        #endif
+        return;
+    }
+    proxyPeList.resize(proxyCnt);
+    ProxyListIter pli(proxy);
+    int i=0;
+    for ( pli = pli.begin(); pli != pli.end(); ++pli, i++ )
+        proxyPeList[i] = pli->node;    
+    ProxyMgr::buildSinglePatchNodeAwareSpanningTree(patchID, proxyPeList, ptnTree, proxyNodeMap);    
+    delete [] proxyNodeMap;
+    proxyPeList.resize(0);
+
+    //optimize on the naive spanning tree
+
+    //setup the children
+    setupChildrenFromProxySpanningTree();
+    //send down to children
+    sendNodeAwareSpanningTree();
+}
+
+void HomePatch::setupChildrenFromProxySpanningTree(){
+    if(ptnTree.size()==0) {
+        numChild = 0;
+        delete [] children;
+        children = NULL;
+        return;
+    }
+    proxyTreeNode *rootnode = &ptnTree.item(0);
+    CmiAssert(rootnode->peIDs[0] == CkMyPe());
+    //set up children
+    //1. add external children (the first proc inside the proxy tree node)    
+    //2. add internal children (with threshold that would enable spanning
+    numChild = rootnode->numPes-1;
+    if(numChild > inNodeProxySpanDim) {        
+        //tree construction within a node)
+        CmiAbort("Enabling in-node spanning tree construction has not been implemented yet!\n");
+    }else{
+        //exclude the root node
+        int treesize = ptnTree.size();
+        int maxExternals = (proxySpanDim>(treesize-1))?(treesize-1):proxySpanDim;
+        numChild += maxExternals;        
+
+        delete [] children;
+        if(numChild==0){
+            children = NULL;
+            return;
+        }
+        children = new int[numChild];    
+        for(int i=0; i<maxExternals; i++) {
+            children[i] = ptnTree.item(i+1).peIDs[0];
+        }
+        for(int i=maxExternals, j=1; i<numChild; i++, j++) {
+            children[i] = rootnode->peIDs[j];
+        }
+    }
+    
+    #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
+    DebugFileTrace *dft = DebugFileTrace::Object();
+    dft->openTrace();
+    dft->writeTrace("HomePatch[%d] has %d children: ", patchID, numChild);
+    for(int i=0; i<numChild; i++)
+        dft->writeTrace("%d ", children[i]);
+    dft->writeTrace("\n");
+    dft->closeTrace();
+    #endif
+    
+}
+#endif
+
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+//This is not an entry method, but takes an argument of message type
+void HomePatch::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
+    //set up the whole tree ptnTree
+    int treesize = msg->numNodesWithProxies;    
+    ptnTree.resize(treesize);    
+    int *pAllPes = msg->allPes;
+    for(int i=0; i<treesize; i++) {
+        proxyTreeNode *oneNode = &ptnTree.item(i);
+        delete oneNode->peIDs;
+        oneNode->numPes = msg->numPesOfNode[i];
+        oneNode->nodeID = CkNodeOf(*pAllPes);
+        oneNode->peIDs = new int[oneNode->numPes];
+        for(int j=0; j<oneNode->numPes; j++) {
+            oneNode->peIDs[j] = *pAllPes;
+            pAllPes++;
+        }
+    }
+    //setup children
+    setupChildrenFromProxySpanningTree();
+    //send down to children
+    sendNodeAwareSpanningTree();
+}
+
+void HomePatch::sendNodeAwareSpanningTree(){
+    if(ptnTree.size()==0) return;    
+    ProxyNodeAwareSpanningTreeMsg *msg = 
+        ProxyNodeAwareSpanningTreeMsg::getANewMsg(patchID, CkMyPe(), ptnTree.begin(), ptnTree.size());
+   
+    #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
+    msg->printOut("HP::sendST");
+    #endif
+
+    CmiAssert(CkMyPe() == msg->allPes[0]);
+    ProxyMgr::Object()->sendNodeAwareSpanningTree(msg);
+
+}
+#else
+void HomePatch::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){}
+void HomePatch::sendNodeAwareSpanningTree(){}
+#endif
+
+#ifndef NODEAWARE_PROXY_SPANNINGTREE
 // recv a spanning tree from load balancer
 void HomePatch::recvSpanningTree(int *t, int n)
 {
@@ -442,17 +599,6 @@ void HomePatch::recvSpanningTree(int *t, int n)
   sendSpanningTree();
 }
 
-void HomePatch::sendProxies()
-{
-  ProxyListIter pli(proxy);
-  NodeIDList list;
-  for ( pli = pli.begin(); pli != pli.end(); ++pli )
-  {
-    list.add(pli->node);
-  }
-  ProxyMgr::Object()->sendProxies(patchID, &list[0], list.size());  
-}
-
 void HomePatch::sendSpanningTree()
 {
   if (tree.size() == 0) return;
@@ -462,7 +608,12 @@ void HomePatch::sendSpanningTree()
   msg->tree = tree;
   ProxyMgr::Object()->sendSpanningTree(msg);  
 }
+#else
+void HomePatch::recvSpanningTree(int *t, int n){}
+void HomePatch::sendSpanningTree(){}
+#endif
 
+#ifndef NODEAWARE_PROXY_SPANNINGTREE
 void HomePatch::buildSpanningTree(void)
 {
   nChild = 0;
@@ -523,7 +674,6 @@ void HomePatch::buildSpanningTree(void)
     // first time, sort by distance
     qsort(&tree[1], nNonPatch, sizeof(int), compDistance);
   }
-#endif
 #endif
 
   //CkPrintf("home: %d:(%d) %d %d %d %d %d\n", patchID, tree.size(),tree[0],tree[1],tree[2],tree[3],tree[4]);
@@ -588,6 +738,7 @@ void HomePatch::buildSpanningTree(void)
     nChild++;
   }
 #endif
+#endif
   
 #if 0
   // for debugging
@@ -600,6 +751,7 @@ void HomePatch::buildSpanningTree(void)
   // send to children nodes
   sendSpanningTree();
 }
+#endif
 
 
 void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg){
@@ -647,7 +799,7 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
 
 void HomePatch::receiveResults(ProxyCombinedResultMsg *msg)
 {
-  DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
+  DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodes.size()<<")\n");
 //CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
   for (int i=0; i<msg->nodes.size(); i++) {
     int node = msg->nodes[i];
@@ -681,7 +833,7 @@ void HomePatch::receiveResults(ProxyCombinedResultMsg *msg)
 }
 
 void HomePatch::positionsReady(int doMigration)
-{
+{    
   flags.sequence++;
 
   if (!patchMapRead) { readPatchMap(); }
@@ -721,7 +873,7 @@ void HomePatch::positionsReady(int doMigration)
 
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
-  int *pids;
+  int *pids = NULL;
   int npid;
   if (proxySendSpanning == 0) {
     npid = proxy.size();
@@ -740,9 +892,17 @@ void HomePatch::positionsReady(int doMigration)
     }
   }
   else {
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+    npid = numChild;
+    if(numChild>0) {
+        pids = new int[numChild];
+        memcpy(pids, children, sizeof(int)*numChild);
+    }
+#else
     npid = nChild;
     pids = new int[proxySpanDim];
     for (int i=0; i<nChild; i++) pids[i] = child[i];
+#endif
   }
   if (npid) {
 #if CMK_PERSISTENT_COMM
@@ -792,6 +952,18 @@ void HomePatch::positionsReady(int doMigration)
     //DMK - Atom Separation (water vs. non-water)
     nmsg->numWaterAtoms = numWaterAtoms;
 #endif
+
+    
+    #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
+    DebugFileTrace *dft = DebugFileTrace::Object();
+    dft->openTrace();
+    dft->writeTrace("HP::posReady: for HomePatch[%d], sending proxy msg to: ", patchID);
+    for(int i=0; i<npid; i++) {
+        dft->writeTrace("%d ", pids[i]);
+    }
+    dft->writeTrace("\n");
+    dft->closeTrace();
+    #endif
 
     if(doMigration) {
         ProxyMgr::Object()->sendProxyAll(nmsg,npid,pids);
@@ -1791,8 +1963,8 @@ HomePatch::doAtomMigration()
 
       // See if we have a migration list already
       MigrationList &mCur = mInfo[xdev][ydev][zdev]->mList;
-      DebugM(3,"Migrating atom " << atomIDList_i << " from patch "
-		<< patchID << " with position " << p_i << "\n");
+      DebugM(3,"Migrating atom " << atom_i->id << " from patch "
+		<< patchID << " with position " << atom_i->position << "\n");
       mCur.add(*atom_i);
 
       ++delnum;
@@ -1890,8 +2062,8 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
       MigrationList::iterator mi;
       Transform mother_transform;
       for (mi = migrationList.begin(); mi != migrationList.end(); mi++) {
-        DebugM(1,"Migrating atom " << mi->atomID << " to patch "
-		  << patchID << " with position " << mi->pos << "\n"); 
+        DebugM(1,"Migrating atom " << mi->id << " to patch "
+		  << patchID << " with position " << mi->position << "\n"); 
         if ( mi->hydrogenGroupSize ) {
           mi->position = lattice.nearest(mi->position,center,&(mi->transform));
           mother_transform = mi->transform;

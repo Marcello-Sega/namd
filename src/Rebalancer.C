@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
- * $Author: bhatele $
- * $Date: 2008/02/03 05:08:37 $
- * $Revision: 1.80 $
+ * $Author: chaomei2 $
+ * $Date: 2008/06/17 20:43:22 $
+ * $Revision: 1.81 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1019,8 +1019,10 @@ void Rebalancer::createSpanningTree() {
   ProxyTree &pt = ProxyMgr::Object()->getPtree();
   Iterator nextP;
   processorInfo *p;
+#ifndef NODEAWARE_PROXY_SPANNINGTREE
   if(pt.sizes==NULL)
     pt.sizes = new int[numPatches];
+#endif
  
   if (pt.proxylist == NULL)
     pt.proxylist = new NodeIDList[numPatches];
@@ -1047,7 +1049,11 @@ void Rebalancer::createSpanningTree() {
     pt.proxylist[i].resize(j);
   }
   CkPrintf("Done intialising\n");
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  ProxyMgr::Object()->buildNodeAwareSpanningTree0();
+#else
   ProxyMgr::Object()->buildSpanningTree0();
+#endif
 }
 
 /** \function brickDim

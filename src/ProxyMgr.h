@@ -20,6 +20,7 @@
 
 extern int proxySendSpanning, proxyRecvSpanning;
 extern const int proxySpanDim;
+extern const int inNodeProxySpanDim;
 
 class RegisterProxyMsg : public CMessage_RegisterProxyMsg {
 public:
@@ -133,6 +134,20 @@ public:
     static ProxyResultVarsizeMsg *getANewMsg(NodeID nid, PatchID pid, int prioSize, ForceList *fls); 
 };
 
+class ProxyNodeAwareSpanningTreeMsg: public CMessage_ProxyNodeAwareSpanningTreeMsg{
+public:
+    PatchID patch;
+    NodeID procID;
+    int numNodesWithProxies;
+    int *numPesOfNode;
+    int *allPes;
+
+    static ProxyNodeAwareSpanningTreeMsg *getANewMsg(PatchID pid, NodeID nid, proxyTreeNode *tree, int size);
+
+    //For debug
+    void printOut(char *tag);
+};
+
 class ProxyCombinedResultMsg : public CMessage_ProxyCombinedResultMsg {
 public:
   PatchID patch;
@@ -173,14 +188,25 @@ class ProxyTree {       // keep track of the spanning trees
   public:
     int proxyMsgCount;
     NodeIDList *proxylist;
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+    //a node-aware spanning tree array, each element of which
+    //is a spanning tree for all proxies of a patch
+    proxyTreeNodeList *naTrees;
+#else
     NodeIDList *trees;
     int *sizes;
+#endif
+    
   public:
     ProxyTree() {
       proxyMsgCount = 0;
       proxylist = NULL;
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+      naTrees = NULL;
+#else
       trees = NULL;
       sizes = NULL;
+#endif      
     }
     ~ProxyTree() {
     }
@@ -217,10 +243,25 @@ public:
   void recvSpanningTreeOnHomePatch(int pid, int *tree, int n);
   void sendSpanningTree(ProxySpanningTreeMsg *);
   void recvSpanningTree(ProxySpanningTreeMsg *);
+
+  void sendNodeAwareSpanningTreeToHomePatch(int pid, proxyTreeNode *tree, int n);
+  void recvNodeAwareSpanningTreeOnHomePatch(ProxyNodeAwareSpanningTreeMsg *msg);
+  void sendNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *);
+  void recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *);
+  //set the proxy patch's parent field
+  void recvNodeAwareSTParent(int patch, int parent);
+
   void buildProxySpanningTree2();               // centralized version
   void sendProxies(int pid, int *list, int n);
   void recvProxies(int pid, int *list, int n);
+
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  void buildNodeAwareSpanningTree0();
+  static void buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &proxyList, 
+                                                    proxyTreeNodeList &ptnTree, int *proxyNodeMap);
+#else
   void buildSpanningTree0();
+#endif
 
   void sendResults(ProxyResultVarsizeMsg *);
   void recvResults(ProxyResultVarsizeMsg *);

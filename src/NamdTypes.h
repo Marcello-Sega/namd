@@ -183,6 +183,48 @@ struct ExtForce {
 
 #endif
 
+//This class represents a tree node of proxy spanning tree
+//All pes in this array have the same "nodeID". In other words,
+//all those pes are in the same physical node.
+//This is a structure for adapting NAMD to multicore processors
+struct proxyTreeNode{
+    int nodeID;
+    int *peIDs;
+    int numPes;
+
+    proxyTreeNode(){
+        nodeID = -1;
+        peIDs = NULL;
+        numPes = 0;
+    }
+    inline proxyTreeNode(const proxyTreeNode &n){
+        nodeID = n.nodeID;
+        numPes = n.numPes;
+        if(numPes==0) {
+            peIDs = NULL;
+        }else{
+            peIDs = new int[n.numPes];
+            memcpy(peIDs, n.peIDs, sizeof(int)*numPes);
+        }
+    }
+    inline proxyTreeNode &operator=(const proxyTreeNode &n){
+        nodeID = n.nodeID;
+        numPes = n.numPes;
+        delete [] peIDs;
+        if(numPes==0) {
+            peIDs = NULL;
+            return (*this);
+        }
+        peIDs = new int[n.numPes];
+        memcpy(peIDs, n.peIDs, sizeof(int)*numPes);
+        return (*this);
+    }
+    ~proxyTreeNode(){
+        delete [] peIDs;
+    }
+};
+
+typedef ResizeArray<proxyTreeNode> proxyTreeNodeList;
 
 #endif /* NAMDTYPES_H */
 
