@@ -1,0 +1,17 @@
+/**
+***  Copyright (c) 1995-2007 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+module FileIO {
+  // FileIO coordinates parallel file input/output
+  group FileIO
+  {
+    entry FileIO(void);
+    entry void writeDCD(int base);
+    entry void recvCoordinates();
+    entry void doneDCD(CkReductionMsg *msg);
+  };
+}
+

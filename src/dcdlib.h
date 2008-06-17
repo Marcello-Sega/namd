@@ -32,9 +32,19 @@ int read_dcdheader(int, int*, int*, int*, int*, double*, int*, int**);
 int read_dcdstep(int, int, float*, float*, float*, int, int, int*);	
 				/*  Read a timestep's values		*/
 int open_dcd_write(char *);     /*  Open a DCD file for writing		*/
+
+int open_dcd_write_par_slave(char *dcdname);
+/* Slaves open existing file created by master */
+
 int write_dcdstep(int, int, float *, float *, float *, double *unitcell);
 int write_dcdstep(int, int, FloatVector *, double *unitcell);
 				/*  Write out a timesteps values	*/
+int write_dcdstep_par_units(int fd, int N, float *X, float *Y, float *Z, double *cell, int unitoffset);
+     /* Master writes unit cell and natom info */
+int write_dcdstep_par_header(int fd, int N, float *X, float *Y, float *Z, double *cell); 
+     /* Master updates header */
+int write_dcdstep_par_slave(int fd, int N, float *X, float *Y, float *Z, double *cell, int xoffset, int yoffset, int zoffset);
+				/*  Write out a timesteps values parallel*/
 int write_dcdheader(int, char*, int, int, int, int, int, double, int);	
 				/*  Write a dcd header			*/
 void close_dcd_read(int, int, int *);

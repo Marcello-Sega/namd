@@ -674,6 +674,29 @@ int open_dcd_write(char *dcdname)
 	return(dcdfd);
 }
 
+// non master nodes open an existing file
+// master will have taken care of backup and creation before the
+// broadcast which triggers the slaves
+int open_dcd_write_par_slave(char *dcdname)
+
+{
+	struct stat sbuf;
+	int dcdfd;
+#ifdef WIN32
+	if ( (dcdfd = _open(dcdname, O_RDWR|O_BINARY|O_LARGEFILE,
+				_S_IREAD|_S_IWRITE)) < 0)
+#else
+
+	if ( (dcdfd = open(dcdname, O_RDWR|O_LARGEFILE,
+				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
+#endif
+	{
+		return(DCD_OPENFAILED);
+	}
+
+	return(dcdfd);
+}
+
 /************************************************************************/
 /*									*/
 /*				FUNCTION write_dcdstep			*/
@@ -691,7 +714,7 @@ int open_dcd_write(char *dcdname)
 /*									*/
 /*	write_dcdstep writes the coordinates out for a given timestep   */
 /*   to the specified DCD file.						*/
-/*									*/
+/*                                                                      */
 /************************************************************************/
 
 int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
@@ -728,6 +751,77 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 #define READ read
 #endif
 
+<<<<<<< dcdlib.C
+	/* don't update header until after write succeeds */
+	LSEEK(fd,NSAVC_POS,SEEK_SET);
+	READ(fd,(void*) &NSAVC,sizeof(int32));
+	LSEEK(fd,NSTEP_POS,SEEK_SET);
+	READ(fd,(void*) &NSTEP,sizeof(int32));
+	LSEEK(fd,NFILE_POS,SEEK_SET);
+	READ(fd,(void*) &NFILE,sizeof(int32));
+	NSTEP += NSAVC;
+	NFILE += 1;
+	LSEEK(fd,NSTEP_POS,SEEK_SET);
+	NAMD_write(fd,(char*) &NSTEP,sizeof(int32));
+	LSEEK(fd,NFILE_POS,SEEK_SET);
+	NAMD_write(fd,(char*) &NFILE,sizeof(int32));
+	LSEEK(fd,0,SEEK_END);
+
+	return(0);
+}
+
+/*   No useful file format description of the DCD format can be found.  */
+/*   The closest approximation purporting to be a format description is */
+/*   a block of fortran formated statements.  Ultra lame.               */
+
+/*   Therefore I simply reverse engineered the sequential output.       */
+/*    -EJB */
+
+
+
+/*   Notionally, one creates the file on the master with header and cell*/
+/*   Master then broadcasts a command for the slaves to write.  They    */
+/*   contribute to a reduction which roots at the master.  Which then   */
+/*   updates the header.                                                */  
+
+
+/*   Here we have a function to handle the the unit cell, and           */
+/*   natom count fields.                                                */
+int write_dcdstep_par_units(int fd, int N, float *X, float *Y, float *Z, double *cell, int unitoffset)
+
+{
+	int32 NSAVC,NSTEP,NFILE;
+	int32 out_integer;
+
+  /* Unit cell */
+  if (cell) {
+    LSEEK(fd, unitoffset, SEEK_SET);
+    out_integer = 48;
+    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+    NAMD_write(fd, (char *) cell, out_integer);
+    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  }
+  // number of elements
+  out_integer = N*4;
+  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  // seek to the end of each x y z block and write out the count
+  LSEEK(fd, out_integer, SEEK_SET);
+  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  LSEEK(fd, out_integer, SEEK_SET);
+  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  LSEEK(fd, out_integer, SEEK_SET);
+  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+  return(0);
+}
+
+/*  A function to update the header.                                      */
+/*  Once all slaves have written the master updates the header.           */
+int write_dcdstep_par_header(int fd, int N, float *X, float *Y, float *Z, double *cell)
+{
+	int32 NSAVC,NSTEP,NFILE;
+=======
 	/* don't update header until after write succeeds */
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
@@ -821,6 +915,7 @@ int write_dcdstep(int fd, int N, FloatVector *coor, double *cell)
 #endif
 
 	/* don't update header until after write succeeds */
+
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
 	LSEEK(fd,NSTEP_POS,SEEK_SET);
@@ -834,9 +929,25 @@ int write_dcdstep(int fd, int N, FloatVector *coor, double *cell)
 	LSEEK(fd,NFILE_POS,SEEK_SET);
 	NAMD_write(fd,(char*) &NFILE,sizeof(int32));
 	LSEEK(fd,0,SEEK_END);
-
 	return(0);
 }
+/* Each slave writer has a sequential block of atoms to output */
+/* Seek to your x,y,z offset and output the coordinates.              */
+int write_dcdstep_par_slave(int fd, int N, float *X, float *Y, float *Z, double *cell, int xoffset, int yoffset, int zoffset)
+
+{
+	int32 out_integer;
+  /* Coordinates for the N elements handled by this writer */
+	out_integer = N*4;
+	LSEEK(fd, xoffset, SEEK_SET);
+	NAMD_write(fd, (char *) X, out_integer);
+	LSEEK(fd, yoffset, SEEK_SET);
+	NAMD_write(fd, (char *) Y, out_integer);
+	LSEEK(fd, zoffset, SEEK_SET);
+	NAMD_write(fd, (char *) Z, out_integer);
+	return(0);
+}
+
 
 /*****************************************************************************/
 /*									     */

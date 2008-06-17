@@ -24,5 +24,6 @@ mainmodule main {
   extern module BroadcastMgr;
   extern module Sync;
   extern module AtomsDisInfo;
+  extern module FileIO;
 }
 
