@@ -751,7 +751,6 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 #define READ read
 #endif
 
-<<<<<<< dcdlib.C
 	/* don't update header until after write succeeds */
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
@@ -821,7 +820,6 @@ int write_dcdstep_par_units(int fd, int N, float *X, float *Y, float *Z, double 
 int write_dcdstep_par_header(int fd, int N, float *X, float *Y, float *Z, double *cell)
 {
 	int32 NSAVC,NSTEP,NFILE;
-=======
 	/* don't update header until after write succeeds */
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));

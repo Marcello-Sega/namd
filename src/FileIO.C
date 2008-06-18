@@ -6,6 +6,9 @@
 #include "FileIO.decl.h"
 #include "FileIO.h"
 
+FileIO::FileIO() { numAtomsToWriteAvg = 1; }
+FileIO::FileIO(CkMigrateMessage* msg) { }
+
 /* body here */
 void FileIO::writeDCD(int base) 
 {

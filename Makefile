@@ -181,7 +181,8 @@ OBJS = \
 	$(DSTDIR)/parm.o \
 	$(DSTDIR)/imd.o \
 	$(DSTDIR)/CompressPsf.o \
-	$(DSTDIR)/AtomsDisInfo.o
+	$(DSTDIR)/AtomsDisInfo.o \
+	$(DSTDIR)/FileIO.o
 
 # Add new modules here and also define explicit rule below.
 
@@ -219,7 +220,9 @@ CIFILES = 	\
 		$(INCDIR)/main.decl.h \
 		$(INCDIR)/main.def.h \
 		$(INCDIR)/AtomsDisInfo.decl.h \
-		$(INCDIR)/AtomsDisInfo.def.h
+		$(INCDIR)/AtomsDisInfo.def.h \
+		$(INCDIR)/FileIO.decl.h \
+		$(INCDIR)/FileIO.def.h
 
 # Add new source files here.
 
@@ -545,6 +548,14 @@ $(INCDIR)/AtomsDisInfo.decl.h: $(SRCDIR)/AtomsDisInfo.ci
 	$(CHARMXI) $(SRCDIR)/AtomsDisInfo.ci
 	$(MOVE) AtomsDisInfo.def.h $(INCDIR)
 	$(MOVE) AtomsDisInfo.decl.h $(INCDIR)
+
+$(INCDIR)/FileIO.def.h: $(INCDIR)/FileIO.decl.h
+
+$(INCDIR)/FileIO.decl.h: $(SRCDIR)/FileIO.ci
+	$(CHARMXI) $(SRCDIR)/FileIO.ci
+	$(MOVE) FileIO.def.h $(INCDIR)
+	$(MOVE) FileIO.decl.h $(INCDIR)
+
 
 DEPENDFILE = .rootdir/Make.depends
 
