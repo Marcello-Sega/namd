@@ -569,6 +569,11 @@ ProxyMgr::sendProxies(int pid, int *list, int n)
   cp[0].recvProxies(pid, list, n);
 }
 
+//The value defines the max number of intermediate proxies (acting
+//as the node to relay proxy msgs to children) allowed to reside 
+//on a physical node for proxy spanning tree
+#define MAX_INTERNODE 1
+
 // only on PE 0
 void 
 ProxyMgr::recvProxies(int pid, int *list, int n)
@@ -592,8 +597,6 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
     sendSpanningTrees();
   }
 }
-
-#define MAX_INTERNODE 1
 
 //
 // XXX static and global variables are unsafe for shared memory builds.
@@ -663,14 +666,188 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
     int *proxyNodeMap = new int[CkNumNodes()];    
     for (int pid=0; pid<numPatches; pid++)     
         buildSinglePatchNodeAwareSpanningTree(pid, ptree.proxylist[pid], ptree.naTrees[pid], proxyNodeMap);
-    
-    delete [] proxyNodeMap;
+       
+
+    //Debug
+    //printf("#######################Naive ST#######################\n");
+    //printNodeAwarePTree();
 
     //Now the naive spanning tree has been constructed and stored in oneNATree;
     //Afterwards, some optimizations on this naive spanning tree could be done.
     //except the first element as the tree root always contains the processor
     //that has home patch
-    
+
+    //1st Optimization: reduce intermediate nodes as much as possible. In details,
+    //the optimal case is that on a single physical smp node, there should be no
+    //two proxies who act as the intermediate nodes to pass information to childrens
+    //in the spanning tree. E.g, for patch A's proxy spanning tree, it has a node X as
+    //its intermediate node. However, for patch B's, it also has a node X as its intermediate
+    //node. We should avoid this situation as node X becomes the bottleneck as it has twice
+    //amount of work to process now.
+    //Step1: foward to the first patch that has proxies
+    //Now proxyNodeMap records the info that how many intermediate nodes on a node
+    memset(proxyNodeMap, 0, sizeof(int)*CkNumNodes());
+    int pid=0;
+    for(;pid<numPatches; pid++) {
+        if(ptree.proxylist[pid].size()>0) break;
+    }
+    if(pid==numPatches) {
+        delete [] proxyNodeMap;
+        return;
+    }
+    proxyTreeNodeList onePatchT = ptree.naTrees[pid];
+    //If a node is an intermediate node, then its idx should satisfy
+    //idx*proxySpanDim + 1 < onePatchT.size()
+    int lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
+    for(int i=1; i<lastInterNodeIdx; i++) { //excluding the root node
+        int nid = onePatchT.item(i).nodeID;
+        proxyNodeMap[nid]++;
+    }
+    //Step2: iterate over each patch's proxy spanning tree to adjust
+    //the tree node positions. The bad thing here is that it may involve
+    //many memory allocations and deallocation for small-size (~100bytes)
+    //chunks.
+    pid++; //advance to the next patch
+    for(; pid<numPatches; pid++) {
+        if(ptree.proxylist[pid].size()==0) continue;
+        onePatchT = ptree.naTrees[pid];
+        lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
+        for(int i=1; i<=lastInterNodeIdx; i++) {
+            int nid = onePatchT.item(i).nodeID;
+            if(proxyNodeMap[nid]<MAX_INTERNODE) {
+                proxyNodeMap[nid]++;
+                continue;
+            }
+            //the position is occupied, so search the children
+            //nodes to see whether there's one to swap this node
+            //if not found, find the first position that has smallest
+            //amount of nodes.
+            int leastIdx = -1;
+            int leastAmount = ~(1<<31);
+            //iterate children nodes
+            int swapPos;
+            for(swapPos=lastInterNodeIdx+1; swapPos<onePatchT.size(); swapPos++) {
+                int chiNId = onePatchT.item(swapPos).nodeID;
+                if(proxyNodeMap[chiNId]<MAX_INTERNODE) {
+                    break;
+                }
+                if(proxyNodeMap[chiNId]<leastAmount) {
+                    leastAmount = proxyNodeMap[chiNId];
+                    leastIdx = swapPos;
+                }
+            }
+            CmiAssert(leastIdx!=-1); //because the above loop at least executes once
+            if(swapPos==onePatchT.size()) {
+                //indicate we cannot find a physical node which
+                //still allows the intermediate proxy.
+                swapPos = leastIdx;
+            }
+            //swap the current proxy tree node "i" with node "swapPos"
+            proxyTreeNode *curNode = &onePatchT.item(i);
+            proxyTreeNode *swapNode = &onePatchT.item(swapPos);
+            proxyNodeMap[swapNode->nodeID]++; //update the proxyNodeMap record
+            int tmp = curNode->nodeID;
+            curNode->nodeID = swapNode->nodeID;
+            swapNode->nodeID = tmp;
+            tmp = curNode->numPes;
+            int tmpPes[tmp];
+            memcpy(tmpPes, curNode->peIDs, sizeof(int)*tmp);
+            delete [] curNode->peIDs;
+            curNode->numPes = swapNode->numPes;
+            curNode->peIDs = new int[swapNode->numPes];
+            memcpy(curNode->peIDs, swapNode->peIDs, sizeof(int)*swapNode->numPes);
+            swapNode->numPes = tmp;
+            delete [] swapNode->peIDs;
+            swapNode->peIDs = new int[tmp];
+            memcpy(swapNode->peIDs, tmpPes, sizeof(int)*tmp);                      
+        }
+    }
+    delete [] proxyNodeMap;    
+
+    //Debug
+    //printf("#######################After 1st optimization#######################\n");
+    //printNodeAwarePTree();
+
+    //2nd optimization: similar to the 1st optimization but now thinking in
+    //the core level. If we cannot avoid place two intermediate proxy
+    //on the same node, we'd better to place them in different cores inside
+    //the node
+    if(CmiMyNodeSize()==1) {
+        //No need to perform the second optimization as every node has only 1 core
+        return;
+    }
+    int *proxyCoreMap = new int[CkNumPes()];
+    memset(proxyCoreMap, 0, sizeof(int)*CkNumPes());
+    //Step1: forward to the first patch that has proxies
+    pid=0;
+    for(;pid<numPatches; pid++) {
+        if(ptree.proxylist[pid].size()>0) break;
+    }
+    if(pid==numPatches) {
+        delete [] proxyCoreMap;
+        return;
+    }
+    onePatchT = ptree.naTrees[pid];
+    //If a node is an intermediate node, then its idx should satisfy
+    //idx*proxySpanDim + 1 < onePatchT.size()
+    lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
+    for(int i=1; i<lastInterNodeIdx; i++) { //excluding the root node
+        int rootProcID = onePatchT.item(i).peIDs[0];
+        proxyCoreMap[rootProcID]++;
+    }
+    //Step2: iterate over each patch's proxy spanning tree to adjust
+    //the root's position of intermediate proxies.
+    pid++; //advance to the next patch
+    for(; pid<numPatches; pid++) {
+        if(ptree.proxylist[pid].size()==0) continue;
+        onePatchT = ptree.naTrees[pid];
+        lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
+        for(int i=1; i<=lastInterNodeIdx; i++) {
+            proxyTreeNode *curNode = &onePatchT.item(i);
+            int rootProcID = curNode->peIDs[0];
+            if(curNode->numPes==1 || proxyCoreMap[rootProcID]<MAX_INTERNODE){
+                //if this node contains only 1 core, then we have to leave it as it is
+                //because there are no other cores in the same node that could be used to
+                //adjust
+                proxyCoreMap[rootProcID]++;
+                continue;
+            }
+            
+            //foound more than MAX_INTERNODE intermediate proxies on the same core,
+            //adjust the root id of the core of this proxy tree node
+            int leastIdx = -1;
+            int leastAmount = ~(1<<31);
+            //iterate children nodes
+            int swapPos;
+            
+            for(swapPos=1; swapPos<curNode->numPes; swapPos++) {
+                int otherCoreID = curNode->peIDs[swapPos];
+                if(proxyCoreMap[otherCoreID]<MAX_INTERNODE) {
+                    break;
+                }
+                if(proxyCoreMap[otherCoreID]<leastAmount) {
+                    leastAmount = proxyCoreMap[otherCoreID];
+                    leastIdx = swapPos;
+                }
+            }
+            CmiAssert(leastIdx!=-1); //because the above loop body must execute at least once
+            if(swapPos==curNode->numPes) {
+                //indicate we cannot find a physical node which
+                //still allows the intermediate proxy.
+                swapPos = leastIdx;
+            }
+            int tmp = curNode->peIDs[swapPos];
+            curNode->peIDs[swapPos] = curNode->peIDs[0];
+            curNode->peIDs[0] = tmp;
+            proxyCoreMap[tmp]++;
+        }      
+    }
+
+    delete proxyCoreMap;
+
+    //Debug
+    //printf("#######################After 2nd optimization#######################\n");
+    //printNodeAwarePTree();
 }
 
 void ProxyMgr::buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &proxyList, 
@@ -732,6 +909,29 @@ void ProxyMgr::buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &pr
         oneNode->numPes++;
     }
 }
+
+void ProxyMgr::printNodeAwarePTree(){
+    int numPatches = PatchMap::Object()->numPatches();
+    for(int i=0; i<numPatches; i++) {
+        proxyTreeNodeList oneList = ptree.naTrees[i];
+        printf("ST tree for HomePatch[%d]: #nodes = %d\n", i, oneList.size()); 
+        if(ptree.proxylist[i].size()==0) continue;
+        printf("===%d=== pes/node: ", i);
+        for(int j=0; j<oneList.size(); j++) {
+            printf("%d ", oneList.item(j).numPes);
+        }
+        printf("\n");
+        printf("===%d=== pe ids: ", i);
+        for(int j=0; j<oneList.size(); j++) {
+            for(int k=0; k<oneList.item(j).numPes; k++) {
+                printf("%d ", oneList.item(j).peIDs[k]);
+            }            
+        }
+        printf("\n");
+    }    
+    fflush(stdout);  
+}
+
 #else //branch of NODEAWARE_PROXY_SPANNINGTREE
 // only on PE 0
 void 
