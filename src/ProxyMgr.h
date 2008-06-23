@@ -290,10 +290,7 @@ private:
   ProxySet proxySet;
   ProxyTree ptree;
 
-#ifdef NODEAWARE_PROXY_SPANNINGTREE
-  void printNodeAwarePTree();
-#endif
-
+  void printProxySpanningTree();
 };
 
 #endif /* PATCHMGR_H */

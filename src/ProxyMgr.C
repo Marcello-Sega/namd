@@ -670,7 +670,7 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
 
     //Debug
     //printf("#######################Naive ST#######################\n");
-    //printNodeAwarePTree();
+    //printProxySpanningTree();
 
     //Now the naive spanning tree has been constructed and stored in oneNATree;
     //Afterwards, some optimizations on this naive spanning tree could be done.
@@ -766,7 +766,7 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
 
     //Debug
     //printf("#######################After 1st optimization#######################\n");
-    //printNodeAwarePTree();
+    //printProxySpanningTree();
 
     //2nd optimization: similar to the 1st optimization but now thinking in
     //the core level. If we cannot avoid place two intermediate proxy
@@ -847,7 +847,7 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
 
     //Debug
     //printf("#######################After 2nd optimization#######################\n");
-    //printNodeAwarePTree();
+    //printProxySpanningTree();
 }
 
 void ProxyMgr::buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &proxyList, 
@@ -909,29 +909,6 @@ void ProxyMgr::buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &pr
         oneNode->numPes++;
     }
 }
-
-void ProxyMgr::printNodeAwarePTree(){
-    int numPatches = PatchMap::Object()->numPatches();
-    for(int i=0; i<numPatches; i++) {
-        proxyTreeNodeList oneList = ptree.naTrees[i];
-        printf("ST tree for HomePatch[%d]: #nodes = %d\n", i, oneList.size()); 
-        if(ptree.proxylist[i].size()==0) continue;
-        printf("===%d=== pes/node: ", i);
-        for(int j=0; j<oneList.size(); j++) {
-            printf("%d ", oneList.item(j).numPes);
-        }
-        printf("\n");
-        printf("===%d=== pe ids: ", i);
-        for(int j=0; j<oneList.size(); j++) {
-            for(int k=0; k<oneList.item(j).numPes; k++) {
-                printf("%d ", oneList.item(j).peIDs[k]);
-            }            
-        }
-        printf("\n");
-    }    
-    fflush(stdout);  
-}
-
 #else //branch of NODEAWARE_PROXY_SPANNINGTREE
 // only on PE 0
 void 
@@ -1448,6 +1425,44 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
   CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
   cp[CkMyPe()].recvProxyAll(msg);
 }
+
+void ProxyMgr::printProxySpanningTree(){
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+    int numPatches = PatchMap::Object()->numPatches();
+    for(int i=0; i<numPatches; i++) {
+        proxyTreeNodeList oneList = ptree.naTrees[i];
+        printf("ST tree for HomePatch[%d]: #nodes = %d\n", i, oneList.size()); 
+        if(ptree.proxylist[i].size()==0) continue;
+        printf("===%d=== pes/node: ", i);
+        for(int j=0; j<oneList.size(); j++) {
+            printf("%d ", oneList.item(j).numPes);
+        }
+        printf("\n");
+        printf("===%d=== pe ids: ", i);
+        for(int j=0; j<oneList.size(); j++) {
+            for(int k=0; k<oneList.item(j).numPes; k++) {
+                printf("%d ", oneList.item(j).peIDs[k]);
+            }            
+        }
+        printf("\n");
+    }    
+    fflush(stdout);  
+#else
+    int numPatches = PatchMap::Object()->numPatches();
+    for(int i=0; i<numPatches; i++) {
+        NodeIDList oneList = ptree.trees[i];
+        printf("ST tree for HomePatch[%d]: #nodes = %d\n", i, oneList.size()); 
+        if(ptree.proxylist[i].size()==0) continue;        
+        printf("===%d=== pe ids: ", i);
+        for(int j=0; j<oneList.size(); j++) {            
+            printf("%d ", oneList.item(j));            
+        }
+        printf("\n");
+    }    
+    fflush(stdout);  
+#endif
+}
+
 
 #include "ProxyMgr.def.h"
 
