@@ -38,6 +38,7 @@ obj/main.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/FileIO.decl.h \
 	src/main.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/main.o $(COPTC) src/main.C
@@ -167,8 +168,8 @@ obj/AtomMap.o: \
 	src/BOCgroup.h \
 	src/AtomMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Debug.h
@@ -200,6 +201,7 @@ obj/BackEnd.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/FileIO.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ProxyMgr.decl.h \
 	inc/PatchMgr.decl.h \
@@ -264,8 +266,8 @@ obj/CollectionMaster.o: \
 	src/CollectionMaster.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Lattice.h \
@@ -294,8 +296,8 @@ obj/CollectionMgr.o: \
 	src/CollectionMgr.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/BOCgroup.h \
@@ -340,8 +342,8 @@ obj/Compute.o: \
 	inc/WorkDistrib.decl.h \
 	src/WorkDistrib.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/BOCgroup.h \
@@ -361,8 +363,8 @@ obj/ComputeAngles.o: \
 	src/ComputeAngles.h \
 	src/ComputeHomeTuples.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
@@ -533,8 +535,8 @@ obj/ComputeConsForceMsgs.o: \
 	src/ComputeConsForceMsgs.C \
 	src/ComputeConsForceMsgs.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	inc/ComputeMgr.decl.h \
@@ -546,8 +548,8 @@ obj/ComputeCrossterms.o: \
 	src/ComputeCrossterms.h \
 	src/ComputeHomeTuples.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
@@ -609,8 +611,8 @@ obj/ComputeCylindricalBC.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -637,8 +639,8 @@ obj/ComputeDihedrals.o: \
 	src/ComputeDihedrals.h \
 	src/ComputeHomeTuples.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
@@ -704,8 +706,8 @@ obj/ComputeDPME.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -756,8 +758,8 @@ obj/ComputeDPMEMsgs.o: \
 	src/ComputeDPMEMsgs.C \
 	src/ComputeDPMEMsgs.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	inc/ComputeMgr.decl.h \
@@ -826,8 +828,8 @@ obj/ComputeEField.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -865,8 +867,8 @@ obj/ComputeEwald.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -924,8 +926,8 @@ obj/ComputeExt.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -986,8 +988,8 @@ obj/ComputeFullDirect.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -1043,8 +1045,8 @@ obj/ComputeHomePatch.o: \
 	src/ComputeHomePatch.h \
 	src/Compute.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1081,8 +1083,8 @@ obj/ComputeHomePatches.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -1126,8 +1128,8 @@ obj/ComputeImpropers.o: \
 	src/ComputeImpropers.h \
 	src/ComputeHomeTuples.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
@@ -1192,8 +1194,8 @@ obj/ComputeGlobal.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -1243,8 +1245,8 @@ obj/ComputeGlobalMsgs.o: \
 	src/ComputeGlobalMsgs.C \
 	src/ComputeGlobalMsgs.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	inc/ComputeMgr.decl.h \
@@ -1258,8 +1260,8 @@ obj/ComputeGridForce.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1305,8 +1307,8 @@ obj/ComputeMap.o: \
 	src/InfoStream.h \
 	src/ComputeMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ProcessorPrivate.h \
@@ -1326,8 +1328,8 @@ obj/ComputeMgr.o: \
 	src/ComputeMgr.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/GlobalMaster.h \
@@ -1446,8 +1448,8 @@ obj/ComputeNonbondedSelf.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1478,8 +1480,8 @@ obj/ComputeNonbondedPair.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1511,8 +1513,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/InfoStream.h \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ReductionMgr.h \
@@ -1539,13 +1541,13 @@ obj/ComputeNonbondedUtil.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputeNonbondedStd.o: \
 	src/ComputeNonbondedStd.C \
-	src/ComputeNonbondedInl.h \
-	src/ComputeNonbondedUtil.h \
+	src/common.h \
 	src/NamdTypes.h \
 	src/Vector.h \
-	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/ComputeNonbondedInl.h \
+	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/main.h \
 	src/BOCgroup.h \
@@ -1577,8 +1579,8 @@ obj/ComputeNonbondedFEP.o: \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ReductionMgr.h \
@@ -1612,8 +1614,8 @@ obj/ComputeNonbondedLES.o: \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ReductionMgr.h \
@@ -1647,8 +1649,8 @@ obj/ComputeNonbondedPProf.o: \
 	src/ComputeNonbondedInl.h \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ReductionMgr.h \
@@ -1688,8 +1690,8 @@ obj/ComputePatch.o: \
 	src/ComputePatch.h \
 	src/Compute.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1722,8 +1724,8 @@ obj/ComputePatchPair.o: \
 	src/ComputePatchPair.h \
 	src/Compute.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1755,8 +1757,8 @@ obj/ComputePme.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -1822,8 +1824,8 @@ obj/ComputeRestraints.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1864,8 +1866,8 @@ obj/ComputeSphericalBC.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1894,8 +1896,8 @@ obj/ComputeStir.o: \
 	src/Compute.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -1943,8 +1945,8 @@ obj/ComputeTclBC.o: \
 	src/ComputeTclBC.h \
 	src/ComputeHomePatches.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Compute.h \
@@ -2066,8 +2068,8 @@ obj/DataStream.o: \
 	src/CollectionMgr.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/BOCgroup.h \
@@ -2261,8 +2263,8 @@ obj/GlobalMasterServer.o: \
 	src/GlobalMasterServer.C \
 	src/ComputeGlobalMsgs.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	inc/ComputeMgr.decl.h \
@@ -2276,8 +2278,8 @@ obj/GlobalMasterServer.o: \
 obj/GlobalMasterTest.o: \
 	src/GlobalMasterTest.C \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/GlobalMaster.h \
@@ -2421,8 +2423,8 @@ obj/GlobalMasterFreeEnergy.o: \
 	src/GlobalMasterFreeEnergy.C \
 	src/InfoStream.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/FreeEnergyEnums.h \
@@ -2468,8 +2470,8 @@ obj/GlobalMasterEasy.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -2516,8 +2518,8 @@ obj/GlobalMasterMisc.o: \
 	src/GlobalMasterMisc.C \
 	src/InfoStream.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/GlobalMaster.h \
@@ -2561,6 +2563,11 @@ obj/GridForceGrid.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/MStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
 	src/InfoStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GridForceGrid.o $(COPTC) src/GridForceGrid.C
@@ -2647,8 +2654,8 @@ obj/IMDOutput.o: \
 	src/GlobalMasterIMD.h \
 	src/GlobalMaster.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/IMDOutput.o $(COPTC) src/IMDOutput.C
@@ -2671,8 +2678,8 @@ obj/LdbCoordinator.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -2797,8 +2804,8 @@ obj/MigrateAtomsMsg.o: \
 	src/InfoStream.h \
 	src/Migration.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -2869,8 +2876,8 @@ obj/NamdCentLB.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -2914,8 +2921,8 @@ obj/NamdNborLB.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -3041,10 +3048,11 @@ obj/Node.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/FileIO.decl.h \
 	src/WorkDistrib.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
@@ -3200,8 +3208,8 @@ obj/Patch.o: \
 	src/InfoStream.h \
 	src/Patch.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/OwnerBox.h \
@@ -3247,8 +3255,8 @@ obj/PatchMgr.o: \
 	inc/PatchMgr.decl.h \
 	src/PatchMgr.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/SortedArray.h \
@@ -3290,6 +3298,7 @@ obj/PatchMgr.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/FileIO.decl.h \
 	inc/WorkDistrib.decl.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
@@ -3367,8 +3376,8 @@ obj/PmeKSpace.o: \
 	src/PmeBase.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h
@@ -3383,7 +3392,8 @@ obj/PmeRealSpace.o: \
 obj/ProcessorPrivate.o: \
 	src/ProcessorPrivate.C \
 	src/ProcessorPrivate.h \
-	src/BOCgroup.h
+	src/BOCgroup.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProcessorPrivate.o $(COPTC) src/ProcessorPrivate.C
 obj/ProxyMgr.o: \
 	src/ProxyMgr.C \
@@ -3393,8 +3403,8 @@ obj/ProxyMgr.o: \
 	inc/ProxyMgr.decl.h \
 	src/ProxyMgr.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -3449,12 +3459,13 @@ obj/ProxyPatch.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/FileIO.decl.h \
 	src/main.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/OwnerBox.h \
@@ -3496,8 +3507,8 @@ obj/Rebalancer.o: \
 	inc/ProxyMgr.decl.h \
 	src/ProxyMgr.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -3518,8 +3529,8 @@ obj/RecBisection.o: \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -3552,8 +3563,8 @@ obj/ReductionMgr.o: \
 	src/InfoStream.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -3585,8 +3596,8 @@ obj/RefineOnly.o: \
 	src/ProxyMgr.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -3609,8 +3620,8 @@ obj/RefineTorusLB.o: \
 	src/ProxyMgr.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -3629,8 +3640,8 @@ obj/ScriptTcl.o: \
 	src/BackEnd.h \
 	src/ScriptTcl.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Broadcasts.h \
@@ -3683,9 +3694,7 @@ obj/ScriptTcl.o: \
 	src/Debug.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	plugins/include/libmolfile_plugin.h \
-	src/ComputeConsForceMsgs.h \
-	inc/ComputeMgr.decl.h
+	plugins/include/libmolfile_plugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
 obj/Sequencer.o: \
 	src/Sequencer.C \
@@ -3779,8 +3788,8 @@ obj/SimParameters.o: \
 	src/InfoStream.h \
 	src/ComputeNonbondedUtil.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ReductionMgr.h \
@@ -3803,8 +3812,8 @@ obj/Sync.o: \
 	src/InfoStream.h \
 	src/Patch.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/OwnerBox.h \
@@ -3856,8 +3865,8 @@ obj/TorusLB.o: \
 	src/ProxyMgr.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/PatchTypes.h \
@@ -3880,8 +3889,8 @@ obj/WorkDistrib.o: \
 	src/WorkDistrib.h \
 	src/main.h \
 	src/NamdTypes.h \
-	src/Vector.h \
 	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ComputeMap.h \
@@ -3902,6 +3911,7 @@ obj/WorkDistrib.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
+	inc/FileIO.decl.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMgr.h \
@@ -4006,6 +4016,12 @@ obj/AtomsDisInfo.o: \
 	inc/AtomsDisInfo.decl.h \
 	inc/AtomsDisInfo.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/AtomsDisInfo.o $(COPTC) src/AtomsDisInfo.C
+obj/FileIO.o: \
+	src/FileIO.C \
+	inc/FileIO.decl.h \
+	src/FileIO.h \
+	inc/FileIO.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/FileIO.o $(COPTC) src/FileIO.C
 obj/dcdplugin.o:
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/dcdplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_dcdplugin plugins/molfile_plugin/src/dcdplugin.c
 obj/tcl_main.o: \
