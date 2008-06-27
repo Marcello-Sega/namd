@@ -84,12 +84,11 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   register BigReal d32inv = r32.rlength();
 
   BigReal cos_theta = (r12*r32)*(d12inv*d32inv);
-  //  This code is useless because below we divide by sin_theta!  -JCP
   //  Make sure that the cosine value is acceptable.  With roundoff, you
   //  can get values like 1.0+2e-16, which makes acos puke.  So instead,
   //  just set these kinds of values to exactly 1.0
-  // if (cos_theta > 1.0) cos_theta = 1.0;
-  // else if (cos_theta < -1.0) cos_theta = -1.0;
+  if (cos_theta > 1.0) cos_theta = 1.0;
+  else if (cos_theta < -1.0) cos_theta = -1.0;
 
   BigReal k = value->k * scale;
   BigReal theta0 = value->theta0;
@@ -109,7 +108,13 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
 
   //  Calculate constant factor 2k(theta-theta0)/sin(theta)
   BigReal sin_theta = sqrt(1.0 - cos_theta*cos_theta);
-  diff *= (-2.0* k) / sin_theta;
+  if ( sin_theta < 1.e-6 ) {
+    // catch case where bonds are parallel
+    // this gets the force approximately right for theta0 of 0 or pi
+    // and at least avoids small division for other values
+    if ( diff < 0. ) diff = 2.0 * k;
+    else diff = -2.0 * k;
+  } else { diff *= (-2.0* k) / sin_theta; }
   BigReal c1 = diff * d12inv;
   BigReal c2 = diff * d32inv;
 
