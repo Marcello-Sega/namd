@@ -2609,7 +2609,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
 
 //fepb
       // send fep atom info
-      if (simParams->fepOn || simParams->lesOn || simParams->pairInteractionOn) {
+      if (simParams->fepOn || simParams->thermInt || simParams->lesOn || simParams->pairInteractionOn) {
         msg->put(numFepInitial);
         msg->put(numFepFinal);
         msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
@@ -2944,7 +2944,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
 //fepb
       //receive fep atom info
-      if (simParams->fepOn || simParams->lesOn || simParams->pairInteractionOn) {
+      if (simParams->fepOn || simParams->lesOn || simParams->thermInt || simParams->pairInteractionOn) {
         delete [] fepAtomFlags;
         fepAtomFlags = new unsigned char[numAtoms];
 
@@ -4200,7 +4200,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       int delExclCnt=0;
 
       vector<ExclusionSignature> newExclSigPool;
-      if(simParams->fepOn || simParams->lesOn){
+      if(simParams->fepOn || simParams->thermInt || simParams->lesOn){
           for(int i=0; i<numAtoms; i++){
               int atom1 = i;
               int t1 = get_fep_type(atom1);
@@ -4350,7 +4350,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     UniqueSet<Exclusion> fepExclusionSet;
     UniqueSetIter<Exclusion> exclIter(exclusionSet);
 
-    if ( simParams->fepOn || simParams->lesOn ) {
+    if ( simParams->fepOn || simParams->thermInt || simParams->lesOn ) {
        for ( exclIter=exclIter.begin(); exclIter != exclIter.end(); exclIter++ )
        {
          int t1 = get_fep_type(exclIter->atom1);
@@ -6715,7 +6715,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
    // the PDB file that contains the fep flag. It then builds
    // the array FepParams for use in the program.
    //
-   //
+   // function doubles up for TI as well
    
    void Molecule::build_fep_flags(StringList *fepfile,
          StringList *fepcol,
@@ -6842,7 +6842,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       } else {
         fepAtomFlags[i] = 0;
       }
-    } else if (simParams->fepOn) {
+    } else if (simParams->fepOn || simParams->thermInt) {
       if (bval == 1.0) {
         fepAtomFlags[i] = 1;
         numFepFinal++;
@@ -8191,7 +8191,7 @@ Index Molecule::insert_new_mass(Real newMass){
 //by stripFepExcl function or fixedAtoms, then return 1. Otherwise return 0
 int Molecule::exclStrippedByFepOrFixedAtoms(int atom1, int atom2){
     //first test for stripFepExcl
-    if(simParams->fepOn || simParams->lesOn){
+    if(simParams->fepOn || simParams->thermInt || simParams->lesOn){
         int t1 = get_fep_type(atom1);
         int t2 = get_fep_type(atom2);
         if(t1 && t2 && t1!=t2) return 1;
