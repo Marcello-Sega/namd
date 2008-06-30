@@ -1226,17 +1226,11 @@ void ComputeNonbondedUtil :: NAME
       }
     }
 
-    register const BigReal p_i_x = p_i.position.x;
-    register const BigReal p_i_y = p_i.position.y;
-    register const BigReal p_i_z = p_i.position.z;
-
-<<<<<<< ComputeNonbondedBase.h
-    ALCH(const int p_i_partition = p_i.partition;)
-=======
     register const BigReal p_i_x = p_i.position.x + offset_x;
     register const BigReal p_i_y = p_i.position.y + offset_y;
     register const BigReal p_i_z = p_i.position.z + offset_z;
->>>>>>> 1.1139
+
+    ALCH(const int p_i_partition = p_i.partition;)
 
     PPROF(
         const int p_i_partition = p_i.partition;
