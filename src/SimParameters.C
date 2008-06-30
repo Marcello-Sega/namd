@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2008/06/17 20:30:37 $
- * $Revision: 1.1253 $
+ * $Author: char $
+ * $Date: 2008/06/30 22:55:39 $
+ * $Revision: 1.1254 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -192,6 +192,12 @@ void SimParameters::scriptSet(const char *param, const char *value) {
     return;
   }
 //fepe
+
+  if ( ! strncasecmp(param,"tiLambda",MAX_SCRIPT_PARAM_SIZE) ) {
+    lambda = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
 
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
     nonbondedScaling = atof(value);
@@ -533,6 +539,13 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
 // end fep output options
 //fepe
 
+   opts.optional("thermInt", "tioutfreq", "Frequency of TI energy output in "
+     "timesteps", &tiOutFreq, 5);
+   opts.range("tioutfreq", NOT_NEGATIVE);
+   opts.optional("tioutfreq", "tioutfile", "TI energy output filename",
+     tiOutFile);
+
+
    /* GROMACS options */
    opts.optionalB("main", "gromacs", "Use GROMACS-like force field?",
        &gromacsOn, FALSE);
@@ -706,6 +719,35 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("fepVdwLambdaEnd", NOT_NEGATIVE);  
 // end FEP options
 //fepe
+
+// Modifications for TI
+// lots of duplication of FEP, we'd be better off without all this but 
+// keeping it in place for now for compatibility
+   opts.optionalB("main", "thermInt", "Perform thermodynamic integration?",
+     &thermInt, FALSE);
+   opts.require("thermInt", "tilambda", "Coupling parameter value", &tiLambda);
+   opts.optional("thermInt", "tiFile", "PDB file with perturbation flags "
+     "default is the input PDB file", PARSE_STRING); 
+   opts.optional("thermInt", "tiCol", "Column in the tiFile with the "
+     "perturbation flag", PARSE_STRING);
+   opts.optional("thermInt", "tiEquilSteps", "Equilibration steps, before "
+     "data collection at each tiLambda value", &tiEquilSteps, 0);
+   opts.range("tiEquilSteps", NOT_NEGATIVE);
+   opts.optional("thermInt", "tiVdwShiftCoeff", "Coeff used for generating"
+     "the altered alchemical vDW interactions", &tiVdwShiftCoeff, 5.);
+   opts.range("tiVdwShiftCoeff", NOT_NEGATIVE);
+   
+   opts.optional("thermInt", "tiElecLambdaStart", "Lambda at which to start"
+      "electrostatics scaling", &tiElecLambdaStart, 0.5); 
+   opts.range("tiElecLambdaStart", NOT_NEGATIVE);
+   
+   opts.optional("thermInt", "tiVdwLambdaEnd", "Lambda at which to end"
+      "Vdw scaling", &tiVdwLambdaEnd, 0.5); 
+   opts.range("tiVdwLambdaEnd", NOT_NEGATIVE);  
+// end TI options
+
+   opts.optional("main", "decouple", "Alchemical decoupling mode",
+     PARSE_STRING);
 
    opts.optionalB("main", "les", "Is locally enhanced sampling enabled?",
      &lesOn, FALSE);
@@ -2077,15 +2119,83 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      lambda = lambda2 = 0;
      fepOutFile[0] = STRINGNULL;
    }
+
+   if (thermInt) {
+     if	     (rescaleFreq > 0) 	tiTemp = rescaleTemp;
+     else if (reassignFreq > 0)	tiTemp = reassignTemp;
+     else if (langevinOn) 	tiTemp = langevinTemp;
+     else if (tCoupleOn) 	tiTemp = tCoupleTemp;
+     else NAMD_die("Thermodynamic integration can be performed only in constant temperature simulations");
+
+     if (reassignFreq > 0 && reassignIncr != 0)
+	NAMD_die("reassignIncr cannot be used in TI runs");
+
+     if (lambda < 0.0 || lambda > 1.0)
+        NAMD_die("lambda values should be in the range [0.0, 1.0]");
+  
+     if (!opts.defined("tioutfile")) {
+       strcpy(tiOutFile, outputFilename);
+       strcat(tiOutFile, ".ti");
+     }
+   } else {
+     tiLambda = 0;
+     tiOutFile[0] = STRINGNULL;
+   }
+
+   if (!opts.defined("decouple")) {
+     decouple = 0;
+   } else {
+     opts.get("decouple", s);
+     if (!strcasecmp(s, "none"))
+     {
+        decouple = 0;
+     }
+     else if (!strcasecmp(s, "full"))
+     {
+        decouple = 1; // decouple with full PME handling of electrostatics
+     }
+     else if (!strcasecmp(s, "local"))
+     {
+        decouple = 2; // replace full electrotsatics with local shifted
+                      // potential (cheaper, fine in thermodynamic cycle)
+     }
+     else
+     {
+        char err_msg[128];
+        sprintf(err_msg, "Illegal value '%s' for 'decouple' in configuration \
+        file", s);
+        NAMD_die(err_msg);
+     }
+   }
+
 //fepe
 
+   if ( fepOn && thermInt )
+     NAMD_die("Sorry, combined TI and FEP is not implemented.");
    if ( fepOn && lesOn )
      NAMD_die("Sorry, combined LES and FEP is not implemented.");
+   if ( thermInt && lesOn )
+     NAMD_die("Sorry, combined LES and TI is not implemented.");
+
+   if (thermInt) {
+     //merge TI variables into FEP ones, so TI can leech off some FEP code paths
+     //doesn't have to be like this but should keep the code a bit neater
+     lambda = tiLambda;
+     fepTemp = tiTemp;
+     fepOutFreq = tiOutFreq;
+     strcpy(fepOutFile, tiOutFile);     
+     fepEquilSteps = tiEquilSteps;
+     fepVdwShiftCoeff = tiVdwShiftCoeff;
+     fepElecLambdaStart = tiElecLambdaStart;
+     fepVdwLambdaEnd = tiVdwLambdaEnd;
+   }
+
+
    if ( lesOn && ( lesFactor < 1 || lesFactor > 15 ) ) {
      NAMD_die("lesFactor must be positive and less than 16");
    }
-   if ((pairInteractionOn && fepOn) || (pairInteractionOn && lesOn)) 
-     NAMD_die("Sorry, pair interactions may not be calculated when LES or FEP is enabled.");
+   if ((pairInteractionOn && fepOn) || (pairInteractionOn && lesOn) || (pairInteractionOn && thermInt) ) 
+     NAMD_die("Sorry, pair interactions may not be calculated when LES, FEP or TI is enabled.");
 
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy")) {
@@ -2345,6 +2455,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
    if ( fepOn && ( FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, FEP is only implemented for PME full electrostatics.");
+   }
+   if ( thermInt && ( FMAOn || useDPME || fullDirectOn ) ) {
+     NAMD_die("Sorry, TI is only implemented for PME full electrostatics.");
    }
    if ( pairInteractionOn && FMAOn ) {
      NAMD_die("Sorry, pairInteraction not implemented for FMA.");
@@ -2801,6 +2914,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if ( pairlistMinProcs > 1 )
      iout << iINFO << "REQUIRING " << pairlistMinProcs << " PROCESSORS FOR PAIRLISTS\n";
    usePairlists = ( CkNumPes() >= pairlistMinProcs );
+   // FB - FEP and TI are now dependent on pairlists - disallow usePairlists=0
+   if ( (fepOn || thermInt) && (!usePairlists)) {
+     NAMD_die("Sorry, FEP and TI require pairlists to be enabled\n");
+   }
+     
    iout << iINFO << "PAIRLISTS " << ( usePairlists ? "ENABLED" : "DISABLED" )
 							<< "\n" << endi;
 
@@ -3065,8 +3183,21 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "FEP VDW ACTIVE BETWEEN LAMBDA = 0 AND LAMBDA = "
           << fepVdwLambdaEnd << "\n";
    }
-
 //fepe
+
+   if (thermInt)
+   {
+     iout << iINFO << "THERMODYNAMIC INTEGRATION (TI) ON\n";
+     iout << iINFO << "TI LAMBDA VALUE     "
+          << lambda << "\n";
+     iout << iINFO << "TI VDW SHIFTING COEFFICIENT "
+          << tiVdwShiftCoeff << "\n";
+     iout << iINFO << "TI ELEC. ACTIVE BETWEEN LAMBDA = "
+          << tiElecLambdaStart << " AND LAMBDA = 1\n";
+     iout << iINFO << "TI VDW ACTIVE BETWEEN LAMBDA = 0 AND LAMBDA = "
+          << tiVdwLambdaEnd << "\n";
+   }
+
 
    if ( lesOn ) {
      iout << iINFO << "LOCALLY ENHANCED SAMPLING ACTIVE\n";

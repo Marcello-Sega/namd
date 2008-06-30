@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: bhatele $
- * $Date: 2008/06/01 02:32:40 $
- * $Revision: 1.1178 $
+ * $Author: char $
+ * $Date: 2008/06/30 22:55:39 $
+ * $Revision: 1.1179 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -318,6 +318,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
     Bool fepOn = params->fepOn;
+    Bool thermInt = params->thermInt;
 //fepe
     Bool lesOn = params->lesOn;
   
@@ -359,7 +360,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
-      if ( fepOn || lesOn || pairInteractionOn || pressureProfileTypes) {
+      if ( fepOn || thermInt || lesOn || pairInteractionOn || pressureProfileTypes) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {
@@ -532,6 +533,7 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
     Bool fepOn = params->fepOn;
+    Bool thermInt = params->thermInt;
 //fepe
     Bool lesOn = params->lesOn;
   
@@ -573,7 +575,7 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
-      if ( fepOn || lesOn || pairInteractionOn || pressureProfileTypes) {
+      if ( fepOn || thermInt || lesOn || pairInteractionOn || pressureProfileTypes) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {

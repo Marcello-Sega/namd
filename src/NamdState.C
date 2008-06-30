@@ -312,9 +312,13 @@ int NamdState::configListInit(ConfigList *cfgList) {
            molecule->build_fep_flags(configList->find("fepfile"),
                 configList->find("fepcol"), pdb, NULL);
         }
+        if (simParameters->thermInt) {
+           molecule->build_fep_flags(configList->find("tifile"),
+                configList->find("ticol"), pdb, NULL);
+        }
 //fepe
         if (simParameters->lesOn) {
-	   if (simParameters->fepOn) NAMD_bug("FEP and LES are incompatible!");
+	   if (simParameters->fepOn || simParameters->thermInt) NAMD_bug("FEP/TI and LES are incompatible!");
            molecule->build_fep_flags(configList->find("lesfile"),
                 configList->find("lescol"), pdb, NULL);
         }
@@ -394,7 +398,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
-        if (simParameters->fepOn) {
+        if (simParameters->fepOn || simParameters->thermInt) {
            iout << iINFO << molecule->numFepInitial <<
                " ATOMS TO DISAPPEAR IN FINAL STATE\n";
            iout << iINFO << molecule->numFepFinal <<

@@ -84,6 +84,22 @@ public:
   ResizeArray<plint> goodglist;
   ResizeArray<plint> pairlistx;
   ResizeArray<plint> pairlistm;
+
+  ResizeArray<plint> pairlistnAlch;
+  ResizeArray<plint> pairlistnA0;
+  ResizeArray<plint> pairlistnA1;
+  ResizeArray<plint> pairlistxA1;
+  ResizeArray<plint> pairlistmA1;
+  ResizeArray<plint> pairlistnA2;
+  ResizeArray<plint> pairlistxA2;
+  ResizeArray<plint> pairlistmA2;
+  ResizeArray<plint> pairlistnA3;
+  ResizeArray<plint> pairlistxA3;
+  ResizeArray<plint> pairlistmA3;
+  ResizeArray<plint> pairlistnA4;
+  ResizeArray<plint> pairlistxA4;
+  ResizeArray<plint> pairlistmA4;
+  
   ResizeArray<plint> pairlist;
   ResizeArray<plint> pairlist2;
   ResizeArray<short> vdwtype_array;
@@ -158,6 +174,8 @@ public:
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
 //sd-db
 	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s,
+	 electEnergyIndex_ti_1, fullElectEnergyIndex_ti_1, vdwEnergyIndex_ti_1,
+	 electEnergyIndex_ti_2, fullElectEnergyIndex_ti_2, vdwEnergyIndex_ti_2,
 //sd-de
 	 TENSOR(virialIndex), TENSOR(fullElectVirialIndex),
          VECTOR(pairVDWForceIndex), VECTOR(pairElectForceIndex),
@@ -200,11 +218,13 @@ public:
   // static BigReal d0;
 //sd-db
   static Bool fepOn;
+  static Bool thermInt;
   static BigReal lambda;
   static BigReal lambda2;
   static BigReal fepVdwShiftCoeff;
   static BigReal fepElecLambdaStart;
   static BigReal fepVdwLambdaEnd;
+  static Bool decouple;
 //sd-de
   static Bool lesOn;
   static int lesFactor;
@@ -263,6 +283,23 @@ public:
   static void calc_self_energy_merge_fullelect_fep (nonbonded *);
   static void calc_self_energy_slow_fullelect_fep (nonbonded *);
 
+  static void calc_pair_energy_ti(nonbonded *);
+  static void calc_pair_ti(nonbonded *);
+  static void calc_pair_energy_fullelect_ti (nonbonded *);
+  static void calc_pair_fullelect_ti (nonbonded *);
+  static void calc_pair_energy_merge_fullelect_ti (nonbonded *);
+  static void calc_pair_merge_fullelect_ti (nonbonded *);
+  static void calc_pair_energy_slow_fullelect_ti (nonbonded *);
+  static void calc_pair_slow_fullelect_ti (nonbonded *);
+  static void calc_self_energy_ti (nonbonded *);
+  static void calc_self_ti (nonbonded *);
+  static void calc_self_energy_fullelect_ti (nonbonded *);
+  static void calc_self_fullelect_ti (nonbonded *);
+  static void calc_self_energy_merge_fullelect_ti (nonbonded *);
+  static void calc_self_merge_fullelect_ti (nonbonded *);
+  static void calc_self_energy_slow_fullelect_ti (nonbonded *);
+  static void calc_self_slow_fullelect_ti (nonbonded *);
+  
 //locally enhanced sampling calcualtion
   static void calc_pair_les(nonbonded *);
   static void calc_pair_energy_les(nonbonded *);

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: bhatele $
- * $Date: 2008/06/05 06:23:49 $
- * $Revision: 1.1219 $
+ * $Author: char $
+ * $Date: 2008/06/30 22:55:38 $
+ * $Revision: 1.1220 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -318,8 +318,10 @@ void Controller::integrate() {
     if ( zeroMomentum && dofull && ! (step % slowFreq) )
 						correctMomentum(step);
     printFepMessage(step);
+    printTiMessage(step);
     printDynamicsEnergies(step);
     outputFepEnergy(step);
+    outputTiEnergy(step);
     traceUserEvent(eventEndOfTimeStep);
     outputExtendedSystem(step);
     rebalanceLoad(step);
@@ -344,6 +346,7 @@ void Controller::integrate() {
         reassignVelocities(step);
         printDynamicsEnergies(step);
         outputFepEnergy(step);
+        outputTiEnergy(step);
         traceUserEvent(eventEndOfTimeStep);
   // if (gotsigint) {
   //   iout << iINFO << "Received SIGINT; shutting down.\n" << endi;
@@ -809,6 +812,18 @@ void Controller::printFepMessage(int step)
          << " K FOR FEP CALCULATION\n" << endi;
   }
 } 
+void Controller::printTiMessage(int step)
+{
+  if (simParams->thermInt) {
+    const BigReal lambda = simParams->lambda;
+    const BigReal fepTemp = simParams->fepTemp;
+    const int fepEquilSteps = simParams->fepEquilSteps;
+    iout << "TI: RESETTING FOR NEW WINDOW "
+         << "LAMBDA SET TO " << lambda 
+         << "\nTI: WINDOW TO HAVE " << fepEquilSteps 
+         << " STEPS OF EQUILIBRATION PRIOR TO TI DATA COLLECTION.\n" << endi;
+  }
+} 
 //fepe
 
 void Controller::reassignVelocities(int step)
@@ -1254,6 +1269,11 @@ void Controller::printEnergies(int step, int minimize)
 //fepb
       electEnergy_f = reduction->item(REDUCTION_ELECT_ENERGY_F);
       ljEnergy_f = reduction->item(REDUCTION_LJ_ENERGY_F);
+
+      electEnergy_ti_1 = reduction->item(REDUCTION_ELECT_ENERGY_TI_1);
+      ljEnergy_ti_1 = reduction->item(REDUCTION_LJ_ENERGY_TI_1);
+      electEnergy_ti_2 = reduction->item(REDUCTION_ELECT_ENERGY_TI_2);
+      ljEnergy_ti_2 = reduction->item(REDUCTION_LJ_ENERGY_TI_2);
 //fepe
     }
 
@@ -1262,6 +1282,10 @@ void Controller::printEnergies(int step, int minimize)
       electEnergySlow = reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
 //fepb
       electEnergySlow_f = reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F);
+
+      electEnergySlow_ti_1 = reduction->item(REDUCTION_ELECT_ENERGY_SLOW_TI_1);
+      electEnergySlow_ti_2 = reduction->item(REDUCTION_ELECT_ENERGY_SLOW_TI_2);
+      electEnergyPME_ti = reduction->item(REDUCTION_ELECT_ENERGY_PME_TI);
 //fepe
     }
 
@@ -1631,6 +1655,13 @@ static char *FEPTITLE(int X)
   return tmp_string;
 }
 
+static char *TITITLE(int X)
+{ 
+  static char tmp_string[21];
+  sprintf(tmp_string, "TI   %6d ",X);
+  return tmp_string;
+}
+
 void Controller::outputFepEnergy(int step) {
  if (simParams->fepOn) {
   const int stepInRun = step - simParams->firstTimestep;
@@ -1680,6 +1711,85 @@ void Controller::outputFepEnergy(int step) {
  }
 }
 
+void Controller::outputTiEnergy(int step) {
+ if (simParams->thermInt) {
+  const int stepInRun = step - simParams->firstTimestep;
+  const int fepEquilSteps = simParams->fepEquilSteps;
+  const BigReal lambda = simParams->lambda;
+  
+  if (stepInRun == 0 || stepInRun == fepEquilSteps) {
+    TiNo = 0;
+    net_dEdl_elec_1 = 0;
+    net_dEdl_elec_2 = 0;
+    net_dEdl_lj_1 = 0;
+    net_dEdl_lj_2 = 0;
+    net_dEdl_PME = 0;
+  }
+  if (stepInRun == 0 || (! ((step - 1) % simParams->fepOutFreq))) {
+    // output of instantaneous dU/dl now replaced with running average
+    // over last fepOutFreq steps (except for step 0)
+    recent_TiNo = 0;
+    recent_dEdl_elec_1 = 0;
+    recent_dEdl_elec_2 = 0;
+    recent_dEdl_lj_1 = 0;
+    recent_dEdl_lj_2 = 0;
+    recent_dEdl_PME = 0;
+  }
+  TiNo++;
+  recent_TiNo++;
+  // since PME is currently scaled by global lambda (not affected by 
+  // elecLambdaStart), add slow local electrostatics to PME total
+  net_dEdl_elec_1 += electEnergy_ti_1; //+ electEnergySlow_ti_1;
+  net_dEdl_elec_2 += electEnergy_ti_2; //+ electEnergySlow_ti_2;
+  net_dEdl_PME += electEnergyPME_ti + electEnergySlow_ti_1 - electEnergySlow_ti_2;
+  net_dEdl_lj_1 += ljEnergy_ti_1;
+  net_dEdl_lj_2 += ljEnergy_ti_2;
+  recent_dEdl_elec_1 += electEnergy_ti_1;  //+ electEnergySlow_ti_1;
+  recent_dEdl_elec_2 += electEnergy_ti_2;  //+ electEnergySlow_ti_2;
+  recent_dEdl_PME += electEnergyPME_ti + electEnergySlow_ti_1 - electEnergySlow_ti_2;
+  recent_dEdl_lj_1 += ljEnergy_ti_1;
+  recent_dEdl_lj_2 += ljEnergy_ti_2;
+
+  if (stepInRun == 0) {
+    BigReal fepElecLambdaStart = simParams->fepElecLambdaStart;
+    BigReal fepVdwLambdaEnd = simParams->fepVdwLambdaEnd;
+    BigReal elec_lambda_1 = (lambda <= fepElecLambdaStart)? 0. : \
+            (lambda - fepElecLambdaStart) / (1. - fepElecLambdaStart);
+    BigReal elec_lambda_2 = ((1-lambda) <= fepElecLambdaStart)? 0. : \
+            ((1-lambda) - fepElecLambdaStart) / (1. - fepElecLambdaStart);
+    BigReal vdw_lambda_1 =  (lambda >= fepVdwLambdaEnd)? 1. : \
+            lambda / fepVdwLambdaEnd; 
+    BigReal vdw_lambda_2 =  ((1-lambda) >= fepVdwLambdaEnd)? 1. : \
+            (1-lambda) / fepVdwLambdaEnd; 
+    if (!tiFile.rdbuf()->is_open()) {
+      //tiSum = 0.0;
+      NAMD_backup_file(simParams->tiOutFile);
+      tiFile.open(simParams->tiOutFile);
+      iout << "OPENING TI ENERGY OUTPUT FILE\n" << endi;
+      tiFile << "#       STEP      Elec_dU/dl      Elec_avg        vdW_dU/dl      vdw_avg       Elec_dU/dl      Elec_avg      vdW_dU/dl       vdw_avg       PME_dU/dl      PME_avg\n"
+              << "#               <---------------------PARTITION 1------------------------>    <---------------------PARTITION 2--------------------->" 
+              << std::endl;
+    }
+    tiFile << "#NEW TI WINDOW: "
+            << "LAMBDA " << lambda 
+            << "\n#PARTITION 1 VDW LAMBDA " << vdw_lambda_1 
+            << "\n#PARTITION 1 ELEC LAMBDA " << elec_lambda_1 
+            << "\n#PARTITION 2 VDW LAMBDA " << vdw_lambda_2 
+            << "\n#PARTITION 2 ELEC LAMBDA " << elec_lambda_2 
+            << "\n" << std::endl;
+  }
+  if (stepInRun == fepEquilSteps) {
+    tiFile << "#" << fepEquilSteps << " STEPS OF EQUILIBRATION AT "
+            << "LAMBDA " << simParams->lambda << " COMPLETED\n"
+            << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
+  }
+  if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
+    writeTiEnergyData(step, tiFile);
+    tiFile.flush();
+  }
+ }
+}
+
 void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   BigReal eeng = electEnergy+electEnergySlow;
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
@@ -1699,6 +1809,20 @@ void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   fepFile << std::endl;
 }
 //fepe
+void Controller::writeTiEnergyData(int step, std::ofstream &file) {
+  tiFile << TITITLE(step);
+  tiFile << FORMAT(recent_dEdl_elec_1 / recent_TiNo);
+  tiFile << FORMAT(net_dEdl_elec_1/TiNo);
+  tiFile << FORMAT(recent_dEdl_lj_1 / recent_TiNo);
+  tiFile << FORMAT(net_dEdl_lj_1/TiNo);
+  tiFile << FORMAT(recent_dEdl_elec_2 / recent_TiNo);
+  tiFile << FORMAT(net_dEdl_elec_2/TiNo);
+  tiFile << FORMAT(recent_dEdl_lj_2 / recent_TiNo);
+  tiFile << FORMAT(net_dEdl_lj_2/TiNo);
+  tiFile << FORMAT(recent_dEdl_PME / recent_TiNo);
+  tiFile << FORMAT(net_dEdl_PME/TiNo);
+  tiFile << std::endl;
+}
 
 void Controller::outputExtendedSystem(int step)
 {

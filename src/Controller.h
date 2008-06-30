@@ -89,6 +89,29 @@ protected:
       void printFepMessage(int);
       BigReal fepSum;
 //fepe
+
+      BigReal electEnergy_ti_1;
+      BigReal electEnergySlow_ti_1;
+      BigReal ljEnergy_ti_1;
+//      BigReal net_dEdl_1;
+      BigReal electEnergy_ti_2;
+      BigReal electEnergySlow_ti_2;
+      BigReal ljEnergy_ti_2;
+      BigReal net_dEdl_elec_1;
+      BigReal net_dEdl_elec_2;
+      BigReal net_dEdl_lj_1;
+      BigReal net_dEdl_lj_2;
+      BigReal electEnergyPME_ti;
+      BigReal net_dEdl_PME;
+      int TiNo;
+      BigReal recent_dEdl_elec_1;
+      BigReal recent_dEdl_elec_2;
+      BigReal recent_dEdl_lj_1;
+      BigReal recent_dEdl_lj_2;
+      BigReal recent_dEdl_PME;
+      int recent_TiNo;
+      void printTiMessage(int);
+
       BigReal kineticEnergy;
       BigReal kineticEnergyHalfstep;
       BigReal kineticEnergyCentered;
@@ -150,6 +173,9 @@ protected:
     void outputFepEnergy(int step);
     void writeFepEnergyData(int step, std::ofstream &file);
 //fepe
+    std::ofstream tiFile;
+    void outputTiEnergy(int step);
+    void writeTiEnergyData(int step, std::ofstream &file);
 
     // for checkpoint/revert
     int checkpoint_stored;

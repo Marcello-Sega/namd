@@ -8,6 +8,22 @@ EXCLUDED( FAST( foo bar ) )
 EXCLUDED( MODIFIED( foo bar ) )
 EXCLUDED( NORMAL( foo bar ) )
 NORMAL( MODIFIED( foo bar ) )
+ALCHPAIR( NOT_ALCHPAIR( foo bar ) )
+
+ALCHPAIR(
+  // get alchemical nonbonded scaling parameters (once per pairlist)
+  myLambda = ALCH1(lambdaUp) ALCH2(lambdaDown);
+  FEP(myLambda2 = ALCH1(lambda2Up) ALCH2(lambda2Down);)
+  myElecLambda =  ALCH1(elecLambdaUp) ALCH2(elecLambdaDown); 
+  FEP(myElecLambda2 = ALCH1(elecLambda2Up) ALCH2(elecLambda2Down);)
+  myVdwLambda =  ALCH1(vdwLambdaUp) ALCH2(vdwLambdaDown); 
+  FEP(myVdwLambda2 = ALCH1(vdwLambda2Up) ALCH2(vdwLambda2Down);) 
+  myVdwShift =  ALCH1(vdwShiftUp) ALCH2(vdwShiftDown); 
+  FEP(myVdwShift2 =  ALCH1(vdwShift2Up) ALCH2(vdwShift2Down);) 
+  // local decoupling scheme shouldn't scale intra-partition vdW
+  LOCALDECOUPLE(myVdwLambda = FEP( myVdwLambda2 = ) 1;)
+  LOCALDECOUPLE(myVdwShift = FEP( myVdwShift2 = ) 0;)
+)
 
 #ifdef ARCH_POWERPC
      __alignx(16, table_four);
@@ -18,6 +34,8 @@ NORMAL( MODIFIED( foo bar ) )
 #ifndef ARCH_POWERPC
 #pragma ivdep
 #endif
+
+
   
     for (k=0; k<npairi; ++k) {      
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
@@ -86,15 +104,6 @@ NORMAL( MODIFIED( foo bar ) )
 
       BigReal kqq = kq_i * p_j->charge;
 
-      FEP(
-        const BigReal lambda_1 = lambda_table_i[2*p_j->partition];
-        const BigReal lambda_2 = lambda_table_i[2*p_j->partition+1];
-        const BigReal lambda_vdw_1 = lambda_vdw_table_i[2*p_j->partition];
-        const BigReal lambda_vdw_2 = lambda_vdw_table_i[2*p_j->partition+1];
-        const BigReal lambda_elec_1 = lambda_elec_table_i[2*p_j->partition];
-        const BigReal lambda_elec_2 = lambda_elec_table_i[2*p_j->partition+1];
-      )
-
       LES( BigReal lambda_pair = lambda_table_i[p_j->partition]; )
 
       register const BigReal p_ij_x = p_i_x - p_j->position.x;
@@ -110,42 +119,48 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal vdw_b = A * table_four_i[4] - B * table_four_i[6];
       BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
 
-      FEP (
-        // Yes this could be made faster using lookup tables, but 
-        // we're aiming for clarity here...
-        // Writing the equations in terms of real physical quantities
-        // makes it easier for others to later adapt the FEP functions
-        const BigReal r2 = p_ij_x*p_ij_x + p_ij_y*p_ij_y + p_ij_z*p_ij_z;
-
-        // The VdW parameters with the _1 and _2 suffix correspond to 
-        // lambda1 and lambda2, respectively, and are used to construct
-        // the scaled FEP VdW potential
-        const BigReal r2_1 = r2 + lambda_shift_table_i[2*p_j->partition];
-        const BigReal r6_1 = r2_1*r2_1*r2_1;
-
-        const BigReal r2_2 = r2 + lambda_shift_table_i[2*p_j->partition+1];
-        const BigReal r6_2 = r2_2*r2_2*r2_2;
-      )   
-          
-      ENERGY(
-      NOT_FEP (
-      register BigReal vdw_val =
-        ( ( diffa * vdw_d * (1/6.)+ vdw_c * (1/4.)) * diffa + vdw_b *(1/2.)) * diffa + vdw_a;
-      vdwEnergy -= LAM(lambda_pair *) vdw_val;
-      )
-      FEP(
-        // switching function (this is correct whether switching is active or not)
-        const BigReal switchmul = r2 > switchdist2? \
-                 switchfactor*(cutoff2 - r2)*(cutoff2 - r2)*(cutoff2 - 3.*switchdist2 + 2.*r2) \
-                 : 1.;
+      ALCHPAIR (
+        // Alchemical free energy calculation
+        // Pairlists are separated so that lambda-coupled pairs are handled
+        // independently from normal nonbonded (inside ALCHPAIR macro).
+        // The separation-shifted van der Waals potential and a shifted 
+        // electrostatics potential for decoupling are calculated explicitly.
+        // Would be faster with lookup tables but because only a small minority
+        // of nonbonded pairs are lambda-coupled the impact is minimal. 
+        // Explicit calculation also makes things easier to modify.
         
-        const BigReal fep_vdw_energy = A/(r6_1*r6_1) - B/r6_1; // needed later
-           
-        // modified FEP potential for vdW
-        vdwEnergy   += lambda_vdw_1 * fep_vdw_energy * switchmul;
-        vdwEnergy_s += lambda_vdw_2 * (A/(r6_2*r6_2) - B/r6_2) * switchmul;
+        const BigReal r2 = r2list[k] - r2_delta;
+
+        // These are now inline functions (in ComputeNonbondedFep.C) to 
+        // tidy the code
+
+        FEP(fep_vdw_forceandenergies(A,B,r2,myVdwShift,myVdwShift2,switchdist2,
+          cutoff2, myVdwLambda, myVdwLambda2, switchfactor, &alch_vdw_energy, 
+          &alch_vdw_force,&alch_vdw_energy_2);)
+        TI(ti_vdw_force_energy_dUdl(A,B,r2,myVdwShift,switchdist2,
+          cutoff2, myVdwLambda, fepVdwShiftCoeff, switchfactor, 
+          &alch_vdw_energy, &alch_vdw_force, &alch_vdw_dUdl);)
+        LOCALDECOUPLE(shiftedpotential(r2,cutoff2,kqq,myElecLambda,
+          &shiftedElec,&shiftedElecForce);
+          MODIFIED(shiftedElec *= (1.0-modf_mod);)
+          MODIFIED(shiftedElecForce *= (1.0-modf_mod);))
       )
-      ) // ENERGY
+      
+      NOT_ALCHPAIR(ENERGY(
+        register BigReal vdw_val =
+          ( ( diffa * vdw_d * (1/6.)+ vdw_c * (1/4.)) * diffa + vdw_b *(1/2.)) * diffa + vdw_a;
+        vdwEnergy -= LAM(lambda_pair *) vdw_val;
+        FEP(vdwEnergy_s -= vdw_val;)
+      ))
+
+      ALCHPAIR(
+        ENERGY(vdwEnergy   += alch_vdw_energy;)
+        FEP(vdwEnergy_s += alch_vdw_energy_2;)
+        TI(ALCH1(vdwEnergy_ti_1) ALCH2(vdwEnergy_ti_2) +=
+            alch_vdw_dUdl LOCALDECOUPLE( * 0);)
+            // LOCALDECOUPLE pairs: no vdW scaling, don't count towards total
+        ) // ALCHPAIR
+      
 #endif // FAST
 
 #if ( FAST(1+) 0 )
@@ -174,19 +189,29 @@ NORMAL( MODIFIED( foo bar ) )
       BigReal fast_a = modfckqq * table_four_i[11];
       )
     
-      {  
+      {
       ENERGY(
       register BigReal fast_val =
 	( ( diffa * fast_d * (1/6.)+ fast_c * (1/4.)) * diffa + fast_b *(1/2.)) * diffa + fast_a;
-      
-      NOT_FEP (
+      NOT_ALCHPAIR (
         electEnergy -=  LAM(lambda_pair *) fast_val;
-      )
-      FEP(
-        electEnergy   -= lambda_elec_1 * fast_val;
-        electEnergy_s -= lambda_elec_2 * fast_val; 
+        FEP(electEnergy_s -= fast_val;)
       )
       ) //ENERGY
+      ALCHPAIR(
+        ENERGY(electEnergy   -= myElecLambda * fast_val;)
+        FEP(electEnergy_s -= myElecLambda2 * fast_val;)
+        LOCALDECOUPLE(
+          ENERGY(electEnergy -= (1-myElecLambda) * shiftedElec;)
+          FEP(electEnergy_s -= (1-myElecLambda2) * shiftedElec;)
+        )
+        TI(
+          NOENERGY(register BigReal fast_val = 
+            ( ( diffa * fast_d * (1/6.)+ fast_c * (1/4.)) * diffa + fast_b *(1/2.)) * diffa + fast_a;)
+          ALCH1(electEnergy_ti_1) ALCH2(electEnergy_ti_2)  -= fast_val;
+          LOCALDECOUPLE(ALCH1(electEnergy_ti_1) ALCH2(electEnergy_ti_2) += shiftedElec;)
+        )
+      )
 
       INT(
       register BigReal fast_dir =
@@ -199,28 +224,19 @@ NORMAL( MODIFIED( foo bar ) )
       }
 
       // Combined short-range electrostatics and VdW force:
-      NOT_FEP(
+      NOT_ALCHPAIR(
         fast_d += vdw_d;
         fast_c += vdw_c;
         fast_b += vdw_b;
         fast_a += vdw_a;  // not used!
-        register BigReal fast_dir =
-                    (diffa * fast_d + fast_c) * diffa + fast_b;
-        BigReal force_r =  LAM(lambda_pair *) fast_dir;
       )
-      FEP(
-        // Note: switching has such a minor effect on the magnitude of the
-        // force (~10ppm) that's it's not clear whether it's worth computing...
-        // but we do it anyways!
-        const BigReal switchmul2 = (r2 > switchdist2)? \
-                 12.*switchfactor*(cutoff2 - r2)*(r2 - switchdist2) : 0.;
-      
-        // FEP force for Coulomb and vdW
-        register BigReal fast_elect_dir = (diffa * fast_d + fast_c) * diffa + fast_b;
-        const BigReal force_r = lambda_elec_1 * fast_elect_dir \
-                          +  lambda_vdw_1 * (  \
-                          + (12.*fep_vdw_energy + 6.*B/r6_1)/r2_1 * switchmul \
-                          + fep_vdw_energy * switchmul2);
+      register BigReal fast_dir =
+                  (diffa * fast_d + fast_c) * diffa + fast_b;
+      BigReal force_r =  LAM(lambda_pair *) fast_dir;
+      ALCHPAIR(
+        force_r *= myElecLambda; 
+        force_r += alch_vdw_force LOCALDECOUPLE( + shiftedElecForce);
+        // special ALCH forces already multiplied by relevant lambda
       )
           
       register BigReal tmp_x = force_r * p_ij_x;
@@ -327,16 +343,29 @@ NORMAL( MODIFIED( foo bar ) )
       register BigReal slow_val =
 	        ( ( diffa * slow_d *(1/6.)+ slow_c * (1/4.)) * diffa + slow_b *(1/2.)) * diffa + slow_a;
       
-      NOT_FEP (
+      NOT_ALCHPAIR (
         fullElectEnergy -= LAM(lambda_pair *) slow_val;
-      )
-          
-      FEP(
-        // PME is not scaled, so we use "lambda", not lambda_elec
-        fullElectEnergy   -= lambda_1 * slow_val;
-        fullElectEnergy_s -= lambda_2 * slow_val; 
+        FEP(fullElectEnergy_s -= slow_val;) 
       )
       ) // ENERGY
+          
+      ALCHPAIR(
+        // PME is not scaled, so we use "lambda", not elecLambda
+        ENERGY(fullElectEnergy   -= myLambda * slow_val;)
+        FEP(fullElectEnergy_s -= myLambda2 * slow_val;)
+        LOCALDECOUPLE(FAST(NOSHORT(
+          //complement the lambda*elect with (1-lambda) * a shifted potential
+          ENERGY(fullElectEnergy -= (1-myElecLambda) * shiftedElec;)
+          FEP(fullElectEnergy_s -= (1-myElecLambda2) * shiftedElec;)
+        )))
+
+        TI(
+          NOENERGY(register BigReal slow_val =
+	        ( ( diffa * slow_d *(1/6.)+ slow_c * (1/4.)) * diffa + slow_b *(1/2.)) * diffa + slow_a;)
+          ALCH1(fullElectEnergy_ti_1) ALCH2(fullElectEnergy_ti_2) -= slow_val \
+            LOCALDECOUPLE(FAST(NOSHORT(- shiftedElec)));
+        )
+      )
 
       INT( {
       register BigReal slow_dir =
@@ -347,7 +376,7 @@ NORMAL( MODIFIED( foo bar ) )
       } )
 
 
-      NOT_FEP ( 
+      NOT_ALCHPAIR ( 
         FAST(
         NOSHORT(
         slow_d += vdw_d;
@@ -356,21 +385,14 @@ NORMAL( MODIFIED( foo bar ) )
         slow_a += vdw_a; // unused!
         )
         )
-        register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
-        BigReal fullforce_r = slow_dir LAM(* lambda_pair);
       )
-      FEP ( 
+      register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
+      BigReal fullforce_r = slow_dir LAM(* lambda_pair);
+      ALCHPAIR (
         // PME is not scaled, so we use "lambda", not lambda_elec
-        register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
-        BigReal fullforce_r = lambda_1 * slow_dir;
-          
+        fullforce_r *= myLambda;
         FAST( NOSHORT(
-          const BigReal switchmul2 = (r2 > switchdist2)? \
-              12.*switchfactor*(cutoff2 - r2)*(r2 - switchdist2) : 0.;
-
-          fullforce_r += lambda_vdw_1 * ( \
-              (12.*fep_vdw_energy + 6.*B/r6_1)/r2_1 * switchmul \
-               + fep_vdw_energy * switchmul2);
+          fullforce_r += alch_vdw_force LOCALDECOUPLE(+shiftedElecForce);
         ))
       )
           

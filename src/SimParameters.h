@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2008/06/17 20:30:37 $
- * $Revision: 1.1140 $
+ * $Author: char $
+ * $Date: 2008/06/30 22:55:39 $
+ * $Revision: 1.1141 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -290,6 +290,22 @@ public:
 // End FEP flags
 //fepe
 
+// Modifications for thermodynamic integration
+// lots of overlap with FEP, but still will duplicate everything for now,
+// mainly for compatibility purposes
+  Bool thermInt;               //  Doing thermodynamic integration?
+  BigReal tiLambda;           //  lambda for dynamics
+  BigReal tiTemp;          //  temperature for FEP calculation
+  int tiOutFreq;           //  freq. of FEP output
+  char tiOutFile[128];     //  FEP output filename
+  int tiEquilSteps;        //  # of equil. steps in the window
+  BigReal tiVdwShiftCoeff; //  r2 shift coeff used for generating  
+                            //  the FEP altered vdW interactions
+  BigReal tiElecLambdaStart;  //  lambda "delay" for electrostatics
+  BigReal tiVdwLambdaEnd;  //  lambda "delay" for vdW 
+
+  Bool decouple;  // alchemical decoupling rather than annihilation
+  
   
 	Bool lesOn;			//  Locally enhanced sampling?
 	int lesFactor;			//  local enhancement factor

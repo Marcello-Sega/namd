@@ -59,11 +59,13 @@ BigReal         ComputeNonbondedUtil::c8;
 // BigReal         ComputeNonbondedUtil::d0;
 // fepb
 Bool      ComputeNonbondedUtil::fepOn;
+Bool      ComputeNonbondedUtil::thermInt;
 BigReal   ComputeNonbondedUtil::lambda;
 BigReal   ComputeNonbondedUtil::lambda2;
 BigReal   ComputeNonbondedUtil::fepVdwShiftCoeff;
 BigReal   ComputeNonbondedUtil::fepVdwLambdaEnd;
 BigReal   ComputeNonbondedUtil::fepElecLambdaStart;
+Bool      ComputeNonbondedUtil::decouple;
 //fepe
 Bool      ComputeNonbondedUtil::lesOn;
 int       ComputeNonbondedUtil::lesFactor;
@@ -120,6 +122,13 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_ELECT_ENERGY_F) += data[electEnergyIndex_s];
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += data[fullElectEnergyIndex_s];
   reduction->item(REDUCTION_LJ_ENERGY_F) += data[vdwEnergyIndex_s];
+
+  reduction->item(REDUCTION_ELECT_ENERGY_TI_1) += data[electEnergyIndex_ti_1];
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW_TI_1) += data[fullElectEnergyIndex_ti_1];
+  reduction->item(REDUCTION_LJ_ENERGY_TI_1) += data[vdwEnergyIndex_ti_1];
+  reduction->item(REDUCTION_ELECT_ENERGY_TI_2) += data[electEnergyIndex_ti_2];
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW_TI_2) += data[fullElectEnergyIndex_ti_2];
+  reduction->item(REDUCTION_LJ_ENERGY_TI_2) += data[vdwEnergyIndex_ti_2];
 //fepe
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,fullElectVirialIndex);
@@ -195,12 +204,15 @@ void ComputeNonbondedUtil::select(void)
 
 //fepb
   fepOn = simParams->fepOn;
+  thermInt = simParams->thermInt;
   lambda = lambda2 = 0;
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
   fepVdwShiftCoeff = simParams->fepVdwShiftCoeff;
   fepVdwLambdaEnd = simParams->fepVdwLambdaEnd;
   fepElecLambdaStart = simParams->fepElecLambdaStart;
+
+  decouple = simParams->decouple;
 
   delete [] lambda_table;
   lambda_table = 0;
@@ -212,29 +224,6 @@ void ComputeNonbondedUtil::select(void)
   if ( fepOn ) {
     lambda = simParams->lambda;
     lambda2 = simParams->lambda2;
-    lambda_table = new BigReal[2*3*3];
-    for ( int ip=0; ip<3; ++ip ) {
-      for ( int jp=0; jp<3; ++jp ) {
-        BigReal lambda_pair = 1.0;
-        BigReal d_lambda_pair = 1.0;
-        if (ip || jp) {
-          if (ip && jp && ip != jp) {
-            lambda_pair = 0.0;
-            d_lambda_pair = 0.0;
-          } else {
-            if (ip == 1 || jp == 1) {
-              lambda_pair = lambda;
-              d_lambda_pair = lambda2;
-            } else if ( ip == 2 || jp == 2) {
-              lambda_pair = 1.0 - lambda;
-              d_lambda_pair = 1.0 - lambda2;
-            }
-          }
-        }
-        lambda_table[2*(3*ip+jp)] = lambda_pair;
-        lambda_table[2*(3*ip+jp)+1] = d_lambda_pair;
-      }
-    }
     ComputeNonbondedUtil::calcPair = calc_pair_energy_fep;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_fep;
     ComputeNonbondedUtil::calcSelf = calc_self_energy_fep;
@@ -251,6 +240,24 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_energy_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_fep;
+  }  else if ( thermInt ) {
+    lambda = simParams->lambda;
+    ComputeNonbondedUtil::calcPair = calc_pair_ti;
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_ti;
+    ComputeNonbondedUtil::calcSelf = calc_self_ti;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_ti;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_ti;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_ti;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_ti;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_ti;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_ti;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_ti;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_ti;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_ti;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_ti;
+    ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_ti;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_ti;
+    ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_ti;
   } else if ( lesOn ) {
     lesFactor = simParams->lesFactor;
     lesScaling = 1.0 / (double)lesFactor;
@@ -475,6 +482,7 @@ void ComputeNonbondedUtil::select(void)
     // corr_gradient is multiplied by -r^2 until later
     BigReal corr_energy, corr_gradient;
 
+    
     if ( PMEOn ) {
       BigReal tmp_a = r * ewaldcof;
       BigReal tmp_b = erfc(tmp_a);

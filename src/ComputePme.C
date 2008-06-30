@@ -268,7 +268,8 @@ private:
   float *work;
 #endif
 
-  int fepOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
+  int fepOn, thermInt, lesOn, lesFactor, pairOn, selfOn, numGrids;
+  int decouple;
 
   LocalPmeInfo *localInfo;
   int qgrid_size;
@@ -371,7 +372,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   PatchMap *patchMap = PatchMap::Object();
 
   fepOn = simParams->fepOn;
-  numGrids = fepOn ? 2 : 1;
+  thermInt = simParams->thermInt;
+  decouple = (fepOn || thermInt) && (simParams->decouple == 1);
+  numGrids = (fepOn || thermInt) ? (decouple ? 4 : 2) : 1;
   lesOn = simParams->lesOn;
   useBarrier = simParams->PMEBarrier;
   if ( lesOn ) {
@@ -1448,7 +1451,9 @@ ComputePme::ComputePme(ComputeID c) :
   SimParameters *simParams = Node::Object()->simParameters;
 
   fepOn = simParams->fepOn;
-  numGrids = fepOn ? 2 : 1;
+  thermInt = simParams->thermInt;
+  decouple = (simParams->decouple == 1);
+  numGrids = (fepOn || thermInt) ? (decouple ? 4 : 2) : 1;
   lesOn = simParams->lesOn;
   if ( lesOn ) {
     lesFactor = simParams->lesFactor;
@@ -1562,7 +1567,7 @@ void ComputePme::doWork()
   }
 
   // copy to other grids if needed
-  if ( fepOn || lesOn ) {
+  if ( ((fepOn || thermInt) && (!decouple)) || lesOn ) {
     for ( g=0; g<numGrids; ++g ) {
 #ifdef NETWORK_PROGRESS
       CmiNetworkProgress();
@@ -1572,6 +1577,40 @@ void ComputePme::doWork()
       int nga = 0;
       for(int i=0; i<numLocalAtoms; ++i) {
         if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
+          lgd[nga++] = localData[i];
+        }
+      }
+      numGridAtoms[g] = nga;
+    }
+  } else if ( (fepOn || thermInt) && decouple) {
+    // alchemical decoupling: four grids
+    // g=0: partition 0 and partition 1
+    // g=1: partition 0 and partition 2
+    // g=2: only partition 1 atoms
+    // g=3: only partition 2 atoms
+    for ( g=0; g<2; ++g ) {  // same as before for first 2
+#ifdef NETWORK_PROGRESS
+      CmiNetworkProgress();
+#endif
+
+      PmeParticle *lgd = localGridData[g];
+      int nga = 0;
+      for(int i=0; i<numLocalAtoms; ++i) {
+        if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
+          lgd[nga++] = localData[i];
+        }
+      }
+      numGridAtoms[g] = nga;
+    }
+    for (g=2 ; g<4 ; ++g ) {  // only alchemical atoms for these last 2 grids
+#ifdef NETWORK_PROGRESS
+      CmiNetworkProgress();
+#endif
+
+      PmeParticle *lgd = localGridData[g];
+      int nga = 0;
+      for(int i=0; i<numLocalAtoms; ++i) {
+        if ( localPartition[i] == (g-1) ) {
           lgd[nga++] = localData[i];
         }
       }
@@ -1987,7 +2026,7 @@ void ComputePme::ungridForces() {
     Vector *localResults = new Vector[numLocalAtoms*
 					((numGrids>1 || selfOn)?2:1)];
     Vector *gridResults;
-    if ( fepOn || lesOn || selfOn || pairOn ) {
+    if ( fepOn || thermInt || lesOn || selfOn || pairOn ) {
       for(int i=0; i<numLocalAtoms; ++i) { localResults[i] = 0.; }
       gridResults = localResults + numLocalAtoms;
     } else {
@@ -2007,11 +2046,15 @@ void ComputePme::ungridForces() {
       delete myRealSpace[g];
       scale_forces(gridResults, numGridAtoms[g], lattice);
 
-      if ( fepOn || lesOn ) {
+      if ( fepOn || thermInt || lesOn ) {
         double scale = 1.;
-        if ( fepOn ) {
+        if ( fepOn || thermInt ) {
           if ( g == 0 ) scale = simParams->lambda;
           else if ( g == 1 ) scale = 1. - simParams->lambda;
+          if (decouple) {
+            if ( g == 2 ) scale = 1. - simParams->lambda;
+            else if ( g == 3 ) scale = simParams->lambda;
+          }
         } else if ( lesOn ) {
           scale = 1.0 / (double)lesFactor;
         }
@@ -2093,9 +2136,13 @@ void ComputePme::ungridForces() {
 
     for ( g=0; g<numGrids; ++g ) {
       double scale = 1.;
-      if ( fepOn ) {
+      if ( fepOn || thermInt ) {
         if ( g == 0 ) scale = simParams->lambda;
         else if ( g == 1 ) scale = 1. - simParams->lambda;
+        if (decouple) {
+          if ( g == 2 ) scale = 1. - simParams->lambda;
+          else if ( g == 3 ) scale = simParams->lambda;
+        }
       } else if ( lesOn ) {
         scale = 1.0 / (double)lesFactor;
       } else if ( pairOn ) {
@@ -2115,7 +2162,13 @@ void ComputePme::ungridForces() {
       double scale2 = 0.;
       if ( fepOn && g == 0 ) scale2 = simParams->lambda2;
       else if ( fepOn && g == 1 ) scale2 = 1. - simParams->lambda2;
+      if (decouple && fepOn && g == 2 ) scale2 = 1. - simParams->lambda2;
+      else if (decouple && fepOn && g == 3 ) scale2 = simParams->lambda2;
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[g][0] * scale2;
+      if ( thermInt && g == 0 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI) += evir[g][0];
+      else if ( thermInt && g == 1 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI) -= evir[g][0];
+      if (decouple && thermInt && g == 2 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI) -= evir[g][0];
+      else if (decouple && thermInt && g == 3 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI) += evir[g][0];
     }
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     reduction->submit();
