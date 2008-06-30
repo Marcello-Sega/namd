@@ -15,8 +15,6 @@
 
 #include "Box.h"
 #include "OwnerBox.h"
-#include "PositionBox.h"
-#include "PositionOwnerBox.h"
 #include "UniqueSet.h"
 
 #include "Node.h"
@@ -37,8 +35,8 @@ class TuplePatchElem {
   public:
     PatchID patchID;
     Patch *p;
-    PositionBox<Patch> *positionBox;
-    PositionBox<Patch> *avgPositionBox;
+    Box<Patch,CompAtom> *positionBox;
+    Box<Patch,CompAtom> *avgPositionBox;
     Box<Patch,Results> *forceBox;
     CompAtom *x;
 #ifdef MEM_OPT_VERSION

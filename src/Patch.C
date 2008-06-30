@@ -45,7 +45,7 @@ Patch::Patch(PatchID pd) :
   lattice = Node::Object()->simParameters->lattice;
 }
 
-PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
+Box<Patch,CompAtom>* Patch::registerPositionPickup(ComputeID cid, int trans)
 {
    //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid << "\n");
    if (positionComputeList.add(cid) < 0)
@@ -53,10 +53,10 @@ PositionBox<Patch>* Patch::registerPositionPickup(ComputeID cid, int trans)
      DebugM(7, "registerPositionPickup() failed for cid " << cid << std::endl);
      return NULL;
    }
-   return positionBox.checkOut(trans);
+   return positionBox.checkOut();
 }
 
-void Patch::unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const box)
+void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
 {
    DebugM(4, "UnregisterPositionPickup from " << cid << "\n");
    positionComputeList.del(cid);
@@ -64,13 +64,13 @@ void Patch::unregisterPositionPickup(ComputeID cid, PositionBox<Patch> **const b
    *box = 0;
 }
 
-PositionBox<Patch>* Patch::registerAvgPositionPickup(ComputeID cid, int trans)
+Box<Patch,CompAtom>* Patch::registerAvgPositionPickup(ComputeID cid, int trans)
 {
    //DebugM(4, "registerAvgPositionPickup("<<patchID<<") from " << cid << "\n");
-   return avgPositionBox.checkOut(trans);
+   return avgPositionBox.checkOut();
 }
 
-void Patch::unregisterAvgPositionPickup(ComputeID cid, PositionBox<Patch> **const box)
+void Patch::unregisterAvgPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
 {
    DebugM(4, "UnregisterAvgPositionPickup from " << cid << "\n");
    avgPositionBox.checkIn(*box);
@@ -144,13 +144,13 @@ void Patch::positionsReady(int doneMigration)
    // Give all position pickup boxes access to positions
    //positionPtrBegin = p.begin();
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
-   positionBox.open(positionPtrBegin,numAtoms,&lattice);
+   positionBox.open(positionPtrBegin);
 #else
-   positionBox.open(p.begin(),numAtoms,&lattice);
+   positionBox.open(p.begin());
 #endif
    if ( flags.doMolly ) {
      //avgPositionPtrBegin = p_avg.begin();
-     avgPositionBox.open(avgPositionPtrBegin,numAtoms,&lattice);
+     avgPositionBox.open(avgPositionPtrBegin);
    }
 
 #if CMK_VERSION_BLUEGENE

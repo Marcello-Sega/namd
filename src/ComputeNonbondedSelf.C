@@ -86,6 +86,7 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
 
     int doEnergy = patch->flags.doEnergy;
     nonbonded params;
+    params.offset = 0.;
     params.p[0] = p;
     params.p[1] = p;
 #ifdef MEM_OPT_VERSION

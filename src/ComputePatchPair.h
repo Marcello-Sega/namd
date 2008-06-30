@@ -17,8 +17,6 @@
 
 #include "Box.h"
 #include "OwnerBox.h"
-#include "PositionBox.h"
-#include "PositionOwnerBox.h"
 
 class Patch;
 class Node;
@@ -52,7 +50,7 @@ protected :
 // private: // hack for ComputeNonbondedPair::noWork()
   PatchID patchID[2];
   int trans[2];
-  PositionBox<Patch> *positionBox[2];
+  Box<Patch,CompAtom> *positionBox[2];
   Box<Patch,Results> *forceBox[2];
 };
 

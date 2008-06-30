@@ -176,6 +176,10 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], Results* r[2])
     // swap to place more atoms in inner loop (second patch)
     int a = 0;  int b = 1;
     if ( numAtoms[0] > numAtoms[1] ) { a = 1; b = 0; }
+
+    const Lattice &lattice = patch[0]->lattice;
+    params.offset = lattice.offset(trans[a]) - lattice.offset(trans[b]);
+
     int doEnergy = patch[0]->flags.doEnergy;
       params.p[0] = p[a];
       params.p[1] = p[b];

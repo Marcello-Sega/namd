@@ -128,16 +128,10 @@ void ComputePatchPair::doWork() {
   CompAtom* p[2];
   Results* r[2];
   int i;
-  int numData;
 
   // Open up positionBox, forceBox, and atomBox
   for (i=0; i<2; i++) {
-      p[i] = positionBox[i]->open(&numData);
-      if (numData != numAtoms[i]) {
-	
-	  DebugM(5,"Interesting, doWork has opened a position box with wrong # atoms ("
-	  <<numData<<" vs " << numAtoms << "\n");
-      }
+      p[i] = positionBox[i]->open();
       r[i] = forceBox[i]->open();
   }
 

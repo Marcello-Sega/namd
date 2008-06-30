@@ -10,8 +10,6 @@
 #include "NamdTypes.h"
 #include "OwnerBox.h"
 #include "Box.h"
-#include "PositionOwnerBox.h"
-#include "PositionBox.h"
 #include "UniqueSortedArray.h"
 #include "Lattice.h"
 #include "PatchTypes.h"
@@ -36,12 +34,12 @@ class Patch
      virtual ~Patch(void) { };
 
      // methods for use by Compute objects
-     PositionBox<Patch>* registerPositionPickup(ComputeID cid, int trans = 13);
+     Box<Patch,CompAtom>* registerPositionPickup(ComputeID cid, int trans = 13);
      void unregisterPositionPickup(ComputeID cid,
-				   PositionBox<Patch>**const box);
-     PositionBox<Patch>* registerAvgPositionPickup(ComputeID cid, int trans = 13);
+				   Box<Patch,CompAtom>**const box);
+     Box<Patch,CompAtom>* registerAvgPositionPickup(ComputeID cid, int trans = 13);
      void unregisterAvgPositionPickup(ComputeID cid,
-				   PositionBox<Patch>**const box);
+				   Box<Patch,CompAtom>**const box);
      Box<Patch,Results>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box);
 
@@ -114,9 +112,9 @@ class Patch
      ForceList     f[Results::maxNumForces];
      Results	   results;
 
-     PositionOwnerBox<Patch> positionBox;
+     OwnerBox<Patch,CompAtom> positionBox;
      ComputeIDList              positionComputeList;
-     PositionOwnerBox<Patch> avgPositionBox;
+     OwnerBox<Patch,CompAtom> avgPositionBox;
      ComputeIDList              avgPositionComputeList;
      OwnerBox<Patch,Results>    forceBox;
      ComputeIDList              forceComputeList;

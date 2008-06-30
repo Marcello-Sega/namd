@@ -232,43 +232,9 @@ public:
     return result0 + result;
   }
 
-  CompAtom* create(CompAtom *d, int n, int i) const
+  Vector offset(int i) const
   {
-    CompAtom *dt;
-    if ( i != 13 )
-    {       
-      dt = (CompAtom *) malloc (sizeof(CompAtom) *n);  
-      Vector shift = (i%3-1) * a1 + ((i/3)%3-1) * a2 + (i/9-1) * a3;
-
-#ifdef ARCH_POWERPC
-#pragma disjoint (*d, *dt)
-#pragma unroll(2)
-#endif
-      for( int j = 0; j < n; ++j ) {			
-	dt[j].position.x           = d[j].position.x + shift.x;	
-	dt[j].position.y           = d[j].position.y + shift.y;	
-	dt[j].position.z           = d[j].position.z + shift.z;	
-	  			    
-	dt[j].charge               = d[j].charge;
-	dt[j].id                   = d[j].id;
-        dt[j].hydrogenGroupSize    = d[j].hydrogenGroupSize;
-	dt[j].nonbondedGroupIsAtom = d[j].nonbondedGroupIsAtom;
-	dt[j].atomFixed            = d[j].atomFixed;
-	dt[j].groupFixed           = d[j].groupFixed;
-	dt[j].partition            = d[j].partition;
-      }
-    }
-    else
-    {
-      dt = d;
-    }
-    return dt;
-  }
-
-  void destroy(CompAtom **d, int i) const
-  {
-    if ( i != 13 ) free (*d);  
-    *d = NULL;
+    return ( (i%3-1) * a1 + ((i/3)%3-1) * a2 + (i/9-1) * a3 );
   }
 
   // lattice vectors

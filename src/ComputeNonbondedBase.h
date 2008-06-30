@@ -233,6 +233,10 @@ void ComputeNonbondedUtil :: NAME
 
   // Bringing stuff into local namespace for speed.
 
+  const BigReal offset_x = params->offset.x;
+  const BigReal offset_y = params->offset.y;
+  const BigReal offset_z = params->offset.z;
+
   register const BigReal plcutoff2 = \
  			params->plcutoff * params->plcutoff;
   register const BigReal groupplcutoff2 = \
@@ -1095,13 +1099,13 @@ void ComputeNonbondedUtil :: NAME
       }
     }
 
-    register const BigReal p_i_x = p_i.position.x;
-    register const BigReal p_i_y = p_i.position.y;
-    register const BigReal p_i_z = p_i.position.z;
+    register const BigReal p_i_x = p_i.position.x + offset_x;
+    register const BigReal p_i_y = p_i.position.y + offset_y;
+    register const BigReal p_i_z = p_i.position.z + offset_z;
 
     PPROF(
         const int p_i_partition = p_i.partition;
-        int n1 = (int)floor((p_i_z-pressureProfileMin)*invThickness);
+        int n1 = (int)floor((p_i.position.z-pressureProfileMin)*invThickness);
         pp_clamp(n1, pressureProfileSlabs);
         )
 

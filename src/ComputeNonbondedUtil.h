@@ -103,6 +103,8 @@ struct nonbonded {
 
   int numAtoms[2];
 
+  Vector offset;
+
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
     int numWaterAtoms[2];

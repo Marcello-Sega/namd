@@ -16,8 +16,6 @@
 
 #include "Box.h"
 #include "OwnerBox.h"
-#include "PositionBox.h"
-#include "PositionOwnerBox.h"
 
 class Patch;
 class Node;
@@ -50,7 +48,7 @@ protected :
 
 private:
   PatchID patchID;
-  PositionBox<Patch> *positionBox;
+  Box<Patch,CompAtom> *positionBox;
   Box<Patch,Results> *forceBox;
 
 };

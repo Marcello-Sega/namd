@@ -83,15 +83,11 @@ void ComputePatch::atomUpdate() {
 void ComputePatch::doWork() {
   CompAtom* p;
   Results* r;
-  int numData;
 
   DebugM(3,patchID << ": doWork() called.\n");
 
   // Open up positionBox, forceBox
-  p = positionBox->open(&numData);
-  if (numData != numAtoms) {
-    NAMD_bug("doWork has opened a position box with wrong # atoms.");
-  }
+  p = positionBox->open();
   r = forceBox->open();
 
   // Pass pointers to doForce

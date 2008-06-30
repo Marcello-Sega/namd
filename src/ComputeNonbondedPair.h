@@ -26,7 +26,7 @@ protected :
 #else
   virtual void doForce(CompAtom* p[2], Results* r[2]);
 #endif
-  PositionBox<Patch> *avgPositionBox[2];
+  Box<Patch,CompAtom> *avgPositionBox[2];
 
   SubmitReduction *reduction;
   SubmitReduction *pressureProfileReduction;

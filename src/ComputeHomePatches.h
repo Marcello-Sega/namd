@@ -14,15 +14,13 @@
 
 #include "Box.h"
 #include "OwnerBox.h"
-#include "PositionBox.h"
-#include "PositionOwnerBox.h"
 
 class PatchElem {
   public:
     PatchID patchID;
     HomePatch *p;
-    PositionBox<Patch> *positionBox;
-    PositionBox<Patch> *avgPositionBox;
+    Box<Patch,CompAtom> *positionBox;
+    Box<Patch,CompAtom> *avgPositionBox;
     Box<Patch,Results> *forceBox;
     CompAtom *x;
     Results *r;
