@@ -74,7 +74,7 @@
 
 ComputeMgr::ComputeMgr()
 {
-    CpvAccess(BOCclass_group).computeMgr = thisgroup;
+    CkpvAccess(BOCclass_group).computeMgr = thisgroup;
     computeGlobalObject = 0;
     computeDPMEObject = 0;
     computeEwaldObject = 0;
@@ -110,7 +110,7 @@ void ComputeMgr::updateComputes2(CkQdMsg *msg)
 {
     delete msg;
 
-    CProxy_WorkDistrib wd(CpvAccess(BOCclass_group).workDistrib);
+    CProxy_WorkDistrib wd(CkpvAccess(BOCclass_group).workDistrib);
     WorkDistrib  *workDistrib = wd.ckLocalBranch();
 #if CHARM_VERSION > 050402
     workDistrib->saveComputeMapChanges(CkIndex_ComputeMgr::updateComputes3(),thisgroup);
@@ -127,7 +127,7 @@ void ComputeMgr::updateComputes3()
 void ComputeMgr::updateLocalComputes()
 {
     ComputeMap *computeMap = ComputeMap::Object();
-    CProxy_ProxyMgr pm(CpvAccess(BOCclass_group).proxyMgr);
+    CProxy_ProxyMgr pm(CkpvAccess(BOCclass_group).proxyMgr);
     ProxyMgr *proxyMgr = pm.ckLocalBranch();
 
     computeFlag = new int[computeMap->numComputes()];
@@ -183,7 +183,7 @@ void
 ComputeMgr::updateLocalComputes3()
 {
     ComputeMap *computeMap = ComputeMap::Object();
-    CProxy_ProxyMgr pm(CpvAccess(BOCclass_group).proxyMgr);
+    CProxy_ProxyMgr pm(CkpvAccess(BOCclass_group).proxyMgr);
     ProxyMgr *proxyMgr = pm.ckLocalBranch();
 
     ProxyMgr::nodecount = 0;
@@ -648,7 +648,7 @@ ComputeMgr::createComputes(ComputeMap *map)
 
 void ComputeMgr:: sendComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 {
-    (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalConfig(msg);
+    (CProxy_ComputeMgr(CkpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalConfig(msg);
 }
 
 void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
@@ -663,7 +663,7 @@ void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 
 void ComputeMgr:: sendComputeGlobalData(ComputeGlobalDataMsg *msg)
 {
-    CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
 #if CHARM_VERSION > 050402
     cm[0].recvComputeGlobalData(msg);
 #else
@@ -682,7 +682,7 @@ void ComputeMgr:: recvComputeGlobalData(ComputeGlobalDataMsg *msg)
 
 void ComputeMgr:: sendComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 {
-    (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalResults(msg);
+    (CProxy_ComputeMgr(CkpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalResults(msg);
 }
 
 void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
@@ -703,7 +703,7 @@ void ComputeMgr:: sendComputeEwaldData(ComputeEwaldMsg *msg)
     if (computeEwaldObject)
     {
         int node = computeEwaldObject->getMasterNode();
-        CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+        CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
 #if CHARM_VERSION > 050402
         cm[node].recvComputeEwaldData(msg);
 #else
@@ -727,7 +727,7 @@ void ComputeMgr:: recvComputeEwaldData(ComputeEwaldMsg *msg)
 
 void ComputeMgr:: sendComputeEwaldResults(ComputeEwaldMsg *msg)
 {
-    (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeEwaldResults(msg);
+    (CProxy_ComputeMgr(CkpvAccess(BOCclass_group).computeMgr)).recvComputeEwaldResults(msg);
 }
 
 void ComputeMgr::recvComputeEwaldResults(ComputeEwaldMsg *msg)
@@ -744,7 +744,7 @@ void ComputeMgr:: sendComputeDPMEData(ComputeDPMEDataMsg *msg)
     {
 #ifdef DPME
         int node = computeDPMEObject->getMasterNode();
-        CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+        CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
         cm.recvComputeDPMEData(msg,node);
 #endif
     }
@@ -766,7 +766,7 @@ void ComputeMgr:: recvComputeDPMEData(ComputeDPMEDataMsg *msg)
 
 void ComputeMgr:: sendComputeDPMEResults(ComputeDPMEResultsMsg *msg, int node)
 {
-    CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
 #if CHARM_VERSION > 050402
     cm[node].recvComputeDPMEResults(msg);
 #else
