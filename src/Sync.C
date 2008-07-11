@@ -68,20 +68,20 @@ void Sync::openSync(void)
       // Dont need proxy sync when immediate messges are turned on
       // If on BG/P, useProxySync should not be turned on for better performance
       #if !CMK_BLUEGENEP
-      // CmiPrintf("[%d] useProxySync is turned on. \n", CmiMyPe());
+      // CmiPrintf("[%d] useProxySync is turned on. \n", CkMyPe());
       useProxySync = 1;
       #endif
 #endif
     }
     // no proxies on this node, no need to use proxy sync.
     if (useProxySync && ProxyMgr::Object()->numProxies() == 0) {
-      // CmiPrintf("[%d] useProxySync is turned off because no proxy. \n", CmiMyPe());
+      // CmiPrintf("[%d] useProxySync is turned off because no proxy. \n", CkMyPe());
       useProxySync = 0;
     }
     // if no proxy sync and no home patch, then disable home patch sync as well
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
-  // CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CmiMyPe(), useSync, useProxySync);
+  // CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CkMyPe(), useSync, useProxySync);
 }    
 
 // called from Patch::positionsReady()
@@ -108,7 +108,7 @@ int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration)
       memcpy(tmp, clist, cnum*sizeof(_clist));
       delete [] clist;
       clist = tmp;
-      CmiPrintf("[%d] Info:: Sync buffer overflow and expanded!\n", CmiMyPe());
+      CmiPrintf("[%d] Info:: Sync buffer overflow and expanded!\n", CkMyPe());
     }
   }
 
