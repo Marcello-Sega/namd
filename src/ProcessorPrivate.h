@@ -32,29 +32,29 @@ class DebugFileTrace;
 
 // Instance Variables that maintain singletonness of classes
 
-CpvExtern(AtomMap*, AtomMap_instance);
-CpvExtern(BroadcastMgr*, BroadcastMgr_instance);
-CpvExtern(CollectionMaster*, CollectionMaster_instance);
-CpvExtern(CollectionMasterHandler*, CollectionMasterHandler_instance);
-CpvExtern(CollectionMgr*, CollectionMgr_instance);
-CpvExtern(ComputeMap*, ComputeMap_instance);
-CpvExtern(LdbCoordinator*, LdbCoordinator_instance);
-CpvExtern(Node*, Node_instance);
-CpvExtern(PatchMap*, PatchMap_instance);
-CpvExtern(PatchMgr*, PatchMgr_instance);
-CpvExtern(ProxyMgr*, ProxyMgr_instance);
-CpvExtern(ReductionMgr*, ReductionMgr_instance);
-CpvExtern(Sync*, Sync_instance);
+CkpvExtern(AtomMap*, AtomMap_instance);
+CkpvExtern(BroadcastMgr*, BroadcastMgr_instance);
+CkpvExtern(CollectionMaster*, CollectionMaster_instance);
+CkpvExtern(CollectionMasterHandler*, CollectionMasterHandler_instance);
+CkpvExtern(CollectionMgr*, CollectionMgr_instance);
+CkpvExtern(ComputeMap*, ComputeMap_instance);
+CkpvExtern(LdbCoordinator*, LdbCoordinator_instance);
+CkpvExtern(Node*, Node_instance);
+CkpvExtern(PatchMap*, PatchMap_instance);
+CkpvExtern(PatchMgr*, PatchMgr_instance);
+CkpvExtern(ProxyMgr*, ProxyMgr_instance);
+CkpvExtern(ReductionMgr*, ReductionMgr_instance);
+CkpvExtern(Sync*, Sync_instance);
 
 #ifdef PROCTRACE_DEBUG
-CpvExtern(DebugFileTrace*, DebugFileTrace_instance);
+CkpvExtern(DebugFileTrace*, DebugFileTrace_instance);
 #endif
 
 // Other static Variables
 
-CpvExtern(PatchMgr*, PatchMap_patchMgr);
-CpvExtern(BOCgroup, BOCclass_group);
-CpvExtern(Communicate*, comm);
+CkpvExtern(PatchMgr*, PatchMap_patchMgr);
+CkpvExtern(BOCgroup, BOCclass_group);
+CkpvExtern(Communicate*, comm);
 
 void ProcessorPrivateInit(void);
 
