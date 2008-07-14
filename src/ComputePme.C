@@ -316,7 +316,7 @@ private:
 #endif
 
 int isPmeProcessor(int p){ 
-  return CProxy_ComputePmeMgr::ckLocalBranch(CpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
+  return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
@@ -326,7 +326,7 @@ int ComputePmeMgr::isPmeProcessor(int p){
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
 				 pmeProxyDir(thisgroup), pmeCompute(0) {
 
-  CpvAccess(BOCclass_group).computePmeMgr = thisgroup;
+  CkpvAccess(BOCclass_group).computePmeMgr = thisgroup;
 
 #ifdef USE_COMM_LIB
   ComlibDelegateProxy(&pmeProxy);
@@ -1442,7 +1442,7 @@ ComputePme::ComputePme(ComputeID c) :
   DebugM(4,"ComputePme created.\n");
 
   CProxy_ComputePmeMgr::ckLocalBranch(
-	CpvAccess(BOCclass_group).computePmeMgr)->setCompute(this);
+	CkpvAccess(BOCclass_group).computePmeMgr)->setCompute(this);
 
   useAvgPositions = 1;
 
@@ -1697,7 +1697,7 @@ void ComputePme::doWork()
     sendPencils();
   } else {
 #if 0
-  CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
+  CProxy_ComputePmeMgr pmeProxy(CkpvAccess(BOCclass_group).computePmeMgr);
 #if CHARM_VERSION > 050402
   pmeProxy[CkMyPe()].sendGrid();
 #else
@@ -1904,7 +1904,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
 
   strayChargeErrors = 0;
 
-  CProxy_ComputePmeMgr pmeProxy(CpvAccess(BOCclass_group).computePmeMgr);
+  CProxy_ComputePmeMgr pmeProxy(CkpvAccess(BOCclass_group).computePmeMgr);
   for (int j=0; j<numRecipPes; j++) {
     int pe = recipPeOrder[j];  // different order
     int start = pe * bsize;
@@ -2239,7 +2239,7 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
     //NAMD_bug("PME ORB Allocator: Processors Unavailable\n");
     return false;
 
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
 
@@ -2448,7 +2448,7 @@ public:
 };
 
 void PmeZPencil::fft_init() {
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
 
@@ -2486,7 +2486,7 @@ void PmeZPencil::fft_init() {
 }
 
 void PmeYPencil::fft_init() {
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
 
@@ -2526,7 +2526,7 @@ void PmeYPencil::fft_init() {
 }
 
 void PmeXPencil::fft_init() {
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
 

@@ -18,10 +18,10 @@
 
 // Singleton method
 AtomMap *AtomMap::Instance() {
-  if (CpvAccess(AtomMap_instance) == 0) {
-    CpvAccess(AtomMap_instance) = new AtomMap;	// this is never deleted!
+  if (CkpvAccess(AtomMap_instance) == 0) {
+    CkpvAccess(AtomMap_instance) = new AtomMap;	// this is never deleted!
   }
-  return CpvAccess(AtomMap_instance);
+  return CkpvAccess(AtomMap_instance);
 }
 
 //----------------------------------------------------------------------

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: char $
- * $Date: 2008/06/30 22:55:39 $
- * $Revision: 1.1179 $
+ * $Author: gzheng $
+ * $Date: 2008/07/14 19:38:03 $
+ * $Revision: 1.1180 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -74,7 +74,7 @@ VARSIZE_MSG(ComputeMapChangeMsg,
 //----------------------------------------------------------------------
 WorkDistrib::WorkDistrib()
 {
-  CpvAccess(BOCclass_group).workDistrib = thisgroup;
+  CkpvAccess(BOCclass_group).workDistrib = thisgroup;
   mapsArrived = false;
   awaitingMaps = false;
 }
@@ -142,10 +142,10 @@ void WorkDistrib::doneSaveComputeMap() {
 int *WorkDistrib::caclNumAtomsInEachPatch(){
     StringList *current;
     int i;
-    CProxy_Node nd(CpvAccess(BOCclass_group).node);
+    CProxy_Node nd(CkpvAccess(BOCclass_group).node);
     Node *node = nd.ckLocalBranch();
     PatchMap *patchMap = PatchMap::Object();
-    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+    CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
     PatchMgr *patchMgr = pm.ckLocalBranch();
     SimParameters *params = node->simParameters;
     Molecule *molecule = node->molecule;
@@ -202,10 +202,10 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 {
   int i;
   StringList *current;	//  Pointer used to retrieve configuration items
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
   PatchMgr *patchMgr = pm.ckLocalBranch();
   SimParameters *params = node->simParameters;
   Molecule *molecule = node->molecule;
@@ -414,7 +414,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 void WorkDistrib::preCreateHomePatches(){
 
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
   PatchMgr *patchMgr = pm.ckLocalBranch();
 
   int numPatches = patchMap->numPatches();
@@ -453,7 +453,7 @@ void WorkDistrib::createHomePatches(void)
 {
   int i;
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
   PatchMgr *patchMgr = pm.ckLocalBranch();
 
   int numPatches = patchMap->numPatches();
@@ -461,7 +461,7 @@ void WorkDistrib::createHomePatches(void)
   FullAtomList *atoms = createAtomLists();
     
 #ifdef MEM_OPT_VERSION
-/*  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+/*  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   node->molecule->delEachAtomSigs();
   node->molecule->delMassChargeSpace();
@@ -492,7 +492,7 @@ void WorkDistrib::createHomePatches(void)
 
 void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Vector *velocities){
     // ref BOC
-    CProxy_Node nd(CpvAccess(BOCclass_group).node);
+    CProxy_Node nd(CkpvAccess(BOCclass_group).node);
     Node *node = nd.ckLocalBranch();
     PDB *pdb = node->pdb;
     SimParameters *params = node->simParameters;
@@ -500,7 +500,7 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
 
     const Lattice lattice = params->lattice;
 
-    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+    CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
     PatchMgr *patchMgr = pm.ckLocalBranch();
     // ref singleton
     PatchMap *patchMap = PatchMap::Object();
@@ -627,13 +627,13 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
 void WorkDistrib::initAndSendHomePatch(){
   StringList *current;
   // ref BOC
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   Molecule *molecule = node->molecule;
   PDB *pdb = node->pdb;
   SimParameters *params = node->simParameters;
 
-  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
   PatchMgr *patchMgr = pm.ckLocalBranch();
   // ref singleton
   PatchMap *patchMap = PatchMap::Object();
@@ -695,9 +695,9 @@ void WorkDistrib::initAndSendHomePatch(){
 
 void WorkDistrib::distributeHomePatches() {
   // ref BOC
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
-  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
   PatchMgr *patchMgr = pm.ckLocalBranch();
   // ref singleton
   PatchMap *patchMap = PatchMap::Object();
@@ -718,7 +718,7 @@ void WorkDistrib::distributeHomePatches() {
 void WorkDistrib::reinitAtoms() {
 
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
   PatchMgr *patchMgr = pm.ckLocalBranch();
 
   int numPatches = patchMap->numPatches();
@@ -817,7 +817,7 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 void WorkDistrib::patchMapInit(void)
 {
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *params = node->simParameters;
   Lattice lattice = params->lattice;
@@ -951,7 +951,7 @@ void WorkDistrib::assignNodeToPatch()
 //   int pid; 
 //   int assignedNode = 0;
 //   PatchMap *patchMap = PatchMap::Object();
-//   Node *node = CLocalBranch(Node, CpvAccess(BOCclass_group).node);
+//   Node *node = CLocalBranch(Node, CkpvAccess(BOCclass_group).node);
 
 //   int *numAtoms = new int[node->numNodes()];
 //   for (int i=0; i<node->numNodes(); i++) {
@@ -984,7 +984,7 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   int pid; 
   int assignedNode = 0;
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
 
@@ -1020,7 +1020,7 @@ void WorkDistrib::assignPatchesBitReversal()
 {
   int pid; 
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
 
   int ncpus = node->numNodes();
@@ -1090,7 +1090,7 @@ void WorkDistrib::sortNodesAndAssign(int *assignedNode, int baseNodes) {
   // if baseNodes is nonzero then this is a second call to set basenodes only
   int i, pid; 
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   int nnodes = node->numNodes();
   int npatches = patchMap->numPatches();
@@ -1133,7 +1133,7 @@ void WorkDistrib::assignPatchesRoundRobin()
 {
   int pid; 
   PatchMap *patchMap = PatchMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   int *assignedNode = new int[patchMap->numPatches()];
 
@@ -1187,7 +1187,7 @@ void WorkDistrib::mapComputes(void)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
 
   DebugM(3,"Mapping computes\n");
@@ -1274,7 +1274,7 @@ void WorkDistrib::mapComputeHomeTuples(ComputeType type)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
 
   int numNodes = node->numNodes();
@@ -1299,7 +1299,7 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
 {
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
 
   int numNodes = node->numNodes();
@@ -1351,7 +1351,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
 
   PatchID oneAway[PatchMap::MaxOneOrTwoAway];
@@ -1464,7 +1464,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   msg->compute = compute; // pointer is valid since send is to local Pe
   int type = compute->type();
 
-  CProxy_WorkDistrib wdProxy(CpvAccess(BOCclass_group).workDistrib);
+  CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
   switch ( type ) {
   case computeBondsType:
   case computeSelfBondsType:

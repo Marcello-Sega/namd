@@ -92,7 +92,7 @@ void ScriptTcl::setParameter(const char* param, const char* value) {
   ScriptParamMsg *msg = new ScriptParamMsg;
   strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
   strncpy(msg->value,value,MAX_SCRIPT_PARAM_SIZE);
-  (CProxy_Node(CpvAccess(BOCclass_group).node)).scriptParam(msg);
+  (CProxy_Node(CkpvAccess(BOCclass_group).node)).scriptParam(msg);
   barrier();
 }
 
@@ -100,7 +100,7 @@ void ScriptTcl::setParameter(const char* param, int value) {
   ScriptParamMsg *msg = new ScriptParamMsg;
   strncpy(msg->param,param,MAX_SCRIPT_PARAM_SIZE);
   sprintf(msg->value,"%d",value);
-  (CProxy_Node(CpvAccess(BOCclass_group).node)).scriptParam(msg);
+  (CProxy_Node(CkpvAccess(BOCclass_group).node)).scriptParam(msg);
   barrier();
 }
 
@@ -361,7 +361,7 @@ int ScriptTcl::Tcl_moveallby(ClientData clientData,
 
   MoveAllByMsg *msg = new MoveAllByMsg;
   msg->offset = Vector(x,y,z);
-  (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).moveAllBy(msg);
+  (CProxy_PatchMgr(CkpvAccess(BOCclass_group).patchMgr)).moveAllBy(msg);
 
   script->barrier();
   return TCL_OK;
@@ -406,7 +406,7 @@ int ScriptTcl::Tcl_move(ClientData clientData,
   msg->atomid = atomid - 1;
   msg->moveto = moveto;
   msg->coord = Vector(x,y,z);
-  (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).moveAtom(msg);
+  (CProxy_PatchMgr(CkpvAccess(BOCclass_group).patchMgr)).moveAtom(msg);
 
   script->barrier();
 
@@ -630,7 +630,7 @@ int ScriptTcl::Tcl_coorfile(ClientData clientData,
       script->state->lattice.set(a,b,c);
       SetLatticeMsg *msg = new SetLatticeMsg;
       msg->lattice = script->state->lattice;
-      (CProxy_PatchMgr(CpvAccess(BOCclass_group).patchMgr)).setLattice(msg);
+      (CProxy_PatchMgr(CkpvAccess(BOCclass_group).patchMgr)).setLattice(msg);
       script->barrier();
     }
     for (int i=0; i<numatoms; i++) {
@@ -745,7 +745,7 @@ int ScriptTcl::Tcl_consForceConfig(ClientData clientData,
     msg->aid.add(atomid);
     msg->f.add(force);
   }
-  (CProxy_ComputeMgr(CpvAccess(BOCclass_group).computeMgr)).recvComputeConsForceMsg(msg);
+  (CProxy_ComputeMgr(CkpvAccess(BOCclass_group).computeMgr)).recvComputeConsForceMsg(msg);
   return TCL_OK;
 }
 

@@ -49,7 +49,7 @@ private:
 public:
     Sync(void);
     ~Sync(void);
-    inline static Sync *Object() { return CpvAccess(Sync_instance); }
+    inline static Sync *Object() { return CkpvAccess(Sync_instance); }
     void openSync(); 
     int holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration);
     void PatchReady(void);

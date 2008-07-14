@@ -71,7 +71,7 @@ private:
 ComputeExtMgr::ComputeExtMgr() :
   extProxy(thisgroup), extCompute(0), numSources(0), numArrived(0),
   coordMsgs(0), coord(0), force(0), oldmsg(0), numAtoms(0) {
-  CpvAccess(BOCclass_group).computeExtMgr = thisgroup;
+  CkpvAccess(BOCclass_group).computeExtMgr = thisgroup;
 }
 
 ComputeExtMgr::~ComputeExtMgr() {
@@ -86,7 +86,7 @@ ComputeExt::ComputeExt(ComputeID c) :
   ComputeHomePatches(c)
 {
   CProxy_ComputeExtMgr::ckLocalBranch(
-	CpvAccess(BOCclass_group).computeExtMgr)->setCompute(this);
+	CkpvAccess(BOCclass_group).computeExtMgr)->setCompute(this);
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -151,7 +151,7 @@ void ComputeExt::doWork()
     (*ap).positionBox->close(&x);
   }
 
-  CProxy_ComputeExtMgr extProxy(CpvAccess(BOCclass_group).computeExtMgr);
+  CProxy_ComputeExtMgr extProxy(CkpvAccess(BOCclass_group).computeExtMgr);
 #if CHARM_VERSION > 050402
   extProxy[0].recvCoord(msg);
 #else

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: bhatele $
- * $Date: 2008/06/05 06:23:49 $
- * $Revision: 1.86 $
+ * $Author: gzheng $
+ * $Date: 2008/07/14 19:38:02 $
+ * $Revision: 1.87 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -134,8 +134,8 @@ void LdbCoordinator::ResumeFromSync()
 
 LdbCoordinator::LdbCoordinator()
 {
-  if (CpvAccess(LdbCoordinator_instance) == NULL) {
-    CpvAccess(LdbCoordinator_instance) = this;
+  if (CkpvAccess(LdbCoordinator_instance) == NULL) {
+    CkpvAccess(LdbCoordinator_instance) = this;
   } else {
     iout << iFILE << iERROR << iPE 
 	 << "LdbCoordinator instanced twice on same node!" << endi;
@@ -553,7 +553,7 @@ void LdbCoordinator::ExecuteMigrations(void)
   // This will barrier for all Nodes - (i.e. Computes must be
   // here and with proxies before anyone can start up
 
-  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
   ComputeMgr *computeMgr = cm.ckLocalBranch();
 #if CHARM_VERSION > 050402
   computeMgr->updateComputes(CkIndex_LdbCoordinator::

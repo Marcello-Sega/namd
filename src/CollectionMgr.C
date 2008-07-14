@@ -18,8 +18,8 @@
 CollectionMgr::CollectionMgr(SlaveInitMsg *msg) : master(msg->master)
 {
   delete msg;
-  if (CpvAccess(CollectionMgr_instance) == 0) {
-    CpvAccess(CollectionMgr_instance) = this;
+  if (CkpvAccess(CollectionMgr_instance) == 0) {
+    CkpvAccess(CollectionMgr_instance) = this;
   } else {
     DebugM(1, "CollectionMgr::CollectionMgr() - another instance of CollectionMgr exists!\n");
   }

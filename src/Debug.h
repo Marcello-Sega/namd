@@ -70,13 +70,13 @@ private:
     FILE *fp;
 public:
     inline static DebugFileTrace *Instance(char *fn){
-        if(CpvAccess(DebugFileTrace_instance)==0){
-            CpvAccess(DebugFileTrace_instance) = new DebugFileTrace(fn);
+        if(CkpvAccess(DebugFileTrace_instance)==0){
+            CkpvAccess(DebugFileTrace_instance) = new DebugFileTrace(fn);
         }
-        return CpvAccess(DebugFileTrace_instance);
+        return CkpvAccess(DebugFileTrace_instance);
     }
     inline static DebugFileTrace *Object(){
-        return CpvAccess(DebugFileTrace_instance);
+        return CkpvAccess(DebugFileTrace_instance);
     }
     DebugFileTrace(char *fn){
         if(fn==NULL) {

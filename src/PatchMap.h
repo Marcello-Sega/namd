@@ -25,7 +25,7 @@ class PatchMap
 {
 public:
   static PatchMap *Instance();
-  inline static PatchMap *Object() { return CpvAccess(PatchMap_instance); }
+  inline static PatchMap *Object() { return CkpvAccess(PatchMap_instance); }
 
   int sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 			const Lattice &lattice, BigReal patchSize,
@@ -44,7 +44,7 @@ public:
   enum { MaxOneOrTwoAway = MaxOneAway + MaxTwoAway };
 
   static void registerPatchMgr(PatchMgr *pmgr) {
-    CpvAccess(PatchMap_patchMgr) = pmgr;
+    CkpvAccess(PatchMap_patchMgr) = pmgr;
   }
 
   HomePatchList *homePatchList();

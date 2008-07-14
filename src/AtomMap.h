@@ -15,7 +15,7 @@ class AtomMap
 {
 public:
   static AtomMap *Instance();
-  inline static AtomMap *Object() {return CpvAccess(AtomMap_instance);}
+  inline static AtomMap *Object() {return CkpvAccess(AtomMap_instance);}
   ~AtomMap(void);
   void checkMap();
 

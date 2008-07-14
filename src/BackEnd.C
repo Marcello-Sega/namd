@@ -40,7 +40,7 @@ extern void _initCharm(int, char**);
 float cpuTime_start;
 float wallTime_start;
 
-CpvStaticDeclare(int,exitSchedHndlr);
+CkpvStaticDeclare(int,exitSchedHndlr);
 
 extern "C" void exit_sched(void* msg)
 {
@@ -50,14 +50,14 @@ extern "C" void exit_sched(void* msg)
 
 static void register_exit_sched(void)
 {
-  CpvInitialize(int,exitSchedHndlr);
-  CpvAccess(exitSchedHndlr) = CmiRegisterHandler((CmiHandler)exit_sched);
+  CkpvInitialize(int,exitSchedHndlr);
+  CkpvAccess(exitSchedHndlr) = CmiRegisterHandler((CmiHandler)exit_sched);
 }
 
 void BackEnd::ExitSchedOn(int pe)
 {
   void* msg = CmiAlloc(CmiMsgHeaderSizeBytes);
-  CmiSetHandler(msg,CpvAccess(exitSchedHndlr));
+  CmiSetHandler(msg,CkpvAccess(exitSchedHndlr));
   CmiSyncSendAndFree(pe,CmiMsgHeaderSizeBytes,(char *)msg);
 }
 

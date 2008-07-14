@@ -91,17 +91,17 @@ Node::Node(GroupInitMsg *msg)
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
   CApplicationInit();
 #endif
-  if (CpvAccess(Node_instance) == 0) {
-    CpvAccess(Node_instance) = this;
+  if (CkpvAccess(Node_instance) == 0) {
+    CkpvAccess(Node_instance) = this;
     eventEndOfTimeStep = traceRegisterUserEvent("EndOfTimeStep");
   } else {
     NAMD_bug("Node::Node() - another instance of Node exists!");
   }
 
-  CpvAccess(BOCclass_group) = msg->group;
+  CkpvAccess(BOCclass_group) = msg->group;
   delete msg;
 
-  CpvAccess(BOCclass_group).node = thisgroup;
+  CkpvAccess(BOCclass_group).node = thisgroup;
 
   startupPhase = 0;
 
@@ -120,15 +120,15 @@ Node::Node(GroupInitMsg *msg)
   computeMap = ComputeMap::Instance();
 
   DebugM(4,"Binding to BOC's\n");
-  CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
   patchMgr = pm.ckLocalBranch();
-  CProxy_ProxyMgr prm(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr prm(CkpvAccess(BOCclass_group).proxyMgr);
   proxyMgr = prm.ckLocalBranch();
-  CProxy_WorkDistrib wd(CpvAccess(BOCclass_group).workDistrib);
+  CProxy_WorkDistrib wd(CkpvAccess(BOCclass_group).workDistrib);
   workDistrib = wd.ckLocalBranch();
-  CProxy_ComputeMgr cm(CpvAccess(BOCclass_group).computeMgr);
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
   computeMgr = cm.ckLocalBranch();
-  CProxy_LdbCoordinator lc(CpvAccess(BOCclass_group).ldbCoordinator);
+  CProxy_LdbCoordinator lc(CkpvAccess(BOCclass_group).ldbCoordinator);
   ldbCoordinator = lc.ckLocalBranch();
 
 }
@@ -142,19 +142,19 @@ Node::~Node(void)
   delete computeMap;
   delete atomMap;
   delete patchMap;
-  delete CpvAccess(comm);
+  delete CkpvAccess(comm);
 }
 
 //----------------------------------------------------------------------
 // Startup Sequence
 
 void Node::messageStartUp() {
-  (CProxy_Node(CpvAccess(BOCclass_group).node)).startup();
+  (CProxy_Node(CkpvAccess(BOCclass_group).node)).startup();
 }
 
 void Node::startUp(CkQdMsg *qmsg) {
   delete qmsg;
-  (CProxy_Node(CpvAccess(BOCclass_group).node)).startup();
+  (CProxy_Node(CkpvAccess(BOCclass_group).node)).startup();
 }
 
 SimParameters *node_simParameters;
@@ -217,7 +217,7 @@ void Node::startup() {
 	
 	//set CollectionMgr and CollectionMasterHandler's field for CollectionMaster
 	CollectionMasterHandler::Object()->setRealMaster(collectionMaster);
-	CProxy_CollectionMgr cmgr(CpvAccess(BOCclass_group).collectionMgr);
+	CProxy_CollectionMgr cmgr(CkpvAccess(BOCclass_group).collectionMgr);
 	SlaveInitMsg *bcmaster = new SlaveInitMsg;
 	bcmaster->master = collectionMaster;
 	cmgr.setCollectionMaster(bcmaster);
@@ -265,7 +265,7 @@ void Node::startup() {
 
   case 4:
     if ( simParameters->PMEOn ) {
-      CProxy_ComputePmeMgr pme(CpvAccess(BOCclass_group).computePmeMgr);
+      CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
 #if CHARM_VERSION > 050402
       pme[CkMyPe()].initialize(new CkQdMsg);
 #else
@@ -276,7 +276,7 @@ void Node::startup() {
 
   case 5:
     if ( simParameters->PMEOn ) {
-      CProxy_ComputePmeMgr pme(CpvAccess(BOCclass_group).computePmeMgr);
+      CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
       pme[CkMyPe()].initialize_pencils(new CkQdMsg);
     }
     if (!CkMyPe()) {
@@ -290,7 +290,7 @@ void Node::startup() {
 
   case 6: 
     if ( simParameters->PMEOn ) {
-      CProxy_ComputePmeMgr pme(CpvAccess(BOCclass_group).computePmeMgr);
+      CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
       pme[CkMyPe()].activate_pencils(new CkQdMsg);
     }
     proxyMgr->createProxies();  // need Home patches before this
@@ -369,8 +369,8 @@ void Node::startup() {
 
 void Node::namdOneCommInit()
 {
-  if (CpvAccess(comm) == NULL) {
-    CpvAccess(comm) = new Communicate();
+  if (CkpvAccess(comm) == NULL) {
+    CkpvAccess(comm) = new Communicate();
 #ifdef DPMTA
     pvmc_init();
 #endif
@@ -420,15 +420,15 @@ void Node::namdOneRecv() {
   molecule = node_molecule = new Molecule(simParameters,parameters);
 
   DebugM(4, "Getting SimParameters\n");
-  conv_msg = CpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
+  conv_msg = CkpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
   simParameters->receive_SimParameters(conv_msg);
 
   DebugM(4, "Getting Parameters\n");
-  conv_msg = CpvAccess(comm)->newInputStream(0, STATICPARAMSTAG);
+  conv_msg = CkpvAccess(comm)->newInputStream(0, STATICPARAMSTAG);
   parameters->receive_Parameters(conv_msg);
 
   DebugM(4, "Getting Molecule\n");
-  conv_msg = CpvAccess(comm)->newInputStream(0, MOLECULETAG);
+  conv_msg = CkpvAccess(comm)->newInputStream(0, MOLECULETAG);
   molecule->receive_Molecule(conv_msg);
 
   DebugM(4, "Done Receiving\n");
@@ -441,11 +441,11 @@ void Node::namdOneSend() {
 
   // I'm Pe(0) so I send what I know
   DebugM(4, "Sending SimParameters\n");
-  simParameters->send_SimParameters(CpvAccess(comm));
+  simParameters->send_SimParameters(CkpvAccess(comm));
   DebugM(4, "Sending Parameters\n");
-  parameters->send_Parameters(CpvAccess(comm));
+  parameters->send_Parameters(CkpvAccess(comm));
   DebugM(4, "Sending Molecule\n");
-  molecule->send_Molecule(CpvAccess(comm));
+  molecule->send_Molecule(CkpvAccess(comm));
 }
 
 void Node::sendCharmArrProxies(AllCharmArrsMsg *msg){
@@ -495,7 +495,7 @@ void Node::buildSequencers() {
 // Node run() - broadcast to all nodes
 //-----------------------------------------------------------------------
 void Node::messageRun() {
-  (CProxy_Node(CpvAccess(BOCclass_group).node)).run();
+  (CProxy_Node(CkpvAccess(BOCclass_group).node)).run();
 }
 
 

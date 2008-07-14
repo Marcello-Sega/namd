@@ -279,7 +279,7 @@ public:
   void recvImmediateProxyAll(ProxyDataMsg *);
   void recvProxyAll(ProxyDataMsg *);
 
-  static ProxyMgr *Object() { return CpvAccess(ProxyMgr_instance); }
+  static ProxyMgr *Object() { return CkpvAccess(ProxyMgr_instance); }
   
   int numProxies() { return proxySet.size(); }
 

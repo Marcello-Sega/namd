@@ -20,10 +20,10 @@
 
 // Singleton method
 ComputeMap *ComputeMap::Instance() {
-  if (CpvAccess(ComputeMap_instance) == 0) {
-    CpvAccess(ComputeMap_instance) = new ComputeMap;	// this is never deleted
+  if (CkpvAccess(ComputeMap_instance) == 0) {
+    CkpvAccess(ComputeMap_instance) = new ComputeMap;	// this is never deleted
   }
-  return CpvAccess(ComputeMap_instance);
+  return CkpvAccess(ComputeMap_instance);
 }
 
 

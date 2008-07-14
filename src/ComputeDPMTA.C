@@ -125,7 +125,7 @@ void ComputeDPMTA::initialize()
   DebugM(2,"ComputeDPMTA creating\n");
   // comm should always be initialized by this point...
   // In the (bug) case that it isn't, then initialize it.
-  if (CpvAccess(comm) == NULL)
+  if (CkpvAccess(comm) == NULL)
   {
     NAMD_die("Communication protocol (Converse, PVM, etc.) not initialized.");
   }
@@ -183,7 +183,7 @@ void ComputeDPMTA::initialize()
   if (CkMyPe() != 0)
   {
     DebugM(2,"waiting for Init go-ahead\n");
-    MIStream *msg2 = CpvAccess(comm)->newInputStream(ANY, DPMTATAG);
+    MIStream *msg2 = CkpvAccess(comm)->newInputStream(ANY, DPMTATAG);
     int dummy;
     msg2->get(dummy);
     delete msg2;
@@ -279,13 +279,13 @@ void ComputeDPMTA::initialize()
   }
 
   // tell all nodes that it is OK to register
-  MOStream *msg = CpvAccess(comm)->newOutputStream(ALL, DPMTATAG, BUFSIZE);
+  MOStream *msg = CkpvAccess(comm)->newOutputStream(ALL, DPMTATAG, BUFSIZE);
   // don't actually put in data...  Nodes just need it as a flag.
   msg->put(TRUE);
   msg->end();
   delete msg;
   DebugM(2,"Init go-ahead\n");
-  MIStream *msg1 = CpvAccess(comm)->newInputStream(ANY, DPMTATAG);
+  MIStream *msg1 = CkpvAccess(comm)->newInputStream(ANY, DPMTATAG);
   int dummy1;
   msg1->get(dummy1);
   delete msg1;

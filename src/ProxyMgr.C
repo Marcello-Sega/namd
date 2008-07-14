@@ -334,7 +334,7 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
 int ProxyMgr::nodecount = 0;
 
 ProxyMgr::ProxyMgr() { 
-  if (CpvAccess(ProxyMgr_instance)) {
+  if (CkpvAccess(ProxyMgr_instance)) {
     NAMD_bug("Tried to create ProxyMgr twice.");
   }
   CkpvAccess(ProxyMgr_instance) = this;
@@ -342,7 +342,7 @@ ProxyMgr::ProxyMgr() {
 
 ProxyMgr::~ProxyMgr() { 
   removeProxies();
-  CpvAccess(ProxyMgr_instance) = NULL;
+  CkpvAccess(ProxyMgr_instance) = NULL;
 }
 
 
@@ -495,7 +495,7 @@ ProxyMgr::registerProxy(PatchID pid) {
   msg->node=CkMyPe();
   msg->patch = pid;
 
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
 #if CHARM_VERSION > 050402
   cp[node].recvRegisterProxy(msg);
 #else
@@ -519,7 +519,7 @@ ProxyMgr::unregisterProxy(PatchID pid) {
   msg->node=CkMyPe();
   msg->patch = pid;
 
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
 #if CHARM_VERSION > 050402
   cp[node].recvUnregisterProxy(msg);
 #else
@@ -565,7 +565,7 @@ ProxyMgr::buildProxySpanningTree2()
 void 
 ProxyMgr::sendProxies(int pid, int *list, int n)
 {
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp[0].recvProxies(pid, list, n);
 }
 
@@ -1056,7 +1056,7 @@ void ProxyMgr::recvNodeAwareSpanningTreeOnHomePatch(ProxyNodeAwareSpanningTreeMs
 
 void 
 ProxyMgr::sendSpanningTree(ProxySpanningTreeMsg *msg) {
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
 #if CHARM_VERSION > 050402
   cp[msg->tree[0]].recvSpanningTree(msg);
 #else
@@ -1065,7 +1065,7 @@ ProxyMgr::sendSpanningTree(ProxySpanningTreeMsg *msg) {
 }
 
 void ProxyMgr::sendNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   int pe = msg->allPes[0]; //the root procID
 
 #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
@@ -1240,7 +1240,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
     }
 
     //3. send msgs for the tree to the children proxies within the same (physical) node
-    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
     for(int i=0; i<iNChild; i++) {
         int pe = msg->allPes[i+1]; //excluding the root procID at allPes[0]
         #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
@@ -1269,7 +1269,7 @@ void ProxyMgr::recvNodeAwareSTParent(int patch, int parent){
 }
 
 void ProxyMgr::sendResults(ProxyResultVarsizeMsg *msg) {
-    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
     NodeID node = PatchMap::Object()->node(msg->patch);
   #if CHARM_VERSION > 050402
     cp[node].recvResults(msg);
@@ -1284,7 +1284,7 @@ void ProxyMgr::recvResults(ProxyResultVarsizeMsg *msg) {
 }
 
 void ProxyMgr::sendResults(ProxyResultMsg *msg) {
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   NodeID node = PatchMap::Object()->node(msg->patch);
 #if CHARM_VERSION > 050402
   cp[node].recvResults(msg);
@@ -1303,7 +1303,7 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
   ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
   ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
   if (cMsg) {
-    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
     int destPe = patch->getSpanningTreeParent();
     if(destPe != CkMyPe()) {
 #if CHARM_VERSION > 050402
@@ -1332,7 +1332,7 @@ ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
 void ProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg) {
   HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
   if (home) {
-    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
 #if CHARM_VERSION > 050402
     cp[CkMyPe()].recvResults(msg);
 #else
@@ -1343,7 +1343,7 @@ void ProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg) {
     ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
     ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
     if (cMsg) {
-      CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+      CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
 #if CHARM_VERSION > 050402
       cp[patch->getSpanningTreeParent()].recvImmediateResults(cMsg);
 #else
@@ -1355,7 +1355,7 @@ void ProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg) {
 
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp.recvImmediateProxyData(msg,pcnt,pids);
 }
 
@@ -1379,19 +1379,19 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
       #if 0
       //ChaoMei: buggy code??? the spanning tree doesn't always have 2 levels
       //At the second level of the tree immediate messages are not needed
-      CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+      CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
       cp.recvProxyData(newmsg,npid,pids);
       #endif
     }
   }
   /* send to self via EP method to preserve priority */
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp[CkMyPe()].recvProxyData(msg);
 }
 
 void
 ProxyMgr::sendProxyAll(ProxyDataMsg *msg, int pcnt, int *pids) {
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp.recvImmediateProxyAll(msg,pcnt,pids);
 }
 
@@ -1422,7 +1422,7 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
     }
   }
   /* send to self via EP method to preserve priority */
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp[CkMyPe()].recvProxyAll(msg);
 }
 

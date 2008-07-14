@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
- * $Author: bhatele $
- * $Date: 2007/11/01 17:42:35 $
- * $Revision: 1.1024 $
+ * $Author: gzheng $
+ * $Date: 2008/07/14 19:38:02 $
+ * $Revision: 1.1025 $
  *****************************************************************************/
 
 #ifndef PATCHMGR_H
@@ -98,7 +98,7 @@ public:
   PatchMgr();
   ~PatchMgr();
 
-  static PatchMgr* Object() { return CpvAccess(PatchMgr_instance); }
+  static PatchMgr* Object() { return CkpvAccess(PatchMgr_instance); }
   
   void createHomePatch(PatchID pid, FullAtomList a);
 

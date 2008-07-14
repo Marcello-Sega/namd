@@ -25,10 +25,10 @@
 
 // Safe singleton creation
 PatchMap *PatchMap::Instance() {
-  if (CpvAccess(PatchMap_instance) == 0) {
-     CpvAccess(PatchMap_instance) = new PatchMap;
+  if (CkpvAccess(PatchMap_instance) == 0) {
+     CkpvAccess(PatchMap_instance) = new PatchMap;
   }
-  return(CpvAccess(PatchMap_instance));
+  return(CkpvAccess(PatchMap_instance));
 }
 
 
@@ -309,12 +309,12 @@ void PatchMap::unpack (char *ptr)
 //----------------------------------------------------------------------
 int PatchMap::numHomePatches(void)
 {
-  return CpvAccess(PatchMap_patchMgr)->homePatches.size();
+  return CkpvAccess(PatchMap_patchMgr)->homePatches.size();
 }
 
 //----------------------------------------------------------------------
 HomePatchList *PatchMap::homePatchList() {
-  return &(CpvAccess(PatchMap_patchMgr)->homePatches);
+  return &(CkpvAccess(PatchMap_patchMgr)->homePatches);
 }
 
 //----------------------------------------------------------------------

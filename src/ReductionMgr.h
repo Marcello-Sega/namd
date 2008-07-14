@@ -247,7 +247,7 @@ public:
 
   // Singleton Access method
   inline static ReductionMgr *Object(void) {
-    return CpvAccess(ReductionMgr_instance);
+    return CkpvAccess(ReductionMgr_instance);
   }
 
   ReductionMgr();

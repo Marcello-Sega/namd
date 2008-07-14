@@ -40,8 +40,8 @@ int useProxySync = 0;
 
 Sync::Sync(): INCREASE(600), step(0), counter(0), homeReady(0)
 {
-    if (CpvAccess(Sync_instance) == NULL) {
-        CpvAccess(Sync_instance) = this;
+    if (CkpvAccess(Sync_instance) == NULL) {
+        CkpvAccess(Sync_instance) = this;
     } else {
 	iout << iFILE << iERROR << iPE
 	  << "Sync instanced twice on same processor!" << endi;

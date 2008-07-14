@@ -109,8 +109,8 @@ void ReductionSet::delData(int seqNum) {
 
 // constructor
 ReductionMgr::ReductionMgr() {
-    if (CpvAccess(ReductionMgr_instance) == 0) {
-      CpvAccess(ReductionMgr_instance) = this;
+    if (CkpvAccess(ReductionMgr_instance) == 0) {
+      CkpvAccess(ReductionMgr_instance) = this;
     } else {
       DebugM(1, "ReductionMgr::ReductionMgr() - another instance exists!\n");
     }

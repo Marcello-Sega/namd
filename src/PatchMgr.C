@@ -39,8 +39,8 @@ PatchMgr::PatchMgr()
     // CkPrintf("[%d] PatchMgr Created\n", CkMyPe());
 
     // Singleton pattern
-    if (CpvAccess(PatchMgr_instance) == NULL) {
-	CpvAccess(PatchMgr_instance) = this;
+    if (CkpvAccess(PatchMgr_instance) == NULL) {
+	CkpvAccess(PatchMgr_instance) = this;
     } else {
 	iout << iFILE << iERROR << iPE 
 	  << "PatchMgr instanced twice on same processor!" << endi;

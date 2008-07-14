@@ -58,7 +58,7 @@ class ComputeMap
 {
 public:
   static ComputeMap *Instance();
-  inline static ComputeMap *Object() { return CpvAccess(ComputeMap_instance); }
+  inline static ComputeMap *Object() { return CkpvAccess(ComputeMap_instance); }
 
   void checkMap();
 

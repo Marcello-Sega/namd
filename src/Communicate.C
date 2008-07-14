@@ -8,9 +8,9 @@
 #include <stdlib.h>
 #include "Communicate.h"
 #include "MStream.h"
-#include "converse.h"
+#include "charm++.h"
 
-CpvStaticDeclare(CmmTable, CsmMessages);
+CkpvStaticDeclare(CmmTable, CsmMessages);
 
 static void CsmHandler(void *msg)
 {
@@ -18,14 +18,14 @@ static void CsmHandler(void *msg)
   // get start of user message
   int *m = (int *) ((char *)msg+CmiMsgHeaderSizeBytes);
   // sending node  & tag act as tags
-  CmmPut(CpvAccess(CsmMessages), 2, m, msg);
+  CmmPut(CkpvAccess(CsmMessages), 2, m, msg);
 }
 
 Communicate::Communicate(void) 
 {
-  CpvInitialize(CmmTable, CsmMessages);
+  CkpvInitialize(CmmTable, CsmMessages);
   CsmHandlerIndex = CmiRegisterHandler((CmiHandler) CsmHandler);
-  CpvAccess(CsmMessages) = CmmNew();
+  CkpvAccess(CsmMessages) = CmmNew();
 }
 
 
@@ -54,7 +54,7 @@ void *Communicate::getMessage(int PE, int tag)
 
   itag[0] = (PE==(-1)) ? (CmmWildCard) : PE;
   itag[1] = (tag==(-1)) ? (CmmWildCard) : tag;
-  while((msg=CmmGet(CpvAccess(CsmMessages),2,itag,rtag))==0) {
+  while((msg=CmmGet(CkpvAccess(CsmMessages),2,itag,rtag))==0) {
     CmiDeliverMsgs(0);
   }
   return msg;

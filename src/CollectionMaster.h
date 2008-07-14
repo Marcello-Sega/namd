@@ -26,7 +26,7 @@ class CollectionMaster : public Chare
 public:
 
   static CollectionMaster *Object() { 
-    return CpvAccess(CollectionMaster_instance); 
+    return CkpvAccess(CollectionMaster_instance); 
   }
   CollectionMaster();
   ~CollectionMaster(void);
@@ -167,7 +167,7 @@ class CollectionMasterHandler : public Chare
 public:
 
   static CollectionMasterHandler *Object() { 
-    return CpvAccess(CollectionMasterHandler_instance); 
+    return CkpvAccess(CollectionMasterHandler_instance); 
   }
   CollectionMasterHandler(MasterHandlerInitMsg *);
   ~CollectionMasterHandler(void);

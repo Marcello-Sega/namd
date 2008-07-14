@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
- * $Author: bhatele $
- * $Date: 2008/06/05 06:23:49 $
- * $Revision: 1.39 $
+ * $Author: gzheng $
+ * $Date: 2008/07/14 19:38:02 $
+ * $Revision: 1.40 $
  *****************************************************************************/
 
 #ifndef LDBCOORDINATOR_H
@@ -45,7 +45,7 @@ public:
   LdbCoordinator();
   ~LdbCoordinator(void);
   static LdbCoordinator *Object()  { 
-    return CpvAccess(LdbCoordinator_instance); 
+    return CkpvAccess(LdbCoordinator_instance); 
   }
 
   void initialize(PatchMap *pmap, ComputeMap *cmap, int reinit=0);

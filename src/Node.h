@@ -81,7 +81,7 @@ public:
   ~Node(void);
 
   // Singleton Access method
-  inline static Node *Object() {return CpvAccess(Node_instance);}
+  inline static Node *Object() {return CkpvAccess(Node_instance);}
 
   // Run for the number of steps specified in the sim_parameters
   static void messageRun();

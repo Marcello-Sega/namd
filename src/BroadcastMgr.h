@@ -88,13 +88,13 @@ class BroadcastMgr : public BOCclass
 {
 public:
   BroadcastMgr() { 
-    CpvAccess(BroadcastMgr_instance) = this; 
+    CkpvAccess(BroadcastMgr_instance) = this; 
   }
   ~BroadcastMgr(void);
 	  
   // Singleton Access method
   inline static BroadcastMgr *Object() {
-    return CpvAccess(BroadcastMgr_instance);
+    return CkpvAccess(BroadcastMgr_instance);
   }
 
   int getbuf(BroadcastClient &b, int tag, void* msg);

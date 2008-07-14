@@ -22,8 +22,8 @@
 CollectionMasterHandler::CollectionMasterHandler(MasterHandlerInitMsg *msg): realMaster(msg->master)
 {
   delete msg;
-  if (CpvAccess(CollectionMasterHandler_instance) == 0) {
-    CpvAccess(CollectionMasterHandler_instance) = this;
+  if (CkpvAccess(CollectionMasterHandler_instance) == 0) {
+    CkpvAccess(CollectionMasterHandler_instance) = this;
   } else {
     DebugM(1, "CollectionMasterHandler::CollectionMasterHandler() - another instance of CollectionMasterHandler exists!\n");
   }
@@ -83,8 +83,8 @@ void CollectionMasterHandler::enqueueVelocities(CkQdMsg *qmsg){
 
 CollectionMaster::CollectionMaster()
 {
-  if (CpvAccess(CollectionMaster_instance) == 0) {
-    CpvAccess(CollectionMaster_instance) = this;
+  if (CkpvAccess(CollectionMaster_instance) == 0) {
+    CkpvAccess(CollectionMaster_instance) = this;
   } else {
     DebugM(1, "CollectionMaster::CollectionMaster() - another instance of CollectionMaster exists!\n");
   }

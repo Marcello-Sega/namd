@@ -28,7 +28,7 @@ class CollectionMgr : public BOCclass
 public:
 
   static CollectionMgr *Object() { 
-    return CpvAccess(CollectionMgr_instance); 
+    return CkpvAccess(CollectionMgr_instance); 
   }
   CollectionMgr(SlaveInitMsg *msg);
   ~CollectionMgr(void);

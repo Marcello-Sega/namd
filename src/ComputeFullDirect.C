@@ -132,9 +132,9 @@ void ComputeFullDirect::doWork()
   register BigReal *remote_ptr;
   register BigReal *end_ptr;
 
-  MOStream *sendDataMsg=CpvAccess(comm)->
+  MOStream *sendDataMsg=CkpvAccess(comm)->
 		newOutputStream(sendDataPE, FULLTAG, BUFSIZE);
-  MIStream *recvDataMsg=CpvAccess(comm)->
+  MIStream *recvDataMsg=CkpvAccess(comm)->
 		newInputStream(recvDataPE, FULLTAG);
 
   for ( int stage = 0; stage < numStages; ++stage )
@@ -143,7 +143,7 @@ void ComputeFullDirect::doWork()
     if ( stage > 1 )
     {
       DebugM(4,"send remoteResults to sendResultsPE " << sendResultsPE << "\n");
-      MOStream *msg=CpvAccess(comm)->
+      MOStream *msg=CkpvAccess(comm)->
 		newOutputStream(sendResultsPE, FULLFORCETAG, BUFSIZE);
       msg->put(3*oldNumRemoteAtoms,remoteResults);
       delete [] remoteResults;
@@ -210,7 +210,7 @@ void ComputeFullDirect::doWork()
     {
       DebugM(4,"receive newLocalResults from recvResultsPE "
 						<< recvResultsPE << "\n");
-      MIStream *msg=CpvAccess(comm)->
+      MIStream *msg=CkpvAccess(comm)->
 		newInputStream(recvResultsPE, FULLFORCETAG);
       msg->get(3*numLocalAtoms,newLocalResults);
       delete msg;
