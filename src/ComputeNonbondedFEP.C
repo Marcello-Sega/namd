@@ -67,21 +67,7 @@ inline void ti_vdw_force_energy_dUdl (BigReal A, BigReal B, BigReal r2,
             * switchmul;  // dU/dlambda
   *alch_vdw_energy *= myVdwLambda*switchmul;
 }
-  
-/* ************************************************************************* */
-/* Explicit shifted potential to replace long-range PME electrostatics       */
-/* with a short-range substitute - achieves the main objectives of alchemical*/
-/* decoupling more cheaply than doing it as pure PME                         */
-/* ***************************************************************************/
-inline void shiftedpotential(BigReal r2, BigReal cutoff2, BigReal kqq,
-  BigReal myElecLambda, BigReal* shiftedElec, BigReal* shiftedElecForce) {
-  const BigReal r = sqrt(r2);
-  BigReal shiftVal = r2/cutoff2 - 1.0; shiftVal *= shiftVal;
-  BigReal dShiftVal = 2.0 * (r2/cutoff2 - 1.0) * 2.0*r/cutoff2;
-  *shiftedElec = - kqq * shiftVal / r;
-  *shiftedElecForce = - kqq \
-    * (dShiftVal/r - shiftVal/r2) * (1 / r) * (1 - myElecLambda);
-}
+
 
 #define FEPFLAG
 #define CALCENERGY

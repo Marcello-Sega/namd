@@ -37,6 +37,10 @@ public:
   int qsize, fsize, bsize;
   int fepOn, thermInt, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int decouple;
+  BigReal fepElecLambdaStart;
+  BigReal elecLambdaUp;
+  BigReal elecLambdaDown;
+  
   double **q_arr;
   char *f_arr;
   char *fz_arr;

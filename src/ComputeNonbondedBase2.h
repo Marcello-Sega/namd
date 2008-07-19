@@ -20,9 +20,6 @@ ALCHPAIR(
   FEP(myVdwLambda2 = ALCH1(vdwLambda2Up) ALCH2(vdwLambda2Down);) 
   myVdwShift =  ALCH1(vdwShiftUp) ALCH2(vdwShiftDown); 
   FEP(myVdwShift2 =  ALCH1(vdwShift2Up) ALCH2(vdwShift2Down);) 
-  // local decoupling scheme shouldn't scale intra-partition vdW
-  LOCALDECOUPLE(myVdwLambda = FEP( myVdwLambda2 = ) 1;)
-  LOCALDECOUPLE(myVdwShift = FEP( myVdwShift2 = ) 0;)
 )
 
 #ifdef ARCH_POWERPC
@@ -140,10 +137,6 @@ ALCHPAIR(
         TI(ti_vdw_force_energy_dUdl(A,B,r2,myVdwShift,switchdist2,
           cutoff2, myVdwLambda, fepVdwShiftCoeff, switchfactor, 
           &alch_vdw_energy, &alch_vdw_force, &alch_vdw_dUdl);)
-        LOCALDECOUPLE(shiftedpotential(r2,cutoff2,kqq,myElecLambda,
-          &shiftedElec,&shiftedElecForce);
-          MODIFIED(shiftedElec *= (1.0-modf_mod);)
-          MODIFIED(shiftedElecForce *= (1.0-modf_mod);))
       )
       
       NOT_ALCHPAIR(ENERGY(
@@ -156,10 +149,8 @@ ALCHPAIR(
       ALCHPAIR(
         ENERGY(vdwEnergy   += alch_vdw_energy;)
         FEP(vdwEnergy_s += alch_vdw_energy_2;)
-        TI(ALCH1(vdwEnergy_ti_1) ALCH2(vdwEnergy_ti_2) +=
-            alch_vdw_dUdl LOCALDECOUPLE( * 0);)
-            // LOCALDECOUPLE pairs: no vdW scaling, don't count towards total
-        ) // ALCHPAIR
+        TI(ALCH1(vdwEnergy_ti_1) ALCH2(vdwEnergy_ti_2) += alch_vdw_dUdl;)
+      ) // ALCHPAIR
       
 #endif // FAST
 
@@ -201,15 +192,10 @@ ALCHPAIR(
       ALCHPAIR(
         ENERGY(electEnergy   -= myElecLambda * fast_val;)
         FEP(electEnergy_s -= myElecLambda2 * fast_val;)
-        LOCALDECOUPLE(
-          ENERGY(electEnergy -= (1-myElecLambda) * shiftedElec;)
-          FEP(electEnergy_s -= (1-myElecLambda2) * shiftedElec;)
-        )
         TI(
           NOENERGY(register BigReal fast_val = 
             ( ( diffa * fast_d * (1/6.)+ fast_c * (1/4.)) * diffa + fast_b *(1/2.)) * diffa + fast_a;)
           ALCH1(electEnergy_ti_1) ALCH2(electEnergy_ti_2)  -= fast_val;
-          LOCALDECOUPLE(ALCH1(electEnergy_ti_1) ALCH2(electEnergy_ti_2) += shiftedElec;)
         )
       )
 
@@ -235,7 +221,7 @@ ALCHPAIR(
       BigReal force_r =  LAM(lambda_pair *) fast_dir;
       ALCHPAIR(
         force_r *= myElecLambda; 
-        force_r += alch_vdw_force LOCALDECOUPLE( + shiftedElecForce);
+        force_r += alch_vdw_force;
         // special ALCH forces already multiplied by relevant lambda
       )
           
@@ -350,20 +336,12 @@ ALCHPAIR(
       ) // ENERGY
           
       ALCHPAIR(
-        // PME is not scaled, so we use "lambda", not elecLambda
-        ENERGY(fullElectEnergy   -= myLambda * slow_val;)
-        FEP(fullElectEnergy_s -= myLambda2 * slow_val;)
-        LOCALDECOUPLE(FAST(NOSHORT(
-          //complement the lambda*elect with (1-lambda) * a shifted potential
-          ENERGY(fullElectEnergy -= (1-myElecLambda) * shiftedElec;)
-          FEP(fullElectEnergy_s -= (1-myElecLambda2) * shiftedElec;)
-        )))
-
+        ENERGY(fullElectEnergy   -= myElecLambda * slow_val;)
+        FEP(fullElectEnergy_s -= myElecLambda2 * slow_val;)
         TI(
           NOENERGY(register BigReal slow_val =
 	        ( ( diffa * slow_d *(1/6.)+ slow_c * (1/4.)) * diffa + slow_b *(1/2.)) * diffa + slow_a;)
-          ALCH1(fullElectEnergy_ti_1) ALCH2(fullElectEnergy_ti_2) -= slow_val \
-            LOCALDECOUPLE(FAST(NOSHORT(- shiftedElec)));
+          ALCH1(fullElectEnergy_ti_1) ALCH2(fullElectEnergy_ti_2) -= slow_val;
         )
       )
 
@@ -389,10 +367,9 @@ ALCHPAIR(
       register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
       BigReal fullforce_r = slow_dir LAM(* lambda_pair);
       ALCHPAIR (
-        // PME is not scaled, so we use "lambda", not lambda_elec
-        fullforce_r *= myLambda;
+        fullforce_r *= myElecLambda;
         FAST( NOSHORT(
-          fullforce_r += alch_vdw_force LOCALDECOUPLE(+shiftedElecForce);
+          fullforce_r += alch_vdw_force;
         ))
       )
           

@@ -93,12 +93,6 @@ public:
   ResizeArray<plint> pairlistnA2;
   ResizeArray<plint> pairlistxA2;
   ResizeArray<plint> pairlistmA2;
-  ResizeArray<plint> pairlistnA3;
-  ResizeArray<plint> pairlistxA3;
-  ResizeArray<plint> pairlistmA3;
-  ResizeArray<plint> pairlistnA4;
-  ResizeArray<plint> pairlistxA4;
-  ResizeArray<plint> pairlistmA4;
   
   ResizeArray<plint> pairlist;
   ResizeArray<plint> pairlist2;

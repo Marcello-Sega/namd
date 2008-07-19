@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: char $
- * $Date: 2008/06/30 22:55:39 $
- * $Revision: 1.1254 $
+ * $Date: 2008/07/19 01:12:20 $
+ * $Revision: 1.1255 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -746,8 +746,8 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("tiVdwLambdaEnd", NOT_NEGATIVE);  
 // end TI options
 
-   opts.optional("main", "decouple", "Alchemical decoupling mode",
-     PARSE_STRING);
+   opts.optionalB("main", "decouple", "Enable alchemical decoupling?",
+     &decouple, FALSE);
 
    opts.optionalB("main", "les", "Is locally enhanced sampling enabled?",
      &lesOn, FALSE);
@@ -2117,6 +2117,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      }
    } else {
      lambda = lambda2 = 0;
+     fepElecLambdaStart = 0;
      fepOutFile[0] = STRINGNULL;
    }
 
@@ -2142,32 +2143,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      tiOutFile[0] = STRINGNULL;
    }
 
-   if (!opts.defined("decouple")) {
-     decouple = 0;
-   } else {
-     opts.get("decouple", s);
-     if (!strcasecmp(s, "none"))
-     {
-        decouple = 0;
-     }
-     else if (!strcasecmp(s, "full"))
-     {
-        decouple = 1; // decouple with full PME handling of electrostatics
-     }
-     else if (!strcasecmp(s, "local"))
-     {
-        decouple = 2; // replace full electrotsatics with local shifted
-                      // potential (cheaper, fine in thermodynamic cycle)
-     }
-     else
-     {
-        char err_msg[128];
-        sprintf(err_msg, "Illegal value '%s' for 'decouple' in configuration \
-        file", s);
-        NAMD_die(err_msg);
-     }
-   }
-
 //fepe
 
    if ( fepOn && thermInt )
@@ -2176,6 +2151,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("Sorry, combined LES and FEP is not implemented.");
    if ( thermInt && lesOn )
      NAMD_die("Sorry, combined LES and TI is not implemented.");
+   if ( decouple && (! (fepOn || thermInt) ) ) 
+     NAMD_die("Alchemcial decoupling was requested but alchemical free \
+       energy calculation is not active.");
 
    if (thermInt) {
      //merge TI variables into FEP ones, so TI can leech off some FEP code paths

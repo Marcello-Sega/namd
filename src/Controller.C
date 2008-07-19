@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: char $
- * $Date: 2008/06/30 22:55:38 $
- * $Revision: 1.1220 $
+ * $Date: 2008/07/19 01:12:20 $
+ * $Revision: 1.1221 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1285,7 +1285,8 @@ void Controller::printEnergies(int step, int minimize)
 
       electEnergySlow_ti_1 = reduction->item(REDUCTION_ELECT_ENERGY_SLOW_TI_1);
       electEnergySlow_ti_2 = reduction->item(REDUCTION_ELECT_ENERGY_SLOW_TI_2);
-      electEnergyPME_ti = reduction->item(REDUCTION_ELECT_ENERGY_PME_TI);
+      electEnergyPME_ti_1 = reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_1);
+      electEnergyPME_ti_2 = reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_2);
 //fepe
     }
 
@@ -1723,7 +1724,6 @@ void Controller::outputTiEnergy(int step) {
     net_dEdl_elec_2 = 0;
     net_dEdl_lj_1 = 0;
     net_dEdl_lj_2 = 0;
-    net_dEdl_PME = 0;
   }
   if (stepInRun == 0 || (! ((step - 1) % simParams->fepOutFreq))) {
     // output of instantaneous dU/dl now replaced with running average
@@ -1733,20 +1733,17 @@ void Controller::outputTiEnergy(int step) {
     recent_dEdl_elec_2 = 0;
     recent_dEdl_lj_1 = 0;
     recent_dEdl_lj_2 = 0;
-    recent_dEdl_PME = 0;
   }
   TiNo++;
   recent_TiNo++;
-  // since PME is currently scaled by global lambda (not affected by 
-  // elecLambdaStart), add slow local electrostatics to PME total
-  net_dEdl_elec_1 += electEnergy_ti_1; //+ electEnergySlow_ti_1;
-  net_dEdl_elec_2 += electEnergy_ti_2; //+ electEnergySlow_ti_2;
-  net_dEdl_PME += electEnergyPME_ti + electEnergySlow_ti_1 - electEnergySlow_ti_2;
+  // FB - PME is no longer scaled by global lambda, but by the respective
+  // lambda as dictated by elecLambdaStart. All electrostatics now go together.
+  net_dEdl_elec_1 += electEnergy_ti_1 + electEnergySlow_ti_1 + electEnergyPME_ti_1;
+  net_dEdl_elec_2 += electEnergy_ti_2 + electEnergySlow_ti_2 + electEnergyPME_ti_2;
   net_dEdl_lj_1 += ljEnergy_ti_1;
   net_dEdl_lj_2 += ljEnergy_ti_2;
-  recent_dEdl_elec_1 += electEnergy_ti_1;  //+ electEnergySlow_ti_1;
-  recent_dEdl_elec_2 += electEnergy_ti_2;  //+ electEnergySlow_ti_2;
-  recent_dEdl_PME += electEnergyPME_ti + electEnergySlow_ti_1 - electEnergySlow_ti_2;
+  recent_dEdl_elec_1 += electEnergy_ti_1 + electEnergySlow_ti_1 + electEnergyPME_ti_1; 
+  recent_dEdl_elec_2 += electEnergy_ti_2 + electEnergySlow_ti_2 + electEnergyPME_ti_2; 
   recent_dEdl_lj_1 += ljEnergy_ti_1;
   recent_dEdl_lj_2 += ljEnergy_ti_2;
 
@@ -1819,8 +1816,6 @@ void Controller::writeTiEnergyData(int step, std::ofstream &file) {
   tiFile << FORMAT(net_dEdl_elec_2/TiNo);
   tiFile << FORMAT(recent_dEdl_lj_2 / recent_TiNo);
   tiFile << FORMAT(net_dEdl_lj_2/TiNo);
-  tiFile << FORMAT(recent_dEdl_PME / recent_TiNo);
-  tiFile << FORMAT(net_dEdl_PME/TiNo);
   tiFile << std::endl;
 }
 

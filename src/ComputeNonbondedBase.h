@@ -349,10 +349,8 @@ void ComputeNonbondedUtil :: NAME
   // 0: non-alchemical pairs, partition 0 <-> partition 0
   // 1: atoms scaled up as lambda increases, p0<->p1
   // 2: atoms scaled down as lambda increases, p0<->p2
-  // 3: p1<->p1 (treatment depends on decoupling choice)
-  // 4: p2<->p2 (treatment depends on decoupling choice)
   // all p1<->p2 interactions to be dropped (99)
-  // so in general, 'up' refers to 1, 'down' refers to 2
+  // in general, 'up' refers to 1, 'down' refers to 2
   for (int ip=0; ip<3; ++ip) {
     for (int jp=0; jp<3; ++jp ) {
       pswitchTable[ip+3*jp] = 0;
@@ -360,29 +358,20 @@ void ComputeNonbondedUtil :: NAME
       if ((ip==2 && jp==0) || (ip==0 && jp==2)) pswitchTable[ip+3*jp] = 2;
       if (ip + jp == 3) pswitchTable[ip+3*jp] = 99; // no interaction
 
-      if (ComputeNonbondedUtil::decouple == 0) {
-        // no decoupling: intractions within a partition are treated like
+      if (! ComputeNonbondedUtil::decouple) {
+        // no decoupling: interactions within a partition are treated like
         // normal alchemical pairs
         if (ip == 1 && jp == 1) pswitchTable[ip+3*jp] = 1;
         if (ip == 2 && jp == 2) pswitchTable[ip+3*jp] = 2;
       }
-      if (ComputeNonbondedUtil::decouple == 1) {
-        // 'full' decoupling: PME calculates extra grids so that while PME 
+      if (ComputeNonbondedUtil::decouple) {
+        // decoupling: PME calculates extra grids so that while PME 
         // interaction with the full system is switched off, a new PME grid
         // containing only alchemical atoms is switched on. Full interactions 
         // between alchemical atoms are maintained; potentials within one 
         // partition need not be scaled here.
         if (ip == 1 && jp == 1) pswitchTable[ip+3*jp] = 0;
         if (ip == 2 && jp == 2) pswitchTable[ip+3*jp] = 0;
-      }
-      if (ComputeNonbondedUtil::decouple == 2) {
-        // 'local' decoupling: instead of replacing full interactions with a 
-        // relatively expensive extra PME grid, put in a local shifted 
-        // electrostatics potential when interactions with rest of system are 
-        // switched off (and account for energy)
-        // => scale down PME corr potential linearly, scale up shifted elec
-        if (ip == 1 && jp == 1) pswitchTable[ip+3*jp] = 3;
-        if (ip == 2 && jp == 2) pswitchTable[ip+3*jp] = 4;
       }
     }
   }
@@ -425,12 +414,6 @@ void ComputeNonbondedUtil :: NAME
   plint *pairlistnA2_save;  int npairnA2;
   plint *pairlistxA2_save;  int npairxA2;
   plint *pairlistmA2_save;  int npairmA2;
-  plint *pairlistnA3_save;  int npairnA3;
-  plint *pairlistxA3_save;  int npairxA3;
-  plint *pairlistmA3_save;  int npairmA3;
-  plint *pairlistnA4_save;  int npairnA4;
-  plint *pairlistxA4_save;  int npairxA4;
-  plint *pairlistmA4_save;  int npairmA4;
   )
 
   NBWORKARRAYSINIT(params->workArrays);
@@ -1073,12 +1056,6 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(plint,pairlistnA2,arraysize);
   NBWORKARRAY(plint,pairlistxA2,arraysize);
   NBWORKARRAY(plint,pairlistmA2,arraysize);
-  NBWORKARRAY(plint,pairlistnA3,arraysize);
-  NBWORKARRAY(plint,pairlistxA3,arraysize);
-  NBWORKARRAY(plint,pairlistmA3,arraysize);
-  NBWORKARRAY(plint,pairlistnA4,arraysize);
-  NBWORKARRAY(plint,pairlistxA4,arraysize);
-  NBWORKARRAY(plint,pairlistmA4,arraysize);
   )
 
   NBWORKARRAY(short,vdwtype_array,j_upper+5);
@@ -1865,12 +1842,6 @@ void ComputeNonbondedUtil :: NAME
     plint *plinA2 = pairlistnA2;
     plint *plixA2 = pairlistxA2;
     plint *plimA2 = pairlistmA2;
-    plint *plinA3 = pairlistnA3;
-    plint *plixA3 = pairlistxA3;
-    plint *plimA3 = pairlistmA3;
-    plint *plinA4 = pairlistnA4;
-    plint *plixA4 = pairlistxA4;
-    plint *plimA4 = pairlistmA4;
     )
     int k=0;
 #if 1 ALCH(-1)
@@ -1887,12 +1858,11 @@ void ComputeNonbondedUtil :: NAME
 ALCH(
     SELF(
     for (; pln < plin && *pln < j_hgroup; ++pln) {
-      switch (pswitchTable[4*p_i_partition]) {
+      switch (pswitchTable[4*p_i_partition]) { //p_i_partition + 3*p_1[i].partition
       case 0: *(plix++) = *pln;  break;
       case 1: *(plixA1++) = *pln; break;
       case 2: *(plixA2++) = *pln; break;
-      case 3: *(plixA3++) = *pln; break;
-      case 4: *(plixA4++) = *pln; break;
+      default: NAMD_die("Alchemical pairlist error"); break;
       }
     }
     for (; k < npair2 && pairlist2[k] < j_hgroup; ++k) {
@@ -1900,8 +1870,7 @@ ALCH(
       case 0: *(plix++) = pairlist2[k];  break;
       case 1: *(plixA1++) = pairlist2[k]; break;
       case 2: *(plixA2++) = pairlist2[k]; break;
-      case 3: *(plixA3++) = pairlist2[k]; break;
-      case 4: *(plixA4++) = pairlist2[k]; break;
+      default: NAMD_die("Alchemical pairlist error"); break;
       }
     }
     )
@@ -1922,12 +1891,6 @@ ALCH(
       case 8:  *(plimA2++) = j; break;
       case 4:  *(plixA1++) = j; break;
       case 7:  *(plixA2++) = j; break;
-      case 9:  *(plinA3++) = j; break;
-      case 10:  *(plixA3++) = j; break;
-      case 11:  *(plimA3++) = j; break;
-      case 12:  *(plinA4++) = j; break;
-      case 13:  *(plixA4++) = j; break;
-      case 14:  *(plimA4++) = j; break;
       )
       }
     }
@@ -1949,8 +1912,6 @@ ALCH(
         case 0:  *(plinA0++) = j; break;
         case 1:  *(plinA1++) = j; break;
         case 2:  *(plinA2++) = j; break;
-        case 3:  *(plinA3++) = j; break;
-        case 4:  *(plinA4++) = j; break;
       }
     }
     
@@ -2000,15 +1961,6 @@ ALCH(
     PAIRLISTFROMARRAY(npairnA2,pairlistnA2,plinA2,pairlistnA2_save);
     PAIRLISTFROMARRAY(npairxA2,pairlistxA2,plixA2,pairlistxA2_save);
     PAIRLISTFROMARRAY(npairmA2,pairlistmA2,plimA2,pairlistmA2_save);
-    // NB that these pairlists 3 and 4 (interactions within partitions 1 and 2
-    // respectively) are only populated when called for by 'local' decoupling 
-    // scheme - see pSwitchTable comments
-    PAIRLISTFROMARRAY(npairnA3,pairlistnA3,plinA3,pairlistnA3_save);
-    PAIRLISTFROMARRAY(npairxA3,pairlistxA3,plixA3,pairlistxA3_save);
-    PAIRLISTFROMARRAY(npairmA3,pairlistmA3,plimA3,pairlistmA3_save);
-    PAIRLISTFROMARRAY(npairnA4,pairlistnA4,plinA4,pairlistnA4_save);
-    PAIRLISTFROMARRAY(npairxA4,pairlistxA4,plixA4,pairlistxA4_save);
-    PAIRLISTFROMARRAY(npairmA4,pairlistmA4,plimA4,pairlistmA4_save);
 #undef PAIRLISTFROMARRAY
 
 #endif
@@ -2042,12 +1994,6 @@ ALCH(
     pairlists.nextlist(&pairlistnA2_save,&npairnA2);  --npairnA2;
     pairlists.nextlist(&pairlistxA2_save,&npairxA2);  --npairxA2;
     pairlists.nextlist(&pairlistmA2_save,&npairmA2);  --npairmA2;
-    pairlists.nextlist(&pairlistnA3_save,&npairnA3);  --npairnA3;
-    pairlists.nextlist(&pairlistxA3_save,&npairxA3);  --npairxA3;
-    pairlists.nextlist(&pairlistmA3_save,&npairmA3);  --npairmA3;
-    pairlists.nextlist(&pairlistnA4_save,&npairnA4);  --npairnA4;
-    pairlists.nextlist(&pairlistxA4_save,&npairxA4);  --npairxA4;
-    pairlists.nextlist(&pairlistmA4_save,&npairmA4);  --npairmA4;
     )
     //if ( npairm > 1000 )
 //	iout << i << " " << i_upper << " " << npairm << " m\n" << endi;
@@ -2147,8 +2093,6 @@ ALCH(
     #define ALCHPAIR(X) X
     #undef NOT_ALCHPAIR
     #define NOT_ALCHPAIR(X)
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X)
     BigReal myLambda; FEP(BigReal myLambda2;)
     BigReal myElecLambda;  FEP(BigReal myElecLambda2;)
     BigReal myVdwLambda; FEP(BigReal myVdwLambda2;)
@@ -2170,14 +2114,6 @@ ALCH(
             p_i_x, p_i_y, p_i_z, p_1, pairlistnA1_save, npairnA1, pairlisti,
             r2_delta, r2list);
     #include  "ComputeNonbondedBase2.h" // normal, direction 'up'
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-            p_i_x, p_i_y, p_i_z, p_1, pairlistnA3_save, npairnA3, pairlisti,
-            r2_delta, r2list);
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X) X
-    #include  "ComputeNonbondedBase2.h" // normal, interactions within part. 1
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X)
     #undef ALCH1
     #undef ALCH2
 
@@ -2187,14 +2123,6 @@ ALCH(
             p_i_x, p_i_y, p_i_z, p_1, pairlistnA2_save, npairnA2, pairlisti,
             r2_delta, r2list);
     #include  "ComputeNonbondedBase2.h" // normal, direction 'down'
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-            p_i_x, p_i_y, p_i_z, p_1, pairlistnA4_save, npairnA4, pairlisti,
-            r2_delta, r2list);
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X) X
-    #include  "ComputeNonbondedBase2.h" // normal, interactions within part. 2
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X)
     #undef ALCH1
     #undef ALCH2
 
@@ -2216,15 +2144,6 @@ ALCH(
             r2_delta, r2list);
         exclChecksum += npairi;
     #include  "ComputeNonbondedBase2.h" // modified, direction 'up'
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-            p_i_x, p_i_y, p_i_z, p_1, pairlistmA3_save, npairmA3, pairlisti,
-            r2_delta, r2list);
-        exclChecksum += npairi;
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X) X
-    #include  "ComputeNonbondedBase2.h" // modified, within partition 1
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X)
     #undef ALCH1
     #undef ALCH2
 
@@ -2235,15 +2154,6 @@ ALCH(
             r2_delta, r2list);
         exclChecksum += npairi;
     #include  "ComputeNonbondedBase2.h" // modified, direction 'down'
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-            p_i_x, p_i_y, p_i_z, p_1, pairlistmA4_save, npairmA4, pairlisti,
-            r2_delta, r2list);
-        exclChecksum += npairi;
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X) X
-    #include  "ComputeNonbondedBase2.h" // modified, within partition 2
-    #undef LOCALDECOUPLE
-    #define LOCALDECOUPLE(X)
     #undef ALCH1
     #undef ALCH2
 
@@ -2271,16 +2181,6 @@ ALCH(
         for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
         )
     #include  "ComputeNonbondedBase2.h"  //excluded, direction 'up'
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-            p_i_x, p_i_y, p_i_z, p_1, pairlistxA3_save, npairxA3, pairlisti,
-            r2_delta, r2list);
-        exclChecksum += npairi;
-        SELF(
-        for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
-        )
-    #include  "ComputeNonbondedBase2.h"  //excluded, within partition 1
-    // (no local decouple shifted potential to add for excluded interactions,
-    // so no LOCALDECOUPLE defined)
     #undef ALCH1
     #undef ALCH2
 
@@ -2294,16 +2194,6 @@ ALCH(
         for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
         )
     #include  "ComputeNonbondedBase2.h"  //excluded, direction 'down'
-    npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
-            p_i_x, p_i_y, p_i_z, p_1, pairlistxA4_save, npairxA4, pairlisti,
-            r2_delta, r2list);
-        exclChecksum += npairi;
-        SELF(
-        for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
-        )
-    #include  "ComputeNonbondedBase2.h"  //excluded, within partition 2
-    // (no local decouple shifted potential to add for excluded interactions,
-    // so no LOCALDECOUPLE defined)
     #undef ALCH1
     #undef ALCH2
 

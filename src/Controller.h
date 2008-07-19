@@ -93,7 +93,6 @@ protected:
       BigReal electEnergy_ti_1;
       BigReal electEnergySlow_ti_1;
       BigReal ljEnergy_ti_1;
-//      BigReal net_dEdl_1;
       BigReal electEnergy_ti_2;
       BigReal electEnergySlow_ti_2;
       BigReal ljEnergy_ti_2;
@@ -101,14 +100,13 @@ protected:
       BigReal net_dEdl_elec_2;
       BigReal net_dEdl_lj_1;
       BigReal net_dEdl_lj_2;
-      BigReal electEnergyPME_ti;
-      BigReal net_dEdl_PME;
+      BigReal electEnergyPME_ti_1;
+      BigReal electEnergyPME_ti_2;
       int TiNo;
       BigReal recent_dEdl_elec_1;
       BigReal recent_dEdl_elec_2;
       BigReal recent_dEdl_lj_1;
       BigReal recent_dEdl_lj_2;
-      BigReal recent_dEdl_PME;
       int recent_TiNo;
       void printTiMessage(int);
 
