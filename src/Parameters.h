@@ -85,6 +85,7 @@ public:
 	Real theta0;	//  Rest angle for angle
 	Real k_ub;	//  Urey-Bradley force constant
 	Real r_ub;	//  Urey-Bradley distance
+  int normal; // Whether we use harmonic (0) or cos-based (1) angle terms
 };
 
 typedef struct four_body_consts
@@ -169,6 +170,7 @@ private:
 //****** BEGIN CHARMM/XPLOR type changes
         int paramType;                          //  Type (format) of parameter-file
 //****** END CHARMM/XPLOR type changes
+  bool cosAngles; // True if some angles may be cos-based
 	struct bond_params *bondp;		//  Binary tree of bond params
 	struct angle_params *anglep;		//  Binary tree of angle params
 	struct improper_params *improperp;	//  Linked list of improper par.
@@ -186,6 +188,7 @@ public:
 	IndexedVdwPair *vdw_pair_tree;		//  Tree of vdw pair params
 	int NumBondParams;			//  Number of bond parameters
 	int NumAngleParams;			//  Number of angle parameters
+  int NumCosAngles;       // Number of cosine-based angles
 	int NumDihedralParams;			//  Number of dihedral params
 	int NumImproperParams;			//  Number of improper params
 	int NumCrosstermParams;			//  Number of cross-term params

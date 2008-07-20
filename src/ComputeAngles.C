@@ -82,6 +82,7 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   const Position & pos3 = p[2]->x[localIndex[2]].position;
   Vector r32 = lattice.delta(pos3,pos2);
   register BigReal d32inv = r32.rlength();
+  Real normal = value->normal;
 
   BigReal cos_theta = (r12*r32)*(d12inv*d32inv);
   //  Make sure that the cosine value is acceptable.  With roundoff, you
@@ -97,7 +98,13 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   BigReal theta = acos(cos_theta);
 
   //  Compare it to the rest angle
-  BigReal diff = theta - theta0;
+  BigReal diff;
+
+  if (normal == 1) {
+    diff = theta - theta0;
+  } else {
+    diff = cos_theta - cos(theta0);
+  }
 
   //  Add the energy from this angle to the total energy
   BigReal energy = k *diff*diff;
@@ -108,7 +115,9 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
 
   //  Calculate constant factor 2k(theta-theta0)/sin(theta)
   BigReal sin_theta = sqrt(1.0 - cos_theta*cos_theta);
-  if ( sin_theta < 1.e-6 ) {
+  if (normal != 1) {
+    diff *= (2.0* k);
+  } else if ( sin_theta < 1.e-6 ) {
     // catch case where bonds are parallel
     // this gets the force approximately right for theta0 of 0 or pi
     // and at least avoids small division for other values
@@ -129,6 +138,10 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   {
 	//  Non-zero k_ub value, so calculate the harmonic
 	//  potential between the 1-3 atoms
+
+  if (normal != 1) {
+    NAMD_die("ERROR: Can't use cosAngles with Urey-Bradley angles");
+  }
 	BigReal k_ub = value->k_ub;
 	BigReal r_ub = value->r_ub;
 	Vector r13 = r12 - r32;
@@ -143,7 +156,7 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
 	force1 += r13;
 	force3 -= r13;
   }
-  
+
   p[0]->f[localIndex[0]].x += force1.x;
   p[0]->f[localIndex[0]].y += force1.y;
   p[0]->f[localIndex[0]].z += force1.z;

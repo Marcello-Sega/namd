@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2008/06/30 22:55:39 $
- * $Revision: 1.1141 $
+ * $Author: petefred $
+ * $Date: 2008/07/20 13:48:44 $
+ * $Revision: 1.1142 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -322,6 +322,7 @@ public:
 	int pairInteractionGroup2;	//  Interaction group 2.
         Bool pairInteractionSelf;       //  Compute just within group.
      
+  Bool cosAngles;    // Can some angles be cos-based
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
 	Bool tclBCOn;			//  Are Tcl boundary forces present

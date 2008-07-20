@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2008/07/19 01:12:20 $
- * $Revision: 1.1255 $
+ * $Author: petefred $
+ * $Date: 2008/07/20 13:48:44 $
+ * $Revision: 1.1256 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -777,6 +777,9 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
     opts.optionalB("pairInteraction", "pairInteractionSelf",
         "Compute only within-group interactions?", &pairInteractionSelf, 
         FALSE);
+   // Options for CG simulations
+   opts.optionalB("main", "cosAngles", "Are some angles cosine-based?", &cosAngles, FALSE);
+
 
    //  Dihedral angle dynamics
    opts.optionalB("main", "globalTest", "Should global integration (for development) be used?",
@@ -3892,6 +3895,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
      iout << iINFO << "STRUCTURE FILE         " 
         << current->data << "\n" << endi;
+
+     if (cosAngles) 
+     {
+       iout << iINFO << "COSANGLES ON. SOME ANGLES WILL BE COSINE-BASED\n" << endi;
+     }
 
      //****** BEGIN CHARMM/XPLOR type changes
      if (paraTypeXplorOn)

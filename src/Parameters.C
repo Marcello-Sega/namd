@@ -57,6 +57,7 @@ struct angle_params
   char atom2name[11];
   char atom3name[11];
   Real forceconstant;
+  int normal;
   Real angle;
   Real k_ub;
   Real r_ub;
@@ -193,6 +194,7 @@ void Parameters::initialize() {
   NumCrosstermParams=0;
   NumVdwParams=0;
   NumVdwPairParams=0;
+  NumCosAngles=0;
 }
 
 /************************************************************************/
@@ -221,6 +223,12 @@ Parameters::Parameters(SimParameters *simParams, StringList *f)
     paramType = paraCharmm;
   }
   //****** END CHARMM/XPLOR type changes
+  //Test for cos-based angles
+  if (simParams->cosAngles) {
+    cosAngles = true;
+  } else {
+    cosAngles = false;
+  }
 
   /* Set up AllFilesRead flag to FALSE.  Once all of the files    */
   /* have been read in, then this will be set to true and the     */
@@ -911,6 +919,7 @@ void Parameters::add_angle_param(char *buf)
   char atom1name[11];    // Type for atom 1
   char atom2name[11];    // Type for atom 2
   char atom3name[11];    // Type for atom 3
+  char norm[4]="xxx";
   Real forceconstant;    // Force constant
   Real angle;      // Theta 0
   Real k_ub;      // Urey-Bradley force constant
@@ -927,17 +936,26 @@ void Parameters::add_angle_param(char *buf)
        atom1name, atom2name, atom3name, &forceconstant, &angle,
        &k_ub, &r_ub);
   }
+  else if ((paramType == paraCharmm) && cosAngles) {
+    read_count=sscanf(buf, "%s %s %s %f %f %3s %f %f\n", 
+       atom1name, atom2name, atom3name, &forceconstant, &angle, norm,
+       &k_ub, &r_ub);
+//    printf("%s\n", buf);
+//    printf("Data: %s %s %s %f %f %s %f %f\n", atom1name, atom2name, atom3name, forceconstant, angle, norm, k_ub, r_ub);
+  }  
   else if (paramType == paraCharmm)
   {
     /* read CHARMM format */
     read_count=sscanf(buf, "%s %s %s %f %f %f %f\n", 
        atom1name, atom2name, atom3name, &forceconstant, &angle,
        &k_ub, &r_ub);
+//    printf("%s\n", buf);
+//    printf("Data: %s %s %s %f %f\n", atom1name, atom2name, atom3name, forceconstant, angle);
   }
   //****** END CHARMM/XPLOR type changes
 
   /*  Check to make sure we got what we expected      */
-  if ( (read_count != 5) && (read_count != 7) )
+  if ( (read_count != 5) && (read_count != 7) && !(cosAngles && read_count == 6))
   {
     char err_msg[512];
 
@@ -980,9 +998,25 @@ void Parameters::add_angle_param(char *buf)
   new_node->forceconstant = forceconstant;
   new_node->angle = angle;
 
+  if (cosAngles) {
+    if (strcmp("cos",norm)==0) {
+//      iout << "Info: Using cos mode for angle " << buf << endl;
+      NumCosAngles++;
+      new_node->normal = 0;
+    } else {
+//      iout << "Info: Using x^2 mode for angle " << buf << endl;
+      new_node->normal = 1;
+    }
+  } else {
+    new_node->normal = 1;
+  }
+
   if (read_count == 7)
   {
     //  Urey-Bradley constants
+    if (new_node->normal == 0) {
+      NAMD_die("ERROR: Urey-Bradley angles can't be used with cosine-based terms\n");
+    }
     new_node->k_ub = k_ub;
     new_node->r_ub = r_ub;
   }
@@ -2754,6 +2788,7 @@ Index Parameters::index_angles(struct angle_params *tree, Index index)
   angle_array[index].k = tree->forceconstant;
   angle_array[index].k_ub = tree->k_ub;
   angle_array[index].r_ub = tree->r_ub;
+  angle_array[index].normal = tree->normal;
 
   //  Convert the angle to radians before storing it
   angle_array[index].theta0 = (tree->angle*PI)/180.0;
@@ -4339,8 +4374,12 @@ void Parameters::print_param_summary()
 {
   iout << iINFO << "SUMMARY OF PARAMETERS:\n" 
        << iINFO << NumBondParams << " BONDS\n" 
-       << iINFO << NumAngleParams << " ANGLES\n"
-       << iINFO << NumDihedralParams << " DIHEDRAL\n"
+       << iINFO << NumAngleParams << " ANGLES\n" << endi;
+       if (cosAngles) {
+         iout << iINFO << "  " << (NumAngleParams - NumCosAngles) << " HARMONIC\n"
+              << iINFO << "  " << NumCosAngles << " COSINE-BASED\n" << endi;
+       }
+  iout << iINFO << NumDihedralParams << " DIHEDRAL\n"
        << iINFO << NumImproperParams << " IMPROPER\n"
        << iINFO << NumCrosstermParams << " CROSSTERM\n"
        << iINFO << NumVdwParams << " VDW\n"
@@ -4460,9 +4499,10 @@ void Parameters::send_Parameters(Communicate *comm_obj)
     a2 = new Real[NumAngleParams];
     a3 = new Real[NumAngleParams];
     a4 = new Real[NumAngleParams];
+    i1 = new int[NumAngleParams];
 
     if ( (a1 == NULL) || (a2 == NULL) || (a3 == NULL) ||
-         (a4 == NULL) )
+         (a4 == NULL) || (i1 == NULL))
     {
       NAMD_die("memory allocation failed in Parameters::send_Parameters");
     }
@@ -4473,15 +4513,18 @@ void Parameters::send_Parameters(Communicate *comm_obj)
       a2[i] = angle_array[i].theta0;
       a3[i] = angle_array[i].k_ub;
       a4[i] = angle_array[i].r_ub;
+      i1[i] = angle_array[i].normal;
     }
 
     msg->put(NumAngleParams, a1)->put(NumAngleParams, a2);
     msg->put(NumAngleParams, a3)->put(NumAngleParams, a4);
+    msg->put(NumAngleParams, i1);
 
     delete [] a1;
     delete [] a2;
     delete [] a3;
     delete [] a4;
+    delete [] i1;
   }
 
   //  Send the dihedral parameters
@@ -4738,9 +4781,10 @@ void Parameters::receive_Parameters(MIStream *msg)
     a2 = new Real[NumAngleParams];
     a3 = new Real[NumAngleParams];
     a4 = new Real[NumAngleParams];
+    i1 = new int[NumAngleParams];
 
     if ( (angle_array == NULL) || (a1 == NULL) || (a2 == NULL) ||
-         (a3 == NULL) || (a4 == NULL) )
+         (a3 == NULL) || (a4 == NULL) || (i1 == NULL))
     {
       NAMD_die("memory allocation failed in Parameters::receive_Parameters");
     }
@@ -4749,6 +4793,7 @@ void Parameters::receive_Parameters(MIStream *msg)
     msg->get(NumAngleParams, a2);
     msg->get(NumAngleParams, a3);
     msg->get(NumAngleParams, a4);
+    msg->get(NumAngleParams, i1);
 
     for (i=0; i<NumAngleParams; i++)
     {
@@ -4756,12 +4801,14 @@ void Parameters::receive_Parameters(MIStream *msg)
       angle_array[i].theta0 = a2[i];
       angle_array[i].k_ub = a3[i];
       angle_array[i].r_ub = a4[i];
+      angle_array[i].normal = i1[i];
     }
 
     delete [] a1;
     delete [] a2;
     delete [] a3;
     delete [] a4;
+    delete [] i1;
   }
 
   //  Get the dihedral parameters
