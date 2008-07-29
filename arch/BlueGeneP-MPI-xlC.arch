@@ -1,7 +1,7 @@
 NAMD_ARCH = BlueGeneP
 CHARMARCH = mpi-bluegenep-xlc
 
-BGP_INC = -I$(BGP_INSTALL)/comm/include 
+BGP_INC = -I/bgsys/drivers/ppcfloor/comm/include
 
 CXX = bgxlC -qstaticinline -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID $(BGP_INC) -DARCH_POWERPC -DUSE_TOPOMAP=1
 
