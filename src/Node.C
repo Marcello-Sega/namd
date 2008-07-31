@@ -232,10 +232,10 @@ void Node::startup() {
   break;
 
   case 3:     
-    if(simParameters->enableProxySendST) {
+    if(simParameters->isSendProxySTEnabled()) {
         ProxyMgr::Object()->setSendSpanning();
     }
-    if(simParameters->enableProxyRecvST) {
+    if(simParameters->isRecvProxySTEnabled()) {
         ProxyMgr::Object()->setRecvSpanning();
     }
     #ifdef PROCTRACE_DEBUG
@@ -260,6 +260,21 @@ void Node::startup() {
       registerUserEventsForAllComputeObjs();
 
       workDistrib->sendMaps();
+      #ifdef USE_NODEPATCHMGR
+      CProxy_NodeProxyMgr npm(CpvAccess(BOCclass_group).nodeProxyMgr);
+      //a node broadcast
+      npm.createProxyInfo(PatchMap::Object()->numPatches());
+      #endif
+    }
+    {
+        #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+        CProxy_NodeProxyMgr npm(CpvAccess(BOCclass_group).nodeProxyMgr);
+        if(CkMyRank()==0) {
+            //just need to register once
+            npm[CkMyNode()].ckLocalBranch()->registerLocalProxyMgr(CpvAccess(BOCclass_group).proxyMgr);
+        }
+        npm[CkMyNode()].ckLocalBranch()->registerLocalPatchMap(CkMyRank(), PatchMap::Object());
+        #endif
     }
   break;
 
