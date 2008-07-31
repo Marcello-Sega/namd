@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: petefred $
- * $Date: 2008/07/20 13:48:44 $
- * $Revision: 1.1142 $
+ * $Author: chaomei2 $
+ * $Date: 2008/07/31 20:54:10 $
+ * $Revision: 1.1143 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -594,8 +594,6 @@ public:
     Bool useCompressedPsf;
     Bool genCompressedPsf;
 
-    Bool enableProxySendST;
-    Bool enableProxyRecvST;
 	
 public:
 
@@ -618,6 +616,11 @@ public:
 					//  master process
 	void scriptSet(const char *, const char *);
 					//  Set parameters at run time
+
+	int isSendProxySTEnabled(){ return enableProxySendST==1; }
+	int isSendProxySTAuto() { return enableProxySendST==-1; }
+	int isRecvProxySTEnabled(){ return enableProxyRecvST==1; }
+	int isRecvProxySTAuto() { return enableProxyRecvST==-1; }
 
 private:
 
@@ -643,6 +646,10 @@ private:
 
 	int fmaFrequency;		//  outdated parameter name
 	char loadStrategy[64];		//  Load balancing strategy
+
+    //default value is -1
+    int enableProxySendST;
+    int enableProxyRecvST;
 };
 
 #endif

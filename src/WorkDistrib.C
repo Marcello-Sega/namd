@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: gzheng $
- * $Date: 2008/07/14 19:38:03 $
- * $Revision: 1.1180 $
+ * $Author: chaomei2 $
+ * $Date: 2008/07/31 20:54:10 $
+ * $Revision: 1.1181 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -759,7 +759,10 @@ void WorkDistrib::sendMaps(void)
   }
 
   //Automatically enable spanning tree
-  if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  SimParameters *params = node->simParameters;
+  if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendProxySTAuto())
     ProxyMgr::Object()->setSendSpanning();
 
   int sizes[2];
@@ -793,7 +796,10 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
     ComputeMap::Object()->unpack(msg->computeMapData);
 
     //Automatically enable spanning tree
-    if(PatchMap::Object()->numPatches() <= CkNumPes()/4)
+    CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+    Node *node = nd.ckLocalBranch();
+    SimParameters *params = node->simParameters;
+    if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendProxySTAuto())
       ProxyMgr::Object()->setSendSpanning();
   }
   if ( mapsArrived ) {
