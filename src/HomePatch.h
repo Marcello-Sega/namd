@@ -215,8 +215,9 @@ private:
   //the immediate children (recording pe ids) containing two parts: 
   //one part of them all belong to the physical node this home patch
   // resides on; the other part of pes belong to all external nodes.
-  int *children;
-  int numChild;
+  /* Moved to Patch.h */ 
+  //int *children;
+  //int numChild;
 #else
   NodeIDList tree;              // the whole tree
   int *child;	// spanning tree of proxies - immediate children

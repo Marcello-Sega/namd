@@ -230,6 +230,9 @@ void ProxyNodeAwareSpanningTreeMsg::printOut(char *tag){
 void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
   int msg_size = 0;
   msg_size += sizeof(int) + msg->nodes.size()*sizeof(NodeID);
+  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  msg_size += sizeof(msg->destPe);
+  #endif  
   msg_size += sizeof(msg->patch);
   int j;
   for ( j = 0; j < Results::maxNumForces; ++j ) {
@@ -256,6 +259,10 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
     CmiMemcpy((void*)msg_cur,(void*)(&msg->nodes[i]), sizeof(NodeID));
     msg_cur += sizeof(NodeID);
   }
+  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  CmiMemcpy((void*)msg_cur,(void*)(&(msg->destPe)),sizeof(msg->destPe));
+  msg_cur += sizeof(msg->destPe);
+  #endif
   CmiMemcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
   for ( j = 0; j < Results::maxNumForces; ++j ) {
@@ -299,6 +306,10 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
     msg->nodes.add(*(int *)msg_cur);
     msg_cur += sizeof(NodeID);
   }
+  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  CmiMemcpy((void*)(&(msg->destPe)),(void*)msg_cur,sizeof(msg->destPe));
+  msg_cur += sizeof(msg->destPe);
+  #endif
   CmiMemcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
   int j;
@@ -1159,6 +1170,19 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
     if(numChild==0){
         ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
         proxy->setSpanningTree(msg->procID, NULL, 0);
+        #ifdef USE_NODEPATCHMGR
+        //set up proxyInfo inside NodeProxyMgr
+        if(!PatchMap::Object()->homePatch(msg->patch)){
+            //only when this processor contains a proxy patch of "msg->patch"
+            //is the patch registeration in NodeProxyMgr needed,
+            //and itself needs to be registered
+            CProxy_NodeProxyMgr pm(CpvAccess(BOCclass_group).nodeProxyMgr);
+            NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();        
+            npm->registerPatch(msg->patch, msg->numPesOfNode[0], msg->allPes);            
+        }
+        //set children in terms of node ids
+        proxy->setSTNodeChildren(0, NULL);       
+        #endif
         return;
     }
 
@@ -1181,6 +1205,24 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
             children[i] = msg->allPes[j]; 
         }
         proxy->setSpanningTree(msg->procID, children, numChild);
+
+        #ifdef USE_NODEPATCHMGR
+        //set up proxyInfo inside NodeProxyMgr
+        CProxy_NodeProxyMgr pm(CpvAccess(BOCclass_group).nodeProxyMgr);
+        NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();        
+        npm->registerPatch(msg->patch, msg->numPesOfNode[0], msg->allPes);        
+
+        //set children in terms of node ids
+        int nodeChildren[eNChild+1];
+        p = msg->allPes + msg->numPesOfNode[0];
+        for(int i=0; i<eNChild; i++) {
+            nodeChildren[i] = CkNodeOf(*p);
+            p += msg->numPesOfNode[i+1];
+        }
+        //the last entry always stores the node id that contains this proxy
+        nodeChildren[eNChild] = CkNodeOf(msg->allPes[0]);
+        proxy->setSTNodeChildren(eNChild+1, nodeChildren);
+        #endif
     }
 
     //2. send msgs for the tree to external children proxies
@@ -1302,14 +1344,16 @@ void
 ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
   ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
   ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
-  if (cMsg) {
-    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+  if (cMsg) {    
     int destPe = patch->getSpanningTreeParent();
+    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
     if(destPe != CkMyPe()) {
-#if CHARM_VERSION > 050402
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+      cMsg->destPe = destPe;
+      CProxy_NodeProxyMgr cnp(CpvAccess(BOCclass_group).nodeProxyMgr);
+      cnp[CkNodeOf(destPe)].recvImmediateResults(cMsg);
+#else    
       cp[destPe].recvImmediateResults(cMsg);
-#else
-      cp.recvImmediateResults(cMsg, destPe);
 #endif
     }
     else 
@@ -1353,9 +1397,41 @@ void ProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg) {
   }
 }
 
+void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg){
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    int destRank = CkRankOf(msg->destPe);
+    PatchMap *pmap = localPatchMaps[destRank];
+    HomePatch *home = pmap->homePatch(msg->patch);
+    if (home) {
+        CProxy_ProxyMgr cp(localProxyMgr);        
+        cp[msg->destPe].recvResults(msg);        
+    }
+    else {
+        ProxyPatch *patch = (ProxyPatch *)pmap->patch(msg->patch);
+        ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
+        if (cMsg) {
+            CProxy_NodeProxyMgr cnp(thisgroup);
+            cMsg->destPe = patch->getSpanningTreeParent();
+            cnp[CkNodeOf(cMsg->destPe)].recvImmediateResults(cMsg);            
+        }
+    }
+#endif    
+}
+
 void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
-  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    if(proxySendSpanning == 1) {
+        CProxy_NodeProxyMgr cnp(CpvAccess(BOCclass_group).nodeProxyMgr);
+        for(int i=0; i<pcnt-1; i++) {
+            ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
+            cnp[pids[i]].recvImmediateProxyData(copymsg);
+        }
+        cnp[pids[pcnt-1]].recvImmediateProxyData(msg);
+        return;
+    }
+#endif
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
   cp.recvImmediateProxyData(msg,pcnt,pids);
 }
 
@@ -1389,9 +1465,50 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
   cp[CkMyPe()].recvProxyData(msg);
 }
 
+void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {    
+    CProxy_ProxyMgr cp(localProxyMgr);
+    proxyTreeNode *ptn = proxyInfo[msg->patch];
+    CmiAssert(ptn->numPes!=0);
+
+    //re-send msg to this nodes's children nodes.
+    //only the first pe of a node of node-aware ST should contain children nodes
+    int rank = CkRankOf(ptn->peIDs[0]);
+    PatchMap *pmap = localPatchMaps[rank];
+    ProxyPatch *ppatch = (ProxyPatch *)pmap->patch(msg->patch);
+
+    int npid = ppatch->getSTNNodeChild();
+    int pids[npid];
+    if(npid>0) {        
+        ppatch->getSTNodeChild(pids);
+        //only needs to send to other nodes, so check the last entry of pids.
+        //This is because the data for proxies on the same node have been sent
+        //by NodeProxyMgr.
+        if(pids[npid-1]==CkMyNode()) npid--;
+    }    
+    CProxy_NodeProxyMgr cnp(thisgroup);
+    for(int i=0; i<npid; i++) {
+        ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
+        cnp[pids[i]].recvImmediateProxyData(copymsg);
+    }    
+
+    //re-send msg to it's internal cores
+    cp.recvProxyData(msg, ptn->numPes, ptn->peIDs);
+}
+
 void
 ProxyMgr::sendProxyAll(ProxyDataMsg *msg, int pcnt, int *pids) {
-  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    if(proxySendSpanning == 1) {
+        CProxy_NodeProxyMgr cnp(CpvAccess(BOCclass_group).nodeProxyMgr);
+        for(int i=0; i<pcnt-1; i++) {
+            ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
+            cnp[pids[i]].recvImmediateProxyAll(copymsg);
+        }
+        cnp[pids[pcnt-1]].recvImmediateProxyAll(msg);
+        return;
+    }
+#endif
+  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
   cp.recvImmediateProxyAll(msg,pcnt,pids);
 }
 
@@ -1424,6 +1541,46 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
   /* send to self via EP method to preserve priority */
   CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp[CkMyPe()].recvProxyAll(msg);
+}
+
+void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {    
+    CProxy_ProxyMgr cp(localProxyMgr);
+    proxyTreeNode *ptn = proxyInfo[msg->patch];
+    CmiAssert(ptn->numPes!=0);
+    #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
+    //This could be executed on comm thd.
+    printf("NodePMgr::recvImmPAll for patch[%d] on node %d rank %d, prepare to send proc ", msg->patch, CkMyNode(), CkMyRank());
+    for(int i=0; i<ptn->numPes; i++) {
+        printf("%d, ", ptn->peIDs[i]);
+    }
+    printf("\n");
+    fflush(stdout);
+    #endif
+
+    //re-send msg to this nodes's children nodes.
+    //only the first pe of a node of node-aware ST should contain children nodes
+    int rank = CkRankOf(ptn->peIDs[0]);
+    PatchMap *pmap = localPatchMaps[rank];
+    ProxyPatch *ppatch = (ProxyPatch *)pmap->patch(msg->patch);
+
+    int npid = ppatch->getSTNNodeChild();
+    int pids[npid];
+    if(npid>0) {        
+        ppatch->getSTNodeChild(pids);
+        //only needs to send to other nodes, so check the last entry of pids.
+        //This is because the data for proxies on the same node have been sent
+        //by NodeProxyMgr.
+        if(pids[npid-1]==CkMyNode()) npid--;
+    }
+    
+    CProxy_NodeProxyMgr cnp(thisgroup);
+    for(int i=0; i<npid; i++) {
+        ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
+        cnp[pids[i]].recvImmediateProxyAll(copymsg);
+    }    
+
+    //re-send msg to it's internal cores
+    cp.recvProxyAll(msg, ptn->numPes, ptn->peIDs);
 }
 
 void ProxyMgr::printProxySpanningTree(){
@@ -1463,6 +1620,16 @@ void ProxyMgr::printProxySpanningTree(){
 #endif
 }
 
+void NodeProxyMgr::registerPatch(int patchID, int numPes, int *pes){
+    if(proxyInfo[patchID]) {
+        delete proxyInfo[patchID];
+    }
+    if(numPes == 0) {
+        proxyInfo[patchID] = NULL;
+    }else{
+        proxyInfo[patchID] = new proxyTreeNode(CkNodeOf(pes[0]),numPes,pes);
+    }
+}
 
 #include "ProxyMgr.def.h"
 

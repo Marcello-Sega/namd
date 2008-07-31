@@ -150,6 +150,11 @@ public:
 
 class ProxyCombinedResultMsg : public CMessage_ProxyCombinedResultMsg {
 public:
+  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  //since this msg may be processed by comm thread in the smp mode,
+  //this variable helps comm thread to find which proc will actually process it.
+  NodeID destPe;
+  #endif
   PatchID patch;
   NodeIDList nodes;
   ForceList forceList[Results::maxNumForces];
@@ -291,6 +296,57 @@ private:
   ProxyTree ptree;
 
   void printProxySpanningTree();
+};
+
+class NodeProxyMgr : public CBase_NodeProxyMgr
+{
+private:
+    proxyTreeNode **proxyInfo;
+    int numPatches;
+
+    CkGroupID localProxyMgr; //a charm Group variable
+    PatchMap **localPatchMaps;
+
+public:
+    NodeProxyMgr(){
+        proxyInfo = NULL;
+        numPatches = 0;
+        localPatchMaps = new PatchMap *[CkMyNodeSize()];
+    }
+    ~NodeProxyMgr(){
+        for(int i=0; i<numPatches; i++) {
+            delete proxyInfo[i];
+        }
+        delete [] proxyInfo;
+        delete [] localPatchMaps;
+    }
+
+    void createProxyInfo(int numPs){
+        numPatches = numPs;
+        proxyInfo = new proxyTreeNode *[numPs];
+        memset(proxyInfo, 0, sizeof(proxyTreeNode *)*numPs);
+    }
+    void registerPatch(int patchID, int numPes, int *pes);
+    proxyTreeNode *getPatchProxyInfo(int patchID){
+        return proxyInfo[patchID];
+    }
+
+    void registerLocalProxyMgr(CkGroupID one){
+        localProxyMgr = one;
+    }
+    const CkGroupID &getLocalProxyMgr(){
+        return localProxyMgr;
+    }
+    void registerLocalPatchMap(int rank, PatchMap *one){
+        localPatchMaps[rank] = one;
+    }
+    PatchMap *getLocalPatchMap(int rank){
+        return localPatchMaps[rank];
+    }   
+
+    void recvImmediateProxyData(ProxyDataMsg *msg);
+    void recvImmediateProxyAll(ProxyDataMsg *msg);
+    void recvImmediateResults(ProxyCombinedResultMsg *);
 };
 
 #endif /* PATCHMGR_H */

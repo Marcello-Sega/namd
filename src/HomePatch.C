@@ -113,8 +113,8 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   ptnTree.resize(0);
-  children = NULL;
-  numChild = 0;
+  /*children = NULL;
+  numChild = 0;*/
 #else
   child =  new int[proxySpanDim];
   nChild = 0;	// number of proxy spanning tree children
@@ -188,8 +188,8 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   ptnTree.resize(0);
-  children = NULL;
-  numChild = 0;
+  /*children = NULL;
+  numChild = 0;*/
 #else
   child =  new int[proxySpanDim];
   nChild = 0;	// number of proxy spanning tree children
@@ -349,6 +349,9 @@ HomePatch::~HomePatch()
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
     ptnTree.resize(0);
     delete [] children;
+    #ifdef USE_NODEPATCHMGR
+    delete [] nodeChildren;    
+    #endif
 #else
   delete [] child;
 #endif
@@ -492,36 +495,76 @@ void HomePatch::setupChildrenFromProxySpanningTree(){
         numChild = 0;
         delete [] children;
         children = NULL;
+        #ifdef USE_NODEPATCHMGR
+        numNodeChild = 0;
+        delete [] nodeChildren;
+        nodeChildren = NULL;        
+        #endif
         return;
     }
     proxyTreeNode *rootnode = &ptnTree.item(0);
     CmiAssert(rootnode->peIDs[0] == CkMyPe());
     //set up children
     //1. add external children (the first proc inside the proxy tree node)    
-    //2. add internal children (with threshold that would enable spanning
-    numChild = rootnode->numPes-1;
+    //2. add internal children (with threshold that would enable spanning    
+    int internalChild;
+    int externalChild;
+    internalChild = rootnode->numPes-1;
+    numChild = internalChild;
     if(numChild > inNodeProxySpanDim) {        
         //tree construction within a node)
         CmiAbort("Enabling in-node spanning tree construction has not been implemented yet!\n");
     }else{
         //exclude the root node
         int treesize = ptnTree.size();
-        int maxExternals = (proxySpanDim>(treesize-1))?(treesize-1):proxySpanDim;
-        numChild += maxExternals;        
+        externalChild = (proxySpanDim>(treesize-1))?(treesize-1):proxySpanDim;
+        numChild += externalChild;        
 
         delete [] children;
+        #ifdef USE_NODEPATCHMGR
+        delete [] nodeChildren;
+        #endif
         if(numChild==0){
             children = NULL;
+            #ifdef USE_NODEPATCHMGR
+            nodeChildren = NULL;
+            numNodeChild = 0;
+            #endif
             return;
         }
         children = new int[numChild];    
-        for(int i=0; i<maxExternals; i++) {
+        for(int i=0; i<externalChild; i++) {
             children[i] = ptnTree.item(i+1).peIDs[0];
         }
-        for(int i=maxExternals, j=1; i<numChild; i++, j++) {
+        for(int i=externalChild, j=1; i<numChild; i++, j++) {
             children[i] = rootnode->peIDs[j];
         }
     }
+
+    #ifdef USE_NODEPATCHMGR
+    //only register the cores that have proxy patches. The HomePach's core
+    //doesn't need to be registered.
+    CProxy_NodeProxyMgr pm(CpvAccess(BOCclass_group).nodeProxyMgr);
+    NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();
+    if(rootnode->numPes==1){
+        npm->registerPatch(patchID, 0, NULL);        
+    }
+    else{
+        npm->registerPatch(patchID, rootnode->numPes-1, &rootnode->peIDs[1]);        
+    }
+
+    //set up childrens in terms of node ids
+    numNodeChild = externalChild;
+    if(internalChild) numNodeChild++;
+    nodeChildren = new int[numNodeChild];    
+    for(int i=0; i<externalChild; i++) {
+        nodeChildren[i] = ptnTree.item(i+1).nodeID;        
+    }
+    //the last entry always stores this node id if there are proxies
+    //on other cores of the same node for this patch.
+    if(internalChild)
+        nodeChildren[numNodeChild-1] = rootnode->nodeID;
+    #endif
     
     #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
     DebugFileTrace *dft = DebugFileTrace::Object();
@@ -893,11 +936,19 @@ void HomePatch::positionsReady(int doMigration)
   }
   else {
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
+    #ifdef USE_NODEPATCHMGR
+    npid = numNodeChild;
+    if(numNodeChild>0) {
+        pids = new int[npid];
+        memcpy(pids, nodeChildren, sizeof(int)*npid);
+    }
+    #else
     npid = numChild;
     if(numChild>0) {
         pids = new int[numChild];
         memcpy(pids, children, sizeof(int)*numChild);
     }
+    #endif
 #else
     npid = nChild;
     pids = new int[proxySpanDim];

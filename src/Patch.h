@@ -124,6 +124,25 @@ class Patch
 
      int _hasNewAtoms;
 
+#ifdef NODEAWARE_PROXY_SPANNINGTREE    
+    //its own children in proxy tree
+    int *children;
+    int numChild;
+    #ifdef USE_NODEPATCHMGR
+    //the immediate children (in terms of node id) also cotains two parts
+    //as the above variable shows
+    //If this patch has proxies residing on the same node, then the last entry
+    //of "nodeChildren" stores this node id. It is same with that variable
+    //in ProxyPatch      
+    //If this proxy resides on node A, then the last entry
+    //of "nodeChildren" has to be A
+    //It is same with that variable in HomePatch
+    int *nodeChildren;
+    int numNodeChild;
+    #endif
+#endif
+
+
   private:
   
 

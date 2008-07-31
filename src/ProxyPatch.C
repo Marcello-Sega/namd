@@ -34,8 +34,8 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   parent = -1;
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
-  numChild = 0;
-  children = NULL;
+  /*numChild = 0;
+  children = NULL;*/
 #else
   nChild = 0;
   child = new int[proxySpanDim];
@@ -49,6 +49,10 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
     numWaterAtoms = -1;
+  #endif
+  
+  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    depositLock = CmiCreateLock();
   #endif
 }
 
@@ -73,6 +77,9 @@ ProxyPatch::~ProxyPatch()
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   delete [] children;
+  #ifdef USE_NODEPATCHMGR
+  delete [] nodeChildren;  
+  #endif
 #else
   delete [] child;
 #endif
@@ -321,7 +328,21 @@ int ProxyPatch::getSpanningTreeChild(int *c) {
   for (int i=0; i<numChild; i++) c[i] = children[i];
   return numChild;
 }
-#else
+
+#ifdef USE_NODEPATCHMGR
+void ProxyPatch::setSTNodeChildren(int numNids, int *nids){
+    numNodeChild = numNids;
+    delete [] nodeChildren;
+    if(numNids==0) {
+        nodeChildren = NULL;
+        return;
+    }
+    nodeChildren = new int[numNids];
+    for(int i=0; i<numNids; i++) nodeChildren[i] = nids[i]; 
+}
+#endif
+
+#else //branch for not defined NODEAWARE_PROXY_SPANNINGTREE
 void ProxyPatch::setSpanningTree(int p, int *c, int n) { 
   parent=p; nChild = n; nWait = 0;
   for (int i=0; i<n; i++) child[i] = c[i];
@@ -335,6 +356,9 @@ int ProxyPatch::getSpanningTreeChild(int *c) {
 #endif
 
 ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResultMsg *msg) {
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  CmiLock(depositLock);
+#endif
   nWait++;
   if (nWait == 1) msgCBuffer = msg;
   else {
@@ -372,8 +396,17 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
   if (nWait == nChild + 1) {
 #endif
     nWait = 0;
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    CmiUnlock(depositLock);
+#endif
+    
     return msgCBuffer;
   }
+
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  CmiUnlock(depositLock);
+#endif
+
   return NULL;
 }
 

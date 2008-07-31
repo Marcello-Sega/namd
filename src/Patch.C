@@ -42,6 +42,16 @@ Patch::Patch(PatchID pd) :
     positionPtrBegin = 0;
     positionPtrEnd = 0;
 #endif
+
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  numChild = 0;
+  children = NULL;
+  #ifdef USE_NODEPATCHMGR
+  nodeChildren = NULL;
+  numNodeChild = 0;
+  #endif
+#endif
+
   lattice = Node::Object()->simParameters->lattice;
 }
 

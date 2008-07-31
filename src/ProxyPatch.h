@@ -38,6 +38,17 @@ class ProxyPatch : public Patch
             return nChild; 
         #endif
      }
+
+    #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+     void setSTNodeChildren(int numNids, int *nids);
+     int getSTNodeChild(int *nodeChildren_) {
+         for(int i=0; i<numNodeChild; i++) nodeChildren_[i] = nodeChildren[i];         
+         return numNodeChild; 
+     }
+     int getSTNNodeChild() { return numNodeChild; }
+     #endif
+
+
      ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
 
 #if CMK_PERSISTENT_COMM
@@ -63,13 +74,18 @@ class ProxyPatch : public Patch
      ProxyCombinedResultMsg *msgCBuffer;
      int parent;
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
-     int *children;
-     int numChild;
+     /* Moved to Patch.h */
+     //int *children;
+     //int numChild;
 #else
      int *child; // spanning tree for recvResults()
      int nChild;
 #endif
      int nWait;
+     
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    CmiNodeLock depositLock;
+#endif     
 };
 
 

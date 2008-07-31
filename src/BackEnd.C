@@ -117,6 +117,10 @@ void BackEnd::init(int argc, char **argv) {
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.sync = CProxy_Sync::ckNew();
 
+  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
+  #endif 
+
 #if CHARM_VERSION > 050402
 #ifdef MEM_OPT_VERSION
   MasterHandlerInitMsg *initmsg8 = new MasterHandlerInitMsg;

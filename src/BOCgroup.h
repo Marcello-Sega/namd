@@ -24,6 +24,11 @@ public:
   CkGroupID ldbCoordinator;
   CkGroupID sync;
   CkGroupID node;
+  
+  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  CkGroupID nodeProxyMgr;
+  #endif
+
 };
 
 class BOCclass : public Group {

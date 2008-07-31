@@ -197,6 +197,13 @@ struct proxyTreeNode{
         peIDs = NULL;
         numPes = 0;
     }
+    proxyTreeNode(int nid, int numPes_, int *pes){
+        nodeID = nid;
+        numPes = numPes_;
+        peIDs = new int[numPes];
+        memcpy(peIDs, pes, sizeof(int)*numPes);
+    }
+
     inline proxyTreeNode(const proxyTreeNode &n){
         nodeID = n.nodeID;
         numPes = n.numPes;
