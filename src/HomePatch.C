@@ -544,7 +544,7 @@ void HomePatch::setupChildrenFromProxySpanningTree(){
     #ifdef USE_NODEPATCHMGR
     //only register the cores that have proxy patches. The HomePach's core
     //doesn't need to be registered.
-    CProxy_NodeProxyMgr pm(CpvAccess(BOCclass_group).nodeProxyMgr);
+    CProxy_NodeProxyMgr pm(CkpvAccess(BOCclass_group).nodeProxyMgr);
     NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();
     if(rootnode->numPes==1){
         npm->registerPatch(patchID, 0, NULL);        
