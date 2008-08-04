@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: bhatele $
- * $Date: 2008/06/05 06:23:49 $
- * $Revision: 1.1162 $
+ * $Date: 2008/08/04 16:35:30 $
+ * $Revision: 1.1163 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -331,6 +331,8 @@ void Sequencer::integrate() {
         cycleBarrier(!((step+1) % stepsPerCycle), step);
 #elif PME_BARRIER
         cycleBarrier(doFullElectrostatics, step);
+#elif  STEP_BARRIER
+        cycleBarrier(1, step);
 #endif
 
 	rebalanceLoad(step);

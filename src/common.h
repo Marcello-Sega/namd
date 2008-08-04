@@ -125,8 +125,9 @@ int  Fclose(FILE *fout);
 
 #define CYCLE_BARRIER   0
 #define PME_BARRIER     0
+#define STEP_BARRIER    0
 
-#define USE_BARRIER   (CYCLE_BARRIER || PME_BARRIER)
+#define USE_BARRIER   (CYCLE_BARRIER || PME_BARRIER || STEP_BARRIER)
 
 
 // DMK - Atom Separation (water vs. non-water)

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: char $
- * $Date: 2008/07/19 01:12:20 $
- * $Revision: 1.1221 $
+ * $Author: bhatele $
+ * $Date: 2008/08/04 16:35:30 $
+ * $Revision: 1.1222 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -357,6 +357,8 @@ void Controller::integrate() {
         cycleBarrier(!((step+1) % stepsPerCycle),step);
 #elif  PME_BARRIER
         cycleBarrier(dofull && !(step%slowFreq),step);
+#elif  STEP_BARRIER
+        cycleBarrier(1, step);
 #endif
 
         rebalanceLoad(step);
