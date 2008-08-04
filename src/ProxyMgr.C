@@ -1176,7 +1176,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
             //only when this processor contains a proxy patch of "msg->patch"
             //is the patch registeration in NodeProxyMgr needed,
             //and itself needs to be registered
-            CProxy_NodeProxyMgr pm(CpvAccess(BOCclass_group).nodeProxyMgr);
+            CProxy_NodeProxyMgr pm(CkpvAccess(BOCclass_group).nodeProxyMgr);
             NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();        
             npm->registerPatch(msg->patch, msg->numPesOfNode[0], msg->allPes);            
         }
@@ -1208,7 +1208,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
 
         #ifdef USE_NODEPATCHMGR
         //set up proxyInfo inside NodeProxyMgr
-        CProxy_NodeProxyMgr pm(CpvAccess(BOCclass_group).nodeProxyMgr);
+        CProxy_NodeProxyMgr pm(CkpvAccess(BOCclass_group).nodeProxyMgr);
         NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();        
         npm->registerPatch(msg->patch, msg->numPesOfNode[0], msg->allPes);        
 
@@ -1346,11 +1346,11 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
   ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
   if (cMsg) {    
     int destPe = patch->getSpanningTreeParent();
-    CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
     if(destPe != CkMyPe()) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
       cMsg->destPe = destPe;
-      CProxy_NodeProxyMgr cnp(CpvAccess(BOCclass_group).nodeProxyMgr);
+      CProxy_NodeProxyMgr cnp(CkpvAccess(BOCclass_group).nodeProxyMgr);
       cnp[CkNodeOf(destPe)].recvImmediateResults(cMsg);
 #else    
       cp[destPe].recvImmediateResults(cMsg);
@@ -1422,7 +1422,7 @@ void
 ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     if(proxySendSpanning == 1) {
-        CProxy_NodeProxyMgr cnp(CpvAccess(BOCclass_group).nodeProxyMgr);
+        CProxy_NodeProxyMgr cnp(CkpvAccess(BOCclass_group).nodeProxyMgr);
         for(int i=0; i<pcnt-1; i++) {
             ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
             cnp[pids[i]].recvImmediateProxyData(copymsg);
@@ -1431,7 +1431,7 @@ ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
         return;
     }
 #endif
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp.recvImmediateProxyData(msg,pcnt,pids);
 }
 
@@ -1466,6 +1466,7 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
 }
 
 void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {    
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     CProxy_ProxyMgr cp(localProxyMgr);
     proxyTreeNode *ptn = proxyInfo[msg->patch];
     CmiAssert(ptn->numPes!=0);
@@ -1493,13 +1494,16 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
 
     //re-send msg to it's internal cores
     cp.recvProxyData(msg, ptn->numPes, ptn->peIDs);
+#else
+    CkAbort("Bad execution path to NodeProxyMgr::recvImmediateProxyData\n");
+#endif
 }
 
 void
 ProxyMgr::sendProxyAll(ProxyDataMsg *msg, int pcnt, int *pids) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     if(proxySendSpanning == 1) {
-        CProxy_NodeProxyMgr cnp(CpvAccess(BOCclass_group).nodeProxyMgr);
+        CProxy_NodeProxyMgr cnp(CkpvAccess(BOCclass_group).nodeProxyMgr);
         for(int i=0; i<pcnt-1; i++) {
             ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
             cnp[pids[i]].recvImmediateProxyAll(copymsg);
@@ -1508,7 +1512,7 @@ ProxyMgr::sendProxyAll(ProxyDataMsg *msg, int pcnt, int *pids) {
         return;
     }
 #endif
-  CProxy_ProxyMgr cp(CpvAccess(BOCclass_group).proxyMgr);
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp.recvImmediateProxyAll(msg,pcnt,pids);
 }
 
@@ -1544,6 +1548,7 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
 }
 
 void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {    
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     CProxy_ProxyMgr cp(localProxyMgr);
     proxyTreeNode *ptn = proxyInfo[msg->patch];
     CmiAssert(ptn->numPes!=0);
@@ -1581,6 +1586,9 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
 
     //re-send msg to it's internal cores
     cp.recvProxyAll(msg, ptn->numPes, ptn->peIDs);
+#else
+    CkAbort("Bad execution path to NodeProxyMgr::recvImmediateProxyData\n");
+#endif
 }
 
 void ProxyMgr::printProxySpanningTree(){
