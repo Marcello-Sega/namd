@@ -201,8 +201,10 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
     
     for (int i0 = 0; i0 < 3; i0++) {
 	if (gridforceCont[i0]) {
+	    Bool found = FALSE;
 	    for (int i1 = 0; i1 < 3; i1++) {
-		if (cross(Avec[i0], Kvec[i1]).length() < 1e-4) {
+		if (cross(Avec[i0].unit(), Kvec[i1].unit()).length() < 1e-4) {
+		    found = TRUE;
 		    cont[i1] = TRUE;
 		    offset[i1] = simParams->gridforceVOffset[i0] * factor;
 		    gap[i1] = (inv * (Avec[i0] - Kvec[i1])).length();	// want in grid-point units (normal = 1)
@@ -217,7 +219,7 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 		}
 	    }
 	    
-	    if (!(cont[0] || cont[1] || cont[2])) {
+	    if (!found) {
 		NAMD_die("No Gridforce unit vector found parallel to requested continuous grid direction!");
 	    }
 	}
