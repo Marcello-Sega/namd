@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2008/07/31 20:54:10 $
- * $Revision: 1.1257 $
+ * $Author: jim $
+ * $Date: 2008/08/12 19:20:03 $
+ * $Revision: 1.1258 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -122,6 +122,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 #define SCRIPT_PARSE_BOOL(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atobool(value); return; } }
 #define SCRIPT_PARSE_INT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atoi(value); return; } }
 #define SCRIPT_PARSE_FLOAT(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atof(value); return; } }
+#define SCRIPT_PARSE_MOD_FLOAT(NAME,VAR,MOD) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atof(value) MOD; return; } }
 #define SCRIPT_PARSE_VECTOR(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR).set(value); return; } }
 #define SCRIPT_PARSE_STRING(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { strcpy(VAR,value); return; } }
 
@@ -142,15 +143,18 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_BOOL("useConstantArea",useConstantArea)
   SCRIPT_PARSE_BOOL("useConstantRatio",useConstantRatio)
   SCRIPT_PARSE_BOOL("LangevinPiston",langevinPistonOn)
-  SCRIPT_PARSE_FLOAT("LangevinPistonTarget",langevinPistonTarget)
+  SCRIPT_PARSE_MOD_FLOAT("LangevinPistonTarget",
+			langevinPistonTarget,/PRESSUREFACTOR)
   SCRIPT_PARSE_FLOAT("LangevinPistonPeriod",langevinPistonPeriod)
   SCRIPT_PARSE_FLOAT("LangevinPistonDecay",langevinPistonDecay)
   SCRIPT_PARSE_FLOAT("LangevinPistonTemp",langevinPistonTemp)
-  SCRIPT_PARSE_FLOAT("SurfaceTensionTarget",surfaceTensionTarget)
+  SCRIPT_PARSE_MOD_FLOAT("SurfaceTensionTarget",
+			surfaceTensionTarget,*(100.0/PRESSUREFACTOR))
   SCRIPT_PARSE_BOOL("BerendsenPressure",berendsenPressureOn)
-  SCRIPT_PARSE_FLOAT("BerendsenPressureTarget",berendsenPressureTarget)
-  SCRIPT_PARSE_FLOAT("BerendsenPressureCompressibility",
-				berendsenPressureCompressibility)
+  SCRIPT_PARSE_MOD_FLOAT("BerendsenPressureTarget",
+			berendsenPressureTarget,/PRESSUREFACTOR)
+  SCRIPT_PARSE_MOD_FLOAT("BerendsenPressureCompressibility",
+			berendsenPressureCompressibility,*PRESSUREFACTOR)
   SCRIPT_PARSE_FLOAT("BerendsenPressureRelaxationTime",
 				berendsenPressureRelaxationTime)
   SCRIPT_PARSE_FLOAT("constraintScaling",constraintScaling)
