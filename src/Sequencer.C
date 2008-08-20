@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: bhatele $
- * $Date: 2008/08/04 16:35:30 $
- * $Revision: 1.1163 $
+ * $Author: petefred $
+ * $Date: 2008/08/20 15:37:13 $
+ * $Revision: 1.1164 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -191,6 +191,14 @@ void Sequencer::integrate() {
 
     doEnergy = ! ( step % energyFrequency );
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
+    
+    // Redistribute forces, if needed for lonepairs
+    if (simParams->watmodel == WAT_TIP4) {
+      redistrib_tip4p_forces(Results::normal, 0);
+      redistrib_tip4p_forces(Results::nbond, 0);
+      redistrib_tip4p_forces(Results::slow, 0);
+    }
+
     if ( staleForces || doTcl ) {
       if ( doNonbonded ) saveForce(Results::nbond);
       if ( doFullElectrostatics ) saveForce(Results::slow);
@@ -277,6 +285,14 @@ void Sequencer::integrate() {
       // Migrate Atoms on stepsPerCycle
       doEnergy = ! ( step % energyFrequency );
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
+      
+      // Redistribute forces, if needed for lonepairs
+      if (simParams->watmodel == WAT_TIP4) {
+        redistrib_tip4p_forces(Results::normal, 1);
+        if (doNonbonded) redistrib_tip4p_forces(Results::nbond, 1);
+        if (doFullElectrostatics) redistrib_tip4p_forces(Results::slow, 1);
+      }
+
       if ( staleForces || doTcl ) {
         if ( doNonbonded ) saveForce(Results::nbond);
         if ( doFullElectrostatics ) saveForce(Results::slow);
@@ -843,16 +859,20 @@ void Sequencer::saveForce(const int ftag)
   patch->saveForce(ftag);
 }
 
+void Sequencer::redistrib_tip4p_forces(const int ftag, const int pressure) {
+  Tensor virial;
+  Tensor *vp = ( pressure ? &virial : 0 );
+  patch->redistrib_tip4p_forces(ftag, vp);
+  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+}
+
 void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
 						const int useSaved, int pressure)
 {
 #if CMK_VERSION_BLUEGENE
   CmiNetworkProgressAfter (0);
 #endif
-  Tensor virial;
-  Tensor *vp = ( pressure ? &virial : 0 );
-  patch->addForceToMomentum(dt,ftag,useSaved,vp);
-  if (simParams->watmodel == WAT_TIP4) ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+  patch->addForceToMomentum(dt,ftag,useSaved);
 }
 
 void Sequencer::addVelocityToPosition(BigReal dt)

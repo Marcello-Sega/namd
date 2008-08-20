@@ -50,6 +50,9 @@ protected:
     void addForceToMomentum(BigReal, const int ftag = Results::normal,
 						const int useSaved = 0, const int pressure = 0);
     void addVelocityToPosition(BigReal);
+    
+    // For TIP4
+    void redistrib_tip4p_forces(const int, const int);
 
     void addRotDragToPosition(BigReal);
     void addMovDragToPosition(BigReal);
@@ -95,6 +98,7 @@ protected:
 
     int ldbSteps;
     void rebalanceLoad(int timestep);
+
 
 private:
     CthThread thread;

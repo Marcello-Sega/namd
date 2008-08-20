@@ -248,7 +248,7 @@ void ::HomePatch::init_tip4() {
 
       if (r_om == 0.0) {
         int omatm = ig;
-        while (atom[omatm].mass >= 0.5 && omatm < atom[ig].hydrogenGroupSize) omatm++;
+        while (atom[omatm].mass >= 0.5 && omatm < (ig + atom[ig].hydrogenGroupSize)) omatm++;
         if (atom[omatm].mass < 0.5) r_om = mol->rigid_bond_length(atom[omatm].id);
       }
 
@@ -1070,7 +1070,7 @@ void HomePatch::saveForce(const int ftag)
    Arguments are pointers to the currently considered forces on each of the four
    atoms in the tip4p, and the index of the oxygen
 */
-void HomePatch::redistrib_tip4p_forces(Vector& f_ox, Vector& f_h1, Vector& f_h2, Vector& f_om, int oxind, Tensor *virial) {
+void HomePatch::redistrib_tip4p_force(Vector& f_ox, Vector& f_h1, Vector& f_h2, Vector& f_om, int oxind, Tensor *virial) {
 
   Tensor wc; // virial for force redistribution
 
@@ -1191,31 +1191,25 @@ void ::HomePatch::tip4_omrepos(Vector* ref, Vector* pos, Vector* vel, BigReal in
 
 }
 
+void HomePatch::redistrib_tip4p_forces(const int ftag, Tensor* virial) {
+  // Loop over the patch's atoms and apply the appropriate corrections
+  // to get all forces off of lone pairs
+
+  ForceList *f_mod =f;
+  for (int i=0; i<numAtoms; i++) {
+    if (atom[i].mass < 0.01) {
+      redistrib_tip4p_force( f_mod[ftag][i-3], f_mod[ftag][i-2], f_mod[ftag][i-1], f_mod[ftag][i], i-3 , virial);
+    }
+  }
+}
 
 
 void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
-							const int useSaved, Tensor *virial)
+							const int useSaved)
 {
   SimParameters *simParams = Node::Object()->simParameters;
   const BigReal dt = timestep / TIMEFACTOR;
-  ForceList *f_use;
-
-  // Apply corrections for massless particles
-  // For now this is specific to TIP4P water
-  if (simParams->watmodel == WAT_TIP4) {
-
-    ForceList *f_mod =  ( useSaved ? f_saved : f );
-    for (int i=0; i<numAtoms; i++) {
-      if (atom[i].mass < 0.01) {
-        redistrib_tip4p_forces( f_mod[ftag][i-3], f_mod[ftag][i-2], f_mod[ftag][i-1], f_mod[ftag][i], i-3 , virial);
-      }
-    }
-
-    f_use = f_mod;
-
-  } else {
-    f_use = ( useSaved ? f_saved : f );
-  }
+  ForceList *f_use = (useSaved ? f_saved : f);
 
   if ( simParams->fixedAtomsOn ) {
     for ( int i = 0; i < numAtoms; ++i ) {

@@ -93,7 +93,7 @@ public:
   // methods to implement integration
   void saveForce(const int ftag = Results::normal);
   void addForceToMomentum(const BigReal, const int ftag = Results::normal,
-				const int useSaved = 0, Tensor* virial = NULL);
+				const int useSaved = 0);
   void addVelocityToPosition(const BigReal);
 
   // methods for rigidBonds
@@ -225,7 +225,8 @@ private:
 #endif
 
   // PLF -- for TIP4P
-  void redistrib_tip4p_forces(Vector&, Vector&, Vector&, Vector&, int, Tensor*);
+  void redistrib_tip4p_force(Vector&, Vector&, Vector&, Vector&, int, Tensor*);
+  void redistrib_tip4p_forces(const int, Tensor*);
   void tip4_omrepos(Vector*, Vector*, Vector*, BigReal);
   void init_tip4();
   BigReal r_om, r_ohc;
