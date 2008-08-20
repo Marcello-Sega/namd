@@ -147,7 +147,7 @@ void Patch::positionsReady(int doneMigration)
    if ( flags.doMolly ) boxesOpen++;
    _hasNewAtoms = (doneMigration != 0);
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
    CmiNetworkProgressAfter (0);
 #endif
 
@@ -163,7 +163,7 @@ void Patch::positionsReady(int doneMigration)
      avgPositionBox.open(avgPositionPtrBegin);
    }
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
    CmiNetworkProgressAfter (0);
 #endif
    

@@ -1085,7 +1085,7 @@ void ComputePmeMgr::sendTrans(void) {
   cinst1.beginIteration();
 #endif
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
@@ -1156,7 +1156,7 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
 void ComputePmeMgr::gridCalc2(void) {
   // CkPrintf("gridCalc2 on Pe(%d)\n",CkMyPe());
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
@@ -1202,7 +1202,7 @@ void ComputePmeMgr::sendUntrans(void) {
   cinst2.beginIteration();
 #endif  
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
@@ -1250,7 +1250,7 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
     }
   }
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
@@ -2995,7 +2995,7 @@ void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
   const float *md = msg->qgrid;
   float *d = data;
   for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif   
     for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
@@ -3014,7 +3014,7 @@ void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
 void PmeYPencil::backward_fft() {
 #ifdef NAMD_FFTW
   for ( int i=0; i<nx; ++i ) {
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif
 
@@ -3070,7 +3070,7 @@ void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
   const float *md = msg->qgrid;
   float *d = data;
   for ( int i=0; i<nx; ++i ) {
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif   
     for ( int j=0; j<ny; ++j, d += dim3 ) {
@@ -3092,7 +3092,7 @@ void PmeZPencil::backward_fft() {
 	    (fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
 #endif
   
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgress();
 #endif
 
@@ -3136,7 +3136,7 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
   float *d = data;
   int numGrids = 1;  // pencil FFT doesn't support multiple grids
   for ( int g=0; g<numGrids; ++g ) {
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif    
     for ( int i=0; i<nx; ++i ) {

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: petefred $
- * $Date: 2008/08/20 15:37:13 $
- * $Revision: 1.1164 $
+ * $Author: bhatele $
+ * $Date: 2008/08/20 19:54:56 $
+ * $Revision: 1.1165 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -869,7 +869,7 @@ void Sequencer::redistrib_tip4p_forces(const int ftag, const int pressure) {
 void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
 						const int useSaved, int pressure)
 {
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
   patch->addForceToMomentum(dt,ftag,useSaved);
@@ -877,7 +877,7 @@ void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
 
 void Sequencer::addVelocityToPosition(BigReal dt)
 {
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
   patch->addVelocityToPosition(dt);
@@ -967,7 +967,7 @@ void Sequencer::submitHalfstep(int step)
   FullAtom *a = patch->atom.begin();
   int numAtoms = patch->numAtoms;
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
@@ -1059,7 +1059,7 @@ void Sequencer::submitHalfstep(int step)
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
       CmiNetworkProgress ();
 #endif
 
@@ -1107,7 +1107,7 @@ void Sequencer::submitReductions(int step)
   FullAtom *a = patch->atom.begin();
   int numAtoms = patch->numAtoms;
 
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
   CmiNetworkProgressAfter(0);
 #endif
 
@@ -1175,7 +1175,7 @@ void Sequencer::submitReductions(int step)
 
     int hgs;
     for ( int i = 0; i < numAtoms; i += hgs ) {
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
       CmiNetworkProgress();
 #endif
       hgs = a[i].hydrogenGroupSize;

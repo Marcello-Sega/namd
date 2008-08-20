@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: bhatele $
- * $Date: 2008/08/04 16:35:30 $
- * $Revision: 1.1222 $
+ * $Date: 2008/08/20 19:54:56 $
+ * $Revision: 1.1223 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1421,7 +1421,7 @@ void Controller::printEnergies(int step, int minimize)
 		labels << (LABEL) << " "; values << "{" << (VALUE) << "} ";
     if (node->getScript() && node->getScript()->doCallback()) {
       std::ostringstream labels, values;
-#if CMK_VERSION_BLUEGENE
+#if CMK_BLUEGENEL
       // the normal version below gives a compiler error
       values.precision(16);
 #else
