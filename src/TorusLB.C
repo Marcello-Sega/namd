@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/06/05 16:42:10 $
- * $Revision: 1.12 $
+ * $Date: 2008/08/27 02:35:17 $
+ * $Revision: 1.13 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -76,20 +76,28 @@ void TorusLB::strategy() {
 
   // see if we have found a processor to place the compute on
   p = 0;
-  if((p = bestPe[3])
-  || (p = bestPe[4])
-  || (p = bestPe[5])
+  if((p = bestPe[5])
 #if USE_TOPOMAP
-  || (p = goodPe[3])
-  || (p = goodPe[4])
   || (p = goodPe[5])
 #endif
+  || (p = bestPe[4])
+#if USE_TOPOMAP
+  || (p = goodPe[4])
+#endif
+  || (p = bestPe[3])
+#if USE_TOPOMAP
+  || (p = goodPe[3])
+#endif
   || (p = bestPe[1])
-  || (p = bestPe[2])
-  || (p = bestPe[0])
 #if USE_TOPOMAP
   || (p = goodPe[1])
+#endif
+  || (p = bestPe[2])
+#if USE_TOPOMAP
   || (p = goodPe[2])
+#endif
+  || (p = bestPe[0])
+#if USE_TOPOMAP
   || (p = goodPe[0])
 #endif
   ) {
@@ -97,10 +105,10 @@ void TorusLB::strategy() {
     continue;
   }
  
+  int found = 0;
 #if USE_TOPOMAP
   // If no processor found, go through the whole list in a topological fashion
   // first try the inner brick
-  int found = 0;
   int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
   int dimNX, dimNY, dimNZ, dimNT;
   double minLoad;
@@ -202,8 +210,8 @@ void TorusLB::strategy() {
     continue;
   }
 
-#else
-  int found = 0;
+#endif /* USE_TOPOMAP */
+
   if(found == 0) {
     heapIterator nextp;
     processorInfo *p = (processorInfo *)(pes->iterator((heapIterator *) &nextp));
@@ -212,24 +220,42 @@ void TorusLB::strategy() {
       p = (processorInfo *)(pes->next(&nextp));
     }
     p = 0;
-    if((p = bestPe[3])
+    if((p = bestPe[5])
+#if USE_TOPOMAP
+    || (p = goodPe[5])
+#endif
     || (p = bestPe[4])
-    || (p = bestPe[5])
+#if USE_TOPOMAP
+    || (p = goodPe[4])
+#endif
+    || (p = bestPe[3])
+#if USE_TOPOMAP
+    || (p = goodPe[3])
+#endif
     || (p = bestPe[1])
+#if USE_TOPOMAP
+    || (p = goodPe[1])
+#endif
     || (p = bestPe[2])
-    || (p = bestPe[0])) {
+#if USE_TOPOMAP
+    || (p = goodPe[2])
+#endif
+    || (p = bestPe[0])
+#if USE_TOPOMAP
+    || (p = goodPe[0])
+#endif
+    ) {
       assign(c, p);
       found = 1;
       continue;
     }
   }
-#endif
 
   if(found == 0) {
     p = 0;
-    if((p = badPe[3])
+    if((p = badPe[5])
     || (p = badPe[4])
-    || (p = badPe[5])
+    || (p = badPe[3])
     || (p = badPe[1])
     || (p = badPe[2])
     || (p = badPe[0])) {
@@ -303,8 +329,12 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
     }
     else {
       processorInfo* &newp = goodPe[index];
-      if (!(newp) || p->load < newp->load )
+      if (!(newp) /*|| p->load < newp->load*/ )
         newp = p;
+      else {
+        if(tmgr.getHopsBetweenRanks(newp->Id, p1) + tmgr.getHopsBetweenRanks(newp->Id, p2) > tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2))
+          newp = p;
+      }
     }
 #endif
   }

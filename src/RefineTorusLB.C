@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/06/05 16:42:10 $
- * $Revision: 1.14 $
+ * $Date: 2008/08/27 02:35:17 $
+ * $Revision: 1.15 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -163,20 +163,28 @@ int RefineTorusLB::newRefine() {
 
     bestP = 0;
     // see if we have found a compute processor pair
-    REASSIGN(bestPe[3])
-    else REASSIGN(bestPe[4])
-    else REASSIGN(bestPe[5])
+    REASSIGN(bestPe[5])
 #if USE_TOPOMAP
-    else REASSIGN(goodPe[3])
-    else REASSIGN(goodPe[4])
     else REASSIGN(goodPe[5])
 #endif
+    else REASSIGN(bestPe[4])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[4])
+#endif
+    else REASSIGN(bestPe[3])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[3])
+#endif
     else REASSIGN(bestPe[1])
-    else REASSIGN(bestPe[2])
-    else REASSIGN(bestPe[0])
 #if USE_TOPOMAP
     else REASSIGN(goodPe[1])
+#endif
+    else REASSIGN(bestPe[2])
+#if USE_TOPOMAP
     else REASSIGN(goodPe[2])
+#endif
+    else REASSIGN(bestPe[0])
+#if USE_TOPOMAP
     else REASSIGN(goodPe[0])
 #endif
 
@@ -201,9 +209,9 @@ int RefineTorusLB::newRefine() {
     //else
       //CkPrintf("1st try failed\n");
 
+    int found = 0;
 #if USE_TOPOMAP
     // if this fails, look at the inner brick
-    int found = 0;
     int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
     int dimNX, dimNY, dimNZ, dimNT;
     double minLoad;
@@ -329,7 +337,7 @@ int RefineTorusLB::newRefine() {
 	      for(int j=ym; j<=yM; j++)
 	        for(int l=0; l<dimNT; l++)
 	        {
-		  pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ);
+		  pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
 		  p = &processors[pe];
 		  if(c->load + p->load < minLoad) {
 		    good.c = c;
@@ -356,14 +364,9 @@ int RefineTorusLB::newRefine() {
         lightPes->insert((InfoRecord *) donor);
       continue;
     }
-    else {
-      done = 0;
-      break;
-    }
 
-#else
+#endif /* USE_TOPOMAP */
 
-    int found=0;
     // find the first processor to place the compute on
     p = (processorInfo *)lightPes->iterator((Iterator *) &nextP);
     if(found == 0) {
@@ -381,12 +384,30 @@ int RefineTorusLB::newRefine() {
       }
 
       bestP = 0;
-      REASSIGN(bestPe[3])
+      REASSIGN(bestPe[5])
+#if USE_TOPOMAP
+      else REASSIGN(goodPe[5])
+#endif
       else REASSIGN(bestPe[4])
-      else REASSIGN(bestPe[5])
+#if USE_TOPOMAP
+      else REASSIGN(goodPe[4])
+#endif
+      else REASSIGN(bestPe[3])
+#if USE_TOPOMAP
+      else REASSIGN(goodPe[3])
+#endif
       else REASSIGN(bestPe[1])
+#if USE_TOPOMAP
+      else REASSIGN(goodPe[1])
+#endif
       else REASSIGN(bestPe[2])
+#if USE_TOPOMAP
+      else REASSIGN(goodPe[2])
+#endif
       else REASSIGN(bestPe[0])
+#if USE_TOPOMAP
+      else REASSIGN(goodPe[0])
+#endif
     }
 
     if(bestP) {
@@ -401,7 +422,6 @@ int RefineTorusLB::newRefine() {
       done = 0;
       break;
     }
-#endif // USE_TOPOMAP
  
   } // end of while loop
 
@@ -468,10 +488,14 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
     } else {
       pcpair* &newp = goodPe[index];
 
-      if (!(newp->c) || ((p->load + c->load) < (newp->p->load + newp->c->load))) {
+      if (!(newp->c) /*|| ((p->load + c->load) < (newp->p->load + newp->c->load))*/) {
         newp->p = p;
         newp->c = c;
-
+      } else {
+        if(tmgr.getHopsBetweenRanks((newp->p)->Id, p1) + tmgr.getHopsBetweenRanks((newp->p)->Id, p2) > tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2)) {
+          newp->p = p;
+          newp->c = c;
+        }
       }
     }
 #endif
