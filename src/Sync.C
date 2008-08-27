@@ -81,7 +81,8 @@ void Sync::openSync(void)
     // if no proxy sync and no home patch, then disable home patch sync as well
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
-  // CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CkMyPe(), useSync, useProxySync);
+  if(CkMyPe() == 0)
+    CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CkMyPe(), useSync, useProxySync);
 }    
 
 // called from Patch::positionsReady()
