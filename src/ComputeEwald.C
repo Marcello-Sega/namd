@@ -60,11 +60,12 @@ ComputeEwald::ComputeEwald(ComputeID c, ComputeMgr *m)
   
   ktot = (1+kxmax) * (2*kymax+1) * (2*kzmax+1);
   kappa = ComputeNonbondedUtil::ewaldcof;
-  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROF_NONBONDED);
   pressureProfileSlabs = sp->pressureProfileSlabs;
   numAtomTypes = sp->pressureProfileAtomTypes;
   int nelements = 3*pressureProfileSlabs * (numAtomTypes*(numAtomTypes+1))/2;
   pressureProfileData = new float[nelements];
+  reduction = ReductionMgr::Object()->willSubmit(
+				REDUCTIONS_PPROF_NONBONDED, nelements);
 
   // figure out who da masta be
   numWorkingPes = (PatchMap::Object())->numNodesWithPatches();

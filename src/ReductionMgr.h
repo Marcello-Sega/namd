@@ -165,30 +165,18 @@ class RequireReduction;
 class ReductionSetData {
 public:
   int sequenceNumber;
-  int eventsRemaining;  // includes delivery, NOT suspend
-  int dataSize;
+  int submitsRecorded;
   BigReal *data;
   ReductionSetData *next;
-  ReductionSetData(int seqNum, int events) {
+  ReductionSetData(int seqNum, int size) {
     sequenceNumber = seqNum;
-    eventsRemaining = events;
-    dataSize = 0;
-    data = 0;
+    submitsRecorded = 0;
+    data = new BigReal[size];
+    for ( int i = 0; i < size; ++i ) { data[i] = 0; }
     next = 0;
   }
-  ~ReductionSetData(void) {
+  ~ReductionSetData() {
     delete [] data;
-  }
-  inline void resize(int size) {
-    if ( size > dataSize ) {
-      BigReal *oldData = data;
-      data = new BigReal[size];
-      int i = 0;
-      for ( ; i < dataSize; ++i ) { data[i] = oldData[i]; }
-      for ( ; i < size; ++i ) { data[i] = 0; }
-      dataSize = size;
-      delete [] oldData;
-    }
   }
 };
 
@@ -197,22 +185,17 @@ class ReductionSet {
 public:
   int reductionSetID;
   int nextSequenceNumber;
-  int eventsRegistered;
+  int submitsRegistered;
+  int dataSize;
   ReductionSetData *dataQueue;
   ReductionSetData* getData(int seqNum);
-  void delData(int seqNum);
+  ReductionSetData* removeData(int seqNum);  // removes from queue
   int requireRegistered;  // is a thread subscribed on this node?
   int threadIsWaiting;  // is there a thread waiting on this?
   int waitingForSequenceNumber;  // sequence number waited for
   CthThread waitingThread;
-  ReductionSet(int setID) {
-    reductionSetID = setID;
-    nextSequenceNumber = 0;
-    eventsRegistered = 0;
-    dataQueue = 0;
-    requireRegistered = 0;
-    threadIsWaiting = 0;
-  }
+  ReductionSet(int setID, int size);
+  ~ReductionSet();
   int addToRemoteSequenceNumber[REDUCTION_MAX_CHILDREN];
 };
 
@@ -232,11 +215,10 @@ private:
   }
   int isRoot(void) const { return ( myParent == -1 ); }
 
-  ReductionSet* getSet(int setID);
+  ReductionSet* getSet(int setID, int size);
   void delSet(int setID);
 
-  void mergeAndDeliver(
-	ReductionSet *set, int seqNum, const BigReal *newData, int size);
+  void mergeAndDeliver(ReductionSet *set, int seqNum);
 
   void submit(SubmitReduction*);
   void remove(SubmitReduction*);
@@ -255,8 +237,8 @@ public:
   ~ReductionMgr();
 
   // client interface
-  SubmitReduction* willSubmit(int setID);
-  RequireReduction* willRequire(int setID);
+  SubmitReduction* willSubmit(int setID, int size = -1);
+  RequireReduction* willRequire(int setID, int size = -1);
 
   // message entry points
   void remoteRegister(ReductionRegisterMsg *msg);
@@ -272,35 +254,18 @@ private:
   int reductionSetID;
   int sequenceNumber;
   ReductionMgr *master;
-  int dataSize;
-  BigReal *data;
-  SubmitReduction(void) { dataSize = 0; data = 0; }
+  BigReal *data;  // managed explicitly by master
 public:
   inline BigReal& item(int i) {
-    if ( i >= dataSize ) {
-      int oldSize = dataSize;
-      BigReal *oldData = data;
-      dataSize = i+1;
-      data = new BigReal[dataSize];
-      int j = 0;
-      for ( ; j < oldSize; ++j ) data[j] = oldData[j];
-      for ( ; j < dataSize; ++j ) data[j] = 0.;
-      delete [] oldData;
-    }
     return data[i];
   }
   void add(int nitems, const BigReal *arr) {
-    if (nitems < 1) return;
-    // bump the size up
-    this->item(nitems-1) += 0;
     for (int i=0; i<nitems; i++) data[i] += arr[i];
   }
   void submit(void) {
     master->submit(this);
-    ++sequenceNumber;
-    for ( int i = 0; i < dataSize; ++i ) { data[i] = 0; }
   }
-  ~SubmitReduction(void) { delete [] data; master->remove(this); }
+  ~SubmitReduction(void) { master->remove(this); }
 };
 
 // Client handle for requires
@@ -310,16 +275,15 @@ private:
   int reductionSetID;
   int sequenceNumber;
   ReductionMgr *master;
-  int dataSize;
+  ReductionSetData *currentData;
   BigReal *data;
-  RequireReduction(void) { dataSize = 0; data = 0; }
+  RequireReduction(void) { currentData = 0; data = 0; }
 public:
-  BigReal item(int i) const { return ( i < dataSize ? data[i] : 0 ); }
+  BigReal item(int i) const { return data[i]; }
   void require(void) {
     master->require(this);
-    ++sequenceNumber;
   }
-  ~RequireReduction(void) { delete [] data; master->remove(this); }
+  ~RequireReduction(void) { delete currentData; master->remove(this); }
 };
 
 

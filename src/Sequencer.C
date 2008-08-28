@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: bhatele $
- * $Date: 2008/08/20 19:54:56 $
- * $Revision: 1.1165 $
+ * $Author: jim $
+ * $Date: 2008/08/28 23:16:35 $
+ * $Revision: 1.1166 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -44,8 +44,11 @@ Sequencer::Sequencer(HomePatch *p) :
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
     if (simParams->pressureProfileOn) {
+      int ntypes = simParams->pressureProfileAtomTypes;
+      int nslabs = simParams->pressureProfileSlabs;
       pressureProfileReduction = 
-        ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROF_INTERNAL);
+        ReductionMgr::Object()->willSubmit(
+		REDUCTIONS_PPROF_INTERNAL, 3*nslabs*ntypes);
     } else {
       pressureProfileReduction = NULL;
     }

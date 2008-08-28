@@ -40,6 +40,7 @@
 class ReductionRegisterMsg : public CMessage_ReductionRegisterMsg {
 public:
   int reductionSetID;
+  int dataSize;
   int sourceNode;
 };
 
@@ -73,6 +74,34 @@ public:
 
 };
 
+ReductionSet::ReductionSet(int setID, int size) {
+  if ( setID == REDUCTIONS_BASIC ) {
+    if ( size != -1 ) {
+      NAMD_bug("ReductionSet size specified for REDUCTIONS_BASIC.");
+    }
+    size = REDUCTION_MAX_RESERVED;
+  }
+  if ( size == -1 ) NAMD_bug("ReductionSet size not specified.");
+  dataSize = size;
+  reductionSetID = setID;
+  nextSequenceNumber = 0;
+  submitsRegistered = 0;
+  dataQueue = 0;
+  requireRegistered = 0;
+  threadIsWaiting = 0;
+}
+
+ReductionSet::~ReductionSet() {
+
+  ReductionSetData *current = dataQueue;
+
+  while ( current ) {
+    ReductionSetData *next = current->next;
+    delete current;
+    current = next;
+  }
+}
+
 // possibly create and return data for a particular seqNum
 ReductionSetData* ReductionSet::getData(int seqNum) {
 
@@ -83,13 +112,13 @@ ReductionSetData* ReductionSet::getData(int seqNum) {
     current = &((*current)->next);
   }
 
-  nextSequenceNumber++; // should match all clients
-  *current = new ReductionSetData(seqNum, eventsRegistered);
+//iout << "seq " << seqNum << " created on " << CkMyPe() << "\n" << endi;
+  *current = new ReductionSetData(seqNum, dataSize);
   return *current;
 }
 
 // possibly delete data for a particular seqNum
-void ReductionSet::delData(int seqNum) {
+ReductionSetData* ReductionSet::removeData(int seqNum) {
 
   ReductionSetData **current = &dataQueue;
 
@@ -98,13 +127,11 @@ void ReductionSet::delData(int seqNum) {
     current = &((*current)->next);
   }
 
-  if ( ! *current ) { NAMD_die("ReductionSet::delData on missing seqNum"); }
+  if ( ! *current ) { NAMD_die("ReductionSet::removeData on missing seqNum"); }
 
-  if ( (*current)->eventsRemaining == 0 ) {
-    ReductionSetData *todelete = *current;
-    *current = (*current)->next;
-    delete todelete;
-  }
+  ReductionSetData *toremove = *current;
+  *current = (*current)->next;
+  return toremove;
 }
 
 // constructor
@@ -143,12 +170,13 @@ ReductionMgr::~ReductionMgr() {
 }
 
 // possibly create and return reduction set
-ReductionSet* ReductionMgr::getSet(int setID) {
+ReductionSet* ReductionMgr::getSet(int setID, int size) {
   if ( reductionSets[setID] == 0 ) {
-    reductionSets[setID] = new ReductionSet(setID);
+    reductionSets[setID] = new ReductionSet(setID,size);
     if ( ! isRoot() ) {
       ReductionRegisterMsg *msg = new ReductionRegisterMsg;
       msg->reductionSetID = setID;
+      msg->dataSize = size;
       msg->sourceNode = CkMyPe();
 #if CHARM_VERSION > 050402
       CProxy_ReductionMgr reductionProxy(thisgroup);
@@ -164,7 +192,7 @@ ReductionSet* ReductionMgr::getSet(int setID) {
 // possibly delete reduction set
 void ReductionMgr::delSet(int setID) {
   ReductionSet *set = reductionSets[setID];
-  if ( set && ! set->eventsRegistered ) {
+  if ( set && ! set->submitsRegistered & ! set->requireRegistered ) {
     if ( ! isRoot() ) {
       ReductionRegisterMsg *msg = new ReductionRegisterMsg;
       msg->reductionSetID = setID;
@@ -182,18 +210,20 @@ void ReductionMgr::delSet(int setID) {
 }
 
 // register local submit
-SubmitReduction* ReductionMgr::willSubmit(int setID) {
-  ReductionSet *set = getSet(setID);
-  if ( set->dataQueue ) {
+SubmitReduction* ReductionMgr::willSubmit(int setID, int size) {
+  ReductionSet *set = getSet(setID, size);
+  ReductionSetData *data = set->getData(set->nextSequenceNumber);
+  if ( data->submitsRecorded ) {
     NAMD_die("ReductionMgr::willSubmit called while reductions outstanding!");
   }
 
-  set->eventsRegistered++;
+  set->submitsRegistered++;
 
   SubmitReduction *handle = new SubmitReduction;
   handle->reductionSetID = setID;
   handle->sequenceNumber = set->nextSequenceNumber;
   handle->master = this;
+  handle->data = data->data;
 
   return handle;
 }
@@ -202,11 +232,11 @@ SubmitReduction* ReductionMgr::willSubmit(int setID) {
 void ReductionMgr::remove(SubmitReduction* handle) {
   int setID = handle->reductionSetID;
   ReductionSet *set = reductionSets[setID];
-  if ( set->dataQueue ) {
+  if ( set->getData(set->nextSequenceNumber)->submitsRecorded ) {
     NAMD_die("SubmitReduction deleted while reductions outstanding!");
   }
 
-  set->eventsRegistered--;
+  set->submitsRegistered--;
 
   delSet(setID);
 }
@@ -214,24 +244,30 @@ void ReductionMgr::remove(SubmitReduction* handle) {
 // local submit
 void ReductionMgr::submit(SubmitReduction* handle) {
   int setID = handle->reductionSetID;
-  ReductionSet *set = reductionSets[setID];
   int seqNum = handle->sequenceNumber;
-  int size = handle->dataSize;
-  BigReal *data = handle->data;
+  ReductionSet *set = reductionSets[setID];
+  ReductionSetData *data = set->getData(seqNum);
 
-  mergeAndDeliver(set,seqNum,data,size);
+  data->submitsRecorded++;
+  if ( data->submitsRecorded == set->submitsRegistered ) {
+    mergeAndDeliver(set,seqNum);
+  }
+
+  handle->sequenceNumber = ++seqNum;
+  handle->data = set->getData(seqNum)->data;
 }
 
 // register submit from child
 void ReductionMgr::remoteRegister(ReductionRegisterMsg *msg) {
 
   int setID = msg->reductionSetID;
-  ReductionSet *set = getSet(setID);
-  if ( set->dataQueue ) {
-    NAMD_die("ReductionMgr::willSubmit called while reductions outstanding on parent!");
+  int size = msg->dataSize;
+  ReductionSet *set = getSet(setID,size);
+  if ( set->getData(set->nextSequenceNumber)->submitsRecorded ) {
+    NAMD_die("ReductionMgr::remoteRegister called while reductions outstanding on parent!");
   }
 
-  set->eventsRegistered++;
+  set->submitsRegistered++;
   set->addToRemoteSequenceNumber[msg->sourceNode - firstChild]
 					= set->nextSequenceNumber;
   delete msg;
@@ -242,11 +278,11 @@ void ReductionMgr::remoteUnregister(ReductionRegisterMsg *msg) {
 
   int setID = msg->reductionSetID;
   ReductionSet *set = reductionSets[setID];
-  if ( set->dataQueue ) {
+  if ( set->getData(set->nextSequenceNumber)->submitsRecorded ) {
     NAMD_die("SubmitReduction deleted while reductions outstanding on parent!");
   }
 
-  set->eventsRegistered--;
+  set->submitsRegistered--;
 
   delSet(setID);
   delete msg;
@@ -258,20 +294,15 @@ void ReductionMgr::remoteSubmit(ReductionSubmitMsg *msg) {
   ReductionSet *set = reductionSets[setID];
   int seqNum = msg->sequenceNumber
 	+ set->addToRemoteSequenceNumber[msg->sourceNode - firstChild];
+
+//iout << "seq " << seqNum << " from " << msg->sourceNode << " received on " << CkMyPe() << "\n" << endi;
   int size = msg->dataSize;
-  BigReal *data = msg->data;
+  if ( size != set->dataSize ) {
+    NAMD_bug("ReductionMgr::remoteSubmit data sizes do not match.");
+  }
 
-  mergeAndDeliver(set,seqNum,data,size);
-  delete msg;
-}
-
-// common code for submission and delivery
-void ReductionMgr::mergeAndDeliver(
-	ReductionSet *set, int seqNum, const BigReal *newData, int size) {
+  BigReal *newData = msg->data;
   ReductionSetData *data = set->getData(seqNum);
-
-  // merge in this submission
-  data->resize(size);  // extend as needed
   BigReal *curData = data->data;
 #ifdef ARCH_POWERPC
 #pragma disjoint (*curData,  *newData)
@@ -280,10 +311,26 @@ void ReductionMgr::mergeAndDeliver(
   for ( int i = 0; i < size; ++i ) {
     curData[i] += newData[i];
   }
-  data->eventsRemaining--;
+  delete msg;
 
-  // deliver if all submissions are in
-  if ( data->eventsRemaining == set->requireRegistered ) {
+  data->submitsRecorded++;
+  if ( data->submitsRecorded == set->submitsRegistered ) {
+    mergeAndDeliver(set,seqNum);
+  }
+}
+
+// common code for submission and delivery
+void ReductionMgr::mergeAndDeliver(ReductionSet *set, int seqNum) {
+
+//iout << "seq " << seqNum << " complete on " << CkMyPe() << "\n" << endi;
+ 
+    set->nextSequenceNumber++; // should match all clients
+
+    ReductionSetData *data = set->getData(seqNum);
+    if ( data->submitsRecorded != set->submitsRegistered ) {
+      NAMD_bug("ReductionMgr::mergeAndDeliver not ready to deliver.");
+    }
+
     if ( isRoot() ) {
       if ( set->requireRegistered ) {
 	if ( set->threadIsWaiting && set->waitingForSequenceNumber == seqNum) {
@@ -295,12 +342,12 @@ void ReductionMgr::mergeAndDeliver(
       }
     } else {
       // send data to parent
-      int size = data->dataSize;
+      int size = set->dataSize;
       ReductionSubmitMsg *msg = new(&size,1) ReductionSubmitMsg;
       msg->reductionSetID = set->reductionSetID;
       msg->sourceNode = CkMyPe();
       msg->sequenceNumber = seqNum;
-      msg->dataSize = data->dataSize;
+      msg->dataSize = set->dataSize;
       for ( int i = 0; i < msg->dataSize; ++i ) {
         msg->data[i] = data->data[i];
       }
@@ -310,17 +357,16 @@ void ReductionMgr::mergeAndDeliver(
 #else
       CProxy_ReductionMgr(thisgroup).remoteSubmit(msg,myParent);
 #endif
+      delete set->removeData(seqNum);
     }
-    set->delData(seqNum);
-  }
+
 }
 
 // register require
-RequireReduction* ReductionMgr::willRequire(int setID) {
-  ReductionSet *set = getSet(setID);
-  set->eventsRegistered++;
+RequireReduction* ReductionMgr::willRequire(int setID, int size) {
+  ReductionSet *set = getSet(setID,size);
   set->requireRegistered++;
-  if ( set->dataQueue ) {
+  if ( set->getData(set->nextSequenceNumber)->submitsRecorded ) {
     NAMD_die("ReductionMgr::willRequire called while reductions outstanding!");
   }
 
@@ -336,11 +382,10 @@ RequireReduction* ReductionMgr::willRequire(int setID) {
 void ReductionMgr::remove(RequireReduction* handle) {
   int setID = handle->reductionSetID;
   ReductionSet *set = reductionSets[setID];
-  if ( set->dataQueue ) {
+  if ( set->getData(set->nextSequenceNumber)->submitsRecorded ) {
     NAMD_die("RequireReduction deleted while reductions outstanding!");
   }
 
-  set->eventsRegistered--;
   set->requireRegistered--;
 
   delSet(setID);
@@ -352,25 +397,20 @@ void ReductionMgr::require(RequireReduction* handle) {
   ReductionSet *set = reductionSets[setID];
   int seqNum = handle->sequenceNumber;
   ReductionSetData *data = set->getData(seqNum);
-  if ( data->eventsRemaining > set->requireRegistered ) {
+  if ( data->submitsRecorded < set->submitsRegistered ) {
     set->threadIsWaiting = 1;
     set->waitingForSequenceNumber = seqNum;
     set->waitingThread = CthSelf();
+//iout << "seq " << seqNum << " waiting\n" << endi;
     CthSuspend();
   }
   set->threadIsWaiting = 0;
-  data->eventsRemaining--;
 
-  if ( handle->dataSize < data->dataSize ) {
-    delete [] handle->data;
-    handle->data = new BigReal[data->dataSize];
-    handle->dataSize = data->dataSize;
-  }
-  for ( int i = 0; i < data->dataSize; ++i ) {
-    handle->data[i] = data->data[i];
-  }
-
-  set->delData(seqNum);
+//iout << "seq " << seqNum << " consumed\n" << endi;
+  delete handle->currentData;
+  handle->currentData = set->removeData(seqNum);
+  handle->data = handle->currentData->data;
+  handle->sequenceNumber = ++seqNum;
 }
 
 

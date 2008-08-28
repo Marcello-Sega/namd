@@ -224,9 +224,9 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       if (params->pressureProfileOn) {
         pressureProfileSlabs = T::pressureProfileSlabs = 
           params->pressureProfileSlabs;
-        pressureProfileReduction = ReductionMgr::Object()->willSubmit(
-          REDUCTIONS_PPROF_BONDED);
         int n = T::pressureProfileAtomTypes = params->pressureProfileAtomTypes;
+        pressureProfileReduction = ReductionMgr::Object()->willSubmit(
+          REDUCTIONS_PPROF_BONDED, 3*pressureProfileSlabs*((n*(n+1))/2));
         int numAtomTypePairs = n*n;
         pressureProfileData = new BigReal[3*pressureProfileSlabs*numAtomTypePairs];
       } else {
@@ -245,9 +245,9 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       if (params->pressureProfileOn) {
         pressureProfileSlabs = T::pressureProfileSlabs = 
           params->pressureProfileSlabs;
-        pressureProfileReduction = ReductionMgr::Object()->willSubmit(
-          REDUCTIONS_PPROF_BONDED);
         int n = T::pressureProfileAtomTypes = params->pressureProfileAtomTypes;
+        pressureProfileReduction = ReductionMgr::Object()->willSubmit(
+          REDUCTIONS_PPROF_BONDED, 3*pressureProfileSlabs*((n*(n+1))/2));
         int numAtomTypePairs = n*n;
         pressureProfileData = new BigReal[3*pressureProfileSlabs*numAtomTypePairs];
       } else {

@@ -22,9 +22,10 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   if (pressureProfileOn) {
-    pressureProfileReduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_PPROF_NONBONDED);
     int n = pressureProfileAtomTypes; 
     pressureProfileData = new BigReal[3*n*n*pressureProfileSlabs];
+    pressureProfileReduction = ReductionMgr::Object()->willSubmit(
+	REDUCTIONS_PPROF_NONBONDED, 3*pressureProfileSlabs*((n*(n+1))/2));
   } else {
     pressureProfileReduction = NULL;
     pressureProfileData = NULL;

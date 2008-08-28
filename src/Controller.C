@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: bhatele $
- * $Date: 2008/08/20 19:54:56 $
- * $Revision: 1.1223 $
+ * $Author: jim $
+ * $Date: 2008/08/28 23:16:35 $
+ * $Revision: 1.1224 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -69,9 +69,9 @@ public:
   PressureProfileReduction(int rtag, int numslabs, int numpartitions,
       const char *myname, int outputfreq)
   : nslabs(numslabs), freq(outputfreq) {
-    reduction = ReductionMgr::Object()->willRequire(rtag);
     name = strdup(myname);
     nelements = 3*nslabs * numpartitions;
+    reduction = ReductionMgr::Object()->willRequire(rtag,nelements);
 
     average = new BigReal[nelements];
     count = 0;
