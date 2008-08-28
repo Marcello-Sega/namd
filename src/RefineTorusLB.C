@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/08/27 02:35:17 $
- * $Revision: 1.15 $
+ * $Date: 2008/08/28 03:37:35 $
+ * $Revision: 1.16 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -487,12 +487,14 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
 #if USE_TOPOMAP
     } else {
       pcpair* &newp = goodPe[index];
+      double loadDiff = newp->p->load + newp->c->load - p->load - c->load;
+      if (loadDiff<0) loadDiff *= (-1);
 
-      if (!(newp->c) /*|| ((p->load + c->load) < (newp->p->load + newp->c->load))*/) {
+      if (!(newp->c) || ( loadDiff > 0.4 * averageLoad && (p->load + c->load) < (newp->p->load + newp->c->load) ) ) {
         newp->p = p;
         newp->c = c;
       } else {
-        if(tmgr.getHopsBetweenRanks((newp->p)->Id, p1) + tmgr.getHopsBetweenRanks((newp->p)->Id, p2) > tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2)) {
+        if (tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2) < tmgr.getHopsBetweenRanks((newp->p)->Id, p1) + tmgr.getHopsBetweenRanks((newp->p)->Id, p2)) {
           newp->p = p;
           newp->c = c;
         }

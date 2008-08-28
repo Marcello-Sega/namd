@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/08/27 02:35:17 $
- * $Revision: 1.13 $
+ * $Date: 2008/08/28 03:37:35 $
+ * $Revision: 1.14 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -329,10 +329,13 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
     }
     else {
       processorInfo* &newp = goodPe[index];
-      if (!(newp) /*|| p->load < newp->load*/ )
+      double loadDiff = newp->load - p->load;
+      if (loadDiff<0) loadDiff *= (-1);
+
+      if (!(newp) || (loadDiff > 0.4 * averageLoad && p->load < newp->load) )
         newp = p;
       else {
-        if(tmgr.getHopsBetweenRanks(newp->Id, p1) + tmgr.getHopsBetweenRanks(newp->Id, p2) > tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2))
+        if (tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2) < tmgr.getHopsBetweenRanks(newp->Id, p1) + tmgr.getHopsBetweenRanks(newp->Id, p2))
           newp = p;
       }
     }
