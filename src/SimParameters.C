@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2008/08/12 19:20:03 $
- * $Revision: 1.1258 $
+ * $Author: brunner $
+ * $Date: 2008/09/11 19:35:02 $
+ * $Revision: 1.1259 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1441,7 +1441,7 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    opts.optional("main", "numAtomsSelf2", 
 		 "maximum number of atoms in one self compute distribution", 
-		 &numAtomsSelf2, numAtomsSelf);
+		 &numAtomsSelf2, 154);
    opts.range("numAtomsSelf2",NOT_NEGATIVE);
 
    opts.optional("main", "numAtomsPair", 
