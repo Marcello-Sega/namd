@@ -18,7 +18,6 @@
 #define USE_COMPAT_CONST
 #include <tcl.h>
 #endif
-#include "TclCommands.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 3
@@ -490,24 +489,9 @@ void GlobalMasterTcl::initialize() {
 
   interp = Node::Object()->getScript()->interp;
   DebugM(1,"here\n");
+
   Tcl_CreateCommand(interp, "atomid", Tcl_atomid,
     (ClientData) (Node::Object()->molecule), (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecsub", proc_vecsub,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecscale", proc_vecscale,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "getbond", proc_getbond,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "getangle", proc_getangle,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "getdihedral", proc_getdihedral,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "anglegrad", proc_anglegrad,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "dihedralgrad", proc_dihedralgrad,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 
   DebugM(1,"here\n");
   // Call interpreter to determine requested atoms

@@ -35,28 +35,14 @@ ComputeTclBC::ComputeTclBC(ComputeID c)
 
 #ifdef NAMD_TCL
   interp = Tcl_CreateInterp();
+  tcl_vector_math_init(interp);
+
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "wrapmode", Tcl_wrapmode,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateObjCommand(interp, "cleardrops", Tcl_cleardrops,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecadd", proc_vecadd,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecsub", proc_vecsub,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "vecscale", proc_vecscale,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "getbond", proc_getbond,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "getangle", proc_getangle,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "getdihedral", proc_getdihedral,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "anglegrad", proc_anglegrad,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
-  Tcl_CreateCommand(interp, "dihedralgrad", proc_dihedralgrad,
-    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
 
   // run script to define calcforces, etc.
   if ( simParams->tclBCScript ) {

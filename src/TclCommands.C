@@ -18,12 +18,10 @@
 #define USE_COMPAT_CONST
 #include <tcl.h>
 
-#define SIMPLE_TCL_OPT(string,result)       \
-if (!strcmp(argv[1], string)) {             \
-  Tcl_AppendResult(interp, result, NULL);   \
-  return TCL_OK;                            \
-}
+#include "Matrix4.C"
+#include "TclVec.C"
 
+#if 0
 
 /***************** override some of the vector routines for speed ******/
 /* These should be the exact C equivalent to the corresponding Tcl    */
@@ -237,49 +235,45 @@ int tcl_get_vector(char *fctn, Tcl_Interp *interp,
   return ret_val;
 }
 
+#endif
+
 
 // Get a 3-D vector from a TCL list
-static int get_3D_vector(Tcl_Interp *interp, char *list, Vector &result)
+static int get_3D_vector(Tcl_Interp *interp, Tcl_Obj *const list, Vector &result)
 {
-  int num, status=1;
-  char **data;
+  int num;
+  Tcl_Obj **data;
   
-  if (Tcl_SplitList(interp,list,&num,&data) != TCL_OK)
-    status = 0;
-  else if (num != 3)
-    status = 0;
-  else if (Tcl_GetDouble(interp,data[0],&(result.x)) != TCL_OK)
-    status = 0;
-  else if (Tcl_GetDouble(interp,data[1],&(result.y)) != TCL_OK)
-    status = 0;
-  else if (Tcl_GetDouble(interp,data[2],&(result.z)) != TCL_OK)
-    status = 0;
-  
-  Tcl_Free((char*) data);
-  return status;
+  if (Tcl_ListObjGetElements(interp, list, &num, &data) != TCL_OK)
+    return 0;
+  if (Tcl_GetDoubleFromObj(interp,data[0],&(result.x)) != TCL_OK)
+    return 0;
+  if (Tcl_GetDoubleFromObj(interp,data[1],&(result.y)) != TCL_OK)
+    return 0;
+  if (Tcl_GetDoubleFromObj(interp,data[2],&(result.z)) != TCL_OK)
+    return 0;
+
+  return 1;
 }
 
 
 // Append a 3-D vector to the result string
-static void append_3D_vector(Tcl_Interp *interp, const Vector &v)
+static Tcl_Obj* obj_3D_vector(const Vector &v)
 {
-  char s[3][TCL_DOUBLE_SPACE], *t[3], *list;
+  Tcl_Obj* doublev[3];
   
-  Tcl_PrintDouble(interp,v.x,s[0]);
-  Tcl_PrintDouble(interp,v.y,s[1]);
-  Tcl_PrintDouble(interp,v.z,s[2]);
-  t[0]=s[0], t[1]=s[1], t[2]=s[2];
-  list = Tcl_Merge(3,t);
-  Tcl_AppendElement(interp,list);
-  Tcl_Free(list);
+  doublev[0] = Tcl_NewDoubleObj(v.x);
+  doublev[1] = Tcl_NewDoubleObj(v.y);
+  doublev[2] = Tcl_NewDoubleObj(v.z);
+  
+  return Tcl_NewListObj(3,doublev);
 }
 
 
 // Function: getbond coor1 coor2
 //  Returns: the length of the bond formed by the two atoms (i.e., the distance between them)
-int proc_getbond(ClientData, Tcl_Interp *interp, int argc, char *argv[])
+int proc_getbond(ClientData, Tcl_Interp *interp, int argc, Tcl_Obj *const argv[])
 {
-  char s[TCL_DOUBLE_SPACE];
   Vector r1, r2;
   
   if (argc != 3)
@@ -288,17 +282,15 @@ int proc_getbond(ClientData, Tcl_Interp *interp, int argc, char *argv[])
     return TCL_ERROR;
   if (!get_3D_vector(interp,argv[2],r2))
     return TCL_ERROR;
-  Tcl_PrintDouble(interp,(r2-r1).length(),s);
-  Tcl_SetResult(interp,s,TCL_VOLATILE);
+  Tcl_SetObjResult(interp, Tcl_NewDoubleObj((r2-r1).length()));
   return TCL_OK;
 }
 
 
 // Function: getangle coor1 coor2 coor3
 //  Returns: the angle formed by the three atoms
-int proc_getangle(ClientData, Tcl_Interp *interp, int argc, char *argv[])
+int proc_getangle(ClientData, Tcl_Interp *interp, int argc, Tcl_Obj *const argv[])
 {
-  char s[TCL_DOUBLE_SPACE];
   Vector r1, r2, r3, r12, r32;
   
   if (argc != 4)
@@ -311,17 +303,16 @@ int proc_getangle(ClientData, Tcl_Interp *interp, int argc, char *argv[])
     return TCL_ERROR;
   r12 = r1 - r2;
   r32 = r3 - r2;
-  Tcl_PrintDouble(interp,acos((r12*r32)/(r12.length()*r32.length()))*180/PI,s);
-  Tcl_SetResult(interp,s,TCL_VOLATILE);
+  Tcl_SetObjResult(interp, Tcl_NewDoubleObj(
+		acos((r12*r32)/(r12.length()*r32.length()))*180/PI  ));
   return TCL_OK;
 }
 
 
 // Function: getdihedral coor1 coor2 coor3 coor4
 //  Returns: the dihedral formed by the four atoms
-int proc_getdihedral(ClientData, Tcl_Interp *interp, int argc, char *argv[])
+int proc_getdihedral(ClientData, Tcl_Interp *interp, int argc, Tcl_Obj *const argv[])
 {
-  char s[TCL_DOUBLE_SPACE];
   BigReal rA, rB, rC;
   Vector r1, r2, r3, r4, r12, r23, r34, A, B, C;
   
@@ -344,8 +335,8 @@ int proc_getdihedral(ClientData, Tcl_Interp *interp, int argc, char *argv[])
   rA = A.length();
   rB = B.length();
   rC = C.length();
-  Tcl_PrintDouble(interp,-atan2((C*B)/(rC*rB),(A*B)/(rA*rB))*180/PI,s);
-  Tcl_SetResult(interp,s,TCL_VOLATILE);
+  Tcl_SetObjResult(interp, Tcl_NewDoubleObj(
+  		-atan2((C*B)/(rC*rB),(A*B)/(rA*rB))*180/PI  ));
   return TCL_OK;
 }
 
@@ -353,7 +344,7 @@ int proc_getdihedral(ClientData, Tcl_Interp *interp, int argc, char *argv[])
 // Function: anglegrad coor1 coor2 coor3
 //  Returns: a list of gradients for each atom
 // The code was basically copied from ComputeAngles.C
-int proc_anglegrad(ClientData, Tcl_Interp *interp, int argc, char *argv[])
+int proc_anglegrad(ClientData, Tcl_Interp *interp, int argc, Tcl_Obj *const argv[])
 {
   Vector r1, r2, r3, r12, r32;
   
@@ -388,9 +379,13 @@ int proc_anglegrad(ClientData, Tcl_Interp *interp, int argc, char *argv[])
   Force force3 = c2*(r32*(d32inv*cos_theta) - r12*d12inv);
   force2 += force3;  force2 *= -1;
   
-  append_3D_vector(interp,force1);
-  append_3D_vector(interp,force2);
-  append_3D_vector(interp,force3);
+  Tcl_Obj* forcev[3];
+
+  forcev[0] = obj_3D_vector(force1);
+  forcev[1] = obj_3D_vector(force2);
+  forcev[2] = obj_3D_vector(force3);
+
+  Tcl_SetObjResult(interp, Tcl_NewListObj(3, forcev));
   
   return TCL_OK;
 }
@@ -399,7 +394,7 @@ int proc_anglegrad(ClientData, Tcl_Interp *interp, int argc, char *argv[])
 // Function: dihedralgrad coor1 coor2 coor3 coor4
 //  Returns: a list of gradients for each atom
 // The code was basically copied from ComputeDihedrals.C
-int proc_dihedralgrad(ClientData, Tcl_Interp *interp, int argc, char *argv[])
+int proc_dihedralgrad(ClientData, Tcl_Interp *interp, int argc, Tcl_Obj *const argv[])
 {
   BigReal K1;
   Vector r1, r2, r3, r4, r12, r23, r34;
@@ -506,12 +501,36 @@ int proc_dihedralgrad(ClientData, Tcl_Interp *interp, int argc, char *argv[])
            +dsindB.y*r34.x - dsindB.x*r34.y);
   }
   
-  append_3D_vector(interp,f1);
-  append_3D_vector(interp,f2-f1);
-  append_3D_vector(interp,f3-f2);
-  append_3D_vector(interp,-f3);
+  Tcl_Obj* forcev[4];
+
+  forcev[0] = obj_3D_vector(f1);
+  forcev[1] = obj_3D_vector(f2-f1);
+  forcev[2] = obj_3D_vector(f3-f2);
+  forcev[3] = obj_3D_vector(-f3);
+
+  Tcl_SetObjResult(interp, Tcl_NewListObj(4, forcev));
   
   return TCL_OK;
 }
+
+int tcl_vector_math_init(Tcl_Interp *interp) {
+
+  // first import from TclVec.C stolen from VMD
+  Vec_Init(interp);
+
+  Tcl_CreateObjCommand(interp, "getbond", proc_getbond,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, "getangle", proc_getangle,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, "getdihedral", proc_getdihedral,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, "anglegrad", proc_anglegrad,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateObjCommand(interp, "dihedralgrad", proc_dihedralgrad,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+
+  return TCL_OK;
+}
+
 
 #endif

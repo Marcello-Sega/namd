@@ -12,17 +12,7 @@
 #define USE_COMPAT_CONST
 #include <tcl.h>
 
-int proc_vecadd(ClientData, Tcl_Interp *interp, int argc, char *argv[]);
-int proc_vecsub(ClientData, Tcl_Interp *interp, int argc, char *argv[]);
-int proc_vecscale(ClientData, Tcl_Interp *interp, int argc, char *argv[]);
+int tcl_vector_math_init(Tcl_Interp *);
 
-int tcl_get_vector(char *fctn, Tcl_Interp *interp, 
-			  char *s, int *num, float **result);
-
-int proc_getbond(ClientData, Tcl_Interp*, int, char**);
-int proc_getangle(ClientData, Tcl_Interp*, int, char**);
-int proc_getdihedral(ClientData, Tcl_Interp*, int, char**);
-int proc_anglegrad(ClientData, Tcl_Interp*, int, char**);
-int proc_dihedralgrad(ClientData, Tcl_Interp*, int, char**);
 #endif
 #endif

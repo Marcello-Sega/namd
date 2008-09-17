@@ -34,6 +34,7 @@
 #define USE_COMPAT_CONST
 #include <tcl.h>
 #endif
+#include "TclCommands.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -787,6 +788,7 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
 
   // Create interpreter
   interp = Tcl_CreateInterp();
+  tcl_vector_math_init(interp);
   Tcl_CreateCommand(interp, "exit", Tcl_exit,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "abort", Tcl_abort,
