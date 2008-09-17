@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Matrix4.C,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 2008/09/17 16:03:55 $
+ *	$Revision: 1.2 $	$Date: 2008/09/17 16:19:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -32,25 +32,25 @@
 #define RADTODEG(a)     (a*180.0/VMD_PI)
 
 
-// constructor, for the case when an array of floating-point numbers is given
-Matrix4::Matrix4(const float *m) {
-  memcpy((void *)mat, (const void *)m, 16*sizeof(float));
+// constructor, for the case when an array of doubleing-point numbers is given
+Matrix4::Matrix4(const double *m) {
+  memcpy((void *)mat, (const void *)m, 16*sizeof(double));
 }
 
 // multiplies a 3D point (first arg) by the Matrix, returns in second arg
-void Matrix4::multpoint3d(const float opoint[3], float npoint[3]) const {
+void Matrix4::multpoint3d(const double opoint[3], double npoint[3]) const {
 #if 0
     // should try re-testing this formulation to see if it outperforms
-    // the old one, without introducing floating point imprecision
-    float tmp[3];
-    float itmp3 = 1.0f / (opoint[0]*mat[3] + opoint[1]*mat[7] + 
+    // the old one, without introducing doubleing point imprecision
+    double tmp[3];
+    double itmp3 = 1.0 / (opoint[0]*mat[3] + opoint[1]*mat[7] + 
                           opoint[2]*mat[11] + mat[15]);
     npoint[0]=itmp3 * (opoint[0]*mat[0] + opoint[1]*mat[4] + opoint[2]*mat[ 8] + mat[12]);
     npoint[1]=itmp3 * (opoint[0]*mat[1] + opoint[1]*mat[5] + opoint[2]*mat[ 9] + mat[13]);
     npoint[2]=itmp3 * (opoint[0]*mat[2] + opoint[1]*mat[6] + opoint[2]*mat[10] + mat[14]);
 #else
-    float tmp[3];
-    float itmp3 = 1.0f / (opoint[0]*mat[3] + opoint[1]*mat[7] +
+    double tmp[3];
+    double itmp3 = 1.0 / (opoint[0]*mat[3] + opoint[1]*mat[7] +
                           opoint[2]*mat[11] + mat[15]);
     tmp[0] = itmp3*opoint[0];
     tmp[1] = itmp3*opoint[1];
@@ -65,14 +65,14 @@ void Matrix4::multpoint3d(const float opoint[3], float npoint[3]) const {
 // multiplies a 3D norm (first arg) by the Matrix, returns in second arg
 // This differs from point multiplication in that the translatation operations
 // are ignored.
-void Matrix4::multnorm3d(const float onorm[3], float nnorm[3]) const {
-  float tmp[4];
+void Matrix4::multnorm3d(const double onorm[3], double nnorm[3]) const {
+  double tmp[4];
 
   tmp[0]=onorm[0]*mat[0] + onorm[1]*mat[4] + onorm[2]*mat[8];
   tmp[1]=onorm[0]*mat[1] + onorm[1]*mat[5] + onorm[2]*mat[9];
   tmp[2]=onorm[0]*mat[2] + onorm[1]*mat[6] + onorm[2]*mat[10];
   tmp[3]=onorm[0]*mat[3] + onorm[1]*mat[7] + onorm[2]*mat[11];
-  float itmp = 1.0f / sqrtf(tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2]);
+  double itmp = 1.0 / sqrtf(tmp[0]*tmp[0] + tmp[1]*tmp[1] + tmp[2]*tmp[2]);
   nnorm[0]=tmp[0]*itmp;
   nnorm[1]=tmp[1]*itmp;
   nnorm[2]=tmp[2]*itmp;
@@ -80,7 +80,7 @@ void Matrix4::multnorm3d(const float onorm[3], float nnorm[3]) const {
 
 
 // multiplies a 4D point (first arg) by the Matrix, returns in second arg
-void Matrix4::multpoint4d(const float opoint[4], float npoint[4]) const {
+void Matrix4::multpoint4d(const double opoint[4], double npoint[4]) const {
   npoint[0]=opoint[0]*mat[0]+opoint[1]*mat[4]+opoint[2]*mat[8]+opoint[3]*mat[12];
   npoint[1]=opoint[0]*mat[1]+opoint[1]*mat[5]+opoint[2]*mat[9]+opoint[3]*mat[13];
   npoint[2]=opoint[0]*mat[2]+opoint[1]*mat[6]+opoint[2]*mat[10]+opoint[3]*mat[14];
@@ -90,16 +90,16 @@ void Matrix4::multpoint4d(const float opoint[4], float npoint[4]) const {
 
 // clears the matrix (resets it to identity)
 void Matrix4::identity(void) {
-  memset((void *)mat, 0, 16*sizeof(float));
-  mat[0]=1.0f;
-  mat[5]=1.0f;
-  mat[10]=1.0f;
-  mat[15]=1.0f;
+  memset((void *)mat, 0, 16*sizeof(double));
+  mat[0]=1.0;
+  mat[5]=1.0;
+  mat[10]=1.0;
+  mat[15]=1.0;
 }
 
 
 // sets the matrix so all items are the given constant value
-void Matrix4::constant(float f) {
+void Matrix4::constant(double f) {
   for (int i=0; i<16; mat[i++] = f); 
 }
 
@@ -109,18 +109,18 @@ void Matrix4::constant(float f) {
 #define MATSWAP(a,b) {temp=(a);(a)=(b);(b)=temp;}
 int Matrix4::inverse(void) {
 
-  float matr[4][4], ident[4][4];
+  double matr[4][4], ident[4][4];
   int i, j, k, l, ll;
   int icol=0, irow=0;
   int indxc[4], indxr[4], ipiv[4];
-  float big, dum, pivinv, temp;
+  double big, dum, pivinv, temp;
  
   for (i=0; i<4; i++) {
     for (j=0; j<4; j++) {
       matr[i][j] = mat[4*i+j];
-      ident[i][j] = 0.0f;
+      ident[i][j] = 0.0;
     }
-    ident[i][i]=1.0f;
+    ident[i][i]=1.0;
   } 
   // Gauss-jordan elimination with full pivoting.  Yes, folks, a 
   // GL Matrix4 is inverted like any other, since the identity is 
@@ -136,7 +136,7 @@ int Matrix4::inverse(void) {
         for (k=0;k<=3;k++) {
           if(ipiv[k] == 0) {
             if(fabs(matr[j][k]) >= big) {
-              big = (float) fabs(matr[j][k]);
+              big = (double) fabs(matr[j][k]);
               irow=j;
               icol=k;
             }
@@ -151,15 +151,15 @@ int Matrix4::inverse(void) {
     }
     indxr[i]=irow;
     indxc[i]=icol;
-    if(matr[icol][icol] == 0.0f) return 1; 
-    pivinv = 1.0f / matr[icol][icol];
-    matr[icol][icol]=1.0f;
+    if(matr[icol][icol] == 0.0) return 1; 
+    pivinv = 1.0 / matr[icol][icol];
+    matr[icol][icol]=1.0;
     for (l=0;l<=3;l++) matr[icol][l] *= pivinv;
     for (l=0;l<=3;l++) ident[icol][l] *= pivinv;
     for (ll=0;ll<=3;ll++) {
       if (ll != icol) {
         dum=matr[ll][icol];
-        matr[ll][icol]=0.0f;
+        matr[ll][icol]=0.0;
         for (l=0;l<=3;l++) matr[ll][l] -= matr[icol][l]*dum;
         for (l=0;l<=3;l++) ident[ll][l] -= ident[icol][l]*dum;
       }
@@ -179,7 +179,7 @@ int Matrix4::inverse(void) {
 }
       
 void Matrix4::transpose() {
-  float tmp[16];
+  double tmp[16];
   int i,j;
   for(i=0;i<4;i++) {
     for(j=0;j<4;j++) {
@@ -192,12 +192,12 @@ void Matrix4::transpose() {
 
 // replaces this matrix with the given one
 void Matrix4::loadmatrix(const Matrix4& m) {
-  memcpy((void *)mat, (const void *)m.mat, 16*sizeof(float));
+  memcpy((void *)mat, (const void *)m.mat, 16*sizeof(double));
 }
 
 // premultiply the matrix by the given matrix
 void Matrix4::multmatrix(const Matrix4& m) {
-  float tmp[4];
+  double tmp[4];
   for (int j=0; j<4; j++) {
     tmp[0] = mat[j];
     tmp[1] = mat[4+j];
@@ -212,7 +212,7 @@ void Matrix4::multmatrix(const Matrix4& m) {
 
 // performs a rotation around an axis (char == 'x', 'y', or 'z')
 // angle is in degrees
-void Matrix4::rot(float a, char axis) {
+void Matrix4::rot(double a, char axis) {
   Matrix4 m;			// create identity matrix
   double angle;
 
@@ -220,21 +220,21 @@ void Matrix4::rot(float a, char axis) {
 
   if (axis == 'x') {
     m.mat[0]=1.0;
-    m.mat[5]=(float)cos(angle);
+    m.mat[5]=(double)cos(angle);
     m.mat[10]=m.mat[5];
-    m.mat[6] = (float)sin(angle);
+    m.mat[6] = (double)sin(angle);
     m.mat[9] = -m.mat[6];
   } else if (axis == 'y') {
-    m.mat[0] = (float)cos(angle);
+    m.mat[0] = (double)cos(angle);
     m.mat[5] = 1.0;
     m.mat[10] = m.mat[0];
-    m.mat[2] = (float) -sin(angle);
+    m.mat[2] = (double) -sin(angle);
     m.mat[8] = -m.mat[2];
   } else if (axis == 'z') {
-    m.mat[0] = (float)cos(angle);
+    m.mat[0] = (double)cos(angle);
     m.mat[5] = m.mat[0];
     m.mat[10] = 1.0;
-    m.mat[1] = (float)sin(angle);
+    m.mat[1] = (double)sin(angle);
     m.mat[4] = -m.mat[1];
   }
   // If there was an error, m is identity so we can multiply anyway.
@@ -242,32 +242,32 @@ void Matrix4::rot(float a, char axis) {
 }
 
 // performs rotation around a given vector
-void Matrix4::rotate_axis(const float axis[3], float angle) {
+void Matrix4::rotate_axis(const double axis[3], double angle) {
   transvec(axis[0], axis[1], axis[2]);
-  rot((float) (RADTODEG(angle)), 'x');
+  rot((double) (RADTODEG(angle)), 'x');
   transvecinv(axis[0], axis[1], axis[2]);
 }
 
 // applies the transformation needed to bring the x axis along the given vector. 
-void Matrix4::transvec(float x, float y, float z) {
+void Matrix4::transvec(double x, double y, double z) {
   double theta = atan2(y,x);
   double length = sqrt(y*y + x*x);
   double phi = atan2((double) z, length);
-  rot((float) RADTODEG(theta), 'z');
-  rot((float) RADTODEG(-phi), 'y');
+  rot((double) RADTODEG(theta), 'z');
+  rot((double) RADTODEG(-phi), 'y');
 }
 
 // applies the transformation needed to bring the given vector to the x axis.
-void Matrix4::transvecinv(float x, float y, float z) {
+void Matrix4::transvecinv(double x, double y, double z) {
   double theta = atan2(y,x);
   double length = sqrt(y*y + x*x);
   double phi = atan2((double) z, length);
-  rot((float) RADTODEG(phi), 'y');
-  rot((float) RADTODEG(-theta), 'z');
+  rot((double) RADTODEG(phi), 'y');
+  rot((double) RADTODEG(-theta), 'z');
 }
 
 // performs a translation
-void Matrix4::translate(float x, float y, float z) {
+void Matrix4::translate(double x, double y, double z) {
   Matrix4 m;		// create identity matrix
   m.mat[12] = x;
   m.mat[13] = y;
@@ -276,7 +276,7 @@ void Matrix4::translate(float x, float y, float z) {
 }
 
 // performs scaling
-void Matrix4::scale(float x, float y, float z) {
+void Matrix4::scale(double x, double y, double z) {
   Matrix4 m;		// create identity matrix
   m.mat[0] = x;
   m.mat[5] = y;
@@ -285,28 +285,28 @@ void Matrix4::scale(float x, float y, float z) {
 }
 
 // sets this matrix to represent a window perspective
-void Matrix4::window(float left, float right, float bottom, 
-			 float top, float nearval, float farval) {
+void Matrix4::window(double left, double right, double bottom, 
+			 double top, double nearval, double farval) {
 
   constant(0.0);		// initialize this matrix to 0
-  mat[0] = (2.0f*nearval) / (right-left);
-  mat[5] = (2.0f*nearval) / (top-bottom);
+  mat[0] = (2.0*nearval) / (right-left);
+  mat[5] = (2.0*nearval) / (top-bottom);
   mat[8] = (right+left) / (right-left);
   mat[9] = (top+bottom) / (top-bottom);
   mat[10] = -(farval+nearval) / (farval-nearval);
-  mat[11] = -1.0f;
-  mat[14] = -(2.0f*farval*nearval) / (farval-nearval);
+  mat[11] = -1.0;
+  mat[14] = -(2.0*farval*nearval) / (farval-nearval);
 }
 
 
 // sets this matrix to a 3D orthographic matrix
-void Matrix4::ortho(float left, float right, float bottom,
-			float top, float nearval, float farval) {
+void Matrix4::ortho(double left, double right, double bottom,
+			double top, double nearval, double farval) {
 
   constant(0.0);		// initialize this matrix to 0
-  mat[0] =  2.0f / (right-left);
-  mat[5] =  2.0f / (top-bottom);
-  mat[10] = -2.0f / (farval-nearval);
+  mat[0] =  2.0 / (right-left);
+  mat[5] =  2.0 / (top-bottom);
+  mat[10] = -2.0 / (farval-nearval);
   mat[12] = -(right+left) / (right-left);
   mat[13] = -(top+bottom) / (top-bottom);
   mat[14] = -(farval+nearval) / (farval-nearval);
@@ -315,15 +315,15 @@ void Matrix4::ortho(float left, float right, float bottom,
 
 
 // sets this matrix to a 2D orthographic matrix
-void Matrix4::ortho2(float left, float right, float bottom, float top) {
+void Matrix4::ortho2(double left, double right, double bottom, double top) {
 
   constant(0.0);		// initialize this matrix to 0
-  mat[0] =  2.0f / (right-left);
-  mat[5] =  2.0f / (top-bottom);
-  mat[10] = -1.0f;
+  mat[0] =  2.0 / (right-left);
+  mat[5] =  2.0 / (top-bottom);
+  mat[10] = -1.0;
   mat[12] = -(right+left) / (right-left);
   mat[13] = -(top+bottom) / (top-bottom);
-  mat[15] =  1.0f;
+  mat[15] =  1.0;
 }
 
 /* This subroutine defines a viewing transformation with the eye at the point
@@ -333,13 +333,13 @@ void Matrix4::ortho2(float left, float right, float bottom, float top) {
  * lookat does:
  * lookat = trans(-vx,-vy,-vz)*rotate(theta,y)*rotate(phi,x)*rotate(-twist,z)
  */
- void Matrix4::lookat(float vx, float vy, float vz, float px, float py,
-			 float pz, short twist) {
+ void Matrix4::lookat(double vx, double vy, double vz, double px, double py,
+			 double pz, short twist) {
   Matrix4 m(0.0);
-  float tmp;
+  double tmp;
 
   /* pre multiply stack by rotate(-twist,z) */
-  rot(-twist / 10.0f,'z');
+  rot(-twist / 10.0,'z');
 
   tmp = sqrtf((px-vx)*(px-vx) + (py-vy)*(py-vy) + (pz-vz)*(pz-vz));
   m.mat[0] = 1.0;
@@ -366,7 +366,7 @@ void Matrix4::ortho2(float left, float right, float bottom, float top) {
 }
 
  // Transform 3x3 into 4x4 matrix:
- void trans_from_rotate(const float mat3[9], Matrix4 *mat4) {
+ void trans_from_rotate(const double mat3[9], Matrix4 *mat4) {
   int i;
   for (i=0; i<3; i++) {
     mat4->mat[0+i] = mat3[3*i];

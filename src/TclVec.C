@@ -11,7 +11,7 @@
  *
  *      $RCSfile: TclVec.C,v $
  *      $Author: jim $        $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $      $Date: 2008/09/17 16:03:56 $
+ *      $Revision: 1.2 $      $Date: 2008/09/17 16:19:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -195,7 +195,7 @@ static int obj_vecscale(ClientData, Tcl_Interp *interp, int argc,
 // The name of the function should be passed in 'fctn' so the error message
 // can be constructed correctly
 int tcl_get_matrix(const char *fctn, Tcl_Interp *interp, 
-			  Tcl_Obj *s, float *mat)
+			  Tcl_Obj *s, double *mat)
 { 
   int num_rows;
   Tcl_Obj **data_rows;
@@ -234,7 +234,7 @@ int tcl_get_matrix(const char *fctn, Tcl_Interp *interp,
         Tcl_SetResult(interp, tmpstring, TCL_VOLATILE);
         return TCL_ERROR;
       } else {
-	mat[4*j+i] = (float) tmp;  // Matrix4 is transpose of Tcl's matrix
+	mat[4*j+i] = (double) tmp;  // Matrix4 is transpose of Tcl's matrix
       }
     }
   }
@@ -242,7 +242,7 @@ int tcl_get_matrix(const char *fctn, Tcl_Interp *interp,
 }
 
 #if 0
-int tcl_get_vector(const char *s, float *val, Tcl_Interp *interp)
+int tcl_get_vector(const char *s, double *val, Tcl_Interp *interp)
 {
   int num;
   const char **pos;
@@ -262,16 +262,16 @@ int tcl_get_vector(const char *s, float *val, Tcl_Interp *interp)
     ckfree((char *) pos); // free of tcl data
     return TCL_ERROR;
   }
-  val[0] = (float) a[0];
-  val[1] = (float) a[1];
-  val[2] = (float) a[2];
+  val[0] = (double) a[0];
+  val[1] = (double) a[1];
+  val[2] = (double) a[2];
   ckfree((char *) pos); // free of tcl data
   return TCL_OK;
 }
 #endif
 
 // append the matrix into the Tcl result
-void tcl_append_matrix(Tcl_Interp *interp, const float *mat) {
+void tcl_append_matrix(Tcl_Interp *interp, const double *mat) {
   Tcl_Obj *tcl_result = Tcl_NewListObj(0, NULL);
   for (int i=0; i<4; i++) {
     Tcl_Obj *m = Tcl_NewListObj(0, NULL);
@@ -294,7 +294,7 @@ static int obj_vectrans(ClientData, Tcl_Interp *interp, int argc,
   }
 
   // get the matrix data
-  float mat[16];
+  double mat[16];
   if (tcl_get_matrix(
     Tcl_GetStringFromObj(objv[0],NULL), interp, objv[1], mat) != TCL_OK) {
     return TCL_ERROR;
@@ -312,7 +312,7 @@ static int obj_vectrans(ClientData, Tcl_Interp *interp, int argc,
     return TCL_ERROR;
   }
 
-  float opoint[4];
+  double opoint[4];
   opoint[3] = 0;
   for (int i=0; i<vec_size; i++) {
     double tmp;
@@ -320,10 +320,10 @@ static int obj_vectrans(ClientData, Tcl_Interp *interp, int argc,
       Tcl_SetResult(interp, (char *) "vectrans: non-numeric in vector", TCL_STATIC);
       return TCL_ERROR;
     }
-    opoint[i] = (float)tmp;
+    opoint[i] = (double)tmp;
   }
   // vector data is in vec_data
-  float npoint[4];
+  double npoint[4];
  
   npoint[0]=opoint[0]*mat[0]+opoint[1]*mat[4]+opoint[2]*mat[8]+opoint[3]*mat[12]
 ;
@@ -356,18 +356,18 @@ static int obj_transmult(ClientData, Tcl_Interp *interp, int argc,
     return TCL_ERROR;
   }
   // Get the first matrix
-  float mult[16];
+  double mult[16];
   if (tcl_get_matrix("transmult: ", interp, objv[1], mult) != TCL_OK) {
     return TCL_ERROR;
   }
   int i = 2;
-  float pre[16];
+  double pre[16];
   while (i < argc) {
     if (tcl_get_matrix("transmult: ", interp, objv[i], pre) != TCL_OK) {
       return TCL_ERROR;
     }
     // premultiply mult by tmp
-    float tmp[4];
+    double tmp[4];
     for (int k=0; k<4; k++) {
       tmp[0] = mult[k];
       tmp[1] = mult[4+k];
@@ -407,7 +407,7 @@ static int obj_transvec(ClientData, Tcl_Interp *interp, int argc,
     return TCL_ERROR;
   }
   Matrix4 mat;
-  mat.transvec((float) x,(float) y,(float) z);
+  mat.transvec((double) x,(double) y,(double) z);
   tcl_append_matrix(interp, mat.mat);
   return TCL_OK;
 }
@@ -435,7 +435,7 @@ static int obj_transvecinv(ClientData, Tcl_Interp *interp, int argc,
     return TCL_ERROR;
   }
   Matrix4 mat;
-  mat.transvecinv((float) x,(float) y,(float) z);
+  mat.transvecinv((double) x,(double) y,(double) z);
   tcl_append_matrix(interp, mat.mat);
   return TCL_OK;
 }
@@ -493,10 +493,10 @@ static int obj_transabout(ClientData, Tcl_Interp *interp, int argc,
     amount = DEGTORAD(amount);
   }
 
-  float axis[3];
-  axis[0] = (float) x;
-  axis[1] = (float) y;
-  axis[2] = (float) z;
+  double axis[3];
+  axis[0] = (double) x;
+  axis[1] = (double) y;
+  axis[2] = (double) z;
 
   Matrix4 mat;
   mat.rotate_axis(axis, amount);

@@ -11,7 +11,7 @@
  *
  *	$RCSfile: Matrix4.h,v $
  *	$Author: jim $	$Locker:  $		$State: Exp $
- *	$Revision: 1.1 $	$Date: 2008/09/17 16:03:55 $
+ *	$Revision: 1.2 $	$Date: 2008/09/17 16:19:54 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -26,26 +26,26 @@
 class Matrix4 {
 public:
   Matrix4(void) { identity(); }                ///< identity constructor
-  Matrix4(float f) { constant(f); }            ///< const elements constructor
-  Matrix4(const float *m);                     ///< construct from float array
+  Matrix4(double f) { constant(f); }            ///< const elements constructor
+  Matrix4(const double *m);                     ///< construct from double array
   Matrix4(const Matrix4& m) { loadmatrix(m); } ///< copy constructor 
   ~Matrix4(void) {}                            ///< destructor
-  float mat[16];                               ///< the matrix itself
+  double mat[16];                               ///< the matrix itself
 
   /// multiplies a 3D point (first arg) by the Matrix, returns in second arg
-  void multpoint3d (const float[3], float[3]) const;
+  void multpoint3d (const double[3], double[3]) const;
 
   /// multiplies a 3D norm (first arg) by the Matrix, returns in second arg
-  void multnorm3d (const float[3], float[3]) const;
+  void multnorm3d (const double[3], double[3]) const;
 
   /// multiplies a 4D point (first arg) by the Matrix, returns in second arg
-  void multpoint4d (const float[4], float[4]) const;
+  void multpoint4d (const double[4], double[4]) const;
 
   /// clears the matrix (resets it to identity)
   void identity(void);
   
   /// sets the matrix so all items are the given constant value
-  void constant(float);
+  void constant(double);
   
   /// inverts the matrix, that is, 
   /// the inverse of the rotation, the inverse of the scaling, and 
@@ -64,33 +64,33 @@ public:
   void multmatrix(const Matrix4 &);
 
   /// performs a left-handed rotation around an axis (char == 'x', 'y', or 'z')
-  void rot(float, char); // angle in degrees
+  void rot(double, char); // angle in degrees
 
   /// apply a rotation around the given vector; angle in radians.
-  void rotate_axis(const float axis[3], float angle);
+  void rotate_axis(const double axis[3], double angle);
   
   /// apply a rotation such that 'x' is brought along the given vector.
-  void transvec(float x, float y, float z);
+  void transvec(double x, double y, double z);
  
   /// apply a rotation such that the given vector is brought along 'x'.
-  void transvecinv(float x, float y, float z);
+  void transvecinv(double x, double y, double z);
 
   /// performs a translation
-  void translate(float, float, float);
-  void translate(float d[3]) { translate(d[0], d[1], d[2]); }
+  void translate(double, double, double);
+  void translate(double d[3]) { translate(d[0], d[1], d[2]); }
 
   /// performs scaling
-  void scale(float, float, float);
-  void scale(float f) { scale(f, f, f); }
+  void scale(double, double, double);
+  void scale(double f) { scale(f, f, f); }
 
   /// sets this matrix to represent a window perspective
-  void window(float, float, float, float, float, float);
+  void window(double, double, double, double, double, double);
 
   /// sets this matrix to a 3D orthographic matrix
-  void ortho(float, float, float, float, float, float);
+  void ortho(double, double, double, double, double, double);
 
   /// sets this matrix to a 2D orthographic matrix
-  void ortho2(float, float, float, float);
+  void ortho2(double, double, double, double);
 
   /// This subroutine defines a viewing transformation with the eye at point
   /// (vx,vy,vz) looking at the point (px,py,pz).  Twist is the right-hand
@@ -98,11 +98,11 @@ public:
   /// the top of the transformation stack and then replaces it.  Precisely,
   /// lookat does:
   /// lookat=trans(-vx,-vy,-vz)*rotate(theta,y)*rotate(phi,x)*rotate(-twist,z)
-  void lookat(float, float, float, float, float, float, short);
+  void lookat(double, double, double, double, double, double, short);
 };
 
 /// Transform 3x3 into 4x4 matrix:
-void trans_from_rotate(const float mat3[9], Matrix4 *mat4);
+void trans_from_rotate(const double mat3[9], Matrix4 *mat4);
 
 /// Print formatted matrix
 void print_Matrix4(const Matrix4 *mat4);
