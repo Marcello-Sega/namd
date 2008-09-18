@@ -1198,7 +1198,9 @@ int topo_mol_end(topo_mol *mol) {
             &(seg->residue_array[ires2]), confdef->atom2,
             &(seg->residue_array[ires3]), confdef->atom3,
             &(seg->residue_array[ires4]), confdef->atom4, confdef)) {
-        fprintf(stderr, "Missing atoms for conformation definition\n");
+        sprintf(errmsg,"Warning: Missing atoms for conformation definition: %s-%s-%s-%s", 
+            confdef->atom1, confdef->atom2, confdef->atom3, confdef->atom4);
+        topo_mol_log_error(mol, errmsg);
       }
     }
   }
@@ -2412,7 +2414,9 @@ int topo_mol_add_patchres(topo_mol *mol, const topo_mol_ident_t *target) {
   strcpy(patchrestmp->resid,target->resid);
 /*   printf("add_patchres %i %s:%s;\n", patch->npres, patchrestmp->segid, patchrestmp->resid);  */
   patch->npres++;
-  patchrestmp->next = *patchres;
+  /* patchrestmp->next = *patchres;  old code builds list in reverse order */
+  patchrestmp->next = NULL;
+  while ( *patchres ) { patchres = &((*patchres)->next); }
   *patchres = patchrestmp;
   return 0;
 }

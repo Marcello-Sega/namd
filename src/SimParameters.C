@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: brunner $
- * $Date: 2008/09/11 19:35:02 $
- * $Revision: 1.1259 $
+ * $Author: char $
+ * $Date: 2008/09/18 21:48:47 $
+ * $Revision: 1.1260 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1116,6 +1116,14 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
        "Configuration file for constant forces", PARSE_STRING);
    opts.require("constantforce", "consForceScaling",
        "Scaling factor for constant forces", &consForceScaling, 1.0);
+ 
+    //// Collective variables
+    opts.optionalB("main", "colvars", "Is the colvars module enabled?",
+      &colvarsOn, FALSE);
+    opts.require("colvars", "colvarsConfig",
+      "configuration for the collective variables", PARSE_STRING);
+    opts.optional("colvars", "colvarsInput",
+      "input restart file for the collective variables", PARSE_STRING);
 }
 
 
@@ -3240,7 +3248,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    // Global forces configuration
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
-                      (IMDon) || SMDOn || TMDOn);
+                      (IMDon) || SMDOn || TMDOn || colvarsOn );
+
 
    if (tclForcesOn)
    {
@@ -3296,6 +3305,31 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "FREE ENERGY PERTURBATION SCRIPT   " << current->data << "\n";
 
      }
+     iout << endi;
+   }
+
+   if (colvarsOn)
+   {
+     iout << iINFO << "COLLECTIVE VARIABLES CALCULATION REQUESTED\n";
+
+     current = config->find ("colvarsConfig");
+     for ( ; current; current = current->next ) {
+       if ( strstr(current->data,"\n") ) {
+         iout << iINFO << "COLLECTIVE VARIABLES CONFIGURATION INLINED IN CONFIG FILE\n";
+         continue;
+       }
+       iout << iINFO << "COLLECTIVE VARIABLES CONFIGURATION   " << current->data << "\n";
+     }
+
+     current = config->find ("colvarsInput");
+     for ( ; current; current = current->next ) {
+       if ( strstr(current->data,"\n") ) {
+         iout << iINFO << "COLLECTIVE VARIABLES RESTART INFORMATION INLINED IN CONFIG FILE\n";
+         continue;
+       }
+       iout << iINFO << "COLLECTIVE VARIABLES RESTART INFORMATION   " << current->data << "\n";
+     }
+
      iout << endi;
    }
 

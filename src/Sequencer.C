@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jim $
- * $Date: 2008/08/28 23:16:35 $
- * $Revision: 1.1166 $
+ * $Author: char $
+ * $Date: 2008/09/18 21:48:47 $
+ * $Revision: 1.1167 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -177,8 +177,9 @@ void Sequencer::integrate() {
 
     int zeroMomentum = simParams->zeroMomentum;
     
-    // Do we need to return forces to TCL script?
+    // Do we need to return forces to TCL script or Colvar module?
     int doTcl = simParams->tclForcesOn;
+	int doColvars = simParams->colvarsOn;
     ComputeGlobal *computeGlobal = Node::Object()->computeMgr->computeGlobalObject;
 
     // Bother to calculate energies?
@@ -202,7 +203,7 @@ void Sequencer::integrate() {
       redistrib_tip4p_forces(Results::slow, 0);
     }
 
-    if ( staleForces || doTcl ) {
+    if ( staleForces || doTcl || doColvars ) {
       if ( doNonbonded ) saveForce(Results::nbond);
       if ( doFullElectrostatics ) saveForce(Results::slow);
     }
@@ -224,7 +225,7 @@ void Sequencer::integrate() {
 		addForceToMomentum(slowstep,Results::slow,staleForces,0);
     }
     rattle1(timestep,1);
-    if (doTcl)  // include constraint forces
+    if (doTcl || doColvars)  // include constraint forces
       computeGlobal->saveTotalForces(patch);
     submitHalfstep(step);
     if ( zeroMomentum && doFullElectrostatics ) submitMomentum(step);
@@ -296,7 +297,7 @@ void Sequencer::integrate() {
         if (doFullElectrostatics) redistrib_tip4p_forces(Results::slow, 1);
       }
 
-      if ( staleForces || doTcl ) {
+      if ( staleForces || doTcl || doColvars ) {
         if ( doNonbonded ) saveForce(Results::nbond);
         if ( doFullElectrostatics ) saveForce(Results::slow);
       }
@@ -327,7 +328,7 @@ void Sequencer::integrate() {
       if ( ! commOnly && rotDragOn ) addRotDragToPosition(timestep);
 
       rattle1(timestep,1);
-      if (doTcl)  // include constraint forces
+      if (doTcl || doColvars)  // include constraint forces
         computeGlobal->saveTotalForces(patch);
 
       submitHalfstep(step);

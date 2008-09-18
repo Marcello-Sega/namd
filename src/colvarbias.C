@@ -1,0 +1,269 @@
+#include "colvarmodule.h"
+#include "colvarvalue.h"
+#include "colvarbias.h"
+
+
+colvarbias::colvarbias (std::string const &conf, char const *key)
+  : colvarparse()
+{
+  cvm::log ("Initializing a new \""+std::string (key)+"\" instance.\n");
+
+  size_t rank = 1;
+  std::string const key_str (key);
+
+  if (colvarparse::to_lower_cppstr (key_str) == std::string ("abf")) {
+    rank = cvm::n_abf_biases+1;
+  }
+  if (colvarparse::to_lower_cppstr (key_str) == std::string ("harmonic")) {
+    rank = cvm::n_harm_biases+1;
+  }
+  if (colvarparse::to_lower_cppstr (key_str) == std::string ("histogram")) {
+    rank = cvm::n_histo_biases+1;
+  }
+  if (colvarparse::to_lower_cppstr (key_str) == std::string ("metadynamics")) {
+    rank = cvm::n_meta_biases+1;
+  }
+
+  get_keyval (conf, "name", name, key_str+cvm::to_str (rank));
+
+  // lookup the associated colvars
+  std::vector<std::string> colvars_str;
+  if (get_keyval (conf, "colvars", colvars_str)) {
+    for (size_t i = 0; i < colvars_str.size(); i++) {
+      add_colvar (colvars_str[i]);
+    }
+  }
+
+  if (!colvars.size()) {
+    cvm::fatal_error ("Error: no collective variables specified.\n");
+  }
+}
+
+
+void colvarbias::add_colvar (std::string const &cv_name)
+{
+  if (colvar *cvp = cvm::colvar_p (cv_name)) {
+    cvp->enable (colvar::task_gradients);
+    if (cvm::debug())
+      cvm::log ("Applying this bias to collective variable \""+
+                cvp->name+"\".\n"); 
+    colvars.push_back (cvp);
+    colvar_forces.push_back (colvarvalue (cvp->type()));
+  } else {
+    cvm::fatal_error ("Error: cannot find a colvar named \""+
+                      cv_name+"\".\n");
+  }
+}
+
+
+void colvarbias::communicate_forces()
+{
+  for (size_t i = 0; i < colvars.size(); i++) {
+    colvars[i]->fb += colvar_forces[i];
+  }
+}    
+
+
+
+colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
+                                          char const *key)
+  : colvarbias (conf, key), 
+    force_k_target_nsteps (0), targets_nsteps (0)
+{
+  get_keyval (conf, "forceConstant", force_k, 1.0);
+  for (size_t i = 0; i < colvars.size(); i++) {
+    if (colvars[i]->width != 1.0)
+      cvm::log ("The force constant for colvar \""+colvars[i]->name+
+                "\" will be rescaled to "+
+                cvm::to_str (force_k/colvars[i]->width)+
+                " according to the specified width.\n");
+  }
+
+  // get the initial restraint centers
+  colvar_centers.resize (colvars.size());
+  for (size_t i = 0; i < colvars.size(); i++) {
+    colvar_centers[i].type (colvars[i]->type());
+  }
+  if (get_keyval (conf, "centers", colvar_centers, colvar_centers)) {
+    for (size_t i = 0; i < colvars.size(); i++) {
+      colvar_centers[i].apply_constraints();
+    }
+  } else {
+    colvar_centers.clear();
+    cvm::fatal_error ("Error: must define the initial centers of the restraints.\n");
+  }
+
+  if (colvar_centers.size() != colvars.size())
+    cvm::fatal_error ("Error: number of harmonic centers does not match "
+                      "that of collective variables.\n");
+
+  //   colvar_targets.resize (colvars.size());
+  //   for (size_t i = 0; i < colvars.size(); i++) {
+  //     colvar_targets[i].type (colvars[i]->type());
+  //   }
+  colvar_targets = colvar_centers;
+  if (get_keyval (conf, "targets", colvar_targets, colvar_targets)) {
+
+    for (size_t i = 0; i < colvar_targets.size(); i++) {
+      colvar_targets[i].apply_constraints();
+    }
+
+    get_keyval (conf, "targetsNumSteps", targets_nsteps, 0);
+    if (!targets_nsteps)
+      cvm::fatal_error ("Error: the number of steps for moving "
+                        "the restraint centers must be non-zero.\n");
+  } else {
+    colvar_targets.clear();
+  }
+
+  if (get_keyval (conf, "forceConstantTarget", force_k_target, 0.0)) {
+    get_keyval (conf, "forceConstantTargetNumSteps", force_k_target_nsteps, 1000);
+    if (!force_k_target_nsteps)
+      cvm::fatal_error ("Error: the number of steps for changing "
+                        "the force constant must be non-zero.\n");
+  }
+
+  if (cvm::debug())
+    cvm::log ("Done initializing a new harmonic restraint bias.\n");
+}
+
+
+void colvarbias_harmonic::update()
+{
+  if (cvm::debug())
+    cvm::log ("Updating the harmonic bias \""+this->name+"\".\n");
+  
+  for (size_t i = 0; i < colvars.size(); i++) {
+    colvar_forces[i] =
+      (-0.5) * force_k /
+      (colvars[i]->width * colvars[i]->width) *
+      colvars[i]->dist2_lgrad (colvars[i]->value(),
+                               colvar_centers[i]);
+  }
+
+  if (cvm::debug())
+    cvm::log ("Current forces for the harmonic bias \""+
+              this->name+"\": "+cvm::to_str (colvar_forces)+".\n");
+
+  if (targets_nsteps) {
+
+    if (!target_steps.size()) {
+      // if this is the first calculation, calculate the advancement
+      // at each simulation step
+      target_steps.resize (colvars.size());
+      for (size_t i = 0; i < colvars.size(); i++) {
+        target_steps[i] = (::sqrt (colvars[i]->dist2 (colvar_centers[i],
+                                                      colvar_targets[i]))) /
+          cvm::real (targets_nsteps - cvm::step_absolute());
+      }
+      if (cvm::debug())
+        cvm::log ("Center movements for the harmonic bias \""+
+                  this->name+"\": "+cvm::to_str (target_steps)+".\n");
+    }
+
+    if (cvm::debug())
+      cvm::log ("Current centers for the harmonic bias \""+
+                this->name+"\": "+cvm::to_str (colvar_centers)+".\n");
+
+    if (cvm::step_absolute() < targets_nsteps) {
+      // move the restraint centers in the direction of the targets
+      for (size_t i = 0; i < colvars.size(); i++) {
+        colvarvalue const d2grad =
+          colvars[i]->dist2_lgrad (colvar_centers[i],
+                                   colvar_targets[i]);
+        colvar_centers[i] += target_steps[i] * (-1.0/d2grad.norm()) * d2grad;
+        colvar_centers[i].apply_constraints();
+      }
+    }
+  }
+
+  if (cvm::debug())
+    cvm::log ("Done updating the harmonic bias \""+this->name+"\".\n");
+}
+
+
+std::istream & colvarbias_harmonic::read_restart (std::istream &is)
+{
+  size_t const start_pos = is.tellg();
+
+  cvm::log ("Restarting harmonic bias \""+
+            this->name+"\".\n");
+
+  std::string key, brace, conf;
+  if ( !(is >> key)   || !(key == "harmonic") ||
+       !(is >> brace) || !(brace == "{") ||
+       !(is >> colvarparse::read_block ("configuration", conf)) ) {
+
+    cvm::log ("Error: in reading restart configuration for harmonic bias \""+
+              this->name+"\" at position "+
+              cvm::to_str (is.tellg())+" in stream.\n");
+    is.clear();
+    is.seekg (start_pos, std::ios::beg);
+    is.setstate (std::ios::failbit);
+    return is;
+  }
+
+//   int id = -1; 
+  std::string name = "";
+//   if ( ( (colvarparse::get_keyval (conf, "id", id, -1, colvarparse::parse_silent)) &&
+//          (id != this->id) ) ||
+  if ( (colvarparse::get_keyval (conf, "name", name, std::string (""), colvarparse::parse_silent)) &&
+       (name != this->name) )
+    cvm::fatal_error ("Error: in the restart file, the "
+                      "\"harmonic\" block has a wrong name\n");
+//   if ( (id == -1) && (name == "") ) {
+  if (name.size() == 0) {
+    cvm::fatal_error ("Error: \"harmonic\" block in the restart file "
+                      "has no identifiers.\n");
+  }
+
+  if (targets_nsteps) {
+    cvm::log ("Reading the updated restraint centers from the restart.\n");
+    if (!get_keyval (conf, "centers", colvar_centers))
+      cvm::fatal_error ("Error: restraint centers are missing in the restart.\n");
+  }
+
+  if (force_k_target_nsteps) {
+    cvm::log ("Reading the updated force constant from the restart.\n");
+    if (!get_keyval (conf, "forceConstant", force_k))
+      cvm::fatal_error ("Error: force cosntant is missing in the restart.\n");
+  }
+
+  is >> brace;
+  if (brace != "}") {
+    cvm::fatal_error ("Error: corrupt restart information for harmonic bias \""+
+                      this->name+"\": no matching brace at position "+
+                      cvm::to_str (is.tellg())+" in the restart file.\n");
+    is.setstate (std::ios::failbit);
+  }
+  return is;
+}
+
+
+std::ostream & colvarbias_harmonic::write_restart (std::ostream &os)
+{
+  os << "harmonic {\n"
+     << "  configuration {\n"
+    //      << "    id " << this->id << "\n"
+     << "    name " << this->name << "\n";
+
+  if (targets_nsteps) {
+    os << "    centers ";
+    for (size_t i = 0; i < colvars.size(); i++) {
+      os << " " << colvar_centers[i];
+    }
+    os << "\n";
+  }
+
+  if (force_k_target_nsteps) {
+    os << "    forceConstant "
+       << std::setprecision (cvm::en_prec)
+       << std::setw (cvm::en_width) << force_k << "\n";
+  }
+
+  os << "  }\n"
+     << "}\n\n";
+
+  return os;
+}
+

@@ -71,6 +71,7 @@
 #include "GlobalMasterEasy.h"
 #include "GlobalMasterMisc.h"
 #include "GlobalMasterFreeEnergy.h"
+#include "GlobalMasterColvars.h"
 
 ComputeMgr::ComputeMgr()
 {
@@ -616,6 +617,9 @@ ComputeMgr::createComputes(ComputeMap *map)
             masterServerObject->addClient(new GlobalMasterMisc());
         if ( simParams->freeEnergyOn )
             masterServerObject->addClient(new GlobalMasterFreeEnergy());
+		if ( simParams->colvarsOn )
+			masterServerObject->addClient(new GlobalMasterColvars());
+
     }
 
     for (int i=0; i < map->nComputes; i++)

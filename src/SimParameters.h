@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2008/07/31 20:54:10 $
- * $Revision: 1.1143 $
+ * $Author: char $
+ * $Date: 2008/09/18 21:48:48 $
+ * $Revision: 1.1144 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -330,6 +330,7 @@ public:
 	char tclBCArgs[128];		//  Extra args for calcforces command
 	Bool freeEnergyOn;		//  Doing free energy perturbation?
 	Bool miscForcesOn;		//  Using misc forces?
+	Bool colvarsOn;         //  Using the colvars module?
 
 	Bool fixedAtomsOn;		//  Are there fixed atoms?
 	Bool fixedAtomsForces;		//  Calculate forces anyway?

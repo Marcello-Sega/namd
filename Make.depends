@@ -1439,6 +1439,10 @@ obj/ComputeMgr.o: \
 	src/GlobalMasterEasy.h \
 	src/GlobalMasterMisc.h \
 	src/GlobalMasterFreeEnergy.h \
+        src/GlobalMasterColvars.h \
+        src/colvarmodule.h \
+        src/colvarproxy.h \
+        src/colvarproxy_namd.h \
 	inc/ComputeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMgr.o $(COPTC) src/ComputeMgr.C
 obj/ComputeNonbondedSelf.o: \
@@ -2551,6 +2555,160 @@ obj/GlobalMasterMisc.o: \
 	src/GlobalMasterEasy.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterMisc.o $(COPTC) src/GlobalMasterMisc.C
+obj/colvarmodule.o: \
+	src/colvarmodule.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarparse.h \
+	src/colvarvalue.h \
+	src/colvar.h \
+	src/colvarbias.h \
+	src/colvarbias_meta.h \
+	src/colvarbias_abf.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarmodule.o $(COPTC) src/colvarmodule.C
+obj/colvarparse.o: \
+	src/colvarparse.C \
+	src/colvarvalue.h \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarparse.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarparse.o $(COPTC) src/colvarparse.C
+obj/colvarvalue.o: \
+	src/colvarvalue.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarvalue.o $(COPTC) src/colvarvalue.C
+obj/colvar.o: \
+	src/colvar.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvarparse.h \
+	src/colvar.h \
+	src/colvarcomp.h \
+	src/colvaratoms.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvar.o $(COPTC) src/colvar.C
+obj/colvarbias.o: \
+	src/colvarbias.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvarbias.h \
+	src/colvar.h \
+	src/colvarparse.h 
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias.o $(COPTC) src/colvarbias.C
+obj/colvarbias_abf.o: \
+	src/colvarbias_abf.C \
+	src/colvar.h \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvarparse.h \
+	src/colvarbias_abf.h \
+	src/colvarbias.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_abf.o $(COPTC) src/colvarbias_abf.C
+obj/colvarbias_meta.o: \
+	src/colvarbias_meta.C \
+	src/colvar.h \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvarparse.h \
+	src/colvarbias_meta.h \
+	src/colvarbias.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_meta.o $(COPTC) src/colvarbias_meta.C
+obj/colvaratoms.o: \
+        src/colvaratoms.C \
+        src/colvarparse.h \
+        src/colvarmodule.h \
+        src/colvartypes.h \
+        src/colvarproxy.h \
+        src/colvarvalue.h \
+        src/colvaratoms.h \
+        src/colvarcomp.h \
+        src/colvar.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvaratoms.o $(COPTC) src/colvaratoms.C
+obj/colvarcomp.o: \
+	src/colvarcomp.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvar.h \
+	src/colvarparse.h \
+	src/colvarcomp.h \
+	src/colvaratoms.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp.o $(COPTC) src/colvarcomp.C
+obj/colvarcomp_angles.o: \
+	src/colvarcomp_angles.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvar.h \
+	src/colvarvalue.h \
+	src/colvarparse.h \
+	src/colvarcomp.h \
+	src/colvaratoms.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_angles.o $(COPTC) src/colvarcomp_angles.C
+obj/colvarcomp_coordnums.o: \
+	src/colvarcomp_coordnums.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvaratoms.h \
+	src/colvarparse.h \
+	src/colvarvalue.h \
+	src/colvar.h \
+	src/colvarcomp.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_coordnums.o $(COPTC) src/colvarcomp_coordnums.C
+obj/colvarcomp_distances.o: \
+	src/colvarcomp_distances.C \
+	src/colvarparse.h \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvar.h \
+	src/colvarcomp.h \
+	src/colvaratoms.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_distances.o $(COPTC) src/colvarcomp_distances.C
+obj/colvarcomp_protein.o: \
+	src/colvarcomp_protein.C \
+	src/colvarparse.h \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvar.h \
+	src/colvarcomp.h \
+	src/colvaratoms.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_protein.o $(COPTC) src/colvarcomp_protein.C
+obj/colvarcomp_rotations.o: \
+	src/colvarcomp_rotations.C \
+	src/colvarparse.h \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvar.h \
+	src/colvarcomp.h \
+	src/colvaratoms.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_rotations.o $(COPTC) src/colvarcomp_rotations.C
+obj/colvarproxy_namd.o: \
+	src/colvarproxy_namd.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarproxy_namd.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarproxy_namd.o $(COPTC) src/colvarproxy_namd.C
 obj/GridForceGrid.o: \
 	src/GridForceGrid.C \
 	src/GridForceGrid.h \

@@ -131,6 +131,21 @@ OBJS = \
 	$(DSTDIR)/GlobalMasterFreeEnergy.o \
 	$(DSTDIR)/GlobalMasterEasy.o \
 	$(DSTDIR)/GlobalMasterMisc.o \
+	$(DSTDIR)/colvarmodule.o \
+	$(DSTDIR)/colvarparse.o \
+	$(DSTDIR)/colvar.o \
+	$(DSTDIR)/colvarvalue.o \
+	$(DSTDIR)/colvarbias.o \
+	$(DSTDIR)/colvarbias_abf.o \
+	$(DSTDIR)/colvarbias_meta.o \
+	$(DSTDIR)/colvaratoms.o \
+	$(DSTDIR)/colvarcomp.o \
+	$(DSTDIR)/colvarcomp_angles.o \
+	$(DSTDIR)/colvarcomp_coordnums.o \
+	$(DSTDIR)/colvarcomp_distances.o \
+	$(DSTDIR)/colvarcomp_protein.o \
+	$(DSTDIR)/colvarcomp_rotations.o \
+	$(DSTDIR)/colvarproxy_namd.o \
 	$(DSTDIR)/GridForceGrid.o \
         $(DSTDIR)/GromacsTopFile.o \
 	$(DSTDIR)/heap.o \
@@ -182,7 +197,8 @@ OBJS = \
 	$(DSTDIR)/imd.o \
 	$(DSTDIR)/CompressPsf.o \
 	$(DSTDIR)/AtomsDisInfo.o \
-	$(DSTDIR)/FileIO.o
+	$(DSTDIR)/FileIO.o 
+
 
 # Add new modules here and also define explicit rule below.
 

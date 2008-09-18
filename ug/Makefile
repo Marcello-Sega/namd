@@ -28,7 +28,7 @@ SRCFILES = ug.bib namd_begindoc.tex namd_copyright.tex namd_macros.tex \
 namd_title.tex namd_version.tex ug.tex ug_add.tex ug_avail.tex ug_basic.tex \
 ug_intro.tex ug_io.tex ug_macros.tex ug_runit.tex ug_sample.tex ug_start.tex \
 ug_xplor.tex ug_fenergy.tex ug_psfgen.tex psfgen_macros.tex ug_alchemy.tex \
-ug_abf.tex
+ug_colvars.tex
 
 PDFFIGS = figures/fmaOn.pdf figures/pairlistdist.pdf \
 figures/shifting.pdf figures/switching.pdf figures/dual_top.pdf

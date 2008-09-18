@@ -43,8 +43,8 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
   /* iterate over each member of "total force" lists */
   a_e = msg->fid.end();
   ForceList::iterator f_i=msg->tf.begin();
-  for (a_i=msg->fid.begin() ; a_i!=a_e; ++a_i,++f_i)
-  { receivedForceIDs.add(*a_i);
+  for (a_i=msg->fid.begin() ; a_i!=a_e; ++a_i,++f_i) {
+    receivedForceIDs.add(*a_i);
     receivedTotalForces.add(*f_i);
   }
 

@@ -25,7 +25,7 @@ struct psfatom {
 };
 typedef struct psfatom psfatom;
 
-#define PSF_RECORD_LENGTH 	80
+#define PSF_RECORD_LENGTH 	200
 
 
 static int extract_patches(FILE *file, topo_mol *mol) { 
@@ -116,7 +116,7 @@ static int extract_segment_extra_data(FILE *file, topo_mol *mol) {
 	    strcpy(seg->pfirst,pfirst);
 	    strcpy(seg->plast, plast);
 	    seg->auto_angles = 0; 
-	    if (!strcmp(diheds,"angles")) {
+	    if (!strcmp(angles,"angles")) {
 	      seg->auto_angles = 1; 
 	    }
 	    seg->auto_dihedrals = 0; 

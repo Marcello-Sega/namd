@@ -108,7 +108,7 @@ class GlobalMaster {
   ResizeArray<BigReal>::const_iterator getGroupMassBegin();
   ResizeArray<BigReal>::const_iterator getGroupMassEnd();
 
- private:
+ protected:
   /* These store the pointers to lists of atom ids and atom positions.
      The list of atom positions has the same length as the list of
      ids, so only three iterators are necessary.   There are also

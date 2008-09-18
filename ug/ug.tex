@@ -9,6 +9,7 @@
 \documentclass[11pt]{article}
 \usepackage{graphicx}
 \usepackage{makeidx}
+\usepackage{amssymb}
 
 \makeindex
 
@@ -65,6 +66,10 @@
 \newpage
 \input{ug_add}
 
+% Collective variable-based calculations
+\newpage
+\input{ug_colvars}
+
 % Equivalence with X-PLOR parameters
 \newpage
 \input{ug_xplor}
@@ -84,8 +89,7 @@
 \newpage
 \addtocontents{toc}{\contentsline {section}{References}{\thepage}}
 \bibliographystyle{abbrv}
-%\bibliography{group,tbpub,ug}
-\bibliography{ug,fep}
+\bibliography{ug}
 
 \newpage
 \addtocontents{toc}{\contentsline {section}{Index}{\thepage}}

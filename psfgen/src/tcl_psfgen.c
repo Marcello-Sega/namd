@@ -612,7 +612,9 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
       int n = hasharray_count(seg->residue_hash);
       int i;
       for (i=0; i<n; i++) {
-        Tcl_AppendElement(interp, seg->residue_array[i].resid);
+        if (hasharray_index(seg->residue_hash, seg->residue_array[i].resid) != HASHARRAY_FAIL) {
+          Tcl_AppendElement(interp, seg->residue_array[i].resid);
+        }
       }
       return TCL_OK;
     }
