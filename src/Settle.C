@@ -12,6 +12,14 @@
 
 #if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 #include <emmintrin.h>  // SSE2
+#if defined(__GNUC__) && ! defined(__INTEL_COMPILER)
+#define __align(X)  __attribute__((aligned(X) ))
+#if (__GNUC__ < 4)
+#define MISSING_mm_cvtsd_f64
+#endif
+#else
+#define __align(X) __declspec(align(X) )
+#endif
 #endif
 
 //
@@ -80,10 +88,10 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
 
   // new center of mass
   // Vector d0 = pos[0] * mOrmT + ((pos[1] + pos[2]) * mHrmT);
-  __declspec(align(16)) Vector a1;
-  __declspec(align(16)) Vector b1;
-  __declspec(align(16)) Vector c1;
-  __declspec(align(16)) Vector d0;
+  __align(16) Vector a1;
+  __align(16) Vector b1;
+  __align(16) Vector c1;
+  __align(16) Vector d0;
 
   __m128d POS1xy = _mm_loadu_pd((double *) &pos[1].x);
   __m128d POS2xy = _mm_loadu_pd((double *) &pos[2].x);
@@ -133,7 +141,7 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   Vector n2 = cross(n0, n1); 
 #endif
 
-#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE) && ! defined(MISSING_mm_cvtsd_f64)
   __m128d l1 = _mm_set_pd(n0.x, n0.y);
   l1 = _mm_mul_pd(l1, l1);
   // n0.x^2 + n0.y^2

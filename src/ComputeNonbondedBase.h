@@ -14,6 +14,11 @@
 
 #if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 #include <emmintrin.h>  // We're using SSE2 intrinsics
+#if defined(__GNUC__) && ! defined(__INTEL_COMPILER)
+#define __align(X)  __attribute__((aligned(X) ))
+#else
+#define __align(X) __declspec(align(X) )
+#endif
 #endif
 
 #ifdef DEFINITION // (
@@ -1393,7 +1398,7 @@ void ComputeNonbondedUtil :: NAME
             PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
             PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
-            __declspec(align(16)) double r2_01[2];
+            __align(16) double r2_01[2];
             _mm_store_pd(r2_01, R2_01); // 16-byte-aligned store
 
             // XXX these could possibly benefit from SSE-based conditionals
@@ -1703,7 +1708,7 @@ void ComputeNonbondedUtil :: NAME
             PJ_Y_01 = _mm_set_pd(p_1[jprev1].position.y, p_1[jprev0].position.y);
             PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
-            __declspec(align(16)) double r2_01[2];
+            __align(16) double r2_01[2];
             _mm_store_pd(r2_01, R2_01); // 16-byte-aligned store
 	    
 	    if (r2_01[0] <= plcutoff2) {
