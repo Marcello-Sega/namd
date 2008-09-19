@@ -1349,7 +1349,6 @@ void ComputeNonbondedUtil :: NAME
           __m128d PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
           // these don't change here, so we could move them into outer scope
-          const __m128d R2_DELTA = _mm_set1_pd(r2_delta);	 
           const __m128d P_I_X = _mm_set1_pd(p_i_x);
           const __m128d P_I_Y = _mm_set1_pd(p_i_y);
           const __m128d P_I_Z = _mm_set1_pd(p_i_z);
@@ -1361,7 +1360,7 @@ void ComputeNonbondedUtil :: NAME
 	    j1     =  jprev1;
 
             __m128d T_01 = _mm_sub_pd(P_I_X, PJ_X_01);
-            __m128d R2_01 = _mm_add_pd(_mm_mul_pd(T_01, T_01), R2_DELTA);
+            __m128d R2_01 = _mm_mul_pd(T_01, T_01);
             T_01 = _mm_sub_pd(P_I_Y, PJ_Y_01);
             R2_01 = _mm_add_pd(R2_01, _mm_mul_pd(T_01, T_01));
             T_01 = _mm_sub_pd(P_I_Z, PJ_Z_01);
@@ -1677,7 +1676,6 @@ void ComputeNonbondedUtil :: NAME
           __m128d PJ_Z_01 = _mm_set_pd(p_1[jprev1].position.z, p_1[jprev0].position.z);
 
           // these don't change here, so we could move them into outer scope
-          const __m128d R2_DELTA = _mm_set1_pd(r2_delta);
           const __m128d P_I_X = _mm_set1_pd(p_i_x);
           const __m128d P_I_Y = _mm_set1_pd(p_i_y);
           const __m128d P_I_Z = _mm_set1_pd(p_i_z);
@@ -1692,7 +1690,7 @@ void ComputeNonbondedUtil :: NAME
 	    j1     =  jprev1;
 	    
             __m128d T_01 = _mm_sub_pd(P_I_X, PJ_X_01);
-            __m128d R2_01 = _mm_add_pd(_mm_mul_pd(T_01, T_01), R2_DELTA);
+            __m128d R2_01 = _mm_mul_pd(T_01, T_01);
             T_01 = _mm_sub_pd(P_I_Y, PJ_Y_01);
             R2_01 = _mm_add_pd(R2_01, _mm_mul_pd(T_01, T_01));
             T_01 = _mm_sub_pd(P_I_Z, PJ_Z_01);
