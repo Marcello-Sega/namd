@@ -12,7 +12,7 @@
 #include <builtins.h>
 #endif
 
-#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 #include <emmintrin.h>  // We're using SSE2 intrinsics
 #endif
 
@@ -1315,7 +1315,7 @@ void ComputeNonbondedUtil :: NAME
 
       if ( g < gu ) {
 	int hu = 0;
-#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 	if ( gu - g  >  6 ) { 
 
 	  // DMK - Atom Sort
@@ -1663,7 +1663,7 @@ void ComputeNonbondedUtil :: NAME
       int k = pairlistoffset;
       int ku = pairlistindex;
       if ( k < ku ) {
-#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 	if ( ku - k  >  6 ) { 	   
 	  register  int jprev0 = pairlist [k    ];
 	  register  int jprev1 = pairlist [k + 1];

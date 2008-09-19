@@ -10,7 +10,7 @@
 #include <math.h>
 //#include <charm++.h> // for CkPrintf
 
-#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 #include <emmintrin.h>  // SSE2
 #endif
 
@@ -51,7 +51,7 @@ int settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist) {
 
 
 int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
-#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
   // SSE acceleration of some of the costly parts of settle using
   // the Intel C/C++ classes.  This implementation uses the SSE units
   // less efficiency than is potentially possible, but in order to do
@@ -133,7 +133,7 @@ int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
   Vector n2 = cross(n0, n1); 
 #endif
 
-#if defined(NAMD_SSE) && defined(__INTEL_COMPILER) && defined(__SSE2__)
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
   __m128d l1 = _mm_set_pd(n0.x, n0.y);
   l1 = _mm_mul_pd(l1, l1);
   // n0.x^2 + n0.y^2
