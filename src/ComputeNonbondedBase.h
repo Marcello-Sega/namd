@@ -585,10 +585,7 @@ void ComputeNonbondedUtil :: NAME
     //   the divide calculation.
     register const BigReal V_length_multiplier = (1.0 / (2.0 * V_length));
 
-    // NOTE: The actual test below is 'distance^2 + r2_delta < groupplcutoff2'
-    //  or... 'distance^2 < groupplcutoff2 - r2_delta'
-    //  so... window radius needs to be 'distance < sqrt(groupplcutoff2 - r2_delta)'
-    atomSort_windowRadius = sqrt(groupplcutoff2 - r2_delta);
+    atomSort_windowRadius = params->groupplcutoff;
 
     // Atom list 1
     {
@@ -1464,8 +1461,8 @@ void ComputeNonbondedUtil :: NAME
 	    
 	    t_0    =  p_i_x - pj_x_0;
 	    t_1    =  p_i_x - pj_x_1;
-	    r2_0   =  t_0 * t_0 + r2_delta;
-	    r2_1   =  t_1 * t_1 + r2_delta;
+	    r2_0   =  t_0 * t_0;
+	    r2_1   =  t_1 * t_1;
 	    
 	    t_0    =  p_i_y - pj_y_0;
 	    t_1    =  p_i_y - pj_y_1;
@@ -1762,8 +1759,8 @@ void ComputeNonbondedUtil :: NAME
 	    
 	    t_0    =  p_i_x - pj_x_0;
 	    t_1    =  p_i_x - pj_x_1;
-	    r2_0   =  t_0 * t_0 + r2_delta;
-	    r2_1   =  t_1 * t_1 + r2_delta;
+	    r2_0   =  t_0 * t_0;
+	    r2_1   =  t_1 * t_1;
 	    
 	    t_0    =  p_i_y - pj_y_0;
 	    t_1    =  p_i_y - pj_y_1;
