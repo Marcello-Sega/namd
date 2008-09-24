@@ -82,6 +82,7 @@ extern "C" void CApplicationInit();
 //----------------------------------------------------------------------
 
 int eventEndOfTimeStep;
+double startupTime;
 
 //----------------------------------------------------------------------
 // BOC constructor
@@ -165,11 +166,26 @@ extern void registerUserEventsForAllComputeObjs(void);
 
 void Node::startup() {
   int gotoRun = false;
+  double newTime;
 
   if (!CkMyPe()) {
-     iout << iINFO << "Entering startup phase " << startupPhase << " with " <<
-	(memusage()/1024) << " kB of memory in use.\n" << endi;
-     fflush(stdout);
+    if (!startupPhase) {
+      iout << iINFO << "\n";
+      iout << iINFO << "====================================================\n" << endi;
+      iout << iINFO << "ENTERING NAMD START-UP PHASES NOW ....\n" << endi;
+      iout << iINFO << "Entering startup phase " << startupPhase << " with " 
+	   << (memusage()/1024) << " kB of memory in use" << endi;
+      startupTime = CmiWallTimer();
+      iout << " -- TIME AT PHASE 0: " << startupTime << "\n" << endi;
+    } else {
+      iout << iINFO << "Entering startup phase " << startupPhase << " with " 
+	   << (memusage()/1024) << " kB of memory in use" << endi;
+      newTime = CmiWallTimer();
+      iout << " -- TIME FOR PHASE " << startupPhase-1 << ": " << newTime - startupTime << "\n" 
+	   << endi;
+      startupTime = newTime;
+    }
+    fflush(stdout);
   }
   
   switch (startupPhase) {
@@ -535,8 +551,12 @@ void Node::run()
   }
 
   if (!CkMyPe()) {
-     iout << iINFO << "Finished startup with " <<
-	(memusage()/1024) << " kB of memory in use.\n" << endi;
+    iout << iINFO << "Finished startup with " << (memusage()/1024) 
+	 << " kB of memory in use" << endi;
+    double newTime = CmiWallTimer();
+    iout << " -- TIME FOR PHASE " << startupPhase-1 << ": " << newTime - startupTime << "\n" << endi;
+    iout << iINFO << "TIME AT END OF NAMD STARTUP: " << newTime << "\n" << endi;
+    iout << iINFO << "====================================================\n\n" << endi;
   }
   
 }

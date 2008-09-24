@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: bhatele $
- * $Date: 2008/08/27 03:10:26 $
- * $Revision: 1.1183 $
+ * $Date: 2008/09/24 19:39:25 $
+ * $Revision: 1.1184 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -906,7 +906,7 @@ void WorkDistrib::assignNodeToPatch()
   TopoManager tmgr;
   int numPes = tmgr.getDimX() * tmgr.getDimY() * tmgr.getDimZ();
   if (numPes > patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
-    CkPrintf ("Blue Gene/L topology partitioner finished successfully \n");
+    iout << "LDB: Topology partitioner finished successfully\n\n" << endi;
   }
   else
 #endif

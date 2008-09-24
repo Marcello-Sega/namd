@@ -82,7 +82,7 @@ void Sync::openSync(void)
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
   if(CkMyPe() == 0)
-    CmiPrintf("[%d] useSync: %d, useProxySync: %d\n", CkMyPe(), useSync, useProxySync);
+    iout << iINFO << "useSync: " << useSync << " useProxySync: " << useProxySync << "\n" << endi;
 }    
 
 // called from Patch::positionsReady()

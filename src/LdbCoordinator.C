@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: gzheng $
- * $Date: 2008/07/14 19:38:02 $
- * $Revision: 1.87 $
+ * $Author: bhatele $
+ * $Date: 2008/09/24 19:39:25 $
+ * $Revision: 1.88 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -223,13 +223,15 @@ LdbCoordinator::~LdbCoordinator(void)
 
 void LdbCoordinator::createLoadBalancer()
 {
-  if (CkMyPe()==0) CkPrintf("Measuring processor speeds...");
+  if (CkMyPe()==0) 
+    iout << "LDB: Measuring processor speeds ..." << endi;
   const SimParameters *simParams = Node::Object()->simParameters;
   /*if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
     CreateNamdNborLB();
   else {*/
     CreateNamdCentLB();
-  if (CkMyPe()==0) CkPrintf(" Done.\n");
+  if (CkMyPe()==0)
+    iout << " Done.\n" << endi;
 }
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
@@ -516,6 +518,7 @@ void LdbCoordinator::rebalance(Controller *c)
   if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
     return;
 
+  iout << "LDB: ============= START OF LOAD BALANCING ============== " << CmiWallTimer() << "\n" << endi;
   DebugM(3, "Controller reached load balance barrier.\n");
   controllerReported = 1;
   controllerThread = c;
@@ -542,6 +545,7 @@ void LdbCoordinator::nodeDone(void)
   nodesDone++;
 
   if (nodesDone==Node::Object()->numNodes()) {
+    iout << "LDB: ============== END OF LOAD BALANCING =============== " << CmiWallTimer() << "\n\n" << endi;
     nodesDone=0;
     ExecuteMigrations();
   }

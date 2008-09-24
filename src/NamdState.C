@@ -152,13 +152,16 @@ int NamdState::configListInit(ConfigList *cfgList) {
     }
     else{
         parameters->print_param_summary();
+	double fileReadTime = CmiWallTimer();
         molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+	iout << iINFO << "TIME FOR READING PSF FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
     }    
   }
   fflush(stdout);
   
   StringList *coordinateFilename = configList->find("coordinates");
 
+  double fileReadTime = CmiWallTimer();
 #ifdef MEM_OPT_VERSION
   if (coordinateFilename != NULL)
     pdb = new PDB(coordinateFilename->data, molecule->numAtoms);
@@ -169,6 +172,8 @@ int NamdState::configListInit(ConfigList *cfgList) {
     NAMD_die("Number of pdb and psf atoms are not the same!");
   }
 #endif
+  iout << iINFO << "TIME FOR READING PDB FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+  iout << iINFO << "\n" << endi;
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
   if ( binCoordinateFilename ) {

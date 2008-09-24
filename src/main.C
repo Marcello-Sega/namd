@@ -113,6 +113,8 @@ public:
   {
 
     // print banner
+    iout << iINFO << "TIME AT END OF CHARM++ STARTUP: " << CmiWallTimer() << "\n" << endi;
+    iout << iINFO << "====================================================\n\n" << endi;
     iout << iINFO << "NAMD " << NAMD_VERSION << " for " << NAMD_PLATFORM
          << "\n"
 #if 0

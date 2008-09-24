@@ -151,9 +151,9 @@ void BackEnd::init(int argc, char **argv) {
 void BackEnd::exit(void) {
   float cpuTime = CmiCpuTimer() - cpuTime_start;
   float wallTime = CmiWallTimer() - wallTime_start;
-  CmiPrintf("==========================================\n"
-  	"WallClock: %f  CPUTime: %f  Memory: %d kB\n",
-	wallTime,cpuTime,memusage()/1024);
+  CmiPrintf("====================================================\n\n"
+	    "WallClock: %f  CPUTime: %f  Memory: %d kB\n",
+	    wallTime, cpuTime, memusage()/1024);
   int i;
   for(i=1; i < CmiNumPes(); i++)
     ExitSchedOn(i);

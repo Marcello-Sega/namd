@@ -449,7 +449,7 @@ int RecBisection::partitionProcGrid(int X, int Y, int Z, int *dest_arr) {
     proc_p.origin.z = 0;
     proc_p.corner.z = new_Z - 1;
     
-    CkPrintf("\n\nPartitioning Proc Grid of size %d, %d, %d\n\n", X, Y, Z);
+    iout << "\nLDB: Partitioning Proc Grid of size " << "[" << X << "] [" << Y << "] [" << Z << "]\n" << endi;
 
     // divide processor grid into rectangular prisms whose sizes
     // corrspond to the computation load of the patches. Moreover

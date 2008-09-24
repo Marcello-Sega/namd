@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2008/08/28 23:16:35 $
- * $Revision: 1.1224 $
+ * $Author: bhatele $
+ * $Date: 2008/09/24 19:39:25 $
+ * $Revision: 1.1225 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -276,7 +276,8 @@ void Controller::algorithm(void)
   outputExtendedSystem(END_OF_RUN);
   // note: this is a Converse interface call that gets translated to a
   // null method call if CMK_OPTIMIZE is set.
-  traceClose();
+  if(traceAvailable())
+    traceClose();
   terminate();
 }
 
