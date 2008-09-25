@@ -13,7 +13,7 @@
 
 #ifndef NO_SOCKET
 
-#define TBSOFT_TRACK_HOST   "130.126.120.106" /* www.ks.uiuc.edu */
+#define TBSOFT_TRACK_HOST   "127.0.0.1"       /* localhost */
 #define TBSOFT_TRACK_PORT   3141              /* UDP port 3141   */
 #define TBSOFT_TRACK_MAXLEN 1024              /* maximum message length */
 
@@ -69,9 +69,9 @@ int tbsoft_sendusage(const char *program,
 
 #ifndef NOHOSTNAME
 #ifdef TRACK_USERS
-  iout << iINFO <<
-     "Sending usage information to NAMD developers via UDP.  Sent data is:\n"
-     << endi;
+  iout << iINFO
+    << "Sending usage information to " << TBSOFT_TRACK_HOST
+    << ":" << TBSOFT_TRACK_PORT << " via UDP.  Sent data is:\n";
 #endif
 
   char sendbuf[TBSOFT_TRACK_MAXLEN];
