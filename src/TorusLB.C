@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/08/28 03:37:35 $
- * $Revision: 1.14 $
+ * $Date: 2008/09/25 15:51:26 $
+ * $Revision: 1.15 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -276,7 +276,7 @@ void TorusLB::strategy() {
 }
 
 void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
-  if(p->available == CmiFalse)
+  if (p->available == CmiFalse)
     return;
 
   // find the position in bestPe/goodPe to place this pair
@@ -287,9 +287,9 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
   numAvailable(c, p, &numPatches, &numProxies, &badForComm); 
   index = ((numPatches==2) ? (numPatches+1) : numPatches) + (numProxies * 2 + 1);
 
-  if(numPatches==0 && numProxies==1)
+  if (numPatches==0 && numProxies==1)
     index--;
-  if(numProxies==0)
+  if (numProxies==0)
     index--; 
   /*if(numPatches == 2 || numProxies == 2) index = 5;
   if(numPatches == 1 && numProxies == 1) index = 5;
@@ -316,36 +316,46 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
   brickDim(z1, z2, dimNZ, zm, zM);
 #endif
 
-  if(p->load + c->load < overLoad * averageLoad) {
+  if (p->load + c->load < overLoad * averageLoad) {
+  // replace only if the new processor is underloaded
 #if USE_TOPOMAP
     tmgr.rankToCoordinates(p->Id, x, y, z, t);
     int wB = withinBrick(x, y, z, xm, xM, dimNX, ym, yM, dimNY, zm, zM, dimNZ);
-    if(wB) {
+    if (wB) {
+      // if within the brick formed by the patch processors
 #endif
-      processorInfo* &newp = bestPe[index];
-      if (!(newp) || p->load < newp->load )
-        newp = p;
+      // or the non-topology case
+      processorInfo* &oldp = bestPe[index];
+      if (!(oldp) || p->load < oldp->load )
+        oldp = p;
 #if USE_TOPOMAP
-    }
-    else {
-      processorInfo* &newp = goodPe[index];
-      double loadDiff = newp->load - p->load;
-      if (loadDiff<0) loadDiff *= (-1);
-
-      if (!(newp) || (loadDiff > 0.4 * averageLoad && p->load < newp->load) )
-        newp = p;
+    } else {
+      // if outside the brick formed by the patch processors
+      processorInfo* &oldp = goodPe[index];
+      double loadDiff = 0.0;
+      
+      if (!(oldp)) {
+	// replace if there is no processor at that position
+        oldp = p;
+      }
       else {
-        if (tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2) < tmgr.getHopsBetweenRanks(newp->Id, p1) + tmgr.getHopsBetweenRanks(newp->Id, p2))
-          newp = p;
+	// get the load difference if the processor exixts
+	loadDiff = oldp->load - p->load;
+	if ((loadDiff > 0.4) || (loadDiff > 0.0 && (tmgr.getHopsBetweenRanks(p->Id, p1) + 
+	    tmgr.getHopsBetweenRanks(p->Id, p2) < tmgr.getHopsBetweenRanks(oldp->Id, p1) + 
+	    tmgr.getHopsBetweenRanks(oldp->Id, p2)))) {
+	  // if weights are similar, look at the hops
+          oldp = p;
+	}
       }
     }
 #endif
-  }
-  else {
-    processorInfo* &newp = badPe[index];
-    if (!(newp) || p->load < newp->load )
-      newp = p;
+  } else {
+    // for the first placement, we must find a processor to place
+    // the compute on, so choose a bad processor if necessary
+    processorInfo* &oldp = badPe[index];
+    if (!(oldp) || p->load < oldp->load )
+      oldp = p;
   }
 }
-
 

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/08/28 03:37:35 $
- * $Revision: 1.16 $
+ * $Date: 2008/09/25 15:51:26 $
+ * $Revision: 1.17 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -432,7 +432,7 @@ int RefineTorusLB::newRefine() {
 }
 
 void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
-  if(p->available == CmiFalse)
+  if (p->available == CmiFalse)
     return;
 
   // find the position in bestPe/goodPe to place this pair
@@ -443,9 +443,9 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
   numAvailable(c, p, &numPatches, &numProxies, &badForComm); 
   index = ((numPatches==2) ? (numPatches+1) : numPatches) + (numProxies * 2 + 1);
 
-  if(numPatches==0 && numProxies==1)
+  if (numPatches==0 && numProxies==1)
     index--;
-  if(numProxies==0)
+  if (numProxies==0)
     index--; 
   /*if(numPatches == 2 || numProxies == 2) index = 5;
   if(numPatches == 1 && numProxies == 1) index = 5;
@@ -472,31 +472,31 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
   brickDim(z1, z2, dimNZ, zm, zM);
 #endif
 
-  if(p->load + c->load < overLoad * averageLoad) {
+  if (p->load + c->load < overLoad * averageLoad) {
 #if USE_TOPOMAP
     tmgr.rankToCoordinates(p->Id, x, y, z, t);
     int wB = withinBrick(x, y, z, xm, xM, dimNX, ym, yM, dimNY, zm, zM, dimNZ);
-    if(wB) {
+    if (wB) {
 #endif
-      pcpair* &newp = bestPe[index];
+      pcpair* &oldp = bestPe[index];
 
-      if (!(newp->c) || ((p->load + c->load) < (newp->p->load + newp->c->load))) {
-        newp->p = p;
-        newp->c = c;
+      if (!(oldp->p) || ((p->load + c->load) < (oldp->p->load + oldp->c->load))) {
+        oldp->p = p;
+        oldp->c = c;
       } 
 #if USE_TOPOMAP
     } else {
-      pcpair* &newp = goodPe[index];
-      double loadDiff = newp->p->load + newp->c->load - p->load - c->load;
-      if (loadDiff<0) loadDiff *= (-1);
+      pcpair* &oldp = goodPe[index];
+      double loadDiff = 0.0;
 
-      if (!(newp->c) || ( loadDiff > 0.4 * averageLoad && (p->load + c->load) < (newp->p->load + newp->c->load) ) ) {
-        newp->p = p;
-        newp->c = c;
+      if (!(oldp->p)) {
+        oldp->p = p;
+        oldp->c = c;
       } else {
-        if (tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2) < tmgr.getHopsBetweenRanks((newp->p)->Id, p1) + tmgr.getHopsBetweenRanks((newp->p)->Id, p2)) {
-          newp->p = p;
-          newp->c = c;
+	loadDiff = oldp->p->load + oldp->c->load - p->load - c->load;
+        if ( (loadDiff > 0.4) || (loadDiff > 0.0 && (tmgr.getHopsBetweenRanks(p->Id, p1) + tmgr.getHopsBetweenRanks(p->Id, p2) < tmgr.getHopsBetweenRanks((oldp->p)->Id, p1) + tmgr.getHopsBetweenRanks((oldp->p)->Id, p2))) ) {
+          oldp->p = p;
+          oldp->c = c;
         }
       }
     }
