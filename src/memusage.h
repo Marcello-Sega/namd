@@ -9,6 +9,9 @@
 
 unsigned long memusage(const char **source = 0);
 
+inline double memusage_kB() { return memusage() / 1024.; }
+inline double memusage_MB() { return memusage() / 1048576.; }
+
 class memusageinit {
 public:
   memusageinit();
