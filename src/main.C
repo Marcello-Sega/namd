@@ -113,8 +113,6 @@ public:
   {
 
     // print banner
-    iout << iINFO << "TIME AT END OF CHARM++ STARTUP: " << CmiWallTimer() << "\n" << endi;
-    iout << iINFO << "====================================================\n\n" << endi;
     iout << iINFO << "NAMD " << NAMD_VERSION << " for " << NAMD_PLATFORM
          << "\n"
 #if 0
@@ -176,9 +174,12 @@ public:
     iout << iINFO << "Running on BigSim using " << CmiNumPes() << " real processors.\n" << endi;
 #endif
     iout << iINFO << "Running on " << CkNumPes() << " processors.\n" << endi;
+    iout << iINFO << "Charm++/Converse parallel runtime startup completed at "
+	 << CmiWallTimer() << " s\n"<< endi;
     const char* memsource;
-    iout << iINFO << (memusage(&memsource)/1024) << " kB of memory in use.\n" << endi;
-    iout << iINFO << "Memory usage based on " << memsource << "\n" << endi;
+    memusage(&memsource);
+    iout << iINFO << memusage_MB() << " MB of memory in use"
+	 << " based on " << memsource << "\n";
   }
 };
 

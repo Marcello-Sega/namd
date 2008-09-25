@@ -152,8 +152,8 @@ void BackEnd::exit(void) {
   float cpuTime = CmiCpuTimer() - cpuTime_start;
   float wallTime = CmiWallTimer() - wallTime_start;
   CmiPrintf("====================================================\n\n"
-	    "WallClock: %f  CPUTime: %f  Memory: %d kB\n",
-	    wallTime, cpuTime, memusage()/1024);
+	    "WallClock: %f  CPUTime: %f  Memory: %f MB\n",
+	    wallTime, cpuTime, memusage_MB());
   int i;
   for(i=1; i < CmiNumPes(); i++)
     ExitSchedOn(i);

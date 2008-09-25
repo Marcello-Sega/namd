@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: bhatele $
- * $Date: 2008/09/24 19:39:25 $
- * $Revision: 1.1225 $
+ * $Author: jim $
+ * $Date: 2008/09/25 16:30:26 $
+ * $Revision: 1.1226 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1182,19 +1182,10 @@ void Controller::printTiming(int step) {
       startCTime = endCTime;
 
       if ( step >= (simParams->firstTimestep + simParams->outputTiming) ) {
-#if 1
 	CmiPrintf("TIMING: %d  CPU: %g, %g/step  Wall: %g, %g/step"
-		  ", %g hours remaining, %d kB of memory in use.\n",
+		  ", %g hours remaining, %f MB of memory in use.\n",
 		  step, endCTime, elapsedC, endWTime, elapsedW,
-		  remainingW_hours, (int)((memusage()/1024)));
-#else
-        iout << "TIMING: " << step
-             << "  CPU: " << endCTime << ", " << elapsedC << "/step"
-             << "  Wall: " << endWTime << ", " << elapsedW << "/step"
-             << ", " << remainingW_hours << " hours remaining"
-             << ", " << (memusage()/1024) << " kB of memory in use"
-             << ".\n" << endi;
-#endif
+		  remainingW_hours, memusage_MB());
       }
     }
 }
@@ -1400,7 +1391,7 @@ void Controller::printEnergies(int step, int minimize)
 	BigReal days = 1.0 / (24.0 * 60.0 * 60.0);
 	BigReal daysPerNano = wallPerStep * days / ns;
 	iout << wallPerStep << " s/step " << daysPerNano << " days/ns ";
-        iout << (memusage()/1024) << " kB memory\n" << endi;
+        iout << memusage_MB() << " MB memory\n" << endi;
       }
      }
      startBenchTime = CmiWallTimer();

@@ -171,20 +171,15 @@ void Node::startup() {
   if (!CkMyPe()) {
     if (!startupPhase) {
       iout << iINFO << "\n";
-      iout << iINFO << "====================================================\n" << endi;
-      iout << iINFO << "ENTERING NAMD START-UP PHASES NOW ....\n" << endi;
-      iout << iINFO << "Entering startup phase " << startupPhase << " with " 
-	   << (memusage()/1024) << " kB of memory in use" << endi;
       startupTime = CmiWallTimer();
-      iout << " -- TIME AT PHASE 0: " << startupTime << "\n" << endi;
+      iout << iINFO << "Entering startup at " << startupTime << " s, ";
     } else {
-      iout << iINFO << "Entering startup phase " << startupPhase << " with " 
-	   << (memusage()/1024) << " kB of memory in use" << endi;
       newTime = CmiWallTimer();
-      iout << " -- TIME FOR PHASE " << startupPhase-1 << ": " << newTime - startupTime << "\n" 
-	   << endi;
+      iout << iINFO << "Startup phase " << startupPhase-1 << " took "
+	   << newTime - startupTime << " s, ";
       startupTime = newTime;
     }
+    iout << memusage_MB() << " MB of memory in use\n" << endi;
     fflush(stdout);
   }
   
@@ -551,12 +546,13 @@ void Node::run()
   }
 
   if (!CkMyPe()) {
-    iout << iINFO << "Finished startup with " << (memusage()/1024) 
-	 << " kB of memory in use" << endi;
     double newTime = CmiWallTimer();
-    iout << " -- TIME FOR PHASE " << startupPhase-1 << ": " << newTime - startupTime << "\n" << endi;
-    iout << iINFO << "TIME AT END OF NAMD STARTUP: " << newTime << "\n" << endi;
-    iout << iINFO << "====================================================\n\n" << endi;
+    iout << iINFO << "Startup phase " << startupPhase-1 << " took "
+	 << newTime - startupTime << " s, "
+	 << memusage_MB() << " MB of memory in use\n";
+    iout << iINFO << "Finished startup at " << newTime << " s, "
+	 << memusage_MB() << " MB of memory in use\n\n" << endi;
+    fflush(stdout);
   }
   
 }
