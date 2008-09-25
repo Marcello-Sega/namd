@@ -13,9 +13,14 @@
 
 #ifndef NO_SOCKET
 
-#define TBSOFT_TRACK_HOST   "127.0.0.1"       /* localhost */
-#define TBSOFT_TRACK_PORT   3141              /* UDP port 3141   */
+// to track usage, define target host and port in compile line, e.g.:
+//    -DTBSOFT_TRACK_HOST=\"127.0.0.1\" -DTBSOFT_TRACK_PORT=3141
+// #define TBSOFT_TRACK_HOST   "127.0.0.1"
+// #define TBSOFT_TRACK_PORT   3141
+
+#ifndef TBSOFT_TRACK_MAXLEN
 #define TBSOFT_TRACK_MAXLEN 1024              /* maximum message length */
+#endif
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -68,7 +73,7 @@ int tbsoft_sendusage(const char *program,
                      const char *miscinfo) {
 
 #ifndef NOHOSTNAME
-#ifdef TRACK_USERS
+#ifdef TBSOFT_TRACK_HOST
   iout << iINFO
     << "Sending usage information to " << TBSOFT_TRACK_HOST
     << ":" << TBSOFT_TRACK_PORT << " via UDP.  Sent data is:\n";
@@ -92,7 +97,7 @@ int tbsoft_sendusage(const char *program,
   sprintf(sendbuf, "1 %s  %s  %s  %s  %s  %s  %s", 
     program, versionnum, platform, numcpus, miscinfo, host, user);
   iout << iINFO << sendbuf << "\n" << endi;
-#ifdef TRACK_USERS
+#ifdef TBSOFT_TRACK_HOST
   send_dgram(TBSOFT_TRACK_HOST, TBSOFT_TRACK_PORT, sendbuf, strlen(sendbuf));
 #endif
 
