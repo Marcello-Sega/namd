@@ -154,6 +154,7 @@ int  Fclose(FILE *fout);
 // plf -- alternate water models
 #define WAT_TIP3 0
 #define WAT_TIP4 1
+#define WAT_SWM4 2  /* Drude model (5 charge sites) */
 
 
 #include "converse.h"

@@ -225,10 +225,22 @@ private:
 #endif
 
   // PLF -- for TIP4P
-  void redistrib_tip4p_force(Vector&, Vector&, Vector&, Vector&, int, Tensor*);
+  //void redistrib_tip4p_force(Vector&, Vector&, Vector&, Vector&, int, Tensor*);
   void redistrib_tip4p_forces(const int, Tensor*);
   void tip4_omrepos(Vector*, Vector*, Vector*, BigReal);
   void init_tip4();
+
+  // Drude SWM4
+  void redistrib_swm4_forces(const int, Tensor*);
+  void swm4_omrepos(Vector*, Vector*, Vector*, BigReal);
+  void init_swm4();
+
+  // use for both TIP4P and SWM4 water
+  void redistrib_lp_force(
+      Vector& f_ox, Vector& f_h1, Vector& f_h2, Vector& f_lp,
+      const Vector& p_ox, const Vector& p_h1, const Vector& p_h2,
+      const Vector& p_lp, Tensor *virial);
+
   BigReal r_om, r_ohc;
 
 #if CMK_PERSISTENT_COMM

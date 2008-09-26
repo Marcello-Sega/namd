@@ -427,6 +427,7 @@ public:
   void reloadCharges(float charge[], int n);
 
         Bool is_lp(int);     // return true if atom is a lone pair
+        Bool is_drude(int);     // return true if atom is a Drude particle
         Bool is_hydrogen(int);     // return true if atom is hydrogen
         Bool is_oxygen(int);       // return true if atom is oxygen
   Bool is_hydrogenGroupParent(int); // return true if atom is group parent

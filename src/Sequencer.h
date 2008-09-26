@@ -54,6 +54,9 @@ protected:
     // For TIP4
     void redistrib_tip4p_forces(const int, const int);
 
+    // For Drude SWM4
+    void redistrib_swm4_forces(const int, const int);
+
     void addRotDragToPosition(BigReal);
     void addMovDragToPosition(BigReal);
 

@@ -21,6 +21,7 @@ using namespace std;
 #define HBAntecedentAtom 0x10
 #define HBHydrogenAtom   0x20
 #define LonepairAtom     0x40
+#define DrudeAtom        0x80
 
 
 typedef unsigned short Index;		//  Used for index into arrays

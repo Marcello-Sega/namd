@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2008/09/18 21:48:48 $
- * $Revision: 1.1144 $
+ * $Author: dhardy $
+ * $Date: 2008/09/26 22:21:08 $
+ * $Revision: 1.1145 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -316,6 +316,9 @@ public:
         char extForcesCommand[256];
         char extCoordFilename[128];
         char extForceFilename[128];
+
+        Bool drudeOn;       // Perform integration of Drude oscillators?
+        BigReal drudeTemp;  // (low) temperature for freezing Drude oscillators
 
 	Bool pairInteractionOn;		//  Calculate pair interactions?
 	int pairInteractionGroup1;	//  Interaction group 1.

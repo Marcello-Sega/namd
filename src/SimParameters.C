@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2008/09/18 21:48:47 $
- * $Revision: 1.1260 $
+ * $Author: dhardy $
+ * $Date: 2008/09/26 22:21:08 $
+ * $Revision: 1.1261 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -764,6 +764,12 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
      &lesReduceTemp, FALSE);
    opts.optionalB("les", "lesReduceMass", "Reduce enhanced atom mass?",
      &lesReduceMass, FALSE);
+
+   // Drude oscillators
+   opts.optionalB("main", "drude", "Perform integration of Drude oscillators?",
+       &drudeOn, FALSE);
+   opts.require("drude", "drudeTemp", "Temperature for freezing "
+       "Drude oscillators", &drudeTemp);
 
    // Pair interaction calculations
     opts.optionalB("main", "pairInteraction", 
@@ -1807,7 +1813,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        NAMD_die(err_msg);
      }
    }
-
+   if (opts.defined("drude")) {
+     watmodel = WAT_SWM4;
+   }
 
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))

@@ -1113,8 +1113,10 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
                 tmpResLookup->append(segment_name, residue_number, i);
             //Determine the type of the atom (H or O)
             Real thisAtomMass = atomMassPool[eachAtomMass[i]];
-            if (thisAtomMass < 0.1) {
-              atoms[i].status = LonepairAtom;
+            if (thisAtomMass <= 0.05) {
+              atoms[i].status |= LonepairAtom;
+            } else if (atoms[i].mass < 1.0) {
+              atoms[i].status |= DrudeAtom;
             } else if(thisAtomMass <= 3.5){
                 atoms[i].status = HydrogenAtom;
             }else if(atomNamePool[atomNames[i].atomnameIdx][0]=='O' &&
@@ -1354,8 +1356,10 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
 	tmpResLookup->append(segment_name, atoi(residue_number), atom_number-1);
 
     /*  Determine the type of the atom (H or O) */
-    if (atoms[atom_number-1].mass < 0.1) {
+    if (atoms[atom_number-1].mass <= 0.05) {
       atoms[atom_number-1].status |= LonepairAtom;
+    } else if (atoms[atom_number-1].mass < 1.0) {
+      atoms[atom_number-1].status |= DrudeAtom;
     } else if (atoms[atom_number-1].mass <=3.5) {
       atoms[atom_number-1].status |= HydrogenAtom;
     } else if ((atomNames[atom_number-1].atomname[0] == 'O') && 
@@ -1456,8 +1460,15 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
     /*  Make sure this isn't a fake bond meant for shake in x-plor.  */
     Real k, x0;
     params->get_bond_params(&k,&x0,b->bond_type);
-    if ( k == 0. ) --numBonds;  // fake bond
-    else ++num_read;  // real bond
+    if (simParams->watmodel == WAT_SWM4) {
+      // need to retain Lonepair bonds for Drude
+      if ( k == 0. && !is_lp(b->atom1) && !is_lp(b->atom2)) --numBonds;
+      else ++num_read;
+    }
+    else {
+      if ( k == 0. ) --numBonds;  // fake bond
+      else ++num_read;  // real bond
+    }
   }
 
   /*  Tell user about our subterfuge  */
@@ -6979,6 +6990,10 @@ void Molecule::build_exPressure_atoms(StringList *fixedfile,
       return ((atoms[anum].status & LonepairAtom) != 0);
     }
 
+    Bool Molecule::is_drude(int anum) {
+      return ((atoms[anum].status & DrudeAtom) != 0);
+    }
+
     Bool Molecule::is_hydrogen(int anum)
     {
   return ((atoms[anum].status & HydrogenAtom) != 0);
@@ -7062,7 +7077,8 @@ void Molecule::build_atom_status(void) {
     }
     #else
     if ( atoms[i].mass <= 0. ) {
-      if (simParams->watmodel == WAT_TIP4) {
+      if (simParams->watmodel == WAT_TIP4 ||
+          simParams->watmodel == WAT_SWM4) {
         ++numLP;
       } else {
         atoms[i].mass = 0.001;
@@ -7078,7 +7094,8 @@ void Molecule::build_atom_status(void) {
   }
   #endif
 
-  if (simParams->watmodel == WAT_TIP4) {
+  if (simParams->watmodel == WAT_TIP4 ||
+      simParams->watmodel == WAT_SWM4) {
     iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF BECAUSE LONE PAIRS ARE USED\n" << endi;
   } else {
     if ( numZeroMassAtoms && ! CkMyPe() ) {
@@ -7139,6 +7156,7 @@ void Molecule::build_atom_status(void) {
     }
   }
 #endif
+
   if ( hhbondcount && ! CkMyPe() ) {
     iout << iWARN << "Found " << hhbondcount << " H-H bonds.\n" << endi;
   }
@@ -7197,9 +7215,9 @@ void Molecule::build_atom_status(void) {
       // check for waters (put them in their own groups: OH or OHH)
       if (is_oxygen(a1))  hg[a1].sortVal++;
     }
+
     // If we have TIP4P water, check for lone pairs
     if (simParams->watmodel == WAT_TIP4) {
-
       if (is_lp(a1)) {
         atoms[a1].partner = a2;
         hg[a2].atomsInGroup++;
@@ -7207,7 +7225,6 @@ void Molecule::build_atom_status(void) {
         hg[a1].GPID = a2;
         hg[a1].isGP = 0;
       }
-
       if (is_lp(a2)) {
         atoms[a2].partner = a1;
         hg[a1].atomsInGroup++;
@@ -7215,9 +7232,37 @@ void Molecule::build_atom_status(void) {
         hg[a2].GPID = a1;
         hg[a2].isGP = 0;
       }
-
-
     }
+    // SWM4 water has lone pair and Drude particles
+    else if (simParams->watmodel == WAT_SWM4) {
+      if (is_lp(a1) || is_drude(a1)) {
+        if (is_hydrogen(a2) || is_lp(a2) || is_drude(a2)) {
+          char msg[256];
+          sprintf(msg, "%s particle %d is bonded to non-parent atom %d",
+              (is_lp(a1) ? "Lonepair" : "Drude"), a1+1, a2+1);
+          NAMD_die(msg);
+        }
+        atoms[a1].partner = a2;
+        hg[a2].atomsInGroup++;
+        hg[a1].atomsInGroup = 0;
+        hg[a1].GPID = a2;
+        hg[a1].isGP = 0;
+      }
+      else if (is_lp(a2) || is_drude(a2)) {
+        if (is_hydrogen(a1) || is_lp(a1) || is_drude(a1)) {
+          char msg[256];
+          sprintf(msg, "%s particle %d is bonded to non-parent atom %d",
+              (is_lp(a2) ? "Lonepair" : "Drude"), a2+1, a1+1);
+          NAMD_die(msg);
+        }
+        atoms[a2].partner = a1;
+        hg[a1].atomsInGroup++;
+        hg[a2].atomsInGroup = 0;
+        hg[a2].GPID = a1;
+        hg[a2].isGP = 0;
+      }
+    }
+
   }
 
 #endif
@@ -7272,13 +7317,15 @@ void Molecule::build_atom_status(void) {
         parentid = hg[i].atomID;
       } else {
         char buff[512];
-        sprintf(buff,"Atom %d has bad group size.  Check for duplicate bonds.",parentid+1);
+        sprintf(buff, "Atom %d has bad group size.  "
+            "Check for duplicate bonds.", parentid+1);
         NAMD_die(buff);
       }
     } else {  // don't expect group parent
       if ( hg[i].isGP ) {
         char buff[512];
-        sprintf(buff,"Atom %d has bad group size.  Check for duplicate bonds.",parentid+1);
+        sprintf(buff, "Atom %d has bad group size.  "
+            "Check for duplicate bonds.", parentid+1);
         NAMD_die(buff);
       }
     }
@@ -7287,13 +7334,48 @@ void Molecule::build_atom_status(void) {
 
   // finally, add the indexing from atoms[] to hydrogenGroup[]
   waterIndex = numAtoms;
-  for(i=0; i<numAtoms; i++)
-    {
+  for(i=0; i<numAtoms; i++) {
     atoms[hydrogenGroup[i].atomID].hydrogenList = i;
     // identify where waters start
-    if ((hydrogenGroup[i].sortVal == 2) && (i < numAtoms))
-  waterIndex = i;
+    if ((hydrogenGroup[i].sortVal == 2) && (i < numAtoms)) {
+      waterIndex = i;
     }
+  }
+
+  // check ordering of Drude particles and water
+  if (simParams->watmodel == WAT_SWM4) {
+    for (i = 0;  i < numAtoms;  i++) {
+      if (is_water(hg[i].atomID) && hg[i].isGP) {
+        if (i > numAtoms-5
+            || ! is_drude(hg[i+1].atomID)
+            || ! is_lp(hg[i+2].atomID)
+            || ! is_hydrogen(hg[i+3].atomID)
+            || ! is_hydrogen(hg[i+4].atomID) ) {
+          char msg[256];
+          sprintf(msg, "Drude water molecule from HydrogenGroup i=%d "
+              "starting at atom %d is not sorted\n", i, hg[i].atomID+1);
+          NAMD_die(msg);
+        }
+        i += 4;  // +1 from loop
+        continue;
+      } // if water
+      else if (is_drude(hg[i].atomID)) {
+        if (i < 1 || hg[i-1].atomID != hg[i].GPID) {
+          char msg[256];
+          sprintf(msg, "Drude particle from HydrogenGroup i=%d must "
+              "immediately follow its parent atom %d\n", i, hg[i].GPID+1);
+          NAMD_die(msg);
+        }
+      } // else if Drude
+      else if (is_lp(hg[i].atomID)) {
+        char msg[256];
+        sprintf(msg, "Drude lonepair from HydrogenGroup i=%d "
+            "at particle %d is NOT from water - unsupported\n",
+            i, hg[i].atomID+1);
+        NAMD_die(msg);
+      }
+    } // for numAtoms
+  } // if SWM4
 
   #if 0
   // debugging code for showing sorted atoms
@@ -7356,11 +7438,34 @@ void Molecule::build_atom_status(void) {
         if (is_lp(a2)) { int tmp = a1;  a1 = a2;  a2 = tmp; } // swap
         if (is_lp(a1)) {
           if (! is_water(a2) ) {
-            // Currently, lonepairs are only allowed on waters, although this may change in the future
+            // Currently, lonepairs are only allowed on waters,
+            // although this may change in the future
             char err_msg[128];
-            sprintf(err_msg, "ILLEGAL LONE PAIR AT INDEX %i\nLONEPAIRS ARE ONLY CURRENTLY ALLOWED ON WATER MOLECULES\n", a1);
+            sprintf(err_msg, "ILLEGAL LONE PAIR AT INDEX %i\n"
+                "LONEPAIRS ARE ONLY CURRENTLY ALLOWED ON WATER MOLECULES\n",
+                a1);
             NAMD_die(err_msg);
           } else {
+            rigidBondLengths[a1] = x0;
+          }
+        }
+      }
+      // Handle SWM4 lone pairs
+      // (Drude bonds remain flexible)
+      if (simParams->watmodel == WAT_SWM4) {
+        if (is_lp(a2)) {
+          int tmp = a1;  a1 = a2;  a2 = tmp;  // swap
+        }
+        if (is_lp(a1)) {
+          if ( ! is_water(a2)) {
+            // Lonepairs allowed only on water - for now
+            char msg[128];
+            sprintf(msg, "ILLEGAL LONE PAIR AT INDEX %d\n"
+                "LONE PAIRS CURRENTLY ALLOWED ONLY ON WATER WATER MOLECULES\n",
+                a1+1);
+            NAMD_die(msg);
+          }
+          else {
             rigidBondLengths[a1] = x0;
           }
         }
@@ -7402,7 +7507,8 @@ void Molecule::build_atom_status(void) {
       if ( ! is_water(a2) ) continue;
       a1 = angles[i].atom1;
       a3 = angles[i].atom3;
-      if (is_lp(a2) || is_lp(a1) || is_lp(a3)) continue;
+      if (is_lp(a2) || is_lp(a1) || is_lp(a3) ||
+          is_drude(a2) || is_drude(a1) || is_drude(a3)) continue;
       if ( rigidBondLengths[a1] != rigidBondLengths[a3] ) {
         if (rigidBondLengths[a1] >0.3 && rigidBondLengths[a3] >0.3) {
           printf("length1: %f length2: %f\n", rigidBondLengths[a1], rigidBondLengths[a3]);
@@ -7612,8 +7718,10 @@ void Molecule::read_parm(Ambertoppar *amber_data)
 
     /*  Determine the type of the atom (H or O) */
     atoms[i].status = UnknownAtom; // the default
-    if (atoms[i].mass <= 0.1) {
+    if (atoms[i].mass <= 0.05) {
       atoms[i].status |= LonepairAtom;
+    } else if (atoms[i].mass < 1.0) {
+      atoms[i].status |= DrudeAtom;
     } else if (atoms[i].mass <=3.5) {
       atoms[i].status |= HydrogenAtom;
     } else if ((atomNames[i].atomname[0] == 'O') && 
@@ -7932,8 +8040,10 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     // For example, in dppc LO2 appears to be an oxygen.
     // And how do the hydrogens in CH3 etc factor in to this?
     atoms[i].status = UnknownAtom; // the default
-    if (atoms[i].mass <= 0.1) {
+    if (atoms[i].mass <= 0.05) {
       atoms[i].status |= LonepairAtom;
+    } else if (atoms[i].mass < 1.0) {
+      atoms[i].status |= DrudeAtom;
     } else if (atoms[i].mass <=3.5) {
       atoms[i].status |= HydrogenAtom;
     } else if ((atomNames[i].atomname[0] == 'O') && 

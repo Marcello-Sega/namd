@@ -69,6 +69,7 @@ void BondElem::computeForce(BigReal *reduction,
                << localIndex[1] << std::endl);
 
   BigReal r;		// Distance between atoms
+  BigReal scal;         // force scaling
   BigReal diff;		// difference between theta and theta0
   BigReal energy;	// energy from the bond
 
@@ -82,19 +83,28 @@ void BondElem::computeForce(BigReal *reduction,
   const Lattice & lattice = p[0]->p->lattice;
   const Vector r12 = lattice.delta(p[0]->x[localIndex[0]].position,
 					p[1]->x[localIndex[1]].position);
-  r = r12.length();
 
-  //  Compare it to the rest bond
-  diff = r - x0;
+  if (0. == x0) {  // for Drude bonds
+    scal = -2.0*k;
+    energy = k * r12.length2();
+  }
+  else {
+    r = r12.length();
 
-  //  Add the energy from this bond to the total energy
-  energy = k*diff*diff;
+    //  Compare it to the rest bond
+    diff = r - x0;
 
-  //  Determine the magnitude of the force
-  diff *= -2.0*k;
+    //  Add the energy from this bond to the total energy
+    energy = k*diff*diff;
 
-  //  Scale the force vector accordingly
-  const Force f12 = r12 * (diff/r);
+    //  Determine the magnitude of the force
+    diff *= -2.0*k;
+
+    //  Scale the force vector accordingly
+    scal = (diff/r);
+  }
+  const Force f12 = scal * r12;
+
 
   //  Now add the forces to each force vector
   p[0]->f[localIndex[0]] += f12;

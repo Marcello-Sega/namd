@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: char $
- * $Date: 2008/09/18 21:48:47 $
- * $Revision: 1.1167 $
+ * $Author: dhardy $
+ * $Date: 2008/09/26 22:21:08 $
+ * $Revision: 1.1168 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -202,6 +202,11 @@ void Sequencer::integrate() {
       redistrib_tip4p_forces(Results::nbond, 0);
       redistrib_tip4p_forces(Results::slow, 0);
     }
+    else if (simParams->watmodel == WAT_SWM4) {
+      redistrib_swm4_forces(Results::normal, 0);
+      redistrib_swm4_forces(Results::nbond, 0);
+      redistrib_swm4_forces(Results::slow, 0);
+    }
 
     if ( staleForces || doTcl || doColvars ) {
       if ( doNonbonded ) saveForce(Results::nbond);
@@ -295,6 +300,11 @@ void Sequencer::integrate() {
         redistrib_tip4p_forces(Results::normal, 1);
         if (doNonbonded) redistrib_tip4p_forces(Results::nbond, 1);
         if (doFullElectrostatics) redistrib_tip4p_forces(Results::slow, 1);
+      }
+      else if (simParams->watmodel == WAT_SWM4) {
+        redistrib_swm4_forces(Results::normal, 1);
+        if (doNonbonded) redistrib_swm4_forces(Results::nbond, 1);
+        if (doFullElectrostatics) redistrib_swm4_forces(Results::slow, 1);
       }
 
       if ( staleForces || doTcl || doColvars ) {
@@ -574,15 +584,64 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
     int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
-    for ( int i = 0; i < numAtoms; ++i )
-    {
-      int aid = a[i].id;
-      BigReal dt_gamma = dt * molecule->langevin_param(aid);
-      if ( ! dt_gamma ) continue;
+    int i;
 
-      a[i].velocity *= ( 1. - 0.5 * dt_gamma );
-    }
-  }
+    if (simParams->drudeOn) {
+      for (i = 0;  i < numAtoms;  i++) {
+
+        if (i < numAtoms-1 &&
+            a[i+1].mass < 1.0 && a[i+1].mass >= 0.001) {
+          //printf("*** Found Drude particle %d\n", a[i+1].id);
+          // i+1 is a Drude particle with parent i
+
+          // convert from Cartesian coordinates to (COM,bond) coordinates
+          BigReal m = a[i+1].mass / (a[i].mass + a[i+1].mass);  // mass ratio
+          Vector v_bnd = a[i+1].velocity - a[i].velocity;  // vel of bond
+          Vector v_com = a[i].velocity + m * v_bnd;  // vel of COM
+          BigReal dt_gamma;
+
+          // use Langevin damping factor i for v_com
+          dt_gamma = dt * molecule->langevin_param(a[i].id);
+          if (dt_gamma != 0.0) {
+            v_com *= ( 1. - 0.5 * dt_gamma );
+          }
+
+          // use Langevin damping factor i+1 for v_bnd
+          dt_gamma = dt * molecule->langevin_param(a[i+1].id);
+          if (dt_gamma != 0.0) {
+            v_bnd *= ( 1. - 0.5 * dt_gamma );
+          }
+
+          // convert back
+          a[i].velocity = v_com - m * v_bnd;
+          a[i+1].velocity = v_bnd + a[i].velocity;
+
+          i++;  // +1 from loop, we've updated both particles
+        }
+        else {
+          int aid = a[i].id;
+          BigReal dt_gamma = dt * molecule->langevin_param(aid);
+          if ( ! dt_gamma ) continue;
+
+          a[i].velocity *= ( 1. - 0.5 * dt_gamma );
+        }
+
+      } // end for
+    } // end if drudeOn
+    else {
+
+      for ( i = 0; i < numAtoms; ++i )
+      {
+        int aid = a[i].id;
+        BigReal dt_gamma = dt * molecule->langevin_param(aid);
+        if ( ! dt_gamma ) continue;
+
+        a[i].velocity *= ( 1. - 0.5 * dt_gamma );
+      }
+
+    } // end else
+
+  } // end if langevinOn
 }
 
 
@@ -600,20 +659,82 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 
     int lesReduceTemp = simParams->lesOn && simParams->lesReduceTemp;
     BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
+    int i;
 
-    for ( int i = 0; i < numAtoms; ++i )
-    {
-      int aid = a[i].id;
-      BigReal dt_gamma = dt * molecule->langevin_param(aid);
-      if ( ! dt_gamma ) continue;
+    if (simParams->drudeOn) {
+      BigReal kbT_bnd = BOLTZMAN*(simParams->drudeTemp);  // drude bond Temp
 
-      a[i].velocity += random->gaussian_vector() *
-             sqrt( 2 * dt_gamma * kbT *
-                   ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass );
-      a[i].velocity /= ( 1. + 0.5 * dt_gamma );
-    }
-  }
+      for (i = 0;  i < numAtoms;  i++) {
+
+        if (i < numAtoms-1 &&
+            a[i+1].mass < 1.0 && a[i+1].mass >= 0.001) {
+          //printf("*** Found Drude particle %d\n", a[i+1].id);
+          // i+1 is a Drude particle with parent i
+
+          // convert from Cartesian coordinates to (COM,bond) coordinates
+          BigReal m = a[i+1].mass / (a[i].mass + a[i+1].mass);  // mass ratio
+          Vector v_bnd = a[i+1].velocity - a[i].velocity;  // vel of bond
+          Vector v_com = a[i].velocity + m * v_bnd;  // vel of COM
+          BigReal dt_gamma;
+
+          // use Langevin damping factor i for v_com
+          dt_gamma = dt * molecule->langevin_param(a[i].id);
+          if (dt_gamma != 0.0) {
+            BigReal mass = a[i].mass + a[i+1].mass;
+            v_com += random->gaussian_vector() *
+              sqrt( 2 * dt_gamma * kbT *
+                  ( a[i].partition ? tempFactor : 1.0 ) / mass );
+            v_com /= ( 1. + 0.5 * dt_gamma );
+          }
+
+          // use Langevin damping factor i+1 for v_bnd
+          dt_gamma = dt * molecule->langevin_param(a[i+1].id);
+          if (dt_gamma != 0.0) {
+            BigReal mass = a[i+1].mass * (1. - m);
+            v_bnd += random->gaussian_vector() *
+              sqrt( 2 * dt_gamma * kbT_bnd *
+                  ( a[i+1].partition ? tempFactor : 1.0 ) / mass );
+            v_bnd /= ( 1. + 0.5 * dt_gamma );
+          }
+
+          // convert back
+          a[i].velocity = v_com - m * v_bnd;
+          a[i+1].velocity = v_bnd + a[i].velocity;
+
+          i++;  // +1 from loop, we've updated both particles
+        }
+        else { 
+          int aid = a[i].id;
+          BigReal dt_gamma = dt * molecule->langevin_param(aid);
+          if ( ! dt_gamma ) continue;
+
+          a[i].velocity += random->gaussian_vector() *
+            sqrt( 2 * dt_gamma * kbT *
+                ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass );
+          a[i].velocity /= ( 1. + 0.5 * dt_gamma );
+        }
+
+      } // end for
+    } // end if drudeOn
+    else {
+
+      for ( i = 0; i < numAtoms; ++i )
+      {
+        int aid = a[i].id;
+        BigReal dt_gamma = dt * molecule->langevin_param(aid);
+        if ( ! dt_gamma ) continue;
+
+        a[i].velocity += random->gaussian_vector() *
+          sqrt( 2 * dt_gamma * kbT *
+              ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass );
+        a[i].velocity /= ( 1. + 0.5 * dt_gamma );
+      }
+
+    } // end else
+
+  } // end if langevinOn
 }
+
 
 void Sequencer::berendsenPressure(int step)
 {
@@ -867,6 +988,13 @@ void Sequencer::redistrib_tip4p_forces(const int ftag, const int pressure) {
   Tensor virial;
   Tensor *vp = ( pressure ? &virial : 0 );
   patch->redistrib_tip4p_forces(ftag, vp);
+  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+}
+
+void Sequencer::redistrib_swm4_forces(const int ftag, const int pressure) {
+  Tensor virial;
+  Tensor *vp = ( pressure ? &virial : 0 );
+  patch->redistrib_swm4_forces(ftag, vp);
   ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
 }
 
