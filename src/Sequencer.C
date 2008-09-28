@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dhardy $
- * $Date: 2008/09/26 22:21:08 $
- * $Revision: 1.1168 $
+ * $Author: petefred $
+ * $Date: 2008/09/28 17:16:18 $
+ * $Revision: 1.1169 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -58,6 +58,7 @@ Sequencer::Sequencer(HomePatch *p) :
 
     rescaleVelocities_numTemps = 0;
     berendsenPressure_count = 0;
+//    patch->write_tip4_props();
 }
 
 Sequencer::~Sequencer(void)
@@ -132,6 +133,8 @@ void Sequencer::algorithm(void)
 
 void Sequencer::integrate() {
 
+//    patch->write_tip4_props();
+
     int &step = patch->flags.step;
     step = simParams->firstTimestep;
 
@@ -186,6 +189,7 @@ void Sequencer::integrate() {
     int &doEnergy = patch->flags.doEnergy;
     int energyFrequency = simParams->outputEnergies;
 
+//    printf("Doing initial rattle\n");
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
 
     const int reassignFreq = simParams->reassignFreq;

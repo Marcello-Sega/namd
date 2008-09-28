@@ -7390,6 +7390,9 @@ void Molecule::build_atom_status(void) {
 
   // now deal with rigidBonds
   if ( simParams->rigidBonds != RIGID_NONE || simParams->mollyOn ) {
+    // temporary variables for use by 4+ site water models
+    Real r_oh = -1.0;
+    Real r_hh = -1.0;
 
     delete [] rigidBondLengths;
     rigidBondLengths = new Real[numAtoms];
@@ -7429,6 +7432,7 @@ void Molecule::build_atom_status(void) {
           }
         } else if ( is_water(a2) || mode == RIGID_ALL ) {
 	  rigidBondLengths[a1] = x0;
+    if (is_water(a2)) r_oh = rigidBondLengths[a1];
 	} else {
 	  rigidBondLengths[a1] = 0.;
         }
@@ -7447,6 +7451,7 @@ void Molecule::build_atom_status(void) {
             NAMD_die(err_msg);
           } else {
             rigidBondLengths[a1] = x0;
+            r_om = x0;
           }
         }
       }
@@ -7499,6 +7504,7 @@ void Molecule::build_atom_status(void) {
 	Real dum, t0;
 	params->get_angle_params(&dum,&t0,&dum,&dum,aSigs[j].tupleParamType);
 	rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
+      r_hh = rigidBondLengths[a2];
     }
 }
 #else
@@ -7519,6 +7525,7 @@ void Molecule::build_atom_status(void) {
       Real dum, t0;
       params->get_angle_params(&dum,&t0,&dum,&dum,angles[i].angle_type);
       rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
+      r_hh = rigidBondLengths[a2];
     }
 #endif
 
@@ -7557,6 +7564,16 @@ void Molecule::build_atom_status(void) {
 #ifdef MEM_OPT_VERSION
     }
 #endif
+    
+    // We now should be able to set the parameters needed for water lonepairs
+    if (simParams->watmodel == WAT_TIP4) {
+      if (r_oh < 0.0 || r_hh < 0.0) {
+        printf("ERROR: r_oh %f / r_hh %f\n", r_oh, r_hh);
+        NAMD_die("Failed to find water bond lengths\n");
+      } 
+      r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
+      printf("final r_om and r_ohc are %f and %f\n", r_om, r_ohc);
+    }
 
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
     for( ; h_i != h_e; ++h_i ) {

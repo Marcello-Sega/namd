@@ -290,6 +290,11 @@ private:
   void read_parm(const GromacsTopFile *);  
 
 public:
+  // data for TIP4P
+  Real r_om;
+  Real r_ohc;
+
+
 
 #ifndef MEM_OPT_VERSION
   Atom *getAtoms () const { return atoms; }
@@ -850,6 +855,7 @@ public:
   }
 
   void delOtherEachAtomStructs();
+
 
 private:
   Index insert_new_mass(Real newMass);

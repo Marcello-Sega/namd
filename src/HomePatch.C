@@ -228,52 +228,18 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 
 }
 
-void ::HomePatch::init_tip4() {
+void HomePatch::write_tip4_props() {
+  printf("Writing r_om and r_ohc: %f | %f\n", r_om, r_ohc);
+}
+
+void HomePatch::init_tip4() {
   // initialize the distances needed for the tip4p water model
 
   Molecule *mol = Node::Object()->molecule;
-
-  int ig;
-  for (ig = 0;  ig < numAtoms;  ig += atom[ig].hydrogenGroupSize) {
-    // find a water
-    if (mol->rigid_bond_length(atom[ig].id) > 0) {
-
-      int oatm = ig+1;
-
-      r_om = 0.0;
-      r_ohc = 0.0;
-      BigReal r_oh, r_hh;
-
-      // Avoid using the Om site to set hh/oh distance by mistake
-      if (atom[ig].mass < 0.5 || atom[ig+1].mass < 0.5) {
-        r_om = mol->rigid_bond_length(atom[oatm].id);
-        oatm += 1;
-      }
-
-      if (r_om == 0.0) {
-        int omatm = ig;
-        while (atom[omatm].mass >= 0.5 && omatm < (ig + atom[ig].hydrogenGroupSize)) omatm++;
-        if (atom[omatm].mass < 0.5) r_om = mol->rigid_bond_length(atom[omatm].id);
-      }
-
-      if (r_om == 0.0) {
-        char errmsg[128];
-        sprintf(errmsg, "Couldn't find bond length for OM distance!\n");
-        NAMD_die(errmsg);
-      }
-
-      // Now initialize r_ohc = r_oh^2 - 0.25 r_hh^2
-      r_hh = mol->rigid_bond_length(atom[ig].id);
-      r_oh = mol->rigid_bond_length(atom[oatm].id);
-      //printf("Other values %f %f\n", r_oh, r_hh);
-      r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
-      //printf("r_om and r_ohc initialized to %f and %f\n", r_om, r_ohc);
-
-
-    }
-    if (r_om > 0) break;
-  }
+  r_om = mol->r_om;
+  r_ohc = mol->r_ohc;
 }
+
 
 void ::HomePatch::init_swm4() {
   // initialize the distances needed for the SWM4 water model
@@ -1140,14 +1106,14 @@ void HomePatch::redistrib_lp_force(
 
   // deviation from collinearity of charge site
   Vector r_oop = cross(r_ox_lp, r_hcom_ox);
-
+  //
   // vector out of o-h-h plane
   Vector r_perp = cross(r_hcom_ox, r_h2_h1_2);
 
   // Here we assume that Ox/Lp/Hcom are linear
   // If you want to correct for deviations, this is the place
 
-  //printf("Deviation from linearity: %f/%f/%f\n", r_oop.x, r_oop.y, r_oop.z);
+//  printf("Deviation from linearity for ox %i: %f/%f/%f\n", oxind, r_oop.x, r_oop.y, r_oop.z);
 
   Vector f_ang = f_lp - f_rad; // leave the angular component
 
@@ -1233,7 +1199,10 @@ void HomePatch::tip4_omrepos(Vector* ref, Vector* pos, Vector* vel, BigReal invd
    * Ordering of TIP4P atoms: O, H1, H2, LP.
    */
 
+//  printf("rom/rohc are %f %f\n", r_om, r_ohc);
+//  printf("Other positions are: \n  0: %f %f %f\n  1: %f %f %f\n  2: %f %f %f\n", pos[0].x, pos[0].y, pos[0].z, pos[1].x, pos[1].y, pos[1].z, pos[2].x, pos[2].y, pos[2].z);
   pos[3] = pos[0] + (0.5 * (pos[1] + pos[2]) - pos[0]) * (r_om / r_ohc); 
+//  printf("New position for lp is %f %f %f\n", pos[3].x, pos[3].y, pos[3].z);
 
   // Now, adjust the velocity of the particle to get it to the appropriate place
   if (invdt != 0) {

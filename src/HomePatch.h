@@ -242,6 +242,7 @@ private:
       const Vector& p_lp, Tensor *virial);
 
   BigReal r_om, r_ohc;
+  void write_tip4_props(void);
 
 #if CMK_PERSISTENT_COMM
   PersistentHandle *localphs;
