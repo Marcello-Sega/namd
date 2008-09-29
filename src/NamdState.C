@@ -430,15 +430,19 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	  // Copied from Controller::printEnergies()
 	  int numAtoms = molecule->numAtoms;
 	  int numDegFreedom = 3 * numAtoms;
+    int numLP = molecule->numLP;
 	  int numFixedAtoms = molecule->numFixedAtoms;
 	  if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
 	  if ( ! ( numFixedAtoms || molecule->numConstraints
 		|| simParameters->comMove || simParameters->langevinOn ) ) {
 	    numDegFreedom -= 3;
 	  }
+    if (numLP) numDegFreedom -= 3 * numLP;
 	  int numRigidBonds = molecule->numRigidBonds;
 	  int numFixedRigidBonds = molecule->numFixedRigidBonds;
-	  numDegFreedom -= ( numRigidBonds - numFixedRigidBonds );
+    // numLP is subtracted here because all lonepairs have a rigid bond to
+    // the oxygen, but all of the LP degrees of freedom are dealt with above
+    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds - numLP);
 	  iout << iINFO << numDegFreedom << " DEGREES OF FREEDOM\n";
 	}
 

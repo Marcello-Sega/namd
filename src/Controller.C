@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2008/09/25 16:30:26 $
- * $Revision: 1.1226 $
+ * $Author: petefred $
+ * $Date: 2008/09/29 20:18:31 $
+ * $Revision: 1.1227 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -931,6 +931,9 @@ void Controller::receivePressure(int step, int minimize)
     int numRigidBonds = molecule->numRigidBonds;
     int numFixedRigidBonds =
 	( simParameters->fixedAtomsOn ? molecule->numFixedRigidBonds : 0 );
+
+    // numLP is subtracted here because all lonepairs have a rigid bond to
+    // the oxygen, but all of the LP degrees of freedom are dealt with above
     numDegFreedom -= ( numRigidBonds - numFixedRigidBonds - numLP);
 
     kineticEnergyHalfstep = reduction->item(REDUCTION_HALFSTEP_KINETIC_ENERGY);
