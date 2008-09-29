@@ -179,5 +179,359 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
 #define NBPAIR	1
 #define NBSELF	2
 
+
+
+// Various atom sorting functions
+#if NAMD_ComputeNonbonded_SortAtoms != 0
+
+inline void sortEntries_selectionSort(SortEntry * const se, const int seLen) {
+
+  register int i;
+
+  for (i = 0; i < seLen; i++) {
+
+    // Search through the remaining elements, finding the lowest
+    //   value, and then swap it with the first remaining element.
+    //   Start by assuming the first element is the smallest.
+    register int smallestIndex = i;
+    register BigReal smallestValue = se[i].sortValue;
+    register int j;
+    for (j = i + 1; j < seLen; j++) {
+      register BigReal currentValue = se[j].sortValue;
+      if (currentValue < smallestValue) {
+        smallestIndex = j;
+        smallestValue = currentValue;
+      }
+    }
+
+    // Swap the first remaining element with the smallest element
+    if (smallestIndex != i) {
+      register SortEntry* entryA = se + i;
+      register SortEntry* entryB = se + smallestIndex;
+      register unsigned int tmpIndex = entryA->index;
+      register BigReal tmpSortValue = entryA->sortValue;
+      entryA->index = entryB->index;
+      entryA->sortValue = entryB->sortValue;
+      entryB->index = tmpIndex;
+      entryB->sortValue = tmpSortValue;
+    }
+  }
+}
+
+inline void sortEntries_bubbleSort(SortEntry * const se, const int seLen) {
+
+  register int keepSorting = 0;
+
+  do {
+
+    // Reset the keepSorting flag (assume no swaps will occur)
+    keepSorting = 0;
+
+    // Loop through the pairs and swap if needed
+    register SortEntry* sortEntry1 = se;
+    for (int i = 1; i < seLen; i++) {
+
+      register SortEntry* sortEntry0 = sortEntry1;
+      sortEntry1 = se + i;
+      register BigReal sortEntry0_sortValue = sortEntry0->sortValue;
+      register BigReal sortEntry1_sortValue = sortEntry1->sortValue;
+
+      if (sortEntry0_sortValue > sortEntry1_sortValue) {
+        register int sortEntry0_index = sortEntry0->index;
+        register int sortEntry1_index = sortEntry1->index;
+        sortEntry0->index = sortEntry1_index;
+        sortEntry0->sortValue = sortEntry1_sortValue;
+        sortEntry1->index = sortEntry0_index;
+        sortEntry1->sortValue = sortEntry0_sortValue;
+        keepSorting = 1;
+      }
+    }
+
+  } while (keepSorting != 0);  // Loop again if at least one set of
+                               //   elements was swapped.
+}
+
+// NOTE: The buf parameter should point to a buffer that this function
+//   can use as a temp storage location (scratch pad).
+// NOTE: This function may swap the values of se and buf, but will not
+//   return any other value (nor will it set either to NULL).
+inline void sortEntries_mergeSort_v1(SortEntry * &se, SortEntry * &buf, int seLen) {
+
+  register SortEntry* srcArray = se;
+  register SortEntry* dstArray = buf;
+
+  // Start with each element being a separate list.  Start
+  //   merging the "lists" into larger lists.
+  register int subListSize = 1;
+  while (subListSize < seLen) {
+
+    // NOTE: This iteration consumes sublists of length
+    //   subListSize and produces sublists of length
+    //   (2*subListSize).  So, keep looping while the length of a
+    //   single sorted sublist is not the size of the entire array.
+
+    // Iterate through the lists, merging each consecutive pair of lists.
+    register int firstListOffset = 0;
+    while (firstListOffset < seLen) {
+
+      /// Setup pointers and counts for sublists in the pair. ///
+
+      register int numElements = min(2 * subListSize, seLen - firstListOffset);
+      register int list0len;
+      register int list1len;
+      if (numElements > subListSize) {
+        list0len = subListSize;                // First list full
+        list1len = numElements - subListSize;  // 1+ elements in second list
+      } else {
+        list0len = numElements;                // 1+ elements in first list
+        list1len = 0;                          // Zero elements in second list
+      }
+
+      register SortEntry* list0ptr = srcArray + firstListOffset;
+      register SortEntry* list1ptr = list0ptr + subListSize;
+      register SortEntry* dstptr = dstArray + firstListOffset;
+
+      /// Merge the sublists ///
+
+      // While there are elements in both lists, pick from one
+      while (list0len > 0 && list1len > 0) {
+
+        register BigReal sortValue0 = list0ptr->sortValue;
+        register BigReal sortValue1 = list1ptr->sortValue;
+
+        if (sortValue0 < sortValue1) {  // choose first list (list0)
+
+          // Copy the value from srcArray to dstArray
+          register int index0 = list0ptr->index;
+          dstptr->sortValue = sortValue0;
+          dstptr->index = index0;
+
+          // Move the pointers forward for the sublists
+          dstptr++;
+          list0ptr++;
+          list0len--;
+
+        } else {                        // choose second list (list1)
+
+          // Copy the value from srcArray to dstArray
+          register int index1 = list1ptr->index;
+          dstptr->sortValue = sortValue1;
+          dstptr->index = index1;
+
+          // Move the pointers forward for the sublists
+          dstptr++;
+          list1ptr++;
+          list1len--;
+        }
+
+      } // end while (list0len > 0 && list1len > 0)
+
+      // NOTE: Either list0len or list1len is zero at this point
+      //   so only one of the following loops should execute.
+
+      // Drain remaining elements from the first list (list0)
+      while (list0len > 0) {
+
+        // Copy the value from srcArray to dstArray
+        register BigReal sortValue0 = list0ptr->sortValue;
+        register int index0 = list0ptr->index;
+        dstptr->sortValue = sortValue0;
+        dstptr->index = index0;
+
+        // Move the pointers forward for the sublists
+        dstptr++;
+        list0ptr++;
+        list0len--;
+
+      } // end while (list0len > 0)
+
+      // Drain remaining elements from the first list (list1)
+      while (list1len > 0) {
+
+        // Copy the value from srcArray to dstArray
+        register BigReal sortValue1 = list1ptr->sortValue;
+        register int index1 = list1ptr->index;
+        dstptr->sortValue = sortValue1;
+        dstptr->index = index1;
+
+        // Move the pointers forward for the sublists
+        dstptr++;
+        list1ptr++;
+        list1len--;
+
+      } // end while (list1len > 0)
+
+      // Move forward to the next pair of sub-lists
+      firstListOffset += (2 * subListSize);
+
+    } // end while (firstListOffset < seLen) {
+
+    // Swap the dstArray and srcArray pointers
+    register SortEntry* tmpPtr = dstArray;
+    dstArray = srcArray;
+    srcArray = tmpPtr;
+
+    // Double the subListSize
+    subListSize <<= 1;
+
+  }  // end while (subListSize < seLen)
+
+  // Set the sort values pointers (NOTE: srcArray and dstArray are
+  //   swapped at the end of each iteration of the merge sort outer-loop).
+  buf = dstArray;
+  se = srcArray;
+}
+
+// NOTE: The buf parameter should point to a buffer that this function
+//   can use as a temp storage location (scratch pad).
+// NOTE: This function may swap the values of se and buf, but will not
+//   return any other value (nor will it set either to NULL).
+inline void sortEntries_mergeSort_v2(SortEntry * &se, SortEntry * &buf, int seLen) {
+
+  // NOTE: This macro "returns" either val0 (if test == 0) or val1 (if
+  // test == 1).  It expects test to be either 0 or 1 (no other values).
+  #define __TERNARY_ASSIGN(test, val0, val1)   ((test * val0) + ((1 - test) * val1))
+
+  register SortEntry* srcArray = se;
+  register SortEntry* dstArray = buf;
+
+  // Start with each element being a separate list.  Start
+  //   merging the "lists" into larger lists.
+  register int subListSize = 1;
+  while (subListSize < seLen) {
+
+    // NOTE: This iteration consumes sublists of length
+    //   subListSize and produces sublists of length
+    //   (2*subListSize).  So, keep looping while the length of a
+    //   single sorted sublist is not the size of the entire array.
+
+    // Iterate through the lists, merging each consecutive pair of lists.
+    register int firstListOffset = 0;
+    while (firstListOffset < seLen) {
+
+      /// Setup pointers and counts for sublists in the pair. ///
+
+      // Calculate the number of elements for both sublists...
+      //   min(2 * subListSize, seLen - firstListOffset);
+      register int numElements;
+      {
+        register int numElements_val0 = 2 * subListSize;
+        register int numElements_val1 = seLen - firstListOffset;
+        register bool numElements_test = (numElements_val0 < numElements_val1);
+        numElements = __TERNARY_ASSIGN(numElements_test, numElements_val0, numElements_val1);
+      }
+
+      // Setup the pointers for the source and destination arrays
+      register SortEntry* dstptr = dstArray + firstListOffset;    // destination array pointer
+      register SortEntry* list0ptr = srcArray + firstListOffset;  // source list 0 pointer
+      register SortEntry* list1ptr = list0ptr + subListSize;      // source list 1 pointer
+      register SortEntry* list0ptr_end;  // pointer to end of source list0's elements (element after last)
+      register SortEntry* list1ptr_end;  // pointer to end of source list1's elements (element after last)
+      {
+        register bool lenTest = (numElements > subListSize);
+        register int list0len_val0 = subListSize;
+        register int list1len_val0 = numElements - subListSize;
+        register int list0len_val1 = numElements;  // NOTE: list1len_val1 = 0
+        register int list0len = __TERNARY_ASSIGN(lenTest, list0len_val0, list0len_val1);
+        register int list1len = __TERNARY_ASSIGN(lenTest, list1len_val0, 0);
+        list0ptr_end = list0ptr + list0len;
+        list1ptr_end = list1ptr + list1len;
+      }
+
+      // The firstListOffset variable won't be used again until the next
+      //   iteration, so go ahead and update it now...
+      //   Move forward to the next pair of sub-lists
+      firstListOffset += (2 * subListSize);
+
+      /// Merge the sublists ///
+
+      // Pre-load values from both source arrays
+      register BigReal sortValue0 = list0ptr->sortValue;
+      register BigReal sortValue1 = list1ptr->sortValue;
+      register int index0 = list0ptr->index;
+      register int index1 = list1ptr->index;
+
+      // While both lists have at least one element in them, compare the
+      //   heads of each list and place the smaller of the two in the
+      //   destination array.
+      while (list0ptr < list0ptr_end && list1ptr < list1ptr_end) {
+
+        // Compare the values
+        register bool test = (sortValue0 < sortValue1);
+
+        // Place the "winner" in the destination array
+        dstptr->sortValue = __TERNARY_ASSIGN(test, sortValue0, sortValue1);
+        dstptr->index = __TERNARY_ASSIGN(test, index0, index1);
+        dstptr++;
+
+        // Update the pointers
+        list0ptr += __TERNARY_ASSIGN(test, 1, 0);
+        list1ptr += __TERNARY_ASSIGN(test, 0, 1);
+
+        // Refill the sortValue and index register
+        // NOTE: These memory locations are likely to be in cache
+        sortValue0 = list0ptr->sortValue;
+        sortValue1 = list1ptr->sortValue;
+        index0 = list0ptr->index;
+        index1 = list1ptr->index;
+
+      } // end while (list0ptr < list0ptr_end && list1ptr < list1ptr_end)
+
+      // NOTE: At this point, at least one of the lists is empty so no
+      //   more than one of the loops will be executed.
+
+      // Drain the remaining elements from list0
+      while (list0ptr < list0ptr_end) {
+
+        // Place the value into the destination array
+        dstptr->sortValue = sortValue0;
+        dstptr->index = index0;
+        dstptr++;
+
+        // Load the next entry in list0
+        list0ptr++;
+        sortValue0 = list0ptr->sortValue;
+        index0 = list0ptr->index;
+
+      } // end while (list0ptr < list0ptr_end)
+
+      // Drain the remaining elements from list1
+      while (list1ptr < list1ptr_end) {
+
+        // Place the value into the destination array
+	dstptr->sortValue = sortValue1;
+        dstptr->index = index1;
+        dstptr++;
+
+        // Load the next entry in list1
+        list1ptr++;
+        sortValue1 = list1ptr->sortValue;
+        index1 = list1ptr->index;
+
+      } // end while (list1ptr < list1ptr_end)
+
+    } // end while (firstListOffset < seLen) {
+
+    // Swap the dstArray and srcArray pointers
+    register SortEntry* tmpPtr = dstArray;
+    dstArray = srcArray;
+    srcArray = tmpPtr;
+
+    // Double the subListSize
+    subListSize <<= 1;
+
+  }  // end while (subListSize < seLen)
+
+  // Set the sort values pointers (NOTE: srcArray and dstArray are
+  //   swapped at the end of each iteration of the merge sort outer-loop).
+  buf = dstArray;
+  se = srcArray;
+
+  #undef __TERNARY_ASSIGN
+}
+
+#endif  // NAMD_ComputeNonbonded_SortAtoms != 0
+
+
 #endif // COMPUTENONBONDEDINL_H
 

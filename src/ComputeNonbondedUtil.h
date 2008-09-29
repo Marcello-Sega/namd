@@ -134,6 +134,10 @@ struct nonbonded {
   int minPart;
   int maxPart;
   int numParts;
+
+  #if NAMD_ComputeNonbonded_SortAtoms != 0
+    Vector projLineVec;
+  #endif
 };
 
 class ComputeNonbondedUtil {

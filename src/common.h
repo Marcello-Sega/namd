@@ -148,7 +148,7 @@ int  Fclose(FILE *fout);
 // NOTE: The "less branches" flag toggles between two versions of merge sort.
 //   When it is non-zero, a version that has fewer branches (but more integer
 //   math) is used.  This version may or may not be faster or some architectures.
-#define NAMD_ComputeNonbonded_SortAtoms                   0
+#define NAMD_ComputeNonbonded_SortAtoms                   1
   #define NAMD_ComputeNonbonded_SortAtoms_LessBranches    1
 
 // plf -- alternate water models
