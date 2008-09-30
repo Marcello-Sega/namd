@@ -1115,7 +1115,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             Real thisAtomMass = atomMassPool[eachAtomMass[i]];
             if (thisAtomMass <= 0.05) {
               atoms[i].status |= LonepairAtom;
-            } else if (atoms[i].mass < 1.0) {
+            } else if (thisAtomMass < 1.0) {
               atoms[i].status |= DrudeAtom;
             } else if(thisAtomMass <= 3.5){
                 atoms[i].status = HydrogenAtom;
