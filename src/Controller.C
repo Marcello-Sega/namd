@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: petefred $
- * $Date: 2008/09/29 20:18:31 $
- * $Revision: 1.1227 $
+ * $Author: dhardy $
+ * $Date: 2008/10/01 21:33:04 $
+ * $Revision: 1.1228 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -191,6 +191,10 @@ Controller::Controller(NamdState *s) :
     groupPressure_tavg = 0;
     tavg_count = 0;
     checkpoint_stored = 0;
+    drudeComTemp = 0;
+    drudeBondTemp = 0;
+    drudeComTempAvg = 0;
+    drudeBondTempAvg = 0;
 }
 
 Controller::~Controller(void)
@@ -909,15 +913,22 @@ void Controller::receivePressure(int step, int minimize)
     Vector extForce_slow;
     BigReal volume;
 
+#if 1
+    numDegFreedom = molecule->num_deg_freedom();
+    int numGroupDegFreedom = molecule->num_group_deg_freedom();
+    int numFixedGroups = molecule->num_fixed_groups();
+    int numFixedAtoms = molecule->num_fixed_atoms();
+#endif
+#if 0
     int numAtoms = molecule->numAtoms;
     numDegFreedom = 3 * numAtoms;
     int numGroupDegFreedom = 3 * molecule->numHydrogenGroups;
     int numFixedAtoms =
 	( simParameters->fixedAtomsOn ? molecule->numFixedAtoms : 0 );
-    int numLP = molecule->numLP;
+    int numLonepairs = molecule->numLonepairs;
     int numFixedGroups = ( numFixedAtoms ? molecule->numFixedGroups : 0 );
     if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
-    if (numLP) numDegFreedom -= 3 * numLP;
+    if (numLonepairs) numDegFreedom -= 3 * numLonepairs;
     if ( numFixedGroups ) numGroupDegFreedom -= 3 * numFixedGroups;
     if ( ! ( numFixedAtoms || molecule->numConstraints
 	|| simParameters->comMove || simParameters->langevinOn ) ) {
@@ -932,9 +943,10 @@ void Controller::receivePressure(int step, int minimize)
     int numFixedRigidBonds =
 	( simParameters->fixedAtomsOn ? molecule->numFixedRigidBonds : 0 );
 
-    // numLP is subtracted here because all lonepairs have a rigid bond to
-    // the oxygen, but all of the LP degrees of freedom are dealt with above
-    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds - numLP);
+    // numLonepairs is subtracted here because all lonepairs have a rigid bond
+    // to oxygen, but all of the LP degrees of freedom are dealt with above
+    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds - numLonepairs);
+#endif
 
     kineticEnergyHalfstep = reduction->item(REDUCTION_HALFSTEP_KINETIC_ENERGY);
     kineticEnergyCentered = reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY);
@@ -987,6 +999,17 @@ void Controller::receivePressure(int step, int minimize)
 
     kineticEnergy = kineticEnergyCentered;
     temperature = 2.0 * kineticEnergyCentered / ( numDegFreedom * BOLTZMAN );
+
+    if (simParameters->drudeOn) {
+      BigReal drudeComKE
+        = reduction->item(REDUCTION_DRUDECOM_CENTERED_KINETIC_ENERGY);
+      BigReal drudeBondKE
+        = reduction->item(REDUCTION_DRUDEBOND_CENTERED_KINETIC_ENERGY);
+      int g_bond = 3 * molecule->numDrudeAtoms;
+      int g_com = numDegFreedom - g_bond;
+      drudeComTemp = 2.0 * drudeComKE / (g_com * BOLTZMAN);
+      drudeBondTemp = (g_bond!=0 ? (2.*drudeBondKE/(g_bond*BOLTZMAN)) : 0.);
+    }
 
     if ( (volume=lattice.volume()) != 0. )
     {
@@ -1211,7 +1234,7 @@ void Controller::printMinimizeEnergies(int step) {
     min_f_dot_f = reduction->item(REDUCTION_MIN_F_DOT_F);
     min_f_dot_v = reduction->item(REDUCTION_MIN_F_DOT_V);
     min_v_dot_v = reduction->item(REDUCTION_MIN_V_DOT_V);
-    min_huge_count = reduction->item(REDUCTION_MIN_HUGE_COUNT);
+    min_huge_count = (int) (reduction->item(REDUCTION_MIN_HUGE_COUNT));
 
 }
 
@@ -1458,6 +1481,9 @@ void Controller::printEnergies(int step, int minimize)
 #undef CALLBACKDATA
 #endif
 
+    drudeComTempAvg += drudeComTemp;
+    drudeBondTempAvg += drudeBondTemp;
+
     temp_avg += temperature;
     pressure_avg += trace(pressure)/3.;
     groupPressure_avg += trace(groupPressure)/3.;
@@ -1524,6 +1550,13 @@ void Controller::printEnergies(int step, int minimize)
 	  iout << FORMAT("PRESSAVG");
 	  iout << FORMAT("GPRESSAVG");
 	}
+        if (simParameters->drudeOn) {
+          iout << "     ";
+	  iout << FORMAT("DRUDECOM");
+	  iout << FORMAT("DRUDEBOND");
+	  iout << FORMAT("DRCOMAVG");
+	  iout << FORMAT("DRBONDAVG");
+        }
 	iout << "\n\n" << endi;
     }
 
@@ -1561,6 +1594,13 @@ void Controller::printEnergies(int step, int minimize)
 	iout << FORMAT(pressure_avg*PRESSUREFACTOR/avg_count);
 	iout << FORMAT(groupPressure_avg*PRESSUREFACTOR/avg_count);
     }
+    if (simParameters->drudeOn) {
+        iout << "     ";
+	iout << FORMAT(drudeComTemp);
+	iout << FORMAT(drudeBondTemp);
+	iout << FORMAT(drudeComTempAvg/avg_count);
+	iout << FORMAT(drudeBondTempAvg/avg_count);
+    }
     iout << "\n\n" << endi;
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
@@ -1584,6 +1624,8 @@ void Controller::printEnergies(int step, int minimize)
       iout << FORMAT(pairElectForce.z);
       iout << "\n" << endi;
     }
+    drudeComTempAvg = 0;
+    drudeBondTempAvg = 0;
     temp_avg = 0;
     pressure_avg = 0;
     groupPressure_avg = 0;

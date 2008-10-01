@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: petefred $
- * $Date: 2008/09/28 17:16:18 $
- * $Revision: 1.1169 $
+ * $Author: dhardy $
+ * $Date: 2008/10/01 21:33:05 $
+ * $Revision: 1.1170 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1255,9 +1255,10 @@ void Sequencer::submitReductions(int step)
     Vector momentum = 0;
     Vector angularMomentum = 0;
     Vector o = patch->lattice.origin();
+    int i;
     if ( simParams->pairInteractionOn ) {
       if ( simParams->pairInteractionSelf ) {
-        for ( int i = 0; i < numAtoms; ++i ) {
+        for (i = 0; i < numAtoms; ++i ) {
           if ( a[i].partition != 1 ) continue;
           kineticEnergy += a[i].mass * a[i].velocity.length2();
           momentum += a[i].mass * a[i].velocity;
@@ -1265,12 +1266,46 @@ void Sequencer::submitReductions(int step)
         }
       }
     } else {
-      for ( int i = 0; i < numAtoms; ++i ) {
+      for (i = 0; i < numAtoms; ++i ) {
         kineticEnergy += a[i].mass * a[i].velocity.length2();
         momentum += a[i].mass * a[i].velocity;
         angularMomentum += cross(a[i].mass,a[i].position-o,a[i].velocity);
       }
-    }
+      if (simParams->drudeOn) {
+        BigReal drudeComKE = 0.;
+        BigReal drudeBondKE = 0.;
+
+        for (i = 0;  i < numAtoms;  i++) {
+          if (i < numAtoms-1 &&
+              a[i+1].mass < 1.0 && a[i+1].mass >= 0.001) {
+            // i+1 is a Drude particle with parent i
+
+            // convert from Cartesian coordinates to (COM,bond) coordinates
+            BigReal m_com = (a[i].mass + a[i+1].mass);  // mass of COM
+            BigReal m = a[i+1].mass / m_com;  // mass ratio
+            BigReal m_bond = a[i+1].mass * (1. - m);  // mass of bond
+            Vector v_bond = a[i+1].velocity - a[i].velocity;  // vel of bond
+            Vector v_com = a[i].velocity + m * v_bond;  // vel of COM
+
+            drudeComKE += m_com * v_com.length2();
+            drudeBondKE += m_bond * v_bond.length2();
+
+            i++;  // +1 from loop, we've updated both particles
+          }
+          else {
+            drudeComKE += a[i].mass * a[i].velocity.length2();
+          }
+        } // end for
+
+        drudeComKE *= 0.5;
+        drudeBondKE *= 0.5;
+        reduction->item(REDUCTION_DRUDECOM_CENTERED_KINETIC_ENERGY)
+          += drudeComKE;
+        reduction->item(REDUCTION_DRUDEBOND_CENTERED_KINETIC_ENERGY)
+          += drudeBondKE;
+      } // end drudeOn
+
+    } // end else
 
     kineticEnergy *= 0.5;
     reduction->item(REDUCTION_CENTERED_KINETIC_ENERGY) += kineticEnergy;

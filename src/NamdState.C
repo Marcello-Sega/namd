@@ -425,26 +425,43 @@ int NamdState::configListInit(ConfigList *cfgList) {
            }
         }
            
-
+#if 1
+        if (molecule->numLonepairs != 0) {
+          iout << iINFO << molecule->numLonepairs << " LONE PAIRS\n";
+        }
+        if (molecule->numDrudeAtoms != 0) {
+          iout << iINFO << molecule->numDrudeAtoms << " DRUDE ATOMS\n";
+        }
+        iout << iINFO << molecule->num_deg_freedom(1)
+             << " DEGREES OF FREEDOM\n";
+        if (simParameters->drudeOn) {
+          int g_bond = 3 * molecule->numDrudeAtoms;
+          int g_com = molecule->num_deg_freedom(1) - g_bond;
+          iout << iINFO << g_com << " DRUDE COM DEGREES OF FREEDOM\n";
+          iout << iINFO << g_bond << " DRUDE BOND DEGREES OF FREEDOM\n";
+        }
+#endif
+#if 0
 	{
 	  // Copied from Controller::printEnergies()
 	  int numAtoms = molecule->numAtoms;
 	  int numDegFreedom = 3 * numAtoms;
-    int numLP = molecule->numLP;
+    int numLonepairs = molecule->numLonepairs;
 	  int numFixedAtoms = molecule->numFixedAtoms;
 	  if ( numFixedAtoms ) numDegFreedom -= 3 * numFixedAtoms;
 	  if ( ! ( numFixedAtoms || molecule->numConstraints
 		|| simParameters->comMove || simParameters->langevinOn ) ) {
 	    numDegFreedom -= 3;
 	  }
-    if (numLP) numDegFreedom -= 3 * numLP;
+    if (numLonepairs) numDegFreedom -= 3 * numLonepairs;
 	  int numRigidBonds = molecule->numRigidBonds;
 	  int numFixedRigidBonds = molecule->numFixedRigidBonds;
-    // numLP is subtracted here because all lonepairs have a rigid bond to
-    // the oxygen, but all of the LP degrees of freedom are dealt with above
-    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds - numLP);
+    // numLonepairs is subtracted here because all lonepairs have a rigid bond
+    // to oxygen, but all of the LP degrees of freedom are dealt with above
+    numDegFreedom -= ( numRigidBonds - numFixedRigidBonds - numLonepairs);
 	  iout << iINFO << numDegFreedom << " DEGREES OF FREEDOM\n";
 	}
+#endif
 
 	iout << iINFO << molecule->numHydrogenGroups << " HYDROGEN GROUPS\n";
 	if (simParameters->fixedAtomsOn)

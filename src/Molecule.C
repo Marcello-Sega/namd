@@ -281,7 +281,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numDonors=0;
   numAcceptors=0;
   numExclusions=0;
-  numLP=0;
+  numLonepairs=0;
+  numDrudeAtoms=0;
   numConstraints=0;
   numStirredAtoms=0;
   numMovDrag=0;
@@ -7079,12 +7080,15 @@ void Molecule::build_atom_status(void) {
     if ( atoms[i].mass <= 0. ) {
       if (simParams->watmodel == WAT_TIP4 ||
           simParams->watmodel == WAT_SWM4) {
-        ++numLP;
+        ++numLonepairs;
       } else {
         atoms[i].mass = 0.001;
         ++numZeroMassAtoms;
       }
-    }    
+    }
+    else if (atoms[i].mass < 1.) {
+      ++numDrudeAtoms;
+    }
     #endif
   }
   #ifdef MEM_OPT_VERSION
@@ -7096,7 +7100,8 @@ void Molecule::build_atom_status(void) {
 
   if (simParams->watmodel == WAT_TIP4 ||
       simParams->watmodel == WAT_SWM4) {
-    iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF BECAUSE LONE PAIRS ARE USED\n" << endi;
+    iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF "
+      "BECAUSE LONE PAIRS ARE USED\n" << endi;
   } else {
     if ( numZeroMassAtoms && ! CkMyPe() ) {
       iout << iWARN << "FOUND " << numZeroMassAtoms <<
@@ -7636,7 +7641,6 @@ void Molecule::build_atom_status(void) {
   }
 
 }
-
 
 #ifdef MEM_OPT_VERSION
 //idx1: atom1's exclusion check signature

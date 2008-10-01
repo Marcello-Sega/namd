@@ -300,6 +300,58 @@ public:
   Atom *getAtoms () const { return atoms; }
 #endif
 
+  // return number of fixed atoms, guarded by SimParameters
+  int num_fixed_atoms() const {
+    // local variables prefixed by s_
+    int s_NumFixedAtoms = (simParams->fixedAtomsOn ? numFixedAtoms : 0);
+    return s_NumFixedAtoms;  // value is "turned on" SimParameters
+  }
+
+  int num_fixed_groups() const {
+    // local variables prefixed by s_
+    int s_NumFixedAtoms = num_fixed_atoms();
+    int s_NumFixedGroups = (s_NumFixedAtoms ? numFixedGroups : 0);
+    return s_NumFixedGroups;  // value is "turned on" SimParameters
+  }
+
+  int num_group_deg_freedom() const {
+    // local variables prefixed by s_
+    int s_NumGroupDegFreedom = 3 * numHydrogenGroups;
+    int s_NumFixedAtoms = num_fixed_atoms();
+    int s_NumFixedGroups = num_fixed_groups();
+    if (s_NumFixedGroups) s_NumGroupDegFreedom -= 3 * s_NumFixedGroups;
+    if ( ! (s_NumFixedAtoms || numConstraints
+          || simParams->comMove || simParams->langevinOn) ) {
+      s_NumGroupDegFreedom -= 3;
+    }
+    return s_NumGroupDegFreedom;
+  }
+
+  int num_deg_freedom(int isInitialReport = 0) const {
+    // local variables prefixed by s_
+    int s_NumDegFreedom = 3 * numAtoms;
+    int s_NumFixedAtoms = num_fixed_atoms();
+    if (s_NumFixedAtoms) s_NumDegFreedom -= 3 * s_NumFixedAtoms;
+    if (numLonepairs) s_NumDegFreedom -= 3 * numLonepairs;
+    if ( ! (s_NumFixedAtoms || numConstraints
+          || simParams->comMove || simParams->langevinOn) ) {
+      s_NumDegFreedom -= 3;
+    }
+    if ( ! isInitialReport && simParams->pairInteractionOn) {
+      //
+      // DJH: a kludge?  We want to initially report system degrees of freedom
+      //
+      // this doesn't attempt to deal with fixed atoms or constraints
+      s_NumDegFreedom = 3 * numFepInitial;
+    }
+    int s_NumFixedRigidBonds = 
+      (simParams->fixedAtomsOn ? numFixedRigidBonds : 0);
+    // numLonepairs is subtracted here because all lonepairs have a rigid bond
+    // to oxygen, but all of the LP degrees of freedom are dealt with above
+    s_NumDegFreedom -= (numRigidBonds - s_NumFixedRigidBonds - numLonepairs);
+    return s_NumDegFreedom;
+  }
+
   int numAtoms;   //  Number of atoms                   
 
   int numRealBonds;   //  Number of bonds for exclusion determination
@@ -312,7 +364,8 @@ public:
   int numAcceptors; //  Number of hydrogen bond acceptors
   int numExclusions;  //  Number of exclusions
   int numTotalExclusions; //  Real Total Number of Exclusions // hack
-  int numLP; // Number of lone pairs
+  int numLonepairs; // Number of lone pairs
+  int numDrudeAtoms;  // Number of Drude particles
   
   int numConstraints; //  Number of atoms constrained
 /* BEGIN gf */
