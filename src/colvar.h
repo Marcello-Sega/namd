@@ -939,7 +939,7 @@ public:
     // xiMin, dXi, nPoints, periodic
 
     std::string   hash;
-    cvm::real             lower, width, x;
+    cvm::real     lower, width, x;
     size_t        n, periodic;
     bool          remap;
     std::vector<T>        new_value;
@@ -1073,7 +1073,7 @@ public:
       data[address (ix)] += t;
       // Save newly read data for inputting parent grid
       if ( this->has_parent_data )
-	new_data[address (ix)] = t;
+        new_data[address (ix)] = t;
     } else {
       data[address (ix)] = t;
     }
@@ -1253,6 +1253,29 @@ public:
       else
         data[address (ix) + imult] = new_value;
     }
+  }
+
+  /// Compute and return average value for a 1D gradient grid
+  inline cvm::real average ()
+  {
+    size_t n = 0;
+
+    if (nd != 1 || nx[0] == 0) {
+      return 0.0;
+    }
+
+    cvm::real sum = 0.0;
+    std::vector<int> ix = new_index();
+    if (samples)
+      for ( ; index_ok (ix); incr (ix)) {
+        if ( (n = samples->value (ix)) )
+          sum += value (ix) / n;
+      }
+    else
+      for ( ; index_ok (ix); incr (ix)) {
+        sum += value (ix);
+      }
+    return (sum / cvm::real (nx[0]));
   }
 
   /// \brief If the grid is 1-dimensional, integrate it and write the

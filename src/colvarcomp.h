@@ -362,14 +362,14 @@ public:
   virtual void calc_value();
   virtual void calc_gradients();
   virtual void apply_force (colvarvalue const &force);
-  virtual cvm::real dist2 (colvarvalue const &x1,
-                           colvarvalue const &x2) const;
-  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
-                                   colvarvalue const &x2) const;
-  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
-                                   colvarvalue const &x2) const;
-  virtual cvm::real compare (colvarvalue const &x1,
-                             colvarvalue const &x2) const;
+//   virtual cvm::real dist2 (colvarvalue const &x1,
+//                            colvarvalue const &x2) const;
+//   virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+//                                    colvarvalue const &x2) const;
+//   virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+//                                    colvarvalue const &x2) const;
+//   virtual cvm::real compare (colvarvalue const &x1,
+//                              colvarvalue const &x2) const;
 };
 
 
@@ -956,34 +956,35 @@ inline cvm::real colvar::distance_z::compare (colvarvalue const &x1,
 
 // generic definitions
 
-#define simple_dist_functions(TYPE)                                     \
-inline cvm::real colvar::TYPE::dist2 (colvarvalue const &x1,            \
-                                      colvarvalue const &x2) const      \
-{                                                                       \
-  return x1.dist2 (x2);                                                 \
-}                                                                       \
-                                                                        \
-inline colvarvalue colvar::TYPE::dist2_lgrad (colvarvalue const &x1,    \
-                                              colvarvalue const &x2) const \
-{                                                                       \
-  return x1.dist2_grad (x1);                                            \
-}                                                                       \
-                                                                        \
-inline colvarvalue colvar::TYPE::dist2_rgrad (colvarvalue const &x1,    \
-                                              colvarvalue const &x2) const \
-{                                                                       \
-  return x2.dist2_grad (x1);                                            \
-}                                                                       \
-                                                                        \
-inline cvm::real colvar::TYPE::compare (colvarvalue const &x1,          \
-                                        colvarvalue const &x2) const    \
-{                                                                       \
-  cvm::fatal_error ("Error: cannot compare() two distance vectors.\n"); \
-  return 0.0;                                                           \
-}                                                                       \
 
-  simple_dist_functions (distance_dir)
-  simple_dist_functions (orientation)
+// distance between three dimensional vectors
+
+inline cvm::real colvar::orientation::dist2 (colvarvalue const &x1,
+                                             colvarvalue const &x2) const
+{
+  return x1.quaternion_value.dist2 (x2);
+}
+
+inline colvarvalue colvar::orientation::dist2_lgrad (colvarvalue const &x1,
+                                                     colvarvalue const &x2) const
+{
+  return x1.quaternion_value.dist2_grad (x2);
+}
+
+inline colvarvalue colvar::orientation::dist2_rgrad (colvarvalue const &x1,
+                                                     colvarvalue const &x2) const
+{
+  return x2.quaternion_value.dist2_grad (x1);
+}
+
+inline cvm::real colvar::orientation::compare (colvarvalue const &x1,
+                                                colvarvalue const &x2) const
+{
+  cvm::fatal_error ("Error: cannot compare() two orientation vectors.\n");
+  return 0.0;
+}
+
+
 
 #endif
 

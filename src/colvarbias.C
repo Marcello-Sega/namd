@@ -59,7 +59,12 @@ void colvarbias::add_colvar (std::string const &cv_name)
 void colvarbias::communicate_forces()
 {
   for (size_t i = 0; i < colvars.size(); i++) {
-    colvars[i]->fb += colvar_forces[i];
+    if (cvm::debug()) {
+      cvm::log ("Communicating a force to colvar \""+
+                colvars[i]->name+"\", of type \""+
+                colvarvalue::type_desc[colvars[i]->type()]+"\".\n");
+    }
+    colvars[i]->add_bias_force (colvar_forces[i]);
   }
 }    
 
@@ -75,7 +80,7 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
     if (colvars[i]->width != 1.0)
       cvm::log ("The force constant for colvar \""+colvars[i]->name+
                 "\" will be rescaled to "+
-                cvm::to_str (force_k/colvars[i]->width)+
+                cvm::to_str (force_k/(colvars[i]->width*colvars[i]->width))+
                 " according to the specified width.\n");
   }
 
@@ -139,6 +144,10 @@ void colvarbias_harmonic::update()
       (colvars[i]->width * colvars[i]->width) *
       colvars[i]->dist2_lgrad (colvars[i]->value(),
                                colvar_centers[i]);
+    if (cvm::debug())
+      cvm::log ("dist_grad["+cvm::to_str (i)+
+                "] = "+cvm::to_str (colvars[i]->dist2_lgrad (colvars[i]->value(),
+                               colvar_centers[i]))+"\n");
   }
 
   if (cvm::debug())

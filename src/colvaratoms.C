@@ -42,7 +42,13 @@ void cvm::atom_group::parse (std::string const &conf,
 
   cvm::log ("Initializing atom group \""+std::string (key)+"\".\n");
 
-  colvarparse::Parse_Mode const mode = parse_silent;
+  // whether or not to include messages in the log
+  colvarparse::Parse_Mode mode = parse_silent;
+  {
+    bool b_verbose;
+    get_keyval (group_conf, "verboseOutput", b_verbose, false, parse_silent);
+    if (b_verbose) mode = parse_normal;
+  }
 
   {
     // get the atoms by numbers
@@ -123,11 +129,20 @@ void cvm::atom_group::parse (std::string const &conf,
   }
 
   {
+    // read the atoms from a file
     std::string atoms_file_name;
     if (get_keyval (group_conf, "atomsFile", atoms_file_name, std::string (""), mode)) {
+
       std::string atoms_col;
       get_keyval (group_conf, "atomsCol", atoms_col, std::string ("O"), mode);
-      cvm::load_atoms (atoms_file_name.c_str(), *this, atoms_col);
+
+      double atoms_col_value;
+      get_keyval (group_conf, "atomsColValue", atoms_col_value, 0.0, mode);
+      if (!atoms_col_value)
+        cvm::fatal_error ("Error: atomsColValue, "
+                          "if provided, must be non-zero.\n");
+
+      cvm::load_atoms (atoms_file_name.c_str(), *this, atoms_col, atoms_col_value);
     }
   }
 
@@ -182,6 +197,20 @@ void cvm::atom_group::parse (std::string const &conf,
       cvm::fatal_error ("Error: cannot set \"centerReference\" or "
                         "\"rotateReference\" with \"dummyAtom\".\n");
 
+    // use refPositionsGroup instead of this group as the one which is
+    // used to fit the coordinates
+    if (key_lookup (group_conf, "refPositionsGroup")) {
+      if (ref_pos_group) {
+        cvm::fatal_error ("Error: the atom group \""+
+                          std::string (key)+"\" has already a reference group "
+                          "for the rototranslational fit, which was communicated by the "
+                          "colvar component.  You should not use refPositionsGroup "
+                          "in this case.\n");
+      }
+      cvm::log ("Within atom group \""+std::string (key)+"\":\n");
+      ref_pos_group = new atom_group (group_conf, "refPositionsGroup");
+    }
+
     if (get_keyval (group_conf, "refPositions", ref_pos, ref_pos, mode)) {
       cvm::log ("Using reference positions from input file.\n");
       if (ref_pos.size() != this->size()) {
@@ -201,19 +230,15 @@ void cvm::atom_group::parse (std::string const &conf,
 
       std::string ref_pos_col;
       get_keyval (group_conf, "refPositionsCol", ref_pos_col, std::string ("O"), mode);
-      cvm::load_coords (ref_pos_file.c_str(), ref_pos, ref_pos_col);
-    }
 
-    if (key_lookup (group_conf, "refPositionsGroup")) {
-      if (ref_pos_group) {
-        cvm::fatal_error ("Error: the atom group \""+
-                          std::string (key)+"\" has already a reference group "
-                          "for the rototranslational fit, which was communicated by the "
-                          "colvar component.  You should not use refPositionsGroup "
-                          "in this case.\n");
-      }
-      cvm::log ("Within atom group \""+std::string (key)+"\":\n");
-      ref_pos_group = new atom_group (group_conf, "refPositionsGroup");
+      double ref_pos_col_value;
+      get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
+      if (!ref_pos_col_value)
+        cvm::fatal_error ("Error: refPositionsColValue, "
+                          "if provided, must be non-zero.\n");
+
+      cvm::load_coords (ref_pos_file.c_str(), ref_pos,
+                        ref_pos_col, ref_pos_col_value);
     }
 
     if (ref_pos.size()) {

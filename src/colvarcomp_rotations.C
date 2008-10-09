@@ -38,10 +38,18 @@ colvar::orientation::orientation (std::string const &conf)
   {
     std::string file_name;
     if (get_keyval (conf, "refPositionsFile", file_name)) {
+
       std::string file_col;
       get_keyval (conf, "refPositionsCol", file_col, std::string ("O"));
+
+      double file_col_value;
+      get_keyval (conf, "refPositionsColValue", file_col_value, 0.0);
+      if (!file_col_value)
+        cvm::fatal_error ("Error: refPositionsColValue, "
+                          "if provided, must be non-zero.\n");
+
       ref_pos.resize (atoms.size());
-      cvm::load_coords (file_name.c_str(), ref_pos, file_col);
+      cvm::load_coords (file_name.c_str(), ref_pos, file_col, file_col_value);
     }
   }
 

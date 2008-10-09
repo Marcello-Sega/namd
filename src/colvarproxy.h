@@ -95,14 +95,16 @@ public:
   /// the atoms to be set
   virtual void load_atoms (char const *filename,
                            std::vector<cvm::atom> &atoms,
-                           std::string const &pdb_field = "O");
+                           std::string const pdb_field = "O",
+                           double const pdb_field_value = 0.0);
 
   /// \brief Load the coordinates for a group of atoms from a file
   /// (usually a PDB); if "pos" is already allocated, the number of its
   /// elements must match the number of atoms in "filename"
   virtual void load_coords (char const *filename,
                             std::vector<cvm::atom_pos> &pos,
-                            std::string const &pdb_field = "O");
+                            std::string const pdb_field = "O",
+                            double const pdb_field_value = 0.0);
 
 
   virtual inline ~colvarproxy() {}
@@ -121,7 +123,8 @@ inline void colvarproxy::select_closest_images (std::vector<cvm::atom_pos> &pos,
 
 inline void colvarproxy::load_coords (char const *filename,
                                       std::vector<cvm::atom_pos> &pos,
-                                      std::string const &pdb_field)
+                                      std::string const pdb_field,
+                                      double const pdb_field_value)
 {
   cvm::fatal_error ("Error: colvarproxy::load_coords() has not been (re)redefined, "
                     "__FILE__ at line __LINE__.\n");
@@ -130,7 +133,8 @@ inline void colvarproxy::load_coords (char const *filename,
 
 inline void colvarproxy::load_atoms (char const *filename,
                                      std::vector<cvm::atom> &atoms,
-                                     std::string const &pdb_field)
+                                     std::string const pdb_field,
+                                     double const pdb_field_value)
 {
   cvm::fatal_error ("Error: colvarproxy::load_atoms() has not been (re)redefined, "
                     "__FILE__ at line __LINE__.\n");

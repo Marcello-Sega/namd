@@ -441,45 +441,6 @@ public:
 };
 
 
-/*
-
-/// An integrated free energy surface for metadynamics
-class colvarbias_meta::free_energy_surface {
-public:
-
-  /// List of hill involved
-  std::list<hill>      *hills_orig;
-
-  /// Free energy grid
-  colvars_grid         *grid;
-
-  /// Interval of hills to plot
-  int                   freq;
-
-  /// Collective variables for which this surface is calculated
-  std::vector<colvar *> colvars;
-
-  /// Integrate out these variables
-  std::vector<colvar *> integ_cv;
-
-  /// Value of the integral
-  cvm::real             integ_const;
-  /// Temperature factor for integration
-  cvm::real             temperature;
-
-  /// File to write the surface
-  std::string           file_name;
-
-  /// Constructor
-  free_energy_surface (std::string const &conf,
-                       std::list<colvarbias_meta::hill> &hills_orig_in);
-
-  /// Write the surface to the output file
-  void write();
-};
-
-*/
-
 #endif
 
 

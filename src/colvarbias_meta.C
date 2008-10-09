@@ -308,7 +308,7 @@ void colvarbias_meta::update()
   if (cvm::debug())
     cvm::log ("Updating the metadynamics bias \""+this->name+"\".\n");
 
-  if (expand_grids) {
+  if (use_grids) {
 
     // first of all, expand the grids, if defined
 
@@ -798,6 +798,15 @@ std::istream & colvarbias_meta::read_restart (std::istream& is)
 
     if (use_grids) {
 
+      if (expand_grids) {
+        // reallocate the grid, the boundaries of the colvars may have
+        // been changed
+        delete hills_energy;
+        delete hills_energy_gradients;
+        hills_energy = new colvar_grid_scalar (colvars);
+        hills_energy_gradients = new colvar_grid_gradient (colvars);
+      }
+
       {
         size_t const pos = is.tellg();
         if ( !(is >> key) || !(key == "hills_energy")) {
@@ -935,12 +944,15 @@ std::ostream & colvarbias_meta::write_restart (std::ostream& os)
         cvm::real const max = hills_energy->maximum_value();
         hills_energy->add_constant (-1.0 * max);
         hills_energy->multiply_constant (-1.0);
+        // if this is the only free energy integrator, the pmf file
+        // name is general, otherwise there is a label with the bias
+        // name
         std::string const fes_file_name =
-          (cvm::n_meta_biases > 1) ?
-          std::string (cvm::output_prefix+"."+this->name+
+          ((cvm::n_meta_biases == 1) && (cvm::n_abf_biases == 0)) ?
+          std::string (cvm::output_prefix+
                        (dump_fes_save ? "."+cvm::to_str (cvm::step_absolute()) : "")+
                        ".pmf") :
-          std::string (cvm::output_prefix+
+          std::string (cvm::output_prefix+"."+this->name+
                        (dump_fes_save ? "."+cvm::to_str (cvm::step_absolute()) : "")+
                        ".pmf");
         std::ofstream fes_os (fes_file_name.c_str());

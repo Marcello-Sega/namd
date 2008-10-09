@@ -5,6 +5,9 @@
 #define COLVARS_DEBUG false
 #endif
 
+#ifndef COLVARS_VERSION
+#define COLVARS_VERSION "29-09-2008"
+#endif
 
 /// \file colvarmodule.h 
 /// \brief Collective variables main module
@@ -268,14 +271,16 @@ public:
   /// field to determine which are the atoms to be set
   static void load_atoms (char const *filename,
                           std::vector<atom> &atoms,
-                          std::string const &pdb_field = "O");
+                          std::string const &pdb_field = "O",
+                          double const pdb_field_value = 0.0);
 
   /// \brief Load the coordinates for a group of atoms from a file
   /// (usually a PDB); the number of atoms in "filename" must match
   /// the number of elements in "pos"
   static void load_coords (char const *filename,
                            std::vector<atom_pos> &pos,
-                           std::string const &pdb_field = "O");
+                           std::string const &pdb_field = "O",
+                           double const pdb_field_value = 0.0);
 
   /// Frequency for collective variables trajectory output
   static size_t cv_traj_freq;
@@ -422,14 +427,16 @@ inline cvm::rvector cvm::position_dist2_lgrad (cvm::atom_pos const &pos1,
 
 inline void cvm::load_atoms (char const *file_name,
                              std::vector<cvm::atom> &atoms,
-                             std::string const &pdb_field)
+                             std::string const &pdb_field,
+                             double const pdb_field_value)
 {
   proxy->load_atoms (file_name, atoms, pdb_field);
 }
 
 inline void cvm::load_coords (char const *file_name,
                               std::vector<cvm::atom_pos> &pos,
-                              std::string const &pdb_field)
+                              std::string const &pdb_field,
+                              double const pdb_field_value)
 {
   proxy->load_coords (file_name, pos, pdb_field);
 }

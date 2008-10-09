@@ -1,3 +1,7 @@
+/************************************************************************
+ * Headers for the ABF and histogram biases                             *
+ ************************************************************************/
+
 #ifndef COLVARBIAS_ABF_H
 #define COLVARBIAS_ABF_H
 

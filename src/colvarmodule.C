@@ -20,7 +20,8 @@ colvarmodule::colvarmodule (char const  *config_filename,
   }
 
   cvm::log (cvm::line_marker);
-  cvm::log ("Initializing the collective variables module.\n");
+  cvm::log ("Initializing the collective variables module, version "
+            COLVARS_VERSION".\n");
 
   // "it_restart" will be set by the input restart file, if any;
   // "it" should be updated by the proxy
@@ -47,8 +48,8 @@ colvarmodule::colvarmodule (char const  *config_filename,
   parse->get_keyval (conf, "timeStep", dt, 1.0);
 #endif
 
-  parse->get_keyval (conf, "trajFrequency", cv_traj_freq, 1);
-  parse->get_keyval (conf, "restartFrequency", restart_out_freq,
+  parse->get_keyval (conf, "colvarsTrajFrequency", cv_traj_freq, 100);
+  parse->get_keyval (conf, "colvarsRestartFrequency", restart_out_freq,
                      proxy->restart_frequency());
 
   // by default overwrite the existing trajectory file

@@ -1,3 +1,7 @@
+/********************************************************************************
+ * Implementation of the ABF and histogram biases                               *
+ ********************************************************************************/
+
 #include <glob.h>
 
 #include "colvarmodule.h"
@@ -174,10 +178,16 @@ void colvarbias_abf::update()
     const cvm::real * grad  = &(gradients->value (bin));
 
     if ( fact != 0.0 ) {
-      for (size_t i=0; i<colvars.size(); i++) {
-        // subtracting the mean force (opposite of the FE gradient) means adding the gradient
-        colvar_forces[i].real_value += fact * grad[i] / cvm::real (count);
-        // without .real_value, the above would do (cheap) runtime type checking
+
+      if ( (colvars.size() == 1) && colvars[0]->periodic_boundaries() ) {
+        // Enforce a zero-mean bias on periodic, 1D coordinates
+        colvar_forces[0].real_value += fact * (grad[0] / cvm::real (count) - gradients->average ());
+      } else {
+        for (size_t i=0; i<colvars.size(); i++) {
+          // subtracting the mean force (opposite of the FE gradient) means adding the gradient
+          colvar_forces[i].real_value += fact * grad[i] / cvm::real (count);
+          // without .real_value, the above would do (cheap) runtime type checking
+        }
       }
     }
   }

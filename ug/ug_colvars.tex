@@ -1,8 +1,11 @@
 % Note: requires package amssymb for \mathbb
 
-% The following two lines moved to ug_add.tex (cbh 2008.09.17)
 %\section{Collective variable-based calculations}
-%\label{section:colvars}
+\label{section:colvars}
+
+The features described in this section were contributed by
+Giacomo Fiorin and J\'er\^ome H\'enin, Center for Molecular Modeling,
+University of Pennsylvania.
 
 Today's molecular dynamics simulations involve a large number of
 degrees of freedom (typically 10,000--1,000,000), and it is often
@@ -52,17 +55,18 @@ Its most important features are:
   frequency histograms of any subset of colvars.
 \end{itemize}
 
+
 \subsubsection{General parameters and input/output files}
-%\label{sec:colvarmodule}
+\label{sec:colvarmodule}
 
 The structure of a typical collective variables calculation is
-depicted in Figure~\ref{fig:colvars_diagram}.  Each colvar is
-a combination of one or more components, which in turn are evaluated
-as a function of a set of atomic coordinates.  Multiple
-biasing or analysis methods can be applied to the same
-colvars, but the meaning of this operation depends on which
-methods are applied: this should be done with particular caution.
-
+depicted in Figure~\ref{fig:colvars_diagram}.  Each colvar is a
+combination of one or more \emph{components} (see \ref{sec:colvar}),
+which are functions of several atomic coordinates.  Multiple biasing
+or analysis methods can be applied to the same colvars.  But care
+should be taken that certain methods (such as free energy
+reconstruction) do not function properly if other biases are adding
+forces to their colvars.
 
 \begin{figure}[!ht]
   \centering
@@ -83,7 +87,7 @@ methods are applied: this should be done with particular caution.
 \end{figure}
 
 
-\subsubsection*{NAMD parameters}
+\paragraph*{NAMD parameters}
 
 To enable a colvar calculation, the NAMD configuration file must
 set two parameters (three when restarting a previous run):
@@ -93,7 +97,7 @@ set two parameters (three when restarting a previous run):
 
 \item %
   \NAMDCONFWDEF{%
-    colvarsOn}{%
+    colvars}{%
     Enable the collective variables module}{%
     boolean}{%
     \texttt{off}}{%
@@ -134,7 +138,45 @@ consequence, keywords described in the following sections
 are not NAMD keywords.
 
 
-\subsubsection*{Colvars module configuration file}
+\paragraph*{Output files}
+
+By default, the collective variables module writes three output
+files:
+\begin{itemize}
+
+\item a \emph{state file}, named
+  \texttt{$<$outputName$>$.colvars.state}; this file is in ASCII
+  format, regardless of the value of \texttt{binaryOutput} in the NAMD
+  configuration; the name of this file can be provided as
+  \texttt{colvarsInput} to continue the simulation in the next run;
+
+\item if either \texttt{colvarsRestartFrequency} or the NAMD parameter
+  \texttt{restartFreq} is defined, a
+  \emph{restart file} (equivalent to the state file) is written every
+  \texttt{colvarsRestartFrequency} steps, named
+  \texttt{$<$restartName$>$.colvars.state}; the name of this file
+  can be provided as \texttt{colvarsInput} to continue an interrupted run;
+  (provided that the corresponding restart files for coordinates
+  and velocities are used);
+
+\item if the colvars module parameter \texttt{colvarsTrajFrequency} is
+  greater than 0 (default: 1), a \emph{trajectory file} is written
+  during the simulation, with the name
+  \texttt{$<$outputName$>$.colvars.traj}; it is not needed to restart
+  a simulation, but it can be read in for post--processing
+  (see~\ref{sec:colvar_acf}).
+
+\end{itemize}
+
+Other output files can written by specific methods applied to the
+colvars (e.g.~by the ABF method, see \ref{sec:colvarbias_abf}, or the
+metadynamics method, see \ref{sec:colvarbias_meta}): as for the colvar
+trajectory file, they are meant for analyzing rather than continuing a
+simulation. All such files begin with the prefix
+\texttt{$<$outputName$>$}.
+
+
+\paragraph*{Colvars module configuration file}
 
 Figure~\ref{fig:colvars_config} shows a typical collective variables
 configuration file. Its syntax is similar to that of the
@@ -205,7 +247,7 @@ those for the colvar biases' blocks \texttt{biastype1},
 \item %
   \NAMDCONFWDEF{%
     colvarsTrajFrequency}{%
-    (global) Colvar values trajectory frequency}{%
+    (global) Colvar value trajectory frequency}{%
     positive integer}{%
     \texttt{1}}{%
     The values of each colvar (and any additional quantities which
@@ -229,7 +271,7 @@ those for the colvar biases' blocks \texttt{biastype1},
 \item %
   \NAMDCONFWDEF{%
     colvarsRestartFrequency}{%
-    (global) Colvar values trajectory frequency}{%
+    (global) Colvar module restart frequency}{%
     positive integer}{%
     \texttt{restartFreq}}{%
     Allows to choose a different restart frequency for the collective
@@ -244,11 +286,8 @@ those for the colvar biases' blocks \texttt{biastype1},
     boolean}{%
     \texttt{off}}{%
     If this flag is enabled, the analysis mode is turned on, and all
-    the colvars and biasing methods are instructed to perform
-    whatever analysis they are configured to.  This is particularly
-    useful when the colvar module is compiled as standalone, to
-    perform data post--processing for the collective variables without
-    restarting NAMD.}
+    the colvars and biasing methods are instructed to perform whatever
+    analysis they are configured to.}
 
 \item %
   \NAMDCONF{%
@@ -283,36 +322,6 @@ those for the colvar biases' blocks \texttt{biastype1},
 \end{itemize}
 
 
-\subsubsection*{Output files}
-
-By default, the collective variables module writes three output
-files:
-\begin{itemize}
-\item a \emph{state file}, named
-  \texttt{$<$outputName$>$.colvars.state}; this file is in
-  ASCII format, regardless of the value of \texttt{binaryOutput};
-  the name of this file can be provided as \texttt{colvarsInput}
-  to continue the simulation in the next run;
-\item if the NAMD parameter \texttt{restartFreq} is defined, a
-  \emph{restart file} (equivalent to the state file) is written every
-  \texttt{restartFreq} steps, named
-  \texttt{$<$restartName$>$.colvars.state}; the name of this file
-  can be provided as \texttt{colvarsInput} to continue an interrupted run;
-  (provided that the corresponding restart files for coordinates
-  and velocities are used);
-\item if the colvars module parameter
-  \texttt{colvarsTrajFrequency} is greater than 0 (default: 1), a
-  \emph{trajectory file} is written during the simulation, with the
-  name \texttt{$<$outputName$>$.colvars.traj}; it is not
-  needed to restart a simulation, but it can be read in for post--processing
-  (see~\ref{sec:colvar_acf}).
-\end{itemize}
-Other output files can written by specific methods applied to the
-colvars (e.g.~by the ABF method, see \ref{sec:colvarbias_abf}): as for
-the colvar trajectory file, they are meant for analyzing rather than
-continuing a simulation. All such files begin with the prefix
-\texttt{$<$outputName$>$}.
-
 
 \subsubsection{Declaring and using collective variables}
 \label{sec:colvar}
@@ -321,14 +330,14 @@ Each collective variable is defined as a combination of
 individual quantities called \emph{components}
 (see Figure~\ref{fig:colvars_diagram}). To obtain a colvar $\xi(\mathbf{r})$,
 its components $q_i(\mathbf{r})$ are summed according to:
-
 \begin{equation}
   \label{eq:colvar_combination}
   \xi(\mathbf{r}) = \sum_i c_i [q_i(\mathbf{r})]^{n_i}
 \end{equation}
-
-where each component appears with a unique coefficient $c_i$
-and (positive integer) exponent $n_i$.
+where each component appears with a unique coefficient $c_i$ and
+(positive integer) exponent $n_i$.  \textbf{Note:} \emph{in most
+  applications, only one component per colvar needs to be defined, and
+  by default $c_i$ and $n_i$ are equal to 1.}
 
 In the configuration file, a collective variable is initiated
 by the keyword \texttt{colvar},
@@ -353,8 +362,7 @@ includes components of one or more of the following types:
 three--dimensional vector $\mathbf{d}$ if \texttt{distanceVec} is
 used, a three--dimensional vector with a $|\mathbf{d}|^2 = 1$
 constraint if \texttt{distanceDir} is used, and a unitary quaternion
-(used to parameterize a rotation) if either \texttt{orientation} or
-\texttt{relativeOrientation} are used.
+(used to parameterize a rotation) if \texttt{orientation} is are used.
 
 Currently, binning of colvar values on a grid can only be performed
 for scalar components.  In addition, some properties like the system
@@ -488,32 +496,6 @@ can be provided the following parameters:
     ``\texttt{fa\_}$<$\texttt{name}$>$''.  The physical unit for this
     force is kcal/mol divided by the colvar unit.}
 
-%    [TODO - should we keep this option?]
-%\item %
-%  \NAMDCONFWDEF{%
-%    JacobianForce}{%
-%    (\texttt{colvar}) Calculate the geometric entropy force}{%
-%    boolean}{%
-%    \texttt{off}}{%
-    % In a few special cases, most notably colvars defined by
-    % distance--based components, an alternate formulation of the
-    % potential of mean force is traditionally used, which excludes
-    % the Jacobian term describing the effect of geometric entropy on
-    % the distribution of the variable.  This results, for example, in
-    % particle--particle potentials of mean force being flat at large
-    % separations.  If all the components of this \texttt{colvar}
-    % support it, the corresponding ``Jacobian force'' is calculated,
-    % and included in the calculated system force.  This force is
-    % based on the
-    % gradient of the ``geometric entropy'' arising from a change in
-    % the
-    % density of states in the coordinate transformation $\{
-    % \mathbf{x}_{1}(t), \mathbf{x}_{2}(t) \ldots \mathbf{x}_{N}(t)
-    % \}$
-    % $\rightarrow$ $\{ \xi(\mathbf{x}_{i}(t)),
-    % \mathbf{\tilde{x}}_{1}(\xi, \mathbf{x}_{i}(t)), \ldots \}$.
-%    }
-
 \item %
   \NAMDCONFWDEF{%
     extendedLagrangian}{%
@@ -548,7 +530,7 @@ can be provided the following parameters:
 
 \end{itemize}
 
-\subsubsection*{Collective variable components}
+\paragraph*{Collective variable components}
 \label{sec:cvc}
 
 Each \texttt{colvar} has one or more \emph{components}, each of them
@@ -749,7 +731,7 @@ recognizes the following options:
 
 \item %
   \NAMDCONFWDEF{%
-    expNum}{%
+    expNumer}{%
     (\texttt{coordnum}) Numerator exponent}{%
     positive even integer}{%
     6}{%
@@ -803,7 +785,7 @@ $\texttt{group1}$ and $\texttt{group2}$.
 bond, implemented as a coordination number (eq.~\ref{eq:cvc_coordnum})
 between the donor and the acceptor atoms.  Therefore, it accepts the
 same options \texttt{cutoff} (with a different default value of
-3.3~\AA{}), \texttt{expNum} (with a default value of 6) and
+3.3~\AA{}), \texttt{expNumer} (with a default value of 6) and
 \texttt{expDenom} (with a default value of 8).  Unlike
 \texttt{coordnum}, it requires two atom numbers, \texttt{acceptor} and
 \texttt{donor}, to be defined.  It returns an adimensional number,
@@ -886,6 +868,18 @@ are:
     used to select the reference coordinates for \texttt{atoms}.
     Otherwise, this field is ignored.
   }
+
+\item %
+  \NAMDCONF{%
+    refPositionsColValue}{%
+    (\texttt{rmsd}) Value in the PDB column}{%
+    positive decimal}{%
+    If defined, this value identifies in the PDB column
+    \texttt{refPositionsCol} of the file \texttt{refPositionsFile}
+    which atom positions are to be read.  Otherwise, all positions
+    with a non-zero value will be read.
+  }
+
 \end{itemize}
 This component returns a positive real number (in \AA).
 
@@ -903,7 +897,7 @@ $\mathsf{q} = (q_0, q_1, q_2, q_3)$, with $\sum_i q_i^2 = 1$; this
 \emph{quaternion} expresses the optimal rotation $\{\mathbf{x}_i(t)\}
 \rightarrow \{\mathbf{x}_i^{\mathrm{(ref)}}\}$ according to the
 formalism in reference~\cite{Coutsias2004}.  The quaternion $(q_0,
-q_1, q_2, q_3)$ can in fact be written as $\left(\cos(\theta/2), \,
+q_1, q_2, q_3)$ can also be written as $\left(\cos(\theta/2), \,
   \sin(\theta/2)\mathbf{u}\right)$, where $\theta$ is the angle and
 $\mathbf{u}$ the normalized axis of rotation; for example, a rotation
 of 90$^{\circ}$ around the $z$ axis should be expressed as
@@ -912,45 +906,23 @@ of 90$^{\circ}$ around the $z$ axis should be expressed as
 to and from a $4\times{}4$ rotation matrix in a format suitable for
 usage in VMD.
 
+\textbf{Hint:} to restrain the rotation of a macromolecule in solution
+(e.g.~when one of the cell dimensions is much longer than the others),
+it is possible to define a \texttt{colvar} with an
+\texttt{orientation} component, and restrain it throuh the
+\texttt{harmonic} bias around the ``zero'' rotation, \texttt{(1.0,
+  0.0, 0.0, 0.0)}.
 
-\paragraph*{Component \texttt{rotationAngle}: angle of rotation with
+
+\paragraph*{Component \texttt{orientationAngle}: angle of rotation with
   respect to a reference structure.}  The block
-\texttt{rotationAngle~\{...\}} accepts the same options of
+\texttt{orientationAngle~\{...\}} accepts the same options of
 \texttt{rmsd} and \texttt{orientation} (\texttt{atoms},
 \texttt{refPositions}, \texttt{refPositionsFile} and
 \texttt{refPositionsCol}), but it returns instead the angle of
 rotation $\theta$ between the current and the reference positions.
 This angle is expressed in degrees within the range
 [-180$^{\circ}$:180$^{\circ}$].
-
-
-
-\paragraph*{Component \texttt{relativeOrientation}: relative
-  orientation of two atom groups.}  This component returns a
-rotational quaternion like that implemented by \texttt{orientation},
-only calculated between the current positions of two groups rather
-than a single group against its reference.  The
-\texttt{relativeOrientation~\{...\}} block contains two atom group
-definition blocks, \texttt{group1} and \texttt{group2}, which have to
-contain the same number of atoms.  If \texttt{centerReference} is
-defined inside either group (see \ref{sec:colvar_atom_groups}), its
-settings will be used to center its coordinates: otherwise, each will
-be centered on its center of geometry.
-
-When the two groups are free to rotate independently, their relative
-orientation is not well defined in the reference frame of the
-simulation because of their \emph{overall} rotation.  In order to have
-it expressed instead in a reference frame which does not change with
-the overall rotation of the two groups, it is advisable to use
-\texttt{rotateReference} within either group (see
-\ref{sec:colvar_atom_groups}).  The code will use the same
-(additional) rotation to rotate both groups, and express their
-relative orientation in a consistent reference frame.  It is also
-advisable in this case to use \texttt{disableForces} (see
-\ref{sec:colvar_atom_groups}) on the group which is used as a
-reference, because its orientation is in any case fixed by
-construction in the rotated frame in which the
-\texttt{relativeOrientation} is calculated.
 
 
 
@@ -1124,7 +1096,7 @@ score).
 
 
 
-\subsubsection*{Linear and polynomial combinations of components}
+\paragraph*{Linear and polynomial combinations of components}
 Any set of components can be combined within a colvar,
 provided that they return
 the same type of values (scalar, unit vector, vector, or quaternion).
@@ -1158,7 +1130,7 @@ parameters, which are common to all components:
 \end{itemize}
 
 
-\subsubsection*{Defining atom groups}
+\paragraph*{Defining atom groups}
 \label{sec:colvar_atom_groups}
 Each component depends on one
 or more \emph{atom groups}, which can be defined by different methods
@@ -1174,10 +1146,12 @@ myatoms {
   atomNumbers        { 1 2 3 }
   # add all the atoms between 11 and 20 to this group
   atomNumbersRange   11-20
-  # add the atoms which have occupancy different from zero in the PDB
-  # file atoms_occ1.pdb; its number of atoms must match the topology
+  # add the atoms which have occupancy equal to 2.0 in the PDB
+  # file atoms_occ1.pdb; the number of atoms in the PDB must match
+  # that of the topology
   atomsFile          atoms_occ1.pdb
   atomsCol           O
+  atomsColValue      2.0
 }
 \end{verbatim}
 
@@ -1187,19 +1161,21 @@ The options for any atom group are:
 \item %
   \NAMDCONF{%
     atomNumbers}{%
-    (atom group) Atoms referred by numbers}{%
+    (atom group) List of atom numbers}{%
     space--separated list of positive integers}{%
-    This option adds to the group all the atoms whose (1-based) numbers
-    are in the list.}
+    This option adds to the group all the atoms whose numbers are in
+    the list.  Atom numbering starts from 1.
+  }
 
 \item %
   \NAMDCONF{%
     atomNumbersRange}{%
     (atom group) Atoms within a number range}{%
     $<$Starting number$>$-$<$Ending number$>$}{%
-    This option adds to the group all the atoms whose (1-based) numbers are
+    This option adds to the group all the atoms whose numbers are
     within the range specified.  It can be used multiple times for the
-    same group.}
+    same group.  Atom numbering starts from 1.
+  }
 
 \item %
   \NAMDCONF{%
@@ -1209,7 +1185,8 @@ The options for any atom group are:
     (example: \texttt{CA 11-20})}{%
     This option adds to the group all the atoms with the provided name
     within residues in the range provided.  It can be used
-    multiple times for the same group.}
+    multiple times for the same group.
+  }
 
 \item %
   \NAMDCONF{%
@@ -1217,21 +1194,19 @@ The options for any atom group are:
     (atom group) PSF segment identifier}{%
     string (max 4 characters)}{%
     This option sets the PSF segment identifier for all instances of
-    \texttt{atomNameResidueRange} within this atom group.
-    In the event that atoms from different segments have to be selected,
-    it is more convenient to perform the atom selection in VMD, set one of
-    the PDB fields to mark the selection and save a PDB file
-    to be read with \texttt{atomsFile}.  This option need not be provided
-    when non--PSF topologies (e.g. AMBER parmtop) are used by NAMD.}
+    \texttt{atomNameResidueRange} within this atom group.  This option
+    need not be provided when non--PSF topologies are used by NAMD.
+  }
 
 \item %
   \NAMDCONF{%
     atomsFile}{%
     (atom group) PDB file name for atom selection}{%
     string}{%
-    This option adds to the group all atoms having a nonzero
-    value in the column \texttt{atomsCol} of the provided PDB file.
-    It can be used multiple times for the same group.}
+    This option selects atoms from the PDB file provided and adds them
+    to the group according to the value in the column
+    \texttt{atomsCol}.  \textbf{Note:} the PDB file provide must match
+    the number of atoms in the topology.  }
 
 \item %
   \NAMDCONFWDEF{%
@@ -1239,9 +1214,19 @@ The options for any atom group are:
     (atom group) PDB column to use for the selection}{%
     \texttt{X}, \texttt{Y}, \texttt{Z}, \texttt{O} or \texttt{B}}{%
     \texttt{O}}{%
-    This option specifies which column in the PDB file is used to
-    determine the atoms to be included in the group, for all instances
-    of \texttt{atomsFile} within the atom group.}
+    This option specifies which column in \texttt{atomsFile} is used
+    to determine the atoms to be included in the group.
+  }
+
+\item %
+  \NAMDCONF{%
+    atomsColValue}{%
+    (atom group) Value in the PDB column}{%
+    positive decimal}{%
+    If defined, this value identifies in \texttt{atomsCol} of
+    \texttt{atomsFile} which atoms are to be read; otherwise, all
+    atoms with a non-zero value will be read.
+  }
 
 \item %
   \NAMDCONF{%
@@ -1252,10 +1237,10 @@ The options for any atom group are:
     used to make this group return a fixed position in space.  This is
     useful e.g.~to make colvar components that normally calculate
     functions of the group's center of mass work with an absolute
-    reference position.  If this option is specified, \texttt{disableForces}
-    is turned on, the provided position is returned as the
-    center of mass, and zero velocities and system forces are
-    reported to the colvars.}
+    reference position.  If this option is specified for the group,
+    \texttt{disableForces} is turned on, the \texttt{(x, y, z)}
+    position provided is returned as its center of mass, and zero
+    velocities and system forces are reported.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -1281,13 +1266,13 @@ The options for any atom group are:
     \texttt{refPositions} or \texttt{refPositionsFile}.  This is done
     before recentering the group, if \texttt{centerReference} is also
     defined.  The algorithm used is the same employed in the
-    \texttt{orientation} colvar component, making use of a quaternion.
-    Forces applied to this group from within the colvar module are
-    rotated back to the reference frame of the simulation prior being
+    \texttt{orientation} colvar component \cite{Coutsias2004}.  Forces
+    applied to this group from within the colvar module are rotated
+    back to the reference frame of the simulation prior being
     communicated to the MD integrator.  \textbf{Note}: care must be
-    taken when a torque is not applied on the group, which could
-    bring the simulation out of control; to avoid problems,
-    \texttt{disableForces} should be used.}
+    taken when a torque is applied on the group, which could bring the
+    simulation out of control; to avoid such problems,
+    \texttt{disableForces} could be used for this group.}
 
 \item %
   \NAMDCONF{%
@@ -1305,18 +1290,16 @@ The options for any atom group are:
     refPositionsFile}{%
     (atom group) Reference positions for the group}{%
     UNIX filename}{%
-    If either \texttt{centerReference} or \texttt{rotateReference}
-    is \texttt{on}, the coordinates from this file are used to
-    determine the center of mass's translation and the optimal
-    rotation between them and the current coordinates of the group.
-    In the latter case, the number of coordinates read from the file
-    must be of the same length as this atom group.  This file can
-    either contain as many atoms as this group (in which case all
-    \texttt{ATOM} records are used) or all the atoms of the
-    topology (in which case only the atoms with a non--zero value in
-    \texttt{refPositionsCol} are used).  One typical
-    usage is to use the file provided as \texttt{atomsFile},
-    given that this file contains all the atoms of the group.}
+    If either \texttt{centerReference} or \texttt{rotateReference} is
+    \texttt{on}, the coordinates from this file are used to determine
+    the center of mass's translation and the optimal rotation between
+    them and the current coordinates of the group.  This file can
+    either \emph{i)} contain as many atoms as the group (in which case
+    all of the \texttt{ATOM} records are read) or \emph{ii)} a larger
+    number of atoms (in which case atoms will be selected according to
+    \texttt{refPositionsCol}).  A typical usage may be to reuse
+    \texttt{atomsFile}.  Unlike \texttt{atomsFile}, however, it need
+    not match the number of atoms in the topology.  }
 
 \item %
   \NAMDCONFWDEF{%
@@ -1324,11 +1307,16 @@ The options for any atom group are:
     (atom group) Reference positions for the group}{%
     \texttt{X}, \texttt{Y}, \texttt{Z}, \texttt{O} or \texttt{B}}{%
     \texttt{O}}{%
-    If \texttt{refPositionsFile} is defined, and the file contains
-    all the atoms in the topology, this option sets which PDB field is
-    used to select the reference coordinates for this group.  If the
-    file contains instead only the atoms of this group, this field is
-    ignored.}
+    Analogous to \texttt{atomsCol}.
+  }
+
+\item %
+  \NAMDCONF{%
+    refPositionsColValue}{%
+    (atom group) Value in the PDB column}{%
+    positive decimal}{%
+    Analogous to \texttt{atomsColValue}.
+  }
 
 \item %
   \NAMDCONFWDEF{%
@@ -1340,17 +1328,6 @@ The options for any atom group are:
     defined, this keyword allows to define an additional atom group,
     which is used instead of this one to calculate the translation or
     the rotation to the reference positions.}
-
-\item %
-  \NAMDCONF{%
-    rotateRefGroup}{%
-    (atom group) Reference group for the rotation}{%
-    Block \texttt{rotateRefGroup \{ ... \}}}{%
-    If \texttt{centerReference} is defined, this keyword allows to
-    allocate another atom group within this one, to act as the
-    reference for rotating this group.
-    The reference group must have the same number of atoms as
-    the group that contains it.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -1372,6 +1349,11 @@ The options for any atom group are:
     (resp. rotation).}
 
 \end{itemize}
+
+To minimize the length of the NAMD standard output, messages from the
+previous options are not echoed by default.  They can be enabled by
+using the boolean keyword \texttt{verboseOutput}.
+
 
 \paragraph*{Recommendations for using atom groups.}  Nearly all the
 calculations of colvar components are based on user--specified atom
@@ -1430,13 +1412,13 @@ groups to define a collective variable:
 
 
 
-\subsubsection*{Statistical analysis of individual collective variables}
+\paragraph*{Statistical analysis of individual collective variables}
 \label{sec:colvar_acf}
 
 Not documented yet\ldots
 
 
-\subsection{Biasing and analysis methods}
+\subsubsection{Biasing and analysis methods}
 \label{sec:colvarbias}
 
 All of biasing and analysis methods recognize the following
@@ -1460,7 +1442,7 @@ options:
 \end{itemize}
 
 
-\subsubsection{Adaptive Biasing Force calculations}
+\paragraph*{Adaptive Biasing Force calculations}
 \label{sec:colvarbias_abf}
 
 For a full description of the Adaptive Biasing Force method, see
@@ -1559,7 +1541,7 @@ to result in sampling difficulties.
 Most commonly, the number of variables is one or two.
 
 
-\subsubsection*{ABF requirements on collective variables}
+\paragraph*{ABF requirements on collective variables}
 \label{sec:colvarbias_abf_req}
 
 \begin{enumerate}
@@ -1592,7 +1574,7 @@ cancel out. For example, all atoms of a rigid TIP3P water molecule can safely be
 group used in a \texttt{distance} component.
 \end{enumerate}
 
-\subsubsection*{Parameters for ABF}
+\paragraph*{Parameters for ABF}
 
 The following parameters can be set in the ABF configuration block
 (in addition to generic bias parameters such as \texttt{colvars}):
@@ -1660,7 +1642,7 @@ energy gradients are computed. In the direction of each colvar, the grid ranges 
 is set by the \texttt{width} parameter.
 
 
-\subsubsection*{Output files}
+\paragraph*{Output files}
 
 The ABF bias produces the following files, all in multicolumn ASCII format:
 \begin{itemize}
@@ -1680,7 +1662,7 @@ If the colvar space has been partitioned into sections (\emph{windows}) in which
 ABF simulations have been run, the resulting data can be merged using the
 \texttt{inputPrefix} option described above (a NAMD run of 0 steps is enough).
 
-\subsubsection*{Reconstructing a multidimensional free energy surface}
+\paragraph*{Reconstructing a multidimensional free energy surface}
 
 If a one-dimensional calculation is performed, the estimated free energy
 gradient is automatically integrated and a potential of mean force is written
@@ -1744,7 +1726,7 @@ discretization on a grid).
 
 
 
-\subsubsection{Metadynamics calculations}
+\paragraph*{Metadynamics calculations}
 \label{sec:colvarbias_meta}
 
 The metadynamics method was first introduced in \cite{Laio2002} and
@@ -1886,7 +1868,7 @@ applied, the block accepts the following options:
     boolean}{%
     \texttt{on}}{%
     When \texttt{useGrids} and this option are \texttt{on}, the PMF is
-    writtein every \texttt{restartFrequency} steps to the file
+    written every \texttt{colvarsRestartFrequency} steps to the file
     \texttt{$<$outputName$>$.pmf}.  If there is more than one
     metadynamics bias active, the name of this bias is included in the
     file name.}
@@ -2098,7 +2080,7 @@ applied, the block accepts the following options:
 % \end{itemize}
 
 
-\subsubsection[Harmonic restraints and SMD]{Harmonic restraints and
+\paragraph*[Harmonic restraints and SMD]{Harmonic restraints and
   Steered Molecular Dynamics}
 \label{sec:colvarbias_harmonic}
 
@@ -2174,7 +2156,7 @@ and enable \texttt{outputAppliedForce} within the configuration block
 of each of the \texttt{colvars} involved.
 
 
-\subsubsection{Multidimensional histograms}
+\paragraph*{Multidimensional histograms}
 \label{sec:colvarbias_histogram}
 
 The \texttt{histogram} feature is used to record the distribution of a set of collective

@@ -373,8 +373,8 @@ public:
   inline cvm::quaternion dist2_grad (cvm::quaternion const &Q2) const
   {
     cvm::real const cos_theta = this->q0*Q2.q0 + this->q1*Q2.q1 + this->q2*Q2.q2 + this->q3*Q2.q3;
-    cvm::real const theta = ::acos ( (cos_theta > 1.0) ? 1.0 : cos_theta );
-    cvm::real const sin_theta = ::sin (theta);
+    double const theta = ::acos ( (cos_theta > 1.0) ? 1.0 : cos_theta );
+    double const sin_theta = ::sin (theta);
 
     if (::pow (cos_theta, int (2)) > 1.0-1.0e-10) {
       // give the null element, avoid the fpe

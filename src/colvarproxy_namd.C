@@ -208,13 +208,65 @@ void colvarproxy_namd::exit (std::string const &message)
 }
 
 
+enum e_pdb_field {
+  e_pdb_none,
+  e_pdb_occ,
+  e_pdb_beta,
+  e_pdb_x,
+  e_pdb_y,
+  e_pdb_z,
+  e_pdb_ntot
+};
+
+
+e_pdb_field pdb_field_str2enum (std::string const &pdb_field_str)
+{
+  e_pdb_field pdb_field = e_pdb_none;
+
+  if (colvarparse::to_lower_cppstr (pdb_field_str) ==
+      colvarparse::to_lower_cppstr ("O")) {
+    pdb_field = e_pdb_occ;
+  }
+
+  if (colvarparse::to_lower_cppstr (pdb_field_str) ==
+      colvarparse::to_lower_cppstr ("B")) {
+    pdb_field = e_pdb_beta;
+  }
+
+  if (colvarparse::to_lower_cppstr (pdb_field_str) ==
+      colvarparse::to_lower_cppstr ("X")) {
+    pdb_field = e_pdb_x;
+  }
+  
+  if (colvarparse::to_lower_cppstr (pdb_field_str) ==
+      colvarparse::to_lower_cppstr ("Y")) {
+    pdb_field = e_pdb_y;
+  }
+
+  if (colvarparse::to_lower_cppstr (pdb_field_str) ==
+      colvarparse::to_lower_cppstr ("Z")) {
+    pdb_field = e_pdb_z;
+  }
+
+  if (pdb_field == e_pdb_none) {
+    cvm::fatal_error ("Error: unsupported PDB field, \""+
+                      pdb_field_str+"\".\n");
+  }
+
+  return pdb_field;
+}
+
+
 void colvarproxy_namd::load_coords (char const *pdb_filename,
                                     std::vector<cvm::atom_pos> &pos,
-                                    std::string const &pdb_field)
+                                    std::string const pdb_field_str,
+                                    double const pdb_field_value)
 {
-  if (pdb_field.size() == 0)
+  if (pdb_field_str.size() == 0)
     cvm::fatal_error ("Error: must define which PDB field to use "
                       "in order to define atoms from a PDB file.\n");
+
+  e_pdb_field pdb_field_index = pdb_field_str2enum (pdb_field_str);
 
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
@@ -226,30 +278,33 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
     size_t ipos = 0, ipdb = 0;
     for ( ; ipdb < pdb_natoms; ipdb++) {
 
-      // discard the unwanted atoms
-      if (colvarparse::to_lower_cppstr (pdb_field) ==
-          colvarparse::to_lower_cppstr ("O")) {
-        if ((pdb->atom (ipdb))->occupancy() == 0.0) 
-          continue;        
-      } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-                 colvarparse::to_lower_cppstr ("B")) {
-        if ((pdb->atom (ipdb))->temperaturefactor() == 0.0) 
+      {
+        double atom_pdb_field_value = 0.0;
+
+        switch (pdb_field_index) {
+        case e_pdb_occ:
+          atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
+          break;
+        case e_pdb_beta:
+          atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
+          break;
+        case e_pdb_x:
+          atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
+          break;
+        case e_pdb_y:
+          atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
+          break;
+        case e_pdb_z:
+          atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
+          break;
+        default:
+          break;
+        }
+
+        if ( (atom_pdb_field_value == 0.0) ||
+             (atom_pdb_field_value != pdb_field_value) ) {
           continue;
-      } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-                 colvarparse::to_lower_cppstr ("X")) {
-        if ((pdb->atom (ipdb))->xcoor() == 0.0) 
-          continue;
-      } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-                 colvarparse::to_lower_cppstr ("Y")) {
-        if ((pdb->atom (ipdb))->ycoor() == 0.0) 
-          continue;
-      } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-                 colvarparse::to_lower_cppstr ("Z")) {
-        if ((pdb->atom (ipdb))->zcoor() == 0.0) 
-          continue;
-      } else {
-        cvm::fatal_error ("Error: unsupported PDB field, \""+
-                          pdb_field+"\".\n");
+        }
       }
 
       if (!pos_allocated)
@@ -263,20 +318,24 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
       } else {
         cvm::fatal_error ("Error: the PDB file \""+
                           std::string (pdb_filename)+
-                          "\" contains more atoms than needed.\n");
+                          "\" contains coordinates for "
+                          "more atoms than needed ("+
+                          cvm::to_str (pos.size())+").\n");
       }
     }
 
     if (ipos < pos.size())
       cvm::fatal_error ("Error: the PDB file \""+
                         std::string (pdb_filename)+
-                        "\" contains "+
+                        "\" contains coordinates for only "+
                         cvm::to_str (ipdb)+
-                        ", but "+cvm::to_str (pos.size())+
+                        " atoms, but "+cvm::to_str (pos.size())+
                         " are needed.\n");
 
   } else {
 
+    // when the PDB contains exactly the number of atoms of the array,
+    // ignore the fields and just read coordinates
     for (size_t ia = 0; ia < pos.size(); ia++) {
       pos[ia] = cvm::atom_pos ((pdb->atom (ia))->xcoor(),
                                (pdb->atom (ia))->ycoor(),
@@ -290,59 +349,51 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
 
 void colvarproxy_namd::load_atoms (char const *pdb_filename,
                                    std::vector<cvm::atom> &atoms,
-                                   std::string const &pdb_field)
+                                   std::string const pdb_field_str,
+                                   double const pdb_field_value)
 {
-  if (pdb_field.size() == 0)
+  if (pdb_field_str.size() == 0)
     cvm::fatal_error ("Error: must define which PDB field to use "
                       "in order to define atoms from a PDB file.\n");
 
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
 
+  e_pdb_field pdb_field_index = pdb_field_str2enum (pdb_field_str);
 
-  if (colvarparse::to_lower_cppstr (pdb_field) ==
-      colvarparse::to_lower_cppstr ("O")) {
+  for (size_t ipdb = 0; ipdb < pdb_natoms; ipdb++) {
 
-    for (size_t ia = 0; ia < pdb_natoms; ia++) {
-      if ((pdb->atom (ia))->occupancy() != 0.0) 
-        atoms.push_back (cvm::atom (ia+1));
+    {
+      double atom_pdb_field_value = 0.0;
+
+      switch (pdb_field_index) {
+      case e_pdb_occ:
+        atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
+        break;
+      case e_pdb_beta:
+        atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
+        break;
+      case e_pdb_x:
+        atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
+        break;
+      case e_pdb_y:
+        atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
+        break;
+      case e_pdb_z:
+        atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
+        break;
+      default:
+        break;
+      }
+
+      if ( (atom_pdb_field_value == 0.0) ||
+           (atom_pdb_field_value != pdb_field_value) ) {
+        continue;
+      }
     }
 
-  } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-             colvarparse::to_lower_cppstr ("B")) {
-
-    for (size_t ia = 0; ia < pdb_natoms; ia++) {
-      if ((pdb->atom (ia))->temperaturefactor() != 0.0) 
-        atoms.push_back (cvm::atom (ia+1));
-    }
-
-  } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-             colvarparse::to_lower_cppstr ("X")) {
-
-    for (size_t ia = 0; ia < pdb_natoms; ia++) {
-      if ((pdb->atom (ia))->xcoor() != 0.0) 
-        atoms.push_back (cvm::atom (ia+1));
-    }
-
-  } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-             colvarparse::to_lower_cppstr ("Y")) {
-
-    for (size_t ia = 0; ia < pdb_natoms; ia++) {
-      if ((pdb->atom (ia))->ycoor() != 0.0) 
-        atoms.push_back (cvm::atom (ia+1));
-    }
-
-  } else if (colvarparse::to_lower_cppstr (pdb_field) ==
-             colvarparse::to_lower_cppstr ("Z")) {
-
-    for (size_t ia = 0; ia < pdb_natoms; ia++) {
-      if ((pdb->atom (ia))->zcoor() != 0.0) 
-        atoms.push_back (cvm::atom (ia+1));
-    }
-
-  } else 
-    cvm::fatal_error ("Error: unsupported PDB field, \""+
-                      pdb_field+"\".\n");
+    atoms.push_back (cvm::atom (ipdb+1));
+  }
 
   delete pdb;
 }

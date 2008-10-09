@@ -915,15 +915,19 @@ std::istream & colvar::read_restart (std::istream &is)
     if (get_keyval (conf, "lowerBoundary", lower_boundary,
                     lower_boundary, parse_silent)) {
       cvm::log ("Reading a new lowerBoundary in the "
-                "state file for the colvar \""+name+"\".\n");
+                "state file for the colvar \""+name+
+                "\" at: "+ cvm::to_str (lower_boundary)+
+                ".\n");
     }
   }
 
   if (b_upper_boundary) {
     if (get_keyval (conf, "upperBoundary", upper_boundary,
                     upper_boundary, parse_silent)) {
-      cvm::log ("Reading an new upperBoundary in the "
-                "state file for the colvar \""+name+"\".\n");
+      cvm::log ("Reading a new upperBoundary in the "
+                "state file for the colvar \""+name+
+                "\" at: "+ cvm::to_str (upper_boundary)+
+                "\".\n");
     }
   }
 
