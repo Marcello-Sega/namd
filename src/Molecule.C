@@ -234,9 +234,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   #ifdef MEM_OPT_VERSION  
   clusterSigs=NULL;
   #else
-  cluster=NULL;
-  clusterSize=NULL;
+  cluster=NULL;  
   #endif
+  clusterSize=NULL;
 
   exPressureAtomFlags=NULL;
   rigidBondLengths=NULL;
@@ -451,10 +451,10 @@ Molecule::~Molecule()
   }  
   #else
   if (cluster != NULL)
-       delete [] cluster;
+       delete [] cluster;  
+  #endif
   if (clusterSize != NULL)
        delete [] clusterSize;
-  #endif
 
   if (exPressureAtomFlags != NULL)
        delete [] exPressureAtomFlags;
@@ -845,6 +845,17 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
 
     char strBuf[12];
 
+    //first check compressed psf file format version
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "FORMAT VERSION")) {
+        NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
+    }
+    float psfVer = 0.0f;
+    sscanf(buffer, "FORMAT VERSION: %f\n", &psfVer);
+    if(fabs(psfVer - COMPRESSED_PSF_VER)>1e-6) {
+        NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
+    }
+
     //Begin reading constant pools for atoms' basic information
     //1. segment names
     NAMD_read_line(psf_file, buffer);
@@ -1057,6 +1068,23 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         modExcls.clear();
     }
 
+    //Now read the cluster information
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NCLUSTERS")) {
+        NAMD_die("UNABLE TO FIND NCLUSTERS");
+    }
+    sscanf(buffer, "%d", &numClusters);
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "CLUSTERCONTIGUITY")) {
+        NAMD_die("UNABLE TO FIND CLUSTERCONTIGUITY");
+    }
+    sscanf(buffer, "%d", &isClusterContiguous);
+    if(!isClusterContiguous) {
+        clusterSize = new int32[numClusters];
+        memset(clusterSize, 0, sizeof(int32)*numClusters);
+    }
+
     //Now begin to read atoms
     //This part could be read in the batch mode. All the above information
     //can be stored in memory which only occupies several KBs.
@@ -1106,6 +1134,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             eachAtomExclSig[i] = (Index)idx[8];
 
             clusterSigs[i] = idx[9];
+            if(!isClusterContiguous)
+                clusterSize[idx[9]]++;           
 
 	    //debugExclNum += (exclSigPool[idx[8]].fullExclCnt+exclSigPool[idx[8]].modExclCnt);
 

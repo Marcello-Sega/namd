@@ -133,32 +133,56 @@ void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
   Molecule *molecule = Node::Object()->molecule;
   int n = molecule->numAtoms;
 #ifdef MEM_OPT_VERSION
-  //iterate over every cluster
-  for(int aid=0; aid<n;){
-      int curClusterSize = molecule->get_cluster_size(aid);
-      if(curClusterSize<0) NAMD_bug("Cluster size is less than 0 at wrap_coor_int");
-      //we encountered the beginning of a cluster, and aid is the current cluster id          
-      Position curClusterCon = 0;
-      //This cluster begins from atom "aid" to atom "aid+curClusterSize-1"
-      for(int i=aid; i<aid+curClusterSize; i++){
-          curClusterCon += coor[i];
+  if(molecule->get_cluster_contiguity()) {
+      //the general case where the atom ids of a cluster are contiguous
+      //iterate over every cluster
+      for(int aid=0; aid<n;){
+          int curClusterSize = molecule->get_cluster_size_con(aid);
+          if(curClusterSize<0) NAMD_bug("Cluster size is less than 0 at wrap_coor_int");
+          //we encountered the beginning of a cluster, and aid is the current cluster id          
+          Position curClusterCon = 0;
+          //This cluster begins from atom "aid" to atom "aid+curClusterSize-1"
+          for(int i=aid; i<aid+curClusterSize; i++){
+              curClusterCon += coor[i];
+          }
+    
+          //The order of evaluating the following if-condition is very important since it
+          //is related with reducting memory usage. Two points worth noting:
+          //1. molecule->is_water is more expensive to evaluate, so evaluatte wrapAll first
+          //2. if molecule->is_water is actually called, we have to reserve a memory space (O(numAtoms)) 
+          //   for its correctness
+          if(wrapAll || molecule->is_water(aid)){
+              Vector coni = curClusterCon/curClusterSize;
+              Vector trans = ( wrapNearest ? lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni));
+              curClusterCon = trans;
+          }
+          for(int i=aid; i<aid+curClusterSize; i++){
+              if(!wrapAll && !molecule->is_water(i)) continue;
+              coor[i] = coor[i] + curClusterCon;
+          }
+          aid += curClusterSize;
+      }
+  }else{
+      int numClusters = molecule->get_num_clusters();
+      Position *con = new Position[numClusters];
+      for(int i=0; i<numClusters; i++) con[i] = 0;
+      for(int i=0; i<n; i++) {
+          int ci = molecule->get_cluster_idx(i);
+          con[ci] += coor[i];
       }
 
-      //The order of evaluating the following if-condition is very important since it
-      //is related with reducting memory usage. Two points worth noting:
-      //1. molecule->is_water is more expensive to evaluate, so evaluatte wrapAll first
-      //2. if molecule->is_water is actually called, we have to reserve a memory space (O(numAtoms)) 
-      //   for its correctness
-      if(wrapAll || molecule->is_water(aid)){
-          Vector coni = curClusterCon/curClusterSize;
+      for(int i=0; i<numClusters; i++) {
+          Vector coni = con[i] / molecule->get_cluster_size_uncon(i);
           Vector trans = ( wrapNearest ? lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni));
-          curClusterCon = trans;
+          con[i] = trans;
       }
-      for(int i=aid; i<aid+curClusterSize; i++){
-          if(!wrapAll && !molecule->is_water(i)) continue;
-          coor[i] = coor[i] + curClusterCon;
+
+      for (int i = 0; i < n; ++i ) {
+          if ( ! wrapAll && ! molecule->is_water(i) ) continue;
+          int ci = molecule->get_cluster_idx(i);
+          coor[i] = coor[i] + con[ci];
       }
-      aid += curClusterSize;
+      delete [] con;    
   }
 #else
   int i;

@@ -200,15 +200,23 @@ private:
   int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
 
   #ifdef MEM_OPT_VERSION  
-  //Assumption: all atoms are arranged in the order of clusters. In other words,
+  //A generally true assumption: all atoms are arranged in the order of clusters. In other words,
   //all atoms for a cluster must appear before/after any atoms in other clusters
   //The first atom in the cluster (which has the lowest atom id) stores the cluster size
   //other atoms in the cluster stores -1
   int32 *clusterSigs;
+  int32 numClusters;
+  //indicate whether the atom ids of a cluster are contiguous. If not, then
+  //the general true assumption above mentioned will not hold. 
+  int32 isClusterContiguous;
   #else
         int32 *cluster;   //  first atom of connected cluster
-        int32 *clusterSize; //  size of connected cluster or 0
   #endif
+  //In the memory optimized version: it will be NULL if the general
+  //true assumption mentioned above holds. If not, its size is numClusters.
+  //In the ordinary version: its size is numAtoms, and indicates the size
+  //of connected cluster or 0.
+  int32 *clusterSize;
                             // 
         Real *rigidBondLengths;  //  if H, length to parent or 0. or
         //  if not H, length between children or 0.
@@ -494,7 +502,15 @@ public:
         int get_mother_atom(int);  // return mother atom of a hydrogen
 
   #ifdef MEM_OPT_VERSION
-  int get_cluster_size(int idx) const { return clusterSigs[idx]; }  
+  //the way to get the cluster size if the atom ids of the cluster are
+  //contiguous. The input parameter is the atom id that leads the cluster.
+  int get_cluster_size_con(int aid) const { return clusterSigs[aid]; }  
+  //the way to get the cluster size if the atoms ids of the cluster are
+  //not contiguous. The input parameter is the cluster index.
+  int get_cluster_size_uncon(int cIdx) const { return clusterSize[cIdx]; }
+  int get_cluster_idx(int aid) const { return clusterSigs[aid]; }
+  int get_num_clusters() const { return numClusters; }
+  int get_cluster_contiguity() { return isClusterContiguous; }
   #else
   int get_cluster(int anum) const { return cluster[anum]; }
   int get_clusterSize(int anum) const { return clusterSize[anum]; }

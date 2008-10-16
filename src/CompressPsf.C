@@ -215,6 +215,9 @@ BasicAtomInfo *atomData;
 //Recording cluster information after reading all bonds info
 int *eachAtomClusterID = NULL;
 vector<int> eachClusterSize;
+int g_numClusters = 0;
+//indicate whether the atom ids in a cluster are contiguous or not
+int g_isClusterContiguous = 0;
 
 vector<TupleSignature> sigsOfBonds;
 vector<TupleSignature> sigsOfAngles;
@@ -691,6 +694,7 @@ void integrateAllAtomSigs()
 
 void outputPsfFile(FILE *ofp)
 {
+    fprintf(ofp, "FORMAT VERSION: %f\n", COMPRESSED_PSF_VER);
 
     fprintf(ofp, "%d !NSEGMENTNAMES\n", segNamePool.size());
     for(int i=0; i<segNamePool.size(); i++)
@@ -798,7 +802,11 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "\n");
     }
 
-    //3. Output atom info
+    //3. Output the cluster information
+    fprintf(ofp, "%d !NCLUSTERS\n", g_numClusters);
+    fprintf(ofp, "%d !CLUSTERCONTIGUITY\n", g_isClusterContiguous);
+
+    //4. Output atom info
     fprintf(ofp, "%d !NATOM\n", g_mol->numAtoms);
     for(int i=0; i<g_mol->numAtoms; i++)
     {
@@ -1378,12 +1386,16 @@ void getBondData(FILE *fd)
         }
     }
 
-    //Now the clusterID of each atom should be in the non-decreasing order, otherwise
-    //report a psf format error. Well, it's not a real problem, it can be fixed the problem
-    //later. Here, such assumption is made for the ease of programming
+    //Now the clusterID of each atom should be usually in the non-decreasing order.
+    //In other words, the atom ids of a cluster are generally contiguous.
+    //If this is the case, the temporary memory usage of output IO during
+    //the simulation can be dramatically reduced. So g_isClusterContiguous
+    //is used to differentiate the two cases
+
     int curClusterID;
     int prevClusterID=eachAtomClusterID[0];
     int curClusterSize=1;
+    g_isClusterContiguous = 1;
     for(int i=1; i<g_mol->numAtoms; i++)
     {
         curClusterID = eachAtomClusterID[i];
@@ -1397,29 +1409,55 @@ void getBondData(FILE *fd)
             curClusterSize++;
         }
         else
-        { //psf format error
-            char errMsg[256];
-            sprintf(errMsg, "Cluster ID of each atom should be in increasing order (error for atom %d)!\n", i+1);
-            NAMD_die(errMsg);
+        { 
+            g_isClusterContiguous = 0;
+            break;
         }
         prevClusterID = curClusterID;
     }
-    eachClusterSize.push_back(curClusterSize); //record the last sequence of cluster
+
 
     //Now iterate over the cluster size again to filter out the repeating cluster size.
-    //Since the cluster id of atoms is monotonically increasing, the size of the cluster can be used
+    //There are two cases:
+    //1. if the cluster id of atoms is monotonically increasing, the size of the cluster can be used
     //as this cluster's signature.
     //After this, eachAtomClusterID will store the cluster signature. Only the atom whose id is "clustersize"
     //will store the size. Others will be -1
+    //2. if the cluster id of atoms is not monotonically increasing, in other words,
+    //the atom ids of a cluster are not contiguous, then eachAtomClusterID remains
+    //unchanged.
 
-    int aid=0;
-    for(int clusterIdx=0; clusterIdx<eachClusterSize.size(); clusterIdx++)
-    {
-        int curSize = eachClusterSize[clusterIdx];
-        eachAtomClusterID[aid] = curSize;
-        for(int i=aid+1; i<aid+curSize; i++)
-            eachAtomClusterID[i] = -1;
-        aid += curSize;
+    if(g_isClusterContiguous) {
+        eachClusterSize.push_back(curClusterSize); //record the last sequence of cluster
+        int aid=0;
+        for(int clusterIdx=0; clusterIdx<eachClusterSize.size(); clusterIdx++)
+        {
+            int curSize = eachClusterSize[clusterIdx];
+            eachAtomClusterID[aid] = curSize;
+            for(int i=aid+1; i<aid+curSize; i++)
+                eachAtomClusterID[i] = -1;
+            aid += curSize;
+        }
+        g_numClusters = eachClusterSize.size();
+        eachClusterSize.clear();
+    }else{
+        eachClusterSize.clear();
+        //reiterate over the atoms to figure out the number of clusters
+        char *clusters = new char[g_mol->numAtoms];
+        memset(clusters, 0, sizeof(char)*g_mol->numAtoms);
+        for(int i=0; i<g_mol->numAtoms; i++) {
+            clusters[eachAtomClusterID[i]] = 1;
+        }
+        
+        for(int zeroPos=0; zeroPos<g_mol->numAtoms; zeroPos++) {
+            if(clusters[zeroPos]==0) {
+                //since the cluster ids are contiguous integers starting from 0,
+                //if it becomes zero, we know the number of clusters is zeroPos
+                g_numClusters = zeroPos;
+                break;
+            }
+        }
+        delete [] clusters;
     }
 
     //check whether cluster is built correctly
@@ -1428,7 +1466,7 @@ void getBondData(FILE *fd)
     for(int i=0; i<g_mol->numAtoms; i++)  fprintf(checkFile, "%d\n", eachAtomClusterID[i]);
     fclose(checkFile);*/
 
-    eachClusterSize.clear();
+    
     for(int i=0; i<g_mol->numAtoms; i++)
         atomListOfBonded[i].clear();
     delete [] atomListOfBonded;
