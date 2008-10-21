@@ -1184,6 +1184,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     numTotalExclusions /= 2;
 
     //read extra bond parameters if there is an input of extra bonds (extraBondsOn is true)
+    int extraDihedralParamNum = 0;
+    int extraImproperParamNum = 0;
     if(simParams->extraBondsOn){
         int numExtraParams=0;
 
@@ -1217,17 +1219,53 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         }
         sscanf(buffer, "%d", &numExtraParams);
         if(numExtraParams>0){
-            NAMD_die("CURRENTLY NOT SUPPORT EXTRA ANGLES");
-        }
+            AngleValue *newParams = new AngleValue[params->NumAngleParams+numExtraParams];
+            memcpy(newParams, params->angle_array, params->NumAngleParams*sizeof(AngleValue));
+            delete [] params->angle_array;
 
+            int curNumPs = params->NumAngleParams;
+            for(int i=0; i<numExtraParams; i++) {
+                Real k, theta0, k_ub, r_ub;
+                NAMD_read_line(psf_file, buffer);
+                sscanf(buffer, "%f %f %f %f", &k, &theta0, &k_ub, &r_ub);
+                newParams[curNumPs+i].k = k;
+                newParams[curNumPs+i].theta0 = theta0;
+                newParams[curNumPs+i].k_ub = k_ub;
+                newParams[curNumPs+i].r_ub = r_ub;
+            }
+            params->angle_array = newParams;
+            params->NumAngleParams += numExtraParams;
+        }
+        
         //read extra diheral params
         NAMD_read_line(psf_file, buffer);
         if(!NAMD_find_word(buffer, "NEXTRADIHEDRALPARAMS")){
             NAMD_die("UNABLE TO FIND NEXTRADIHEDRALPARAMS");
         }
         sscanf(buffer, "%d", &numExtraParams);
+        extraDihedralParamNum = numExtraParams;
         if(numExtraParams>0){
-            NAMD_die("CURRENTLY NOT SUPPORT EXTRA DIHEDRALS");
+            DihedralValue *newParams = new DihedralValue[params->NumDihedralParams+numExtraParams];
+            memcpy(newParams, params->dihedral_array, params->NumDihedralParams*sizeof(DihedralValue));
+            delete [] params->dihedral_array;
+
+            int curNumPs = params->NumDihedralParams;
+            for(int i=0; i<numExtraParams; i++) {
+                int multiplicity;
+                Real k, delta;
+                int n;
+                NAMD_read_line(psf_file, buffer); //read multiplicity
+                sscanf(buffer, "%d", &multiplicity);
+                newParams[curNumPs+i].multiplicity = multiplicity;
+                for(int j=0; j<multiplicity; j++) {
+                    NAMD_read_line(psf_file, buffer);
+                    sscanf(buffer, "%f %d %f", &k, &n, &delta);
+                    newParams[curNumPs+i].values[j].k = k;
+                    newParams[curNumPs+i].values[j].n = n;
+                    newParams[curNumPs+i].values[j].delta = delta;
+                }
+            }
+            params->dihedral_array = newParams;
         }
 
         //read extra improper params
@@ -1236,8 +1274,29 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             NAMD_die("UNABLE TO FIND NEXTRAIMPROPERPARAMS");
         }
         sscanf(buffer, "%d", &numExtraParams);
+        extraImproperParamNum = numExtraParams;
         if(numExtraParams>0){
-            NAMD_die("CURRENTLY NOT SUPPORT EXTRA IMPROPERS");
+            ImproperValue *newParams = new ImproperValue[params->NumImproperParams+numExtraParams];
+            memcpy(newParams, params->improper_array, params->NumImproperParams*sizeof(ImproperValue));
+            delete [] params->improper_array;
+
+            int curNumPs = params->NumImproperParams;
+            for(int i=0; i<numExtraParams; i++) {
+                int multiplicity;
+                Real k, delta;
+                int n;
+                NAMD_read_line(psf_file, buffer); //read multiplicity
+                sscanf(buffer, "%d", &multiplicity);
+                newParams[curNumPs+i].multiplicity = multiplicity;
+                for(int j=0; j<multiplicity; j++) {
+                    NAMD_read_line(psf_file, buffer);
+                    sscanf(buffer, "%f %d %f", &k, &n, &delta);
+                    newParams[curNumPs+i].values[j].k = k;
+                    newParams[curNumPs+i].values[j].n = n;
+                    newParams[curNumPs+i].values[j].delta = delta;
+                }
+            }
+            params->improper_array = newParams;
         }
     }
 
@@ -1248,6 +1307,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     for(int i=0; i<params->NumDihedralParams; i++){
         params->dihedral_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
+    params->NumDihedralParams += extraDihedralParamNum;
 
     NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line 
     NAMD_read_line(psf_file, buffer);
@@ -1256,7 +1316,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     for(int i=0; i<params->NumImproperParams; i++){
         params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
-
+    params->NumImproperParams += extraImproperParamNum;
     Fclose(psf_file);
 
     //numRealBonds is set when reading bondSignatures from compressed psf file

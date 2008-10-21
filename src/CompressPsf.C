@@ -47,13 +47,14 @@ struct BasicAtomInfo
     int exclSigIdx;
 };
 
+typedef unsigned short SigIndex;
 struct AtomSigInfo
 {
-    vector<short> bondSigIndices;
-    vector<short> angleSigIndices;
-    vector<short> dihedralSigIndices;
-    vector<short> improperSigIndices;
-    vector<short> crosstermSigIndices;
+    vector<SigIndex> bondSigIndices;
+    vector<SigIndex> angleSigIndices;
+    vector<SigIndex> dihedralSigIndices;
+    vector<SigIndex> improperSigIndices;
+    vector<SigIndex> crosstermSigIndices;
 
     AtomSigInfo()
     {}
@@ -741,7 +742,7 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d !%sSIGS\n", oneTypeCnt, "NBOND");
         for(int j=0; j<oneTypeCnt; j++)
         {
-            short idx = oneAtomSig.bondSigIndices[j];
+            SigIndex idx = oneAtomSig.bondSigIndices[j];
             TupleSignature& tSig = sigsOfBonds[idx];
             tSig.output(ofp);
         }
@@ -750,7 +751,7 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d !%sSIGS\n", oneTypeCnt, "NTHETA");
         for(int j=0; j<oneTypeCnt; j++)
         {
-            short idx = oneAtomSig.angleSigIndices[j];
+            SigIndex idx = oneAtomSig.angleSigIndices[j];
             TupleSignature& tSig = sigsOfAngles[idx];
             tSig.output(ofp);
         }
@@ -759,7 +760,7 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d !%sSIGS\n", oneTypeCnt, "NPHI");
         for(int j=0; j<oneTypeCnt; j++)
         {
-            short idx = oneAtomSig.dihedralSigIndices[j];
+            SigIndex idx = oneAtomSig.dihedralSigIndices[j];
             TupleSignature& tSig = sigsOfDihedrals[idx];
             tSig.output(ofp);
         }
@@ -768,7 +769,7 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d !%sSIGS\n", oneTypeCnt, "NIMPHI");
         for(int j=0; j<oneTypeCnt; j++)
         {
-            short idx = oneAtomSig.improperSigIndices[j];
+            SigIndex idx = oneAtomSig.improperSigIndices[j];
             TupleSignature& tSig = sigsOfImpropers[idx];
             tSig.output(ofp);
         }
@@ -777,7 +778,7 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d !%sSIGS\n", oneTypeCnt, "NCRTERM");
         for(int j=0; j<oneTypeCnt; j++)
         {
-            short idx = oneAtomSig.crosstermSigIndices[j];
+            SigIndex idx = oneAtomSig.crosstermSigIndices[j];
             TupleSignature& tSig = sigsOfCrossterms[idx];
             tSig.output(ofp);
         }
@@ -839,7 +840,11 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d!NEXTRAANGLEPARAMS\n", numExtraParams);
         if(numExtraParams>0)
         {
-            NAMD_die("Output extra angle params not implemented!");
+            vector<AngleValue>::iterator apIter;
+            for(apIter=extraAngleParams.begin(); apIter!=extraAngleParams.end(); apIter++)
+            {
+                fprintf(ofp, "%f %f %f %f\n", apIter->k, apIter->theta0, apIter->k_ub, apIter->r_ub);
+            }
         }
 
         // 3) output extra params for dihedrals
@@ -847,7 +852,14 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d!NEXTRADIHEDRALPARAMS\n", numExtraParams);
         if(numExtraParams>0)
         {
-            NAMD_die("Output extra dihedral params not implemented!");
+            vector<DihedralValue>::iterator dpIter;
+            for(dpIter=extraDihedralParams.begin(); dpIter!=extraDihedralParams.end(); dpIter++)
+            {
+                fprintf(ofp, "%d\n", dpIter->multiplicity);
+                for(int i=0; i<dpIter->multiplicity; i++) {
+                    fprintf(ofp, "%f %d %f\n", dpIter->values[i].k, dpIter->values[i].n, dpIter->values[i].delta);
+                }                
+            }
         }
 
         // 4) output extra params for impropers
@@ -855,7 +867,14 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d!NEXTRAIMPROPERPARAMS\n", numExtraParams);
         if(numExtraParams>0)
         {
-            NAMD_die("Output extra improper params not implemented!");
+            vector<ImproperValue>::iterator ipIter;
+            for(ipIter=extraImproperParams.begin(); ipIter!=extraImproperParams.end(); ipIter++)
+            {
+                fprintf(ofp, "%d\n", ipIter->multiplicity);
+                for(int i=0; i<ipIter->multiplicity; i++) {
+                    fprintf(ofp, "%f %d %f\n", ipIter->values[i].k, ipIter->values[i].n, ipIter->values[i].delta);
+                }                
+            }
         }
     }
 
@@ -1302,13 +1321,13 @@ void getBondData(FILE *fd)
         if(poolIndex == -1)
         {
             sigsOfBonds.push_back(oneSig);
-            poolIndex = (short)sigsOfBonds.size()-1;
+            poolIndex = (SigIndex)sigsOfBonds.size()-1;
             newSig=1;
         }
 
         if(!newSig)
         {//check duplicate bonds in the form of (a, b) && (a, b);
-            int dupIdx = lookupCstPool(eachAtomSigs[b->atom1].bondSigIndices, (short)poolIndex);
+            int dupIdx = lookupCstPool(eachAtomSigs[b->atom1].bondSigIndices, (SigIndex)poolIndex);
             if(dupIdx!=-1)
             {
                 char err_msg[128];
@@ -1327,7 +1346,7 @@ void getBondData(FILE *fd)
         int thisOffset = atom2 - b->atom1;
         for(int j=0; j<eachAtomSigs[atom2].bondSigIndices.size(); j++)
         {
-            short atom2BondId = eachAtomSigs[atom2].bondSigIndices[j];
+            SigIndex atom2BondId = eachAtomSigs[atom2].bondSigIndices[j];
             TupleSignature *secSig = &(sigsOfBonds[atom2BondId]);
             if(thisOffset== -(secSig->offset[0]))
             {
@@ -1586,7 +1605,7 @@ void getAngleData(FILE *fd)
         if(poolIndex == -1)
         {
             sigsOfAngles.push_back(oneSig);
-            poolIndex = (short)sigsOfAngles.size()-1;
+            poolIndex = (SigIndex)sigsOfAngles.size()-1;
         }
         eachAtomSigs[tuple->atom1].angleSigIndices.push_back(poolIndex);
     }
@@ -1726,7 +1745,7 @@ void getDihedralData(FILE *fd)
         if(poolIndex == -1)
         {
             sigsOfDihedrals.push_back(oneSig);
-            poolIndex = (short)sigsOfDihedrals.size()-1;
+            poolIndex = (SigIndex)sigsOfDihedrals.size()-1;
         }
         eachAtomSigs[tuple->atom1].dihedralSigIndices.push_back(poolIndex);
     }
@@ -1870,7 +1889,7 @@ void getImproperData(FILE *fd)
         if(poolIndex == -1)
         {
             sigsOfImpropers.push_back(oneSig);
-            poolIndex = (short)sigsOfImpropers.size()-1;
+            poolIndex = (SigIndex)sigsOfImpropers.size()-1;
         }
         eachAtomSigs[tuple->atom1].improperSigIndices.push_back(poolIndex);
     }
@@ -2123,7 +2142,7 @@ void getCrosstermData(FILE *fd)
     if(poolIndex == -1)
     {
       sigsOfCrossterms.push_back(oneSig);
-      poolIndex = (short)sigsOfCrossterms.size()-1;
+      poolIndex = (SigIndex)sigsOfCrossterms.size()-1;
     }
     eachAtomSigs[tuple->atom1].crosstermSigIndices.push_back(poolIndex);
   }

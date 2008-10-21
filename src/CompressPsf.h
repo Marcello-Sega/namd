@@ -6,7 +6,7 @@
 #include <deque>
 using namespace std;
 
-#define COMPRESSED_PSF_VER 1.2
+#define COMPRESSED_PSF_VER 1.3
 
 class Molecule;
 class Parameters;
