@@ -82,7 +82,7 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   const Position & pos3 = p[2]->x[localIndex[2]].position;
   Vector r32 = lattice.delta(pos3,pos2);
   register BigReal d32inv = r32.rlength();
-  Real normal = value->normal;
+  int normal = value->normal;
 
   BigReal cos_theta = (r12*r32)*(d12inv*d32inv);
   //  Make sure that the cosine value is acceptable.  With roundoff, you
@@ -105,13 +105,14 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
   } else {
     diff = cos_theta - cos(theta0);
   }
-
+  
   //  Add the energy from this angle to the total energy
   BigReal energy = k *diff*diff;
 
   //  Normalize vector r12 and r32
   //BigReal d12inv = 1. / d12;
   //BigReal d32inv = 1. / d32;
+
 
   //  Calculate constant factor 2k(theta-theta0)/sin(theta)
   BigReal sin_theta = sqrt(1.0 - cos_theta*cos_theta);
@@ -123,7 +124,9 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
     // and at least avoids small division for other values
     if ( diff < 0. ) diff = 2.0 * k;
     else diff = -2.0 * k;
-  } else { diff *= (-2.0* k) / sin_theta; }
+  } else { 
+    diff *= (-2.0* k) / sin_theta; 
+  }
   BigReal c1 = diff * d12inv;
   BigReal c2 = diff * d32inv;
 
