@@ -76,6 +76,13 @@ extern "C" void CApplicationInit();
 #include "CollectionMaster.decl.h"
 #endif
 
+#if USE_HPM
+extern "C" void HPM_Init(int);
+extern "C" void HPM_Start(char *label, int);
+extern "C" void HPM_Stop(char *label, int);
+extern "C" void HPM_Print(int, int);
+#endif
+
 //======================================================================
 // Public Functions
 
@@ -114,6 +121,14 @@ Node::Node(GroupInitMsg *msg)
   state = NULL;
   output = NULL;
   imd = new IMDOutput;
+
+#if USE_HPM
+  // assumes that this will be done only on BG/P
+  TopoManager *tmgr = new TopoManager();
+  int x, y, z;
+  tmgr->rankToCoordinates(CkMyPe(), x, y, z, localRankOnNode);
+  delete tmgr;
+#endif
 
   DebugM(4,"Creating PatchMap, AtomMap, ComputeMap\n");
   patchMap = PatchMap::Instance();
@@ -216,6 +231,10 @@ void Node::startup() {
     simParameters = node_simParameters;
     parameters = node_parameters;
     molecule = node_molecule;
+
+    #if USE_HPM
+    HPM_Init(localRankOnNode);
+    #endif
 
     #ifdef MEM_OPT_VERSION
     //Allocate CollectionMaster which handles I/O depending on the shiftIOToOne parameter
@@ -682,6 +701,20 @@ void Node::saveMolDataPointers(NamdState *state)
   this->configList = state->configList;
   this->pdb = state->pdb;
   this->state = state;
+}
+
+// entry methods for BG/P HPM (performance counters) library
+void Node::startHPM() {
+#if USE_HPM
+  HPM_Start("500 steps", localRankOnNode);
+#endif
+}
+
+void Node::stopHPM() {
+#if USE_HPM
+  HPM_Stop("500 steps", localRankOnNode);
+  HPM_Print(CkMyPe(), localRankOnNode);
+#endif
 }
 
 //======================================================================

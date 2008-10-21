@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dhardy $
- * $Date: 2008/10/01 21:33:05 $
- * $Revision: 1.1170 $
+ * $Author: bhatele $
+ * $Date: 2008/10/21 20:54:04 $
+ * $Revision: 1.1171 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -34,6 +34,11 @@
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
+
+#if USE_HPM
+#define START_HPM_STEP  1000
+#define STOP_HPM_STEP   1500
+#endif
 
 Sequencer::Sequencer(HomePatch *p) :
 	simParams(Node::Object()->simParameters),
@@ -374,6 +379,14 @@ void Sequencer::integrate() {
 #if PME_BARRIER
 	// a step before PME
         cycleBarrier(dofull && !((step+1)%fullElectFrequency),step);
+#endif
+
+#if USE_HPM
+        if(step == START_HPM_STEP)
+          (CProxy_Node(CkpvAccess(BOCclass_group).node)).startHPM();
+
+        if(step == STOP_HPM_STEP)
+          (CProxy_Node(CkpvAccess(BOCclass_group).node)).stopHPM();
 #endif
     }
 }

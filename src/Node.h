@@ -123,6 +123,10 @@ public:
   void sendCharmArrProxies(AllCharmArrsMsg *msg);
   //#endif
 
+  // entry methods for BG/P HPM (performance counters) library
+  void startHPM();
+  void stopHPM();
+
   // Made public for pmeAid;
   WorkDistrib *workDistrib;
 
@@ -176,7 +180,8 @@ private:
   ScriptTcl *script;
 
   // Startup phase
-  int startupPhase;  
+  int startupPhase;
+  int localRankOnNode;
 };
 
 #endif /* _NODE_H */

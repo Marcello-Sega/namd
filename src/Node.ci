@@ -36,7 +36,9 @@ module Node {
     entry void earlyExit(CkQdMsg *);
       
     entry void sendCharmArrProxies(AllCharmArrsMsg *);
-    
+
+    entry void startHPM();
+    entry void stopHPM();
   };
 }
 
