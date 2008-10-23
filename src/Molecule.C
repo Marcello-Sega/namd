@@ -32,6 +32,8 @@
 #include "charm++.h"
 /* BEGIN gf */
 #include "GridForceGrid.h"
+
+#include "MGridforceParams.h"
 /* END gf */
 
 #define MIN_DEBUG_LEVEL 3
@@ -246,6 +248,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   gridfrcIndexes=NULL;
   gridfrcParams=NULL;
   gridfrcGrid=NULL;
+  numGridforces=NULL;
   /* END gf */
   stirIndexes=NULL;
   stirParams=NULL;
@@ -2623,16 +2626,20 @@ void Molecule::send_Molecule(Communicate *com_obj)
       
       /* BEGIN gf */
       // Send the gridforce information, if used
-      if (simParams->gridforceOn)
+      if (simParams->mgridforceOn)
       {
 	 DebugM(3, "Sending gridforce info\n");
-	 msg->put(numGridforces);
-	 msg->put(numAtoms, gridfrcIndexes);
-	 if (numGridforces)
-	 {
-	     msg->put(numGridforces*sizeof(GridforceParams), (char*)gridfrcParams);
+	 msg->put(numGridforceGrids);
+	 
+	 for (int grid = 0; grid < numGridforceGrids; grid++) {
+	     msg->put(numGridforces[grid]);
+	     msg->put(numAtoms, gridfrcIndexes[grid]);
+	     if (numGridforces[grid])
+	     {
+		 msg->put(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
+	     }
+	     gridfrcGrid[grid]->pack(msg);	// grid object writes its private data to message itself
 	 }
-	 gridfrcGrid->pack(msg);	// grid object writes its private data to message itself
       }
       /* END gf */
 
@@ -2923,24 +2930,37 @@ void Molecule::receive_Molecule(MIStream *msg)
       }
 
       /* BEGIN gf */
-      if (simParams->gridforceOn)
+      if (simParams->mgridforceOn)
       {
 	 DebugM(3, "Receiving gridforce info\n");
-	 msg->get(numGridforces);
 	 
-	 delete [] gridfrcIndexes;
-	 gridfrcIndexes = new int32[numAtoms];
-	 msg->get(numAtoms, gridfrcIndexes);
+	 msg->get(numGridforceGrids);
 	 
-	 if (numGridforces)
-	 {
-	     delete [] gridfrcParams;
-	     gridfrcParams = new GridforceParams[numGridforces];
-	     msg->get(numGridforces*sizeof(GridforceParams), (char*)gridfrcParams);
+	 delete [] numGridforces;
+	 numGridforces = new int[numGridforceGrids];
+	 
+	 delete [] gridfrcIndexes;	// Should I be deleting elements of these first?
+	 delete [] gridfrcParams;
+	 delete [] gridfrcGrid;
+	 gridfrcIndexes = new int32*[numGridforceGrids];
+	 gridfrcParams = new GridforceParams*[numGridforceGrids];
+	 gridfrcGrid = new GridforceGrid*[numGridforceGrids];
+	 
+	 for (int grid = 0; grid < numGridforceGrids; grid++) {
+	     msg->get(numGridforces[grid]);
+	     
+	     gridfrcIndexes[grid] = new int32[numAtoms];
+	     msg->get(numAtoms, gridfrcIndexes[grid]);
+	 
+	     if (numGridforces[grid])
+	     {
+		 gridfrcParams[grid] = new GridforceParams[numGridforces[grid]];
+		 msg->get(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
+	     }
+	     
+	     gridfrcGrid[grid] = new GridforceGrid();
+	     gridfrcGrid[grid]->unpack(msg);
 	 }
-	 
-	 gridfrcGrid = new GridforceGrid();
-	 gridfrcGrid->unpack(msg);
       }
       /* END gf */
       
@@ -4524,277 +4544,288 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     register int i;		//  Loop counters
     register int j;
     register int k;
-    int current_index=0;	//  Index into values used
-    int kcol = 5;		//  Column to look for force constant in
-    int qcol = 0;		//  Column for charge (default 0: use electric charge)
-    Real kval = 0;		//  Force constant value retreived
-    char filename[129];		//  PDB filename
-    char potfilename[129];	//  Potential file name
-    
-    DebugM(3,  "Entered build_gridforce_params ...\n");
+
+    DebugM(3,  "Entered build_gridforce_params multi...\n");
 //     DebugM(3, "\tgridfrcfile = " << gridfrcfile->data << endi);
 //     DebugM(3, "\tgridfrccol = " << gridfrccol->data << endi);
-
-    if (gridfrcfile == NULL)
-    {
-	kPDB = initial_pdb;
+    
+    MGridforceParams* mgridParams = simParams->mgridforcelist.get_first();
+    numGridforceGrids = 0;
+    while (mgridParams != NULL) {
+	numGridforceGrids++;
+	mgridParams = mgridParams->next;
     }
-    else
-    {
-	if (gridfrcfile->next != NULL)
-	{
-	    NAMD_die("Multiple definitions of gridforcefile in configuration file");
-	}
-	 
-	if ( (cwd == NULL) || (gridfrcfile->data[0] == '/') )
-	{
-	    strcpy(filename, gridfrcfile->data);
-	}
-	else
-	{
-	    strcpy(filename, cwd);
-	    strcat(filename, gridfrcfile->data);
+    
+    gridfrcIndexes = new int32*[numGridforceGrids];
+    gridfrcParams = new GridforceParams*[numGridforceGrids];
+    gridfrcGrid = new GridforceGrid*[numGridforceGrids];
+    numGridforces = new int[numGridforceGrids];
+    
+    mgridParams = simParams->mgridforcelist.get_first();
+    for (int gridnum = 0; gridnum < numGridforceGrids; gridnum++) {
+	int current_index=0;	//  Index into values used
+	int kcol = 5;		//  Column to look for force constant in
+	int qcol = 0;		//  Column for charge (default 0: use electric charge)
+	Real kval = 0;		//  Force constant value retreived
+	char filename[129];	//  PDB filename
+	char potfilename[129];	//  Potential file name
+	
+	if (mgridParams == NULL) {
+	    NAMD_die("Problem with mgridParams!");
 	}
 	
-	kPDB = new PDB(filename);
-	if ( kPDB == NULL )
+	// Now load values from mgridforcelist object
+	if (mgridParams->gridforceFile == NULL)
 	{
-	    NAMD_die("Memory allocation failed in Molecule::build_gridforce_params");
+	    kPDB = initial_pdb;
 	}
+	else
+	{
+	    DebugM(4, "mgridParams->gridforceFile = " << mgridParams->gridforceFile << "\n" << endi);
+	    
+	    if ( (cwd == NULL) || (mgridParams->gridforceFile[0] == '/') )
+	    {
+		strcpy(filename, mgridParams->gridforceFile);
+	    }
+	    else
+	    {
+		strcpy(filename, cwd);
+		strcat(filename, mgridParams->gridforceFile);
+	    }
+	
+	    kPDB = new PDB(filename);
+	    if ( kPDB == NULL )
+	    {
+		NAMD_die("Memory allocation failed in Molecule::build_gridforce_params");
+	    }
 	   
-	if (kPDB->num_atoms() != numAtoms)
-	{
-	    NAMD_die("Number of atoms in grid force PDB doesn't match coordinate PDB");
+	    if (kPDB->num_atoms() != numAtoms)
+	    {
+		NAMD_die("Number of atoms in grid force PDB doesn't match coordinate PDB");
+	    }
 	}
-    }
 
-    //  Get the column that the force constant is going to be in.  It
-    //  can be in any of the 5 floating point fields in the PDB, according
-    //  to what the user wants.  The allowable fields are X, Y, Z, O, or
-    //  B which correspond to the 1st, 2nd, ... 5th floating point fields.
-    //  The default is the 5th field, which is beta (temperature factor)
-    if (gridfrccol == NULL)
-    {
-	kcol = 5;
-    }
-    else
-    {
-	if (gridfrccol->next != NULL)
+	//  Get the column that the force constant is going to be in.  It
+	//  can be in any of the 5 floating point fields in the PDB, according
+	//  to what the user wants.  The allowable fields are X, Y, Z, O, or
+	//  B which correspond to the 1st, 2nd, ... 5th floating point fields.
+	//  The default is the 5th field, which is beta (temperature factor)
+	if (mgridParams->gridforceCol == NULL)
 	{
-	    NAMD_die("Multiple definitions of grid force column in config file");
-	}
-    
-	if (strcasecmp(gridfrccol->data, "X") == 0)
-	{
-	    kcol=1;
-	}
-	else if (strcasecmp(gridfrccol->data, "Y") == 0)
-	{
-	    kcol=2;
-	}
-	else if (strcasecmp(gridfrccol->data, "Z") == 0)
-	{
-	    kcol=3;
-	}
-	else if (strcasecmp(gridfrccol->data, "O") == 0)
-	{
-	    kcol=4;
-	}
-	else if (strcasecmp(gridfrccol->data, "B") == 0)
-	{
-	    kcol=5;
+	    kcol = 5;
 	}
 	else
 	{
-	    NAMD_die("gridforcecol must have value of X, Y, Z, O, or B");
+	    if (strcasecmp(mgridParams->gridforceCol, "X") == 0)
+	    {
+		kcol=1;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceCol, "Y") == 0)
+	    {
+		kcol=2;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceCol, "Z") == 0)
+	    {
+		kcol=3;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceCol, "O") == 0)
+	    {
+		kcol=4;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceCol, "B") == 0)
+	    {
+		kcol=5;
+	    }
+	    else
+	    {
+		NAMD_die("gridforcecol must have value of X, Y, Z, O, or B");
+	    }
 	}
-    }
     
-    //  Get the column that the charge is going to be in.
-    if (gridfrcchrgcol == NULL)
-    {
-	qcol = 0;	// Default: don't read charge from file, use electric charge
-    }
-    else
-    {
-	if (gridfrcchrgcol->next != NULL)
+	//  Get the column that the charge is going to be in.
+	if (mgridParams->gridforceQcol == NULL) // *** DON'T THINK THIS MAKES SENSE ***
 	{
-	    NAMD_die("Multiple definitions of grid force column in config file");
-	}
-    
-	if (strcasecmp(gridfrcchrgcol->data, "X") == 0)
-	{
-	    qcol=1;
-	}
-	else if (strcasecmp(gridfrcchrgcol->data, "Y") == 0)
-	{
-	    qcol=2;
-	}
-	else if (strcasecmp(gridfrcchrgcol->data, "Z") == 0)
-	{
-	    qcol=3;
-	}
-	else if (strcasecmp(gridfrcchrgcol->data, "O") == 0)
-	{
-	    qcol=4;
-	}
-	else if (strcasecmp(gridfrcchrgcol->data, "B") == 0)
-	{
-	    qcol=5;
+	    qcol = 0;	// Default: don't read charge from file, use electric charge
 	}
 	else
 	{
-	    NAMD_die("gridforceqcol must have value of X, Y, Z, O, or B");
+	    if (strcasecmp(mgridParams->gridforceQcol, "X") == 0)
+	    {
+		qcol=1;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceQcol, "Y") == 0)
+	    {
+		qcol=2;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceQcol, "Z") == 0)
+	    {
+		qcol=3;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceQcol, "O") == 0)
+	    {
+		qcol=4;
+	    }
+	    else if (strcasecmp(mgridParams->gridforceQcol, "B") == 0)
+	    {
+		qcol=5;
+	    }
+	    else
+	    {
+		NAMD_die("gridforceqcol must have value of X, Y, Z, O, or B");
+	    }
 	}
-    }
     
-    if (kcol == qcol) {
-	NAMD_die("gridforcecol and gridforceqcol cannot have same value");
-    }
+	if (kcol == qcol) {
+	    NAMD_die("gridforcecol and gridforceqcol cannot have same value");
+	}
 
     
-    //  Allocate an array that will store an index into the constraint
-    //  parameters for each atom.  If the atom is not constrained, its
-    //  value will be set to -1 in this array.
-    gridfrcIndexes = new int32[numAtoms];
+	//  Allocate an array that will store an index into the constraint
+	//  parameters for each atom.  If the atom is not constrained, its
+	//  value will be set to -1 in this array.
+	DebugM(4, "Here!\n" << endi);
+	gridfrcIndexes[gridnum] = new int32[numAtoms];
+	DebugM(4, "There!\n" << endi);
        
-    if (gridfrcIndexes == NULL)
-    {
-	NAMD_die("memory allocation failed in Molecule::build_gridforce_params()");
-    }
+	if (gridfrcIndexes[gridnum] == NULL)
+	{
+	    NAMD_die("memory allocation failed in Molecule::build_gridforce_params()");
+	}
 
-    //  Loop through all the atoms and find out which ones are constrained
-    for (i=0; i<numAtoms; i++)
-    {
-	//  Get the k value based on where we were told to find it
-	switch (kcol)
+	//  Loop through all the atoms and find out which ones are constrained
+	for (i=0; i<numAtoms; i++)
 	{
-	case 1:
-	    kval = (kPDB->atom(i))->xcoor();
-	    break;
-	case 2:
-	    kval = (kPDB->atom(i))->ycoor();
-	    break;
-	case 3:
-	    kval = (kPDB->atom(i))->zcoor();
-	    break;
-	case 4:
-	    kval = (kPDB->atom(i))->occupancy();
-	    break;
-	case 5:
-	    kval = (kPDB->atom(i))->temperaturefactor();
-	    break;
-	}
-	   
-	if (kval > 0.0)
-	{
-	    //  This atom is constrained
-	    gridfrcIndexes[i] = current_index;
-	    current_index++;
-	}
-	else
-	{
-	    //  This atom is not constrained
-	    gridfrcIndexes[i] = -1;
-	}
-    }
-    
-    if (current_index == 0)
-    {
-	//  Constraints were turned on, but there weren't really any constrained
-	iout << iWARN << "NO GRIDFORCE ATOMS WERE FOUND, BUT GRIDFORCE IS ON . . .\n" << endi;
-    }
-    else
-    {
-	//  Allocate an array to hold the constraint parameters
-        gridfrcParams = new GridforceParams[current_index];
-	if (gridfrcParams == NULL)
-	{
-	    NAMD_die("memory allocation failed in Molecule::build_gridforce_params");
-	}
-    }
-    
-    numGridforces = current_index;
-
-    //  Loop through all the atoms and assign the parameters for those
-    //  that are constrained
-    for (i=0; i<numAtoms; i++)
-    {
-	if (gridfrcIndexes[i] != -1)
-	{
-	    //  This atom has grid force, so get the k value again
+	    //  Get the k value based on where we were told to find it
 	    switch (kcol)
 	    {
 	    case 1:
-		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->xcoor();
+		kval = (kPDB->atom(i))->xcoor();
 		break;
 	    case 2:
-		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->ycoor();
+		kval = (kPDB->atom(i))->ycoor();
 		break;
 	    case 3:
-		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->zcoor();
+		kval = (kPDB->atom(i))->zcoor();
 		break;
 	    case 4:
-		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->occupancy();
+		kval = (kPDB->atom(i))->occupancy();
 		break;
 	    case 5:
-		gridfrcParams[gridfrcIndexes[i]].k = (kPDB->atom(i))->temperaturefactor();
+		kval = (kPDB->atom(i))->temperaturefactor();
 		break;
 	    }
-	    
-	    //  Also get charge column
-	    switch (qcol)
+	   
+	    if (kval > 0.0)
 	    {
-        case 0:
-#ifdef MEM_OPT_VERSION
-	    gridfrcParams[gridfrcIndexes[i]].q = atomChargePool[eachAtomCharge[i]];
-#else
-	    gridfrcParams[gridfrcIndexes[i]].q = atoms[i].charge;
-#endif
-		break;
-	    case 1:
-		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->xcoor();
-		break;
-	    case 2:
-		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->ycoor();
-		break;
-	    case 3:
-		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->zcoor();
-		break;
-	    case 4:
-		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->occupancy();
-		break;
-	    case 5:
-		gridfrcParams[gridfrcIndexes[i]].q = (kPDB->atom(i))->temperaturefactor();
-		break;
+		//  This atom is constrained
+		gridfrcIndexes[gridnum][i] = current_index;
+		current_index++;
+	    }
+	    else
+	    {
+		//  This atom is not constrained
+		gridfrcIndexes[gridnum][i] = -1;
 	    }
 	}
-    }
+    
+	if (current_index == 0)
+	{
+	    //  Constraints were turned on, but there weren't really any constrained
+	    iout << iWARN << "NO GRIDFORCE ATOMS WERE FOUND, BUT GRIDFORCE IS ON . . .\n" << endi;
+	}
+	else
+	{
+	    //  Allocate an array to hold the constraint parameters
+	    gridfrcParams[gridnum] = new GridforceParams[current_index];
+	    if (gridfrcParams[gridnum] == NULL)
+	    {
+		NAMD_die("memory allocation failed in Molecule::build_gridforce_params");
+	    }
+	}
+    
+	numGridforces[gridnum] = current_index;
+
+	//  Loop through all the atoms and assign the parameters for those
+	//  that are constrained
+	for (i=0; i<numAtoms; i++)
+	{
+	    if (gridfrcIndexes[gridnum][i] != -1)
+	    {
+		//  This atom has grid force, so get the k value again
+		switch (kcol)
+		{
+		case 1:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].k = (kPDB->atom(i))->xcoor();
+		    break;
+		case 2:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].k = (kPDB->atom(i))->ycoor();
+		    break;
+		case 3:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].k = (kPDB->atom(i))->zcoor();
+		    break;
+		case 4:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].k = (kPDB->atom(i))->occupancy();
+		    break;
+		case 5:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].k = (kPDB->atom(i))->temperaturefactor();
+		    break;
+		}
+	    
+		//  Also get charge column
+		switch (qcol)
+		{
+		case 0:
+#ifdef MEM_OPT_VERSION
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].q = atomChargePool[eachAtomCharge[i]];
+#else
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].q = atoms[i].charge;
+#endif
+		    break;
+		case 1:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].q = (kPDB->atom(i))->xcoor();
+		    break;
+		case 2:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].q = (kPDB->atom(i))->ycoor();
+		    break;
+		case 3:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].q = (kPDB->atom(i))->zcoor();
+		    break;
+		case 4:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].q = (kPDB->atom(i))->occupancy();
+		    break;
+		case 5:
+		    gridfrcParams[gridnum][gridfrcIndexes[gridnum][i]].q = (kPDB->atom(i))->temperaturefactor();
+		    break;
+		}
+	    }
+	}
        
-    //  If we had to create new PDB objects, delete them now
-    if (gridfrcfile != NULL)
-    {
-	delete kPDB;
-    }
+	//  If we had to create new PDB objects, delete them now
+	if (mgridParams->gridforceFile != NULL)
+	{
+	    delete kPDB;
+	}
     
-    //  Now we fill in our grid information
+	//  Now we fill in our grid information
     
-    // Open potential file
-    if ( (cwd == NULL) || (potfile->data[0] == '/') )
-    {
-	strcpy(potfilename, potfile->data);
-    }
-    else
-    {
-	strcpy(potfilename, cwd);
-	strcat(potfilename, potfile->data);
-    }
+	// Open potential file
+	if ( (cwd == NULL) || (mgridParams->gridforceVfile[0] == '/') )
+	{
+	    strcpy(potfilename, mgridParams->gridforceVfile);
+	}
+	else
+	{
+	    strcpy(potfilename, cwd);
+	    strcat(potfilename, mgridParams->gridforceVfile);
+	}
     
-    gridfrcGrid = new GridforceGrid();
-    gridfrcGrid->initialize(potfilename, simParams);
+	gridfrcGrid[gridnum] = new GridforceGrid();
+	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
+	
+	// Finally, get next mgridParams pointer
+	mgridParams = mgridParams->next;
+    }
 }
-
-
 /* END gf */
 
 

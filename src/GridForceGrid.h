@@ -13,6 +13,7 @@
 #include "NamdTypes.h"
 #include "MStream.h"
 
+#include "MGridforceParams.h"
 
 class GridforceGrid {
 public:
@@ -35,13 +36,14 @@ public:
     };
     typedef struct __box Box;
     
-    void initialize(char *potfilename, SimParameters *simParams);
+    void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
     int get_box(Box *box, Vector pos) const;
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
     
     inline Position get_center(void) const { return center; }
     inline Tensor get_inv(void) const { return inv; }
+    inline Vector get_scale(void) const { return scale; }
     
 private:
     float *grid;	// Actual grid
@@ -62,7 +64,9 @@ private:
     float gap[3];	// Gap between images of grid in grid units for each dimension
     float gapinv[3];	// 1.0/gap
     
-    enum {border = 3}; // Size of border (for generality)
+    Vector scale;
+    
+    static const int border = 3; // Size of border (for generality)
 };
 
 

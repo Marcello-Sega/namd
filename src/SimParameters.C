@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2008/09/26 22:21:08 $
- * $Revision: 1.1261 $
+ * $Author: brunner $
+ * $Date: 2008/10/23 22:04:34 $
+ * $Revision: 1.1262 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -166,11 +166,15 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("eFieldPhase",eFieldPhase) 
   SCRIPT_PARSE_VECTOR("stirAxis",stirAxis)
   SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
-  /* BEGIN gf */
-  SCRIPT_PARSE_VECTOR("gridforcescale",gridforceScale)
-  SCRIPT_PARSE_VECTOR("gridforcevoff",gridforceVOffset)
-  /* END gf */
-
+  if ( ! strncasecmp(param,"mgridforcescale",MAX_SCRIPT_PARAM_SIZE) ) {
+    NAMD_die("Can't yet modify mgridforcescale in a script");
+    return;
+  }
+  if ( ! strncasecmp(param,"mgridforcevoff",MAX_SCRIPT_PARAM_SIZE) ) {
+    NAMD_die("Can't yet modify mgridforcevoff in a script");
+    return;
+  }
+   
   if ( ! strncasecmp(param,"fixedatoms",MAX_SCRIPT_PARAM_SIZE) ) {
     if ( ! fixedAtomsOn )
       NAMD_die("FixedAtoms may not be enabled in a script.");
@@ -250,9 +254,9 @@ void SimParameters::config_parser(ParseOptions &opts) {
    config_parser_fullelect(opts);
    config_parser_methods(opts);
    config_parser_constraints(opts);
-   /* BEGIN gf */
+
    config_parser_gridforce(opts);
-   /* END gf */
+   config_parser_mgridforce(opts);
    config_parser_movdrag(opts);
    config_parser_rotdrag(opts);
    config_parser_constorque(opts);
@@ -1134,6 +1138,32 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
 
 /* BEGIN gf */
+void SimParameters::config_parser_mgridforce(ParseOptions &opts) {
+    //// Gridforce
+    opts.optionalB("main", "mgridforce", "Is Multiple gridforce active?", 
+		   &mgridforceOn, FALSE);
+    opts.optional("mgridforce", "mgridforcevolts", "Is Gridforce using Volts/eV as units?",
+                  PARSE_MULTIPLES);
+    opts.require("mgridforce", "mgridforcescale", "Scale factor by which to multiply "
+		 "grid forces", PARSE_MULTIPLES);
+    opts.require("mgridforce", "mgridforcefile", "PDB file containing force "
+		 "multipliers in one of the columns", PARSE_MULTIPLES);
+    opts.require("mgridforce", "mgridforcecol", "Column of gridforcefile to "
+		 "use for force multiplier", PARSE_MULTIPLES);
+    opts.optional("mgridforce", "mgridforceqcol", "Column of gridforcefile to "
+		  "use for charge", PARSE_MULTIPLES);
+    opts.require("mgridforce", "mgridforcevfile", "Gridforce potential file",
+		 PARSE_MULTIPLES);
+    opts.optional("mgridforce", "mgridforcecont1", "Use continuous grid "
+		   "in K1 direction?", PARSE_MULTIPLES);
+    opts.optional("mgridforce", "mgridforcecont2", "Use continuous grid "
+		   "in K2 direction?", PARSE_MULTIPLES);
+    opts.optional("mgridforce", "mgridforcecont3", "Use continuous grid "
+		   "in K3 direction?", PARSE_MULTIPLES);
+    opts.optional("mgridforce", "mgridforcevoff", "Gridforce potential offsets",
+                  PARSE_MULTIPLES);
+}
+
 void SimParameters::config_parser_gridforce(ParseOptions &opts) {
     //// Gridforce
     opts.optionalB("main", "gridforce", "Is Gridforce active?", 
@@ -1160,8 +1190,6 @@ void SimParameters::config_parser_gridforce(ParseOptions &opts) {
 		  &gridforceVOffset);
 }
 /* END gf */
-
-
 
 void SimParameters::config_parser_movdrag(ParseOptions &opts) {
    //// moving drag
@@ -2479,14 +2507,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      fixedAtomsForces = 0;
    }
 
-   /* BEGIN gf */
-   if (!opts.defined("gridforce"))
-   {
-      gridforceScale = Vector(0);
-      gridforceVOffset = Vector(0);
+   if ( gridforceOn || mgridforceOn ) {
+     parse_mgrid_params(config);
    }
-   /* END gf */
-
+      
    if (!opts.defined("constraints"))
    {
      constraintExp = 0;     
@@ -3095,33 +3119,15 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      
      iout << endi;
    }
-   
-   /* BEGIN gf */
-   if (gridforceOn) {
-     iout << iINFO << "GRID FORCE ACTIVE\n";
-     
-     if (gridforceVolts) {
-	 iout << iINFO << "GRID FORCE UNITS ARE VOLTS\n";
-     }
-     
-     iout << iINFO << "GRID FORCE SCALING     " << gridforceScale.x << ", "
-	  << gridforceScale.y << ", " << gridforceScale.z << "\n";
-     
-     if (gridforceContA1) {
-	 iout << iINFO << "GRID FORCE GRID CONTINUOUS IN A1 DIRECTION\n";
-     }
-     if (gridforceContA2) {
-	 iout << iINFO << "GRID FORCE GRID CONTINUOUS IN A2 DIRECTION\n";
-     }
-     if (gridforceContA3) {
-	 iout << iINFO << "GRID FORCE GRID CONTINUOUS IN A3 DIRECTION\n";
-     }
-     
-     iout << iINFO << "GRID FORCE OFFSET      " << gridforceVOffset.x << ", "
-	  << gridforceVOffset.y << ", " << gridforceVOffset.z << "\n";
-   }
-   /* END gf */
 
+   if (mgridforceOn) {
+     iout << iINFO << "GRID FORCE ACTIVE\n";
+     iout << iINFO << " Please include this reference in published work using\n";
+     iout << iINFO << " the Gridforce module of NAMD: David Wells, Volha Abramkina,\n";
+     iout << iINFO << " and Aleksei Aksimentiev, J. Chem. Phys. 127:125101-10 (2007).\n";
+     print_mgrid_params();
+   }
+   
    //****** BEGIN SMD constraints changes 
    
    if (SMDOn) {
@@ -3988,7 +3994,390 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
 }
 /*    END OF FUNCTION initialize_config_data    */
+   
+   
+/****************************************************************/
+/*                                                              */
+/*      FUNCTION parse_mgrid_params                             */
+/*                                                              */
+/*                                                              */
+/****************************************************************/
+void SimParameters::parse_mgrid_params(ConfigList *config)
+{
+  StringList *current;
 
+  mgridforcelist.clear();
+  char *key = new char[81];
+  char *valstr = new char[256];
+  // If the old gridforce commands are still in use, parse them too.
+  if (gridforceOn) {
+    mgridforceOn = TRUE;
+    char *default_key = "BaseGridForceParams";
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(default_key);
+    if (mgfp != NULL) {
+      iout << iINFO << "MGRIDFORCEVFILE key " 
+        << key << " redefined for file " << valstr << "\n" << endi;
+    } else {
+      mgfp = mgridforcelist.add(default_key);
+    }
+    mgfp->gridforceVolts = gridforceVolts;
+    mgfp->gridforceScale = gridforceScale;
+
+    parse_mgrid_string_param(config,"gridforcefile",&(mgfp->gridforceFile));
+    parse_mgrid_string_param(config,"gridforcecol",&(mgfp->gridforceCol));
+    parse_mgrid_string_param(config,"gridforceqcol",&(mgfp->gridforceQcol));
+    parse_mgrid_string_param(config,"gridforcevfile",&(mgfp->gridforceVfile));
+    
+    mgfp->gridforceCont[0] = gridforceContA1;
+    mgfp->gridforceCont[1] = gridforceContA2;
+    mgfp->gridforceCont[2] = gridforceContA3;
+    mgfp->gridforceVOffset = gridforceVOffset;
+  }
+  
+  // Create multigrid parameter structures
+  current = config->find("mgridforcevfile");
+  while (current != NULL) {
+    int curlen = strlen(current->data);
+    //    iout << iINFO << "MGRIDFORCEVFILE " << current->data 
+    //         << " " << curlen << "\n"  << endi;
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp != NULL) {
+      iout << iINFO << "MGRIDFORCEVFILE key " 
+        << key << " redefined for file " << valstr << "\n" << endi;
+    } else {
+      mgfp = mgridforcelist.add(key);
+    }
+    int fnamelen = strlen(valstr);
+    mgfp->gridforceVfile = new char[fnamelen+1];
+    strncpy(mgfp->gridforceVfile,valstr,fnamelen+1);
+    mgfp->gridforceScale.x = 
+      mgfp->gridforceScale.y = 
+        mgfp->gridforceScale.z = 1.;
+    mgfp->gridforceVOffset.x = 
+      mgfp->gridforceVOffset.y = 
+        mgfp->gridforceVOffset.z = 0.;
+    
+    current = current->next;
+  }
+
+  current = config->find("mgridforcefile");
+  while (current != NULL) {
+    int curlen = strlen(current->data);
+    //    iout << iINFO << "MGRIDFORCEFILE " << current->data          
+    //         << " " << curlen << "\n"  << endi;
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCEFILE no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+    } else {
+      int fnamelen = strlen(valstr);
+      if (mgfp->gridforceFile != NULL) {
+        delete [] mgfp->gridforceFile;
+      }
+      mgfp->gridforceFile = new char[fnamelen+1];
+      strncpy(mgfp->gridforceFile,valstr,fnamelen+1);
+    }
+
+    current = current->next;
+  }
+  
+  current = config->find("mgridforcevolts");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCEVOLTS " << current->data << "\n"  
+    //         << endi;
+    int curlen = strlen(current->data);
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCEVOLTS no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+    } else {
+      int boolval = MGridforceParamsList::atoBool(valstr);
+      if (boolval == -1) {
+        iout << iINFO << "MGRIDFORCEVOLTS  key " 
+          << key << " boolval " << valstr << " badly defined" << endi;
+      } else {
+        mgfp->gridforceVolts = (boolval == 1);
+      }
+    }
+
+    current = current->next;
+  }
+  
+  current = config->find("mgridforcescale");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCESCALE " << current->data 
+    //         << "\n"  << endi;
+    int curlen = strlen(current->data);
+    int nread;
+    sscanf(current->data,"%80s%n",key,&nread);
+    char *val = current->data + nread + 1;
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCESCALE no key " 
+      << key << " defined for vector " << val << "\n" << endi;
+    } else {
+      mgfp->gridforceScale.set(val);
+    }
+    
+    current = current->next;
+  }
+  
+  current = config->find("mgridforcevoff");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCEVOFF " << current->data 
+    //         << "\n"  << endi;
+    int curlen = strlen(current->data);
+    int nread;
+    sscanf(current->data,"%80s%n",key,&nread);
+    char *val = current->data + nread + 1;
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCEVOFF no key " 
+      << key << " defined for vector " << val << "\n" << endi;
+    } else {
+      mgfp->gridforceVOffset.set(val);
+    }
+    
+    current = current->next;
+  }
+  
+  current = config->find("mgridforcecol");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCECOL " << current->data 
+    //         << "\n"  << endi;
+    int curlen = strlen(current->data);
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCECOL no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+    } else {
+      int collen = strlen(valstr);
+      if (mgfp->gridforceCol != NULL) {
+        delete [] mgfp->gridforceCol;
+      }
+      mgfp->gridforceCol = new char[collen+1];
+      strncpy(mgfp->gridforceCol,valstr,collen+1);
+     }
+    
+    current = current->next;
+  }
+  
+  current = config->find("mgridforceqcol");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCEQCOL " << current->data << "\n"  
+    //         << endi;
+    int curlen = strlen(current->data);
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCEQCOL no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+    } else {
+      int collen = strlen(valstr);
+      if (mgfp->gridforceQcol != NULL) {
+        delete [] mgfp->gridforceQcol;
+      }
+      mgfp->gridforceQcol = new char[collen+1];
+      strncpy(mgfp->gridforceQcol,valstr,collen+1);
+    }
+    
+    current = current->next;
+  }
+  
+  current = config->find("mgridforcecont1");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCECONT1 " << current->data 
+    //         << "\n"  << endi;
+    int curlen = strlen(current->data);
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCECONT1 no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+    } else {
+      int boolval = MGridforceParamsList::atoBool(valstr);
+      if (boolval == -1) {
+        iout << iINFO << "MGRIDFORCECONT1  key " 
+        << key << " boolval " << valstr << " badly defined" << endi;
+      } else {
+        mgfp->gridforceCont[0] = (boolval == 1);
+      }
+    }
+    
+    current = current->next;
+  }
+  
+  current = config->find("mgridforcecont2");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCECONT2 " << current->data 
+    //         << "\n"  << endi;
+    int curlen = strlen(current->data);
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCECONT2 no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+    } else {
+      int boolval = MGridforceParamsList::atoBool(valstr);
+      if (boolval == -1) {
+        iout << iINFO << "MGRIDFORCECONT2  key " 
+        << key << " boolval " << valstr << " badly defined" << endi;
+      } else {
+        mgfp->gridforceCont[1] = (boolval == 1);
+      }
+    }
+    
+    current = current->next;
+  }
+  current = config->find("mgridforcecont3");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCECONT3 " << current->data 
+    //         << "\n"  << endi;
+    int curlen = strlen(current->data);
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCECONT3 no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+      NAMD_die("MGRIDFORCE error");
+    } else {
+      int boolval = MGridforceParamsList::atoBool(valstr);
+      if (boolval == -1) {
+        iout << iINFO << "MGRIDFORCECONT3  key " 
+        << key << " boolval " << valstr << " badly defined" << endi;
+      } else {
+        mgfp->gridforceCont[2] = (boolval == 1);
+      }
+    }
+    
+    current = current->next;
+  }
+  delete [] valstr;
+  delete [] key;
+
+  // Fill in default values for optional items
+  
+  MGridforceParams* params = mgridforcelist.get_first();
+  
+  while (params != NULL) {
+    if (params->gridforceFile == NULL) {
+      char errmsg[255];
+      sprintf(errmsg,"Value undefined for gridforceFile for key %s\n",
+              params->gridforceKey);
+         NAMD_die(errmsg);
+    }
+    if (params->gridforceCol == NULL) {
+      char errmsg[255];
+      sprintf(errmsg,"Value undefined for gridforceCol for key %s\n",
+              params->gridforceKey);
+         NAMD_die(errmsg);
+    }
+    if (params->gridforceQcol == NULL) {
+      char* defval = params->gridforceCol;
+      int collen = strlen(defval);
+      params->gridforceQcol = new char[collen+1];
+      strncpy(params->gridforceQcol,defval,collen+1);
+    }
+    params = params->next;
+  }
+  
+}
+
+void SimParameters::parse_mgrid_string_param(ConfigList *cl,
+                                             const char *fieldname,
+                                             char **dest) 
+{
+  StringList *vallist = cl->find(fieldname);
+  char *val = NULL;
+  
+  if (vallist != NULL) {
+    val = vallist->data;
+  } else {
+    return;
+  }
+  
+  int len = 0;
+  if (val == NULL) {
+    *dest = NULL;
+  } else {
+    len = strlen(val);
+    if (len == 0) {
+      *dest = NULL;
+    } else {
+      *dest = new char[len+1];
+      strncpy(*dest,val,len+1);
+    }
+  }
+}
+   
+/****************************************************************/
+/*                                                              */
+/*      FUNCTION print_mgrid_params                             */
+/*                                                              */
+/*                                                              */
+/****************************************************************/
+#define BoolToString(b) ((b) ? "TRUE" : "FALSE")
+  
+void SimParameters::print_mgrid_params()
+{
+  const MGridforceParams* params = mgridforcelist.get_first();
+  
+  while (params != NULL) {
+    iout << iINFO << "MGRIDFORCE key " << params->gridforceKey << "\n" << endi;
+    iout << iINFO << "           Vfile " << params->gridforceVfile 
+      << "\n" << endi;
+    iout << iINFO << "           Scale " << params->gridforceScale 
+      << "\n" << endi;
+    iout << iINFO << "           File " << params->gridforceFile 
+      << "\n" << endi;
+    iout << iINFO << "           Col " << params->gridforceCol 
+      << "\n" << endi;
+    iout << iINFO << "           QCol " << params->gridforceQcol 
+      << "\n" << endi;
+    iout << iINFO << "           VOffset " << params->gridforceVOffset 
+      << "\n" << endi;
+    iout << iINFO << "           Continuous K1 " 
+      << BoolToString(params->gridforceCont[0]) 
+      << "\n" << endi;
+    iout << iINFO << "           Continuous K2 " 
+      << BoolToString(params->gridforceCont[1]) 
+    << "\n" << endi;
+    iout << iINFO << "           Continuous K3 " 
+      << BoolToString(params->gridforceCont[2]) 
+      << "\n" << endi;
+    iout << iINFO << "           Volts " 
+      << BoolToString(params->gridforceVolts)
+      << "\n" << endi;
+    params = params->next;
+  }
+}
+   
+   
 /****************************************************************/
 /*                */
 /*    FUNCTION send_SimParameters      */
@@ -4022,6 +4411,8 @@ void SimParameters::send_SimParameters(Communicate *com_obj)
     msg->put(tcllen,tclBCScript);
   }
 
+  mgridforcelist.pack_data(msg);
+  
   msg->end();
 }
 /*    END OF FUNCITON send_SimParameters    */
@@ -4055,6 +4446,11 @@ void SimParameters::receive_SimParameters(MIStream *msg)
     msg->get(tcllen,tclBCScript);
   }
 
+  // The simParameters bit copy above put illegal values in the list pointers
+  // So this resets everything so that unpacking will work.
+  mgridforcelist.clear();
+  mgridforcelist.unpack_data(msg);
+  
   delete msg;
 }
 /*      END OF FUNCTION receive_SimParameters  */

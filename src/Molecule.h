@@ -179,9 +179,9 @@ private:
   ConstraintParams *consParams;
 
 /* BEGIN gf */
-  int32 *gridfrcIndexes;
-  GridforceParams *gridfrcParams;
-  GridforceGrid *gridfrcGrid;
+  int32 **gridfrcIndexes;
+  GridforceParams **gridfrcParams;
+  GridforceGrid **gridfrcGrid;
 /* END gf */
 
         //  Parameters for each atom constrained
@@ -377,7 +377,8 @@ public:
   
   int numConstraints; //  Number of atoms constrained
 /* BEGIN gf */
-  int numGridforces;  //  Number of atoms in gridforce file
+  int numGridforceGrids;//  Number of gridforce grids
+  int *numGridforces;	//  Number of atoms in gridforce file (array, one per grid)
 /* END gf */
   int numMovDrag;         //  Number of atoms moving-dragged
   int numRotDrag;         //  Number of atoms rotating-dragged
@@ -642,11 +643,11 @@ public:
 /* BEGIN gf */
   // Return true or false based on whether or not the atom
   // is subject to grid force
-  Bool is_atom_gridforced(int atomnum) const
+  Bool is_atom_gridforced(int atomnum, int gridnum) const
   {
-      if (numGridforces)
+      if (numGridforceGrids)
       {
-	  return(gridfrcIndexes[atomnum] != -1);
+	  return(gridfrcIndexes[gridnum][atomnum] != -1);
       }
       else
       {
@@ -727,15 +728,15 @@ public:
   }
 
 /* BEGIN gf */
-  void get_gridfrc_params(Real &k, Charge &q, int atomnum) const
+  void get_gridfrc_params(Real &k, Charge &q, int atomnum, int gridnum) const
   {
-      k = gridfrcParams[gridfrcIndexes[atomnum]].k;
-      q = gridfrcParams[gridfrcIndexes[atomnum]].q;
+      k = gridfrcParams[gridnum][gridfrcIndexes[gridnum][atomnum]].k;
+      q = gridfrcParams[gridnum][gridfrcIndexes[gridnum][atomnum]].q;
   }
   
-  const GridforceGrid* get_gridfrc_grid(void) const
+  const GridforceGrid* get_gridfrc_grid(int gridnum) const
   {
-      return gridfrcGrid;
+      return gridfrcGrid[gridnum];
   }
 /* END gf */
 

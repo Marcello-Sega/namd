@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2008/09/26 22:21:08 $
- * $Revision: 1.1145 $
+ * $Author: brunner $
+ * $Date: 2008/10/23 22:04:34 $
+ * $Revision: 1.1146 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -17,6 +17,8 @@
 #include "common.h"
 #include "Vector.h"
 #include "Lattice.h"
+
+#include "MGridforceParams.h"
 
 class ParseOptions;
 class Communicate;
@@ -197,6 +199,8 @@ public:
 	Bool gridforceContA3;		//  Flag TRUE -> grid continuous in A3 direction
 	zVector gridforceVOffset;	//  Gridforce potential offsets
 	/* END gf */
+        Bool mgridforceOn;
+        MGridforceParamsList mgridforcelist;
 
         //****** BEGIN selective restraints (X,Y,Z) changes 
         Bool selectConstraintsOn;       //  Flag TRUE-> selective restraints  
@@ -597,15 +601,14 @@ public:
 
     Bool useCompressedPsf;
     Bool genCompressedPsf;
-
 	
 public:
 
-	SimParameters() {};
-	SimParameters(ConfigList *c, char *&cwd) {
+        SimParameters() : mgridforcelist() {};
+        SimParameters(ConfigList *c, char *&cwd) : mgridforcelist() {
 	  initialize_config_data(c,cwd);
 	};
-	~SimParameters() {};
+        ~SimParameters() {};
 
 	void initialize_config_data(ConfigList *, char *&cwd);
 					//  Initialize SimParameters data
@@ -643,7 +646,12 @@ private:
 	void config_parser_constorque(ParseOptions &opts);
 	void config_parser_boundary(ParseOptions &opts);
 	void config_parser_misc(ParseOptions &opts);
-
+   	void config_parser_mgridforce(ParseOptions &opts);
+     	void parse_mgrid_string_param(ConfigList *config,
+     	                              const char *fieldname, char** dest);
+     	void parse_mgrid_params(ConfigList *config);
+       	void print_mgrid_params();
+  
 	void check_config(ParseOptions &opts, ConfigList *config, char *&cwd);
 
 	void print_config(ParseOptions &opts, ConfigList *config, char *&cwd);

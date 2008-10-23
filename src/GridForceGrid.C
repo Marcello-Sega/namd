@@ -13,6 +13,8 @@
 #include "InfoStream.h"
 #include "common.h"
 
+#include "MGridforceParams.h"
+
 #define MIN_DEBUG_LEVEL 3
 //#define DEBUGM
 #include "Debug.h"
@@ -21,6 +23,7 @@
 GridforceGrid::GridforceGrid(void)
 {
     grid = NULL;
+    cont[0]=cont[1]=cont[2]=FALSE;
 }
 
 // GridforceGrid::GridforceGrid(GridforceGrid g) :
@@ -63,6 +66,7 @@ void GridforceGrid::pack(MOStream *msg) const
     msg->put(3*sizeof(float), (char*)offset);
     msg->put(3*sizeof(float), (char*)gap);
     msg->put(3*sizeof(float), (char*)gapinv);
+    msg->put(sizeof(Vector), (char*)&scale);
     
     msg->put(size*sizeof(float), (char*)grid);
 }
@@ -86,7 +90,8 @@ void GridforceGrid::unpack(MIStream *msg)
     msg->get(3*sizeof(float), (char*)offset);
     msg->get(3*sizeof(float), (char*)gap);
     msg->get(3*sizeof(float), (char*)gapinv);
-    
+    msg->get(sizeof(Vector), (char*)&scale);
+
     if (size) {
 	delete [] grid;
 	grid = new float[size];
@@ -108,7 +113,7 @@ void GridforceGrid::unpack(MIStream *msg)
 //     DebugM(2, "gap = " << gap[0] << " " << gap[1] << " " << gap[2] << endi << "\n");
 }
 
-void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
+void GridforceGrid::initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams)
 {
     FILE *poten = Fopen(potfilename, "r");
     if (!poten) {
@@ -156,11 +161,14 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
     float *grid_nopad = new float[size_nopad];
     
     float factor;
-    if (simParams->gridforceVolts) {
+    if (mgridParams->gridforceVolts)
+    {
 	factor = 1.0/0.0434;  // convert V -> kcal/mol*e
     } else {
 	factor = 1.0;
     }
+
+    scale = mgridParams->gridforceScale;
     
     float tmp2;
     for (int count = 0; count < size_nopad; count++) {
@@ -198,15 +206,16 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
     gridforceCont[0] = simParams->gridforceContA1;
     gridforceCont[1] = simParams->gridforceContA2;
     gridforceCont[2] = simParams->gridforceContA3;
-    
+
     for (int i0 = 0; i0 < 3; i0++) {
-	if (gridforceCont[i0]) {
+	if (mgridParams->gridforceCont[i0])
+	{
 	    Bool found = FALSE;
 	    for (int i1 = 0; i1 < 3; i1++) {
 		if (cross(Avec[i0].unit(), Kvec[i1].unit()).length() < 1e-4) {
 		    found = TRUE;
 		    cont[i1] = TRUE;
-		    offset[i1] = simParams->gridforceVOffset[i0] * factor;
+		    offset[i1] = mgridParams->gridforceVOffset[i0] * factor;
 		    gap[i1] = (inv * (Avec[i0] - Kvec[i1])).length();	// want in grid-point units (normal = 1)
 		    gapinv[i1] = 1.0/gap[i1];
 		    
@@ -216,6 +225,7 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams)
 		    
 		    DebugM(4, "cont[" << i1 << "] = " << cont[i1] << "\n" << endi);
 		    DebugM(4, "gap[" << i1 << "] = " << gap[i1] << "\n" << endi);
+		    DebugM(4, "gapinv[" << i1 << "] = " << gapinv[i1] << "\n" << endi);
 		}
 	    }
 	    

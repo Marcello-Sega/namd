@@ -15,6 +15,11 @@
 //#define DEBUGM
 #include "Debug.h"
 
+#include "MGridforceParams.h"
+
+#define GF_FORCE_OUTPUT
+#define GF_FORCE_OUTPUT_FREQ 100
+
 
 ComputeGridForce::ComputeGridForce(ComputeID c, PatchID pid)
     : ComputeHomePatch(c,pid)
@@ -46,25 +51,38 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     
     Real scale;			// Scaling factor
     Charge charge;		// Charge
-    const GridforceGrid *grid = mol->get_gridfrc_grid();
     GridforceGrid::Box box;	// Structure with potential info
     Force f;
     float v;
     
+    DebugM(4, "numGridforceGrids = " << mol->numGridforceGrids << "\n" << endi);
+    
+    for (int gridnum = 0; gridnum < mol->numGridforceGrids; gridnum++) {
+	const GridforceGrid *grid = mol->get_gridfrc_grid(gridnum);
+	DebugM(4, "scale = " << grid->get_scale() << "\n" << endi);
+    
+    Position center = grid->get_center();
+    Tensor inv = grid->get_inv();
+    Vector gfScale = grid->get_scale();
+    
     //  Loop through and check each atom
     for (int i = 0; i < numAtoms; i++) {
-	if (mol->is_atom_gridforced(p[i].id)) {
-	    mol->get_gridfrc_params(scale, charge, p[i].id);
-	    
+
+	if (mol->is_atom_gridforced(p[i].id, gridnum))
+	{
+
+	    mol->get_gridfrc_params(scale, charge, p[i].id, gridnum);
+		
 	    // Wrap coordinates using grid center
 	    Position pos = p[i].position;
 	    pos += homePatch->lattice.wrap_delta(p[i].position);
-	    pos += homePatch->lattice.delta(pos, grid->get_center()) - (pos - grid->get_center());
-	    
+	    pos += homePatch->lattice.delta(pos, center) - (pos - center);
+		
 	    int err = grid->get_box(&box, pos);
 	    if (err) {
-		DebugM(4, "force4 = 0 0 0\n" << endi);
+		DebugM(4, "ts = " << patch->flags.step << " gridnum = " << gridnum << " force4 = 0 0 0\n" << endi);
 		DebugM(4, "v4 = 0\n" << endi);
+		    		    
 		continue;  // This means the current atom is outside the potential
 	    }
 	    
@@ -251,12 +269,19 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 	    }
 	    
 // 	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (inv * f);
-//	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * (f * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
-	    Force force = scale * Tensor::diagonal(simParams->gridforceScale) * charge * ((box.scale * f) * grid->get_inv()); // Must multiply ON THE RIGHT by inv tensor
+//	    Force force = scale * gfScale * charge * (f * inv); // Must multiply ON THE RIGHT by inv tensor
+	    Force force = scale * Tensor::diagonal(gfScale) * charge * ((box.scale * f) * inv); // Must multiply ON THE RIGHT by inv tensor
 	    
 	    DebugM(4, "f4 = " << f << "\n" << endi);
-	    DebugM(4, "force4 = " << force << "\n" << endi);
+	    DebugM(4, "ts = " << patch->flags.step << " gridnum = " << gridnum << " force4 = " << force << "\n" << endi);
 	    DebugM(4, "v4 = " << v << "\n" << endi);
+	    
+	    //#ifdef GF_FORCE_OUTPUT
+	    //	    int t = patch->flags.step;
+	    //	    if (t % GF_FORCE_OUTPUT_FREQ == 0) {
+	    //		iout << "GRIDFORCE (TS ATOM FORCE)  " << t << ' ' << i << ' ' << force*PNPERKCALMOL << '\n' << endi;
+	    //	    }
+	    //#endif
 	    
 	    forces[i] += force;
 	    extForce += force;
@@ -266,16 +291,21 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		   << (int)p[i].transform.j << " " << (int)p[i].transform.k << "\n" << endi);
 	    
 	    //energy -= force * (vpos - homePatch->lattice.origin());
-	    if (simParams->gridforceScale.x == simParams->gridforceScale.y 
-		&& simParams->gridforceScale.x == simParams->gridforceScale.z)
+	    if (gfScale.x == gfScale.y && gfScale.x == gfScale.z)
 	    {
 		// only makes sense when scaling is isotropic
-		energy += v * charge * scale * simParams->gridforceScale.x;
+		energy += v * charge * scale * gfScale.x;
 	    }
 	    extVirial += outer(force,vpos);
 	}
     }
-    
+
+    }
+//    for(int i=0; i < numAtoms; i++) {
+//      iout << "ZZZAtom " << p[i].id << " Force " << forces[i].x << "," 
+//           << forces[i].y << "," << forces[i].z
+//           << endl;
+//    }
     reduction->item(REDUCTION_MISC_ENERGY) += energy;
     ADD_VECTOR_OBJECT(reduction,REDUCTION_EXT_FORCE_NORMAL,extForce);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,extVirial);

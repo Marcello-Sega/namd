@@ -227,7 +227,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 	
 	/* BEGIN gf */
-	if (simParameters->gridforceOn)
+	if (simParameters->mgridforceOn)
 	{
 	    molecule->build_gridforce_params(configList->find("gridforcefile"),
 					     configList->find("gridforcecol"),
@@ -395,9 +395,11 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 	
 	/* BEGIN gf */
-	if (simParameters->gridforceOn)
+	if (simParameters->mgridforceOn)
 	{
-	    iout << iINFO << molecule->numGridforces << " GRID FORCES\n";
+            int i;
+	    iout << iINFO << molecule->numGridforceGrids 
+	         << " GRIDS ACTIVE\n";
 	}
 	/* END gf */
 
