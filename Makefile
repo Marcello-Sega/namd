@@ -155,6 +155,7 @@ OBJS = \
 	$(DSTDIR)/LdbCoordinator.o \
 	$(DSTDIR)/LJTable.o \
 	$(DSTDIR)/Measure.o \
+	$(DSTDIR)/MGridforceParams.o \
 	$(DSTDIR)/MStream.o \
 	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
