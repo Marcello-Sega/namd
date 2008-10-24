@@ -182,7 +182,7 @@ ProxyNodeAwareSpanningTreeMsg *ProxyNodeAwareSpanningTreeMsg::getANewMsg(PatchID
     for(int i=0; i<size; i++) {
         numAllPes += tree[i].numPes;
     }
-    ProxyNodeAwareSpanningTreeMsg *retmsg = new(size, numAllPes)ProxyNodeAwareSpanningTreeMsg;
+    ProxyNodeAwareSpanningTreeMsg *retmsg = new(size, numAllPes, 0) ProxyNodeAwareSpanningTreeMsg;
     retmsg->patch = pid;
     retmsg->procID = nid;
     retmsg->numNodesWithProxies = size;    
@@ -1260,7 +1260,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
             int totalNodes = allSizes->size();
             int totalPes = 0;
             for(int j=0; j<totalNodes; j++) totalPes += allSizes->item(j);
-            ProxyNodeAwareSpanningTreeMsg *cmsg = new(totalNodes, totalPes)ProxyNodeAwareSpanningTreeMsg;
+            ProxyNodeAwareSpanningTreeMsg *cmsg = new(totalNodes, totalPes, 0) ProxyNodeAwareSpanningTreeMsg;
             cmsg->patch = msg->patch;
             cmsg->procID = CkMyPe();
             cmsg->numNodesWithProxies = totalNodes;
