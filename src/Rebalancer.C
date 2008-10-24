@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2008/06/18 21:42:44 $
- * $Revision: 1.82 $
+ * $Date: 2008/10/24 03:59:21 $
+ * $Revision: 1.83 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -871,7 +871,7 @@ void Rebalancer::printSummary()
    iout << iINFO << "  min = " << min << " processor " << min_proc << "\n";
    iout << iINFO << "  max = " << max << " processor " << max_proc << "\n";
    iout << iINFO << "  total = " << total << " average = " << total/P << "\n";
-   iout << iINFO << "Info about most overloaded processor " << max_proc << ": Load: " << processors[max_proc].load << " Bg Load: " << processors[max_proc].backgroundLoad << " Compute Load: " << processors[max_proc].computeLoad << " No of computes: " << processors[max_proc].computeSet.numElements() << "\n" << endi; 
+   iout << iINFO << "Info about most overloaded processor " << max_proc << ": Load: " << processors[max_proc].load << " Bg Load: " << processors[max_proc].backgroundLoad << " Compute Load: " << processors[max_proc].computeLoad << " No of computes: " << processors[max_proc].computeSet.numElements() << " No. of proxies: " << processors[max_proc].proxies.numElements() << "\n" << endi; 
 }
 
 double Rebalancer::computeAverage()

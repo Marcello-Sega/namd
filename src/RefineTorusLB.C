@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/09/25 15:51:26 $
- * $Revision: 1.17 $
+ * $Date: 2008/10/24 03:59:21 $
+ * $Revision: 1.18 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -111,6 +111,11 @@ int RefineTorusLB::newRefine() {
     else
       lightPes->insert((InfoRecord *) &(processors[i]));
   }
+
+#if LDB_DEBUG
+  iout << "\n Before Refinement Summary\n" << endi;
+  printSummary();
+#endif
 
   pcpair pcpairarray[12];
      
@@ -424,6 +429,11 @@ int RefineTorusLB::newRefine() {
     }
  
   } // end of while loop
+
+#if LDB_DEBUG
+  iout << "After Refinement Summary\n" << endi;
+  printSummary();
+#endif
 
   delete heavyPes;
   delete lightPes;
