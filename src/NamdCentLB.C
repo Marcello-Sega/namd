@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2008/08/28 03:36:23 $
- * $Revision: 1.87 $
+ * $Date: 2008/11/05 22:47:46 $
+ * $Revision: 1.88 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -32,11 +32,7 @@ void CreateNamdCentLB()
   for (int i=0; i<CkNumPes(); i++) cpuloads[i] = 0.0;
 }
 
-#if CHARM_VERSION > 050610
 NamdCentLB::NamdCentLB(): CentralLB(CkLBOptions(-1))
-#else
-NamdCentLB::NamdCentLB()
-#endif
 {
   //  if (CkMyPe()==0)
   //   CkPrintf("[%d] NamdCentLB created\n",CkMyPe());
@@ -197,11 +193,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   
   int migrate_count=migrateInfo.length();
   // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
-#if CHARM_VERSION > 050611
   CLBMigrateMsg* msg = new(migrate_count,CkNumPes(),CkNumPes(),0) CLBMigrateMsg;
-#else
-  CLBMigrateMsg* msg = new(&migrate_count,1) CLBMigrateMsg;
-#endif
+
   msg->n_moves = migrate_count;
   for(i=0; i < migrate_count; i++) {
     MigrateInfo* item = migrateInfo[i];
@@ -255,9 +248,7 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
     computeInfo* c = computeArray + i;
     fprintf(fp,"%d %e %d %d %d %d",c->Id,c->load,c->patch1,c->patch2,
 	    c->processor,c->oldProcessor);
-#if CHARM_VERSION > 50910
     fprintf(fp, " %e %e", c->minTime, c->maxTime);
-#endif
     fprintf(fp, "\n");
   }
 
@@ -340,9 +331,8 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
     computeInfo* c = computeArray + i;
     fscanf(fp,"%d %le %d %d %d %d",&c->Id,&c->load,&c->patch1,&c->patch2,
 	    &c->processor,&c->oldProcessor);
-#if CHARM_VERSION > 50910
     fscanf(fp, " %le %le", &c->minTime, &c->maxTime);
-#endif
+
     if (c->patch1 < 0 || c->patch1 > numPatches || c->patch2 < 0 || c->patch2 > numPatches)
       CmiAbort("Reading computeArray error!");
 //  printf("%d %e %d %d %d %d %e %e\n", c->Id,c->load,c->patch1,c->patch2,c->processor,c->oldProcessor,c->minTime,c->maxTime);
@@ -397,23 +387,11 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     processorArray[i].Id = i;
     processorArray[i].available = CmiTrue;
     if ( pmeOn && isPmeProcessor(i) ) {
-#if CHARM_VERSION > 050607
       processorArray[i].backgroundLoad = pmebgfactor * stats->procs[i].bg_walltime;
-#else
-      processorArray[i].backgroundLoad = pmebgfactor * stats[i].bg_walltime;
-#endif
     } else if (patchMap->numPatchesOnNode(i) > 0) {
-#if CHARM_VERSION > 050607
       processorArray[i].backgroundLoad = homebgfactor * stats->procs[i].bg_walltime;
-#else
-      processorArray[i].backgroundLoad = homebgfactor * stats[i].bg_walltime;
-#endif
     } else {
-#if CHARM_VERSION > 050607
       processorArray[i].backgroundLoad = bgfactor * stats->procs[i].bg_walltime;
-#else
-      processorArray[i].backgroundLoad = bgfactor * stats[i].bg_walltime;
-#endif
     }
     processorArray[i].idleTime = stats->procs[i].idletime;
     processorArray[i].load = processorArray[i].computeLoad = 0.0;
@@ -436,17 +414,9 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   for (i=0; i<count; i++) {
     processorArray[i].Id = i;
     if (patchMap->numPatchesOnNode(i) > 0)
-#if CHARM_VERSION > 050607
       processorArray[i].backgroundLoad = bg_weight * stats->procs[i].bg_walltime;
-#else
-      processorArray[i].backgroundLoad = bg_weight * stats[i].bg_walltime;
-#endif
     else 
-#if CHARM_VERSION > 050607
       processorArray[i].backgroundLoad = stats[i].bg_walltime;
-#else
-      processorArray[i].backgroundLoad = stats->procs[i].bg_walltime;
-#endif
   }
   
   //Modification to reduce the coputeload on PME processors
@@ -503,42 +473,22 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies
-#if CHARM_VERSION > 050607
+
   int j;
   for (j=0; j < stats->n_objs; j++) {
       const LDObjData &this_obj = stats->objData[j];
       int frompe = stats->from_proc[j];
-#else
-  for (i=0; i < count; i++) {
-    int j;
-    for (j=0; j < stats[i].n_objs; j++) {
-      const LDObjData &this_obj = stats[i].objData[j];
-      int frompe = i;
-#endif
+
       // filter out non-NAMD managed objects (like PME array)
-#if CHARM_VERSION > 050405
       if (this_obj.omID().id.idx != 1) continue;
-#elif CHARM_VERSION > 050403
-      if (this_obj.omID.id.idx != 1) continue;
-#else
-      if (this_obj.omID.id != 1) continue;
-#endif
-#if CHARM_VERSION > 050405
+
       if (this_obj.id().id[1] == -2) { // Its a patch
 	const int pid = this_obj.id().id[0];
-#else
-      if (this_obj.id.id[1] == -2) { // Its a patch
-	const int pid = this_obj.id.id[0];
-#endif
 	int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
 
 	patchArray[pid].Id = pid;
 	patchArray[pid].numAtoms = 0;
-#if CHARM_VERSION > 050607
 	patchArray[pid].processor = stats->from_proc[j];
-#else
-	patchArray[pid].processor = i;
-#endif
 	const int numProxies = 
 #if USE_TOPOMAP
 	requiredProxiesOnProcGrid(pid,neighborNodes);
@@ -553,11 +503,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
-#if CHARM_VERSION > 050405
 	const int cid = this_obj.id().id[0];
-#else
-	const int cid = this_obj.id.id[0];
-#endif
 	const int p0 = computeMap->pid(cid,0);
 
 	// For self-interactions, just return the same pid twice
@@ -566,28 +512,18 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	  p1 = computeMap->pid(cid,1);
 	else p1 = p0;
 	computeArray[nMoveableComputes].Id = cid;
-#if CHARM_VERSION > 050607
 	computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
 	processorArray[stats->from_proc[j]].computeLoad += this_obj.wallTime;
-#else
-	computeArray[nMoveableComputes].oldProcessor = i;
-	processorArray[i].computeLoad += this_obj.wallTime;
-#endif
 	computeArray[nMoveableComputes].processor = -1;
 	computeArray[nMoveableComputes].patch1 = p0;
 	computeArray[nMoveableComputes].patch2 = p1;
 	computeArray[nMoveableComputes].handle = this_obj.handle;
 	computeArray[nMoveableComputes].load = this_obj.wallTime;
-#if CHARM_VERSION > 50910
 	computeArray[nMoveableComputes].minTime = this_obj.minWall;
 	computeArray[nMoveableComputes].maxTime = this_obj.maxWall;
-#endif
 	nMoveableComputes++;
       }
     }
-#if ! ( CHARM_VERSION > 050607 )
-  }
-#endif
 
 /* *********** this code is defunct *****************
 #if 0
@@ -603,7 +539,8 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     }
   }
 #endif
-        *********** end of defunct code *********** */
+*********** end of defunct code *********** */
+
   for (i=0; i<count; i++) {
     processorArray[i].load = processorArray[i].backgroundLoad + processorArray[i].computeLoad;
   }

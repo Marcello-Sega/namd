@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: bhatele $
- * $Date: 2008/09/24 19:39:25 $
- * $Revision: 1.88 $
+ * $Date: 2008/11/05 22:47:46 $
+ * $Revision: 1.89 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -45,24 +45,18 @@ extern "C" void disableBlockingReceives();
 #endif
 
 void LdbCoordinator_initproc() {
-#if CHARM_VERSION >= 50804
   // Set the load balancing period (in seconds).  Without this the
   // load balancing framework will hang until 1 second has passed
   // since the last load balancing, causing hiccups in very fast runs.
   // This is duplicated below for older versions, but putting it here
   // also fixes the first load balance.
   LBSetPeriod(1.0e-5);
-#endif
 }
 
 void LdbCoordinator::staticMigrateFn(LDObjHandle handle, int dest)
 {
-#if CHARM_VERSION > 050606
    LdbCoordinator *ldbCoordinator = (LdbCoordinator *)LDOMUserData(handle.omhandle);
    ldbCoordinator->Migrate(handle,dest);
-#else
-   ((LdbCoordinator*)handle.omhandle.user_ptr)->Migrate(handle,dest);
-#endif
 }
 
 void LdbCoordinator::Migrate(LDObjHandle handle, int dest)
@@ -71,12 +65,8 @@ void LdbCoordinator::Migrate(LDObjHandle handle, int dest)
   msg->handle = handle;
   msg->from = CkMyPe();
   msg->to = dest;
-#if CHARM_VERSION > 050402
   CProxy_LdbCoordinator ldbProxy(thisgroup);
   ldbProxy[CkMyPe()].RecvMigrate(msg);
-#else
-  CProxy_LdbCoordinator(thisgroup).RecvMigrate(msg,CkMyPe());
-#endif
 }
 
 void LdbCoordinator::staticStatsFn(LDOMHandle h, int state)
@@ -125,11 +115,7 @@ void LdbCoordinator::ResumeFromSync()
   }
 #endif
   CProxy_LdbCoordinator cl(thisgroup);
-#if CHARM_VERSION > 050402
   cl[0].nodeDone();
-#else
-  cl.nodeDone(0);
-#endif
 }
 
 LdbCoordinator::LdbCoordinator()
@@ -165,11 +151,7 @@ LdbCoordinator::LdbCoordinator()
   nodesDone = 0;
 
   // Register self as an object manager for new charm++ balancer framework
-#if CHARM_VERSION > 050610
   theLbdb = LBDatabase::Object(); 
-#else
-  theLbdb = CProxy_LBDatabase::ckLocalBranch(lbdb);
-#endif
 
   // Set the load balancing period (in seconds).  Without this the
   // load balancing framework will hang until 1 second has passed
@@ -180,11 +162,7 @@ LdbCoordinator::LdbCoordinator()
 
   theLbdb->SetLBPeriod(1.0e-5);
 
-#if CHARM_VERSION > 050403
   myOMid.id.idx = 1;
-#else
-  myOMid.id = 1;
-#endif
   LDCallbacks cb = { (LDMigrateFn)staticMigrateFn,
 		     (LDStatsFn)staticStatsFn,
 		     (LDQueryEstLoadFn)staticQueryEstLoadFn
@@ -449,7 +427,6 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
  *------------------------------------------------------------------------------*
  */
 
-#if CHARM_VERSION >= 050606
   if (traceAvailable()) {
     static int specialTracing = 0; // XXX static variables are unsafe for SMP
     if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
@@ -458,7 +435,6 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       if (ldbCycleNum == 8) traceEnd();
     }
   }
-#endif
 
   nPatchesReported = 0;
   nPatchesExpected = nLocalPatches;
@@ -559,13 +535,8 @@ void LdbCoordinator::ExecuteMigrations(void)
 
   CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
   ComputeMgr *computeMgr = cm.ckLocalBranch();
-#if CHARM_VERSION > 050402
   computeMgr->updateComputes(CkIndex_LdbCoordinator::
                              updateComputesReady(),thisgroup);
-#else
-  computeMgr->updateComputes(CProxy_LdbCoordinator::
-			     ckIdx_updateComputesReady(),thisgroup);
-#endif
 }
 
 void LdbCoordinator::RecvMigrate(LdbMigrateMsg* m)
@@ -577,12 +548,8 @@ void LdbCoordinator::RecvMigrate(LdbMigrateMsg* m)
   theLbdb->UnregisterObj(objHandles[id]);
   objHandles[id].id.id[0] = -1;
 
-#if CHARM_VERSION > 050402
   CProxy_LdbCoordinator  ldbProxy(thisgroup);
   ldbProxy[m->to].ExpectMigrate(m);
-#else
-  CProxy_LdbCoordinator(thisgroup).ExpectMigrate(m,m->to);
-#endif
 }
 
 void LdbCoordinator::ExpectMigrate(LdbMigrateMsg* m)
@@ -599,11 +566,7 @@ void LdbCoordinator::updateComputesReady() {
   DebugM(3,"updateComputesReady()\n");
 
   CProxy_LdbCoordinator(thisgroup).resume();
-#if CHARM_VERSION > 050402
   CkStartQD(CkIndex_LdbCoordinator::resumeReady((CkQdMsg*)0),&thishandle);
-#else
-  CkStartQD(CProxy_LdbCoordinator::ckIdx_resumeReady((CkQdMsg*)0),&thishandle);
-#endif
 }
 
 void LdbCoordinator::resume(void)
