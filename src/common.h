@@ -158,11 +158,6 @@ int  Fclose(FILE *fout);
 
 
 #include "converse.h"
-#if CHARM_VERSION <= 50900
-#ifndef CmiMemcpy
-#define CmiMemcpy(D,S,N) memcpy(D,S,N)
-#endif
-#endif
 
 #endif
 

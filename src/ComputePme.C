@@ -1030,13 +1030,8 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   --grid_count;
 
   if ( grid_count == 0 ) {
-#if CHARM_VERSION > 050402
     pmeProxyDir[CkMyPe()].gridCalc1();
     if ( useBarrier ) pmeProxyDir[0].sendTransBarrier();
-#else
-    pmeProxyDir.gridCalc1(CkMyPe());
-    if ( useBarrier ) pmeProxyDir.sendTransBarrier(0);
-#endif
   }
 }
 
@@ -1050,11 +1045,7 @@ void ComputePmeMgr::gridCalc1(void) {
   }
 #endif
 
-#if CHARM_VERSION > 050402
   if ( ! useBarrier ) pmeProxyDir[CkMyPe()].sendTrans();
-#else
-  if ( ! useBarrier ) pmeProxyDir.sendTrans(CkMyPe());
-#endif
 }
 
 void ComputePmeMgr::sendTransBarrier(void) {
@@ -1063,11 +1054,7 @@ void ComputePmeMgr::sendTransBarrier(void) {
   if ( sendTransBarrier_received < numGridPes ) return;
   sendTransBarrier_received = 0;
   for ( int i=0; i<numGridPes; ++i ) {
-#if CHARM_VERSION > 050402
     pmeProxyDir[gridPeMap[i]].sendTrans();
-#else
-    pmeProxyDir.sendTrans(gridPeMap[i]);
-#endif
   }
 }
 
@@ -1110,11 +1097,7 @@ void ComputePmeMgr::sendTrans(void) {
     }
     newmsg->sequence = sequence;
     SET_PRIORITY(newmsg,sequence,PME_TRANS_PRIORITY)
-#if CHARM_VERSION > 050402
     pmeProxy[transPeMap[pe]].recvTrans(newmsg);
-#else
-    pmeProxy.recvTrans(newmsg,transPeMap[pe]);
-#endif
   }
  
   untrans_count = numTransPes;
@@ -1145,11 +1128,7 @@ void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
   --trans_count;
 
   if ( trans_count == 0 ) {
-#if CHARM_VERSION > 050402
     pmeProxyDir[CkMyPe()].gridCalc2();
-#else
-    pmeProxyDir.gridCalc2(CkMyPe());
-#endif
   }
 }
 
@@ -1184,11 +1163,7 @@ void ComputePmeMgr::gridCalc2(void) {
 #endif
   }
 
-#if CHARM_VERSION > 050402
   pmeProxyDir[CkMyPe()].sendUntrans();
-#else
-  pmeProxyDir.sendUntrans(CkMyPe());
-#endif
 }
 
 void ComputePmeMgr::sendUntrans(void) {
@@ -1228,11 +1203,7 @@ void ComputePmeMgr::sendUntrans(void) {
 		nx*ny*zdim*sizeof(float));
     }
     SET_PRIORITY(newmsg,sequence,PME_UNTRANS_PRIORITY)
-#if CHARM_VERSION > 050402
     pmeProxy[gridPeMap[pe]].recvUntrans(newmsg);
-#else
-    pmeProxy.recvUntrans(newmsg,gridPeMap[pe]);
-#endif
   }
 
 #ifdef USE_COMM_LIB
@@ -1280,11 +1251,7 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   --untrans_count;
 
   if ( untrans_count == 0 ) {
-#if CHARM_VERSION > 050402
     pmeProxyDir[CkMyPe()].gridCalc3();
-#else
-    pmeProxyDir.gridCalc3(CkMyPe());
-#endif
   }
 }
 
@@ -1300,11 +1267,7 @@ void ComputePmeMgr::gridCalc3(void) {
   }
 #endif
 
-#if CHARM_VERSION > 050402
   pmeProxyDir[CkMyPe()].sendUngrid();
-#else
-  pmeProxyDir.sendUngrid(CkMyPe());
-#endif
 }
 
 void ComputePmeMgr::sendUngrid(void) {
@@ -1343,11 +1306,7 @@ void ComputePmeMgr::sendUngrid(void) {
     newmsg->sourceNode = myGridPe;
 
     SET_PRIORITY(newmsg,sequence,PME_UNGRID_PRIORITY)
-#if CHARM_VERSION > 050402
     pmeProxyDir[pe].recvUngrid(newmsg);
-#else
-    pmeProxyDir.recvUngrid(newmsg,pe);
-#endif
   }
   grid_count = numSources;
   memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
@@ -1365,11 +1324,7 @@ void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
   --ungrid_count;
 
   if ( ungrid_count == 0 ) {
-#if CHARM_VERSION > 050402
     pmeProxyDir[CkMyPe()].ungridCalc();
-#else
-    pmeProxyDir.ungridCalc(CkMyPe());
-#endif
   }
 }
 
@@ -1734,11 +1689,7 @@ void ComputePme::doWork()
   } else {
 #if 0
   CProxy_ComputePmeMgr pmeProxy(CkpvAccess(BOCclass_group).computePmeMgr);
-#if CHARM_VERSION > 050402
   pmeProxy[CkMyPe()].sendGrid();
-#else
-  pmeProxy.sendGrid(CkMyPe());
-#endif
 #else
   sendData(myMgr->numGridPes,myMgr->gridPeOrder,
 		myMgr->recipPeDest,myMgr->gridPeMap);
@@ -2017,11 +1968,7 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
 
     msg->sequence = sequence();
     SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
-#if CHARM_VERSION > 050402
     pmeProxy[gridPeMap[pe]].recvGrid(msg);
-#else
-    pmeProxy.recvGrid(msg,gridPeMap[pe]);
-#endif
   }
 
   for (int i=0; i<fsize; ++i) {

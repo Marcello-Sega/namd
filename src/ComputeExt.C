@@ -152,11 +152,7 @@ void ComputeExt::doWork()
   }
 
   CProxy_ComputeExtMgr extProxy(CkpvAccess(BOCclass_group).computeExtMgr);
-#if CHARM_VERSION > 050402
   extProxy[0].recvCoord(msg);
-#else
-  extProxy.recvCoord(msg,0);
-#endif
 
 }
 
@@ -278,11 +274,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
       for ( int k=0; k<3; ++k ) for ( int l=0; l<3; ++l )
         fmsg->virial[k][l] = 0;
     }
-#if CHARM_VERSION > 050402
     extProxy[cmsg->sourceNode].recvForce(fmsg);
-#else
-    extProxy.recvForce(fmsg,cmsg->sourceNode);
-#endif
     delete cmsg;
   }
 

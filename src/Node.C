@@ -311,11 +311,7 @@ void Node::startup() {
   case 4:
     if ( simParameters->PMEOn ) {
       CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-#if CHARM_VERSION > 050402
       pme[CkMyPe()].initialize(new CkQdMsg);
-#else
-      pme.initialize(new CkQdMsg, CkMyPe());
-#endif
     }
   break;
 
@@ -401,11 +397,7 @@ void Node::startup() {
   startupPhase++;
   if (!CkMyPe()) {
     if (!gotoRun) {
-#if CHARM_VERSION > 050402
       CkStartQD(CkIndex_Node::startUp((CkQdMsg*)0),&thishandle);
-#else
-      CkStartQD(CProxy_Node::ckIdx_startUp((CkQdMsg*)0),&thishandle);
-#endif
     } else {
       Node::messageRun();
     }
@@ -582,11 +574,7 @@ void Node::run()
 //-----------------------------------------------------------------------
 
 void Node::enableScriptBarrier() {
-#if CHARM_VERSION > 050402
   CkStartQD(CkIndex_Node::scriptBarrier((CkQdMsg*)0),&thishandle);
-#else
-  CkStartQD(CProxy_Node::ckIdx_scriptBarrier((CkQdMsg*)0),&thishandle);
-#endif
 }
 
 void Node::scriptBarrier(CkQdMsg *qmsg) {
@@ -624,12 +612,8 @@ void Node::reloadCharges(float charge[], int n) {
 void Node::sendEnableExitScheduler(void) {
   //CmiPrintf("sendEnableExitScheduler\n");
   CkQdMsg *msg = new CkQdMsg;
-#if CHARM_VERSION > 050402
   CProxy_Node nodeProxy(thisgroup);
   nodeProxy[0].recvEnableExitScheduler(msg);
-#else
-  CProxy_Node(thisgroup).recvEnableExitScheduler(msg,0);
-#endif
 }
 
 void Node::recvEnableExitScheduler(CkQdMsg *msg) {
@@ -642,11 +626,7 @@ void Node::enableExitScheduler(void) {
   if ( CkMyPe() ) {
     sendEnableExitScheduler();
   } else {
-#if CHARM_VERSION > 050402
     CkStartQD(CkIndex_Node::exitScheduler((CkQdMsg*)0),&thishandle);
-#else
-    CkStartQD(CProxy_Node::ckIdx_exitScheduler((CkQdMsg*)0),&thishandle);
-#endif
   }
 }
 
@@ -658,12 +638,8 @@ void Node::exitScheduler(CkQdMsg *msg) {
 
 void Node::sendEnableEarlyExit(void) {
   CkQdMsg *msg = new CkQdMsg;
-#if CHARM_VERSION > 050402
   CProxy_Node nodeProxy(thisgroup);
   nodeProxy[0].recvEnableEarlyExit(msg);
-#else
-  CProxy_Node(thisgroup).recvEnableEarlyExit(msg,0);
-#endif
 }
 
 void Node::recvEnableEarlyExit(CkQdMsg *msg) {
@@ -675,11 +651,7 @@ void Node::enableEarlyExit(void) {
   if ( CkMyPe() ) {
     sendEnableEarlyExit();
   } else {
-#if CHARM_VERSION > 050402
     CkStartQD(CkIndex_Node::earlyExit((CkQdMsg*)0),&thishandle);
-#else
-    CkStartQD(CProxy_Node::ckIdx_earlyExit((CkQdMsg*)0),&thishandle);
-#endif
   }
 }
 

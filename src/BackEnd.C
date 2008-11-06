@@ -121,17 +121,12 @@ void BackEnd::init(int argc, char **argv) {
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
   #endif 
 
-#if CHARM_VERSION > 050402
 #ifdef MEM_OPT_VERSION
   MasterHandlerInitMsg *initmsg8 = new MasterHandlerInitMsg;
   //initmsg8->master = collectionMaster;
   CkChareID collectionMasterHanlder = CProxy_CollectionMasterHandler::ckNew(initmsg8, 0);
 #else
   CkChareID collectionMaster = CProxy_CollectionMaster::ckNew(0);
-#endif
-#else
-  CProxy_CollectionMaster coll(0);
-  CkChareID collectionMaster = coll.ckGetChareId();
 #endif
 
   SlaveInitMsg *initmsg7 = new SlaveInitMsg;

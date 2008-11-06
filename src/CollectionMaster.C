@@ -45,11 +45,7 @@ void CollectionMasterHandler::enqueuePositions(EnqueueDataMsg *msg){
 	delete msg;
     }else if(enqueuePhase==1){
 	enqueuePhase = 0;
-	#if CHARM_VERSION>050402
 	CkStartQD(CkIndex_CollectionMasterHandler::enqueuePositions((CkQdMsg*)0), &thishandle);
-	#else
-	CkStartQD(CProxy_CollectionMasterHandler::ckIdx_enqueuePositions((CkQdMsg*)0), &thishandle);
-	#endif
     }else{
 	NAMD_die("Enqueue phase at enqueuePositions in the CollectionMasterHandler has wrong value!\n");
     }
@@ -61,11 +57,7 @@ void CollectionMasterHandler::enqueueVelocities(int seq){
 	cm.enqueueVelocitiesFromHandler(seq);
     }else if(enqueuePhase==1){
 	enqueuePhase = 0;
-	#if CHARM_VERSION>050402
 	CkStartQD(CkIndex_CollectionMasterHandler::enqueueVelocities((CkQdMsg*)0), &thishandle);
-	#else
-	CkStartQD(CProxy_CollectionMasterHandler::ckIdx_enqueueVelocities((CkQdMsg*)0), &thishandle);
-	#endif
     }else{
 	NAMD_die("Enqueue phase at enqueueVelocities in the CollectionMasterHandler has wrong value!\n");
     }
