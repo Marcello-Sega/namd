@@ -157,12 +157,12 @@ public:
          << endi;
 
     char charm_version[64];
-#if CHARM_VERSION < 50800
-    // CHARM_VERSION macro starts with 0, interpreted as octal
-    sprintf(charm_version,"0%o",CHARM_VERSION);
-#else
     sprintf(charm_version,"%d",CHARM_VERSION);
+
+#if CHARM_VERSION < 60000
+#error "We do not support Charm 5 any more"
 #endif
+
     iout << iINFO << "Based on Charm++/Converse " << charm_version
          << " for " << CMK_MACHINE_NAME << "\n" << endi;
 

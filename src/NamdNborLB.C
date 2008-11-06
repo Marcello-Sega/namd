@@ -19,11 +19,7 @@ void CreateNamdNborLB()
   // CkPrintf("[%d] created NamdNborLB %d\n",CkMyPe(),loadbalancer);
 }
 
-#if CHARM_VERSION > 050610
 NamdNborLB::NamdNborLB(): NeighborLB(CkLBOptions(-1))
-#else
-NamdNborLB::NamdNborLB()
-#endif
 {
   //  if (CkMyPe()==0)
   //   CkPrintf("[%d] NamdNborLB created\n",CkMyPe());
@@ -142,7 +138,6 @@ CmiBool NamdNborLB::QueryMigrateStep(int _step)
 
 NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
 {
-#if CHARM_VERSION > 050403
   //  CkPrintf("LDB:[%d] All statistics received at %f, %f\n",
   //  CkMyPe(), CmiTimer(),CmiWallTimer());
   int i,j;
@@ -160,13 +155,8 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
     LDStats &thisLDStats = ((i==count)?myStats:stats[i]);
     for (j=0; j < thisLDStats.n_objs; j++) {
       const LDObjData &this_obj = thisLDStats.objData[j];
-#if CHARM_VERSION > 050405
       if (this_obj.omID().id.idx != 1) continue;
       if (this_obj.id().id[1] == -2) continue;
-#else
-      if (this_obj.omID.id.idx != 1) continue;
-      if (this_obj.id.id[1] == -2) continue;
-#endif
       if (this_obj.migratable)  nMoveableComputes++;
     }
   }
@@ -202,11 +192,7 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   
   int migrate_count=migrateInfo.length();
   CkPrintf("NamdNborLB [%d] migrating %d elements\n", CkMyPe(), migrate_count);
-#if CHARM_VERSION > 050611
   NLBMigrateMsg* msg = new(migrate_count,CkNumPes(),CkNumPes(),0) NLBMigrateMsg;
-#else
-  NLBMigrateMsg* msg = new(&migrate_count,1) NLBMigrateMsg;
-#endif
   msg->n_moves = migrate_count;
   for(i=0; i < migrate_count; i++) {
     MigrateInfo* item = migrateInfo[i];
@@ -224,15 +210,11 @@ NLBMigrateMsg* NamdNborLB::Strategy(NborBaseLB::LDStats* stats, int count)
   delete [] processorArray;
 
   return msg;
-#else
-  return NULL;
-#endif
 };
 
 
 int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
 {
-#if CHARM_VERSION > 050403
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
   double bg_weight = 0.7;
@@ -287,13 +269,8 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
     for (j=0; j < thisLDStats.n_objs; j++) {
       const LDObjData &this_obj = thisLDStats.objData[j];
       // filter out non-NAMD managed objects (like PME array)
-#if CHARM_VERSION > 050405
       if (this_obj.omID().id.idx != 1) continue;
       if (this_obj.id().id[1] == -2) { // Its a patch
-#else
-      if (this_obj.omID.id.idx != 1) continue;
-      if (this_obj.id.id[1] == -2) { // Its a patch
-#endif
 /*
 	const int pid = this_obj.id.id[0];
 	int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
@@ -310,11 +287,7 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
 	}
 */
       } else if (this_obj.migratable) { // Its a compute
-#if CHARM_VERSION > 050405
 	const int cid = this_obj.id().id[0];
-#else
-	const int cid = this_obj.id.id[0];
-#endif
 	const int p0 = computeMap->pid(cid,0);
 
 	// For self-interactions, just return the same pid twice
@@ -334,9 +307,6 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
     }
   }
   return nMoveableComputes;
-#else
-  return 0;
-#endif
 }
 
 // Figure out which proxies we will definitely create on other

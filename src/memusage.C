@@ -105,10 +105,8 @@ unsigned long memusage(const char **source) {
   unsigned long memtotal = 0;
   const char* s = "ERROR";
 
-#if CHARM_VERSION > 50911
   if (CmiMemoryIs(CMI_MEMORY_IS_GNU) ) memtotal = CmiMemoryUsage();
   s = "CmiMemoryUsage";
-#endif
 
   if ( ! memtotal ) { memtotal = memusage_mstats(); s = "mstats"; }
 

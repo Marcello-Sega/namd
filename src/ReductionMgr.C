@@ -178,12 +178,8 @@ ReductionSet* ReductionMgr::getSet(int setID, int size) {
       msg->reductionSetID = setID;
       msg->dataSize = size;
       msg->sourceNode = CkMyPe();
-#if CHARM_VERSION > 050402
       CProxy_ReductionMgr reductionProxy(thisgroup);
       reductionProxy[myParent].remoteRegister(msg);
-#else
-      CProxy_ReductionMgr(thisgroup).remoteRegister(msg,myParent);
-#endif
     }
   }
   return reductionSets[setID];
@@ -197,12 +193,8 @@ void ReductionMgr::delSet(int setID) {
       ReductionRegisterMsg *msg = new ReductionRegisterMsg;
       msg->reductionSetID = setID;
       msg->sourceNode = CkMyPe();
-#if CHARM_VERSION > 050402
       CProxy_ReductionMgr reductionProxy(thisgroup);
       reductionProxy[myParent].remoteUnregister(msg);
-#else
-      CProxy_ReductionMgr(thisgroup).remoteUnregister(msg,myParent);
-#endif
     }
     delete set;
     reductionSets[setID] = 0;
@@ -351,12 +343,8 @@ void ReductionMgr::mergeAndDeliver(ReductionSet *set, int seqNum) {
       for ( int i = 0; i < msg->dataSize; ++i ) {
         msg->data[i] = data->data[i];
       }
-#if CHARM_VERSION > 050402
       CProxy_ReductionMgr reductionProxy(thisgroup);
       reductionProxy[myParent].remoteSubmit(msg);
-#else
-      CProxy_ReductionMgr(thisgroup).remoteSubmit(msg,myParent);
-#endif
       delete set->removeData(seqNum);
     }
 

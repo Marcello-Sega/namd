@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: brunner $
- * $Date: 2008/10/23 22:04:34 $
- * $Revision: 1.1185 $
+ * $Author: bhatele $
+ * $Date: 2008/11/06 19:08:33 $
+ * $Revision: 1.1186 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -117,12 +117,8 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
 
   delete msg;
 
-#if CHARM_VERSION > 050402
   CProxy_WorkDistrib workProxy(thisgroup);
   workProxy[0].doneSaveComputeMap();
-#else
-  CProxy_WorkDistrib(thisgroup).doneSaveComputeMap(0);
-#endif
 
   DebugM(2, "ComputeMap after send!\n");
   for (i=0; i<computeMap->numComputes(); i++) {
@@ -774,12 +770,8 @@ void WorkDistrib::sendMaps(void)
   PatchMap::Object()->pack(mapMsg->patchMapData);
   ComputeMap::Object()->pack(mapMsg->computeMapData);
 
-#if CHARM_VERSION > 050402
   CProxy_WorkDistrib workProxy(thisgroup);
   workProxy[0].saveMaps(mapMsg);
-#else
-  CProxy_WorkDistrib(thisgroup).saveMaps(mapMsg,0);
-#endif
 }
 
 // saveMaps() is called when the map message is received
@@ -1474,59 +1466,31 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   switch ( type ) {
   case computeBondsType:
   case computeSelfBondsType:
-#if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueueBonds(msg);
-#else
-    wdProxy.enqueueBonds(msg,CkMyPe());
-#endif
     break;
   case computeAnglesType:
   case computeSelfAnglesType:
-#if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueueAngles(msg);
-#else
-    wdProxy.enqueueAngles(msg,CkMyPe());
-#endif
     break;
   case computeDihedralsType:
   case computeSelfDihedralsType:
-#if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueueDihedrals(msg);
-#else
-    wdProxy.enqueueDihedrals(msg,CkMyPe());
-#endif
     break;
   case computeImpropersType:
   case computeSelfImpropersType:
-#if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueueImpropers(msg);
-#else
-    wdProxy.enqueueImpropers(msg,CkMyPe());
-#endif
     break;
   case computeCrosstermsType:
   case computeSelfCrosstermsType:
-#if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueueCrossterms(msg);
-#else
-    wdProxy.enqueueCrossterms(msg,CkMyPe());
-#endif
     break;
   case computeNonbondedSelfType:
     switch ( seq % 2 ) {
     case 0:
-#if CHARM_VERSION > 050402
       wdProxy[CkMyPe()].enqueueSelfA(msg);
-#else
-      wdProxy.enqueueSelfA(msg,CkMyPe());
-#endif
       break;
     case 1:
-#if CHARM_VERSION > 050402
       wdProxy[CkMyPe()].enqueueSelfB(msg);
-#else
-      wdProxy.enqueueSelfB(msg,CkMyPe());
-#endif
       break;
     default:
       NAMD_bug("WorkDistrib::messageEnqueueSelf case statement error!");
@@ -1535,25 +1499,13 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   case computeNonbondedPairType:
     switch ( seq % 2 ) {
     case 0:
-#if CHARM_VERSION > 050402
       wdProxy[CkMyPe()].enqueueWorkA(msg);
-#else 
-      wdProxy.enqueueWorkA(msg,CkMyPe());
-#endif
       break;
     case 1:
-#if CHARM_VERSION > 050402
       wdProxy[CkMyPe()].enqueueWorkB(msg);
-#else
-      wdProxy.enqueueWorkB(msg,CkMyPe());
-#endif
       break;
     case 2:
-#if CHARM_VERSION > 050402
       wdProxy[CkMyPe()].enqueueWorkC(msg);
-#else
-      wdProxy.enqueueWorkC(msg,CkMyPe());
-#endif
       break;
     default:
       NAMD_bug("WorkDistrib::messageEnqueueWork case statement error!");
@@ -1561,21 +1513,13 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     break;
   case computePmeType:
 #if 0
-#if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueuePme(msg);
-#else
-    wdProxy.enqueuePme(msg,CkMyPe());
-#endif
 #else
     msg->compute->doWork();
 #endif
     break;
   default:
-#if CHARM_VERSION > 050402
     wdProxy[CkMyPe()].enqueueWork(msg);
-#else
-    wdProxy.enqueueWork(msg,CkMyPe());
-#endif
   }
 }
 
