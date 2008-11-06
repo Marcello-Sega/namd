@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: brunner $
- * $Date: 2008/10/23 22:04:34 $
- * $Revision: 1.1262 $
+ * $Author: jim $
+ * $Date: 2008/11/06 21:11:05 $
+ * $Revision: 1.1263 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3790,6 +3790,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, grid1, 1, 0, 0) );
        iout << "   Done.\n" << endi;
        delete [] work;
+       delete [] grid1;
+       delete [] grid2;
 
        iout << iINFO << "Writing FFTW data to "
 		<< FFTWWisdomFile << "\n" << endi;
