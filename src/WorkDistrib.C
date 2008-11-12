@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: bhatele $
- * $Date: 2008/11/06 19:08:33 $
- * $Revision: 1.1186 $
+ * $Author: jim $
+ * $Date: 2008/11/12 23:19:01 $
+ * $Revision: 1.1187 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -889,8 +889,6 @@ void WorkDistrib::patchMapInit(void)
 //----------------------------------------------------------------------
 void WorkDistrib::assignNodeToPatch()
 {
-  int method=1;
-
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
 
@@ -904,12 +902,11 @@ void WorkDistrib::assignNodeToPatch()
 #endif
     if (nNodes > patchMap->numPatches())
       assignPatchesBitReversal();
-  // else if (nNodes == patchMap->numPatches())
-  //   assignPatchesRoundRobin();
-    else if (method==1)
-      assignPatchesRecursiveBisection();
     else
-      assignPatchesToLowestLoadNode();
+      assignPatchesSpaceFillingCurve();
+      // assignPatchesRecursiveBisection();
+      // assignPatchesRoundRobin();
+      // assignPatchesToLowestLoadNode();
   
   int *nAtoms = new int[nNodes];
   int numAtoms=0;
@@ -1181,6 +1178,86 @@ void WorkDistrib::assignPatchesRecursiveBisection()
 }
 
 //----------------------------------------------------------------------
+void WorkDistrib::assignPatchesSpaceFillingCurve() 
+{
+  PatchMap *patchMap = PatchMap::Object();
+  int *assignedNode = new int[patchMap->numPatches()];
+  int numNodes = Node::Object()->numNodes();
+  SimParameters *simParams = Node::Object()->simParameters;
+  int usedNodes = numNodes;
+  int unusedNodes = 0;
+  if ( simParams->noPatchesOnZero && numNodes > 1 ){
+    usedNodes -= 1;
+    if(simParams->noPatchesOnOne && numNodes > 2)
+      usedNodes -= 1;
+  }  
+  unusedNodes = numNodes - usedNodes;
+
+  int numPatches = patchMap->numPatches();
+  if ( numPatches < usedNodes )
+    NAMD_bug("WorkDistrib::assignPatchesSpaceFillingCurve() called with more nodes than patches");
+
+  ResizeArray<double> patchLoads(numPatches);
+  SortableResizeArray<double> sortedLoads(numPatches);
+  for ( int i=0; i<numPatches; ++i ) {
+    double load = patchMap->patch(i)->getNumAtoms() + 10;
+    patchLoads[i] = load;
+    sortedLoads[i] = load;
+  }
+  sortedLoads.sort();
+
+  // limit maxPatchLoad to adjusted average load per node
+  double sumLoad = 0;
+  double maxPatchLoad = 1;
+  for ( int i=0; i<numPatches; ++i ) {
+    double load = sortedLoads[i];
+    double total = sumLoad + (numPatches-i) * load;
+    if ( usedNodes * load > total ) break;
+    sumLoad += load;
+    maxPatchLoad = load;
+  }
+  double totalLoad = 0;
+  for ( int i=0; i<numPatches; ++i ) {
+    if ( patchLoads[i] > maxPatchLoad ) patchLoads[i] = maxPatchLoad;
+    totalLoad += patchLoads[i];
+  }
+  if ( usedNodes * maxPatchLoad > totalLoad )
+    NAMD_bug("algorithm failure in WorkDistrib::assignPatchesSpaceFillingCurve()");
+
+  // walk through patches in space-filling curve
+  sumLoad = 0;
+  int node = 0;
+  int adim = patchMap->gridsize_a();
+  int bdim = patchMap->gridsize_b();
+  int cdim = patchMap->gridsize_c();
+  int b = 0;
+  int c = 0;
+  int binc = 1;
+  int cinc = 1;
+  for ( int a = 0; a < adim; ++a ) {
+    while ( b >= 0 && b < bdim ) {
+      while ( c >= 0 && c < cdim ) {
+        int pid = patchMap->pid(a,b,c);
+        assignedNode[pid] = node;
+        sumLoad += patchLoads[pid];
+        double targetLoad = (double)(node+1) / (double)usedNodes;
+        targetLoad *= totalLoad;
+        if ( node+1 < usedNodes && sumLoad >= targetLoad ) ++node;
+        c += cinc;
+      }
+      cinc *= -1;  c += cinc;
+      b += binc;
+    }
+    binc *= -1;  b += binc;
+  }
+
+  for ( int i=0; i<patchMap->numPatches(); ++i ) {
+    assignedNode[i] += unusedNodes;
+  }
+  sortNodesAndAssign(assignedNode);
+}
+
+//----------------------------------------------------------------------
 void WorkDistrib::mapComputes(void)
 {
   PatchMap *patchMap = PatchMap::Object();
@@ -1224,6 +1301,10 @@ void WorkDistrib::mapComputes(void)
 
   if ( node->simParameters->extForcesOn )
     mapComputeHomePatches(computeExtType);
+
+#ifdef NAMD_CUDA
+  mapComputeNode(computeNonbondedCUDAType);
+#endif
 
   mapComputeNonbonded();
 
@@ -1335,6 +1416,22 @@ void WorkDistrib::mapComputePatch(ComputeType type)
     cid=computeMap->storeCompute(patchMap->node(i),1,type);
     computeMap->newPid(cid,i);
     patchMap->newCid(i,cid);
+  }
+
+}
+
+
+//----------------------------------------------------------------------
+void WorkDistrib::mapComputeNode(ComputeType type)
+{
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+
+  PatchID i;
+  ComputeID cid;
+
+  for(int i=0; i<CkNumPes(); i++) {
+    computeMap->storeCompute(i,0,type);
   }
 
 }
@@ -1511,8 +1608,17 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
       NAMD_bug("WorkDistrib::messageEnqueueWork case statement error!");
     }
     break;
+  case computeNonbondedCUDAType:
+#ifdef NAMD_CUDA
+    // CkPrintf("CUDA %d %d %x\n", CkMyPe(), seq, compute->priority());
+    wdProxy[CkMyPe()].enqueueCUDA(msg);
+#else
+    msg->compute->doWork();
+#endif
+    break;
   case computePmeType:
-#if 0
+    // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());
+#ifdef NAMD_CUDA
     wdProxy[CkMyPe()].enqueuePme(msg);
 #else
     msg->compute->doWork();
@@ -1594,6 +1700,13 @@ void WorkDistrib::enqueueWorkC(LocalWorkMsg *msg) {
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
+
+void WorkDistrib::enqueueCUDA(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
 
 //**********************************************************************
 //

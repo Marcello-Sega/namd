@@ -193,7 +193,16 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, char *f_arr, char *fz_arr
 
   // fill_b_spline(p);   leave this off!  replaced with code below
 
-  for (i=0; i<N; i++) {
+#ifdef NAMD_CUDA
+  for ( int istart = 0; istart < N; istart += 1000 ) {
+   int iend = istart + 1000;
+   if ( iend > N ) iend = N;
+   CmiNetworkProgress();
+   for (i=istart; i<iend; i++) {
+#else
+  {
+   for (i=0; i<N; i++) {
+#endif
     double q;
     int u1, u2, u2i, u3i;
     double fr1 = p[i].x;
@@ -273,6 +282,7 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, char *f_arr, char *fz_arr
       int ind = u3 + (u3 < 0 ? K3 : 0);
       fz_arr[ind] = 1;
     }
+   }
   }
 }
 

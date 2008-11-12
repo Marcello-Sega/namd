@@ -1,6 +1,8 @@
 # pass version/platform information to compile
 NAMD_VERSION = 2.6
 
+default: all
+
 # compiler flags (Win32 overrides)
 COPTI = -I
 COPTC = -c
@@ -47,6 +49,8 @@ EXTRADEFINES=-DREMOVE_PROXYRESULTMSG_EXTRACOPY
 CXXTHREADOPTS = $(CXXOPTS) 
 CXXSIMPARAMOPTS = $(CXXOPTS) 
 CXXNOALIASOPTS = $(CXXOPTS) 
+CUDACC = $(CXX)
+CUDAOBJS =
 
 include Make.config
 
@@ -101,6 +105,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedFEP.o \
 	$(DSTDIR)/ComputeNonbondedLES.o \
 	$(DSTDIR)/ComputeNonbondedPProf.o \
+	$(DSTDIR)/ComputeNonbondedCUDA.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \
@@ -248,6 +253,18 @@ PLUGINOBJS = \
 
 PLUGINLIB = $(PLUGINOBJS)
 
+CUDAOBJSRAW = \
+	$(DSTDIR)/ComputeNonbondedCUDAKernel.o
+
+$(DSTDIR)/ComputeNonbondedCUDAKernel.o: \
+	$(SRCDIR)/ComputeNonbondedCUDAKernel.cu \
+	$(SRCDIR)/ComputeNonbondedCUDAKernel.h
+	$(CUDACC) $(COPTO)$(DSTDIR)/ComputeNonbondedCUDAKernel.o $(COPTC) $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
+	$(CUDACC) -ptx $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
+	grep global ComputeNonbondedCUDAKernel.ptx
+	$(CUDACC) -cubin $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
+	grep reg ComputeNonbondedCUDAKernel.cubin
+
 SBOBJS = \
 	$(DSTDIR)/tcl_main.o \
 	$(DSTDIR)/tcl_psfgen.o \
@@ -273,10 +290,10 @@ CHARMINC = $(CHARM)/include $(COPTD)CMK_OPTIMIZE=1
 CHARMLIB = $(CHARM)/lib
 
 # Libraries we may have changed
-LIBS = $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
+LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(TCL) $(FFT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(TCL) $(FFT) $(CUDA) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
 CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
 CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
 CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
@@ -311,6 +328,8 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-module NeighborLB -module commlib -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
+	$(CUDAOBJS) \
+	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
@@ -330,6 +349,8 @@ namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-module NeighborLB -module commlib -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
+	$(CUDAOBJS) \
+	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
@@ -403,6 +424,8 @@ projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-tracemode projections -tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
+	$(CUDAOBJS) \
+	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \
@@ -419,6 +442,8 @@ summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	-tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
+	$(CUDAOBJS) \
+	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
 	$(TCLLIB) \

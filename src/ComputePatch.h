@@ -46,7 +46,7 @@ protected :
 #endif
   Patch *patch;
 
-private:
+// private:
   PatchID patchID;
   Box<Patch,CompAtom> *positionBox;
   Box<Patch,Results> *forceBox;

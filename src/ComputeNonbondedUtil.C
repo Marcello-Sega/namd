@@ -23,6 +23,10 @@ extern "C" {
 #include "ReductionMgr.h"
 #include <stdio.h>
 
+#ifdef NAMD_CUDA
+  void build_cuda_force_table();
+#endif
+
 Bool		ComputeNonbondedUtil::commOnly;
 Bool		ComputeNonbondedUtil::fixedAtomsOn;
 BigReal         ComputeNonbondedUtil::cutoff;
@@ -793,6 +797,10 @@ void ComputeNonbondedUtil::select(void)
     fprintf(f,"\n");
   }
   fclose(f);
+#endif
+
+#ifdef NAMD_CUDA
+  build_cuda_force_table();
 #endif
 
 }

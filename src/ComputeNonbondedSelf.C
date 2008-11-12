@@ -36,6 +36,9 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
 void ComputeNonbondedSelf::initialize() {
   ComputePatch::initialize();
   avgPositionBox = patch->registerAvgPositionPickup(cid);
+#ifdef NAMD_CUDA
+  register_cuda_compute_self(cid, patchID);
+#endif
 }
 
 ComputeNonbondedSelf::~ComputeNonbondedSelf()
@@ -48,6 +51,7 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
   }
 }
 
+
 #ifdef MEM_OPT_VERSION
 void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
 #else
@@ -56,7 +60,9 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
+#ifndef NAMD_CUDA
   LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+#endif
 
 #ifdef TRACE_COMPUTE_OBJECTS
   double traceObjStartTime = CmiWallTimer();
@@ -96,6 +102,10 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
 #endif
     params.ff[0] = r->f[Results::nbond];
     params.ff[1] = r->f[Results::nbond];
+#ifdef NAMD_CUDA
+    params.ff[0] = r->f[Results::slow];
+    params.ff[1] = r->f[Results::slow];
+#endif
     params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
 
@@ -175,7 +185,9 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
 #endif
 
   // Inform load balancer
+#ifndef NAMD_CUDA
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
 
   reduction->submit();
   if (pressureProfileOn)

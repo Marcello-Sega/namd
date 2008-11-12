@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2008/11/06 21:11:05 $
- * $Revision: 1.1263 $
+ * $Date: 2008/11/12 23:19:01 $
+ * $Revision: 1.1264 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2753,6 +2753,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if ( ldbUnloadRankZero ) iout << iINFO << "REMOVING LOAD FROM RANK 0\n";
      iout << endi;
    }
+
+#ifdef NAMD_CUDA
+    maxSelfPart = maxPairPart = 1;
+#endif
 
    iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
         << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n"

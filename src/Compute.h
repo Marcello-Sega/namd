@@ -58,7 +58,7 @@ public:
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
   int sequence(void) { return sequenceNumber; }
-  virtual int priority(void) { return basePriority; }
+  int priority(void) { return basePriority; }
 };
 
 /* For projection's usage: each compute object's work is associated 

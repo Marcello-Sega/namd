@@ -39,6 +39,9 @@ void ComputeNonbondedPair::initialize() {
   for (int i=0; i<2; i++) {
     avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid,trans[i]);
   }
+#ifdef NAMD_CUDA
+  register_cuda_compute_pair(cid, patchID, trans);
+#endif
 }
 
 ComputeNonbondedPair::~ComputeNonbondedPair()
@@ -56,13 +59,19 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
 int ComputeNonbondedPair::noWork() {
 
   // return 0;  // for testing
-  if ( numAtoms[0] && numAtoms[1] && patch[0]->flags.doNonbonded )
+  if ( numAtoms[0] && numAtoms[1] && patch[0]->flags.doNonbonded
+#ifdef NAMD_CUDA
+	&& patch[0]->flags.doEnergy
+#endif
+ )
   {
     return 0;  // work to do, enqueue as usual
   } else
   {
     // Inform load balancer
+#ifndef NAMD_CUDA
     LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+#endif
     // fake out patches and reduction system
 
     BigReal reductionData[reductionDataSize];
@@ -95,7 +104,9 @@ int ComputeNonbondedPair::noWork() {
       submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
     // Inform load balancer
+#ifndef NAMD_CUDA
     LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
 
     reduction->submit();
     if (pressureProfileOn) 
@@ -113,7 +124,9 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], Results* r[2])
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
+#ifndef NAMD_CUDA
   LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+#endif
 
 #ifdef TRACE_COMPUTE_OBJECTS
     double traceObjStartTime = CmiWallTimer();
@@ -226,6 +239,10 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], Results* r[2])
     #endif
       params.ff[0] = r[a]->f[Results::nbond];
       params.ff[1] = r[b]->f[Results::nbond];
+#ifdef NAMD_CUDA
+      params.ff[0] = r[a]->f[Results::slow];
+      params.ff[1] = r[b]->f[Results::slow];
+#endif
       params.numAtoms[0] = numAtoms[a];
       params.numAtoms[1] = numAtoms[b];
 
@@ -273,7 +290,9 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], Results* r[2])
 #endif
 
   // Inform load balancer
+#ifndef NAMD_CUDA
   LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
 
   reduction->submit();
   if (pressureProfileOn)

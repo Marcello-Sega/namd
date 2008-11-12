@@ -16,6 +16,12 @@
 class LJTable;
 class Molecule;
 
+#ifdef NAMD_CUDA
+void register_cuda_compute_self(ComputeID c, PatchID pid);
+void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]);
+void unregister_cuda_compute(ComputeID c);
+#endif
+
 typedef unsigned short plint;
 
 class Pairlists {

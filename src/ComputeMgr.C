@@ -26,6 +26,7 @@
 #include "ComputeNonbondedUtil.h"
 #include "ComputeNonbondedSelf.h"
 #include "ComputeNonbondedPair.h"
+#include "ComputeNonbondedCUDA.h"
 #include "ComputeAngles.h"
 #include "ComputeDihedrals.h"
 #include "ComputeImpropers.h"
@@ -291,6 +292,13 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
         break;
+#ifdef NAMD_CUDA
+    case computeNonbondedCUDAType:
+	c = new ComputeNonbondedCUDA(i); // unknown delete
+	map->registerCompute(i,c);
+	c->initialize();
+	break;
+#endif
     case computeBondsType:
         PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
         c = new ComputeBonds(i,pids); // unknown delete

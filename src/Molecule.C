@@ -4189,6 +4189,10 @@ void Molecule::receive_Molecule(MIStream *msg)
 
   void Molecule::stripHGroupExcl(void)
   {
+#ifdef NAMD_CUDA
+    return;
+#endif
+
 #ifdef MEM_OPT_VERSION
    //don't eliminate the exclusion signatures but only adjusting numCalcExclusions
    //which is related to the checksum in reductions. HGroupExcl are not calculated

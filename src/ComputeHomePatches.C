@@ -39,8 +39,6 @@ void ComputeHomePatches::initialize()
   }
 
   setNumPatches(patchList.size());
-
-  basePriority = 0;  // higher priority than pme or proxies
 }
 
 void ComputeHomePatches::atomUpdate()

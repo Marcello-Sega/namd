@@ -54,6 +54,7 @@ public:
   void enqueueWorkA(LocalWorkMsg *msg);
   void enqueueWorkB(LocalWorkMsg *msg);
   void enqueueWorkC(LocalWorkMsg *msg);
+  void enqueueCUDA(LocalWorkMsg *msg);
 
   void mapComputes(void);
   void sendMaps(void);
@@ -82,12 +83,14 @@ public:
 
 private:
   void mapComputeNonbonded(void);
+  void mapComputeNode(ComputeType);
   void mapComputeHomePatches(ComputeType);
   void mapComputeHomeTuples(ComputeType);
   void mapComputePatch(ComputeType);
   void assignPatchesToLowestLoadNode(void);
   void assignPatchesRecursiveBisection(void);
   void assignPatchesRoundRobin(void);
+  void assignPatchesSpaceFillingCurve(void);
   void assignPatchesBitReversal(void);
   int  assignPatchesTopoGridRecBisection();
 

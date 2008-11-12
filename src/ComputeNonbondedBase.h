@@ -118,6 +118,7 @@
 #undef INT
 #undef PPROF
 #undef LAM
+#undef CUDA
 #undef ALCH
 #undef TI
 #define FEPNAME(X) LAST( X )
@@ -128,6 +129,7 @@
 #define INT(X)
 #define PPROF(X)
 #define LAM(X)
+#define CUDA(X)
 #define ALCH(X)
 #define TI(X)
 #ifdef FEPFLAG
@@ -168,6 +170,10 @@
   #define INT(X) X
   #define PPROF(X) X
 #endif
+#ifdef NAMD_CUDA
+  #undef CUDA
+  #define CUDA(X) X
+#endif
 
 #define LAST(X) X
 
@@ -197,6 +203,10 @@ void ComputeNonbondedUtil :: NAME
 
   if ( ComputeNonbondedUtil::commOnly ) return;
 
+#ifdef NAMD_CUDA
+  NOENERGY(return;)
+#endif
+
   // speedup variables
   BigReal *reduction = params->reduction;
 
@@ -206,8 +216,13 @@ void ComputeNonbondedUtil :: NAME
   )
 
   Pairlists &pairlists = *(params->pairlists);
+#ifdef NAMD_CUDA
+  int savePairlists = 0;
+  int usePairlists = 0;
+#else
   int savePairlists = params->savePairlists;
   int usePairlists = params->usePairlists;
+#endif
   pairlists.reset();
   // PAIR(iout << "--------\n" << endi;)
 
@@ -1554,9 +1569,11 @@ ALCH(
 	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti,
 	r2_delta, r2list);
     exclChecksum += npairi;
+#ifndef NAMD_CUDA
     SELF(
     for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
     )
+#endif
 
 #undef FAST
 #define FAST(X)
@@ -1575,9 +1592,11 @@ ALCH(
 #undef MODIFIED
 #else
     exclChecksum += npairx;
+#ifndef NAMD_CUDA
     SELF(
       for (k=0; k<npairx && pairlistx_save[k] < j_hgroup; ++k) --exclChecksum;
     )
+#endif
 #endif
 
 #if 0 ALCH(+1)   // nonbondedbase2 for alchemical-separeted pairlists

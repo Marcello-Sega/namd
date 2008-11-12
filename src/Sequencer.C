@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: bhatele $
- * $Date: 2008/10/21 20:54:04 $
- * $Revision: 1.1171 $
+ * $Author: jim $
+ * $Date: 2008/11/12 23:19:00 $
+ * $Revision: 1.1172 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1623,6 +1623,24 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
     patch->mollyMollify(&virial);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,virial);
   }
+#ifdef NAMD_CUDA_XXX
+  int numAtoms = patch->numAtoms;
+  FullAtom *a = patch->atom.begin();
+  for ( int i=0; i<numAtoms; ++i ) {
+    CkPrintf("%d %g %g %g\n", a[i].id,
+        patch->f[Results::normal][i].x,
+        patch->f[Results::nbond][i].x,
+        patch->f[Results::slow][i].x);
+    CkPrintf("%d %g %g %g\n", a[i].id,
+        patch->f[Results::normal][i].y,
+        patch->f[Results::nbond][i].y,
+        patch->f[Results::slow][i].y);
+    CkPrintf("%d %g %g %g\n", a[i].id,
+        patch->f[Results::normal][i].z,
+        patch->f[Results::nbond][i].z,
+        patch->f[Results::slow][i].z);
+  }
+#endif
 }
 
 void Sequencer::rebalanceLoad(int timestep) {

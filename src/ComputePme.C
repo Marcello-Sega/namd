@@ -1406,6 +1406,8 @@ ComputePme::ComputePme(ComputeID c) :
 {
   DebugM(4,"ComputePme created.\n");
 
+  basePriority = PME_PRIORITY;
+
   CProxy_ComputePmeMgr::ckLocalBranch(
 	CkpvAccess(BOCclass_group).computePmeMgr)->setCompute(this);
 

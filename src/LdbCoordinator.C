@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: bhatele $
- * $Date: 2008/11/05 22:47:46 $
- * $Revision: 1.89 $
+ * $Author: jim $
+ * $Date: 2008/11/12 23:19:00 $
+ * $Revision: 1.90 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -278,13 +278,17 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 
   for(i=0;i<numComputes;i++)  {
     if ( (computeMap->node(i) == Node::Object()->myid())
-	 && ( (computeMap->type(i) == computeNonbondedPairType)
+	 && ( 0
+#ifndef NAMD_CUDA
+	      || (computeMap->type(i) == computeNonbondedSelfType)
+	      || (computeMap->type(i) == computeNonbondedPairType)
+#endif
 	      || (computeMap->type(i) == computeSelfBondsType)
 	      || (computeMap->type(i) == computeSelfAnglesType)
 	      || (computeMap->type(i) == computeSelfDihedralsType)
 	      || (computeMap->type(i) == computeSelfImpropersType)
 	      || (computeMap->type(i) == computeSelfCrosstermsType)
-	      || (computeMap->type(i) == computeNonbondedSelfType) ) ) {
+	) ) {
       nLocalComputes++;
     }
   }
@@ -328,13 +332,17 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       // Register computes
       for(i=0; i<numComputes; i++)  {
 	if ( (computeMap->node(i) == Node::Object()->myid())
-	     && ( (computeMap->type(i) == computeNonbondedPairType)
+	     && ( 0
+#ifndef NAMD_CUDA
+	          || (computeMap->type(i) == computeNonbondedSelfType)
+	          || (computeMap->type(i) == computeNonbondedPairType)
+#endif
 	          || (computeMap->type(i) == computeSelfBondsType)
 	          || (computeMap->type(i) == computeSelfAnglesType)
 	          || (computeMap->type(i) == computeSelfDihedralsType)
 	          || (computeMap->type(i) == computeSelfImpropersType)
 	          || (computeMap->type(i) == computeSelfCrosstermsType)
-		  || (computeMap->type(i) == computeNonbondedSelfType) ) ) {
+		) ) {
 	  // Register the object with the load balancer
 	  // Store the depended patch IDs in the rest of the element ID
 	  LDObjid elemID;

@@ -26,22 +26,28 @@
 
 // the following are in order of decreasing urgency
 
-#define PME_GRID_PRIORITY (1<<8)
-#define PME_TRANS_PRIORITY (PME_GRID_PRIORITY+1)
-#define PME_TRANS2_PRIORITY (PME_GRID_PRIORITY+2)
-#define PME_UNTRANS_PRIORITY (PME_GRID_PRIORITY+3)
-#define PME_UNTRANS2_PRIORITY (PME_GRID_PRIORITY+4)
+#define PME_PRIORITY (2<<8)
+#define PME_GRID_PRIORITY (PME_PRIORITY+1)
+#define PME_TRANS_PRIORITY (PME_PRIORITY+2)
+#define PME_TRANS2_PRIORITY (PME_PRIORITY+3)
+#define PME_UNTRANS_PRIORITY (PME_PRIORITY+4)
+#define PME_UNTRANS2_PRIORITY (PME_PRIORITY+5)
+ 
+#ifdef NAMD_CUDA
+// higher priority so offloaded work can overlap
+#define PROXY_DATA_PRIORITY (1<<8)
+#else
+#define PROXY_DATA_PRIORITY (3<<8)
+#endif
 
-#define PROXY_DATA_PRIORITY (2<<8)
+#define COMPUTE_PROXY_PRIORITY (4<<8)
 
-#define COMPUTE_PROXY_PRIORITY (3<<8)
-
-#define PROXY_RESULTS_PRIORITY (4<<8)
+#define PROXY_RESULTS_PRIORITY (5<<8)
 
 // pme ungrid messages only affect home patches
-#define PME_UNGRID_PRIORITY (5<<8)
+#define PME_UNGRID_PRIORITY (6<<8)
 
-#define COMPUTE_HOME_PRIORITY (6<<8)
+#define COMPUTE_HOME_PRIORITY (7<<8)
 
 #endif // PRIORITIES_H
 

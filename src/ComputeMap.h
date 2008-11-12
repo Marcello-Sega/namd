@@ -19,6 +19,7 @@ enum ComputeType
 {
   computeNonbondedSelfType,
   computeNonbondedPairType,
+  computeNonbondedCUDAType,
   computeBondsType,
   computeAnglesType,
   computeDihedralsType,

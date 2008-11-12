@@ -56,13 +56,13 @@ void Compute::patchReady(PatchID patchID, int doneMigration, int seq) {
   if (doneMigration) { // If any patch has done migration - we must remap
     doAtomUpdate = true; 
   }
-  sequenceNumber = seq;
 
   if (numPatches <= 0) {
       DebugM(5,"Compute::patchReady("<<patchID<<")-call not valid!\n");
   } else {
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
+      sequenceNumber = seq;  // breaks CUDA priority if done earlier
       if (doAtomUpdate) {
 	atomUpdate();
 	doAtomUpdate = false;

@@ -74,6 +74,8 @@ void NAMD_new_handler() {
 #endif
 }
 
+void cuda_initialize(char**);
+
 // called on all procs
 void all_init(int argc, char **argv)
 {
@@ -84,6 +86,11 @@ void all_init(int argc, char **argv)
 #endif
   ProcessorPrivateInit();
   register_exit_sched();
+#ifdef NAMD_CUDA
+  CmiGetArgFlag(argv, "+netpoll");  // remove +netpoll if it's still there
+  cuda_initialize(argv);
+  argc = CmiGetArgc(argv);
+#endif
   _initCharm(argc, argv);  // message main Chare
 }
 
@@ -97,6 +104,18 @@ void slave_init(int argc, char **argv)
 
 // called by main on one or all procs
 void BackEnd::init(int argc, char **argv) {
+
+#ifdef NAMD_CUDA
+  // look for but don't remove +netpoll on command line
+  int netpoll = 0;
+  for ( int i = 0; i < argc; ++i ) {
+    if ( 0==strcmp(argv[i],"+netpoll") ) {
+      netpoll = 1;
+      break;
+    }
+  }
+#endif
+
   ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
   cpuTime_start = CmiCpuTimer();
   wallTime_start = CmiWallTimer();
@@ -105,6 +124,12 @@ void BackEnd::init(int argc, char **argv) {
     ConverseExit();  // should never return
   }
   all_init(argc, argv);
+
+#ifdef NAMD_CUDA
+  if ( ! netpoll ) {
+    NAMD_die("Please add +netpoll to command line for proper performance.");
+  }
+#endif
 
   // Create branch-office chares
   BOCgroup group;
