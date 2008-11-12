@@ -319,7 +319,7 @@ void colvar::parse_analysis (std::string const &conf) {
   //               this->name+"\".\n");
 
   bool b_runave = false;
-  if (get_keyval (conf, "runningAverage", b_runave)) {
+  if (get_keyval (conf, "runAve", b_runave)) {
 
     //     cvm::log ("Calculating running average.\n");
 
@@ -342,34 +342,37 @@ void colvar::parse_analysis (std::string const &conf) {
     runave_length = 0;
   
   bool b_acf = false;
-  if (get_keyval (conf, "acf", b_acf)) {
+  if (get_keyval (conf, "corrFunc", b_acf)) {
 
-    //     cvm::log ("Calculating auto-correlation function.\n");
+    std::string acf_colvar_name;
+    get_keyval (conf, "corrFuncWithColvar", acf_colvar_name);
+    if (!acf_colvar_name.size()) {
+      cvm::log ("Calculating auto-correlation function for \""+
+                this->name+"\".\n");
+    }
 
     std::string acf_type_str;
-    get_keyval (conf, "acfType", acf_type_str, to_lower_cppstr (std::string ("velocity")));
+    get_keyval (conf, "corrFuncType", acf_type_str, to_lower_cppstr (std::string ("velocity")));
     if (acf_type_str == to_lower_cppstr (std::string ("coordinate"))) {
-      //       cvm::log ("Calculating coordinate ACF for \""+this->name+"\".\n");
       acf_type = acf_coor;
     } else if (acf_type_str == to_lower_cppstr (std::string ("velocity"))) {
-      //       cvm::log ("Calculating velocity ACF for \""+this->name+"\".\n");
       acf_type = acf_vel;
       enable (task_fdiff_velocity);
+      if (acf_colvar_name.size())
+        (cvm::colvar_p (acf_colvar_name))->enable (task_fdiff_velocity);
     } else if (acf_type_str == to_lower_cppstr (std::string ("coordinate_p2"))) {
-      //       cvm::log ("Calculating second order Legendre polynomial "
-      //                 "coordinate ACF for \""+this->name+"\".\n");
       acf_type = acf_p2coor;
     } else {
-      cvm::fatal_error ("Unknown type of ACF for \""+this->name+
-                        "\", (\""+acf_type_str+"\").\n");
+      cvm::fatal_error ("Unknown type of correlation function, \""+
+                        acf_type_str+"\".\n");
     }
-    
-    get_keyval (conf, "acfNormalize", acf_normalize, true);
-    get_keyval (conf, "acfLength", acf_length, 1000);
-    get_keyval (conf, "acfOffset", acf_offset, 0);
-    get_keyval (conf, "acfStride", acf_stride, 1);
-    get_keyval (conf, "acfOutputFile", acf_outfile,
-                std::string (this->name+"."+acf_type_str+".acf.dat"));
+
+    get_keyval (conf, "corrFuncNormalize", acf_normalize, true);
+    get_keyval (conf, "corrFuncLength", acf_length, 1000);
+    get_keyval (conf, "corrFuncStride", acf_stride, 1);
+    get_keyval (conf, "corrFuncOffset", acf_offset, 0);
+    get_keyval (conf, "corrFuncOutputFile", acf_outfile,
+                std::string (this->name+".corrfunc.dat"));
 
   } else {
     acf_length = 0;
@@ -1176,19 +1179,25 @@ inline void store_incr (std::list< std::list<colvarvalue> >           &store,
 void colvar::calc_acf()
 {
   // using here an acf_stride-long list of vectors for either
-  // coordinates (x_store) or velocities (v_store); each vector can
+  // coordinates (x_history) or velocities (v_history); each vector can
   // contain up to acf_length values, which are contiguous in memory
   // representation but separated by acf_stride in the time series;
   // the pointer to each vector is changed at every step
 
-  if (! (x_store.size() || v_store.size()) ) {
+  if (! (x_history.size() || v_history.size()) ) {
 
     // first-step operations
 
+    colvar *cfcv = (acf_colvar_name.size() ? 
+                    cvm::colvar_p (acf_colvar_name) :
+                    this);
+    if (cfcv->type() != this->type())
+      cvm::fatal_error ("Error: correlation function between \""+cfcv->name+
+                        "\" and \""+this->name+"\" cannot be calculated, "
+                        "because their value types are different.\n");
     acf_nframes = 0;
 
-    if (cvm::debug())
-      cvm::log ("Colvar \""+this->name+"\": initializing ACF calculation.\n");
+    cvm::log ("Colvar \""+this->name+"\": initializing ACF calculation.\n");
 
     if (acf.size() < acf_length+1)
       acf.resize (acf_length+1, 0.0);
@@ -1196,22 +1205,20 @@ void colvar::calc_acf()
     switch (acf_type) {
 
     case acf_vel:
-      // allocate space for velocities to be stored
+      // allocate space for the velocities history
       for (size_t i = 0; i < acf_stride; i++) {
-        v_store.push_back (std::list<colvarvalue>());
-        //        (v_store.back()).reserve (acf_length);
+        v_history.push_back (std::list<colvarvalue>());
       }
-      v_store_p = v_store.begin();
+      v_history_p = v_history.begin();
       break;
 
     case acf_coor:
     case acf_p2coor:
-      // allocate space for coordinates to be stored
+      // allocate space for the coordinates history
       for (size_t i = 0; i < acf_stride; i++) {
-        x_store.push_back (std::list<colvarvalue>());
-        //        (x_store.back()).reserve (acf_length);
+        x_history.push_back (std::list<colvarvalue>());
       }
-      x_store_p = x_store.begin();
+      x_history_p = x_history.begin();
       break;
 
     default:
@@ -1220,34 +1227,40 @@ void colvar::calc_acf()
 
   } else {
 
+    colvar *cfcv = (acf_colvar_name.size() ? 
+                    cvm::colvar_p (acf_colvar_name) :
+                    this);
+
     switch (acf_type) {
 
     case acf_vel:
 
       if (tasks[task_fdiff_velocity]) {
-        // only way to calculate velocities for the moment
-        v_reported = v_fdiff = fdiff_velocity (x_old, x);
+        // calc() should do this already, but this only happens in a
+        // simulation; better do it again in case a trajectory is
+        // being read
+        v_reported = v_fdiff = fdiff_velocity (x_old, cfcv->value());
       }
 
-      calc_vel_acf ((*v_store_p), this->velocity());
-      // store this value in the list of previous ones
-      store_add_value (acf_length+acf_offset, *v_store_p, this->velocity());
-      // if stride is larger than one, cycle the store lists
-      store_incr (v_store, v_store_p);
+      calc_vel_acf ((*v_history_p), cfcv->velocity());
+      // store this value in the history
+      store_add_value (acf_length+acf_offset, *v_history_p, cfcv->velocity());
+      // if stride is larger than one, cycle among different histories
+      store_incr (v_history, v_history_p);
       break;
 
     case acf_coor:
 
-      calc_coor_acf ((*x_store_p), x);
-      store_add_value (acf_length+acf_offset, *x_store_p, x);
-      store_incr (x_store, x_store_p);
+      calc_coor_acf ((*x_history_p), cfcv->value());
+      store_add_value (acf_length+acf_offset, *x_history_p, cfcv->value());
+      store_incr (x_history, x_history_p);
       break;
 
     case acf_p2coor:
 
-      calc_p2coor_acf ((*x_store_p), x);
-      store_add_value (acf_length+acf_offset, *x_store_p, x);
-      store_incr (x_store, x_store_p);
+      calc_p2coor_acf ((*x_history_p), cfcv->value());
+      store_add_value (acf_length+acf_offset, *x_history_p, cfcv->value());
+      store_incr (x_history, x_history_p);
       break;
 
     default:
@@ -1262,13 +1275,13 @@ void colvar::calc_acf()
 }
 
 
-void colvar::calc_vel_acf (std::list<colvarvalue> &v_store,
+void colvar::calc_vel_acf (std::list<colvarvalue> &v_history,
                            colvarvalue const      &v)
 {
   // loop over stored velocities and add to the ACF, but only the
   // length is sufficient to hold an entire row of ACF values
-  if (v_store.size() >= acf_length+acf_offset) {
-    std::list<colvarvalue>::iterator  vs_i = v_store.begin();
+  if (v_history.size() >= acf_length+acf_offset) {
+    std::list<colvarvalue>::iterator  vs_i = v_history.begin();
     std::vector<cvm::real>::iterator acf_i = acf.begin();
 
     for (size_t i = 0; i < acf_offset; i++)
@@ -1279,19 +1292,19 @@ void colvar::calc_vel_acf (std::list<colvarvalue> &v_store,
 
     // inner products of previous velocities with current (acf_i and
     // vs_i are updated)
-    colvarvalue::inner_opt (v, vs_i, v_store.end(), acf_i); 
+    colvarvalue::inner_opt (v, vs_i, v_history.end(), acf_i); 
 
     acf_nframes++;
   }
 }
 
 
-void colvar::calc_coor_acf (std::list<colvarvalue> &x_store,
+void colvar::calc_coor_acf (std::list<colvarvalue> &x_history,
                             colvarvalue const      &x)
 {
   // same as above but for coordinates
-  if (x_store.size() >= acf_length+acf_offset) {
-    std::list<colvarvalue>::iterator  xs_i = x_store.begin();
+  if (x_history.size() >= acf_length+acf_offset) {
+    std::list<colvarvalue>::iterator  xs_i = x_history.begin();
     std::vector<cvm::real>::iterator acf_i = acf.begin();
 
     for (size_t i = 0; i < acf_offset; i++)
@@ -1299,20 +1312,20 @@ void colvar::calc_coor_acf (std::list<colvarvalue> &x_store,
 
     *(acf_i++) += x.norm2();
 
-    colvarvalue::inner_opt (x, xs_i, x_store.end(), acf_i); 
+    colvarvalue::inner_opt (x, xs_i, x_history.end(), acf_i); 
 
     acf_nframes++;
   }
 }
 
 
-void colvar::calc_p2coor_acf (std::list<colvarvalue> &x_store,
+void colvar::calc_p2coor_acf (std::list<colvarvalue> &x_history,
                               colvarvalue const      &x)
 {
   // same as above but with second order Legendre polynomial instead
   // of just the scalar product
-  if (x_store.size() >= acf_length+acf_offset) {
-    std::list<colvarvalue>::iterator  xs_i = x_store.begin();
+  if (x_history.size() >= acf_length+acf_offset) {
+    std::list<colvarvalue>::iterator  xs_i = x_history.begin();
     std::vector<cvm::real>::iterator acf_i = acf.begin();
 
     for (size_t i = 0; i < acf_offset; i++)
@@ -1321,7 +1334,7 @@ void colvar::calc_p2coor_acf (std::list<colvarvalue> &x_store,
     // value of P2(0) = 1
     *(acf_i++) += 1.0;
 
-    colvarvalue::p2leg_opt (x, xs_i, x_store.end(), acf_i); 
+    colvarvalue::p2leg_opt (x, xs_i, x_history.end(), acf_i); 
 
     acf_nframes++;
   }
@@ -1362,7 +1375,7 @@ void colvar::calc_runave()
 {
   size_t const store_length = runave_length-1;
 
-  if (!x_store.size()) {
+  if (!x_history.size()) {
 
     runave.type (x.type());
 
@@ -1374,19 +1387,19 @@ void colvar::calc_runave()
 
     acf_nframes = 0;
 
-    x_store.push_back (std::list<colvarvalue>());
-    //    (x_store.back()).reserve (store_length);
-    x_store_p = x_store.begin();
+    x_history.push_back (std::list<colvarvalue>());
+    //    (x_history.back()).reserve (store_length);
+    x_history_p = x_history.begin();
 
   } else {
 
     if ( (cvm::step_relative() % runave_stride) == 0) {
 
-      if ((*x_store_p).size() >= store_length) {
+      if ((*x_history_p).size() >= store_length) {
 
         runave = x;
-        for (std::list<colvarvalue>::iterator xs_i = (*x_store_p).begin();
-             xs_i != (*x_store_p).end(); xs_i++) {
+        for (std::list<colvarvalue>::iterator xs_i = (*x_history_p).begin();
+             xs_i != (*x_history_p).end(); xs_i++) {
           runave += (*xs_i);
         }
         runave *= 1.0 / cvm::real (runave_length);
@@ -1394,8 +1407,8 @@ void colvar::calc_runave()
 
         runave_variance = 0.0;
         runave_variance += this->dist2 (x, runave);
-        for (std::list<colvarvalue>::iterator xs_i = (*x_store_p).begin();
-             xs_i != (*x_store_p).end(); xs_i++) {
+        for (std::list<colvarvalue>::iterator xs_i = (*x_history_p).begin();
+             xs_i != (*x_history_p).end(); xs_i++) {
           runave_variance += this->dist2 (x, (*xs_i));
         }
         runave_variance *= 1.0 / cvm::real (store_length);
@@ -1408,7 +1421,7 @@ void colvar::calc_runave()
                   << ::sqrt (runave_variance) << "\n";
       }
 
-      store_add_value (store_length, *x_store_p, x);
+      store_add_value (store_length, *x_history_p, x);
     }
   }
 

@@ -290,7 +290,8 @@ public:
                          std::vector<cvm::real>::iterator         &inner);
 
   /// \brief Optimized routine for the second order Legendre
-  /// polynomial of one collective variable with an array
+  /// polynomial, (3cos^2(w)-1)/2, of one collective variable with an
+  /// array
   void static p2leg_opt (colvarvalue const                        &x,
                          std::vector<colvarvalue>::iterator       &xv,
                          std::vector<colvarvalue>::iterator const &xv_end,

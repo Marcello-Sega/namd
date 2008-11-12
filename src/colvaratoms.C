@@ -232,8 +232,8 @@ void cvm::atom_group::parse (std::string const &conf,
       get_keyval (group_conf, "refPositionsCol", ref_pos_col, std::string ("O"), mode);
 
       double ref_pos_col_value;
-      get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
-      if (!ref_pos_col_value)
+      bool found = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
+      if (found && !ref_pos_col_value)
         cvm::fatal_error ("Error: refPositionsColValue, "
                           "if provided, must be non-zero.\n");
 

@@ -43,8 +43,8 @@ colvar::orientation::orientation (std::string const &conf)
       get_keyval (conf, "refPositionsCol", file_col, std::string ("O"));
 
       double file_col_value;
-      get_keyval (conf, "refPositionsColValue", file_col_value, 0.0);
-      if (!file_col_value)
+      bool found = get_keyval (conf, "refPositionsColValue", file_col_value, 0.0);
+      if (found && !file_col_value)
         cvm::fatal_error ("Error: refPositionsColValue, "
                           "if provided, must be non-zero.\n");
 

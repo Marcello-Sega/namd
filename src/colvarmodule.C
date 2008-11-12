@@ -20,8 +20,7 @@ colvarmodule::colvarmodule (char const  *config_filename,
   }
 
   cvm::log (cvm::line_marker);
-  cvm::log ("Initializing the collective variables module, version "
-            COLVARS_VERSION".\n");
+  cvm::log ("Initializing the collective variables module, version " + cvm::to_str(COLVARS_VERSION) + ".\n");
 
   // "it_restart" will be set by the input restart file, if any;
   // "it" should be updated by the proxy

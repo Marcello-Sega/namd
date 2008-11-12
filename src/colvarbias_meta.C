@@ -345,10 +345,6 @@ void colvarbias_meta::update()
         if (colvars[i]->lower_wall_k == 0.0)
           if (curr_bin[i] < min_buffer) {
             int const extra_points = (2*min_buffer - curr_bin[i]);
-            if (cvm::debug())
-              cvm::log ("Adding extra points (low) = "+
-                        cvm::to_str (extra_points)+
-                        " on the direction of \""+colvars[i]->name+"\".\n");
             colvars[i]->lower_boundary -=
               extra_points * colvars[i]->width;
             curr_bin[i] += extra_points;
@@ -365,10 +361,6 @@ void colvarbias_meta::update()
             int const extra_points = (curr_bin[i]-np+1+2*min_buffer);
             colvars[i]->upper_boundary +=
               extra_points * colvars[i]->width;
-            if (cvm::debug())
-              cvm::log ("Adding extra points (up) = "+
-                        cvm::to_str (extra_points)+
-                        " on the direction of \""+colvars[i]->name+"\".\n");
             new_ub = true;
             cvm::log ("Setting a new upper boundary for colvar \""+
                       colvars[i]->name+"\", at "+

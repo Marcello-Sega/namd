@@ -351,11 +351,14 @@ protected:
 
   /// Time series of values and velocities used in auto-correlation
   /// functions (ACF) and running averages
-  std::list< std::list<colvarvalue> > x_store, v_store;
+  std::list< std::list<colvarvalue> > x_history, v_history;
   /// Time series of values and velocities used in auto-correlation
   /// functions (ACF) and running averages (standard deviations)
-  std::list< std::list<colvarvalue> >::iterator x_store_p, v_store_p;
+  std::list< std::list<colvarvalue> >::iterator x_history_p, v_history_p;
 
+  /// \brief Collective variable with which the correlation is
+  /// calculated (default: itself)
+  std::string            acf_colvar_name;
   /// Length of autocorrelation function (ACF)
   size_t                 acf_length;
   /// After how many steps the ACF starts
@@ -388,17 +391,17 @@ protected:
   acf_type_e             acf_type;
 
   /// \brief Velocity ACF, scalar product between v(0) and v(t)
-  void calc_vel_acf (std::list<colvarvalue> &v_store,
+  void calc_vel_acf (std::list<colvarvalue> &v_history,
                      colvarvalue const      &v);
 
   /// \brief Coordinate ACF, scalar product between x(0) and x(t)
   /// (does not work with scalar numbers)
-  void calc_coor_acf (std::list<colvarvalue> &x_store,
+  void calc_coor_acf (std::list<colvarvalue> &x_history,
                       colvarvalue const      &x);
 
   /// \brief Coordinate ACF, second order Legendre polynomial between
   /// x(0) and x(t) (does not work with scalar numbers)
-  void calc_p2coor_acf (std::list<colvarvalue> &x_store,
+  void calc_p2coor_acf (std::list<colvarvalue> &x_history,
                         colvarvalue const      &x);
 
   /// Calculate the auto-correlation function (ACF)
