@@ -1,0 +1,783 @@
+\section{Force Field Parameters}
+\label{section:forcefield}
+
+
+\subsection{Potential energy functions}
+
+Evaluating the force is the most computationally demanding
+part of molecular dynamics.
+The force is the negative gradient of a scalar potential energy function,
+\begin{equation}
+\vec{F}(\vec{r}) = -\nabla U(\vec{r}),
+\end{equation}
+and, for systems of biomolecules,
+this potential function involves the summing,
+\begin{equation}
+U(\vec{r}) = \sum U_{\text{bonded}}(\vec{r})
+  + \sum U_{\text{nonbonded}}(\vec{r}),
+\end{equation}
+over a large number of bonded and nonbonded terms.
+The bonded potential terms involve 2--, 3--, and 4--body interactions
+of covalently bonded atoms,
+with $O(N)$ terms in the summation.
+The nonbonded potential terms involve interactions
+between all pairs of atoms
+(usually excluding pairs of atoms already involved in a bonded term),
+with $O(N^2)$ terms in the summation,
+although fast evaluation techniques are used to
+compute good approximations to their contribution to the potential
+with $O(N)$ or $O(N \log N)$ computational cost.
+
+
+\subsubsection{Bonded potential energy terms}
+%\label{sec:bonded}
+
+The bonded potential terms involve 2--, 3--, and 4--body interactions
+of covalently bonded atoms.
+
+The 2--body spring bond potential
+describes the harmonic vibrational motion
+between an $(i,j)$--pair of covalently bonded atoms,
+\begin{equation}
+U_{\text{bond}} = k (r_{ij} - r_0)^2,
+\end{equation}
+where $r_{ij} = \|\vec{r}_j - \vec{r}_i\|$ gives the distance
+between the atoms,
+$r_0$ is the equilibrium distance,
+and $k$ is the spring constant.
+
+The 3--body angular bond potential
+describes the angular vibrational motion
+occurring between an $(i,j,k)$--triple of covalently bonded atoms,
+\begin{equation}
+U_{\text{angle}} = k_{\theta} (\theta - \theta_0)^2
+                 + k_{\text{ub}} (r_{ik} - r_{\text{ub}})^2,
+\end{equation}
+where, in the first term,
+$\theta$ is the angle in radians between vectors
+$\vec{r}_{ij} = \vec{r}_j - \vec{r}_i$
+and $\vec{r}_{kj} = \vec{r}_j - \vec{r}_k$,
+$\theta_0$ is the equilibrium angle,
+and $k_{\theta}$ is the angle constant.
+The second term is the Urey--Bradley term
+used to describe a 
+(noncovalent) spring between the outer $i$ and $k$ atoms,
+active when constant $k_{\text{ub}} \neq 0$,
+where, like the spring bond,
+$r_{ik} = \|\vec{r}_k - \vec{r}_i\|$ gives the distance between
+the pair of atoms and
+$r_{\text{ub}}$ is the equilibrium distance.
+
+The 4--body torsion angle (also known as dihedral angle) potential
+describes the angular spring between the planes formed
+by the first three and last three atoms of
+a consecutively bonded $(i,j,k,l)$--quadruple of atoms,
+\begin{equation}
+U_{\text{tors}} =
+  \begin{cases}
+  k (1 + \cos(n \psi + \phi)) & \text{if $n > 0$,} \\
+  k (\psi - \phi)^2           & \text{if $n = 0$,}
+  \end{cases}
+\end{equation}
+where $\psi$ is the angle in radians between
+the $(i,j,k)$--plane and the $(j,k,l)$--plane.
+The integer constant $n$ is nonnegative and indicates the periodicity.
+For $n > 0$, $\phi$ is the phase shift angle
+and $k$ is the multiplicative constant.
+For $n = 0$, $\phi$ acts as an equilibrium angle
+and the units of $k$ change to $\text{potential}/\text{rad}^2$.
+A given $(i,j,k,l)$--quadruple of atoms might contribute
+multiple terms to the potential,
+each with its own parameterization.
+The use of multiple terms for a torsion angle allows for
+complex angular variation of the potential,
+effectively a truncated Fourier series.
+
+
+\subsubsection{Nonbonded potential energy terms}
+%\label{sec:nonbonded}
+
+The nonbonded potential terms involve interactions
+between all $(i,j)$--pairs of atoms,
+usually excluding pairs of atoms already involved in a bonded term.
+Even using a fast evaluation methods
+the cost of computing the nonbonded potentials dominates the work
+required for each time step of an MD simulation.
+
+The Lennard--Jones potential
+accounts for the weak dipole attraction between distant atoms and
+the hard core repulsion as atoms become close,
+\begin{equation}
+U_{\text{LJ}} = (-E_{\text{min}}) \left[ 
+    \left( \frac{R_{\text{min}}}{r_{ij}} \right)^{12} -
+    2 \left( \frac{R_{\text{min}}}{r_{ij}} \right)^{6} \right],
+\end{equation}
+where $r_{ij} = \|\vec{r}_j - \vec{r}_i\|$ gives the distance
+between the pair of atoms.
+The parameter $E_{\text{min}} = U_{\text{LJ}}(R_{\text{min}})$ is 
+the minimum of the potential term
+($E_{\text{min}} < 0$, which means that $-E_{\text{min}}$ is the well-depth).
+The Lennard--Jones potential approaches 0 rapidly as $r_{ij}$
+increases, so it is usually truncated (smoothly shifted) to 0
+past a cutoff radius, requiring $O(N)$ computational cost.
+
+The electrostatic potential
+is repulsive for atomic charges with the same sign
+and attractive for atomic charges with opposite signs,
+\begin{equation}
+U_{\text{elec}} = \epsilon_{14} \frac{C q_i q_j}{\epsilon_0 r_{ij}},
+\end{equation}
+where $r_{ij} = \|\vec{r}_j - \vec{r}_i\|$ gives the distance
+between the pair of atoms,
+and $q_i$ and $q_j$ are the charges on the respective atoms.
+Coulomb's constant $C$ and the dielectric constant $\epsilon_0$
+are fixed for all electrostatic interactions.
+The parameter $\epsilon_{14}$ is a unitless scaling factor 
+whose value is 1,
+except for a modified 1--4 interaction,
+where the pair of atoms is separated by a sequence
+of three covalent bonds (so that the atoms might
+also be involved in a torsion angle interaction),
+in which case $\epsilon_{14} = \varepsilon$,
+for a fixed constant $0 \leq \varepsilon \leq 1$.
+Although the electrostatic potential may be computed with
+a cutoff like the Lennard--Jones potential,
+the $1/r$ potential approaches 0 much more
+slowly than the $1/r^6$ potential,
+so neglecting the long range electrostatic terms
+can degrade qualitative results,
+especially for highly charged systems.
+There are other fast evaluation methods that approximate
+the contribution to the long range electrostatic terms
+that require $O(N)$ or $O(N \log N)$ computational cost,
+depending on the method.
+
+
+\subsection{Non-bonded interactions}
+\label{section:electdesc}
+
+\NAMD\ has a number of options that control the way that non-bonded
+interactions are calculated.  These options are interrelated and
+can be quite confusing, so this section attempts to explain the
+behavior of the non-bonded interactions and how to use these
+parameters.
+
+\subsubsection{Van der Waals interactions}
+The simplest non-bonded 
+interaction is the van der Waals interaction.  In 
+\NAMD, van der Waals interactions are always truncated at the 
+cutoff distance, specified by {\tt cutoff}.  
+The main option that effects van der Waals interactions
+is the {\tt switching} parameter.  With this option set to {\tt on},
+a smooth switching function will be used to truncate the
+van der Waals potential energy smoothly at the cutoff distance.  
+A graph of the van der Waals 
+potential with this switching function is shown in Figure 
+\ref{fig:switching}.  If {\tt switching} is set to {\tt off}, the 
+van der Waals energy is just abruptly truncated at the cutoff 
+distance, so that energy may not be conserved.  
+
+\begin{figure}[htb]
+  \center{\includegraphics{figures/switching}}
+  \caption[Graph of van der Waals potential with and without switching]
+  {\small Graph of van der Waals potential with and without the
+  application of the switching function.  With the switching function
+  active, the potential is smoothly reduced to 0 at the cutoff distance.
+  Without the switching function, there is a discontinuity where the
+  potential is truncated.}
+  \label{fig:switching}
+\end{figure}
+
+The switching function used is based on the X-PLOR switching
+function.  The parameter {\tt switchdist} specifies the distance
+at which the switching function should start taking effect to
+bring the van der Waals potential to 0 smoothly at the cutoff distance.  
+Thus, the value of {\tt switchdist} must always be less than that 
+of {\tt cutoff}.
+
+
+\subsubsection{Electrostatic interactions}
+The handling of electrostatics is slightly
+more complicated due to the incorporation of multiple timestepping for full
+electrostatic interactions.  There are two cases to consider, one where
+full electrostatics is employed and the other where electrostatics
+are truncated at a given distance.
+\prettypar
+First let us consider the latter case, where electrostatics are truncated at
+the cutoff distance.  Using this scheme, all electrostatic interactions
+beyond a specified distance are ignored, or assumed to be zero.  If
+{\tt switching} is set to {\tt on}, rather than having a discontinuity
+in the potential
+at the cutoff distance, a shifting function is applied to the electrostatic
+potential as shown in Figure \ref{fig:shifting}.  As this figure shows, the
+shifting function shifts the entire potential curve so that the curve
+intersects the x-axis at the cutoff distance.  This shifting function
+is based on the
+shifting function used by X-PLOR.
+
+\begin{figure}[htb]
+  \center{\includegraphics{figures/shifting}}
+  \caption[Graph of electrostatic potential with and without shifting function]
+  {\small Graph showing an electrostatic potential with and without the
+  application of the shifting function.}
+  \label{fig:shifting}
+\end{figure}
+
+Next, consider the case where full electrostatics are calculated.  In this
+case, the electrostatic interactions are not truncated at any distance.  In
+this scheme, the {\tt cutoff} parameter has a slightly different meaning
+for the electrostatic interactions --- it represents
+the {\it local interaction distance\/}, or distance within which electrostatic
+pairs will be directly calculated every timestep.  Outside of this distance,
+interactions will be calculated only periodically.  These forces
+will be applied using a multiple timestep integration scheme as described in
+Section \ref{section:mts}.
+
+\begin{figure}[htb]
+  \center{\includegraphics{figures/fmaOn}}
+  \caption[Graph of electrostatic split between short and long range forces]
+  {\small Graph showing an electrostatic potential 
+  when full electrostatics are used within \NAMD, 
+  with one curve portion calculated directly 
+  and the other calculated using DPMTA.}
+  \label{fig:fmaOn}
+\end{figure}
+
+
+
+\subsubsection{Non-bonded force field parameters}
+
+\begin{itemize}
+%\item
+%\NAMDCONF{eleccutoff}%
+%{local interaction distance for electrostatic calculations (\AA)}%
+%{positive decimal}%
+%{If DPMTA is active, this distance defines the local interaction length
+%for the DPMTA algorithm.
+%Otherwise, this value specifies the distance at which
+%electrostatic interactions are truncated.
+%If {\tt eleccutoff} is defined, it supersedes {\tt cutoff}.
+%If {\tt eleccutoff} is not defined, then \verb }cutoff} {\em must}
+%be defined.
+%See Section \ref{section:electdesc} for a further discussion
+%of this configuration value.}
+
+%\item
+%\NAMDCONF{vdwcutoff}%
+%{local interaction distance for van der Waals calculations (\AA)}%
+%{positive decimal}%
+%{This value specifies the distance at which
+%van der Waals interactions are truncated.
+%If {\tt vdwcutoff} is defined, it supersedes {\tt cutoff}.
+%If {\tt vdwcutoff} is not defined, then \verb }cutoff} {\em must}
+%be defined.
+%See Section \ref{section:electdesc} for a further discussion
+%of this configuration value.}
+
+\item
+\NAMDCONF{cutoff}
+{local interaction distance common to both electrostatic 
+and van der Waals calculations (\AA)}
+{positive decimal}
+{%This value can substitute for either {\tt eleccutoff}
+%or {\tt vdwcutoff} if either of those is undefined.
+See Section \ref{section:electdesc} for more information.}
+
+\item
+\NAMDCONFWDEF{switching}{use switching function?}{{\tt on} or {\tt off}}
+{{\tt on}}
+{If {\tt switching} is
+specified to be {\tt off}, then a truncated cutoff is performed.
+If {\tt switching} is turned {\tt on}, then smoothing functions
+are applied to both the electrostatics and van der Waals forces.
+For a complete description of the non-bonded force parameters see
+Section \ref{section:electdesc}.  If {\tt switching} is set to
+{\tt on}, then {\tt switchdist} must also be defined.}
+
+%\item
+%\NAMDCONF{elecswitchdist}{distance at which to activate switching function for %electrostatic calculations (\AA)}{positive decimal $\leq$ {\tt eleccutoff}}
+%{Distance at which the switching function
+%used to smooth the truncation of
+%electrostatic forces should begin to take effect.  
+%This parameter only has meaning if {\tt switching} is 
+%set to {\tt on}.  
+%The value of {\tt elecswitchdist} must be less than
+%or equal to the value of {\tt eleccutoff}, since the switching function
+%is only applied on the range from {\tt elecswitchdist} to {\tt eleccutoff}.
+%If {\tt elecswitchdist} is defined, it supersedes {\tt switchdist}.
+%If {\tt elecswitchdist} is not defined and {\tt switching} is
+%{\tt on}, then \verb }switchdist} {\em must} be defined.
+%For a complete description of the non-bonded force parameters, see
+%Section \ref{section:electdesc}.
+%}
+
+%\item
+%\NAMDCONF{vdwswitchdist}%
+%{distance at which to activate switching function 
+%for van der Waals calculations (\AA)}%
+%{positive decimal $\leq$ {\tt vdwcutoff}}%
+%{Distance at which the switching function
+%used to smooth the truncation of
+%van der Waals forces should begin to take effect.  
+%This parameter only has meaning if {\tt switching} is 
+%set to {\tt on}.  
+%The value of {\tt vdwswitchdist} must be less than
+%or equal to the value of {\tt vdwcutoff}, since the switching function
+%is only applied on the range from {\tt vdwswitchdist} to {\tt vdwcutoff}.
+%If {\tt vdwswitchdist} is defined, it supersedes {\tt switchdist}.
+%If {\tt vdwswitchdist} is not defined and {\tt switching} is
+%{\tt on}, then \verb }switchdist} {\em must} be defined.
+%For a complete description of the non-bonded force parameters, see
+%Section \ref{section:electdesc}.
+%}
+
+\item
+\NAMDCONF{switchdist}
+{distance at which to activate switching/splitting function 
+for electrostatic and van der Waals calculations (\AA)}
+{positive decimal $\leq$ {\tt cutoff}}
+{Distance at which the switching function
+should begin to take effect.  
+This parameter only has meaning if {\tt switching} is 
+set to {\tt on}.  
+The value of {\tt switchdist} must be less than
+or equal to the value of {\tt cutoff}, since the switching function
+is only applied on the range from {\tt switchdist} to {\tt cutoff}.  
+For a complete description of the non-bonded force parameters see
+Section \ref{section:electdesc}.}
+
+\item
+\NAMDCONF{exclude}
+{exclusion policy to use}
+{{\tt none}, {\tt 1-2}, {\tt 1-3}, {\tt 1-4}, or {\tt scaled1-4}}
+{\label{param:exclude}
+%% This parameter is {\it required\/} for every simulation.
+This parameter specifies which pairs of bonded atoms should
+be excluded from non-bonded
+interactions.  With the value of {\tt none}, no bonded pairs of atoms 
+will be excluded.  With the value of {\tt 1-2}, all atom pairs that
+are directly connected via a linear bond will be excluded.  With the
+value of {\tt 1-3}, all {\tt 1-2} pairs will be excluded along with
+all pairs of atoms that are bonded to a common
+third atom (i.e., if atom A is bonded to atom B and atom B is bonded
+to atom C, then the atom pair A-C would be excluded).
+With the value of {\tt 1-4}, all {\tt 1-3} pairs will be excluded along
+with all pairs connected by a set of two bonds (i.e., if atom A is bonded
+to atom B, and atom B is bonded to atom C, and atom C is bonded to
+atom D, then the atom pair A-D would be excluded).  With the value
+of {\tt scaled1-4}, all {\tt 1-3} pairs are excluded and all pairs
+that match the {\tt 1-4} criteria are modified.  The electrostatic
+interactions for such pairs are modified by the constant factor
+defined by {\tt 1-4scaling}.  
+The van der Waals interactions are modified
+by using the special 1-4 parameters defined in the parameter files.}
+
+\item
+\NAMDCONFWDEF{dielectric}{dielectric constant for system}
+{decimal $\geq$ 1.0}{1.0}
+{Dielectric constant for the system.  A value of 1.0 implies no modification
+of the electrostatic interactions.  Any larger value will lessen the
+electrostatic forces acting in the system.}
+
+\item
+\NAMDCONFWDEF{nonbondedScaling}{scaling factor for nonbonded forces}
+{decimal $\geq$ 0.0}{1.0}
+{Scaling factor for electrostatic and van der Waals forces.
+A value of 1.0 implies no modification of the interactions.
+Any smaller value will lessen the
+nonbonded forces acting in the system.}
+
+\item
+\NAMDCONFWDEF{1-4scaling}{scaling factor for 1-4 interactions}
+{0 $\leq$ decimal $\leq$ 1}{1.0}
+{Scaling factor for 1-4 interactions.  This factor is only used when the
+{\tt exclude} parameter is set to {\tt scaled1-4}.  In this case, this
+factor is used to modify the electrostatic interactions between 1-4 atom
+pairs.  If the {\tt exclude} parameter is set to anything but 
+{\tt scaled1-4}, this parameter has no effect regardless of its value.}
+
+\item
+\NAMDCONFWDEF{vdwGeometricSigma}{use geometric mean to combine L-J sigmas}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{Use geometric mean, as required by \index{OPLS} OPLS, rather than
+traditional arithmetic mean when combining Lennard-Jones sigma parameters
+for different atom types.}
+
+\item
+\NAMDCONFWDEF{limitdist}
+{maximum distance between pairs for limiting interaction strength(\AA)}
+{non-negative decimal}
+{{\tt 0.}}
+{
+The electrostatic and van der Waals potential functions diverge
+as the distance between two atoms approaches zero.
+The potential for atoms closer than {\tt limitdist} is instead
+treated as $a r^2 + c$ with parameters chosen to match the
+force and potential at {\tt limitdist}.
+This option should primarily be useful for alchemical free energy
+perturbation calculations, since it makes the process of creating
+and destroying atoms far less drastic energetically.
+The larger the value of {\tt limitdist} the more the maximum force
+between atoms will be reduced.
+In order to not alter the other interactions in the simulation,
+{\tt limitdist} should be less than the closest approach
+of any non-bonded pair of atoms; 1.3\,\AA\ appears to satisfy this
+for typical simulations but the user is encouraged to experiment.
+There should be no performance impact from enabling this feature.
+}
+
+\end{itemize}
+
+
+\subsubsection{PME parameters}
+
+PME stands for Particle Mesh Ewald and is an efficient
+full electrostatics method for use with periodic boundary conditions.
+None of the parameters should affect energy conservation, although they may affect the accuracy of the results and momentum conservation.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{PME}{Use particle mesh Ewald for electrostatics?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Turns on particle mesh Ewald.}
+
+\item
+\NAMDCONFWDEF{PMETolerance}{PME direct space tolerance}{positive decimal}{$10^{-6}$}
+{Affects the value of the Ewald coefficient and the overall accuracy of the results.}
+
+\item
+\NAMDCONFWDEF{PMEInterpOrder}{PME interpolation order}{positive integer}{4 (cubic)}
+{Charges are interpolated onto the grid and forces are interpolated off using this many points, equal to the order of the interpolation function plus one.}
+
+\item
+\NAMDCONF{PMEGridSpacing}{maximum space between grid points}{positive real}
+{The grid spacing partially determines the accuracy and efficiency of PME.
+If any of the grid sizes below are not set, then PMEGridSpacing must be set
+(recommended value is 1.0 \AA ) and will be used to calculate them.
+If a grid size is set, then the grid spacing must be
+at least PMEGridSpacing (if set, or a very large default of 1.5).}
+
+\item
+\NAMDCONF{PMEGridSizeX}{number of grid points in x dimension}{positive integer}
+{The grid size partially determines the accuracy and efficiency of PME.
+For speed, {\tt PMEGridSizeX} should have only small integer factors (2, 3 and 5).}
+
+\item
+\NAMDCONF{PMEGridSizeY}{number of grid points in y dimension}{positive integer}
+{The grid size partially determines the accuracy and efficiency of PME.
+For speed, {\tt PMEGridSizeY} should have only small integer factors (2, 3 and 5).}
+
+\item
+\NAMDCONF{PMEGridSizeZ}{number of grid points in z dimension}{positive integer}
+{The grid size partially determines the accuracy and efficiency of PME.
+For speed, {\tt PMEGridSizeZ} should have only small integer factors (2, 3 and 5).}
+
+\item
+\NAMDCONFWDEF{PMEProcessors}{processors for FFT and reciprocal sum}{positive integer}{larger of x and y grid sizes up to all available processors}
+{For best performance on some systems and machines, it may be necessary to
+restrict the amount of parallelism used.  Experiment with this parameter if
+your parallel performance is poor when PME is used.}
+
+\item
+\NAMDCONFWDEF{FFTWEstimate}{Use estimates to optimize FFT?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Do not optimize FFT based on measurements, but on FFTW rules of thumb.
+This reduces startup time, but may affect performance.}
+
+\item
+\NAMDCONFWDEF{FFTWUseWisdom}{Use FFTW wisdom archive file?}{{\tt yes} or {\tt no}}{{\tt yes}}
+{Try to reduce startup time when possible by reading FFTW ``wisdom'' from a file, and saving wisdom generated by performance measurements to the same file for future use.
+This will reduce startup time when running the same size PME grid on the same number of processors as a previous run using the same file.}
+
+\item
+\NAMDCONFWDEF{FFTWWisdomFile}{name of file for FFTW wisdom archive}{file name}{FFTW\_NAMD\_{\em version}\_{\em platform}.txt}
+{File where FFTW wisdom is read and saved.
+If you only run on one platform this may be useful to reduce startup times for all runs.
+The default is likely sufficient, as it is version and platform specific.}
+
+\end{itemize}
+
+\subsubsection{Full direct parameters}
+
+The direct computation of electrostatics 
+is not intended to be used during 
+real calculations, but rather as a testing or 
+comparison measure.  Because of the ${\mathcal O}(N^2)$ 
+computational complexity for performing 
+direct calculations, this is {\it much} 
+slower than using DPMTA or PME to compute full 
+electrostatics for large systems.
+In the case of periodic boundary conditions,
+the nearest image convention is used rather than a
+full Ewald sum.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{FullDirect}{calculate full electrostatics directly?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Specifies whether or not direct computation of 
+full electrostatics should be performed.}
+
+\end{itemize}
+
+
+\subsubsection{DPME parameters}
+
+{\em DPME is an implementation of PME that is no longer
+included in the released NAMD binaries.
+We recommend that you use the current PME implementation.}
+\begin{itemize}
+\item
+\NAMDCONFWDEF{useDPME}{Use old DPME code?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Switches to old DPME implementation of particle mesh Ewald.
+The new code is faster and allows non-orthogonal cells so you
+probably just want to leave this option turned off.  If you set
+{\tt cellOrigin} to something other than $(0,0,0)$ the energy may differ
+slightly between the old and new implementations.
+{\em DPME is no longer included in released binaries.}
+}
+\end{itemize}
+
+
+\subsubsection{DPMTA parameters}
+
+{\em DPMTA is no longer included in the released NAMD binaries.
+We recommend that you instead use PME with a periodic system because
+it conserves energy better, is more efficient, and is better parallelized.
+If you must have the fast multipole algorithm you may compile \NAMD\ yourself.} 
+
+These parameters control the options to DPMTA, an algorithm
+used to provide full electrostatic interactions.  DPMTA is a
+modified version of the FMA (Fast Multipole Algorithm) and, 
+unfortunately, most of the parameters still refer to FMA
+rather than DPMTA for historical reasons.  Don't be confused!
+\prettypar
+For a further description of how exactly full electrostatics
+are incorporated into \NAMD, see Section \ref{section:mts}.
+For a greater level of detail about DPMTA and the specific
+meaning of its options, see the DPMTA distribution which is
+available via anonymous FTP from the site {\tt ftp.ee.duke.edu}
+in the directory {\tt /pub/SciComp/src}.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{FMA}{use full electrostatics?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not 
+the DPMTA algorithm from Duke University should be used 
+to compute the full electrostatic interactions.  If set to 
+{\tt on}, DPMTA will be used with a multiple timestep integration scheme 
+to provide full electrostatic interactions as detailed in Section 
+\ref{section:mts}.  {\em DPMTA is no longer included in released binaries.}}
+
+\item
+\NAMDCONFWDEF{FMALevels}{number of levels to use in multipole expansion}{positive integer}{5}
+{Number of levels to use for the multipole expansion.  This parameter
+is only used if {\tt FMA} is set to {\tt on}.  
+A value of 4 should be sufficient for systems with less than 10,000 atoms.  
+A value of 5 or greater should be used for larger systems. }
+
+\item
+\NAMDCONFWDEF{FMAMp}{number of multipole terms to use for FMA}{positive integer}{8}
+{Number of terms to use in the multipole expansion.  
+This parameter is only used if {\tt FMA} is set to {\tt on}.  
+If the {\tt FMAFFT} is set to {\tt on}, then this value must 
+be a multiple of 4.  The default value of 8 should be suitable
+for most applications.}
+
+\item
+\NAMDCONFWDEF{FMAFFT}{use DPMTA FFT enhancement?}{{\tt on} or {\tt off}}{{\tt on}}
+{Specifies whether or not the DPMTA code should use the FFT enhancement 
+feature.  This parameter is only used if {\tt FMA} is set to {\tt on}.  
+If {\tt FMAFFT} is set to {\tt on}, the value of {\tt FMAMp} must be 
+set to a multiple of 4.  
+This feature offers substantial benefits only for values 
+of {\tt FMAMp} of 8 or greater.  This feature will substantially 
+increase the amount of memory used by DPMTA.}
+
+%%  REMOVE THIS AS A DOCUMENTED FEATURE.  WE USE stepspercycle INSTEAD.  
+%%
+%%  \item
+%%  \NAMDCONF{FMAfrequency}{number of timesteps between DPMTA calculations}{positive integer}
+%%  {This parameter specifies the number of timesteps between each
+%%  invocation of the DPMTA algorithm.}
+
+\item
+\NAMDCONFWDEF{FMAtheta}{DPMTA theta parameter (radians)}{decimal}{0.715}
+{This parameter specifies the value of the theta parameter
+used in the DPMTA calculation.  The default value is based on
+recommendations by the developers of the code.}
+
+\item
+\NAMDCONFWDEF{FMAFFTBlock}{blocking factor for FMA FFT}{positive integer}{4}
+{The blocking factor for the FFT enhancement to DPMTA.
+This parameter is only used if both {\tt FMA} and {\tt FMAFFT} 
+are set to {\tt on}.  The default value of 4 should be suitable
+for most applications.}
+
+\end{itemize}
+
+
+\subsection{Constraints and Restraints}
+%\label{section:config_add}
+
+\subsubsection{Bond constraint parameters}
+\begin{itemize}
+\item
+\NAMDCONFWDEF{rigidBonds}{controls if and how ShakeH is used}{{\tt none},
+{\tt water}, {\tt all}}{{\tt none}} 
+{When {\tt water} is selected, the hydrogen-oxygen and hydrogen-hydrogen
+distances in waters are constrained to the nominal length or angle given
+in the parameter file, making the molecules completely rigid.
+When {\tt rigidBonds} is {\tt all}, waters are made rigid as described above
+and the bond between each hydrogen and the (one) atom to which
+it is bonded is similarly constrained.
+For the default case {\tt none}, no lengths are constrained.
+}
+
+\item
+\NAMDCONFWDEF{rigidTolerance}{allowable bond-length error for ShakeH (\AA)}
+{positive decimal}{1.0e-8}
+{
+The ShakeH algorithm is assumed to have converged when all constrained
+bonds differ from the nominal bond length by less than this amount.
+}
+
+\item
+\NAMDCONFWDEF{rigidIterations}{maximum ShakeH iterations}{positive integer}{100}
+{
+The maximum number of iterations ShakeH will perform before giving up
+on constraining the bond lengths.  If the bond lengths do not
+converge, a warning message is printed, and the atoms are left at the
+final value achieved by ShakeH.  
+Although the default value is 100, 
+convergence is usually reached after fewer than 10 iterations.
+}
+
+\item
+\NAMDCONFWDEF{rigidDieOnError}{maximum ShakeH iterations}{{\tt on} or {\tt off}}
+{{\tt on}}
+{
+Exit and report an error if rigidTolerance is not achieved after rigidIterations.
+}
+
+\item
+\NAMDCONFWDEF{useSettle}{Use SETTLE for waters.}{{\tt on} or {\tt off}}
+{{\tt on}}
+{
+If rigidBonds are enabled then use the non-iterative SETTLE algorithm to
+keep waters rigid rather than the slower SHAKE algorithm.
+}
+\end{itemize}
+
+\subsubsection{Harmonic restraint parameters}
+
+The following describes the parameters for the 
+harmonic restraints feature of \NAMD.
+%Actually, this feature 
+%should be referred to as harmonic restraints rather than 
+%constraints, but
+For historical reasons the terminology of 
+``harmonic constraints'' has been carried over from X-PLOR.  
+This feature allows a harmonic restraining force to be applied 
+to any set of atoms in the simulation.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{constraints}{are constraints active?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not harmonic constraints are active.  If it 
+is set to {\tt off}, then no harmonic constraints are computed.  
+If it is set to {\tt on}, then 
+harmonic constraints are calculated using the values specified 
+by the parameters {\tt consref}, {\tt conskfile}, {\tt conskcol}, 
+and {\tt consexp}.}
+
+\item
+\NAMDCONFWDEF{consexp}{exponent for harmonic constraint energy function}{positive, even integer}{2}
+{Exponent to be use in the harmonic constraint energy function.  
+This value must be a positive integer, and only even values really make 
+sense.  This parameter is used only if {\tt constraints} is set to 
+{\tt on}.}
+
+\item
+\NAMDCONF{consref}{PDB file containing constraint reference positions}{UNIX file name}
+{PDB file to use for reference positions for harmonic constraints.  
+Each atom that has an active constraint will be constrained about 
+the position specified in this file.}
+
+\item
+\NAMDCONF{conskfile}{PDB file containing force constant values}{UNIX filename}
+{PDB file to use for force constants for 
+harmonic constraints.}
+
+\item
+\NAMDCONF{conskcol}{column of PDB file containing force constant}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}
+{Column of the PDB file to use for the harmonic constraint force constant.
+This parameter may specify any of the floating point fields of the PDB file, 
+either X, Y, Z, occupancy, or beta-coupling (temperature-coupling).  
+Regardless of which column is used, a value of 0 indicates that the atom 
+should not be constrained.  
+Otherwise, the value specified is used as the force constant for 
+that atom's restraining potential.}
+
+\item
+\NAMDCONFWDEF{constraintScaling}{scaling factor for harmonic constraint energy function}{positive}{1.0}
+{The harmonic constraint energy function is multiplied by this parameter,
+making it possible to gradually turn off constraints during equilibration.
+This parameter is used only if {\tt constraints} is set to 
+{\tt on}.}
+
+\item
+\NAMDCONFWDEF{selectConstraints}{Restrain only selected Cartesian components of the coordinates?}{{\tt on} or {\tt off}}{{\tt off}}
+{This option is useful to restrain the positions of atoms to a plane or a line in space. If active,
+ this option will ensure that only selected Cartesian components of the coordinates are restrained.
+ E.g.: Restraining the positions of atoms to their current z values with no restraints
+ in x and y will allow the atoms to move in the x-y plane while retaining their original z-coordinate.
+ Restraining the x and y values will lead to free motion only along the z coordinate.}
+
+\item
+\NAMDCONFWDEF{selectConstrX}{Restrain X components of coordinates}{{\tt on} or {\tt off}}{{\tt off}}
+{Restrain the Cartesian x components of the positions.}
+\item
+\NAMDCONFWDEF{selectConstrY}{Restrain Y components of coordinates}{{\tt on} or {\tt off}}{{\tt off}}
+{Restrain the Cartesian y components of the positions.}
+\item
+\NAMDCONFWDEF{selectConstrZ}{Restrain Z components of coordinates}{{\tt on} or {\tt off}}{{\tt off}}
+{Restrain the Cartesian z components of the positions.}
+
+\end{itemize}
+
+\subsubsection{Fixed atoms parameters}
+
+Atoms may be held fixed during a simulation.  \NAMD\ avoids calculating most interactions in which all affected atoms are fixed unless {\tt fixedAtomsForces} is specified.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{fixedAtoms}{are there fixed atoms?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not fixed atoms are present.} 
+
+\item
+\NAMDCONFWDEF{fixedAtomsForces}{are forces between fixed atoms calculated?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not forces between fixed atoms are calculated.  This option is required to turn fixed atoms off in the middle of a simulation.
+These forces will affect the pressure calculation, and you should leave this option off when using constant pressure if the coordinates of the fixed atoms have not been minimized.
+The use of constant pressure with significant numbers of fixed atoms is not recommended.}
+
+\item
+\NAMDCONFWDEF{fixedAtomsFile}{PDB file containing fixed atom parameters}
+{UNIX filename}{{\tt coordinates}}
+{PDB file to use for the fixed atom flags for each atom.  
+If this parameter is not specified, then 
+the PDB file specified by {\tt coordinates} is used.}
+
+\item
+\NAMDCONFWDEF{fixedAtomsCol}{column of PDB containing fixed atom parameters}
+{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt O}} 
+{Column of the PDB file to use for the containing fixed atom parameters for 
+each atom.  The coefficients can be read from any 
+floating point column of the PDB file.  
+A value of 0 indicates that the atom is not fixed.}
+
+\end{itemize}
+
+

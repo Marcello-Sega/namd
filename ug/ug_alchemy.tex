@@ -1,65 +1,6 @@
-%\documentclass[12pt]{article}
-%\usepackage{graphicx}
-%\usepackage{times}
-%\usepackage{calrsfs}
-%\usepackage{mathrsfs}
-%\usepackage{cite}
-%\usepackage{rotating}
-%\usepackage[T1]{fontenc}
 
-
-%\setlength{\parindent}{0.0cm}
-%\setlength{\parskip}{0.5cm}
-%\setlength{\textheight}{8.8in}
-%\setlength{\textwidth}{6.5in}
-%\setlength{\topmargin}{0pt}
-%\setlength{\oddsidemargin}{0pt}
-%\setlength{\evensidemargin}{0pt}
-%\setlength{\marginparwidth}{44pt}
-%\renewcommand{\baselinestretch}{1.2}
-
-
-%\newcommand{\eg}{{\it e.g.~}}
-%\newcommand{\ie}{{\it i.e.~}}
-
-%\newcommand{\NAMDCONF}[4]{
-%  {\bf \tt #1 } $<$ #2 $>$ \\
-%  {\bf Acceptable Values: } #3 \\
-%  {\bf Description: } #4
-%}
-
-%\newcommand{\NAMDCONFWDEF}[5]{
-%  {\bf \tt #1 } $<$ #2 $>$ \\
-%  {\bf Acceptable Values: } #3 \\
-%  {\bf Default Value: } #4 \\
-%  {\bf Description: } #5
-%}
-
-
-
-%\begin{document}
-
-
-%\addtolength{\baselineskip}{0.2\baselineskip}
-
-
-%\setlength{\abovedisplayshortskip}{-0.6cm}
-%\setlength{\abovedisplayskip}{-0.6cm}
-%\setlength{\belowdisplayshortskip}{0.5cm}
-%\setlength{\belowdisplayskip}{0.5cm}
-
-
-%\renewcommand{\rightmark}{\footnotesize{\it Alchemical free energy perturbation
-%                                            calculations in NAMD}}
-
-
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%% TEXT
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-%\title{User guide to the alchemical free energy perturbation
-%       calculations in NAMD}
+\section{Alchemical Free Energy Perturbation Calculations}
+\label{section:alchemy}
 
 This feature has been contributed to NAMD by the following authors:
 
@@ -78,22 +19,11 @@ Surjit B. Dixit, J\'{e}r\^{o}me H\'{e}nin and Christophe Chipot   \\[0.4cm]
 \copyright~2001--2006, {\sc Centre National de la Recherche Scientifique}
 
 
-%\maketitle
+
+\subsection{Introduction}
 
 
-%\thispagestyle{empty}
-
-
-%\newpage
-
-
-%\pagestyle{headings}
-
-
-\subsubsection{Introduction}
-
-
-\paragraph*{Theoretical background}
+\subsubsection{Theoretical background}
 
 
 A method to perform alchemical free energy perturbation (FEP)~\cite{Zwanzig1954,Beveridge1989,VanGunsteren1989,Straatsma1992,Kollman1993,Gilson1997,
@@ -179,7 +109,7 @@ between the initial and the final states --- see Figure~\ref{fig:overlap}.
 
 
 
-\paragraph*{The dual--topology paradigm}
+\subsubsection{The dual--topology paradigm}
 
 
 In a typical FEP setup involving the transformation of one chemical
@@ -266,7 +196,7 @@ avoided~\cite{Boresch1999}.
 
 
 
-\subsubsection{Implementation of free energy perturbation in NAMD}
+\subsection{Implementation of free energy perturbation in NAMD}
 
 
 The procedure implemented in NAMD is particularly
@@ -365,7 +295,7 @@ contains the FEP energies, dumped every {\tt fepOutFreq} steps.}
 
 
 
-\subsubsection{Examples of input files for running FEP alchemical calculations}
+\subsection{Examples of input files for running FEP alchemical calculations}
 
 
 The first example illustrates the use of {\sc Tcl} scripting for running
@@ -463,7 +393,7 @@ with a soft--core potential (see relevant section).
 
 
 
-\subsubsection{Description of FEP simulation output }
+\subsection{Description of FEP simulation output }
 
 
 The {\tt fepOutFile} contains electrostatic and van der Waals energy

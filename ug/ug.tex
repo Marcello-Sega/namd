@@ -10,6 +10,7 @@
 \usepackage{graphicx}
 \usepackage{makeidx}
 \usepackage{amssymb}
+\usepackage{amsmath}
 
 \makeindex
 
@@ -58,17 +59,41 @@
 \newpage
 \input{ug_psfgen}
 
-% Basic simulation parameters
+% Force field parameters
 \newpage
-\input{ug_basic}
+\input{ug_forcefield}
 
-% Additional simulation parameters
+% Standard minimization and dynamics parameters
 \newpage
-\input{ug_add}
+\input{ug_dynamics}
+
+% Performance tuning parameters
+\newpage
+\input{ug_performance}
+
+% User defined forces
+\newpage
+\input{ug_userdef}
+
+% Free energy of conformation change calculations
+\newpage
+\input{ug_fenergy}
 
 % Collective variable-based calculations
 \newpage
 \input{ug_colvars}
+
+% Alchemical free energy perturbation calculations
+\newpage
+\input{ug_alchemy}
+
+% Accelerated sampling methods
+\newpage
+\input{ug_accel}
+
+% Runtime analysis
+\newpage
+\input{ug_analysis}
 
 % Equivalence with X-PLOR parameters
 \newpage

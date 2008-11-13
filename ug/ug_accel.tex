@@ -1,0 +1,203 @@
+
+\section{Accelerated Sampling Methods}
+\label{section:accel}
+
+
+\subsection{Locally enhanced sampling}
+\label{section:les}
+
+Locally enhanced sampling (LES)~\cite{ROIT91,SIMM98,SIMM00} increases
+sampling and transition rates for a portion of a molecule by the use of
+multiple non-interacting copies of the enhanced atoms.  These enhanced
+atoms experience an interaction (electrostatics, van der Waals, and
+covalent) potential that is divided by the number of copies present.
+In this way the enhanced atoms can occupy the same space, while the
+multiple instances and reduces barriers increase transition rates.
+
+\subsubsection{Structure generation}
+
+To use LES, the structure and coordinate input files must be modified to
+contain multiple copies of the enhanced atoms.  \PSFGEN\ provides the
+{\tt multiply} command for this purpose.  \NAMD\ supports a maximum of 15
+copies, which should be sufficient.  
+
+Begin by generating the complete molecular structure and guessing
+coordinates as described in Sec.~\ref{section:psfgen}.  As the last
+operation in your script, prior to writing the psf and pdb files, add
+the {\tt multiply} command, specifying the number of copies desired and
+listing segments, residues, or atoms to be multiplied.  For example,
+\verb#multiply 4 BPTI:56 BPTI:57# will create four copies of the last
+two residues of segment BPTI.  You must include all atoms to be
+enhanced in a single {\tt multiply} command in order for the bonded
+terms in the psf file to be duplicated correctly.  Calling {\tt multiply}
+on connected sets of atoms multiple times will produce unpredictable
+results, as may running other commands after {\tt multiply}.
+
+The enhanced atoms are duplicated exactly in the structure---they have
+the same segment, residue, and atom names.  They are distinguished only
+by the value of the B (beta) column in the pdb file, which is 0 for
+normal atoms and varies from 1 to the number of copies created for
+enhanced atoms.  The enhanced atoms may be easily observed in VMD with
+the atom selection \verb#beta != 0#.
+
+\subsubsection{Simulation}
+
+In practice, LES is a simple method used to increase sampling;
+no special output is generated.
+The following parameters are used to enable LES:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{les}{is locally enhanced sampling active?}{{\tt on} or {\tt
+off}}{{\tt off}}
+{Specifies whether or not LES is active.}
+
+\NAMDCONF{lesFactor}{number of LES images to use}
+{positive integer equal to the number of images present}
+{This should be equal to the factor used in {\tt multiply}
+ when creating the structure.  The interaction potentials for images is
+ divided by {\tt lesFactor}.  
+}
+
+\item
+\NAMDCONFWDEF{lesReduceTemp}{reduce enhanced atom temperature?}{{\tt on} or {\tt
+off}}{{\tt off}}
+{Enhanced atoms experience interaction potentials divided by {\tt lesFactor}.
+This allows them to enter regions that would not normally be thermally
+accessible.  If this is not desired, then the temperature of these atoms
+may be reduced to correspond with the reduced potential.  This option
+affects velocity initialization, reinititialization, reassignment, and
+the target temperature for langevin dynamics.  Langevin dynamics is
+recommended with this option, since in a constant energy simulation energy
+will flow into the enhanced degrees of freedom until they reach thermal
+equilibrium with the rest of the system.  The reduced temperature atoms
+will have reduced velocities as well, unless {\tt lesReduceMass} is also
+enabled.}
+
+\item
+\NAMDCONFWDEF{lesReduceMass}{reduce enhanced atom mass?}{{\tt on} or {\tt off}}{{\tt off}}
+{Used with {\tt lesReduceTemp} to restore velocity distribution to
+enhanced atoms.  If used alone, enhanced atoms would move faster than
+normal atoms, and hence a smaller timestep would be required.}
+
+\item
+\item
+\NAMDCONFWDEF{lesFile}{PDB file containing LES flags}{UNIX filename} {{\tt coordinates}}
+{PDB file to specify the LES image number of each atom.
+If this parameter is not specified, then 
+the PDB file containing initial coordinates specified by 
+{\tt coordinates} is used.}
+
+\item
+\NAMDCONFWDEF{lesCol}{column of PDB file containing LES flags}{{\tt X}, {\tt Y}, {\tt Z}, {\tt O}, or {\tt B}}{{\tt B}}
+{Column of the PDB file to specify the LES image number of each atom.
+This parameter may specify any of the floating point fields of the PDB file, 
+either X, Y, Z, occupancy, or beta-coupling (temperature-coupling).  
+A value of 0 in this column indicates that the atom is not enhanced.
+Any other value should be a positive integer less than {\tt lesFactor}.}
+
+\end{itemize}
+
+
+\subsection{Replica exchange simulations}
+
+\index{replica exchange}
+The {\tt lib/replica/}
+directory contains Tcl scripts that implement replica exchange
+for NAMD, using a Tcl server and socket connections to drive a
+separate NAMD process for every replica used in the simulation.
+Replica exchanges and energies are recorded in the potenergy.dat,
+realtemp.dat, and targtemp.dat files written in the output directory.
+These can be viewed with, e.g., ``{\tt xmgrace -nxy ....potenergy.dat}''
+There is also a script to load the output into VMD and color each
+frame according to target temperature.  An example simulation folds
+a 66-atom model of a deca-alanine helix in about 10\,ns.
+
+This implementation is designed to be modified by the user to implement
+exchanges of parameters other than temperature or via other temperature
+exchange methods.  The scripts should provide a good starting point for
+any simulation method requiring a number of loosely interacting systems.
+
+{\tt replica\_exchange.tcl}
+is the master Tcl script for replica exchange simulations, it is run in
+{\tt tclsh} {\em outside of NAMD} and takes a replica exchange config
+file as an argument:
+\begin{verbatim}
+          tclsh ../replica_exchange.tcl fold_alanin.conf
+          tclsh ../replica_exchange.tcl restart_1.conf
+\end{verbatim}
+{\tt replica\_exchange.tcl} uses code in
+{\tt namd\_replica\_server.tcl}, a general script for driving NAMD slaves, and
+{\tt spawn\_namd.tcl}, a variety of methods for launching NAMD slaves.
+
+{\tt show\_replicas.vmd} is a script for loading replicas into VMD;
+first source the replica exchange conf file and then this script, then
+repeat for each restart conf file or for example just do
+``{\tt vmd -e load\_all.vmd}''.
+This script will likely destroy anything else you are doing in VMD at the
+time, so it is best to start with a fresh VMD.
+{\tt clone\_reps.vmd} provides the {\tt clone\_reps} commmand to copy graphical
+representation from the top molecule to all other molecules.
+
+A replica exchange config file should define the following Tcl variables:
+\begin{itemize}
+\item {\tt num\_replicas}, the number of replica simulations to use,
+\item {\tt min\_temp}, the lowest replica target temperature,
+\item {\tt max\_temp}, the highest replica target temperature,
+\item {\tt steps\_per\_run}, the number of steps between exchange attempts,
+\item {\tt num\_runs}, the number of runs before stopping
+(should be divisible by {\tt runs\_per\_frame} $\times$ {\tt frames\_per\_restart}).
+\item {\tt runs\_per\_frame}, the number of runs between trajectory outputs,
+\item {\tt frames\_per\_restart}, the number of frames between restart outputs,
+
+\item {\tt namd\_config\_file}, the NAMD config file containing all parameters,
+needed for the simulation except {\tt seed}, {\tt langevin}, 
+{\tt langevinDamping}, {\tt langevinTemp}, {\tt outputEnergies},
+{\tt outputname}, {\tt dcdFreq},
+{\tt temperature}, {\tt bincoordinates}, {\tt binvelocities},
+or {\tt extendedSystem}, which are provided by {\tt replica\_exchange.tcl},
+
+\item {\tt output\_root}, the directory/fileroot for output files,
+
+\item {\tt psf\_file}, the psf file for {\tt show\_replicas.vmd}, 
+\item {\tt initial\_pdb\_file}, the initial coordinate pdb file for {\tt show\_replicas.vmd},
+\item {\tt fit\_pdb\_file}, the coodinates that frames are fit to by {\tt show\_replicas.vmd} (e.g., a folded structure),
+\item {\tt server\_port}, the port to connect to the replica server on, and
+\item {\tt spawn\_namd\_command}, a command from {\tt spawn\_namd.tcl} and arguments to launch NAMD jobs.
+\end{itemize}
+
+The {\tt lib/replica/example/} directory contains
+all files needed to fold a 66-atom model of a deca-alanine helix:
+\begin{itemize}
+\item {\tt alanin\_base.namd}, basic config options for NAMD,
+\item {\tt alanin.params}, parameters,
+\item {\tt alanin.psf}, structure,
+\item {\tt unfolded.pdb}, initial coordinates,
+\item {\tt alanin.pdb}, folded structure for fitting in {\tt show\_replicas.vmd},
+\item {\tt fold\_alanin.conf}, config file for {\tt replica\_exchange.tcl} script,
+\item {\tt restart\_1.conf}, config file to continue alanin folding another 10\,ns, and
+\item {\tt load\_all.vmd}, load all output into VMD and color by target temperature.
+\end{itemize}
+
+The {\tt fold\_alanin.conf} config file contains the following settings:
+\begin{verbatim}
+set num_replicas 8
+set min_temp 300
+set max_temp 600
+set steps_per_run 1000
+set num_runs 10000
+set runs_per_frame 10
+set frames_per_restart 10
+set namd_config_file "alanin_base.namd"
+set output_root "output/fold_alanin" ; # directory must exist
+set psf_file "alanin.psf"
+set initial_pdb_file "unfolded.pdb"
+set fit_pdb_file "alanin.pdb"
+set namd_bin_dir /Projects/namd2/bin/current/Linux64
+set server_port 3177
+set spawn_namd_command \
+  [list spawn_namd_ssh "cd [pwd]; [file join $namd_bin_dir namd2] +netpoll" \
+  [list beirut belfast] ]
+\end{verbatim}
+

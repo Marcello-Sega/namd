@@ -1,6 +1,37 @@
+
+\section{Free Energy of Conformational Change Calculations}
+\label{section:fenergy}
+
+\NAMD\ incorporates methods for performing free energy of conformational change perturbation calculations.
+The system is efficient if only a few coordinates, either of individual atoms or centers of mass of groups of atoms, are needed.
+The following configuration parameters are used to enable free energy perturbation:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{freeEnergy}{is free energy perturbation active?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not free energy perturbation is active.  If it 
+is set to {\tt off}, then no free energy perturbation is performed.  
+If it is set to {\tt on}, then the free energy perturbation calculation specified in
+{\tt freeEnergyConfig} parameters is executed.}
+
+\item
+\NAMDCONF{freeEnergyConfig}{free energy perturbation script}{file or \{script\}}
+{Must contain either the name of a free energy perturbation script file or the script 
+itself between \{ and \} (may include multiple lines).
+This parameter may occur multiple times and scripts will be executed
+in order of appearance.
+The format of the free energy perturbation script is described below.
+}
+
+\end{itemize}
+
+The following sections describe the format of the free energy perturbation script.
+
+% Free energy perturbation parameters
 % Free energy perturbation parameters, included into usage description
 
-\subsubsection{User-Supplied Conformational Restraints}
+\subsection{User-Supplied Conformational Restraints}
 
 These restraints extend the scope of the available restraints beyond that
 provided by the harmonic position restraints. Each restraint is imposed with
@@ -161,7 +192,7 @@ $\qquad \qquad G=E_{0}/\left\{ 1-\cos \left( \Delta \chi \right) \right\}
 Bounds may be used in pairs, to set a lower and upper bound. Torsional
 bounds always are defined in pairs.
 
-\subsubsection{Free Energy Calculations}
+\subsection{Free Energy Calculations}
 
 {\bf Conformational forcing / Potential of mean force}
 
@@ -224,7 +255,7 @@ change to $\lambda =1$, equilibration at $\lambda =1$, change to $\lambda =0$
 . It is usual to estimate the precision of slow growth simulations from the
 results of successive cycles.
 
-\subsubsection{Options for Conformational Restraints}
+\subsection{Options for Conformational Restraints}
 
 {\bf User-supplied restraint and bounds specifications}
 
@@ -282,7 +313,7 @@ $K_{f}$ & kcal/(mol %TCIMACRO{\UNICODE{0xc5}{}}
 $^{2}$) or kcal/(mol rad$^{2}$) \\ \hline
 \end{tabular}
 
-\subsubsection{Options for ATOM Specification}
+\subsection{Options for ATOM Specification}
 
 The designation ATOM, above, stands for one of the following forms:\medskip
 
@@ -355,7 +386,7 @@ resnum) $\}$
 & group $\{$ (ca, cb): (insulin, 10) to (insulin, 12) all: (insulin, 13) $\}$
 \end{tabular}
 
-\subsubsection{Options for Potential of Mean Force Calculation}
+\subsection{Options for Potential of Mean Force Calculation}
 
 The pmf and mcti blocks, below, are used to simultaneously control all
 forcing restraints specified in urestraint above. These blocks are performed
@@ -429,7 +460,7 @@ or 1 $\rightarrow $0. At each step, no data is accumulated for the initial
 period T1, then dU/d$\lambda $ is accumulated for T2. Therefore, the total
 duration of an mcti block is (T1+T2) x N.
 
-\subsubsection{Examples}
+\subsection{Examples}
 
 {\bf Fixed restraints}
 
@@ -664,7 +695,7 @@ mcti $\{$
 
 $\}$
 
-\subsubsection{Appendix}
+\subsection{Appendix}
 
 {\bf Gradient for position restraint}
 

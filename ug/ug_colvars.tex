@@ -1,6 +1,5 @@
 % Note: requires package amssymb for \mathbb
-
-%\section{Collective variable-based calculations}
+\section{Collective Variable-based Calculations}
 \label{section:colvars}
 
 The features described in this section were contributed by
@@ -40,9 +39,9 @@ Its most important features are:
   (see \ref{sec:cvc});
 \item calculate potentials of mean force (PMFs) or free energy
   surfaces for any set of colvars, using different sampling methods:
-  currently implemented are the Adaptive Biasing Force (ABF)
+  currently implemented are the adaptive biasing force (ABF)
   method (see \ref{sec:colvarbias_abf}), metadynamics (see
-  \ref{sec:colvarbias_meta}), and Steered Molecular Dynamics (SMD)
+  \ref{sec:colvarbias_meta}), and steered molecular dynamics (SMD)
   (see \ref{sec:colvarbias_harmonic}); any number of harmonic
   restraints can also be applied to the colvars (see
   \ref{sec:colvarbias_harmonic});
@@ -56,7 +55,7 @@ Its most important features are:
 \end{itemize}
 
 
-\subsubsection{General parameters and input/output files}
+\subsection{General parameters and input/output files}
 \label{sec:colvarmodule}
 
 The structure of a typical collective variables calculation is
@@ -87,7 +86,7 @@ forces to their colvars.
 \end{figure}
 
 
-\paragraph*{NAMD parameters}
+\subsubsection{NAMD parameters}
 
 To enable a colvar calculation, the NAMD configuration file must
 set two parameters (three when restarting a previous run):
@@ -138,7 +137,7 @@ consequence, keywords described in the following sections
 are not NAMD keywords.
 
 
-\paragraph*{Output files}
+\subsubsection{Output files}
 
 By default, the collective variables module writes three output
 files:
@@ -176,7 +175,7 @@ simulation. All such files begin with the prefix
 \texttt{$<$outputName$>$}.
 
 
-\paragraph*{Colvars module configuration file}
+\subsubsection{Colvars module configuration file}
 
 Figure~\ref{fig:colvars_config} shows a typical collective variables
 configuration file. Its syntax is similar to that of the
@@ -323,7 +322,7 @@ those for the colvar biases' blocks \texttt{biastype1},
 
 
 
-\subsubsection{Declaring and using collective variables}
+\subsection{Declaring and using collective variables}
 \label{sec:colvar}
 
 Each collective variable is defined as a combination of
@@ -530,7 +529,7 @@ can be provided the following parameters:
 
 \end{itemize}
 
-\paragraph*{Collective variable components}
+\subsubsection{Collective variable components}
 \label{sec:cvc}
 
 Each \texttt{colvar} has one or more \emph{components}, each of them
@@ -1096,7 +1095,7 @@ score).
 
 
 
-\paragraph*{Linear and polynomial combinations of components}
+\subsubsection{Linear and polynomial combinations of components}
 Any set of components can be combined within a colvar,
 provided that they return
 the same type of values (scalar, unit vector, vector, or quaternion).
@@ -1130,7 +1129,7 @@ parameters, which are common to all components:
 \end{itemize}
 
 
-\paragraph*{Defining atom groups}
+\subsubsection{Defining atom groups}
 \label{sec:colvar_atom_groups}
 Each component depends on one
 or more \emph{atom groups}, which can be defined by different methods
@@ -1412,13 +1411,13 @@ groups to define a collective variable:
 
 
 
-\paragraph*{Statistical analysis of individual collective variables}
+\subsubsection{Statistical analysis of individual collective variables}
 \label{sec:colvar_acf}
 
 Not documented yet\ldots
 
 
-\subsubsection{Biasing and analysis methods}
+\subsection{Biasing and analysis methods}
 \label{sec:colvarbias}
 
 All of biasing and analysis methods recognize the following
@@ -1442,10 +1441,10 @@ options:
 \end{itemize}
 
 
-\paragraph*{Adaptive Biasing Force calculations}
+\subsubsection{Adaptive biasing force calculations}
 \label{sec:colvarbias_abf}
 
-For a full description of the Adaptive Biasing Force method, see
+For a full description of the adaptive biasing force (ABF) method, see
 reference~\cite{Darve2008}. For details about this implementation,
 see reference~\cite{Henin2004}.
 
@@ -1508,7 +1507,7 @@ are orthogonal to the directions along which the free energy gradient is
 measured, so that the measurement is effectively performed on unconstrained
 degrees of freedom. In NAMD, constraints are typically applied to the lengths of
 bonds involving hydrogen atoms, for example in TIP3P water molecules
-(parameter \texttt{rigidBonds}, section~\ref{section:basic}).
+(parameter \texttt{rigidBonds}, section~\ref{section:forcefield}).
 
 
 In the framework of ABF,
@@ -1541,7 +1540,7 @@ to result in sampling difficulties.
 Most commonly, the number of variables is one or two.
 
 
-\paragraph*{ABF requirements on collective variables}
+\subsubsection{ABF requirements on collective variables}
 \label{sec:colvarbias_abf_req}
 
 \begin{enumerate}
@@ -1574,7 +1573,7 @@ cancel out. For example, all atoms of a rigid TIP3P water molecule can safely be
 group used in a \texttt{distance} component.
 \end{enumerate}
 
-\paragraph*{Parameters for ABF}
+\subsubsection{Parameters for ABF}
 
 The following parameters can be set in the ABF configuration block
 (in addition to generic bias parameters such as \texttt{colvars}):
@@ -1642,7 +1641,7 @@ energy gradients are computed. In the direction of each colvar, the grid ranges 
 is set by the \texttt{width} parameter.
 
 
-\paragraph*{Output files}
+\subsubsection{Output files}
 
 The ABF bias produces the following files, all in multicolumn ASCII format:
 \begin{itemize}
@@ -1662,7 +1661,7 @@ If the colvar space has been partitioned into sections (\emph{windows}) in which
 ABF simulations have been run, the resulting data can be merged using the
 \texttt{inputPrefix} option described above (a NAMD run of 0 steps is enough).
 
-\paragraph*{Reconstructing a multidimensional free energy surface}
+\subsubsection{Reconstructing a multidimensional free energy surface}
 
 If a one-dimensional calculation is performed, the estimated free energy
 gradient is automatically integrated and a potential of mean force is written
@@ -1726,7 +1725,7 @@ discretization on a grid).
 
 
 
-\paragraph*{Metadynamics calculations}
+\subsubsection{Metadynamics calculations}
 \label{sec:colvarbias_meta}
 
 The metadynamics method was first introduced in \cite{Laio2002} and
@@ -2080,7 +2079,7 @@ applied, the block accepts the following options:
 % \end{itemize}
 
 
-\paragraph*[Harmonic restraints and SMD]{Harmonic restraints and
+\subsubsection[Harmonic restraints and SMD]{Harmonic restraints and
   Steered Molecular Dynamics}
 \label{sec:colvarbias_harmonic}
 
@@ -2156,7 +2155,7 @@ and enable \texttt{outputAppliedForce} within the configuration block
 of each of the \texttt{colvars} involved.
 
 
-\paragraph*{Multidimensional histograms}
+\subsubsection{Multidimensional histograms}
 \label{sec:colvarbias_histogram}
 
 The \texttt{histogram} feature is used to record the distribution of a set of collective
