@@ -11,6 +11,8 @@ syntax:
   echo '  --with-tcl (default)  --without-tcl'
   echo '  --fftw-prefix <directory containing lib and include>'
   echo '  --with-fftw (default)  --without-fftw'
+  echo '  --cuda-prefix <directory containing bin, lib, and include>'
+  echo '  --without-cuda (default)  --with-cuda'
   echo '  --charm-base <Charm++ base build directory containing src>'
   echo '  --charm-arch <subdirectory of Charm++ base build directory>'
   echo '  --charm-opts <options to pass to charmc (quote list)>'
@@ -78,6 +80,7 @@ begin:
   set use_debug = 0
   set use_tcl = 1
   set use_fftw = 1
+  set use_cuda = 0
 
   if ($#argv < 1) then
     set PRINT_ARCH_LIST
@@ -104,6 +107,12 @@ begin:
   if ($#argv < 1) goto syntax
   if ( $1 == plugins ) then
     echo 'The "plugins" flag is not needed; plugins are built automatically.'
+    shift
+  endif
+
+  if ($#argv < 1) goto syntax
+  if ( $1 == cuda ) then
+    set use_cuda = 1
     shift
   endif
 
@@ -179,6 +188,21 @@ begin:
           goto syntax
         endif
         set FFTW_PREFIX=$1
+      breaksw
+
+      case --with-cuda:
+        set use_cuda = 1
+      breaksw
+      case --without-cuda:
+        set use_cuda = 0
+      breaksw
+      case --cuda-prefix:
+        shift
+        if ( ! -d $1 ) then
+          echo "ERROR: No such directory $1"
+          goto syntax
+        endif
+        set CUDA_PREFIX=$1
       breaksw
 
       case --charm-base:
@@ -310,14 +334,17 @@ begin:
    cat .rootdir/arch/Win32.base >> Make.config
    if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Make.config
    if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Make.config
+   if ( $use_cuda ) cat .rootdir/arch/Win32.cuda >> Make.config
   else if ( $ARCH =~ *Win64* ) then
    cat .rootdir/arch/Win64.base >> Make.config
    if ( $use_tcl ) cat .rootdir/arch/Win64.tcl >> Make.config
    if ( $use_fftw ) cat .rootdir/arch/Win64.fftw >> Make.config
+   if ( $use_cuda ) cat .rootdir/arch/Win64.cuda >> Make.config
   else
    echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Make.config
    if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Make.config
    if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
+   if ( $use_cuda ) echo 'include .rootdir/arch/$(NAMD_ARCH).cuda' >> Make.config
   endif
 
   if ( $use_tcl ) then
@@ -341,6 +368,18 @@ begin:
     else if ( -d $HOME/fftw/lib && -d $HOME/fftw/include ) then
       echo "Using FFTW build found in $HOME/fftw"
       echo 'FFTDIR = $(HOME)/fftw' >> Make.config
+    endif
+  endif
+
+  if ( $use_cuda ) then
+    if ( $?CUDA_PREFIX ) then
+      echo "CUDADIR = $CUDA_PREFIX" >> Make.config
+    else if ( -d .rootdir/cuda/lib && -d .rootdir/cuda/include ) then
+      echo "Using CUDA build found in main build directory"
+      echo 'CUDADIR = .rootdir/cuda' >> Make.config
+    else if ( -d $HOME/cuda/lib && -d $HOME/cuda/include ) then
+      echo "Using CUDA build found in $HOME/cuda"
+      echo 'CUDADIR = $(HOME)/cuda' >> Make.config
     endif
   endif
 
