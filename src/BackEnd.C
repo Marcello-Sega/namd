@@ -87,7 +87,7 @@ void all_init(int argc, char **argv)
   ProcessorPrivateInit();
   register_exit_sched();
 #ifdef NAMD_CUDA
-  CmiGetArgFlag(argv, "+netpoll");  // remove +netpoll if it's still there
+  CmiGetArgFlag(argv, "+idlepoll");  // remove +idlepoll if it's still there
   cuda_initialize(argv);
   argc = CmiGetArgc(argv);
 #endif
@@ -106,11 +106,11 @@ void slave_init(int argc, char **argv)
 void BackEnd::init(int argc, char **argv) {
 
 #ifdef NAMD_CUDA
-  // look for but don't remove +netpoll on command line
-  int netpoll = 0;
+  // look for but don't remove +idlepoll on command line
+  int idlepoll = 0;
   for ( int i = 0; i < argc; ++i ) {
-    if ( 0==strcmp(argv[i],"+netpoll") ) {
-      netpoll = 1;
+    if ( 0==strcmp(argv[i],"+idlepoll") ) {
+      idlepoll = 1;
       break;
     }
   }
@@ -126,8 +126,8 @@ void BackEnd::init(int argc, char **argv) {
   all_init(argc, argv);
 
 #ifdef NAMD_CUDA
-  if ( ! netpoll ) {
-    NAMD_die("Please add +netpoll to command line for proper performance.");
+  if ( ! idlepoll ) {
+    NAMD_die("Please add +idlepoll to command line for proper performance.");
   }
 #endif
 
