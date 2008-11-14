@@ -1,7 +1,7 @@
 
 CUDADIR=/usr/local/cuda
 CUDAINCL=-I$(CUDADIR)/include
-CUDALIB=-L$(CUDADIR)/lib -lcuda -lcudart
+CUDALIB=-L$(CUDADIR)/lib -lcudart
 CUDAFLAGS=-DNAMD_CUDA
 CUDAOBJS=$(CUDAOBJSRAW)
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
