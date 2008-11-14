@@ -1,6 +1,9 @@
 % Note: requires package amssymb for \mathbb
-\section{Collective Variable-based Calculations\footnote{ The features described in this section were contributed by Giacomo Fiorin and J\'er\^ome H\'enin, Center for Molecular Modeling, University of Pennsylvania.}}
+
+\section{Collective variable-based calculations\footnote{ The features described in this section were contributed by Giacomo Fiorin and J\'er\^ome H\'enin, Center for Molecular Modeling, University of Pennsylvania, Philadelphia, PA USA.}}
 \label{section:colvars}
+
+The features described in this section were contributed by Giacomo Fiorin and J\'er\^ome H\'enin, Center for Molecular Modeling, University of Pennsylvania.
 
 Today's molecular dynamics simulations involve a large number of
 degrees of freedom (typically 10,000--1,000,000), and it is often
@@ -23,31 +26,37 @@ The collective variables module in NAMD offers a mechanism to define
 several collective variables, and execute various tasks on them.
 Its most important features are:
 \begin{itemize}
+
 \item defining an arbitrary number of colvars, and perform a
   multidimensional analysis or biased simulation by accessing any
   subset of colvars independently from the others (see
   \ref{sec:colvarmodule});
+
 \item combine different functions of Cartesian coordinates
   (herein termed colvar \emph{components}) into a colvar
   defined as a polynomial of several such components, thereby
   implementing new functional forms at runtime; periodic,
   multidimensional and symmetric components are handled transparently
   (see \ref{sec:cvc});
+
 \item calculate potentials of mean force (PMFs) or free energy
   surfaces for any set of colvars, using different sampling methods:
-  currently implemented are the adaptive biasing force (ABF)
+  currently implemented are the Adaptive Biasing Force (ABF)
   method (see \ref{sec:colvarbias_abf}), metadynamics (see
-  \ref{sec:colvarbias_meta}), and steered molecular dynamics (SMD)
+  \ref{sec:colvarbias_meta}), and Steered Molecular Dynamics (SMD)
   (see \ref{sec:colvarbias_harmonic}); any number of harmonic
   restraints can also be applied to the colvars (see
   \ref{sec:colvarbias_harmonic});
+
 \item calculate statistical properties of an individual collective
   variable along a simulated trajectory, such as its running average,
   standard deviation or the time auto--correlation function (ACF)
   of its value, its velocity, or its total force (see
   \ref{sec:colvar_acf});
+
 \item perform multidimensional correlation analysis, by calculating
   frequency histograms of any subset of colvars.
+
 \end{itemize}
 
 
@@ -324,15 +333,15 @@ those for the colvar biases' blocks \texttt{biastype1},
 Each collective variable is defined as a combination of
 individual quantities called \emph{components}
 (see Figure~\ref{fig:colvars_diagram}). To obtain a colvar $\xi(\mathbf{r})$,
-its components $q_i(\mathbf{r})$ are summed according to:
+its components $q_{i}(\mathbf{r})$ are summed according to:
 \begin{equation}
   \label{eq:colvar_combination}
-  \xi(\mathbf{r}) = \sum_i c_i [q_i(\mathbf{r})]^{n_i}
+  \xi(\mathbf{r}) = \sum_{i} c_{i} [q_{i}(\mathbf{r})]^{n_{i}}
 \end{equation}
-where each component appears with a unique coefficient $c_i$ and
-(positive integer) exponent $n_i$.  \textbf{Note:} \emph{in most
-  applications, only one component per colvar needs to be defined, and
-  by default $c_i$ and $n_i$ are equal to 1.}
+where each component appears with a unique coefficient $c_{i}$ and
+(positive integer) exponent $n_{i}$.  \textbf{Note:} \emph{in most
+  applications, only one component per colvar needs to be defined:
+  accordingly, $c_{i}$ and $n_{i}$ are equal to 1 by default.}
 
 In the configuration file, a collective variable is initiated
 by the keyword \texttt{colvar},
@@ -355,7 +364,7 @@ includes components of one or more of the following types:
 \texttt{rmsd}, \texttt{orientationAngle}, \texttt{gyration}, and
 \texttt{alphaHelix}.  The \texttt{colvar} returns instead a
 three--dimensional vector $\mathbf{d}$ if \texttt{distanceVec} is
-used, a three--dimensional vector with a $|\mathbf{d}|^2 = 1$
+used, a three--dimensional vector with a $|\mathbf{d}|^{2} = 1$
 constraint if \texttt{distanceDir} is used, and a unitary quaternion
 (used to parameterize a rotation) if \texttt{orientation} is are used.
 
@@ -363,6 +372,9 @@ Currently, binning of colvar values on a grid can only be performed
 for scalar components.  In addition, some properties like the system
 force, can be calculated only for some of these components.  The
 detail documentation all component types is provided in \ref{sec:cvc}.
+\emph{Note: restrictions only apply to the type of an individual
+  colvar.  In fact, all of the implemented methods can be applied to
+  any number of collective variables.}
 
 Irrespective of which components it is built of, each \texttt{colvar}
 can be provided the following parameters:
@@ -795,30 +807,30 @@ distance) and 1 (acceptor and donor much closer than the cutoff).
 each set of coordinates $\{ \mathbf{x}_1(t), \mathbf{x}_2(t), \ldots
 \mathbf{x}_N(t) \}$, the colvar component \texttt{rmsd} calculates the
 optimal rotation
-$U^{\{\mathbf{x}_i(t)\}\rightarrow\{\mathbf{x}_i^{\mathrm{(ref)}}\}}$
-that best superimposes the coordinates $\{\mathbf{x}_i(t)\}$ onto a
-set of reference coordinates $\{\mathbf{x}_i^{\mathrm{(ref)}}\}$.
+$U^{\{\mathbf{x}_{i}(t)\}\rightarrow\{\mathbf{x}_{i}^{\mathrm{(ref)}}\}}$
+that best superimposes the coordinates $\{\mathbf{x}_{i}(t)\}$ onto a
+set of reference coordinates $\{\mathbf{x}_{i}^{\mathrm{(ref)}}\}$.
 Both the current and the reference coordinates are centered on their
 centers of geometry, $\mathbf{x}_{\mathrm{cog}}(t)$ and
 $\mathbf{x}_{\mathrm{cog}}^{\mathrm{(ref)}}$.  The root mean square
 displacement is then defined as:
 \begin{equation}
   \label{eq:cvc_rmsd}
-  { \mathrm{RMSD}(\{\mathbf{x}_i(t)\},
-    \{\mathbf{x}_i^{\mathrm{(ref)}}\}) } \; = \; \sqrt{
+  { \mathrm{RMSD}(\{\mathbf{x}_{i}(t)\},
+    \{\mathbf{x}_{i}^{\mathrm{(ref)}}\}) } \; = \; \sqrt{
     \frac{1}{N} \sum_{i=1}^{N} \left|
       U
-      \left(\mathbf{x}_i(t) - \mathbf{x}_{\mathrm{cog}}(t)\right) -
-      \left(\mathbf{x}_i^{\mathrm{(ref)}} -
+      \left(\mathbf{x}_{i}(t) - \mathbf{x}_{\mathrm{cog}}(t)\right) -
+      \left(\mathbf{x}_{i}^{\mathrm{(ref)}} -
         \mathbf{x}_{\mathrm{cog}}^{\mathrm{(ref)}} \right) \right|^{2} }
 \end{equation}
 The optimal rotation
-$U^{\{\mathbf{x}_i(t)\}\rightarrow\{\mathbf{x}_i^{\mathrm{(ref)}}\}}$
+$U^{\{\mathbf{x}_{i}(t)\}\rightarrow\{\mathbf{x}_{i}^{\mathrm{(ref)}}\}}$
 is calculated within the formalism developed in
 reference~\cite{Coutsias2004}, which guarantees a continuous
 dependence of
-$U^{\{\mathbf{x}_i(t)\}\rightarrow\{\mathbf{x}_i^{\mathrm{(ref)}}\}}$
-with respect to $\{\mathbf{x}_i(t)\}$.  The options for \texttt{rmsd}
+$U^{\{\mathbf{x}_{i}(t)\}\rightarrow\{\mathbf{x}_{i}^{\mathrm{(ref)}}\}}$
+with respect to $\{\mathbf{x}_{i}(t)\}$.  The options for \texttt{rmsd}
 are:
 \begin{itemize}
 
@@ -883,14 +895,14 @@ This component returns a positive real number (in \AA).
 \paragraph*{Component \texttt{orientation}: orientation with respect
   to a reference structure.}  The block \texttt{orientation~\{...\}}
 returns the same optimal rotation used in the \texttt{rmsd} component
-to superimpose the coordinates $\{\mathbf{x}_i(t)\}$ onto a set of
-reference coordinates $\{\mathbf{x}_i^{\mathrm{(ref)}}\}$.  It accepts
+to superimpose the coordinates $\{\mathbf{x}_{i}(t)\}$ onto a set of
+reference coordinates $\{\mathbf{x}_{i}^{\mathrm{(ref)}}\}$.  It accepts
 all the options of \texttt{rmsd}: \texttt{atoms},
 \texttt{refPositions}, \texttt{refPositionsFile} and
 \texttt{refPositionsCol}, and returns a four dimensional vector
-$\mathsf{q} = (q_0, q_1, q_2, q_3)$, with $\sum_i q_i^2 = 1$; this
-\emph{quaternion} expresses the optimal rotation $\{\mathbf{x}_i(t)\}
-\rightarrow \{\mathbf{x}_i^{\mathrm{(ref)}}\}$ according to the
+$\mathsf{q} = (q_0, q_1, q_2, q_3)$, with $\sum_{i} q_{i}^{2} = 1$; this
+\emph{quaternion} expresses the optimal rotation $\{\mathbf{x}_{i}(t)\}
+\rightarrow \{\mathbf{x}_{i}^{\mathrm{(ref)}}\}$ according to the
 formalism in reference~\cite{Coutsias2004}.  The quaternion $(q_0,
 q_1, q_2, q_3)$ can also be written as $\left(\cos(\theta/2), \,
   \sin(\theta/2)\mathbf{u}\right)$, where $\theta$ is the angle and
@@ -1127,30 +1139,31 @@ parameters, which are common to all components:
 
 \subsubsection{Defining atom groups}
 \label{sec:colvar_atom_groups}
-Each component depends on one
-or more \emph{atom groups}, which can be defined by different methods
-in the configuration file.  Each atom group block is
-initiated by the name of the group itself within the component block,
-followed by the instructions to the colvar module on how to select the
-atoms involved.  Here is an example configuration for an atom group called
-\texttt{myatoms}:
+Each component depends on one or more \emph{atom groups}, which can be
+defined by different methods in the configuration file.  Each atom
+group block is initiated by the name of the group itself within the
+component block, followed by the instructions to the colvar module on
+how to select the atoms involved.  Here is an example configuration,
+for an atom group called \texttt{myatoms}, which makes use of the most
+common keywords:
 \begin{verbatim}
 # atom group definition
 myatoms {
-  # add the atoms 1, 2 and 3 to this group (numbers start from 1)
-  atomNumbers        { 1 2 3 }
-  # add all the atoms between 11 and 20 to this group
-  atomNumbersRange   11-20
-  # add the atoms which have occupancy equal to 2.0 in the PDB
-  # file atoms_occ1.pdb; the number of atoms in the PDB must match
-  # that of the topology
-  atomsFile          atoms_occ1.pdb
-  atomsCol           O
-  atomsColValue      2.0
+  # add atoms 1, 2 and 3 to this group (note: numbers start from 1)
+  atomNumbers {
+     1 2 3
+  }
+  # add all the C-alphas within residues 11 to 20 of segment "PROT"
+  atomNameResidueRange  CA 11-20
+  psfSegID              PROT
+  # add all the atoms with occupancy 2 in the file atoms_occ1.pdb
+  atomsFile             atoms_occ1.pdb
+  atomsCol              O
+  atomsColValue         2.0
 }
 \end{verbatim}
 
-The options for any atom group are:
+For any atom group, the available options are:
 \begin{itemize}
 
 \item %
@@ -1159,7 +1172,7 @@ The options for any atom group are:
     (atom group) List of atom numbers}{%
     space--separated list of positive integers}{%
     This option adds to the group all the atoms whose numbers are in
-    the list.  Atom numbering starts from 1.
+    the list.  \emph{Atom numbering starts from 1.}
   }
 
 \item %
@@ -1169,18 +1182,16 @@ The options for any atom group are:
     $<$Starting number$>$-$<$Ending number$>$}{%
     This option adds to the group all the atoms whose numbers are
     within the range specified.  It can be used multiple times for the
-    same group.  Atom numbering starts from 1.
+    same group.  Atom numbering starts from 1.  May be repeated.
   }
 
 \item %
   \NAMDCONF{%
     atomNameResidueRange}{%
     (atom group) Named atoms within a range of residue numbers}{%
-    $<$Atom name$>$ $<$Starting residue$>$-$<$Ending residue$>$
-    (example: \texttt{CA 11-20})}{%
+    $<$Atom name$>$ $<$Starting residue$>$-$<$Ending residue$>$}{%
     This option adds to the group all the atoms with the provided name
-    within residues in the range provided.  It can be used
-    multiple times for the same group.
+    within residues in the range provided.  May be repated.
   }
 
 \item %
@@ -1382,26 +1393,14 @@ groups to define a collective variable:
   type of calculation is being performed, whether \texttt{wrapAll} or
   \texttt{wrapWater} can be enabled.
 
-\item The colvars calculation is serial, i.e.~it is not parallelized
-  over the computational nodes: therefore, the load on the first node
-  (where the colvars module is executed) should be maintained lower
-  than that of any other node.  This condition is true in most cases,
-  but there can be some specific configurations for which the
-  computational load can affect the parallel performance of NAMD.  As
-  a general guideline, the number of atoms in each group should be
-  kept as low as possible, and increased to a larger fraction of the
-  total system only when really needed.
-
-  % as long as the number of atoms in each group is much smaller than
-  % the total number of atoms (such as when studying the motions of a
-  % small molecule in solution).  When many atomic coordinates are used
-  % in an atom group (such as the exampe above for the lipid atoms), the
-  % computational cost to evaluate the colvars may affect the parallel
-  % performance, but still be acceptable with respect to the total cost
-  % of the simulation.  It is when the calculation involves a loop over
-  % a large number of atom \emph{pairs} (such as in some coordination
-  % number calculations), that the colvar module actually consumes
-  % most of the computational time.
+\item The colvars calculation is is not parallelized over the
+  computational nodes.  Therefore, the extra load on the first node,
+  where the colvars module is executed, should be maintained lower
+  than that of any other node.  In most cases this condition is very
+  well satisfied, but there may be some specific configurations for
+  which such extra load may affect the parallel performance of NAMD.
+  As a general guideline, an atom group should include for a large
+  fraction of the whole system only when necessary.
 
 \end{itemize}
 
@@ -1410,15 +1409,137 @@ groups to define a collective variable:
 \subsubsection{Statistical analysis of individual collective variables}
 \label{sec:colvar_acf}
 
-Not documented yet\ldots
+When the global keyword \texttt{analysis} is defined in the
+configuration file, calculations of statistical properties for
+individual colvars can be performed.  At the moment, several types of
+time correlation functions, running averages and running standard
+deviations are available.
 
+\begin{itemize}
+
+\item %
+  \NAMDCONFWDEF{%
+    corrFunc}{%
+    (colvar) Calculate a time correlation function?}{%
+    boolean}{%
+    \texttt{off}}{%
+    Whether or not a time correlaction function should be calculated
+    for this colvar.}
+
+\item %
+  \NAMDCONF{%
+    corrFuncWithColvar}{%
+    (colvar) Colvar name for the correlation function}{%
+    string}{%
+    By default, the auto-correlation function (ACF) of this colvar,
+    $\xi_{i}$, is calculated.  When this option is specified, the
+    correlation function is calculated instead with another colvar,
+    $\xi_{j}$, which must be of the same type (scalar, vector, or
+    quaternion) of $\xi_{i}$.}
+
+\item%
+  \NAMDCONFWDEF{%
+    corrFuncType}{%
+    (colvar) Type of the correlation function}{%
+    \texttt{velocity}, \texttt{coordinate} or
+    \texttt{coordinate\_p2}}{%
+    \texttt{velocity}}{%
+    With \texttt{coordinate} or \texttt{velocity}, the correlation
+    function $C_{i,j}(t)$~= $\left\langle O\left(\xi_{i}(t_{0}),
+        \xi_{j}(t_{0}+t)\right) \right\rangle$ is calculated between
+    the variables $\xi_{i}$ and $\xi_{j}$, or their velocities.
+    $O(\xi_{i}, \xi_{j})$ is the scalar product when calculated
+    between scalar or vector values, whereas for quaternions it is the
+    cosine between the two corresponding rotation axes.  With
+    \texttt{coordinate\_p2}, the second order Legendre polynomial,
+    $(3\cos(\theta)^{2}-1)/2$, is used instead of the cosine.}
+
+\item %
+  \NAMDCONFWDEF{%
+    corrFuncNormalize}{%
+    (colvar) Normalize the time correlation function?}{%
+    boolean}{%
+    \texttt{on}}{%
+    If enabled, the value of the correlation function at $t$~= 0
+    is normalized to 1; otherwise, it equals to $\left\langle
+      O\left(\xi_{i}, \xi_{j}\right) \right\rangle$.}
+
+\item %
+  \NAMDCONFWDEF{%
+    corrFuncLength}{%
+    (colvar) Length of the time correlation function}{%
+    positive integer}{%
+    \texttt{1000}}{%
+    Length (in number of points) of the time correlation function.}
+
+\item %
+  \NAMDCONFWDEF{%
+    corrFuncStride}{%
+    (colvar) Stride of the time correlation function}{%
+    positive integer}{%
+    \texttt{1}}{%
+    Number of steps between two values of the time correlation function.}
+
+\item %
+  \NAMDCONFWDEF{%
+    corrFuncOffset}{%
+    (colvar) Offset of the time correlation function}{%
+    positive integer}{%
+    \texttt{0}}{%
+    The starting time (in number of steps) of the time correlation
+    function (default: $t$~= 0).  Note: the value at $t$~= 0 is always
+    used for the normalization.}
+
+\item %
+  \NAMDCONFWDEF{%
+    corrFuncOutputFile}{%
+    (colvar) Output file for the time correlation function}{%
+    UNIX filename}{%
+    \texttt{$<$name$>$.corrfunc.dat}}{%
+    The time correlation function is saved in this file.}
+
+\item %
+  \NAMDCONFWDEF{%
+    runAve}{%
+    (colvar) Calculate the running average and standard deviation}{%
+    boolean}{%
+    \texttt{off}}{%
+    Whether or not the running average and standard deviation should
+    be calculated for this colvar.}
+
+\item %
+  \NAMDCONFWDEF{%
+    runAveLength}{%
+    (colvar) Length of the running average window}{%
+    positive integer}{%
+    \texttt{1000}}{%
+    Length (in number of points) of the running average window.}
+
+\item %
+  \NAMDCONFWDEF{%
+    runAveStride}{%
+    (colvar) Stride of the running average window values}{%
+    positive integer}{%
+    \texttt{1}}{%
+    Number of steps between two values within the running average window.}
+
+\item %
+  \NAMDCONFWDEF{%
+    runAveOutputFile}{%
+    (colvar) Output file for the running average and standard deviation}{%
+    UNIX filename}{%
+    \texttt{$<$name$>$.runave.dat}}{%
+    The running average and standard deviation are saved in this file.}
+
+\end{itemize}
 
 \subsection{Biasing and analysis methods}
 \label{sec:colvarbias}
 
-All of biasing and analysis methods recognize the following
-options:
+All of the biasing and analysis methods implemented recognize the
+following options:
 \begin{itemize}
+
 \item %
   \NAMDCONFWDEF{%
     name}{%
@@ -1427,6 +1548,7 @@ options:
     \texttt{$<$type of bias$><$bias index$>$}}{%
     This string is used to identify the bias or analysis method in
     output messages and to name some output files.}
+
 \item %
   \NAMDCONF{%
     colvars}{%
@@ -1434,19 +1556,20 @@ options:
     space--separated list of \texttt{colvar} names}{%
     This option selects by name all the colvars to which this bias or
     analysis will be applied.}
+
 \end{itemize}
 
 
-\subsubsection{Adaptive biasing force calculations}
+\subsubsection{Adaptive Biasing Force calculations}
 \label{sec:colvarbias_abf}
 
-For a full description of the adaptive biasing force (ABF) method, see
+For a full description of the Adaptive Biasing Force method, see
 reference~\cite{Darve2008}. For details about this implementation,
 see reference~\cite{Henin2004}.
 
 ABF is based on the thermodynamic integration (TI) scheme for
 computing free energy profiles. The free energy as a function
-of a set of collective variables $\bm{\xi}=(\xi_i)_{i\in[1,n]}$
+of a set of collective variables $\bm{\xi}=(\xi_{i})_{i\in[1,n]}$
 is defined from the canonical distribution of $\bm{\xi}$, ${\mathcal P}(\bm{\xi})$:
 
 \begin{equation}
@@ -1463,47 +1586,48 @@ $\bm{F}_\xi$ exerted on $\bm{\xi}$, taken over an iso-$\bm{\xi}$ surface:
   \bm{\nabla}_\xi A(\bm{\xi}) = \left\langle -\bm{F}_\xi \right\rangle_\bm{\xi}
 \end{equation}
 
-Several formulae that take the form of~(\ref{eq:gradient}) have been proposed.
-This implementation relies partly on the classic formulation~\cite{Carter1989},
-and partly on a more versatile scheme originating in work by Ruiz-Montero et
-al.~\cite{Ruiz-Montero1997}, generalized by den Otter~\cite{denOtter2000} and
-extended to multiple variables by Ciccotti et al.~\cite{Ciccotti2005}.
-Consider a system subject to constraints of the form $\sigma_k(\vx) = 0$.
-Let ($\bm{v}_i)_{i\in[1,n]}$ be arbitrarily chosen vector fields
-($\mathbb{R}^{3N}\rightarrow\mathbb{R}^{3N}$) verifying, for all $i$, $j$,
-and $k$:
+Several formulae that take the form of~(\ref{eq:gradient}) have been
+proposed.  This implementation relies partly on the classic
+formulation~\cite{Carter1989}, and partly on a more versatile scheme
+originating in a work by Ruiz-Montero et al.~\cite{Ruiz-Montero1997},
+generalized by den Otter~\cite{denOtter2000} and extended to multiple
+variables by Ciccotti et al.~\cite{Ciccotti2005}.  Consider a system
+subject to constraints of the form $\sigma_{k}(\vx) = 0$.  Let
+($\bm{v}_{i})_{i\in[1,n]}$ be arbitrarily chosen vector fields
+($\mathbb{R}^{3N}\rightarrow\mathbb{R}^{3N}$) verifying, for all $i$,
+$j$, and $k$:
 
 \begin{eqnarray}
 \label{eq:ortho_gradient}
-\bm{v}_i \cdot \gradx \xi_j    & = & \delta_{ij}\\
+\bm{v}_{i} \cdot \gradx \xi_{j}    & = & \delta_{ij}\\
 \label{eq:ortho_constraints}
-\bm{v}_i \cdot \gradx \sigma_k & = & 0
+\bm{v}_{i} \cdot \gradx \sigma_{k} & = & 0
 \end{eqnarray}
 
 then the following holds~\cite{Ciccotti2005}:
 
 \begin{equation}
 \label{eq:gradient_vector}
-\frac{\partial A}{\partial \xi_i} = \left\langle \bm{v}_i \cdot \gradx V
-- k_B T \gradx \cdot \bm{v}_i \right\rangle_\bm{\xi}
+\frac{\partial A}{\partial \xi_{i}} = \left\langle \bm{v}_{i} \cdot \gradx V
+- k_B T \gradx \cdot \bm{v}_{i} \right\rangle_\bm{\xi}
 \end{equation}
 
 where $V$ is the potential energy function.
-$\bm{v}_i$ can be interpreted as the direction along which the force
-acting on variable $\xi_i$ is measured, whereas the second term in the
+$\bm{v}_{i}$ can be interpreted as the direction along which the force
+acting on variable $\xi_{i}$ is measured, whereas the second term in the
 average corresponds to the geometric entropy contribution that appears
 as a Jacobian correction in the classic formalism~\cite{Carter1989}.
 Condition~(\ref{eq:ortho_gradient}) states that the direction along
-which the system force on $\xi_i$ is measured is orthogonal to the
-gradient of $\xi_j$, which means that the force measured on $\xi_i$
-does not act on $\xi_j$.
+which the system force on $\xi_{i}$ is measured is orthogonal to the
+gradient of $\xi_{j}$, which means that the force measured on $\xi_{i}$
+does not act on $\xi_{j}$.
 
 Equation~(\ref{eq:ortho_constraints}) implies that constraint forces
 are orthogonal to the directions along which the free energy gradient is
 measured, so that the measurement is effectively performed on unconstrained
 degrees of freedom. In NAMD, constraints are typically applied to the lengths of
 bonds involving hydrogen atoms, for example in TIP3P water molecules
-(parameter \texttt{rigidBonds}, section~\ref{section:forcefield}).
+(parameter \texttt{rigidBonds}, section~\ref{section:basic}).
 
 
 In the framework of ABF,
@@ -1536,7 +1660,7 @@ to result in sampling difficulties.
 Most commonly, the number of variables is one or two.
 
 
-\subsubsection{ABF requirements on collective variables}
+\subsubsection*{ABF requirements on collective variables}
 \label{sec:colvarbias_abf_req}
 
 \begin{enumerate}
@@ -1546,18 +1670,18 @@ can be used in ABF calculations:
 \texttt{distance}, \texttt{distance\_xy}, \texttt{distance\_z}, \texttt{dihedral},
 \texttt{gyration}, and \texttt{rmsd}.
  \item \emph{Mutual orthogonality of colvars}. In a multidimensional ABF calculation,
-equation~(\ref{eq:ortho_gradient}) must be satisfied for any two colvars $\xi_i$ and $\xi_j$.
+equation~(\ref{eq:ortho_gradient}) must be satisfied for any two colvars $\xi_{i}$ and $\xi_{j}$.
 Various cases fulfill this orthogonality condition:
 \begin{itemize}
- \item $\xi_i$ and $\xi_j$ are based on non-overlapping sets of atoms.
- \item atoms involved in the force measurement on $\xi_i$ do not participate in
-the definition of $\xi_j$. This can be obtained using the option \texttt{oneSiteSystemForce}
+ \item $\xi_{i}$ and $\xi_{j}$ are based on non-overlapping sets of atoms.
+ \item atoms involved in the force measurement on $\xi_{i}$ do not participate in
+the definition of $\xi_{j}$. This can be obtained using the option \texttt{oneSiteSystemForce}
 of the \texttt{distance} and \texttt{dihedral} components (example: Ramachandran angles $\phi$, $\psi$).
- \item $\xi_i$ and $\xi_j$ are orthogonal by construction. Useful cases are the sum and
+ \item $\xi_{i}$ and $\xi_{j}$ are orthogonal by construction. Useful cases are the sum and
 difference of two components, or \texttt{distance\_z} and \texttt{distance\_xy} using the same axis.
 \end{itemize}
  \item \emph{Mutual orthogonality of components}: when several components are combined into a colvar,
-it is assumed that their vectors $\bm{v}_i$ (equation~(\ref{eq:gradient_vector}))
+it is assumed that their vectors $\bm{v}_{i}$ (equation~(\ref{eq:gradient_vector}))
 are mutually orthogonal. The cases described for colvars in the previous paragraph apply.
 % (example: difference of distances).
  \item \emph{Orthogonality of colvars and constraints}: equation~\ref{eq:ortho_constraints} can
@@ -1569,7 +1693,7 @@ cancel out. For example, all atoms of a rigid TIP3P water molecule can safely be
 group used in a \texttt{distance} component.
 \end{enumerate}
 
-\subsubsection{Parameters for ABF}
+\subsubsection*{Parameters for ABF}
 
 The following parameters can be set in the ABF configuration block
 (in addition to generic bias parameters such as \texttt{colvars}):
@@ -1637,7 +1761,7 @@ energy gradients are computed. In the direction of each colvar, the grid ranges 
 is set by the \texttt{width} parameter.
 
 
-\subsubsection{Output files}
+\subsubsection*{Output files}
 
 The ABF bias produces the following files, all in multicolumn ASCII format:
 \begin{itemize}
@@ -1657,7 +1781,7 @@ If the colvar space has been partitioned into sections (\emph{windows}) in which
 ABF simulations have been run, the resulting data can be merged using the
 \texttt{inputPrefix} option described above (a NAMD run of 0 steps is enough).
 
-\subsubsection{Reconstructing a multidimensional free energy surface}
+\subsubsection*{Reconstructing a multidimensional free energy surface}
 
 If a one-dimensional calculation is performed, the estimated free energy
 gradient is automatically integrated and a potential of mean force is written
@@ -1724,13 +1848,19 @@ discretization on a grid).
 \subsubsection{Metadynamics calculations}
 \label{sec:colvarbias_meta}
 
-The metadynamics method was first introduced in \cite{Laio2002} and
-underwent minor changes to its algorithm in \cite{Iannuzzi2003}.
-This implementation provides the latter version of the algorithm,
-where the history--dependent term is collected continuously as the
-simulation proceeds.  The metadynamics external potential on the
-colvars $\bm{\xi} = (\xi_{1}, \xi_{2}, \ldots,
-\xi_{N_{\mathrm{cv}}})$ can be written as:
+Many methods have been introduced in the past that make use of an
+artificial energy term, that changes and adapts over time, to
+reconstruct a potential of mean force from a conventional molecular
+dynamics simulation \cite{Huber1994, Grubmuller1995, Voter1997,
+  Darve2001, Laio2002, Hummer2003}.  One of the most recent,
+metadynamics, was first designed as a step-wise algorithm, which may
+be roughly described as an ``adaptive umbrella sampling''
+\cite{Laio2002}, and was later transformed into a continuous one
+\cite{Iannuzzi2003}.  The implementation described here provides the
+latter version only, which is the most commonly used.
+
+In metadynamics, the external potential on the colvars $\bm{\xi} =
+(\xi_{1}, \xi_{2}, \ldots, \xi_{N_{\mathrm{cv}}})$ is:
 \begin{equation}
   \label{eq:colvars_meta_pot}
   V_{\mathrm{meta}}(\bm{\xi}) \; = \; {
@@ -1757,30 +1887,32 @@ the regions with a lower effective free energy $\tilde{A}(\bm{\xi}) =
 A(\bm{\xi})+V_{\mathrm{meta}}(\bm{\xi})$.  That is, the probability of
 having a given system configuration $\bm{\xi^{*}}$ being explored (and
 thus, a hill being added there) is proportional to
-$\exp\left(-\tilde{A}(\bm{\xi^{*}})/\kappa_{\mathrm{B}}T\right)$, and
-tends to a nearly flat histogram when the simulation is continued long
-enough so that the system has deposited hills across the whole free
+$\exp\left(-\tilde{A}(\bm{\xi^{*}})/\kappa_{\mathrm{B}}T\right)$,
+which tends to a nearly flat histogram when the simulation is
+continued until the system has deposited hills across the whole free
 energy landscape.  In this situation, $-V_{\mathrm{meta}}(\bm{\xi})$
 is a good approximant of the free energy $A(\bm{\xi})$, and the only
 dependence on the specific conformational history
-$\bm{\xi}(\delta{}t), \bm{\xi}(2\delta{}t), \ldots$ is by an additive
-constant:
+$\bm{\xi}(\delta{}t), \bm{\xi}(2\delta{}t), \ldots$ is by an
+irrelevant additive constant:
 \begin{equation}
   \label{eq:colvars_meta_fes}
   A(\bm{\xi}) \; \simeq \; {
     -V_{\mathrm{meta}}(\bm{\xi}) + K
   }
 \end{equation}
-The accuracy of the reconstructed profile is determined by the ratio
-between $W$ and $\delta{}t$, given the optimal choice of
-$\delta_{\xi_{i}}$ and $D_{\xi_{i}}$, the diffusion constant of the
-variable $\xi_{i}$; see reference \cite{Bussi2006} for details.  As a
-rule of thumb, the very upper limit for the ratio $W/\delta{}t$ is
-given by $\kappa_{\mathrm{B}}T/\tau_{\bm{\xi}}$, where
-$\tau_{\bm{\xi}}$ is the longest among $\bm{\xi}$'s correlation times.
-In the most typical conditions, to achieve a good statistical
-convergence the user would prefer to keep $W/\delta{}t$ much smaller
-than $\kappa_{\mathrm{B}}T/\tau_{\bm{\xi}}$.
+Provided that the set of collective variables fully describes the
+relevant degrees of freedom, the accuracy of the reconstructed profile
+is a function of the ratio between $W$ and $\delta{}t$
+\cite{Bussi2006}.  For the optimal choice of $\delta_{\xi_{i}}$ and
+$D_{\xi_{i}}$, the diffusion constant of the variable $\xi_{i}$, see
+reference \cite{Bussi2006}.  As a rule of thumb, the very upper limit
+for the ratio $W/\delta{}t$ is given by
+$\kappa_{\mathrm{B}}T/\tau_{\bm{\xi}}$, where $\tau_{\bm{\xi}}$ is the
+longest among $\bm{\xi}$'s correlation times.  In the most typical
+conditions, to achieve a good statistical convergence the user would
+prefer to keep $W/\delta{}t$ much smaller than
+$\kappa_{\mathrm{B}}T/\tau_{\bm{\xi}}$.
 
 Given $\Delta\xi$ the extension of the free energy profile along the
 colvar $\xi$, and $A^{*}=A(\bm{\xi}^{*})$ the highest free energy that
@@ -2075,8 +2207,7 @@ applied, the block accepts the following options:
 % \end{itemize}
 
 
-\subsubsection[Harmonic restraints and SMD]{Harmonic restraints and
-  Steered Molecular Dynamics}
+\subsubsection{Harmonic restraints and Steered Molecular Dynamics}
 \label{sec:colvarbias_harmonic}
 
 The harmonic restraint is allocated by a \texttt{harmonic~\{...\}}

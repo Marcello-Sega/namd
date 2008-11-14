@@ -11,7 +11,7 @@
 %
 %       $RCSfile: ug.bib,v $
 %       $Author: char $        $Locker:  $                $State: Exp $
-%       $Revision: 1.7 $      $Date: 2008/09/18 21:48:50 $
+%       $Revision: 1.8 $      $Date: 2008/11/14 01:29:19 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,8 +21,8 @@
 % REVISION HISTORY:
 %
 % $Log: ug.bib,v $
-% Revision 1.7  2008/09/18 21:48:50  char
-% Initial add of colvar module  (Following files added: src/GlobalMasterColvars.h src/colvar.C src/colvar.h src/colvaratoms.C src/colvaratoms.h src/colvarbias.C src/colvarbias.h src/colvarbias_abf.C src/colvarbias_abf.h src/colvarbias_meta.C src/colvarbias_meta.h src/colvarcomp.C src/colvarcomp.h src/colvarcomp_angles.C src/colvarcomp_coordnums.C src/colvarcomp_distances.C src/colvarcomp_protein.C src/colvarcomp_rotations.C src/colvarmodule.C src/colvarmodule.h src/colvarparse.C src/colvarparse.h src/colvarproxy.h src/colvarproxy_namd.C src/colvarproxy_namd.h src/colvartypes.h src/colvarvalue.C src/colvarvalue.h ug/ug_colvars.tex) --cbh
+% Revision 1.8  2008/11/14 01:29:19  char
+% *** empty log message ***
 %
 % Revision 1.6  2006/09/17 21:33:00  jim
 % update chipot ref
@@ -517,11 +517,12 @@ number=35,
 % begin Free Energy entries from Fiorin and Henin
 
 
+
 @ARTICLE{Carter1989,
   author = {Carter, E, A. and Ciccotti, G. and Hynes, J. T. and Kapral, R.},
   title = {Constrained reaction coordinate dynamics for the simulation of rare
 	events},
-  journal = {Chem. Phys. Lett. },
+  journal = {Chem. Phys. Lett.},
   year = {1989},
   volume = {156},
   pages = {472-477}
@@ -566,6 +567,75 @@ number=35,
   year = {2004},
   volume = {121},
   pages = {2904--2914}
+}
+
+
+@Article{Huber1994,
+  Author         = {Huber, T. and Torda, A. E. and van~Gunsteren, W.F.},
+  Title          = {Local elevation - {A} method for improving
+                   the searching properties of
+                   molecular-dynamics simulation},
+  Journal        = {Journal of Computer-Aided Molecular Design},
+  Volume         = {8},
+  Number         = {6},
+  Pages          = {695--708},
+  month          = {DEC},
+  sourceid       = {ISI:A1994QA06400005},
+  year           = 1994
+}
+
+@Article{Grubmuller1995,
+  title = {Predicting slow structural transitions in macromolecular systems: Conformational flooding},
+  author = {Grubm\"uller, Helmut },
+  journal = {Phys. Rev. E},
+  volume = {52},
+  number = {3},
+  pages = {2893--2906},
+  numpages = {13},
+  year = {1995},
+  month = {Sep},
+  doi = {10.1103/PhysRevE.52.2893},
+  publisher = {American Physical Society}
+}
+
+@Article{Voter1997,
+  title = {Hyperdynamics: Accelerated Molecular Dynamics of Infrequent Events},
+  author = {Voter, Arthur F.},
+  journal = {Phys. Rev. Lett.},
+  volume = {78},
+  number = {20},
+  pages = {3908--3911},
+  numpages = {3},
+  year = {1997},
+  month = {May},
+  doi = {10.1103/PhysRevLett.78.3908},
+  publisher = {American Physical Society}
+}
+
+@Article{Darve2001,
+  Author         = {Darve, E. and Pohorille, A.},
+  Title          = {{Calculating} free energies using average force},
+  Journal        = {J. Chem. Phys,},
+  Volume         = {115},
+  Number         = {20},
+  Pages          = {9169--9183},
+  month          = {NOV 22},
+  sourceid       = {ISI:000172129300010},
+  year           = 2001
+}
+
+@Article{Hummer2003,
+  Author         = {Hummer, G. and Kevrekidis, I.G.},
+  Title          = {Coarse molecular dynamics of a peptide fragment:
+                   {Free} energy, kinetics, and long-time dynamics
+                   computations},
+  Journal        = {Journal of Chemical Physics},
+  Volume         = {118},
+  Number         = {23},
+  Pages          = {10762 -- 10773},
+  month          = {JUN 15},
+  sourceid       = {ISI:000183124300045},
+  year           = 2003
 }
 
 @Article{Laio2002,
