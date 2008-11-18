@@ -355,7 +355,7 @@ void ComputeNonbondedUtil :: NAME
     FEP(BigReal vdwShift2Down = ComputeNonbondedUtil::fepVdwShiftCoeff * (1-vdwLambda2Down);)
 
   
-  // Thermodynamic Integration Notes (F. Buelens): 
+  // Thermodynamic Integration Notes: 
   // Separation of atom pairs into different pairlist according to lambda
   // coupling, for alchemical free energy calculations. Normal pairlists
   // (pairlist[nxm]_save) are re-used for non-lambda-coupled pairs; new ones
