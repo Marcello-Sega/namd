@@ -1091,7 +1091,7 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
         if ((tree->forceconstant != new_node->forceconstant) ||
             (tree->angle != new_node->angle) ||
             (tree->k_ub != new_node->k_ub) ||
-            (tree->r_ub != new_node->r_ub))
+            (tree->r_ub != new_node->r_ub) || (tree->normal != new_node->normal))
         {
           iout << "\n" << iWARN << "DUPLICATE ANGLE ENTRY FOR "
             << new_node->atom1name << "-"
@@ -1112,6 +1112,7 @@ struct angle_params *Parameters::add_to_angle_tree(struct angle_params *new_node
           tree->angle=new_node->angle;
           tree->k_ub=new_node->k_ub;
           tree->r_ub=new_node->r_ub;
+          tree->normal=new_node->normal;
         }
         //****** END CHARMM/XPLOR type changes
 
@@ -5276,6 +5277,8 @@ void Parameters::read_parm(Ambertoppar *amber_data, BigReal vdw14)
     angle_array[i].theta0 = amber_data->Teq[i];
     // Amber has no k_ub and r_ub for angle parameters, so they're set to 0
     angle_array[i].k_ub = angle_array[i].r_ub = 0;
+    // All angles are harmonic
+    angle_array[i].normal = 1;
   }
 
   // Copy dihedral parameters
@@ -5437,6 +5440,7 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
     angle_array[i].k = k;
     // Gromacs has no Urey-Bradley angle parameters, so they're set to 0
     angle_array[i].k_ub = angle_array[i].r_ub = 0;
+    angle_array[i].normal = 1;
   }
 
   // Copy dihedral parameters
