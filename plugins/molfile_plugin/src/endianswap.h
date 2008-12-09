@@ -10,7 +10,7 @@
  *
  *      $RCSfile: endianswap.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.2 $       $Date: 2006/01/20 20:23:55 $
+ *      $Revision: 1.3 $       $Date: 2008/12/09 19:46:22 $
  *
  ***************************************************************************
  * DESCRIPTION:

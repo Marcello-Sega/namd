@@ -21,7 +21,9 @@ foreach file ( molfile_plugin.h vmdplugin.h )
   \cp -f $f $dest/$dir
 end
 
-foreach file ( dcdplugin.c endianswap.h fastio.h largefiles.h )
+foreach file ( dcdplugin.c pdbplugin.c psfplugin.c jsplugin.c \
+               hash.h hash.c endianswap.h fastio.h largefiles.h \
+               readpdb.h periodic_table.h fortread.h )
   set dir=molfile_plugin/src
   set f=$base/$dir/$file
   echo $f

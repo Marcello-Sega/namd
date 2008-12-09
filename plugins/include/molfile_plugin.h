@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2002 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2006 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: molfile_plugin.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.2 $       $Date: 2006/01/20 20:23:49 $
+ *      $Revision: 1.3 $       $Date: 2008/12/09 19:46:17 $
  *
  ***************************************************************************/
 
@@ -37,11 +37,18 @@
 #define MOLFILE_CONVERTER_PLUGIN_TYPE "mol file converter"
 
 /* File plugin symbolic constants for better code readability */
-#define MOLFILE_EOF              -1   /**< end of file                  */
-#define MOLFILE_ERROR            -1   /**< error reading/opening a file */
-#define MOLFILE_SUCCESS           0   /**< succeeded in reading file    */
-#define MOLFILE_NUMATOMS_UNKNOWN -1   /**< unknown number of atoms      */
-#define MOLFILE_NUMATOMS_NONE     0   /**< no atoms in this file type   */
+#define MOLFILE_SUCCESS           0   /**< succeeded in reading file      */
+#define MOLFILE_EOF              -1   /**< end of file                    */
+#define MOLFILE_ERROR            -1   /**< error reading/opening a file   */
+#define MOLFILE_NOSTRUCTUREDATA  -2   /**< no structure data in this file */
+
+#define MOLFILE_NUMATOMS_UNKNOWN -1   /**< unknown number of atoms       */
+#define MOLFILE_NUMATOMS_NONE     0   /**< no atoms in this file type    */
+
+/**
+ * Maximum string size macro
+ */
+#define MOLFILE_BUFSIZ           81   /**< maximum chars in string data  */
 
 
 /**
@@ -74,8 +81,8 @@ typedef struct {
  */
 typedef struct {
   /* these fields absolutely must be set or initialized to empty */
-  char name[8];       /**< required atom name string             */
-  char type[8];       /**< required atom type string             */
+  char name[16];      /**< required atom name string             */
+  char type[16];      /**< required atom type string             */
   char resname[8];    /**< required residue name string          */
   int resid;          /**< required integer residue ID           */
   char segid[8];      /**< required segment name string, or ""   */
@@ -94,24 +101,46 @@ typedef struct {
 
 /*@{*/
 /** Plugin optional data field availability flag */
-#define MOLFILE_NOOPTIONS     0x0000
-#define MOLFILE_INSERTION     0x0001
-#define MOLFILE_OCCUPANCY     0x0002
-#define MOLFILE_BFACTOR       0x0004
-#define MOLFILE_MASS          0x0008
-#define MOLFILE_CHARGE        0x0010
-#define MOLFILE_RADIUS        0x0020
-#define MOLFILE_ALTLOC        0x0040
-#define MOLFILE_ATOMICNUMBER  0x0080
+#define MOLFILE_NOOPTIONS     0x0000 /**< no optional data                 */
+#define MOLFILE_INSERTION     0x0001 /**< insertion codes provided         */
+#define MOLFILE_OCCUPANCY     0x0002 /**< occupancy data provided          */
+#define MOLFILE_BFACTOR       0x0004 /**< B-factor data provided           */
+#define MOLFILE_MASS          0x0008 /**< Atomic mass provided             */
+#define MOLFILE_CHARGE        0x0010 /**< Atomic charge provided           */
+#define MOLFILE_RADIUS        0x0020 /**< Atomic VDW radius provided       */
+#define MOLFILE_ALTLOC        0x0040 /**< Multiple conformations present   */
+#define MOLFILE_ATOMICNUMBER  0x0080 /**< Atomic element number provided   */
+#define MOLFILE_BONDSSPECIAL  0x0100 /**< Only non-standard bonds provided */
+#define MOLFILE_BADOPTIONS    0xFFFFFFFF /**< Detect badly behaved plugins */
+                              
 /*@}*/
 
+#if vmdplugin_ABIVERSION > 10
+typedef struct molfile_timestep_metadata {
+  unsigned int count;                  /**< total # timesteps; -1 if unknown */
+  unsigned int avg_bytes_per_timestep; /** bytes per timestep                */
+  int has_velocities;                  /**< if timesteps have velocities     */
+} molfile_timestep_metadata_t;
+#endif
+
+#if vmdplugin_ABIVERSION > 11
+typedef struct molfile_qm_timestep_metadata {
+  unsigned int count;                  /**< total # timesteps; -1 if unknown */
+  unsigned int avg_bytes_per_timestep; /** bytes per timestep                */
+  int has_gradient;                    /**< if timestep contains gradient    */
+  int scfiter_per_timestep;   /**< # scf iterations for this ts     */
+  int orbitals_per_timestep;  /**< # orbitals for this ts           */
+  int num_wave_f;             /**< number of gaussian basis fctns   */
+} molfile_qm_timestep_metadata_t;
+#endif
 
 /*
  * Per-timestep atom coordinates and periodic cell information
  */ 
 typedef struct {
-  float *coords;  /**< space for coordinates of all atoms, arranged xyzxyzxyz */
-
+  float *coords;        /**< coordinates of all atoms, arranged xyzxyzxyz   */
+  float *velocities;    /**< space for velocities of all atoms; same layout */
+                        /**< NULL unless has_velocities is set              */
   /*@{*/   
   /**
    * Unit cell specification of the form A, B, C, alpha, beta, gamma.
@@ -122,6 +151,8 @@ typedef struct {
    */ 
   float A, B, C, alpha, beta, gamma; 
   /*@}*/   
+
+  double physical_time; /**< physical time point associated with this frame */
 } molfile_timestep_t;
 
 
@@ -130,9 +161,8 @@ typedef struct {
  * memory allocations and file loading.  
  */
 typedef struct {
-  char dataname[256]; /**< name of volumetric data set                    */
-
-  float origin[3];    /**< origin: origin of volume (x=0, y=0, z=0 corner */
+  char dataname[256];   /**< name of volumetric data set                    */
+  float origin[3];      /**< origin: origin of volume (x=0, y=0, z=0 corner */
 
   /*
    * x/y/z axis:
@@ -143,9 +173,9 @@ typedef struct {
    * axes can be oriented non-orthogonally, and the parallelpiped
    * may have different side lengths, not just a cube/rhombus.
    */
-  float xaxis[3];     /**< direction (and length) for X axis              */ 
-  float yaxis[3];     /**< direction (and length) for Y axis              */
-  float zaxis[3];     /**< direction (and length) for Z axis              */
+  float xaxis[3];       /**< direction (and length) for X axis              */ 
+  float yaxis[3];       /**< direction (and length) for Y axis              */
+  float zaxis[3];       /**< direction (and length) for Z axis              */
 
   /*
    * x/y/z size: 
@@ -153,12 +183,134 @@ typedef struct {
    * physical size of the box, this is the number of voxels in each
    * direction, independent of the shape of the volume set. 
    */
-  int xsize;          /**< number of grid cells along the X axis          */
-  int ysize;          /**< number of grid cells along the Y axis          */
-  int zsize;          /**< number of grid cells along the Z axis          */
+  int xsize;            /**< number of grid cells along the X axis          */
+  int ysize;            /**< number of grid cells along the Y axis          */
+  int zsize;            /**< number of grid cells along the Z axis          */
 
-  int has_color;      /**< flag indicating presence of voxel color data   */
+  int has_color;        /**< flag indicating presence of voxel color data   */
 } molfile_volumetric_t;
+
+
+/* XXX disabled until next major plugin ABI rev */
+#if vmdplugin_ABIVERSION > 9
+
+/**
+ * Sizes of various QM-related data arrays which must be allocated by
+ * the caller (VMD) so that the plugin can fill in the arrays with data.
+ */
+typedef struct {
+  /* hessian data */
+  int nimag;            /**< # imaginary modes */
+  int nintcoords;       /**< # internal coordinates */
+  int ncart;            /**< # cartesian coordinates */
+
+  /* orbital data */
+  int num_basis_funcs;  /**< # uncontracted basis functions in basis array */
+  int num_shells;       /**< total # of atomic shells */
+  int num_wave_f;       /**< counts # orbitals in output file */
+
+  /* everything else */
+  int num_traj_points;  /**< # trajectory points, 1 for single point runs */
+
+  int have_esp;
+  int have_npa;
+  int have_carthessian;
+  int have_internals;
+  int have_normalmodes;
+} molfile_qm_metadata_t;
+
+
+/**
+ * struct holding the data of hessian/normal mode runs
+ * needed to calculate bond/angle/dihedral force constants
+ */
+typedef struct {
+  double *carthessian;      /**< hessian matrix in cartesian coordinates (ncart)*(ncart) as a single array of doubles (row(1), ...,row(natoms)) */
+  int *imag_modes;          /**< list(nimag) of imaginary modes */
+  double *inthessian;       /**< hessian matrix in internal coordinates (nintcoords*nintcoords) as a single array of doubles (row(1), ...,row(nintcoords)) */
+  double *wavenumbers;      /**< array(ncart) of wavenumbers of normal modes */
+  double *intensities;      /**< array(ncart) of intensities of normal modes */
+  double *normalmodes;      /**< matrix(ncart*ncart) of normal modes  */
+} molfile_qm_hessian_t;
+
+
+/**
+ * struct holding the data for wavefunction/orbitals
+ * needed to generate the volumetric orbital data
+ */
+typedef struct {
+  int *num_shells_per_atom; /**< number of shells per atom */
+  int *num_prim_per_shell;  /**< number of shell primitives shell */
+
+  float *basis;              /**< contraction coeffients and exponents for the basis functions in the form { exp(1), c-coeff(1), exp(2), c-coeff(2), ....}; size=2*num_basis_funcs */
+  float *localized_orbitals; /**< localized orbitals (Boys, Ruedenberg, etc.) */
+  int *angular_momentum;     /* 3 ints per wave function coefficient do describe the 
+                              * cartesian components of the angular momentum.
+                              * E.g. S={0 0 0}, Px={1 0 0}, Dxy={1 1 0}, or Fyyz={0 2 1}. */
+  int *shell_symmetry;       /**< symmetry type per shell in basis */
+} molfile_qm_basis_t;
+
+
+/**
+ * QM run info
+ */ 
+typedef struct {
+  int runtyp;                  /* runtyp for internal use */
+  int mplevel;                 /* Moeller-Plesset perturbation level */
+  int num_electrons;           /* number of electrons */
+  int nproc;                   /* number of processors used */
+  int num_wave_f;              /* max. size of the wave_function array
+                                * i.e. # of cartesian contracted
+                                * gaussian basis functions */
+  int totalcharge;             /* total charge of system */
+  int multiplicity;            /* multiplicity of system */
+  int num_orbitals_A;          /* number of alpha orbitals */
+  int num_orbitals_B;          /* number of beta orbitals */
+  int scftyp;                  /* scftyp for internal use */
+
+  double *nuc_charge;                   /* array(natom) containing the nuclear charge of atom i */
+  double *esp_charges;                  /* per-atom esp charges */
+  double *npa_charges;                  /* per-atom npa charges */
+
+
+  char runtyp_string[MOLFILE_BUFSIZ];   /* runtyp as string for punching */
+  char scftyp_string[MOLFILE_BUFSIZ];   /* scftyp as string for punching */
+  char dfttyp_string[MOLFILE_BUFSIZ];   /* dfttyp as string for punching */
+  char basis_string[MOLFILE_BUFSIZ];    /* basis name as "nice" string */
+  char memory[MOLFILE_BUFSIZ];          /* amount of memory used, e.g. 1Gb */
+  char runtitle[MOLFILE_BUFSIZ];        /* title of run. XXX needs to be made larger for Gaussian */
+  char guess[MOLFILE_BUFSIZ];           /* guess option used */
+  char geometry[MOLFILE_BUFSIZ];        /* typ of provided geometry,
+                                         * e.g. UNIQUE, ZMT, CART, ... */
+  char version_string[MOLFILE_BUFSIZ];  /* QM code version information */
+} molfile_qm_sysinfo_t;
+
+
+/**
+ * QM per trajectory timestep info
+ */
+typedef struct {
+  float *wave_function;     /* expansion coefficients for wavefunction in the form {orbital1(c1),orbital1(c2),.....,orbi talM(cN)} */
+  float *orbital_energies;  /* list of orbital energies for wavefunction */
+  float *gradient;          /* force on each atom (=gradient of energy) */
+
+  double *scfenergies;      /* scfenergies per trajectory point */
+  double *mulliken_charges; /* per-atom Mulliken charges */
+  double *lowdin_charges;   /* per-atom Lowdin charges */
+} molfile_qm_timestep_t;
+
+
+/**
+ * QM wavefunctions, and related information 
+ */
+typedef struct {
+  molfile_qm_hessian_t hess;            /* hessian info */
+  molfile_qm_basis_t   basis;           /* basis set info */
+  molfile_qm_sysinfo_t run;             /* system info  */
+} molfile_qm_t;
+
+
+#endif
 
 
 /**
@@ -219,7 +371,13 @@ typedef struct {
 
   /**
    * Filename extension for this file type.  May be NULL if no filename 
-   * extension exists and/or is known.
+   * extension exists and/or is known.  For file types that match several
+   * common extensions, list them in a comma separated list such as:
+   *  "pdb,ent,foo,bar,baz,ban"
+   * The comma separated list will be expanded when filename extension matching
+   * is performed.  If multiple plugins solicit the same filename extensions,
+   * the one that lists the extension earliest in its list is selected. In the 
+   * case of a "tie", the first one tried/checked "wins".
    */
   const char *filename_extension;
 
@@ -265,6 +423,9 @@ typedef struct {
   int (*read_bonds)(void *, int *nbonds, int **from, int **to, float **bondorder);
 
   /**
+   * XXX this function will be augmented and possibly superceded by a 
+   *     new QM-capable version named read_timestep(), when finished.
+   *
    * Read the next timestep from the file.  Return MOLFILE_SUCCESS, or 
    * MOLFILE_EOF on EOF.  If the molfile_timestep_t argument is NULL, then 
    * the frame should be skipped.  Otherwise, the application must prepare 
@@ -353,11 +514,89 @@ typedef struct {
    * File formats that list bonds twice will need to emit both the 
    * from/to and to/from versions of each.
    * This function must be called before write_structure().  
-   * Unlike the read_bonds() routine, the bondorder information
-   * will always be provided (each bondorder can be set to 1 if unknown).
+   * Like the read_bonds() routine, the bondorder pointer is set to NULL
+   * if the caller doesn't have such information, in which case the 
+   * plugin should assume a bond order of 1.0 if the file format requires
+   * bond order information.
    * Return MOLFILE_SUCCESS if no errors occur. 
    */
   int (* write_bonds)(void *, int nbonds, int *from, int *to, float *bondorder);
+
+/* XXX disabled until next major plugin ABI rev */
+#if vmdplugin_ABIVERSION > 9
+  /**
+   * Write the specified volumetric data set into the space pointed to by 
+   * datablock.  The * allocated for the datablock must be equal to
+   * xsize * ysize * zsize.  No space will be allocated for colorblock 
+   * unless has_color is nonzero; in that case, colorblock should be
+   * filled in with three RGB floats per datapoint.
+   */
+  int (* write_volumetric_data)(void *, molfile_volumetric_t *metadata,
+                                float *datablock, float *colorblock);
+
+  /** 
+   * Read in Angles, Dihedrals, Impropers, and Cross Terms, and their forces
+   * Forces are in Kcal/mol
+   * (Cross terms pertain to the CHARMM/NAMD CMAP feature, forces are given
+   *  as a 2-D matrix)
+   */
+  int (* read_angles)(void *,
+                int *numangles,    int **angles,    double **angleforces,
+                int *numdihedrals, int **dihedrals, double **dihedralforces,
+                int *numimpropers, int **impropers, double **improperforces,
+                int *numcterms,    int **cterms, 
+                int *ctermcols,    int *ctermrows,  double **ctermforces);
+
+  /** 
+   * Write out Angles, Dihedrals, Impropers, and Cross Terms
+   * Forces are in Kcal/mol
+   * (Cross terms pertain to the CHARMM/NAMD CMAP feature, forces are given
+   *  as a 2-D matrix)
+   */
+  int (* write_angles)(void *,
+        int numangles,    const int *angles,    const double *angleforces,
+        int numdihedrals, const int *dihedrals, const double *dihedralforces,
+        int numimpropers, const int *impropers, const double *improperforces,
+        int numcterms,   const int *cterms,    
+        int ctermcols, int ctermrows, const double *ctermforces);
+
+  /**
+   * Retrieve metadata pertaining to QM datasets in this file.
+   */
+  int (* read_qm_metadata)(void *, molfile_qm_metadata_t *metadata);
+
+  /**
+   * Read QM data
+   */
+  int (* read_qm_rundata)(void *, molfile_qm_t *qmdata);
+
+  /**
+   * Read the next timestep from the file.  Return MOLFILE_SUCCESS, or 
+   * MOLFILE_EOF on EOF.  If the molfile_timestep_t or molfile_qm_metadata_t
+   * arguments are NULL, then the coordinate or qm data should be skipped.  
+   * Otherwise, the application must prepare molfile_timestep_t and 
+   * molfile_qm_timestep_t by allocating space for the corresponding 
+   * number of coordinates, orbital wavefunction coefficients, etc.
+   * Since it is common for users to want to load only the final timestep 
+   * data from a QM run, the application may provide any combination of
+   * valid, or NULL pointers for the molfile_timestep_t and 
+   * molfile_qm_timestep_t parameters, depending on what information the
+   * user is interested in.
+   * The natoms and qm metadata parameters exist because some file formats 
+   * cannot determine for themselves how many atoms etc are in a 
+   * timestep; the app must therefore obtain this information elsewhere
+   * and provide it to the plugin.
+   */
+  int (* read_timestep)(void *, int natoms, molfile_timestep_t *,
+                        molfile_qm_metadata_t *, molfile_qm_timestep_t *);
+#endif
+
+#if vmdplugin_ABIVERSION > 10
+  int (* read_timestep_metadata)(void *, molfile_timestep_metadata_t *);
+#endif
+#if vmdplugin_ABIVERSION > 11
+  int (* read_qm_timestep_metadata)(void *, molfile_qm_timestep_metadata_t *);
+#endif
 
 } molfile_plugin_t;
 

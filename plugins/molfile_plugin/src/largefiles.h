@@ -11,7 +11,7 @@
  *
  *      $RCSfile: largefiles.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2006/01/20 20:30:38 $
+ *      $Revision: 1.2 $       $Date: 2008/12/09 19:46:23 $
  *
  ***************************************************************************
  * DESCRIPTION:
