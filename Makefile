@@ -249,7 +249,10 @@ CIFILES = 	\
 # Add new source files here.
 
 PLUGINOBJS = \
-	$(DSTDIR)/dcdplugin.o
+	$(DSTDIR)/dcdplugin.o \
+	$(DSTDIR)/jsplugin.o \
+	$(DSTDIR)/pdbplugin.o \
+	$(DSTDIR)/psfplugin.o
 
 PLUGINLIB = $(PLUGINOBJS)
 
@@ -621,7 +624,7 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	      SRCFILE=$(PLUGINSRCDIR)/$$BASENAME.c ; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      gcc -MM $(PLUGINGCCFLAGS) $$SRCFILE | \
-	      perl $(SRCDIR)/dc.pl $(PLUGINSRCDIR) $(PLUGININCDIR) /usr/include /usr/local >> $(DEPENDFILE); \
+	      perl $(SRCDIR)/dc.pl /usr/include /usr/local >> $(DEPENDFILE); \
 	      $(ECHO) '	$$(CC) $$(PLUGINCFLAGS) $$(COPTO)'$$i '$$(COPTC)' \
 		'$$(COPTD)'VMDPLUGIN=molfile_$$BASENAME \
 		$$SRCFILE >> $(DEPENDFILE) ; \

@@ -4293,8 +4293,39 @@ obj/FileIO.o: \
 	src/FileIO.h \
 	inc/FileIO.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/FileIO.o $(COPTC) src/FileIO.C
-obj/dcdplugin.o:
+obj/dcdplugin.o: \
+	plugins/molfile_plugin/src/dcdplugin.c \
+	plugins/molfile_plugin/src/largefiles.h \
+	plugins/molfile_plugin/src/endianswap.h \
+	plugins/molfile_plugin/src/fastio.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/dcdplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_dcdplugin plugins/molfile_plugin/src/dcdplugin.c
+obj/jsplugin.o: \
+	plugins/molfile_plugin/src/jsplugin.c \
+	plugins/molfile_plugin/src/largefiles.h \
+	plugins/molfile_plugin/src/hash.h \
+	plugins/molfile_plugin/src/hash.c \
+	plugins/molfile_plugin/src/fastio.h \
+	plugins/molfile_plugin/src/endianswap.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h
+	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/jsplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_jsplugin plugins/molfile_plugin/src/jsplugin.c
+obj/pdbplugin.o: \
+	plugins/molfile_plugin/src/pdbplugin.c \
+	plugins/molfile_plugin/src/largefiles.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	plugins/molfile_plugin/src/readpdb.h \
+	plugins/molfile_plugin/src/periodic_table.h
+	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/pdbplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_pdbplugin plugins/molfile_plugin/src/pdbplugin.c
+obj/psfplugin.o: \
+	plugins/molfile_plugin/src/psfplugin.c \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	plugins/molfile_plugin/src/fortread.h \
+	plugins/molfile_plugin/src/endianswap.h
+	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/psfplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_psfplugin plugins/molfile_plugin/src/psfplugin.c
 obj/tcl_main.o: \
 	sb/src/tcl_main.c
 	$(CC) $(SBCFLAGS) $(COPTO)obj/tcl_main.o $(COPTC) sb/src/tcl_main.c
