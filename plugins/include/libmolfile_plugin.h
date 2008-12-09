@@ -6,9 +6,17 @@
 extern "C" {
 #endif
 
-extern int molfile_dcdplugin_init(void);
-extern int molfile_dcdplugin_register(void *, vmdplugin_register_cb);
-extern int molfile_dcdplugin_fini(void);
+#define DECLARE_PLUGIN(PLUGIN) \
+  extern int molfile_ ## PLUGIN ## _init(void); \
+  extern int molfile_ ## PLUGIN ## _register(void *, vmdplugin_register_cb); \
+  extern int molfile_ ## PLUGIN ## _fini(void);
+
+DECLARE_PLUGIN(dcdplugin)
+DECLARE_PLUGIN(jsplugin)
+DECLARE_PLUGIN(pdbplugin)
+DECLARE_PLUGIN(psfplugin)
+
+#undef DECLARE_PLUGIN
 
 #ifdef __cplusplus
 }
