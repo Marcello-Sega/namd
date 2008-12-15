@@ -43,6 +43,7 @@
 #include "CompressPsf.h"
 #include <deque>
 #include <algorithm>
+
 using namespace std;
 
 #ifdef MEM_OPT_VERSION
@@ -347,6 +348,96 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
   }      
   else
       read_psf_file(filename, param);
+}
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION Molecule                                               */
+/*                                                                      */
+/*  This is the constructor for the Molecule class from plugin IO.      */
+/*                                                                      */
+/************************************************************************/
+Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t *pIOHdl, void *pIOFileHdl, int natoms)
+{
+    initialize(simParams, param);
+    numAtoms = natoms;
+    int optflags = MOLFILE_BADOPTIONS;
+    molfile_atom_t *atomarray = (molfile_atom_t *) malloc(natoms*sizeof(molfile_atom_t));
+    memset(atomarray, 0, natoms*sizeof(molfile_atom_t));
+
+    //1a. read basic atoms information
+    int rc = pIOHdl->read_structure(pIOFileHdl, &optflags, atomarray);
+    if (rc != MOLFILE_SUCCESS && rc != MOLFILE_NOSTRUCTUREDATA) {
+        free(atomarray);
+        NAMD_die("ERROR: plugin failed reading structure data");
+    }
+    if(optflags == MOLFILE_BADOPTIONS) {
+        free(atomarray);
+        NAMD_die("ERROR: plugin didn't initialize optional data flags");
+    }
+    if(optflags & MOLFILE_OCCUPANCY) {
+        occupancy = new float[natoms];
+        for(int i=0; i<natoms; i++) {
+            occupancy[i] = atomarray[i].occupancy;
+        }
+    }else{
+        occupancy = NULL;
+    }
+    if(optflags & MOLFILE_BFACTOR) {
+        bfactor = new float[natoms];
+        for(int i=0; i<natoms; i++) {
+            bfactor[i] = atomarray[i].bfactor;
+        }
+    }else{
+        bfactor = NULL;
+    }
+    //1b. load basic atoms information to the molecule object
+    plgLoadAtomBasics(atomarray);    
+    free(atomarray);
+
+    //2a. read bonds
+    //indices are one-based in read_bonds
+    int *from, *to;
+    float *bondorder;
+    if(pIOHdl->read_bonds!=NULL) {
+        if(pIOHdl->read_bonds(pIOFileHdl, &numBonds, &from, &to, &bondorder)){
+            NAMD_die("ERROR: failed reading bond information.");
+        }
+    }    
+    //2b. load bonds information to the molecule object
+    if(numBonds!=0) {
+        plgLoadBonds(from,to);
+        //TODO: Not sure of doing these two free operations
+        free(from);
+        free(to);
+    }
+
+    //3a. read other bonded structures
+    int *plgAngles, *plgDihedrals, *plgImpropers, *plgCterms;
+    int ctermcols, ctermrows;
+    double *angleforces,  *dihedralforces, *improperforces, *ctermforces;
+
+    plgAngles=plgDihedrals=plgImpropers=plgCterms=NULL;
+    if(pIOHdl->read_angles!=NULL) {
+        if(pIOHdl->read_angles(pIOFileHdl,
+                               &numAngles, &plgAngles, &angleforces,
+                               &numDihedrals, &plgDihedrals, &dihedralforces,
+                               &numImpropers, &plgImpropers, &improperforces,
+                               &numCrossterms, &plgCterms, &ctermcols, &ctermrows,
+                               &ctermforces)) {
+            NAMD_die("ERROR: failed reading angle information.");
+        }
+    }
+    //3b. load other bonded structures to the molecule object
+    if(numAngles!=0) plgLoadAngles(plgAngles);
+    if(numDihedrals!=0) plgLoadDihedrals(plgDihedrals);
+    if(numImpropers!=0) plgLoadImpropers(plgImpropers);
+    if(numCrossterms!=0) plgLoadCrossterms(plgCterms);
+    //TODO: Not sure of doing these four free operations
+    free(plgAngles);
+    free(plgDihedrals);
+    free(plgImpropers);
+    free(plgCterms);
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -2043,7 +2134,7 @@ void Molecule::read_crossterms(FILE *fd, Parameters *params)
     crossterms[num_read].atom7=atom_nums[6];
     crossterms[num_read].atom8=atom_nums[7];
 
-    num_read++;
+    if(!duplicate_bond) num_read++;
   }
 
   numCrossterms = num_read;
@@ -2334,6 +2425,297 @@ void Molecule::read_exclusions(FILE *fd)
 #endif
 }
 /*      END OF FUNCTION read_exclusions      */
+
+
+void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
+    atoms = new Atom[numAtoms];
+    atomNames = new AtomNameInfo[numAtoms];
+    hydrogenGroup.resize(0);
+
+    ResidueLookupElem *tmpResLookup = resLookup;
+
+    for(int i=0; i<numAtoms; i++) {
+        int reslength = strlen(atomarray[i].resname)+1;
+        int namelength = strlen(atomarray[i].name)+1;
+        int typelength = strlen(atomarray[1].type)+1;
+        atomNames[i].resname = nameArena->getNewArray(reslength);
+        atomNames[i].atomname = nameArena->getNewArray(namelength);
+        atomNames[i].atomtype = nameArena->getNewArray(typelength);
+        strcpy(atomNames[i].resname, atomarray[i].resname);
+        strcpy(atomNames[i].atomname, atomarray[i].name);
+        strcpy(atomNames[i].atomtype, atomarray[1].type);
+
+        atoms[i].mass = atomarray[i].mass;
+        atoms[i].charge = atomarray[i].charge;
+        atoms[i].status = UnknownAtom;
+
+        //add this atom to residue lookup table
+        if(tmpResLookup) {
+            tmpResLookup = tmpResLookup->append(atomarray[i].segid, atomarray[i].resid, i);
+        }
+        //Determine the type of the atom
+        if(atoms[i].mass <= 0.05) {
+            atoms[i].status |= LonepairAtom;
+        }else if(atoms[i].mass < 1.0) {
+            atoms[i].status |= DrudeAtom;
+        }else if(atoms[i].mass <= 3.5) {
+            atoms[i].status |= HydrogenAtom;
+        }else if((atomNames[i].atomname[0] == 'O') &&
+                 (atoms[i].mass>=14.0) && (atoms[i].mass<=18.0)){
+            atoms[i].status |= OxygenAtom;
+        }
+        //Lookk up the vdw constants for this atom
+        params->assign_vdw_index(atomNames[i].atomtype, &atoms[i]);
+    }
+}
+
+void Molecule::plgLoadBonds(int *from, int *to){
+    bonds = new Bond[numBonds];
+    char atom1name[11];
+    char atom2name[11];
+    int realNumBonds = 0;
+    for(int i=0; i<numBonds; i++) {
+        Bond *thisBond = bonds+realNumBonds;
+        thisBond->atom1 = from[i]-1;
+        thisBond->atom2 = to[i]-1;
+        /* Get the atom type for the two atoms.
+         * When we query the parameter object, we
+         * need to send the atom type that is alphabetically
+         * first as atom 1.
+         */
+        if(strcasecmp(atomNames[thisBond->atom1].atomtype,
+                      atomNames[thisBond->atom2].atomtype)<0) {
+            strcpy(atom1name, atomNames[thisBond->atom1].atomtype);
+            strcpy(atom2name, atomNames[thisBond->atom2].atomtype);
+        }else{
+            strcpy(atom2name, atomNames[thisBond->atom1].atomtype);
+            strcpy(atom1name, atomNames[thisBond->atom2].atomtype);
+        }
+        params->assign_bond_index(atom1name, atom2name, thisBond);
+
+        //Make sure this isn't a fake bond meant for shake in x-plor
+        Real k, x0;
+        params->get_bond_params(&k, &x0, thisBond->bond_type);
+        if(simParams->watmodel == WAT_SWM4) {
+            //need to retain Lonepair bonds for Drude
+            if(k!=0. || is_lp(thisBond->atom1) || 
+               is_lp(thisBond->atom2)) {               
+                realNumBonds++;
+	    }
+        }else{
+            if(k != 0.) realNumBonds++;
+        }
+    }
+
+    if(numBonds != realNumBonds) {
+        iout << iWARN << "Ignored" << numBonds-realNumBonds <<
+            "bonds with zero force constants.\n" <<endi;
+        iout << iWARN << "Will get H-H distance in rigid H20 from H-O-H angle.\n" <<endi;
+    }
+    numBonds = realNumBonds;
+}
+
+void Molecule::plgLoadAngles(int *plgAngles)
+{    
+    char atom1name[11];
+    char atom2name[11];
+    char atom3name[11];
+
+    angles=new Angle[numAngles];
+    int *atomid = plgAngles;
+    int numRealAngles = 0;
+    for(int i=0; i<numAngles; i++) {
+        Angle *thisAngle = angles+numRealAngles;
+        thisAngle->atom1 = atomid[0]-1;
+        thisAngle->atom2 = atomid[1]-1;
+        thisAngle->atom3 = atomid[2]-1;
+        atomid += 3;
+
+        if(strcasecmp(atomNames[thisAngle->atom1].atomtype,
+                      atomNames[thisAngle->atom2].atomtype)<0) {
+            strcpy(atom1name, atomNames[thisAngle->atom1].atomtype);
+            strcpy(atom2name, atomNames[thisAngle->atom2].atomtype);
+            strcpy(atom3name, atomNames[thisAngle->atom3].atomtype);
+        }else{
+            strcpy(atom1name, atomNames[thisAngle->atom3].atomtype);
+            strcpy(atom2name, atomNames[thisAngle->atom2].atomtype);
+            strcpy(atom3name, atomNames[thisAngle->atom1].atomtype);
+        }
+
+        params->assign_angle_index(atom1name, atom2name, atom3name, thisAngle);
+
+        Real k, t0, k_ub, r_ub;
+        params->get_angle_params(&k, &t0, &k_ub, &r_ub, thisAngle->angle_type);
+        if(k!=0. || k_ub!=0.) numRealAngles++;
+    }
+
+    if(numAngles != numRealAngles) {
+        iout << iWARN << "Ignored" << numAngles-numRealAngles << 
+            " angles with zero force constants.\n" << endi; 
+    }
+    numAngles = numRealAngles;
+}
+
+void Molecule::plgLoadDihedrals(int *plgDihedrals)
+{
+    char atom1name[11];
+    char atom2name[11];
+    char atom3name[11];
+    char atom4name[11];
+    int lastAtomIds[4];
+    int multiplicity = 1; //multiplicity of the current bond
+
+    lastAtomIds[0]=lastAtomIds[1]=lastAtomIds[2]=lastAtomIds[3]=-1;
+    dihedrals = new Dihedral[numDihedrals];
+    int numRealDihedrals = 0;
+    int *atomid = plgDihedrals;
+    for(int i=0; i<numDihedrals; i++, atomid+=4) {
+        Dihedral *thisDihedral = dihedrals + numRealDihedrals;
+        Bool duplicate_bond = TRUE;
+        for(int j=0; j<4; j++) {
+            if(atomid[j] != lastAtomIds[j]) {
+                duplicate_bond = FALSE;
+            }
+            lastAtomIds[j] = atomid[j];
+        }
+
+        strcpy(atom1name, atomNames[atomid[0]].atomtype);
+        strcpy(atom2name, atomNames[atomid[1]].atomtype);
+        strcpy(atom3name, atomNames[atomid[2]].atomtype);
+        strcpy(atom4name, atomNames[atomid[3]].atomtype);
+
+        if(duplicate_bond) {
+            multiplicity++;
+            if(multiplicity==2) {
+                numMultipleDihedrals++;
+            }
+        }else{
+            multiplicity=1;
+            numRealDihedrals++;
+        }
+
+        params->assign_dihedral_index(atom1name, atom2name,
+                                      atom3name, atom4name, thisDihedral,
+                                      multiplicity);
+        thisDihedral->atom1 = atomid[0];
+        thisDihedral->atom2 = atomid[1];
+        thisDihedral->atom3 = atomid[2];
+        thisDihedral->atom4 = atomid[3];
+    }
+
+    numDihedrals = numRealDihedrals;
+}
+
+void Molecule::plgLoadImpropers(int *plgImpropers)
+{
+    char atom1name[11];
+    char atom2name[11];
+    char atom3name[11];
+    char atom4name[11];
+    int lastAtomIds[4];
+    int multiplicity = 1; //multiplicity of the current bond
+
+    lastAtomIds[0]=lastAtomIds[1]=lastAtomIds[2]=lastAtomIds[3]=-1;
+    impropers = new Improper[numImpropers];
+    int numRealImpropers = 0;
+    int *atomid = plgImpropers;
+    for(int i=0; i<numImpropers; i++, atomid+=4) {
+        Improper *thisImproper = impropers + numRealImpropers;
+        Bool duplicate_bond = TRUE;
+        for(int j=0; j<4; j++) {
+            if(atomid[j] != lastAtomIds[j]) {
+                duplicate_bond = FALSE;
+            }
+            lastAtomIds[j] = atomid[j];
+        }
+
+        strcpy(atom1name, atomNames[atomid[0]].atomtype);
+        strcpy(atom2name, atomNames[atomid[1]].atomtype);
+        strcpy(atom3name, atomNames[atomid[2]].atomtype);
+        strcpy(atom4name, atomNames[atomid[3]].atomtype);
+
+        if(duplicate_bond) {
+            multiplicity++;
+            if(multiplicity==2) {
+                numMultipleImpropers++;
+            }
+        }else{
+            multiplicity=1;
+            numRealImpropers++;
+        }
+
+        params->assign_improper_index(atom1name, atom2name,
+                                      atom3name, atom4name, thisImproper,
+                                      multiplicity);
+        thisImproper->atom1 = atomid[0];
+        thisImproper->atom2 = atomid[1];
+        thisImproper->atom3 = atomid[2];
+        thisImproper->atom4 = atomid[3];
+    }
+
+    numImpropers = numRealImpropers;
+}
+
+void Molecule::plgLoadCrossterms(int *plgCterms)
+{
+    char atom1name[11];
+    char atom2name[11];
+    char atom3name[11];
+    char atom4name[11];
+    char atom5name[11];
+    char atom6name[11];
+    char atom7name[11];
+    char atom8name[11];
+    int lastAtomIds[8];    
+
+    for(int i=0; i<8; i++)
+        lastAtomIds[i]=-1;
+    
+    crossterms = new Crossterm[numCrossterms];
+    int numRealCrossterms = 0;
+    int *atomid = plgCterms;
+    for(int i=0; i<numCrossterms; i++, atomid+=8) {
+        Crossterm *thisCrossterm = crossterms + numRealCrossterms;
+        Bool duplicate_bond = TRUE;
+        for(int j=0; j<8; j++) {
+            if(atomid[j] != lastAtomIds[j]) {
+                duplicate_bond = FALSE;
+            }
+            lastAtomIds[j] = atomid[j];
+        }
+
+        strcpy(atom1name, atomNames[atomid[0]].atomtype);
+        strcpy(atom2name, atomNames[atomid[1]].atomtype);
+        strcpy(atom3name, atomNames[atomid[2]].atomtype);
+        strcpy(atom4name, atomNames[atomid[3]].atomtype);
+        strcpy(atom5name, atomNames[atomid[4]].atomtype);
+        strcpy(atom6name, atomNames[atomid[5]].atomtype);
+        strcpy(atom7name, atomNames[atomid[6]].atomtype);
+        strcpy(atom8name, atomNames[atomid[7]].atomtype);
+
+        if(duplicate_bond) {
+            iout << iWARN <<"Duplicate cross-term detected.\n" << endi;
+        }else
+            numRealCrossterms++;
+
+        params->assign_crossterm_index(atom1name, atom2name,
+                                       atom3name, atom4name, atom5name,
+                                       atom6name, atom7name, atom8name,
+                                       thisCrossterm);
+
+        thisCrossterm->atom1 = atomid[0];
+        thisCrossterm->atom2 = atomid[1];
+        thisCrossterm->atom3 = atomid[2];
+        thisCrossterm->atom4 = atomid[3];
+        thisCrossterm->atom5 = atomid[4];
+        thisCrossterm->atom6 = atomid[5];
+        thisCrossterm->atom7 = atomid[6];
+        thisCrossterm->atom8 = atomid[7];
+    }
+
+    numCrossterms = numRealCrossterms;
+}
+
 
 /************************************************************************/
 /*                  */

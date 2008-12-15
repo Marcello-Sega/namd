@@ -27,6 +27,8 @@
 //#define DEBUGM
 #include "Debug.h"
 
+#include "PluginIOMgr.h"
+
 NamdState::NamdState()
 {
     configList = NULL;
@@ -137,6 +139,56 @@ int NamdState::configListInit(ConfigList *cfgList) {
     // NAMD_die("Failed to read AMBER parm file!");
     parameters->print_param_summary();
   }
+  else if (simParameters->usePluginIO){
+    if(simParameters->useCompressedPsf) {
+        NAMD_die("Compressed psf file is not supported currently when using plugin IO");
+    }
+    PluginIOMgr *pIOMgr = new PluginIOMgr();
+    //TODO: register or add plugins
+
+    
+    iout << iWARN << "Plugin-based I/O is still in development and may still have bugs" << endl;
+
+    molfile_plugin_t *pIOHandle = pIOMgr->getPlugin();
+    if (pIOHandle == NULL) {
+        NAMD_die("ERROR: Failed to match requested plugin type");
+    }
+    if(pIOHandle->open_file_read == NULL || 
+       pIOHandle->read_structure == NULL ||
+       pIOHandle->read_timestep == NULL) {
+       NAMD_die("ERROR: Selected plugin type cannot load molecule structure information"); 
+    }
+
+    StringList *moleculeFilename = configList->find("structure");
+    StringList *parameterFilename = configList->find("parameters");
+    //****** BEGIN CHARMM/XPLOR type changes
+    // For AMBER use different constructor based on parm_struct!!!  -JCP
+    parameters = new Parameters(simParameters, parameterFilename);
+    parameters->print_param_summary();
+
+    int numAtoms = 0;
+    //TODO: not sure about the name field in the handler
+    void *plgFile = pIOHandle->open_file_read(moleculeFilename->data, 
+                                              pIOHandle->name, &numAtoms);
+    if(plgFile ==  NULL) {
+        NAMD_die("ERROR: Opening structure file failed!");
+    }
+
+    double fileReadTime = CmiWallTimer();
+    molecule = new Molecule(simParameters, parameters, pIOHandle, plgFile, numAtoms);
+    iout << iINFO << "TIME FOR LOAD MOLECULE STRUCTURE INFORMATION: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+
+    fileReadTime = CmiWallTimer();
+    //get the occupancy data from the Molecule object and then free it
+    //as it is stored in the Molecule object.
+    pdb = new PDB(pIOHandle, plgFile, molecule->numAtoms, molecule->getOccupancyData(), molecule->getBFactorData());
+    molecule->freeOccupancyData();
+    molecule->freeBFactorData();
+    iout << iINFO << "TIME FOR LOADING ATOMS' COORDINATES INFORMATION: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+
+    pIOHandle->close_file_read(plgFile);
+    delete pIOMgr;
+  }
   else
   { StringList *moleculeFilename = configList->find("structure");
     StringList *parameterFilename = configList->find("parameters");
@@ -158,27 +210,32 @@ int NamdState::configListInit(ConfigList *cfgList) {
     }    
   }
   fflush(stdout);
-  
-  StringList *coordinateFilename = configList->find("coordinates");
 
-  double fileReadTime = CmiWallTimer();
-#ifdef MEM_OPT_VERSION
-  if (coordinateFilename != NULL)
-    pdb = new PDB(coordinateFilename->data, molecule->numAtoms);
-#else
-  if (coordinateFilename != NULL)
-    pdb = new PDB(coordinateFilename->data);
-  if (pdb->num_atoms() != molecule->numAtoms) {
-    NAMD_die("Number of pdb and psf atoms are not the same!");
+  //If using plugin-based IO, the PDB object is already created!
+  StringList *coordinateFilename = NULL;
+  if(!simParameters->usePluginIO) {
+      coordinateFilename = configList->find("coordinates");
+    
+      double fileReadTime = CmiWallTimer();
+    #ifdef MEM_OPT_VERSION
+      if (coordinateFilename != NULL)
+        pdb = new PDB(coordinateFilename->data, molecule->numAtoms);
+    #else
+      if (coordinateFilename != NULL)
+        pdb = new PDB(coordinateFilename->data);
+      if (pdb->num_atoms() != molecule->numAtoms) {
+        NAMD_die("Number of pdb and psf atoms are not the same!");
+      }
+    #endif
+      iout << iINFO << "TIME FOR READING PDB FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+      iout << iINFO << "\n" << endi;
   }
-#endif
-  iout << iINFO << "TIME FOR READING PDB FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
-  iout << iINFO << "\n" << endi;
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
   if ( binCoordinateFilename ) {
     read_binary_coors(binCoordinateFilename->data, pdb);
   }
+  
 
 	//  If constraints are active, build the parameters necessary
 	if (simParameters->constraintsOn)

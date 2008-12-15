@@ -79,6 +79,57 @@ PDB::PDB(const char *pdbfilename, int expectedNumAtoms){
 }
 #endif
 
+PDB::PDB(molfile_plugin_t *pIOHdl, void *pIOFileHdl, int numAtoms, const float *occupancy, const float *bfactor){
+  molfile_timestep_t ts;
+  float *atomcoords;
+  memset(&ts, 0, sizeof(molfile_timestep_t));
+
+  /* set defaults for unit cell information */
+  ts.A = ts.B = ts.C = 0.0f;
+  ts.alpha = ts.beta = ts.gamma = 90.0f; 
+
+  atomcoords = (float *) malloc(3*numAtoms*sizeof(float));
+  memset(atomcoords, 0, 3*numAtoms*sizeof(float));
+  ts.coords = atomcoords;
+  
+  if (pIOHdl->read_next_timestep(pIOFileHdl, numAtoms, &ts)) {
+    free(atomcoords);    
+    pIOHdl->close_file_read(pIOFileHdl);
+    NAMD_die("ERROR: failed reading atom coordinates");
+  }
+
+  //load coordinates to PDB object
+  //Note: the PDBAtom structure is very redundant in this case
+  PDBAtom *tmpAtoms = new PDBAtom[numAtoms];
+  atomArray = new PDBAtomPtr[numAtoms];
+  BigReal tmpCoords[3];
+  for(int i=0; i<numAtoms; i++) {
+      PDBAtom *thisAtom = tmpAtoms+i;
+      atomArray[i] = thisAtom;
+
+      tmpCoords[0] = atomcoords[0];
+      tmpCoords[1] = atomcoords[1];
+      tmpCoords[2] = atomcoords[2];
+      atomcoords += 3; //set to the next atom
+      thisAtom->coordinates(tmpCoords);
+  }
+  free(ts.coords);
+
+  if(occupancy) {
+      for(int i=0; i<numAtoms; i++) {
+          PDBAtom *thisAtom = tmpAtoms+i;
+          thisAtom->occupancy((BigReal)occupancy[i]);          
+      }
+  }
+  if(bfactor) {
+      for(int i=0; i<numAtoms; i++) {
+          PDBAtom *thisAtom = tmpAtoms+i;       
+          thisAtom->temperaturefactor((BigReal)bfactor[i]);       
+      }
+  }
+}
+
+
 // read in a file and stick all the elements on the appropriate list
 PDB::PDB( const char *pdbfilename) {
   FILE *infile;

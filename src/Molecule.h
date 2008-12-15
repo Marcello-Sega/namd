@@ -32,6 +32,8 @@
 #include "Tensor.h"
 /* END gf */
 
+#include "molfile_plugin.h"
+
 #include <vector>
 using namespace std;
 
@@ -247,6 +249,12 @@ private:
   ObjectArena<char> *exclArena;
   ExclusionCheck *all_exclusions;
 #endif
+
+
+  //occupancy and bfactor data from plugin-based IO implementation of loading structures
+  float *occupancy;
+  float *bfactor;
+
         //  List of all exclusions, including
         //  explicit exclusions and those calculated
         //  from the bonded structure based on the
@@ -274,6 +282,15 @@ private:
         //  Read in hydrogen bond acceptors from .psf
   void read_exclusions(FILE *);
         //  Read in exclusion info from .psf
+
+  //pluginIO-based loading atoms' structure
+  void plgLoadAtomBasics(molfile_atom_t *atomarray);
+  void plgLoadBonds(int *from, int *to); //atom index is 1-based in the parameters
+  void plgLoadAngles(int *plgAngles);
+  void plgLoadDihedrals(int *plgDihedrals);
+  void plgLoadImpropers(int *plgImpropers);
+  void plgLoadCrossterms(int *plgCterms);
+
 
   void build12excl(void);
   void build13excl(void);
@@ -422,6 +439,7 @@ public:
 
   Molecule(SimParameters *, Parameters *param);
   Molecule(SimParameters *, Parameters *param, char *filename, ConfigList *cfgList=NULL);  
+  Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t *pIOHdl, void *pIOFileHdl, int natoms);
   
   Molecule(SimParameters *, Parameters *, Ambertoppar *);
   void read_parm(Ambertoppar *);
@@ -516,6 +534,12 @@ public:
   int get_cluster(int anum) const { return cluster[anum]; }
   int get_clusterSize(int anum) const { return clusterSize[anum]; }
   #endif
+
+  const float *getOccupancyData() { return (const float *)occupancy; }
+  void freeOccupancyData() { delete occupancy; occupancy=NULL; }
+
+  const float *getBFactorData() { return (const float *)bfactor; }
+  void freeBFactorData() { delete bfactor; bfactor=NULL; }
 
   #ifdef CHARMIZE_NAMD
   Atom *getAllAtoms() {

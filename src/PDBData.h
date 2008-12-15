@@ -181,9 +181,10 @@ public:
     enum PDBPossibleAtoms {USE_ATOM = ATOM, USE_HETATM = HETATM};
     PDBAtom( const char *data,
            PDBPossibleAtoms whichatom);// parses a line from the PDB data file
-    PDBAtom( void);        // makes a generic atom
+    //PDBAtom( void);        // makes a generic atom
 
   public:
+    PDBAtom( void);        // makes a generic atom
     virtual ~PDBAtom( void);
     void parse( const char *s);  // reset to new input values
     void  sprint( char *s, PDBFormatStyle usestyle = COLUMNS);// write to string

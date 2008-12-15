@@ -24,6 +24,7 @@
 #include "PDBData.h"
 #include "Vector.h"
 #include "Lattice.h"
+#include "molfile_plugin.h"
 
 typedef PDBAtom *PDBAtomPtr ;
 typedef struct PAL {
@@ -51,7 +52,10 @@ class PDB {
     //read in PDB from a file and eliminate the temporary memory usage of pdb atom list    
     PDB(const char *pdbfilename, int expectedNumAtoms); 
 #endif
-    
+
+    //Constructor for plugin IO based way of loading atoms' structure
+    PDB(molfile_plugin_t *pIOHdl, void *pIOFileHdl, int numAtoms, const float *occupancy, const float *bfactor);
+
     PDB(const char *, Ambertoppar *);  // read AMBER coordinate file
 
     /* This constructor initializes the PDB data using a Gromacs
