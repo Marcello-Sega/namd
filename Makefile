@@ -202,6 +202,7 @@ OBJS = \
 	$(DSTDIR)/parm.o \
 	$(DSTDIR)/imd.o \
 	$(DSTDIR)/CompressPsf.o \
+	$(DSTDIR)/PluginIOMgr.o \
 	$(DSTDIR)/AtomsDisInfo.o \
 	$(DSTDIR)/FileIO.o 
 
