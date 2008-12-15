@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: brunner $
- * $Date: 2008/10/23 22:04:34 $
- * $Revision: 1.1146 $
+ * $Author: chaomei2 $
+ * $Date: 2008/12/15 17:02:23 $
+ * $Revision: 1.1147 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -601,6 +601,8 @@ public:
 
     Bool useCompressedPsf;
     Bool genCompressedPsf;
+
+    Bool usePluginIO;
 	
 public:
 

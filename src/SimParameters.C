@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2008/11/12 23:19:01 $
- * $Revision: 1.1264 $
+ * $Author: chaomei2 $
+ * $Date: 2008/12/15 17:02:23 $
+ * $Revision: 1.1265 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1393,6 +1393,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                   &useCompressedPsf, FALSE);
    opts.optionalB("main", "genCompressedPsf", "Generate the compressed version of the psf file",
                   &genCompressedPsf, FALSE);
+   opts.optionalB("main", "usePluginIO", "Use the plugin I/O to load the molecule system", 
+                  &usePluginIO, FALSE);
    opts.optionalB("main", "shiftIOToOne", "shift I/O operation to pe one",
      &shiftIOToOne, FALSE);
    opts.optional("main", "sendProxySpanningTree", "using spanning tree to send proxies",
