@@ -16,6 +16,7 @@
 #include "MGridforceParams.h"
 
 #define MIN_DEBUG_LEVEL 3
+
 //#define DEBUGM
 #include "Debug.h"
 
@@ -108,7 +109,7 @@ void GridforceGrid::unpack(MIStream *msg)
 //     DebugM(2, "inv = " << inv << "\n");
 //     DebugM(2, "pad_p = " << pad_p[0] << " " << pad_p[1] << " " << pad_p[2] << "\n");
 //     DebugM(2, "pad_n = " << pad_n[0] << " " << pad_n[1] << " " << pad_n[2] << "\n");
-//     DebugM(2, "cont = " << cont[0] << " " << cont[1] << " " << cont[2] << "\n");
+    DebugM(4, "cont = " << cont[0] << " " << cont[1] << " " << cont[2] << "\n");
 //     DebugM(2, "offset = " << offset[0] << " " << offset[1] << " " << offset[2] << "\n");
 //     DebugM(2, "gap = " << gap[0] << " " << gap[1] << " " << gap[2] << endi << "\n");
 }
@@ -202,6 +203,9 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams, MGri
     Avec[2] = simParams->lattice.c();
     
     // Decide whether we're wrapping
+    cont[0] = FALSE;
+    cont[1] = FALSE;
+    cont[2] = FALSE;
     Bool gridforceCont[3];
     gridforceCont[0] = simParams->gridforceContA1;
     gridforceCont[1] = simParams->gridforceContA2;
