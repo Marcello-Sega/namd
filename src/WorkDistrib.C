@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2008/11/12 23:19:01 $
- * $Revision: 1.1187 $
+ * $Date: 2008/12/16 21:17:07 $
+ * $Revision: 1.1188 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -823,13 +823,15 @@ void WorkDistrib::patchMapInit(void)
   BigReal patchSize = params->patchDimension;
 
   ScaledPosition xmin, xmax;
-  ScaledPosition sysDim, sysMin;
 
   double maxNumPatches = 1000000;  // need to adjust fractional values
   if ( params->minAtomsPerPatch > 0 )
     maxNumPatches = node->pdb->num_atoms() / params->minAtomsPerPatch;
 
   DebugM(3,"Mapping patches\n");
+  if ( lattice.a_p() && lattice.b_p() && lattice.c_p() ) {
+    xmin = 0.;  xmax = 0.;
+  } else {
   // Need to use full box for FMA to match NAMD 1.X results.
   if ( params->FMAOn ) {
     node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r());
@@ -840,6 +842,7 @@ void WorkDistrib::patchMapInit(void)
     node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r(),0.9);
     node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r(),0.9);
     node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.9);
+  }
   }
 
   BigReal origin_shift;
