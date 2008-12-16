@@ -88,6 +88,8 @@ PDB::PDB(molfile_plugin_t *pIOHdl, void *pIOFileHdl, int numAtoms, const float *
   ts.A = ts.B = ts.C = 0.0f;
   ts.alpha = ts.beta = ts.gamma = 90.0f; 
 
+  atomCount = numAtoms;
+
   atomcoords = (float *) malloc(3*numAtoms*sizeof(float));
   memset(atomcoords, 0, 3*numAtoms*sizeof(float));
   ts.coords = atomcoords;

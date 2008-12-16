@@ -153,11 +153,12 @@ int NamdState::configListInit(ConfigList *cfgList) {
     if (pIOHandle == NULL) {
         NAMD_die("ERROR: Failed to match requested plugin type");
     }
-    if(pIOHandle->open_file_read == NULL || 
-       pIOHandle->read_structure == NULL ||
-       pIOHandle->read_timestep == NULL) {
-       NAMD_die("ERROR: Selected plugin type cannot load molecule structure information"); 
-    }
+    if ( pIOHandle->open_file_read == NULL )
+       NAMD_die("ERROR: Selected plugin type cannot open files"); 
+    if ( pIOHandle->read_structure == NULL )
+       NAMD_die("ERROR: Selected plugin type cannot read structures"); 
+    if ( pIOHandle->read_next_timestep == NULL )
+       NAMD_die("ERROR: Selected plugin type cannot read coordinates"); 
 
     StringList *moleculeFilename = configList->find("structure");
     StringList *parameterFilename = configList->find("parameters");

@@ -407,9 +407,6 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
     //2b. load bonds information to the molecule object
     if(numBonds!=0) {
         plgLoadBonds(from,to);
-        //TODO: Not sure of doing these two free operations
-        free(from);
-        free(to);
     }
 
     //3a. read other bonded structures
@@ -433,11 +430,10 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
     if(numDihedrals!=0) plgLoadDihedrals(plgDihedrals);
     if(numImpropers!=0) plgLoadImpropers(plgImpropers);
     if(numCrossterms!=0) plgLoadCrossterms(plgCterms);
-    //TODO: Not sure of doing these four free operations
-    free(plgAngles);
-    free(plgDihedrals);
-    free(plgImpropers);
-    free(plgCterms);
+
+  numRealBonds = numBonds;
+  build_atom_status();
+
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -2437,13 +2433,13 @@ void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
     for(int i=0; i<numAtoms; i++) {
         int reslength = strlen(atomarray[i].resname)+1;
         int namelength = strlen(atomarray[i].name)+1;
-        int typelength = strlen(atomarray[1].type)+1;
+        int typelength = strlen(atomarray[i].type)+1;
         atomNames[i].resname = nameArena->getNewArray(reslength);
         atomNames[i].atomname = nameArena->getNewArray(namelength);
         atomNames[i].atomtype = nameArena->getNewArray(typelength);
         strcpy(atomNames[i].resname, atomarray[i].resname);
         strcpy(atomNames[i].atomname, atomarray[i].name);
-        strcpy(atomNames[i].atomtype, atomarray[1].type);
+        strcpy(atomNames[i].atomtype, atomarray[i].type);
 
         atoms[i].mass = atomarray[i].mass;
         atoms[i].charge = atomarray[i].charge;
@@ -2579,10 +2575,10 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
             lastAtomIds[j] = atomid[j];
         }
 
-        strcpy(atom1name, atomNames[atomid[0]].atomtype);
-        strcpy(atom2name, atomNames[atomid[1]].atomtype);
-        strcpy(atom3name, atomNames[atomid[2]].atomtype);
-        strcpy(atom4name, atomNames[atomid[3]].atomtype);
+        strcpy(atom1name, atomNames[atomid[0]-1].atomtype);
+        strcpy(atom2name, atomNames[atomid[1]-1].atomtype);
+        strcpy(atom3name, atomNames[atomid[2]-1].atomtype);
+        strcpy(atom4name, atomNames[atomid[3]-1].atomtype);
 
         if(duplicate_bond) {
             multiplicity++;
@@ -2597,10 +2593,10 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
         params->assign_dihedral_index(atom1name, atom2name,
                                       atom3name, atom4name, thisDihedral,
                                       multiplicity);
-        thisDihedral->atom1 = atomid[0];
-        thisDihedral->atom2 = atomid[1];
-        thisDihedral->atom3 = atomid[2];
-        thisDihedral->atom4 = atomid[3];
+        thisDihedral->atom1 = atomid[0]-1;
+        thisDihedral->atom2 = atomid[1]-1;
+        thisDihedral->atom3 = atomid[2]-1;
+        thisDihedral->atom4 = atomid[3]-1;
     }
 
     numDihedrals = numRealDihedrals;
@@ -2629,10 +2625,10 @@ void Molecule::plgLoadImpropers(int *plgImpropers)
             lastAtomIds[j] = atomid[j];
         }
 
-        strcpy(atom1name, atomNames[atomid[0]].atomtype);
-        strcpy(atom2name, atomNames[atomid[1]].atomtype);
-        strcpy(atom3name, atomNames[atomid[2]].atomtype);
-        strcpy(atom4name, atomNames[atomid[3]].atomtype);
+        strcpy(atom1name, atomNames[atomid[0]-1].atomtype);
+        strcpy(atom2name, atomNames[atomid[1]-1].atomtype);
+        strcpy(atom3name, atomNames[atomid[2]-1].atomtype);
+        strcpy(atom4name, atomNames[atomid[3]-1].atomtype);
 
         if(duplicate_bond) {
             multiplicity++;
@@ -2647,10 +2643,10 @@ void Molecule::plgLoadImpropers(int *plgImpropers)
         params->assign_improper_index(atom1name, atom2name,
                                       atom3name, atom4name, thisImproper,
                                       multiplicity);
-        thisImproper->atom1 = atomid[0];
-        thisImproper->atom2 = atomid[1];
-        thisImproper->atom3 = atomid[2];
-        thisImproper->atom4 = atomid[3];
+        thisImproper->atom1 = atomid[0]-1;
+        thisImproper->atom2 = atomid[1]-1;
+        thisImproper->atom3 = atomid[2]-1;
+        thisImproper->atom4 = atomid[3]-1;
     }
 
     numImpropers = numRealImpropers;
@@ -2684,14 +2680,14 @@ void Molecule::plgLoadCrossterms(int *plgCterms)
             lastAtomIds[j] = atomid[j];
         }
 
-        strcpy(atom1name, atomNames[atomid[0]].atomtype);
-        strcpy(atom2name, atomNames[atomid[1]].atomtype);
-        strcpy(atom3name, atomNames[atomid[2]].atomtype);
-        strcpy(atom4name, atomNames[atomid[3]].atomtype);
-        strcpy(atom5name, atomNames[atomid[4]].atomtype);
-        strcpy(atom6name, atomNames[atomid[5]].atomtype);
-        strcpy(atom7name, atomNames[atomid[6]].atomtype);
-        strcpy(atom8name, atomNames[atomid[7]].atomtype);
+        strcpy(atom1name, atomNames[atomid[0]-1].atomtype);
+        strcpy(atom2name, atomNames[atomid[1]-1].atomtype);
+        strcpy(atom3name, atomNames[atomid[2]-1].atomtype);
+        strcpy(atom4name, atomNames[atomid[3]-1].atomtype);
+        strcpy(atom5name, atomNames[atomid[4]-1].atomtype);
+        strcpy(atom6name, atomNames[atomid[5]-1].atomtype);
+        strcpy(atom7name, atomNames[atomid[6]-1].atomtype);
+        strcpy(atom8name, atomNames[atomid[7]-1].atomtype);
 
         if(duplicate_bond) {
             iout << iWARN <<"Duplicate cross-term detected.\n" << endi;
@@ -2703,14 +2699,14 @@ void Molecule::plgLoadCrossterms(int *plgCterms)
                                        atom6name, atom7name, atom8name,
                                        thisCrossterm);
 
-        thisCrossterm->atom1 = atomid[0];
-        thisCrossterm->atom2 = atomid[1];
-        thisCrossterm->atom3 = atomid[2];
-        thisCrossterm->atom4 = atomid[3];
-        thisCrossterm->atom5 = atomid[4];
-        thisCrossterm->atom6 = atomid[5];
-        thisCrossterm->atom7 = atomid[6];
-        thisCrossterm->atom8 = atomid[7];
+        thisCrossterm->atom1 = atomid[0]-1;
+        thisCrossterm->atom2 = atomid[1]-1;
+        thisCrossterm->atom3 = atomid[2]-1;
+        thisCrossterm->atom4 = atomid[3]-1;
+        thisCrossterm->atom5 = atomid[4]-1;
+        thisCrossterm->atom6 = atomid[5]-1;
+        thisCrossterm->atom7 = atomid[6]-1;
+        thisCrossterm->atom8 = atomid[7]-1;
     }
 
     numCrossterms = numRealCrossterms;
