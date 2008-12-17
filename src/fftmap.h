@@ -129,14 +129,20 @@ class OptPmePencilMapX : public CBase_OptPmePencilMapX
     initializePmeMap (_info, xprocs, yprocs, zprocs);
     
     for (int y = 0; y < _info.yBlocks; y++) {
-      for (int z = 0; z < _info.zBlocks; z ++) {
-	int index = z + y * _info.zBlocks;
-	int pe = xprocs[index];
-	_mapcache[index] = pe;
-		
-	if (CkMyPe() == 0)
-	  pencilPMEProcessors[pe] = 1;
-      }
+        for (int z = 0; z < _info.zBlocks; z ++) {
+            int index = z + y * _info.zBlocks;
+            int pe = xprocs[index];
+            _mapcache[index] = pe;
+            
+            //X and Y pencils shouldnt share the same processors with
+            //patches or each other
+            if(CkMyPe() == 0) {
+                assert (pencilPMEProcessors[pe] == 0);
+                PatchMap *pmap = PatchMap::Object();
+                assert (pmap->numPatchesOnNode(pe) == 0);
+                pencilPMEProcessors[pe] = 1;
+            }
+        }
     }
   }
 
@@ -184,8 +190,12 @@ class OptPmePencilMapY : public CBase_OptPmePencilMapY
 	int pe = yprocs[index];
 	_mapcache [index] = pe;
 
-	if (CkMyPe() == 0)
-	  pencilPMEProcessors[pe] = 1;
+	if (CkMyPe() == 0) {
+            assert (pencilPMEProcessors[pe] == 0);
+            PatchMap *pmap = PatchMap::Object();
+            assert (pmap->numPatchesOnNode(pe) == 0);
+            pencilPMEProcessors[pe] = 1;
+        }
       }
     }
   }
