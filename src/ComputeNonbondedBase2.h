@@ -44,7 +44,7 @@ ALCHPAIR(
 
       FAST(
       const LJTable::TableEntry * lj_pars = 
-              lj_row + 2 * vdwtype_array[j]  MODIFIED(+ 1);
+              lj_row + 2 * pExt_1[j].vdwType MODIFIED(+ 1);
       )	
 
 #if ( SHORT( FAST( 1+ ) ) 0 ) 

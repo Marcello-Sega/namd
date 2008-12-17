@@ -64,9 +64,7 @@ class Patch
      PatchID getPatchID() { return patchID; }
      int getNumComputes() { return positionComputeList.size(); }
 
-#ifdef MEM_OPT_VERSION
      CompAtomExt* getCompAtomExtInfo() { return pExt.begin(); }
-#endif
 
      Lattice &lattice;
      Flags flags;
@@ -87,9 +85,7 @@ class Patch
                            //   atoms has not been separated yet.
      #endif
 
-#ifdef MEM_OPT_VERSION
      CompAtomExtList pExt;
-#endif     
 
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
      //1. Those fields are declared for reusing position info

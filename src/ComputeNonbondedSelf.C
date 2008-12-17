@@ -52,11 +52,7 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
 }
 
 
-#ifdef MEM_OPT_VERSION
 void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
-#else
-void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
-#endif
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
@@ -96,10 +92,8 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, Results* r)
     params.offset = 0.;
     params.p[0] = p;
     params.p[1] = p;
-#ifdef MEM_OPT_VERSION
     params.pExt[0] = pExt;
     params.pExt[1] = pExt;
-#endif
     params.ff[0] = r->f[Results::nbond];
     params.ff[1] = r->f[Results::nbond];
 #ifdef NAMD_CUDA

@@ -74,11 +74,7 @@ ComputeRestraints::~ComputeRestraints()
 /*				FUNCTION force				*/
 /*									*/
 /************************************************************************/
-#ifdef MEM_OPT_VERSION
 void ComputeRestraints::doForce(CompAtom* p, CompAtomExt* pExt, Results* res)
-#else
-void ComputeRestraints::doForce(CompAtom* p, Results* res)
-#endif
 {
 	Molecule *molecule = Node::Object()->molecule;
 	Real k;			//  Force constant

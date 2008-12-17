@@ -116,11 +116,7 @@ int ComputeNonbondedPair::noWork() {
   }
 }
 
-#ifdef MEM_OPT_VERSION
 void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results* r[2])
-#else
-void ComputeNonbondedPair::doForce(CompAtom* p[2], Results* r[2])
-#endif
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
@@ -233,10 +229,8 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], Results* r[2])
     int doEnergy = patch[0]->flags.doEnergy;
       params.p[0] = p[a];
       params.p[1] = p[b];
-    #ifdef MEM_OPT_VERSION      
       params.pExt[0] = pExt[a]; 
       params.pExt[1] = pExt[b];
-    #endif
       params.ff[0] = r[a]->f[Results::nbond];
       params.ff[1] = r[b]->f[Results::nbond];
 #ifdef NAMD_CUDA

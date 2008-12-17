@@ -423,10 +423,8 @@ void ComputeNonbondedUtil :: NAME
   register int i;
   const CompAtom *p_0 = params->p[0];
   const CompAtom *p_1 = params->p[1];
-#ifdef MEM_OPT_VERSION
   const CompAtomExt *pExt_0 = params->pExt[0];
   const CompAtomExt *pExt_1 = params->pExt[1];
-#endif
 
   char * excl_flags_buff = 0;
   const int32 * full_excl = 0;
@@ -626,26 +624,6 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(plint,pairlistmA2,arraysize);
   )
 
-  NBWORKARRAY(short,vdwtype_array,j_upper+5);
-
-  
-#ifdef MEM_OPT_VERSION
-  for (j = 0; j < j_upper; ++j){
-    vdwtype_array[j] = pExt_1[j].vdwType;
-  }
-#else
-  const Atom *atomlist = mol->getAtoms();
-#ifdef ARCH_POWERPC
-#pragma disjoint (*atomlist, *vdwtype_array)
-#pragma disjoint (*p_1, *vdwtype_array)
-#pragma unroll(4)
-#endif
-  for (j = 0; j < j_upper; ++j) {
-    int id = p_1[j].id;
-    vdwtype_array [j] = atomlist[id].vdw_type;
-  }
-#endif
-
   int fixg_upper = 0;
   int g_upper = 0;
 
@@ -744,9 +722,7 @@ void ComputeNonbondedUtil :: NAME
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
     const CompAtom &p_i = p_0[i];
-#ifdef MEM_OPT_VERSION
     const CompAtomExt &pExt_i = pExt_0[i];
-#endif
     if ( p_i.hydrogenGroupSize ) {
       //save current group count
       int curgrpcount = groupCount;      
@@ -1521,13 +1497,8 @@ ALCH(
     )
 
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
-#ifdef MEM_OPT_VERSION
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(pExt_i.vdwType);
-#else
-    const LJTable::TableEntry * const lj_row =
-		ljTable->table_row(mol->atomvdwtype(p_i.id));
-#endif
 
     SHORT( FAST( BigReal f_i_x = 0.; ) )
     SHORT( FAST( BigReal f_i_y = 0.; ) )

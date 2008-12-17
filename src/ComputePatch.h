@@ -39,11 +39,7 @@ protected :
     int numWaterAtoms;
   #endif
 
-#ifdef MEM_OPT_VERSION
   virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r) = 0;
-#else
-  virtual void doForce(CompAtom* p, Results* r) = 0;
-#endif
   Patch *patch;
 
 // private:

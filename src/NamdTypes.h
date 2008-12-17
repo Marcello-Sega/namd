@@ -101,21 +101,28 @@ typedef unsigned short ExclSigID;
 typedef unsigned short VDW_TYPE;
 
 struct CompAtomExt {
+  #ifdef MEM_OPT_VERSION
   AtomSigID sigId;
   ExclSigID exclId;
+  #endif
   VDW_TYPE vdwType;
 
   CompAtomExt(){;}
 
   // Needed for IBM's xlC compiler
   inline CompAtomExt(const CompAtomExt &a) :
-    sigId(a.sigId), exclId(a.exclId), vdwType(a.vdwType){
+    #ifdef MEM_OPT_VERSION
+    sigId(a.sigId), exclId(a.exclId),
+    #endif
+    vdwType(a.vdwType){
   }
 
   // Needed for IBM's xlC compiler
   inline CompAtomExt& operator=(const CompAtomExt &a) {
+    #ifdef MEM_OPT_VERSION
     sigId = a.sigId;
     exclId = a.exclId;
+    #endif
     vdwType = a.vdwType;
 
     return *this;
@@ -123,11 +130,7 @@ struct CompAtomExt {
 
 };
 
-#ifdef MEM_OPT_VERSION
 struct FullAtom : CompAtom, CompAtomExt{
-#else
-struct FullAtom : CompAtom {
-#endif
   Velocity velocity;
   Position fixedPosition;
   Mass mass;
@@ -136,10 +139,7 @@ struct FullAtom : CompAtom {
 
 typedef ResizeArray<CompAtom> CompAtomList;
 
-#ifdef MEM_OPT_VERSION
 typedef ResizeArray<CompAtomExt> CompAtomExtList;
-#endif
-
 typedef ResizeArray<FullAtom> FullAtomList;
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArray<Velocity> VelocityList;

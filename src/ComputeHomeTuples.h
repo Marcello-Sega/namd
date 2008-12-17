@@ -39,9 +39,7 @@ class TuplePatchElem {
     Box<Patch,CompAtom> *avgPositionBox;
     Box<Patch,Results> *forceBox;
     CompAtom *x;
-#ifdef MEM_OPT_VERSION
     CompAtomExt *xExt;
-#endif
     CompAtom *x_avg;
     Results *r;
     Force *f;
@@ -55,9 +53,7 @@ class TuplePatchElem {
     avgPositionBox = NULL;
     forceBox = NULL;
     x = NULL;
-#ifdef MEM_OPT_VERSION
     xExt = NULL;
-#endif
     x_avg = NULL;
     r = NULL;
     f = NULL;
@@ -70,9 +66,7 @@ class TuplePatchElem {
     avgPositionBox = p_param->registerAvgPositionPickup(cid);
     forceBox = p_param->registerForceDeposit(cid);
     x = NULL;
-#ifdef MEM_OPT_VERSION
     xExt = NULL;
-#endif
     x_avg = NULL;
     r = NULL;
     f = NULL;
@@ -138,9 +132,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         CompAtom *atom = (*ai).x;
         Patch *patch = (*ai).p;
         int numAtoms = patch->getNumAtoms();
-	#ifdef MEM_OPT_VERSION
 	CompAtomExt *atomExt = (*ai).xExt; //patch->getCompAtomExtInfo();
-	#endif
     
         // cycle through each atom in the patch and load up tuples
         for (int j=0; j < numAtoms; j++)
@@ -327,9 +319,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
       for (ap = ap.begin(); ap != ap.end(); ap++) {
         ap->x = ap->positionBox->open();
-#ifdef MEM_OPT_VERSION
 	ap->xExt = ap->p->getCompAtomExtInfo();
-#endif
         if ( ap->p->flags.doMolly ) ap->x_avg = ap->avgPositionBox->open();
         ap->r = ap->forceBox->open();
         ap->f = ap->r->f[Results::normal];

@@ -142,9 +142,7 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   if (simParams->watmodel == WAT_TIP4) init_tip4();
   else if (simParams->watmodel == WAT_SWM4) init_swm4();
 
-#ifdef MEM_OPT_VERSION
   isNewProxyAdded = 0;
-#endif
 }
 
 HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
@@ -222,9 +220,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   if (simParams->watmodel == WAT_TIP4) init_tip4();
   else if (simParams->watmodel == WAT_SWM4) init_swm4();
 
-#ifdef MEM_OPT_VERSION
   isNewProxyAdded = 0;
-#endif
 
 }
 
@@ -378,9 +374,7 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   DebugM(4, "registerProxy("<<patchID<<") - adding node " <<msg->node<<"\n");
   proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
 
-#ifdef MEM_OPT_VERSION
   isNewProxyAdded = 1;
-#endif
 
   Random((patchID + 37) * 137).reorder(proxy.begin(),proxy.size());
   delete msg;
@@ -887,17 +881,13 @@ void HomePatch::positionsReady(int doMigration)
   // Copy information needed by computes and proxys to Patch::p.
   p.resize(numAtoms);
   CompAtom *p_i = p.begin();
-#ifdef MEM_OPT_VERSION
   pExt.resize(numAtoms);
   CompAtomExt *pExt_i = pExt.begin();
-#endif
   FullAtom *a_i = atom.begin();
   int i; int n = numAtoms;
   for ( i=0; i<n; ++i ) { 
     p_i[i] = a_i[i]; 
-    #ifdef MEM_OPT_VERSION
     pExt_i[i] = a_i[i];
-    #endif
   }
 
   // Measure atom movement to test pairlist validity
@@ -967,11 +957,9 @@ void HomePatch::positionsReady(int doMigration)
         pdMsgAvgPLLen = p_avg.size();
     }
     int pdMsgPLExtLen = 0;
-#ifdef MEM_OPT_VERSION
     if(doMigration || isNewProxyAdded) {
         pdMsgPLExtLen = pExt.size();
     }
-#endif
     ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgPLExtLen, PRIORITY_SIZE) ProxyDataMsg;
     SET_PRIORITY(nmsg,seq,priority);
     nmsg->patch = patchID;
@@ -984,11 +972,9 @@ void HomePatch::positionsReady(int doMigration)
         memcpy(nmsg->avgPositionList, p_avg.begin(), sizeof(CompAtom)*pdMsgAvgPLLen);
     }
     nmsg->plExtLen = pdMsgPLExtLen;
-#ifdef MEM_OPT_VERSION
     if(doMigration || isNewProxyAdded){     
         memcpy(nmsg->positionExtList, pExt.begin(), sizeof(CompAtomExt)*pdMsgPLExtLen);
     }
-#endif
     
 #if NAMD_SeparateWaters != 0
     //DMK - Atom Separation (water vs. non-water)
@@ -1015,9 +1001,7 @@ void HomePatch::positionsReady(int doMigration)
 #if CMK_PERSISTENT_COMM
     CmiUsePersistentHandle(NULL, 0);
 #endif
-#ifdef MEM_OPT_VERSION
     isNewProxyAdded = 0;
-#endif
   }
   delete [] pids;
   DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");

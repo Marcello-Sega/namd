@@ -91,11 +91,7 @@ void ComputePatch::doWork() {
   r = forceBox->open();
 
   // Pass pointers to doForce
-#ifdef MEM_OPT_VERSION
   doForce(p, patch->getCompAtomExtInfo(), r);
-#else
-  doForce(p,r);
-#endif
 
   // Close up boxes
   positionBox->close(&p);

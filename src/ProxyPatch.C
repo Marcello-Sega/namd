@@ -85,10 +85,7 @@ ProxyPatch::~ProxyPatch()
 #endif
 
   p.resize(0);
-
-#ifdef MEM_OPT_VERSION
   pExt.resize(0);
-#endif
 
 #if CMK_PERSISTENT_COMM
   CmiDestoryPersistent(localphs);
@@ -172,12 +169,10 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
       //numAtoms = p.size();
       numAtoms = msg->plLen;
 
-#ifdef MEM_OPT_VERSION
       //Retrieve the CompAtomExt list
       CmiAssert(msg->plExtLen!=0);
       pExt.resize(msg->plExtLen);
       memcpy(pExt.begin(), msg->positionExtList, sizeof(CompAtomExt)*(msg->plExtLen));
-#endif
 
 
     // DMK - Atom Separation (water vs. non-water)
@@ -237,7 +232,6 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   avgPositionPtrBegin = msg->avgPositionList;
   avgPositionPtrEnd = msg->avgPositionList + msg->avgPlLen;
 
-#ifdef MEM_OPT_VERSION
   //We cannot reuse the CompAtomExt list inside the msg because
   //the information is needed at every step. In the current implementation
   //scheme, the ProxyDataMsg msg will be deleted for every step.
@@ -246,7 +240,6 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   // --Chao Mei
   pExt.resize(msg->plExtLen);
   memcpy(pExt.begin(), msg->positionExtList, sizeof(CompAtomExt)*(msg->plExtLen));
-#endif
 
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0

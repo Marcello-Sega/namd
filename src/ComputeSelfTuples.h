@@ -56,9 +56,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
         CompAtom *atom = (*ai).x;
         Patch *patch = (*ai).p;
         int numAtoms = patch->getNumAtoms();
-	#ifdef MEM_OPT_VERSION
 	CompAtomExt *atomExt = (*ai).xExt; //patch->getCompAtomExtInfo();
-	#endif
     
         // cycle through each atom in the patch and load up tuples
         for (int j=0; j < numAtoms; j++)

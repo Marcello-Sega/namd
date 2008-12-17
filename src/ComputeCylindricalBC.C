@@ -90,11 +90,7 @@ ComputeCylindricalBC::~ComputeCylindricalBC()
 /*									*/
 /************************************************************************/
 
-#ifdef MEM_OPT_VERSION
 void ComputeCylindricalBC::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
-#else
-void ComputeCylindricalBC::doForce(CompAtom* p, Results* r)
-#endif
 {
 	Vector diff;		//  Distance from atom to center of cylinder
 	Vector f;		//  Calculated force vector

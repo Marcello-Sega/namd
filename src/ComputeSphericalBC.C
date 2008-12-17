@@ -83,11 +83,7 @@ ComputeSphericalBC::~ComputeSphericalBC()
 /*   boundary conditions for this patch.				*/
 /*									*/
 /************************************************************************/
-#ifdef MEM_OPT_VERSION
 void ComputeSphericalBC::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
-#else
-void ComputeSphericalBC::doForce(CompAtom* p, Results* r)
-#endif
 {
 	Vector diff;		//  Distance from atom to center of sphere
 	Vector f;		//  Calculated force vector

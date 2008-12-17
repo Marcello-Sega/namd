@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2008/12/16 21:17:07 $
- * $Revision: 1.1188 $
+ * $Date: 2008/12/17 21:32:08 $
+ * $Revision: 1.1189 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -271,8 +271,8 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       #ifdef MEM_OPT_VERSION
       a.sigId = molecule->getAtomSigId(aid);
       a.exclId = molecule->getAtomExclSigId(aid);
-      a.vdwType = molecule->atomvdwtype(aid);
       #endif
+      a.vdwType = molecule->atomvdwtype(aid);
       atoms[pid].add(a);
       }
     }
@@ -293,8 +293,8 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       #ifdef MEM_OPT_VERSION
       a.sigId = molecule->getAtomSigId(i);
       a.exclId = molecule->getAtomExclSigId(i);
-      a.vdwType = molecule->atomvdwtype(i);
       #endif
+      a.vdwType = molecule->atomvdwtype(i);
       atoms[pid].add(a);
       }
     }
@@ -515,8 +515,8 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
         #ifdef MEM_OPT_VERSION
         a.sigId = molecule->getAtomSigId(aid);
         a.exclId = molecule->getAtomExclSigId(aid);
-        a.vdwType = molecule->atomvdwtype(aid);
         #endif
+        a.vdwType = molecule->atomvdwtype(aid);
         onePatchAtoms->add(a);
     }
 
