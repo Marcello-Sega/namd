@@ -109,6 +109,8 @@ OBJS = \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \
+	$(DSTDIR)/OptPme.o \
+	$(DSTDIR)/OptPmeRealSpace.o \
 	$(DSTDIR)/ComputeRestraints.o \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ComputeStir.o \
@@ -220,6 +222,10 @@ CIFILES = 	\
 		$(INCDIR)/ComputeMgr.def.h \
 		$(INCDIR)/ComputePmeMgr.decl.h \
 		$(INCDIR)/ComputePmeMgr.def.h \
+		$(INCDIR)/OptPmeMgr.decl.h \
+		$(INCDIR)/OptPmeMgr.def.h \
+		$(INCDIR)/PmeFFTLib.decl.h \
+		$(INCDIR)/PmeFFTLib.def.h \
 		$(INCDIR)/ComputeExtMgr.decl.h \
 		$(INCDIR)/ComputeExtMgr.def.h \
 		$(INCDIR)/LdbCoordinator.decl.h \
@@ -402,6 +408,7 @@ updatefiles:
 	rm -f obj/ComputeNonbondedPair.o
 	rm -f obj/ComputeNonbondedSelf.o
 	rm -f obj/ComputePme.o
+	rm -f obj/OptPme.o
 
 #To compile tracecomputes, type the command "make tracecomputes TRACEOBJDEF=-DTRACE_COMPUTE_OBJECTS"
 tracecomputes: updatefiles $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
@@ -497,6 +504,13 @@ $(INCDIR)/CollectionMgr.decl.h: $(SRCDIR)/CollectionMgr.ci
 	$(MOVE) CollectionMgr.def.h $(INCDIR)
 	$(MOVE) CollectionMgr.decl.h $(INCDIR)
 
+$(INCDIR)/PmeFFTLib.def.h: $(INCDIR)/PmeFFTLib.decl.h
+
+$(INCDIR)/PmeFFTLib.decl.h: $(SRCDIR)/fftlib.ci
+	$(CHARMXI) $(SRCDIR)/fftlib.ci
+	$(MOVE) PmeFFTLib.def.h $(INCDIR)
+	$(MOVE) PmeFFTLib.decl.h $(INCDIR)
+
 $(INCDIR)/ComputeMgr.def.h: $(INCDIR)/ComputeMgr.decl.h
 
 $(INCDIR)/ComputeMgr.decl.h: $(SRCDIR)/ComputeMgr.ci
@@ -510,6 +524,13 @@ $(INCDIR)/ComputePmeMgr.decl.h: $(SRCDIR)/ComputePmeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputePmeMgr.ci
 	$(MOVE) ComputePmeMgr.def.h $(INCDIR)
 	$(MOVE) ComputePmeMgr.decl.h $(INCDIR)
+
+$(INCDIR)/OptPmeMgr.def.h: $(INCDIR)/OptPmeMgr.decl.h
+
+$(INCDIR)/OptPmeMgr.decl.h: $(SRCDIR)/OptPme.ci
+	$(CHARMXI) $(SRCDIR)/OptPme.ci
+	$(MOVE) OptPmeMgr.def.h $(INCDIR)
+	$(MOVE) OptPmeMgr.decl.h $(INCDIR)
 
 $(INCDIR)/ComputeExtMgr.def.h: $(INCDIR)/ComputeExtMgr.decl.h
 
