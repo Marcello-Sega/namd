@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2008/12/15 17:02:23 $
- * $Revision: 1.1147 $
+ * $Author: sameer $
+ * $Date: 2008/12/17 22:26:21 $
+ * $Revision: 1.1148 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -427,6 +427,9 @@ public:
 	int PMEPencils;			//  Size of pencil grid in each dim
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
+	Bool useOptPME;                 //  Flag TRUE -> use the scalable version of PME
+	Bool useManyToMany;             //  Flag TRUE -> use the manytomany optimization of PME. 
+	                                //  This flag requres useOptPME to be set.
 
 	Bool FFTWEstimate;
 	Bool FFTWUseWisdom;

@@ -10,15 +10,12 @@
 #include "ComputeHomePatches.h"
 #include "PmeBase.h"
 #include "NamdTypes.h"
-#include "MathArray.h"
 
 class PmeRealSpace;
 class ComputeMgr;
 class SubmitReduction;
 class PmeGridMsg;
 class ComputePmeMgr;
-#define PME_MAX_EVALS 15 
-typedef MathArray<double,7> PmeReduction;
 
 class ComputePme : public ComputeHomePatches {
 public:

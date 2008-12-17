@@ -292,5 +292,8 @@ private:
 
 };
 
+#include <pup.h>
+PUPbytes (Lattice);  
+
 #endif
 

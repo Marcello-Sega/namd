@@ -38,6 +38,7 @@
 #include "InfoStream.h"
 #include "memusage.h"
 
+#include "Lattice.h"
 #include "main.decl.h"
 #include "main.h"
 

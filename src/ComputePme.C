@@ -320,7 +320,10 @@ private:
 #endif
 
 int isPmeProcessor(int p){ 
-  return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
+  if (pencilPMEProcessors)
+    return pencilPMEProcessors[p];
+  else
+    return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
@@ -343,13 +346,6 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
 #endif
 
   myKSpace = 0;
-  localInfo = new LocalPmeInfo[CkNumPes()];
-  gridPeMap = new int[CkNumPes()];
-  transPeMap = new int[CkNumPes()];
-  recipPeDest = new int[CkNumPes()];
-  gridPeOrder = new int[CkNumPes()];
-  transPeOrder = new int[CkNumPes()];
-  isPmeFlag = new char[CkNumPes()];
   kgrid = 0;
   work = 0;
   grid_count = 0;
@@ -371,6 +367,14 @@ void ComputePmeMgr::recvArrays(
 
 void ComputePmeMgr::initialize(CkQdMsg *msg) {
   delete msg;
+
+  localInfo = new LocalPmeInfo[CkNumPes()];
+  gridPeMap = new int[CkNumPes()];
+  transPeMap = new int[CkNumPes()];
+  recipPeDest = new int[CkNumPes()];
+  gridPeOrder = new int[CkNumPes()];
+  transPeOrder = new int[CkNumPes()];
+  isPmeFlag = new char[CkNumPes()];  
 
   SimParameters *simParams = Node::Object()->simParameters;
   PatchMap *patchMap = PatchMap::Object();
@@ -1336,70 +1340,6 @@ void ComputePmeMgr::ungridCalc(void) {
   ungrid_count = (usePencils ? numPencilsActive : numDestRecipPes );
 }
 
-
-static void scale_coordinates(PmeParticle p[], int N, Lattice lattice, PmeGrid grid) {
-  Vector origin = lattice.origin();
-  Vector recip1 = lattice.a_r();
-  Vector recip2 = lattice.b_r();
-  Vector recip3 = lattice.c_r();
-  double ox = origin.x;
-  double oy = origin.y;
-  double oz = origin.z;
-  double r1x = recip1.x;
-  double r1y = recip1.y;
-  double r1z = recip1.z;
-  double r2x = recip2.x;
-  double r2y = recip2.y;
-  double r2z = recip2.z;
-  double r3x = recip3.x;
-  double r3y = recip3.y;
-  double r3z = recip3.z;
-  int K1 = grid.K1;
-  int K2 = grid.K2;
-  int K3 = grid.K3;
-
-  for (int i=0; i<N; i++) {
-    double px = p[i].x - ox;
-    double py = p[i].y - oy;
-    double pz = p[i].z - oz;
-    double sx = px*r1x + py*r1y + pz*r1z;
-    double sy = px*r2x + py*r2y + pz*r2z;
-    double sz = px*r3x + py*r3y + pz*r3z;
-    p[i].x = K1 * ( sx - floor(sx) );
-    p[i].y = K2 * ( sy - floor(sy) );
-    p[i].z = K3 * ( sz - floor(sz) );
-    //  Check for rare rounding condition where K * ( 1 - epsilon ) == K
-    //  which was observed with g++ on Intel x86 architecture.
-    if ( p[i].x == K1 ) p[i].x = 0;
-    if ( p[i].y == K2 ) p[i].y = 0;
-    if ( p[i].z == K3 ) p[i].z = 0;
-  }
-}
-
-static void scale_forces(Vector f[], int N, Lattice lattice) {
-  Vector recip1 = lattice.a_r();
-  Vector recip2 = lattice.b_r();
-  Vector recip3 = lattice.c_r();
-  double r1x = recip1.x;
-  double r1y = recip1.y;
-  double r1z = recip1.z;
-  double r2x = recip2.x;
-  double r2y = recip2.y;
-  double r2z = recip2.z;
-  double r3x = recip3.x;
-  double r3y = recip3.y;
-  double r3z = recip3.z;
-
-  for (int i=0; i<N; i++) {
-    double f1 = f[i].x;
-    double f2 = f[i].y;
-    double f3 = f[i].z;
-    f[i].x = f1*r1x + f2*r2x + f3*r3x;
-    f[i].y = f1*r1y + f2*r2y + f3*r3y;
-    f[i].z = f1*r1z + f2*r2z + f3*r3z;
-  }
-}
- 
 
 ComputePme::ComputePme(ComputeID c) :
   ComputeHomePatches(c)

@@ -19,6 +19,7 @@
 #include "ComlibManager.h"
 #endif
 
+#include "Lattice.h"
 #include "main.decl.h"
 #include "main.h"
 #include "BOCgroup.h"
@@ -138,9 +139,11 @@ void BackEnd::init(int argc, char **argv) {
   group.patchMgr = CProxy_PatchMgr::ckNew();
   group.computeMgr = CProxy_ComputeMgr::ckNew();
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
-  group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.sync = CProxy_Sync::ckNew();
+
+  //group.computePmeMgr = CProxy_OptPmeMgr::ckNew();
+  //group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
 
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
@@ -164,7 +167,6 @@ void BackEnd::init(int argc, char **argv) {
   GroupInitMsg *msg = new GroupInitMsg;
   msg->group = group;
   CProxy_Node::ckNew(msg);
-
 }
 
 // called on proc 0 by front end

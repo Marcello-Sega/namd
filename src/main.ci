@@ -18,6 +18,7 @@ mainmodule main {
   extern module LdbCoordinator;
   extern module ComputeMgr;
   extern module ComputePmeMgr;
+  extern module OptPmeMgr;
   extern module ComputeExtMgr;
   extern module CollectionMgr;
   extern module CollectionMaster;

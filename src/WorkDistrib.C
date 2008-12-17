@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2008/12/17 21:32:08 $
- * $Revision: 1.1189 $
+ * $Author: sameer $
+ * $Date: 2008/12/17 22:26:21 $
+ * $Revision: 1.1190 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -29,6 +29,7 @@
 #include "ComlibManager.h"
 #endif
 
+#include "Lattice.h"
 #include "main.decl.h"
 #include "main.h"
 #include "Node.h"
@@ -897,17 +898,20 @@ void WorkDistrib::assignNodeToPatch()
 
 #if USE_TOPOMAP 
   TopoManager tmgr;
-  int numPes = tmgr.getDimX() * tmgr.getDimY() * tmgr.getDimZ();
+  int numPes = tmgr.getDimNX() * tmgr.getDimNY() * tmgr.getDimNZ();
   if (numPes > patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
-    iout << "LDB: Topology partitioner finished successfully\n\n" << endi;
+    CkPrintf ("Blue Gene/L topology partitioner finished successfully \n");
   }
   else
 #endif
     if (nNodes > patchMap->numPatches())
       assignPatchesBitReversal();
     else
+#if (CMK_BLUEGENEP | CMK_BLUEGENEL)
+      assignPatchesRecursiveBisection();
+#else
       assignPatchesSpaceFillingCurve();
-      // assignPatchesRecursiveBisection();
+#endif
       // assignPatchesRoundRobin();
       // assignPatchesToLowestLoadNode();
   
@@ -1286,14 +1290,28 @@ void WorkDistrib::mapComputes(void)
     if ( node->simParameters->useDPME )
       mapComputeHomePatches(computeDPMEType);
     else {
-      mapComputeHomePatches(computePmeType);
-      if ( node->simParameters->pressureProfileEwaldOn )
-        mapComputeHomePatches(computeEwaldType);
+      if (node->simParameters->useOptPME) {
+	mapComputeHomePatches(optPmeType);
+	if ( node->simParameters->pressureProfileEwaldOn )
+	  mapComputeHomePatches(computeEwaldType);
+      }
+      else {
+	mapComputeHomePatches(computePmeType);
+	if ( node->simParameters->pressureProfileEwaldOn )
+	  mapComputeHomePatches(computeEwaldType);
+      }
     }
 #else
-    mapComputeHomePatches(computePmeType);
-    if ( node->simParameters->pressureProfileEwaldOn )
-      mapComputeHomePatches(computeEwaldType);
+    if (node->simParameters->useOptPME) {
+      mapComputeHomePatches(optPmeType);
+      if ( node->simParameters->pressureProfileEwaldOn )
+	mapComputeHomePatches(computeEwaldType);
+    }
+    else {      
+      mapComputeHomePatches(computePmeType);
+      if ( node->simParameters->pressureProfileEwaldOn )
+	mapComputeHomePatches(computeEwaldType);
+    }
 #endif
   }
 
@@ -1627,6 +1645,14 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     msg->compute->doWork();
 #endif
     break;
+  case optPmeType:
+    // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());
+#ifdef NAMD_CUDA
+    wdProxy[CkMyPe()].enqueuePme(msg);
+#else
+    msg->compute->doWork();
+#endif
+    break;
   default:
     wdProxy[CkMyPe()].enqueueWork(msg);
   }
@@ -1920,9 +1946,9 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   
   // Right now assumes a T*** (e.g. TXYZ) mapping
   TopoManager tmgr;
-  xsize = tmgr.getDimX();
-  ysize = tmgr.getDimY();
-  zsize = tmgr.getDimZ();
+  xsize = tmgr.getDimNX();
+  ysize = tmgr.getDimNY();
+  zsize = tmgr.getDimNZ();
   
   //Fix to not assign patches to processor 0
   int rc = recBisec.partitionProcGrid(xsize, ysize, zsize, assignedNode);

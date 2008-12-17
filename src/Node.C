@@ -34,6 +34,7 @@
 #include "ComlibManager.h"
 #endif
 
+#include "Lattice.h"
 #include "main.decl.h"
 #include "main.h"
 #include "WorkDistrib.h"
@@ -59,6 +60,7 @@
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
 #include "ComputePmeMgr.decl.h"
+#include "OptPmeMgr.decl.h"
 #include "Sync.h"
 #include "BackEnd.h"
 #include "PDB.h"
@@ -259,6 +261,14 @@ void Node::startup() {
 
     // create blank AtomMap
     AtomMap::Object()->allocateMap(molecule->numAtoms);
+
+    if (!CkMyPe()) {
+      if (simParameters->useOptPME)
+	CkpvAccess(BOCclass_group).computePmeMgr = CProxy_OptPmeMgr::ckNew();
+      else 
+	CkpvAccess(BOCclass_group).computePmeMgr = CProxy_ComputePmeMgr::ckNew();
+    }
+
   break;
 
   case 3:     
@@ -310,15 +320,27 @@ void Node::startup() {
 
   case 4:
     if ( simParameters->PMEOn ) {
-      CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-      pme[CkMyPe()].initialize(new CkQdMsg);
+      if ( simParameters->useOptPME ) {
+	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].initialize(new CkQdMsg);
+      }
+      else {
+	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].initialize(new CkQdMsg);
+      }
     }
-  break;
-
+    break;
+    
   case 5:
     if ( simParameters->PMEOn ) {
-      CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-      pme[CkMyPe()].initialize_pencils(new CkQdMsg);
+      if ( simParameters->useOptPME ) {
+	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
+      }
+      else {
+	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
+      }
     }
     if (!CkMyPe()) {
     #ifdef MEM_OPT_VERSION
@@ -329,10 +351,16 @@ void Node::startup() {
     }
   break;
 
-  case 6: 
+  case 6:
     if ( simParameters->PMEOn ) {
-      CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-      pme[CkMyPe()].activate_pencils(new CkQdMsg);
+      if ( simParameters->useOptPME ) {
+	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].activate_pencils(new CkQdMsg);
+      }
+      else {
+	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].activate_pencils(new CkQdMsg);
+      }
     }
     proxyMgr->createProxies();  // need Home patches before this
     if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();

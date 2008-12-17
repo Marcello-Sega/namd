@@ -10,6 +10,7 @@
 #include "ComlibManager.h"
 #endif
 
+#include "Lattice.h"
 #include "main.decl.h"
 #include "main.h"
 #include "ProxyPatch.h"
