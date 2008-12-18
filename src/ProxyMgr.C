@@ -17,6 +17,7 @@
 #include "ProcessorPrivate.h"
 #include "packmsg.h"
 #include "Priorities.h"
+#include <alloca.h>
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
@@ -1177,7 +1178,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
     if(!PatchMap::Object()->homePatch(msg->patch)){
         //the home patch of this spanning tree has been already set up for its childrens
         ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
-        int children[numChild];
+        int *children = (int*)alloca(numChild*sizeof(int));
         //add external children
         int *p = msg->allPes + msg->numPesOfNode[0];
         for(int i=0; i<eNChild; i++) {
@@ -1414,7 +1415,7 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);  
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int pids[proxy->getSpanningTreeNChild()];
+    int *pids = (int*)alloca(proxy->getSpanningTreeNChild()*sizeof(int));
     int npid = proxy->getSpanningTreeChild(pids);
     if (npid) {        
         ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);     
@@ -1503,7 +1504,7 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
   #endif
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int pids[proxy->getSpanningTreeNChild()];
+    int *pids = (int*)alloca(proxy->getSpanningTreeNChild()*sizeof(int));
     int npid = proxy->getSpanningTreeChild(pids);
     if (npid) {
         ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);      

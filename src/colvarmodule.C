@@ -5,6 +5,7 @@
 #include "colvarbias.h"
 #include "colvarbias_meta.h"
 #include "colvarbias_abf.h"
+#include <alloca.h>
 
 
 colvarmodule::colvarmodule (char const  *config_filename,
@@ -1054,9 +1055,9 @@ void nr_jacobi(cvm::real **a, int n, cvm::real d[], cvm::real **v, int *nrot)
   cvm::real tresh,theta,tau,t,sm,s,h,g,c;
 
   //  b=vector(1,n);
-  cvm::real b[n];
+  cvm::real *b = (cvm::real*)alloca(n*sizeof(cvm::real));
   //  z=vector(1,n);
-  cvm::real z[n];
+  cvm::real *z = (cvm::real*)alloca(n*sizeof(cvm::real));
   for (ip=0;ip<n;ip++) {
     for (iq=0;iq<n;iq++) v[ip][iq]=0.0;
     v[ip][ip]=1.0;
