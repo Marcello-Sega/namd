@@ -2019,7 +2019,7 @@ HomePatch::doAtomMigration()
   }
 
   // Purge the AtomMap
-  AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
+  AtomMap::Object()->unregisterIDs(patchID,pExt.begin(),pExt.end());
 
   // Determine atoms that need to migrate
 

@@ -1459,7 +1459,7 @@ void ComputePme::doWork()
 #endif
 
     CompAtom *x = (*ap).positionBox->open();
-    CompAtomExt *xExt = (*ap).p->getCompAtomExtInfo();
+    // CompAtomExt *xExt = (*ap).p->getCompAtomExtInfo();
     if ( patchList[0].p->flags.doMolly ) {
       (*ap).positionBox->close(&x);
       x = (*ap).avgPositionBox->open();
@@ -1473,7 +1473,7 @@ void ComputePme::doWork()
       data_ptr->z = x[i].position.z;
       data_ptr->cg = coloumb_sqrt * x[i].charge;
       ++data_ptr;
-      *part_ptr = xExt[i].partition;
+      *part_ptr = x[i].partition;
       ++part_ptr;
     }
 

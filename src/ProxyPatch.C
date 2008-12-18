@@ -66,11 +66,11 @@ ProxyPatch::~ProxyPatch()
   // it corresponds to no longer exist on this specific processor.
   CmiAssert(prevProxyMsg!=NULL);
   if(prevProxyMsg!=NULL) {
-#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
-      AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin, positionPtrEnd);
-#else
-      AtomMap::Object()->unregisterIDs(patchID,p.begin(),p.end());
-#endif      
+// #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+//       AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin, positionPtrEnd);
+// #else
+      AtomMap::Object()->unregisterIDs(patchID,pExt.begin(),pExt.end());
+// #endif      
       delete prevProxyMsg;
       prevProxyMsg = NULL;
   }
@@ -201,11 +201,11 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   //The prevProxyMsg has to be deleted after this if-statement because
   // positionPtrBegin points to the space inside the prevProxyMsg
   if(prevProxyMsg!=NULL) {
-#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
-      AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin,positionPtrEnd);
-#else
-      AtomMap::Object()->unregisterIDs(patchID, p.begin(), p.end());
-#endif
+// #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+//       AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin,positionPtrEnd);
+// #else
+      AtomMap::Object()->unregisterIDs(patchID, pExt.begin(), pExt.end());
+// #endif
   }
   //Now delete the ProxyDataMsg of the previous step
   delete prevProxyMsg;

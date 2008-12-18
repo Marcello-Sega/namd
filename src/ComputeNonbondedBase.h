@@ -715,7 +715,7 @@ void ComputeNonbondedUtil :: NAME
   {
     const CompAtom &p_i = p_0[i];
     const CompAtomExt &pExt_i = pExt_0[i];
-    if ( pExt_i.hydrogenGroupSize ) {
+    if ( p_i.hydrogenGroupSize ) {
       //save current group count
       int curgrpcount = groupCount;      
       //increment group count
@@ -725,7 +725,7 @@ void ComputeNonbondedUtil :: NAME
 	groupCount = 0;
       
       if ( curgrpcount != myPart ) {
-        i += pExt_i.hydrogenGroupSize - 1;
+        i += p_i.hydrogenGroupSize - 1;
 	
 	//Power PC alignment constraint
 #ifdef ARCH_POWERPC
@@ -739,15 +739,15 @@ void ComputeNonbondedUtil :: NAME
     register const BigReal p_i_y = p_i.position.y + offset_y;
     register const BigReal p_i_z = p_i.position.z + offset_z;
 
-    ALCH(const int p_i_partition = pExt_i.partition;)
+    ALCH(const int p_i_partition = p_i.partition;)
 
     PPROF(
-        const int p_i_partition = pExt_i.partition;
+        const int p_i_partition = p_i.partition;
         int n1 = (int)floor((p_i.position.z-pressureProfileMin)*invThickness);
         pp_clamp(n1, pressureProfileSlabs);
         )
 
-  SELF ( if ( pExt_i.hydrogenGroupSize ) j_hgroup = i + pExt_i.hydrogenGroupSize; )
+  SELF ( if ( p_i.hydrogenGroupSize ) j_hgroup = i + p_i.hydrogenGroupSize; )
 
   if ( savePairlists || ! usePairlists ) {
 
@@ -755,10 +755,10 @@ void ComputeNonbondedUtil :: NAME
 
     #ifdef MEM_OPT_VERSION
     const ExclusionCheck *exclcheck = mol->get_excl_check_for_idx(pExt_i.exclId);        
-    const int excl_min = p_i.id + exclcheck->min;
-    const int excl_max = p_i.id + exclcheck->max;
+    const int excl_min = pExt_i.id + exclcheck->min;
+    const int excl_max = pExt_i.id + exclcheck->max;
     #else
-    const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(p_i.id);
+    const ExclusionCheck *exclcheck = mol->get_excl_check_for_atom(pExt_i.id);
     const int excl_min = exclcheck->min;
     const int excl_max = exclcheck->max;
     #endif
@@ -780,10 +780,10 @@ void ComputeNonbondedUtil :: NAME
         memset( (void*) excl_flags_buff, 0, mol->numAtoms);
       }
       int nl,l;
-      full_excl = mol->get_full_exclusions_for_atom(p_i.id);
+      full_excl = mol->get_full_exclusions_for_atom(pExt_i.id);
       nl = full_excl[0] + 1;
       for ( l=1; l<nl; ++l ) excl_flags_buff[full_excl[l]] = EXCHCK_FULL;
-      mod_excl = mol->get_mod_exclusions_for_atom(p_i.id);
+      mod_excl = mol->get_mod_exclusions_for_atom(pExt_i.id);
       nl = mod_excl[0] + 1;
       for ( l=1; l<nl; ++l ) excl_flags_buff[mod_excl[l]] = EXCHCK_MOD;
       excl_flags_var = excl_flags_buff;
@@ -807,9 +807,9 @@ void ComputeNonbondedUtil :: NAME
 
     SELF
     (
-      if ( pExt_i.hydrogenGroupSize ) {
+      if ( p_i.hydrogenGroupSize ) {
         // exclude child hydrogens of i
-        // j_hgroup = i + pExt_i.hydrogenGroupSize;  (moved above)
+        // j_hgroup = i + p_i.hydrogenGroupSize;  (moved above)
         while ( g_lower < g_upper &&
                 grouplist[g_lower] < j_hgroup ) ++g_lower;
         while ( fixg_lower < fixg_upper &&
@@ -1078,12 +1078,12 @@ void ComputeNonbondedUtil :: NAME
 
     INT(
     if ( pairInteractionOn ) {
-      const int ifep_type = pExt_i.partition;
+      const int ifep_type = p_i.partition;
       if (pairInteractionSelf) {
         if (ifep_type != 1) continue;
         for (int k=pairlistoffset; k<pairlistindex; k++) {
           j = pairlist[k];
-          const int jfep_type = pExt_1[j].partition;
+          const int jfep_type = p_1[j].partition;
           // for pair-self, both atoms must be in group 1.
           if (jfep_type == 1) {
             *(pli++) = j;
@@ -1093,7 +1093,7 @@ void ComputeNonbondedUtil :: NAME
         if (ifep_type != 1 && ifep_type != 2) continue;
         for (int k=pairlistoffset; k<pairlistindex; k++) {
           j = pairlist[k];
-          const int jfep_type = pExt_1[j].partition;
+          const int jfep_type = p_1[j].partition;
           // for pair, must have one from each group.
           if (ifep_type + jfep_type == 3) {
             *(pli++) = j;
@@ -1114,7 +1114,7 @@ void ComputeNonbondedUtil :: NAME
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
 	if ( ( ! (atomfixed && pExt_1[j].atomFixed) ) && (r2 <= plcutoff2) ) {
-          int atom2 = p_1[j].id;
+          int atom2 = pExt_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
         }
@@ -1134,7 +1134,7 @@ void ComputeNonbondedUtil :: NAME
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
 	if ( (! pExt_1[j].atomFixed) && (r2 <= plcutoff2) ) {
-          int atom2 = p_1[j].id;
+          int atom2 = pExt_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
         }
@@ -1160,8 +1160,8 @@ void ComputeNonbondedUtil :: NAME
           const __m128d P_I_Y = _mm_set1_pd(p_i_y);
           const __m128d P_I_Z = _mm_set1_pd(p_i_z);
 	  
-	  int atom2_0 = p_1[jprev0].id;
-	  int atom2_1 = p_1[jprev1].id;
+	  int atom2_0 = pExt_1[jprev0].id;
+	  int atom2_1 = pExt_1[jprev1].id;
 	  
 	  k += 2;
 	  for ( ; k < ku - 2; k +=2 ) {
@@ -1192,7 +1192,7 @@ void ComputeNonbondedUtil :: NAME
 	      else 
 		*(plin++) = j0;
 	    }
-	    atom2_0 = p_1[jprev0].id;
+	    atom2_0 = pExt_1[jprev0].id;
 	    
 	    if (r2_01[1] <= plcutoff2) {
 	      if ( atom2_1 >= excl_min && atom2_1 <= excl_max ) 
@@ -1200,7 +1200,7 @@ void ComputeNonbondedUtil :: NAME
 	      else 
 		*(plin++) = j1;
 	    }
-	    atom2_1 = p_1[jprev1].id;	    
+	    atom2_1 = pExt_1[jprev1].id;	    
 	  }
 	  k-=2;
 	}       
@@ -1226,8 +1226,8 @@ void ComputeNonbondedUtil :: NAME
 	  pj_z_0 = p_1[jprev0].position.z; 
 	  pj_z_1 = p_1[jprev1].position.z;
 	  
-	  int atom2_0 = p_1[jprev0].id;
-	  int atom2_1 = p_1[jprev1].id;
+	  int atom2_0 = pExt_1[jprev0].id;
+	  int atom2_1 = pExt_1[jprev1].id;
 	  
 	  k += 2;
 	  for ( ; k < ku - 2; k +=2 ) {
@@ -1266,7 +1266,7 @@ void ComputeNonbondedUtil :: NAME
 	      else 
 		*(plin++) = j0;
 	    }
-	    atom2_0 = p_1[jprev0].id;
+	    atom2_0 = pExt_1[jprev0].id;
 	    
 	    if (r2_1 <= plcutoff2) {
 	      if ( atom2_1 >= excl_min && atom2_1 <= excl_max ) 
@@ -1274,7 +1274,7 @@ void ComputeNonbondedUtil :: NAME
 	      else 
 		*(plin++) = j1;
 	     }
-	    atom2_1 = p_1[jprev1].id;	    
+	    atom2_1 = pExt_1[jprev1].id;	    
 	  }
 	  k-=2;
 	}       
@@ -1282,7 +1282,7 @@ void ComputeNonbondedUtil :: NAME
 
 	for (; k < ku; k++) {
 	  int j = pairlist[k];
-	  int atom2 = p_1[j].id;
+	  int atom2 = pExt_1[j].id;
 	  
 	  BigReal p_j_x = p_1[j].position.x;
 	  BigReal p_j_y = p_1[j].position.y;
@@ -1333,7 +1333,7 @@ void ComputeNonbondedUtil :: NAME
 ALCH(
     SELF(
     for (; pln < plin && *pln < j_hgroup; ++pln) {
-      switch (pswitchTable[4*p_i_partition]) { //p_i_partition + 3*pExt_1[i].partition
+      switch (pswitchTable[4*p_i_partition]) { //p_i_partition + 3*p_1[i].partition
       case 0: *(plix++) = *pln;  break;
       case 1: *(plixA1++) = *pln; break;
       case 2: *(plixA2++) = *pln; break;
@@ -1352,9 +1352,9 @@ ALCH(
 )
     for (; k < npair2; ++k ) {
       int j = pairlist2[k];
-      int atom2 = p_1[j].id;
+      int atom2 = pExt_1[j].id;
       int excl_flag = excl_flags[atom2];
-      ALCH(int pswitch = pswitchTable[p_i_partition + 3*(pExt_1[j].partition)];)
+      ALCH(int pswitch = pswitchTable[p_i_partition + 3*(p_1[j].partition)];)
       switch ( excl_flag ALCH( + 3 * pswitch)) {
       case 0:  *(plin++) = j;  break;
       case 1:  *(plix++) = j;  break;
@@ -1383,7 +1383,7 @@ ALCH(
     int unsortedNpairn = plin - pln;
     for ( k=0; k<unsortedNpairn; ++k ) {
       int j = pln[k];
-      switch(pswitchTable[p_i_partition + 3*(pExt_1[j].partition)]) {
+      switch(pswitchTable[p_i_partition + 3*(p_1[j].partition)]) {
         case 0:  *(plinA0++) = j; break;
         case 1:  *(plinA1++) = j; break;
         case 2:  *(plinA2++) = j; break;
@@ -1477,19 +1477,19 @@ ALCH(
   } // if ( savePairlists || ! usePairlists )
 
     LES( BigReal *lambda_table_i =
-			lambda_table + (lesFactor+1) * pExt_i.partition; )
+			lambda_table + (lesFactor+1) * p_i.partition; )
 
     INT(
     const BigReal force_sign = (
       ( pairInteractionOn && ! pairInteractionSelf ) ?
-        ( ( pExt_i.partition == 1 ) ? 1. : -1. ) : 0.
+        ( ( p_i.partition == 1 ) ? 1. : -1. ) : 0.
     );
       
     )
 
     const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
     const LJTable::TableEntry * const lj_row =
-		ljTable->table_row(pExt_i.vdwType);
+		ljTable->table_row(p_i.vdwType);
 
     SHORT( FAST( BigReal f_i_x = 0.; ) )
     SHORT( FAST( BigReal f_i_y = 0.; ) )

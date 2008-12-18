@@ -21,8 +21,8 @@ public:
 
   void allocateMap(int nAtomIDs);
 
-  int registerIDs(PatchID pid, const CompAtom *begin, const CompAtom *end);
-  int unregisterIDs(PatchID pid, const CompAtom *begin, const CompAtom *end);
+  int registerIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
+  int unregisterIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
 
   LocalID localID(AtomID id);
 

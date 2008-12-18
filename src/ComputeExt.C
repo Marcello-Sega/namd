@@ -30,12 +30,18 @@
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
 
+struct ComputeExtAtom {
+    Position position;
+    float charge;
+    int id;
+};
+
 class ExtCoordMsg : public CMessage_ExtCoordMsg {
 public:
   int sourceNode;
   int numAtoms;
   Lattice lattice;
-  CompAtom *coord;
+  ComputeExtAtom *coord;
 };
 
 class ExtForceMsg : public CMessage_ExtForceMsg {
@@ -63,7 +69,7 @@ private:
   int numArrived;
   ExtCoordMsg **coordMsgs;
   int numAtoms;
-  CompAtom *coord;
+  ComputeExtAtom *coord;
   ExtForce *force;
   ExtForceMsg *oldmsg;
 };
@@ -125,11 +131,12 @@ void ComputeExt::doWork()
   msg->sourceNode = CkMyPe();
   msg->numAtoms = numLocalAtoms;
   msg->lattice = patchList[0].p->flags.lattice;
-  CompAtom *data_ptr = msg->coord;
+  ComputeExtAtom *data_ptr = msg->coord;
 
   // get positions
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     CompAtom *x = (*ap).positionBox->open();
+    CompAtomExt *xExt = (*ap).p->getCompAtomExtInfo();
 #if 0
     if ( patchList[0].p->flags.doMolly ) {
       (*ap).positionBox->close(&x);
@@ -140,7 +147,9 @@ void ComputeExt::doWork()
 
     for(int i=0; i<numAtoms; ++i)
     {
-      *data_ptr = x[i];
+      data_ptr->position = x[i].position;
+      data_ptr->charge = x[i].charge;
+      data_ptr->id = xExt[i].id;
       ++data_ptr;
     }
 
@@ -163,7 +172,7 @@ void ComputeExtMgr::recvCoord(ExtCoordMsg *msg) {
     for ( int i=0; i<numSources; ++i ) { coordMsgs[i] = 0; }
     numArrived = 0;
     numAtoms = Node::Object()->molecule->numAtoms;
-    coord = new CompAtom[numAtoms];
+    coord = new ComputeExtAtom[numAtoms];
     force = new ExtForce[numAtoms];
   }
 

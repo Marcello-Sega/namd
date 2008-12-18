@@ -150,7 +150,7 @@ void ComputeEwald::doWork() {
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     CompAtom *x = (*ap).positionBox->open();
-    CompAtomExt *xExt = (*ap).p->getCompAtomExtInfo();
+    // CompAtomExt *xExt = (*ap).p->getCompAtomExtInfo();
     Results *r = (*ap).forceBox->open();
     if ( patchList[0].p->flags.doMolly ) {
       (*ap).positionBox->close(&x);
@@ -162,7 +162,7 @@ void ComputeEwald::doWork() {
       // wrap back to unit cell, centered on origin
       Vector pos = x[i].position;
       pos += lattice.wrap_delta(pos) - o;
-      *part_ptr++ = xExt[i].partition; 
+      *part_ptr++ = x[i].partition; 
       data_ptr->x = pos.x;
       data_ptr->y = pos.y;
       data_ptr->z = pos.z;

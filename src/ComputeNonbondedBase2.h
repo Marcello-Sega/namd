@@ -38,14 +38,14 @@ ALCHPAIR(
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
       const int j = pairlisti[k];
       register const CompAtom *p_j = p_1 + j;
-      const CompAtomExt *pExt_j = pExt_1 + j;
+      // const CompAtomExt *pExt_j = pExt_1 + j;
       
       BigReal diffa = r2list[k] - r2_table[table_i];
       const BigReal* const table_four_i = table_four + 16*table_i;
 
       FAST(
       const LJTable::TableEntry * lj_pars = 
-              lj_row + 2 * pExt_j->vdwType MODIFIED(+ 1);
+              lj_row + 2 * p_j->vdwType MODIFIED(+ 1);
       )	
 
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
@@ -102,7 +102,7 @@ ALCHPAIR(
 
       BigReal kqq = kq_i * p_j->charge;
 
-      LES( BigReal lambda_pair = lambda_table_i[pExt_j->partition]; )
+      LES( BigReal lambda_pair = lambda_table_i[p_j->partition]; )
 
       register const BigReal p_ij_x = p_i_x - p_j->position.x;
       register const BigReal p_ij_y = p_i_y - p_j->position.y;
@@ -249,7 +249,7 @@ ALCHPAIR(
         const BigReal p_j_z = p_j->position.z;
         int n2 = (int)floor((p_j_z-pressureProfileMin)*invThickness);
         pp_clamp(n2, pressureProfileSlabs);
-        int p_j_partition = pExt_j->partition;
+        int p_j_partition = p_j->partition;
 
         pp_reduction(pressureProfileSlabs, n1, n2, 
                      p_i_partition, p_j_partition, pressureProfileAtomTypes,
@@ -395,7 +395,7 @@ ALCHPAIR(
         const BigReal p_j_z = p_j->position.z;
         int n2 = (int)floor((p_j_z-pressureProfileMin)*invThickness);
         pp_clamp(n2, pressureProfileSlabs);
-        int p_j_partition = pExt_j->partition;
+        int p_j_partition = p_j->partition;
 
         pp_reduction(pressureProfileSlabs, n1, n2, 
                      p_i_partition, p_j_partition, pressureProfileAtomTypes,

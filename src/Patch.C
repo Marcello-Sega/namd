@@ -136,11 +136,11 @@ void Patch::positionsReady(int doneMigration)
    ComputeMap *computeMap = ComputeMap::Object();
 
    if ( doneMigration ){
-#ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
-       AtomMap::Object()->registerIDs(patchID,positionPtrBegin,positionPtrEnd);       
-#else
-       AtomMap::Object()->registerIDs(patchID,p.begin(),p.end());
-#endif
+// #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
+//       AtomMap::Object()->registerIDs(patchID,positionPtrBegin,positionPtrEnd);       
+// #else
+       AtomMap::Object()->registerIDs(patchID,pExt.begin(),pExt.end());
+// #endif
    }
 
    boxesOpen = 2;

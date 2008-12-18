@@ -12,6 +12,7 @@
 
 class SubmitReduction;
 class ExtForceMsg;
+class ComputeExtAtom;
 
 class ComputeExt : public ComputeHomePatches {
 public:

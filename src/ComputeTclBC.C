@@ -181,7 +181,7 @@ int ComputeTclBC::Tcl_dropatom(ClientData clientData,
     return TCL_ERROR;
   }
 
-  self->drops[self->atoms[self->i_atom].id] = 1;
+  self->drops[self->fullatoms[self->i_atom].id] = 1;
 
   return TCL_OK;
 }
@@ -220,7 +220,7 @@ int ComputeTclBC::Tcl_nextatom(ClientData clientData,
     self->atoms = (*(self->ap)).positionBox->open();
     (*(self->ap)).r = (*(self->ap)).forceBox->open();
     self->forces = (*(self->ap)).r->f[Results::normal];
-  } while ( self->drops[self->atoms[self->i_atom].id] );
+  } while ( self->drops[self->fullatoms[self->i_atom].id] );
 
   Tcl_SetObjResult(interp, Tcl_NewIntObj((long)(1)));
   return TCL_OK;
@@ -352,7 +352,7 @@ int ComputeTclBC::Tcl_getid(ClientData clientData,
   }
 
   int i = self->i_atom;
-  Tcl_SetObjResult(interp, Tcl_NewIntObj((long)(self->atoms[i].id + 1)));
+  Tcl_SetObjResult(interp, Tcl_NewIntObj((long)(self->fullatoms[i].id + 1)));
   return TCL_OK;
 }
 

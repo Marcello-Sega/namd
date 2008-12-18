@@ -46,32 +46,14 @@ struct Transform
  * (including BG/L) for better cache and message performance. Therefore, changes
  * to this structure should be cautioned for the sake of performance.
  */
+
 struct CompAtom {
   Position position;
   Charge charge;
-  int id : 29;
+  short vdwType;
+  unsigned char partition;
   unsigned int nonbondedGroupSize : 3;
-
-  CompAtom() { ; }
-
-  // Needed for IBM's xlC compiler
-  inline CompAtom(const CompAtom &a) :
-    position(a.position), charge(a.charge),
-    id(a.id),
-    nonbondedGroupSize(a.nonbondedGroupSize) {
-      ;
-  }
-
-  // Needed for IBM's xlC compiler
-  inline CompAtom& operator=(const CompAtom &a) {
-    position = a.position;
-    charge = a.charge;
-    id = a.id;
-    nonbondedGroupSize = a.nonbondedGroupSize;
-
-    return *this;
-  }
-
+  unsigned int hydrogenGroupSize : 5;  // could be 4 if signed, 3 if unsigned
 };
 
 //CompAtomExt is now needed even in normal case
@@ -88,47 +70,15 @@ struct CompAtom {
 
 typedef short AtomSigID;
 typedef short ExclSigID;
-typedef short VDW_TYPE;
 
 struct CompAtomExt {
   #ifdef MEM_OPT_VERSION
   AtomSigID sigId;
   ExclSigID exclId;
   #endif
-  VDW_TYPE vdwType;
-  char partition;
-  int hydrogenGroupSize : 6;  // could be 4 if signed, 3 if unsigned
+  int id : 30;  // minimum for 100M atoms is 28 signed, 27 unsigned
   unsigned int atomFixed : 1;
   unsigned int groupFixed : 1;
-
-  CompAtomExt(){;}
-
-  // Needed for IBM's xlC compiler
-  inline CompAtomExt(const CompAtomExt &a) :
-    #ifdef MEM_OPT_VERSION
-    sigId(a.sigId), exclId(a.exclId),
-    #endif
-    vdwType(a.vdwType),
-    partition(a.partition),
-    hydrogenGroupSize(a.hydrogenGroupSize),
-    atomFixed(a.atomFixed), groupFixed(a.groupFixed) {
-  }
-
-  // Needed for IBM's xlC compiler
-  inline CompAtomExt& operator=(const CompAtomExt &a) {
-    #ifdef MEM_OPT_VERSION
-    sigId = a.sigId;
-    exclId = a.exclId;
-    #endif
-    vdwType = a.vdwType;
-    partition = a.partition;
-    hydrogenGroupSize = a.hydrogenGroupSize;
-    atomFixed = a.atomFixed;
-    groupFixed = a.groupFixed;
-
-    return *this;
-  }
-
 };
 
 struct FullAtom : CompAtom, CompAtomExt{

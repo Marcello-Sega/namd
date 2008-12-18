@@ -54,13 +54,13 @@ void AtomMap::allocateMap(int nAtomIds)
 }
 
 //
-int AtomMap::unregisterIDs(PatchID pid, const CompAtom *begin, const CompAtom *end)
+int AtomMap::unregisterIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end)
 {
   if (localIDTable == NULL)
     return -1;
   else 
   {
-    for(const CompAtom *a = begin; a != end; ++a)
+    for(const CompAtomExt *a = begin; a != end; ++a)
     {
         unsigned int ali = a->id;
 	if (localIDTable[ali].pid == pid) {
@@ -72,13 +72,13 @@ int AtomMap::unregisterIDs(PatchID pid, const CompAtom *begin, const CompAtom *e
   }
 }
 //----------------------------------------------------------------------
-int AtomMap::registerIDs(PatchID pid, const CompAtom *begin, const CompAtom *end)
+int AtomMap::registerIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end)
 {
   if (localIDTable == NULL)
     return -1;
   else 
   {
-    for(const CompAtom *a = begin; a != end; ++a)
+    for(const CompAtomExt *a = begin; a != end; ++a)
     {
         unsigned int ali = a->id;
 	localIDTable[ali].pid = pid;

@@ -129,7 +129,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
     
       for ( ai = ai.begin(); ai != ai.end(); ai++ )
       {
-        CompAtom *atom = (*ai).x;
+        // CompAtom *atom = (*ai).x;
         Patch *patch = (*ai).p;
         int numAtoms = patch->getNumAtoms();
 	CompAtomExt *atomExt = (*ai).xExt; //patch->getCompAtomExtInfo();
@@ -143,10 +143,10 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
            TupleSignature *allTuples;
            T::getTupleInfo(thisAtomSig, &numTuples, &allTuples);
            for(int k=0; k<numTuples; k++) {
-               T t(atom[j].id, &allTuples[k], tupleValues);
+               T t(atomExt[j].id, &allTuples[k], tupleValues);
            #else
            /* get list of all tuples for the atom */
-           int32 *curTuple = tuplesByAtom[atom[j].id];
+           int32 *curTuple = tuplesByAtom[atomExt[j].id];
            for( ; *curTuple != -1; ++curTuple) {             
              T t(&tupleStructs[*curTuple],tupleValues);
            #endif            

@@ -107,9 +107,9 @@ void ComputeRestraints::doForce(CompAtom* p, CompAtomExt* pExt, Results* res)
 	  
 	if (scaling != 0.) for (int localID=0; localID<numAtoms; ++localID)
 	{
-	  if (molecule->is_atom_constrained(p[localID].id))
+	  if (molecule->is_atom_constrained(pExt[localID].id))
 	  {
-	    molecule->get_cons_params(k, refPos, p[localID].id);
+	    molecule->get_cons_params(k, refPos, pExt[localID].id);
 
 	    k *= scaling;
 
