@@ -259,7 +259,7 @@ int dumpbench(FILE *file) {
     fprintf(file,"%d\n",numAtoms);
     FullAtomList &atoms = patch->getAtomList();
     for ( j=0; j<numAtoms; ++j) {
-      CompAtom &a = atoms[j];
+      FullAtom &a = atoms[j];
       double x,y,z,q;
       int id,hgs,ngia,af,gf,part;
       x = a.position.x;
@@ -268,7 +268,7 @@ int dumpbench(FILE *file) {
       q = a.charge;
       id = a.id;
       hgs = a.hydrogenGroupSize;
-      ngia = a.nonbondedGroupIsAtom;
+      ngia = ( hgs != 1 && a.nonbondedGroupSize == 1 ) ? 1 : 0;
       af = a.atomFixed;
       gf = a.groupFixed;
       part = a.partition;

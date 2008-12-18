@@ -493,14 +493,14 @@ CkPrintf("%d %d-%d-%d-%d %d-%d-%d-%d\n", CkMyPe(),
     pp_clamp(n6, pressureProfileSlabs);
     pp_clamp(n7, pressureProfileSlabs);
     pp_clamp(n8, pressureProfileSlabs);
-    int p1 = p[0]->x[localIndex[0]].partition;
-    int p2 = p[1]->x[localIndex[1]].partition;
-    int p3 = p[2]->x[localIndex[2]].partition;
-    int p4 = p[3]->x[localIndex[3]].partition;
-    int p5 = p[4]->x[localIndex[4]].partition;
-    int p6 = p[5]->x[localIndex[5]].partition;
-    int p7 = p[6]->x[localIndex[6]].partition;
-    int p8 = p[7]->x[localIndex[7]].partition;
+    int p1 = p[0]->xExt[localIndex[0]].partition;
+    int p2 = p[1]->xExt[localIndex[1]].partition;
+    int p3 = p[2]->xExt[localIndex[2]].partition;
+    int p4 = p[3]->xExt[localIndex[3]].partition;
+    int p5 = p[4]->xExt[localIndex[4]].partition;
+    int p6 = p[5]->xExt[localIndex[5]].partition;
+    int p7 = p[6]->xExt[localIndex[6]].partition;
+    int p8 = p[7]->xExt[localIndex[7]].partition;
     int pn = pressureProfileAtomTypes;
     pp_reduction(pressureProfileSlabs, n1, n2, p1, p2, pn,
                 f1.x * r12.x, f1.y * r12.y, f1.z * r12.z,

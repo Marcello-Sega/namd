@@ -195,9 +195,9 @@ void AngleElem::computeForce(BigReal *reduction, BigReal *pressureProfileData)
     pp_clamp(n1, pressureProfileSlabs);
     pp_clamp(n2, pressureProfileSlabs);
     pp_clamp(n3, pressureProfileSlabs);
-    int p1 = p[0]->x[localIndex[0]].partition;
-    int p2 = p[1]->x[localIndex[1]].partition;
-    int p3 = p[2]->x[localIndex[2]].partition;
+    int p1 = p[0]->xExt[localIndex[0]].partition;
+    int p2 = p[1]->xExt[localIndex[1]].partition;
+    int p3 = p[2]->xExt[localIndex[2]].partition;
     int pn = pressureProfileAtomTypes;
     pp_reduction(pressureProfileSlabs, n1, n2, 
                 p1, p2, pn,

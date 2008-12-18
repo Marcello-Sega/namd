@@ -49,22 +49,16 @@ struct Transform
 struct CompAtom {
   Position position;
   Charge charge;
-  unsigned int id : 22;
-  unsigned int hydrogenGroupSize : 3;
-  unsigned int nonbondedGroupIsAtom : 1;
-  unsigned int atomFixed : 1;
-  unsigned int groupFixed : 1;
-  unsigned int partition : 4;
+  int id : 29;
+  unsigned int nonbondedGroupSize : 3;
 
   CompAtom() { ; }
 
   // Needed for IBM's xlC compiler
   inline CompAtom(const CompAtom &a) :
     position(a.position), charge(a.charge),
-    id(a.id), hydrogenGroupSize(a.hydrogenGroupSize),
-    nonbondedGroupIsAtom(a.nonbondedGroupIsAtom),
-    atomFixed(a.atomFixed), groupFixed(a.groupFixed),
-    partition(a.partition){
+    id(a.id),
+    nonbondedGroupSize(a.nonbondedGroupSize) {
       ;
   }
 
@@ -73,11 +67,7 @@ struct CompAtom {
     position = a.position;
     charge = a.charge;
     id = a.id;
-    hydrogenGroupSize = a.hydrogenGroupSize;
-    nonbondedGroupIsAtom = a.nonbondedGroupIsAtom;
-    atomFixed = a.atomFixed;
-    groupFixed = a.groupFixed;
-    partition = a.partition;
+    nonbondedGroupSize = a.nonbondedGroupSize;
 
     return *this;
   }
@@ -96,9 +86,9 @@ struct CompAtom {
 // in the actual force calculation.
 // --Chao Mei
 
-typedef unsigned short AtomSigID;
-typedef unsigned short ExclSigID;
-typedef unsigned short VDW_TYPE;
+typedef short AtomSigID;
+typedef short ExclSigID;
+typedef short VDW_TYPE;
 
 struct CompAtomExt {
   #ifdef MEM_OPT_VERSION
@@ -106,6 +96,10 @@ struct CompAtomExt {
   ExclSigID exclId;
   #endif
   VDW_TYPE vdwType;
+  char partition;
+  int hydrogenGroupSize : 6;  // could be 4 if signed, 3 if unsigned
+  unsigned int atomFixed : 1;
+  unsigned int groupFixed : 1;
 
   CompAtomExt(){;}
 
@@ -114,7 +108,10 @@ struct CompAtomExt {
     #ifdef MEM_OPT_VERSION
     sigId(a.sigId), exclId(a.exclId),
     #endif
-    vdwType(a.vdwType){
+    vdwType(a.vdwType),
+    partition(a.partition),
+    hydrogenGroupSize(a.hydrogenGroupSize),
+    atomFixed(a.atomFixed), groupFixed(a.groupFixed) {
   }
 
   // Needed for IBM's xlC compiler
@@ -124,6 +121,10 @@ struct CompAtomExt {
     exclId = a.exclId;
     #endif
     vdwType = a.vdwType;
+    partition = a.partition;
+    hydrogenGroupSize = a.hydrogenGroupSize;
+    atomFixed = a.atomFixed;
+    groupFixed = a.groupFixed;
 
     return *this;
   }
@@ -177,7 +178,7 @@ struct ExtForce {
 #if NAMD_ComputeNonbonded_SortAtoms != 0
 
   typedef struct __sort_entry {
-    unsigned int index;  // Index of atom in CompAtom array
+    int index;  // Index of atom in CompAtom array
     BigReal sortValue;   // Distance of PAp from P0 (see calculation code)
   } SortEntry;
 

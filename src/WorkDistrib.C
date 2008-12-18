@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: sameer $
- * $Date: 2008/12/17 22:26:21 $
- * $Revision: 1.1190 $
+ * $Author: jim $
+ * $Date: 2008/12/18 17:27:39 $
+ * $Revision: 1.1191 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -338,7 +338,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
         a[j].hydrogenGroupSize = 1;
       }
 
-      a[j].nonbondedGroupIsAtom = 0;
+      a[j].nonbondedGroupSize = 0;  // must be set based on coordinates
 
       a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
       a[j].fixedPosition = a[j].position;
@@ -553,7 +553,7 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
         a[j].hydrogenGroupSize = 1;
       }
 
-      a[j].nonbondedGroupIsAtom = 0;
+      a[j].nonbondedGroupSize = 0;  // must be set based on coordinates
 
       a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
       a[j].fixedPosition = a[j].position;

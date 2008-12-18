@@ -129,8 +129,8 @@ void BondElem::computeForce(BigReal *reduction,
     int n2 = (int)floor((z2-pressureProfileMin)/pressureProfileThickness);
     pp_clamp(n1, pressureProfileSlabs);
     pp_clamp(n2, pressureProfileSlabs);
-    int p1 = p[0]->x[localIndex[0]].partition;
-    int p2 = p[1]->x[localIndex[1]].partition;
+    int p1 = p[0]->xExt[localIndex[0]].partition;
+    int p2 = p[1]->xExt[localIndex[1]].partition;
     int pn = pressureProfileAtomTypes;
     pp_reduction(pressureProfileSlabs,
                 n1, n2, 

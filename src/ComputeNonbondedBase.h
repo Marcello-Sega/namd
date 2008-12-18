@@ -498,8 +498,7 @@ void ComputeNonbondedUtil :: NAME
     // Calculate the sort values for the atoms in patch 1
     {
       register int j = 0;
-      register unsigned int ngia = p_1->nonbondedGroupIsAtom;
-      register unsigned int hgs = p_1->hydrogenGroupSize;
+      register int nbgs = p_1->nonbondedGroupSize;
       register BigReal p_x = p_1->position.x;
       register BigReal p_y = p_1->position.y;
       register BigReal p_z = p_1->position.z;
@@ -507,15 +506,12 @@ void ComputeNonbondedUtil :: NAME
 
       while (j < j_upper) {
 
-        // Advance j... NOTE: ngia is either 0 or 1, so if ngia is set '1'
-        // is added to 'j'.  Otherwise, the value of 'hgs' is added to j.
-	j += ((ngia) + ((1 - ngia) * hgs));
+	j += nbgs;
 
         // Set p_j_next to point to the atom for the next iteration and begin
-        //   loading the 'ngia' and 'hgs' values for that atom.
+        //   loading the 'nbgs' value for that atom.
         register const CompAtom* p_j_next = p_1 + j;
-        ngia = p_j_next->nonbondedGroupIsAtom;
-        hgs = p_j_next->hydrogenGroupSize;
+        nbgs = p_j_next->nonbondedGroupSize;
 
         // Calculate the distance along the projection vector
         // NOTE: If the vector from the origin to the point is 'A' and the vector
@@ -559,8 +555,7 @@ void ComputeNonbondedUtil :: NAME
     // Calculate the sort values for the atoms in patch 0
     {
       register int i = 0;
-      register unsigned int ngia = p_0->nonbondedGroupIsAtom;
-      register unsigned int hgs = p_0->hydrogenGroupSize;
+      register int nbgs = p_0->nonbondedGroupSize;
       register BigReal p_x = p_0->position.x;
       register BigReal p_y = p_0->position.y;
       register BigReal p_z = p_0->position.z;
@@ -568,15 +563,12 @@ void ComputeNonbondedUtil :: NAME
 
       while (i < i_upper) {
 
-        // Advance i... NOTE: ngia is either 0 or 1, so if ngia is set '1'
-        //   is added to 'i'.  Otherwise, the value of 'hgs' is added to i.
-        i += ((ngia) + ((1 - ngia) * hgs));
+        i += nbgs;
 
         // Set p_i_next to point to the atom for the next iteration and begin
-        //   loading the 'ngia' and 'hgs' values for that atom.
+        //   loading the 'nbgs' value for that atom.
         register const CompAtom* p_i_next = p_0 + i;
-        ngia = p_i_next->nonbondedGroupIsAtom;
-        hgs = p_i_next->hydrogenGroupSize;
+        nbgs = p_i_next->nonbondedGroupSize;
 
         // Calculate the distance along the projection vector
         register BigReal sortVal = COMPONENT_DOTPRODUCT(p,projLineVec);
@@ -636,7 +628,7 @@ void ComputeNonbondedUtil :: NAME
       for (int tmpI = 0; tmpI < p_1_sortValues_len; tmpI++) {
         register SortEntry* p_1_sortEntry = p_1_sortValues + tmpI;
         register int p_1_index = p_1_sortEntry->index;
-        if (!p_1[p_1_index].groupFixed) {
+        if (!pExt_1[p_1_index].groupFixed) {
           register SortEntry* p_1_sortEntry_fixg = p_1_sortValues_fixg + p_1_sortValues_fixg_len;
           p_1_sortEntry_fixg->index = p_1_sortEntry->index;
           p_1_sortEntry_fixg->sortValue = p_1_sortEntry->sortValue;
@@ -648,7 +640,7 @@ void ComputeNonbondedUtil :: NAME
 
       register int g = 0;
       for ( j = 0; j < j_upper; ++j ) {
-        if ( p_1[j].hydrogenGroupSize || p_1[j].nonbondedGroupIsAtom ) {
+        if ( p_1[j].nonbondedGroupSize ) {
           grouplist[g++] = j;
         }
       }
@@ -659,7 +651,7 @@ void ComputeNonbondedUtil :: NAME
       if ( fixedAtomsOn ) {
         for ( g = 0; g < g_upper; ++g ) {
           j = grouplist[g];
-          if ( ! p_1[j].groupFixed ) {
+          if ( ! pExt_1[j].groupFixed ) {
             fixglist[fixg++] = j;
           }
         }
@@ -723,7 +715,7 @@ void ComputeNonbondedUtil :: NAME
   {
     const CompAtom &p_i = p_0[i];
     const CompAtomExt &pExt_i = pExt_0[i];
-    if ( p_i.hydrogenGroupSize ) {
+    if ( pExt_i.hydrogenGroupSize ) {
       //save current group count
       int curgrpcount = groupCount;      
       //increment group count
@@ -733,7 +725,7 @@ void ComputeNonbondedUtil :: NAME
 	groupCount = 0;
       
       if ( curgrpcount != myPart ) {
-        i += p_i.hydrogenGroupSize - 1;
+        i += pExt_i.hydrogenGroupSize - 1;
 	
 	//Power PC alignment constraint
 #ifdef ARCH_POWERPC
@@ -747,15 +739,15 @@ void ComputeNonbondedUtil :: NAME
     register const BigReal p_i_y = p_i.position.y + offset_y;
     register const BigReal p_i_z = p_i.position.z + offset_z;
 
-    ALCH(const int p_i_partition = p_i.partition;)
+    ALCH(const int p_i_partition = pExt_i.partition;)
 
     PPROF(
-        const int p_i_partition = p_i.partition;
+        const int p_i_partition = pExt_i.partition;
         int n1 = (int)floor((p_i.position.z-pressureProfileMin)*invThickness);
         pp_clamp(n1, pressureProfileSlabs);
         )
 
-  SELF ( if ( p_i.hydrogenGroupSize ) j_hgroup = i + p_i.hydrogenGroupSize; )
+  SELF ( if ( pExt_i.hydrogenGroupSize ) j_hgroup = i + pExt_i.hydrogenGroupSize; )
 
   if ( savePairlists || ! usePairlists ) {
 
@@ -800,11 +792,11 @@ void ComputeNonbondedUtil :: NAME
     }
     const char * const excl_flags = excl_flags_var;
 
-  if (p_i.hydrogenGroupSize || p_i.nonbondedGroupIsAtom) {
+  if ( p_i.nonbondedGroupSize ) {
 
     pairlistindex = 0;	// initialize with 0 elements
     pairlistoffset=0;
-    const int groupfixed = ( fixedAtomsOn && p_i.groupFixed );
+    const int groupfixed = ( fixedAtomsOn && pExt_i.groupFixed );
 
     // If patch divisions are not made by hydrogen groups, then
     // hydrogenGroupSize is set to 1 for all atoms.  Thus we can
@@ -815,9 +807,9 @@ void ComputeNonbondedUtil :: NAME
 
     SELF
     (
-      if ( p_i.hydrogenGroupSize ) {
+      if ( pExt_i.hydrogenGroupSize ) {
         // exclude child hydrogens of i
-        // j_hgroup = i + p_i.hydrogenGroupSize;  (moved above)
+        // j_hgroup = i + pExt_i.hydrogenGroupSize;  (moved above)
         while ( g_lower < g_upper &&
                 grouplist[g_lower] < j_hgroup ) ++g_lower;
         while ( fixg_lower < fixg_upper &&
@@ -1045,13 +1037,12 @@ void ComputeNonbondedUtil :: NAME
 
 	for ( int h=0; h<hu; ++h ) {
           int j = goodglist[h];
-          int hgs = ( p_1[j].nonbondedGroupIsAtom ? 1 :
-		      p_1[j].hydrogenGroupSize );
+          int nbgs = p_1[j].nonbondedGroupSize;
 	  pli[0] = j;   // copy over the next four in any case
 	  pli[1] = j+1;
 	  pli[2] = j+2;
-	  pli[3] = j+3; // assume hgs <= 4
-          pli += hgs;
+	  pli[3] = j+3; // assume nbgs <= 4
+          pli += nbgs;
 	}
       }
     }
@@ -1061,8 +1052,8 @@ void ComputeNonbondedUtil :: NAME
     if ( pairlistindex ) {
        pairlist[pairlistindex] = pairlist[pairlistindex-1];
     } /* PAIR( else {  // skip empty loops if no pairs were found
-       int hgs = ( p_i.nonbondedGroupIsAtom ? 1 : p_i.hydrogenGroupSize );
-       i += hgs - 1;
+       int nbgs = p_i.nonbondedGroupSize;
+       i += nbgs - 1;
        continue;
     } ) */
   } // if i is hydrogen group parent
@@ -1073,7 +1064,7 @@ void ComputeNonbondedUtil :: NAME
     else pairlistoffset++;
     )
 
-    const int atomfixed = ( fixedAtomsOn && p_i.atomFixed );
+    const int atomfixed = ( fixedAtomsOn && pExt_i.atomFixed );
 
     register plint *pli = pairlist2;
 #if 1 ALCH(-1)
@@ -1087,12 +1078,12 @@ void ComputeNonbondedUtil :: NAME
 
     INT(
     if ( pairInteractionOn ) {
-      const int ifep_type = p_i.partition;
+      const int ifep_type = pExt_i.partition;
       if (pairInteractionSelf) {
         if (ifep_type != 1) continue;
         for (int k=pairlistoffset; k<pairlistindex; k++) {
           j = pairlist[k];
-          const int jfep_type = p_1[j].partition;
+          const int jfep_type = pExt_1[j].partition;
           // for pair-self, both atoms must be in group 1.
           if (jfep_type == 1) {
             *(pli++) = j;
@@ -1102,7 +1093,7 @@ void ComputeNonbondedUtil :: NAME
         if (ifep_type != 1 && ifep_type != 2) continue;
         for (int k=pairlistoffset; k<pairlistindex; k++) {
           j = pairlist[k];
-          const int jfep_type = p_1[j].partition;
+          const int jfep_type = pExt_1[j].partition;
           // for pair, must have one from each group.
           if (ifep_type + jfep_type == 3) {
             *(pli++) = j;
@@ -1122,7 +1113,7 @@ void ComputeNonbondedUtil :: NAME
         BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	if ( ( ! (atomfixed && p_1[j].atomFixed) ) && (r2 <= plcutoff2) ) {
+	if ( ( ! (atomfixed && pExt_1[j].atomFixed) ) && (r2 <= plcutoff2) ) {
           int atom2 = p_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
@@ -1142,7 +1133,7 @@ void ComputeNonbondedUtil :: NAME
         BigReal p_j_z = p_1[j].position.z;
 	t2 = p_i_z - p_j_z;
 	r2 += t2 * t2;
-	if ( (! p_1[j].atomFixed) && (r2 <= plcutoff2) ) {
+	if ( (! pExt_1[j].atomFixed) && (r2 <= plcutoff2) ) {
           int atom2 = p_1[j].id;
           if ( atom2 >= excl_min && atom2 <= excl_max ) *(pli++) = j;
           else *(plin++) = j;
@@ -1342,7 +1333,7 @@ void ComputeNonbondedUtil :: NAME
 ALCH(
     SELF(
     for (; pln < plin && *pln < j_hgroup; ++pln) {
-      switch (pswitchTable[4*p_i_partition]) { //p_i_partition + 3*p_1[i].partition
+      switch (pswitchTable[4*p_i_partition]) { //p_i_partition + 3*pExt_1[i].partition
       case 0: *(plix++) = *pln;  break;
       case 1: *(plixA1++) = *pln; break;
       case 2: *(plixA2++) = *pln; break;
@@ -1363,7 +1354,7 @@ ALCH(
       int j = pairlist2[k];
       int atom2 = p_1[j].id;
       int excl_flag = excl_flags[atom2];
-      ALCH(int pswitch = pswitchTable[p_i_partition + 3*(p_1[j].partition)];)
+      ALCH(int pswitch = pswitchTable[p_i_partition + 3*(pExt_1[j].partition)];)
       switch ( excl_flag ALCH( + 3 * pswitch)) {
       case 0:  *(plin++) = j;  break;
       case 1:  *(plix++) = j;  break;
@@ -1392,7 +1383,7 @@ ALCH(
     int unsortedNpairn = plin - pln;
     for ( k=0; k<unsortedNpairn; ++k ) {
       int j = pln[k];
-      switch(pswitchTable[p_i_partition + 3*(p_1[j].partition)]) {
+      switch(pswitchTable[p_i_partition + 3*(pExt_1[j].partition)]) {
         case 0:  *(plinA0++) = j; break;
         case 1:  *(plinA1++) = j; break;
         case 2:  *(plinA2++) = j; break;
@@ -1486,12 +1477,12 @@ ALCH(
   } // if ( savePairlists || ! usePairlists )
 
     LES( BigReal *lambda_table_i =
-			lambda_table + (lesFactor+1) * p_i.partition; )
+			lambda_table + (lesFactor+1) * pExt_i.partition; )
 
     INT(
     const BigReal force_sign = (
       ( pairInteractionOn && ! pairInteractionSelf ) ?
-        ( ( p_i.partition == 1 ) ? 1. : -1. ) : 0.
+        ( ( pExt_i.partition == 1 ) ? 1. : -1. ) : 0.
     );
       
     )
