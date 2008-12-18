@@ -103,8 +103,8 @@ public:
                            std::vector<_type_> (0, _def_value_),        \
                          Parse_Mode const parse_mode = parse_normal)
   
-    _get_keyval_vector_proto_ (int, 0);
-    _get_keyval_vector_proto_ (size_t, 0);
+    _get_keyval_vector_proto_ (int, (int)0);
+    _get_keyval_vector_proto_ (size_t, (size_t)0);
     _get_keyval_vector_proto_ (std::string, std::string (""));
     _get_keyval_vector_proto_ (colvarmodule::real, 0.0);
     _get_keyval_vector_proto_ (colvarmodule::rvector, colvarmodule::rvector());
