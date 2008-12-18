@@ -55,6 +55,8 @@ void read_binary_file(const char *fname, Vector *data, int n)
   FILE *fp;             //  File descriptor
   int needToFlip = 0;
 
+  iout << iINFO << "Reading from binary file " << fname << "\n" << endi;
+
   //  Open the file and die if the open fails
   if ( (fp = Fopen(fname, "rb")) == NULL)
   {

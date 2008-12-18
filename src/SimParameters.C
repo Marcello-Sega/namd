@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: sameer $
- * $Date: 2008/12/18 01:17:34 $
- * $Revision: 1.1267 $
+ * $Author: jim $
+ * $Date: 2008/12/18 22:19:43 $
+ * $Revision: 1.1268 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1543,10 +1543,15 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       strcat(cwd, PATHSEPSTR);
    }
 
+   // Don't try to specify coordinates with pluginIO
+   if ( usePluginIO && opts.defined("coordinates") ) {
+     NAMD_die("Separate coordinates file not allowed with plugin IO, coordinates will be taken from structure file.");
+   }
+
    // If it's not AMBER||GROMACS, then "coordinates", "structure"
    // and "parameters" must be specified.
    if (!amberOn && !gromacsOn)
-   { if (!opts.defined("coordinates"))
+   { if (!usePluginIO && !opts.defined("coordinates"))
        NAMD_die("coordinates not found in the configuration file!");
      if (!opts.defined("structure"))
        NAMD_die("structure not found in the configuration file!");
@@ -1559,7 +1564,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (opts.defined("coordinates") && opts.defined("ambercoor"))
      NAMD_die("Cannot specify both coordinates and ambercoor!");
    if (!opts.defined("coordinates") && !opts.defined("ambercoor")
-       && !opts.defined("grocoorfile"))
+       && !opts.defined("grocoorfile") && !usePluginIO)
      NAMD_die("Coordinate file not found!");
 
    //  Make sure that both a temperature and a velocity PDB were
@@ -3953,8 +3958,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    }
    else {
-     current = config->find("coordinates");
-     iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
+     if ( !usePluginIO ) {
+       current = config->find("coordinates");
+       iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
+     }
 
      current = config->find("structure");
 
