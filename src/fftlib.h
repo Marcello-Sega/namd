@@ -2,7 +2,10 @@
 #ifndef   __FFT_LIB_H__
 #define   __FFT_LIB_H__
 
+#if CHARM_VERSION > 60000
 #include <cmidirectmanytomany.h>
+#endif
+
 #define  MANY_TO_MANY_START  10
 #define  MANY_TO_MANY_SETUP  2
 
@@ -139,7 +142,7 @@ public:
     void recv_trans(const OptPmeFFTMsg *);
     void forward_fft();
     void send_trans();
-    void many_to_many_prepare_send();
+    void many_to_many_send(int phase);
     void recv_untrans(const OptPmeFFTMsg *);
     void many_to_many_recv_trans();
     void backward_fft();

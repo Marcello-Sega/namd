@@ -112,10 +112,10 @@ module PmeFFTLib {
 	else {
 	  when many_to_manyRecvTrans(OptPmeDummyMsg *msg) atomic { many_to_many_recv_trans();}
 	  atomic { forward_fft(); }
-          atomic { many_to_many_prepare_send(); CmiDirect_manytomany_start (handle, PHASE_XF); }	
+          atomic { many_to_many_send(PHASE_XF); } 
           when many_to_manyRecvUntrans(OptPmeDummyMsg *msg) atomic {many_to_many_recv_untrans();} 
 	  atomic { backward_fft(); }
-          atomic { many_to_many_prepare_send(); CmiDirect_manytomany_start (handle,PHASE_ZB);  }
+          atomic { many_to_many_send(PHASE_ZB); } 
         }
       }
     };

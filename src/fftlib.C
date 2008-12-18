@@ -1,6 +1,5 @@
 
 #include "fftlib.h"
-//#include "fftmanytomany.h"
 
 void call_ck_cb (void *arg) {
   CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
@@ -52,7 +51,10 @@ void OptPmeZPencil::fft_init() {
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
 
+  handle = NULL; 
+#if CHARM_VERSION > 60000
   handle = CmiDirect_manytomany_allocate_handle();
+#endif
 }
 
 void OptPmeYPencil::fft_init() {
@@ -100,7 +102,10 @@ void OptPmeYPencil::fft_init() {
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
 
+  handle = NULL; 
+#if CHARM_VERSION > 60000
   handle = CmiDirect_manytomany_allocate_handle();
+#endif
   initialize_manytomany();
 }
 
@@ -155,7 +160,10 @@ void OptPmeXPencil::fft_init() {
 		thisIndex.y*block2, thisIndex.y*block2 + ny,
 		thisIndex.z*block3, thisIndex.z*block3 + nz);
 
+  handle = NULL; 
+#if CHARM_VERSION > 60000
   handle = CmiDirect_manytomany_allocate_handle();
+#endif
   initialize_manytomany();
 
   constant_pressure = initdata.constant_pressure;
@@ -221,7 +229,7 @@ void OptPmeZPencil::recv_grid(const OptPmeGridMsg *msg) {
     m2m_recv_grid[imsg].patchID = msg->patchID;
     
     if ( imsg == grid_msgs.size() - 1) 
-      initialize_manytomany ();
+        initialize_manytomany ();
   }
 }
 
@@ -645,7 +653,9 @@ void OptPmeZPencil::many_to_many_send_trans() {
     }
   }
   
+#if CHARM_VERSION > 60000
   CmiDirect_manytomany_start (handle, PHASE_YF);
+#endif
 }
 
 void OptPmeYPencil::many_to_many_recv_trans () {  
@@ -667,7 +677,7 @@ void OptPmeYPencil::many_to_many_recv_trans () {
   }
 }
 
-void OptPmeYPencil::many_to_many_prepare_send() {
+void OptPmeYPencil::many_to_many_send(int phase) {
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
@@ -688,8 +698,11 @@ void OptPmeYPencil::many_to_many_prepare_send() {
       }
     }
   }
-}
 
+#if CHARM_VERSION > 60000
+  CmiDirect_manytomany_start (handle, phase);  
+#endif
+}
 
 void OptPmeXPencil::many_to_many_recv_trans () {
   
@@ -732,7 +745,9 @@ void OptPmeXPencil::many_to_many_send_untrans() {
       }
     }
   }
+#if CHARM_VERSION > 60000
   CmiDirect_manytomany_start (handle, PHASE_YB);
+#endif
 }
 
 void OptPmeYPencil::many_to_many_recv_untrans () {  
@@ -806,12 +821,15 @@ void OptPmeZPencil::many_to_many_send_ungrid () {
     } 
   }
   
+#if CHARM_VERSION > 60000
   CmiDirect_manytomany_start (handle, PHASE_UG);
+#endif
 }
 
 
 
 void  OptPmeZPencil::initialize_manytomany () {  
+#if CHARM_VERSION > 60000
   int idx = 0;
   int totalcount = 0;
   for (idx = 0; idx < grid_msgs.size(); idx ++) 
@@ -867,9 +885,11 @@ void  OptPmeZPencil::initialize_manytomany () {
     CmiDirect_manytomany_initialize_recv (handle, PHASE_ZB, kb, kb*nx*ny*block3*2*sizeof(float), nx*ny*nz*2*sizeof(float), pe);
     many_to_many_nb [kb] = nz;
   }
+#endif
 }
 
 void  OptPmeYPencil::initialize_manytomany () {
+#if CHARM_VERSION > 60000
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
@@ -916,9 +936,11 @@ void  OptPmeYPencil::initialize_manytomany () {
 
     many_to_many_nb [jb] = ny;
   }
+#endif
 }
 
 void  OptPmeXPencil::initialize_manytomany () {  
+#if CHARM_VERSION > 60000
   int xBlocks = initdata.xBlocks;
   int block1 = initdata.grid.block1;
   int K1 = initdata.grid.K1;
@@ -943,6 +965,7 @@ void  OptPmeXPencil::initialize_manytomany () {
     CmiDirect_manytomany_initialize_recv (handle, PHASE_XF, ib, ib*block1*ny*nz*2*sizeof(float), nx*ny*nz*2*sizeof(float), pe);
     many_to_many_nb [ib] = nx;
   }
+#endif
 }
 
 
@@ -951,5 +974,4 @@ void  OptPmeXPencil::initialize_manytomany () {
 ////////////////////////////////////////////////////////////////////////////
 
 
-//#include "fftmanytomany.C"
 #include "PmeFFTLib.def.h"

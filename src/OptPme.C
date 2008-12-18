@@ -230,7 +230,9 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
 
     _iter = 0;
 
+#if CHARM_VERSION > 60000
     handle = CmiDirect_manytomany_allocate_handle ();
+#endif
 
     SimParameters *simParams = Node::Object()->simParameters;
     PatchMap *patchMap = PatchMap::Object();
@@ -247,13 +249,26 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
       constant_pressure = false;      
 
     bool useManyToMany = simParams->useManyToMany;
-    if (patchMap->numPatches() + myGrid.xBlocks + myGrid.yBlocks + myGrid.zBlocks >
-	CkNumPes())
+    //Many-to-many requires that patches and pmepencils are all on different processors
+    int npes = patchMap->numPatches() + 
+               myGrid.xBlocks *  myGrid.yBlocks + 
+               myGrid.zBlocks *  myGrid.xBlocks +
+               myGrid.yBlocks *  myGrid.zBlocks;
+
+    if (npes >= CkNumPes()) {
+      if (CkMyPe() == 0)
+	printf ("Warning : Not enough processors for the many-to-many optimization \n");      
       useManyToMany = false;
+    }
     
-    if (useManyToMany)  
+#if CHARM_VERSION > 60000
+    if (useManyToMany)  {
+      if (CkMyPe() == 0)
+	printf ("Enabling the Many-to-many optimization\n");
       //defaults to max integer
       many_to_many_start = MANY_TO_MANY_START;
+    }
+#endif
 
     if ( CkMyPe() == 0) {
       iout << iINFO << "PME using " << myGrid.xBlocks << " x " <<
@@ -636,6 +651,7 @@ void OptPmeCompute::initializeOptPmeCompute () {
   //We dont need the sparse array anymore
   delete [] pencilActive;
 
+#if CHARM_VERSION > 60000
   /******************************* Initialize Many to Many ***********************************/
   OptPmeDummyMsg *m = new (PRIORITY_SIZE) OptPmeDummyMsg;
   CmiDirect_manytomany_initialize_recvbase (myMgr->handle, PHASE_UG, 
@@ -667,6 +683,7 @@ void OptPmeCompute::initializeOptPmeCompute () {
 					  srcnode, offset, fcount*sizeof(float), pe);
   }
   /********************************** End initialize many to many ****************************/
+#endif
 
 }
 
@@ -776,11 +793,13 @@ void OptPmeCompute::doWork()
     myMgr->xPencil.recvLattice (lattice);
   
   if (myMgr->_iter <= many_to_many_start)
-    sendPencils();
+      sendPencils();
+#if CHARM_VERSION > 60000
   else {
-    pme_d2f (sp_zstorage, zline_storage, nzlines * zlen);
-    CmiDirect_manytomany_start (myMgr->handle, PHASE_GR);
+      pme_d2f (sp_zstorage, zline_storage, nzlines * zlen);
+      CmiDirect_manytomany_start (myMgr->handle, PHASE_GR);
   }
+#endif
 }
 
 
