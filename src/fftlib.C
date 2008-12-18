@@ -1,6 +1,8 @@
 
 #include "fftlib.h"
 
+#include <assert.h>
+
 void call_ck_cb (void *arg) {
   CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
   cw->cb.send (cw->msg);

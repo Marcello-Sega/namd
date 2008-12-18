@@ -14,6 +14,8 @@
 #endif
 #endif
 
+#include <assert.h>
+
 #include "InfoStream.h"
 #include "Node.h"
 #include "PatchMap.h"
