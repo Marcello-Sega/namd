@@ -20,11 +20,11 @@
 #include "Debug.h"
 
 
-class Matrix4 {
+class Matrix4TMD {
   BigReal mat[16];                               ///< the matrix itself
 public:
-  Matrix4(void) { identity(); }
-  Matrix4(const BigReal *m)  { memcpy(mat, m, 16*sizeof(BigReal)); }
+  Matrix4TMD(void) { identity(); }
+  Matrix4TMD(const BigReal *m)  { memcpy(mat, m, 16*sizeof(BigReal)); }
   void multpoint(BigReal point[3]) const {
     BigReal tmp[3];
     BigReal itmp3 = 1.0f / (point[0]*mat[3] + point[1]*mat[7] +
@@ -55,7 +55,7 @@ public:
     for(i=0;i<16;i++) mat[i] = tmp[i];
   }
   /// premultiply the matrix by the given matrix, this->other * this
-  void multmatrix(const Matrix4 &m) {
+  void multmatrix(const Matrix4TMD &m) {
     BigReal tmp[4];
     for (int j=0; j<4; j++) {
       tmp[0] = mat[j];
@@ -69,7 +69,7 @@ public:
     } 
   }
   void translate(BigReal x, BigReal y, BigReal z) {
-    Matrix4 m;		
+    Matrix4TMD m;		
     m.mat[12] = x;
     m.mat[13] = y;
     m.mat[14] = z;
@@ -196,9 +196,9 @@ void GlobalMasterTMD::calculate() {
       pre[j] = ttt[12+j];
       ttt[12+j] = 0;
     }
-    Matrix4 result;
+    Matrix4TMD result;
     result.translate(pre);
-    result.multmatrix(Matrix4(ttt));
+    result.multmatrix(Matrix4TMD(ttt));
     result.translate(post);
   
     // compute forces on each atom
