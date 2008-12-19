@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: dhardy $
- * $Date: 2008/10/01 21:33:04 $
- * $Revision: 1.1228 $
+ * $Author: jim $
+ * $Date: 2008/12/19 20:35:11 $
+ * $Revision: 1.1229 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -865,7 +865,7 @@ void Controller::tcoupleVelocities(int step)
 static char *FORMAT(BigReal X)
 {
   static char tmp_string[25];
-  const double maxnum = 99999999.9999;
+  const double maxnum = 9999999999.9999;
   if ( X > maxnum ) X = maxnum;
   if ( X < -maxnum ) X = -maxnum;
   sprintf(tmp_string," %14.4f",X); 
