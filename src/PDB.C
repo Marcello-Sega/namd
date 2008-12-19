@@ -80,6 +80,9 @@ PDB::PDB(const char *pdbfilename, int expectedNumAtoms){
 #endif
 
 PDB::PDB(molfile_plugin_t *pIOHdl, void *pIOFileHdl, int numAtoms, const float *occupancy, const float *bfactor){
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Sorry, plugin IO is not supported in the memory optimized version.");
+#else
   molfile_timestep_t ts;
   float *atomcoords;
   memset(&ts, 0, sizeof(molfile_timestep_t));
@@ -129,6 +132,7 @@ PDB::PDB(molfile_plugin_t *pIOHdl, void *pIOFileHdl, int numAtoms, const float *
           thisAtom->temperaturefactor((BigReal)bfactor[i]);       
       }
   }
+#endif
 }
 
 

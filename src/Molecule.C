@@ -359,6 +359,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
 /************************************************************************/
 Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t *pIOHdl, void *pIOFileHdl, int natoms)
 {
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Sorry, plugin IO is not supported in the memory optimized version.");
+#endif
     initialize(simParams, param);
     numAtoms = natoms;
     int optflags = MOLFILE_BADOPTIONS;
@@ -2424,6 +2427,7 @@ void Molecule::read_exclusions(FILE *fd)
 
 
 void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
+#ifndef MEM_OPT_VERSION
     atoms = new Atom[numAtoms];
     atomNames = new AtomNameInfo[numAtoms];
     hydrogenGroup.resize(0);
@@ -2463,9 +2467,11 @@ void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
         //Lookk up the vdw constants for this atom
         params->assign_vdw_index(atomNames[i].atomtype, &atoms[i]);
     }
+#endif
 }
 
 void Molecule::plgLoadBonds(int *from, int *to){
+#ifndef MEM_OPT_VERSION
     bonds = new Bond[numBonds];
     char atom1name[11];
     char atom2name[11];
@@ -2509,10 +2515,12 @@ void Molecule::plgLoadBonds(int *from, int *to){
         iout << iWARN << "Will get H-H distance in rigid H20 from H-O-H angle.\n" <<endi;
     }
     numBonds = realNumBonds;
+#endif
 }
 
 void Molecule::plgLoadAngles(int *plgAngles)
 {    
+#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2550,10 +2558,12 @@ void Molecule::plgLoadAngles(int *plgAngles)
             " angles with zero force constants.\n" << endi; 
     }
     numAngles = numRealAngles;
+#endif
 }
 
 void Molecule::plgLoadDihedrals(int *plgDihedrals)
 {
+#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2600,10 +2610,12 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
     }
 
     numDihedrals = numRealDihedrals;
+#endif
 }
 
 void Molecule::plgLoadImpropers(int *plgImpropers)
 {
+#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2650,10 +2662,12 @@ void Molecule::plgLoadImpropers(int *plgImpropers)
     }
 
     numImpropers = numRealImpropers;
+#endif
 }
 
 void Molecule::plgLoadCrossterms(int *plgCterms)
 {
+#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2710,6 +2724,7 @@ void Molecule::plgLoadCrossterms(int *plgCterms)
     }
 
     numCrossterms = numRealCrossterms;
+#endif
 }
 
 
