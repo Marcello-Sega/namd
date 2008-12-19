@@ -1,7 +1,7 @@
 NAMD_ARCH = MacOSX-i686
 CHARMARCH = net-darwin-x86
 
-CXX = g++ -D_NO_MALLOC_H
+CXX = g++ -D_NO_MALLOC_H -DMISSING_mm_cvtsd_f64
 FLOATOPTS = -O3 -fomit-frame-pointer -march=pentium-m -msse3 -ffast-math
 CXXOPTS = $(FLOATOPTS)
 CC = gcc
