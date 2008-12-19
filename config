@@ -13,6 +13,7 @@ syntax:
   echo '  --with-fftw (default)  --without-fftw'
   echo '  --cuda-prefix <directory containing bin, lib, and include>'
   echo '  --without-cuda (default)  --with-cuda'
+  echo '  --without-memopt (default)  --with-memopt'
   echo '  --charm-base <Charm++ base build directory containing src>'
   echo '  --charm-arch <subdirectory of Charm++ base build directory>'
   echo '  --charm-opts <options to pass to charmc (quote list)>'
@@ -81,6 +82,7 @@ begin:
   set use_tcl = 1
   set use_fftw = 1
   set use_cuda = 0
+  set use_memopt = 0
 
   if ($#argv < 1) then
     set PRINT_ARCH_LIST
@@ -113,6 +115,12 @@ begin:
   if ($#argv < 1) goto syntax
   if ( $1 == cuda ) then
     set use_cuda = 1
+    shift
+  endif
+
+  if ($#argv < 1) goto syntax
+  if ( $1 == memopt ) then
+    set use_memopt = 1
     shift
   endif
 
@@ -203,6 +211,10 @@ begin:
           goto syntax
         endif
         set CUDA_PREFIX=$1
+      breaksw
+
+      case --with-memopt:
+        set use_memopt = 1
       breaksw
 
       case --charm-base:
@@ -346,6 +358,8 @@ begin:
    if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
    if ( $use_cuda ) echo 'include .rootdir/arch/$(NAMD_ARCH).cuda' >> Make.config
   endif
+
+  if ( $use_memopt ) echo 'MEMOPT=-DMEM_OPT_VERSION' >> Make.config
 
   if ( $use_tcl ) then
     if ( $?TCL_PREFIX ) then
