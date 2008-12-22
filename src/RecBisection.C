@@ -786,7 +786,7 @@ void RecBisection::assignPatchesToProcGrid(int *dest_arr, int X, int Y, int Z,
 	coord[1] = p.origin.y + rand() % ydiff;
 	coord[2] = p.origin.z + rand() % zdiff;
 	
-	int pe = tmgr.coordinatesToRank(coord[dm.x], coord[dm.y], coord[dm.z]);
+	int pe = tmgr.coordinatesToRank(coord[dm.x], coord[dm.y], coord[dm.z], 0);
 	patchMap->assignNode(pix, pe);  
 	dest_arr[pix] = pe;  
     }
