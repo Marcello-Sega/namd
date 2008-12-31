@@ -14,7 +14,9 @@
 
 #if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 #include <emmintrin.h>  // We're using SSE2 intrinsics
-#if defined(__GNUC__) && ! defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER)
+#define __align(X) __declspec(align(X) )
+#elif defined(__GNUC__) || defined(__PGI)
 #define __align(X)  __attribute__((aligned(X) ))
 #else
 #define __align(X) __declspec(align(X) )

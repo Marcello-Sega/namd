@@ -12,7 +12,12 @@
 
 #if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
 #include <emmintrin.h>  // SSE2
-#if defined(__GNUC__) && ! defined(__INTEL_COMPILER)
+#if defined(__INTEL_COMPILER)
+#define __align(X) __declspec(align(X) )
+#elif defined(__PGI)
+#define __align(X)  __attribute__((aligned(X) ))
+#define MISSING_mm_cvtsd_f64
+#elif defined(__GNUC__)
 #define __align(X)  __attribute__((aligned(X) ))
 #if (__GNUC__ < 4)
 #define MISSING_mm_cvtsd_f64
