@@ -1,0 +1,11 @@
+NAMD_ARCH = Linux-amd64
+CHARMARCH = mpi-linux-x86_64
+
+CXX = CC
+CXXOPTS = -O
+#CXXOPTS = -fastsse
+#CXXNOALIASOPTS = -fast -Mnodepchk -Msafeptr=arg,global,local,static -Minfo=all -Mneginfo=loop
+
+CC = cc
+COPTS = -fast
+
