@@ -109,7 +109,7 @@ int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration)
       memcpy(tmp, clist, cnum*sizeof(_clist));
       delete [] clist;
       clist = tmp;
-      CmiPrintf("[%d] Info:: Sync buffer overflow and expanded!\n", CkMyPe());
+      //CmiPrintf("[%d] Info:: Sync buffer overflow and expanded!\n", CkMyPe());
     }
   }
 
