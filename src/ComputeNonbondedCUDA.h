@@ -25,6 +25,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     Box<Patch,CompAtom> *positionBox;
     Box<Patch,Results> *forceBox;
     CompAtom *x;
+    CompAtomExt *xExt;
     Results *r;
     Force *f;
 
