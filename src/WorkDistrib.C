@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2008/12/18 17:27:39 $
- * $Revision: 1.1191 $
+ * $Date: 2009/01/30 23:27:14 $
+ * $Revision: 1.1192 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1262,6 +1262,7 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
     assignedNode[i] += unusedNodes;
   }
   sortNodesAndAssign(assignedNode);
+  delete [] assignedNode; 
 }
 
 //----------------------------------------------------------------------
