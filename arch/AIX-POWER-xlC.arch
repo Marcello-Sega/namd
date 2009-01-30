@@ -1,10 +1,11 @@
 NAMD_ARCH = AIX-POWER
-CHARMARCH = net-rs6k
+CHARMARCH = net-rs6k-xlc
 
 # need to define MEMUSAGE_USE_SBRK because mallinfo appears to cause crashes
 CXX = xlC_r -w -qstaticinline -DMEMUSAGE_USE_SBRK
-CXXOPTS = -O3 -qstrict -qaggrcopy=nooverlap -qalias=ansi -Q -qarch=auto -qtune=auto -qfloat=rsqrt:fltint -bmaxdata:0x80000000 -DARCH_POWERPC
-CXXNOALIASOPTS = -O3 -qaggrcopy=nooverlap -qalias=noallptrs -Q -qarch=auto -qtune=auto -qfloat=rsqrt:fltint -bmaxdata:0x80000000 -DARCH_POWERPC
+CXXOPTS = -O -qstrict -qaggrcopy=nooverlap -qalias=ansi -qarch=auto -qtune=auto -qfloat=rsqrt:fltint -bmaxdata:0x80000000 -DARCH_POWERPC
+CXXNOALIASOPTS = -O3 -qaggrcopy=nooverlap -qalias=noallptrs -qarch=auto -qtune=auto -qfloat=rsqrt:fltint -bmaxdata:0x80000000 -DARCH_POWERPC
+CXXTHREADOPTS = -O -qstrict -qaggrcopy=nooverlap -qalias=ansi -qarch=auto -qtune=auto -qfloat=rsqrt:fltint -bmaxdata:0x80000000 -DARCH_POWERPC
 CC = xlc_r -w
 COPTS = -O4 -qinlglue -qarch=auto -qtune=auto -bmaxdata:0x80000000
 
