@@ -304,7 +304,7 @@ begin:
   ln -s $ROOTDIR .rootdir
 
   echo "Writing build options to $BUILD_LINK/Make.config"
-  if ( $ARCH =~ *Win* ) then
+  if ( $ARCH =~ XXXWin* ) then
    cat .rootdir/Make.charm >! Make.config
    cat .rootdir/arch/$ARCH.arch >> Make.config
   else
@@ -342,12 +342,12 @@ begin:
   endif
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
 
-  if ( $ARCH =~ *Win32* ) then
+  if ( $ARCH =~ XXXWin32* ) then
    cat .rootdir/arch/Win32.base >> Make.config
    if ( $use_tcl ) cat .rootdir/arch/Win32.tcl >> Make.config
    if ( $use_fftw ) cat .rootdir/arch/Win32.fftw >> Make.config
    if ( $use_cuda ) cat .rootdir/arch/Win32.cuda >> Make.config
-  else if ( $ARCH =~ *Win64* ) then
+  else if ( $ARCH =~ XXXWin64* ) then
    cat .rootdir/arch/Win64.base >> Make.config
    if ( $use_tcl ) cat .rootdir/arch/Win64.tcl >> Make.config
    if ( $use_fftw ) cat .rootdir/arch/Win64.fftw >> Make.config
@@ -425,7 +425,7 @@ begin:
   endif
 
   echo "Linking Makefiles"
-  if ( $ARCH =~ *Win* ) then
+  if ( $ARCH =~ XXXWin* ) then
    cp .rootdir/Makefile ./Makefile
    cp .rootdir/Make.depends ./Make.depends
   else
@@ -441,12 +441,13 @@ begin:
      end
    end
   endif
-  echo "Linking src, plugins, and psfgen"
   if ( $ARCH =~ *MSVC* ) then
+    echo "Copying src, plugins, and psfgen"
     cp -r .rootdir/src ./src
     cp -r .rootdir/plugins ./plugins
     cp -r .rootdir/psfgen ./sb
   else
+    echo "Linking src, plugins, and psfgen"
     ln -s .rootdir/src ./src
     ln -s .rootdir/plugins ./plugins
     ln -s .rootdir/psfgen ./sb

@@ -1,10 +1,9 @@
 
-TCLDIR = C:/cygwin$(HOME)/tcl
-TCLINCL = /I$(TCLDIR)/include
-TCLLIB = -L$(TCLDIR)/lib -ltcl83
-TCLWINLIB = $(TCLDIR)/lib/tcl83.lib
-TCLDLL = tcl83.dll
-TCLFLAGS = /DNAMD_TCL
+TCLDIR = $(HOME)/tcl-win32
+TCLINCL = -I$(TCLDIR)/include
+TCLLIB = -L$(TCLDIR)/lib -ltcl85
+TCLDLL = tcl85.dll
+TCLFLAGS = -DNAMD_TCL
 TCL = $(TCLINCL) $(TCLFLAGS)
 
 $(TCLSENTINEL)$(TCLDLL):

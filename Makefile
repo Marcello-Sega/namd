@@ -1,8 +1,6 @@
 # pass version/platform information to compile
 NAMD_VERSION = 2.6
 
-default: all
-
 # compiler flags (Win32 overrides)
 COPTI = -I
 COPTC = -c
@@ -10,6 +8,9 @@ COPTD = -D
 COPTO = -o $(SPACE)
 
 include Make.config
+
+# define below Make.config so Win32 can change default target to winall
+default: all
 
 # pass version/platform information to compile
 RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\" $(SCYLDFLAGS)
@@ -303,14 +304,14 @@ CHARMLIB = $(CHARM)/lib
 LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
 CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
 CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
 CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
 CXXNOALIASFLAGS = $(CXXBASEFLAGS) $(CXXNOALIASOPTS)
 GXXFLAGS = $(CXXBASEFLAGS) -DNO_STRSTREAM_H
 CFLAGS = $(COPTI)$(SRCDIR) $(TCL) $(COPTS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
-PLUGINGCCFLAGS = $(COPTI)$(PLUGINSRCDIR) $(COPTI)$(PLUGININCDIR)
+PLUGINGCCFLAGS = $(COPTI)$(PLUGINSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN
 PLUGINCFLAGS = $(PLUGINGCCFLAGS) $(COPTS)
 SBCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(COPTS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
 SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(TCL) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
@@ -353,7 +354,7 @@ charmrun: $(CHARM)/bin/charmrun # XXX
 
 windowsbinaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 
-namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose \
 	-module NeighborLB -module commlib -language charm++ \
@@ -381,8 +382,8 @@ charmrun.exe:
 psfgen:	$(DSTDIR) $(SBOBJS)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
-psfgen.exe:	$(DSTDIR) $(SBOBJS)
-	$(LINK) $(LINKOPTS) /out:psfgen.exe $(SBOBJS) $(TCLWINLIB) $(TCLAPPLIB)
+psfgen.exe:	$(DSTDIR) $(SBOBJS) $(TCLDLL)
+	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) $(CFLAGS) -o $@ $(SRCDIR)/flipdcd.c || \

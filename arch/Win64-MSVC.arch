@@ -1,18 +1,12 @@
 NAMD_ARCH = Win64
 CHARMARCH = net-win64
 
-CXX = cl /nologo /MT /TP /DWIN32 /DWIN64 /DNAMD_SOCKLEN_T=int /D_CONSOLE /Zp4 /D_CRT_SECURE_NO_DEPRECATE
-CC = cl /nologo /MT /DWIN32 /DWIN64 /D_CONSOLE /D_CRT_SECURE_NO_DEPRECATE
+CXX = unix2nt_cc -DWIN32 -DWIN64 -DNAMD_SOCKLEN_T=int -D_NO_ALLOCA_H -D_CONSOLE -D_CRT_SECURE_NO_WARNINGS
+CC = $(CXX)
 
-LINK = link /nologo /subsystem:console /incremental:no \
-  kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib \
-  advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib \
-  odbccp32.lib ws2_32.lib
-
-CXXOPTS = /O2 /G6
-CXXTHREADOPTS = /G6
-COPTS = /O2 /G6
-LINKOPTS = /OPT:REF
+CXXOPTS = -O
+CXXTHREADOPTS = 
+COPTS = -O
 
 winall: windowsbinaries
 

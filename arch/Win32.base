@@ -4,10 +4,10 @@
 
 #MOVE = move
 #COPY = copy
-COPTI = /I
-COPTC = /c
-COPTD = /D
-COPTO = /Fo
+#COPTI = /I
+#COPTC = /c
+#COPTD = /D
+#COPTO = /Fo
 
 DPMTAINCL=
 DPMTALIB=
