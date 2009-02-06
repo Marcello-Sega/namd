@@ -9,6 +9,7 @@
 #ifndef MGRIDFORCEPARAMS_H
 #define MGRIDFORCEPARAMS_H
 
+#include "strlib.h"
 #include "common.h"
 #include "Vector.h"
 #include "InfoStream.h"

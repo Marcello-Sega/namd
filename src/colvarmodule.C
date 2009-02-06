@@ -5,7 +5,12 @@
 #include "colvarbias.h"
 #include "colvarbias_meta.h"
 #include "colvarbias_abf.h"
+#ifndef _NO_ALLOCA_H
 #include <alloca.h>
+#endif
+#ifndef _NO_MALLOC_H
+#include <malloc.h>
+#endif
 
 
 colvarmodule::colvarmodule (char const  *config_filename,

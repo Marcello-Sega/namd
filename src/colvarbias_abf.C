@@ -2,7 +2,7 @@
  * Implementation of the ABF and histogram biases                               *
  ********************************************************************************/
 
-#include <glob.h>
+// #include <glob.h>
 
 #include "colvarmodule.h"
 #include "colvar.h"

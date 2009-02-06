@@ -21,7 +21,7 @@ public:
     //GridforceGrid(GridforceGrid g);
     ~GridforceGrid();
     
-    struct __box
+    struct _box
     {
 	Vector loc;	// Position within grid
 	float b[64];	// b[0 .. 7] = V (eight corners)
@@ -34,7 +34,7 @@ public:
 			// b[56..63] = d3V/dxdydz
 	Tensor scale;
     };
-    typedef struct __box Box;
+    typedef struct _box Box;
     
     void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
     int get_box(Box *box, Vector pos) const;

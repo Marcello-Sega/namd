@@ -29,7 +29,7 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
   int i, j, k, l;
   int stride;
   int K1, K2, K3, dim2, dim3;
-  int32_t  K3_1;
+  int32  K3_1;
   double *Mi, *dMi;
   Mi = M; dMi = dM;
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2; dim3=myGrid.dim3;
@@ -39,7 +39,7 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
 
   for (i=0; i<N; i++) {
     double q;
-    int32_t u1, u2, u2i, u3i;
+    int32 u1, u2, u2i, u3i;
     double fr1 = p[i].x;
     double fr2 = p[i].y;
     double fr3 = p[i].z;
@@ -83,7 +83,7 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
     u3i += 1;
     for (j=0; j<order; j++) {
       double m1;
-      int32_t ind1;
+      int32 ind1;
       m1 = Mi[j]*q;
       u1++;
       //ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2;
@@ -91,7 +91,7 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
       u2 = u2i;
       for (k=0; k<order; k++) {
         double m1m2;
-	int32_t ind2;
+	int32 ind2;
         m1m2 = m1*Mi[order+k];
 	u2++;
 
@@ -106,9 +106,9 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
 	//	assert (qline != NULL);
         for (l=0; l<order; l++) {
 	  double m3;
-	  int32_t ind;
+	  int32 ind;
 	  m3 = Mi[2*order + l];
-	  int32_t u3 = u3i + l;
+	  int32 u3 = u3i + l;
           ind = u3 - zstart;
 	  //if (ind >= K3) ind -= K3;
 	  ind = ind - ((unsigned)(K3_1 - ind) >>31)*K3;
@@ -134,7 +134,7 @@ void OptPmeRealSpace::compute_forces(const double * const *q_arr,
   double f1, f2, f3;
   double *Mi, *dMi;
   int K1, K2, K3, dim2;
-  int32_t K3_1;
+  int32 K3_1;
 
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2;
   K3_1 = K3 - 1;
@@ -144,7 +144,7 @@ void OptPmeRealSpace::compute_forces(const double * const *q_arr,
  
   for (i=0; i<N; i++) {
     double q;
-    int32_t u1, u2, u2i, u3i;
+    int32 u1, u2, u2i, u3i;
     q = p[i].cg;
     f1=f2=f3=0.0;
     u1 = (int)(p[i].x);
@@ -156,7 +156,7 @@ void OptPmeRealSpace::compute_forces(const double * const *q_arr,
     u3i += 1;
     for (j=0; j<order; j++) {
       double m1, d1;
-      int32_t ind1;
+      int32 ind1;
       m1=Mi[j]*q;
       d1=K1*dMi[j]*q;
       u1++;
@@ -165,7 +165,7 @@ void OptPmeRealSpace::compute_forces(const double * const *q_arr,
       u2 = u2i;
       for (k=0; k<order; k++) {
         double m2, d2, m1m2, m1d2, d1m2;
-	int32_t ind2;
+	int32 ind2;
         m2=Mi[order+k];
 	d2=K2*dMi[order+k];
 	m1m2=m1*m2;
@@ -177,10 +177,10 @@ void OptPmeRealSpace::compute_forces(const double * const *q_arr,
 	const double *qline = q_arr[ind2];
         for (l=0; l<order; l++) {
 	  double term, m3, d3;
-	  int32_t ind;
+	  int32 ind;
 	  m3=Mi[2*order+l];
 	  d3=K3*dMi[2*order+l];
-	  int32_t u3 = u3i + l;
+	  int32 u3 = u3i + l;
 	  ind = u3 - zstart;	  
 	  //if (ind >= K3) ind -= K3;
 	  ind = ind - ((unsigned)(K3_1 -ind) >>31)*K3;

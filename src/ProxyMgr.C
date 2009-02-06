@@ -17,7 +17,13 @@
 #include "ProcessorPrivate.h"
 #include "packmsg.h"
 #include "Priorities.h"
+#ifndef _NO_ALLOCA_H
 #include <alloca.h>
+#endif
+#ifndef _NO_MALLOC_H
+#include <malloc.h>
+#endif
+
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
