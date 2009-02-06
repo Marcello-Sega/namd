@@ -6,17 +6,36 @@
 extern "C" {
 #endif
 
-#define DECLARE_PLUGIN(PLUGIN) \
-  extern int molfile_ ## PLUGIN ## _init(void); \
-  extern int molfile_ ## PLUGIN ## _register(void *, vmdplugin_register_cb); \
-  extern int molfile_ ## PLUGIN ## _fini(void);
+extern int molfile_dcdplugin_init(void);
+extern int molfile_dcdplugin_register(void *, vmdplugin_register_cb);
+extern int molfile_dcdplugin_fini(void);
+extern int molfile_jsplugin_init(void);
+extern int molfile_jsplugin_register(void *, vmdplugin_register_cb);
+extern int molfile_jsplugin_fini(void);
+extern int molfile_pdbplugin_init(void);
+extern int molfile_pdbplugin_register(void *, vmdplugin_register_cb);
+extern int molfile_pdbplugin_fini(void);
+extern int molfile_psfplugin_init(void);
+extern int molfile_psfplugin_register(void *, vmdplugin_register_cb);
+extern int molfile_psfplugin_fini(void);
 
-DECLARE_PLUGIN(dcdplugin)
-DECLARE_PLUGIN(jsplugin)
-DECLARE_PLUGIN(pdbplugin)
-DECLARE_PLUGIN(psfplugin)
+#define MOLFILE_INIT_ALL \
+    molfile_dcdplugin_init(); \
+    molfile_jsplugin_init(); \
+    molfile_pdbplugin_init(); \
+    molfile_psfplugin_init(); \
 
-#undef DECLARE_PLUGIN
+#define MOLFILE_REGISTER_ALL(v, cb) \
+    molfile_dcdplugin_register(v, cb); \
+    molfile_jsplugin_register(v, cb); \
+    molfile_pdbplugin_register(v, cb); \
+    molfile_psfplugin_register(v, cb); \
+
+#define MOLFILE_FINI_ALL \
+    molfile_dcdplugin_fini(); \
+    molfile_jsplugin_fini(); \
+    molfile_pdbplugin_fini(); \
+    molfile_psfplugin_fini(); \
 
 #ifdef __cplusplus
 }

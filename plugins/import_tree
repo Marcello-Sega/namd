@@ -30,3 +30,7 @@ foreach file ( dcdplugin.c pdbplugin.c psfplugin.c jsplugin.c \
   \cp -f $f $dest/$dir
 end
 
+set header=include/libmolfile_plugin.h
+/bin/rm $header
+$base/create_static_header.sh MOLFILE molfile $header dcdplugin jsplugin pdbplugin psfplugin
+
