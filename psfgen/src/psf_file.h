@@ -5,12 +5,7 @@
 #include <stdio.h>
 
 int psf_start_atoms(FILE *);
-int psf_start_bonds(FILE *);
-int psf_start_angles(FILE *);
-int psf_start_dihedrals(FILE *);
-int psf_start_impropers(FILE *);
-int psf_start_cmaps(FILE *);
-
+int psf_start_block(FILE *, const char *blockstr);
 int psf_get_atom(FILE *f, char *name, char *atype, char *resname,
                  char *segname, char *resid, double *q, double *m);
 int psf_get_bonds(FILE *f, int n, int *bonds);

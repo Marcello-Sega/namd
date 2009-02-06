@@ -5,11 +5,31 @@
 
 #define PSF_RECORD_LENGTH 	160
 
+/*
+ * Read in the beginning of the bond/angle/dihed/etc information,
+ * but don't read in the data itself.  Returns the number of the record type
+ * for the molecule.  If error, returns (-1).
+ */
+int psf_start_block(FILE *file, const char *blockname) {
+  char inbuf[PSF_RECORD_LENGTH+2];
+  int nrec = -1;
+
+  /* keep reading the next line until a line with blockname appears */
+  do {
+    if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
+      /* EOF encountered with no blockname line found ==> error, return (-1) */
+      return (-1);
+    }
+    if(strlen(inbuf) > 0 && strstr(inbuf, blockname))
+      nrec = atoi(inbuf);
+  } while (nrec == -1);
+
+  return nrec;
+}
+
+
 /* return # of atoms, or negative if error */
-
-
 int psf_start_atoms(FILE *file) {
- 
   char inbuf[PSF_RECORD_LENGTH+2];
   int natom = 0;
   
@@ -31,8 +51,9 @@ int psf_start_atoms(FILE *file) {
   return natom;
 }
 
+
 int psf_get_atom(FILE *f, char *name, char *atype, char *resname,
-   char *segname, char *resid, double *q, double *m) {
+                 char *segname, char *resid, double *q, double *m) {
 
   char inbuf[PSF_RECORD_LENGTH+2];
   int i,num, read_count;
@@ -54,26 +75,8 @@ int psf_get_atom(FILE *f, char *name, char *atype, char *resname,
   return num;
 }
  
-int psf_start_bonds(FILE *file) {
-
-  char inbuf[PSF_RECORD_LENGTH+2];
-  int nbond = -1;
-
-  /* keep reading the next line until a line with NBOND appears */
-  do {
-    if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
-      /* EOF encountered with no NBOND line found ==> error, return (-1) */
-      return (-1);
-    }
-    if(strlen(inbuf) > 0 && strstr(inbuf,"NBOND"))
-      nbond = atoi(inbuf);
-  } while (nbond == -1);
-
-  return nbond;
-}
 
 int psf_get_bonds(FILE *f, int n, int *bonds) {
-
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
   int i=0;
@@ -98,26 +101,8 @@ int psf_get_bonds(FILE *f, int n, int *bonds) {
   return (i != n);
 }
 
-int psf_start_angles(FILE *file) {
-
-  char inbuf[PSF_RECORD_LENGTH+2];
-  int nbond = -1;
-
-  /* keep reading the next line until a line with NBOND appears */
-  do {
-    if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
-      /* EOF encountered with no NBOND line found ==> error, return (-1) */
-      return (-1);
-    }
-    if(strlen(inbuf) > 0 && strstr(inbuf,"NTHETA"))
-      nbond = atoi(inbuf);
-  } while (nbond == -1);
-
-  return nbond;
-}
 
 int psf_get_angles(FILE *f, int n, int *angles) {
-
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
   int i=0;
@@ -145,27 +130,8 @@ int psf_get_angles(FILE *f, int n, int *angles) {
   return (i != n);
 }
 
-int psf_start_dihedrals(FILE *file) {
 
-  char inbuf[PSF_RECORD_LENGTH+2];
-  int nbond = -1;
-
-  /* keep reading the next line until a line with NBOND appears */
-  do {
-    if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
-      /* EOF encountered with no NBOND line found ==> error, return (-1) */
-      return (-1);
-    }
-    if(strlen(inbuf) > 0 && strstr(inbuf,"NPHI"))
-      nbond = atoi(inbuf);
-  } while (nbond == -1);
-
-  return nbond;
-}
-
-    
 int psf_get_dihedrals(FILE *f, int n, int *dihedrals) {
-
   char inbuf[PSF_RECORD_LENGTH+2];
   char *bondptr = NULL;
   int i=0;
@@ -196,48 +162,14 @@ int psf_get_dihedrals(FILE *f, int n, int *dihedrals) {
   return (i != n);
 }
 
-int psf_start_impropers(FILE *file) {
 
-  char inbuf[PSF_RECORD_LENGTH+2];
-  int nbond = -1;
-
-  /* keep reading the next line until a line with NBOND appears */
-  do {
-    if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
-      /* EOF encountered with no NBOND line found ==> error, return (-1) */
-      return (-1);
-    }
-    if(strlen(inbuf) > 0 && strstr(inbuf,"NIMPHI"))
-      nbond = atoi(inbuf);
-  } while (nbond == -1);
-
-  return nbond;
-}
-    
 int psf_get_impropers(FILE *f, int n, int *impropers) {
   
   /* Same format */
   return psf_get_dihedrals(f, n, impropers);
 }
 
-int psf_start_cmaps(FILE *file) {
 
-  char inbuf[PSF_RECORD_LENGTH+2];
-  int nbond = -1;
-
-  /* keep reading the next line until a line with NBOND appears */
-  do {
-    if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
-      /* EOF encountered with no NBOND line found ==> error, return (-1) */
-      return (-1);
-    }
-    if(strlen(inbuf) > 0 && strstr(inbuf,"NCRTERM"))
-      nbond = atoi(inbuf);
-  } while (nbond == -1);
-
-  return nbond;
-}
-    
 int psf_get_cmaps(FILE *f, int n, int *cmaps) {
   
   /* Same format */

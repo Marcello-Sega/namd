@@ -319,7 +319,6 @@ static int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
   atomtmp->charge = atomdef->charge;
   strcpy(atomtmp->type,atomdef->type);
   strcpy(atomtmp->element,"");
-  atomtmp->typeid = 0;
   atomtmp->mass = 0;
   idef = hasharray_index(mol->defs->type_hash,atomtmp->type);
   if ( idef == HASHARRAY_FAIL ) {
@@ -328,7 +327,6 @@ static int topo_mol_add_atom(topo_mol *mol, topo_mol_atom_t **atoms,
     return -3;
   } else {
     atype = &(mol->defs->type_array[idef]);
-    atomtmp->typeid = atype->id;
     strcpy(atomtmp->element,atype->element);
     atomtmp->mass = atype->mass;
   }
@@ -1198,9 +1196,7 @@ int topo_mol_end(topo_mol *mol) {
             &(seg->residue_array[ires2]), confdef->atom2,
             &(seg->residue_array[ires3]), confdef->atom3,
             &(seg->residue_array[ires4]), confdef->atom4, confdef)) {
-        sprintf(errmsg,"Warning: Missing atoms for conformation definition: %s-%s-%s-%s", 
-            confdef->atom1, confdef->atom2, confdef->atom3, confdef->atom4);
-        topo_mol_log_error(mol, errmsg);
+        fprintf(stderr, "Missing atoms for conformation definition\n");
       }
     }
   }

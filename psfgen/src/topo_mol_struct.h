@@ -72,7 +72,6 @@ typedef struct topo_mol_atom_t {
   double x,y,z;
   int xyz_state;
   int partition;
-  int typeid;
   int atomid;
 } topo_mol_atom_t;
 

@@ -138,7 +138,7 @@ static int extract_bonds(FILE *file, topo_mol *mol, int natoms,
   int i, nbonds;
 
   /* Build bonds */
-  nbonds = psf_start_bonds(file);
+  nbonds = psf_start_block(file, "NBOND");
   if (nbonds < 0) {
     return -1; 
   }
@@ -185,7 +185,7 @@ static int extract_angles(FILE *file, topo_mol *mol, int natoms,
   int i, nangles;
   int *angles;
   
-  nangles = psf_start_angles(file);
+  nangles = psf_start_block(file, "NTHETA");
   if (nangles < 0) return -1; 
   angles = (int *)malloc(3*nangles*sizeof(int));
 
@@ -225,7 +225,7 @@ static int extract_dihedrals(FILE *file, topo_mol *mol, int natoms,
   int i, ndihedrals;
   int *dihedrals;
 
-  ndihedrals = psf_start_dihedrals(file);
+  ndihedrals = psf_start_block(file, "NPHI");
   if (ndihedrals < 0) return -1; 
   dihedrals = (int *)malloc(4*ndihedrals*sizeof(int));
 
@@ -269,7 +269,7 @@ static int extract_impropers(FILE *file, topo_mol *mol, int natoms,
   int i, nimpropers;
   int *impropers;
   
-  nimpropers = psf_start_impropers(file);
+  nimpropers = psf_start_block(file, "NIMPHI");
   if (nimpropers < 0) return -1; 
   impropers = (int *)malloc(4*nimpropers*sizeof(int));
 
@@ -313,7 +313,7 @@ static int extract_cmaps(FILE *file, topo_mol *mol, int natoms,
   int i, j, ncmaps;
   int *cmaps;
   
-  ncmaps = psf_start_cmaps(file);
+  ncmaps = psf_start_block(file, "NCRTERM");
   if (ncmaps < 0) {
     return 1;
   }
@@ -475,7 +475,6 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
       atomtmp->y = 0;       
       atomtmp->z = 0;       
       atomtmp->xyz_state = TOPO_MOL_XYZ_VOID;
-      atomtmp->typeid = 0;
       atomtmp->partition = 0;
       atomtmp->copy = 0;
       atomtmp->atomid = 0;
@@ -496,6 +495,13 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
     }  
   }  
 
+  /* Check to see if we broke out of the loop prematurely */
+  if (i != natoms) {
+    free(atomlist);
+    free(molatomlist);
+    return -1;
+  }
+
   /* Get the segment patch first,last and auto angles,dihedrals info from psf */
   /* We have to rewind the file and read the info now since it has to be added to */
   /* the existing segments which have just been read. */
@@ -504,13 +510,6 @@ int psf_file_extract(topo_mol *mol, FILE *file, void *v,
   extract_segment_extra_data(file, mol);
   fseek(file, filepos, SEEK_SET);
 
-  /* Check to see if we broke out of the loop prematurely */
-  if (i != natoms) {
-    free(atomlist);
-    free(molatomlist);
-    return -1;
-  }
-    
   if (extract_bonds(file, mol, natoms, molatomlist)) {
     print_msg(v,"Error processing bonds");
     free(atomlist);

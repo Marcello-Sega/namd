@@ -298,6 +298,7 @@ obj/CollectionMaster.o: \
 	src/Output.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/packmsg.h \
 	src/Debug.h \
@@ -339,6 +340,7 @@ obj/CollectionMgr.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
@@ -412,6 +414,7 @@ obj/ComputeAngles.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -425,7 +428,6 @@ obj/ComputeAngles.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
@@ -461,6 +463,7 @@ obj/ComputeBonds.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -490,7 +493,6 @@ obj/ComputeBonds.o: \
 	src/AtomMap.h \
 	src/PatchMgr.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
 	src/ComputeSelfTuples.h \
@@ -514,6 +516,7 @@ obj/ComputeConsForce.o: \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/ComputeConsForce.h \
 	src/ComputeHomePatch.h \
@@ -600,6 +603,7 @@ obj/ComputeCrossterms.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -613,7 +617,6 @@ obj/ComputeCrossterms.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
@@ -648,6 +651,7 @@ obj/ComputeCylindricalBC.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Patch.h \
@@ -693,6 +697,7 @@ obj/ComputeDihedrals.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -706,7 +711,6 @@ obj/ComputeDihedrals.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
@@ -770,6 +774,7 @@ obj/ComputeDPME.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -807,6 +812,7 @@ obj/ComputeDPMTA.o: \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -869,6 +875,7 @@ obj/ComputeEField.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -931,6 +938,7 @@ obj/ComputeEwald.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -992,6 +1000,7 @@ obj/ComputeExt.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -1056,6 +1065,7 @@ obj/ComputeFullDirect.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -1145,6 +1155,7 @@ obj/ComputeHomePatches.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -1189,6 +1200,7 @@ obj/ComputeImpropers.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -1202,7 +1214,6 @@ obj/ComputeImpropers.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/ReductionMgr.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
@@ -1263,6 +1274,7 @@ obj/ComputeGlobal.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -1306,6 +1318,7 @@ obj/ComputeGridForce.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Node.h \
@@ -1405,6 +1418,7 @@ obj/ComputeMgr.o: \
 	src/HomePatchTypes.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
@@ -1416,7 +1430,6 @@ obj/ComputeMgr.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/Priorities.h \
 	src/ComputeAngles.h \
 	src/ComputeSelfTuples.h \
@@ -1564,6 +1577,7 @@ obj/ComputeNonbondedUtil.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -1598,6 +1612,7 @@ obj/ComputeNonbondedStd.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Node.h \
@@ -1641,6 +1656,7 @@ obj/ComputeNonbondedFEP.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Node.h \
@@ -1684,6 +1700,7 @@ obj/ComputeNonbondedLES.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Node.h \
@@ -1727,6 +1744,7 @@ obj/ComputeNonbondedPProf.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Node.h \
@@ -1796,6 +1814,7 @@ obj/ComputeNonbondedCUDA.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -1809,7 +1828,6 @@ obj/ComputeNonbondedCUDA.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
 	src/ComputeNonbondedCUDAKernel.h \
@@ -1934,6 +1952,7 @@ obj/ComputePme.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -1990,6 +2009,7 @@ obj/OptPme.o: \
 	src/Array.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
@@ -2072,6 +2092,7 @@ obj/ComputeRestraints.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
@@ -2106,6 +2127,7 @@ obj/ComputeSphericalBC.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Patch.h \
@@ -2137,6 +2159,7 @@ obj/ComputeStir.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -2201,6 +2224,7 @@ obj/ComputeTclBC.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/Molecule.h \
 	src/parm.h \
@@ -2250,6 +2274,7 @@ obj/Controller.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2264,7 +2289,6 @@ obj/Controller.o: \
 	src/AtomMap.h \
 	inc/CollectionMaster.decl.h \
 	src/Output.h \
-	src/strlib.h \
 	src/BroadcastObject.h \
 	src/BroadcastMgr.h \
 	src/UniqueSetIter.h \
@@ -2326,6 +2350,7 @@ obj/DumpBench.o: \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -2487,6 +2512,7 @@ obj/GlobalMaster.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
@@ -2541,6 +2567,7 @@ obj/GlobalMasterIMD.o: \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
@@ -2576,6 +2603,7 @@ obj/GlobalMasterTcl.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2618,6 +2646,7 @@ obj/GlobalMasterSMD.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2654,6 +2683,7 @@ obj/GlobalMasterTMD.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2702,6 +2732,7 @@ obj/GlobalMasterFreeEnergy.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2754,6 +2785,7 @@ obj/GlobalMasterEasy.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2971,6 +3003,7 @@ obj/colvarproxy_namd.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2997,6 +3030,7 @@ obj/GridForceGrid.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/Node.h \
@@ -3030,6 +3064,7 @@ obj/HomePatch.o: \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
 	src/HomePatch.h \
@@ -3126,6 +3161,7 @@ obj/LdbCoordinator.o: \
 	src/Tensor.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/RefineOnly.h \
 	src/elements.h \
@@ -3234,6 +3270,7 @@ obj/Measure.o: \
 obj/MGridforceParams.o: \
 	src/MGridforceParams.C \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/common.h \
 	src/Vector.h \
 	src/InfoStream.h \
@@ -3300,10 +3337,10 @@ obj/Molecule.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/strlib.h \
 	src/Communicate.h \
 	src/ObjectArena.h \
 	src/Parameters.h \
@@ -3337,6 +3374,7 @@ obj/NamdCentLB.o: \
 	src/Tensor.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/RefineOnly.h \
 	src/elements.h \
@@ -3384,6 +3422,7 @@ obj/NamdNborLB.o: \
 	src/Tensor.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/AlgNbor.h \
 	src/Rebalancer.h \
@@ -3425,11 +3464,11 @@ obj/NamdState.o: \
 	src/SimParameters.h \
 	src/Lattice.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Parameters.h \
-	src/strlib.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/NamdState.h \
@@ -3477,6 +3516,7 @@ obj/NamdOneTools.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdOneTools.o $(COPTC) src/NamdOneTools.C
@@ -3553,6 +3593,7 @@ obj/Node.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -3566,7 +3607,6 @@ obj/Node.o: \
 	inc/ProxyMgr.decl.h \
 	src/PatchMap.inl \
 	src/Parameters.h \
-	src/strlib.h \
 	src/Communicate.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -3711,6 +3751,7 @@ obj/Patch.o: \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -3776,6 +3817,7 @@ obj/PatchMgr.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/packmsg.h \
 	src/Debug.h \
@@ -4066,6 +4108,7 @@ obj/ReductionMgr.o: \
 	inc/Node.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	inc/ReductionMgr.decl.h \
 	src/ReductionMgr.h \
@@ -4161,6 +4204,7 @@ obj/ScriptTcl.o: \
 	src/Controller.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/Thread.h \
 	src/PatchMgr.h \
@@ -4205,6 +4249,7 @@ obj/Sequencer.o: \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/Sequencer.h \
 	src/PatchTypes.h \
@@ -4294,11 +4339,11 @@ obj/SimParameters.o: \
 	src/Lattice.h \
 	src/Tensor.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/ParseOptions.h \
 	src/structures.h \
 	src/Communicate.h \
-	src/strlib.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
 obj/Sync.o: \
@@ -4439,6 +4484,7 @@ obj/WorkDistrib.o: \
 	plugins/include/vmdplugin.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
+	src/strlib.h \
 	src/MStream.h \
 	src/Molecule.h \
 	src/structures.h \
@@ -4574,6 +4620,7 @@ obj/tcl_psfgen.o: \
 	sb/src/stringhash.h \
 	sb/src/charmm_parse_topo_defs.h \
 	sb/src/topo_mol_output.h \
+	sb/src/topo_mol_pluginio.h \
 	sb/src/pdb_file_extract.h \
 	sb/src/psf_file_extract.h \
 	sb/src/topo_defs_struct.h \
@@ -4666,6 +4713,22 @@ obj/topo_mol_output.o: \
 	sb/src/topo_defs_struct.h \
 	sb/src/pdb_file.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol_output.o $(COPTC) sb/src/topo_mol_output.c
+obj/topo_mol_pluginio.o: \
+	sb/src/topo_mol_pluginio.c \
+	sb/src/topo_mol_pluginio.h \
+	sb/src/topo_mol.h \
+	sb/src/topo_defs.h \
+	sb/src/stringhash.h \
+	sb/src/topo_mol_struct.h \
+	sb/src/hasharray.h \
+	sb/src/memarena.h \
+	sb/src/topo_defs_struct.h \
+	sb/src/extract_alias.h \
+	plugins/include/libmolfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	plugins/include/molfile_plugin.h \
+	sb/src/hash.h
+	$(CC) $(SBCFLAGS) $(COPTO)obj/topo_mol_pluginio.o $(COPTC) sb/src/topo_mol_pluginio.c
 obj/stringhash.o: \
 	sb/src/stringhash.c \
 	sb/src/memarena.h \

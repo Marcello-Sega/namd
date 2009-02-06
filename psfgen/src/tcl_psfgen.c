@@ -6,6 +6,7 @@
 #include "psfgen.h"
 #include "charmm_parse_topo_defs.h"
 #include "topo_mol_output.h"
+#include "topo_mol_pluginio.h"
 #include "pdb_file_extract.h"
 #include "psf_file_extract.h"
 #include "topo_defs_struct.h"
@@ -144,8 +145,10 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[])
 int tcl_coordpdb(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_guesscoord(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_readpsf(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
+int tcl_readplugin(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_writepsf(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_writepdb(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
+int tcl_writeplugin(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_first(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_last(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
 int tcl_patch(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
@@ -192,6 +195,8 @@ int Psfgen_Init(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"readpsf",tcl_readpsf,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"readmol",tcl_readplugin,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"segment",tcl_segment,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"residue",tcl_residue,
@@ -220,6 +225,8 @@ int Psfgen_Init(Tcl_Interp *interp) {
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"writepdb",tcl_writepdb,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
+  Tcl_CreateCommand(interp,"writemol",tcl_writeplugin,
+	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"first",tcl_first,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
   Tcl_CreateCommand(interp,"last",tcl_last,
@@ -231,7 +238,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.4.5");
+  Tcl_PkgProvide(interp, "psfgen", "1.4.7");
 
   return TCL_OK;
 }
@@ -556,6 +563,71 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
   return TCL_OK;
 }
 
+
+int tcl_readplugin(ClientData data, Tcl_Interp *interp,
+					int argc, CONST84 char *argv[]) {
+  const char *filename, *pluginname;
+  char msg[2048];
+  psfgen_data *psf = *(psfgen_data **)data;
+  char *segid=NULL;
+  int curarg;
+  int coordinatesonly=0;
+  int residuesonly=0;
+  PSFGEN_TEST_MOL(interp,psf);
+
+  if ( argc < 3 ) {
+    Tcl_SetResult(interp,"missing file format and/or input filename",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  pluginname = argv[1];
+  filename = argv[2];
+
+  for (curarg=3; curarg<argc; curarg++) {
+    if (!strcmp(argv[curarg], "segment")) {
+      curarg++;
+      if (curarg<argc) {
+        segid = strtoupper(argv[curarg]);
+        newhandle_msg(interp, "Info: read mode: coordinates for segment");
+      }
+    }
+    if (!strcmp(argv[curarg], "coordinatesonly")) {
+      coordinatesonly=1;
+      newhandle_msg(interp, "Info: read mode: coordinates only");
+    }
+    if (!strcmp(argv[curarg], "residuesonly")) {
+      residuesonly=1;
+      newhandle_msg(interp, "Info: read mode: residue sequence only");
+    }
+  }
+
+  if (segid != NULL)
+    sprintf(msg,"Info: reading coordinates from file %s for segment %s", filename, segid);
+  else
+    sprintf(msg,"Info: reading coordinates from file %s",filename);
+  newhandle_msg(interp,msg);
+
+  sprintf(msg,"Info: reading file %s using plugin %s", filename, pluginname);
+  if ( topo_mol_read_plugin(psf->mol, pluginname, filename, 
+                            segid, psf->aliases,
+                            coordinatesonly, residuesonly,
+                            interp, newhandle_msg) ) { 
+    if (segid != NULL)
+      free(segid);
+    Tcl_AppendResult(interp,"ERROR: failed reading file", NULL);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+
+  if (segid != NULL)
+    free(segid);
+
+  return TCL_OK;
+}
+
+
+
+
 int tcl_segment(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
   char msg[2048];
@@ -709,8 +781,8 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   }
   seg=strtoupper(argv[1]);
-  if ( strlen(seg) > 4 ) {
-    Tcl_SetResult(interp,"segment name more than 4 characters",TCL_VOLATILE);
+  if ( strlen(seg) > 7 ) {
+    Tcl_SetResult(interp,"segment name more than 7 characters",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
@@ -1253,6 +1325,40 @@ int tcl_writepdb(ClientData data, Tcl_Interp *interp,
 
   return TCL_OK;
 }
+
+
+int tcl_writeplugin(ClientData data, Tcl_Interp *interp,
+                    int argc, CONST84 char *argv[]) {
+  const char *filename, *pluginname;
+  char msg[2048];
+  psfgen_data *psf = *(psfgen_data **)data;
+  PSFGEN_TEST_MOL(interp,psf);
+
+  if ( argc < 3 ) {
+    Tcl_SetResult(interp,"missing file format and/or output filename",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  if ( argc > 3 ) {
+    Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  pluginname = argv[1]; 
+  filename = argv[2];
+
+  sprintf(msg,"Info: writing file %s using plugin %s", filename, pluginname);
+  newhandle_msg(interp,msg);
+  if ( topo_mol_write_plugin(psf->mol, pluginname, filename, interp, newhandle_msg) ) {
+    Tcl_AppendResult(interp,"ERROR: failed writing to file", NULL);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
+  newhandle_msg(interp, "Info: file complete.");
+
+  return TCL_OK;
+}
+
 
 int tcl_first(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {

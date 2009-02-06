@@ -8,6 +8,7 @@
 int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v, 
                                 void (*print_msg)(void *, const char *)) {
 
+  char buf[128];
   int iseg,nseg,ires,nres,atomid;
   int has_guessed_atoms = 0;
   double x,y,z,o,b;
@@ -24,6 +25,14 @@ int topo_mol_write_pdb(topo_mol *mol, FILE *file, void *v,
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
     if (! seg) continue;
+
+    if ( strlen(seg->segid) > 4 ) {
+      sprintf(buf,
+	"warning: truncating segid %s to 4 characters allowed by pdb format",
+	seg->segid);
+      print_msg(v,buf);
+    }
+
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -105,6 +114,15 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
   for ( iseg=0; iseg<nseg; ++iseg ) {
     seg = mol->segment_array[iseg];
     if (! seg) continue;
+
+    if ( strlen(seg->segid) > 4 ) {
+      sprintf(buf,
+	"error: segid %s is longer than 4 characters allowed by psf format",
+	seg->segid);
+      print_msg(v,buf);
+      return -2;
+    }
+
     nres = hasharray_count(seg->residue_hash);
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
@@ -238,9 +256,17 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
     for ( ires=0; ires<nres; ++ires ) {
       res = &(seg->residue_array[ires]);
       if ( charmmfmt ) for ( atom = res->atoms; atom; atom = atom->next ) {
+        int idef,typeid;
+        idef = hasharray_index(mol->defs->type_hash,atom->type);
+        if ( idef == HASHARRAY_FAIL ) {
+          sprintf(buf,"unknown atom type %s",atom->type);
+          print_msg(v,buf);
+          return -3;
+        }
+        typeid = mol->defs->type_array[idef].id;
         fprintf(file,"%8d %-4s %-4s %-4s %-4s %4d %10.6f     %9.4f  %10d\n",
                 atom->atomid, seg->segid,res->resid,res->name,
-                atom->name,atom->typeid,atom->charge,atom->mass,0);
+                atom->name,typeid,atom->charge,atom->mass,0);
       } else for ( atom = res->atoms; atom; atom = atom->next ) {
         fprintf(file,"%8d %-4s %-4s %-4s %-4s %-4s %10.6f     %9.4f  %10d\n",
                 atom->atomid, seg->segid,res->resid,res->name,
@@ -343,12 +369,8 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
   }
   fprintf(file,"\n\n");
 
-  fprintf(file,"%8d !NDON: donors\n",0);
-  fprintf(file,"\n\n");
-
-  fprintf(file,"%8d !NACC: acceptors\n",0);
-  fprintf(file,"\n\n");
-
+  fprintf(file,"%8d !NDON: donors\n\n\n",0);
+  fprintf(file,"%8d !NACC: acceptors\n\n\n",0);
   fprintf(file,"%8d !NNB\n\n",0);
   /* Pad with zeros, one for every atom */
   {
@@ -361,8 +383,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
   } 
   fprintf(file,"\n\n");
 
-  fprintf(file,"%8d %7d !NGRP\n%8d%8d%8d\n",1,0,0,0,0);
-  fprintf(file,"\n");
+  fprintf(file,"%8d %7d !NGRP\n%8d%8d%8d\n\n",1,0,0,0,0);
 
   if ( ! nocmap ) {
     fprintf(file,"%8d !NCRTERM: cross-terms\n",ncmaps);
