@@ -383,7 +383,7 @@ charmrun.exe:
 psfgen:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(PLUGINOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
-psfgen.exe:	$(DSTDIR) $(SBOBJS)  $(PLUGINOBJS)$(TCLDLL)
+psfgen.exe:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS) $(TCLDLL)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(PLUGINOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
 flipdcd:	$(SRCDIR)/flipdcd.c
