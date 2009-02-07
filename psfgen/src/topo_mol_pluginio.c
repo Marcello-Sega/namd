@@ -6,6 +6,10 @@
 #include "topo_mol_struct.h"
 #include "extract_alias.h"
 
+#if defined(WIN32)
+#define snprintf _snprintf
+#endif
+
 #if !defined(PSFGEN_USEPLUGINS)
 
 /*
