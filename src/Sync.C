@@ -65,6 +65,9 @@ void Sync::openSync(void)
     // if use proxy spanning tree, proxy sync is forced
     if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
 #if !CMK_IMMEDIATE_MSG
+      //Dont need proxy sync when immediate messges are turned on
+      if (CkMyPe() == 0)
+      CmiPrintf("[%d] useProxySync is turned on. \n", CkMyPe());
       // Dont need proxy sync when immediate messges are turned on
       // If on BG/P, useProxySync should not be turned on for better performance
       #if !CMK_BLUEGENEP
