@@ -453,7 +453,7 @@ public:
         //  the filename and the parameter
         //  object to use  
 
-  void send_Molecule(Communicate *);
+  void send_Molecule(MOStream *);
         //  send the molecular structure 
         //  from the master to the clients
   void receive_Molecule(MIStream *);

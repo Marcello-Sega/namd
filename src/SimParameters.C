@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2008/12/18 22:19:43 $
- * $Revision: 1.1268 $
+ * $Author: chaomei2 $
+ * $Date: 2009/02/11 21:07:22 $
+ * $Revision: 1.1269 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -4410,14 +4410,14 @@ void SimParameters::print_mgrid_params()
 /*                */
 /****************************************************************/
 
-void SimParameters::send_SimParameters(Communicate *com_obj)
+void SimParameters::send_SimParameters(MOStream *msg)
 
 {
-  MOStream *msg = com_obj->newOutputStream(ALLBUTME, SIMPARAMSTAG, BUFSIZE);
+  /*MOStream *msg = com_obj->newOutputStream(ALLBUTME, SIMPARAMSTAG, BUFSIZE);
   if ( msg == NULL )
   {
     NAMD_die("memory allocation failed in SimParameters::send_SimParameters");
-  }
+  }*/
 
   msg->put(sizeof(SimParameters),(char*)this);
   if ( FFTWWisdomString ) {

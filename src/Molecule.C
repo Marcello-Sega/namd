@@ -2874,7 +2874,7 @@ void Molecule::print_exclusions()
 /************************************************************************/
 
 
-void Molecule::send_Molecule(Communicate *com_obj)
+void Molecule::send_Molecule(MOStream *msg)
 
 {
     #ifdef MEM_OPT_VERSION
@@ -2883,7 +2883,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
     build_lists_by_atom();
     #endif
       
-  //  Message to send to clients
+  /*//  Message to send to clients
   int bufSize = BUFSIZE;
   // When the simulation system is very large, then the buffer size should be expanded to reduce the number of one-to-all broadcasts.
   if(numAtoms>=1000000) bufSize=16*BUFSIZE;
@@ -2891,7 +2891,7 @@ void Molecule::send_Molecule(Communicate *com_obj)
   if ( msg == NULL )
   {
     NAMD_die("Memory allocation failed in Molecule::send_Molecule");
-  }
+  }*/
 
   #ifdef MEM_OPT_VERSION
       msg->put(numAtoms);

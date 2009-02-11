@@ -340,7 +340,7 @@ public:
 
 	//  send_parameters is used by the master process to
 	//  communicate the paramters to all the other processors
-	void send_Parameters(Communicate *);
+	void send_Parameters(MOStream *);
 
 	//  receive_parameters is used by all the child processes
 	//  to receive the parameters from the master process

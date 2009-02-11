@@ -4452,7 +4452,7 @@ void Parameters::done_reading_structure()
 /*                  */
 /************************************************************************/
 
-void Parameters::send_Parameters(Communicate *comm_obj)
+void Parameters::send_Parameters(MOStream *msg)
 {
   Real *a1, *a2, *a3, *a4;        //  Temporary arrays for sending messages
   int *i1, *i2;      //  Temporary int array
@@ -4460,11 +4460,11 @@ void Parameters::send_Parameters(Communicate *comm_obj)
   Real **kvals;      //  Force constant values for dihedrals and impropers
   int **nvals;      //  Periodicity values for  dihedrals and impropers
   Real **deltavals;    //  Phase shift values for  dihedrals and impropers
-  MOStream *msg=comm_obj->newOutputStream(ALLBUTME, STATICPARAMSTAG, BUFSIZE);
+  /*MOStream *msg=comm_obj->newOutputStream(ALLBUTME, STATICPARAMSTAG, BUFSIZE);
   if ( msg == NULL )
   {
     NAMD_die("memory allocation failed in Parameters::send_Parameters");
-  }
+  }*/
 
   //  Send the bond parameters
   msg->put(NumBondParams);

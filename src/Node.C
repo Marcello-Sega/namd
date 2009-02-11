@@ -504,13 +504,21 @@ void Node::namdOneSend() {
   node_parameters = parameters;
   node_molecule = molecule;
 
+  MOStream *conv_msg;
   // I'm Pe(0) so I send what I know
-  DebugM(4, "Sending SimParameters\n");
-  simParameters->send_SimParameters(CkpvAccess(comm));
+  DebugM(4, "Sending SimParameters\n");  
+  conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, SIMPARAMSTAG, BUFSIZE);
+  simParameters->send_SimParameters(conv_msg);
+
   DebugM(4, "Sending Parameters\n");
-  parameters->send_Parameters(CkpvAccess(comm));
+  conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, STATICPARAMSTAG, BUFSIZE);
+  parameters->send_Parameters(conv_msg);
+
   DebugM(4, "Sending Molecule\n");
-  molecule->send_Molecule(CkpvAccess(comm));
+  int bufSize = BUFSIZE;
+  if(molecule->numAtoms>=1000000) bufSize = 16*BUFSIZE;
+  conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
+  molecule->send_Molecule(conv_msg);
 }
 
 void Node::sendCharmArrProxies(AllCharmArrsMsg *msg){

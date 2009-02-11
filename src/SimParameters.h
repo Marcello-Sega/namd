@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: sameer $
- * $Date: 2008/12/17 22:26:21 $
- * $Revision: 1.1148 $
+ * $Author: chaomei2 $
+ * $Date: 2009/02/11 21:07:23 $
+ * $Revision: 1.1149 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -618,7 +618,7 @@ public:
 	void initialize_config_data(ConfigList *, char *&cwd);
 					//  Initialize SimParameters data
 					//  from the ConfigList object
-	void send_SimParameters(Communicate *);	
+	void send_SimParameters(MOStream *);	
 					//  Used by the master process
 					//  to send the paramters to
 					//  the other processors
