@@ -418,23 +418,7 @@ tracecomputes: updatefiles $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -module commlib -language charm++ \
-	-tracemode projections -tracemode summary \
-	$(BUILDINFO).o \
-	$(OBJS) \
-	$(DPMTALIB) \
-	$(DPMELIB) \
-	$(TCLLIB) \
-	$(FFTLIB) \
-	$(PLUGINLIB) \
-	$(CHARMOPTS) \
-	-lm -o namd2
-
-projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
-	$(MAKEBUILDINFO)
-	$(CHARMC) -verbose -ld++-option \
-	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module commlib -language charm++ \
-	-tracemode projections -tracemode summary \
+	-tracemode projections \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
@@ -445,7 +429,25 @@ projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB) \
 	$(PLUGINLIB) \
 	$(CHARMOPTS) \
-	-lm -o namd2
+	-lm -o namd2.tc.prj
+
+projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+	$(MAKEBUILDINFO)
+	$(CHARMC) -verbose -ld++-option \
+	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
+	-module NeighborLB -module commlib -language charm++ \
+	-tracemode projections \
+	$(BUILDINFO).o \
+	$(OBJS) \
+	$(CUDAOBJS) \
+	$(CUDALIB) \
+	$(DPMTALIB) \
+	$(DPMELIB) \
+	$(TCLLIB) \
+	$(FFTLIB) \
+	$(PLUGINLIB) \
+	$(CHARMOPTS) \
+	-lm -o namd2.prj
 
 summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
@@ -463,7 +465,7 @@ summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB) \
 	$(PLUGINLIB) \
 	$(CHARMOPTS) \
-	-lm -o namd2
+	-lm -o namd2.sum
 
 $(DPMTADIR)/mpole/libmpole.a: $(DPMTADIR)/src/libdpmta2.a
 
