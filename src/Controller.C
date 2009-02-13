@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2008/12/19 20:35:11 $
- * $Revision: 1.1229 $
+ * $Date: 2009/02/13 18:40:06 $
+ * $Revision: 1.1230 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -396,7 +396,7 @@ void Controller::integrate() {
     enqueueCollections(step); \
     CALCULATE \
   } else if ( (X)-last.x ) { \
-    if ( 0 ) { iout << "LINE MINIMIZER: MOVING FROM " << last.x << " TO " << (X) << "\n" << endi; } \
+    if ( 0 ) { iout << "LINE MINIMIZER: MOVING " << ( (X)-last.x ) << " FROM " << last.x << " TO " << (X) << "\n" << endi; } \
     broadcast->minimizeCoefficient.publish(minSeq++,(X)-last.x); \
     newDir = 0; \
     last.x = (X); \
@@ -404,6 +404,7 @@ void Controller::integrate() {
     CALCULATE \
     last.u = min_energy; \
     last.dudx = -1. * min_f_dot_v; \
+    if ( 0 ) { iout << "LINE MINIMIZER: ENERGY " << last.u << " GRADIENT " << last.dudx << "\n" << endi; } \
   }
 
 struct minpoint {
@@ -419,7 +420,7 @@ void Controller::minimize() {
   slowFreq = nbondFreq = 1;
   BigReal tinystep = simParams->minTinyStep;  // 1.0e-6
   BigReal babystep = simParams->minBabyStep;  // 1.0e-2
-  BigReal linegoal = simParams->minLineGoal;  // 1.0e-4
+  BigReal linegoal = simParams->minLineGoal;  // 1.0e-3
   BigReal initstep = tinystep;
   const BigReal goldenRatio = 0.5 * ( sqrt(5.0) - 1.0 );
 
@@ -445,11 +446,13 @@ void Controller::minimize() {
     int noGradients = min_huge_count;
     mid = lo;
     last = mid;
+    if ( 0 ) { iout << "LINE MINIMIZER: ENERGY " << lo.u << " GRADIENT " << lo.dudx << "\n" << endi; } \
     BigReal tol = fabs( linegoal * min_f_dot_v );
     if ( initstep > babystep ) initstep = babystep;
     if ( initstep < 1.0e-300 ) initstep = 1.0e-300;
-    iout << "INITIAL STEP: " << initstep << "\n" << endi;
-    iout << "GRADIENT TOLERANCE: " << tol << "\n" << endi;
+    if ( 0 ) iout << "INITIAL STEP: " << initstep << "\n" << endi;
+    iout << "LINE MINIMIZER REDUCING GRADIENT FROM " <<
+            fabs(min_f_dot_v) << " TO " << tol << "\n" << endi;
     x = initstep;
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
     // bracket minimum on line
@@ -464,10 +467,16 @@ void Controller::minimize() {
     }
     if ( initstep > maxinitstep ) initstep = maxinitstep;
     hi = last;
-    iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
+#define PRINT_BRACKET \
+    iout << "LINE MINIMIZER BRACKET: DX " \
+         << (mid.x-lo.x) << " " << (hi.x-mid.x) << \
+        " DU " << (mid.u-lo.u) << " " << (hi.u-mid.u) << " DUDX " << \
+        lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
+    PRINT_BRACKET
     // converge on minimum on line
     int itcnt;
-    for ( itcnt = 10; fabs(last.dudx) > tol && itcnt > 0 ; --itcnt ) {
+    int progress = 1;
+    for ( itcnt = 10; fabs(last.dudx) > tol && itcnt > 0 && progress ; --itcnt ) {
       // select new position
       if ( noGradients ) {
        if ( ( mid.x - lo.x ) > ( hi.x - mid.x ) ) {  // subdivide left side
@@ -501,6 +510,7 @@ void Controller::minimize() {
         if ( last.u <= mid.u ) {
 	  hi = mid; mid = last; noGradients = min_huge_count;
 	} else {
+          if ( lo.dudx < 0. && last.dudx > 0. ) progress = 0;
 	  lo = last;
 	}
        } else {  // subdivide right side
@@ -516,11 +526,14 @@ void Controller::minimize() {
         if ( last.u <= mid.u ) {
 	  lo = mid; mid = last; noGradients = min_huge_count;
 	} else {
+          if ( hi.dudx > 0. && last.dudx < 0. ) progress = 0;
 	  hi = last;
 	}
        }
       }
-      iout << "BRACKET: " << (hi.x-lo.x) << " " << ((hi.u>lo.u?hi.u:lo.u)-mid.u) << " " << lo.dudx << " " << mid.dudx << " " << hi.dudx << " \n" << endi;
+      PRINT_BRACKET
+      if ( (lo.u-mid.u) < tol * (mid.x-lo.x) ) break;
+      if ( (hi.u-mid.u) < tol * (hi.x-mid.x) ) break;
     }
     // new direction
     broadcast->minimizeCoefficient.publish(minSeq++,0.);
@@ -532,9 +545,7 @@ void Controller::minimize() {
       if ( errorFactor < 100 ) errorFactor += 10;
     }
     if ( c == 0 ) {
-      iout << "RESTARTING CONJUGATE GRADIENT ALGORITHM\n" << endi;
-    } else {
-      iout << "NEW SEARCH DIRECTION\n" << endi;
+      iout << "MINIMIZER RESTARTING CONJUGATE GRADIENT ALGORITHM\n" << endi;
     }
     broadcast->minimizeCoefficient.publish(minSeq++,c); // v = c*v+f
     newDir = 1;

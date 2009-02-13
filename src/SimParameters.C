@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2009/02/11 21:07:22 $
- * $Revision: 1.1269 $
+ * $Author: jim $
+ * $Date: 2009/02/13 18:40:06 $
+ * $Revision: 1.1270 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -677,7 +677,7 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
       &minBabyStep, 1.0e-2);
    opts.range("minBabyStep", POSITIVE);
    opts.optional("main", "minLineGoal", "line minimization gradient reduction",
-      &minLineGoal, 1.0e-4);
+      &minLineGoal, 1.0e-3);
    opts.range("minLineGoal", POSITIVE);
 
    opts.optionalB("main", "velocityQuenching",
