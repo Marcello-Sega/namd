@@ -622,8 +622,8 @@ void OptPmeCompute::initializeOptPmeCompute () {
   zline_storage = new double [nzlines * zlen];
   sp_zstorage = new float [nzlines * zlen];  
 
-  printf ("%d: Allocate %d bytes of storage for %d PME Pencils\n", CkMyPe(), 
-	  nzlines * zlen * (int)sizeof(double), nactive);
+  //printf ("%d: Allocate %d bytes of storage for %d PME Pencils\n", CkMyPe(), 
+  //	  nzlines * zlen * (int)sizeof(double), nactive);
   
   assert (zline_storage != NULL);
   double * zblock = zline_storage;
