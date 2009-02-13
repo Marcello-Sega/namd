@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2008/11/12 23:19:00 $
- * $Revision: 1.1172 $
+ * $Date: 2009/02/13 22:39:18 $
+ * $Revision: 1.1173 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -465,15 +465,22 @@ void Sequencer::minimize() {
   submitMinimizeReductions(step);
   rebalanceLoad(step);
 
+  int downhill = 1;  // start out just fixing bad contacts
   int minSeq = 0;
   for ( ++step; step <= numberOfSteps; ++step ) {
-    BigReal c = broadcast->minimizeCoefficient.get(minSeq++);
+   BigReal c = broadcast->minimizeCoefficient.get(minSeq++);
+   if ( downhill ) {
+    if ( c ) minimizeMoveDownhill();
+    else downhill = 0;
+   }
+   if ( ! downhill ) {
     if ( ! c ) {  // new direction
       c = broadcast->minimizeCoefficient.get(minSeq++);
       newMinimizeDirection(c);  // v = c * v + f
       c = broadcast->minimizeCoefficient.get(minSeq++);
     }  // same direction
     newMinimizePosition(c);  // x = x + c * v
+   }
 
     runComputeObjects(1,0);
     submitMinimizeReductions(step);
@@ -481,6 +488,27 @@ void Sequencer::minimize() {
     rebalanceLoad(step);
   }
   quenchVelocities();  // zero out bogus velocity
+}
+
+// constants are needed below as well
+#define FMAX ( 100. * TIMEFACTOR * TIMEFACTOR )
+#define FMAX2 ( FMAX * FMAX )
+
+// x = x + 0.1 * unit(f) for large f
+void Sequencer::minimizeMoveDownhill() {
+
+  FullAtom *a = patch->atom.begin();
+  Force *f1 = patch->f[Results::normal].begin();
+  Force *f2 = patch->f[Results::nbond].begin();
+  Force *f3 = patch->f[Results::slow].begin();
+  int numAtoms = patch->numAtoms;
+
+  for ( int i = 0; i < numAtoms; ++i ) {
+    Force f = f1[i] + f2[i] + f3[i];
+    if ( f.length2() > FMAX2 ) {
+      a[i].position += ( 0.1 * f.unit() );
+    }
+  }
 }
 
 // v = c * v + f
@@ -1498,8 +1526,6 @@ void Sequencer::submitMinimizeReductions(int step)
   int numAtoms = patch->numAtoms;
 
   reduction->item(REDUCTION_ATOM_CHECKSUM) += numAtoms;
-  const BigReal fmax = 100. * TIMEFACTOR * TIMEFACTOR;
-  const BigReal fmax2 = fmax * fmax;
 
   BigReal fdotf = 0;
   BigReal fdotv = 0;
@@ -1509,9 +1535,10 @@ void Sequencer::submitMinimizeReductions(int step)
     if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
     Force f = f1[i] + f2[i] + f3[i];
     BigReal ff = f * f;
-    if ( ff > fmax2 ) {
+    if ( ff > FMAX2 ) {
       ++numHuge;
-      BigReal fmult = sqrt(fmax2/ff);
+      // pad scaling so minimizeMoveDownhill() doesn't miss them
+      BigReal fmult = 1.01 * sqrt(FMAX2/ff);
       f *= fmult;  ff = f * f;
       f1[i] *= fmult;
       f2[i] *= fmult;

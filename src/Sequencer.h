@@ -60,6 +60,7 @@ protected:
     void addRotDragToPosition(BigReal);
     void addMovDragToPosition(BigReal);
 
+    void minimizeMoveDownhill();
     void newMinimizeDirection(BigReal);
     void newMinimizePosition(BigReal);
     void quenchVelocities();

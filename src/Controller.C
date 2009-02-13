@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2009/02/13 18:40:06 $
- * $Revision: 1.1230 $
+ * $Date: 2009/02/13 22:39:17 $
+ * $Revision: 1.1231 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -427,6 +427,14 @@ void Controller::minimize() {
   CALCULATE
 
   int minSeq = 0;
+
+  // just move downhill until initial bad contacts go away
+  while ( min_huge_count ) {
+    iout << "MINIMIZER SLOWLY MOVING ATOMS WITH BAD CONTACTS DOWNHILL\n" << endi;
+    broadcast->minimizeCoefficient.publish(minSeq++,1.);
+    CALCULATE
+  }
+
   int atStart = 2;
   int errorFactor = 10;
   BigReal old_f_dot_f = min_f_dot_f;
