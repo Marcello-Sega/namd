@@ -5011,6 +5011,22 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	{
 	    kcol = 5;
 	}
+	else if (strcasecmp(gridfrccol->data, "Y") == 0)
+	{
+	    kcol=2;
+	}
+	else if (strcasecmp(gridfrccol->data, "Z") == 0)
+	{
+	    kcol=3;
+	}
+	else if (strcasecmp(gridfrccol->data, "O") == 0)
+	{
+	    kcol=4;
+	}
+	else if (strcasecmp(gridfrccol->data, "B") == 0)
+	{
+	    kcol=5;
+	}
 	else
 	{
 	    if (strcasecmp(mgridParams->gridforceCol, "X") == 0)
@@ -7900,6 +7916,72 @@ void Molecule::build_atom_status(void) {
     } // for numAtoms
   } // if SWM4
 
+  // set up tail corrections if desired
+  /************************************
+   * The tail corrections here are based on Eq. 6 of Horn et al., 
+   * JCP 120:9665-9678 (2004), properly corrected for the switching
+   * function used in namd
+   * Tail corrections will be applied *for all waters* using the 
+   * *water vdw parameters* and assuming that everything beyond the cutoff radius
+   * looks like pure water
+   * This should be a good approximation in dilute solution, but may not be
+   * good for large solutes
+   * *****************************************/
+  if (simParams->wattailcorr) {
+    Real wat_eps;
+    Real wat_sigma;
+    Real sigma14;
+    Real epsilon14;
+    int numwat = 0;
+    BigReal rcut = simParams->cutoff;
+    BigReal rswitch = simParams->switchingDist;
+
+    // get values for sigma, epsilon, and the number of waters
+    for (i = 0;  i < numAtoms;  i++) {
+      if (is_water(hg[i].atomID) && hg[i].isGP) {
+        if (numwat == 0) {
+          params->get_vdw_params(&wat_sigma, &wat_eps, &sigma14, &epsilon14, atoms[i].vdw_type);
+        }
+        // printf("VDW info for atom %i (type %i) is %f / %f\n", i, atoms[i].vdw_type, wat_sigma, wat_eps);
+        numwat++;
+      }
+    }
+
+    // calculate the pair corrections
+    // analytical forms from mathematica
+
+    const BigReal sig3 = wat_sigma * wat_sigma * wat_sigma;
+    const BigReal rcut3= rcut * rcut * rcut;
+    const BigReal rswit3 = rswitch * rswitch * rswitch;
+    const BigReal switchdiff = rcut - rswitch;
+    const BigReal switchdiff2 = switchdiff * switchdiff;
+    const BigReal switch2diff = (rcut * rcut - rswitch * rswitch);
+
+    //printf("Values for calculating tail corrections: eps %f sigma %f rswit %f rcut %f nwat %i \n", wat_eps, wat_sigma, rswitch, rcut, numwat);
+
+    BigReal ener_swit = wat_eps * switchdiff2 * switchdiff2 * sig3 * sig3 * ( 210.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut) - sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 * rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch * rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 * rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut + 96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) / (-315.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 * switch2diff * switch2diff * switch2diff);
+    BigReal ener_long = wat_eps * (sig3 * sig3) * (-6.0 * rcut3 * rcut3 + sig3 * sig3) / (9.0 * rcut3 * rcut3 *rcut3);
+
+    BigReal vir_swit = -4.0 * wat_eps * switchdiff2 * switchdiff2 * sig3
+    * sig3 * (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 *
+    (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut)
+    + sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 *
+    rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch *
+    rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 *
+    rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut +
+    96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) /
+    (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 *
+    switch2diff * switch2diff * switch2diff);
+    BigReal vir_long = 4.0 * wat_eps * (sig3 * sig3) * (-3.0 * rcut3 * rcut3 + sig3 * sig3) / (3.0 * rcut3 * rcut3 *rcut3);
+
+    // WARNING: These values must be divided by volume prior to use
+    tail_corr_ener = 2.0 * PI * numwat * numwat * ( ener_swit + ener_long );
+    tail_corr_virial = 2.0 * PI *numwat * numwat * ( vir_swit + vir_long );
+
+  }
+
+
+
   #if 0
   // debugging code for showing sorted atoms
   for(i=0; i<numAtoms; i++)
@@ -8095,7 +8177,7 @@ void Molecule::build_atom_status(void) {
         NAMD_die("Failed to find water bond lengths\n");
       } 
       r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
-      printf("final r_om and r_ohc are %f and %f\n", r_om, r_ohc);
+      //printf("final r_om and r_ohc are %f and %f\n", r_om, r_ohc);
     }
 
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();

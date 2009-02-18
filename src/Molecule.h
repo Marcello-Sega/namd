@@ -319,6 +319,10 @@ public:
   Real r_om;
   Real r_ohc;
 
+  // data for tail corrections
+  BigReal tail_corr_ener;
+  BigReal tail_corr_virial;
+
 
 
 #ifndef MEM_OPT_VERSION

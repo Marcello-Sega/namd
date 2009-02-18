@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2009/02/13 18:40:06 $
- * $Revision: 1.1270 $
+ * $Author: petefred $
+ * $Date: 2009/02/18 16:48:08 $
+ * $Revision: 1.1271 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -443,6 +443,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.optionalB("main", "outputPatchDetails", "print number of atoms in each patch",
       &outputPatchDetails, FALSE);
    opts.optional("main", "waterModel", "Water model to use", PARSE_STRING);
+   opts.optionalB("main", "waterTailCorr", "Apply VDW tail corrections to water", &wattailcorr, FALSE);
 }
 
 void SimParameters::config_parser_fileio(ParseOptions &opts) {
@@ -1856,6 +1857,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (opts.defined("drude")) {
      watmodel = WAT_SWM4;
    }
+
 
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))

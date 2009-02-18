@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2009/02/13 22:39:17 $
- * $Revision: 1.1231 $
+ * $Author: petefred $
+ * $Date: 2009/02/18 16:48:07 $
+ * $Revision: 1.1232 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1016,6 +1016,7 @@ void Controller::receivePressure(int step, int minimize)
     virial_nbond -= outer(extForce_nbond,extPosition);
     virial_slow -= outer(extForce_slow,extPosition);
 
+
     kineticEnergy = kineticEnergyCentered;
     temperature = 2.0 * kineticEnergyCentered / ( numDegFreedom * BOLTZMAN );
 
@@ -1032,6 +1033,14 @@ void Controller::receivePressure(int step, int minimize)
 
     if ( (volume=lattice.volume()) != 0. )
     {
+
+      if (simParameters->wattailcorr) {
+        // Apply tail correction to pressure
+        //printf("Volume is %f\n", volume);
+        //printf("Applying tail correction of %f to virial\n", molecule->tail_corr_virial / volume);
+        virial_normal += Tensor::identity(molecule->tail_corr_virial / volume);
+      }
+
       // kinetic energy component included in virials
       pressure_normal = virial_normal / volume;
       groupPressure_normal = ( virial_normal - intVirial_normal ) / volume;
@@ -1329,6 +1338,14 @@ void Controller::printEnergies(int step, int minimize)
 //fepe
     }
 
+    if (simParameters->wattailcorr) {
+      // Apply tail correction to energy
+      //printf("Volume is %f\n", volume);
+      //printf("Applying tail correction of %f to energy\n", molecule->tail_corr_ener / volume);
+      ljEnergy += molecule->tail_corr_ener / volume;
+    }
+
+
     momentum.x = reduction->item(REDUCTION_MOMENTUM_X);
     momentum.y = reduction->item(REDUCTION_MOMENTUM_Y);
     momentum.z = reduction->item(REDUCTION_MOMENTUM_Z);
@@ -1554,6 +1571,7 @@ void Controller::printEnergies(int step, int minimize)
 	iout << FORMAT("VDW");
 	iout << FORMAT("BOUNDARY");
 	iout << FORMAT("MISC");
+	iout << FORMAT("POTENTIAL");
 	iout << FORMAT("KINETIC");
         iout << "     ";
 	iout << FORMAT("TOTAL");
@@ -1597,6 +1615,7 @@ void Controller::printEnergies(int step, int minimize)
     iout << FORMAT(ljEnergy);
     iout << FORMAT(boundaryEnergy);
     iout << FORMAT(miscEnergy);
+    iout << FORMAT(potentialEnergy);
     iout << FORMAT(kineticEnergy);
     iout << "     ";
     iout << FORMAT(totalEnergy);

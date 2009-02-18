@@ -61,6 +61,7 @@ void LJTable::compute_vdw_params(int i, int j,
     cur_scaled->A = A14;
     cur_scaled->B = B14;
 
+
     // BigReal sigma_ij, sigma_ij14;
 
     // if ((B == 0) || (A/B < 0)) sigma_ij = 0;

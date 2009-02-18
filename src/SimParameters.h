@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2009/02/11 21:07:23 $
- * $Revision: 1.1149 $
+ * $Author: petefred $
+ * $Date: 2009/02/18 16:48:08 $
+ * $Revision: 1.1150 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -84,6 +84,7 @@ public:
 
   int watmodel; // integer code for the water model in use
                 // choices are defined in common.h
+  Bool wattailcorr; // flag for whether water tail corrections should be used
   char dummy;
 	BigReal dt;	   		//  Timestep size
 	int N;		   		//  Number of steps to be performed
