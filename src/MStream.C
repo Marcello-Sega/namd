@@ -17,7 +17,7 @@ struct StreamMessage {
   char header[CmiMsgHeaderSizeBytes];
   int PE;
   int tag;
-  unsigned int len; // sizeof the data
+  size_t len; // sizeof the data
   unsigned int index; // index of packet in stream
   unsigned int checksum;
   StreamMessage *next; // for linked list of early packets
@@ -41,7 +41,7 @@ MIStream::~MIStream()
     CmiFree(msg);
 }
 
-MOStream::MOStream(Communicate *c, int p, int t, unsigned int size)
+MOStream::MOStream(Communicate *c, int p, int t, size_t size)
 {
   cobj = c;
   PE = p;
@@ -65,7 +65,7 @@ MOStream::~MOStream()
 static int checkSum(StreamMessage *msg)
 {
   int checksum = 0;
-  for ( int i=0; i < msg->len; i++ ) {
+  for ( size_t i=0; i < msg->len; i++ ) {
     checksum += (unsigned char) msg->data[i];
   }
   if ( checksum != msg->checksum ) {
@@ -78,7 +78,7 @@ static int checkSum(StreamMessage *msg)
   return 1;
 }
 
-MIStream *MIStream::Get(char *buf, int len)
+MIStream *MIStream::Get(char *buf, size_t len)
 {
   while(len) {
     if(msg==0) {
@@ -131,7 +131,7 @@ MIStream *MIStream::Get(char *buf, int len)
       currentPos += len;
       len = 0;
     } else {
-      int b = msg->len-currentPos;
+      size_t b = msg->len-currentPos;
       memcpy(buf, &(msg->data[currentPos]), b);
       len -= b;
       buf += b;
@@ -153,14 +153,14 @@ MOStream *MOStream::Put(char *buf, size_t len)
       msgBuf->len += len;
       len = 0;
     } else {
-      int b = bufLen - msgBuf->len;
+      size_t b = bufLen - msgBuf->len;
       memcpy(&(msgBuf->data[msgBuf->len]), buf, b);
       msgBuf->len = bufLen;
       if ( msgBuf->index && ! ((msgBuf->index) % 100) ) {
         DebugM(3,"Sending message " << msgBuf->index << ".\n");
       }
       msgBuf->checksum = 0;
-      for ( int i=0; i < msgBuf->len; i++ ) {
+      for ( size_t i=0; i < msgBuf->len; i++ ) {
         msgBuf->checksum += (unsigned char) msgBuf->data[i];
       }
       cobj->sendMessage(PE, (void *)msgBuf, bufLen+sizeof(StreamMessage)-1);
@@ -180,7 +180,7 @@ void MOStream::end(void)
     DebugM(3,"Sending message " << msgBuf->index << ".\n");
   }
   msgBuf->checksum = 0;
-  for ( int i=0; i < msgBuf->len; i++ ) {
+  for ( size_t i=0; i < msgBuf->len; i++ ) {
     msgBuf->checksum += (unsigned char) msgBuf->data[i];
   }
   cobj->sendMessage(PE,(void*)msgBuf,msgBuf->len+sizeof(StreamMessage)-1);

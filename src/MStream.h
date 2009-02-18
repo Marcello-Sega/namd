@@ -17,12 +17,12 @@ class MIStream {
   private:
     int PE, tag;
     StreamMessage *msg;
-    int currentPos;
+    size_t currentPos;
     int currentIndex;
     StreamMessage *early;
     Communicate *cobj;
     unsigned int checksum;
-    MIStream *Get(char *buf, int len);  // get len bytes from message to buf
+    MIStream *Get(char *buf, size_t len);  // get len bytes from message to buf
   public:
     MIStream(Communicate *c, int pe, int tag);
     ~MIStream();
@@ -56,37 +56,37 @@ class MIStream {
     MIStream *get(double &data) { 
       return Get((char *)&data, sizeof(double)); 
     }
-    MIStream *get(int len, char *data) { 
+    MIStream *get(size_t len, char *data) { 
       return Get(data,len*sizeof(char)); 
     }
-    MIStream *get(int len, unsigned char *data) { 
+    MIStream *get(size_t len, unsigned char *data) { 
       return Get((char *)data,len*sizeof(unsigned char)); 
     }
-    MIStream *get(int len, short *data) { 
+    MIStream *get(size_t len, short *data) { 
       return Get((char *)data,len*sizeof(short)); 
     }
-    MIStream *get(int len, unsigned short *data) { 
+    MIStream *get(size_t len, unsigned short *data) { 
       return Get((char *)data,len*sizeof(unsigned short)); 
     }
-    MIStream *get(int len, int *data) { 
+    MIStream *get(size_t len, int *data) { 
       return Get((char *)data,len*sizeof(int)); 
     }
-    MIStream *get(int len, unsigned int *data) { 
+    MIStream *get(size_t len, unsigned int *data) { 
       return Get((char *)data,len*sizeof(unsigned int)); 
     }
-    MIStream *get(int len, long *data) { 
+    MIStream *get(size_t len, long *data) { 
       return Get((char *)data,len*sizeof(long)); 
     }
-    MIStream *get(int len, unsigned long *data) { 
+    MIStream *get(size_t len, unsigned long *data) { 
       return Get((char *)data,len*sizeof(unsigned long)); 
     }
-    MIStream *get(int len, float *data) { 
+    MIStream *get(size_t len, float *data) { 
       return Get((char *)data,len*sizeof(float)); 
     }
-    MIStream *get(int len, double *data) { 
+    MIStream *get(size_t len, double *data) { 
       return Get((char *)data,len*sizeof(double)); 
     }
-    MIStream *get(int len, Vector *data) {
+    MIStream *get(size_t len, Vector *data) {
       return Get((char *)data, len*sizeof(Vector));
     }
     MIStream *get(Vector *data) {
@@ -102,7 +102,7 @@ class MOStream {
     Communicate *cobj;
     MOStream *Put(char *buf, size_t len); // put len bytes from buf into message
   public:
-    MOStream(Communicate *c, int pe, int tag, unsigned int bufSize);
+    MOStream(Communicate *c, int pe, int tag, size_t bufSize);
     ~MOStream();
     void end(void);
     MOStream *put(char data) { 
@@ -135,44 +135,44 @@ class MOStream {
     MOStream *put(double data) { 
       return Put((char *)&data, sizeof(double)); 
     }
-    MOStream *put(int len, char *data) { 
+    MOStream *put(size_t len, char *data) { 
       return Put(data,len*sizeof(char)); 
     }
-    MOStream *put(int len, unsigned char *data) { 
+    MOStream *put(size_t len, unsigned char *data) { 
       return Put((char *)data,len*sizeof(unsigned char)); 
     }
-    MOStream *put(int len, short *data) { 
+    MOStream *put(size_t len, short *data) { 
       return Put((char *)data,len*sizeof(short)); 
     }
-    MOStream *put(int len, unsigned short *data) { 
+    MOStream *put(size_t len, unsigned short *data) { 
       return Put((char *)data,len*sizeof(unsigned short)); 
     }
-    MOStream *put(int len, int *data) { 
+    MOStream *put(size_t len, int *data) { 
       return Put((char *)data,len*sizeof(int)); 
     }
-    MOStream *put(int len, unsigned int *data) { 
+    MOStream *put(size_t len, unsigned int *data) { 
       return Put((char *)data,len*sizeof(unsigned int)); 
     }
-    MOStream *put(int len, long *data) { 
+    MOStream *put(size_t len, long *data) { 
       return Put((char *)data,len*sizeof(long)); 
     }
-    MOStream *put(int len, unsigned long *data) { 
+    MOStream *put(size_t len, unsigned long *data) { 
       return Put((char *)data,len*sizeof(unsigned long)); 
     }
-    MOStream *put(int len, float *data) { 
+    MOStream *put(size_t len, float *data) { 
       return Put((char *)data,len*sizeof(float)); 
     }
-    MOStream *put(int len, double *data) { 
+    MOStream *put(size_t len, double *data) { 
       return Put((char *)data,len*sizeof(double)); 
     }
     MOStream *put(Vector *data) { 
       return Put((char *)data,sizeof(Vector)); 
     }
-    MOStream *put(int len, Vector *data) { 
+    MOStream *put(size_t len, Vector *data) { 
       return Put((char *)data,len*sizeof(Vector)); 
     }
     MOStream *put(char *data) {
-      int length = strlen(data);
+      size_t length = strlen(data);
       put(length);
       return put(length, data);
     }
