@@ -694,6 +694,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   sscanf(buffer, "%d", &numAtoms);
 
   read_atoms(psf_file, params);
+  printf("VDW code for atom 0 is %i\n", atoms[0].vdw_type);
 
   /*  Read until we find the next non-blank line      */
   ret_code = NAMD_read_line(psf_file, buffer);
@@ -7915,7 +7916,7 @@ void Molecule::build_atom_status(void) {
       }
     } // for numAtoms
   } // if SWM4
-
+  
   // set up tail corrections if desired
   /************************************
    * The tail corrections here are based on Eq. 6 of Horn et al., 
@@ -7959,20 +7960,19 @@ void Molecule::build_atom_status(void) {
 
     //printf("Values for calculating tail corrections: eps %f sigma %f rswit %f rcut %f nwat %i \n", wat_eps, wat_sigma, rswitch, rcut, numwat);
 
-    BigReal ener_swit = wat_eps * switchdiff2 * switchdiff2 * sig3 * sig3 * ( 210.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut) - sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 * rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch * rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 * rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut + 96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) / (-315.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 * switch2diff * switch2diff * switch2diff);
     BigReal ener_long = wat_eps * (sig3 * sig3) * (-6.0 * rcut3 * rcut3 + sig3 * sig3) / (9.0 * rcut3 * rcut3 *rcut3);
-
-    BigReal vir_swit = -4.0 * wat_eps * switchdiff2 * switchdiff2 * sig3
-    * sig3 * (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 *
-    (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut)
-    + sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 *
-    rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch *
-    rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 *
-    rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut +
-    96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) /
-    (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 *
-    switch2diff * switch2diff * switch2diff);
     BigReal vir_long = 4.0 * wat_eps * (sig3 * sig3) * (-3.0 * rcut3 * rcut3 + sig3 * sig3) / (3.0 * rcut3 * rcut3 *rcut3);
+    BigReal vir_swit;
+    BigReal ener_swit;
+
+    if (simParams->switchingActive) {
+      vir_swit = -4.0 * wat_eps * switchdiff2 * switchdiff2 * sig3 * sig3 * (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut) + sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 * rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch * rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 * rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut + 96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) / (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 * switch2diff * switch2diff * switch2diff);
+      ener_swit = wat_eps * switchdiff2 * switchdiff2 * sig3 * sig3 * ( 210.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut) - sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 * rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch * rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 * rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut + 96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) / (-315.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 * switch2diff * switch2diff * switch2diff);
+
+    } else {
+      ener_swit = 0.0;
+      vir_swit = 0.0;
+    }
 
     // WARNING: These values must be divided by volume prior to use
     tail_corr_ener = 2.0 * PI * numwat * numwat * ( ener_swit + ener_long );
