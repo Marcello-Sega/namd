@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: petefred $
- * $Date: 2009/02/18 16:48:08 $
- * $Revision: 1.1150 $
+ * $Author: jim $
+ * $Date: 2009/02/20 17:28:39 $
+ * $Revision: 1.1151 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -438,6 +438,7 @@ public:
 	char *FFTWWisdomString;
 
 	Bool minimizeCGOn;		//  Flag TRUE-> CG minimization active
+        Bool minVerbose;                //  Flag TRUE-> print extra minimization data
 	BigReal minTinyStep;		//  Minimization parameter
 	BigReal minBabyStep;		//  Minimization parameter
 	BigReal minLineGoal;		//  Minimization parameter

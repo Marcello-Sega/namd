@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: petefred $
- * $Date: 2009/02/18 16:48:08 $
- * $Revision: 1.1271 $
+ * $Author: jim $
+ * $Date: 2009/02/20 17:28:39 $
+ * $Revision: 1.1272 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -671,6 +671,8 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    /////////// Special Dynamics Methods
    opts.optionalB("main", "minimization", "Should minimization be performed?",
       &minimizeCGOn, FALSE);
+   opts.optionalB("main", "minVerbose", "Print extra minimization diagnostics?",
+      &minVerbose, FALSE);
    opts.optional("main", "minTinyStep", "very first minimization steps",
       &minTinyStep, 1.0e-6);
    opts.range("minTinyStep", POSITIVE);

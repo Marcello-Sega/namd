@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: petefred $
- * $Date: 2009/02/18 16:48:07 $
- * $Revision: 1.1232 $
+ * $Author: jim $
+ * $Date: 2009/02/20 17:28:39 $
+ * $Revision: 1.1233 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -385,7 +385,7 @@ void Controller::integrate() {
 
 #define MOVETO(X) \
   if ( step == numberOfSteps ) { \
-    if ( 0 ) { iout << "LINE MINIMIZER: RETURNING TO " << mid.x << " FROM " << last.x << "\n" << endi; } \
+    if ( minVerbose ) { iout << "LINE MINIMIZER: RETURNING TO " << mid.x << " FROM " << last.x << "\n" << endi; } \
     if ( newDir || (mid.x-last.x) ) { \
       broadcast->minimizeCoefficient.publish(minSeq++,mid.x-last.x); \
     } else { \
@@ -396,7 +396,6 @@ void Controller::integrate() {
     enqueueCollections(step); \
     CALCULATE \
   } else if ( (X)-last.x ) { \
-    if ( 0 ) { iout << "LINE MINIMIZER: MOVING " << ( (X)-last.x ) << " FROM " << last.x << " TO " << (X) << "\n" << endi; } \
     broadcast->minimizeCoefficient.publish(minSeq++,(X)-last.x); \
     newDir = 0; \
     last.x = (X); \
@@ -404,17 +403,23 @@ void Controller::integrate() {
     CALCULATE \
     last.u = min_energy; \
     last.dudx = -1. * min_f_dot_v; \
-    if ( 0 ) { iout << "LINE MINIMIZER: ENERGY " << last.u << " GRADIENT " << last.dudx << "\n" << endi; } \
+    last.noGradient = min_huge_count; \
+    if ( minVerbose ) { \
+      iout << "LINE MINIMIZER: POSITION " << last.x << " ENERGY " << last.u << " GRADIENT " << last.dudx; \
+      if ( last.noGradient ) iout << " HUGECOUNT " << last.noGradient; \
+      iout << "\n" << endi; \
+    } \
   }
 
 struct minpoint {
-  BigReal x, u, dudx;
-  minpoint() : x(0), u(0), dudx(0) { ; }
+  BigReal x, u, dudx, noGradient;
+  minpoint() : x(0), u(0), dudx(0), noGradient(1) { ; }
 };
 
 void Controller::minimize() {
   // iout << "Controller::minimize() called.\n" << endi;
 
+  const int minVerbose = simParams->minVerbose;
   const int numberOfSteps = simParams->N;
   int step = simParams->firstTimestep;
   slowFreq = nbondFreq = 1;
@@ -451,26 +456,31 @@ void Controller::minimize() {
     lo.x = x;
     lo.u = min_energy;
     lo.dudx = -1. * min_f_dot_v;
-    int noGradients = min_huge_count;
+    lo.noGradient = min_huge_count;
     mid = lo;
     last = mid;
-    if ( 0 ) { iout << "LINE MINIMIZER: ENERGY " << lo.u << " GRADIENT " << lo.dudx << "\n" << endi; } \
+    if ( minVerbose ) {
+      iout << "LINE MINIMIZER: POSITION " << last.x << " ENERGY " << last.u << " GRADIENT " << last.dudx;
+      if ( last.noGradient ) iout << " HUGECOUNT " << last.noGradient;
+      iout << "\n" << endi;
+    }
     BigReal tol = fabs( linegoal * min_f_dot_v );
     if ( initstep > babystep ) initstep = babystep;
     if ( initstep < 1.0e-300 ) initstep = 1.0e-300;
-    if ( 0 ) iout << "INITIAL STEP: " << initstep << "\n" << endi;
     iout << "LINE MINIMIZER REDUCING GRADIENT FROM " <<
             fabs(min_f_dot_v) << " TO " << tol << "\n" << endi;
     x = initstep;
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
+    while ( min_huge_count ) {
+      x *= 0.25;  MOVETO(x);
+      initstep *= 0.25;
+    }
     // bracket minimum on line
     initstep *= 0.25;
     BigReal maxinitstep = initstep * 16.0;
     while ( last.u < mid.u ) {
       initstep *= 2.0;
       lo = mid; mid = last;
-      // when bracketed, need to know if midpoint gradient is valid
-      noGradients = min_huge_count;
       x *= 2.0; MOVETO(x)
     }
     if ( initstep > maxinitstep ) initstep = maxinitstep;
@@ -483,15 +493,15 @@ void Controller::minimize() {
     PRINT_BRACKET
     // converge on minimum on line
     int itcnt;
-    int progress = 1;
-    for ( itcnt = 10; fabs(last.dudx) > tol && itcnt > 0 && progress ; --itcnt ) {
+    for ( itcnt = 10; itcnt > 0; --itcnt ) {
+      int progress = 1;
       // select new position
-      if ( noGradients ) {
+      if ( mid.noGradient ) {
        if ( ( mid.x - lo.x ) > ( hi.x - mid.x ) ) {  // subdivide left side
 	x = (1.0 - goldenRatio) * lo.x + goldenRatio * mid.x;
 	MOVETO(x)
 	if ( last.u <= mid.u ) {
-	  hi = mid; mid = last; noGradients = min_huge_count;
+	  hi = mid; mid = last;
 	} else {
 	  lo = last;
 	}
@@ -499,7 +509,7 @@ void Controller::minimize() {
 	x = (1.0 - goldenRatio) * hi.x + goldenRatio * mid.x;
 	MOVETO(x)
 	if ( last.u <= mid.u ) {
-	  lo = mid; mid = last; noGradients = min_huge_count;
+	  lo = mid; mid = last;
 	} else {
 	  hi = last;
 	}
@@ -516,7 +526,7 @@ void Controller::minimize() {
         if ( x-last.x == 0 ) break;
         MOVETO(x)
         if ( last.u <= mid.u ) {
-	  hi = mid; mid = last; noGradients = min_huge_count;
+	  hi = mid; mid = last;
 	} else {
           if ( lo.dudx < 0. && last.dudx > 0. ) progress = 0;
 	  lo = last;
@@ -532,7 +542,7 @@ void Controller::minimize() {
         if ( x-last.x == 0 ) break;
         MOVETO(x)
         if ( last.u <= mid.u ) {
-	  lo = mid; mid = last; noGradients = min_huge_count;
+	  lo = mid; mid = last;
 	} else {
           if ( hi.dudx > 0. && last.dudx < 0. ) progress = 0;
 	  hi = last;
@@ -540,8 +550,13 @@ void Controller::minimize() {
        }
       }
       PRINT_BRACKET
-      if ( (lo.u-mid.u) < tol * (mid.x-lo.x) ) break;
-      if ( (hi.u-mid.u) < tol * (hi.x-mid.x) ) break;
+      if ( ! progress ) {
+        MOVETO(mid.x);
+        break;
+      }
+      if ( fabs(last.dudx) < tol ) break;
+      if ( lo.x != mid.x && (lo.u-mid.u) < tol * (mid.x-lo.x) ) break;
+      if ( mid.x != hi.x && (hi.u-mid.u) < tol * (hi.x-mid.x) ) break;
     }
     // new direction
     broadcast->minimizeCoefficient.publish(minSeq++,0.);
