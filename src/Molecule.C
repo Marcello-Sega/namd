@@ -694,7 +694,6 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   sscanf(buffer, "%d", &numAtoms);
 
   read_atoms(psf_file, params);
-  printf("VDW code for atom 0 is %i\n", atoms[0].vdw_type);
 
   /*  Read until we find the next non-blank line      */
   ret_code = NAMD_read_line(psf_file, buffer);
