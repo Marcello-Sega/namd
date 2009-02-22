@@ -1,0 +1,23 @@
+NAMD_ARCH = CRAY-XT
+CHARMARCH = mpi-crayxt
+
+# need -lgmalloc because normal Catamount malloc is horribly slow
+CHARMOPTS =
+
+# The following variables need to exported to the environment for the gcc
+# compilers to be employed.
+#
+# At the same time. Users should ensure that the module gcc/4.0.2 (or later)
+# be loaded by executing 'module load gcc/4.0.2' at the command line or
+# in their shell startup scripts.
+#
+# Users of psfgen might also need to do 'module remove acml' in order for 
+# the the psfgen compilation to succeed.
+#
+
+CXX = CC -I/usr/include -DMEMUSAGE_USE_SBRK -DNO_SOCKET -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_GETPWUID -DNAMD_NO_STDOUT_FLUSH -DNAMD_NO_O_EXCL
+CXXOPTS = -O3 -ffast-math -static -fexpensive-optimizations -fomit-frame-pointer
+
+CC = cc
+COPTS = -O3 -ffast-math -static -fexpensive-optimizations -fomit-frame-pointer
+
