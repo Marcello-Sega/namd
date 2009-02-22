@@ -1,4 +1,4 @@
-include .rootdir/arch/Linux-amd64-icc.arch
+include .rootdir/arch/Linux-x86_64-icc.arch
 
-CHARMARCH = net-linux-amd64-tcp-iccstatic
+CHARMARCH = net-linux-x86_64-tcp-iccstatic
 
