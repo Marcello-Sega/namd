@@ -1,9 +1,0 @@
-
-CUDADIR=/usr/local/cuda
-CUDAINCL=-I$(CUDADIR)/include
-CUDALIB=-L$(CUDADIR)/lib -lcudart
-CUDAFLAGS=-DNAMD_CUDA
-CUDAOBJS=$(CUDAOBJSRAW)
-CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
-CUDACC=$(CUDADIR)/bin/nvcc -O3 --maxrregcount 32 -Xcompiler "-m64" $(CUDA)
-
