@@ -27,6 +27,7 @@
 //#define DEBUGM
 #include "Debug.h"
 
+#include "CompressPsf.h"
 #include "PluginIOMgr.h"
 
 NamdState::NamdState()
@@ -92,13 +93,15 @@ int NamdState::configListInit(ConfigList *cfgList) {
   simParameters =  new SimParameters(configList,currentdir);
   fflush(stdout);
   lattice = simParameters->lattice;
-  
+
+  StringList *molInfoFilename;
   // If it's AMBER force field, read the AMBER style files;
   // if it's GROMACS, read the GROMACS files;
   // Otherwise read the CHARMM style files
 
   if (simParameters->amberOn)
   { StringList *parmFilename = configList->find("parmfile");
+    molInfoFilename = parmFilename;
     StringList *coorFilename = configList->find("ambercoor");
     // "amber" is a temporary data structure, which records all
     // the data from the parm file. After copying them into
@@ -118,6 +121,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
   }
   else if (simParameters->gromacsOn) {
     StringList *topFilename = configList->find("grotopfile");
+    molInfoFilename = topFilename;
     StringList *coorFilename = configList->find("grocoorfile");
     // "gromacsFile" is a temporary data structure, which records all
     // the data from the topology file. After copying it into the
@@ -144,8 +148,6 @@ int NamdState::configListInit(ConfigList *cfgList) {
         NAMD_die("Compressed psf file is not supported currently when using plugin IO");
     }
     PluginIOMgr *pIOMgr = new PluginIOMgr();
-    //TODO: register or add plugins
-
     
     iout << iWARN << "Plugin-based I/O is still in development and may still have bugs" << endl;
 
@@ -161,6 +163,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
        NAMD_die("ERROR: Selected plugin type cannot read coordinates"); 
 
     StringList *moleculeFilename = configList->find("structure");
+    molInfoFilename = moleculeFilename;
     StringList *parameterFilename = configList->find("parameters");
     //****** BEGIN CHARMM/XPLOR type changes
     // For AMBER use different constructor based on parm_struct!!!  -JCP
@@ -179,38 +182,51 @@ int NamdState::configListInit(ConfigList *cfgList) {
     molecule = new Molecule(simParameters, parameters, pIOHandle, plgFile, numAtoms);
     iout << iINFO << "TIME FOR LOAD MOLECULE STRUCTURE INFORMATION: " << CmiWallTimer() - fileReadTime << "\n" << endi;
 
-    fileReadTime = CmiWallTimer();
-    //get the occupancy data from the Molecule object and then free it
-    //as it is stored in the Molecule object.
-    pdb = new PDB(pIOHandle, plgFile, molecule->numAtoms, molecule->getOccupancyData(), molecule->getBFactorData());
-    molecule->freeOccupancyData();
-    molecule->freeBFactorData();
-    iout << iINFO << "TIME FOR LOADING ATOMS' COORDINATES INFORMATION: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+    /* If we are only generating compressed molecule information, the PDB object is not needed */
+    if(!simParameters->genCompressedPsf) {        
+        fileReadTime = CmiWallTimer();
+        //get the occupancy data from the Molecule object and then free it
+        //as it is stored in the Molecule object.
+        pdb = new PDB(pIOHandle, plgFile, molecule->numAtoms, molecule->getOccupancyData(), molecule->getBFactorData());
+        molecule->freeOccupancyData();
+        molecule->freeBFactorData();
+        iout << iINFO << "TIME FOR LOADING ATOMS' COORDINATES INFORMATION: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+    }
 
     pIOHandle->close_file_read(plgFile);
     delete pIOMgr;
   }
   else
   { StringList *moleculeFilename = configList->find("structure");
+    molInfoFilename = moleculeFilename; 
     StringList *parameterFilename = configList->find("parameters");
     //****** BEGIN CHARMM/XPLOR type changes
     // For AMBER use different constructor based on parm_struct!!!  -JCP
     parameters = new Parameters(simParameters, parameterFilename);
     //****** END CHARMM/XPLOR type changes    
 
-    if(simParameters->genCompressedPsf){
-        molecule = new Molecule(simParameters, parameters, moleculeFilename->data, configList);
-        iout << "Finished Compressing psf file!\n" <<endi;
-        CkExit();
-    }
-    else{
-        parameters->print_param_summary();
-	double fileReadTime = CmiWallTimer();
-        molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
-	iout << iINFO << "TIME FOR READING PSF FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
-    }    
+    parameters->print_param_summary();
+
+    double fileReadTime = CmiWallTimer();
+    molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+    iout << iINFO << "TIME FOR READING PSF FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;    
   }
   fflush(stdout);
+
+  if (simParameters->extraBondsOn) {        
+      molecule->build_extra_bonds(parameters, configList->find("extraBondsFile"));         
+  }
+  if(simParameters->genCompressedPsf) {
+    #ifdef MEM_OPT_VERSION
+      iout << "In the memory optimized version, the compression of molecule information is not supported! "
+              << "Please use the non-memory optimized version.\n" <<endi;
+    #else
+      double fileReadTime = CmiWallTimer();
+      compress_molecule_info(molecule, molInfoFilename->data, parameters, simParameters, configList);
+      iout << "Finished compressing molecule information, which takes " << CmiWallTimer()-fileReadTime <<"(s)\n"<<endi;
+    #endif
+      CkExit();
+  }
 
   //If using plugin-based IO, the PDB object is already created!
   StringList *coordinateFilename = NULL;
@@ -267,14 +283,14 @@ int NamdState::configListInit(ConfigList *cfgList) {
 				       NULL);
 	}
 
-	if (simParameters->extraBondsOn) {
+	/*if (simParameters->extraBondsOn) {
        #ifdef MEM_OPT_VERSION
        iout << "Information about the extra bonds have been already integrated into the compressed psf file!\n" <<endi;
        #else
 	   molecule->build_extra_bonds(parameters,
 				configList->find("extraBondsFile"));
        #endif
-	}
+	}*/
 	
 	if (simParameters->fixedAtomsOn)
 	{

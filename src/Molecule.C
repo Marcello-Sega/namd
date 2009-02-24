@@ -182,6 +182,10 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   atoms=NULL;
   atomNames=NULL;
   resLookup=NULL;
+
+  //for compressing molecule info
+  atomSegResids=NULL;
+
   if ( simParams->globalForcesOn ) {
     resLookup = new ResidueLookupElem;
   }
@@ -312,6 +316,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numFepFinal = 0;
 //fepe
 
+  //fields related with pluginIO-based loading molecule structure
+  occupancy = NULL;
+  bfactor = NULL;
 }
 
 /*      END OF FUNCTION initialize */
@@ -343,9 +350,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
 
   if(simParams->useCompressedPsf)
       read_compressed_psf_file(filename, param);
-  else if(simParams->genCompressedPsf){      
+  /*else if(simParams->genCompressedPsf){      
       compress_psf_file(this, filename, param, simParams, cfgList);
-  }      
+  }*/      
   else
       read_psf_file(filename, param);
 }
@@ -379,20 +386,10 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
         NAMD_die("ERROR: plugin didn't initialize optional data flags");
     }
     if(optflags & MOLFILE_OCCUPANCY) {
-        occupancy = new float[natoms];
-        for(int i=0; i<natoms; i++) {
-            occupancy[i] = atomarray[i].occupancy;
-        }
-    }else{
-        occupancy = NULL;
+        setOccupancyData(atomarray);
     }
     if(optflags & MOLFILE_BFACTOR) {
-        bfactor = new float[natoms];
-        for(int i=0; i<natoms; i++) {
-            bfactor[i] = atomarray[i].bfactor;
-        }
-    }else{
-        bfactor = NULL;
+        setBFactorData(atomarray);
     }
     //1b. load basic atoms information to the molecule object
     plgLoadAtomBasics(atomarray);    
@@ -1185,7 +1182,22 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     if(!NAMD_find_word(buffer, "NATOM"))
         NAMD_die("UNABLE TO FIND NATOM");
     sscanf(buffer, "%d", &numAtoms);
-    
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NHYDROGENGROUP"))
+        NAMD_die("UNABLE TO FIND NHYDROGENGROUP");
+    sscanf(buffer, "%d", &numHydrogenGroups);
+
+    int isOccupancyValid, isBFactorValid;
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "OCCUPANCYVALID"))
+        NAMD_die("UNABLE TO FIND OCCUPANCYVALID");
+    sscanf(buffer, "%d", &isOccupancyValid);
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "TEMPFACTORVALID"))
+        NAMD_die("UNABLE TO FIND TEMPFACTORVALID");
+    sscanf(buffer, "%d", &isBFactorValid);
+
     if(numAtoms>0){
         atoms = new AtomCstInfo[numAtoms];
         atomNames = new AtomNameIdx[numAtoms];
@@ -1196,41 +1208,137 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
 
         clusterSigs = new int[numAtoms];
 
-        hydrogenGroup.resize(0);
+        hydrogenGroup.resize(numAtoms);
+        HydrogenGroupID *hg = hydrogenGroup.begin();
+
         ResidueLookupElem *tmpResLookup = resLookup;
+
+        if(isOccupancyValid) {
+            occupancy = new float[numAtoms];
+        }
+        if(isBFactorValid) {
+            bfactor = new float[numAtoms];
+        }
 
         int residue_number; //for residue number
         char *segment_name;
-        int read_count;
-        int idx[10];
+        int read_count;        
+        float tmpf[2];
         
+#if BINARY_PERATOM_OUTPUT
+        //1. open the binary per-atom info file (fname.bin)
+        char *binFName = new char[strlen(fname)+10];
+        sprintf(binFName, "%s.bin", fname);
+        FILE *perAtomFile = Fopen(binFName, "rb");
+        if(perAtomFile==NULL) {
+            char err_msg[512];
+            sprintf(err_msg, "UNABLE TO OPEN THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s", binFName);            
+            NAMD_die(err_msg);
+        }                
+        //2. read the magic number to determine whether the endian is same or not
+        int needFlip = 0;
+        int magicNum = COMPRESSED_PSF_MAGICNUM;
+        int rMagicNum = COMPRESSED_PSF_MAGICNUM;
+        flipNum((char *)&rMagicNum, sizeof(int), 1);
+        int fMagicNum;
+        fread(&fMagicNum, sizeof(int), 1, perAtomFile);
+        if(fMagicNum==magicNum) {
+            needFlip = 0;
+        }else if(fMagicNum==rMagicNum){
+            needFlip = 1;
+        }else{
+            char err_msg[512];
+            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS CORRUPTED", binFName);            
+            NAMD_die(err_msg);
+        }
+        //3. read the file version number
+        float verNum =  0.0f;
+        fread(&verNum, sizeof(float), 1, perAtomFile);
+        if(needFlip) flipNum((char *)&verNum, sizeof(float), 1);
+        if(fabs(verNum - COMPRESSED_PSF_VER)>1e-6) {
+            char err_msg[512];
+            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS INCORRECT, PLEASE RE-GENERATE!\n", binFName);
+            NAMD_die(err_msg);
+        }
+        delete[] binFName;
+        //4. read per-atom info
+        Index sIdx[8];
+        int iIdx[8];
+        char isGP;
+        for(int i=0; i<numAtoms; i++){   
+            fread(sIdx, sizeof(Index), 8, perAtomFile);
+            fread(iIdx, sizeof(int), 8, perAtomFile);
+            fread(&isGP, sizeof(char), 1, perAtomFile);
+            fread(tmpf, sizeof(float), 2, perAtomFile);
+            if(needFlip) {
+                flipNum((char *)sIdx, sizeof(Index), 8);
+                flipNum((char *)iIdx, sizeof(int), 8);
+                flipNum((char *)tmpf, sizeof(float), 2);
+            }
+            segment_name = segNamePool[sIdx[0]];                   
+            atomNames[i].resnameIdx = sIdx[1];
+            atomNames[i].atomnameIdx = sIdx[2];
+            atomNames[i].atomtypeIdx = sIdx[3];
+            eachAtomCharge[i] = sIdx[4];
+            eachAtomMass[i] = sIdx[5];
+            eachAtomSig[i] = sIdx[6];
+            eachAtomExclSig[i] = sIdx[7];
+            residue_number = iIdx[0];
+            clusterSigs[i] = iIdx[1];
+            if(!isClusterContiguous)
+                clusterSize[iIdx[1]]++;
 
+            atoms[i].partner = iIdx[2];
+            atoms[i].hydrogenList= iIdx[3];
+
+            hg[i].atomID = iIdx[4];
+            hg[i].atomsInGroup = iIdx[5];
+            hg[i].GPID = iIdx[6];
+            hg[i].sortVal = iIdx[7];
+            hg[i].isGP = isGP;
+
+            //debugExclNum += (exclSigPool[sIdx[7]].fullExclCnt+exclSigPool[sIdx[7]].modExclCnt);
+#else
+        int idx[17];
         for(int i=0; i<numAtoms; i++){
             NAMD_read_line(psf_file, buffer);
-            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d %d",
+            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f",
                                 idx, idx+1, idx+2, idx+3, idx+4,
-                                idx+5, idx+6, idx+7, idx+8, idx+9);
-            if(read_count!=10){
+                                idx+5, idx+6, idx+7, idx+8, idx+9, idx+10, idx+11, idx+12,
+                                idx+13, idx+14, idx+15, idx+16, tmpf, tmpf+1);
+            if(read_count!=19){
                 char err_msg[128];
                 sprintf(err_msg, "BAD ATOM LINE FORMAT IN COMPRESSED PSF FILE IN ATOM LINE %d\nLINE=%s",i+1, buffer);
                 NAMD_die(err_msg);
             }
-
-            segment_name = segNamePool[idx[0]];
-            residue_number = idx[1];            
-            atomNames[i].resnameIdx = (Index)idx[2];
-            atomNames[i].atomnameIdx = (Index)idx[3];
-            atomNames[i].atomtypeIdx = (Index)idx[4];
-            eachAtomCharge[i] = (Index)idx[5];
-            eachAtomMass[i] = (Index)idx[6];
-            eachAtomSig[i] = (Index)idx[7];
-            eachAtomExclSig[i] = (Index)idx[8];
-
+            segment_name = segNamePool[idx[0]];                   
+            atomNames[i].resnameIdx = (Index)idx[1];
+            atomNames[i].atomnameIdx = (Index)idx[2];
+            atomNames[i].atomtypeIdx = (Index)idx[3];
+            eachAtomCharge[i] = (Index)idx[4];
+            eachAtomMass[i] = (Index)idx[5];              
+            eachAtomSig[i] = (Index)idx[6];
+            eachAtomExclSig[i] = (Index)idx[7];
+            residue_number = idx[8];
             clusterSigs[i] = idx[9];
             if(!isClusterContiguous)
-                clusterSize[idx[9]]++;           
+                clusterSize[idx[9]]++;
 
-	    //debugExclNum += (exclSigPool[idx[8]].fullExclCnt+exclSigPool[idx[8]].modExclCnt);
+            atoms[i].partner = idx[10];
+            atoms[i].hydrogenList= idx[11];
+
+            hg[i].atomID = idx[12];
+            hg[i].atomsInGroup = idx[13];
+            hg[i].GPID = idx[14];
+            hg[i].sortVal = idx[15];
+            hg[i].isGP = idx[16];
+            //debugExclNum += (exclSigPool[idx[7]].fullExclCnt+exclSigPool[idx[7]].modExclCnt);
+#endif	    
+
+            if(isOccupancyValid)
+                occupancy[i] = tmpf[0];
+            if(isBFactorValid)
+                bfactor[i] = tmpf[1];
 
             //Add this atom to residue lookup table
             if(tmpResLookup) tmpResLookup =
@@ -1276,6 +1384,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     
     numTotalExclusions /= 2;
 
+#if 0
+    //This part has been enabled in build_extra_bonds for memory optimized version
     //read extra bond parameters if there is an input of extra bonds (extraBondsOn is true)
     int extraDihedralParamNum = 0;
     int extraImproperParamNum = 0;
@@ -1392,6 +1502,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             params->improper_array = newParams;
         }
     }
+#endif
 
     //read DIHEDRALPARAMARRAY and IMPROPERPARAMARRAY    
     NAMD_read_line(psf_file, buffer);
@@ -1400,7 +1511,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     for(int i=0; i<params->NumDihedralParams; i++){
         params->dihedral_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
-    params->NumDihedralParams += extraDihedralParamNum;
+    //params->NumDihedralParams += extraDihedralParamNum;
 
     NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line 
     NAMD_read_line(psf_file, buffer);
@@ -1409,7 +1520,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
     for(int i=0; i<params->NumImproperParams; i++){
         params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
-    params->NumImproperParams += extraImproperParamNum;
+    //params->NumImproperParams += extraImproperParamNum;
     Fclose(psf_file);
 
     //numRealBonds is set when reading bondSignatures from compressed psf file
@@ -1458,6 +1569,11 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
   /*  Allocate the atom arrays          */
   atoms     = new Atom[numAtoms];
   atomNames = new AtomNameInfo[numAtoms];
+  if(simParams->genCompressedPsf) {
+      atomSegResids = new AtomSegResInfo[numAtoms];
+  }
+
+
   hydrogenGroup.resize(0);
 
   if (atoms == NULL || atomNames == NULL )
@@ -1538,6 +1654,12 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     /*  Add this atom to residue lookup table */
     if ( tmpResLookup ) tmpResLookup =
 	tmpResLookup->append(segment_name, atoi(residue_number), atom_number-1);
+
+    if(atomSegResids) { //for compressing molecule information
+        AtomSegResInfo *one = atomSegResids + (atom_number - 1);
+        memcpy(one->segname, segment_name, strlen(segment_name)+1);
+        one->resid = atoi(residue_number);
+    }
 
     /*  Determine the type of the atom (H or O) */
     if (atoms[atom_number-1].mass <= 0.05) {
@@ -2425,11 +2547,27 @@ void Molecule::read_exclusions(FILE *fd)
 }
 /*      END OF FUNCTION read_exclusions      */
 
+void Molecule::setOccupancyData(molfile_atom_t *atomarray){
+    occupancy = new float[numAtoms];
+    for(int i=0; i<numAtoms; i++) {
+        occupancy[i] = atomarray[i].occupancy;
+    }
+}
+
+void Molecule::setBFactorData(molfile_atom_t *atomarray){
+    bfactor = new float[numAtoms];
+    for(int i=0; i<numAtoms; i++) {
+        bfactor[i] = atomarray[i].bfactor;
+    }
+}
 
 void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
 #ifndef MEM_OPT_VERSION
     atoms = new Atom[numAtoms];
     atomNames = new AtomNameInfo[numAtoms];
+    if(simParams->genCompressedPsf) {
+        atomSegResids = new AtomSegResInfo[numAtoms];
+    }    
     hydrogenGroup.resize(0);
 
     ResidueLookupElem *tmpResLookup = resLookup;
@@ -2452,6 +2590,12 @@ void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
         //add this atom to residue lookup table
         if(tmpResLookup) {
             tmpResLookup = tmpResLookup->append(atomarray[i].segid, atomarray[i].resid, i);
+        }
+
+        if(atomSegResids) { //for compressing molecule information
+            AtomSegResInfo *one = atomSegResids + i;
+            memcpy(one->segname, atomarray[i].segid, strlen(atomarray[i].segid)+1);
+            one->resid = atomarray[i].resid;
         }
         //Determine the type of the atom
         if(atoms[i].mass <= 0.05) {
@@ -3003,6 +3147,14 @@ void Molecule::send_Molecule(MOStream *msg)
         msg->put(numExclusions*sizeof(Exclusion), (char*)exclusions);
       }
       #endif
+
+      //hydrogen group info is calculated when generating the compressed molecule
+      //information, so this has to be distributed to other nodes instead of
+      //being recalculated in build_atom_status in receive_Molecule function
+      #ifdef MEM_OPT_VERSION
+      msg->put(numHydrogenGroups);      
+      msg->put(numAtoms*sizeof(HydrogenGroupID), (char *)hydrogenGroup.begin());      
+      #endif
       
       //  Send the constraint information, if used
       if (simParams->constraintsOn)
@@ -3301,6 +3453,12 @@ void Molecule::receive_Molecule(MIStream *msg)
 
         msg->get(numExclusions*sizeof(Exclusion), (char*)exclusions);
       }
+      #endif
+
+      #ifdef MEM_OPT_VERSION
+      msg->get(numHydrogenGroups);      
+      hydrogenGroup.resize(numAtoms);
+      msg->get(numAtoms*sizeof(HydrogenGroupID), (char *)hydrogenGroup.begin());     
       #endif
       
       //  Get the constraint information, if they are active
@@ -5010,22 +5168,6 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	if (mgridParams->gridforceCol == NULL)
 	{
 	    kcol = 5;
-	}
-	else if (strcasecmp(gridfrccol->data, "Y") == 0)
-	{
-	    kcol=2;
-	}
-	else if (strcasecmp(gridfrccol->data, "Z") == 0)
-	{
-	    kcol=3;
-	}
-	else if (strcasecmp(gridfrccol->data, "O") == 0)
-	{
-	    kcol=4;
-	}
-	else if (strcasecmp(gridfrccol->data, "B") == 0)
-	{
-	    kcol=5;
 	}
 	else
 	{
@@ -7034,15 +7176,16 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
 
 
 void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
-#ifdef MEM_OPT_VERSION
-    NAMD_die("Not allowed in memory-optimized namd version!");
-#else
+//In the memory optimized version, only the parameters of extraBonds are needed
+//to load
   char err_msg[512];
   int a1,a2,a3,a4; float k, ref;
+  #ifndef MEM_OPT_VERSION
   ResizeArray<Bond> bonds;
   ResizeArray<Angle> angles;
   ResizeArray<Dihedral> dihedrals;
   ResizeArray<Improper> impropers;
+  #endif
   ResizeArray<BondValue> bond_params;
   ResizeArray<AngleValue> angle_params;
   ResizeArray<DihedralValue> dihedral_params;
@@ -7083,12 +7226,17 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
           CHECKATOMID(a1)
           CHECKATOMID(a2)
         }
+
+        #ifndef MEM_OPT_VERSION              
         Bond tmp;
         tmp.bond_type = parameters->NumBondParams + bonds.size();
         tmp.atom1 = a1;  tmp.atom2 = a2;
+        bonds.add(tmp);
+        #endif
+
         BondValue tmpv;
         tmpv.k = k;  tmpv.x0 = ref;
-        bonds.add(tmp);  bond_params.add(tmpv);
+        bond_params.add(tmpv);                
       } else if ( ! strncasecmp(type,"angle",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %f %f %s",
 	    type, &a1, &a2, &a3, &k, &ref, err_msg) != 6 ) badline = 1;
@@ -7097,13 +7245,18 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
           CHECKATOMID(a2)
           CHECKATOMID(a3)
         }
+        #ifndef MEM_OPT_VERSION
         Angle tmp;
         tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;
         tmp.angle_type = parameters->NumAngleParams + angles.size();
+        angles.add(tmp);  
+        #endif  
+
         AngleValue tmpv;
         tmpv.k = k;  tmpv.theta0 = ref / 180. * PI;
         tmpv.k_ub = 0;  tmpv.r_ub = 0;
-        angles.add(tmp);  angle_params.add(tmpv);
+        angle_params.add(tmpv);      
+              
       } else if ( ! strncasecmp(type,"dihedral",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
 	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
@@ -7113,13 +7266,17 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
           CHECKATOMID(a3)
           CHECKATOMID(a4)
         }
+        #ifndef MEM_OPT_VERSION
         Dihedral tmp;
         tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;  tmp.atom4 = a4;
         tmp.dihedral_type = parameters->NumDihedralParams + dihedrals.size();
+        dihedrals.add(tmp);
+        #endif
+
         DihedralValue tmpv;
         tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
         tmpv.values[0].k = k;  tmpv.values[0].delta = ref / 180. * PI;
-        dihedrals.add(tmp);  dihedral_params.add(tmpv);
+        dihedral_params.add(tmpv);
       } else if ( ! strncasecmp(type,"improper",4) ) {
         if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
 	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
@@ -7129,13 +7286,17 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
           CHECKATOMID(a3)
           CHECKATOMID(a4)
         }
+        #ifndef MEM_OPT_VERSION
         Improper tmp;
         tmp.atom1 = a1;  tmp.atom2 = a2;  tmp.atom3 = a3;  tmp.atom4 = a4;
         tmp.improper_type = parameters->NumImproperParams + impropers.size();
+        impropers.add(tmp);  
+        #endif
+
         ImproperValue tmpv;
         tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
         tmpv.values[0].k = k;  tmpv.values[0].delta = ref / 180. * PI;
-        impropers.add(tmp);  improper_params.add(tmpv);
+        improper_params.add(tmpv);
       } else if ( ! strncasecmp(type,"#",1) ) {
         continue;  // comment
       } else {
@@ -7157,91 +7318,99 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
   }  // loop over files
 
   // append to parameters and molecule data structures
-  if ( bonds.size() ) {
-    iout << iINFO << "READ " << bonds.size() << " EXTRA BONDS\n" << endi;
+  int extraNumBonds = bond_params.size();
+  if ( extraNumBonds ) {
+    iout << iINFO << "READ " << extraNumBonds << " EXTRA BONDS\n" << endi;
 
-    Bond *newbonds = new Bond[numBonds+bonds.size()];
+    #ifndef MEM_OPT_VERSION
+    Bond *newbonds = new Bond[numBonds+extraNumBonds];
     memcpy(newbonds, this->bonds, numBonds*sizeof(Bond));
-    memcpy(newbonds+numBonds, bonds.begin(), bonds.size()*sizeof(Bond));
+    memcpy(newbonds+numBonds, bonds.begin(), extraNumBonds*sizeof(Bond));
     delete [] this->bonds;
     this->bonds = newbonds;
-    numBonds += bonds.size();
+    numBonds += extraNumBonds;
+    #endif
 
     BondValue *newbondp = new BondValue[
-			parameters->NumBondParams + bonds.size()];
+			parameters->NumBondParams + extraNumBonds];
     memcpy(newbondp, parameters->bond_array,
 			parameters->NumBondParams * sizeof(BondValue));
     memcpy(newbondp+parameters->NumBondParams, bond_params.begin(),
-			bonds.size() * sizeof(BondValue));
+			extraNumBonds * sizeof(BondValue));
     delete [] parameters->bond_array;
     parameters->bond_array = newbondp;
-    parameters->NumBondParams += bonds.size();
+    parameters->NumBondParams += extraNumBonds;
   }
 
-  if ( angles.size() ) {
-    iout << iINFO << "READ " << angles.size() << " EXTRA ANGLES\n" << endi;
-
-    Angle *newangles = new Angle[numAngles+angles.size()];
+  int extraNumAngles = angle_params.size();
+  if ( extraNumAngles ) {
+    iout << iINFO << "READ " << extraNumAngles << " EXTRA ANGLES\n" << endi;
+    #ifndef MEM_OPT_VERSION
+    Angle *newangles = new Angle[numAngles+extraNumAngles];
     memcpy(newangles, this->angles, numAngles*sizeof(Angle));
-    memcpy(newangles+numAngles, angles.begin(), angles.size()*sizeof(Angle));
+    memcpy(newangles+numAngles, angles.begin(), extraNumAngles*sizeof(Angle));
     delete [] this->angles;
     this->angles = newangles;
-    numAngles += angles.size();
+    numAngles += extraNumAngles;
+    #endif
 
     AngleValue *newanglep = new AngleValue[
-			parameters->NumAngleParams + angles.size()];
+			parameters->NumAngleParams + extraNumAngles];
     memcpy(newanglep, parameters->angle_array,
 			parameters->NumAngleParams * sizeof(AngleValue));
     memcpy(newanglep+parameters->NumAngleParams, angle_params.begin(),
-			angles.size() * sizeof(AngleValue));
+			extraNumAngles * sizeof(AngleValue));
     delete [] parameters->angle_array;
     parameters->angle_array = newanglep;
-    parameters->NumAngleParams += angles.size();
+    parameters->NumAngleParams += extraNumAngles;
   }
 
-  if ( dihedrals.size() ) {
-    iout << iINFO << "READ " << dihedrals.size() << " EXTRA DIHEDRALS\n" << endi;
-
-    Dihedral *newdihedrals = new Dihedral[numDihedrals+dihedrals.size()];
+  int extraNumDihedrals = dihedral_params.size();
+  if ( extraNumDihedrals ) {
+    iout << iINFO << "READ " << extraNumDihedrals << " EXTRA DIHEDRALS\n" << endi;
+    #ifndef MEM_OPT_VERSION
+    Dihedral *newdihedrals = new Dihedral[numDihedrals+extraNumDihedrals];
     memcpy(newdihedrals, this->dihedrals, numDihedrals*sizeof(Dihedral));
-    memcpy(newdihedrals+numDihedrals, dihedrals.begin(), dihedrals.size()*sizeof(Dihedral));
+    memcpy(newdihedrals+numDihedrals, dihedrals.begin(), extraNumDihedrals*sizeof(Dihedral));
     delete [] this->dihedrals;
     this->dihedrals = newdihedrals;
-    numDihedrals += dihedrals.size();
+    numDihedrals += extraNumDihedrals;
+    #endif
 
     DihedralValue *newdihedralp = new DihedralValue[
-			parameters->NumDihedralParams + dihedrals.size()];
+			parameters->NumDihedralParams + extraNumDihedrals];
     memcpy(newdihedralp, parameters->dihedral_array,
 			parameters->NumDihedralParams * sizeof(DihedralValue));
     memcpy(newdihedralp+parameters->NumDihedralParams, dihedral_params.begin(),
-			dihedrals.size() * sizeof(DihedralValue));
+			extraNumDihedrals * sizeof(DihedralValue));
     delete [] parameters->dihedral_array;
     parameters->dihedral_array = newdihedralp;
-    parameters->NumDihedralParams += dihedrals.size();
+    parameters->NumDihedralParams += extraNumDihedrals;
   }
 
-  if ( impropers.size() ) {
-    iout << iINFO << "READ " << impropers.size() << " EXTRA IMPROPERS\n" << endi;
-
-    Improper *newimpropers = new Improper[numImpropers+impropers.size()];
+  int extraNumImpropers = improper_params.size();
+  if ( extraNumImpropers ) {
+    iout << iINFO << "READ " << extraNumImpropers << " EXTRA IMPROPERS\n" << endi;
+    #ifndef MEM_OPT_VERSION
+    Improper *newimpropers = new Improper[numImpropers+extraNumImpropers];
     memcpy(newimpropers, this->impropers, numImpropers*sizeof(Improper));
-    memcpy(newimpropers+numImpropers, impropers.begin(), impropers.size()*sizeof(Improper));
+    memcpy(newimpropers+numImpropers, impropers.begin(), extraNumImpropers*sizeof(Improper));
     delete [] this->impropers;
     this->impropers = newimpropers;
-    numImpropers += impropers.size();
+    numImpropers += extraNumImpropers;
+    #endif
 
     ImproperValue *newimproperp = new ImproperValue[
-			parameters->NumImproperParams + impropers.size()];
+			parameters->NumImproperParams + extraNumImpropers];
     memcpy(newimproperp, parameters->improper_array,
 			parameters->NumImproperParams * sizeof(ImproperValue));
     memcpy(newimproperp+parameters->NumImproperParams, improper_params.begin(),
-			impropers.size() * sizeof(ImproperValue));
+			extraNumImpropers * sizeof(ImproperValue));
     delete [] parameters->improper_array;
     parameters->improper_array = newimproperp;
-    parameters->NumImproperParams += impropers.size();
+    parameters->NumImproperParams += extraNumImpropers;
   }
-#endif
-}  // Molecule::build_extra_bonds()
+}// end of Molecule::build_extra_bonds()
 
 
 //Modifications for alchemical fep
@@ -7643,6 +7812,12 @@ void Molecule::build_atom_status(void) {
     }
   }
 
+//In the memory optimization, hydrogen group related information is already
+//recorded in the per-Atom file, therefore there's no need re-calculating the
+//hydrogen group
+//#if 1
+#ifndef MEM_OPT_VERSION
+
   // initialize information for each atom (note that the status has
   // already been initialized during the read/receive phase)
   hydrogenGroup.resize(numAtoms);
@@ -7659,7 +7834,8 @@ void Molecule::build_atom_status(void) {
   // deal with H-H bonds in a sane manner
   // this information will be rewritten later if bonded elsewhere
   int hhbondcount = 0;
-#ifdef MEM_OPT_VERSION
+#if 0 
+//#ifdef MEM_OPT_VERSION
   for(i=0; i<numAtoms; i++){
     AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
     TupleSignature *bSigs = sig->bondSigs;
@@ -7702,7 +7878,8 @@ void Molecule::build_atom_status(void) {
 
   // find which atom each hydrogen is bound to
   // also determine number of atoms in each group
-#ifdef MEM_OPT_VERSION
+#if 0  
+//#ifdef MEM_OPT_VERSION
   for(i=0; i<numAtoms; i++){
     AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
     TupleSignature *bSigs = sig->bondSigs;
@@ -7915,81 +8092,21 @@ void Molecule::build_atom_status(void) {
       }
     } // for numAtoms
   } // if SWM4
-  
-  // set up tail corrections if desired
-  /************************************
-   * The tail corrections here are based on Eq. 6 of Horn et al., 
-   * JCP 120:9665-9678 (2004), properly corrected for the switching
-   * function used in namd
-   * Tail corrections will be applied *for all waters* using the 
-   * *water vdw parameters* and assuming that everything beyond the cutoff radius
-   * looks like pure water
-   * This should be a good approximation in dilute solution, but may not be
-   * good for large solutes
-   * *****************************************/
-  if (simParams->wattailcorr) {
-    Real wat_eps;
-    Real wat_sigma;
-    Real sigma14;
-    Real epsilon14;
-    int numwat = 0;
-    BigReal rcut = simParams->cutoff;
-    BigReal rswitch = simParams->switchingDist;
-
-    // get values for sigma, epsilon, and the number of waters
-    for (i = 0;  i < numAtoms;  i++) {
-      if (is_water(hg[i].atomID) && hg[i].isGP) {
-        if (numwat == 0) {
-          params->get_vdw_params(&wat_sigma, &wat_eps, &sigma14, &epsilon14, atoms[i].vdw_type);
-        }
-        // printf("VDW info for atom %i (type %i) is %f / %f\n", i, atoms[i].vdw_type, wat_sigma, wat_eps);
-        numwat++;
-      }
-    }
-
-    // calculate the pair corrections
-    // analytical forms from mathematica
-
-    const BigReal sig3 = wat_sigma * wat_sigma * wat_sigma;
-    const BigReal rcut3= rcut * rcut * rcut;
-    const BigReal rswit3 = rswitch * rswitch * rswitch;
-    const BigReal switchdiff = rcut - rswitch;
-    const BigReal switchdiff2 = switchdiff * switchdiff;
-    const BigReal switch2diff = (rcut * rcut - rswitch * rswitch);
-
-    //printf("Values for calculating tail corrections: eps %f sigma %f rswit %f rcut %f nwat %i \n", wat_eps, wat_sigma, rswitch, rcut, numwat);
-
-    BigReal ener_long = wat_eps * (sig3 * sig3) * (-6.0 * rcut3 * rcut3 + sig3 * sig3) / (9.0 * rcut3 * rcut3 *rcut3);
-    BigReal vir_long = 4.0 * wat_eps * (sig3 * sig3) * (-3.0 * rcut3 * rcut3 + sig3 * sig3) / (3.0 * rcut3 * rcut3 *rcut3);
-    BigReal vir_swit;
-    BigReal ener_swit;
-
-    if (simParams->switchingActive) {
-      vir_swit = -4.0 * wat_eps * switchdiff2 * switchdiff2 * sig3 * sig3 * (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut) + sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 * rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch * rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 * rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut + 96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) / (-105.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 * switch2diff * switch2diff * switch2diff);
-      ener_swit = wat_eps * switchdiff2 * switchdiff2 * sig3 * sig3 * ( 210.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * (rswitch * rswitch + 4.0 * rswitch * rcut + 7.0 * rcut * rcut) - sig3 * sig3 * (35.0 * rswit3 * rswit3 * rswitch + 140.0 * rswit3 * rswit3 * rcut + 245.0 * rswit3 * rswitch * rswitch * rcut *rcut + 280.0 * rswit3 * rswitch * rcut3 + 256.0 * rswit3 * rcut3 * rcut + 184.0 * rswitch * rswitch * rcut3 * rcut * rcut + 96.0 * rswitch * rcut3 * rcut3 + 24.0 * rcut3 * rcut3 * rcut) ) / (-315.0 * rswit3 * rswitch * rswitch * rcut3 * rcut3 * rcut3 * switch2diff * switch2diff * switch2diff);
-
-    } else {
-      ener_swit = 0.0;
-      vir_swit = 0.0;
-    }
-
-    // WARNING: These values must be divided by volume prior to use
-    tail_corr_ener = 2.0 * PI * numwat * numwat * ( ener_swit + ener_long );
-    tail_corr_virial = 2.0 * PI *numwat * numwat * ( vir_swit + vir_long );
-
-  }
-
-
+#endif
 
   #if 0
   // debugging code for showing sorted atoms
+  //if(CkMyPe()==1) {  
   for(i=0; i<numAtoms; i++)
     iout << i << " atomID=" << hydrogenGroup[i].atomID
    << " isGP=" << hydrogenGroup[i].isGP
    << " parent=" << hydrogenGroup[i].GPID
    << " #" << hydrogenGroup[i].atomsInGroup
    << " sortVal=" << hydrogenGroup[i].sortVal
+   << " partner=" << atoms[i].partner
+   << " hydrogenList=" << atoms[i].hydrogenList
    << "\n" << endi;
+  //}
   #endif
 
   // now deal with rigidBonds
@@ -8176,7 +8293,7 @@ void Molecule::build_atom_status(void) {
         NAMD_die("Failed to find water bond lengths\n");
       } 
       r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
-      //printf("final r_om and r_ohc are %f and %f\n", r_om, r_ohc);
+      printf("final r_om and r_ohc are %f and %f\n", r_om, r_ohc);
     }
 
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
@@ -8309,6 +8426,11 @@ void Molecule::read_parm(Ambertoppar *amber_data)
   numAtoms = amber_data->Natom;
   atoms = new Atom[numAtoms];
   atomNames = new AtomNameInfo[numAtoms];
+
+  if(simParams->genCompressedPsf) {
+      atomSegResids = new AtomSegResInfo[numAtoms];
+  }
+
   if (atoms == NULL || atomNames == NULL )
     NAMD_die("memory allocation failed when reading atom information");
   ResidueLookupElem *tmpResLookup = resLookup;
@@ -8335,6 +8457,13 @@ void Molecule::read_parm(Ambertoppar *amber_data)
     /*  Add this atom to residue lookup table */
     if ( tmpResLookup ) tmpResLookup =
 	tmpResLookup->append("MAIN", amber_data->AtomRes[i]+1, i);
+
+    if(atomSegResids) { //for compressing molecule information
+        AtomSegResInfo *one = atomSegResids + i;
+        memcpy(one->segname, "MAIN", strlen("MAIN")+1);
+        one->resid = amber_data->AtomRes[i]+1;
+    }
+    
 
     /*  Determine the type of the atom (H or O) */
     atoms[i].status = UnknownAtom; // the default
@@ -8625,6 +8754,11 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
   numAtoms = gf->getNumAtoms();
   atoms = new Atom[numAtoms];
   atomNames = new AtomNameInfo[numAtoms];
+
+  if(simParams->genCompressedPsf) {
+      atomSegResids = new AtomSegResInfo[numAtoms];
+  }
+
   if (atoms == NULL || atomNames == NULL )
     NAMD_die("memory allocation failed when reading atom information");
   ResidueLookupElem *tmpResLookup = resLookup;
@@ -8654,6 +8788,12 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     /*  Add this atom to residue lookup table */
     if ( tmpResLookup ) tmpResLookup =
 	tmpResLookup->append("MAIN", resnum+1, i);
+
+    if(atomSegResids) { //for compressing molecule information
+        AtomSegResInfo *one = atomSegResids + i;
+        memcpy(one->segname, "MAIN", strlen("MAIN")+1);
+        one->resid = resnum+1;
+    }
 
     /*  Determine the type of the atom (H or O) */
     // XXX this cannot be done this way in GROMACS

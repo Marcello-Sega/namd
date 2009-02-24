@@ -35,16 +35,15 @@ ConfigList *g_cfgList = NULL;
 
 struct BasicAtomInfo
 {
-    short segNameIdx;
-    short resNameIdx;
-    short atomNameIdx;
-    short atomTypeIdx;
-    short chargeIdx;
-    short massIdx;
+    Index segNameIdx;
+    Index resNameIdx;
+    Index atomNameIdx;
+    Index atomTypeIdx;
+    Index chargeIdx;
+    Index massIdx;    
+    Index atomSigIdx;
+    Index exclSigIdx;
     int resID;
-
-    int atomSigIdx;
-    int exclSigIdx;
 };
 
 typedef unsigned short SigIndex;
@@ -235,6 +234,7 @@ vector<Bond> extraBonds;
 vector<Angle> extraAngles;
 vector<Dihedral> extraDihedrals;
 vector<Improper> extraImpropers;
+
 vector<BondValue> extraBondParams;
 vector<AngleValue> extraAngleParams;
 vector<DihedralValue> extraDihedralParams;
@@ -280,8 +280,11 @@ int operator==(const ImproperValue &d1, const ImproperValue &d2)
 }
 
 void readPsfFile(char *psfFileName);
+void loadMolInfo();
+
 void integrateAllAtomSigs();
 void outputPsfFile(FILE *ofp);
+void outputCompressedFile(FILE *txtOfp, FILE *binOfp);
 
 //reading extraBond's information
 void getExtraBonds(StringList *file);
@@ -297,11 +300,35 @@ void getAcceptorData(FILE *ifp);
 void getExclusionData(FILE *ifp);
 void getCrosstermData(FILE *ifp);
 
+void buildAtomData();
+void buildBondData();
+void buildAngleData();
+void buildDihedralData();
+void buildImproperData();
+void buildCrosstermData();
+
+void buildExclusionData();
+void buildParamData();
+
 //Functions related with building exclusions
 void buildExclusions();
 void build12Excls(UniqueSet<Exclusion>&, vector<int> *);
 void build13Excls(UniqueSet<Exclusion>&, vector<int> *);
 void build14Excls(UniqueSet<Exclusion>&, vector<int> *, int);
+
+//reverse the byte-order of every element starting at "elem"
+void flipNum(char *elem, int elemSize, int numElems){
+    int mid = elemSize/2;
+    char *ptr = elem;
+    for(int i=0; i<numElems; i++) {
+        for(int j=0; j<mid; j++) {
+            char tmp = ptr[j];
+            ptr[j] = ptr[elemSize-1-j];
+            ptr[elemSize-1-j] = tmp;
+        }
+        ptr += elemSize;
+    }
+}
 
 void clearGlobalVectors()
 {
@@ -343,6 +370,39 @@ void compress_psf_file(Molecule *mol, char *psfFileName, Parameters *param, SimP
     //output compressed psf file
     outputPsfFile(ofp);
     fclose(ofp);
+}
+
+void compress_molecule_info(Molecule *mol, char *psfFileName, Parameters *param, SimParameters *simParam, ConfigList* cfgList)
+{
+    g_mol = mol;
+    g_param = param;
+    g_simParam = simParam; //used for building exclusions
+    g_cfgList = cfgList; //used for integrating extra bonds
+
+    //read psf files
+    //readPsfFile(psfFileName);
+    loadMolInfo();
+
+    integrateAllAtomSigs();
+
+    buildExclusions();
+
+    //buildParamData();
+
+    char *outFileName = new char[strlen(psfFileName)+20];
+    sprintf(outFileName, "%s.inter", psfFileName);
+    //the text file for signatures and other non-per-atom info
+    FILE *txtOfp = fopen(outFileName, "w");
+    sprintf(outFileName, "%s.inter.bin", psfFileName);
+    //the binary file for per-atom info
+    FILE *binOfp = fopen(outFileName, "wb");
+    delete [] outFileName;
+
+    //output compressed psf file
+    outputCompressedFile(txtOfp, binOfp);
+
+    fclose(txtOfp);
+    fclose(binOfp);
 }
 
 //Almost same with Molecule::read_psf_file
@@ -667,6 +727,51 @@ void readPsfFile(char *fname)
     fclose(psf_file);
 }
 
+/** Before entering this function, all information about
+ *  Molecule has been obtained. The
+ *  Molecule::build_atom_status should also be called.
+ */
+void loadMolInfo()
+{
+    char err_msg[512];  //  Error message for NAMD_die
+    char buffer[512];  //  Buffer for file reading
+    int i;      //  Loop counter
+    int NumTitle;    //  Number of Title lines in .psf file
+    int ret_code;    //  ret_code from NAMD_read_line calls
+    FILE *psf_file;
+    Parameters *params = g_param;
+
+    buildAtomData();
+
+    //read extra bonds/angles/dihedrals/impropers information first
+    //and then integrate them into the following reading procedures
+    /*if(g_simParam->extraBondsOn)
+    {
+        getExtraBonds(g_cfgList->find("extraBondsFile"));
+    }*/
+
+    //initialize eachAtomSigs
+    eachAtomSigs = new AtomSigInfo[g_mol->numAtoms];    
+
+    if (g_mol->numBonds)
+        buildBondData();
+
+    if (g_mol->numAngles)
+        buildAngleData();
+
+    if (g_mol->numDihedrals)
+        buildDihedralData();
+
+    if (g_mol->numImpropers)
+        buildImproperData();
+
+    if (g_mol->numCrossterms)
+        buildCrosstermData();
+
+    //  analyze the data and find the status of each atom
+    //build_atom_status();
+}
+
 void integrateAllAtomSigs()
 {
     printf("Bond sigs:  %d\n", (int)sigsOfBonds.size());
@@ -809,14 +914,29 @@ void outputPsfFile(FILE *ofp)
 
     //4. Output atom info
     fprintf(ofp, "%d !NATOM\n", g_mol->numAtoms);
+    const float *atomOccupancy = g_mol->getOccupancyData();
+    const float *atomBFactor = g_mol->getBFactorData();
+    fprintf(ofp, "%d !OCCUPANCYVALID\n", (atomOccupancy==NULL)?0:1);
+    fprintf(ofp, "%d !TEMPFACTORVALID\n", (atomBFactor==NULL)?0:1);
+
+    float *zeroFloats = NULL;
+    if(atomOccupancy==NULL || atomBFactor==NULL) {
+        zeroFloats = new float[g_mol->numAtoms];
+        memcpy(zeroFloats, 0, sizeof(float)*g_mol->numAtoms);
+        if(atomOccupancy==NULL) atomOccupancy = (const float *)zeroFloats;
+        if(atomBFactor==NULL) atomBFactor = (const float *)zeroFloats;
+    }
+
     for(int i=0; i<g_mol->numAtoms; i++)
     {
         BasicAtomInfo &one = atomData[i];
-        fprintf(ofp, "%d %d %d %d %d %d %d %d %d %d\n", one.segNameIdx, one.resID, one.resNameIdx, one.atomNameIdx,
-                one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx, eachAtomClusterID[i]);
+        fprintf(ofp, "%d %d %d %d %d %d %d %d %d %d %f %f\n", one.segNameIdx, one.resID, one.resNameIdx, one.atomNameIdx,
+                one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx, 
+                eachAtomClusterID[i], atomOccupancy[i], atomBFactor[i]);
     }
     //fprintf(ofp, "\n");
 
+    if(zeroFloats) delete[] zeroFloats;
     delete[] atomData;
     delete[] eachAtomClusterID;
 
@@ -878,7 +998,6 @@ void outputPsfFile(FILE *ofp)
         }
     }
 
-
     //5. Output the "multiplicity" field TUPLE_array of the Parameter object
     fprintf(ofp, "!DIHEDRALPARAMARRAY\n");
     for(int i=0; i<g_param->NumDihedralParams; i++)
@@ -892,6 +1011,244 @@ void outputPsfFile(FILE *ofp)
         fprintf(ofp, "%d ", g_param->improper_array[i].multiplicity);
     }
     fprintf(ofp, "\n");
+}
+
+/**
+ * Per-atom data structure is as follows (the order of fields is
+ * very important as it has to be preserved when reading them in 
+ * the memory optimized version) 
+ * 1. unsigned short: segNameIdx 
+ * 2. unsigned short: resNameIdx 
+ * 3. unsigned short: atomNameIdx 
+ * 4. unsigned short: atomTypeIdx 
+ * 5. unsigned short: chargeIdx 
+ * 6. unsigned short: massIdx 
+ * 7. unsigned short: atom's signature idx
+ * 8. unsigned short: atom's exclusion signature idx
+ * 9. int: atom's residue idx 
+ * 10. int: atom's cluster idx 
+ * //following fields (11- 17) are related to hydrogen group 
+ * 11. int: atom's partner 
+ * 12. int: atom's hydrogenList 
+ * 13. int: hydrogenGroup's atom id 
+ * 14. int: hydrogenGroup's atomsInGroup 
+ * 15. int: hydrogenGroup's GPID 
+ * 16. int: hydrogenGroup's sortVal 
+ * 17. char: hydrogenGroup's isGP 
+ * 18. float: atom's occupancy 
+ * 19. float: atom's bfactor (temperature's factor) 
+ */
+void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
+{
+#ifndef MEM_OPT_VERSION
+    fprintf(txtOfp, "FORMAT VERSION: %f\n", COMPRESSED_PSF_VER);
+
+    fprintf(txtOfp, "%d !NSEGMENTNAMES\n", segNamePool.size());
+    for(int i=0; i<segNamePool.size(); i++)
+    {
+        fprintf(txtOfp, "%s\n", segNamePool[i].c_str());
+    }
+
+    fprintf(txtOfp, "%d !NRESIDUENAMES\n", resNamePool.size());
+    for(int i=0; i<resNamePool.size(); i++)
+    {
+        fprintf(txtOfp, "%s\n", resNamePool[i].c_str());
+    }
+
+    fprintf(txtOfp, "%d !NATOMNAMES\n", atomNamePool.size());
+    for(int i=0; i<atomNamePool.size(); i++)
+    {
+        fprintf(txtOfp, "%s\n", atomNamePool[i].c_str());
+    }
+
+    fprintf(txtOfp, "%d !NATOMTYPES\n", atomTypePool.size());
+    for(int i=0; i<atomTypePool.size(); i++)
+    {
+        fprintf(txtOfp, "%s\n", atomTypePool[i].c_str());
+    }
+
+    fprintf(txtOfp, "%d !NCHARGES\n", chargePool.size());
+    for(int i=0; i<chargePool.size(); i++)
+    {
+        fprintf(txtOfp, "%f\n", chargePool[i]);
+    }
+
+    fprintf(txtOfp, "%d !NMASSES\n", massPool.size());
+    for(int i=0; i<massPool.size(); i++)
+    {
+        fprintf(txtOfp, "%f\n", massPool[i]);
+    }
+
+
+    fprintf(txtOfp, "%d !NATOMSIGS\n", atomSigPool.size());
+    for(int i=0; i<atomSigPool.size(); i++)
+    {
+        AtomSigInfo& oneAtomSig = atomSigPool[i];
+        int oneTypeCnt = oneAtomSig.bondSigIndices.size();
+        fprintf(txtOfp, "%d !%sSIGS\n", oneTypeCnt, "NBOND");
+        for(int j=0; j<oneTypeCnt; j++)
+        {
+            SigIndex idx = oneAtomSig.bondSigIndices[j];
+            TupleSignature& tSig = sigsOfBonds[idx];
+            tSig.output(txtOfp);
+        }
+
+        oneTypeCnt = oneAtomSig.angleSigIndices.size();
+        fprintf(txtOfp, "%d !%sSIGS\n", oneTypeCnt, "NTHETA");
+        for(int j=0; j<oneTypeCnt; j++)
+        {
+            SigIndex idx = oneAtomSig.angleSigIndices[j];
+            TupleSignature& tSig = sigsOfAngles[idx];
+            tSig.output(txtOfp);
+        }
+
+        oneTypeCnt = oneAtomSig.dihedralSigIndices.size();
+        fprintf(txtOfp, "%d !%sSIGS\n", oneTypeCnt, "NPHI");
+        for(int j=0; j<oneTypeCnt; j++)
+        {
+            SigIndex idx = oneAtomSig.dihedralSigIndices[j];
+            TupleSignature& tSig = sigsOfDihedrals[idx];
+            tSig.output(txtOfp);
+        }
+
+        oneTypeCnt = oneAtomSig.improperSigIndices.size();
+        fprintf(txtOfp, "%d !%sSIGS\n", oneTypeCnt, "NIMPHI");
+        for(int j=0; j<oneTypeCnt; j++)
+        {
+            SigIndex idx = oneAtomSig.improperSigIndices[j];
+            TupleSignature& tSig = sigsOfImpropers[idx];
+            tSig.output(txtOfp);
+        }
+
+        oneTypeCnt = oneAtomSig.crosstermSigIndices.size();
+        fprintf(txtOfp, "%d !%sSIGS\n", oneTypeCnt, "NCRTERM");
+        for(int j=0; j<oneTypeCnt; j++)
+        {
+            SigIndex idx = oneAtomSig.crosstermSigIndices[j];
+            TupleSignature& tSig = sigsOfCrossterms[idx];
+            tSig.output(txtOfp);
+        }
+    }
+
+    //2. Output exclusion signatures
+    int exclSigCnt = sigsOfExclusions.size();
+    fprintf(txtOfp, "%d !NEXCLSIGS\n", exclSigCnt);
+    for(int i=0; i<exclSigCnt; i++)
+    {
+        ExclSigInfo *sig = &sigsOfExclusions[i];
+        //first line is for full exclusions (1-2, 1-3) in the format of count offset1 offset2 offset3 ...
+        fprintf(txtOfp, "%d", sig->fullExclOffset.size());
+        for(int j=0; j<sig->fullExclOffset.size(); j++)
+            fprintf(txtOfp, " %d", sig->fullExclOffset[j]);
+        fprintf(txtOfp, "\n");
+
+        //second line is for modified exclusions (1-4)
+        fprintf(txtOfp, "%d", sig->modExclOffset.size());
+        for(int j=0; j<sig->modExclOffset.size(); j++)
+            fprintf(txtOfp, " %d", sig->modExclOffset[j]);
+        fprintf(txtOfp, "\n");
+    }
+
+    //3. Output the cluster information
+    fprintf(txtOfp, "%d !NCLUSTERS\n", g_numClusters);
+    fprintf(txtOfp, "%d !CLUSTERCONTIGUITY\n", g_isClusterContiguous);
+
+    //4. Output atom info
+    fprintf(txtOfp, "%d !NATOM\n", g_mol->numAtoms);
+    fprintf(txtOfp, "%d !NHYDROGENGROUP\n", g_mol->numHydrogenGroups);
+    const float *atomOccupancy = g_mol->getOccupancyData();
+    const float *atomBFactor = g_mol->getBFactorData();
+    fprintf(txtOfp, "%d !OCCUPANCYVALID\n", (atomOccupancy==NULL)?0:1);
+    fprintf(txtOfp, "%d !TEMPFACTORVALID\n", (atomBFactor==NULL)?0:1);
+
+    float *zeroFloats = NULL;
+    if(atomOccupancy==NULL || atomBFactor==NULL) {
+        zeroFloats = new float[g_mol->numAtoms];
+        memset(zeroFloats, 0, sizeof(float)*g_mol->numAtoms);
+        if(atomOccupancy==NULL) atomOccupancy = (const float *)zeroFloats;
+        if(atomBFactor==NULL) atomBFactor = (const float *)zeroFloats;
+    }
+
+    Atom *atoms = g_mol->getAtoms(); //need to output its partner and hydrogenList
+    HydrogenGroupID *hg = g_mol->hydrogenGroup.begin();
+
+#if BINARY_PERATOM_OUTPUT
+    //First, output magic number
+    int magicNum = COMPRESSED_PSF_MAGICNUM;
+    fwrite(&magicNum, sizeof(int), 1, binOfp);
+    //Second, version number
+    float verNum = (float)COMPRESSED_PSF_VER;
+    fwrite(&verNum, sizeof(float), 1, binOfp);
+    //Third, each atom info
+    Index sIdx[8];
+    int iIdx[8];
+    char isGP;
+    float tmpf[2];
+    for(int i=0; i<g_mol->numAtoms; i++)
+    {                
+        sIdx[0] = atomData[i].segNameIdx;
+        sIdx[1] = atomData[i].resNameIdx;
+        sIdx[2] = atomData[i].atomNameIdx;
+        sIdx[3] = atomData[i].atomTypeIdx;
+        sIdx[4] = atomData[i].chargeIdx;
+        sIdx[5] = atomData[i].massIdx;
+        sIdx[6] = atomData[i].atomSigIdx;
+        sIdx[7] = atomData[i].exclSigIdx;        
+
+        iIdx[0] = atomData[i].resID;
+        iIdx[1] = eachAtomClusterID[i];
+        iIdx[2] = atoms[i].partner;
+        iIdx[3] = atoms[i].hydrogenList;
+        iIdx[4] = hg[i].atomID;
+        iIdx[5] = hg[i].atomsInGroup;
+        iIdx[6] = hg[i].GPID;
+        iIdx[7] = hg[i].sortVal;
+        isGP = hg[i].isGP;
+        tmpf[0] = atomOccupancy[i];
+        tmpf[1] = atomBFactor[i];
+        fwrite(sIdx, sizeof(Index), 8, binOfp);
+        fwrite(iIdx, sizeof(int), 8, binOfp);
+        fwrite(&isGP, sizeof(char), 1, binOfp);
+        fwrite(tmpf, sizeof(float), 2, binOfp);
+    }
+#else
+    for(int i=0; i<g_mol->numAtoms; i++)
+    {
+        BasicAtomInfo &one = atomData[i];
+        fprintf(txtOfp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f\n", 
+                one.segNameIdx, one.resNameIdx, one.atomNameIdx,
+                one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx, one.resID,
+                eachAtomClusterID[i], atoms[i].partner, atoms[i].hydrogenList,
+                hg[i].atomID, hg[i].atomsInGroup, hg[i].GPID, hg[i].sortVal, hg[i].isGP,
+                atomOccupancy[i], atomBFactor[i]);
+    }
+#endif
+    //fprintf(txtOfp, "\n");
+
+    if(zeroFloats) delete[] zeroFloats;
+    delete[] atoms;
+    g_mol->hydrogenGroup.resize(0);
+    delete[] atomData;
+    delete[] eachAtomClusterID;
+
+    //4.Output the parameter new values if extraBonds are present.
+    //The parameters are not needed since now extraBonds' parameters will be
+    //read again during running the simulation
+
+    //5. Output the "multiplicity" field TUPLE_array of the Parameter object
+    fprintf(txtOfp, "!DIHEDRALPARAMARRAY\n");
+    for(int i=0; i<g_param->NumDihedralParams; i++)
+    {
+        fprintf(txtOfp, "%d ", g_param->dihedral_array[i].multiplicity);
+    }
+    fprintf(txtOfp, "\n");
+    fprintf(txtOfp, "!IMPROPERPARAMARRAY\n");
+    for(int i=0; i<g_param->NumImproperParams; i++)
+    {
+        fprintf(txtOfp, "%d ", g_param->improper_array[i].multiplicity);
+    }
+    fprintf(txtOfp, "\n");
+#endif
 }
 
 void getAtomData(FILE *ifp)
@@ -1010,6 +1367,85 @@ void getAtomData(FILE *ifp)
         atomData[atomID-1].massIdx = poolIndex;
     }
 }
+
+void buildAtomData()
+{
+#ifndef MEM_OPT_VERSION
+    int numAtoms = g_mol->numAtoms;
+
+    //1. parse atom data to build constant pool (atom name, mass, charge etc.)
+    atomData = new BasicAtomInfo[numAtoms];
+    Atom *atoms = g_mol->getAtoms();
+    AtomNameInfo *atomNames = g_mol->getAtomNames();
+    AtomSegResInfo *atomSegResids = g_mol->getAtomSegResInfo();
+
+    for(int atomID=0; atomID < numAtoms; atomID++)
+    {
+        //building constant pool
+        int poolIndex;
+        string fieldName;
+        fieldName.assign(atomSegResids[atomID].segname);
+        poolIndex = lookupCstPool(segNamePool, fieldName);
+        if(poolIndex==-1)
+        {
+            segNamePool.push_back(fieldName);
+            poolIndex = segNamePool.size()-1;
+        }
+        atomData[atomID].segNameIdx = poolIndex;
+        
+        atomData[atomID].resID = atomSegResids[atomID].resid;
+
+        fieldName.assign(atomNames[atomID].resname);
+        poolIndex = lookupCstPool(resNamePool, fieldName);
+        if(poolIndex==-1)
+        {
+            resNamePool.push_back(fieldName);
+            poolIndex = resNamePool.size()-1;
+        }
+        atomData[atomID].resNameIdx = poolIndex;
+
+        fieldName.assign(atomNames[atomID].atomname);
+        poolIndex = lookupCstPool(atomNamePool, fieldName);
+        if(poolIndex==-1)
+        {
+            atomNamePool.push_back(fieldName);
+            poolIndex = atomNamePool.size()-1;
+        }
+        atomData[atomID].atomNameIdx = poolIndex;
+
+        fieldName.assign(atomNames[atomID].atomtype);
+        poolIndex = lookupCstPool(atomTypePool, fieldName);
+        if(poolIndex==-1)
+        {
+            atomTypePool.push_back(fieldName);
+            poolIndex = atomTypePool.size()-1;
+        }
+        atomData[atomID].atomTypeIdx = poolIndex;
+
+        poolIndex = lookupCstPool(chargePool, atoms[atomID].charge);
+        if(poolIndex==-1)
+        {
+            chargePool.push_back(atoms[atomID].charge);
+            poolIndex = chargePool.size()-1;
+        }
+        atomData[atomID].chargeIdx = poolIndex;
+
+        poolIndex = lookupCstPool(massPool, atoms[atomID].mass);
+        if(poolIndex==-1)
+        {
+            massPool.push_back(atoms[atomID].mass);
+            poolIndex = massPool.size()-1;
+        }
+        atomData[atomID].massIdx = poolIndex;
+    }
+
+    //Free those space to reduce transient memory usage
+    //delete [] atoms; (deleted until per-atom info is output)
+    delete [] atomNames;
+    delete [] atomSegResids;
+#endif
+}
+
 
 void getExtraBonds(StringList *file)
 {
@@ -1203,6 +1639,10 @@ void getExtraBonds(StringList *file)
     }  // loop over files
 }
 
+void buildParamData()
+{
+
+}
 
 //In this function, safety check will also be performed:
 //1. bond itself 2.duplicate bonds such as (a, b) & (b, a)
@@ -1491,6 +1931,195 @@ void getBondData(FILE *fd)
     delete [] atomListOfBonded;
 }
 
+void buildBondData()
+{
+#ifndef MEM_OPT_VERSION
+    Bond *bonds = g_mol->getAllBonds();    
+
+    //then creating bond's tupleSignature
+    for(int i=0; i<g_mol->numBonds; i++)
+    {
+        Bond *b = bonds+i;
+        TupleSignature oneSig(1,BOND,b->bond_type);
+        oneSig.offset[0] = b->atom2 - b->atom1;
+        oneSig.isReal = (i<g_mol->numRealBonds);
+
+        int poolIndex = lookupCstPool(sigsOfBonds, oneSig);
+        int newSig=0;
+        if(poolIndex == -1)
+        {
+            sigsOfBonds.push_back(oneSig);
+            poolIndex = (SigIndex)sigsOfBonds.size()-1;
+            newSig=1;
+        }
+
+        if(!newSig)
+        {//check duplicate bonds in the form of (a, b) && (a, b);
+            int dupIdx = lookupCstPool(eachAtomSigs[b->atom1].bondSigIndices, (SigIndex)poolIndex);
+            if(dupIdx!=-1)
+            {
+                char err_msg[128];
+                sprintf(err_msg, "Duplicate bond %d-%d!", b->atom1+1, b->atom2+1);
+                NAMD_die(err_msg);
+            }
+        }
+        eachAtomSigs[b->atom1].bondSigIndices.push_back(poolIndex);
+    }
+
+    //check duplicate bonds in the form of (a, b) && (b, a)
+    for(int i=0; i<g_mol->numBonds; i++)
+    {
+        Bond *b=bonds+i;
+        int atom2 = b->atom2;
+        int thisOffset = atom2 - b->atom1;
+        for(int j=0; j<eachAtomSigs[atom2].bondSigIndices.size(); j++)
+        {
+            SigIndex atom2BondId = eachAtomSigs[atom2].bondSigIndices[j];
+            TupleSignature *secSig = &(sigsOfBonds[atom2BondId]);
+            if(thisOffset== -(secSig->offset[0]))
+            {
+                char err_msg[128];
+                sprintf(err_msg, "Duplicate bond %d-%d because two atoms are just reversed!", b->atom1+1, atom2+1);
+                NAMD_die(err_msg);
+            }
+        }
+    }      
+
+    //building clusters for this simulation system in two steps
+    //1. create a list for each atom where each atom in the list is bonded with that atom
+    vector<int> *atomListOfBonded = new vector<int>[g_mol->numAtoms];
+
+    for(int i=0; i<g_mol->numRealBonds; i++)
+    {
+        Bond *b=bonds+i;
+        int atom1 = b->atom1;
+        int atom2 = b->atom2;
+        atomListOfBonded[atom1].push_back(atom2);
+        atomListOfBonded[atom2].push_back(atom1);
+    }
+
+    delete [] bonds;
+
+    //2. using breadth-first-search to build the clusters. Here, we avoid recursive call
+    // because the depth of calls may be of thousands which will blow up the stack, and
+    //recursive call is slower than the stack-based BFS.
+    //Considering such structure
+    //1->1245; 7->1243; 1243->1245
+    eachAtomClusterID = new int[g_mol->numAtoms];
+    for(int i=0; i<g_mol->numAtoms; i++)
+        eachAtomClusterID[i] = -1;
+
+    for(int i=0; i<g_mol->numAtoms; i++)
+    {
+        int curClusterID=eachAtomClusterID[i];
+        if(curClusterID==-1)
+        {
+            curClusterID=i;
+        }
+
+        deque<int> toVisitAtoms;
+        toVisitAtoms.push_back(i);
+        while(!toVisitAtoms.empty())
+        {
+            int visAtomID = toVisitAtoms.front();
+            toVisitAtoms.pop_front();
+            eachAtomClusterID[visAtomID] = curClusterID;
+            for(int j=0; j<atomListOfBonded[visAtomID].size(); j++)
+            {
+                int otherAtom = atomListOfBonded[visAtomID][j];
+                if(eachAtomClusterID[otherAtom]!=curClusterID)
+                    toVisitAtoms.push_back(otherAtom);
+            }
+        }
+    }
+
+    //Now the clusterID of each atom should be usually in the non-decreasing order.
+    //In other words, the atom ids of a cluster are generally contiguous.
+    //If this is the case, the temporary memory usage of output IO during
+    //the simulation can be dramatically reduced. So g_isClusterContiguous
+    //is used to differentiate the two cases
+
+    int curClusterID;
+    int prevClusterID=eachAtomClusterID[0];
+    int curClusterSize=1;
+    g_isClusterContiguous = 1;
+    for(int i=1; i<g_mol->numAtoms; i++)
+    {
+        curClusterID = eachAtomClusterID[i];
+        if(curClusterID > prevClusterID)
+        {
+            eachClusterSize.push_back(curClusterSize);
+            curClusterSize=1;
+        }
+        else if(curClusterID == prevClusterID)
+        {
+            curClusterSize++;
+        }
+        else
+        { 
+            g_isClusterContiguous = 0;
+            break;
+        }
+        prevClusterID = curClusterID;
+    }
+
+
+    //Now iterate over the cluster size again to filter out the repeating cluster size.
+    //There are two cases:
+    //1. if the cluster id of atoms is monotonically increasing, the size of the cluster can be used
+    //as this cluster's signature.
+    //After this, eachAtomClusterID will store the cluster signature. Only the atom whose id is "clustersize"
+    //will store the size. Others will be -1
+    //2. if the cluster id of atoms is not monotonically increasing, in other words,
+    //the atom ids of a cluster are not contiguous, then eachAtomClusterID remains
+    //unchanged.
+
+    if(g_isClusterContiguous) {
+        eachClusterSize.push_back(curClusterSize); //record the last sequence of cluster
+        int aid=0;
+        for(int clusterIdx=0; clusterIdx<eachClusterSize.size(); clusterIdx++)
+        {
+            int curSize = eachClusterSize[clusterIdx];
+            eachAtomClusterID[aid] = curSize;
+            for(int i=aid+1; i<aid+curSize; i++)
+                eachAtomClusterID[i] = -1;
+            aid += curSize;
+        }
+        g_numClusters = eachClusterSize.size();
+        eachClusterSize.clear();
+    }else{
+        eachClusterSize.clear();
+        //reiterate over the atoms to figure out the number of clusters
+        char *clusters = new char[g_mol->numAtoms];
+        memset(clusters, 0, sizeof(char)*g_mol->numAtoms);
+        for(int i=0; i<g_mol->numAtoms; i++) {
+            clusters[eachAtomClusterID[i]] = 1;
+        }
+        
+        for(int zeroPos=0; zeroPos<g_mol->numAtoms; zeroPos++) {
+            if(clusters[zeroPos]==0) {
+                //since the cluster ids are contiguous integers starting from 0,
+                //if it becomes zero, we know the number of clusters is zeroPos
+                g_numClusters = zeroPos;
+                break;
+            }
+        }
+        delete [] clusters;
+    }
+
+    //check whether cluster is built correctly
+    /*printf("num clusters: %d\n", eachClusterSize.size());
+    FILE *checkFile = fopen("cluster.opt", "w");
+    for(int i=0; i<g_mol->numAtoms; i++)  fprintf(checkFile, "%d\n", eachAtomClusterID[i]);
+    fclose(checkFile);*/
+
+    
+    for(int i=0; i<g_mol->numAtoms; i++)
+        atomListOfBonded[i].clear();
+    delete [] atomListOfBonded;
+#endif
+}
+
 void getAngleData(FILE *fd)
 {
 
@@ -1612,6 +2241,32 @@ void getAngleData(FILE *fd)
 
     delete [] angles;
 
+}
+
+void buildAngleData()
+{
+#ifndef MEM_OPT_VERSION
+    Angle *angles = g_mol->getAllAngles();
+    //create angles' tupleSignature
+    for(int i=0; i<g_mol->numAngles; i++)
+    {
+        Angle *tuple = angles+i;
+        TupleSignature oneSig(2,ANGLE,tuple->angle_type);
+        int offset[2];
+        offset[0] = tuple->atom2 - tuple->atom1;
+        offset[1] = tuple->atom3 - tuple->atom1;
+        oneSig.setOffsets(offset);
+
+        int poolIndex = lookupCstPool(sigsOfAngles, oneSig);
+        if(poolIndex == -1)
+        {
+            sigsOfAngles.push_back(oneSig);
+            poolIndex = (SigIndex)sigsOfAngles.size()-1;
+        }
+        eachAtomSigs[tuple->atom1].angleSigIndices.push_back(poolIndex);
+    }
+    delete [] angles;
+#endif
 }
 
 void getDihedralData(FILE *fd)
@@ -1754,6 +2409,35 @@ void getDihedralData(FILE *fd)
 
 }
 
+void buildDihedralData()
+{
+#ifndef MEM_OPT_VERSION
+    Dihedral *dihedrals = g_mol->getAllDihedrals();    
+
+    //create dihedrals' tupleSignature
+    for(int i=0; i<g_mol->numDihedrals; i++)
+    {
+        Dihedral *tuple = dihedrals+i;
+        TupleSignature oneSig(3,DIHEDRAL,tuple->dihedral_type);
+        int offset[3];
+        offset[0] = tuple->atom2 - tuple->atom1;
+        offset[1] = tuple->atom3 - tuple->atom1;
+        offset[2] = tuple->atom4 - tuple->atom1;
+        oneSig.setOffsets(offset);
+
+        int poolIndex = lookupCstPool(sigsOfDihedrals, oneSig);
+        if(poolIndex == -1)
+        {
+            sigsOfDihedrals.push_back(oneSig);
+            poolIndex = (SigIndex)sigsOfDihedrals.size()-1;
+        }
+        eachAtomSigs[tuple->atom1].dihedralSigIndices.push_back(poolIndex);
+    }
+
+    delete[] dihedrals;
+#endif
+}
+
 void getImproperData(FILE *fd)
 {
     int atom_nums[4];  //  Atom indexes for the 4 atoms
@@ -1872,7 +2556,7 @@ void getImproperData(FILE *fd)
     //  Now reset the numImpropers value to the number of UNIQUE
     //  impropers.  Sure, we waste a few entries in the improper_array
     //  on the master node, but it is very little space . . .
-    numImpropers = num_unique;
+    g_mol->numImpropers = num_unique;
 
     //create improper's tupleSignature
     for(int i=0; i<num_unique; i++)
@@ -1896,6 +2580,35 @@ void getImproperData(FILE *fd)
 
     delete[] impropers;
 
+}
+
+void buildImproperData()
+{ 
+#ifndef MEM_OPT_VERSION
+    Improper *impropers=g_mol->getAllImpropers();
+
+    //create improper's tupleSignature
+    for(int i=0; i<g_mol->numImpropers; i++)
+    {
+        Improper *tuple = impropers+i;
+        TupleSignature oneSig(3,IMPROPER,tuple->improper_type);
+        int offset[3];
+        offset[0] = tuple->atom2 - tuple->atom1;
+        offset[1] = tuple->atom3 - tuple->atom1;
+        offset[2] = tuple->atom4 - tuple->atom1;
+        oneSig.setOffsets(offset);
+
+        int poolIndex = lookupCstPool(sigsOfImpropers, oneSig);
+        if(poolIndex == -1)
+        {
+            sigsOfImpropers.push_back(oneSig);
+            poolIndex = (SigIndex)sigsOfImpropers.size()-1;
+        }
+        eachAtomSigs[tuple->atom1].improperSigIndices.push_back(poolIndex);
+    }
+
+    delete[] impropers;
+#endif
 }
 
 void getDonorData(FILE *fd)
@@ -2148,6 +2861,38 @@ void getCrosstermData(FILE *fd)
   }
   
   delete[] crossterms;
+}
+
+void buildCrosstermData()
+{
+#ifndef MEM_OPT_VERSION
+  Crossterm *crossterms = g_mol->getAllCrossterms();
+  //create crossterm's tupleSignature
+  for(int i=0; i<g_mol->numCrossterms; i++)
+  {
+    Crossterm *tuple = crossterms+i;
+    TupleSignature oneSig(7, CROSSTERM, tuple->crossterm_type);
+    int offset[7];
+    offset[0] = tuple->atom2 - tuple->atom1;
+    offset[1] = tuple->atom3 - tuple->atom1;
+    offset[2] = tuple->atom4 - tuple->atom1;
+    offset[3] = tuple->atom5 - tuple->atom1;
+    offset[4] = tuple->atom6 - tuple->atom1;
+    offset[5] = tuple->atom7 - tuple->atom1;
+    offset[6] = tuple->atom8 - tuple->atom1;
+    oneSig.setOffsets(offset);
+   
+    int poolIndex = lookupCstPool(sigsOfCrossterms, oneSig);
+    if(poolIndex == -1)
+    {
+      sigsOfCrossterms.push_back(oneSig);
+      poolIndex = (SigIndex)sigsOfCrossterms.size()-1;
+    }
+    eachAtomSigs[tuple->atom1].crosstermSigIndices.push_back(poolIndex);
+  }
+  
+  delete[] crossterms;
+#endif
 }
 
 void buildExclusions()

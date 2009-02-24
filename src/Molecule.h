@@ -88,6 +88,13 @@ public:
 #define EXCHCK_FULL 1
 #define EXCHCK_MOD 2
 
+//only used for compressing the molecule information
+typedef struct seg_resid
+{
+    char segname[11];
+    int resid;
+}AtomSegResInfo;
+
 // List maintaining the global atom indicies sorted by helix groups.
 class Molecule
 {
@@ -157,7 +164,10 @@ private:
   AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained on node 0 for VMD interface
   #endif
 
+
   ResidueLookupElem *resLookup; // find residues by name
+
+  AtomSegResInfo *atomSegResids; //only used for generating compressed molecule info
 
   #ifndef MEM_OPT_VERSION
   //replaced by atom signatures
@@ -325,10 +335,16 @@ public:
 
 
 
-#ifndef MEM_OPT_VERSION
+#ifdef MEM_OPT_VERSION
+  AtomCstInfo *getAtoms() const { return atoms; }
+  AtomNameIdx *getAtomNames() const { return atomNames; }
+#else
   Atom *getAtoms () const { return atoms; }
+  AtomNameInfo *getAtomNames() const { return atomNames; }
 #endif
 
+  AtomSegResInfo *getAtomSegResInfo() const { return atomSegResids; }
+  
   // return number of fixed atoms, guarded by SimParameters
   int num_fixed_atoms() const {
     // local variables prefixed by s_
@@ -540,10 +556,12 @@ public:
   #endif
 
   const float *getOccupancyData() { return (const float *)occupancy; }
-  void freeOccupancyData() { delete occupancy; occupancy=NULL; }
+  void setOccupancyData(molfile_atom_t *atomarray);
+  void freeOccupancyData() { delete [] occupancy; occupancy=NULL; }
 
   const float *getBFactorData() { return (const float *)bfactor; }
-  void freeBFactorData() { delete bfactor; bfactor=NULL; }
+  void setBFactorData(molfile_atom_t *atomarray);
+  void freeBFactorData() { delete [] bfactor; bfactor=NULL; }
 
   #ifdef CHARMIZE_NAMD
   Atom *getAllAtoms() {
@@ -592,13 +610,22 @@ public:
 
   //  Retrieve a cross-term strutcure
   Crossterm *get_crossterm(int inum) const {return (&(crossterms[inum]));}
+
+  Bond *getAllBonds() const {return bonds;}
+  Angle *getAllAngles() const {return angles;}
+  Improper *getAllImpropers() const {return impropers;}
+  Dihedral *getAllDihedrals() const {return dihedrals;}
+  Crossterm *getAllCrossterms() const {return crossterms;}
   #endif
 
   //  Retrieve a hydrogen bond donor structure
-  Bond *get_donor(int dnum) const {return (&(donors[dnum]));}
+  Bond *get_donor(int dnum) const {return (&(donors[dnum]));}  
 
   //  Retrieve a hydrogen bond acceptor structure
-  Bond *get_acceptor(int dnum) const {return (&(acceptors[dnum]));}
+  Bond *get_acceptor(int dnum) const {return (&(acceptors[dnum]));} 
+
+  Bond *getAllDonors() const {return donors;}
+  Bond *getAllAcceptors() const {return acceptors;}
 
   //  Retrieve an exclusion structure
   #ifndef MEM_OPT_VERSION
