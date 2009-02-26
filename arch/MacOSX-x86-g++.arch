@@ -1,4 +1,4 @@
-NAMD_ARCH = MacOSX-i686
+NAMD_ARCH = MacOSX-x86
 CHARMARCH = net-darwin-x86
 
 CXX = g++ -D_NO_MALLOC_H -DMISSING_mm_cvtsd_f64
