@@ -5,10 +5,10 @@ BGP_INC = -I/bgsys/drivers/ppcfloor/comm/include
 
 CXX = bgxlC -qstaticinline -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID $(BGP_INC) -DARCH_POWERPC -DUSE_TOPOMAP=1
 
-CXXOPTS = -O3 -Q -qhot -qarch=440 -qtune=440 -DFFTW_ENABLE_FLOAT
-CXXNOALIASOPTS = -O3 -Q -qhot -qarch=440d -qtune=440 -qalias=noallptrs:notypeptr -DFFTW_ENABLE_FLOAT
+CXXOPTS = -O3 -Q -qhot -qarch=450d -qtune=450 -DFFTW_ENABLE_FLOAT
+CXXNOALIASOPTS = -O3 -Q -qhot -qarch=450d -qtune=450 -qalias=noallptrs:notypeptr -DFFTW_ENABLE_FLOAT
 
-CXXTHREADOPTS = -O3 -Q -qarch=440 -qtune=440 -DFFTW_ENABLE_FLOAT
+CXXTHREADOPTS = -O3 -Q -qarch=450d -qtune=450 -DFFTW_ENABLE_FLOAT
 
 CC = bgxlc 
 COPTS = -O3 -qhot

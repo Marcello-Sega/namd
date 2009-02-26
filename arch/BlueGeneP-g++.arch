@@ -1,5 +1,5 @@
-NAMD_ARCH = BlueGeneL
-CHARMARCH = bluegenel
+NAMD_ARCH = BlueGeneP
+CHARMARCH = bluegenep
 
 BGL_INC=/auto/BGX/floor/bglsys/include
 BGL_LIB=/auto/BGX/floor/bglsys/lib
