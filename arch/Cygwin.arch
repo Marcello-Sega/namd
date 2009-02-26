@@ -1,4 +1,4 @@
-NAMD_ARCH = Cygwin-i686
+NAMD_ARCH = Cygwin
 CHARMARCH = net-cygwin
 
 CXX = g++ -I/usr/include/w32api 
