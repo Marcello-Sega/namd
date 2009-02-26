@@ -1,6 +1,0 @@
-include .rootdir/arch/Linux-i686-icc.arch
-
-CHARMARCH = mpi-linux
-
-CHARMOPTS = -memory os
-

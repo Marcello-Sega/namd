@@ -1,4 +1,0 @@
-include .rootdir/arch/Tru64-Alpha-CC.arch
-
-CHARMARCH = mpi-axp-cxx
-

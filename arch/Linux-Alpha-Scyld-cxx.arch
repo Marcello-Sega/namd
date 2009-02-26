@@ -1,4 +1,0 @@
-include .rootdir/arch/Linux-Alpha-cxx.arch
-
-CHARMARCH = net-linux-axp-scyld-cxx
-

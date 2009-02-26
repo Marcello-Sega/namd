@@ -1,8 +1,0 @@
-NAMD_ARCH = HPUX
-CHARMARCH = net-hp
-
-CXX = g++
-CXXOPTS = -O3 -Wall
-CC = gcc
-COPTS = -O3 -Wall
-

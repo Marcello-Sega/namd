@@ -1,4 +1,0 @@
-include .rootdir/arch/Linux-i686-icc.arch
-
-CHARMARCH = net-linux-smp-iccstatic
-

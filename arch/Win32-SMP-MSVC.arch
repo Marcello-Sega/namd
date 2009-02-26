@@ -1,4 +1,0 @@
-include .rootdir/arch/Win32-MSVC.arch
-
-CHARMARCH = net-win32-smp
-

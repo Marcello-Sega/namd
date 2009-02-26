@@ -1,4 +1,0 @@
-include .rootdir/arch/AIX-POWER-xlC.arch
-
-CHARMARCH = mpi-sp
-

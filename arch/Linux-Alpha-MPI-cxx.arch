@@ -1,4 +1,0 @@
-include .rootdir/arch/Linux-Alpha-cxx.arch
-
-CHARMARCH = mpi-linux-axp-cxx
-

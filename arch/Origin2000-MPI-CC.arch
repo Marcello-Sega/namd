@@ -1,4 +1,0 @@
-include .rootdir/arch/Origin2000-CC.arch
-
-CHARMARCH = mpi-origin
-

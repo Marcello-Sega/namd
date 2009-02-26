@@ -1,4 +1,0 @@
-include .rootdir/arch/Tru64-Alpha-CC.arch
-
-CHARMARCH = elan-axp-cxx
-

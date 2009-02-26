@@ -1,8 +1,0 @@
-NAMD_ARCH = Linux-Alpha
-CHARMARCH = net-linux-axp
-
-CXX = g++
-CXXOPTS = -O3 -Wall -ffast-math
-CC = gcc
-COPTS = -O3 -ffast-math
-

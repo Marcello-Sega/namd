@@ -1,4 +1,0 @@
-include .rootdir/arch/Solaris-Sparc-CC.arch
-
-CHARMARCH = net-sol-smp-cc
-

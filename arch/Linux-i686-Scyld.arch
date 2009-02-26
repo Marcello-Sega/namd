@@ -1,4 +1,0 @@
-include .rootdir/arch/Linux-i686-g++.arch
-
-CHARMARCH = net-linux-scyld
-

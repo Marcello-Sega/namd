@@ -1,8 +1,0 @@
-NAMD_ARCH = HPUX-ia64
-CHARMARCH = net-hp-ia64-acc
-
-CXX = aCC -w
-CXXOPTS = -O +Ofast
-CC = cc -Aa -Wp,-H16000 -D_HPUX_SOURCE
-COPTS = -O +Ofast
-

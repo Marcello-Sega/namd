@@ -1,8 +1,0 @@
-NAMD_ARCH = HPUX
-CHARMARCH = net-hp-kcc
-
-CXX = KCC
-CXXOPTS = -O
-CC = cc -Aa -Wp,-H16000 -D_HPUX_SOURCE
-COPTS = -O +DAportable
-

@@ -1,6 +1,0 @@
-
-# another FFT that SGI's use
-FFTLIB=-lcomplib.sgimath
-FFTFLAGS=-DNAMD_SGI_COMPLIB_FFT
-FFT=$(FFTFLAGS)
-

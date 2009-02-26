@@ -1,8 +1,0 @@
-NAMD_ARCH = Tru64-Alpha
-CHARMARCH = net-axp-cxx
-
-CXX = cxx -D__USE_STD_IOSTREAM -DNAMD_SOCKLEN_T=int
-CXXOPTS = -fast -O4 -nocleanup -use_non_shared_libcxx
-CC = cc
-COPTS = -fast -O4
-

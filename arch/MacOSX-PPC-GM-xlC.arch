@@ -1,4 +1,0 @@
-include .rootdir/arch/MacOSX-PPC-xlC.arch
-
-CHARMARCH = net-ppc-darwin-gm-xlc
-

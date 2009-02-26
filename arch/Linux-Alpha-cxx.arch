@@ -1,8 +1,0 @@
-NAMD_ARCH = Linux-Alpha
-CHARMARCH = net-linux-axp-cxx
-
-CXX = cxx
-CXXOPTS = -fast -O4 -nocleanup -non_shared
-CC = ccc
-COPTS = -fast -O4 -non_shared
-

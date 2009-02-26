@@ -1,4 +1,0 @@
-include .rootdir/arch/Linux-x86_64-g++.arch
-
-CHARMARCH = net-linux-x86_64-clustermatic
-

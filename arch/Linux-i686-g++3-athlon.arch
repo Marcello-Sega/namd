@@ -1,8 +1,0 @@
-NAMD_ARCH = Linux-i686
-CHARMARCH = net-linux-gcc3
-
-CXX = g++3
-CXXOPTS = -O3 -funroll-all-loops -fomit-frame-pointer -ffast-math -march=athlon -static
-CC = gcc3
-COPTS = -O3 -funroll-all-loops -fomit-frame-pointer -ffast-math -march=athlon -static
-
