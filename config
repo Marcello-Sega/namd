@@ -34,16 +34,18 @@ syntax:
         set ARCH_PAT = Linux
         switch ( `uname -p` )
           case i686:
-            set ARCH_PAT = Linux-i686
+            set ARCH_PAT = Linux-x86
           breaksw
           case x86_64:
-            set ARCH_PAT = Linux-amd64
+            set ARCH_PAT = Linux-x86_64
             set ARCH_PAT2 = CRAY-XT
           breaksw
           case ppc:
+            set ARCH_PAT = Linux-PPC
             set ARCH_PAT2 = BlueGene
           breaksw
           case ppc64:
+            set ARCH_PAT = Linux-PPC
             set ARCH_PAT2 = BlueGene
           breaksw
         endsw
