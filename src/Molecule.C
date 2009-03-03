@@ -3693,6 +3693,7 @@ void Molecule::receive_Molecule(MIStream *msg)
            }           
 
            if((sigChk->max-sigChk->min) > simParams->maxExclusionFlags){
+	       printf("The distance of a exclusion check %d exceeds the value %d simulation parameter maxExclusionFlags specifies! Please increase the value\n", sigChk->max-sigChk->min, simParams->maxExclusionFlags);
                NAMD_die("Currently not supporting building exclusion check on the fly for memory optimized version!\n");
            }
 
