@@ -6,6 +6,7 @@
 
 #include "ProcessorPrivate.h"
 #include "Debug.h"
+#include "InfoStream.h"
 
 /*
  * Variable Definitions
@@ -36,6 +37,7 @@ CkpvDeclare(PatchMgr*, PatchMap_patchMgr);
 CkpvDeclare(BOCgroup, BOCclass_group);
 CkpvDeclare(Communicate*, comm);
 CkpvDeclare(Sync*, Sync_instance);
+CkpvDeclare(infostream, iout_obj);
 
 /*
  * Initialization Function to be called on every processor
@@ -74,6 +76,7 @@ void ProcessorPrivateInit(void)
   CkpvAccess(comm) = 0;
   CkpvInitialize(Sync*, Sync_instance);
   CkpvAccess(Sync_instance) = 0;
+  CkpvInitialize(infostream, iout_obj);
 
 #ifdef PROCTRACE_DEBUG
   CkpvInitialize(DebugFileTrace*, DebugFileTrace_instance);

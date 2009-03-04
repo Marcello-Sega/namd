@@ -13,6 +13,7 @@
 
 #include <iostream>
 #include <sstream>
+#include "charm++.h"
 class Vector;
 class Tensor;
 
@@ -75,7 +76,9 @@ std::ostream& iPE(std::ostream& s);  // outlined because of CkMyPe()
 #define iERRORF  iERROR << iFILE
 #define iDEBUGF  iDEBUG << iFILE
 
-extern infostream iout;
+CkpvExtern(infostream, iout_obj);
+
+#define iout CkpvAccess(iout_obj)
 
 #endif /* INFOSTREAM_H */
 

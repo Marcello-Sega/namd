@@ -96,5 +96,4 @@ std::ostream& iWARN (std::ostream& s)  { return s << "Warning: "; }
 std::ostream& iERROR(std::ostream& s)  { return s << "ERROR: "; }
 std::ostream& iDEBUG(std::ostream& s)  { return s << "DEBUG: "; }
 
-infostream iout;
 
