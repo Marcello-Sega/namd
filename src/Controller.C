@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2009/03/04 22:55:00 $
- * $Revision: 1.1234 $
+ * $Date: 2009/03/05 05:21:47 $
+ * $Revision: 1.1235 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1586,13 +1586,13 @@ void Controller::printEnergies(int step, int minimize)
 	iout << FORMAT("VDW");
 	iout << FORMAT("BOUNDARY");
 	iout << FORMAT("MISC");
-	iout << FORMAT("POTENTIAL");
-        iout << "     ";
 	iout << FORMAT("KINETIC");
+        iout << "     ";
 	iout << FORMAT("TOTAL");
+	iout << FORMAT("TEMP");
+	iout << FORMAT("POTENTIAL");
 	// iout << FORMAT("TOTAL2");
 	iout << FORMAT("TOTAL3");
-	iout << FORMAT("TEMP");
 	iout << FORMAT("TEMPAVG");
 	if ( volume != 0. ) {
           iout << "     ";
@@ -1630,13 +1630,13 @@ void Controller::printEnergies(int step, int minimize)
     iout << FORMAT(ljEnergy);
     iout << FORMAT(boundaryEnergy);
     iout << FORMAT(miscEnergy);
-    iout << FORMAT(potentialEnergy);
-    iout << "     ";
     iout << FORMAT(kineticEnergy);
+    iout << "     ";
     iout << FORMAT(totalEnergy);
+    iout << FORMAT(temperature);
+    iout << FORMAT(potentialEnergy);
     // iout << FORMAT(flatEnergy);
     iout << FORMAT(smoothEnergy);
-    iout << FORMAT(temperature);
     iout << FORMAT(temp_avg/avg_count);
     if ( volume != 0. )
     {
