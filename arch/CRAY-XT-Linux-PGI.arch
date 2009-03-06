@@ -1,4 +1,4 @@
-NAMD_ARCH = Linux-amd64
+NAMD_ARCH = Linux-x86_64
 CHARMARCH = mpi-linux-x86_64
 
 CXX = CC
