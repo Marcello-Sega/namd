@@ -6,17 +6,18 @@ syntax:
   echo ''
   echo 'Usage: config [<build_dir>/]<arch>[.comment] [options]'
   echo ''
-  echo 'Options (defaults are set in arch subdirectory):'
-  echo '  --tcl-prefix <directory containing lib and include>'
-  echo '  --with-tcl (default)  --without-tcl'
-  echo '  --fftw-prefix <directory containing lib and include>'
-  echo '  --with-fftw (default)  --without-fftw'
-  echo '  --cuda-prefix <directory containing bin, lib, and include>'
-  echo '  --without-cuda (default)  --with-cuda'
-  echo '  --without-memopt (default)  --with-memopt'
+  echo 'Options (most defaults are set in arch subdirectory):'
   echo '  --charm-base <Charm++ base build directory containing src>'
+  echo '      (defaults to ./charm-6.1, ./charm-6.0.1, or ./charm)'
   echo '  --charm-arch <subdirectory of Charm++ base build directory>'
+  echo '      (such as mpi-linux-x86_64-mpicxx or multicore-linux64)'
   echo '  --charm-opts <options to pass to charmc (quote list)>'
+  echo '  --with-tcl (default)  --without-tcl'
+  echo '  --tcl-prefix <directory containing Tcl lib and include>'
+  echo '      (defaults to ./tcl or ~/tcl)'
+  echo '  --with-fftw (default)  --without-fftw'
+  echo '  --fftw-prefix <directory containing FFTW 2.1.3 lib and include>'
+  echo '      (defaults to ./fftw or ~/fftw)'
   echo '  --cxx <C++ compiler command>'
   echo '  --cxx-opts <C++ compiler options (quote list)>'
   echo '  --cxx-noalias-opts <C++ compiler options (quote list)>'
@@ -25,6 +26,10 @@ syntax:
   echo '  --cc-opts <C compiler options (quote list)>'
   echo '  --with-debug  (sets all opts to -g)'
   echo '  --arch-suffix <suffix for NAMD platform printed at startup>'
+  echo '  (the following are experimental features)'
+  echo '  --without-cuda (default)  --with-cuda'
+  echo '  --cuda-prefix <directory containing CUDA bin, lib, and include>'
+  echo '  --without-memopt (default)  --with-memopt'
   echo ''
   if ( $?PRINT_ARCH_LIST ) then
     set ARCH_PAT = ''
@@ -59,11 +64,13 @@ syntax:
         endsw
       breaksw
     endsw
-    echo 'Possible options for <arch> on this machine: ' 
+    echo 'Possible options for <arch> on this machine based on uname: ' 
     ( cd arch ; ls -1 $ARCH_PAT*.arch $ARCH_PAT2*.arch |sed -e 's/\.arch//' | egrep -v 'template' | pr -2 -t)
     if ( XX$ARCH_PAT != XX ) then
       echo ''
-      echo 'ls arch/*.arch to see all known platforms'
+      echo 'ls arch/*.arch to see all known platforms.  Options such as'
+      echo 'MPI are controlled by the choice of Charm++ architecture. '
+      echo 'Please see .txt files for Charm++ and NAMD build instructions.'
     endif
   else
     echo 'config with no arguments lists available <arch> options.'
@@ -309,18 +316,15 @@ begin:
 
   if ( $?CHARM_BASE ) then
     echo "CHARMBASE = $CHARM_BASE" >> Make.config
-  else if ( -d .rootdir/charm-6.0 ) then
-    echo "Using Charm++ 6.0 build found in main build directory"
-    echo 'CHARMBASE = .rootdir/charm-6.0' >> Make.config
+  else if ( -d .rootdir/charm-6.1 ) then
+    echo "Using Charm++ 6.1 build found in main build directory"
+    echo 'CHARMBASE = .rootdir/charm-6.1' >> Make.config
+  else if ( -d .rootdir/charm-6.0.1 ) then
+    echo "Using Charm++ 6.0.1 build found in main build directory"
+    echo 'CHARMBASE = .rootdir/charm-6.0.1' >> Make.config
   else if ( -d .rootdir/charm ) then
     echo "Using Charm++ build found in main build directory"
     echo 'CHARMBASE = .rootdir/charm' >> Make.config
-  else if ( -d $HOME/charm-6.0 ) then
-    echo "Using Charm++ 6.0 build found in $HOME/charm-6.0"
-    echo 'CHARMBASE = $(HOME)/charm-6.0' >> Make.config
-  else if ( -d $HOME/charm ) then
-    echo "Using Charm++ build found in $HOME/charm"
-    echo 'CHARMBASE = $(HOME)/charm' >> Make.config
   else
     echo "Using Charm++ build found in Make.charm:"
     cat .rootdir/Make.charm
@@ -451,4 +455,4 @@ begin:
   cat Make.config
 
   echo ''
-  echo "You are ready to do a make in directory $BUILD_LINK now."
+  echo "You are ready to run make in directory $BUILD_LINK now."
