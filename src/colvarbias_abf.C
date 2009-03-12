@@ -237,7 +237,10 @@ void colvarbias_abf::read_gradients_samples ()
     samples->read_multicol (is, true);
     is.close ();
 
+    is.clear();
+
     is.open (gradients_in_name.c_str());
+
     if (!is.good())	cvm::fatal_error ("Error opening ABF gradient file " + gradients_in_name + " for reading");
     gradients->read_multicol (is, true);
     is.close ();
