@@ -3350,6 +3350,42 @@ obj/Molecule.o: \
 	src/Debug.h \
 	src/CompressPsf.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
+obj/Molecule2.o: \
+	src/Molecule2.C \
+	src/Molecule.C \
+	src/InfoStream.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/Communicate.h \
+	src/ObjectArena.h \
+	src/Parameters.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/UniqueSetIter.h \
+	src/Debug.h \
+	src/CompressPsf.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule2.o $(COPTC) src/Molecule2.C
 obj/NamdCentLB.o: \
 	src/NamdCentLB.C \
 	src/InfoStream.h \
@@ -3486,6 +3522,7 @@ obj/NamdState.o: \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
 	src/Debug.h \
+	src/CompressPsf.h \
 	src/PluginIOMgr.h \
 	plugins/include/libmolfile_plugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdState.o $(COPTC) src/NamdState.C
@@ -3925,7 +3962,8 @@ obj/ProcessorPrivate.o: \
 	src/ProcessorPrivate.C \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
-	src/Debug.h
+	src/Debug.h \
+	src/InfoStream.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ProcessorPrivate.o $(COPTC) src/ProcessorPrivate.C
 obj/ProxyMgr.o: \
 	src/ProxyMgr.C \
