@@ -4,6 +4,10 @@
 ***  All rights reserved.
 **/
 
+// Molecule.C is compiled twice!
+// MOLECULE2_C undefined only compiles first half of file
+// MOLECULE2_C defined only compiles second half of file
+// This is shameful but it works.  Molecule needs refactoring badly.
 
 /*
    The class Molecule is used to hold all of the structural information
@@ -65,6 +69,8 @@ public:
   int lookup(const char *segid, int resid, int *begin, int *end) const;
   ResidueLookupElem* append(const char *segid, int resid, int aid);
 };
+
+#ifndef MOLECULE2_C  // first object file
 
 int ResidueLookupElem::lookup(
 	const char *segid, int resid, int *begin, int *end) const {
@@ -5068,6 +5074,8 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*      END OF FUNCTION stripFepExcl      */
 
 
+#endif  // MOLECULE2_C undefined = first object file
+#ifdef MOLECULE2_C  // second object file
 
 /* BEGIN gf */
     /************************************************************************/
@@ -9419,3 +9427,6 @@ void ExclusionSignature::unpack(MIStream *msg){
     modOffset = new int[modExclCnt];
     msg->get(modExclCnt*sizeof(int), (char *)modOffset);    
 }
+
+#endif  // MOLECULE2_C defined = second object file
+

@@ -167,6 +167,7 @@ OBJS = \
 	$(DSTDIR)/MStream.o \
 	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
+	$(DSTDIR)/Molecule2.o \
 	$(DSTDIR)/NamdCentLB.o \
 	$(DSTDIR)/NamdNborLB.o \
 	$(DSTDIR)/NamdState.o \
