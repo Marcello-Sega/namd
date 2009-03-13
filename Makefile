@@ -354,8 +354,10 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
 
-windowsbinaries: namd2.exe psfgen.exe
-# windowsbinaries: namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
+WINDOWSBINARIES = namd2.exe psfgen.exe
+# WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
+
+windowsbinaries: $(WINDOWSBINARIES)
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(MAKEBUILDINFO)
@@ -700,7 +702,7 @@ DOC_FILES = README.txt announce.txt license.txt notes.txt
 
 RELEASE_FILES = flipdcd flipbinpdb psfgen charmrun namd2
 
-WIN32_RELEASE_FILES = namd2.exe psfgen.exe charmrun.exe charmd.exe charmd_faceless.exe $(TCLDLL)
+WINDOWS_RELEASE_FILES = $(WINDOWSBINARIES) $(TCLDLL)
 
 release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
@@ -725,7 +727,7 @@ release: all
 winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
-	cp $(DOC_FILES) $(WIN32_RELEASE_FILES) $(RELEASE_DIR_NAME)
+	cp $(DOC_FILES) $(WINDOWS_RELEASE_FILES) $(RELEASE_DIR_NAME)
 	cp -r lib $(RELEASE_DIR_NAME)
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	echo $(CHARM)
