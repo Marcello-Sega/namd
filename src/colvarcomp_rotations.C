@@ -185,7 +185,7 @@ colvar::rmsd::rmsd (std::string const &conf)
   : orientation (conf)
 {
   b_inverse_gradients = true;
-  b_Jacobian_derivative = true;
+  b_Jacobian_derivative = false;
   function_type = "rmsd";
   x.type (colvarvalue::type_scalar);
 
