@@ -2,8 +2,7 @@ NAMD_ARCH = Linux-x86_64
 CHARMARCH = mpi-linux-x86_64
 
 CXX = CC
-#CXXOPTS = -O
-CXXOPTS = -fastsse
+CXXOPTS = -O
 CXXNOALIASOPTS = -fast -Mnodepchk -Msafeptr=arg,global,local,static -Minfo=all -Mneginfo=loop
 
 CC = cc
