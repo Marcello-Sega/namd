@@ -30,8 +30,16 @@
 #include "ConfigList.h"
 #include "ScriptTcl.h"
 
+
+void after_backend_init(int argc, char **argv);
+
 int main(int argc, char **argv) {
   BackEnd::init(argc,argv);
+  after_backend_init(argc, argv);
+  return 0;
+}
+
+void after_backend_init(int argc, char **argv){
   ScriptTcl *script = new ScriptTcl;
   Node::Object()->setScript(script);
 
@@ -91,6 +99,5 @@ int main(int argc, char **argv) {
 #endif
 
   BackEnd::exit();
-  return 0;
 }
 

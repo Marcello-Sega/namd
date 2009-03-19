@@ -92,38 +92,43 @@ void all_init(int argc, char **argv)
   cuda_initialize(argv);
   argc = CmiGetArgc(argv);
 #endif
+  
   _initCharm(argc, argv);  // message main Chare
 }
+
+extern void after_backend_init(int argc, char **argv);
+void master_init(int argc, char **argv);
 
 // called on slave procs
 void slave_init(int argc, char **argv)
 {
+#if CMK_SMP
+  //the original main thread could now be a comm thread
+  //and a slave thread could now be the main thread,
+  //so we have to do the master initialization here
+  if(CmiMyRank()==0){
+    master_init(argc, argv);
+    if(CmiMyPe()==0)
+      after_backend_init(argc, argv);
+    return;
+  }
+#endif
+
   all_init(argc, argv);
+
   if (CkMyRank() < CkMyNodeSize()) 	// skip the communication thread
     CsdScheduler(-1);
 }
 
-// called by main on one or all procs
-void BackEnd::init(int argc, char **argv) {
-
-#ifdef NAMD_CUDA
-  // look for but don't remove +idlepoll on command line
-  int idlepoll = 0;
-  for ( int i = 0; i < argc; ++i ) {
-    if ( 0==strcmp(argv[i],"+idlepoll") ) {
-      idlepoll = 1;
-      break;
-    }
-  }
-#endif
-
-  ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
+void master_init(int argc, char **argv){
   cpuTime_start = CmiCpuTimer();
   wallTime_start = CmiWallTimer();
   if ( CmiMyPe() ) {
-    slave_init(argc, argv);  // for procs that call main
+    all_init(argc, argv);
+    CsdScheduler(-1);
     ConverseExit();  // should never return
   }
+
   all_init(argc, argv);
 
 #ifdef NAMD_CUDA
@@ -167,6 +172,26 @@ void BackEnd::init(int argc, char **argv) {
   GroupInitMsg *msg = new GroupInitMsg;
   msg->group = group;
   CProxy_Node::ckNew(msg);
+ 
+}
+
+// called by main on one or all procs
+void BackEnd::init(int argc, char **argv) {
+
+#ifdef NAMD_CUDA
+  // look for but don't remove +idlepoll on command line
+  int idlepoll = 0;
+  for ( int i = 0; i < argc; ++i ) {
+    if ( 0==strcmp(argv[i],"+idlepoll") ) {
+      idlepoll = 1;
+      break;
+    }
+  }
+#endif
+
+  ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
+
+  master_init(argc, argv);
 }
 
 // called on proc 0 by front end
