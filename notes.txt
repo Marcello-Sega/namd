@@ -442,19 +442,7 @@ processor hyperthreaded machines an SMP version should provide very
 good scaling running one process per node since the communication
 thread can run very efficiently on the second virtual processor.  We
 are unable to ship an SMP build for Linux due to portability problems
-with the Linux pthreads implementation needed by Charm++.  The new
-NPTL pthreads library in RedHat 9 fixes these problems so an SMP port
-can become the standard shipping binary version in the future.
-
-On some large machines with very high bandwidth interconnects you may
-be able to increase performance for PME simulations by adding either
-"+strategy USE_MESH" or "+strategy USE_GRID" to the command line.
-These flags instruct the Charm++ communication optimization library to
-reduce the number of messages sent during PME 3D FFT by combining data
-into larger messages to be transmitted along each dimension of either
-a 2D mesh or a 3D grid, respectively.  While reducing the number of
-messages sent per processor from N to 2*sqrt(N) or 3*cbrt(N), the
-total amount of data transmitted for the FFT is doubled or tripled.
+with the Linux pthreads implementation needed by Charm++.
 
 Extremely short cycle lengths (less than 10 steps) will also limit
 parallel scaling, since the atom migration at the end of each cycle
@@ -472,6 +460,9 @@ which roughly doubles the number of patches.  (Similar options
 twoAwayY and twoAwayZ also exist, and may be used in combination,
 but this greatly increases the number of compute objects.  twoAwayX
 has the unique advantage of also improving the scalability of PME.)
+
+Additional performance tuning suggestions and options are described
+at http://www.ks.uiuc.edu/Research/namd/wiki/?NamdPerformanceTuning
 
 ----------------------------------------------------------------------
 
