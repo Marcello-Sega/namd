@@ -34,17 +34,14 @@ ug_colvars.tex ug_analysis.tex
 PDFFIGS = figures/fmaOn.pdf figures/pairlistdist.pdf \
 figures/shifting.pdf figures/switching.pdf figures/dual_top.pdf
 
-### latex the documentation
-doc:	$(DOCDIR)/ug.ps 
+### run pdflatex
+pdf:	$(DOCDIR)/ug.pdf
 
 ### run latex2html
-html:	$(DOCDIR)/ug.ps
+html:	$(DOCDIR)/ug.dvi
 	latex2html -local_icons -split 5 -toc_depth 4 -toc_stars \
 	-t "NAMD $(NAMD_VERSION) User's Guide" -address "namd@ks.uiuc.edu" \
 	-up_url "../../" -up_title "Main NAMD Page" ug
-
-### run pdflatex
-pdf:	$(DOCDIR)/ug.pdf
 
 $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
@@ -76,7 +73,7 @@ DISTILL = distill -compatlevel 2.1
 #figures/dual_top.pdf: figures/dual_top.eps
 #	$(DISTILL) -pagesize 584 220 pts < $^ > $@
 
-$(DOCDIR)/ug.ps: $(SRCFILES)
+$(DOCDIR)/ug.dvi: $(SRCFILES)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
 	$(CD) $(DOCDIR); \
 	latex $(MAIN_UG_FILE); \
@@ -85,7 +82,7 @@ $(DOCDIR)/ug.ps: $(SRCFILES)
 	latex $(MAIN_UG_FILE); \
 	makeindex $(MAIN_UG_FILE).idx; \
 	latex $(MAIN_UG_FILE); \
-	dvips -t letter -o ug.ps ug.dvi
+	# dvips -t letter -o ug.ps ug.dvi
 
 namd_version.tex: Makefile
 	$(DELETE) namd_version.tex ; \
