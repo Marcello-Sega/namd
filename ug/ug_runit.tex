@@ -164,7 +164,7 @@ on Windows HPC Server.
 \subsection{SGI Altix}
 
 Be sure that the {\tt MPI\_DSM\_DISTRIBUTE} environment variable is set, then
-use the Linux-ia64-MPT version of NAMD along with the system mpirun:
+use the Linux-Itanium-MPI-Altix version of NAMD along with the system mpirun:
 
 \begin{verbatim}
 mpirun -np <procs> <configfile>
@@ -235,9 +235,7 @@ processor hyperthreaded machines an SMP version should provide very
 good scaling running one process per node since the communication
 thread can run very efficiently on the second virtual processor.  We
 are unable to ship an SMP build for Linux due to portability problems
-with the Linux pthreads implementation needed by Charm++.  The new
-NPTL pthreads library in RedHat 9 fixes these problems so an SMP port
-can become the standard shipping binary version in the future.
+with the Linux pthreads implementation needed by Charm++.
 
 Extremely short cycle lengths (less than 10 steps) will also limit
 parallel scaling, since the atom migration at the end of each cycle
