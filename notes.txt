@@ -97,7 +97,7 @@ processor core you can run the namd2 binary directly:
 For multicore workstations, Windows and Mac OX X (Intel) released binaries 
 are based on "multicore" builds of Charm++ that can run multiple threads. 
 These multicore builds lack a network layer, so they can only be used on a 
-single machine. The Solaris (Sparc and x86-64) released binaries are based 
+single machine. The Solaris (Sparc and x86_64) released binaries are based 
 on "smp" builds of Charm++ that can be used with multiple threads on 
 either a single machine like a multicore build, or across a network. For 
 best performance use one thread per processor with the +p option:
