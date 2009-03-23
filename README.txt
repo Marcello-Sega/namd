@@ -14,10 +14,8 @@ All distributions of NAMD include the following files:
 	This file contains the announcement for this version of NAMD.
 
  notes.txt
-	This file includes directions for compiling and running NAMD,
-	configuration file parameters for new simulation features,
-	advice for dealing with endian issues when switching platforms,
-	a list of know deficiencies, and advice for reporting bugs.
+	This file includes directions for compiling and running NAMD
+	and advice for resolving problems and reporting bugs.
 
  license.txt
 	This file contains the license under which NAMD is distributed
@@ -30,12 +28,7 @@ VMD, NAMD, and BioCoRE represent a broad effort by the Theoretical and
 Computational Biophysics Group, an NIH Resource for Macromolecular
 Modeling and Bioinformatics, to develop and freely distribute effective
 tools (with source code) for molecular dynamics studies in structural
-biology.
-
-For more information, see:
-	http://www.ks.uiuc.edu/Research/VMD/
-	http://www.ks.uiuc.edu/Research/NAMD/
-	http://www.ks.uiuc.edu/Research/biocore/
+biology.  For more information, see http://www.ks.uiuc.edu/
 
 The NAMD project is funded by the National Institutes of Health
 (grant number PHS 5 P41 RR05969).
