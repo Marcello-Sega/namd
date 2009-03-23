@@ -1,446 +1,17 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                       NAMD 2.6 Release Notes                       |
+|                      NAMD 2.7b1 Release Notes                      |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-This file includes directions for running NAMD on various plaftorms,
-tips on limiting memory usage and improving parallel scaling, an
-explanation of the automated usage reporting mechanism, advice for
-dealing with endian issues when switching platforms, a procedure for
-reporting bugs, and detailed compilation instructions.
-
-----------------------------------------------------------------------
-
-New Features
-
---- Ports to Itanium, Altix, and Opteron/Athlon64/EMT64 ---
-
-NAMD runs very fast on the Itanium processor under Linux, including
-the SGI Altix.  Native binaries for 64-bit x86 processors such as
-AMD Opteron and Intel EMT64 are 25% faster than 32-bit binaries.
-
---- Port to Mac OS X for Intel Processors ---
-
-NAMD has been ported to the new Intel-based Macintosh platform.
-Binaries are only 32-bit, but should run on newer 64-bit machines.
-
---- Ports to Cray XT3 and IBM BlueGene/L (source code only) ---
-
-These two large, scalable, but immature platforms are now
-supported.  Neither platform supports dynamic linking and our
-experience shows that binaries would be quickly out of date, so
-only source code is released.  Also, BlueGene/L requires the
-latest development version of Charm++, rather than charm-5.9
-as shipped with the NAMD source code.
-
---- Improved Serial Performance, Especially on POWER and PowerPC ---
-
-Tuning of the NAMD inner loop has provided a 30% performance boost
-with the IBM XL compiler.  New Mac OS X binaries are up to 70%
-faster, but users must download the IBM XL runtime library from
-http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/
-
---- Adaptive Biasing Force Free Energy Calculations ---
-
-A new method, implemented in Tcl, efficiently calculates the
-potential of mean force along a reaction coordinate by applying
-adaptive biasing forces to provide uniform sampling.
-
---- Customizable Replica Exchange Simulations ---
-
-The replica exchange method is implemented as a set of Tcl scripts
-that use socket connections to drive a set of NAMD jobs, exchanging
-temperatures (or any other scriptable parameter) based on energy.
-
---- Tcl-Based Boundary Potentials ---
-
-Tcl-scripted forces may be efficiently applied individually to
-large numbers of atoms to implement boundaries and similar forces.
-
---- Reduced Memory Usage for Unusual Simulations ---
-
-Memory usage for simulations of large, highly bonded structures
-such as covalent crystals and for sparse simulations such as
-coarse-grained models has been greatly reduced without affecting
-the performance of typical biopolymer simulations.
-
---- Support for CHARMM 31 Stream Files and CMAP Crossterms ---
-
-Both NAMD and psfgen (standalone or VMD plug) read and interpret 
-the new CHARMM 31 stream files (combining topology and parameters)
-and the new CMAP crossterm (dihedral-dihedral) potential function.
-
---- Support for OPLS Force Field ---
-
-Geometric combining of Lennard-Jones sigma (radius) parameters
-(sigma_ij = sqrt(sigma_i*sigma_j), as required by the OPLS force
-field, is available with the option vdwGeometricSigma.
-
-----------------------------------------------------------------------
-
-Running NAMD
-
-NAMD runs on a variety of serial and parallel platforms.  While it is
-trivial to launch a serial program, a parallel program depends on a
-platform-specific library such as MPI to launch copies of itself on
-other nodes and to provide access to a high performance network such
-as Myrinet if one is available.
-
-For typical workstations (Windows, Linux, Mac OS X, or other Unix)
-with only ethernet networking (100 Megabit or Gigabit), NAMD uses the
-Charm++ native communications layer and the program charmrun to launch
-namd2 processes for parallel runs (either exclusively on the local
-machine with the ++local option or on other hosts as specified by a
-nodelist file).  The namd2 binaries for these platforms can also be
-run directly (known as standalone mode) for single process runs.
-
-For workstation clusters and other massively parallel machines with
-special high-performance networking, NAMD uses the system-provided
-MPI library (with a few exceptions) and standard system tools such as
-mpirun are used to launch jobs.  Since MPI libraries are very often
-incompatible between versions, you will likely need to recompile NAMD
-and its underlying Charm++ libraries to use these machines in parallel
-(the provided non-MPI binaries should still work for serial runs.)
-The provided charmrun program for these platforms is only a script
-that attempts to translate charmrun options into mpirun options, but
-due to the diversity of MPI libraries it often fails to work.
-
--- Mac OS X Users Must Install the IBM XL C/C++ Run-Time Library --
-
-The IBM XL C/C++ compiler provides a significant performance boost
-to NAMD on PowerPC G4 and G5 processors.  Unfortunately, the runtime
-library cannot be statically linked, so you must download it from
-http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/
-and install it based on the the README file in that directory.  If
-the library is not installed, running NAMD will product this error:
-dyld: ./namd2 can't open library: /opt/ibmcmp/lib/libibmc++.A.dylib
-
--- Individual Windows, Linux, Mac OS X, or Other Unix Workstations --
-
-Individual workstations use the same version of NAMD as workstation
-networks, but running NAMD is much easier.  If your machine has only
-one processor you can run the namd2 binary directly:
-
-  namd2 <configfile>
-
-For multiprocessor workstations, Windows and Solaris released binaries
-are based on SMP versions of Charm++ that can run multiple threads.
-For best performance use one thread per processor with the +p option:
-
-  namd2 +p<procs> <configfile>
-
-Since the SMP versions of NAMD are relatively new, there may be bugs
-that are only present when running multiple threads.  You may want to
-try running with charmrun (see below) if you experience crashes.
-
-For other multiprocessor workstations the included charmrun program is
-needed to run multiple namd2 processes.  The ++local option is also
-required to specify that only the local machine is being used:
-
-  charmrun namd2 ++local +p<procs> <configfile>
-
-You may need to specify the full path to the namd2 binary.
-
--- Linux, Mac OS X, or Other Unix Workstation Networks --
-
-The same binaries used for individual workstations as described above
-can be used with charmrun to run in parallel on a workstation network.
-The only difference is that you must provide a "nodelist" file listing
-the machines where namd2 processes should run, for example:
-
-  group main
-  host brutus
-  host romeo
-
-The "group main" line defines the default machine list.  Hosts brutus
-and romeo are the two machines on which to run the simulation.  Note
-that charmrun may run on one of those machines, or charmrun may run
-on a third machine.  All machines used for a simulation must be of the
-same type and have access to the same namd2 binary.
-
-By default, the "rsh" command ("remsh" on HPUX) is used to start namd2
-on each node specified in the nodelist file.  You can change this via
-the CONV_RSH environment variable, i.e., to use ssh instead of rsh run
-"setenv CONV_RSH ssh" or add it to your login or batch script.  You
-must be able to connect to each node via rsh/ssh without typing your
-password; this can be accomplished via a .rhosts files in your home
-directory, by an /etc/hosts.equiv file installed by your sysadmin, or
-by a .ssh/authorized_keys file in your home directory.  You should
-confirm that you can run "ssh hostname pwd" (or "rsh hostname pwd")
-without typing a password before running NAMD.  Contact your local
-sysadmin if you have difficulty setting this up.  If you are unable to
-use rsh or ssh, then add "setenv CONV_DAEMON" to your script and run 
-charmd (or charmd_faceless, which produces a log file) on every node.
-
-You should now be able to try running NAMD as:
-
-  charmrun namd2 +p<procs> <configfile>
-
-If this fails or just hangs, try adding the ++verbose option to see
-more details of the startup process.  You may need to specify the full
-path to the namd2 binary.  Charmrun will start the number of processes
-specified by the +p option, cycling through the hosts in the nodelist
-file as many times as necessary.  You may list multiprocessor machines
-multiple times in the nodelist file, once for each processor.
-
-You may specify the nodelist file with the "++nodelist" option and the
-group (which defaults to "main") with the "++nodegroup" option.  If
-you do not use "++nodelist" charmrun will first look for "nodelist"
-in your current directory and then ".nodelist" in your home directory.
-
-Some automounters use a temporary mount directory which is prepended
-to the path returned by the pwd command.  To run on multiple machines
-you must add a "++pathfix" option to your nodelist file.  For example:
-
-  group main ++pathfix /tmp_mnt /
-  host alpha1
-  host alpha2
-
-There are many other options to charmrun and for the nodelist file.
-These are documented at in the Charm++ Installation and Usage Manual
-available at http://charm.cs.uiuc.edu/manuals/ and a list of available
-charmrun options is available by running charmrun without arguments.
-
-If your workstation cluster is controlled by a queueing system you
-will need build a nodelist file in your job script.  For example, if
-your queueing system provides a $HOST_FILE environment variable:
-
-  set NODES = `cat $HOST_FILE`
-  set NODELIST = $TMPDIR/namd2.nodelist
-  echo group main >! $NODELIST
-  foreach node ( $nodes )
-    echo host $node >> $NODELIST
-  end
-  @ NUMPROCS = 2 * $#NODES
-  charmrun namd2 +p$NUMPROCS ++nodelist $NODELIST <configfile>
-
-Note that $NUMPROCS is twice the number of nodes in this example.
-This is the case for dual-processor machines.  For single-processor
-machines you would not multiply $#NODES by two.
-
-Note that these example scripts and the setenv command are for the csh
-or tcsh shells.  They must be translated to work with sh or bash.
-
--- Windows Workstation Networks ---
-
-Windows is the same as other workstation networks described above,
-except that rsh is not available on this platform.  Instead, you must
-run the provided daemon (charmd.exe) on every node listed in the
-nodelist file.  Using charmd_faceless rather than charmd will eliminate
-consoles for the daemon and node processes.
-
--- BProc-Based Clusters (Scyld and Clustermatic) --
-
-Scyld and Clustermatic replace rsh and other methods of launching jobs
-via a distributed process space.  There is no need for a nodelist file
-or any special daemons, although special Scyld or Clustermatic versions
-of charmrun and namd2 are required.  In order to allow access to files,
-the first NAMD process must be on the master node of the cluster.
-Launch jobs from the master node of the cluster via the command:
-
-  charmrun namd2 +p<procs> <configfile>
-
-For best performance, run a single NAMD job on all available nodes and
-never run multiple NAMD jobs at the same time.  You should probably
-determine the number of processors via a script, for example on Scyld:
-
-  @ NUMPROCS = `bpstat -u` + 1
-  charmrun namd2 +p$NUMPROCS <configfile>
-
-You may safely suspend and resume a running NAMD job on these clusters
-using kill -STOP and kill -CONT on the process group.  Queueing systems
-typically provide this functionality, allowing you to suspend a running
-job to allow a higher priority job to run immediately.
-
-If you want to run multiple NAMD jobs simultaneously on the same cluster
-you can use the charmrun options ++startpe and ++endpe to specify the
-range of nodes to use.  The master node (-1) is always included unless
-the ++skipmaster option is given.  The requested number of processes are
-assigned to nodes round-robin as with other network versions, or the
-++ppn option can be used to specify the number of processes per node.
-To limit the master node to one process use the ++singlemaster option.
-
--- SGI Altix --
-
-Be sure that the MPI_DSM_DISTRIBUTE environment variable is set, then
-use the Linux-ia64-MPT version of NAMD along with the system mpirun:
-
-  mpirun -np <procs> <configfile>
-
--- Compaq AlphaServer SC --
-
-If your machine as a Quadrics interconnect you should use the Elan
-version of NAMD, other wise select the normal MPI version.  In either
-case, parallel jobs are run using the "prun" command as follows:
-
-  prun -n <procs> <configfile>
-
-There are additional options.  Consult your local documentation.
-
--- IBM POWER Clusters --
-
-Run the MPI version of NAMD as you would any POE program.  The options
-and environment variables for poe are various and arcane, so you should
-consult your local documentation for recommended settings.  As an
-example, to run on Blue Horizon one would specify:
-
-  poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
-
--- Origin 2000 --
-
-For small numbers of processors (1-8) use the non-MPI version of namd2.
-If your stack size limit is unlimited, which DQS may do, you will need
-to set it with "limit stacksize 64M" to run on multiple processors.
-To run on <procs> processors call the binary directly with the +p option:
-
-  namd2 +p<procs> <configfile>
-
-For better performance on larger numbers of processors we recommend
-that you use the MPI version of NAMD.  To run this version, you must
-have MPI installed.  Furthermore, you must set two environment
-variables to tell MPI how to allocate certain internal buffers.  Put
-the following commands in your .cshrc or .profile file, or in your
-job file if you are running under a queuing system:
-
-  setenv MPI_REQUEST_MAX 10240
-  setenv MPI_TYPE_MAX 10240
-
-Then run NAMD with the following command:
-
-  mpirun -np <procs> namd2 <configfile>
-
-----------------------------------------------------------------------
-
-Memory Usage
-
-NAMD has traditionally used less than 100MB of memory even for systems
-of 100,000 atoms.  With the reintroduction of pairlists in NAMD 2.5,
-however, memory usage for a 100,000 atom system with a 12A cutoff can
-approach 300MB, and will grow with the cube of the cutoff.  This extra
-memory is distributed across processors during a parallel run, but a
-single workstation may run out of physical memory with a large system.
-
-To avoid this, NAMD now provides a pairlistMinProcs config file option
-that specifies the minimum number of processors that a run must use
-before pairlists will be enabled (on fewer processors small local
-pairlists are generated and recycled rather than being saved, the
-default is "pairlistMinProcs 1").  This is a per-simulation rather than
-a compile time option because memory usage is molecule-dependent.
-
-----------------------------------------------------------------------
-
-Improving Parallel Scaling
-
-While NAMD is designed to be a scalable program, particularly for
-simulations of 100,000 atoms or more, at some point adding additional
-processors to a simulation will provide little or no extra performance.
-If you are lucky enough to have access to a parallel machine you should
-measure NAMD's parallel speedup for a variety of processor counts when
-running your particular simulation.  The easiest and most accurate way
-to do this is to look at the "Benchmark time:" lines that are printed
-after 20 and 25 cycles (usually less than 500 steps).  You can monitor
-performance during the entire simulation by adding "outputTiming <steps>"
-to your configuration file, but be careful to look at the "wall time"
-rather than "CPU time" fields on the "TIMING:" output lines produced.
-For an external measure of performance, you should run simulations of
-both 25 and 50 cycles (see the stepspercycle parameter) and base your
-estimate on the additional time needed for the longer simulation in
-order to exclude startup costs and allow for initial load balancing.
-
-We provide both standard (UDP) and new TCP based precompiled binaries
-for Linux clusters.  We have observed that the TCP version is better
-on our dual processor clusters with gigabit ethernet while the basic
-UDP version is superior on our single processor fast ethernet cluster.
-When using the UDP version with gigabit you can add the +giga option
-to adjust several tuning parameters.  Additional performance may be
-gained by building NAMD against an SMP version of Charm++ such as
-net-linux-smp or net-linux-smp-icc.  This will use a communication
-thread for each process to respond to network activity more rapidly.
-For dual processor clusters we have found it that running two separate
-processes per node, each with its own communication thread, is faster
-than using the charmrun ++ppn option to run multiple worker threads.
-However, we have observed that when running on a single hyperthreaded
-processor (i.e., a newer Pentium 4) there is an additional 15% boost
-from running standalone with two threads (namd2 +p2) beyond running
-two processors (charmrun namd2 ++local +p2).  For a cluster of single
-processor hyperthreaded machines an SMP version should provide very
-good scaling running one process per node since the communication
-thread can run very efficiently on the second virtual processor.  We
-are unable to ship an SMP build for Linux due to portability problems
-with the Linux pthreads implementation needed by Charm++.  The new
-NPTL pthreads library in RedHat 9 fixes these problems so an SMP port
-can become the standard shipping binary version in the future.
-
-On some large machines with very high bandwidth interconnects you may
-be able to increase performance for PME simulations by adding either
-"+strategy USE_MESH" or "+strategy USE_GRID" to the command line.
-These flags instruct the Charm++ communication optimization library to
-reduce the number of messages sent during PME 3D FFT by combining data
-into larger messages to be transmitted along each dimension of either
-a 2D mesh or a 3D grid, respectively.  While reducing the number of
-messages sent per processor from N to 2*sqrt(N) or 3*cbrt(N), the
-total amount of data transmitted for the FFT is doubled or tripled.
-
-Extremely short cycle lengths (less than 10 steps) will also limit
-parallel scaling, since the atom migration at the end of each cycle
-sends many more messages than a normal force evaluation.  Increasing
-pairlistdist from, e.g., cutoff + 1.5 to cutoff + 2.5, while also
-doubling stepspercycle from 10 to 20, may increase parallel scaling,
-but it is important to measure.  When increasing stepspercycle, also
-try increasing pairlistspercycle by the same proportion.
-
-NAMD should scale very well when the number of patches (multiply the
-dimensions of the patch grid) is larger or rougly the same as the
-number of processors.  If this is not the case, it may be possible
-to improve scaling by adding ``twoAwayX yes'' to the config file,
-which roughly doubles the number of patches.  (Similar options
-twoAwayY and twoAwayZ also exist, and may be used in combination,
-but this greatly increases the number of compute objects.  twoAwayX
-has the unique advantage of also improving the scalability of PME.)
-
-----------------------------------------------------------------------
-
-Automated Usage Reporting
-
-NAMD may print information similar to the following at startup:
-
- Info: Sending usage information to NAMD developers via UDP.
- Info: Sent data is: 1 NAMD  2.2  Solaris-Sparc  1    verdun  jim
-
-The information you see listed is sent via a single UDP packet and
-logged for future analysis.  The UDP protocol does not retransmit
-lost packets and does not attempt to establish a connection.  We will
-use this information only for statistical analysis to determine how
-frequently NAMD is actually being used.  Your user and machine name
-are only used for counting unique users, they will not be correlated
-with your download registration data.
-
-We collect this information in order to better justify continued
-development of NAMD to the NIH, our primary source of funding.  We
-also use collected information to direct NAMD development efforts.
-If you are opposed to this reporting, you are welcome to recompile
-NAMD and disable it.  Usage reporting is disabled in the release
-Windows binaries, but will be added in a later version.
-
-----------------------------------------------------------------------
-
-Endian Issues
-
-Some architectures write binary data (integer or floating point) with
-the most significant byte first; others put the most significant byte
-last.  This doesn't effect text files but it does matter when a binary
-data file that was written on a "big-endian" machine (Sun, HP, SGI) is
-read on a "small-endian" machine (Intel, Alpha) or vice versa.
-
-NAMD generates DCD trajectory files and binary coordinate and velocity
-files which are "endian-sensitive".  While VMD can now read DCD files
-from any machine and NAMD reads most other-endian binary restart files,
-many analysis programs (like CHARMM or X-PLOR) require same-endian DCD
-files.  We provide the programs flipdcd and flipbinpdb for switching the
-endianness of DCD and binary restart files, respectively.  These programs
-use mmap to alter the file in-place and may therefore appear to consume
-an amount of memory equal to the size of the file.
+This file contains the following sections:
+
+  - Problems?  Found a bug?
+  - Running NAMD
+  - Compiling NAMD
+  - Memory Usage
+  - Improving Parallel Scaling
+  - Endian Issues
 
 ----------------------------------------------------------------------
 
@@ -475,16 +46,173 @@ Problems?  Found a bug?
  7. For bug reports, mail namd@ks.uiuc.edu with: 
     - A synopsis of the problem as the subject (not "HELP" or "URGENT").
     - The NAMD version, platform and number of CPUs the problem occurs
-      with (to be very complete just copy the first 20 lines of output).
+      (to be very complete just copy the first 20 lines of output).
     - A description of the problematic behavior and any error messages. 
     - If the problem is consistent or random. 
-    - The compressed tar file as an attachment (or a URL if it is too big). 
+    - The URL of your compressed tar file on a web server.
 
  8. We'll get back to you with further questions or suggestions.  While
     we try to treat all of our users equally and respond to emails in a
     timely manner, other demands occasionally prevent us from doing so.
     Please understand that we must give our highest priority to crashes
     or incorrect results from the most recently released NAMD binaries.
+
+----------------------------------------------------------------------
+
+Running NAMD
+
+NAMD runs on a variety of serial and parallel platforms.  While it is 
+trivial to launch a serial program, a parallel program depends on a 
+platform-specific library such as MPI to launch copies of itself on other 
+nodes and to provide access to a high performance network such as Myrinet 
+or InfiniBand if one is available.
+
+For typical workstations (Windows, Linux, Mac OS X, or other Unix) with 
+only ethernet networking (hopefully gigabit), NAMD uses the Charm++ native 
+communications layer and the program charmrun to launch namd2 processes 
+for parallel runs (either exclusively on the local machine with the 
+++local option or on other hosts as specified by a nodelist file).  The 
+namd2 binaries for these platforms can also be run directly (known as 
+standalone mode) for single process runs.
+
+For workstation clusters and other massively parallel machines with 
+special high-performance networking, NAMD uses the system-provided MPI 
+library (with a few exceptions) and standard system tools such as mpirun 
+are used to launch jobs.  Since MPI libraries are very often incompatible 
+between versions, you will likely need to recompile NAMD and its 
+underlying Charm++ libraries to use these machines in parallel (the 
+provided non-MPI binaries should still work for serial runs.) The provided 
+charmrun program for these platforms is only a script that attempts to 
+translate charmrun options into mpirun options, but due to the diversity 
+of MPI libraries it often fails to work.
+
+-- Individual Windows, Linux, Mac OS X, or Other Unix Workstations --
+
+Individual workstations use the same version of NAMD as workstation 
+networks, but running NAMD is much easier.  If your machine has only one 
+processor core you can run the namd2 binary directly:
+
+  namd2 <configfile>
+
+For multicore workstations, Windows and Mac OX X (Intel) released binaries 
+are based on "multicore" builds of Charm++ that can run multiple threads. 
+These multicore builds lack a network layer, so they can only be used on a 
+single machine. The Solaris (Sparc and x86-64) released binaries are based 
+on "smp" builds of Charm++ that can be used with multiple threads on 
+either a single machine like a multicore build, or across a network. For 
+best performance use one thread per processor with the +p option:
+
+  namd2 +p<procs> <configfile>
+
+For other multiprocessor workstations the included charmrun program is 
+needed to run multiple namd2 processes.  The ++local option is also 
+required to specify that only the local machine is being used:
+
+  charmrun namd2 ++local +p<procs> <configfile>
+
+You may need to specify the full path to the namd2 binary.
+
+-- Linux or Other Unix Workstation Networks --
+
+The same binaries used for individual workstations as described above 
+(other than pure "multicore" builds and MPI builds) can be used with 
+charmrun to run in parallel on a workstation network. The only difference 
+is that you must provide a "nodelist" file listing the machines where 
+namd2 processes should run, for example:
+
+  group main
+  host brutus
+  host romeo
+
+The "group main" line defines the default machine list.  Hosts brutus and 
+romeo are the two machines on which to run the simulation.  Note that 
+charmrun may run on one of those machines, or charmrun may run on a third 
+machine.  All machines used for a simulation must be of the same type and 
+have access to the same namd2 binary.
+
+By default, the "rsh" command ("remsh" on HPUX) is used to start namd2 on 
+each node specified in the nodelist file.  You can change this via the 
+CONV_RSH environment variable, i.e., to use ssh instead of rsh run "setenv 
+CONV_RSH ssh" or add it to your login or batch script.  You must be able 
+to connect to each node via rsh/ssh without typing your password; this can 
+be accomplished via a .rhosts files in your home directory, by an 
+/etc/hosts.equiv file installed by your sysadmin, or by a 
+.ssh/authorized_keys file in your home directory.  You should confirm that 
+you can run "ssh hostname pwd" (or "rsh hostname pwd") without typing a 
+password before running NAMD.  Contact your local sysadmin if you have 
+difficulty setting this up.  If you are unable to use rsh or ssh, then add 
+"setenv CONV_DAEMON" to your script and run charmd (or charmd_faceless, 
+which produces a log file) on every node.
+
+You should now be able to try running NAMD as:
+
+  charmrun namd2 +p<procs> <configfile>
+
+If this fails or just hangs, try adding the ++verbose option to see more 
+details of the startup process.  You may need to specify the full path to 
+the namd2 binary.  Charmrun will start the number of processes specified 
+by the +p option, cycling through the hosts in the nodelist file as many 
+times as necessary.  You may list multiprocessor machines multiple times 
+in the nodelist file, once for each processor.
+
+You may specify the nodelist file with the "++nodelist" option and the 
+group (which defaults to "main") with the "++nodegroup" option.  If you do 
+not use "++nodelist" charmrun will first look for "nodelist" in your 
+current directory and then ".nodelist" in your home directory.
+
+Some automounters use a temporary mount directory which is prepended to 
+the path returned by the pwd command.  To run on multiple machines you 
+must add a "++pathfix" option to your nodelist file.  For example:
+
+  group main ++pathfix /tmp_mnt /
+  host alpha1
+  host alpha2
+
+There are many other options to charmrun and for the nodelist file. These 
+are documented at in the Charm++ Installation and Usage Manual available 
+at http://charm.cs.uiuc.edu/manuals/ and a list of available charmrun 
+options is available by running charmrun without arguments.
+
+If your workstation cluster is controlled by a queueing system you will 
+need build a nodelist file in your job script.  For example, if your 
+queueing system provides a $HOST_FILE environment variable:
+
+  set NODES = `cat $HOST_FILE`
+  set NODELIST = $TMPDIR/namd2.nodelist
+  echo group main >! $NODELIST
+  foreach node ( $nodes )
+    echo host $node >> $NODELIST
+  end
+  @ NUMPROCS = 2 * $#NODES
+  charmrun namd2 +p$NUMPROCS ++nodelist $NODELIST <configfile>
+
+Note that $NUMPROCS is twice the number of nodes in this example. This is 
+the case for dual-processor machines.  For single-processor machines you 
+would not multiply $#NODES by two.
+
+Note that these example scripts and the setenv command are for the csh or 
+tcsh shells.  They must be translated to work with sh or bash.
+
+-- Windows Workstation Networks ---
+
+These are no longer supported, but NAMD has been reported to compile
+on Windows HPC Server.
+
+-- SGI Altix --
+
+Be sure that the MPI_DSM_DISTRIBUTE environment variable is set, then use 
+the Linux-Itanium-MPI-Altix version of NAMD along with the system mpirun:
+
+  mpirun -np <procs> <configfile>
+
+-- IBM POWER Clusters --
+
+Run the MPI version of NAMD as you would any POE program.  The options and 
+environment variables for poe are various and arcane, so you should 
+consult your local documentation for recommended settings.  As an example, 
+to run on Blue Horizon one would specify:
+
+  poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
 
 ----------------------------------------------------------------------
 
@@ -655,6 +383,114 @@ several options to elicit similar behavior on all platforms.  Your
 compiler may conform to an earlier C++ specification than NAMD uses.
 You compiler may also enforce a later C++ rule than NAMD follows.
 You may ignore repeated warnings about new and delete matching.
+
+----------------------------------------------------------------------
+
+Memory Usage
+
+NAMD has traditionally used less than 100MB of memory even for systems
+of 100,000 atoms.  With the reintroduction of pairlists in NAMD 2.5,
+however, memory usage for a 100,000 atom system with a 12A cutoff can
+approach 300MB, and will grow with the cube of the cutoff.  This extra
+memory is distributed across processors during a parallel run, but a
+single workstation may run out of physical memory with a large system.
+
+To avoid this, NAMD now provides a pairlistMinProcs config file option
+that specifies the minimum number of processors that a run must use
+before pairlists will be enabled (on fewer processors small local
+pairlists are generated and recycled rather than being saved, the
+default is "pairlistMinProcs 1").  This is a per-simulation rather than
+a compile time option because memory usage is molecule-dependent.
+
+----------------------------------------------------------------------
+
+Improving Parallel Scaling
+
+While NAMD is designed to be a scalable program, particularly for
+simulations of 100,000 atoms or more, at some point adding additional
+processors to a simulation will provide little or no extra performance.
+If you are lucky enough to have access to a parallel machine you should
+measure NAMD's parallel speedup for a variety of processor counts when
+running your particular simulation.  The easiest and most accurate way
+to do this is to look at the "Benchmark time:" lines that are printed
+after 20 and 25 cycles (usually less than 500 steps).  You can monitor
+performance during the entire simulation by adding "outputTiming <steps>"
+to your configuration file, but be careful to look at the "wall time"
+rather than "CPU time" fields on the "TIMING:" output lines produced.
+For an external measure of performance, you should run simulations of
+both 25 and 50 cycles (see the stepspercycle parameter) and base your
+estimate on the additional time needed for the longer simulation in
+order to exclude startup costs and allow for initial load balancing.
+
+We provide both standard (UDP) and new TCP based precompiled binaries
+for Linux clusters.  We have observed that the TCP version is better
+on our dual processor clusters with gigabit ethernet while the basic
+UDP version is superior on our single processor fast ethernet cluster.
+When using the UDP version with gigabit you can add the +giga option
+to adjust several tuning parameters.  Additional performance may be
+gained by building NAMD against an SMP version of Charm++ such as
+net-linux-smp or net-linux-smp-icc.  This will use a communication
+thread for each process to respond to network activity more rapidly.
+For dual processor clusters we have found it that running two separate
+processes per node, each with its own communication thread, is faster
+than using the charmrun ++ppn option to run multiple worker threads.
+However, we have observed that when running on a single hyperthreaded
+processor (i.e., a newer Pentium 4) there is an additional 15% boost
+from running standalone with two threads (namd2 +p2) beyond running
+two processors (charmrun namd2 ++local +p2).  For a cluster of single
+processor hyperthreaded machines an SMP version should provide very
+good scaling running one process per node since the communication
+thread can run very efficiently on the second virtual processor.  We
+are unable to ship an SMP build for Linux due to portability problems
+with the Linux pthreads implementation needed by Charm++.  The new
+NPTL pthreads library in RedHat 9 fixes these problems so an SMP port
+can become the standard shipping binary version in the future.
+
+On some large machines with very high bandwidth interconnects you may
+be able to increase performance for PME simulations by adding either
+"+strategy USE_MESH" or "+strategy USE_GRID" to the command line.
+These flags instruct the Charm++ communication optimization library to
+reduce the number of messages sent during PME 3D FFT by combining data
+into larger messages to be transmitted along each dimension of either
+a 2D mesh or a 3D grid, respectively.  While reducing the number of
+messages sent per processor from N to 2*sqrt(N) or 3*cbrt(N), the
+total amount of data transmitted for the FFT is doubled or tripled.
+
+Extremely short cycle lengths (less than 10 steps) will also limit
+parallel scaling, since the atom migration at the end of each cycle
+sends many more messages than a normal force evaluation.  Increasing
+pairlistdist from, e.g., cutoff + 1.5 to cutoff + 2.5, while also
+doubling stepspercycle from 10 to 20, may increase parallel scaling,
+but it is important to measure.  When increasing stepspercycle, also
+try increasing pairlistspercycle by the same proportion.
+
+NAMD should scale very well when the number of patches (multiply the
+dimensions of the patch grid) is larger or rougly the same as the
+number of processors.  If this is not the case, it may be possible
+to improve scaling by adding ``twoAwayX yes'' to the config file,
+which roughly doubles the number of patches.  (Similar options
+twoAwayY and twoAwayZ also exist, and may be used in combination,
+but this greatly increases the number of compute objects.  twoAwayX
+has the unique advantage of also improving the scalability of PME.)
+
+----------------------------------------------------------------------
+
+Endian Issues
+
+Some architectures write binary data (integer or floating point) with
+the most significant byte first; others put the most significant byte
+last.  This doesn't effect text files but it does matter when a binary
+data file that was written on a "big-endian" machine (POWER, PowerPC) is
+read on a "small-endian" machine (Intel) or vice versa.
+
+NAMD generates DCD trajectory files and binary coordinate and velocity
+files which are "endian-sensitive".  While VMD can now read DCD files
+from any machine and NAMD reads most other-endian binary restart files,
+many analysis programs (like CHARMM or X-PLOR) require same-endian DCD
+files.  We provide the programs flipdcd and flipbinpdb for switching the
+endianness of DCD and binary restart files, respectively.  These programs
+use mmap to alter the file in-place and may therefore appear to consume
+an amount of memory equal to the size of the file.
 
 ----------------------------------------------------------------------
 
