@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                   NAMD 2.6 Release Announcement                    |
+|                  NAMD 2.7b1 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                     August 31, 2006
+                                                     March 23, 2009
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
@@ -13,29 +13,21 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.6 has several advantages over NAMD 2.5:
+NAMD 2.7b1 has many advantages over NAMD 2.6, among these are:
 
-- Ports to Itanium, Altix, and Opteron/Athlon64/EMT64.
+- Collective variable-based calculations
 
-- Port to Mac OS X for Intel processors.
+- Improved free energy methods for alchemical transformations
 
-- Ports to Cray XT3 and IBM BlueGene/L (source code only).
+- Grid-based forces and molecular dynamics flexible fitting
 
-- Improved serial performance, especially on POWER and PowerPC.
+- Additional bonded terms for restraining molecular structure
 
-- Adaptive biasing force free energy calculations.
+- Enhanced performance and scalability
 
-- Customizable replica exchange simulations.
+Details at http://www.ks.uiuc.edu/Research/namd/2.7/features.html
 
-- Tcl-based boundary potentials.
-
-- Reduced memory usage for unusual simulations.
-
-- Support for CHARMM 31 stream files and CMAP crossterms.
-
-- Support for OPLS force field.
-
-NAMD is available from http://www.ks.uiuc.edu/Research/namd/.
+NAMD is available from http://www.ks.uiuc.edu/Research/namd/
 
 For your convenience, NAMD has been ported to and will be installed
 on the machines at the NSF-sponsored national supercomputing centers.
