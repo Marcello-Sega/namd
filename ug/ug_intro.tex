@@ -26,7 +26,7 @@ non-bonded interactions, and full electrostatics.
 and dynamics parameters.
 \item[Section \ref{section:performance}] lists performance tuning parameters.
 \item[Section \ref{section:userdef}] explains user defined forces.
-\item[Section \ref{section:fenergy}] discusses free energy of
+% \item[Section \ref{section:fenergy}] discusses free energy of
 conformation change calculations.
 \item[Section \ref{section:colvars}] describes collective
 variable-based calculations.
@@ -45,71 +45,6 @@ complete and easy to understand and to make \NAMD\ itself
 easy to install and run.
 We welcome your suggestions for improving the documentation or code
 at {\tt namd@ks.uiuc.edu}.
-
-\subsection{New features in version \NAMDVER}
-
-\subsubsection*{Ports to Itanium, Altix, and Opteron/Athlon64/EMT64}
-
-NAMD runs very fast on the Itanium processor under Linux, including
-the SGI Altix.  Native binaries for 64-bit x86 processors such as
-AMD Opteron and Intel EMT64 are 25\% faster than 32-bit binaries.
-
-\subsubsection*{Port to Mac OS X for Intel Processors}
-
-NAMD has been ported to the new Intel-based Macintosh platform.
-Binaries are only 32-bit, but should run on newer 64-bit machines.
-
-\subsubsection*{Ports to Cray XT3 and IBM BlueGene/L (source code only)}
-
-These two large, scalable, but immature platforms are now
-supported.  Neither platform supports dynamic linking and our
-experience shows that binaries would be quickly out of date, so
-only source code is released.  Also, BlueGene/L requires the
-latest development version of Charm++, rather than charm-5.9
-as shipped with the NAMD source code.
-
-\subsubsection*{Improved Serial Performance, Especially on POWER and PowerPC}
-
-Tuning of the NAMD inner loop has provided a 30\% performance boost
-with the IBM XL compiler.  New Mac OS X binaries are up to 70\%
-faster, but users must download the IBM XL runtime library from
-{\tt http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/}
-
-\subsubsection*{Adaptive Biasing Force Free Energy Calculations}
-
-A new method, implemented in Tcl, efficiently calculates the
-potential of mean force along a reaction coordinate by applying
-adaptive biasing forces to provide uniform sampling.
-
-\subsubsection*{Customizable Replica Exchange Simulations}
-
-The replica exchange method is implemented as a set of Tcl scripts
-that use socket connections to drive a set of NAMD jobs, exchanging
-temperatures (or any other scriptable parameter) based on energy.
-
-\subsubsection*{Tcl-Based Boundary Potentials}
-
-Tcl-scripted forces may be efficiently applied individually to
-large numbers of atoms to implement boundaries and similar forces.
-
-\subsubsection*{Reduced Memory Usage for Unusual Simulations}
-
-Memory usage for simulations of large, highly bonded structures
-such as covalent crystals and for sparse simulations such as
-coarse-grained models has been greatly reduced without affecting
-the performance of typical biopolymer simulations.
-
-\subsubsection*{Support for CHARMM 31 Stream Files and CMAP Crossterms}
-
-Both NAMD and psfgen (standalone or VMD plug) read and interpret
-the new CHARMM 31 stream files (combining topology and parameters)
-and the new CMAP crossterm (dihedral-dihedral) potential function.
-
-\subsubsection*{Support for OPLS Force Field}
-
-Geometric combining of Lennard-Jones $\sigma$ (radius) parameters
-($\sigma_{ij} = \sqrt{\sigma_i \sigma_j}$), as required by the OPLS force
-field, is available with the option {\tt vdwGeometricSigma}.
 
 
 \subsection{\NAMD\ and molecular dynamics simulations}

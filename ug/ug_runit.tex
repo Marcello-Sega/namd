@@ -13,10 +13,10 @@ NAMD runs on a variety of serial and parallel platforms.  While it is
 trivial to launch a serial program, a parallel program depends on a
 platform-specific library such as MPI to launch copies of itself on
 other nodes and to provide access to a high performance network such
-as Myrinet if one is available.
+as Myrinet or InfiniBand if one is available.
 
 For typical workstations (Windows, Linux, Mac OS X, or other Unix)
-with only ethernet networking (100 Megabit or Gigabit), NAMD uses the
+with only ethernet networking (hopefully gigabit), NAMD uses the
 Charm++ native communications layer and the program charmrun to launch
 namd2 processes for parallel runs (either exclusively on the local
 machine with the ++local option or on other hosts as specified by a
@@ -34,39 +34,28 @@ The provided charmrun program for these platforms is only a script
 that attempts to translate charmrun options into mpirun options, but
 due to the diversity of MPI libraries it often fails to work.
 
-\subsection{Mac OS X Users Must Install the IBM XL C/C++ Run-Time Library}
-
-The IBM XL C/C++ compiler provides a significant performance boost
-to NAMD on PowerPC G4 and G5 processors.  Unfortunately, the runtime
-library cannot be statically linked, so you must download it from
-{\tt http://ftp.software.ibm.com/aix/products/ccpp/vacpp-rte-macos/}
-and install it based on the the README file in that directory.  If
-the library is not installed, running NAMD will product this error:
-\begin{verbatim}
-dyld: ./namd2 can't open library: /opt/ibmcmp/lib/libibmc++.A.dylib
-\end{verbatim}
-
 \subsection{Individual Windows, Linux, Mac OS X, or Other Unix Workstations}
 
 Individual workstations use the same version of NAMD as workstation
 networks, but running NAMD is much easier.  If your machine has only
-one processor you can run the namd2 binary directly:
+one processor core you can run the any non-MPI namd2 binary directly:
 
 \begin{verbatim}
   namd2 <configfile>
 \end{verbatim}
 
-For multiprocessor workstations, Windows and Solaris released binaries
-are based on SMP versions of Charm++ that can run multiple threads.
+For multicore workstations, Windows and Mac OX X (Intel) released binaries
+are based on ``multicore'' builds of Charm++ that can run multiple threads.
+These multicore builds lack a network layer, so they can only be used on a
+single machine.
+The Solaris (Sparc and x86-64) released binaries are based on ``smp''
+builds of Charm++ that can be used with multiple threads on either a
+single machine like a multicore build, or across a network.
 For best performance use one thread per processor with the +p option:
 
 \begin{verbatim}
   namd2 +p<procs> <configfile>
 \end{verbatim}
-
-Since the SMP versions of NAMD are relatively new, there may be bugs
-that are only present when running multiple threads.  You may want to
-try running with charmrun (see below) if you experience crashes.
 
 For other multiprocessor workstations the included charmrun program is
 needed to run multiple namd2 processes.  The ++local option is also
@@ -78,9 +67,10 @@ required to specify that only the local machine is being used:
 
 You may need to specify the full path to the namd2 binary.
 
-\subsection{Linux, Mac OS X, or Other Unix Workstation Networks}
+\subsection{Linux or Other Unix Workstation Networks}
 
 The same binaries used for individual workstations as described above
+(other than pure ``multicore'' builds and MPI builds)
 can be used with charmrun to run in parallel on a workstation network.
 The only difference is that you must provide a ``nodelist'' file listing
 the machines where namd2 processes should run, for example:
@@ -97,7 +87,7 @@ that charmrun may run on one of those machines, or charmrun may run
 on a third machine.  All machines used for a simulation must be of the
 same type and have access to the same namd2 binary.
 
-By default, the ``rsh'' command (``remsh'' on HPUX) is used to start namd2
+By default, the ``rsh'' command is used to start namd2
 on each node specified in the nodelist file.  You can change this via
 the CONV\_RSH environment variable, i.e., to use ssh instead of rsh run
 ``setenv CONV\_RSH ssh'' or add it to your login or batch script.  You
@@ -168,46 +158,8 @@ or tcsh shells.  They must be translated to work with sh or bash.
 
 \subsection{Windows Workstation Networks}
 
-Windows is the same as other workstation networks described above,
-except that rsh is not available on this platform.  Instead, you must
-run the provided daemon (charmd.exe) on every node listed in the
-nodelist file.  Using charmd\_faceless rather than charmd will eliminate
-consoles for the daemon and node processes.
-
-\subsection{BProc-Based Clusters (Scyld and Clustermatic)}
-
-Scyld and Clustermatic replace rsh and other methods of launching jobs
-via a distributed process space.  There is no need for a nodelist file
-or any special daemons, although special Scyld or Clustermatic versions
-of charmrun and namd2 are required.  In order to allow access to files,
-the first NAMD process must be on the master node of the cluster.
-Launch jobs from the master node of the cluster via the command:
-
-\begin{verbatim}
-  charmrun namd2 +p<procs> <configfile>
-\end{verbatim}
-
-For best performance, run a single NAMD job on all available nodes and
-never run multiple NAMD jobs at the same time.  You should probably
-determine the number of processors via a script, for example on Scyld:
-
-\begin{verbatim}
-  @ NUMPROCS = `bpstat -u` + 1
-  charmrun namd2 +p$NUMPROCS <configfile>
-\end{verbatim}
-
-You may safely suspend and resume a running NAMD job on these clusters
-using kill -STOP and kill -CONT on the process group.  Queueing systems
-typically provide this functionality, allowing you to suspend a running
-job to allow a higher priority job to run immediately.
-
-If you want to run multiple NAMD jobs simultaneously on the same cluster
-you can use the charmrun options ++startpe and ++endpe to specify the
-range of nodes to use.  The master node (-1) is always included unless
-the ++skipmaster option is given.  The requested number of processes are
-assigned to nodes round-robin as with other network versions, or the
-++ppn option can be used to specify the number of processes per node.
-To limit the master node to one process use the ++singlemaster option.
+These are no longer supported, but NAMD has been reported to compile
+on Windows HPC Server.
 
 \subsection{SGI Altix}
 
@@ -218,18 +170,6 @@ use the Linux-ia64-MPT version of NAMD along with the system mpirun:
 mpirun -np <procs> <configfile>
 \end{verbatim}
 
-\subsection{Compaq AlphaServer SC}
-
-If your machine as a Quadrics interconnect you should use the Elan
-version of NAMD, other wise select the normal MPI version.  In either
-case, parallel jobs are run using the ``prun'' command as follows:
-
-\begin{verbatim}
-  prun -n <procs> <configfile>
-\end{verbatim}
-
-There are additional options.  Consult your local documentation.
-
 \subsection{IBM POWER Clusters}
 
 Run the MPI version of NAMD as you would any POE program.  The options
@@ -239,35 +179,6 @@ example, to run on Blue Horizon one would specify:
 
 \begin{verbatim}
   poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
-\end{verbatim}
-
-\subsection{Origin 2000}
-
-For small numbers of processors (1-8) use the non-MPI version of namd2.
-If your stack size limit is unlimited, which DQS may do, you will need
-to set it with ``limit stacksize 64M'' to run on multiple processors.
-To run on <procs> processors call the binary directly with the +p option:
-
-\begin{verbatim}
-  namd2 +p<procs> <configfile>
-\end{verbatim}
-
-For better performance on larger numbers of processors we recommend
-that you use the MPI version of NAMD.  To run this version, you must
-have MPI installed.  Furthermore, you must set two environment
-variables to tell MPI how to allocate certain internal buffers.  Put
-the following commands in your .cshrc or .profile file, or in your
-job file if you are running under a queuing system:
-
-\begin{verbatim}
-  setenv MPI_REQUEST_MAX 10240
-  setenv MPI_TYPE_MAX 10240
-\end{verbatim}
-
-Then run NAMD with the following command:
-
-\begin{verbatim}
-  mpirun -np <procs> namd2 <configfile>
 \end{verbatim}
 
 \subsection{Memory Usage}
@@ -304,7 +215,7 @@ both 25 and 50 cycles (see the stepspercycle parameter) and base your
 estimate on the additional time needed for the longer simulation in
 order to exclude startup costs and allow for initial load balancing.
 
-We provide both standard (UDP) and new TCP based precompiled binaries
+We provide both standard (UDP) and TCP based precompiled binaries
 for Linux clusters.  We have observed that the TCP version is better
 on our dual processor clusters with gigabit ethernet while the basic
 UDP version is superior on our single processor fast ethernet cluster.
@@ -328,16 +239,6 @@ with the Linux pthreads implementation needed by Charm++.  The new
 NPTL pthreads library in RedHat 9 fixes these problems so an SMP port
 can become the standard shipping binary version in the future.
 
-On some large machines with very high bandwidth interconnects you may
-be able to increase performance for PME simulations by adding either
-``+strategy USE\_MESH'' or ``+strategy USE\_GRID'' to the command line.
-These flags instruct the Charm++ communication optimization library to
-reduce the number of messages sent during PME 3D FFT by combining data
-into larger messages to be transmitted along each dimension of either
-a 2D mesh or a 3D grid, respectively.  While reducing the number of
-messages sent per processor from N to 2*sqrt(N) or 3*cbrt(N), the
-total amount of data transmitted for the FFT is doubled or tripled.
-
 Extremely short cycle lengths (less than 10 steps) will also limit
 parallel scaling, since the atom migration at the end of each cycle
 sends many more messages than a normal force evaluation.  Increasing
@@ -355,4 +256,7 @@ twoAwayY and twoAwayZ also exist, and may be used in combination,
 but this greatly increases the number of compute objects.  twoAwayX
 has the unique advantage of also improving the scalability of PME.)
 \index{twoAwayX} \index{twoAwayY} \index{twoAwayZ}
+
+Additional performance tuning suggestions and options are described
+at http://www.ks.uiuc.edu/Research/namd/wiki/?NamdPerformanceTuning
 
