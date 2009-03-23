@@ -222,48 +222,58 @@ Building a complete NAMD binary from source code requires working
 C and C++ compilers, Charm++/Converse, TCL, and FFTW.  NAMD will
 compile without TCL or FFTW but certain features will be disabled.
 Fortunately, precompiled libraries are available from
-http://www.ks.uiuc.edu/Research/namd/libraries/.  You must enable
-these options by specifying "tcl fftw" as options when you run the
-config script and some files in arch may need editing.
+http://www.ks.uiuc.edu/Research/namd/libraries/.  You may disable
+these options by specifying --without-tcl --without-fftw as options
+when you run the config script.  Some files in arch may need editing
+to set the path to TCL and FFTW libraries correctly.
 
-As an example, here is the build sequence for Linux workstations:
-
-Download TCL and FFTW libraries:
-  mkdir fftw;  cd fftw
-  wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux.tar.gz
-  tar xzf fftw-linux.tar.gz
-  cd ..;  mkdir tcl;  cd tcl
-  wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl-linux.tar.gz
-  tar xzf tcl-linux.tar.gz
+As an example, here is the build sequence for 64-bit Linux workstations:
 
 Unpack NAMD and matching Charm++ source code and enter directory:
-  tar xzf NAMD_2.6_Source.tar.gz
-  cd NAMD_2.6_Source
-  tar xf charm-5.9.tar
-  cd charm-5.9
+  tar xzf NAMD_2.7b1_Source.tar.gz
+  cd NAMD_2.7b1_Source
+  tar xf charm-6.1.tar
+  cd charm-6.1
 
 Build and test the Charm++/Converse library:
-  ./build charm++ net-linux --no-shared -O -DCMK_OPTIMIZE=1
-  cd net-linux/tests/charm++/megatest/
+  ./build charm++ net-linux-x86_64 --no-shared -O -DCMK_OPTIMIZE=1
+  cd net-linux-x86_64/tests/charm++/megatest
   make pgm
   ./charmrun ++local +p4 ./pgm    (also try running on multiple nodes)
   cd ../../../../..
 
-Edit various configuration files:
-  vi Make.charm  (set CHARMBASE to .rootdir/charm-5.9 or full path to charm)
-  vi arch/Linux-i686.fftw     (fix library name and path to files)
-  vi arch/Linux-i686.tcl      (fix library version and path to TCL files)
+Download and install TCL and FFTW libraries:
+  (cd to NAMD_2.7b1_Source if you're not already there)
+  wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
+  tar xzf fftw-linux-x86_64.tar.gz
+  mv linux-x86_64 fftw
+  wget http://www.ks.uiuc.edu/Research/namd/libraries/tcl-linux-x86_64.tar.gz
+  tar xzf tcl-linux-x86_64.tar.gz
+  mv linux-x86_64 tcl
+
+Optionally edit various configuration files:
+  (not needed if charm-6.1, fftw, and tcl are in NAMD_2.7b1_Source)
+  vi Make.charm  (set CHARMBASE to full path to charm)
+  vi arch/Linux-x86_64.fftw     (fix library name and path to files)
+  vi arch/Linux-x86_64.tcl      (fix library version and path to TCL files)
 
 Set up build directory and compile:
-  ./config tcl fftw Linux-i686-g++
-  cd Linux-i686-g++ 
-  make
+  ./config Linux-x86_64-g++ --charm-arch net-linux-x86_64
+  cd Linux-x86_64-g++
+  make   (or gmake -j4, which should run faster)
 
 Quick tests using one and two processes:
+  (this is a 66-atom simulation so don't expect any speedup)
   ./namd2
   ./namd2 src/alanin
   ./charmrun ++local +p2 ./namd2
   ./charmrun ++local +p2 ./namd2 src/alanin
+
+Longer test using four processes:
+  wget http://www.ks.uiuc.edu/Research/namd/utilities/apoa1.tar.gz
+  tar xzf apoa1.tar.gz
+  ./charmrun ++local +p4 ./namd2 apoa1/apoa1.namd
+  (FFT optimization will take a several seconds during the first run.)
 
 That's it.  A more complete explanation of the build process follows.
 Note that you will need Cygwin to compile NAMD on Windows.
@@ -273,24 +283,28 @@ http://www.ks.uiuc.edu/Research/namd/libraries/.  Each tar file
 contains a directory with the name of the platform.  These libraries
 don't change very often, so you should find a permanent home for them.
 
-Unpack the NAMD source code and the enclosed charm-5.9.tar archive.  This
+Unpack the NAMD source code and the enclosed charm-6.1.tar archive.  This
 version of Charm++ is the same one used to build the released binaries
 and is more likely to work and be bug free than any other we know of.
-Edit Make.charm to point at .rootdir/charm-5.9 or the full path to the
+Edit Make.charm to point at .rootdir/charm-6.1 or the full path to the
 charm directory if you unpacked outside of the NAMD source directory.
 
 Run the config script without arguments to list the available builds,
-which have names like Linux-i686-Clustermatic-TCP-icc.  Each build or
-"ARCH" of the form BASEARCH-options-compiler, where BASEARCH is the
-most generic name for a platform, like Linux-i686.  The options are
-things like Scyld, TCP, SMP, or Elan.
+which have names like Linux-x86_64-icc.  Each build or "ARCH" is of the
+form BASEARCH-compiler, where BASEARCH is the most generic name for a
+platform, like Linux-x86_64.
+
+Note that many of the options that used to require editing files can
+now be set with options to the config script.  Running the config script
+without arguments lists the available options as well.
 
 Edit arch/BASEARCH.fftw and arch/BASEARCH.tcl to point to the libraries
 you downloaded.  Find a line something like
-"CHARMARCH = net-linux-clustermatic-tcp-icc" in arch/ARCH.arch to tell
+"CHARMARCH = net-linux-x86_64-iccstatic" in arch/ARCH.arch to tell
 what Charm++ platform you need to build.  The CHARMARCH name is of the
 format comm-OS-cpu-options-compiler.  It is important that Charm++ and
-NAMD be built with the same C++ compiler.
+NAMD be built with the same C++ compiler.  To change the CHARMARCH, just
+edit the .arch file or use the --charm-arch config option.
 
 Enter the charm directory and run the build script without options
 to see a list of available platforms.  Only the comm-OS-cpu part will
@@ -302,7 +316,7 @@ command for your platform as:
 
 For this specific example:
 
-  ./build charm++ net-linux clustermatic tcp icc --no-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux tcp icc --no-shared -O -DCMK_OPTIMIZE=1
 
 The README distributed with Charm++ contains a complete explanation.
 You only actually need the bin, include, and lib subdirectories, so
@@ -334,7 +348,7 @@ GM library network version by specifying the "gm" option as in:
   ./build charm++ net-linux gm icc --no-shared -O -DCMK_OPTIMIZE=1
 
 You would then change "net-linux-icc" to "net-linux-gm-icc" in your
-namd2/arch/Linux-i686-icc.arch file (or create a new .arch file).
+namd2/arch/Linux-x86-icc.arch file (or create a new .arch file).
 Alternatively you could use a Myrinet-aware MPI library.  If you want
 to use MPICH-GM you must use the "gm" option, as in "mpi-linux gm icc"
 or equivalently you can edit charm/arch/mpi-linux/conv-mach.h to set
@@ -343,11 +357,14 @@ or equivalently you can edit charm/arch/mpi-linux/conv-mach.h to set
 "--with-device=ch_gm:-disable-registration" when configuring MPICH-GM
 (at least according to the Myrinet FAQ at www.myri.com).
 
+There is a similar "ibverbs" option for InfiniBand networks, as well
+as an "mx" option for newer Myrinet networks.  Both help performance.
+
 Run make in charm/CHARMARCH/tests/charm++/megatest/ and run the
 resulting binary "pgm" as you would run NAMD on your platform.  You
 should try running on several processors if possible.  For example:
 
-  cd net-linux-clustermatic-tcp-icc/tests/charm++/megatest/
+  cd net-linux-tcp-icc/tests/charm++/megatest/
   make pgm
   ./charmrun +p16 ./pgm
 
@@ -359,20 +376,21 @@ at ppl@cs.uiuc.edu on your email.
 
 Now you can run the NAMD config script to set up a build directory:
 
-  ./config tcl fftw ARCH
+  ./config ARCH
 
 For this specific example:
 
-  ./config tcl fftw Linux-i686-Clustermatic-TCP-icc
+  ./config Linux-x86-icc --charm-arch net-linux-tcp-icc
 
-This will create a build directory Linux-i686-Clustermatic-TCP-icc.
+This will create a build directory Linux-x86-icc.
+
 If you wish to create this directory elsewhere use config DIR/ARCH,
 replacing DIR with the location the build directory should be created.
 A symbolic link to the remote directory will be created as well.  You
 can create multiple build directories for the same ARCH by adding a
 suffix.  These can be combined, of course, as in:
 
-  ./config tcl fftw /tmp/Linux-i686-Clustermatic-TCP-icc.test1
+  ./config tcl fftw /tmp/Linux-x86-icc.test1
 
 Now cd to your build directory and type make.  The namd2 binary and
 a number of utilities will be created.
@@ -383,6 +401,11 @@ several options to elicit similar behavior on all platforms.  Your
 compiler may conform to an earlier C++ specification than NAMD uses.
 You compiler may also enforce a later C++ rule than NAMD follows.
 You may ignore repeated warnings about new and delete matching.
+
+The NAMD Wiki at http://www.ks.uiuc.edu/Research/namd/wiki/ has entries
+on building and running NAMD at various supercomputer centers (e.g.,
+NamdAtTexas) and on various architectures (e.g., NamdOnMPICH).  Please
+consider adding a page on your own porting effort for others to read.
 
 ----------------------------------------------------------------------
 
