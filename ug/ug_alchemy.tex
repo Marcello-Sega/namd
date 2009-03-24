@@ -403,7 +403,7 @@ containing the FEP energies, or {\tt tiOutFile}, containing the TI derivatives, 
 \item
 \NAMDCONFWDEF {fepVdwShiftCoeff / tiVdwShiftCoeff}{Soft-core van der Waals radius-shifting coefficient}
 {positive decimal}
-{0} %CBH -- reconcile with SimParameters.C/.h
+{5} %CBH -- reconcile with SimParameters.C/.h
 {This is a radius-shifting coefficient of $\lambda$ that is used
 to construct the modified vdW interactions during alchemical free energy calculations.
 Providing a positive value for {\tt fepVdWShiftCoeff/tiVdwShiftCoeff} ensures that the vdW potential
@@ -418,7 +418,7 @@ $r^2 \rightarrow r^2 + {\tt fepVdWShiftCoeff} \times (1 - \lambda)$
 \item
 \NAMDCONFWDEF {fepElecLambdaStart / tiElecLambdaStart}{Value of $\lambda$ to introduce electrostatic interactions}
 {positive decimal}
-{0} %CBH -- reconcile with SimParameters.C/.h
+{0.5} %CBH -- reconcile with SimParameters.C/.h
 {In order to avoid the so--called ``end-point catastrophes'', it is crucial to
 avoid situations where growing particles overlap with existing particles with
 an unbounded interaction potential, which would approach infinity as the
@@ -436,7 +436,7 @@ incoming and outgoing particles.}
 \item
   \NAMDCONFWDEF {fepVdwLambdaEnd / tiVdwLambdaEnd}{Value of $\lambda$ to cancel van der Waals interactions}
 {positive decimal}
-{1.0} %CBH -- reconcile with SimParameters.C/.h
+{0.5} %CBH -- reconcile with SimParameters.C/.h
 {If the above {\tt fepElecLambdaStart/tiElecLambdaStart} option is being used, it may be further
 desirable to separate the scaling of van der Waals and electrostatic
 interactions. {\tt fepVdwLambdaEnd/tiVdwLambdaEnd} sets the value of $\lambda$ above which
