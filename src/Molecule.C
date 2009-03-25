@@ -1214,6 +1214,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
 
         clusterSigs = new int[numAtoms];
 
+	int *tmpHgSize = new int[numAtoms];
+	int *tmpHgGP = new int[numAtoms];
+	int *tmpHgSV = new int[numAtoms];
         hydrogenGroup.resize(numAtoms);
         HydrogenGroupID *hg = hydrogenGroup.begin();
 
@@ -1270,15 +1273,13 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
         //4. read per-atom info
         Index sIdx[8];
         int iIdx[8];
-        char isGP;
         for(int i=0; i<numAtoms; i++){   
             fread(sIdx, sizeof(Index), 8, perAtomFile);
-            fread(iIdx, sizeof(int), 8, perAtomFile);
-            fread(&isGP, sizeof(char), 1, perAtomFile);
+            fread(iIdx, sizeof(int), 7, perAtomFile);
             fread(tmpf, sizeof(float), 2, perAtomFile);
             if(needFlip) {
                 flipNum((char *)sIdx, sizeof(Index), 8);
-                flipNum((char *)iIdx, sizeof(int), 8);
+                flipNum((char *)iIdx, sizeof(int), 7);
                 flipNum((char *)tmpf, sizeof(float), 2);
             }
             segment_name = segNamePool[sIdx[0]];                   
@@ -1297,22 +1298,20 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             atoms[i].partner = iIdx[2];
             atoms[i].hydrogenList= iIdx[3];
 
-            hg[i].atomID = iIdx[4];
-            hg[i].atomsInGroup = iIdx[5];
-            hg[i].GPID = iIdx[6];
-            hg[i].sortVal = iIdx[7];
-            hg[i].isGP = isGP;
+            tmpHgSize[i] = iIdx[4];
+            tmpHgGP[i] = iIdx[5];
+            tmpHgSV[i] = iIdx[6];
 
             //debugExclNum += (exclSigPool[sIdx[7]].fullExclCnt+exclSigPool[sIdx[7]].modExclCnt);
 #else
-        int idx[17];
+        int idx[15];
         for(int i=0; i<numAtoms; i++){
             NAMD_read_line(psf_file, buffer);
-            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f",
+            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f",
                                 idx, idx+1, idx+2, idx+3, idx+4,
                                 idx+5, idx+6, idx+7, idx+8, idx+9, idx+10, idx+11, idx+12,
-                                idx+13, idx+14, idx+15, idx+16, tmpf, tmpf+1);
-            if(read_count!=19){
+                                idx+13, idx+14, tmpf, tmpf+1);
+            if(read_count!=17){
                 char err_msg[128];
                 sprintf(err_msg, "BAD ATOM LINE FORMAT IN COMPRESSED PSF FILE IN ATOM LINE %d\nLINE=%s",i+1, buffer);
                 NAMD_die(err_msg);
@@ -1333,11 +1332,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             atoms[i].partner = idx[10];
             atoms[i].hydrogenList= idx[11];
 
-            hg[i].atomID = idx[12];
-            hg[i].atomsInGroup = idx[13];
-            hg[i].GPID = idx[14];
-            hg[i].sortVal = idx[15];
-            hg[i].isGP = idx[16];
+            tmpHgSize[i] = idx[12];
+            tmpHgGP[i] = idx[13];
+            tmpHgSV[i] = idx[14];
             //debugExclNum += (exclSigPool[idx[7]].fullExclCnt+exclSigPool[idx[7]].modExclCnt);
 #endif	    
 
@@ -1365,7 +1362,23 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params){
             //Look up the vdw constants for this atom
             params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
                                      &(atoms[i]));
-        }
+        } //end of reading per-atom information
+
+	//re-sort the hydrogenGroup array based on the recorded "hydrogenList"
+	//value
+	for(int i=0; i<numAtoms; i++){
+	    int hgIdx = atoms[i].hydrogenList;
+	    hg[hgIdx].atomID = i;
+	    hg[hgIdx].atomsInGroup = tmpHgSize[i];
+	    hg[hgIdx].GPID = tmpHgGP[i];
+	    hg[hgIdx].sortVal = tmpHgSV[i];
+	    hg[hgIdx].isGP = 1;
+	    if(tmpHgSize[i]==0) hg[hgIdx].isGP = 0;
+	}
+	
+	delete [] tmpHgSize;
+	delete [] tmpHgGP;
+	delete [] tmpHgSV;	
 
 	//printf("debugExclNum: %d\n", debugExclNum);
     }
@@ -8103,9 +8116,9 @@ void Molecule::build_atom_status(void) {
   } // if SWM4
 #endif
 
-  #if 0
+  #if 0 
   // debugging code for showing sorted atoms
-  //if(CkMyPe()==1) {  
+  if(CkMyPe()==1) {  
   for(i=0; i<numAtoms; i++)
     iout << i << " atomID=" << hydrogenGroup[i].atomID
    << " isGP=" << hydrogenGroup[i].isGP
@@ -8115,7 +8128,7 @@ void Molecule::build_atom_status(void) {
    << " partner=" << atoms[i].partner
    << " hydrogenList=" << atoms[i].hydrogenList
    << "\n" << endi;
-  //}
+  }
   #endif
 
   // now deal with rigidBonds

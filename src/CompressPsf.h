@@ -6,7 +6,7 @@
 #include <deque>
 using namespace std;
 
-#define COMPRESSED_PSF_VER 1.50
+#define COMPRESSED_PSF_VER 1.60
 
 //used to detemine big-endian or little-endian for 
 //the per-atom binary file

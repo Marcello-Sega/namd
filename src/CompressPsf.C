@@ -1016,7 +1016,13 @@ void outputPsfFile(FILE *ofp)
 /**
  * Per-atom data structure is as follows (the order of fields is
  * very important as it has to be preserved when reading them in 
- * the memory optimized version) 
+ * the memory optimized version)
+ * The hydrogenGroup information is organized in the atom ID's order
+ * so it needs to be re-sorted after being loaded system.
+ * "hydrogenList" which indicates the array index in the hydrogenGroup
+ * array that this atom maps to. This field can be used to do re-sorting.
+ *"isGP" is not recorded as it could be determined by atomsInGroup.
+ *
  * 1. unsigned short: segNameIdx 
  * 2. unsigned short: resNameIdx 
  * 3. unsigned short: atomNameIdx 
@@ -1027,16 +1033,14 @@ void outputPsfFile(FILE *ofp)
  * 8. unsigned short: atom's exclusion signature idx
  * 9. int: atom's residue idx 
  * 10. int: atom's cluster idx 
- * //following fields (11- 17) are related to hydrogen group 
+ * //following fields (11- 15) are related to hydrogen group 
  * 11. int: atom's partner 
  * 12. int: atom's hydrogenList 
- * 13. int: hydrogenGroup's atom id 
- * 14. int: hydrogenGroup's atomsInGroup 
- * 15. int: hydrogenGroup's GPID 
- * 16. int: hydrogenGroup's sortVal 
- * 17. char: hydrogenGroup's isGP 
- * 18. float: atom's occupancy 
- * 19. float: atom's bfactor (temperature's factor) 
+ * 13. int: hydrogenGroup's atomsInGroup 
+ * 14. int: hydrogenGroup's GPID 
+ * 15. int: hydrogenGroup's sortVal 
+ * 16. float: atom's occupancy 
+ * 17. float: atom's bfactor (temperature's factor) 
  */
 void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
 {
@@ -1181,8 +1185,7 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
     fwrite(&verNum, sizeof(float), 1, binOfp);
     //Third, each atom info
     Index sIdx[8];
-    int iIdx[8];
-    char isGP;
+    int iIdx[7];
     float tmpf[2];
     for(int i=0; i<g_mol->numAtoms; i++)
     {                
@@ -1199,27 +1202,25 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
         iIdx[1] = eachAtomClusterID[i];
         iIdx[2] = atoms[i].partner;
         iIdx[3] = atoms[i].hydrogenList;
-        iIdx[4] = hg[i].atomID;
-        iIdx[5] = hg[i].atomsInGroup;
-        iIdx[6] = hg[i].GPID;
-        iIdx[7] = hg[i].sortVal;
-        isGP = hg[i].isGP;
+        iIdx[4] = hg[iIdx[3]].atomsInGroup;
+        iIdx[5] = hg[iIdx[3]].GPID;
+        iIdx[6] = hg[iIdx[3]].sortVal;
         tmpf[0] = atomOccupancy[i];
         tmpf[1] = atomBFactor[i];
         fwrite(sIdx, sizeof(Index), 8, binOfp);
-        fwrite(iIdx, sizeof(int), 8, binOfp);
-        fwrite(&isGP, sizeof(char), 1, binOfp);
+        fwrite(iIdx, sizeof(int), 7, binOfp);
         fwrite(tmpf, sizeof(float), 2, binOfp);
     }
 #else
     for(int i=0; i<g_mol->numAtoms; i++)
     {
         BasicAtomInfo &one = atomData[i];
-        fprintf(txtOfp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f\n", 
+	int hgIdx = atoms[i].hydrogenList;
+        fprintf(txtOfp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f\n", 
                 one.segNameIdx, one.resNameIdx, one.atomNameIdx,
                 one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx, one.resID,
-                eachAtomClusterID[i], atoms[i].partner, atoms[i].hydrogenList,
-                hg[i].atomID, hg[i].atomsInGroup, hg[i].GPID, hg[i].sortVal, hg[i].isGP,
+                eachAtomClusterID[i], atoms[i].partner, hgIdx,
+                hg[hgIdx].atomsInGroup, hg[hgIdx].GPID, hg[hgIdx].sortVal,
                 atomOccupancy[i], atomBFactor[i]);
     }
 #endif
