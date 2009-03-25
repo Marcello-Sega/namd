@@ -38,7 +38,7 @@ figures/shifting.pdf figures/switching.pdf figures/dual_top.pdf
 pdf:	$(DOCDIR)/ug.pdf
 
 ### run latex2html
-html:	$(DOCDIR)/ug.dvi
+html:	$(DOCDIR)/ug.pdf
 	latex2html -local_icons -split 5 -toc_depth 4 -toc_stars \
 	-t "NAMD $(NAMD_VERSION) User's Guide" -address "namd@ks.uiuc.edu" \
 	-up_url "../../" -up_title "Main NAMD Page" ug
