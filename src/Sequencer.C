@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2009/02/13 22:39:18 $
- * $Revision: 1.1173 $
+ * $Date: 2009/03/25 21:58:22 $
+ * $Revision: 1.1174 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -504,6 +504,7 @@ void Sequencer::minimizeMoveDownhill() {
   int numAtoms = patch->numAtoms;
 
   for ( int i = 0; i < numAtoms; ++i ) {
+    if ( simParams->fixedAtomsOn && a[i].atomFixed ) continue;
     Force f = f1[i] + f2[i] + f3[i];
     if ( f.length2() > FMAX2 ) {
       a[i].position += ( 0.1 * f.unit() );
