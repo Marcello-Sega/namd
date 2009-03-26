@@ -131,12 +131,6 @@ void master_init(int argc, char **argv){
 
   all_init(argc, argv);
 
-#ifdef NAMD_CUDA
-  if ( ! idlepoll ) {
-    NAMD_die("Please add +idlepoll to command line for proper performance.");
-  }
-#endif
-
   // Create branch-office chares
   BOCgroup group;
   group.workDistrib = CProxy_WorkDistrib::ckNew();
@@ -190,6 +184,12 @@ void BackEnd::init(int argc, char **argv) {
 #endif
 
   ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
+
+#ifdef NAMD_CUDA
+  if ( ! idlepoll ) {
+    NAMD_die("Please add +idlepoll to command line for proper performance.");
+  }
+#endif
 
   master_init(argc, argv);
 }
