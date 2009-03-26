@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2009/03/05 05:21:47 $
- * $Revision: 1.1235 $
+ * $Date: 2009/03/26 21:05:21 $
+ * $Revision: 1.1236 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -433,12 +433,24 @@ void Controller::minimize() {
 
   int minSeq = 0;
 
-  // just move downhill until initial bad contacts go away
-  while ( min_huge_count ) {
-    iout << "MINIMIZER SLOWLY MOVING ATOMS WITH BAD CONTACTS DOWNHILL\n" << endi;
+  // just move downhill until initial bad contacts go away or 100 steps
+  int old_min_huge_count = -1;
+  int steps_at_same_min_huge_count = 0;
+  for ( int i_slow = 0; min_huge_count && i_slow < 100; ++i_slow ) {
+    if ( min_huge_count == old_min_huge_count ) {
+      if ( ++steps_at_same_min_huge_count > 10 ) break;
+    } else {
+      old_min_huge_count = min_huge_count;
+      steps_at_same_min_huge_count = 0;
+    }
+    iout << "MINIMIZER SLOWLY MOVING " << min_huge_count << " ATOMS WITH BAD CONTACTS DOWNHILL\n" << endi;
     broadcast->minimizeCoefficient.publish(minSeq++,1.);
     CALCULATE
   }
+  if ( min_huge_count ) {
+    iout << "MINIMIZER GIVING UP ON " << min_huge_count << " ATOMS WITH BAD CONTACTS\n" << endi;
+  }
+  iout << "MINIMIZER STARTING CONJUGATE GRADIENT ALGORITHM\n" << endi;
 
   int atStart = 2;
   int errorFactor = 10;
