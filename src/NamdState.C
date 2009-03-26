@@ -556,6 +556,14 @@ int NamdState::configListInit(ConfigList *cfgList) {
           }
           iout << iINFO << "TOTAL MASS = " << totalMass << " amu\n"; 
           iout << iINFO << "TOTAL CHARGE = " << totalCharge << " e\n"; 
+
+          BigReal volume = lattice.volume();
+          if ( volume ) {
+            iout << iINFO << "MASS DENSITY = "
+              << ((totalMass/volume) / 0.6022) << " g/cm^3\n";
+            iout << iINFO << "ATOM DENSITY = "
+              << (molecule->numAtoms/volume) << " atoms/A^3\n";
+          }
         }
 
 	iout << iINFO << "*****************************\n";
