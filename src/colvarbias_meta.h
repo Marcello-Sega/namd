@@ -435,8 +435,8 @@ public:
   std::string output_traj();
 
   /// Write the hill to an output stream
-  inline friend std::ostream & operator << (std::ostream &os,
-                                            hill const &h);
+  friend std::ostream & operator << (std::ostream &os,
+                                           colvarbias_meta::hill const &h);
 
 };
 
