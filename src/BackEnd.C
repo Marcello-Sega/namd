@@ -75,7 +75,8 @@ void NAMD_new_handler() {
 #endif
 }
 
-void cuda_initialize(char**);
+void cuda_getargs(char**);
+void cuda_initialize();
 
 // called on all procs
 void all_init(int argc, char **argv)
@@ -89,11 +90,15 @@ void all_init(int argc, char **argv)
   register_exit_sched();
 #ifdef NAMD_CUDA
   CmiGetArgFlag(argv, "+idlepoll");  // remove +idlepoll if it's still there
-  cuda_initialize(argv);
+  cuda_getargs(argv);
   argc = CmiGetArgc(argv);
 #endif
   
   _initCharm(argc, argv);  // message main Chare
+
+#ifdef NAMD_CUDA
+  cuda_initialize();
+#endif
 }
 
 extern void after_backend_init(int argc, char **argv);

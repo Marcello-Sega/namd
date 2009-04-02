@@ -23,7 +23,20 @@ void cuda_errcheck(const char *msg) {
   }
 }
 
-void cuda_initialize(char **argv) {
+char *devicelist;
+static int usedevicelist;
+
+void cuda_getargs(char **argv) {
+  devicelist = 0;
+  usedevicelist = CmiGetArgStringDesc(argv, "+devices", &devicelist,
+	"comma-delimited list of CUDA device numbers such as 0,2,1,2");
+}
+
+static int shared_gpu;
+static int first_pe_sharing_gpu;
+static int next_pe_sharing_gpu;
+
+void cuda_initialize() {
 
   char host[128];
 #ifdef NOHOSTNAME
@@ -32,41 +45,99 @@ void cuda_initialize(char **argv) {
   gethostname(host, 128);  host[127] = 0;
 #endif
 
+  int myRankInPhysicalNode;
+  int numPesOnPhysicalNode;
+  int *pesOnPhysicalNode;
+  CmiGetPesOnPhysicalNode(CkMyPe(),&pesOnPhysicalNode,&numPesOnPhysicalNode);
+  {
+    int i;
+    for ( i=0; i < numPesOnPhysicalNode; ++i ) {
+      if ( i && (pesOnPhysicalNode[i] <= pesOnPhysicalNode[i-1]) ) {
+        i = numPesOnPhysicalNode;
+        break;
+      }
+      if ( pesOnPhysicalNode[i] == CkMyPe() ) break;
+    }
+    if ( i == numPesOnPhysicalNode ) {
+      CkPrintf("Bad result from CmiGetPesOnPhysicalNode!\n");
+      myRankInPhysicalNode = 0;
+      numPesOnPhysicalNode = 1;
+      pesOnPhysicalNode = new int[1];
+      pesOnPhysicalNode[0] = CkMyPe();
+    } else {
+      myRankInPhysicalNode = i;
+    }
+  }
+  // CkPrintf("Pe %d ranks %d in physical node\n",CkMyPe(),myRankInPhysicalNode);
+
   int deviceCount = 0;
   cudaGetDeviceCount(&deviceCount);
   if ( deviceCount <= 0 ) {
     NAMD_die("No CUDA devices found.");
   }
-  int dev = (CkMyPe() + 1) % deviceCount;  // avoid 0 if possible
 
-  char *devicelist = 0;
-  int usedevicelist = CmiGetArgStringDesc(argv, "+devices", &devicelist,
-	"comma-delimited list of CUDA device numbers such as 0,2,1,2");
+  int *devices;
+  int ndevices;
   if ( usedevicelist ) {
-    int *devices = new int[strlen(devicelist)];
-    int ndevices = 0; 
+    devices = new int[strlen(devicelist)];
+    ndevices = 0; 
     int i = 0;
     while ( devicelist[i] ) {
       ndevices += sscanf(devicelist+i,"%d",devices+ndevices);
       while ( devicelist[i] && isdigit(devicelist[i]) ) ++i;
       while ( devicelist[i] && ! isdigit(devicelist[i]) ) ++i;
     }
-
-    dev = devices[CkMyPe() % ndevices];
-    if ( dev >= deviceCount ) {
-      char buf[256];
-      sprintf(buf,"Pe %d unable to bind to CUDA device %d on %s because only %d devices are present",
-		CkMyPe(), dev, host, deviceCount);
-      NAMD_die(buf);
+  } else {
+    if ( ! CkMyPe() ) {
+      CkPrintf("Did not find +devices i,j,k,... argument, using all\n");
     }
-  } else if ( ! CkMyPe() ) {
-    CkPrintf("Did not find +devices i,j,k,... argument, defaulting to (pe + 1) %% deviceCount\n");
+    devices = new int[deviceCount];
+    ndevices = deviceCount;
+    for ( int i=0; i<deviceCount; ++i ) {
+      devices[i] = (i+1) % deviceCount;  // avoid 0 if possible
+    }
+  }
+
+  shared_gpu = 0;
+  first_pe_sharing_gpu = CkMyPe();
+  next_pe_sharing_gpu = CkMyPe();
+  int dev;
+  if ( numPesOnPhysicalNode > 1 ) {
+    dev = devices[myRankInPhysicalNode % ndevices];
+    for ( int i = (myRankInPhysicalNode + 1) % numPesOnPhysicalNode;
+          i != myRankInPhysicalNode;
+          i = (i + 1) % numPesOnPhysicalNode ) {
+      if (devices[i % ndevices] == dev) {
+        shared_gpu = 1;
+        next_pe_sharing_gpu = pesOnPhysicalNode[i];
+        break;
+      }
+    }
+    if ( shared_gpu ) {
+      for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
+        if (devices[i % ndevices] == dev) {
+          first_pe_sharing_gpu = pesOnPhysicalNode[i];
+          break;
+        }
+      }
+      CkPrintf("Pe %d sharing CUDA device %d first %d next %d\n",
+		CkMyPe(), dev, first_pe_sharing_gpu, next_pe_sharing_gpu);
+    }
+  } else {  // in case phys node code is lying
+    dev = devices[CkMyPe() % ndevices];
+  }
+
+  if ( dev >= deviceCount ) {
+    char buf[256];
+    sprintf(buf,"Pe %d unable to bind to CUDA device %d on %s because only %d devices are present",
+		CkMyPe(), dev, host, deviceCount);
+    NAMD_die(buf);
   }
 
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, dev);
-  CkPrintf("Pe %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
-             CkMyPe(), dev, host,
+  CkPrintf("Pe %d physical rank %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
+             CkMyPe(), myRankInPhysicalNode, dev, host,
              deviceProp.name, deviceProp.totalGlobalMem / (1024*1024),
              deviceProp.major, deviceProp.minor);
 
