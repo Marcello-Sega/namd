@@ -692,7 +692,7 @@ void Node::enableEarlyExit(void) {
 }
 
 void Node::earlyExit(CkQdMsg *msg) {
-  iout << iERROR << "Exiting prematurely.\n" << endi;
+  iout << iERROR << "Exiting prematurely; see error messages above.\n" << endi;
   BackEnd::exit();
   delete msg;
 }
