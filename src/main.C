@@ -121,6 +121,11 @@ public:
     // print banner
     iout << iINFO << "NAMD " << NAMD_VERSION << " for " << NAMD_PLATFORM
          << "\n"
+#ifdef MEM_OPT_VERSION
+         << iWARN << "\n"
+         << iWARN << "       ***  EXPERIMENTAL MEMORY OPTIMIZED VERSION  ***\n"
+         << iWARN << "\n"
+#endif
 #if 0
          << iWARN << "\n"
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
