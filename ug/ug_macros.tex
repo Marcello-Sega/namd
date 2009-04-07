@@ -65,6 +65,20 @@ machines and in parallel.}
   {\bf Description: } #5%
 }
 
+\newcommand{\NAMDCONFTAG}[4]{%
+%  \addcontentsline{toc}{subparagraph}{#1}%
+  {\bf \tt #1 } $<$ tag $>$ $<$ #2 $>$ \index{#1 parameter} \\%
+  {\bf Acceptable Values: } #3 \\%
+  {\bf Description: } #4%
+}
+
+\newcommand{\NAMDCONFTAGWDEF}[5]{%
+%  \addcontentsline{toc}{subparagraph}{#1}%
+  {\bf \tt #1 }  $<$ tag $>$ $<$ #2 $>$ \index{#1 parameter} \\%
+  {\bf Acceptable Values: } #3 \\%
+  {\bf Default Value: } #4 \\%
+  {\bf Description: } #5%
+}
 \newcommand{\XNCOMP}[3]{%
   {\bf \NAMD\ Parameter: \tt #1 } \\%
   {\bf X-PLOR Parameter: \tt #2 } \\%

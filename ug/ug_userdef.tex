@@ -31,7 +31,7 @@ applied. (One may be unable to record very large or very small
 numbers in the data fields of a PDB file due to limited space).
 Zero forces are ignored.
 
-Specifying {\tt consforcefile} is optional; constant forces may be specifed
+Specifying {\tt consforcefile} is optional; constant forces may be specified
 or updated between runs by using the consForceConfig command.
 }
 
@@ -66,6 +66,131 @@ wave or other approximate wave form to be applied.}
 
 \end{itemize}
 
+\subsection{Grid Forces}
+
+\NAMD\ provides the ability to specify grids describing an electrical potential in the simulation space. Each atom is affected by the potential based on its charge and its position interpolated from the specified grid(s). Energy due to the grid-defined field will be reported in the MISC column of the output.
+
+NAMD allows the definition of multiple grids, each with a separate set of defining parameters. This is specified using a tag field in each of the mgridforceXXX commands. The tag is an alphanumeric string without spaces which identifies to which grid the specified field applies.
+
+The grid file format is a subset of the DataExplorer DX file format. as shown below:
+\begin{verbatim}
+# Lines at the beginning of the file starting with a # symbol 
+# are ignored as comments
+# Variables (replaced by numbers in an actual file):
+#   xn, yn, and zn are the number of data points along each axis;
+#   xorg, yorg, and zorg is the origin of the grid, in angstroms;
+#   x[1-3]del, y[1-3]del, and z[1-3]del are the basis vectors which transform
+#   grid indices to coordinates in angstroms:
+#      x(i,j,k) = xorg + i * x1del + j * y1del + k * z1del
+#      y(i,j,k) = yorg + i * x2del + j * y2del + k * z2del
+#      z(i,j,k) = zorg + i * x3del + j * y3del + k * z3del
+#
+#   Grid data follows, with three values per line, ordered z fast, y medium,
+#   and x slow. Exactly xn*yn*zn values should be given
+#   
+#  Note: Other features of the DX file format are not handled by this code
+#
+object 1 class gridpositions counts xn yn zn
+origin xorg yorg zorg
+delta x1del y1del z1del
+delta x2del y2del z2del
+delta x3del y3del z3del
+object 2 class gridconnections counts xn yn zn
+object 3 class array type double rank 0 items [ xn*yn*zn ] data follows
+f1 f2 f3
+f4 f5 f6
+.
+.
+.
+\end{verbatim}
+
+Each axis of the grid may be specified as continuous or not. If the grid is not continuous in a particular axis, the potential grid is padded with three border slices on each non-continuous face of the grid, and border grid values are computed so that the force felt by an atom outside the grid goes to zero. If the grid is continuous along a particular axis, atoms outside the grid are affected by a potential that is interpolated from the grid and its corresponding periodic image along that axis.
+
+To calculate the force on an atom due to the grid, the atom's coordinates are transformed according to the current basis vectors of the simulation box to a coordinate frame that is centered at the center of the specified grid. Note that the size and spatial coordinates of the grid remain fixed, and are not scaled as the size of the simulation box fluctuates. For atoms within the grid, the force is computed by numerically approximating the gradient of the potential using surrounding grid values. For atoms outside the grid, the state of the {\tt mgridforcecont[1,2,3]} determine whether the force is zero, or computed from the images of the grid as described above. Note that if the grid is ever larger than the periodic box, it is truncated at the edge of that box. The consequence of this is that the computed potential will not vary smoothly at the edges, introducing numerical instability.
+
+The following parameters describe the grid-based potentials.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{mgridforce}
+{apply grid forces?}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{Specifies whether or not any grid forces are being applied.}
+
+\item
+\NAMDCONFTAG{mgridforcefile}
+{PDB file specifying force multipliers and charges for each atomd}
+{UNIX file name}
+{The force on each atom is scaled by the corresponding value in this PDB file. By setting the force multiplier to zero for an atom, it will not be affected by the grid force. }
+
+\item
+\NAMDCONFTAGWDEF{mgridforcecol}
+{column of PDB from which to read force multipliers}
+{X, Y, Z, O, or B}
+{B}
+{Which column in the PDB file specified by {\tt mgridforcefile} contains the scaling factor}
+
+\item
+\NAMDCONFTAGWDEF{mgridforceqcol}
+{column of PDB from which to read atom charges}
+{X, Y, Z, O, or B}
+{Atom charge used for electrostatics.} 
+{Which column in the PDB file specified by {\tt mgridforcefile} contains the atom charge. By default, the charge value specified for the short-range Columb interactions are also used for the grid force. Both {\tt mgridforcecol} and {\tt mgridforceqcol} can be specified, in which case the apparent charge of the atom will be the product of the two values.}
+
+\item
+\NAMDCONFTAG{mgridforcevfile}
+{grid potential file name}
+{UNIX file name}
+{File specifying the grid size, coordinates, and potential values.}
+
+\item
+\NAMDCONFTAGWDEF{mgridforcevolts}
+{grid potential units in eV}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{If set, the grid potential values are expressed in {\rm eV}. Otherwise, values are
+in ${\rm kcal} / ({\rm mol} \; e)$}
+
+\item
+\NAMDCONFTAG{mgridforcescale}
+{scale factor for grid potential}
+{decimal}
+{Scale factor applied to the grid potential values}
+
+\item
+\NAMDCONFTAGWDEF{mgridforcecont1}
+{Is grid continuous in the direction of the first basis vector}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{By specifying that the grid is continuous in a direction, atoms outside of the grid will be affected by a force determined by interpolating based on the values at the edge of the grid with the values of the corresponding edge of the periodic image of the grid. The current size of the simulation box is taken into account, so that as the simulation box size fluctuates, the force on an atom outside of the grid varies continuously until it re-enters the opposite edge of the grid. If the grid is not continuous in this direction, the interpolated force on atoms near the edge of the grid is calculated so that it continuously approaches zero as an atom approaches the edge of the grid.}
+
+\item
+\NAMDCONFTAGWDEF{mgridforcecont2}
+{Is grid continuous in the direction of the second basis vector}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{Operates the same as {\tt mgridforcecont1} except applies in the direction of the second basis vector}
+
+\item
+\NAMDCONFTAGWDEF{mgridforcecont3}
+{Is grid continuous in the direction of the third basis vector}
+{{\tt yes} or {\tt no}}{{\tt no}}
+{Operates the same as {\tt mgridforcecont1} except applies in the direction of the third basis vector}
+
+\item
+\NAMDCONFTAG{mgridforcevoff}
+{Offset periodic images of the grid by specified amounts}
+{vector of decimals (x y z)}
+{If a continuous grid is used along a particular basis vector, it may be desirable to shift the potentials in the image to manipulate the potential outside the grid. For example, consider the case where the potential is a ramp in the $x$ direction and the grid is defined for points $[0,N)$, with a potential $f(i,j,k)$ given by $f(i,j,k) = f_0 + i (f_1-f_0) / N$. By shifting the images of the grid, the potential can be transformed as illustrated in Fig.~\ref{fig:gridshift}.
+}
+
+\begin{figure}[htb]
+  \center{\includegraphics{figures/gridshift}}
+  \caption[Graph showing a slice of a ramp potential, showing the effect of 
+           {\tt mgridforcevoff}]
+  {\small Graph showing a slice of a ramp potential, with eight grid points along the axis, and a periodic cell size which just contains the grid. The Unshifted case shows how the pontential is not smooth when {\tt mgridforcevoff} is not specified, or set to zero. The Shifted potential shows the grid that results when {\tt mgridfocevoff} is set so that the wrapped potential is offset so that the potential has constant slope at the periodic boundaries.}
+  \label{fig:gridshift}
+\end{figure}
+
+\end{itemize}
 
 \subsection{Moving Constraints}
 
