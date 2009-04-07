@@ -1,5 +1,5 @@
 NAMD_ARCH = Solaris-x86_64
-CHARMARCH = net-sol-x86_64
+CHARMARCH = net-sol-x86_64-smp
 CHARMOPTS = -thread context -memory os
 
 CXX = CC -DSOLARIS -DMEMUSAGE_USE_SBRK
