@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2009/02/20 17:28:39 $
- * $Revision: 1.1272 $
+ * $Author: char $
+ * $Date: 2009/04/09 19:24:57 $
+ * $Revision: 1.1273 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -763,7 +763,7 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
 // end TI options
 
    opts.optionalB("main", "decouple", "Enable alchemical decoupling?",
-     &decouple, FALSE);
+     &decouple, TRUE);
 
    opts.optionalB("main", "les", "Is locally enhanced sampling enabled?",
      &lesOn, FALSE);
