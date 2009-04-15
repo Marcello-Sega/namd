@@ -100,13 +100,36 @@ inline unsigned long memusage_ps() { return 0; }
 #endif
 
 
+inline unsigned long memusage_proc_self_stat() {
+
+  static int failed_once = 0;
+  if ( failed_once ) return 0;  // no point in retrying
+
+  FILE *f = fopen("/proc/self/stat","r");
+  if ( ! f ) { failed_once = 1; return 0; }
+  for ( int i=0; i<22; ++i ) fscanf(f,"%*s");
+  unsigned long vsz = 0;  // should remain 0 on failure
+  fscanf(f,"%lu",&vsz);
+  fclose(f);
+  if ( ! vsz ) failed_once = 1;
+  // printf("/proc/self/stat reports %d MB\n", vsz/(1024*1024));
+  return vsz;
+
+}
+
+
 unsigned long memusage(const char **source) {
 
   unsigned long memtotal = 0;
   const char* s = "ERROR";
 
-  if (CmiMemoryIs(CMI_MEMORY_IS_GNU) ) memtotal = CmiMemoryUsage();
-  s = "CmiMemoryUsage";
+  if (CmiMemoryIs(CMI_MEMORY_IS_GNU) ) {
+    memtotal = CmiMemoryUsage();  s = "CmiMemoryUsage";
+  }
+
+  if ( ! memtotal ) {
+    memtotal = memusage_proc_self_stat();  s = "/proc/self/stat";
+  }
 
   if ( ! memtotal ) { memtotal = memusage_mstats(); s = "mstats"; }
 
