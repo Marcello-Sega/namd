@@ -365,7 +365,7 @@ void ComputeNonbondedUtil :: NAME
   // lambda respectively.
   // This makes TI coding far easier and more readable, since it's necessary 
   // to store dU/dlambda in different variables depending on whether atoms are
-  // being switched up or down. Further, it allows Jordi's explicit coding of 
+  // being switched up or down. Further, it allows the prior explicit coding of 
   // the separation-shifted vdW potential to stay in place without a big 
   // performance hit, since it's no longer necessary to calculate vdW potentials
   // explicity for the bulk (non-alchemical) interactions - so that part of the 

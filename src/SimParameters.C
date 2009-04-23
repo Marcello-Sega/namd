@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: char $
- * $Date: 2009/04/12 11:57:16 $
- * $Revision: 1.1274 $
+ * $Date: 2009/04/23 17:07:49 $
+ * $Revision: 1.1275 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -731,7 +731,7 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("fepElecLambdaStart", NOT_NEGATIVE);
    
    opts.optional("fep", "fepVdwLambdaEnd", "Lambda at which to end"
-      "Vdw scaling", &fepVdwLambdaEnd, 0.5); 
+      "Vdw scaling", &fepVdwLambdaEnd, 1.0); 
    opts.range("fepVdwLambdaEnd", NOT_NEGATIVE);  
 // end FEP options
 //fepe
