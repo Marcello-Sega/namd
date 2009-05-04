@@ -1,0 +1,13 @@
+NAMD_ARCH = Linux-x86_64
+CHARMARCH = mpi-linux-x86_64-mpicxx
+CHARMOPTS = -thread uJcontext -memory os
+
+FLOATOPTS = -ip -fno-rtti
+
+CXX = icpc
+CXXOPTS = -O2 $(FLOATOPTS) -x0
+CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS) -xT
+
+CC = icc
+COPTS = -O2 $(FLOATOPTS) -x0
+
