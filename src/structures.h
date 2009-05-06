@@ -123,6 +123,12 @@ class MIStream;
 
 enum TupleSigType {BOND=0, ANGLE, DIHEDRAL, IMPROPER, DONOR, ACCEPTOR, CROSSTERM, EXCLUSION};
 
+inline unsigned int circShift(unsigned int h, unsigned int by) {
+  const unsigned int intBits=8*sizeof(unsigned int);
+  by%=intBits;
+  return (h<<by)|(h>>(intBits-by));
+}
+
 class TupleSignature{
 public:
     //This field indicates which class this tuple belongs to (bond or angle or ...)
@@ -235,6 +241,21 @@ public:
             fprintf(ofp, "%d ", offset[i]);
         fprintf(ofp, "| %d | %d\n", tupleParamType, isReal);         
     }
+  
+    int hash() const {
+      unsigned int code = tupleType;
+      unsigned int codesz = 8 * sizeof(int);
+      unsigned int shift = codesz / numOffset;
+      
+      if (shift == 0) shift=1;
+      unsigned int i;
+      for(i=0; i < numOffset; i++) {
+        code = circShift(code,shift);
+        code ^= offset[i];
+      }
+      return code;
+    }
+  
     void pack(MOStream *msg);
     void unpack(MIStream *msg);
 };
@@ -478,7 +499,26 @@ struct ExclusionSignature{
         }
     }
 
-    void removeEmptyOffset();
+    int hash() const {
+      unsigned int numOffset = fullExclCnt + modExclCnt;
+      unsigned int code = 0x12345678;
+      unsigned int codesz = 8 * sizeof(int);
+      unsigned int shift = codesz / numOffset;
+    
+      if (shift == 0) shift=1;
+      unsigned int i;
+      for(i=0; i < fullExclCnt; i++) {
+        code = circShift(code,shift);
+        code ^= fullOffset[i];
+      }
+      for(i=0; i < modExclCnt; i++) {
+        code = circShift(code,shift);
+        code ^= modOffset[i];
+      }
+      return code;
+    }
+  
+  void removeEmptyOffset();
     //assuming offsets in the signature have been sorted increasingly
     int findOffset(int offset, int  *fullOrMod);
     void pack(MOStream *msg);

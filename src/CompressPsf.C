@@ -97,6 +97,44 @@ struct AtomSigInfo
         sort(improperSigIndices.begin(), improperSigIndices.end());
         sort(crosstermSigIndices.begin(), crosstermSigIndices.end());
     }
+  
+    inline CkHashCode hash() const {
+      // What's a good hash function for this? Lets make something up
+      // Concatenate all the index lists into a list of chars, then hash that
+      // string using Charm's string hash function
+
+      // To keep memory allocation cheap, we'll just use a 32-byte buffer
+      // and wrap around if we have more sigs
+      const int maxlen = 32;
+      unsigned char keydata[maxlen+1];
+      const int maxchar = 256;
+      int i,j;
+      for(j=0;j<=maxlen;j++) keydata[j] = 0;
+      j=0;
+      for(i=0; i<bondSigIndices.size(); i++,j++) {
+        keydata[j % maxlen] ^= (bondSigIndices[i] % maxchar);
+      }
+      for(i=0; i<angleSigIndices.size(); i++,j++) {
+        keydata[j % maxlen] ^= (angleSigIndices[i] % maxchar);
+      }
+      for(i=0; i<dihedralSigIndices.size(); i++,j++) {
+        keydata[j % maxlen] ^= (dihedralSigIndices[i] % maxchar);
+      }
+      for(i=0; i<improperSigIndices.size(); i++,j++) {
+        keydata[j % maxlen] ^= (improperSigIndices[i] % maxchar);
+      }
+      for(i=0; i<crosstermSigIndices.size(); i++,j++) {
+        keydata[j % maxlen] ^= (crosstermSigIndices[i] % maxchar);
+      }
+//      CmiPrintf("Computed hash string len %d,%d\n",j,maxlen);
+      if (j > maxlen) j = maxlen;
+//      for(i=0; i < j; i++) {
+//        if (keydata[i] == 0)
+//          keydata[i] = 255;
+//        CmiPrintf("key[%d]=%d %p\n",i,keydata[i],keydata);
+//      }
+      return CkHashFunction_default((const void*)keydata,(size_t)j);
+    }
 };
 
 int operator==(const AtomSigInfo &s1, const AtomSigInfo& s2)
@@ -180,6 +218,31 @@ struct ExclSigInfo
         sort(fullExclOffset.begin(), fullExclOffset.end());
         sort(modExclOffset.begin(), modExclOffset.end());
     }
+
+    int hash() const {
+      unsigned int code = 0x1234;
+      unsigned int codesz = 8 * sizeof(int);
+      const unsigned int numFoffset = fullExclOffset.size();
+      const unsigned int numMoffset = modExclOffset.size();
+      const unsigned int numOffsets = numFoffset + numMoffset;
+      
+      // No excluded atoms? Just hash to 0
+      if (numOffsets == 0)
+        return 0;
+      
+      unsigned int shift = codesz / numOffsets;
+      if (shift == 0) shift=1;
+      unsigned int i;
+      for(i=0; i < numFoffset; i++) {
+        code = circShift(code,shift);
+        code ^= fullExclOffset[i];
+      }
+      for(i=0; i < numMoffset; i++) {
+        code = circShift(code,shift);
+        code ^= modExclOffset[i];
+      }
+      return code;
+    }
 };
 int operator==(const ExclSigInfo &s1, const ExclSigInfo &s2)
 {
@@ -202,14 +265,46 @@ int operator==(const ExclSigInfo &s1, const ExclSigInfo &s2)
     return 1;
 }
 
+class HashString : public string {
+public:
+  int hash() const {
+    const char* d = this->c_str();
+    int ret=0;
+    for (int i=0;d[i]!=0;i++) {
+      int shift1=((5*i)%16)+0;
+      int shift2=((6*i)%16)+8;
+      ret+=((0xa5^d[i])<<shift2)+(d[i]<<shift1);
+    }
+    return ret;
+  }
+};
 
-vector<string> segNamePool;
-vector<string> resNamePool;
-vector<string> atomNamePool;
-vector<string> atomTypePool;
-vector<Real> chargePool;
-vector<Real> massPool;
-vector<AtomSigInfo> atomSigPool;
+class HashReal {
+  Real val;
+public:
+  HashReal(Real v) : val(v) {}
+  operator Real & () { return val; }
+  operator const Real & () const { return val; }
+  
+  int hash() const {
+    const char* d = (const char *)&val;
+    int ret=0;
+    for (int i=0;i < sizeof(Real);i++) {
+      int shift1=((5*i)%16)+0;
+      int shift2=((6*i)%16)+8;
+      ret+=((0xa5^d[i])<<shift2)+(d[i]<<shift1);
+    }
+    return ret;
+  };
+};
+
+HashPool<HashString> segNamePool;
+HashPool<HashString> resNamePool;
+HashPool<HashString> atomNamePool;
+HashPool<HashString> atomTypePool;
+HashPool<HashReal> chargePool;
+HashPool<HashReal> massPool;
+HashPool<AtomSigInfo> atomSigPool;
 BasicAtomInfo *atomData;
 
 //Recording cluster information after reading all bonds info
@@ -219,14 +314,14 @@ int g_numClusters = 0;
 //indicate whether the atom ids in a cluster are contiguous or not
 int g_isClusterContiguous = 0;
 
-vector<TupleSignature> sigsOfBonds;
-vector<TupleSignature> sigsOfAngles;
-vector<TupleSignature> sigsOfDihedrals;
-vector<TupleSignature> sigsOfImpropers;
-vector<TupleSignature> sigsOfCrossterms;
+HashPool<TupleSignature> sigsOfBonds;
+HashPool<TupleSignature> sigsOfAngles;
+HashPool<TupleSignature> sigsOfDihedrals;
+HashPool<TupleSignature> sigsOfImpropers;
+HashPool<TupleSignature> sigsOfCrossterms;
 AtomSigInfo *eachAtomSigs;
 
-vector<ExclSigInfo> sigsOfExclusions;
+HashPool<ExclSigInfo> sigsOfExclusions;
 ExclSigInfo *eachAtomExclSigs;
 
 //Structures for extraBond options
@@ -784,7 +879,7 @@ void integrateAllAtomSigs()
     for(int i=0; i<g_mol->numAtoms; i++)
     {
         eachAtomSigs[i].sortTupleSigIndices();
-        int poolIndex = lookupCstPool(atomSigPool, eachAtomSigs[i]);
+        int poolIndex = atomSigPool.lookupCstPool(eachAtomSigs[i]);
         if(poolIndex==-1)
         {
             atomSigPool.push_back(eachAtomSigs[i]);
@@ -829,13 +924,15 @@ void outputPsfFile(FILE *ofp)
     fprintf(ofp, "%d !NCHARGES\n", chargePool.size());
     for(int i=0; i<chargePool.size(); i++)
     {
-        fprintf(ofp, "%f\n", chargePool[i]);
+        const Real charge = chargePool[i];
+        fprintf(ofp, "%f\n", charge);
     }
 
     fprintf(ofp, "%d !NMASSES\n", massPool.size());
     for(int i=0; i<massPool.size(); i++)
     {
-        fprintf(ofp, "%f\n", massPool[i]);
+        const Real mass = massPool[i];
+        fprintf(ofp, "%f\n", mass);
     }
 
 
@@ -1074,13 +1171,15 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
     fprintf(txtOfp, "%d !NCHARGES\n", chargePool.size());
     for(int i=0; i<chargePool.size(); i++)
     {
-        fprintf(txtOfp, "%f\n", chargePool[i]);
+        const Real charge = chargePool[i];
+        fprintf(txtOfp, "%f\n", charge);
     }
 
     fprintf(txtOfp, "%d !NMASSES\n", massPool.size());
     for(int i=0; i<massPool.size(); i++)
     {
-        fprintf(txtOfp, "%f\n", massPool[i]);
+        const Real mass = massPool[i];
+        fprintf(txtOfp, "%f\n", mass);
     }
 
 
@@ -1309,9 +1408,9 @@ void getAtomData(FILE *ifp)
 
         //building constant pool
         int poolIndex;
-        string fieldName;
+        HashString fieldName;
         fieldName.assign(segmentName);
-        poolIndex = lookupCstPool(segNamePool, fieldName);
+        poolIndex = segNamePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             segNamePool.push_back(fieldName);
@@ -1325,7 +1424,7 @@ void getAtomData(FILE *ifp)
         atomData[atomID-1].resID = residueID;
 
         fieldName.assign(residueName);
-        poolIndex = lookupCstPool(resNamePool, fieldName);
+        poolIndex = resNamePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             resNamePool.push_back(fieldName);
@@ -1334,7 +1433,7 @@ void getAtomData(FILE *ifp)
         atomData[atomID-1].resNameIdx = poolIndex;
 
         fieldName.assign(atomName);
-        poolIndex = lookupCstPool(atomNamePool, fieldName);
+        poolIndex = atomNamePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             atomNamePool.push_back(fieldName);
@@ -1343,7 +1442,7 @@ void getAtomData(FILE *ifp)
         atomData[atomID-1].atomNameIdx = poolIndex;
 
         fieldName.assign(atomType);
-        poolIndex = lookupCstPool(atomTypePool, fieldName);
+        poolIndex = atomTypePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             atomTypePool.push_back(fieldName);
@@ -1351,7 +1450,7 @@ void getAtomData(FILE *ifp)
         }
         atomData[atomID-1].atomTypeIdx = poolIndex;
 
-        poolIndex = lookupCstPool(chargePool, charge);
+        poolIndex = chargePool.lookupCstPool(charge);
         if(poolIndex==-1)
         {
             chargePool.push_back(charge);
@@ -1359,7 +1458,7 @@ void getAtomData(FILE *ifp)
         }
         atomData[atomID-1].chargeIdx = poolIndex;
 
-        poolIndex = lookupCstPool(massPool, mass);
+        poolIndex = massPool.lookupCstPool(mass);
         if(poolIndex==-1)
         {
             massPool.push_back(mass);
@@ -1384,9 +1483,9 @@ void buildAtomData()
     {
         //building constant pool
         int poolIndex;
-        string fieldName;
+        HashString fieldName;
         fieldName.assign(atomSegResids[atomID].segname);
-        poolIndex = lookupCstPool(segNamePool, fieldName);
+        poolIndex = segNamePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             segNamePool.push_back(fieldName);
@@ -1397,7 +1496,7 @@ void buildAtomData()
         atomData[atomID].resID = atomSegResids[atomID].resid;
 
         fieldName.assign(atomNames[atomID].resname);
-        poolIndex = lookupCstPool(resNamePool, fieldName);
+        poolIndex = resNamePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             resNamePool.push_back(fieldName);
@@ -1406,7 +1505,7 @@ void buildAtomData()
         atomData[atomID].resNameIdx = poolIndex;
 
         fieldName.assign(atomNames[atomID].atomname);
-        poolIndex = lookupCstPool(atomNamePool, fieldName);
+        poolIndex = atomNamePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             atomNamePool.push_back(fieldName);
@@ -1415,7 +1514,7 @@ void buildAtomData()
         atomData[atomID].atomNameIdx = poolIndex;
 
         fieldName.assign(atomNames[atomID].atomtype);
-        poolIndex = lookupCstPool(atomTypePool, fieldName);
+        poolIndex = atomTypePool.lookupCstPool(fieldName);
         if(poolIndex==-1)
         {
             atomTypePool.push_back(fieldName);
@@ -1423,7 +1522,7 @@ void buildAtomData()
         }
         atomData[atomID].atomTypeIdx = poolIndex;
 
-        poolIndex = lookupCstPool(chargePool, atoms[atomID].charge);
+        poolIndex = chargePool.lookupCstPool(atoms[atomID].charge);
         if(poolIndex==-1)
         {
             chargePool.push_back(atoms[atomID].charge);
@@ -1431,7 +1530,7 @@ void buildAtomData()
         }
         atomData[atomID].chargeIdx = poolIndex;
 
-        poolIndex = lookupCstPool(massPool, atoms[atomID].mass);
+        poolIndex = massPool.lookupCstPool(atoms[atomID].mass);
         if(poolIndex==-1)
         {
             massPool.push_back(atoms[atomID].mass);
@@ -1757,7 +1856,7 @@ void getBondData(FILE *fd)
         oneSig.offset[0] = b->atom2 - b->atom1;
         oneSig.isReal = (i<numRealBonds );
 
-        int poolIndex = lookupCstPool(sigsOfBonds, oneSig);
+        int poolIndex = sigsOfBonds.lookupCstPool(oneSig);
         int newSig=0;
         if(poolIndex == -1)
         {
@@ -1768,7 +1867,8 @@ void getBondData(FILE *fd)
 
         if(!newSig)
         {//check duplicate bonds in the form of (a, b) && (a, b);
-            int dupIdx = lookupCstPool(eachAtomSigs[b->atom1].bondSigIndices, (SigIndex)poolIndex);
+          CkPrintf("Checking %d\n",poolIndex);
+          int dupIdx = lookupCstPool(eachAtomSigs[b->atom1].bondSigIndices, (SigIndex)poolIndex);
             if(dupIdx!=-1)
             {
                 char err_msg[128];
@@ -1945,7 +2045,7 @@ void buildBondData()
         oneSig.offset[0] = b->atom2 - b->atom1;
         oneSig.isReal = (i<g_mol->numRealBonds);
 
-        int poolIndex = lookupCstPool(sigsOfBonds, oneSig);
+        int poolIndex = sigsOfBonds.lookupCstPool(oneSig);
         int newSig=0;
         if(poolIndex == -1)
         {
@@ -1954,9 +2054,9 @@ void buildBondData()
             newSig=1;
         }
 
-        if(!newSig)
+      if(!newSig)
         {//check duplicate bonds in the form of (a, b) && (a, b);
-            int dupIdx = lookupCstPool(eachAtomSigs[b->atom1].bondSigIndices, (SigIndex)poolIndex);
+          int dupIdx = lookupCstPool(eachAtomSigs[b->atom1].bondSigIndices, (SigIndex)poolIndex);
             if(dupIdx!=-1)
             {
                 char err_msg[128];
@@ -2231,7 +2331,7 @@ void getAngleData(FILE *fd)
         offset[1] = tuple->atom3 - tuple->atom1;
         oneSig.setOffsets(offset);
 
-        int poolIndex = lookupCstPool(sigsOfAngles, oneSig);
+        int poolIndex = sigsOfAngles.lookupCstPool(oneSig);
         if(poolIndex == -1)
         {
             sigsOfAngles.push_back(oneSig);
@@ -2258,7 +2358,7 @@ void buildAngleData()
         offset[1] = tuple->atom3 - tuple->atom1;
         oneSig.setOffsets(offset);
 
-        int poolIndex = lookupCstPool(sigsOfAngles, oneSig);
+        int poolIndex = sigsOfAngles.lookupCstPool(oneSig);
         if(poolIndex == -1)
         {
             sigsOfAngles.push_back(oneSig);
@@ -2397,7 +2497,7 @@ void getDihedralData(FILE *fd)
         offset[2] = tuple->atom4 - tuple->atom1;
         oneSig.setOffsets(offset);
 
-        int poolIndex = lookupCstPool(sigsOfDihedrals, oneSig);
+        int poolIndex = sigsOfDihedrals.lookupCstPool(oneSig);
         if(poolIndex == -1)
         {
             sigsOfDihedrals.push_back(oneSig);
@@ -2426,7 +2526,7 @@ void buildDihedralData()
         offset[2] = tuple->atom4 - tuple->atom1;
         oneSig.setOffsets(offset);
 
-        int poolIndex = lookupCstPool(sigsOfDihedrals, oneSig);
+        int poolIndex = sigsOfDihedrals.lookupCstPool(oneSig);
         if(poolIndex == -1)
         {
             sigsOfDihedrals.push_back(oneSig);
@@ -2570,7 +2670,7 @@ void getImproperData(FILE *fd)
         offset[2] = tuple->atom4 - tuple->atom1;
         oneSig.setOffsets(offset);
 
-        int poolIndex = lookupCstPool(sigsOfImpropers, oneSig);
+        int poolIndex = sigsOfImpropers.lookupCstPool(oneSig);
         if(poolIndex == -1)
         {
             sigsOfImpropers.push_back(oneSig);
@@ -2599,7 +2699,7 @@ void buildImproperData()
         offset[2] = tuple->atom4 - tuple->atom1;
         oneSig.setOffsets(offset);
 
-        int poolIndex = lookupCstPool(sigsOfImpropers, oneSig);
+        int poolIndex = sigsOfImpropers.lookupCstPool(oneSig);
         if(poolIndex == -1)
         {
             sigsOfImpropers.push_back(oneSig);
@@ -2852,7 +2952,7 @@ void getCrosstermData(FILE *fd)
     offset[6] = tuple->atom8 - tuple->atom1;
     oneSig.setOffsets(offset);
    
-    int poolIndex = lookupCstPool(sigsOfCrossterms, oneSig);
+    int poolIndex = sigsOfCrossterms.lookupCstPool(oneSig);
     if(poolIndex == -1)
     {
       sigsOfCrossterms.push_back(oneSig);
@@ -2883,7 +2983,7 @@ void buildCrosstermData()
     offset[6] = tuple->atom8 - tuple->atom1;
     oneSig.setOffsets(offset);
    
-    int poolIndex = lookupCstPool(sigsOfCrossterms, oneSig);
+    int poolIndex = sigsOfCrossterms.lookupCstPool(oneSig);
     if(poolIndex == -1)
     {
       sigsOfCrossterms.push_back(oneSig);
@@ -2999,7 +3099,7 @@ void buildExclusions()
     for(int i=0; i<g_mol->numAtoms; i++)
     {
         eachAtomExclSigs[i].sortExclOffset();
-        int poolIndex = lookupCstPool(sigsOfExclusions, eachAtomExclSigs[i]);
+        int poolIndex = sigsOfExclusions.lookupCstPool(eachAtomExclSigs[i]);
         if(poolIndex==-1)
         {
             poolIndex = sigsOfExclusions.size();
@@ -3082,4 +3182,19 @@ void build14Excls(UniqueSet<Exclusion>& allExcls, vector<int> *eachAtomNeighbors
             }
         }
     }
+}
+
+template <class T> void HashPool<T>::dump_tables()
+{
+  for(int j=0; j < pool.size(); j++) {
+    HashPoolAdaptorT<T>* pval = pool[j];
+    CmiPrintf("Pool[%d]=%p %p  hash = %d\n",j,pool[j],pval,pval->hash());
+  }
+  CkHashtableIterator *iter = index_table.iterator();
+  void *key,*indx;
+  while (iter->hasNext()) {
+    indx = iter->next(&key);
+    HashPoolAdaptorT<T> *pkey = (HashPoolAdaptorT<T>*)key;
+    CmiPrintf("key %p indx %p %d hash=%d\n",key,indx,*((int *)indx),pkey->hash());
+  }
 }
