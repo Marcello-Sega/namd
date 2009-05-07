@@ -69,7 +69,8 @@ static int atoms_alloc;
 
 static int max_atoms_per_patch;
 
-static cudaStream_t stream;
+// static cudaStream_t stream;
+cudaStream_t stream;
  
 void cuda_init() {
   forces = 0;

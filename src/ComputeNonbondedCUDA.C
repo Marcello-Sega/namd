@@ -15,6 +15,8 @@
 
 #ifdef NAMD_CUDA
 
+extern cudaStream_t stream;
+
 void cuda_errcheck(const char *msg) {
   cudaError_t err;
   if ((err = cudaGetLastError()) != cudaSuccess) {
@@ -804,26 +806,26 @@ void ComputeNonbondedCUDA::doWork() {
 #if 0
   kernel_launch_state = 3;
 
-  cudaEventRecord(start_upload, 0);
+  cudaEventRecord(start_upload, stream);
 
   if ( atomsChanged ) {
     cuda_bind_atom_params(atom_params);
   }
 
   cuda_bind_atoms(atoms);
-  cudaEventRecord(start_calc, 0);
+  cudaEventRecord(start_calc, stream);
   cuda_nonbonded_forces(cutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size());
-  cudaEventRecord(end_remote_calc, 0);
+  cudaEventRecord(end_remote_calc, stream);
   cuda_load_forces(forces,num_local_atom_records,num_remote_atom_records);
-  cudaEventRecord(end_remote_download, 0);
+  cudaEventRecord(end_remote_download, stream);
   cuda_nonbonded_forces(cutoff2,
 	0,localComputeRecords.size(),
 	0,localActivePatches.size());
-  cudaEventRecord(end_local_calc, 0);
+  cudaEventRecord(end_local_calc, stream);
   cuda_load_forces(forces,0,num_local_atom_records);
-  cudaEventRecord(end_local_download, 0);
+  cudaEventRecord(end_local_download, stream);
 
   if ( cuda_stream_finished() ) {
     CkPrintf("CUDA not overlapping with CPU work.\n");
@@ -842,6 +844,7 @@ void ComputeNonbondedCUDA::doWork() {
 
 static int ccd_index_remote_calc;
 void cuda_check_remote_calc(void *arg, double) {
+  // in theory we only need end_remote_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_remote_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
 // CkPrintf("Pe %d yielding to %d after remote calc\n", CkMyPe(), next_pe_sharing_gpu);
@@ -854,6 +857,7 @@ void cuda_check_remote_calc(void *arg, double) {
 
 static int ccd_index_local_calc;
 void cuda_check_local_calc(void *arg, double) {
+  // in theory we only need end_local_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_local_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
 // CkPrintf("Pe %d yielding to %d after local calc\n", CkMyPe(), next_pe_sharing_gpu);
@@ -876,21 +880,21 @@ fflush(stdout);
   case 1:
     ++kernel_launch_state;
     gpu_is_mine = 0;
-    cudaEventRecord(start_upload, 0);
+    cudaEventRecord(start_upload, stream);
 
     if ( atomsChanged ) {
       cuda_bind_atom_params(atom_params);
     }
 
     cuda_bind_atoms(atoms);
-    cudaEventRecord(start_calc, 0);
+    cudaEventRecord(start_calc, stream);
     cuda_nonbonded_forces(cutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size());
-    cudaEventRecord(end_remote_calc, 0);
+    cudaEventRecord(end_remote_calc, stream);
     ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_calc,this);
     cuda_load_forces(forces,num_local_atom_records,num_remote_atom_records);
-    cudaEventRecord(end_remote_download, 0);
+    cudaEventRecord(end_remote_download, stream);
     ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
     break;
  
@@ -900,10 +904,10 @@ fflush(stdout);
     cuda_nonbonded_forces(cutoff2,
 	0,localComputeRecords.size(),
 	0,localActivePatches.size());
-    cudaEventRecord(end_local_calc, 0);
+    cudaEventRecord(end_local_calc, stream);
     ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_calc,this);
     cuda_load_forces(forces,0,num_local_atom_records);
-    cudaEventRecord(end_local_download, 0);
+    cudaEventRecord(end_local_download, stream);
     if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
     break;
 
