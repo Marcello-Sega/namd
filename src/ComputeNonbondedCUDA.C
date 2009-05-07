@@ -8,6 +8,7 @@
 #endif
 
 #include "WorkDistrib.h"
+#include "ComputeMgr.h"
 #include "ComputeNonbondedCUDA.h"
 #include "ComputeNonbondedCUDAKernel.h"
 #include "ObjectArena.h"
@@ -36,6 +37,8 @@ static int shared_gpu;
 static int first_pe_sharing_gpu;
 static int next_pe_sharing_gpu;
 
+static int gpu_is_mine;
+
 void cuda_initialize() {
 
   char host[128];
@@ -60,6 +63,10 @@ void cuda_initialize() {
     }
     if ( i == numPesOnPhysicalNode ) {
       CkPrintf("Bad result from CmiGetPesOnPhysicalNode!\n");
+      for ( i=0; i < numPesOnPhysicalNode; ++i ) {
+        CkPrintf("pe %d physnode rank %d of %d is %d\n", CkMyPe(),
+          i, numPesOnPhysicalNode, pesOnPhysicalNode[i]);
+      }
       myRankInPhysicalNode = 0;
       numPesOnPhysicalNode = 1;
       pesOnPhysicalNode = new int[1];
@@ -126,6 +133,8 @@ void cuda_initialize() {
   } else {  // in case phys node code is lying
     dev = devices[CkMyPe() % ndevices];
   }
+
+  gpu_is_mine = ( first_pe_sharing_gpu == CkMyPe() ); 
 
   if ( dev >= deviceCount ) {
     char buf[256];
@@ -274,6 +283,7 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
 }
 
 static ComputeNonbondedCUDA* cudaCompute = 0;
+static ComputeMgr *computeMgr = 0;
 
 static ushort2 *exclusionsByAtom;
 
@@ -411,9 +421,10 @@ static cudaEvent_t end_remote_download;
 static cudaEvent_t end_local_calc;
 static cudaEvent_t end_local_download;
 
-ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c) : Compute(c) {
+ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compute(c) {
   CkPrintf("create ComputeNonbondedCUDA\n");
   cudaCompute = this;
+  computeMgr = mgr;
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
   reduction = 0;
@@ -480,38 +491,49 @@ static int cuda_timer_count;
 static double cuda_timer_total;
 static double kernel_time;
 
-static int ccd_index;
+static int ccd_index_remote_download;
+static int ccd_index_local_download;
 #define CUDA_CONDITION CcdPERIODIC
 
 void cuda_check_remote_progress(void *arg, double) {
+fflush(stdout);
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
-    CcdCancelCallOnConditionKeep(CUDA_CONDITION, ccd_index);
+fflush(stdout);
     // ((ComputeNonbondedCUDA *) arg)->finishWork();
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
+  } else {
+    ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION, cuda_check_remote_progress, arg);
   }
 }
 
 void cuda_check_local_progress(void *arg, double) {
   if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
     kernel_time += CkWallTimer();
-    CcdCancelCallOnConditionKeep(CUDA_CONDITION, ccd_index);
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
+  } else {
+    ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION, cuda_check_local_progress, arg);
   }
 }
 
+#if 0
 // don't use this one unless timer is part of stream, above is better
 void cuda_check_progress(void *arg, double) {
   if ( cuda_stream_finished() ) {
     kernel_time += CkWallTimer();
-    CcdCancelCallOnConditionKeep(CUDA_CONDITION, ccd_index);
+    CcdCallOnCondition(CUDA_CONDITION, ccd_index);
     // ((ComputeNonbondedCUDA *) arg)->finishWork();
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
   }
 }
+#endif
 
 void ComputeNonbondedCUDA::atomUpdate() { atomsChanged = 1; }
 
+static int kernel_launch_state = 0;
+
 void ComputeNonbondedCUDA::doWork() {
+
+// CkPrintf("Pe %d doWork %d\n", CkMyPe(), workStarted);
 
   if ( workStarted ) {
     if ( finishWork() ) {  // finished
@@ -520,7 +542,7 @@ void ComputeNonbondedCUDA::doWork() {
     } else {  // need to call again
       workStarted = 2;
       basePriority = COMPUTE_HOME_PRIORITY;  // lower for local
-      ccd_index = CcdCallOnConditionKeep(CUDA_CONDITION,cuda_check_local_progress,this);
+      if ( kernel_launch_state > 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
     }
     return;
   }
@@ -779,6 +801,9 @@ void ComputeNonbondedCUDA::doWork() {
   }
 
   kernel_time = -1. * CkWallTimer();
+#if 0
+  kernel_launch_state = 3;
+
   cudaEventRecord(start_upload, 0);
 
   if ( atomsChanged ) {
@@ -787,11 +812,6 @@ void ComputeNonbondedCUDA::doWork() {
 
   cuda_bind_atoms(atoms);
   cudaEventRecord(start_calc, 0);
-  // cuda_nonbonded_forces(cutoff2,
-// 	0,localComputeRecords.size()+remoteComputeRecords.size(),
-// 	0,localActivePatches.size()+remoteActivePatches.size());
-  // cuda_load_forces(forces,0,num_local_atom_records+num_remote_atom_records);
-  // CkPrintf("%d atoms %d %d\n", CkMyPe(), num_local_atom_records, num_remote_atom_records);
   cuda_nonbonded_forces(cutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size());
@@ -811,8 +831,89 @@ void ComputeNonbondedCUDA::doWork() {
 
   // finishWork();
 
-  ccd_index = CcdCallOnConditionKeep(CUDA_CONDITION,cuda_check_remote_progress,this);
+  ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
+#else
+
+  kernel_launch_state = 1;
+  if ( gpu_is_mine ) recvYieldDevice(-1);
+
+#endif
 }
+
+static int ccd_index_remote_calc;
+void cuda_check_remote_calc(void *arg, double) {
+  // if ( cudaEventQuery(end_remote_calc) == cudaSuccess ) {
+  if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
+// CkPrintf("Pe %d yielding to %d after remote calc\n", CkMyPe(), next_pe_sharing_gpu);
+    computeMgr->sendYieldDevice(next_pe_sharing_gpu);
+// CkPrintf("Pe %d yielded to %d after remote calc\n", CkMyPe(), next_pe_sharing_gpu);
+  } else {
+    ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION, cuda_check_remote_calc, arg);
+  }
+}
+
+static int ccd_index_local_calc;
+void cuda_check_local_calc(void *arg, double) {
+  // if ( cudaEventQuery(end_local_calc) == cudaSuccess ) {
+  if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
+// CkPrintf("Pe %d yielding to %d after local calc\n", CkMyPe(), next_pe_sharing_gpu);
+    computeMgr->sendYieldDevice(next_pe_sharing_gpu);
+// CkPrintf("Pe %d yielded to %d after local calc\n", CkMyPe(), next_pe_sharing_gpu);
+  } else {
+    ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION, cuda_check_local_calc, arg);
+  }
+}
+
+// computeMgr->sendYieldDevice(next_pe_sharing_gpu);
+
+void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
+
+// CkPrintf("Pe %d entering state %d via yield from pe %d\n",
+//           CkMyPe(), kernel_launch_state, pe);
+fflush(stdout);
+
+  switch ( kernel_launch_state ) {
+  case 1:
+    ++kernel_launch_state;
+    gpu_is_mine = 0;
+    cudaEventRecord(start_upload, 0);
+
+    if ( atomsChanged ) {
+      cuda_bind_atom_params(atom_params);
+    }
+
+    cuda_bind_atoms(atoms);
+    cudaEventRecord(start_calc, 0);
+    cuda_nonbonded_forces(cutoff2,
+	localComputeRecords.size(),remoteComputeRecords.size(),
+	localActivePatches.size(),remoteActivePatches.size());
+    cudaEventRecord(end_remote_calc, 0);
+    ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_calc,this);
+    cuda_load_forces(forces,num_local_atom_records,num_remote_atom_records);
+    cudaEventRecord(end_remote_download, 0);
+    ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
+    break;
+ 
+  case 2:
+    ++kernel_launch_state;
+    gpu_is_mine = 0;
+    cuda_nonbonded_forces(cutoff2,
+	0,localComputeRecords.size(),
+	0,localActivePatches.size());
+    cudaEventRecord(end_local_calc, 0);
+    ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_calc,this);
+    cuda_load_forces(forces,0,num_local_atom_records);
+    cudaEventRecord(end_local_download, 0);
+    if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
+    break;
+
+  default:
+    gpu_is_mine = 1;
+    break;
+  }
+
+}
+
 
 int ComputeNonbondedCUDA::finishWork() {
 

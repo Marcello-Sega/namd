@@ -36,6 +36,8 @@ class ComputeConsForceMsg;
 class ComputeEwald;
 class ComputeEwaldMsg;
 
+class ComputeNonbondedCUDA;
+
 class ComputeNonbondedWorkArrays;
 
 class ComputeMgr : public BOCclass
@@ -76,6 +78,9 @@ public:
 
   // Made public in order to access the ComputeGlobal on the node
   ComputeGlobal *computeGlobalObject; /* node part of global computes */
+
+  void sendYieldDevice(int pe);
+  void recvYieldDevice(int pe);
   
 private:
   void createCompute(ComputeID, ComputeMap *);
@@ -86,6 +91,8 @@ private:
   ComputeDPME *computeDPMEObject;
 
   ComputeEwald *computeEwaldObject;
+
+  ComputeNonbondedCUDA *computeNonbondedCUDAObject;
 
   ComputeNonbondedWorkArrays *computeNonbondedWorkArrays;
 

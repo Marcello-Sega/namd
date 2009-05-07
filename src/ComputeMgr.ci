@@ -41,6 +41,8 @@ module ComputeMgr {
 
     entry void recvComputeEwaldData(ComputeEwaldMsg *);
     entry void recvComputeEwaldResults(ComputeEwaldMsg *);
+
+    entry void recvYieldDevice(int pe);
   } ;
 }
 

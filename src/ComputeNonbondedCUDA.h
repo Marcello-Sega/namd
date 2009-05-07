@@ -2,6 +2,8 @@
 #include "ComputeNonbondedUtil.h"
 #include "ComputeHomeTuples.h"
 
+class ComputeMgr;
+
 class ComputeNonbondedCUDAKernel;
 
 class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
@@ -32,11 +34,13 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     patch_record() { refCount = 0; }
   };
 
-    ComputeNonbondedCUDA(ComputeID c);
+    ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr);
     ~ComputeNonbondedCUDA();
 
     void atomUpdate();
     void doWork();
+
+    void recvYieldDevice(int pe);
 
     int workStarted;
     int finishWork();  // returns true when finished, false to continue

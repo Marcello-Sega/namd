@@ -81,6 +81,7 @@ ComputeMgr::ComputeMgr()
     computeGlobalObject = 0;
     computeDPMEObject = 0;
     computeEwaldObject = 0;
+    computeNonbondedCUDAObject = 0;
     computeNonbondedWorkArrays = new ComputeNonbondedWorkArrays;
 }
 
@@ -295,7 +296,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         break;
 #ifdef NAMD_CUDA
     case computeNonbondedCUDAType:
-	c = new ComputeNonbondedCUDA(i); // unknown delete
+	c = computeNonbondedCUDAObject = new ComputeNonbondedCUDA(i,this); // unknown delete
 	map->registerCompute(i,c);
 	c->initialize();
 	break;
@@ -796,6 +797,17 @@ void ComputeMgr::recvComputeConsForceMsg(ComputeConsForceMsg *msg)
         m->consForce = NULL;
     }
     delete msg;
+}
+
+void ComputeMgr::sendYieldDevice(int pe) {
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+    cm[pe].recvYieldDevice(CkMyPe());
+}
+
+void ComputeMgr::recvYieldDevice(int pe) {
+#ifdef NAMD_CUDA
+    computeNonbondedCUDAObject->recvYieldDevice(pe);
+#endif
 }
 
 #include "ComputeMgr.def.h"
