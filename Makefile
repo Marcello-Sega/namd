@@ -440,7 +440,7 @@ projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -module commlib -language charm++ \
-	-tracemode projections \
+	-tracemode projections -tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
