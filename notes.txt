@@ -236,7 +236,7 @@ Unpack NAMD and matching Charm++ source code and enter directory:
   cd charm-6.1
 
 Build and test the Charm++/Converse library:
-  ./build charm++ net-linux-x86_64 --no-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux-x86_64 --no-build-shared -O -DCMK_OPTIMIZE=1
   cd net-linux-x86_64/tests/charm++/megatest
   make pgm
   ./charmrun ++local +p4 ./pgm    (also try running on multiple nodes)
@@ -312,11 +312,11 @@ be listed.  Any options or compiler tags are listed separately and
 must be separated by spaces on the build command line.  Run the build
 command for your platform as:
 
-  ./build charm++ comm-OS-cpu options compiler --no-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ comm-OS-cpu options compiler --no-build-shared -O -DCMK_OPTIMIZE=1
 
 For this specific example:
 
-  ./build charm++ net-linux tcp icc --no-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux tcp icc --no-build-shared -O -DCMK_OPTIMIZE=1
 
 The README distributed with Charm++ contains a complete explanation.
 You only actually need the bin, include, and lib subdirectories, so
@@ -345,7 +345,7 @@ choices are defined by files in charm/src/arch/common/.
 If you want to run NAMD on Myrinet one option is to build a Myrinet 
 GM library network version by specifying the "gm" option as in:
 
-  ./build charm++ net-linux gm icc --no-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux gm icc --no-build-shared -O -DCMK_OPTIMIZE=1
 
 You would then change "net-linux-icc" to "net-linux-gm-icc" in your
 namd2/arch/Linux-x86-icc.arch file (or create a new .arch file).
