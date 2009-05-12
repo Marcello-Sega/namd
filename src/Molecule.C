@@ -5220,7 +5220,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	}
     
 	//  Get the column that the charge is going to be in.
-	if (mgridParams->gridforceQcol == NULL) // *** DON'T THINK THIS MAKES SENSE ***
+        if (mgridParams->gridforceQcol == NULL)
 	{
 	    qcol = 0;	// Default: don't read charge from file, use electric charge
 	}

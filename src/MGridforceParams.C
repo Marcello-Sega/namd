@@ -86,9 +86,14 @@ void MGridforceParamsList::pack_data(MOStream *msg)
       msg->put(len);
       msg->put(len,elem->gridforceCol);
       
-      len = strlen(elem->gridforceQcol) + 1;
-      msg->put(len);
-      msg->put(len,elem->gridforceQcol);
+      if (elem->gridforceQcol == NULL) 
+        msg->put(1); // Qcol_is_null = true
+      else {
+        msg->put(0); // Qcol_is_null = false
+        len = strlen(elem->gridforceQcol) + 1;
+        msg->put(len);
+        msg->put(len,elem->gridforceQcol);
+      }
       
       v = elem->gridforceVOffset;
       msg->put(&v);
@@ -141,10 +146,16 @@ void MGridforceParamsList::unpack_data(MIStream *msg)
       msg->get(len,str);
       elem->gridforceCol = str;
       
-      msg->get(len);
-      str = new char[len];
-      msg->get(len,str);
-      elem->gridforceQcol = str;
+      int qcol_is_null;
+      msg->get(qcol_is_null);
+      if (qcol_is_null)
+        elem->gridforceQcol = NULL;
+      else {
+        msg->get(len);
+        str = new char[len];
+        msg->get(len,str);
+        elem->gridforceQcol = str;
+      }
       
       msg->get(&v);
       elem->gridforceVOffset = v;

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2009/04/23 17:07:49 $
- * $Revision: 1.1275 $
+ * $Author: brunner $
+ * $Date: 2009/05/12 18:21:21 $
+ * $Revision: 1.1276 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -4321,12 +4321,6 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
               params->gridforceKey);
          NAMD_die(errmsg);
     }
-    if (params->gridforceQcol == NULL) {
-      char* defval = params->gridforceCol;
-      int collen = strlen(defval);
-      params->gridforceQcol = new char[collen+1];
-      strncpy(params->gridforceQcol,defval,collen+1);
-    }
     params = params->next;
   }
   
@@ -4381,7 +4375,12 @@ void SimParameters::print_mgrid_params()
       << "\n" << endi;
     iout << iINFO << "           Col " << params->gridforceCol 
       << "\n" << endi;
-    iout << iINFO << "           QCol " << params->gridforceQcol 
+    
+    char *qcol_msg = "Use atom charge";
+    if (params->gridforceQcol != NULL) {
+      qcol_msg = params->gridforceQcol;
+    }
+    iout << iINFO << "           QCol " << qcol_msg
       << "\n" << endi;
     iout << iINFO << "           VOffset " << params->gridforceVOffset 
       << "\n" << endi;
