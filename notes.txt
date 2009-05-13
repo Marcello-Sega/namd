@@ -323,6 +323,14 @@ You only actually need the bin, include, and lib subdirectories, so
 you can copy those elsewhere and delete the whole charm directory,
 but don't forget to edit Make.charm if you do this.
 
+The CUDA (NVIDIA's graphics processor programming platform) code in
+NAMD is completely self-contained and does not use any of the CUDA
+support features in Charm++.  When building NAMD with CUDA support
+you should use the same Charm++ you would use for a non-CUDA build.
+Do NOT add the cuda option to the Charm++ build command line.  The
+only changes to the build process needed are to add --with-cuda and
+possibly --cuda-prefix ... to the NAMD config command line.
+
 If you are building a non-smp, non-tcp version of net-linux with the
 Intel icc compiler you will need to disable optimization for some
 files to avoid crashes in the communication interrupt handler.  The
@@ -424,6 +432,9 @@ before pairlists will be enabled (on fewer processors small local
 pairlists are generated and recycled rather than being saved, the
 default is "pairlistMinProcs 1").  This is a per-simulation rather than
 a compile time option because memory usage is molecule-dependent.
+
+Additional information on reducing memory usage may be found at
+http://www.ks.uiuc.edu/Research/namd/wiki/index.cgi?NamdMemoryReduction
 
 ----------------------------------------------------------------------
 
