@@ -190,7 +190,7 @@ void BackEnd::init(int argc, char **argv) {
 
   ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
 
-#ifdef NAMD_CUDA
+#if defined(NAMD_CUDA) && CMK_NET_VERSION
   if ( ! idlepoll ) {
     NAMD_die("Please add +idlepoll to command line for proper performance.");
   }
