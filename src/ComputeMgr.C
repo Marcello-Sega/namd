@@ -32,6 +32,7 @@
 #include "ComputeImpropers.h"
 #include "ComputeCrossterms.h"
 #include "ComputeBonds.h"
+#include "ComputeNonbondedCUDAExcl.h"
 #include "ComputeFullDirect.h"
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
@@ -301,6 +302,12 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 	c->initialize();
 	break;
 #endif
+    case computeExclsType:
+        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+        c = new ComputeExcls(i,pids); // unknown delete
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
     case computeBondsType:
         PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
         c = new ComputeBonds(i,pids); // unknown delete
@@ -328,6 +335,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     case computeCrosstermsType:
         PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
         c = new ComputeCrossterms(i,pids); // unknown delete
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
+    case computeSelfExclsType:
+        c = new ComputeSelfExcls(i,map->computeData[i].pids[0].pid);
         map->registerCompute(i,c);
         c->initialize();
         break;
@@ -469,6 +481,9 @@ void registerUserEventsForAllComputeObjs()
         case computeNonbondedPairType:
             sprintf(user_des, "computeNonBondedPairType_%d", i);
             break;
+        case computeExclsType:
+            sprintf(user_des, "computeExclsType_%d", i);
+            break;
         case computeBondsType:
             sprintf(user_des, "computeBondsType_%d", i);
             break;
@@ -483,6 +498,9 @@ void registerUserEventsForAllComputeObjs()
             break;
         case computeCrosstermsType:
             sprintf(user_des, "computeCrosstermsType_%d", i);
+            break;
+        case computeSelfExclsType:
+            sprintf(user_des, "computeSelfExclsType_%d", i);
             break;
         case computeSelfBondsType:
             sprintf(user_des, "computeSelfBondsType_%d", i);

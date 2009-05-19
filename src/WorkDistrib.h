@@ -43,6 +43,7 @@ public:
 
   static void messageEnqueueWork(Compute *);
   void enqueueWork(LocalWorkMsg *msg);
+  void enqueueExcls(LocalWorkMsg *msg);
   void enqueueBonds(LocalWorkMsg *msg);
   void enqueueAngles(LocalWorkMsg *msg);
   void enqueueDihedrals(LocalWorkMsg *msg);

@@ -1769,7 +1769,9 @@ ALCH(
 #endif
 #endif
 
+#ifndef NAMD_CUDA
   reduction[exclChecksumIndex] += exclChecksum;
+#endif
   FAST
   (
   ENERGY( reduction[vdwEnergyIndex] += vdwEnergy; )

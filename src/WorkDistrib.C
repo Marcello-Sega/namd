@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2009/01/30 23:27:14 $
- * $Revision: 1.1192 $
+ * $Date: 2009/05/19 05:10:29 $
+ * $Revision: 1.1193 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1326,6 +1326,8 @@ void WorkDistrib::mapComputes(void)
 
 #ifdef NAMD_CUDA
   mapComputeNode(computeNonbondedCUDAType);
+  mapComputeHomeTuples(computeExclsType);
+  mapComputePatch(computeSelfExclsType);
 #endif
 
   mapComputeNonbonded();
@@ -1583,6 +1585,10 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 
   CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
   switch ( type ) {
+  case computeExclsType:
+  case computeSelfExclsType:
+    wdProxy[CkMyPe()].enqueueExcls(msg);
+    break;
   case computeBondsType:
   case computeSelfBondsType:
     wdProxy[CkMyPe()].enqueueBonds(msg);
@@ -1660,6 +1666,12 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 }
 
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueueExcls(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");

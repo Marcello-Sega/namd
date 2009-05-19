@@ -44,6 +44,7 @@ class PDB;
 class MIStream;
 class MOStream;
 
+class ExclElem;
 class BondElem;
 class AngleElem;
 class DihedralElem;
@@ -141,6 +142,7 @@ typedef struct constorque_params
    Vector p;            //  Rotation pivot point
 } ConsTorqueParams;
 
+friend class ExclElem;
 friend class BondElem;
 friend class AngleElem;
 friend class DihedralElem;

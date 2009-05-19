@@ -149,7 +149,7 @@ class ComputeNonbondedUtil {
 public:
 
   ComputeNonbondedUtil() {}
-  virtual ~ComputeNonbondedUtil() {}
+  ~ComputeNonbondedUtil() {}
   static void select(void);
 
   static void (*calcPair)(nonbonded *);
