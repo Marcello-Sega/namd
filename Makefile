@@ -107,6 +107,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedLES.o \
 	$(DSTDIR)/ComputeNonbondedPProf.o \
 	$(DSTDIR)/ComputeNonbondedCUDA.o \
+	$(DSTDIR)/ComputeNonbondedCUDAExcl.o \
 	$(DSTDIR)/ComputePatch.o \
 	$(DSTDIR)/ComputePatchPair.o \
 	$(DSTDIR)/ComputePme.o \
