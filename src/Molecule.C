@@ -1407,7 +1407,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
     //have been taken into account when compressing the molecule object.
     //The actual number of Bonds, Dihedrals etc. will be calculated based
     //on atom signatures.
-    build_extra_bonds(params, cfgList->find("extraBondsFile"));
+    if(simParams->extraBondsOn)
+	build_extra_bonds(params, cfgList->find("extraBondsFile"));
 #if 0
     //This part has been enabled in build_extra_bonds for memory optimized version
     //read extra bond parameters if there is an input of extra bonds (extraBondsOn is true)
