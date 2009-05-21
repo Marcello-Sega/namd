@@ -208,12 +208,16 @@ int NamdState::configListInit(ConfigList *cfgList) {
     parameters->print_param_summary();
 
     double fileReadTime = CmiWallTimer();
-    molecule = new Molecule(simParameters, parameters, moleculeFilename->data);
+    molecule = new Molecule(simParameters, parameters, moleculeFilename->data, configList);
     iout << iINFO << "TIME FOR READING PSF FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;    
   }
   fflush(stdout);
 
   if (simParameters->extraBondsOn) {        
+    //The extra bonds building will be executed in read_compressed_psf in
+    //the memory optimized version, so avoid calling this function in the 
+    //memory optimized run.
+    if(!simParameters->useCompressedPsf)
       molecule->build_extra_bonds(parameters, configList->find("extraBondsFile"));         
   }
   if(simParameters->genCompressedPsf) {

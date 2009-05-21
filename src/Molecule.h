@@ -897,7 +897,7 @@ public:
 private:
   //Read in a compressed .psf file (whose format is not standard) for
   //the sake of very very large simulations (say, 100M atoms system)
-  void read_compressed_psf_file(char *, Parameters *);   
+  void read_compressed_psf_file(char *, Parameters *, ConfigList *cfgList);   
 
 #ifdef MEM_OPT_VERSION
 public:  
