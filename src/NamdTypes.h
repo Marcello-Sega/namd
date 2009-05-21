@@ -68,8 +68,8 @@ struct CompAtom {
 // in the actual force calculation.
 // --Chao Mei
 
-typedef short AtomSigID;
-typedef short ExclSigID;
+typedef unsigned short AtomSigID;
+typedef unsigned short ExclSigID;
 
 struct CompAtomExt {
   #ifdef MEM_OPT_VERSION
