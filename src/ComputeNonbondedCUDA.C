@@ -211,10 +211,10 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
     // coulomb 1/r
     // t[i].x = 1. / (r2 * r);  // -1/r * d/dr r^-1
     {
-      // BigReal table_a = fast_table[4*table_i];
-      BigReal table_b = fast_table[4*table_i+1];
-      BigReal table_c = fast_table[4*table_i+2];
-      BigReal table_d = fast_table[4*table_i+3];
+      // BigReal table_a = corr_table[4*table_i];
+      BigReal table_b = corr_table[4*table_i+1];
+      BigReal table_c = corr_table[4*table_i+2];
+      BigReal table_d = corr_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
       t[i].x = 2. * grad;
@@ -224,13 +224,15 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
     // pme exclusion correction
     // t[i].w = 0.;
     {
-      // BigReal table_a = scor_table[4*table_i];
-      BigReal table_b = scor_table[4*table_i+1];
-      BigReal table_c = scor_table[4*table_i+2];
-      BigReal table_d = scor_table[4*table_i+3];
+      // BigReal table_a = corr_table[4*table_i] - full_table[4*table_i];
+      BigReal table_b = corr_table[4*table_i+1] - full_table[4*table_i+1];
+      BigReal table_c = corr_table[4*table_i+2] - full_table[4*table_i+2];
+      BigReal table_d = corr_table[4*table_i+3] - full_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
-      t[i].w = 2. * grad;
+      // t[i].w = 2. * grad;
+      // problem: excluded atoms can be closer than 1 Angstrom!
+      t[i].w = 0.;  // calculate no force, handle on CPU instead
     }
 
 

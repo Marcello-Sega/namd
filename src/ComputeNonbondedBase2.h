@@ -226,6 +226,7 @@ ALCHPAIR(
         // special ALCH forces already multiplied by relevant lambda
       )
           
+#ifndef NAMD_CUDA
       register BigReal tmp_x = force_r * p_ij_x;
       PAIR( virial_xx += tmp_x * p_ij_x; )
       PAIR( virial_xy += tmp_x * p_ij_y; )
@@ -257,6 +258,7 @@ ALCHPAIR(
                      pressureProfileReduction);
 
       )
+#endif
 
 #endif // SHORT
 #endif // FAST
@@ -288,7 +290,7 @@ ALCHPAIR(
 
 #endif //FULL
       
-      FULL(
+#if ( FULL( 1+ ) 0 )
       BigReal slow_d = table_four_i[8 SHORT(+ 4)];
       BigReal slow_c = table_four_i[9 SHORT(+ 4)];
       BigReal slow_b = table_four_i[10 SHORT(+ 4)];
@@ -374,6 +376,7 @@ ALCHPAIR(
         ))
       )
           
+#ifndef NAMD_CUDA
       {
       register BigReal tmp_x = fullforce_r * p_ij_x;
       PAIR( fullElectVirial_xx += tmp_x * p_ij_x; )
@@ -405,7 +408,8 @@ ALCHPAIR(
       )
 
       }
-      )
+#endif
+#endif //FULL
 
    } // for pairlist
 

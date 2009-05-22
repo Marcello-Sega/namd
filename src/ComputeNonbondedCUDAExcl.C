@@ -41,26 +41,30 @@ void ExclElem::getParameterPointers(Parameters *p, const int **v) {
 void ExclElem::computeForce(BigReal *reduction, 
                             BigReal *pressureProfileData)
 {
-  if ( ! modified ) return;
-
     const CompAtom &p_i = p[0]->x[localIndex[0]];
     const CompAtom &p_j = p[1]->x[localIndex[1]];
 
     // compute vectors between atoms and their distances
     const Lattice & lattice = p[0]->p->lattice;
     const Vector r12 = lattice.delta(p_i.position, p_j.position);
-    const BigReal r2 = r12.length2();
+    BigReal r2 = r12.length2();
 
     if ( r2 > cutoff2 ) return;
 
+    r2 += r2_delta;
+
     union { double f; int64 i; } r2i;
-    r2i.f = r2 + r2_delta;
+    r2i.f = r2;
     const int r2_delta_expc = 64 * (r2_delta_exp - 1023);
     int table_i = (r2i.i >> (32+14)) + r2_delta_expc;  // table_i >= 0
 
     BigReal diffa = r2 - r2_table[table_i];
     // XXX for short table_four is set to table_short, check for MTS
-    const BigReal* const table_four_i = table_short + 16*table_i;
+    const BigReal* const table_four_i = table_noshort + 16*table_i;
+
+    BigReal fast_a, fast_b, fast_c, fast_d;
+
+  if ( modified ) {
 
     const LJTable::TableEntry * lj_pars =
             ljTable->table_row(p_i.vdwType) + 2 * p_j.vdwType;
@@ -78,15 +82,23 @@ void ExclElem::computeForce(BigReal *reduction,
     BigReal vdw_b = A * table_four_i[4] - B * table_four_i[6];
     BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
 
-    BigReal fast_d = kqq * table_four_i[8];
-    BigReal fast_c = kqq * table_four_i[9];
-    BigReal fast_b = kqq * table_four_i[10];
-    BigReal fast_a = kqq * table_four_i[11];
+    fast_d = vdw_d + kqq * table_four_i[12];
+    fast_c = vdw_c + kqq * table_four_i[13];
+    fast_b = vdw_b + kqq * table_four_i[14];
+    fast_a = vdw_a + kqq * table_four_i[15];  // not used!
 
-    fast_d += vdw_d;
-    fast_c += vdw_c;
-    fast_b += vdw_b;
-    fast_a += vdw_a;  // not used!
+  } else {  // full exclusion
+
+    const BigReal kqq = 
+            COLOUMB * p_i.charge * p_j.charge * scaling * dielectric_1;
+
+    fast_d = kqq * ( table_four_i[8]  - table_four_i[12] );
+    fast_c = kqq * ( table_four_i[9]  - table_four_i[13] );
+    fast_b = kqq * ( table_four_i[10] - table_four_i[14] );
+    fast_a = kqq * ( table_four_i[11] - table_four_i[15] );  // not used!
+
+  }
+
     register BigReal fast_dir =
                   (diffa * fast_d + fast_c) * diffa + fast_b;
 

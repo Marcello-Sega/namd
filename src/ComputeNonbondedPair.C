@@ -233,10 +233,6 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
       params.pExt[1] = pExt[b];
       params.ff[0] = r[a]->f[Results::nbond];
       params.ff[1] = r[b]->f[Results::nbond];
-#ifdef NAMD_CUDA
-      params.ff[0] = r[a]->f[Results::slow];
-      params.ff[1] = r[b]->f[Results::slow];
-#endif
       params.numAtoms[0] = numAtoms[a];
       params.numAtoms[1] = numAtoms[b];
 

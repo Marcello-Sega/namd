@@ -1707,12 +1707,14 @@ ALCH(
     __prefetch_by_load ((void *)&(groupCount));
 #endif
 
+#ifndef NAMD_CUDA
     SHORT( FAST( f_0[i].x += f_i_x; ) )
     SHORT( FAST( f_0[i].y += f_i_y; ) )
     SHORT( FAST( f_0[i].z += f_i_z; ) )
     FULL( fullf_0[i].x += fullf_i_x; )
     FULL( fullf_0[i].y += fullf_i_y; )
     FULL( fullf_0[i].z += fullf_i_z; )
+#endif
 
 	// PAIR( iout << i << " " << i_upper << " end\n" << endi;)
   } // for i
@@ -1727,6 +1729,7 @@ ALCH(
   {
     Force *patch_f_0 = params->ff[0];
 
+#ifndef NAMD_CUDA
 #ifndef ARCH_POWERPC 
 #pragma ivdep
 #endif
@@ -1741,6 +1744,7 @@ ALCH(
       virial_yz += f_0[i].y * p_0[i].position.z;
       virial_zz += f_0[i].z * p_0[i].position.z;
     }
+#endif
   }
 #endif
 #endif
@@ -1751,6 +1755,7 @@ ALCH(
 #if ( SELF( 1+ ) 0 )
   {
     Force *patch_fullf_0 = params->fullf[0];
+#ifndef NAMD_CUDA
 #ifndef ARCH_POWERPC 
 #pragma ivdep
 #endif
@@ -1765,6 +1770,7 @@ ALCH(
       fullElectVirial_yz += fullf_0[i].y * p_0[i].position.z;
       fullElectVirial_zz += fullf_0[i].z * p_0[i].position.z;
     }
+#endif
   }
 #endif
 #endif

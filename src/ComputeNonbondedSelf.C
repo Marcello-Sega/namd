@@ -96,10 +96,6 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     params.pExt[1] = pExt;
     params.ff[0] = r->f[Results::nbond];
     params.ff[1] = r->f[Results::nbond];
-#ifdef NAMD_CUDA
-    params.ff[0] = r->f[Results::slow];
-    params.ff[1] = r->f[Results::slow];
-#endif
     params.numAtoms[0] = numAtoms;
     params.numAtoms[1] = numAtoms;
 
