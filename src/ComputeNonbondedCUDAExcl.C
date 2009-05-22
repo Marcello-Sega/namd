@@ -51,8 +51,10 @@ void ExclElem::computeForce(BigReal *reduction,
     const Vector r12 = lattice.delta(p_i.position, p_j.position);
     const BigReal r2 = r12.length2();
 
+    if ( r2 > cutoff2 ) return;
+
     union { double f; int64 i; } r2i;
-    r2i.f = r2;
+    r2i.f = r2 + r2_delta;
     const int r2_delta_expc = 64 * (r2_delta_exp - 1023);
     int table_i = (r2i.i >> (32+14)) + r2_delta_expc;  // table_i >= 0
 
