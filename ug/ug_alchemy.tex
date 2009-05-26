@@ -85,7 +85,7 @@ system from one state to another, through a series of intermediate steps. Two
 alternative methods for alchemical calculation of free energies from molecular
 dynamics simulation are available in NAMD: Free energy perturbation (FEP) and
 thermodynamic integration (TI).
-%CBH INSERT FOOTNOTE HERE  -- Surjit B. Dixit, J\'{e}r\^{o}me H\'{e}nin and Christophe Chipot (Nancy Universit{\'e}, Universit{\'e} Henri Poincar{\'e}, France), and Floris Buelens (Institute of Structural and Molecular Biology, Birkbeck / UCL, University of London, United Kingdom), etc, etc.
+%CBH: INSERT FOOTNOTE HERE  -- Surjit B. Dixit, J\'{e}r\^{o}me H\'{e}nin and Christophe Chipot (Nancy Universit{\'e}, Universit{\'e} Henri Poincar{\'e}, France), Floris Buelens (Institute of Structural and Molecular Biology, Birkbeck / UCL, University of London, United Kingdom), and Christopher Harrison (University of Illinois, Urbana, IL USA).}}
 
 
 
@@ -167,19 +167,25 @@ scaled on the basis of the current value of $\lambda$. It should be clearly
 understood that these side chains never interact with each other.
 
 
-Noteworthily, end points of alchemical transformations carried out in the
-framework of the dual--topology paradigm have been shown to be conducive to
+It is noteworthy that end points of alchemical transformations carried out in the framework of the dual--topology paradigm have been shown to be conducive to
 numerical instabilities from molecular dynamics simulations, often coined as ``end--point
 catastrophes''. These scenarios are prone to occur when $\lambda$ becomes close
 to 0 or 1, and incoming atoms instantly appear where other particles are
 already present, which results in a virtually infinite potential as the
 interatomic distance tends towards 0. Such ``end--point catastrophes'' can be
 profitably circumvented by introducing a so--called soft--core
-potential~\cite{Beutler1994}, aimed at a gradual scaling of the short--range
-nonbonded interactions of incoming atoms with their environment.  
-What is really being modified is the value of the coupling parameter that
+potential~\cite{Beutler1994,Zacharias1994}, aimed at a gradual scaling of the short--range
+nonbonded interactions of incoming atoms with their environment, as shown in Equation \ref{eqn:softcore}.  
+What is really being modified is the value of a coupling parameter ($\lambda_\mathrm{LJ}$ or $\lambda_\mathrm{elec}$) that
 scales the interactions --- \ie, if set to 0, the latter are off; if set to 1,
-they are on --- in lieu of the actual value of $\lambda$ provided by the user.
+they are on --- in lieu of the actual value of $\lambda$ provided by the user.  
+
+%CBH: TODO - SOFTCORE Eqn -- insert paragraph explanation ``What is softcore and what does it mean in NAMD2.7''.  Add softcore_lambda.png figure below softcore keywords in Implementation section
+\begin{equation}
+\label{eqn:softcore}
+V_\mathrm{NB}(r_{ij}) = \lambda_\mathrm{LJ} \varepsilon_{ij} \left[ \left(\frac{R^\mathrm{min}_{ij}\,^2}{r_{ij}^2+\delta(1-\lambda_\mathrm{LJ})}\right)^{\!\!6}  -  \left(\frac{R^\mathrm{min}_{ij}\,^2}{r_{ij}^2+\delta(1-\lambda_\mathrm{LJ})}\right)^{\!\!3} \right]
++ \lambda_\mathrm{elec} \frac{q_iq_j}{\varepsilon_1 r_{ij}}
+\end{equation}
 
 
 It is also worth noting that the free energy calculation does not alter
@@ -190,7 +196,7 @@ distinct environments --- \eg~a ligand, bound to a protein in the first
 simulation, and solvated in water, in the second --- as is the case for most
 free energy calculations that make use of a thermodynamic cycle, perturbation
 of intramolecular terms may, by and large, be safely
-avoided~\cite{Boresch1999}.
+avoided~\cite{Boresch1999}.  This property is controlled by the {\tt decouple} keyword described in  
 
 
 
@@ -275,7 +281,6 @@ this parameter between $a$ and $b$:
 
 Here, $N$ stands for the number of intermediate stages, or ``windows''
 between the initial and the final states --- see Figure~\ref{fig:overlap}.
-
 
 
 \subsubsection{Thermodynamic Integration }
@@ -427,11 +432,17 @@ avoiding overlap of unbounded electrostatic potentials consists of allowing a
 bounded (soft-core) vdW potential, using a positive value of {\tt
 fepVdWShiftCoeff/tiVdwShiftCoeff}, to repel first all overlapping particles at low values of
 $\lambda$. As $\lambda$ increases, once the particles are repelled, it becomes
-safe to turn on FEP or TI electrostatics. {\tt fepElecLambdaStart/tiElecLambdaStart} is the
-value of the $\lambda$ at which electrostatic interactions are turned on and
-linearly increased towards their nominal value. Below {\tt
-fepElecLambdaStart/tiElecLambdaStart}, electrostatic interactions are turned off for all
-incoming and outgoing particles.}
+safe to turn on FEP or TI electrostatics. 
+
+In the current implementation, the electrostatic interactions of an exnihilated, or appearing, particle are linearly coupled to the simulation over the $\lambda$ value range of {\tt fepElecLambdaStart/tiElecLambdaStart} -- 1.0. At $\lambda$ values less than or equal to the user-defined value of {\tt fepElecLambdaStart/tiElecLambdaStart}, electrostatic interactions of the exnihilated particle are fully decoupled from the simulation.  Coupling of electrostatic interactions then increases linearly for increasing values of $\lambda$ until $\lambda$=1.0, at which point electrostatic interactions of the exnihilated particle are fully coupled to the simulation.  
+
+For annihilated, or vanishing, particles the electrostatic interactions are linearly decoupled from the simulation over the $\lambda$ value range of 0 -- (1.0 - {\tt fepElecLambdaStart/tiElecLambdaStart}), such that at $\lambda$=0 electrostatic interactions are fully coupled to the simulation, and then linearly decreased with increasing $\lambda$ such that at $\lambda$ values greater than or equal to (1.0 - {\tt fepElecLambdaStart/tiElecLambdaStart}) electrostatic interactions are completely decoupled from the simulation.  Two examples, shown in Figure \ref{fig:softcore}, describe the relationship between the user-defined value of $\lambda$ and the coupling of electrostatic or vdW interactions to the simulation. }
+
+\begin{figure}
+  \center{\includegraphics[width=0.75\textwidth]{figures/softcore_lambda.pdf}}
+  \caption{Relationship of user-defined $\lambda$ to coupling of electrostatic or vdW interactions to a simulation, given specific values of {\tt elecLambdaStart} or {\tt vdwLambdaEnd}.}
+  \label{fig:softcore}
+\end{figure}
 
 \item
   \NAMDCONFWDEF {fepVdwLambdaEnd / tiVdwLambdaEnd}{Value of $\lambda$ to cancel van der Waals interactions}
@@ -440,7 +451,16 @@ incoming and outgoing particles.}
 {If the above {\tt fepElecLambdaStart/tiElecLambdaStart} option is being used, it may be further
 desirable to separate the scaling of van der Waals and electrostatic
 interactions. {\tt fepVdwLambdaEnd/tiVdwLambdaEnd} sets the value of $\lambda$ above which
-all vdW interactions are fully enabled.}
+all vdW interactions are fully enabled for exnihilated particles.
+
+For an exnihilated particle, vdW interactions are fully decoupled at $\lambda$=0.  The coupling of vdW interactions to the simulation is then increased with increasing values of $\lambda$ such that at values of $\lambda$ greater than or equal to {\tt fepVdwLambdaEnd/tiVdwLambdaEnd} the vdW interactions of the exnihilated particle are fully coupled to the simulation.
+
+For an annihilated particle, vdW interactions are completely coupled to the simulation at $\lambda$=0.  This coupling linearly decreases for $\lambda$ values between 1.0 and (1 - {\tt fepVdwLambdaEnd/tiVdwLambdaEnd}).  For $\lambda$ values greater than or equal to (1 - {\tt fepVdwLambdaEnd/tiVdwLambdaEnd}), vdW interactions of the annihilated particle are fully decoupled from the simulation.  
+}
+
+
+
+
 
 \item
   \NAMDCONFWDEF {decouple / decouple}{Disable scaling of nonbonded interactions within alchemical partitions}
