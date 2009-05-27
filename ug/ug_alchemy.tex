@@ -439,7 +439,7 @@ In the current implementation, the electrostatic interactions of an exnihilated,
 For annihilated, or vanishing, particles the electrostatic interactions are linearly decoupled from the simulation over the $\lambda$ value range of 0 -- (1.0 - {\tt fepElecLambdaStart/tiElecLambdaStart}). At $\lambda$=0 electrostatic interactions are fully coupled to the simulation, and then linearly decreased with increasing $\lambda$ such that at $\lambda$ values greater than or equal to (1.0 - {\tt fepElecLambdaStart/tiElecLambdaStart}) electrostatic interactions are completely decoupled from the simulation.  Two examples, shown in Figure \ref{fig:softcore}, describe the relationship between the user-defined value of $\lambda$ and the coupling of electrostatic or vdW interactions to the simulation. }
 
 \begin{figure}
-  \center{\includegraphics[width=0.75\textwidth]{figures/softcore_lambda.pdf}}
+  \center{\includegraphics[width=0.75\textwidth]{figures/softcore_lambda}}
   \caption{Relationship of user-defined $\lambda$ to coupling of electrostatic or vdW interactions to a simulation, given specific values of {\tt elecLambdaStart} or {\tt vdwLambdaEnd}.}
   \label{fig:softcore}
 \end{figure}
@@ -748,7 +748,7 @@ broader sense.
 
 %\begin{figure}[ht]
 \begin{figure}
-  \center{\includegraphics[width=0.75\textwidth]{figures/TI.pdf}}
+  \center{\includegraphics[width=0.75\textwidth]{figures/TI}}
   \caption{Sample TI data ($log(\left<\frac{\partial U}{\partial\lambda}\right>)$ against $\lambda$). The blue shaded
   area shows the integral with fine sampling close to the end point. The red area
   shows the difference when $\lambda$ values are more sparse. In this example,
