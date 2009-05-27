@@ -38,10 +38,14 @@ figures/shifting.pdf figures/switching.pdf figures/dual_top.pdf
 pdf:	$(DOCDIR)/ug.pdf
 
 ### run latex2html
-html:	$(DOCDIR)/ug.pdf
+html:	$(DOCDIR)/ug.tar.gz
+
+$(DOCDIR)/ug.tar.gz: $(DOCDIR)/ug.pdf
 	latex2html -local_icons -split 5 -toc_depth 4 -toc_stars \
 	-t "NAMD $(NAMD_VERSION) User's Guide" -address "namd@ks.uiuc.edu" \
 	-up_url "../../" -up_title "Main NAMD Page" ug
+	chmod -R a+rX ug
+	gtar czvf ug.tar.gz ug
 
 $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
@@ -115,4 +119,5 @@ clean:
 	$(DELETE) $(DOCDIR)/ug.ind ; \
 	$(DELETE) $(DOCDIR)/ug.toc ; \
 	$(DELETE) $(DOCDIR)/ug.pdf ; \
+	$(DELETE) $(DOCDIR)/ug.tar.gz; \
 #	$(DELETE) $(PDFFIGS)
