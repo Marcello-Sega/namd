@@ -9,6 +9,7 @@
 
 
 #include "charm++.h"
+#include "envelope.h"
 
 #include "main.h"
 #include "NamdTypes.h"
