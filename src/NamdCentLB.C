@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: bhatele $
- * $Date: 2008/11/05 22:47:46 $
- * $Revision: 1.88 $
+ * $Author: chaomei2 $
+ * $Date: 2009/06/02 16:39:58 $
+ * $Revision: 1.89 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -340,8 +340,10 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
 
   // dump patchSet
   for (i=0; i< numProcessors; i++) {
-      int num = processorArray[i].proxies.numElements();
-      fscanf(fp,"%d",&num);
+      int num, curp;
+      fscanf(fp,"%d %d: ",&curp, &num);
+      if(curp != i)
+	CmiAbort("Reading patchsSet error!");
       for (int j=0; j<num; j++) {
           int id;
           fscanf(fp,"%d",&id);
@@ -350,8 +352,10 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
   }
   // dump proxiesOn
   for (i=0; i<numPatches; i++)  {
-      int num;
-      fscanf(fp,"%d",&num);
+      int num, curp;
+      fscanf(fp,"%d %d: ",&curp, &num);
+      if(curp != i)
+	CmiAbort("Reading proxiesOn error!");
       for (int j=0; j<num; j++) {
           int id;
 	  fscanf(fp,"%d",&id);
