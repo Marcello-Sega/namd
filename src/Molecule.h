@@ -405,6 +405,10 @@ public:
   int numBonds;   //  Number of bonds calculated, including extras
   int numAngles;    //  Number of angles
   int numDihedrals; //  Number of dihedrals
+  int suspiciousAlchBonds;    //  angles dropped due to crossing FEP partitions
+  int alchDroppedAngles;    //  angles dropped due to crossing FEP partitions
+  int alchDroppedDihedrals; //  dihedrals dropped due to crossing FEP partitions
+  int alchDroppedImpropers; //  impropers dropped due to crossing FEP partitions
   int numImpropers; //  Number of impropers
   int numCrossterms; //  Number of cross-terms
   int numDonors;          //  Number of hydrogen bond donors
@@ -525,6 +529,7 @@ public:
 //fepb
         void build_fep_flags(StringList *, StringList *, PDB *, char *);
                                // selection of the mutant atoms
+        void delete_alch_bonded(void);
 //fepe
 
   void build_exPressure_atoms(StringList *, StringList *, PDB *, char *);

@@ -394,10 +394,24 @@ int NamdState::configListInit(ConfigList *cfgList) {
         if (simParameters->fepOn) {
            molecule->build_fep_flags(configList->find("fepfile"),
                 configList->find("fepcol"), pdb, NULL);
+#ifndef MEM_OPT_VERSION
+           molecule->delete_alch_bonded();
+#else
+           iout << iWARN << "ALCH: AUTOMATIC DELETION OF BONDED INTERACTIONS "
+           << "BETWEEN INITIAL AND FINAL GROUPS IS NOT SUPPORTED IN MEMORY "
+           << "OPTIMISED VERSION - MANUAL PROCESSING IS NECESSARY\n" << endi;
+#endif
         }
         if (simParameters->thermInt) {
            molecule->build_fep_flags(configList->find("tifile"),
                 configList->find("ticol"), pdb, NULL);
+#ifndef MEM_OPT_VERSION
+           molecule->delete_alch_bonded();
+#else
+           iout << iWARN << "ALCH: AUTOMATIC DELETION OF BONDED INTERACTIONS "
+           << "BETWEEN INITIAL AND FINAL GROUPS IS NOT SUPPORTED IN MEMORY "
+           << "OPTIMISED VERSION - MANUAL PROCESSING IS NECESSARY\n" << endi;
+#endif
         }
 //fepe
         if (simParameters->lesOn) {
@@ -484,10 +498,31 @@ int NamdState::configListInit(ConfigList *cfgList) {
 //Modifications for alchemical fep
 //SD & CC, CNRS - LCTN, Nancy
         if (simParameters->fepOn || simParameters->thermInt) {
-           iout << iINFO << molecule->numFepInitial <<
+          iout << iINFO << "ALCH: " 
+               << molecule->numFepInitial <<
                " ATOMS TO DISAPPEAR IN FINAL STATE\n";
-           iout << iINFO << molecule->numFepFinal <<
+           iout << iINFO << "ALCH: " 
+               <<  molecule->numFepFinal <<
                " ATOMS TO APPEAR IN FINAL STATE\n";
+           if (molecule->suspiciousAlchBonds) {
+             iout << iWARN << "ALCH: SUSPICIOUS BONDS BETWEEN INITIAL AND " <<
+             "FINAL GROUPS WERE FOUND" << "\n" << endi;
+           }
+           if (molecule->alchDroppedAngles) {
+             iout << iINFO << "ALCH: " 
+                 << molecule->alchDroppedAngles <<
+                 " ANGLES LINKING INITIAL AND FINAL ATOMS DELETED\n";
+           }
+           if (molecule->alchDroppedDihedrals) {
+             iout << iINFO << "ALCH: "
+                 << molecule->alchDroppedDihedrals <<
+                 " DIHEDRALS LINKING INITIAL AND FINAL ATOMS DELETED\n";
+           }
+           if (molecule->alchDroppedImpropers) {
+             iout << iINFO << "ALCH: "
+                 << molecule->alchDroppedImpropers <<
+                 " IMPROPERS LINKING INITIAL AND FINAL ATOMS DELETED\n";
+           }
         }
 //fepe
 

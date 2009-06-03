@@ -7617,6 +7617,114 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
 
 }
  // End of function build_fep_flags
+ 
+   //
+   //
+   //  FUNCTION delete_alch_bonded
+   //
+   // FB - Loop over bonds, angles, dihedrals and impropers, drop any that 
+   // contain atoms of both partitions 1 and 2
+   // 
+   // 
+
+#ifndef MEM_OPT_VERSION
+void Molecule::delete_alch_bonded(void)  {
+
+  // Bonds
+  suspiciousAlchBonds = 0;  // these really shouldn't exist...?
+  for (int i = 0; i < numBonds; i++) {
+    int part1 = fepAtomFlags[bonds[i].atom1];
+    int part2 = fepAtomFlags[bonds[i].atom2];
+    if ((part1 == 1 || part2 == 1 ) &&
+      (part1 == 2 || part2 == 2 )) {
+      //CkPrintf("-----BOND ATOMS %i %i partitions %i %i \n",bonds[i].atom1, bonds[i].atom2, part1, part2);
+      suspiciousAlchBonds++;
+    }
+  }
+
+  // Angles
+  Angle *nonalchAngles;
+  nonalchAngles = new Angle[numAngles];
+  int nonalchAngleCount = 0;
+  alchDroppedAngles = 0;
+  for (int i = 0; i < numAngles; i++) {
+    int part1 = fepAtomFlags[angles[i].atom1];
+    int part2 = fepAtomFlags[angles[i].atom2];
+    int part3 = fepAtomFlags[angles[i].atom3];
+    if ((part1 == 1 || part2 == 1 || part3 == 1) &&
+      (part1 == 2 || part2 == 2 || part3 == 2)) {
+      //CkPrintf("-----ANGLE ATOMS %i %i %i partitions %i %i %i\n",angles[i].atom1, angles[i].atom2, angles[i].atom3, part1, part2, part3);
+      alchDroppedAngles++;
+    }
+    else {
+      nonalchAngles[nonalchAngleCount++] = angles[i];
+    }
+  }
+  numAngles = nonalchAngleCount;
+  delete [] angles;
+  angles = new Angle[numAngles];
+  for (int i = 0; i < nonalchAngleCount; i++) {
+    angles[i]=nonalchAngles[i];
+  }
+  delete [] nonalchAngles;
+
+
+  // Dihedrals
+  Dihedral *nonalchDihedrals;
+  nonalchDihedrals = new Dihedral[numDihedrals];
+  int nonalchDihedralCount = 0;
+  alchDroppedDihedrals = 0;
+  for (int i = 0; i < numDihedrals; i++) {
+    int part1 = fepAtomFlags[dihedrals[i].atom1];
+    int part2 = fepAtomFlags[dihedrals[i].atom2];
+    int part3 = fepAtomFlags[dihedrals[i].atom3];
+    int part4 = fepAtomFlags[dihedrals[i].atom4];
+    if ((part1 == 1 || part2 == 1 || part3 == 1 || part4 == 1) &&
+      (part1 == 2 || part2 == 2 || part3 == 2 || part4 == 2)) {
+      //CkPrintf("-----i %i DIHEDRAL ATOMS %i %i %i %i partitions %i %i %i %i\n",i,dihedrals[i].atom1, dihedrals[i].atom2, dihedrals[i].atom3, dihedrals[i].atom4, part1, part2, part3,part4);
+      alchDroppedDihedrals++;
+    }
+    else {
+      nonalchDihedrals[nonalchDihedralCount++] = dihedrals[i];
+    }
+  }
+  numDihedrals = nonalchDihedralCount;
+  delete [] dihedrals;
+  dihedrals = new Dihedral[numDihedrals];
+  for (int i = 0; i < numDihedrals; i++) {
+    dihedrals[i]=nonalchDihedrals[i];
+  }
+  delete [] nonalchDihedrals;
+
+  // Impropers
+  Improper *nonalchImpropers;
+  nonalchImpropers = new Improper[numImpropers];
+  int nonalchImproperCount = 0;
+  alchDroppedImpropers = 0;
+  for (int i = 0; i < numImpropers; i++) {
+    int part1 = fepAtomFlags[impropers[i].atom1];
+    int part2 = fepAtomFlags[impropers[i].atom2];
+    int part3 = fepAtomFlags[impropers[i].atom3];
+    int part4 = fepAtomFlags[impropers[i].atom4];
+    if ((part1 == 1 || part2 == 1 || part3 == 1 || part4 == 1) &&
+      (part1 == 2 || part2 == 2 || part3 == 2 || part4 == 2)) {
+      //CkPrintf("-----i %i IMPROPER ATOMS %i %i %i %i partitions %i %i %i %i\n",i,impropers[i].atom1, impropers[i].atom2, impropers[i].atom3, impropers[i].atom4, part1, part2, part3,part4);
+      alchDroppedImpropers++;
+    }
+    else {
+      nonalchImpropers[nonalchImproperCount++] = impropers[i];
+    }
+  }
+  numImpropers = nonalchImproperCount;
+  delete [] impropers;
+  impropers = new Improper[numImpropers];
+  for (int i = 0; i < numImpropers; i++) {
+    impropers[i]=nonalchImpropers[i];
+  }
+  delete [] nonalchImpropers;
+  
+} // end delete_alch_bonded
+#endif  
 
 //fepe
 
