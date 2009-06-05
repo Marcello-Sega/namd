@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: brunner $
- * $Date: 2009/05/12 18:21:21 $
- * $Revision: 1.1276 $
+ * $Author: char $
+ * $Date: 2009/06/05 00:30:32 $
+ * $Revision: 1.1277 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3205,9 +3205,17 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
           << lambda2 << "\n";
      iout << iINFO << "FEP VDW SHIFTING COEFFICIENT "
           << fepVdwShiftCoeff << "\n";
-     iout << iINFO << "FEP ELEC. ACTIVE BETWEEN LAMBDA = "
+     iout << iINFO << "FEP ELEC. ACTIVE FOR ANNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
+          << (1 - fepElecLambdaStart) << "\n";
+     iout << iINFO << "FEP ELEC. ACTIVE FOR EXNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = "
           << fepElecLambdaStart << " AND LAMBDA = 1\n";
-     iout << iINFO << "FEP VDW ACTIVE BETWEEN LAMBDA = 0 AND LAMBDA = "
+     iout << iINFO << "FEP VDW ACTIVE FOR ANNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = "
+          << (1 - fepVdwLambdaEnd) << " AND LAMBDA = 1\n";
+     iout << iINFO << "FEP VDW ACTIVE FOR EXNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
           << fepVdwLambdaEnd << "\n";
    }
 //fepe
@@ -3219,9 +3227,17 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
           << lambda << "\n";
      iout << iINFO << "TI VDW SHIFTING COEFFICIENT "
           << tiVdwShiftCoeff << "\n";
-     iout << iINFO << "TI ELEC. ACTIVE BETWEEN LAMBDA = "
+     iout << iINFO << "TI ELEC. ACTIVE FOR ANNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
+          << (1 - tiElecLambdaStart) << "\n";
+     iout << iINFO << "TI ELEC. ACTIVE FOR EXNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = "
           << tiElecLambdaStart << " AND LAMBDA = 1\n";
-     iout << iINFO << "TI VDW ACTIVE BETWEEN LAMBDA = 0 AND LAMBDA = "
+     iout << iINFO << "TI VDW ACTIVE FOR ANNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = "
+          << (1 - tiVdwLambdaEnd) << " AND LAMBDA = 1\n";
+     iout << iINFO << "TI VDW ACTIVE FOR EXNIHILATED "
+          << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
           << tiVdwLambdaEnd << "\n";
    }
 
