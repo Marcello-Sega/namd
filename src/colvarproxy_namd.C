@@ -134,10 +134,10 @@ void colvarproxy_namd::calculate()
           found_total_force = true;
           Vector const &namd_force = *f_i;
           total_forces[i] = cvm::rvector (namd_force.x, namd_force.y, namd_force.z);
-                     if (cvm::debug()) 
-                       cvm::log ("Found the total force of atom "+
-                                 cvm::to_str (colvars_atoms[i]+1)+", which is "+
-                                 cvm::to_str (total_forces[i])+".\n");
+//                     if (cvm::debug()) 
+//                       cvm::log ("Found the total force of atom "+
+//                                 cvm::to_str (colvars_atoms[i]+1)+", which is "+
+//                                 cvm::to_str (total_forces[i])+".\n");
           break;
         }
       }
@@ -170,10 +170,10 @@ void colvarproxy_namd::calculate()
 
   // NAMD does not properly destruct GlobalMaster objects at the end
   // of the job
-  //if (colvars->it >= (colvars->it_restart + simparams->N)) {
-  //  if (cvm::debug())
-  //    iout << "Info: Deallocating the colvar module object.\n" << endi;
-  //  colvars->finalise();
+  if (colvars->it >= (colvars->it_restart + simparams->N)) {
+    if (cvm::debug())
+      iout << "Info: Deallocating the colvar module object.\n" << endi;
+    colvars->finalise();
   //}
 
   // increment the step number: XX TODO: syncronise with NAMD's counter?
