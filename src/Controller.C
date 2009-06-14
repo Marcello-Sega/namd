@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2009/03/26 21:05:21 $
- * $Revision: 1.1236 $
+ * $Author: petefred $
+ * $Date: 2009/06/14 01:23:48 $
+ * $Revision: 1.1237 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -666,6 +666,7 @@ void Controller::langevinPiston1(int step)
       } else {
 	strainRate += f2 * Tensor::identity(random->gaussian());
       }
+
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "applying langevin, strain rate: " << strainRate << "\n";
 #endif
@@ -681,6 +682,13 @@ void Controller::langevinPiston1(int step)
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
       ( controlPressure - ptarget );
+
+    if (simParams->fixCellDims) {
+      if (simParams->fixCellDimX) strainRate.xx = 0;
+      if (simParams->fixCellDimY) strainRate.yy = 0;
+      if (simParams->fixCellDimZ) strainRate.zz = 0;
+    }
+
 
 #ifdef DEBUG_PRESSURE
     iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
@@ -727,8 +735,14 @@ void Controller::langevinPiston1(int step)
       iout << "strain rate: " << strainRate << "\n";
 #endif
     }
+    if (simParams->fixCellDims) {
+      if (simParams->fixCellDimX) strainRate.xx = 0;
+      if (simParams->fixCellDimY) strainRate.yy = 0;
+      if (simParams->fixCellDimZ) strainRate.zz = 0;
+    }
 
   }
+
 }
 
 void Controller::langevinPiston2(int step)
@@ -777,6 +791,7 @@ void Controller::langevinPiston2(int step)
 
     strainRate += ( 0.5 * dt * cellDims * state->lattice.volume() / mass ) *
       ( controlPressure - ptarget );
+
  
 #ifdef DEBUG_PRESSURE
     iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
@@ -809,7 +824,14 @@ void Controller::langevinPiston2(int step)
 #ifdef DEBUG_PRESSURE
     iout << iINFO << "exiting langevinPiston2, strain rate: " << strainRate << "\n";
 #endif
+    if (simParams->fixCellDims) {
+      if (simParams->fixCellDimX) strainRate.xx = 0;
+      if (simParams->fixCellDimY) strainRate.yy = 0;
+      if (simParams->fixCellDimZ) strainRate.zz = 0;
+    }
   }
+
+
 }
 
 void Controller::rescaleVelocities(int step)
@@ -1061,7 +1083,7 @@ void Controller::receivePressure(int step, int minimize)
     if ( (volume=lattice.volume()) != 0. )
     {
 
-      if (simParameters->wattailcorr) {
+      if (simParameters->LJcorrection) {
         // Apply tail correction to pressure
         //printf("Volume is %f\n", volume);
         //printf("Applying tail correction of %f to virial\n", molecule->tail_corr_virial / volume);
@@ -1120,6 +1142,12 @@ void Controller::receivePressure(int step, int minimize)
       controlPressure_slow = pressure_slow;
       controlPressure = pressure;
       controlNumDegFreedom = numDegFreedom / 3;
+    }
+
+    if (simParameters->fixCellDims) {
+      if (simParameters->fixCellDimX) controlNumDegFreedom -= 1;
+      if (simParameters->fixCellDimY) controlNumDegFreedom -= 1;
+      if (simParameters->fixCellDimZ) controlNumDegFreedom -= 1;
     }
 
     if ( simParameters->useFlexibleCell ) {
@@ -1365,7 +1393,7 @@ void Controller::printEnergies(int step, int minimize)
 //fepe
     }
 
-    if (simParameters->wattailcorr) {
+    if (simParameters->LJcorrection) {
       // Apply tail correction to energy
       //printf("Volume is %f\n", volume);
       //printf("Applying tail correction of %f to energy\n", molecule->tail_corr_ener / volume);

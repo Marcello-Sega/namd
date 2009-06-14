@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2009/02/20 17:28:39 $
- * $Revision: 1.1151 $
+ * $Author: petefred $
+ * $Date: 2009/06/14 01:23:50 $
+ * $Revision: 1.1152 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -84,8 +84,7 @@ public:
 
   int watmodel; // integer code for the water model in use
                 // choices are defined in common.h
-  Bool wattailcorr; // flag for whether water tail corrections should be used
-  char dummy;
+  Bool LJcorrection; // flag for whether water tail corrections should be used
 	BigReal dt;	   		//  Timestep size
 	int N;		   		//  Number of steps to be performed
 	int stepsPerCycle;		//  Number of timesteps per cycle
@@ -375,6 +374,11 @@ public:
 	Bool useFlexibleCell;		//  Use anisotropic cell fluctuations
 	Bool useConstantArea;		//  x,y dimensions fixed.
 	Bool useConstantRatio;		//  x,y ratio fixed.
+
+  Bool fixCellDims; // fix the cell dimensions
+  Bool fixCellDimX;
+  Bool fixCellDimY;
+  Bool fixCellDimZ;
 
 	Bool berendsenPressureOn;	//  Berendsen pressure bath
 	BigReal berendsenPressureTarget;

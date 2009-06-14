@@ -192,10 +192,10 @@ public:
 	int NumDihedralParams;			//  Number of dihedral params
 	int NumImproperParams;			//  Number of improper params
 	int NumCrosstermParams;			//  Number of cross-term params
-private:
 	int NumVdwParams;			//  Number of vdw parameters
-        int NumVdwParamsAssigned;               //  Number actually assigned
+  int NumVdwParamsAssigned;               //  Number actually assigned
 	int NumVdwPairParams;			//  Number of vdw_pair params
+private:
 	ResizeArray<char *> error_msgs;		//  Avoids repeating warnings
 
 	int *maxDihedralMults;			//  Max multiplicity for
@@ -402,19 +402,34 @@ public:
 
 	void get_vdw_params(Real *sigma, Real *epsilon, Real *sigma14, 
 			    Real *epsilon14, Index index)
-	{
-	    if ( vdw_array ) {
-		*sigma = vdw_array[index].sigma;
-		*epsilon = vdw_array[index].epsilon;
-		*sigma14 = vdw_array[index].sigma14;
-		*epsilon14 = vdw_array[index].epsilon14;
-	    } else {
-		*sigma = 0.;
-		*epsilon = 0.;
-		*sigma14 = 0.;
-		*epsilon14 = 0.;
-	    }
-	}
+  {
+    if ( vdw_array ) {
+      *sigma = vdw_array[index].sigma;
+      *epsilon = vdw_array[index].epsilon;
+      *sigma14 = vdw_array[index].sigma14;
+      *epsilon14 = vdw_array[index].epsilon14;
+    } else {
+      // sigma and epsilon from A and B for each vdw type's interaction with itself
+      Real A; Real B; Real A14; Real B14;
+      if (get_vdw_pair_params(index, index, &A, &B, &A14, &B14) ) {
+        if (A && B) {
+          *sigma = sqrt(cbrt(A)) / sqrt(cbrt(B));
+          *epsilon = B*B / (4*A);
+        }
+        else {
+          *sigma = 0; *epsilon = 0;
+        }
+        if (A14 && B14) {
+          *sigma14 = sqrt(cbrt(A14)) / sqrt(cbrt(B14));
+          *epsilon14 = B14*B14 / (4*A14);
+        }
+        else {
+          *sigma14 = 0; *epsilon14 = 0;
+        }
+      }
+      else {NAMD_die ("Function get_vdw_params failed to derive Lennard-Jones sigma and epsilon from A and B values\n");}
+    }
+  }
 
 	int get_vdw_pair_params(Index ind1, Index ind2, Real *, Real *, Real *, Real *);
 						//  Find a vwd_pair parameter

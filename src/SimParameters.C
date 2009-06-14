@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2009/06/05 00:30:32 $
- * $Revision: 1.1277 $
+ * $Author: petefred $
+ * $Date: 2009/06/14 01:23:49 $
+ * $Revision: 1.1278 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -141,6 +141,10 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_BOOL("useGroupPressure",useGroupPressure)
   SCRIPT_PARSE_BOOL("useFlexibleCell",useFlexibleCell)
   SCRIPT_PARSE_BOOL("useConstantArea",useConstantArea)
+  SCRIPT_PARSE_BOOL("fixCellDims",fixCellDims)
+  SCRIPT_PARSE_BOOL("fixCellDimX",fixCellDimX)
+  SCRIPT_PARSE_BOOL("fixCellDimY",fixCellDimY)
+  SCRIPT_PARSE_BOOL("fixCellDimZ",fixCellDimZ)
   SCRIPT_PARSE_BOOL("useConstantRatio",useConstantRatio)
   SCRIPT_PARSE_BOOL("LangevinPiston",langevinPistonOn)
   SCRIPT_PARSE_MOD_FLOAT("LangevinPistonTarget",
@@ -443,7 +447,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.optionalB("main", "outputPatchDetails", "print number of atoms in each patch",
       &outputPatchDetails, FALSE);
    opts.optional("main", "waterModel", "Water model to use", PARSE_STRING);
-   opts.optionalB("main", "waterTailCorr", "Apply VDW tail corrections to water", &wattailcorr, FALSE);
+   opts.optionalB("main", "LJcorrection", "Apply analytical tail corrections for energy and virial", &LJcorrection, FALSE);
 }
 
 void SimParameters::config_parser_fileio(ParseOptions &opts) {
@@ -866,6 +870,21 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optionalB("main", "useFlexibleCell",
       "Use anisotropic cell fluctuation for pressure control?",
       &useFlexibleCell, FALSE);
+
+   // Fix specific cell dimensions
+   opts.optionalB("main", "fixCellDims",
+      "Fix some cell dimensions?",
+      &fixCellDims, FALSE);
+
+   opts.optionalB("fixCellDims", "fixCellDimX",
+      "Fix the X dimension?",
+      &fixCellDimX, FALSE);
+   opts.optionalB("fixCellDims", "fixCellDimY",
+      "Fix the Y dimension?",
+      &fixCellDimY, FALSE);
+   opts.optionalB("fixCellDims", "fixCellDimZ",
+      "Fix the Z dimension?",
+      &fixCellDimZ, FALSE);
 
    ////  Constant dimension ratio in X-Y plane
    opts.optionalB("main", "useConstantRatio",
@@ -1859,7 +1878,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (opts.defined("drude")) {
      watmodel = WAT_SWM4;
    }
-
+   
 
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))

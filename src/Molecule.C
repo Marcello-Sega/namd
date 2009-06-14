@@ -8228,6 +8228,148 @@ void Molecule::build_atom_status(void) {
       }
     } // for numAtoms
   } // if SWM4
+
+  // set up tail corrections if desired
+  if (simParams->LJcorrection) {
+
+      // long-range dispersion correction (FB)
+      // Allen and Tildesley, Computer Simulation of Liquids, 1991
+      // integrated for NAMD's LJ switch function
+      
+      // Average values for all particles in the system will be
+      // used, as per J Phys Chem B. 2007 111:13052
+
+      // first calculate average A and B coefficients
+
+      int LJtypecount = params->get_num_vdw_params();
+
+      Real A; Real B;
+      Real A14; Real B14;
+      Real sigma_i, sigma_i14, epsilon_i, epsilon_i14;
+      Real sigma_j, sigma_j14, epsilon_j, epsilon_j14;
+      Real *ATable = new Real[LJtypecount*LJtypecount];
+      Real *BTable = new Real[LJtypecount*LJtypecount];
+      int useGeom = simParams->vdwGeometricSigma;
+      for (i = 0; i < LJtypecount; i++) {
+        for (int j = 0; j < LJtypecount; j++) {
+          // A and B calculation code coped from LJTable.C
+          if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14)) {
+            ATable[i*LJtypecount + j] = A;
+            BTable[i*LJtypecount + j] = B;
+          }
+          else {
+            params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
+                &epsilon_i14,i);
+            params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
+                &epsilon_j14,j);
+            BigReal sigma_ij =
+              useGeom ? sqrt(sigma_i*sigma_j) : 0.5*(sigma_i+sigma_j);
+            BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
+            sigma_ij *= sigma_ij*sigma_ij;
+            sigma_ij *= sigma_ij;
+
+            ATable[i*LJtypecount + j] = 4.0 * sigma_ij * epsilon_ij * sigma_ij;
+            BTable[i*LJtypecount + j] = 4.0 * sigma_ij * epsilon_ij;
+          }
+        }
+      }
+
+      int numAtomsByLjType[LJtypecount];
+      for (i = 0; i < LJtypecount; i++) {numAtomsByLjType[i]=0;}
+      for (i = 0; i < numAtoms;  i++) {numAtomsByLjType[atoms[i].vdw_type] ++;}
+
+      BigReal sumOfAs = 0; BigReal sumOfBs = 0; int count = 0;
+      for (i = 0;  i < LJtypecount;  i++) {
+        if (numAtomsByLjType[i]) {
+          for (int j = 0;  j < LJtypecount;  j++) {
+            if (i == j) {
+              sumOfAs += (numAtomsByLjType[i] - 1) * numAtomsByLjType[j] * ATable[i*LJtypecount + j];
+              sumOfBs += (numAtomsByLjType[i] - 1) * numAtomsByLjType[j] * BTable[i*LJtypecount + j];
+              count += (numAtomsByLjType[i] - 1) * numAtomsByLjType[j];
+            }
+            else {
+              sumOfAs += (numAtomsByLjType[i]) * numAtomsByLjType[j] * ATable[i*LJtypecount + j];
+              sumOfBs += (numAtomsByLjType[i]) * numAtomsByLjType[j] * BTable[i*LJtypecount + j];
+              count += (numAtomsByLjType[i]) * numAtomsByLjType[j];
+            }
+          }
+        }
+      }
+      delete [] ATable;
+      delete [] BTable;
+
+      // this naive algorithm (time-consuming n*(n-1)/2) gives the same result
+      //BigReal sumOfBs = 0; int count = 0;
+      //for (i = 0;  i < numAtoms;  i++) {
+      //  for (int j = i + 1; j < numAtoms; j++) {
+      //    [get A and B];
+      //    sumOfAs += A;
+      //    sumOfBs += B;
+      //    count ++;
+      //  }
+      //}
+
+
+      // discard modified / excluded pairings
+      // should be negligible but more correct
+
+      for (i=0; i < numExclusions; i++) {
+        int a1 = exclusions[i].atom1;
+        int a2 = exclusions[i].atom2;
+        if (a1 != a2) { 
+          // A and B calculation copied from LJTable.C
+          if (params->get_vdw_pair_params(atoms[a1].vdw_type,atoms[a2].vdw_type, 
+                &A, &B, &A14, &B14)) {
+            sumOfAs -= A;
+            sumOfBs -= B;
+          }
+          else {
+            params->get_vdw_params(&sigma_i, &epsilon_i, &sigma_i14,
+                &epsilon_i14,atoms[a1].vdw_type);
+            params->get_vdw_params(&sigma_j, &epsilon_j, &sigma_j14, 
+                &epsilon_j14,atoms[a2].vdw_type);
+            BigReal sigma_ij =
+              useGeom ? sqrt(sigma_i*sigma_j) : 0.5*(sigma_i+sigma_j);
+            BigReal epsilon_ij = sqrt(epsilon_i*epsilon_j);
+
+            sigma_ij *= sigma_ij*sigma_ij;
+            sigma_ij *= sigma_ij;
+            sumOfAs -= 4.0 * sigma_ij * epsilon_ij * sigma_ij;
+            sumOfBs -= 4.0 * sigma_ij * epsilon_ij;
+          }
+          count -= 1;
+        }
+      }
+
+      BigReal LJAvgA = sumOfAs / count;
+      BigReal LJAvgB = sumOfBs / count;
+      if ( ! CkMyPe() ) {
+        iout << iINFO << "LONG-RANGE LJ: APPLYING ANALYTICAL CORRECTIONS TO "
+          << "ENERGY AND PRESSURE\n" << endi; 
+        iout << iINFO << "LONG-RANGE LJ: AVERAGE A AND B COEFFICIENTS " 
+          << LJAvgA << " AND " << LJAvgB << "\n" << endi; 
+      }
+
+      BigReal rcut = simParams->cutoff;
+      BigReal rcut2= rcut * rcut;
+      BigReal rcut3= rcut2 * rcut;
+      BigReal rcut4= rcut2 * rcut2;
+      BigReal rcut5= rcut2 * rcut3;
+      BigReal rswitch = simParams->switchingDist;
+      BigReal rswitch2 = rswitch * rswitch;
+      BigReal rswitch3 = rswitch2 * rswitch;
+      BigReal rswitch4 = rswitch2 * rswitch2;
+      BigReal rswitch5 = rswitch2 * rswitch3;
+
+      if (simParams->switchingActive) {
+        tail_corr_ener = tail_corr_virial = (16*numAtoms*numAtoms*PI*(-105*LJAvgB*rcut5*rswitch5 + LJAvgA*(3*rcut4 + 9*rcut3*rswitch + 11*rcut2*rswitch2 + 9*rcut*rswitch3 + 3*rswitch4)))/(315*rcut5*rswitch5*((rcut + rswitch)*(rcut + rswitch)*(rcut + rswitch)));
+      }
+      else {
+        tail_corr_virial = -4 * numAtoms * numAtoms * PI * (3 * LJAvgB * rcut3 * rcut3 - 2 * LJAvgA) / (9 * rcut3 * rcut3 * rcut3);
+        tail_corr_ener = 2 * numAtoms * numAtoms * PI * (LJAvgA - 3 * LJAvgB * rcut3 * rcut3) / (9 * rcut3 * rcut3 * rcut3); 
+      }
+
+    } // LJcorrection 
 #endif
 
   #if 0 
