@@ -174,7 +174,7 @@ void colvarproxy_namd::calculate()
     if (cvm::debug())
       iout << "Info: Deallocating the colvar module object.\n" << endi;
     colvars->finalise();
-  //}
+  }
 
   // increment the step number: XX TODO: syncronise with NAMD's counter?
   (colvars->it)++;
