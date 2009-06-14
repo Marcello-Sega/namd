@@ -268,9 +268,9 @@ private:
   float *work;
 #endif
 
-  int fepOn, thermInt, lesOn, lesFactor, pairOn, selfOn, numGrids;
-  int decouple;
-  BigReal fepElecLambdaStart;
+  int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
+  int alchDecouple;
+  BigReal alchElecLambdaStart;
   BigReal elecLambdaUp;
   BigReal elecLambdaDown;
 
@@ -379,14 +379,15 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   SimParameters *simParams = Node::Object()->simParameters;
   PatchMap *patchMap = PatchMap::Object();
 
-  fepOn = simParams->fepOn;
-  thermInt = simParams->thermInt;
-  decouple = (fepOn || thermInt) && (simParams->decouple);
-  fepElecLambdaStart = (fepOn || thermInt) ? simParams->fepElecLambdaStart : 0;
-  if (fepOn || thermInt) {
+  alchFepOn = simParams->alchFepOn;
+  alchThermIntOn = simParams->alchThermIntOn;
+  alchDecouple = (alchFepOn || alchThermIntOn) && (simParams->alchDecouple);
+  alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? 
+    simParams->alchElecLambdaStart : 0;
+  if (alchFepOn || alchThermIntOn) {
     numGrids = 2;
-    if (decouple) numGrids += 2;
-    if (fepElecLambdaStart || thermInt) numGrids ++;
+    if (alchDecouple) numGrids += 2;
+    if (alchElecLambdaStart || alchThermIntOn) numGrids ++;
   }
   else numGrids = 1;
   lesOn = simParams->lesOn;
@@ -1357,15 +1358,16 @@ ComputePme::ComputePme(ComputeID c) :
 
   SimParameters *simParams = Node::Object()->simParameters;
 
-  fepOn = simParams->fepOn;
-  thermInt = simParams->thermInt;
-  decouple = (fepOn || thermInt) && (simParams->decouple);
-  fepElecLambdaStart = (fepOn || thermInt) ? simParams->fepElecLambdaStart : 0;
+  alchFepOn = simParams->alchFepOn;
+  alchThermIntOn = simParams->alchThermIntOn;
+  alchDecouple = (alchFepOn || alchThermIntOn) && (simParams->alchDecouple);
+  alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? 
+    simParams->alchElecLambdaStart : 0;
             
-  if (fepOn || thermInt) {
+  if (alchFepOn || alchThermIntOn) {
     numGrids = 2;
-    if (decouple) numGrids += 2;
-    if (fepElecLambdaStart || thermInt) numGrids ++;
+    if (alchDecouple) numGrids += 2;
+    if (alchElecLambdaStart || alchThermIntOn) numGrids ++;
   }
   else numGrids = 1;
   lesOn = simParams->lesOn;
@@ -1482,7 +1484,7 @@ void ComputePme::doWork()
   }
 
   // copy to other grids if needed
-  if ( ((fepOn || thermInt) && (!decouple)) || lesOn ) {
+  if ( ((alchFepOn || alchThermIntOn) && (!alchDecouple)) || lesOn ) {
     for ( g=0; g<numGrids; ++g ) {
 #ifdef NETWORK_PROGRESS
       CmiNetworkProgress();
@@ -1500,7 +1502,7 @@ void ComputePme::doWork()
       }
       numGridAtoms[g] = nga;
     }
-  } else if ( (fepOn || thermInt) && decouple) {
+  } else if ( (alchFepOn || alchThermIntOn) && alchDecouple) {
     // alchemical decoupling: four grids
     // g=0: partition 0 and partition 1
     // g=1: partition 0 and partition 2
@@ -1536,7 +1538,7 @@ void ComputePme::doWork()
       numGridAtoms[g] = nga;
     }
     for (g=4 ; g<numGrids ; ++g ) {  // only non-alchemical atoms 
-      // numGrids=5 only if fepElecLambdaStart > 0
+      // numGrids=5 only if alchElecLambdaStart > 0
 #ifdef NETWORK_PROGRESS
       CmiNetworkProgress();
 #endif
@@ -1952,7 +1954,7 @@ void ComputePme::ungridForces() {
     Vector *localResults = new Vector[numLocalAtoms*
 					((numGrids>1 || selfOn)?2:1)];
     Vector *gridResults;
-    if ( fepOn || thermInt || lesOn || selfOn || pairOn ) {
+    if ( alchFepOn || alchThermIntOn || lesOn || selfOn || pairOn ) {
       for(int i=0; i<numLocalAtoms; ++i) { localResults[i] = 0.; }
       gridResults = localResults + numLocalAtoms;
     } else {
@@ -1972,22 +1974,21 @@ void ComputePme::ungridForces() {
       delete myRealSpace[g];
       scale_forces(gridResults, numGridAtoms[g], lattice);
 
-      if ( fepOn || thermInt ) {
+      if ( alchFepOn || alchThermIntOn ) {
         double scale = 1.;
-        elecLambdaUp =  (simParams->lambda <= fepElecLambdaStart)? 0. : \
-          (simParams->lambda - fepElecLambdaStart) / (1. - fepElecLambdaStart);
-        elecLambdaDown =  ((1-simParams->lambda) <= fepElecLambdaStart)? 0. : \
-          ((1-simParams->lambda) - fepElecLambdaStart) / (1. - fepElecLambdaStart);
+        elecLambdaUp =  (simParams->alchLambda <= alchElecLambdaStart)? 0. : \
+          (simParams->alchLambda - alchElecLambdaStart) / (1. - alchElecLambdaStart);
+        elecLambdaDown =  ((1-simParams->alchLambda) <= alchElecLambdaStart)? 0. : ((1-simParams->alchLambda) - alchElecLambdaStart) / (1. - alchElecLambdaStart);
         if ( g == 0 ) scale = elecLambdaUp;
         else if ( g == 1 ) scale = elecLambdaDown;
         else if ( g == 2 ) scale = (elecLambdaUp + elecLambdaDown - 1)*(-1);
-        if (decouple) {
+        if (alchDecouple) {
           if ( g == 2 ) scale = 1 - elecLambdaUp;
           else if ( g == 3 ) scale = 1 - elecLambdaDown;
           else if ( g == 4 ) scale = (elecLambdaUp + elecLambdaDown - 1)*(-1);
         }
         int nga = 0;
-        if (!decouple) {
+        if (!alchDecouple) {
           for(int i=0; i<numLocalAtoms; ++i) {
             if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
               // (g=2: only partition 0)
@@ -1995,7 +1996,7 @@ void ComputePme::ungridForces() {
             }
           }
         }
-        else {  // decouple
+        else {  // alchDecouple
           if ( g < 2 ) {
             for(int i=0; i<numLocalAtoms; ++i) {
               if ( localPartition[i] == 0 || localPartition[i] == (g+1) ) {
@@ -2018,9 +2019,9 @@ void ComputePme::ungridForces() {
         }
       } else if ( lesOn ) {
         double scale = 1.;
-        if ( fepOn ) {
-          if ( g == 0 ) scale = simParams->lambda;
-          else if ( g == 1 ) scale = 1. - simParams->lambda;
+        if ( alchFepOn ) {
+          if ( g == 0 ) scale = simParams->alchLambda;
+          else if ( g == 1 ) scale = 1. - simParams->alchLambda;
         } else if ( lesOn ) {
           scale = 1.0 / (double)lesFactor;
         }
@@ -2102,11 +2103,11 @@ void ComputePme::ungridForces() {
 
     for ( g=0; g<numGrids; ++g ) {
       double scale = 1.;
-      if ( fepOn || thermInt ) {
+      if ( alchFepOn || alchThermIntOn ) {
         if ( g == 0 ) scale = elecLambdaUp;
         else if ( g == 1 ) scale = elecLambdaDown;
         else if ( g == 2 ) scale = (elecLambdaUp + elecLambdaDown - 1)*(-1);
-        if (decouple) {
+        if (alchDecouple) {
           if ( g == 2 ) scale = 1-elecLambdaUp;
           else if ( g == 3 ) scale = 1-elecLambdaDown;
           else if ( g == 4 ) scale = (elecLambdaUp + elecLambdaDown - 1)*(-1);
@@ -2129,25 +2130,25 @@ void ComputePme::ungridForces() {
 
       double scale2 = 0.;
 
-      //fepElecLambdaStart = (fepOn || thermInt) ? simParams->fepElecLambdaStart : 0;
+      //alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? simParams->alchElecLambdaStart : 0;
 
-      if (fepOn) {
-        BigReal elecLambda2Up =  (simParams->lambda2 <= fepElecLambdaStart)? 0. : \
-              (simParams->lambda2 - fepElecLambdaStart) / (1. - fepElecLambdaStart);
-        BigReal elecLambda2Down =  ((1-simParams->lambda2) <= fepElecLambdaStart)? 0. : \
-              ((1-simParams->lambda2) - fepElecLambdaStart) / (1. - fepElecLambdaStart);
+      if (alchFepOn) {
+        BigReal elecLambda2Up =  (simParams->alchLambda2 <= alchElecLambdaStart)? 0. : \
+              (simParams->alchLambda2 - alchElecLambdaStart) / (1. - alchElecLambdaStart);
+        BigReal elecLambda2Down =  ((1-simParams->alchLambda2) <= alchElecLambdaStart)? 0. : \
+              ((1-simParams->alchLambda2) - alchElecLambdaStart) / (1. - alchElecLambdaStart);
         
         
         if ( g == 0 ) scale2 = elecLambda2Up;
         else if ( g == 1 ) scale2 = elecLambda2Down;
         else if ( g == 2 ) scale2 = (elecLambda2Up + elecLambda2Down - 1)*(-1);
-        if (decouple && g == 2 ) scale2 = 1 - elecLambda2Up;
-        else if (decouple && g == 3 ) scale2 = 1 - elecLambda2Down;
-        else if (decouple && g == 4 ) scale2 = (elecLambda2Up + elecLambda2Down - 1)*(-1);
+        if (alchDecouple && g == 2 ) scale2 = 1 - elecLambda2Up;
+        else if (alchDecouple && g == 3 ) scale2 = 1 - elecLambda2Down;
+        else if (alchDecouple && g == 4 ) scale2 = (elecLambda2Up + elecLambda2Down - 1)*(-1);
       }
       reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += evir[g][0] * scale2;
       
-      if (thermInt) {
+      if (alchThermIntOn) {
         
         // no decoupling:
         // part. 1 <-> all of system except partition 2: g[0] - g[2] 
@@ -2162,7 +2163,7 @@ void ComputePme::ungridForces() {
         // U = elecLambdaDown * (U[1] - U[2])
         // dU/dl = U[1] - U[2];
 
-        // decouple:
+        // alchDecouple:
         // part. 1 <-> part. 0: g[0] - g[2] - g[4] 
         // (interactions between all atoms [partition 0 OR partition 1]
         // minus all [within partition 1] minus all [within partition 0]
@@ -2178,11 +2179,11 @@ void ComputePme::ungridForces() {
         
         if ( g == 0 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_1) += evir[g][0];
         if ( g == 1 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_2) += evir[g][0];
-        if (!decouple) {
+        if (!alchDecouple) {
           if ( g == 2 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_1) -= evir[g][0];
           if ( g == 2 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_2) -= evir[g][0];
         }
-        else {  // decouple
+        else {  // alchDecouple
           if ( g == 2 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_1) -= evir[g][0];
           if ( g == 3 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_2) -= evir[g][0];
           if ( g == 4 ) reduction->item(REDUCTION_ELECT_ENERGY_PME_TI_1) -= evir[g][0];

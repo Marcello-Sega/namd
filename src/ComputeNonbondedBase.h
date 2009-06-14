@@ -323,38 +323,38 @@ void ComputeNonbondedUtil :: NAME
     const BigReal switchdist2 = ComputeNonbondedUtil::switchOn2;
     const BigReal cutoff2 = ComputeNonbondedUtil::cutoff2;
     const BigReal switchfactor = 1./((cutoff2 - switchdist2)*(cutoff2 - switchdist2)*(cutoff2 - switchdist2));
-    const BigReal fepElecLambdaStart = ComputeNonbondedUtil::fepElecLambdaStart;
-    const BigReal fepVdwLambdaEnd = ComputeNonbondedUtil::fepVdwLambdaEnd;
-    const BigReal fepVdwShiftCoeff = ComputeNonbondedUtil::fepVdwShiftCoeff;
+    const BigReal alchElecLambdaStart = ComputeNonbondedUtil::alchElecLambdaStart;
+    const BigReal alchVdwLambdaEnd = ComputeNonbondedUtil::alchVdwLambdaEnd;
+    const BigReal alchVdwShiftCoeff = ComputeNonbondedUtil::alchVdwShiftCoeff;
 
     /*lambda values 'up' are for atoms scaled up with lambda (partition 1)*/
-    BigReal lambdaUp = ComputeNonbondedUtil::lambda;
-    BigReal elecLambdaUp =  (lambdaUp <= fepElecLambdaStart)? 0. : \
-              (lambdaUp - fepElecLambdaStart) / (1. - fepElecLambdaStart);
+    BigReal lambdaUp = ComputeNonbondedUtil::alchLambda;
+    BigReal elecLambdaUp =  (lambdaUp <= alchElecLambdaStart)? 0. : \
+              (lambdaUp - alchElecLambdaStart) / (1. - alchElecLambdaStart);
     BigReal vdwLambdaUp = 
-        (lambdaUp >= fepVdwLambdaEnd)? 1. : lambdaUp / fepVdwLambdaEnd; 
-    BigReal vdwShiftUp = ComputeNonbondedUtil::fepVdwShiftCoeff * (1-vdwLambdaUp);
-    FEP(BigReal lambda2Up = ComputeNonbondedUtil::lambda2;)
-    FEP(BigReal elecLambda2Up = (lambda2Up <= fepElecLambdaStart)? 0. : \
-              (lambda2Up - fepElecLambdaStart) / (1. - fepElecLambdaStart);)
+        (lambdaUp >= alchVdwLambdaEnd)? 1. : lambdaUp / alchVdwLambdaEnd; 
+    BigReal vdwShiftUp = ComputeNonbondedUtil::alchVdwShiftCoeff * (1-vdwLambdaUp);
+    FEP(BigReal lambda2Up = ComputeNonbondedUtil::alchLambda2;)
+    FEP(BigReal elecLambda2Up = (lambda2Up <= alchElecLambdaStart)? 0. : \
+              (lambda2Up - alchElecLambdaStart) / (1. - alchElecLambdaStart);)
     FEP(BigReal vdwLambda2Up = 
-        (lambda2Up >= fepVdwLambdaEnd)? 1. : lambda2Up / fepVdwLambdaEnd;) 
-    FEP(BigReal vdwShift2Up = ComputeNonbondedUtil::fepVdwShiftCoeff * (1-vdwLambda2Up);)
+        (lambda2Up >= alchVdwLambdaEnd)? 1. : lambda2Up / alchVdwLambdaEnd;) 
+    FEP(BigReal vdwShift2Up = ComputeNonbondedUtil::alchVdwShiftCoeff * (1-vdwLambda2Up);)
 
         
     /*lambda values 'down' are for atoms scaled down with lambda (partition 2)*/
-    BigReal lambdaDown = 1 - ComputeNonbondedUtil::lambda;
-    BigReal elecLambdaDown =  (lambdaDown <= fepElecLambdaStart)? 0. : \
-              (lambdaDown - fepElecLambdaStart) / (1. - fepElecLambdaStart);
+    BigReal lambdaDown = 1 - ComputeNonbondedUtil::alchLambda;
+    BigReal elecLambdaDown =  (lambdaDown <= alchElecLambdaStart)? 0. : \
+              (lambdaDown - alchElecLambdaStart) / (1. - alchElecLambdaStart);
     BigReal vdwLambdaDown = 
-        (lambdaDown >= fepVdwLambdaEnd)? 1. : lambdaDown / fepVdwLambdaEnd; 
-    BigReal vdwShiftDown = ComputeNonbondedUtil::fepVdwShiftCoeff * (1-vdwLambdaDown);
-    FEP(BigReal lambda2Down = 1 - ComputeNonbondedUtil::lambda2;)
-    FEP(BigReal elecLambda2Down = (lambda2Down <= fepElecLambdaStart)? 0. : \
-              (lambda2Down - fepElecLambdaStart) / (1. - fepElecLambdaStart); )
+        (lambdaDown >= alchVdwLambdaEnd)? 1. : lambdaDown / alchVdwLambdaEnd; 
+    BigReal vdwShiftDown = ComputeNonbondedUtil::alchVdwShiftCoeff * (1-vdwLambdaDown);
+    FEP(BigReal lambda2Down = 1 - ComputeNonbondedUtil::alchLambda2;)
+    FEP(BigReal elecLambda2Down = (lambda2Down <= alchElecLambdaStart)? 0. : \
+        (lambda2Down - alchElecLambdaStart) / (1. - alchElecLambdaStart); )
     FEP(BigReal vdwLambda2Down = 
-        (lambda2Down >= fepVdwLambdaEnd)? 1. : lambda2Down / fepVdwLambdaEnd; )
-    FEP(BigReal vdwShift2Down = ComputeNonbondedUtil::fepVdwShiftCoeff * (1-vdwLambda2Down);)
+        (lambda2Down >= alchVdwLambdaEnd)? 1. : lambda2Down / alchVdwLambdaEnd; )
+    FEP(BigReal vdwShift2Down = ComputeNonbondedUtil::alchVdwShiftCoeff * (1-vdwLambda2Down);)
 
   
   // Thermodynamic Integration Notes: 
@@ -389,13 +389,13 @@ void ComputeNonbondedUtil :: NAME
       if ((ip==2 && jp==0) || (ip==0 && jp==2)) pswitchTable[ip+3*jp] = 2;
       if (ip + jp == 3) pswitchTable[ip+3*jp] = 99; // no interaction
 
-      if (! ComputeNonbondedUtil::decouple) {
+      if (! ComputeNonbondedUtil::alchDecouple) {
         // no decoupling: interactions within a partition are treated like
         // normal alchemical pairs
         if (ip == 1 && jp == 1) pswitchTable[ip+3*jp] = 1;
         if (ip == 2 && jp == 2) pswitchTable[ip+3*jp] = 2;
       }
-      if (ComputeNonbondedUtil::decouple) {
+      if (ComputeNonbondedUtil::alchDecouple) {
         // decoupling: PME calculates extra grids so that while PME 
         // interaction with the full system is switched off, a new PME grid
         // containing only alchemical atoms is switched on. Full interactions 

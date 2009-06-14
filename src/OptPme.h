@@ -56,7 +56,7 @@ public:
   int qsize, fsize;
   //normalized patch corrdinates
   int xstart, xlen, ystart, ylen, zstart, zlen;
-  int fepOn, thermInt, lesOn, pairOn;
+  int alchFepOn, alchThermIntOn, lesOn, pairOn;
   
   double **q_arr;
   int nzlines;

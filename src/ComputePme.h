@@ -32,9 +32,9 @@ public:
  private:
   PmeGrid myGrid;
   int qsize, fsize, bsize;
-  int fepOn, thermInt, lesOn, lesFactor, pairOn, selfOn, numGrids;
-  int decouple;
-  BigReal fepElecLambdaStart;
+  int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
+  int alchDecouple;
+  BigReal alchElecLambdaStart;
   BigReal elecLambdaUp;
   BigReal elecLambdaDown;
   

@@ -28,14 +28,13 @@
 					//  should be added to pairlist
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
 //   Begin FEP flags
-	SIMPARAM(Bool,fepOn,0);			//  Doing alchemical FEP?
-	SIMPARAM(BigReal,lambda,0);			//  lambda for dynamics
-	SIMPARAM(BigReal,lambda2,0);		//  lambda for comparison
-	SIMPARAM(int,fepOutFreq,0);			//  freq of fep output
-	SIMPARAM(int,fepEquilSteps,0);		//  no of eqlb steps in the window
-  SIMPARAM(BigReal,fepVdwShiftCoeff,0);	// r2 shifting coeff
+	SIMPARAM(Bool,alchOn,0);		//  Doing alchemical FEP?
+	SIMPARAM(BigReal,alchLambda,0);		//  lambda for dynamics
+	SIMPARAM(BigReal,alchLambda2,0);	//  lambda for comparison
+	SIMPARAM(int,alchOutFreq,0);			//  freq of fep output
+	SIMPARAM(int,alchEquilSteps,0);		//  no of eqlb steps in the window
+  SIMPARAM(BigReal,alchVdwShiftCoeff,0);	// r2 shifting coeff
   //   End FEP flags
 //fepe
 

@@ -196,7 +196,7 @@ distinct environments --- \eg~a ligand, bound to a protein in the first
 simulation, and solvated in water, in the second --- as is the case for most
 free energy calculations that make use of a thermodynamic cycle, perturbation
 of intramolecular terms may, by and large, be safely
-avoided~\cite{Boresch1999}.  This property is controlled by the {\tt decouple} keyword described in  
+avoided~\cite{Boresch1999}.  This property is controlled by the {\tt alchDecouple} keyword described in  
 
 
 
@@ -323,47 +323,50 @@ An example, making use of such a script, is supplied at the end
 of this section.
 
 The following keywords can be used to run alchemical free
-energy calculations, whether FEP or TI.  Each keyword has two variants: one that is used in FEP calculations and a second that should be used when performing TI.  The FEP and TI variants are seperated by slashes like so: {\tt fepKeyword / tiKeyword}, listing first the FEP keyword and second the TI keyword. The FEP and TI specific keywords should be used exclusively with FEP or TI, respectively, and should not be intermixed during a simulation. 
+energy calculations, whether FEP or TI.  
+%Each keyword has two variants: one that is used in FEP calculations and a second that should be used when performing TI.  The FEP and TI variants are seperated by slashes like so: {\tt fepKeyword / tiKeyword}, listing first the FEP keyword and second the TI keyword. The FEP and TI specific keywords should be used exclusively with FEP or TI, respectively, and should not be intermixed during a simulation. 
 %The attention of the user is directed to a novel hierarchy of parameters controlling both FEP and TI implementations.  Back-compatibility with configuration files running on previous versions of NAMD is nevertheless ensured by means of aliased commands.
 
 \begin{itemize}
 \item
-%\NAMDCONFWDEF{alchOn}{ Is an alchemical transformation to be performed? } {{\tt on} or {\tt off}} {{\tt off}} {Turns on alchemical transformation methods in NAMD.}
-\NAMDCONFWDEF{fep / thermInt}{ Is an alchemical free energy perturbation to be performed? } {{\tt on} or {\tt off}} {{\tt off}} {Turns on alchemical transformation methods in NAMD.}
+\NAMDCONFWDEF{alchOn}{ Is an alchemical transformation to be performed? } {{\tt on} or {\tt off}} {{\tt off}} {Turns on alchemical transformation methods in NAMD.}
+%\NAMDCONFWDEF{fep / thermInt}{ Is an alchemical free energy perturbation to be performed? } {{\tt on} or {\tt off}} {{\tt off}} {Turns on alchemical transformation methods in NAMD.}
 
 %\item
-%\NAMDCONFWDEF{alchMethod}{ Which method is to be employed for the alchemical transformation? } {{\tt fep} or {\tt ti}} {{\tt ti} if only {\tt alchLambda} is specified; {\tt fep} if {\tt alchLambdaPlusDelta} / {\tt alchLambdaMinusDelta} are specified} {Turns on Hamiltonian scaling and ensemble averaging for alchemical FEP or TI.}
+\NAMDCONFWDEF{alchType}{ Which method is to be employed for the alchemical transformation? } {{\tt fep} or {\tt ti}} {{\tt ti} 
+%if only {\tt alchLambda} is specified; {\tt fep} if {\tt alchLambdaPlusDelta} / {\tt alchLambdaMinusDelta} are specified} 
+{Turns on Hamiltonian scaling and ensemble averaging for alchemical FEP or TI.}
 
 
 \item
-\NAMDCONF{lambda / tilambda}{ Current value of the coupling parameter } {positive
+\NAMDCONF{alchLambda}{ Current value of the coupling parameter } {positive
 decimal between 0.0 and 1.0} {The coupling parameter value determining the
 progress of the perturbation for FEP or TI.}
 
 \item
-\NAMDCONF{lambda2 / Not applicable }{Forward projected value of the coupling
+\NAMDCONF{alchLambda2}{Forward projected value of the coupling
 parameter} {positive decimal between 0.0 and 1.0} {The {\tt
 lambda2} value corresponds to the coupling parameter to be used for
 sampling in the next window.  The free energy difference between {\tt
-lambda2} and {\tt lambda} is calculated.  Through simulations
-at progressive values of {\tt lambda} and {\tt lambda2} the
-total free energy difference may be determined.}
+alchLambda2} and {\tt alchLambda} is calculated.  Through simulations
+at progressive values of {\tt alchLambda} and {\tt alchLambda2} the
+total free energy difference may be determined. }
 
 %\item
 %\NAMDCONF{alchLambdaMinusDelta}{Backward projected value of the coupling parameter} {positive decimal between 0.0 and 1.0} {The {\tt alchLambdaMinusDelta} value corresponds to the coupling parameter to be used for sampling in the previous window, assuming that a double-wide sampling simulation is being performed, whereby both the forward and the backward transformations are computed explicitly.  The free energy difference between {\tt alchLambdaMinusDelta} and {\tt alchLambda} is calculated.  Through simulations at progressive values of {\tt alchLambda} and {\tt alchLambdaMinusDelta} the total free energy difference may be determined.}
 
 \item
-\NAMDCONFWDEF{fepEquilSteps / tiEquilSteps}{Number of equilibration steps in a window,
+\NAMDCONFWDEF{alchEquilSteps}{Number of equilibration steps in a window,
 prior to data collection}
 {positive integer less than {\tt numSteps} or {\tt run}}
 {0}
-{In each window {\tt fepEquilSteps/tiEquilSteps} steps of equilibration can be
+{In each window {\tt alchEquilSteps} steps of equilibration can be
 performed before ensemble averaging is initiated. The output also contains
 the data gathered during equilibration and is meant for analysis of
 convergence properties of the alchemical free energy calculation.}
 
 \item
-\NAMDCONFWDEF{fepFile / tiFile}{{\tt pdb} file with perturbation flags}
+\NAMDCONFWDEF{alchFile}{{\tt pdb} file with perturbation flags}
 {filename}
 {coordinates}
 {{\tt pdb} file to be used for indicating the status of all
@@ -373,7 +376,7 @@ If this parameter is not declared specifically, then the
 {\tt coordinates} is utilized for this information.}
 
 \item
-\NAMDCONFWDEF{fepCol / tiCol}{Column in the {\tt fepFile/tiFile} that carries
+\NAMDCONFWDEF{alchCol}{Column in the {\tt alchFile} that carries
                       the perturbation flag}
 {X, Y, Z, O or B}
 {B}
@@ -385,43 +388,43 @@ vanish as $\lambda$ moves from 0 to 1, whereas a value of {\tt 1}
 indicates that it will grow.}
 
 \item
-\NAMDCONFWDEF{fepOutFreq / tiOutFreq}{Frequency of free energy output in time--steps}
+\NAMDCONFWDEF{alchOutFreq}{Frequency of free energy output in time--steps}
 {positive integer}
 {5}
-{Every {\tt fepOutFreq/tiOutFreq} number of MD steps, the output file
-{\tt fepOutFile/tiOutFile} is updated by dumping energies that are
+{Every {\tt alchOutFreq} number of MD steps, the output file
+{\tt alchOutFile} is updated by dumping energies that are
 used for ensemble averaging.
 This variable could be set to {\tt 1} to include all the
 configurations for ensemble averaging. Yet, it is recommended
-to update {\tt fepOutFile/tiOutFile}  energies at longer intervals
+to update {\tt alchOutFile}  energies at longer intervals
 to avoid large files containing highly correlated data, unless a post--treatment,
 \eg~Bennett's acceptance ratio (BAR)~\cite{Bennett1976} or simple overlap
 sampling (SOS)~\cite{Lu2004}, is to be performed.}
 
 \item
-\NAMDCONFWDEF{fepOutFile / tiOutFile}{Alchemical free energy output filename}
+\NAMDCONFWDEF{alchOutFile}{Alchemical free energy output filename}
 {filename}
 {{\tt outfilename}}
-{An output file named {\tt fepOutFile},
-containing the FEP energies, or {\tt tiOutFile}, containing the TI derivatives, dumped every {\tt fepOutFreq/tiOutFreq} steps.}
+{An output file named {\tt alchOutFile},
+containing the FEP energies, or {\tt tiOutFile}, containing the TI derivatives, dumped every {\tt alchOutFreq} steps.}
 
 \item
-\NAMDCONFWDEF {fepVdwShiftCoeff / tiVdwShiftCoeff}{Soft-core van der Waals radius-shifting coefficient}
+\NAMDCONFWDEF {alchVdwShiftCoeff}{Soft-core van der Waals radius-shifting coefficient}
 {positive decimal}
 {5} %CBH -- reconcile with SimParameters.C/.h
 {This is a radius-shifting coefficient of $\lambda$ that is used
 to construct the modified vdW interactions during alchemical free energy calculations.
-Providing a positive value for {\tt fepVdWShiftCoeff/tiVdwShiftCoeff} ensures that the vdW potential
+Providing a positive value for {\tt alchVdWShiftCoeff} ensures that the vdW potential
 is finite everywhere for small values of $\lambda$, which significantly improves the
 accuracy and convergence of FEP and TI calculations, and also prevents overlapping particles
 from making the simulation unstable. During FEP and TI, assuming $\lambda = 0$
 denotes an absence of interaction, the interatomic distances used in
 the Lennard-Jones potential are shifted according to ~\cite{Beutler1994,Zacharias1994}:
-$r^2 \rightarrow r^2 + {\tt fepVdWShiftCoeff} \times (1 - \lambda)$
+$r^2 \rightarrow r^2 + {\tt alchVdWShiftCoeff} \times (1 - \lambda)$
 }
 
 \item
-\NAMDCONFWDEF {fepElecLambdaStart / tiElecLambdaStart}{Value of $\lambda$ to introduce electrostatic interactions}
+\NAMDCONFWDEF {alchElecLambdaStart}{Value of $\lambda$ to introduce electrostatic interactions}
 {positive decimal}
 {0.5} %CBH -- reconcile with SimParameters.C/.h
 {In order to avoid the so--called ``end-point catastrophes'', it is crucial to
@@ -430,32 +433,32 @@ an unbounded interaction potential, which would approach infinity as the
 interaction distance approaches zero~\cite{Beutler1994,Chipot2007}. One possible route for
 avoiding overlap of unbounded electrostatic potentials consists of allowing a
 bounded (soft-core) vdW potential, using a positive value of {\tt
-fepVdWShiftCoeff/tiVdwShiftCoeff}, to repel first all overlapping particles at low values of
+alchVdWShiftCoeff}, to repel first all overlapping particles at low values of
 $\lambda$. As $\lambda$ increases, once the particles are repelled, it becomes
 safe to turn on FEP or TI electrostatics. 
 
-In the current implementation, the electrostatic interactions of an exnihilated, or appearing, particle are linearly coupled to the simulation over the $\lambda$ value range of {\tt fepElecLambdaStart/tiElecLambdaStart} -- 1.0. At $\lambda$ values less than or equal to the user-defined value of {\tt fepElecLambdaStart/tiElecLambdaStart}, electrostatic interactions of the exnihilated particle are fully decoupled from the simulation.  Coupling of electrostatic interactions then increases linearly for increasing values of $\lambda$ until $\lambda$=1.0, at which point electrostatic interactions of the exnihilated particle are fully coupled to the simulation.  
+In the current implementation, the electrostatic interactions of an exnihilated, or appearing, particle are linearly coupled to the simulation over the $\lambda$ value range of {\tt alchElecLambdaStart} -- 1.0. At $\lambda$ values less than or equal to the user-defined value of {\tt alchElecLambdaStart}, electrostatic interactions of the exnihilated particle are fully decoupled from the simulation.  Coupling of electrostatic interactions then increases linearly for increasing values of $\lambda$ until $\lambda$=1.0, at which point electrostatic interactions of the exnihilated particle are fully coupled to the simulation.  
 
-For annihilated, or vanishing, particles the electrostatic interactions are linearly decoupled from the simulation over the $\lambda$ value range of 0 -- (1.0 - {\tt fepElecLambdaStart/tiElecLambdaStart}). At $\lambda$=0 electrostatic interactions are fully coupled to the simulation, and then linearly decreased with increasing $\lambda$ such that at $\lambda$ values greater than or equal to (1.0 - {\tt fepElecLambdaStart/tiElecLambdaStart}) electrostatic interactions are completely decoupled from the simulation.  Two examples, shown in Figure \ref{fig:softcore}, describe the relationship between the user-defined value of $\lambda$ and the coupling of electrostatic or vdW interactions to the simulation. }
+For annihilated, or vanishing, particles the electrostatic interactions are linearly decoupled from the simulation over the $\lambda$ value range of 0 -- (1.0 - {\tt alchElecLambdaStart}). At $\lambda$=0 electrostatic interactions are fully coupled to the simulation, and then linearly decreased with increasing $\lambda$ such that at $\lambda$ values greater than or equal to (1.0 - {\tt alchElecLambdaStart}) electrostatic interactions are completely decoupled from the simulation.  Two examples, shown in Figure \ref{fig:softcore}, describe the relationship between the user-defined value of $\lambda$ and the coupling of electrostatic or vdW interactions to the simulation. }
 
 \begin{figure}
   \center{\includegraphics[width=0.75\textwidth]{figures/softcore_lambda}}
-  \caption{Relationship of user-defined $\lambda$ to coupling of electrostatic or vdW interactions to a simulation, given specific values of {\tt elecLambdaStart} or {\tt vdwLambdaEnd}.}
+  \caption{Relationship of user-defined $\lambda$ to coupling of electrostatic or vdW interactions to a simulation, given specific values of {\tt alchElecLambdaStart} or {\tt alchVdwLambdaEnd}.}
   \label{fig:softcore}
 \end{figure}
 
 \item
-  \NAMDCONFWDEF {fepVdwLambdaEnd / tiVdwLambdaEnd}{Value of $\lambda$ to cancel van der Waals interactions}
+  \NAMDCONFWDEF {alchVdwLambdaEnd}{Value of $\lambda$ to cancel van der Waals interactions}
 {positive decimal}
 {1.0} %CBH -- reconcile with SimParameters.C/.h
-{If the above {\tt fepElecLambdaStart/tiElecLambdaStart} option is being used, it may be further
+{If the {\tt alchElecLambdaStart} option is used, it may also be 
 desirable to separate the scaling of van der Waals and electrostatic
-interactions. {\tt fepVdwLambdaEnd/tiVdwLambdaEnd} sets the value of $\lambda$ above which
+interactions. {\tt alchVdwLambdaEnd} sets the value of $\lambda$ above which
 all vdW interactions are fully enabled for exnihilated particles.
 
-For an exnihilated particle, vdW interactions are fully decoupled at $\lambda$=0.  The coupling of vdW interactions to the simulation is then increased with increasing values of $\lambda$ such that at values of $\lambda$ greater than or equal to {\tt fepVdwLambdaEnd/tiVdwLambdaEnd} the vdW interactions of the exnihilated particle are fully coupled to the simulation.
+For an exnihilated particle, vdW interactions are fully decoupled at $\lambda$=0.  The coupling of vdW interactions to the simulation is then increased with increasing values of $\lambda$ such that at values of $\lambda$ greater than or equal to {\tt alchVdwLambdaEnd} the vdW interactions of the exnihilated particle are fully coupled to the simulation.
 
-For an annihilated particle, vdW interactions are completely coupled to the simulation at $\lambda$=0.  This coupling linearly decreases for $\lambda$ values between 1.0 and (1 - {\tt fepVdwLambdaEnd/tiVdwLambdaEnd}).  For $\lambda$ values greater than or equal to (1 - {\tt fepVdwLambdaEnd/tiVdwLambdaEnd}), vdW interactions of the annihilated particle are fully decoupled from the simulation.  
+For an annihilated particle, vdW interactions are completely coupled to the simulation at $\lambda$=0.  This coupling linearly decreases for $\lambda$ values between 1.0 and (1 - {\tt alchVdwLambdaEnd}).  For $\lambda$ values greater than or equal to (1 - {\tt alchVdwLambdaEnd}), vdW interactions of the annihilated particle are fully decoupled from the simulation.  
 }
 
 
@@ -463,11 +466,11 @@ For an annihilated particle, vdW interactions are completely coupled to the simu
 
 
 \item
-  \NAMDCONFWDEF {decouple / decouple}{Disable scaling of nonbonded interactions within alchemical partitions}
-{{\tt on} or {\tt off}} {{\tt off}} {With {\tt decouple} set to {\tt on},
+  \NAMDCONFWDEF {alchDecouple}{Disable scaling of nonbonded interactions within alchemical partitions}
+{{\tt on} or {\tt off}} {{\tt off}} {With {\tt alchDecouple} set to {\tt on},
 only nonbonded interactions of perturbed, incoming and outgoing atoms with
 their environment are scaled, while interactions within the subset of perturbed
-atoms are preserved. On the contrary, if {\tt decouple} is set to {\tt
+atoms are preserved. On the contrary, if {\tt alchDecouple} is set to {\tt
 off}, interactions within the perturbed subset of atoms are also scaled and
 contribute to the cumulative free energy. In most calculations, intramolecular
 annihilation free energies are not particularly informative, and decoupling
@@ -494,31 +497,32 @@ by increments of $\delta \lambda$ = 0.1.
 \begin{tabular}{ll}
 \begin{minipage}{8cm}
 \begin{verbatim}
-fep           On
-fepFile        ion.fep
-fepCol         X
-fepOutfile     ion.fepout
-fepOutFreq     5
-fepEquilSteps  5000
+alch           On
+alchType       fep
+alchFile       ion.fep
+alchCol        X
+alchOutfile    ion.fepout
+alchOutFreq    5
+alchEquilSteps 5000
 
-set Lambda0     0.0
-set dLambda 0.1
+set Lambda0    0.0
+set dLambda    0.1
 
 while {$Lambda0 <= 1.0} {
- lambda $Lambda0
+ alchLambda $Lambda0
  set Lambda0 [expr \$Lambda0 + \$dLambda]
- lambda2 $Lambda0
+ alchLambda2 $Lambda0
  run  10000
 }
 \end{verbatim}
 \end{minipage}
 &
 \begin{minipage}{7.8cm}
-%\newline
-Turn FEP functionality on.
 \newline
-%Alchemical Method to use.
-%\newline
+Enable alchemical simulation module
+\newline
+Set alchemical method to FEP
+\newline
 File containing the information about growing/shrinking atoms
 described in column {\tt X}.
 \newline
@@ -559,16 +563,16 @@ explicitly, avoiding the use of {\sc Tcl} scripting:
 \begin{tabular}{ll}
 \begin{minipage}{8cm}
 \begin{verbatim}
-lambda          0.0
-lambda2         0.1
+alchLambda      0.0
+alchLambda2     0.1
 run             10000
 \end{verbatim}
 \end{minipage}
 &
 \begin{minipage}{7.8cm}
-(1) set {\tt lambda} value;
+(1) set {\tt alchLambda} value;
 \newline
-(2) set {\tt lambda2} value;
+(2) set {\tt alchLambda2} value;
 \newline
 (3) run 10,000 MD steps.
 \end{minipage}
@@ -585,43 +589,44 @@ The following second input is proposed for the measuring via TI the free energy
 of a particle insertion.
 
 \begin{verbatim}
-    thermInt      On             # Enable thermodynamic integration
-    tiFile        ion.alch.pdb   # PDB file with perturbation flags
-    tiCol         B              # Perturbation flags in Beta column
-    tiOutfile     ion.ti.out
-    tiOutFreq     5
-    tiEquilSteps  5000
+    alch           On             # Enable alchemical simulation module
+    alchType       ti             # Set method to thermodynamic integration
+    alchFile       ion.alch.pdb   # PDB file with perturbation flags
+    alchCol        B              # Perturbation flags in Beta column
+    alchOutfile    ion.ti.out
+    alchOutFreq    5
+    alchEquilSteps 5000
 
-    tiVdWShiftCoeff    1         # Enable soft-core vdW potential
-    tiElecLambdaStart  0.1       # Introduce electrostatics for lambda > 0.1
-    tiLambda 0
+    alchVdWShiftCoeff    1         # Enable soft-core vdW potential
+    alchElecLambdaStart  0.1       # Introduce electrostatics for lambda > 0.1
+    alchLambda 0
     run 10000
-    tiLambda 0.00001
+    alchLambda 0.00001
     run 10000
-    tiLambda 0.0001
+    alchLambda 0.0001
     run 10000
-    tiLambda 0.001
+    alchLambda 0.001
     run 10000
-    tiLambda 0.01
+    alchLambda 0.01
     run 10000
 
     set Lambda           0.1
 
     while {$Lambda <= 0.9} {
-      tiLambda $Lambda
+      alchLambda $Lambda
       run 10000
       set Lambda [expr $Lambda + 0.1]
     }
 
-    tiLambda 0.99
+    alchLambda 0.99
     run 10000
-    tiLambda 0.999
+    alchLambda 0.999
     run 10000
-    tiLambda 0.9999
+    alchLambda 0.9999
     run 10000
-    tiLambda 0.99999
+    alchLambda 0.99999
     run 10000
-    tiLambda 1
+    alchLambda 1
     run 10000
 
 \end{verbatim}
@@ -629,9 +634,9 @@ of a particle insertion.
 %In this example, most input parameters are shared with FEP, except for the specification of {\tt alchMethod ti} and the absence of {\tt alchLambdaPlusDelta} or {\tt alchLambdaMinusDelta} parameters. Moreover, 
 Robust
 sampling of the free energy of particle insertion is enabled by the use of
-soft-core van der Waals scaling with the {\tt VdWShiftCoeff} parameter,
+soft-core van der Waals scaling with the {\tt alchVdWShiftCoeff} parameter,
 delayed introduction of electrostatics with a non-zero {\tt
-tiElecLambdaStart} value, and very gradual scaling of $\lambda$ towards its
+alchElecLambdaStart} value, and very gradual scaling of $\lambda$ towards its
 end points.
 
 
@@ -642,14 +647,14 @@ end points.
 \subsubsection{Free Energy Perturbation }
 
 
-When running FEP, the {\tt fepOutFile} contains electrostatic and van der Waals energy
-data calculated for {\tt lambda} and {\tt lambda2}, written every
-{\tt fepOutFreq} steps. The column {\tt dE} is the energy
+When running FEP, the {\tt alchOutFile} contains electrostatic and van der Waals energy
+data calculated for {\tt alchLambda} and {\tt alchLambda2}, written every
+{\tt alchOutFreq} steps. The column {\tt dE} is the energy
 difference of the single configuration, {\tt dE\_avg} and {\tt dG}
 are the instantaneous ensemble average of the energy and the calculated
 free energy at the time step specified in column 2, respectively.
 The temperature is specified in the penultimate column. Upon completion
-of {\tt fepEquilSteps} steps, the calculation of {\tt dE\_avg} and
+of {\tt alchEquilSteps} steps, the calculation of {\tt dE\_avg} and
 {\tt dG} is restarted. The accumulated net free energy change is written
 at each lambda value and at the end of the simulation.
 %This will confuse people and doesn't apply with non-linear vdW scaling
@@ -660,7 +665,7 @@ at each lambda value and at the end of the simulation.
 
 Whereas the FEP module of NAMD supplies free energy differences determined from
 equation~({\ref{fep}}), the wealth of information available in {\tt
-fepOutFile} may be utilized profitably to explore different routes towards the
+alchOutFile} may be utilized profitably to explore different routes towards the
 estimation of $\Delta A$. Both BAR and SOS methods, which combine
 advantageously \emph{direct} and \emph{reverse} transformations to improve
 convergence and accuracy of the calculation, represent relevant alternatives to
@@ -708,7 +713,7 @@ The electrostatics and vdW are separated following a partition scheme --- that
 is, the ``appearing'' and the ``disappearing'' atoms are accounted for
 separately. ``Partition 1'' contains those atoms whose interactions are
 switched up as $\lambda$ increases --- \ie~flagged with {\tt 1} in the {\tt
-fepFile} or {\tt tiFile}. ``Partition 2'' represents those atoms whose interactions are
+alchFile}. ``Partition 2'' represents those atoms whose interactions are
 switched down as $\lambda$ increases --- \ie~flagged with {\tt -1}. $\Delta A$
 values for each component are obtained by integrating from $\lambda=0$ to $1$
 using the respective {\tt ELEC / VDW LAMBDA} listed for each partition after

@@ -3288,7 +3288,7 @@ void Molecule::send_Molecule(MOStream *msg)
 
 //fepb
       // send fep atom info
-      if (simParams->fepOn || simParams->thermInt || simParams->lesOn || simParams->pairInteractionOn) {
+      if (simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn || simParams->pairInteractionOn) {
         msg->put(numFepInitial);
         msg->put(numFepFinal);
         msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
@@ -3642,7 +3642,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
 //fepb
       //receive fep atom info
-      if (simParams->fepOn || simParams->lesOn || simParams->thermInt || simParams->pairInteractionOn) {
+      if (simParams->alchFepOn || simParams->lesOn || simParams->alchThermIntOn || simParams->pairInteractionOn) {
         delete [] fepAtomFlags;
         fepAtomFlags = new unsigned char[numAtoms];
 
@@ -3752,8 +3752,8 @@ void Molecule::receive_Molecule(MIStream *msg)
     //In memory optimized version, this function is only performed on PE0 since other nodes
     //may have less memory than the master node.
     //3 tasks is performed in the function: 1) cluster building 2) atom signatures changed due to
-    // fixed atoms and fep atoms 3) exclusion signatures (in the format of offset) changed due to
-    //hydrogen group/fep/fixed atoms.
+    // fixed atoms and alch atoms 3) exclusion signatures (in the format of offset) changed due to
+    //hydrogen group/alch/fixed atoms.
     void Molecule::build_lists_by_atom()
        
     {
@@ -4903,7 +4903,7 @@ void Molecule::receive_Molecule(MIStream *msg)
       int delExclCnt=0;
 
       vector<ExclusionSignature> newExclSigPool;
-      if(simParams->fepOn || simParams->thermInt || simParams->lesOn){
+      if(simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn){
           for(int i=0; i<numAtoms; i++){
               int atom1 = i;
               int t1 = get_fep_type(atom1);
@@ -5053,7 +5053,7 @@ void Molecule::receive_Molecule(MIStream *msg)
     UniqueSet<Exclusion> fepExclusionSet;
     UniqueSetIter<Exclusion> exclIter(exclusionSet);
 
-    if ( simParams->fepOn || simParams->thermInt || simParams->lesOn ) {
+    if ( simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn ) {
        for ( exclIter=exclIter.begin(); exclIter != exclIter.end(); exclIter++ )
        {
          int t1 = get_fep_type(exclIter->atom1);
@@ -7442,26 +7442,24 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
 
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-   //
    //
    //  FUNCTION build_fep_flags
    //
    // INPUTS:
-   // fepfile - Value of fepfile read from config file
-   // fepcol - Value of fep column, read from config file
+   // alchfile - Value of alchfile read from config file
+   // alchcol - Value of alch column, read from config file
    // initial_pdb - PDB object that contains the initial positions
    //  cwd - current working directory
    //
    // This function builds the array of state values necessary
-   // for FEP. It takes the name of the PDB file and column in
-   // the PDB file that contains the fep flag. It then builds
+   // for FEP or TI. It takes the name of the PDB file and column in
+   // the PDB file that contains the alch flag. It then builds
    // the array FepParams for use in the program.
    //
    // function doubles up for TI as well
    
-   void Molecule::build_fep_flags(StringList *fepfile,
-         StringList *fepcol,
+   void Molecule::build_fep_flags(StringList *alchfile,
+         StringList *alchcol,
          PDB *initial_pdb,
          char *cwd)
    {
@@ -7471,24 +7469,24 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
      int i;         // loop counter
      char filename[129]; // filename
 
-     // get the pdb object that contains the fep flags.
+     // get the pdb object that contains the alch flags.
      // if the user gave another filename, use it, else
      // use the pdb file with the initial coordinates
-     if (fepfile == NULL) {
+     if (alchfile == NULL) {
        bPDB = initial_pdb;
        strcpy(filename, "coordinate pdb file (default)");
      }
      else {
-       if (fepfile->next != NULL) {
-        NAMD_die("Multiple definitions of fep PDB file in configuration file");
+       if (alchfile->next != NULL) {
+        NAMD_die("Multiple definitions of alch PDB file in configuration file");
        }
    
-       if ((cwd == NULL) || (fepfile->data[0] == '/')) {
-         strcpy(filename, fepfile->data);
+       if ((cwd == NULL) || (alchfile->data[0] == '/')) {
+         strcpy(filename, alchfile->data);
        }
        else {
          strcpy(filename, cwd);
-         strcat(filename, fepfile->data);
+         strcat(filename, alchfile->data);
        }
 
        bPDB = new PDB(filename);
@@ -7497,45 +7495,45 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
        }
 
        if (bPDB->num_atoms() != numAtoms) {
-         NAMD_die("Number of atoms in fep PDB doesnt match coordinate PDB");
+         NAMD_die("Number of atoms in alch PDB doesnt match coordinate PDB");
        }
     }
    
-    // Get the column that the fep flag is in. It can be in any of the 5 
+    // Get the column that the alch flag is in. It can be in any of the 5 
     // floating point fields in the PDB ie X, Y, Z, O or B.
     // The default is 5th field ie the beta field
-    if (fepcol == NULL) {
+    if (alchcol == NULL) {
       bcol = 5;
     }
     else {
-      if (fepcol->next != NULL) {
-        NAMD_die("Multiple definitions of fep parameter column in config file");
+      if (alchcol->next != NULL) {
+        NAMD_die("Multiple definitions of alch parameter column in config file");
       }
 
-      if (strcasecmp(fepcol->data, "X") == 0) {
+      if (strcasecmp(alchcol->data, "X") == 0) {
        bcol = 1;
       }
-      else if (strcasecmp(fepcol->data, "Y") == 0) {
+      else if (strcasecmp(alchcol->data, "Y") == 0) {
        bcol = 2;
       }
-      else if (strcasecmp(fepcol->data, "Z") == 0) {
+      else if (strcasecmp(alchcol->data, "Z") == 0) {
        bcol = 3;
       }
-      else if (strcasecmp(fepcol->data, "O") == 0) {
+      else if (strcasecmp(alchcol->data, "O") == 0) {
        bcol = 4;
       }
-      else if (strcasecmp(fepcol->data, "B") == 0) {
+      else if (strcasecmp(alchcol->data, "B") == 0) {
        bcol = 5;
       }
       else {
-       NAMD_die("fepcol must have value of X, Y, Z, O or B");
+       NAMD_die("alchcol must have value of X, Y, Z, O or B");
       }
     }
 
-   iout << iINFO << "To read fep data from file: " << filename << "\n" << endi;
-   iout << iINFO << "To read fep flag data from column: " << bcol << "\n" << endi;
+   iout << iINFO << "To read alch data from file: " << filename << "\n" << endi;
+   iout << iINFO << "To read alch flag data from column: " << bcol << "\n" << endi;
  
-   //  Allocate the array to hold all the fep data
+   //  Allocate the array to hold all the alch data
    fepAtomFlags = new unsigned char[numAtoms];
        
    if (fepAtomFlags == NULL) {
@@ -7549,7 +7547,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
 
    // loop through all the atoms and get the b value
    for (i = 0; i < numAtoms; i++) {
-   // Get the fep flag value
+   // Get the alch flag value
     switch (bcol) {
       case 1:
        bval = (bPDB->atom(i))->xcoor();
@@ -7568,7 +7566,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
        break;
     }
 
-    // Assign fep flag value
+    // Assign alch flag value
     if (simParams->lesOn) {
       if ( bval == (int) bval && bval > 0 ) {
         if ( bval > simParams->lesFactor ) 
@@ -7585,7 +7583,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       } else {
         fepAtomFlags[i] = 0;
       }
-    } else if (simParams->fepOn || simParams->thermInt) {
+    } else if (simParams->alchFepOn || simParams->alchThermIntOn) {
       if (bval == 1.0) {
         fepAtomFlags[i] = 1;
         numFepFinal++;
@@ -7611,7 +7609,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
   }
 
   // if PDB object was created, delete it
-  if (fepfile != NULL) {
+  if (alchfile != NULL) {
     delete bPDB;
   }
 
@@ -9339,7 +9337,7 @@ Index Molecule::insert_new_mass(Real newMass){
 //by stripFepExcl function or fixedAtoms, then return 1. Otherwise return 0
 int Molecule::exclStrippedByFepOrFixedAtoms(int atom1, int atom2){
     //first test for stripFepExcl
-    if(simParams->fepOn || simParams->thermInt || simParams->lesOn){
+    if(simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn){
         int t1 = get_fep_type(atom1);
         int t2 = get_fep_type(atom2);
         if(t1 && t2 && t1!=t2) return 1;

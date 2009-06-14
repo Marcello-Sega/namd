@@ -389,22 +389,10 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	}
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
      //identify the mutant atoms for fep simulation
-        if (simParameters->fepOn) {
-           molecule->build_fep_flags(configList->find("fepfile"),
-                configList->find("fepcol"), pdb, NULL);
-#ifndef MEM_OPT_VERSION
-           molecule->delete_alch_bonded();
-#else
-           iout << iWARN << "ALCH: AUTOMATIC DELETION OF BONDED INTERACTIONS "
-           << "BETWEEN INITIAL AND FINAL GROUPS IS NOT SUPPORTED IN MEMORY "
-           << "OPTIMISED VERSION - MANUAL PROCESSING IS NECESSARY\n" << endi;
-#endif
-        }
-        if (simParameters->thermInt) {
-           molecule->build_fep_flags(configList->find("tifile"),
-                configList->find("ticol"), pdb, NULL);
+        if (simParameters->alchOn) {
+           molecule->build_fep_flags(configList->find("alchfile"),
+                configList->find("alchcol"), pdb, NULL);
 #ifndef MEM_OPT_VERSION
            molecule->delete_alch_bonded();
 #else
@@ -415,7 +403,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
         }
 //fepe
         if (simParameters->lesOn) {
-	   if (simParameters->fepOn || simParameters->thermInt) NAMD_bug("FEP/TI and LES are incompatible!");
+	   if (simParameters->alchFepOn || simParameters->alchThermIntOn) NAMD_bug("FEP/TI and LES are incompatible!");
            molecule->build_fep_flags(configList->find("lesfile"),
                 configList->find("lescol"), pdb, NULL);
         }
@@ -496,8 +484,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	/* END gf */
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-        if (simParameters->fepOn || simParameters->thermInt) {
+        if (simParameters->alchFepOn || simParameters->alchThermIntOn) {
           iout << iINFO << "ALCH: " 
                << molecule->numFepInitial <<
                " ATOMS TO DISAPPEAR IN FINAL STATE\n";

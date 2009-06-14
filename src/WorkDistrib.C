@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2009/05/19 05:10:29 $
- * $Revision: 1.1193 $
+ * $Author: char $
+ * $Date: 2009/06/14 07:01:48 $
+ * $Revision: 1.1194 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -313,9 +313,8 @@ FullAtomList *WorkDistrib::createAtomLists(void)
     FullAtom *a = atoms[i].begin();
     int j;
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-    Bool fepOn = params->fepOn;
-    Bool thermInt = params->thermInt;
+    Bool alchFepOn = params->alchFepOn;
+    Bool alchThermIntOn = params->alchThermIntOn;
 //fepe
     Bool lesOn = params->lesOn;
   
@@ -356,8 +355,7 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       a[j].charge = molecule->atomcharge(aid);
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-      if ( fepOn || thermInt || lesOn || pairInteractionOn || pressureProfileTypes) {
+      if ( alchFepOn || alchThermIntOn || lesOn || pairInteractionOn || pressureProfileTypes) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {
@@ -528,9 +526,8 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
     FullAtom *a = onePatchAtoms->begin();
     int j;
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-    Bool fepOn = params->fepOn;
-    Bool thermInt = params->thermInt;
+    Bool alchFepOn = params->alchFepOn;
+    Bool alchThermIntOn = params->alchThermIntOn;
 //fepe
     Bool lesOn = params->lesOn;
   
@@ -571,8 +568,7 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
       a[j].charge = molecule->atomcharge(aid);
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-      if ( fepOn || thermInt || lesOn || pairInteractionOn || pressureProfileTypes) {
+      if ( alchFepOn || alchThermIntOn || lesOn || pairInteractionOn || pressureProfileTypes) {
         a[j].partition = molecule->get_fep_type(aid);
       } 
       else {

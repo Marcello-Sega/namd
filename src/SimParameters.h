@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: petefred $
- * $Date: 2009/06/14 01:23:50 $
- * $Revision: 1.1152 $
+ * $Author: char $
+ * $Date: 2009/06/14 07:01:48 $
+ * $Revision: 1.1153 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -277,39 +277,35 @@ public:
         BigReal TMDInitialRMSD, TMDFinalRMSD;
 
         
-// Modifications for alchemical fep
-// SD & CC, CNRS - LCTN, Nancy
-// Begin FEP flags
-  Bool fepOn;               //  Doing alchemical FEP?
-  BigReal lambda;           //  lambda for dynamics
-  BigReal lambda2;          //  lambda for comparison
-  BigReal fepTemp;          //  temperature for FEP calculation
-  int fepOutFreq;           //  freq. of FEP output
-  char fepOutFile[128];     //  FEP output filename
-  int fepEquilSteps;        //  # of equil. steps in the window
-  BigReal fepVdwShiftCoeff; //  r2 shift coeff used for generating  
-                            //  the FEP altered vdW interactions
-  BigReal fepElecLambdaStart;  //  lambda "delay" for electrostatics
-  BigReal fepVdwLambdaEnd;  //  lambda "delay" for vdW 
-// End FEP flags
+// Modifications for alchemical simulations
+// Begin alch flags
+
+  Bool alchOn;              //  Doing alchemical simulation?
+  Bool alchFepOn;           //  Doing alchemical simulation?
+  Bool alchThermIntOn;      //  Doing thermodynamic integration?
+  int alchMethod;           //  Which alchemical method to use? fep or ti
+  BigReal alchLambda;       //  lambda for dynamics
+  BigReal alchLambda2;      //  lambda for comparison
+  BigReal alchTemp;         //  temperature for alchemical calculation
+  int alchOutFreq;          //  freq. of alchemical output
+  char alchOutFile[128];    //  alchemical output filename
+  int alchEquilSteps;       //  # of equil. steps in the window
+  BigReal alchVdwShiftCoeff; //  r2 shift coeff used for generating  
+                            //  the alchemical altered vdW interactions
+  BigReal alchElecLambdaStart;  //  lambda value for starting point of
+                                //  electrostatic interactions of 
+                                //  exnihilated particles.  For annihilated
+                                //  particles the starting point is
+                                //  (1-alchElecLambdaStart)
+  BigReal alchVdwLambdaEnd;  //  lambda value for endpoint of vdW
+                             //  interactions of exnihilated particles.
+                             //  For annihilated particles the endpoint is 
+                             //  (1-alchVdwLambdaEnd)
+  Bool alchDecouple;  // alchemical decoupling rather than annihilation
+
+// End alch flags
 //fepe
 
-// Modifications for thermodynamic integration
-// lots of overlap with FEP, but still will duplicate everything for now,
-// mainly for compatibility purposes
-  Bool thermInt;               //  Doing thermodynamic integration?
-  BigReal tiLambda;           //  lambda for dynamics
-  BigReal tiTemp;          //  temperature for FEP calculation
-  int tiOutFreq;           //  freq. of FEP output
-  char tiOutFile[128];     //  FEP output filename
-  int tiEquilSteps;        //  # of equil. steps in the window
-  BigReal tiVdwShiftCoeff; //  r2 shift coeff used for generating  
-                            //  the FEP altered vdW interactions
-  BigReal tiElecLambdaStart;  //  lambda "delay" for electrostatics
-  BigReal tiVdwLambdaEnd;  //  lambda "delay" for vdW 
-
-  Bool decouple;  // alchemical decoupling rather than annihilation
-  
   
 	Bool lesOn;			//  Locally enhanced sampling?
 	int lesFactor;			//  local enhancement factor

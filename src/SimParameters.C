@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: petefred $
- * $Date: 2009/06/14 01:23:49 $
- * $Revision: 1.1278 $
+ * $Author: char $
+ * $Date: 2009/06/14 07:01:48 $
+ * $Revision: 1.1279 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -189,27 +189,28 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   }
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
-  SCRIPT_PARSE_INT("fepEquilSteps",fepEquilSteps)
+  SCRIPT_PARSE_INT("alchEquilSteps",alchEquilSteps)
 
-  if ( ! strncasecmp(param,"lambda",MAX_SCRIPT_PARAM_SIZE) ) {
-    lambda = atof(value);
+  if ( ! strncasecmp(param,"alchLambda",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchLambda = atof(value);
     ComputeNonbondedUtil::select();
     return;
   }
 
-  if ( ! strncasecmp(param,"lambda2",MAX_SCRIPT_PARAM_SIZE) ) {
-    lambda2 = atof(value);
+  if ( ! strncasecmp(param,"alchLambda2",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchLambda2 = atof(value);
     ComputeNonbondedUtil::select();
     return;
   }
 //fepe
 
-  if ( ! strncasecmp(param,"tiLambda",MAX_SCRIPT_PARAM_SIZE) ) {
-    lambda = atof(value);
-    ComputeNonbondedUtil::select();
-    return;
-  }
+// REDUNDANT TI BEGINS
+//  if ( ! strncasecmp(param,"tiLambda",MAX_SCRIPT_PARAM_SIZE) ) {
+//    alchLambda = atof(value);
+//    ComputeNonbondedUtil::select();
+//    return;
+//  }
+// REDUNDANT TI ENDS
 
   if ( ! strncasecmp(param,"nonbondedScaling",MAX_SCRIPT_PARAM_SIZE) ) {
     nonbondedScaling = atof(value);
@@ -542,22 +543,22 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.optional("amber", "ambercoor", "AMBER coordinate file", PARSE_STRING);
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
 // begin fep output options    
-   opts.optional("fep", "fepoutfreq", "Frequency of FEP energy output in "
-     "timesteps", &fepOutFreq, 5);
-   opts.range("fepoutfreq", NOT_NEGATIVE);
-   opts.optional("fepoutfreq", "fepoutfile", "FEP energy output filename",
-     fepOutFile);
+   opts.optional("alch", "alchoutfreq", "Frequency of alchemical energy"
+     "output in timesteps", &alchOutFreq, 5);
+   opts.range("alchoutfreq", NOT_NEGATIVE);
+   opts.optional("alchoutfreq", "alchoutfile", "Alchemical energy output"
+       "filename", alchOutFile);
 // end fep output options
 //fepe
 
-   opts.optional("thermInt", "tioutfreq", "Frequency of TI energy output in "
-     "timesteps", &tiOutFreq, 5);
-   opts.range("tioutfreq", NOT_NEGATIVE);
-   opts.optional("tioutfreq", "tioutfile", "TI energy output filename",
-     tiOutFile);
-
+// REDUNDANT TI BEGINS 
+//   opts.optional("thermInt", "tioutfreq", "Frequency of TI energy output in "
+//     "timesteps", &tiOutFreq, 5);
+//   opts.range("tioutfreq", NOT_NEGATIVE);
+//   opts.optional("tioutfreq", "tioutfile", "TI energy output filename",
+//     tiOutFile);
+// REDUNDANT TI ENDS
 
    /* GROMACS options */
    opts.optionalB("main", "gromacs", "Use GROMACS-like force field?",
@@ -713,61 +714,66 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
      "default is 'O'", PARSE_STRING);
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
 //  alchemical fep options
-   opts.optionalB("main", "fep", "Is chemical fep being performed?",
-     &fepOn, FALSE);
-   opts.require("fep", "lambda", "Coupling parameter value", &lambda);
-   opts.require("fep", "lambda2", "Coupling comparison value", &lambda2);
-   opts.optional("fep", "fepFile", "PDB file with perturbation flags "
+   opts.optionalB("main", "alch", "Is achemical simulation being performed?",
+     &alchOn, FALSE);
+   opts.optional("alch", "alchType", "Which alchemical method to use?", 
+       PARSE_STRING);
+   opts.require("alch", "alchLambda", "Coupling parameter value", 
+       &alchLambda);
+   opts.require("alch", "alchLambda2", "Coupling comparison value",
+       &alchLambda2);
+   opts.optional("alch", "alchFile", "PDB file with perturbation flags "
      "default is the input PDB file", PARSE_STRING); 
-   opts.optional("fep", "fepCol", "Column in the fepFile with the "
+   opts.optional("alch", "alchCol", "Column in the alchFile with the "
      "perturbation flag", PARSE_STRING);
-   opts.optional("fep", "fepEquilSteps", "Equilibration steps, before "
-     "data collection in the fep window", &fepEquilSteps, 0);
-   opts.range("fepEquilSteps", NOT_NEGATIVE);
-   opts.optional("fep", "fepVdwShiftCoeff", "Coeff used for generating"
-     "the altered FEP vDW interactions", &fepVdwShiftCoeff, 5.);
-   opts.range("fepVdwShiftCoeff", NOT_NEGATIVE);
+   opts.optional("alch", "alchEquilSteps", "Equilibration steps, before "
+     "data collection in the alchemical window", &alchEquilSteps, 0);
+   opts.range("alchEquilSteps", NOT_NEGATIVE);
+   opts.optional("alch", "alchVdwShiftCoeff", "Coeff used for generating"
+     "the altered alchemical vDW interactions", &alchVdwShiftCoeff, 5.);
+   opts.range("alchVdwShiftCoeff", NOT_NEGATIVE);
    
-   opts.optional("fep", "fepElecLambdaStart", "Lambda at which to start"
-      "electrostatics scaling", &fepElecLambdaStart, 0.5); 
-   opts.range("fepElecLambdaStart", NOT_NEGATIVE);
+   opts.optional("alch", "alchElecLambdaStart", "Lambda at which electrostatic"
+      "scaling of exnihilated particles begins", &alchElecLambdaStart, 0.5); 
+   opts.range("alchElecLambdaStart", NOT_NEGATIVE);
    
-   opts.optional("fep", "fepVdwLambdaEnd", "Lambda at which to end"
-      "Vdw scaling", &fepVdwLambdaEnd, 1.0); 
-   opts.range("fepVdwLambdaEnd", NOT_NEGATIVE);  
+   opts.optional("alch", "alchVdwLambdaEnd", "Lambda at which vdW"
+      "scaling of exnihilated particles begins", &alchVdwLambdaEnd, 1.0); 
+   opts.range("alchVdwLambdaEnd", NOT_NEGATIVE);  
 // end FEP options
 //fepe
 
+// REDUNDANT TI BEGINS
 // Modifications for TI
 // lots of duplication of FEP, we'd be better off without all this but 
 // keeping it in place for now for compatibility
-   opts.optionalB("main", "thermInt", "Perform thermodynamic integration?",
-     &thermInt, FALSE);
-   opts.require("thermInt", "tilambda", "Coupling parameter value", &tiLambda);
-   opts.optional("thermInt", "tiFile", "PDB file with perturbation flags "
-     "default is the input PDB file", PARSE_STRING); 
-   opts.optional("thermInt", "tiCol", "Column in the tiFile with the "
-     "perturbation flag", PARSE_STRING);
-   opts.optional("thermInt", "tiEquilSteps", "Equilibration steps, before "
-     "data collection at each tiLambda value", &tiEquilSteps, 0);
-   opts.range("tiEquilSteps", NOT_NEGATIVE);
-   opts.optional("thermInt", "tiVdwShiftCoeff", "Coeff used for generating"
-     "the altered alchemical vDW interactions", &tiVdwShiftCoeff, 5.);
-   opts.range("tiVdwShiftCoeff", NOT_NEGATIVE);
-   
-   opts.optional("thermInt", "tiElecLambdaStart", "Lambda at which to start"
-      "electrostatics scaling", &tiElecLambdaStart, 0.5); 
-   opts.range("tiElecLambdaStart", NOT_NEGATIVE);
-   
-   opts.optional("thermInt", "tiVdwLambdaEnd", "Lambda at which to end"
-      "Vdw scaling", &tiVdwLambdaEnd, 0.5); 
-   opts.range("tiVdwLambdaEnd", NOT_NEGATIVE);  
+//   opts.optionalB("main", "thermInt", "Perform thermodynamic integration?",
+//     &thermInt, FALSE);
+// opts.require("thermInt", "tilambda", "Coupling parameter value", &tiLambda);
+// opts.optional("thermInt", "tiFile", "PDB file with perturbation flags "
+//     "default is the input PDB file", PARSE_STRING); 
+//   opts.optional("thermInt", "tiCol", "Column in the tiFile with the "
+//     "perturbation flag", PARSE_STRING);
+//   opts.optional("thermInt", "tiEquilSteps", "Equilibration steps, before "
+//     "data collection at each tiLambda value", &tiEquilSteps, 0);
+//   opts.range("tiEquilSteps", NOT_NEGATIVE);
+//   opts.optional("thermInt", "tiVdwShiftCoeff", "Coeff used for generating"
+//     "the altered alchemical vDW interactions", &tiVdwShiftCoeff, 5.);
+//   opts.range("tiVdwShiftCoeff", NOT_NEGATIVE);
+//   
+//   opts.optional("thermInt", "tiElecLambdaStart", "Lambda at which to start"
+//      "electrostatics scaling", &tiElecLambdaStart, 0.5); 
+//   opts.range("tiElecLambdaStart", NOT_NEGATIVE);
+//   
+//   opts.optional("thermInt", "tiVdwLambdaEnd", "Lambda at which to end"
+//      "Vdw scaling", &tiVdwLambdaEnd, 0.5); 
+//   opts.range("tiVdwLambdaEnd", NOT_NEGATIVE);  
 // end TI options
+// REDUNDANT TI ENDS
 
-   opts.optionalB("main", "decouple", "Enable alchemical decoupling?",
-     &decouple, FALSE);
+   opts.optionalB("main", "alchDecouple", "Enable alchemical decoupling?",
+     &alchDecouple, FALSE);
 
    opts.optionalB("main", "les", "Is locally enhanced sampling enabled?",
      &lesOn, FALSE);
@@ -2182,83 +2188,81 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
 
-   if (fepOn) {
-     if	     (rescaleFreq > 0) 	fepTemp = rescaleTemp;
-     else if (reassignFreq > 0)	fepTemp = reassignTemp;
-     else if (langevinOn) 	fepTemp = langevinTemp;
-     else if (tCoupleOn) 	fepTemp = tCoupleTemp;
-     else NAMD_die("Alchemical FEP can be performed only in constant temperature simulations");
+   if (alchOn) {
+
+     if (!opts.defined("alchType")) 
+     {
+       NAMD_die("Must define type of alchemical simulation: fep or ti\n");
+     }
+     else
+     {
+       opts.get("alchType",s);
+       if (!strcasecmp(s, "fep"))
+       {
+         alchFepOn = TRUE;
+       }
+       else if (!strcasecmp(s, "ti"))
+       {
+         alchThermIntOn = TRUE;
+       }
+     }
+
+     if	     (rescaleFreq > 0) 	alchTemp = rescaleTemp;
+     else if (reassignFreq > 0)	alchTemp = reassignTemp;
+     else if (langevinOn) 	alchTemp = langevinTemp;
+     else if (tCoupleOn) 	alchTemp = tCoupleTemp;
+     else NAMD_die("Alchemical FEP can be performed only in constant temperature simulations\n");
 
      if (reassignFreq > 0 && reassignIncr != 0)
-	NAMD_die("reassignIncr cannot be used in alchemical FEP runs");
+	NAMD_die("reassignIncr cannot be used in alchemical simulations\n");
 
-     if (lambda < 0.0 || lambda > 1.0 || lambda2 < 0.0 || lambda2 > 1.0)
-        NAMD_die("lambda values should be in the range [0.0, 1.0]");
-  
-     if (!opts.defined("fepoutfile")) {
-       strcpy(fepOutFile, outputFilename);
-       strcat(fepOutFile, ".fep");
+     if (alchLambda < 0.0 || alchLambda > 1.0 || alchLambda2 < 0.0 || alchLambda2 > 1.0)
+        NAMD_die("Alchemical lambda values should be in the range [0.0, 1.0]\n");
+
+     if ( alchOn && alchVdwLambdaEnd > 1.0) 
+        NAMD_die("Gosh tiny Elvis, you kicked soft-core in the van der Waals! alchVdwLambdaEnd should be in the range [0.0, 1.0]\n");
+
+     if ( alchOn && alchElecLambdaStart > 1.0) 
+        NAMD_die("alchElecLambdaStart should be in the range [0.0, 1.0]\n");
+     
+     if (alchFepOn)
+     {
+       if (!opts.defined("alchoutfile")) {
+       strcpy(alchOutFile, outputFilename);
+       strcat(alchOutFile, ".fep");
+       }
      }
-   } else {
-     lambda = lambda2 = 0;
-     fepElecLambdaStart = 0;
-     fepOutFile[0] = STRINGNULL;
-   }
-
-   if (thermInt) {
-     if	     (rescaleFreq > 0) 	tiTemp = rescaleTemp;
-     else if (reassignFreq > 0)	tiTemp = reassignTemp;
-     else if (langevinOn) 	tiTemp = langevinTemp;
-     else if (tCoupleOn) 	tiTemp = tCoupleTemp;
-     else NAMD_die("Thermodynamic integration can be performed only in constant temperature simulations");
-
-     if (reassignFreq > 0 && reassignIncr != 0)
-	NAMD_die("reassignIncr cannot be used in TI runs");
-
-     if (lambda < 0.0 || lambda > 1.0)
-        NAMD_die("lambda values should be in the range [0.0, 1.0]");
-  
-     if (!opts.defined("tioutfile")) {
-       strcpy(tiOutFile, outputFilename);
-       strcat(tiOutFile, ".ti");
+     else if (alchThermIntOn)
+     {
+       if (!opts.defined("alchoutfile")) { 
+         strcpy(alchOutFile, outputFilename); 
+         strcat(alchOutFile, ".ti"); 
+       } 
      }
+
    } else {
-     tiLambda = 0;
-     tiOutFile[0] = STRINGNULL;
+     alchLambda = alchLambda2 = 0;
+     alchElecLambdaStart = 0;
+     alchOutFile[0] = STRINGNULL;
    }
 
 //fepe
 
-   if ( fepOn && thermInt )
-     NAMD_die("Sorry, combined TI and FEP is not implemented.");
-   if ( fepOn && lesOn )
-     NAMD_die("Sorry, combined LES and FEP is not implemented.");
-   if ( thermInt && lesOn )
-     NAMD_die("Sorry, combined LES and TI is not implemented.");
-   if ( decouple && (! (fepOn || thermInt) ) ) 
+   if ( alchFepOn && alchThermIntOn )
+     NAMD_die("Sorry, combined TI and FEP is not implemented.\n");
+   if ( alchOn && lesOn )
+     NAMD_die("Sorry, combined LES with FEP or TI is not implemented.\n");
+   if ( alchThermIntOn && lesOn )
+     NAMD_die("Sorry, combined LES and TI is not implemented.\n");
+   if ( alchDecouple && (! (alchFepOn || alchThermIntOn) ) ) 
      NAMD_die("Alchemcial decoupling was requested but alchemical free \
-       energy calculation is not active.");
-
-   if (thermInt) {
-     //merge TI variables into FEP ones, so TI can leech off some FEP code paths
-     //doesn't have to be like this but should keep the code a bit neater
-     lambda = tiLambda;
-     fepTemp = tiTemp;
-     fepOutFreq = tiOutFreq;
-     strcpy(fepOutFile, tiOutFile);     
-     fepEquilSteps = tiEquilSteps;
-     fepVdwShiftCoeff = tiVdwShiftCoeff;
-     fepElecLambdaStart = tiElecLambdaStart;
-     fepVdwLambdaEnd = tiVdwLambdaEnd;
-   }
-
+       energy calculation is not active.\n");
 
    if ( lesOn && ( lesFactor < 1 || lesFactor > 15 ) ) {
      NAMD_die("lesFactor must be positive and less than 16");
    }
-   if ((pairInteractionOn && fepOn) || (pairInteractionOn && lesOn) || (pairInteractionOn && thermInt) ) 
+   if ((pairInteractionOn && alchFepOn) || (pairInteractionOn && lesOn) || (pairInteractionOn && alchThermIntOn) ) 
      NAMD_die("Sorry, pair interactions may not be calculated when LES, FEP or TI is enabled.");
 
    //  Set up load balancing variables
@@ -2517,10 +2521,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if ( lesOn && ( FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, LES is only implemented for PME full electrostatics.");
    }
-   if ( fepOn && ( FMAOn || useDPME || fullDirectOn ) ) {
+   if ( alchFepOn && ( FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, FEP is only implemented for PME full electrostatics.");
    }
-   if ( thermInt && ( FMAOn || useDPME || fullDirectOn ) ) {
+   if ( alchThermIntOn && ( FMAOn || useDPME || fullDirectOn ) ) {
      NAMD_die("Sorry, TI is only implemented for PME full electrostatics.");
    }
    if ( pairInteractionOn && FMAOn ) {
@@ -2979,8 +2983,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "REQUIRING " << pairlistMinProcs << " PROCESSORS FOR PAIRLISTS\n";
    usePairlists = ( CkNumPes() >= pairlistMinProcs );
    // FB - FEP and TI are now dependent on pairlists - disallow usePairlists=0
-   if ( (fepOn || thermInt) && (!usePairlists)) {
-     NAMD_die("Sorry, FEP and TI require pairlists to be enabled\n");
+   if ( (alchOn) && (!usePairlists)) {
+     NAMD_die("Sorry, Alchemical simulations require pairlists to be enabled\n");
    }
      
    iout << iINFO << "PAIRLISTS " << ( usePairlists ? "ENABLED" : "DISABLED" )
@@ -3211,53 +3215,52 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
 //  Alchemical FEP status
 
-//   current = config->find("fepOutFile");
-   if (fepOn)
+//   current = config->find("alchOutFile");
+   if (alchOn)
    {
      iout << iINFO << "ALCHEMICAL FEP ON\n";
      iout << iINFO << "FEP CURRENT LAMBDA VALUE     "
-          << lambda << "\n";
+          << alchLambda << "\n";
      iout << iINFO << "FEP COMPARISON LAMBDA VALUE  "
-          << lambda2 << "\n";
+          << alchLambda2 << "\n";
      iout << iINFO << "FEP VDW SHIFTING COEFFICIENT "
-          << fepVdwShiftCoeff << "\n";
+          << alchVdwShiftCoeff << "\n";
      iout << iINFO << "FEP ELEC. ACTIVE FOR ANNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
-          << (1 - fepElecLambdaStart) << "\n";
+          << (1 - alchElecLambdaStart) << "\n";
      iout << iINFO << "FEP ELEC. ACTIVE FOR EXNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = "
-          << fepElecLambdaStart << " AND LAMBDA = 1\n";
+          << alchElecLambdaStart << " AND LAMBDA = 1\n";
      iout << iINFO << "FEP VDW ACTIVE FOR ANNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = "
-          << (1 - fepVdwLambdaEnd) << " AND LAMBDA = 1\n";
+          << (1 - alchVdwLambdaEnd) << " AND LAMBDA = 1\n";
      iout << iINFO << "FEP VDW ACTIVE FOR EXNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
-          << fepVdwLambdaEnd << "\n";
+          << alchVdwLambdaEnd << "\n";
    }
 //fepe
 
-   if (thermInt)
+   if (alchThermIntOn)
    {
      iout << iINFO << "THERMODYNAMIC INTEGRATION (TI) ON\n";
      iout << iINFO << "TI LAMBDA VALUE     "
-          << lambda << "\n";
+          << alchLambda << "\n";
      iout << iINFO << "TI VDW SHIFTING COEFFICIENT "
-          << tiVdwShiftCoeff << "\n";
+          << alchVdwShiftCoeff << "\n";
      iout << iINFO << "TI ELEC. ACTIVE FOR ANNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
-          << (1 - tiElecLambdaStart) << "\n";
+          << (1 - alchElecLambdaStart) << "\n";
      iout << iINFO << "TI ELEC. ACTIVE FOR EXNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = "
-          << tiElecLambdaStart << " AND LAMBDA = 1\n";
+          << alchElecLambdaStart << " AND LAMBDA = 1\n";
      iout << iINFO << "TI VDW ACTIVE FOR ANNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = "
-          << (1 - tiVdwLambdaEnd) << " AND LAMBDA = 1\n";
+          << (1 - alchVdwLambdaEnd) << " AND LAMBDA = 1\n";
      iout << iINFO << "TI VDW ACTIVE FOR EXNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
-          << tiVdwLambdaEnd << "\n";
+          << alchVdwLambdaEnd << "\n";
    }
 
 

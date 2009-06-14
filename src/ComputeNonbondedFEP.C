@@ -46,7 +46,7 @@ inline void fep_vdw_forceandenergies (BigReal A, BigReal B, BigReal r2,
 /* ********************************** */
 inline void ti_vdw_force_energy_dUdl (BigReal A, BigReal B, BigReal r2, 
   BigReal myVdwShift, BigReal switchdist2, BigReal cutoff2, 
-  BigReal myVdwLambda, BigReal fepVdwShiftCoeff, BigReal switchfactor, 
+  BigReal myVdwLambda, BigReal alchVdwShiftCoeff, BigReal switchfactor, 
   BigReal* alch_vdw_energy, BigReal* alch_vdw_force, BigReal* alch_vdw_dUdl) {
   const BigReal r2_1 = r2 + myVdwShift;  //myVdwShift already multplied by relevant (1-vdwLambda)
   const BigReal r6_1 = r2_1*r2_1*r2_1;
@@ -62,7 +62,7 @@ inline void ti_vdw_force_energy_dUdl (BigReal A, BigReal B, BigReal r2,
   *alch_vdw_force =  myVdwLambda * (  \
                     + (12.*(*alch_vdw_energy) + 6.*B/r6_1)/r2_1 * switchmul \
                     + (*alch_vdw_energy) * switchmul2);
-  *alch_vdw_dUdl = (myVdwLambda * fepVdwShiftCoeff * (
+  *alch_vdw_dUdl = (myVdwLambda * alchVdwShiftCoeff * (
             (6*A/(r6_1*r6_1) - 3*B/r6_1) / r2_1 ) + (*alch_vdw_energy))
             * switchmul;  // dU/dlambda
   *alch_vdw_energy *= myVdwLambda*switchmul;

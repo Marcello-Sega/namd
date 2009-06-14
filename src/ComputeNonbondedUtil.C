@@ -62,14 +62,14 @@ BigReal         ComputeNonbondedUtil::c7;
 BigReal         ComputeNonbondedUtil::c8;
 // BigReal         ComputeNonbondedUtil::d0;
 // fepb
-Bool      ComputeNonbondedUtil::fepOn;
-Bool      ComputeNonbondedUtil::thermInt;
-BigReal   ComputeNonbondedUtil::lambda;
-BigReal   ComputeNonbondedUtil::lambda2;
-BigReal   ComputeNonbondedUtil::fepVdwShiftCoeff;
-BigReal   ComputeNonbondedUtil::fepVdwLambdaEnd;
-BigReal   ComputeNonbondedUtil::fepElecLambdaStart;
-Bool      ComputeNonbondedUtil::decouple;
+Bool      ComputeNonbondedUtil::alchFepOn;
+Bool      ComputeNonbondedUtil::alchThermIntOn;
+BigReal   ComputeNonbondedUtil::alchLambda;
+BigReal   ComputeNonbondedUtil::alchLambda2;
+BigReal   ComputeNonbondedUtil::alchVdwShiftCoeff;
+BigReal   ComputeNonbondedUtil::alchVdwLambdaEnd;
+BigReal   ComputeNonbondedUtil::alchElecLambdaStart;
+Bool      ComputeNonbondedUtil::alchDecouple;
 //fepe
 Bool      ComputeNonbondedUtil::lesOn;
 int       ComputeNonbondedUtil::lesFactor;
@@ -207,16 +207,16 @@ void ComputeNonbondedUtil::select(void)
   cutoff2 = cutoff*cutoff;
 
 //fepb
-  fepOn = simParams->fepOn;
-  thermInt = simParams->thermInt;
-  lambda = lambda2 = 0;
+  alchFepOn = simParams->alchFepOn;
+  alchThermIntOn = simParams->alchThermIntOn;
+  alchLambda = alchLambda2 = 0;
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
-  fepVdwShiftCoeff = simParams->fepVdwShiftCoeff;
-  fepVdwLambdaEnd = simParams->fepVdwLambdaEnd;
-  fepElecLambdaStart = simParams->fepElecLambdaStart;
+  alchVdwShiftCoeff = simParams->alchVdwShiftCoeff;
+  alchVdwLambdaEnd = simParams->alchVdwLambdaEnd;
+  alchElecLambdaStart = simParams->alchElecLambdaStart;
 
-  decouple = simParams->decouple;
+  alchDecouple = simParams->alchDecouple;
 
   delete [] lambda_table;
   lambda_table = 0;
@@ -225,9 +225,9 @@ void ComputeNonbondedUtil::select(void)
   pairInteractionSelf = simParams->pairInteractionSelf;
   pressureProfileOn = simParams->pressureProfileOn;
 
-  if ( fepOn ) {
-    lambda = simParams->lambda;
-    lambda2 = simParams->lambda2;
+  if ( alchFepOn ) {
+    alchLambda = simParams->alchLambda;
+    alchLambda2 = simParams->alchLambda2;
     ComputeNonbondedUtil::calcPair = calc_pair_energy_fep;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_fep;
     ComputeNonbondedUtil::calcSelf = calc_self_energy_fep;
@@ -244,8 +244,8 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_energy_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_fep;
-  }  else if ( thermInt ) {
-    lambda = simParams->lambda;
+  }  else if ( alchThermIntOn ) {
+    alchLambda = simParams->alchLambda;
     ComputeNonbondedUtil::calcPair = calc_pair_ti;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_ti;
     ComputeNonbondedUtil::calcSelf = calc_self_ti;

@@ -219,14 +219,14 @@ public:
   static BigReal c8;
   // static BigReal d0;
 //sd-db
-  static Bool fepOn;
-  static Bool thermInt;
-  static BigReal lambda;
-  static BigReal lambda2;
-  static BigReal fepVdwShiftCoeff;
-  static BigReal fepElecLambdaStart;
-  static BigReal fepVdwLambdaEnd;
-  static Bool decouple;
+  static Bool alchFepOn;
+  static Bool alchThermIntOn;
+  static BigReal alchLambda;
+  static BigReal alchLambda2;
+  static BigReal alchVdwShiftCoeff;
+  static BigReal alchElecLambdaStart;
+  static BigReal alchVdwLambdaEnd;
+  static Bool alchDecouple;
 //sd-de
   static Bool lesOn;
   static int lesFactor;

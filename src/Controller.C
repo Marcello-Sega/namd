@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: petefred $
- * $Date: 2009/06/14 01:23:48 $
- * $Revision: 1.1237 $
+ * $Author: char $
+ * $Date: 2009/06/14 07:01:47 $
+ * $Revision: 1.1238 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -871,31 +871,30 @@ void Controller::correctMomentum(int step) {
 }
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
 void Controller::printFepMessage(int step)
 {
-  if (simParams->fepOn) {
-    const BigReal lambda = simParams->lambda;
-    const BigReal lambda2 = simParams->lambda2;
-    const BigReal fepTemp = simParams->fepTemp;
-    const int fepEquilSteps = simParams->fepEquilSteps;
+  if (simParams->alchFepOn) {
+    const BigReal alchLambda = simParams->alchLambda;
+    const BigReal alchLambda2 = simParams->alchLambda2;
+    const BigReal alchTemp = simParams->alchTemp;
+    const int alchEquilSteps = simParams->alchEquilSteps;
     iout << "FEP: RESETTING FOR NEW FEP WINDOW "
-         << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2
-         << "\nFEP: WINDOW TO HAVE " << fepEquilSteps
+         << "LAMBDA SET TO " << alchLambda << " LAMBDA2 " << alchLambda2
+         << "\nFEP: WINDOW TO HAVE " << alchEquilSteps
          << " STEPS OF EQUILIBRATION PRIOR TO FEP DATA COLLECTION.\n"
-         << "FEP: USING CONSTANT TEMPERATURE OF " << fepTemp 
+         << "FEP: USING CONSTANT TEMPERATURE OF " << alchTemp 
          << " K FOR FEP CALCULATION\n" << endi;
   }
 } 
 void Controller::printTiMessage(int step)
 {
-  if (simParams->thermInt) {
-    const BigReal lambda = simParams->lambda;
-    const BigReal fepTemp = simParams->fepTemp;
-    const int fepEquilSteps = simParams->fepEquilSteps;
+  if (simParams->alchThermIntOn) {
+    const BigReal alchLambda = simParams->alchLambda;
+    const BigReal alchTemp = simParams->alchTemp;
+    const int alchEquilSteps = simParams->alchEquilSteps;
     iout << "TI: RESETTING FOR NEW WINDOW "
-         << "LAMBDA SET TO " << lambda 
-         << "\nTI: WINDOW TO HAVE " << fepEquilSteps 
+         << "LAMBDA SET TO " << alchLambda 
+         << "\nTI: WINDOW TO HAVE " << alchEquilSteps 
          << " STEPS OF EQUILIBRATION PRIOR TO TI DATA COLLECTION.\n" << endi;
   }
 } 
@@ -1780,7 +1779,6 @@ void Controller::enqueueCollections(int timestep)
 }
 
 //Modifications for alchemical fep
-//SD & CC, CNRS - LCTN, Nancy
 static char *FEPTITLE(int X)
 { 
   static char tmp_string[21];
@@ -1796,19 +1794,19 @@ static char *TITITLE(int X)
 }
 
 void Controller::outputFepEnergy(int step) {
- if (simParams->fepOn) {
+ if (simParams->alchFepOn) {
   const int stepInRun = step - simParams->firstTimestep;
-  const int fepEquilSteps = simParams->fepEquilSteps;
-  const BigReal lambda = simParams->lambda;
-  const BigReal lambda2 = simParams->lambda2;
-  if (stepInRun == 0 || stepInRun == fepEquilSteps) {
+  const int alchEquilSteps = simParams->alchEquilSteps;
+  const BigReal alchLambda = simParams->alchLambda;
+  const BigReal alchLambda2 = simParams->alchLambda2;
+  if (stepInRun == 0 || stepInRun == alchEquilSteps) {
     FepNo = 0;
     exp_dE_ByRT = 0.0;
     net_dE = 0.0;
   }
   BigReal dE = electEnergy_f + electEnergySlow_f + ljEnergy_f
 		- (electEnergy + electEnergySlow + ljEnergy);
-  BigReal RT = BOLTZMAN * simParams->fepTemp;
+  BigReal RT = BOLTZMAN * simParams->alchTemp;
   FepNo++;
   exp_dE_ByRT += exp(-dE/RT);
   net_dE += dE;
@@ -1816,8 +1814,8 @@ void Controller::outputFepEnergy(int step) {
   if (stepInRun == 0) {
     if (!fepFile.rdbuf()->is_open()) {
       fepSum = 0.0;
-      NAMD_backup_file(simParams->fepOutFile);
-      fepFile.open(simParams->fepOutFile);
+      NAMD_backup_file(simParams->alchOutFile);
+      fepFile.open(simParams->alchOutFile);
       iout << "OPENING FEP ENERGY OUTPUT FILE\n" << endi;
       fepFile << "#            STEP                 Elec                            "
               << "vdW                    dE           dE_avg         Temp             dG\n"
@@ -1825,41 +1823,42 @@ void Controller::outputFepEnergy(int step) {
               << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
     }
     fepFile << "#NEW FEP WINDOW: "
-            << "LAMBDA SET TO " << lambda << " LAMBDA2 " << lambda2 << std::endl;
+            << "LAMBDA SET TO " << alchLambda << " LAMBDA2 " 
+            << alchLambda2 << std::endl;
   }
-  if (stepInRun == fepEquilSteps) {
-    fepFile << "#" << fepEquilSteps << " STEPS OF EQUILIBRATION AT "
-            << "LAMBDA " << simParams->lambda << " COMPLETED\n"
+  if (stepInRun == alchEquilSteps) {
+    fepFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
+            << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
             << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
   }
-  if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
+  if (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0)) {
     writeFepEnergyData(step, fepFile);
     fepFile.flush();
   }
   if (step == simParams->N) {
     fepSum = fepSum + dG;
-    fepFile << "#Free energy change for lambda window [ " << lambda
-	    << " " << lambda2 << " ] is " << dG << " ; net change until now is " << fepSum << std::endl;
+    fepFile << "#Free energy change for lambda window [ " << alchLambda
+	    << " " << alchLambda2 << " ] is " << dG << " ; net change until now is " << fepSum << std::endl;
   }
  }
 }
 
 void Controller::outputTiEnergy(int step) {
- if (simParams->thermInt) {
+ if (simParams->alchThermIntOn) {
   const int stepInRun = step - simParams->firstTimestep;
-  const int fepEquilSteps = simParams->fepEquilSteps;
-  const BigReal lambda = simParams->lambda;
+  const int alchEquilSteps = simParams->alchEquilSteps;
+  const BigReal alchLambda = simParams->alchLambda;
   
-  if (stepInRun == 0 || stepInRun == fepEquilSteps) {
+  if (stepInRun == 0 || stepInRun == alchEquilSteps) {
     TiNo = 0;
     net_dEdl_elec_1 = 0;
     net_dEdl_elec_2 = 0;
     net_dEdl_lj_1 = 0;
     net_dEdl_lj_2 = 0;
   }
-  if (stepInRun == 0 || (! ((step - 1) % simParams->fepOutFreq))) {
+  if (stepInRun == 0 || (! ((step - 1) % simParams->alchOutFreq))) {
     // output of instantaneous dU/dl now replaced with running average
-    // over last fepOutFreq steps (except for step 0)
+    // over last alchOutFreq steps (except for step 0)
     recent_TiNo = 0;
     recent_dEdl_elec_1 = 0;
     recent_dEdl_elec_2 = 0;
@@ -1880,39 +1879,39 @@ void Controller::outputTiEnergy(int step) {
   recent_dEdl_lj_2 += ljEnergy_ti_2;
 
   if (stepInRun == 0) {
-    BigReal fepElecLambdaStart = simParams->fepElecLambdaStart;
-    BigReal fepVdwLambdaEnd = simParams->fepVdwLambdaEnd;
-    BigReal elec_lambda_1 = (lambda <= fepElecLambdaStart)? 0. : \
-            (lambda - fepElecLambdaStart) / (1. - fepElecLambdaStart);
-    BigReal elec_lambda_2 = ((1-lambda) <= fepElecLambdaStart)? 0. : \
-            ((1-lambda) - fepElecLambdaStart) / (1. - fepElecLambdaStart);
-    BigReal vdw_lambda_1 =  (lambda >= fepVdwLambdaEnd)? 1. : \
-            lambda / fepVdwLambdaEnd; 
-    BigReal vdw_lambda_2 =  ((1-lambda) >= fepVdwLambdaEnd)? 1. : \
-            (1-lambda) / fepVdwLambdaEnd; 
+    BigReal alchElecLambdaStart = simParams->alchElecLambdaStart;
+    BigReal alchVdwLambdaEnd = simParams->alchVdwLambdaEnd;
+    BigReal elec_lambda_1 = (alchLambda <= alchElecLambdaStart)? 0. : \
+            (alchLambda - alchElecLambdaStart) / (1. - alchElecLambdaStart);
+    BigReal elec_lambda_2 = ((1-alchLambda) <= alchElecLambdaStart)? 0. : \
+            ((1-alchLambda) - alchElecLambdaStart) / (1. - alchElecLambdaStart);
+    BigReal vdw_lambda_1 =  (alchLambda >= alchVdwLambdaEnd)? 1. : \
+            alchLambda / alchVdwLambdaEnd; 
+    BigReal vdw_lambda_2 =  ((1-alchLambda) >= alchVdwLambdaEnd)? 1. : \
+            (1-alchLambda) / alchVdwLambdaEnd; 
     if (!tiFile.rdbuf()->is_open()) {
       //tiSum = 0.0;
-      NAMD_backup_file(simParams->tiOutFile);
-      tiFile.open(simParams->tiOutFile);
+      NAMD_backup_file(simParams->alchOutFile);
+      tiFile.open(simParams->alchOutFile);
       iout << "OPENING TI ENERGY OUTPUT FILE\n" << endi;
       tiFile << "#       STEP      Elec_dU/dl      Elec_avg        vdW_dU/dl      vdw_avg       Elec_dU/dl      Elec_avg      vdW_dU/dl       vdw_avg       PME_dU/dl      PME_avg\n"
               << "#               <---------------------PARTITION 1------------------------>    <---------------------PARTITION 2--------------------->" 
               << std::endl;
     }
     tiFile << "#NEW TI WINDOW: "
-            << "LAMBDA " << lambda 
+            << "LAMBDA " << alchLambda 
             << "\n#PARTITION 1 VDW LAMBDA " << vdw_lambda_1 
             << "\n#PARTITION 1 ELEC LAMBDA " << elec_lambda_1 
             << "\n#PARTITION 2 VDW LAMBDA " << vdw_lambda_2 
             << "\n#PARTITION 2 ELEC LAMBDA " << elec_lambda_2 
             << "\n" << std::endl;
   }
-  if (stepInRun == fepEquilSteps) {
-    tiFile << "#" << fepEquilSteps << " STEPS OF EQUILIBRATION AT "
-            << "LAMBDA " << simParams->lambda << " COMPLETED\n"
+  if (stepInRun == alchEquilSteps) {
+    tiFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
+            << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
             << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
   }
-  if (simParams->fepOutFreq && ((step%simParams->fepOutFreq)==0)) {
+  if (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0)) {
     writeTiEnergyData(step, tiFile);
     tiFile.flush();
   }
@@ -1923,7 +1922,7 @@ void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   BigReal eeng = electEnergy+electEnergySlow;
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
   BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
-  BigReal RT = BOLTZMAN * simParams->fepTemp;
+  BigReal RT = BOLTZMAN * simParams->alchTemp;
   dG = -(RT * log(exp_dE_ByRT/FepNo));
   BigReal dE_avg = net_dE/FepNo;
   fepFile << FEPTITLE(step);

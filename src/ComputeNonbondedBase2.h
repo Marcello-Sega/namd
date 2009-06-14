@@ -136,7 +136,7 @@ ALCHPAIR(
           cutoff2, myVdwLambda, myVdwLambda2, switchfactor, &alch_vdw_energy, 
           &alch_vdw_force,&alch_vdw_energy_2);)
         TI(ti_vdw_force_energy_dUdl(A,B,r2,myVdwShift,switchdist2,
-          cutoff2, myVdwLambda, fepVdwShiftCoeff, switchfactor, 
+          cutoff2, myVdwLambda, alchVdwShiftCoeff, switchfactor, 
           &alch_vdw_energy, &alch_vdw_force, &alch_vdw_dUdl);)
       )
       

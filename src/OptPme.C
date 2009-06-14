@@ -554,13 +554,13 @@ void OptPmeCompute::initializeOptPmeCompute () {
 
   initializePmeGrid (simParams, myGrid);
 
-  fepOn    = simParams->fepOn;
-  thermInt = simParams->thermInt;
+  alchFepOn    = simParams->alchFepOn;
+  alchThermIntOn = simParams->alchThermIntOn;
   lesOn    = simParams->lesOn;
   pairOn   = simParams->pairInteractionOn;
 
-  assert (!fepOn);
-  assert (!thermInt);
+  assert (!alchFepOn);
+  assert (!alchThermIntOn);
   assert (!lesOn);
   assert (!pairOn);
   
