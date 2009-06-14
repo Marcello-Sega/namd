@@ -426,6 +426,19 @@ for typical simulations but the user is encouraged to experiment.
 There should be no performance impact from enabling this feature.
 }
 
+\item
+\NAMDCONFWDEF{LJcorrection}
+{Apply long-range corrections to the system energy and virial to
+account for neglected vdW forces?}{{\tt yes} or {\tt no}}{{\tt no}}
+{Apply an analytical correction to the reported vdW energy and virial
+that is equal to the amount lost due to switching and cutoff of the LJ
+potential. The correction will use the average of vdW parameters for
+all particles in the system and assume a constant, homogeneous
+distribution of particles beyond the switching distance. See 
+\cite{Shirts2007} for details (the equations used in the NAMD
+implementation are slightly different due to the use of a different
+switching function).}
+
 \end{itemize}
 
 
