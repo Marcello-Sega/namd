@@ -68,16 +68,23 @@ wave or other approximate wave form to be applied.}
 
 \subsection{Grid Forces}
 
-\NAMD\ provides the ability to specify grids describing an electrical potential in the simulation space. Each atom is affected by the potential based on its charge and its position interpolated from the specified grid(s). Energy due to the grid-defined field will be reported in the MISC column of the output.
+\NAMD\ provides the ability to specify grids describing a potential in the simulation 
+space. Each atom is affected by the potential based on its charge and its position, 
+using the potential function interpolated from the specified grid(s). Energy due to the 
+grid-defined field will be reported in the MISC column of the output, unless a scaling
+factor not proportional to (1,1,1) is used.
 
-NAMD allows the definition of multiple grids, each with a separate set of defining parameters. This is specified using a tag field in each of the mgridforceXXX commands. The tag is an alphanumeric string without spaces which identifies to which grid the specified field applies.
+NAMD allows the definition of multiple grids, each with a separate set of defining 
+parameters. This is specified using a tag field in each of the mgridforceXXX commands. 
+The tag is an alphanumeric string without spaces which identifies to which grid the 
+specified field applies.
 
 The grid file format is a subset of the DataExplorer DX file format. as shown below:
 \begin{verbatim}
 # Lines at the beginning of the file starting with a # symbol 
 # are ignored as comments
 # Variables (replaced by numbers in an actual file):
-#   xn, yn, and zn are the number of data points along each axis;
+#   xn, yn, and zn are the number of data points along each dimension;
 #   xorg, yorg, and zorg is the origin of the grid, in angstroms;
 #   x[1-3]del, y[1-3]del, and z[1-3]del are the basis vectors which transform
 #   grid indices to coordinates in angstroms:
@@ -104,9 +111,9 @@ f4 f5 f6
 .
 \end{verbatim}
 
-Each axis of the grid may be specified as continuous or not. If the grid is not continuous in a particular axis, the potential grid is padded with three border slices on each non-continuous face of the grid, and border grid values are computed so that the force felt by an atom outside the grid goes to zero. If the grid is continuous along a particular axis, atoms outside the grid are affected by a potential that is interpolated from the grid and its corresponding periodic image along that axis.
+Each dimension of the grid may be specified as continuous or not. If the grid is not continuous in a particular dimension, the potential grid is padded with one border slices on each non-continuous face of the grid, and border grid values are computed so that the force felt by an atom outside the grid goes to zero. If the grid is continuous along a particular dimension, atoms outside the grid are affected by a potential that is interpolated from the grid and its corresponding periodic image along that dimension.
 
-To calculate the force on an atom due to the grid, the atom's coordinates are transformed according to the current basis vectors of the simulation box to a coordinate frame that is centered at the center of the specified grid. Note that the size and spatial coordinates of the grid remain fixed, and are not scaled as the size of the simulation box fluctuates. For atoms within the grid, the force is computed by numerically approximating the gradient of the potential using surrounding grid values. For atoms outside the grid, the state of the {\tt mgridforcecont[1,2,3]} determine whether the force is zero, or computed from the images of the grid as described above. Note that if the grid is ever larger than the periodic box, it is truncated at the edge of that box. The consequence of this is that the computed potential will not vary smoothly at the edges, introducing numerical instability.
+To calculate the force on an atom due to the grid, the atom's coordinates are transformed according to the current basis vectors of the simulation box to a coordinate frame that is centered at the center of the specified grid. Note that the size and spatial coordinates of the grid remain fixed, and are not scaled as the size of the simulation box fluctuates. For atoms within the grid, the force is computed by analytically determining the gradient of the tricubic polynomial used to interpolate the potential from surrounding grid values. For atoms outside the grid, the state of the {\tt mgridforcecont[1,2,3]} determine whether the force is zero, or computed from the images of the grid as described above. Note that if the grid is ever larger than the periodic box, it is truncated at the edge of that box. The consequence of this is that the computed potential will not vary smoothly at the edges, introducing numerical instability.
 
 The following parameters describe the grid-based potentials.
 
@@ -132,29 +139,30 @@ The following parameters describe the grid-based potentials.
 {Which column in the PDB file specified by {\tt mgridforcefile} contains the scaling factor}
 
 \item
-\NAMDCONFTAGWDEF{mgridforceqcol}
+\NAMDCONFTAGWDEF{mgridforcechargecol}
 {column of PDB from which to read atom charges}
 {X, Y, Z, O, or B}
 {Atom charge used for electrostatics.} 
 {Which column in the PDB file specified by {\tt mgridforcefile} contains the atom charge. By default, the charge value specified for the short-range Columb interactions are also used for the grid force. Both {\tt mgridforcecol} and {\tt mgridforceqcol} can be specified, in which case the apparent charge of the atom will be the product of the two values.}
 
 \item
-\NAMDCONFTAG{mgridforcevfile}
+\NAMDCONFTAG{mgridforcepotfile}
 {grid potential file name}
 {UNIX file name}
 {File specifying the grid size, coordinates, and potential values.}
 
 \item
 \NAMDCONFTAGWDEF{mgridforcevolts}
-{grid potential units in eV}
+{grid potential units in eV/charge}
 {{\tt yes} or {\tt no}}{{\tt no}}
 {If set, the grid potential values are expressed in {\rm eV}. Otherwise, values are
-in ${\rm kcal} / ({\rm mol} \; e)$}
+in ${\rm kcal} / ({\rm mol} \; charge)$}
 
 \item
-\NAMDCONFTAG{mgridforcescale}
+\NAMDCONFTAGWDEF{mgridforcescale}
 {scale factor for grid potential}
-{decimal}
+{Vector of decimals {\it scale}$_x$ {\it scale}$_y$ {\it scale}$_z$ }
+{1 1 1}
 {Scale factor applied to the grid potential values}
 
 \item
