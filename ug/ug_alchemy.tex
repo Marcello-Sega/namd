@@ -333,7 +333,7 @@ energy calculations, whether FEP or TI.
 %\NAMDCONFWDEF{fep / thermInt}{ Is an alchemical free energy perturbation to be performed? } {{\tt on} or {\tt off}} {{\tt off}} {Turns on alchemical transformation methods in NAMD.}
 
 %\item
-\NAMDCONFWDEF{alchType}{ Which method is to be employed for the alchemical transformation? } {{\tt fep} or {\tt ti}} {{\tt ti} 
+\NAMDCONFWDEF{alchType}{ Which method is to be employed for the alchemical transformation? } {{\tt fep} or {\tt ti}} {{\tt ti}} 
 %if only {\tt alchLambda} is specified; {\tt fep} if {\tt alchLambdaPlusDelta} / {\tt alchLambdaMinusDelta} are specified} 
 {Turns on Hamiltonian scaling and ensemble averaging for alchemical FEP or TI.}
 
@@ -518,7 +518,7 @@ while {$Lambda0 <= 1.0} {
 \end{minipage}
 &
 \begin{minipage}{7.8cm}
-\newline
+%\newline % LaTeX complains there is no line to end here
 Enable alchemical simulation module
 \newline
 Set alchemical method to FEP
