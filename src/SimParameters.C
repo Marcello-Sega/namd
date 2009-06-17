@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2009/06/14 07:01:48 $
- * $Revision: 1.1279 $
+ * $Author: brunner $
+ * $Date: 2009/06/17 21:09:12 $
+ * $Revision: 1.1280 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1183,9 +1183,9 @@ void SimParameters::config_parser_mgridforce(ParseOptions &opts) {
 		 "multipliers in one of the columns", PARSE_MULTIPLES);
     opts.require("mgridforce", "mgridforcecol", "Column of gridforcefile to "
 		 "use for force multiplier", PARSE_MULTIPLES);
-    opts.optional("mgridforce", "mgridforceqcol", "Column of gridforcefile to "
+    opts.optional("mgridforce", "mgridforcechargecol", "Column of gridforcefile to "
 		  "use for charge", PARSE_MULTIPLES);
-    opts.require("mgridforce", "mgridforcevfile", "Gridforce potential file",
+    opts.require("mgridforce", "mgridforcepotfile", "Gridforce potential file",
 		 PARSE_MULTIPLES);
     opts.optional("mgridforce", "mgridforcecont1", "Use continuous grid "
 		   "in K1 direction?", PARSE_MULTIPLES);
@@ -1209,9 +1209,9 @@ void SimParameters::config_parser_gridforce(ParseOptions &opts) {
 		 "multipliers in one of the columns", PARSE_STRING);
     opts.require("gridforce", "gridforcecol", "Column of gridforcefile to "
 		 "use for force multiplier", PARSE_STRING);
-    opts.optional("gridforce", "gridforceqcol", "Column of gridforcefile to "
+    opts.optional("gridforce", "gridforcechargecol", "Column of gridforcefile to "
 		  "use for charge", PARSE_STRING);
-    opts.require("gridforce", "gridforcevfile", "Gridforce potential file",
+    opts.require("gridforce", "gridforcepotfile", "Gridforce potential file",
 		 PARSE_STRING);
     opts.optionalB("gridforce", "gridforcecont1", "Use continuous grid "
 		   "in A1 direction?", &gridforceContA1, FALSE);
@@ -4078,7 +4078,7 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
     MGridforceParams* mgfp = NULL;
     mgfp = mgridforcelist.find_key(default_key);
     if (mgfp != NULL) {
-      iout << iINFO << "MGRIDFORCEVFILE key " 
+      iout << iINFO << "MGRIDFORCEPOTFILE key " 
         << key << " redefined for file " << valstr << "\n" << endi;
     } else {
       mgfp = mgridforcelist.add(default_key);
@@ -4088,8 +4088,8 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
 
     parse_mgrid_string_param(config,"gridforcefile",&(mgfp->gridforceFile));
     parse_mgrid_string_param(config,"gridforcecol",&(mgfp->gridforceCol));
-    parse_mgrid_string_param(config,"gridforceqcol",&(mgfp->gridforceQcol));
-    parse_mgrid_string_param(config,"gridforcevfile",&(mgfp->gridforceVfile));
+    parse_mgrid_string_param(config,"gridforcechargecol",&(mgfp->gridforceQcol));
+    parse_mgrid_string_param(config,"gridforcepotfile",&(mgfp->gridforceVfile));
     
     mgfp->gridforceCont[0] = gridforceContA1;
     mgfp->gridforceCont[1] = gridforceContA2;
@@ -4098,17 +4098,17 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
   }
   
   // Create multigrid parameter structures
-  current = config->find("mgridforcevfile");
+  current = config->find("mgridforcepotfile");
   while (current != NULL) {
     int curlen = strlen(current->data);
-    //    iout << iINFO << "MGRIDFORCEVFILE " << current->data 
+    //    iout << iINFO << "MGRIDFORCEPOTFILE " << current->data 
     //         << " " << curlen << "\n"  << endi;
     sscanf(current->data,"%80s%255s",key,valstr);
     
     MGridforceParams* mgfp = NULL;
     mgfp = mgridforcelist.find_key(key);
     if ( mgfp != NULL) {
-      iout << iINFO << "MGRIDFORCEVFILE key " 
+      iout << iINFO << "MGRIDFORCEPOTFILE key " 
         << key << " redefined for file " << valstr << "\n" << endi;
     } else {
       mgfp = mgridforcelist.add(key);
@@ -4241,9 +4241,9 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
     current = current->next;
   }
   
-  current = config->find("mgridforceqcol");
+  current = config->find("mgridforcechargecol");
   while (current != NULL) {
-    //    iout << iINFO << "MGRIDFORCEQCOL " << current->data << "\n"  
+    //    iout << iINFO << "MGRIDFORCECHARGECOL " << current->data << "\n"  
     //         << endi;
     int curlen = strlen(current->data);
     sscanf(current->data,"%80s%255s",key,valstr);
@@ -4251,7 +4251,7 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
     MGridforceParams* mgfp = NULL;
     mgfp = mgridforcelist.find_key(key);
     if ( mgfp == NULL) {
-      iout << iINFO << "MGRIDFORCEQCOL no key " 
+      iout << iINFO << "MGRIDFORCECHARGECOL no key " 
       << key << " defined for file " << valstr << "\n" << endi;
     } else {
       int collen = strlen(valstr);
@@ -4405,7 +4405,7 @@ void SimParameters::print_mgrid_params()
   
   while (params != NULL) {
     iout << iINFO << "MGRIDFORCE key " << params->gridforceKey << "\n" << endi;
-    iout << iINFO << "           Vfile " << params->gridforceVfile 
+    iout << iINFO << "           Potfile " << params->gridforceVfile 
       << "\n" << endi;
     iout << iINFO << "           Scale " << params->gridforceScale 
       << "\n" << endi;
@@ -4418,7 +4418,7 @@ void SimParameters::print_mgrid_params()
     if (params->gridforceQcol != NULL) {
       qcol_msg = params->gridforceQcol;
     }
-    iout << iINFO << "           QCol " << qcol_msg
+    iout << iINFO << "           ChargeCol " << qcol_msg
       << "\n" << endi;
     iout << iINFO << "           VOffset " << params->gridforceVOffset 
       << "\n" << endi;

@@ -309,8 +309,8 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	{
 	    molecule->build_gridforce_params(configList->find("gridforcefile"),
 					     configList->find("gridforcecol"),
-					     configList->find("gridforceqcol"),
-					     configList->find("gridforcevfile"),
+					     configList->find("gridforcechargecol"),
+					     configList->find("gridforcepotfile"),
 					     pdb,
 					     NULL);
 	}

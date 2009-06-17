@@ -5104,8 +5104,8 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*   INPUTS:                                                            */
     /*  gridfrcfile - Value of gridforcefile from config file               */
     /*  gridfrccol - Value of gridforcecol from config file                 */
-    /*  gridfrcchrgcol - Value of gridforceqcol from config file	    */
-    /*  potfile - Value of gridforcevfile from config file                  */
+    /*  gridfrcchrgcol - Value of gridforcechargecol from config file	    */
+    /*  potfile - Value of gridforcepotfile from config file                  */
     /*  initial_pdb - PDB object that contains initial positions            */
     /*  cwd - Current working directory                                     */
     /*                                                                      */
@@ -5254,12 +5254,12 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	    }
 	    else
 	    {
-		NAMD_die("gridforceqcol must have value of X, Y, Z, O, or B");
+		NAMD_die("gridforcechargecol must have value of X, Y, Z, O, or B");
 	    }
 	}
     
 	if (kcol == qcol) {
-	    NAMD_die("gridforcecol and gridforceqcol cannot have same value");
+	    NAMD_die("gridforcecol and gridforcechargecol cannot have same value");
 	}
 
     
