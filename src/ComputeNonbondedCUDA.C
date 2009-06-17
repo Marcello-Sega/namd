@@ -28,11 +28,13 @@ void cuda_errcheck(const char *msg) {
 
 char *devicelist;
 static int usedevicelist;
+static int ignoresharing;
 
 void cuda_getargs(char **argv) {
   devicelist = 0;
   usedevicelist = CmiGetArgStringDesc(argv, "+devices", &devicelist,
 	"comma-delimited list of CUDA device numbers such as 0,2,1,2");
+  ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
 }
 
 static int shared_gpu;
@@ -113,7 +115,8 @@ void cuda_initialize() {
   int dev;
   if ( numPesOnPhysicalNode > 1 ) {
     dev = devices[myRankInPhysicalNode % ndevices];
-    for ( int i = (myRankInPhysicalNode + 1) % numPesOnPhysicalNode;
+    if ( ! ignoresharing ) {
+     for ( int i = (myRankInPhysicalNode + 1) % numPesOnPhysicalNode;
           i != myRankInPhysicalNode;
           i = (i + 1) % numPesOnPhysicalNode ) {
       if (devices[i % ndevices] == dev) {
@@ -121,6 +124,7 @@ void cuda_initialize() {
         next_pe_sharing_gpu = pesOnPhysicalNode[i];
         break;
       }
+     }
     }
     if ( shared_gpu ) {
       for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
