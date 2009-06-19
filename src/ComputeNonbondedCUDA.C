@@ -88,10 +88,10 @@ void cuda_initialize() {
   }
 
   int *devices;
-  int ndevices;
+  int ndevices = 0;
+  int nexclusive = 0;
   if ( usedevicelist ) {
     devices = new int[strlen(devicelist)];
-    ndevices = 0; 
     int i = 0;
     while ( devicelist[i] ) {
       ndevices += sscanf(devicelist+i,"%d",devices+ndevices);
@@ -103,15 +103,30 @@ void cuda_initialize() {
       CkPrintf("Did not find +devices i,j,k,... argument, using all\n");
     }
     devices = new int[deviceCount];
-    ndevices = deviceCount;
     for ( int i=0; i<deviceCount; ++i ) {
-      devices[i] = (i+1) % deviceCount;  // avoid 0 if possible
+      int dev = (i+1) % deviceCount;  // avoid 0 if possible
+      cudaDeviceProp deviceProp;
+      cudaGetDeviceProperties(&deviceProp, dev);
+      if ( deviceProp.computeMode != cudaComputeModeProhibited ) {
+        devices[ndevices++] = dev;
+      }
+      if ( deviceProp.computeMode == cudaComputeModeExclusive ) {
+        ++nexclusive;
+      }
     }
   }
 
+  if ( ! ndevices ) {
+    NAMD_die("All CUDA devices are in prohibited mode.");
+  }
+
   shared_gpu = 0;
+  gpu_is_mine = 1;
   first_pe_sharing_gpu = CkMyPe();
   next_pe_sharing_gpu = CkMyPe();
+
+ if ( (ndevices >= numPesOnPhysicalNode) || (nexclusive == 0) ) {
+
   int dev;
   if ( numPesOnPhysicalNode > 1 ) {
     dev = devices[myRankInPhysicalNode % ndevices];
@@ -164,6 +179,8 @@ void cuda_initialize() {
 			dev, CkMyPe(), cudaGetErrorString(err));
     NAMD_die(errmsg);
   }
+
+ }  // just let CUDA pick a device for us
 
   if ( sizeof(patch_pair) & 15 ) NAMD_die("sizeof(patch_pair) % 16 != 0");
   if ( sizeof(force_list) & 15 ) NAMD_die("sizeof(force_list) % 16 != 0");
