@@ -121,7 +121,7 @@ void cvm::atom_group::parse (std::string const &conf,
           continue;
         }
       } 
-      
+
       cvm::fatal_error ("Error: no valid definition for \""
                         "atom_name_residue_range\", \""+
                         range_conf+"\".\n");
@@ -135,10 +135,10 @@ void cvm::atom_group::parse (std::string const &conf,
 
       std::string atoms_col;
       get_keyval (group_conf, "atomsCol", atoms_col, std::string ("O"), mode);
-
       double atoms_col_value;
-      get_keyval (group_conf, "atomsColValue", atoms_col_value, 0.0, mode);
-      if (!atoms_col_value)
+      bool const atoms_col_value_defined =
+        get_keyval (group_conf, "atomsColValue", atoms_col_value, 0.0, mode);
+      if (atoms_col_value_defined && (!atoms_col_value))
         cvm::fatal_error ("Error: atomsColValue, "
                           "if provided, must be non-zero.\n");
 
@@ -213,7 +213,8 @@ void cvm::atom_group::parse (std::string const &conf,
 
     if (get_keyval (group_conf, "refPositions", ref_pos, ref_pos, mode)) {
       cvm::log ("Using reference positions from input file.\n");
-      if (ref_pos.size() != this->size()) {
+      atom_group *ag = ref_pos_group ? ref_pos_group : this;
+      if (ref_pos.size() != ag->size()) {
         cvm::fatal_error ("Error: reference positions for \""+
                           std::string (key)+
                           "\" do not match the number of atom indexes.\n");
@@ -232,8 +233,8 @@ void cvm::atom_group::parse (std::string const &conf,
       get_keyval (group_conf, "refPositionsCol", ref_pos_col, std::string ("O"), mode);
 
       double ref_pos_col_value;
-      bool found = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
-      if (found && !ref_pos_col_value)
+      bool const ref_pos_col_value_defined = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
+      if (ref_pos_col_value_defined && !ref_pos_col_value)
         cvm::fatal_error ("Error: refPositionsColValue, "
                           "if provided, must be non-zero.\n");
 
@@ -261,7 +262,6 @@ void cvm::atom_group::parse (std::string const &conf,
       cvm::atom_iter ai = ag->begin();
       std::vector<cvm::atom_pos>::iterator pi = ref_pos.begin();
       for ( ; ai != ag->end(); pi++, ai++) {
-        cvm::select_closest_image ((*pi), ref_pos.front());
         ref_pos_com += ai->mass * (*pi);
       }
       ref_pos_com /= ag->total_mass;

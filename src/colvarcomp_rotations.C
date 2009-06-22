@@ -313,5 +313,49 @@ void colvar::rmsd::calc_force_invgrads()
 
 void colvar::rmsd::calc_Jacobian_derivative()
 {
-  jd.real_value = x.real_value ? (3.0 * atoms.size() - 6.0) / x.real_value : 0.0;
+  // divergence of the back-rotated target coordinates
+  cvm::real divergence = 0.0;
+ 
+  // gradient of the rotation matrix
+  cvm::matrix2d <cvm::rvector, 3, 3> grad_rot_mat;
+
+  // gradients of products of 2 quaternion components 
+  cvm::rvector g11, g22, g33, g01, g02, g03, g12, g13, g23;
+
+  for (size_t ia = 0; ia < atoms.size(); ia++) {
+
+    // Gradient of optimal quaternion wrt current Cartesian position
+    cvm::vector1d< cvm::rvector, 4 >      &dq = rot.dQ0_2[ia];
+
+    g11 = 2.0 * (rot.q)[1]*dq[1];
+    g22 = 2.0 * (rot.q)[2]*dq[2];
+    g33 = 2.0 * (rot.q)[3]*dq[3];
+    g01 = (rot.q)[0]*dq[1] + (rot.q)[1]*dq[0];
+    g02 = (rot.q)[0]*dq[2] + (rot.q)[2]*dq[0];
+    g03 = (rot.q)[0]*dq[3] + (rot.q)[3]*dq[0];
+    g12 = (rot.q)[1]*dq[2] + (rot.q)[2]*dq[1];
+    g13 = (rot.q)[1]*dq[3] + (rot.q)[3]*dq[1];
+    g23 = (rot.q)[2]*dq[3] + (rot.q)[3]*dq[2];
+
+    // Gradient of the rotation matrix wrt current Cartesian position
+    grad_rot_mat[0][0] = -2.0 * (g22 + g33); 
+    grad_rot_mat[1][0] =  2.0 * (g12 + g03); 
+    grad_rot_mat[2][0] =  2.0 * (g13 - g02); 
+    grad_rot_mat[0][1] =  2.0 * (g12 - g03); 
+    grad_rot_mat[1][1] = -2.0 * (g11 + g33); 
+    grad_rot_mat[2][1] =  2.0 * (g01 + g23); 
+    grad_rot_mat[0][2] =  2.0 * (g02 + g13); 
+    grad_rot_mat[1][2] =  2.0 * (g23 - g01); 
+    grad_rot_mat[2][2] = -2.0 * (g11 + g22); 
+
+    cvm::atom_pos &y = ref_pos[ia]; 
+
+    for (size_t i = 0; i < 3; i++) {
+      for (size_t j = 0; j < 3; j++) {
+        divergence += grad_rot_mat[i][j][i] * y[j];
+      }
+    }
+  }
+
+  jd.real_value = x.real_value > 0.0 ? (3.0 * atoms.size() - 4.0 - divergence) / x.real_value : 0.0;
 }

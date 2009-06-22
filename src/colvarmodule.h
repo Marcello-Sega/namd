@@ -425,12 +425,13 @@ inline cvm::rvector cvm::position_dist2_lgrad (cvm::atom_pos const &pos1,
   return proxy->position_dist2_lgrad (pos1, pos2);
 }
 
+
 inline void cvm::load_atoms (char const *file_name,
                              std::vector<cvm::atom> &atoms,
                              std::string const &pdb_field,
                              double const pdb_field_value)
 {
-  proxy->load_atoms (file_name, atoms, pdb_field);
+  proxy->load_atoms (file_name, atoms, pdb_field, pdb_field_value);
 }
 
 inline void cvm::load_coords (char const *file_name,
@@ -438,8 +439,9 @@ inline void cvm::load_coords (char const *file_name,
                               std::string const &pdb_field,
                               double const pdb_field_value)
 {
-  proxy->load_coords (file_name, pos, pdb_field);
+  proxy->load_coords (file_name, pos, pdb_field, pdb_field_value);
 }
+
 
 
 #endif

@@ -134,32 +134,34 @@ void colvarproxy_namd::calculate()
           found_total_force = true;
           Vector const &namd_force = *f_i;
           total_forces[i] = cvm::rvector (namd_force.x, namd_force.y, namd_force.z);
-//                     if (cvm::debug()) 
-//                       cvm::log ("Found the total force of atom "+
-//                                 cvm::to_str (colvars_atoms[i]+1)+", which is "+
-//                                 cvm::to_str (total_forces[i])+".\n");
+          //           if (cvm::debug()) 
+          //             cvm::log ("Found the total force of atom "+
+          //                       cvm::to_str (colvars_atoms[i]+1)+", which is "+
+          //                       cvm::to_str (total_forces[i])+".\n");
           break;
         }
       }
       if (!found_total_force)
         cvm::fatal_error ("Error: cannot find the total force of atom "+
-                          cvm::to_str (colvars_atoms[i]+1)+"\n");
+                          cvm::to_str (colvars_atoms[i]+1)+". Is energy minimization"+
+                          " (instead of MD) enabled?\n");
     }
 
     // do the same for applied forces
     for (size_t i = 0; i < colvars_atoms.size(); i++) {
-      bool found_applied_force = false;
       AtomIDList::const_iterator a_i = this->getLastAtomsForcedBegin();
       AtomIDList::const_iterator a_e = this->getLastAtomsForcedEnd();
       PositionList::const_iterator f_i = this->getLastForcesBegin();
       for ( ; a_i != a_e; ++a_i, ++f_i ) {
         if ( *a_i == colvars_atoms[i] ) {
           Vector const &namd_force = *f_i;
-          applied_forces[i] += cvm::rvector (namd_force.x, namd_force.y, namd_force.z);
           if (cvm::debug())
-	       cvm::log ("Found applied force of atom "+
-			 cvm::to_str (colvars_atoms[i]+1)+", current total is "+
-			 cvm::to_str (applied_forces[i])+".\n");
+            cvm::log ("Found a force applied to atom "+
+                      cvm::to_str (colvars_atoms[i]+1)+": "+
+                      cvm::to_str (cvm::rvector (namd_force.x, namd_force.y, namd_force.z))+
+                      "; current total is "+
+                      cvm::to_str (applied_forces[i])+".\n");
+          applied_forces[i] += cvm::rvector (namd_force.x, namd_force.y, namd_force.z);
         }
       }
     }
@@ -266,7 +268,7 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
     cvm::fatal_error ("Error: must define which PDB field to use "
                       "in order to define atoms from a PDB file.\n");
 
-  e_pdb_field pdb_field_index = pdb_field_str2enum (pdb_field_str);
+  e_pdb_field const pdb_field_index = pdb_field_str2enum (pdb_field_str);
 
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
@@ -278,35 +280,35 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
     size_t ipos = 0, ipdb = 0;
     for ( ; ipdb < pdb_natoms; ipdb++) {
 
-      {
-        double atom_pdb_field_value = 0.0;
+      double atom_pdb_field_value = 0.0;
 
-        switch (pdb_field_index) {
-        case e_pdb_occ:
-          atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
-          break;
-        case e_pdb_beta:
-          atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
-          break;
-        case e_pdb_x:
-          atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
-          break;
-        case e_pdb_y:
-          atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
-          break;
-        case e_pdb_z:
-          atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
-          break;
-        default:
-          break;
-        }
-
-        if ( (atom_pdb_field_value == 0.0) ||
-             (atom_pdb_field_value != pdb_field_value) ) {
-          continue;
-        }
+      switch (pdb_field_index) {
+      case e_pdb_occ:
+        atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
+        break;
+      case e_pdb_beta:
+        atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
+        break;
+      case e_pdb_x:
+        atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
+        break;
+      case e_pdb_y:
+        atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
+        break;
+      case e_pdb_z:
+        atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
+        break;
+      default:
+        break;
       }
 
+      if ( (pdb_field_value) &&
+           (atom_pdb_field_value != pdb_field_value) ) {
+        continue;
+      } else if (atom_pdb_field_value == 0.0) {
+        continue;
+      }
+      
       if (!pos_allocated)
         pos.push_back (cvm::atom_pos (0.0, 0.0, 0.0));
 
@@ -359,37 +361,37 @@ void colvarproxy_namd::load_atoms (char const *pdb_filename,
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
 
-  e_pdb_field pdb_field_index = pdb_field_str2enum (pdb_field_str);
+  e_pdb_field const pdb_field_index = pdb_field_str2enum (pdb_field_str);
 
   for (size_t ipdb = 0; ipdb < pdb_natoms; ipdb++) {
 
-    {
-      double atom_pdb_field_value = 0.0;
+    double atom_pdb_field_value = 0.0;
 
-      switch (pdb_field_index) {
-      case e_pdb_occ:
-        atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
-        break;
-      case e_pdb_beta:
-        atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
-        break;
-      case e_pdb_x:
-        atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
-        break;
-      case e_pdb_y:
-        atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
-        break;
-      case e_pdb_z:
-        atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
-        break;
-      default:
-        break;
-      }
+    switch (pdb_field_index) {
+    case e_pdb_occ:
+      atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
+      break;
+    case e_pdb_beta:
+      atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
+      break;
+    case e_pdb_x:
+      atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
+      break;
+    case e_pdb_y:
+      atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
+      break;
+    case e_pdb_z:
+      atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
+      break;
+    default:
+      break;
+    }
 
-      if ( (atom_pdb_field_value == 0.0) ||
-           (atom_pdb_field_value != pdb_field_value) ) {
-        continue;
-      }
+    if ( (pdb_field_value) &&
+         (atom_pdb_field_value != pdb_field_value) ) {
+      continue;
+    } else if (atom_pdb_field_value == 0.0) {
+      continue;
     }
 
     atoms.push_back (cvm::atom (ipdb+1));
@@ -429,7 +431,7 @@ cvm::atom::atom (int const &atom_number)
   AtomID const aid (atom_number-1);
 
   if (cvm::debug())
-    cvm::log ("Requesting atom "+cvm::to_str (aid+1)+
+    cvm::log ("Adding atom "+cvm::to_str (aid+1)+
               " for collective variables calculation.\n");
 
   if ( (aid < 0) || (aid >= Node::Object()->molecule->numAtoms) ) 
@@ -458,10 +460,10 @@ cvm::atom::atom (cvm::residue_id const &residue,
                                                   atom_name.c_str());
 
   if (cvm::debug())
-    cvm::log ("Requesting atom \""+
+    cvm::log ("Adding atom \""+
               atom_name+"\" in residue "+
               cvm::to_str (residue)+
-              " (index "+cvm::to_str (aid+1)+
+              " (index "+cvm::to_str (aid)+
               ") for collective variables calculation.\n");
 
   if (aid < 0) {
@@ -487,7 +489,7 @@ cvm::atom::atom (cvm::residue_id const &residue,
 
 // copy constructor
 cvm::atom::atom (cvm::atom const &a)
-  : id (a.id), mass (a.mass), index (a.index)
+  : index (a.index), id (a.id), mass (a.mass)
 {
   // init_namd_atom() has already been called by a's constructor, no
   // need to call it again
@@ -508,7 +510,7 @@ cvm::atom::~atom()
 
 void cvm::atom::read_position()
 {
-  colvarproxy_namd *gm = (colvarproxy_namd *) cvm::proxy;
+  colvarproxy_namd const * const gm = (colvarproxy_namd *) cvm::proxy;
   this->pos = gm->positions[this->index];
 }
 
@@ -522,7 +524,7 @@ void cvm::atom::read_velocity()
 
 void cvm::atom::read_system_force()
 {
-  colvarproxy_namd *gm = (colvarproxy_namd *) cvm::proxy;
+  colvarproxy_namd const * const gm = (colvarproxy_namd *) cvm::proxy;
   this->system_force = gm->total_forces[this->index] - gm->applied_forces[this->index];
 }
 
