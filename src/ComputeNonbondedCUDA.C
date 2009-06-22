@@ -624,8 +624,6 @@ void ComputeNonbondedCUDA::doWork() {
       force_lists[i].force_list_size = 0;
     }
 
-    Lattice &lattice = patchRecords[activePatches[0]].p->flags.lattice;
-
     int ncomputes = computeRecords.size();
     patch_pairs.resize(ncomputes);
     for ( int i=0; i<ncomputes; ++i ) {
@@ -634,12 +632,9 @@ void ComputeNonbondedCUDA::doWork() {
       int lp2 = patchRecords[cr.pid[1]].localIndex;
       force_lists[lp1].force_list_size++;
       patch_pair &pp = patch_pairs[i];
-      Vector offset = cr.offset.x * lattice.a()
-                + cr.offset.y * lattice.b()
-                + cr.offset.z * lattice.c(); 
-      pp.offset.x = offset.x;
-      pp.offset.y = offset.y;
-      pp.offset.z = offset.z;
+      pp.offset.x = cr.offset.x;
+      pp.offset.y = cr.offset.y;
+      pp.offset.z = cr.offset.z;
     }
 
     CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
@@ -902,6 +897,18 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 //           CkMyPe(), kernel_launch_state, pe);
 fflush(stdout);
 
+  Lattice &lattice = patchRecords[activePatches[0]].p->flags.lattice;
+  float3 lata, latb, latc;
+  lata.x = lattice.a().x;
+  lata.y = lattice.a().y;
+  lata.z = lattice.a().z;
+  latb.x = lattice.b().x;
+  latb.y = lattice.b().y;
+  latb.z = lattice.b().z;
+  latc.x = lattice.c().x;
+  latc.y = lattice.c().y;
+  latc.z = lattice.c().z;
+
   switch ( kernel_launch_state ) {
   case 1:
     ++kernel_launch_state;
@@ -914,7 +921,7 @@ fflush(stdout);
 
     cuda_bind_atoms(atoms);
     cudaEventRecord(start_calc, stream);
-    cuda_nonbonded_forces(cutoff2,
+    cuda_nonbonded_forces(lata, latb, latc, cutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size());
     cudaEventRecord(end_remote_calc, stream);
@@ -927,7 +934,7 @@ fflush(stdout);
   case 2:
     ++kernel_launch_state;
     gpu_is_mine = 0;
-    cuda_nonbonded_forces(cutoff2,
+    cuda_nonbonded_forces(lata, latb, latc, cutoff2,
 	0,localComputeRecords.size(),
 	0,localActivePatches.size());
     cudaEventRecord(end_local_calc, stream);

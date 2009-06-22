@@ -213,6 +213,7 @@ __global__ static void dev_nonbonded(
 	const atom *atoms,
 	const atom_param *atom_params,
 	float4 *force_buffers,
+        float3 lata, float3 latb, float3 latc,
 	float cutoff2) {
 // call with two blocks per patch_pair
 // call with BLOCK_SIZE threads per block
@@ -238,6 +239,23 @@ __global__ static void dev_nonbonded(
     unsigned int tmp = ((unsigned int*)patch_pairs)[
 			(sizeof(patch_pair)>>2)*blockIdx.x+threadIdx.x];
     pp.i[threadIdx.x] = tmp;
+  }
+  __syncthreads();
+
+  // convert scaled offset with current lattice
+  if ( threadIdx.x == 0 ) {
+    float offx = myPatchPair.offset.x * lata.x
+               + myPatchPair.offset.y * latb.x
+               + myPatchPair.offset.z * latc.x;
+    float offy = myPatchPair.offset.x * lata.y
+               + myPatchPair.offset.y * latb.y
+               + myPatchPair.offset.z * latc.y;
+    float offz = myPatchPair.offset.x * lata.z
+               + myPatchPair.offset.y * latb.z
+               + myPatchPair.offset.z * latc.z;
+    myPatchPair.offset.x = offx;
+    myPatchPair.offset.y = offy;
+    myPatchPair.offset.z = offz;
   }
   __syncthreads();
 
@@ -420,13 +438,14 @@ __global__ static void dev_sum_forces(
 }
 
 
-void cuda_nonbonded_forces(float cutoff2,
+void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
 		int cbegin, int ccount, int pbegin, int pcount) {
 
  if ( ccount ) {
   // printf("%d %d %d\n",cbegin,ccount,patch_pairs_size);
   dev_nonbonded<<< ccount, BLOCK_SIZE, 0, stream
-	>>>(patch_pairs+cbegin,atoms,atom_params,force_buffers,cutoff2);
+	>>>(patch_pairs+cbegin,atoms,atom_params,force_buffers,
+                                        lata, latb, latc, cutoff2);
   cuda_errcheck("dev_nonbonded");
  }
 

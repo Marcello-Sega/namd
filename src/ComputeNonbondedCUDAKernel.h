@@ -101,7 +101,7 @@ void cuda_bind_atoms(const atom *a);
 
 void cuda_load_forces(float4 *f, int begin, int count);
 
-void cuda_nonbonded_forces(float cutoff2,
+void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
 			int cbegin, int ccount, int pbegin, int pcount);
 
 int cuda_stream_finished();
