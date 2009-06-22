@@ -361,12 +361,10 @@ __global__ static void dev_nonbonded(
         e *= IAP.sqrt_epsilon * japs[j].sqrt_epsilon;  /* full L-J */ \
         e += IPQ.charge * jpqs[j].charge * fi.x; \
         if ( ! excluded ) { \
+          ife.w += r2 * e; \
           ife.x += tmpx * e; \
-          ife.w += tmpx * ( tmpx * e ); \
           ife.y += tmpy * e; \
-          ife.w += tmpy * ( tmpy * e ); \
           ife.z += tmpz * e; \
-          ife.w += tmpz * ( tmpz * e ); \
         } \
       }  /* cutoff */ \
     }
