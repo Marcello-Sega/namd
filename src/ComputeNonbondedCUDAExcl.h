@@ -47,9 +47,9 @@ public:
     // Internal data
     int modified;
 
-  // enum { bondEnergyIndex, TENSOR(virialIndex), reductionDataSize };
+  enum { bondEnergyIndex, TENSOR(virialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_EXCLUSION_CHECKSUM };
-  // static void submitReductionData(BigReal*,SubmitReduction*);
+  static void submitReductionData(BigReal*,SubmitReduction*);
 
   inline ExclElem();
   inline ExclElem(AtomID atom0, const TupleSignature *sig, const int *v);

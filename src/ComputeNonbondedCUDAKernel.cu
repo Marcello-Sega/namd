@@ -359,13 +359,15 @@ __global__ static void dev_nonbonded(
         e *= e;  /* sigma^6 */ \
         e *= ( e * fi.z + fi.y );  /* s^12 * fi.z - s^6 * fi.y */ \
         e *= IAP.sqrt_epsilon * japs[j].sqrt_epsilon;  /* full L-J */ \
-        float qq = IPQ.charge * jpqs[j].charge; \
-        if ( excluded ) { e = qq * fi.w; } \
-        else { e += qq * fi.x; } \
-        ife.x += tmpx * e; \
-        ife.y += tmpy * e; \
-        ife.z += tmpz * e; \
-        if ( excluded ) ife.w += 1.f; \
+        e += IPQ.charge * jpqs[j].charge * fi.x; \
+        if ( ! excluded ) { \
+          ife.x += tmpx * e; \
+          ife.w += tmpx * ( tmpx * e ); \
+          ife.y += tmpy * e; \
+          ife.w += tmpy * ( tmpy * e ); \
+          ife.z += tmpz * e; \
+          ife.w += tmpz * ( tmpz * e ); \
+        } \
       }  /* cutoff */ \
     }
     FORCE_INNER_LOOP(ipq,iap)

@@ -958,7 +958,8 @@ int ComputeNonbondedCUDA::finishWork() {
     pr.f = pr.r->f[Results::nbond];
   }
 
-  long long int wcount = 0;
+  // long long int wcount = 0;
+  double virial = 0.;
 
   for ( int i=0; i<patches.size(); ++i ) {
     patch_record &pr = patchRecords[patches[i]];
@@ -975,10 +976,13 @@ int ComputeNonbondedCUDA::finishWork() {
       f[j].x += af[k].x;
       f[j].y += af[k].y;
       f[j].z += af[k].z;
-      wcount += af[k].w;
+      // wcount += af[k].w;
+      virial += af[k].w;
       ++k;
     }
 
+#if 0
+    // check exclusions reported as w
     if ( CkNumPes() == 1 ) {
       const CompAtomExt *aExt = pr.xExt;
       int k = 0;
@@ -993,6 +997,7 @@ int ComputeNonbondedCUDA::finishWork() {
         ++k;
       }
     }
+#endif
     
 
 #if 0
@@ -1006,13 +1011,18 @@ int ComputeNonbondedCUDA::finishWork() {
     pr.forceBox->close(&(pr.r));
   }
 
+  virial *= (-1./6.);
+  reduction->item(REDUCTION_VIRIAL_NBOND_XX) += virial;
+  reduction->item(REDUCTION_VIRIAL_NBOND_YY) += virial;
+  reduction->item(REDUCTION_VIRIAL_NBOND_ZZ) += virial;
+
   if ( workStarted == 1 ) return 0;  // not finished, call again
 
   atomsChanged = 0;
   reduction->submit();
 
-  int natoms = mol->numAtoms; 
-  double wpa = wcount;  wpa /= natoms;
+  // int natoms = mol->numAtoms; 
+  // double wpa = wcount;  wpa /= natoms;
 
   // CkPrintf("Pe %d CUDA kernel %f ms, total %f ms, wpa %f\n", CkMyPe(),
 	// 	kernel_time * 1.e3, time * 1.e3, wpa);

@@ -110,22 +110,20 @@ void ExclElem::computeForce(BigReal *reduction,
 
   // reduction[nonbondedEnergyIndex] += energy;
   reduction[virialIndex_XX] += f12.x * r12.x;
-  reduction[virialIndex_XY] += f12.x * r12.y;
-  reduction[virialIndex_XZ] += f12.x * r12.z;
-  reduction[virialIndex_YX] += f12.y * r12.x;
+  // reduction[virialIndex_XY] += f12.x * r12.y;
+  // reduction[virialIndex_XZ] += f12.x * r12.z;
+  // reduction[virialIndex_YX] += f12.y * r12.x;
   reduction[virialIndex_YY] += f12.y * r12.y;
-  reduction[virialIndex_YZ] += f12.y * r12.z;
-  reduction[virialIndex_ZX] += f12.z * r12.x;
-  reduction[virialIndex_ZY] += f12.z * r12.y;
+  // reduction[virialIndex_YZ] += f12.y * r12.z;
+  // reduction[virialIndex_ZX] += f12.z * r12.x;
+  // reduction[virialIndex_ZY] += f12.z * r12.y;
   reduction[virialIndex_ZZ] += f12.z * r12.z;
 
 }
 
-#if 0
 void ExclElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   // reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
 }
-#endif
 
