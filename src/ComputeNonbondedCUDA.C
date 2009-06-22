@@ -105,6 +105,7 @@ void cuda_initialize() {
     devices = new int[deviceCount];
     for ( int i=0; i<deviceCount; ++i ) {
       int dev = (i+1) % deviceCount;  // avoid 0 if possible
+#if CUDA_VERSION >= 2020
       cudaDeviceProp deviceProp;
       cudaGetDeviceProperties(&deviceProp, dev);
       if ( deviceProp.computeMode != cudaComputeModeProhibited ) {
@@ -113,6 +114,9 @@ void cuda_initialize() {
       if ( deviceProp.computeMode == cudaComputeModeExclusive ) {
         ++nexclusive;
       }
+#else
+      devices[ndevices++] = dev;
+#endif
     }
   }
 
