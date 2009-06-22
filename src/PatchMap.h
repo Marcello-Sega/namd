@@ -93,6 +93,9 @@ public:
   inline BigReal min_c(int pid) const { return patchData[pid].cMin; }
   inline BigReal max_c(int pid) const { return patchData[pid].cMax; }
 
+  // returns the center of patch scaled position
+  inline ScaledPosition center(int pid) const { return patchData[pid].center; }
+
   // asssigns atom to patch based on position and lattice
   inline PatchID assignToPatch(Position p, const Lattice &l);
 
@@ -164,6 +167,7 @@ private:
     int node, basenode;
     int aIndex, bIndex, cIndex;
     Coordinate aMin, aMax, bMin, bMax, cMin, cMax;
+    ScaledPosition center;
     int numCids;
     int numCidsAllocated;
     ComputeID *cids;

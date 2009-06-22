@@ -12,7 +12,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   struct compute_record {
     ComputeID c;
     PatchID pid[2];
-    int t[2];
+    Vector offset;
   };
 
   struct patch_record {

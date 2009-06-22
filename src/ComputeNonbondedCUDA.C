@@ -397,7 +397,7 @@ void register_cuda_compute_self(ComputeID c, PatchID pid) {
   ComputeNonbondedCUDA::compute_record cr;
   cr.c = c;
   cr.pid[0] = pid;  cr.pid[1] = pid;
-  cr.t[0] = 13;  cr.t[1] = 13;
+  cr.offset = 0.;
   if ( cudaCompute->patchMap->node(pid) == CkMyPe() ) {
     cudaCompute->localComputeRecords.add(cr);
   } else {
@@ -416,8 +416,17 @@ void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]) {
   cr.c = c;  cr2.c = c;
   cr.pid[0] = pid[0];  cr.pid[1] = pid[1];
   cr2.pid[0] = pid[1];  cr2.pid[1] = pid[0];
-  cr.t[0] = t[0];  cr.t[1] = t[1];
-  cr2.t[0] = t[1];  cr2.t[1] = t[0];
+
+  int t1 = t[0];
+  int t2 = t[1];
+  Vector offset = cudaCompute->patchMap->center(pid[0])
+                - cudaCompute->patchMap->center(pid[1]);
+  offset.x += (t1%3-1) - (t2%3-1);
+  offset.y += ((t1/3)%3-1) - ((t2/3)%3-1);
+  offset.z += (t1/9-1) - (t2/9-1);
+  cr.offset = offset;
+  cr2.offset = -1. * offset;
+    
   if ( cudaCompute->patchMap->node(pid[0]) == CkMyPe() ) {
     cudaCompute->localComputeRecords.add(cr);
   } else {
@@ -625,21 +634,12 @@ void ComputeNonbondedCUDA::doWork() {
       int lp2 = patchRecords[cr.pid[1]].localIndex;
       force_lists[lp1].force_list_size++;
       patch_pair &pp = patch_pairs[i];
-      pp.offset.x = 0.;
-      pp.offset.y = 0.;
-      pp.offset.z = 0.;
-      if ( cr.t[0] != cr.t[1] ) {
-        int t1 = cr.t[0];
-        int t2 = cr.t[1];
-        // add offset to first patch or subtract from second
-        Vector offset =
-          ( (t1%3-1) - (t2%3-1) ) * lattice.a() +
-          ( ((t1/3)%3-1) - ((t2/3)%3-1) ) * lattice.b() +
-          ( (t1/9-1) - (t2/9-1) ) * lattice.c();
-        pp.offset.x = offset.x;
-        pp.offset.y = offset.y;
-        pp.offset.z = offset.z;
-      }
+      Vector offset = cr.offset.x * lattice.a()
+                + cr.offset.y * lattice.b()
+                + cr.offset.z * lattice.c(); 
+      pp.offset.x = offset.x;
+      pp.offset.y = offset.y;
+      pp.offset.z = offset.z;
     }
 
     CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
@@ -762,6 +762,7 @@ void ComputeNonbondedCUDA::doWork() {
 
   double charge_scaling = sqrt(COLOUMB * scaling * dielectric_1);
 
+
   for ( int i=0; i<activePatches.size(); ++i ) {
     patch_record &pr = patchRecords[activePatches[i]];
 
@@ -802,23 +803,25 @@ void ComputeNonbondedCUDA::doWork() {
       }
     }
     {
+      Vector center =
+        pr.p->flags.lattice.unscale(cudaCompute->patchMap->center(pr.patchID));
       atom *ap = atoms + start;
       int k = 0;
       for ( int j=0; j<n; ++j ) {
         // put free atoms first
         if ( fixedAtomsOn && aExt[j].atomFixed ) continue;
-        ap[k].position.x = a[j].position.x;
-        ap[k].position.y = a[j].position.y;
-        ap[k].position.z = a[j].position.z;
+        ap[k].position.x = a[j].position.x - center.x;
+        ap[k].position.y = a[j].position.y - center.y;
+        ap[k].position.z = a[j].position.z - center.z;
         ap[k].charge = charge_scaling * a[j].charge;
         ++k;
       }
       if ( fixedAtomsOn ) for ( int j=0; j<n; ++j ) {
         // put fixed atoms at end
         if ( ! (fixedAtomsOn && aExt[j].atomFixed) ) continue;
-        ap[k].position.x = a[j].position.x;
-        ap[k].position.y = a[j].position.y;
-        ap[k].position.z = a[j].position.z;
+        ap[k].position.x = a[j].position.x - center.x;
+        ap[k].position.y = a[j].position.y - center.y;
+        ap[k].position.z = a[j].position.z - center.z;
         ap[k].charge = charge_scaling * a[j].charge;
         ++k;
       }

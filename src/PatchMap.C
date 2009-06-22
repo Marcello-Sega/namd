@@ -170,6 +170,9 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
     p.aMax = ((float)(p.aIndex+1)/(float)aDim) * aLength + aOrigin;
     p.bMax = ((float)(p.bIndex+1)/(float)bDim) * bLength + bOrigin;
     p.cMax = ((float)(p.cIndex+1)/(float)cDim) * cLength + cOrigin;
+    p.center.x = (((double)(p.aIndex)+0.5)/(double)aDim) * aLength + aOrigin;
+    p.center.y = (((double)(p.bIndex)+0.5)/(double)bDim) * bLength + bOrigin;
+    p.center.z = (((double)(p.cIndex)+0.5)/(double)cDim) * cLength + cOrigin;
     p.numCids = 0;
     int max_computes = 200;
     p.cids = new int[max_computes];
