@@ -5,6 +5,7 @@
 #include "colvarbias.h"
 #include "colvarbias_meta.h"
 #include "colvarbias_abf.h"
+#include "common.h"
 #ifndef _NO_ALLOCA_H
 #include <alloca.h>
 #endif
@@ -132,10 +133,12 @@ colvarmodule::colvarmodule (char const  *config_filename,
     if (cvm::debug())
       cvm::log ("Opening output file \""+cv_traj_name+"\".\n");
 
-    if (cv_traj_append)
+    if (cv_traj_append) {
       cv_traj_os.open (cv_traj_name.c_str(), std::ios::app);
-    else 
+    } else {
+      NAMD_backup_file (cv_traj_name.c_str());
       cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
+    }
 
     cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
   }
@@ -387,6 +390,7 @@ void colvarmodule::calc() {
     if ( (cvm::step_relative() > 0) &&
          ((cvm::step_relative() % restart_out_freq) == 0) ) {
       cvm::log ("Writing the current state to the restart file.\n");
+      NAMD_backup_file (restart_out_name.c_str(), ".old");
       restart_out_os.open (restart_out_name.c_str());
       restart_out_os.setf (std::ios::scientific, std::ios::floatfield);
       if (!write_restart (restart_out_os))
@@ -508,6 +512,7 @@ void colvarmodule::finalise()
        std::string (output_prefix+".colvars.state") :
        std::string ("colvars.state"));
     cvm::log ("Saving collective variables state to \""+out_name+"\".\n");
+    NAMD_backup_file (out_name.c_str(), ".old");
     std::ofstream out (out_name.c_str());
     out.setf (std::ios::scientific, std::ios::floatfield);
     this->write_restart (out);
