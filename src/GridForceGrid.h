@@ -42,8 +42,14 @@ public:
     void unpack(MIStream *msg);
     
     inline Position get_center(void) const { return center; }
+    inline Position get_origin(void) const { return origin; }
+    inline Tensor get_e (void) const { return e; }
     inline Tensor get_inv(void) const { return inv; }
     inline Vector get_scale(void) const { return scale; }
+    
+    inline int get_k0(void) const { return k[0]; }
+    inline int get_k1(void) const { return k[1]; }
+    inline int get_k2(void) const { return k[2]; }
     
 private:
     float *grid;	// Actual grid
@@ -66,7 +72,7 @@ private:
     
     Vector scale;
     
-    static const int border = 3; // Size of border (for generality)
+    static const int border = 1; // Size of border (for generality)
 };
 
 

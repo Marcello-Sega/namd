@@ -65,6 +65,35 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     Tensor inv = grid->get_inv();
     Vector gfScale = grid->get_scale();
     
+    DebugM(4, "center = " << center << "\n" << endi);
+    
+    // Check that grid doesn't cross periodic bounds
+    if (CkMyPe() == 0) {
+	Position origin = grid->get_origin();
+	Tensor e = grid->get_e();
+	
+	for (int i0 = 0; i0 < 2; i0++) {
+	    float x = i0 * (grid->get_k0()-1);
+	    for (int i1 = 0; i1 < 2; i1++) {
+		float y = i1 * (grid->get_k1()-1);
+		for (int i2 = 0; i2 < 2; i2++) {
+		    float z = i2 * (grid->get_k2()-1);
+		    
+		    Position pos_orig = origin + e * Position(x, y, z);
+		    Position pos = pos_orig + homePatch->lattice.wrap_delta(pos_orig);
+		    pos += homePatch->lattice.delta(pos, center) - (pos - center);
+		    
+		    if (pos != pos_orig) {
+			char err_msg[128];
+			sprintf(err_msg, "Gridforce grid too large for periodic cell: (%f %f %f) != (%f %f %f)",
+				pos.x, pos.y, pos.z, pos_orig.x, pos_orig.y, pos_orig.z);
+			NAMD_die(err_msg);
+		    }
+		}
+	    }
+	}
+    }
+    
     //  Loop through and check each atom
     for (int i = 0; i < numAtoms; i++) {
 

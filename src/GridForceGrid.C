@@ -138,7 +138,7 @@ void GridforceGrid::initialize(char *potfilename, SimParameters *simParams, MGri
     fscanf(poten, "delta %lf %lf %lf\n", &e.xy, &e.yy, &e.zy);
     fscanf(poten, "delta %lf %lf %lf\n", &e.xz, &e.yz, &e.zz);
     
-    center = origin + e * 0.5 * Position(k_nopad[0], k_nopad[1], k_nopad[2]);
+    center = origin + e * 0.5 * Position(k_nopad[0]-1, k_nopad[1]-1, k_nopad[2]-1);
 
     BigReal tmp[3];   // Temporary storage
     fscanf(poten, "object 2 class gridconnections counts %lf %lf %lf\n", tmp, tmp+1, tmp+2);
