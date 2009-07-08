@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: brunner $
- * $Date: 2009/06/17 21:09:12 $
- * $Revision: 1.1280 $
+ * $Author: char $
+ * $Date: 2009/07/08 14:57:32 $
+ * $Revision: 1.1281 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -716,6 +716,10 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
 //Modifications for alchemical fep
 //  alchemical fep options
    opts.optionalB("main", "alch", "Is achemical simulation being performed?",
+     &alchOn, FALSE);
+   opts.optionalB("alch", "alchFepOn", "Is achemical FEP being performed?",
+     &alchOn, FALSE);
+   opts.optionalB("alch", "alchThermIntOn", "Is achemical TI being performed?",
      &alchOn, FALSE);
    opts.optional("alch", "alchType", "Which alchemical method to use?", 
        PARSE_STRING);
@@ -2249,11 +2253,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
 //fepe
 
-   if ( alchFepOn && alchThermIntOn )
+   if ( alchOn && alchFepOn && alchThermIntOn )
      NAMD_die("Sorry, combined TI and FEP is not implemented.\n");
    if ( alchOn && lesOn )
      NAMD_die("Sorry, combined LES with FEP or TI is not implemented.\n");
-   if ( alchThermIntOn && lesOn )
+   if ( alchOn && alchThermIntOn && lesOn )
      NAMD_die("Sorry, combined LES and TI is not implemented.\n");
    if ( alchDecouple && (! (alchFepOn || alchThermIntOn) ) ) 
      NAMD_die("Alchemcial decoupling was requested but alchemical free \
