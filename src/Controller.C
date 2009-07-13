@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: char $
- * $Date: 2009/06/14 07:01:47 $
- * $Revision: 1.1238 $
+ * $Author: petefred $
+ * $Date: 2009/07/13 00:22:30 $
+ * $Revision: 1.1239 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1082,7 +1082,7 @@ void Controller::receivePressure(int step, int minimize)
     if ( (volume=lattice.volume()) != 0. )
     {
 
-      if (simParameters->LJcorrection) {
+      if (simParameters->LJcorrection && volume) {
         // Apply tail correction to pressure
         //printf("Volume is %f\n", volume);
         //printf("Applying tail correction of %f to virial\n", molecule->tail_corr_virial / volume);
@@ -1392,7 +1392,7 @@ void Controller::printEnergies(int step, int minimize)
 //fepe
     }
 
-    if (simParameters->LJcorrection) {
+    if (simParameters->LJcorrection && volume) {
       // Apply tail correction to energy
       //printf("Volume is %f\n", volume);
       //printf("Applying tail correction of %f to energy\n", molecule->tail_corr_ener / volume);

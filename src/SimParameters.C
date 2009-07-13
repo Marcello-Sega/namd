@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2009/07/08 14:57:32 $
- * $Revision: 1.1281 $
+ * $Author: petefred $
+ * $Date: 2009/07/13 00:22:31 $
+ * $Revision: 1.1282 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1759,6 +1759,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        if ( pos == s_z ) strainRate.z = tmp;
      }
 
+   }
+
+   if ( LJcorrection && ! cellBasisVector3.length2() ) {
+     NAMD_die("Can't use LJ tail corrections without periodic boundary conditions!");
    }
 
    if ( cellBasisVector3.length2() && ! cellBasisVector2.length2() ) {
