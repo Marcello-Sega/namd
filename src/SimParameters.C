@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: petefred $
- * $Date: 2009/07/13 00:22:31 $
- * $Revision: 1.1282 $
+ * $Author: brunner $
+ * $Date: 2009/07/20 20:40:01 $
+ * $Revision: 1.1283 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -653,7 +653,7 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 
    opts.optionalB("PME", "useOptPME", "Use the new scalable PME optimization", &useOptPME, FALSE);
    opts.optionalB("PME", "useManyToMany", "Use the many-to-many PME optimization", &useManyToMany, FALSE);
-   if (!useOptPME)
+   if (PMEOn && !useOptPME)
      useManyToMany = false;
 
 #ifdef DPME
