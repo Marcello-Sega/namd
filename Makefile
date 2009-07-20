@@ -223,6 +223,8 @@ CIFILES = 	\
 		$(INCDIR)/CollectionMgr.def.h \
 		$(INCDIR)/ComputeMgr.decl.h \
 		$(INCDIR)/ComputeMgr.def.h \
+		$(INCDIR)/ComputeGridForceMgr.decl.h \
+		$(INCDIR)/ComputeGridForceMgr.def.h \
 		$(INCDIR)/ComputePmeMgr.decl.h \
 		$(INCDIR)/ComputePmeMgr.def.h \
 		$(INCDIR)/OptPmeMgr.decl.h \
@@ -357,7 +359,6 @@ charmrun: $(CHARM)/bin/charmrun # XXX
 
 WINDOWSBINARIES = namd2.exe psfgen.exe
 # WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
-
 windowsbinaries: $(WINDOWSBINARIES)
 
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
@@ -533,6 +534,13 @@ $(INCDIR)/ComputePmeMgr.decl.h: $(SRCDIR)/ComputePmeMgr.ci
 	$(CHARMXI) $(SRCDIR)/ComputePmeMgr.ci
 	$(MOVE) ComputePmeMgr.def.h $(INCDIR)
 	$(MOVE) ComputePmeMgr.decl.h $(INCDIR)
+
+$(INCDIR)/ComputeGridForceMgr.def.h: $(INCDIR)/ComputeGridForceMgr.decl.h
+
+$(INCDIR)/ComputeGridForceMgr.decl.h: $(SRCDIR)/ComputeGridForceMgr.ci
+	$(CHARMXI) $(SRCDIR)/ComputeGridForceMgr.ci
+	$(MOVE) ComputeGridForceMgr.def.h $(INCDIR)
+	$(MOVE) ComputeGridForceMgr.decl.h $(INCDIR)
 
 $(INCDIR)/OptPmeMgr.def.h: $(INCDIR)/OptPmeMgr.decl.h
 
