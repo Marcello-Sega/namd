@@ -39,6 +39,7 @@ obj/main.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -210,6 +211,7 @@ obj/BackEnd.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -1299,42 +1301,43 @@ obj/ComputeGlobalMsgs.o: \
 obj/ComputeGridForce.o: \
 	src/ComputeGridForce.C \
 	src/ComputeGridForce.h \
-	src/ComputeHomePatch.h \
-	src/Compute.h \
-	src/main.h \
+	src/ComputeHomePatches.h \
 	src/NamdTypes.h \
 	src/common.h \
 	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/PatchTypes.h \
+	src/Compute.h \
+	src/main.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
 	src/Lattice.h \
 	src/Tensor.h \
-	src/Box.h \
-	src/OwnerBox.h \
-	src/ReductionMgr.h \
-	src/BOCgroup.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
 	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
-	src/InfoStream.h \
 	src/MStream.h \
+	inc/ComputeGridForceMgr.decl.h \
 	src/Node.h \
 	inc/Node.decl.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -1345,7 +1348,8 @@ obj/ComputeGridForce.o: \
 	src/GromacsTopFile.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Debug.h
+	src/Debug.h \
+	inc/ComputeGridForceMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGridForce.o $(COPTC) src/ComputeGridForce.C
 obj/ComputeMap.o: \
 	src/ComputeMap.C \
@@ -1466,6 +1470,7 @@ obj/ComputeMgr.o: \
 	src/ComputeEField.h \
 	src/ComputeHomePatch.h \
 	src/ComputeGridForce.h \
+	inc/ComputeGridForceMgr.decl.h \
 	src/ComputeStir.h \
 	src/ComputeSphericalBC.h \
 	src/ComputeCylindricalBC.h \
@@ -2911,7 +2916,8 @@ obj/colvarmodule.o: \
 	src/colvar.h \
 	src/colvarbias.h \
 	src/colvarbias_meta.h \
-	src/colvarbias_abf.h
+	src/colvarbias_abf.h \
+	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarmodule.o $(COPTC) src/colvarmodule.C
 obj/colvarparse.o: \
 	src/colvarparse.C \
@@ -3109,6 +3115,36 @@ obj/GridForceGrid.o: \
 	src/ProcessorPrivate.h \
 	src/BOCgroup.h \
 	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ComputeGridForce.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	inc/ComputeGridForceMgr.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GridForceGrid.o $(COPTC) src/GridForceGrid.C
 obj/GromacsTopFile.o: \
@@ -3418,6 +3454,28 @@ obj/Molecule.o: \
 	src/PDB.h \
 	src/PDBData.h \
 	src/UniqueSetIter.h \
+	src/ComputeGridForce.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/main.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	inc/ComputeGridForceMgr.decl.h \
 	src/Debug.h \
 	src/CompressPsf.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
@@ -3454,6 +3512,28 @@ obj/Molecule2.o: \
 	src/PDB.h \
 	src/PDBData.h \
 	src/UniqueSetIter.h \
+	src/ComputeGridForce.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/main.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/HomePatchTypes.h \
+	src/ReductionMgr.h \
+	inc/ComputeGridForceMgr.decl.h \
 	src/Debug.h \
 	src/CompressPsf.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule2.o $(COPTC) src/Molecule2.C
@@ -3658,6 +3738,7 @@ obj/Node.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -3726,6 +3807,7 @@ obj/Node.o: \
 	src/BroadcastClient.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
@@ -3909,6 +3991,7 @@ obj/PatchMgr.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -4099,6 +4182,7 @@ obj/ProxyPatch.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
@@ -4556,6 +4640,7 @@ obj/WorkDistrib.o: \
 	inc/NamdNborLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
+	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
