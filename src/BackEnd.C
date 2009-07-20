@@ -143,6 +143,9 @@ void master_init(int argc, char **argv){
   group.patchMgr = CProxy_PatchMgr::ckNew();
   group.computeMgr = CProxy_ComputeMgr::ckNew();
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
+  group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
+  group.computeGridForceNodeMgr = CProxy_ComputeGridForceNodeMgr::ckNew();
+  group.computeGridForceMgr = CProxy_ComputeGridForceMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.sync = CProxy_Sync::ckNew();
 

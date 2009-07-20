@@ -796,7 +796,7 @@ public:
       q = gridfrcParams[gridnum][gridfrcIndexes[gridnum][atomnum]].q;
   }
   
-  const GridforceGrid* get_gridfrc_grid(int gridnum) const
+  GridforceGrid* get_gridfrc_grid(int gridnum) const
   {
       return gridfrcGrid[gridnum];
   }

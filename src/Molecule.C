@@ -35,6 +35,7 @@
 #include "UniqueSetIter.h"
 #include "charm++.h"
 /* BEGIN gf */
+#include "ComputeGridForce.h"
 #include "GridForceGrid.h"
 
 #include "MGridforceParams.h"
@@ -3534,8 +3535,15 @@ void Molecule::receive_Molecule(MIStream *msg)
 		 msg->get(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
 	     }
 	     
-	     gridfrcGrid[grid] = new GridforceGrid();
+	     gridfrcGrid[grid] = new GridforceGrid(grid);
 	     gridfrcGrid[grid]->unpack(msg);
+             CProxy_ComputeGridForceNodeMgr 
+               mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
+             GridDepositMsg *outmsg = new GridDepositMsg;
+             outmsg->gridnum = grid;
+             outmsg->grid = gridfrcGrid[grid];
+             outmsg->num_grids = numGridforceGrids;
+             mgr[CkMyNode()].depositInitialGrid(outmsg);
 	 }
       }
       /* END gf */
@@ -5402,9 +5410,26 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	    strcat(potfilename, mgridParams->gridforceVfile);
 	}
     
-	gridfrcGrid[gridnum] = new GridforceGrid();
-	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
-	
+//        iout << iINFO << "Allocating grid " << gridnum
+//             << "\n" << endi;
+             
+	gridfrcGrid[gridnum] = new GridforceGrid(gridnum);
+	//	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
+	gridfrcGrid[gridnum]->init1(potfilename, simParams, mgridParams);
+//        ComputeGridForceNodeMgr* mgr = CProxy_ComputeGridForceNodeMgr::
+//          ckLocalBranch(CkpvAccess(BOCclass_group).
+//          computeGridForceNodeMgr);
+//      mgr->depositInitialGrid(gridnum,gridfrcGrid[gridnum],numGridforceGrids);
+
+        CProxy_ComputeGridForceNodeMgr 
+          mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
+          
+        GridDepositMsg *outmsg = new GridDepositMsg;
+        outmsg->gridnum = gridnum;
+        outmsg->grid = gridfrcGrid[gridnum];
+        outmsg->num_grids = numGridforceGrids;
+        mgr[CkMyNode()].depositInitialGrid(outmsg);        
+ 
 	// Finally, get next mgridParams pointer
 	mgridParams = mgridParams->next;
     }

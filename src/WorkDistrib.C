@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: char $
- * $Date: 2009/06/14 07:01:48 $
- * $Revision: 1.1194 $
+ * $Author: brunner $
+ * $Date: 2009/07/20 20:51:40 $
+ * $Revision: 1.1195 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1349,7 +1349,7 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeEFieldType);
   /* BEGIN gf */
   if ( node->simParameters->mgridforceOn )
-    mapComputePatch(computeGridForceType);
+    mapComputeHomePatches(computeGridForceType);
   /* END gf */
   if ( node->simParameters->stirOn )
     mapComputePatch(computeStirType);

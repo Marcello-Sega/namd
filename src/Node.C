@@ -60,6 +60,7 @@
 #include "ScriptTcl.h"
 #include "ComputeMgr.decl.h"
 #include "ComputePmeMgr.decl.h"
+#include "ComputeGridForceMgr.decl.h"
 #include "OptPmeMgr.decl.h"
 #include "Sync.h"
 #include "BackEnd.h"
