@@ -1,0 +1,37 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+module ComputeGridForceMgr {
+  message GridDepositMsg;
+  message GridSegmentMsg;
+  message SubReqMsg;
+  
+  message GridRequestMsg {
+    int gridStartIndex[];
+    int gridIndexList[];
+  };
+  
+  message GridValuesMsg {
+    int gridStartIndex[];
+    GridVal gridVals[];
+  };
+  
+  group ComputeGridForceMgr {
+    entry ComputeGridForceMgr(void);
+    entry void finishWork();
+  };
+  
+  nodegroup ComputeGridForceNodeMgr {
+    entry ComputeGridForceNodeMgr(void);
+    entry [exclusive] void depositInitialGrid(GridDepositMsg *);
+    entry [exclusive] void requestInitialGridData();
+    entry [exclusive] void receiveInitialGridData(GridSegmentMsg *);
+    entry [exclusive] void submitRequest(SubReqMsg *);
+    entry [exclusive] void fetchGridValues(GridRequestMsg *);
+    entry [exclusive] void recvGridValues(GridValuesMsg *);
+  };
+}
+
