@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: brunner $
- * $Date: 2009/07/20 20:40:01 $
- * $Revision: 1.1283 $
+ * $Author: char $
+ * $Date: 2009/07/27 21:42:52 $
+ * $Revision: 1.1284 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -718,9 +718,9 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optionalB("main", "alch", "Is achemical simulation being performed?",
      &alchOn, FALSE);
    opts.optionalB("alch", "alchFepOn", "Is achemical FEP being performed?",
-     &alchOn, FALSE);
+     &alchFepOn, FALSE);
    opts.optionalB("alch", "alchThermIntOn", "Is achemical TI being performed?",
-     &alchOn, FALSE);
+     &alchThermIntOn, FALSE);
    opts.optional("alch", "alchType", "Which alchemical method to use?", 
        PARSE_STRING);
    opts.require("alch", "alchLambda", "Coupling parameter value", 
@@ -2255,6 +2255,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      alchOutFile[0] = STRINGNULL;
    }
 
+
 //fepe
 
    if ( alchOn && alchFepOn && alchThermIntOn )
@@ -2263,9 +2264,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("Sorry, combined LES with FEP or TI is not implemented.\n");
    if ( alchOn && alchThermIntOn && lesOn )
      NAMD_die("Sorry, combined LES and TI is not implemented.\n");
-   if ( alchDecouple && (! (alchFepOn || alchThermIntOn) ) ) 
-     NAMD_die("Alchemcial decoupling was requested but alchemical free \
-       energy calculation is not active.\n");
+   if ( alchDecouple && (! (alchFepOn || alchThermIntOn) ) ) {
+         iout << iWARN << "Alchemical decoupling was requested but \
+           alchemical free energy calculation is not active. Setting \
+           alchDecouple to off.\n" << endi;
+         alchDecouple = FALSE;
+     //NAMD_die("Alchemcial decoupling was requested but alchemical free \
+         energy calculation is not active.\n");
+   }
 
    if ( lesOn && ( lesFactor < 1 || lesFactor > 15 ) ) {
      NAMD_die("lesFactor must be positive and less than 16");
