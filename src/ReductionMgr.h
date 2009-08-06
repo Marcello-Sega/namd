@@ -196,9 +196,9 @@ public:
   int threadIsWaiting;  // is there a thread waiting on this?
   int waitingForSequenceNumber;  // sequence number waited for
   CthThread waitingThread;
-  ReductionSet(int setID, int size);
+  ReductionSet(int setID, int size,int numChildren);
   ~ReductionSet();
-  int addToRemoteSequenceNumber[REDUCTION_MAX_CHILDREN];
+  int *addToRemoteSequenceNumber;
 };
 
 // Top level class
@@ -211,9 +211,25 @@ private:
   ReductionSet * (reductionSets[REDUCTION_MAX_SET_ID]);
 
   int myParent;  // parent node or -1 if none
+#if 0
   int firstChild, lastChild;  // firstChild <= children < lastChild
   int isMyChild(int nodeID) const {
     return ( nodeID >= firstChild && nodeID < lastChild );
+  }
+#endif
+  int numChildren;
+  int *children;
+  int isMyChild(int nodeID) const {
+    int i;
+    for(i=0;i<numChildren;i++)
+      if (children[i]==nodeID) return 1;
+    return 0;
+  }      
+  int childIndex(int nodeID) const {
+    int i;
+    for(i=0;i<numChildren;i++)
+      if (children[i]==nodeID) return i;
+    return -1;
   }
   int isRoot(void) const { return ( myParent == -1 ); }
 
@@ -237,6 +253,13 @@ public:
 
   ReductionMgr();
   ~ReductionMgr();
+
+  void buildSpanTree(const int pe, 
+                     const int max_intranode_children,
+                     const int max_internode_children,
+                     int* parent, 
+                     int* num_children, 
+                     int** children);
 
   // client interface
   SubmitReduction* willSubmit(int setID, int size = -1);

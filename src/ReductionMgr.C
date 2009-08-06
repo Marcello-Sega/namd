@@ -74,7 +74,7 @@ public:
 
 };
 
-ReductionSet::ReductionSet(int setID, int size) {
+ReductionSet::ReductionSet(int setID, int size, int numChildren) {
   if ( setID == REDUCTIONS_BASIC ) {
     if ( size != -1 ) {
       NAMD_bug("ReductionSet size specified for REDUCTIONS_BASIC.");
@@ -89,6 +89,7 @@ ReductionSet::ReductionSet(int setID, int size) {
   dataQueue = 0;
   requireRegistered = 0;
   threadIsWaiting = 0;
+  addToRemoteSequenceNumber = new int[numChildren];
 }
 
 ReductionSet::~ReductionSet() {
@@ -100,6 +101,7 @@ ReductionSet::~ReductionSet() {
     delete current;
     current = next;
   }
+  delete [] addToRemoteSequenceNumber;
 }
 
 // possibly create and return data for a particular seqNum
@@ -134,6 +136,137 @@ ReductionSetData* ReductionSet::removeData(int seqNum) {
   return toremove;
 }
 
+void ReductionMgr::buildSpanTree(const int pe, 
+                                 const int max_intranode_children,
+                                 const int max_internode_children,
+                                 int* parent, 
+                                 int* num_children, 
+                                 int** children)
+{
+  // If pe is a first-node, children are same-node pes and perhaps some
+  // other first-nodes, and parents are other first-nodes. If pe is not a 
+  // first-node, build the spanning tree among the children, and the parent
+  // is the corresponding first-node
+  
+  // No matter what, build list of PEs on my node first
+  const int num_pes = CkNumPes();
+  const int num_node_pes = CmiNumPesOnPhysicalNode(pe); 
+  int *node_pes = new int[num_node_pes];
+  int pe_index;
+  const int first_pe = CmiGetFirstPeOnPhysicalNode(pe);
+  int num_nodes = 0;
+  int *node_ids = new int[num_pes];
+  int first_pe_index;
+  int my_parent_index;
+  
+  // Make sure PE 0 is a first-node
+  if (pe == 0 && first_pe != pe) {
+    NAMD_die("PE 0 is not the first physical node. This shouldn't happen");
+  }
+  // Get all the PEs on my node, and also build the list of all first-nodes
+  int i;
+  int node_pe_count=0;
+  for (i = 0; i < num_pes; i++) {
+    // Save first-nodes
+    if (CmiGetFirstPeOnPhysicalNode(i) == i) {
+      node_ids[num_nodes] = i;
+      if (i == first_pe)
+        first_pe_index = num_nodes;
+      num_nodes++;
+    }
+
+    // Also, find pes on my node
+    const int i1 = (i + first_pe) % num_pes;
+    if (CmiOnSamePhysicalNode(first_pe,i1)) {
+      node_pes[node_pe_count] = i1;
+      if (pe == i1)
+        pe_index = node_pe_count;
+      node_pe_count++;
+    }
+  }
+  
+  // Any PE might have children on the same node, plus, if its a first-node,
+  // it may have several children on other nodes
+
+  int first_loc_child_index = pe_index * max_intranode_children + 1;
+  if (first_loc_child_index > num_node_pes) 
+    first_loc_child_index = num_node_pes;
+  int last_loc_child_index = first_loc_child_index + max_intranode_children;
+  if (last_loc_child_index > num_node_pes) 
+    last_loc_child_index = num_node_pes;
+  
+  int first_rem_child_index = num_nodes;
+  int last_rem_child_index = num_nodes;
+  
+  if (first_pe != pe) {
+    // I'm not a first_pe, so I have no more children, and my parent
+    // is someone else on my node
+    my_parent_index = (pe_index-1)/max_intranode_children;
+    *parent = node_pes[my_parent_index];
+  } else {
+    // I am a first_pe, so I may have additional children
+    // on other nodes, and my parent will be on another node
+
+    if (pe == 0) {
+      my_parent_index = -1;
+      *parent = -1;
+    } else {
+      my_parent_index = (first_pe_index-1)/max_internode_children;
+      *parent = node_ids[my_parent_index];
+    }
+    int first_rem_child_index = first_pe_index * max_internode_children + 1;
+    if (first_rem_child_index > num_nodes) 
+      first_rem_child_index = num_nodes;
+    int last_rem_child_index = first_rem_child_index + max_internode_children;
+    if (last_rem_child_index > num_nodes)
+      last_rem_child_index = num_nodes;
+  }
+
+  *num_children = 0;
+//  CkPrintf("TREE pe %d my_parent %d %d\n",
+//    pe,my_parent_index,*parent);
+
+  int loc_children=0;
+  if (first_loc_child_index != num_node_pes) {
+    loc_children = last_loc_child_index - first_loc_child_index;
+    *num_children += loc_children;
+//    CkPrintf("TREE pe %d %d local children\n",pe,loc_children);
+//  } else {
+//    CkPrintf("TREE pe %d No local children\n",pe);
+  }
+
+  int rem_children=0;
+  if (first_rem_child_index != num_nodes) {
+    rem_children = last_rem_child_index - first_rem_child_index;
+    *num_children += rem_children;
+//    CkPrintf("TREE pe %d %d rem children\n",pe,rem_children);
+//  } else {
+//    CkPrintf("TREE pe %d No rem children\n",pe);
+  }
+  if (*num_children == 0)
+    *children = 0;
+  else {
+    *children = new int[*num_children];
+//    CkPrintf("TREE pe %d children %d\n",pe,*num_children);
+    int k;
+    int child=0;
+    if (loc_children > 0) {
+      for(k=first_loc_child_index; k < last_loc_child_index; k++) {
+//        CkPrintf("TREE pe %d loc child[%d,%d] %d\n",pe,child,k,node_pes[k]);
+        (*children)[child++]=node_pes[k];
+      }
+    }
+    if (rem_children > 0) {
+      for(k=first_rem_child_index; k < last_rem_child_index; k++)  {
+//        CkPrintf("TREE pe %d rem child[%d,%d] %d\n",pe,child,k,node_ids[k]);
+        (*children)[child++]=node_ids[k];
+      }
+    }
+  }
+  delete [] node_ids;
+  delete [] node_pes;
+}
+
 // constructor
 ReductionMgr::ReductionMgr() {
     if (CkpvAccess(ReductionMgr_instance) == 0) {
@@ -141,8 +274,24 @@ ReductionMgr::ReductionMgr() {
     } else {
       DebugM(1, "ReductionMgr::ReductionMgr() - another instance exists!\n");
     }
-
+    
+    int numChildren;
+    int *children;
+    buildSpanTree(CkMyPe(),REDUCTION_MAX_CHILDREN,REDUCTION_MAX_CHILDREN,
+                  &myParent,&numChildren,&children);
+    
+//    CkPrintf("TREE [%d] parent %d %d children\n",
+//    CkMyPe(),myParent,numChildren);
+//    if (numChildren > 0) {
+//      for(int i=0; i < numChildren; i++)  {
+//        CkPrintf("TREE [%d] child %d %d\n",CkMyPe(),i,children[i]);
+//      }
+//    } else {
+//      CkPrintf("TREE [%d] no children\n",CkMyPe());
+//    }
+    
     // fill in the spanning tree fields
+#if 0  // Old spanning tree
     if (CkMyPe() == 0) {
       myParent = -1;
     } else {
@@ -152,6 +301,7 @@ ReductionMgr::ReductionMgr() {
     if (firstChild > CkNumPes()) firstChild = CkNumPes();
     lastChild = firstChild + REDUCTION_MAX_CHILDREN;
     if (lastChild > CkNumPes()) lastChild = CkNumPes();
+#endif
 
     // initialize data
     for(int i=0; i<REDUCTION_MAX_SET_ID; i++) {
@@ -163,6 +313,8 @@ ReductionMgr::ReductionMgr() {
 
 // destructor
 ReductionMgr::~ReductionMgr() {
+    if (children != 0)
+      delete [] children;
     for(int i=0; i<REDUCTION_MAX_SET_ID; i++) {
       delete reductionSets[i];
     }
@@ -172,7 +324,7 @@ ReductionMgr::~ReductionMgr() {
 // possibly create and return reduction set
 ReductionSet* ReductionMgr::getSet(int setID, int size) {
   if ( reductionSets[setID] == 0 ) {
-    reductionSets[setID] = new ReductionSet(setID,size);
+    reductionSets[setID] = new ReductionSet(setID,size,numChildren);
     if ( ! isRoot() ) {
       ReductionRegisterMsg *msg = new ReductionRegisterMsg;
       msg->reductionSetID = setID;
@@ -260,8 +412,11 @@ void ReductionMgr::remoteRegister(ReductionRegisterMsg *msg) {
   }
 
   set->submitsRegistered++;
-  set->addToRemoteSequenceNumber[msg->sourceNode - firstChild]
+  set->addToRemoteSequenceNumber[childIndex(msg->sourceNode)]
 					= set->nextSequenceNumber;
+//  CkPrintf("[%d] reduction register received from node[%d] %d\n",
+//    CkMyPe(),childIndex(msg->sourceNode),msg->sourceNode);
+    
   delete msg;
 }
 
@@ -285,7 +440,7 @@ void ReductionMgr::remoteSubmit(ReductionSubmitMsg *msg) {
   int setID = msg->reductionSetID;
   ReductionSet *set = reductionSets[setID];
   int seqNum = msg->sequenceNumber
-	+ set->addToRemoteSequenceNumber[msg->sourceNode - firstChild];
+	+ set->addToRemoteSequenceNumber[childIndex(msg->sourceNode)];
 
 //iout << "seq " << seqNum << " from " << msg->sourceNode << " received on " << CkMyPe() << "\n" << endi;
   int size = msg->dataSize;
@@ -303,6 +458,8 @@ void ReductionMgr::remoteSubmit(ReductionSubmitMsg *msg) {
   for ( int i = 0; i < size; ++i ) {
     curData[i] += newData[i];
   }
+//  CkPrintf("[%d] reduction Submit received from node[%d] %d\n",
+//    CkMyPe(),childIndex(msg->sourceNode),msg->sourceNode);
   delete msg;
 
   data->submitsRecorded++;
