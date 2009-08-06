@@ -1183,10 +1183,10 @@ void HomePatch::tip4_omrepos(Vector* ref, Vector* pos, Vector* vel, BigReal invd
    * Ordering of TIP4P atoms: O, H1, H2, LP.
    */
 
-//  printf("rom/rohc are %f %f\n", r_om, r_ohc);
-//  printf("Other positions are: \n  0: %f %f %f\n  1: %f %f %f\n  2: %f %f %f\n", pos[0].x, pos[0].y, pos[0].z, pos[1].x, pos[1].y, pos[1].z, pos[2].x, pos[2].y, pos[2].z);
+  //printf("rom/rohc are %f %f and invdt is %f\n", r_om, r_ohc, invdt);
+  //printf("Other positions are: \n  0: %f %f %f\n  1: %f %f %f\n  2: %f %f %f\n", pos[0].x, pos[0].y, pos[0].z, pos[1].x, pos[1].y, pos[1].z, pos[2].x, pos[2].y, pos[2].z);
   pos[3] = pos[0] + (0.5 * (pos[1] + pos[2]) - pos[0]) * (r_om / r_ohc); 
-//  printf("New position for lp is %f %f %f\n", pos[3].x, pos[3].y, pos[3].z);
+  //printf("New position for lp is %f %f %f\n", pos[3].x, pos[3].y, pos[3].z);
 
   // Now, adjust the velocity of the particle to get it to the appropriate place
   if (invdt != 0) {
@@ -1239,8 +1239,12 @@ void HomePatch::addForceToMomentum(const BigReal timestep, const int ftag,
 
   if ( simParams->fixedAtomsOn ) {
     for ( int i = 0; i < numAtoms; ++i ) {
-      if ( atom[i].atomFixed || atom[i].mass <= 0. ) atom[i].velocity = 0;
-      else atom[i].velocity += f_use[ftag][i] * ( dt * namd_reciprocal (atom[i].mass) );
+      if ( atom[i].atomFixed ) {
+        atom[i].velocity = 0;
+      } else {
+        BigReal recip_val = ( atom[i].mass > 0. ? dt * namd_reciprocal( atom[i].mass ) : 0.); 
+        atom[i].velocity += f_use[ftag][i] * recip_val;
+      }
     }
   } else {
     FullAtom *atom_arr  = atom.begin();
@@ -1359,6 +1363,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       rmass[i] = (atom[ig+1].mass > 0. ? 1. / atom[ig+i].mass : 0.);
       //printf("rmass of %i is %f\n", ig+i, rmass[i]);
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
+      //printf("fixed status of %i is %i\n", i, fixed[i]);
       // undo addVelocityToPosition to get proper reference coordinates
       if ( fixed[i] ) rmass[i] = 0.; else pos[i] += vel[i] * dt;
     }
