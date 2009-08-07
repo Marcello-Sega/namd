@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2009/07/27 21:42:52 $
- * $Revision: 1.1284 $
+ * $Author: jim $
+ * $Date: 2009/08/07 04:43:04 $
+ * $Revision: 1.1285 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2794,9 +2794,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
      if ( ldbUnloadOne ) iout << iINFO << "REMOVING LOAD FROM NODE 1\n";
      iout << endi;
+#ifndef NAMD_CUDA
      if ( CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
        noPatchesOnZero = TRUE;
      }
+#endif
      if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
      iout << endi;
      if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";
