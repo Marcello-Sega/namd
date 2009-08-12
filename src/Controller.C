@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: petefred $
- * $Date: 2009/07/13 00:22:30 $
- * $Revision: 1.1239 $
+ * $Author: jim $
+ * $Date: 2009/08/12 20:40:51 $
+ * $Revision: 1.1240 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -445,6 +445,7 @@ void Controller::minimize() {
     }
     iout << "MINIMIZER SLOWLY MOVING " << min_huge_count << " ATOMS WITH BAD CONTACTS DOWNHILL\n" << endi;
     broadcast->minimizeCoefficient.publish(minSeq++,1.);
+    enqueueCollections(step);
     CALCULATE
   }
   if ( min_huge_count ) {
