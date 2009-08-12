@@ -147,6 +147,12 @@ void ReductionMgr::buildSpanTree(const int pe,
   // other first-nodes, and parents are other first-nodes. If pe is not a 
   // first-node, build the spanning tree among the children, and the parent
   // is the corresponding first-node
+
+#if CHARM_VERSION < 60103
+#define CmiNumPesOnPhysicalNode(X) 1
+#define CmiGetFirstPeOnPhysicalNode(X) (X)
+#define CmiOnSamePhysicalNode(X,Y) ((X)==(Y))
+#endif
   
   // No matter what, build list of PEs on my node first
   const int num_pes = CkNumPes();
