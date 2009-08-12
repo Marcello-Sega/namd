@@ -18,18 +18,27 @@ class colvarparse {
 protected:
 
   /// \brief List of legal keywords for this object: this is updated
-  /// by each call to colvarparse::get_keyval()
+  /// by each call to colvarparse::get_keyval() or
+  /// colvarparse::key_lookup()
   std::list<std::string> allowed_keywords;
 
   /// \brief List of delimiters for the values of each keyword in the
-  /// configuration string; all values will be stripped of the
-  /// configuration before the keyword check is performed
+  /// configuration string; all keywords will be stripped of their
+  /// values before the keyword check is performed
   std::list<size_t>      data_begin_pos;
 
   /// \brief List of delimiters for the values of each keyword in the
-  /// configuration string; all values will be stripped of the
-  /// configuration before the keyword check is performed
+  /// configuration string; all keywords will be stripped of their
+  /// values before the keyword check is performed
   std::list<size_t>      data_end_pos;
+
+  /// \brief Whether or not to accumulate data_begin_pos and
+  /// data_end_pos in key_lookup(); it may be useful to disable
+  /// this after the constructor is called, because other files may be
+  /// read (e.g. restart) that would mess up with the registry; in any
+  /// case, nothing serious happens until check_keywords() is invoked
+  /// (which should happen only right after construction)
+  bool save_delimiters;
 
   /// \brief Add a new valid keyword to the list
   void add_keyword (char const *key);
@@ -40,6 +49,7 @@ protected:
 public:
 
   inline colvarparse()
+    : save_delimiters (true)
   {}
 
   /// How a keyword is parsed in a string
@@ -81,34 +91,34 @@ public:
 
 #define _get_keyval_scalar_proto_(_type_,_def_value_)           \
   bool get_keyval (std::string const &conf,                     \
-                         char const *key,                       \
-                         _type_ &value,                         \
-                         _type_ const &def_value = _def_value_, \
-                         Parse_Mode const parse_mode = parse_normal)
+                   char const *key,                             \
+                   _type_ &value,                               \
+                   _type_ const &def_value = _def_value_,       \
+                   Parse_Mode const parse_mode = parse_normal)
 
-    _get_keyval_scalar_proto_ (int, 0);
-    _get_keyval_scalar_proto_ (size_t, 0);
+    _get_keyval_scalar_proto_ (int, (int)0);
+    _get_keyval_scalar_proto_ (size_t, (size_t)0);
     _get_keyval_scalar_proto_ (std::string, std::string (""));
-    _get_keyval_scalar_proto_ (colvarmodule::real, 0.0);
-    _get_keyval_scalar_proto_ (colvarmodule::rvector, colvarmodule::rvector());
-    _get_keyval_scalar_proto_ (colvarmodule::quaternion, colvarmodule::quaternion());
+    _get_keyval_scalar_proto_ (cvm::real, (cvm::real)0.0);
+    _get_keyval_scalar_proto_ (cvm::rvector, cvm::rvector());
+    _get_keyval_scalar_proto_ (cvm::quaternion, cvm::quaternion());
     _get_keyval_scalar_proto_ (colvarvalue, colvarvalue (colvarvalue::type_notset));
     _get_keyval_scalar_proto_ (bool, false);
 
 #define _get_keyval_vector_proto_(_type_,_def_value_)                   \
   bool get_keyval (std::string const &conf,                             \
                    char const *key,                                     \
-                         std::vector<_type_> &values,                   \
-                         std::vector<_type_> const &def_values =        \
-                           std::vector<_type_> (0, _def_value_),        \
-                         Parse_Mode const parse_mode = parse_normal)
+                   std::vector<_type_> &values,                         \
+                   std::vector<_type_> const &def_values =              \
+                   std::vector<_type_> (0, _def_value_),                \
+                   Parse_Mode const parse_mode = parse_normal)
   
-    _get_keyval_vector_proto_ (int, (int)0);
-    _get_keyval_vector_proto_ (size_t, (size_t)0);
+    _get_keyval_vector_proto_ (int, 0);
+    _get_keyval_vector_proto_ (size_t, 0);
     _get_keyval_vector_proto_ (std::string, std::string (""));
-    _get_keyval_vector_proto_ (colvarmodule::real, 0.0);
-    _get_keyval_vector_proto_ (colvarmodule::rvector, colvarmodule::rvector());
-    _get_keyval_vector_proto_ (colvarmodule::quaternion, colvarmodule::quaternion());
+    _get_keyval_vector_proto_ (cvm::real, 0.0);
+    _get_keyval_vector_proto_ (cvm::rvector, cvm::rvector());
+    _get_keyval_vector_proto_ (cvm::quaternion, cvm::quaternion());
     _get_keyval_vector_proto_ (colvarvalue, colvarvalue (colvarvalue::type_notset));
 
 
@@ -159,13 +169,11 @@ public:
   /// data (optional) holds the string provided after "key", if any
   /// \param save_pos (optional) stores the position of the keyword
   /// within "conf", useful when doing multiple calls \param
-  /// save_delimiters (optional) whether to register or not the
-  /// position and length of "data"
+  /// save_delimiters (optional) 
   bool key_lookup (std::string const &conf,
                    char const *key,
                    std::string &data = dummy_string,
-                   size_t &save_pos = dummy_pos,
-                   bool const save_delimiters = true);
+                   size_t &save_pos = dummy_pos);
 
   /// Used as a default argument by key_lookup
   static std::string dummy_string;

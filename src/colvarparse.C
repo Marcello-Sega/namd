@@ -404,8 +404,7 @@ std::istream & colvarparse::getline_nocomments (std::istream &is,
 bool colvarparse::key_lookup (std::string const &conf,
                               char const *key_in,
                               std::string &data,
-                              size_t &save_pos,
-                              bool const save_delimiters)
+                              size_t &save_pos)
 {
   // add this keyword to the register (in its camelCase version)
   add_keyword (key_in);
