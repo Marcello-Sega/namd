@@ -7,6 +7,7 @@
 
 colvar::cvc::cvc()
   : sup_coeff (1.0), sup_np (1),
+    b_periodic (false),
     b_debug_gradients (false),
     b_inverse_gradients (false),
     b_Jacobian_derivative (false)
@@ -15,6 +16,7 @@ colvar::cvc::cvc()
 
 colvar::cvc::cvc (std::string const &conf)
   : sup_coeff (1.0), sup_np (1),
+    b_periodic (false),
     b_debug_gradients (false),
     b_inverse_gradients (false),
     b_Jacobian_derivative (false)
@@ -59,14 +61,14 @@ colvar::cvc::~cvc()
 void colvar::cvc::calc_force_invgrads()
 {
   cvm::fatal_error ("Error: calculation of inverse gradients is not implemented "
-                    "for colvar definitions of type \""+function_type+"\".\n");
+                    "for colvar components of type \""+function_type+"\".\n");
 }
 
 
 void colvar::cvc::calc_Jacobian_derivative()
 {
   cvm::fatal_error ("Error: calculation of inverse gradients is not implemented "
-                    "for colvar definitions of type \""+function_type+"\".\n");
+                    "for colvar components of type \""+function_type+"\".\n");
 }
 
 

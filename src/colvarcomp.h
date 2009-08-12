@@ -30,18 +30,23 @@
 /// they can be combined together by the parent \link colvar \endlink
 /// object.
 ///
-/// If you wish to implement a new collective variable component, you
+/// <b> If you wish to implement a new collective variable component, you
 /// should write your own class by inheriting directly from \link
 /// cvc \endlink, or one of its derived classes (for instance,
-/// \link distance \endlink is frequently used as it can provide
-/// useful data and function members for any variable based on two
-/// atom groups).
+/// \link distance \endlink is frequently used, because it provides
+/// useful data and function members for any colvar based on two
+/// atom groups).  The steps are: \par
+/// 1. add the name of this class under colvar.h \par
+/// 2. add a call to the parser in colvar.C, within the function colvar::colvar() \par
+/// 3. declare the class in colvarcomp.h \par
+/// 4. implement the class in one of the files colvarcomp_*.C
 /// 
+/// </b>
 /// The cvm::atom and cvm::atom_group classes are available to
 /// transparently communicate with the simulation program.  However,
-/// there is no need to use them as long as all the degrees of freedom
-/// associated to the cvc are properly evolved by a simple call
-/// to e.g. apply_force().
+/// they are not strictly needed, as long as all the degrees of
+/// freedom associated to the cvc are properly evolved by a simple
+/// call to e.g. apply_force().
 
 class colvar::cvc
   : public colvarparse
@@ -73,6 +78,8 @@ public:
 
   /// \brief Period of this cvc value, (default: 0.0, non periodic)
   cvm::real period;
+
+  bool b_periodic;
 
   /// \brief Constructor
   ///
@@ -321,32 +328,32 @@ public:
 };
 
 
-/// \brief Colvar component: distance vector between centers of mass
-/// of two groups (\link colvarvalue::type_vector \endlink type,
-/// range (-*:*)x(-*:*)x(-*:*))
-class colvar::distance_vec
-  : public colvar::distance
-{
-public:
-  distance_vec (std::string const &conf);
-  distance_vec();
-  virtual inline ~distance_vec() {}
-  virtual void calc_value();
-  virtual void calc_gradients();
-  virtual void apply_force (colvarvalue const &force);
-  /// Redefined to handle the box periodicity
-  virtual cvm::real dist2 (colvarvalue const &x1,
-                           colvarvalue const &x2) const;
-  /// Redefined to handle the box periodicity
-  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
-                                   colvarvalue const &x2) const;
-  /// Redefined to handle the box periodicity
-  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
-                                   colvarvalue const &x2) const;
-  /// Redefined to handle the box periodicity
-  virtual cvm::real compare (colvarvalue const &x1,
-                             colvarvalue const &x2) const;
-};
+// // \brief Colvar component: distance vector between centers of mass
+// // of two groups (\link colvarvalue::type_vector \endlink type,
+// // range (-*:*)x(-*:*)x(-*:*))
+// class colvar::distance_vec
+//   : public colvar::distance
+// {
+// public:
+//   distance_vec (std::string const &conf);
+//   distance_vec();
+//   virtual inline ~distance_vec() {}
+//   virtual void calc_value();
+//   virtual void calc_gradients();
+//   virtual void apply_force (colvarvalue const &force);
+//   /// Redefined to handle the box periodicity
+//   virtual cvm::real dist2 (colvarvalue const &x1,
+//                            colvarvalue const &x2) const;
+//   /// Redefined to handle the box periodicity
+//   virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+//                                    colvarvalue const &x2) const;
+//   /// Redefined to handle the box periodicity
+//   virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+//                                    colvarvalue const &x2) const;
+//   /// Redefined to handle the box periodicity
+//   virtual cvm::real compare (colvarvalue const &x1,
+//                              colvarvalue const &x2) const;
+// };
 
 
 /// \brief Colvar component: distance unit vector (direction) between
@@ -373,7 +380,7 @@ public:
 };
 
 
-/// Colvar component: projection of the distance vector along
+/// \brief Colvar component: projection of the distance vector along
 /// an axis (colvarvalue::type_scalar type, range (-*:*))
 class colvar::distance_z
   : public colvar::cvc
@@ -416,8 +423,8 @@ public:
 };
 
 
-/// \brief Colvar component: projection of the distance vector along
-/// a fixed axis (colvarvalue::type_scalar type, range (-*:*))
+/// \brief Colvar component: projection of the distance vector on a
+/// plane (colvarvalue::type_scalar type, range [0:*))
 class colvar::distance_xy
   : public colvar::distance_z
 {
@@ -444,6 +451,34 @@ public:
   virtual cvm::real compare (colvarvalue const &x1,
                              colvarvalue const &x2) const;
 };
+
+
+/// \brief Colvar component: projection of the distance vector along
+/// a fixed axis (colvarvalue::type_scalar type, range (-*:*))
+class colvar::min_distance
+  : public colvar::distance
+{
+protected:
+  /// Components of the distance vector orthogonal to the axis
+  cvm::real smoothing;
+public:
+  min_distance (std::string const &conf);
+  min_distance();
+  virtual inline ~min_distance() {}
+  virtual void calc_value();
+  virtual void calc_gradients();
+  virtual void apply_force (colvarvalue const &force);
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
+
+
 
 
 /// \brief Colvar component: Radius of gyration of an atom group
@@ -473,6 +508,47 @@ public:
   virtual cvm::real compare (colvarvalue const &x1,
                              colvarvalue const &x2) const;
 };
+
+
+/// \brief Colvar component: projection of 3N coordinates onto an
+/// eigenvector (colvarvalue::type_scalar type, range (-*:*))
+class colvar::eigenvector
+  : public colvar::cvc
+{
+protected:
+
+  /// Atom group
+  cvm::atom_group             atoms;
+
+  /// Reference coordinates
+  std::vector<cvm::atom_pos>  ref_pos;
+
+  /// Eigenvector (of a normal or essential mode)
+  std::vector<cvm::rvector>   eigenvec;
+
+  /// Inverse square norm of the eigenvector
+  cvm::real                   eigenvec_invnorm2;
+
+public:
+
+  /// Constructor
+  eigenvector (std::string const &conf);
+  virtual inline ~eigenvector() {}
+  virtual void calc_value();
+  virtual void calc_gradients();
+  virtual void calc_force_invgrads();
+  virtual void calc_Jacobian_derivative();
+  virtual void apply_force (colvarvalue const &force);
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
+
 
 
 /// \brief Colvar component: angle between the centers of mass of
@@ -758,12 +834,19 @@ class colvar::orientation
 {
 protected:
 
+  /// Atom group
   cvm::atom_group            atoms;
+  /// Center of geometry of the group
+  cvm::atom_pos              atoms_cog;
+
+  /// Reference coordinates
   std::vector<cvm::atom_pos> ref_pos;
 
+  /// Rotation object
   cvm::rotation              rot;
-  cvm::real                  lambda0;
-  cvm::quaternion            quat0;
+
+  /// \brief This is used to remove jumps in the sign of the
+  /// quaternion, which may be annoying in the colvars trajectory
   cvm::quaternion            ref_quat;
 
 public:
@@ -785,6 +868,32 @@ public:
 };
 
 
+/// \brief Colvar component: angle of rotation with respect to a set
+/// of reference coordinates (colvarvalue::type_scalar type, range
+/// [0:PI))
+class colvar::orientation_angle
+  : public colvar::orientation
+{
+public:
+
+  orientation_angle (std::string const &conf);
+  orientation_angle();
+  virtual inline ~orientation_angle() {}
+  virtual void calc_value();
+  virtual void calc_gradients();
+  virtual void apply_force (colvarvalue const &force);
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
+
+
+
 /// \brief Colvar component: root mean square deviation (RMSD) of a
 /// group with respect to a set of reference coordinates; uses \link
 /// colvar::orientation \endlink to calculate the rotation matrix
@@ -801,7 +910,6 @@ public:
 
   /// Constructor
   rmsd (std::string const &conf);
-  rmsd();
   virtual inline ~rmsd() {}
   virtual void calc_value();
   virtual void calc_gradients();
@@ -819,6 +927,39 @@ public:
 };
 
 
+/// \brief Colvar component:  mean square deviation (RMSD) of a
+/// group with respect to a set of reference coordinates; uses \link
+/// colvar::orientation \endlink to calculate the rotation matrix
+/// (colvarvalue::type_scalar type, range [0:*))
+class colvar::logmsd
+  : public colvar::orientation
+{
+protected:
+
+  /// Sum of the squares of ref_coords
+  cvm::real                 ref_pos_sum2;
+  cvm::real                 MSD;
+
+public:
+
+  /// Constructor
+  logmsd (std::string const &conf);
+  virtual inline ~logmsd() {}
+  virtual void calc_value();
+  virtual void calc_gradients();
+  virtual void calc_force_invgrads();
+  virtual void calc_Jacobian_derivative();
+  virtual void apply_force (colvarvalue const &force);
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
+
 
 // metrics functions for cvc implementations with a periodicity
 
@@ -828,21 +969,21 @@ inline cvm::real colvar::dihedral::dist2 (colvarvalue const &x1,
   // This version is asymptotically accurate for small distances,
   // other choices are possible
   cvm::real const diff = x1.real_value - x2.real_value;
-  return (180.0*180.0/M_PI/M_PI) * 2.0 * (1.0 - ::cos (diff * (M_PI/180.00)));
+  return (180.0*180.0/PI/PI) * 2.0 * (1.0 - ::cos (diff * (PI/180.00)));
 }
 
 inline colvarvalue colvar::dihedral::dist2_lgrad (colvarvalue const &x1,
                                                   colvarvalue const &x2) const
 {
   cvm::real const diff = x1.real_value - x2.real_value;
-  return colvarvalue ( (180.0/M_PI) * 2.0 * ::sin ( diff * (M_PI/180.0)));
+  return colvarvalue ((180.0/PI) * 2.0 * ::sin ( diff * (PI/180.0)));
 }
 
 inline colvarvalue colvar::dihedral::dist2_rgrad (colvarvalue const &x1,
                                                   colvarvalue const &x2) const
 {
   cvm::real const diff = x1.real_value - x2.real_value;
-  return colvarvalue ( (180.0/M_PI) * (-2.0) * ::sin ( diff * (M_PI/180.0)));
+  return colvarvalue ((180.0/PI) * (-2.0) * ::sin ( diff * (PI/180.0)));
 }
 
 inline cvm::real colvar::dihedral::compare (colvarvalue const &x1,
@@ -852,67 +993,9 @@ inline cvm::real colvar::dihedral::compare (colvarvalue const &x1,
 }
 
 
-// distance between three dimensional vectors
-
-inline cvm::real colvar::distance_vec::dist2 (colvarvalue const &x1,
-                                              colvarvalue const &x2) const
-{
-  return cvm::position_dist2 (x1, x2);
-}
-
-inline colvarvalue colvar::distance_vec::dist2_lgrad (colvarvalue const &x1,
-                                                      colvarvalue const &x2) const
-{
-  return cvm::position_dist2_lgrad (x1, x2);
-}
-
-inline colvarvalue colvar::distance_vec::dist2_rgrad (colvarvalue const &x1,
-                                                      colvarvalue const &x2) const
-{
-  return cvm::position_dist2_lgrad (x2, x1);
-}
-
-inline cvm::real colvar::distance_vec::compare (colvarvalue const &x1,
-                                                colvarvalue const &x2) const
-{
-  cvm::fatal_error ("Error: cannot compare() two distance vectors.\n");
-  return 0.0;
-}
-
-
-inline cvm::real colvar::distance_z::dist2 (colvarvalue const &x1,
-                                            colvarvalue const &x2) const
-{
-  cvm::atom_pos const x1_vec (cvm::rvector (x1.real_value * axis));
-  cvm::atom_pos const x2_vec (cvm::rvector (x2.real_value * axis));
-  return cvm::position_dist2 (x1_vec, x2_vec);
-}
-
-inline colvarvalue colvar::distance_z::dist2_lgrad (colvarvalue const &x1,
-                                                    colvarvalue const &x2) const
-{
-  cvm::atom_pos const x1_vec (cvm::rvector (x1.real_value * axis));
-  cvm::atom_pos const x2_vec (cvm::rvector (x2.real_value * axis));
-  return axis * cvm::position_dist2_lgrad (x1_vec, x2_vec);
-}
-
-inline colvarvalue colvar::distance_z::dist2_rgrad (colvarvalue const &x1,
-                                                    colvarvalue const &x2) const
-{
-  cvm::atom_pos const x1_vec (cvm::rvector (x1.real_value * axis));
-  cvm::atom_pos const x2_vec (cvm::rvector (x2.real_value * axis));
-  return axis * cvm::position_dist2_lgrad (x2_vec, x1_vec);
-}
-
-inline cvm::real colvar::distance_z::compare (colvarvalue const &x1,
-                                              colvarvalue const &x2) const
-{
-  return dist2_lgrad (x1, x2);
-}
-
-
-
-// simple definitions, they are here only for optimization purposes
+// simple definitions of the distance functions; they are useful for
+// optimizing the calculation (the type check performed by the base
+// class functions is skipped)
 
 
 // definitions assuming the scalar type
@@ -946,18 +1029,53 @@ inline cvm::real colvar::distance_z::compare (colvarvalue const &x1,
 
   simple_scalar_dist_functions (distance)
   simple_scalar_dist_functions (distance_xy)
+  simple_scalar_dist_functions (distance_z)
+  simple_scalar_dist_functions (min_distance)
   simple_scalar_dist_functions (angle)
   simple_scalar_dist_functions (coordnum)
   simple_scalar_dist_functions (h_bond)
-  simple_scalar_dist_functions (rmsd)
   simple_scalar_dist_functions (gyration)
+  simple_scalar_dist_functions (rmsd)
+  simple_scalar_dist_functions (logmsd)
+  simple_scalar_dist_functions (orientation_angle)
+  simple_scalar_dist_functions (eigenvector)
   simple_scalar_dist_functions (alpha_dihedrals)
   simple_scalar_dist_functions (alpha_angles)
+
+
 
 // generic definitions
 
 
 // distance between three dimensional vectors
+
+// inline cvm::real colvar::distance_vec::dist2 (colvarvalue const &x1,
+//                                               colvarvalue const &x2) const
+// {
+//   return (x1.rvector_value - x2.rvector_value).norm2();
+// }
+
+// inline colvarvalue colvar::distance_vec::dist2_lgrad (colvarvalue const &x1,
+//                                                       colvarvalue const &x2) const
+// {
+//   return (x1.rvector_value - x2.rvector_value);
+// }
+
+// inline colvarvalue colvar::distance_vec::dist2_rgrad (colvarvalue const &x1,
+//                                                       colvarvalue const &x2) const
+// {
+//   return (x2.rvector_value - x1.rvector_value);
+// }
+
+// inline cvm::real colvar::distance_vec::compare (colvarvalue const &x1,
+//                                                 colvarvalue const &x2) const
+// {
+//   cvm::fatal_error ("Error: cannot compare() two distance vectors.\n");
+//   return 0.0;
+// }
+
+
+// distance between quaternions
 
 inline cvm::real colvar::orientation::dist2 (colvarvalue const &x1,
                                              colvarvalue const &x2) const
@@ -978,11 +1096,13 @@ inline colvarvalue colvar::orientation::dist2_rgrad (colvarvalue const &x1,
 }
 
 inline cvm::real colvar::orientation::compare (colvarvalue const &x1,
-                                                colvarvalue const &x2) const
+                                               colvarvalue const &x2) const
 {
-  cvm::fatal_error ("Error: cannot compare() two orientation vectors.\n");
+  cvm::fatal_error ("Error: cannot compare() two quaternions.\n");
   return 0.0;
 }
+
+
 
 
 

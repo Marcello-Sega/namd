@@ -5,13 +5,6 @@
 #include "colvarbias.h"
 #include "colvarbias_meta.h"
 #include "colvarbias_abf.h"
-#include "common.h"
-#ifndef _NO_ALLOCA_H
-#include <alloca.h>
-#endif
-#ifndef _NO_MALLOC_H
-#include <malloc.h>
-#endif
 
 
 colvarmodule::colvarmodule (char const  *config_filename,
@@ -27,7 +20,13 @@ colvarmodule::colvarmodule (char const  *config_filename,
   }
 
   cvm::log (cvm::line_marker);
-  cvm::log ("Initializing the collective variables module, version " + cvm::to_str(COLVARS_VERSION) + ".\n");
+  cvm::log ("Initializing the collective variables module, version "+
+            cvm::to_str(COLVARS_VERSION)+".\n");
+
+#if (defined (COLVARS_STANDALONE) || defined (COLVARS_GMXTOOLS))
+  cvm::log ("Note: this version is not linked to a MD simulation program, "
+            "and can only be used to analyse data.\n");
+#endif
 
   // "it_restart" will be set by the input restart file, if any;
   // "it" should be updated by the proxy
@@ -49,10 +48,19 @@ colvarmodule::colvarmodule (char const  *config_filename,
     config_s.close();
   }
 
+  parse->get_keyval (conf, "analysis", b_analysis, false);
 
 #if defined (COLVARS_STANDALONE)
   parse->get_keyval (conf, "timeStep", dt, 1.0);
 #endif
+
+  if (cvm::debug())
+    parse->get_keyval (conf, "debugGradientsStepSize", debug_gradients_step_size, 1.0e-03,
+                       colvarparse::parse_silent);
+
+  parse->get_keyval (conf, "eigenvalueCrossingThreshold",
+                     colvarmodule::rotation::crossing_threshold, 1.0e-04,
+                     colvarparse::parse_silent);
 
   parse->get_keyval (conf, "colvarsTrajFrequency", cv_traj_freq, 100);
   parse->get_keyval (conf, "colvarsRestartFrequency", restart_out_freq,
@@ -60,7 +68,8 @@ colvarmodule::colvarmodule (char const  *config_filename,
 
   // by default overwrite the existing trajectory file
   bool cv_traj_append;
-  parse->get_keyval (conf, "trajAppend", cv_traj_append, false);
+  parse->get_keyval (conf, "colvarsTrajAppend", cv_traj_append, false,
+                     colvarparse::parse_silent);
 
   // input restart file
   restart_in_name = proxy->input_prefix().size() ?
@@ -89,23 +98,30 @@ colvarmodule::colvarmodule (char const  *config_filename,
              std::string (output_prefix+".colvars.state") :
              std::string ("colvars.state"))+"\".\n");
 
-  // parse the analysis options (if provided); this should stay after
-  // the initialization of the colvars and biases
-  parse->get_keyval (conf, "analysis", b_analysis, false);
-  if (b_analysis) {
-    cvm::log (cvm::line_marker);
-    parse_analysis (conf);
-  }
-
   // parse the options for collective variables
   init_colvars (conf);
 
   // parse the options for biases
   init_biases (conf);
 
+#if defined (COLVARS_STANDALONE)
+  if (b_analysis) {
+    // parse the analysis options (if provided); this should stay after
+    // the initialization of the colvars and biases
+    cvm::log (cvm::line_marker);
+    // read the colvar trajectory from a file
+    parse->get_keyval (conf, "readTrajectory",
+                       cv_traj_read_name);
+    parse->get_keyval (conf, "readBegin",
+                       cv_traj_read_begin, 0);
+    parse->get_keyval (conf, "readEnd",
+                       cv_traj_read_end,   0);
+  }
+#endif
+
   // done with the parsing, check that all keywords are valid
   parse->check_keywords (conf, "colvarmodule");
-      cvm::log (cvm::line_marker);
+  cvm::log (cvm::line_marker);
 
   // read the restart configuration, if available
   if (restart_in_name.size()) {
@@ -121,11 +137,14 @@ colvarmodule::colvarmodule (char const  *config_filename,
     }
   }
 
+
+#if (!defined (COLVARS_STANDALONE) && !defined (COLVARS_GMXTOOLS))
   // check if it is possible to save output configuration
-  if ( (!output_prefix.size()) ||
-       (restart_out_freq && !restart_out_name.size()) ) {
-    cvm::fatal_error ("Error: undefined output or restart file.\n");
+  if ((!output_prefix.size()) && (!restart_out_name.size())) {
+    cvm::fatal_error ("Error: neither the final output state file or "
+                      "the output restart file could be defined, exiting.\n");
   }
+#endif
 
   // open trajectory files
   if (cv_traj_freq && !cvm::b_analysis) {
@@ -136,10 +155,9 @@ colvarmodule::colvarmodule (char const  *config_filename,
     if (cv_traj_append) {
       cv_traj_os.open (cv_traj_name.c_str(), std::ios::app);
     } else {
-      NAMD_backup_file (cv_traj_name.c_str());
+      proxy->backup_file (cv_traj_name.c_str());
       cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
     }
-
     cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
   }
 
@@ -157,10 +175,6 @@ std::istream & colvarmodule::read_restart (std::istream &is)
       parse->get_keyval (restart_conf, "step",
                          it_restart, (size_t) 0,
                          colvarparse::parse_silent);
-#if defined (COLVARS_STANDALONE)
-      parse->get_keyval (restart_conf, "timeStep",
-                         dt, 1.0, colvarparse::parse_silent);
-#endif
       it = it_restart;
     }
     is.clear();
@@ -359,6 +373,24 @@ void colvarmodule::calc() {
   }
   cvm::decrease_depth();
 
+  if (cvm::b_analysis) {
+    // perform runtime analysis of colvars and biases
+    if (cvm::debug() && biases.size())
+      cvm::log ("Perform runtime analyses.\n");
+    cvm::increase_depth();
+    for (std::vector<colvar *>::iterator cvi = colvars.begin();
+         cvi != colvars.end();
+         cvi++) {
+      (*cvi)->analyse(); 
+    }
+    for (std::vector<colvarbias *>::iterator bi = biases.begin();
+         bi != biases.end();
+         bi++) {
+      (*bi)->analyse(); 
+    }
+    cvm::decrease_depth();
+  }
+
   // sum up the forces for each colvar and integrate any internal
   // equation of motion
   if (cvm::debug())
@@ -390,7 +422,7 @@ void colvarmodule::calc() {
     if ( (cvm::step_relative() > 0) &&
          ((cvm::step_relative() % restart_out_freq) == 0) ) {
       cvm::log ("Writing the current state to the restart file.\n");
-      NAMD_backup_file (restart_out_name.c_str(), ".old");
+      proxy->backup_file (restart_out_name.c_str());
       restart_out_os.open (restart_out_name.c_str());
       restart_out_os.setf (std::ios::scientific, std::ios::floatfield);
       if (!write_restart (restart_out_os))
@@ -451,18 +483,6 @@ void colvarmodule::calc() {
 }
 
 
-void colvarmodule::parse_analysis (std::string const &conf)
-{
-  // read the colvar trajectory from a file
-  parse->get_keyval (conf, "readTrajectory",
-                     cv_traj_read_name);
-  parse->get_keyval (conf, "readBegin",
-                     cv_traj_read_begin, 0);
-  parse->get_keyval (conf, "readEnd",
-                     cv_traj_read_end,   0);
-}
-
-
 void colvarmodule::analyse()
 {
   if (cvm::debug()) {
@@ -504,7 +524,8 @@ void colvarmodule::finalise()
 {
   // close files and deallocate stuff
 
-  if (!cvm::b_analysis) {
+#if (!defined (COLVARS_STANDALONE) && !defined (COLVARS_GMXTOOLS))
+  {
     // if this is a regular run, data must be written to be able to
     // restart the simulation
     std::string const out_name =
@@ -512,12 +533,13 @@ void colvarmodule::finalise()
        std::string (output_prefix+".colvars.state") :
        std::string ("colvars.state"));
     cvm::log ("Saving collective variables state to \""+out_name+"\".\n");
-    NAMD_backup_file (out_name.c_str(), ".old");
+    proxy->backup_file (out_name.c_str());
     std::ofstream out (out_name.c_str());
     out.setf (std::ios::scientific, std::ios::floatfield);
     this->write_restart (out);
     out.close();
   }
+#endif
 
   for (std::vector<colvar *>::iterator cvi = colvars.begin();
        cvi != colvars.end();
@@ -683,12 +705,14 @@ colvarproxy              *colvarmodule::proxy = NULL;
 
 // static runtime data
 cvm::real colvarmodule::dt = 1.0;
+cvm::real colvarmodule::debug_gradients_step_size = 1.0e-03;
 size_t    colvarmodule::it = 0;
 size_t    colvarmodule::it_restart = 0;
 size_t    colvarmodule::restart_out_freq = 0;
 size_t    colvarmodule::cv_traj_freq = 0;
 size_t    colvarmodule::depth = 0;
 bool      colvarmodule::b_analysis = false;
+cvm::real colvarmodule::rotation::crossing_threshold = 1.0E-04;
 
 
 // file name prefixes
@@ -703,9 +727,10 @@ size_t const colvarmodule::cv_prec  = 14;
 size_t const colvarmodule::cv_width = 21;
 size_t const colvarmodule::en_prec  = 14;
 size_t const colvarmodule::en_width = 21;
-
 std::string const colvarmodule::line_marker =
-"----------------------------------------------------------------------\n";
+  "----------------------------------------------------------------------\n";
+
+
 
 
 
@@ -766,33 +791,61 @@ std::ostream & operator << (std::ostream &os, colvarmodule::quaternion const &q)
 
 std::istream & operator >> (std::istream &is, colvarmodule::quaternion &q)
 {
-  size_t start_pos = is.tellg();
+  size_t const start_pos = is.tellg();
 
-  char sep;
-  if ( !(is >> sep)  || !(sep == '(') ||
-       !(is >> q.q0) || !(is >> sep)  || !(sep == ',') ||
-       !(is >> q.q1) || !(is >> sep)  || !(sep == ',') ||
-       !(is >> q.q2) || !(is >> sep)  || !(sep == ',') ||
-       !(is >> q.q3) || !(is >> sep)  || !(sep == ')') ) {
-    is.clear();
-    is.seekg (start_pos, std::ios::beg);
-    is.setstate (std::ios::failbit);
-    return is;
+  std::string euler ("");
+
+  if ( (is >> euler) && (colvarparse::to_lower_cppstr (euler) ==
+                         std::string ("euler")) ) {
+
+    // parse the Euler angles
+    
+    char sep;
+    cvm::real phi, theta, psi;
+    if ( !(is >> sep)   || !(sep == '(') ||
+         !(is >> phi)   || !(is >> sep)  || !(sep == ',') ||
+         !(is >> theta) || !(is >> sep)  || !(sep == ',') ||
+         !(is >> psi)   || !(is >> sep)  || !(sep == ')') ) {
+      is.clear();
+      is.seekg (start_pos, std::ios::beg);
+      is.setstate (std::ios::failbit);
+      return is;
+    }
+
+    q = colvarmodule::quaternion (phi, theta, psi);
+
+  } else {
+
+    // parse the quaternion components
+
+    is.seekg (start_pos, std::ios::beg);      
+    char sep;
+    if ( !(is >> sep)  || !(sep == '(') ||
+         !(is >> q.q0) || !(is >> sep)  || !(sep == ',') ||
+         !(is >> q.q1) || !(is >> sep)  || !(sep == ',') ||
+         !(is >> q.q2) || !(is >> sep)  || !(sep == ',') ||
+         !(is >> q.q3) || !(is >> sep)  || !(sep == ')') ) {
+      is.clear();
+      is.seekg (start_pos, std::ios::beg);
+      is.setstate (std::ios::failbit);
+      return is;
+    }
   }
+
   return is;
 }
 
 
 
 
-/// Calculate the optimal rotation between two groups, and implement
-/// it as a quaternion.  The method is exposed in: Coutsias EA, Seok
-/// C, Dill KA.  Using quaternions to calculate RMSD.  J Comput
-/// Chem. 25(15):1849-57 (2004) DOI: 10.1002/jcc.20110 PubMed:
-/// 15376254
+// Calculate the optimal rotation between two groups, and implement it
+// as a quaternion.  The method is the one documented in: Coutsias EA,
+// Seok C, Dill KA.  Using quaternions to calculate RMSD.  J Comput
+// Chem. 25(15):1849-57 (2004) DOI: 10.1002/jcc.20110 PubMed: 15376254
 
 
-// first come the functions which are used by atom_group
+
+
 
 void colvarmodule::rotation::build_matrix (std::vector<cvm::atom_pos> const &pos1,
                                            std::vector<cvm::atom_pos> const &pos2,
@@ -814,24 +867,24 @@ void colvarmodule::rotation::build_matrix (std::vector<cvm::atom_pos> const &pos
     C.zz() += pos1[i].z * pos2[i].z;
   } 
 
-  // build the S matrix
-  S[0][0] =   C.xx() + C.yy() + C.zz();
-  S[1][0] =   C.yz() - C.zy();
+  // build the "overlap" matrix, whose eigenvectors are stationary
+  // points of the RMSD in the space of rotations
+  S[0][0] =    C.xx() + C.yy() + C.zz();
+  S[1][0] =    C.yz() - C.zy();
   S[0][1] = S[1][0];
-  S[2][0] =   C.zx() - C.xz();
+  S[2][0] =  - C.xz() + C.zx() ;
   S[0][2] = S[2][0];
-  S[3][0] =   C.xy() - C.yx();
+  S[3][0] =    C.xy() - C.yx();
   S[0][3] = S[3][0];
-  S[1][1] =   C.xx() - C.yy() - C.zz();
-  S[2][1] =   C.xy() + C.yx();
+  S[1][1] =    C.xx() - C.yy() - C.zz();
+  S[2][1] =    C.xy() + C.yx();
   S[1][2] = S[2][1];
-  S[3][1] =   C.zx() + C.xz();
+  S[3][1] =    C.xz() + C.zx();
   S[1][3] = S[3][1];
   S[2][2] = - C.xx() + C.yy() - C.zz();
-  S[3][2] = C.yz() + C.zy();
+  S[3][2] =   C.yz() + C.zy();
   S[2][3] = S[3][2];
   S[3][3] = - C.xx() - C.yy() + C.zz();
-
 
   //   if (cvm::debug()) {
   //     for (size_t i = 0; i < 4; i++) {
@@ -852,33 +905,10 @@ void colvarmodule::rotation::diagonalize_matrix (matrix2d<cvm::real, 4, 4> &S,
 {
   // diagonalize
   int jac_nrot = 0;
-  nr_jacobi (S, 4, S_eigval, S_eigvec, &jac_nrot);
-  nr_eigsrt (S_eigval, S_eigvec, 4);
-  // nr_jacobi saves eigenvectors by columns
-  nr_transpose (S_eigvec, 4);
-    
-  cvm::real const S2_trace =
-    ::pow (S_eigval[0], int (2)) +
-    ::pow (S_eigval[1], int (2)) +
-    ::pow (S_eigval[2], int (2)) +
-    ::pow (S_eigval[3], int (2));
-
-  if (cvm::debug()) {
-    if ( ::pow (S_eigval[0] - S_eigval[1], int (2))
-         < (1.0E-04 * S2_trace) ) {
-      if (!degeneracy) {
-        cvm::log ("Warning: possible degeneracy of the leading "
-                  "eigenvalue of the overlap matrix "
-                  "in the optimal rotation procedure; check for "
-                  "structural distortions.\n");
-        degeneracy = true;
-      }
-    } else {
-      cvm::log ("Warning: possible degeneracy of the leading "
-                "eigenvalue (see message above) is now removed.\n");
-      degeneracy = false;
-    }
-  }
+  jacobi (S, 4, S_eigval, S_eigvec, &jac_nrot);
+  eigsrt (S_eigval, S_eigvec, 4);
+  // jacobi saves eigenvectors by columns
+  transpose (S_eigvec, 4);
 
   // normalize eigenvectors
   for (size_t ie = 0; ie < 4; ie++) {
@@ -890,55 +920,45 @@ void colvarmodule::rotation::diagonalize_matrix (matrix2d<cvm::real, 4, 4> &S,
 }
 
 
-// Calculate just the rotation
-void
-colvarmodule::rotation::calc_optimal_rotation (std::vector<cvm::atom_pos> const &pos1,
-                                               std::vector<cvm::atom_pos> const &pos2,
-                                               cvm::real                        &l0,
-                                               cvm::quaternion                  &q0)
-{
-  matrix2d<cvm::real, 4, 4> S;
-  cvm::real                 S_eigval[4];
-  matrix2d<cvm::real, 4, 4> S_eigvec;
-
-  build_matrix (pos1, pos2, S);
-
-  diagonalize_matrix (S, S_eigval, S_eigvec);
-
-  cvm::real const *Q0 = S_eigvec[0];
-  cvm::real const &L0 = S_eigval[0];
-
-  l0 = L0;
-  q0 = cvm::quaternion (Q0);
-  this->q = cvm::quaternion (Q0);
-}
-
-
-// Calculate the rotation and its derivatives
+// Calculate the rotation, plus its derivatives
 
 void colvarmodule::rotation::calc_optimal_rotation
 (std::vector<cvm::atom_pos> const &pos1,
- std::vector<cvm::atom_pos> const &pos2,
- cvm::real                        &l0,
- cvm::quaternion                  &q0,
- /* Gradients of S with respect to either group */
- std::vector< matrix2d<cvm::rvector, 4, 4> > &dS_1,
- std::vector< matrix2d<cvm::rvector, 4, 4> > &dS_2,
- /* Gradients of L0 (leading eigenvalue) */
- std::vector< cvm::rvector > &dL0_1,
- std::vector< cvm::rvector > &dL0_2,
- /* Gradients of Q0 (leading eigenvector) */
- std::vector< vector1d<cvm::rvector, 4> > &dQ0_1,
- std::vector< vector1d<cvm::rvector, 4> > &dQ0_2)
+ std::vector<cvm::atom_pos> const &pos2)
 {
   matrix2d<cvm::real, 4, 4> S;
+  matrix2d<cvm::real, 4, 4> S_backup;
   cvm::real                 S_eigval[4];
   matrix2d<cvm::real, 4, 4> S_eigvec;
 
+//   if (cvm::debug()) {
+//     cvm::atom_pos cog1 (0.0, 0.0, 0.0);
+//     for (size_t i = 0; i < pos1.size(); i++) {
+//       cog1 += pos1[i];
+//     }
+//     cog1 /= cvm::real (pos1.size());
+//     cvm::atom_pos cog2 (0.0, 0.0, 0.0);
+//     for (size_t i = 0; i < pos2.size(); i++) {
+//       cog2 += pos2[i];
+//     }
+//     cog2 /= cvm::real (pos1.size());
+//     cvm::log ("calc_optimal_rotation: centers of geometry are: "+
+//               cvm::to_str (cog1, cvm::cv_width, cvm::cv_prec)+
+//               " and "+cvm::to_str (cog2, cvm::cv_width, cvm::cv_prec)+".\n");
+//   }
+
   build_matrix (pos1, pos2, S);
+  S_backup = S;
+
+  if (cvm::debug()) {
+    if (b_debug_gradients) {
+      cvm::log ("S     = "+cvm::to_str (cvm::to_str (S_backup), cvm::cv_width, cvm::cv_prec)+"\n");
+    }
+  }
 
   diagonalize_matrix (S, S_eigval, S_eigvec);
 
+  // eigenvalues and eigenvectors
   cvm::real const &L0 = S_eigval[0];
   cvm::real const &L1 = S_eigval[1];
   cvm::real const &L2 = S_eigval[2];
@@ -948,12 +968,39 @@ void colvarmodule::rotation::calc_optimal_rotation
   cvm::real const *Q2 = S_eigvec[2];
   cvm::real const *Q3 = S_eigvec[3];
 
-  //   if (cvm::debug()) {
-  //     cvm::log ("Q0 = "+cvm::to_str (cvm::quaternion (Q0))+"\n");
-  //     cvm::log ("Q1 = "+cvm::to_str (cvm::quaternion (Q1))+"\n");
-  //     cvm::log ("Q2 = "+cvm::to_str (cvm::quaternion (Q2))+"\n");
-  //     cvm::log ("Q3 = "+cvm::to_str (cvm::quaternion (Q3))+"\n");
-  //   }
+  lambda = L0;
+  q = cvm::quaternion (Q0);
+
+#if (!defined (COLVARS_STANDALONE) && !defined (COLVARS_GMXTOOLS)) 
+  if (q_old.norm2() > 0.0) {
+    q.match (q_old);
+    if (q_old.inner (q) < (1.0 - crossing_threshold)) {
+      cvm::log ("Warning: discontinuous rotation!\n");
+    }
+  }
+  q_old = q;
+#endif
+                     
+  if (cvm::debug()) {
+    if (b_debug_gradients) {
+      cvm::log ("L0 = "+cvm::to_str (L0, cvm::cv_width, cvm::cv_prec)+
+                ", Q0 = "+cvm::to_str (cvm::quaternion (Q0), cvm::cv_width, cvm::cv_prec)+
+                ", Q0*Q0 = "+cvm::to_str (cvm::quaternion (Q0).inner (cvm::quaternion (Q0)), cvm::cv_width, cvm::cv_prec)+
+                "\n");
+      cvm::log ("L1 = "+cvm::to_str (L1, cvm::cv_width, cvm::cv_prec)+
+                ", Q1 = "+cvm::to_str (cvm::quaternion (Q1), cvm::cv_width, cvm::cv_prec)+
+                ", Q0*Q1 = "+cvm::to_str (cvm::quaternion (Q0).inner (cvm::quaternion (Q1)), cvm::cv_width, cvm::cv_prec)+
+                "\n");
+      cvm::log ("L2 = "+cvm::to_str (L2, cvm::cv_width, cvm::cv_prec)+
+                ", Q2 = "+cvm::to_str (cvm::quaternion (Q2), cvm::cv_width, cvm::cv_prec)+
+                ", Q0*Q2 = "+cvm::to_str (cvm::quaternion (Q0).inner (cvm::quaternion (Q2)), cvm::cv_width, cvm::cv_prec)+
+                "\n");
+      cvm::log ("L3 = "+cvm::to_str (L3, cvm::cv_width, cvm::cv_prec)+
+                ", Q3 = "+cvm::to_str (cvm::quaternion (Q3), cvm::cv_width, cvm::cv_prec)+
+                ", Q0*Q3 = "+cvm::to_str (cvm::quaternion (Q0).inner (cvm::quaternion (Q3)), cvm::cv_width, cvm::cv_prec)+
+                "\n");
+    }
+  }
 
   // calculate derivatives of L0 and Q0 with respect to each atom in
   // either group; note: if dS_1 is a null vector, nothing will be
@@ -965,10 +1012,9 @@ void colvarmodule::rotation::calc_optimal_rotation
     cvm::real const &a2z = pos2[ia].z;
 
     matrix2d<cvm::rvector, 4, 4>    &ds_1 =  dS_1[ia];
-    cvm::rvector                   &dl0_1 = dL0_1[ia];
-    vector1d<cvm::rvector, 4>      &dq0_1 = dQ0_1[ia];
 
     // derivative of the S matrix
+    ds_1.reset();
     ds_1[0][0] = cvm::rvector ( a2x,  a2y,  a2z);
     ds_1[1][0] = cvm::rvector ( 0.0,  a2z, -a2y);
     ds_1[0][1] = ds_1[1][0];
@@ -984,27 +1030,34 @@ void colvarmodule::rotation::calc_optimal_rotation
     ds_1[2][2] = cvm::rvector (-a2x,  a2y, -a2z);
     ds_1[3][2] = cvm::rvector ( 0.0,  a2z,  a2y);
     ds_1[2][3] = ds_1[3][2];
-    ds_1[3][3] = cvm::rvector (-a2x, -a2y, +a2z);
+    ds_1[3][3] = cvm::rvector (-a2x, -a2y,  a2z);
 
-    // matrix multiplications; the derivatives are calculated by a
-    // perturbation theory-like approach (S -> S+dS), exploiting the
-    // fact that the Q_i form an orthonormal basis
-    dl0_1 = 0.0;
+    cvm::rvector              &dl0_1 = dL0_1[ia];
+    vector1d<cvm::rvector, 4> &dq0_1 = dQ0_1[ia];
+
+    // matrix multiplications; derivatives of L_0 and Q_0 are
+    // calculated using Hellmann-Feynman theorem (i.e. exploiting the
+    // fact that the eigenvectors Q_i form an orthonormal basis)
+
+    dl0_1.reset();
     for (size_t i = 0; i < 4; i++) {
-      cvm::rvector ds_1q0_i (0.0, 0.0, 0.0);
       for (size_t j = 0; j < 4; j++) {
-        ds_1q0_i += ds_1[i][j] * Q0[j];
+        dl0_1 += Q0[i] * ds_1[i][j] * Q0[j];
       }
-      // derivative of the eigenvalue
-      dl0_1 += Q0[i] * ds_1q0_i;
-      // derivative of the eigenvector
-      dq0_1[i] =
-        (Q1[i] * ds_1q0_i) / (L0-L1) * Q1[i] + 
-        (Q2[i] * ds_1q0_i) / (L0-L2) * Q2[i] + 
-        (Q3[i] * ds_1q0_i) / (L0-L3) * Q3[i];
+    }
+
+    dq0_1.reset();
+    for (size_t p = 0; p < 4; p++) {
+      for (size_t i = 0; i < 4; i++) {
+        for (size_t j = 0; j < 4; j++) {
+          dq0_1[p] +=
+            (Q1[i] * ds_1[i][j] * Q0[j]) / (L0-L1) * Q1[p] + 
+            (Q2[i] * ds_1[i][j] * Q0[j]) / (L0-L2) * Q2[p] + 
+            (Q3[i] * ds_1[i][j] * Q0[j]) / (L0-L3) * Q3[p];
+        }
+      }
     }
   }
-
 
   // do the same for the second group
   for (size_t ia = 0; ia < dS_2.size(); ia++) {
@@ -1013,10 +1066,9 @@ void colvarmodule::rotation::calc_optimal_rotation
     cvm::real const &a1y = pos1[ia].y;
     cvm::real const &a1z = pos1[ia].z;
 
-    matrix2d<cvm::rvector, 4, 4>    &ds_2 =  dS_2[ia];
-    cvm::rvector                   &dl0_2 = dL0_2[ia];
-    vector1d<cvm::rvector, 4>      &dq0_2 = dQ0_2[ia];
+    matrix2d<cvm::rvector, 4, 4> &ds_2 =  dS_2[ia];
 
+    ds_2.reset();
     ds_2[0][0] = cvm::rvector ( a1x,  a1y,  a1z);
     ds_2[1][0] = cvm::rvector ( 0.0, -a1z,  a1y);
     ds_2[0][1] = ds_2[1][0];
@@ -1032,25 +1084,74 @@ void colvarmodule::rotation::calc_optimal_rotation
     ds_2[2][2] = cvm::rvector (-a1x,  a1y, -a1z);
     ds_2[3][2] = cvm::rvector ( 0.0,  a1z,  a1y);
     ds_2[2][3] = ds_2[3][2];
-    ds_2[3][3] = cvm::rvector (-a1x, -a1y, +a1z);
+    ds_2[3][3] = cvm::rvector (-a1x, -a1y,  a1z);
 
-    dl0_2 = 0.0;
+    cvm::rvector              &dl0_2 = dL0_2[ia];
+    vector1d<cvm::rvector, 4> &dq0_2 = dQ0_2[ia];
+
+    dl0_2.reset();
     for (size_t i = 0; i < 4; i++) {
-      cvm::rvector ds_2q0_i (0.0, 0.0, 0.0);
       for (size_t j = 0; j < 4; j++) {
-        ds_2q0_i += ds_2[i][j] * Q0[j];
+        dl0_2 += Q0[i] * ds_2[i][j] * Q0[j];
       }
-      dl0_2 += Q0[i] * ds_2q0_i;
-      dq0_2[i] =
-        (Q1[i] * ds_2q0_i) / (L0-L1) * Q1[i] + 
-        (Q2[i] * ds_2q0_i) / (L0-L2) * Q2[i] + 
-        (Q3[i] * ds_2q0_i) / (L0-L3) * Q3[i];
+    }
+
+    dq0_2.reset();
+    for (size_t p = 0; p < 4; p++) {
+      for (size_t i = 0; i < 4; i++) {
+        for (size_t j = 0; j < 4; j++) {
+          dq0_2[p] +=
+            (Q1[i] * ds_2[i][j] * Q0[j]) / (L0-L1) * Q1[p] + 
+            (Q2[i] * ds_2[i][j] * Q0[j]) / (L0-L2) * Q2[p] + 
+            (Q3[i] * ds_2[i][j] * Q0[j]) / (L0-L3) * Q3[p];
+        }
+      }
+    }
+
+    if (cvm::debug()) {
+      
+      if (b_debug_gradients) {
+
+      matrix2d<cvm::real, 4, 4> S_new;
+      cvm::real                 S_new_eigval[4];
+      matrix2d<cvm::real, 4, 4> S_new_eigvec;
+
+        // make an infitesimal move along each cartesian coordinate of
+        // this atom, and solve again the eigenvector problem
+        for (size_t comp = 0; comp < 3; comp++) {
+
+          S_new = S_backup;
+          // diagonalize the new overlap matrix
+          for (size_t i = 0; i < 4; i++) {
+            for (size_t j = 0; j < 4; j++) {
+              S_new[i][j] += 
+                colvarmodule::debug_gradients_step_size * ds_2[i][j][comp];
+            }
+          }
+
+//           cvm::log ("S_new = "+cvm::to_str (cvm::to_str (S_new), cvm::cv_width, cvm::cv_prec)+"\n");
+
+          diagonalize_matrix (S_new, S_new_eigval, S_new_eigvec);
+
+          cvm::real const &L0_new = S_new_eigval[0];
+          cvm::real const *Q0_new = S_new_eigvec[0];
+
+          cvm::real const DL0 = (dl0_2[comp]) * colvarmodule::debug_gradients_step_size;
+          cvm::quaternion const q0 (Q0);
+          cvm::quaternion const DQ0 (dq0_2[0][comp] * colvarmodule::debug_gradients_step_size,
+                                     dq0_2[1][comp] * colvarmodule::debug_gradients_step_size,
+                                     dq0_2[2][comp] * colvarmodule::debug_gradients_step_size,
+                                     dq0_2[3][comp] * colvarmodule::debug_gradients_step_size);
+
+          cvm::log (  "|(l_0+dl_0) - l_0^new|/l_0 = "+
+                      cvm::to_str (::fabs (L0+DL0 - L0_new)/L0, cvm::cv_width, cvm::cv_prec)+
+                      ", |(q_0+dq_0) - q_0^new| = "+
+                      cvm::to_str ((Q0+DQ0 - Q0_new).norm(), cvm::cv_width, cvm::cv_prec)+
+                      "\n");
+        }
+      }
     }
   }
-
-  l0 = L0;
-  q0 = cvm::quaternion (Q0);
-  this->q = cvm::quaternion (Q0);
 }
 
 
@@ -1059,15 +1160,14 @@ void colvarmodule::rotation::calc_optimal_rotation
 
 #define ROTATE(a,i,j,k,l) g=a[i][j];h=a[k][l];a[i][j]=g-s*(h+g*tau);    \
   a[k][l]=h+s*(g-h*tau);
-void nr_jacobi(cvm::real **a, int n, cvm::real d[], cvm::real **v, int *nrot)
+void jacobi(cvm::real **a, int n, cvm::real d[], cvm::real **v, int *nrot)
 {
   int j,iq,ip,i;
   cvm::real tresh,theta,tau,t,sm,s,h,g,c;
 
-  //  b=vector(1,n);
-  cvm::real *b = (cvm::real*)alloca(n*sizeof(cvm::real));
-  //  z=vector(1,n);
-  cvm::real *z = (cvm::real*)alloca(n*sizeof(cvm::real));
+  std::vector<cvm::real> b (n, 0.0);
+  std::vector<cvm::real> z (n, 0.0);
+
   for (ip=0;ip<n;ip++) {
     for (iq=0;iq<n;iq++) v[ip][iq]=0.0;
     v[ip][ip]=1.0;
@@ -1084,8 +1184,6 @@ void nr_jacobi(cvm::real **a, int n, cvm::real d[], cvm::real **v, int *nrot)
         sm += fabs(a[ip][iq]);
     }
     if (sm == 0.0) {
-      //      free_vector(z,1,n);
-      //      free_vector(b,1,n);
       return;
     }
     if (i < 4)
@@ -1138,12 +1236,12 @@ void nr_jacobi(cvm::real **a, int n, cvm::real d[], cvm::real **v, int *nrot)
       z[ip]=0.0;
     }
   }
-  cvm::fatal_error ("Too many iterations in routine nr_jacobi.\n");
+  cvm::fatal_error ("Too many iterations in routine jacobi.\n");
 }
 #undef ROTATE
 
 
-void nr_eigsrt(cvm::real d[], cvm::real **v, int n)
+void eigsrt(cvm::real d[], cvm::real **v, int n)
 {
   int k,j,i;
   cvm::real p;
@@ -1165,7 +1263,7 @@ void nr_eigsrt(cvm::real d[], cvm::real **v, int n)
 }
 
 
-void nr_transpose(cvm::real **v, int n)
+void transpose(cvm::real **v, int n)
 {
   cvm::real p;
   for (int i=0;i<n;i++) {

@@ -87,8 +87,6 @@ public:
                                   cvm::atom_pos const &pos2);
   cvm::real position_dist2 (cvm::atom_pos const &pos1,
                             cvm::atom_pos const &pos2);
-  cvm::rvector position_dist2_lgrad (cvm::atom_pos const &pos1,
-                                     cvm::atom_pos const &pos2);
 
   void select_closest_image (cvm::atom_pos &pos,
                              cvm::atom_pos const &ref_pos);
@@ -104,11 +102,13 @@ public:
                     std::string const pdb_field = "O",
                     double const pdb_field_value = 0.0);
 
+  void backup_file (char const *filename);
+
 };
 
 
-inline cvm::rvector  colvarproxy_namd::position_distance (cvm::atom_pos const &pos1,
-                                                          cvm::atom_pos const &pos2)
+inline cvm::rvector colvarproxy_namd::position_distance (cvm::atom_pos const &pos1,
+                                                         cvm::atom_pos const &pos2)
 {
   Position const p1 (pos1.x, pos1.y, pos1.z);
   Position const p2 (pos2.x, pos2.y, pos2.z);
@@ -141,16 +141,6 @@ inline cvm::real colvarproxy_namd::position_dist2 (cvm::atom_pos const &pos1,
   return cvm::real (d.x*d.x + d.y*d.y + d.z*d.z);
 }
 
-
-inline cvm::rvector colvarproxy_namd::position_dist2_lgrad (cvm::atom_pos const &pos1,
-                                                            cvm::atom_pos const &pos2)
-{
-  Lattice const *l = this->lattice;
-  Vector const p1 (pos1.x, pos1.y, pos1.z);
-  Vector const p2 (pos2.x, pos2.y, pos2.z);
-  Vector const d = l->delta (p1, p2);
-  return 2.0 * cvm::rvector (d.x, d.y, d.z);
-}
 
 
 #endif

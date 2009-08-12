@@ -20,6 +20,9 @@ colvar::alpha_angles::alpha_angles (std::string const &conf)
   function_type = "alpha_angles";
   x.type (colvarvalue::type_scalar);
 
+  std::string segment_id;
+  get_keyval (conf, "psfSegID", segment_id, std::string ("MAIN"));
+
   std::vector<int> residues;
   {
     std::string residues_conf = "";
@@ -43,9 +46,6 @@ colvar::alpha_angles::alpha_angles (std::string const &conf)
   if (residues.size() < 5) {
     cvm::fatal_error ("Error: not enough residues defined in \"residueRange\".\n");
   }
-
-  std::string segment_id;
-  get_keyval (conf, "psfSegID", segment_id, std::string ("MAIN"));
 
   std::string const &sid    = segment_id;
   std::vector<int> const &r = residues;

@@ -72,7 +72,7 @@ public:
     type_vector,
     /// 3-dimensional unit vector, implemented as \link colvarmodule::rvector \endlink
     type_unitvector,
-    /// 4-dimensional unit vector, implemented as \link colvarmodule::quaternion \endlink
+    /// 4-dimensional unit vector representing a rotation, implemented as \link colvarmodule::quaternion \endlink
     type_quaternion
   };
 

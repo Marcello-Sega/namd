@@ -2,8 +2,6 @@
  * Implementation of the ABF and histogram biases                               *
  ********************************************************************************/
 
-// #include <glob.h>
-
 #include "colvarmodule.h"
 #include "colvar.h"
 #include "colvarbias_abf.h"
@@ -138,7 +136,7 @@ void colvarbias_abf::update()
     }
 
     for (size_t i=0; i<colvars.size(); i++) {
-      bin[i]		= colvars[i]->current_bin_scalar();
+      bin[i]   = colvars[i]->current_bin_scalar();
     }
 
   } else {
@@ -236,11 +234,9 @@ void colvarbias_abf::read_gradients_samples ()
     if (!is.good()) cvm::fatal_error ("Error opening ABF samples file " + samples_in_name + " for reading");
     samples->read_multicol (is, true);
     is.close ();
-
     is.clear();
 
     is.open (gradients_in_name.c_str());
-
     if (!is.good())	cvm::fatal_error ("Error opening ABF gradient file " + gradients_in_name + " for reading");
     gradients->read_multicol (is, true);
     is.close ();

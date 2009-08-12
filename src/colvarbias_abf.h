@@ -12,6 +12,7 @@
 //#include <cmath>
 
 #include "colvarbias.h"
+#include "colvargrid.h"
 
 typedef cvm::real* gradient_t;
 
@@ -42,10 +43,6 @@ private:
   size_t	min_samples;
   /// frequency for updating output files (default: same as restartFreq?)
   int		output_freq;
-
-  // below: stuff for force histograms
-  //float	fMax; 
-  //float	df; 
 
   // Internal data and methods
 

@@ -155,6 +155,7 @@ OBJS = \
 	$(DSTDIR)/colvarcomp_protein.o \
 	$(DSTDIR)/colvarcomp_rotations.o \
 	$(DSTDIR)/colvarproxy_namd.o \
+	$(DSTDIR)/colvargrid.o \
 	$(DSTDIR)/GridForceGrid.o \
         $(DSTDIR)/GromacsTopFile.o \
 	$(DSTDIR)/heap.o \

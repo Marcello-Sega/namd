@@ -7,6 +7,7 @@
 #include <fstream>
 
 #include "colvarbias.h"
+#include "colvargrid.h"
 
 /// Metadynamics bias (implementation of \link colvarbias \endlink)
 class colvarbias_meta : public colvarbias {
@@ -18,36 +19,11 @@ public:
     /// One replica (default)
     single_replica,
     /// Hills added concurrently by several replicas
-    multiple_replicas,
-    /// Perform replica exchange (not yet implemented)
-    exchange_replicas
+    multiple_replicas
   };
 
   /// Communication between different replicas
   Communication comm;
-
-  /// Manipulation of the hills
-  enum Fill_Mode {
-    /// \brief All hills are persistent, and created with the same
-    /// weight
-    fill_normal,
-    /// \brief Remove the oldest hills, after a lifetime of \link
-    /// colvarbias_meta::nt_cutoff \endlink steps
-    strip_older
-  };
-
-  /// Manipulation of the hills
-  Fill_Mode fill_mode;
-
-  /// \brief Value at which two hills are considered "overlapping"
-  /// (value at half-width from the center)
-  cvm::real static const hills_overlap;
-
-  /// \brief Scaling factor for fill modes which modify the hills
-  cvm::real static const hills_downscaling;
-
-  /// True if only analysis is performed and not a run
-  bool static b_analysis;
 
   /// Constructor
   colvarbias_meta (std::string const &conf, char const *key);
@@ -70,10 +46,26 @@ public:
 protected:
 
   /// Parse analysis tasks and options
-  virtual void parse_analysis (std::string const &conf);
+//   virtual void parse_analysis (std::string const &conf);
 
-  /// List of hills used on this bias
-  std::list<colvarbias_meta::hill> hills;
+  /// \brief List of hills used on this bias (total); if a grid is
+  /// employed, these don't need to be updated at every time step
+  std::list<hill> hills;
+
+  /// \brief Iterator to the first of the "newest" hills (when using
+  /// grids, those who haven't been mapped yet)
+  hill_iter new_hills_begin;
+
+  /// \brief List of hills used on this bias that are on the boundary
+  /// edges; these are updated regardless of whether hills are used
+  std::list<hill> hills_off_grid;
+
+  /// \brief Same as new_hills_begin, but for the off-grid ones
+  hill_iter new_hills_off_grid_begin;
+
+  /// Regenerate the hills_off_grid list
+  void recount_hills_off_grid (hill_iter h_first, hill_iter h_last,
+                               colvar_grid_scalar *ge);
 
   /// Read a hill from a file
   std::istream & read_hill (std::istream &is);
@@ -95,29 +87,33 @@ protected:
                            std::vector<colvarvalue> const &values = std::vector<colvarvalue> (0));
 
   /// \brief Calculate the forces acting on the i-th colvar,
-  /// incrementing colvar_forces[i]
+  /// incrementing colvar_forces[i]; must be called after calc_hills
+  /// each time the values of the colvars are changed
   virtual void calc_hills_force (size_t const &i,
                                  hill_iter h_first,
                                  hill_iter h_last,
                                  std::vector<colvarvalue> &forces,
                                  std::vector<colvarvalue> const &values = std::vector<colvarvalue> (0));
 
-  virtual void scale_hills();
-
-  virtual void remove_hills();
-
-
-  /// Height of new hill
+  /// Height of new hills
   cvm::real  hill_weight;
 
-  /// \brief Bin the hills on two grids of energy and forces 
+  /// \brief Bin the hills on grids of energy and forces, and use them
+  /// to force the colvars (as opposed to deriving the hills analytically)
   bool       use_grids;
+
+  /// \brief Rebin the hills upon restarting
+  bool       rebin_grids;
 
   /// \brief Should the grids be expanded if necessary?
   bool       expand_grids;
 
   /// \brief How often the hills should be projected onto the grids
   size_t     grids_freq;
+
+  /// \brief Whether to keep the hills in the restart file (e.g. to do
+  /// meaningful accurate rebinning afterwards)
+  bool       keep_hills;
 
   /// \brief Dump the free energy surface (.pmf file) every restartFrequency
   bool       dump_fes;
@@ -126,14 +122,17 @@ protected:
   /// iterations, appending a step number to each
   bool       dump_fes_save;
 
-  /// Hill energy, cached
+  /// Hill energy, cached on a grid
   colvar_grid_scalar    *hills_energy;
 
-  /// Hill forces, cached
+  /// Hill forces, cached on a grid
   colvar_grid_gradient  *hills_energy_gradients;
 
+  /// Project the selected hills onto grids
   void project_hills (hill_iter h_first, hill_iter h_last,
-                      colvar_grid_scalar *ge, colvar_grid_gradient *gf);
+                      colvar_grid_scalar *ge, colvar_grid_gradient *gf,
+                      cvm::real const scale_factor = 1.0);
+
 
 
   /// \brief width of a hill
@@ -187,16 +186,6 @@ protected:
 
   /// \brief File to contain the hills created by this replica in this run (name)
   std::string            replica_out_file_name;
-
-
-  /// \brief Remove hills older than this number of steps, if
-  /// fill_mode is defined accordingly
-  size_t                 nt_cutoff;
-  /// \brief Smoothing time for hills
-  size_t                 nt_smooth;
-  /// \brief If \link fill_mode \endlink is \link energy_bound
-  /// \endlink, keep the hill energy lower than this
-  cvm::real              energy_bound_max;
 
 
   // Analysis
@@ -270,10 +259,10 @@ protected:
   cvm::real W;
 
   /// Center of the hill in the collective variable space
-  std::vector<colvarvalue>  s0;
+  std::vector<colvarvalue>  centers;
 
   /// Widths of the hill in the collective variable space
-  std::vector<cvm::real>    ds;
+  std::vector<cvm::real>    widths;
 
 public:
 
@@ -296,40 +285,39 @@ public:
                std::string           const &replica_in = "")
     : sW (1.0),
       W (W_in),
-      s0 (cv.size()),
-      ds (cv.size()),
+      centers (cv.size()),
+      widths (cv.size()),
       it (cvm::it),
       replica (replica_in)
   {
     for (size_t i = 0; i < cv.size(); i++) {
-      s0[i].type (cv[i]->type());
-      s0[i] = cv[i]->value();
-      // 1/2 because ds is the half-width
-      ds[i] = 0.5 * cv[i]->width * hill_width;
+      centers[i].type (cv[i]->type());
+      centers[i] = cv[i]->value();
+      widths[i] = cv[i]->width * hill_width;
     }
     if (cvm::debug()) 
-      cvm::log ("This hill is applied to "+cvm::to_str (cv.size())+
+      cvm::log ("New hill, applied to "+cvm::to_str (cv.size())+
                 " collective variables, with reference values "+
-                cvm::to_str (s0)+", widths "+
-                cvm::to_str (ds)+" and weight "+
+                cvm::to_str (centers)+", widths "+
+                cvm::to_str (widths)+" and weight "+
                 cvm::to_str (W)+".\n");
   }
 
   /// \brief General constructor: all data are explicitly passed as
   /// arguments (used for instance when reading hills saved on a
   /// file) \param it Time step of creation of the hill \param
-  /// weight Weight of the hill \param s0 Center of the hill
-  /// \param ds Half-width of the hill around s0 \param replica
+  /// weight Weight of the hill \param centers Center of the hill
+  /// \param widths Width of the hill around centers \param replica
   /// (optional) Identity of the replica which creates the hill
   inline hill (size_t                    const &it_in,
                cvm::real                 const &W_in,
-               std::vector<colvarvalue>  const &s0_in,
-               std::vector<cvm::real>    const &ds_in,
+               std::vector<colvarvalue>  const &centers_in,
+               std::vector<cvm::real>    const &widths_in,
                std::string               const &replica_in = "")
     : sW (1.0),
       W (W_in),
-      s0 (s0_in),
-      ds (ds_in),
+      centers (centers_in),
+      widths (widths_in),
       it (it_in),
       replica (replica_in)
   {}
@@ -338,8 +326,8 @@ public:
   inline hill (colvarbias_meta::hill const &h)
     : sW (1.0),
       W (h.W),
-      s0 (h.s0),
-      ds (h.ds),
+      centers (h.centers),
+      widths (h.widths),
       it (h.it),
       replica (h.replica)
   {}
@@ -387,13 +375,13 @@ public:
   /// Get the center of the hill
   inline std::vector<colvarvalue> & center()
   {
-    return s0;
+    return centers;
   }
 
   /// Get the i-th component of the center
   inline colvarvalue & center (size_t const &i)
   {
-    return s0[i];
+    return centers[i];
   }
 
   /// Comparison operator
@@ -435,8 +423,8 @@ public:
   std::string output_traj();
 
   /// Write the hill to an output stream
-  friend std::ostream & operator << (std::ostream &os,
-                                           colvarbias_meta::hill const &h);
+  inline friend std::ostream & operator << (std::ostream &os,
+                                            hill const &h);
 
 };
 

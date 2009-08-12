@@ -6,7 +6,7 @@
 #endif
 
 #ifndef COLVARS_VERSION
-#define COLVARS_VERSION "29-09-2008"
+#define COLVARS_VERSION "20090807"
 #endif
 
 /// \file colvarmodule.h 
@@ -45,12 +45,15 @@ class colvarproxy;
 /// to provide a transparent interface between the MD program and the
 /// child objects
 class colvarmodule {
+
 private:
 
   /// Impossible to initialize the main object without arguments
   colvarmodule();
 
 public:
+
+  friend class colvarproxy;
   
   /// Defining an abstract real number allows to switch precision
   typedef  double    real;
@@ -104,8 +107,12 @@ public:
   }
 
   /// Time step of the MD integrator
-  static real   dt;
+  static real dt;
 
+  /// \brief Finite difference step size (if there is no dynamics, or
+  /// if gradients need to be tested independently from the size of
+  /// dt)
+  static real debug_gradients_step_size;
 
   /// Prefix for all output files for this run
   static std::string output_prefix;
@@ -163,8 +170,6 @@ public:
   /// Deallocate memory and close files
   void finalise();
 
-  /// If performing analysis, parse the specific setup
-  void parse_analysis (std::string const &conf);
   /// Perform analysis
   void analyse();
   /// Read a collective variable trajectory for analysis
@@ -244,12 +249,6 @@ public:
   /// position_distance() would produce leads to a cusp)
   static real position_dist2 (atom_pos const &pos1,
                               atom_pos const &pos2);
-
-  /// \brief Get the gradient (with respect to pos1) of the square
-  /// distance between two positions (with periodic boundary
-  /// conditions handled transparently)
-  static rvector position_dist2_lgrad (atom_pos const &pos1,
-                                       atom_pos const &pos2);
 
   /// \brief Get the closest periodic image to a reference position
   /// \param pos The position to look for the closest periodic image
@@ -419,13 +418,6 @@ inline cvm::real cvm::position_dist2 (cvm::atom_pos const &pos1,
   return proxy->position_dist2 (pos1, pos2);
 }
 
-inline cvm::rvector cvm::position_dist2_lgrad (cvm::atom_pos const &pos1,
-                                               cvm::atom_pos const &pos2)
-{
-  return proxy->position_dist2_lgrad (pos1, pos2);
-}
-
-
 inline void cvm::load_atoms (char const *file_name,
                              std::vector<cvm::atom> &atoms,
                              std::string const &pdb_field,
@@ -441,7 +433,6 @@ inline void cvm::load_coords (char const *file_name,
 {
   proxy->load_coords (file_name, pos, pdb_field, pdb_field_value);
 }
-
 
 
 #endif

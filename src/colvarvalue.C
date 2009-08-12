@@ -237,6 +237,7 @@ std::istream & operator >> (std::istream &is, colvarvalue &x)
   default:
     x.undef_op();
   }
+  x.apply_constraints();
   return is;
 }
 

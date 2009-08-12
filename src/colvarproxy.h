@@ -68,12 +68,6 @@ public:
   virtual cvm::real position_dist2 (cvm::atom_pos const &pos1,
                                     cvm::atom_pos const &pos2) = 0;
 
-  /// \brief Get the gradient (with respect to pos1) of the square
-  /// distance between two positions (with periodic boundary
-  /// conditions handled transparently)
-  virtual cvm::rvector position_dist2_lgrad (cvm::atom_pos const &pos1,
-                                             cvm::atom_pos const &pos2) = 0;
-
   /// \brief Get the closest periodic image to a reference position
   /// \param pos The position to look for the closest periodic image
   /// \param ref_pos The reference position 
@@ -106,6 +100,9 @@ public:
                             std::string const pdb_field = "O",
                             double const pdb_field_value = 0.0);
 
+  /// \brief Rename the given file, under the convention provided by
+  /// the MD program
+  virtual void backup_file (char const *filename);
 
   virtual inline ~colvarproxy() {}
 };
@@ -138,6 +135,13 @@ inline void colvarproxy::load_atoms (char const *filename,
 {
   cvm::fatal_error ("Error: colvarproxy::load_atoms() has not been (re)redefined, "
                     "__FILE__ at line __LINE__.\n");
+}
+
+
+inline void colvarproxy::backup_file (char const *filename)
+{
+//   cvm::fatal_error ("Error: colvarproxy::backup_file() has not been (re)redefined, "
+//                     "__FILE__ at line __LINE__.\n"); 
 }
 
 

@@ -56,20 +56,7 @@ protected:
   /// obtained by deriving this)
   cvm::real                colvar_energy;
 
-  /// \brief Get the bin indices corresponding to the given values of
-  /// the colvars (or other values if provided)
-  void set_bin (std::vector<int> &bin,
-                std::vector<colvarvalue> const &values = std::vector<colvarvalue>());
-
 };
-
-inline void colvarbias::set_bin (std::vector<int> &bin,
-                                 std::vector<colvarvalue> const &values)
-{
-  for (size_t i = 0; i < colvars.size(); i++) {
-    bin[i] = colvars[i]->current_bin_scalar();
-  }
-}
 
 
 /// \brief Harmonic restraint, optionally moving towards a target

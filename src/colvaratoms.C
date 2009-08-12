@@ -28,10 +28,16 @@ void cvm::atom_group::parse (std::string const &conf,
                              atom_group        *ref_pos_group_in)
 {
   std::string group_conf;
-  // the arg save_delimiters is false here because "conf" is not the
-  // config string of this group, but of its parent object (which has
-  // already taken care of the delimiters)
-  key_lookup (conf, key, group_conf, dummy_pos, false);
+
+  // save_delimiters is set to false for this call, because "conf" is
+  // not the config string of this group, but of its parent object
+  // (which has already taken care of the delimiters)
+  save_delimiters = false;
+  key_lookup (conf, key, group_conf, dummy_pos);
+  // restoring the normal value, because we do want keywords checked
+  // inside "group_conf"
+  save_delimiters = true;
+
   if (group_conf.size() == 0) {
     cvm::fatal_error ("Error: atom group \""+
                       std::string (key)+"\" is set, but "
@@ -92,20 +98,34 @@ void cvm::atom_group::parse (std::string const &conf,
     }
   }
 
-  std::string psf_segid;
-  get_keyval (group_conf, "psfSegID", psf_segid, std::string ("MAIN"), mode);
-  if ( (psf_segid.size() == 0) || (psf_segid.size() > 4) ) {
-    cvm::fatal_error ("Error: invalid segmend identifier provided, \""+
-                      psf_segid+"\".\n");
+  std::vector<std::string> psf_segids;
+  get_keyval (group_conf, "psfSegID", psf_segids, std::vector<std::string> (1, std::string("MAIN")), mode);
+  for (std::vector<std::string>::iterator psii = psf_segids.begin();
+       psii < psf_segids.end(); psii++) {
+
+    if ( (psii->size() == 0) || (psii->size() > 4) ) {
+      cvm::fatal_error ("Error: invalid segmend identifier provided, \""+
+                        (*psii)+"\".\n");
+    }
   }
 
   {
     std::string range_conf = "";
     size_t pos = 0;
+    size_t range_count = 0;
+    std::vector<std::string>::iterator psii = psf_segids.begin();
     while (key_lookup (group_conf, "atomNameResidueRange",
                        range_conf, pos)) {
 
+      if (psii > psf_segids.end()) {
+        cvm::fatal_error ("Error: more instances of \"atomNameResidueRange\" than "
+                          "values of \"psfSegID\".\n");
+      }
+
+      std::string const &psf_segid = *psii;
+
       if (range_conf.size()) {
+        
         std::istringstream is (range_conf);
         std::string atom_name;
         int initial, final;
@@ -120,11 +140,14 @@ void cvm::atom_group::parse (std::string const &conf,
           range_conf = "";
           continue;
         }
-      } 
 
-      cvm::fatal_error ("Error: no valid definition for \""
-                        "atom_name_residue_range\", \""+
-                        range_conf+"\".\n");
+      } else {
+        cvm::fatal_error ("Error: no valid definition for \""
+                          "atom_name_residue_range\", \""+
+                          range_conf+"\".\n");
+      }
+
+      psii++;
     }
   }
 
@@ -135,9 +158,9 @@ void cvm::atom_group::parse (std::string const &conf,
 
       std::string atoms_col;
       get_keyval (group_conf, "atomsCol", atoms_col, std::string ("O"), mode);
+
       double atoms_col_value;
-      bool const atoms_col_value_defined =
-        get_keyval (group_conf, "atomsColValue", atoms_col_value, 0.0, mode);
+      bool const atoms_col_value_defined = get_keyval (group_conf, "atomsColValue", atoms_col_value, 0.0, mode);
       if (atoms_col_value_defined && (!atoms_col_value))
         cvm::fatal_error ("Error: atomsColValue, "
                           "if provided, must be non-zero.\n");
@@ -173,10 +196,12 @@ void cvm::atom_group::parse (std::string const &conf,
                       std::string (key)+"\" as a dummy atom "
                       "and provide it with atom definitions.\n");
 
+#if (! defined (COLVARS_STANDALONE))
   if ( (!b_dummy) && (!cvm::b_analysis) && (!(this->size())) ) {
     cvm::fatal_error ("Error: no atoms defined for atom group \""+
                       std::string (key)+"\".\n");
   }
+#endif
 
   if (!b_dummy) {
     this->total_mass = 0.0;
@@ -215,9 +240,11 @@ void cvm::atom_group::parse (std::string const &conf,
       cvm::log ("Using reference positions from input file.\n");
       atom_group *ag = ref_pos_group ? ref_pos_group : this;
       if (ref_pos.size() != ag->size()) {
-        cvm::fatal_error ("Error: reference positions for \""+
+        cvm::fatal_error ("Error: the number of reference positions provided ("+
+                          cvm::to_str (ref_pos.size())+
+                          ") does not match the number of atoms within \""+
                           std::string (key)+
-                          "\" do not match the number of atom indexes.\n");
+                          "\" ("+cvm::to_str (ag->size())+").\n");
       }
     }
 
@@ -233,8 +260,8 @@ void cvm::atom_group::parse (std::string const &conf,
       get_keyval (group_conf, "refPositionsCol", ref_pos_col, std::string ("O"), mode);
 
       double ref_pos_col_value;
-      bool const ref_pos_col_value_defined = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
-      if (ref_pos_col_value_defined && !ref_pos_col_value)
+      bool found = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
+      if (found && !ref_pos_col_value)
         cvm::fatal_error ("Error: refPositionsColValue, "
                           "if provided, must be non-zero.\n");
 
@@ -247,9 +274,11 @@ void cvm::atom_group::parse (std::string const &conf,
       if (b_rotate) {
         atom_group *ag = ref_pos_group ? ref_pos_group : this;
         if (ref_pos.size() != ag->size())
-          cvm::fatal_error ("Error: the number of reference positions "
-                            "provided does not match the number of atoms "
-                            "of the group.\n");
+          cvm::fatal_error ("Error: the number of reference positions provided ("+
+                            cvm::to_str (ref_pos.size())+
+                            ") does not match the number of atoms within \""+
+                            std::string (key)+
+                            "\" ("+cvm::to_str (ag->size())+").\n");
       }
 
       // save the center of mass of ref_pos and then subtract it from
@@ -271,8 +300,10 @@ void cvm::atom_group::parse (std::string const &conf,
         (*pi) -= ref_pos_com;
       }
     } else {
+#if (! defined (COLVARS_STANDALONE))
       if (!cvm::b_analysis)
         cvm::fatal_error ("Error: no reference positions provided.\n");
+#endif
     }
 
     if (b_rotate && !noforce) {
@@ -294,7 +325,7 @@ void cvm::atom_group::parse (std::string const &conf,
   this->check_keywords (group_conf, key);
 
   cvm::log ("Atom group \""+std::string (key)+"\" defined, "+
-            cvm::to_str (this->size())+" atoms, total mass = "+
+            cvm::to_str (this->size())+" initialized: total mass = "+
             cvm::to_str (this->total_mass)+".\n");
 
   cvm::decrease_depth();
@@ -349,8 +380,10 @@ void cvm::atom_group::read_positions()
 {
   if (b_dummy) return;
 
+#if (! defined (COLVARS_STANDALONE))
   if (!this->size())
     cvm::fatal_error ("Error: no atoms defined in the requested group.\n");
+#endif
 
   for (cvm::atom_iter ai = this->begin();
        ai != this->end(); ai++) {
@@ -378,9 +411,7 @@ void cvm::atom_group::read_positions()
     // true, around the origin otherwise); store the rotation, in
     // order to bring back the forces to the original frame before
     // applying them
-    cvm::real lambda;
-    rot.calc_optimal_rotation (fit_group->positions(), ref_pos,
-                               lambda, rot.q);
+    rot.calc_optimal_rotation (fit_group->positions(), ref_pos);
 
     for (cvm::atom_iter ai = this->begin();
          ai != this->end(); ai++) {
@@ -544,6 +575,21 @@ std::vector<cvm::atom_pos> cvm::atom_group::positions() const
   std::vector<cvm::atom_pos>::iterator xi = x.begin();
   for ( ; ai != this->end(); xi++, ai++) {
     *xi = ai->pos;
+  }
+  return x;
+}
+
+std::vector<cvm::atom_pos> cvm::atom_group::positions_shifted (cvm::rvector const &shift) const
+{
+  if (b_dummy)
+    cvm::fatal_error ("Error: positions are not available "
+                      "from a dummy atom group.\n");
+
+  std::vector<cvm::atom_pos> x (this->size(), 0.0);
+  cvm::atom_const_iter ai = this->begin();
+  std::vector<cvm::atom_pos>::iterator xi = x.begin();
+  for ( ; ai != this->end(); xi++, ai++) {
+    *xi = (ai->pos + shift);
   }
   return x;
 }

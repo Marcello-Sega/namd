@@ -3052,6 +3052,15 @@ obj/colvarcomp_rotations.o: \
 	src/colvarcomp.h \
 	src/colvaratoms.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_rotations.o $(COPTC) src/colvarcomp_rotations.C
+obj/colvargrid.o: \
+	src/colvargrid.C \
+	src/colvarmodule.h \
+	src/colvarvalue.h \
+	src/colvarparse.h \
+	src/colvar.h \
+	src/colvarcomp.h \
+	src/colvargrid.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvargrid.o $(COPTC) src/colvargrid.C
 obj/colvarproxy_namd.o: \
 	src/colvarproxy_namd.C \
 	src/BackEnd.h \

@@ -54,7 +54,7 @@ void colvar::angle::calc_value()
 
   cvm::real     const cos_theta = (r21*r23)/(r21l*r23l);
 
-  x.real_value = (180.0/M_PI) * ::acos (cos_theta);
+  x.real_value = (180.0/PI) * ::acos (cos_theta);
 }
 
 
@@ -63,11 +63,11 @@ void colvar::angle::calc_gradients()
   cvm::real const cos_theta = (r21*r23)/(r21l*r23l);
   cvm::real const dxdcos = -1.0 / ::sqrt (1.0 - cos_theta*cos_theta);
     
-  cvm::rvector const dthetadr21 = (180.0/M_PI) * dxdcos *
+  cvm::rvector const dthetadr21 = (180.0/PI) * dxdcos *
     ( (r23)/(r21l*r23l) +
       (r21l*cos_theta) * (-1.0/(r21l*r21l)) * r21/r21l );
 
-  cvm::rvector const dthetadr23 = (180.0/M_PI) * dxdcos *
+  cvm::rvector const dthetadr23 = (180.0/PI) * dxdcos *
     ( (r21)/(r21l*r23l) +
       (r23l*cos_theta) * (-1.0/(r23l*r23l)) * r23/r23l );
 
@@ -108,6 +108,7 @@ colvar::dihedral::dihedral (std::string const &conf)
 {
   function_type = "dihedral";
   period = 360.0;
+  b_periodic = true;
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
   if (get_keyval (conf, "oneSiteSystemForce", b_1site_force, false)) {
@@ -135,6 +136,7 @@ colvar::dihedral::dihedral (cvm::atom const &a1,
 
   function_type = "dihedral";
   period = 360.0;
+  b_periodic = true;
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
   b_1site_force = false;
@@ -149,6 +151,7 @@ colvar::dihedral::dihedral()
 {
   function_type = "dihedral";
   period = 360.0;
+  b_periodic = true;
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
   x.type (colvarvalue::type_scalar);
@@ -178,7 +181,7 @@ void colvar::dihedral::calc_value()
   cvm::real const cos_phi = n1 * n2;
   cvm::real const sin_phi = n1 * r34 * r23.norm();
 
-  x.real_value = (180.0/M_PI) * ::atan2 (sin_phi, cos_phi);
+  x.real_value = (180.0/PI) * ::atan2 (sin_phi, cos_phi);
 }
 
 
@@ -206,7 +209,7 @@ void colvar::dihedral::calc_gradients()
     cvm::rvector const dcosdB = rB*(cos_phi*B-A);
     rA = 1.0;
 
-    cvm::real const K = (1.0/sin_phi) * (180.0/M_PI);
+    cvm::real const K = (1.0/sin_phi) * (180.0/PI);
 
 	f1 = K * cvm::rvector::outer (r23, dcosdA);
 	f3 = K * cvm::rvector::outer (dcosdB, r23);
@@ -220,7 +223,7 @@ void colvar::dihedral::calc_gradients()
     cvm::rvector const dsindB = rB*(sin_phi*B-C);
     rC = 1.0;
 
-    cvm::real    const K = (-1.0/cos_phi) * (180.0/M_PI);
+    cvm::real    const K = (-1.0/cos_phi) * (180.0/PI);
 
     f1.x = K*((r23.y*r23.y + r23.z*r23.z)*dsindC.x
               - r23.x*r23.y*dsindC.y
@@ -284,11 +287,11 @@ void colvar::dihedral::calc_force_invgrads()
   group1.read_system_forces();
   if ( b_1site_force ) {
     // This is only measuring the force on group 1
-    ft.real_value = M_PI/180.0 * fact1 * (cross1 * group1.system_force());
+    ft.real_value = PI/180.0 * fact1 * (cross1 * group1.system_force());
   } else {
     // Default case: use groups 1 and 4
     group4.read_system_forces();
-    ft.real_value = M_PI/180.0 * 0.5 * (fact1 * (cross1 * group1.system_force())
+    ft.real_value = PI/180.0 * 0.5 * (fact1 * (cross1 * group1.system_force())
 				      + fact4 * (cross4 * group4.system_force()));
   }
 }

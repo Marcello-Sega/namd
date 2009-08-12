@@ -18,8 +18,6 @@ cvm::real colvar::coordnum::switching_function (cvm::real const &r0,
 {
   cvm::rvector const diff = cvm::position_distance (A1.pos, A2.pos);
   cvm::real const l2 = diff.norm2()/(r0*r0);
-  // same position
-  if (l2 < 1.0E-12) return 1.0;
 
   // Assume en and ed are even integers, and avoid sqrt in the following
   int const en2 = en/2;
@@ -50,8 +48,6 @@ cvm::real colvar::coordnum::switching_function (cvm::rvector const &r0_vec,
   cvm::rvector const diff = cvm::position_distance (A1.pos, A2.pos);
   cvm::rvector const scal_diff (diff.x/r0_vec.x, diff.y/r0_vec.y, diff.z/r0_vec.z);
   cvm::real const l2 = scal_diff.norm2();
-  // same position
-  if (l2 < 1.0E-12) return 1.0;
 
   // Assume en and ed are even integers, and avoid sqrt in the following
   int const en2 = en/2;

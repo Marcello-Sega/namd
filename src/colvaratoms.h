@@ -225,6 +225,9 @@ public:
   /// \brief Return a copy of the current atom positions
   std::vector<cvm::atom_pos> positions() const;
 
+  /// \brief Return a copy of the current atom positions, shifted by a constant vector
+  std::vector<cvm::atom_pos> positions_shifted (cvm::rvector const &shift) const;
+
   /// \brief Return the center of geometry of the positions \param ref_pos
   /// Use the closest periodic images to this position
   cvm::atom_pos center_of_geometry (cvm::atom_pos const &ref_pos);

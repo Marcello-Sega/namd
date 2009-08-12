@@ -1,3 +1,4 @@
+#include "common.h"
 #include "BackEnd.h"
 #include "InfoStream.h"
 #include "Node.h"
@@ -268,7 +269,7 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
     cvm::fatal_error ("Error: must define which PDB field to use "
                       "in order to define atoms from a PDB file.\n");
 
-  e_pdb_field const pdb_field_index = pdb_field_str2enum (pdb_field_str);
+  e_pdb_field pdb_field_index = pdb_field_str2enum (pdb_field_str);
 
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
@@ -361,7 +362,7 @@ void colvarproxy_namd::load_atoms (char const *pdb_filename,
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
 
-  e_pdb_field const pdb_field_index = pdb_field_str2enum (pdb_field_str);
+  e_pdb_field pdb_field_index = pdb_field_str2enum (pdb_field_str);
 
   for (size_t ipdb = 0; ipdb < pdb_natoms; ipdb++) {
 
@@ -393,11 +394,21 @@ void colvarproxy_namd::load_atoms (char const *pdb_filename,
     } else if (atom_pdb_field_value == 0.0) {
       continue;
     }
-
+     
     atoms.push_back (cvm::atom (ipdb+1));
   }
 
   delete pdb;
+}
+
+
+void colvarproxy_namd::backup_file (char const *filename)
+{
+  if (std::string (filename).rfind (std::string (".colvars.state")) != std::string::npos) {
+    NAMD_backup_file (filename, ".old");
+  } else {
+    NAMD_backup_file (filename, ".BAK");
+  }
 }
 
 
