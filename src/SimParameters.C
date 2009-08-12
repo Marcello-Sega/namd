@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2009/08/07 04:43:04 $
- * $Revision: 1.1285 $
+ * $Date: 2009/08/12 20:45:39 $
+ * $Revision: 1.1286 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -717,10 +717,6 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
 //  alchemical fep options
    opts.optionalB("main", "alch", "Is achemical simulation being performed?",
      &alchOn, FALSE);
-   opts.optionalB("alch", "alchFepOn", "Is achemical FEP being performed?",
-     &alchFepOn, FALSE);
-   opts.optionalB("alch", "alchThermIntOn", "Is achemical TI being performed?",
-     &alchThermIntOn, FALSE);
    opts.optional("alch", "alchType", "Which alchemical method to use?", 
        PARSE_STRING);
    opts.require("alch", "alchLambda", "Coupling parameter value", 
@@ -2197,6 +2193,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
 //Modifications for alchemical fep
 
+   alchFepOn = FALSE;
+   alchThermIntOn = FALSE;
+
    if (alchOn) {
 
      if (!opts.defined("alchType")) 
@@ -2213,6 +2212,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        else if (!strcasecmp(s, "ti"))
        {
          alchThermIntOn = TRUE;
+       }
+       else
+       {
+         NAMD_die("Unknown type of alchemical simulation; choices are fep or ti\n");
        }
      }
 
