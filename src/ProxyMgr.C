@@ -25,6 +25,10 @@
 #endif
 
 
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#include "qd.h"
+#endif
+
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
@@ -239,6 +243,9 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
   msg_size += sizeof(int) + msg->nodes.size()*sizeof(NodeID);
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   msg_size += sizeof(msg->destPe);
+  #if CMK_SMP
+  msg_size += sizeof(msg->isFromImmMsgCall);
+  #endif
   #endif  
   msg_size += sizeof(msg->patch);
   int j;
@@ -269,6 +276,10 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   CmiMemcpy((void*)msg_cur,(void*)(&(msg->destPe)),sizeof(msg->destPe));
   msg_cur += sizeof(msg->destPe);
+  #if CMK_SMP
+  CmiMemcpy((void*)msg_cur, (void*)(&(msg->isFromImmMsgCall)), sizeof(msg->isFromImmMsgCall));
+  msg_cur += sizeof(msg->isFromImmMsgCall);
+  #endif
   #endif
   CmiMemcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
@@ -316,6 +327,10 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   CmiMemcpy((void*)(&(msg->destPe)),(void*)msg_cur,sizeof(msg->destPe));
   msg_cur += sizeof(msg->destPe);
+  #if CMK_SMP
+  CmiMemcpy((void *)(&(msg->isFromImmMsgCall)), (void*)msg_cur, sizeof(msg->isFromImmMsgCall));
+  msg_cur += sizeof(msg->isFromImmMsgCall);  
+  #endif
   #endif
   CmiMemcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
@@ -1332,6 +1347,9 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
     CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
     if(destPe != CkMyPe()) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+      /*CkPrintf("ready to call node::recvImmRes on pe[%d] to dest[%d]\n", CkMyPe(), destPe);
+      fflush(stdout);*/
+
       cMsg->destPe = destPe;
       CProxy_NodeProxyMgr cnp(CkpvAccess(BOCclass_group).nodeProxyMgr);
       cnp[CkNodeOf(destPe)].recvImmediateResults(cMsg);
@@ -1339,13 +1357,25 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
       cp[destPe].recvImmediateResults(cMsg);
 #endif
     }
-    else 
+    else{
       cp[destPe].recvResults(cMsg);
+    }
   }
 }
 
 void
 ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
+//Chao Mei: hack for QD in case of SMP with immediate msg
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+    if(proxyRecvSpanning && msg->isFromImmMsgCall){
+//    CkPrintf("qdcreate called on pe[%d]\n", CkMyPe());
+//    fflush(stdout);
+	//To compensate for the counter loss for message creation
+	//inside the process of immediate message on comm thread
+	CkpvAccess(_qd)->create();
+    }
+#endif
+
   HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
   if (home) {
     //printf("Home got a message\n");
@@ -1374,12 +1404,24 @@ void ProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg) {
 
 void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg){
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    //CkPrintf("recvImmRes called on comm thread%d pe[%d]\n", CkMyRank()==CmiMyNodeSize(), CkMyPe());
+    //fflush(stdout);
+    
     int destRank = CkRankOf(msg->destPe);
     PatchMap *pmap = localPatchMaps[destRank];
     HomePatch *home = pmap->homePatch(msg->patch);
     if (home) {
+#if CMK_SMP
+	msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
+#endif
         CProxy_ProxyMgr cp(localProxyMgr);        
         cp[msg->destPe].recvResults(msg);        
+/*
+	char *srcfrom = "Isfrom";
+	if(CkMyRank()!=CmiMyNodeSize()) srcfrom="Notfrom";
+      CkPrintf("%s comm thread from pe[%d]\n", srcfrom, CkMyPe());
+      fflush(stdout);
+*/  
     }
     else {
         ProxyPatch *patch = (ProxyPatch *)pmap->patch(msg->patch);
@@ -1412,6 +1454,16 @@ ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
 
 void 
 ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
+//Chao Mei: hack for QD in case of SMP with immediate msg
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+    if(proxySendSpanning && msg->isFromImmMsgCall){
+//    CkPrintf("qdcreate called on pe[%d]\n", CkMyPe());
+//    fflush(stdout);
+	//To compensate for the counter loss for message creation
+	//inside the process of immediate message on comm thread
+	CkpvAccess(_qd)->create();
+    }
+#endif
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms()
 }
@@ -1468,6 +1520,9 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
     }    
 
     //re-send msg to it's internal cores
+#if CMK_SMP
+    msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
+#endif
     cp.recvProxyData(msg, ptn->numPes, ptn->peIDs);
 #else
     CkAbort("Bad execution path to NodeProxyMgr::recvImmediateProxyData\n");
@@ -1493,6 +1548,17 @@ ProxyMgr::sendProxyAll(ProxyDataMsg *msg, int pcnt, int *pids) {
 
 void 
 ProxyMgr::recvProxyAll(ProxyDataMsg *msg) {
+//Chao Mei: hack for QD in case of SMP with immediate msg
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+    if(proxySendSpanning && msg->isFromImmMsgCall){
+//    CkPrintf("qdcreate called on pe[%d]\n", CkMyPe());
+//    fflush(stdout);
+	//To compensate for the counter loss for message creation
+	//inside the process of immediate message on comm thread
+	CkpvAccess(_qd)->create();
+    }
+#endif
+
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveAll(msg); // deleted in ProxyPatch::receiveAtoms()
 }
@@ -1560,6 +1626,9 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
     }    
 
     //re-send msg to it's internal cores
+#if CMK_SMP
+    msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
+#endif
     cp.recvProxyAll(msg, ptn->numPes, ptn->peIDs);
 #else
     CkAbort("Bad execution path to NodeProxyMgr::recvImmediateProxyData\n");

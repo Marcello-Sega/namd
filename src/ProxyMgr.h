@@ -80,6 +80,24 @@ public:
   int plExtLen;
   CompAtomExt *positionExtList;
 
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+  //In smp layer, the couter for msg creation and process of communication
+  //thread is not included in the quiescence detection process. In addition,
+  //the immediate messages from other nodes are executed on the communication
+  //thread. If inside the process of immediate messages, some normal Charm++
+  //messages sent out which will be processed on worker threads. Then QD will
+  //be a problem that the process of the normal messages sent from communication
+  //thread is recorded, but the creation of such messages (although recorded
+  //in the comm thread) is virtually not recorded, i.e., not visible the 
+  //QD process. So we need to artificially increase the QD counter to 
+  //compensate for aforementioned msg creation loss.
+  //The idea is to use the following variable to indicate the normal message
+  //is sent from the communication thread inside a processing of immediate
+  //message. If the variable is set, then we should increase the QD counter.
+  //Chao Mei
+  char isFromImmMsgCall; //hack for imm msg with QD in SMP 
+#endif
+
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0
     int numWaterAtoms;  // Number of atoms in positionList (from start)
@@ -94,11 +112,20 @@ public:
   //the size of all the fields so far, including
   //the message header (the envelope) , then mod (alignment)
   // --Chao Mei
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+ #if NAMD_SeparateWaters != 0
+  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+sizeof(isFromImmMsgCall)+4*sizeof(int)+3*sizeof(void *))%32)%32];
+ #else
+  char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+sizeof(isFromImmMsgCall)+3*sizeof(int)+3*sizeof(void *))%32)%32];
+ #endif
+#else
  #if NAMD_SeparateWaters != 0
   char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+4*sizeof(int)+3*sizeof(void *))%32)%32];
  #else
   char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+3*sizeof(int)+3*sizeof(void *))%32)%32];
  #endif
+#endif
+
 #endif
 
 };
@@ -155,6 +182,12 @@ public:
   //since this msg may be processed by comm thread in the smp mode,
   //this variable helps comm thread to find which proc will actually process it.
   NodeID destPe;
+  #if CMK_SMP
+  //Mainly for QD in the presence of the optimization of using immediate
+  //message. Refer to the explanation from ProxyDataMsg for the same 
+  //variable. --Chao Mei
+  char isFromImmMsgCall;
+  #endif
   #endif
   PatchID patch;
   NodeIDList nodes;

@@ -857,7 +857,8 @@ void HomePatch::receiveResults(ProxyCombinedResultMsg *msg)
     }
     pe->forceBox->close(&r);
   }
-  delete msg;
+
+    delete msg;
 }
 
 void HomePatch::positionsReady(int doMigration)
@@ -981,6 +982,9 @@ void HomePatch::positionsReady(int doMigration)
     nmsg->numWaterAtoms = numWaterAtoms;
 #endif
 
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+    nmsg->isFromImmMsgCall = 0;
+#endif
     
     #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
     DebugFileTrace *dft = DebugFileTrace::Object();
