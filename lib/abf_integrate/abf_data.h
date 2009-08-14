@@ -3,72 +3,92 @@
 #include <iostream>
 #include <vector>
 
+#define MIN_SAMPLES 1
+
 /// Free energy gradients class
 class ABFdata {
 
-    protected:
-	/// Sizes of (i-1) dimension blocks
-	/// computed as Prod_(j<i) sizes[j]
-	int *blocksizes;
-	/// Minimum values of each variable
-	double *mins;
-	unsigned int vec_dim;
+  protected:
+    /// Sizes of (i-1) dimension blocks
+    /// computed as Prod_(j<i) sizes[j]
+    int *blocksizes;
+    /// Minimum values of each variable
+    double *mins;
 
-    public:
-	int Nvars;
-	/// Free energy gradients (vector field)
-	double *gradients;
-	/// Bin widths
-	double *widths;
+  public:
+    int Nvars;
+    /// Free energy gradients (vector field)
+    double *gradients;
+    /// Sampling from the ABF calculation
+    unsigned int *count;
+    /// Bin widths
+    double *widths;
 
-	unsigned int scalar_dim;
-	unsigned int *histogram;
+    unsigned int scalar_dim;
+    unsigned int vec_dim;
+    unsigned int *histogram;
 
-	/// History-dependent bias
-	double *bias;
+    /// History-dependent bias
+    double *bias;
 
-	/// Deviation between starting free energy gradient and that computed
-	/// from MtD bias or histogram in standard MC
-	double *deviation;
+    /// Estimate of the FE gradient computed
+    /// from MtD bias or histogram in standard MC
+    double *estimate;
 
-	void write_histogram ( const char *fileName );
-	void write_bias ( const char *fileName );
-	void write_deviation ( const char *fileName );
+    /// Deviation between starting free energy gradient and 
+    /// estimated one
+    double *deviation;
 
-	/// Grid sizes
-	int *sizes;
+    void write_histogram(const char *fileName);
+    void write_bias(const char *fileName);
+    void write_field(double *field, const char *fileName);
 
-	/// Flag stating if each variable is periodic
-	int *PBC;
+    /// Grid sizes
+    int *sizes;
 
-	/// Constructor: reads from a file
-	ABFdata ( const char *gradFileName );
-       ~ABFdata ();
+    /// Flag stating if each variable is periodic
+    int *PBC;
 
-	/// \brief Returns an offset for scalar fields based on a n-index.
-	/// multiply by Nvars to get an offset in a Nvars-vector field
-	unsigned int offset (const int*);
+    /// Constructor: reads from a file
+     ABFdata(const char *gradFileName);
+    ~ABFdata();
 
-	inline void wrap (int &pos, int i);
+    /// \brief Returns an offset for scalar fields based on a n-index.
+    /// multiply by Nvars to get an offset in a Nvars-vector field
+    unsigned int offset(const int *);
+
+    inline bool wrap(int &pos, int i);
+
+    /// Decides if an offset is outside the allowed region based on the ABF sampling
+    inline bool allowed(unsigned int offset);
 };
 
-inline void ABFdata::wrap (int &pos, int i)
+
+inline bool ABFdata::wrap(int &pos, int i)
 {
-  if ( PBC[i] ) {
-	if (pos == -1) {
-	  pos = sizes[i] - 1;
-	}
-	if (pos == sizes[i]) {
-	  pos = 0;
-	}
-  } else {
-	// No PBC
-	if (pos == -1) {
-	  pos = 0;
-	}
-	if (pos == sizes[i]) {
-	  pos = sizes[i] - 1;
-	}
-  }
-  return;
+    if (PBC[i]) {
+        if (pos == -1) {
+            pos = sizes[i] - 1;
+            return true;
+        }
+        if (pos == sizes[i]) {
+            pos = 0;
+            return true;
+        }
+    } else {
+        // No PBC
+        if (pos == -1) {
+            pos = 0;
+            return false;
+        }
+        if (pos == sizes[i]) {
+            pos = sizes[i] - 1;
+            return false;
+        }
+    }
+    return true;
+}
+
+inline bool ABFdata::allowed(unsigned int offset) {
+    return count[offset] > MIN_SAMPLES;
 }
