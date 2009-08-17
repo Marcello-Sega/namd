@@ -25,7 +25,7 @@
 #endif
 
 
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
 #include "qd.h"
 #endif
 
@@ -243,7 +243,7 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
   msg_size += sizeof(int) + msg->nodes.size()*sizeof(NodeID);
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   msg_size += sizeof(msg->destPe);
-  #if CMK_SMP
+  #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
   msg_size += sizeof(msg->isFromImmMsgCall);
   #endif
   #endif  
@@ -276,7 +276,7 @@ void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   CmiMemcpy((void*)msg_cur,(void*)(&(msg->destPe)),sizeof(msg->destPe));
   msg_cur += sizeof(msg->destPe);
-  #if CMK_SMP
+  #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
   CmiMemcpy((void*)msg_cur, (void*)(&(msg->isFromImmMsgCall)), sizeof(msg->isFromImmMsgCall));
   msg_cur += sizeof(msg->isFromImmMsgCall);
   #endif
@@ -327,7 +327,7 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   CmiMemcpy((void*)(&(msg->destPe)),(void*)msg_cur,sizeof(msg->destPe));
   msg_cur += sizeof(msg->destPe);
-  #if CMK_SMP
+  #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
   CmiMemcpy((void *)(&(msg->isFromImmMsgCall)), (void*)msg_cur, sizeof(msg->isFromImmMsgCall));
   msg_cur += sizeof(msg->isFromImmMsgCall);  
   #endif
@@ -1366,7 +1366,7 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
 void
 ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
 //Chao Mei: hack for QD in case of SMP with immediate msg
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
     if(proxyRecvSpanning && msg->isFromImmMsgCall){
 //    CkPrintf("qdcreate called on pe[%d]\n", CkMyPe());
 //    fflush(stdout);
@@ -1411,7 +1411,7 @@ void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg){
     PatchMap *pmap = localPatchMaps[destRank];
     HomePatch *home = pmap->homePatch(msg->patch);
     if (home) {
-#if CMK_SMP
+#if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
 	msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
 #endif
         CProxy_ProxyMgr cp(localProxyMgr);        
@@ -1455,7 +1455,7 @@ ProxyMgr::sendProxyData(ProxyDataMsg *msg, int pcnt, int *pids) {
 void 
 ProxyMgr::recvProxyData(ProxyDataMsg *msg) {
 //Chao Mei: hack for QD in case of SMP with immediate msg
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
     if(proxySendSpanning && msg->isFromImmMsgCall){
 //    CkPrintf("qdcreate called on pe[%d]\n", CkMyPe());
 //    fflush(stdout);
@@ -1520,7 +1520,7 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
     }    
 
     //re-send msg to it's internal cores
-#if CMK_SMP
+#if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
     msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
 #endif
     cp.recvProxyData(msg, ptn->numPes, ptn->peIDs);
@@ -1549,7 +1549,7 @@ ProxyMgr::sendProxyAll(ProxyDataMsg *msg, int pcnt, int *pids) {
 void 
 ProxyMgr::recvProxyAll(ProxyDataMsg *msg) {
 //Chao Mei: hack for QD in case of SMP with immediate msg
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
     if(proxySendSpanning && msg->isFromImmMsgCall){
 //    CkPrintf("qdcreate called on pe[%d]\n", CkMyPe());
 //    fflush(stdout);
@@ -1626,7 +1626,7 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
     }    
 
     //re-send msg to it's internal cores
-#if CMK_SMP
+#if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
     msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
 #endif
     cp.recvProxyAll(msg, ptn->numPes, ptn->peIDs);

@@ -982,7 +982,7 @@ void HomePatch::positionsReady(int doMigration)
     nmsg->numWaterAtoms = numWaterAtoms;
 #endif
 
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
     nmsg->isFromImmMsgCall = 0;
 #endif
     

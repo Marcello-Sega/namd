@@ -80,7 +80,7 @@ public:
   int plExtLen;
   CompAtomExt *positionExtList;
 
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
   //In smp layer, the couter for msg creation and process of communication
   //thread is not included in the quiescence detection process. In addition,
   //the immediate messages from other nodes are executed on the communication
@@ -112,7 +112,7 @@ public:
   //the size of all the fields so far, including
   //the message header (the envelope) , then mod (alignment)
   // --Chao Mei
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP)
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
  #if NAMD_SeparateWaters != 0
   char padding[(32-(sizeof(envelope)+sizeof(PatchID)+sizeof(Flags)+sizeof(isFromImmMsgCall)+4*sizeof(int)+3*sizeof(void *))%32)%32];
  #else
@@ -182,7 +182,7 @@ public:
   //since this msg may be processed by comm thread in the smp mode,
   //this variable helps comm thread to find which proc will actually process it.
   NodeID destPe;
-  #if CMK_SMP
+  #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
   //Mainly for QD in the presence of the optimization of using immediate
   //message. Refer to the explanation from ProxyDataMsg for the same 
   //variable. --Chao Mei
