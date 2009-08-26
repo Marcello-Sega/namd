@@ -105,8 +105,8 @@ void ExclElem::computeForce(BigReal *reduction,
   const Force f12 = fast_dir * r12;
 
   //  Now add the forces to each force vector
-  p[0]->f[localIndex[0]] += f12;
-  p[1]->f[localIndex[1]] -= f12;
+  p[0]->r->f[Results::nbond][localIndex[0]] += f12;
+  p[1]->r->f[Results::nbond][localIndex[1]] -= f12;
 
   // reduction[nonbondedEnergyIndex] += energy;
   reduction[virialIndex_XX] += f12.x * r12.x;
