@@ -84,7 +84,9 @@ struct shared_atom {  // do not align, size to avoid bank conflicts
 
 void cuda_bind_exclusions(const unsigned int *t, int n);
 
-#define FORCE_TABLE_SIZE 512
+// #define FORCE_TABLE_SIZE 512
+// maximum size of CUDA array 1D texture reference is 2^13 = 8192
+#define FORCE_TABLE_SIZE 8192
 
 void cuda_bind_force_table(const float4 *t);
 

@@ -308,7 +308,9 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
 
   cuda_bind_force_table(t);
 
-  CkPrintf("CUDA force table updated on pe %d\n", CkMyPe());
+  if ( ! CkMyPe() ) {
+    CkPrintf("Updated CUDA force table with %d elements.\n", FORCE_TABLE_SIZE);
+  }
 }
 
 static ComputeNonbondedCUDA* cudaCompute = 0;
