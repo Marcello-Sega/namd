@@ -56,11 +56,13 @@ static force_list *force_lists;
 
 static int force_buffers_size;
 static float4 *force_buffers;
+static float4 *slow_force_buffers;
 
 static int atoms_size;
 static atom *atoms;
 static atom_param *atom_params;
 static float4 *forces;
+static float4 *slow_forces;
 
 static int patch_pairs_alloc;
 static int force_buffers_alloc;
@@ -74,9 +76,11 @@ cudaStream_t stream;
  
 void cuda_init() {
   forces = 0;
+  slow_forces = 0;
   atom_params = 0;
   atoms = 0;
   force_buffers = 0;
+  slow_force_buffers = 0;
   force_lists = 0;
   patch_pairs = 0;
 
@@ -119,9 +123,11 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   atoms_alloc = (int) (1.2 * atoms_size);
 
   if ( forces ) cudaFree(forces);
+  if ( slow_forces ) cudaFree(slow_forces);
   if ( atom_params ) cudaFree(atom_params);
   if ( atoms ) cudaFree(atoms);
   if ( force_buffers ) cudaFree(force_buffers);
+  if ( slow_force_buffers ) cudaFree(slow_force_buffers);
   if ( force_lists ) cudaFree(force_lists);
   if ( patch_pairs ) cudaFree(patch_pairs);
   cuda_errcheck("free everything");
@@ -129,19 +135,21 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
 #if 1
   int totalmem = patch_pairs_alloc * sizeof(patch_pair) +
 		force_lists_alloc * sizeof(force_list) +
-		force_buffers_alloc * sizeof(float4) +
+		2 * force_buffers_alloc * sizeof(float4) +
 		atoms_alloc * sizeof(atom) +
 		atoms_alloc * sizeof(atom_param) +
-		atoms_alloc * sizeof(float4);
+		2 * atoms_alloc * sizeof(float4);
   printf("allocating %d MB of memory on GPU\n", totalmem >> 20);
 #endif
 
   cudaMalloc((void**) &patch_pairs, patch_pairs_alloc * sizeof(patch_pair));
   cudaMalloc((void**) &force_lists, force_lists_alloc * sizeof(force_list));
   cudaMalloc((void**) &force_buffers, force_buffers_alloc * sizeof(float4));
+  cudaMalloc((void**) &slow_force_buffers, force_buffers_alloc * sizeof(float4));
   cudaMalloc((void**) &atoms, atoms_alloc * sizeof(atom));
   cudaMalloc((void**) &atom_params, atoms_alloc * sizeof(atom_param));
   cudaMalloc((void**) &forces, atoms_alloc * sizeof(float4));
+  cudaMalloc((void**) &slow_forces, atoms_alloc * sizeof(float4));
   cuda_errcheck("malloc everything");
 
  }
@@ -168,10 +176,14 @@ void cuda_bind_atoms(const atom *a) {
   cuda_errcheck("memcpy to atoms");
 }
 
-void cuda_load_forces(float4 *f, int begin, int count) {
+void cuda_load_forces(float4 *f, float4 *f_slow, int begin, int count) {
   // printf("load forces %d %d %d\n",begin,count,atoms_size);
   cudaMemcpyAsync(f+begin, forces+begin, count * sizeof(float4),
 				cudaMemcpyDeviceToHost, stream);
+  if ( f_slow ) {
+    cudaMemcpyAsync(f_slow+begin, slow_forces+begin, count * sizeof(float4),
+				cudaMemcpyDeviceToHost, stream);
+  }
   cuda_errcheck("memcpy from forces");
 }
 
@@ -213,6 +225,7 @@ __global__ static void dev_nonbonded(
 	const atom *atoms,
 	const atom_param *atom_params,
 	float4 *force_buffers,
+	float4 *slow_force_buffers,
         float3 lata, float3 latb, float3 latc,
 	float cutoff2) {
 // call with two blocks per patch_pair
@@ -329,11 +342,15 @@ __global__ static void dev_nonbonded(
     iap.index = tmpap.z;
   }
 
-  float4 ife;
+  float4 ife, ife_slow;
   ife.x = 0.f;
   ife.y = 0.f;
   ife.z = 0.f;
   ife.w = 0.f;
+  ife_slow.x = 0.f;
+  ife_slow.y = 0.f;
+  ife_slow.z = 0.f;
+  ife_slow.w = 0.f;
 
   for ( int blockj = 0;
         blockj < myPatchPair.patch2_size;
@@ -377,12 +394,18 @@ __global__ static void dev_nonbonded(
         e *= e;  /* sigma^6 */ \
         e *= ( e * fi.z + fi.y );  /* s^12 * fi.z - s^6 * fi.y */ \
         e *= IAP.sqrt_epsilon * japs[j].sqrt_epsilon;  /* full L-J */ \
-        e += IPQ.charge * jpqs[j].charge * fi.x; \
+        float e_slow = IPQ.charge * jpqs[j].charge; \
+        e += e_slow * fi.x; \
+        e_slow *= fi.w; \
         if ( ! excluded ) { \
           ife.w += r2 * e; \
           ife.x += tmpx * e; \
           ife.y += tmpy * e; \
           ife.z += tmpz * e; \
+          ife_slow.w += r2 * e_slow; \
+          ife_slow.x += tmpx * e_slow; \
+          ife_slow.y += tmpy * e_slow; \
+          ife_slow.z += tmpz * e_slow; \
         } \
       }  /* cutoff */ \
     }
@@ -392,7 +415,11 @@ __global__ static void dev_nonbonded(
   } // blockj loop
 
   if ( blocki + threadIdx.x < myPatchPair.patch1_force_size ) {
-    force_buffers[myPatchPair.patch1_force_start + blocki + threadIdx.x] = ife;
+    int i_out = myPatchPair.patch1_force_start + blocki + threadIdx.x;
+    force_buffers[i_out] = ife;
+    if ( slow_force_buffers ) {
+      slow_force_buffers[i_out] = ife_slow;
+    }
   }
 
   } // blocki loop
@@ -439,13 +466,13 @@ __global__ static void dev_sum_forces(
 
 
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
-		int cbegin, int ccount, int pbegin, int pcount) {
+		int cbegin, int ccount, int pbegin, int pcount, int doSlow) {
 
  if ( ccount ) {
   // printf("%d %d %d\n",cbegin,ccount,patch_pairs_size);
   dev_nonbonded<<< ccount, BLOCK_SIZE, 0, stream
 	>>>(patch_pairs+cbegin,atoms,atom_params,force_buffers,
-                                        lata, latb, latc, cutoff2);
+             (doSlow?slow_force_buffers:0), lata, latb, latc, cutoff2);
   cuda_errcheck("dev_nonbonded");
  }
 
@@ -453,6 +480,10 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
   // printf("%d %d %d\n",pbegin,pcount,force_lists_size);
   dev_sum_forces<<< pcount, 64, 0, stream
 	>>>(force_lists+pbegin,force_buffers,forces);
+  if ( doSlow ) {
+    dev_sum_forces<<< pcount, 64, 0, stream
+	>>>(force_lists+pbegin,slow_force_buffers,slow_forces);
+  }
   cuda_errcheck("dev_sum_forces");
  }
 

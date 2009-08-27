@@ -58,11 +58,14 @@ void ExclElem::computeForce(BigReal *reduction,
     const int r2_delta_expc = 64 * (r2_delta_exp - 1023);
     int table_i = (r2i.i >> (32+14)) + r2_delta_expc;  // table_i >= 0
 
-    BigReal diffa = r2 - r2_table[table_i];
-    // XXX for short table_four is set to table_short, check for MTS
     const BigReal* const table_four_i = table_noshort + 16*table_i;
 
+    BigReal diffa = r2 - r2_table[table_i];
+
+    const int doFull = p[0]->p->flags.doFullElectrostatics;
+
     BigReal fast_a, fast_b, fast_c, fast_d;
+    BigReal slow_a, slow_b, slow_c, slow_d;
 
   if ( modified ) {
 
@@ -72,34 +75,40 @@ void ExclElem::computeForce(BigReal *reduction,
     // modified - normal = correction
     const BigReal A = scaling * ( (lj_pars+1)->A - lj_pars->A );
     const BigReal B = scaling * ( (lj_pars+1)->B - lj_pars->B );
-    const BigReal kqq = (scale14 - 1.0) *
-            COLOUMB * p_i.charge * p_j.charge * scaling * dielectric_1;
-
-    // iout << " A " << A << " B " << B << " kqq " << kqq << "\n" << endi;
 
     BigReal vdw_d = A * table_four_i[0] - B * table_four_i[2];
     BigReal vdw_c = A * table_four_i[1] - B * table_four_i[3];
     BigReal vdw_b = A * table_four_i[4] - B * table_four_i[6];
     BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
 
-    fast_d = vdw_d + kqq * table_four_i[12];
-    fast_c = vdw_c + kqq * table_four_i[13];
-    fast_b = vdw_b + kqq * table_four_i[14];
-    fast_a = vdw_a + kqq * table_four_i[15];  // not used!
+    const BigReal kqq = (1.0 - scale14) *
+            COLOUMB * p_i.charge * p_j.charge * scaling * dielectric_1;
 
-  } else {  // full exclusion
+    fast_a = vdw_a +      kqq * fast_table[4*table_i+0];  // not used!
+    fast_b = vdw_b + 2. * kqq * fast_table[4*table_i+1];
+    fast_c = vdw_c + 4. * kqq * fast_table[4*table_i+2];
+    fast_d = vdw_d + 6. * kqq * fast_table[4*table_i+3];
+
+    if ( doFull ) {
+      slow_a =      kqq * slow_table[4*table_i+0];  // not used!
+      slow_b = 2. * kqq * slow_table[4*table_i+1];
+      slow_c = 4. * kqq * slow_table[4*table_i+2];
+      slow_d = 6. * kqq * slow_table[4*table_i+3];
+    }
+
+  } else if ( doFull ) {  // full exclusion
 
     const BigReal kqq = 
             COLOUMB * p_i.charge * p_j.charge * scaling * dielectric_1;
 
-    fast_d = kqq * ( table_four_i[8]  - table_four_i[12] );
-    fast_c = kqq * ( table_four_i[9]  - table_four_i[13] );
-    fast_b = kqq * ( table_four_i[10] - table_four_i[14] );
-    fast_a = kqq * ( table_four_i[11] - table_four_i[15] );  // not used!
+    slow_d = kqq * ( table_four_i[8]  - table_four_i[12] );
+    slow_c = kqq * ( table_four_i[9]  - table_four_i[13] );
+    slow_b = kqq * ( table_four_i[10] - table_four_i[14] );
+    slow_a = kqq * ( table_four_i[11] - table_four_i[15] );  // not used!
 
   }
 
-    register BigReal fast_dir =
+  register BigReal fast_dir =
                   (diffa * fast_d + fast_c) * diffa + fast_b;
 
   const Force f12 = fast_dir * r12;
@@ -119,11 +128,33 @@ void ExclElem::computeForce(BigReal *reduction,
   // reduction[virialIndex_ZY] += f12.z * r12.y;
   reduction[virialIndex_ZZ] += f12.z * r12.z;
 
+  if ( doFull ) {
+    register BigReal slow_dir =
+                  (diffa * slow_d + slow_c) * diffa + slow_b;
+
+    const Force slow_f12 = slow_dir * r12;
+
+    p[0]->r->f[Results::slow][localIndex[0]] += slow_f12;
+    p[1]->r->f[Results::slow][localIndex[1]] -= slow_f12;
+
+    // reduction[nonbondedEnergyIndex] += energy;
+    reduction[slowVirialIndex_XX] += slow_f12.x * r12.x;
+    // reduction[slowVirialIndex_XY] += slow_f12.x * r12.y;
+    // reduction[slowVirialIndex_XZ] += slow_f12.x * r12.z;
+    // reduction[slowVirialIndex_YX] += slow_f12.y * r12.x;
+    reduction[slowVirialIndex_YY] += slow_f12.y * r12.y;
+    // reduction[slowVirialIndex_YZ] += slow_f12.y * r12.z;
+    // reduction[slowVirialIndex_ZX] += slow_f12.z * r12.x;
+    // reduction[slowVirialIndex_ZY] += slow_f12.z * r12.y;
+    reduction[slowVirialIndex_ZZ] += slow_f12.z * r12.z;
+  }
+
 }
 
 void ExclElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   // reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,slowVirialIndex);
 }
 

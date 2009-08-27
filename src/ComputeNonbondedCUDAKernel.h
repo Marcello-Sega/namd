@@ -101,10 +101,10 @@ void cuda_bind_atom_params(const atom_param *t);
 
 void cuda_bind_atoms(const atom *a);
 
-void cuda_load_forces(float4 *f, int begin, int count);
+void cuda_load_forces(float4 *f, float4 *f_slow, int begin, int count);
 
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
-			int cbegin, int ccount, int pbegin, int pcount);
+	int cbegin, int ccount, int pbegin, int pcount, int doSlow);
 
 int cuda_stream_finished();
 

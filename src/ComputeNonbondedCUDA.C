@@ -233,31 +233,29 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
 
     BigReal diffa = r2list[i] - r2_table[table_i];
 
-    // coulomb 1/r
+    // coulomb 1/r or fast force
     // t[i].x = 1. / (r2 * r);  // -1/r * d/dr r^-1
     {
-      // BigReal table_a = corr_table[4*table_i];
-      BigReal table_b = corr_table[4*table_i+1];
-      BigReal table_c = corr_table[4*table_i+2];
-      BigReal table_d = corr_table[4*table_i+3];
+      // BigReal table_a = fast_table[4*table_i];
+      BigReal table_b = fast_table[4*table_i+1];
+      BigReal table_c = fast_table[4*table_i+2];
+      BigReal table_d = fast_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
       t[i].x = 2. * grad;
     }
 
 
-    // pme exclusion correction
+    // pme correction for slow force
     // t[i].w = 0.;
     {
-      // BigReal table_a = corr_table[4*table_i] - full_table[4*table_i];
-      BigReal table_b = corr_table[4*table_i+1] - full_table[4*table_i+1];
-      BigReal table_c = corr_table[4*table_i+2] - full_table[4*table_i+2];
-      BigReal table_d = corr_table[4*table_i+3] - full_table[4*table_i+3];
+      // BigReal table_a = scor_table[4*table_i];
+      BigReal table_b = scor_table[4*table_i+1];
+      BigReal table_c = scor_table[4*table_i+2];
+      BigReal table_d = scor_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
-      // t[i].w = 2. * grad;
-      // problem: excluded atoms can be closer than 1 Angstrom!
-      t[i].w = 0.;  // calculate no force, handle on CPU instead
+      t[i].w = 2. * grad;
     }
 
 
@@ -526,6 +524,7 @@ static int num_atom_records_allocated;
 static atom_param* atom_params;
 static atom* atoms;
 static float4* forces;
+static float4* slow_forces;
 
 static int cuda_timer_count;
 static double cuda_timer_total;
@@ -689,11 +688,13 @@ void ComputeNonbondedCUDA::doWork() {
       cudaFreeHost(atom_params);
       cudaFreeHost(atoms);
       cudaFreeHost(forces);
+      cudaFreeHost(slow_forces);
     }
     num_atom_records_allocated = 1.1 * num_atom_records + 1;
     cudaMallocHost((void**)&atom_params,sizeof(atom_param)*num_atom_records_allocated);
     cudaMallocHost((void**)&atoms,sizeof(atom)*num_atom_records_allocated);
     cudaMallocHost((void**)&forces,sizeof(float4)*num_atom_records_allocated);
+    cudaMallocHost((void**)&slow_forces,sizeof(float4)*num_atom_records_allocated);
   }
 
 #if 0
@@ -839,6 +840,7 @@ void ComputeNonbondedCUDA::doWork() {
     cuda_bind_atom_params(atom_params);
   }
 
+  XXX - THIS PATH NOT UPDATED FOR SLOW FORCES - DO NOT COMPILE
   cuda_bind_atoms(atoms);
   cudaEventRecord(start_calc, stream);
   cuda_nonbonded_forces(cutoff2,
@@ -903,7 +905,10 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 //           CkMyPe(), kernel_launch_state, pe);
 fflush(stdout);
 
-  Lattice &lattice = patchRecords[activePatches[0]].p->flags.lattice;
+  Flags &flags = patchRecords[activePatches[0]].p->flags;
+  int doSlow = flags.doFullElectrostatics;
+
+  Lattice &lattice = flags.lattice;
   float3 lata, latb, latc;
   lata.x = lattice.a().x;
   lata.y = lattice.a().y;
@@ -929,10 +934,11 @@ fflush(stdout);
     cudaEventRecord(start_calc, stream);
     cuda_nonbonded_forces(lata, latb, latc, cutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
-	localActivePatches.size(),remoteActivePatches.size());
+	localActivePatches.size(),remoteActivePatches.size(), doSlow);
     cudaEventRecord(end_remote_calc, stream);
     ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_calc,this);
-    cuda_load_forces(forces,num_local_atom_records,num_remote_atom_records);
+    cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
+        num_local_atom_records,num_remote_atom_records);
     cudaEventRecord(end_remote_download, stream);
     ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
     break;
@@ -942,10 +948,11 @@ fflush(stdout);
     gpu_is_mine = 0;
     cuda_nonbonded_forces(lata, latb, latc, cutoff2,
 	0,localComputeRecords.size(),
-	0,localActivePatches.size());
+	0,localActivePatches.size(), doSlow);
     cudaEventRecord(end_local_calc, stream);
     ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_calc,this);
-    cuda_load_forces(forces,0,num_local_atom_records);
+    cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
+        0,num_local_atom_records);
     cudaEventRecord(end_local_download, stream);
     if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
     break;
@@ -965,6 +972,9 @@ int ComputeNonbondedCUDA::finishWork() {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
 
+  Flags &flags = patchRecords[activePatches[0]].p->flags;
+  int doSlow = flags.doFullElectrostatics;
+
   ResizeArray<int> &patches( workStarted == 1 ?
 				remoteActivePatches : localActivePatches );
 
@@ -976,15 +986,18 @@ int ComputeNonbondedCUDA::finishWork() {
 
   // long long int wcount = 0;
   double virial = 0.;
+  double virial_slow = 0.;
 
   for ( int i=0; i<patches.size(); ++i ) {
     patch_record &pr = patchRecords[patches[i]];
     int start = pr.localStart;
     int n = pr.numAtoms;
     Force *f = pr.f;
+    Force *f_slow = pr.r->f[Results::slow];
     const CompAtom *a = pr.x;
     const CompAtomExt *aExt = pr.xExt;
     float4 *af = forces + start;
+    float4 *af_slow = slow_forces + start;
     int k = 0;
     for ( int j=0; j<n; ++j ) {
       // only free atoms return forces
@@ -994,6 +1007,12 @@ int ComputeNonbondedCUDA::finishWork() {
       f[j].z += af[k].z;
       // wcount += af[k].w;
       virial += af[k].w;
+      if ( doSlow ) {
+        f_slow[j].x += af_slow[k].x;
+        f_slow[j].y += af_slow[k].y;
+        f_slow[j].z += af_slow[k].z;
+        virial_slow += af_slow[k].w;
+      }
       ++k;
     }
 
@@ -1031,6 +1050,12 @@ int ComputeNonbondedCUDA::finishWork() {
   reduction->item(REDUCTION_VIRIAL_NBOND_XX) += virial;
   reduction->item(REDUCTION_VIRIAL_NBOND_YY) += virial;
   reduction->item(REDUCTION_VIRIAL_NBOND_ZZ) += virial;
+  if ( doSlow ) {
+    virial_slow *= (-1./6.);
+    reduction->item(REDUCTION_VIRIAL_SLOW_XX) += virial_slow;
+    reduction->item(REDUCTION_VIRIAL_SLOW_YY) += virial_slow;
+    reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += virial_slow;
+  }
 
   if ( workStarted == 1 ) return 0;  // not finished, call again
 
