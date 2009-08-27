@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: brunner $
- * $Date: 2009/07/20 20:51:40 $
- * $Revision: 1.1195 $
+ * $Author: jim $
+ * $Date: 2009/08/27 20:15:11 $
+ * $Revision: 1.1196 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -858,6 +858,39 @@ void WorkDistrib::patchMapInit(void)
   int twoAwayY = params->twoAwayY;
   int twoAwayZ = params->twoAwayZ;
 
+#ifdef NAMD_CUDA
+  // for CUDA be sure there are more patches than pes
+
+  int numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
+  if ( numPatches < CkNumPes() && twoAwayX < 0 ) {
+    twoAwayX = 1;
+    numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
+  }
+  if ( numPatches < CkNumPes() && twoAwayY < 0 ) {
+    twoAwayY = 1;
+    numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
+  }
+  if ( numPatches < CkNumPes() && twoAwayZ < 0 ) {
+    twoAwayZ = 1;
+    numPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
+  }
+  if ( numPatches < CkNumPes() ) {
+    NAMD_die("CUDA-enabled NAMD requires more patches than processes.");
+  }
+
+  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
+	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
+
+#else
+
   int numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,maxNumPatches,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
@@ -882,6 +915,8 @@ void WorkDistrib::patchMapInit(void)
 
   patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
+
+#endif
 
 }
 
