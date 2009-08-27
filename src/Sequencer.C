@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2009/03/25 21:58:22 $
- * $Revision: 1.1174 $
+ * $Date: 2009/08/27 18:04:40 $
+ * $Revision: 1.1175 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1655,6 +1655,16 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   int numAtoms = patch->numAtoms;
   FullAtom *a = patch->atom.begin();
   for ( int i=0; i<numAtoms; ++i ) {
+    CkPrintf("%d %g %g %g\n", a[i].id,
+        patch->f[Results::normal][i].x +
+        patch->f[Results::nbond][i].x +
+        patch->f[Results::slow][i].x,
+        patch->f[Results::normal][i].y + 
+        patch->f[Results::nbond][i].y +
+        patch->f[Results::slow][i].y,
+        patch->f[Results::normal][i].z +
+        patch->f[Results::nbond][i].z +
+        patch->f[Results::slow][i].z);
     CkPrintf("%d %g %g %g\n", a[i].id,
         patch->f[Results::normal][i].x,
         patch->f[Results::nbond][i].x,
