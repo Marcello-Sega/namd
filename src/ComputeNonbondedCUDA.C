@@ -592,6 +592,10 @@ void ComputeNonbondedCUDA::doWork() {
   Parameters *params = Node::Object()->parameters;
   SimParameters *simParams = Node::Object()->simParameters;
 
+  if ( simParams->useFlexibleCell ) {
+    NAMD_die("flexible-cell constant pressure not supported in CUDA");
+  }
+
   for ( int i=0; i<activePatches.size(); ++i ) {
     patch_record &pr = patchRecords[activePatches[i]];
     pr.x = pr.positionBox->open();
