@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2009/08/27 20:25:10 $
- * $Revision: 1.1287 $
+ * $Date: 2009/08/28 20:57:00 $
+ * $Revision: 1.1288 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3057,6 +3057,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (fixedAtomsOn)
    {
       iout << iINFO << "FIXED ATOMS ACTIVE\n";
+#ifdef NAMD_CUDA
+      iout << iWARN << "FOR CUDA VERSION PRESSURE WILL BE INCORRECT WITHOUT FIXEDATOMSFORCES\n";
+      if (berendsenPressureOn || langevinPistonOn) {
+        fixedAtomsForces = TRUE;
+        iout << iWARN << "ENABLING FIXEDATOMSFORCES DUE TO PRESSURE CONTROL\n";
+      }
+#endif
       if ( fixedAtomsForces )
 	iout << iINFO << "FORCES BETWEEN FIXED ATOMS ARE CALCULATED\n";
       iout << endi;
