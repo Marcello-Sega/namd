@@ -110,7 +110,7 @@ public:
                    char const *key,                                     \
                    std::vector<_type_> &values,                         \
                    std::vector<_type_> const &def_values =              \
-                   std::vector<_type_> (0, _def_value_),                \
+                   std::vector<_type_> (0, static_cast<_type_>(_def_value_)),                \
                    Parse_Mode const parse_mode = parse_normal)
   
     _get_keyval_vector_proto_ (int, 0);

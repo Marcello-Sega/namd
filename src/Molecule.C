@@ -8297,7 +8297,7 @@ void Molecule::build_atom_status(void) {
         }
       }
 
-      int numAtomsByLjType[LJtypecount];
+      int *numAtomsByLjType = new int[LJtypecount];
       for (i = 0; i < LJtypecount; i++) {numAtomsByLjType[i]=0;}
       for (i = 0; i < numAtoms;  i++) {numAtomsByLjType[atoms[i].vdw_type] ++;}
 
@@ -8318,6 +8318,7 @@ void Molecule::build_atom_status(void) {
           }
         }
       }
+      delete [] numAtomsByLjType;
       delete [] ATable;
       delete [] BTable;
 
