@@ -57,7 +57,7 @@ void LJTable::compute_vdw_params(int i, int j,
   if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14))
   {
 #ifdef NAMD_CUDA
-    NAMD_die("CUDA-accelerated NAMD does not support NFBIX parameters.");
+    NAMD_die("CUDA-accelerated NAMD does not support NBFIX terms in parameter file.");
 #endif
 
     cur->A = A;
