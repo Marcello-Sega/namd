@@ -535,9 +535,7 @@ static int ccd_index_local_download;
 #define CUDA_CONDITION CcdPERIODIC
 
 void cuda_check_remote_progress(void *arg, double) {
-fflush(stdout);
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
-fflush(stdout);
     // ((ComputeNonbondedCUDA *) arg)->finishWork();
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
   } else {
@@ -907,7 +905,6 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 
 // CkPrintf("Pe %d entering state %d via yield from pe %d\n",
 //           CkMyPe(), kernel_launch_state, pe);
-fflush(stdout);
 
   Flags &flags = patchRecords[activePatches[0]].p->flags;
   int doSlow = flags.doFullElectrostatics;
