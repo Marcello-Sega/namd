@@ -90,6 +90,38 @@ typedef struct crossterm
 	Index crossterm_type;
 } Crossterm;
 
+
+// DRUDE: data read from PSF
+typedef struct drude_constants  // supplement Atom data
+{
+  Real alpha;
+  Real thole;
+} DrudeConst;
+
+typedef struct lphost    // lone pair host
+{
+  int32 atom1;
+  int32 atom2;
+  int32 atom3;
+  int32 atom4;
+  Real distance;
+  Real angle;
+  Real dihedral;
+} Lphost;
+
+typedef struct aniso     // anisotropic term
+{
+  int32 atom1;
+  int32 atom2;
+  int32 atom3;
+  int32 atom4;
+  Real k11;
+  Real k22;
+  Real k33;
+} Aniso;
+// DRUDE
+
+
 class Exclusion
 {
 public:

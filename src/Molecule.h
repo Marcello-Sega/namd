@@ -166,7 +166,6 @@ private:
   AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained on node 0 for VMD interface
   #endif
 
-
   ResidueLookupElem *resLookup; // find residues by name
 
   AtomSegResInfo *atomSegResids; //only used for generating compressed molecule info
@@ -188,6 +187,12 @@ private:
   Exclusion *exclusions;  //  Array of exclusion structures
   UniqueSet<Exclusion> exclusionSet;  //  Used for building
   #endif
+
+  // DRUDE
+  DrudeConst *drudeConsts;  // supplement Atom data
+  Lphost *lphosts;          // lone pair hosts
+  Aniso *anisos;            // anisotropic terms
+  // DRUDE
 
   int32 *consIndexes; //  Constraint indexes for each atom
   ConstraintParams *consParams;
@@ -295,6 +300,13 @@ private:
   void read_exclusions(FILE *);
         //  Read in exclusion info from .psf
 
+  // DRUDE
+  void read_lphosts(FILE *);
+        //  Read in lone pair hosts from Drude PSF
+  void read_anisos(FILE *);
+        //  Read in anisotropic terms from Drude PSF
+  // DRUDE
+
   //pluginIO-based loading atoms' structure
   void plgLoadAtomBasics(molfile_atom_t *atomarray);
   void plgLoadBonds(int *from, int *to); //atom index is 1-based in the parameters
@@ -327,6 +339,9 @@ private:
   void read_parm(const GromacsTopFile *);  
 
 public:
+  // DRUDE: flag for reading Drude PSF
+  int is_drude_psf;
+
   // data for TIP4P
   Real r_om;
   Real r_ohc;
@@ -415,8 +430,13 @@ public:
   int numAcceptors; //  Number of hydrogen bond acceptors
   int numExclusions;  //  Number of exclusions
   int numTotalExclusions; //  Real Total Number of Exclusions // hack
+
+  // DRUDE
   int numLonepairs; // Number of lone pairs
   int numDrudeAtoms;  // Number of Drude particles
+  int numAnisos;  // Number of anisotropic terms
+  int numLphosts;  // Number of lone pair hosts
+  // DRUDE
   
   int numConstraints; //  Number of atoms constrained
 /* BEGIN gf */

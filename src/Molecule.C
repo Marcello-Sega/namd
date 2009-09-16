@@ -185,10 +185,18 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   if ( sizeof(int32) != 4 ) { NAMD_bug("sizeof(int32) != 4"); }
   this->simParams = simParams;
   this->params = param;
+
   /*  Initialize array pointers to NULL  */
   atoms=NULL;
   atomNames=NULL;
   resLookup=NULL;
+
+  // DRUDE
+  is_drude_psf = 0;  // assume not Drude model
+  drudeConsts=NULL;
+  lphosts=NULL;
+  anisos=NULL;
+  // DRUDE
 
   //for compressing molecule info
   atomSegResids=NULL;
@@ -296,8 +304,14 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numDonors=0;
   numAcceptors=0;
   numExclusions=0;
+
+  // DRUDE
   numLonepairs=0;
   numDrudeAtoms=0;
+  numLphosts=0;
+  numAnisos=0;
+  // DRUDE
+
   numConstraints=0;
   numStirredAtoms=0;
   numMovDrag=0;
@@ -472,6 +486,12 @@ Molecule::~Molecule()
   if (resLookup != NULL)
     delete resLookup;
 
+  // DRUDE: free arrays read from PSF
+  if (drudeConsts != NULL) delete [] drudeConsts;
+  if (lphosts != NULL) delete [] lphosts;
+  if (anisos != NULL) delete [] anisos;
+  // DRUDE
+
   #ifdef MEM_OPT_VERSION
   if(eachAtomSig) delete [] eachAtomSig;
   if(atomSigPool) delete [] atomSigPool;
@@ -633,6 +653,13 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
        fname);
     NAMD_die(err_msg);
   }
+
+  // DRUDE: set flag if we discover Drude PSF
+  if (NAMD_find_word(buffer, "drude"))
+  {
+    is_drude_psf = 1;
+  }
+  // DRUDE
 
   /*  Read until we find the next non-blank line      */
   ret_code = NAMD_read_line(psf_file, buffer);
@@ -871,6 +898,34 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
 
   if (numExclusions)
     read_exclusions(psf_file);
+
+  // DRUDE: read lone pair hosts and anisotropic terms from PSF
+  if (is_drude_psf)
+  {
+    while (!NAMD_find_word(buffer, "NUMLP"))
+    {
+      ret_code = NAMD_read_line(psf_file, buffer);
+      if (ret_code != 0)
+      {
+        NAMD_die("EOF ENCOUNTERED LOOKING FOR NUMLP IN DRUDE PSF FILE");
+      }
+    }
+    sscanf(buffer, "%d", &numLphosts);
+    if (numLphosts) read_lphosts(psf_file);
+
+    while (!NAMD_find_word(buffer, "NUMANISO"))
+    {
+      ret_code = NAMD_read_line(psf_file, buffer);
+      if (ret_code != 0)
+      {
+        NAMD_die("EOF ENCOUNTERED LOOKING FOR NUMANISO IN DRUDE PSF FILE");
+      }
+    }
+    sscanf(buffer, "%d", &numAnisos);
+    if (numAnisos) read_anisos(psf_file);
+
+  }
+  // DRUDE
 
   /*  look for the cross-term section.     */
   int crossterms_present = 1;
@@ -1599,6 +1654,11 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
       atomSegResids = new AtomSegResInfo[numAtoms];
   }
 
+  // DRUDE: supplement Atom data
+  if (is_drude_psf) {
+    drudeConsts = new DrudeConst[numAtoms];
+  }
+  // DRUDE
 
   hydrogenGroup.resize(0);
 
@@ -1633,6 +1693,27 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
          last_atom_number+1, buffer);
       NAMD_die(err_msg);
     }
+
+    // DRUDE: read alpha and thole parameters from atom line
+    if (is_drude_psf)
+    {
+      Real alpha, thole;
+      read_count=sscanf(buffer,
+//          "%*d %*s %*s %*s %*s %*s %*f %*f %*d %*f %*f %f %f", &alpha, &thole);
+                // the two columns preceding alpha and thole will disappear
+          "%*d %*s %*s %*s %*s %*s %*f %*f %*d %f %f", &alpha, &thole);
+      if (read_count != 2)
+      {
+        char err_msg[128];
+
+        sprintf(err_msg, "BAD ATOM LINE FORMAT IN PSF FILE "
+            "IN ATOM LINE %d\nLINE=%s", last_atom_number+1, buffer);
+        NAMD_die(err_msg);
+      }
+      drudeConsts[atom_number-1].alpha = alpha;
+      drudeConsts[atom_number-1].thole = thole;
+    }
+    // DRUDE
 
     /*  Check if this is in XPLOR format  */
     int atom_type_num;
@@ -2572,6 +2653,103 @@ void Molecule::read_exclusions(FILE *fd)
 #endif
 }
 /*      END OF FUNCTION read_exclusions      */
+
+/************************************************************************/
+/*                  */
+/*        FUNCTION read_lphosts    */
+/*                  */
+/*   INPUTS:                */
+/*  fd - file pointer to the .psf file        */
+/*                  */
+/*  this function reads in the lone pair host section of the .psf file. */
+/*                  */
+void Molecule::read_lphosts(FILE *fd)
+{
+  char buffer[512];  // Buffer for reading from file
+  char lptype[8];
+  int numhosts, index, i, read_count;
+  Real distance, angle, dihedral;
+
+  if (numLphosts != numLonepairs)
+  {
+    NAMD_die("must have same number of LP hosts as lone pairs");
+  }
+  lphosts = new Lphost[numLphosts];
+  if (lphosts == NULL)
+  {
+    NAMD_die("memory allocation failed in Molecule::read_lphosts");
+  }
+  for (i = 0;  i < numLphosts;  i++)
+  {
+    NAMD_read_line(fd, buffer);
+    if ( (NAMD_blank_string(buffer)) || (buffer[0] == '!') ) continue;
+    read_count=sscanf(buffer, "%d %d %6s %f %f %f",
+        &numhosts, &index, lptype, &distance, &angle, &dihedral);
+    if (read_count != 6 || numhosts != 3 || index != 4*i + 1
+        || strcmp(lptype,"F") != 0)
+    {
+      char err_msg[128];
+      sprintf(err_msg, "BAD FORMAT FOR LPHOST LINE %d IN PSF FILE LINE\n"
+          "LINE=%s\n", i+1, buffer);
+      NAMD_die(err_msg);
+    }
+    lphosts[i].distance = distance;
+    lphosts[i].angle = angle * (M_PI/180);
+    lphosts[i].dihedral = dihedral;
+  }
+  for (i = 0;  i < numLphosts;  i++) {
+    lphosts[i].atom1 = NAMD_read_int(fd, "LPHOSTS")-1;
+    lphosts[i].atom2 = NAMD_read_int(fd, "LPHOSTS")-1;
+    lphosts[i].atom3 = NAMD_read_int(fd, "LPHOSTS")-1;
+    lphosts[i].atom4 = NAMD_read_int(fd, "LPHOSTS")-1;
+  }
+}
+/*      END OF FUNCTION read_lphosts    */
+
+/************************************************************************/
+/*                  */
+/*        FUNCTION read_anisos     */
+/*                  */
+/*   INPUTS:                */
+/*  fd - file pointer to the .psf file        */
+/*                  */
+/*  this function reads in the anisotropic terms section of .psf file. */
+/*                  */
+void Molecule::read_anisos(FILE *fd)
+{
+  char buffer[512];  // Buffer for reading from file
+  int numhosts, index, i, read_count;
+  Real k11, k22, k33;
+
+  anisos = new Aniso[numAnisos];
+  if (anisos == NULL)
+  {
+    NAMD_die("memory allocation failed in Molecule::read_anisos");
+  }
+  for (i = 0;  i < numAnisos;  i++)
+  {
+    NAMD_read_line(fd, buffer);
+    if ( (NAMD_blank_string(buffer)) || (buffer[0] == '!') ) continue;
+    read_count=sscanf(buffer, "%f %f %f", &k11, &k22, &k33);
+    if (read_count != 3)
+    {
+      char err_msg[128];
+      sprintf(err_msg, "BAD FORMAT FOR ANISO LINE %d IN PSF FILE LINE\n"
+          "LINE=%s\n", i+1, buffer);
+      NAMD_die(err_msg);
+    }
+    anisos[i].k11 = k11;
+    anisos[i].k22 = k22;
+    anisos[i].k33 = k33;
+  }
+  for (i = 0;  i < numAnisos;  i++) {
+    anisos[i].atom1 = NAMD_read_int(fd, "ANISOS")-1;
+    anisos[i].atom2 = NAMD_read_int(fd, "ANISOS")-1;
+    anisos[i].atom3 = NAMD_read_int(fd, "ANISOS")-1;
+    anisos[i].atom4 = NAMD_read_int(fd, "ANISOS")-1;
+  }
+}
+/*      END OF FUNCTION read_anisos     */
 
 void Molecule::setOccupancyData(molfile_atom_t *atomarray){
     occupancy = new float[numAtoms];
@@ -4644,6 +4822,21 @@ void Molecule::receive_Molecule(MIStream *msg)
             {
               exclusionSet.add(Exclusion(i,bonds[*bond2].atom2));
             }
+
+            // DRUDE: give Drude particles additional exclusions
+            if (is_drude(i + 1))
+            {
+              exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom2));
+            }
+            if (is_drude(bonds[*bond2].atom2 + 1))
+            {
+              exclusionSet.add(Exclusion(i,bonds[*bond2].atom2 + 1));
+            }
+            if (is_drude(i + 1) && is_drude(bonds[*bond2].atom2 + 1))
+            {
+             exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom2 + 1));
+            }
+            // DRUDE
           }
           else
           {
@@ -4651,6 +4844,21 @@ void Molecule::receive_Molecule(MIStream *msg)
             {
               exclusionSet.add(Exclusion(i,bonds[*bond2].atom1));
             }
+
+            // DRUDE: give Drude particles additional exclusions
+            if (is_drude(i + 1))
+            {
+              exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom1));
+            }
+            if (is_drude(bonds[*bond2].atom1 + 1))
+            {
+              exclusionSet.add(Exclusion(i,bonds[*bond2].atom1 + 1));
+            }
+            if(is_drude(i + 1) && is_drude(bonds[*bond2].atom1 + 1))
+            {
+              exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom1 + 1));
+            }
+            // DRUDE
           }
 
           ++bond2;
