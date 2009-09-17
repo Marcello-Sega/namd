@@ -2670,10 +2670,6 @@ void Molecule::read_lphosts(FILE *fd)
   int numhosts, index, i, read_count;
   Real distance, angle, dihedral;
 
-  if (numLphosts != numLonepairs)
-  {
-    NAMD_die("must have same number of LP hosts as lone pairs");
-  }
   lphosts = new Lphost[numLphosts];
   if (lphosts == NULL)
   {
@@ -8161,6 +8157,11 @@ void Molecule::build_atom_status(void) {
     }
     #endif
   }
+  // DRUDE: verify number of LPs
+  if (numLonepairs != numLphosts) {
+    NAMD_die("must have same number of LP hosts as lone pairs");
+  }
+  // DRUDE
   #ifdef MEM_OPT_VERSION
   for(i=0; i<massPoolSize; i++){
       if(atomMassPool[i]<=0.)
