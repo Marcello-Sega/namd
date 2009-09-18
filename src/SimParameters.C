@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2009/08/28 20:57:00 $
- * $Revision: 1.1288 $
+ * $Author: bhatele $
+ * $Date: 2009/09/18 21:55:14 $
+ * $Revision: 1.1289 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1430,9 +1430,9 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                   &usePluginIO, FALSE);
    opts.optionalB("main", "shiftIOToOne", "shift I/O operation to pe one",
      &shiftIOToOne, FALSE);
-   opts.optional("main", "sendProxySpanningTree", "using spanning tree to send proxies",
+   opts.optional("main", "enableProxySendST", "using spanning tree to send proxies",
                   &enableProxySendST, -1);
-   opts.optional("main", "recvProxySpanningTree", "using spanning tree to receive proxies",
+   opts.optional("main", "enableProxyRecvST", "using spanning tree to receive proxies",
                   &enableProxyRecvST, -1);
    opts.optional("main", "procsPerNode", "Number of Processor per node",
      &procsPerNode);

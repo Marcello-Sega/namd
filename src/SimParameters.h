@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2009/06/14 07:01:48 $
- * $Revision: 1.1153 $
+ * $Author: bhatele $
+ * $Date: 2009/09/18 21:55:13 $
+ * $Revision: 1.1154 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -604,11 +604,15 @@ public:
 	BigReal scriptArg4;
 	BigReal scriptArg5;
 
-    Bool useCompressedPsf;
-    Bool genCompressedPsf;
+	Bool useCompressedPsf;
+	Bool genCompressedPsf;
 
-    Bool usePluginIO;
-	
+	Bool usePluginIO;
+
+	//default value is -1
+	int enableProxySendST;
+	int enableProxyRecvST;
+
 public:
 
         SimParameters() : mgridforcelist() {};
@@ -666,9 +670,6 @@ private:
 	int fmaFrequency;		//  outdated parameter name
 	char loadStrategy[64];		//  Load balancing strategy
 
-    //default value is -1
-    int enableProxySendST;
-    int enableProxyRecvST;
 };
 
 #endif
