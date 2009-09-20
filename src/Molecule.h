@@ -189,9 +189,10 @@ private:
   #endif
 
   // DRUDE
-  DrudeConst *drudeConsts;  // supplement Atom data
-  Lphost *lphosts;          // lone pair hosts
+  DrudeConst *drudeConsts;  // supplement Atom data (length of Atom array)
   Aniso *anisos;            // anisotropic terms
+  Lphost *lphosts;          // lone pair hosts
+  int32 *lphostIndexes;     // index for each LP into lphosts array
   // DRUDE
 
   int32 *consIndexes; //  Constraint indexes for each atom
@@ -300,7 +301,7 @@ private:
   void read_exclusions(FILE *);
         //  Read in exclusion info from .psf
 
-  // DRUDE
+  // DRUDE: PSF reading
   void read_lphosts(FILE *);
         //  Read in lone pair hosts from Drude PSF
   void read_anisos(FILE *);
@@ -320,6 +321,10 @@ private:
   void build13excl(void);
   void build14excl(int);
   void stripHGroupExcl(void);
+
+  // DRUDE: extend exclusions for Drude and LP
+  void build_inherited_excl(void);
+  // DRUDE
   #ifdef MEM_OPT_VERSION
   void stripFepFixedExcl(void);
   #else
@@ -341,6 +346,7 @@ private:
 public:
   // DRUDE: flag for reading Drude PSF
   int is_drude_psf;
+  // DRUDE
 
   // data for TIP4P
   Real r_om;
@@ -638,11 +644,22 @@ public:
   //  Retrieve a cross-term strutcure
   Crossterm *get_crossterm(int inum) const {return (&(crossterms[inum]));}
 
+  // DRUDE: retrieve lphost structure
+  Lphost *get_lphost(int atomid) const {
+    int index = lphostIndexes[atomid];
+    return (index != -1 ? &(lphosts[index]) : NULL);
+  }
+  // DRUDE
+
   Bond *getAllBonds() const {return bonds;}
   Angle *getAllAngles() const {return angles;}
   Improper *getAllImpropers() const {return impropers;}
   Dihedral *getAllDihedrals() const {return dihedrals;}
   Crossterm *getAllCrossterms() const {return crossterms;}
+
+  // DRUDE: retrieve entire lphosts array
+  Lphost *getAllLphosts() const { return lphosts; }
+  // DRUDE
   #endif
 
   //  Retrieve a hydrogen bond donor structure

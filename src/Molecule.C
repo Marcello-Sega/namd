@@ -4727,9 +4727,168 @@ void Molecule::receive_Molecule(MIStream *msg)
         stripHGroupExcl();
 
       stripFepExcl();
+
+      // DRUDE
+      if (is_drude_psf) build_inherited_excl();
 #endif
     }
     /*      END OF FUNCTION build_exclusions    */
+
+
+    // DRUDE: extend exclusions for Drude and LP
+    // Drude and LP particles "inherit" exclusions from their parents
+    void Molecule::build_inherited_excl(void) {
+      ExclusionSettings exclude_flag = simParams->exclude;
+      int32 *bond1, *bond2, *bond3;
+      int32 i, mid1, mid2;
+
+      if (exclude_flag == ONEFOUR || exclude_flag == SCALED14) {
+        NAMD_die("DRUDE MODEL SUPPORTS ONLY UP TO 1-3 EXCLUSION POLICY");
+      }
+
+      if (exclude_flag == NONE) return;
+
+      // validate that each Drude or lone pair particle
+      // has a unique parent that is a heavy atom
+      for (i = 0;  i < numAtoms;  i++) {
+
+        if (is_drude(i) || is_lp(i)) {
+          // find parent (heavy) atom of particle i
+          bond1 = bondsWithAtom[i];
+
+          if (-1 == *bond1) {  // i must have one bond
+            char err_msg[512];
+            const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
+            sprintf(err_msg, "FOUND ISOLATED %s PARTICLE %d", idescrip, i+1);
+            NAMD_die(err_msg);
+          }
+          if (-1 != *(bond1+1)) {  // and only one bond
+            char err_msg[512];
+            const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
+            sprintf(err_msg, "FOUND MULTIPLY LINKED %s PARTICLE %d",
+                idescrip, i+1);
+            NAMD_die(err_msg);
+          }
+
+          // mid1 is parent of particle i
+          mid1 = bonds[*bond1].atom1;
+          if (mid1 == i) mid1 = bonds[*bond1].atom2;
+
+          // make sure that mid1 is a heavy atom
+          if (is_drude(mid1) || is_lp(mid1) || is_hydrogen(mid1)) {
+            char err_msg[512];
+            const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
+            sprintf(err_msg, "PARENT ATOM %d of %s PARTICLE %d "
+                "IS NOT HEAVY ATOM", mid1+1, idescrip, i+1);
+            NAMD_die(err_msg);
+          }
+
+          // follow build14excl() code
+          bond2 = bondsWithAtom[mid1];
+
+          // loop through all the bonds connected to atom mid1
+          while (*bond2 != -1) {
+            if (bonds[*bond2].atom1 == mid1) {
+              mid2 = bonds[*bond2].atom2;
+            }
+            else {
+              mid2 = bonds[*bond2].atom1;
+            }
+
+            // Make sure that we don't double back to where we started from.
+            // Doing so causes strange behavior.
+            if (mid2 == i) {
+              bond2++;
+              continue;
+            }
+
+            if (exclude_flag == ONETWO) {
+              // add (i,mid2) as an exclusion
+              if (i < mid2) {
+                exclusionSet.add(Exclusion(i, mid2));
+              }
+              else {
+                exclusionSet.add(Exclusion(mid2, i));
+              }
+            }
+            else {  // exclude_flag == ONETHREE
+
+              bond3 = bondsWithAtom[mid2];
+
+              // loop through all the bonds connected to mid2
+              while (*bond3 != -1) {
+
+                if (bonds[*bond3].atom1 == mid2) {
+                  // Make sure we don't double back to where we started.
+                  // Doing so causes strange behavior.
+                  if (bonds[*bond3].atom2 != mid1) {
+                    if (i < bonds[*bond3].atom2) {
+                      exclusionSet.add(Exclusion(i, bonds[*bond3].atom2));
+                    }
+                    else if (bonds[*bond3].atom2 < i) {
+                      exclusionSet.add(Exclusion(bonds[*bond3].atom2, i));
+                    }
+                  }
+                }
+                else {
+                  // Make sure we don't double back to where we started.
+                  // Doing so causes strange behavior.
+                  if (bonds[*bond3].atom1 != mid1) {
+                    if (i < bonds[*bond3].atom1) {
+                      exclusionSet.add(Exclusion(i, bonds[*bond3].atom1));
+                    }
+                    else if (bonds[*bond3].atom1 < i) {
+                      exclusionSet.add(Exclusion(bonds[*bond3].atom1, i));
+                    }
+                  }
+                }
+
+                ++bond3;
+              } // while bond3
+            } // else ONETHREE
+           
+            ++bond2;
+          } // while bond2
+
+        } // if i is Drude or LP
+
+      } // for i
+
+#if 0
+      // WRONG!
+      // Shouldn't update exclusionSet while iterating over it.
+
+      // Add a layer of exclusions to Drude and LP particles.
+      // This is equivalent to the Drude and LP particles
+      // "inheriting" the exclusion list of its parent atom.
+      UniqueSetIter<Exclusion> exIter(exclusionSet);
+      for (exIter = exIter.begin();  exIter != exIter.end();  exIter++) {
+        if (is_drude(exIter->atom1) || is_lp(exIter->atom1)) {
+          i = exIter->atom1;
+          j = exIter->atom2;
+        }
+        else if (is_drude(exIter->atom2) || is_lp(exIter->atom2)) {
+          i = exIter->atom2;
+          j = exIter->atom1;
+        }
+        else continue;
+
+        kb = bondsWithAtom[j];
+        while (*kb != -1) {
+          k = bonds[*kb].atom1;
+          if      (i < k) exclusionSet.add(Exclusion(i, k));
+          else if (k < i) exclusionSet.add(Exclusion(k, i));
+          k = bonds[*kb].atom2;
+          if      (i < k) exclusionSet.add(Exclusion(i, k));
+          else if (k < i) exclusionSet.add(Exclusion(k, i));
+          kb++;
+        }
+      }
+#endif
+
+    } 
+    // DRUDE
+
 
     /************************************************************************/
     /*                  */
@@ -4819,6 +4978,7 @@ void Molecule::receive_Molecule(MIStream *msg)
               exclusionSet.add(Exclusion(i,bonds[*bond2].atom2));
             }
 
+#if 0
             // DRUDE: give Drude particles additional exclusions
             if (is_drude(i + 1))
             {
@@ -4833,6 +4993,7 @@ void Molecule::receive_Molecule(MIStream *msg)
              exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom2 + 1));
             }
             // DRUDE
+#endif
           }
           else
           {
@@ -4841,6 +5002,7 @@ void Molecule::receive_Molecule(MIStream *msg)
               exclusionSet.add(Exclusion(i,bonds[*bond2].atom1));
             }
 
+#if 0
             // DRUDE: give Drude particles additional exclusions
             if (is_drude(i + 1))
             {
@@ -4855,6 +5017,7 @@ void Molecule::receive_Molecule(MIStream *msg)
               exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom1 + 1));
             }
             // DRUDE
+#endif
           }
 
           ++bond2;
@@ -8451,6 +8614,7 @@ void Molecule::build_atom_status(void) {
           NAMD_die(msg);
         }
       } // else if Drude
+#if 0
       else if (is_lp(hg[i].atomID)) {
         char msg[256];
         sprintf(msg, "Drude lonepair from HydrogenGroup i=%d "
@@ -8458,6 +8622,7 @@ void Molecule::build_atom_status(void) {
             i, hg[i].atomID+1);
         NAMD_die(msg);
       }
+#endif
     } // for numAtoms
   } // if SWM4
 
