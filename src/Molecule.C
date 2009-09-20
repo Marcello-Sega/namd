@@ -490,6 +490,7 @@ Molecule::~Molecule()
   if (drudeConsts != NULL) delete [] drudeConsts;
   if (lphosts != NULL) delete [] lphosts;
   if (anisos != NULL) delete [] anisos;
+  if (lphostIndexes != NULL) delete [] lphostIndexes;
   // DRUDE
 
   #ifdef MEM_OPT_VERSION
@@ -4457,6 +4458,18 @@ void Molecule::receive_Molecule(MIStream *msg)
          int a1 = crossterms[i].atom1;
          crosstermsByAtom[a1][byAtomSize[a1]++] = i;
        }
+
+       // DRUDE: init lphostIndexes array
+       DebugM(3,"Initializing lone pair host index array.\n");
+       lphostIndexes = new int32[numAtoms];
+       for (i = 0;  i < numAtoms;  i++) {
+         lphostIndexes[i] = -1;
+       }
+       for (i = 0;  i < numLphosts;  i++) {
+         int32 index = lphosts[i].atom1;
+         lphostIndexes[index] = i;
+       }
+       // DRUDE
     
        DebugM(3,"Building exclusion data.\n");
     
