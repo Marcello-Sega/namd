@@ -196,6 +196,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   drudeConsts=NULL;
   lphosts=NULL;
   anisos=NULL;
+  lphostIndexes=NULL;
   // DRUDE
 
   //for compressing molecule info
@@ -4867,38 +4868,6 @@ void Molecule::receive_Molecule(MIStream *msg)
 
       } // for i
 
-#if 0
-      // WRONG!
-      // Shouldn't update exclusionSet while iterating over it.
-
-      // Add a layer of exclusions to Drude and LP particles.
-      // This is equivalent to the Drude and LP particles
-      // "inheriting" the exclusion list of its parent atom.
-      UniqueSetIter<Exclusion> exIter(exclusionSet);
-      for (exIter = exIter.begin();  exIter != exIter.end();  exIter++) {
-        if (is_drude(exIter->atom1) || is_lp(exIter->atom1)) {
-          i = exIter->atom1;
-          j = exIter->atom2;
-        }
-        else if (is_drude(exIter->atom2) || is_lp(exIter->atom2)) {
-          i = exIter->atom2;
-          j = exIter->atom1;
-        }
-        else continue;
-
-        kb = bondsWithAtom[j];
-        while (*kb != -1) {
-          k = bonds[*kb].atom1;
-          if      (i < k) exclusionSet.add(Exclusion(i, k));
-          else if (k < i) exclusionSet.add(Exclusion(k, i));
-          k = bonds[*kb].atom2;
-          if      (i < k) exclusionSet.add(Exclusion(i, k));
-          else if (k < i) exclusionSet.add(Exclusion(k, i));
-          kb++;
-        }
-      }
-#endif
-
     } 
     // DRUDE
 
@@ -4990,23 +4959,6 @@ void Molecule::receive_Molecule(MIStream *msg)
             {
               exclusionSet.add(Exclusion(i,bonds[*bond2].atom2));
             }
-
-#if 0
-            // DRUDE: give Drude particles additional exclusions
-            if (is_drude(i + 1))
-            {
-              exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom2));
-            }
-            if (is_drude(bonds[*bond2].atom2 + 1))
-            {
-              exclusionSet.add(Exclusion(i,bonds[*bond2].atom2 + 1));
-            }
-            if (is_drude(i + 1) && is_drude(bonds[*bond2].atom2 + 1))
-            {
-             exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom2 + 1));
-            }
-            // DRUDE
-#endif
           }
           else
           {
@@ -5014,23 +4966,6 @@ void Molecule::receive_Molecule(MIStream *msg)
             {
               exclusionSet.add(Exclusion(i,bonds[*bond2].atom1));
             }
-
-#if 0
-            // DRUDE: give Drude particles additional exclusions
-            if (is_drude(i + 1))
-            {
-              exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom1));
-            }
-            if (is_drude(bonds[*bond2].atom1 + 1))
-            {
-              exclusionSet.add(Exclusion(i,bonds[*bond2].atom1 + 1));
-            }
-            if(is_drude(i + 1) && is_drude(bonds[*bond2].atom1 + 1))
-            {
-              exclusionSet.add(Exclusion(i + 1,bonds[*bond2].atom1 + 1));
-            }
-            // DRUDE
-#endif
           }
 
           ++bond2;
