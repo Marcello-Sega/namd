@@ -236,7 +236,8 @@ public:
       { 
         cvm::real nbins = ( upper_boundaries[i].real_value -
                             lower_boundaries[i].real_value ) / widths[i];
-        int nbins_round = ::round (nbins);
+        //int nbins_round = ::round (nbins);
+        int nbins_round = (int)(nbins+0.5);
         
         if (::fabs (nbins - cvm::real (nbins_round)) > 1.0E-10) {
           cvm::log ("Warning: grid interval ("+
