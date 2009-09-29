@@ -173,7 +173,7 @@ class MOStream {
     }
     MOStream *put(char *data) {
       size_t length = strlen(data);
-      put(length);
+      put((int)length);
       return put(length, data);
     }
 };
