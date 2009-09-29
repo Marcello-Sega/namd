@@ -26,6 +26,11 @@
 
 #include "GromacsTopFile.h"
 
+#ifndef cbrt
+  // cbrt() not in math.h on goneril
+  #define cbrt(x)  pow((double)x,(double)(1.0/3.0))
+#endif
+
 class Communicate;
 class StringList;
 
