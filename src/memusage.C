@@ -127,6 +127,12 @@ unsigned long memusage(const char **source) {
     memtotal = CmiMemoryUsage();  s = "CmiMemoryUsage";
   }
 
+#if defined(WIN32) && !defined(__CYGWIN__) && CHARM_VERSION > 60103
+  if ( ! memtotal ) {
+    memtotal = CmiMemoryUsage();  s = "GetProcessMemoryInfo";
+  }
+#endif
+
   if ( ! memtotal ) {
     memtotal = memusage_proc_self_stat();  s = "/proc/self/stat";
   }
