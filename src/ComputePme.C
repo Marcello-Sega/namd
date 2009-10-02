@@ -2070,7 +2070,10 @@ void ComputePme::ungridForces() {
       }
     }
     }
-
+    else
+    {// cleanup for commOnly to avoid leaking
+      for ( g=0; g<numGrids; ++g ) {delete myRealSpace[g];}
+    }
     delete [] localData;
     delete [] localPartition;
 
