@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2008/10/24 03:59:21 $
- * $Revision: 1.83 $
+ * $Date: 2009/10/03 23:56:49 $
+ * $Revision: 1.84 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -18,7 +18,7 @@
 #include "PatchMap.h"
 
 #define ST_NODE_LOAD 		0.005
-#define PROXY_LOAD              0.0004
+#define PROXY_LOAD              0.001
 #define COMPUTE_LOAD            0.00005
 
 Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
@@ -409,10 +409,14 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       return;
    }
 
+   double temp_load = 0.0;
+
    c->processor = -1;
    p->computeLoad -= c->load;
    CmiAssert(p->computeLoad >= 0.0);
+   temp_load = p->load - c->load;
    p->load = p->computeLoad + p->backgroundLoad;
+   CmiAssert( abs(temp_load - p->load) < 0.001 );
 
    // 4-29-98: Added the following code to keep track of how many proxies 
    // on each processor are being used by a compute on that processor.
@@ -444,8 +448,8 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       if(firstAssignInRefine) {
 	processors[p->Id].load -= PROXY_LOAD;
 	processors[p->Id].backgroundLoad -= PROXY_LOAD;
-	if(processors[p->Id].backgroundLoad < 0) {
-	  processors[p->Id].backgroundLoad = 0;
+	if(processors[p->Id].backgroundLoad < 0.0) {
+	  processors[p->Id].backgroundLoad = 0.0;
 	  processors[p->Id].load += PROXY_LOAD;
 	}
       }
@@ -467,8 +471,8 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
       if(firstAssignInRefine) {
 	processors[p->Id].load -= PROXY_LOAD;
 	processors[p->Id].backgroundLoad -= PROXY_LOAD;
-	if(processors[p->Id].backgroundLoad < 0) {
-	  processors[p->Id].backgroundLoad = 0;
+	if(processors[p->Id].backgroundLoad < 0.0) {
+	  processors[p->Id].backgroundLoad = 0.0;
 	  processors[p->Id].load += PROXY_LOAD;
 	}
       }
