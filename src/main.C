@@ -185,6 +185,9 @@ public:
     iout << iINFO << "Running on BigSim using " << CmiNumPes() << " real processors.\n" << endi;
 #endif
     iout << iINFO << "Running on " << CkNumPes() << " processors.\n" << endi;
+#if CHARM_VERSION > 60102
+    iout << iINFO << "CPU topology information " << (CmiCpuTopologyEnabled()?"available":"unavailable") << ".\n" << endi;
+#endif
     iout << iINFO << "Charm++/Converse parallel runtime startup completed at "
 	 << CmiWallTimer() << " s\n"<< endi;
     const char* memsource;
