@@ -2,5 +2,5 @@
 # The config script will override this setting if there is a directory
 # called charm-6.1 or charm in the NAMD base directory.
 
-CHARMBASE = /Projects/namd2/charm-6.1
+CHARMBASE = /Projects/namd2/charm-6.1.3
 
