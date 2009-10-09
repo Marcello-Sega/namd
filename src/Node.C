@@ -273,10 +273,10 @@ void Node::startup() {
   break;
 
   case 3:     
-    if(simParameters->isSendProxySTEnabled()) {
+    if(simParameters->isSendSpanningTreeOn()) {
         ProxyMgr::Object()->setSendSpanning();
     }
-    if(simParameters->isRecvProxySTEnabled()) {
+    if(simParameters->isRecvSpanningTreeOn()) {
         ProxyMgr::Object()->setRecvSpanning();
     }
     #ifdef PROCTRACE_DEBUG

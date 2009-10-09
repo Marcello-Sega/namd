@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2009/08/27 20:15:11 $
- * $Revision: 1.1196 $
+ * $Author: bhatele $
+ * $Date: 2009/10/09 20:09:05 $
+ * $Revision: 1.1197 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -755,7 +755,7 @@ void WorkDistrib::sendMaps(void)
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *params = node->simParameters;
-  if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendProxySTAuto())
+  if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendSpanningTreeUnset())
     ProxyMgr::Object()->setSendSpanning();
 
   int sizes[2];
@@ -788,7 +788,7 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
     CProxy_Node nd(CkpvAccess(BOCclass_group).node);
     Node *node = nd.ckLocalBranch();
     SimParameters *params = node->simParameters;
-    if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendProxySTAuto())
+    if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendSpanningTreeUnset())
       ProxyMgr::Object()->setSendSpanning();
   }
   if ( mapsArrived ) {

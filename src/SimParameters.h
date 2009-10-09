@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: bhatele $
- * $Date: 2009/09/18 21:55:13 $
- * $Revision: 1.1154 $
+ * $Date: 2009/10/09 20:09:05 $
+ * $Revision: 1.1155 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -610,8 +610,8 @@ public:
 	Bool usePluginIO;
 
 	//default value is -1
-	int enableProxySendST;
-	int enableProxyRecvST;
+	int proxySendSpanningTree;
+	int proxyRecvSpanningTree;
 
 public:
 
@@ -635,10 +635,10 @@ public:
 	void scriptSet(const char *, const char *);
 					//  Set parameters at run time
 
-	int isSendProxySTEnabled(){ return enableProxySendST==1; }
-	int isSendProxySTAuto() { return enableProxySendST==-1; }
-	int isRecvProxySTEnabled(){ return enableProxyRecvST==1; }
-	int isRecvProxySTAuto() { return enableProxyRecvST==-1; }
+	int isSendSpanningTreeOn(){ return proxySendSpanningTree == 1; }
+	int isSendSpanningTreeUnset() { return proxySendSpanningTree == -1; }
+	int isRecvSpanningTreeOn(){ return proxyRecvSpanningTree == 1; }
+	int isRecvSpanningTreeUnset() { return proxyRecvSpanningTree == -1; }
 
 private:
 
