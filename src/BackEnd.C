@@ -62,7 +62,7 @@ void BackEnd::ExitSchedOn(int pe)
   CmiSyncSendAndFree(pe,CmiMsgHeaderSizeBytes,(char *)msg);
 }
 
-#if defined(WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW_H)
 int NAMD_new_handler(size_t) {
 #else
 void NAMD_new_handler() {
@@ -70,7 +70,7 @@ void NAMD_new_handler() {
   char tmp[100];
   sprintf(tmp,"Memory allocation failed on processor %d.",CmiMyPe());
   NAMD_die(tmp);
-#if defined(WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW_H)
   return 0;
 #endif
 }
@@ -81,7 +81,7 @@ void cuda_initialize();
 // called on all procs
 void all_init(int argc, char **argv)
 {
-#if defined(WIN32) && !defined(__CYGWIN__)
+#if defined(WIN32) && !defined(__CYGWIN__) && !defined(__MINGW_H)
   _set_new_handler(NAMD_new_handler);
 #else
   std::set_new_handler(NAMD_new_handler);
