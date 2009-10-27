@@ -106,6 +106,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedFEP.o \
 	$(DSTDIR)/ComputeNonbondedLES.o \
 	$(DSTDIR)/ComputeNonbondedPProf.o \
+	$(DSTDIR)/ComputeNonbondedTabEnergies.o \
 	$(DSTDIR)/ComputeNonbondedCUDA.o \
 	$(DSTDIR)/ComputeNonbondedCUDAExcl.o \
 	$(DSTDIR)/ComputePatch.o \

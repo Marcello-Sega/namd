@@ -1600,7 +1600,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/LJTable.h
+	src/LJTable.h \
+	src/Parameters.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputeNonbondedStd.o: \
 	src/ComputeNonbondedStd.C \
@@ -1778,6 +1779,50 @@ obj/ComputeNonbondedPProf.o: \
 	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedPProf.o $(COPTC) src/ComputeNonbondedPProf.C
+obj/ComputeNonbondedTabEnergies.o: \
+	src/ComputeNonbondedTabEnergies.C \
+	src/ComputeNonbondedInl.h \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/LJTable.h \
+	src/ReserveArray.h \
+	src/PressureProfile.h \
+	src/ComputeNonbondedBase.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedTabEnergies.o $(COPTC) src/ComputeNonbondedTabEnergies.C
 obj/ComputeNonbondedCUDA.o: \
 	src/ComputeNonbondedCUDA.C \
 	src/common.h \
@@ -2916,8 +2961,8 @@ obj/colvarmodule.o: \
 	src/colvar.h \
 	src/colvarbias.h \
 	src/colvarbias_meta.h \
-	src/colvarbias_abf.h \
-	src/common.h
+	src/colvargrid.h \
+	src/colvarbias_abf.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarmodule.o $(COPTC) src/colvarmodule.C
 obj/colvarparse.o: \
 	src/colvarparse.C \
@@ -2964,7 +3009,8 @@ obj/colvarbias_abf.o: \
 	src/colvarvalue.h \
 	src/colvarparse.h \
 	src/colvarbias_abf.h \
-	src/colvarbias.h
+	src/colvarbias.h \
+	src/colvargrid.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_abf.o $(COPTC) src/colvarbias_abf.C
 obj/colvarbias_meta.o: \
 	src/colvarbias_meta.C \
@@ -2975,7 +3021,8 @@ obj/colvarbias_meta.o: \
 	src/colvarvalue.h \
 	src/colvarparse.h \
 	src/colvarbias_meta.h \
-	src/colvarbias.h
+	src/colvarbias.h \
+	src/colvargrid.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarbias_meta.o $(COPTC) src/colvarbias_meta.C
 obj/colvaratoms.o: \
 	src/colvaratoms.C \
@@ -3052,17 +3099,9 @@ obj/colvarcomp_rotations.o: \
 	src/colvarcomp.h \
 	src/colvaratoms.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarcomp_rotations.o $(COPTC) src/colvarcomp_rotations.C
-obj/colvargrid.o: \
-	src/colvargrid.C \
-	src/colvarmodule.h \
-	src/colvarvalue.h \
-	src/colvarparse.h \
-	src/colvar.h \
-	src/colvarcomp.h \
-	src/colvargrid.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvargrid.o $(COPTC) src/colvargrid.C
 obj/colvarproxy_namd.o: \
 	src/colvarproxy_namd.C \
+	src/common.h \
 	src/BackEnd.h \
 	src/InfoStream.h \
 	src/Node.h \
@@ -3072,7 +3111,6 @@ obj/colvarproxy_namd.o: \
 	inc/Node.decl.h \
 	src/Molecule.h \
 	src/parm.h \
-	src/common.h \
 	src/NamdTypes.h \
 	src/Vector.h \
 	src/ResizeArray.h \
@@ -3104,6 +3142,18 @@ obj/colvarproxy_namd.o: \
 	src/colvarproxy_namd.h \
 	src/GlobalMaster.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvarproxy_namd.o $(COPTC) src/colvarproxy_namd.C
+obj/colvargrid.o: \
+	src/colvargrid.C \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
+	src/colvarvalue.h \
+	src/colvarparse.h \
+	src/colvar.h \
+	src/colvarcomp.h \
+	src/colvaratoms.h \
+	src/colvargrid.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/colvargrid.o $(COPTC) src/colvargrid.C
 obj/GridForceGrid.o: \
 	src/GridForceGrid.C \
 	src/GridForceGrid.h \
