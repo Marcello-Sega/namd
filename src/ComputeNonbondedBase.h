@@ -97,13 +97,26 @@
 #undef FULL
 #undef NOFULL
 #ifdef FULLELECT
-  #define FULLELECTNAME(X) FEPNAME( X ## _fullelect )
+  #define FULLELECTNAME(X) TABENERGYNAME( X ## _fullelect )
   #define FULL(X) X
   #define NOFULL(X)
 #else
-  #define FULLELECTNAME(X) FEPNAME( X )
+  #define FULLELECTNAME(X) TABENERGYNAME( X )
   #define FULL(X)
   #define NOFULL(X) X
+#endif
+
+#undef TABENERGYNAME
+#undef TABENERGY
+#undef NOTABENERGY
+#ifdef TABENERGYFLAG
+  #define TABENERGYNAME(X) FEPNAME( X ## _tabener )
+  #define TABENERGY(X) X
+  #define NOTABENERGY(X)
+#else
+  #define TABENERGYNAME(X) FEPNAME( X )
+  #define TABENERGY(X)
+  #define NOTABENERGY(X) X
 #endif
 
 // Here are what these macros stand for:
@@ -187,7 +200,7 @@ FEP( INT( foo bar ) )
 LAM( INT( foo bar ) )
 FEP( NOENERGY( foo bar ) )
 ENERGY( NOENERGY( foo bar ) )
-
+TABENERGY(NOTABENERGY( foo bar ) )
 
 #if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR( + 1 ) )
   #define COMPONENT_DOTPRODUCT(A,B)  ((A##_x * B##_x) + (A##_y * B##_y) + (A##_z * B##_z))
@@ -211,6 +224,7 @@ void ComputeNonbondedUtil :: NAME
 
   // speedup variables
   BigReal *reduction = params->reduction;
+  SimParameters *simParams = Node::Object()->simParameters;
 
   PPROF(
   BigReal *pressureProfileReduction = params->pressureProfileReduction;
@@ -284,7 +298,7 @@ void ComputeNonbondedUtil :: NAME
 	 		params->groupplcutoff * params->groupplcutoff;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
-  LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0;
+  LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0; TABENERGY(ljNull.tabletype=-1;)
   const LJTable::TableEntry* const lj_null_pars = &ljNull;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
   SHORT
@@ -617,6 +631,10 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(plint,pairlistxA2,arraysize);
   NBWORKARRAY(plint,pairlistmA2,arraysize);
   )
+
+  NBWORKARRAY(short,vdwtype_array,j_upper+5);
+  for (j = 0; j < j_upper; ++j)
+    vdwtype_array [j] = p_1[j].vdwType;
 
   int fixg_upper = 0;
   int g_upper = 0;

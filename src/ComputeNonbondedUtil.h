@@ -193,8 +193,11 @@ public:
   static const LJTable* ljTable;
   static const Molecule* mol;
   static BigReal r2_delta, r2_delta_1;
+  static int rowsize;
+  static int columnsize;
   static int r2_delta_exp;
   static BigReal *table_alloc;
+  static BigReal *table_ener;
   static BigReal *table_short;
   static BigReal *table_noshort;
   static BigReal *fast_table;
@@ -345,6 +348,24 @@ public:
   static void calc_self_energy_merge_fullelect_pprof (nonbonded *);
   static void calc_self_slow_fullelect_pprof (nonbonded *);
   static void calc_self_energy_slow_fullelect_pprof (nonbonded *);
+ 
+  //tabulated potential nonbonded calcs
+  static void calc_pair_tabener(nonbonded *);
+  static void calc_pair_energy_tabener(nonbonded *);
+  static void calc_pair_fullelect_tabener(nonbonded *);
+  static void calc_pair_energy_fullelect_tabener(nonbonded *);
+  static void calc_pair_merge_fullelect_tabener(nonbonded *);
+  static void calc_pair_energy_merge_fullelect_tabener(nonbonded *);
+  static void calc_pair_slow_fullelect_tabener(nonbonded *);
+  static void calc_pair_energy_slow_fullelect_tabener(nonbonded *);
+  static void calc_self_tabener(nonbonded *);
+  static void calc_self_energy_tabener(nonbonded *);
+  static void calc_self_fullelect_tabener (nonbonded *);
+  static void calc_self_energy_fullelect_tabener (nonbonded *);
+  static void calc_self_merge_fullelect_tabener (nonbonded *);
+  static void calc_self_energy_merge_fullelect_tabener (nonbonded *);
+  static void calc_self_slow_fullelect_tabener (nonbonded *);
+  static void calc_self_energy_slow_fullelect_tabener (nonbonded *);
 };
 
 #endif

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: bhatele $
- * $Date: 2009/10/09 20:09:05 $
- * $Revision: 1.1155 $
+ * $Author: brunner $
+ * $Date: 2009/10/27 18:50:05 $
+ * $Revision: 1.1156 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -267,6 +267,15 @@ public:
  	char SMDFile[128];		//  File for SMD information
         int SMDOutputFreq;              //  Output frequency for SMD constr.
         //****** END SMD constraints changes 
+        
+  //****** BEGIN tabulated energy section
+  Bool tabulatedEnergies;
+  int tableNumTypes;
+  char tabulatedEnergiesFile[128];
+  char tableInterpType[128];
+  Real tableSpacing;
+  BigReal tableMaxDist;
+  //****** END tabulated energy section
 
         // TMD
         Bool TMDOn;

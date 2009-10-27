@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: bhatele $
- * $Date: 2009/10/09 20:09:04 $
- * $Revision: 1.1290 $
+ * $Author: brunner $
+ * $Date: 2009/10/27 18:50:04 $
+ * $Revision: 1.1291 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1106,6 +1106,12 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.range("SMDOutputFreq", POSITIVE);
    
    //****** END SMD constraints changes 
+
+   //****** BEGIN tabulated energies section
+   opts.optionalB("main", "tabulatedEnergies", "Do we get energies from a table?", &tabulatedEnergies, FALSE);
+//   opts.require("tabulatedEnergies", "tableNumTypes","Number of types for energy tabulation", &tableNumTypes);
+   opts.require("tabulatedEnergies", "tabulatedEnergiesFile", "File containing energy table", tabulatedEnergiesFile);
+   opts.require("tabulatedEnergies", "tableInterpType", "Cubic or linear interpolation", tableInterpType);
 
    // TMD parameters
    opts.optionalB("main", "TMD", "Perform Targeted MD?", &TMDOn, FALSE);

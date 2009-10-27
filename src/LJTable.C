@@ -50,10 +50,21 @@ void LJTable::compute_vdw_params(int i, int j,
   int useGeom = Node::Object()->simParameters->vdwGeometricSigma;
 
   Real A, B, A14, B14;
+  int K;
   // BigReal sigma_max;
   //  We need the A and B parameters for the Van der Waals.  These can
   //  be explicitly be specified for this pair or calculated from the
   //  sigma and epsilon values for the two atom types
+//  printf("Looking at interaction of  %i with %i\n", i, j);
+  if (params->get_table_pair_params(i,j,&K)) {
+//    printf("Making this interaction tabulated. %i %i %i\n", i, j, K);
+    cur->tabletype = K;
+    cur_scaled->tabletype = K;
+  } else {
+    cur->tabletype = -1;
+    cur_scaled->tabletype = -1;
+  }
+
   if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14))
   {
 #ifdef NAMD_CUDA

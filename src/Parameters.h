@@ -152,6 +152,20 @@ typedef struct indexed_vdw_pair
    	struct indexed_vdw_pair *left;	 //  Left child
 } IndexedVdwPair;
 
+
+//  IndexedTablePair is used to form a binary search tree that is
+//  indexed by table_type index.  This is the tree that will be
+//  used to search during the actual simulation
+
+typedef struct indexed_table_pair
+{
+   	Index ind1;		//  Index for first atom type
+   	Index ind2;		//  Index for second atom type
+   	int K;			//  number of the table type for this pair
+	struct indexed_table_pair *right;	 //  Right child
+   	struct indexed_table_pair *left;	 //  Left child
+} IndexedTablePair;
+
 //  Structures that are defined in Parameters.C
 struct bond_params;
 struct angle_params;
@@ -160,6 +174,7 @@ struct dihedral_params;
 struct crossterm_params;
 struct vdw_params;
 struct vdw_pair_params;
+struct table_pair_params;
 
 class Parameters
 {
@@ -183,6 +198,7 @@ private:
 	struct crossterm_params *crosstermp;	//  Linked list of cross-term par.
 	struct vdw_params *vdwp;		//  Binary tree of vdw params
 	struct vdw_pair_params *vdw_pairp;	//  Binary tree of vdw pairs
+	struct table_pair_params *table_pairp;	//  Binary tree of table pairs
 public:
 	BondValue *bond_array;			//  Array of bond params
 	AngleValue *angle_array;		//  Array of angle params
@@ -190,7 +206,13 @@ public:
 	ImproperValue *improper_array;		//  Array of improper params
 	CrosstermValue *crossterm_array;	//  Array of crossterm params
 	VdwValue *vdw_array;			//  Array of vdw params
+	int numenerentries;			//  Number of entries for enertable
+	int rowsize;
+	int columnsize;
+	BigReal* table_ener;			//  Table for tabulated energies
 	IndexedVdwPair *vdw_pair_tree;		//  Tree of vdw pair params
+	IndexedTablePair *tab_pair_tree;		//  Tree of vdw pair params
+  int tablenumtypes;
 	int NumBondParams;			//  Number of bond parameters
 	int NumAngleParams;			//  Number of angle parameters
   int NumCosAngles;       // Number of cosine-based angles
@@ -198,8 +220,10 @@ public:
 	int NumImproperParams;			//  Number of improper params
 	int NumCrosstermParams;			//  Number of cross-term params
 	int NumVdwParams;			//  Number of vdw parameters
+	int NumTableParams;			//  Number of table parameters
   int NumVdwParamsAssigned;               //  Number actually assigned
 	int NumVdwPairParams;			//  Number of vdw_pair params
+	int NumTablePairParams;			//  Number of vdw_pair params
 private:
 	ResizeArray<char *> error_msgs;		//  Avoids repeating warnings
 
@@ -233,7 +257,9 @@ private:
 				     struct vdw_params *);
 
 	void add_vdw_pair_param(char *);	//  Add a vdw pair parameter
+	void add_table_pair_param(char *);	//  Add a table pair parameter
 	void add_to_vdw_pair_list(struct vdw_pair_params *);
+	void add_to_table_pair_list(struct table_pair_params *);
 
 	void add_hb_pair_param(char *);	//  Add a hydrogen bond pair parameter
 
@@ -258,10 +284,14 @@ private:
 	void index_crossterms();
 	
 	void convert_vdw_pairs();
+	void convert_table_pairs();
 	IndexedVdwPair *add_to_indexed_vdw_pairs(IndexedVdwPair *, IndexedVdwPair *);
+	IndexedTablePair *add_to_indexed_table_pairs(IndexedTablePair *, IndexedTablePair *);
 	
 	int vdw_pair_to_arrays(int *, int *, Real *, Real *, Real *, Real *, 
 			       int, IndexedVdwPair *);
+
+	int table_pair_to_arrays(int *, int *, int *, int, IndexedTablePair *);
 
 	//  The free_* routines are used by the destructor to deallocate
 	//  memory
@@ -272,7 +302,10 @@ private:
 	void free_crossterm_list(struct crossterm_params *);
 	void free_vdw_tree(struct vdw_params *);
 	void free_vdw_pair_tree(IndexedVdwPair *);
+	void free_table_pair_tree(IndexedTablePair *);
 	void free_vdw_pair_list();
+
+  BigReal interp_lin(BigReal, BigReal, BigReal, BigReal, BigReal); // Perform a linear interpolation for energy table 
 
 	/* does the actual initialization, once the variables have all
 	   been given default values.  See Parameters() below */
@@ -441,6 +474,8 @@ public:
 
         int get_num_vdw_params(void) { return NumVdwParamsAssigned; }
 
+  int get_table_pair_params(Index, Index, int*);
+
 	//  The print_*_params are provided for debugging purposes
 	void print_bond_params();		//  Print bonds params
 	void print_angle_params();		//  Print angle params
@@ -450,6 +485,12 @@ public:
 	void print_vdw_params();		//  Print vdw params
 	void print_vdw_pair_params();		//  Print vdw_pair params
 	void print_param_summary();		//  Print a summary of params
+	void read_ener_table(SimParameters*); // Read an energy table file
+  int get_int_table_type(char*); // Return the integer type for a named table interaction
+
+  int read_energy_type(FILE*, const int, BigReal*, const float, const float);
+  int read_energy_type_cubspline(FILE*, const int, BigReal*, const float, const float);
+  int read_energy_type_bothcubspline(FILE*, const int, BigReal*, const float, const float);
 };
 
 #endif

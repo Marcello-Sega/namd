@@ -18,6 +18,7 @@ public:
     // BigReal exclcut2;
     BigReal A;
     BigReal B;
+    int tabletype;
   };
 
   LJTable(void);

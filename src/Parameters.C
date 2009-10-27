@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <vector>
 #ifndef WIN32
 #include <strings.h>
 #endif
@@ -31,6 +32,11 @@
 //#define DEBUGM
 #include "Debug.h"
 
+#define INDEX(ncols,i,j)  ((i)*ncols + (j))
+
+#define ENABLETABLES
+
+static char** table_types;
 
 //  struct bond_params is used to form a binary tree of bond parameters.
 //  The two atom names are used to determine the order of the nodes in the
@@ -158,6 +164,13 @@ struct vdw_pair_params
   struct vdw_pair_params *next;
 };
 
+struct table_pair_params
+{
+  char atom1name[11];
+  char atom2name[11];
+  int K;
+  struct table_pair_params *next;
+};
 
 Parameters::Parameters() {
   initialize();
@@ -176,6 +189,7 @@ void Parameters::initialize() {
   crosstermp=NULL;
   vdwp=NULL;
   vdw_pairp=NULL;
+  table_pairp=NULL;
   bond_array=NULL;
   angle_array=NULL;
   dihedral_array=NULL;
@@ -183,6 +197,7 @@ void Parameters::initialize() {
   crossterm_array=NULL;
   vdw_array=NULL;
   vdw_pair_tree=NULL;
+  tab_pair_tree=NULL;
   maxDihedralMults=NULL;
   maxImproperMults=NULL;
 
@@ -194,6 +209,7 @@ void Parameters::initialize() {
   NumCrosstermParams=0;
   NumVdwParams=0;
   NumVdwPairParams=0;
+  NumTablePairParams=0;
   NumCosAngles=0;
 }
 
@@ -234,6 +250,14 @@ Parameters::Parameters(SimParameters *simParams, StringList *f)
   /* have been read in, then this will be set to true and the     */
   /* arrays of parameters will be set up        */
   AllFilesRead = FALSE;
+
+  numenerentries=0;
+  table_ener = NULL;
+  if (simParams->tabulatedEnergies) {
+
+	  fprintf(stdout,"Working on tables\n");
+	  read_ener_table(simParams);
+  }
 
   if (NULL != f) 
   {
@@ -312,6 +336,9 @@ Parameters::~Parameters()
   if (vdw_array != NULL)
     delete [] vdw_array;
   
+  if (tab_pair_tree != NULL)
+    free_table_pair_tree(tab_pair_tree);
+
   if (vdw_pair_tree != NULL)
     free_vdw_pair_tree(vdw_pair_tree);
 
@@ -427,6 +454,16 @@ void Parameters::read_parameter_file(char *fname)
       {
         add_vdw_pair_param(buffer);
         NumVdwPairParams++; 
+      }
+      else if (strncasecmp(first_word, "nbta", 4)==0)
+      {
+
+        if (table_ener == NULL) {
+          continue;
+        }
+
+        add_table_pair_param(buffer);
+        NumTablePairParams++; 
       }
       else if (strncasecmp(first_word, "hbon", 4)==0)
       {
@@ -564,6 +601,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         par_type=8; skipline=1;
       }
+      else if (strncasecmp(first_word, "nbta", 4)==0)
+      {
+        par_type=9; skipline=1;
+      }
       else if (strncasecmp(first_word, "read", 4)==0)
       {
         skip_stream_read(buffer, pfile);  skipline=1;
@@ -598,7 +639,7 @@ void Parameters::read_charmm_parameter_file(char *fname)
                (strncasecmp(first_word, "ctof", 4) == 0) ||
                (strncasecmp(first_word, "cton", 4) == 0) ) 
       {
-        if ((par_type != 5) && (par_type != 6) && (par_type != 7))
+        if ((par_type != 5) && (par_type != 6) && (par_type != 7) && (par_type != 9))
         {
           char err_msg[512];
 
@@ -668,6 +709,16 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         add_crossterm_param(buffer, pfile);                  
         NumCrosstermParams++;
+      }
+      else if (par_type == 9)
+      {
+
+        if (table_ener == NULL) {
+          continue;
+        }
+
+        add_table_pair_param(buffer);                  
+        NumTablePairParams++;
       }
       else
       {
@@ -2387,6 +2438,74 @@ struct vdw_params *Parameters::add_to_vdw_tree(struct vdw_params *new_node,
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION add_table_pair_param      */
+/*                  */
+/*   INPUTS:                */
+/*  buf - line containing the table_pair information      */
+/*                  */
+/*  this function adds a table_pair parameter to the current          */
+/*   parameters.              */
+/*                  */
+/************************************************************************/
+
+void Parameters::add_table_pair_param(char *buf)
+
+{
+  char atom1name[11];      //  Atom 1 name
+  char atom2name[11];      //  Atom 2 name
+  char tabletype[11];      // Name of pair interaction
+  int K;           // Table entry type for pair
+  int read_count;        //  count from sscanf
+  struct table_pair_params *new_node;  //  new node
+
+  /*  Parse up the input line using sscanf      */
+  read_count=sscanf(buf, "%s %s %s\n", atom1name, 
+  atom2name, tabletype);
+
+  /*  Check to make sure we got what we expected      */
+  if ((read_count != 3))
+  {
+    char err_msg[512];
+
+    sprintf(err_msg, "BAD TABLE PAIR FORMAT IN PARAMETER FILE\nLINE=*%s*", buf);
+    NAMD_die(err_msg);
+  }
+
+  /*  Allocate a new node            */
+  new_node = new table_pair_params;
+
+  if (new_node == NULL)
+  {
+    NAMD_die("memory allocation failed in Parameters::add_table_pair_param\n");
+  }
+
+  strcpy(new_node->atom1name, atom1name);
+  strcpy(new_node->atom2name, atom2name);
+
+  /* Find the proper table type for this pairing */
+  K = get_int_table_type(tabletype);
+//  printf("Looking for type %s; got %i\n", tabletype, K);
+  if (K < 0) {
+    char err_msg[512];
+    sprintf(err_msg, "Couldn't find table parameters for table interaction %s!\n", tabletype);
+    NAMD_die(err_msg);
+  }
+
+  /*  Assign values to this node          */
+  new_node->K = K;
+
+  new_node->next = NULL;
+
+  /*  Add this node to the tree          */
+//  printf("Adding pair parameter with index %i\n", K);
+  add_to_table_pair_list(new_node);
+
+  return;
+}
+/*      END OF FUNCTION add_vdw_par_param    */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION add_vdw_pair_param      */
 /*                  */
 /*   INPUTS:                */
@@ -2533,6 +2652,74 @@ void Parameters::add_hb_pair_param(char *buf)
 #endif
 }
 /*      END OF FUNCTION add_hb_par_param    */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION add_to_table_pair_list      */
+/*                  */
+/*   INPUTS:                */
+/*  new_node - node to be added to list        */
+/*                  */
+/*  This function adds a link to the end of the table_pair_list list  */
+/*                  */
+/************************************************************************/
+
+void Parameters::add_to_table_pair_list(struct table_pair_params *new_node)
+
+{
+     static struct table_pair_params *tail=NULL;
+  struct table_pair_params *ptr;
+  int compare_code;
+  
+
+  //  If the list was empty, then just make the new node the list
+  if (table_pairp == NULL)
+  {
+     table_pairp = new_node;
+     tail = new_node;
+     return;
+  }
+  
+  ptr = table_pairp;
+
+  //  Now check the list to see if we have a duplicate entry
+  while (ptr!=NULL)
+  {
+      /*  Compare atom 1            */
+      compare_code = strncasecmp(new_node->atom1name, ptr->atom1name, 5);
+      
+      if (compare_code == 0)
+      {
+    /*  Atom 1 is the same, compare atom 2      */
+    compare_code = strcasecmp(new_node->atom2name, ptr->atom2name);
+
+    if (compare_code==0)
+    {
+      /*  Found a duplicate.  Print out a warning   */
+      /*  message, assign the values to the current   */
+      /*  node in the tree, and then free the new_node*/
+      iout << iWARN << "DUPLICATE TABLE PAIR ENTRY FOR "
+        << new_node->atom1name << "-"
+        << new_node->atom2name
+        << "\n" << endi;
+
+        ptr->K=new_node->K;
+
+      delete new_node;
+
+      return;
+    }
+      }
+      
+      ptr = ptr->next;
+  }
+
+  //  We didn't find a duplicate, so add this node to the end
+  //  of the list
+  tail->next = new_node;
+  tail = new_node;
+}
+/*      END OF FUNCTION add_to_vdw_pair_list    */
 
 /************************************************************************/
 /*                  */
@@ -2708,6 +2895,7 @@ void Parameters::done_reading_files()
   
   //  Convert the vdw pairs
   convert_vdw_pairs();
+  convert_table_pairs();
 }
 /*      END OF FUNCTION done_reading_files    */
 
@@ -3210,6 +3398,75 @@ void Parameters::assign_vdw_index(char *atomtype, Atom *atom_ptr)
   return;
 }
 /*      END OF FUNCTION assign_vdw_index    */
+
+/************************************************************************
+ * FUNCTION get_table_pair_params
+ *
+ * Inputs:
+ * atom1 - atom type for atom 1
+ * atom2 - atom type for atom 2
+ * K - an integer value for the table type to populate
+ *
+ * Outputs:
+ * If a match is found, K is populated and 1 is returned. Otherwise,
+ * 0 is returned.
+ *
+ * This function finds the proper type index for tabulated nonbonded 
+ * interactions between two atoms. If no such interactions are found,
+ * the atoms are assumed to interact through standard VDW potentials.
+ * 
+ ************************************************************************/
+
+int Parameters::get_table_pair_params(Index ind1, Index ind2, int *K) {
+  IndexedTablePair *ptr;
+  Index temp;
+  int found=FALSE;
+
+  ptr=tab_pair_tree;
+  //
+  //  We need the smaller type in ind1, so if it isn't already that 
+  //  way, switch them        */
+  if (ind1 > ind2)
+  {
+    temp = ind1;
+    ind1 = ind2;
+    ind2 = temp;
+  }
+
+  /*  While we haven't found a match and we're not at the end  */
+  /*  of the tree, compare the bond passed in with the tree  */
+  while (!found && (ptr!=NULL))
+  {
+//    printf("Comparing %i with %i and %i with %i\n", ind1, ptr->ind1, ind2, ptr->ind2);
+    if ( (ind1 == ptr->ind1) && (ind2 == ptr->ind2) )
+    {
+       found = TRUE;
+    }
+    else if ( (ind1 < ptr->ind1) || 
+        ( (ind1==ptr->ind1) && (ind2 < ptr->ind2) ) )
+    {
+      /*  Go left          */
+      ptr=ptr->left;
+    }
+    else
+    {
+      /*  Go right          */
+      ptr=ptr->right;
+    }
+  }
+
+  /*  If we found a match, assign the values      */
+  if (found)
+  {
+    *K = ptr->K;
+    return(TRUE);
+  }
+  else
+  {
+    return(FALSE);
+  }
+}
+/*      END OF FUNCTION get_table_pair_params    */
 
 /************************************************************************/
 /*                  */
@@ -4016,6 +4273,29 @@ void Parameters::free_vdw_pair_list()
 }
 /*      END OF FUNCTION free_vdw_pair_list    */
 
+/************************************************************************
+ * FUNCTION free_table_pair_tree
+ *
+ * Free a table_pair_tree given a pointer to its head
+ * **********************************************************************/
+
+void Parameters::free_table_pair_tree(IndexedTablePair *table_pair_ptr) {
+  if (table_pair_ptr->left != NULL)
+  {
+    free_table_pair_tree(table_pair_ptr->left);
+  }
+
+  if (table_pair_ptr->right != NULL)
+  {
+    free_table_pair_tree(table_pair_ptr->right);
+  }
+
+  delete table_pair_ptr;
+
+  return;
+}
+
+
 /************************************************************************/
 /*                  */
 /*      FUNCTION free_vdw_pair_tree      */
@@ -4455,7 +4735,7 @@ void Parameters::done_reading_structure()
 void Parameters::send_Parameters(MOStream *msg)
 {
   Real *a1, *a2, *a3, *a4;        //  Temporary arrays for sending messages
-  int *i1, *i2;      //  Temporary int array
+  int *i1, *i2, *i3;      //  Temporary int array
   int i, j;      //  Loop counters
   Real **kvals;      //  Force constant values for dihedrals and impropers
   int **nvals;      //  Periodicity values for  dihedrals and impropers
@@ -4656,6 +4936,21 @@ void Parameters::send_Parameters(MOStream *msg)
       msg->put(nvals,&crossterm_array[i].c[0][0].d00);
     }
   }
+  //
+  //Send the energy table parameters
+  msg->put(numenerentries);
+
+  if (numenerentries) {
+	  /*
+    b1 = new Real[numenerentries];
+    if (b1 == NULL) 
+    {
+      NAMD_die("memory allocation failed in Parameters::send_Parameters");
+    }
+    */
+    
+    msg->put(numenerentries, table_ener);
+  }
 
   //  Send the vdw parameters
   msg->put(NumVdwParams);
@@ -4718,6 +5013,27 @@ void Parameters::send_Parameters(MOStream *msg)
     msg->put(NumVdwPairParams, a2)->put(NumVdwPairParams, a3);
     msg->put(NumVdwPairParams, a4);
   }
+  
+  //  Send the table pair parameters
+  printf("Pairs: %i\n", NumTablePairParams);
+  msg->put(NumTablePairParams);
+  
+  if (NumTablePairParams)
+  {
+    i1 = new int[NumTablePairParams];
+    i2 = new int[NumTablePairParams];    
+    i3 = new int[NumTablePairParams];
+
+    if ( (i3 == NULL) || (i1 == NULL) || (i2 == NULL) )
+    {
+      NAMD_die("memory allocation failed in Parameters::send_Parameters");
+    }
+    
+    table_pair_to_arrays(i1, i2, i3, 0, tab_pair_tree);
+    
+    msg->put(NumTablePairParams, i1)->put(NumTablePairParams, i2);
+    msg->put(NumTablePairParams, i3);
+  }
 
   // send the hydrogen bond parameters
   // hbondParams.create_message(msg);
@@ -4739,8 +5055,9 @@ void Parameters::receive_Parameters(MIStream *msg)
 {
   int i, j;      //  Loop counters
   Real *a1, *a2, *a3, *a4;  //  Temporary arrays to get data from message in
-  int *i1, *i2;      //  Temporary int array to get data from message in
+  int *i1, *i2, *i3;      //  Temporary int array to get data from message in
   IndexedVdwPair *new_node;  //  New node for vdw pair param tree
+  IndexedTablePair *new_tab_node;
   Real **kvals;      //  Force constant values for dihedrals and impropers
   int **nvals;      //  Periodicity values for dihedrals and impropers
   Real **deltavals;    //  Phase shift values for dihedrals and impropers
@@ -4951,6 +5268,21 @@ void Parameters::receive_Parameters(MIStream *msg)
       msg->get(nvals,&crossterm_array[i].c[0][0].d00);
     }
   }
+  
+  //Get the energy table
+  msg->get(numenerentries);
+  if (numenerentries > 0) {
+    //fprintf(stdout, "Getting tables\n");
+    //fprintf(infofile, "Trying to allocate table\n");
+    table_ener = new BigReal[numenerentries];
+    //fprintf(infofile, "Finished table allocation\n");
+    if (table_ener==NULL)
+    {
+      NAMD_die("memory allocation failed in Parameters::receive_Parameters");
+    }
+
+    msg->get(numenerentries, table_ener);
+  }
 
   //  Get the vdw parameters
   msg->get(NumVdwParams);
@@ -5044,6 +5376,48 @@ void Parameters::receive_Parameters(MIStream *msg)
     delete [] a3;
     delete [] a4;
   }
+ 
+  //  Get the table_pair_parameters
+  msg->get(NumTablePairParams);
+  
+  if (NumTablePairParams)
+  {
+    i1 = new int[NumTablePairParams];
+    i2 = new int[NumTablePairParams];
+    i3 = new int[NumTablePairParams];
+
+    if ( (i3 == NULL) || (i1 == NULL) || (i2 == NULL) )
+    {
+      NAMD_die("memory allocation failed in Parameters::send_Parameters");
+    }
+    
+    msg->get(NumTablePairParams, i1);
+    msg->get(NumTablePairParams, i2);
+    msg->get(NumTablePairParams, i3);
+    
+    for (i=0; i<NumTablePairParams; i++)
+    {
+      new_tab_node = (IndexedTablePair *) malloc(sizeof(IndexedTablePair));
+      
+      if (new_tab_node == NULL)
+      {
+         NAMD_die("memory allocation failed in Parameters::receive_Parameters");
+      }
+      
+//      printf("Adding new table pair with ind1 %i ind2 %i k %i\n", i1[i], i2[i],i3[i]);
+      new_tab_node->ind1 = i1[i];
+      new_tab_node->ind2 = i2[i];
+      new_tab_node->K = i3[i];
+      new_tab_node->left = NULL;
+      new_tab_node->right = NULL;
+      
+      tab_pair_tree = add_to_indexed_table_pairs(new_tab_node, tab_pair_tree);
+    }
+    
+    delete [] i1;
+    delete [] i2;
+    delete [] i3;
+  }
   
   // receive the hydrogen bond parameters
   // hbondParams.receive_message(msg);
@@ -5134,6 +5508,113 @@ void Parameters::convert_vdw_pairs()
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION convert_table_pairs      */
+/*                  */
+/*  This function converts the linked list of table_pairs indexed by  */
+/*  atom name into a binary search tree of parameters stored by table     */
+/*  type index.  This tree is what will be used for real when searching */
+/*  for parameters during the simulation.        */
+/*                  */
+/************************************************************************/
+
+void Parameters::convert_table_pairs()
+   
+{
+   Atom atom_struct;    //  Dummy structure for getting indexes
+   Index index1, index2;  //  Indexes for the two atoms
+   IndexedTablePair *new_node;  //  New node for tree
+   struct table_pair_params *ptr, *next;  //  Pointers for traversing list
+   
+   ptr = table_pairp;
+   
+   //  Go down then entire list and insert each node into the 
+   //  binary search tree
+   while (ptr != NULL)
+   {
+      new_node = (IndexedTablePair *) malloc(sizeof(IndexedTablePair));
+      
+      if (new_node == NULL)
+      {
+   NAMD_die("memory allocation failed in Parameters::convert_table_pairs");
+      }
+      
+      //  Get the vdw indexes for the two atoms.  This is kind of a hack
+      //  using the goofy Atom structure, but hey, it works
+      assign_vdw_index(ptr->atom1name, &atom_struct);
+      index1 = atom_struct.vdw_type;
+      assign_vdw_index(ptr->atom2name, &atom_struct);
+      index2 = atom_struct.vdw_type;
+
+//      printf("Adding new table pair with index1 %i, index2 %i, k %i\n", index1, index2, ptr->K);
+      
+      if (index1 > index2)
+      {
+   new_node->ind1 = index2;
+   new_node->ind2 = index1;
+      }
+      else
+      {
+   new_node->ind1 = index1;
+   new_node->ind2 = index2;
+      }
+           
+      new_node->K = ptr->K;
+
+      new_node->left = NULL;
+      new_node->right = NULL;
+      
+      //  Add it to the tree
+      tab_pair_tree = add_to_indexed_table_pairs(new_node, tab_pair_tree);
+      
+      //  Free the current node and move to the next
+      next = ptr->next;
+      
+      delete ptr;
+      
+      ptr = next;
+   }
+   
+   table_pairp = NULL;
+
+}
+/*      END OF FUNCTION convert_table_pairs    */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION add_to_indexed_table_pairs    */
+/*                  */
+/*   INPUTS:                */
+/*  new_node - new node to be added to the tree      */
+/*  tree - tree to add the node to          */
+/*                  */
+/*  This is a recursive function that adds a node to the    */
+/*   binary search tree of table_pair parameters        */
+/*                  */
+/************************************************************************/
+
+IndexedTablePair *Parameters::add_to_indexed_table_pairs(IndexedTablePair *new_node,
+                 IndexedTablePair *tree)
+   
+{
+   if (tree == NULL)
+      return(new_node);
+   
+   if ( (new_node->ind1 < tree->ind1) || 
+        ((new_node->ind1 == tree->ind1) && (new_node->ind2 < tree->ind2)) )
+   {
+      tree->left = add_to_indexed_table_pairs(new_node, tree->left);
+   }
+   else
+   {
+      tree->right = add_to_indexed_table_pairs(new_node, tree->right);
+   }
+   
+   return(tree);
+}
+/*      END OF FUNCTION add_to_indexed_table_pairs  */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION add_to_indexed_vdw_pairs    */
 /*                  */
 /*   INPUTS:                */
@@ -5214,6 +5695,44 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
 }
 /*      END OF FUNCTION vdw_pair_to_arrays    */
 
+/************************************************************************/
+/*                  */
+/*      FUNCTION table_pair_to_arrays      */
+/*                  */
+/*   INPUTS:                */
+/*  ind1_array - Array of index 1 values        */
+/*  ind2_array - Array of index 2 values        */
+/*  K - Array of K values            */
+/*                  */
+/*  This is a recursive function that places all the entries of     */
+/*   the tree passed in into arrays of values.  This is done so that    */
+/*   the parameters can be sent from the master node to the other       */
+/*   nodes.                */
+/*                  */
+/************************************************************************/
+
+int Parameters::table_pair_to_arrays(int *ind1_array, int *ind2_array,
+          int *K,
+          int arr_index, IndexedTablePair *tree)
+      
+{
+   if (tree == NULL)
+      return(arr_index);
+   
+   ind1_array[arr_index] = tree->ind1;
+   ind2_array[arr_index] = tree->ind2;
+   K[arr_index] = tree->K;
+
+   arr_index++;
+   
+   arr_index = table_pair_to_arrays(ind1_array, ind2_array, K,
+          arr_index, tree->left);
+   arr_index = table_pair_to_arrays(ind1_array, ind2_array, K,
+          arr_index, tree->right);
+   
+   return(arr_index);
+}
+/*      END OF FUNCTION table_pair_to_arrays    */
 
 /************************************************************************/
 /*                  */
@@ -5565,3 +6084,862 @@ void Parameters::read_parm(const GromacsTopFile *gf, Bool min)
   }
 }
 /*      END OF FUNCTION read_parm    */
+
+/************************************************************************/
+/*                                                                      */
+/*      FUNCTION read_ener_table                                          */
+/*                                                                      */
+/*   INPUTS:                                                            */
+/*  simParams -- Simulation Parameters   */
+/*                                                                      */
+/*   This function reads energy tables from a file and places them into                                                       */
+/*   memory.                                                                      */
+/************************************************************************/
+
+void Parameters::read_ener_table(SimParameters *simParams) {
+	char* table_file = simParams->tabulatedEnergiesFile;
+  char* interp_type = simParams->tableInterpType;
+	FILE* enertable;
+	enertable = fopen(table_file, "r");
+
+	if (enertable == NULL) {
+		NAMD_die("ERROR: Could not open energy table file!\n");
+	}
+
+	char tableline[121];
+  char* newtypename;
+  int numtypes;
+	int atom1;
+	int atom2;
+	int distbin;
+  int readcount;
+	Real dist;
+	Real energy;
+	Real force;
+	Real table_spacing;
+	Real maxdist;
+
+/* First find the header line and set the variables we need */
+	iout << "Beginning table read\n" << endi;
+	while(fgets(tableline,120,enertable)) {
+		if (strncmp(tableline,"#",1)==0) {
+			continue;
+		}
+    readcount = sscanf(tableline, "%i %f %f", &numtypes, &table_spacing, &maxdist);
+    if (readcount != 3) {
+      NAMD_die("ERROR: Couldn't parse table header line\n");
+    }
+    break;
+  }
+
+  if (maxdist < simParams->cutoff) {
+    NAMD_die("Tabulated energies must at least extend to the cutoff distance\n");
+  }
+
+	if (maxdist > simParams->cutoff) {
+		iout << "Info: Reducing max table size to match nonbond cutoff\n";
+		maxdist = ceil(simParams->cutoff);
+	}
+
+/* Now allocate memory for the table; we know what we should be getting */
+	numenerentries = 2 * numtypes * int (nearbyint(maxdist/table_spacing) + 1);
+	//Set up a full energy lookup table from a file
+	//Allocate the table; layout is atom1 x atom2 x distance energy force
+	fprintf(stdout, "Table has %i entries\n",numenerentries);
+	//iout << "Allocating original energy table\n" << endi;
+	if ( table_ener ) delete [] table_ener;
+	table_ener = new BigReal[numenerentries];
+  if ( table_types ) delete [] table_types;
+  table_types = new char*[numtypes];
+
+/* Finally, start reading the table */
+  int numtypesread = 0; //Number of types read so far
+
+	while(fgets(tableline,120,enertable)) {
+		if (strncmp(tableline,"#",1)==0) {
+			continue;
+		}
+    if (strncmp(tableline,"TYPE",4)==0) {
+      // Read a new type
+      newtypename = new char[5];
+      int readcount = sscanf(tableline, "%*s %s", newtypename);
+      if (readcount != 1) {
+        NAMD_die("Couldn't read interaction type from TYPE line\n");
+      }
+//      printf("Setting table_types[%i] to %s\n", numtypesread, newtypename);
+      table_types[numtypesread] = newtypename;
+
+      if (numtypesread == numtypes) {
+        NAMD_die("Error: Number of types in table doesn't match table header\n");
+      }
+
+      // Read the current energy type with the proper interpolation
+      if (!strncasecmp(interp_type, "linear", 6)) {
+        if (read_energy_type(enertable, numtypesread, table_ener, table_spacing, maxdist) != 0) {
+          char err_msg[512];
+          sprintf(err_msg, "Failed to read table energy (linear) type %s\n", newtypename);
+          NAMD_die(err_msg);
+        }
+      } else if (!strncasecmp(interp_type, "cubic", 5)) {
+        if (read_energy_type_bothcubspline(enertable, numtypesread, table_ener, table_spacing, maxdist) != 0) {
+          char err_msg[512];
+          sprintf(err_msg, "Failed to read table energy (cubic) type %s\n", newtypename);
+          NAMD_die(err_msg);
+        }
+      } else {
+        NAMD_die("Table interpolation type must be linear or cubic\n");
+      }
+
+      numtypesread++;
+      continue;
+    }
+    //char err_msg[512];
+    //sprintf(err_msg, "Unrecognized line in energy table file: %s\n", tableline);
+    //NAMD_die(err_msg);
+  }
+
+  // See if we got what we expected
+  if (numtypesread != numtypes) {
+    char err_msg[512];
+    sprintf(err_msg, "ERROR: Expected %i tabulated energy types but got %i\n", numtypes, numtypesread);
+    NAMD_die(err_msg);
+  }
+
+  // Move the necessary information into simParams
+  simParams->tableNumTypes = numtypes;
+  simParams->tableSpacing = table_spacing;
+  simParams->tableMaxDist = maxdist;
+  tablenumtypes = numtypes;
+
+  /*
+xxxxxx
+	int numtypes = simParams->tableNumTypes;
+
+	//This parameter controls the table spacing
+	BigReal table_spacing = 0.01;
+	BigReal maxdist = 20.0;
+	if (maxdist > simParams->cutoff) {
+		iout << "Info: Reducing max table size to match nonbond cutoff\n";
+		maxdist = ceil(simParams->cutoff);
+	}
+
+	numenerentries = (numtypes + 1) * numtypes * int (ceil(maxdist/table_spacing));
+//	fprintf(stdout, "Table arithmetic: maxdist %f, table_spacing %f, numtypes %i, numentries %i\n", maxdist, table_spacing, numtypes, numenerentries);
+	columnsize = 2 * nearbyint(maxdist/table_spacing);
+	rowsize = numtypes * columnsize;
+	//Set up a full energy lookup table from a file
+	//Allocate the table; layout is atom1 x atom2 x distance energy force
+	fprintf(stdout, "Table has %i entries\n",numenerentries);
+	//iout << "Allocating original energy table\n" << endi;
+	if ( table_ener ) delete [] table_ener;
+	table_ener = new Real[numenerentries];
+	//
+	//Set sentinel values for uninitialized table energies
+	for (int i=0 ; i<numenerentries ; i++) {
+		table_ener[i] = 1337.0;
+	}
+	Real compval = 1337.0;
+
+	//    iout << "Entering table reading\n" << endi;
+	//iout << "Finished allocating table\n" << endi;
+
+	//Counter to make sure we read the right number of energy entries
+	int numentries = 0;
+
+	//Now, start reading from the file
+	char* table_file = simParams->tabulatedEnergiesFile;
+	FILE* enertable;
+	enertable = fopen(table_file, "r");
+
+	if (enertable == NULL) {
+		NAMD_die("ERROR: Could not open energy table file!\n");
+	}
+
+	char tableline[121];
+	int atom1;
+	int atom2;
+	int distbin;
+	Real dist;
+	Real energy;
+	Real force;
+
+	iout << "Beginning table read\n" << endi;
+	//Read the table entries
+	while(fgets(tableline,120,enertable)) {
+//		IOut << "Processing line " << tableline << "\n" << endi;
+		if (strncmp(tableline,"#",1)==0) {
+			continue;
+		}
+
+
+		sscanf(tableline, "%i %i %f %f %f\n", &atom1, &atom2, &dist, &energy, &force);
+		distbin = int(nearbyint(dist/table_spacing));
+//		fprintf(stdout, "Working on atoms %i and %i at distance %f\n",atom1,atom2,dist);
+		if ((atom2 > atom1) || (distbin > int(nearbyint(maxdist/table_spacing)))) {
+//			fprintf(stdout,"Rejected\n");
+//			fprintf(stdout, "Error: Throwing out energy line beyond bounds\n");
+	//		fprintf(stdout, "Bad line: Atom 1: %i Atom 2: %i Distance Bin: %i Max Distance Bin: %i \n", atom1, atom2, distbin, int(nearbyint(maxdist/table_spacing)));
+		} else {
+			//The magic formula for the number of columns from previous rows
+			//in the triangular matrix is (2ni+i-i**2)/2
+			//Here n is the number of types, and i is atom2
+//			fprintf(stdout, "Input: atom1 %f atom2 %f columnsize %f \n", float(atom1), float(atom2), float(columnsize));
+//			fprintf(stdout, "Testing arithmetic: Part1: %i Part2: %i Part3: %i Total: %i\n", columnsize*((2*numtypes*atom2 + atom2 - atom2*atom2)/2), columnsize*(atom1-atom2), 2*distbin, columnsize*((2*numtypes*atom2 + atom2 - atom2*atom2)/2) + columnsize*(atom1-atom2) + 2*distbin - 2);
+			int eneraddress = columnsize*((2*numtypes*atom2 + atom2 - atom2*atom2)/2) + columnsize*(atom1-atom2) + 2*distbin - 2;
+			int forceaddress = eneraddress + 1;
+//				fprintf(stdout, "Tableloc: %i Atom 1: %i Atom 2: %i Distance Bin: %i Energy: %f Force: %f\n", eneraddress, atom1, atom2, distbin, table_ener[eneraddress], table_ener[forceaddress]);
+		fflush(stdout);
+//			fprintf(stdout, "Checking for dupes: Looking at: %f %f \n", table_ener[eneraddress], table_ener[forceaddress]);
+			if ((table_ener[eneraddress] == compval && table_ener[forceaddress] == compval)) {
+				numentries++;
+				table_ener[eneraddress] = energy;
+				table_ener[forceaddress] = force;
+//				fprintf(stdout, "Tableloc: %i Atom 1: %i Atom 2: %i Distance Bin: %i Energy: %f Force: %f\n", eneraddress, atom1, atom2, distbin, table_ener[eneraddress], table_ener[forceaddress]);
+				//table_ener[rowsize*atom2 + columnsize*atom1 + 2*distbin] = energy;
+				//table_ener[rowsize*atom2 + columnsize*atom1 + 2*distbin + 1] = force;
+//				fflush(stdout);
+			} else {
+//				fprintf(stdout,"Rejecting duplicate entry\n");
+			}
+		}
+		//      iout << "Done with line\n"<< endi;
+	}
+
+	//    int should = numtypes * numtypes * (maxdist/table_spacing);
+	//    cout << "Entries: " << numentries << " should be " << should << "\n" << endi;
+//	int exptypes = ceil((numtypes+1) * numtypes * (maxdist/table_spacing));
+//fprintf(stdout,"numtypes: %i maxdist: %f table_spacing: %f exptypes: %i\n",numtypes,maxdist,table_spacing);
+	if (numentries != int(numenerentries/2)) {
+		fprintf(stdout,"ERROR: Expected %i entries but got %i\n",numenerentries/2, numentries);
+		NAMD_die("Number of energy table entries did not match expected value\n");
+	}
+	//      iout << "Done with table\n"<< endi;
+	fprintf(stdout, "Numenerentries: %i\n",numenerentries/2);
+  */
+} /* END of function read_ener_table */ 
+
+/**************************************************************************
+ * FUNCTION read_energy_type_bothcubspline
+ *
+ * Read a single type block from an energy table file, using cubic spline interpolation
+ * Unlike _cubspline, the forces are interpolated separately
+ *
+ * Inputs:
+ *  enertable - File stream positioned at the start of the type block
+ *  typeindex  - integer index of current type
+ *  table_ener - pointer to array to be filled with table entries
+ *  table_spacing - Spacing between table points (A)
+ *  maxdist - Longest distance needed in table
+ *
+ * Return values:
+ *  0 on normal exit
+ *  1 if not enough entries were present to fill out the table
+ *
+ *  Note: enertable should be left positioned immediately BEFORE the next
+ *  TYPE block starts
+ *  **********************************************************************/
+
+int Parameters::read_energy_type_bothcubspline(FILE* enertable, const int typeindex, BigReal* table_ener, const float table_spacing, const float maxdist) {
+
+  char tableline[120];
+  int i,j;
+
+  /* Last values read from table */
+  BigReal readdist;
+  BigReal readener;
+  BigReal readforce;
+  BigReal spacing;
+//  BigReal readforce;
+  BigReal lastdist;
+//  BigReal lastener;
+//  BigReal lastforce;
+//  readdist = -1.0;
+//  readener = 0.0;
+//  readforce = 0.0;
+
+  /* Create arrays for holding the input values */
+  std::vector<BigReal>  dists;
+  std::vector<BigReal> enervalues;
+  std::vector<BigReal> forcevalues;
+  int numentries = 0;
+
+
+  /* Keep track of where in the table we are */
+  BigReal currdist;
+  int distbin;
+  currdist = 0.0;
+  lastdist = -1.0;
+  distbin = 0;
+
+  // Read all of the values first -- we'll interpolate later
+	while(fgets(tableline,120,enertable) && distbin <= (int) (nearbyint(maxdist / table_spacing) + 1)) {
+		if (strncmp(tableline,"#",1)==0) {
+			continue;
+		}
+    if (strncmp(tableline,"TYPE",4)==0) {
+      fseek(enertable, -1 * strlen(tableline), SEEK_CUR); 
+      break;
+    }
+
+    // Read an energy line from the table
+    int readcount = sscanf(tableline, "%lf %lf %lf", &readdist, &readener, &readforce);
+
+    //printf("Read an energy line: %g %g %g\n", readdist, readener, readforce);
+    if (readcount != 3) {
+      char err_msg[512];
+      sprintf(err_msg, "ERROR: Failed to parse table line %s!\n", tableline);
+      NAMD_die(err_msg);
+    }
+
+    //Sanity check the current entry
+    if (readdist < lastdist) {
+      NAMD_die("ERROR: Encountered badly ordered entries in energy table!\n");
+    }
+
+    lastdist = readdist;
+    dists.push_back(readdist);
+    enervalues.push_back(readener);
+    forcevalues.push_back(readforce);
+    numentries++;
+  }
+
+  // Check the spacing and make sure it is uniform
+  if (dists[0] != 0.0) {
+    NAMD_die("ERROR: First data point for energy table must be at r=0\n");
+  }
+  spacing = dists[1] - dists[0];
+  for (i=2; i<(numentries - 1); i++) {
+    BigReal myspacing;
+    myspacing = dists[i] - dists[i-1];
+    if (fabs(myspacing - spacing) > 0.00001) {
+      printf("Bad spacing in table: %f should be %f (between distances %f and %f)\n", myspacing, spacing, dists[i-1], dists[i]);
+      NAMD_die("ERROR: Nonuniform table encountered on cubic interpolation. Use a uniformly spaced table or switch to linear interpolation.\n");
+    }
+  }
+
+// Perform cubic spline interpolation to get the energies and forces
+
+  /* allocate spline coefficient matrix */
+  // xe and xf / be and bf for energies and forces, respectively
+  double* m = new double[numentries*numentries];
+  double* xe = new double[numentries];
+  double* xf = new double[numentries];
+  double* be = new double[numentries];
+  double* bf = new double[numentries];
+
+  be[0] = 3 * (enervalues[1] - enervalues[0]);
+  for (i=1; i < (numentries - 1); i++) {
+//    printf("Control point %i at %f\n", i, enervalues[i]);
+    be[i] = 3 * (enervalues[i+1] - enervalues[i-1]);
+//    printf("be is %f\n", be[i]);
+  }
+  be[numentries - 1] = 3 * (enervalues[numentries - 1] - enervalues[numentries - 2]);
+
+  bf[0] = 3 * (forcevalues[1] - forcevalues[0]);
+  for (i=1; i < (numentries - 1); i++) {
+//    printf("Control point %i at %f\n", i, forcevalues[i]);
+    bf[i] = 3 * (forcevalues[i+1] - forcevalues[i-1]);
+//    printf("bf is %f\n", bf[i]);
+  }
+  bf[numentries - 1] = 3 * (forcevalues[numentries - 1] - forcevalues[numentries - 2]);
+
+  memset(m,0,numentries*numentries*sizeof(double));
+
+  /* initialize spline coefficient matrix */
+  m[0] = 2;
+  for (i = 1;  i < numentries;  i++) {
+    m[INDEX(numentries,i-1,i)] = 1;
+    m[INDEX(numentries,i,i-1)] = 1;
+    m[INDEX(numentries,i,i)] = 4;
+  }
+  m[INDEX(numentries,numentries-1,numentries-1)] = 2;
+
+  /* Now we need to solve the equation M X = b for X */
+  // Do this simultaneously for energy and force -- ONLY because we use the same matrix
+
+  //Put m in upper triangular form and apply corresponding operations to b
+  for (i=0; i<numentries; i++) {
+    // zero the ith column in all rows below i
+    const BigReal baseval = m[INDEX(numentries,i,i)];
+    for (j=i+1; j<numentries; j++) {
+      const BigReal myval = m[INDEX(numentries,j,i)];
+      const BigReal factor = myval / baseval;
+
+      for (int k=i; k<numentries; k++) {
+        const BigReal subval = m[INDEX(numentries,i,k)];
+        m[INDEX(numentries,j,k)] -= (factor * subval);
+      }
+
+      be[j] -= (factor * be[i]);
+      bf[j] -= (factor * bf[i]);
+
+    }
+  }
+
+  //Now work our way diagonally up from the bottom right to assign values to X
+  for (i=numentries-1; i>=0; i--) {
+
+    //Subtract the effects of previous columns
+    for (j=i+1; j<numentries; j++) {
+      be[i] -= ( m[INDEX(numentries,i,j)] * xe[j] );
+      bf[i] -= ( m[INDEX(numentries,i,j)] * xf[j] );
+    }
+
+    xe[i] = be[i] / m[INDEX(numentries,i,i)];
+    xf[i] = bf[i] / m[INDEX(numentries,i,i)];
+
+  }
+
+  // We now have the coefficient information we need to make the table
+  // Now interpolate on each interval we want
+
+  distbin = 0;
+  int entriesperseg = (int) ceil(spacing / table_spacing);
+  int table_prefix = 2 * typeindex * (int) (nearbyint(maxdist / table_spacing) + 1);
+
+  for (i=0; i<numentries-1; i++) {
+    BigReal Ae,Be,Ce,De;
+    BigReal Af,Bf,Cf,Df;
+    currdist = dists[i];
+
+//    printf("Interpolating on interval %i\n", i);
+
+    // Set up the coefficients for this section
+    Ae = enervalues[i];
+    Be = xe[i];
+    Ce = 3 * (enervalues[i+1] - enervalues[i]) - (2 * xe[i]) - xe[i+1];
+    De = 2 * (enervalues[i] - enervalues[i+1]) + xe[i] + xe[i+1];
+
+    Af = forcevalues[i];
+    Bf = xf[i];
+    Cf = 3 * (forcevalues[i+1] - forcevalues[i]) - (2 * xf[i]) - xf[i+1];
+    Df = 2 * (forcevalues[i] - forcevalues[i+1]) + xf[i] + xf[i+1];
+
+    // Go over the region of interest and fill in the table
+    for (j=0; j<entriesperseg; j++) {
+      const BigReal mydist = currdist + (j * table_spacing);
+      const BigReal mydistfrac = (float) j / (entriesperseg - 1);
+      distbin = (int) nearbyint(mydist / table_spacing);
+      if (distbin >= (int) nearbyint(maxdist / table_spacing)) break;
+      BigReal energy;
+      BigReal force;
+
+      energy = Ae + (Be * mydistfrac) + (Ce * mydistfrac * mydistfrac) + (De * mydistfrac * mydistfrac * mydistfrac);
+      force = Af + (Bf * mydistfrac) + (Cf * mydistfrac * mydistfrac) + (Df * mydistfrac * mydistfrac * mydistfrac);
+
+//      printf("Adding energy/force entry %f / %f in bins %i / %i for distance %f (%f)\n", energy, force, (table_prefix + 2 * distbin), (table_prefix + 2 * distbin + 1), mydist, mydistfrac);
+      table_ener[table_prefix + 2 * distbin] = energy;
+      table_ener[table_prefix + 2 * distbin + 1] = force;
+      distbin++;
+    }
+    if (currdist >= maxdist) break;
+  }
+
+  //The procedure above leaves out the last entry -- add it explicitly
+  distbin = (int) nearbyint(maxdist / table_spacing);
+//  printf("Adding energy/force entry %f / %f in bins %i / %i\n", enervalues[numentries - 1], 0.0, (table_prefix + 2 * distbin), (table_prefix + 2 * distbin + 1));
+  table_ener[table_prefix + 2 * distbin] = enervalues[numentries - 1];
+  table_ener[table_prefix + 2 * distbin + 1] = 0.0;
+  distbin++;
+
+
+  // Clean up and make sure everything worked ok
+  delete m;
+  delete xe;
+  delete xf;
+  delete be;
+  delete bf;
+  distbin--;
+  printf("Testing: %i vs %i (from %f / %f)\n", distbin, (int) (nearbyint(maxdist / table_spacing)), maxdist, table_spacing);
+  if (distbin != (int) (nearbyint(maxdist / table_spacing))) return 1;
+  return 0;
+} /* end read_energy_type_bothcubspline */
+
+/**************************************************************************
+ * FUNCTION read_energy_type_cubspline
+ *
+ * Read a single type block from an energy table file, using cubic spline interpolation
+ *
+ * Inputs:
+ *  enertable - File stream positioned at the start of the type block
+ *  typeindex  - integer index of current type
+ *  table_ener - pointer to array to be filled with table entries
+ *  table_spacing - Spacing between table points (A)
+ *  maxdist - Longest distance needed in table
+ *
+ * Return values:
+ *  0 on normal exit
+ *  1 if not enough entries were present to fill out the table
+ *
+ *  Note: enertable should be left positioned immediately BEFORE the next
+ *  TYPE block starts
+ *  **********************************************************************/
+
+int Parameters::read_energy_type_cubspline(FILE* enertable, const int typeindex, BigReal* table_ener, const float table_spacing, const float maxdist) {
+
+  char tableline[120];
+  int i,j;
+
+  /* Last values read from table */
+  BigReal readdist;
+  BigReal readener;
+  BigReal spacing;
+//  BigReal readforce;
+  BigReal lastdist;
+//  BigReal lastener;
+//  BigReal lastforce;
+//  readdist = -1.0;
+//  readener = 0.0;
+//  readforce = 0.0;
+
+  /* Create arrays for holding the input values */
+  std::vector<BigReal>  dists;
+  std::vector<BigReal> enervalues;
+  int numentries = 0;
+
+
+  /* Keep track of where in the table we are */
+  BigReal currdist;
+  int distbin;
+  currdist = 0.0;
+  lastdist = -1.0;
+  distbin = 0;
+
+  // Read all of the values first -- we'll interpolate later
+	while(fgets(tableline,120,enertable) && distbin <= (int) (nearbyint(maxdist / table_spacing) + 1)) {
+		if (strncmp(tableline,"#",1)==0) {
+			continue;
+		}
+    if (strncmp(tableline,"TYPE",4)==0) {
+      fseek(enertable, -1 * strlen(tableline), SEEK_CUR); 
+      break;
+    }
+
+    // Read an energy line from the table
+    int readcount = sscanf(tableline, "%lf %lf", &readdist, &readener);
+
+   // printf("Read an energy line: %f %f %f\n", readdist, readener, readforce);
+    if (readcount != 2) {
+      char err_msg[512];
+      sprintf(err_msg, "ERROR: Failed to parse table line %s!\n", tableline);
+      NAMD_die(err_msg);
+    }
+
+    //Sanity check the current entry
+    if (readdist < lastdist) {
+      NAMD_die("ERROR: Encountered badly ordered entries in energy table!\n");
+    }
+
+    lastdist = readdist;
+    dists.push_back(readdist);
+    enervalues.push_back(readener);
+    numentries++;
+  }
+
+  // Check the spacing and make sure it is uniform
+  if (dists[0] != 0.0) {
+    NAMD_die("ERROR: First data point for energy table must be at r=0\n");
+  }
+  spacing = dists[1] - dists[0];
+  for (i=2; i<(numentries - 1); i++) {
+    BigReal myspacing;
+    myspacing = dists[i] - dists[i-1];
+    if (fabs(myspacing - spacing) > 0.00001) {
+      printf("Bad spacing in table: %f should be %f (between distances %f and %f)\n", myspacing, spacing, dists[i-1], dists[i]);
+      NAMD_die("ERROR: Nonuniform table encountered on cubic interpolation. Use a uniformly spaced table or switch to linear interpolation.\n");
+    }
+  }
+
+// Perform cubic spline interpolation to get the energies and forces
+
+  /* allocate spline coefficient matrix */
+  double* m = new double[numentries*numentries];
+  double* x = new double[numentries];
+  double* b = new double[numentries];
+
+  b[0] = 3 * (enervalues[1] - enervalues[0]);
+  for (i=1; i < (numentries - 1); i++) {
+    printf("Control point %i at %f\n", i, enervalues[i]);
+    b[i] = 3 * (enervalues[i+1] - enervalues[i-1]);
+    printf("b is %f\n", b[i]);
+  }
+  b[numentries - 1] = 3 * (enervalues[numentries - 1] - enervalues[numentries - 2]);
+
+  memset(m,0,numentries*numentries*sizeof(double));
+
+  /* initialize spline coefficient matrix */
+  m[0] = 2;
+  for (i = 1;  i < numentries;  i++) {
+    m[INDEX(numentries,i-1,i)] = 1;
+    m[INDEX(numentries,i,i-1)] = 1;
+    m[INDEX(numentries,i,i)] = 4;
+  }
+  m[INDEX(numentries,numentries-1,numentries-1)] = 2;
+
+  /* Now we need to solve the equation M X = b for X */
+
+  printf("Solving the matrix equation: \n");
+
+  for (i=0; i<numentries; i++) {
+    printf(" ( ");
+    for (j=0; j<numentries; j++) {
+      printf(" %6.3f,", m[INDEX(numentries, i, j)]);
+    }
+    printf(" )  ( D%-3i )  =  ( %6.3f )\n", i, b[i]);
+  }
+
+  //Put m in upper triangular form and apply corresponding operations to b
+  for (i=0; i<numentries; i++) {
+    // zero the ith column in all rows below i
+    const BigReal baseval = m[INDEX(numentries,i,i)];
+    for (j=i+1; j<numentries; j++) {
+      const BigReal myval = m[INDEX(numentries,j,i)];
+      const BigReal factor = myval / baseval;
+
+      for (int k=i; k<numentries; k++) {
+        const BigReal subval = m[INDEX(numentries,i,k)];
+        m[INDEX(numentries,j,k)] -= (factor * subval);
+      }
+
+      b[j] -= (factor * b[i]);
+
+    }
+  }
+
+  printf(" In upper diagonal form, equation is:\n");
+  for (i=0; i<numentries; i++) {
+    printf(" ( ");
+    for (j=0; j<numentries; j++) {
+      printf(" %6.3f,", m[INDEX(numentries, i, j)]);
+    }
+    printf(" )  ( D%-3i )  =  ( %6.3f )\n", i, b[i]);
+  }
+
+  //Now work our way diagonally up from the bottom right to assign values to X
+  for (i=numentries-1; i>=0; i--) {
+
+    //Subtract the effects of previous columns
+    for (j=i+1; j<numentries; j++) {
+      b[i] -= ( m[INDEX(numentries,i,j)] * x[j] );
+    }
+
+    x[i] = b[i] / m[INDEX(numentries,i,i)];
+
+  }
+
+  printf(" Solution vector is:\n\t(");
+  for (i=0; i<numentries; i++) {
+    printf(" %6.3f ", x[i]);
+  }
+  printf(" ) \n");
+
+  // We now have the coefficient information we need to make the table
+  // Now interpolate on each interval we want
+
+  distbin = 0;
+  int entriesperseg = (int) ceil(spacing / table_spacing);
+  int table_prefix = 2 * typeindex * (int) (nearbyint(maxdist / table_spacing) + 1);
+
+  for (i=0; i<numentries-1; i++) {
+    BigReal A,B,C,D;
+    currdist = dists[i];
+
+    printf("Interpolating on interval %i\n", i);
+
+    // Set up the coefficients for this section
+    A = enervalues[i];
+    B = x[i];
+    C = 3 * (enervalues[i+1] - enervalues[i]) - (2 * x[i]) - x[i+1];
+    D = 2 * (enervalues[i] - enervalues[i+1]) + x[i] + x[i+1];
+
+    printf("Coefficients for this interval: %f %f %f %f\n", A, B, C, D);
+
+    // Go over the region of interest and fill in the table
+    for (j=0; j<entriesperseg; j++) {
+      const BigReal mydist = currdist + (j * table_spacing);
+      const BigReal mydistfrac = (float) j / (entriesperseg - 1);
+      distbin = (int) nearbyint(mydist / table_spacing);
+      if (distbin >= (int) nearbyint(maxdist / table_spacing)) break;
+      BigReal energy;
+      BigReal force;
+
+      energy = A + (B * mydistfrac) + (C * mydistfrac * mydistfrac) + (D * mydistfrac * mydistfrac * mydistfrac);
+      force = B + (2 * C * mydistfrac) + (3 * D * mydistfrac * mydistfrac);
+      // Multiply force by 1 / (interval length)
+      force *= (1.0 / spacing);
+
+      printf("Adding energy/force entry %f / %f in bins %i / %i for distance %f (%f)\n", energy, force, (table_prefix + 2 * distbin), (table_prefix + 2 * distbin + 1), mydist, mydistfrac);
+      table_ener[table_prefix + 2 * distbin] = energy;
+      table_ener[table_prefix + 2 * distbin + 1] = force;
+      distbin++;
+    }
+    if (currdist >= maxdist) break;
+  }
+
+  //The procedure above leaves out the last entry -- add it explicitly
+  distbin = (int) nearbyint(maxdist / table_spacing);
+  printf("Adding energy/force entry %f / %f in bins %i / %i\n", enervalues[numentries - 1], 0.0, (table_prefix + 2 * distbin), (table_prefix + 2 * distbin + 1));
+  table_ener[table_prefix + 2 * distbin] = enervalues[numentries - 1];
+  table_ener[table_prefix + 2 * distbin + 1] = 0.0;
+  distbin++;
+
+
+  // Clean up and make sure everything worked ok
+  delete m;
+  delete x;
+  delete b;
+  distbin--;
+  printf("Testing: %i vs %i (from %f / %f)\n", distbin, (int) (nearbyint(maxdist / table_spacing)), maxdist, table_spacing);
+  if (distbin != (int) (nearbyint(maxdist / table_spacing))) return 1;
+  return 0;
+} /* end read_energy_type_cubspline */
+
+/**************************************************************************
+ * FUNCTION read_energy_type
+ *
+ * Read a single type block from an energy table file
+ *
+ * Inputs:
+ *  enertable - File stream positioned at the start of the type block
+ *  typeindex  - integer index of current type
+ *  table_ener - pointer to array to be filled with table entries
+ *  table_spacing - Spacing between table points (A)
+ *  maxdist - Longest distance needed in table
+ *
+ * Return values:
+ *  0 on normal exit
+ *  1 if not enough entries were present to fill out the table
+ *
+ *  Note: enertable should be left positioned immediately BEFORE the next
+ *  TYPE block starts
+ *  **********************************************************************/
+
+int Parameters::read_energy_type(FILE* enertable, const int typeindex, BigReal* table_ener, const float table_spacing, const float maxdist) {
+
+  char tableline[120];
+
+  /* Last values read from table */
+  BigReal readdist;
+  BigReal readener;
+  BigReal readforce;
+  BigReal lastdist;
+  BigReal lastener;
+  BigReal lastforce;
+  readdist = -1.0;
+  readener = 0.0;
+  readforce = 0.0;
+
+  /* Keep track of where in the table we are */
+  float currdist;
+  int distbin;
+  currdist = -1.0;
+  distbin = -1;
+
+	while(fgets(tableline,120,enertable) && distbin <= (int) (nearbyint(maxdist / table_spacing) + 1)) {
+    printf("At distance %f + %f vs. %f\n", currdist, table_spacing, maxdist);
+		if (strncmp(tableline,"#",1)==0) {
+			continue;
+		}
+    if (strncmp(tableline,"TYPE",4)==0) {
+      break;
+    }
+
+    // Read an energy line from the table
+    lastdist = readdist;
+    lastener = readener;
+    lastforce = readforce;
+    int readcount = sscanf(tableline, "%lf %lf %lf", &readdist, &readener, &readforce);
+    if (distbin == -1) {
+      if (readdist != 0.0) {
+        NAMD_die("ERROR: Energy/force tables must start at d=0.0\n");
+      } else {
+        distbin = 0;
+        continue;
+      }
+    }
+   // printf("Read an energy line: %f %f %f\n", readdist, readener, readforce);
+    if (readcount != 3) {
+      char err_msg[512];
+      sprintf(err_msg, "ERROR: Failed to parse table line %s!\n", tableline);
+      NAMD_die(err_msg);
+    }
+
+    //Sanity check the current entry
+    if (readdist < lastdist) {
+      NAMD_die("ERROR: Encountered badly ordered entries in energy table!\n");
+    }
+
+    currdist = lastdist;
+
+    while (currdist <= readdist && distbin <= (int) (nearbyint(maxdist / table_spacing))) {
+      distbin = (int) (nearbyint(currdist / table_spacing));
+      int table_loc = 2 * (distbin + (typeindex * (1 + (int) nearbyint(maxdist / table_spacing))));
+      printf("Doing interpolation for energy between %f %f and %f %f: Dist %f\n", readener, readdist, lastener, lastdist, currdist);
+      table_ener[table_loc] = interp_lin(readener, lastener, readdist, lastdist, currdist);
+      table_ener[table_loc + 1] = interp_lin(readforce, lastforce, readdist, lastdist, currdist);
+      printf("Adding energy/force entry: %f %f in distbin %i (distance %f) to address %i/%i\n", table_ener[table_loc], table_ener[table_loc + 1], distbin, currdist, table_loc, table_loc + 1);
+      currdist += table_spacing;
+      distbin++;
+    }
+  }
+
+  // Go back one line, since we should now be into the next TYPE block
+  fseek(enertable, -1 * strlen(tableline), SEEK_CUR); 
+
+  // Clean up and make sure everything worked ok
+  distbin--;
+  printf("Testing: %i vs %i (from %f / %f)\n", distbin, (int) (nearbyint(maxdist / table_spacing)), maxdist, table_spacing);
+  if (distbin != (int) (nearbyint(maxdist / table_spacing))) return 1;
+  return 0;
+}
+
+/*********************************************************************
+ * FUNCTION interp_lin
+ *
+ * Perform a linear interpolation to fill in energy/force tables
+ * This should be replaced in the near future with a better interpolation
+ *
+ * Input:
+ *  val1,val2 --  Y Values at the endpoints of the segments we interpolate on
+ *  end1,end2 --  X coordinates of the corresponding endpoints
+ *  currdist -- Distance we want the value at
+ *  ** It is assumed that end2 > end1 **
+ *
+ * Output: Returns a floating point value at the requested point
+ * ********************************************************************/
+
+BigReal Parameters::interp_lin(BigReal val1, BigReal val2, BigReal end1, BigReal end2, BigReal currdist) {
+
+  BigReal m; //slope of line
+  BigReal val; // Value at desired point
+  
+  m = (val2 - val1) / (end2 - end1);
+
+  val = ((currdist-end1) * m + val1);
+  return val;
+}
+
+/*************************************************************************
+ * FUNCTION get_int_table_type
+ *
+ * Find and return the integer index of a table type given its name
+ *
+ * Input:
+ *  tabletype -- char array containing the name of the type to be looked up
+ *
+ * Output:
+ * Returns an integer index < the total number of types, or -1 if the type could
+ * not be found
+ * ************************************************************************/
+
+int Parameters::get_int_table_type(char* tabletype) {
+  for (int i=0; i<tablenumtypes; i++) {
+    if (!strncmp(tabletype, table_types[i], 5)) {
+      return i;
+    }
+  }
+
+  return -1;
+}
+
+

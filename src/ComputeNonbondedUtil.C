@@ -21,6 +21,7 @@ extern "C" {
 #include "Molecule.h"
 #include "LJTable.h"
 #include "ReductionMgr.h"
+#include "Parameters.h"
 #include <stdio.h>
 
 #ifdef NAMD_CUDA
@@ -37,7 +38,10 @@ const Molecule* ComputeNonbondedUtil::mol;
 BigReal		ComputeNonbondedUtil::r2_delta;
 BigReal		ComputeNonbondedUtil::r2_delta_1;
 int		ComputeNonbondedUtil::r2_delta_exp;
+int		ComputeNonbondedUtil::rowsize;
+int		ComputeNonbondedUtil::columnsize;
 BigReal*	ComputeNonbondedUtil::table_alloc = 0;
+BigReal*	        ComputeNonbondedUtil::table_ener = 0;
 BigReal*	ComputeNonbondedUtil::table_short;
 BigReal*	ComputeNonbondedUtil::table_noshort;
 BigReal*	ComputeNonbondedUtil::fast_table;
@@ -199,6 +203,11 @@ void ComputeNonbondedUtil::select(void)
   ComputeNonbondedUtil::calcSlowSelfEnergy = calc_error;
 
   SimParameters * simParams = Node::Object()->simParameters;
+  Parameters * params = Node::Object()->parameters;
+
+  table_ener = params->table_ener;
+  rowsize = params->rowsize;
+  columnsize = params->columnsize;
 
   commOnly = simParams->commOnly;
   fixedAtomsOn = ( simParams->fixedAtomsOn && ! simParams->fixedAtomsForces );
@@ -212,6 +221,7 @@ void ComputeNonbondedUtil::select(void)
   alchLambda = alchLambda2 = 0;
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
+  Bool tabulatedEnergies = simParams->tabulatedEnergies;
   alchVdwShiftCoeff = simParams->alchVdwShiftCoeff;
   alchVdwLambdaEnd = simParams->alchVdwLambdaEnd;
   alchElecLambdaStart = simParams->alchElecLambdaStart;
@@ -322,6 +332,23 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_int;
     ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_int;
     ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_int;
+  } else if ( tabulatedEnergies ) {
+    ComputeNonbondedUtil::calcPair = calc_pair_tabener;
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_tabener;
+    ComputeNonbondedUtil::calcSelf = calc_self_tabener;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_tabener;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_tabener;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_tabener;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_tabener;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_tabener;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_tabener;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_tabener;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_tabener;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_tabener;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_tabener;
+    ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_tabener;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_tabener;
+    ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_tabener;
   } else {
     ComputeNonbondedUtil::calcPair = calc_pair;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy;
