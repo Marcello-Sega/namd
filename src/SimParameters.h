@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: brunner $
- * $Date: 2009/10/27 18:50:05 $
- * $Revision: 1.1156 $
+ * $Author: dhardy $
+ * $Date: 2009/10/27 21:50:09 $
+ * $Revision: 1.1157 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -54,6 +54,7 @@ typedef int  MTSChoices;
 #define SHARP		0
 #define XPLOR		1
 #define C1		2
+#define C2              3
 
 //  The following definitions are used to distinguish among load
 //  balancing strategies

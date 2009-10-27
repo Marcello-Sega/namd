@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: brunner $
- * $Date: 2009/10/27 18:50:04 $
- * $Revision: 1.1291 $
+ * $Author: dhardy $
+ * $Date: 2009/10/27 21:50:09 $
+ * $Revision: 1.1292 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1946,6 +1946,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
     longSplitting = XPLOR;
   else if (!strcasecmp(s, "c1"))
     longSplitting = C1;
+  else if (!strcasecmp(s, "c2"))
+    longSplitting = C2;
   else
   {
     char err_msg[129];
@@ -3931,6 +3933,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
   iout << iINFO << "XPLOR SPLITTING OF LONG RANGE ELECTROSTATICS\n";
    else if (longSplitting == C1)
   iout << iINFO << "C1 SPLITTING OF LONG RANGE ELECTROSTATICS\n";
+   else if (longSplitting == C2)
+  iout << iINFO << "C2 SPLITTING OF LONG RANGE ELECTROSTATICS\n";
 
    if (splitPatch == SPLIT_PATCH_POSITION)
   iout << iINFO << "PLACING ATOMS IN PATCHES BY POSITION\n";

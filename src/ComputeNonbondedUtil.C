@@ -118,6 +118,7 @@ void (*ComputeNonbondedUtil::calcSlowSelfEnergy)(nonbonded *);
 #define SPLIT_SHIFT	2
 #define SPLIT_C1	3
 #define SPLIT_XPLOR	4
+#define SPLIT_C2	5
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
@@ -417,6 +418,10 @@ void ComputeNonbondedUtil::select(void)
   if ( simParams->switchingActive ) splitType = SPLIT_SHIFT;
   if ( simParams->fullDirectOn || simParams->FMAOn || PMEOn ) {
     switch ( simParams->longSplitting ) {
+      case C2:
+      splitType = SPLIT_C2;
+      break;
+
       case C1:
       splitType = SPLIT_C1;
       break;
@@ -547,6 +552,23 @@ void ComputeNonbondedUtil::select(void)
 	// calculate scor from slow and corr
 	scor_energy = slow_energy + (corr_energy - 1.0)/r;
 	scor_gradient = slow_gradient - (corr_gradient - 1.0)/r2;
+	// calculate fast from slow
+	fast_energy = 1.0/r - slow_energy;
+	fast_gradient = -1.0/r2 - slow_gradient;
+	break;
+      case SPLIT_C2:
+        //
+        // Quintic splitting function contributed by
+        // Bruce Berne, Ruhong Zhou, and Joe Morrone
+        //
+	// calculate actual energy and gradient
+        slow_energy = r2/(cutoff*cutoff2) * (6.0 * (r2/cutoff2)
+            - 15.0*(r/cutoff) + 10.0);
+        slow_gradient = r/(cutoff*cutoff2) * (24.0 * (r2/cutoff2)
+            - 45.0 *(r/cutoff) + 20.0);
+	// calculate scor from slow and corr
+        scor_energy = slow_energy + (corr_energy - 1.0)/r;
+        scor_gradient = slow_gradient - (corr_gradient - 1.0)/r2;
 	// calculate fast from slow
 	fast_energy = 1.0/r - slow_energy;
 	fast_gradient = -1.0/r2 - slow_gradient;
