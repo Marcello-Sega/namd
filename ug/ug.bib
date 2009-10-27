@@ -10,8 +10,8 @@
 % RCS INFORMATION:
 %
 %       $RCSfile: ug.bib,v $
-%       $Author: petefred $        $Locker:  $                $State: Exp $
-%       $Revision: 1.10 $      $Date: 2009/06/14 01:28:16 $
+%       $Author: dhardy $        $Locker:  $                $State: Exp $
+%       $Revision: 1.11 $      $Date: 2009/10/27 22:56:45 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug.bib,v $
+% Revision 1.11  2009/10/27 22:56:45  dhardy
+% fixed the documentation for longSplitting and the new 'c2' option
+%
 % Revision 1.10  2009/06/14 01:28:16  petefred
 % Add documentation for LJ tail corrections
 %
@@ -77,6 +80,7 @@
 @string{JCC = "J.\ Comp.\ Chem."}
 @string{JCP = "J.\ Chem.\ Phys."}
 @string{JACS = "J.\ Am. Chem.\ Soc."}
+@string{ANM = "Ann.\ Numer.\ Math."}
 
 @inproceedings{CRUZ93,
   author={Carolina Cruz-Neira and Dan J. Sandin and Thomas A. DeFanti},
@@ -769,5 +773,13 @@ number=35,
   eprint = {http://pubs.acs.org/doi/pdf/10.1021/jp0735987}
 }
 
-
+%% introduces artificial splittings for MTS
+@article{SKEE94,
+  author = {R. D. Skeel and J. J. Biesiadecki},
+  title = "Symplectic integration with variable stepsize",
+  journal = ANM,
+  volume=1,
+  pages="191-198",
+  year = "1994",
+}
 

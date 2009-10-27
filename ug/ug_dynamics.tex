@@ -421,35 +421,29 @@ in which case the upper limit is perhaps doubled.}
 long and short range forces.  {\tt impulse/verletI} is the same as r-RESPA.
 {\tt constant/naive} is the stale force extrapolation method.}
 
-
 \item
-\NAMDCONFWDEF{longSplitting}{how should long and short range forces be split?}{{\tt xplor}, {\tt c1}}{{\tt c1}}
+\NAMDCONFWDEF{longSplitting}{how should long and short range forces be split?}{{\tt c1}, {\tt c2}}{{\tt c1}}
 {Specifies the method used to split electrostatic forces between long 
 and short range potentials.  
-The {\tt xplor} option uses the X-PLOR shifting function, 
-and the {\tt c1} splitting uses 
-the following $C^1$ continuous shifting 
-function \mycite{Humphreys \ETAL}{HUMP94}:  
-\begin{list}{}{}
-\item
-$SW(r_{ij}) = 0$ if $|{{\vec{r}}_{ij}}| > R_{\mathit off}$
-\item
-$SW(r_{ij}) = 1$ if $|{{\vec{r}}_{ij}}| \leq R_{\mathit on}$
-\item
-% $SW(r_{ij}) = \frac{ {\left({R_{\mathit off}}^2 - {r_{ij}}^2\right)}^2
-% \left({R_{\mathit off}}^2 + 2{r_{ij}}^2 - 3{R_{\mathit on}}^2\right)}
-% {{\left({R_{\mathit off}}^2 - {R_{\mathit on}}^2\right)}^3}$
-if $R_{\mathit off} > |{{\vec{r}}_{ij}}| \geq R_{\mathit on}$
-\end{list}
+The {\tt c1} option uses a cubic polynomial splitting function,
+$$S_3(r) = 1 - \frac{3}{2}\left(\frac{r}{r_{\text{cut}}}\right)
++ \frac{1}{2}\left(\frac{r}{r_{\text{cut}}}\right)^3,$$
+to affect $C^1$ continuity in the splitting of the electrostatic potential
+\mycite{Skeel \ETAL}{SKEE94}.
+The {\tt c2} option uses a quintic polynomial splitting function,
+$$S_5(r) = 1 - 10\left(\frac{r}{r_{\text{cut}}}\right)^3
++ 15\left(\frac{r}{r_{\text{cut}}}\right)^4
+- 6\left(\frac{r}{r_{\text{cut}}}\right)^5,$$
+to affect $C^2$ continuity in the splitting of the electrostatic potential.
+The $S_5$ splitting function,
+contributed by Bruce Berne, Ruhong Zhou, and Joe Morrone,
+produces demonstrably better long time stability than $S_3$
+without requiring any additional
+computational cost during simulation,
+since the nonbonded forces are calculated via a lookup table.
+Note that earlier options
+{\tt xplor} and {\tt sharp} are no longer supported.
 }
-where
-\begin{list}{}{}
-\item
-$R_{\mathit on}$ is a constant defined using the configuration value 
-{\tt switchdist} 
-\item
-$R_{\mathit off}$ is specified using the configuration value {\tt cutoff}
-\end{list}
 
 \item
 \NAMDCONFWDEF{molly}{use mollified impulse method (MOLLY)?}
