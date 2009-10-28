@@ -543,6 +543,9 @@ cvm::atom_pos cvm::atom_group::center_of_mass (cvm::atom_pos const &ref_pos)
 
 cvm::atom_pos cvm::atom_group::center_of_mass() const
 {
+  if (b_dummy)
+    return dummy_atom_pos;
+
   cvm::atom_pos com (0.0, 0.0, 0.0);
   for (cvm::atom_const_iter ai = this->begin();
        ai != this->end(); ai++) {
