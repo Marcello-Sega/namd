@@ -149,16 +149,17 @@ void ReductionMgr::buildSpanTree(const int pe,
   // is the corresponding first-node
 
 #if CHARM_VERSION < 60103
+#define CmiPhysicalNodeID(X)      X
 #define CmiNumPesOnPhysicalNode(X) 1
 #define CmiGetFirstPeOnPhysicalNode(X) (X)
-#define CmiOnSamePhysicalNode(X,Y) ((X)==(Y))
+#define CmiPeOnSamePhysicalNode(X,Y) ((X)==(Y))
 #endif
   // No matter what, build list of PEs on my node first
   const int num_pes = CkNumPes();
-  const int num_node_pes = CmiNumPesOnPhysicalNode(pe); 
+  const int num_node_pes = CmiNumPesOnPhysicalNode(CmiPhysicalNodeID(pe)); 
   int *node_pes = new int[num_node_pes];
   int pe_index;
-  const int first_pe = CmiGetFirstPeOnPhysicalNode(pe);
+  const int first_pe = CmiGetFirstPeOnPhysicalNode(CmiPhysicalNodeID(pe));
   int num_nodes = 0;
   int *node_ids = new int[num_pes];
   int first_pe_index;
@@ -173,7 +174,7 @@ void ReductionMgr::buildSpanTree(const int pe,
   int node_pe_count=0;
   for (i = 0; i < num_pes; i++) {
     // Save first-nodes
-    if (CmiGetFirstPeOnPhysicalNode(i) == i) {
+    if (CmiGetFirstPeOnPhysicalNode(CmiPhysicalNodeID(i)) == i) {
       node_ids[num_nodes] = i;
       if (i == first_pe)
         first_pe_index = num_nodes;
@@ -182,7 +183,7 @@ void ReductionMgr::buildSpanTree(const int pe,
 
     // Also, find pes on my node
     const int i1 = (i + first_pe) % num_pes;
-    if (CmiOnSamePhysicalNode(first_pe,i1)) {
+    if (CmiPeOnSamePhysicalNode(first_pe,i1)) {
       node_pes[node_pe_count] = i1;
       if (pe == i1)
         pe_index = node_pe_count;
