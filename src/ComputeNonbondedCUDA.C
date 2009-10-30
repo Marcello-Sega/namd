@@ -52,10 +52,12 @@ void cuda_initialize() {
   gethostname(host, 128);  host[127] = 0;
 #endif
 
+  int myPhysicalNodeID = CmiPhysicalNodeID(CkMyPe());
   int myRankInPhysicalNode;
   int numPesOnPhysicalNode;
   int *pesOnPhysicalNode;
-  CmiGetPesOnPhysicalNode(CkMyPe(),&pesOnPhysicalNode,&numPesOnPhysicalNode);
+  CmiGetPesOnPhysicalNode(myPhysicalNodeID,
+                           &pesOnPhysicalNode,&numPesOnPhysicalNode);
   {
     int i;
     for ( i=0; i < numPesOnPhysicalNode; ++i ) {
@@ -65,7 +67,7 @@ void cuda_initialize() {
       }
       if ( pesOnPhysicalNode[i] == CkMyPe() ) break;
     }
-    if ( i == numPesOnPhysicalNode ) {
+    if ( i == numPesOnPhysicalNode || i != CmiPhysicalRank(CkMyPe()) ) {
       CkPrintf("Bad result from CmiGetPesOnPhysicalNode!\n");
       for ( i=0; i < numPesOnPhysicalNode; ++i ) {
         CkPrintf("pe %d physnode rank %d of %d is %d\n", CkMyPe(),
