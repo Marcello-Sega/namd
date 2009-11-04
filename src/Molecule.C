@@ -9769,48 +9769,43 @@ void AtomSignature::pack(MOStream *msg){
 void AtomSignature::unpack(MIStream *msg){
     msg->get(bondCnt);
     delete [] bondSigs;
-    bondSigs = NULL;
     if(bondCnt>0){
         bondSigs = new TupleSignature[bondCnt];
         for(int i=0; i<bondCnt; i++)
             bondSigs[i].unpack(msg);
-    }
+    } else bondSigs = NULL;
 
     msg->get(angleCnt);
     delete [] angleSigs;
-    angleSigs = NULL;
     if(angleCnt>0){
         angleSigs = new TupleSignature[angleCnt];
         for(int i=0; i<angleCnt; i++)
             angleSigs[i].unpack(msg);
-    }
+    } else angleSigs = NULL;
 
     msg->get(dihedralCnt);
     delete [] dihedralSigs;
-    dihedralSigs = NULL;
     if(dihedralCnt>0){
         dihedralSigs = new TupleSignature[dihedralCnt];
         for(int i=0; i<dihedralCnt; i++)
             dihedralSigs[i].unpack(msg);
-    }
+    } else dihedralSigs = NULL;
 
     msg->get(improperCnt);
     delete [] improperSigs;
-    improperSigs = NULL;
     if(improperCnt>0){
         improperSigs = new TupleSignature[improperCnt];
         for(int i=0; i<improperCnt; i++)
             improperSigs[i].unpack(msg);
-    }
+    } else improperSigs = NULL;
 
     msg->get(crosstermCnt);
     delete [] crosstermSigs;
-    crosstermSigs = NULL;
     if(crosstermCnt>0){
         crosstermSigs = new TupleSignature[crosstermCnt];
         for(int i=0; i<crosstermCnt; i++)
             crosstermSigs[i].unpack(msg);
-    }
+    } else crosstermSigs = NULL;
 }
 
 void AtomSignature::removeEmptyTupleSigs(){
