@@ -86,7 +86,9 @@ void cuda_bind_exclusions(const unsigned int *t, int n);
 
 // #define FORCE_TABLE_SIZE 512
 // maximum size of CUDA array 1D texture reference is 2^13 = 8192
-#define FORCE_TABLE_SIZE 8192
+// #define FORCE_TABLE_SIZE 8192
+// CUDA docs lie, older devices can only handle 4096
+#define FORCE_TABLE_SIZE 4096
 
 void cuda_bind_force_table(const float4 *t);
 
