@@ -143,6 +143,7 @@ ParseOptions::DataElement::DataElement(const char *newname,      \
    Mptr = ptr;                                                   \
    Mdef = defalt;                                                \
    has_default = TRUE;                                           \
+   if ( ptr ) *ptr = defalt;                                     \
 }
 
 #define dataelement_cons_macro(Mtype, MType, Mptr) \
