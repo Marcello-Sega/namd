@@ -358,7 +358,11 @@ charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
 
 $(LIBCUDARTSO):
-	$(COPY) $(LIBCUDARTSODIR)/$(LIBCUDARTSO) $@
+	if [ -r $(CUDADIR)/lib64/$(LIBCUDARTSO) ]; then \
+	  $(COPY) $(CUDADIR)/lib64/$(LIBCUDARTSO) $@; \
+	else \
+	  $(COPY) $(CUDADIR)/lib/$(LIBCUDARTSO) $@; \
+	fi
 
 WINDOWSBINARIES = namd2.exe psfgen.exe
 # WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
