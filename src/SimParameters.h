@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2009/10/27 21:50:09 $
- * $Revision: 1.1157 $
+ * $Author: jim $
+ * $Date: 2009/11/11 20:36:45 $
+ * $Revision: 1.1158 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -509,6 +509,9 @@ public:
 
 	int outputTiming;		//  Number of timesteps between timing
 					//  outputs
+
+	int outputCudaTiming;		//  Number of timesteps between timing
+					//  outputs of CUDA code
 
 	int outputPressure;		//  Number of timesteps between pressure
 					//  tensor outputs

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2009/10/27 21:50:09 $
- * $Revision: 1.1292 $
+ * $Author: jim $
+ * $Date: 2009/11/11 20:36:45 $
+ * $Revision: 1.1293 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -390,6 +390,10 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    opts.optional("main", "outputTiming", "How often to print timing data in timesteps",
      &outputTiming);
    opts.range("outputTiming", NOT_NEGATIVE);
+     
+   opts.optional("main", "outputCudaTiming", "How often to print CUDA timing data in timesteps",
+     &outputCudaTiming, 0);
+   opts.range("outputCudaTiming", NOT_NEGATIVE);
      
    opts.optional("main", "outputPressure", "How often to print pressure data in timesteps",
      &outputPressure, 0);
@@ -3052,6 +3056,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    {
       iout << iINFO << "TIMING OUTPUT STEPS    "
          << outputTiming << "\n";
+      iout << endi;
+   }
+   
+   if (outputCudaTiming != 0)
+   {
+      iout << iINFO << "CUDA TIMING OUTPUT STEPS    "
+         << outputCudaTiming << "\n";
       iout << endi;
    }
    

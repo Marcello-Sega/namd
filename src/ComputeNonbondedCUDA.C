@@ -1089,8 +1089,8 @@ int ComputeNonbondedCUDA::finishWork() {
   cuda_errcheck("event timers");
 
   cuda_timer_total += kernel_time;
-  if ( simParams->outputTiming &&
-	cuda_timer_count % simParams->outputTiming == 0 ) {
+  if ( simParams->outputCudaTiming &&
+	cuda_timer_count % simParams->outputCudaTiming == 0 ) {
     cuda_timer_total /= (cuda_timer_count + 1);
     CkPrintf("CUDA EVENT TIMING: %d %f %f %f %f %f %f\n",
 	CkMyPe(), upload_ms, remote_calc_ms, remote_download_ms,
