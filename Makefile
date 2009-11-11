@@ -335,7 +335,7 @@ MAKEBUILDINFO = \
 	cat $(BUILDINFO).C; \
 	$(CXX) $(CXXFLAGS) $(COPTO)$(BUILDINFO).o $(COPTC) $(BUILDINFO).C
 
-all:	$(BINARIES)
+all:	$(BINARIES) $(LIBCUDARTSO)
 
 namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
@@ -356,6 +356,9 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 
 charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
+
+$(LIBCUDARTSO):
+	$(COPY) $(LIBCUDARTSODIR)/$(LIBCUDARTSO) $@
 
 WINDOWSBINARIES = namd2.exe psfgen.exe
 # WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
