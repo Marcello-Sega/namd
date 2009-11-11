@@ -106,11 +106,12 @@ void cuda_initialize() {
     }
     devices = new int[deviceCount];
     for ( int i=0; i<deviceCount; ++i ) {
-      int dev = (i+1) % deviceCount;  // avoid 0 if possible
+      int dev = i % deviceCount;
 #if CUDA_VERSION >= 2020
       cudaDeviceProp deviceProp;
       cudaGetDeviceProperties(&deviceProp, dev);
-      if ( deviceProp.computeMode != cudaComputeModeProhibited ) {
+      if ( deviceProp.computeMode != cudaComputeModeProhibited
+           && deviceProp.multiProcessorCount > 2 ) {  // exclude weak cards
         devices[ndevices++] = dev;
       }
       if ( deviceProp.computeMode == cudaComputeModeExclusive ) {
