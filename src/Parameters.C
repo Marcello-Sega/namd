@@ -5015,7 +5015,7 @@ void Parameters::send_Parameters(MOStream *msg)
   }
   
   //  Send the table pair parameters
-  printf("Pairs: %i\n", NumTablePairParams);
+  //printf("Pairs: %i\n", NumTablePairParams);
   msg->put(NumTablePairParams);
   
   if (NumTablePairParams)
