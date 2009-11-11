@@ -390,12 +390,19 @@ begin:
   if ( $use_cuda ) then
     if ( $?CUDA_PREFIX ) then
       echo "CUDADIR = $CUDA_PREFIX" >> Make.config
+      set CUDA_SO_FULL=`ls $CUDA_PREFIX/lib/libcudart.so.[1-9]`
     else if ( -d .rootdir/cuda/lib && -d .rootdir/cuda/include ) then
       echo "Using CUDA build found in main build directory"
       echo 'CUDADIR = .rootdir/cuda' >> Make.config
+      set CUDA_SO_FULL=`ls .rootdir/cuda/lib/libcudart.so.[1-9]`
     else if ( -d $HOME/cuda/lib && -d $HOME/cuda/include ) then
       echo "Using CUDA build found in $HOME/cuda"
       echo 'CUDADIR = $(HOME)/cuda' >> Make.config
+      set CUDA_SO_FULL=`ls $HOME/cuda/lib/libcudart.so.[1-9]`
+    endif
+    if ( $?CUDA_SO_FULL ) then
+      set CUDA_SO=$CUDA_SO_FULL:t
+      echo "LIBCUDARTSO = $CUDA_SO" >> Make.config
     endif
   endif
 
