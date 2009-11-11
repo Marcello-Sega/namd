@@ -572,9 +572,9 @@ void ComputeNonbondedUtil :: NAME
     {
       register int i = 0;
       register int nbgs = p_0->nonbondedGroupSize;
-      register BigReal p_x = p_0->position.x;
-      register BigReal p_y = p_0->position.y;
-      register BigReal p_z = p_0->position.z;
+      register BigReal p_x = p_0->position.x + offset_x;
+      register BigReal p_y = p_0->position.y + offset_y;
+      register BigReal p_z = p_0->position.z + offset_z;
       register int index = i;
 
       while (i < i_upper) {
@@ -590,9 +590,9 @@ void ComputeNonbondedUtil :: NAME
         register BigReal sortVal = COMPONENT_DOTPRODUCT(p,projLineVec);
 
         // Start loading the next iteration's atom's position
-        p_x = p_i_next->position.x;
-        p_y = p_i_next->position.y;
-        p_z = p_i_next->position.z;
+        p_x = p_i_next->position.x + offset_x;
+        p_y = p_i_next->position.y + offset_y;
+        p_z = p_i_next->position.z + offset_z;
 
         // Store the calculated sort value into the array of sort values
 	register BigReal* p_0_sortValStorePtr = p_0_sortValues + index;
