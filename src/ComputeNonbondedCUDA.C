@@ -162,6 +162,11 @@ void cuda_initialize() {
     dev = devices[CkMyPe() % ndevices];
   }
 
+  // disable token-passing but don't submit local until remote finished
+  // if shared_gpu is true, otherwise submit all work immediately
+  first_pe_sharing_gpu = CkMyPe();
+  next_pe_sharing_gpu = CkMyPe();
+
   gpu_is_mine = ( first_pe_sharing_gpu == CkMyPe() ); 
 
   if ( dev >= deviceCount ) {
@@ -944,12 +949,14 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size(), doSlow);
     cudaEventRecord(end_remote_calc, stream);
-    ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_calc,this);
     cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
         num_local_atom_records,num_remote_atom_records);
     cudaEventRecord(end_remote_download, stream);
     ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
-    break;
+    if ( shared_gpu ) {
+      ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_calc,this);
+      break;
+    }
  
   case 2:
     ++kernel_launch_state;
@@ -958,12 +965,14 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 	0,localComputeRecords.size(),
 	0,localActivePatches.size(), doSlow);
     cudaEventRecord(end_local_calc, stream);
-    ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_calc,this);
     cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
         0,num_local_atom_records);
     cudaEventRecord(end_local_download, stream);
     if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
-    break;
+    if ( shared_gpu ) {
+      ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_calc,this);
+      break;
+    }
 
   default:
     gpu_is_mine = 1;
