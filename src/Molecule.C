@@ -4756,6 +4756,9 @@ void Molecule::receive_Molecule(MIStream *msg)
     // DRUDE: extend exclusions for Drude and LP
     // Drude and LP particles "inherit" exclusions from their parents
     void Molecule::build_inherited_excl(void) {
+#ifdef MEM_OPT_VERSION
+      NAMD_die("Drude and LP particles not supported in memopt version.");
+#else
       ExclusionSettings exclude_flag = simParams->exclude;
       int32 *bond1, *bond2, *bond3;
       int32 i, mid1, mid2;
@@ -4872,6 +4875,7 @@ void Molecule::receive_Molecule(MIStream *msg)
 
       } // for i
 
+#endif
     } 
     // DRUDE
 

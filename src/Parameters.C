@@ -5520,7 +5520,11 @@ void Parameters::convert_vdw_pairs()
 void Parameters::convert_table_pairs()
    
 {
+   #ifdef MEM_OPT_VERSION
+   AtomCstInfo atom_struct;
+   #else
    Atom atom_struct;    //  Dummy structure for getting indexes
+   #endif
    Index index1, index2;  //  Indexes for the two atoms
    IndexedTablePair *new_node;  //  New node for tree
    struct table_pair_params *ptr, *next;  //  Pointers for traversing list
