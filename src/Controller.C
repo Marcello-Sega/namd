@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2009/08/12 20:40:51 $
- * $Revision: 1.1240 $
+ * $Date: 2009/11/12 01:54:06 $
+ * $Revision: 1.1241 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1290,6 +1290,12 @@ void Controller::printTiming(int step) {
       startWTime = endWTime;
       startCTime = endCTime;
 
+#ifdef NAMD_CUDA
+      if ( simParams->outputEnergies < 60 &&
+           step < (simParams->firstTimestep + 10 * simParams->outputTiming) ) {
+        iout << iWARN << "Energy evaluation is done on CPU, increase outputEnergies to improve performance.\n" << endi;
+      }
+#endif
       if ( step >= (simParams->firstTimestep + simParams->outputTiming) ) {
 	CmiPrintf("TIMING: %d  CPU: %g, %g/step  Wall: %g, %g/step"
 		  ", %g hours remaining, %f MB of memory in use.\n",
@@ -1438,6 +1444,12 @@ void Controller::printEnergies(int step, int minimize)
       groupPressure_tavg += groupPressure;
       tavg_count += 1;
       if ( minimize || ! ( step % simParameters->outputPressure ) ) {
+#ifdef NAMD_CUDA
+        if ( 
+          step < (simParams->firstTimestep + 10*simParams->outputPressure) ) {
+          iout << iWARN << "Pressure tensor is incorrect.  CUDA currently evaluates scalar pressure only.\n" << endi;
+        }
+#endif
         iout << "PRESSURE: " << step << " "
            << PRESSUREFACTOR * pressure << "\n"
            << "GPRESSURE: " << step << " "
@@ -1496,6 +1508,11 @@ void Controller::printEnergies(int step, int minimize)
     if ( stepInRun % simParams->firstLdbStep == 0 ) {
      int benchPhase = stepInRun / simParams->firstLdbStep;
      if ( benchPhase > 0 && benchPhase < 7 ) {
+#ifdef NAMD_CUDA
+      if ( simParams->outputEnergies < 60 ) {
+        iout << iWARN << "Energy evaluation is done on CPU, increase outputEnergies to improve performance.\n";
+      }
+#endif
       iout << iINFO;
       if ( benchPhase < 4 ) iout << "Initial time: ";
       else iout << "Benchmark time: ";
