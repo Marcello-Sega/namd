@@ -23,6 +23,12 @@ NAMD 2.7b2 has many advantages over NAMD 2.6, among these are:
 
 - Additional bonded terms for restraining molecular structure
 
+- Support for the TIP4 water model
+
+- NVIDIA CUDA GPU acceleration of nonbonded force evaluation
+
+- Direct (non-MPI) support for InfiniBand via OFED ibverbs library
+
 - Enhanced performance and scalability
 
 Details at http://www.ks.uiuc.edu/Research/namd/2.7/features.html
