@@ -631,6 +631,23 @@ for most applications.}
 \end{itemize}
 
 
+
+\subsection{Water Models}
+\label{section:water_models}
+
+\subsubsection{Water model parameters}
+
+\NAMD~currently supports the 3-site TIP3P water model and the 4-site TIP4P water model.  TIP3P is the current default water model.  Usage of alternate water models is described below. 
+
+\begin{itemize}
+
+  \item
+    \NAMDCONFWDEF{waterModel}{using which water model?}{ {\tt tip3} or {\tt tip4}}{ {\tt tip3}}
+    {Specifies if the TIP3P or TIP4P water model is to be used.  When using the TIP4P water model, the ordering of atoms within each TIP4P water molecule must be oxygen, hydrogen, hydrogen, lone pair.  Alternate orderings will fail. } 
+
+\end{itemize}
+
+
 \subsection{Constraints and Restraints}
 %\label{section:config_add}
 

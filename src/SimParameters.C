@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2009/11/11 20:36:45 $
- * $Revision: 1.1293 $
+ * $Author: char $
+ * $Date: 2009/11/12 20:28:16 $
+ * $Revision: 1.1294 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1889,6 +1889,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if (!strncasecmp(s, "tip4", 4)) {
        iout << iINFO << "Using TIP4P water model.\n" << endi;
        watmodel = WAT_TIP4;
+     } else if (!strncasecmp(s, "tip3", 4)) {
+       iout << iINFO << "Using TIP3P water model.\n" << endi;
      } else {
        char err_msg[128];
        sprintf(err_msg, "Illegal value %s for 'waterModel' in configuration file", s);
