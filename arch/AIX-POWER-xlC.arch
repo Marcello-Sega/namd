@@ -1,5 +1,5 @@
 NAMD_ARCH = AIX-POWER
-CHARMARCH = net-rs6k-xlc
+CHARMARCH = net-aix-ppc
 
 # need to define MEMUSAGE_USE_SBRK because mallinfo appears to cause crashes
 CXX = xlC_r -w -qstaticinline -DMEMUSAGE_USE_SBRK
