@@ -139,7 +139,7 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
 		atoms_alloc * sizeof(atom) +
 		atoms_alloc * sizeof(atom_param) +
 		2 * atoms_alloc * sizeof(float4);
-  printf("allocating %d MB of memory on GPU\n", totalmem >> 20);
+  // printf("allocating %d MB of memory on GPU\n", totalmem >> 20);
 #endif
 
   cudaMalloc((void**) &patch_pairs, patch_pairs_alloc * sizeof(patch_pair));

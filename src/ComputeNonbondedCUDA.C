@@ -310,7 +310,7 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
   cuda_bind_force_table(t);
 
   if ( ! CkMyPe() ) {
-    CkPrintf("Updated CUDA force table with %d elements.\n", FORCE_TABLE_SIZE);
+    CkPrintf("Info: Updated CUDA force table with %d elements.\n", FORCE_TABLE_SIZE);
   }
 }
 
@@ -367,8 +367,10 @@ void ComputeNonbondedCUDA::build_exclusions() {
 
   if ( totalbits & 31 ) totalbits += ( 32 - ( totalbits & 31 ) );
 
-  CkPrintf("Pe %d found %d unique exclusion lists needing %d bytes\n",
-		CkMyPe(), unique_lists.size(), totalbits / 8);
+  if ( ! CkMyPe() ) {
+  CkPrintf("Info: Found %d unique exclusion lists needing %d bytes\n",
+		unique_lists.size(), totalbits / 8);
+  }
 
 #define SET_EXCL(EXCL,BASE,DIFF) \
          (EXCL)[((BASE)+(DIFF))>>5] |= (1<<(((BASE)+(DIFF))&31))
@@ -463,7 +465,7 @@ static cudaEvent_t end_local_calc;
 static cudaEvent_t end_local_download;
 
 ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compute(c) {
-  CkPrintf("create ComputeNonbondedCUDA\n");
+  // CkPrintf("create ComputeNonbondedCUDA\n");
   cudaCompute = this;
   computeMgr = mgr;
   patchMap = PatchMap::Object();
@@ -647,9 +649,11 @@ void ComputeNonbondedCUDA::doWork() {
       pp.offset.z = cr.offset.z;
     }
 
+   if ( simParams->outputCudaTiming ) {
     CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
 	CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
 	localComputeRecords.size(), remoteComputeRecords.size());
+   }
   }
 
   int istart = 0;
