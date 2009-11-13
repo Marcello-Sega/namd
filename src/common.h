@@ -49,6 +49,10 @@ void * operator new (size_t, void *p) { return p; }
 #define PDBVELINVFACTOR (1.0/PDBVELFACTOR)
 #define PNPERKCALMOL 69.479
 
+#ifdef WIN32
+#define nearbyint(X) floor((X)+0.5)
+#endif
+
 #ifndef PI
 #define PI	3.141592653589793
 #endif
