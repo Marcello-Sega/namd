@@ -23,6 +23,12 @@ machine with the ++local option or on other hosts as specified by a
 nodelist file).  The namd2 binaries for these platforms can also be
 run directly (known as standalone mode) for single process runs.
 
+Charm++ provides a special ibverbs network layer that uses InfiniBand
+networks directly through the OpenFabrics OFED ibverbs library.  This
+avoids efficiency and portability issues associated with MPI.  Look for
+pre-built ibverbs NAMD binaries or specify ibverbs when building Charm++.
+All runs must be launched with charmrun (standalone mode does not work).
+
 For workstation clusters and other massively parallel machines with
 special high-performance networking, NAMD uses the system-provided
 MPI library (with a few exceptions) and standard system tools such as
@@ -181,6 +187,86 @@ example, to run on Blue Horizon one would specify:
   poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
 \end{verbatim}
 
+\subsection{CUDA GPU Acceleration}
+
+NAMD only uses the GPU for nonbonded force evaluation.  Energy evaluation
+is done on the CPU.  To benefit from GPU acceleration you should set
+outputEnergies to 100 or higher in the simulation config file.  Some
+features are unavailable in CUDA builds, including alchemical free
+energy perturbation and non-isotropic (flexible cell) pressure control
+(the scalar pressure is correct but the pressure tensor is incorrect).
+
+As this is a new feature you are encouraged to test all simulations
+before beginning production runs.  Forces evaluated on the GPU differ
+slightly from a CPU-only calculation, an effect more visible in reported
+scalar pressure values than in energies.
+
+To benefit from GPU acceleration you will need a CUDA build of NAMD
+and a recent high-end NVIDIA video card.  CUDA builds will not function
+without a CUDA-capable GPU.  You will also need to be running the
+NVIDIA Linux driver version 195.17 or newer (NAMD 2.7b2 released binaries
+are built with CUDA 2.3, but can be built with 2.2 or 3.0 as well).
+
+Finally, the libcudart.so.2 included with the binary (the one copied from
+the version of CUDA it was built with) must be in a directory in your
+LD\_LIBRARY\_PATH before any other libcudart.so libraries.  For example:
+
+\begin{verbatim}
+  setenv LD_LIBRARY_PATH ".:$LD_LIBRARY_PATH"
+  (or LD_LIBRARY_PATH=".:$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH)
+  ./namd2 +idlepoll <configfile>
+  ./charmrun ++local +p4 ./namd2 +idlepoll <configfile>
+\end{verbatim}
+
+When running CUDA NAMD always add +idlepoll to the command line.  This
+is needed to poll the GPU for results rather than sleeping while idle.
+
+Each namd2 process can use only one GPU.  Therefore you will need to run
+at least one process for each GPU you want to use.  Multiple processes
+can share a single GPU, usually with an increase in performance.  NAMD
+will automatically distribute processes equally among the GPUs on a node.
+Specific GPU device IDs can be requested via the ++devices argument on
+the namd2 command line, for example:
+
+\begin{verbatim}
+  ./charmrun ++local +p4 ./namd2 +idlepoll +devices 0,2 <configfile>
+\end{verbatim}
+
+Devices are selected cyclically from those available, so in the above
+example processes 0 and 2 will share device 0 and processes 1 and 3 will
+share device 2.  One could also specify +devices 0,0,2,2 to cause device
+0 to be shared by processes 0 and 1, etc.  GPUs with two or fewer
+multiprocessors are ignored unless specifically requested with ++devices.
+
+While charmrun with ++local will preserve LD\_LIBRARY\_PATH, normal
+charmrun does not.  You can use charmrun ++runscript to add the namd2
+directory to LD\_LIBRARY\_PATH with the following executable runscript:
+
+\begin{verbatim}
+  #!/bin/csh
+  setenv LD_LIBRARY_PATH "${1:h}:$LD_LIBRARY_PATH"
+  $*
+\end{verbatim}
+
+For example:
+
+\begin{verbatim}
+  ./charmrun ++runscript ./runscript +p8 ./namd2 +idlepoll <configfile>
+\end{verbatim}
+
+An InfiniBand network is highly recommended when running CUDA-accelerated
+NAMD across multiple nodes.  You will need either an ibverbs NAMD binary
+(available for download) or an MPI NAMD binary (must build Charm++ and
+NAMD as described above) to make use of the InfiniBand network.
+
+The CUDA (NVIDIA's graphics processor programming platform) code in
+NAMD is completely self-contained and does not use any of the CUDA
+support features in Charm++.  When building NAMD with CUDA support
+you should use the same Charm++ you would use for a non-CUDA build.
+Do NOT add the cuda option to the Charm++ build command line.  The
+only changes to the build process needed are to add --with-cuda and
+possibly --cuda-prefix ... to the NAMD config command line.
+
 \subsection{Memory Usage}
 
 NAMD has traditionally used less than 100MB of memory even for systems
@@ -196,6 +282,9 @@ before pairlists will be enabled (on fewer processors small local
 pairlists are generated and recycled rather than being saved, the
 default is ``pairlistMinProcs 1'').  This is a per-simulation rather than
 a compile time option because memory usage is molecule-dependent.
+
+Additional information on reducing memory usage may be found at
+http://www.ks.uiuc.edu/Research/namd/wiki/index.cgi?NamdMemoryReduction
 
 \subsection{Improving Parallel Scaling}
 
