@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: bhatele $
- * $Date: 2009/10/03 23:56:49 $
- * $Revision: 1.84 $
+ * $Date: 2009/11/13 00:02:29 $
+ * $Revision: 1.85 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -416,7 +416,7 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
    CmiAssert(p->computeLoad >= 0.0);
    temp_load = p->load - c->load;
    p->load = p->computeLoad + p->backgroundLoad;
-   CmiAssert( abs(temp_load - p->load) < 0.001 );
+   CmiAssert( fabs(temp_load - p->load) < 0.001 );
 
    // 4-29-98: Added the following code to keep track of how many proxies 
    // on each processor are being used by a compute on that processor.
