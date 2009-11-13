@@ -81,9 +81,10 @@ inline unsigned long memusage_mallinfo() { return 0; }
 #endif
 
 
-#ifndef NO_PS
-
 inline unsigned long memusage_ps() {
+#ifdef NO_PS
+  return 0;
+#else
   char pscmd[100];
   sprintf(pscmd, "/bin/ps -o vsz= -p %d", getpid());
   unsigned long vsz = 0;
@@ -93,15 +94,14 @@ inline unsigned long memusage_ps() {
     pclose(p);
   }
   return ( vsz * (unsigned long) 1024 );
-}
-
-#else
-inline unsigned long memusage_ps() { return 0; }
 #endif
+}
 
 
 inline unsigned long memusage_proc_self_stat() {
-
+#ifdef NO_PS
+  return 0;
+#else
   static int failed_once = 0;
   if ( failed_once ) return 0;  // no point in retrying
 
@@ -114,7 +114,7 @@ inline unsigned long memusage_proc_self_stat() {
   if ( ! vsz ) failed_once = 1;
   // printf("/proc/self/stat reports %d MB\n", vsz/(1024*1024));
   return vsz;
-
+#endif
 }
 
 
