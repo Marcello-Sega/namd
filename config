@@ -244,32 +244,32 @@ begin:
       breaksw
       case --charm-opts:
         shift
-        set CHARM_OPTS=$1
+        set CHARM_OPTS="$1"
       breaksw
 
       case --cxx:
         shift
-        set CXX=$1
+        set CXX="$1"
       breaksw
       case --cxx-opts:
         shift
-        set CXX_OPTS=$1
+        set CXX_OPTS="$1"
       breaksw
       case --cxx-noalias-opts:
         shift
-        set CXX_NOALIAS_OPTS=$1
+        set CXX_NOALIAS_OPTS="$1"
       breaksw
       case --cxx-thread-opts:
         shift
-        set CXX_THREAD_OPTS=$1
+        set CXX_THREAD_OPTS="$1"
       breaksw
       case --cc:
         shift
-        set CC=$1
+        set CC="$1"
       breaksw
       case --cc-opts:
         shift
-        set CC_OPTS=$1
+        set CC_OPTS="$1"
       breaksw
 
       default
