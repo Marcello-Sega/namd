@@ -38,7 +38,7 @@ ALCHPAIR(
       TABENERGY(
       const int numtypes = simParams->tableNumTypes;
       const float table_spacing = simParams->tableSpacing;
-      const int npertype = (int) (nearbyint(simParams->tableMaxDist / simParams->tableSpacing) + 1);
+      const int npertype = (int) (mynearbyint(simParams->tableMaxDist / simParams->tableSpacing) + 1);
       )
 
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
@@ -156,8 +156,8 @@ ALCHPAIR(
       TABENERGY(
         if (tabtype >= 0) {
           r1 = sqrt(p_ij_x*p_ij_x + p_ij_y*p_ij_y + p_ij_z*p_ij_z);
-          //CkPrintf("%i %i %f %f %i\n", npertype, tabtype, r1, table_spacing, (int) (nearbyint(r1 / table_spacing)));
-          eneraddress = 2 * ((npertype * tabtype) + ((int) nearbyint(r1 / table_spacing)));
+          //CkPrintf("%i %i %f %f %i\n", npertype, tabtype, r1, table_spacing, (int) (mynearbyint(r1 / table_spacing)));
+          eneraddress = 2 * ((npertype * tabtype) + ((int) mynearbyint(r1 / table_spacing)));
           //CkPrintf("Using distance bin %i for distance %f\n", eneraddress, r1);
           ENERGY(
             register BigReal vdw_val = table_ener[eneraddress];
