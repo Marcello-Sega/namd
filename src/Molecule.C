@@ -55,11 +55,6 @@
 
 using namespace std;
 
-#ifdef MEM_OPT_VERSION
-template int lookupCstPool<AtomSignature>(const vector<AtomSignature>&, const AtomSignature&);
-template int lookupCstPool<ExclusionSignature>(const vector<ExclusionSignature>&, const ExclusionSignature&);
-#endif
-
 class ResidueLookupElem
 {
 public:
@@ -76,6 +71,11 @@ public:
 };
 
 #ifndef MOLECULE2_C  // first object file
+
+#ifdef MEM_OPT_VERSION
+template int lookupCstPool<AtomSignature>(const vector<AtomSignature>&, const AtomSignature&);
+template int lookupCstPool<ExclusionSignature>(const vector<ExclusionSignature>&, const ExclusionSignature&);
+#endif
 
 int ResidueLookupElem::lookup(
 	const char *segid, int resid, int *begin, int *end) const {
