@@ -1,0 +1,17 @@
+module NamdHybridLB {
+
+extern module HybridBaseLB;
+extern module LBDatabase;
+extern module BaseLB;
+
+include "CentralLB.h";
+include "CentralLBMsg.h";
+include "HybridLBMsg.h";
+
+group [migratable] NamdHybridLB : HybridBaseLB {
+  entry void NamdHybridLB(void);
+  entry void UpdateComputeMap(LBMigrateMsg*);
+  entry void CollectInfo(Location loc[n], int n, int fromlevel);	
+};
+
+};

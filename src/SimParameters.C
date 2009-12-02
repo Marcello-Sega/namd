@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2009/11/12 20:28:16 $
- * $Revision: 1.1294 $
+ * $Author: emeneses $
+ * $Date: 2009/12/02 23:09:03 $
+ * $Revision: 1.1295 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2307,6 +2307,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        ldbStrategy=LDBSTRAT_ALG7;
      else if (strcasecmp(loadStrategy, "asb8") == 0)
        ldbStrategy=LDBSTRAT_ASB8;
+     else if (strcasecmp(loadStrategy, "hybrid") == 0)
+       ldbStrategy=LDBSTRAT_HYBRID;
      else if (strcasecmp(loadStrategy, "other") == 0)
        ldbStrategy=LDBSTRAT_OTHER;
      else

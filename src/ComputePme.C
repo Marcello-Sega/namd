@@ -50,7 +50,6 @@
 
 char *pencilPMEProcessors;
 
-
 class PmeGridMsg : public CMessage_PmeGridMsg {
 public:
 
@@ -320,14 +319,14 @@ private:
 #endif
 
 int isPmeProcessor(int p){ 
-  if (pencilPMEProcessors)
-    return pencilPMEProcessors[p];
-  else
     return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
-  return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
+	if (pencilPMEProcessors)
+    	return pencilPMEProcessors[p];
+	else
+		return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
 }
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
@@ -598,141 +597,170 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
     myGrid.block3 = ( myGrid.K3/2 + 1 + zBlocks - 1 ) / zBlocks;  // complex
 
-    if ( CkMyPe() == 0 ) {
-      int basepe = 0;  int npe = CkNumPes();
-      if ( npe > xBlocks*yBlocks &&
-		npe > xBlocks*zBlocks &&
-		npe > yBlocks*zBlocks ) {
-        // avoid node 0
-        ++basepe;
-        --npe;
-      }
 
-      zPencil = CProxy_PmeZPencil::ckNew();  // (xBlocks,yBlocks,1);
-      yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
-      xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
-      
-      // decide which pes to use by bit reversal and patch use
-      int i;
-      int ncpus = CkNumPes();
-  
-      // find next highest power of two
-      int npow2 = 1;  int nbits = 0;
-      while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
-  
-      // build bit reversal sequence
-      SortableResizeArray<int> patches, nopatches, pmeprocs;
-      PatchMap *pmap = PatchMap::Object();
-      i = 0;
-      for ( int icpu=0; icpu<ncpus; ++icpu ) {
-        int ri;
-        for ( ri = ncpus; ri >= ncpus; ++i ) {
-          ri = 0;
-          int pow2 = 1;
-          int rpow2 = npow2 / 2;
-          for ( int j=0; j<nbits; ++j ) {
-            ri += rpow2 * ( ( i / pow2 ) % 2 );
-            pow2 *= 2;  rpow2 /= 2;
-          }
-        }
-        // seq[icpu] = ri;
-        if ( ri ) { // keep 0 for special case
-          if ( pmap->numPatchesOnNode(ri) ) patches.add(ri);
-          else nopatches.add(ri);
-        }
-      }
-
-      // only use zero if it eliminates overloading or has patches
-      int useZero = 0;
-      int npens = xBlocks*yBlocks;
-      if ( npens % ncpus == 0 ) useZero = 1;
-      if ( npens == nopatches.size() + 1 ) useZero = 1;
-      npens += xBlocks*zBlocks;
-      if ( npens % ncpus == 0 ) useZero = 1;
-      if ( npens == nopatches.size() + 1 ) useZero = 1;
-      npens += yBlocks*zBlocks;
-      if ( npens % ncpus == 0 ) useZero = 1;
-      if ( npens == nopatches.size() + 1 ) useZero = 1;
-
-      // add nopatches then patches in reversed order
-      for ( i=nopatches.size()-1; i>=0; --i ) pmeprocs.add(nopatches[i]);
-      if ( useZero && ! pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
-      for ( i=patches.size()-1; i>=0; --i ) pmeprocs.add(patches[i]);
-      if ( pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
-  
       int pe = 0;
-      int npes = pmeprocs.size();
-      SortableResizeArray<int> zprocs(xBlocks*yBlocks);
-      for ( i=0; i<xBlocks*yBlocks; ++i, ++pe ) zprocs[i] = pmeprocs[pe%npes];
-      zprocs.sort();
-      SortableResizeArray<int> yprocs(xBlocks*zBlocks);
-      for ( i=0; i<xBlocks*zBlocks; ++i, ++pe ) yprocs[i] = pmeprocs[pe%npes];
-      yprocs.sort();
-      SortableResizeArray<int> xprocs(yBlocks*zBlocks);
+      int x,y,z;
+
+      		SortableResizeArray<int> zprocs(xBlocks*yBlocks);
+      		SortableResizeArray<int> yprocs(xBlocks*zBlocks);
+      		SortableResizeArray<int> xprocs(yBlocks*zBlocks);
+ 		{
+      		int basepe = 0;  int npe = CkNumPes();
+			if ( npe > xBlocks*yBlocks &&
+				npe > xBlocks*zBlocks &&
+				npe > yBlocks*zBlocks ) {
+        		// avoid node 0
+        		++basepe;
+        		--npe;
+      		}
+
+      
+      		// decide which pes to use by bit reversal and patch use
+      		int i;
+      		int ncpus = CkNumPes();
+  
+      		// find next highest power of two
+      		int npow2 = 1;  int nbits = 0;
+      		while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
+  
+      		// build bit reversal sequence
+      		SortableResizeArray<int> patches, nopatches, pmeprocs;
+      		PatchMap *pmap = PatchMap::Object();
+      		i = 0;
+      		for ( int icpu=0; icpu<ncpus; ++icpu ) {
+        		int ri;
+        		for ( ri = ncpus; ri >= ncpus; ++i ) {
+          			ri = 0;
+          			int pow2 = 1;
+          			int rpow2 = npow2 / 2;
+          			for ( int j=0; j<nbits; ++j ) {
+            			ri += rpow2 * ( ( i / pow2 ) % 2 );
+            			pow2 *= 2;  rpow2 /= 2;
+          			}
+        		}
+        		// seq[icpu] = ri;
+        		if ( ri ) { // keep 0 for special case
+          			if ( pmap->numPatchesOnNode(ri) ) patches.add(ri);
+          			else nopatches.add(ri);
+        		}
+      		}
+
+      		// only use zero if it eliminates overloading or has patches
+      		int useZero = 0;
+      		int npens = xBlocks*yBlocks;
+      		if ( npens % ncpus == 0 ) useZero = 1;
+      		if ( npens == nopatches.size() + 1 ) useZero = 1;
+      		npens += xBlocks*zBlocks;
+      		if ( npens % ncpus == 0 ) useZero = 1;
+      		if ( npens == nopatches.size() + 1 ) useZero = 1;
+      		npens += yBlocks*zBlocks;
+      		if ( npens % ncpus == 0 ) useZero = 1;
+      		if ( npens == nopatches.size() + 1 ) useZero = 1;
+
+      		// add nopatches then patches in reversed order
+      		for ( i=nopatches.size()-1; i>=0; --i ) pmeprocs.add(nopatches[i]);
+      		if ( useZero && ! pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
+      		for ( i=patches.size()-1; i>=0; --i ) pmeprocs.add(patches[i]);
+      		if ( pmap->numPatchesOnNode(0) ) pmeprocs.add(0);
+  
+      		int npes = pmeprocs.size();
+      		for ( i=0; i<xBlocks*yBlocks; ++i, ++pe ) zprocs[i] = pmeprocs[pe%npes];
+      		zprocs.sort();
+      		for ( i=0; i<xBlocks*zBlocks; ++i, ++pe ) yprocs[i] = pmeprocs[pe%npes];
+      		yprocs.sort();
       for ( i=0; i<yBlocks*zBlocks; ++i, ++pe ) xprocs[i] = pmeprocs[pe%npes];
       xprocs.sort();
 
       pencilPMEProcessors = new char [CkNumPes()];
       memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
 
-      int x,y,z;
 
-      iout << iINFO << "PME Z PENCIL LOCATIONS:";
-      for ( i=0; i<zprocs.size() && i<10; ++i ) {
-        iout << " " << zprocs[i];
-      }
-      if ( i < zprocs.size() ) iout << " ...";
-      iout << "\n" << endi;
+		if(CkMyPe() == 0){  
+	      iout << iINFO << "PME Z PENCIL LOCATIONS:";
+	      for ( i=0; i<zprocs.size() && i<10; ++i ) {
+    	    iout << " " << zprocs[i];
+	      }
+    	  if ( i < zprocs.size() ) iout << " ...";
+	      iout << "\n" << endi;
+		}
 
       for (pe=0, x = 0; x < xBlocks; ++x)
 	for (y = 0; y < yBlocks; ++y, ++pe ) {
-	  zPencil(x,y,0).insert(zprocs[pe]);
 	  pencilPMEProcessors[zprocs[pe]] = 1;
 	}
-      zPencil.doneInserting();
-      
-      iout << iINFO << "PME Y PENCIL LOCATIONS:";
-      for ( i=0; i<yprocs.size() && i<10; ++i ) {
-        iout << " " << yprocs[i];
-      }
-      if ( i < yprocs.size() ) iout << " ...";
-      iout << "\n" << endi;
+     
+		if(CkMyPe() == 0){  
+	      iout << iINFO << "PME Y PENCIL LOCATIONS:";
+    	  for ( i=0; i<yprocs.size() && i<10; ++i ) {
+        	iout << " " << yprocs[i];
+	      }
+    	  if ( i < yprocs.size() ) iout << " ...";
+	      iout << "\n" << endi;
+		}
 
       for (pe=0, z = 0; z < zBlocks; ++z )
 	for (x = 0; x < xBlocks; ++x, ++pe ) {
-	  yPencil(x,0,z).insert(yprocs[pe]);
 	  pencilPMEProcessors[yprocs[pe]] = 1;
 	}
-      yPencil.doneInserting();
-      
-      iout << iINFO << "PME X PENCIL LOCATIONS:";
-      for ( i=0; i<xprocs.size() && i<10; ++i ) {
-        iout << " " << xprocs[i];
-      }
-      if ( i < xprocs.size() ) iout << " ...";
-      iout << "\n" << endi;
+    
+		if(CkMyPe() == 0){  
+      		iout << iINFO << "PME X PENCIL LOCATIONS:";
+		    for ( i=0; i<xprocs.size() && i<10; ++i ) {
+        		iout << " " << xprocs[i];
+      		}
+      		if ( i < xprocs.size() ) iout << " ...";
+      		iout << "\n" << endi;
+		}
 
       for (pe=0, y = 0; y < yBlocks; ++y )	
 	for (z = 0; z < zBlocks; ++z, ++pe ) {
-	  xPencil(0,y,z).insert(xprocs[pe]);
 	  pencilPMEProcessors[xprocs[pe]] = 1;
 	}
-      xPencil.doneInserting();      
 	
-      pmeProxy.recvArrays(xPencil,yPencil,zPencil);
-      PmePencilInitMsgData msgdata;
-      msgdata.grid = myGrid;
-      msgdata.xBlocks = xBlocks;
-      msgdata.yBlocks = yBlocks;
-      msgdata.zBlocks = zBlocks;
-      msgdata.xPencil = xPencil;
-      msgdata.yPencil = yPencil;
-      msgdata.zPencil = zPencil;
-      msgdata.pmeProxy = pmeProxyDir;
-      xPencil.init(new PmePencilInitMsg(msgdata));
-      yPencil.init(new PmePencilInitMsg(msgdata));
-      zPencil.init(new PmePencilInitMsg(msgdata));
     }
+
+
+	// creating the pencil arrays
+	if ( CkMyPe() == 0 ){
+		zPencil = CProxy_PmeZPencil::ckNew();  // (xBlocks,yBlocks,1);
+      	yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
+      	xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
+
+		for (pe=0, x = 0; x < xBlocks; ++x)
+			for (y = 0; y < yBlocks; ++y, ++pe ) {
+	  			zPencil(x,y,0).insert(zprocs[pe]);
+			}
+      	zPencil.doneInserting();
+
+		for (pe=0, z = 0; z < zBlocks; ++z )
+			for (x = 0; x < xBlocks; ++x, ++pe ) {
+	  			yPencil(x,0,z).insert(yprocs[pe]);
+			}
+      	yPencil.doneInserting();
+
+
+		for (pe=0, y = 0; y < yBlocks; ++y )	
+			for (z = 0; z < zBlocks; ++z, ++pe ) {
+	  			xPencil(0,y,z).insert(xprocs[pe]);
+			}
+		xPencil.doneInserting();     
+
+		pmeProxy.recvArrays(xPencil,yPencil,zPencil);
+		PmePencilInitMsgData msgdata;
+		msgdata.grid = myGrid;
+		msgdata.xBlocks = xBlocks;
+		msgdata.yBlocks = yBlocks;
+		msgdata.zBlocks = zBlocks;
+		msgdata.xPencil = xPencil;
+		msgdata.yPencil = yPencil;
+		msgdata.zPencil = zPencil;
+		msgdata.pmeProxy = pmeProxyDir;
+		xPencil.init(new PmePencilInitMsg(msgdata));
+		yPencil.init(new PmePencilInitMsg(msgdata));
+		zPencil.init(new PmePencilInitMsg(msgdata));
+ 
+	}
+
     return;  // continue in initialize_pencils() at next startup stage
   }
 

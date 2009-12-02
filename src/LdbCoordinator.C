@@ -3,18 +3,20 @@
 ***  The Board of Trustees of the University of Illinois.
 ***  All rights reserved.
 **/
-
+ 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: jim $
- * $Date: 2009/05/19 05:10:28 $
- * $Revision: 1.91 $
+ * $Author: emeneses $
+ * $Date: 2009/12/02 23:09:02 $
+ * $Revision: 1.92 $
  *****************************************************************************/
 
 #include <stdlib.h>
 
 #include "InfoStream.h"
 #include "NamdCentLB.h"
+#include "NamdHybridLB.h"
+#include "NamdDummyLB.h"
 #include "NamdNborLB.h"
 
 #include "HomePatch.h"
@@ -36,6 +38,8 @@
 
 #include "elements.h"
 #include "ComputeMgr.decl.h"
+
+#include "GreedyLB.h"
 
 #define DEBUG_LEVEL 4
 
@@ -115,6 +119,7 @@ void LdbCoordinator::ResumeFromSync()
   }
 #endif
   CProxy_LdbCoordinator cl(thisgroup);
+  //iout << "[" << CmiMyPe() << "] Calling nodeDone\n" << endi;
   cl[0].nodeDone();
 }
 
@@ -207,7 +212,18 @@ void LdbCoordinator::createLoadBalancer()
   /*if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
     CreateNamdNborLB();
   else {*/
-    CreateNamdCentLB();
+    if(simParams->ldbStrategy == LDBSTRAT_HYBRID){
+	CkPrintf("Hybrid LB being created...\n");
+        CreateNamdHybridLB();
+/*	CkPrintf("Dummy LB being created...\n");
+        CreateNamdDummyLB(); */
+/*	CkPrintf("Neighbor LB being created ...\n");
+	CreateNamdNborLB(); */
+	}
+	else{
+	CkPrintf("Namd Central LB beign created...\n");
+    	CreateNamdCentLB();
+	}
   if (CkMyPe()==0)
     iout << " Done.\n" << endi;
 }
@@ -229,6 +245,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     lbcreated = 1;
   }
 #endif
+
+  // CkPrintf("%d is INITIALIZING\n",CkMyPe());
 
   //  DebugM(10,"stepsPerLdbCycle initialized\n");
   stepsPerLdbCycle = simParams->ldbPeriod;
@@ -479,6 +497,7 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 
 void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 {
+	if(!(id >= 0 && id < numComputes)) CkExit();
   CmiAssert(id >=0 && id < numComputes);
   theLbdb->ObjectStart(objHandles[id]);
 }
@@ -582,6 +601,7 @@ void LdbCoordinator::updateComputesReady() {
 void LdbCoordinator::resume(void)
 {
   DebugM(3,"resume()\n");
+  //CkPrintf("%d RESUME LDBCOORDINATOR\n",CkMyPe());
 
   //  printLocalLdbReport();
 

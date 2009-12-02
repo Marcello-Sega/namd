@@ -173,6 +173,8 @@ OBJS = \
 	$(DSTDIR)/Molecule2.o \
 	$(DSTDIR)/NamdCentLB.o \
 	$(DSTDIR)/NamdNborLB.o \
+	$(DSTDIR)/NamdHybridLB.o \
+	$(DSTDIR)/NamdDummyLB.o \
 	$(DSTDIR)/NamdState.o \
 	$(DSTDIR)/NamdOneTools.o \
 	$(DSTDIR)/Node.o \
@@ -241,6 +243,10 @@ CIFILES = 	\
 		$(INCDIR)/NamdCentLB.def.h \
 		$(INCDIR)/NamdNborLB.decl.h \
 		$(INCDIR)/NamdNborLB.def.h \
+		$(INCDIR)/NamdHybridLB.decl.h \
+		$(INCDIR)/NamdHybridLB.def.h \
+		$(INCDIR)/NamdDummyLB.decl.h \
+		$(INCDIR)/NamdDummyLB.def.h \
 		$(INCDIR)/Node.decl.h \
 		$(INCDIR)/Node.def.h \
 		$(INCDIR)/PatchMgr.decl.h \
@@ -341,7 +347,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module commlib -language charm++ \
+	-module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -module commlib -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
@@ -583,6 +589,20 @@ $(INCDIR)/NamdNborLB.decl.h: $(SRCDIR)/NamdNborLB.ci
 	$(CHARMXI) $(SRCDIR)/NamdNborLB.ci
 	$(MOVE) NamdNborLB.def.h $(INCDIR)
 	$(MOVE) NamdNborLB.decl.h $(INCDIR)
+
+$(INCDIR)/NamdHybridLB.def.h: $(INCDIR)/NamdHybridLB.decl.h
+
+$(INCDIR)/NamdDummyLB.def.h: $(INCDIR)/NamdDummyLB.decl.h
+
+$(INCDIR)/NamdHybridLB.decl.h: $(SRCDIR)/NamdHybridLB.ci
+	$(CHARMXI) $(SRCDIR)/NamdHybridLB.ci
+	$(MOVE) NamdHybridLB.def.h $(INCDIR)
+	$(MOVE) NamdHybridLB.decl.h $(INCDIR)
+
+$(INCDIR)/NamdDummyLB.decl.h: $(SRCDIR)/NamdDummyLB.ci
+	$(CHARMXI) $(SRCDIR)/NamdDummyLB.ci
+	$(MOVE) NamdDummyLB.def.h $(INCDIR)
+	$(MOVE) NamdDummyLB.decl.h $(INCDIR)
 
 $(INCDIR)/Node.def.h: $(INCDIR)/Node.decl.h
 

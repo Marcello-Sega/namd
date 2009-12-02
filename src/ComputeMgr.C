@@ -127,6 +127,8 @@ void ComputeMgr::updateLocalComputes()
     CProxy_ProxyMgr pm(CkpvAccess(BOCclass_group).proxyMgr);
     ProxyMgr *proxyMgr = pm.ckLocalBranch();
 
+	//CkPrintf("[%d] Updating as many as %d Computes\n",CkMyPe(),computeMap->numComputes());
+
     computeFlag = new int[computeMap->numComputes()];
 
     for (int i=0; i<computeMap->numComputes(); i++)
@@ -156,6 +158,7 @@ void ComputeMgr::updateLocalComputes()
         {
             computeMap->setNode(i,computeMap->newNode(i));
         }
+	
         computeMap->setNewNode(i,-1);
     }
 

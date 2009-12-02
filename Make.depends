@@ -37,6 +37,8 @@ obj/main.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \
@@ -209,6 +211,8 @@ obj/BackEnd.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \
@@ -438,6 +442,8 @@ obj/ComputeAngles.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/ComputeAngles.inl \
 	src/PressureProfile.h \
 	src/Debug.h
@@ -502,6 +508,8 @@ obj/ComputeBonds.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/ComputeBonds.inl \
 	src/PressureProfile.h \
 	src/Debug.h
@@ -627,6 +635,8 @@ obj/ComputeCrossterms.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/PressureProfile.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeCrossterms.o $(COPTC) src/ComputeCrossterms.C
@@ -721,6 +731,8 @@ obj/ComputeDihedrals.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/ComputeDihedrals.inl \
 	src/PressureProfile.h \
 	src/Debug.h
@@ -1224,6 +1236,8 @@ obj/ComputeImpropers.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/PressureProfile.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeImpropers.o $(COPTC) src/ComputeImpropers.C
@@ -1441,6 +1455,8 @@ obj/ComputeMgr.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/ComputeAngles.inl \
 	src/ComputeDihedrals.h \
 	src/ComputeDihedrals.inl \
@@ -1532,6 +1548,8 @@ obj/ComputeNonbondedSelf.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedSelf.o $(COPTC) src/ComputeNonbondedSelf.C
 obj/ComputeNonbondedPair.o: \
@@ -1562,6 +1580,8 @@ obj/ComputeNonbondedPair.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
@@ -2422,6 +2442,8 @@ obj/Controller.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/Thread.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
@@ -3275,6 +3297,8 @@ obj/HomePatch.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/Settle.h \
 	src/ReductionMgr.h \
 	src/Sync.h \
@@ -3308,6 +3332,10 @@ obj/LdbCoordinator.o: \
 	src/InfoStream.h \
 	src/NamdCentLB.h \
 	inc/NamdCentLB.decl.h \
+	src/NamdHybridLB.h \
+	inc/NamdHybridLB.decl.h \
+	src/NamdDummyLB.h \
+	inc/NamdDummyLB.decl.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -3359,6 +3387,8 @@ obj/LdbCoordinator.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/LdbCoordinator.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -3688,6 +3718,96 @@ obj/NamdNborLB.o: \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdNborLB.o $(COPTC) src/NamdNborLB.C
+obj/NamdHybridLB.o: \
+        src/NamdHybridLB.C \
+        src/InfoStream.h \
+        src/NamdHybridLB.h \
+        inc/NamdHybridLB.decl.h \
+        src/Node.h \
+        src/main.h \
+        src/ProcessorPrivate.h \
+        src/BOCgroup.h \
+        inc/Node.decl.h \
+        src/PatchMap.h \
+        src/NamdTypes.h \
+        src/common.h \
+        src/Vector.h \
+        src/ResizeArray.h \
+        src/ResizeArrayRaw.h \
+        src/HomePatchList.h \
+        src/SortedArray.h \
+        src/SortableResizeArray.h \
+        src/ResizeArrayIter.h \
+        src/Lattice.h \
+        src/Tensor.h \
+        src/SimParameters.h \
+        src/RefineOnly.h \
+        src/elements.h \
+        src/Set.h \
+        src/Rebalancer.h \
+        src/heap.h \
+        inc/ProxyMgr.decl.h \
+        src/ProxyMgr.h \
+        src/PatchTypes.h \
+        src/UniqueSet.h \
+        src/UniqueSetRaw.h \
+        src/UniqueSetIter.h \
+        src/Alg7.h \
+        src/AlgRecBisection.h \
+        src/TorusLB.h \
+        src/RefineTorusLB.h \
+        inc/NamdHybridLB.def.h \
+        src/ComputeMap.h \
+        src/LdbCoordinator.h \
+        inc/LdbCoordinator.decl.h \
+        inc/NamdHybridLB.decl.h \
+        inc/NamdNborLB.decl.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdHybridLB.o $(COPTC) src/NamdHybridLB.C
+obj/NamdDummyLB.o: \
+        src/NamdDummyLB.C \
+        src/InfoStream.h \
+        src/NamdDummyLB.h \
+        inc/NamdDummyLB.decl.h \
+        src/Node.h \
+        src/main.h \
+        src/ProcessorPrivate.h \
+        src/BOCgroup.h \
+        inc/Node.decl.h \
+        src/PatchMap.h \
+        src/NamdTypes.h \
+        src/common.h \
+        src/Vector.h \
+        src/ResizeArray.h \
+        src/ResizeArrayRaw.h \
+        src/HomePatchList.h \
+        src/SortedArray.h \
+        src/SortableResizeArray.h \
+        src/ResizeArrayIter.h \
+        src/Lattice.h \
+        src/Tensor.h \
+        src/SimParameters.h \
+        src/RefineOnly.h \
+        src/elements.h \
+        src/Set.h \
+        src/Rebalancer.h \
+        src/heap.h \
+        inc/ProxyMgr.decl.h \
+        src/ProxyMgr.h \
+        src/PatchTypes.h \
+        src/UniqueSet.h \
+        src/UniqueSetRaw.h \
+        src/UniqueSetIter.h \
+        src/Alg7.h \
+        src/AlgRecBisection.h \
+        src/TorusLB.h \
+        src/RefineTorusLB.h \
+        inc/NamdDummyLB.def.h \
+        src/ComputeMap.h \
+        src/LdbCoordinator.h \
+        inc/LdbCoordinator.decl.h \
+        inc/NamdDummyLB.decl.h \
+        inc/NamdNborLB.decl.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdDummyLB.o $(COPTC) src/NamdDummyLB.C
 obj/NamdState.o: \
 	src/NamdState.C \
 	src/InfoStream.h \
@@ -3795,6 +3915,8 @@ obj/Node.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \
@@ -4048,6 +4170,8 @@ obj/PatchMgr.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \
@@ -4239,6 +4363,8 @@ obj/ProxyPatch.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \
@@ -4548,6 +4674,8 @@ obj/Sequencer.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/Thread.h \
 	src/Random.h \
 	src/PatchMap.inl \
@@ -4697,6 +4825,8 @@ obj/WorkDistrib.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \

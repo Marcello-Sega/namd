@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
- * $Author: bhatele $
- * $Date: 2008/09/25 15:51:26 $
- * $Revision: 1.15 $
+ * $Author: emeneses $
+ * $Date: 2009/12/02 23:09:04 $
+ * $Revision: 1.16 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -31,6 +31,7 @@ int npas, int npes) : RefineTorusLB(cs, pas, pes, ncs, npas, npes, 0)
 TorusLB::~TorusLB() { }
 
 void TorusLB::strategy() {
+	int index, realPe;
   // compute the average load by (compute load + background load) / numPesAvailable
   computeAverage();
   // two heaps of self and pair computes
@@ -56,10 +57,21 @@ void TorusLB::strategy() {
   }
 
   // Look at the processors which have the compute's patches first
-  p = &processors[patches[c->patch1].processor];	// patch 1
-  selectPes(p, c);
-  p = &processors[patches[c->patch2].processor];	// patch 2
-  selectPes(p, c); 
+  //HYBRID check if processor is in local group
+	realPe = patches[c->patch1].processor;
+	if(realPe >= processors[0].Id && realPe < processors[0].Id + P){
+		index = realPe - processors[0].Id;
+  		//BACKUP p = &processors[patches[c->patch1].processor];	// patch 1
+  		p = &processors[index];	// patch 1
+  		selectPes(p, c);
+	}
+	realPe = patches[c->patch2].processor;
+	if(realPe >= processors[0].Id && realPe < processors[0].Id + P){
+		index = realPe - processors[0].Id;
+		//BACKUP p = &processors[patches[c->patch2].processor];	// patch 2
+		p = &processors[index];	// patch 2
+  		selectPes(p, c); 
+	}
 
   // Try the processors which have the patches' proxies
   p = (processorInfo *)(patches[c->patch1].proxiesOn.iterator((Iterator *)&nextP));
@@ -77,27 +89,27 @@ void TorusLB::strategy() {
   // see if we have found a processor to place the compute on
   p = 0;
   if((p = bestPe[5])
-#if USE_TOPOMAP
+#if 0
   || (p = goodPe[5])
 #endif
   || (p = bestPe[4])
-#if USE_TOPOMAP
+#if 0
   || (p = goodPe[4])
 #endif
   || (p = bestPe[3])
-#if USE_TOPOMAP
+#if 0
   || (p = goodPe[3])
 #endif
   || (p = bestPe[1])
-#if USE_TOPOMAP
+#if 0
   || (p = goodPe[1])
 #endif
   || (p = bestPe[2])
-#if USE_TOPOMAP
+#if 0
   || (p = goodPe[2])
 #endif
   || (p = bestPe[0])
-#if USE_TOPOMAP
+#if 0
   || (p = goodPe[0])
 #endif
   ) {
@@ -106,7 +118,7 @@ void TorusLB::strategy() {
   }
  
   int found = 0;
-#if USE_TOPOMAP
+#if 0
   // If no processor found, go through the whole list in a topological fashion
   // first try the inner brick
   int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
@@ -210,7 +222,7 @@ void TorusLB::strategy() {
     continue;
   }
 
-#endif /* USE_TOPOMAP */
+#endif /* 0 */
 
   if(found == 0) {
     heapIterator nextp;
@@ -221,27 +233,27 @@ void TorusLB::strategy() {
     }
     p = 0;
     if((p = bestPe[5])
-#if USE_TOPOMAP
+#if 0
     || (p = goodPe[5])
 #endif
     || (p = bestPe[4])
-#if USE_TOPOMAP
+#if 0
     || (p = goodPe[4])
 #endif
     || (p = bestPe[3])
-#if USE_TOPOMAP
+#if 0
     || (p = goodPe[3])
 #endif
     || (p = bestPe[1])
-#if USE_TOPOMAP
+#if 0
     || (p = goodPe[1])
 #endif
     || (p = bestPe[2])
-#if USE_TOPOMAP
+#if 0
     || (p = goodPe[2])
 #endif
     || (p = bestPe[0])
-#if USE_TOPOMAP
+#if 0
     || (p = goodPe[0])
 #endif
     ) {
@@ -296,7 +308,7 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
   else if(numPatches == 1 || numProxies == 1) index = 4;
   else index = 3;*/
 
-#if USE_TOPOMAP
+#if 0
   int x, y, z, t;
   int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
   int dimNX, dimNY, dimNZ, dimNT;
@@ -318,7 +330,7 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
 
   if (p->load + c->load < overLoad * averageLoad) {
   // replace only if the new processor is underloaded
-#if USE_TOPOMAP
+#if 0
     tmgr.rankToCoordinates(p->Id, x, y, z, t);
     int wB = withinBrick(x, y, z, xm, xM, dimNX, ym, yM, dimNY, zm, zM, dimNZ);
     if (wB) {
@@ -328,7 +340,7 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
       processorInfo* &oldp = bestPe[index];
       if (!(oldp) || p->load < oldp->load )
         oldp = p;
-#if USE_TOPOMAP
+#if 0
     } else {
       // if outside the brick formed by the patch processors
       processorInfo* &oldp = goodPe[index];

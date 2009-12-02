@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2009/11/11 20:36:45 $
- * $Revision: 1.1158 $
+ * $Author: emeneses $
+ * $Date: 2009/12/02 23:09:03 $
+ * $Revision: 1.1159 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -62,6 +62,7 @@ typedef int  MTSChoices;
 #define LDBSTRAT_REFINEONLY	1
 #define LDBSTRAT_ALG7		2
 #define LDBSTRAT_ASB8		3
+#define LDBSTRAT_HYBRID		4
 #define LDBSTRAT_OTHER		99
 
 // The following definitions are used to distinguish between patch-splitting

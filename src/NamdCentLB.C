@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: chaomei2 $
- * $Date: 2009/06/02 16:39:58 $
- * $Revision: 1.89 $
+ * $Author: emeneses $
+ * $Date: 2009/12/02 23:09:02 $
+ * $Revision: 1.90 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -31,6 +31,20 @@ void CreateNamdCentLB()
   cpuloads = new double[CkNumPes()];
   for (int i=0; i<CkNumPes(); i++) cpuloads[i] = 0.0;
 }
+
+NamdCentLB *AllocateNamdCentLB(){
+	return new NamdCentLB((CkMigrateMessage*)NULL);
+}
+
+/**
+ * Migratable Object Constructor.
+ kMigrateMessage*)NULL
+ */
+NamdCentLB::NamdCentLB(CkMigrateMessage *msg): CentralLB(msg){
+  processorArray = 0;
+  patchArray = 0;
+  computeArray = 0;
+} 
 
 NamdCentLB::NamdCentLB(): CentralLB(CkLBOptions(-1))
 {
@@ -85,6 +99,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
   if ( ! computeArray ) computeArray = new computeInfo[numComputes];
 
+
   int nMoveableComputes = buildData(stats,count);
 
 #if LDB_DEBUG
@@ -98,6 +113,8 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   loadDataASCII("ldbd_before.5", numProcessors, numPatches, nMoveableComputes);
   // CkExit();
 #endif
+
+  iout << " NamdCentLB 1" << CmiWallTimer() << "\n" << endi;
 
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
     RefineOnly(computeArray, patchArray, processorArray,
@@ -121,6 +138,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
                   nMoveableComputes, numPatches, numProcessors);
   }
 
+  iout << " NamdCentLB 2" << CmiWallTimer() << "\n" << endi;
 #if LDB_DEBUG && USE_TOPOMAP
   TopoManager tmgr;
   int pe1, pe2, pe3, hops=0;
@@ -187,10 +205,11 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
 
       // sneak in updates to ComputeMap
       computeMap->setNewNode(computeArray[i].handle.id.id[0],
-				computeArray[i].processor);
+	 			computeArray[i].processor);
     }
   }
   
+  iout << " NamdCentLB 3" << CmiWallTimer() << "\n" << endi;
   int migrate_count=migrateInfo.length();
   // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
   CLBMigrateMsg* msg = new(migrate_count,CkNumPes(),CkNumPes(),0) CLBMigrateMsg;
@@ -371,6 +390,8 @@ extern int isPmeProcessor(int);
 
 int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
+
+
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
   const SimParameters* simParams = Node::Object()->simParameters;
@@ -507,6 +528,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
+
 	const int cid = this_obj.id().id[0];
 	const int p0 = computeMap->pid(cid,0);
 
@@ -528,6 +550,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	nMoveableComputes++;
       }
     }
+
 
 /* *********** this code is defunct *****************
 #if 0

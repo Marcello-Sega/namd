@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/AlgSeven.C,v $
- * $Author: bhatele $
- * $Date: 2007/11/01 17:39:53 $
- * $Revision: 1.55 $
+ * $Author: emeneses $
+ * $Date: 2009/12/02 23:09:02 $
+ * $Revision: 1.56 $
  *****************************************************************************/
 
 #include "common.h"
@@ -135,7 +135,7 @@ void Alg7::strategy()
   makeHeaps();
   //   iout << iINFO
   //	<< "Before assignment\n" << endi;
-  //   printLoads();
+  printLoads();
 
   /*
   int numOverloaded = 0;
