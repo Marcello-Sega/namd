@@ -1052,7 +1052,7 @@ void HomePatch::saveForce(const int ftag)
  * pass by constant reference the corresponding positions,
  * and a pointer to virial.
  */
-void HomePatch::redistrib_lp_force(
+void HomePatch::redistrib_lp_water_force(
     Vector& f_ox, Vector& f_h1, Vector& f_h2, Vector& f_lp,
     const Vector& p_ox, const Vector& p_h1, const Vector& p_h2,
     const Vector& p_lp, Tensor *virial) {
@@ -1208,7 +1208,7 @@ void HomePatch::redistrib_swm4_forces(const int ftag, Tensor *virial) {
   for (int i = 0;  i < numAtoms;  i++) {
     if (atom[i].mass < 0.01) {
       // found lonepair
-      redistrib_lp_force(f_mod[ftag][i-2], f_mod[ftag][i+1],
+      redistrib_lp_water_force(f_mod[ftag][i-2], f_mod[ftag][i+1],
           f_mod[ftag][i+2], f_mod[ftag][i],
           atom[i-2].position, atom[i+1].position,
           atom[i+2].position, atom[i].position, virial);
@@ -1225,7 +1225,7 @@ void HomePatch::redistrib_tip4p_forces(const int ftag, Tensor* virial) {
   for (int i=0; i<numAtoms; i++) {
     if (atom[i].mass < 0.01) {
       // found lonepair
-      redistrib_lp_force(f_mod[ftag][i-3], f_mod[ftag][i-2],
+      redistrib_lp_water_force(f_mod[ftag][i-3], f_mod[ftag][i-2],
           f_mod[ftag][i-1], f_mod[ftag][i],
           atom[i-3].position, atom[i-2].position,
           atom[i-1].position, atom[i].position, virial);

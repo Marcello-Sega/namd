@@ -234,7 +234,7 @@ private:
   void init_swm4();
 
   // use for both TIP4P and SWM4 water
-  void redistrib_lp_force(
+  void redistrib_lp_water_force(
       Vector& f_ox, Vector& f_h1, Vector& f_h2, Vector& f_lp,
       const Vector& p_ox, const Vector& p_h1, const Vector& p_h2,
       const Vector& p_lp, Tensor *virial);
