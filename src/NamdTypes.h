@@ -53,7 +53,8 @@ struct CompAtom {
   short vdwType;
   unsigned char partition;
   unsigned int nonbondedGroupSize : 3;
-  unsigned int hydrogenGroupSize : 5;  // could be 4 if signed, 3 if unsigned
+  unsigned int hydrogenGroupSize : 4;  // could be 3 if unsigned
+  unsigned int isWater : 1;  // 0 = particle is not in water, 1 = is in water
 };
 
 //CompAtomExt is now needed even in normal case
