@@ -233,6 +233,12 @@ private:
   void swm4_omrepos(Vector*, Vector*, Vector*, BigReal);
   void init_swm4();
 
+  // general redistribution of lp forces to host atoms
+  void redistrib_lp_force(
+      Vector& fi, Vector& fj, Vector& fk, Vector& fl,
+      const Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
+      Tensor *virial, int midpt);
+
   // use for both TIP4P and SWM4 water
   void redistrib_lp_water_force(
       Vector& f_ox, Vector& f_h1, Vector& f_h2, Vector& f_lp,

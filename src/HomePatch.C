@@ -1041,8 +1041,138 @@ void HomePatch::saveForce(const int ftag)
   }
 }
 
+
 #undef DEBUG_REDISTRIB_FORCE 
 #undef DEBUG_REDISTRIB_FORCE_VERBOSE
+/*
+ * Redistribute forces from lone pair site onto its host atoms.
+ *
+ * Atoms are "labeled" i, j, k, l, where atom i is the lone pair.
+ * Positions of atoms are ri, rj, rk, rl.
+ * Forces of atoms are fi, fj, fk, fl; updated forces are returned.
+ * Accumulate updates to the virial.
+ *
+ * The forces on the atoms are updated so that:
+ *   - the force fi on the lone pair site is 0
+ *   - the net force fi+fj+fk+fl is conserved
+ *   - the net torque cross(ri,fi)+cross(rj,fj)+cross(rk,fk)+cross(rl,fl)
+ *     is conserved
+ *
+ * If "midpt" is true (nonzero), then use the midpoint of rk and rl
+ * (e.g. rk and rl are the hydrogen atoms for water).  Otherwise use
+ * planes defined by ri,rj,rk and rj,rk,rl.
+ *
+ * Having "midpt" set true corresponds in CHARMM to having a negative
+ * distance parameter in Lphost.
+ */
+void HomePatch::redistrib_lp_force(
+    Vector& fi, Vector& fj, Vector& fk, Vector& fl,
+    const Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
+    Tensor *virial, int midpt) {
+//#define DEBUG_REDISTRIB_FORCE
+#ifdef DEBUG_REDISTRIB_FORCE
+  Vector foldnet, toldnet;  // old net force, old net torque
+  foldnet = fi + fj + fk + fl;
+  toldnet = cross(ri,fi) + cross(rj,fj) + cross(rk,fk) + cross(rl,fl);
+#endif
+  Vector fja(0), fka(0), fla(0);
+
+  Vector r = ri - rj;
+  BigReal invr2 = r.rlength();
+  invr2 *= invr2;
+  BigReal fdot = (fi*r) * invr2;
+  Vector fr = r * fdot;
+
+  fja += fr;
+
+  Vector s, t;
+  if (midpt) {
+    s = rj - 0.5*(rk + rl);
+    t = 0.5*(rk - rl);
+  }
+  else {
+    s = rj - rk;
+    t = rk - rl;
+  }
+  BigReal invs2 = s.rlength();
+  invs2 *= invs2;
+
+  Vector p = cross(r,s);
+  BigReal invp = p.rlength();
+  Vector q = cross(s,t);
+  BigReal invq = q.rlength();
+
+  BigReal fpdot = (fi*p) * invp;
+  Vector fp = p * fpdot;
+  Vector ft = fi - fr - fp;
+
+  fja += ft;
+  Vector v = cross(r,ft);  // torque
+  ft = cross(s,v) * invs2;
+  fja -= ft;
+
+  if (midpt) {
+    fka += 0.5 * ft;
+    fla += 0.5 * ft;
+  }
+  else {
+    fka += ft;
+  }
+
+  BigReal srdot = (s*r) * invs2;
+  Vector rr = r - s*srdot;
+  BigReal rrdot = rr.length();
+  BigReal stdot = (s*t) * invs2;
+  Vector tt = t - s*stdot;
+  BigReal invtt = tt.rlength();
+  BigReal fact = rrdot*fpdot*invtt*invq;
+  Vector fq = q * fact;
+
+  fla += fq;
+  fja += fp*(1+srdot) + fq*stdot;
+
+  ft = fq*(1+stdot) + fp*srdot;
+
+  if (midpt) {
+    fka += -0.5*ft;
+    fla += -0.5*ft;
+  }
+  else {
+    fka -= ft;
+  }
+
+  if (virial) {
+    Tensor va = outer(fja,rj);
+    va += outer(fka,rk);
+    va += outer(fla,rl);
+    va -= outer(fi,ri);
+    *virial += va;
+  }
+
+  fi = 0;  // lone pair has zero force
+  fj += fja;
+  fk += fka;
+  fl += fla;
+
+#ifdef DEBUG_REDISTRIB_FORCE
+#define TOL_REDISTRIB  1e-4
+  Vector fnewnet, tnewnet;  // new net force, new net torque
+  fnewnet = fi + fj + fk + fl;
+  tnewnet = cross(ri,fi) + cross(rj,fj) + cross(rk,fk) + cross(rl,fl);
+  Vector fdiff = fnewnet - foldnet;
+  Vector tdiff = tnewnet - toldnet;
+  if (fdiff.length2() > TOL_REDISTRIB*TOL_REDISTRIB) {
+    printf("Error:  force redistribution for water exceeded tolerance:  "
+        "fdiff=(%f, %f, %f)\n", fdiff.x, fdiff.y, fdiff.z);
+  }
+  if (tdiff.length2() > TOL_REDISTRIB*TOL_REDISTRIB) {
+    printf("Error:  torque redistribution for water exceeded tolerance:  "
+        "tdiff=(%f, %f, %f)\n", tdiff.x, tdiff.y, tdiff.z);
+  }
+#endif
+}
+
+
 /* Redistribute forces from the massless lonepair charge particle onto
  * the other atoms of the water.
  *
@@ -1057,20 +1187,13 @@ void HomePatch::redistrib_lp_water_force(
     const Vector& p_ox, const Vector& p_h1, const Vector& p_h2,
     const Vector& p_lp, Tensor *virial) {
 
-  Tensor wc;  // accumulate virial contribution from force redistribution
-
 #ifdef DEBUG_REDISTRIB_FORCE 
   // Debug information to check against results at end
 
   // total force and torque relative to origin
-  Vector totforce(0.0, 0.0, 0.0);
-  Vector tottorque(0.0, 0.0, 0.0);
-
+  Vector totforce, tottorque;
   totforce = f_ox + f_h1 + f_h2 + f_lp;
-
-  tottorque += cross(f_ox, p_ox);
-  tottorque += cross(f_h1, p_h1);
-  tottorque += cross(f_h2, p_h2);
+  tottorque = cross(f_ox, p_ox) + cross(f_h1, p_h1) + cross(f_h2, p_h2);
   //printf("Torque without LP is %f/%f/%f\n",
   //    tottorque.x, tottorque.y, tottorque.z);
   tottorque += cross(f_lp, p_lp);
@@ -1078,25 +1201,27 @@ void HomePatch::redistrib_lp_water_force(
   //    tottorque.x, tottorque.y, tottorque.z);
 #endif
 
+  // accumulate force adjustments
+  Vector fad_ox(0), fad_h(0);
+
   // Calculate the radial component of the force and add it to the oxygen
   Vector r_ox_lp = p_lp - p_ox;
-  BigReal rad_factor = (f_lp * r_ox_lp) * r_ox_lp.rlength() * r_ox_lp.rlength();
+  BigReal invlen2_r_ox_lp = r_ox_lp.rlength();
+  invlen2_r_ox_lp *= invlen2_r_ox_lp;
+  BigReal rad_factor = (f_lp * r_ox_lp) * invlen2_r_ox_lp;
   Vector f_rad = r_ox_lp * rad_factor;
 
-  Tensor vir = outer(f_rad, p_ox);
-  wc += vir;
-
-  f_ox = f_ox + f_rad;
+  fad_ox += f_rad;
 
   // Calculate the angular component
   Vector r_hcom_ox = p_ox - ( (p_h1 + p_h2) * 0.5 );
   Vector r_h2_h1_2 = (p_h1 - p_h2) * 0.5; // half of r_h2_h1
 
   // deviation from collinearity of charge site
-  Vector r_oop = cross(r_ox_lp, r_hcom_ox);
+  //Vector r_oop = cross(r_ox_lp, r_hcom_ox);
   //
   // vector out of o-h-h plane
-  Vector r_perp = cross(r_hcom_ox, r_h2_h1_2);
+  //Vector r_perp = cross(r_hcom_ox, r_h2_h1_2);
 
   // Here we assume that Ox/Lp/Hcom are linear
   // If you want to correct for deviations, this is the place
@@ -1106,59 +1231,52 @@ void HomePatch::redistrib_lp_water_force(
   Vector f_ang = f_lp - f_rad; // leave the angular component
 
   // now split this component onto the other atoms
-  BigReal oxcomp = (r_hcom_ox.length() - r_ox_lp.length()) *
-    r_hcom_ox.rlength();
-  BigReal hydcomp = 0.5 * r_ox_lp.length() * r_hcom_ox.rlength();
+  BigReal len_r_ox_lp = r_ox_lp.length();
+  BigReal invlen_r_hcom_ox = r_hcom_ox.rlength();
+  BigReal oxcomp = (r_hcom_ox.length() - len_r_ox_lp) * invlen_r_hcom_ox;
+  BigReal hydcomp = 0.5 * len_r_ox_lp * invlen_r_hcom_ox;
 
-  f_ox = f_ox + (f_ang * oxcomp);
-  f_h1 = f_h1 + (f_ang * hydcomp);
-  f_h2 = f_h2 + (f_ang * hydcomp);
+  fad_ox += (f_ang * oxcomp);
+  fad_h += (f_ang * hydcomp);  // adjustment for both hydrogens
 
   // Add virial contributions
-  vir = outer(f_ang * oxcomp, p_ox);
-  wc += vir;
-  vir = outer(f_ang * hydcomp, p_h1);
-  wc += vir;
-  vir = outer(f_ang * hydcomp, p_h2);
-  wc += vir;
-  vir = outer(-1.0 * f_lp, p_lp);
-  wc += vir;
-
-  if ( virial ) *virial += wc;
+  if (virial) {
+    Tensor vir = outer(fad_ox, p_ox);
+    vir += outer(fad_h, p_h1);
+    vir += outer(fad_h, p_h2);
+    vir -= outer(f_lp, p_lp);
+    *virial += vir;
+  }
 
   //Vector zerovec(0.0, 0.0, 0.0);
-  f_lp = Vector(0.0, 0.0, 0.0);
+  f_lp = 0;
+  f_ox += fad_ox;
+  f_h1 += fad_h;
+  f_h2 += fad_h;
 
 #ifdef DEBUG_REDISTRIB_FORCE 
   // Check that the total force and torque come out right
-  Vector newforce(0.0, 0.0, 0.0);
-  Vector newtorque(0.0, 0.0, 0.0);
-  BigReal error = 0.0;
-
+  Vector newforce, newtorque;
   newforce = f_ox + f_h1 + f_h2;
-
-  newtorque += cross(f_ox, p_ox);
-  newtorque += cross(f_h1, p_h1);
-  newtorque += cross(f_h2, p_h2);
-
-  error = fabs(newforce.length() - totforce.length());
+  newtorque = cross(f_ox, p_ox) + cross(f_h1, p_h1) + cross(f_h2, p_h2);
+  Vector fdiff = newforce - totforce;
+  Vector tdiff = newtorque - tottorque;
+  BigReal error = fdiff.length();
   if (error > 0.0001) {
      printf("Error:  Force redistribution for water "
-         "exceeded force tolerance (%f vs. %f)\n",
-         newforce.length(), totforce.length());
+         "exceeded force tolerance:  error=%f\n", error);
   }
 #ifdef DEBUG_REDISTRIB_FORCE_VERBOSE
-  printf("Error in force length:  %f\n", error);
+  printf("Error in net force:  %f\n", error);
 #endif
 
-  error = fabs(newtorque.length() - tottorque.length());
+  error = tdiff.length();
   if (error > 0.0001) {
      printf("Error:  Force redistribution for water "
-         "exceeded torque tolerance (%f vs. %f)\n",
-         newtorque.length(), tottorque.length());
+         "exceeded torque tolerance:  error=%f\n", error);
   }
 #ifdef DEBUG_REDISTRIB_FORCE_VERBOSE
-  printf("Error in torque:  %f\n", error);
+  printf("Error in net torque:  %f\n", error);
 #endif
 #endif /* DEBUG */
 }
@@ -1208,10 +1326,17 @@ void HomePatch::redistrib_swm4_forces(const int ftag, Tensor *virial) {
   for (int i = 0;  i < numAtoms;  i++) {
     if (atom[i].mass < 0.01) {
       // found lonepair
+#if 1
       redistrib_lp_water_force(f_mod[ftag][i-2], f_mod[ftag][i+1],
           f_mod[ftag][i+2], f_mod[ftag][i],
           atom[i-2].position, atom[i+1].position,
           atom[i+2].position, atom[i].position, virial);
+#else
+      redistrib_lp_force(f_mod[ftag][i],
+          f_mod[ftag][i-2], f_mod[ftag][i+1], f_mod[ftag][i+2],
+          atom[i].position, atom[i-2].position, atom[i+1].position,
+          atom[i+2].position, virial, 1);
+#endif
     }
   }
 }
