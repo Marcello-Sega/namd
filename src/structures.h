@@ -96,7 +96,6 @@ typedef struct drude_constants  // supplement Atom data
 {                        // create array length N of these
   Real alpha;
   Real thole;
-  int32 lphostIndex;     // for each lone pair, index into array of Lphost
 } DrudeConst;
 
 typedef struct lphost    // lone pair host

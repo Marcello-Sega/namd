@@ -1718,7 +1718,6 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
       }
       drudeConsts[atom_number-1].alpha = alpha;
       drudeConsts[atom_number-1].thole = thole;
-      drudeConsts[atom_number-1].lphostIndex = -1;  // set this later
     }
     // DRUDE
 
@@ -2705,10 +2704,6 @@ void Molecule::read_lphosts(FILE *fd)
     lphosts[i].atom2 = NAMD_read_int(fd, "LPHOSTS")-1;
     lphosts[i].atom3 = NAMD_read_int(fd, "LPHOSTS")-1;
     lphosts[i].atom4 = NAMD_read_int(fd, "LPHOSTS")-1;
-  }
-  for (i = 0;  i < numLphosts;  i++) {
-    int32 atomid = lphosts[i].atom1;      // this is the lone pair
-    drudeConsts[atomid].lphostIndex = i;  // direct it to this lphosts entry
   }
 }
 /*      END OF FUNCTION read_lphosts    */
