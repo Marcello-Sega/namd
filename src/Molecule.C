@@ -663,6 +663,10 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   // DRUDE: set flag if we discover Drude PSF
   if (NAMD_find_word(buffer, "drude"))
   {
+    if ( ! simParams->drudeOn ) {
+      iout << iINFO << "Warning: Reading PSF supporting DRUDE without "
+        "enabling the Drude model in the simulation config file\n";
+    }
     is_drude_psf = 1;
   }
   // DRUDE
@@ -3476,6 +3480,17 @@ void Molecule::send_Molecule(MOStream *msg)
       }
 //fepe
 
+      // DRUDE: send data read from PSF
+      msg->put(is_drude_psf);
+      if (is_drude_psf) {
+        msg->put(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
+        msg->put(numLphosts);
+        msg->put(numLphosts*sizeof(Lphost), (char*)lphosts);
+        msg->put(numAnisos);
+        msg->put(numAnisos*sizeof(Aniso), (char*)anisos);
+      }
+      // DRUDE
+
       // Broadcast the message to the other nodes
       msg->end();
       delete msg;
@@ -3839,6 +3854,23 @@ void Molecule::receive_Molecule(MIStream *msg)
         msg->get(numAtoms*sizeof(unsigned char), (char*)fepAtomFlags);
       }
 //fepe
+
+      // DRUDE: receive data read from PSF
+      msg->get(is_drude_psf);
+      if (is_drude_psf) {
+        delete[] drudeConsts;
+        drudeConsts = new DrudeConst[numAtoms];
+        msg->get(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
+        msg->get(numLphosts);
+        delete[] lphosts;
+        lphosts = new Lphost[numLphosts];
+        msg->get(numLphosts*sizeof(Lphost), (char*)lphosts);
+        msg->get(numAnisos);
+        delete[] anisos;
+        anisos = new Aniso[numAnisos];
+        msg->get(numAnisos*sizeof(Aniso), (char*)anisos);
+      }
+      // DRUDE
 
       //  Now free the message 
       delete msg;
