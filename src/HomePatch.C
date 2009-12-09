@@ -1281,6 +1281,44 @@ void HomePatch::redistrib_lp_water_force(
 #endif /* DEBUG */
 }
 
+void HomePatch::repos_lp(
+    Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
+    Real distance, Real angle, Real dihedral)
+{
+  BigReal r, t, p, cst, snt, csp, snp, invlen;
+  Vector v, w, a, b, c;
+
+  if (distance >= 0) {
+    v = rk;
+    r = distance;
+  }
+  else {
+    v = 0.5*(rk + rl);
+    r = -distance;
+  }
+
+  t = angle;
+  p = dihedral;
+  cst = cos(t);
+  snt = sin(t);
+  csp = cos(p);
+  snp = sin(p);
+  a = v - rj;
+  b = rl - v;
+  invlen = a.rlength();
+  a *= invlen;
+  c = cross(b, a);
+  invlen = c.rlength();
+  c *= invlen;
+  b = cross(a, c);
+  w.x = r*cst;
+  w.y = r*snt*csp;
+  w.z = r*snt*snp;
+  ri.x = rj.x + w.x*a.x + w.y*b.x + w.z*c.x;
+  ri.y = rj.y + w.x*a.y + w.y*b.y + w.z*c.y;
+  ri.z = rj.z + w.x*a.z + w.y*b.z + w.z*c.z;
+}
+
 void HomePatch::swm4_omrepos(Vector *ref, Vector *pos, Vector *vel,
     BigReal invdt) {
   // Reposition lonepair (Om) particle of Drude SWM4 water.

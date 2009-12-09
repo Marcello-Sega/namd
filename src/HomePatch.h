@@ -233,7 +233,12 @@ private:
   void swm4_omrepos(Vector*, Vector*, Vector*, BigReal);
   void init_swm4();
 
-  // general redistribution of lp forces to host atoms
+  // reposition lone pair using its host atoms and additional parameters
+  void repos_lp(
+      Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
+      Real distance, Real angle, Real dihedral);
+
+  // general redistribution of lone pair forces to host atoms
   void redistrib_lp_force(
       Vector& fi, Vector& fj, Vector& fk, Vector& fl,
       const Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
