@@ -1044,6 +1044,7 @@ void HomePatch::saveForce(const int ftag)
 
 #undef DEBUG_REDISTRIB_FORCE 
 #undef DEBUG_REDISTRIB_FORCE_VERBOSE
+//#define DEBUG_REDISTRIB_FORCE
 /*
  * Redistribute forces from lone pair site onto its host atoms.
  *
@@ -1064,12 +1065,16 @@ void HomePatch::saveForce(const int ftag)
  *
  * Having "midpt" set true corresponds in CHARMM to having a negative
  * distance parameter in Lphost.
+ *
+ * Use FIX_FOR_WATER below to fix the case that occurs when the lone pair
+ * site for water lies on the perpendicular bisector of rk and rl, making
+ * the cross(r,s) zero.
  */
+#define FIX_FOR_WATER
 void HomePatch::redistrib_lp_force(
     Vector& fi, Vector& fj, Vector& fk, Vector& fl,
     const Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
     Tensor *virial, int midpt) {
-//#define DEBUG_REDISTRIB_FORCE
 #ifdef DEBUG_REDISTRIB_FORCE
   Vector foldnet, toldnet;  // old net force, old net torque
   foldnet = fi + fj + fk + fl;
@@ -1098,13 +1103,33 @@ void HomePatch::redistrib_lp_force(
   invs2 *= invs2;
 
   Vector p = cross(r,s);
+#if !defined(FIX_FOR_WATER)
   BigReal invp = p.rlength();
+#else
+  BigReal p2 = p.length2();  // fix division by zero above
+#endif
+
   Vector q = cross(s,t);
   BigReal invq = q.rlength();
 
+#if !defined(FIX_FOR_WATER)
   BigReal fpdot = (fi*p) * invp;
   Vector fp = p * fpdot;
   Vector ft = fi - fr - fp;
+#else
+  BigReal fpdot;
+  Vector fp, ft;
+  if (p2 < 1e-6) {  // vector is near zero, assume no fp contribution to force
+    fpdot = 0;
+    fp = 0;
+    ft = fi - fr;
+  }
+  else {
+    fpdot = (fi*p) / sqrt(p2);
+    fp = p * fpdot;
+    ft = fi - fr - fp;
+  }
+#endif
 
   fja += ft;
   Vector v = cross(r,ft);  // torque
@@ -1281,7 +1306,7 @@ void HomePatch::redistrib_lp_water_force(
 #endif /* DEBUG */
 }
 
-void HomePatch::repos_lp(
+void HomePatch::reposition_lonepair(
     Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
     Real distance, Real angle, Real dihedral)
 {
@@ -1319,6 +1344,35 @@ void HomePatch::repos_lp(
   ri.z = rj.z + w.x*a.z + w.y*b.z + w.z*c.z;
 }
 
+void HomePatch::reposition_all_lonepairs(void) {
+  for (int i=0;  i < numAtoms;  i++) {
+    if (atom[i].mass < 0.01) {
+      // found a lone pair
+      AtomID aid = atom[i].id;  // global atom ID of lp
+      Lphost *lph = Node::Object()->molecule->get_lphost(aid);  // its lphost
+      if (lph == NULL) {
+        char errmsg[512];
+        sprintf(errmsg, "reposition lone pairs: "
+            "no Lphost exists for LP %d\n", aid);
+        NAMD_die(errmsg);
+      }
+      LocalID j = AtomMap::Object()->localID(lph->atom2);
+      LocalID k = AtomMap::Object()->localID(lph->atom3);
+      LocalID l = AtomMap::Object()->localID(lph->atom4);
+      if (j.pid != patchID || k.pid != patchID || l.pid != patchID) {
+        char errmsg[512];
+        sprintf(errmsg, "reposition lone pairs: "
+            "LP %d has some Lphost atom off patch\n", aid);
+        NAMD_die(errmsg);
+      }
+      // reposition this lone pair
+      reposition_lonepair(atom[i].position, atom[j.index].position,
+          atom[k.index].position, atom[l.index].position,
+          lph->distance, lph->angle, lph->dihedral);
+    }
+  }
+}
+
 void HomePatch::swm4_omrepos(Vector *ref, Vector *pos, Vector *vel,
     BigReal invdt) {
   // Reposition lonepair (Om) particle of Drude SWM4 water.
@@ -1326,6 +1380,7 @@ void HomePatch::swm4_omrepos(Vector *ref, Vector *pos, Vector *vel,
   // is different: O, D, LP, H1, H2.
   pos[2] = pos[0] + (0.5 * (pos[3] + pos[4]) - pos[0]) * (r_om / r_ohc);
   // Now, adjust velocity of particle to get it to appropriate place
+  // during next integration "drift-step"
   if (invdt != 0) {
     vel[2] = (pos[2] - ref[2]) * invdt;
   }
@@ -1357,6 +1412,38 @@ void HomePatch::tip4_omrepos(Vector* ref, Vector* pos, Vector* vel, BigReal invd
   return;
 }
 
+void HomePatch::redistrib_lonepair_forces(const int ftag, Tensor *virial) {
+  ForceList *f_mod = f;
+  for (int i = 0;  i < numAtoms;  i++) {
+    if (atom[i].mass < 0.01) {
+      // found a lone pair
+      AtomID aid = atom[i].id;  // global atom ID of lp
+      Lphost *lph = Node::Object()->molecule->get_lphost(aid);  // its lphost
+      if (lph == NULL) {
+        char errmsg[512];
+        sprintf(errmsg, "redistrib lone pair forces: "
+            "no Lphost exists for LP %d\n", aid);
+        NAMD_die(errmsg);
+      }
+      LocalID j = AtomMap::Object()->localID(lph->atom2);
+      LocalID k = AtomMap::Object()->localID(lph->atom3);
+      LocalID l = AtomMap::Object()->localID(lph->atom4);
+      if (j.pid != patchID || k.pid != patchID || l.pid != patchID) {
+        char errmsg[512];
+        sprintf(errmsg, "redistrib lone pair forces: "
+            "LP %d has some Lphost atom off patch\n", aid);
+        NAMD_die(errmsg);
+      }
+      // redistribute forces from this lone pair
+      int midpt = (lph->distance < 0);
+      redistrib_lp_force(f_mod[ftag][i], f_mod[ftag][j.index],
+          f_mod[ftag][k.index], f_mod[ftag][l.index],
+          atom[i].position, atom[j.index].position,
+          atom[k.index].position, atom[l.index].position, virial, midpt);
+    }
+  }
+}
+
 void HomePatch::redistrib_swm4_forces(const int ftag, Tensor *virial) {
   // Loop over the patch's atoms and apply the appropriate corrections
   // to get all forces off of lone pairs
@@ -1364,17 +1451,10 @@ void HomePatch::redistrib_swm4_forces(const int ftag, Tensor *virial) {
   for (int i = 0;  i < numAtoms;  i++) {
     if (atom[i].mass < 0.01) {
       // found lonepair
-#if 1
       redistrib_lp_water_force(f_mod[ftag][i-2], f_mod[ftag][i+1],
           f_mod[ftag][i+2], f_mod[ftag][i],
           atom[i-2].position, atom[i+1].position,
           atom[i+2].position, atom[i].position, virial);
-#else
-      redistrib_lp_force(f_mod[ftag][i],
-          f_mod[ftag][i-2], f_mod[ftag][i+1], f_mod[ftag][i+2],
-          atom[i].position, atom[i-2].position, atom[i+1].position,
-          atom[i+2].position, virial, 1);
-#endif
     }
   }
 }

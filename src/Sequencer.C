@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jim $
- * $Date: 2009/08/27 18:04:40 $
- * $Revision: 1.1175 $
+ * $Author: dhardy $
+ * $Date: 2009/12/16 20:41:48 $
+ * $Revision: 1.1176 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -197,6 +197,9 @@ void Sequencer::integrate() {
 //    printf("Doing initial rattle\n");
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
 
+    // can't call reposition_all_lonepairs() until after call to
+    // runComputeObjects() performs the initial atom migration
+
     const int reassignFreq = simParams->reassignFreq;
     if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
        reassignVelocities(timestep,step);
@@ -204,9 +207,14 @@ void Sequencer::integrate() {
 
     doEnergy = ! ( step % energyFrequency );
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
-    
+
     // Redistribute forces, if needed for lonepairs
-    if (simParams->watmodel == WAT_TIP4) {
+    if (simParams->drudeOn) {
+      redistrib_lonepair_forces(Results::normal, 0);
+      redistrib_lonepair_forces(Results::nbond, 0);
+      redistrib_lonepair_forces(Results::slow, 0);
+    }
+    else if (simParams->watmodel == WAT_TIP4) {
       redistrib_tip4p_forces(Results::normal, 0);
       redistrib_tip4p_forces(Results::nbond, 0);
       redistrib_tip4p_forces(Results::slow, 0);
@@ -281,8 +289,10 @@ void Sequencer::integrate() {
 
       maximumMove(timestep);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+      if (simParams->drudeOn) reposition_all_lonepairs();
       langevinPiston(step);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+      if (simParams->drudeOn) reposition_all_lonepairs();
 
       minimizationQuenchVelocity();
 
@@ -305,7 +315,12 @@ void Sequencer::integrate() {
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
       
       // Redistribute forces, if needed for lonepairs
-      if (simParams->watmodel == WAT_TIP4) {
+      if (simParams->drudeOn) {
+        redistrib_lonepair_forces(Results::normal, 1);
+        if (doNonbonded) redistrib_lonepair_forces(Results::nbond, 1);
+        if (doFullElectrostatics) redistrib_lonepair_forces(Results::slow, 1);
+      }
+      else if (simParams->watmodel == WAT_TIP4) {
         redistrib_tip4p_forces(Results::normal, 1);
         if (doNonbonded) redistrib_tip4p_forces(Results::nbond, 1);
         if (doFullElectrostatics) redistrib_tip4p_forces(Results::slow, 1);
@@ -335,10 +350,12 @@ void Sequencer::integrate() {
       if ( ! commOnly ) {
         langevinVelocitiesBBK1(timestep);
         addForceToMomentum(timestep);
-        if (staleForces || doNonbonded)
+        if (staleForces || doNonbonded) {
           addForceToMomentum(nbondstep,Results::nbond,staleForces,1);
-        if (staleForces || doFullElectrostatics)
+        }
+        if (staleForces || doFullElectrostatics) {
           addForceToMomentum(slowstep,Results::slow,staleForces,1);
+        }
         langevinVelocitiesBBK2(timestep);
       }
 
@@ -1028,6 +1045,17 @@ void Sequencer::tcoupleVelocities(BigReal dt_fs, int step)
 void Sequencer::saveForce(const int ftag)
 {
   patch->saveForce(ftag);
+}
+
+void Sequencer::reposition_all_lonepairs(void) {
+  patch->reposition_all_lonepairs();
+}
+
+void Sequencer::redistrib_lonepair_forces(const int ftag, const int pressure) {
+  Tensor virial;
+  Tensor *vp = ( pressure ? &virial : 0 );
+  patch->redistrib_lonepair_forces(ftag, vp);
+  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
 }
 
 void Sequencer::redistrib_tip4p_forces(const int ftag, const int pressure) {

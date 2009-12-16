@@ -222,6 +222,9 @@ private:
   int nChild;
 #endif
 
+  // Drude lone pairs
+  void redistrib_lonepair_forces(const int, Tensor *);
+
   // PLF -- for TIP4P
   //void redistrib_tip4p_force(Vector&, Vector&, Vector&, Vector&, int, Tensor*);
   void redistrib_tip4p_forces(const int, Tensor*);
@@ -233,10 +236,12 @@ private:
   void swm4_omrepos(Vector*, Vector*, Vector*, BigReal);
   void init_swm4();
 
-  // reposition lone pair using its host atoms and additional parameters
-  void repos_lp(
+  // reposition a lone pair using its host atoms and additional parameters
+  void reposition_lonepair(
       Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
       Real distance, Real angle, Real dihedral);
+
+  void reposition_all_lonepairs(void);
 
   // general redistribution of lone pair forces to host atoms
   void redistrib_lp_force(
