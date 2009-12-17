@@ -90,6 +90,24 @@ int AtomMap::registerIDs(PatchID pid, const CompAtomExt *begin, const CompAtomEx
 }
 
 //----------------------------------------------------------------------
+int AtomMap::registerIDsFullAtom(PatchID pid, const FullAtom *begin, const FullAtom *end)
+{
+  if (localIDTable == NULL)
+    return -1;
+  else 
+  {
+    for(const FullAtom *a = begin; a != end; ++a)
+    {
+        unsigned int ali = a->id;
+	localIDTable[ali].pid = pid;
+	localIDTable[ali].index = a - begin;
+    }
+    cleared = false;
+    return 0;
+  }
+}
+
+//----------------------------------------------------------------------
 // resets map to notUsed condition
 void AtomMap::clearMap(void)
 {

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dhardy $
- * $Date: 2009/12/16 20:41:48 $
- * $Revision: 1.1176 $
+ * $Author: jim $
+ * $Date: 2009/12/17 19:42:47 $
+ * $Revision: 1.1177 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -197,8 +197,11 @@ void Sequencer::integrate() {
 //    printf("Doing initial rattle\n");
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
 
-    // can't call reposition_all_lonepairs() until after call to
-    // runComputeObjects() performs the initial atom migration
+    if (simParams->drudeOn) {
+      AtomMap::Object()->registerIDsFullAtom(
+		patch->patchID,patch->atom.begin(),patch->atom.end());
+      reposition_all_lonepairs();
+    }
 
     const int reassignFreq = simParams->reassignFreq;
     if ( !commOnly && ( reassignFreq>0 ) && ! (step%reassignFreq) ) {
