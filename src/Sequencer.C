@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2009/12/17 19:42:47 $
- * $Revision: 1.1177 $
+ * $Date: 2009/12/17 19:45:16 $
+ * $Revision: 1.1178 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -292,7 +292,8 @@ void Sequencer::integrate() {
 
       maximumMove(timestep);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
-      if (simParams->drudeOn) reposition_all_lonepairs();
+      // langevinPiston() should not depend on lone pair position
+      // if (simParams->drudeOn) reposition_all_lonepairs();
       langevinPiston(step);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
       if (simParams->drudeOn) reposition_all_lonepairs();
