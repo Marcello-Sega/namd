@@ -643,6 +643,7 @@ public:
 
   //  Retrieve a cross-term strutcure
   Crossterm *get_crossterm(int inum) const {return (&(crossterms[inum]));}
+  #endif
 
   // DRUDE: retrieve lphost structure
   Lphost *get_lphost(int atomid) const {
@@ -651,16 +652,17 @@ public:
   }
   // DRUDE
 
+  #ifndef MEM_OPT_VERSION
   Bond *getAllBonds() const {return bonds;}
   Angle *getAllAngles() const {return angles;}
   Improper *getAllImpropers() const {return impropers;}
   Dihedral *getAllDihedrals() const {return dihedrals;}
   Crossterm *getAllCrossterms() const {return crossterms;}
+  #endif
 
   // DRUDE: retrieve entire lphosts array
   Lphost *getAllLphosts() const { return lphosts; }
   // DRUDE
-  #endif
 
   //  Retrieve a hydrogen bond donor structure
   Bond *get_donor(int dnum) const {return (&(donors[dnum]));}  
