@@ -4757,6 +4757,7 @@ void Molecule::receive_Molecule(MIStream *msg)
           case ONETHREE:
             build12excl();
             build13excl();
+            //if (is_drude_psf) build_inherited_excl();
 	    if ( stripHGroupExclFlag ) stripHGroupExcl();
             break;
           case ONEFOUR:
@@ -4779,7 +4780,40 @@ void Molecule::receive_Molecule(MIStream *msg)
       stripFepExcl();
 
       // DRUDE
+#if 0
+#define NELEMS(a)  (sizeof(a)/sizeof(a[0]))
+      {
+        UniqueSetIter<Exclusion> t(exclusionSet);
+        int m[] = { 0, 1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22,
+          25, 26, 29, 30, 33, 34, 37, 38 };
+        int n;
+        printf("exclusions before Drude extensions:\n");
+        for (n = 0;  n < NELEMS(m);  n++) {
+          for (t = t.begin();  t != t.end();  t++) {
+            if (t->atom1 == m[n]) {
+              printf("%4d  %4d\n", t->atom1, t->atom2);
+            }
+          }
+        }
+      }
+#endif
       if (is_drude_psf) build_inherited_excl();
+#if 0
+      {
+        UniqueSetIter<Exclusion> t(exclusionSet);
+        int m[] = { 0, 1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22,
+          25, 26, 29, 30, 33, 34, 37, 38 };
+        int n;
+        printf("exclusions before Drude extensions:\n");
+        for (n = 0;  n < NELEMS(m);  n++) {
+          for (t = t.begin();  t != t.end();  t++) {
+            if (t->atom1 == m[n]) {
+              printf("%4d  %4d\n", t->atom1, t->atom2);
+            }
+          }
+        }
+      }
+#endif
 #endif
     }
     /*      END OF FUNCTION build_exclusions    */
@@ -4787,13 +4821,19 @@ void Molecule::receive_Molecule(MIStream *msg)
 
     // DRUDE: extend exclusions for Drude and LP
     // Drude and LP particles "inherit" exclusions from their parents
+#define EXTEND_DRUDE_EXCL
     void Molecule::build_inherited_excl(void) {
 #ifdef MEM_OPT_VERSION
       NAMD_die("Drude and LP particles not supported in memopt version.");
 #else
       ExclusionSettings exclude_flag = simParams->exclude;
+#ifdef EXTEND_DRUDE_EXCL
+      int32 *bond1, *bond2, *bond3, *bond4;
+      int32 i, j, mid1, mid2, mid3;
+#else
       int32 *bond1, *bond2, *bond3;
       int32 i, mid1, mid2;
+#endif
 
       if (exclude_flag == ONEFOUR || exclude_flag == SCALED14) {
         NAMD_die("DRUDE MODEL SUPPORTS ONLY UP TO 1-3 EXCLUSION POLICY");
@@ -4863,6 +4903,24 @@ void Molecule::receive_Molecule(MIStream *msg)
               else {
                 exclusionSet.add(Exclusion(mid2, i));
               }
+
+#ifdef EXTEND_DRUDE_EXCL
+              // also exclude any Drude particles or LPs bonded to mid2
+              bond3 = bondsWithAtom[mid2];
+              while (*bond3 != -1) {
+                j = bonds[*bond3].atom1;
+                if (is_drude(j) || is_lp(j)) {
+                  if      (i < j) exclusionSet.add(Exclusion(i, j));
+                  else if (j < i) exclusionSet.add(Exclusion(j, i));
+                }
+                j = bonds[*bond3].atom2;
+                if (is_drude(j) || is_lp(j)) {
+                  if      (i < j) exclusionSet.add(Exclusion(i, j));
+                  else if (j < i) exclusionSet.add(Exclusion(j, i));
+                }
+                bond3++;
+              }
+#endif
             }
             else {  // exclude_flag == ONETHREE
 
@@ -4871,6 +4929,46 @@ void Molecule::receive_Molecule(MIStream *msg)
               // loop through all the bonds connected to mid2
               while (*bond3 != -1) {
 
+#ifdef EXTEND_DRUDE_EXCL
+                if (bonds[*bond3].atom1 == mid2) {
+                  mid3 = bonds[*bond3].atom2;
+                }
+                else {
+                  mid3 = bonds[*bond3].atom1;
+                }
+
+                // Make sure we don't double back to where we started.
+                // Doing so causes strange behavior.
+                if (mid3 == mid1) {
+                  bond3++;
+                  continue;
+                }
+
+                // add (i,mid3) as an exclusion
+                if (i < mid3) {
+                  exclusionSet.add(Exclusion(i, mid3));
+                }
+                else if (mid3 < i) {
+                  exclusionSet.add(Exclusion(mid3, i));
+                }
+
+                // also exclude any Drude particles or LPs bonded to mid3
+                bond4 = bondsWithAtom[mid3];
+                while (*bond4 != -1) {
+                  j = bonds[*bond4].atom1;
+                  if (is_drude(j) || is_lp(j)) {
+                    if      (i < j) exclusionSet.add(Exclusion(i, j));
+                    else if (j < i) exclusionSet.add(Exclusion(j, i));
+                  }
+                  j = bonds[*bond4].atom2;
+                  if (is_drude(j) || is_lp(j)) {
+                    if      (i < j) exclusionSet.add(Exclusion(i, j));
+                    else if (j < i) exclusionSet.add(Exclusion(j, i));
+                  }
+                  bond4++;
+                }
+
+#else
                 if (bonds[*bond3].atom1 == mid2) {
                   // Make sure we don't double back to where we started.
                   // Doing so causes strange behavior.
@@ -4895,9 +4993,11 @@ void Molecule::receive_Molecule(MIStream *msg)
                     }
                   }
                 }
+#endif
 
                 ++bond3;
               } // while bond3
+
             } // else ONETHREE
            
             ++bond2;
