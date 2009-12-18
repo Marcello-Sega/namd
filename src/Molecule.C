@@ -4757,7 +4757,6 @@ void Molecule::receive_Molecule(MIStream *msg)
           case ONETHREE:
             build12excl();
             build13excl();
-            //if (is_drude_psf) build_inherited_excl();
 	    if ( stripHGroupExclFlag ) stripHGroupExcl();
             break;
           case ONEFOUR:
@@ -4780,60 +4779,32 @@ void Molecule::receive_Molecule(MIStream *msg)
       stripFepExcl();
 
       // DRUDE
-#if 0
-#define NELEMS(a)  (sizeof(a)/sizeof(a[0]))
-      {
-        UniqueSetIter<Exclusion> t(exclusionSet);
-        int m[] = { 0, 1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22,
-          25, 26, 29, 30, 33, 34, 37, 38 };
-        int n;
-        printf("exclusions before Drude extensions:\n");
-        for (n = 0;  n < NELEMS(m);  n++) {
-          for (t = t.begin();  t != t.end();  t++) {
-            if (t->atom1 == m[n]) {
-              printf("%4d  %4d\n", t->atom1, t->atom2);
-            }
-          }
-        }
-      }
-#endif
       if (is_drude_psf) build_inherited_excl();
-#if 0
-      {
-        UniqueSetIter<Exclusion> t(exclusionSet);
-        int m[] = { 0, 1, 5, 6, 9, 10, 13, 14, 17, 18, 21, 22,
-          25, 26, 29, 30, 33, 34, 37, 38 };
-        int n;
-        printf("exclusions before Drude extensions:\n");
-        for (n = 0;  n < NELEMS(m);  n++) {
-          for (t = t.begin();  t != t.end();  t++) {
-            if (t->atom1 == m[n]) {
-              printf("%4d  %4d\n", t->atom1, t->atom2);
-            }
-          }
-        }
-      }
-#endif
 #endif
     }
     /*      END OF FUNCTION build_exclusions    */
 
 
-    // DRUDE: extend exclusions for Drude and LP
-    // Drude and LP particles "inherit" exclusions from their parents
-#define EXTEND_DRUDE_EXCL
+    // Extend exclusions for the Drude model.  The Drude model is generally
+    // used with the 1-3 exclusion policy, although the code below also
+    // supports the 1-2 exclusion policy.  The use of light (or massless)
+    // pseudo-atoms requires the introduction of extra exclusions.
+    //
+    // Here is the algorithm for determining Drude model exclusions:
+    // (1)  Each Drude particle and each lone pair has a single parent atom.
+    //      The parent atom must be a heavy atom.
+    // (2)  Each Drude particle and lone pair inherit the exclusions of its
+    //      parent atom.
+    // (3)  If two heavy atoms are excluded and they both have either a
+    //      Drude particle or a lone pair, the these light (or massless)
+    //      particles are also excluded from interacting with each other.
     void Molecule::build_inherited_excl(void) {
 #ifdef MEM_OPT_VERSION
       NAMD_die("Drude and LP particles not supported in memopt version.");
 #else
       ExclusionSettings exclude_flag = simParams->exclude;
-#ifdef EXTEND_DRUDE_EXCL
       int32 *bond1, *bond2, *bond3, *bond4;
       int32 i, j, mid1, mid2, mid3;
-#else
-      int32 *bond1, *bond2, *bond3;
-      int32 i, mid1, mid2;
-#endif
 
       if (exclude_flag == ONEFOUR || exclude_flag == SCALED14) {
         NAMD_die("DRUDE MODEL SUPPORTS ONLY UP TO 1-3 EXCLUSION POLICY");
@@ -4904,7 +4875,6 @@ void Molecule::receive_Molecule(MIStream *msg)
                 exclusionSet.add(Exclusion(mid2, i));
               }
 
-#ifdef EXTEND_DRUDE_EXCL
               // also exclude any Drude particles or LPs bonded to mid2
               bond3 = bondsWithAtom[mid2];
               while (*bond3 != -1) {
@@ -4920,7 +4890,6 @@ void Molecule::receive_Molecule(MIStream *msg)
                 }
                 bond3++;
               }
-#endif
             }
             else {  // exclude_flag == ONETHREE
 
@@ -4929,7 +4898,6 @@ void Molecule::receive_Molecule(MIStream *msg)
               // loop through all the bonds connected to mid2
               while (*bond3 != -1) {
 
-#ifdef EXTEND_DRUDE_EXCL
                 if (bonds[*bond3].atom1 == mid2) {
                   mid3 = bonds[*bond3].atom2;
                 }
@@ -4967,33 +4935,6 @@ void Molecule::receive_Molecule(MIStream *msg)
                   }
                   bond4++;
                 }
-
-#else
-                if (bonds[*bond3].atom1 == mid2) {
-                  // Make sure we don't double back to where we started.
-                  // Doing so causes strange behavior.
-                  if (bonds[*bond3].atom2 != mid1) {
-                    if (i < bonds[*bond3].atom2) {
-                      exclusionSet.add(Exclusion(i, bonds[*bond3].atom2));
-                    }
-                    else if (bonds[*bond3].atom2 < i) {
-                      exclusionSet.add(Exclusion(bonds[*bond3].atom2, i));
-                    }
-                  }
-                }
-                else {
-                  // Make sure we don't double back to where we started.
-                  // Doing so causes strange behavior.
-                  if (bonds[*bond3].atom1 != mid1) {
-                    if (i < bonds[*bond3].atom1) {
-                      exclusionSet.add(Exclusion(i, bonds[*bond3].atom1));
-                    }
-                    else if (bonds[*bond3].atom1 < i) {
-                      exclusionSet.add(Exclusion(bonds[*bond3].atom1, i));
-                    }
-                  }
-                }
-#endif
 
                 ++bond3;
               } // while bond3
