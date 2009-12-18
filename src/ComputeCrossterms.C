@@ -26,31 +26,6 @@ enum {
 
 #define INDEX(ncols,i,j)  ((i)*ncols + (j))
 
-#if 0
-void CrosstermElem::loadTuplesForAtom
-  (void *voidlist, AtomID atomID, Molecule *molecule)
-{
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-      UniqueSet<CrosstermElem> &crosstermList =
-                  *( (UniqueSet<CrosstermElem>*) voidlist );
-
-      DebugM(1, "::loadTuplesForAtom - current list size " << crosstermList.size() << std::endl );
-
-      /* get list of all crossterms for the atom */
-      int *crossterms = molecule->get_crossterms_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-
-      /* cycle through each crossterm */
-      int crosstermNum = *crossterms;
-      while(crosstermNum != -1)
-      {
-        /* store crossterm in the list */
-        DebugM(1, "::loadTuplesForAtom - loading crossterm " << crosstermNum << std::endl );
-        crosstermList.add(CrosstermElem(molecule->get_crossterm(crosstermNum)));
-        crosstermNum = *(++crossterms);
-      }
-}
-#endif
 
 // static initialization
 int CrosstermElem::pressureProfileSlabs = 0;

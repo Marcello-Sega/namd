@@ -14,31 +14,6 @@
 #include "PressureProfile.h"
 #include "Debug.h"
 
-#if 0
-void BondElem::loadTuplesForAtom
-  (void *voidlist, AtomID atomID, Molecule *molecule)
-{
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-      UniqueSet<BondElem> &bondList =
-                  *( (UniqueSet<BondElem>*) voidlist );
-
-      DebugM(1, "::loadTuplesForAtom - current list size " << bondList.size() << std::endl );
-
-      /* get list of all bonds for the atom */
-      int *bonds = molecule->get_bonds_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-
-      /* cycle through each bond */
-      int bondNum = *bonds;
-      while(bondNum != -1)
-      {
-        /* store bond in the list */
-        DebugM(1, "::loadTuplesForAtom - loading bond " << bondNum << std::endl );
-        bondList.add(BondElem(molecule->get_bond(bondNum)));
-        bondNum = *(++bonds);
-      }
-}
-#endif
 
 // static initialization
 int BondElem::pressureProfileSlabs = 0;

@@ -14,31 +14,6 @@
 #include "PressureProfile.h"
 #include "Debug.h"
 
-#if 0
-void DihedralElem::loadTuplesForAtom
-  (void *voidlist, AtomID atomID, Molecule *molecule)
-{
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-      UniqueSet<DihedralElem> &dihedralList =
-                  *( (UniqueSet<DihedralElem>*) voidlist );
-
-      DebugM(1, "::loadTuplesForAtom - current list size " << dihedralList.size() << std::endl );
-
-      /* get list of all dihedrals for the atom */
-      int *dihedrals = molecule->get_dihedrals_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-
-      /* cycle through each dihedral */
-      int dihedralNum = *dihedrals;
-      while(dihedralNum != -1)
-      {
-        /* store dihedral in the list */
-        DebugM(1, "::loadTuplesForAtom - loading dihedral " << dihedralNum << std::endl );
-        dihedralList.add(DihedralElem(molecule->get_dihedral(dihedralNum)));
-        dihedralNum = *(++dihedrals);
-      }
-}
-#endif
 
 // static initialization
 int DihedralElem::pressureProfileSlabs = 0;

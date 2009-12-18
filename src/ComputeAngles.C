@@ -21,31 +21,6 @@
 #include "PressureProfile.h"
 #include "Debug.h"
 
-#if 0
-void AngleElem::loadTuplesForAtom
-  (void *voidlist, AtomID atomID, Molecule *molecule)
-{
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-      UniqueSet<AngleElem> &angleList =
-                  *( (UniqueSet<AngleElem>*) voidlist );
-
-      DebugM(1, "::loadTuplesForAtom - current list size " << angleList.size() << std::endl );
-
-      /* get list of all angles for the atom */
-      int *angles = molecule->get_angles_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-
-      /* cycle through each angle */
-      int angleNum = *angles;
-      while(angleNum != -1)
-      {
-        /* store angle in the list */
-        DebugM(1, "::loadTuplesForAtom - loading angle " << angleNum << std::endl );
-        angleList.add(AngleElem(molecule->get_angle(angleNum)));
-        angleNum = *(++angles);
-      }
-}
-#endif
 
 // static initialization
 int AngleElem::pressureProfileSlabs = 0;

@@ -14,31 +14,6 @@
 #include "PressureProfile.h"
 #include "Debug.h"
 
-#if 0
-void ImproperElem::loadTuplesForAtom
-  (void *voidlist, AtomID atomID, Molecule *molecule)
-{
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-      UniqueSet<ImproperElem> &improperList =
-                  *( (UniqueSet<ImproperElem>*) voidlist );
-
-      DebugM(1, "::loadTuplesForAtom - current list size " << improperList.size() << std::endl );
-
-      /* get list of all impropers for the atom */
-      int *impropers = molecule->get_impropers_for_atom(atomID);
-      DebugM(1, "::loadTuplesForAtom - atomID " << atomID << std::endl );
-
-      /* cycle through each improper */
-      int improperNum = *impropers;
-      while(improperNum != -1)
-      {
-        /* store improper in the list */
-        DebugM(1, "::loadTuplesForAtom - loading improper " << improperNum << std::endl );
-        improperList.add(ImproperElem(molecule->get_improper(improperNum)));
-        improperNum = *(++impropers);
-      }
-}
-#endif
 
 // static initialization
 int ImproperElem::pressureProfileSlabs = 0;

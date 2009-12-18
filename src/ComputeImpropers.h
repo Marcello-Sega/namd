@@ -23,8 +23,7 @@ public:
     TuplePatchElem *p[size];
     Real scale;
     void computeForce(BigReal*, BigReal *);
-    // The following is evil, but the compiler chokes otherwise. (JCP)
-    static void loadTuplesForAtom(void*, AtomID, Molecule*);
+
     static void getMoleculePointers(Molecule*, int*, int32***, Improper**);
     static void getParameterPointers(Parameters*, const ImproperValue**);
     static void getTupleInfo(AtomSignature* sig, int *count, TupleSignature** t) {
