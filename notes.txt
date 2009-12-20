@@ -285,7 +285,7 @@ For example:
 An InfiniBand network is highly recommended when running CUDA-accelerated
 NAMD across multiple nodes.  You will need either an ibverbs NAMD binary
 (available for download) or an MPI NAMD binary (must build Charm++ and
-NAMD as described above) to make use of the InfiniBand network.
+NAMD as described below) to make use of the InfiniBand network.
 
 The CUDA (NVIDIA's graphics processor programming platform) code in
 NAMD is completely self-contained and does not use any of the CUDA
@@ -316,11 +316,18 @@ Unpack NAMD and matching Charm++ source code and enter directory:
   tar xf charm-6.1.3.tar
   cd charm-6.1.3
 
-Build and test the Charm++/Converse library:
+Build and test the Charm++/Converse library (network version):
   ./build charm++ net-linux-x86_64 --no-build-shared -O -DCMK_OPTIMIZE=1
   cd net-linux-x86_64/tests/charm++/megatest
   make pgm
   ./charmrun ++local +p4 ./pgm    (also try running on multiple nodes)
+  cd ../../../../..
+
+Build and test the Charm++/Converse library (MPI version):
+  env MPICXX=mpicxx ./build charm++ mpi-linux-x86_64 --no-build-shared -O -DCMK_OPTIMIZE=1
+  cd mpi-linux-x86_64/tests/charm++/megatest
+  make pgm
+  mpirun -n 4 ./pgm    (run as any other MPI program on your cluster)
   cd ../../../../..
 
 Download and install TCL and FFTW libraries:
@@ -339,16 +346,18 @@ Optionally edit various configuration files:
   vi arch/Linux-x86_64.tcl      (fix library version and path to TCL files)
 
 Set up build directory and compile:
-  ./config Linux-x86_64-g++ --charm-arch net-linux-x86_64
+  network version: ./config Linux-x86_64-g++ --charm-arch net-linux-x86_64
+  MPI version: ./config Linux-x86_64-g++ --charm-arch mpi-linux-x86_64
   cd Linux-x86_64-g++
   make   (or gmake -j4, which should run faster)
 
-Quick tests using one and two processes:
+Quick tests using one and two processes (network version):
   (this is a 66-atom simulation so don't expect any speedup)
   ./namd2
   ./namd2 src/alanin
   ./charmrun ++local +p2 ./namd2
   ./charmrun ++local +p2 ./namd2 src/alanin
+  (for MPI version, run namd2 binary as any other MPI executable)
 
 Longer test using four processes:
   wget http://www.ks.uiuc.edu/Research/namd/utilities/apoa1.tar.gz
@@ -399,6 +408,10 @@ For this specific example:
 
   ./build charm++ net-linux tcp icc --no-build-shared -O -DCMK_OPTIMIZE=1
 
+Note that for MPI builds you normally do not need to specify a compiler,
+even if your mpicxx calls icc internally, but you will need to use an
+icc-based NAMD architecture specification.
+
 The README distributed with Charm++ contains a complete explanation.
 You only actually need the bin, include, and lib subdirectories, so
 you can copy those elsewhere and delete the whole charm directory,
@@ -425,7 +438,9 @@ These commands recompile the necessary files without optmization:
   /bin/rm lib/libconv-cplus-*
   ( cd tmp; make charm++ OPTS="-O0 -DCMK_OPTIMIZE=1" )
 
-If you're building an MPI version you will probably need to edit
+If you're building an MPI version you will probably want to build
+Charm++ with env MPICXX=mpicxx preceding ./build on the command line,
+since the default MPI C++ compiler is mpiCC.  You may also need to
 compiler flags or commands in the Charm++ src/arch directory.  The
 file charm/src/arch/mpi-linux/conv-mach.sh contains the definitions
 that select the mpiCC compiler for mpi-linux, while other compiler
