@@ -4,9 +4,9 @@ CHARMARCH = net-linux-x86_64-iccstatic
 FLOATOPTS = -ip -fno-rtti
 
 CXX = icpc
-CXXOPTS = -i-static -static-libcxa -O2 $(FLOATOPTS)
+CXXOPTS = -i-static -O2 $(FLOATOPTS)
 CXXNOALIASOPTS = -O3 -fno-alias $(FLOATOPTS)
 
 CC = icc
-COPTS = -i-static -static-libcxa -O2 $(FLOATOPTS)
+COPTS = -i-static -O2 $(FLOATOPTS)
 
