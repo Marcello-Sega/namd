@@ -436,15 +436,6 @@ begin:
   echo "Linking Makefiles"
   ln -s .rootdir/Makefile ./Makefile
   ln -s .rootdir/Make.depends ./Make.depends
-  if ( $ARCH =~ *Win* ) then
-   echo "Converting text files"
-   mkdir lib; mkdir lib/abf
-   foreach d ( . lib lib/abf )
-     foreach f ( .rootdir/$d/*.txt .rootdir/$d/*.tcl )
-       perl -p -i -e 's/(?<!\r)\n$/\r\n/' < $f > $d/$f:t
-     end
-   end
-  endif
   echo "Linking src, plugins, and psfgen"
   ln -s .rootdir/src ./src
   ln -s .rootdir/plugins ./plugins

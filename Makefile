@@ -616,7 +616,9 @@ release: all
 	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
 	for f in $(DOC_FILES); do cp .rootdir/$$f $(RELEASE_DIR_NAME); done
 	cp -r .rootdir/lib $(RELEASE_DIR_NAME)
-	/bin/rm -rf $(RELEASE_DIR_NAME)/lib/CVS $(RELEASE_DIR_NAME)/lib/*/CVS
+	for f in `find (RELEASE_DIR_NAME)/lib -name CVS`; do \
+	  /bin/rm -rf $$f; \
+	done
 	if [ -r $(CHARM)/bin/charmd ]; then \
 	  $(COPY) $(CHARM)/bin/charmd $(RELEASE_DIR_NAME); \
 	fi
@@ -633,8 +635,18 @@ release: all
 winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
-	cp $(DOC_FILES) $(WINDOWS_RELEASE_FILES) $(RELEASE_DIR_NAME)
-	cp -r lib $(RELEASE_DIR_NAME)
+	cp $(WINDOWS_RELEASE_FILES) $(RELEASE_DIR_NAME)
+	for f in $(DOC_FILES); do \
+	  perl -p -i -e 's/(?<!\r)\n$$/\r\n/' < .rootdir/$$f > $(RELEASE_DIR_NAME)/$$f; \
+	done
+	cp -r .rootdir/lib $(RELEASE_DIR_NAME)
+	for f in `find $(RELEASE_DIR_NAME)/lib -name CVS`; do \
+	  /bin/rm -rf $$f; \
+	done
+	for f in `find $(RELEASE_DIR_NAME)/lib -type f`; do \
+	  perl -p -i -e 's/(?<!\r)\n$$/\r\n/' < $$f > $$f.wintxt; \
+	  mv $$f.wintxt $$f; \
+	done
 	chmod -R a+rX $(RELEASE_DIR_NAME)
 	echo $(CHARM)
 	ls -l $(CHARM)/lib
