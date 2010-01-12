@@ -4510,14 +4510,17 @@ void Molecule::receive_Molecule(MIStream *msg)
        }
 
        // DRUDE: init lphostIndexes array
-       DebugM(3,"Initializing lone pair host index array.\n");
-       lphostIndexes = new int32[numAtoms];
-       for (i = 0;  i < numAtoms;  i++) {
-         lphostIndexes[i] = -1;
-       }
-       for (i = 0;  i < numLphosts;  i++) {
-         int32 index = lphosts[i].atom1;
-         lphostIndexes[index] = i;
+       if (simParams->drudeOn) {
+         // allocate lone pair host index array only if we need it!
+         DebugM(3,"Initializing lone pair host index array.\n");
+         lphostIndexes = new int32[numAtoms];
+         for (i = 0;  i < numAtoms;  i++) {
+           lphostIndexes[i] = -1;
+         }
+         for (i = 0;  i < numLphosts;  i++) {
+           int32 index = lphosts[i].atom1;
+           lphostIndexes[index] = i;
+         }
        }
        // DRUDE
     

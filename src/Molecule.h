@@ -659,6 +659,8 @@ public:
 
   // DRUDE: retrieve lphost structure
   Lphost *get_lphost(int atomid) const {
+    // don't call unless simParams->drudeOn == TRUE
+    // otherwise lphostIndexes array doesn't exist!
     int index = lphostIndexes[atomid];
     return (index != -1 ? &(lphosts[index]) : NULL);
   }
