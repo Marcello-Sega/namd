@@ -378,7 +378,7 @@ void ComputeDPMTA::doWork()
 	NAMD_die("DPMTA Failed to allocate memory.");
 	}
 
-  BigReal unitFactor = sqrt(COLOUMB * ComputeNonbondedUtil::scaling
+  BigReal unitFactor = sqrt(COULOMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1);
   DebugM(2,"Charge unit factor = " << unitFactor << "\n");
   for (i=0, ap = ap.begin(); ap != ap.end(); ap++)

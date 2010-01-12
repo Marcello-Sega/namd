@@ -1507,7 +1507,7 @@ ALCH(
       
     )
 
-    const BigReal kq_i = COLOUMB * p_i.charge * scaling * dielectric_1;
+    const BigReal kq_i = COULOMB * p_i.charge * scaling * dielectric_1;
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(p_i.vdwType);
 

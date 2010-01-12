@@ -163,7 +163,7 @@ static inline void scale_n_copy_coordinates(CompAtom *x, PmeParticle p[],
   int K2 = grid.K2;
   int K3 = grid.K3;
 
-  const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::scaling
+  const BigReal coulomb_sqrt = sqrt( COULOMB * ComputeNonbondedUtil::scaling
 				     * ComputeNonbondedUtil::dielectric_1 );
 
 
@@ -199,7 +199,7 @@ static inline void scale_n_copy_coordinates(CompAtom *x, PmeParticle p[],
       continue;
     }
     
-    p[natoms].cg = coloumb_sqrt * x[i].charge;
+    p[natoms].cg = coulomb_sqrt * x[i].charge;
     natoms ++;
   }
   N = natoms;

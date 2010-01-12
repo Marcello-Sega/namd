@@ -776,7 +776,7 @@ void ComputeNonbondedCUDA::doWork() {
 
  }  // atomsChanged || computesChanged
 
-  double charge_scaling = sqrt(COLOUMB * scaling * dielectric_1);
+  double charge_scaling = sqrt(COULOMB * scaling * dielectric_1);
 
 
   for ( int i=0; i<activePatches.size(); ++i ) {

@@ -134,7 +134,7 @@ void ComputeEwald::doWork() {
   pressureProfileThickness = lattice.c().z / pressureProfileSlabs;
   pressureProfileMin = lattice.origin().z - 0.5*lattice.c().z;
 
-  const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::scaling
+  const BigReal coulomb_sqrt = sqrt( COULOMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1 );
 
   // get coordinates and store them
@@ -166,7 +166,7 @@ void ComputeEwald::doWork() {
       data_ptr->x = pos.x;
       data_ptr->y = pos.y;
       data_ptr->z = pos.z;
-      data_ptr->cg = coloumb_sqrt * x[i].charge;
+      data_ptr->cg = coulomb_sqrt * x[i].charge;
       ++data_ptr;
     }
     (*ap).positionBox->close(&x);

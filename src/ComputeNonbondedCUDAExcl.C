@@ -82,7 +82,7 @@ void ExclElem::computeForce(BigReal *reduction,
     BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
 
     const BigReal kqq = (1.0 - scale14) *
-            COLOUMB * p_i.charge * p_j.charge * scaling * dielectric_1;
+            COULOMB * p_i.charge * p_j.charge * scaling * dielectric_1;
 
     fast_a = vdw_a +      kqq * fast_table[4*table_i+0];  // not used!
     fast_b = vdw_b + 2. * kqq * fast_table[4*table_i+1];
@@ -99,7 +99,7 @@ void ExclElem::computeForce(BigReal *reduction,
   } else if ( doFull ) {  // full exclusion
 
     const BigReal kqq = 
-            COLOUMB * p_i.charge * p_j.charge * scaling * dielectric_1;
+            COULOMB * p_i.charge * p_j.charge * scaling * dielectric_1;
 
     slow_d = kqq * ( table_four_i[8]  - table_four_i[12] );
     slow_c = kqq * ( table_four_i[9]  - table_four_i[13] );

@@ -9,7 +9,7 @@
 */
 
 {
-  const BigReal coloumb = COLOUMB * ComputeNonbondedUtil::scaling
+  const BigReal coulomb = COULOMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1;
   BigReal *dp1 = data1;
   BigReal *rp1 = results1;
@@ -36,7 +36,7 @@
     register BigReal p_i_x = *(dp1++);
     register BigReal p_i_y = *(dp1++);
     register BigReal p_i_z = *(dp1++);
-    register BigReal kq_i = coloumb * *(dp1++);
+    register BigReal kq_i = coulomb * *(dp1++);
     register BigReal f_i_x = 0.;
     register BigReal f_i_y = 0.;
     register BigReal f_i_z = 0.;

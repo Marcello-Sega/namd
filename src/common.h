@@ -41,7 +41,7 @@ void * ::operator new (size_t, void *p) { return p; }
 void * operator new (size_t, void *p) { return p; }
 #endif
 
-#define COLOUMB 332.0636
+#define COULOMB 332.0636
 #define BOLTZMAN 0.001987191
 #define TIMEFACTOR 48.88821
 #define PRESSUREFACTOR 6.95E4

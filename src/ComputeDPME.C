@@ -132,7 +132,7 @@ void ComputeDPME::doWork()
 
   // get positions and charges
   Pme2Particle * data_ptr = localData;
-  const BigReal coloumb_sqrt = sqrt( COLOUMB * ComputeNonbondedUtil::scaling
+  const BigReal coulomb_sqrt = sqrt( COULOMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1 );
   for (ap = ap.begin(); ap != ap.end(); ap++) {
     CompAtom *x = (*ap).positionBox->open();
@@ -148,7 +148,7 @@ void ComputeDPME::doWork()
       data_ptr->x = tmp.x;
       data_ptr->y = tmp.y;
       data_ptr->z = tmp.z;
-      data_ptr->cg = coloumb_sqrt * x[i].charge;
+      data_ptr->cg = coulomb_sqrt * x[i].charge;
       data_ptr->id = x[i].id;
       ++data_ptr;
     }
