@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: emeneses $
- * $Date: 2009/12/02 23:09:03 $
- * $Revision: 1.19 $
+ * $Author: jim $
+ * $Date: 2010/01/12 21:32:15 $
+ * $Revision: 1.20 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -109,7 +109,7 @@ void RefineTorusLB::binaryRefine() {
 int RefineTorusLB::newRefine() {
   int done = 1;
   maxHeap *heavyPes = new maxHeap(P);
-  Set *lightPes = new Set();
+  IRSet *lightPes = new IRSet();
   processorInfo *donor, *p, *bestP;
   computeInfo *c;
   Iterator nextC, nextP;

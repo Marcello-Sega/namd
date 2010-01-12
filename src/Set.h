@@ -4,8 +4,8 @@
 ***  All rights reserved.
 **/
 
-#ifndef SET_DEFS_H
-#define SET_DEFS_H
+#ifndef IRSET_DEFS_H
+#define IRSET_DEFS_H
 class InfoRecord;
 
 
@@ -22,14 +22,14 @@ public:
   listNode* next;
 };
 
-class Set {
+class IRSet {
 
 private:
  listNode *head;
 
 public:
- Set();
- ~Set();
+ IRSet();
+ ~IRSet();
  void insert(InfoRecord *);
  int find(InfoRecord *) ;
  int remove(InfoRecord *);

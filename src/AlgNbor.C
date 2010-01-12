@@ -53,7 +53,7 @@ void AlgNbor::strategy()
 
   CmiPrintf("[%d]:Myload: %f, avrage load: %f. \n", mype, myload, avgload);
 
-  Set *lightProcessors = new Set();
+  IRSet *lightProcessors = new IRSet();
   for (i=0; i<P; i++) {
     if (processors[i].Id >= 0 &&  i != mype)
       if (processors[i].load < processors[mype].load)

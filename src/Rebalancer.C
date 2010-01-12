@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
- * $Author: emeneses $
- * $Date: 2009/12/02 23:09:03 $
- * $Revision: 1.86 $
+ * $Author: jim $
+ * $Date: 2010/01/12 21:32:15 $
+ * $Revision: 1.87 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -535,7 +535,7 @@ int Rebalancer::refine()
    int no_new_proxies = 0;  // set to true if new proxies are futile
    maxHeap *heavyProcessors = new maxHeap(P);
 
-   Set *lightProcessors = new Set();
+   IRSet *lightProcessors = new IRSet();
    int i;
    double thresholdLoad = overLoad * averageLoad;
    for (i=0; i<P; i++)

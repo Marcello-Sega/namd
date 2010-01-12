@@ -8,12 +8,12 @@
 #include "Set.h"
 #include "elements.h"
 
-Set::Set() 
+IRSet::IRSet() 
 {
   head = (listNode *) 0;
 }
 
-Set::~Set() {
+IRSet::~IRSet() {
   // delete all links; don't delete the InfoRecord objects
   listNode *tmp;
   for (listNode *link = head; link; link = tmp) {
@@ -22,7 +22,7 @@ Set::~Set() {
   }
 }
 
-void Set::insert(InfoRecord *info) 
+void IRSet::insert(InfoRecord *info) 
 {
   if (!find(info))
   {
@@ -34,7 +34,7 @@ void Set::insert(InfoRecord *info)
 }
 
 
-void Set::myRemove(listNode **n, InfoRecord *r)
+void IRSet::myRemove(listNode **n, InfoRecord *r)
 {
   if ((*n)->info == r)
     *n = (*n)->next;
@@ -42,7 +42,7 @@ void Set::myRemove(listNode **n, InfoRecord *r)
     myRemove(&((*n)->next), r);
 }
 
-int Set::remove(InfoRecord * r) 
+int IRSet::remove(InfoRecord * r) 
 {
   if (!head)
     return 0;
@@ -70,7 +70,7 @@ int Set::remove(InfoRecord * r)
   return 0;
 }
 
-int Set::find(InfoRecord * r) 
+int IRSet::find(InfoRecord * r) 
 {
   listNode *p = head;
   while (p) {
@@ -80,7 +80,7 @@ int Set::find(InfoRecord * r)
   return 0;
 }
 
-InfoRecord * Set::iterator(Iterator *iter)
+InfoRecord * IRSet::iterator(Iterator *iter)
 {
   if (head){
     iter->next = head->next;
@@ -89,7 +89,7 @@ InfoRecord * Set::iterator(Iterator *iter)
   return 0;
 }
 
-InfoRecord * Set::next(Iterator *iter)
+InfoRecord * IRSet::next(Iterator *iter)
 {
   //  std::cout << "set::next: " << iter->next << "\n";
   if (!iter->next)
@@ -102,7 +102,7 @@ InfoRecord * Set::next(Iterator *iter)
 }
 
 
-int Set::numElements()
+int IRSet::numElements()
 {
 int n;
   n = 0;
@@ -114,7 +114,7 @@ int n;
   return n;
 }
 
-void Set::print() 
+void IRSet::print() 
 {
   listNode *p = head;
   while (p){

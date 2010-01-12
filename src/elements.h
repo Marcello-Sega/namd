@@ -31,7 +31,7 @@ class patchInfo : public InfoRecord {
 public:
    int processor;
    int numAtoms;
-   Set proxiesOn;  // caller to ReBalancer should fill in the forced proxies
+   IRSet proxiesOn;  // caller to ReBalancer should fill in the forced proxies
 };
 
 class processorInfo: public InfoRecord {
@@ -43,9 +43,9 @@ public:
                           // by adding these two.		     
    // Added 10/22/01:  indicate if this processor will migrate its objs.   
    CmiBool  available;
-   Set patchSet;   // caller to ReBalancer should leave this field NULL.
-   Set proxies;    // caller to ReBalancer should fill in the forced proxies
-   Set computeSet; // caller to ReBalancer should leave this field NULL.
+   IRSet patchSet;   // caller to ReBalancer should leave this field NULL.
+   IRSet proxies;    // caller to ReBalancer should fill in the forced proxies
+   IRSet computeSet; // caller to ReBalancer should leave this field NULL.
    
    // Added 4-29-98: Array to keep track of number of computes that are using
    // each proxy on a processor
