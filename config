@@ -445,17 +445,10 @@ begin:
      end
    end
   endif
-  if ( $ARCH =~ *MSVC* ) then
-    echo "Copying src, plugins, and psfgen"
-    cp -r .rootdir/src ./src
-    cp -r .rootdir/plugins ./plugins
-    cp -r .rootdir/psfgen ./sb
-  else
-    echo "Linking src, plugins, and psfgen"
-    ln -s .rootdir/src ./src
-    ln -s .rootdir/plugins ./plugins
-    ln -s .rootdir/psfgen ./sb
-  endif
+  echo "Linking src, plugins, and psfgen"
+  ln -s .rootdir/src ./src
+  ln -s .rootdir/plugins ./plugins
+  ln -s .rootdir/psfgen ./sb
 
   echo ''
   echo "Generated $BUILD_LINK/Make.config contains the following:"
