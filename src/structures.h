@@ -126,6 +126,8 @@ typedef struct thole    // Thole terms - constructed implicitly from exclusions
   int32 atom2;  // Drude particle of first heavy atom
   int32 atom3;  // second heavy atom
   int32 atom4;  // Drude particle of second heavy atom
+  Real aa;      // constant (alpha_i * alpha_j)^(-6) / (thole_i + thole_j)
+  Real qq;      // combined charge of Drudes (C * q_{i+1} * q_{j+1})
 } Thole;
 // DRUDE
 
