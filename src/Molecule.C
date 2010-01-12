@@ -200,6 +200,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   drudeConsts=NULL;
   lphosts=NULL;
   anisos=NULL;
+  tholes=NULL;
   lphostIndexes=NULL;
   // DRUDE
 
@@ -241,6 +242,10 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   dihedralsByAtom=NULL;
   impropersByAtom=NULL;
   crosstermsByAtom=NULL;
+  // DRUDE
+  tholesByAtom=NULL;
+  anisosByAtom=NULL;
+  // DRUDE
   #endif
 
   #ifdef MEM_OPT_VERSION
@@ -495,6 +500,7 @@ Molecule::~Molecule()
   if (drudeConsts != NULL) delete [] drudeConsts;
   if (lphosts != NULL) delete [] lphosts;
   if (anisos != NULL) delete [] anisos;
+  if (tholes != NULL) delete [] tholes;
   if (lphostIndexes != NULL) delete [] lphostIndexes;
   // DRUDE
 
@@ -558,6 +564,13 @@ Molecule::~Molecule()
   
   if (all_exclusions != NULL)
        delete [] all_exclusions;
+
+  // DRUDE
+  if (tholesByAtom != NULL)
+       delete [] tholesByAtom;
+  if (anisosByAtom != NULL)
+       delete [] anisosByAtom;
+  // DRUDE
   #endif
 
 
@@ -4606,6 +4619,110 @@ void Molecule::receive_Molecule(MIStream *msg)
          l1[++(*l1)] = a2;
          l2[++(*l2)] = a1;
        }
+
+       // DRUDE
+       if (is_drude_psf) {
+
+         // build Thole (screened Coulomb) correction terms;
+         // they are constructed implicitly from exclusions
+
+         // free the previous Thole array if already allocated
+         if (tholes != NULL) delete[] tholes;
+         numTholes = 0;
+
+         // count the number of Thole terms
+         for (i = 0;  i < numTotalExclusions;  i++) {
+           int a1 = exclusions[i].atom1;
+           int a2 = exclusions[i].atom2;
+           if (a2 < numAtoms-1 && is_drude(a1+1) && is_drude(a2+1)) {
+             numTholes++;
+           }
+         }
+
+         // allocate space for Thole terms
+         tholes = new Thole[numTholes];
+         int nt = 0;
+
+         // store Thole terms
+         for (i = 0;  i < numTotalExclusions;  i++) {
+           int a1 = exclusions[i].atom1;
+           int a2 = exclusions[i].atom2;
+           // exclusions are stored with a1 < a2
+           if (a2 < numAtoms-1 && is_drude(a1+1) && is_drude(a2+1)) {
+             tholes[nt].atom1 = a1;
+             tholes[nt].atom2 = a1+1;
+             tholes[nt].atom3 = a2;
+             tholes[nt].atom4 = a2+1;
+             nt++;
+           }
+         }
+
+         // build Thole lists by atom
+         DebugM(3, "Building Thole correction term lists.\n");
+         tholesByAtom = new int32 *[numAtoms];
+
+         for (i = 0;  i < numAtoms;  i++) {
+           byAtomSize[i] = 0;
+         }
+         numCalcTholes = 0;
+         for (i = 0;  i < numTholes;  i++) {
+           if ( numFixedAtoms && fixedAtomFlags[tholes[i].atom1]
+                              && fixedAtomFlags[tholes[i].atom2]
+                              && fixedAtomFlags[tholes[i].atom3]
+                              && fixedAtomFlags[tholes[i].atom4] ) continue;
+           if ( pair_self && fepAtomFlags[tholes[i].atom1] != 1) continue;
+           byAtomSize[tholes[i].atom1]++;
+           numCalcTholes++;
+         }
+         for (i = 0;  i < numAtoms;  i++) {
+           tholesByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
+           tholesByAtom[i][byAtomSize[i]] = -1;
+           byAtomSize[i] = 0;
+         }
+         for (i = 0;  i < numTholes;  i++) {
+           if ( numFixedAtoms && fixedAtomFlags[tholes[i].atom1]
+                              && fixedAtomFlags[tholes[i].atom2]
+                              && fixedAtomFlags[tholes[i].atom3]
+                              && fixedAtomFlags[tholes[i].atom4] ) continue;
+           if ( pair_self && fepAtomFlags[tholes[i].atom1] != 1) continue;
+           int a1 = tholes[i].atom1;
+           tholesByAtom[a1][byAtomSize[a1]++] = i;
+         }
+
+         // build anisotropic lists by atom
+         DebugM(3, "Building anisotropic term lists.\n");
+         anisosByAtom = new int32 *[numAtoms];
+
+         for (i = 0;  i < numAtoms;  i++) {
+           byAtomSize[i] = 0;
+         }
+         numCalcAnisos = 0;
+         for (i = 0;  i < numAnisos;  i++) {
+           if ( numFixedAtoms && fixedAtomFlags[anisos[i].atom1]
+                              && fixedAtomFlags[anisos[i].atom2]
+                              && fixedAtomFlags[anisos[i].atom3]
+                              && fixedAtomFlags[anisos[i].atom4] ) continue;
+           if ( pair_self && fepAtomFlags[anisos[i].atom1] != 1) continue;
+           byAtomSize[anisos[i].atom1]++;
+           numCalcAnisos++;
+         }
+         for (i = 0;  i < numAtoms;  i++) {
+           anisosByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
+           anisosByAtom[i][byAtomSize[i]] = -1;
+           byAtomSize[i] = 0;
+         }
+         for (i = 0;  i < numAnisos;  i++) {
+           if ( numFixedAtoms && fixedAtomFlags[anisos[i].atom1]
+                              && fixedAtomFlags[anisos[i].atom2]
+                              && fixedAtomFlags[anisos[i].atom3]
+                              && fixedAtomFlags[anisos[i].atom4] ) continue;
+           if ( pair_self && fepAtomFlags[anisos[i].atom1] != 1) continue;
+           int a1 = anisos[i].atom1;
+           anisosByAtom[a1][byAtomSize[a1]++] = i;
+         }
+
+       }
+       // DRUDE
 
        delete [] byAtomSize;  byAtomSize = 0;
        delete [] byAtomSize2;  byAtomSize2 = 0;

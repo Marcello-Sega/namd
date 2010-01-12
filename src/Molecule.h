@@ -190,6 +190,7 @@ private:
 
   // DRUDE
   DrudeConst *drudeConsts;  // supplement Atom data (length of Atom array)
+  Thole *tholes;            // Thole (screened Coulomb) interactions
   Aniso *anisos;            // anisotropic terms
   Lphost *lphosts;          // lone pair hosts
   int32 *lphostIndexes;     // index for each LP into lphosts array
@@ -266,6 +267,11 @@ private:
   int32 **modExclusionsByAtom; //  List of atoms modified for each atom
   ObjectArena<char> *exclArena;
   ExclusionCheck *all_exclusions;
+
+  // DRUDE
+  int32 **tholesByAtom;  // list of Thole correction terms owned by each atom
+  int32 **anisosByAtom;  // list of anisotropic terms owned by each atom
+  // DRUDE
 #endif
 
 
@@ -440,6 +446,7 @@ public:
   // DRUDE
   int numLonepairs; // Number of lone pairs
   int numDrudeAtoms;  // Number of Drude particles
+  int numTholes;  // Number of Thole terms
   int numAnisos;  // Number of anisotropic terms
   int numLphosts;  // Number of lone pair hosts
   // DRUDE
@@ -480,6 +487,11 @@ public:
   int numCalcImpropers; //  Number of impropers requiring calculation
   int numCalcCrossterms; //  Number of cross-terms requiring calculation
   int numCalcExclusions;  //  Number of exclusions requiring calculation
+
+  // DRUDE
+  int numCalcTholes;  // Number of Thole correction terms requiring calculation
+  int numCalcAnisos;  // Number of anisotropic terms requiring calculation
+  // DRUDE
 
   //  Number of dihedrals with multiple periodicity
   int numMultipleDihedrals; 

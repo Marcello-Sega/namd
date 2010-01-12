@@ -119,6 +119,14 @@ typedef struct aniso     // anisotropic term
   Real k22;
   Real k33;
 } Aniso;
+
+typedef struct thole    // Thole terms - constructed implicitly from exclusions
+{
+  int32 atom1;  // first heavy atom
+  int32 atom2;  // Drude particle of first heavy atom
+  int32 atom3;  // second heavy atom
+  int32 atom4;  // Drude particle of second heavy atom
+} Thole;
 // DRUDE
 
 
