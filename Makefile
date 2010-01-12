@@ -616,7 +616,7 @@ release: all
 	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
 	for f in $(DOC_FILES); do cp .rootdir/$$f $(RELEASE_DIR_NAME); done
 	cp -r .rootdir/lib $(RELEASE_DIR_NAME)
-	for f in `find (RELEASE_DIR_NAME)/lib -name CVS`; do \
+	for f in `find $(RELEASE_DIR_NAME)/lib -name CVS`; do \
 	  /bin/rm -rf $$f; \
 	done
 	if [ -r $(CHARM)/bin/charmd ]; then \
