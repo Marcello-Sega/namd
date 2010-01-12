@@ -5623,9 +5623,6 @@ void Molecule::receive_Molecule(MIStream *msg)
     /*      END OF FUNCTION stripFepExcl      */
 
 
-#endif  // MOLECULE2_C undefined = first object file
-#ifdef MOLECULE2_C  // second object file
-
 /* BEGIN gf */
     /************************************************************************/
     /*                                                                      */
@@ -5958,6 +5955,9 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 }
 /* END gf */
 
+
+#endif  // MOLECULE2_C undefined = first object file
+#ifdef MOLECULE2_C  // second object file
 
 
     /************************************************************************/
