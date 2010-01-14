@@ -469,11 +469,15 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
 		int cbegin, int ccount, int pbegin, int pcount, int doSlow) {
 
  if ( ccount ) {
-  // printf("%d %d %d\n",cbegin,ccount,patch_pairs_size);
-  dev_nonbonded<<< ccount, BLOCK_SIZE, 0, stream
-	>>>(patch_pairs+cbegin,atoms,atom_params,force_buffers,
-             (doSlow?slow_force_buffers:0), lata, latb, latc, cutoff2);
-  cuda_errcheck("dev_nonbonded");
+   int grid_dim = 65535;  // maximum allowed
+   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
+     if ( grid_dim > ccount - cstart ) grid_dim = ccount - cstart;
+     // printf("%d %d %d\n",cbegin+cstart,grid_dim,patch_pairs_size);
+     dev_nonbonded<<< grid_dim, BLOCK_SIZE, 0, stream
+	>>>(patch_pairs+cbegin+cstart,atoms,atom_params,force_buffers,
+	     (doSlow?slow_force_buffers:0), lata, latb, latc, cutoff2);
+     cuda_errcheck("dev_nonbonded");
+   }
  }
 
  if ( pcount ) {
