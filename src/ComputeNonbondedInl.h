@@ -434,6 +434,8 @@ inline void sortEntries_mergeSort_v2(SortEntry * &se, SortEntry * &buf, int seLe
         register int list0len_val1 = numElements;  // NOTE: list1len_val1 = 0
         register int list0len = __TERNARY_ASSIGN(lenTest, list0len_val0, list0len_val1);
         register int list1len = __TERNARY_ASSIGN(lenTest, list1len_val0, 0);
+        // avoid pre-load of sortValue1 from past end of array
+        if ( ! lenTest ) list1ptr = list0ptr;
         list0ptr_end = list0ptr + list0len;
         list1ptr_end = list1ptr + list1len;
       }
