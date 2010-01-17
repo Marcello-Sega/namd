@@ -30,6 +30,7 @@
 #include "ComputeAngles.h"
 #include "ComputeDihedrals.h"
 #include "ComputeImpropers.h"
+#include "ComputeThole.h"
 #include "ComputeCrossterms.h"
 #include "ComputeBonds.h"
 #include "ComputeNonbondedCUDAExcl.h"
@@ -335,6 +336,12 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
         break;
+    case computeTholeType:
+        PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
+        c = new ComputeThole(i,pids); // unknown delete
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
     case computeCrosstermsType:
         PatchMap::Object()->basePatchIDList(CkMyPe(),pids);
         c = new ComputeCrossterms(i,pids); // unknown delete
@@ -363,6 +370,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         break;
     case computeSelfImpropersType:
         c = new ComputeSelfImpropers(i,map->computeData[i].pids[0].pid);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
+    case computeSelfTholeType:
+        c = new ComputeSelfThole(i,map->computeData[i].pids[0].pid);
         map->registerCompute(i,c);
         c->initialize();
         break;
@@ -499,6 +511,9 @@ void registerUserEventsForAllComputeObjs()
         case computeImpropersType:
             sprintf(user_des, "computeImpropersType_%d", i);
             break;
+        case computeTholeType:
+            sprintf(user_des, "computeTholeType_%d", i);
+            break;
         case computeCrosstermsType:
             sprintf(user_des, "computeCrosstermsType_%d", i);
             break;
@@ -516,6 +531,9 @@ void registerUserEventsForAllComputeObjs()
             break;
         case computeSelfImpropersType:
             sprintf(user_des, "computeSelfImpropersType_%d", i);
+            break;
+        case computeSelfTholeType:
+            sprintf(user_des, "computeSelfTholeType_%d", i);
             break;
         case computeSelfCrosstermsType:
             sprintf(user_des, "computeSelfCrosstermsType_%d", i);

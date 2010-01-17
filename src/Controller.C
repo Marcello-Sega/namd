@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2009/11/12 01:54:06 $
- * $Revision: 1.1241 $
+ * $Author: dhardy $
+ * $Date: 2010/01/17 22:35:27 $
+ * $Revision: 1.1242 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1234,6 +1234,13 @@ void Controller::compareChecksums(int step, int forgiving) {
       if ( forgiving && (((int)checksum) < molecule->numCalcImpropers) )
         iout << iWARN << "Bad global improper count!\n" << endi;
       else NAMD_bug("Bad global improper count!\n");
+    }
+
+    checksum = reduction->item(REDUCTION_THOLE_CHECKSUM);
+    if ( checksum_b && (((int)checksum) != molecule->numCalcTholes) ) {
+      if ( forgiving && (((int)checksum) < molecule->numCalcTholes) )
+        iout << iWARN << "Bad global Thole count!\n" << endi;
+      else NAMD_bug("Bad global Thole count!\n");
     }
 
     checksum = reduction->item(REDUCTION_CROSSTERM_CHECKSUM);

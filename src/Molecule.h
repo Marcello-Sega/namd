@@ -49,6 +49,7 @@ class BondElem;
 class AngleElem;
 class DihedralElem;
 class ImproperElem;
+class TholeElem;  // Drude model
 class CrosstermElem;
 class ResidueLookupElem;
 template<class Type> class ObjectArena;
@@ -147,6 +148,7 @@ friend class BondElem;
 friend class AngleElem;
 friend class DihedralElem;
 friend class ImproperElem;
+friend class TholeElem;  // Drude model
 friend class CrosstermElem;
 
 private:

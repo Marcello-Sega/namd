@@ -4643,7 +4643,8 @@ void Molecule::receive_Molecule(MIStream *msg)
          }
 
          // allocate space for Thole terms
-         tholes = new Thole[numTholes];
+         if (numTholes != 0) tholes = new Thole[numTholes];
+         else tholes = NULL;
          int nt = 0;
 
          Real c = COULOMB*simParams->nonbondedScaling/simParams->dielectric;
@@ -4656,11 +4657,13 @@ void Molecule::receive_Molecule(MIStream *msg)
            if (a2 < numAtoms-1 && is_drude(a1+1) && is_drude(a2+1)) {
              Real thsum = drudeConsts[a1].thole + drudeConsts[a2].thole;
              Real aprod = drudeConsts[a1].alpha * drudeConsts[a2].alpha;
+             // guard against having alpha==0
+             Real apower = (aprod <= 0 ? 0 : powf(aprod, -1.f/6));
              tholes[nt].atom1 = a1;
              tholes[nt].atom2 = a1+1;
              tholes[nt].atom3 = a2;
              tholes[nt].atom4 = a2+1;
-             tholes[nt].aa = powf(aprod, -6) * thsum;
+             tholes[nt].aa = apower * thsum;
              tholes[nt].qq = c * atoms[a1+1].charge * atoms[a2+1].charge;
              nt++;
            }

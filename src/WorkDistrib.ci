@@ -28,6 +28,7 @@ module WorkDistrib {
     entry void enqueueAngles(LocalWorkMsg *);
     entry void enqueueDihedrals(LocalWorkMsg *);
     entry void enqueueImpropers(LocalWorkMsg *);
+    entry void enqueueThole(LocalWorkMsg *);  // Drude model
     entry void enqueueCrossterms(LocalWorkMsg *);
     entry void enqueueCUDA(LocalWorkMsg *);
     entry void enqueuePme(LocalWorkMsg *);

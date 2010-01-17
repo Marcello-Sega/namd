@@ -48,6 +48,7 @@ public:
   void enqueueAngles(LocalWorkMsg *msg);
   void enqueueDihedrals(LocalWorkMsg *msg);
   void enqueueImpropers(LocalWorkMsg *msg);
+  void enqueueThole(LocalWorkMsg *msg);  // Drude model
   void enqueueCrossterms(LocalWorkMsg *msg);
   void enqueuePme(LocalWorkMsg *msg);
   void enqueueSelfA(LocalWorkMsg *msg);
