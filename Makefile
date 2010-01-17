@@ -202,6 +202,7 @@ OBJS = \
 	$(DSTDIR)/Set.o \
 	$(DSTDIR)/Settle.o \
 	$(DSTDIR)/SimParameters.o \
+	$(DSTDIR)/SortAtoms.o \
 	$(DSTDIR)/Sync.o \
 	$(DSTDIR)/TclCommands.o \
 	$(DSTDIR)/TorusLB.o \

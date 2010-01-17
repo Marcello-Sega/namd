@@ -1906,7 +1906,8 @@ obj/ComputeNonbondedCUDA.o: \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
 	src/ComputeNonbondedCUDAKernel.h \
-	src/ObjectArena.h
+	src/ObjectArena.h \
+	src/SortAtoms.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedCUDA.o $(COPTC) src/ComputeNonbondedCUDA.C
 obj/ComputeNonbondedCUDAExcl.o: \
 	src/ComputeNonbondedCUDAExcl.C \
@@ -1968,6 +1969,8 @@ obj/ComputeNonbondedCUDAExcl.o: \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ComputeNonbondedCUDAExcl.inl \
 	src/LJTable.h \
@@ -3332,10 +3335,6 @@ obj/LdbCoordinator.o: \
 	src/InfoStream.h \
 	src/NamdCentLB.h \
 	inc/NamdCentLB.decl.h \
-	src/NamdHybridLB.h \
-	inc/NamdHybridLB.decl.h \
-	src/NamdDummyLB.h \
-	inc/NamdDummyLB.decl.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -3372,6 +3371,10 @@ obj/LdbCoordinator.o: \
 	src/AlgRecBisection.h \
 	src/TorusLB.h \
 	src/RefineTorusLB.h \
+	src/NamdHybridLB.h \
+	inc/NamdHybridLB.decl.h \
+	src/NamdDummyLB.h \
+	inc/NamdDummyLB.decl.h \
 	src/NamdNborLB.h \
 	inc/NamdNborLB.decl.h \
 	src/AlgNbor.h \
@@ -3672,7 +3675,9 @@ obj/NamdCentLB.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
-	inc/NamdNborLB.decl.h
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdCentLB.o $(COPTC) src/NamdCentLB.C
 obj/NamdNborLB.o: \
 	src/NamdNborLB.C \
@@ -3716,97 +3721,113 @@ obj/NamdNborLB.o: \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
-	inc/NamdNborLB.decl.h
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdNborLB.o $(COPTC) src/NamdNborLB.C
 obj/NamdHybridLB.o: \
-        src/NamdHybridLB.C \
-        src/InfoStream.h \
-        src/NamdHybridLB.h \
-        inc/NamdHybridLB.decl.h \
-        src/Node.h \
-        src/main.h \
-        src/ProcessorPrivate.h \
-        src/BOCgroup.h \
-        inc/Node.decl.h \
-        src/PatchMap.h \
-        src/NamdTypes.h \
-        src/common.h \
-        src/Vector.h \
-        src/ResizeArray.h \
-        src/ResizeArrayRaw.h \
-        src/HomePatchList.h \
-        src/SortedArray.h \
-        src/SortableResizeArray.h \
-        src/ResizeArrayIter.h \
-        src/Lattice.h \
-        src/Tensor.h \
-        src/SimParameters.h \
-        src/RefineOnly.h \
-        src/elements.h \
-        src/Set.h \
-        src/Rebalancer.h \
-        src/heap.h \
-        inc/ProxyMgr.decl.h \
-        src/ProxyMgr.h \
-        src/PatchTypes.h \
-        src/UniqueSet.h \
-        src/UniqueSetRaw.h \
-        src/UniqueSetIter.h \
-        src/Alg7.h \
-        src/AlgRecBisection.h \
-        src/TorusLB.h \
-        src/RefineTorusLB.h \
-        inc/NamdHybridLB.def.h \
-        src/ComputeMap.h \
-        src/LdbCoordinator.h \
-        inc/LdbCoordinator.decl.h \
-        inc/NamdHybridLB.decl.h \
-        inc/NamdNborLB.decl.h
+	src/NamdHybridLB.C \
+	src/InfoStream.h \
+	src/NamdHybridLB.h \
+	inc/NamdHybridLB.decl.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	src/RefineOnly.h \
+	src/elements.h \
+	src/Set.h \
+	src/Rebalancer.h \
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/PatchTypes.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/Alg7.h \
+	src/AlgRecBisection.h \
+	src/NamdCentLB.h \
+	inc/NamdCentLB.decl.h \
+	src/TorusLB.h \
+	src/RefineTorusLB.h \
+	src/NamdDummyLB.h \
+	inc/NamdDummyLB.decl.h \
+	inc/NamdHybridLB.def.h \
+	src/ComputeMap.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdHybridLB.o $(COPTC) src/NamdHybridLB.C
 obj/NamdDummyLB.o: \
-        src/NamdDummyLB.C \
-        src/InfoStream.h \
-        src/NamdDummyLB.h \
-        inc/NamdDummyLB.decl.h \
-        src/Node.h \
-        src/main.h \
-        src/ProcessorPrivate.h \
-        src/BOCgroup.h \
-        inc/Node.decl.h \
-        src/PatchMap.h \
-        src/NamdTypes.h \
-        src/common.h \
-        src/Vector.h \
-        src/ResizeArray.h \
-        src/ResizeArrayRaw.h \
-        src/HomePatchList.h \
-        src/SortedArray.h \
-        src/SortableResizeArray.h \
-        src/ResizeArrayIter.h \
-        src/Lattice.h \
-        src/Tensor.h \
-        src/SimParameters.h \
-        src/RefineOnly.h \
-        src/elements.h \
-        src/Set.h \
-        src/Rebalancer.h \
-        src/heap.h \
-        inc/ProxyMgr.decl.h \
-        src/ProxyMgr.h \
-        src/PatchTypes.h \
-        src/UniqueSet.h \
-        src/UniqueSetRaw.h \
-        src/UniqueSetIter.h \
-        src/Alg7.h \
-        src/AlgRecBisection.h \
-        src/TorusLB.h \
-        src/RefineTorusLB.h \
-        inc/NamdDummyLB.def.h \
-        src/ComputeMap.h \
-        src/LdbCoordinator.h \
-        inc/LdbCoordinator.decl.h \
-        inc/NamdDummyLB.decl.h \
-        inc/NamdNborLB.decl.h
+	src/NamdDummyLB.C \
+	src/InfoStream.h \
+	src/NamdDummyLB.h \
+	inc/NamdDummyLB.decl.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	src/RefineOnly.h \
+	src/elements.h \
+	src/Set.h \
+	src/Rebalancer.h \
+	src/heap.h \
+	inc/ProxyMgr.decl.h \
+	src/ProxyMgr.h \
+	src/PatchTypes.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/UniqueSetIter.h \
+	src/Alg7.h \
+	src/AlgRecBisection.h \
+	src/TorusLB.h \
+	src/RefineTorusLB.h \
+	inc/NamdDummyLB.def.h \
+	src/ComputeMap.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdDummyLB.o $(COPTC) src/NamdDummyLB.C
 obj/NamdState.o: \
 	src/NamdState.C \
@@ -4726,6 +4747,15 @@ obj/SimParameters.o: \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
+obj/SortAtoms.o: \
+	src/SortAtoms.C \
+	src/SortAtoms.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/SortAtoms.o $(COPTC) src/SortAtoms.C
 obj/Sync.o: \
 	src/Sync.C \
 	src/InfoStream.h \
