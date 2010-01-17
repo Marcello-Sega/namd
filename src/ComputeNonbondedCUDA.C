@@ -12,6 +12,7 @@
 #include "ComputeNonbondedCUDA.h"
 #include "ComputeNonbondedCUDAKernel.h"
 #include "ObjectArena.h"
+#include "SortAtoms.h"
 
 #ifdef NAMD_CUDA
 
@@ -531,6 +532,7 @@ static ResizeArray<patch_pair> patch_pairs;
 static ResizeArray<force_list> force_lists;
 
 static int num_atom_records_allocated;
+static int* atom_order;
 static atom_param* atom_params;
 static atom* atoms;
 static float4* forces;
@@ -659,7 +661,7 @@ void ComputeNonbondedCUDA::doWork() {
 	CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
 	localComputeRecords.size(), remoteComputeRecords.size());
    }
-  }
+  }  // computesChanged
 
   int istart = 0;
   int flstart = 0;
@@ -699,12 +701,14 @@ void ComputeNonbondedCUDA::doWork() {
   num_remote_atom_records = num_atom_records - num_local_atom_records;
   if ( num_atom_records > num_atom_records_allocated ) {
     if ( num_atom_records_allocated ) {
+      delete [] atom_order;
       cudaFreeHost(atom_params);
       cudaFreeHost(atoms);
       cudaFreeHost(forces);
       cudaFreeHost(slow_forces);
     }
     num_atom_records_allocated = 1.1 * num_atom_records + 1;
+    atom_order = new int[num_atom_records_allocated];
     cudaMallocHost((void**)&atom_params,sizeof(atom_param)*num_atom_records_allocated);
     cudaMallocHost((void**)&atoms,sizeof(atom)*num_atom_records_allocated);
     cudaMallocHost((void**)&forces,sizeof(float4)*num_atom_records_allocated);
@@ -786,26 +790,30 @@ void ComputeNonbondedCUDA::doWork() {
     int n = pr.numAtoms;
     const CompAtom *a = pr.x;
     const CompAtomExt *aExt = pr.xExt;
+    int *ao = atom_order + start;
     if ( atomsChanged ) {
-      atom_param *ap = atom_params + start;
-      int k = 0;
-      for ( int j=0; j<n; ++j ) {
-        // put free atoms first
-        if ( fixedAtomsOn && aExt[j].atomFixed ) continue;
-        ap[k].index = aExt[j].id;
-        ap[k].excl_index = exclusionsByAtom[aExt[j].id].y;
-        ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
-        int vdwtype = mol->atomvdwtype(aExt[j].id);
-        Real sig, eps, sig14, eps14;
-        params->get_vdw_params(&sig,&eps,&sig14,&eps14,vdwtype);
-        ap[k].sqrt_epsilon = sqrt(4.0 * scaling * eps);
-        ap[k].half_sigma = 0.5 * sig;
-// CkPrintf("%d %d %f %f\n", k, vdwtype, sig, eps);
-        ++k;
+      int nfree = pr.numFreeAtoms;
+      if ( nfree != n ) {
+        int k = 0;
+        for ( int j=0; j<n; ++j ) {
+          // put free atoms first
+          if ( ! aExt[j].atomFixed ) ao[k++] = j;
+        }
+        if ( fixedAtomsOn ) for ( int j=0; j<n; ++j ) {
+          // put fixed atoms at end
+          if ( aExt[j].atomFixed ) ao[k++] = j;
+        }
+      } else {
+        for ( int j=0; j<n; ++j ) {
+          ao[j] = j;
+        }
       }
-      if ( fixedAtomsOn ) for ( int j=0; j<n; ++j ) {
-        // put fixed atoms at end
-        if ( ! (fixedAtomsOn && aExt[j].atomFixed) ) continue;
+
+      sortAtomsForCUDA(ao,a,nfree,n);
+
+      atom_param *ap = atom_params + start;
+      for ( int k=0; k<n; ++k ) {
+        int j = ao[k];
         ap[k].index = aExt[j].id;
         ap[k].excl_index = exclusionsByAtom[aExt[j].id].y;
         ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
@@ -815,31 +823,18 @@ void ComputeNonbondedCUDA::doWork() {
         ap[k].sqrt_epsilon = sqrt(4.0 * scaling * eps);
         ap[k].half_sigma = 0.5 * sig;
 // CkPrintf("%d %d %f %f\n", k, vdwtype, sig, eps);
-        ++k;
       }
     }
     {
       Vector center =
         pr.p->flags.lattice.unscale(cudaCompute->patchMap->center(pr.patchID));
       atom *ap = atoms + start;
-      int k = 0;
-      for ( int j=0; j<n; ++j ) {
-        // put free atoms first
-        if ( fixedAtomsOn && aExt[j].atomFixed ) continue;
+      for ( int k=0; k<n; ++k ) {
+        int j = ao[k];
         ap[k].position.x = a[j].position.x - center.x;
         ap[k].position.y = a[j].position.y - center.y;
         ap[k].position.z = a[j].position.z - center.z;
         ap[k].charge = charge_scaling * a[j].charge;
-        ++k;
-      }
-      if ( fixedAtomsOn ) for ( int j=0; j<n; ++j ) {
-        // put fixed atoms at end
-        if ( ! (fixedAtomsOn && aExt[j].atomFixed) ) continue;
-        ap[k].position.x = a[j].position.x - center.x;
-        ap[k].position.y = a[j].position.y - center.y;
-        ap[k].position.z = a[j].position.z - center.z;
-        ap[k].charge = charge_scaling * a[j].charge;
-        ++k;
       }
     }
   }
@@ -1008,17 +1003,17 @@ int ComputeNonbondedCUDA::finishWork() {
   for ( int i=0; i<patches.size(); ++i ) {
     patch_record &pr = patchRecords[patches[i]];
     int start = pr.localStart;
-    int n = pr.numAtoms;
+    int nfree = pr.numFreeAtoms;
     Force *f = pr.f;
     Force *f_slow = pr.r->f[Results::slow];
     const CompAtom *a = pr.x;
     const CompAtomExt *aExt = pr.xExt;
+    int *ao = atom_order + start;
     float4 *af = forces + start;
     float4 *af_slow = slow_forces + start;
-    int k = 0;
-    for ( int j=0; j<n; ++j ) {
-      // only free atoms return forces
-      if ( fixedAtomsOn && aExt[j].atomFixed ) continue;
+    // only free atoms return forces
+    for ( int k=0; k<nfree; ++k ) {
+      int j = ao[k];
       f[j].x += af[k].x;
       f[j].y += af[k].y;
       f[j].z += af[k].z;
@@ -1030,23 +1025,19 @@ int ComputeNonbondedCUDA::finishWork() {
         f_slow[j].z += af_slow[k].z;
         virial_slow += af_slow[k].w;
       }
-      ++k;
     }
 
 #if 0
     // check exclusions reported as w
     if ( CkNumPes() == 1 ) {
       const CompAtomExt *aExt = pr.xExt;
-      int k = 0;
-      for ( int j=0; j<n; ++j ) {
-        // only free atoms return forces
-        if ( fixedAtomsOn && aExt[j].atomFixed ) continue;
+      for ( int k=0; k<nfree; ++k ) {
+        int j = ao[k];
         int excl_expected = mol->get_full_exclusions_for_atom(aExt[j].id)[0] + 1;
         if ( af[k].w != excl_expected ) {
           CkPrintf("%d:%d(%d) atom %d found %d exclusions but expected %d\n",
 		i, j, k, aExt[j].id, (int)af[k].w, excl_expected );
         }
-        ++k;
       }
     }
 #endif
