@@ -54,32 +54,38 @@ void TholeElem::computeForce(BigReal *reduction,
   const Position & raj = p[2]->x[localIndex[2]].position;  // atom j
   const Position & rdj = p[3]->x[localIndex[3]].position;  // atom j's Drude
 
+  // r_ij = r_i - r_j
   const Lattice & lattice = p[0]->p->lattice;
   Vector raa = lattice.delta(rai,raj);  // shortest vector image:  rai - raj
   Vector rad = lattice.delta(rai,rdj);  // shortest vector image:  rai - rdj
   Vector rda = lattice.delta(rdi,raj);  // shortest vector image:  rdi - raj
   Vector rdd = lattice.delta(rdi,rdj);  // shortest vector image:  rdi - rdj
 
+  // 1/r, r = |r_ij|
   BigReal raa_invlen = raa.rlength();  // reciprocal of length
   BigReal rad_invlen = rad.rlength();
   BigReal rda_invlen = rda.rlength();
   BigReal rdd_invlen = rdd.rlength();
 
+  // ar
   BigReal auaa = aa / raa_invlen;
   BigReal auad = aa / rad_invlen;
   BigReal auda = aa / rda_invlen;
   BigReal audd = aa / rdd_invlen;
 
+  // exp(-ar)
   BigReal expauaa = exp(-auaa);
   BigReal expauad = exp(-auad);
   BigReal expauda = exp(-auda);
   BigReal expaudd = exp(-audd);
 
+  // (1 + ar/2)
   BigReal polyauaa = 1 + 0.5*auaa;
   BigReal polyauad = 1 + 0.5*auad;
   BigReal polyauda = 1 + 0.5*auda;
   BigReal polyaudd = 1 + 0.5*audd;
 
+  // U(r) = qq/r (1 - (1 + ar/2) exp(-ar))
   BigReal ethole = 0;
   ethole += qq * raa_invlen * (1 - polyauaa * expauaa);
   ethole += -qq * rad_invlen * (1 - polyauad * expauad);
@@ -96,15 +102,16 @@ void TholeElem::computeForce(BigReal *reduction,
   BigReal rda_invlen3 = rda_invlen * rda_invlen * rda_invlen;
   BigReal rdd_invlen3 = rdd_invlen * rdd_invlen * rdd_invlen;
 
+  // df = (1/r) (dU/dr)
   BigReal dfaa = qq * raa_invlen3 * (polyauaa*expauaa - 1);
   BigReal dfad = -qq * rad_invlen3 * (polyauad*expauad - 1);
   BigReal dfda = -qq * rda_invlen3 * (polyauda*expauda - 1);
   BigReal dfdd = qq * rdd_invlen3 * (polyaudd*expaudd - 1);
 
-  Vector faa = dfaa * raa;
-  Vector fad = dfad * rad;
-  Vector fda = dfda * rda;
-  Vector fdd = dfdd * rdd;
+  Vector faa = -dfaa * raa;
+  Vector fad = -dfad * rad;
+  Vector fda = -dfda * rda;
+  Vector fdd = -dfdd * rdd;
 
   p[0]->f[localIndex[0]] += faa + fad;
   p[1]->f[localIndex[1]] += fda + fdd;
