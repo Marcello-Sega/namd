@@ -362,7 +362,7 @@ __global__ static void dev_nonbonded(
   if ( blocki + threadIdx.x < myPatchPair.patch1_force_size ) {
 
 // be careful not to use // comments inside macros!
-#define FORCE_INNER_LOOP(IPQ,IAP) \
+#define FORCE_INNER_LOOP(IPQ,IAP,DO_SLOW) \
     for ( int j = 0; j < shared_size; ++j ) { \
       /* actually calculate force */ \
       float tmpx = jpqs[j].position.x - IPQ.position.x; \
@@ -384,20 +384,27 @@ __global__ static void dev_nonbonded(
         e *= IAP.sqrt_epsilon * japs[j].sqrt_epsilon;  /* full L-J */ \
         float e_slow = IPQ.charge * jpqs[j].charge; \
         e += e_slow * fi.x; \
-        e_slow *= fi.w; \
+        if ( DO_SLOW ) e_slow *= fi.w; \
         if ( ! excluded ) { \
           ife.w += r2 * e; \
           ife.x += tmpx * e; \
           ife.y += tmpy * e; \
           ife.z += tmpz * e; \
+          if ( DO_SLOW ) { \
           ife_slow.w += r2 * e_slow; \
           ife_slow.x += tmpx * e_slow; \
           ife_slow.y += tmpy * e_slow; \
           ife_slow.z += tmpz * e_slow; \
+          } \
         } \
       }  /* cutoff */ \
+    } /* end of FORCE_INNER_LOOP macro */
+
+    if ( slow_force_buffers ) {
+      FORCE_INNER_LOOP(ipq,iap,1)
+    } else {
+      FORCE_INNER_LOOP(ipq,iap,0)
     }
-    FORCE_INNER_LOOP(ipq,iap)
 
   } // if
   } // blockj loop
