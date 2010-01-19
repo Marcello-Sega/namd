@@ -839,6 +839,69 @@ void ComputeNonbondedCUDA::doWork() {
     }
   }
 
+#if 0
+  // calculate warp divergence
+  if ( 1 ) {
+    Flags &flags = patchRecords[activePatches[0]].p->flags;
+    Lattice &lattice = flags.lattice;
+    float3 lata, latb, latc;
+    lata.x = lattice.a().x;
+    lata.y = lattice.a().y;
+    lata.z = lattice.a().z;
+    latb.x = lattice.b().x;
+    latb.y = lattice.b().y;
+    latb.z = lattice.b().z;
+    latc.x = lattice.c().x;
+    latc.y = lattice.c().y;
+    latc.z = lattice.c().z;
+
+    int ncomputes = computeRecords.size();
+    for ( int ic=0; ic<ncomputes; ++ic ) {
+      patch_pair &pp = patch_pairs[ic];
+      atom *a1 = atoms + pp.patch1_atom_start;
+      int n1 = pp.patch1_size;
+      atom *a2 = atoms + pp.patch2_atom_start;
+      int n2 = pp.patch2_size;
+      float offx = pp.offset.x * lata.x
+               + pp.offset.y * latb.x
+               + pp.offset.z * latc.x;
+      float offy = pp.offset.x * lata.y
+               + pp.offset.y * latb.y
+               + pp.offset.z * latc.y;
+      float offz = pp.offset.x * lata.z
+               + pp.offset.y * latb.z
+               + pp.offset.z * latc.z;
+      // CkPrintf("%f %f %f\n", offx, offy, offz);
+      int atoms_tried = 0;
+      int blocks_tried = 0;
+      int atoms_used = 0;
+      int blocks_used = 0;
+      for ( int ii=0; ii<n1; ii+=32 ) {  // warps
+        for ( int jj=0; jj<n2; jj+=16 ) {  // shared atom loads
+          int block_used = 0;
+          for ( int j=jj; j<jj+16 && j<n2; ++j ) {  // shared atoms
+            int atom_used = 0;
+            for ( int i=ii; i<ii+32 && i<n1; ++i ) {  // threads
+              float dx = offx + a1[i].position.x - a2[j].position.x;
+              float dy = offy + a1[i].position.y - a2[j].position.y;
+              float dz = offz + a1[i].position.z - a2[j].position.z;
+              float r2 = dx*dx + dy*dy + dz*dz;
+              if ( r2 < cutoff2 ) atom_used = 1;
+            }
+            ++atoms_tried;
+            if ( atom_used ) { block_used = 1; ++atoms_used; }
+          }
+          ++blocks_tried;
+          if ( block_used ) { ++blocks_used; }
+        }
+      }
+      CkPrintf("blocks = %d/%d (%f)  atoms = %d/%d (%f)\n",
+                blocks_used, blocks_tried, blocks_used/(float)blocks_tried,
+                atoms_used, atoms_tried, atoms_used/(float)atoms_tried);
+    }
+  }
+#endif
+
   kernel_time = -1. * CkWallTimer();
 #if 0
   kernel_launch_state = 3;
