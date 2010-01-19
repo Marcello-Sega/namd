@@ -311,6 +311,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numDihedrals=0;
   numImpropers=0;
   numTholes=0;
+  numAnisos=0;
   numCrossterms=0;
   numDonors=0;
   numAcceptors=0;
@@ -341,6 +342,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   numCalcDihedrals=0;
   numCalcImpropers=0;
   numCalcTholes=0;
+  numCalcAnisos=0;
   numCalcCrossterms=0;
   numCalcExclusions=0;
 

@@ -78,6 +78,7 @@ OBJS = \
 	$(DSTDIR)/Communicate.o \
 	$(DSTDIR)/Compute.o \
 	$(DSTDIR)/ComputeAngles.o \
+	$(DSTDIR)/ComputeAniso.o \
 	$(DSTDIR)/ComputeBonds.o \
 	$(DSTDIR)/ComputeConsForce.o \
 	$(DSTDIR)/ComputeConsForceMsgs.o \

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: dhardy $
- * $Date: 2010/01/17 22:35:27 $
- * $Revision: 1.93 $
+ * $Date: 2010/01/19 22:11:38 $
+ * $Revision: 1.94 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -307,6 +307,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	      || (computeMap->type(i) == computeSelfDihedralsType)
 	      || (computeMap->type(i) == computeSelfImpropersType)
 	      || (computeMap->type(i) == computeSelfTholeType)
+	      || (computeMap->type(i) == computeSelfAnisoType)
 	      || (computeMap->type(i) == computeSelfCrosstermsType)
 	) ) {
       nLocalComputes++;
@@ -363,6 +364,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	          || (computeMap->type(i) == computeSelfDihedralsType)
 	          || (computeMap->type(i) == computeSelfImpropersType)
 	          || (computeMap->type(i) == computeSelfTholeType)
+	          || (computeMap->type(i) == computeSelfAnisoType)
 	          || (computeMap->type(i) == computeSelfCrosstermsType)
 		) ) {
 	  // Register the object with the load balancer

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: dhardy $
- * $Date: 2010/01/17 22:35:28 $
- * $Revision: 1.1198 $
+ * $Date: 2010/01/19 22:11:39 $
+ * $Revision: 1.1199 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1382,6 +1382,8 @@ void WorkDistrib::mapComputes(void)
   if ( node->simParameters->drudeOn ) {
     mapComputeHomeTuples(computeTholeType);
     mapComputePatch(computeSelfTholeType);
+    mapComputeHomeTuples(computeAnisoType);
+    mapComputePatch(computeSelfAnisoType);
   }
 
   if ( node->simParameters->eFieldOn )
@@ -1644,6 +1646,10 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   case computeSelfTholeType:
     wdProxy[CkMyPe()].enqueueThole(msg);
     break;
+  case computeAnisoType:
+  case computeSelfAnisoType:
+    wdProxy[CkMyPe()].enqueueAniso(msg);
+    break;
   case computeCrosstermsType:
   case computeSelfCrosstermsType:
     wdProxy[CkMyPe()].enqueueCrossterms(msg);
@@ -1741,6 +1747,12 @@ void WorkDistrib::enqueueImpropers(LocalWorkMsg *msg) {
 }
 
 void WorkDistrib::enqueueThole(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+void WorkDistrib::enqueueAniso(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");

@@ -26,6 +26,7 @@ enum ComputeType
   computeDihedralsType,
   computeImpropersType,
   computeTholeType,
+  computeAnisoType,
   computeCrosstermsType,
   computeSelfExclsType,
   computeSelfBondsType,
@@ -33,6 +34,7 @@ enum ComputeType
   computeSelfDihedralsType,
   computeSelfImpropersType,
   computeSelfTholeType,
+  computeSelfAnisoType,
   computeSelfCrosstermsType,
 #ifdef DPMTA
   computeDPMTAType,
