@@ -118,6 +118,7 @@ OBJS = \
 	$(DSTDIR)/ComputeSphericalBC.o \
 	$(DSTDIR)/ComputeStir.o \
 	$(DSTDIR)/ComputeTclBC.o \
+	$(DSTDIR)/ComputeThole.o \
 	$(DSTDIR)/ConfigList.o \
 	$(DSTDIR)/Controller.o \
 	$(DSTDIR)/ccsinterface.o \
