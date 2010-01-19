@@ -32,9 +32,10 @@ inline TholeElem::TholeElem(const Thole *a, const TholeValue *v)
 inline TholeElem::TholeElem(AtomID atom0, AtomID atom1,
 				  AtomID atom2, AtomID atom3)
   {
-    if (atom0 > atom3) {  // Swap end atoms so lowest is first!
-      AtomID tmp = atom3; atom3 = atom0; atom0 = tmp; 
-      tmp = atom1; atom1 = atom2; atom2 = tmp;
+    // atoms arranged:  HEAVY DRUDE HEAVY DRUDE
+    if (atom0 > atom2) {  // Swap heavy atoms so lowest is first!
+      AtomID tmp = atom2; atom2 = atom0; atom0 = tmp; 
+      tmp = atom1; atom1 = atom3; atom3 = tmp;
     }
     atomID[0] = atom0;
     atomID[1] = atom1;
