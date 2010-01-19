@@ -176,9 +176,11 @@ void TholeElem::computeForce(BigReal *reduction,
 }
 
 
+// The energy from the screened Coulomb correction of Thole is 
+// accumulated into the electrostatic potential energy.
 void TholeElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
   reduction->item(REDUCTION_ELECT_ENERGY) += data[tholeEnergyIndex];
-  ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
 }
 
