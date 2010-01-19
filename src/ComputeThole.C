@@ -42,7 +42,8 @@ void TholeElem::computeForce(BigReal *reduction,
                                 BigReal *pressureProfileData)
 {
   DebugM(3, "::computeForce() localIndex = " << localIndex[0] << " "
-               << localIndex[1] << " " << localIndex[2] << std::endl);
+               << localIndex[1] << " " << localIndex[2] << " "
+               << localIndex[3] << std::endl);
 
 #ifdef CALCULATE_THOLE_CORRECTION
   const BigReal aa = value->aa;
