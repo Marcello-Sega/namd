@@ -76,9 +76,6 @@ struct shared_atom {  // do not align, size to avoid bank conflicts
     COPY_PARAM( PARAM, SHARED ) \
   }
 
-// atom limit is based on shared memory and register usage
-#define MAX_ATOMS_PER_PATCH 384
-
 // 2^11 ints * 2^5 bits = 2^16 bits = range of unsigned short excl_index
 #define MAX_EXCLUSIONS 2048  // cache size is 8k
 

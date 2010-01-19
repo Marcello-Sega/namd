@@ -374,8 +374,18 @@ void ComputeNonbondedCUDA::build_exclusions() {
   if ( totalbits & 31 ) totalbits += ( 32 - ( totalbits & 31 ) );
 
   if ( ! CkMyPe() ) {
-  CkPrintf("Info: Found %d unique exclusion lists needing %d bytes\n",
-		unique_lists.size(), totalbits / 8);
+    int bytesneeded = totalbits / 8;
+    CkPrintf("Info: Found %d unique exclusion lists needing %d bytes\n",
+		unique_lists.size(), bytesneeded);
+
+    int bytesavail = MAX_EXCLUSIONS * sizeof(unsigned int);
+    if ( bytesneeded > bytesavail ) {
+      char errmsg[512];
+      sprintf(errmsg,"%d bytes of CUDA constant memory needed for exclusions, "
+                     "but only %d bytes available.  Increase MAX_EXCLUSIONS.",
+                     bytesneeded, bytesavail);
+      NAMD_die(errmsg);
+    }
   }
 
 #define SET_EXCL(EXCL,BASE,DIFF) \
@@ -714,16 +724,6 @@ void ComputeNonbondedCUDA::doWork() {
     cudaMallocHost((void**)&forces,sizeof(float4)*num_atom_records_allocated);
     cudaMallocHost((void**)&slow_forces,sizeof(float4)*num_atom_records_allocated);
   }
-
-#if 0
-  if ( max_atoms_per_patch > MAX_ATOMS_PER_PATCH ) {
-    char errstr[1024];
-    sprintf(errstr,"Found patch with %d atoms; limit is %d for CUDA."
-	"  Try enabling twoAwayX, twoAwayY, and/or twoAwayZ to fix this.",
-	max_atoms_per_patch, MAX_ATOMS_PER_PATCH);
-    NAMD_die(errstr);
-  }
-#endif
 
   int ncomputes = computeRecords.size();
   for ( int i=0; i<ncomputes; ++i ) {

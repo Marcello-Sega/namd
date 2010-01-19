@@ -12,18 +12,6 @@ __constant__ unsigned int exclusions[MAX_EXCLUSIONS];
 
 void cuda_bind_exclusions(const unsigned int *t, int n) {
 
-#if 0
-  unsigned int excl[MAX_EXCLUSIONS];
-
-  for ( int i=0; i<MAX_EXCLUSIONS; ++i ) { excl[i] = 0; }
-
-  SET_EXCL(excl,0,2);
-  SET_EXCL(excl,0,3);
-  SET_EXCL(excl,0,4);
-
-  cudaMemcpyToSymbol(exclusions, excl, MAX_EXCLUSIONS*sizeof(unsigned int), 0);
-#endif
-
   cudaMemcpyToSymbol(exclusions, t, n*sizeof(unsigned int), 0);
   cuda_errcheck("memcpy to exclusions");
 }
