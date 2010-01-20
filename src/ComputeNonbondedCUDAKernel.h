@@ -8,6 +8,9 @@ void cuda_errcheck(const char *msg);
 #define __align__(X)
 #endif
 
+#define PATCH_PAIR_SIZE 12
+#define PATCH_PAIR_USED 10
+
 struct __align__(16) patch_pair {  // must be multiple of 16!
   float4 offset;
   unsigned int patch1_size;

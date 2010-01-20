@@ -234,9 +234,9 @@ __global__ static void dev_nonbonded(
   } japu;
 
   #define myPatchPair pp.pp
-  __shared__ union { patch_pair pp; unsigned int i[12]; } pp;
+  __shared__ union { patch_pair pp; unsigned int i[PATCH_PAIR_SIZE]; } pp;
 
-  if ( threadIdx.x < (sizeof(patch_pair)>>2) ) {
+  if ( threadIdx.x < PATCH_PAIR_USED ) {
     unsigned int tmp = ((unsigned int*)patch_pairs)[
 			(sizeof(patch_pair)>>2)*blockIdx.x+threadIdx.x];
     pp.i[threadIdx.x] = tmp;
@@ -258,52 +258,12 @@ __global__ static void dev_nonbonded(
     myPatchPair.offset.y = offy;
     myPatchPair.offset.z = offz;
   }
+
   __syncthreads();
-
-#if 0
-// compute records duplicated so this is no longer needed
-  if ( blockIdx.y ) {
-
-    if ( myPatchPair.patch1_force_start == myPatchPair.patch2_force_start ) {
-      return;
-    }
-
-  } else {  // swap patches
-
-    if ( threadIdx.x == 0 &&
-         myPatchPair.patch1_force_start != myPatchPair.patch2_force_start ) {
-
-#undef SWAP
-#define SWAP(FIELD1, FIELD2) { \
-        unsigned int tmp1 = myPatchPair.FIELD1; \
-        unsigned int tmp2 = myPatchPair.FIELD2; \
-        if ( tmp1 != tmp2 ) { \
-          myPatchPair.FIELD1 = tmp2; \
-          myPatchPair.FIELD2 = tmp1; \
-        } \
-      }
-
-      SWAP(patch1_size, patch2_size)
-      SWAP(patch1_force_size, patch2_force_size)
-      SWAP(patch1_atom_start, patch2_atom_start)
-      SWAP(patch1_force_start, patch2_force_start)
-
-      myPatchPair.offset.x *= -1.f;
-      myPatchPair.offset.y *= -1.f;
-      myPatchPair.offset.z *= -1.f;
-
-    }
-
-    __syncthreads();
-
-  }
-#endif
 
   for ( int blocki = 0;
         blocki < myPatchPair.patch1_force_size;
         blocki += BLOCK_SIZE ) {
-
-  __syncthreads();
 
   atom ipq;
   struct {
@@ -323,10 +283,8 @@ __global__ static void dev_nonbonded(
 
     uint4 tmpap = ((uint4*)atom_params)[i];
 
-    jpqu.i[threadIdx.x] = tmpap.x;
-    iap.sqrt_epsilon = jpqu.f[threadIdx.x];
-    jpqu.i[threadIdx.x] = tmpap.y;
-    iap.half_sigma = jpqu.f[threadIdx.x];
+    iap.sqrt_epsilon = __int_as_float(tmpap.x);
+    iap.half_sigma = __int_as_float(tmpap.y);
     iap.index = tmpap.z;
   }
 
