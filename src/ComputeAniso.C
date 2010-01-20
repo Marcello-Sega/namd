@@ -46,16 +46,7 @@ void AnisoElem::computeForce(BigReal *reduction,
                << localIndex[3] << std::endl);
 
 #ifdef CALCULATE_ANISO
-  // calculation and (most) comments from Ed Harder's implementation in CHARMM
-#if 0
-  fprintf(stderr, "AnisoElem::computeForce() -  localIndex[] = %d %d %d %d\n",
-      localIndex[0], localIndex[1], localIndex[2], localIndex[3]);
-  fprintf(stderr, "     id = %d %d %d %d\n",
-      p[0]->xExt[localIndex[0]].id,
-      p[1]->xExt[localIndex[1]].id,
-      p[2]->xExt[localIndex[2]].id,
-      p[3]->xExt[localIndex[3]].id);
-#endif
+  // used some comments from Ed Harder's implementation in CHARMM
 
   const BigReal kpar0  = 2*value->k11;  // force constants
   const BigReal kperp0 = 2*value->k22;
@@ -90,84 +81,6 @@ void AnisoElem::computeForce(BigReal *reduction,
   BigReal eaniso;
   eaniso = 0.5*kpar0*dpar*dpar + 0.5*kperp0*dperp*dperp + 0.5*kiso0*(dr*dr);
 
-#if 0
-  Vector fi = kiso0 * dr;   // iso spring force
-  Vector fj = -kiso0 * dr;
-
-  // par/perp spring forces
-  fi.x += kpar0*dpar*(u1.x - (dr.x - u1.x*dpar)*u1_invlen) + kperp0*dperp*u2.x;
-  fi.y += kpar0*dpar*(u1.y - (dr.y - u1.y*dpar)*u1_invlen) + kperp0*dperp*u2.y;
-  fi.z += kpar0*dpar*(u1.z - (dr.z - u1.z*dpar)*u1_invlen) + kperp0*dperp*u2.z;
-
-  fj.x -= kpar0*dpar*u1.x + kperp0*dperp*u2.x;
-  fj.y -= kpar0*dpar*u1.y + kperp0*dperp*u2.y;
-  fj.z -= kpar0*dpar*u1.z + kperp0*dperp*u2.z;
-
-  Vector fl, fm, fn;
-
-  fl.x = kpar0*dpar*(dr.x - u1.x*dpar)*u1_invlen;
-  fl.y = kpar0*dpar*(dr.y - u1.y*dpar)*u1_invlen;
-  fl.z = kpar0*dpar*(dr.z - u1.z*dpar)*u1_invlen;
-
-  fm.x = -kperp0*dperp*(dr.x - u2.x*dperp)*u2_invlen;
-  fm.y = -kperp0*dperp*(dr.y - u2.y*dperp)*u2_invlen;
-  fm.z = -kperp0*dperp*(dr.z - u2.z*dperp)*u2_invlen;
-
-  fn.x = kperp0*dperp*(dr.x - u2.x*dperp)*u2_invlen;
-  fn.y = kperp0*dperp*(dr.y - u2.y*dperp)*u2_invlen;
-  fn.z = kperp0*dperp*(dr.z - u2.z*dperp)*u2_invlen;
-
-  // accumulate forces
-  p[0]->f[localIndex[0]] += fi;
-  p[0]->f[localIndex[0]+1] += fj;
-  p[1]->f[localIndex[1]] += fl;
-  p[2]->f[localIndex[2]] += fm;
-  p[3]->f[localIndex[3]] += fn;
-
-  Vector f_sum = fi + fj + fl + fm + fn;
-  fprintf(stderr, "    Aniso net = %e %e %e\n", f_sum.x, f_sum.y, f_sum.z);
-
-  fprintf(stderr, "    fi = %e %e %e\n",
-      p[0]->f[localIndex[0]].x, p[0]->f[localIndex[0]].y, p[0]->f[localIndex[0]].z);
-  fprintf(stderr, "    fj = %e %e %e\n",
-      p[0]->f[localIndex[0]+1].x, p[0]->f[localIndex[0]+1].y, p[0]->f[localIndex[0]+1].z);
-  fprintf(stderr, "    fl = %e %e %e\n",
-      p[1]->f[localIndex[1]].x, p[1]->f[localIndex[1]].y, p[1]->f[localIndex[1]].z);
-  fprintf(stderr, "    fm = %e %e %e\n",
-      p[2]->f[localIndex[2]].x, p[2]->f[localIndex[2]].y, p[2]->f[localIndex[2]].z);
-  fprintf(stderr, "    fn = %e %e %e\n",
-      p[3]->f[localIndex[3]].x, p[3]->f[localIndex[3]].y, p[3]->f[localIndex[3]].z);
-
-  // update potential
-  reduction[anisoEnergyIndex] += eaniso;
-
-  // update virial
-  // XXX won't the virial get messed up whenever an atom wraps around
-  // periodic boundaries?
-  Tensor v = outer(fi,ri);
-  v += outer(fj,rj);
-  v += outer(fl,rl);
-  v += outer(fm,rm);
-  v += outer(fn,rn);
-
-  reduction[virialIndex_XX] += v.xx;
-  reduction[virialIndex_XY] += v.xy;
-  reduction[virialIndex_XZ] += v.xz;
-  reduction[virialIndex_YX] += v.yx;
-  reduction[virialIndex_YY] += v.yy;
-  reduction[virialIndex_YZ] += v.yz;
-  reduction[virialIndex_ZX] += v.zx;
-  reduction[virialIndex_ZY] += v.zy;
-  reduction[virialIndex_ZZ] += v.zz;
-
-  fprintf(stderr, "     virial =  %e %e %e\n",
-      reduction[virialIndex_XX], reduction[virialIndex_XY], reduction[virialIndex_XZ]);
-  fprintf(stderr, "               %e %e %e\n",
-      reduction[virialIndex_YX], reduction[virialIndex_YY], reduction[virialIndex_YZ]);
-  fprintf(stderr, "               %e %e %e\n",
-      reduction[virialIndex_ZX], reduction[virialIndex_ZY], reduction[virialIndex_ZZ]);
-
-#else
   // calculate force vectors in one direction only
 
   // force into j
@@ -190,19 +103,6 @@ void AnisoElem::computeForce(BigReal *reduction,
   p[2]->f[localIndex[2]] += fm;
   p[3]->f[localIndex[3]] -= fm;
 
-#if 0
-  fprintf(stderr, "    fi = %e %e %e\n",
-      p[0]->f[localIndex[0]].x, p[0]->f[localIndex[0]].y, p[0]->f[localIndex[0]].z);
-  fprintf(stderr, "    fj = %e %e %e\n",
-      p[0]->f[localIndex[0]+1].x, p[0]->f[localIndex[0]+1].y, p[0]->f[localIndex[0]+1].z);
-  fprintf(stderr, "    fl = %e %e %e\n",
-      p[1]->f[localIndex[1]].x, p[1]->f[localIndex[1]].y, p[1]->f[localIndex[1]].z);
-  fprintf(stderr, "    fm = %e %e %e\n",
-      p[2]->f[localIndex[2]].x, p[2]->f[localIndex[2]].y, p[2]->f[localIndex[2]].z);
-  fprintf(stderr, "    fn = %e %e %e\n",
-      p[3]->f[localIndex[3]].x, p[3]->f[localIndex[3]].y, p[3]->f[localIndex[3]].z);
-#endif
-
   // update potential
   reduction[anisoEnergyIndex] += eaniso;
 
@@ -216,15 +116,7 @@ void AnisoElem::computeForce(BigReal *reduction,
   reduction[virialIndex_ZY] += fj.z * dr.y + fi_l.z * u1.y + fm.z * u2.y;
   reduction[virialIndex_ZZ] += fj.z * dr.z + fi_l.z * u1.z + fm.z * u2.z;
 
-#if 0
-  fprintf(stderr, "     virial =  %e %e %e\n",
-      reduction[virialIndex_XX], reduction[virialIndex_XY], reduction[virialIndex_XZ]);
-  fprintf(stderr, "               %e %e %e\n",
-      reduction[virialIndex_YX], reduction[virialIndex_YY], reduction[virialIndex_YZ]);
-  fprintf(stderr, "               %e %e %e\n",
-      reduction[virialIndex_ZX], reduction[virialIndex_ZY], reduction[virialIndex_ZZ]);
-#endif
-
+  // update pressure profile data
   if (pressureProfileData) {
     BigReal zi = p[0]->x[localIndex[0]].position.z;
     BigReal zj = p[0]->x[localIndex[0]+1].position.z;
@@ -257,9 +149,6 @@ void AnisoElem::computeForce(BigReal *reduction,
         pm, pn, pt, fm.x * u2.x, fm.y * u2.y, fm.z * u2.z,
         pressureProfileData);
   }
-#endif
-
-  //fprintf(stderr, "     eaniso = %g\n", eaniso);
 #endif
 }
 
