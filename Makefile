@@ -285,9 +285,9 @@ CUDAOBJSRAW = \
 $(DSTDIR)/ComputeNonbondedCUDAKernel.o: \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.cu \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.h
-	$(CUDACC) -Xptxas -v $(COPTO)$(DSTDIR)/ComputeNonbondedCUDAKernel.o $(COPTC) $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
 	$(CUDACC) -ptx $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
 	grep global ComputeNonbondedCUDAKernel.ptx
+	$(CUDACC) -Xptxas -v $(COPTO)$(DSTDIR)/ComputeNonbondedCUDAKernel.o $(COPTC) $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
 
 SBOBJS = \
 	$(DSTDIR)/tcl_main.o \
