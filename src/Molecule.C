@@ -9005,7 +9005,7 @@ void Molecule::build_atom_status(void) {
             // although this may change in the future
             char err_msg[128];
             sprintf(err_msg, "ILLEGAL LONE PAIR AT INDEX %i\n"
-                "LONEPAIRS ARE ONLY CURRENTLY ALLOWED ON WATER MOLECULES\n",
+                "LONEPAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
                 a1);
             NAMD_die(err_msg);
           } else {
@@ -9016,7 +9016,7 @@ void Molecule::build_atom_status(void) {
       }
       // Handle SWM4 lone pairs
       // (Drude bonds remain flexible)
-      if (simParams->watmodel == WAT_SWM4) {
+      if ( (! simParams->drudeOn) && simParams->watmodel == WAT_SWM4) {
         if (is_lp(a2)) {
           int tmp = a1;  a1 = a2;  a2 = tmp;  // swap
         }
@@ -9025,7 +9025,7 @@ void Molecule::build_atom_status(void) {
             // Lonepairs allowed only on water - for now
             char msg[128];
             sprintf(msg, "ILLEGAL LONE PAIR AT INDEX %d\n"
-                "LONE PAIRS CURRENTLY ALLOWED ONLY ON WATER WATER MOLECULES\n",
+                "LONEPAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
                 a1+1);
             NAMD_die(msg);
           }
