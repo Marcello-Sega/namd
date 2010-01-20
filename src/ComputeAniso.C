@@ -46,135 +46,108 @@ void AnisoElem::computeForce(BigReal *reduction,
                << localIndex[3] << std::endl);
 
 #ifdef CALCULATE_ANISO
+  // calculation and (most) comments from Ed Harder's implementation in CHARMM
 #if 0
-  const BigReal aa = value->aa;
-  const BigReal qq = value->qq;
-
-  //  Calculate the vectors between atoms
-  const Position & rai = p[0]->x[localIndex[0]].position;  // atom i
-  const Position & rdi = p[1]->x[localIndex[1]].position;  // atom i's Drude
-  const Position & raj = p[2]->x[localIndex[2]].position;  // atom j
-  const Position & rdj = p[3]->x[localIndex[3]].position;  // atom j's Drude
-
-  // r_ij = r_i - r_j
-  const Lattice & lattice = p[0]->p->lattice;
-  Vector raa = lattice.delta(rai,raj);  // shortest vector image:  rai - raj
-  Vector rad = lattice.delta(rai,rdj);  // shortest vector image:  rai - rdj
-  Vector rda = lattice.delta(rdi,raj);  // shortest vector image:  rdi - raj
-  Vector rdd = lattice.delta(rdi,rdj);  // shortest vector image:  rdi - rdj
-
-  // 1/r, r = |r_ij|
-  BigReal raa_invlen = raa.rlength();  // reciprocal of length
-  BigReal rad_invlen = rad.rlength();
-  BigReal rda_invlen = rda.rlength();
-  BigReal rdd_invlen = rdd.rlength();
-
-  // ar
-  BigReal auaa = aa / raa_invlen;
-  BigReal auad = aa / rad_invlen;
-  BigReal auda = aa / rda_invlen;
-  BigReal audd = aa / rdd_invlen;
-
-  // exp(-ar)
-  BigReal expauaa = exp(-auaa);
-  BigReal expauad = exp(-auad);
-  BigReal expauda = exp(-auda);
-  BigReal expaudd = exp(-audd);
-
-  // (1 + ar/2)
-  BigReal polyauaa = 1 + 0.5*auaa;
-  BigReal polyauad = 1 + 0.5*auad;
-  BigReal polyauda = 1 + 0.5*auda;
-  BigReal polyaudd = 1 + 0.5*audd;
-
-  // U(r) = qq/r (1 - (1 + ar/2) exp(-ar))
-  BigReal ethole = 0;
-  ethole += qq * raa_invlen * (1 - polyauaa * expauaa);
-  ethole += -qq * rad_invlen * (1 - polyauad * expauad);
-  ethole += -qq * rda_invlen * (1 - polyauda * expauda);
-  ethole += qq * rdd_invlen * (1 - polyaudd * expaudd);
-
-  polyauaa = 1 + auaa*polyauaa;
-  polyauad = 1 + auad*polyauad;
-  polyauda = 1 + auda*polyauda;
-  polyaudd = 1 + audd*polyaudd;
-
-  BigReal raa_invlen3 = raa_invlen * raa_invlen * raa_invlen;
-  BigReal rad_invlen3 = rad_invlen * rad_invlen * rad_invlen;
-  BigReal rda_invlen3 = rda_invlen * rda_invlen * rda_invlen;
-  BigReal rdd_invlen3 = rdd_invlen * rdd_invlen * rdd_invlen;
-
-  // df = (1/r) (dU/dr)
-  BigReal dfaa = qq * raa_invlen3 * (polyauaa*expauaa - 1);
-  BigReal dfad = -qq * rad_invlen3 * (polyauad*expauad - 1);
-  BigReal dfda = -qq * rda_invlen3 * (polyauda*expauda - 1);
-  BigReal dfdd = qq * rdd_invlen3 * (polyaudd*expaudd - 1);
-
-  Vector faa = -dfaa * raa;
-  Vector fad = -dfad * rad;
-  Vector fda = -dfda * rda;
-  Vector fdd = -dfdd * rdd;
-
-  p[0]->f[localIndex[0]] += faa + fad;
-  p[1]->f[localIndex[1]] += fda + fdd;
-  p[2]->f[localIndex[2]] -= faa + fda;
-  p[3]->f[localIndex[3]] -= fad + fdd;
-
-  DebugM(3, "::computeForce() -- ending with delta energy " << ethole
-      << std::endl);
-  reduction[tholeEnergyIndex] += ethole;
-
-  reduction[virialIndex_XX] += faa.x * raa.x + fad.x * rad.x
-    + fda.x * rda.x + fdd.x * rdd.x;
-  reduction[virialIndex_XY] += faa.x * raa.y + fad.x * rad.y
-    + fda.x * rda.y + fdd.x * rdd.y;
-  reduction[virialIndex_XZ] += faa.x * raa.z + fad.x * rad.z
-    + fda.x * rda.z + fdd.x * rdd.z;
-  reduction[virialIndex_YX] += faa.y * raa.x + fad.y * rad.x
-    + fda.y * rda.x + fdd.y * rdd.x;
-  reduction[virialIndex_YY] += faa.y * raa.y + fad.y * rad.y
-    + fda.y * rda.y + fdd.y * rdd.y;
-  reduction[virialIndex_YZ] += faa.y * raa.z + fad.y * rad.z
-    + fda.y * rda.z + fdd.y * rdd.z;
-  reduction[virialIndex_ZX] += faa.z * raa.x + fad.z * rad.x
-    + fda.z * rda.x + fdd.z * rdd.x;
-  reduction[virialIndex_ZY] += faa.z * raa.y + fad.z * rad.y
-    + fda.z * rda.y + fdd.z * rdd.y;
-  reduction[virialIndex_ZZ] += faa.z * raa.z + fad.z * rad.z
-    + fda.z * rda.z + fdd.z * rdd.z;
-
-  if (pressureProfileData) {
-    BigReal zai = p[0]->x[localIndex[0]].position.z;
-    BigReal zdi = p[1]->x[localIndex[1]].position.z;
-    BigReal zaj = p[2]->x[localIndex[2]].position.z;
-    BigReal zdj = p[3]->x[localIndex[3]].position.z;
-    int nai = (int)floor((zai-pressureProfileMin)/pressureProfileThickness);
-    int ndi = (int)floor((zdi-pressureProfileMin)/pressureProfileThickness);
-    int naj = (int)floor((zaj-pressureProfileMin)/pressureProfileThickness);
-    int ndj = (int)floor((zdj-pressureProfileMin)/pressureProfileThickness);
-    pp_clamp(nai, pressureProfileSlabs);
-    pp_clamp(ndi, pressureProfileSlabs);
-    pp_clamp(naj, pressureProfileSlabs);
-    pp_clamp(ndj, pressureProfileSlabs);
-    int pai = p[0]->x[localIndex[0]].partition;
-    int pdi = p[1]->x[localIndex[1]].partition;
-    int paj = p[2]->x[localIndex[2]].partition;
-    int pdj = p[3]->x[localIndex[3]].partition;
-    int pn = pressureProfileAtomTypes;
-    pp_reduction(pressureProfileSlabs, nai, naj,
-        pai, paj, pn, faa.x * raa.x, faa.y * raa.y, faa.z * raa.z,
-        pressureProfileData);
-    pp_reduction(pressureProfileSlabs, nai, ndj,
-        pai, pdj, pn, fad.x * rad.x, fad.y * rad.y, fad.z * rad.z,
-        pressureProfileData);
-    pp_reduction(pressureProfileSlabs, ndi, naj,
-        pdi, paj, pn, fda.x * rda.x, fda.y * rda.y, fda.z * rda.z,
-        pressureProfileData);
-    pp_reduction(pressureProfileSlabs, ndi, ndj,
-        pdi, pdj, pn, fdd.x * rdd.x, fdd.y * rdd.y, fdd.z * rdd.z,
-        pressureProfileData);
-  }
+  fprintf(stderr, "AnisoElem::computeForce() -  localIndex[] = %d %d %d %d\n",
+      localIndex[0], localIndex[1], localIndex[2], localIndex[3]);
+  fprintf(stderr, "     id = %d %d %d %d\n",
+      p[0]->xExt[localIndex[0]].id,
+      p[1]->xExt[localIndex[1]].id,
+      p[2]->xExt[localIndex[2]].id,
+      p[3]->xExt[localIndex[3]].id);
 #endif
+
+  const BigReal kpar0  = 2*value->k11;  // force constants
+  const BigReal kperp0 = 2*value->k22;
+  const BigReal kiso0  = 2*value->k33;
+
+  const Position & ri = p[0]->x[localIndex[0]].position;    // atom I
+  const Position & rj = p[0]->x[localIndex[0]+1].position;  // atom I's Drude
+  const Position & rl = p[1]->x[localIndex[1]].position;    // atom L
+  const Position & rm = p[2]->x[localIndex[2]].position;    // atom M
+  const Position & rn = p[3]->x[localIndex[3]].position;    // atom N
+
+  // calculate parallel and perpendicular displacement vectors
+  const Lattice & lattice = p[0]->p->lattice;
+  Vector u1 = lattice.delta(ri,rl);  // shortest vector image:  ri - rl
+  Vector u2 = lattice.delta(rm,rn);  // shortest vector image:  rm - rn
+
+  BigReal u1_invlen = u1.rlength();  // need reciprocal lengths of u1, u2
+  BigReal u2_invlen = u2.rlength();
+
+  u1 *= u1_invlen;  // normalize u1, u2
+  u2 *= u2_invlen;
+
+  Vector dr = rj - ri;  // Drude displacement vector
+
+  BigReal dpar  = dr * u1;  // parallel displacement
+  BigReal dperp = dr * u2;  // perpendicular displacement
+
+  // aniso spring energy
+  // kpar reduces response along carbonyl vector
+  // kperp reduces response perp to bond vector
+  //   (reg in and out of plane response)
+  BigReal eaniso;
+  eaniso = 0.5*kpar0*dpar*dpar + 0.5*kperp0*dperp*dperp + 0.5*kiso0*(dr*dr);
+
+  Vector fi = kiso0 * dr;   // iso spring force
+  Vector fj = -kiso0 * dr;
+
+  // par/perp spring forces
+  fi.x += kpar0*dpar*(u1.x - (dr.x + u1.x*dpar)*u1_invlen) + kperp0*dperp*u2.x;
+  fi.y += kpar0*dpar*(u1.y - (dr.y + u1.y*dpar)*u1_invlen) + kperp0*dperp*u2.y;
+  fi.z += kpar0*dpar*(u1.z - (dr.z + u1.z*dpar)*u1_invlen) + kperp0*dperp*u2.z;
+
+  fj.x -= kpar0*dpar*u1.x + kperp0*dperp*u2.x;
+  fj.y -= kpar0*dpar*u1.y + kperp0*dperp*u2.y;
+  fj.z -= kpar0*dpar*u1.z + kperp0*dperp*u2.z;
+
+  Vector fl, fm, fn;
+
+  fl.x = kpar0*dpar*(dr.x - u1.x*dpar)*u1_invlen;
+  fl.y = kpar0*dpar*(dr.y - u1.y*dpar)*u1_invlen;
+  fl.z = kpar0*dpar*(dr.z - u1.z*dpar)*u1_invlen;
+
+  fm.x = -kperp0*dperp*(dr.x - u2.x*dperp)*u2_invlen;
+  fm.y = -kperp0*dperp*(dr.y - u2.y*dperp)*u2_invlen;
+  fm.z = -kperp0*dperp*(dr.z - u2.z*dperp)*u2_invlen;
+
+  fn.x = kperp0*dperp*(dr.x - u2.x*dperp)*u2_invlen;
+  fn.y = kperp0*dperp*(dr.y - u2.y*dperp)*u2_invlen;
+  fn.z = kperp0*dperp*(dr.z - u2.z*dperp)*u2_invlen;
+
+  // accumulate forces
+  p[0]->f[localIndex[0]] += fi;
+  p[0]->f[localIndex[0]+1] += fj;
+  p[1]->f[localIndex[1]] += fl;
+  p[2]->f[localIndex[2]] += fm;
+  p[3]->f[localIndex[3]] += fn;
+
+  // update potential
+  reduction[anisoEnergyIndex] += eaniso;
+
+#if 0
+  // update virial
+  // XXX won't the virial get messed up whenever an atom wraps around
+  // periodic boundaries?
+  Tensor v = outer(fi,ri);
+  v += outer(fj,rj);
+  v += outer(fl,rl);
+  v += outer(fm,rm);
+  v += outer(fn,rn);
+
+  reduction[virialIndex_XX] = v.xx;
+  reduction[virialIndex_XY] = v.xy;
+  reduction[virialIndex_XZ] = v.xz;
+  reduction[virialIndex_YX] = v.yx;
+  reduction[virialIndex_YY] = v.yy;
+  reduction[virialIndex_YZ] = v.yz;
+  reduction[virialIndex_ZX] = v.zx;
+  reduction[virialIndex_ZY] = v.zy;
+  reduction[virialIndex_ZZ] = v.zz;
+#endif
+
+  //fprintf(stderr, "     eaniso = %g\n", eaniso);
 #endif
 }
 

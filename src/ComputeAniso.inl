@@ -32,10 +32,8 @@ inline AnisoElem::AnisoElem(const Aniso *a, const AnisoValue *v)
 inline AnisoElem::AnisoElem(AtomID atom0, AtomID atom1,
 				  AtomID atom2, AtomID atom3)
   {
-    if (atom0 > atom3) {  // Swap end atoms so lowest is first!
-      AtomID tmp = atom3; atom3 = atom0; atom0 = tmp; 
-      tmp = atom1; atom1 = atom2; atom2 = tmp;
-    }
+    // do not rearrange atom ordering of Aniso
+    // the first atom is special
     atomID[0] = atom0;
     atomID[1] = atom1;
     atomID[2] = atom2;
