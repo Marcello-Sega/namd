@@ -60,16 +60,16 @@ void AnisoElem::computeForce(BigReal *reduction,
 
   // calculate parallel and perpendicular displacement vectors
   const Lattice & lattice = p[0]->p->lattice;
-  Vector u1 = lattice.delta(ri,rl);  // shortest vector image:  ri - rl
-  Vector u2 = lattice.delta(rm,rn);  // shortest vector image:  rm - rn
+  Vector r_il = lattice.delta(ri,rl);  // shortest vector image:  ri - rl
+  Vector r_mn = lattice.delta(rm,rn);  // shortest vector image:  rm - rn
 
-  BigReal u1_invlen = u1.rlength();  // need reciprocal lengths of u1, u2
-  BigReal u2_invlen = u2.rlength();
+  BigReal r_il_invlen = r_il.rlength();  // need recip lengths of r_il, r_mn
+  BigReal r_mn_invlen = r_mn.rlength();
 
-  u1 *= u1_invlen;  // normalize u1, u2
-  u2 *= u2_invlen;
+  Vector u1 = r_il * r_il_invlen;  // normalize r_il, r_mn
+  Vector u2 = r_mn * r_mn_invlen;
 
-  Vector dr = rj - ri;  // Drude displacement vector
+  Vector dr = rj - ri;  // Drude displacement vector (ri, rj are in same patch)
 
   BigReal dpar  = dr * u1;  // parallel displacement
   BigReal dperp = dr * u2;  // perpendicular displacement
@@ -81,40 +81,42 @@ void AnisoElem::computeForce(BigReal *reduction,
   BigReal eaniso;
   eaniso = 0.5*kpar0*dpar*dpar + 0.5*kperp0*dperp*dperp + 0.5*kiso0*(dr*dr);
 
-  // calculate force vectors in one direction only
+  // calculate force vectors in one direction only:
+  // fi = -(fj + fl),  fn = -fm
 
-  // force into j
+  // force on atom j
   Vector fj = -kiso0 * dr;
   fj -= kpar0 * dpar * u1;
   fj -= kperp0 * dperp * u2;
 
-  // force from l
-  Vector fi_l = kpar0 * dpar * dpar * u1_invlen * u1;
-  fi_l -= kpar0 * dpar * u1_invlen * dr;
+  // force on atom l
+  Vector fl = kpar0 * dpar * r_il_invlen * dr;
+  fl -= kpar0 * dpar * dpar * r_il_invlen * u1;
 
-  // force into m
-  Vector fm = kperp0 * dperp * dperp * u2_invlen * u2;
-  fm -= kperp0 * dperp * u2_invlen * dr;
+  // force on atom m
+  Vector fm = kperp0 * dperp * dperp * r_mn_invlen * u2;
+  fm -= kperp0 * dperp * r_mn_invlen * dr;
 
   // accumulate forces
-  p[0]->f[localIndex[0]] += fi_l - fj;
+  p[0]->f[localIndex[0]] -= (fj + fl);
   p[0]->f[localIndex[0]+1] += fj;
-  p[1]->f[localIndex[1]] -= fi_l;
+  p[1]->f[localIndex[1]] += fl;
   p[2]->f[localIndex[2]] += fm;
   p[3]->f[localIndex[3]] -= fm;
 
   // update potential
   reduction[anisoEnergyIndex] += eaniso;
 
-  reduction[virialIndex_XX] += fj.x * dr.x + fi_l.x * u1.x + fm.x * u2.x;
-  reduction[virialIndex_XY] += fj.x * dr.y + fi_l.x * u1.y + fm.x * u2.y;
-  reduction[virialIndex_XZ] += fj.x * dr.z + fi_l.x * u1.z + fm.x * u2.z;
-  reduction[virialIndex_YX] += fj.y * dr.x + fi_l.y * u1.x + fm.y * u2.x;
-  reduction[virialIndex_YY] += fj.y * dr.y + fi_l.y * u1.y + fm.y * u2.y;
-  reduction[virialIndex_YZ] += fj.y * dr.z + fi_l.y * u1.z + fm.y * u2.z;
-  reduction[virialIndex_ZX] += fj.z * dr.x + fi_l.z * u1.x + fm.z * u2.x;
-  reduction[virialIndex_ZY] += fj.z * dr.y + fi_l.z * u1.y + fm.z * u2.y;
-  reduction[virialIndex_ZZ] += fj.z * dr.z + fi_l.z * u1.z + fm.z * u2.z;
+  // update virial
+  reduction[virialIndex_XX] += fj.x * dr.x - fl.x * r_il.x + fm.x * r_mn.x;
+  reduction[virialIndex_XY] += fj.x * dr.y - fl.x * r_il.y + fm.x * r_mn.y;
+  reduction[virialIndex_XZ] += fj.x * dr.z - fl.x * r_il.z + fm.x * r_mn.z;
+  reduction[virialIndex_YX] += fj.y * dr.x - fl.y * r_il.x + fm.y * r_mn.x;
+  reduction[virialIndex_YY] += fj.y * dr.y - fl.y * r_il.y + fm.y * r_mn.y;
+  reduction[virialIndex_YZ] += fj.y * dr.z - fl.y * r_il.z + fm.y * r_mn.z;
+  reduction[virialIndex_ZX] += fj.z * dr.x - fl.z * r_il.x + fm.z * r_mn.x;
+  reduction[virialIndex_ZY] += fj.z * dr.y - fl.z * r_il.y + fm.z * r_mn.y;
+  reduction[virialIndex_ZZ] += fj.z * dr.z - fl.z * r_il.z + fm.z * r_mn.z;
 
   // update pressure profile data
   if (pressureProfileData) {
@@ -143,10 +145,10 @@ void AnisoElem::computeForce(BigReal *reduction,
         pj, pi, pt, fj.x * dr.x, fj.y * dr.y, fj.z * dr.z,
         pressureProfileData);
     pp_reduction(pressureProfileSlabs, ni, nl,
-        pi, pl, pt, fi_l.x * u1.x, fi_l.y * u1.y, fi_l.z * u1.z,
+        pi, pl, pt, -fl.x * r_il.x, -fl.y * r_il.y, -fl.z * r_il.z,
         pressureProfileData);
     pp_reduction(pressureProfileSlabs, nm, nn,
-        pm, pn, pt, fm.x * u2.x, fm.y * u2.y, fm.z * u2.z,
+        pm, pn, pt, fm.x * r_mn.x, fm.y * r_mn.y, fm.z * r_mn.z,
         pressureProfileData);
   }
 #endif
