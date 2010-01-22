@@ -43,9 +43,7 @@ void BondElem::computeForce(BigReal *reduction,
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << std::endl);
 
-  BigReal r;		// Distance between atoms
   BigReal scal;         // force scaling
-  BigReal diff;		// difference between theta and theta0
   BigReal energy;	// energy from the bond
 
   //DebugM(3, "::computeForce() -- starting with bond type " << bondType << std::endl);
@@ -60,14 +58,28 @@ void BondElem::computeForce(BigReal *reduction,
 					p[1]->x[localIndex[1]].position);
 
   if (0. == x0) {  // for Drude bonds
-    scal = -2.0*k;
-    energy = k * r12.length2();
+    SimParameters *simParams = Node::Object()->simParameters;
+    BigReal drudeBondLen = simParams->drudeBondLen;
+    BigReal drudeBondConst = simParams->drudeBondConst;
+
+    BigReal r2 = r12.length2();
+
+    scal = -2.0*k;    // bond interaction for equilibrium length 0
+    energy = k * r2;
+
+    if (drudeBondConst > 0 && r2 > drudeBondLen*drudeBondLen) {
+      // add a quartic restraining potential to keep Drude bond short
+      BigReal r = sqrt(r2);
+      BigReal diff = r - drudeBondLen;
+      BigReal diff2 = diff*diff;
+
+      scal += -4*drudeBondConst * diff2 * diff / r;
+      energy += drudeBondConst * diff2 * diff2;
+    }
   }
   else {
-    r = r12.length();
-
-    //  Compare it to the rest bond
-    diff = r - x0;
+    BigReal r = r12.length();  // Distance between atoms
+    BigReal diff = r - x0;     // Compare it to the rest bond
 
     //  Add the energy from this bond to the total energy
     energy = k*diff*diff;

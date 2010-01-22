@@ -375,6 +375,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 					    NULL);
 	  } else {
 	    molecule->build_langevin_params(simParameters->langevinDamping,
+                                            simParameters->drudeDamping,
 					    simParameters->langevinHydrogen);
 	  }
 	}

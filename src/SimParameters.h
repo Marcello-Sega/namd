@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: emeneses $
- * $Date: 2009/12/02 23:09:03 $
- * $Revision: 1.1159 $
+ * $Author: dhardy $
+ * $Date: 2010/01/22 00:49:22 $
+ * $Revision: 1.1160 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -330,6 +330,11 @@ public:
 
         Bool drudeOn;       // Perform integration of Drude oscillators?
         BigReal drudeTemp;  // (low) temperature for freezing Drude oscillators
+        BigReal drudeDamping;    // Langevin damping coefficient (1/ps)
+                                 //   defaults to langevinDamping
+        BigReal drudeBondLen;    // Length beyond which to apply quartic
+                                 //   restraining potential to Drude bond
+        BigReal drudeBondConst;  // Force constant for restraining potential
 
 	Bool pairInteractionOn;		//  Calculate pair interactions?
 	int pairInteractionGroup1;	//  Interaction group 1.

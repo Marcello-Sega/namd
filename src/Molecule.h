@@ -556,7 +556,8 @@ public:
   void build_constant_forces(char *);
         //  Build the set of constant forces
 
-  void build_langevin_params(BigReal coupling, Bool doHydrogen);
+  void build_langevin_params(BigReal coupling, BigReal drudeCoupling,
+      Bool doHydrogen);
   void build_langevin_params(StringList *, StringList *, PDB *, char *);
         //  Build the set of langevin dynamics parameters
 

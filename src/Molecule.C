@@ -1431,15 +1431,16 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
                 tmpResLookup->append(segment_name, residue_number, i);
             //Determine the type of the atom (H or O)
             Real thisAtomMass = atomMassPool[eachAtomMass[i]];
+            atoms[i].status = UnknownAtom;
             if (thisAtomMass <= 0.05) {
               atoms[i].status |= LonepairAtom;
             } else if (thisAtomMass < 1.0) {
               atoms[i].status |= DrudeAtom;
             } else if(thisAtomMass <= 3.5){
-                atoms[i].status = HydrogenAtom;
+                atoms[i].status |= HydrogenAtom;
             }else if(atomNamePool[atomNames[i].atomnameIdx][0]=='O' &&
                      (thisAtomMass >= 14.0) && (thisAtomMass <= 18.0)){
-                atoms[i].status = OxygenAtom;
+                atoms[i].status |= OxygenAtom;
             }
 
             //Look up the vdw constants for this atom
@@ -7181,7 +7182,8 @@ void Molecule::build_constant_forces(char *filename)
 /*      END OF FUNCTION build_constant_forces    */
 
 
-void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
+void Molecule::build_langevin_params(BigReal coupling,
+    BigReal drudeCoupling, Bool doHydrogen) {
 
   //  Allocate the array to hold all the data
   langevinParams = new Real[numAtoms];
@@ -7197,7 +7199,8 @@ void Molecule::build_langevin_params(BigReal coupling, Bool doHydrogen) {
     BigReal bval = coupling;
 
     if ( (! doHydrogen) && is_hydrogen(i) ) bval = 0;
-    if ( is_lp(i) ) bval = 0;
+    else if ( is_lp(i) ) bval = 0;
+    else if ( is_drude(i) ) bval = drudeCoupling;
 
     //  Assign the b value
     langevinParams[i] = bval;
@@ -8648,7 +8651,7 @@ void Molecule::build_atom_status(void) {
         if (is_hydrogen(a2) || is_lp(a2) || is_drude(a2)) {
           char msg[256];
           sprintf(msg, "%s particle %d is bonded to non-parent atom %d",
-              (is_lp(a1) ? "Lonepair" : "Drude"), a1+1, a2+1);
+              (is_lp(a1) ? "Lone pair" : "Drude"), a1+1, a2+1);
           NAMD_die(msg);
         }
         atoms[a1].partner = a2;
@@ -8661,7 +8664,7 @@ void Molecule::build_atom_status(void) {
         if (is_hydrogen(a1) || is_lp(a1) || is_drude(a1)) {
           char msg[256];
           sprintf(msg, "%s particle %d is bonded to non-parent atom %d",
-              (is_lp(a2) ? "Lonepair" : "Drude"), a2+1, a1+1);
+              (is_lp(a2) ? "Lone pair" : "Drude"), a2+1, a1+1);
           NAMD_die(msg);
         }
         atoms[a2].partner = a1;
@@ -9005,7 +9008,7 @@ void Molecule::build_atom_status(void) {
             // although this may change in the future
             char err_msg[128];
             sprintf(err_msg, "ILLEGAL LONE PAIR AT INDEX %i\n"
-                "LONEPAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
+                "LONE PAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
                 a1);
             NAMD_die(err_msg);
           } else {
@@ -9025,7 +9028,7 @@ void Molecule::build_atom_status(void) {
             // Lonepairs allowed only on water - for now
             char msg[128];
             sprintf(msg, "ILLEGAL LONE PAIR AT INDEX %d\n"
-                "LONEPAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
+                "LONE PAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
                 a1+1);
             NAMD_die(msg);
           }

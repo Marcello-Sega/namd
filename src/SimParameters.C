@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: emeneses $
- * $Date: 2009/12/02 23:09:03 $
- * $Revision: 1.1295 $
+ * $Author: dhardy $
+ * $Date: 2010/01/22 00:49:22 $
+ * $Revision: 1.1296 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -796,6 +796,17 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
        &drudeOn, FALSE);
    opts.require("drude", "drudeTemp", "Temperature for freezing "
        "Drude oscillators", &drudeTemp);
+   opts.range("drudeTemp", NOT_NEGATIVE);
+   opts.units("drudeTemp", N_KELVIN);
+   opts.optional("drude", "drudeDamping", "Damping coefficient (1/ps) for "
+       "Drude oscillators", &drudeDamping);
+   opts.range("drudeDamping", POSITIVE);
+   opts.optional("drude", "drudeBondLen", "Drude oscillator bond length "
+       "beyond which to apply restraint", &drudeBondLen);
+   opts.range("drudeBondLen", POSITIVE);
+   opts.optional("drude", "drudeBondConst", "Drude oscillator restraining "
+       "force constant", &drudeBondConst);
+   opts.range("drudeBondConst", POSITIVE);
 
    // Pair interaction calculations
     opts.optionalB("main", "pairInteraction", 
@@ -1891,16 +1902,24 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        watmodel = WAT_TIP4;
      } else if (!strncasecmp(s, "tip3", 4)) {
        iout << iINFO << "Using TIP3P water model.\n" << endi;
+     } else if (!strncasecmp(s, "swm4", 4)) {
+       iout << iINFO << "Using SWM4-DP water model.\n" << endi;
      } else {
        char err_msg[128];
-       sprintf(err_msg, "Illegal value %s for 'waterModel' in configuration file", s);
+       sprintf(err_msg,
+           "Illegal value %s for 'waterModel' in configuration file", s);
        NAMD_die(err_msg);
      }
    }
-   if (opts.defined("drude")) {
-     watmodel = WAT_SWM4;
+   if (watmodel == WAT_SWM4 && !drudeOn) {
+     NAMD_die("Must have 'drudeOn' enabled to use SWM4-DP water model.");
    }
-   
+   if (drudeOn && watmodel != WAT_SWM4) {
+     watmodel = WAT_SWM4;
+     iout << iWARN
+       << "Setting water model to 'swm4' (SWM4-DP) for Drude polarization.\n"
+       << endi;
+   }
 
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))
@@ -2295,6 +2314,26 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
    if ((pairInteractionOn && alchFepOn) || (pairInteractionOn && lesOn) || (pairInteractionOn && alchThermIntOn) ) 
      NAMD_die("Sorry, pair interactions may not be calculated when LES, FEP or TI is enabled.");
+
+   // Drude model
+   if (drudeOn) {
+     if ( ! langevinOn ) {
+       NAMD_die("Drude model requires use of Langevin thermostat.");
+     }
+     if ( ! opts.defined("drudeDamping")) {
+       drudeDamping = langevinDamping;
+       iout << iWARN << "Undefined 'drudeDamping' will be set to "
+         "value of 'langevinDamping'\n" << endi;
+     }
+     if ( ! opts.defined("drudeBondConst")) {
+       drudeBondConst = 0;
+       if (opts.defined("drudeBondLen")) {
+         iout << iWARN << "Resetting 'drudeBondLen' to 0 "
+           "since 'drudeBondConst' is unset\n" << endi;
+       }
+       drudeBondLen = 0;
+     }
+   }
 
    //  Set up load balancing variables
    if (opts.defined("ldbStrategy")) {
@@ -3573,6 +3612,23 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       current = config->find("stirredAtomsCol");
       iout << iINFO <<"STIR FILE COLUMN " << current ->data << '\n';
       iout << endi;
+   }
+
+   if (drudeOn)
+   {
+      iout << iINFO << "DRUDE MODEL DUAL THERMOSTAT IS ACTIVE\n";
+      iout << iINFO << "DRUDE BOND TEMPERATURE " << drudeTemp << "\n";
+      if (drudeDamping > 0.0) {
+        iout << iINFO << "DRUDE DAMPING COEFFICIENT IS "
+             << drudeDamping << " INVERSE PS\n";
+      }
+      if (drudeBondConst > 0.0) {
+        iout << iINFO << "DRUDE QUARTIC RESTRAINT IS ACTIVE FOR DRUDE BONDS\n";
+        iout << iINFO << "DRUDE MAXIMUM BOND LENGTH BEFORE RESTRAINT IS   "
+             << drudeBondLen << "\n";
+        iout << iINFO << "DRUDE BOND RESTRAINT CONSTANT IS                "
+             << drudeBondConst << "\n";
+      }
    }
 
    if (langevinOn)
