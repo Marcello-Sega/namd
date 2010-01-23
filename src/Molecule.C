@@ -9019,13 +9019,13 @@ void Molecule::build_atom_status(void) {
       }
       // Handle SWM4 lone pairs
       // (Drude bonds remain flexible)
-      if ( (! simParams->drudeOn) && simParams->watmodel == WAT_SWM4) {
+      if (simParams->watmodel == WAT_SWM4) {
         if (is_lp(a2)) {
           int tmp = a1;  a1 = a2;  a2 = tmp;  // swap
         }
         if (is_lp(a1)) {
-          if ( ! is_water(a2)) {
-            // Lonepairs allowed only on water - for now
+          if ( (! simParams->drudeOn) && (! is_water(a2)) ) {
+            // Lonepairs allowed only on water if not using Drude model
             char msg[128];
             sprintf(msg, "ILLEGAL LONE PAIR AT INDEX %d\n"
                 "LONE PAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
