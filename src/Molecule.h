@@ -424,9 +424,17 @@ public:
     }
     int s_NumFixedRigidBonds = 
       (simParams->fixedAtomsOn ? numFixedRigidBonds : 0);
-    // numLonepairs is subtracted here because all lonepairs have a rigid bond
-    // to oxygen, but all of the LP degrees of freedom are dealt with above
-    s_NumDegFreedom -= (numRigidBonds - s_NumFixedRigidBonds - numLonepairs);
+    if (simParams->watmodel == WAT_TIP4) {
+      // numLonepairs is subtracted here because all lonepairs have a rigid bond
+      // to oxygen, but all of the LP degrees of freedom are dealt with above
+      s_NumDegFreedom -= (numRigidBonds - s_NumFixedRigidBonds - numLonepairs);
+    }
+    else {
+      // Non-polarized systems don't have LPs.
+      // For Drude model, bonds that attach LPs are not counted as rigid;
+      // LPs have already been subtracted from degrees of freedom.
+      s_NumDegFreedom -= (numRigidBonds - s_NumFixedRigidBonds);
+    }
     return s_NumDegFreedom;
   }
 

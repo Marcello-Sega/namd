@@ -9024,16 +9024,17 @@ void Molecule::build_atom_status(void) {
           int tmp = a1;  a1 = a2;  a2 = tmp;  // swap
         }
         if (is_lp(a1)) {
-          if ( (! simParams->drudeOn) && (! is_water(a2)) ) {
-            // Lonepairs allowed only on water if not using Drude model
+          if (is_water(a2)) {
+            // do not count bonds to LPs as rigid, do not set rigidBondLengths[]
+            r_om = x0;  // for faster position update routine for LP on water
+          }
+          else if ( ! simParams->drudeOn) {
+            // if not using Drude model, lone pairs allowed only on water
             char msg[128];
             sprintf(msg, "ILLEGAL LONE PAIR AT INDEX %d\n"
                 "LONE PAIRS ARE CURRENTLY ALLOWED ONLY ON WATER MOLECULES\n",
                 a1+1);
             NAMD_die(msg);
-          }
-          else {
-            rigidBondLengths[a1] = x0;
           }
         }
       }
