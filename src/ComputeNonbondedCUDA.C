@@ -13,6 +13,7 @@
 #include "ComputeNonbondedCUDAKernel.h"
 #include "ObjectArena.h"
 #include "SortAtoms.h"
+#include <algorithm>
 
 #ifdef NAMD_CUDA
 
@@ -590,6 +591,17 @@ void ComputeNonbondedCUDA::atomUpdate() { atomsChanged = 1; }
 
 static int kernel_launch_state = 0;
 
+struct cr_sortop {
+  const Lattice &l;
+  cr_sortop(const Lattice &lattice) : l(lattice) { }
+  bool operator() (ComputeNonbondedCUDA::compute_record i,
+			ComputeNonbondedCUDA::compute_record j) {
+    BigReal ri = l.unscale(i.offset).length2();
+    BigReal rj = l.unscale(j.offset).length2();
+    return ( ri < rj );
+  }
+};
+
 void ComputeNonbondedCUDA::doWork() {
 
 // CkPrintf("Pe %d doWork %d\n", CkMyPe(), workStarted);
@@ -636,6 +648,11 @@ void ComputeNonbondedCUDA::doWork() {
       *(ap++) = remoteActivePatches[i];
     }
 
+    // sort computes by distance between patches
+    cr_sortop so(patchRecords[activePatches[0]].p->flags.lattice);
+    std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),so);
+    std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),so);
+ 
     int nlc = localComputeRecords.size();
     int nrc = remoteComputeRecords.size();
     computeRecords.resize(nlc+nrc);
