@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: jim $
- * $Date: 2010/01/12 21:32:15 $
- * $Revision: 1.20 $
+ * $Author: bhatele $
+ * $Date: 2010/02/02 21:40:08 $
+ * $Revision: 1.21 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -193,27 +193,27 @@ int RefineTorusLB::newRefine() {
     bestP = 0;
     // see if we have found a compute processor pair
     REASSIGN(bestPe[5])
-#if 0
+#if USE_TOPOMAP
     else REASSIGN(goodPe[5])
 #endif
     else REASSIGN(bestPe[4])
-#if 0
+#if USE_TOPOMAP
     else REASSIGN(goodPe[4])
 #endif
     else REASSIGN(bestPe[3])
-#if 0
+#if USE_TOPOMAP
     else REASSIGN(goodPe[3])
 #endif
     else REASSIGN(bestPe[1])
-#if 0
+#if USE_TOPOMAP
     else REASSIGN(goodPe[1])
 #endif
     else REASSIGN(bestPe[2])
-#if 0
+#if USE_TOPOMAP
     else REASSIGN(goodPe[2])
 #endif
     else REASSIGN(bestPe[0])
-#if 0
+#if USE_TOPOMAP
     else REASSIGN(goodPe[0])
 #endif
 
@@ -239,7 +239,7 @@ int RefineTorusLB::newRefine() {
       //CkPrintf("1st try failed\n");
 
     int found = 0;
-#if 0
+#if USE_TOPOMAP
     // if this fails, look at the inner brick
     int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
     int dimNX, dimNY, dimNZ, dimNT;
@@ -394,7 +394,7 @@ int RefineTorusLB::newRefine() {
       continue;
     }
 
-#endif /* 0 */
+#endif /* USE_TOPOMAP */
 
     // find the first processor to place the compute on
     p = (processorInfo *)lightPes->iterator((Iterator *) &nextP);
@@ -414,27 +414,27 @@ int RefineTorusLB::newRefine() {
 
       bestP = 0;
       REASSIGN(bestPe[5])
-#if 0
+#if USE_TOPOMAP
       else REASSIGN(goodPe[5])
 #endif
       else REASSIGN(bestPe[4])
-#if 0
+#if USE_TOPOMAP
       else REASSIGN(goodPe[4])
 #endif
       else REASSIGN(bestPe[3])
-#if 0
+#if USE_TOPOMAP
       else REASSIGN(goodPe[3])
 #endif
       else REASSIGN(bestPe[1])
-#if 0
+#if USE_TOPOMAP
       else REASSIGN(goodPe[1])
 #endif
       else REASSIGN(bestPe[2])
-#if 0
+#if USE_TOPOMAP
       else REASSIGN(goodPe[2])
 #endif
       else REASSIGN(bestPe[0])
-#if 0
+#if USE_TOPOMAP
       else REASSIGN(goodPe[0])
 #endif
     }
@@ -486,7 +486,7 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
   else if(numPatches == 1 || numProxies == 1) index = 4;
   else index = 3;*/
 
-#if 0
+#if USE_TOPOMAP
   int x, y, z, t;
   int p1, p2, pe, x1, x2, xm, xM, y1, y2, ym, yM, z1, z2, zm, zM, t1, t2;
   int dimNX, dimNY, dimNZ, dimNT;
@@ -507,7 +507,7 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
 #endif
 
   if (p->load + c->load < overLoad * averageLoad) {
-#if 0
+#if USE_TOPOMAP
     tmgr.rankToCoordinates(p->Id, x, y, z, t);
     int wB = withinBrick(x, y, z, xm, xM, dimNX, ym, yM, dimNY, zm, zM, dimNZ);
     if (wB) {
@@ -518,7 +518,7 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
         oldp->p = p;
         oldp->c = c;
       } 
-#if 0
+#if USE_TOPOMAP
     } else {
       pcpair* &oldp = goodPe[index];
       double loadDiff = 0.0;
