@@ -1135,7 +1135,7 @@ void outputPsfFile(FILE *ofp)
  * 12. int: atom's hydrogenList 
  * 13. int: hydrogenGroup's atomsInGroup 
  * 14. int: hydrogenGroup's GPID 
- * 15. int: hydrogenGroup's sortVal 
+ * 15. int: hydrogenGroup's waterVal 
  * 16. float: atom's occupancy 
  * 17. float: atom's bfactor (temperature's factor) 
  */
@@ -1303,7 +1303,7 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
         iIdx[3] = atoms[i].hydrogenList;
         iIdx[4] = hg[iIdx[3]].atomsInGroup;
         iIdx[5] = hg[iIdx[3]].GPID;
-        iIdx[6] = hg[iIdx[3]].sortVal;
+        iIdx[6] = hg[iIdx[3]].waterVal;
         tmpf[0] = atomOccupancy[i];
         tmpf[1] = atomBFactor[i];
         fwrite(sIdx, sizeof(Index), 8, binOfp);
@@ -1319,7 +1319,7 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
                 one.segNameIdx, one.resNameIdx, one.atomNameIdx,
                 one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx, one.resID,
                 eachAtomClusterID[i], atoms[i].partner, hgIdx,
-                hg[hgIdx].atomsInGroup, hg[hgIdx].GPID, hg[hgIdx].sortVal,
+                hg[hgIdx].atomsInGroup, hg[hgIdx].GPID, hg[hgIdx].waterVal,
                 atomOccupancy[i], atomBFactor[i]);
     }
 #endif

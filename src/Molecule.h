@@ -511,7 +511,6 @@ public:
   int numMultipleImpropers; 
   // indexes of "atoms" sorted by hydrogen groups
   HydrogenGroup hydrogenGroup;
-  int waterIndex;
 
   Molecule(SimParameters *, Parameters *param);
   Molecule(SimParameters *, Parameters *param, char *filename, ConfigList *cfgList=NULL);  

@@ -1455,7 +1455,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
 	    hg[hgIdx].atomID = i;
 	    hg[hgIdx].atomsInGroup = tmpHgSize[i];
 	    hg[hgIdx].GPID = tmpHgGP[i];
-	    hg[hgIdx].sortVal = tmpHgSV[i];
+	    hg[hgIdx].waterVal = tmpHgSV[i];
 	    hg[hgIdx].isGP = 1;
 	    if(tmpHgSize[i]==0) hg[hgIdx].isGP = 0;
 	}
@@ -8406,7 +8406,7 @@ void Molecule::build_exPressure_atoms(StringList *fixedfile,
 
     Bool Molecule::is_water(int anum)
     {
-  return (hydrogenGroup[atoms[anum].hydrogenList].sortVal == 2);
+  return (hydrogenGroup[atoms[anum].hydrogenList].waterVal == 2);
     }
 
     int Molecule::get_groupSize(int anum)
@@ -8524,7 +8524,7 @@ void Molecule::build_atom_status(void) {
     hg[i].atomsInGroup = 1;  // currently only 1 in group
     hg[i].isGP = 1;  // assume it is a group parent
     hg[i].GPID = i;  // assume it is a group parent
-    hg[i].sortVal = 0;  // for group sorting
+    hg[i].waterVal = 0;  // for group sorting
   }
 
   // deal with H-H bonds in a sane manner
@@ -8591,7 +8591,7 @@ void Molecule::build_atom_status(void) {
 	    hg[a1].GPID = a2;
 	    hg[a1].isGP = 0;
 	    // check for waters (put them in their own groups: OH or OHH)
-	    if (is_oxygen(a2))  hg[a2].sortVal++;
+	    if (is_oxygen(a2))  hg[a2].waterVal++;
 	}
 	if (is_hydrogen(a2)) {
 	    atoms[a2].partner = a1;
@@ -8600,7 +8600,7 @@ void Molecule::build_atom_status(void) {
 	    hg[a2].GPID = a1;
 	    hg[a2].isGP = 0;
 	    // check for waters (put them in their own groups: OH or OHH)
-	    if (is_oxygen(a1))  hg[a1].sortVal++;
+	    if (is_oxygen(a1))  hg[a1].waterVal++;
         }
     }
   }
@@ -8616,7 +8616,7 @@ void Molecule::build_atom_status(void) {
       hg[a1].GPID = a2;
       hg[a1].isGP = 0;
       // check for waters (put them in their own groups: OH or OHH)
-      if (is_oxygen(a2))  hg[a2].sortVal++;
+      if (is_oxygen(a2))  hg[a2].waterVal++;
     }
     if (is_hydrogen(a2)) {
       atoms[a2].partner = a1;
@@ -8625,7 +8625,7 @@ void Molecule::build_atom_status(void) {
       hg[a2].GPID = a1;
       hg[a2].isGP = 0;
       // check for waters (put them in their own groups: OH or OHH)
-      if (is_oxygen(a1))  hg[a1].sortVal++;
+      if (is_oxygen(a1))  hg[a1].waterVal++;
     }
 
     // If we have TIP4P water, check for lone pairs
@@ -8714,7 +8714,7 @@ void Molecule::build_atom_status(void) {
   for(i=0; i<numAtoms; i++)
   {
     // make H follow their group parents.
-    if (!hg[i].isGP)  hg[i].sortVal = hg[hg[i].GPID].sortVal;
+    if (!hg[i].isGP)  hg[i].waterVal = hg[hg[i].GPID].waterVal;
     else ++numHydrogenGroups;
   }
   hydrogenGroup.sort();
@@ -8745,13 +8745,8 @@ void Molecule::build_atom_status(void) {
   }
 
   // finally, add the indexing from atoms[] to hydrogenGroup[]
-  waterIndex = numAtoms;
   for(i=0; i<numAtoms; i++) {
     atoms[hydrogenGroup[i].atomID].hydrogenList = i;
-    // identify where waters start
-    if ((hydrogenGroup[i].sortVal == 2) && (i < numAtoms)) {
-      waterIndex = i;
-    }
   }
 
   // check ordering of Drude particles and water
@@ -8943,7 +8938,7 @@ void Molecule::build_atom_status(void) {
    << " isGP=" << hydrogenGroup[i].isGP
    << " parent=" << hydrogenGroup[i].GPID
    << " #" << hydrogenGroup[i].atomsInGroup
-   << " sortVal=" << hydrogenGroup[i].sortVal
+   << " waterVal=" << hydrogenGroup[i].waterVal
    << " partner=" << atoms[i].partner
    << " hydrogenList=" << atoms[i].hydrogenList
    << "\n" << endi;
