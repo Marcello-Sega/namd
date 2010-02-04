@@ -2155,32 +2155,27 @@ void HomePatch::doGroupSizeCheck()
   FullAtomList::iterator p_e = atom.end();
 
   while ( p_i != p_e ) {
-    int hgs = p_i->hydrogenGroupSize;
-    p_i->nonbondedGroupSize = hgs;
+    const int hgs = p_i->hydrogenGroupSize;
+    int ngs = hgs;
+    if ( ngs > 4 ) ngs = 4;  // limit to at most 4 atoms per group
     BigReal x = p_i->position.x;
     BigReal y = p_i->position.y;
     BigReal z = p_i->position.z;
-    ++p_i;
-    int oversize = 0;
-    // limit spatial extent
-    for ( int i = 1; i < hgs; ++i ) {
-      p_i->nonbondedGroupSize = 0;
-      BigReal dx = p_i->position.x - x;
-      BigReal dy = p_i->position.y - y;
-      BigReal dz = p_i->position.z - z;
+    int i;
+    for ( i = 1; i < ngs; ++i ) {  // limit spatial extent
+      p_i[i].nonbondedGroupSize = 0;
+      BigReal dx = p_i[i].position.x - x;
+      BigReal dy = p_i[i].position.y - y;
+      BigReal dz = p_i[i].position.z - z;
       BigReal r2 = dx * dx + dy * dy + dz * dz;
-      ++p_i;
-      if ( r2 > hgcut ) oversize = 1;
+      if ( r2 > hgcut ) break;
       else if ( r2 > maxrad2 ) maxrad2 = r2;
     }
-    // also limit to at most 4 atoms per group
-    if ( oversize || hgs > 4 ) {
-      p_i -= hgs;
-      for ( int i = 0; i < hgs; ++i ) {
-        p_i->nonbondedGroupSize = 1;
-        ++p_i;
-      }
+    p_i->nonbondedGroupSize = i;
+    for ( ; i < hgs; ++i ) {
+      p_i[i].nonbondedGroupSize = 1;
     }
+    p_i += hgs;
   }
 
   flags.maxGroupRadius = sqrt(maxrad2);
