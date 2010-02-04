@@ -87,6 +87,7 @@ struct FullAtom : CompAtom, CompAtomExt{
   Position fixedPosition;
   Mass mass;
   Transform transform;
+  int migrationGroupSize;
 };
 
 typedef ResizeArray<CompAtom> CompAtomList;

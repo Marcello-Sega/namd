@@ -2297,9 +2297,21 @@ HomePatch::doAtomMigration()
   #endif
 
   while ( atom_i != atom_e ) {
-    if ( atom_i->hydrogenGroupSize ) {
+    if ( atom_i->migrationGroupSize ) {
+      Position pos = atom_i->position;
+      if ( atom_i->migrationGroupSize != atom_i->hydrogenGroupSize ) {
+        int mgs = atom_i->migrationGroupSize;
+        int c = 1;
+        for ( int j=atom_i->hydrogenGroupSize; j<mgs;
+				j+=(atom_i+j)->hydrogenGroupSize ) {
+          pos += (atom_i+j)->position;
+          ++c;
+        }
+        pos *= 1./c;
+        // iout << "mgroup " << atom_i->id << " at " << pos << "\n" << endi;
+      }
 
-      ScaledPosition s = lattice.scale(atom_i->position);
+      ScaledPosition s = lattice.scale(pos);
 
       // check if atom is within bounds
       if (s.x < minx) xdev = 0;

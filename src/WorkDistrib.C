@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dhardy $
- * $Date: 2010/01/19 22:11:39 $
- * $Revision: 1.1199 $
+ * $Author: jim $
+ * $Date: 2010/02/04 19:17:00 $
+ * $Revision: 1.1200 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -159,7 +159,6 @@ int *WorkDistrib::caclNumAtomsInEachPatch(){
     const Lattice lattice = params->lattice;
 
     Position eachAtomPos;
-    if (params->splitPatch == SPLIT_PATCH_HYDROGEN)
       {
       // split atoms into patched based on helix-group and position
       int aid, pid=0;
@@ -170,24 +169,13 @@ int *WorkDistrib::caclNumAtomsInEachPatch(){
         // listed first.  Thus, only change the pid if an atom is a group parent.
         aid = molecule->hydrogenGroup[i].atomID;
         pdb->get_position_for_atom(&eachAtomPos, aid);
-        if (molecule->hydrogenGroup[i].isGP)            
+        if (molecule->hydrogenGroup[i].isMP)            
             pid = patchMap->assignToPatch(eachAtomPos,lattice);
         // else: don't change pid        
         patchAtomCnt[pid]++;
         eachPatchAtomList[pid].push_back(aid);
         }
       }
-    else
-      {
-      // split atoms into patched based on position
-      for(i=0; i < numAtoms; i++)
-        {
-        pdb->get_position_for_atom(&eachAtomPos, i);
-        int pid = patchMap->assignToPatch(eachAtomPos,lattice);        
-        patchAtomCnt[pid]++;
-        eachPatchAtomList[pid].push_back(i);
-        }
-      }   
 
     return patchAtomCnt;    
 }
@@ -248,7 +236,6 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 
   const Lattice lattice = params->lattice;
 
-  if (params->splitPatch == SPLIT_PATCH_HYDROGEN)
     {
     // split atoms into patched based on helix-group and position
     int aid, pid=0;
@@ -262,9 +249,6 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       // We know that the hydrogenGroup array is sorted with group parents
       // listed first.  Thus, only change the pid if an atom is a group parent.
       aid = molecule->hydrogenGroup[i].atomID;
-      if (molecule->hydrogenGroup[i].isGP)
-	pid = patchMap->assignToPatch(positions[aid],lattice);
-      // else: don't change pid
       FullAtom a;
       a.id = aid;
       a.position = positions[aid];
@@ -274,28 +258,12 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       a.exclId = molecule->getAtomExclSigId(aid);
       #endif
       a.vdwType = molecule->atomvdwtype(aid);
-      atoms[pid].add(a);
-      }
-    }
-  else
-    {
-    // split atoms into patched based on position
-    for(i=0; i < numAtoms; i++)
-      {
-      if ( ! ( i % 1000 ) )
-	{
-	DebugM(3,"Assigned " << i << " atoms to patches so far.\n");
-	}
-      int pid = patchMap->assignToPatch(positions[i],lattice);
-      FullAtom a;
-      a.id = i;
-      a.position = positions[i];
-      a.velocity = velocities[i];
-      #ifdef MEM_OPT_VERSION
-      a.sigId = molecule->getAtomSigId(i);
-      a.exclId = molecule->getAtomExclSigId(i);
-      #endif
-      a.vdwType = molecule->atomvdwtype(i);
+      HydrogenGroupID &h = molecule->hydrogenGroup[i];
+      a.hydrogenGroupSize = h.isGP ? h.atomsInGroup : 0;
+      a.migrationGroupSize = h.isMP ? h.atomsInMigrationGroup : 0;
+      if (h.isMP) {
+	pid = patchMap->assignToPatch(positions[aid],lattice);
+      } // else: don't change pid
       atoms[pid].add(a);
       }
     }
@@ -326,16 +294,6 @@ FullAtomList *WorkDistrib::createAtomLists(void)
     for(j=0; j < n; j++)
     {
       int aid = a[j].id;
-
-      if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
-        if ( molecule->is_hydrogenGroupParent(aid) ) {
-          a[j].hydrogenGroupSize = molecule->get_groupSize(aid);
-        } else {
-          a[j].hydrogenGroupSize = 0;
-        }
-      } else {
-        a[j].hydrogenGroupSize = 1;
-      }
 
       a[j].nonbondedGroupSize = 0;  // must be set based on coordinates
 
@@ -516,6 +474,9 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
         a.exclId = molecule->getAtomExclSigId(aid);
         #endif
         a.vdwType = molecule->atomvdwtype(aid);
+        HydrogenGroupID &h = molecule->hydrogenGroup[i];
+        a.hydrogenGroupSize = h.isGP ? h.atomsInGroup : 0;
+        a.migrationGroupSize = h.isMP ? h.atomsInMigrationGroup : 0;
         onePatchAtoms->add(a);
     }
 
@@ -539,16 +500,6 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
     for(j=0; j < n; j++)
     {
       int aid = a[j].id;
-
-      if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
-        if ( molecule->is_hydrogenGroupParent(aid) ) {
-          a[j].hydrogenGroupSize = molecule->get_groupSize(aid);
-        } else {
-          a[j].hydrogenGroupSize = 0;
-        }
-      } else {
-        a[j].hydrogenGroupSize = 1;
-      }
 
       a[j].nonbondedGroupSize = 0;  // must be set based on coordinates
 

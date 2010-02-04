@@ -8709,14 +8709,86 @@ void Molecule::build_atom_status(void) {
     iout << iWARN << "Found " << hGPcount << " H-H molecules.\n" << endi;
   }
 
-  // sort the hydrogenGroup list and count number of groups
+  // copy hydrogen groups to migration groups
+  for (i=0; i<numAtoms; ++i) {
+    if ( hg[i].isGP ) hg[i].GPID = i;  // group parent is its own parent
+    else hg[i].waterVal = hg[hg[i].GPID].waterVal;  // copy to children
+    hg[i].MPID = hg[i].GPID;
+  }
+
+  // determine migration groups based on lone pair hosts
+  for (i=0; i<numLphosts; ++i) {
+    int a1 = lphosts[i].atom1;
+    int a2 = lphosts[i].atom2;
+    int a3 = lphosts[i].atom3;
+    int a4 = lphosts[i].atom4;
+    int m1 = hg[a1].MPID;
+    while ( hg[m1].MPID != m1 ) m1 = hg[m1].MPID;
+    int m2 = hg[a2].MPID;
+    while ( hg[m2].MPID != m2 ) m2 = hg[m2].MPID;
+    int m3 = hg[a3].MPID;
+    while ( hg[m3].MPID != m3 ) m3 = hg[m3].MPID;
+    int m4 = hg[a4].MPID;
+    while ( hg[m4].MPID != m4 ) m4 = hg[m4].MPID;
+    int mp = m1;
+    if ( m2 < mp ) mp = m2;
+    if ( m3 < mp ) mp = m3;
+    if ( m4 < mp ) mp = m4;
+    hg[m1].MPID = mp;
+    hg[m2].MPID = mp;
+    hg[m3].MPID = mp;
+    hg[m4].MPID = mp;
+  }
+  while ( 1 ) {
+    int allok = 1;
+    for (i=0; i<numAtoms; ++i) {
+      int mp = hg[i].MPID;
+      if ( hg[mp].MPID != mp ) {
+        allok = 0;
+        hg[i].MPID = hg[mp].MPID;
+      }
+    }
+    if ( allok ) break;
+  }
+  for (i=0; i<numAtoms; ++i) {
+    hg[i].isMP = ( hg[i].MPID == i );
+    hg[i].atomsInMigrationGroup = 0;
+  }
+  for (i=0; i<numAtoms; ++i) {
+    hg[hg[i].MPID].atomsInMigrationGroup++;
+  }
+
+  if ( simParams->splitPatch != SPLIT_PATCH_HYDROGEN ) {
+    // every atom its own group
+    for (i=0; i<numAtoms; i++) {
+      hg[i].isGP = 1;
+      hg[i].isMP = 1;
+      hg[i].atomsInGroup = 1;
+      hg[i].atomsInMigrationGroup = 1;
+      hg[i].GPID = i;
+      hg[i].MPID = i;
+    }
+  }
+
+  // count number of groups
   numHydrogenGroups = 0;
+  maxHydrogenGroupSize = 0;
+  numMigrationGroups = 0;
+  maxMigrationGroupSize = 0;
   for(i=0; i<numAtoms; i++)
   {
-    // make H follow their group parents.
-    if (!hg[i].isGP)  hg[i].waterVal = hg[hg[i].GPID].waterVal;
-    else ++numHydrogenGroups;
+    if (hg[i].isMP) {
+      ++numMigrationGroups;
+      int mgs = hg[i].atomsInMigrationGroup;
+      if ( mgs > maxMigrationGroupSize ) maxMigrationGroupSize = mgs;
+    }
+    if (hg[i].isGP) {
+      ++numHydrogenGroups;
+      int hgs = hg[i].atomsInGroup;
+      if ( hgs > maxHydrogenGroupSize ) maxHydrogenGroupSize = hgs;
+    }
   }
+
   hydrogenGroup.sort();
 
   // sanity checking
@@ -8729,20 +8801,41 @@ void Molecule::build_atom_status(void) {
         parentid = hg[i].atomID;
       } else {
         char buff[512];
-        sprintf(buff, "Atom %d has bad group size.  "
+        sprintf(buff, "Atom %d has bad hydrogen group size.  "
             "Check for duplicate bonds.", parentid+1);
         NAMD_die(buff);
       }
     } else {  // don't expect group parent
       if ( hg[i].isGP ) {
         char buff[512];
-        sprintf(buff, "Atom %d has bad group size.  "
+        sprintf(buff, "Atom %d has bad hydrogen group size.  "
             "Check for duplicate bonds.", parentid+1);
         NAMD_die(buff);
       }
     }
-
   }
+
+  parentid = -1;
+  int mgs = 0;
+  for(i=0; i<numAtoms; ++i, --mgs) {
+    if ( ! mgs ) {  // expect group parent
+      if ( hg[i].isMP ) {
+        mgs = hg[i].atomsInMigrationGroup;
+        parentid = hg[i].atomID;
+      } else {
+        char buff[512];
+        sprintf(buff, "Atom %d has bad migration group size.", parentid+1);
+        NAMD_die(buff);
+      }
+    } else {  // don't expect group parent
+      if ( hg[i].isMP ) {
+        char buff[512];
+        sprintf(buff, "Atom %d has bad migration group size.", parentid+1);
+        NAMD_die(buff);
+      }
+    }
+  }
+
 
   // finally, add the indexing from atoms[] to hydrogenGroup[]
   for(i=0; i<numAtoms; i++) {

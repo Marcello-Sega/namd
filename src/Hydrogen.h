@@ -22,36 +22,32 @@ class HydrogenGroupID {
     // although the Molecule object contains get_mother_atom(), we cannot
     // use it since Molecule.h, Node.h, and structure.h would have cyclical
     // include statements.
-    int GPID;	// group parent ID
+    int GPID;	// group parent ID, should be atomID if isGP is true
+
+    // extension for migration groups
+    int isMP;  // is this atom a migration group parent
+    int MPID;  // migration group parent ID
+    int atomsInMigrationGroup;
 
     HydrogenGroupID() {};
     ~HydrogenGroupID() {};
 
     int operator < (const HydrogenGroupID &a) const {
       int rval;
-      if (isGP)	// same group.  Check for other hydrogen ordering
-	{
-	// case 1: both are group parents
-	if (a.isGP)	rval = (atomID < a.atomID);
-	// case 2: only this atom is a group parent
-	else		rval = (atomID <= a.GPID);
-	}
-      else
-	{
-	// case 3: only 'a' is a group parent
-	if (a.isGP)	rval = (GPID < a.atomID);
-	// case 4: both are in a group
-	// case 4.1: both in different groups
-	else if (GPID != a.GPID)	rval = (GPID < a.GPID);
-	// case 4.2: both in same group
-	else rval = (atomID < a.atomID);
-	}
-      return(rval);
-    }
-
-    int operator == (const HydrogenGroupID &a) const {
-      // only the same when both part of same group
-      return (!isGP && !a.isGP && (GPID == a.GPID) );
+      int mp1 = ( isMP ? atomID : MPID );
+      int mp2 = ( a.isMP ? a.atomID : a.MPID );
+      if ( mp1 != mp2 ) {
+        rval = ( mp1 < mp2 );
+      } else {
+        int gp1 = ( isGP ? atomID : GPID );
+        int gp2 = ( a.isGP ? a.atomID : a.GPID );
+        if ( gp1 != gp2 ) {
+          rval = ( gp1 < gp2 );
+        } else {
+	  rval = (atomID < a.atomID);
+        }
+      }
+      return rval;
     }
 };
 

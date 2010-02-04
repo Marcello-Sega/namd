@@ -475,6 +475,9 @@ public:
   int numStirredAtoms;  //  Number of stirred atoms
   int numExPressureAtoms; //  Number of atoms excluded from pressure
   int numHydrogenGroups;  //  Number of hydrogen groups
+  int maxHydrogenGroupSize;  //  Max atoms per hydrogen group
+  int numMigrationGroups;  //  Number of migration groups
+  int maxMigrationGroupSize;  //  Max atoms per migration group
   int numFixedGroups; //  Number of totally fixed hydrogen groups
   int numRigidBonds;  //  Number of rigid bonds
   int numFixedRigidBonds; //  Number of rigid bonds between fixed atoms

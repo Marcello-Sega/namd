@@ -567,6 +567,11 @@ int NamdState::configListInit(ConfigList *cfgList) {
 #endif
 
 	iout << iINFO << molecule->numHydrogenGroups << " HYDROGEN GROUPS\n";
+	iout << iINFO << molecule->maxHydrogenGroupSize
+		<< " ATOMS IN LARGEST HYDROGEN GROUP\n";
+	iout << iINFO << molecule->numMigrationGroups << " MIGRATION GROUPS\n";
+	iout << iINFO << molecule->maxMigrationGroupSize
+		<< " ATOMS IN LARGEST MIGRATION GROUP\n";
 	if (simParameters->fixedAtomsOn)
 	{
 	   iout << iINFO << molecule->numFixedGroups <<
