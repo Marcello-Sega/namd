@@ -1058,10 +1058,13 @@ void ComputeNonbondedUtil :: NAME
 	for ( int h=0; h<hu; ++h ) {
           int j = goodglist[h];
           int nbgs = p_1[j].nonbondedGroupSize;
-	  pli[0] = j;   // copy over the next four in any case
+	  pli[0] = j;   // copy over the next three in any case
 	  pli[1] = j+1;
 	  pli[2] = j+2;
-	  pli[3] = j+3; // assume nbgs <= 4
+          if ( nbgs & 4 ) {  // if nbgs > 3, assume nbgs <= 5
+	    pli[3] = j+3;
+	    pli[4] = j+4;
+          }
           pli += nbgs;
 	}
       }

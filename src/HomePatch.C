@@ -2157,7 +2157,7 @@ void HomePatch::doGroupSizeCheck()
   while ( p_i != p_e ) {
     const int hgs = p_i->hydrogenGroupSize;
     int ngs = hgs;
-    if ( ngs > 4 ) ngs = 4;  // limit to at most 4 atoms per group
+    if ( ngs > 5 ) ngs = 5;  // limit to at most 5 atoms per group
     BigReal x = p_i->position.x;
     BigReal y = p_i->position.y;
     BigReal z = p_i->position.z;
