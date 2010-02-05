@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2010/02/04 19:17:00 $
- * $Revision: 1.1200 $
+ * $Date: 2010/02/05 19:52:52 $
+ * $Revision: 1.1201 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -474,7 +474,8 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
         a.exclId = molecule->getAtomExclSigId(aid);
         #endif
         a.vdwType = molecule->atomvdwtype(aid);
-        HydrogenGroupID &h = molecule->hydrogenGroup[i];
+        HydrogenGroupID &h =
+          molecule->hydrogenGroup[molecule->atoms[aid].hydrogenList];
         a.hydrogenGroupSize = h.isGP ? h.atomsInGroup : 0;
         a.migrationGroupSize = h.isMP ? h.atomsInMigrationGroup : 0;
         onePatchAtoms->add(a);

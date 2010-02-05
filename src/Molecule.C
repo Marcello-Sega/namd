@@ -1276,6 +1276,18 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
     if(!NAMD_find_word(buffer, "NHYDROGENGROUP"))
         NAMD_die("UNABLE TO FIND NHYDROGENGROUP");
     sscanf(buffer, "%d", &numHydrogenGroups);
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "MAXHYDROGENGROUPSIZE"))
+        NAMD_die("UNABLE TO FIND MAXHYDROGENGROUPSIZE");
+    sscanf(buffer, "%d", &maxHydrogenGroupSize);
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NMIGRATIONGROUP"))
+        NAMD_die("UNABLE TO FIND NMIGRATIONGROUP");
+    sscanf(buffer, "%d", &numMigrationGroups);
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "MAXMIGRATIONGROUPSIZE"))
+        NAMD_die("UNABLE TO FIND MAXMIGRATIONGROUPSIZE");
+    sscanf(buffer, "%d", &maxMigrationGroupSize);
 
     int isOccupancyValid, isBFactorValid;
     NAMD_read_line(psf_file, buffer);
@@ -1300,6 +1312,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
 	int *tmpHgSize = new int[numAtoms];
 	int *tmpHgGP = new int[numAtoms];
 	int *tmpHgSV = new int[numAtoms];
+	int *tmpHgMSize = new int[numAtoms];
+	int *tmpHgMP = new int[numAtoms];
         hydrogenGroup.resize(numAtoms);
         HydrogenGroupID *hg = hydrogenGroup.begin();
 
@@ -1355,14 +1369,14 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         delete[] binFName;
         //4. read per-atom info
         Index sIdx[8];
-        int iIdx[8];
+        int iIdx[9];
         for(int i=0; i<numAtoms; i++){   
             fread(sIdx, sizeof(Index), 8, perAtomFile);
-            fread(iIdx, sizeof(int), 7, perAtomFile);
+            fread(iIdx, sizeof(int), 9, perAtomFile);
             fread(tmpf, sizeof(float), 2, perAtomFile);
             if(needFlip) {
                 flipNum((char *)sIdx, sizeof(Index), 8);
-                flipNum((char *)iIdx, sizeof(int), 7);
+                flipNum((char *)iIdx, sizeof(int), 9);
                 flipNum((char *)tmpf, sizeof(float), 2);
             }
             segment_name = segNamePool[sIdx[0]];                   
@@ -1384,9 +1398,12 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
             tmpHgSize[i] = iIdx[4];
             tmpHgGP[i] = iIdx[5];
             tmpHgSV[i] = iIdx[6];
+            tmpHgMSize[i] = iIdx[7];
+            tmpHgMP[i] = iIdx[8];
 
             //debugExclNum += (exclSigPool[sIdx[7]].fullExclCnt+exclSigPool[sIdx[7]].modExclCnt);
 #else
+        XXX THIS BRANCH NOT UPDATED FOR MIGRATION GROUP XXX
         int idx[15];
         for(int i=0; i<numAtoms; i++){
             NAMD_read_line(psf_file, buffer);
@@ -1456,13 +1473,17 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
 	    hg[hgIdx].atomsInGroup = tmpHgSize[i];
 	    hg[hgIdx].GPID = tmpHgGP[i];
 	    hg[hgIdx].waterVal = tmpHgSV[i];
-	    hg[hgIdx].isGP = 1;
-	    if(tmpHgSize[i]==0) hg[hgIdx].isGP = 0;
+	    hg[hgIdx].isGP = ( tmpHgSize[i] ? 1 : 0 );
+	    hg[hgIdx].atomsInMigrationGroup = tmpHgMSize[i];
+	    hg[hgIdx].MPID = tmpHgMP[i];
+	    hg[hgIdx].isMP = ( tmpHgMSize[i] ? 1 : 0 );
 	}
 	
 	delete [] tmpHgSize;
 	delete [] tmpHgGP;
 	delete [] tmpHgSV;	
+	delete [] tmpHgMSize;
+	delete [] tmpHgMP;
 
 	//printf("debugExclNum: %d\n", debugExclNum);
     }
@@ -3381,6 +3402,9 @@ void Molecule::send_Molecule(MOStream *msg)
       //being recalculated in build_atom_status in receive_Molecule function
       #ifdef MEM_OPT_VERSION
       msg->put(numHydrogenGroups);      
+      msg->put(maxHydrogenGroupSize);      
+      msg->put(numMigrationGroups);      
+      msg->put(maxMigrationGroupSize);      
       msg->put(numAtoms*sizeof(HydrogenGroupID), (char *)hydrogenGroup.begin());      
       #endif
       
@@ -3696,6 +3720,9 @@ void Molecule::receive_Molecule(MIStream *msg)
 
       #ifdef MEM_OPT_VERSION
       msg->get(numHydrogenGroups);      
+      msg->get(maxHydrogenGroupSize);      
+      msg->get(numMigrationGroups);      
+      msg->get(maxMigrationGroupSize);      
       hydrogenGroup.resize(numAtoms);
       msg->get(numAtoms*sizeof(HydrogenGroupID), (char *)hydrogenGroup.begin());     
       #endif

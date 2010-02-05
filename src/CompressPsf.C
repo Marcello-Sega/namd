@@ -1259,6 +1259,9 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
     //4. Output atom info
     fprintf(txtOfp, "%d !NATOM\n", g_mol->numAtoms);
     fprintf(txtOfp, "%d !NHYDROGENGROUP\n", g_mol->numHydrogenGroups);
+    fprintf(txtOfp, "%d !MAXHYDROGENGROUPSIZE\n", g_mol->maxHydrogenGroupSize);
+    fprintf(txtOfp, "%d !NMIGRATIONGROUP\n", g_mol->numMigrationGroups);
+    fprintf(txtOfp, "%d !MAXMIGRATIONGROUPSIZE\n", g_mol->maxMigrationGroupSize);
     const float *atomOccupancy = g_mol->getOccupancyData();
     const float *atomBFactor = g_mol->getBFactorData();
     fprintf(txtOfp, "%d !OCCUPANCYVALID\n", (atomOccupancy==NULL)?0:1);
@@ -1284,7 +1287,7 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
     fwrite(&verNum, sizeof(float), 1, binOfp);
     //Third, each atom info
     Index sIdx[8];
-    int iIdx[7];
+    int iIdx[9];
     float tmpf[2];
     for(int i=0; i<g_mol->numAtoms; i++)
     {                
@@ -1304,13 +1307,16 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
         iIdx[4] = hg[iIdx[3]].atomsInGroup;
         iIdx[5] = hg[iIdx[3]].GPID;
         iIdx[6] = hg[iIdx[3]].waterVal;
+        iIdx[7] = hg[iIdx[3]].atomsInMigrationGroup;
+        iIdx[8] = hg[iIdx[3]].MPID;
         tmpf[0] = atomOccupancy[i];
         tmpf[1] = atomBFactor[i];
         fwrite(sIdx, sizeof(Index), 8, binOfp);
-        fwrite(iIdx, sizeof(int), 7, binOfp);
+        fwrite(iIdx, sizeof(int), 9, binOfp);
         fwrite(tmpf, sizeof(float), 2, binOfp);
     }
 #else
+    XXX THIS BRANCH NOT UPDATED FOR MIGRATION GROUP XXX
     for(int i=0; i<g_mol->numAtoms; i++)
     {
         BasicAtomInfo &one = atomData[i];

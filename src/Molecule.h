@@ -152,6 +152,7 @@ friend class ImproperElem;
 friend class TholeElem;  // Drude model
 friend class AnisoElem;  // Drude model
 friend class CrosstermElem;
+friend class WorkDistrib;
 
 private:
   void initialize(SimParameters *, Parameters *param);
