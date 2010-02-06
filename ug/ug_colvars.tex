@@ -165,7 +165,7 @@ Other output files may be written by specific methods applied to the
 colvars (e.g.~by the ABF method, see \ref{sec:colvarbias_abf}, or the
 metadynamics method, see \ref{sec:colvarbias_meta}).  Like the colvar
 trajectory file, they are needed only for analyzing, not continuing a
-simulation.  All such files begin with the prefix
+simulation.  All such files' names also begin with the prefix
 \texttt{$<$outputName$>$}.
 
 
@@ -227,15 +227,19 @@ Three global options are available:
     operating systems), but it is synchronized with the disks every
     time the restart file is written.}
 
-% \item %
-%   \NAMDCONFWDEF{%
-%     trajAppend}{%
-%     (global) Append to trajectory file}{%
-%     boolean}{%
-%     \texttt{off}}{%
-%     If this flag is enabled, and a file with the same name as the
-%     trajectory file is already present, new data is appended to
-%     that file.  Otherwise, a new file is created.}
+\item %
+  \NAMDCONFWDEF{%
+    colvarsTrajAppend}{%
+    (global) Append to trajectory file?}{%
+    boolean}{%
+    \texttt{off}}{%
+    If this flag is enabled, and a file with the same name as the
+    trajectory file is already present, new data is appended to that
+    file.  Otherwise, a new file is created.  \textbf{Note:} \emph{if
+      you're running consecutive simulations with the same
+    }\texttt{outputName}\emph{ (e.g.~in FEP calculations), you should
+      enable this option to preserve the previous contents of the
+      trajectory file}.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -532,34 +536,43 @@ Each colvar accepts the following parameters:
 \item %
   \NAMDCONFWDEF{%
     extendedLagrangian}{%
-    (\texttt{colvar}) Add an extra degree of freedom}{%
+    (\texttt{colvar}) Add extended degree of freedom}{%
     boolean}{%
     \texttt{off}}{%
-    Adds a fictitious particle with mass \texttt{fictitiousMass},
-    coupled to the colvar by a harmonic potential with force constant
-    \texttt{extendedForceConstant}.  Biasing forces on the colvar
-    are applied to this extra particle, rather than to the atoms
-    directly.  This implements the extended Lagrangian formalism used
-    in some metadynamics simulations~\cite{Iannuzzi2003}.}
+    Adds a fictitious particle to be coupled to the colvar by a harmonic
+    spring. The fictitious mass and the force constant of the coupling
+    potential are derived from the parameters \texttt{extendedTimeConstant}
+    and \texttt{extendedFluctuation}, described below. Biasing forces on the
+    colvar are applied to this fictitious particle, rather than to the
+    atoms directly.  This implements the extended Lagrangian formalism
+    used in some metadynamics simulations~\cite{Iannuzzi2003}.}
 
 \item %
   \NAMDCONFWDEF{%
-    extendedForceConstant}{%
-    (\texttt{colvar}) Ext.~Lagrangian force constant
-    (kcal/mol)}{%
+    extendedFluctuation}{%
+    (\texttt{colvar}) Standard deviation between the colvar and the fictitious
+    particle (colvar unit)}{%
     positive decimal}{%
-    \texttt{1.0}}{%
-    Defines the force constant for the \texttt{extendedLagrangian}
-    mode.  The physical unit is the same as
-    \texttt{lowerWallConstant}.}
+    \texttt{0.2 $\times$ width}}{%
+    Defines the spring stiffness for the \texttt{extendedLagrangian}
+    mode, by setting the typical deviation between the colvar and the extended
+    degree of freedom due to thermal fluctuation.
+    The spring force constant is calculated internally as $k_B T / \sigma^2$,
+    where  $\sigma$ is the value of \texttt{extendedFluctuation}.}
 
 \item %
   \NAMDCONFWDEF{%
-    fictitiousMass}{%
-    (\texttt{colvar}) Fictitious mass of the colvar (amu)}{%
+    extendedTimeConstant}{%
+    (\texttt{colvar}) Oscillation period of the fictitious particle (fs)}{%
     positive decimal}{%
-    \texttt{1.0}}{%
-    Set the inertial mass of this colvar.}
+    \texttt{50.0 $\times$ timestep}}{%
+    Defines the inertial mass of the fictitious particle, by setting the
+    oscillation period of the harmonic oscillator formed by the fictitious
+    particle and the spring. The period
+    should be much larger than the MD time step to ensure accurate integration
+    of the extended particle's equation of motion.
+    The fictitious mass is calculated internally as $k_B T (\tau/2 \pi \sigma)^2$,
+    where $\tau$ is the period and $\sigma$ is the typical fluctuation (see above).}
 
 \end{itemize}
 
@@ -1736,7 +1749,9 @@ recognize the following options:
 
 For a full description of the Adaptive Biasing Force method, see
 reference~\cite{Darve2008}. For details about this implementation,
-see reference~\cite{Henin2004}.
+see references~\cite{Henin2004} and \cite{Henin2009}. When
+publishing work that makes use of this functionality, please cite
+references~\cite{Darve2008} and \cite{Henin2009}.
 
 ABF is based on the thermodynamic integration (TI) scheme for
 computing free energy profiles. The free energy as a function
@@ -2441,19 +2456,26 @@ block, which may contain (in addition to the standard option
     Each value is a decimal number if the corresponding colvar returns
     a scalar, a ``\texttt{(x, y, z)}'' triplet if it returns a unit
     vector or a vector, and a ``\texttt{(q0, q1, q2, q3)}'' quadruplet
-    if it return a rotational quaternion.  If a colvar has
+    if it returns a rotational quaternion.  If a colvar has
     periodicities or symmetries, its closest image to the restraint
     center is considered when calculating the harmonic potential.}
 
 \item %
   \NAMDCONF{%
-    targets}{%
+    targetCenters}{%
     (\texttt{harmonic}) Steer the restraint centers towards these
     targets}{%
     space-separated list of colvar values}{%
     When defined, the current \texttt{centers} will be moved towards
-    these values in \texttt{targetsNumSteps} steps, by a linear
-    interpolation.  The intermediate values will be evolved by taking
+    these values during the simulation.
+    By default, the centers are moved over a total of 
+    \texttt{targetNumSteps} steps by a linear interpolation, in the
+    spirit of Steered MD.
+    If \texttt{targetNumStages} is set to a nonzero value, the
+    change is performed in discrete stages, lasting \texttt{targetsNumSteps}
+    steps \emph{each}. This second mode may be used to sample successive
+    windows in the context of an Umbrella Sampling simulation.
+    The intermediate values will be evolved by taking
     into account periodicities or symmetries (the closest image of the
     target is assumed for each colvar) and intrinsic constraints to
     the colvar value.  For example, when moving the restraint center
@@ -2464,22 +2486,75 @@ block, which may contain (in addition to the standard option
     different targets should be used.  When continuing a simulation
     run, the \texttt{centers} specified in the configuration file
     \texttt{$<$colvarsConfig$>$} will be overridden by those saved in
-    the state file \texttt{$<$colvarsInput$>$}.  To perform Steered
-    Molecular Dynamics (SMD) in an arbitrary space of colvars, it is
+    the restart file \texttt{$<$colvarsInput$>$}.  To perform Steered
+    MD in an arbitrary space of colvars, it is
     sufficient to use this option and enable
     \texttt{outputAppliedForce} within each of the colvars involved.}
 
 \item %
+  \NAMDCONF{%
+    targetForceConstant}{%
+    (\texttt{harmonic}) Change the force constant towards this value}{%
+    positive decimal}{%
+    When defined, the current \texttt{forceConstant} will be moved towards
+    this value during the simulation. Time evolution of the force constant
+    is dictated by the \texttt{targetForceExponent} parameter (see below).
+    By default, the force constant is changed smoothly over a total of 
+    \texttt{targetNumSteps} steps. This is useful to introduce or
+    remove restraints in a progressive manner.
+    If \texttt{targetNumStages} is set to a nonzero value, the
+    change is performed in discrete stages, lasting \texttt{targetsNumSteps}
+    steps \emph{each}. This second mode may be used to compute the
+    conformational free energy change associated with the restraint, within
+    the FEP or TI formalisms. For convenience, the code provides an estimate
+    of the free energy derivative for use in TI. A more complete free energy
+    calculation (particularly with regard to convergence analysis),
+    while not handled by the colvars module, can be performed by post-processing
+    the colvars trajectory, if \texttt{colvarsTrajFrequency} is set to a
+    suitably small value. It should be noted, however, that restraint
+    free energy calculations may be handled more efficiently by an
+    indirectly route, through the
+    determination of a PMF for the restrained coordinate.\cite{Deng2009}}
+
+\item %
   \NAMDCONFWDEF{%
-    targetsNumSteps}{%
+    targetForceExponent}{%
+    Exponent in the time-dependence of the force constant}{%
+    decimal equal to or greater than 1.0}{%
+    \texttt{1.0}}{%
+    Sets the exponent, $\alpha$, in the function used to vary the force
+    constant as a function of time. The force is varied according to a
+    coupling parameter $\lambda$, raised to the power $\alpha$:
+    $ k_\lambda = k_0 + \lambda^\alpha (k_1 - k_0)$, where $k_0$,
+    $k_\lambda$, and $k_1$ are the initial, current, and final values
+    of the force constant. The parameter $\lambda$ evolves linearly from
+    0 to 1, either smoothly or in \texttt{targetNumStages} discrete stages.
+    When the initial value of the force constant is zero,
+    an exponent greater than 1.0 distributes the effects of introducing the
+    restraint more smoothly over time than a linear dependence.
+    }
+
+\item %
+  \NAMDCONF{%
+    targetNumSteps}{%
     (\texttt{harmonic}) Number of steps for steering}{%
     positive integer}{%
-    \texttt{0}}{%
-    If larger than zero, it defines the number of steps required to
-    move the restraint centers towards the specified \texttt{targets}.
-    After the targets have been reached, the centers are maintained
-    fixed.}
+    Defines the number of steps required to
+    move the restraint centers (or force constant) towards the values
+    specified with \texttt{targetCenters} or \texttt{targetForceConstant}.
+    After the target values have been reached, the centers (resp. force
+    constant) are kept fixed.}
 
+\item %
+  \NAMDCONFWDEF{%
+    targetNumStages}{%
+    (\texttt{harmonic}) Number of stages for steering}{%
+    non-negative integer}{%
+    \texttt{0}}{%
+    If non-zero, sets the number of stages in which the restraint centers
+    or force constant are changed to their target values. If zero, the change
+    is continuous.
+    }
 \end{itemize}
 
 \textbf{Tip:} A complex set of restraints can be applied to a system,
