@@ -178,7 +178,7 @@ public:
     return value_type;
   }
 
-  /// Set the type expliticitly
+  /// Set the type explicitly
   inline void type (Type const &vti)
   {
     reset();
@@ -265,7 +265,7 @@ public:
   /// with a different type to this object
   void error_rside (Type const &vt) const;
 
-  /// Give the number of characters required to output this
+  ///ï¿½Give the number of characters required to output this
   /// colvarvalue, given the current type assigned and the number of
   /// characters for a real number
   size_t output_width (size_t const &real_width);
