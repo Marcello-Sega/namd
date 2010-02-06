@@ -140,63 +140,6 @@ colvarbias_meta::colvarbias_meta (std::string const &conf, char const *key)
 }
 
 
-// void colvarbias_meta::parse_analysis (std::string const &conf)
-// {
-//   // at some point, all of this should be done in the standard run
-
-//   get_keyval (conf, "freeEnergyFile", free_energy_file);
-
-//   get_keyval (conf, "freeEnergyGradientsFile", free_energy_gradients_file);
-
-//   get_keyval (conf, "freeEnergyFirstStep",  free_energy_begin, 0);
-//   get_keyval (conf, "freeEnergyLastStep",   free_energy_end,   0);
-
-//   get_keyval (conf, "shiftFreeEnergy",  shift_fes, true);
-
-//   get_keyval (conf, "freeEnergyOffset", free_energy_offset, 0.0);
-
-//   get_keyval (conf, "boltzmannWeightsFile", boltzmann_weights_file);
-
-//   get_keyval (conf, "boltzmannCountsFile", boltzmann_counts_file);
-
-//   get_keyval (conf, "boltzmannWeightsTemp", boltzmann_weights_temp, 300.0);
-
-//   if (get_keyval (conf, "boltzmannWeightsScale",
-//                   boltzmann_weights_scale, 1.0)) {
-//     if (boltzmann_counts_file.size() && (boltzmann_weights_scale <= 1.0)) {
-//       cvm::log ("Warning: boltzmann_weights_scale is too small "
-//                 "for a proper discretization: Boltzmann counts "
-//                 "will be inaccurate.\n");
-//     }
-//   }
-
-//   if (free_energy_file.size() ||
-//       boltzmann_weights_file.size() ||
-//       boltzmann_counts_file.size()) {
-//     // all these require the free energy to be read and shifted
-//     if (cvm::debug())
-//       cvm::log ("Allocating free energy grid.\n");
-//     free_energy = new colvar_grid_scalar (colvars);
-//   } else
-//     free_energy = NULL;
-  
-//   if (free_energy_gradients_file.size()) {
-//     free_energy_gradients = new colvar_grid_gradient (colvars);
-//   } else 
-//     free_energy_gradients = NULL;
-
-//   if (boltzmann_weights_file.size()) {
-//     boltzmann_weights = new colvar_grid_scalar (colvars);
-//   } else
-//     boltzmann_weights = NULL;
-
-//   if (boltzmann_counts_file.size()) {
-//     boltzmann_counts = new colvar_grid_count (colvars);
-//   } else
-//     boltzmann_counts = NULL;
-// }
-
-
 colvarbias_meta::~colvarbias_meta()
 {
   if (hills_energy) {
@@ -208,26 +151,6 @@ colvarbias_meta::~colvarbias_meta()
     delete hills_energy_gradients;
     hills_energy_gradients = NULL;
   }
-
-//   if (free_energy) {
-//     delete free_energy;
-//     free_energy = NULL;
-//   }
-
-//   if (free_energy_gradients) {
-//     delete free_energy_gradients;
-//     free_energy_gradients = NULL;
-//   }
-
-//   if (boltzmann_weights) {
-//     delete boltzmann_weights;
-//     boltzmann_weights = NULL;
-//   }
-
-//   if (boltzmann_counts) {
-//     delete boltzmann_counts;
-//     boltzmann_counts = NULL;
-//   }
 
   if (replica_out_file.good())
     replica_out_file.close();
@@ -778,7 +701,8 @@ std::istream & colvarbias_meta::read_restart (std::istream& is)
   }
 
   std::string name = "";
-  if ( colvarparse::get_keyval (conf, "name", name, std::string (""), colvarparse::parse_silent) &&
+  if ( colvarparse::get_keyval (conf, "name", name,
+                                std::string (""), colvarparse::parse_silent) &&
        (name != this->name) )
     cvm::fatal_error ("Error: in the restart file, the "
                       "\"metadynamics\" block has a wrong name: different system?\n");
@@ -788,42 +712,67 @@ std::istream & colvarbias_meta::read_restart (std::istream& is)
                       "has no identifiers.\n");
   }
 
+  bool grids_from_restart_file = use_grids;
+
   if (this->comm == single_replica) {
 
     if (use_grids) {
 
       if (expand_grids) {
-        // the boundaries of the colvars may have been changed (note:
-        // this second reallocation may be deleted when the new
-        // restart format for the grids has kicked in)
+        // the boundaries of the colvars may have been changed; note:
+        // this reallocation is only for backward-compatibility, and
+        // may be deleted when grid_parameters has kicked in
         delete hills_energy;
         delete hills_energy_gradients;
         hills_energy = new colvar_grid_scalar (colvars);
         hills_energy_gradients = new colvar_grid_gradient (colvars);
       }
 
-      if ( !(is >> key) ||
-           !(key == std::string ("hills_energy")) ||
-           !(hills_energy->read_restart (is)) ) {
-        cvm::log ("Error: in reading restart information for metadynamics bias \""+
-                  this->name+"\".\n");
+      size_t const hills_energy_pos = is.tellg();
+      if (!(is >> key)) {
+        cvm::log ("Error: in reading restart configuration for metadynamics bias \""+
+                  this->name+"\" at position "+
+                  cvm::to_str (hills_energy_pos)+" in stream.\n");
         is.clear();
-        is.seekg (start_pos, std::ios::beg);
+        is.seekg (hills_energy_pos, std::ios::beg);
         is.setstate (std::ios::failbit);
         return is;
+      } else if (!(key == std::string ("hills_energy")) ||
+                 !(hills_energy->read_restart (is))) {
+        is.clear();
+        is.seekg (hills_energy_pos, std::ios::beg);
+        grids_from_restart_file = false;
+        if (!rebin_grids) {
+          is.setstate (std::ios::failbit);
+          cvm::log ("Error: couldn't read the free energy grid for metadynamics bias \""+
+                    this->name+"\"; if grids were not enabled in the previous runs, "
+                    "enable rebinGrids to generate it.\n");
+          return is;
+        }
       }
 
-      if ( !(is >> key) ||
-           !(key == std::string ("hills_energy_gradients")) || 
-           !(hills_energy_gradients->read_restart (is)) ) {
-        cvm::log ("Error: in reading restart information for metadynamics bias \""+
-                  this->name+"\".\n");
+      size_t const hills_energy_gradients_pos = is.tellg();
+      if (!(is >> key)) {
+        cvm::log ("Error: in reading restart configuration for metadynamics bias \""+
+                  this->name+"\" at position "+
+                  cvm::to_str (hills_energy_gradients_pos)+" in stream.\n");
         is.clear();
-        is.seekg (start_pos, std::ios::beg);
+        is.seekg (hills_energy_gradients_pos, std::ios::beg);
         is.setstate (std::ios::failbit);
         return is;
+      } else if (!(key == std::string ("hills_energy_gradients")) ||
+                 !(hills_energy_gradients->read_restart (is))) {
+        is.clear();
+        is.seekg (hills_energy_gradients_pos, std::ios::beg);
+        grids_from_restart_file = false;
+        if (!rebin_grids) {
+          is.setstate (std::ios::failbit);
+          cvm::log ("Error: couldn't read the free energy gradients grid for metadynamics bias \""+
+                    this->name+"\"; if grids were not enabled in the previous runs, "
+                    "enable rebinGrids to generate it.\n");
+          return is;
+        }
       }
-
     }
 
     // read the hills explicitly (if there are any)
@@ -836,6 +785,12 @@ std::istream & colvarbias_meta::read_restart (std::istream& is)
     }
     is.clear();
     new_hills_begin = hills.end();
+    if (grids_from_restart_file) {
+      cvm::log ("Read "+cvm::to_str (hills.size())+
+                " hills in addition to the grids.\n");
+    } else {
+      cvm::log ("Read "+cvm::to_str (hills.size())+" hills.\n");
+   }
 
     if (rebin_grids) {
 
@@ -846,12 +801,11 @@ std::istream & colvarbias_meta::read_restart (std::istream& is)
         new colvar_grid_scalar (colvars);
       colvar_grid_gradient *new_hills_energy_gradients =
         new colvar_grid_gradient (colvars);
-      
-      if (keep_hills && (hills.size() > 0)) {
 
+      if (!grids_from_restart_file || keep_hills) {
         // if there are hills, recompute the new grids from them
-        cvm::log ("rebinGrids and keepHills defined, recomputing "
-                  "analytically the energy and force grids; this may take a while...\n");
+        cvm::log ("Rebinning the energy and forces grids from "+
+                  cvm::to_str (hills.size())+" hills (this may take a while)...\n");
         project_hills (hills.begin(), hills.end(),
                        new_hills_energy, new_hills_energy_gradients);
         cvm::log ("rebinning done.\n");
@@ -860,7 +814,8 @@ std::istream & colvarbias_meta::read_restart (std::istream& is)
 
         // otherwise, use the grids in the restart file
 
-        cvm::log ("rebinGrids defined, mapping energy and forces grid to new grids.\n");
+        cvm::log ("Rebinning the energy and forces grids "
+                  "from the grids in the restart file.\n");
         new_hills_energy->map_grid (*hills_energy);
         new_hills_energy_gradients->map_grid (*hills_energy_gradients);
       }
@@ -892,6 +847,14 @@ std::istream & colvarbias_meta::read_restart (std::istream& is)
                       this->name+"\": no matching brace at position "+
                       cvm::to_str (is.tellg())+" in the restart file.\n");
     is.setstate (std::ios::failbit);
+  }
+
+  if (use_grids) {
+    if (hills_off_grid.size()) {
+      cvm::log (cvm::to_str (hills_off_grid.size())+" hills are near the "
+                "grid boundaries: they will be computed analytically "
+                "and saved to the state files.\n");
+    }
   }
 
   if (cvm::debug())
@@ -1006,6 +969,7 @@ std::ostream & colvarbias_meta::write_restart (std::ostream& os)
                        ".pmf");
         std::ofstream fes_os (fes_file_name.c_str());
         hills_energy->write_multicol (fes_os);
+        fes_os.close();
 
         // restore the grid to original values
         hills_energy->multiply_constant (-1.0);
@@ -1179,202 +1143,3 @@ void colvarbias_meta::recount_hills_off_grid (colvarbias_meta::hill_iter  h_firs
 
 void colvarbias_meta::analyse()
 {}
-
-
-// void colvarbias_meta::analyse()
-// {
-//   if ((cvm::step_relative() == 0) || cvm::debug())
-//     cvm::log ("Performing analysis for the metadynamics bias \""+
-//               this->name+"\".\n");
-
-//   cvm::log ("Sorting hills according to their timestep...\n");
-//   hills.sort();
-//   cvm::log ("Sorting done.\n");
-
-
-//   if (cvm::step_relative() == 0) {
-
-//     if (free_energy || free_energy_gradients) {
-
-//       cvm::log ("Calculating the free energy surface of the metadynamics bias \""+
-//                 this->name+"\".\n");
-
-//       if (!free_energy_end) {
-//         free_energy_end = (hills.back()).it;
-//       }
-
-//       hill_iter h_first;
-//       for (h_first = hills.begin();
-//            (h_first != hills.end()) && (h_first->it < free_energy_begin);
-//            h_first++) {
-//       }
-
-//       hill_iter h_last;
-//       for (h_last = h_first;
-//            (h_last != hills.end()) && (h_last->it <= free_energy_end);
-//            h_last++) {
-//       }
-
-//       if (h_first != h_last) {
-
-//         size_t np_total = 0;
-
-//         std::vector<int> fe_ix;
-//         colvar_grid_scalar *fe = free_energy;
-//         if (fe) {
-//           fe_ix = fe->new_index();
-//           np_total = fe->number_of_points();
-//           cvm::log ("Calculating free energy values on a grid "
-//                     "of "+cvm::to_str (np_total)+" points.\n");
-//         }
-
-//         std::vector<int> fg_ix;
-//         colvar_grid_gradient *fg = free_energy_gradients;
-//         if (fg) {
-//           fg_ix = fg->new_index();
-//           np_total = fg->number_of_points();
-//           cvm::log ("Calculating free energy gradients on a grid "
-//                     "of "+cvm::to_str (np_total)+" points.\n");
-//         }
-
-//         std::vector<int> bw_ix;
-//         colvar_grid_scalar *bw = boltzmann_weights;
-//         if (bw) {
-//           bw_ix = bw->new_index();
-//           np_total = bw->number_of_points();
-//           cvm::log ("Calculating Boltzmann weights on a grid "
-//                     "of "+cvm::to_str (np_total)+" points.\n");
-//         }
-
-//         std::vector<int> bc_ix;
-//         colvar_grid_count *bc = boltzmann_counts;
-//         if (bc) {
-//           bc_ix = bc->new_index();
-//         }
-
-//         std::vector<colvarvalue> cv_values (colvars.size());
-//         for (size_t i = 0; i < colvars.size(); i++) {
-//           cv_values[i].type (colvars[i]->type());
-//         }
-
-
-//         // loop over all grids in the same sweep
-//         cvm::real free_energy_minimum = 1.0E+12;
-//         for (size_t np = 0;
-//              ( (fe ? fe->index_ok (fe_ix) : true) &&
-//                (fg ? fg->index_ok (fg_ix) : true) ); np++) {
-
-//           for (size_t i = 0; i < colvars.size(); i++) {
-//             cv_values[i] = colvars[i]->bin_to_value_scalar (fe_ix[i]);
-//           }
-
-//           colvar_energy = 0.0;
-//           calc_hills (h_first, h_last, colvar_energy, cv_values);
-
-//           if (fe) {
-//             cvm::real const fe_here = -1.0*colvar_energy;
-//             if (fe_here < free_energy_minimum)
-//               free_energy_minimum = fe_here;
-//             // introduce the offset already, but the minimum is
-//             // calculated from the hill energy
-//             fe->set_value (fe_ix, fe_here - free_energy_offset);
-//             fe->incr (fe_ix);
-//           }
-
-//           if (fg) {
-
-//             for (size_t i = 0; i < colvars.size(); i++) {
-//               colvar_forces[i].reset();
-//               calc_hills_force (i, h_first, h_last, colvar_forces, cv_values);
-//               colvar_forces[i] *= -1.0;
-//               fg->set_value (fg_ix, colvar_forces[i].real_value, i);
-//             }
-//             fg->incr (fg_ix);
-//           }
-
-// #if defined (COLVARS_STANDALONE)
-//           std::cerr.setf (std::ios::fixed, std::ios::floatfield); 
-//           std::cerr << std::setw (6) << std::setprecision (2)
-//                     << 100.0 * double (np) / double (np_total)
-//                     << "% done.\r";
-// #endif
-//         }
-// #if defined (COLVARS_STANDALONE)
-//         std::cerr << "100.00% done.\n";
-// #endif
-
-//         if (shift_fes && fe) {
-//           fe_ix = fe->new_index();
-//           for ( ; fe->index_ok (fe_ix); fe->incr (fe_ix)) {
-//             fe->set_value (fe_ix, fe->value (fe_ix) - free_energy_minimum);
-//           }
-//         }
-
-
-//         if (bw || bc) {
-
-//           fe_ix = fe->new_index();
-//           if (bw) bw_ix = bw->new_index();
-//           if (bc) bc_ix = bc->new_index();
-
-//           for ( ; fe->index_ok (fe_ix); ) {
-
-//             cvm::real const fe_here = fe->value (fe_ix);
-
-//             cvm::real const boltzmann_weight = 
-//               boltzmann_weights_scale * 
-//               ( (fe_here > 0.0) ? 
-//                 ::exp (-1.0 * fe_here / 
-//                        (cvm::boltzmann() * boltzmann_weights_temp)) :
-//                 1.0 );
-
-//             if (bw) {
-//               bw->set_value (bw_ix, boltzmann_weight); 
-//               bw->incr (bw_ix);
-//             }
-
-//             if (bc) {
-//               bc->set_value (bc_ix, size_t (boltzmann_weight));
-//               bc->incr (bc_ix);
-//             }
-
-//             fe->incr (fe_ix);
-//           }
-//         }
-
-//         if (free_energy_file.size()) {
-//           std::ofstream os (free_energy_file.c_str());
-//           os.setf (std::ios::fixed, std::ios::floatfield);
-//           os << std::setw (cvm::cv_width) << std::setprecision (cvm::cv_prec);
-//           free_energy->write_multicol (os);
-//         }
-
-//         if (free_energy_gradients_file.size()) {
-//           std::ofstream os (free_energy_gradients_file.c_str());
-//           os.setf (std::ios::fixed, std::ios::floatfield);
-//           os << std::setw (cvm::cv_width) << std::setprecision (cvm::cv_prec);
-//           free_energy_gradients->write_multicol (os);
-//         }
-
-//         if (boltzmann_weights_file.size()) {
-//           std::ofstream os (boltzmann_weights_file.c_str());
-//           os.setf (std::ios::fixed, std::ios::floatfield);
-//           os << std::setw (cvm::cv_width) << std::setprecision (cvm::cv_prec);
-//           boltzmann_weights->write_multicol (os);
-//         }
-
-//         if (boltzmann_counts_file.size()) {
-//           std::ofstream os (boltzmann_counts_file.c_str());
-//           os.setf (std::ios::fixed, std::ios::floatfield);
-//           os << std::setw (cvm::cv_width) << std::setprecision (cvm::cv_prec);
-//           boltzmann_counts->write_multicol (os);
-//         }
-      
-//       } else {
-//         cvm::log ("Warning: no hills found within the requested interval.\n");
-//       }
-
-//     } // end of free energy plotting
-
-//   } // end of first-step analysis
-// }
