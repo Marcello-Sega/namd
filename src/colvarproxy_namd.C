@@ -55,7 +55,6 @@ colvarproxy_namd::colvarproxy_namd()
   // initiate the colvarmodule, this object will be the communication
   // proxy
   colvars = new colvarmodule (config->data, this);
-  colvars->dt = simparams->dt;
 
   if (cvm::debug()) {
     cvm::log ("colvars_atoms = "+cvm::to_str (colvars_atoms)+"\n");
@@ -171,15 +170,13 @@ void colvarproxy_namd::calculate()
   // call the collective variable module
   colvars->calc();
 
-  // NAMD does not properly destruct GlobalMaster objects at the end
-  // of the job
+  // NAMD does not destruct GlobalMaster objects, so we must remember
+  // to write all output files at the end of the run
   if (colvars->it >= (colvars->it_restart + simparams->N)) {
-    if (cvm::debug())
-      iout << "Info: Deallocating the colvar module object.\n" << endi;
-    colvars->finalise();
+    colvars->write_output_files();
   }
 
-  // increment the step number: XX TODO: syncronise with NAMD's counter?
+  // increment the step number: XX TODO: synchronise with NAMD's counter?
   (colvars->it)++;
 }
 
@@ -463,12 +460,17 @@ cvm::atom::atom (int const &atom_number)
 /// and is therefore optional when an AMBER topology is used
 cvm::atom::atom (cvm::residue_id const &residue,
                  std::string const     &atom_name,
-                 std::string const     &segment_id = "MAIN")
+                 std::string const     &segment_id)
 {
   AtomID const aid =
-    Node::Object()->molecule->get_atom_from_name (segment_id.c_str(),
-                                                  residue,
-                                                  atom_name.c_str());
+    (segment_id.size() ? 
+       Node::Object()->molecule->get_atom_from_name (segment_id.c_str(),
+                                                     residue,
+                                                     atom_name.c_str()) :
+     Node::Object()->molecule->get_atom_from_name ("MAIN",
+                                                   residue,
+                                                   atom_name.c_str()));
+    
 
   if (cvm::debug())
     cvm::log ("Adding atom \""+
