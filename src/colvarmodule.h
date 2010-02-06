@@ -1,12 +1,12 @@
 #ifndef COLVARMODULE_H
 #define COLVARMODULE_H
 
-#ifndef COLVARS_DEBUG
-#define COLVARS_DEBUG false
+#ifndef COLVARS_VERSION
+#define COLVARS_VERSION "20091218"
 #endif
 
-#ifndef COLVARS_VERSION
-#define COLVARS_VERSION "20090807"
+#ifndef COLVARS_DEBUG
+#define COLVARS_DEBUG false
 #endif
 
 /// \file colvarmodule.h 
@@ -106,9 +106,6 @@ public:
     return it;
   }
 
-  /// Time step of the MD integrator
-  static real dt;
-
   /// \brief Finite difference step size (if there is no dynamics, or
   /// if gradients need to be tested independently from the size of
   /// dt)
@@ -167,13 +164,16 @@ public:
   std::istream & read_restart (std::istream &is);
   /// Write the output restart file
   std::ostream & write_restart (std::ostream &os);
-  /// Deallocate memory and close files
-  void finalise();
+  /// Write all output files (called by the proxy)
+  void write_output_files();
 
   /// Perform analysis
   void analyse();
-  /// Read a collective variable trajectory for analysis
-  bool read_traj (char const *cv_traj_filename);
+  /// \brief Read a collective variable trajectory (post-processing
+  /// only, not called at runtime)
+  bool read_traj (char const *traj_filename,
+                  size_t      traj_read_begin,
+                  size_t      traj_read_end);
  
   /// Get the pointer of a colvar from its name (returns NULL if not found)
   static colvar * colvar_p (std::string const &name);
@@ -224,6 +224,9 @@ public:
 
   /// \brief Temperature of the simulation (K)
   static real temperature();
+
+  /// \brief Time step of MD integrator (fs)
+  static real dt();
   
   /// Print a message to the main log
   static void log (std::string const &message);
@@ -287,11 +290,6 @@ public:
   /// \brief True if only analysis is performed and not a run
   static bool   b_analysis;
 
-  /// Trajectory file name to analyze 
-  std::string   cv_traj_read_name;
-  /// Step numbers to analyse in the trajectory
-  size_t        cv_traj_read_begin, cv_traj_read_end;
-
   /// Frequency for saving output restarts
   static size_t restart_out_freq;
   /// Output restart file name
@@ -305,8 +303,14 @@ protected:
   /// Configuration file parser object
   colvarparse *parse;
 
+  /// Name of the trajectory file
+  std::string   cv_traj_name;
+
   /// Collective variables output trajectory file
   std::ofstream cv_traj_os;
+
+  /// Appending to the existing trajectory file?
+  bool          cv_traj_append;
 
   /// Output restart file
   std::ofstream restart_out_os;
@@ -392,6 +396,11 @@ inline cvm::real cvm::boltzmann()
 inline cvm::real cvm::temperature()
 {
   return proxy->temperature();
+}
+
+inline cvm::real cvm::dt()
+{
+  return proxy->dt();
 }
   
 inline void cvm::select_closest_image (atom_pos &pos,

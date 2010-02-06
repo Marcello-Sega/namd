@@ -23,11 +23,6 @@ colvarmodule::colvarmodule (char const  *config_filename,
   cvm::log ("Initializing the collective variables module, version "+
             cvm::to_str(COLVARS_VERSION)+".\n");
 
-#if (defined (COLVARS_STANDALONE) || defined (COLVARS_GMXTOOLS))
-  cvm::log ("Note: this version is not linked to a MD simulation program, "
-            "and can only be used to analyse data.\n");
-#endif
-
   // "it_restart" will be set by the input restart file, if any;
   // "it" should be updated by the proxy
   it = it_restart = 0;
@@ -50,10 +45,6 @@ colvarmodule::colvarmodule (char const  *config_filename,
 
   parse->get_keyval (conf, "analysis", b_analysis, false);
 
-#if defined (COLVARS_STANDALONE)
-  parse->get_keyval (conf, "timeStep", dt, 1.0);
-#endif
-
   if (cvm::debug())
     parse->get_keyval (conf, "debugGradientsStepSize", debug_gradients_step_size, 1.0e-03,
                        colvarparse::parse_silent);
@@ -67,9 +58,7 @@ colvarmodule::colvarmodule (char const  *config_filename,
                      proxy->restart_frequency());
 
   // by default overwrite the existing trajectory file
-  bool cv_traj_append;
-  parse->get_keyval (conf, "colvarsTrajAppend", cv_traj_append, false,
-                     colvarparse::parse_silent);
+  parse->get_keyval (conf, "colvarsTrajAppend", cv_traj_append, false);
 
   // input restart file
   restart_in_name = proxy->input_prefix().size() ?
@@ -86,38 +75,34 @@ colvarmodule::colvarmodule (char const  *config_filename,
 
   output_prefix = proxy->output_prefix();
 
-  std::string const cv_traj_name = 
+  cvm::log ("The final output state file will be \""+
+            (output_prefix.size() ?
+             std::string (output_prefix+".colvars.state") :
+             std::string ("colvars.state"))+"\".\n");
+
+  cv_traj_name = 
     (output_prefix.size() ?
      std::string (output_prefix+".colvars.traj") :
      std::string ("colvars.traj"));
   cvm::log ("The trajectory file will be \""+
             cv_traj_name+"\".\n");
 
-  cvm::log ("The final output state file will be \""+
-            (output_prefix.size() ?
-             std::string (output_prefix+".colvars.state") :
-             std::string ("colvars.state"))+"\".\n");
+  // open trajectory file
+  if (cv_traj_append) {
+    cvm::log ("Appending to colvar trajectory file \""+cv_traj_name+
+              "\".\n");
+    cv_traj_os.open (cv_traj_name.c_str(), std::ios::app);
+  } else {
+    proxy->backup_file (cv_traj_name.c_str());
+    cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
+  }
+  cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
 
   // parse the options for collective variables
   init_colvars (conf);
 
   // parse the options for biases
   init_biases (conf);
-
-#if defined (COLVARS_STANDALONE)
-  if (b_analysis) {
-    // parse the analysis options (if provided); this should stay after
-    // the initialization of the colvars and biases
-    cvm::log (cvm::line_marker);
-    // read the colvar trajectory from a file
-    parse->get_keyval (conf, "readTrajectory",
-                       cv_traj_read_name);
-    parse->get_keyval (conf, "readBegin",
-                       cv_traj_read_begin, 0);
-    parse->get_keyval (conf, "readEnd",
-                       cv_traj_read_end,   0);
-  }
-#endif
 
   // done with the parsing, check that all keywords are valid
   parse->check_keywords (conf, "colvarmodule");
@@ -137,28 +122,10 @@ colvarmodule::colvarmodule (char const  *config_filename,
     }
   }
 
-
-#if (!defined (COLVARS_STANDALONE) && !defined (COLVARS_GMXTOOLS))
   // check if it is possible to save output configuration
   if ((!output_prefix.size()) && (!restart_out_name.size())) {
     cvm::fatal_error ("Error: neither the final output state file or "
                       "the output restart file could be defined, exiting.\n");
-  }
-#endif
-
-  // open trajectory files
-  if (cv_traj_freq && !cvm::b_analysis) {
-
-    if (cvm::debug())
-      cvm::log ("Opening output file \""+cv_traj_name+"\".\n");
-
-    if (cv_traj_append) {
-      cv_traj_os.open (cv_traj_name.c_str(), std::ios::app);
-    } else {
-      proxy->backup_file (cv_traj_name.c_str());
-      cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
-    }
-    cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
   }
 
   cvm::log ("Collective variables module initialized.\n");
@@ -437,6 +404,21 @@ void colvarmodule::calc() {
     if (cvm::debug())
       cvm::log ("Writing trajectory file.\n");
 
+    // (re)open trajectory file
+    if (!cv_traj_os.good()) {
+      if (cv_traj_append) {
+        cvm::log ("Appending to colvar trajectory file \""+cv_traj_name+
+                  "\".\n");
+        cv_traj_os.open (cv_traj_name.c_str(), std::ios::app);
+      } else {
+        cvm::log ("Overwriting colvar trajectory file \""+cv_traj_name+
+                  "\".\n");
+        proxy->backup_file (cv_traj_name.c_str());
+        cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
+      }
+      cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
+    }
+
     // write labels in the traj file every 1000 lines
     cvm::increase_depth();
     if ((cvm::step_relative() % (cv_traj_freq * 1000)) == 0) {
@@ -479,7 +461,7 @@ void colvarmodule::calc() {
         cv_traj_os.flush();
       }
     }
-  }
+  } // end if (cv_traj_freq)
 }
 
 
@@ -515,32 +497,6 @@ void colvarmodule::analyse()
 
 colvarmodule::~colvarmodule()
 {
-  delete parse;
-  finalise();
-}  
-
-
-void colvarmodule::finalise()
-{
-  // close files and deallocate stuff
-
-#if (!defined (COLVARS_STANDALONE) && !defined (COLVARS_GMXTOOLS))
-  {
-    // if this is a regular run, data must be written to be able to
-    // restart the simulation
-    std::string const out_name =
-      (output_prefix.size() ?
-       std::string (output_prefix+".colvars.state") :
-       std::string ("colvars.state"));
-    cvm::log ("Saving collective variables state to \""+out_name+"\".\n");
-    proxy->backup_file (out_name.c_str());
-    std::ofstream out (out_name.c_str());
-    out.setf (std::ios::scientific, std::ios::floatfield);
-    this->write_restart (out);
-    out.close();
-  }
-#endif
-
   for (std::vector<colvar *>::iterator cvi = colvars.begin();
        cvi != colvars.end();
        cvi++) {
@@ -555,82 +511,97 @@ void colvarmodule::finalise()
   }
   biases.clear();
 
-  if (cv_traj_freq) {
+  if (cv_traj_os.good()) {
     cv_traj_os.close();
   }
+
+  delete parse;
+}  
+
+
+void colvarmodule::write_output_files()
+{
+  // if this is a simulation run (i.e. not a postprocessing), output data
+  // must be written to be able to restart the simulation
+  std::string const out_name =
+    (output_prefix.size() ?
+     std::string (output_prefix+".colvars.state") :
+     std::string ("colvars.state"));
+  cvm::log ("Saving collective variables state to \""+out_name+"\".\n");
+  proxy->backup_file (out_name.c_str());
+  std::ofstream out (out_name.c_str());
+  out.setf (std::ios::scientific, std::ios::floatfield);
+  this->write_restart (out);
+  out.close();
+
+  cv_traj_os.close();
 }
 
 
 
-bool colvarmodule::read_traj (char const *traj_filename)
+bool colvarmodule::read_traj (char const *traj_filename,
+                              size_t      traj_read_begin,
+                              size_t      traj_read_end)
 {
-  std::ifstream static *traj_s = NULL;
+  cvm::log ("Opening trajectory file \""+
+            std::string (traj_filename)+"\".\n");
+  std::ifstream traj_is (traj_filename);
 
-  if (!traj_s) {
-    cvm::log ("Opening trajectory file \""+
-              std::string (traj_filename)+"\".\n");
-    traj_s = new std::ifstream (traj_filename);
-  }
+  while (true) {
+    while (true) {
 
-  do {
+      std::string line ("");
 
-    std::string line ("");
-
-    do {
-      if (!colvarparse::getline_nocomments (*traj_s, line)) {
-        cvm::log ("End of file \""+std::string (traj_filename)+
-                  "\" reached.\n");
-        traj_s->close();
-        return false;
-      }
-    } while (line.find_first_not_of (colvarparse::white_space) == std::string::npos);
-
-    std::istringstream is (line);
-
-    if (!(is >> it)) return false;
-
-    if ( (it < cv_traj_read_begin) ) {
-
-#if defined (COLVARS_STANDALONE)
-      if ((it % 1000) == 0)
-        std::cerr << "Skipping trajectory step " << it
-                  << "                    \r";
-#endif  
-
-      continue;
-
-    } else { 
-
-#if defined (COLVARS_STANDALONE)
-      if ((it % 1000) == 0)
-        std::cerr << "Reading from trajectory, step = " << it
-                  << "                    \r";
-#endif  
-
-      if ( (cv_traj_read_end > cv_traj_read_begin) &&
-           (it > cv_traj_read_end) ) {
-#if defined (COLVARS_STANDALONE)
-        std::cerr << "\n";
-#endif  
-        cvm::log ("Reached the end of the trajectory, "
-                  "read_end = "+cvm::to_str (cv_traj_read_end)+"\n");
-        return false;
-      }
-
-      for (std::vector<colvar *>::iterator cvi = colvars.begin();
-           cvi != colvars.end();
-           cvi++) {
-        if (!(*cvi)->read_traj (is)) {
-          cvm::log ("Error: in reading colvar \""+(*cvi)->name+
-                    "\" from trajectory file \""+
-                    std::string (traj_filename)+"\".\n");
+      do {
+        if (!colvarparse::getline_nocomments (traj_is, line)) {
+          cvm::log ("End of file \""+std::string (traj_filename)+
+                    "\" reached, or corrupted file.\n");
+          traj_is.close();
           return false;
         }
-      }
+      } while (line.find_first_not_of (colvarparse::white_space) == std::string::npos);
 
-      break;
+      std::istringstream is (line);
+
+      if (!(is >> it)) return false;
+
+      if ( (it < traj_read_begin) ) {
+
+        if ((it % 1000) == 0)
+          std::cerr << "Skipping trajectory step " << it
+                    << "                    \r";
+
+        continue;
+
+      } else { 
+
+        if ((it % 1000) == 0)
+          std::cerr << "Reading from trajectory, step = " << it
+                    << "                    \r";
+
+        if ( (traj_read_end > traj_read_begin) &&
+             (it > traj_read_end) ) {
+          std::cerr << "\n";
+          cvm::log ("Reached the end of the trajectory, "
+                    "read_end = "+cvm::to_str (traj_read_end)+"\n");
+          return false;
+        }
+
+        for (std::vector<colvar *>::iterator cvi = colvars.begin();
+             cvi != colvars.end();
+             cvi++) {
+          if (!(*cvi)->read_traj (is)) {
+            cvm::log ("Error: in reading colvar \""+(*cvi)->name+
+                      "\" from trajectory file \""+
+                      std::string (traj_filename)+"\".\n");
+            return false;
+          }
+        }
+
+        break;
+      }
     }
-  } while (true);
+  }
 
   return true;
 }
@@ -641,7 +612,7 @@ std::ostream & colvarmodule::write_restart (std::ostream &os)
   os << "configuration {\n"
      << "  step " << std::setw (it_width)
      << it << "\n"
-     << "  dt " << dt << "\n"
+     << "  dt " << dt() << "\n"
      << "}\n\n";
 
   cvm::increase_depth();
@@ -704,7 +675,6 @@ colvarproxy              *colvarmodule::proxy = NULL;
 
 
 // static runtime data
-cvm::real colvarmodule::dt = 1.0;
 cvm::real colvarmodule::debug_gradients_step_size = 1.0e-03;
 size_t    colvarmodule::it = 0;
 size_t    colvarmodule::it_restart = 0;
@@ -971,7 +941,6 @@ void colvarmodule::rotation::calc_optimal_rotation
   lambda = L0;
   q = cvm::quaternion (Q0);
 
-#if (!defined (COLVARS_STANDALONE) && !defined (COLVARS_GMXTOOLS)) 
   if (q_old.norm2() > 0.0) {
     q.match (q_old);
     if (q_old.inner (q) < (1.0 - crossing_threshold)) {
@@ -979,7 +948,6 @@ void colvarmodule::rotation::calc_optimal_rotation
     }
   }
   q_old = q;
-#endif
                      
   if (cvm::debug()) {
     if (b_debug_gradients) {
