@@ -99,7 +99,7 @@ void cvm::atom_group::parse (std::string const &conf,
   }
 
   std::vector<std::string> psf_segids;
-  get_keyval (group_conf, "psfSegID", psf_segids, std::vector<std::string> (1, std::string("MAIN")), mode);
+  get_keyval (group_conf, "psfSegID", psf_segids, std::vector<std::string> (), mode);
   for (std::vector<std::string>::iterator psii = psf_segids.begin();
        psii < psf_segids.end(); psii++) {
 
@@ -122,7 +122,7 @@ void cvm::atom_group::parse (std::string const &conf,
                           "values of \"psfSegID\".\n");
       }
 
-      std::string const &psf_segid = *psii;
+      std::string const &psf_segid = psf_segids.size() ? *psii : std::string ("");
 
       if (range_conf.size()) {
         
@@ -147,7 +147,8 @@ void cvm::atom_group::parse (std::string const &conf,
                           range_conf+"\".\n");
       }
 
-      psii++;
+      if (psf_segid.size())
+        psii++;
     }
   }
 

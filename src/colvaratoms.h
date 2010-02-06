@@ -70,7 +70,7 @@ public:
   /// type of topologies, may not be required
   atom (cvm::residue_id const &residue,
         std::string const     &atom_name,
-        std::string const     &segment_id);
+        std::string const     &segment_id = std::string (""));
 
   /// Copy constructor
   atom (atom const &a);
