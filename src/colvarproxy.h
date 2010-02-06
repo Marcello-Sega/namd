@@ -26,6 +26,9 @@ public:
   /// \brief Temperature of the simulation (K)
   virtual cvm::real temperature() = 0;
 
+  /// \brief Time step of the simulation (fs)
+  virtual cvm::real dt() = 0;
+
   /// Print a message to the main log
   virtual void log (std::string const &message) = 0;
 

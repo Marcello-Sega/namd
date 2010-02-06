@@ -66,6 +66,11 @@ public:
     return thermostat_temperature;
   }
 
+  cvm::real dt()
+  {
+    return simparams->dt;
+  }
+
   inline std::string input_prefix()
   {
     return input_prefix_str;
