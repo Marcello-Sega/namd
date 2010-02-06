@@ -212,6 +212,9 @@ public:
   virtual cvm::real compare (colvarvalue const &x1,
                              colvarvalue const &x2) const;
 
+  /// \brief Wrapped value (for periodic/symmetric cvcs)
+  virtual void wrap (colvarvalue &x) const;
+
 protected:
 
   /// \brief Cached value
@@ -285,6 +288,10 @@ inline cvm::real colvar::cvc::compare (colvarvalue const &x1,
   }
 }
 
+inline void colvar::cvc::wrap (colvarvalue &x) const
+{
+  return;
+}
 
 
 /// \brief Colvar component: distance between the centers of mass of
@@ -640,6 +647,8 @@ public:
   /// Redefined to handle the 2*PI periodicity
   virtual cvm::real compare (colvarvalue const &x1,
                              colvarvalue const &x2) const;
+  /// Redefined to handle the 2*PI periodicity
+  virtual void wrap (colvarvalue &x) const;
 };
 
 
@@ -902,9 +911,8 @@ class colvar::rmsd
   : public colvar::orientation
 {
 protected:
-
   /// Sum of the squares of ref_coords
-  cvm::real                  ref_pos_sum2;
+  cvm::real ref_pos_sum2;
 
 public:
 
@@ -992,6 +1000,18 @@ inline cvm::real colvar::dihedral::compare (colvarvalue const &x1,
   return dist2_lgrad (x1, x2);
 }
 
+inline void colvar::dihedral::wrap (colvarvalue &x) const
+{
+  if (x.real_value >= 180.0) {
+    x.real_value -= 360.0;
+    return;
+  } 
+  if (x.real_value < -180.0) {
+    x.real_value += 360.0;
+    return;
+  } 
+  return;
+}
 
 // simple definitions of the distance functions; they are useful for
 // optimizing the calculation (the type check performed by the base
