@@ -201,3 +201,91 @@ set spawn_namd_command \
   [list beirut belfast] ]
 \end{verbatim}
 
+\subsection{Random acceleration molecular dynamics simulations}
+
+The "lib/ramd" directory stores the tcl scripts and the example files for the implementation of the Random Acceleration Molecular Dynamics (RAMD) simulation method in NAMD. 
+The RAMD method can be used to carry out molecular dynamics (MD) simulations with an additional randomly oriented acceleration applied to the center of mass of one group of atoms (referred below as "ligand") in the system. 
+It can, for example, be used to identify egress routes for a ligand from a buried protein binding site. 
+Since its original implementation in the ARGOS (ref 1, 2) program, the method has been also implemented in AMBER 8 (ref 3), and CHARMM (ref 4). 
+The first implementation of RAMD in NAMD using a tcl script (available as supplementary material in ref 6) provided only limited functionality compared to the AMBER 8 implementation. 
+
+In the current implementation, the RAMD method can be performed in 2 flavors: (i) "pure RAMD simulations" in which the randomly-oriented acceleration is applied continuously, and (ii) "combined RAMD-MD simulations" in which RAMD steps alternate with standard MD steps. 
+Additional information is found in the README file in the "lib/ramd" directory. 
+The user is encouraged to carefully read this information before starting production runs.
+
+The three required scripts are stored in "lib/ramd/scripts": (i) ramd--4.0.tcl defines the simulation parameters and passes them from the NAMD configuration file to the main script, (ii) "ramd--4.0\_script.tcl" adds the randomly oriented force and performs all related computations, and  (iii) "vectors.tcl" was borrowed from VMD and defines the vector operations used.
+
+Two examples for running the scripts are included in the directory "lib/ramd/examples".  
+The user is encouraged to read the "README.examples" file provided in the same directory.
+
+In order to turn RAMD on, the line "source /path/to/your/files/ramd--4.0.tcl" should be included in the NAMD configuration file. 
+Unless the user decides to store the scripts at a different location, the path 
+"/path/to/your/files" should point to the "lib/ramd/scripts" directory. 
+Otherwise, the user should make sure that the directory "/path/to/your/files" stores all three scripts described above. 
+
+The specific RAMD simulation parameters to be provided in the NAMD configuration file (listed below) should be preceded by the keyword "ramd". 
+The default values for these parameters are only given as guidance. 
+They are likely not to be suitable for other systems than those the scripts were tested on. 
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{ramd debugLevel}{ Set debug level of RAMD} {\tt integer value } {0} { Activates verbose output if set to an integer greater than 0. Should be used only for testing purposes because the very dense output is full of information only relevant for debugging.}
+
+\NAMDCONFWDEF{ramd mdStart}{ Start RAMD-MD with MD or RAMD?} {{\tt yes} or {\tt no}} {{\tt no}} { Specifies if combined RAMD-MD simulation starts with MD or RAMD steps; ignored if pure RAMD simulation is performed.  Should be set to "yes" if initial MD steps are desired.}
+
+\item
+\NAMDCONFWDEF{ramd ramdSteps} { Set number steps in RAMD block} {{\tt positive integer}} {{\tt 50}} {Specifies the number of steps in 1 RAMD block; the simulations are evaluated every 'ramdSteps' steps.} 
+ 
+\item
+\NAMDCONFWDEF{ramd mdSteps} { Set number steps in MD block} {{\tt positive integer}} {{\tt 0}} {Specifies the number of steps in 1 standard MD block; in combined RAMD-MD simulations, the RAMD blocks are evaluated every 'ramdSteps', the MD blocks every 'mdSteps' steps. Default of 0 gives pure RAMD simulation.}
+
+\item
+\NAMDCONFWDEF{ramd accel} {Set acceleration energy} {{\tt positive decimal}} {{\tt 0.25}} {Specifies acceleration in kcal/mol*A*amu to be applied during RAMD step.}
+
+\item
+\NAMDCONFWDEF{ramd rMinRamd} {Set threshold for distance traveled RAMD} {{\tt positive decimal}} {{\tt 0.01}} {Specifies a threshold value for the distance in Angstroms traveled by the ligand in 1 RAMD block. In pure RAMD simulations the direction of the acceleration is changed if the ligand traveled less than 'rMinRamd' \AA in the evaluated block. In combined RAMD-MD simulations, a switch from a RAMD block to a standard MD block is applied if the ligand traveled more than 'rMinRamd' \AA in the evaluated block.}
+
+\item
+\NAMDCONF{ramd rMinMd} {Set threshold for distance traveled in MD} {{\tt positive decimal}} {Specifies a threshold value for the distance, in Angstroms, traveled by accelerated atoms in 1 standard MD block.  In combined RAMD-MD simulations, a switch from a standard MD block to a RAMD block is applied according to the criteria described in the note below.  Required if 'mdStep' is not 0; ignored if 'mdSteps' is 0.}
+ 
+\item
+\NAMDCONFWDEF{ramd forceOutFreq}{Set frequency of RAMD forces output} {{\tt positive integer}, Must be divisor of both {\tt ramdSteps} and {\tt mdSteps}} {{\tt 0}} { Every 'forceOutFreq' steps, detailed output of forces will be written.} 
+
+\item
+\NAMDCONFWDEF{ramd maxDist} {Set center of mass separation} {{\tt positive decimal}} {{\tt 50}} { Specifies the distance in Angstroms between the the centers of mass of the ligand and the protein when the simulation is stopped.}
+ 
+\item
+\NAMDCONFWDEF{ramd firstProtAtom} {First index of protein atom} {{\tt positive integer}} {{\tt 1}} { Specifies the index of the first protein atom.}
+ 
+\item
+\NAMDCONF{ramd lastProtAtom} {Last index of protein atom} {{\tt positive atom}} { Specifies the index of the last protein atom. } 
+
+\item
+\NAMDCONF{ramd firstRamdAtom}{ First index of ligand atom } {{\tt positive integer}} {Specifies the index of the first ligand atom.}
+
+\item
+\NAMDCONF{ramd lastRamdAtom}{ Last index of ligand atom } {{\tt positive integer}} {Specifies the index of the last ligand atom. }
+
+\item
+\NAMDCONFWDEF{ramd ramdSeed}{Set RAMD seed} {{\tt positive integer}} {{\tt 14253}} {Specifies seed for the random number generator for generation of acceleration directions. Change this parameter if you wish to run different trajectories with identical parameters.}
+
+\end{itemize}
+
+Note: 
+In combined RAMD-MD simulations, RAMD blocks alternate with standard MD blocks ('ramdSteps' and 'mdSteps' input parameters). The switches between RAMD and MD blocks are decided based on the following parameters: (i) 'd' =  the distance between the protein and ligand centers of mass, (ii) 'dr' = the distance traveled by the ligand in 1 RAMD block, and (iii) 'dm' = the distance traveled by the ligand in 1 MD block. A switch from RAMD to MD is applied if 'dr' > 'rRamdMin'. A switch from MD to RAMD is applied if: (i) 'dm' < 'rMdMin' and 'd' > 0 (acceleration direction is kept from previous RAMD block), (ii) if 'dm' < 'rMdMin' and 'd' < 0 (acceleration direction is changed), (iii) if 'dm' > 'rMdMin' and 'd' < 0 (acceleration direction is changed). In all other case, a switch is not applied.
+ 
+%References:
+%Luedemann, S.K., Lounnas, V. and R. C. Wade. How do Substrates Enter and Products Exit the Buried Active Site of Cytochrome P450cam ? 1. Random Expulsion Molecular Dynamics Investigation of Ligand Access Channels and Mechanisms. J Mol Biol, 303:797-811 (2000). 
+%Winn,P., Luedemann, S.K., Gauges,R., Lounnas, V. and R. C. Wade. Comparison of the dynamics of substrate access channels in three cytochrome P450s reveals different opening mechanisms and a new functional role for a buried arginine PNAS, 99, 5361-5366 (2002). 
+%Schleinkofer, K., Sudarko, Winn,P., Luedemann, S.K. and R. C. Wade. Do mammalian cytochrome P450s show multiple ligand access pathways and ligand channelling? EMBO Reports, 6, 584-589 (2005).
+%Carlsson, P., Burendahl, S., Nilsson, L. Unbinding of retinoic acid from the retinoic acid receptor by random expulsion molecular dynamics. Biophys. J. 91, 3151-3161 (2006).
+%Wang, T., Duan, Y. Chromophore channeling in the G-protein coupled receptor rhodopsin. J. Am. Chem. Soc. 129, 6970-6971 (2007).
+%Vashisth, H., Abrams, C.F. Ligand escape pathways and (un)binding free energy calculations for the hexameric insulin-phenol complex. Biophys. J. 95, 4193-4204 (2008).
+%Perakyla, M. Ligand unbinding pathways from the vitamin D receptor studied by molecular dynamics simulations. 38, 185-198 (2009).doi:10.1007/s00249-008-0369-x 
+%Klvana, M. et al. Pathways and Mechanisms for Product Release in the Engineered Haloalkane Dehalogenases Explored Using Classical and Random Acceleration Molecular Dynamics Simulations  J. Mol. Biol. 392, 1339-1356 (2009).
+%Pavlova, M. et al. Redesigning dehalogenase access tunnels as a strategy for degrading an anthropogenic substrate Nature Chem. Biol. 5, 727-733 (2009).
+%Wang, T., Duan, Y. Ligand entry and exit pathways in the beta2-adrenergic receptor. J. Mol. Biol. 392, 1102-1115 (2009).
+
+
+
