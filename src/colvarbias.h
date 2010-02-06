@@ -89,22 +89,42 @@ protected:
   /// \brief Restraint force constant
   cvm::real force_k;
 
-  /// \brief Restraint force constant (target value)
-  cvm::real force_k_target;
+  /// \brief Moving target?
+  bool b_chg_centers;
 
-  /// \brief Number of steps required to reach the new force constant
-  size_t force_k_target_nsteps;
+  /// \brief Changing force constant?
+  bool b_chg_force_k;
+
+  /// \brief Restraint force constant (target value)
+  cvm::real target_force_k;
+
+  /// \brief Restraint force constant (starting value)
+  cvm::real starting_force_k;
 
   /// \brief New restraint centers
-  std::vector<colvarvalue> colvar_targets;
+  std::vector<colvarvalue> target_centers;
 
-  /// \brief Number of steps required to reach the new restraint
-  /// centers
-  size_t targets_nsteps;
+  /// \brief Amplitude of the restraint centers' increment at each step
+  /// (or stage) towards the new values (calculated from target_nsteps)
+  std::vector<cvm::real> centers_incr;
 
-  /// \brief Amplitude of the restraint centers' motion at each step
-  /// towards the new values (calculated from target_nsteps)
-  std::vector<cvm::real> target_steps;
+  /// \brief Exponent for varying the force constant
+  cvm::real force_k_exp;
+
+  /// \brief Number of steps required to reach the target force constant
+  /// or restraint centers
+  size_t target_nsteps;
+
+  /// \brief Number of stages over which to perform the change
+  /// If zero, perform a continuous change
+  size_t target_nstages;
+
+  /// \brief Number of current stage of the perturbation
+  size_t stage;
+  
+  /// \brief Intermediate quantity to compute the restraint free energy
+  /// (in TI, would be the accumulating FE derivative)
+  cvm::real restraint_FE;
 };
 
 

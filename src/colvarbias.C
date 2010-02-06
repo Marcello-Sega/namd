@@ -73,7 +73,7 @@ void colvarbias::communicate_forces()
 colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
                                           char const *key)
   : colvarbias (conf, key), 
-    force_k_target_nsteps (0), targets_nsteps (0)
+    target_nsteps (0)
 {
   get_keyval (conf, "forceConstant", force_k, 1.0);
   for (size_t i = 0; i < colvars.size(); i++) {
@@ -102,30 +102,45 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
     cvm::fatal_error ("Error: number of harmonic centers does not match "
                       "that of collective variables.\n");
 
-  //   colvar_targets.resize (colvars.size());
-  //   for (size_t i = 0; i < colvars.size(); i++) {
-  //     colvar_targets[i].type (colvars[i]->type());
-  //   }
-  colvar_targets = colvar_centers;
-  if (get_keyval (conf, "targets", colvar_targets, colvar_targets)) {
-
-    for (size_t i = 0; i < colvar_targets.size(); i++) {
-      colvar_targets[i].apply_constraints();
+  target_centers = colvar_centers;
+  if (get_keyval (conf, "targetCenters", target_centers, target_centers)) {
+    b_chg_centers = true;
+    for (size_t i = 0; i < target_centers.size(); i++) {
+      target_centers[i].apply_constraints();
     }
-
-    get_keyval (conf, "targetsNumSteps", targets_nsteps, 0);
-    if (!targets_nsteps)
-      cvm::fatal_error ("Error: the number of steps for moving "
-                        "the restraint centers must be non-zero.\n");
   } else {
-    colvar_targets.clear();
+    b_chg_centers = false;
+    target_centers.clear();
   }
 
-  if (get_keyval (conf, "forceConstantTarget", force_k_target, 0.0)) {
-    get_keyval (conf, "forceConstantTargetNumSteps", force_k_target_nsteps, 1000);
-    if (!force_k_target_nsteps)
-      cvm::fatal_error ("Error: the number of steps for changing "
-                        "the force constant must be non-zero.\n");
+  if (get_keyval (conf, "targetForceConstant", target_force_k, 0.0)) {
+    if (b_chg_centers)
+      cvm::fatal_error ("Error: cannot specify both targets and forceConstantTarget.\n");
+
+    starting_force_k = force_k;
+    b_chg_force_k = true;
+  } else {
+    b_chg_force_k = false;
+  }
+
+  target_nstages = 0;
+  if (b_chg_centers || b_chg_force_k) {
+    get_keyval (conf, "targetNumSteps", target_nsteps, 0);
+    if (!target_nsteps)
+      cvm::fatal_error ("Error: targetNumSteps must be non-zero.\n");
+
+    get_keyval (conf, "targetNumStages", target_nstages, 0);
+
+    if (target_nstages)
+      stage = 0;
+      restraint_FE = 0.0;
+
+    if (get_keyval (conf, "targetForceExponent", force_k_exp, 1.0)) {
+      if (! b_chg_force_k)
+        cvm::log ("Warning: not changing force constant: targetForceExponent will be ignored\n");
+      if (force_k_exp < 1.0)
+        cvm::fatal_error ("Error: targetForceExponent must be 1.0 or greater.\n");
+    }
   }
 
   if (cvm::debug())
@@ -154,35 +169,90 @@ void colvarbias_harmonic::update()
     cvm::log ("Current forces for the harmonic bias \""+
               this->name+"\": "+cvm::to_str (colvar_forces)+".\n");
 
-  if (targets_nsteps) {
+  if (b_chg_centers) {
 
-    if (!target_steps.size()) {
+    if (!centers_incr.size()) {
       // if this is the first calculation, calculate the advancement
-      // at each simulation step
-      target_steps.resize (colvars.size());
+      // at each simulation step (or stage, if applicable)
+      centers_incr.resize (colvars.size());
       for (size_t i = 0; i < colvars.size(); i++) {
-        target_steps[i] = (::sqrt (colvars[i]->dist2 (colvar_centers[i],
-                                                      colvar_targets[i]))) /
-          cvm::real (targets_nsteps - cvm::step_absolute());
+        centers_incr[i] = (::sqrt (colvars[i]->dist2 (colvar_centers[i],
+                                                      target_centers[i]))) /
+          cvm::real ( target_nstages ? target_nstages :
+                                      (target_nsteps - cvm::step_absolute()));
       }
       if (cvm::debug())
         cvm::log ("Center movements for the harmonic bias \""+
-                  this->name+"\": "+cvm::to_str (target_steps)+".\n");
+                  this->name+"\": "+cvm::to_str (centers_incr)+".\n");
     }
 
     if (cvm::debug())
       cvm::log ("Current centers for the harmonic bias \""+
                 this->name+"\": "+cvm::to_str (colvar_centers)+".\n");
 
-    if (cvm::step_absolute() < targets_nsteps) {
+    if (target_nstages) {
+      if (cvm::step_absolute() > 0
+            && (cvm::step_absolute() % target_nsteps) == 0
+            && stage <= target_nstages) {
+
+          // TODO: any per-stage calculation, e.g. free energy things
+          for (size_t i = 0; i < colvars.size(); i++) {
+            colvarvalue const d2grad =
+              colvars[i]->dist2_lgrad (colvar_centers[i],
+                                       target_centers[i]);
+            colvar_centers[i] += centers_incr[i] * (-1.0/d2grad.norm()) * d2grad;
+            colvar_centers[i].apply_constraints();
+          }
+          stage++;
+      }
+    } else if (cvm::step_absolute() < target_nsteps) {
       // move the restraint centers in the direction of the targets
+      // (slow growth)
       for (size_t i = 0; i < colvars.size(); i++) {
         colvarvalue const d2grad =
           colvars[i]->dist2_lgrad (colvar_centers[i],
-                                   colvar_targets[i]);
-        colvar_centers[i] += target_steps[i] * (-1.0/d2grad.norm()) * d2grad;
+                                   target_centers[i]);
+        colvar_centers[i] += centers_incr[i] * (-1.0/d2grad.norm()) * d2grad;
         colvar_centers[i].apply_constraints();
       }
+    }
+  }
+
+  if (b_chg_force_k) {
+    //if (cvm::debug())
+    //  cvm::log ("Current centers for the harmonic bias \""+
+    //            this->name+"\": "+cvm::to_str (colvar_centers)+".\n");
+
+    if (target_nstages) {
+      // coupling parameter, between zero and one
+      cvm::real lambda = cvm::real(stage) / cvm::real(target_nstages);
+
+      // Square distance for restraint energy calculation
+      cvm::real dist_sq = 0.0;
+      for (size_t i = 0; i < colvars.size(); i++) {
+        dist_sq += colvars[i]->dist2 (colvars[i]->value(), target_centers[i]);
+      }
+
+      // TI calculation: estimate free energy derivative
+      restraint_FE += 0.5 * force_k_exp * pow(lambda, force_k_exp - 1.0)
+        * (target_force_k - starting_force_k) * dist_sq;
+
+      if (cvm::step_absolute() % target_nsteps == 0 &&
+          cvm::step_absolute() > 0 &&
+          stage < target_nstages) {
+
+          cvm::log ("Lambda= " + cvm::to_str (lambda) + " dA/dLambda= "
+              + cvm::to_str (restraint_FE / cvm::real(target_nstages)));
+
+          restraint_FE = 0.0;
+          stage++;
+          force_k = starting_force_k + (target_force_k - starting_force_k)
+                    * pow (lambda, force_k_exp);
+      }
+    } else if (cvm::step_absolute() <= target_nsteps) {
+      // update force constant (slow growth)
+      force_k = starting_force_k + (target_force_k - starting_force_k)
+          * pow (cvm::real(cvm::step_absolute()) / cvm::real(target_nsteps), force_k_exp);
     }
   }
 
@@ -226,16 +296,22 @@ std::istream & colvarbias_harmonic::read_restart (std::istream &is)
                       "has no identifiers.\n");
   }
 
-  if (targets_nsteps) {
+  if (b_chg_centers) {
     cvm::log ("Reading the updated restraint centers from the restart.\n");
     if (!get_keyval (conf, "centers", colvar_centers))
-      cvm::fatal_error ("Error: restraint centers are missing in the restart.\n");
+      cvm::fatal_error ("Error: restraint centers are missing from the restart.\n");
   }
 
-  if (force_k_target_nsteps) {
+  if (b_chg_force_k) {
     cvm::log ("Reading the updated force constant from the restart.\n");
     if (!get_keyval (conf, "forceConstant", force_k))
-      cvm::fatal_error ("Error: force cosntant is missing in the restart.\n");
+      cvm::fatal_error ("Error: force constant is missing from the restart.\n");
+  }
+
+  if (target_nstages) {
+    cvm::log ("Reading current stage from the restart.\n");
+    if (!get_keyval (conf, "stage", stage))
+      cvm::fatal_error ("Error: current stage is missing from the restart.\n");
   }
 
   is >> brace;
@@ -256,7 +332,7 @@ std::ostream & colvarbias_harmonic::write_restart (std::ostream &os)
     //      << "    id " << this->id << "\n"
      << "    name " << this->name << "\n";
 
-  if (targets_nsteps) {
+  if (b_chg_centers) {
     os << "    centers ";
     for (size_t i = 0; i < colvars.size(); i++) {
       os << " " << colvar_centers[i];
@@ -264,10 +340,15 @@ std::ostream & colvarbias_harmonic::write_restart (std::ostream &os)
     os << "\n";
   }
 
-  if (force_k_target_nsteps) {
+  if (b_chg_force_k) {
     os << "    forceConstant "
        << std::setprecision (cvm::en_prec)
        << std::setw (cvm::en_width) << force_k << "\n";
+  }
+
+  if (target_nstages) {
+    os << "    stage " << std::setw (cvm::it_width)
+       << stage << "\n";
   }
 
   os << "  }\n"
