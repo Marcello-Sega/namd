@@ -49,20 +49,22 @@ colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
     // Request calculation of system force (which also checks for availability)
     colvars[i]->enable (colvar::task_system_force);
 
-    // request computation of Jacobian force
-    colvars[i]->enable (colvar::task_Jacobian_force);
+    if (!colvars[i]->tasks[colvar::task_extended_lagrangian]) {
+      // request computation of Jacobian force
+      colvars[i]->enable (colvar::task_Jacobian_force);
 
-    // request Jacobian force as part as system force
-    // except if the user explicitly requires the "silent" Jacobian
-    // correction AND the colvar has a single component
-    if (hide_Jacobian) {
-      if (colvars[i]->n_components() > 1) {
-        cvm::log ("WARNING: colvar \"" + colvars[i]->name
-        + "\" has multiple components; reporting its Jacobian forces\n");
+      // request Jacobian force as part as system force
+      // except if the user explicitly requires the "silent" Jacobian
+      // correction AND the colvar has a single component
+      if (hide_Jacobian) {
+        if (colvars[i]->n_components() > 1) {
+          cvm::log ("WARNING: colvar \"" + colvars[i]->name
+          + "\" has multiple components; reporting its Jacobian forces\n");
+          colvars[i]->enable (colvar::task_report_Jacobian_force);
+        }
+      } else {
         colvars[i]->enable (colvar::task_report_Jacobian_force);
       }
-    } else {
-      colvars[i]->enable (colvar::task_report_Jacobian_force);
     }
 
     // Here we could check for orthogonality of the Cartesian coordinates
