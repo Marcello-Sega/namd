@@ -32,7 +32,7 @@ colvar::colvar (std::string const &conf)
 
   // read the configuration and set up corresponding instances, for
   // each type of forcepar implemented
-#define initialize_forcepars(def_desc,def_config_key,def_class_name)    \
+#define initialize_components(def_desc,def_config_key,def_class_name)   \
   {                                                                     \
     size_t def_count = 0;                                               \
     std::string def_conf = "";                                          \
@@ -71,38 +71,38 @@ colvar::colvar (std::string const &conf)
   }
 
 
-  initialize_forcepars ("distance",         "distance",       distance);
-  //   initialize_forcepars ("distance vector",  "distanceVec",    distance_vec);
-  initialize_forcepars ("distance vector "
-                        "direction",        "distanceDir",    distance_dir);
-  initialize_forcepars ("distance projection "
-                        "on an axis",       "distanceZ",      distance_z);
-  initialize_forcepars ("distance projection "
-                        "on a plane",       "distanceXY",     distance_xy);
-  initialize_forcepars ("minimum distance", "minDistance",    min_distance);
+  initialize_components ("distance",         "distance",       distance);
+  //   initialize_components ("distance vector",  "distanceVec",    distance_vec);
+  initialize_components ("distance vector "
+                         "direction",        "distanceDir",    distance_dir);
+  initialize_components ("distance projection "
+                         "on an axis",       "distanceZ",      distance_z);
+  initialize_components ("distance projection "
+                         "on a plane",       "distanceXY",     distance_xy);
+  initialize_components ("minimum distance", "minDistance",    min_distance);
 
-  initialize_forcepars ("coordination "
-                        "number",           "coordnum",       coordnum);
+  initialize_components ("coordination "
+                         "number",           "coordnum",       coordnum);
 
-  initialize_forcepars ("angle",            "angle",          angle);
-  initialize_forcepars ("dihedral",         "dihedral",       dihedral);
+  initialize_components ("angle",            "angle",          angle);
+  initialize_components ("dihedral",         "dihedral",       dihedral);
 
-  initialize_forcepars ("hydrogen bond",    "hBond",          h_bond);
+  initialize_components ("hydrogen bond",    "hBond",          h_bond);
 
-  initialize_forcepars ("alpha helix",      "alphaDihedrals", alpha_dihedrals);
-  initialize_forcepars ("alpha helix",      "alpha",          alpha_angles);
+  initialize_components ("alpha helix",      "alphaDihedrals", alpha_dihedrals);
+  initialize_components ("alpha helix",      "alpha",          alpha_angles);
 
-  initialize_forcepars ("orientation",      "orientation",    orientation);
-  initialize_forcepars ("orientation "
-                        "angle",            "orientationAngle",orientation_angle);
+  initialize_components ("orientation",      "orientation",    orientation);
+  initialize_components ("orientation "
+                         "angle",            "orientationAngle",orientation_angle);
 
-  initialize_forcepars ("RMSD",             "rmsd",           rmsd);
+  initialize_components ("RMSD",             "rmsd",           rmsd);
 
-  initialize_forcepars ("logarithm of MSD", "logmsd",         logmsd);
+  initialize_components ("logarithm of MSD", "logmsd",         logmsd);
 
-  initialize_forcepars ("radius of "
-                        "gyration",         "gyration",       gyration);
-  initialize_forcepars ("eigenvector",      "eigenvector",    eigenvector);
+  initialize_components ("radius of "
+                         "gyration",         "gyration",       gyration);
+  initialize_components ("eigenvector",      "eigenvector",    eigenvector);
 
   if (!cvcs.size())
     cvm::fatal_error ("Error: no valid components were provided "
@@ -260,23 +260,18 @@ colvar::colvar (std::string const &conf)
       vr.type (this->type());
       fr.type (this->type());
 
-      get_keyval (conf, "extendedForceConstant", ext_force_k, 1.0);
-      if (ext_force_k <= 0.0)
-        cvm::fatal_error ("Error: \"extended_force_constant\" must be positive.\n");
+      get_keyval (conf, "extendedFluctuation", ext_tolerance, 0.2*width);
+      if (ext_tolerance <= 0.0)
+        cvm::fatal_error ("Error: \"extendedFluctuation\" must be positive.\n");
+      ext_force_k = cvm::boltzmann() * cvm::temperature() / (ext_tolerance * ext_tolerance);
 
-      get_keyval (conf, "extendedFictitiousMass",   ext_mass, 1.0);
-      if (ext_mass <= 0.0)
-        cvm::fatal_error ("Error: \"extended_fictitious_mass\" must be positive.\n");
+      get_keyval (conf, "extendedTimeConstant", ext_period, 50.0 * cvm::dt());
+      if (ext_period <= 0.0)
+        cvm::fatal_error ("Error: \"extendedTimeConstant\" must be positive.\n");
+      ext_mass = (cvm::boltzmann() * cvm::temperature() * ext_period * ext_period)
+                 / (4.0 * PI * PI * ext_tolerance * ext_tolerance);
     }
   }
-
-  //{
-  //  bool b_jacobian_force;
-  //  get_keyval (conf, "JacobianForce", b_jacobian_force, false);
-  //  if (b_jacobian_force) {
-  //    enable (task_Jacobian_force);
-  //  }
-  //}
 
   {
     bool b_output_value;
@@ -415,23 +410,26 @@ void colvar::enable (colvar::task const &t)
     break;
 
   case task_Jacobian_force:
-    enable (task_gradients);
+    // checks below do not apply to extended-system colvars
+    if ( !tasks[task_extended_lagrangian] ) {
+      enable (task_gradients);
 
-    if (!b_Jacobian_force) 
-      cvm::fatal_error ("Error: colvar \""+this->name+
-                        "\" does not have Jacobian forces implemented.\n");
-    if (!b_linear) 
-      cvm::fatal_error ("Error: colvar \""+this->name+
-                        "\" must be defined as a linear superposition "
-                        "to calculate the Jacobian force.\n");
-    if (cvm::debug())
-      cvm::log ("Enabling calculation of the Jacobian force "
-                "on this colvar.\n");
+      if (!b_Jacobian_force) 
+        cvm::fatal_error ("Error: colvar \""+this->name+
+                          "\" does not have Jacobian forces implemented.\n");
+      if (!b_linear) 
+        cvm::fatal_error ("Error: colvar \""+this->name+
+                          "\" must be defined as a linear superposition "
+                          "to calculate the Jacobian force.\n");
+      if (cvm::debug())
+        cvm::log ("Enabling calculation of the Jacobian force "
+                  "on this colvar.\n");
+    }
     fj.type (this->type());
     break;
 
   case task_system_force:
-    if (!b_inverse_gradients)
+    if (!tasks[task_extended_lagrangian] && !b_inverse_gradients)
       cvm::fatal_error ("Error: one or more of the components of "
                         "colvar \""+this->name+
                         "\" is unable to calculate system forces.\n");
@@ -621,22 +619,25 @@ void colvar::calc()
     }
   }
 
-  if (tasks[task_system_force] && (cvm::step_relative() > 0)) {
-    // get from the cvcs the system forces from the PREVIOUS step
+  if (tasks[task_system_force]) {
     ft.reset();
-    for (size_t i = 0; i < cvcs.size(); i++) {
-      (cvcs[i])->calc_force_invgrads();
-      // linear superposition is assumed
-      cvm::increase_depth();
-      ft += (cvcs[i])->system_force() / ((cvcs[i])->sup_coeff * cvm::real (cvcs.size()));
-      cvm::decrease_depth();
-    }
-  }
 
-  if (tasks[task_report_Jacobian_force]) {
-    // add the Jacobian force to the system force, and don't apply the
-    // correction internally: biases such as colvarbias_abf will handle it
-    ft += fj;
+    if(!tasks[task_extended_lagrangian] && (cvm::step_relative() > 0)) {
+      // get from the cvcs the system forces from the PREVIOUS step
+      for (size_t i = 0; i < cvcs.size(); i++) {
+        (cvcs[i])->calc_force_invgrads();
+        // linear superposition is assumed
+        cvm::increase_depth();
+        ft += (cvcs[i])->system_force() / ((cvcs[i])->sup_coeff * cvm::real (cvcs.size()));
+        cvm::decrease_depth();
+      }
+    }
+
+    if (tasks[task_report_Jacobian_force]) {
+      // add the Jacobian force to the system force, and don't apply any silent
+      // correction internally: biases such as colvarbias_abf will handle it
+      ft += fj;
+    }
   }
 
   if (tasks[task_fdiff_velocity]) {
@@ -660,9 +661,10 @@ void colvar::calc()
     // report the restraint center as "value"
     x_reported = xr;
     v_reported = vr;
-    // the "system force" with the extended lagrangian is just the
-    // harmonic term
-    ft_reported = fr;
+    // the "system force" with the extended Lagrangian is just the
+    // harmonic term acting on the extended coordinate
+    // Note: this is the force for current timestep
+    ft_reported = (-0.5 * ext_force_k) * this->dist2_lgrad (xr, x);
 
   } else {
 
@@ -742,8 +744,8 @@ void colvar::update()
     }
     fj *= cvm::boltzmann() * cvm::temperature();
 
-    // the Jacobian force has not been added to the system force, so
-    // it's now subtracted from the applied force
+    // the instantaneous Jacobian force was not included in the reported system force;
+    // instead, it is subtracted from the applied force (silent Jacobian correction) 
     if (! tasks[task_report_Jacobian_force]) 
       f -= fj;
   }
@@ -751,19 +753,21 @@ void colvar::update()
 
   if (tasks[task_extended_lagrangian]) {
 
-    // the total force is applied on the fictitious mass, while the
+    cvm::real dt = cvm::dt();
+
+    // the total force is applied to the fictitious mass, while the
     // atoms only feel the harmonic force
     fr   = f;
     fr  += (-0.5 * ext_force_k) * this->dist2_lgrad (xr, x);
     f    = (-0.5 * ext_force_k) * this->dist2_rgrad (xr, x);
 
     // leap frog
-    vr  += (0.5 * cvm::dt) * fr / ext_mass;
-    xr  += cvm::dt * vr;
-    // if the colvarvalue is set to a type with constraints, apply
-    // them
+    vr  += (0.5 * dt) * fr / ext_mass;
+    xr  += dt * vr;
+    // if the colvarvalue is set to a type with constraints, apply them
     xr.apply_constraints();
-    vr  += (0.5 * cvm::dt) * fr / ext_mass; 
+    this->wrap (xr);
+    vr  += (0.5 * dt) * fr / ext_mass; 
   }
 
 
@@ -868,6 +872,11 @@ cvm::real colvar::compare (colvarvalue const &x1,
   return (cvcs[0])->compare (x1, x2);
 }
 
+void colvar::wrap (colvarvalue &x) const
+{
+  (cvcs[0])->wrap (x);
+  return;
+}
 
 
 // ******************** INPUT FUNCTIONS ********************
