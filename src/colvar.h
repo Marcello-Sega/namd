@@ -182,8 +182,8 @@ protected:
     // using the gradient of the square distance to calculate the
     // velocity (non-scalar variables automatically taken into
     // account)
-    return ( ( (cvm::dt > 0.0) ? (1.0/cvm::dt) : 1.0 ) *
-             0.5 * dist2_lgrad (xnew, xold) );
+    cvm::real dt = cvm::dt();
+    return ( ( (dt > 0.0) ? (1.0/dt) : 1.0 ) * 0.5 * dist2_lgrad (xnew, xold) );
   }
 
   /// Cached reported velocity
@@ -198,6 +198,11 @@ protected:
   cvm::real ext_mass;
   /// Restraint force constant
   cvm::real ext_force_k;
+  /// Restraint time scale (period)
+  cvm::real ext_period;
+  /// Restraint tolerance (fluctuation width)
+  cvm::real ext_tolerance;
+  
   /// \brief Harmonic restraint force
   colvarvalue fr;
 
@@ -347,7 +352,11 @@ public:
   cvm::real compare (colvarvalue const &x1,
                      colvarvalue const &x2) const;
 
-
+  /// \brief Use the internal metrics (as from \link cvc
+  /// \endlink objects) to wrap a value into a standard interval
+  ///
+  /// Handles correctly symmetries and periodic boundary conditions
+  void wrap (colvarvalue &x) const;
 
 
   /// Read the analysis tasks
