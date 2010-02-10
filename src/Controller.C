@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: dhardy $
- * $Date: 2010/01/20 04:33:30 $
- * $Revision: 1.1243 $
+ * $Author: jim $
+ * $Date: 2010/02/10 19:47:21 $
+ * $Revision: 1.1244 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -482,11 +482,14 @@ void Controller::minimize() {
     if ( initstep < 1.0e-300 ) initstep = 1.0e-300;
     iout << "LINE MINIMIZER REDUCING GRADIENT FROM " <<
             fabs(min_f_dot_v) << " TO " << tol << "\n" << endi;
+    int start_with_huge = last.noGradient;
     x = initstep;
     x *= sqrt( min_f_dot_f / min_v_dot_v ); MOVETO(x)
-    while ( min_huge_count ) {
-      x *= 0.25;  MOVETO(x);
-      initstep *= 0.25;
+    if ( ! start_with_huge ) {
+      for ( int i_huge = 0; last.noGradient && i_huge < 10; ++i_huge ) {
+        x *= 0.25;  MOVETO(x);
+        initstep *= 0.25;
+      }
     }
     // bracket minimum on line
     initstep *= 0.25;
