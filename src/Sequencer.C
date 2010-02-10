@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2010/02/10 20:14:09 $
- * $Revision: 1.1179 $
+ * $Date: 2010/02/10 20:56:03 $
+ * $Revision: 1.1180 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -529,11 +529,9 @@ void Sequencer::minimizeMoveDownhill() {
     Force f = f1[i] + f2[i] + f3[i];
     if ( f.length2() > FMAX2 ) {
       a[i].position += ( 0.1 * f.unit() );
-      if ( a[i].hydrogenGroupSize ) {
-        while ( ! a[++i].hydrogenGroupSize ) {
-          a[i].position += ( 0.1 * f.unit() );
-        }
-        --i;
+      int hgs = a[i].hydrogenGroupSize;  // 0 if not parent
+      for ( int j=1; j<hgs; ++j ) {
+        a[++i].position += ( 0.1 * f.unit() );
       }
     }
   }
