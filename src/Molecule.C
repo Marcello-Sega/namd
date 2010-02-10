@@ -8513,7 +8513,7 @@ void Molecule::build_atom_status(void) {
     #endif
   }
   // DRUDE: verify number of LPs
-  if (numLonepairs != numLphosts) {
+  if (simParams->drudeOn && numLonepairs != numLphosts) {
     NAMD_die("must have same number of LP hosts as lone pairs");
   }
   // DRUDE
