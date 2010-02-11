@@ -40,7 +40,7 @@ protected:
 
     void submitReductions(int);
     void submitHalfstep(int);
-    void submitMinimizeReductions(int);
+    void submitMinimizeReductions(int, BigReal fmax2);
     void submitCollections(int step, int zeroVel = 0);
 
     void submitMomentum(int step);
@@ -64,7 +64,7 @@ protected:
     void addRotDragToPosition(BigReal);
     void addMovDragToPosition(BigReal);
 
-    void minimizeMoveDownhill();
+    void minimizeMoveDownhill(BigReal fmax2);
     void newMinimizeDirection(BigReal);
     void newMinimizePosition(BigReal);
     void quenchVelocities();
