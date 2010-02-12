@@ -283,7 +283,6 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
                                      computeNonbondedWorkArrays,
                                      map->partition(i),map->partition(i)+1,
                                      map->numPartitions(i)); // unknown delete
-        ++numNonbondedSelf;
         map->registerCompute(i,c);
         c->initialize();
         break;
@@ -296,7 +295,6 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
                                      computeNonbondedWorkArrays,
                                      map->partition(i),map->partition(i)+1,
                                      map->numPartitions(i)); // unknown delete
-        ++numNonbondedPair;
         map->registerCompute(i,c);
         c->initialize();
         break;
@@ -637,8 +635,6 @@ ComputeMgr::createComputes(ComputeMap *map)
     SimParameters *simParams = node->simParameters;
     int myNode = node->myid();
 
-    numNonbondedSelf = 0;
-    numNonbondedPair = 0;
     ComputeNonbondedUtil::select();
 
     if ( simParams->globalForcesOn && !myNode )

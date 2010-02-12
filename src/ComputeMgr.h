@@ -84,8 +84,6 @@ public:
   
 private:
   void createCompute(ComputeID, ComputeMap *);
-  int numNonbondedSelf;
-  int numNonbondedPair;
 
   GlobalMasterServer *masterServerObject; /* master part of global computes */
   ComputeDPME *computeDPMEObject;
@@ -101,38 +99,6 @@ private:
   CkGroupID updateComputesReturnChareID;
 
   int *computeFlag;
-
-  class ComputeElem {
-  public:
-    ComputeID   cid;
-    Compute *c;
-
-    int operator<(ComputeElem e) { return (cid < e.cid); }
-    int operator==(ComputeElem e) { return (cid == e.cid); }
-
-    ComputeElem(ComputeID id=-1, Compute *compute=NULL) : 
-      cid(id), c(compute) {};
-    ~ComputeElem() { };
-    ComputeElem& operator=(const ComputeElem &e) { 
-      cid = e.cid; c = e.c;  // Do not delete c!  This op only used to shuffle
-                             // we delete the c here only when the Compute is 
-		             // moved off!
-      return(*this);
-    };
-  };
-
-  int numComputes;
-
-  typedef ResizeArray<ComputeElem> ComputeList;
-  typedef ResizeArray<int> ComputeIndex;
-
-  // global patch number to local patch table conversion table
-  ComputeIndex computeIndex;
-
-  // an array of compute pointers residing on this node
-  ComputeList computeList;
-
-  int workDistribGroup;
 };
 
 #endif /* COMPUTEMGR_H */
