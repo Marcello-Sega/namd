@@ -46,6 +46,8 @@ void TholeElem::computeForce(BigReal *reduction,
                << localIndex[3] << std::endl);
 
 #ifdef CALCULATE_THOLE_CORRECTION
+  if ( ! p[0]->p->flags.doNonbonded ) return;
+
   const BigReal aa = value->aa;
   const BigReal qq = value->qq;
 
@@ -114,10 +116,10 @@ void TholeElem::computeForce(BigReal *reduction,
   Vector fda = -dfda * rda;
   Vector fdd = -dfdd * rdd;
 
-  p[0]->f[localIndex[0]] += faa + fad;
-  p[1]->f[localIndex[1]] += fda + fdd;
-  p[2]->f[localIndex[2]] -= faa + fda;
-  p[3]->f[localIndex[3]] -= fad + fdd;
+  p[0]->r->f[Results::nbond][localIndex[0]] += faa + fad;
+  p[1]->r->f[Results::nbond][localIndex[1]] += fda + fdd;
+  p[2]->r->f[Results::nbond][localIndex[2]] -= faa + fda;
+  p[3]->r->f[Results::nbond][localIndex[3]] -= fad + fdd;
 
   DebugM(3, "::computeForce() -- ending with delta energy " << ethole
       << std::endl);
