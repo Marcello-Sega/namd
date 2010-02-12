@@ -41,6 +41,9 @@ void ExclElem::getParameterPointers(Parameters *p, const int **v) {
 void ExclElem::computeForce(BigReal *reduction, 
                             BigReal *pressureProfileData)
 {
+    const Flags &flags = p[0]->p->flags;
+    if ( ! flags.doNonbonded ) return;
+
     const CompAtom &p_i = p[0]->x[localIndex[0]];
     const CompAtom &p_j = p[1]->x[localIndex[1]];
 
@@ -62,7 +65,7 @@ void ExclElem::computeForce(BigReal *reduction,
 
     BigReal diffa = r2 - r2_table[table_i];
 
-    const int doFull = p[0]->p->flags.doFullElectrostatics;
+    const int doFull = flags.doFullElectrostatics;
 
     BigReal fast_a, fast_b, fast_c, fast_d;
     BigReal slow_a, slow_b, slow_c, slow_d;

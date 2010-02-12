@@ -604,7 +604,18 @@ struct cr_sortop {
 
 void ComputeNonbondedCUDA::doWork() {
 
-// CkPrintf("Pe %d doWork %d\n", CkMyPe(), workStarted);
+  // Skip computations if nothing to do.
+  if ( ! patchRecords[0].p->flags.doNonbonded ) {
+    for ( int i=0; i<activePatches.size(); ++i ) {
+      patch_record &pr = patchRecords[activePatches[i]];
+      CompAtom *x = pr.positionBox->open();
+      Results *r = pr.forceBox->open();
+      pr.positionBox->close(&x);
+      pr.forceBox->close(&r);
+    }
+    reduction->submit();
+    return;
+  }
 
   if ( workStarted ) {
     if ( finishWork() ) {  // finished
