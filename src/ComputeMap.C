@@ -18,12 +18,14 @@
 //#define DEBUGM
 #include "Debug.h"
 
+ComputeMap* ComputeMap::instance;
+
 // Singleton method
 ComputeMap *ComputeMap::Instance() {
-  if (CkpvAccess(ComputeMap_instance) == 0) {
-    CkpvAccess(ComputeMap_instance) = new ComputeMap;	// this is never deleted
+  if (instance == 0) {
+    instance = new ComputeMap;	// this is never deleted
   }
-  return CkpvAccess(ComputeMap_instance);
+  return instance;
 }
 
 
@@ -258,7 +260,6 @@ void ComputeMap::newPid(ComputeID cid, PatchID pid, int trans)
 //----------------------------------------------------------------------
 void ComputeMap::printComputeMap(void)
 {
-  iout << iINFO << "CREATING " << nComputes << " COMPUTE OBJECTS\n" << endi;
   DebugM(2,"---------------------------------------");
   DebugM(2,"---------------------------------------\n");
 

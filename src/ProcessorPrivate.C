@@ -19,7 +19,6 @@ CkpvDeclare(BroadcastMgr*, BroadcastMgr_instance);
 CkpvDeclare(CollectionMaster*, CollectionMaster_instance);
 CkpvDeclare(CollectionMasterHandler*, CollectionMasterHandler_instance);
 CkpvDeclare(CollectionMgr*, CollectionMgr_instance);
-CkpvDeclare(ComputeMap*, ComputeMap_instance);
 CkpvDeclare(LdbCoordinator*, LdbCoordinator_instance);
 CkpvDeclare(Node*, Node_instance);
 CkpvDeclare(PatchMap*, PatchMap_instance);
@@ -55,8 +54,6 @@ void ProcessorPrivateInit(void)
   CkpvAccess(CollectionMasterHandler_instance) = 0;
   CkpvInitialize(CollectionMgr*, CollectionMgr_instance);
   CkpvAccess(CollectionMgr_instance) = 0;
-  CkpvInitialize(ComputeMap*, ComputeMap_instance);
-  CkpvAccess(ComputeMap_instance) = 0;
   CkpvInitialize(LdbCoordinator*, LdbCoordinator_instance);
   CkpvAccess(LdbCoordinator_instance) = 0;
   CkpvInitialize(Node*, Node_instance);

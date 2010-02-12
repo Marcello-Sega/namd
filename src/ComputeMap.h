@@ -66,7 +66,7 @@ class ComputeMap
 {
 public:
   static ComputeMap *Instance();
-  inline static ComputeMap *Object() { return CkpvAccess(ComputeMap_instance); }
+  inline static ComputeMap *Object() { return instance; }
 
   void checkMap();
 
@@ -74,7 +74,6 @@ public:
 
   void registerCompute(ComputeID cid, Compute *c) {
     computeData[cid].compute = c;
-    computeData[cid].moveToNode = -1;
   }
 
   // numComputes() returns the number of compute objects known
@@ -190,6 +189,8 @@ private:
   int nComputes;
   ResizeArray<ComputeData> computeData;
   ObjectArena<PatchRec> *patchArena;
+
+  static ComputeMap *instance;
 };
 
 #endif /* COMPUTEMAP_H */

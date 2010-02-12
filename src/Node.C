@@ -136,7 +136,7 @@ Node::Node(GroupInitMsg *msg)
   DebugM(4,"Creating PatchMap, AtomMap, ComputeMap\n");
   patchMap = PatchMap::Instance();
   atomMap = AtomMap::Instance();
-  computeMap = ComputeMap::Instance();
+  if ( CkMyRank() == 0 ) ComputeMap::Instance();
 
   DebugM(4,"Binding to BOC's\n");
   CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
@@ -207,6 +207,8 @@ void Node::startup() {
     #ifdef CHARMIZE_NAMD
     populateAtomDisArrs(startupPhase);
     #endif
+
+    computeMap = ComputeMap::Object();
 
     namdOneCommInit(); // Namd1.X style
   break;
@@ -296,7 +298,7 @@ void Node::startup() {
       
       workDistrib->assignNodeToPatch();
       workDistrib->mapComputes();
-      ComputeMap::Object()->printComputeMap();
+      // ComputeMap::Object()->printComputeMap();
 
       registerUserEventsForAllComputeObjs();
 
@@ -369,7 +371,8 @@ void Node::startup() {
 
   case 7:
     if (!CkMyPe()) {
-      ComputeMap::Object()->printComputeMap();
+      iout << iINFO << "CREATING " << ComputeMap::Object()->numComputes()
+           << " COMPUTE OBJECTS\n" << endi;
     }
     Sync::Object()->openSync();  // decide if to open local Sync 
     if (proxySendSpanning || proxyRecvSpanning )

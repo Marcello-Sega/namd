@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2010/02/05 19:52:52 $
- * $Revision: 1.1201 $
+ * $Date: 2010/02/12 21:16:17 $
+ * $Revision: 1.1202 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -96,9 +96,6 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
 
   int i;
   int nc = computeMap->numComputes();
-  for (i=0; i<nc; i++) {
-    DebugM(3, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << "\n");
-  }
   
   ComputeMapChangeMsg *mapMsg = new (nc, 0) ComputeMapChangeMsg ;
 
@@ -111,21 +108,17 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
 
 void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
   
-  ComputeMap *computeMap = ComputeMap::Object();
-  int i;
-  for(i=0; i<computeMap->numComputes(); i++)
-    computeMap->setNewNode(i,msg->newNodes[i]);
+  if ( ! CkMyRank() ) {
+    ComputeMap *computeMap = ComputeMap::Object();
+    int i;
+    for(i=0; i<computeMap->numComputes(); i++)
+      computeMap->setNewNode(i,msg->newNodes[i]);
+  }
 
   delete msg;
 
   CProxy_WorkDistrib workProxy(thisgroup);
   workProxy[0].doneSaveComputeMap();
-
-  DebugM(2, "ComputeMap after send!\n");
-  for (i=0; i<computeMap->numComputes(); i++) {
-    DebugM(2, "ComputeMap (" << i << ") node = " << computeMap->node(i) << " newNode = " << computeMap->newNode(i) << " type=" << computeMap->type(i) << "\n");
-  }
-  DebugM(2, "===================================================\n");
 }
 
 void WorkDistrib::doneSaveComputeMap() {
@@ -734,7 +727,7 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
 
   if ( mapsArrived && CkMyPe() ) {
     PatchMap::Object()->unpack(msg->patchMapData);
-    ComputeMap::Object()->unpack(msg->computeMapData);
+    if ( ! CkMyRank() ) ComputeMap::Object()->unpack(msg->computeMapData);
 
     //Automatically enable spanning tree
     CProxy_Node nd(CkpvAccess(BOCclass_group).node);

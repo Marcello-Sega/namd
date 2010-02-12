@@ -129,21 +129,15 @@ void ComputeMgr::updateLocalComputes()
     CProxy_ProxyMgr pm(CkpvAccess(BOCclass_group).proxyMgr);
     ProxyMgr *proxyMgr = pm.ckLocalBranch();
 
-	//CkPrintf("[%d] Updating as many as %d Computes\n",CkMyPe(),computeMap->numComputes());
-
     computeFlag = new int[computeMap->numComputes()];
 
-    for (int i=0; i<computeMap->numComputes(); i++)
-    {
-        DebugM(3, "updateLocalComputes("<<i<<") curnode="<<computeMap->node(i)
-               <<" newnode="<<computeMap->newNode(i)<<"\n");
+    const int nc = computeMap->numComputes();
+    for (int i=0; i<nc; i++) {
         computeFlag[i] = 0;
 
         if (computeMap->newNode(i) == CkMyPe() && computeMap->node(i) != CkMyPe())
         {
-            DebugM(4, "updateLocal - creating new computeID("<<i<<")\n");
             computeFlag[i] = 1;
-            computeMap->setNode(i,computeMap->newNode(i));
             for (int n=0; n < computeMap->numPids(i); n++)
             {
                 proxyMgr->createProxy(computeMap->pid(i,n));
@@ -152,16 +146,11 @@ void ComputeMgr::updateLocalComputes()
         else if (computeMap->node(i) == CkMyPe() &&
                  (computeMap->newNode(i) != -1 && computeMap->newNode(i) != CkMyPe() ))
         {
-            DebugM(4, "updateLocal - deleting computeID("<<i<<")\n");
             computeFlag[i] = -1;
-            computeMap->setNode(i,computeMap->newNode(i));
+            // CkPrintf("delete compute %d on pe %d\n",i,CkMyPe());
+            delete computeMap->compute(i);
+            computeMap->registerCompute(i,NULL);
         }
-        else if (computeMap->newNode(i) != -1)
-        {
-            computeMap->setNode(i,computeMap->newNode(i));
-        }
-	
-        computeMap->setNewNode(i,-1);
     }
 
     if (!CkMyPe())
@@ -186,37 +175,31 @@ ComputeMgr::updateLocalComputes3()
 
     ProxyMgr::nodecount = 0;
 
-    for (int i=0; i<computeMap->numComputes(); i++)
-    {
-        if (1 == computeFlag[i])
-        {
-            DebugM(4, "updateLocalCompute3() - create computeID(" << i << ")\n");
-            createCompute(i, computeMap);
+    const int nc = computeMap->numComputes();
+
+    if ( ! CkMyRank() ) {
+      for (int i=0; i<nc; i++) {
+        if (computeMap->newNode(i) != -1) {
+          computeMap->setNode(i,computeMap->newNode(i));
+          computeMap->setNewNode(i,-1);
         }
-        else if (-1 == computeFlag[i])
-        {
-            // remove this compute
-            DebugM(4, "updateLocalCompute3() - delete computeID(" << i << ")\n");
-            delete computeMap->compute(i);
-            computeMap->registerCompute(i,NULL);
+      }
+    }
+ 
+    for (int i=0; i<nc; i++) {
+        if (1 == computeFlag[i]) {
+            createCompute(i, computeMap);
+            // CkPrintf("create compute %d on pe %d\n",i,CkMyPe());
         }
     }
     delete[] computeFlag;
 
     proxyMgr->removeUnusedProxies();
 
-    DebugM(4, "msg to doneUpdateLocalComputes on Pe("<<CkMyPe()<<")\n");
-    ComputeMap::Object()->checkMap();
-    PatchMap::Object()->checkMap();
-
     if (!CkMyPe())
     {
         CkStartQD(CkIndex_ComputeMgr::updateLocalComputes4((CkQdMsg*)0), &thishandle);
-// added a new phase to build spanning tree after load balance
-// was
-//    CkStartQD(CProxy_ComputeMgr::ckIdx_doneUpdateLocalComputes(), &thishandle);
     }
-    //CSendMsgBranch(ComputeMgr, doneUpdateLocalComputes, thisgroup, 0);
 }
 
 void
@@ -231,6 +214,11 @@ int firstphase = 1;
 void
 ComputeMgr::updateLocalComputes5()
 {
+    if ( ! CkMyRank() ) {
+      ComputeMap::Object()->checkMap();
+      PatchMap::Object()->checkMap();
+    }
+
     // we always use the centralized building of spanning tree
     // distributed building of ST called in Node.C only
     if (proxySendSpanning || proxyRecvSpanning)
