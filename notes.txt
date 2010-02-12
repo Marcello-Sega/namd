@@ -259,7 +259,7 @@ Each namd2 process can use only one GPU.  Therefore you will need to run
 at least one process for each GPU you want to use.  Multiple processes
 can share a single GPU, usually with an increase in performance.  NAMD
 will automatically distribute processes equally among the GPUs on a node.
-Specific GPU device IDs can be requested via the ++devices argument on
+Specific GPU device IDs can be requested via the +devices argument on
 the namd2 command line, for example:
 
   ./charmrun ++local +p4 ./namd2 +idlepoll +devices 0,2 <configfile>
@@ -268,7 +268,7 @@ Devices are selected cyclically from those available, so in the above
 example processes 0 and 2 will share device 0 and processes 1 and 3 will
 share device 2.  One could also specify +devices 0,0,2,2 to cause device
 0 to be shared by processes 0 and 1, etc.  GPUs with two or fewer
-multiprocessors are ignored unless specifically requested with ++devices.
+multiprocessors are ignored unless specifically requested with +devices.
 
 While charmrun with ++local will preserve LD_LIBRARY_PATH, normal
 charmrun does not.  You can use charmrun ++runscript to add the namd2
