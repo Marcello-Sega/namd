@@ -15,10 +15,6 @@
 #include <new.h>
 #endif
 
-#ifdef USE_COMM_LIB
-#include "ComlibManager.h"
-#endif
-
 #include "Lattice.h"
 #include "main.decl.h"
 #include "main.h"

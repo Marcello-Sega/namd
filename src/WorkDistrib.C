@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2010/02/12 21:16:17 $
- * $Revision: 1.1202 $
+ * $Date: 2010/02/15 17:50:27 $
+ * $Revision: 1.1203 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -24,11 +24,6 @@
 #include "BOCgroup.h"
 #include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
-
-#ifdef USE_COMM_LIB
-#include "ComlibManager.h"
-#endif
-
 #include "Lattice.h"
 #include "main.decl.h"
 #include "main.h"

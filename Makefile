@@ -350,7 +350,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -module commlib -language charm++ \
+	-module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
@@ -380,7 +380,7 @@ windowsbinaries: $(WINDOWSBINARIES)
 namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose \
-	-module NeighborLB -module commlib -language charm++ \
+	-module NeighborLB -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
@@ -439,7 +439,7 @@ tracecomputes: updatefiles $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module commlib -language charm++ \
+	-module NeighborLB -language charm++ \
 	-tracemode projections \
 	$(BUILDINFO).o \
 	$(OBJS) \
@@ -457,7 +457,7 @@ projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module commlib -language charm++ \
+	-module NeighborLB -language charm++ \
 	-tracemode projections -tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
@@ -475,7 +475,7 @@ summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module commlib -language charm++ \
+	-module NeighborLB -language charm++ \
 	-tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \

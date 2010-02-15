@@ -38,12 +38,6 @@
 #include "Random.h"
 #include "Priorities.h"
 
-// commlib has been observed to cause hangs when starting load balancing
-// #define USE_COMM_LIB 1
-#ifdef USE_COMM_LIB
-#include "EachToManyMulticastStrategy.h"
-#endif
-
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
@@ -334,10 +328,6 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
 
   CkpvAccess(BOCclass_group).computePmeMgr = thisgroup;
 
-#ifdef USE_COMM_LIB
-  ComlibDelegateProxy(&pmeProxy);
-#endif
-
 #ifdef NAMD_FFTW
   if ( CmiMyRank() == 0 ) {
     fftw_plan_lock = CmiCreateLock();
@@ -511,13 +501,11 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     patch_pes *= 2;
  
   bool done = false;
-#ifndef USE_COMM_LIB  
   if(CkNumPes() > 2*sum_npes + patch_pes) {    
     done = generateBGLORBPmePeList(transPeMap, numTransPes);
     done &= generateBGLORBPmePeList(gridPeMap, numGridPes, transPeMap, numTransPes);    
   }
   else 
-#endif
     if(CkNumPes() > 2 *max_npes + patch_pes) {
       done = generateBGLORBPmePeList(transPeMap, max_npes);
       gridPeMap = transPeMap;
@@ -531,22 +519,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       generatePmePeList2(gridPeMap, numGridPes, transPeMap, numTransPes);
     }
   
-#ifdef USE_COMM_LIB  
-  if(CkMyPe() == 0) {
-      ComlibInstanceHandle cinst1 = CkCreateComlibInstance();
-      EachToManyMulticastStrategy *strat = new 
-          EachToManyMulticastStrategy(USE_DIRECT, numGridPes, 
-                                      gridPeMap, numTransPes, transPeMap);
-      cinst1.setStrategy(strat);
-      
-      ComlibInstanceHandle cinst2 = CkCreateComlibInstance();
-      strat = new EachToManyMulticastStrategy(USE_DIRECT, numTransPes, transPeMap
-                                              , numGridPes, gridPeMap);
-      cinst2.setStrategy(strat);
-      ComlibDoneCreating();
-  }
-#endif
-
   myGridPe = -1;
   int i = 0;
   for ( i=0; i<CkNumPes(); ++i )
@@ -1100,11 +1072,6 @@ void ComputePmeMgr::sendTrans(void) {
   int x_start = localInfo[myGridPe].x_start;
   int slicelen = myGrid.K2 * zdim;
 
-#ifdef USE_COMM_LIB
-  ComlibInstanceHandle cinst1 = CkGetComlibInstance(0);
-  cinst1.beginIteration();
-#endif
-
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
@@ -1135,9 +1102,6 @@ void ComputePmeMgr::sendTrans(void) {
  
   untrans_count = numTransPes;
 
-#ifdef USE_COMM_LIB
-  cinst1.endIteration();
-#endif  
 }
 
 void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
@@ -1205,11 +1169,6 @@ void ComputePmeMgr::sendUntrans(void) {
   int y_start = localInfo[myTransPe].y_start_after_transpose;
   int ny = localInfo[myTransPe].ny_after_transpose;
 
-#ifdef USE_COMM_LIB
-  ComlibInstanceHandle cinst2 = CkGetComlibInstance(1); 
-  cinst2.beginIteration();
-#endif  
-
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
@@ -1238,10 +1197,6 @@ void ComputePmeMgr::sendUntrans(void) {
     SET_PRIORITY(newmsg,sequence,PME_UNTRANS_PRIORITY)
     pmeProxy[gridPeMap[pe]].recvUntrans(newmsg);
   }
-
-#ifdef USE_COMM_LIB
-  cinst2.endIteration();
-#endif  
 
   trans_count = numGridPes;
 }
