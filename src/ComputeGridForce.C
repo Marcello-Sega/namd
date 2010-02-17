@@ -522,7 +522,7 @@ void ComputeGridForce::doForce(HomePatch* homePatch,FullAtom* p)
                     Position pos = pos_orig + homePatch->lattice.wrap_delta(pos_orig);
 		    pos += homePatch->lattice.delta(pos, center) - (pos - center);
 		    
-		    if (pos != pos_orig) {
+		    if ((pos - pos_orig).length() > 1.0) {	// FIX
 			char err_msg[128];
 
 			sprintf(err_msg, "Gridforce grid too large for periodic cell: (%f %f %f) != (%f %f %f)",
