@@ -8524,12 +8524,11 @@ void Molecule::build_atom_status(void) {
   }
   #endif
 
-  if (simParams->watmodel == WAT_TIP4 ||
-      simParams->watmodel == WAT_SWM4) {
-    iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF "
-      "BECAUSE LONE PAIRS ARE USED\n" << endi;
-  } else {
-    if ( numZeroMassAtoms && ! CkMyPe() ) {
+  if ( ! CkMyPe() ) {
+    if (simParams->watmodel == WAT_TIP4 || simParams->watmodel == WAT_SWM4) {
+      iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF "
+        "BECAUSE LONE PAIRS ARE USED\n" << endi;
+    } else if ( numZeroMassAtoms ) {
       iout << iWARN << "FOUND " << numZeroMassAtoms <<
         " ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
     }
