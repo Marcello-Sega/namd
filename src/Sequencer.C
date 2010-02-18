@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2010/02/11 20:47:20 $
- * $Revision: 1.1181 $
+ * $Date: 2010/02/18 23:48:05 $
+ * $Revision: 1.1182 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -200,7 +200,6 @@ void Sequencer::integrate() {
     if (simParams->drudeOn) {
       AtomMap::Object()->registerIDsFullAtom(
 		patch->patchID,patch->atom.begin(),patch->atom.end());
-      reposition_all_lonepairs();
     }
 
     const int reassignFreq = simParams->reassignFreq;
@@ -210,23 +209,6 @@ void Sequencer::integrate() {
 
     doEnergy = ! ( step % energyFrequency );
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
-
-    // Redistribute forces, if needed for lonepairs
-    if (simParams->drudeOn) {
-      redistrib_lonepair_forces(Results::normal, 0);
-      redistrib_lonepair_forces(Results::nbond, 0);
-      redistrib_lonepair_forces(Results::slow, 0);
-    }
-    else if (simParams->watmodel == WAT_TIP4) {
-      redistrib_tip4p_forces(Results::normal, 0);
-      redistrib_tip4p_forces(Results::nbond, 0);
-      redistrib_tip4p_forces(Results::slow, 0);
-    }
-    else if (simParams->watmodel == WAT_SWM4) {
-      redistrib_swm4_forces(Results::normal, 0);
-      redistrib_swm4_forces(Results::nbond, 0);
-      redistrib_swm4_forces(Results::slow, 0);
-    }
 
     if ( staleForces || doTcl || doColvars ) {
       if ( doNonbonded ) saveForce(Results::nbond);
@@ -292,11 +274,8 @@ void Sequencer::integrate() {
 
       maximumMove(timestep);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
-      // langevinPiston() should not depend on lone pair position
-      // if (simParams->drudeOn) reposition_all_lonepairs();
       langevinPiston(step);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
-      if (simParams->drudeOn) reposition_all_lonepairs();
 
       minimizationQuenchVelocity();
 
@@ -318,23 +297,6 @@ void Sequencer::integrate() {
       doEnergy = ! ( step % energyFrequency );
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
       
-      // Redistribute forces, if needed for lonepairs
-      if (simParams->drudeOn) {
-        redistrib_lonepair_forces(Results::normal, 1);
-        if (doNonbonded) redistrib_lonepair_forces(Results::nbond, 1);
-        if (doFullElectrostatics) redistrib_lonepair_forces(Results::slow, 1);
-      }
-      else if (simParams->watmodel == WAT_TIP4) {
-        redistrib_tip4p_forces(Results::normal, 1);
-        if (doNonbonded) redistrib_tip4p_forces(Results::nbond, 1);
-        if (doFullElectrostatics) redistrib_tip4p_forces(Results::slow, 1);
-      }
-      else if (simParams->watmodel == WAT_SWM4) {
-        redistrib_swm4_forces(Results::normal, 1);
-        if (doNonbonded) redistrib_swm4_forces(Results::nbond, 1);
-        if (doFullElectrostatics) redistrib_swm4_forces(Results::slow, 1);
-      }
-
       if ( staleForces || doTcl || doColvars ) {
         if ( doNonbonded ) saveForce(Results::nbond);
         if ( doFullElectrostatics ) saveForce(Results::slow);
@@ -1079,33 +1041,8 @@ void Sequencer::saveForce(const int ftag)
   patch->saveForce(ftag);
 }
 
-void Sequencer::reposition_all_lonepairs(void) {
-  patch->reposition_all_lonepairs();
-}
-
-void Sequencer::redistrib_lonepair_forces(const int ftag, const int pressure) {
-  Tensor virial;
-  Tensor *vp = ( pressure ? &virial : 0 );
-  patch->redistrib_lonepair_forces(ftag, vp);
-  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
-}
-
-void Sequencer::redistrib_tip4p_forces(const int ftag, const int pressure) {
-  Tensor virial;
-  Tensor *vp = ( pressure ? &virial : 0 );
-  patch->redistrib_tip4p_forces(ftag, vp);
-  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
-}
-
-void Sequencer::redistrib_swm4_forces(const int ftag, const int pressure) {
-  Tensor virial;
-  Tensor *vp = ( pressure ? &virial : 0 );
-  patch->redistrib_swm4_forces(ftag, vp);
-  ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
-}
-
 void Sequencer::addForceToMomentum(BigReal dt, const int ftag,
-						const int useSaved, int pressure)
+					const int useSaved, int pressure)
 {
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
@@ -1699,13 +1636,68 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   patch->flags.usePairlists = pairlists || pairlistsAreValid;
   patch->flags.savePairlists =
 	pairlists && ! pairlistsAreValid;
+
+  if ( simParams->drudeOn ) patch->reposition_all_lonepairs();
+
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
+
   if ( patch->flags.savePairlists && patch->flags.doNonbonded ) {
     pairlistsAreValid = 1;
     pairlistsAge = 0;
   }
   if ( pairlistsAreValid ) ++pairlistsAge;
+
+  if (simParams->drudeOn) {
+    {
+      Tensor virial;
+      patch->redistrib_lonepair_forces(Results::normal, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NORMAL, virial);
+    }
+    if (patch->flags.doNonbonded) {
+      Tensor virial;
+      patch->redistrib_lonepair_forces(Results::nbond, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NBOND, virial);
+    }
+    if (patch->flags.doFullElectrostatics) {
+      Tensor virial;
+      patch->redistrib_lonepair_forces(Results::slow, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_SLOW, virial);
+    }
+  } else if (simParams->watmodel == WAT_TIP4) {
+    {
+      Tensor virial;
+      patch->redistrib_tip4p_forces(Results::normal, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NORMAL, virial);
+    }
+    if (patch->flags.doNonbonded) {
+      Tensor virial;
+      patch->redistrib_tip4p_forces(Results::nbond, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NBOND, virial);
+    }
+    if (patch->flags.doFullElectrostatics) {
+      Tensor virial;
+      patch->redistrib_tip4p_forces(Results::slow, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_SLOW, virial);
+    }
+  } else if (simParams->watmodel == WAT_SWM4) {
+    {
+      Tensor virial;
+      patch->redistrib_swm4_forces(Results::normal, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NORMAL, virial);
+    }
+    if (patch->flags.doNonbonded) {
+      Tensor virial;
+      patch->redistrib_swm4_forces(Results::nbond, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_NBOND, virial);
+    }
+    if (patch->flags.doFullElectrostatics) {
+      Tensor virial;
+      patch->redistrib_swm4_forces(Results::slow, &virial);
+      ADD_TENSOR_OBJECT(reduction, REDUCTION_VIRIAL_SLOW, virial);
+    }
+  }
+
   if ( patch->flags.doMolly ) {
     Tensor virial;
     patch->mollyMollify(&virial);

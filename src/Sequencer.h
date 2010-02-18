@@ -51,16 +51,6 @@ protected:
 						const int useSaved = 0, const int pressure = 0);
     void addVelocityToPosition(BigReal);
     
-    // For Drude lone pairs
-    void redistrib_lonepair_forces(const int, const int);
-    void reposition_all_lonepairs(void);
-
-    // For TIP4
-    void redistrib_tip4p_forces(const int, const int);
-
-    // For Drude SWM4
-    void redistrib_swm4_forces(const int, const int);
-
     void addRotDragToPosition(BigReal);
     void addMovDragToPosition(BigReal);
 
