@@ -43,6 +43,10 @@ class HydrogenGroupID {
         int gp2 = ( a.isGP ? a.atomID : a.GPID );
         if ( gp1 != gp2 ) {
           rval = ( gp1 < gp2 );
+        } else if ( a.isGP ) {  // compare to self should return 0
+          rval = 0;
+        } else if ( isGP ) {
+          rval = 1;
         } else {
 	  rval = (atomID < a.atomID);
         }
