@@ -36,6 +36,9 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
 void ComputeNonbondedSelf::initialize() {
   ComputePatch::initialize();
   avgPositionBox = patch->registerAvgPositionPickup(cid);
+  // BEGIN LA
+  velocityBox = patch->registerVelocityPickup(cid);
+  // END LA
 #ifdef NAMD_CUDA
   register_cuda_compute_self(cid, patchID);
 #endif
@@ -49,6 +52,11 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
   if (avgPositionBox != NULL) {
     patch->unregisterAvgPositionPickup(cid,&avgPositionBox);
   }
+  // BEGIN LA
+  if (velocityBox != NULL) {
+      patch->unregisterVelocityPickup(cid,&velocityBox);
+  }
+  // END LA
 }
 
 
@@ -94,6 +102,16 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     params.p[1] = p;
     params.pExt[0] = pExt;
     params.pExt[1] = pExt;
+    // BEGIN LA
+    params.doLoweAndersen = patch->flags.doLoweAndersen;
+    CompAtom* v;
+    if (params.doLoweAndersen) {
+	DebugM(4, "opening velocity box\n");
+	v = velocityBox->open();
+	params.v[0] = v;
+	params.v[1] = v;
+    }
+    // END LA
     params.ff[0] = r->f[Results::nbond];
     params.ff[1] = r->f[Results::nbond];
     params.numAtoms[0] = numAtoms;
@@ -164,6 +182,13 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     else
       if ( doEnergy ) calcSelfEnergy(&params);
       else calcSelf(&params);
+    
+    // BEGIN LA
+    if (params.doLoweAndersen) {
+	DebugM(4, "closing velocity box\n");
+	velocityBox->close(&v);
+    }
+    // END LA
   }
 
   submitReductionData(reductionData,reduction);

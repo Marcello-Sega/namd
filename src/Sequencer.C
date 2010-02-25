@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jim $
- * $Date: 2010/02/18 23:48:05 $
- * $Revision: 1.1182 $
+ * $Author: dbwells2 $
+ * $Date: 2010/02/25 00:21:35 $
+ * $Revision: 1.1183 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -182,6 +182,10 @@ void Sequencer::integrate() {
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
+    // BEGIN LA
+    int &doLoweAndersen = patch->flags.doLoweAndersen;
+    doLoweAndersen = simParams->loweAndersenOn && doNonbonded;
+    // END LA
 
     int zeroMomentum = simParams->zeroMomentum;
     
@@ -288,7 +292,10 @@ void Sequencer::integrate() {
       submitHalfstep(step);
 
       doMolly = simParams->mollyOn && doFullElectrostatics;
-
+      // BEGIN LA
+      doLoweAndersen = simParams->loweAndersenOn && doNonbonded;
+      // END LA
+      
       maxForceUsed = Results::normal;
       if ( doNonbonded ) maxForceUsed = Results::nbond;
       if ( doFullElectrostatics ) maxForceUsed = Results::slow;
@@ -441,6 +448,10 @@ void Sequencer::minimize() {
   }
   int &doMolly = patch->flags.doMolly;
   doMolly = simParams->mollyOn && doFullElectrostatics;
+  // BEGIN LA
+  int &doLoweAndersen = patch->flags.doLoweAndersen;
+  doLoweAndersen = 0;
+  // END LA
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;
 
@@ -1703,6 +1714,11 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
     patch->mollyMollify(&virial);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,virial);
   }
+  // BEGIN LA
+  if (patch->flags.doLoweAndersen) {
+      patch->loweAndersenFinish();
+  }
+  // END LA
 #ifdef NAMD_CUDA_XXX
   int numAtoms = patch->numAtoms;
   FullAtom *a = patch->atom.begin();

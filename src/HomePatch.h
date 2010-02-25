@@ -103,6 +103,11 @@ public:
   void mollyMollify(Tensor *virial);
 //  Bool average(Vector qtilde[],const Vector q[],BigReal lambda[],const int n,const int m, const BigReal imass[], const BigReal length2[], const int ial[], const int ilb[], const Vector qji[], const BigReal tolf, const int ntrial);
 //  void mollify(Vector qtilde[],const Vector q0[],const BigReal lambda[], Vector force[],const int n, const int m, const BigReal imass[],const int ial[],const int ibl[],const Vector refab[]); 
+  
+  // BEGIN LA
+  void loweAndersenVelocities();
+  void loweAndersenFinish();
+  // END LA
 
   // methods for CONTRA, etc
   void checkpoint(void);

@@ -159,8 +159,12 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   
   avgPositionPtrBegin = msg->avgPositionList;
   avgPositionPtrEnd = msg->avgPositionList + msg->avgPlLen;
-
   
+  // BEGIN LA
+  velocityPtrBegin = msg->velocityList;
+  velocityPtrEnd = msg->velocityList + msg->vlLen;
+  // END LA
+
   if ( numAtoms == -1 ) { // for new proxies since receiveAtoms is not called
       //numAtoms = p.size();
       numAtoms = msg->plLen;
@@ -227,6 +231,11 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   
   avgPositionPtrBegin = msg->avgPositionList;
   avgPositionPtrEnd = msg->avgPositionList + msg->avgPlLen;
+  
+  // BEGIN LA
+  velocityPtrBegin = msg->velocityList;
+  velocityPtrEnd = msg->velocityList + msg->vlLen;
+  // END LA
 
   //We cannot reuse the CompAtomExt list inside the msg because
   //the information is needed at every step. In the current implementation

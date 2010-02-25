@@ -28,8 +28,10 @@ Patch::Patch(PatchID pd) :
    lattice(flags.lattice),
    patchID(pd), numAtoms(0), numFixedAtoms(0),
    avgPositionPtrBegin(0), avgPositionPtrEnd(0),
+   velocityPtrBegin(0), velocityPtrEnd(0),	// BEGIN LA, END LA
    positionBox(this,&Patch::positionBoxClosed),
    avgPositionBox(this,&Patch::avgPositionBoxClosed),
+   velocityBox(this,&Patch::velocityBoxClosed), // BEGIN LA, END LA
    forceBox(this,&Patch::forceBoxClosed),
    boxesOpen(0), _hasNewAtoms(0)
 
@@ -87,6 +89,21 @@ void Patch::unregisterAvgPositionPickup(ComputeID cid, Box<Patch,CompAtom> **con
    *box = 0;
 }
 
+// BEGIN LA
+Box<Patch,CompAtom>* Patch::registerVelocityPickup(ComputeID cid, int trans)
+{
+   //DebugM(4, "registerVelocityPickup("<<patchID<<") from " << cid << "\n");
+   return velocityBox.checkOut();
+}
+
+void Patch::unregisterVelocityPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
+{
+   DebugM(4, "UnregisterVelocityPickup from " << cid << "\n");
+   velocityBox.checkIn(*box);
+   *box = 0;
+}
+// END LA
+
 Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
 {
    if (forceComputeList.add(cid) < 0)
@@ -128,6 +145,15 @@ void Patch::avgPositionBoxClosed(void)
    this->boxClosed(3);
 }
 
+// BEGIN LA
+void Patch::velocityBoxClosed(void)
+{
+   DebugM(4, "patchID("<<patchID<<") velocityBoxClosed! call\n");
+   velocityPtrBegin = 0;
+   this->boxClosed(4);	// ?? Don't know about number
+}
+// END LA
+
 // void Patch::boxClosed(int box) is virtual
 
 void Patch::positionsReady(int doneMigration)
@@ -145,6 +171,12 @@ void Patch::positionsReady(int doneMigration)
 
    boxesOpen = 2;
    if ( flags.doMolly ) boxesOpen++;
+   // BEGIN LA
+   if (flags.doLoweAndersen) {
+       DebugM(4, "Patch::positionsReady, flags.doMolly = " << flags.doMolly << "\n");
+       boxesOpen++;
+   }
+   // END LA
    _hasNewAtoms = (doneMigration != 0);
 
 #if CMK_BLUEGENEL
@@ -162,6 +194,13 @@ void Patch::positionsReady(int doneMigration)
      //avgPositionPtrBegin = p_avg.begin();
      avgPositionBox.open(avgPositionPtrBegin);
    }
+   
+   // BEGIN LA
+   if (flags.doLoweAndersen) {
+       velocityBox.open(velocityPtrBegin);
+   }
+   // END LA
+   
 
 #if CMK_BLUEGENEL
    CmiNetworkProgressAfter (0);

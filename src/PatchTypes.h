@@ -21,6 +21,9 @@ public:
   int doNonbonded;
   int doFullElectrostatics;
   int doMolly;
+  // BEGIN LA
+  int doLoweAndersen;
+  // END LA
   int submitLoadStats;
   int maxForceUsed;		// may ignore slower force classes
   int maxForceMerged;		// add this and faster to normal

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2010/01/22 00:49:22 $
- * $Revision: 1.1296 $
+ * $Author: dbwells2 $
+ * $Date: 2010/02/25 00:21:35 $
+ * $Revision: 1.1297 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -137,6 +137,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   // SCRIPT_PARSE_BOOL("Langevin",langevinOn)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
+  SCRIPT_PARSE_FLOAT("loweAndersenTemp",loweAndersenTemp) // BEGIN LA, END LA
   SCRIPT_PARSE_FLOAT("initialTemp",initialTemp)
   SCRIPT_PARSE_BOOL("useGroupPressure",useGroupPressure)
   SCRIPT_PARSE_BOOL("useFlexibleCell",useFlexibleCell)
@@ -716,6 +717,22 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("Langevin", "langevinCol", "Column in the langevinFile "
      "containing the temperature coupling term B(i);\n"
      "default is 'O'", PARSE_STRING);
+
+// BEGIN LA
+   opts.optionalB("main", "LoweAndersen", "Should Lowe-Andersen dynamics be performed?",
+		  &loweAndersenOn, FALSE);
+   opts.require("LoweAndersen", "loweAndersenTemp", "Temperature for heat bath in Lowe-Andersen "
+		"dynamics", &loweAndersenTemp);
+   opts.range("loweAndersenTemp", NOT_NEGATIVE);
+   opts.units("loweAndersenTemp", N_KELVIN);
+   opts.optional("LoweAndersen", "loweAndersenRate", "Collision rate (1/ps)",
+		 &loweAndersenRate, 50);
+   opts.range("loweAndersenRate", POSITIVE);
+   opts.optional("LoweAndersen", "loweAndersenCutoff", "Cutoff radius",
+		 &loweAndersenCutoff, 2.7);
+   opts.range("loweAndersenCutoff", POSITIVE);
+   opts.units("loweAndersenCutoff", N_ANGSTROM);
+// END LA
 
 //Modifications for alchemical fep
 //  alchemical fep options
@@ -2069,11 +2086,30 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    {
       NAMD_die("Minimization and temperature coupling are mutually exclusive dynamics modes");
    }
+   
+   // BEGIN LA
+   if ((minimizeOn||minimizeCGOn) && loweAndersenOn) 
+   {
+      NAMD_die("Minimization and Lowe-Andersen dynamics are mutually exclusive dynamics modes");
+   }
+#ifdef NAMD_CUDA
+   if (loweAndersenOn) {
+       NAMD_die("Lowe-Andersen dynamics not compatible with CUDA at this time");
+   }
+#endif
+   // END LA
 
    if (langevinOn && tCoupleOn)
    {
       NAMD_die("Langevin dynamics and temperature coupling are mutually exclusive dynamics modes");
    }
+   
+   // BEGIN LA
+   if (loweAndersenOn && (langevinOn || tCoupleOn))
+   {
+      NAMD_die("Lowe-Andersen dynamics, Langevin dynamics and temperature coupling are mutually exclusive dynamics modes");
+   }
+   // END LA
 
    if (tCoupleOn && opts.defined("rescaleFreq") )
    {
@@ -2128,6 +2164,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if ( opts.defined("langevinHydrogen") && langevinDamping == 0.0 )
        NAMD_die("langevinHydrogen requires langevinDamping to be set.");
    }
+   
+   // BEGIN LA
+   if (loweAndersenOn) {
+       if (!opts.defined("loweAndersenRate")) loweAndersenRate = 100;
+       if (!opts.defined("loweAndersenCutoff")) loweAndersenCutoff = 2.7;
+   }
+   // END LA
 
    if (opts.defined("rescaleFreq"))
    {
@@ -2305,8 +2348,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
            alchemical free energy calculation is not active. Setting \
            alchDecouple to off.\n" << endi;
          alchDecouple = FALSE;
-     //NAMD_die("Alchemcial decoupling was requested but alchemical free \
-         energy calculation is not active.\n");
+     //NAMD_die("Alchemcial decoupling was requested but alchemical free energy calculation is not active.\n");
    }
 
    if ( lesOn && ( lesFactor < 1 || lesFactor > 15 ) ) {
@@ -2753,6 +2795,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    {
   langevinTemp = 0.0;
    }
+   
+   // BEGIN LA
+   if (!opts.defined("loweAndersen"))
+   {
+       loweAndersenTemp = 0.0;
+   }
+   // END LA
 
    if (!opts.defined("tcouple"))
    {
@@ -3656,6 +3705,20 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       }
       iout << endi;
    }
+   
+   // BEGIN LA
+   if (loweAndersenOn)
+   {
+      iout << iINFO << "LOWE-ANDERSEN DYNAMICS ACTIVE\n";
+      iout << iINFO << "LOWE-ANDERSEN TEMPERATURE     "
+         << loweAndersenTemp << " K\n";
+      iout << iINFO << "LOWE-ANDERSEN RATE            "
+         << loweAndersenRate << " INVERSE PS\n";
+      iout << iINFO << "LOWE-ANDERSEN CUTOFF          "
+         << loweAndersenCutoff << " ANGSTROMS\n";
+      iout << endi;
+   }
+   // END LA
 
    if (tCoupleOn)
    {

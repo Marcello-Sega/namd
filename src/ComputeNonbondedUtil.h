@@ -111,6 +111,9 @@ public:
 struct nonbonded {
   CompAtom* p[2];
   CompAtomExt *pExt[2];
+  // BEGIN LA
+  CompAtom* v[2];
+  // END LA
   Force* ff[2];
   // for full electrostatics
   Force* fullf [2];
@@ -135,6 +138,10 @@ struct nonbonded {
   BigReal plcutoff;
   BigReal groupplcutoff;
 
+  // BEGIN LA
+  int doLoweAndersen;
+  // END LA
+  
   int minPart;
   int maxPart;
   int numParts;

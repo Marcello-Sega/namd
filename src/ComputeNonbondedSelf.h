@@ -22,6 +22,9 @@ protected :
   virtual void initialize();
   virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r);
   Box<Patch,CompAtom> *avgPositionBox;
+  // BEGIN LA
+  Box<Patch,CompAtom> *velocityBox;
+  // END LA
 
   SubmitReduction *reduction;
   SubmitReduction *pressureProfileReduction;

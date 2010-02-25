@@ -20,6 +20,9 @@ module ProxyMgr {
     //in this message type as it needs alignment
     CompAtom positionList[];
     CompAtom avgPositionList[];
+    // BEGIN LA
+    CompAtom velocityList[];
+    // END LA
     CompAtomExt positionExtList[];
   };
 

@@ -241,6 +241,10 @@ void ComputeNonbondedUtil :: NAME
 #endif
   pairlists.reset();
   // PAIR(iout << "--------\n" << endi;)
+  
+  // BEGIN LA
+  const int doLoweAndersen = params->doLoweAndersen;
+  // END LA
 
   // local variables
   int exclChecksum = 0;
@@ -1527,6 +1531,112 @@ ALCH(
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti,
 	r2_delta, r2list);
+    
+    // BEGIN LA
+#if (FAST(1+)0)
+    if (doLoweAndersen && p_i.hydrogenGroupSize) {
+	BigReal loweAndersenCutoff = simParams->loweAndersenCutoff;
+	BigReal loweAndersenCutoff2 = (loweAndersenCutoff * loweAndersenCutoff) + r2_delta;
+	BigReal loweAndersenProb = simParams->loweAndersenRate * (simParams->dt * simParams->nonbondedFrequency) * 0.001; // loweAndersenRate is in 1/ps
+	const bool loweAndersenUseCOMvelocity = (simParams->rigidBonds != RIGID_NONE);
+	const BigReal kbT = BOLTZMAN * (simParams->loweAndersenTemp);
+	const BigReal dt_inv = TIMEFACTOR / (simParams->dt * simParams->nonbondedFrequency);
+	//const BigReal dt_inv = 1.0 / simParams->dt;
+	//BigReal kbT = 8.3145e-7 * (simParams->loweAndersenTemp); // in A^2/fs^2 * K
+	
+	const CompAtom* v_0 = params->v[0];
+	const CompAtom* v_1 = params->v[1];
+	const CompAtom& v_i = v_0[i];
+	Mass mass_i = v_i.charge;
+	Velocity vel_i = v_i.position;
+	Position pos_i = p_i.position;
+	int atom_i = pExt_0[i].id;
+	
+	if (loweAndersenUseCOMvelocity) {
+	    Mass mass = 0;
+	    Velocity vel = 0;
+	    Position pos = 0;
+	    for (int l = 0; l < p_i.hydrogenGroupSize; l++) {
+		vel += v_0[i+l].charge * v_0[i+l].position;
+		pos += v_0[i+l].charge * p_0[i+l].position;
+		mass += v_0[i+l].charge;
+	    }
+	    vel_i = vel / mass;
+	    pos_i = pos / mass;
+	    mass_i = mass;
+	}
+	
+	// Note v[0].charge is actually mass
+	//Random rand(CkMyPe()); // ?? OK ?? NO!!!!
+	Random *rand = Node::Object()->rand;
+	for (k = 0; k < npairi; k++) {
+	    if (r2list[k] > loweAndersenCutoff2) { continue; }
+		
+	    const int j = pairlisti[k];
+	    const CompAtom& v_j = v_1[j];
+	    const CompAtom& p_j = p_1[j];
+		
+	    if (!p_j.hydrogenGroupSize) { continue; }
+	    if (rand->uniform() > loweAndersenProb) { continue; }
+		
+	    Mass mass_j = v_j.charge;
+	    Velocity vel_j = v_j.position;
+	    Position pos_j = p_j.position;
+	    int atom_j = pExt_1[j].id;
+		
+	    if (loweAndersenUseCOMvelocity) {
+		Mass mass = 0;
+		Velocity vel = 0;
+		Position pos = 0;
+		for (int l = 0; l < p_j.hydrogenGroupSize; l++) {
+		    vel += v_1[j+l].charge * v_1[j+l].position;
+		    pos += v_1[j+l].charge * p_1[j+l].position;
+		    mass += v_1[j+l].charge;
+		}
+		vel_j = vel / mass;
+		pos_j = pos / mass;
+		mass_j = mass;
+	    }
+		
+	    //Velocity deltaV = v_i.position - v_j.position;
+	    Velocity deltaV = vel_i - vel_j;
+	    Mass mu_ij = (mass_i * mass_j)/(mass_i + mass_j);
+	    //Vector sep = (p_i.position + params->offset) - p_j.position;
+	    Vector sep = (pos_i + params->offset) - pos_j;
+	    Vector sigma_ij = sep.unit();
+	    BigReal lambda = rand->gaussian() * sqrt(kbT / mu_ij);
+	    Force force = mu_ij * dt_inv * (lambda - (deltaV * sigma_ij)) * sigma_ij;
+		
+	    //DebugM(1, "atom1 atom2 = " << atom1 << " " << atom2 << " lambda = " << lambda << " force = " << force << " deltaP = " << sep.length() << " sqrt(r2) = " << sqrt(r2list[k]) << "\n");
+	    //DebugM(1, "atom1 atom2 = " << atom_i << " " << atom_j << " mass1 mass2 = " << mass_i << " " << mass_j << " hgrp1 hgrp2 " << p_i.hydrogenGroupSize << " " << p_j.hydrogenGroupSize << "\n");
+		
+	    if (loweAndersenUseCOMvelocity) {
+		BigReal inv_mass_i = 1.0 / mass_i;
+		BigReal inv_mass_j = 1.0 / mass_j;
+		for (int l = 0; l < p_i.hydrogenGroupSize; l++) {
+		    params->ff[0][i+l] += (v_0[i+l].charge * inv_mass_i) * force;
+		}
+		for (int l = 0; l < p_j.hydrogenGroupSize; l++) {
+		    params->ff[1][j+l] -= (v_1[j+l].charge * inv_mass_j) * force;
+		}
+	    } else {
+		params->ff[0][i] += force;
+		params->ff[1][j] -= force;
+	    }
+		
+	    reduction[virialIndex_XX] += force.x * sep.x;
+	    reduction[virialIndex_XY] += force.x * sep.y;
+	    reduction[virialIndex_XZ] += force.x * sep.z;
+	    reduction[virialIndex_YX] += force.y * sep.x;
+	    reduction[virialIndex_YY] += force.y * sep.y;
+	    reduction[virialIndex_YZ] += force.y * sep.z;
+	    reduction[virialIndex_ZX] += force.z * sep.x;
+	    reduction[virialIndex_ZY] += force.z * sep.y;
+	    reduction[virialIndex_ZZ] += force.z * sep.z;
+	}
+    }
+#endif
+    // END LA
 
 #define NORMAL(X) X
 #define EXCLUDED(X)

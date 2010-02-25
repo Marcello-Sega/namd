@@ -21,6 +21,10 @@
 #include "AtomsDisInfo.h"
 #endif
 
+// BEGIN LA
+class Random;
+// END LA
+
 #ifdef SOLARIS
 extern "C" int gethostname( char *name, int namelen);
 #endif
@@ -132,6 +136,10 @@ public:
 
   // Made public in order to access the ComputeGlobal on the node
   ComputeMgr *computeMgr;
+  
+  // BEGIN LA
+  Random *rand;
+  // END LA
   
   // NAMD 1.X molecule database objects - must be public for now
   Molecule *molecule;

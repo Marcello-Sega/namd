@@ -40,6 +40,11 @@ class Patch
      Box<Patch,CompAtom>* registerAvgPositionPickup(ComputeID cid, int trans = 13);
      void unregisterAvgPositionPickup(ComputeID cid,
 				   Box<Patch,CompAtom>**const box);
+     // BEGIN LA
+     Box<Patch,CompAtom>* registerVelocityPickup(ComputeID cid, int trans = 13);
+     void unregisterVelocityPickup(ComputeID cid,
+                                  Box<Patch,CompAtom>**const box);
+     // END LA
      Box<Patch,Results>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box);
 
@@ -51,6 +56,9 @@ class Patch
      void positionBoxClosed(void);
      void forceBoxClosed(void);
      void avgPositionBoxClosed(void);
+     // BEGIN LA
+     void velocityBoxClosed(void);
+     // END LA
 
      int getNumAtoms() { return numAtoms; }
 
@@ -76,6 +84,9 @@ class Patch
      int           numFixedAtoms;
      CompAtomList  p;
      CompAtomList  p_avg;
+     // BEGIN LA
+     CompAtomList  v;
+     // END LA
 
      // DMK - Atom Separation (water vs. non-water)
      #if NAMD_SeparateWaters != 0
@@ -105,6 +116,11 @@ class Patch
      CompAtom      *avgPositionPtrBegin;
      CompAtom      *avgPositionPtrEnd;
 
+     // BEGIN LA
+     CompAtom      *velocityPtrBegin;
+     CompAtom      *velocityPtrEnd;
+     // END LA
+
      ForceList     f[Results::maxNumForces];
      Results	   results;
 
@@ -112,6 +128,10 @@ class Patch
      ComputeIDList              positionComputeList;
      OwnerBox<Patch,CompAtom> avgPositionBox;
      ComputeIDList              avgPositionComputeList;
+     // BEGIN LA
+     OwnerBox<Patch,CompAtom> velocityBox;
+     ComputeIDList              velocityComputeList;
+     // END LA
      OwnerBox<Patch,Results>    forceBox;
      ComputeIDList              forceComputeList;
 

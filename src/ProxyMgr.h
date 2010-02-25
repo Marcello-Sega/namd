@@ -69,6 +69,10 @@ public:
   CompAtom *positionList;
   int avgPlLen;
   CompAtom *avgPositionList;
+  // BEGIN LA
+  int vlLen;
+  CompAtom *velocityList;
+  // END LA
 
   //1. The following field will be only
   //useful for memory optimized version.

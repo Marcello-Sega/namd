@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2010/01/22 00:49:22 $
- * $Revision: 1.1160 $
+ * $Author: dbwells2 $
+ * $Date: 2010/02/25 00:21:35 $
+ * $Revision: 1.1161 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -358,6 +358,13 @@ public:
 	BigReal langevinTemp;		//  Temperature for Langevin dynamics
 	BigReal langevinDamping;	//  Damping coefficient (1/ps)
 	Bool langevinHydrogen;		//  Flag TRUE-> apply to hydrogens
+	
+	// BEGIN LA
+	Bool loweAndersenOn;		//  Flag TRUE-> Lowe-Andersen dynamics active
+	BigReal loweAndersenTemp;	//  Temperature for Lowe-Andersen dynamics
+	BigReal loweAndersenRate;	//  Collision frequency for Lowe-Andersen dynamics (1/ps)
+	BigReal loweAndersenCutoff;	//  Cutoff radius for Lowe-Andersen dynamics
+	// END LA
 
 	Bool globalOn;			//  Flag TRUE-> use global integrator
 	Bool dihedralOn;		//  Flag TRUE-> dihedral dynamics active

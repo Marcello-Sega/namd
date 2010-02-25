@@ -895,6 +895,9 @@ void HomePatch::positionsReady(int doMigration)
   doPairlistCheck();
 
   if (flags.doMolly) mollyAverage();
+  // BEGIN LA
+  if (flags.doLoweAndersen) loweAndersenVelocities();
+  // END LA
 
   // Must Add Proxy Changes when migration completed!
   ProxyListIter pli(proxy);
@@ -957,11 +960,17 @@ void HomePatch::positionsReady(int doMigration)
     if(flags.doMolly) {
         pdMsgAvgPLLen = p_avg.size();
     }
+    // BEGIN LA
+    int pdMsgVLLen = 0;
+    if (flags.doLoweAndersen) {
+	pdMsgVLLen = v.size();
+    }
+    // END LA
     int pdMsgPLExtLen = 0;
     if(doMigration || isNewProxyAdded) {
         pdMsgPLExtLen = pExt.size();
     }
-    ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgPLExtLen, PRIORITY_SIZE) ProxyDataMsg;
+    ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgVLLen, pdMsgPLExtLen, PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
     SET_PRIORITY(nmsg,seq,priority);
     nmsg->patch = patchID;
     nmsg->flags = flags;
@@ -972,6 +981,12 @@ void HomePatch::positionsReady(int doMigration)
     if(flags.doMolly) {
         memcpy(nmsg->avgPositionList, p_avg.begin(), sizeof(CompAtom)*pdMsgAvgPLLen);
     }
+    // BEGIN LA
+    nmsg->vlLen = pdMsgVLLen;
+    if (flags.doLoweAndersen) {
+	memcpy(nmsg->velocityList, v.begin(), sizeof(CompAtom)*pdMsgVLLen);
+    }
+    // END LA
     nmsg->plExtLen = pdMsgPLExtLen;
     if(doMigration || isNewProxyAdded){     
         memcpy(nmsg->positionExtList, pExt.begin(), sizeof(CompAtomExt)*pdMsgPLExtLen);
@@ -1019,6 +1034,12 @@ void HomePatch::positionsReady(int doMigration)
       avgPositionPtrBegin = p_avg.begin();
       avgPositionPtrEnd = p_avg.end();
   }
+  // BEGIN LA
+  if (flags.doLoweAndersen) {
+      velocityPtrBegin = v.begin();
+      velocityPtrEnd = v.end();
+  }
+  // END LA
   Patch::positionsReady(doMigration);
 
   patchMapRead = 1;
@@ -1901,6 +1922,30 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
   *virial += wc / ( 0.5 * dt );
 
 }
+
+
+// BEGIN LA
+void HomePatch::loweAndersenVelocities()
+{
+    DebugM(2, "loweAndersenVelocities\n");
+    Molecule *mol = Node::Object()->molecule;
+    SimParameters *simParams = Node::Object()->simParameters;
+    v.resize(numAtoms);
+    for (int i = 0; i < numAtoms; ++i) {
+	//v[i] = p[i];
+	// co-opt CompAtom structure to pass velocity and mass information
+	v[i].position = atom[i].velocity;
+	v[i].charge = atom[i].mass;
+    }
+    DebugM(2, "loweAndersenVelocities\n");
+}
+
+void HomePatch::loweAndersenFinish()
+{
+    DebugM(2, "loweAndersenFinish\n");
+    v.resize(0);
+}
+// END LA
 
 
 //  MOLLY algorithm part 1

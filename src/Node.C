@@ -60,6 +60,9 @@
 #include "Sync.h"
 #include "BackEnd.h"
 #include "PDB.h"
+// BEGIN LA
+#include "Random.h"
+// END LA
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 extern "C" void CApplicationInit();
@@ -157,6 +160,9 @@ Node::~Node(void)
   delete atomMap;
   delete patchMap;
   delete CkpvAccess(comm);
+  // BEGIN LA
+  delete rand;
+  // END LA
 }
 
 //----------------------------------------------------------------------
@@ -266,6 +272,11 @@ void Node::startup() {
       else 
 	CkpvAccess(BOCclass_group).computePmeMgr = CProxy_ComputePmeMgr::ckNew();
     }
+  
+    // BEGIN LA
+    rand = new Random(simParameters->randomSeed);
+    rand->split(CkMyPe(), CkNumPes());
+    // END LA
 
   break;
 

@@ -38,6 +38,9 @@ void ComputeNonbondedPair::initialize() {
   ComputePatchPair::initialize();
   for (int i=0; i<2; i++) {
     avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid,trans[i]);
+    // BEGIN LA
+    velocityBox[i] = patch[i]->registerVelocityPickup(cid,trans[i]);
+    // END LA
   }
 #ifdef NAMD_CUDA
   register_cuda_compute_pair(cid, patchID, trans);
@@ -53,6 +56,11 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
     if (avgPositionBox[i] != NULL) {
       patch[i]->unregisterAvgPositionPickup(cid,&avgPositionBox[i]);
     }
+    // BEGIN LA
+    if (velocityBox[i] != NULL) {
+      patch[i]->unregisterVelocityPickup(cid,&velocityBox[i]);
+    }
+    // END LA
   }
 }
 
@@ -83,6 +91,9 @@ int ComputeNonbondedPair::noWork() {
     }
     CompAtom* p[2];
     CompAtom* p_avg[2];
+    // BEGIN LA
+    CompAtom* v[2];
+    // END LA
     Results* r[2];
 
     // Open up positionBox, forceBox, and atomBox
@@ -90,6 +101,9 @@ int ComputeNonbondedPair::noWork() {
       p[i] = positionBox[i]->open();
       r[i] = forceBox[i]->open();
       if ( patch[0]->flags.doMolly ) p_avg[i] = avgPositionBox[i]->open();
+      // BEGIN LA
+      if (patch[0]->flags.doLoweAndersen) v[i] = velocityBox[i]->open();
+      // END LA
     }
 
     // Close up boxes
@@ -97,6 +111,9 @@ int ComputeNonbondedPair::noWork() {
       positionBox[i]->close(&p[i]);
       forceBox[i]->close(&r[i]);
       if ( patch[0]->flags.doMolly ) avgPositionBox[i]->close(&p_avg[i]);
+      // BEGIN LA
+      if (patch[0]->flags.doLoweAndersen) velocityBox[i]->close(&v[i]);
+      // END LA
     }
 
     submitReductionData(reductionData,reduction);
@@ -231,6 +248,17 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
       params.p[1] = p[b];
       params.pExt[0] = pExt[a]; 
       params.pExt[1] = pExt[b];
+      // BEGIN LA
+      params.doLoweAndersen = patch[0]->flags.doLoweAndersen;
+      CompAtom* v[2];
+      if (params.doLoweAndersen) {
+	  DebugM(4, "opening velocity boxes\n");
+	  v[0] = velocityBox[0]->open();
+	  v[1] = velocityBox[1]->open();
+	  params.v[0] = v[a];
+	  params.v[1] = v[b];
+      }
+      // END LA
       params.ff[0] = r[a]->f[Results::nbond];
       params.ff[1] = r[b]->f[Results::nbond];
       params.numAtoms[0] = numAtoms[a];
@@ -269,6 +297,14 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
       else
         if ( doEnergy ) calcPairEnergy(&params);
         else calcPair(&params);
+      
+      // BEGIN LA
+      if (params.doLoweAndersen) {
+	  DebugM(4, "closing velocity boxes\n");
+	  velocityBox[0]->close(&v[0]);
+	  velocityBox[1]->close(&v[1]);
+      }
+      // END LA
   }
 
   submitReductionData(reductionData,reduction);
