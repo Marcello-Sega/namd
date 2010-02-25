@@ -628,6 +628,37 @@ This parameter is valid only if {\tt reassignIncr} has been set.}
 
 \end{itemize}
 
+\subsubsection{Lowe-Andersen dynamics parameters}
+
+\NAMD\ can perform Lowe-Andersen dynamics, a variation of Andersen dynamics whereby the radial relative velocities of atom pairs are randomly modified based on a thermal distribution.
+The Lowe-Andersen thermostat is Galilean invariant, therefore conserving momentum, and is thus independent of absolute atom velocities.
+Forces are applied only between non-bonded, non-hydrogen pairs of atoms.
+When using rigid bonds, forces are applied to the center of mass of hydrogen groups.
+The implementation is based on Koopman and Lowe~\mycite{(Koopman and Lowe, 2006)}{KOOP2006}.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{loweAndersen}{use Lowe-Andersen dynamics?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not Lowe-Andersen dynamics are active.
+If set to {\tt on}, then the parameter {\tt loweAndersenTemp} must be set and the parameters {\tt loweAndersenCutoff} and {\tt loweAndersenRate} can optionally be set.}
+
+\item
+\NAMDCONF{loweAndersenTemp}{temperature for Lowe-Andersen calculations (K)}{positive decimal}
+{Temperature of the distribution used to set radial relative velocities.
+This determines the target temperature of the system.}
+
+\item
+\NAMDCONFWDEF{loweAndersenCutoff}{cutoff radius for Lowe-Andersen collisions (\AA)}{positive decimal}{2.7}
+{Forces are only applied to atoms within this distance of one another.}
+
+\item
+\NAMDCONFWDEF{loweAndersenRate}{rate for Lowe-Andersen collisions (1/ps)}{positive decimal}{50}
+{Determines the probability of a collision between atoms within the cutoff radius.
+The probability is the rate specified by this keyword times the non-bonded timestep.}
+
+\end{itemize}
+
 
 \subsection{Pressure Control}
 
