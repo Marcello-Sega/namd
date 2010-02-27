@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: emeneses $
- * $Date: 2009/12/02 23:09:03 $
- * $Revision: 1.1 $
+ * $Date: 2010/02/27 22:51:08 $
+ * $Revision: 1.2 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -558,9 +558,10 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
    lData->info_recved++;
 
    CkVec<Location> &matchedObjs = lData->matchedObjs;
-   CkVec<Location> &unmatchedObjs = lData->unmatchedObjs;
+   std::map<LDObjKey, int> &unmatchedObjs = lData->unmatchedObjs;
 
    // sort into mactched and unmatched list
+#if 0
    for (int i=0; i<n; i++) {
      // search and see if we have answer, put to matched
      // store in unknown
@@ -578,34 +579,51 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
      }
      if (!found) unmatchedObjs.push_back(loc[i]);
    }
+#else
+   for (int i=0; i<n; i++) {
+     std::map<LDObjKey, int>::iterator iter = unmatchedObjs.find(loc[i].key);
+     if (iter != unmatchedObjs.end()) {
+       CmiAssert(iter->second != -1 || loc[i].loc != -1);
+       if (loc[i].loc == -1) loc[i].loc = iter->second;
+       matchedObjs.push_back(loc[i]);
+       unmatchedObjs.erase(iter);
+     }
+     else
+       unmatchedObjs[loc[i].key] = loc[i].loc;
+   }
+#endif
 
 //  DEBUGF(("[%d] level %d has %d unmatched and %d matched. \n", CkMyPe(), atlevel, unmatchedObjs.size(), matchedObjs.size()));
 
    if (lData->info_recved == lData->nChildren) {
      lData->info_recved = 0;
+     if (_lb_args.debug() > 1)
+         CkPrintf("[%d] CollectInfo at level %d started at %f\n",
+	        CkMyPe(), atlevel, CkWallTimer());
      if (lData->parent != -1) {
 
-		//CkPrintf("[%d] HERE\n",CkMyPe());
-		//thisProxy[lData->parent].CollectInfo(unmatchedObjs.getVec(), unmatchedObjs.size(), atlevel);
-		
-
+		// NAMD specific
+		CkVec<Location> unmatchedbuf;
+   		for(std::map<LDObjKey, int>::const_iterator it = unmatchedObjs.begin(); it != unmatchedObjs.end(); ++it){
+    		unmatchedbuf.push_back(Location(it->first, it->second));
+   		}
 		// checking if update of ComputeMap is ready before calling parent
 		if(CkMyPe() == 0){
 			if(updateFlag){
 				updateFlag = false;
-				collectFlag = false;	
-				thisProxy[lData->parent].CollectInfo(unmatchedObjs.getVec(), unmatchedObjs.size(), atlevel);
+				collectFlag = false;
+				thisProxy[lData->parent].CollectInfo(unmatchedbuf.getVec(), unmatchedbuf.size(), atlevel);
 			}else{
 				CkPrintf("[%d] COMPUTEMAP UPDATE NOT READY\n",CkMyPe());
 				collectFlag = true;
 				parent_backup = lData->parent;
-				loc_backup = unmatchedObjs.getVec();
-				n_backup = unmatchedObjs.size();
+				loc_backup = unmatchedbuf.getVec();
+				n_backup = unmatchedbuf.size();
 				fromlevel_backup = atlevel;
 			}
 		}else{
-       		// send only unmatched ones up the tree
-			thisProxy[lData->parent].CollectInfo(unmatchedObjs.getVec(), unmatchedObjs.size(), atlevel);
+			// send only unmatched ones up the tree
+			thisProxy[lData->parent].CollectInfo(unmatchedbuf.getVec(), unmatchedbuf.size(), atlevel);
 		}
 
      }
