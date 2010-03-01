@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: emeneses $
- * $Date: 2009/12/02 23:09:02 $
- * $Revision: 1.90 $
+ * $Author: bhatele $
+ * $Date: 2010/03/01 02:31:33 $
+ * $Revision: 1.91 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -114,8 +114,6 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   // CkExit();
 #endif
 
-  iout << " NamdCentLB 1" << CmiWallTimer() << "\n" << endi;
-
   if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
     RefineOnly(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors);
@@ -138,7 +136,6 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
                   nMoveableComputes, numPatches, numProcessors);
   }
 
-  iout << " NamdCentLB 2" << CmiWallTimer() << "\n" << endi;
 #if LDB_DEBUG && USE_TOPOMAP
   TopoManager tmgr;
   int pe1, pe2, pe3, hops=0;
@@ -209,7 +206,6 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
     }
   }
   
-  iout << " NamdCentLB 3" << CmiWallTimer() << "\n" << endi;
   int migrate_count=migrateInfo.length();
   // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
   CLBMigrateMsg* msg = new(migrate_count,CkNumPes(),CkNumPes(),0) CLBMigrateMsg;

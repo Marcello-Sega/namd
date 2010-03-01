@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: emeneses $
- * $Date: 2010/02/27 22:51:08 $
- * $Revision: 1.2 $
+ * $Author: bhatele $
+ * $Date: 2010/03/01 02:31:33 $
+ * $Revision: 1.3 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -195,7 +195,7 @@ CLBMigrateMsg* NamdHybridLB::CentralStrategy(LDStats* stats,int count){
       	RefineTorusLB(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors, 1);
 
-#if LDB_DEBUG && 0
+#if LDB_DEBUG && USE_TOPOMAP
   TopoManager tmgr;
   int pe1, pe2, pe3, hops=0;
   /* This is double counting the hops
@@ -392,7 +392,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 			patchArray[pid].numAtoms = 0;
 			patchArray[pid].processor = stats->from_proc[j];
 			const int numProxies = 
-#if 0
+#if 0 // USE_TOPOMAP - this function needs to be there for the hybrid case
 			requiredProxiesOnProcGrid(pid,neighborNodes);
 #else
 			requiredProxies(pid, neighborNodes);

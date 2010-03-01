@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: bhatele $
- * $Date: 2010/02/02 21:40:08 $
- * $Revision: 1.21 $
+ * $Date: 2010/03/01 02:31:33 $
+ * $Revision: 1.22 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -44,24 +44,20 @@ int npas, int npes, int flag) : Rebalancer(cs, pas, pes, ncs, npas, npes)
 RefineTorusLB::~RefineTorusLB() { }
 
 void RefineTorusLB::strategy() {
-	int index, realPe;
+  int index, realPe;
 
-  iout << " RefineTorusLB 1" << CmiWallTimer() << "\n" << endi;
   firstAssignInRefine = 0;
   for(int i=0; i<numComputes; i++){
-  	//HYBRID check if processor is in local group
-	realPe = computes[i].oldProcessor;
-	if(realPe >= processors[0].Id && realPe < processors[0].Id + P){
-		index = realPe - processors[0].Id;
-	    //BACKUP assign((computeInfo *) &(computes[i]), (processorInfo *) &(processors[computes[i].oldProcessor]));
-	    assign((computeInfo *) &(computes[i]), (processorInfo *) &(processors[index]));
-	}
+    // HYBRID check if processor is in local group
+    realPe = computes[i].oldProcessor;
+    if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+      index = realPe - processors[0].Id;
+      assign((computeInfo *) &(computes[i]), (processorInfo *) &(processors[index]));
+    }
   }
   firstAssignInRefine = 1;
 
-  iout << " RefineTorusLB 2" << CmiWallTimer() << "\n" << endi;
   binaryRefine();
-  iout << " RefineTorusLB 3" << CmiWallTimer() << "\n" << endi;
   printLoads();
 }
 
