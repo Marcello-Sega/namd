@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: bhatele $
- * $Date: 2010/03/01 02:31:33 $
- * $Revision: 1.3 $
+ * $Author: jim $
+ * $Date: 2010/03/02 18:34:26 $
+ * $Revision: 1.4 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -558,10 +558,10 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
    lData->info_recved++;
 
    CkVec<Location> &matchedObjs = lData->matchedObjs;
-   std::map<LDObjKey, int> &unmatchedObjs = lData->unmatchedObjs;
 
    // sort into mactched and unmatched list
-#if 0
+#if CHARM_VERSION <= 60103
+   CkVec<Location> &unmatchedObjs = lData->unmatchedObjs;
    for (int i=0; i<n; i++) {
      // search and see if we have answer, put to matched
      // store in unknown
@@ -580,6 +580,7 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
      if (!found) unmatchedObjs.push_back(loc[i]);
    }
 #else
+   std::map<LDObjKey, int> &unmatchedObjs = lData->unmatchedObjs;
    for (int i=0; i<n; i++) {
      std::map<LDObjKey, int>::iterator iter = unmatchedObjs.find(loc[i].key);
      if (iter != unmatchedObjs.end()) {
@@ -603,10 +604,14 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
      if (lData->parent != -1) {
 
 		// NAMD specific
+#if CHARM_VERSION <= 60103
+#define unmatchedbuf unmatchedObjs
+#else
 		CkVec<Location> unmatchedbuf;
    		for(std::map<LDObjKey, int>::const_iterator it = unmatchedObjs.begin(); it != unmatchedObjs.end(); ++it){
     		unmatchedbuf.push_back(Location(it->first, it->second));
    		}
+#endif
 		// checking if update of ComputeMap is ready before calling parent
 		if(CkMyPe() == 0){
 			if(updateFlag){
