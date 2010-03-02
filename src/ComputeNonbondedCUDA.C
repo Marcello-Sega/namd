@@ -605,7 +605,7 @@ struct cr_sortop {
 void ComputeNonbondedCUDA::doWork() {
 
   // Skip computations if nothing to do.
-  if ( ! patchRecords[0].p->flags.doNonbonded ) {
+  if ( ! patchRecords[activePatches[0]].p->flags.doNonbonded ) {
     for ( int i=0; i<activePatches.size(); ++i ) {
       patch_record &pr = patchRecords[activePatches[i]];
       CompAtom *x = pr.positionBox->open();
