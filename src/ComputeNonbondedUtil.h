@@ -102,7 +102,6 @@ public:
   
   ResizeArray<plint> pairlist;
   ResizeArray<plint> pairlist2;
-  ResizeArray<short> vdwtype_array;
   ResizeArray<Force> f_0;
   ResizeArray<Force> fullf_0;
 };

@@ -636,10 +636,6 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(plint,pairlistmA2,arraysize);
   )
 
-  NBWORKARRAY(short,vdwtype_array,j_upper+5);
-  for (j = 0; j < j_upper; ++j)
-    vdwtype_array [j] = p_1[j].vdwType;
-
   int fixg_upper = 0;
   int g_upper = 0;
 
