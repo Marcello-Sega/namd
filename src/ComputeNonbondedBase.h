@@ -1095,11 +1095,10 @@ void ComputeNonbondedUtil :: NAME
 
     register plint *pli = pairlist2;
 #if 1 ALCH(-1)
-    plint *pairlistn = pairlists.newlist(j_upper + 5 + 1 + 5) SELF(+ 1);
+    plint *pairlistn = pairlists.newlist(j_upper + 5 + 5);
 #else
     plint *pairlistn = pairlistnAlch;
 #endif
-    SELF( plint &pairlistn_skip = *(pairlistn-1); )
     register plint *plin = pairlistn;
 
 
@@ -1346,17 +1345,6 @@ void ComputeNonbondedUtil :: NAME
     plint *plimA2 = pairlistmA2;
     )
     int k=0;
-#if 1 ALCH(-1)
-    SELF(
-    for (; pln < plin && *pln < j_hgroup; ++pln) {
-      *(plix++) = *pln;  // --exclChecksum;
-    }
-    pairlistn_skip = pln - pairlistn;
-    for (; k < npair2 && pairlist2[k] < j_hgroup; ++k) {
-      *(plix++) = pairlist2[k];  // --exclChecksum;
-    }
-    )
-#endif
 ALCH(
     SELF(
     for (; pln < plin && *pln < j_hgroup; ++pln) {
@@ -1404,7 +1392,7 @@ ALCH(
     npairn = plin - pln;
     pairlistn_save = pln;
     pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
-    pairlists.newsize(plin - pairlistn SELF(+ 1) + 1);
+    pairlists.newsize(plin - pairlistn + 1);
 #else
     plint *plinA0 = pairlistnA0;
     int unsortedNpairn = plin - pln;
@@ -1473,21 +1461,7 @@ ALCH(
 	// PAIR( iout << i << " " << i_upper << " use\n" << endi;)
 
     pairlists.nextlist(&pairlistn_save,&npairn);  --npairn;
-    //if ( npairn > 1000 )
-//	iout << i << " " << i_upper << " " << npairn << " n\n" << endi;
-#if 1 ALCH(-1)
-    SELF(
-    int pairlistn_skip = *pairlistn_save;
-    pairlistn_save += (pairlistn_skip + 1);
-    npairn -= (pairlistn_skip + 1);
-    )
-#endif
-
     pairlists.nextlist(&pairlistx_save,&npairx);  --npairx;
-
-    //if ( npairx > 1000 )
-//	iout << i << " " << i_upper << " " << npairx << " x\n" << endi;
-    // exclChecksum += npairx;
     pairlists.nextlist(&pairlistm_save,&npairm);  --npairm;
     ALCH(
     pairlists.nextlist(&pairlistnA1_save,&npairnA1);  --npairnA1;
@@ -1664,11 +1638,6 @@ ALCH(
 	p_i_x, p_i_y, p_i_z, p_1, pairlistx_save, npairx, pairlisti,
 	r2_delta, r2list);
     exclChecksum += npairi;
-#ifndef NAMD_CUDA
-    SELF(
-    for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
-    )
-#endif
 
 #undef FAST
 #define FAST(X)
@@ -1687,11 +1656,6 @@ ALCH(
 #undef MODIFIED
 #else
     exclChecksum += npairx;
-#ifndef NAMD_CUDA
-    SELF(
-      for (k=0; k<npairx && pairlistx_save[k] < j_hgroup; ++k) --exclChecksum;
-    )
-#endif
 #endif
 
 #if 0 ALCH(+1)   // nonbondedbase2 for alchemical-separeted pairlists
@@ -1784,9 +1748,6 @@ ALCH(
             p_i_x, p_i_y, p_i_z, p_1, pairlistxA1_save, npairxA1, pairlisti,
             r2_delta, r2list);
         exclChecksum += npairi;
-        SELF(
-        for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
-        )
     #include  "ComputeNonbondedBase2.h"  //excluded, direction 'up'
     #undef ALCH1
     #undef ALCH2
@@ -1797,9 +1758,6 @@ ALCH(
             p_i_x, p_i_y, p_i_z, p_1, pairlistxA2_save, npairxA2, pairlisti,
             r2_delta, r2list);
         exclChecksum += npairi;
-        SELF(
-        for (k=0; k<npairi && pairlisti[k] < j_hgroup; ++k) --exclChecksum;
-        )
     #include  "ComputeNonbondedBase2.h"  //excluded, direction 'down'
     #undef ALCH1
     #undef ALCH2
@@ -1815,10 +1773,6 @@ ALCH(
     #undef MODIFIED
     #else
         exclChecksum += npairxA1 + npairxA2;
-        SELF(
-          for (k=0; k<npairxA1 && pairlistxA1_save[k] < j_hgroup; ++k) --exclChecksum;
-          for (k=0; k<npairxA2 && pairlistxA2_save[k] < j_hgroup; ++k) --exclChecksum;
-        )
     #endif
 
     #undef ALCHPAIR
