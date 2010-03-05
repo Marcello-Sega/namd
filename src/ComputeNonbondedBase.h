@@ -1341,26 +1341,7 @@ void ComputeNonbondedUtil :: NAME
     plint *plimA2 = pairlistmA2;
     )
     int k=0;
-ALCH(
-    SELF(
-    for (; pln < plin && *pln < j_hgroup; ++pln) {
-      switch (pswitchTable[4*p_i_partition]) { //p_i_partition + 3*p_1[i].partition
-      case 0: *(plix++) = *pln;  break;
-      case 1: *(plixA1++) = *pln; break;
-      case 2: *(plixA2++) = *pln; break;
-      default: NAMD_die("Alchemical pairlist error"); break;
-      }
-    }
-    for (; k < npair2 && pairlist2[k] < j_hgroup; ++k) {
-      switch (pswitchTable[4*p_i_partition]) {
-      case 0: *(plix++) = pairlist2[k];  break;
-      case 1: *(plixA1++) = pairlist2[k]; break;
-      case 2: *(plixA2++) = pairlist2[k]; break;
-      default: NAMD_die("Alchemical pairlist error"); break;
-      }
-    }
-    )
-)
+    // removed code for implicit exclusions within hydrogen groups -JCP
     for (; k < npair2; ++k ) {
       int j = pairlist2[k];
       int atom2 = pExt_1[j].id;
@@ -1380,8 +1361,6 @@ ALCH(
       )
       }
     }
-    // exclChecksum += (plix - pairlistx);
-    // exclChecksum += (plim - pairlistm);
 
 
 #if 1 ALCH(-1)
@@ -1467,9 +1446,6 @@ ALCH(
     pairlists.nextlist(&pairlistxA2_save,&npairxA2);  --npairxA2;
     pairlists.nextlist(&pairlistmA2_save,&npairmA2);  --npairmA2;
     )
-    //if ( npairm > 1000 )
-//	iout << i << " " << i_upper << " " << npairm << " m\n" << endi;
-    // exclChecksum += npairm;
 
   } // if ( savePairlists || ! usePairlists )
 
