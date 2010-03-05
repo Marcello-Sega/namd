@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2010/02/10 19:47:21 $
- * $Revision: 1.1244 $
+ * $Date: 2010/03/05 23:33:39 $
+ * $Revision: 1.1245 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1263,7 +1263,7 @@ void Controller::compareChecksums(int step, int forgiving) {
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
     if ( ((int)checksum) > molecule->numCalcExclusions &&
          ( ! simParams->mollyOn || step % slowFreq ) )
-      iout << iWARN << "Not all atoms have unique coordinates.\n" << endi;
+      NAMD_bug("Bad global exclusion count!\n");
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) && ! marginViolations ) {
