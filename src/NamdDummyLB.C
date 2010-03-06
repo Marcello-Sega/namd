@@ -12,37 +12,33 @@
 #include "ComputeMap.h"
 #include "LdbCoordinator.h"
 
-void CreateNamdDummyLB()
-{
+void CreateNamdDummyLB() {
   loadbalancer = CProxy_NamdDummyLB::ckNew();
 }
 
-NamdDummyLB *AllocateNamdDummyLB(){
-	return new NamdDummyLB((CkMigrateMessage*)NULL);
+NamdDummyLB *AllocateNamdDummyLB() {
+  return new NamdDummyLB((CkMigrateMessage*)NULL);
 }
 
-NamdDummyLB::NamdDummyLB(CkMigrateMessage *msg): CentralLB(msg){
-	lbname = (char*)"NamdDummyLB";
+NamdDummyLB::NamdDummyLB(CkMigrateMessage *msg): CentralLB(msg) {
+  lbname = (char*)"NamdDummyLB";
 }
  
-NamdDummyLB::NamdDummyLB(): CentralLB(CkLBOptions(-1))
-{
-	lbname = (char*)"NamdDummyLB";
-	if (CkMyPe() == 0)
-    	CkPrintf("[%d] DummyLB created\n",CkMyPe());
+NamdDummyLB::NamdDummyLB(): CentralLB(CkLBOptions(-1)) {
+  lbname = (char*)"NamdDummyLB";
+  if (CkMyPe() == 0)
+    CkPrintf("[%d] DummyLB created\n",CkMyPe());
 }
 
-CmiBool NamdDummyLB::QueryBalanceNow(int _step)
-{
-    return CmiTrue;
+CmiBool NamdDummyLB::QueryBalanceNow(int _step) {
+  return CmiTrue;
 }
 
-CmiBool NamdDummyLB::QueryDumpData()
-{
+CmiBool NamdDummyLB::QueryDumpData() {
   return CmiFalse;
 }
 
-// Dummy work function            
-void NamdDummyLB::work(LDStats* stats,int count){
-	// CkPrintf("[%d] NamdDummyLB At WORK\n",CkMyPe());
+// Dummy work function
+void NamdDummyLB::work(LDStats* stats,int count) {
+  // CkPrintf("[%d] NamdDummyLB At WORK\n",CkMyPe());
 }

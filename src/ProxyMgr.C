@@ -685,7 +685,6 @@ static int noInterNode(int p)
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
 //only on PE 0
 void ProxyMgr::buildNodeAwareSpanningTree0(){
-	CkPrintf("------------------> BUILD NODE AWARE SPANNING TREE %d\n",CkMyPe());
     int numPatches = PatchMap::Object()->numPatches();
     if (ptree.naTrees == NULL) ptree.naTrees = new proxyTreeNodeList[numPatches];
     //each element indiates the number of proxies residing on this node    
@@ -883,7 +882,6 @@ void ProxyMgr::buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &pr
         CkPrintf ("This is sheer evil in building node-aware spanning tree!\n\n");            
         return;
     }        
-
  
     memset(proxyNodeMap, 0, sizeof(int)*CkNumNodes());
     int proxyNodeList[numProxies+1]; //including the root node             
@@ -943,9 +941,7 @@ ProxyMgr::buildSpanningTree0()
 {
   int i;
 
-	CkPrintf("------------------> BUILD SPANNING TREE %d\n",CkMyPe());
   processCpuLoad();
-
 
   int *numPatchesOnNode = new int[CkNumPes()];
   int numNodesWithPatches = 0;

@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: dhardy $
- * $Date: 2010/01/19 22:11:38 $
- * $Revision: 1.94 $
+ * $Author: emeneses $
+ * $Date: 2010/03/06 23:24:36 $
+ * $Revision: 1.95 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -38,8 +38,6 @@
 
 #include "elements.h"
 #include "ComputeMgr.decl.h"
-
-#include "GreedyLB.h"
 
 #define DEBUG_LEVEL 4
 
@@ -119,7 +117,6 @@ void LdbCoordinator::ResumeFromSync()
   }
 #endif
   CProxy_LdbCoordinator cl(thisgroup);
-  //iout << "[" << CmiMyPe() << "] Calling nodeDone\n" << endi;
   cl[0].nodeDone();
 }
 
@@ -209,21 +206,17 @@ void LdbCoordinator::createLoadBalancer()
   if (CkMyPe()==0) 
     iout << "LDB: Measuring processor speeds ..." << endi;
   const SimParameters *simParams = Node::Object()->simParameters;
-  /*if (simParams->ldbStrategy == LDBSTRAT_ALGNBOR) 
-    CreateNamdNborLB();
-  else {*/
-    if(simParams->ldbStrategy == LDBSTRAT_HYBRID){
-	CkPrintf("Hybrid LB being created...\n");
-        CreateNamdHybridLB();
-/*	CkPrintf("Dummy LB being created...\n");
-        CreateNamdDummyLB(); */
-/*	CkPrintf("Neighbor LB being created ...\n");
-	CreateNamdNborLB(); */
-	}
-	else{
-	CkPrintf("Namd Central LB beign created...\n");
-    	CreateNamdCentLB();
-	}
+
+  // Create hierarchical or centralized load balancers
+  // Currently centralized is the default
+  if(simParams->ldbStrategy == LDBSTRAT_HYBRID){
+    CkPrintf("Hybrid LB being created...\n");
+    CreateNamdHybridLB();
+  } else {
+    CkPrintf("Namd Central LB beign created...\n");
+    CreateNamdCentLB();
+  }
+
   if (CkMyPe()==0)
     iout << " Done.\n" << endi;
 }
@@ -245,8 +238,6 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     lbcreated = 1;
   }
 #endif
-
-  // CkPrintf("%d is INITIALIZING\n",CkMyPe());
 
   //  DebugM(10,"stepsPerLdbCycle initialized\n");
   stepsPerLdbCycle = simParams->ldbPeriod;
@@ -501,7 +492,6 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 
 void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 {
-	if(!(id >= 0 && id < numComputes)) CkExit();
   CmiAssert(id >=0 && id < numComputes);
   theLbdb->ObjectStart(objHandles[id]);
 }
@@ -605,8 +595,6 @@ void LdbCoordinator::updateComputesReady() {
 void LdbCoordinator::resume(void)
 {
   DebugM(3,"resume()\n");
-  //CkPrintf("%d RESUME LDBCOORDINATOR\n",CkMyPe());
-
   //  printLocalLdbReport();
 
   ldbCycleNum++;

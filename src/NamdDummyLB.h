@@ -23,9 +23,10 @@
 class NamdDummyLB : public CentralLB {
 
 public:
-	NamdDummyLB();
-	NamdDummyLB(CkMigrateMessage *);
-  	void work(LDStats* stats,int count);
+  NamdDummyLB();
+  NamdDummyLB(CkMigrateMessage *);
+  void work(LDStats* stats,int count);
+
 private:
   CmiBool QueryBalanceNow(int step);
   CmiBool QueryDumpData();

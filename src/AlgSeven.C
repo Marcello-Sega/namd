@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/AlgSeven.C,v $
  * $Author: emeneses $
- * $Date: 2009/12/02 23:09:02 $
- * $Revision: 1.56 $
+ * $Date: 2010/03/06 23:24:36 $
+ * $Revision: 1.57 $
  *****************************************************************************/
 
 #include "common.h"
@@ -130,12 +130,11 @@ void Alg7::strategy()
 
   double startTime = CmiWallTimer();
 
-  //   iout << iINFO  << "calling makeHeaps. \n";
+  // iout << iINFO << "calling makeHeaps. \n";
   adjustBackgroundLoadAndComputeAverage();
   makeHeaps();
-  //   iout << iINFO
-  //	<< "Before assignment\n" << endi;
-  printLoads();
+  // iout << iINFO << "Before assignment\n" << endi;
+  // printLoads();
 
   /*
   int numOverloaded = 0;

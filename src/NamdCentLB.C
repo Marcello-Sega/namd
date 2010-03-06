@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: bhatele $
- * $Date: 2010/03/01 02:31:33 $
- * $Revision: 1.91 $
+ * $Author: emeneses $
+ * $Date: 2010/03/06 23:24:36 $
+ * $Revision: 1.92 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -23,8 +23,7 @@
 
 double *cpuloads = NULL;
 
-void CreateNamdCentLB()
-{
+void CreateNamdCentLB() {
   // CkPrintf("[%d] creating NamdCentLB %d\n",CkMyPe(),loadbalancer);
   loadbalancer = CProxy_NamdCentLB::ckNew();
   // CkPrintf("[%d] created NamdCentLB %d\n",CkMyPe(),loadbalancer);
@@ -32,15 +31,14 @@ void CreateNamdCentLB()
   for (int i=0; i<CkNumPes(); i++) cpuloads[i] = 0.0;
 }
 
-NamdCentLB *AllocateNamdCentLB(){
-	return new NamdCentLB((CkMigrateMessage*)NULL);
+NamdCentLB *AllocateNamdCentLB() {
+  return new NamdCentLB((CkMigrateMessage*)NULL);
 }
 
 /**
  * Migratable Object Constructor.
- kMigrateMessage*)NULL
  */
-NamdCentLB::NamdCentLB(CkMigrateMessage *msg): CentralLB(msg){
+NamdCentLB::NamdCentLB(CkMigrateMessage *msg): CentralLB(msg) {
   processorArray = 0;
   patchArray = 0;
   computeArray = 0;
@@ -98,7 +96,6 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   if ( ! processorArray ) processorArray = new processorInfo[numProcessors];
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
   if ( ! computeArray ) computeArray = new computeInfo[numComputes];
-
 
   int nMoveableComputes = buildData(stats,count);
 
@@ -386,8 +383,6 @@ extern int isPmeProcessor(int);
 
 int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 {
-
-
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
   const SimParameters* simParams = Node::Object()->simParameters;
@@ -524,7 +519,6 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
-
 	const int cid = this_obj.id().id[0];
 	const int p0 = computeMap->pid(cid,0);
 
@@ -546,7 +540,6 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	nMoveableComputes++;
       }
     }
-
 
 /* *********** this code is defunct *****************
 #if 0

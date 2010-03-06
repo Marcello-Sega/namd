@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.h,v $
  * $Author: emeneses $
- * $Date: 2009/12/02 23:09:02 $
- * $Revision: 1.12 $
+ * $Date: 2010/03/06 23:24:36 $
+ * $Revision: 1.13 $
  *****************************************************************************/
 
 /** \file NamdCentLB.h
@@ -46,13 +46,16 @@
 #include "TorusLB.h"
 #include "RefineTorusLB.h"
 
+void CreateNamdCentLB();
+NamdCentLB *AllocateNamdCentLB();
 
 class NamdCentLB : public CentralLB {
 
 public:
-	NamdCentLB();
-	NamdCentLB(CkMigrateMessage *);
-	CLBMigrateMsg* Strategy(CentralLB::LDStats* stats, int count);
+  NamdCentLB();
+  NamdCentLB(CkMigrateMessage *);
+  CLBMigrateMsg* Strategy(CentralLB::LDStats* stats, int count);
+
 private:
   CmiBool QueryBalanceNow(int step);
   CmiBool QueryDumpData();
@@ -70,8 +73,5 @@ private:
   patchInfo *patchArray;
   processorInfo *processorArray;
 };
-
-void CreateNamdCentLB();
-NamdCentLB *AllocateNamdCentLB();
 
 #endif /* _NAMDCENTLB_H_ */
