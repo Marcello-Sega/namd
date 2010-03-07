@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dbwells2 $
- * $Date: 2010/02/25 00:21:35 $
- * $Revision: 1.1161 $
+ * $Author: emeneses $
+ * $Date: 2010/03/07 00:19:13 $
+ * $Revision: 1.1162 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -57,13 +57,15 @@ typedef int  MTSChoices;
 #define C2              3
 
 //  The following definitions are used to distinguish among load
-//  balancing strategies
-#define LDBSTRAT_NONE		0
-#define LDBSTRAT_REFINEONLY	1
-#define LDBSTRAT_ALG7		2
-#define LDBSTRAT_ASB8		3
-#define LDBSTRAT_HYBRID		4
-#define LDBSTRAT_OTHER		99
+//  balancers and their strategies
+#define LDBAL_NONE		0
+#define LDBAL_CENTRALIZED	1	// default
+#define LDBAL_HYBRID		2
+
+#define LDBSTRAT_ASB		10	// default
+#define LDBSTRAT_COMPREHENSIVE	11
+#define LDBSTRAT_REFINEONLY	12
+#define LDBSTRAT_OLD		13
 
 // The following definitions are used to distinguish between patch-splitting
 // strategies
@@ -102,7 +104,8 @@ public:
 	int fullElectFrequency;		//  Number of timesteps between
 					//  full electrostatic evaluation
         BigReal fmaTheta;	        //  DPMTA theta value
-	int ldbStrategy;                //  What type of load balancing
+	int ldBalancer;			//  None, Centralized or Hybrid
+	int ldbStrategy;                //  What load balancing strategy to use
 	int ldbPeriod;                  //  How often to do load balancing
 	int firstLdbStep;		//  What step to do the first 
                                         //  load-balance on.
@@ -694,6 +697,7 @@ private:
 	void print_config(ParseOptions &opts, ConfigList *config, char *&cwd);
 
 	int fmaFrequency;		//  outdated parameter name
+	char loadBalancer[64];		//  Load balancer
 	char loadStrategy[64];		//  Load balancing strategy
 
 };

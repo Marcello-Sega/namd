@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dbwells2 $
- * $Date: 2010/02/25 00:21:35 $
- * $Revision: 1.1297 $
+ * $Author: emeneses $
+ * $Date: 2010/03/07 00:19:13 $
+ * $Revision: 1.1298 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1426,6 +1426,8 @@ void SimParameters::config_parser_boundary(ParseOptions &opts) {
 void SimParameters::config_parser_misc(ParseOptions &opts) {
    
    ///////////////  Load balance options
+   opts.optional("main", "ldBalancer", "Load balancer",
+     loadBalancer);
    opts.optional("main", "ldbStrategy", "Load balancing strategy",
      loadStrategy);
    opts.optional("main", "ldbPeriod", "steps between load balancing", 
@@ -2378,24 +2380,29 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
    //  Set up load balancing variables
+   if (opts.defined("ldBalancer")) {
+     if (strcasecmp(loadBalancer, "none") == 0)
+       ldBalancer = LDBAL_NONE;
+     else if (strcasecmp(loadBalancer, "hybrid") == 0)
+       ldBalancer = LDBAL_HYBRID;
+     else
+       NAMD_die("Unknown ldBalancer selected");
+   } else {
+     ldBalancer = LDBAL_CENTRALIZED;
+   }
+
    if (opts.defined("ldbStrategy")) {
      //  Assign the load balancing strategy
-     if (strcasecmp(loadStrategy, "none") == 0)
-       ldbStrategy=LDBSTRAT_NONE;
+     if (strcasecmp(loadStrategy, "comprehensive") == 0)
+       ldbStrategy = LDBSTRAT_COMPREHENSIVE;
      else if (strcasecmp(loadStrategy, "refineonly") == 0)
-       ldbStrategy=LDBSTRAT_REFINEONLY;
-     else if (strcasecmp(loadStrategy, "alg7") == 0)
-       ldbStrategy=LDBSTRAT_ALG7;
-     else if (strcasecmp(loadStrategy, "asb8") == 0)
-       ldbStrategy=LDBSTRAT_ASB8;
-     else if (strcasecmp(loadStrategy, "hybrid") == 0)
-       ldbStrategy=LDBSTRAT_HYBRID;
-     else if (strcasecmp(loadStrategy, "other") == 0)
-       ldbStrategy=LDBSTRAT_OTHER;
+       ldbStrategy = LDBSTRAT_REFINEONLY;
+     else if (strcasecmp(loadStrategy, "old") == 0)
+       ldbStrategy = LDBSTRAT_OLD;
      else
        NAMD_die("Unknown ldbStrategy selected");
    } else {
-     ldbStrategy=LDBSTRAT_ASB8;
+     ldbStrategy = LDBSTRAT_ASB;
    }
 
   if (!opts.defined("ldbPeriod")) {
@@ -2874,18 +2881,25 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
-   if (ldbStrategy==LDBSTRAT_NONE)  {
-     iout << iINFO << "LOAD BALANCE STRATEGY  none\n" << endi;
+   if (ldBalancer == LDBAL_NONE) {
+     iout << iINFO << "LOAD BALANCER  None\n" << endi;
    } else {
-     if (ldbStrategy==LDBSTRAT_REFINEONLY) {
-       iout << iINFO << "LOAD BALANCE STRATEGY  Refine-only\n";
-     } else if (ldbStrategy==LDBSTRAT_ALG7)  {
-       iout << iINFO << "LOAD BALANCE STRATEGY  Alg7\n";
-     } else if (ldbStrategy==LDBSTRAT_ASB8)  {
-       iout << iINFO << "LOAD BALANCE STRATEGY  New Load Balancers -- ASB\n";
-     } else if (ldbStrategy==LDBSTRAT_OTHER)  {
-       iout << iINFO << "LOAD BALANCE STRATEGY  Other\n";
+     if (ldBalancer == LDBAL_CENTRALIZED) {
+       iout << iINFO << "LOAD BALANCER  Centralized\n" << endi;
+     } else if (ldBalancer == LDBAL_HYBRID) {
+       iout << iINFO << "LOAD BALANCER  Hybrid\n" << endi;
      }
+
+     if (ldbStrategy == LDBSTRAT_ASB) {
+       iout << iINFO << "LOAD BALANCING STRATEGY  New Load Balancers -- ASB\n";
+     } else if (ldbStrategy == LDBSTRAT_REFINEONLY) {
+       iout << iINFO << "LOAD BALANCING STRATEGY  Refinement Only\n";
+     } else if (ldbStrategy == LDBSTRAT_COMPREHENSIVE) {
+       iout << iINFO << "LOAD BALANCING STRATEGY  Comprehensive\n";
+     } else if (ldbStrategy == LDBSTRAT_OLD) {
+       iout << iINFO << "LOAD BALANCING STRATEGY  Old Load Balancers\n";
+     }
+
      iout << iINFO << "LDB PERIOD             " << ldbPeriod << " steps\n";
      iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep << "\n";
      iout << iINFO << "LAST LDB TIMESTEP     " << lastLdbStep << "\n";

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: emeneses $
- * $Date: 2010/03/06 23:24:36 $
- * $Revision: 1.92 $
+ * $Date: 2010/03/07 00:19:13 $
+ * $Revision: 1.93 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -111,20 +111,20 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   // CkExit();
 #endif
 
-  if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
-    RefineOnly(computeArray, patchArray, processorArray,
-                  nMoveableComputes, numPatches, numProcessors);
-  } else if (simParams->ldbStrategy == LDBSTRAT_ALG7) {
-    Alg7(computeArray, patchArray, processorArray,
-                  nMoveableComputes, numPatches, numProcessors);
-  } else if (simParams->ldbStrategy == LDBSTRAT_ASB8) {
+  if (simParams->ldbStrategy == LDBSTRAT_ASB) { // default
     if (step() < 2)
       TorusLB(computeArray, patchArray, processorArray,
 	          nMoveableComputes, numPatches, numProcessors);
     else
       RefineTorusLB(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors, 1);
-  } else if (simParams->ldbStrategy == LDBSTRAT_OTHER) {
+  } else if (simParams->ldbStrategy == LDBSTRAT_COMPREHENSIVE) {
+    TorusLB(computeArray, patchArray, processorArray,
+	          nMoveableComputes, numPatches, numProcessors);
+  } else if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
+    RefineTorusLB(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors, 1);
+  } else if (simParams->ldbStrategy == LDBSTRAT_OLD) {
     if (step() < 2)
       Alg7(computeArray, patchArray, processorArray,
 	          nMoveableComputes, numPatches, numProcessors);

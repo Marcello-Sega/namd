@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: emeneses $
- * $Date: 2010/03/06 23:24:36 $
- * $Revision: 1.95 $
+ * $Date: 2010/03/07 00:19:13 $
+ * $Revision: 1.96 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -209,12 +209,12 @@ void LdbCoordinator::createLoadBalancer()
 
   // Create hierarchical or centralized load balancers
   // Currently centralized is the default
-  if(simParams->ldbStrategy == LDBSTRAT_HYBRID){
-    CkPrintf("Hybrid LB being created...\n");
-    CreateNamdHybridLB();
-  } else {
+  if (simParams->ldBalancer == LDBAL_CENTRALIZED) {
     CkPrintf("Namd Central LB beign created...\n");
     CreateNamdCentLB();
+  } else if (simParams->ldBalancer == LDBAL_HYBRID) {
+    CkPrintf("Hybrid LB being created...\n");
+    CreateNamdHybridLB();
   }
 
   if (CkMyPe()==0)
@@ -505,7 +505,7 @@ void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
 
 void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
 {
-  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
+  if (Node::Object()->simParameters->ldBalancer == LDBAL_NONE)
     return;
 
   sequencerThreads[pid] = seq;
@@ -514,7 +514,7 @@ void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
 
 void LdbCoordinator::rebalance(Controller *c)
 {
-  if (Node::Object()->simParameters->ldbStrategy == LDBSTRAT_NONE)
+  if (Node::Object()->simParameters->ldBalancer == LDBAL_NONE)
     return;
 
   iout << "LDB: ============= START OF LOAD BALANCING ============== " << CmiWallTimer() << "\n" << endi;
