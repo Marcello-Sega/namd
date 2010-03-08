@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2010/03/02 18:34:26 $
- * $Revision: 1.4 $
+ * $Date: 2010/03/08 17:34:21 $
+ * $Revision: 1.5 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -317,8 +317,6 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 	int pmeBarrier = simParams->PMEBarrier;
 	int unLoadZero = simParams->ldbUnloadZero;
 	int unLoadOne = simParams->ldbUnloadOne;
-	int unLoadRankZero = simParams->ldbUnloadRankZero;
-	int unLoadSMP = simParams->ldbUnloadSMP;
 
 	// traversing the list of processors and getting their load information
 	for (i=0; i<count; ++i) {
@@ -341,10 +339,6 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 
 	if(unLoadZero && stats->procs[0].pe == 0) processorArray[0].available = CmiFalse;
 	if(unLoadOne && stats->procs[1].pe == 1) processorArray[1].available = CmiFalse;
-	if(unLoadRankZero){
-		for (int i=0; i<count; i+=4) 
-      		processorArray[i].available = CmiFalse;
-	}
 
 	// if all pes are Pme, disable this flag
   	if (pmeOn && unLoadPme) {
@@ -361,14 +355,6 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
     	for (i=0; i<count; i++) {
       		if ((pmeBarrier && i==0) || isPmeProcessor(stats->procs[i].pe)) 
 				processorArray[i].available = CmiFalse;
-    	}
-  	}
-
-	if (unLoadSMP) {
-    	int ppn = simParams->procsPerNode;
-    	int unloadrank = simParams->ldbUnloadRank;
-    	for (int i=0; i<count; i+=ppn) {
-      		processorArray[i+unloadrank].available = CmiFalse;
     	}
   	}
 

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: emeneses $
- * $Date: 2010/03/07 00:19:13 $
- * $Revision: 1.1162 $
+ * $Author: jim $
+ * $Date: 2010/03/08 17:34:21 $
+ * $Revision: 1.1163 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -118,12 +118,8 @@ public:
 	int twoAwayY;			//  half-size patches in Y dimension
 	int twoAwayZ;			//  half-size patches in Z dimension
 	Bool ldbUnloadPME;		//  unload processors doing PME
-	Bool ldbUnloadSMP;		//  unload processors rank
 	Bool ldbUnloadZero;		//  unload processor 0
 	Bool ldbUnloadOne;		//  unload processor 1 
-	Bool ldbUnloadRankZero;		//  unload processors rank
-	int procsPerNode;		//  number of pes per node
-	int ldbUnloadRank;		//  unload rank on a node
 	Bool noPatchesOnZero;		//  no patches on processor 0
 	Bool noPatchesOnOne;		//  no patches on processor 1
 	Bool shiftIOToOne;		//  shift I/O operation (say, DCD output) to proc 1

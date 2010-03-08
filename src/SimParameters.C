@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/07 00:19:13 $
- * $Revision: 1.1298 $
+ * $Author: jim $
+ * $Date: 2010/03/08 17:34:21 $
+ * $Revision: 1.1299 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1450,14 +1450,10 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("ldbHomeBackgroundScaling", NOT_NEGATIVE);
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);
-   opts.optionalB("main", "ldbUnloadSMP", "no load on one pe of SMP node",
-     &ldbUnloadSMP, FALSE);
    opts.optionalB("main", "ldbUnloadZero", "no load on pe zero",
      &ldbUnloadZero, FALSE);
    opts.optionalB("main", "ldbUnloadOne", "no load on pe one",
      &ldbUnloadOne, FALSE);
-   opts.optionalB("main", "ldbUnloadRankZero", "no load on rank zero",
-     &ldbUnloadRankZero, FALSE);
    opts.optionalB("main", "noPatchesOnZero", "no patches on pe zero",
      &noPatchesOnZero, FALSE);
    opts.optionalB("main", "noPatchesOnOne", "no patches on pe one",
@@ -1474,12 +1470,6 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                   &proxySendSpanningTree, -1);
    opts.optional("main", "proxyRecvSpanningTree", "using spanning tree to receive proxies",
                   &proxyRecvSpanningTree, -1);
-   opts.optional("main", "procsPerNode", "Number of Processor per node",
-     &procsPerNode);
-   opts.range("procsPerNode", POSITIVE);
-   opts.optional("main", "ldbUnloadRank", "no load on rank pe of a node",
-     &ldbUnloadRank);
-   opts.range("ldbUnloadRank", POSITIVE);
    opts.optionalB("main", "twoAwayX", "half-size patches in 1st dimension",
      &twoAwayX, -1);
    opts.optionalB("main", "twoAwayY", "half-size patches in 1st dimension",
@@ -2462,18 +2452,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (!opts.defined("ldbHomeBackgroundScaling")) {
      ldbHomeBackgroundScaling = ldbBackgroundScaling;
    }
-   if (!opts.defined("procsPerNode"))
-   {
-     procsPerNode=1;
-   }
-   if (!opts.defined("ldbUnloadRank"))
-   {
-     ldbUnloadRank = procsPerNode-1;
-   }
-   if (ldbUnloadRank >= procsPerNode)
-	NAMD_die("Invalid unload rank of SMP node!!!");
-
-
 
    //  Check on PME parameters
    if (PMEOn) {  // idiot checking
@@ -2927,8 +2905,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";
      iout << endi;
      if ( shiftIOToOne ) iout << iINFO << "SHIFTING I/O OPERATION TO PROCESSOR 1\n";
-     iout << endi;
-     if ( ldbUnloadRankZero ) iout << iINFO << "REMOVING LOAD FROM RANK 0\n";
      iout << endi;
    }
 

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/07 00:19:13 $
- * $Revision: 1.93 $
+ * $Author: jim $
+ * $Date: 2010/03/08 17:34:21 $
+ * $Revision: 1.94 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -395,8 +395,6 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int pmeBarrier = simParams->PMEBarrier;
   int unLoadZero = simParams->ldbUnloadZero;
   int unLoadOne = simParams->ldbUnloadOne;
-  int unLoadRankZero = simParams->ldbUnloadRankZero;
-  int unLoadSMP = simParams->ldbUnloadSMP;
 
   int i;
   for (i=0; i<count; ++i) {
@@ -456,10 +454,6 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
   if (unLoadZero) processorArray[0].available = CmiFalse;
   if (unLoadOne) processorArray[1].available = CmiFalse;
-  if (unLoadRankZero) {
-    for (int i=0; i<count; i+=4) 
-      processorArray[i].available = CmiFalse;
-  }
 
   // if all pes are Pme, disable this flag
   if (pmeOn && unLoadPme) {
@@ -476,14 +470,6 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
     for (i=0; i<count; i++) {
       if ((pmeBarrier && i==0) || isPmeProcessor(i)) 
 	processorArray[i].available = CmiFalse;
-    }
-  }
-
-  if (unLoadSMP) {
-    int ppn = simParams->procsPerNode;
-    int unloadrank = simParams->ldbUnloadRank;
-    for (int i=0; i<count; i+=ppn) {
-      processorArray[i+unloadrank].available = CmiFalse;
     }
   }
 
