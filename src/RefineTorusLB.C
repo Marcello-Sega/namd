@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: bhatele $
- * $Date: 2010/03/01 02:31:33 $
- * $Revision: 1.22 $
+ * $Author: emeneses $
+ * $Date: 2010/03/08 22:42:51 $
+ * $Revision: 1.23 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -111,7 +111,7 @@ int RefineTorusLB::newRefine() {
   Iterator nextC, nextP;
   pcpair good;
   double thresholdLoad = overLoad * averageLoad;
-	int index, realPe;
+  int index, realPe;
 
   // create a heap and set of heavy and light pes respectively
   for(int i=0; i<P; i++) {
@@ -150,32 +150,34 @@ int RefineTorusLB::newRefine() {
 
     while(c) {
       // Look at the processors which have the compute's patches first
-  		//HYBRID check if processor is in local group
-		realPe = patches[c->patch1].processor;
-		if(realPe >= processors[0].Id && realPe < processors[0].Id + P){
-			index = realPe - processors[0].Id;
-  			//BACKUP p = &processors[patches[c->patch1].processor];	// patch 1
-  			p = &processors[index];	// patch 1
-  			selectPes(p, c);
-		}
-		realPe = patches[c->patch2].processor;
-		if(realPe >= processors[0].Id && realPe < processors[0].Id + P){
-			index = realPe - processors[0].Id;
-			//BACKUP p = &processors[patches[c->patch2].processor];	// patch 2
-			p = &processors[index];	// patch 2
-  			selectPes(p, c); 
-		}
+
+      // HYBRID check if processor is in local group
+      realPe = patches[c->patch1].processor;
+      if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+	index = realPe - processors[0].Id;
+  	p = &processors[index];	// patch 1
+  	selectPes(p, c);
+      }
+
+      realPe = patches[c->patch2].processor;
+      if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+	index = realPe - processors[0].Id;
+	p = &processors[index];	// patch 2
+  	selectPes(p, c); 
+      }
 
       // Try the processors which have the patches' proxies
       p = (processorInfo *)(patches[c->patch1].proxiesOn.iterator((Iterator *)&nextP));
       while(p) {                                            // patch 1
-	selectPes(p, c);
+	if(p->Id >= processors[0].Id && p->Id < processors[0].Id + P)
+	  selectPes(p, c);
 	p = (processorInfo *)(patches[c->patch1].proxiesOn.next((Iterator *)&nextP));
       }
   
       p = (processorInfo *)(patches[c->patch2].proxiesOn.iterator((Iterator *)&nextP));
       while(p) {                                            //patch 2
-        selectPes(p, c);
+	if(p->Id >= processors[0].Id && p->Id < processors[0].Id + P)
+	  selectPes(p, c);
         p = (processorInfo *)(patches[c->patch2].proxiesOn.next((Iterator *)&nextP));
       }
       

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: jim $
- * $Date: 2010/03/08 17:34:21 $
- * $Revision: 1.5 $
+ * $Author: emeneses $
+ * $Date: 2010/03/08 22:42:51 $
+ * $Revision: 1.6 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -32,26 +32,25 @@ void CreateNamdHybridLB() {
  */
 NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
 {
+  // setting the name
+  lbname = (char *)"NamdHybridLB";
 
-	// setting the name
-	lbname = (char *)"NamdHybridLB";
+  // initializing thisProxy
+  thisProxy = CProxy_NamdHybridLB(thisgroup);
+  
+  // initializing the central LB
+  centralLB = AllocateNamdCentLB();
 
-	// initializing thisProxy
-	thisProxy = CProxy_NamdHybridLB(thisgroup);
-	
-	// initializing the central LB
-	centralLB = AllocateNamdCentLB();
+  // initializing the dummy LB
+  dummyLB = AllocateNamdDummyLB();
 
-	// initializing the dummy LB
-	dummyLB = AllocateNamdDummyLB();
-
-	// assigning initial values to variables
-	computeArray = NULL;
-	patchArray = NULL;
-	processorArray = NULL;
-	updateCount = 0;
-	updateFlag = false;
-	collectFlag = false;
+  // assigning initial values to variables
+  computeArray = NULL;
+  patchArray = NULL;
+  processorArray = NULL;
+  updateCount = 0;
+  updateFlag = false;
+  collectFlag = false;
 
 }
 
@@ -61,14 +60,14 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
  * It is called from HybridBase every time AtSync method is called.
  */
 CmiBool NamdHybridLB::QueryBalanceNow(int _step){ 
-	if ( LdbCoordinator::Object()->takingLdbData ) {
-		return CmiTrue;
-	} else {
-		return CmiFalse;
-	} 
+  if ( LdbCoordinator::Object()->takingLdbData ) {
+	  return CmiTrue;
+  } else {
+	  return CmiFalse;
+  } 
 }
 
-CmiBool NamdHybridLB::QueryDumpData(){                                                                                                 
+CmiBool NamdHybridLB::QueryDumpData() {
 #if 0                                                                                             
   if (LdbCoordinator::Object()->ldbCycleNum == 1)  return CmiTrue;                                
   if (LdbCoordinator::Object()->ldbCycleNum == 2)  return CmiTrue;                                
@@ -77,30 +76,29 @@ CmiBool NamdHybridLB::QueryDumpData(){
 }
 
 /**
- *  * Runs the load balancing strategy with shrinking the load information.
- *   * Note: now, it is just calling the Strategy, but eventually will have
- *    * its own code.
- *     */
+ *  Runs the load balancing strategy with shrinking the load information.
+ *  Note: now, it is just calling the Strategy, but eventually will have
+ *  its own code.
+ */
 LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats,int count){
-		CkPrintf("[%d] Using Vector Strategy to balance the load\n",CkMyPe());
-        LBVectorMigrateMsg* msg = new(0,0) LBVectorMigrateMsg;
-        msg->n_moves = 0;
-        msg->level = currentLevel;
-        return msg;
+  CkPrintf("[%d] Using Vector Strategy to balance the load\n",CkMyPe());
+  LBVectorMigrateMsg* msg = new(0,0) LBVectorMigrateMsg;
+  msg->n_moves = 0;
+  msg->level = currentLevel;
+  return msg;
 }
 
 /*
  * Runs the load balancing strategy
  */
-CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats,int count){
-	
+CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int count){
   	// CkPrintf("[%d] NamdHybridLB at Strategy\n",CkMyPe());
 	
 	// calling the centralLB for level 1		
 	if(currentLevel == 1){
 		LevelData *lData = levelData[currentLevel];
 		CLBMigrateMsg *msg, *newMsg;
-		msg = CentralStrategy(stats,count);
+		msg = GrpLevelStrategy(stats, count);
 
 		// creating a new message to send to its parent
 		newMsg = new(msg->n_moves,CkNumPes(),CkNumPes(),0) CLBMigrateMsg;
@@ -157,24 +155,19 @@ void NamdHybridLB::UpdateComputeMap(CLBMigrateMsg *msg){
  * This function implements a strategy similar to the one used in the 
  * centralized case in NamdCentLB.
  */
-CLBMigrateMsg* NamdHybridLB::CentralStrategy(LDStats* stats,int count){
-
-  //  CkPrintf("LDB: All statistics received at %f, %f\n",
-  //  CmiTimer(),CmiWallTimer());
-
-  int numProcessors = count;
+CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
+  int numProcessors = count;	// number of processors at group level
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
   const int numComputes = computeMap->numComputes();
   const SimParameters* simParams = Node::Object()->simParameters;
 
-  // these sizes should never change
   if ( ! processorArray ) processorArray = new processorInfo[numProcessors];
+  // these data structures are global and need to be distributed
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
   if ( ! computeArray ) computeArray = new computeInfo[numComputes];
 
-
-  int nMoveableComputes = buildData(stats,count);
+  int nMoveableComputes = buildData(stats, count);
 
 #if LDB_DEBUG
 #define DUMP_LDBDATA 1
@@ -188,12 +181,27 @@ CLBMigrateMsg* NamdHybridLB::CentralStrategy(LDStats* stats,int count){
   // CkExit();
 #endif
 
-	if (step() < 2)
-    	TorusLB(computeArray, patchArray, processorArray,
-	          nMoveableComputes, numPatches, numProcessors);
+  if (simParams->ldbStrategy == LDBSTRAT_ASB) { // default
+    if (step() < 2)
+      TorusLB(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors);
     else
-      	RefineTorusLB(computeArray, patchArray, processorArray,
+      RefineTorusLB(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors, 1);
+  } else if (simParams->ldbStrategy == LDBSTRAT_COMPREHENSIVE) {
+    TorusLB(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors);
+  } else if (simParams->ldbStrategy == LDBSTRAT_REFINEONLY) {
+    RefineTorusLB(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors, 1);
+  } else if (simParams->ldbStrategy == LDBSTRAT_OLD) {
+    if (step() < 2)
+      Alg7(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors);
+    else
+      RefineOnly(computeArray, patchArray, processorArray,
+                  nMoveableComputes, numPatches, numProcessors);
+  }
 
 #if LDB_DEBUG && USE_TOPOMAP
   TopoManager tmgr;
@@ -301,109 +309,112 @@ CLBMigrateMsg* NamdHybridLB::CentralStrategy(LDStats* stats,int count){
  * @brief Builds the data structures required for the load balancing strategies in NAMD.
  */ 
 int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
-	int i;
+  PatchMap* patchMap = PatchMap::Object();
+  ComputeMap* computeMap = ComputeMap::Object();
+  const SimParameters* simParams = Node::Object()->simParameters;
 
-   // CkPrintf("%d is in buildData %d %d %d\n",CmiMyPe(),stats->count,stats->complete_flag,stats->procs[1].pe);
+  BigReal bgfactor = simParams->ldbBackgroundScaling;
+  BigReal pmebgfactor = simParams->ldbPMEBackgroundScaling;
+  BigReal homebgfactor = simParams->ldbHomeBackgroundScaling;
+  int pmeOn = simParams->PMEOn;
+  int unLoadPme = simParams->ldbUnloadPME;
+  int pmeBarrier = simParams->PMEBarrier;
+  int unLoadZero = simParams->ldbUnloadZero;
+  int unLoadOne = simParams->ldbUnloadOne;
 
-	PatchMap* patchMap = PatchMap::Object();
-	ComputeMap* computeMap = ComputeMap::Object();
-	const SimParameters* simParams = Node::Object()->simParameters;
+  // traversing the list of processors and getting their load information
+  int i, pe_no;
+  for (i=0; i<count; ++i) {
+    pe_no = stats->procs[i].pe;
 
-	BigReal bgfactor = simParams->ldbBackgroundScaling;
-	BigReal pmebgfactor = simParams->ldbPMEBackgroundScaling;
-	BigReal homebgfactor = simParams->ldbHomeBackgroundScaling;
-	int pmeOn = simParams->PMEOn;
-	int unLoadPme = simParams->ldbUnloadPME;
-	int pmeBarrier = simParams->PMEBarrier;
-	int unLoadZero = simParams->ldbUnloadZero;
-	int unLoadOne = simParams->ldbUnloadOne;
+    // BACKUP processorArray[i].Id = i; 
+    processorArray[i].Id = pe_no;
+    processorArray[i].available = CmiTrue;
+    // BACKUP if ( pmeOn && isPmeProcessor(i) ) {
+    if ( pmeOn && isPmeProcessor(pe_no) ) {
+      processorArray[i].backgroundLoad = pmebgfactor * stats->procs[i].bg_walltime;
+    // BACKUP } else if (patchMap->numPatchesOnNode(i) > 0) {
+    } else if (patchMap->numPatchesOnNode(pe_no) > 0) {
+      processorArray[i].backgroundLoad = homebgfactor * stats->procs[i].bg_walltime;
+    } else {
+      processorArray[i].backgroundLoad = bgfactor * stats->procs[i].bg_walltime;
+    }
+    processorArray[i].idleTime = stats->procs[i].idletime;
+    processorArray[i].load = processorArray[i].computeLoad = 0.0;
+  }
 
-	// traversing the list of processors and getting their load information
-	for (i=0; i<count; ++i) {
-		//BACKUPprocessorArray[i].Id = i; 
-		processorArray[i].Id = stats->procs[i].pe;
-    	processorArray[i].available = CmiTrue;
-    	//BACKUPif ( pmeOn && isPmeProcessor(i) ) {
-    	if ( pmeOn && isPmeProcessor(stats->procs[i].pe) ) {
-     		processorArray[i].backgroundLoad = pmebgfactor * stats->procs[i].bg_walltime;
-    	//BACKUP } else if (patchMap->numPatchesOnNode(i) > 0) {
-    	} else if (patchMap->numPatchesOnNode(stats->procs[i].pe) > 0) {
-      		processorArray[i].backgroundLoad = homebgfactor * stats->procs[i].bg_walltime;
-    	} else {
-      		processorArray[i].backgroundLoad = bgfactor * stats->procs[i].bg_walltime;
-    	}
-    	processorArray[i].idleTime = stats->procs[i].idletime;
-    	processorArray[i].load = processorArray[i].computeLoad = 0.0;
-	}
+  // If I am group zero, then offload processor 0 and 1 in my group
+  if(stats->procs[0].pe == 0) {
+    if(unLoadZero) processorArray[0].available = CmiFalse;
+    if(unLoadOne) processorArray[1].available = CmiFalse;
+  }
 
+  // if all pes are Pme, disable this flag
+  if (pmeOn && unLoadPme) {
+    for (i=0; i<count; i++) {
+      if(!isPmeProcessor(stats->procs[i].pe))  break;
+    }
+    if (i == count) {
+      iout << iINFO << "Turned off unLoadPme flag!\n"  << endi;
+      unLoadPme = 0;
+    }
+  }
 
-	if(unLoadZero && stats->procs[0].pe == 0) processorArray[0].available = CmiFalse;
-	if(unLoadOne && stats->procs[1].pe == 1) processorArray[1].available = CmiFalse;
+  if (pmeOn && unLoadPme) {
+    for (i=0; i<count; i++) {
+      if ((pmeBarrier && i==0) || isPmeProcessor(stats->procs[i].pe)) 
+	processorArray[i].available = CmiFalse;
+    }
+  }
 
-	// if all pes are Pme, disable this flag
-  	if (pmeOn && unLoadPme) {
-    	for (i=0; i<count; i++) {
-      		if(!isPmeProcessor(stats->procs[i].pe))  break;
-    	}
-    	if (i==count) {
-      		iout << iINFO << "Turned off unLoadPme flag!\n"  << endi;
-      		unLoadPme = 0;
-		}
-  	}
+  int nMoveableComputes=0;
+  int nProxies = 0;		// total number of estimated proxies
+  int index;
+
+  int j;
   
-	if (pmeOn && unLoadPme) {
-    	for (i=0; i<count; i++) {
-      		if ((pmeBarrier && i==0) || isPmeProcessor(stats->procs[i].pe)) 
-				processorArray[i].available = CmiFalse;
-    	}
-  	}
-
-	int nMoveableComputes=0;
-	int nProxies = 0;		// total number of estimated proxies
-	int index;
-
-	int j;
-  	for(j=0; j < stats->n_objs; j++){
-		const LDObjData &this_obj = stats->objData[j];
+  // this loop goes over only the objects in this group
+  for(j=0; j < stats->n_objs; j++) {
+	const LDObjData &this_obj = stats->objData[j];
       	int frompe = stats->from_proc[j];
 
-		// filter out non-NAMD managed objects (like PME array)
+	// filter out non-NAMD managed objects (like PME array)
       	if (this_obj.omID().id.idx != 1) continue;
 
       	if (this_obj.id().id[1] == -2) { // Its a patch
-			const int pid = this_obj.id().id[0];
-			int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+		const int pid = this_obj.id().id[0];
+		int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
 
-			patchArray[pid].Id = pid;
-			patchArray[pid].numAtoms = 0;
-			patchArray[pid].processor = stats->from_proc[j];
-			const int numProxies = 
+		patchArray[pid].Id = pid;
+		patchArray[pid].numAtoms = 0;
+		patchArray[pid].processor = stats->from_proc[j];
+		const int numProxies = 
 #if 0 // USE_TOPOMAP - this function needs to be there for the hybrid case
-			requiredProxiesOnProcGrid(pid,neighborNodes);
+		requiredProxiesOnProcGrid(pid,neighborNodes);
 #else
-			requiredProxies(pid, neighborNodes);
+		requiredProxies(pid, neighborNodes);
 #endif
 
         	nProxies += numProxies;
 
-			for (int k=0; k<numProxies; k++) {
-				if( (neighborNodes[k] >= stats->procs[0].pe) && (neighborNodes[k] <= stats->procs[count-1].pe) ){
-					index = neighborNodes[k] - stats->procs[0].pe;
-	  				//BACKUP processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
-	  				processorArray[index].proxies.insert(&patchArray[pid]);
-	  				//BACKUP patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
-	  				patchArray[pid].proxiesOn.insert(&processorArray[index]);
-				}
+		for (int k=0; k<numProxies; k++) {
+			if( (neighborNodes[k] >= stats->procs[0].pe) && (neighborNodes[k] <= stats->procs[count-1].pe) ){
+				index = neighborNodes[k] - stats->procs[0].pe;
+  				//BACKUP processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
+  				processorArray[index].proxies.insert(&patchArray[pid]);
+  				//BACKUP patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
+  				patchArray[pid].proxiesOn.insert(&processorArray[index]);
 			}
+		}
       	} else if (this_obj.migratable) { // Its a compute
 
-			const int cid = this_obj.id().id[0];
-			const int p0 = computeMap->pid(cid,0);
+		const int cid = this_obj.id().id[0];
+		const int p0 = computeMap->pid(cid,0);
 
-			// For self-interactions, just return the same pid twice
-			int p1;
-			if (computeMap->numPids(cid) > 1)
-	  			p1 = computeMap->pid(cid,1);
+		// For self-interactions, just return the same pid twice
+		int p1;
+		if (computeMap->numPids(cid) > 1)
+	  		p1 = computeMap->pid(cid,1);
 			else p1 = p0;
 			computeArray[nMoveableComputes].Id = cid;
 			//BACKUP computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
@@ -425,7 +436,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 	}
 
   	for (i=0; i<count; i++) {
-    	processorArray[i].load = processorArray[i].backgroundLoad + processorArray[i].computeLoad;
+	  processorArray[i].load = processorArray[i].backgroundLoad + processorArray[i].computeLoad;
   	}
   	stats->clear();
   	return nMoveableComputes;

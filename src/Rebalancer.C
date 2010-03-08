@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
- * $Author: jim $
- * $Date: 2010/01/12 21:32:15 $
- * $Revision: 1.87 $
+ * $Author: emeneses $
+ * $Date: 2010/03/08 22:42:51 $
+ * $Revision: 1.88 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -55,23 +55,16 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       }
    }
 
-	for (i=0; i<nPatches; i++)
-	{
-		//HYBRID checking for range in local group
-		if(patches[i].processor >= processors[0].Id &&
-				patches[i].processor < processors[0].Id + P){
-			index = patches[i].processor - processors[0].Id;
-      		//BACKUP if (!patches[i].proxiesOn.find(&(processors[patches[i].processor]))) 
-      		if (!patches[i].proxiesOn.find(&(processors[index]))) 
-      		{
-         		//BACKUP patches[i].proxiesOn.insert(&(processors[patches[i].processor]));
-         		patches[i].proxiesOn.insert(&(processors[index]));
-         		//BACKUP processors[patches[i].processor].proxies.insert(&(patches[i]));
-         		processors[index].proxies.insert(&(patches[i]));
-      		}
-      		//BACKUP processors[patches[i].processor].patchSet.insert(&patches[i]);
-      		processors[index].patchSet.insert(&patches[i]);
-		}
+   for (i=0; i<nPatches; i++) {
+     // Only for those patches which are in my group (hierarchical case)
+     if(patches[i].processor >= processors[0].Id && patches[i].processor < processors[0].Id + P) {
+       index = patches[i].processor - processors[0].Id;
+       if (!patches[i].proxiesOn.find(&(processors[index]))) {
+       	 patches[i].proxiesOn.insert(&(processors[index]));
+       	 processors[index].proxies.insert(&(patches[i]));
+       }
+       processors[index].patchSet.insert(&patches[i]);
+     }
    }		          
 
    InitProxyUsage();
@@ -79,14 +72,14 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    for (i=0; i<numComputes; i++)
       computeArray[i].processor = -1;
 
-   for (i=0; i < numComputes; i++){
-		if(computes[i].oldProcessor >= processors[0].Id &&
-				computes[i].oldProcessor < processors[0].Id + P){
-			index = computes[i].oldProcessor - processors[0].Id;
-      		//BACKUP processors[computes[i].oldProcessor].computeLoad += computes[i].load;
-      		processors[index].computeLoad += computes[i].load;
-		}
-	}
+   for (i=0; i < numComputes; i++) {
+     // Only for those computes which are in my group (hierarchical case)
+     if(computes[i].oldProcessor >= processors[0].Id && 
+	computes[i].oldProcessor < processors[0].Id + P) {
+       index = computes[i].oldProcessor - processors[0].Id;
+       processors[index].computeLoad += computes[i].load;
+     }
+   }
 
    // Added 4-29-98: Temporarily adds the compute load to the background
    // load so that the correct value for the total load can be displayed.
@@ -944,7 +937,7 @@ void Rebalancer::adjustBackgroundLoadAndComputeAverage()
         }
       }
    }
-   //iout << iINFO << "Adjusted background load on " << nadjusted
+   // iout << iINFO << "Adjusted background load on " << nadjusted
    //     << " nodes.\n" << endi;
 
    computeAverage();  // because otherwise someone will forget
@@ -970,15 +963,13 @@ int Rebalancer::isAvailableOn(patchInfo *patch, processorInfo *p)
 void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
            int *nPatches, int *nProxies, int *isBadForCommunication)
 {
-   //return the number of proxy/home patches available on p for c (0,1,2)
-	int realPe,index;
-
+   // return the number of proxy/home patches available on p for c (0, 1, 2)
+   int realPe, index;
    int patch_count = 0;
    int proxy_count = 0;
 
    patchInfo &pa1 = patches[c->patch1];
    patchInfo &pa2 = patches[c->patch2];
-
    int pa1_avail = 1;
    int pa2_avail = 1;
 
@@ -1005,44 +996,40 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
    int bad = 0;
 
    if ( patch_count + proxy_count < 2 ) {
-
      double bgLoadLimit = 1.2 * averageLoad;
-
      if ( p->backgroundLoad > bgLoadLimit ) bad = 1;
-#if 1
      else {
+       int proxiesPerPeLimit = numProxies / numPesAvailable + 3;
+       if ( proxiesPerPeLimit < 6 ) proxiesPerPeLimit = 6;
 
-      int proxiesPerPeLimit = numProxies / numPesAvailable + 3;
-      if ( proxiesPerPeLimit < 6 ) proxiesPerPeLimit = 6;
+       if ( p->proxies.numElements() > proxiesPerPeLimit ) bad = 1;
 
-      if ( p->proxies.numElements() > proxiesPerPeLimit ) bad = 1;
+       int proxiesPerPatchLimit = numProxies / numPatches + 3;
+       if ( proxiesPerPatchLimit < 6 ) proxiesPerPatchLimit = 6;
 
-      int proxiesPerPatchLimit = numProxies / numPatches + 3;
-      if ( proxiesPerPatchLimit < 6 ) proxiesPerPatchLimit = 6;
+       if ( ! bad && ! pa1_avail ) {
+	 // HYBRID check for range in local group
+	 realPe = pa1.processor;
+	 if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+	   index = realPe - processors[0].Id;
+           //BACKUP if ( processors[pa1.processor].backgroundLoad > bgLoadLimit) bad = 1;
+           if (processors[index].backgroundLoad > bgLoadLimit) bad = 1;
+           else if ( pa1.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
+	 }
+       }
 
-      if ( ! bad && ! pa1_avail ) {
-		//HYBRID check for range in local group
-		realPe = pa1.processor;
-		if(realPe >= processors[0].Id && realPe < processors[0].Id + P){
-			index = realPe - processors[0].Id;
-        	//BACKUP if ( processors[pa1.processor].backgroundLoad > bgLoadLimit) bad = 1;
-        	if (processors[index].backgroundLoad > bgLoadLimit) bad = 1;
-        	else if ( pa1.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
-		} else bad = 1;
-      }
-      if ( ! bad && ! pa2_avail ) {
-		//HYBRID check for range in local group
-		realPe = pa2.processor;
-		if(realPe >= processors[0].Id && realPe < processors[0].Id + P){
-			index = realPe - processors[0].Id;
-        	//BACKUP if ( processors[pa2.processor].backgroundLoad > bgLoadLimit) bad = 1;
-        	if ( processors[index].backgroundLoad > bgLoadLimit) bad = 1;
-        	else if ( pa2.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
-		} else bad = 1;
-      }
+       if ( ! bad && ! pa2_avail ) {
+	 // HYBRID check for range in local group
+	 realPe = pa2.processor;
+	 if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+	   index = realPe - processors[0].Id;
+	   // BACKUP if ( processors[pa2.processor].backgroundLoad > bgLoadLimit) bad = 1;
+	   if ( processors[index].backgroundLoad > bgLoadLimit) bad = 1;
+	   else if ( pa2.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
+	 }
+       }
 
      }
-#endif
    }
 
    *isBadForCommunication = bad;
