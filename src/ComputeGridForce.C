@@ -22,12 +22,15 @@
 
 ComputeGridForceNodeMgr::ComputeGridForceNodeMgr() 
 {
+  __sdag_init();
+
   CkpvAccess(BOCclass_group).computeGridForceNodeMgr = thisgroup;
 
   grids_deposited = 0;
   grids = NULL;
   requestGrids_count = 0;
   myNode = CkMyNode();
+  numNodes = CkNumNodes();
   nodeSize = CkNodeSize(myNode);
   gf = new ComputeGridForce*[nodeSize];
   proc_count = 0;
@@ -86,6 +89,10 @@ void ComputeGridForceNodeMgr::requestInitialGridData()
   // receiveInitialGridData on every node will generate another call
   // here until the data has all been sent
   if (requestGrids_count == CkNumNodes()) {
+    CProxy_ComputeGridForceNodeMgr myproxy(thisgroup);
+    myproxy[0].broadcastInitialGridData();
+  }
+#if 0
     requestGrids_count = 0;
     bool sent = false;
     while (!sent && cur_grid < num_grids) {
@@ -124,6 +131,7 @@ void ComputeGridForceNodeMgr::requestInitialGridData()
 //    }
   }
 //  iout << iINFO << "Done w/ request\n" << endi;
+#endif
 }
 
 void ComputeGridForceNodeMgr::receiveInitialGridData(GridSegmentMsg *msg)
@@ -135,10 +143,10 @@ void ComputeGridForceNodeMgr::receiveInitialGridData(GridSegmentMsg *msg)
 //       << " start=" << msg->start_index
 //       << "\n" << endi;
   grids[msg->gridnum]->init4(msg->grid,msg->start_index,msg->count);
-  delete msg;
+  // delete msg;
   
-  CProxy_ComputeGridForceNodeMgr myproxy(thisgroup);
-  myproxy[0].requestInitialGridData();
+  // CProxy_ComputeGridForceNodeMgr myproxy(thisgroup);
+  // myproxy[0].requestInitialGridData();
 }
 
 

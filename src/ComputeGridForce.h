@@ -96,6 +96,7 @@ private:
 
 class ComputeGridForceNodeMgr : public NodeGroup {
 public:
+  ComputeGridForceNodeMgr_SDAG_CODE
   ComputeGridForceNodeMgr();
   void depositInitialGrid(GridDepositMsg *msg);
   void requestInitialGridData();
@@ -107,6 +108,7 @@ public:
   
   private:
     int myNode;
+    int numNodes;
     int nodeSize;
     int num_grids;
     int grids_deposited;
