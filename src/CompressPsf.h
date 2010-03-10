@@ -7,7 +7,7 @@
 #include <ckhashtable.h>
 using namespace std;
 
-#define COMPRESSED_PSF_VER 1.61
+#define COMPRESSED_PSF_VER 1.62
 
 //used to detemine big-endian or little-endian for 
 //the per-atom binary file

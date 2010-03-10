@@ -1368,14 +1368,14 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         }
         delete[] binFName;
         //4. read per-atom info
-        Index sIdx[8];
+        Index sIdx[9];
         int iIdx[9];
         for(int i=0; i<numAtoms; i++){   
-            fread(sIdx, sizeof(Index), 8, perAtomFile);
+            fread(sIdx, sizeof(Index), 9, perAtomFile);
             fread(iIdx, sizeof(int), 9, perAtomFile);
             fread(tmpf, sizeof(float), 2, perAtomFile);
             if(needFlip) {
-                flipNum((char *)sIdx, sizeof(Index), 8);
+                flipNum((char *)sIdx, sizeof(Index), 9);
                 flipNum((char *)iIdx, sizeof(int), 9);
                 flipNum((char *)tmpf, sizeof(float), 2);
             }
@@ -1387,6 +1387,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
             eachAtomMass[i] = sIdx[5];
             eachAtomSig[i] = sIdx[6];
             eachAtomExclSig[i] = sIdx[7];
+
+	    atoms[i].vdw_type = sIdx[8];
+
             residue_number = iIdx[0];
             clusterSigs[i] = iIdx[1];
             if(!isClusterContiguous)
@@ -1403,7 +1406,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
 
             //debugExclNum += (exclSigPool[sIdx[7]].fullExclCnt+exclSigPool[sIdx[7]].modExclCnt);
 #else
-        XXX THIS BRANCH NOT UPDATED FOR MIGRATION GROUP XXX
+        XXX THIS BRANCH NOT UPDATED FOR MIGRATION GROUP  AND VDW_TYPE XXX
         int idx[15];
         for(int i=0; i<numAtoms; i++){
             NAMD_read_line(psf_file, buffer);
@@ -1461,7 +1464,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
             }
 
             //Look up the vdw constants for this atom
-            params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
+	    //vdw constant has been encoded in the per-atom file. 
+            //params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
                                      &(atoms[i]));
         } //end of reading per-atom information
 

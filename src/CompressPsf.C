@@ -1286,7 +1286,7 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
     float verNum = (float)COMPRESSED_PSF_VER;
     fwrite(&verNum, sizeof(float), 1, binOfp);
     //Third, each atom info
-    Index sIdx[8];
+    Index sIdx[9];
     int iIdx[9];
     float tmpf[2];
     for(int i=0; i<g_mol->numAtoms; i++)
@@ -1299,6 +1299,7 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
         sIdx[5] = atomData[i].massIdx;
         sIdx[6] = atomData[i].atomSigIdx;
         sIdx[7] = atomData[i].exclSigIdx;        
+	sIdx[8] = atoms[i].vdw_type;
 
         iIdx[0] = atomData[i].resID;
         iIdx[1] = eachAtomClusterID[i];
