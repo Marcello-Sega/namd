@@ -49,6 +49,11 @@ struct GridVal {
   float val;
 };
 
+class GridAckMsg : public CMessage_GridAckMsg {
+public:
+  int dummy;
+};
+
 class GridDepositMsg : public CMessage_GridDepositMsg {
 public:
   int gridnum;
