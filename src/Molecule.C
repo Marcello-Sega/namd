@@ -1466,7 +1466,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
             //Look up the vdw constants for this atom
 	    //vdw constant has been encoded in the per-atom file. 
             //params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
-                                     &(atoms[i]));
+            //                         &(atoms[i]));
         } //end of reading per-atom information
 
 	//re-sort the hydrogenGroup array based on the recorded "hydrogenList"

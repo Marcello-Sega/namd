@@ -1312,7 +1312,7 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
         iIdx[8] = hg[iIdx[3]].MPID;
         tmpf[0] = atomOccupancy[i];
         tmpf[1] = atomBFactor[i];
-        fwrite(sIdx, sizeof(Index), 8, binOfp);
+        fwrite(sIdx, sizeof(Index), 9, binOfp);
         fwrite(iIdx, sizeof(int), 9, binOfp);
         fwrite(tmpf, sizeof(float), 2, binOfp);
     }
