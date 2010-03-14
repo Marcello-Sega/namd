@@ -313,14 +313,11 @@ private:
 #endif
 
 int isPmeProcessor(int p){ 
-    return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
+  return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
-	if (pencilPMEProcessors)
-    	return pencilPMEProcessors[p];
-	else
-		return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
+  return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
 }
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
