@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2010/03/08 17:34:21 $
- * $Revision: 1.1299 $
+ * $Date: 2010/03/15 20:20:18 $
+ * $Revision: 1.1300 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1943,7 +1943,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   {
     MTSAlgorithm = NAIVE;
   }
-  if (!strcasecmp(s, "constant"))
+  else if (!strcasecmp(s, "constant"))
   {
     MTSAlgorithm = NAIVE;
   }
