@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
- * $Author: emeneses $
- * $Date: 2010/03/08 22:42:51 $
- * $Revision: 1.2 $
+ * $Author: bhatele $
+ * $Date: 2010/03/15 05:21:12 $
+ * $Revision: 1.3 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -55,6 +55,8 @@ private:
   
   int buildData(CentralLB::LDStats* stats, int count);
   int requiredProxies(PatchID id, int neighborNodes[]);
+  void dumpDataASCII(char *file, int numProcessors, int numPatches,
+                int numComputes);
 
   // centralized load balancer for load balancing all the children processors
   NamdCentLB *centralLB;

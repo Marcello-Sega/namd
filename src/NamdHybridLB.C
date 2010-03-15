@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/08 22:42:51 $
- * $Revision: 1.6 $
+ * $Author: bhatele $
+ * $Date: 2010/03/15 05:21:11 $
+ * $Revision: 1.7 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -17,6 +17,9 @@
 #include "PatchMap.h"
 #include "ComputeMap.h"
 #include "LdbCoordinator.h"
+
+// #define DUMP_LDBDATA 1
+// #define LOAD_LDBDATA 1
 
 extern int isPmeProcessor(int); 
 
@@ -305,6 +308,72 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
 
 }
 
+void NamdHybridLB::dumpDataASCII(char *file, int numProcessors,
+                               int numPatches, int numComputes)
+{
+  char filename[128];
+  sprintf(filename, "%s_%d.%d", file, CkMyPe(), step());
+  FILE* fp = fopen(filename,"w");
+  if (fp == NULL){
+     perror("dumpLDStatsASCII");
+     return;
+  }
+  // CkPrintf("***** DUMP data to file: %s ***** \n", filename);
+  fprintf(fp,"%d %d %d\n",numProcessors,numPatches,numComputes);
+
+  int i;
+  for(i=0;i<numProcessors;i++) {
+    processorInfo* p = processorArray + i;
+    fprintf(fp,"%d %e %e %e %e\n",p->Id,p->load,p->backgroundLoad,p->computeLoad,p->idleTime);
+  }
+
+  for(i=0;i < numPatches; i++) {
+    patchInfo* p = patchArray + i;
+    fprintf(fp,"%d %e %d %d\n",p->Id,p->load,p->processor,p->numAtoms);
+  }
+
+  for(i=0; i < numComputes; i++) {
+    computeInfo* c = computeArray + i;
+    fprintf(fp,"%d %e %d %d %d %d",c->Id,c->load,c->patch1,c->patch2,
+            c->processor,c->oldProcessor);
+    fprintf(fp, " %e %e", c->minTime, c->maxTime);
+    fprintf(fp, "\n");
+  }
+
+  // dump patchSet
+  for (i=0; i< numProcessors; i++) {
+      int num = processorArray[i].proxies.numElements();
+      fprintf(fp, "%d %d: ", i, num);
+      Iterator nextProxy;
+      patchInfo *p = (patchInfo *)processorArray[i].proxies.
+        iterator((Iterator *)&nextProxy);
+      while (p) {
+          fprintf(fp, "%d ", p->Id);
+          p = (patchInfo *)processorArray[i].proxies.
+            next((Iterator*)&nextProxy);
+      }
+      fprintf(fp, "\n");
+  }
+  // dump proxiesOn
+  for (i=0; i<numPatches; i++)  {
+    int num = patchArray[i].proxiesOn.numElements();
+    fprintf(fp, "%d %d: ", i, num);
+      Iterator nextProc;
+      processorInfo *p = (processorInfo *)patchArray[i].proxiesOn.
+        iterator((Iterator *)&nextProc);
+      while (p) {
+        fprintf(fp, "%d ", p->Id);
+        p = (processorInfo *)patchArray[i].proxiesOn.
+          next((Iterator*)&nextProc);
+      }
+      fprintf(fp, "\n");
+  }
+
+  fclose(fp);
+  //CkExit();
+}
+
+
 /**
  * @brief Builds the data structures required for the load balancing strategies in NAMD.
  */ 
@@ -330,7 +399,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
     // BACKUP processorArray[i].Id = i; 
     processorArray[i].Id = pe_no;
     processorArray[i].available = CmiTrue;
-    // BACKUP if ( pmeOn && isPmeProcessor(i) ) {
+    // BACKUP if ( pmeOn && isPmeProcessor(i) )
     if ( pmeOn && isPmeProcessor(pe_no) ) {
       processorArray[i].backgroundLoad = pmebgfactor * stats->procs[i].bg_walltime;
     // BACKUP } else if (patchMap->numPatchesOnNode(i) > 0) {
@@ -387,7 +456,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 
 		patchArray[pid].Id = pid;
 		patchArray[pid].numAtoms = 0;
-		patchArray[pid].processor = stats->from_proc[j];
+		patchArray[pid].processor = stats->from_proc[j] + processorArray[0].Id;
 		const int numProxies = 
 #if 0 // USE_TOPOMAP - this function needs to be there for the hybrid case
 		requiredProxiesOnProcGrid(pid,neighborNodes);
