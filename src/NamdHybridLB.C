@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: bhatele $
- * $Date: 2010/03/15 05:21:11 $
- * $Revision: 1.7 $
+ * $Author: jim $
+ * $Date: 2010/03/16 19:37:28 $
+ * $Revision: 1.8 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -626,7 +626,7 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
    CkVec<Location> &matchedObjs = lData->matchedObjs;
 
    // sort into mactched and unmatched list
-#if CHARM_VERSION <= 60103
+#if CHARM_VERSION < 60200
    CkVec<Location> &unmatchedObjs = lData->unmatchedObjs;
    for (int i=0; i<n; i++) {
      // search and see if we have answer, put to matched
@@ -670,7 +670,7 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
      if (lData->parent != -1) {
 
 		// NAMD specific
-#if CHARM_VERSION <= 60103
+#if CHARM_VERSION < 60200
 #define unmatchedbuf unmatchedObjs
 #else
 		CkVec<Location> unmatchedbuf;
