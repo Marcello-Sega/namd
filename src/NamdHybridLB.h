@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
- * $Author: bhatele $
- * $Date: 2010/03/15 05:21:12 $
- * $Revision: 1.3 $
+ * $Author: gzheng $
+ * $Date: 2010/03/17 07:48:26 $
+ * $Revision: 1.4 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -49,7 +49,7 @@ private:
 
   CmiBool QueryBalanceNow(int step);
   CmiBool QueryDumpData();
-  LBVectorMigrateMsg* VectorStrategy(LDStats* stats,int count);
+//  LBVectorMigrateMsg* VectorStrategy(LDStats* stats,int count);
   LBMigrateMsg* Strategy(LDStats* stats,int count);
   LBMigrateMsg* GrpLevelStrategy(LDStats* stats,int count);
   

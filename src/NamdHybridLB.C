@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: jim $
- * $Date: 2010/03/16 19:37:28 $
- * $Revision: 1.8 $
+ * $Author: gzheng $
+ * $Date: 2010/03/17 07:48:26 $
+ * $Revision: 1.9 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -78,6 +78,7 @@ CmiBool NamdHybridLB::QueryDumpData() {
   return CmiFalse;                                                                                
 }
 
+#if 0
 /**
  *  Runs the load balancing strategy with shrinking the load information.
  *  Note: now, it is just calling the Strategy, but eventually will have
@@ -90,6 +91,7 @@ LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats,int count){
   msg->level = currentLevel;
   return msg;
 }
+#endif
 
 /*
  * Runs the load balancing strategy
@@ -134,6 +136,7 @@ void NamdHybridLB::UpdateComputeMap(CLBMigrateMsg *msg){
 
 	// traversing the set of moves in msg
 	for(int i=0; i<msg->n_moves; i++){
+	    if (msg->moves[i].to_pe != -1)
 		computeMap->setNewNode(msg->moves[i].obj.id.id[0],msg->moves[i].to_pe);	
 	}
 
@@ -165,7 +168,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   const int numComputes = computeMap->numComputes();
   const SimParameters* simParams = Node::Object()->simParameters;
 
-  if ( ! processorArray ) processorArray = new processorInfo[numProcessors];
+  if ( ! processorArray ) processorArray = new processorInfo[numProcessors+1];
   // these data structures are global and need to be distributed
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
   if ( ! computeArray ) computeArray = new computeInfo[numComputes];
@@ -260,14 +263,25 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   
   CkVec<MigrateInfo *> migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
-    if (computeArray[i].processor != computeArray[i].oldProcessor) {
-            /* ERASECkPrintf("[%d] Obj %d migrating from %d to %d\n",
+    if (computeArray[i].processor != computeArray[i].fromProcessor+stats->procs[0].pe) {
+      /* CkPrintf("[%d] Obj %d migrating from %d (%d) to %d\n",
                      CkMyPe(),computeArray[i].handle.id.id[0],
-			 computeArray[i].oldProcessor, computeArray[i].processor); */
+			 computeArray[i].fromProcessor, computeArray[i].oldProcessor, computeArray[i].processor); */
       MigrateInfo *migrateMe = new MigrateInfo;
       migrateMe->obj = computeArray[i].handle;
-      migrateMe->from_pe = computeArray[i].oldProcessor;
+      //migrateMe->from_pe = computeArray[i].oldProcessor;
+      int frompe = computeArray[i].fromProcessor;
+      if (frompe == count)
+        frompe = -1;
+      else
+        frompe = frompe + stats->procs[0].pe;
+      migrateMe->from_pe = frompe;
       migrateMe->to_pe = computeArray[i].processor;
+      if (frompe == -1) {
+        LDObjData obj;
+        obj.handle = computeArray[i].handle;
+        thisProxy[computeArray[i].processor].ObjMigrated(obj, NULL, 0, currentLevel-1);
+      } 
       migrateInfo.insertAtEnd(migrateMe);
 
       // sneak in updates to ComputeMap
@@ -278,6 +292,16 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   }
   // CkPrintf("LOAD BALANCING READY %d\n",CkMyPe()); 
 
+  // merge outgoing objs
+  LevelData *lData = levelData[currentLevel];
+  CkVec<MigrationRecord> &outObjs = lData->outObjs;
+  for (i=0; i<outObjs.size(); i++) {
+    MigrateInfo *migrateMe = new MigrateInfo;
+    migrateMe->obj = outObjs[i].handle;
+    migrateMe->from_pe = outObjs[i].fromPe;
+    migrateMe->to_pe = -1;
+    migrateInfo.insertAtEnd(migrateMe);
+  }
  
   int migrate_count=migrateInfo.length();
   // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
@@ -487,7 +511,13 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 			else p1 = p0;
 			computeArray[nMoveableComputes].Id = cid;
 			//BACKUP computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
-			computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j] + stats->procs[0].pe;
+			if (stats->from_proc[j] >= count) {  // from outside
+			  computeArray[nMoveableComputes].oldProcessor = CrnRand()%count + stats->procs[0].pe;     // random
+			}
+			else {
+			  computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j] + stats->procs[0].pe;
+			}
+			computeArray[nMoveableComputes].fromProcessor = stats->from_proc[j];
 
 			index = stats->from_proc[j]; 
 			//BACKUP2 index = stats->from_proc[j] - stats->procs[0].pe;
@@ -624,6 +654,7 @@ void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
    lData->info_recved++;
 
    CkVec<Location> &matchedObjs = lData->matchedObjs;
+CmiAssert(0);
 
    // sort into mactched and unmatched list
 #if CHARM_VERSION < 60200
