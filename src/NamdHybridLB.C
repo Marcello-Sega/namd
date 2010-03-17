@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: gzheng $
- * $Date: 2010/03/17 07:58:47 $
- * $Revision: 1.10 $
+ * $Date: 2010/03/17 15:52:25 $
+ * $Revision: 1.11 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -169,14 +169,16 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
   const int numComputes = computeMap->numComputes();
+  const int numGroupComputes = stats->n_migrateobjs;
   const SimParameters* simParams = Node::Object()->simParameters;
 
-  if ( ! processorArray ) processorArray = new processorInfo[numProcessors+1];
+  if ( ! processorArray ) processorArray = new processorInfo[numProcessors];
   // these data structures are global and need to be distributed
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
-  if ( ! computeArray ) computeArray = new computeInfo[numComputes];
+  if ( ! computeArray ) computeArray = new computeInfo[numGroupComputes];
 
   int nMoveableComputes = buildData(stats, count);
+  CmiAssert(nMoveableComputes <= numGroupComputes);
 
 #if LDB_DEBUG
 #define DUMP_LDBDATA 1
@@ -525,7 +527,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 			index = stats->from_proc[j]; 
 			//BACKUP2 index = stats->from_proc[j] - stats->procs[0].pe;
 			//BACKUP processorArray[stats->from_proc[j]].computeLoad += this_obj.wallTime;
-			processorArray[index].computeLoad += this_obj.wallTime;
+			if (index < count) processorArray[index].computeLoad += this_obj.wallTime;
 			computeArray[nMoveableComputes].processor = -1;
 			computeArray[nMoveableComputes].patch1 = p0;
 			computeArray[nMoveableComputes].patch2 = p1;
