@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: gzheng $
- * $Date: 2010/03/17 15:52:25 $
- * $Revision: 1.11 $
+ * $Date: 2010/03/18 00:10:03 $
+ * $Revision: 1.12 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -51,6 +51,7 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
   dummyLB = AllocateNamdDummyLB();
 
   // assigning initial values to variables
+  from_procs = NULL;
   computeArray = NULL;
   patchArray = NULL;
   processorArray = NULL;
@@ -176,9 +177,11 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   // these data structures are global and need to be distributed
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
   if ( ! computeArray ) computeArray = new computeInfo[numGroupComputes];
+  if ( ! from_procs ) from_procs = new int[numGroupComputes];
 
   int nMoveableComputes = buildData(stats, count);
   CmiAssert(nMoveableComputes <= numGroupComputes);
+
 
 #if LDB_DEBUG
 #define DUMP_LDBDATA 1
@@ -268,14 +271,14 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   
   CkVec<MigrateInfo *> migrateInfo;
   for(i=0;i<nMoveableComputes;i++) {
-    if (computeArray[i].processor != computeArray[i].fromProcessor+stats->procs[0].pe) {
+    if (computeArray[i].processor != from_procs[i]+stats->procs[0].pe) {
       /* CkPrintf("[%d] Obj %d migrating from %d (%d) to %d\n",
                      CkMyPe(),computeArray[i].handle.id.id[0],
-			 computeArray[i].fromProcessor, computeArray[i].oldProcessor, computeArray[i].processor); */
+			 from_procs[i], computeArray[i].oldProcessor, computeArray[i].processor); */
       MigrateInfo *migrateMe = new MigrateInfo;
       migrateMe->obj = computeArray[i].handle;
       //migrateMe->from_pe = computeArray[i].oldProcessor;
-      int frompe = computeArray[i].fromProcessor;
+      int frompe = from_procs[i];
       if (frompe == count)
         frompe = -1;
       else
@@ -325,10 +328,12 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   }
 */
 
+  delete [] from_procs;
   delete [] processorArray;
   delete [] patchArray;
   delete [] computeArray;
 
+  from_procs = NULL;
   processorArray = NULL;
   patchArray = NULL;
   computeArray = NULL;
@@ -522,12 +527,12 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 			else {
 			  computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j] + stats->procs[0].pe;
 			}
-			computeArray[nMoveableComputes].fromProcessor = stats->from_proc[j];
+			from_procs[nMoveableComputes] = stats->from_proc[j];
 
-			index = stats->from_proc[j]; 
 			//BACKUP2 index = stats->from_proc[j] - stats->procs[0].pe;
 			//BACKUP processorArray[stats->from_proc[j]].computeLoad += this_obj.wallTime;
-			if (index < count) processorArray[index].computeLoad += this_obj.wallTime;
+			int index = computeArray[nMoveableComputes].oldProcessor - stats->procs[0].pe; 
+			processorArray[index].computeLoad += this_obj.wallTime;
 			computeArray[nMoveableComputes].processor = -1;
 			computeArray[nMoveableComputes].patch1 = p0;
 			computeArray[nMoveableComputes].patch2 = p1;
@@ -652,6 +657,7 @@ int NamdHybridLB::requiredProxies(PatchID id, int neighborNodes[])
   return nProxyNodes;
 }
 
+#if 0
 void NamdHybridLB::CollectInfo(Location *loc, int n, int fromlevel)
 {
    int atlevel = fromlevel + 1;
@@ -743,3 +749,4 @@ CmiAssert(0);
      }
    }
 }
+#endif

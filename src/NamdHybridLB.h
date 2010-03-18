@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
  * $Author: gzheng $
- * $Date: 2010/03/17 07:48:26 $
- * $Revision: 1.4 $
+ * $Date: 2010/03/18 00:10:04 $
+ * $Revision: 1.5 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -31,7 +31,7 @@ public:
   NamdHybridLB();
   NamdHybridLB(CkMigrateMessage *m):HybridBaseLB(m) {}
   void UpdateComputeMap(CLBMigrateMsg *msg);
-  void CollectInfo(Location *loc, int n, int fromlevel);
+  //void CollectInfo(Location *loc, int n, int fromlevel);
 
 private:
   CProxy_NamdHybridLB thisProxy;
@@ -43,6 +43,7 @@ private:
   int n_backup;
   int fromlevel_backup;
 
+  int *from_procs;
   computeInfo *computeArray;
   patchInfo *patchArray;
   processorInfo *processorArray;

@@ -11,7 +11,7 @@ include "HybridLBMsg.h";
 group [migratable] NamdHybridLB : HybridBaseLB {
   entry void NamdHybridLB(void);
   entry void UpdateComputeMap(LBMigrateMsg*);
-  entry void CollectInfo(Location loc[n], int n, int fromlevel);	
+//  entry void CollectInfo(Location loc[n], int n, int fromlevel);	
 };
 
 };
