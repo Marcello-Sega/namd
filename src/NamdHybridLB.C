@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: gzheng $
- * $Date: 2010/03/18 16:45:07 $
- * $Revision: 1.14 $
+ * $Date: 2010/03/18 19:48:07 $
+ * $Revision: 1.15 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -297,8 +297,9 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   }
   // CkPrintf("LOAD BALANCING READY %d\n",CkMyPe()); 
 
+  LBMigrateMsg* msg;
 #if CHARM_VERSION > 60300
-  LBMigrateMsg* msg = createMigrateMsg(migrateInfo, count);
+  msg = createMigrateMsg(migrateInfo, count);
 #else
   CmiAbort("NamdHybridLB is not supported, please install a newer version of charm.");
 #endif
