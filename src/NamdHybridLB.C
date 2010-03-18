@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: gzheng $
- * $Date: 2010/03/18 00:10:03 $
- * $Revision: 1.12 $
+ * $Date: 2010/03/18 06:22:21 $
+ * $Revision: 1.13 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -110,12 +110,7 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int count){
 		msg = GrpLevelStrategy(stats, count);
 
 		// creating a new message to send to its parent
-		newMsg = new(msg->n_moves,CkNumPes(),CkNumPes(),0) CLBMigrateMsg;
-  		newMsg->level = currentLevel;
-  		newMsg->n_moves = msg->n_moves;
-  		for(int i=0; i < msg->n_moves; i++) {
-    		newMsg->moves[i] = msg->moves[i];
-  		}
+		newMsg = (LBMigrateMsg *)CkCopyMsg((void **)&msg);
 		thisProxy[0].UpdateComputeMap(newMsg);
 		return msg;
 	}else{
@@ -286,6 +281,8 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
       migrateMe->from_pe = frompe;
       migrateMe->to_pe = computeArray[i].processor;
       if (frompe == -1) {
+          // don't know yet which processor this compute belongs to, but
+	  // inform receiver
         LDObjData obj;
         obj.handle = computeArray[i].handle;
         thisProxy[computeArray[i].processor].ObjMigrated(obj, NULL, 0, currentLevel-1);
@@ -300,28 +297,11 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   }
   // CkPrintf("LOAD BALANCING READY %d\n",CkMyPe()); 
 
-  // merge outgoing objs
-  LevelData *lData = levelData[currentLevel];
-  CkVec<MigrationRecord> &outObjs = lData->outObjs;
-  for (i=0; i<outObjs.size(); i++) {
-    MigrateInfo *migrateMe = new MigrateInfo;
-    migrateMe->obj = outObjs[i].handle;
-    migrateMe->from_pe = outObjs[i].fromPe;
-    migrateMe->to_pe = -1;
-    migrateInfo.insertAtEnd(migrateMe);
-  }
- 
-  int migrate_count=migrateInfo.length();
-  // CkPrintf("NamdCentLB migrating %d elements\n",migrate_count);
-  CLBMigrateMsg* msg = new(migrate_count,CkNumPes(),CkNumPes(),0) CLBMigrateMsg;
-  msg->level = currentLevel;
-  msg->n_moves = migrate_count;
-  for(i=0; i < migrate_count; i++) {
-    MigrateInfo* item = migrateInfo[i];
-    msg->moves[i] = *item;
-    delete item;
-    migrateInfo[i] = 0;
-  }
+#if CHARM_VERSION > 60300
+  LBMigrateMsg* msg = createMigrateMsg(migrateInfo, count);
+#else
+  CmiAbort("NamdHybridLB is not supported, please install a newer version of charm.");
+#endif
 
 /*Not needed  for (i=0; i<numProcessors; i++) {
     cpuloads[i] = processorArray[i].load;
