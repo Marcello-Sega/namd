@@ -434,8 +434,11 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
     //indices are one-based in read_bonds
     int *from, *to;
     float *bondorder;
+    int *bondtype, nbondtypes;
+    char **bondtypename;
     if(pIOHdl->read_bonds!=NULL) {
-        if(pIOHdl->read_bonds(pIOFileHdl, &numBonds, &from, &to, &bondorder)){
+        if(pIOHdl->read_bonds(pIOFileHdl, &numBonds, &from, &to, &bondorder,
+                                 &bondtype, &nbondtypes, &bondtypename)){
             NAMD_die("ERROR: failed reading bond information.");
         }
     }    
@@ -447,16 +450,20 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
     //3a. read other bonded structures
     int *plgAngles, *plgDihedrals, *plgImpropers, *plgCterms;
     int ctermcols, ctermrows;
-    double *angleforces,  *dihedralforces, *improperforces, *ctermforces;
+    int *angletypes, numangletypes, *dihedraltypes, numdihedraltypes;
+    int *impropertypes, numimpropertypes; 
+    char **angletypenames, **dihedraltypenames, **impropertypenames;
 
     plgAngles=plgDihedrals=plgImpropers=plgCterms=NULL;
     if(pIOHdl->read_angles!=NULL) {
         if(pIOHdl->read_angles(pIOFileHdl,
-                               &numAngles, &plgAngles, &angleforces,
-                               &numDihedrals, &plgDihedrals, &dihedralforces,
-                               &numImpropers, &plgImpropers, &improperforces,
-                               &numCrossterms, &plgCterms, &ctermcols, &ctermrows,
-                               &ctermforces)) {
+                  &numAngles, &plgAngles,
+                  &angletypes, &numangletypes, &angletypenames,
+                  &numDihedrals, &plgDihedrals,
+                  &dihedraltypes, &numdihedraltypes, &dihedraltypenames,
+                  &numImpropers, &plgImpropers,
+                  &impropertypes, &numimpropertypes, &impropertypenames,
+                  &numCrossterms, &plgCterms, &ctermcols, &ctermrows)) {
             NAMD_die("ERROR: failed reading angle information.");
         }
     }

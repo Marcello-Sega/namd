@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr                                                                       
- *cr            (C) Copyright 1995-2006 The Board of Trustees of the           
+ *cr            (C) Copyright 1995-2009 The Board of Trustees of the           
  *cr                        University of Illinois                       
  *cr                         All Rights Reserved                        
  *cr                                                                   
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: dcdplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $       $Date: 2008/12/09 19:46:22 $
+ *      $Revision: 1.4 $       $Date: 2010/03/19 21:44:15 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -673,7 +673,7 @@ static int write_dcdstep(fio_fd fd, int curframe, int curstep, int N,
   if (charmm) {
     /* write out optional unit cell */
     if (unitcell != NULL) {
-      out_integer = 48; /* 48 bytes (6 doubles) */
+      out_integer = 48; /* 48 bytes (6 floats) */
       fio_write_int32(fd, out_integer);
       WRITE(fd, unitcell, out_integer);
       fio_write_int32(fd, out_integer);

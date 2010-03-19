@@ -11,7 +11,7 @@
  *
  *      $RCSfile: molfile_plugin.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $       $Date: 2008/12/09 19:46:17 $
+ *      $Revision: 1.4 $       $Date: 2010/03/19 21:44:02 $
  *
  ***************************************************************************/
 
@@ -49,6 +49,10 @@
  * Maximum string size macro
  */
 #define MOLFILE_BUFSIZ           81   /**< maximum chars in string data  */
+#define MOLFILE_BIGBUFSIZ        4096 /**< maximum chars in long strings */
+
+#define MOLFILE_MAXWAVEPERTS     25   /**< maximum number of wavefunctions
+                                       *   per timestep */
 
 
 /**
@@ -115,6 +119,15 @@ typedef struct {
                               
 /*@}*/
 
+/*@{*/
+/** Flags indicating availability of optional data fields
+ *  for QM timesteps
+ */
+#define MOLFILE_QMTS_NOOPTIONS     0x0000 /**< no optional data               */
+#define MOLFILE_QMTS_GRADIENT      0x0001 /**< energy gradients provided      */
+#define MOLFILE_QMTS_SCFITER       0x0002
+/*@}*/
+
 #if vmdplugin_ABIVERSION > 10
 typedef struct molfile_timestep_metadata {
   unsigned int count;                  /**< total # timesteps; -1 if unknown */
@@ -123,24 +136,16 @@ typedef struct molfile_timestep_metadata {
 } molfile_timestep_metadata_t;
 #endif
 
-#if vmdplugin_ABIVERSION > 11
-typedef struct molfile_qm_timestep_metadata {
-  unsigned int count;                  /**< total # timesteps; -1 if unknown */
-  unsigned int avg_bytes_per_timestep; /** bytes per timestep                */
-  int has_gradient;                    /**< if timestep contains gradient    */
-  int scfiter_per_timestep;   /**< # scf iterations for this ts     */
-  int orbitals_per_timestep;  /**< # orbitals for this ts           */
-  int num_wave_f;             /**< number of gaussian basis fctns   */
-} molfile_qm_timestep_metadata_t;
-#endif
-
 /*
  * Per-timestep atom coordinates and periodic cell information
  */ 
 typedef struct {
   float *coords;        /**< coordinates of all atoms, arranged xyzxyzxyz   */
+#if vmdplugin_ABIVERSION > 10
   float *velocities;    /**< space for velocities of all atoms; same layout */
                         /**< NULL unless has_velocities is set              */
+#endif
+
   /*@{*/   
   /**
    * Unit cell specification of the form A, B, C, alpha, beta, gamma.
@@ -152,7 +157,9 @@ typedef struct {
   float A, B, C, alpha, beta, gamma; 
   /*@}*/   
 
+#if vmdplugin_ABIVERSION > 10
   double physical_time; /**< physical time point associated with this frame */
+#endif
 } molfile_timestep_t;
 
 
@@ -191,126 +198,276 @@ typedef struct {
 } molfile_volumetric_t;
 
 
-/* XXX disabled until next major plugin ABI rev */
+
+
+/**************************************************************
+ **************************************************************
+ ****                                                      ****
+ ****          Data structures for QM files                ****
+ ****                                                      ****
+ **************************************************************
+ **************************************************************/
+
 #if vmdplugin_ABIVERSION > 9
 
+
+/* macros for the convergence status of a QM calculation. */
+#define MOLFILE_QMSTATUS_UNKNOWN       -1 /* don't know yet */
+#define MOLFILE_QMSTATUS_OPT_CONV       0 /* optimization converged */
+#define MOLFILE_QMSTATUS_SCF_NOT_CONV   1 /* SCF convergence failed */
+#define MOLFILE_QMSTATUS_OPT_NOT_CONV   2 /* optimization not converged */
+#define MOLFILE_QMSTATUS_FILE_TRUNCATED 3 /* file was truncated */
+
+/* macros describing the SCF method (SCFTYP in GAMESS) */
+#define MOLFILE_SCFTYPE_UNKNOWN -1 /* no info about the method  */
+#define MOLFILE_SCFTYPE_NONE     0 /* calculation didn't make use of SCF */
+#define MOLFILE_SCFTYPE_RHF      1 /* restricted Hartree-Fock   */
+#define MOLFILE_SCFTYPE_UHF      2 /* unrestricted Hartree-Fock */
+#define MOLFILE_SCFTYPE_ROHF     3 /* restricted open-shell Hartree-Fock */
+#define MOLFILE_SCFTYPE_GVB      4 /* generalized valence bond orbitals  */
+#define MOLFILE_SCFTYPE_MCSCF    5 /* multi-configuration SCF   */
+#define MOLFILE_SCFTYPE_FF       6 /* classical force-field based sim.   */
+
+/* macros describing the type of calculation (RUNTYP in GAMESS) */
+#define MOLFILE_RUNTYPE_UNKNOWN    0  /* single point run */
+#define MOLFILE_RUNTYPE_ENERGY     1  /* single point run */
+#define MOLFILE_RUNTYPE_OPTIMIZE   2  /* geometry optimization */
+#define MOLFILE_RUNTYPE_SADPOINT   3  /* saddle point search */
+#define MOLFILE_RUNTYPE_HESSIAN    4  /* Hessian/frequency calculation */
+#define MOLFILE_RUNTYPE_SURFACE    5  /* potential surface scan */
+#define MOLFILE_RUNTYPE_GRADIENT   6  /* energy gradient calculation */
+#define MOLFILE_RUNTYPE_MEX        7  /* minimum energy crossing */
+#define MOLFILE_RUNTYPE_DYNAMICS   8  /* Any type of molecular dynamics
+                                       * e.g. Born-Oppenheimer, Car-Parinello,
+                                       * or classical MD */
+#define MOLFILE_RUNTYPE_PROPERTIES 9  /* Properties were calculated from a
+                                       * wavefunction that was read from file */
+
+
 /**
- * Sizes of various QM-related data arrays which must be allocated by
- * the caller (VMD) so that the plugin can fill in the arrays with data.
+ * Sizes of various QM-related, timestep independent data arrays
+ * which must be allocated by the caller (VMD) so that the plugin
+ * can fill in the arrays with data.
  */
 typedef struct {
   /* hessian data */
-  int nimag;            /**< # imaginary modes */
-  int nintcoords;       /**< # internal coordinates */
-  int ncart;            /**< # cartesian coordinates */
+  int nimag;                    /**< number of imaginary modes */
+  int nintcoords;               /**< number internal coordinates */
+  int ncart;                    /**< number cartesian coordinates */
 
-  /* orbital data */
-  int num_basis_funcs;  /**< # uncontracted basis functions in basis array */
-  int num_shells;       /**< total # of atomic shells */
-  int num_wave_f;       /**< counts # orbitals in output file */
+  /* orbital/basisset data */
+  int num_basis_funcs;          /**< number of uncontracted basis functions in basis array */
+  int num_basis_atoms;          /**< number of atoms in basis set */
+  int num_shells;               /**< total number of atomic shells */
+  int wavef_size;               /**< size of the wavefunction
+                                 *   i.e. size of secular eq. or
+                                 *   # of cartesian contracted
+                                 *   gaussian basis functions */
 
   /* everything else */
-  int num_traj_points;  /**< # trajectory points, 1 for single point runs */
-
-  int have_esp;
-  int have_npa;
-  int have_carthessian;
-  int have_internals;
-  int have_normalmodes;
+  int have_sysinfo;
+  int have_carthessian;         /**< hessian in cartesian coords available  */
+  int have_inthessian;          /**< hessian in internal coords available  */
+  int have_normalmodes;         /**< normal modes available  */
 } molfile_qm_metadata_t;
 
 
 /**
- * struct holding the data of hessian/normal mode runs
- * needed to calculate bond/angle/dihedral force constants
- */
+ * QM run info. Parameters that stay unchanged during a single file.
+ */ 
 typedef struct {
-  double *carthessian;      /**< hessian matrix in cartesian coordinates (ncart)*(ncart) as a single array of doubles (row(1), ...,row(natoms)) */
-  int *imag_modes;          /**< list(nimag) of imaginary modes */
-  double *inthessian;       /**< hessian matrix in internal coordinates (nintcoords*nintcoords) as a single array of doubles (row(1), ...,row(nintcoords)) */
-  double *wavenumbers;      /**< array(ncart) of wavenumbers of normal modes */
-  double *intensities;      /**< array(ncart) of intensities of normal modes */
-  double *normalmodes;      /**< matrix(ncart*ncart) of normal modes  */
-} molfile_qm_hessian_t;
+  int nproc;             /**< number of processors used. */
+  int memory;            /**< amount of memory used in Mbyte. */ 
+  int runtype;           /**< flag indicating the calculation method. */
+  int scftype;           /**< SCF type: RHF, UHF, ROHF, GVB or MCSCF wfn. */
+  int status;            /**< indicates wether SCF and geometry optimization
+                          *   have converged properly. */
+  int num_electrons;     /**< number of electrons.    XXX: can be fractional in some DFT codes */
+  int totalcharge;       /**< total charge of system. XXX: can be fractional in some DFT codes */
+  int num_occupied_A;    /**< number of occupied alpha orbitals */
+  int num_occupied_B;    /**< number of occupied beta orbitals */
+
+  double *nuc_charge;    /**< array(natom) containing the nuclear charge of atom i */
+
+  char basis_string[MOLFILE_BUFSIZ];    /**< basis name as "nice" string. */
+  char runtitle[MOLFILE_BIGBUFSIZ];     /**< title of run.                */
+  char geometry[MOLFILE_BUFSIZ];        /**< type of provided geometry,   XXX: remove?
+                                         * e.g. UNIQUE, ZMT, CART, ...    */
+  char version_string[MOLFILE_BUFSIZ];  /**< QM code version information. */
+} molfile_qm_sysinfo_t;
 
 
 /**
- * struct holding the data for wavefunction/orbitals
- * needed to generate the volumetric orbital data
+ * Data for QM basis set
  */
 typedef struct {
   int *num_shells_per_atom; /**< number of shells per atom */
   int *num_prim_per_shell;  /**< number of shell primitives shell */
 
-  float *basis;              /**< contraction coeffients and exponents for the basis functions in the form { exp(1), c-coeff(1), exp(2), c-coeff(2), ....}; size=2*num_basis_funcs */
-  float *localized_orbitals; /**< localized orbitals (Boys, Ruedenberg, etc.) */
-  int *angular_momentum;     /* 3 ints per wave function coefficient do describe the 
-                              * cartesian components of the angular momentum.
-                              * E.g. S={0 0 0}, Px={1 0 0}, Dxy={1 1 0}, or Fyyz={0 2 1}. */
-  int *shell_symmetry;       /**< symmetry type per shell in basis */
+  float *basis;             /**< contraction coeffients and exponents for
+                             *   the basis functions in the form
+                             *   {exp(1), c-coeff(1), exp(2), c-coeff(2), ...};
+                             *   array size = 2*num_basis_funcs
+                             *   The basis must NOT be normalized. */
+  int *atomic_number;       /**< atomic numbers (chem. element) of atoms in basis set */
+  int *angular_momentum;    /**< 3 ints per wave function coefficient do describe the 
+                             *   cartesian components of the angular momentum.
+                             *   E.g. S={0 0 0}, Px={1 0 0}, Dxy={1 1 0}, or Fyyz={0 2 1}. 
+                             */
+  int *shell_types;         /**< type for each shell in basis */
 } molfile_qm_basis_t;
 
 
 /**
- * QM run info
- */ 
+ * Data from QM Hessian/normal mode runs
+ *
+ * A noteworthy comment from one of Axel's emails:
+ * The molfile_qm_hessian_t, I'd rename to molfile_hessian_t (one
+ * can do vibrational analysis without QM) and would make this a
+ * completely separate entity. This could then be also used to
+ * read in data from, say, principal component analysis or normal
+ * mode analysis and VMD could contain code to either project a
+ * trajectory on the contained eigenvectors or animate them and
+ * so on. There is a bunch of possible applications...
+ */
 typedef struct {
-  int runtyp;                  /* runtyp for internal use */
-  int mplevel;                 /* Moeller-Plesset perturbation level */
-  int num_electrons;           /* number of electrons */
-  int nproc;                   /* number of processors used */
-  int num_wave_f;              /* max. size of the wave_function array
-                                * i.e. # of cartesian contracted
-                                * gaussian basis functions */
-  int totalcharge;             /* total charge of system */
-  int multiplicity;            /* multiplicity of system */
-  int num_orbitals_A;          /* number of alpha orbitals */
-  int num_orbitals_B;          /* number of beta orbitals */
-  int scftyp;                  /* scftyp for internal use */
-
-  double *nuc_charge;                   /* array(natom) containing the nuclear charge of atom i */
-  double *esp_charges;                  /* per-atom esp charges */
-  double *npa_charges;                  /* per-atom npa charges */
+  double *carthessian;  /**< hessian matrix in cartesian coordinates (ncart)*(ncart)
+                         *   as a single array of doubles (row(1), ...,row(natoms)) */
+  int    *imag_modes;   /**< list(nimag) of imaginary modes */
+  double *inthessian;   /**< hessian matrix in internal coordinates
+                         *   (nintcoords*nintcoords) as a single array of
+                         *   doubles (row(1), ...,row(nintcoords)) */
+  float *wavenumbers;   /**< array(ncart) of wavenumbers of normal modes */
+  float *intensities;   /**< array(ncart) of intensities of normal modes */
+  float *normalmodes;   /**< matrix(ncart*ncart) of normal modes  */
+} molfile_qm_hessian_t;
 
 
-  char runtyp_string[MOLFILE_BUFSIZ];   /* runtyp as string for punching */
-  char scftyp_string[MOLFILE_BUFSIZ];   /* scftyp as string for punching */
-  char dfttyp_string[MOLFILE_BUFSIZ];   /* dfttyp as string for punching */
-  char basis_string[MOLFILE_BUFSIZ];    /* basis name as "nice" string */
-  char memory[MOLFILE_BUFSIZ];          /* amount of memory used, e.g. 1Gb */
-  char runtitle[MOLFILE_BUFSIZ];        /* title of run. XXX needs to be made larger for Gaussian */
-  char guess[MOLFILE_BUFSIZ];           /* guess option used */
-  char geometry[MOLFILE_BUFSIZ];        /* typ of provided geometry,
-                                         * e.g. UNIQUE, ZMT, CART, ... */
-  char version_string[MOLFILE_BUFSIZ];  /* QM code version information */
-} molfile_qm_sysinfo_t;
+/**
+ * QM related information that is timestep independent
+ */
+typedef struct {
+  molfile_qm_sysinfo_t run;             /* system info  */
+  molfile_qm_basis_t   basis;           /* basis set info */
+  molfile_qm_hessian_t hess;            /* hessian info */
+} molfile_qm_t;
+
+
+
+/**
+ *  Enumeration of all of the wavefunction types that can be read
+ *  from QM file reader plugins.
+ *
+ *  CANON    = canonical (i.e diagonalized) wavefunction
+ *  GEMINAL  = GVB-ROHF geminal pairs
+ *  MCSCFNAT = Multi-Configuration SCF natural orbitals
+ *  MCSCFOPT = Multi-Configuration SCF optimized orbitals
+ *  CINATUR  = Configuration-Interaction natural orbitals
+ *  BOYS     = Boys localization
+ *  RUEDEN   = Ruedenberg localization
+ *  PIPEK    = Pipek-Mezey population localization
+ *
+ *  NBO related localizations:
+ *  --------------------------
+ *  NAO      = Natural Atomic Orbitals
+ *  PNAO     = pre-orthogonal NAOs
+ *  NBO      = Natural Bond Orbitals
+ *  PNBO     = pre-orthogonal NBOs
+ *  NHO      = Natural Hybrid Orbitals
+ *  PNHO     = pre-orthogonal NHOs
+ *  NLMO     = Natural Localized Molecular Orbitals
+ *  PNLMO    = pre-orthogonal NLMOs
+ *
+ *  UNKNOWN  = Use this for any type not listed here
+ *             You can use the string field for description
+ */
+enum molfile_qm_wavefunc_type {
+  MOLFILE_WAVE_CANON,    MOLFILE_WAVE_GEMINAL,
+  MOLFILE_WAVE_MCSCFNAT, MOLFILE_WAVE_MCSCFOPT,
+  MOLFILE_WAVE_CINATUR,
+  MOLFILE_WAVE_PIPEK,  MOLFILE_WAVE_BOYS, MOLFILE_WAVE_RUEDEN,
+  MOLFILE_WAVE_NAO,    MOLFILE_WAVE_PNAO, MOLFILE_WAVE_NHO, 
+  MOLFILE_WAVE_PNHO,   MOLFILE_WAVE_NBO,  MOLFILE_WAVE_PNBO, 
+  MOLFILE_WAVE_PNLMO,  MOLFILE_WAVE_NLMO, MOLFILE_WAVE_MOAO, 
+  MOLFILE_WAVE_NATO,   MOLFILE_WAVE_UNKNOWN
+};
+
+
+/**
+ *  Enumeration of all of the supported QM related charge
+ *  types
+ */
+enum molfile_qm_charge_type {
+  MOLFILE_QMCHARGE_UNKNOWN,
+  MOLFILE_QMCHARGE_MULLIKEN, MOLFILE_QMCHARGE_LOWDIN,
+  MOLFILE_QMCHARGE_ESP, MOLFILE_QMCHARGE_NPA
+};
+
+
+
+/**
+ * Sizes of various QM-related, per-timestep data arrays
+ * which must be allocated by the caller (VMD) so that the plugin
+ * can fill in the arrays with data.
+ */
+typedef struct molfile_qm_timestep_metadata {
+  unsigned int count;                  /**< total # timesteps; -1 if unknown */
+  unsigned int avg_bytes_per_timestep; /**< bytes per timestep                */
+  int has_gradient;                    /**< if timestep contains gradient    */
+  int num_scfiter;                     /**< # scf iterations for this ts     */
+  int num_orbitals_per_wavef[MOLFILE_MAXWAVEPERTS]; /**< # orbitals for each wavefunction */
+  int has_orben_per_wavef[MOLFILE_MAXWAVEPERTS]; /**< orbital energy flags */
+  int has_occup_per_wavef[MOLFILE_MAXWAVEPERTS]; /**< orbital occupancy flags */
+  int num_wavef ;                      /**< # wavefunctions in this ts     */
+  int wavef_size;                      /**< size of one wavefunction 
+                                        *   (# of gaussian basis fctns)    */
+  int num_charge_sets;                 /**< # of charge values per atom */
+} molfile_qm_timestep_metadata_t;
+
+
+/**
+ * QM wavefunction
+ */
+typedef struct {
+  int   type;               /**< MOLFILE_WAVE_CANON, MOLFILE_WAVE_MCSCFNAT, ... */
+  int   spin;               /**< 1 for alpha, -1 for beta */
+  int   excitation;         /**< 0 for ground state, 1,2,3,... for excited states */
+  int   multiplicity;       /**< spin multiplicity of the state, zero if unknown */
+  char info[MOLFILE_BUFSIZ]; /**< string for additional type info */
+
+  double energy;            /**< energy of the electronic state.
+                             *   i.e. HF-SCF energy, CI state energy,
+                             *   MCSCF energy, etc. */
+
+  float *wave_coeffs;       /**< expansion coefficients for wavefunction in the
+                             *   form {orbital1(c1),orbital1(c2),.....,orbitalM(cN)} */
+  float *orbital_energies;  /**< list of orbital energies for wavefunction */
+  float *occupancies;       /**< orbital occupancies */
+  int   *orbital_ids;       /**< orbital ID numbers; If NULL then VMD will
+                             *   assume 1,2,3,...num_orbs.     */
+} molfile_qm_wavefunction_t;
 
 
 /**
  * QM per trajectory timestep info
+ * Note that each timestep can contain multiple wavefunctions.
  */
 typedef struct {
-  float *wave_function;     /* expansion coefficients for wavefunction in the form {orbital1(c1),orbital1(c2),.....,orbi talM(cN)} */
-  float *orbital_energies;  /* list of orbital energies for wavefunction */
-  float *gradient;          /* force on each atom (=gradient of energy) */
+  molfile_qm_wavefunction_t *wave; /**< array of wavefunction objects */
+  float  *gradient;         /**< force on each atom (=gradient of energy) */
 
-  double *scfenergies;      /* scfenergies per trajectory point */
-  double *mulliken_charges; /* per-atom Mulliken charges */
-  double *lowdin_charges;   /* per-atom Lowdin charges */
+  double *scfenergies;      /**< energies from the SCF cycles */
+  double *charges;          /**< per-atom charges */
+  int    *charge_types;     /**< type of each charge set */
 } molfile_qm_timestep_t;
 
 
-/**
- * QM wavefunctions, and related information 
- */
-typedef struct {
-  molfile_qm_hessian_t hess;            /* hessian info */
-  molfile_qm_basis_t   basis;           /* basis set info */
-  molfile_qm_sysinfo_t run;             /* system info  */
-} molfile_qm_t;
-
-
 #endif
+
+/**************************************************************
+ **************************************************************/
+
+
 
 
 /**
@@ -412,15 +569,29 @@ typedef struct {
    * set to 0 and from/to should be set to NULL to indicate that no bond
    * information was actually present, and automatic bond search should be
    * performed.  
+   *
    * If the plugin provides bond order information, the bondorder array
    * will contain the bond order for each from/to pair.  If not, the bondorder
    * pointer should be set to NULL, in which case the caller will provide a 
    * default bond order value of 1.0.
+   *
+   * If the plugin provides bond type information, the bondtype array
+   * will contain the bond type index for each from/to pair. These numbers
+   * are consecutive integers starting from 0.
+   * the bondtypenames list, contains the corresponding names, if available,
+   * as a NULL string terminated list. nbondtypes is provided for convenience
+   * and consistency checking.
+   *
    * These arrays must be freed by the plugin in the close_file_read function.
    * This function can be called only after read_structure().  
    * Return MOLFILE_SUCCESS if no errors occur. 
    */
+#if vmdplugin_ABIVERSION > 14
+  int (*read_bonds)(void *, int *nbonds, int **from, int **to, float **bondorder, 
+                    int **bondtype, int *nbondtypes, char ***bondtypename);
+#else
   int (*read_bonds)(void *, int *nbonds, int **from, int **to, float **bondorder);
+#endif
 
   /**
    * XXX this function will be augmented and possibly superceded by a 
@@ -514,15 +685,28 @@ typedef struct {
    * File formats that list bonds twice will need to emit both the 
    * from/to and to/from versions of each.
    * This function must be called before write_structure().  
+   *
    * Like the read_bonds() routine, the bondorder pointer is set to NULL
    * if the caller doesn't have such information, in which case the 
    * plugin should assume a bond order of 1.0 if the file format requires
    * bond order information.
+   *
+   * Support for bond types follows the bondorder rules. bondtype is
+   * an integer array of the size nbonds that contains the bond type
+   * index (consecutive integers starting from 0) and bondtypenames
+   * contain the corresponding strings, in case the naming/numbering
+   * scheme is different from the index numbers.
+   * if the pointers are set to NULL, then this information is not available.
+   * bondtypenames can only be used of bondtypes is also given.
    * Return MOLFILE_SUCCESS if no errors occur. 
    */
+#if vmdplugin_ABIVERSION > 14
+  int (* write_bonds)(void *, int nbonds, int *from, int *to, float *bondorder, 
+                     int *bondtype, int nbondtypes, char **bondtypename);
+#else
   int (* write_bonds)(void *, int nbonds, int *from, int *to, float *bondorder);
+#endif
 
-/* XXX disabled until next major plugin ABI rev */
 #if vmdplugin_ABIVERSION > 9
   /**
    * Write the specified volumetric data set into the space pointed to by 
@@ -534,8 +718,32 @@ typedef struct {
   int (* write_volumetric_data)(void *, molfile_volumetric_t *metadata,
                                 float *datablock, float *colorblock);
 
+#if vmdplugin_ABIVERSION > 15
   /** 
-   * Read in Angles, Dihedrals, Impropers, and Cross Terms, and their forces
+   * Read in Angles, Dihedrals, Impropers, and Cross Terms and optionally types.
+   * (Cross terms pertain to the CHARMM/NAMD CMAP feature) 
+   */
+  int (* read_angles)(void *handle, int *numangles, int **angles, int **angletypes,
+                      int *numangletypes, char ***angletypenames, int *numdihedrals,
+                      int **dihedrals, int **dihedraltypes, int *numdihedraltypes,
+                      char ***dihedraltypenames, int *numimpropers, int **impropers,        
+                      int **impropertypes, int *numimpropertypes, char ***impropertypenames,
+                      int *numcterms, int **cterms, int *ctermcols, int *ctermrows);
+
+  /** 
+   * Write out Angles, Dihedrals, Impropers, and Cross Terms
+   * (Cross terms pertain to the CHARMM/NAMD CMAP feature) 
+   */
+  int (* write_angles)(void *handle, int numangles, const int *angles, const int *angletypes,
+                       int numangletypes, const char **angletypenames, int numdihedrals,
+                       const int *dihedrals, const int *dihedraltypes, int numdihedraltypes,
+                       const char **dihedraltypenames, int numimpropers, 
+                       const int *impropers, const int *impropertypes, int numimpropertypes,
+                       const char **impropertypenames, int numcterms,  const int *cterms, 
+                       int ctermcols, int ctermrows);
+#else
+  /** 
+   * Read in Angles, Dihedrals, Impropers, and Cross Terms
    * Forces are in Kcal/mol
    * (Cross terms pertain to the CHARMM/NAMD CMAP feature, forces are given
    *  as a 2-D matrix)
@@ -559,16 +767,35 @@ typedef struct {
         int numimpropers, const int *impropers, const double *improperforces,
         int numcterms,   const int *cterms,    
         int ctermcols, int ctermrows, const double *ctermforces);
+#endif
+
 
   /**
-   * Retrieve metadata pertaining to QM datasets in this file.
+   * Retrieve metadata pertaining to timestep independent
+   * QM datasets in this file.
+   *
+   * The metadata are the sizes of the QM related data structure
+   * arrays that will be populated by the plugin when 
+   * read_qm_rundata() is called. Since the allocation of these
+   * arrays is done by VMD rather than the plugin, VMD needs to
+   * know the sizes beforehand. Consequently read_qm_metadata()
+   * has to be called before read_qm_rundata().
    */
   int (* read_qm_metadata)(void *, molfile_qm_metadata_t *metadata);
 
+
   /**
-   * Read QM data
+   * Read timestep independent QM data.
+   *
+   * Typical data that are defined only once per trajectory are
+   * general info about the calculation (such as the used method), 
+   * the basis set and normal modes.
+   * The data structures to be populated must have been allocated
+   * before by VMD according to sizes obtained through
+   * read_qm_metadata().
    */
   int (* read_qm_rundata)(void *, molfile_qm_t *qmdata);
+
 
   /**
    * Read the next timestep from the file.  Return MOLFILE_SUCCESS, or 
@@ -596,6 +823,27 @@ typedef struct {
 #endif
 #if vmdplugin_ABIVERSION > 11
   int (* read_qm_timestep_metadata)(void *, molfile_qm_timestep_metadata_t *);
+#endif
+
+#if vmdplugin_ABIVERSION > 13
+  /**
+   *  Console output, READ-ONLY function pointer.
+   *  Function pointer that plugins can use for printing to the host
+   *  application's text console.  This provides a clean way for plugins
+   *  to send message strings back to the calling application, giving the
+   *  caller the ability to prioritize, buffer, and redirect console messages
+   *  to an appropriate output channel, window, etc.  This enables the use of
+   *  graphical consoles like TkCon without losing console output from plugins.
+   *  If the function pointer is NULL, no console output service is provided
+   *  by the calling application, and the output should default to stdout
+   *  stream.  If the function pointer is non-NULL, all output will be
+   *  subsequently dealt with by the calling application.
+   *
+   *  XXX this should really be put into a separate block of
+   *      application-provided read-only function pointers for any
+   *      application-provided services
+   */
+  int (* cons_fputs)(const int, const char*);
 #endif
 
 } molfile_plugin_t;

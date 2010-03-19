@@ -11,7 +11,7 @@
  *
  *      $RCSfile: vmdplugin.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.4 $       $Date: 2009/02/06 19:07:00 $
+ *      $Revision: 1.5 $       $Date: 2010/03/19 21:44:02 $
  *
  ***************************************************************************/
 
@@ -81,7 +81,7 @@ BOOL APIENTRY DllMain( HANDLE hModule,
 #else
 #define VMDPLUGIN_API __declspec(dllimport)
 #endif /* VMDPLUGIN_EXPORTS */
-#else /* ! STATIC_PLUGIN */
+#else  /* ! STATIC_PLUGIN */
 #define VMDPLUGIN_API
 #endif /* ! STATIC_PLUGIN */
 #else
@@ -144,7 +144,7 @@ typedef struct {
 /**
  * Use this macro to initialize the abiversion member of each plugin
  */
-#define vmdplugin_ABIVERSION  12 
+#define vmdplugin_ABIVERSION  16
 
 /*@{*/
 /** Use this macro to indicate a plugin's thread-safety at registration time */

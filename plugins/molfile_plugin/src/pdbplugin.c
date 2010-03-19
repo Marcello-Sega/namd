@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2006 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2009 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: pdbplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2008/12/09 19:46:23 $
+ *      $Revision: 1.2 $       $Date: 2010/03/19 21:44:16 $
  *
  ***************************************************************************/
 
@@ -195,14 +195,18 @@ static int read_pdb_structure(void *mydata, int *optflags,
   return MOLFILE_SUCCESS;
 }
 
-static int read_bonds(void *v, int *nbonds, int **fromptr, int **toptr, float **
-bondorder) {
+static int read_bonds(void *v, int *nbonds, int **fromptr, int **toptr, 
+                      float ** bondorder,int **bondtype, 
+                      int *nbondtypes, char ***bondtypename) {
   pdbdata *pdb = (pdbdata *)v;
   
   *nbonds = 0;
   *fromptr = NULL;
   *toptr = NULL;
   *bondorder = NULL; /* PDB files don't have bond order information */
+  *bondtype = NULL;
+  *nbondtypes = 0;
+  *bondtypename = NULL;
 
 /* The newest plugin API allows us to return CONECT records as 
  * additional bonds above and beyond what the distance search returns.
@@ -573,7 +577,7 @@ VMDPLUGIN_API int VMDPLUGIN_init() {
   plugin.prettyname = "PDB";
   plugin.author = "Justin Gullingsrud, John Stone";
   plugin.majorv = 1;
-  plugin.minorv = 14;
+  plugin.minorv = 16;
   plugin.is_reentrant = VMDPLUGIN_THREADSAFE;
   plugin.filename_extension = "pdb,ent";
   plugin.open_file_read = open_pdb_read;

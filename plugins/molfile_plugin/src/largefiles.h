@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2006 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2009 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: largefiles.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.2 $       $Date: 2008/12/09 19:46:23 $
+ *      $Revision: 1.3 $       $Date: 2010/03/19 21:44:16 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -28,7 +28,9 @@
  * on 32-bit machines.  These must be defined before inclusion of any
  * system headers.
  */
+#ifndef _LARGEFILE_SOURCE
 #define _LARGEFILE_SOURCE
+#endif
 #define _FILE_OFFSET_BITS 64
 #endif
 

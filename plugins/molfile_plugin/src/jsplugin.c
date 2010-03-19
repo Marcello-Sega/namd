@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr                                                                       
- *cr            (C) Copyright 1995-2006 The Board of Trustees of the           
+ *cr            (C) Copyright 1995-2009 The Board of Trustees of the           
  *cr                        University of Illinois                       
  *cr                         All Rights Reserved                        
  *cr                                                                   
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: jsplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2008/12/09 19:46:23 $
+ *      $Revision: 1.2 $       $Date: 2010/03/19 21:44:16 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -62,7 +62,7 @@
 #define JSENDIANISM      0x12345678
 
 #define JSMAJORVERSION   2
-#define JSMINORVERSION   2
+#define JSMINORVERSION   6
 
 #define JSNFRAMESOFFSET  (strlen(JSHEADERSTRING) + 20)
 
@@ -224,11 +224,11 @@ printf("jsplugin) read option flags: %0x08x\n", js->optflags);
     fio_read_int32(js->fd, &numsegids);
     fio_read_int32(js->fd, &numchains); 
     if (js->reverseendian) {
-      swap4_aligned(&numatomnames, js->natoms);
-      swap4_aligned(&numatomtypes, js->natoms);
-      swap4_aligned(&numresnames, js->natoms);
-      swap4_aligned(&numsegids, js->natoms);
-      swap4_aligned(&numchains, js->natoms);
+      swap4_aligned(&numatomnames, 1);
+      swap4_aligned(&numatomtypes, 1);
+      swap4_aligned(&numresnames, 1);
+      swap4_aligned(&numsegids, 1);
+      swap4_aligned(&numchains, 1);
     }
 
 printf("jsplugin) reading string tables...\n");
@@ -474,7 +474,7 @@ printf("jsplugin)   %d angles...\n", js->numangles);
       js->angles = (int *) malloc(3 * js->numangles * sizeof(int));
       fio_fread(js->angles, sizeof(int)*3*js->numangles, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(&js->angles, 3*js->numangles);
+        swap4_aligned(js->angles, 3*js->numangles);
 
       fio_fread(&js->numdihedrals, sizeof(int), 1, js->fd);
       if (js->reverseendian)
@@ -483,7 +483,7 @@ printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
       js->dihedrals = (int *) malloc(4 * js->numdihedrals * sizeof(int));
       fio_fread(js->dihedrals, sizeof(int)*4*js->numdihedrals, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(&js->dihedrals, 4*js->numdihedrals);
+        swap4_aligned(js->dihedrals, 4*js->numdihedrals);
 
       fio_fread(&js->numimpropers, sizeof(int), 1, js->fd);
       if (js->reverseendian)
@@ -492,7 +492,7 @@ printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
 printf("jsplugin)   %d impropers...\n", js->numimpropers);
       fio_fread(js->impropers, sizeof(int)*4*js->numimpropers, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(&js->impropers, 4*js->numimpropers);
+        swap4_aligned(js->impropers, 4*js->numimpropers);
     }
     if (js->optflags & JSOPT_CTERMS) {
       fio_fread(&js->numcterms, sizeof(int), 1, js->fd);
@@ -502,7 +502,7 @@ printf("jsplugin)   %d impropers...\n", js->numimpropers);
 printf("jsplugin)   %d cterms...\n", js->numcterms);
       fio_fread(js->cterms, sizeof(int)*8*js->numcterms, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(&js->cterms, 8*js->numcterms);
+        swap4_aligned(js->cterms, 8*js->numcterms);
     }
 
 printf("jsplugin) final optflags: %08x\n", *optflags);
@@ -518,13 +518,18 @@ printf("jsplugin) no structure information available\n");
 }
 
 
-static int read_js_bonds(void *v, int *nbonds, int **fromptr, int **toptr, float **bondorder) {
+static int read_js_bonds(void *v, int *nbonds, int **fromptr, int **toptr, 
+                         float **bondorder, int **bondtype, 
+                         int *nbondtypes, char ***bondtypename) {
   jshandle *js = (jshandle *)v;
 
   *nbonds = 0;
   *fromptr = NULL;
   *toptr = NULL;
   *bondorder = NULL;
+  *bondtype = NULL;
+  *nbondtypes = 0;
+  *bondtypename = NULL;
 
   if (js->optflags & JSOPT_BONDS) {
     /* save bond info until we actually write out the structure file */
@@ -540,7 +545,56 @@ static int read_js_bonds(void *v, int *nbonds, int **fromptr, int **toptr, float
   return MOLFILE_SUCCESS;
 }
 
+#if vmdplugin_ABIVERSION > 14
+static int read_js_angles(void *v, int *numangles, int **angles, 
+                          int **angletypes, int *numangletypes, 
+                          char ***angletypenames, int *numdihedrals,
+                          int **dihedrals, int **dihedraltypes, 
+                          int *numdihedraltypes, char ***dihedraltypenames,
+                          int *numimpropers, int **impropers, 
+                          int **impropertypes, int *numimpropertypes, 
+                          char ***impropertypenames, int *numcterms, 
+                          int **cterms, int *ctermcols, int *ctermrows) {
+  jshandle *js = (jshandle *)v;
 
+  /* initialize data to zero */
+  *numangles         = 0;
+  *angles            = NULL;
+  *angletypes        = NULL;
+  *numangletypes     = 0;
+  *angletypenames    = NULL;
+  *numdihedrals      = 0;
+  *dihedrals         = NULL;
+  *dihedraltypes     = NULL;
+  *numdihedraltypes  = 0;
+  *dihedraltypenames = NULL;
+  *numimpropers      = 0;
+  *impropers         = NULL;
+  *impropertypes     = NULL;
+  *numimpropertypes  = 0;
+  *impropertypenames = NULL;
+  *numcterms         = 0;
+  *cterms            = NULL;
+  *ctermrows         = 0;
+  *ctermcols         = 0;
+
+  *numangles = js->numangles;
+  *angles = js->angles;
+
+  *numdihedrals = js->numdihedrals;
+  *dihedrals = js->dihedrals;
+
+  *numimpropers = js->numimpropers;
+  *impropers = js->impropers;
+
+  *numcterms = js->numcterms;
+  *cterms = js->cterms;
+  *ctermcols = 0;
+  *ctermrows = 0;
+
+  return MOLFILE_SUCCESS;
+}
+#else
 static int read_js_angles(void *v,
                int *numangles,    int **angles,    double **angleforces,
                int *numdihedrals, int **dihedrals, double **dihedralforces,
@@ -569,6 +623,7 @@ static int read_js_angles(void *v,
 
   return MOLFILE_SUCCESS;
 }
+#endif
 
 #endif
 
@@ -795,7 +850,7 @@ printf("jsplugin)   atom names...\n");
     for (hashcnt=0,i=0; i<js->natoms; i++) {
       /* add a new string table entry for hash inserts that don't yet exist */
       if (hash_insert(&atomnamehash, atoms[i].name, hashcnt) == HASH_FAIL) {
-        atomnames[hashcnt] = (char *) malloc(16 * sizeof(char));
+        atomnames[hashcnt] = (char *) calloc(1, 16 * sizeof(char));
         strcpy(atomnames[hashcnt], atoms[i].name);
         hashcnt++;
       }
@@ -810,7 +865,7 @@ printf("jsplugin)   atom types...\n");
     for (hashcnt=0,i=0; i<js->natoms; i++) {
       /* add a new string table entry for hash inserts that don't yet exist */
       if (hash_insert(&atomtypehash, atoms[i].type, hashcnt) == HASH_FAIL) {
-        atomtypes[hashcnt] = (char *) malloc(16 * sizeof(char));
+        atomtypes[hashcnt] = (char *) calloc(1, 16 * sizeof(char));
         strcpy(atomtypes[hashcnt], atoms[i].type);
         hashcnt++;
       }
@@ -825,7 +880,7 @@ printf("jsplugin)   residue names...\n");
     for (hashcnt=0,i=0; i<js->natoms; i++) {
       /* add a new string table entry for hash inserts that don't yet exist */
       if (hash_insert(&resnamehash, atoms[i].resname, hashcnt) == HASH_FAIL) {
-        resnames[hashcnt] = (char *) malloc(8 * sizeof(char));
+        resnames[hashcnt] = (char *) calloc(1, 8 * sizeof(char));
         strcpy(resnames[hashcnt], atoms[i].resname);
         hashcnt++;
       }
@@ -840,7 +895,7 @@ printf("jsplugin)   segment names...\n");
     for (hashcnt=0,i=0; i<js->natoms; i++) {
       /* add a new string table entry for hash inserts that don't yet exist */
       if (hash_insert(&segidhash, atoms[i].segid, hashcnt) == HASH_FAIL) {
-        segids[hashcnt] = (char *) malloc(8 * sizeof(char));
+        segids[hashcnt] = (char *) calloc(1, 8 * sizeof(char));
         strcpy(segids[hashcnt], atoms[i].segid);
         hashcnt++;
       }
@@ -855,7 +910,7 @@ printf("jsplugin)   chain names...\n");
     for (hashcnt=0,i=0; i<js->natoms; i++) {
       /* add a new string table entry for hash inserts that don't yet exist */
       if (hash_insert(&chainhash, atoms[i].chain, hashcnt) == HASH_FAIL) {
-        chains[hashcnt] = (char *) malloc(2 * sizeof(char));
+        chains[hashcnt] = (char *) calloc(1, 2 * sizeof(char));
         strcpy(chains[hashcnt], atoms[i].chain);
         hashcnt++;
       }
@@ -1048,7 +1103,9 @@ printf("jsplugin) writing cross-terms\n");
 }
 
 
-static int write_js_bonds(void *mydata, int nbonds, int *fromptr, int *toptr, float *bondorder) {
+static int write_js_bonds(void *mydata, int nbonds, int *fromptr, int *toptr, 
+                          float *bondorder,  int *bondtype, 
+                          int nbondtypes, char **bondtypename) {
   jshandle *js = (jshandle *) mydata;
 
   if (nbonds > 0 && fromptr != NULL && toptr != NULL) {
@@ -1071,7 +1128,44 @@ static int write_js_bonds(void *mydata, int nbonds, int *fromptr, int *toptr, fl
   return MOLFILE_SUCCESS;
 }
 
+#if vmdplugin_ABIVERSION > 14
+static int write_js_angles(void * v, int numangles, const int *angles,
+                           const int *angletypes, int numangletypes,
+                           const char **angletypenames, int numdihedrals, 
+                           const int *dihedrals, const int *dihedraltype,
+                           int numdihedraltypes, const char **dihedraltypenames,
+                           int numimpropers, const int *impropers, 
+                           const int *impropertypes, int numimpropertypes, 
+                           const char **impropertypenames, int numcterms, 
+                           const int *cterms, int ctermcols, int ctermrows) {
+  jshandle *js = (jshandle *) v;
 
+  /* save info until we actually write out the structure file */
+  js->numangles = numangles;
+  js->numdihedrals = numdihedrals;
+  js->numimpropers = numimpropers;
+  js->numcterms = numcterms;
+
+  if (js->numangles > 0 || js->numdihedrals > 0 || js->numimpropers > 0) {
+    js->optflags |= JSOPT_ANGLES;
+
+    js->angles = (int *) malloc(3*js->numangles*sizeof(int));
+    memcpy(js->angles, angles, 3*js->numangles*sizeof(int));
+    js->dihedrals = (int *) malloc(4*js->numdihedrals*sizeof(int));
+    memcpy(js->dihedrals, dihedrals, 4*js->numdihedrals*sizeof(int));
+    js->impropers = (int *) malloc(4*js->numimpropers*sizeof(int));
+    memcpy(js->impropers, impropers, 4*js->numimpropers*sizeof(int));
+  }
+  if (js->numcterms > 0) {
+    js->optflags |= JSOPT_CTERMS;
+
+    js->cterms = (int *) malloc(8*js->numcterms*sizeof(int));
+    memcpy(js->cterms, cterms, 8*js->numcterms*sizeof(int));
+  }
+
+  return MOLFILE_SUCCESS;
+}
+#else
 static int write_js_angles(void * v,
         int numangles,    const int *angles,    const double *angleforces,
         int numdihedrals, const int *dihedrals, const double *dihedralforces,
@@ -1105,7 +1199,7 @@ static int write_js_angles(void * v,
 
   return MOLFILE_SUCCESS;
 }
-
+#endif
 #endif
 
 

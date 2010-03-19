@@ -173,11 +173,22 @@ static int plugin_read_bonds(molfile_plugin_t *plg, void *rv,
                              topo_mol *mol, int natoms, 
                              topo_mol_atom_t **molatomlist,
                              void *v, void (*print_msg)(void *, const char *)) {
-  int i, nbonds, *from, *to;
+  int i, nbonds, *from, *to, *bondtype, nbondtypes;
   float *bondorder;
+  char **bondtypename;
   char msg[128];
 
+  /* must explicitly set these since they may are otherwise only  */
+  /* initialized by the read_bonds() call in the new ABI          */
+  nbondtypes = 0;
+  bondtype = NULL;
+  bondtypename = NULL;
+ 
+#if vmdplugin_ABIVERSION >= 15
+  if (plg->read_bonds(rv, &nbonds, &from, &to, &bondorder, &bondtype, &nbondtypes, &bondtypename)) {
+#else
   if (plg->read_bonds(rv, &nbonds, &from, &to, &bondorder)) {
+#endif
     print_msg(v, "ERROR: failed reading bond information.");
     return -1;
   } else {
@@ -217,21 +228,22 @@ static int plugin_read_angles(molfile_plugin_t *plg, void *rv,
                               topo_mol *mol, int natoms, 
                               topo_mol_atom_t **molatomlist,
                               void *v, void (*print_msg)(void *, const char *)){
-  int numangles, *angles;
-  int numdihedrals, *dihedrals;
-  int numimpropers, *impropers;
+  int numangles, *angles, *angletypes, numangletypes;
+  int numdihedrals, *dihedrals, *dihedraltypes, numdihedraltypes;
+  int numimpropers, *impropers, *impropertypes, numimpropertypes; 
   int numcterms, *cterms, ctermcols, ctermrows;
-  double *angleforces, *dihedralforces, *improperforces, *ctermforces;
+  char **angletypenames, **dihedraltypenames, **impropertypenames;
   char msg[128];
   topo_mol_atom_t *atom1, *atom2, *atom3, *atom4;
   int i, j;
 
-  if (plg->read_angles(rv,
-                       &numangles, &angles, &angleforces,
-                       &numdihedrals, &dihedrals, &dihedralforces,
-                       &numimpropers, &impropers, &improperforces,
-                       &numcterms, &cterms, &ctermcols, &ctermrows,
-                       &ctermforces)) {
+  if (plg->read_angles(rv, &numangles, &angles, &angletypes, 
+                          &numangletypes, &angletypenames, &numdihedrals,
+                          &dihedrals,  &dihedraltypes, &numdihedraltypes, 
+                          &dihedraltypenames, &numimpropers, &impropers,
+                          &impropertypes, &numimpropertypes, 
+                          &impropertypenames, &numcterms, &cterms, 
+                          &ctermcols, &ctermrows)) {
     print_msg(v, "ERROR: failed reading angle information.");
     return -1;
   } else {
@@ -944,7 +956,11 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
       }
     }
 
+#if vmdplugin_ABIVERSION >= 15
+    if (plg->write_bonds(wv, nbonds, from, to, NULL, NULL, 0, NULL)) {
+#else
     if (plg->write_bonds(wv, nbonds, from, to, NULL)) {
+#endif
       print_msg(v, "ERROR: plugin failed to write bonds");
       free(from);
       free(to);
@@ -1066,10 +1082,10 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
     }
 
     if (plg->write_angles(wv, 
-                          nangls, angles, NULL,
-                          ndihes, dihedrals, NULL,
-                          nimprs, impropers, NULL,
-                          ncmaps, cmaps, 0, 0, NULL)) {
+                          nangls, angles, NULL, 0, NULL,
+                          ndihes, dihedrals, NULL, 0, NULL,
+                          nimprs, impropers, NULL, 0, NULL,
+                          ncmaps, cmaps, 0, 0)) {
       print_msg(v, "ERROR: plugin failed to write angles/dihedrals/impropers/cross-terms");
       if (angles != NULL)
         free(angles);

@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2006 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2009 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: fortread.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2008/12/09 19:46:22 $
+ *      $Revision: 1.2 $       $Date: 2010/03/19 21:44:16 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -26,6 +26,65 @@
 #include <stdio.h>
 
 #include "endianswap.h"
+
+#define FORT_RECLEN_32BIT 4
+#define FORT_RECLEN_64BIT 8
+
+/*
+ * consume a record length marker
+ */
+static int fort_eat_recmark(FILE *ifp, int recmarklen) {
+  int tmp;
+  if (recmarklen == FORT_RECLEN_64BIT) {
+    if (fread(&tmp, 4, 1, ifp) != 1) 
+      return -1;
+    if (fread(&tmp, 4, 1, ifp) != 1) 
+      return -1;
+  } else {
+    if (fread(&tmp, 4, 1, ifp) != 1) 
+      return -1;
+  }
+
+  return 0;
+}
+
+/*
+ * Determine endianness and length of Fortran 
+ * record length markers within unformatted binary files.
+ */
+static int fort_get_endian_reclen(int reclen, int word0, int word1, 
+                                  int *swap, int *recmarklen) {
+  /* check for 32-bit record length markers */
+  if (reclen == word0) {
+    *swap=0;
+    *recmarklen=FORT_RECLEN_32BIT;
+    return 0;
+  } else {
+    int tmp = word0;
+    swap4_aligned(&tmp, 1);   
+    if (tmp == reclen) {
+      *swap=0;
+      *recmarklen=FORT_RECLEN_32BIT;
+      return 0;
+    }
+  }
+  
+  /* check for 64-bit record length markers */ 
+  if (reclen == (word0+word1)) {
+    *swap=0;
+    *recmarklen=FORT_RECLEN_64BIT;
+  } else {
+    int tmp0=word0;
+    int tmp1=word1;
+    swap4_aligned(&tmp0, 1);   
+    swap4_aligned(&tmp1, 1);   
+    *swap=1;
+    *recmarklen=FORT_RECLEN_64BIT;
+  }
+    
+  return -1; /* completely unrecognized record length marker */
+}
+
 
 
 /*  Unformatted reads.

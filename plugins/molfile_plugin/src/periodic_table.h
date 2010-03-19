@@ -3,7 +3,7 @@
  *
  *      $RCSfile: periodic_table.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2008/12/09 19:46:23 $
+ *      $Revision: 1.2 $       $Date: 2010/03/19 21:44:17 $
  *
  ***************************************************************************/
 
@@ -13,7 +13,7 @@
  * all tables and functions are declared static, so that it
  * can be safely included by all plugins that may need it.
  *
- * 2002-2007 axel.kohlmeyer@theochem.ruhr-uni-bochum.de, vmd@ks.uiuc.edu
+ * 2002-2009 akohlmey@cmm.chem.upenn.edu, vmd@ks.uiuc.edu
  */
 
 #include <string.h>
@@ -146,6 +146,8 @@ static int get_pte_idx(const char *label)
         atom[0] = (char) toupper((int) label[0]);
         atom[1] = (char) tolower((int) label[1]);
     }
+    /* discard numbers in atom label */
+    if (isdigit(atom[1])) atom[1] = (char) 0;
     
     for (i=0; i < nr_pte_entries; ++i) {
         if ( (pte_label[i][0] == atom[0])

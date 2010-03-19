@@ -1,6 +1,6 @@
 /***************************************************************************
  *cr
- *cr            (C) Copyright 1995-2006 The Board of Trustees of the
+ *cr            (C) Copyright 1995-2009 The Board of Trustees of the
  *cr                        University of Illinois
  *cr                         All Rights Reserved
  *cr
@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2008/12/09 19:46:24 $
+ *      $Revision: 1.2 $       $Date: 2010/03/19 21:44:17 $
  *
  ***************************************************************************/
 
@@ -23,15 +23,16 @@
 
 #include "fortread.h"
 
-#define PSF_RECORD_LENGTH   160  /* extended to handle Charmm CMAP/CHEQ */ 
+#define PSF_RECORD_LENGTH 256  /* extended to handle Charmm CMAP/CHEQ/DRUDE */
 
 typedef struct {
   FILE *fp;
   int numatoms;
-  int charmmfmt;  /* whether psf was written in charmm format          */
-  int charmmcmap; /* stuff used by charmm for polarizable force fields */
-  int charmmcheq; /* stuff used by charmm for polarizable force fields */
-  int charmmext;  /* flag used by charmm for IOFOrmat EXTEnded         */
+  int charmmfmt;   /* whether psf was written in charmm format              */
+  int charmmcmap;  /* cross-term maps                                       */
+  int charmmcheq;  /* stuff used by charmm for polarizable force fields     */
+  int charmmext;   /* flag used by charmm for IOFOrmat EXTEnded             */
+  int charmmdrude; /* flag used by charmm for Drude polarizable force field */
   int nbonds;
   int *from, *to;
   int numangles, *angles;
@@ -46,7 +47,8 @@ typedef struct {
    that file has already been moved to the beginning of the atom records.
    Returns the serial number of the atom. If there is an error, returns -1.*/
 static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
-   char *segname, int *resid, float *q, float *m, int charmmext) {
+                        char *segname, int *resid, float *q, float *m, 
+                        int charmmext, int charmmdrude) {
   char inbuf[PSF_RECORD_LENGTH+2];
   int num;
 
@@ -61,8 +63,24 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
 
   num = atoi(inbuf); /* atom index */
 
-  if (charmmext == 1) {
-    /* CHARMM PSF format is (if CMAP,CHEQ are also included):
+  if (charmmdrude == 1) {
+    /* CHARMM PSF format is (if DRUDE and CHEQ are enabled):
+     *  '(I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8,2G14.6)'
+     */
+    strnwscpy(segname, inbuf+11, 7);
+    strnwscpy(resname, inbuf+29, 7);
+    strnwscpy(name, inbuf+38, 7);
+    strnwscpy(atype, inbuf+47, 4);
+    
+    *resid = atoi(inbuf+20);
+    *q = (float) atof(inbuf+52);
+    *m = (float) atof(inbuf+68);
+    // data we don't currently read:
+    //   *imove = atoi(inbuf+84);
+    //   *alphadp = atof(inbuf+92);
+    //   *tholei = atof(inbuf+108);
+  } else if (charmmext == 1) {
+    /* CHARMM PSF format is (if CMAP and CHEQ are also enabled):
      *  '(I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8,2G14.6)'
      */
     strnwscpy(segname, inbuf+11, 7);
@@ -74,6 +92,9 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
     *q = (float) atof(inbuf+52);
     *m = (float) atof(inbuf+68);
   } else {
+    /* CHARMM PSF format is 
+     *  '(I8,1X,A4,1X,A4,1X,A4,1X,A4,1X,I4,1X,2G14.6,I8)'
+     */
     strnwscpy(segname, inbuf+9, 4);
     strnwscpy(resname, inbuf+19, 4);
     strnwscpy(name, inbuf+24, 4);
@@ -104,12 +125,17 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
 static int psf_start_block(FILE *file, const char *blockname) {
   char inbuf[PSF_RECORD_LENGTH+2];
   int nrec = -1;
+  
+  /* check if we had a parse error earlier, which is indicated
+     by the file descriptor set to NULL */
+  if (!file)
+    return -1;
 
   /* keep reading the next line until a line with blockname appears */
   do {
     if(inbuf != fgets(inbuf, PSF_RECORD_LENGTH+1, file)) {
       /* EOF encountered with no blockname line found ==> error, return (-1) */
-      return (-1);
+      return -1;
     }
     if(strlen(inbuf) > 0 && strstr(inbuf, blockname))
       nrec = atoi(inbuf);
@@ -216,6 +242,10 @@ static void *open_psf_read(const char *path, const char *filetype,
             psf->charmmfmt = 1; 
             psf->charmmcmap = 1;      
           }
+          if (strstr(inbuf, "DRUDE")) {
+            psf->charmmfmt = 1; 
+            psf->charmmdrude = 1;      
+          }
         } else if (strstr(inbuf, "NATOM")) {
           *natoms = atoi(inbuf);
         }
@@ -228,6 +258,10 @@ static void *open_psf_read(const char *path, const char *filetype,
   }
   if (psf->charmmext) {
     printf("psfplugin) Detected a Charmm31 PSF EXTEnded file\n");
+  }
+  if (psf->charmmdrude) {
+    printf("psfplugin) Detected a Charmm36 Drude polarizable force field file\n");
+    printf("psfplugin) WARNING: Support for Drude FF is currently experimental\n");
   }
 
   psf->numatoms = *natoms;
@@ -246,7 +280,8 @@ static int read_psf(void *v, int *optflags, molfile_atom_t *atoms) {
     molfile_atom_t *atom = atoms+i; 
     if (get_psf_atom(psf->fp, atom->name, atom->type, 
                      atom->resname, atom->segid, 
-                     &atom->resid, &atom->charge, &atom->mass, psf->charmmext) < 0) {
+                     &atom->resid, &atom->charge, &atom->mass, 
+                     psf->charmmext, psf->charmmdrude) < 0) {
       fprintf(stderr, "couldn't read atom %d\n", i);
       fclose(psf->fp);
       psf->fp = NULL;
@@ -260,7 +295,9 @@ static int read_psf(void *v, int *optflags, molfile_atom_t *atoms) {
 }
 
 
-static int read_bonds(void *v, int *nbonds, int **fromptr, int **toptr, float **bondorder) {
+static int read_bonds(void *v, int *nbonds, int **fromptr, int **toptr, 
+                      float **bondorder, int **bondtype, 
+                      int *nbondtypes, char ***bondtypename) {
   psfdata *psf = (psfdata *)v;
 
   *nbonds = psf_start_block(psf->fp, "NBOND"); /* get bond count */
@@ -276,8 +313,17 @@ static int read_bonds(void *v, int *nbonds, int **fromptr, int **toptr, float **
     }
     *fromptr = psf->from;
     *toptr = psf->to;
-    *bondorder = NULL; /* PSF files don't provide bond order information */
+    *bondorder = NULL; /* PSF files don't provide bond order or type information */
+    *bondtype = NULL;
+    *nbondtypes = 0;
+    *bondtypename = NULL;
   } else {
+    *fromptr = NULL;
+    *toptr = NULL;
+    *bondorder = NULL; /* PSF files don't provide bond order or type information */
+    *bondtype = NULL;
+    *nbondtypes = 0;
+    *bondtypename = NULL;
     printf("psfplugin) WARNING: no bonds defined in PSF file.\n");
   }
 
@@ -345,7 +391,91 @@ static int psf_get_dihedrals_impropers(FILE *f, int n, int *dihedrals) {
   return (i != n);
 }
 
+#if vmdplugin_ABIVERSION > 14
+static int read_angles(void *v, int *numangles, int **angles, 
+                       int **angletypes, int *numangletypes, 
+                       char ***angletypenames, int *numdihedrals,
+                       int **dihedrals, int **dihedraltypes, 
+                       int *numdihedraltypes, char ***dihedraltypenames,
+                       int *numimpropers, int **impropers, 
+                       int **impropertypes, int *numimpropertypes, 
+                       char ***impropertypenames, int *numcterms, 
+                       int **cterms, int *ctermcols, int *ctermrows) {
+  psfdata *psf = (psfdata *)v;
 
+  /* initialize data to zero */
+  *numangles         = 0;
+  *angles            = NULL;
+  *angletypes        = NULL;
+  *numangletypes     = 0;
+  *angletypenames    = NULL;
+  *numdihedrals      = 0;
+  *dihedrals         = NULL;
+  *dihedraltypes     = NULL;
+  *numdihedraltypes  = 0;
+  *dihedraltypenames = NULL;
+  *numimpropers      = 0;
+  *impropers         = NULL;
+  *impropertypes     = NULL;
+  *numimpropertypes  = 0;
+  *impropertypenames = NULL;
+  *numcterms         = 0;
+  *cterms            = NULL;
+  *ctermrows         = 0;
+  *ctermcols         = 0;
+
+  psf->numangles    = psf_start_block(psf->fp, "NTHETA"); /* get angle count */
+  if (psf->numangles > 0) {
+    psf->angles = (int *) malloc(3*psf->numangles*sizeof(int));
+    psf_get_angles(psf->fp, psf->numangles, psf->angles);
+  } else {
+    printf("psfplugin) WARNING: no angles defined in PSF file.\n");
+  }
+ 
+  psf->numdihedrals = psf_start_block(psf->fp, "NPHI");   /* get dihed count */
+  if (psf->numdihedrals > 0) {
+    psf->dihedrals = (int *) malloc(4*psf->numdihedrals*sizeof(int));
+    psf_get_dihedrals_impropers(psf->fp, psf->numdihedrals, psf->dihedrals);
+  } else {
+    printf("psfplugin) WARNING: no dihedrals defined in PSF file.\n");
+  }
+ 
+  psf->numimpropers = psf_start_block(psf->fp, "NIMPHI"); /* get imprp count */
+  if (psf->numimpropers > 0) {
+    psf->impropers = (int *) malloc(4*psf->numimpropers*sizeof(int));
+    psf_get_dihedrals_impropers(psf->fp, psf->numimpropers, psf->impropers);
+  } else {
+    printf("psfplugin) WARNING: no impropers defined in PSF file.\n");
+  }
+
+  psf->numcterms = psf_start_block(psf->fp, "NCRTERM"); /* get cmap count */
+  if (psf->numcterms > 0) {
+    psf->cterms = (int *) malloc(8*psf->numcterms*sizeof(int));
+
+    /* same format as dihedrals, but double the number of terms */
+    psf_get_dihedrals_impropers(psf->fp, psf->numcterms * 2, psf->cterms);
+  } else {
+    printf("psfplugin) no cross-terms defined in PSF file.\n");
+  }
+
+  *numangles = psf->numangles;
+  *angles = psf->angles;
+
+  *numdihedrals = psf->numdihedrals;
+  *dihedrals = psf->dihedrals;
+
+  *numimpropers = psf->numimpropers;
+  *impropers = psf->impropers;
+
+  *numcterms = psf->numcterms;
+  *cterms = psf->cterms;
+
+  *ctermcols = 0;
+  *ctermrows = 0;
+
+  return MOLFILE_SUCCESS;
+}
+#else
 static int read_angles(void *v,
                int *numangles,    int **angles,    double **angleforces,
                int *numdihedrals, int **dihedrals, double **dihedralforces,
@@ -409,7 +539,7 @@ static int read_angles(void *v,
 
   return MOLFILE_SUCCESS;
 }
-
+#endif
 
 static void close_psf_read(void *mydata) {
   psfdata *psf = (psfdata *)mydata;
@@ -602,7 +732,9 @@ static int write_psf_structure(void *v, int optflags,
   return MOLFILE_SUCCESS;
 }
 
-static int write_bonds(void *v, int nbonds, int *fromptr, int *toptr, float *bondorderptr) {
+static int write_bonds(void *v, int nbonds, int *fromptr, int *toptr, 
+                       float *bondorderptr, int *bondtype, 
+                       int nbondtypes, char **bondtypename) {
   psfdata *psf = (psfdata *)v;
 
   /* save info until we actually write out the structure file */
@@ -615,6 +747,39 @@ static int write_bonds(void *v, int nbonds, int *fromptr, int *toptr, float *bon
   return MOLFILE_SUCCESS;
 }
 
+#if vmdplugin_ABIVERSION > 14
+static int write_angles(void * v, int numangles, const int *angles,
+                        const int *angletypes, int numangletypes,
+                        const char **angletypenames, int numdihedrals, 
+                        const int *dihedrals, const int *dihedraltype,
+                        int numdihedraltypes, const char **dihedraltypenames,
+                        int numimpropers, const int *impropers, 
+                        const int *impropertypes, int numimpropertypes, 
+                        const char **impropertypenames, int numcterms, 
+                        const int *cterms, int ctermcols, int ctermrows) {
+  psfdata *psf = (psfdata *)v;
+
+  /* save info until we actually write out the structure file */
+  psf->numangles = numangles;
+  psf->numdihedrals = numdihedrals;
+  psf->numimpropers = numimpropers;
+  psf->numcterms = numcterms;
+
+  psf->angles = (int *) malloc(3*psf->numangles*sizeof(int));
+  memcpy(psf->angles, angles, 3*psf->numangles*sizeof(int));
+
+  psf->dihedrals = (int *) malloc(4*psf->numdihedrals*sizeof(int));
+  memcpy(psf->dihedrals, dihedrals, 4*psf->numdihedrals*sizeof(int));
+
+  psf->impropers = (int *) malloc(4*psf->numimpropers*sizeof(int));
+  memcpy(psf->impropers, impropers, 4*psf->numimpropers*sizeof(int));
+
+  psf->cterms = (int *) malloc(8*psf->numcterms*sizeof(int));
+  memcpy(psf->cterms, cterms, 8*psf->numcterms*sizeof(int));
+
+  return MOLFILE_SUCCESS;
+}
+#else
 static int write_angles(void * v,
         int numangles,    const int *angles,    const double *angleforces,
         int numdihedrals, const int *dihedrals, const double *dihedralforces,
@@ -643,7 +808,7 @@ static int write_angles(void * v,
 
   return MOLFILE_SUCCESS;
 }
-
+#endif
 
 static void close_psf_write(void *v) {
   psfdata *psf = (psfdata *)v;
@@ -685,7 +850,7 @@ VMDPLUGIN_API int VMDPLUGIN_init() {
   plugin.prettyname = "CHARMM,NAMD,XPLOR PSF";
   plugin.author = "Justin Gullingsrud, John Stone";
   plugin.majorv = 1;
-  plugin.minorv = 2;
+  plugin.minorv = 5;
   plugin.is_reentrant = VMDPLUGIN_THREADSAFE;
   plugin.filename_extension = "psf";
   plugin.open_file_read = open_psf_read;
