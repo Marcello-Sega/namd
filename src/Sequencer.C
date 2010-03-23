@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dbwells2 $
- * $Date: 2010/02/25 00:21:35 $
- * $Revision: 1.1183 $
+ * $Author: jim $
+ * $Date: 2010/03/23 18:19:34 $
+ * $Revision: 1.1184 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -454,6 +454,11 @@ void Sequencer::minimize() {
   // END LA
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;
+
+  if (simParams->drudeOn) {
+    AtomMap::Object()->registerIDsFullAtom(
+		patch->patchID,patch->atom.begin(),patch->atom.end());
+  }
 
   runComputeObjects(1,step<numberOfSteps); // must migrate here!
 
