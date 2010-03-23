@@ -24,6 +24,7 @@ public:
   int registerIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
   int registerIDsFullAtom(PatchID pid, const FullAtom *begin, const FullAtom *end);
   int unregisterIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
+  int unregisterIDs(PatchID pid, const FullAtom *begin, const FullAtom *end);
 
   LocalID localID(AtomID id);
 

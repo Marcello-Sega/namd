@@ -1012,7 +1012,7 @@ void HomePatch::positionsReady(int doMigration)
     dft->closeTrace();
     #endif
 
-    if(doMigration) {
+    if(doMigration || isNewProxyAdded) {
         ProxyMgr::Object()->sendProxyAll(nmsg,npid,pids);
     }else{
         ProxyMgr::Object()->sendProxyData(nmsg,npid,pids);
@@ -2313,7 +2313,7 @@ HomePatch::doAtomMigration()
   }
 
   // Purge the AtomMap
-  AtomMap::Object()->unregisterIDs(patchID,pExt.begin(),pExt.end());
+  AtomMap::Object()->unregisterIDs(patchID,atom.begin(),atom.end());
 
   // Determine atoms that need to migrate
 

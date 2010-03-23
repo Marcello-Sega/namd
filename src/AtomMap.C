@@ -72,6 +72,24 @@ int AtomMap::unregisterIDs(PatchID pid, const CompAtomExt *begin, const CompAtom
   }
 }
 //----------------------------------------------------------------------
+int AtomMap::unregisterIDs(PatchID pid, const FullAtom *begin, const FullAtom *end)
+{
+  if (localIDTable == NULL)
+    return -1;
+  else 
+  {
+    for(const FullAtom *a = begin; a != end; ++a)
+    {
+        unsigned int ali = a->id;
+	if (localIDTable[ali].pid == pid) {
+	    localIDTable[ali].pid = notUsed;
+	    localIDTable[ali].index = notUsed;
+	}
+    }
+    return 0;
+  }
+}
+//----------------------------------------------------------------------
 int AtomMap::registerIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end)
 {
   if (localIDTable == NULL)
