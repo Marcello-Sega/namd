@@ -230,7 +230,6 @@ void HomePatch::write_tip4_props() {
 
 void HomePatch::init_tip4() {
   // initialize the distances needed for the tip4p water model
-
   Molecule *mol = Node::Object()->molecule;
   r_om = mol->r_om;
   r_ohc = mol->r_ohc;
@@ -239,24 +238,11 @@ void HomePatch::init_tip4() {
 
 void ::HomePatch::init_swm4() {
   // initialize the distances needed for the SWM4 water model
-  SimParameters *simParams = Node::Object()->simParameters;
   Molecule *mol = Node::Object()->molecule;
-  int ig;
-  if (RIGID_NONE == simParams->rigidBonds) return;
-  if (WAT_SWM4 != simParams->watmodel) return;
-  for (ig = 0;  ig < numAtoms;  ig += atom[ig].hydrogenGroupSize ) {
-    // find a water
-    if (mol->rigid_bond_length(atom[ig].id) > 0) {
-      // water is guaranteed by Molecule to have order:  O D LP H1 H2
-      BigReal r_hh = mol->rigid_bond_length(atom[ig].id);
-      BigReal r_oh = mol->rigid_bond_length(atom[ig+3].id);
-      r_om = mol->rigid_bond_length(atom[ig+2].id);
-      r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
-      //printf("r_om and r_ohc initialized to %f and %f\n", r_om, r_ohc);
-      break;
-    }
-  }
+  r_om = mol->r_om;
+  r_ohc = mol->r_ohc;
 }
+
 
 void HomePatch::reinitAtoms(FullAtomList al) {
   atom = al;

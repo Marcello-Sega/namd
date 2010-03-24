@@ -9103,13 +9103,14 @@ void Molecule::build_atom_status(void) {
 #endif
     
     // We now should be able to set the parameters needed for water lonepairs
-    if (simParams->watmodel == WAT_TIP4) {
+    if (simParams->watmodel == WAT_TIP4
+        || simParams->watmodel == WAT_SWM4) {
       if (r_oh < 0.0 || r_hh < 0.0) {
         printf("ERROR: r_oh %f / r_hh %f\n", r_oh, r_hh);
         NAMD_die("Failed to find water bond lengths\n");
       } 
       r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
-      printf("final r_om and r_ohc are %f and %f\n", r_om, r_ohc);
+      //printf("final r_om and r_ohc are %f and %f\n", r_om, r_ohc);
     }
 
     h_i = hydrogenGroup.begin();  h_e = hydrogenGroup.end();
