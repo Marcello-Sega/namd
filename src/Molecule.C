@@ -8729,6 +8729,8 @@ void Molecule::build_atom_status(void) {
   }
 
   // check ordering of Drude particles and water
+  // count number of Drude waters
+  int numDrudeWaters = 0;
   if (simParams->watmodel == WAT_SWM4) {
     for (i = 0;  i < numAtoms;  i++) {
       if (is_water(hg[i].atomID) && hg[i].isGP) {
@@ -8742,6 +8744,7 @@ void Molecule::build_atom_status(void) {
               "starting at atom %d is not sorted\n", i, hg[i].atomID+1);
           NAMD_die(msg);
         }
+        numDrudeWaters++;
         i += 4;  // +1 from loop
         continue;
       } // if water
@@ -9103,10 +9106,11 @@ void Molecule::build_atom_status(void) {
 #endif
     
     // We now should be able to set the parameters needed for water lonepairs
-    if (simParams->watmodel == WAT_TIP4
-        || simParams->watmodel == WAT_SWM4) {
+    // make sure that there is water in the system
+    if ( (simParams->watmodel == WAT_TIP4 && numLonepairs > 0)
+        || (simParams->watmodel == WAT_SWM4 && numDrudeWaters > 0)) {
       if (r_oh < 0.0 || r_hh < 0.0) {
-        printf("ERROR: r_oh %f / r_hh %f\n", r_oh, r_hh);
+        //printf("ERROR: r_oh %f / r_hh %f\n", r_oh, r_hh);
         NAMD_die("Failed to find water bond lengths\n");
       } 
       r_ohc = sqrt(r_oh * r_oh - 0.25 * r_hh * r_hh);
