@@ -8349,6 +8349,7 @@ void Molecule::reloadCharges(float charge[], int n){
 void Molecule::build_atom_status(void) {
   register int i;
   int a1, a2, a3;
+  int numDrudeWaters = 0;
 
   // if any atoms have a mass of zero set to 0.001 and warn user
   int numZeroMassAtoms = 0;
@@ -8730,7 +8731,6 @@ void Molecule::build_atom_status(void) {
 
   // check ordering of Drude particles and water
   // count number of Drude waters
-  int numDrudeWaters = 0;
   if (simParams->watmodel == WAT_SWM4) {
     for (i = 0;  i < numAtoms;  i++) {
       if (is_water(hg[i].atomID) && hg[i].isGP) {
