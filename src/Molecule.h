@@ -257,8 +257,8 @@ private:
 #endif
 
 #ifdef MEM_OPT_VERSION
-  Index *eachAtomSig;
-  Index *eachAtomExclSig;
+  AtomSigID *eachAtomSig;
+  ExclSigID *eachAtomExclSig;
 #else
 //function is replaced by atom signatures
   int32 **bondsByAtom;  //  List of bonds owned by each atom

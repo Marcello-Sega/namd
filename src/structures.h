@@ -24,7 +24,7 @@ using namespace std;
 #define DrudeAtom        0x80
 
 
-typedef unsigned short Index;		//  Used for index into arrays
+typedef int Index;		//  Used for index into arrays
 					//  or parameters
 
 typedef struct atom_name_info

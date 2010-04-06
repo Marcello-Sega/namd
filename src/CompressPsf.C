@@ -46,7 +46,6 @@ struct BasicAtomInfo
     int resID;
 };
 
-typedef unsigned short SigIndex;
 struct AtomSigInfo
 {
     vector<SigIndex> bondSigIndices;
