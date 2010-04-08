@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: jim $
- * $Date: 2010/03/08 17:34:21 $
- * $Revision: 1.94 $
+ * $Author: gzheng $
+ * $Date: 2010/04/08 18:44:47 $
+ * $Revision: 1.95 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -27,8 +27,11 @@ void CreateNamdCentLB() {
   // CkPrintf("[%d] creating NamdCentLB %d\n",CkMyPe(),loadbalancer);
   loadbalancer = CProxy_NamdCentLB::ckNew();
   // CkPrintf("[%d] created NamdCentLB %d\n",CkMyPe(),loadbalancer);
-  cpuloads = new double[CkNumPes()];
-  for (int i=0; i<CkNumPes(); i++) cpuloads[i] = 0.0;
+  if (CkMyRank() == 0 && cpuloads == NULL) {    
+    cpuloads = new double[CkNumPes()];
+    CmiAssert(cpuloads != NULL);
+    for (int i=0; i<CkNumPes(); i++) cpuloads[i] = 0.0;
+  }
 }
 
 NamdCentLB *AllocateNamdCentLB() {
