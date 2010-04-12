@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/07 00:19:13 $
- * $Revision: 1.96 $
+ * $Author: bhatele $
+ * $Date: 2010/04/12 22:59:07 $
+ * $Revision: 1.97 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -283,7 +283,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     NAMD_die("Disaggreement in patchMap data.\n");
  
   nLocalComputes = 0;
-  numComputes = cMap->numComputes();
+  numComputes = computeMap->numComputes();
 
   for(i=0;i<numComputes;i++)  {
     if ( (computeMap->node(i) == Node::Object()->myid())
@@ -363,19 +363,32 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	  LDObjid elemID;
 	  elemID.id[0] = i;
 	
-	  if (cMap->numPids(i) > 2)
-	    elemID.id[3] = cMap->pid(i,2);
+	  if (computeMap->numPids(i) > 2)
+	    elemID.id[3] = computeMap->pid(i,2);
 	  else elemID.id[3] = -1;
 
-	  if (cMap->numPids(i) > 1)
-	    elemID.id[2] =  cMap->pid(i,1);
+	  if (computeMap->numPids(i) > 1)
+	    elemID.id[2] =  computeMap->pid(i,1);
 	  else elemID.id[2] = -1;
 
-	  if (cMap->numPids(i) > 0)
-	    elemID.id[1] =  cMap->pid(i,0);
+	  if (computeMap->numPids(i) > 0)
+	    elemID.id[1] =  computeMap->pid(i,0);
 	  else elemID.id[1] = -1;
 
-	  objHandles[i] = theLbdb->RegisterObj(myHandle,elemID,0,1);
+	  int x1 = patchMap->index_a(computeMap->pid(i, 0));
+	  int y1 = patchMap->index_b(computeMap->pid(i, 0));
+	  int z1 = patchMap->index_c(computeMap->pid(i, 0));
+
+	  int x2 = patchMap->index_a(computeMap->pid(i, 1));
+	  int y2 = patchMap->index_b(computeMap->pid(i, 1));
+	  int z2 = patchMap->index_c(computeMap->pid(i, 1));
+
+	  int man_dist = abs(x1-x2) + abs(y1-y2) + abs(z1-z2);
+
+	  // if(man_dist < 3)
+	    objHandles[i] = theLbdb->RegisterObj(myHandle, elemID, 0, 1);
+	  // else
+	  //   objHandles[i] = theLbdb->RegisterObj(myHandle, elemID, 0, 0);
 	}
       }
     }

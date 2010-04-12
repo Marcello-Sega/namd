@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: gzheng $
- * $Date: 2010/04/08 18:44:47 $
- * $Revision: 1.95 $
+ * $Author: bhatele $
+ * $Date: 2010/04/12 22:59:07 $
+ * $Revision: 1.96 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -527,6 +527,8 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 	computeArray[nMoveableComputes].minTime = this_obj.minWall;
 	computeArray[nMoveableComputes].maxTime = this_obj.maxWall;
 	nMoveableComputes++;
+      } else {
+	processorArray[stats->from_proc[j]].backgroundLoad += this_obj.wallTime;
       }
     }
 
