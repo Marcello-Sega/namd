@@ -200,6 +200,7 @@ void Parameters::initialize() {
   tab_pair_tree=NULL;
   maxDihedralMults=NULL;
   maxImproperMults=NULL;
+  table_ener = NULL;
 
   /*  Set all the counts to 0          */
   NumBondParams=0;
@@ -211,6 +212,7 @@ void Parameters::initialize() {
   NumVdwPairParams=0;
   NumTablePairParams=0;
   NumCosAngles=0;
+  numenerentries=0;
 }
 
 /************************************************************************/
@@ -228,7 +230,6 @@ Parameters::Parameters(SimParameters *simParams, StringList *f)
 {
   initialize();
 
-  //****** BEGIN CHARMM/XPLOR type changes
   //// get current parameter format
   if (simParams->paraTypeXplorOn)
   {
@@ -246,18 +247,16 @@ Parameters::Parameters(SimParameters *simParams, StringList *f)
     cosAngles = false;
   }
 
+  if (simParams->tabulatedEnergies) {
+	  CkPrintf("Working on tables\n");
+	  read_ener_table(simParams);
+  }
+
+  //****** BEGIN CHARMM/XPLOR type changes
   /* Set up AllFilesRead flag to FALSE.  Once all of the files    */
   /* have been read in, then this will be set to true and the     */
   /* arrays of parameters will be set up        */
   AllFilesRead = FALSE;
-
-  numenerentries=0;
-  table_ener = NULL;
-  if (simParams->tabulatedEnergies) {
-
-	  fprintf(stdout,"Working on tables\n");
-	  read_ener_table(simParams);
-  }
 
   if (NULL != f) 
   {
