@@ -215,6 +215,7 @@ OBJS = \
 	$(DSTDIR)/imd.o \
 	$(DSTDIR)/CompressPsf.o \
 	$(DSTDIR)/PluginIOMgr.o \
+	$(DSTDIR)/ParallelIOMgr.o \
 	$(DSTDIR)/AtomsDisInfo.o \
 	$(DSTDIR)/FileIO.o 
 
@@ -262,6 +263,8 @@ CIFILES = 	\
 		$(INCDIR)/Sync.def.h \
 		$(INCDIR)/WorkDistrib.decl.h \
 		$(INCDIR)/WorkDistrib.def.h \
+		$(INCDIR)/ParallelIOMgr.decl.h \
+		$(INCDIR)/ParallelIOMgr.def.h \
 		$(INCDIR)/main.decl.h \
 		$(INCDIR)/main.def.h \
 		$(INCDIR)/AtomsDisInfo.decl.h \

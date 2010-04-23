@@ -34,6 +34,7 @@ obj/main.o: \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
 	inc/Node.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -204,6 +205,7 @@ obj/BackEnd.o: \
 	src/Tensor.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
@@ -226,6 +228,7 @@ obj/BackEnd.o: \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
 	inc/WorkDistrib.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	inc/ProxyMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ComputeMgr.decl.h \
@@ -4065,6 +4068,7 @@ obj/Node.o: \
 	src/Tensor.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
@@ -4087,6 +4091,7 @@ obj/Node.o: \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
 	src/WorkDistrib.h \
+	src/ParallelIOMgr.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
 	src/PatchMgr.h \
@@ -4151,6 +4156,7 @@ obj/Node.o: \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
 	src/BackEnd.h \
+	src/ParallelIOMgr.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/DumpBench.h \
@@ -5111,6 +5117,12 @@ obj/PluginIOMgr.o: \
 	plugins/include/vmdplugin.h \
 	plugins/include/libmolfile_plugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PluginIOMgr.o $(COPTC) src/PluginIOMgr.C
+obj/ParallelIOMgr.o: \
+	src/ParallelIOMgr.C \
+	src/PatchMap.h \
+	src/PatchMap.inl \
+	src/ParallelIOMgr.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ParallelIOMgr.o $(COPTC) src/ParallelIOMgr.C
 obj/AtomsDisInfo.o: \
 	src/AtomsDisInfo.C \
 	src/AtomsDisInfo.h \
