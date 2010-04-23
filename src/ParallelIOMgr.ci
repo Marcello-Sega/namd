@@ -1,0 +1,30 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
+module ParallelIOMgr {
+  // Handles messages to Patch(s)
+
+  message ConfigListMessage;
+  message [packed] AtomsPerPatchMsg;
+  message [packed] NodeAssignmentMsg;
+  message [packed] MoveFullAtomsMsg;
+  message [packed] AtomListForPatchCreateMsg;
+
+  group ParallelIOMgr
+  {
+    entry ParallelIOMgr(void);
+    entry void readCoordinatesAndVel(ConfigListMessage *pmsg);
+    entry void getPatchCoordinates(AtomListForPatchCreateMsg *msg);
+    entry void sendCoordinatesToProcs();
+    entry void receiveNumAtomsPerPatch(AtomsPerPatchMsg *msg1);
+    entry void updateCounters(int numBonds,int numAngles, int numDihedrals, int numImpropers, int numCrossterms, int numTotalExclusions,int numCalcExclusions);
+    entry void receiveMigrationChildren(MoveFullAtomsMsg *msg);    
+    entry void sendAssignedNode(NodeAssignmentMsg *msg);
+    entry void caclNumAtomsInEachPatchParallel();
+    entry void atomExchangeForPatchCreation();
+  } ;
+}
+
