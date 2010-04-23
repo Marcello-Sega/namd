@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: sarood $
- * $Date: 2010/04/23 22:16:58 $
- * $Revision: 1.1301 $
+ * $Date: 2010/04/23 23:48:42 $
+ * $Revision: 1.1302 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1578,7 +1578,6 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      "maximum number of exclusion flags per atom", &maxExclusionFlags, 256);
    opts.range("maxExclusionFlags",POSITIVE);
 
-printf("VALLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL in SIM =%d \n\n\n",maxExclusionFlags);
 }
 
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
