@@ -88,6 +88,20 @@ struct FullAtom : CompAtom, CompAtomExt{
   Position fixedPosition;
   Mass mass;
   Transform transform;
+////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input Change
+  int aidIdx;
+  int readProc;
+  int destProc;
+  long long GPID;
+  int sortVal;
+  int atomsInGroup;
+  int isMP;
+  int MPID;
+  int waterVal;
+////////////////////////////////////////////////
+//
   int migrationGroupSize;
 };
 
