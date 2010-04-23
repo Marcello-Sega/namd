@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2010/02/15 17:50:27 $
- * $Revision: 1.1203 $
+ * $Author: sarood $
+ * $Date: 2010/04/23 22:16:58 $
+ * $Revision: 1.1204 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -122,6 +122,252 @@ void WorkDistrib::doneSaveComputeMap() {
   }
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////^M
+//// Osman Sarood^M
+//// Parallel Input Change^M
+void WorkDistrib::setMapsArrived(bool s) {mapsArrived=s;}
+
+
+#ifdef MEM_OPT_VERSION
+void WorkDistrib::fillOnePatchCreationParallelIO(int patchId, FullAtomList *onePatchAtoms, Vector *velocities){
+    
+
+    CProxy_Node nd(CpvAccess(BOCclass_group).node);
+    Node *node = nd.ckLocalBranch();
+    PDB *pdb = node->pdb;
+    SimParameters *params = node->simParameters;
+    Molecule *molecule = node->molecule;
+
+    const Lattice lattice = params->lattice;
+
+    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+    PatchMgr *patchMgr = pm.ckLocalBranch();
+    
+    PatchMap *patchMap = PatchMap::Object();
+
+    vector<int> *eachPatchAtomsList = Node::Object()->ioMgr->patchAtomList;
+    vector<int> *thisPatchAtomsList = &eachPatchAtomsList[patchId];
+
+    vector<int> *eachPatchAtomsList1 = Node::Object()->ioMgr->patchAtomIdMappingList;
+    vector<int> *thisPatchAtomsList1 = &eachPatchAtomsList1[patchId];
+    for(int i=0; i<thisPatchAtomsList->size(); i++){
+        int aid = thisPatchAtomsList->at(i);
+        int aidIdx=thisPatchAtomsList1->at(i);
+
+        FullAtom a;
+        a.id = aid;
+                a.aidIdx=aidIdx;
+                
+        Position pos,vel;
+        Node::Object()->ioMgr->get_position_for_patch_creation(&pos, aid,aidIdx);
+                if ( Node::Object()->simParameters->initialTemp < 0.0 ) {
+                        Node::Object()->ioMgr->get_position_for_patch_creationVel(&vel, aid,aidIdx);
+                        a.velocity = vel;
+                }
+                else
+                        a.velocity = velocities[aidIdx];        
+
+        a.position = pos;
+                
+
+        
+                
+
+        #ifdef MEM_OPT_VERSION
+/*
+ *         a.sigId = molecule->getAtomSigId(aid);
+ *                 a.exclId = molecule->getAtomExclSigId(aid);
+ *                         a.vdwType = molecule->atomvdwtype(aid);
+ *                         */
+	FullAtom *at=Node::Object()->ioMgr->finalAtomList.begin();
+/*
+ *         a.sigId = Node::Object()->ioMgr->eachAtomSigPerProc[aidIdx];
+ *                 a.exclId = Node::Object()->ioMgr->eachAtomExclSigPerProc[aidIdx];
+ *                         a.vdwType = Node::Object()->ioMgr->vdwTypePerProc[aidIdx];
+ *                         */
+        a.sigId = at[aidIdx].sigId;
+        a.exclId = at[aidIdx].exclId;
+        a.vdwType = at[aidIdx].vdwType;
+
+        #endif
+        onePatchAtoms->add(a);
+
+    }
+
+
+    ScaledPosition center(0.5*(patchMap->min_a(patchId)+patchMap->max_a(patchId)),
+                          0.5*(patchMap->min_b(patchId)+patchMap->max_b(patchId)),
+                          0.5*(patchMap->min_c(patchId)+patchMap->max_c(patchId)));
+
+    int n = onePatchAtoms->size();
+
+    FullAtom *a = onePatchAtoms->begin();
+    int j;
+
+    Bool alchFepOn = params->alchFepOn;
+    Bool alchThermIntOn = params->alchThermIntOn;
+
+
+    Bool lesOn = params->lesOn;
+
+    Bool pairInteractionOn = params->pairInteractionOn;
+
+    Bool pressureProfileTypes = (params->pressureProfileAtomTypes > 1);
+    Transform mother_transform;
+    for(j=0; j < n; j++)
+    {
+      int aid = a[j].id;
+                int aidIdx=a[j].aidIdx;
+      if (params->splitPatch == SPLIT_PATCH_HYDROGEN) {
+                if ( Node::Object()->ioMgr->is_hydrogenGroupParentPar(aidIdx) ) {
+                        a[j].hydrogenGroupSize = (Node::Object()->ioMgr->is_hydrogenGroupParentPar(aidIdx)) ? Node::Object()->ioMgr->get_groupSizePar(aidIdx) : 0;
+			a[j].migrationGroupSize= (Node::Object()->ioMgr->getIsMP(aidIdx)) ? Node::Object()->ioMgr->get_MigrationGpSizePar(aidIdx) : 0;
+        } else {
+          a[j].hydrogenGroupSize = 0;
+	  a[j].migrationGroupSize=0;
+        }
+      } else {
+        a[j].hydrogenGroupSize = 1;
+      }
+
+
+      a[j].nonbondedGroupSize = 0;  // must be set based on coordinates
+
+      a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
+      a[j].fixedPosition = a[j].position;
+
+      if ( a[j].hydrogenGroupSize ) {
+
+        a[j].position = lattice.nearest(
+                a[j].position, center, &(a[j].transform));
+
+        mother_transform = a[j].transform;
+      } else {
+        a[j].position = lattice.apply_transform(a[j].position,mother_transform);
+        a[j].transform = mother_transform;
+      }
+          Real *massPool=molecule->getAtomMassPool();
+          Real *chargePool=molecule->getAtomChargePool();
+
+      FullAtom *at=Node::Object()->ioMgr->finalAtomList.begin();
+      a[j].mass = massPool[(Index)at[aidIdx].mass];
+
+      a[j].charge = chargePool[(Index)at[aidIdx].charge];
+
+
+
+      if ( alchFepOn || alchThermIntOn || lesOn || pairInteractionOn || pressureProfileTypes) {
+        a[j].partition = molecule->get_fep_type(aid);
+      }
+      else {
+        a[j].partition = 0;
+      }
+
+    }
+
+    int size, allfixed, k;
+    for(j=0; j < n; j+=size) {
+      size = a[j].hydrogenGroupSize;
+      if ( ! size ) {
+        NAMD_bug("Mother atom with hydrogenGroupSize of 0!");
+      }
+      allfixed = 1;
+      for ( k = 0; k < size; ++k ) {
+        allfixed = ( allfixed && (a[j+k].atomFixed) );
+      }
+      for ( k = 0; k < size; ++k ) {
+        a[j+k].groupFixed = allfixed ? 1 : 0;
+      }
+    }
+    if(params->fixedAtomsOn){
+        int fixedCnt=0;
+        for(j=0; j<n; j++)
+            fixedCnt += (a[j].atomFixed ? 1:0);
+        patchMgr->setHomePatchFixedAtomNum(patchId, fixedCnt);
+    }
+
+    if ( params->outputPatchDetails ) {
+      int numAtomsInPatch = n;
+      int numFixedAtomsInPatch = 0;
+      int numAtomsInFixedGroupsInPatch = 0;
+      for(j=0; j < n; j++) {
+        numFixedAtomsInPatch += ( a[j].atomFixed ? 1 : 0 );
+        numAtomsInFixedGroupsInPatch += ( a[j].groupFixed ? 1 : 0 );
+      }
+      iout << "PATCH_DETAILS:"
+           << " patch " << patchId
+           << " atoms " << numAtomsInPatch
+           << " fixed_atoms " << numFixedAtomsInPatch
+           << " fixed_groups " << numAtomsInFixedGroupsInPatch
+           << "\n" << endi;
+    }
+}
+
+
+void WorkDistrib::random_velocities_parallel(BigReal Temp,Molecule *structure,
+                                    Vector *v,int newTotalAtoms)
+{
+  int i, j;             //  Loop counter
+  BigReal kbT;          //  Boltzman constant * Temp
+  BigReal randnum;      //  Random number from -6.0 to 6.0
+  BigReal kbToverM;     //  sqrt(Kb*Temp/Mass)
+  SimParameters *simParams = Node::Object()->simParameters;
+  Bool lesOn = simParams->lesOn;
+  Random vel_random(simParams->randomSeed);
+  PDB *pdb=Node::Object()->pdb;
+  int lesReduceTemp = lesOn && simParams->lesReduceTemp;
+  BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
+
+  kbT = Temp*BOLTZMAN;
+  int count=0;
+  for(int i=0;i<newTotalAtoms;i++)
+  {
+    FullAtom *at=Node::Object()->ioMgr->finalAtomList.begin();
+    int aid=at[i].id;
+
+    Real *massPool=Node::Object()->molecule->getAtomMassPool();
+    Real atomMs=massPool[(Index)at[i].mass];
+
+    if (atomMs <= 0.) {
+      kbToverM = 0.;
+    } else {
+      kbToverM = sqrt(kbT *
+        ( lesOn && structure->get_fep_type(aid) ? tempFactor : 1.0 ) /
+                          atomMs );
+    }
+    for (randnum=0.0, j=0; j<12; j++)
+    {
+      randnum += vel_random.uniform();
+    }
+
+    randnum -= 6.0;
+
+    v[count].x = randnum*kbToverM;
+
+    for (randnum=0.0, j=0; j<12; j++)
+    {
+      randnum += vel_random.uniform();
+    }
+
+    randnum -= 6.0;
+
+    v[count].y = randnum*kbToverM;
+
+    for (randnum=0.0, j=0; j<12; j++)
+    {
+      randnum += vel_random.uniform();
+    }
+
+    randnum -= 6.0;
+    
+    v[count].z = randnum*kbToverM;
+    count++;
+  }
+
+
+}
+#endif
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 //only called on node 0
 int *WorkDistrib::caclNumAtomsInEachPatch(){
@@ -763,7 +1009,11 @@ void WorkDistrib::patchMapInit(void)
 
   double maxNumPatches = 1000000;  // need to adjust fractional values
   if ( params->minAtomsPerPatch > 0 )
+#ifndef MEM_OPT_VERSION
     maxNumPatches = node->pdb->num_atoms() / params->minAtomsPerPatch;
+#else
+    maxNumPatches = Node::Object()->ioMgr->totalAtomsSys / params->minAtomsPerPatch;
+#endif
 
   DebugM(3,"Mapping patches\n");
   if ( lattice.a_p() && lattice.b_p() && lattice.c_p() ) {
@@ -910,6 +1160,7 @@ void WorkDistrib::assignNodeToPatch()
 //    iout << iINFO 
 //	 << nAtoms[i] << " atoms assigned to node " << i << "\n" << endi;
   if ( numAtoms != Node::Object()->molecule->numAtoms ) {
+printf("numAtoms=%d Node::Object()->molecule->numAtoms=%d\n",numAtoms,Node::Object()->molecule->numAtoms);
     NAMD_die("Incorrect atom count in WorkDistrib::assignNodeToPatch\n");
   }
 
@@ -1460,8 +1711,17 @@ void WorkDistrib::mapComputeNonbonded(void)
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
-    int64 numAtoms = patchMap->patch(i)->getNumAtoms();  // avoid overflow
-    int64 numFixed = patchMap->patch(i)->getNumFixedAtoms();  // avoid overflow
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////^M
+//// Osman Sarood^M
+//// Parallel Input Change^M
+//// Comment some lines^M
+ int64 numAtoms = patchMap->patch(i)->getNumAtoms();
+#ifdef  MEM_OPT_VERSION
+    int64 numFixed = 0;  // avoid overflow^M
+#else
+        int64 numFixed = patchMap->patch(i)->getNumFixedAtoms();  // avoid overflow^M
+#endif
+//////////////////////////////////////////////////
     int numPartitions = 0;
     int divide = node->simParameters->numAtomsSelf;
     if (divide > 0) {
@@ -1491,10 +1751,24 @@ void WorkDistrib::mapComputeNonbonded(void)
     for(j=0;j<numNeighbors;j++)
     {
 	int p2 = oneAway[j];
-	int64 numAtoms1 = patchMap->patch(p1)->getNumAtoms();
-	int64 numAtoms2 = patchMap->patch(p2)->getNumAtoms();
-	int64 numFixed1 = patchMap->patch(p1)->getNumFixedAtoms();
-	int64 numFixed2 = patchMap->patch(p2)->getNumFixedAtoms();
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////^M
+//// Osman Sarood^M
+//// Parallel Input Change^M
+//// Comment some lines^M
+        int64 numAtoms1 = patchMap->patch(p1)->getNumAtoms();
+        int64 numAtoms2 = patchMap->patch(p2)->getNumAtoms();
+
+#ifdef  MEM_OPT_VERSION
+        int64 numFixed1 = patchMap->patch(p1)->getNumFixedAtoms();
+        int64 numFixed2 = patchMap->patch(p2)->getNumFixedAtoms();
+#else
+
+        int64 numFixed1 = 0;
+        int64 numFixed2 = 0;
+#endif
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
         const int nax = patchMap->numaway_a();  // 1 or 2
         const int nay = patchMap->numaway_b();  // 1 or 2
         const int naz = patchMap->numaway_c();  // 1 or 2

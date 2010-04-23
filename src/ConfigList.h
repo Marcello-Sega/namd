@@ -42,7 +42,11 @@
 #define CONFIGLIST_H
 #include "common.h"
 #include <string.h>
-
+//////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input
+#include "ParallelIOMgr.h"
+////////////////////////////////
 class StringList {
  public:
   char *data;
@@ -105,6 +109,11 @@ class ConfigList {
     ConfigListNode *find_key_word( const char *keyword) const;
     Bool isokay;
   public:
+//////////////////////////////////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input
+    char* packHelper(ConfigListMessage *pmsg);
+//////////////////////////////////////////////////////////////////////////////
     ConfigList(void);
     void add_element( const char *s1, int len1, const char *s2, int len2);
     ConfigList( const char *filename);

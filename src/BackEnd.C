@@ -31,6 +31,12 @@
 #include "BroadcastMgr.decl.h"
 #include "LdbCoordinator.decl.h"
 #include "Sync.decl.h"
+///////////////////////////////////////////////////
+//// Parallel Input change
+//// Osman Sarood
+#include "ParallelIOMgr.decl.h"
+/////////////////////////////////////////////////////
+//
 
 extern void _initCharm(int, char**);
 
@@ -143,6 +149,15 @@ void master_init(int argc, char **argv){
   group.computeGridForceNodeMgr = CProxy_ComputeGridForceNodeMgr::ckNew();
   group.computeGridForceMgr = CProxy_ComputeGridForceMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
+///////////////////////////////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input change
+// ParallelIOMgr group required for Parallel IO
+#ifdef MEM_OPT_VERSION
+  group.ioMgr=CProxy_ParallelIOMgr::ckNew();
+#endif
+//  //////////////////////////////////////////////////////////////////
+//
   group.sync = CProxy_Sync::ckNew();
 
   //group.computePmeMgr = CProxy_OptPmeMgr::ckNew();

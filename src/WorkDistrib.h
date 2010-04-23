@@ -69,6 +69,18 @@ public:
   void createHomePatches(void);
 
   int *caclNumAtomsInEachPatch(void);
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input Change
+  void setMapsArrived(bool s);
+#ifdef MEM_OPT_VERSION
+  void random_velocities_parallel(BigReal Temp,Molecule *structure,
+                                    Vector *v,int newTotalAtoms);
+  void fillOnePatchCreationParallelIO(int patchId, FullAtomList *onePatchAtoms, Vector *velocities);
+#endif
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   //create home patches without populating them with atoms' data
   //the only data set is the number atoms the patch contains
   void preCreateHomePatches(void);

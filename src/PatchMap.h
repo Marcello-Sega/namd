@@ -61,7 +61,12 @@ public:
   inline int gridsize_a(void) const { return aDim; }
   inline int gridsize_b(void) const { return bDim; }
   inline int gridsize_c(void) const { return cDim; }
-
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input change
+  void initPatchData();
+  void registerMyPatch(PatchID pid, HomePatch *pptr);
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // returns the number of patches in each dimension
   inline int numaway_a(void) const { return aAway; }
   inline int numaway_b(void) const { return bAway; }

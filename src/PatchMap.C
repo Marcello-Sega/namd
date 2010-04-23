@@ -31,7 +31,6 @@ PatchMap *PatchMap::Instance() {
   return(CkpvAccess(PatchMap_instance));
 }
 
-
 PatchMap::PatchMap(void)
 {
   nPatches = 0;
@@ -612,6 +611,21 @@ void PatchMap::printPatchMap(void)
   }
 
 }
+//////////////////////////////////////////////////////////////
+// Osman Sarood
+// // Parallel Input Change
+void PatchMap::registerMyPatch(PatchID pid, HomePatch *pptr)
+{
+  patchData[pid].myPatch = (Patch*)pptr;
+}
+
+void PatchMap::initPatchData()
+{
+  for(int i=0;i<nPatches;i++)
+    patchData[i].myPatch=NULL;
+}
+//////////////////////////////////////////////////////////
+
 
 //----------------------------------------------------------------------
 void PatchMap::registerPatch(PatchID pid, HomePatch *pptr) {

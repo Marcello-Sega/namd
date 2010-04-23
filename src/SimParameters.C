@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2010/03/15 20:20:18 $
- * $Revision: 1.1300 $
+ * $Author: sarood $
+ * $Date: 2010/04/23 22:16:58 $
+ * $Revision: 1.1301 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -503,6 +503,15 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
 
    opts.optional("main", "auxFile", "Filename for data stream output",
      auxFilename);
+////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Parallel Input Change
+//// Osman Sarood
+   opts.optional("main", "numinputprocs", "Number of pes to use for parallel input"
+    "timesteps", &numinputprocs, 1);
+  opts.range("numinputprocs", NOT_NEGATIVE);
+//  if(numinputprocs==0) {printf("NUM INP=%d\n\n",numinputprocs);NAMD_bug("Specify numinputprocs\n");}
+////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
    opts.optional("main", "DCDfreq", "Frequency of DCD trajectory output, in "
     "timesteps", &dcdFrequency, 0);
@@ -1566,8 +1575,10 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    // Maximum exclusion flags per atom
    opts.optional("main", "maxExclusionFlags", 
-     "maximum number of exclusion flags per atom", &maxExclusionFlags, 100);
+     "maximum number of exclusion flags per atom", &maxExclusionFlags, 256);
    opts.range("maxExclusionFlags",POSITIVE);
+
+printf("VALLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL in SIM =%d \n\n\n",maxExclusionFlags);
 }
 
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {

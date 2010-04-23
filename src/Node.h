@@ -53,6 +53,11 @@ class LdbCoordinator;
 class ScriptTcl;
 class IMDOutput;
 class Vector;
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Osman Sarood
+// Parallel Input change
+class ParallelIOMgr;
+//////////////////////////////////////////////////////////
 
 // Message to send our per processor BOC's list of groupIDs of
 // all other BOC's
@@ -113,6 +118,18 @@ public:
   static void messageStartUp();
   void startup();  
   void startUp(CkQdMsg *);  
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Parallel Input Change
+//// Osman Sarood
+  PatchMgr *getPatchMgr(){return patchMgr;}
+  PatchMap *getPatchMap(){return patchMap;}
+  ParallelIOMgr *ioMgr;
+  float initVM, initRSS;
+  float measureMemory();
+  void namdOneRecvPar();
+  void namdOneSendPar();
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
   // Charm Entry point - synchronize on BOC creation and startup
   static void messageBOCCheckIn();

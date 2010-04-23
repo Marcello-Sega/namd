@@ -25,6 +25,11 @@ CkpvDeclare(PatchMap*, PatchMap_instance);
 CkpvDeclare(PatchMgr*, PatchMgr_instance);
 CkpvDeclare(ProxyMgr*, ProxyMgr_instance);
 CkpvDeclare(ReductionMgr*, ReductionMgr_instance);
+/////////////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input
+CkpvDeclare(ParallelIOMgr*, ParallelIOMgr_instance);
+/////////////////////////////////////////////////////////
 
 #ifdef PROCTRACE_DEBUG
 CkpvDeclare(DebugFileTrace*, DebugFileTrace_instance);
@@ -58,6 +63,12 @@ void ProcessorPrivateInit(void)
   CkpvAccess(LdbCoordinator_instance) = 0;
   CkpvInitialize(Node*, Node_instance);
   CkpvAccess(Node_instance) = 0;
+///////////////////////////////////////////////////////////
+//// Osman Sarood
+//  CkpvInitialize(ParallelIOMgr*, ParallelIOMgr_instance);
+//  CkpvAccess(ParallelIOMgr_instance) = 0;
+///////////////////////////////////////////////
+
   CkpvInitialize(PatchMap*, PatchMap_instance);
   CkpvAccess(PatchMap_instance) = 0;
   CkpvInitialize(PatchMgr*, PatchMgr_instance);

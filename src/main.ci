@@ -27,5 +27,10 @@ mainmodule main {
   extern module Sync;
   extern module AtomsDisInfo;
   extern module FileIO;
+//////////////////////
+//// Osman Sarood
+//// Parallel Input
+  extern module ParallelIOMgr;
+//  ///////////////////
 }
 

@@ -38,12 +38,19 @@ class HomePatch : public Patch {
   friend class PatchMgr;
   friend class Sequencer;
   friend class ComputeGlobal;
+/////////////////////////////////////////////////////////
+// Osman Sarood
+// Parallel Input
+// HomePatch constructor required to be a public method because for parallel IO it is called from outside as well
+public:
+HomePatch(PatchID, int atomCnt);
+//////////////////////////////////////
 
 private: 
   // for PatchMgr to use only
   HomePatch(PatchID, FullAtomList);
 
-  HomePatch(PatchID, int atomCnt);
+//  HomePatch(PatchID, int atomCnt);
 
   void reinitAtoms(FullAtomList);
   ScaledPosition min, max, center;

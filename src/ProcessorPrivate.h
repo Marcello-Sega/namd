@@ -24,6 +24,11 @@ class ProxyMgr;
 class ReductionMgr;
 class Communicate;
 class Sync;
+///////////////////////////
+//// Osman Sarood
+//// Parallel Input
+class ParallelIOMgr;
+/////////////////////////////
 
 #ifdef PROCTRACE_DEBUG
 class DebugFileTrace;
@@ -43,7 +48,12 @@ CkpvExtern(PatchMgr*, PatchMgr_instance);
 CkpvExtern(ProxyMgr*, ProxyMgr_instance);
 CkpvExtern(ReductionMgr*, ReductionMgr_instance);
 CkpvExtern(Sync*, Sync_instance);
-
+//////////////////////////
+//// Osman Sarood
+//// Parallel Input
+CkpvExtern(ParallelIOMgr*,ParallelIOMgr_instance);
+///////////////////////
+//
 #ifdef PROCTRACE_DEBUG
 CkpvExtern(DebugFileTrace*, DebugFileTrace_instance);
 #endif

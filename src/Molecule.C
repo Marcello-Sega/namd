@@ -26,7 +26,7 @@
 #include "strlib.h"
 #include "MStream.h"
 #include "Communicate.h"
-// #include "Node.h"
+ #include "Node.h"
 #include "ObjectArena.h"
 #include "Parameters.h"
 #include "PDB.h"
@@ -384,7 +384,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
   initialize(simParams,param);
 
   if(simParams->useCompressedPsf)
-      read_compressed_psf_file(filename, param, cfgList);
+//      read_compressed_psf_file(filename, param, cfgList);
+      read_basic_info(filename, param, cfgList);
   /*else if(simParams->genCompressedPsf){      
       compress_psf_file(this, filename, param, simParams, cfgList);
   }*/      
@@ -995,25 +996,59 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   return;
 #endif
 }
-/*      END OF FUNCTION read_psf_file      */
 
-/************************************************************************/
-/*                  */
-/*        FUNCTION read_compressed_psf_file      */
-/*                  */
-/*   INPUTS:                */
-/*  fname - Name of the compressed .psf file to read        */
-/*  params - pointer to Parameters object to use to obtain          */
-/*     parameters for vdWs, bonds, etc.      */
-/*                  */
-/*  This function reads a compressed .psf file in.  This is where just about   */
-/*   all of the structural information for this class comes from.  The  */
-/*   .psf file contains descriptions of the atom, bonds, angles,        */
-/*   dihedrals, impropers, and exclusions.  The parameter object is     */
-/*   used to look up parameters for each of these entities.    */
-/*                  */
-/************************************************************************/
-void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigList *cfgList){
+
+void Molecule::read_basic_info(char *fname, Parameters *params,ConfigList *cfgList)
+{
+	read_hdr_info(fname,params);
+/*
+    FILE *psf_file;    //  pointer to .psf file
+    int ret_code;    //  ret_code from NAMD_read_line calls
+    char buffer[512];
+
+
+    if ( (psf_file = Fopen(fname, "r")) == NULL)
+    {
+        char err_msg[512];
+        sprintf(err_msg, "UNABLE TO OPEN THE COMPRESSED .psf FILE %s", fname);
+        NAMD_die(err_msg);
+    }
+*/
+#if BINARY_PERATOM_OUTPUT
+
+        char *binFName = new char[strlen(fname)+10];
+        sprintf(binFName, "%s.bin", fname);
+        FILE *perAtomFile = Fopen(binFName, "rb");
+        if(perAtomFile==NULL) {
+            char err_msg[512];
+            sprintf(err_msg, "UNABLE TO OPEN THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s", binFName);
+            NAMD_die(err_msg);
+        }
+
+        int needFlip = 0;
+        int magicNum = COMPRESSED_PSF_MAGICNUM;
+        int rMagicNum = COMPRESSED_PSF_MAGICNUM;
+                Node::Object()->ioMgr->setDoFlip(false);
+
+        flipNum((char *)&rMagicNum, sizeof(int), 1);
+        int fMagicNum;
+        fread(&fMagicNum, sizeof(int), 1, perAtomFile);
+        if(fMagicNum==magicNum) {
+            needFlip = 0;
+        }else if(fMagicNum==rMagicNum){
+            needFlip = 1;
+                        Node::Object()->ioMgr->setDoFlip(true);
+
+        }else{
+            char err_msg[512];
+            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS CORRUPTED", binFName);
+            NAMD_die(err_msg);
+        }
+#endif
+
+}
+
+void Molecule::read_hdr_info(char *fname, Parameters *params){
 #ifndef MEM_OPT_VERSION
     return;
 #else
@@ -1021,17 +1056,17 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
     int ret_code;    //  ret_code from NAMD_read_line calls
     char buffer[512];
 
-    /* Try and open the .psf file           */
+    
     if ( (psf_file = Fopen(fname, "r")) == NULL)
     {
         char err_msg[512];
         sprintf(err_msg, "UNABLE TO OPEN THE COMPRESSED .psf FILE %s", fname);
         NAMD_die(err_msg);
-    }     
+    }
 
     char strBuf[12];
 
-    //first check compressed psf file format version
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "FORMAT VERSION")) {
         NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
@@ -1042,8 +1077,6 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
     }
 
-    //Begin reading constant pools for atoms' basic information
-    //1. segment names
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NSEGMENTNAMES"))
         NAMD_die("UNABLE TO FIND NSEGMENTNAMES");
@@ -1054,10 +1087,10 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         NAMD_read_line(psf_file, buffer);
         sscanf(buffer, "%s", strBuf);
         segNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
-        strcpy(segNamePool[i], strBuf);        
-    }    
+        strcpy(segNamePool[i], strBuf);
+    }
 
-    //2. residue names
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NRESIDUENAMES"))
         NAMD_die("UNABLE TO FIND NRESIDUENAMES");
@@ -1071,7 +1104,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         strcpy(resNamePool[i], strBuf);
     }
 
-    //3. atom names
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NATOMNAMES"))
         NAMD_die("UNABLE TO FIND NATOMNAMES");
@@ -1085,7 +1118,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         strcpy(atomNamePool[i], strBuf);
     }
 
-    //4. atom types
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NATOMTYPES"))
         NAMD_die("UNABLE TO FIND NATOMTYPES");
@@ -1099,7 +1132,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         strcpy(atomTypePool[i], strBuf);
     }
 
-    //5. charges
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NCHARGES"))
         NAMD_die("UNABLE TO FIND NCHARGES");
@@ -1108,10 +1141,10 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         atomChargePool = new Real[chargePoolSize];
     for(int i=0; i<chargePoolSize; i++){
         NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%f", atomChargePool+i);        
+        sscanf(buffer, "%f", atomChargePool+i);
     }
 
-    //6. masses
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NMASSES"))
         NAMD_die("UNABLE TO FIND NMASSES");
@@ -1120,10 +1153,10 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         atomMassPool = new Real[massPoolSize];
     for(int i=0; i<massPoolSize; i++){
         NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%f", atomMassPool+i);        
+        sscanf(buffer, "%f", atomMassPool+i);
     }
 
-    //Begin reading of atom signatures
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "ATOMSIGS"))
         NAMD_die("UNABLE TO FIND ATOMSIGS");
@@ -1134,7 +1167,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
     int tisReal;
     int ttype;
     for(int i=0; i<atomSigPoolSize; i++){
-        //BOND SIGS
+        
         NAMD_read_line(psf_file, buffer);
         if(!NAMD_find_word(buffer, "NBONDSIGS"))
             NAMD_die("UNABLE TO FIND NBONDSIGS");
@@ -1142,17 +1175,17 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         if(typeCnt!=0){
             atomSigPool[i].bondCnt = typeCnt;
             atomSigPool[i].bondSigs = new TupleSignature[typeCnt];
-        }            
+        }
         for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);            
+            NAMD_read_line(psf_file, buffer);
             sscanf(buffer, "%d | %d | %d", &tmp1, &ttype, &tisReal);
             TupleSignature oneSig(1, BOND, (Index)ttype, (char)tisReal);
-            oneSig.offset[0] = tmp1;            
+            oneSig.offset[0] = tmp1;
             atomSigPool[i].bondSigs[j]=oneSig;
             if(tisReal) numRealBonds++;
         }
 
-        //ANGLE SIGS
+        
         NAMD_read_line(psf_file, buffer);
         if(!NAMD_find_word(buffer, "NTHETASIGS"))
             NAMD_die("UNABLE TO FIND NTHETASIGS");
@@ -1160,16 +1193,16 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         if(typeCnt!=0){
             atomSigPool[i].angleCnt = typeCnt;
             atomSigPool[i].angleSigs = new TupleSignature[typeCnt];
-        }            
+        }
         for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);            
+            NAMD_read_line(psf_file, buffer);
             sscanf(buffer, "%d %d | %d | %d", &tmp1, &tmp2, &ttype, &tisReal);
             TupleSignature oneSig(2,ANGLE,(Index)ttype, (char)tisReal);
             oneSig.offset[0] = tmp1;
-            oneSig.offset[1] = tmp2;            
+            oneSig.offset[1] = tmp2;
             atomSigPool[i].angleSigs[j] = oneSig;
         }
-        //DIHEDRAL SIGS
+        
         NAMD_read_line(psf_file, buffer);
         if(!NAMD_find_word(buffer, "NPHISIGS"))
             NAMD_die("UNABLE TO FIND NPHISIGS");
@@ -1177,9 +1210,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         if(typeCnt!=0){
             atomSigPool[i].dihedralCnt = typeCnt;
             atomSigPool[i].dihedralSigs = new TupleSignature[typeCnt];
-        }            
+        }
         for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);            
+            NAMD_read_line(psf_file, buffer);
             sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
             TupleSignature oneSig(3,DIHEDRAL,(Index)ttype, (char)tisReal);
             oneSig.offset[0] = tmp1;
@@ -1187,7 +1220,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
             oneSig.offset[2] = tmp3;
             atomSigPool[i].dihedralSigs[j] = oneSig;
         }
-        //IMPROPER SIGS
+        
         NAMD_read_line(psf_file, buffer);
         if(!NAMD_find_word(buffer, "NIMPHISIGS"))
             NAMD_die("UNABLE TO FIND NIMPHISIGS");
@@ -1195,17 +1228,17 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         if(typeCnt!=0){
             atomSigPool[i].improperCnt = typeCnt;
             atomSigPool[i].improperSigs = new TupleSignature[typeCnt];
-        }            
+        }
         for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);            
+            NAMD_read_line(psf_file, buffer);
             sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
             TupleSignature oneSig(3,IMPROPER,(Index)ttype, (char)tisReal);
             oneSig.offset[0] = tmp1;
             oneSig.offset[1] = tmp2;
             oneSig.offset[2] = tmp3;
             atomSigPool[i].improperSigs[j] = oneSig;
-        }        
-        //CROSSTERM SIGS
+        }
+        
         NAMD_read_line(psf_file, buffer);
         if(!NAMD_find_word(buffer, "NCRTERMSIGS"))
             NAMD_die("UNABLE TO FIND NCRTERMSIGS");
@@ -1213,9 +1246,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         if(typeCnt!=0){
             atomSigPool[i].crosstermCnt = typeCnt;
             atomSigPool[i].crosstermSigs = new TupleSignature[typeCnt];
-        }            
+        }
         for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);            
+            NAMD_read_line(psf_file, buffer);
             sscanf(buffer, "%d %d %d %d %d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &tmp7, &ttype, &tisReal);
             TupleSignature oneSig(7,CROSSTERM,(Index)ttype, (char)tisReal);
             oneSig.offset[0] = tmp1;
@@ -1226,10 +1259,10 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
             oneSig.offset[5] = tmp6;
             oneSig.offset[6] = tmp7;
             atomSigPool[i].crosstermSigs[j] = oneSig;
-        }        
+        }
     }
 
-    //Reading exclusions' signatures    
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NEXCLSIGS")){
         NAMD_die("UNABLE TO FIND NEXCLSIGS");
@@ -1246,15 +1279,14 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         for(int j=0; j<modExclCnt; j++)
             modExcls.push_back(NAMD_read_int(psf_file, buffer));
 
-        //The integers in both vectors should be in the increasing the order
-        //since they have been sorted during the compression of psf file
+        
         exclSigPool[i].setOffsets(fullExcls, modExcls);
 
         fullExcls.clear();
         modExcls.clear();
     }
 
-    //Now read the cluster information
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NCLUSTERS")) {
         NAMD_die("UNABLE TO FIND NCLUSTERS");
@@ -1271,9 +1303,9 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         memset(clusterSize, 0, sizeof(int32)*numClusters);
     }
 
-    //Now begin to read atoms
-    //This part could be read in the batch mode. All the above information
-    //can be stored in memory which only occupies several KBs.
+    
+    
+    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "NATOM"))
         NAMD_die("UNABLE TO FIND NATOM");
@@ -1283,6 +1315,7 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
     if(!NAMD_find_word(buffer, "NHYDROGENGROUP"))
         NAMD_die("UNABLE TO FIND NHYDROGENGROUP");
     sscanf(buffer, "%d", &numHydrogenGroups);
+
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "MAXHYDROGENGROUPSIZE"))
         NAMD_die("UNABLE TO FIND MAXHYDROGENGROUPSIZE");
@@ -1296,7 +1329,8 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
         NAMD_die("UNABLE TO FIND MAXMIGRATIONGROUPSIZE");
     sscanf(buffer, "%d", &maxMigrationGroupSize);
 
-    int isOccupancyValid, isBFactorValid;
+
+//    int isOccupancyValid, isBFactorValid;
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "OCCUPANCYVALID"))
         NAMD_die("UNABLE TO FIND OCCUPANCYVALID");
@@ -1305,370 +1339,38 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params, ConfigL
     if(!NAMD_find_word(buffer, "TEMPFACTORVALID"))
         NAMD_die("UNABLE TO FIND TEMPFACTORVALID");
     sscanf(buffer, "%d", &isBFactorValid);
-
-    if(numAtoms>0){
-        atoms = new AtomCstInfo[numAtoms];
-        atomNames = new AtomNameIdx[numAtoms];
-        eachAtomMass = new Index[numAtoms];
-        eachAtomCharge = new Index[numAtoms];
-        eachAtomSig = new Index[numAtoms];
-        eachAtomExclSig = new Index[numAtoms];
-
-        clusterSigs = new int[numAtoms];
-
-	int *tmpHgSize = new int[numAtoms];
-	int *tmpHgGP = new int[numAtoms];
-	int *tmpHgSV = new int[numAtoms];
-	int *tmpHgMSize = new int[numAtoms];
-	int *tmpHgMP = new int[numAtoms];
-        hydrogenGroup.resize(numAtoms);
-        HydrogenGroupID *hg = hydrogenGroup.begin();
-
-        ResidueLookupElem *tmpResLookup = resLookup;
-
-        if(isOccupancyValid) {
-            occupancy = new float[numAtoms];
-        }
-        if(isBFactorValid) {
-            bfactor = new float[numAtoms];
-        }
-
-        int residue_number; //for residue number
-        char *segment_name;
-        int read_count;        
-        float tmpf[2];
-        
-#if BINARY_PERATOM_OUTPUT
-        //1. open the binary per-atom info file (fname.bin)
-        char *binFName = new char[strlen(fname)+10];
-        sprintf(binFName, "%s.bin", fname);
-        FILE *perAtomFile = Fopen(binFName, "rb");
-        if(perAtomFile==NULL) {
-            char err_msg[512];
-            sprintf(err_msg, "UNABLE TO OPEN THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s", binFName);            
-            NAMD_die(err_msg);
-        }                
-        //2. read the magic number to determine whether the endian is same or not
-        int needFlip = 0;
-        int magicNum = COMPRESSED_PSF_MAGICNUM;
-        int rMagicNum = COMPRESSED_PSF_MAGICNUM;
-        flipNum((char *)&rMagicNum, sizeof(int), 1);
-        int fMagicNum;
-        fread(&fMagicNum, sizeof(int), 1, perAtomFile);
-        if(fMagicNum==magicNum) {
-            needFlip = 0;
-        }else if(fMagicNum==rMagicNum){
-            needFlip = 1;
-        }else{
-            char err_msg[512];
-            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS CORRUPTED", binFName);            
-            NAMD_die(err_msg);
-        }
-        //3. read the file version number
-        float verNum =  0.0f;
-        fread(&verNum, sizeof(float), 1, perAtomFile);
-        if(needFlip) flipNum((char *)&verNum, sizeof(float), 1);
-        if(fabs(verNum - COMPRESSED_PSF_VER)>1e-6) {
-            char err_msg[512];
-            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS INCORRECT, PLEASE RE-GENERATE!\n", binFName);
-            NAMD_die(err_msg);
-        }
-        delete[] binFName;
-        //4. read per-atom info
-        Index sIdx[9];
-        int iIdx[9];
-        for(int i=0; i<numAtoms; i++){   
-            fread(sIdx, sizeof(Index), 9, perAtomFile);
-            fread(iIdx, sizeof(int), 9, perAtomFile);
-            fread(tmpf, sizeof(float), 2, perAtomFile);
-            if(needFlip) {
-                flipNum((char *)sIdx, sizeof(Index), 9);
-                flipNum((char *)iIdx, sizeof(int), 9);
-                flipNum((char *)tmpf, sizeof(float), 2);
-            }
-            segment_name = segNamePool[sIdx[0]];                   
-            atomNames[i].resnameIdx = sIdx[1];
-            atomNames[i].atomnameIdx = sIdx[2];
-            atomNames[i].atomtypeIdx = sIdx[3];
-            eachAtomCharge[i] = sIdx[4];
-            eachAtomMass[i] = sIdx[5];
-            eachAtomSig[i] = sIdx[6];
-            eachAtomExclSig[i] = sIdx[7];
-
-	    atoms[i].vdw_type = sIdx[8];
-
-            residue_number = iIdx[0];
-            clusterSigs[i] = iIdx[1];
-            if(!isClusterContiguous)
-                clusterSize[iIdx[1]]++;
-
-            atoms[i].partner = iIdx[2];
-            atoms[i].hydrogenList= iIdx[3];
-
-            tmpHgSize[i] = iIdx[4];
-            tmpHgGP[i] = iIdx[5];
-            tmpHgSV[i] = iIdx[6];
-            tmpHgMSize[i] = iIdx[7];
-            tmpHgMP[i] = iIdx[8];
-
-            //debugExclNum += (exclSigPool[sIdx[7]].fullExclCnt+exclSigPool[sIdx[7]].modExclCnt);
-#else
-        XXX THIS BRANCH NOT UPDATED FOR MIGRATION GROUP  AND VDW_TYPE XXX
-        int idx[15];
-        for(int i=0; i<numAtoms; i++){
-            NAMD_read_line(psf_file, buffer);
-            read_count = sscanf(buffer, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f",
-                                idx, idx+1, idx+2, idx+3, idx+4,
-                                idx+5, idx+6, idx+7, idx+8, idx+9, idx+10, idx+11, idx+12,
-                                idx+13, idx+14, tmpf, tmpf+1);
-            if(read_count!=17){
-                char err_msg[128];
-                sprintf(err_msg, "BAD ATOM LINE FORMAT IN COMPRESSED PSF FILE IN ATOM LINE %d\nLINE=%s",i+1, buffer);
-                NAMD_die(err_msg);
-            }
-            segment_name = segNamePool[idx[0]];                   
-            atomNames[i].resnameIdx = (Index)idx[1];
-            atomNames[i].atomnameIdx = (Index)idx[2];
-            atomNames[i].atomtypeIdx = (Index)idx[3];
-            eachAtomCharge[i] = (Index)idx[4];
-            eachAtomMass[i] = (Index)idx[5];              
-            eachAtomSig[i] = (Index)idx[6];
-            eachAtomExclSig[i] = (Index)idx[7];
-            residue_number = idx[8];
-            clusterSigs[i] = idx[9];
-            if(!isClusterContiguous)
-                clusterSize[idx[9]]++;
-
-            atoms[i].partner = idx[10];
-            atoms[i].hydrogenList= idx[11];
-
-            tmpHgSize[i] = idx[12];
-            tmpHgGP[i] = idx[13];
-            tmpHgSV[i] = idx[14];
-            //debugExclNum += (exclSigPool[idx[7]].fullExclCnt+exclSigPool[idx[7]].modExclCnt);
-#endif	    
-
-            if(isOccupancyValid)
-                occupancy[i] = tmpf[0];
-            if(isBFactorValid)
-                bfactor[i] = tmpf[1];
-
-            //Add this atom to residue lookup table
-            if(tmpResLookup) tmpResLookup =
-                tmpResLookup->append(segment_name, residue_number, i);
-            //Determine the type of the atom (H or O)
-            Real thisAtomMass = atomMassPool[eachAtomMass[i]];
-            atoms[i].status = UnknownAtom;
-            if (thisAtomMass <= 0.05) {
-              atoms[i].status |= LonepairAtom;
-            } else if (thisAtomMass < 1.0) {
-              atoms[i].status |= DrudeAtom;
-            } else if(thisAtomMass <= 3.5){
-                atoms[i].status |= HydrogenAtom;
-            }else if(atomNamePool[atomNames[i].atomnameIdx][0]=='O' &&
-                     (thisAtomMass >= 14.0) && (thisAtomMass <= 18.0)){
-                atoms[i].status |= OxygenAtom;
-            }
-
-            //Look up the vdw constants for this atom
-	    //vdw constant has been encoded in the per-atom file. 
-            //params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
-            //                         &(atoms[i]));
-        } //end of reading per-atom information
-
-	//re-sort the hydrogenGroup array based on the recorded "hydrogenList"
-	//value
-	for(int i=0; i<numAtoms; i++){
-	    int hgIdx = atoms[i].hydrogenList;
-	    hg[hgIdx].atomID = i;
-	    hg[hgIdx].atomsInGroup = tmpHgSize[i];
-	    hg[hgIdx].GPID = tmpHgGP[i];
-	    hg[hgIdx].waterVal = tmpHgSV[i];
-	    hg[hgIdx].isGP = ( tmpHgSize[i] ? 1 : 0 );
-	    hg[hgIdx].atomsInMigrationGroup = tmpHgMSize[i];
-	    hg[hgIdx].MPID = tmpHgMP[i];
-	    hg[hgIdx].isMP = ( tmpHgMSize[i] ? 1 : 0 );
-	}
-	
-	delete [] tmpHgSize;
-	delete [] tmpHgGP;
-	delete [] tmpHgSV;	
-	delete [] tmpHgMSize;
-	delete [] tmpHgMP;
-
-	//printf("debugExclNum: %d\n", debugExclNum);
-    }
-    //build up information for numBonds/numDihedrals.. etc
-    numBonds=0;
-    numAngles=0;
-    numDihedrals=0;
-    numImpropers=0;
-    numCrossterms=0;
-    numTotalExclusions=0;
-    for(int i=0; i<numAtoms; i++){
-        AtomSignature *thisSig = &atomSigPool[eachAtomSig[i]];
-        numBonds += thisSig->bondCnt;
-        numAngles += thisSig->angleCnt;
-        numDihedrals += thisSig->dihedralCnt;
-        numImpropers += thisSig->improperCnt;
-        numCrossterms += thisSig->crosstermCnt;
-
-        ExclusionSignature *exclSig = &exclSigPool[eachAtomExclSig[i]];
-        numTotalExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
-    }
-    
-    numTotalExclusions /= 2;
-
-    //Just reading for the parameters values; extra Bonds, Dihedrals etc.
-    //have been taken into account when compressing the molecule object.
-    //The actual number of Bonds, Dihedrals etc. will be calculated based
-    //on atom signatures.
-    if(simParams->extraBondsOn)
-	build_extra_bonds(params, cfgList->find("extraBondsFile"));
-#if 0
-    //This part has been enabled in build_extra_bonds for memory optimized version
-    //read extra bond parameters if there is an input of extra bonds (extraBondsOn is true)
-    int extraDihedralParamNum = 0;
-    int extraImproperParamNum = 0;
-    if(simParams->extraBondsOn){
-        int numExtraParams=0;
-
-        //read extra bond params
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NEXTRABONDPARAMS")){
-            NAMD_die("UNABLE TO FIND NEXTRABONDPARAMS");
-        }
-        sscanf(buffer, "%d", &numExtraParams);
-        if(numExtraParams>0){
-            BondValue *newParams = new BondValue[params->NumBondParams+numExtraParams];
-            memcpy(newParams, params->bond_array, params->NumBondParams*sizeof(BondValue));
-            delete [] params->bond_array;            
-
-            int curNumPs = params->NumBondParams;
-            for(int i=0; i<numExtraParams; i++){
-                Real k, x0;
-                NAMD_read_line(psf_file, buffer);
-                sscanf(buffer, "%f %f", &k, &x0);
-                newParams[curNumPs+i].k = k;
-                newParams[curNumPs+i].x0 = x0;
-            }
-            params->bond_array = newParams;
-            params->NumBondParams += numExtraParams;
-        }
-
-        //read extra angle params
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NEXTRAANGLEPARAMS")){
-            NAMD_die("UNABLE TO FIND NEXTRAANGLEPARAMS");
-        }
-        sscanf(buffer, "%d", &numExtraParams);
-        if(numExtraParams>0){
-            AngleValue *newParams = new AngleValue[params->NumAngleParams+numExtraParams];
-            memcpy(newParams, params->angle_array, params->NumAngleParams*sizeof(AngleValue));
-            delete [] params->angle_array;
-
-            int curNumPs = params->NumAngleParams;
-            for(int i=0; i<numExtraParams; i++) {
-                Real k, theta0, k_ub, r_ub;
-                NAMD_read_line(psf_file, buffer);
-                sscanf(buffer, "%f %f %f %f", &k, &theta0, &k_ub, &r_ub);
-                newParams[curNumPs+i].k = k;
-                newParams[curNumPs+i].theta0 = theta0;
-                newParams[curNumPs+i].k_ub = k_ub;
-                newParams[curNumPs+i].r_ub = r_ub;
-            }
-            params->angle_array = newParams;
-            params->NumAngleParams += numExtraParams;
-        }
-        
-        //read extra diheral params
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NEXTRADIHEDRALPARAMS")){
-            NAMD_die("UNABLE TO FIND NEXTRADIHEDRALPARAMS");
-        }
-        sscanf(buffer, "%d", &numExtraParams);
-        extraDihedralParamNum = numExtraParams;
-        if(numExtraParams>0){
-            DihedralValue *newParams = new DihedralValue[params->NumDihedralParams+numExtraParams];
-            memcpy(newParams, params->dihedral_array, params->NumDihedralParams*sizeof(DihedralValue));
-            delete [] params->dihedral_array;
-
-            int curNumPs = params->NumDihedralParams;
-            for(int i=0; i<numExtraParams; i++) {
-                int multiplicity;
-                Real k, delta;
-                int n;
-                NAMD_read_line(psf_file, buffer); //read multiplicity
-                sscanf(buffer, "%d", &multiplicity);
-                newParams[curNumPs+i].multiplicity = multiplicity;
-                for(int j=0; j<multiplicity; j++) {
-                    NAMD_read_line(psf_file, buffer);
-                    sscanf(buffer, "%f %d %f", &k, &n, &delta);
-                    newParams[curNumPs+i].values[j].k = k;
-                    newParams[curNumPs+i].values[j].n = n;
-                    newParams[curNumPs+i].values[j].delta = delta;
-                }
-            }
-            params->dihedral_array = newParams;
-        }
-
-        //read extra improper params
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NEXTRAIMPROPERPARAMS")){
-            NAMD_die("UNABLE TO FIND NEXTRAIMPROPERPARAMS");
-        }
-        sscanf(buffer, "%d", &numExtraParams);
-        extraImproperParamNum = numExtraParams;
-        if(numExtraParams>0){
-            ImproperValue *newParams = new ImproperValue[params->NumImproperParams+numExtraParams];
-            memcpy(newParams, params->improper_array, params->NumImproperParams*sizeof(ImproperValue));
-            delete [] params->improper_array;
-
-            int curNumPs = params->NumImproperParams;
-            for(int i=0; i<numExtraParams; i++) {
-                int multiplicity;
-                Real k, delta;
-                int n;
-                NAMD_read_line(psf_file, buffer); //read multiplicity
-                sscanf(buffer, "%d", &multiplicity);
-                newParams[curNumPs+i].multiplicity = multiplicity;
-                for(int j=0; j<multiplicity; j++) {
-                    NAMD_read_line(psf_file, buffer);
-                    sscanf(buffer, "%f %d %f", &k, &n, &delta);
-                    newParams[curNumPs+i].values[j].k = k;
-                    newParams[curNumPs+i].values[j].n = n;
-                    newParams[curNumPs+i].values[j].delta = delta;
-                }
-            }
-            params->improper_array = newParams;
-        }
-    }
-#endif
-
-    //read DIHEDRALPARAMARRAY and IMPROPERPARAMARRAY    
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "DIHEDRALPARAMARRAY"))
         NAMD_die("UNABLE TO FIND DIHEDRALPARAMARRAY");
     for(int i=0; i<params->NumDihedralParams; i++){
         params->dihedral_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
-    //params->NumDihedralParams += extraDihedralParamNum;
+    
 
-    NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line 
+    NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line
     NAMD_read_line(psf_file, buffer);
     if(!NAMD_find_word(buffer, "IMPROPERPARAMARRAY"))
         NAMD_die("UNABLE TO FIND IMPROPERPARAMARRAY");
     for(int i=0; i<params->NumImproperParams; i++){
         params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
     }
-    //params->NumImproperParams += extraImproperParamNum;
+    
     Fclose(psf_file);
 
-    //numRealBonds is set when reading bondSignatures from compressed psf file
+#endif
+
+}
     
-    build_atom_status();
+void Molecule::read_compressed_psf_file(char *fname, Parameters *params,ConfigList *cfgList){
+#ifndef MEM_OPT_VERSION
+    return;
+#else
+  read_basic_info(fname,params,cfgList);  
+  build_excl_check_signatures();
+
 #endif
 }
+
 /*      END OF FUNCTION read_compressed_psf_file      */
 
 /************************************************************************/
@@ -3950,6 +3652,188 @@ void Molecule::receive_Molecule(MIStream *msg)
     }
     /*      END OF FUNCTION receive_Molecule    */
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input Change
+// // This method is the same as read_compressed_psf_file. But it is reading only the atom data assigned to this Input proc.
+void Molecule::getCountsToMaster()
+{
+       numCalcBonds = numBonds;
+       numCalcAngles = numAngles;
+       numCalcDihedrals = numDihedrals;
+       numCalcImpropers = numImpropers;
+       numCalcCrossterms = numCrossterms;
+}
+
+#ifdef MEM_OPT_VERSION
+void Molecule::read_compressed_psf_file_parallelIO(char *fname, Parameters *params){
+read_hdr_info(fname,params);
+  
+    long long numAtomsPar=Node::Object()->ioMgr->getAtomsAssignedThisProc();
+    if(numAtomsPar>0){
+        atoms = new AtomCstInfo[numAtomsPar];
+        atomNames = new AtomNameIdx[numAtomsPar];
+        eachAtomMass = new Index[numAtomsPar];
+        eachAtomCharge = new Index[numAtomsPar];
+        eachAtomSig = new Index[numAtomsPar];
+        eachAtomExclSig = new Index[numAtomsPar];
+
+        clusterSigs = new int[numAtomsPar];
+
+        hydrogenGroup.resize(numAtomsPar);
+        HydrogenGroupID *hg = hydrogenGroup.begin();
+        ResidueLookupElem *tmpResLookup = resLookup;
+
+        if(isOccupancyValid) {
+            occupancy = new float[numAtomsPar];
+        }
+        if(isBFactorValid) {
+            bfactor = new float[numAtomsPar];
+        }
+
+        int residue_number; //for residue number
+        char *segment_name;
+        int read_count;
+        float tmpf[2];
+        char *binFName = new char[strlen(fname)+10];
+        sprintf(binFName, "%s.bin", fname);
+        FILE *perAtomFile = Fopen(binFName, "rb");
+        if(perAtomFile==NULL) {
+            char err_msg[512];
+            sprintf(err_msg, "UNABLE TO OPEN THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s", binFName);
+            NAMD_die(err_msg);
+        }
+        int needFlip = 0;
+        int magicNum = COMPRESSED_PSF_MAGICNUM;
+        int rMagicNum = COMPRESSED_PSF_MAGICNUM;
+        flipNum((char *)&rMagicNum, sizeof(int), 1);
+        int fMagicNum;
+        fread(&fMagicNum, sizeof(int), 1, perAtomFile);
+        if(fMagicNum==magicNum) {
+            needFlip = 0;
+        }else if(fMagicNum==rMagicNum){
+            needFlip = 1;
+        }else{
+            char err_msg[512];
+            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS CORRUPTED", binFName);
+            NAMD_die(err_msg);
+        }
+
+        float verNum =  0.0f;
+        fread(&verNum, sizeof(float), 1, perAtomFile);
+        if(needFlip) flipNum((char *)&verNum, sizeof(float), 1);
+        if(fabs(verNum - COMPRESSED_PSF_VER)>1e-6) {
+            char err_msg[512];
+            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS INCORRECT, PLEASE RE-GENERATE!\n", binFName);
+            NAMD_die(err_msg);
+        }
+        delete[] binFName;
+        Index sIdx[9];
+        int iIdx[9];
+off_t startbyte=Node::Object()->ioMgr->getRecordOffset()*62+sizeof(int)+sizeof(float);
+fseek(perAtomFile,startbyte,SEEK_SET);
+        for(int i=0; i<numAtomsPar; i++){
+            fread(sIdx, sizeof(Index), 9, perAtomFile);
+            fread(iIdx, sizeof(int), 9, perAtomFile);
+            fread(tmpf, sizeof(float), 2, perAtomFile);
+            if(needFlip) {
+                flipNum((char *)sIdx, sizeof(Index), 9);
+                flipNum((char *)iIdx, sizeof(int), 9);
+                flipNum((char *)tmpf, sizeof(float), 2);
+            }
+                segment_name = segNamePool[sIdx[0]];
+                atomNames[i].resnameIdx = sIdx[1];
+                atomNames[i].atomnameIdx = sIdx[2];
+                atomNames[i].atomtypeIdx = sIdx[3];
+                eachAtomCharge[i] = sIdx[4];
+                eachAtomMass[i] = sIdx[5];
+                eachAtomSig[i] = sIdx[6];
+                eachAtomExclSig[i] = sIdx[7];
+
+		atoms[i].vdw_type = sIdx[8];
+
+                residue_number = iIdx[0];
+                clusterSigs[i] = iIdx[1];
+                if(!isClusterContiguous)
+                clusterSize[iIdx[1]]++;
+
+                atoms[i].partner = iIdx[2];
+                atoms[i].hydrogenList= iIdx[3];
+
+                hg[i].atomID = i+Node::Object()->ioMgr->getRecordOffset();
+                hg[i].atomsInGroup=iIdx[4];
+                hg[i].GPID = iIdx[5];
+                hg[i].sortVal = iIdx[6];
+		hg[i].waterVal=iIdx[6];
+		hg[i].atomsInMigrationGroup= iIdx[7];
+		hg[i].MPID=iIdx[8];
+		hg[i].isMP = ( hg[i].atomsInMigrationGroup ? 1 : 0 );
+                hg[i].isGP = 1;
+
+
+                if(hg[i].atomsInGroup==0) hg[i].isGP = 0;
+
+
+                if(isOccupancyValid)
+                        occupancy[i] = tmpf[0];
+                if(isBFactorValid)
+                        bfactor[i] = tmpf[1];
+                if(tmpResLookup) tmpResLookup =
+                        tmpResLookup->append(segment_name, residue_number, i);
+                Real thisAtomMass = atomMassPool[eachAtomMass[i]];
+
+                if (thisAtomMass <= 0.05) {
+                        atoms[i].status |= LonepairAtom;
+                } else if (thisAtomMass < 1.0) {
+                        atoms[i].status |= DrudeAtom;
+                } else if(thisAtomMass <= 3.5){
+                        atoms[i].status = HydrogenAtom;
+                }else if(atomNamePool[atomNames[i].atomnameIdx][0]=='O' &&
+                     (thisAtomMass >= 14.0) && (thisAtomMass <= 18.0)){
+                        atoms[i].status = OxygenAtom;
+                }
+
+//                params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
+  //                                   &(atoms[i]));
+                } //end of reading per-atom information
+    }
+    numBonds=0;
+    numAngles=0;
+    numDihedrals=0;
+    numImpropers=0;
+    numCrossterms=0;
+    numTotalExclusions=0;
+int c1,c2,c3,c4;
+c1=c2=c3=c4=0;
+
+    for(int i=0; i<numAtomsPar; i++){
+        AtomSignature *thisSig = &atomSigPool[eachAtomSig[i]];
+        numBonds += thisSig->bondCnt;
+        numAngles += thisSig->angleCnt;
+        numDihedrals += thisSig->dihedralCnt;
+        numImpropers += thisSig->improperCnt;
+        numCrossterms += thisSig->crosstermCnt;
+
+        ExclusionSignature *exclSig = &exclSigPool[eachAtomExclSig[i]];
+        numTotalExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
+int div=i/23056;
+if(div==0) c1+=(exclSig->fullExclCnt + exclSig->modExclCnt);
+else if(div==1) c2+=(exclSig->fullExclCnt + exclSig->modExclCnt);
+else if(div==2) c3+=(exclSig->fullExclCnt + exclSig->modExclCnt);
+else if(div==3) c4+=(exclSig->fullExclCnt + exclSig->modExclCnt);
+    }
+//    numTotalExclusions /= 2;
+
+
+build_excl_check_signatures();
+
+
+
+
+}
+#endif
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 #ifdef MEM_OPT_VERSION
     //Well, the exclusion check signatures could also done on PE0 and
@@ -3994,7 +3878,7 @@ void Molecule::receive_Molecule(MIStream *msg)
            }           
 
            if((sigChk->max-sigChk->min) > simParams->maxExclusionFlags){
-	       printf("The distance of a exclusion check %d exceeds the value %d simulation parameter maxExclusionFlags specifies! Please increase the value\n", sigChk->max-sigChk->min, simParams->maxExclusionFlags);
+	       printf("The distance of a exclusion check %d exceeds the value %d simulation parameter maxExclusionFlags specifies! Please increase the value inPES=%d \n", sigChk->max-sigChk->min, simParams->maxExclusionFlags,simParams->numinputprocs);
                NAMD_die("Currently not supporting building exclusion check on the fly for memory optimized version!\n");
            }
 
@@ -5418,7 +5302,6 @@ void Molecule::receive_Molecule(MIStream *msg)
           addNewExclSigPool(newExclSigPool);
           newExclSigPool.clear();
       }
-
       numTotalExclusions -= (delExclCnt/2); 
 
       //deal with fixed atoms
@@ -8347,6 +8230,7 @@ void Molecule::reloadCharges(float charge[], int n){
 // over the network and have each node calculate the rest of the data on
 // it's own.
 void Molecule::build_atom_status(void) {
+
   register int i;
   int a1, a2, a3;
   int numDrudeWaters = 0;

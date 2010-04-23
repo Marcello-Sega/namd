@@ -33,6 +33,7 @@
 /* END gf */
 
 #include "molfile_plugin.h"
+#include "ParallelIOMgr.h"
 
 #include <vector>
 using namespace std;
@@ -967,13 +968,32 @@ public:
         //  Print out list of bonds
   void print_exclusions();//  Print out list of exclusions
 
-private:
-  //Read in a compressed .psf file (whose format is not standard) for
-  //the sake of very very large simulations (say, 100M atoms system)
-  void read_compressed_psf_file(char *, Parameters *, ConfigList *cfgList);   
-
-#ifdef MEM_OPT_VERSION
 public:  
+//////////////////////////////////////////////////////////////////////////////////////////////////////
+// Osman Sarood
+// Parallel Input
+// comment out the read_compressed_psf_file from above and make it public. Declare the following new methods as well.
+  int isOccupancyValid, isBFactorValid;
+
+  void read_hdr_info(char *fname, Parameters *params);
+  int getNumCalcExclusions(){return numCalcExclusions;}
+  void setNumCalcExclusions(int x){numCalcExclusions= x;}
+  void read_compressed_psf_file(char *, Parameters *, ConfigList *cfgList);
+  void read_basic_info(char *, Parameters *, ConfigList *cfgList);
+  void getCountsToMaster();
+#ifdef MEM_OPT_VERSION
+  Index getEachAtomMass(int i){return eachAtomMass[i];}
+  Index getEachAtomCharge(int i){return eachAtomCharge[i];}
+
+  ExclSigID getAtomExclSigId(int aid) const {
+      return eachAtomExclSig[aid];
+  }
+
+  void read_compressed_psf_file_parallelIO(char *fname, Parameters *params);
+  Real *getAtomMassPool(){return atomMassPool;}
+  Real *getAtomChargePool(){return atomChargePool;}
+  AtomCstInfo *getAtoms(){return atoms;}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   int atomSigPoolSize;
   AtomSignature *atomSigPool;
 
@@ -999,9 +1019,6 @@ public:
 
   AtomSigID getAtomSigId(int aid) {
       return eachAtomSig[aid]; 
-  }
-  ExclSigID getAtomExclSigId(int aid) const {
-      return eachAtomExclSig[aid];
   }
 
   //Indicates the size of both exclSigPool and exclChkSigPool

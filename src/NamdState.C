@@ -197,7 +197,8 @@ int NamdState::configListInit(ConfigList *cfgList) {
     delete pIOMgr;
   }
   else
-  { StringList *moleculeFilename = configList->find("structure");
+  { 
+StringList *moleculeFilename = configList->find("structure");
     molInfoFilename = moleculeFilename; 
     StringList *parameterFilename = configList->find("parameters");
     //****** BEGIN CHARMM/XPLOR type changes
@@ -239,8 +240,13 @@ int NamdState::configListInit(ConfigList *cfgList) {
     
       double fileReadTime = CmiWallTimer();
     #ifdef MEM_OPT_VERSION
-      if (coordinateFilename != NULL)
-        pdb = new PDB(coordinateFilename->data, molecule->numAtoms);
+      if (coordinateFilename != NULL){}
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+////////// Parallel Input Change
+////////// Osman Sarood
+// Comment out the PDB init so that the file is not read
+//      pdb = new PDB(coordinateFilename->data, molecule->numAtoms);
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////      
     #else
       if (coordinateFilename != NULL)
         pdb = new PDB(coordinateFilename->data);
@@ -251,12 +257,25 @@ int NamdState::configListInit(ConfigList *cfgList) {
       iout << iINFO << "TIME FOR READING PDB FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
       iout << iINFO << "\n" << endi;
   }
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////// Parallel Input Change
+//////// Osman Sarood
+////PUT If defs around the existing code
+////#ifndef USE_PARALLEL_IO
+
+  if(simParameters->langevinOn)
+    NAMD_bug("Parallel IO can not be used with langevin On.\n");
+
+  if(simParameters->fixedAtomsOn)
+    NAMD_bug("Parallel IO can not be used with Fixed Atoms On\n");
 
   StringList *binCoordinateFilename = configList->find("bincoordinates");
+/*
   if ( binCoordinateFilename ) {
     read_binary_coors(binCoordinateFilename->data, pdb);
   }
-  
+*/
+//////////////////////////////////////////////////////////////////////////////  
 
 	//  If constraints are active, build the parameters necessary
 	if (simParameters->constraintsOn)
@@ -577,7 +596,11 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	   iout << iINFO << molecule->numFixedGroups <<
 			" HYDROGEN GROUPS WITH ALL ATOMS FIXED\n";
 	}
-
+////////////////////////////////////////////////////////////////////
+// Osman Sarood
+// Parallel Input
+//Need to comment this out as PE0 doesnt have the entire Molecule obj in Parallel IO
+/*
         {
           BigReal totalMass = 0;
           BigReal totalCharge = 0;
@@ -608,7 +631,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
   molecule->print_bonds(parameters);
   molecule->print_exclusions();
   fflush(stdout);
-
+*/
   DebugM(4, "::configFileInit() - done printing Molecule Information\n");
   DebugM(1, "::configFileInit() - done\n");
 

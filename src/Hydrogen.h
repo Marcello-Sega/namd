@@ -23,7 +23,13 @@ class HydrogenGroupID {
     // use it since Molecule.h, Node.h, and structure.h would have cyclical
     // include statements.
     int GPID;	// group parent ID, should be atomID if isGP is true
-
+/////////////////////////////////////////////////////
+//// Osman Sarood
+//// Parallel Input Change
+    int atomHoldIdxPar;
+    int sortVal;
+//   ////////////////////////////////////////////////////
+//
     // extension for migration groups
     int isMP;  // is this atom a migration group parent
     int MPID;  // migration group parent ID
