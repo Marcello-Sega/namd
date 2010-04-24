@@ -1000,6 +1000,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
 
 void Molecule::read_basic_info(char *fname, Parameters *params,ConfigList *cfgList)
 {
+#ifdef MEM_OPT_VERSION
 	read_hdr_info(fname,params);
 /*
     FILE *psf_file;    //  pointer to .psf file
@@ -1045,7 +1046,7 @@ void Molecule::read_basic_info(char *fname, Parameters *params,ConfigList *cfgLi
             NAMD_die(err_msg);
         }
 #endif
-
+#endif
 }
 
 void Molecule::read_hdr_info(char *fname, Parameters *params){
@@ -3730,7 +3731,7 @@ read_hdr_info(fname,params);
         delete[] binFName;
         Index sIdx[9];
         int iIdx[9];
-off_t startbyte=Node::Object()->ioMgr->getRecordOffset()*62+sizeof(int)+sizeof(float);
+off_t startbyte=Node::Object()->ioMgr->getRecordOffset()*80+sizeof(int)+sizeof(float);
 fseek(perAtomFile,startbyte,SEEK_SET);
         for(int i=0; i<numAtomsPar; i++){
             fread(sIdx, sizeof(Index), 9, perAtomFile);
