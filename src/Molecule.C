@@ -3731,7 +3731,8 @@ read_hdr_info(fname,params);
         delete[] binFName;
         Index sIdx[9];
         int iIdx[9];
-off_t startbyte=Node::Object()->ioMgr->getRecordOffset()*80+sizeof(int)+sizeof(float);
+	int sizePerRecord=9*sizeof(Index)+9*sizeof(int)+2*sizeof(float);
+off_t startbyte=Node::Object()->ioMgr->getRecordOffset()*sizePerRecord+sizeof(int)+sizeof(float);
 fseek(perAtomFile,startbyte,SEEK_SET);
         for(int i=0; i<numAtomsPar; i++){
             fread(sIdx, sizeof(Index), 9, perAtomFile);
