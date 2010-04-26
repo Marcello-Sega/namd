@@ -1001,7 +1001,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
 void Molecule::read_basic_info(char *fname, Parameters *params,ConfigList *cfgList)
 {
 #ifdef MEM_OPT_VERSION
-	read_hdr_info(fname,params);
+	read_hdr_info(fname,params,cfgList);
 /*
     FILE *psf_file;    //  pointer to .psf file
     int ret_code;    //  ret_code from NAMD_read_line calls
@@ -1049,7 +1049,7 @@ void Molecule::read_basic_info(char *fname, Parameters *params,ConfigList *cfgLi
 #endif
 }
 
-void Molecule::read_hdr_info(char *fname, Parameters *params){
+void Molecule::read_hdr_info(char *fname, Parameters *params, ConfigList *cfgList){
 #ifndef MEM_OPT_VERSION
     return;
 #else
@@ -1341,6 +1341,14 @@ void Molecule::read_hdr_info(char *fname, Parameters *params){
         NAMD_die("UNABLE TO FIND TEMPFACTORVALID");
     sscanf(buffer, "%d", &isBFactorValid);
     NAMD_read_line(psf_file, buffer);
+
+    //Just reading for the parameters values; extra Bonds, Dihedrals etc.
+    //have been taken into account when compressing the molecule object.
+    //The actual number of Bonds, Dihedrals etc. will be calculated based
+    //on atom signatures.
+    if(cfgList && simParams->extraBondsOn)
+        build_extra_bonds(params, cfgList->find("extraBondsFile"));
+
     if(!NAMD_find_word(buffer, "DIHEDRALPARAMARRAY"))
         NAMD_die("UNABLE TO FIND DIHEDRALPARAMARRAY");
     for(int i=0; i<params->NumDihedralParams; i++){

@@ -975,7 +975,7 @@ public:
 // comment out the read_compressed_psf_file from above and make it public. Declare the following new methods as well.
   int isOccupancyValid, isBFactorValid;
 
-  void read_hdr_info(char *fname, Parameters *params);
+  void read_hdr_info(char *fname, Parameters *params, ConfigList *cfgList=0);
   int getNumCalcExclusions(){return numCalcExclusions;}
   void setNumCalcExclusions(int x){numCalcExclusions= x;}
   void read_compressed_psf_file(char *, Parameters *, ConfigList *cfgList);
