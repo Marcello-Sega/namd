@@ -3887,11 +3887,6 @@ build_excl_check_signatures();
                }
            }           
 
-           if((sigChk->max-sigChk->min) > simParams->maxExclusionFlags){
-	       printf("The distance of a exclusion check %d exceeds the value %d simulation parameter maxExclusionFlags specifies! Please increase the value inPES=%d \n", sigChk->max-sigChk->min, simParams->maxExclusionFlags,simParams->numinputprocs);
-               NAMD_die("Currently not supporting building exclusion check on the fly for memory optimized version!\n");
-           }
-
            sigChk->flags = new char[sigChk->max-sigChk->min+1];
            memset(sigChk->flags, 0, sizeof(char)*(sigChk->max-sigChk->min+1));
            for(int j=0; j<sig->fullExclCnt; j++){
