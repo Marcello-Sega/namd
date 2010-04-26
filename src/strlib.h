@@ -30,7 +30,7 @@
 
 void	NAMD_truncate(char *);		//  Remove trailing spaces from
 					//  a string
-int	NAMD_read_line(FILE *, char *); //  Read in a line from a file
+int	NAMD_read_line(FILE *, char *, int bufsize=512); //  Read in a line from a file
 int	NAMD_find_word(const char *, const char *); //  Check for given word in a
 					//  string
 int	NAMD_blank_string(char *);	//  Check to see if a string

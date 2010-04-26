@@ -35,7 +35,7 @@
 /*									*/
 /************************************************************************/
 
-int NAMD_read_line(FILE *fd, char *buf)
+int NAMD_read_line(FILE *fd, char *buf, int bufsize)
 
 {
 	int i=0;	//  Current position in buf
@@ -56,10 +56,9 @@ int NAMD_read_line(FILE *fd, char *buf)
 
 			if (c==EOF)
 			{
-				char err_msg[512];
-
-				sprintf(err_msg, "ABNORMAL EOF FOUND - buffer=*%s*\n", 
-				   buf);
+				buf[i]=STRINGNULL;
+				char *err_msg = new char[128 + strlen(buf)];
+				sprintf(err_msg, "ABNORMAL EOF FOUND - buffer=*%s*\n", buf);
 				NAMD_die(err_msg);
 			}
 
@@ -71,8 +70,15 @@ int NAMD_read_line(FILE *fd, char *buf)
 		if ((i>0) || !isspace(c))
 		{
 			buf[i] = c;
-	
 			i++;
+			if ( i == bufsize ) {
+				i--;
+	                        buf[i]=STRINGNULL;
+                                char *err_msg = new char[128 + strlen(buf)];
+				sprintf(err_msg, "BUFFER OVERRUN - buffer=*%s*\n", 
+				   buf);
+				NAMD_die(err_msg);
+			}
 		}
 	}
 
@@ -82,10 +88,9 @@ int NAMD_read_line(FILE *fd, char *buf)
 	/*  Check for an EOF in the middle of a line			*/
 	if ((c==EOF) && (i!=0))
 	{
-		char err_msg[512];
-
-		sprintf(err_msg, "ABNORMAL EOF FOUND - buffer=*%s*\n", 
-		   buf);
+		buf[i]=STRINGNULL;
+		char *err_msg = new char[128 + strlen(buf)];
+		sprintf(err_msg, "ABNORMAL EOF FOUND - buffer=*%s*\n", buf);
 		NAMD_die(err_msg);
 	}
 
