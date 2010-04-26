@@ -88,9 +88,8 @@ struct FullAtom : CompAtom, CompAtomExt{
   Position fixedPosition;
   Mass mass;
   Transform transform;
-////////////////////////////////////////////////
-//// Osman Sarood
-//// Parallel Input Change
+  int migrationGroupSize;
+  #ifdef MEM_OPT_VERSION
   int aidIdx;
   int readProc;
   int destProc;
@@ -100,9 +99,7 @@ struct FullAtom : CompAtom, CompAtomExt{
   int isMP;
   int MPID;
   int waterVal;
-////////////////////////////////////////////////
-//
-  int migrationGroupSize;
+  #endif
 };
 
 typedef ResizeArray<CompAtom> CompAtomList;
