@@ -154,15 +154,11 @@ Node::Node(GroupInitMsg *msg)
   computeMgr = cm.ckLocalBranch();
   CProxy_LdbCoordinator lc(CkpvAccess(BOCclass_group).ldbCoordinator);
   ldbCoordinator = lc.ckLocalBranch();
-/////////////////////////////////////////////////
-//// Osman Sarood
-//// Parallel Input Change
+#ifdef MEM_OPT_VERSION
+    // Parallel Input Change
   CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
   ioMgr = io.ckLocalBranch();
-
-///////////////////////////////////////////////////
-//
-
+#endif
 }
 
 //----------------------------------------------------------------------
