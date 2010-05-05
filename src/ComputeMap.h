@@ -144,6 +144,8 @@ public:
   void newPid(ComputeID cid, int pid, int trans = 13);
 
   void printComputeMap(void);
+  void saveComputeMap(const char *fname);
+  void loadComputeMap(const char *fname);
 
   Compute *compute(ComputeID cid) { return (computeData[cid].compute); };
 

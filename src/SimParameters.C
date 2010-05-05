@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: sarood $
- * $Date: 2010/04/23 23:48:42 $
- * $Revision: 1.1302 $
+ * $Author: gzheng $
+ * $Date: 2010/05/05 06:00:11 $
+ * $Revision: 1.1303 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -586,6 +586,14 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.optionalB("main", "vdwGeometricSigma",
        "Use geometric mean to combine L-J sigmas, as for OPLS",
        &vdwGeometricSigma, FALSE);
+
+   // load/store computeMap
+   opts.optional("main", "computeMapFile", "Filename for computeMap",
+     computeMapFilename);
+   opts.optionalB("main", "storeComputeMap", "store computeMap?",
+       &storeComputeMap, FALSE);
+   opts.optionalB("main", "loadComputeMap", "load computeMap?",
+       &loadComputeMap, FALSE);
 }
 
 
@@ -1685,6 +1693,13 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      restartFilename[0] = STRINGNULL;
      restartSave = FALSE;
      binaryRestart = FALSE;
+   }
+
+   if (storeComputeMap || loadComputeMap) {
+     if (! opts.defined("computeMapFile")) {
+       strcpy(computeMapFilename,"computeMapFile");
+       strcat(computeMapFilename,".txt");
+     }
    }
 
 

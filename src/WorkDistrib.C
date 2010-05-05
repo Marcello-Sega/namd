@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: sarood $
- * $Date: 2010/04/23 22:16:58 $
- * $Revision: 1.1204 $
+ * $Author: gzheng $
+ * $Date: 2010/05/05 06:00:12 $
+ * $Revision: 1.1205 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -99,6 +99,13 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
     mapMsg->newNodes[i] = computeMap->newNode(i);
 
   CProxy_WorkDistrib(thisgroup).recvComputeMapChanges(mapMsg);
+
+    // store the latest compute map
+  SimParameters *simParams = Node::Object()->simParameters;
+  if (simParams->storeComputeMap) {
+    computeMap->saveComputeMap(simParams->computeMapFilename);
+    CkPrintf("ComputeMap has been stored in %s.\n", simParams->computeMapFilename);
+  }
 }
 
 void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
@@ -1598,6 +1605,18 @@ void WorkDistrib::mapComputes(void)
     mapComputePatch(computeConsForceType);
   if ( node->simParameters->consTorqueOn )
     mapComputePatch(computeConsTorqueType);
+
+    // store the latest compute map
+  SimParameters *simParams = Node::Object()->simParameters;
+  if (simParams->storeComputeMap) {
+    computeMap->saveComputeMap(simParams->computeMapFilename);
+    CkPrintf("ComputeMap has been stored in %s.\n", simParams->computeMapFilename);
+  }
+    // override mapping decision
+  if (simParams->loadComputeMap) {
+    computeMap->loadComputeMap(simParams->computeMapFilename);
+    CkPrintf("ComputeMap has been loaded from %s.\n", simParams->computeMapFilename);
+  }
 }
 
 //----------------------------------------------------------------------

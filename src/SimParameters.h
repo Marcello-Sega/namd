@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: sarood $
- * $Date: 2010/04/23 22:20:48 $
- * $Revision: 1.1164 $
+ * $Author: gzheng $
+ * $Date: 2010/05/05 06:00:11 $
+ * $Revision: 1.1165 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -644,6 +644,9 @@ public:
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //
 
+	char computeMapFilename[128];		//  store compute map
+        Bool storeComputeMap;
+        Bool loadComputeMap;
 
 public:
 

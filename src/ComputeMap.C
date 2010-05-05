@@ -286,3 +286,29 @@ void ComputeMap::printComputeMap(void)
   }
 }
 
+void ComputeMap::saveComputeMap(const char *fname)
+{
+  FILE *fp = fopen(fname, "w");
+  CmiAssert(fp != NULL);
+  fprintf(fp, "%d\n", nComputes);
+  for(int i=0; i < nComputes; i++)
+  {
+    fprintf(fp, "%d\n", computeData[i].node);
+  }
+  fclose(fp);
+}
+
+void ComputeMap::loadComputeMap(const char *fname)
+{
+  FILE *fp = fopen(fname, "r");
+  CmiAssert(fp != NULL);
+  int n;
+  fscanf(fp, "%d\n", &n);
+  CmiAssert(n == nComputes);
+  for(int i=0; i < nComputes; i++)
+  {
+    fscanf(fp, "%d\n", &computeData[i].node);
+  }
+  fclose(fp);
+}
+
