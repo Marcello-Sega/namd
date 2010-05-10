@@ -66,7 +66,7 @@ char* ConfigList::packHelper(ConfigListMessage *inmsg)
     count++;
     ptr=ptr->next;
   }
-  int numDataFields[count];
+  int *numDataFields = new int[count];
   ptr=inmsg->cfgList->theList;
   count=0;
   while(ptr!=NULL)
@@ -121,6 +121,7 @@ char* ConfigList::packHelper(ConfigListMessage *inmsg)
     count++;
     ptr=ptr->next;
   }
+  delete [] numDataFields;
   return buf;
 
 }
