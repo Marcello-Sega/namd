@@ -838,7 +838,7 @@ Bool ParseOptions::set(const ConfigList& clist)
                   iout << iWARN 
 		    << "The following variables were set in the\n";
 		  iout << iWARN 
-		    << "configuation file but were not needed" << "\n" << endi;
+		    << "configuration file but were not needed" << "\n" << endi;
 	       }
 	       iout << iWARN << "   " << data->name << "\n" << endi;
 	    }
