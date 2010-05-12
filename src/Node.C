@@ -292,7 +292,7 @@ computeMap = ComputeMap::Object();
 #ifdef MEM_OPT_VERSION
   if(ioMgr->isInputProc(CkMyPe()))
   {
-    iout << iINFO << "Parallel I/O being used for reading files\n";
+    iout << iINFO << "Parallel I/O being used for reading files\n" << endi;
     CProxy_Node cm(thisgroup);
     ioMgr->setPointers(molecule,cm,state,patchMgr,this->simParameters);
     StringList *cfgFile=(ioMgr->getState()->configList->find("parameters"));
