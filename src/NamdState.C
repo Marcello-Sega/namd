@@ -240,13 +240,8 @@ StringList *moleculeFilename = configList->find("structure");
     
       double fileReadTime = CmiWallTimer();
     #ifdef MEM_OPT_VERSION
-      if (coordinateFilename != NULL){}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////////// Parallel Input Change
-////////// Osman Sarood
-// Comment out the PDB init so that the file is not read
-//      pdb = new PDB(coordinateFilename->data, molecule->numAtoms);
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////      
+      if (coordinateFilename != NULL)
+        NAMD_die("PDB file not used in memory optimized version.");
     #else
       if (coordinateFilename != NULL)
         pdb = new PDB(coordinateFilename->data);
@@ -257,25 +252,19 @@ StringList *moleculeFilename = configList->find("structure");
       iout << iINFO << "TIME FOR READING PDB FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
       iout << iINFO << "\n" << endi;
   }
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////// Parallel Input Change
-//////// Osman Sarood
-////PUT If defs around the existing code
-////#ifndef USE_PARALLEL_IO
 
+#ifdef MEM_OPT_VERSION
   if(simParameters->langevinOn)
     NAMD_bug("Parallel IO can not be used with langevin On.\n");
 
   if(simParameters->fixedAtomsOn)
     NAMD_bug("Parallel IO can not be used with Fixed Atoms On\n");
-
+#else
   StringList *binCoordinateFilename = configList->find("bincoordinates");
-/*
   if ( binCoordinateFilename ) {
     read_binary_coors(binCoordinateFilename->data, pdb);
   }
-*/
-//////////////////////////////////////////////////////////////////////////////  
+#endif
 
 	//  If constraints are active, build the parameters necessary
 	if (simParameters->constraintsOn)
@@ -596,11 +585,7 @@ StringList *moleculeFilename = configList->find("structure");
 	   iout << iINFO << molecule->numFixedGroups <<
 			" HYDROGEN GROUPS WITH ALL ATOMS FIXED\n";
 	}
-////////////////////////////////////////////////////////////////////
-// Osman Sarood
-// Parallel Input
-//Need to comment this out as PE0 doesnt have the entire Molecule obj in Parallel IO
-/*
+#ifndef MEM_OPT_VERSION
         {
           BigReal totalMass = 0;
           BigReal totalCharge = 0;
@@ -630,8 +615,9 @@ StringList *moleculeFilename = configList->find("structure");
   molecule->print_atoms(parameters);
   molecule->print_bonds(parameters);
   molecule->print_exclusions();
+#endif
+
   fflush(stdout);
-*/
   DebugM(4, "::configFileInit() - done printing Molecule Information\n");
   DebugM(1, "::configFileInit() - done\n");
 
