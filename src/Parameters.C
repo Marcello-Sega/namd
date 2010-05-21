@@ -3627,10 +3627,18 @@ void Parameters::assign_bond_index(char *atom1, char *atom2, Bond *bond_ptr)
   /*  Check to see if we found anything        */
   if (!found)
   {
-    char err_msg[128];
+    if ((strcmp(atom1, "DRUD")==0 || strcmp(atom2, "DRUD")==0)
+        && (strcmp(atom1, "X")!=0 && strcmp(atom2, "X")!=0)) {
+      /* try a wildcard DRUD X match for this Drude bond */
+      char a1[8] = "DRUD", a2[8] = "X";
+      return assign_bond_index(a1, a2, bond_ptr);  /* recursive call */
+    }
+    else {
+      char err_msg[128];
 
-    sprintf(err_msg, "CAN'T FIND BOND PARAMETERS FOR BOND %s - %s IN PARAMETER FILES", atom1, atom2);
-    NAMD_die(err_msg);
+      sprintf(err_msg, "CAN'T FIND BOND PARAMETERS FOR BOND %s - %s IN PARAMETER FILES", atom1, atom2);
+      NAMD_die(err_msg);
+    }
   }
 
   return;
