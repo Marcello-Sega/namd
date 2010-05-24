@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: gzheng $
- * $Date: 2010/05/05 06:00:12 $
- * $Revision: 1.1205 $
+ * $Date: 2010/05/24 13:52:37 $
+ * $Revision: 1.1206 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -100,12 +100,14 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
 
   CProxy_WorkDistrib(thisgroup).recvComputeMapChanges(mapMsg);
 
+/*
     // store the latest compute map
   SimParameters *simParams = Node::Object()->simParameters;
   if (simParams->storeComputeMap) {
     computeMap->saveComputeMap(simParams->computeMapFilename);
     CkPrintf("ComputeMap has been stored in %s.\n", simParams->computeMapFilename);
   }
+*/
 }
 
 void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
@@ -1610,7 +1612,6 @@ void WorkDistrib::mapComputes(void)
   SimParameters *simParams = Node::Object()->simParameters;
   if (simParams->storeComputeMap) {
     computeMap->saveComputeMap(simParams->computeMapFilename);
-    CkPrintf("ComputeMap has been stored in %s.\n", simParams->computeMapFilename);
   }
     // override mapping decision
   if (simParams->loadComputeMap) {

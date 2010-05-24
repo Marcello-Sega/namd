@@ -288,7 +288,10 @@ void ComputeMap::printComputeMap(void)
 
 void ComputeMap::saveComputeMap(const char *fname)
 {
-  FILE *fp = fopen(fname, "w");
+  static int count = 0;
+  char f[128];
+  sprintf(f, "%s.%d", fname, count++);
+  FILE *fp = fopen(f, "w");
   CmiAssert(fp != NULL);
   fprintf(fp, "%d\n", nComputes);
   for(int i=0; i < nComputes; i++)
@@ -296,6 +299,7 @@ void ComputeMap::saveComputeMap(const char *fname)
     fprintf(fp, "%d\n", computeData[i].node);
   }
   fclose(fp);
+  CkPrintf("ComputeMap has been stored in %s.\n", f);
 }
 
 void ComputeMap::loadComputeMap(const char *fname)

@@ -207,6 +207,13 @@ ComputeMgr::updateLocalComputes4(CkQdMsg *msg)
 {
     delete msg;
     CProxy_ComputeMgr(thisgroup).updateLocalComputes5();
+
+    // store the latest compute map
+           SimParameters *simParams = Node::Object()->simParameters;
+    if (simParams->storeComputeMap) {
+      ComputeMap *computeMap = ComputeMap::Object();
+      computeMap->saveComputeMap(simParams->computeMapFilename);
+    }
 }
 
 int firstphase = 1;
