@@ -408,3 +408,58 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
   return NULL;
 }
 
+ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultRawMsg(ProxyCombinedResultRawMsg *msg) {
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  CmiLock(depositLock);
+#endif
+  nWait++;
+  if (nWait == 1) msgCBuffer = ProxyCombinedResultMsg::fromRaw(msg);
+  else {
+    for (int i=0; i<msg->nodeSize; i++) msgCBuffer->nodes.add(msg->nodes[i]);
+
+    register char* isNonZero = msg->isForceNonZero;
+	register Force* f_i = msg->forceArr;
+	for ( int k = 0; k < Results::maxNumForces; ++k )
+    {
+		register ForceList::iterator r_i;
+		r_i = msgCBuffer->forceList[k].begin();
+        int nf = msg->flLen[k];
+
+#ifdef ARCH_POWERPC
+#pragma disjoint (*f_i, *r_i)
+#endif
+		for (int count = 0; count < nf; count++) {
+			if(*isNonZero){
+				r_i[count].x += f_i->x;
+				r_i[count].y += f_i->y;
+				r_i[count].z += f_i->z;
+				f_i++;
+			}
+			isNonZero++;
+		}
+    }
+    delete msg;
+  }
+//CkPrintf("[%d:%d] wait: %d of %d (%d %d %d)\n", CkMyPe(), patchID, nWait, nChild+1, parent, child[0],child[1]);
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  if(nWait == numChild+1) {
+#else
+  if (nWait == nChild + 1) {
+#endif
+    nWait = 0;
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    CmiUnlock(depositLock);
+#endif
+
+    return msgCBuffer;
+  }
+
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  CmiUnlock(depositLock);
+#endif
+
+  return NULL;
+}
+
+
+

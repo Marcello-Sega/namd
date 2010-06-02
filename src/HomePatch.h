@@ -28,7 +28,7 @@ class RegisterProxyMsg;
 class UnregisterProxyMsg;
 class ProxyResultVarsizeMsg;
 class ProxyResultMsg;
-class ProxyCombinedResultMsg;
+class ProxyCombinedResultRawMsg;
 class Sequencer;
 class SubmitReduction;
 
@@ -76,8 +76,9 @@ public:
   // ProxyPatch sends Forces back to here (via ProxyMgr)  
   void receiveResults(ProxyResultVarsizeMsg *msg);
   void receiveResults(ProxyResultMsg *msg);     
-
-  void receiveResults(ProxyCombinedResultMsg *msg);
+  
+  //direct function calls, not as entry methods
+  void receiveResults(ProxyCombinedResultRawMsg *msg);
 
   // AtomMigration messages passes from neighbor HomePatches to here.
   void depositMigration(MigrateAtomsMsg *);

@@ -238,128 +238,97 @@ void ProxyNodeAwareSpanningTreeMsg::printOut(char *tag){
 }
 
 // for spanning tree
-void* ProxyCombinedResultMsg::pack(ProxyCombinedResultMsg *msg) {
-  int msg_size = 0;
-  msg_size += sizeof(int) + msg->nodes.size()*sizeof(NodeID);
-  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
-  msg_size += sizeof(msg->destPe);
-  #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
-  msg_size += sizeof(msg->isFromImmMsgCall);
-  #endif
-  #endif  
-  msg_size += sizeof(msg->patch);
-  int j;
-  for ( j = 0; j < Results::maxNumForces; ++j ) {
-    int array_size = msg->forceList[j].size();
-    msg_size += sizeof(array_size);
-    msg_size += array_size * sizeof(char);
-    msg_size = ALIGN_8 (msg_size);
-
+ProxyCombinedResultRawMsg* ProxyCombinedResultMsg::toRaw(ProxyCombinedResultMsg *msg) {
+  int totalFLLen=0;
+  int nonzero_count = 0;
+  int nodeSize = msg->nodes.size();
+  for (int j = 0; j < Results::maxNumForces; ++j ) {
+        int array_size = msg->forceList[j].size();
+    totalFLLen +=  array_size;
     Force* f = msg->forceList[j].begin();
-    int nonzero_count = 0;
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) { ++nonzero_count; }
     }
-    msg_size += nonzero_count * sizeof(Force);
   }
 
-  void *msg_buf = CkAllocBuffer(msg,msg_size);
-  char *msg_cur = (char *)msg_buf;
+  ProxyCombinedResultRawMsg *msg_buf = new(nodeSize, totalFLLen, nonzero_count, PRIORITY_SIZE)ProxyCombinedResultRawMsg;
+  //Copy envelope stuff
+  {
+         envelope *oenv = UsrToEnv(msg);
+         envelope *nenv = UsrToEnv(msg_buf);
+         CmiMemcpy(nenv->getPrioPtr(), oenv->getPrioPtr(), nenv->getPrioBytes());
+  }
 
-  int nodeSize = msg->nodes.size();
-  CmiMemcpy((void*)msg_cur,(void*)(&nodeSize), sizeof(nodeSize));
-  msg_cur += sizeof(nodeSize);
+  msg_buf->nodeSize = nodeSize;
   for (int i=0; i<nodeSize; i++) {
-    CmiMemcpy((void*)msg_cur,(void*)(&msg->nodes[i]), sizeof(NodeID));
-    msg_cur += sizeof(NodeID);
+    msg_buf->nodes[i] = msg->nodes[i];
   }
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
-  CmiMemcpy((void*)msg_cur,(void*)(&(msg->destPe)),sizeof(msg->destPe));
-  msg_cur += sizeof(msg->destPe);
+  msg_cur->destPe = msg->destPe;
   #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
-  CmiMemcpy((void*)msg_cur, (void*)(&(msg->isFromImmMsgCall)), sizeof(msg->isFromImmMsgCall));
-  msg_cur += sizeof(msg->isFromImmMsgCall);
+  msg_buf->isFromImmMsgCall = msg->isFromImmMsgCall;
   #endif
   #endif
-  CmiMemcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
-  msg_cur += sizeof(msg->patch);
-  for ( j = 0; j < Results::maxNumForces; ++j ) {
-    int array_size = msg->forceList[j].size();
-    CmiMemcpy((void*)msg_cur,(void*)(&array_size),sizeof(array_size));
-    msg_cur += sizeof(array_size);
-    char *nonzero = msg_cur;
-    msg_cur += array_size * sizeof(char);
-    msg_cur = (char *)ALIGN_8 (msg_cur);
-    Vector *farr = (Vector *) msg_cur; 
-    Force* f = msg->forceList[j].begin();
+  msg_buf->patch = msg->patch;
 
-    for ( int i = 0; i < array_size; ++i ) {
+  Force *farr = msg_buf->forceArr;
+  char *isNonZeroPtr = msg_buf->isForceNonZero;
+  for ( int j = 0; j < Results::maxNumForces; ++j ) {
+        int array_size = msg->forceList[j].size();
+    msg_buf->flLen[j] = array_size;
+    Force* f = msg->forceList[j].begin();
+    for ( int i = 0; i < array_size; ++i , isNonZeroPtr++) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
-        nonzero[i] = 1;
-	farr->x  =  f[i].x;
+        *isNonZeroPtr = 1;
+                farr->x  =  f[i].x;
         farr->y  =  f[i].y;
         farr->z  =  f[i].z;
-
         farr ++;
       } else {
-        nonzero[i] = 0;
+        *isNonZeroPtr = 0;
       }
     }
-    msg_cur = (char *) farr;
   }
-
-  delete msg;
   return msg_buf;
 }
 
-ProxyCombinedResultMsg* ProxyCombinedResultMsg::unpack(void *ptr) {
+ProxyCombinedResultMsg* ProxyCombinedResultMsg::fromRaw(ProxyCombinedResultRawMsg *ptr) {
+
+  //CkPrintf("[%d]: unpacking: plainData=%p\n", CkMyPe(), ptr->plainData);      
+
   void *vmsg = CkAllocBuffer(ptr,sizeof(ProxyCombinedResultMsg));
   ProxyCombinedResultMsg *msg = new (vmsg) ProxyCombinedResultMsg;
-  char *msg_cur = (char*)ptr;
 
-  int nodeSize;
-  CmiMemcpy((void*)(&nodeSize),(void*)msg_cur,sizeof(nodeSize));
-  msg_cur += sizeof(nodeSize);
-  for (int i=0; i<nodeSize; i++) {
-    msg->nodes.add(*(int *)msg_cur);
-    msg_cur += sizeof(NodeID);
+  for (int i=0; i<ptr->nodeSize; i++) {
+    msg->nodes.add(ptr->nodes[i]);
   }
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
-  CmiMemcpy((void*)(&(msg->destPe)),(void*)msg_cur,sizeof(msg->destPe));
-  msg_cur += sizeof(msg->destPe);
+  msg->destPe = ptr->destPe;
   #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
-  CmiMemcpy((void *)(&(msg->isFromImmMsgCall)), (void*)msg_cur, sizeof(msg->isFromImmMsgCall));
-  msg_cur += sizeof(msg->isFromImmMsgCall);  
+  msg->isFromImmMsgCall = ptr->isFromImmMsgCall;
   #endif
   #endif
-  CmiMemcpy((void*)(&(msg->patch)),(void*)msg_cur,sizeof(msg->patch));
-  msg_cur += sizeof(msg->patch);
-  int j;
-  for ( j = 0; j < Results::maxNumForces; ++j ) {
-    int array_size;
-    CmiMemcpy((void*)(&array_size),(void*)msg_cur,sizeof(array_size));
-    msg_cur += sizeof(array_size);
-    msg->forceList[j].resize(array_size);
-    char *nonzero = msg_cur;
-    msg_cur += array_size * sizeof(char);
-    msg_cur = (char *)ALIGN_8 (msg_cur);
-    Vector* farr = (Vector *) msg_cur;
-    Force* f = msg->forceList[j].begin();
+  msg->patch = ptr->patch;
 
-    for ( int i = 0; i < array_size; ++i ) {
-      if ( nonzero[i] ) {
-	f[i].x = farr->x;
-	f[i].y = farr->y;
-	f[i].z = farr->z;
-	farr++;
+  for ( int j = 0; j < Results::maxNumForces; ++j ) {
+    int array_size = ptr->flLen[j];
+    msg->forceList[j].resize(array_size);
+        char *nonzero = ptr->isForceNonZero;
+    Force* farr = ptr->forceArr;
+    Force* f = msg->forceList[j].begin();
+    for ( int i = 0; i < array_size; ++i, nonzero++ ) {
+      if ( *nonzero ) {
+                f[i].x = farr->x;
+                f[i].y = farr->y;
+                f[i].z = farr->z;
+                farr++;
       } else {
         f[i].x = 0.;  f[i].y = 0.;  f[i].z = 0.;
       }
     }
-    msg_cur = (char *) farr;
   }
 
-  CkFreeMsg(ptr);
+  delete ptr;
   return msg;
 }
 
@@ -1338,11 +1307,12 @@ void ProxyMgr::recvResults(ProxyResultMsg *msg) {
   home->receiveResults(msg); // delete done in HomePatch::receiveResults()
 }
 
-void
-ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
+//sendResults is a direct function call, not an entry method
+void ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
   ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
-  ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
-  if (cMsg) {    
+  ProxyCombinedResultMsg *ocMsg = patch->depositCombinedResultMsg(msg);
+  if (ocMsg) {
+	ProxyCombinedResultRawMsg *cMsg = ProxyCombinedResultMsg::toRaw(ocMsg);        
     int destPe = patch->getSpanningTreeParent();
     CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
     if(destPe != CkMyPe()) {
@@ -1353,7 +1323,7 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
       cMsg->destPe = destPe;
       CProxy_NodeProxyMgr cnp(CkpvAccess(BOCclass_group).nodeProxyMgr);
       cnp[CkNodeOf(destPe)].recvImmediateResults(cMsg);
-#else    
+#else
       cp[destPe].recvImmediateResults(cMsg);
 #endif
     }
@@ -1363,16 +1333,17 @@ ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
   }
 }
 
-void
-ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
+void ProxyMgr::recvResults(ProxyCombinedResultRawMsg *omsg) {
+	ProxyCombinedResultRawMsg *msg = omsg;
+
 //Chao Mei: hack for QD in case of SMP with immediate msg
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
     if(proxyRecvSpanning && msg->isFromImmMsgCall){
 //    CkPrintf("qdcreate called on pe[%d]\n", CkMyPe());
 //    fflush(stdout);
-	//To compensate for the counter loss for message creation
-	//inside the process of immediate message on comm thread
-	CkpvAccess(_qd)->create();
+        //To compensate for the counter loss for message creation
+        //inside the process of immediate message on comm thread
+        CkpvAccess(_qd)->create();
     }
 #endif
 
@@ -1386,53 +1357,56 @@ ProxyMgr::recvResults(ProxyCombinedResultMsg *msg) {
   }
 }
 
-void ProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg) {
-  HomePatch *home = PatchMap::Object()->homePatch(msg->patch);
+void ProxyMgr::recvImmediateResults(ProxyCombinedResultRawMsg *omsg) {
+  HomePatch *home = PatchMap::Object()->homePatch(omsg->patch);
   if (home) {
-    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
-    cp[CkMyPe()].recvResults(msg);
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);        
+    cp[CkMyPe()].recvResults(omsg);
   }
   else {
-    ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(msg->patch);
-    ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
-    if (cMsg) {
-      CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
-      cp[patch->getSpanningTreeParent()].recvImmediateResults(cMsg);
+    ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(omsg->patch);
+	ProxyCombinedResultMsg *ocMsg = patch->depositCombinedResultRawMsg(omsg);
+    if (ocMsg) {
+		CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+		ProxyCombinedResultRawMsg *cMsg = ProxyCombinedResultMsg::toRaw(ocMsg);		
+		cp[patch->getSpanningTreeParent()].recvImmediateResults(cMsg);
     }
   }
 }
 
-void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultMsg *msg){
+void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultRawMsg *omsg){
+    ProxyCombinedResultRawMsg *msg = omsg;
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     //CkPrintf("recvImmRes called on comm thread%d pe[%d]\n", CkMyRank()==CmiMyNodeSize(), CkMyPe());
     //fflush(stdout);
-    
+
     int destRank = CkRankOf(msg->destPe);
     PatchMap *pmap = localPatchMaps[destRank];
     HomePatch *home = pmap->homePatch(msg->patch);
     if (home) {
 #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
-	msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
+        msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
 #endif
-        CProxy_ProxyMgr cp(localProxyMgr);        
-        cp[msg->destPe].recvResults(msg);        
+        CProxy_ProxyMgr cp(localProxyMgr);
+        cp[msg->destPe].recvResults(msg);
 /*
-	char *srcfrom = "Isfrom";
-	if(CkMyRank()!=CmiMyNodeSize()) srcfrom="Notfrom";
+        char *srcfrom = "Isfrom";
+        if(CkMyRank()!=CmiMyNodeSize()) srcfrom="Notfrom";
       CkPrintf("%s comm thread from pe[%d]\n", srcfrom, CkMyPe());
       fflush(stdout);
-*/  
+*/
     }
     else {
         ProxyPatch *patch = (ProxyPatch *)pmap->patch(msg->patch);
-        ProxyCombinedResultMsg *cMsg = patch->depositCombinedResultMsg(msg);
-        if (cMsg) {
+        ProxyCombinedResultMsg *ocMsg = patch->depositCombinedResultMsgNew(msg); 
+        if (ocMsg) {
             CProxy_NodeProxyMgr cnp(thisgroup);
             cMsg->destPe = patch->getSpanningTreeParent();
-            cnp[CkNodeOf(cMsg->destPe)].recvImmediateResults(cMsg);            
+			ProxyCombinedResultRawMsg *cMsg = ProxyCombinedResultMsg::toRaw(ocMsg);
+            cnp[CkNodeOf(cMsg->destPe)].recvImmediateResults(cMsg);
         }
     }
-#endif    
+#endif
 }
 
 void

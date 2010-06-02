@@ -811,34 +811,34 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
   delete msg;
 }
 
-void HomePatch::receiveResults(ProxyCombinedResultMsg *msg)
+void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
 {
-  DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodes.size()<<")\n");
-//CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
-  for (int i=0; i<msg->nodes.size(); i++) {
+  DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodeSize<<")\n");
+  //CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
+  for (int i=0; i<msg->nodeSize; i++) {
     int node = msg->nodes[i];
     ProxyListElem *pe = proxy.begin();
     for ( ; pe->node != node; ++pe );
     Results *r = pe->forceBox->open();
     if (i==0) {
+      register char* isNonZero = msg->isForceNonZero;
+      register Force* f_i = msg->forceArr;
       for ( int k = 0; k < Results::maxNumForces; ++k )
       {
         Force *f = r->f[k];
-        register ForceList::iterator f_i, f_e;
-        f_i = msg->forceList[k].begin();
-        f_e = msg->forceList[k].end();
-        //for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
-
-	int nf = f_e - f_i;
+		int nf = msg->flLen[k];
 #ifdef ARCH_POWERPC
 #pragma disjoint (*f_i, *f)
-#pragma unroll(4)
 #endif
-	for (int count = 0; count < nf; count++) {
-	  f[count].x += f_i[count].x;      
-	  f[count].y += f_i[count].y;      
-	  f[count].z += f_i[count].z;
-	}
+        for (int count = 0; count < nf; count++) {
+          if(*isNonZero){
+			f[count].x += f_i->x;
+			f[count].y += f_i->y;
+			f[count].z += f_i->z;
+			f_i++;
+          }
+          isNonZero++;
+        }
       }
     }
     pe->forceBox->close(&r);
@@ -846,6 +846,7 @@ void HomePatch::receiveResults(ProxyCombinedResultMsg *msg)
 
     delete msg;
 }
+
 
 void HomePatch::positionsReady(int doMigration)
 {    

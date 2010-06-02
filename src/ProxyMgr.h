@@ -180,6 +180,30 @@ public:
     void printOut(char *tag);
 };
 
+class ProxyCombinedResultRawMsg : public CMessage_ProxyCombinedResultRawMsg {
+public:
+        int nodeSize;
+        NodeID *nodes;
+
+        #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+        //since this msg may be processed by comm thread in the smp mode,
+        //this variable helps comm thread to find which proc will actually process it.
+        NodeID destPe;
+        #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
+        //Mainly for QD in the presence of the optimization of using immediate
+        //message. Refer to the explanation from ProxyDataMsg for the same 
+        //variable. --Chao Mei
+        char isFromImmMsgCall;
+        #endif
+        #endif
+        PatchID patch;
+
+        int flLen[Results::maxNumForces];
+        char *isForceNonZero;
+        //The beginning address of this variable should be 8-byte aligned!!! -Chao Mei
+        Force *forceArr;
+};
+
 class ProxyCombinedResultMsg : public CMessage_ProxyCombinedResultMsg {
 public:
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
@@ -196,8 +220,8 @@ public:
   PatchID patch;
   NodeIDList nodes;
   ForceList forceList[Results::maxNumForces];
-  static void* pack(ProxyCombinedResultMsg *msg);
-  static ProxyCombinedResultMsg* unpack(void *ptr);
+  static ProxyCombinedResultRawMsg* toRaw(ProxyCombinedResultMsg *msg);
+  static ProxyCombinedResultMsg* fromRaw(ProxyCombinedResultRawMsg *msg);
 };
 
 class ProxySpanningTreeMsg : public CMessage_ProxySpanningTreeMsg {
@@ -311,8 +335,8 @@ public:
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);
   void sendResults(ProxyCombinedResultMsg *);
-  void recvResults(ProxyCombinedResultMsg *);
-  void recvImmediateResults(ProxyCombinedResultMsg *);
+  void recvResults(ProxyCombinedResultRawMsg *);
+  void recvImmediateResults(ProxyCombinedResultRawMsg *);
 
   void sendProxyData(ProxyDataMsg *, int, int*);
   void recvImmediateProxyData(ProxyDataMsg *);
@@ -384,7 +408,7 @@ public:
 
     void recvImmediateProxyData(ProxyDataMsg *msg);
     void recvImmediateProxyAll(ProxyDataMsg *msg);
-    void recvImmediateResults(ProxyCombinedResultMsg *);
+    void recvImmediateResults(ProxyCombinedResultRawMsg *);
 };
 
 #endif /* PATCHMGR_H */

@@ -13,7 +13,14 @@ module ProxyMgr {
 
   message [packed] ProxyResultMsg;
   message [packed] ProxySpanningTreeMsg;
-  message [packed] ProxyCombinedResultMsg;
+  
+  //It is a message that is based on the RawMsg
+  message ProxyCombinedResultMsg;
+  message ProxyCombinedResultRawMsg{
+	NodeID nodes[];
+	char isForceNonZero[];
+	Force forceArr[];
+  };
 
   message ProxyDataMsg{
     //Make sure positionList is the first varsize type declaration
@@ -49,8 +56,8 @@ module ProxyMgr {
     entry void recvImmediateProxyAll(ProxyDataMsg *);
     entry void recvResults(ProxyResultVarsizeMsg *);       
     entry void recvResults(ProxyResultMsg *);
-    entry void recvResults(ProxyCombinedResultMsg *);
-    entry void recvImmediateResults(ProxyCombinedResultMsg *);
+    entry void recvResults(ProxyCombinedResultRawMsg *);
+    entry void recvImmediateResults(ProxyCombinedResultRawMsg *);
     entry void recvSpanningTreeOnHomePatch(int, int tree[n], int n);
     entry void recvNodeAwareSpanningTreeOnHomePatch(ProxyNodeAwareSpanningTreeMsg *);
     entry void recvSpanningTree(ProxySpanningTreeMsg *);
@@ -65,7 +72,7 @@ module ProxyMgr {
     entry void createProxyInfo(int);   
     entry [immediate] void recvImmediateProxyData(ProxyDataMsg *);
     entry [immediate] void recvImmediateProxyAll(ProxyDataMsg *);
-    entry [immediate] void recvImmediateResults(ProxyCombinedResultMsg *);
+    entry [immediate] void recvImmediateResults(ProxyCombinedResultRawMsg *);
   };
 }
 

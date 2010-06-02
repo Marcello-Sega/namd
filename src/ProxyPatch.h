@@ -50,6 +50,7 @@ class ProxyPatch : public Patch
 
 
      ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
+	 ProxyCombinedResultMsg *depositCombinedResultRawMsg(ProxyCombinedResultRawMsg *);
 
 #if CMK_PERSISTENT_COMM
   private:
