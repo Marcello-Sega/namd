@@ -20,6 +20,7 @@ public:
 
 protected :
   virtual void initialize();
+  virtual int noWork();
   virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r);
   Box<Patch,CompAtom> *avgPositionBox;
   // BEGIN LA

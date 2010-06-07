@@ -59,6 +59,70 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
   // END LA
 }
 
+int ComputeNonbondedSelf::noWork() {
+
+  // return 0;  // for testing
+  if ( numAtoms && patch->flags.doNonbonded
+#ifdef NAMD_CUDA
+        && patch->flags.doEnergy
+#endif
+ )
+  {
+    return 0;  // work to do, enqueue as usual
+  } else
+  {
+    // Inform load balancer
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+#endif
+    // fake out patches and reduction system
+
+    BigReal reductionData[reductionDataSize];
+    int i;
+    for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
+    if (pressureProfileOn) {
+      int n = pressureProfileAtomTypes;
+      memset(pressureProfileData, 0, 3*n*n*pressureProfileSlabs*sizeof(BigReal));
+    }
+    CompAtom* p;
+    CompAtom* p_avg;
+    // BEGIN LA
+    CompAtom* v;
+    // END LA
+    Results* r;
+
+    // Open up positionBox, forceBox, and atomBox
+      p = positionBox->open();
+      r = forceBox->open();
+      if ( patch->flags.doMolly ) p_avg = avgPositionBox->open();
+      // BEGIN LA
+      if (patch->flags.doLoweAndersen) v = velocityBox->open();
+      // END LA
+
+    // Close up boxes
+      positionBox->close(&p);
+      forceBox->close(&r);
+      if ( patch->flags.doMolly ) avgPositionBox->close(&p_avg);
+      // BEGIN LA
+      if (patch->flags.doLoweAndersen) velocityBox->close(&v);
+      // END LA
+
+    submitReductionData(reductionData,reduction);
+    if (pressureProfileOn)
+      submitPressureProfileData(pressureProfileData, pressureProfileReduction);
+
+    // Inform load balancer
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
+
+    reduction->submit();
+    if (pressureProfileOn)
+      pressureProfileReduction->submit();
+
+    return 1;  // no work to do, do not enqueue
+  }
+}
 
 void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
 {
