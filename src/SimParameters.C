@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: gzheng $
- * $Date: 2010/05/05 06:00:11 $
- * $Revision: 1.1303 $
+ * $Author: dhardy $
+ * $Date: 2010/06/09 21:46:46 $
+ * $Revision: 1.1304 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -452,6 +452,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.optionalB("main", "outputPatchDetails", "print number of atoms in each patch",
       &outputPatchDetails, FALSE);
+   opts.optionalB("main", "lonePairs", "Enable lone pairs", &lonepairs, FALSE);
    opts.optional("main", "waterModel", "Water model to use", PARSE_STRING);
    opts.optionalB("main", "LJcorrection", "Apply analytical tail corrections for energy and virial", &LJcorrection, FALSE);
 }
@@ -1953,6 +1954,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iWARN
        << "Setting water model to 'swm4' (SWM4-DP) for Drude polarization.\n"
        << endi;
+   }
+
+   // Drude water model uses "lonepairs"
+   if (watmodel == WAT_SWM4) {
+     lonepairs = TRUE;
    }
 
    //  Get multiple timestep integration scheme

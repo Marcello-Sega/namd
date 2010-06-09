@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jim $
- * $Date: 2010/03/23 18:19:34 $
- * $Revision: 1.1184 $
+ * $Author: dhardy $
+ * $Date: 2010/06/09 21:46:46 $
+ * $Revision: 1.1185 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -201,7 +201,7 @@ void Sequencer::integrate() {
 //    printf("Doing initial rattle\n");
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
 
-    if (simParams->drudeOn) {
+    if (simParams->lonepairs) {
       AtomMap::Object()->registerIDsFullAtom(
 		patch->patchID,patch->atom.begin(),patch->atom.end());
     }
@@ -455,7 +455,7 @@ void Sequencer::minimize() {
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;
 
-  if (simParams->drudeOn) {
+  if (simParams->lonepairs) {
     AtomMap::Object()->registerIDsFullAtom(
 		patch->patchID,patch->atom.begin(),patch->atom.end());
   }
@@ -1653,7 +1653,7 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   patch->flags.savePairlists =
 	pairlists && ! pairlistsAreValid;
 
-  if ( simParams->drudeOn ) patch->reposition_all_lonepairs();
+  if ( simParams->lonepairs ) patch->reposition_all_lonepairs();
 
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
@@ -1664,7 +1664,7 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   }
   if ( pairlistsAreValid ) ++pairlistsAge;
 
-  if (simParams->drudeOn) {
+  if (simParams->lonepairs) {
     {
       Tensor virial;
       patch->redistrib_lonepair_forces(Results::normal, &virial);

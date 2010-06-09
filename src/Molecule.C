@@ -196,6 +196,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   resLookup=NULL;
 
   // DRUDE
+  is_lonepairs_psf = 0;
   is_drude_psf = 0;  // assume not Drude model
   drudeConsts=NULL;
   lphosts=NULL;
@@ -693,6 +694,10 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
         "enabling the Drude model in the simulation config file\n";
     }
     is_drude_psf = 1;
+    is_lonepairs_psf = 1;
+  }
+  else if (simParams->lonepairs) {
+    is_lonepairs_psf = 1;
   }
   // DRUDE
 
@@ -935,7 +940,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
     read_exclusions(psf_file);
 
   // DRUDE: read lone pair hosts and anisotropic terms from PSF
-  if (is_drude_psf)
+  if (is_lonepairs_psf)
   {
     while (!NAMD_find_word(buffer, "NUMLP"))
     {
@@ -947,7 +952,10 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
     }
     sscanf(buffer, "%d", &numLphosts);
     if (numLphosts) read_lphosts(psf_file);
+  }
 
+  if (is_drude_psf)
+  {
     while (!NAMD_find_word(buffer, "NUMANISO"))
     {
       ret_code = NAMD_read_line(psf_file, buffer);
@@ -958,7 +966,6 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
     }
     sscanf(buffer, "%d", &numAnisos);
     if (numAnisos) read_anisos(psf_file);
-
   }
   // DRUDE
 
@@ -1644,7 +1651,7 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
     /*  Make sure this isn't a fake bond meant for shake in x-plor.  */
     Real k, x0;
     params->get_bond_params(&k,&x0,b->bond_type);
-    if (simParams->watmodel == WAT_SWM4) {
+    if (simParams->lonepairs) {
       // need to retain Lonepair bonds for Drude
       if ( k == 0. && !is_lp(b->atom1) && !is_lp(b->atom2)) --numBonds;
       else ++num_read;
@@ -2613,7 +2620,7 @@ void Molecule::plgLoadBonds(int *from, int *to){
         //Make sure this isn't a fake bond meant for shake in x-plor
         Real k, x0;
         params->get_bond_params(&k, &x0, thisBond->bond_type);
-        if(simParams->watmodel == WAT_SWM4) {
+        if(simParams->lonepairs) {
             //need to retain Lonepair bonds for Drude
             if(k!=0. || is_lp(thisBond->atom1) || 
                is_lp(thisBond->atom2)) {               
@@ -3245,11 +3252,14 @@ void Molecule::send_Molecule(MOStream *msg)
 //fepe
 
       // DRUDE: send data read from PSF
+      msg->put(is_lonepairs_psf);
+      if (is_lonepairs_psf) {
+        msg->put(numLphosts);
+        msg->put(numLphosts*sizeof(Lphost), (char*)lphosts);
+      }
       msg->put(is_drude_psf);
       if (is_drude_psf) {
         msg->put(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
-        msg->put(numLphosts);
-        msg->put(numLphosts*sizeof(Lphost), (char*)lphosts);
         msg->put(numAnisos);
         msg->put(numAnisos*sizeof(Aniso), (char*)anisos);
       }
@@ -3623,15 +3633,18 @@ void Molecule::receive_Molecule(MIStream *msg)
 //fepe
 
       // DRUDE: receive data read from PSF
+      msg->get(is_lonepairs_psf);
+      if (is_lonepairs_psf) {
+        msg->get(numLphosts);
+        delete[] lphosts;
+        lphosts = new Lphost[numLphosts];
+        msg->get(numLphosts*sizeof(Lphost), (char*)lphosts);
+      }
       msg->get(is_drude_psf);
       if (is_drude_psf) {
         delete[] drudeConsts;
         drudeConsts = new DrudeConst[numAtoms];
         msg->get(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
-        msg->get(numLphosts);
-        delete[] lphosts;
-        lphosts = new Lphost[numLphosts];
-        msg->get(numLphosts*sizeof(Lphost), (char*)lphosts);
         msg->get(numAnisos);
         delete[] anisos;
         anisos = new Aniso[numAnisos];
@@ -4442,7 +4455,7 @@ build_excl_check_signatures();
        }
 
        // DRUDE: init lphostIndexes array
-       if (simParams->drudeOn) {
+       if (simParams->lonepairs) {
          // allocate lone pair host index array only if we need it!
          DebugM(3,"Initializing lone pair host index array.\n");
          lphostIndexes = new int32[numAtoms];
@@ -4831,7 +4844,9 @@ build_excl_check_signatures();
       stripFepExcl();
 
       // DRUDE
-      if (is_drude_psf) build_inherited_excl();
+      if (is_lonepairs_psf) {
+        build_inherited_excl(SCALED14 == exclude_flag);
+      }
 #endif
     }
     /*      END OF FUNCTION build_exclusions    */
@@ -4850,19 +4865,13 @@ build_excl_check_signatures();
     // (3)  If two heavy atoms are excluded and they both have either a
     //      Drude particle or a lone pair, the these light (or massless)
     //      particles are also excluded from interacting with each other.
-    void Molecule::build_inherited_excl(void) {
+    void Molecule::build_inherited_excl(int modified) {
 #ifdef MEM_OPT_VERSION
       NAMD_die("Drude and LP particles not supported in memopt version.");
 #else
       ExclusionSettings exclude_flag = simParams->exclude;
-      int32 *bond1, *bond2, *bond3, *bond4;
-      int32 i, j, mid1, mid2, mid3;
-
-      if (exclude_flag == ONEFOUR || exclude_flag == SCALED14) {
-        NAMD_die("DRUDE MODEL SUPPORTS ONLY UP TO 1-3 EXCLUSION POLICY");
-      }
-
-      if (exclude_flag == NONE) return;
+      int32 *bond1, *bond2, *bond3, *bond4, *bond5;
+      int32 i, j, mid1, mid2, mid3, mid4;
 
       // validate that each Drude or lone pair particle
       // has a unique parent that is a heavy atom
@@ -4897,6 +4906,33 @@ build_excl_check_signatures();
             sprintf(err_msg, "PARENT ATOM %d of %s PARTICLE %d "
                 "IS NOT HEAVY ATOM", mid1+1, idescrip, i+1);
             NAMD_die(err_msg);
+          }
+
+          if (exclude_flag == NONE) {
+            // add (i,mid1) as an exclusion
+            if (i < mid1) {
+              exclusionSet.add(Exclusion(i, mid1));
+            }
+            else {
+              exclusionSet.add(Exclusion(mid1, i));
+            }
+
+            // also exclude any Drude particles or LPs bonded to mid1
+            bond2 = bondsWithAtom[mid1];
+            while (*bond2 != -1) {
+              j = bonds[*bond2].atom1;
+              if (is_drude(j) || is_lp(j)) {
+                if      (i < j) exclusionSet.add(Exclusion(i, j));
+                else if (j < i) exclusionSet.add(Exclusion(j, i));
+              }
+              j = bonds[*bond2].atom2;
+              if (is_drude(j) || is_lp(j)) {
+                if      (i < j) exclusionSet.add(Exclusion(i, j));
+                else if (j < i) exclusionSet.add(Exclusion(j, i));
+              }
+              bond2++;
+            }
+            continue;
           }
 
           // follow build14excl() code
@@ -4943,7 +4979,7 @@ build_excl_check_signatures();
                 bond3++;
               }
             }
-            else {  // exclude_flag == ONETHREE
+            else if (exclude_flag == ONETHREE) {
 
               bond3 = bondsWithAtom[mid2];
 
@@ -4991,7 +5027,86 @@ build_excl_check_signatures();
                 ++bond3;
               } // while bond3
 
-            } // else ONETHREE
+            } // else if ONETHREE
+            else { // else (if ONEFOUR or SCALED14)
+
+              bond3 = bondsWithAtom[mid2];
+
+              // loop through all the bonds connected to mid2
+              while (*bond3 != -1) {
+
+                if (bonds[*bond3].atom1 == mid2) {
+                  mid3 = bonds[*bond3].atom2;
+                }
+                else {
+                  mid3 = bonds[*bond3].atom1;
+                }
+
+                // Make sure we don't double back to where we started.
+                // Doing so causes strange behavior.
+                if (mid3 == mid1) {
+                  bond3++;
+                  continue;
+                }
+
+                // add (i,mid3) as an exclusion
+                if (i < mid3) {
+                  exclusionSet.add(Exclusion(i, mid3));
+                }
+                else if (mid3 < i) {
+                  exclusionSet.add(Exclusion(mid3, i));
+                }
+
+                bond4 = bondsWithAtom[mid3];
+
+                // loop through all the bonds connected to mid3
+                while (*bond4 != -1) {
+
+                  if (bonds[*bond4].atom1 == mid3) {
+                    mid4 = bonds[*bond4].atom2;
+                  }
+                  else {
+                    mid4 = bonds[*bond4].atom1;
+                  }
+
+                  // Make sure we don't double back to where we started.
+                  // Doing so causes strange behavior.
+                  if (mid4 == mid2) {
+                    bond4++;
+                    continue;
+                  }
+
+                  // add (i,mid4) as an exclusion
+                  if (i < mid4) {
+                    exclusionSet.add(Exclusion(i, mid4, modified));
+                  }
+                  else if (mid4 < i) {
+                    exclusionSet.add(Exclusion(mid4, i, modified));
+                  }
+
+                  // also exclude any Drude particles or LPs bonded to mid4
+                  bond5 = bondsWithAtom[mid4];
+                  while (*bond5 != -1) {
+                    j = bonds[*bond5].atom1;
+                    if (is_drude(j) || is_lp(j)) {
+                      if      (i < j) exclusionSet.add(Exclusion(i,j,modified));
+                      else if (j < i) exclusionSet.add(Exclusion(j,i,modified));
+                    }
+                    j = bonds[*bond5].atom2;
+                    if (is_drude(j) || is_lp(j)) {
+                      if      (i < j) exclusionSet.add(Exclusion(i,j,modified));
+                      else if (j < i) exclusionSet.add(Exclusion(j,i,modified));
+                    }
+                    bond5++;
+                  }
+
+                  ++bond4;
+                } // while bond4
+
+                ++bond3;
+              } // while bond3
+
+            } // else (if ONEFOUR or SCALED14)
            
             ++bond2;
           } // while bond2
@@ -5129,6 +5244,8 @@ build_excl_check_signatures();
        //  Loop through all the atoms
        for (i=0; i<numAtoms; i++)
        {  
+         if (is_drude(i) || is_lp(i)) continue;  // skip Drude and LP for now
+
       // Get all the bonds connect directly to atom i
       bond1 = bondsWithAtom[i];
        
@@ -5173,26 +5290,28 @@ build_excl_check_signatures();
           {
             if (bonds[*bond3].atom1 == mid2)
             {
+              int j = bonds[*bond3].atom2;
               //  Make sure that we don't double back to where
               //  we started from.  This causes strange behavior.
               //  Trust me, I've been there . . .
               //  I added this!!!  Why wasn't it there before?  -JCP
-              if (bonds[*bond3].atom2 != mid1)
-              if (i<bonds[*bond3].atom2)
+              if (j != mid1)
+              if (i < j && !is_drude(j) && !is_lp(j))  // skip Drude and LP
               {
-                 exclusionSet.add(Exclusion(i,bonds[*bond3].atom2,modified));
+                 exclusionSet.add(Exclusion(i,j,modified));
               }
             }
             else
             {
+              int j = bonds[*bond3].atom1;
               //  Make sure that we don't double back to where
               //  we started from.  This causes strange behavior.
               //  Trust me, I've been there . . .
               //  I added this!!!  Why wasn't it there before?  -JCP
-              if (bonds[*bond3].atom1 != mid1)
-              if (i<bonds[*bond3].atom1)
+              if (j != mid1)
+              if (i < j && !is_drude(j) && !is_lp(j))  // skip Drude and LP
               {
-                 exclusionSet.add(Exclusion(i,bonds[*bond3].atom1,modified));
+                 exclusionSet.add(Exclusion(i,j,modified));
               }
             }
 
@@ -8250,7 +8369,7 @@ void Molecule::build_atom_status(void) {
     #else
     if ( atoms[i].mass <= 0. ) {
       if (simParams->watmodel == WAT_TIP4 ||
-          simParams->watmodel == WAT_SWM4) {
+          simParams->lonepairs) {
         ++numLonepairs;
       } else {
         atoms[i].mass = 0.001;
@@ -8263,7 +8382,7 @@ void Molecule::build_atom_status(void) {
     #endif
   }
   // DRUDE: verify number of LPs
-  if (simParams->drudeOn && numLonepairs != numLphosts) {
+  if (simParams->lonepairs && numLonepairs != numLphosts) {
     NAMD_die("must have same number of LP hosts as lone pairs");
   }
   // DRUDE
@@ -8275,7 +8394,7 @@ void Molecule::build_atom_status(void) {
   #endif
 
   if ( ! CkMyPe() ) {
-    if (simParams->watmodel == WAT_TIP4 || simParams->watmodel == WAT_SWM4) {
+    if (simParams->watmodel == WAT_TIP4 || simParams->lonepairs) {
       iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF "
         "BECAUSE LONE PAIRS ARE USED\n" << endi;
     } else if ( numZeroMassAtoms ) {
@@ -8422,7 +8541,7 @@ void Molecule::build_atom_status(void) {
       }
     }
     // SWM4 water has lone pair and Drude particles
-    else if (simParams->watmodel == WAT_SWM4) {
+    else if ( /* simParams->watmodel == WAT_SWM4 */ simParams->lonepairs) {
       if (is_lp(a1) || is_drude(a1)) {
         if (is_hydrogen(a2) || is_lp(a2) || is_drude(a2)) {
           char msg[256];

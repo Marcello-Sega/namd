@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: gzheng $
- * $Date: 2010/05/05 06:00:11 $
- * $Revision: 1.1165 $
+ * $Author: dhardy $
+ * $Date: 2010/06/09 21:46:47 $
+ * $Revision: 1.1166 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -86,6 +86,7 @@ public:
 //  MAKE SURE THAT THIS CLASS CAN BE BIT COPIED OR YOU WILL HAVE TO
 //  ADD SPECIAL CODE TO send_SimParameters() and receive_SimParameters()
 
+  Bool lonepairs;  // enable lone pairs
   int watmodel; // integer code for the water model in use
                 // choices are defined in common.h
   Bool LJcorrection; // flag for whether water tail corrections should be used

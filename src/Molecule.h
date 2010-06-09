@@ -334,7 +334,7 @@ private:
   void build14excl(int);
 
   // DRUDE: extend exclusions for Drude and LP
-  void build_inherited_excl(void);
+  void build_inherited_excl(int);
   // DRUDE
   #ifdef MEM_OPT_VERSION
   void stripFepFixedExcl(void);
@@ -355,8 +355,9 @@ private:
   void read_parm(const GromacsTopFile *);  
 
 public:
-  // DRUDE: flag for reading Drude PSF
-  int is_drude_psf;
+  // DRUDE
+  int is_drude_psf;      // flag for reading Drude PSF
+  int is_lonepairs_psf;  // flag for reading lone pairs from PSF
   // DRUDE
 
   // data for TIP4P

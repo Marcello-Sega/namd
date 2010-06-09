@@ -1353,7 +1353,7 @@ void HomePatch::reposition_lonepair(
 }
 
 void HomePatch::reposition_all_lonepairs(void) {
-  // ASSERT: simParams->drudeOn == TRUE
+  // ASSERT: simParams->lonepairs == TRUE
   for (int i=0;  i < numAtoms;  i++) {
     if (atom[i].mass < 0.01) {
       // found a lone pair
@@ -1422,7 +1422,7 @@ void HomePatch::tip4_omrepos(Vector* ref, Vector* pos, Vector* vel, BigReal invd
 }
 
 void HomePatch::redistrib_lonepair_forces(const int ftag, Tensor *virial) {
-  // ASSERT: simParams->drudeOn == TRUE
+  // ASSERT: simParams->lonepairs == TRUE
   ForceList *f_mod = f;
   for (int i = 0;  i < numAtoms;  i++) {
     if (atom[i].mass < 0.01) {
