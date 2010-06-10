@@ -4877,65 +4877,67 @@ build_excl_check_signatures();
       // has a unique parent that is a heavy atom
       for (i = 0;  i < numAtoms;  i++) {
 
-        if (is_drude(i) || is_lp(i)) {
-          // find parent (heavy) atom of particle i
-          bond1 = bondsWithAtom[i];
+        if (!is_drude(i) && !is_lp(i)) continue;
+        // make sure that i is either Drude or LP
 
-          if (-1 == *bond1) {  // i must have one bond
-            char err_msg[512];
-            const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
-            sprintf(err_msg, "FOUND ISOLATED %s PARTICLE %d", idescrip, i+1);
-            NAMD_die(err_msg);
+        // find parent (heavy) atom of particle i
+        bond1 = bondsWithAtom[i];
+
+        if (-1 == *bond1) {  // i must have one bond
+          char err_msg[512];
+          const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
+          sprintf(err_msg, "FOUND ISOLATED %s PARTICLE %d", idescrip, i+1);
+          NAMD_die(err_msg);
+        }
+        if (-1 != *(bond1+1)) {  // and only one bond
+          char err_msg[512];
+          const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
+          sprintf(err_msg, "FOUND MULTIPLY LINKED %s PARTICLE %d",
+              idescrip, i+1);
+          NAMD_die(err_msg);
+        }
+
+        // mid1 is parent of particle i
+        mid1 = bonds[*bond1].atom1;
+        if (mid1 == i) mid1 = bonds[*bond1].atom2;
+
+        // make sure that mid1 is a heavy atom
+        if (is_drude(mid1) || is_lp(mid1) || is_hydrogen(mid1)) {
+          char err_msg[512];
+          const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
+          sprintf(err_msg, "PARENT ATOM %d of %s PARTICLE %d "
+              "IS NOT HEAVY ATOM", mid1+1, idescrip, i+1);
+          NAMD_die(err_msg);
+        }
+
+        if (exclude_flag == NONE) {
+          // add (i,mid1) as an exclusion
+          if (i < mid1) {
+            exclusionSet.add(Exclusion(i, mid1));
           }
-          if (-1 != *(bond1+1)) {  // and only one bond
-            char err_msg[512];
-            const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
-            sprintf(err_msg, "FOUND MULTIPLY LINKED %s PARTICLE %d",
-                idescrip, i+1);
-            NAMD_die(err_msg);
+          else {
+            exclusionSet.add(Exclusion(mid1, i));
           }
 
-          // mid1 is parent of particle i
-          mid1 = bonds[*bond1].atom1;
-          if (mid1 == i) mid1 = bonds[*bond1].atom2;
-
-          // make sure that mid1 is a heavy atom
-          if (is_drude(mid1) || is_lp(mid1) || is_hydrogen(mid1)) {
-            char err_msg[512];
-            const char *idescrip = (is_drude(i) ? "DRUDE" : "LONE PAIR");
-            sprintf(err_msg, "PARENT ATOM %d of %s PARTICLE %d "
-                "IS NOT HEAVY ATOM", mid1+1, idescrip, i+1);
-            NAMD_die(err_msg);
-          }
-
-          if (exclude_flag == NONE) {
-            // add (i,mid1) as an exclusion
-            if (i < mid1) {
-              exclusionSet.add(Exclusion(i, mid1));
+          // also exclude any Drude particles or LPs bonded to mid1
+          bond2 = bondsWithAtom[mid1];
+          while (*bond2 != -1) {
+            j = bonds[*bond2].atom1;
+            if ((is_drude(j) || is_lp(j)) && j != mid1) {
+              if      (i < j) exclusionSet.add(Exclusion(i, j));
+              else if (j < i) exclusionSet.add(Exclusion(j, i));
             }
-            else {
-              exclusionSet.add(Exclusion(mid1, i));
+            j = bonds[*bond2].atom2;
+            if ((is_drude(j) || is_lp(j)) && j != mid1) {
+              if      (i < j) exclusionSet.add(Exclusion(i, j));
+              else if (j < i) exclusionSet.add(Exclusion(j, i));
             }
-
-            // also exclude any Drude particles or LPs bonded to mid1
-            bond2 = bondsWithAtom[mid1];
-            while (*bond2 != -1) {
-              j = bonds[*bond2].atom1;
-              if (is_drude(j) || is_lp(j)) {
-                if      (i < j) exclusionSet.add(Exclusion(i, j));
-                else if (j < i) exclusionSet.add(Exclusion(j, i));
-              }
-              j = bonds[*bond2].atom2;
-              if (is_drude(j) || is_lp(j)) {
-                if      (i < j) exclusionSet.add(Exclusion(i, j));
-                else if (j < i) exclusionSet.add(Exclusion(j, i));
-              }
-              bond2++;
-            }
-            continue;
+            bond2++;
           }
+        }
+        else {  // if ONETWO or ONETHREE or ONEFOUR or SCALED14
 
-          // follow build14excl() code
+          // find the next link
           bond2 = bondsWithAtom[mid1];
 
           // loop through all the bonds connected to atom mid1
@@ -4967,20 +4969,21 @@ build_excl_check_signatures();
               bond3 = bondsWithAtom[mid2];
               while (*bond3 != -1) {
                 j = bonds[*bond3].atom1;
-                if (is_drude(j) || is_lp(j)) {
+                if ((is_drude(j) || is_lp(j)) && j != mid2) {
                   if      (i < j) exclusionSet.add(Exclusion(i, j));
                   else if (j < i) exclusionSet.add(Exclusion(j, i));
                 }
                 j = bonds[*bond3].atom2;
-                if (is_drude(j) || is_lp(j)) {
+                if ((is_drude(j) || is_lp(j)) && j != mid2) {
                   if      (i < j) exclusionSet.add(Exclusion(i, j));
                   else if (j < i) exclusionSet.add(Exclusion(j, i));
                 }
                 bond3++;
               }
             }
-            else if (exclude_flag == ONETHREE) {
+            else { // if ONETHREE or ONEFOUR or SCALED14
 
+              // find the next link
               bond3 = bondsWithAtom[mid2];
 
               // loop through all the bonds connected to mid2
@@ -5008,110 +5011,93 @@ build_excl_check_signatures();
                   exclusionSet.add(Exclusion(mid3, i));
                 }
 
-                // also exclude any Drude particles or LPs bonded to mid3
-                bond4 = bondsWithAtom[mid3];
-                while (*bond4 != -1) {
-                  j = bonds[*bond4].atom1;
-                  if (is_drude(j) || is_lp(j)) {
-                    if      (i < j) exclusionSet.add(Exclusion(i, j));
-                    else if (j < i) exclusionSet.add(Exclusion(j, i));
-                  }
-                  j = bonds[*bond4].atom2;
-                  if (is_drude(j) || is_lp(j)) {
-                    if      (i < j) exclusionSet.add(Exclusion(i, j));
-                    else if (j < i) exclusionSet.add(Exclusion(j, i));
-                  }
-                  bond4++;
-                }
-
-                ++bond3;
-              } // while bond3
-
-            } // else if ONETHREE
-            else { // else (if ONEFOUR or SCALED14)
-
-              bond3 = bondsWithAtom[mid2];
-
-              // loop through all the bonds connected to mid2
-              while (*bond3 != -1) {
-
-                if (bonds[*bond3].atom1 == mid2) {
-                  mid3 = bonds[*bond3].atom2;
-                }
-                else {
-                  mid3 = bonds[*bond3].atom1;
-                }
-
-                // Make sure we don't double back to where we started.
-                // Doing so causes strange behavior.
-                if (mid3 == mid1) {
-                  bond3++;
-                  continue;
-                }
-
-                // add (i,mid3) as an exclusion
-                if (i < mid3) {
-                  exclusionSet.add(Exclusion(i, mid3));
-                }
-                else if (mid3 < i) {
-                  exclusionSet.add(Exclusion(mid3, i));
-                }
-
-                bond4 = bondsWithAtom[mid3];
-
-                // loop through all the bonds connected to mid3
-                while (*bond4 != -1) {
-
-                  if (bonds[*bond4].atom1 == mid3) {
-                    mid4 = bonds[*bond4].atom2;
-                  }
-                  else {
-                    mid4 = bonds[*bond4].atom1;
-                  }
-
-                  // Make sure we don't double back to where we started.
-                  // Doing so causes strange behavior.
-                  if (mid4 == mid2) {
+                if (exclude_flag == ONETHREE) {
+                  // also exclude any Drude particles or LPs bonded to mid3
+                  bond4 = bondsWithAtom[mid3];
+                  while (*bond4 != -1) {
+                    j = bonds[*bond4].atom1;
+                    if ((is_drude(j) || is_lp(j)) && j != mid3) {
+                      if      (i < j) exclusionSet.add(Exclusion(i, j));
+                      else if (j < i) exclusionSet.add(Exclusion(j, i));
+                    }
+                    j = bonds[*bond4].atom2;
+                    if ((is_drude(j) || is_lp(j)) && j != mid3) {
+                      if      (i < j) exclusionSet.add(Exclusion(i, j));
+                      else if (j < i) exclusionSet.add(Exclusion(j, i));
+                    }
                     bond4++;
-                    continue;
                   }
+                }
+                else { // if ONEFOUR or SCALED14
 
-                  // add (i,mid4) as an exclusion
-                  if (i < mid4) {
-                    exclusionSet.add(Exclusion(i, mid4, modified));
-                  }
-                  else if (mid4 < i) {
-                    exclusionSet.add(Exclusion(mid4, i, modified));
-                  }
+                  // find next link
+                  bond4 = bondsWithAtom[mid3];
 
-                  // also exclude any Drude particles or LPs bonded to mid4
-                  bond5 = bondsWithAtom[mid4];
-                  while (*bond5 != -1) {
-                    j = bonds[*bond5].atom1;
-                    if (is_drude(j) || is_lp(j)) {
-                      if      (i < j) exclusionSet.add(Exclusion(i,j,modified));
-                      else if (j < i) exclusionSet.add(Exclusion(j,i,modified));
+                  // loop through all the bonds connected to mid3
+                  while (*bond4 != -1) {
+
+                    if (bonds[*bond4].atom1 == mid3) {
+                      mid4 = bonds[*bond4].atom2;
                     }
-                    j = bonds[*bond5].atom2;
-                    if (is_drude(j) || is_lp(j)) {
-                      if      (i < j) exclusionSet.add(Exclusion(i,j,modified));
-                      else if (j < i) exclusionSet.add(Exclusion(j,i,modified));
+                    else {
+                      mid4 = bonds[*bond4].atom1;
                     }
-                    bond5++;
-                  }
 
-                  ++bond4;
-                } // while bond4
+                    // Make sure we don't double back to where we started.
+                    // Doing so causes strange behavior.
+                    if (mid4 == mid2) {
+                      bond4++;
+                      continue;
+                    }
+
+                    // add (i,mid4) as an exclusion
+                    if (i < mid4) {
+                      if (is_drude(mid4) || is_lp(mid4)) {  // 1-3 excl
+                        exclusionSet.add(Exclusion(i, mid4));
+                      }
+                      else {
+                        exclusionSet.add(Exclusion(i, mid4, modified));
+                      }
+                    }
+                    else if (mid4 < i) {
+                      if (is_drude(mid4) || is_lp(mid4)) {  // 1-3 excl
+                        exclusionSet.add(Exclusion(mid4, i));
+                      }
+                      else {
+                        exclusionSet.add(Exclusion(mid4, i, modified));
+                      }
+                    }
+
+                    // also exclude any Drude particles or LPs bonded to mid4
+                    bond5 = bondsWithAtom[mid4];
+                    while (*bond5 != -1) {
+                      j = bonds[*bond5].atom1;
+                      if ((is_drude(j) || is_lp(j)) && j != mid4) {
+                        if      (i<j) exclusionSet.add(Exclusion(i,j,modified));
+                        else if (j<i) exclusionSet.add(Exclusion(j,i,modified));
+                      }
+                      j = bonds[*bond5].atom2;
+                      if ((is_drude(j) || is_lp(j)) && j != mid4) {
+                        if      (i<j) exclusionSet.add(Exclusion(i,j,modified));
+                        else if (j<i) exclusionSet.add(Exclusion(j,i,modified));
+                      }
+                      bond5++;
+                    }
+
+                    ++bond4;
+                  } // while bond4
+
+                } // else (if ONEFOUR or SCALED14)
 
                 ++bond3;
               } // while bond3
 
-            } // else (if ONEFOUR or SCALED14)
+            } // else (if ONETHREE or ONEFOUR or SCALED14)
            
             ++bond2;
           } // while bond2
 
-        } // if i is Drude or LP
+        } // else (if ONETWO or ONETHREE or ONEFOUR or SCALED14)
 
       } // for i
 
