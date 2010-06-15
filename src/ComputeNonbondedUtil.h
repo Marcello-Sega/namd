@@ -219,6 +219,12 @@ public:
   static BigReal switchOn;
   static BigReal switchOn_1;
   static BigReal switchOn2;
+  static BigReal v_vdwa;
+  static BigReal v_vdwb;
+  static BigReal k_vdwa;
+  static BigReal k_vdwb;
+  static BigReal cutoff_3;
+  static BigReal cutoff_6;
   static BigReal c0;
   static BigReal c1;
   static BigReal c3;

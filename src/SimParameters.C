@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2010/06/09 21:46:46 $
- * $Revision: 1.1304 $
+ * $Author: jim $
+ * $Date: 2010/06/15 19:39:28 $
+ * $Revision: 1.1305 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -313,6 +313,9 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.optionalB("main", "switching",
      "Should a smoothing function be used?", &switchingActive, TRUE);
+   
+   opts.optionalB("switching", "vdwForceSwitching",
+     "Use force switching for vdw?", &vdwForceSwitching, FALSE);
    
    opts.optional("switching", "switchdist",
      "Distance for switching function activation",
@@ -3106,6 +3109,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if (switchingActive)
    {
       iout << iINFO << "SWITCHING ACTIVE\n";
+      if ( vdwForceSwitching ) {
+        iout << iINFO << "VDW FORCE SWITCHING ACTIVE\n";
+      }
       iout << iINFO << "SWITCHING ON           "
                << switchingDist << "\n";
       iout << iINFO << "SWITCHING OFF          "

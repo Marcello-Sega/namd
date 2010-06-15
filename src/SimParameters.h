@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2010/06/09 21:46:47 $
- * $Revision: 1.1166 $
+ * $Author: jim $
+ * $Date: 2010/06/15 19:39:28 $
+ * $Revision: 1.1167 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -174,6 +174,8 @@ public:
 					//  forces between atoms are limited
 	Bool switchingActive;		//  Flag TRUE->using switching function
 					//  for electrostatics and vdw
+	Bool vdwForceSwitching;		//  Flag TRUE->using force switching
+					//  function for vdw
 	BigReal switchingDist;		//  Distance at which switching
 					//  becomes active
 	BigReal pairlistDist;		//  Distance within which atom pairs 

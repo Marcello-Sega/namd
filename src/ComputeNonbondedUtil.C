@@ -57,6 +57,12 @@ BigReal         ComputeNonbondedUtil::scale14;
 BigReal         ComputeNonbondedUtil::switchOn;
 BigReal         ComputeNonbondedUtil::switchOn_1;
 BigReal         ComputeNonbondedUtil::switchOn2;
+BigReal         ComputeNonbondedUtil::v_vdwa;
+BigReal         ComputeNonbondedUtil::v_vdwb;
+BigReal         ComputeNonbondedUtil::k_vdwa;
+BigReal         ComputeNonbondedUtil::k_vdwb;
+BigReal         ComputeNonbondedUtil::cutoff_3;
+BigReal         ComputeNonbondedUtil::cutoff_6;
 BigReal         ComputeNonbondedUtil::c0;
 BigReal         ComputeNonbondedUtil::c1;
 BigReal         ComputeNonbondedUtil::c3;
@@ -390,6 +396,19 @@ void ComputeNonbondedUtil::select(void)
     // d0 = 1.0/(cutoff-switchOn);
     switchOn2 = switchOn*switchOn;
     c0 = 1.0/(cutoff2-switchOn2);
+
+    if ( simParams->vdwForceSwitching ) {
+      double switchOn3 = switchOn * switchOn2;
+      double cutoff3 = cutoff * cutoff2;
+      double switchOn6 = switchOn3 * switchOn3;
+      double cutoff6 = cutoff3 * cutoff3;
+      v_vdwa = -1. / ( switchOn6 * cutoff6 );
+      v_vdwb = -1. / ( switchOn3 * cutoff3 );
+      k_vdwa = cutoff6 / ( cutoff6 - switchOn6 );
+      k_vdwb = cutoff3 / ( cutoff3 - switchOn3 );
+      cutoff_3 = 1. / cutoff3;
+      cutoff_6 = 1. / cutoff6;
+    }
   }
   else
   {
@@ -593,6 +612,22 @@ void ComputeNonbondedUtil::select(void)
     const BigReal r_12 = r_6*r_6;
 
     // Lennard-Jones switching function
+  if ( simParams->vdwForceSwitching ) {  // switch force
+    // from Steinbach & Brooks, JCC 15, pgs 667-683, 1994, eqns 10-13
+    if ( r2 > switchOn2 ) {
+      BigReal tmpa = r_6 - cutoff_6;
+      vdwa_energy = k_vdwa * tmpa * tmpa;
+      BigReal tmpb = r_1 * r_2 - cutoff_3;
+      vdwb_energy = k_vdwb * tmpb * tmpb;
+      vdwa_gradient = -6.0 * k_vdwa * tmpa * r_2 * r_6;
+      vdwb_gradient = -3.0 * k_vdwb * tmpb * r_2 * r_2 * r_1;
+    } else {
+      vdwa_energy = r_12 + v_vdwa;
+      vdwb_energy = r_6 + v_vdwb;
+      vdwa_gradient = -6.0 * r_2 * r_12;
+      vdwb_gradient = -3.0 * r_2 * r_6;
+    }
+  } else {  // switch energy
     const BigReal c2 = cutoff2-r2;
     const BigReal c4 = c2*(c3-2.0*c2);
     const BigReal switchVal =         // used for Lennard-Jones
@@ -605,6 +640,7 @@ void ComputeNonbondedUtil::select(void)
 
     vdwa_gradient = ( dSwitchVal - 6.0 * switchVal * r_2 ) * r_12;
     vdwb_gradient = ( dSwitchVal - 3.0 * switchVal * r_2 ) * r_6;
+  }
 
 
     *(fast_i++) = fast_energy;

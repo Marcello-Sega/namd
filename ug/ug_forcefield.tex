@@ -294,6 +294,12 @@ For a complete description of the non-bonded force parameters see
 Section \ref{section:electdesc}.  If {\tt switching} is set to
 {\tt on}, then {\tt switchdist} must also be defined.}
 
+\item
+\NAMDCONFWDEF{vdwForceSwitching}{use force switching for VDW?}{{\tt on} or {\tt off}}
+{{\tt off}}
+{If both {\tt switching} and {\tt vdwForceSwitching} are set to {\tt on},
+then CHARMM force switching is used for van der Waals forces.}
+
 %\item
 %\NAMDCONF{elecswitchdist}{distance at which to activate switching function for %electrostatic calculations (\AA)}{positive decimal $\leq$ {\tt eleccutoff}}
 %{Distance at which the switching function
