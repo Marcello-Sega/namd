@@ -328,7 +328,7 @@ __global__ static void dev_nonbonded(
       float tmpz = jpqs[j].position.z - IPQ.position.z; \
       float r2 = tmpx*tmpx + tmpy*tmpy + tmpz*tmpz; \
       if ( r2 < cutoff2 ) { \
-        float4 fi = tex1D(force_table, 1.f/sqrt(r2)); \
+        float4 fi = tex1D(force_table, rsqrtf(r2)); \
         bool excluded = false; \
         int indexdiff = (int)(IAP.index) - (int)(japs[j].index); \
         if ( abs(indexdiff) <= (int) japs[j].excl_maxdiff ) { \
