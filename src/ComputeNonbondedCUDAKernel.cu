@@ -205,8 +205,8 @@ __host__ __device__ static int3 patch_offset_from_neighbor(int neighbor) {
 }
 #endif
  
-#define BLOCK_SIZE 64
-#define SHARED_SIZE 16
+#define BLOCK_SIZE 128
+#define SHARED_SIZE 32
 
 __global__ static void dev_nonbonded(
 	const patch_pair *patch_pairs,
@@ -435,10 +435,10 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
 
  if ( pcount ) {
   // printf("%d %d %d\n",pbegin,pcount,force_lists_size);
-  dev_sum_forces<<< pcount, 64, 0, stream
+  dev_sum_forces<<< pcount, 128, 0, stream
 	>>>(force_lists+pbegin,force_buffers,forces);
   if ( doSlow ) {
-    dev_sum_forces<<< pcount, 64, 0, stream
+    dev_sum_forces<<< pcount, 128, 0, stream
 	>>>(force_lists+pbegin,slow_force_buffers,slow_forces);
   }
   cuda_errcheck("dev_sum_forces");
