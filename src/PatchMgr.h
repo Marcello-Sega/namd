@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
- * $Author: gzheng $
- * $Date: 2008/07/14 19:38:02 $
- * $Revision: 1.1025 $
+ * $Author: jim $
+ * $Date: 2010/06/22 22:38:51 $
+ * $Revision: 1.1026 $
  *****************************************************************************/
 
 #ifndef PATCHMGR_H
@@ -109,7 +109,7 @@ public:
   void sendMovePatches();
   void recvMovePatches(MovePatchesMsg *msg);
 
-  void sendAtoms(PatchID pid, FullAtomList a);
+  void sendAtoms(PatchID pid, FullAtomList &a);
   void recvAtoms(MovePatchesMsg *msg);
 
   // void ackMovePatches(AckMovePatchesMsg *msg);
@@ -118,9 +118,9 @@ public:
      return homePatches.find(HomePatchElem(pid))->patch;
   } 
 
-  void sendMigrationMsg(PatchID, MigrationInfo);
+  // void sendMigrationMsg(PatchID, MigrationInfo);
   void sendMigrationMsgs(PatchID, MigrationInfo*, int);
-  void recvMigrateAtoms(MigrateAtomsMsg *);
+  // void recvMigrateAtoms(MigrateAtomsMsg *);
   void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
 
   void moveAtom(MoveAtomMsg *msg);

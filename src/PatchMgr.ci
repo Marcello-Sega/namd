@@ -19,7 +19,7 @@ module PatchMgr {
     entry PatchMgr(void);
     entry void recvMovePatches(MovePatchesMsg *);
     entry void recvAtoms(MovePatchesMsg *);
-    entry void recvMigrateAtoms(MigrateAtomsMsg *);
+    // entry void recvMigrateAtoms(MigrateAtomsMsg *);
     entry void recvMigrateAtomsCombined(MigrateAtomsCombinedMsg *);
     entry void moveAtom(MoveAtomMsg *);
     entry void moveAllBy(MoveAllByMsg *);

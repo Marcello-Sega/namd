@@ -89,15 +89,15 @@ void PatchMgr::sendOneHomePatch(int patchId, int nodeId){
 
     MovePatchesMsg *msg = new MovePatchesMsg(patchId, p->atom);
 
-    // Sending to PatchMgr::recvMovePatches on remote node
-    CProxy_PatchMgr cp(thisgroup);
-    cp[nodeId].recvMovePatches(msg);
-
     // Deleting the HomePatchElem will call a destructor for clean up
     // but the msg elements are safe since they use a container template
     // that uses ref counting.
     delete p;
     homePatches.del(HomePatchElem(patchId)); 
+
+    // Sending to PatchMgr::recvMovePatches on remote node
+    CProxy_PatchMgr cp(thisgroup);
+    cp[nodeId].recvMovePatches(msg);
 }
 
 // Uses list constructed by movePatch() and dispatches
@@ -114,15 +114,15 @@ void PatchMgr::sendMovePatches()
 
       MovePatchesMsg *msg = new MovePatchesMsg(m->pid, p->atom);
 
-      // Sending to PatchMgr::recvMovePatches on remote node
-      CProxy_PatchMgr cp(thisgroup);
-      cp[m->nodeID].recvMovePatches(msg);
-
       // Deleting the HomePatchElem will call a destructor for clean up
       // but the msg elements are safe since they use a container template
       // that uses ref counting.
       delete p;
       homePatches.del(HomePatchElem(m->pid)); 
+
+      // Sending to PatchMgr::recvMovePatches on remote node
+      CProxy_PatchMgr cp(thisgroup);
+      cp[m->nodeID].recvMovePatches(msg);
     }
     move.resize(0);
 }
@@ -147,9 +147,12 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
 //}
 
 
-void PatchMgr::sendAtoms(PatchID pid, FullAtomList a) {
+void PatchMgr::sendAtoms(PatchID pid, FullAtomList &a) {
 
       MovePatchesMsg *msg = new MovePatchesMsg(pid, a);
+
+      FullAtomList empty;
+      a = empty;  // eliminate reference in sender
 
       CProxy_PatchMgr cp(thisgroup);
       cp[patchMap->node(pid)].recvAtoms(msg);
@@ -164,11 +167,13 @@ void PatchMgr::recvAtoms(MovePatchesMsg *msg) {
 
 // Called by HomePatch to migrate atoms off to new patches
 // Message combining could occur here
+#if 0
 void PatchMgr::sendMigrationMsg(PatchID src, MigrationInfo m) {
   MigrateAtomsMsg *msg = new MigrateAtomsMsg(src,m.destPatchID,m.mList);
   CProxy_PatchMgr cp(thisgroup);
   cp[m.destNodeID].recvMigrateAtoms(msg);
 }
+#endif
 
 // Called by HomePatch to migrate atoms off to new patches
 // Message combining occurs here
@@ -217,10 +222,12 @@ void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
 }
 
 // Receive end of sendMigrationMsg() above
+#if 0
 void PatchMgr::recvMigrateAtoms (MigrateAtomsMsg *msg) {
   //  msg must be deleted by HomePatch::depositMigrationMsg();
   PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg);
 }
+#endif
 
 void PatchMgr::recvMigrateAtomsCombined (MigrateAtomsCombinedMsg *msg)
 {
