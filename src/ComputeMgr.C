@@ -692,7 +692,7 @@ ComputeMgr::createComputes(ComputeMap *map)
 
 }
 
-
+#if 0
 void ComputeMgr:: sendComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
 {
     (CProxy_ComputeMgr(CkpvAccess(BOCclass_group).computeMgr)).recvComputeGlobalConfig(msg);
@@ -707,6 +707,7 @@ void ComputeMgr:: recvComputeGlobalConfig(ComputeGlobalConfigMsg *msg)
     else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
     else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
 }
+#endif
 
 void ComputeMgr:: sendComputeGlobalData(ComputeGlobalDataMsg *msg)
 {

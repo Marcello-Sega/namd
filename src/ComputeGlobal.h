@@ -25,7 +25,7 @@ public:
   ComputeGlobal(ComputeID, ComputeMgr*);
   virtual ~ComputeGlobal();
   void doWork();
-  void recvConfig(ComputeGlobalConfigMsg *);
+  // void recvConfig(ComputeGlobalConfigMsg *);
   void recvResults(ComputeGlobalResultsMsg *);
   // For "loadtotalforces" TCL command
   void saveTotalForces(HomePatch *);

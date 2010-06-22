@@ -16,6 +16,7 @@
 
 // CONFIG MESSAGE
 
+#if 0
 ComputeGlobalConfigMsg::ComputeGlobalConfigMsg(void) { 
 }
 
@@ -26,6 +27,7 @@ PACK_MSG(ComputeGlobalConfigMsg,
   PACK_RESIZE(aid);
   PACK_RESIZE(gdef);
 )
+#endif
 
 
 // DATA MESSAGE

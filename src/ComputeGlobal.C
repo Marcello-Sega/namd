@@ -86,12 +86,14 @@ void ComputeGlobal::configure(AtomIDList newaid, AtomIDList newgdef) {
   }
 }
 
+#if 0
 void ComputeGlobal::recvConfig(ComputeGlobalConfigMsg *msg) {
   DebugM(3,"Receiving configure on client\n");
   configure(msg->aid,msg->gdef);
   delete msg;
   sendData();
 }
+#endif
 
 void ComputeGlobal::recvResults(ComputeGlobalResultsMsg *msg) {
   DebugM(3,"Receiving results (" << msg->aid.size() << " forces, "

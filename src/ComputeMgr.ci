@@ -5,7 +5,7 @@
 **/
 
 module ComputeMgr {
-  message [packed] ComputeGlobalConfigMsg;
+  // message [packed] ComputeGlobalConfigMsg;
   message [packed] ComputeGlobalDataMsg;
   message [packed] ComputeGlobalResultsMsg;
 
@@ -30,7 +30,7 @@ module ComputeMgr {
     entry void updateLocalComputes5(void);
     entry void doneUpdateLocalComputes(void);
 
-    entry void recvComputeGlobalConfig(ComputeGlobalConfigMsg *);
+    // entry void recvComputeGlobalConfig(ComputeGlobalConfigMsg *);
     entry void recvComputeGlobalData(ComputeGlobalDataMsg *);
     entry void recvComputeGlobalResults(ComputeGlobalResultsMsg *);
 

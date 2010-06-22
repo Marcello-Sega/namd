@@ -12,6 +12,7 @@
 #include "NamdTypes.h"
 #include "ComputeMgr.decl.h"
 
+#if 0
 class ComputeGlobalConfigMsg : public CMessage_ComputeGlobalConfigMsg {
 public:
   // data members
@@ -26,6 +27,7 @@ public:
   static void* pack(ComputeGlobalConfigMsg *msg);
   static ComputeGlobalConfigMsg* unpack(void *ptr);
 };
+#endif
 
 
 class ComputeGlobalDataMsg : public CMessage_ComputeGlobalDataMsg {
