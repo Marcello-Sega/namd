@@ -514,6 +514,7 @@ include Make.config
 # Implicit rules for modules.
 
 $(INCDIR)/%.def.h: $(INCDIR)/%.decl.h
+	$(ECHO) remove $(INCDIR)/$*.decl.h and re-build
 
 $(INCDIR)/%.decl.h: $(SRCDIR)/%.ci
 	$(COPY) $(SRCDIR)/$*.ci $(INCDIR)
@@ -526,6 +527,7 @@ $(INCDIR)/%.decl.h: $(SRCDIR)/%.ci
 # Explicit rules for modules that don't match their file names.
 
 $(INCDIR)/PmeFFTLib.def.h: $(INCDIR)/PmeFFTLib.decl.h
+	$(ECHO) remove $(INCDIR)/$*.decl.h and re-build
 
 $(INCDIR)/PmeFFTLib.decl.h: $(SRCDIR)/fftlib.ci
 	$(COPY) $(SRCDIR)/fftlib.ci $(INCDIR)
@@ -535,6 +537,7 @@ $(INCDIR)/PmeFFTLib.decl.h: $(SRCDIR)/fftlib.ci
 	$(MOVE) PmeFFTLib.decl.h $(INCDIR)
 
 $(INCDIR)/OptPmeMgr.def.h: $(INCDIR)/OptPmeMgr.decl.h
+	$(ECHO) remove $(INCDIR)/$*.decl.h and re-build
 
 $(INCDIR)/OptPmeMgr.decl.h: $(SRCDIR)/OptPme.ci
 	$(COPY) $(SRCDIR)/OptPme.ci $(INCDIR)
