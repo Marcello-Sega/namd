@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dhardy $
- * $Date: 2010/06/09 21:46:46 $
- * $Revision: 1.1185 $
+ * $Author: jim $
+ * $Date: 2010/06/29 20:14:11 $
+ * $Revision: 1.1186 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -638,8 +638,7 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
 
     for ( int i = 0; i < numAtoms; ++i )
     {
-      int aid = a[i].id;
-      BigReal f1 = exp( -1. * dt * molecule->langevin_param(aid) );
+      BigReal f1 = exp( -1. * dt * a[i].langevinParam );
       BigReal f2 = sqrt( ( 1. - f1*f1 ) * kbT * 
                          ( a[i].partition ? tempFactor : 1.0 ) / a[i].mass );
 
@@ -674,13 +673,13 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
           BigReal dt_gamma;
 
           // use Langevin damping factor i for v_com
-          dt_gamma = dt * molecule->langevin_param(a[i].id);
+          dt_gamma = dt * a[i].langevinParam;
           if (dt_gamma != 0.0) {
             v_com *= ( 1. - 0.5 * dt_gamma );
           }
 
           // use Langevin damping factor i+1 for v_bnd
-          dt_gamma = dt * molecule->langevin_param(a[i+1].id);
+          dt_gamma = dt * a[i+1].langevinParam;
           if (dt_gamma != 0.0) {
             v_bnd *= ( 1. - 0.5 * dt_gamma );
           }
@@ -692,8 +691,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
           i++;  // +1 from loop, we've updated both particles
         }
         else {
-          int aid = a[i].id;
-          BigReal dt_gamma = dt * molecule->langevin_param(aid);
+          BigReal dt_gamma = dt * a[i].langevinParam;
           if ( ! dt_gamma ) continue;
 
           a[i].velocity *= ( 1. - 0.5 * dt_gamma );
@@ -705,8 +703,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
 
       for ( i = 0; i < numAtoms; ++i )
       {
-        int aid = a[i].id;
-        BigReal dt_gamma = dt * molecule->langevin_param(aid);
+        BigReal dt_gamma = dt * a[i].langevinParam;
         if ( ! dt_gamma ) continue;
 
         a[i].velocity *= ( 1. - 0.5 * dt_gamma );
@@ -751,7 +748,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
           BigReal dt_gamma;
 
           // use Langevin damping factor i for v_com
-          dt_gamma = dt * molecule->langevin_param(a[i].id);
+          dt_gamma = dt * a[i].langevinParam;
           if (dt_gamma != 0.0) {
             BigReal mass = a[i].mass + a[i+1].mass;
             v_com += random->gaussian_vector() *
@@ -761,7 +758,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
           }
 
           // use Langevin damping factor i+1 for v_bnd
-          dt_gamma = dt * molecule->langevin_param(a[i+1].id);
+          dt_gamma = dt * a[i+1].langevinParam;
           if (dt_gamma != 0.0) {
             BigReal mass = a[i+1].mass * (1. - m);
             v_bnd += random->gaussian_vector() *
@@ -777,8 +774,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
           i++;  // +1 from loop, we've updated both particles
         }
         else { 
-          int aid = a[i].id;
-          BigReal dt_gamma = dt * molecule->langevin_param(aid);
+          BigReal dt_gamma = dt * a[i].langevinParam;
           if ( ! dt_gamma ) continue;
 
           a[i].velocity += random->gaussian_vector() *
@@ -793,8 +789,7 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 
       for ( i = 0; i < numAtoms; ++i )
       {
-        int aid = a[i].id;
-        BigReal dt_gamma = dt * molecule->langevin_param(aid);
+        BigReal dt_gamma = dt * a[i].langevinParam;
         if ( ! dt_gamma ) continue;
 
         a[i].velocity += random->gaussian_vector() *
@@ -1045,8 +1040,7 @@ void Sequencer::tcoupleVelocities(BigReal dt_fs, int step)
     coefficient *= dt;
     for ( int i = 0; i < numAtoms; ++i )
     {
-      int aid = a[i].id;
-      BigReal f1 = exp( coefficient * molecule->langevin_param(aid) );
+      BigReal f1 = exp( coefficient * a[i].langevinParam );
       a[i].velocity *= f1;
     }
   }

@@ -874,7 +874,7 @@ public:
 
   Real langevin_param(int atomnum) const
   {
-    return(langevinParams[atomnum]);
+    return(langevinParams ? langevinParams[atomnum] : 0.);
   }
 
   //  Get the stirring constraints for a specific atom

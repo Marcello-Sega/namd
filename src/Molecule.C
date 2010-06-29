@@ -3786,7 +3786,6 @@ fseek(perAtomFile,startbyte,SEEK_SET);
                 hg[i].atomID = i+Node::Object()->ioMgr->getRecordOffset();
                 hg[i].atomsInGroup=iIdx[4];
                 hg[i].GPID = iIdx[5];
-                hg[i].sortVal = iIdx[6];
 		hg[i].waterVal=iIdx[6];
 		hg[i].atomsInMigrationGroup= iIdx[7];
 		hg[i].MPID=iIdx[8];

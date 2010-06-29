@@ -241,25 +241,19 @@ StringList *moleculeFilename = configList->find("structure");
       double fileReadTime = CmiWallTimer();
     #ifdef MEM_OPT_VERSION
       if (coordinateFilename != NULL)
-        NAMD_die("PDB file not used in memory optimized version.");
+        NAMD_die("Do not specify PDB coordinate file with memopt version.");
     #else
       if (coordinateFilename != NULL)
         pdb = new PDB(coordinateFilename->data);
       if (pdb->num_atoms() != molecule->numAtoms) {
         NAMD_die("Number of pdb and psf atoms are not the same!");
       }
-    #endif
       iout << iINFO << "TIME FOR READING PDB FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+    #endif
       iout << iINFO << "\n" << endi;
   }
 
-#ifdef MEM_OPT_VERSION
-  if(simParameters->langevinOn)
-    NAMD_bug("Parallel IO can not be used with langevin On.\n");
-
-  if(simParameters->fixedAtomsOn)
-    NAMD_bug("Parallel IO can not be used with Fixed Atoms On\n");
-#else
+#ifndef MEM_OPT_VERSION
   StringList *binCoordinateFilename = configList->find("bincoordinates");
   if ( binCoordinateFilename ) {
     read_binary_coors(binCoordinateFilename->data, pdb);
@@ -377,18 +371,26 @@ StringList *moleculeFilename = configList->find("structure");
 	if (simParameters->langevinOn)
 	{
 	  if (simParameters->langevinDamping == 0.0) {
+#ifdef MEM_OPT_VERSION
+            NAMD_die("langevinfile not supported in memopt version");
+#endif
 	    molecule->build_langevin_params(configList->find("langevinfile"),
 					    configList->find("langevincol"),
 					    pdb,
 					    NULL);
+#ifndef MEM_OPT_VERSION
 	  } else {
 	    molecule->build_langevin_params(simParameters->langevinDamping,
                                             simParameters->drudeDamping,
 					    simParameters->langevinHydrogen);
+#endif
 	  }
 	}
 	else if (simParameters->tCoupleOn)
 	{
+#ifdef MEM_OPT_VERSION
+            NAMD_die("tcouplefile not supported in memopt version");
+#endif
 	   //  Temperature coupling uses the same parameters, but with different
 	   //  names . . .
 	   molecule->build_langevin_params(configList->find("tcouplefile"),
@@ -585,6 +587,7 @@ StringList *moleculeFilename = configList->find("structure");
 	   iout << iINFO << molecule->numFixedGroups <<
 			" HYDROGEN GROUPS WITH ALL ATOMS FIXED\n";
 	}
+
 #ifndef MEM_OPT_VERSION
         {
           BigReal totalMass = 0;
@@ -615,9 +618,9 @@ StringList *moleculeFilename = configList->find("structure");
   molecule->print_atoms(parameters);
   molecule->print_bonds(parameters);
   molecule->print_exclusions();
+  fflush(stdout);
 #endif
 
-  fflush(stdout);
   DebugM(4, "::configFileInit() - done printing Molecule Information\n");
   DebugM(1, "::configFileInit() - done\n");
 

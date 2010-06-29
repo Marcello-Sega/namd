@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2010/06/15 19:39:28 $
- * $Revision: 1.1305 $
+ * $Date: 2010/06/29 20:14:11 $
+ * $Revision: 1.1306 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -513,7 +513,6 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.optional("main", "numinputprocs", "Number of pes to use for parallel input"
     "timesteps", &numinputprocs, 1);
   opts.range("numinputprocs", NOT_NEGATIVE);
-//  if(numinputprocs==0) {printf("NUM INP=%d\n\n",numinputprocs);NAMD_bug("Specify numinputprocs\n");}
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -1630,9 +1629,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    // If it's not AMBER||GROMACS, then "coordinates", "structure"
    // and "parameters" must be specified.
-   if (!amberOn && !gromacsOn)
-   { if (!usePluginIO && !opts.defined("coordinates"))
+   if (!amberOn && !gromacsOn) {
+#ifndef MEM_OPT_VERSION
+     if (!usePluginIO && !opts.defined("coordinates"))
        NAMD_die("coordinates not found in the configuration file!");
+#endif
      if (!opts.defined("structure"))
        NAMD_die("structure not found in the configuration file!");
      if (!opts.defined("parameters"))
@@ -1643,9 +1644,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    // "ambercoor", but not both
    if (opts.defined("coordinates") && opts.defined("ambercoor"))
      NAMD_die("Cannot specify both coordinates and ambercoor!");
+#ifndef MEM_OPT_VERSION
    if (!opts.defined("coordinates") && !opts.defined("ambercoor")
        && !opts.defined("grocoorfile") && !usePluginIO)
      NAMD_die("Coordinate file not found!");
+#endif
 
    //  Make sure that both a temperature and a velocity PDB were
    //  specified
@@ -4200,7 +4203,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    }
    else {
      if ( !usePluginIO ) {
-       current = config->find("coordinates");
+       if ( current = config->find("coordinates") )
        iout << iINFO << "COORDINATE PDB         " << current->data << '\n' << endi;
      }
 

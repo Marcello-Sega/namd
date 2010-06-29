@@ -347,7 +347,6 @@ void ParallelIOMgr::sendCoordinatesToProcs()
             {
               found=true;
 	      newAt.GPID=hg[aid-recordOffset].GPID;
-	      newAt.sortVal=hg[aid-recordOffset].sortVal;
 	      newAt.atomsInGroup=hg[aid-recordOffset].atomsInGroup;
 	      newAt.isMP=hg[aid-recordOffset].isMP;
 	      newAt.migrationGroupSize=hg[aid-recordOffset].atomsInMigrationGroup;
@@ -364,7 +363,6 @@ void ParallelIOMgr::sendCoordinatesToProcs()
               {
 		found=true;
 		newAt.GPID=hgPar[i].GPID;
-		newAt.sortVal=hgPar[i].sortVal;
 		newAt.atomsInGroup=hgPar[i].atomsInGroup;
 		newAt.isMP=hgPar[i].isMP;
 		newAt.migrationGroupSize=hgPar[i].atomsInMigrationGroup;
@@ -463,7 +461,6 @@ void ParallelIOMgr::getPatchCoordinates(AtomListForPatchCreateMsg *msg)
       hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomID=aid;
       hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomsInGroup=recvAtom[allAtomCount].atomsInGroup;
       hydrogenGroupPerProc[currentAtomsAfterPatchExchange].GPID=recvAtom[allAtomCount].GPID;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].sortVal=recvAtom[allAtomCount].sortVal;
       hydrogenGroupPerProc[currentAtomsAfterPatchExchange].isGP=1;
       hydrogenGroupPerProc[currentAtomsAfterPatchExchange].isMP=recvAtom[allAtomCount].isMP;
       hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomsInMigrationGroup=recvAtom[allAtomCount].migrationGroupSize;
@@ -530,9 +527,6 @@ void ParallelIOMgr::checkConfigParas()
   if(Node::Object()->simParameters->numinputprocs>CkNumPes())
     NAMD_bug("Num of Input Processors exceed the total number of processors! They can not be more than p-1.\n");
   
-  if(Node::Object()->simParameters->langevinOn)
-    NAMD_bug("Langevin On can not work with ParallelIO\n");
-
   if(Node::Object()->simParameters->pairInteractionOn)
     NAMD_bug("pairInteractionOn can not work with ParallelIO\n");
 
@@ -545,9 +539,6 @@ void ParallelIOMgr::checkConfigParas()
   if(Node::Object()->simParameters->lesOn)
     NAMD_bug("lesOn can not work with ParallelIO\n");
 
-  if((Node::Object()->state->getConfigList()->find("numinputprocs"))==NULL)
-    NAMD_bug("Please specify numinputprocs in config file for Parallel IO to use\n");
-
   if((Node::Object()->state->getConfigList()->find("bincoordinates"))==NULL)
     NAMD_bug("Please specify the bincoordinates file for ParallelIO\n");
   
@@ -558,8 +549,7 @@ void ParallelIOMgr::initParallelInput(){
   checkConfigParas();
   CProxy_Node cml(thisgroup);
   setPointers(Node::Object()->molecule,cml,Node::Object()->state,Node::Object()->getPatchMgr(),Node::Object()->simParameters);
-  int inputProcs=-1;
-  inputProcs=atoi((state->getConfigList()->find("numinputprocs"))->data);
+  int inputProcs = Node::Object()->simParameters->numinputprocs;
 
 for(int i=0;i<CkNumPes();i++)
 {
@@ -578,8 +568,7 @@ for(int i=0;i<CkNumPes();i++)
 void ParallelIOMgr::readCoordinatesAndVel(ConfigListMessage *pmsg)
 {
 #ifdef MEM_OPT_VERSION
-  int inP=-1;
-  inP=atoi((pmsg->cfgList->find("numinputprocs"))->data);
+  int inP = Node::Object()->simParameters->numinputprocs;
 
   if(CkMyPe())
   {
@@ -870,7 +859,6 @@ void ParallelIOMgr::updateHydrogenGP()
 	hgPar[count].atomsInGroup=hg[i].atomsInGroup;  // currently only 1 in group                
         hgPar[count].isGP=hg[i].isGP;  // assume it is a group parent
         hgPar[count].GPID=hg[i].GPID;  // assume it is a group parent
-        hgPar[count].sortVal=hg[i].sortVal;  // for group sorting
 	hgPar[count].isMP=hg[i].isMP;
 	hgPar[count].atomsInMigrationGroup=hg[i].atomsInMigrationGroup;
 	hgPar[count].MPID=hg[i].MPID;
@@ -885,7 +873,6 @@ void ParallelIOMgr::updateHydrogenGP()
     hgPar[count].atomID=recvAtom[i].id;  // currently unsorted
     hgPar[count].atomsInGroup=recvAtom[i].atomsInGroup;  // currently only 1 in group
     hgPar[count].GPID=recvAtom[i].GPID;  // assume it is a group parent
-    hgPar[count].sortVal=recvAtom[i].sortVal;  // for group sorting
     hgPar[count].isGP = 1;
     hgPar[count].isMP=recvAtom[i].isMP;
     hgPar[count].atomsInMigrationGroup=recvAtom[i].migrationGroupSize;
@@ -1012,12 +999,12 @@ void ParallelIOMgr::sendAtomsToMigrationGpParents()
 	  atomsThisProc[count].MPID=hg[migList[i].id-recordOffset].MPID;
 	  atomsThisProc[count].waterVal=hg[migList[i].id-recordOffset].waterVal;
 	  atomsThisProc[count].atomsInGroup=hg[migList[i].id-recordOffset].atomsInGroup;
-          atomsThisProc[count].sortVal=hg[migList[i].id-recordOffset].sortVal;
           AtomCstInfo *ats=molecule->getAtoms();
           atomsThisProc[count].mass=molecule->getEachAtomMass(migList[i].id-recordOffset);
           atomsThisProc[count].charge=molecule->getEachAtomCharge(migList[i].id-recordOffset);
           atomsThisProc[count].sigId=molecule->getAtomSigId(migList[i].id-recordOffset);
           atomsThisProc[count].exclId=molecule->getAtomExclSigId(migList[i].id-recordOffset);
+          atomsThisProc[count].status=ats[migList[i].id-recordOffset].status;
           atomsThisProc[count].vdwType=ats[migList[i].id-recordOffset].vdw_type;
           atomsThisProc[count].position.x=recs[atomIDIdx].x;
           atomsThisProc[count].position.y=recs[atomIDIdx].y;

@@ -250,8 +250,6 @@ void Node::startup() {
       newTime = CmiWallTimer();
       iout << iINFO << "Startup phase " << startupPhase-1 << " took "
            << newTime - startupTime << " s, ";
-
-                fflush(stdout);
       startupTime = newTime;
     }
     iout << memusage_MB() << " MB of memory in use\n" << endi;
@@ -290,14 +288,16 @@ computeMap = ComputeMap::Object();
       namdOneSendPar();
     }
 #ifdef MEM_OPT_VERSION
-  if(ioMgr->isInputProc(CkMyPe()))
-  {
-    iout << iINFO << "Parallel I/O being used for reading files\n" << endi;
+    if (! CkMyPe()) {
+      iout << iINFO << "Parallel I/O being used for reading files\n" << endi;
+    }
+  if(ioMgr->isInputProc(CkMyPe())) {
     CProxy_Node cm(thisgroup);
     ioMgr->setPointers(molecule,cm,state,patchMgr,this->simParameters);
-    StringList *cfgFile=(ioMgr->getState()->configList->find("parameters"));
-    char *currentdir = 0;
-    parameters=new Parameters(simParameters,cfgFile);
+//  we just sent and received this above!!
+//    StringList *cfgFile=(ioMgr->getState()->configList->find("parameters"));
+//    char *currentdir = 0;
+//    parameters=new Parameters(simParameters,cfgFile);
     ioMgr->readMolecule();
     ioMgr->redistributionAtomInfoParallel2();
   }

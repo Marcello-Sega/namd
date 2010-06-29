@@ -87,14 +87,15 @@ struct FullAtom : CompAtom, CompAtomExt{
   Velocity velocity;
   Position fixedPosition;
   Mass mass;
+  Real langevinParam;
+  int32 status;
   Transform transform;
   int migrationGroupSize;
   #ifdef MEM_OPT_VERSION
   int aidIdx;
   int readProc;
   int destProc;
-  long long GPID;
-  int sortVal;
+  int GPID;
   int atomsInGroup;
   int isMP;
   int MPID;

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: gzheng $
- * $Date: 2010/05/24 13:52:37 $
- * $Revision: 1.1206 $
+ * $Author: jim $
+ * $Date: 2010/06/29 20:14:11 $
+ * $Revision: 1.1207 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -159,24 +159,25 @@ void WorkDistrib::fillOnePatchCreationParallelIO(int patchId, FullAtomList *oneP
 
     vector<int> *eachPatchAtomsList1 = Node::Object()->ioMgr->patchAtomIdMappingList;
     vector<int> *thisPatchAtomsList1 = &eachPatchAtomsList1[patchId];
+    FullAtom *at=Node::Object()->ioMgr->finalAtomList.begin();
     for(int i=0; i<thisPatchAtomsList->size(); i++){
         int aid = thisPatchAtomsList->at(i);
         int aidIdx=thisPatchAtomsList1->at(i);
 
-        FullAtom a;
-        a.id = aid;
-                a.aidIdx=aidIdx;
+        FullAtom a = at[aidIdx];
+        a.aidIdx=aidIdx;
+        if ( a.id != aid ) NAMD_bug("WorkDistrib::fillOnePatchCreationParallelIO a.id != aid");
                 
-        Position pos,vel;
-        Node::Object()->ioMgr->get_position_for_patch_creation(&pos, aid,aidIdx);
+//        Position pos,vel;
+//        Node::Object()->ioMgr->get_position_for_patch_creation(&pos, aid,aidIdx);
                 if ( Node::Object()->simParameters->initialTemp < 0.0 ) {
-                        Node::Object()->ioMgr->get_position_for_patch_creationVel(&vel, aid,aidIdx);
-                        a.velocity = vel;
+//                        Node::Object()->ioMgr->get_position_for_patch_creationVel(&vel, aid,aidIdx);
+//                        a.velocity = vel;
                 }
                 else
                         a.velocity = velocities[aidIdx];        
 
-        a.position = pos;
+//        a.position = pos;
                 
 
         
@@ -188,15 +189,14 @@ void WorkDistrib::fillOnePatchCreationParallelIO(int patchId, FullAtomList *oneP
  *                 a.exclId = molecule->getAtomExclSigId(aid);
  *                         a.vdwType = molecule->atomvdwtype(aid);
  *                         */
-	FullAtom *at=Node::Object()->ioMgr->finalAtomList.begin();
 /*
  *         a.sigId = Node::Object()->ioMgr->eachAtomSigPerProc[aidIdx];
  *                 a.exclId = Node::Object()->ioMgr->eachAtomExclSigPerProc[aidIdx];
  *                         a.vdwType = Node::Object()->ioMgr->vdwTypePerProc[aidIdx];
  *                         */
-        a.sigId = at[aidIdx].sigId;
-        a.exclId = at[aidIdx].exclId;
-        a.vdwType = at[aidIdx].vdwType;
+//        a.sigId = at[aidIdx].sigId;
+//        a.exclId = at[aidIdx].exclId;
+//        a.vdwType = at[aidIdx].vdwType;
 
         #endif
         onePatchAtoms->add(a);
@@ -263,6 +263,22 @@ void WorkDistrib::fillOnePatchCreationParallelIO(int patchId, FullAtomList *oneP
 
       a[j].charge = chargePool[(Index)at[aidIdx].charge];
 
+
+      if ( params->langevinOn ) {
+        if ( params->langevinDamping ) {
+          Real bval = params->langevinDamping;
+          if ( (! params->langevinHydrogen ) &&
+                            (a[j].status & HydrogenAtom) ) bval = 0.;
+          else if ( a[j].status & LonepairAtom ) bval = 0.;
+          else if ( a[j].status & DrudeAtom ) bval = params->drudeDamping;
+          a[j].langevinParam = bval;
+        } else {
+          NAMD_bug("langevinfile not supported by memopt version");
+          // a[j].langevinParam = molecule->langevin_param(aid);
+        }
+      } else {
+        a[j].langevinParam = 0.;
+      }
 
 
       if ( alchFepOn || alchThermIntOn || lesOn || pairInteractionOn || pressureProfileTypes) {
@@ -501,6 +517,8 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       a.exclId = molecule->getAtomExclSigId(aid);
       #endif
       a.vdwType = molecule->atomvdwtype(aid);
+      a.status = molecule->getAtoms()[aid].status;
+      a.langevinParam = molecule->langevin_param(aid);
       HydrogenGroupID &h = molecule->hydrogenGroup[i];
       a.hydrogenGroupSize = h.isGP ? h.atomsInGroup : 0;
       a.migrationGroupSize = h.isMP ? h.atomsInMigrationGroup : 0;
@@ -717,6 +735,8 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
         a.exclId = molecule->getAtomExclSigId(aid);
         #endif
         a.vdwType = molecule->atomvdwtype(aid);
+        a.status = molecule->getAtoms()[aid].status;
+        a.langevinParam = molecule->langevin_param(aid);
         HydrogenGroupID &h =
           molecule->hydrogenGroup[molecule->atoms[aid].hydrogenList];
         a.hydrogenGroupSize = h.isGP ? h.atomsInGroup : 0;
