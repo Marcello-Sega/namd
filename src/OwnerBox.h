@@ -43,6 +43,17 @@ template <class Owner, class Data> class OwnerBox {
       return (closeCount != numberUsers || openCount != numberUsers);
     }
 
+    // manipulate counters without Box object
+    void clientAdd();
+    void clientRemove();
+    Data* clientOpen(int count=1) {
+      openCount -= count;
+      return data;
+    }
+    void clientClose(int count=1) {
+      if ( ! (closeCount -= count) ) close();
+    }
+
   private:
     Owner *owner;
     void (Owner::*callback)(void);
@@ -51,26 +62,36 @@ template <class Owner, class Data> class OwnerBox {
 };
 
 template <class Owner, class Data>
-inline Box<Owner,Data> *OwnerBox<Owner,Data>::checkOut(void) {
+inline void OwnerBox<Owner,Data>::clientAdd(void) {
   if (closeCount != numberUsers || openCount != numberUsers) {
-    CkPrintf("OwnerBox::checkOut() Tried to checkOut while in use\n");
+    CkPrintf("OwnerBox::clientAdd() while in use\n");
   }
   ++numberUsers; ++closeCount; ++openCount; 
+}
+
+template <class Owner, class Data>
+inline Box<Owner,Data> *OwnerBox<Owner,Data>::checkOut(void) {
+  clientAdd();
   return (new Box<Owner,Data>(this));
+}
+
+template <class Owner, class Data>
+inline void OwnerBox<Owner,Data>::clientRemove() {
+  if (closeCount != numberUsers || openCount != numberUsers) {
+    CkPrintf("OwnerBox::clientRemove() while in use\n");
+  }
+  if ( ! numberUsers-- ) {
+    CkPrintf("OwnerBox::clientRemove() - no registrants remaining\n");
+    numberUsers = 0;
+  } else {
+    closeCount--; openCount--;
+  }
 }
 
 template <class Owner, class Data>
 inline void OwnerBox<Owner,Data>::checkIn(Box<Owner,Data> * box) {
   delete box;
-  if (closeCount != numberUsers || openCount != numberUsers) {
-    CkPrintf("OwnerBox::checkIn() Tried to checkIn while in use\n");
-  }
-  if ( ! numberUsers-- ) {
-    CkPrintf("OwnerBox::checkIn() - no registrants remaining\n");
-    numberUsers = 0;
-  } else {
-    closeCount--; openCount--;
-  }
+  clientRemove();
 }
 
 template <class Owner, class Data>

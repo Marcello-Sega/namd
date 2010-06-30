@@ -19,7 +19,6 @@
 #include "PatchMap.h"
 
 #include "MigrateAtomsMsg.h"
-#include "HomePatchTypes.h"
 #include "main.h"
 #include "common.h"
 #include "Migration.h"
@@ -204,7 +203,7 @@ private:
   ResizeArray<BigReal> molly_lambda;
   
   // List of Proxies
-  ProxyList     proxy;
+  NodeIDList proxy;
   
   Sequencer  *sequencer;
 

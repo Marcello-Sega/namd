@@ -358,7 +358,8 @@ void HomePatch::boxClosed(int)
 
 void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   DebugM(4, "registerProxy("<<patchID<<") - adding node " <<msg->node<<"\n");
-  proxy.add(ProxyListElem(msg->node,forceBox.checkOut()));
+  proxy.add(msg->node);
+  forceBox.clientAdd();
 
   isNewProxyAdded = 1;
 
@@ -368,9 +369,9 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
 
 void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   int n = msg->node;
-  ProxyListElem *pe = proxy.begin();
-  for ( ; pe->node != n; ++pe );
-  forceBox.checkIn(pe->forceBox);
+  NodeID *pe = proxy.begin();
+  for ( ; *pe != n; ++pe );
+  forceBox.clientRemove();
   proxy.del(pe - proxy.begin());
   delete msg;
 }
@@ -417,22 +418,14 @@ static int compDistance(const void *a, const void *b)
 
 void HomePatch::sendProxies()
 {
-  ProxyListIter pli(proxy);
-  NodeIDList list;
-  for ( pli = pli.begin(); pli != pli.end(); ++pli )
-  {
-    list.add(pli->node);
-  }
-  ProxyMgr::Object()->sendProxies(patchID, &list[0], list.size());  
+  ProxyMgr::Object()->sendProxies(patchID, proxy.begin(), proxy.size());  
 }
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
 void HomePatch::buildNodeAwareSpanningTree(void){
     //build the naive spanning tree for this home patch    
     int *proxyNodeMap = new int[CkNumNodes()]; //each element indiates the number of proxies residing on this node 
-    NodeIDList proxyPeList;
-    int proxyCnt = proxy.size();
-    if(proxyCnt==0) {
+    if(! proxy.size()) {
         //this case will not happen in practice.
         //In debugging state where spanning tree is enforced, then this could happen
         //Chao Mei        
@@ -444,12 +437,7 @@ void HomePatch::buildNodeAwareSpanningTree(void){
         #endif
         return;
     }
-    proxyPeList.resize(proxyCnt);
-    ProxyListIter pli(proxy);
-    int i=0;
-    for ( pli = pli.begin(); pli != pli.end(); ++pli, i++ )
-        proxyPeList[i] = pli->node;    
-    ProxyMgr::buildSinglePatchNodeAwareSpanningTree(patchID, proxyPeList, ptnTree, proxyNodeMap);    
+    ProxyMgr::buildSinglePatchNodeAwareSpanningTree(patchID, proxy, ptnTree, proxyNodeMap);    
     delete [] proxyNodeMap;
     proxyPeList.resize(0);
 
@@ -639,47 +627,29 @@ void HomePatch::buildSpanningTree(void)
   tree.setall(-1);
   tree[0] = CkMyPe();
   int s=1, e=psize+1;
-  ProxyListIter pli(proxy);
+  NodeIDList::iterator pli;
   int patchNodesLast =
     ( PatchMap::Object()->numNodesWithPatches() < ( 0.7 * CkNumPes() ) );
   int nNonPatch = 0;
-#if 0
-  int* pelists = new int[psize];
-  for (int i=0; i<psize; i++) pelists[i] = -1;
-  for ( pli = pli.begin(); pli != pli.end(); ++pli ) {
-    int idx = rand()%psize;
-    while (pelists[idx] != -1) { idx++; if (idx == psize) idx = 0; }
-    pelists[idx] = pli->node;
-  }
-  for ( int i=0; i<psize; i++)
-  {
-    if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pelists[i]) ) {
-      tree[--e] = pelists[i];
-    } else {
-      tree[s++] = pelists[i];
-      nNonPatch++;
-    }
-  }
-  delete [] pelists;
-#else
+#if 1
     // try to put it to the same old tree
-  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  for ( pli = proxy.begin(); pli != proxy.end(); ++pli )
   {
-    int oldindex = oldtree.find(pli->node);
+    int oldindex = oldtree.find(*pli);
     if (oldindex != -1 && oldindex < psize) {
-      tree[oldindex] = pli->node;
+      tree[oldindex] = *pli;
     }
   }
   s=1; e=psize;
-  for ( pli = pli.begin(); pli != pli.end(); ++pli )
+  for ( pli = proxy.begin(); pli != proxy.end(); ++pli )
   {
-    if (tree.find(pli->node) != -1) continue;    // already assigned
-    if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
+    if (tree.find(*pli) != -1) continue;    // already assigned
+    if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(*pli) ) {
       while (tree[e] != -1) { e--; if (e==-1) e = psize; }
-      tree[e] = pli->node;
+      tree[e] = *pli;
     } else {
       while (tree[s] != -1) { s++; if (s==psize+1) s = 1; }
-      tree[s] = pli->node;
+      tree[s] = *pli;
       nNonPatch++;
     }
   }
@@ -770,10 +740,7 @@ void HomePatch::buildSpanningTree(void)
 
 void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg){
     DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
-    int n = msg->node;
-    ProxyListElem *pe = proxy.begin();
-    for ( ; pe->node != n; ++pe );
-    Results *r = pe->forceBox->open();
+    Results *r = forceBox.clientOpen();
 
     char *iszeroPtr = msg->isZero;
     Force *msgFPtr = msg->forceArr;
@@ -788,17 +755,14 @@ void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg){
           }
       }      
     }
-    pe->forceBox->close(&r);
+    forceBox.clientClose();
     delete msg;
 }
 
 void HomePatch::receiveResults(ProxyResultMsg *msg)
 {
   DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
-  int n = msg->node;
-  ProxyListElem *pe = proxy.begin();
-  for ( ; pe->node != n; ++pe );
-  Results *r = pe->forceBox->open();
+  Results *r = forceBox.clientOpen();
   for ( int k = 0; k < Results::maxNumForces; ++k )
   {
     Force *f = r->f[k];
@@ -807,7 +771,7 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
     f_e = msg->forceList[k].end();
     for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
   }
-  pe->forceBox->close(&r);
+  forceBox.clientClose();
   delete msg;
 }
 
@@ -815,12 +779,7 @@ void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
 {
   DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodeSize<<")\n");
   //CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
-  for (int i=0; i<msg->nodeSize; i++) {
-    int node = msg->nodes[i];
-    ProxyListElem *pe = proxy.begin();
-    for ( ; pe->node != node; ++pe );
-    Results *r = pe->forceBox->open();
-    if (i==0) {
+    Results *r = forceBox.clientOpen(msg->nodeSize);
       register char* isNonZero = msg->isForceNonZero;
       register Force* f_i = msg->forceArr;
       for ( int k = 0; k < Results::maxNumForces; ++k )
@@ -840,9 +799,7 @@ void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
           isNonZero++;
         }
       }
-    }
-    pe->forceBox->close(&r);
-  }
+    forceBox.clientClose(msg->nodeSize);
 
     delete msg;
 }
@@ -887,7 +844,7 @@ void HomePatch::positionsReady(int doMigration)
   // END LA
 
   // Must Add Proxy Changes when migration completed!
-  ProxyListIter pli(proxy);
+  NodeIDList::iterator pli;
   int *pids = NULL;
   int npid;
   if (proxySendSpanning == 0) {
@@ -897,12 +854,12 @@ void HomePatch::positionsReady(int doMigration)
     int *pide = pids + proxy.size();
     int patchNodesLast =
       ( PatchMap::Object()->numNodesWithPatches() < ( 0.7 * CkNumPes() ) );
-    for ( pli = pli.begin(); pli != pli.end(); ++pli )
+    for ( pli = proxy.begin(); pli != proxy.end(); ++pli )
     {
-      if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(pli->node) ) {
-        *(--pide) = pli->node;
+      if ( patchNodesLast && PatchMap::Object()->numPatchesOnNode(*pli) ) {
+        *(--pide) = *pli;
       } else {
-        *(pidi++) = pli->node;
+        *(pidi++) = *pli;
       }
     }
   }
