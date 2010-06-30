@@ -78,7 +78,7 @@ int ComputeNonbondedPair::noWork() {
   {
     // Inform load balancer
 #ifndef NAMD_CUDA
-    LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+    LdbCoordinator::Object()->skipWork(cid);
 #endif
     // fake out patches and reduction system
 
@@ -119,11 +119,6 @@ int ComputeNonbondedPair::noWork() {
     submitReductionData(reductionData,reduction);
     if (pressureProfileOn)
       submitPressureProfileData(pressureProfileData, pressureProfileReduction);
-
-    // Inform load balancer
-#ifndef NAMD_CUDA
-    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
-#endif
 
     reduction->submit();
     if (pressureProfileOn) 

@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: bhatele $
- * $Date: 2010/04/12 22:59:07 $
- * $Revision: 1.97 $
+ * $Author: jim $
+ * $Date: 2010/06/30 20:38:37 $
+ * $Revision: 1.98 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -507,6 +507,18 @@ void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 {
   CmiAssert(id >=0 && id < numComputes);
   theLbdb->ObjectStart(objHandles[id]);
+}
+
+void LdbCoordinator::pauseWork(ComputeID id)
+{
+  CmiAssert(id >=0 && id < numComputes);
+  theLbdb->ObjectStop(objHandles[id]);
+}
+
+void LdbCoordinator::skipWork(ComputeID id)
+{
+  CmiAssert(id >=0 && id < numComputes);
+  nComputesReported++;
 }
 
 void LdbCoordinator::endWork(ComputeID id, int /* timestep */)

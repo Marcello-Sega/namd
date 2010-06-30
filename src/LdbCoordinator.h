@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
- * $Author: gzheng $
- * $Date: 2008/07/14 19:38:02 $
- * $Revision: 1.40 $
+ * $Author: jim $
+ * $Date: 2010/06/30 20:38:37 $
+ * $Revision: 1.41 $
  *****************************************************************************/
 
 #ifndef LDBCOORDINATOR_H
@@ -51,8 +51,10 @@ public:
   void initialize(PatchMap *pmap, ComputeMap *cmap, int reinit=0);
   void createLoadBalancer();
   void patchLoad(PatchID id, int nAtoms, int timestep);
-  void startWork(ComputeID id, int timestep);
-  void endWork(ComputeID id, int timestep);
+  void startWork(ComputeID id, int timestep=0);  // start timer
+  void pauseWork(ComputeID id);  // stop timer only
+  void skipWork(ComputeID id);  // increment counter only
+  void endWork(ComputeID id, int timestep=0);  // both
   void rebalance(Sequencer *seq, PatchID id);
   void rebalance(Controller *seq);
   void nodeDone(void);
