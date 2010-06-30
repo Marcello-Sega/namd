@@ -517,16 +517,13 @@ void ComputeNonbondedUtil :: NAME
 
     // Calculate the sort values for the atoms in patch 1
     {
-      register int j = 0;
       register int nbgs = p_1->nonbondedGroupSize;
       register BigReal p_x = p_1->position.x;
       register BigReal p_y = p_1->position.y;
       register BigReal p_z = p_1->position.z;
-      register int index = j;
+      register int index = 0;
 
-      while (j < j_upper) {
-
-	j += nbgs;
+      for (register int j = nbgs; j < j_upper; j += nbgs) {
 
         // Set p_j_next to point to the atom for the next iteration and begin
         //   loading the 'nbgs' value for that atom.
@@ -556,6 +553,13 @@ void ComputeNonbondedUtil :: NAME
         index = j;       
 
       } // end while (j < j_upper)
+
+      register BigReal sortVal = COMPONENT_DOTPRODUCT(p,projLineVec);
+
+      register SortEntry* p_1_sortValStorePtr = p_1_sortValues + p_1_sortValues_len;
+      p_1_sortValStorePtr->index = index;
+      p_1_sortValStorePtr->sortValue = sortVal;
+      p_1_sortValues_len++;
     }
 
     // NOTE: This list and another version of it with only non-fixed
@@ -574,16 +578,13 @@ void ComputeNonbondedUtil :: NAME
 
     // Calculate the sort values for the atoms in patch 0
     {
-      register int i = 0;
       register int nbgs = p_0->nonbondedGroupSize;
       register BigReal p_x = p_0->position.x + offset_x;
       register BigReal p_y = p_0->position.y + offset_y;
       register BigReal p_z = p_0->position.z + offset_z;
-      register int index = i;
+      register int index = 0;
 
-      while (i < i_upper) {
-
-        i += nbgs;
+      for (register int i = nbgs; i < i_upper; i += nbgs) {
 
         // Set p_i_next to point to the atom for the next iteration and begin
         //   loading the 'nbgs' value for that atom.
@@ -605,6 +606,11 @@ void ComputeNonbondedUtil :: NAME
         // Update index for the next iteration
         index = i;
       }
+
+      register BigReal sortVal = COMPONENT_DOTPRODUCT(p,projLineVec);
+
+      register BigReal* p_0_sortValStorePtr = p_0_sortValues + index;
+      *p_0_sortValStorePtr = sortVal;
 
       p_0_sortValues_len = i_upper;
     }
