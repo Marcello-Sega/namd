@@ -34,7 +34,6 @@ obj/main.o: \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
 	inc/Node.decl.h \
-	inc/ParallelIOMgr.decl.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -52,6 +51,7 @@ obj/main.o: \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	src/main.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/main.o $(COPTC) src/main.C
@@ -82,6 +82,26 @@ obj/mainfunc.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/structures.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/ScriptTcl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/mainfunc.o $(COPTC) src/mainfunc.C
 obj/memusage.o: \
@@ -205,7 +225,6 @@ obj/BackEnd.o: \
 	src/Tensor.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
-	inc/ParallelIOMgr.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
@@ -227,8 +246,8 @@ obj/BackEnd.o: \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
-	inc/WorkDistrib.decl.h \
 	inc/ParallelIOMgr.decl.h \
+	inc/WorkDistrib.decl.h \
 	inc/ProxyMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ComputeMgr.decl.h \
@@ -246,7 +265,8 @@ obj/BackEnd.o: \
 	src/AtomMap.h \
 	inc/BroadcastMgr.decl.h \
 	inc/LdbCoordinator.decl.h \
-	inc/Sync.decl.h
+	inc/Sync.decl.h \
+	inc/ParallelIOMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BackEnd.o $(COPTC) src/BackEnd.C
 obj/BroadcastMgr.o: \
 	src/BroadcastMgr.C \
@@ -342,15 +362,29 @@ obj/CollectionMgr.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
-	src/InfoStream.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -416,7 +450,6 @@ obj/ComputeAngles.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -431,7 +464,11 @@ obj/ComputeAngles.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -482,7 +519,6 @@ obj/ComputeAniso.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -497,7 +533,11 @@ obj/ComputeAniso.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -530,32 +570,24 @@ obj/ComputeBonds.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
-	src/GromacsTopFile.h \
-	src/GridForceGrid.h \
-	src/Tensor.h \
-	src/SimParameters.h \
+	src/NamdState.h \
 	src/Lattice.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/MStream.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
-	src/ReductionMgr.h \
-	src/main.h \
-	src/BOCgroup.h \
-	src/ProcessorPrivate.h \
-	src/ComputeHomeTuples.h \
-	src/Compute.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/UniqueSortedArray.h \
-	src/SortedArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -563,12 +595,23 @@ obj/ComputeBonds.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ReductionMgr.h \
+	src/ComputeHomeTuples.h \
+	src/Compute.h \
 	src/Node.h \
-	inc/Node.decl.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
-	src/PatchMgr.h \
 	src/Parameters.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
@@ -611,27 +654,31 @@ obj/ComputeConsForce.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
-	src/GromacsTopFile.h \
-	src/GridForceGrid.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
-	src/Node.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
-	src/SortedArray.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/Node.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeConsForce.o $(COPTC) src/ComputeConsForce.C
 obj/ComputeConsForceMsgs.o: \
 	src/ComputeConsForceMsgs.C \
@@ -675,7 +722,6 @@ obj/ComputeCrossterms.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -690,7 +736,11 @@ obj/ComputeCrossterms.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -771,7 +821,6 @@ obj/ComputeDihedrals.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -786,7 +835,11 @@ obj/ComputeDihedrals.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -840,7 +893,6 @@ obj/ComputeDPME.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ComputeDPMEMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
@@ -850,9 +902,13 @@ obj/ComputeDPME.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -918,15 +974,18 @@ obj/ComputeDPMTA.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -970,8 +1029,7 @@ obj/ComputeEField.o: \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h
+	inc/PatchMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeEField.o $(COPTC) src/ComputeEField.C
 obj/ComputeEwald.o: \
 	src/ComputeEwald.C \
@@ -1007,16 +1065,19 @@ obj/ComputeEwald.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	inc/ComputeMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -1069,16 +1130,19 @@ obj/ComputeExt.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	inc/ComputeExtMgr.decl.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -1133,7 +1197,6 @@ obj/ComputeFullDirect.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/PatchMgr.h \
@@ -1141,9 +1204,13 @@ obj/ComputeFullDirect.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -1190,7 +1257,6 @@ obj/ComputeHomePatch.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/Priorities.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeHomePatch.o $(COPTC) src/ComputeHomePatch.C
@@ -1225,15 +1291,18 @@ obj/ComputeHomePatches.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -1276,7 +1345,6 @@ obj/ComputeImpropers.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -1291,7 +1359,11 @@ obj/ComputeImpropers.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1344,7 +1416,6 @@ obj/ComputeGlobal.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ComputeGlobalMsgs.h \
 	inc/ComputeMgr.decl.h \
 	src/PatchMgr.h \
@@ -1352,9 +1423,13 @@ obj/ComputeGlobal.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -1411,7 +1486,6 @@ obj/ComputeGridForce.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -1425,9 +1499,14 @@ obj/ComputeGridForce.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -1502,7 +1581,6 @@ obj/ComputeMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
@@ -1511,7 +1589,11 @@ obj/ComputeMgr.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1685,10 +1767,28 @@ obj/ComputeNonbondedUtil.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1722,10 +1822,28 @@ obj/ComputeNonbondedStd.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1733,11 +1851,8 @@ obj/ComputeNonbondedStd.o: \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
+	src/Random.h \
 	src/ComputeNonbondedBase.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedStd.o $(COPTC) src/ComputeNonbondedStd.C
 obj/ComputeNonbondedFEP.o: \
@@ -1766,10 +1881,28 @@ obj/ComputeNonbondedFEP.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1777,11 +1910,8 @@ obj/ComputeNonbondedFEP.o: \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
+	src/Random.h \
 	src/ComputeNonbondedBase.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedFEP.o $(COPTC) src/ComputeNonbondedFEP.C
 obj/ComputeNonbondedLES.o: \
@@ -1810,10 +1940,28 @@ obj/ComputeNonbondedLES.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1821,11 +1969,8 @@ obj/ComputeNonbondedLES.o: \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
+	src/Random.h \
 	src/ComputeNonbondedBase.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedLES.o $(COPTC) src/ComputeNonbondedLES.C
 obj/ComputeNonbondedPProf.o: \
@@ -1854,10 +1999,28 @@ obj/ComputeNonbondedPProf.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1865,11 +2028,8 @@ obj/ComputeNonbondedPProf.o: \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
+	src/Random.h \
 	src/ComputeNonbondedBase.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedPProf.o $(COPTC) src/ComputeNonbondedPProf.C
 obj/ComputeNonbondedTabEnergies.o: \
@@ -1898,10 +2058,28 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1909,11 +2087,8 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
+	src/Random.h \
 	src/ComputeNonbondedBase.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedTabEnergies.o $(COPTC) src/ComputeNonbondedTabEnergies.C
 obj/ComputeNonbondedCUDA.o: \
@@ -1955,7 +2130,6 @@ obj/ComputeNonbondedCUDA.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -1970,7 +2144,11 @@ obj/ComputeNonbondedCUDA.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -1995,32 +2173,24 @@ obj/ComputeNonbondedCUDAExcl.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
-	src/GromacsTopFile.h \
-	src/GridForceGrid.h \
-	src/Tensor.h \
-	src/SimParameters.h \
+	src/NamdState.h \
 	src/Lattice.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/MStream.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
-	src/ReductionMgr.h \
-	src/main.h \
-	src/BOCgroup.h \
-	src/ProcessorPrivate.h \
-	src/ComputeHomeTuples.h \
-	src/Compute.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/UniqueSortedArray.h \
-	src/SortedArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -2028,12 +2198,23 @@ obj/ComputeNonbondedCUDAExcl.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ReductionMgr.h \
+	src/ComputeHomeTuples.h \
+	src/Compute.h \
 	src/Node.h \
-	inc/Node.decl.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
-	src/PatchMgr.h \
 	src/Parameters.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
@@ -2148,7 +2329,6 @@ obj/ComputePme.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/PmeBase.h \
 	src/MathArray.h \
 	src/Array.h \
@@ -2162,9 +2342,13 @@ obj/ComputePme.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -2220,7 +2404,6 @@ obj/OptPme.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/PmeBase.h \
 	src/MathArray.h \
 	src/Array.h \
@@ -2239,9 +2422,13 @@ obj/OptPme.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -2301,22 +2488,34 @@ obj/ComputeRestraints.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
-	src/InfoStream.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Patch.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
 	src/PDBData.h
@@ -2389,15 +2588,19 @@ obj/ComputeStir.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/DataStream.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -2435,7 +2638,6 @@ obj/ComputeTclBC.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -2447,9 +2649,14 @@ obj/ComputeTclBC.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -2487,7 +2694,6 @@ obj/ComputeThole.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/Node.h \
@@ -2502,7 +2708,11 @@ obj/ComputeThole.o: \
 	src/Molecule.h \
 	src/parm.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -2527,6 +2737,37 @@ obj/ConfigList.o: \
 	src/InfoStream.h \
 	src/ConfigList.h \
 	src/common.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
+	src/structures.h \
+	src/Hydrogen.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
 	src/strlib.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ConfigList.o $(COPTC) src/ConfigList.C
 obj/Controller.o: \
@@ -2547,15 +2788,33 @@ obj/Controller.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -2564,10 +2823,6 @@ obj/Controller.o: \
 	src/Controller.h \
 	src/ReductionMgr.h \
 	src/CollectionMaster.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	inc/CollectionMaster.decl.h \
@@ -2577,7 +2832,6 @@ obj/Controller.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	src/NamdState.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/LdbCoordinator.h \
@@ -2647,31 +2901,34 @@ obj/DumpBench.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
-	src/GromacsTopFile.h \
-	src/GridForceGrid.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
-	src/Node.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	inc/Node.decl.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
+	src/PatchMgr.h \
 	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/UniqueSortedArray.h \
 	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
-	src/NamdState.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/Node.h \
 	src/ComputeMap.h \
 	src/DumpBenchParams.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/DumpBench.o $(COPTC) src/DumpBench.C
@@ -2787,18 +3044,36 @@ obj/GlobalMaster.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
-	src/InfoStream.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -2878,15 +3153,33 @@ obj/GlobalMasterTcl.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -2921,15 +3214,33 @@ obj/GlobalMasterSMD.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -2958,15 +3269,33 @@ obj/GlobalMasterTMD.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -3007,15 +3336,33 @@ obj/GlobalMasterFreeEnergy.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -3058,14 +3405,17 @@ obj/GlobalMasterEasy.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -3111,7 +3461,6 @@ obj/GlobalMasterMisc.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/GlobalMasterEasy.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterMisc.o $(COPTC) src/GlobalMasterMisc.C
@@ -3281,15 +3630,33 @@ obj/colvarproxy_namd.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -3342,22 +3709,19 @@ obj/GridForceGrid.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
-	src/GromacsTopFile.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
-	src/ComputeGridForce.h \
-	src/ComputeHomePatches.h \
-	src/Compute.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/UniqueSortedArray.h \
-	src/SortedArray.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
@@ -3365,7 +3729,14 @@ obj/GridForceGrid.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/GromacsTopFile.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ComputeGridForce.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
 	src/ReductionMgr.h \
 	inc/ComputeGridForceMgr.decl.h \
 	src/Debug.h
@@ -3413,7 +3784,6 @@ obj/HomePatch.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/main.h \
 	src/AtomMap.h \
 	src/Node.h \
@@ -3428,12 +3798,16 @@ obj/HomePatch.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/PatchMgr.h \
 	src/Sequencer.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
@@ -3525,7 +3899,6 @@ obj/LdbCoordinator.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
@@ -3597,10 +3970,28 @@ obj/Measure.o: \
 	src/GromacsTopFile.h \
 	src/Molecule.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h
@@ -3649,7 +4040,6 @@ obj/MigrateAtomsMsg.o: \
 	src/OwnerBox.h \
 	src/Box.h \
 	src/UniqueSortedArray.h \
-	src/HomePatchTypes.h \
 	src/main.h \
 	src/packmsg.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/MigrateAtomsMsg.o $(COPTC) src/MigrateAtomsMsg.C
@@ -3665,21 +4055,44 @@ obj/Molecule.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Communicate.h \
+	src/Node.h \
 	src/ObjectArena.h \
 	src/Parameters.h \
 	src/PDB.h \
@@ -3688,27 +4101,9 @@ obj/Molecule.o: \
 	src/ComputeGridForce.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
-	src/main.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
 	inc/ComputeGridForceMgr.decl.h \
-	src/Debug.h \
-	src/CompressPsf.h
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
 obj/Molecule2.o: \
 	src/Molecule2.C \
@@ -3723,21 +4118,44 @@ obj/Molecule2.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Communicate.h \
+	src/Node.h \
 	src/ObjectArena.h \
 	src/Parameters.h \
 	src/PDB.h \
@@ -3746,27 +4164,9 @@ obj/Molecule2.o: \
 	src/ComputeGridForce.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
-	src/main.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/UniqueSortedArray.h \
-	src/SortedArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
 	inc/ComputeGridForceMgr.decl.h \
-	src/Debug.h \
-	src/CompressPsf.h
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule2.o $(COPTC) src/Molecule2.C
 obj/NamdCentLB.o: \
 	src/NamdCentLB.C \
@@ -3980,15 +4380,37 @@ obj/NamdState.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
@@ -3997,13 +4419,8 @@ obj/NamdState.o: \
 	src/Parameters.h \
 	src/PDB.h \
 	src/PDBData.h \
-	src/NamdState.h \
 	src/Controller.h \
 	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
 	src/ScriptTcl.h \
 	src/Broadcasts.h \
 	src/BroadcastObject.h \
@@ -4012,7 +4429,6 @@ obj/NamdState.o: \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
 	src/Debug.h \
-	src/CompressPsf.h \
 	src/PluginIOMgr.h \
 	plugins/include/libmolfile_plugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/NamdState.o $(COPTC) src/NamdState.C
@@ -4036,10 +4452,32 @@ obj/NamdOneTools.o: \
 	src/Molecule.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
@@ -4068,7 +4506,6 @@ obj/Node.o: \
 	src/Tensor.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
-	inc/ParallelIOMgr.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/PatchMgr.decl.h \
 	inc/ProxyMgr.decl.h \
@@ -4090,8 +4527,8 @@ obj/Node.o: \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	src/WorkDistrib.h \
-	src/ParallelIOMgr.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
 	src/PatchMgr.h \
@@ -4109,7 +4546,6 @@ obj/Node.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/Compute.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
@@ -4118,9 +4554,13 @@ obj/Node.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -4132,7 +4572,6 @@ obj/Node.o: \
 	src/AtomMap.h \
 	src/Sequencer.h \
 	src/Controller.h \
-	src/NamdState.h \
 	src/Output.h \
 	src/ProxyMgr.h \
 	src/UniqueSetIter.h \
@@ -4156,9 +4595,11 @@ obj/Node.o: \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
 	src/BackEnd.h \
-	src/ParallelIOMgr.h \
 	src/PDB.h \
 	src/PDBData.h \
+	src/packmsg.h \
+	inc/CollectionMgr.decl.h \
+	src/Random.h \
 	src/DumpBench.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Node.o $(COPTC) src/Node.C
@@ -4179,32 +4620,46 @@ obj/Output.o: \
 	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
 	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	inc/Node.decl.h \
 	src/Parameters.h \
 	src/PDB.h \
 	src/PDBData.h \
 	src/Communicate.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/ResizeArrayIter.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ScriptTcl.h \
@@ -4235,6 +4690,30 @@ obj/Parameters.o: \
 	src/GromacsTopFile.h \
 	src/Communicate.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Parameters.o $(COPTC) src/Parameters.C
 obj/ParseOptions.o: \
@@ -4243,7 +4722,37 @@ obj/ParseOptions.o: \
 	src/common.h \
 	src/Vector.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/CompressPsf.h \
+	src/structures.h \
+	src/Hydrogen.h \
+	src/NamdTypes.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
 	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
 	src/strlib.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ParseOptions.o $(COPTC) src/ParseOptions.C
 obj/Patch.o: \
@@ -4278,9 +4787,18 @@ obj/Patch.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/HomePatch.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -4321,7 +4839,6 @@ obj/PatchMgr.o: \
 	src/BOCgroup.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	src/HomePatchTypes.h \
 	src/main.h \
 	src/AtomMap.h \
 	inc/main.decl.h \
@@ -4347,6 +4864,7 @@ obj/PatchMgr.o: \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	inc/WorkDistrib.decl.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
@@ -4388,7 +4906,6 @@ obj/PatchMap.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/main.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -4501,7 +5018,6 @@ obj/ProxyMgr.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/packmsg.h \
 	src/Priorities.h \
 	src/Debug.h \
@@ -4540,6 +5056,7 @@ obj/ProxyPatch.o: \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	src/main.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
@@ -4624,7 +5141,6 @@ obj/RecBisection.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/main.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/RecBisection.o $(COPTC) src/RecBisection.C
 obj/ReductionMgr.o: \
@@ -4730,27 +5246,16 @@ obj/ScriptTcl.o: \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
 	src/ConfigList.h \
-	src/Node.h \
-	inc/Node.decl.h \
-	src/PDB.h \
-	src/parm.h \
-	src/GromacsTopFile.h \
-	src/PDBData.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
-	src/WorkDistrib.h \
-	src/ComputeMap.h \
-	inc/WorkDistrib.decl.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/structures.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
 	src/NamdState.h \
-	src/Controller.h \
-	src/SimParameters.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/MStream.h \
-	src/Thread.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
 	src/PatchMgr.h \
 	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/OwnerBox.h \
@@ -4763,7 +5268,22 @@ obj/ScriptTcl.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
+	src/Node.h \
+	src/PDB.h \
+	src/parm.h \
+	src/GromacsTopFile.h \
+	src/PDBData.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/Controller.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	src/Thread.h \
 	src/Measure.h \
 	src/DumpBench.h \
 	src/TclCommands.h \
@@ -4807,7 +5327,6 @@ obj/Sequencer.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/ReductionMgr.h \
 	src/CollectionMgr.h \
 	inc/CollectionMgr.decl.h \
@@ -4825,7 +5344,12 @@ obj/Sequencer.o: \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
 	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
@@ -4878,14 +5402,35 @@ obj/SimParameters.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/ConfigList.h \
-	src/SimParameters.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/structures.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/NamdState.h \
 	src/Lattice.h \
 	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
 	src/ParseOptions.h \
-	src/structures.h \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
@@ -5011,6 +5556,7 @@ obj/WorkDistrib.o: \
 	inc/Sync.decl.h \
 	inc/AtomsDisInfo.decl.h \
 	inc/FileIO.decl.h \
+	inc/ParallelIOMgr.decl.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMgr.h \
@@ -5028,7 +5574,6 @@ obj/WorkDistrib.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/HomePatchTypes.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PDB.h \
@@ -5044,9 +5589,13 @@ obj/WorkDistrib.o: \
 	src/Molecule.h \
 	src/structures.h \
 	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/NamdState.h \
+	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
 	src/GridForceGrid.h \
 	src/NamdOneTools.h \
 	src/Compute.h \
@@ -5093,17 +5642,38 @@ obj/CompressPsf.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
-	src/Tensor.h \
 	src/SimParameters.h \
-	src/Lattice.h \
 	src/MGridforceParams.h \
-	src/InfoStream.h \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
@@ -5119,9 +5689,62 @@ obj/PluginIOMgr.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PluginIOMgr.o $(COPTC) src/PluginIOMgr.C
 obj/ParallelIOMgr.o: \
 	src/ParallelIOMgr.C \
+	src/BOCgroup.h \
+	inc/ParallelIOMgr.decl.h \
+	src/ParallelIOMgr.h \
+	src/ProcessorPrivate.h \
+	src/common.h \
+	src/CompressPsf.h \
+	src/structures.h \
+	src/Hydrogen.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/Node.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
 	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
+	src/main.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/Node.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/PDB.h \
+	src/PDBData.h \
 	src/PatchMap.inl \
-	src/ParallelIOMgr.h
+	src/AtomMap.h \
+	src/packmsg.h \
+	inc/ParallelIOMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ParallelIOMgr.o $(COPTC) src/ParallelIOMgr.C
 obj/AtomsDisInfo.o: \
 	src/AtomsDisInfo.C \
