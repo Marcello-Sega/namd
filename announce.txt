@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.7b2 Release Announcement                   |
+|                  NAMD 2.7b3 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                  November 12, 2009
+                                                       July 2, 2010
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
@@ -13,7 +13,7 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.7b2 has many advantages over NAMD 2.6, among these are:
+NAMD 2.7b3 has many advantages over NAMD 2.6, among these are:
 
 - Collective variable-based calculations
 
