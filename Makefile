@@ -513,10 +513,10 @@ include Make.config
 
 # Implicit rules for modules.
 
-$(INCDIR)/%.def.h: $(INCDIR)/%.decl.h
-	$(ECHO) remove $(INCDIR)/$*.decl.h and re-build
+$(INCDIR)/%.decl.h: $(INCDIR)/%.def.h
+	# .decl.h file built by .def.h rule
 
-$(INCDIR)/%.decl.h: $(SRCDIR)/%.ci
+$(INCDIR)/%.def.h: $(SRCDIR)/%.ci
 	$(COPY) $(SRCDIR)/$*.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/$*.ci
 	$(RM) $(INCDIR)/$*.ci
@@ -526,20 +526,20 @@ $(INCDIR)/%.decl.h: $(SRCDIR)/%.ci
 
 # Explicit rules for modules that don't match their file names.
 
-$(INCDIR)/PmeFFTLib.def.h: $(INCDIR)/PmeFFTLib.decl.h
-	$(ECHO) remove $(INCDIR)/$*.decl.h and re-build
+$(INCDIR)/PmeFFTLib.decl.h: $(INCDIR)/PmeFFTLib.def.h
+	# .decl.h file built by .def.h rule
 
-$(INCDIR)/PmeFFTLib.decl.h: $(SRCDIR)/fftlib.ci
+$(INCDIR)/PmeFFTLib.def.h: $(SRCDIR)/fftlib.ci
 	$(COPY) $(SRCDIR)/fftlib.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/fftlib.ci
 	$(RM) $(INCDIR)/fftlib.ci
 	$(MOVE) PmeFFTLib.def.h $(INCDIR)
 	$(MOVE) PmeFFTLib.decl.h $(INCDIR)
 
-$(INCDIR)/OptPmeMgr.def.h: $(INCDIR)/OptPmeMgr.decl.h
-	$(ECHO) remove $(INCDIR)/$*.decl.h and re-build
+$(INCDIR)/OptPmeMgr.decl.h: $(INCDIR)/OptPmeMgr.def.h
+	# .decl.h file built by .def.h rule
 
-$(INCDIR)/OptPmeMgr.decl.h: $(SRCDIR)/OptPme.ci
+$(INCDIR)/OptPmeMgr.def.h: $(SRCDIR)/OptPme.ci
 	$(COPY) $(SRCDIR)/OptPme.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/OptPme.ci
 	$(RM) $(INCDIR)/OptPme.ci
