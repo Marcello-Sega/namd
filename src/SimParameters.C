@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2010/06/29 20:14:11 $
- * $Revision: 1.1306 $
+ * $Date: 2010/07/01 21:34:37 $
+ * $Revision: 1.1307 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -688,9 +688,17 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
 #endif
 
    opts.optionalB("main", "FFTWEstimate", "Use estimates to optimize FFTW?",
+#ifdef WIN32
+	&FFTWEstimate, TRUE);
+#else
 	&FFTWEstimate, FALSE);
+#endif
    opts.optionalB("main", "FFTWUseWisdom", "Read/save wisdom file for FFTW?",
+#ifdef WIN32
+	&FFTWUseWisdom, FALSE);
+#else
 	&FFTWUseWisdom, TRUE);
+#endif
    opts.optional("FFTWUseWisdom", "FFTWWisdomFile", "File for FFTW wisdom",
 	FFTWWisdomFile);
 
