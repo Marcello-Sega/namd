@@ -76,23 +76,6 @@ for parallel runs (either exclusively on the local machine with the
 namd2 binaries for these platforms can also be run directly (known as 
 standalone mode) for single process runs.
 
-Charm++ provides a special ibverbs network layer that uses InfiniBand
-networks directly through the OpenFabrics OFED ibverbs library.  This
-avoids efficiency and portability issues associated with MPI.  Look for
-pre-built ibverbs NAMD binaries or specify ibverbs when building Charm++.
-All runs must be launched with charmrun (standalone mode does not work).
-
-For workstation clusters and other massively parallel machines with 
-special high-performance networking, NAMD uses the system-provided MPI 
-library (with a few exceptions) and standard system tools such as mpirun 
-are used to launch jobs.  Since MPI libraries are very often incompatible 
-between versions, you will likely need to recompile NAMD and its 
-underlying Charm++ libraries to use these machines in parallel (the 
-provided non-MPI binaries should still work for serial runs.) The provided 
-charmrun program for these platforms is only a script that attempts to 
-translate charmrun options into mpirun options, but due to the diversity 
-of MPI libraries it often fails to work.
-
 -- Individual Windows, Linux, Mac OS X, or Other Unix Workstations --
 
 Individual workstations use the same version of NAMD as workstation 
@@ -118,6 +101,38 @@ required to specify that only the local machine is being used:
   charmrun namd2 ++local +p<procs> <configfile>
 
 You may need to specify the full path to the namd2 binary.
+
+-- Linux Clusters with InfiniBand Or Other High-Performance Networks --
+
+Charm++ provides a special ibverbs network layer that uses InfiniBand
+networks directly through the OpenFabrics OFED ibverbs library.  This
+avoids efficiency and portability issues associated with MPI.  Look for
+pre-built ibverbs NAMD binaries or specify ibverbs when building Charm++.
+
+Writing batch job scripts to run charmrun in a queueing system can be
+challenging.  Since most clusters provide directions for using mpiexec
+to launch MPI jobs, charmrun provides a ++mpiexec option to use mpiexec
+to launch non-MPI binaries.  If "mpiexec -np <procs> ..." is not
+sufficient to launch jobs on your cluster you will need to write an
+executable mympiexec script like the following from TACC:
+
+  #!/bin/csh
+  shift; shift; exec ibrun $*
+
+The job is then launched (with full paths where needed) as:
+
+  charmrun +p<procs> ++mpiexec ++remote-shell mympiexec namd2 <configfile>
+
+For workstation clusters and other massively parallel machines with 
+special high-performance networking, NAMD uses the system-provided MPI 
+library (with a few exceptions) and standard system tools such as mpirun 
+are used to launch jobs.  Since MPI libraries are very often incompatible 
+between versions, you will likely need to recompile NAMD and its 
+underlying Charm++ libraries to use these machines in parallel (the 
+provided non-MPI binaries should still work for serial runs.) The provided 
+charmrun program for these platforms is only a script that attempts to 
+translate charmrun options into mpirun options, but due to the diversity 
+of MPI libraries it often fails to work.
 
 -- Linux or Other Unix Workstation Networks --
 
@@ -317,14 +332,14 @@ Unpack NAMD and matching Charm++ source code and enter directory:
   cd charm-6.2.1
 
 Build and test the Charm++/Converse library (network version):
-  ./build charm++ net-linux-x86_64 --no-build-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux-x86_64 --no-build-shared --with-production
   cd net-linux-x86_64/tests/charm++/megatest
   make pgm
   ./charmrun ++local +p4 ./pgm    (also try running on multiple nodes)
   cd ../../../../..
 
 Build and test the Charm++/Converse library (MPI version):
-  env MPICXX=mpicxx ./build charm++ mpi-linux-x86_64 --no-build-shared -O -DCMK_OPTIMIZE=1
+  env MPICXX=mpicxx ./build charm++ mpi-linux-x86_64 --no-build-shared --with-production
   cd mpi-linux-x86_64/tests/charm++/megatest
   make pgm
   mpirun -n 4 ./pgm    (run as any other MPI program on your cluster)
@@ -402,11 +417,11 @@ be listed.  Any options or compiler tags are listed separately and
 must be separated by spaces on the build command line.  Run the build
 command for your platform as:
 
-  ./build charm++ comm-OS-cpu options compiler --no-build-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ comm-OS-cpu options compiler --no-build-shared --with-production
 
 For this specific example:
 
-  ./build charm++ net-linux tcp icc --no-build-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux tcp icc --no-build-shared --with-production
 
 Note that for MPI builds you normally do not need to specify a compiler,
 even if your mpicxx calls icc internally, but you will need to use an
@@ -436,7 +451,7 @@ These commands recompile the necessary files without optmization:
   cd charm/net-linux-icc
   /bin/rm tmp/sockRoutines.o
   /bin/rm lib/libconv-cplus-*
-  ( cd tmp; make charm++ OPTS="-O0 -DCMK_OPTIMIZE=1" )
+  ( cd tmp; make charm++ OPTS="-O0" )
 
 If you're building an MPI version you will probably want to build
 Charm++ with env MPICXX=mpicxx preceding ./build on the command line,
@@ -449,7 +464,7 @@ choices are defined by files in charm/src/arch/common/.
 If you want to run NAMD on Myrinet one option is to build a Myrinet 
 GM library network version by specifying the "gm" option as in:
 
-  ./build charm++ net-linux gm icc --no-build-shared -O -DCMK_OPTIMIZE=1
+  ./build charm++ net-linux gm icc --no-build-shared --with-production
 
 You would then change "net-linux-icc" to "net-linux-gm-icc" in your
 namd2/arch/Linux-x86-icc.arch file (or create a new .arch file).
