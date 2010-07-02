@@ -47,11 +47,11 @@ syntax:
             set ARCH_PAT2 = CRAY-XT
           breaksw
           case ppc:
-            set ARCH_PAT = Linux-PPC
+            set ARCH_PAT = Linux-P
             set ARCH_PAT2 = BlueGene
           breaksw
           case ppc64:
-            set ARCH_PAT = Linux-PPC
+            set ARCH_PAT = Linux-P
             set ARCH_PAT2 = BlueGene
           breaksw
         endsw
