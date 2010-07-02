@@ -504,6 +504,7 @@ $(DPMEDIR)/libdpme.a:
 
 ECHO = echo
 MOVE = mv
+MKDIR = mkdir -p
 COPY = cp
 RM = rm -f
 LDD = ldd
@@ -517,6 +518,7 @@ $(INCDIR)/%.decl.h: $(INCDIR)/%.def.h
 	# .decl.h file built by .def.h rule
 
 $(INCDIR)/%.def.h: $(SRCDIR)/%.ci
+	$(MKDIR) $(INCDIR)
 	$(COPY) $(SRCDIR)/$*.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/$*.ci
 	$(RM) $(INCDIR)/$*.ci
@@ -530,6 +532,7 @@ $(INCDIR)/PmeFFTLib.decl.h: $(INCDIR)/PmeFFTLib.def.h
 	# .decl.h file built by .def.h rule
 
 $(INCDIR)/PmeFFTLib.def.h: $(SRCDIR)/fftlib.ci
+	$(MKDIR) $(INCDIR)
 	$(COPY) $(SRCDIR)/fftlib.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/fftlib.ci
 	$(RM) $(INCDIR)/fftlib.ci
@@ -540,6 +543,7 @@ $(INCDIR)/OptPmeMgr.decl.h: $(INCDIR)/OptPmeMgr.def.h
 	# .decl.h file built by .def.h rule
 
 $(INCDIR)/OptPmeMgr.def.h: $(SRCDIR)/OptPme.ci
+	$(MKDIR) $(INCDIR)
 	$(COPY) $(SRCDIR)/OptPme.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/OptPme.ci
 	$(RM) $(INCDIR)/OptPme.ci
