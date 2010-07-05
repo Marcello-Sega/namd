@@ -23,23 +23,6 @@ machine with the ++local option or on other hosts as specified by a
 nodelist file).  The namd2 binaries for these platforms can also be
 run directly (known as standalone mode) for single process runs.
 
-Charm++ provides a special ibverbs network layer that uses InfiniBand
-networks directly through the OpenFabrics OFED ibverbs library.  This
-avoids efficiency and portability issues associated with MPI.  Look for
-pre-built ibverbs NAMD binaries or specify ibverbs when building Charm++.
-All runs must be launched with charmrun (standalone mode does not work).
-
-For workstation clusters and other massively parallel machines with
-special high-performance networking, NAMD uses the system-provided
-MPI library (with a few exceptions) and standard system tools such as
-mpirun are used to launch jobs.  Since MPI libraries are very often
-incompatible between versions, you will likely need to recompile NAMD
-and its underlying Charm++ libraries to use these machines in parallel
-(the provided non-MPI binaries should still work for serial runs.)
-The provided charmrun program for these platforms is only a script
-that attempts to translate charmrun options into mpirun options, but
-due to the diversity of MPI libraries it often fails to work.
-
 \subsection{Individual Windows, Linux, Mac OS X, or Other Unix Workstations}
 
 Individual workstations use the same version of NAMD as workstation
@@ -72,6 +55,42 @@ required to specify that only the local machine is being used:
 \end{verbatim}
 
 You may need to specify the full path to the namd2 binary.
+
+\subsection{Linux Clusters with InfiniBand Or Other High-Performance Networks}
+
+Charm++ provides a special ibverbs network layer that uses InfiniBand
+networks directly through the OpenFabrics OFED ibverbs library.  This
+avoids efficiency and portability issues associated with MPI.  Look for
+pre-built ibverbs NAMD binaries or specify ibverbs when building Charm++.
+
+Writing batch job scripts to run charmrun in a queueing system can be
+challenging.  Since most clusters provide directions for using mpiexec
+to launch MPI jobs, charmrun provides a ++mpiexec option to use mpiexec
+to launch non-MPI binaries.  If "mpiexec -np {\em procs} ..." is not
+sufficient to launch jobs on your cluster you will need to write an
+executable mympiexec script like the following from TACC:
+
+\begin{verbatim}
+  #!/bin/csh
+  shift; shift; exec ibrun $*
+\end{verbatim}
+
+The job is then launched (with full paths where needed) as:
+
+\begin{verbatim}
+  charmrun +p<procs> ++mpiexec ++remote-shell mympiexec namd2 <configfile>
+\end{verbatim}
+
+For workstation clusters and other massively parallel machines with
+special high-performance networking, NAMD uses the system-provided MPI
+library (with a few exceptions) and standard system tools such as mpirun
+are used to launch jobs.  Since MPI libraries are very often incompatible
+between versions, you will likely need to recompile NAMD and its
+underlying Charm++ libraries to use these machines in parallel (the
+provided non-MPI binaries should still work for serial runs.) The provided
+charmrun program for these platforms is only a script that attempts to
+translate charmrun options into mpirun options, but due to the diversity
+of MPI libraries it often fails to work.
 
 \subsection{Linux or Other Unix Workstation Networks}
 
@@ -225,7 +244,7 @@ Each namd2 process can use only one GPU.  Therefore you will need to run
 at least one process for each GPU you want to use.  Multiple processes
 can share a single GPU, usually with an increase in performance.  NAMD
 will automatically distribute processes equally among the GPUs on a node.
-Specific GPU device IDs can be requested via the ++devices argument on
+Specific GPU device IDs can be requested via the +devices argument on
 the namd2 command line, for example:
 
 \begin{verbatim}
@@ -236,7 +255,7 @@ Devices are selected cyclically from those available, so in the above
 example processes 0 and 2 will share device 0 and processes 1 and 3 will
 share device 2.  One could also specify +devices 0,0,2,2 to cause device
 0 to be shared by processes 0 and 1, etc.  GPUs with two or fewer
-multiprocessors are ignored unless specifically requested with ++devices.
+multiprocessors are ignored unless specifically requested with +devices.
 
 While charmrun with ++local will preserve LD\_LIBRARY\_PATH, normal
 charmrun does not.  You can use charmrun ++runscript to add the namd2
