@@ -8877,6 +8877,12 @@ void Molecule::build_atom_status(void) {
       BigReal LJAvgA = sumOfAs / count;
       BigReal LJAvgB = sumOfBs / count;
       if ( ! CkMyPe() ) {
+        if ( simParams->switchingActive && simParams->vdwForceSwitching ) {
+          iout << iWARN << "**************************************************************\n";
+          iout << iWARN << "LONG-RANGE LJ: CORRECTION FOR FORCE SWITCHING NOT IMPLEMENTED,\n";
+          iout << iWARN << "LONG-RANGE LJ: USING CORRECTION FOR ENERGY SWITCHING INSTEAD!\n";
+          iout << iWARN << "**************************************************************\n" << endi;
+        }
         iout << iINFO << "LONG-RANGE LJ: APPLYING ANALYTICAL CORRECTIONS TO "
           << "ENERGY AND PRESSURE\n" << endi; 
         iout << iINFO << "LONG-RANGE LJ: AVERAGE A AND B COEFFICIENTS " 
