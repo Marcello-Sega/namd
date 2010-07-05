@@ -4,7 +4,7 @@
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                       July 2, 2010
+                                                       July 6, 2010
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
@@ -23,11 +23,19 @@ NAMD 2.7b3 has many advantages over NAMD 2.6, among these are:
 
 - Additional bonded terms for restraining molecular structure
 
-- Support for the TIP4 water model
+- Support for TIP4P water model
+
+- Support for CHARMM Drude polarizable force field
+
+- Support for C2 long-range electrostatics splitting function
+
+- Support for VDW force switching and long-range tail corrections
 
 - NVIDIA CUDA GPU acceleration of nonbonded force evaluation
 
 - Direct (non-MPI) support for InfiniBand via OFED ibverbs library
+
+- Use of mpirun to launch non-MPI (network or ibverbs) binaries
 
 - Enhanced performance and scalability
 
