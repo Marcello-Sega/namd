@@ -237,6 +237,10 @@ public:
     return ( (i%3-1) * a1 + ((i/3)%3-1) * a2 + (i/9-1) * a3 );
   }
 
+  static int offset_a(int i) { return (i%3-1); }
+  static int offset_b(int i) { return ((i/3)%3-1); }
+  static int offset_c(int i) { return (i/9-1); }
+
   // lattice vectors
   Vector a() const { return a1; }
   Vector b() const { return a2; }
