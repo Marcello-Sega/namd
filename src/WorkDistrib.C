@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2010/06/29 20:14:11 $
- * $Revision: 1.1207 $
+ * $Date: 2010/07/17 22:50:20 $
+ * $Revision: 1.1208 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1809,15 +1809,25 @@ void WorkDistrib::mapComputeNonbonded(void)
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+        const int t2 = oneAwayTrans[j];
+        const int adim = patchMap->gridsize_a();
+        const int bdim = patchMap->gridsize_b();
+        const int cdim = patchMap->gridsize_c();
         const int nax = patchMap->numaway_a();  // 1 or 2
         const int nay = patchMap->numaway_b();  // 1 or 2
         const int naz = patchMap->numaway_c();  // 1 or 2
         const int ia1 = patchMap->index_a(p1);
-        const int ia2 = patchMap->index_a(p2);
+        const int ia2 = patchMap->index_a(p2) + adim * Lattice::offset_a(t2);
         const int ib1 = patchMap->index_b(p1);
-        const int ib2 = patchMap->index_b(p2);
+        const int ib2 = patchMap->index_b(p2) + bdim * Lattice::offset_b(t2);
         const int ic1 = patchMap->index_c(p1);
-        const int ic2 = patchMap->index_c(p2);
+        const int ic2 = patchMap->index_c(p2) + cdim * Lattice::offset_c(t2);
+
+        if ( abs(ia2-ia1) > nax ||
+             abs(ib2-ib1) > nay ||
+             abs(ic2-ic1) > naz )
+          NAMD_bug("Bad patch distance in WorkDistrib::mapComputeNonbonded");
+
 	int distance = 3;
  	if ( ia1 == ia2 ) --distance;
  	else if ( ia1 == ia2 + nax - 1 ) --distance;
