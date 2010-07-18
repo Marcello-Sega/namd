@@ -733,31 +733,24 @@ void ComputeNonbondedUtil :: NAME
 #endif
     
 
-  int numParts = params->numParts;
-  int myPart = params->minPart;
-  int groupCount = 0;
+  int maxPart = params->numParts - 1;
+  int groupCount = params->minPart;
 
   for ( i = 0; i < (i_upper SELF(- 1)); ++i )
   {
     const CompAtom &p_i = p_0[i];
     const CompAtomExt &pExt_i = pExt_0[i];
-    if ( p_i.hydrogenGroupSize ) {
-      //save current group count
-      int curgrpcount = groupCount;      
-      //increment group count
-      groupCount ++;
 
-      if (groupCount >= numParts)
-	groupCount = 0;
-      
-      if ( curgrpcount != myPart ) {
+    if ( p_i.hydrogenGroupSize ) {
+      if ( groupCount ) {  // skip this group
+        --groupCount;
         i += p_i.hydrogenGroupSize - 1;
-	
-	//Power PC alignment constraint
 #ifdef ARCH_POWERPC
-	__dcbt((void *) &(p_0[i+1]));
+        __dcbt((void *) &(p_0[i+1]));
 #endif
         continue;
+      } else {  // compute this group
+        groupCount = maxPart;
       }
     }
 
