@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2010/07/16 16:07:33 $
- * $Revision: 1.99 $
+ * $Date: 2010/07/18 19:34:40 $
+ * $Revision: 1.100 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -203,22 +203,17 @@ LdbCoordinator::~LdbCoordinator(void)
 
 void LdbCoordinator::createLoadBalancer()
 {
-  if (CkMyPe()==0) 
-    iout << "LDB: Measuring processor speeds ..." << endi;
   const SimParameters *simParams = Node::Object()->simParameters;
 
   // Create hierarchical or centralized load balancers
   // Currently centralized is the default
   if (simParams->ldBalancer == LDBAL_CENTRALIZED) {
-    CkPrintf("Namd Central LB beign created...\n");
+    CkPrintf("LDB: Central LB being created...\n");
     CreateNamdCentLB();
   } else if (simParams->ldBalancer == LDBAL_HYBRID) {
-    CkPrintf("Hybrid LB being created...\n");
+    CkPrintf("LDB: Hybrid LB being created...\n");
     CreateNamdHybridLB();
   }
-
-  if (CkMyPe()==0)
-    iout << " Done.\n" << endi;
 }
 
 void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
