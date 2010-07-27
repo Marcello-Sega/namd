@@ -1,7 +1,15 @@
 #! /bin/bash
 
-#NAMD_HOME=/path/to/your/namd/directory  # change this to the path of your NAMD instalation
+#NAMD_HOME=/path/to/your/directory ## please change this to the path of your NAMD installation
 NAMD_HOME=/sw/mcm/app/vlad/namd/2009-08-13/namd2_mvapich2-1.4rc1/Linux-x86_64-intel-mvapich2
+#NAMD_HOME=/sw/mcm/app/vlad/namd/2009-08-13/namd2_mvapich2-1.4rc1_tcl8.3/Linux-x86_64-intel-mvapich2
+#NAMD_HOME=/sw/mcm/app/vlad/namd/2009-08-13/namd2_mvapich2-1.4rc1_tcl8.5/Linux-x86_64-intel-mvapich2
+#NAMD_HOME=/sw/mcm/app/vlad/namd/2010-02-23/namd2_mvapich2-1.4rc1/Linux-x86_64-intel-mvapich2
+
+echo "NAMD executable is : $NAMD_HOME/namd2"
+echo "Linking information for the NAMD executable:"
+ldd $NAMD_HOME/namd2
+
 fname=dhaawt_DCL                      # the RAMD example; in order to run the RAMD-MD example, change this to "example_ramd-md"
 outdir=ramd-md_output              # the RAMD output directory; change to example_ramd-md_output
 if [ -d "$outdir" ]; then rm -rf $outdir; mkdir $outdir; else mkdir $outdir; fi
@@ -66,8 +74,9 @@ tCoupleFile      $fname.tCouple.pdb   ### friction coef.=1.0
 tCoupleCol       B
 
 #*** Constant pressure (with Berendsen bath coupling) **************************
-useGroupPressure                         on
-useFlexibleCell                          on
+useGroupPressure                         yes
+useFlexibleCell                          no
+useConstantArea                          no
 BerendsenPressure                        on
 BerendsenPressureTarget                  1.0
 BerendsenPressureCompressibility         0.0000457
@@ -98,15 +107,15 @@ binaryrestart                       on
 
 #*** Random Acceleration Molecular Dynamics *************************************
 
-source ../scripts/ramd-4.0.tcl                   
-#*** sources the wrapper script ramd-4.0.tcl;
+source ../scripts/ramd-4.1.tcl                   
+#*** sources the wrapper script ramd-4.1.tcl;
 #*** please change the directory '../scripts/' to '$dir' ( the correct path );
-#*** directory '$dir' should contain the scripts: ramd-4.0.tcl, ramd-4.0_script.tcl, and vectors.tcl
+#*** directory '$dir' should contain the scripts: ramd-4.1.tcl, ramd-4.1_script.tcl, and vectors.tcl
 
 ramd debugLevel                       0   
 #*** activates verbose output if set to something else than 0
 
-ramd mdStart                         no     
+ramd mdStart                        yes      
 #*** specifies whether combined RAMD-MD simulation will start with MD or RAMD; 
 #*** defaults to no; can be set to yes if an intial MD stint is desired
 
@@ -118,7 +127,7 @@ ramd mdSteps                        100
 #*** specifies the number of steps in 1 standard md stint; 
 #*** defaults to 0 (pure RAMD simulation)
 
-ramd accel                            0.3  
+ramd accel                            0.5  
 #*** specifies the acceleration to be applied; 
 #*** defaults to 0.25 kcal/mol*A*amu
 

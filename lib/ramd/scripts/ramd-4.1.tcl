@@ -42,20 +42,20 @@
 #*******************************************************
 # Startup                                              *
 #*******************************************************
-package provide ramd 4.0
+package provide ramd 4.1
 
 #*******************************************************
 # Parameter definitions
 #*******************************************************
 
 namespace eval ::RAMD {
- set version "4.0"
+ set version "4.1"
  if {! [info exists RAMDdir]} { set RAMDdir [file dirname [info script]] }
  # If it fails, try the local directory
  if { $RAMDdir == "" } { set RAMDdir "." }
  
  TclForces		on
- TclForcesScript	$RAMDdir/ramd-4.0_script.tcl
+ TclForcesScript	$RAMDdir/ramd-4.1_script.tcl
 
  array set defaults {
   ramdSteps               50

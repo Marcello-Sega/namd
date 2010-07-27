@@ -64,8 +64,10 @@ namespace eval ::RAMD {
  }
  #***** Check if 'forceOutFreq' is equal to 1; exit with error if that's the case
  if { $forceOutFreq == 1 } { error "RAMD: ERROR: 'forceOutFreq' parameter may not be 1" } 
- #***** Check if "mdSteps" is specified in the configuration file
- #***** Performed pure RAMD if mdSteps = 0
+
+ #***** Check if 'mdSteps' is specified in the configuration file
+
+ #***** Performed pure RAMD if 'mdSteps' = 0
  if { $mdSteps == 0 } { 
   
   #***** Check that the number of ramd steps is a multiple of 'forceOutFreq'; exit with error if not
@@ -73,39 +75,51 @@ namespace eval ::RAMD {
   if { $r != 0 } { error "RAMD: ERROR: The number of RAMD steps is not a multiple of 'forceOutFreq'" } 
  
   print "RAMD: Pure RAMD simulation is performed" 
-
- }
-
- #***** If 'mdSteps' is specified, exit with error if 'rMinMd' is not specified
- if { $mdSteps != 0 && ! [info exists rMinMd] } {
-  error "RAMD: ERROR: parameter 'rMinMd' not set: 'rMinMd' is required if 'mdSteps' is not 0"
- }
- #***** If 'mdSteps' is not specified, but "rMinMd" is, give a warning
- if { $mdSteps == 0 && [info exists rMinMd] } {
-   print "RAMD: WARNING: parameter 'rMinMd' specified while 'mdSteps' is 0"
-   print "RAMD: WARNING: Pure RAMD simulation will be performed"
- }
- #***** Perform combined RAMD with MD simulation if both mdSteps and rMinMd are specified
- if { $mdSteps != 0  && [info exists rMinMd] } {
-
-  #***** Check that the number of ramd and md steps are each a multiple of 'forceOutFreq'
-  #***** Exit with error if that's not the case
-  set r1 [expr "$ramdSteps % $forceOutFreq"]
-  set r2 [expr "$mdSteps % $forceOutFreq"]
-  if { $r1 != 0 || $r2 != 0 } { 
-   error "RAMD: ERROR: The number of RAMD or MD steps must be multiple of 'forceOutFreq'" 
-  } 
-
-  foreach svar $silent {
-   print [format "RAMD: %25s = %s" $svar [expr $$svar]]
+  
+  #***** If 'mdSteps' is 0 and "mdStart" is yes, give a warning
+  if { $mdStart == "yes" } { 
+   print "RAMD: WARNING: 'mdStart' has no meaning for pure RAMD simulation; it will be ignored" 
   }
-  print "RAMD:"
-  print "RAMD: Combined RAMD-MD simulation is performed"
+
+  #***** If 'mdSteps' is 0 and "rMinMd" is set, give a warning
+  if { [info exists rMinMd] } {
+   print "RAMD: WARNING: 'rMinMd' specified while 'mdSteps' is 0"
+   print "RAMD: WARNING: For combined RAMD-MD simulation 'mdSteps' must be greater than 0"
+   print "RAMD: WARNING: Ignore 'rMinMd' and perform pure RAMD simulation"
+  }
+  
+ }
+
+ #***** Perform combined RAMD with MD simulation if 'mdSteps' is not 0 and 'rMinMd' is specified
+ if { $mdSteps != 0  } { 
+  
+  if { [info exists rMinMd] } {
+
+   #***** Check that the number of ramd and md steps are each a multiple of 'forceOutFreq'
+   #***** Exit with error if that's not the case
+   set r1 [expr "$ramdSteps % $forceOutFreq"]
+   set r2 [expr "$mdSteps % $forceOutFreq"]
+   
+   if { $r1 != 0 || $r2 != 0 } { 
+    error "RAMD: ERROR: The number of RAMD or MD steps must be multiple of 'forceOutFreq'" 
+   } 
+
+   foreach svar $silent {
+    print [format "RAMD: %25s = %s" $svar [expr $$svar]]
+   }
+  
+   print "RAMD:"
+   print "RAMD: Combined RAMD-MD simulation is performed"
+  
+  } elseif { ! [info exists rMinMd] } {
+   
+   #***** If 'mdSteps' is not 0, exit with error if 'rMinMd' is not specified
+   error "RAMD: ERROR: parameter 'rMinMd' not set: 'rMinMd' is required if 'mdSteps' is greater than 0"
+  
+  }
 
  }
- if { $mdSteps == 0 && $mdStart == yes } { 
-  print "RAMD: WARNING: 'mdStart' has no meaning for pure RAMD simulation" 
- }
+  
  print "RAMD:"
    
  #***** Make a list of all the atoms on which the force will be applied
@@ -128,11 +142,10 @@ namespace eval ::RAMD {
 
  #***** Initialization of simulation flags
  if { $mdSteps == 0 } {
-  set ramdFlag 1; set mdFlag 0; set ramdStep 0;
- } elseif { $mdSteps != 0 && $mdStart eq "yes" } {
-  set ramdFlag 0; set mdFlag 1; set ramdStep 0; set mdStep 0;
- } elseif { $mdSteps != 0 && $mdStart eq "no" } {
-  set ramdFlag 1; set mdFlag 0; set ramdStep 0; set mdStep 0
+  set ramdFlag 1; set mdFlag 0; set ramdStep 0; set mdStep 0;
+ } elseif { $mdSteps != 0 } { 
+  if { $mdStart == "yes" } { set ramdFlag 0; set mdFlag 1; set ramdStep 0; set mdStep 0; }
+  if { $mdStart == "no" } { set ramdFlag 1; set mdFlag 0; set ramdStep 0; set mdStep 0; }  
  }
  
 } ;# namespace
@@ -208,7 +221,7 @@ namespace eval ::RAMD {
   print "EXIT: $timeStep  > LIGAND EXIT EVENT DETECTED: STOP SIMULATION"
   print "EXIT: $timeStep  > EXIT NAMD"
   set process [pid]
-  exec kill $process          
+  exec kill -9 $process
  } 
 
  if { [ array exists coords ] } { array unset coords }

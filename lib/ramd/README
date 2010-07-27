@@ -1,7 +1,7 @@
 #***********************************************************************************                                                                                  *
 # Random Acceleration Molecular Dynamics (RAMD)                                    *
 # Implementation for NAMD v2.7                                                     *
-# December 2009                                                                    *
+# March 2010                                                                       *
 #                                                                                  *
 # Copyright (c) 2009, EML Research gGmbH, Heidelberg, Germany                      * 
 # Author:  Vlad Cojocaru                                                           *
@@ -9,11 +9,16 @@
 #***********************************************************************************
 
 Random Acceleration Molecular Dynamics
-RAMD 4.0 implementation in NAMD 2.6, 2.7b2 and above
+RAMD 4.1 implementation in NAMD 2.6, 2.7b2 and above
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+NOTE: It requires NAMD to be compiled against tcl 8.3 or 8.4
+NOTE: Further testing is required for the compatibility with tcl 8.5
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 Scripts (in the './scripts' directory):
-   ramd-4.0.tcl        - 'wrapper' script that is sourced in the NAMD configuration file
-   ramd-4.0_script.tcl - script that performs the calculations
+   ramd-4.1.tcl        - 'wrapper' script that is sourced in the NAMD configuration file
+   ramd-4.1_script.tcl - script that performs the calculations
    vectors.tcl         - script that defines vector procedures borrowed from VMD
    
 Simulation methods:
@@ -26,6 +31,10 @@ Reference describing the original method (pure RAMD simulations):
 
 Notes on the current implementation:
 (see examples of NAMD configuration files in the ../examples directory for description of input parameters)
+
+*** version 4.1 fixes the following bugs (the implementation and usage is the same as described for version 4.0):
+	- the scripts are now also compatible with tcl 8.3 (version 4.0 was only compatible with tcl 8.4)
+	- the exit of NAMD is error free if a ligand exit event occurred
 
 *** version 4.0 is the first released version
 
