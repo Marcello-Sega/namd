@@ -8,6 +8,8 @@
    This object outputs the data collected on the master node
 */
 
+#include "largefiles.h"
+
 #include <string.h>
 #include <stdlib.h>
 
@@ -29,6 +31,32 @@
 #include "PatchMap.inl"
 #include "ScriptTcl.h"
 #include "Lattice.h"
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef WIN32
+#include <io.h>
+#endif
+
+#define NAMD_write NAMD_write64
+// same as write, only does error checking internally
+void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg) {
+  while ( count ) {
+#if defined(WIN32) && !defined(__CYGWIN__)
+    long retval = _write(fd,buf,count);
+#else
+    ssize_t retval = write(fd,buf,count);
+#endif
+    if ( retval < 0 ) NAMD_err(errmsg);
+    if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write64()");
+    buf += retval;
+    count -= retval;
+  }
+}
+
+#ifndef O_LARGEFILE
+#define O_LARGEFILE 0x0
+#endif
+
 
 // These make the NAMD 1 names work in NAMD 2
 #define namdMyNode Node::Object()
@@ -869,27 +897,39 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
 void Output::write_binary_file(char *fname, int n, Vector *vecs)
 
 {
-  FILE *fp;    //  File descriptor
+  char errmsg[256];
+  int fd;    //  File descriptor
   int32 n32 = n;
 
   //  open the file and die if the open fails
-  if ( (fp = fopen(fname, "wb")) == NULL)
+#ifdef WIN32
+  if ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,                                _S_IREAD|_S_IWRITE)) < 0)
+#else
+#ifdef NAMD_NO_O_EXCL
+  if ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
+#else
+  if ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE,
+#endif
+                           S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
+#endif
   {
-    char errmsg[256];
-
     sprintf(errmsg, "Unable to open binary file %s", fname);
     NAMD_err(errmsg);
   }
 
+  sprintf(errmsg, "Error on write to binary file %s", fname);
+
   //  Write out the number of atoms and the vectors
-  fwrite(&n32, sizeof(int32), 1, fp);
-  fwrite(vecs, sizeof(Vector), n, fp);
+  NAMD_write(fd, (char *) &n32, sizeof(int32), errmsg);
+  NAMD_write(fd, (char *) vecs, sizeof(Vector)*n, errmsg);
 
-  if ( ferror(fp) || fclose(fp) )
+#ifdef WIN32
+  if ( _close(fd) )
+#else
+  if ( close(fd) )
+#endif
   {
-    char errmsg[256];
-
-    sprintf(errmsg, "Error on write to binary file %s", fname);
+    sprintf(errmsg, "Error on closing binary file %s", fname);
     NAMD_err(errmsg);
   }
 }
