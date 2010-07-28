@@ -604,10 +604,10 @@ $(DEPENDFILE):
 include Make.depends
 
 $(DSTDIR):
-	mkdir $(DSTDIR)
+	$(MKDIR) $(DSTDIR)
 
 $(INCDIR):
-	mkdir $(INCDIR)
+	$(MKDIR) $(INCDIR)
 
 clean:
 	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
