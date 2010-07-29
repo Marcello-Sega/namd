@@ -67,7 +67,7 @@ void ExclElem::computeForce(BigReal *reduction,
 
     const int doFull = flags.doFullElectrostatics;
 
-    BigReal fast_a, fast_b, fast_c, fast_d;
+    BigReal fast_a = 0., fast_b = 0., fast_c = 0., fast_d = 0.;
     BigReal slow_a, slow_b, slow_c, slow_d;
 
   if ( modified ) {
