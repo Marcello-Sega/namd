@@ -514,6 +514,9 @@ include Make.config
 
 # Implicit rules for modules.
 
+.SECONDARY:
+	# prevent gmake from deleting intermediate files
+
 $(INCDIR)/%.decl.h: $(INCDIR)/%.def.h
 	# .decl.h file built by .def.h rule
 
