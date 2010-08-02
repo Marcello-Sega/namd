@@ -517,10 +517,7 @@ include Make.config
 .SECONDARY:
 	# prevent gmake from deleting intermediate files
 
-$(INCDIR)/%.decl.h: $(INCDIR)/%.def.h
-	# .decl.h file built by .def.h rule
-
-$(INCDIR)/%.def.h: $(SRCDIR)/%.ci
+$(INCDIR)/%.decl.h $(INCDIR)/%.def.h: $(SRCDIR)/%.ci
 	$(MKDIR) $(INCDIR)
 	$(COPY) $(SRCDIR)/$*.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/$*.ci
@@ -530,11 +527,9 @@ $(INCDIR)/%.def.h: $(SRCDIR)/%.ci
 
 
 # Explicit rules for modules that don't match their file names.
+# Multiple targets must be a pattern to execute recipe only once.
 
-$(INCDIR)/PmeFFTLib.decl.h: $(INCDIR)/PmeFFTLib.def.h
-	# .decl.h file built by .def.h rule
-
-$(INCDIR)/PmeFFTLib.def.h: $(SRCDIR)/fftlib.ci
+$(INCDIR)/PmeFF%Lib.decl.h $(INCDIR)/PmeFF%Lib.def.h: $(SRCDIR)/fftlib.ci
 	$(MKDIR) $(INCDIR)
 	$(COPY) $(SRCDIR)/fftlib.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/fftlib.ci
@@ -542,10 +537,7 @@ $(INCDIR)/PmeFFTLib.def.h: $(SRCDIR)/fftlib.ci
 	$(MOVE) PmeFFTLib.def.h $(INCDIR)
 	$(MOVE) PmeFFTLib.decl.h $(INCDIR)
 
-$(INCDIR)/OptPmeMgr.decl.h: $(INCDIR)/OptPmeMgr.def.h
-	# .decl.h file built by .def.h rule
-
-$(INCDIR)/OptPmeMgr.def.h: $(SRCDIR)/OptPme.ci
+$(INCDIR)/OptPm%Mgr.decl.h $(INCDIR)/OptPm%Mgr.def.h: $(SRCDIR)/OptPme.ci
 	$(MKDIR) $(INCDIR)
 	$(COPY) $(SRCDIR)/OptPme.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/OptPme.ci
