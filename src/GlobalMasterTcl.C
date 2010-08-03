@@ -209,6 +209,7 @@ int GlobalMasterTcl::Tcl_loadforces(ClientData clientData,
   DebugM(1,"Making Tcl array\n");
   while(forced_ids_i != forced_ids_e) {
     Tcl_Obj *array_key = Tcl_NewIntObj((int)((*forced_ids_i)+1)); // the id
+    Tcl_IncrRefCount(array_key);
 
     // Check if the element is already defined, and if so, add to it
     Tcl_Obj *oldlist = Tcl_ObjGetVar2(interp, force_array_name, array_key, 0);
@@ -245,7 +246,6 @@ int GlobalMasterTcl::Tcl_loadforces(ClientData clientData,
       return TCL_ERROR;
     }
 
-    // what is this for?
     Tcl_DecrRefCount(array_key);
 
     // go to the next atom
@@ -278,6 +278,7 @@ int GlobalMasterTcl::Tcl_loadtotalforces(ClientData clientData,
   // their forces
   while(forced_ids_i != forced_ids_e) {
     Tcl_Obj *array_key = Tcl_NewIntObj((int)((*forced_ids_i)+1)); // the id
+    Tcl_IncrRefCount(array_key);
     Tcl_Obj *newlist = Tcl_NewListObj(0,NULL); // the list <fx,fy,fz>
     Tcl_ListObjAppendElement(interp, newlist,
       Tcl_NewDoubleObj((double)((*forces_i).x)));
@@ -292,7 +293,6 @@ int GlobalMasterTcl::Tcl_loadtotalforces(ClientData clientData,
       return TCL_ERROR;
     }
 
-    // what is this for?
     Tcl_DecrRefCount(array_key);
 
     // go to the next atom
@@ -317,6 +317,7 @@ int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
   for ( ; a_i != a_e; ++a_i, ++p_i ) {
     Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
     Tcl_Obj *arrkey = Tcl_NewIntObj((int)((*a_i)+1));
+    Tcl_IncrRefCount(arrkey);
     
     Tcl_ListObjAppendElement(interp, newlist, 
       Tcl_NewDoubleObj((double)((*p_i).x)));
@@ -341,6 +342,7 @@ int GlobalMasterTcl::Tcl_loadcoords(ClientData clientData,
     char buf[10];
     sprintf(buf, "g%d", gcount);
     Tcl_Obj *arrkey = Tcl_NewStringObj(buf, -1);
+    Tcl_IncrRefCount(arrkey);
  
     Tcl_ListObjAppendElement(interp, newlist,
       Tcl_NewDoubleObj((double)((*c_i).x)));
@@ -372,6 +374,7 @@ int GlobalMasterTcl::Tcl_loadmasses(ClientData clientData,
   AtomIDList::const_iterator a_e = self->getAtomIdEnd();
   for ( ; a_i != a_e; ++a_i) {
     Tcl_Obj *arrkey = Tcl_NewIntObj((int)((*a_i)+1));
+    Tcl_IncrRefCount(arrkey);
     if (!Tcl_ObjSetVar2(interp, vname, arrkey,
                         Tcl_NewDoubleObj((double)(mol->atommass(*a_i))),
                         0)) {
@@ -389,6 +392,7 @@ int GlobalMasterTcl::Tcl_loadmasses(ClientData clientData,
     char buf[10];
     sprintf(buf, "g%d", gcount);
     Tcl_Obj *arrkey = Tcl_NewStringObj(buf, -1);
+    Tcl_IncrRefCount(arrkey);
     if (!Tcl_ObjSetVar2(interp, vname, arrkey,
                         Tcl_NewDoubleObj((double)(*g_i)),
                         0)) {

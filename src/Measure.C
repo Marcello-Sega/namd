@@ -126,6 +126,7 @@ static int Tcl_loadCoords(ClientData, Tcl_Interp *interp, int objc, Tcl_Obj * co
     for (int i=0; i<numAtoms; i++) {
       Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
       Tcl_Obj *arrkey = Tcl_NewIntObj(i+1);
+      Tcl_IncrRefCount(arrkey);
       Tcl_ListObjAppendElement(interp, newlist, 
         Tcl_NewDoubleObj(coords[i].x));
       Tcl_ListObjAppendElement(interp, newlist, 
@@ -149,6 +150,7 @@ static int Tcl_loadCoords(ClientData, Tcl_Interp *interp, int objc, Tcl_Obj * co
         return TCL_ERROR;
       Tcl_Obj *newlist = Tcl_NewListObj(0, NULL);
       Tcl_Obj *arrkey = Tcl_NewIntObj(ind);
+      Tcl_IncrRefCount(arrkey);
       --ind;
       Tcl_ListObjAppendElement(interp, newlist, 
         Tcl_NewDoubleObj(coords[ind].x));
