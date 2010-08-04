@@ -365,10 +365,10 @@ public:
 	void assign_bond_index(char *, char *, Bond *); 
 						//  Assign a bond index
 						//  to a bond
-	void assign_angle_index(char *, char *, char *, Angle *);
+	void assign_angle_index(char *, char *, char *, Angle *, int);
 						//  Assign an angle index
 						//  to an angle
-	void assign_dihedral_index(char *, char*, char*, char *, Dihedral *, int);
+	void assign_dihedral_index(char *, char*, char*, char *, Dihedral *, int, int);
 						//  Assign a dihedral index
 						//  to a dihedral
 	void assign_improper_index(char *, char*, char*, char *, Improper *, int);

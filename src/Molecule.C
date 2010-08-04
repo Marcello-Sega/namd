@@ -1757,7 +1757,7 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
     /*  Get the constant values for this bond from the  */
     /*  parameter object          */
     params->assign_angle_index(atom1name, atom2name, 
-       atom3name, &(angles[num_read]));
+       atom3name, &(angles[num_read]), simParams->alchOn ? -1 : 0);
 
     /*  Assign the three atom indices      */
     angles[num_read].atom1=atom_nums[0];
@@ -1766,6 +1766,7 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
 
     /*  Make sure this isn't a fake angle meant for shake in x-plor.  */
     Real k, t0, k_ub, r_ub;
+    if ( angles[num_read].angle_type == -1 ) { k = -1.;  k_ub = -1.; } else
     params->get_angle_params(&k,&t0,&k_ub,&r_ub,angles[num_read].angle_type);
     if ( k == 0. && k_ub == 0. ) --numAngles;  // fake angle
     else ++num_read;  // real angle
@@ -1886,7 +1887,7 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
     /*  Get the constants for this dihedral bond    */
     params->assign_dihedral_index(atom1name, atom2name, 
        atom3name, atom4name, &(dihedrals[num_unique-1]),
-       multiplicity);
+       multiplicity, simParams->alchOn ? -1 : 0);
 
     /*  Assign the atom indexes        */
     dihedrals[num_unique-1].atom1=atom_nums[0];
@@ -2668,9 +2669,11 @@ void Molecule::plgLoadAngles(int *plgAngles)
             strcpy(atom3name, atomNames[thisAngle->atom1].atomtype);
         }
 
-        params->assign_angle_index(atom1name, atom2name, atom3name, thisAngle);
+        params->assign_angle_index(atom1name, atom2name, atom3name,
+				thisAngle, simParams->alchOn ? -1 : 0);
 
         Real k, t0, k_ub, r_ub;
+        if ( thisAngle->angle_type == -1 ) { k = -1.;  k_ub = -1.; } else
         params->get_angle_params(&k, &t0, &k_ub, &r_ub, thisAngle->angle_type);
         if(k!=0. || k_ub!=0.) numRealAngles++;
     }
@@ -2724,7 +2727,7 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
 
         params->assign_dihedral_index(atom1name, atom2name,
                                       atom3name, atom4name, thisDihedral,
-                                      multiplicity);
+                                      multiplicity, simParams->alchOn ? -1 : 0);
         thisDihedral->atom1 = atomid[0]-1;
         thisDihedral->atom2 = atomid[1]-1;
         thisDihedral->atom3 = atomid[2]-1;
@@ -8091,6 +8094,14 @@ void Molecule::delete_alch_bonded(void)  {
       alchDroppedAngles++;
     }
     else {
+      if ( angles[i].angle_type == -1 ) {
+        char err_msg[128];
+        sprintf(err_msg,
+            "MISSING PARAMETERS FOR ANGLE %i %i %i PARTITIONS %i %i %i\n",
+            angles[i].atom1+1, angles[i].atom2+1, angles[i].atom3+1,
+            part1, part2, part3);
+        NAMD_die(err_msg);
+      }
       nonalchAngles[nonalchAngleCount++] = angles[i];
     }
   }
@@ -8119,6 +8130,15 @@ void Molecule::delete_alch_bonded(void)  {
       alchDroppedDihedrals++;
     }
     else {
+      if ( dihedrals[i].dihedral_type == -1 ) {
+        char err_msg[128];
+        sprintf(err_msg,
+        "MISSING PARAMETERS FOR DIHEDRAL %i %i %i %i PARTITIONS %i %i %i %i\n",
+            dihedrals[i].atom1+1, dihedrals[i].atom2+1,
+            dihedrals[i].atom3+1, dihedrals[i].atom4+1,
+            part1, part2, part3, part4);
+        NAMD_die(err_msg);
+      }
       nonalchDihedrals[nonalchDihedralCount++] = dihedrals[i];
     }
   }

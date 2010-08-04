@@ -3666,7 +3666,7 @@ void Parameters::assign_bond_index(char *atom1, char *atom2, Bond *bond_ptr)
 /************************************************************************/
 
 void Parameters::assign_angle_index(char *atom1, char *atom2, char*atom3,
-          Angle *angle_ptr)
+          Angle *angle_ptr, int notFoundIndex)
 
 {
   struct angle_params *ptr;  //  Current position in tree
@@ -3735,7 +3735,12 @@ void Parameters::assign_angle_index(char *atom1, char *atom2, char*atom3,
 
     sprintf(err_msg, "UNABLE TO FIND ANGLE PARAMETERS FOR %s %s %s",
        atom1, atom2, atom3);
-    NAMD_die(err_msg);
+
+    if ( notFoundIndex ) {
+      angle_ptr->angle_type = notFoundIndex;
+      iout << iWARN << err_msg << "\n" << endi;
+      return;
+    } else NAMD_die(err_msg);
   }
 
   return;
@@ -3765,7 +3770,7 @@ void Parameters::assign_angle_index(char *atom1, char *atom2, char*atom3,
 
 void Parameters::assign_dihedral_index(char *atom1, char *atom2, char *atom3,
         char *atom4, Dihedral *dihedral_ptr,
-        int multiplicity)
+        int multiplicity, int notFoundIndex)
 
 {
   struct dihedral_params *ptr;  //  Current position in list
@@ -3817,7 +3822,11 @@ void Parameters::assign_dihedral_index(char *atom1, char *atom2, char *atom3,
     sprintf(err_msg, "CAN'T FIND DIHEDRAL PARAMETERS FOR %s  %s  %s  %s",
        atom1, atom2, atom3, atom4);
     
-    NAMD_die(err_msg);
+    if ( notFoundIndex ) {
+      dihedral_ptr->dihedral_type = notFoundIndex;
+      iout << iWARN << err_msg << "\n" << endi;
+      return;
+    } else NAMD_die(err_msg);
   }
 
   //  Check to make sure the number of multiples specified in the psf
