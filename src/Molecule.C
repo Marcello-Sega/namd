@@ -10008,6 +10008,7 @@ void AtomSignature::removeEmptyTupleSigs(){
     TupleSignature *newTupleSigs;
 
     //bonds
+  {
     origTupleCnt = bondCnt;
     tupleSigs= bondSigs;
     for(int i=0; i<origTupleCnt; i++){
@@ -10029,8 +10030,10 @@ void AtomSignature::removeEmptyTupleSigs(){
         delete [] tupleSigs;
         bondSigs = newTupleSigs;
     }
+  }
 
     //angles
+  {
     origTupleCnt = angleCnt;
     tupleSigs = angleSigs;
     for(int i=0; i<origTupleCnt; i++){
@@ -10052,8 +10055,10 @@ void AtomSignature::removeEmptyTupleSigs(){
         delete [] tupleSigs;
         angleSigs = newTupleSigs;
     }
+  }
 
     //dihedrals
+  {
     origTupleCnt = dihedralCnt;
     tupleSigs = dihedralSigs;
     for(int i=0; i<origTupleCnt; i++){
@@ -10075,9 +10080,11 @@ void AtomSignature::removeEmptyTupleSigs(){
         delete [] tupleSigs;
         dihedralSigs = newTupleSigs;        
     }
+  }
 
 
     //impropers
+  {
     origTupleCnt = improperCnt;
     tupleSigs = improperSigs;
     for(int i=0; i<origTupleCnt; i++){
@@ -10099,8 +10106,10 @@ void AtomSignature::removeEmptyTupleSigs(){
         delete [] tupleSigs;
         improperSigs = newTupleSigs;
     }    
+  }
 
     //crossterms
+  {
     origTupleCnt = crosstermCnt;
     tupleSigs = crosstermSigs;
     for(int i=0; i<origTupleCnt; i++){
@@ -10122,6 +10131,7 @@ void AtomSignature::removeEmptyTupleSigs(){
         delete [] tupleSigs;
         crosstermSigs = newTupleSigs;
     }    
+  }
 }
 
 void ExclusionSignature::removeEmptyOffset(){
