@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2010/07/01 21:34:37 $
- * $Revision: 1.1307 $
+ * $Date: 2010/08/05 16:31:32 $
+ * $Revision: 1.1308 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2050,13 +2050,20 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       {
           rigidBonds = RIGID_ALL;
       }
-      else  if (!strcasecmp(s, "water"))
+      else if (!strcasecmp(s, "water"))
       {
            rigidBonds = RIGID_WATER;
       } 
-      else
+      else if (!strcasecmp(s, "none"))
       {
            rigidBonds = RIGID_NONE;
+      } 
+      else
+      {
+        char err_msg[256];
+        sprintf(err_msg, 
+          "Illegal value '%s' for 'rigidBonds' in configuration file", s);
+        NAMD_die(err_msg);
       }
    }
    
