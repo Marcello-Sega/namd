@@ -114,11 +114,12 @@ public:
   private:
     int myNode;
     int numNodes;
-    int nodeSize;
     int num_grids;
     int grids_deposited;
     GridforceGrid **grids;
     int requestGrids_count;
+    int activeProcCount;
+    int* activeProcs;
     ComputeGridForce **gf;
     int proc_count;
     int msgSentCount;

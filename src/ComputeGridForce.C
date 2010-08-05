@@ -31,7 +31,9 @@ ComputeGridForceNodeMgr::ComputeGridForceNodeMgr()
   requestGrids_count = 0;
   myNode = CkMyNode();
   numNodes = CkNumNodes();
-  nodeSize = CkNodeSize(myNode);
+  int nodeSize = CkNodeSize();
+  activeProcCount = -1;
+  activeProcs = new int[nodeSize];
   gf = new ComputeGridForce*[nodeSize];
   proc_count = 0;
   cur_grid = 0;
@@ -156,13 +158,26 @@ void ComputeGridForceNodeMgr::submitRequest(SubReqMsg *msg)
 //  CkPrintf("[%d] submitRequest received message %d from %d\n",
 //           CkMyPe(),proc_count,msg->rank); 
   const int msgrank = msg->rank;
+
+  // If we haven't figured out how many client procs this node has, do it now
+  if (activeProcCount == -1) {
+    int nodeSz = CkNodeSize();
+    int i, pe;
+    activeProcCount = 0;
+    PatchMap* map = PatchMap::Object();
+    for(i=0,pe=CkNodeFirst(myNode) ; i < nodeSz; pe++, i++) {
+      if (map->numPatchesOnNode(pe)) {
+	activeProcs[activeProcCount++] = pe;
+      }
+    }
+  }
     
   // Save the data from this request
   gf[msgrank] = msg->gf;
   delete msg;
   proc_count++;
 
-  if (proc_count < nodeSize) {
+  if (proc_count < activeProcCount) {
 //    iout << iINFO << "[" << CkMyPe() << "] " 
 //         << " submitRequest rank=" << msgrank
 //         << " still waiting"
@@ -390,8 +405,8 @@ void ComputeGridForceNodeMgr::resume()
   CProxy_ComputeGridForceMgr pemgr(CkpvAccess(BOCclass_group).
                                    computeGridForceMgr);
 
-  for(rank=0; rank < nodeSize; rank++) {
-    pemgr[CkNodeFirst(myNode) + rank].finishWork();
+  for(rank=0; rank < activeProcCount; rank++) {
+    pemgr[activeProcs[rank]].finishWork();
   }
 }
 
