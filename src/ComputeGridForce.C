@@ -31,7 +31,7 @@ ComputeGridForceNodeMgr::ComputeGridForceNodeMgr()
   requestGrids_count = 0;
   myNode = CkMyNode();
   numNodes = CkNumNodes();
-  int nodeSize = CkNodeSize();
+  int nodeSize = CkNodeSize(myNode);
   activeProcCount = -1;
   activeProcs = new int[nodeSize];
   gf = new ComputeGridForce*[nodeSize];
@@ -161,7 +161,7 @@ void ComputeGridForceNodeMgr::submitRequest(SubReqMsg *msg)
 
   // If we haven't figured out how many client procs this node has, do it now
   if (activeProcCount == -1) {
-    int nodeSz = CkNodeSize();
+    int nodeSz = CkNodeSize(myNode);
     int i, pe;
     activeProcCount = 0;
     PatchMap* map = PatchMap::Object();
