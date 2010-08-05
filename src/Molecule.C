@@ -1758,6 +1758,10 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
     /*  parameter object          */
     params->assign_angle_index(atom1name, atom2name, 
        atom3name, &(angles[num_read]), simParams->alchOn ? -1 : 0);
+    if ( angles[num_read].angle_type == -1 ) {
+      iout << iWARN << "ALCHEMY MODULE WILL REMOVE ANGLE OR RAISE ERROR\n"
+           << endi;
+    }
 
     /*  Assign the three atom indices      */
     angles[num_read].atom1=atom_nums[0];
@@ -1888,6 +1892,10 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
     params->assign_dihedral_index(atom1name, atom2name, 
        atom3name, atom4name, &(dihedrals[num_unique-1]),
        multiplicity, simParams->alchOn ? -1 : 0);
+    if ( dihedrals[num_unique-1].dihedral_type == -1 ) {
+      iout << iWARN << "ALCHEMY MODULE WILL REMOVE DIHEDRAL OR RAISE ERROR\n"
+           << endi;
+    }
 
     /*  Assign the atom indexes        */
     dihedrals[num_unique-1].atom1=atom_nums[0];
@@ -2671,6 +2679,10 @@ void Molecule::plgLoadAngles(int *plgAngles)
 
         params->assign_angle_index(atom1name, atom2name, atom3name,
 				thisAngle, simParams->alchOn ? -1 : 0);
+        if ( thisAngle->angle_type == -1 ) {
+          iout << iWARN << "ALCHEMY MODULE WILL REMOVE ANGLE OR RAISE ERROR\n"
+               << endi;
+        }
 
         Real k, t0, k_ub, r_ub;
         if ( thisAngle->angle_type == -1 ) { k = -1.;  k_ub = -1.; } else
@@ -2728,6 +2740,10 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
         params->assign_dihedral_index(atom1name, atom2name,
                                       atom3name, atom4name, thisDihedral,
                                       multiplicity, simParams->alchOn ? -1 : 0);
+        if ( thisDihedral->dihedral_type == -1 ) {
+          iout << iWARN << "ALCHEMY MODULE WILL REMOVE DIHEDRAL OR RAISE ERROR\n"
+               << endi;
+        }
         thisDihedral->atom1 = atomid[0]-1;
         thisDihedral->atom2 = atomid[1]-1;
         thisDihedral->atom3 = atomid[2]-1;
