@@ -1275,6 +1275,10 @@ void HomePatch::reposition_lonepair(
     Vector& ri, const Vector& rj, const Vector& rk, const Vector& rl,
     Real distance, Real angle, Real dihedral)
 {
+  if ( (rj-rk).length2() > 100. || (rj-rl).length2() > 100. ) {
+    iout << iWARN << "Large distance between lonepair reference atoms: ("
+      << rj << ") (" << rk << ") (" << rl << ")\n" << endi;
+  }
   BigReal r, t, p, cst, snt, csp, snp, invlen;
   Vector v, w, a, b, c;
 
@@ -2418,9 +2422,27 @@ HomePatch::depositMigration(MigrateAtomsMsg *msg)
       for (mi = migrationList.begin(); mi != migrationList.end(); mi++) {
         DebugM(1,"Migrating atom " << mi->id << " to patch "
 		  << patchID << " with position " << mi->position << "\n"); 
-        if ( mi->hydrogenGroupSize ) {
-          mi->position = lattice.nearest(mi->position,center,&(mi->transform));
-          mother_transform = mi->transform;
+        if ( mi->migrationGroupSize ) {
+          if ( mi->migrationGroupSize != mi->hydrogenGroupSize ) {
+            Position pos = mi->position;
+            int mgs = mi->migrationGroupSize;
+            int c = 1;
+            for ( int j=mi->hydrogenGroupSize; j<mgs;
+                                j+=(mi+j)->hydrogenGroupSize ) {
+              pos += (mi+j)->position;
+              ++c;
+            }
+            pos *= 1./c;
+            // iout << "mgroup " << mi->id << " at " << pos << "\n" << endi;
+            mother_transform = mi->transform;
+            pos = lattice.nearest(pos,center,&mother_transform);
+            mi->position = lattice.reverse_transform(mi->position,mi->transform);
+            mi->position = lattice.apply_transform(mi->position,mother_transform);
+            mi->transform = mother_transform;
+          } else {
+            mi->position = lattice.nearest(mi->position,center,&(mi->transform));
+            mother_transform = mi->transform;
+          }
         } else {
           mi->position = lattice.reverse_transform(mi->position,mi->transform);
           mi->position = lattice.apply_transform(mi->position,mother_transform);
@@ -2587,6 +2609,9 @@ void HomePatch::mergeAtomList(FullAtomList &al) {
 
     FullAtom &atom_i = al[i];
     int hgs = atom_i.hydrogenGroupSize;
+    if ( hgs != atom_i.migrationGroupSize ) {
+      NAMD_bug("HomePatch::mergeAtomList() not updated for migration groups!");
+    }
     Mass mass = atom_i.mass;
 
     if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
@@ -2702,6 +2727,9 @@ void HomePatch::mergeAtomList(FullAtomList &al) {
 
     FullAtom &atom_i = al[i];
     int hgs = atom_i.hydrogenGroupSize;
+    if ( hgs != atom_i.migrationGroupSize ) {
+      NAMD_bug("HomePatch::mergeAtomList() not updated for migration groups!");
+    }
     Mass mass = atom_i.mass;
 
     if (IS_HYDROGEN_GROUP_WATER(hgs, mass)) {
