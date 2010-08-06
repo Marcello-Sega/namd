@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2010/07/17 22:50:20 $
- * $Revision: 1.1208 $
+ * $Date: 2010/08/06 19:14:53 $
+ * $Revision: 1.1209 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -245,12 +245,26 @@ void WorkDistrib::fillOnePatchCreationParallelIO(int patchId, FullAtomList *oneP
       a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
       a[j].fixedPosition = a[j].position;
 
-      if ( a[j].hydrogenGroupSize ) {
-
+      if ( a[j].migrationGroupSize ) {
+       if ( a[j].migrationGroupSize != a[j].hydrogenGroupSize ) {
+            Position pos = a[j].position;
+            int mgs = a[j].migrationGroupSize;
+            int c = 1;
+            for ( int k=a[j].hydrogenGroupSize; k<mgs;
+                                k+=a[j+k].hydrogenGroupSize ) {
+              pos += a[j+k].position;
+              ++c;
+            }
+            pos *= 1./c;
+            mother_transform = a[j].transform;  // should be 0,0,0
+            pos = lattice.nearest(pos,center,&mother_transform);
+            a[j].position = lattice.apply_transform(a[j].position,mother_transform);
+            a[j].transform = mother_transform;
+       } else {
         a[j].position = lattice.nearest(
                 a[j].position, center, &(a[j].transform));
-
         mother_transform = a[j].transform;
+       }
       } else {
         a[j].position = lattice.apply_transform(a[j].position,mother_transform);
         a[j].transform = mother_transform;
@@ -561,10 +575,26 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
       a[j].fixedPosition = a[j].position;
 
-      if ( a[j].hydrogenGroupSize ) {
+      if ( a[j].migrationGroupSize ) {
+       if ( a[j].migrationGroupSize != a[j].hydrogenGroupSize ) {
+            Position pos = a[j].position;
+            int mgs = a[j].migrationGroupSize;
+            int c = 1;
+            for ( int k=a[j].hydrogenGroupSize; k<mgs;
+                                k+=a[j+k].hydrogenGroupSize ) {
+              pos += a[j+k].position;
+              ++c;
+            }
+            pos *= 1./c;
+            mother_transform = a[j].transform;  // should be 0,0,0
+            pos = lattice.nearest(pos,center,&mother_transform);
+            a[j].position = lattice.apply_transform(a[j].position,mother_transform);
+            a[j].transform = mother_transform;
+       } else {
         a[j].position = lattice.nearest(
 		a[j].position, center, &(a[j].transform));
         mother_transform = a[j].transform;
+       }
       } else {
         a[j].position = lattice.apply_transform(a[j].position,mother_transform);
         a[j].transform = mother_transform;
@@ -770,10 +800,26 @@ void WorkDistrib::fillOnePatchAtoms(int patchId, FullAtomList *onePatchAtoms, Ve
       a[j].atomFixed = molecule->is_atom_fixed(aid) ? 1 : 0;
       a[j].fixedPosition = a[j].position;
 
-      if ( a[j].hydrogenGroupSize ) {
+      if ( a[j].migrationGroupSize ) {
+       if ( a[j].migrationGroupSize != a[j].hydrogenGroupSize ) {
+            Position pos = a[j].position;
+            int mgs = a[j].migrationGroupSize;
+            int c = 1;
+            for ( int k=a[j].hydrogenGroupSize; k<mgs;
+                                k+=a[j+k].hydrogenGroupSize ) {
+              pos += a[j+k].position;
+              ++c;
+            }
+            pos *= 1./c;
+            mother_transform = a[j].transform;  // should be 0,0,0
+            pos = lattice.nearest(pos,center,&mother_transform);
+            a[j].position = lattice.apply_transform(a[j].position,mother_transform);
+            a[j].transform = mother_transform;
+       } else {
         a[j].position = lattice.nearest(
 		a[j].position, center, &(a[j].transform));
         mother_transform = a[j].transform;
+       }
       } else {
         a[j].position = lattice.apply_transform(a[j].position,mother_transform);
         a[j].transform = mother_transform;
