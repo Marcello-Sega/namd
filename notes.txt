@@ -328,8 +328,8 @@ As an example, here is the build sequence for 64-bit Linux workstations:
 Unpack NAMD and matching Charm++ source code and enter directory:
   tar xzf NAMD_2.7b3_Source.tar.gz
   cd NAMD_2.7b3_Source
-  tar xf charm-6.2.1.tar
-  cd charm-6.2.1
+  tar xf charm-6.2.2.tar
+  cd charm-6.2.2
 
 Build and test the Charm++/Converse library (network version):
   ./build charm++ net-linux-x86_64 --no-build-shared --with-production
@@ -355,7 +355,7 @@ Download and install TCL and FFTW libraries:
   mv linux-x86_64 tcl
 
 Optionally edit various configuration files:
-  (not needed if charm-6.2.1, fftw, and tcl are in NAMD_2.7b3_Source)
+  (not needed if charm-6.2.2, fftw, and tcl are in NAMD_2.7b3_Source)
   vi Make.charm  (set CHARMBASE to full path to charm)
   vi arch/Linux-x86_64.fftw     (fix library name and path to files)
   vi arch/Linux-x86_64.tcl      (fix library version and path to TCL files)
@@ -388,10 +388,10 @@ http://www.ks.uiuc.edu/Research/namd/libraries/.  Each tar file
 contains a directory with the name of the platform.  These libraries
 don't change very often, so you should find a permanent home for them.
 
-Unpack the NAMD source code and the enclosed charm-6.2.1.tar archive.  This
+Unpack the NAMD source code and the enclosed charm-6.2.2.tar archive.  This
 version of Charm++ is the same one used to build the released binaries
 and is more likely to work and be bug free than any other we know of.
-Edit Make.charm to point at .rootdir/charm-6.2.1 or the full path to the
+Edit Make.charm to point at .rootdir/charm-6.2.2 or the full path to the
 charm directory if you unpacked outside of the NAMD source directory.
 
 Run the config script without arguments to list the available builds,
