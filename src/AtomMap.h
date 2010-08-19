@@ -4,6 +4,13 @@
 ***  All rights reserved.
 **/
 
+/**
+ * AtomMap maps the global atom ID (int) to the atom's assigned
+ * patch ID (int) and local index (int) within that patch.
+ * An array of "LocalID" of length (number of atoms) is allocated.
+ * The total space required is 2*sizeof(int)*(number of atoms).
+ */
+
 #ifndef ATOMMAP_H
 #define ATOMMAP_H
 
