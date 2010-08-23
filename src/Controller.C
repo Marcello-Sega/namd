@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2010/03/05 23:33:39 $
- * $Revision: 1.1245 $
+ * $Date: 2010/08/23 19:56:05 $
+ * $Revision: 1.1246 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1262,8 +1262,22 @@ void Controller::compareChecksums(int step, int forgiving) {
 
     checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
     if ( ((int)checksum) > molecule->numCalcExclusions &&
-         ( ! simParams->mollyOn || step % slowFreq ) )
-      NAMD_bug("Bad global exclusion count!\n");
+         ( ! simParams->mollyOn || step % slowFreq ) ) {
+      if ( forgiving )
+        iout << iWARN << "High global exclusion count, possible error!\n"
+          << iWARN << "This warning is not unusual during minimization.\n"
+          << iWARN << "Decreasing pairlistdist or cutoff that is too close to periodic cell size may avoid this.\n" << endi;
+      else
+        NAMD_bug("High global exclusion count!  System unstable or pairlistdist or cutoff too close to periodic cell size.\n");
+    }
+    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions ) {
+      if ( forgiving )
+        iout << iWARN << "Low global exclusion count, possible error!\n"
+          << iWARN << "This warning is not unusual during minimization.\n"
+          << iWARN << "Increasing pairlistdist or cutoff may avoid this.\n" << endi;
+      else
+        NAMD_bug("Low global exclusion count!  System unstable or pairlistdist or cutoff too small.\n");
+    }
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
     if ( ((int)checksum) && ! marginViolations ) {
@@ -1328,10 +1342,6 @@ void Controller::printMinimizeEnergies(int step) {
 
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
-    BigReal checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
-    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions )
-      iout << iWARN << "Bad global exclusion count, possible error!\n" << iWARN
-        << "Increasing cutoff during minimization may avoid this.\n" << endi;
     compareChecksums(step,1);
 
     printEnergies(step,1);
@@ -1351,9 +1361,6 @@ void Controller::printDynamicsEnergies(int step) {
     SimParameters *simParameters = node->simParameters;
     Lattice &lattice = state->lattice;
 
-    BigReal checksum = reduction->item(REDUCTION_EXCLUSION_CHECKSUM);
-    if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions )
-      NAMD_bug("Bad global exclusion count!\n");
     compareChecksums(step);
 
     printEnergies(step,0);
