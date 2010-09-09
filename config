@@ -437,9 +437,11 @@ begin:
   ln -s .rootdir/Makefile ./Makefile
   echo "Linking Make.depends"
   ln -s .rootdir/Make.depends ./Make.depends
-  echo "Linking src, plugins, and psfgen"
+  echo "Linking src directory"
   ln -s .rootdir/src ./src
+  echo "Linking plugins directory"
   ln -s .rootdir/plugins ./plugins
+  echo "Linking psfgen directory"
   ln -s .rootdir/psfgen ./sb
 
   echo ''
