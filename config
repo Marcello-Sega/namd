@@ -433,8 +433,9 @@ begin:
     echo 'COPTS = -g' >> Make.config
   endif
 
-  echo "Linking Makefiles"
+  echo "Linking Makefile"
   ln -s .rootdir/Makefile ./Makefile
+  echo "Linking Make.depends"
   ln -s .rootdir/Make.depends ./Make.depends
   echo "Linking src, plugins, and psfgen"
   ln -s .rootdir/src ./src
