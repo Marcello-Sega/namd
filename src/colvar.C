@@ -5,7 +5,7 @@
 #include "colvarparse.h"
 #include "colvar.h"
 #include "colvarcomp.h"
-#include "algorithm"
+#include <algorithm>
 
 
 // XX TODO make the acf code handle forces as well as values and velocities
