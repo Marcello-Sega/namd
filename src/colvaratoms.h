@@ -25,7 +25,7 @@ protected:
 
 public:
 
-  /// Internal identifier
+  /// Internal identifier (zero-based)
   int              id;
 
   /// Mass
@@ -130,6 +130,13 @@ public:
   /// \brief dummy atom position
   cvm::atom_pos dummy_atom_pos;
 
+  /// Sorted list of zero-based (internal) atom ids
+  /// (populated on-demand by create_sorted_ids)
+  std::vector<int> sorted_ids;
+
+  /// Allocates and populates the sorted list of atom ids
+  void create_sorted_ids (void);
+  
 
   /// \brief Before calculating colvars, move the group to overlap the
   /// center of mass of reference coordinates
@@ -150,7 +157,7 @@ public:
   /// \brief In case b_center or b_rotate is true, use these reference
   /// coordinates
   std::vector<cvm::atom_pos> ref_pos;
-  /// \brief Center of mass of the reference coordinates; irregardless
+  /// \brief Center of mass of the reference coordinates; regardless
   /// of whether b_center is true, ref_pos is centered to zero at
   /// initialization, and ref_pos_com serves to center the positions
   cvm::atom_pos              ref_pos_com;

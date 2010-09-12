@@ -115,7 +115,7 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
 
   if (get_keyval (conf, "targetForceConstant", target_force_k, 0.0)) {
     if (b_chg_centers)
-      cvm::fatal_error ("Error: cannot specify both targets and forceConstantTarget.\n");
+      cvm::fatal_error ("Error: cannot specify both targetCenters and targetForceConstant.\n");
 
     starting_force_k = force_k;
     b_chg_force_k = true;

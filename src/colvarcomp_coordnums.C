@@ -78,6 +78,10 @@ colvar::coordnum::coordnum (std::string const &conf)
 
   // group1 and group2 are already initialized by distance()
 
+  // need to specify this explicitly because the distance() constructor
+  // has set it to true
+  b_inverse_gradients = false;
+
   bool const b_scale = get_keyval (conf, "cutoff", r0,
                                    cvm::real (4.0 * cvm::unit_angstrom()));
 
@@ -231,6 +235,9 @@ colvar::h_bond::h_bond (std::string const &conf)
 
   acceptor = cvm::atom (a_num);
   donor    = cvm::atom (d_num);
+  atom_groups.push_back (new cvm::atom_group);
+  atom_groups[0]->add_atom (acceptor);
+  atom_groups[0]->add_atom (donor);
 
   get_keyval (conf, "cutoff",   r0, (3.3 * cvm::unit_angstrom()));
   get_keyval (conf, "expNumer", en, 6);
@@ -251,8 +258,11 @@ colvar::h_bond::h_bond (cvm::atom const &acceptor_i,
 {
   function_type = "h_bond";
   x.type (colvarvalue::type_scalar);
-}
 
+  atom_groups.push_back (new cvm::atom_group);
+  atom_groups[0]->add_atom (acceptor);
+  atom_groups[0]->add_atom (donor);
+}
 
 colvar::h_bond::h_bond()
   : cvc ()
@@ -261,6 +271,13 @@ colvar::h_bond::h_bond()
   x.type (colvarvalue::type_scalar);
 }
 
+
+colvar::h_bond::~h_bond()
+{
+  for (int i=0; i<atom_groups.size(); i++) {
+    delete atom_groups[i];
+  }
+}
 
 
 void colvar::h_bond::calc_value()
@@ -280,6 +297,8 @@ void colvar::h_bond::calc_value()
 void colvar::h_bond::calc_gradients()
 {
   colvar::coordnum::switching_function<true> (r0, en, ed, acceptor, donor);
+  (*atom_groups[0])[0].grad = acceptor.grad;
+  (*atom_groups[0])[1].grad = donor.grad;
 }
 
 
@@ -290,4 +309,86 @@ void colvar::h_bond::apply_force (colvarvalue const &force)
 }
 
 
+// Self-coordination number for a group
+
+template<bool calculate_gradients>
+cvm::real colvar::selfcoordnum::switching_function (cvm::real const &r0,
+                                                int const &en,
+                                                int const &ed,
+                                                cvm::atom &A1,
+                                                cvm::atom &A2)
+{
+  cvm::rvector const diff = cvm::position_distance (A1.pos, A2.pos);
+  cvm::real const l2 = diff.norm2()/(r0*r0);
+
+  // Assume en and ed are even integers, and avoid sqrt in the following
+  int const en2 = en/2;
+  int const ed2 = ed/2;
+
+  cvm::real const xn = ::pow (l2, en2);
+  cvm::real const xd = ::pow (l2, ed2);
+  cvm::real const func = (1.0-xn)/(1.0-xd);
+
+  if (calculate_gradients) {
+    cvm::real const dFdl2 = (1.0/(1.0-xd))*(en2*(xn/l2) - func*ed2*(xd/l2))*(-1.0);
+    cvm::rvector const dl2dx = (2.0/(r0*r0))*diff;
+    A1.grad += (-1.0)*dFdl2*dl2dx;
+    A2.grad +=        dFdl2*dl2dx;
+  }
+
+  return func;
+}
+
+
+colvar::selfcoordnum::selfcoordnum (std::string const &conf)
+{ 
+  function_type = "selfcoordnum";
+  x.type (colvarvalue::type_scalar);
+
+  parse_group (conf, "group1", group1);
+  atom_groups.push_back (&group1);
+
+  get_keyval (conf, "cutoff", r0, cvm::real (4.0 * cvm::unit_angstrom()));
+  get_keyval (conf, "expNumer", en, int (6) );
+  get_keyval (conf, "expDenom", ed, int (12));
+
+  if ( (en%2) || (ed%2) ) {
+    cvm::fatal_error ("Error: odd exponents provided, can only use even ones.\n");
+  }
+}
+
+
+colvar::selfcoordnum::selfcoordnum()
+{
+  function_type = "selfcoordnum";
+  x.type (colvarvalue::type_scalar);
+}
+
+
+void colvar::selfcoordnum::calc_value()
+{
+  x.real_value = 0.0;
+
+  // for each atom, gradients are summed by multiple calls to switching_function()
+  group1.reset_atoms_data();
+  group1.read_positions();
+
+  for (size_t i = 0; i < group1.size() - 1; i++)
+    for (size_t j = i + 1; j < group1.size(); j++)
+      x.real_value += switching_function<false> (r0, en, ed, group1[i], group1[j]);
+}
+
+
+void colvar::selfcoordnum::calc_gradients()
+{
+  for (size_t i = 0; i < group1.size() - 1; i++)
+    for (size_t j = i + 1; j < group1.size(); j++)
+      switching_function<true> (r0, en, ed, group1[i], group1[j]);
+}
+
+void colvar::selfcoordnum::apply_force (colvarvalue const &force)
+{
+  if (!group1.noforce)
+    group1.apply_colvar_force (force.real_value);
+}
 

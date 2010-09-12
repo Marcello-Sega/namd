@@ -29,7 +29,8 @@ colvar::cvc::cvc (std::string const &conf)
   get_keyval (conf, "componentCoeff", sup_coeff, 1.0);
   get_keyval (conf, "componentExp", sup_np, 1);
 
-  get_keyval (conf, "period", period, 0.0, parse_silent);
+  get_keyval (conf, "period", period, 0.0);
+  get_keyval (conf, "wrapAround", wrap_center, 0.0);
 
   get_keyval (conf, "debugGradients", b_debug_gradients, false, parse_silent);
 

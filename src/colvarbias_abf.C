@@ -46,6 +46,8 @@ colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
       cvm::fatal_error ("Error: ABF bias can only use scalar-type variables.\n");
     }
 
+    colvars[i]->enable (colvar::task_gradients);
+
     // Request calculation of system force (which also checks for availability)
     colvars[i]->enable (colvar::task_system_force);
 
@@ -138,13 +140,13 @@ void colvarbias_abf::update()
     }
 
     for (size_t i=0; i<colvars.size(); i++) {
-      bin[i]   = colvars[i]->current_bin_scalar();
+      bin[i] = samples->current_bin_scalar(i);
     }
 
   } else {
 
     for (size_t i=0; i<colvars.size(); i++) {
-      bin[i]	= colvars[i]->current_bin_scalar();
+      bin[i] = samples->current_bin_scalar(i);
     }
 
     if ( samples->index_ok (prev_bin) ) {	  // Only within bounds of the grid...
@@ -340,7 +342,7 @@ std::istream & colvarbias_abf::read_restart (std::istream& is)
 
 
 /// Histogram "bias" constructor
-//
+
 colvarbias_histogram::colvarbias_histogram (std::string const &conf, char const *key)
   : colvarbias (conf, key),
     grid (NULL)
@@ -377,7 +379,7 @@ void colvarbias_histogram::update()
   if (cvm::debug()) cvm::log ("Updating Grid bias " + this->name);
 
   for (size_t i=0; i<colvars.size(); i++) {
-    bin[i] = colvars[i]->current_bin_scalar();
+    bin[i] = grid->current_bin_scalar(i);
   }
 
   if ( grid->index_ok (bin) ) {	  // Only within bounds of the grid...

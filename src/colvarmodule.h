@@ -60,10 +60,6 @@ public:
   /// Residue identifier
   typedef  int       residue_id;
 
-  /// \brief Atom identifier (may not be an int in the future to
-  /// handle implicit parallelization)
-  typedef  int       atom_id;
-
   class rvector;
   template <class T,
             size_t const length> class vector1d;
@@ -273,7 +269,7 @@ public:
   /// field to determine which are the atoms to be set
   static void load_atoms (char const *filename,
                           std::vector<atom> &atoms,
-                          std::string const &pdb_field = "O",
+                          std::string const &pdb_field,
                           double const pdb_field_value = 0.0);
 
   /// \brief Load the coordinates for a group of atoms from a file
@@ -281,7 +277,8 @@ public:
   /// the number of elements in "pos"
   static void load_coords (char const *filename,
                            std::vector<atom_pos> &pos,
-                           std::string const &pdb_field = "O",
+                           const std::vector<int> &indices,
+                           std::string const &pdb_field,
                            double const pdb_field_value = 0.0);
 
   /// Frequency for collective variables trajectory output
@@ -437,10 +434,11 @@ inline void cvm::load_atoms (char const *file_name,
 
 inline void cvm::load_coords (char const *file_name,
                               std::vector<cvm::atom_pos> &pos,
+                              const std::vector<int> &indices,
                               std::string const &pdb_field,
                               double const pdb_field_value)
 {
-  proxy->load_coords (file_name, pos, pdb_field, pdb_field_value);
+  proxy->load_coords (file_name, pos, indices, pdb_field, pdb_field_value);
 }
 
 

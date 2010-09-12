@@ -67,7 +67,7 @@ void cvm::atom_group::parse (std::string const &conf,
         }
       } else
         cvm::fatal_error ("Error: no numbers provided for \""
-                          "atom_numbers\".\n");
+                          "atomNumbers\".\n");
     }
   }
 
@@ -93,7 +93,7 @@ void cvm::atom_group::parse (std::string const &conf,
       }
 
       cvm::fatal_error ("Error: no valid definition for \""
-                        "atom_numbers_range\", \""+
+                        "atomNumbersRange\", \""+
                         range_conf+"\".\n");
     }
   }
@@ -138,13 +138,14 @@ void cvm::atom_group::parse (std::string const &conf,
             this->push_back (cvm::atom (resid, atom_name, psf_segid));
           }
           range_conf = "";
-          continue;
+        } else {
+          cvm::fatal_error ("Error: cannot parse definition for \""
+                            "atomNameResidueRange\", \""+
+                            range_conf+"\".\n");
         }
 
       } else {
-        cvm::fatal_error ("Error: no valid definition for \""
-                          "atom_name_residue_range\", \""+
-                          range_conf+"\".\n");
+        cvm::fatal_error ("Error: atomNameResidueRange with empty definition.\n");
       }
 
       if (psf_segid.size())
@@ -158,7 +159,9 @@ void cvm::atom_group::parse (std::string const &conf,
     if (get_keyval (group_conf, "atomsFile", atoms_file_name, std::string (""), mode)) {
 
       std::string atoms_col;
-      get_keyval (group_conf, "atomsCol", atoms_col, std::string ("O"), mode);
+      if (!get_keyval (group_conf, "atomsCol", atoms_col, std::string (""), mode)) {
+        cvm::fatal_error ("Error: parameter atomsCol is required if atomsFile is set.\n");
+      }
 
       double atoms_col_value;
       bool const atoms_col_value_defined = get_keyval (group_conf, "atomsColValue", atoms_col_value, 0.0, mode);
@@ -258,15 +261,19 @@ void cvm::atom_group::parse (std::string const &conf,
       }
 
       std::string ref_pos_col;
-      get_keyval (group_conf, "refPositionsCol", ref_pos_col, std::string ("O"), mode);
-
       double ref_pos_col_value;
-      bool found = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
-      if (found && !ref_pos_col_value)
-        cvm::fatal_error ("Error: refPositionsColValue, "
-                          "if provided, must be non-zero.\n");
-
-      cvm::load_coords (ref_pos_file.c_str(), ref_pos,
+      
+      if (get_keyval (group_conf, "refPositionsCol", ref_pos_col, std::string (""), mode)) {
+        // If provided, use PDB column to select coordinates...
+        bool found = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
+        if (found && !ref_pos_col_value)
+          cvm::fatal_error ("Error: refPositionsColValue, "
+                            "if provided, must be non-zero.\n");
+      } else {
+        // ...if not, rely on existing atom indices for the group
+        this->create_sorted_ids();
+      }
+      cvm::load_coords (ref_pos_file.c_str(), ref_pos, sorted_ids,
                         ref_pos_col, ref_pos_col_value);
     }
 
@@ -374,6 +381,29 @@ void cvm::atom_group::add_atom (cvm::atom const &a)
     this->push_back (a);
     total_mass += a.mass;
   }
+}
+
+
+void cvm::atom_group::create_sorted_ids (void)
+{
+  // Only do the work if the vector is not yet populated
+  if (sorted_ids.size())
+    return;
+
+  std::list<int> temp_id_list;
+  for (cvm::atom_iter ai = this->begin(); ai != this->end(); ai++) {
+    temp_id_list.push_back (ai->id);
+  }
+  temp_id_list.sort();
+  temp_id_list.unique();
+  if (temp_id_list.size() != this->size()) {
+    cvm::fatal_error ("Error: duplicate atom IDs in atom group? (found " +
+                      cvm::to_str(temp_id_list.size()) +
+                      " unique atom IDs instead of" +
+                      cvm::to_str(this->size()) + ").\n");
+  }
+  sorted_ids = std::vector<int> (temp_id_list.begin(), temp_id_list.end());
+  return;
 }
 
 

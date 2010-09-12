@@ -18,11 +18,16 @@ colvar::distance::distance (std::string const &conf)
   function_type = "distance";
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
+  if (get_keyval (conf, "forceNoPBC", b_no_PBC, false)) {
+    cvm::log ("Computing distance using absolute positions (not minimal-image)");
+  }
   if (get_keyval (conf, "oneSiteSystemForce", b_1site_force, false)) {
     cvm::log ("Computing system force on group 1 only");
   }
   parse_group (conf, "group1", group1);
   parse_group (conf, "group2", group2);
+  atom_groups.push_back (&group1);
+  atom_groups.push_back (&group2);
   x.type (colvarvalue::type_scalar);
 }
 
@@ -44,8 +49,12 @@ void colvar::distance::calc_value()
   group1.read_positions();
   group2.read_positions();
 
-  dist_v = cvm::position_distance (group1.center_of_mass(),
-                                   group2.center_of_mass());
+  if (b_no_PBC) {
+    dist_v = group2.center_of_mass() - group1.center_of_mass();
+  } else {
+    dist_v = cvm::position_distance (group1.center_of_mass(),
+                                     group2.center_of_mass());
+  }
   x.real_value = dist_v.norm();
 }
 
@@ -136,12 +145,18 @@ colvar::distance_z::distance_z (std::string const &conf)
   b_Jacobian_derivative = true;
   x.type (colvarvalue::type_scalar);
 
+  if (period != 0.0)
+    b_periodic = true;    
+
   parse_group (conf, "main", main);
   parse_group (conf, "ref", ref1);
+  atom_groups.push_back (&main);
+  atom_groups.push_back (&ref1);
   // this group is optional
   parse_group (conf, "ref2", ref2, true);
  
   if (ref2.size()) {
+    atom_groups.push_back (&ref2);
     cvm::log ("Using axis joining the centers of mass of groups \"ref\" and \"ref2\"");
     fixed_axis = false;
     if (key_lookup (conf, "axis"))
@@ -155,6 +170,9 @@ colvar::distance_z::distance_z (std::string const &conf)
     fixed_axis = true;
   }
 
+  if (get_keyval (conf, "forceNoPBC", b_no_PBC, false)) {
+    cvm::log ("Computing distance using absolute positions (not minimal-image)");
+  }
   if (get_keyval (conf, "oneSiteSystemForce", b_1site_force, false)) {
     cvm::log ("Computing system force on group \"main\" only");
   }
@@ -177,32 +195,59 @@ void colvar::distance_z::calc_value()
   ref1.read_positions();
 
   if (fixed_axis) {
-    dist_v = cvm::position_distance (ref1.center_of_mass(),
-                                     main.center_of_mass());
+    if (b_no_PBC) {
+      dist_v = main.center_of_mass() - ref1.center_of_mass();
+    } else {
+      dist_v = cvm::position_distance (ref1.center_of_mass(),
+                                       main.center_of_mass());
+    }
   } else {
     ref2.reset_atoms_data();
     ref2.read_positions();
 
-    dist_v = cvm::position_distance (0.5 * (ref1.center_of_mass() + ref2.center_of_mass()),
-                                     main.center_of_mass());
-    axis = cvm::position_distance (ref1.center_of_mass(), ref2.center_of_mass());
+    if (b_no_PBC) {
+      dist_v = main.center_of_mass() -
+               (0.5 * (ref1.center_of_mass() + ref2.center_of_mass()));
+      axis = ref2.center_of_mass() - ref1.center_of_mass();
+    } else {
+      dist_v = cvm::position_distance (0.5 * (ref1.center_of_mass() +
+               ref2.center_of_mass()), main.center_of_mass());
+      axis = cvm::position_distance (ref1.center_of_mass(), ref2.center_of_mass());
+    }
     axis_norm = axis.norm();
     axis = axis.unit();
   }
   x.real_value = axis * dist_v;
+
+  if (wrap_center != 0.0) {
+    if (period == 0.0) {
+      cvm::fatal_error ("Error: wrapAround was defined in a distanceZ component,"
+                        " but its period has not been set.\n");
+    }
+    colvarvalue x_tmp (x);
+    this->wrap (x_tmp);
+    x = x_tmp;
+  }
 }
 
 void colvar::distance_z::calc_gradients()
 {
+  main.set_weighted_gradient ( axis );
+
   if (fixed_axis) {
     ref1.set_weighted_gradient (-1.0 * axis);
-    main.set_weighted_gradient (       axis);
   } else {
-    ref1.set_weighted_gradient ( 1.0 / axis_norm * (
-      cvm::position_distance (ref2.center_of_mass(), main.center_of_mass()) - x.real_value * axis ));
-    ref2.set_weighted_gradient ( 1.0 / axis_norm * (
-      cvm::position_distance (main.center_of_mass(), ref1.center_of_mass()) + x.real_value * axis ));
-    main.set_weighted_gradient ( axis );
+    if (b_no_PBC) {
+      ref1.set_weighted_gradient ( 1.0 / axis_norm * (main.center_of_mass() - ref2.center_of_mass() -
+                                   x.real_value * axis ));
+      ref2.set_weighted_gradient ( 1.0 / axis_norm * (ref1.center_of_mass() - main.center_of_mass() +
+                                   x.real_value * axis ));
+    } else {
+      ref1.set_weighted_gradient ( 1.0 / axis_norm * (
+        cvm::position_distance (ref2.center_of_mass(), main.center_of_mass()) - x.real_value * axis ));
+      ref2.set_weighted_gradient ( 1.0 / axis_norm * (
+        cvm::position_distance (main.center_of_mass(), ref1.center_of_mass()) + x.real_value * axis ));
+    }
   }
 }
 
@@ -263,13 +308,21 @@ void colvar::distance_xy::calc_value()
   ref1.read_positions();
   main.read_positions();
 
-  dist_v = cvm::position_distance (ref1.center_of_mass(),
-                                   main.center_of_mass());
+  if (b_no_PBC) {
+    dist_v = main.center_of_mass() - ref1.center_of_mass();
+  } else {
+    dist_v = cvm::position_distance (ref1.center_of_mass(),
+                                     main.center_of_mass());
+  }
   if (!fixed_axis) {
     ref2.reset_atoms_data();
     ref2.read_positions();
 
-    v12 = cvm::position_distance (ref1.center_of_mass(), ref2.center_of_mass());
+    if (b_no_PBC) {
+      v12 = ref2.center_of_mass() - ref1.center_of_mass();
+    } else {
+      v12 = cvm::position_distance (ref1.center_of_mass(), ref2.center_of_mass());
+    }
     axis_norm = v12.norm();
     axis = v12.unit();
   }
@@ -292,7 +345,11 @@ void colvar::distance_xy::calc_gradients()
     ref1.set_weighted_gradient (-1.0 * x_inv * dist_v_ortho);
     main.set_weighted_gradient (       x_inv * dist_v_ortho);
   } else {
-    v13 = cvm::position_distance (ref1.center_of_mass(), main.center_of_mass());
+    if (b_no_PBC) {
+      v13 = main.center_of_mass() - ref1.center_of_mass();
+    } else {
+      v13 = cvm::position_distance (ref1.center_of_mass(), main.center_of_mass());
+    }
     A = (dist_v * axis) / axis_norm;
 
     ref1.set_weighted_gradient ( (A - 1.0) * x_inv * dist_v_ortho);
@@ -433,8 +490,12 @@ void colvar::distance_dir::calc_value()
   group1.read_positions();
   group2.read_positions();
 
-  dist_v = cvm::position_distance (group1.center_of_mass(),
-                                   group2.center_of_mass());
+  if (b_no_PBC) {
+    dist_v = group2.center_of_mass() - group1.center_of_mass();
+  } else {
+    dist_v = cvm::position_distance (group1.center_of_mass(),
+                                     group2.center_of_mass());
+  }
   x.rvector_value = dist_v.unit();
 }
 
@@ -442,6 +503,8 @@ void colvar::distance_dir::calc_value()
 void colvar::distance_dir::calc_gradients()
 {
   // gradients are computed on the fly within apply_force()
+  // Note: could be a problem if a future bias relies on gradient
+  // calculations...
 }
 
 
@@ -449,7 +512,7 @@ void colvar::distance_dir::apply_force (colvarvalue const &force)
 {
   // remove the radial force component
   cvm::real const iprod = force.rvector_value * x.rvector_value;
-  cvm::rvector const force_tang = (1.0 - iprod) * force.rvector_value;
+  cvm::rvector const force_tang = force.rvector_value - iprod * x.rvector_value;
 
   if (!group1.noforce)
     group1.apply_force (-1.0 * force_tang);
@@ -468,6 +531,7 @@ colvar::gyration::gyration (std::string const &conf)
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
   parse_group (conf, "atoms", atoms);
+  atom_groups.push_back (&atoms);
   x.type (colvarvalue::type_scalar);
 }
 
@@ -534,8 +598,6 @@ void colvar::gyration::apply_force (colvarvalue const &force)
 colvar::rmsd::rmsd (std::string const &conf)
   : orientation (conf)
 {
-  // TODO: refuse to start if hideJacobian is on
-
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
   function_type = "rmsd";
@@ -786,6 +848,7 @@ colvar::eigenvector::eigenvector (std::string const &conf)
   x.type (colvarvalue::type_scalar);
 
   parse_group (conf, "atoms", atoms);
+  atom_groups.push_back (&atoms);
 
   if (get_keyval (conf, "refPositions", ref_pos, ref_pos)) {
     cvm::log ("Using reference positions from input file.\n");
@@ -800,16 +863,20 @@ colvar::eigenvector::eigenvector (std::string const &conf)
     if (get_keyval (conf, "refPositionsFile", file_name)) {
 
       std::string file_col;
-      get_keyval (conf, "refPositionsCol", file_col, std::string ("O"));
-
       double file_col_value;
-      bool found = get_keyval (conf, "refPositionsColValue", file_col_value, 0.0);
-      if (found && !file_col_value)
-        cvm::fatal_error ("Error: refPositionsColValue, "
-                          "if provided, must be non-zero.\n");
+      if (get_keyval (conf, "refPositionsCol", file_col, std::string (""))) {
+        // use PDB flags if column is provided
+        bool found = get_keyval (conf, "refPositionsColValue", file_col_value, 0.0);
+        if (found && !file_col_value)
+          cvm::fatal_error ("Error: refPositionsColValue, "
+                            "if provided, must be non-zero.\n");
+      } else {
+        // if not, use atom indices
+        atoms.create_sorted_ids();
+      }
 
       ref_pos.resize (atoms.size());
-      cvm::load_coords (file_name.c_str(), ref_pos, file_col, file_col_value);
+      cvm::load_coords (file_name.c_str(), ref_pos, atoms.sorted_ids, file_col, file_col_value);
     }
   }
 
@@ -827,7 +894,9 @@ colvar::eigenvector::eigenvector (std::string const &conf)
     if (get_keyval (conf, "vectorFile", file_name)) {
 
       std::string file_col;
-      get_keyval (conf, "vectorCol", file_col, std::string ("O"));
+      if (!get_keyval (conf, "vectorCol", file_col, std::string (""))) {
+        cvm::fatal_error ("Error: parameter vectorCol is required if vectorFile is set.\n");
+      }
 
       double file_col_value;
       bool found = get_keyval (conf, "vectorColValue", file_col_value, 0.0);
@@ -836,7 +905,7 @@ colvar::eigenvector::eigenvector (std::string const &conf)
                           "if provided, must be non-zero.\n");
 
       eigenvec.resize (atoms.size());
-      cvm::load_coords (file_name.c_str(), eigenvec, file_col, file_col_value);
+      cvm::load_coords (file_name.c_str(), eigenvec, atoms.sorted_ids, file_col, file_col_value);
     }
   }
 

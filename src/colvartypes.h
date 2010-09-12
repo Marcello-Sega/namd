@@ -479,7 +479,7 @@ public:
     this->yy() = yyi;
     this->yz() = yzi;
     this->zx() = zxi;
-    this->zy() = xyi;
+    this->zy() = zyi;
     this->zz() = zzi;
   }
 
@@ -797,6 +797,12 @@ public:
   }
 
 
+  /// \brief Multiply the given vector by the derivative of the given
+  /// (rotated) position with respect to the quaternion
+  cvm::quaternion position_derivative_inner (cvm::rvector const &pos,
+                                             cvm::rvector const &vec) const;
+
+
   /// \brief Return the square cosine between the orientation
   /// associated to this quaternion and another
   inline cvm::real cos2 (cvm::quaternion const &q) const
@@ -975,6 +981,94 @@ public:
   inline cvm::rmatrix matrix() const
   {
     return q.rotation_matrix();
+  }
+
+
+  /// \brief Return the spin angle (in degrees) with respect to the
+  /// provided axis (which MUST be normalized)
+  inline cvm::real spin_angle (cvm::rvector const &axis) const
+  {
+    cvm::rvector const q_vec = q.get_vector();
+    cvm::real alpha = (180.0/PI) * 2.0 * ::atan2 (axis * q_vec, q.q0);
+    while (alpha >  180.0) alpha -= 360;
+    while (alpha < -180.0) alpha += 360;
+    return alpha;
+  }
+
+  /// \brief Return the derivative of the spin angle with respect to
+  /// the quaternion
+  inline cvm::quaternion dspin_angle_dq (cvm::rvector const &axis) const
+  {
+    cvm::rvector const q_vec = q.get_vector();
+    cvm::real const iprod = axis * q_vec;
+
+    if (q.q0 != 0.0) {
+
+      // cvm::real const x = iprod/q.q0;
+      
+      cvm::real const dspindx = (180.0/PI) * 2.0 * (1.0 / (1.0 + (iprod*iprod)/(q.q0*q.q0)));
+
+      return 
+        cvm::quaternion ( dspindx * (iprod * (-1.0) / (q.q0*q.q0)), 
+                          dspindx * ((1.0/q.q0) * axis.x),
+                          dspindx * ((1.0/q.q0) * axis.y),
+                          dspindx * ((1.0/q.q0) * axis.z));
+    } else {
+      // (1/(1+x^2)) ~ (1/x)^2
+      return
+        cvm::quaternion ((180.0/PI) * 2.0 * ((-1.0)/iprod), 0.0, 0.0, 0.0);
+      // XX TODO: What if iprod == 0? XX
+    }
+  }
+
+  /// \brief Return the projection of the orientation vector onto a
+  /// predefined axis
+  inline cvm::real cos_theta (cvm::rvector const &axis) const
+  {
+    cvm::rvector const q_vec = q.get_vector();
+    cvm::real const alpha = 
+      (180.0/PI) * 2.0 * ::atan2 (axis * q_vec, q.q0);
+
+    cvm::real const cos_spin_2 = ::cos (alpha * (PI/180.0) * 0.5);
+    cvm::real const cos_theta_2 = ( (cos_spin_2 != 0.0) ? 
+                                    (q.q0 / cos_spin_2) :
+                                    (0.0) );
+    // cos(2t) = 2*cos(t)^2 - 1
+    return 2.0 * (cos_theta_2*cos_theta_2) - 1.0;
+  }
+
+   /// Return the derivative of the tilt wrt the quaternion
+  inline cvm::quaternion dcos_theta_dq (cvm::rvector const &axis) const
+  {
+    cvm::rvector const q_vec = q.get_vector();
+    cvm::real const iprod = axis * q_vec;
+
+    cvm::real const cos_spin_2 = ::cos (::atan2 (iprod, q.q0));
+
+    if (q.q0 != 0.0)  {
+
+      cvm::real const d_cos_theta_dq0 = 
+        (4.0 * q.q0 / (cos_spin_2*cos_spin_2)) *
+        (1.0 - (iprod*iprod)/(q.q0*q.q0) / (1.0 + (iprod*iprod)/(q.q0*q.q0)));
+
+      cvm::real const d_cos_theta_dqn =
+        (4.0 * q.q0 / (cos_spin_2*cos_spin_2) *
+         (iprod/q.q0) / (1.0 + (iprod*iprod)/(q.q0*q.q0)));
+
+      return cvm::quaternion (d_cos_theta_dq0, 
+                              d_cos_theta_dqn * axis.x,
+                              d_cos_theta_dqn * axis.y,
+                              d_cos_theta_dqn * axis.z);
+    } else {
+
+      cvm::real const d_cos_theta_dqn =
+        (4.0 / (cos_spin_2*cos_spin_2 * iprod));
+
+      return cvm::quaternion (0.0,
+                              d_cos_theta_dqn * axis.x,
+                              d_cos_theta_dqn * axis.y,
+                              d_cos_theta_dqn * axis.z);
+    }
   }
 
   /// \brief Threshold for the eigenvalue crossing test

@@ -66,6 +66,11 @@ colvar::alpha_angles::alpha_angles (std::string const &conf)
       theta.push_back (new colvar::angle (cvm::atom (r[i  ], "CA", sid),
                                           cvm::atom (r[i+1], "CA", sid),
                                           cvm::atom (r[i+2], "CA", sid)));
+      // Collect atom group references from the angle sub-cvc into
+      // the list for this alpha_angles cvc
+      for (int i=0; i < theta.back()->atom_groups.size(); i++) {  
+          atom_groups.push_back (theta.back()->atom_groups[i]);
+      }
     }
 
   } else {
@@ -85,6 +90,11 @@ colvar::alpha_angles::alpha_angles (std::string const &conf)
         hb.push_back (new colvar::h_bond (cvm::atom (r[i  ], "O",  sid),
                                           cvm::atom (r[i+4], "N",  sid),
                                           r0, en, ed));
+        // Collect atom group references from the h_bond sub-cvc into
+        // the list for this alpha_angles cvc
+        for (int i=0; i < hb.back()->atom_groups.size(); i++) {  
+            atom_groups.push_back (hb.back()->atom_groups[i]);
+        }
       }
 
     } else {
@@ -201,151 +211,164 @@ void colvar::alpha_angles::apply_force (colvarvalue const &force)
 //////////////////////////////////////////////////////////////////////
 
 
-// Restraint function for the dihedral
-inline cvm::real dih_func (cvm::real const &w,
-                           cvm::real const &w0)
-{
-  return 0.5*(1.0 + ::cos (w-w0));
-}
+// // Restraint function for the dihedral
+// inline cvm::real dih_func (cvm::real const &w,
+//                            cvm::real const &w0)
+// {
+//   return 0.5*(1.0 + ::cos (w-w0));
+// }
 
-// Derivative
-inline cvm::real dih_deriv (cvm::real const &w,
-                            cvm::real const &w0)
-{
-  return (-0.5 * ::sin (w-w0));
-}
-
-
-colvar::alpha_dihedrals::alpha_dihedrals (std::string const &conf)
-  : cvc (conf)
-{
-  if (cvm::debug())
-    cvm::log ("Initializing alpha_dihedrals object.\n");
-
-  function_type = "alpha_dihedrals";
-  x.type (colvarvalue::type_scalar);
-
-  std::vector<int> residues;
-
-  get_keyval (conf, "residues", residues, std::vector<int>());
-
-  phi.reserve (residues.size());
-  psi.reserve (residues.size());
-  hb.reserve  (residues.size());
-
-  get_keyval (conf, "phi_ref", phi_ref, -57.8, parse_silent);
-  get_keyval (conf, "psi_ref", psi_ref, -47.0, parse_silent);
-
-  if (residues.size() < 5) {
-    cvm::fatal_error ("Error: not enough residues defined.\n");
-  }
-
-  std::string segment_id;
-  get_keyval (conf, "segment_id", segment_id, std::string ("MAIN"));
-
-  std::string const &sid    = segment_id;
-  std::vector<int> const &r = residues;
-  for (size_t i = 0; i < residues.size()-1; i++) {
-
-    phi.push_back (new colvar::dihedral (cvm::atom (r[i  ], "C",  sid),
-                                         cvm::atom (r[i+1], "N",  sid),
-                                         cvm::atom (r[i+1], "CA", sid),
-                                         cvm::atom (r[i+1], "C",  sid)));
-
-    psi.push_back (new colvar::dihedral (cvm::atom (r[i  ], "N",  sid),
-                                         cvm::atom (r[i  ], "CA", sid),
-                                         cvm::atom (r[i  ], "C",  sid),
-                                         cvm::atom (r[i+1], "N",  sid)));
-  }
-
-  for (size_t i = 0; i < residues.size()-4; i++) {
-    hb.push_back (new colvar::h_bond (cvm::atom (r[i  ], "O",  sid),
-                                      cvm::atom (r[i+4], "N",  sid),
-                                      3.3 * cvm::unit_angstrom(),
-                                      6, 8));
-  }
-
-  if (cvm::debug())
-    cvm::log ("Done initializing alpha_dihedrals object.\n");
-}
+// // Derivative
+// inline cvm::real dih_deriv (cvm::real const &w,
+//                             cvm::real const &w0)
+// {
+//   return (-0.5 * ::sin (w-w0));
+// }
 
 
-colvar::alpha_dihedrals::alpha_dihedrals()
-  : cvc ()
-{
-  function_type = "alpha_dihedrals";
-  x.type (colvarvalue::type_scalar);
-}
+// colvar::alpha_dihedrals::alpha_dihedrals (std::string const &conf)
+//   : cvc (conf)
+// {
+//   if (cvm::debug())
+//     cvm::log ("Initializing alpha_dihedrals object.\n");
+
+//   function_type = "alpha_dihedrals";
+//   x.type (colvarvalue::type_scalar);
+
+//   std::vector<int> residues;
+
+//   get_keyval (conf, "residues", residues, std::vector<int>());
+
+//   phi.reserve (residues.size());
+//   psi.reserve (residues.size());
+//   hb.reserve  (residues.size());
+
+//   get_keyval (conf, "phi_ref", phi_ref, -57.8, parse_silent);
+//   get_keyval (conf, "psi_ref", psi_ref, -47.0, parse_silent);
+
+//   if (residues.size() < 5) {
+//     cvm::fatal_error ("Error: not enough residues defined.\n");
+//   }
+
+//   std::string segment_id;
+//   get_keyval (conf, "segment_id", segment_id, std::string ("MAIN"));
+
+//   std::string const &sid    = segment_id;
+//   std::vector<int> const &r = residues;
+//   for (size_t i = 0; i < residues.size()-1; i++) {
+
+//     phi.push_back (new colvar::dihedral (cvm::atom (r[i  ], "C",  sid),
+//                                          cvm::atom (r[i+1], "N",  sid),
+//                                          cvm::atom (r[i+1], "CA", sid),
+//                                          cvm::atom (r[i+1], "C",  sid)));
+
+//     psi.push_back (new colvar::dihedral (cvm::atom (r[i  ], "N",  sid),
+//                                          cvm::atom (r[i  ], "CA", sid),
+//                                          cvm::atom (r[i  ], "C",  sid),
+//                                          cvm::atom (r[i+1], "N",  sid)));
+//     // Collect atom group references from the dihedral sub-cvcs into
+//     // the list for this alpha_dihedrals cvc
+//     for (int i=0; i < phi.back()->atom_groups.size(); i++) {  
+//         atom_groups.push_back (phi.back()->atom_groups[i]);
+//     }
+//     for (int i=0; i < psi.back()->atom_groups.size(); i++) {  
+//         atom_groups.push_back (psi.back()->atom_groups[i]);
+//     }
+//   }
+
+//   for (size_t i = 0; i < residues.size()-4; i++) {
+//     hb.push_back (new colvar::h_bond (cvm::atom (r[i  ], "O",  sid),
+//                                       cvm::atom (r[i+4], "N",  sid),
+//                                       3.3 * cvm::unit_angstrom(),
+//                                       6, 8));
+//     // Collect atom group references from the h_bond sub-cvc into
+//     // the list for this alpha_angles cvc
+//     for (int i=0; i < hb.back()->atom_groups.size(); i++) {  
+//         atom_groups.push_back (hb.back()->atom_groups[i]);
+//     }
+//   }
+
+//   if (cvm::debug())
+//     cvm::log ("Done initializing alpha_dihedrals object.\n");
+// }
 
 
-void colvar::alpha_dihedrals::calc_value()
-{
-  x.real_value = 0.0;
-
-  for (size_t i = 0; i < phi.size(); i++) {
-
-    (phi[i])->calc_value();
-    (psi[i])->calc_value();
-
-    x.real_value += 0.5 *
-      dih_func (((phi[i])->value()).real_value, phi_ref) *
-      dih_func (((psi[i])->value()).real_value, psi_ref);
-
-    if (cvm::debug())
-      cvm::log ("Phi dihedral no. "+cvm::to_str (i+1)+" in \""+
-                this->name+"\" has a value of "+
-                (cvm::to_str ((phi[i])->value().real_value))+
-                " degrees.\n");
-
-    if (cvm::debug())
-      cvm::log ("Psi dihedral no. "+cvm::to_str (i+1)+" in \""+
-                this->name+"\" has a value of "+
-                (cvm::to_str ((psi[i])->value().real_value))+
-                " degrees.\n");
-  }
-
-  for (size_t i = 0; i < hb.size(); i++) {
-    (hb[i])->calc_value();
-    x.real_value += 0.5 * (hb[i])->value().real_value;
-    if (cvm::debug())
-      cvm::log ("Hydrogen bond no. "+cvm::to_str (i+1)+" in \""+
-                this->name+"\" has a value of "+
-                (cvm::to_str ((hb[i])->value().real_value))+".\n");
-  }
-}
+// colvar::alpha_dihedrals::alpha_dihedrals()
+//   : cvc ()
+// {
+//   function_type = "alpha_dihedrals";
+//   x.type (colvarvalue::type_scalar);
+// }
 
 
-void colvar::alpha_dihedrals::calc_gradients()
-{
-  for (size_t i = 0; i < phi.size(); i++) {
-    (phi[i])->calc_gradients();
-    (psi[i])->calc_gradients();
-  }
-  for (size_t i = 0; i < hb.size(); i++) {
-    (hb[i])->calc_gradients();
-  }
-}
+// void colvar::alpha_dihedrals::calc_value()
+// {
+//   x.real_value = 0.0;
+
+//   for (size_t i = 0; i < phi.size(); i++) {
+
+//     (phi[i])->calc_value();
+//     (psi[i])->calc_value();
+
+//     x.real_value += 0.5 *
+//       dih_func (((phi[i])->value()).real_value, phi_ref) *
+//       dih_func (((psi[i])->value()).real_value, psi_ref);
+
+//     if (cvm::debug())
+//       cvm::log ("Phi dihedral no. "+cvm::to_str (i+1)+" in \""+
+//                 this->name+"\" has a value of "+
+//                 (cvm::to_str ((phi[i])->value().real_value))+
+//                 " degrees.\n");
+
+//     if (cvm::debug())
+//       cvm::log ("Psi dihedral no. "+cvm::to_str (i+1)+" in \""+
+//                 this->name+"\" has a value of "+
+//                 (cvm::to_str ((psi[i])->value().real_value))+
+//                 " degrees.\n");
+//   }
+
+//   for (size_t i = 0; i < hb.size(); i++) {
+//     (hb[i])->calc_value();
+//     x.real_value += 0.5 * (hb[i])->value().real_value;
+//     if (cvm::debug())
+//       cvm::log ("Hydrogen bond no. "+cvm::to_str (i+1)+" in \""+
+//                 this->name+"\" has a value of "+
+//                 (cvm::to_str ((hb[i])->value().real_value))+".\n");
+//   }
+// }
 
 
-void colvar::alpha_dihedrals::apply_force (colvarvalue const &force)
-{
-  for (size_t i = 0; i < phi.size(); i++) {
+// void colvar::alpha_dihedrals::calc_gradients()
+// {
+//   for (size_t i = 0; i < phi.size(); i++) {
+//     (phi[i])->calc_gradients();
+//     (psi[i])->calc_gradients();
+//   }
+//   for (size_t i = 0; i < hb.size(); i++) {
+//     (hb[i])->calc_gradients();
+//   }
+// }
 
-    (phi[i])->apply_force ( 0.5 *
-                            dih_func (((psi[i])->value()).real_value, psi_ref) *
-                            dih_deriv (((phi[i])->value()).real_value, phi_ref) *
-                            force.real_value );
 
-    (psi[i])->apply_force ( 0.5 *
-                            dih_func (((phi[i])->value()).real_value, phi_ref) *
-                            dih_deriv (((psi[i])->value()).real_value, psi_ref) *
-                            force.real_value );
-  }
+// void colvar::alpha_dihedrals::apply_force (colvarvalue const &force)
+// {
+//   for (size_t i = 0; i < phi.size(); i++) {
 
-  for (size_t i = 0; i < hb.size(); i++) {
-    (hb[i])->apply_force (0.5 * force.real_value);
-  }
-}
+//     (phi[i])->apply_force ( 0.5 *
+//                             dih_func (((psi[i])->value()).real_value, psi_ref) *
+//                             dih_deriv (((phi[i])->value()).real_value, phi_ref) *
+//                             force.real_value );
+
+//     (psi[i])->apply_force ( 0.5 *
+//                             dih_func (((phi[i])->value()).real_value, phi_ref) *
+//                             dih_deriv (((psi[i])->value()).real_value, psi_ref) *
+//                             force.real_value );
+//   }
+
+//   for (size_t i = 0; i < hb.size(); i++) {
+//     (hb[i])->apply_force (0.5 * force.real_value);
+//   }
+// }
 
 
 

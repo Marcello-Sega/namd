@@ -125,6 +125,7 @@ ABFdata::ABFdata(const char *gradFileName)
     }
     // Could check for end-of-file string here
     countFile.close();
+    delete [] countFileName;
 
     // for metadynamics
     bias = new double[scalar_dim];
@@ -217,7 +218,7 @@ void ABFdata::write_bias(const char *fileName)
     std::ofstream os;
     unsigned int index;
     int *pos, i;
-    double maxbias;
+    double minbias, maxbias;
 
     os.open(fileName);
     if (!os.good()) {
@@ -235,6 +236,13 @@ void ABFdata::write_bias(const char *fileName)
             maxbias = bias[index];
     }
 
+    // Set the maximum value to that of the lowest nonzero bias
+    minbias = bias[0];
+    for (index = 0; index < scalar_dim; index++) {
+        if (minbias == 0.0 || (bias[index] > 0.0 && bias[index] < minbias))
+            minbias = bias[index];
+    }
+    
     for (index = 0; index < scalar_dim; index++) {
         // Here we do the Euclidian division iteratively
         for (i = Nvars - 1; i > 0; i--) {
@@ -253,7 +261,7 @@ void ABFdata::write_bias(const char *fileName)
         for (i = 0; i < Nvars; i++) {
             os << mins[i] + widths[i] * (pos[i] + 0.5) << " ";
         }
-        os << maxbias - bias[index] << "\n";
+        os << maxbias - (bias[index] > 0.0 ? bias[index] : minbias) << "\n";
         pos[Nvars - 1]++;       // move on to next position
     }
     os.close();

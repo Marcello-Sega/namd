@@ -196,7 +196,7 @@ void colvarproxy_namd::fatal_error (std::string const &message)
   cvm::log (message);
   if (!cvm::debug())
     cvm::log ("If this error message is unclear, "
-              "try recompile with -DCOLVARS_DEBUG.\n");
+              "try recompiling with -DCOLVARS_DEBUG.\n");
   NAMD_die ("Error in the collective variables module: exiting.\n");
 }
 
@@ -259,14 +259,22 @@ e_pdb_field pdb_field_str2enum (std::string const &pdb_field_str)
 
 void colvarproxy_namd::load_coords (char const *pdb_filename,
                                     std::vector<cvm::atom_pos> &pos,
+                                    const std::vector<int> &indices,
                                     std::string const pdb_field_str,
                                     double const pdb_field_value)
 {
-  if (pdb_field_str.size() == 0)
-    cvm::fatal_error ("Error: must define which PDB field to use "
-                      "in order to define atoms from a PDB file.\n");
+  if (pdb_field_str.size() == 0 && indices.size() == 0) {
+    cvm::fatal_error ("Bug alert: either PDB field should be defined or list of "
+                      "atom IDs should be available when loading atom coordinates!\n");
+  }
 
-  e_pdb_field pdb_field_index = pdb_field_str2enum (pdb_field_str);
+  e_pdb_field pdb_field_index;
+  bool const use_pdb_field = (pdb_field_str.size() > 0);
+  if (use_pdb_field) {
+    pdb_field_index = pdb_field_str2enum (pdb_field_str);
+  }
+
+  std::vector<int>::const_iterator current_index = indices.begin();
 
   PDB *pdb = new PDB (pdb_filename);
   size_t const pdb_natoms = pdb->num_atoms();
@@ -278,57 +286,71 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
     size_t ipos = 0, ipdb = 0;
     for ( ; ipdb < pdb_natoms; ipdb++) {
 
-      double atom_pdb_field_value = 0.0;
+      if (use_pdb_field) {
+        // PDB field mode: skip atoms with wrong value in PDB field
+        double atom_pdb_field_value = 0.0;
 
-      switch (pdb_field_index) {
-      case e_pdb_occ:
-        atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
-        break;
-      case e_pdb_beta:
-        atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
-        break;
-      case e_pdb_x:
-        atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
-        break;
-      case e_pdb_y:
-        atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
-        break;
-      case e_pdb_z:
-        atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
-        break;
-      default:
-        break;
-      }
+        switch (pdb_field_index) {
+        case e_pdb_occ:
+          atom_pdb_field_value = (pdb->atom (ipdb))->occupancy();
+          break;
+        case e_pdb_beta:
+          atom_pdb_field_value = (pdb->atom (ipdb))->temperaturefactor();
+          break;
+        case e_pdb_x:
+          atom_pdb_field_value = (pdb->atom (ipdb))->xcoor();
+          break;
+        case e_pdb_y:
+          atom_pdb_field_value = (pdb->atom (ipdb))->ycoor();
+          break;
+        case e_pdb_z:
+          atom_pdb_field_value = (pdb->atom (ipdb))->zcoor();
+          break;
+        default:
+          break;
+        }
 
-      if ( (pdb_field_value) &&
-           (atom_pdb_field_value != pdb_field_value) ) {
-        continue;
-      } else if (atom_pdb_field_value == 0.0) {
-        continue;
+        if ( (pdb_field_value) &&
+             (atom_pdb_field_value != pdb_field_value) ) {
+          continue;
+        } else if (atom_pdb_field_value == 0.0) {
+          continue;
+        }
+
+      } else {
+        // Atom ID mode: use predefined atom IDs from the atom group
+        // Skip atoms not in the list
+        if (ipdb != *current_index) {
+          continue;
+        } else {
+          current_index++;
+        }
       }
       
-      if (!pos_allocated)
+      if (!pos_allocated) {
         pos.push_back (cvm::atom_pos (0.0, 0.0, 0.0));
-
-      if (ipos < pos.size()) {
-        pos[ipos] = cvm::atom_pos ((pdb->atom (ipdb))->xcoor(),
-                                   (pdb->atom (ipdb))->ycoor(),
-                                   (pdb->atom (ipdb))->zcoor());
-        ipos++;
-      } else {
+      } else if (ipos >= pos.size()) {
         cvm::fatal_error ("Error: the PDB file \""+
                           std::string (pdb_filename)+
                           "\" contains coordinates for "
-                          "more atoms than needed ("+
+                          "more atoms ("+
+                          cvm::to_str (ipos+1)+
+                          ") than needed ("+
                           cvm::to_str (pos.size())+").\n");
       }
+
+      pos[ipos] = cvm::atom_pos ((pdb->atom (ipdb))->xcoor(),
+                                 (pdb->atom (ipdb))->ycoor(),
+                                 (pdb->atom (ipdb))->zcoor());
+      ipos++;
+
     }
 
     if (ipos < pos.size())
       cvm::fatal_error ("Error: the PDB file \""+
                         std::string (pdb_filename)+
                         "\" contains coordinates for only "+
-                        cvm::to_str (ipdb)+
+                        cvm::to_str (ipos)+
                         " atoms, but "+cvm::to_str (pos.size())+
                         " are needed.\n");
 
@@ -341,6 +363,10 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
                                (pdb->atom (ia))->ycoor(),
                                (pdb->atom (ia))->zcoor());
     }
+  }
+
+  if (current_index != indices.end()) {
+    cvm::fatal_error ("Error: not all atoms found in PDB file.\n");
   }
 
   delete pdb;

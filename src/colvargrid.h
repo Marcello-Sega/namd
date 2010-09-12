@@ -205,12 +205,12 @@ public:
       }
 
       if (cv[i]->width <= 0.0) {
-        cvm::fatal_error ("Tried to initialize a grid on a"
+        cvm::fatal_error ("Tried to initialize a grid on a "
                           "variable with negative or zero width.\n");
       }
 
       if (!cv[i]->tasks[colvar::task_lower_boundary] || !cv[i]->tasks[colvar::task_upper_boundary]) {
-        cvm::fatal_error ("Tried to initialize a grid on a"
+        cvm::fatal_error ("Tried to initialize a grid on a "
                           "variable with undefined boundaries.\n");
       }
 
@@ -276,7 +276,11 @@ public:
     }
   }
 
-  // TODO import all bin-related colvar functions here
+  /// \brief Report the bin corresponding to the current value of variable i
+  inline int current_bin_scalar(int const i) const
+  {
+      return value_to_bin_scalar (cv[i]->value(), i);
+  }
 
   /// \brief Use the lower boundary and the width to report which bin
   /// the provided value is in
@@ -285,11 +289,27 @@ public:
     return (int) ::floor ( (value.real_value - lower_boundaries[i].real_value) / widths[i] );
   }
 
+  /// \brief Same as the standard version, but uses another grid definition
+  inline int value_to_bin_scalar (colvarvalue const &value,
+                                  colvarvalue const &new_offset,
+                                  cvm::real   const &new_width) const
+  {
+    return (int) ::floor ( (value.real_value - new_offset.real_value) / new_width );
+  }
+
   /// \brief Use the two boundaries and the width to report the
   /// central value corresponding to a bin index
   inline colvarvalue bin_to_value_scalar (int const &i_bin, int const i) const
   {
     return lower_boundaries[i].real_value + widths[i] * (0.5 + i_bin);
+  }
+  
+  /// \brief Same as the standard version, but uses different parameters
+  inline colvarvalue bin_to_value_scalar (int const &i_bin,
+                                          colvarvalue const &new_offset,
+                                          cvm::real const &new_width) const
+  {
+      return new_offset.real_value + new_width * (0.5 + i_bin);
   }
 
   /// Set the value at the point with index ix
@@ -331,7 +351,7 @@ public:
   {
     std::vector<int> index = new_index();
     for (size_t i = 0; i < nd; i++) {
-      index[i] = cv[i]->value_to_bin_scalar (values[i], lower_boundaries[i], widths[i]);
+      index[i] = value_to_bin_scalar (values[i], i);
     }
     return index;
   }
@@ -340,11 +360,11 @@ public:
   /// of the colvars
   inline std::vector<int> const get_colvars_index() const
   {
-    std::vector<colvarvalue> current_values (nd);
+    std::vector<int> index = new_index();
     for (size_t i = 0; i < nd; i++) {
-      current_values[i] = cv[i]->value();
+      index[i] = current_bin_scalar (i);
     }
-    return get_colvars_index (current_values);
+    return index;
   }
 
   /// \brief Get the minimum distance (in number of bins) from the
@@ -401,9 +421,9 @@ public:
 
       for (size_t i = 0; i < nd; i++) {
         oix[i] =
-          cv[i]->value_to_bin_scalar (cv[i]->bin_to_value_scalar (ix[i], gb[i], gw[i]),
-                                      ogb[i],
-                                      ogw[i]);
+          value_to_bin_scalar (bin_to_value_scalar (ix[i], gb[i], gw[i]),
+                               ogb[i],
+                               ogw[i]);
       }
 
       if (! other_grid.index_ok (oix)) {

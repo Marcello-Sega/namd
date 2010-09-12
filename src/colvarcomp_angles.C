@@ -14,6 +14,10 @@ colvar::angle::angle (std::string const &conf)
   parse_group (conf, "group1", group1);
   parse_group (conf, "group2", group2);
   parse_group (conf, "group3", group3);
+  atom_groups.push_back (&group1);
+  atom_groups.push_back (&group2);
+  atom_groups.push_back (&group3);
+
   x.type (colvarvalue::type_scalar);
 }
 
@@ -26,6 +30,10 @@ colvar::angle::angle (cvm::atom const &a1,
     group3 (std::vector<cvm::atom> (1, a3))
 {
   function_type = "angle";
+  atom_groups.push_back (&group1);
+  atom_groups.push_back (&group2);
+  atom_groups.push_back (&group3);
+
   x.type (colvarvalue::type_scalar);
 }
 
@@ -118,6 +126,11 @@ colvar::dihedral::dihedral (std::string const &conf)
   parse_group (conf, "group2", group2);
   parse_group (conf, "group3", group3);
   parse_group (conf, "group4", group4);
+  atom_groups.push_back (&group1);
+  atom_groups.push_back (&group2);
+  atom_groups.push_back (&group3);
+  atom_groups.push_back (&group4);
+
   x.type (colvarvalue::type_scalar);
 }
 
@@ -140,6 +153,12 @@ colvar::dihedral::dihedral (cvm::atom const &a1,
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
   b_1site_force = false;
+
+  atom_groups.push_back (&group1);
+  atom_groups.push_back (&group2);
+  atom_groups.push_back (&group3);
+  atom_groups.push_back (&group4);
+
   x.type (colvarvalue::type_scalar);
 
   if (cvm::debug())

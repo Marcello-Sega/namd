@@ -5,6 +5,7 @@
 #include "colvarparse.h"
 #include "colvar.h"
 #include "colvarcomp.h"
+#include "algorithm"
 
 
 // XX TODO make the acf code handle forces as well as values and velocities
@@ -22,7 +23,7 @@ colvar::colvar (std::string const &conf)
        cvi++) {
     if ((*cvi)->name == this->name)
       cvm::fatal_error ("Error: this colvar has the same name, \""+this->name+
-                        "\", of another colvar.\n");
+                        "\", as another colvar.\n");
   }
 
   // all tasks disabled by default 
@@ -43,23 +44,36 @@ colvar::colvar (std::string const &conf)
                               pos) ) {                                  \
       if (!def_conf.size()) continue;                                   \
       cvm::log ("Initializing "                                         \
-                "a new \""+std::string (def_desc)+"\" component"+       \
+                "a new \""+std::string (def_config_key)+"\" component"+ \
                 (cvm::debug() ? ", with configuration:\n"+def_conf      \
                  : ".\n"));                                             \
       cvm::increase_depth();                                            \
       cvc *cvdp = new colvar::def_class_name (def_conf);                \
-      cvdp->check_keywords (def_conf, def_config_key);                  \
-      cvm::decrease_depth();                                            \
-      if (cvdp != NULL)                                                 \
+      if (cvdp != NULL) {                                               \
         cvcs.push_back (cvdp);                                          \
-      else cvm::fatal_error ("Error: in allocating component \""        \
-                             def_config_key"\".\n");                    \
+        cvdp->check_keywords (def_conf, def_config_key);                \
+        cvm::decrease_depth();                                          \
+      } else {                                                          \
+        cvm::fatal_error ("Error: in allocating component \""           \
+                          def_config_key"\".\n");                       \
+      }                                                                 \
+      if ( (cvdp->period != 0.0) || (cvdp->wrap_center != 0.0) ) {      \
+        if ( (cvdp->function_type != std::string ("distance_z")) &&     \
+             (cvdp->function_type != std::string ("dihedral")) &&       \
+             (cvdp->function_type != std::string ("spin_angle")) ) {    \
+          cvm::fatal_error ("Error: invalid use of period and/or "      \
+                            "wrapAround in a \""+                       \
+                            std::string (def_config_key)+               \
+                            "\" component.\n");                         \
+        }                                                               \
+      }                                                                 \
       if ( ! cvcs.back()->name.size())                                  \
         cvcs.back()->name = std::string (def_config_key)+               \
           (cvm::to_str (++def_count));                                  \
       if (cvm::debug())                                                 \
-        cvm::log ("Done initializing a component of type \""+           \
-                  std::string (def_desc)+"\""+                          \
+        cvm::log ("Done initializing a \""+                             \
+                  std::string (def_config_key)+                         \
+                  "\" component"+                                       \
                   (cvm::debug() ?                                       \
                    ", named \""+cvcs.back()->name+"\""                  \
                    : "")+".\n");                                        \
@@ -82,23 +96,27 @@ colvar::colvar (std::string const &conf)
   initialize_components ("minimum distance", "minDistance",    min_distance);
 
   initialize_components ("coordination "
-                         "number",           "coordnum",       coordnum);
+                         "number",           "coordNum",       coordnum);
+  initialize_components ("self-coordination "
+                         "number",           "selfCoordNum",   selfcoordnum);
 
   initialize_components ("angle",            "angle",          angle);
   initialize_components ("dihedral",         "dihedral",       dihedral);
 
   initialize_components ("hydrogen bond",    "hBond",          h_bond);
 
-  initialize_components ("alpha helix",      "alphaDihedrals", alpha_dihedrals);
+  //  initialize_components ("alpha helix",      "alphaDihedrals", alpha_dihedrals);
   initialize_components ("alpha helix",      "alpha",          alpha_angles);
 
   initialize_components ("orientation",      "orientation",    orientation);
   initialize_components ("orientation "
                          "angle",            "orientationAngle",orientation_angle);
+  initialize_components ("tilt",             "tilt",           tilt);
+  initialize_components ("spin angle",       "spinAngle",      spin_angle);
 
   initialize_components ("RMSD",             "rmsd",           rmsd);
 
-  initialize_components ("logarithm of MSD", "logmsd",         logmsd);
+  //  initialize_components ("logarithm of MSD", "logmsd",         logmsd);
 
   initialize_components ("radius of "
                          "gyration",         "gyration",       gyration);
@@ -265,7 +283,7 @@ colvar::colvar (std::string const &conf)
         cvm::fatal_error ("Error: \"extendedFluctuation\" must be positive.\n");
       ext_force_k = cvm::boltzmann() * cvm::temperature() / (ext_tolerance * ext_tolerance);
 
-      get_keyval (conf, "extendedTimeConstant", ext_period, 50.0 * cvm::dt());
+      get_keyval (conf, "extendedTimeConstant", ext_period, 80.0 * cvm::dt());
       if (ext_period <= 0.0)
         cvm::fatal_error ("Error: \"extendedTimeConstant\" must be positive.\n");
       ext_mass = (cvm::boltzmann() * cvm::temperature() * ext_period * ext_period)
@@ -310,6 +328,35 @@ colvar::colvar (std::string const &conf)
 
   if (cvm::debug())
     cvm::log ("Done initializing collective variable \""+this->name+"\".\n");
+}
+
+
+
+void colvar::build_atom_list (void)
+{
+  // If atomic gradients are requested, build full list of atom ids from all cvcs
+  std::list<int> temp_id_list;
+
+  for (size_t i = 0; i < cvcs.size(); i++) {
+    for (size_t j = 0; j < cvcs[i]->atom_groups.size(); j++) {
+      for (size_t k = 0; k < cvcs[i]->atom_groups[j]->size(); k++) {
+        temp_id_list.push_back (cvcs[i]->atom_groups[j]->at(k).id);
+      }
+    }
+  }
+
+  temp_id_list.sort();
+  temp_id_list.unique();
+  atom_ids = std::vector<int> (temp_id_list.begin(), temp_id_list.end());
+  temp_id_list.clear();
+
+  atomic_gradients.resize (atom_ids.size());
+  if (atom_ids.size()) {
+    if (cvm::debug())
+      cvm::log ("Colvar: created atom list with " + cvm::to_str(atom_ids.size()) + " atoms.\n");
+  } else {
+    cvm::log ("Warning: colvar components communicated no atom IDs.\n");
+  }
 }
 
 
@@ -461,6 +508,7 @@ void colvar::enable (colvar::task const &t)
     break;
 
   case task_extended_lagrangian:
+    enable (task_gradients);
     v_reported.type (this->type());
     break;
 
@@ -483,7 +531,18 @@ void colvar::enable (colvar::task const &t)
     f.type  (this->type());
     fb.type (this->type());
     break;
+
+  case task_collect_gradients:
+    if (this->type() != colvarvalue::type_scalar)
+      cvm::fatal_error ("Collecting atomic gradients for non-scalar collective variable \""+
+                        this->name+"\" is not yet implemented.\n");
+    enable (task_gradients);
+    if (atom_ids.size() == 0) {
+      build_atom_list();
+    }
+    break;
   }
+
 
   tasks[t] = true;
 }
@@ -617,6 +676,41 @@ void colvar::calc()
       (cvcs[i])->calc_gradients();
       cvm::decrease_depth();
     }
+    if (tasks[task_collect_gradients]) {
+      // Collect the atomic gradients inside colvar object
+      for (int a = 0; a < atomic_gradients.size(); a++) {
+        atomic_gradients[a].reset();
+      }
+      for (size_t i = 0; i < cvcs.size(); i++) {
+        // Coefficient: d(a * x^n) = a * n * x^(n-1) * dx
+        cvm::real coeff = (cvcs[i])->sup_coeff * cvm::real ((cvcs[i])->sup_np) *
+          ::pow ((cvcs[i])->value().real_value, (cvcs[i])->sup_np-1);
+
+        for (size_t j = 0; j < cvcs[i]->atom_groups.size(); j++) {
+
+          // If necessary, apply inverse rotation to get atomic
+          // gradient in the laboratory frame
+          if (cvcs[i]->atom_groups[j]->b_rotate) {
+            cvm::rotation const rot_inv = cvcs[i]->atom_groups[j]->rot.inverse();
+
+            for (size_t k = 0; k < cvcs[i]->atom_groups[j]->size(); k++) {
+              int a = lower_bound (atom_ids.begin(), atom_ids.end(),
+                  cvcs[i]->atom_groups[j]->at(k).id) - atom_ids.begin();
+              atomic_gradients[a] += coeff *
+                rot_inv.rotate (cvcs[i]->atom_groups[j]->at(k).grad);
+            }
+
+          } else {
+
+            for (size_t k = 0; k < cvcs[i]->atom_groups[j]->size(); k++) {
+              int a = lower_bound (atom_ids.begin(), atom_ids.end(),
+                  cvcs[i]->atom_groups[j]->at(k).id) - atom_ids.begin();
+              atomic_gradients[a] += coeff * cvcs[i]->atom_groups[j]->at(k).grad; 
+            }
+          }
+        }
+      }
+    }
   }
 
   if (tasks[task_system_force]) {
@@ -732,9 +826,6 @@ void colvar::update()
       (cvcs[i])->calc_Jacobian_derivative();
     }
     cvm::decrease_depth();
-
-    // JH - here we could compute the dot product of the cvc inverse gradient
-    // with the colvar gradient, and renormalize.
 
     fj.reset();
     for (size_t i = 0; i < cvcs.size(); i++) {

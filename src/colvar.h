@@ -94,6 +94,9 @@ public:
     /// \brief Gradients are calculated and temporarily stored, so
     /// that external forces can be applied
     task_gradients,
+    /// \brief Collect atomic gradient data from all cvcs into vector
+    /// atomic_gradients
+    task_collect_gradients,
     /// \brief Calculate the velocity with finite differences
     task_fdiff_velocity,
     /// \brief The system force is calculated, projecting the atomic
@@ -183,7 +186,8 @@ protected:
     // velocity (non-scalar variables automatically taken into
     // account)
     cvm::real dt = cvm::dt();
-    return ( ( (dt > 0.0) ? (1.0/dt) : 1.0 ) * 0.5 * dist2_lgrad (xnew, xold) );
+    return ( ( (dt > 0.0) ? (1.0/dt) : 1.0 ) *
+             0.5 * dist2_lgrad (xnew, xold) );
   }
 
   /// Cached reported velocity
@@ -254,32 +258,6 @@ public:
   colvarvalue upper_wall;
   /// \brief Force constant for the upper boundary potential (|x-xb|^2)
   cvm::real   upper_wall_k;
-
-  // TODO: move everything below into the grid class;
-  // Possibly: use vectors instead of single bin number / colvar values?
-
-  /// \brief Use the two boundaries and the width to report which bin
-  /// the current value is in
-  int current_bin_scalar() const;
-
-  /// \brief Use the lower boundary and the width to report which bin
-  /// the provided value is in
-  int value_to_bin_scalar (colvarvalue const &value) const;
-
-  /// \brief Same as the standard version, but uses another grid definition
-  int value_to_bin_scalar (colvarvalue const &value,
-                           colvarvalue const &new_offset,
-                           cvm::real const   &new_width) const;
-
-  /// \brief Use the two boundaries and the width to report the
-  /// central value corresponding to a bin index
-  colvarvalue bin_to_value_scalar (int const &i_bin) const;
-
-  /// \brief Same as the standard version, but uses different parameters
-  colvarvalue bin_to_value_scalar (int const &i_bin,
-                                   colvarvalue const &new_offset,
-                                   cvm::real const &new_width) const;
-  // End of TODO
 
   /// \brief Is the interval defined by the two boundaries periodic?
   bool periodic_boundaries() const;
@@ -481,10 +459,13 @@ public:
   class angle;
   class dihedral;
   class coordnum;
+  class selfcoordnum;
   class h_bond;
   class rmsd;
   class logmsd;
   class orientation_angle;
+  class tilt;
+  class spin_angle;
   class gyration;
   class eigenvector;
   class alpha_dihedrals;
@@ -500,7 +481,18 @@ protected:
   /// \brief Array of \link cvc \endlink objects
   std::vector<cvc *> cvcs;
 
+  /// \brief Initialize the sorted list of atom IDs for atoms involved
+  /// in all cvcs (called when enabling task_collect_gradients)
+  void build_atom_list (void);
+
 public:
+  /// \brief Sorted array of (zero-based) IDs for all atoms involved
+  std::vector<int> atom_ids;
+
+  /// \brief Array of atomic gradients collected from all cvcs
+  /// with appropriate components, rotations etc.
+  /// For scalar variables only!
+  std::vector<cvm::rvector> atomic_gradients;
 
   inline size_t n_components () const {
     return cvcs.size();
@@ -545,42 +537,11 @@ inline colvarvalue const & colvar::system_force() const
 }
 
 
-
-inline int colvar::current_bin_scalar() const
-{
-  return this->value_to_bin_scalar (this->value());
-}
-
-inline int colvar::value_to_bin_scalar (colvarvalue const &value) const
-{
-  return (int) ::floor ( (value.real_value - lower_boundary.real_value) / width );
-}
-
-inline int colvar::value_to_bin_scalar (colvarvalue const &value,
-                                        colvarvalue const &new_offset,
-                                        cvm::real   const &new_width) const
-{
-  return (int) ::floor ( (value.real_value - new_offset.real_value) / new_width );
-}
-
-
-inline colvarvalue colvar::bin_to_value_scalar (int const &i_bin) const
-{
-  return lower_boundary.real_value + width * (0.5 + i_bin);
-}
-
-inline colvarvalue colvar::bin_to_value_scalar (int const &i_bin,
-                                                colvarvalue const &new_offset,
-                                                cvm::real const &new_width) const
-{
-  return new_offset.real_value + new_width * (0.5 + i_bin);
-}
-
-
 inline void colvar::add_bias_force (colvarvalue const &force)
 {
   fb += force;
 }
+
 
 inline void colvar::reset_bias_force() {
   fb.reset();
