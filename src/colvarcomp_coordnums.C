@@ -23,8 +23,8 @@ cvm::real colvar::coordnum::switching_function (cvm::real const &r0,
   int const en2 = en/2;
   int const ed2 = ed/2;
 
-  cvm::real const xn = ::pow (l2, en2);
-  cvm::real const xd = ::pow (l2, ed2);
+  cvm::real const xn = std::pow (l2, en2);
+  cvm::real const xd = std::pow (l2, ed2);
   cvm::real const func = (1.0-xn)/(1.0-xd);
 
   if (calculate_gradients) {
@@ -53,8 +53,8 @@ cvm::real colvar::coordnum::switching_function (cvm::rvector const &r0_vec,
   int const en2 = en/2;
   int const ed2 = ed/2;
 
-  cvm::real const xn = ::pow (l2, en2);
-  cvm::real const xd = ::pow (l2, ed2);
+  cvm::real const xn = std::pow (l2, en2);
+  cvm::real const xd = std::pow (l2, ed2);
   cvm::real const func = (1.0-xn)/(1.0-xd);
 
   if (calculate_gradients) {
@@ -325,8 +325,8 @@ cvm::real colvar::selfcoordnum::switching_function (cvm::real const &r0,
   int const en2 = en/2;
   int const ed2 = ed/2;
 
-  cvm::real const xn = ::pow (l2, en2);
-  cvm::real const xd = ::pow (l2, ed2);
+  cvm::real const xn = std::pow (l2, en2);
+  cvm::real const xd = std::pow (l2, ed2);
   cvm::real const func = (1.0-xn)/(1.0-xd);
 
   if (calculate_gradients) {

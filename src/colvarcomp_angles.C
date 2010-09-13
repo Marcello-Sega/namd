@@ -62,14 +62,14 @@ void colvar::angle::calc_value()
 
   cvm::real     const cos_theta = (r21*r23)/(r21l*r23l);
 
-  x.real_value = (180.0/PI) * ::acos (cos_theta);
+  x.real_value = (180.0/PI) * std::acos (cos_theta);
 }
 
 
 void colvar::angle::calc_gradients()
 {
   cvm::real const cos_theta = (r21*r23)/(r21l*r23l);
-  cvm::real const dxdcos = -1.0 / ::sqrt (1.0 - cos_theta*cos_theta);
+  cvm::real const dxdcos = -1.0 / std::sqrt (1.0 - cos_theta*cos_theta);
     
   cvm::rvector const dthetadr21 = (180.0/PI) * dxdcos *
     ( (r23)/(r21l*r23l) +
@@ -200,7 +200,7 @@ void colvar::dihedral::calc_value()
   cvm::real const cos_phi = n1 * n2;
   cvm::real const sin_phi = n1 * r34 * r23.norm();
 
-  x.real_value = (180.0/PI) * ::atan2 (sin_phi, cos_phi);
+  x.real_value = (180.0/PI) * std::atan2 (sin_phi, cos_phi);
 }
 
 
@@ -221,7 +221,7 @@ void colvar::dihedral::calc_gradients()
   rB = 1.0/rB;
   B *= rB;
 
-  if (::fabs (sin_phi) > 0.1) {
+  if (std::fabs (sin_phi) > 0.1) {
     rA = 1.0/rA;
     A *= rA;
     cvm::rvector const dcosdA = rA*(cos_phi*A-B);
@@ -300,8 +300,8 @@ void colvar::dihedral::calc_force_invgrads()
   cvm::real const dot1 = u23 * u12;
   cvm::real const dot4 = u23 * u34;
 
-  cvm::real const fact1 = d12 * sqrt (1.0 - dot1 * dot1);
-  cvm::real const fact4 = d34 * sqrt (1.0 - dot4 * dot4);
+  cvm::real const fact1 = d12 * std::sqrt (1.0 - dot1 * dot1);
+  cvm::real const fact4 = d34 * std::sqrt (1.0 - dot4 * dot4);
 
   group1.read_system_forces();
   if ( b_1site_force ) {

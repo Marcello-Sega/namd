@@ -151,9 +151,9 @@ void colvar::orientation_angle::calc_value()
   rot.calc_optimal_rotation (ref_pos, atoms.positions_shifted (-1.0 * atoms_cog));
 
   if ((rot.q).q0 >= 0.0) {
-    x.real_value = (180.0/PI) * 2.0 * ::acos ((rot.q).q0);
+    x.real_value = (180.0/PI) * 2.0 * std::acos ((rot.q).q0);
   } else {
-    x.real_value = (180.0/PI) * 2.0 * ::acos (-1.0 * (rot.q).q0);
+    x.real_value = (180.0/PI) * 2.0 * std::acos (-1.0 * (rot.q).q0);
   }
 }
 
@@ -162,7 +162,7 @@ void colvar::orientation_angle::calc_gradients()
 {
   cvm::real const dxdq0 =
     ( ((rot.q).q0 * (rot.q).q0 < 1.0) ? 
-      ((180.0 / PI) * (-2.0) / ::sqrt (1.0 - ((rot.q).q0 * (rot.q).q0))) :
+      ((180.0 / PI) * (-2.0) / std::sqrt (1.0 - ((rot.q).q0 * (rot.q).q0))) :
       0.0 );
 
   for (size_t ia = 0; ia < atoms.size(); ia++) {
@@ -248,9 +248,9 @@ void colvar::tilt::calc_gradients()
         pos_test[ia][comp] -= cvm::debug_gradients_step_size;
 
         cvm::log ("|dx(real) - dx(pred)|/dx(real) = "+
-                  cvm::to_str (::fabs (rot.cos_theta (axis) - x.real_value -
+                  cvm::to_str (std::fabs (rot.cos_theta (axis) - x.real_value -
                                        cvm::debug_gradients_step_size * atoms[ia].grad[comp]) /
-                               ::fabs (rot.cos_theta (axis) - x.real_value),
+                               std::fabs (rot.cos_theta (axis) - x.real_value),
                                cvm::cv_width, cvm::cv_prec)+".\n");
       }
 
@@ -345,9 +345,9 @@ void colvar::spin_angle::calc_gradients()
         pos_test[ia][comp] -= cvm::debug_gradients_step_size;
 
         cvm::log ("|dx(real) - dx(pred)|/dx(real) = "+
-                  cvm::to_str (::fabs (rot.spin_angle (axis) - x.real_value -
+                  cvm::to_str (std::fabs (rot.spin_angle (axis) - x.real_value -
                                        cvm::debug_gradients_step_size * atoms[ia].grad[comp]) /
-                               ::fabs (rot.spin_angle (axis) - x.real_value),
+                               std::fabs (rot.spin_angle (axis) - x.real_value),
                                cvm::cv_width, cvm::cv_prec)+".\n");
       }
 

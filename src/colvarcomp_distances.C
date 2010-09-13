@@ -422,19 +422,19 @@ void colvar::min_distance::calc_value()
       cvm::rvector const dv = cvm::position_distance (ai1->pos, ai2->pos);
       cvm::real const d = dv.norm();
       if (d > 0.0)
-        x.real_value += ::exp (smoothing / d);
+        x.real_value += std::exp (smoothing / d);
       else
         zero_dist = true;
     }
   }
 
-  x.real_value = zero_dist ? 0.0 : smoothing/(::log (x.real_value));
+  x.real_value = zero_dist ? 0.0 : smoothing/(std::log (x.real_value));
 }
 
 void colvar::min_distance::calc_gradients()
 {
   if (x.real_value > 0.0) {
-    cvm::real const sum = ::exp (smoothing/x.real_value);
+    cvm::real const sum = std::exp (smoothing/x.real_value);
     cvm::real const dxdsum = -1.0 *
       (x.real_value/smoothing) * (x.real_value/smoothing) *
       (1.0 / sum);
@@ -445,9 +445,9 @@ void colvar::min_distance::calc_gradients()
         cvm::real const d = dv.norm();
         if (d > 0.0) {
           cvm::rvector const dvu = dv / dv.norm();
-          ai1->grad += dxdsum * ::exp (smoothing / d) *
+          ai1->grad += dxdsum * std::exp (smoothing / d) *
             smoothing * (-1.0/(d*d)) * (-1.0) * dvu;
-          ai2->grad += dxdsum * ::exp (smoothing / d) *
+          ai2->grad += dxdsum * std::exp (smoothing / d) *
             smoothing * (-1.0/(d*d)) * dvu;
         }
       }
@@ -555,7 +555,7 @@ void colvar::gyration::calc_value()
   for (cvm::atom_iter ai = atoms.begin(); ai != atoms.end(); ai++) {
     x.real_value += (ai->mass/atoms.total_mass) * (ai->pos).norm2();
   }
-  x.real_value = ::sqrt (x.real_value);
+  x.real_value = std::sqrt (x.real_value);
 }
 
 
@@ -627,7 +627,7 @@ void colvar::rmsd::calc_value()
   cvm::real const MSD = 1.0/(cvm::real (atoms.size())) *
     ( group_pos_sum2 + ref_pos_sum2 - 2.0 * rot.lambda );
 
-  x.real_value = (MSD > 0.0) ? ::sqrt (MSD) : 0.0;
+  x.real_value = (MSD > 0.0) ? std::sqrt (MSD) : 0.0;
 }
 
 
@@ -752,7 +752,7 @@ void colvar::logmsd::calc_value()
   MSD = 1.0/(cvm::real (atoms.size())) *
     ( group_pos_sum2 + ref_pos_sum2 - 2.0 * rot.lambda );
 
-  x.real_value = (MSD > 0.0) ? ::log(MSD) : 0.0;
+  x.real_value = (MSD > 0.0) ? std::log(MSD) : 0.0;
 }
 
 
@@ -1026,5 +1026,5 @@ void colvar::eigenvector::calc_Jacobian_derivative()
     }
   }
 
-  jd.real_value = sum * sqrt (eigenvec_invnorm2); 
+  jd.real_value = sum * std::sqrt (eigenvec_invnorm2); 
 }

@@ -41,7 +41,7 @@ colvarbias_meta::colvarbias_meta (std::string const &conf, char const *key)
 
   get_keyval (conf, "newHillFrequency", new_hill_freq, 1000);
 
-  get_keyval (conf, "hillWidth", hill_width, ::sqrt (2.0 * PI) / 2.0);
+  get_keyval (conf, "hillWidth", hill_width, std::sqrt (2.0 * PI) / 2.0);
 
   {
     bool b_replicas = false;
@@ -182,7 +182,7 @@ colvarbias_meta::create_hill (colvarbias_meta::hill const &h)
     // receive special treatment (i.e. they are computed analytically)
 
     cvm::real const min_dist = hills_energy->bin_distance_from_boundaries (h.centers);
-    if (min_dist < (3.0 * ::floor (hill_width)) + 1.0) {
+    if (min_dist < (3.0 * std::floor (hill_width)) + 1.0) {
       hills_off_grid.push_back (hills.back());
     }
   }
@@ -264,7 +264,7 @@ void colvarbias_meta::update()
 
       bool changed_grids = false;
       int const min_buffer =
-        (3 * (size_t) ::floor (hill_width)) + 1;
+        (3 * (size_t) std::floor (hill_width)) + 1;
 
       std::vector<int>         new_sizes (hills_energy->sizes());
       std::vector<colvarvalue> new_lower_boundaries (hills_energy->lower_boundaries);
@@ -481,7 +481,7 @@ void colvarbias_meta::calc_hills (colvarbias_meta::hill_iter      h_first,
       // set it to zero if the exponent is more negative than log(1.0E-05)
       h->value (0.0);
     } else {
-      h->value (::exp (-0.5*cv_sqdev));
+      h->value (std::exp (-0.5*cv_sqdev));
     }
     energy += h->energy();
   }
@@ -920,7 +920,7 @@ std::istream & colvarbias_meta::read_hill (std::istream &is)
     // be computed analytically
     cvm::real const min_dist =
       hills_energy->bin_distance_from_boundaries ((hills.back()).centers);
-    if (min_dist < (3.0 * ::floor (hill_width)) + 1.0) {
+    if (min_dist < (3.0 * std::floor (hill_width)) + 1.0) {
       hills_off_grid.push_back (hills.back());
     }
   }
@@ -1134,7 +1134,7 @@ void colvarbias_meta::recount_hills_off_grid (colvarbias_meta::hill_iter  h_firs
 
   for (hill_iter h = h_first; h != h_last; h++) {
     cvm::real const min_dist = hills_energy->bin_distance_from_boundaries (h->centers);
-    if (min_dist < (3.0 * ::floor (hill_width)) + 1.0) {
+    if (min_dist < (3.0 * std::floor (hill_width)) + 1.0) {
       hills_off_grid.push_back (*h);
     }
   }

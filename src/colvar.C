@@ -647,7 +647,7 @@ void colvar::calc()
                                cvm::cv_width, cvm::cv_prec)+".\n");
       x += (cvcs[i])->sup_coeff *
         ( ((cvcs[i])->sup_np != 1) ?
-          ::pow ((cvcs[i])->value().real_value, (cvcs[i])->sup_np) :
+          std::pow ((cvcs[i])->value().real_value, (cvcs[i])->sup_np) :
           (cvcs[i])->value().real_value );
     } 
   } else {
@@ -684,7 +684,7 @@ void colvar::calc()
       for (size_t i = 0; i < cvcs.size(); i++) {
         // Coefficient: d(a * x^n) = a * n * x^(n-1) * dx
         cvm::real coeff = (cvcs[i])->sup_coeff * cvm::real ((cvcs[i])->sup_np) *
-          ::pow ((cvcs[i])->value().real_value, (cvcs[i])->sup_np-1);
+          std::pow ((cvcs[i])->value().real_value, (cvcs[i])->sup_np-1);
 
         for (size_t j = 0; j < cvcs[i]->atom_groups.size(); j++) {
 
@@ -694,7 +694,7 @@ void colvar::calc()
             cvm::rotation const rot_inv = cvcs[i]->atom_groups[j]->rot.inverse();
 
             for (size_t k = 0; k < cvcs[i]->atom_groups[j]->size(); k++) {
-              int a = lower_bound (atom_ids.begin(), atom_ids.end(),
+              int a = std::lower_bound (atom_ids.begin(), atom_ids.end(),
                   cvcs[i]->atom_groups[j]->at(k).id) - atom_ids.begin();
               atomic_gradients[a] += coeff *
                 rot_inv.rotate (cvcs[i]->atom_groups[j]->at(k).grad);
@@ -703,7 +703,7 @@ void colvar::calc()
           } else {
 
             for (size_t k = 0; k < cvcs[i]->atom_groups[j]->size(); k++) {
-              int a = lower_bound (atom_ids.begin(), atom_ids.end(),
+              int a = std::lower_bound (atom_ids.begin(), atom_ids.end(),
                   cvcs[i]->atom_groups[j]->at(k).id) - atom_ids.begin();
               atomic_gradients[a] += coeff * cvcs[i]->atom_groups[j]->at(k).grad; 
             }
@@ -883,7 +883,7 @@ void colvar::communicate_forces()
       cvm::increase_depth();
       (cvcs[i])->apply_force (f * (cvcs[i])->sup_coeff * 
                               cvm::real ((cvcs[i])->sup_np) *
-                              (::pow ((cvcs[i])->value().real_value,
+                              (std::pow ((cvcs[i])->value().real_value,
                                       (cvcs[i])->sup_np-1)) );
       cvm::decrease_depth();
     }
@@ -917,7 +917,7 @@ bool colvar::periodic_boundaries (colvarvalue const &lb, colvarvalue const &ub) 
   }
 
   if (period > 0.0) {
-    if ( ((::sqrt (this->dist2 (lb, ub))) / this->width)
+    if ( ((std::sqrt (this->dist2 (lb, ub))) / this->width)
          < 1.0E-10 ) {
       return true;
     }
@@ -1510,7 +1510,7 @@ void colvar::calc_runave()
                   << std::setprecision (cvm::cv_prec) << std::setw (cvm::cv_width)
                   << runave << " "
                   << std::setprecision (cvm::cv_prec) << std::setw (cvm::cv_width)
-                  << ::sqrt (runave_variance) << "\n";
+                  << std::sqrt (runave_variance) << "\n";
       }
 
       history_add_value (runave_length, *x_history_p, x);

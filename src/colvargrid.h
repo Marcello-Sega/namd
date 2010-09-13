@@ -238,7 +238,7 @@ public:
                             lower_boundaries[i].real_value ) / widths[i];
         int nbins_round = (int)(nbins+0.5);
         
-        if (::fabs (nbins - cvm::real (nbins_round)) > 1.0E-10) {
+        if (std::fabs (nbins - cvm::real (nbins_round)) > 1.0E-10) {
           cvm::log ("Warning: grid interval ("+
                     cvm::to_str (lower_boundaries[i], cvm::cv_width, cvm::cv_prec)+" - "+
                     cvm::to_str (upper_boundaries[i], cvm::cv_width, cvm::cv_prec)+
@@ -286,7 +286,7 @@ public:
   /// the provided value is in
   inline int value_to_bin_scalar (colvarvalue const &value, const int i) const
   {
-    return (int) ::floor ( (value.real_value - lower_boundaries[i].real_value) / widths[i] );
+    return (int) std::floor ( (value.real_value - lower_boundaries[i].real_value) / widths[i] );
   }
 
   /// \brief Same as the standard version, but uses another grid definition
@@ -294,7 +294,7 @@ public:
                                   colvarvalue const &new_offset,
                                   cvm::real   const &new_width) const
   {
-    return (int) ::floor ( (value.real_value - new_offset.real_value) / new_width );
+    return (int) std::floor ( (value.real_value - new_offset.real_value) / new_width );
   }
 
   /// \brief Use the two boundaries and the width to report the
@@ -374,8 +374,8 @@ public:
     cvm::real minimum = 1.0E+16;
     for (size_t i = 0; i < nd; i++) {
 
-      cvm::real dl = ::sqrt (cv[i]->dist2 (values[i], lower_boundaries[i])) / widths[i];
-      cvm::real du = ::sqrt (cv[i]->dist2 (values[i], upper_boundaries[i])) / widths[i];
+      cvm::real dl = std::sqrt (cv[i]->dist2 (values[i], lower_boundaries[i])) / widths[i];
+      cvm::real du = std::sqrt (cv[i]->dist2 (values[i], upper_boundaries[i])) / widths[i];
 
       if (! periodic[i]) {
         if (values[i].real_value < lower_boundaries[i])
@@ -569,7 +569,7 @@ public:
     bool new_params = false;
     for (size_t i = 0; i < nd; i++) {
       if ( (old_nx[i] != nx[i]) ||
-           (::sqrt (cv[i]->dist2 (old_lb[i],
+           (std::sqrt (cv[i]->dist2 (old_lb[i],
                                   lower_boundaries[i])) > 1.0E-10) ) {
         new_params = true;
       }
@@ -590,11 +590,11 @@ public:
   void check_consistency()
   {
     for (size_t i = 0; i < nd; i++) {
-      if ( (::sqrt (cv[i]->dist2 (cv[i]->lower_boundary,
+      if ( (std::sqrt (cv[i]->dist2 (cv[i]->lower_boundary,
                                   lower_boundaries[i])) > 1.0E-10) || 
-           (::sqrt (cv[i]->dist2 (cv[i]->upper_boundary,
+           (std::sqrt (cv[i]->dist2 (cv[i]->upper_boundary,
                                   upper_boundaries[i])) > 1.0E-10) || 
-           (::sqrt (cv[i]->dist2 (cv[i]->width,
+           (std::sqrt (cv[i]->dist2 (cv[i]->width,
                                   widths[i])) > 1.0E-10) ) {
         cvm::fatal_error ("Error: restart information for a grid is "
                           "inconsistent with that of its colvars.\n");
@@ -745,8 +745,8 @@ public:
       is >> lower >> width >> nx_read[i] >> periodic;
 
 
-      if ( (::fabs (lower - lower_boundaries[i].real_value) > 1.0e-10) ||
-           (::fabs (width - widths[i] ) > 1.0e-10) ||
+      if ( (std::fabs (lower - lower_boundaries[i].real_value) > 1.0e-10) ||
+           (std::fabs (width - widths[i] ) > 1.0e-10) ||
            (nx_read[i] != nx[i]) ) {
         cvm::log ("Warning: reading from different grid definition (colvar "
                   + cvm::to_str (i+1) + "); remapping data on new grid.\n");

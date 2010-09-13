@@ -200,7 +200,7 @@ public:
   /// Norm of this colvarvalue
   inline cvm::real norm() const
   {
-    return ::sqrt (this->norm2());
+    return std::sqrt (this->norm2());
   }
 
   /// \brief Return the value whose scalar product with this value is
@@ -336,10 +336,10 @@ inline void colvarvalue::apply_constraints()
   case colvarvalue::type_vector:
     break;
   case colvarvalue::type_unitvector:
-    rvector_value /= ::sqrt (rvector_value.norm2());
+    rvector_value /= std::sqrt (rvector_value.norm2());
     break;
   case colvarvalue::type_quaternion:
-    quaternion_value /= ::sqrt (quaternion_value.norm2());
+    quaternion_value /= std::sqrt (quaternion_value.norm2());
     break;
   case colvarvalue::type_notset:
   default:
@@ -637,12 +637,12 @@ inline cvm::real colvarvalue::dist2 (colvarvalue const &x2) const
 
   switch (this->value_type) {
   case colvarvalue::type_scalar:
-    return pow (this->real_value - x2.real_value, int (2));
+    return std::pow (this->real_value - x2.real_value, int (2));
   case colvarvalue::type_vector:
     return (this->rvector_value - x2.rvector_value).norm2();
   case colvarvalue::type_unitvector:
     // angle between (*this) and x2 is the distance
-    return ::pow (::acos (this->rvector_value * x2.rvector_value), int (2));
+    return std::pow (std::acos (this->rvector_value * x2.rvector_value), int (2));
   case colvarvalue::type_quaternion:
     // angle between (*this) and x2 is the distance, the quaternion
     // object has it implemented internally
@@ -670,7 +670,7 @@ inline colvarvalue colvarvalue::dist2_grad (colvarvalue const &x2) const
       cvm::rvector const &v1 = this->rvector_value;
       cvm::rvector const &v2 = x2.rvector_value;
       cvm::real const cos_t = v1 * v2;
-      cvm::real const sin_t = ::sqrt (1.0 - cos_t*cos_t);
+      cvm::real const sin_t = std::sqrt (1.0 - cos_t*cos_t);
       return colvarvalue ( 2.0 * sin_t *
                            cvm::rvector ( (-1.0) * sin_t * v2.x +
                                           cos_t/sin_t * (v1.x - cos_t*v2.x),

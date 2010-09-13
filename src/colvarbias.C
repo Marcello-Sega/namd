@@ -176,7 +176,7 @@ void colvarbias_harmonic::update()
       // at each simulation step (or stage, if applicable)
       centers_incr.resize (colvars.size());
       for (size_t i = 0; i < colvars.size(); i++) {
-        centers_incr[i] = (::sqrt (colvars[i]->dist2 (colvar_centers[i],
+        centers_incr[i] = (std::sqrt (colvars[i]->dist2 (colvar_centers[i],
                                                       target_centers[i]))) /
           cvm::real ( target_nstages ? target_nstages :
                                       (target_nsteps - cvm::step_absolute()));
@@ -234,7 +234,7 @@ void colvarbias_harmonic::update()
       }
 
       // TI calculation: estimate free energy derivative
-      restraint_FE += 0.5 * force_k_exp * pow(lambda, force_k_exp - 1.0)
+      restraint_FE += 0.5 * force_k_exp * std::pow(lambda, force_k_exp - 1.0)
         * (target_force_k - starting_force_k) * dist_sq;
 
       if (cvm::step_absolute() % target_nsteps == 0 &&
@@ -247,12 +247,12 @@ void colvarbias_harmonic::update()
           restraint_FE = 0.0;
           stage++;
           force_k = starting_force_k + (target_force_k - starting_force_k)
-                    * pow (lambda, force_k_exp);
+                    * std::pow (lambda, force_k_exp);
       }
     } else if (cvm::step_absolute() <= target_nsteps) {
       // update force constant (slow growth)
       force_k = starting_force_k + (target_force_k - starting_force_k)
-          * pow (cvm::real(cvm::step_absolute()) / cvm::real(target_nsteps), force_k_exp);
+          * std::pow (cvm::real(cvm::step_absolute()) / cvm::real(target_nsteps), force_k_exp);
     }
   }
 
