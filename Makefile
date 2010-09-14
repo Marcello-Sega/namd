@@ -614,7 +614,7 @@ RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 
 DOC_FILES = README.txt announce.txt license.txt notes.txt
 
-RELEASE_FILES = $(LIBCUDARTSO) flipdcd flipbinpdb psfgen charmrun namd2
+RELEASE_FILES = $(LIBCUDARTSO) flipdcd flipbinpdb psfgen charmrun namd2 $(COMPILERRUNTIMELIBS)
 
 WINDOWS_RELEASE_FILES = $(WINDOWSBINARIES) $(TCLDLL)
 
