@@ -614,14 +614,14 @@ RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 
 DOC_FILES = README.txt announce.txt license.txt notes.txt
 
-RELEASE_FILES = $(LIBCUDARTSO) flipdcd flipbinpdb psfgen charmrun namd2 $(COMPILERRUNTIMELIBS)
+RELEASE_FILES = $(LIBCUDARTSO) flipdcd flipbinpdb psfgen charmrun namd2
 
 WINDOWS_RELEASE_FILES = $(WINDOWSBINARIES) $(TCLDLL)
 
 release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
 	mkdir $(RELEASE_DIR_NAME)
-	cp $(RELEASE_FILES) $(RELEASE_DIR_NAME)
+	cp $(RELEASE_FILES) $(COMPILERRUNTIMELIBS) $(RELEASE_DIR_NAME)
 	for f in $(DOC_FILES); do cp .rootdir/$$f $(RELEASE_DIR_NAME); done
 	cp -r .rootdir/lib $(RELEASE_DIR_NAME)
 	for f in `find $(RELEASE_DIR_NAME)/lib -name CVS`; do \
@@ -638,7 +638,7 @@ release: all
 	gzip $(RELEASE_DIR_NAME).tar
 	echo $(CHARM)
 	ls -l $(CHARM)/lib
-	-for f in $(RELEASE_FILES); do echo $$f; $(LDD) $$f; done
+	-for f in $(RELEASE_FILES); do echo $$f; $(LDD) $(RELEASE_DIR_NAME)/$$f; done
 
 winrelease: winall
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
