@@ -753,6 +753,7 @@ void ComputeNonbondedCUDA::doWork() {
     cudaMallocHost((void**)&slow_forces,sizeof(float4)*num_atom_records_allocated);
   }
 
+  int bfstart = 0;
   int ncomputes = computeRecords.size();
   for ( int i=0; i<ncomputes; ++i ) {
     ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
@@ -766,6 +767,8 @@ void ComputeNonbondedCUDA::doWork() {
 	force_lists[lp1].patch_size * force_lists[lp1].force_list_size;
     pp.patch1_size = patchRecords[p1].numAtoms;
     pp.patch1_force_size = patchRecords[p1].numFreeAtoms;
+    pp.block_flags_start = bfstart;
+    bfstart += ((pp.patch1_force_size + 127) >> 7) << 5;
     // istart += pp.patch1_size;
     // if ( istart & 15 ) { istart += 16 - (istart & 15); }
     pp.patch2_atom_start = patchRecords[p2].localStart;
@@ -804,7 +807,7 @@ void ComputeNonbondedCUDA::doWork() {
   cuda_bind_patch_pairs(patch_pairs.begin(), patch_pairs.size(),
 			force_lists.begin(), force_lists.size(),
 			num_atom_records, num_force_records,
-			max_atoms_per_patch);
+			bfstart, max_atoms_per_patch);
 
  }  // atomsChanged || computesChanged
 
@@ -1006,6 +1009,8 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 
   Flags &flags = patchRecords[activePatches[0]].p->flags;
   int doSlow = flags.doFullElectrostatics;
+  int usePairlists = flags.usePairlists;
+  int savePairlists = flags.savePairlists;
 
   Lattice &lattice = flags.lattice;
   float3 lata, latb, latc;
@@ -1019,6 +1024,9 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
   latc.y = lattice.c().y;
   latc.z = lattice.c().z;
 
+  SimParameters *simParams = Node::Object()->simParameters;
+  float plcutoff2 = simParams->pairlistDist;  plcutoff2 *= plcutoff2;
+
   switch ( kernel_launch_state ) {
   case 1:
     ++kernel_launch_state;
@@ -1031,9 +1039,10 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 
     cuda_bind_atoms(atoms);
     cudaEventRecord(start_calc, stream);
-    cuda_nonbonded_forces(lata, latb, latc, cutoff2,
+    cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
-	localActivePatches.size(),remoteActivePatches.size(), doSlow);
+	localActivePatches.size(),remoteActivePatches.size(),
+	doSlow, usePairlists, savePairlists);
     cudaEventRecord(end_remote_calc, stream);
     cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
         num_local_atom_records,num_remote_atom_records);
@@ -1047,9 +1056,10 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
   case 2:
     ++kernel_launch_state;
     gpu_is_mine = 0;
-    cuda_nonbonded_forces(lata, latb, latc, cutoff2,
+    cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
 	0,localComputeRecords.size(),
-	0,localActivePatches.size(), doSlow);
+	0,localActivePatches.size(),
+	doSlow, usePairlists, savePairlists);
     cudaEventRecord(end_local_calc, stream);
     cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
         0,num_local_atom_records);

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2010/08/05 16:31:32 $
- * $Revision: 1.1308 $
+ * $Date: 2010/09/15 19:52:29 $
+ * $Revision: 1.1309 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3156,6 +3156,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if ( (alchOn) && (!usePairlists)) {
      NAMD_die("Sorry, Alchemical simulations require pairlists to be enabled\n");
    }
+#ifdef NAMD_CUDA
+   if ( ! usePairlists ) {
+     usePairlists = 1;
+     iout << iINFO << "CUDA ACCELERATION REQUIRES PAIRLISTS\n";
+   }
+#endif
      
    iout << iINFO << "PAIRLISTS " << ( usePairlists ? "ENABLED" : "DISABLED" )
 							<< "\n" << endi;

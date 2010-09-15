@@ -9,7 +9,7 @@ void cuda_errcheck(const char *msg);
 #endif
 
 #define PATCH_PAIR_SIZE 12
-#define PATCH_PAIR_USED 10
+#define PATCH_PAIR_USED 11
 
 struct __align__(16) patch_pair {  // must be multiple of 16!
   float4 offset;
@@ -21,7 +21,8 @@ struct __align__(16) patch_pair {  // must be multiple of 16!
   unsigned int patch2_atom_start;
   unsigned int patch1_force_start;
   // unsigned int patch2_force_start;  // same as patch1_force_start for self
-  unsigned int pad1, pad2;
+  unsigned int block_flags_start;
+  unsigned int pad1;
 };
 
 struct __align__(16) force_list {  // must be multiple of 16!
@@ -97,7 +98,7 @@ void cuda_init();
 void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
 			const force_list *fl, int nfl,
 			int atoms_size_p, int force_buffers_size_p,
-			int max_atoms_per_patch_p);
+			int block_flags_size_p, int max_atoms_per_patch_p);
 
 void cuda_bind_atom_params(const atom_param *t);
 
@@ -105,8 +106,10 @@ void cuda_bind_atoms(const atom *a);
 
 void cuda_load_forces(float4 *f, float4 *f_slow, int begin, int count);
 
-void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc, float cutoff2,
-	int cbegin, int ccount, int pbegin, int pcount, int doSlow);
+void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
+                float cutoff2, float plcutoff2,
+                int cbegin, int ccount, int pbegin, int pcount,
+                int doSlow, int usePairlists, int savePairlists);
 
 int cuda_stream_finished();
 

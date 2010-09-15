@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2010/06/29 20:14:11 $
- * $Revision: 1.1186 $
+ * $Date: 2010/09/15 19:52:28 $
+ * $Revision: 1.1187 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -170,8 +170,7 @@ void Sequencer::integrate() {
     if ( doNonbonded ) maxForceUsed = Results::nbond;
 
     // Do we do full electrostatics?
-    const int dofull = ( simParams->fullDirectOn ||
-			simParams->FMAOn || simParams->PMEOn );
+    const int dofull = ( simParams->fullElectFrequency ? 1 : 0 );
     const int fullElectFrequency = simParams->fullElectFrequency;
     if ( dofull ) slowFreq = fullElectFrequency;
     const BigReal slowstep = timestep * (staleForces?1:fullElectFrequency);
@@ -438,8 +437,7 @@ void Sequencer::minimize() {
   doNonbonded = 1;
   maxForceUsed = Results::nbond;
   maxForceMerged = Results::nbond;
-  const int dofull = ( simParams->fullDirectOn ||
-			simParams->FMAOn || simParams->PMEOn );
+  const int dofull = ( simParams->fullElectFrequency ? 1 : 0 );
   int &doFullElectrostatics = patch->flags.doFullElectrostatics;
   doFullElectrostatics = dofull;
   if ( dofull ) {
@@ -1638,7 +1636,13 @@ void Sequencer::submitCollections(int step, int zeroVel)
 void Sequencer::runComputeObjects(int migration, int pairlists)
 {
   if ( migration ) pairlistsAreValid = 0;
+#ifdef NAMD_CUDA
+  if ( pairlistsAreValid &&
+       ( patch->flags.doFullElectrostatics || ! simParams->fullElectFrequency )
+                         && ( pairlistsAge > (
+#else
   if ( pairlistsAreValid && ( pairlistsAge > (
+#endif
          (simParams->stepsPerCycle - 1) / simParams->pairlistsPerCycle ) ) ) {
     pairlistsAreValid = 0;
   }
