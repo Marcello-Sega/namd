@@ -355,7 +355,7 @@ Section \ref{section:electdesc}.}
 
 \item
 \NAMDCONF{exclude}
-{exclusion policy to use}
+{non-bonded exclusion policy to use}
 {{\tt none}, {\tt 1-2}, {\tt 1-3}, {\tt 1-4}, or {\tt scaled1-4}}
 {\label{param:exclude}
 %% This parameter is {\it required\/} for every simulation.
@@ -377,7 +377,20 @@ that match the {\tt 1-4} criteria are modified.  The electrostatic
 interactions for such pairs are modified by the constant factor
 defined by {\tt 1-4scaling}.  
 The van der Waals interactions are modified
-by using the special 1-4 parameters defined in the parameter files.}
+by using the special 1-4 parameters defined in the parameter files.
+The value of {\tt scaled1-4} is necessary to enable the modified
+1-4 VDW parameters present in the CHARMM parameter files.
+}
+
+\item
+\NAMDCONFWDEF{1-4scaling}{scaling factor for 1-4 electrostatic interactions}
+{0 $\leq$ decimal $\leq$ 1}{1.0}
+{Scaling factor for 1-4 electrostatic interactions.
+This factor is only used when the
+{\tt exclude} parameter is set to {\tt scaled1-4}.  In this case, this
+factor is used to modify the electrostatic interactions between 1-4 atom
+pairs.  If the {\tt exclude} parameter is set to anything but 
+{\tt scaled1-4}, this parameter has no effect regardless of its value.}
 
 \item
 \NAMDCONFWDEF{dielectric}{dielectric constant for system}
@@ -393,15 +406,6 @@ electrostatic forces acting in the system.}
 A value of 1.0 implies no modification of the interactions.
 Any smaller value will lessen the
 nonbonded forces acting in the system.}
-
-\item
-\NAMDCONFWDEF{1-4scaling}{scaling factor for 1-4 interactions}
-{0 $\leq$ decimal $\leq$ 1}{1.0}
-{Scaling factor for 1-4 interactions.  This factor is only used when the
-{\tt exclude} parameter is set to {\tt scaled1-4}.  In this case, this
-factor is used to modify the electrostatic interactions between 1-4 atom
-pairs.  If the {\tt exclude} parameter is set to anything but 
-{\tt scaled1-4}, this parameter has no effect regardless of its value.}
 
 \item
 \NAMDCONFWDEF{vdwGeometricSigma}{use geometric mean to combine L-J sigmas}

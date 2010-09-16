@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2010/09/15 19:52:29 $
- * $Revision: 1.1309 $
+ * $Date: 2010/09/16 16:47:20 $
+ * $Revision: 1.1310 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -304,7 +304,7 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &limitDist, 0.0);
    opts.range("limitDist", NOT_NEGATIVE);
 
-   opts.require("main", "exclude", "Electrostatic exclusion policy",
+   opts.require("main", "exclude", "Electrostatic and VDW exclusion policy",
     PARSE_STRING);
 
    opts.optional("exclude", "1-4scaling", "1-4 electrostatic scaling factor",
@@ -3041,7 +3041,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    if (exclude == SCALED14)
    {
-     iout << iINFO << "1-4 SCALE FACTOR       " << scale14 << "\n" << endi;
+     iout << iINFO << "1-4 ELECTROSTATICS SCALED BY " << scale14 << "\n";
+     iout << iINFO << "MODIFIED 1-4 VDW PARAMETERS WILL BE USED\n" << endi;
+   } else {
+     iout << iWARN << "MODIFIED 1-4 VDW PARAMETERS WILL BE IGNORED\n" << endi;
    }
 
    if (dcdFrequency > 0)
