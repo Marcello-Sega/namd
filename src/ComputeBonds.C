@@ -43,6 +43,9 @@ void BondElem::computeForce(BigReal *reduction,
   DebugM(1, "::computeForce() localIndex = " << localIndex[0] << " "
                << localIndex[1] << std::endl);
 
+  // skip Lonepair bonds (other k=0. bonds have been filtered out)
+  if (0. == value->k) return;
+
   BigReal scal;         // force scaling
   BigReal energy;	// energy from the bond
 
