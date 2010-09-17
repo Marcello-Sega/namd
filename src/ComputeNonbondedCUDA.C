@@ -474,6 +474,12 @@ void unregister_cuda_compute(ComputeID c) {  // static
 static int atomsChanged = 0;
 static int computesChanged = 0;
 
+static int pairlistsValid = 0;
+static float pairlistTolerance = 0.;
+static int usePairlists = 0;
+static int savePairlists = 0;
+static float plcutoff2 = 0;
+
 static cudaEvent_t start_upload;
 static cudaEvent_t start_calc;
 static cudaEvent_t end_remote_calc;
@@ -648,6 +654,9 @@ void ComputeNonbondedCUDA::doWork() {
  if ( atomsChanged || computesChanged ) {
   int npatches = activePatches.size();
 
+  pairlistsValid = 0;
+  pairlistTolerance = 0.;
+
   if ( computesChanged ) {
     computesChanged = 0;
 
@@ -813,9 +822,18 @@ void ComputeNonbondedCUDA::doWork() {
 
   double charge_scaling = sqrt(COULOMB * scaling * dielectric_1);
 
+  Flags &flags = patchRecords[activePatches[0]].p->flags;
+  float maxAtomMovement = 0.;
+  float maxPatchTolerance = 0.;
 
   for ( int i=0; i<activePatches.size(); ++i ) {
     patch_record &pr = patchRecords[activePatches[i]];
+
+    float maxMove = pr.p->flags.maxAtomMovement;
+    if ( maxMove > maxAtomMovement ) maxAtomMovement = maxMove;
+
+    float maxTol = pr.p->flags.pairlistTolerance;
+    if ( maxTol > maxPatchTolerance ) maxPatchTolerance = maxTol;
 
     int start = pr.localStart;
     int n = pr.numAtoms;
@@ -869,6 +887,37 @@ void ComputeNonbondedCUDA::doWork() {
       }
     }
   }
+
+  //CkPrintf("maxMovement = %f  maxTolerance = %f  save = %d  use = %d\n",
+  //  maxAtomMovement, maxPatchTolerance,
+  //  flags.savePairlists, flags.usePairlists);
+
+  savePairlists = 0;
+  usePairlists = 0;
+  if ( flags.savePairlists ) {
+    savePairlists = 1;
+    usePairlists = 1;
+  } else if ( flags.usePairlists ) {
+    if ( ! pairlistsValid ||
+         ( 2. * maxAtomMovement > pairlistTolerance ) ) {
+      reduction->item(REDUCTION_PAIRLIST_WARNINGS) += 1;
+    } else {
+      usePairlists = 1;
+    }
+  }
+  if ( ! usePairlists ) {
+    pairlistsValid = 0;
+  }
+  float plcutoff = cutoff;
+  if ( savePairlists ) {
+    pairlistsValid = 1;
+    pairlistTolerance = 2. * maxPatchTolerance;
+    plcutoff += pairlistTolerance;
+  }
+  plcutoff2 = plcutoff * plcutoff;
+
+  //CkPrintf("plcutoff = %f  listTolerance = %f  save = %d  use = %d\n",
+  //  plcutoff, pairlistTolerance, savePairlists, usePairlists);
 
 #if 0
   // calculate warp divergence
@@ -1009,8 +1058,6 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 
   Flags &flags = patchRecords[activePatches[0]].p->flags;
   int doSlow = flags.doFullElectrostatics;
-  int usePairlists = flags.usePairlists;
-  int savePairlists = flags.savePairlists;
 
   Lattice &lattice = flags.lattice;
   float3 lata, latb, latc;
@@ -1023,9 +1070,6 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
   latc.x = lattice.c().x;
   latc.y = lattice.c().y;
   latc.z = lattice.c().z;
-
-  SimParameters *simParams = Node::Object()->simParameters;
-  float plcutoff2 = simParams->pairlistDist;  plcutoff2 *= plcutoff2;
 
   switch ( kernel_launch_state ) {
   case 1:
