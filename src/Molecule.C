@@ -1450,6 +1450,9 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
   /*  Loop and read in numAtoms atom lines.      */
   while (atom_number < numAtoms)
   {
+    // Standard PSF format has 8 columns:
+    //   ATOMNUM  SEGNAME  RESIDUE  RESNAME  ATOMNAME  ATOMTYPE  CHARGE  MASS
+
     /*  Get the line from the file        */
     NAMD_read_line(fd, buffer);
 
@@ -1475,6 +1478,11 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     // DRUDE: read alpha and thole parameters from atom line
     if (is_drude_psf)
     {
+      // Drude model PSF format has 11 columns, the 8 above plus 3 more:
+      //   (unknown integer)  ALPHA  THOLE
+      // These constants are used for the Thole interactions
+      // (dipole interactions occurring between excluded non-bonded terms).
+
       Real alpha, thole;
       read_count=sscanf(buffer,
 //          "%*d %*s %*s %*s %*s %*s %*f %*f %*d %*f %*f %f %f", &alpha, &thole);
