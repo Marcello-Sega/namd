@@ -4606,6 +4606,8 @@ build_excl_check_signatures();
 
          // count the number of Thole terms
          for (i = 0;  i < numTotalExclusions;  i++) {
+           /* skip over the modified exclusions */
+           if (exclusions[i].modified) continue;
            int a1 = exclusions[i].atom1;
            int a2 = exclusions[i].atom2;
            if (a2 < numAtoms-1 && is_drude(a1+1) && is_drude(a2+1)) {
@@ -4622,6 +4624,8 @@ build_excl_check_signatures();
 
          // store Thole terms
          for (i = 0;  i < numTotalExclusions;  i++) {
+           /* skip over the modified exclusions */
+           if (exclusions[i].modified) continue;
            int a1 = exclusions[i].atom1;
            int a2 = exclusions[i].atom2;
            // exclusions are stored with a1 < a2
