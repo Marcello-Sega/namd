@@ -5080,36 +5080,56 @@ build_excl_check_signatures();
                       continue;
                     }
 
-                    // add (i,mid4) as an exclusion
-                    if (i < mid4) {
-                      if (is_drude(mid4) || is_lp(mid4)) {  // 1-3 excl
+                    if (is_drude(mid4) || is_lp(mid4)) {
+                      // (i,mid4) is 1-3 excl
+                      if (i < mid4) {
                         exclusionSet.add(Exclusion(i, mid4));
                       }
-                      else {
-                        exclusionSet.add(Exclusion(i, mid4, modified));
-                      }
-                    }
-                    else if (mid4 < i) {
-                      if (is_drude(mid4) || is_lp(mid4)) {  // 1-3 excl
+                      else if (mid4 < i) {
                         exclusionSet.add(Exclusion(mid4, i));
                       }
-                      else {
-                        exclusionSet.add(Exclusion(mid4, i, modified));
+                      bond4++;
+                      continue;
+                    }
+                    
+                    // (mid1,mid4) is an existing heavy atom exclusion
+                    // if we have modified 1-4 exclusions, make sure
+                    // that (mid1,mid4) is modified 1-4 exclusion
+                    // rather than something closer due to a ring
+                    int modi = modified;
+                    if (modified) {
+                      int amin = (mid1 < mid4 ? mid1 : mid4);
+                      int amax = (mid1 >= mid4 ? mid1 : mid4);
+                      Exclusion *pe = exclusionSet.find(Exclusion(amin,amax));
+                      if (pe==0) {
+                        // since there is not an existing exclusion
+                        // between (mid1,mid4), don't inherit!
+                        bond4++;
+                        continue;
                       }
+                      modi = pe->modified;
+                    }
+
+                    if (i < mid4) {
+                      exclusionSet.add(Exclusion(i, mid4, modi));
+                    }
+                    else if (mid4 < i) {
+                      exclusionSet.add(Exclusion(mid4, i, modi));
                     }
 
                     // also exclude any Drude particles or LPs bonded to mid4
+                    // using the "modi" setting of (mid1,mid4) exclusion
                     bond5 = bondsWithAtom[mid4];
                     while (*bond5 != -1) {
                       j = bonds[*bond5].atom1;
                       if ((is_drude(j) || is_lp(j)) && j != mid4) {
-                        if      (i<j) exclusionSet.add(Exclusion(i,j,modified));
-                        else if (j<i) exclusionSet.add(Exclusion(j,i,modified));
+                        if      (i<j) exclusionSet.add(Exclusion(i,j,modi));
+                        else if (j<i) exclusionSet.add(Exclusion(j,i,modi));
                       }
                       j = bonds[*bond5].atom2;
                       if ((is_drude(j) || is_lp(j)) && j != mid4) {
-                        if      (i<j) exclusionSet.add(Exclusion(i,j,modified));
-                        else if (j<i) exclusionSet.add(Exclusion(j,i,modified));
+                        if      (i<j) exclusionSet.add(Exclusion(i,j,modi));
+                        else if (j<i) exclusionSet.add(Exclusion(j,i,modi));
                       }
                       bond5++;
                     }
