@@ -122,13 +122,13 @@ void ExclElem::computeForce(BigReal *reduction,
 
   // reduction[nonbondedEnergyIndex] += energy;
   reduction[virialIndex_XX] += f12.x * r12.x;
-  // reduction[virialIndex_XY] += f12.x * r12.y;
-  // reduction[virialIndex_XZ] += f12.x * r12.z;
-  // reduction[virialIndex_YX] += f12.y * r12.x;
+  reduction[virialIndex_XY] += f12.x * r12.y;
+  reduction[virialIndex_XZ] += f12.x * r12.z;
+  reduction[virialIndex_YX] += f12.y * r12.x;
   reduction[virialIndex_YY] += f12.y * r12.y;
-  // reduction[virialIndex_YZ] += f12.y * r12.z;
-  // reduction[virialIndex_ZX] += f12.z * r12.x;
-  // reduction[virialIndex_ZY] += f12.z * r12.y;
+  reduction[virialIndex_YZ] += f12.y * r12.z;
+  reduction[virialIndex_ZX] += f12.z * r12.x;
+  reduction[virialIndex_ZY] += f12.z * r12.y;
   reduction[virialIndex_ZZ] += f12.z * r12.z;
 
   if ( doFull ) {
@@ -142,13 +142,13 @@ void ExclElem::computeForce(BigReal *reduction,
 
     // reduction[nonbondedEnergyIndex] += energy;
     reduction[slowVirialIndex_XX] += slow_f12.x * r12.x;
-    // reduction[slowVirialIndex_XY] += slow_f12.x * r12.y;
-    // reduction[slowVirialIndex_XZ] += slow_f12.x * r12.z;
-    // reduction[slowVirialIndex_YX] += slow_f12.y * r12.x;
+    reduction[slowVirialIndex_XY] += slow_f12.x * r12.y;
+    reduction[slowVirialIndex_XZ] += slow_f12.x * r12.z;
+    reduction[slowVirialIndex_YX] += slow_f12.y * r12.x;
     reduction[slowVirialIndex_YY] += slow_f12.y * r12.y;
-    // reduction[slowVirialIndex_YZ] += slow_f12.y * r12.z;
-    // reduction[slowVirialIndex_ZX] += slow_f12.z * r12.x;
-    // reduction[slowVirialIndex_ZY] += slow_f12.z * r12.y;
+    reduction[slowVirialIndex_YZ] += slow_f12.y * r12.z;
+    reduction[slowVirialIndex_ZX] += slow_f12.z * r12.x;
+    reduction[slowVirialIndex_ZY] += slow_f12.z * r12.y;
     reduction[slowVirialIndex_ZZ] += slow_f12.z * r12.z;
   }
 

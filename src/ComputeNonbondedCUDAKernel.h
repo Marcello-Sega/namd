@@ -9,27 +9,32 @@ void cuda_errcheck(const char *msg);
 #endif
 
 #define PATCH_PAIR_SIZE 12
-#define PATCH_PAIR_USED 11
+#define PATCH_PAIR_USED 12
 
 struct __align__(16) patch_pair {  // must be multiple of 16!
   float4 offset;
   unsigned int patch1_size;
   unsigned int patch2_size;
   unsigned int patch1_force_size;  // non-fixed atoms at start of list
-  // unsigned int patch2_force_size;
   unsigned int patch1_atom_start;
   unsigned int patch2_atom_start;
   unsigned int patch1_force_start;
-  // unsigned int patch2_force_start;  // same as patch1_force_start for self
   unsigned int block_flags_start;
-  unsigned int pad1;
+  unsigned int virial_start;  // virial output location padded to 16
 };
+
+#define FORCE_LIST_SIZE 8
+#define FORCE_LIST_USED 8
 
 struct __align__(16) force_list {  // must be multiple of 16!
   unsigned int force_list_start;  // beginning of compute output
   unsigned int force_list_size;  // number of computes for this patch
-  unsigned int patch_size;  // padded number of atoms in patch
+  unsigned int patch_size;  // real number of atoms in patch
+  unsigned int patch_stride;  // padded number of atoms in patch
   unsigned int force_output_start;  // output array
+  unsigned int atom_start;  // atom positions
+  unsigned int virial_list_start;  // beginning of compute virial output
+  unsigned int virial_output_start;  // virial output location padded to 16
 };
 
 struct __align__(16) atom {  // must be multiple of 16!
@@ -105,6 +110,8 @@ void cuda_bind_atom_params(const atom_param *t);
 void cuda_bind_atoms(const atom *a);
 
 void cuda_load_forces(float4 *f, float4 *f_slow, int begin, int count);
+
+void cuda_load_virials(float *v, int doSlow);
 
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
                 float cutoff2, float plcutoff2,

@@ -554,6 +554,10 @@ static atom_param* atom_params;
 static atom* atoms;
 static float4* forces;
 static float4* slow_forces;
+static int num_virials;
+static int num_virials_allocated;
+static float *virials;
+static float *slow_virials;
 
 static int cuda_timer_count;
 static double cuda_timer_total;
@@ -602,8 +606,11 @@ struct cr_sortop {
   cr_sortop(const Lattice &lattice) : l(lattice) { }
   bool operator() (ComputeNonbondedCUDA::compute_record i,
 			ComputeNonbondedCUDA::compute_record j) {
-    BigReal ri = l.unscale(i.offset).length2();
-    BigReal rj = l.unscale(j.offset).length2();
+    Vector a = l.a();
+    Vector b = l.b();
+    Vector c = l.c();
+    BigReal ri = (i.offset.x * a + i.offset.y * b + i.offset.z * c).length2();
+    BigReal rj = (j.offset.x * a + j.offset.y * b + j.offset.z * c).length2();
     return ( ri < rj );
   }
 };
@@ -641,10 +648,6 @@ void ComputeNonbondedCUDA::doWork() {
   Parameters *params = Node::Object()->parameters;
   SimParameters *simParams = Node::Object()->simParameters;
 
-  if ( simParams->useFlexibleCell ) {
-    NAMD_die("flexible-cell constant pressure not supported in CUDA");
-  }
-
   for ( int i=0; i<activePatches.size(); ++i ) {
     patch_record &pr = patchRecords[activePatches[i]];
     pr.x = pr.positionBox->open();
@@ -659,6 +662,16 @@ void ComputeNonbondedCUDA::doWork() {
 
   if ( computesChanged ) {
     computesChanged = 0;
+
+    num_virials = npatches;
+    if ( num_virials > num_virials_allocated ) {
+      if ( num_virials_allocated ) {
+        cudaFreeHost(virials);
+      }
+      num_virials_allocated = 1.1 * num_virials + 1;
+      cudaMallocHost((void**)&virials,2*16*sizeof(float)*num_virials_allocated);
+      slow_virials = virials + 16*num_virials;
+    }
 
     int *ap = activePatches.begin();
     for ( int i=0; i<localActivePatches.size(); ++i ) {
@@ -712,6 +725,7 @@ void ComputeNonbondedCUDA::doWork() {
 
   int istart = 0;
   int flstart = 0;
+  int vlstart = 0;
   int max_atoms_per_patch = 0;
   int i;
   for ( i=0; i<npatches; ++i ) {
@@ -720,6 +734,9 @@ void ComputeNonbondedCUDA::doWork() {
     }
     force_lists[i].force_list_start = flstart;
     force_lists[i].force_output_start = istart;
+    force_lists[i].atom_start = istart;
+    force_lists[i].virial_list_start = vlstart;
+    force_lists[i].virial_output_start = 16*i;
     patch_record &pr = patchRecords[activePatches[i]];
     pr.localStart = istart;
     int natoms = pr.p->getNumAtoms();
@@ -733,10 +750,12 @@ void ComputeNonbondedCUDA::doWork() {
     if ( natoms > max_atoms_per_patch ) max_atoms_per_patch = natoms;
     pr.numAtoms = natoms;
     pr.numFreeAtoms = nfreeatoms;
+    force_lists[i].patch_size = nfreeatoms;
     if ( natoms & 15 ) { natoms += 16 - (natoms & 15); }
     if ( nfreeatoms & 15 ) { nfreeatoms += 16 - (nfreeatoms & 15); }
-    force_lists[i].patch_size = nfreeatoms;
+    force_lists[i].patch_stride = nfreeatoms;
     flstart += nfreeatoms * force_lists[i].force_list_size;
+    vlstart += 16 * force_lists[i].force_list_size;
     istart += natoms;  // already rounded up
     force_lists[i].force_list_size = 0;  // rebuild below
   }
@@ -773,7 +792,9 @@ void ComputeNonbondedCUDA::doWork() {
     patch_pair &pp = patch_pairs[i];
     pp.patch1_atom_start = patchRecords[p1].localStart;
     pp.patch1_force_start = force_lists[lp1].force_list_start +
-	force_lists[lp1].patch_size * force_lists[lp1].force_list_size;
+	force_lists[lp1].patch_stride * force_lists[lp1].force_list_size;
+    pp.virial_start = force_lists[lp1].virial_list_start +
+	                         16 * force_lists[lp1].force_list_size;
     pp.patch1_size = patchRecords[p1].numAtoms;
     pp.patch1_force_size = patchRecords[p1].numFreeAtoms;
     pp.block_flags_start = bfstart;
@@ -782,7 +803,7 @@ void ComputeNonbondedCUDA::doWork() {
     // if ( istart & 15 ) { istart += 16 - (istart & 15); }
     pp.patch2_atom_start = patchRecords[p2].localStart;
     // pp.patch2_force_start = force_lists[lp2].force_list_start +
-// 	force_lists[lp2].patch_size * force_lists[lp2].force_list_size;
+// 	force_lists[lp2].patch_stride * force_lists[lp2].force_list_size;
     pp.patch2_size = patchRecords[p2].numAtoms;
     // pp.patch2_force_size = patchRecords[p2].numFreeAtoms;
     // this must happen at end to get self computes right
@@ -1107,6 +1128,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     cudaEventRecord(end_local_calc, stream);
     cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
         0,num_local_atom_records);
+    cuda_load_virials(virials, doSlow);  // slow_virials follows virials
     cudaEventRecord(end_local_download, stream);
     if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
     if ( shared_gpu ) {
@@ -1199,6 +1221,7 @@ int ComputeNonbondedCUDA::finishWork() {
     pr.forceBox->close(&(pr.r));
   }
 
+#if 0
   virial *= (-1./6.);
   reduction->item(REDUCTION_VIRIAL_NBOND_XX) += virial;
   reduction->item(REDUCTION_VIRIAL_NBOND_YY) += virial;
@@ -1209,8 +1232,40 @@ int ComputeNonbondedCUDA::finishWork() {
     reduction->item(REDUCTION_VIRIAL_SLOW_YY) += virial_slow;
     reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += virial_slow;
   }
+#endif
 
   if ( workStarted == 1 ) return 0;  // not finished, call again
+
+  {
+    Tensor virial_tensor;
+    for ( int i = 0; i < num_virials; ++i ) {
+      virial_tensor.xx += virials[16*i];
+      virial_tensor.xy += virials[16*i+1];
+      virial_tensor.xz += virials[16*i+2];
+      virial_tensor.yx += virials[16*i+3];
+      virial_tensor.yy += virials[16*i+4];
+      virial_tensor.yz += virials[16*i+5];
+      virial_tensor.zx += virials[16*i+6];
+      virial_tensor.zy += virials[16*i+7];
+      virial_tensor.zz += virials[16*i+8];
+    }
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,virial_tensor);
+  }
+  if ( doSlow ) {
+    Tensor virial_slow_tensor;
+    for ( int i = 0; i < num_virials; ++i ) {
+      virial_slow_tensor.xx += slow_virials[16*i];
+      virial_slow_tensor.xy += slow_virials[16*i+1];
+      virial_slow_tensor.xz += slow_virials[16*i+2];
+      virial_slow_tensor.yx += slow_virials[16*i+3];
+      virial_slow_tensor.yy += slow_virials[16*i+4];
+      virial_slow_tensor.yz += slow_virials[16*i+5];
+      virial_slow_tensor.zx += slow_virials[16*i+6];
+      virial_slow_tensor.zy += slow_virials[16*i+7];
+      virial_slow_tensor.zz += slow_virials[16*i+8];
+    }
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,virial_slow_tensor);
+  }
 
   atomsChanged = 0;
   reduction->submit();

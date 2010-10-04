@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2010/08/23 19:56:05 $
- * $Revision: 1.1246 $
+ * $Date: 2010/10/04 19:39:04 $
+ * $Revision: 1.1247 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1471,12 +1471,6 @@ void Controller::printEnergies(int step, int minimize)
       groupPressure_tavg += groupPressure;
       tavg_count += 1;
       if ( minimize || ! ( step % simParameters->outputPressure ) ) {
-#ifdef NAMD_CUDA
-        if ( 
-          step < (simParams->firstTimestep + 10*simParams->outputPressure) ) {
-          iout << iWARN << "Pressure tensor is incorrect.  CUDA currently evaluates scalar pressure only.\n" << endi;
-        }
-#endif
         iout << "PRESSURE: " << step << " "
            << PRESSUREFACTOR * pressure << "\n"
            << "GPRESSURE: " << step << " "
@@ -1484,7 +1478,8 @@ void Controller::printEnergies(int step, int minimize)
         if ( tavg_count > 1 ) iout << "PRESSAVG: " << step << " "
            << (PRESSUREFACTOR/tavg_count) * pressure_tavg << "\n"
            << "GPRESSAVG: " << step << " "
-           << (PRESSUREFACTOR/tavg_count) * groupPressure_tavg << "\n" << endi;
+           << (PRESSUREFACTOR/tavg_count) * groupPressure_tavg << "\n";
+        iout << endi;
         pressure_tavg = 0;
         groupPressure_tavg = 0;
         tavg_count = 0;

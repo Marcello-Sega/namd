@@ -40,6 +40,8 @@ void cuda_bind_force_table(const float4 *t) {
 
 static int patch_pairs_size;
 static patch_pair *patch_pairs;
+static float *virial_buffers;  // one per patch pair
+static float *slow_virial_buffers;  // one per patch pair
 
 static int block_flags_size;
 static unsigned int *block_flags;
@@ -56,6 +58,8 @@ static atom *atoms;
 static atom_param *atom_params;
 static float4 *forces;
 static float4 *slow_forces;
+static float *virials;  // one per patch
+static float *slow_virials;  // one per patch
 
 static int patch_pairs_alloc;
 static int block_flags_alloc;
@@ -71,12 +75,16 @@ cudaStream_t stream;
 void cuda_init() {
   forces = 0;
   slow_forces = 0;
+  virials = 0;
+  slow_virials = 0;
   atom_params = 0;
   atoms = 0;
   force_buffers = 0;
   slow_force_buffers = 0;
   force_lists = 0;
   patch_pairs = 0;
+  virial_buffers = 0;
+  slow_virial_buffers = 0;
   block_flags = 0;
 
   patch_pairs_alloc = 0;
@@ -128,7 +136,10 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   if ( force_buffers ) cudaFree(force_buffers);
   if ( slow_force_buffers ) cudaFree(slow_force_buffers);
   if ( force_lists ) cudaFree(force_lists);
+  if ( virials ) cudaFree(virials);
   if ( patch_pairs ) cudaFree(patch_pairs);
+  if ( virial_buffers ) cudaFree(virial_buffers);
+  if ( slow_virial_buffers ) cudaFree(slow_virial_buffers);
   if ( block_flags ) cudaFree(block_flags);
   cuda_errcheck("free everything");
 
@@ -145,7 +156,11 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
 #endif
 
   cudaMalloc((void**) &block_flags, block_flags_alloc * 4);
+  cudaMalloc((void**) &virial_buffers, patch_pairs_alloc * 16*sizeof(float));
+  cudaMalloc((void**) &slow_virial_buffers, patch_pairs_alloc * 16*sizeof(float));
   cudaMalloc((void**) &patch_pairs, patch_pairs_alloc * sizeof(patch_pair));
+  cudaMalloc((void**) &virials, 2 * force_lists_alloc * 16*sizeof(float));
+  slow_virials = virials + force_lists_size * 16;
   cudaMalloc((void**) &force_lists, force_lists_alloc * sizeof(force_list));
   cudaMalloc((void**) &force_buffers, force_buffers_alloc * sizeof(float4));
   cudaMalloc((void**) &slow_force_buffers, force_buffers_alloc * sizeof(float4));
@@ -190,6 +205,13 @@ void cuda_load_forces(float4 *f, float4 *f_slow, int begin, int count) {
   cuda_errcheck("memcpy from forces");
 }
 
+void cuda_load_virials(float *v, int doSlow) {
+  int count = force_lists_size;
+  if ( doSlow ) count *= 2;
+  cudaMemcpyAsync(v, virials, count * 16*sizeof(float),
+				cudaMemcpyDeviceToHost, stream);
+  cuda_errcheck("memcpy from virials");
+}
 
 #if 0
 __host__ __device__ static int3 patch_coords_from_id(
@@ -230,9 +252,11 @@ __global__ static void dev_nonbonded(
 	float4 *force_buffers,
 	float4 *slow_force_buffers,
 	unsigned int *block_flags,
+	float *virial_buffers,
+	float *slow_virial_buffers,
         float3 lata, float3 latb, float3 latc,
 	float cutoff2, float plcutoff2) {
-// call with two blocks per patch_pair
+// call with one block per patch_pair
 // call with BLOCK_SIZE threads per block
 // call with no shared memory
 
@@ -241,6 +265,16 @@ __global__ static void dev_nonbonded(
     unsigned int i[BLOCK_SIZE];
     char c[4*BLOCK_SIZE];
   } plu;
+
+  volatile __shared__ union {
+    float a2d[32][3];
+    float a1d[32*3];
+  } sumf;
+
+  volatile __shared__ union {
+    float a2d[32][3];
+    float a1d[32*3];
+  } sumf_slow;
 
 #ifdef __DEVICE_EMULATION__
   #define jpqs ((atom*)(jpqu.i))
@@ -283,6 +317,11 @@ __global__ static void dev_nonbonded(
     unsigned int tmp = ((unsigned int*)patch_pairs)[
 			PATCH_PAIR_SIZE*blockIdx.x+threadIdx.x];
     pp.i[threadIdx.x] = tmp;
+  }
+
+  if ( threadIdx.x < 96 ) { // initialize net force in shared memory
+    sumf.a1d[threadIdx.x] = 0.f;
+    sumf_slow.a1d[threadIdx.x] = 0.f;
   }
 
   __syncthreads();
@@ -443,6 +482,21 @@ __global__ static void dev_nonbonded(
     if ( slow_force_buffers ) {
       slow_force_buffers[i_out] = ife_slow;
     }
+    // accumulate net force to shared memory, warp-synchronous
+    const int subwarp = threadIdx.x >> 2;  // 32 entries in table
+    const int thread = threadIdx.x & 3;  // 4 threads share each entry
+    for ( int g = 0; g < 4; ++g ) {
+      if ( thread == g ) {
+        sumf.a2d[subwarp][0] += ife.x;
+        sumf.a2d[subwarp][1] += ife.y;
+        sumf.a2d[subwarp][2] += ife.z;
+        if ( slow_force_buffers ) {
+          sumf_slow.a2d[subwarp][0] += ife_slow.x;
+          sumf_slow.a2d[subwarp][1] += ife_slow.y;
+          sumf_slow.a2d[subwarp][2] += ife_slow.z;
+        }
+      }
+    }
   }
   if ( plcutoff2 != 0 ) {
     __syncthreads();  // all shared pairlist writes complete
@@ -462,25 +516,97 @@ __global__ static void dev_nonbonded(
 
   } // blocki loop
 
+  __syncthreads();
+  if ( threadIdx.x < 24 ) { // reduce forces, warp-synchronous
+                            // 3 components, 8 threads per component
+    const int i_out = myPatchPair.virial_start + threadIdx.x;
+    {
+      float f;
+      f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + 
+          sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
+      sumf.a1d[threadIdx.x] = f;
+      f += sumf.a1d[threadIdx.x + 12];
+      sumf.a1d[threadIdx.x] = f;
+      f += sumf.a1d[threadIdx.x + 6];
+      sumf.a1d[threadIdx.x] = f;
+      f += sumf.a1d[threadIdx.x + 3];
+      f *= 0.5f;  // compensate for double-counting
+      // calculate virial contribution on first 3 threads
+      sumf.a2d[threadIdx.x][0] = f * myPatchPair.offset.x;
+      sumf.a2d[threadIdx.x][1] = f * myPatchPair.offset.y;
+      sumf.a2d[threadIdx.x][2] = f * myPatchPair.offset.z;
+      if ( threadIdx.x < 9 ) {  // write out output buffer
+        virial_buffers[i_out] = sumf.a1d[threadIdx.x];
+      }
+    }
+    if ( slow_force_buffers ) { // repeat above for slow forces
+      float fs;
+      fs = sumf_slow.a1d[threadIdx.x] + sumf_slow.a1d[threadIdx.x + 24] + 
+           sumf_slow.a1d[threadIdx.x + 48] + sumf_slow.a1d[threadIdx.x + 72];
+      sumf_slow.a1d[threadIdx.x] = fs;
+      fs += sumf_slow.a1d[threadIdx.x + 12];
+      sumf_slow.a1d[threadIdx.x] = fs;
+      fs += sumf_slow.a1d[threadIdx.x + 6];
+      sumf_slow.a1d[threadIdx.x] = fs;
+      fs += sumf_slow.a1d[threadIdx.x + 3];
+      fs *= 0.5f;
+      sumf_slow.a2d[threadIdx.x][0] = fs * myPatchPair.offset.x;
+      sumf_slow.a2d[threadIdx.x][1] = fs * myPatchPair.offset.y;
+      sumf_slow.a2d[threadIdx.x][2] = fs * myPatchPair.offset.z;
+      if ( threadIdx.x < 9 ) {
+        slow_virial_buffers[i_out] = sumf_slow.a1d[threadIdx.x];
+      }
+    }
+  }
+
 }
 
 
 __global__ static void dev_sum_forces(
+	const atom *atoms,
 	const force_list *force_lists,
 	const float4 *force_buffers,
-	float4 *forces) {
+	float *virial_buffers,
+	float4 *forces, float *virials) {
 // call with one block per patch
-// call multiple of 64 threads per block
+// call BLOCK_SIZE threads per block
 // call with no shared memory
 
-  __shared__ force_list myForceList;
+  #define myForceList fl.fl
+  __shared__ union {
+    force_list fl;
+    unsigned int i[FORCE_LIST_SIZE];
+  } fl;
 
-  if ( threadIdx.x == 0 ) {
-    myForceList = force_lists[blockIdx.x];
+  volatile __shared__ union {
+    float a3d[32][3][3];
+    float a2d[32][9];
+    float a1d[32*9];
+  } virial;
+
+  if ( threadIdx.x < FORCE_LIST_USED ) {
+    unsigned int tmp = ((unsigned int*)force_lists)[
+                        FORCE_LIST_SIZE*blockIdx.x+threadIdx.x];
+    fl.i[threadIdx.x] = tmp;
   }
+
+  for ( int i = threadIdx.x; i < 32*9; i += BLOCK_SIZE ) {
+    virial.a1d[i] = 0.f;
+  }
+
   __syncthreads();
 
-  for ( int j = threadIdx.x; j < myForceList.patch_size; j += blockDim.x ) {
+  float vxx = 0.f;
+  float vxy = 0.f;
+  float vxz = 0.f;
+  float vyx = 0.f;
+  float vyy = 0.f;
+  float vyz = 0.f;
+  float vzx = 0.f;
+  float vzy = 0.f;
+  float vzz = 0.f;
+
+  for ( int j = threadIdx.x; j < myForceList.patch_size; j += BLOCK_SIZE ) {
 
     const float4 *fbuf = force_buffers + myForceList.force_list_start + j;
     float4 fout;
@@ -494,12 +620,77 @@ __global__ static void dev_sum_forces(
       fout.y += f.y;
       fout.z += f.z;
       fout.w += f.w;
-      fbuf += myForceList.patch_size;
+      fbuf += myForceList.patch_stride;
     }
 
     forces[myForceList.force_output_start + j] = fout;
 
+    float4 pos = ((float4*)atoms)[myForceList.atom_start + j];
+
+    // accumulate per-atom virials to registers
+    vxx += fout.x * pos.x;
+    vxy += fout.x * pos.y;
+    vxz += fout.x * pos.z;
+    vyx += fout.y * pos.x;
+    vyy += fout.y * pos.y;
+    vyz += fout.y * pos.z;
+    vzx += fout.z * pos.x;
+    vzy += fout.z * pos.y;
+    vzz += fout.z * pos.z;
+
   }
+
+  { // accumulate per-atom virials to shared memory, warp-synchronous
+    const int subwarp = threadIdx.x >> 2;  // 32 entries in table
+    const int thread = threadIdx.x & 3;  // 4 threads share each entry
+    for ( int g = 0; g < 4; ++g ) {
+      if ( thread == g ) {
+        virial.a3d[subwarp][0][0] += vxx;
+        virial.a3d[subwarp][0][1] += vxy;
+        virial.a3d[subwarp][0][2] += vxz;
+        virial.a3d[subwarp][1][0] += vyx;
+        virial.a3d[subwarp][1][1] += vyy;
+        virial.a3d[subwarp][1][2] += vyz;
+        virial.a3d[subwarp][2][0] += vzx;
+        virial.a3d[subwarp][2][1] += vzy;
+        virial.a3d[subwarp][2][2] += vzz;
+      }
+    }
+  }
+  __syncthreads();
+  { // accumulate per-compute virials to shared memory, data-parallel
+    const int halfwarp = threadIdx.x >> 4;  // 8 half-warps
+    const int thread = threadIdx.x & 15;
+    if ( thread < 9 ) {
+      for ( int i = halfwarp; i < myForceList.force_list_size; i += 8 ) {
+        virial.a2d[halfwarp][thread] +=
+          virial_buffers[myForceList.virial_list_start + 16*i + thread];
+      }
+    }
+  }
+  __syncthreads();
+  { // reduce virials in shared memory, warp-synchronous
+    const int subwarp = threadIdx.x >> 3;  // 16 quarter-warps
+    const int thread = threadIdx.x & 7;  // 8 threads per component
+    if ( subwarp < 9 ) {  // 9 components
+      float v;
+      v = virial.a2d[thread][subwarp] + virial.a2d[thread+8][subwarp] +
+          virial.a2d[thread+16][subwarp] + virial.a2d[thread+24][subwarp];
+      virial.a2d[thread][subwarp] = v;
+      v += virial.a2d[thread+4][subwarp];
+      virial.a2d[thread][subwarp] = v;
+      v += virial.a2d[thread+2][subwarp];
+      virial.a2d[thread][subwarp] = v;
+      v += virial.a2d[thread+1][subwarp];
+      virial.a2d[thread][subwarp] = v;
+    }
+  }
+  __syncthreads();
+  if ( threadIdx.x < 9 ) {  // 9 components
+    virials[myForceList.virial_output_start + threadIdx.x] =
+                                              virial.a2d[0][threadIdx.x];
+  }
+
 }
 
 
@@ -521,6 +712,7 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
      dev_nonbonded<<< grid_dim, BLOCK_SIZE, 0, stream
 	>>>(patch_pairs+cbegin+cstart,atoms,atom_params,force_buffers,
 	     (doSlow?slow_force_buffers:0), block_flags,
+             virial_buffers, (doSlow?slow_virial_buffers:0),
 	     lata, latb, latc, cutoff2, plcutoff2);
      cuda_errcheck("dev_nonbonded");
    }
@@ -528,11 +720,13 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
 
  if ( pcount ) {
   // printf("%d %d %d\n",pbegin,pcount,force_lists_size);
-  dev_sum_forces<<< pcount, 128, 0, stream
-	>>>(force_lists+pbegin,force_buffers,forces);
+  dev_sum_forces<<< pcount, BLOCK_SIZE, 0, stream
+	>>>(atoms,force_lists+pbegin,force_buffers,
+                virial_buffers,forces,virials);
   if ( doSlow ) {
-    dev_sum_forces<<< pcount, 128, 0, stream
-	>>>(force_lists+pbegin,slow_force_buffers,slow_forces);
+    dev_sum_forces<<< pcount, BLOCK_SIZE, 0, stream
+	>>>(atoms,force_lists+pbegin,slow_force_buffers,
+                slow_virial_buffers,slow_forces,slow_virials);
   }
   cuda_errcheck("dev_sum_forces");
  }
