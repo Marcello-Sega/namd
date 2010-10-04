@@ -566,11 +566,15 @@ __global__ static void dev_sum_forces(
 	const atom *atoms,
 	const force_list *force_lists,
 	const float4 *force_buffers,
-	float *virial_buffers,
+	const float *virial_buffers,
 	float4 *forces, float *virials) {
 // call with one block per patch
 // call BLOCK_SIZE threads per block
 // call with no shared memory
+
+#if 0
+// if this is enabled compiler will generate incoherent st.global.f32
+// instead of coherent st.global.v4.f32 when writing to forces
 
   #define myForceList fl.fl
   __shared__ union {
@@ -578,17 +582,24 @@ __global__ static void dev_sum_forces(
     unsigned int i[FORCE_LIST_SIZE];
   } fl;
 
-  volatile __shared__ union {
-    float a3d[32][3][3];
-    float a2d[32][9];
-    float a1d[32*9];
-  } virial;
-
   if ( threadIdx.x < FORCE_LIST_USED ) {
     unsigned int tmp = ((unsigned int*)force_lists)[
                         FORCE_LIST_SIZE*blockIdx.x+threadIdx.x];
     fl.i[threadIdx.x] = tmp;
   }
+#else
+  __shared__ force_list myForceList;
+
+  if ( threadIdx.x == 0 ) {
+    myForceList = force_lists[blockIdx.x];
+  }
+#endif
+
+  volatile __shared__ union {
+    float a3d[32][3][3];
+    float a2d[32][9];
+    float a1d[32*9];
+  } virial;
 
   for ( int i = threadIdx.x; i < 32*9; i += BLOCK_SIZE ) {
     virial.a1d[i] = 0.f;
