@@ -157,7 +157,7 @@ void AnisoElem::computeForce(BigReal *reduction,
 
 void AnisoElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
-  reduction->item(REDUCTION_ANISO_ENERGY) += data[anisoEnergyIndex];
+  reduction->item(REDUCTION_BOND_ENERGY) += data[anisoEnergyIndex];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
 }
 

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: dhardy $
- * $Date: 2010/10/05 21:37:31 $
- * $Revision: 1.1248 $
+ * $Date: 2010/10/05 22:01:05 $
+ * $Revision: 1.1249 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1391,7 +1391,6 @@ void Controller::printEnergies(int step, int minimize)
     BigReal volume = lattice.volume();
 
     bondEnergy = reduction->item(REDUCTION_BOND_ENERGY);
-    bondEnergy += reduction->item(REDUCTION_ANISO_ENERGY);
     angleEnergy = reduction->item(REDUCTION_ANGLE_ENERGY);
     dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
     improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
