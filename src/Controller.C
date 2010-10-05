@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2010/10/04 19:39:04 $
- * $Revision: 1.1247 $
+ * $Author: dhardy $
+ * $Date: 2010/10/05 21:37:31 $
+ * $Revision: 1.1248 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1373,11 +1373,13 @@ void Controller::printEnergies(int step, int minimize)
     SimParameters *simParameters = node->simParameters;
     Lattice &lattice = state->lattice;
 
+    // Drude model ANISO energy is added into BOND energy
+    // and THOLE energy is added into ELECT energy
+
     BigReal bondEnergy;
     BigReal angleEnergy;
     BigReal dihedralEnergy;
     BigReal improperEnergy;
-    BigReal anisoEnergy;  // Drude model
     BigReal crosstermEnergy;
     BigReal boundaryEnergy;
     BigReal miscEnergy;
@@ -1389,10 +1391,10 @@ void Controller::printEnergies(int step, int minimize)
     BigReal volume = lattice.volume();
 
     bondEnergy = reduction->item(REDUCTION_BOND_ENERGY);
+    bondEnergy += reduction->item(REDUCTION_ANISO_ENERGY);
     angleEnergy = reduction->item(REDUCTION_ANGLE_ENERGY);
     dihedralEnergy = reduction->item(REDUCTION_DIHEDRAL_ENERGY);
     improperEnergy = reduction->item(REDUCTION_IMPROPER_ENERGY);
-    anisoEnergy = reduction->item(REDUCTION_ANISO_ENERGY);
     crosstermEnergy = reduction->item(REDUCTION_CROSSTERM_ENERGY);
     boundaryEnergy = reduction->item(REDUCTION_BC_ENERGY);
     miscEnergy = reduction->item(REDUCTION_MISC_ENERGY);
@@ -1441,8 +1443,7 @@ void Controller::printEnergies(int step, int minimize)
     angularMomentum.z = reduction->item(REDUCTION_ANGULAR_MOMENTUM_Z);
 
     potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy +
-	improperEnergy + anisoEnergy +
-        electEnergy + electEnergySlow + ljEnergy +
+	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
 	crosstermEnergy + boundaryEnergy + miscEnergy;
     totalEnergy = potentialEnergy + kineticEnergy;
     flatEnergy = totalEnergy +
@@ -1581,7 +1582,6 @@ void Controller::printEnergies(int step, int minimize)
       CALLBACKDATA("DIHED",dihedralEnergy);
       CALLBACKDATA("CROSS",crosstermEnergy);
       CALLBACKDATA("IMPRP",improperEnergy);
-      CALLBACKDATA("ANISO",anisoEnergy);
       CALLBACKDATA("ELECT",electEnergy+electEnergySlow);
       CALLBACKDATA("VDW",ljEnergy);
       CALLBACKDATA("BOUNDARY",boundaryEnergy);
@@ -1684,7 +1684,6 @@ void Controller::printEnergies(int step, int minimize)
 	}
         if (simParameters->drudeOn) {
           iout << "     ";
-	  iout << FORMAT("ANISO");
 	  iout << FORMAT("DRUDECOM");
 	  iout << FORMAT("DRUDEBOND");
 	  iout << FORMAT("DRCOMAVG");
@@ -1730,7 +1729,6 @@ void Controller::printEnergies(int step, int minimize)
     }
     if (simParameters->drudeOn) {
         iout << "     ";
-	iout << FORMAT(anisoEnergy);
 	iout << FORMAT(drudeComTemp);
 	iout << FORMAT(drudeBondTemp);
 	iout << FORMAT(drudeComTempAvg/avg_count);
