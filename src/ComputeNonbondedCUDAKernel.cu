@@ -572,10 +572,6 @@ __global__ static void dev_sum_forces(
 // call BLOCK_SIZE threads per block
 // call with no shared memory
 
-#if 0
-// if this is enabled compiler will generate incoherent st.global.f32
-// instead of coherent st.global.v4.f32 when writing to forces
-
   #define myForceList fl.fl
   __shared__ union {
     force_list fl;
@@ -587,13 +583,6 @@ __global__ static void dev_sum_forces(
                         FORCE_LIST_SIZE*blockIdx.x+threadIdx.x];
     fl.i[threadIdx.x] = tmp;
   }
-#else
-  __shared__ force_list myForceList;
-
-  if ( threadIdx.x == 0 ) {
-    myForceList = force_lists[blockIdx.x];
-  }
-#endif
 
   volatile __shared__ union {
     float a3d[32][3][3];
@@ -634,7 +623,10 @@ __global__ static void dev_sum_forces(
       fbuf += myForceList.patch_stride;
     }
 
-    forces[myForceList.force_output_start + j] = fout;
+    // compiler will use st.global.f32 instead of st.global.v4.f32
+    // if forcedest is directly substituted in the assignment
+    const int forcedest = myForceList.force_output_start + j;
+    forces[forcedest] = fout;
 
     float4 pos = ((float4*)atoms)[myForceList.atom_start + j];
 
