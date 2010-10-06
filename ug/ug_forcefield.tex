@@ -239,7 +239,7 @@ Section \ref{section:mts}.
   {\small Graph showing an electrostatic potential 
   when full electrostatics are used within \NAMD, 
   with one curve portion calculated directly 
-  and the other calculated using DPMTA.}
+  and the other calculated using PME.}
   \label{fig:fmaOn}
 \end{figure}
 
@@ -252,9 +252,7 @@ Section \ref{section:mts}.
 %\NAMDCONF{eleccutoff}%
 %{local interaction distance for electrostatic calculations (\AA)}%
 %{positive decimal}%
-%{If DPMTA is active, this distance defines the local interaction length
-%for the DPMTA algorithm.
-%Otherwise, this value specifies the distance at which
+%{Specifies the distance at which
 %electrostatic interactions are truncated.
 %If {\tt eleccutoff} is defined, it supersedes {\tt cutoff}.
 %If {\tt eleccutoff} is not defined, then \verb }cutoff} {\em must}
@@ -530,7 +528,7 @@ real calculations, but rather as a testing or
 comparison measure.  Because of the ${\mathcal O}(N^2)$ 
 computational complexity for performing 
 direct calculations, this is {\it much} 
-slower than using DPMTA or PME to compute full 
+slower than using PME to compute full 
 electrostatics for large systems.
 In the case of periodic boundary conditions,
 the nearest image convention is used rather than a
@@ -542,103 +540,6 @@ full Ewald sum.
 \NAMDCONFWDEF{FullDirect}{calculate full electrostatics directly?}{{\tt yes} or {\tt no}}{{\tt no}}
 {Specifies whether or not direct computation of 
 full electrostatics should be performed.}
-
-\end{itemize}
-
-
-\subsubsection{DPME parameters}
-
-{\em DPME is an implementation of PME that is no longer
-included in the released NAMD binaries.
-We recommend that you use the current PME implementation.}
-\begin{itemize}
-\item
-\NAMDCONFWDEF{useDPME}{Use old DPME code?}{{\tt yes} or {\tt no}}{{\tt no}}
-{Switches to old DPME implementation of particle mesh Ewald.
-The new code is faster and allows non-orthogonal cells so you
-probably just want to leave this option turned off.  If you set
-{\tt cellOrigin} to something other than $(0,0,0)$ the energy may differ
-slightly between the old and new implementations.
-{\em DPME is no longer included in released binaries.}
-}
-\end{itemize}
-
-
-\subsubsection{DPMTA parameters}
-
-{\em DPMTA is no longer included in the released NAMD binaries.
-We recommend that you instead use PME with a periodic system because
-it conserves energy better, is more efficient, and is better parallelized.
-If you must have the fast multipole algorithm you may compile \NAMD\ yourself.} 
-
-These parameters control the options to DPMTA, an algorithm
-used to provide full electrostatic interactions.  DPMTA is a
-modified version of the FMA (Fast Multipole Algorithm) and, 
-unfortunately, most of the parameters still refer to FMA
-rather than DPMTA for historical reasons.  Don't be confused!
-\prettypar
-For a further description of how exactly full electrostatics
-are incorporated into \NAMD, see Section \ref{section:mts}.
-For a greater level of detail about DPMTA and the specific
-meaning of its options, see the DPMTA distribution which is
-available via anonymous FTP from the site {\tt ftp.ee.duke.edu}
-in the directory {\tt /pub/SciComp/src}.
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{FMA}{use full electrostatics?}{{\tt on} or {\tt off}}{{\tt off}}
-{Specifies whether or not 
-the DPMTA algorithm from Duke University should be used 
-to compute the full electrostatic interactions.  If set to 
-{\tt on}, DPMTA will be used with a multiple timestep integration scheme 
-to provide full electrostatic interactions as detailed in Section 
-\ref{section:mts}.  {\em DPMTA is no longer included in released binaries.}}
-
-\item
-\NAMDCONFWDEF{FMALevels}{number of levels to use in multipole expansion}{positive integer}{5}
-{Number of levels to use for the multipole expansion.  This parameter
-is only used if {\tt FMA} is set to {\tt on}.  
-A value of 4 should be sufficient for systems with less than 10,000 atoms.  
-A value of 5 or greater should be used for larger systems. }
-
-\item
-\NAMDCONFWDEF{FMAMp}{number of multipole terms to use for FMA}{positive integer}{8}
-{Number of terms to use in the multipole expansion.  
-This parameter is only used if {\tt FMA} is set to {\tt on}.  
-If the {\tt FMAFFT} is set to {\tt on}, then this value must 
-be a multiple of 4.  The default value of 8 should be suitable
-for most applications.}
-
-\item
-\NAMDCONFWDEF{FMAFFT}{use DPMTA FFT enhancement?}{{\tt on} or {\tt off}}{{\tt on}}
-{Specifies whether or not the DPMTA code should use the FFT enhancement 
-feature.  This parameter is only used if {\tt FMA} is set to {\tt on}.  
-If {\tt FMAFFT} is set to {\tt on}, the value of {\tt FMAMp} must be 
-set to a multiple of 4.  
-This feature offers substantial benefits only for values 
-of {\tt FMAMp} of 8 or greater.  This feature will substantially 
-increase the amount of memory used by DPMTA.}
-
-%%  REMOVE THIS AS A DOCUMENTED FEATURE.  WE USE stepspercycle INSTEAD.  
-%%
-%%  \item
-%%  \NAMDCONF{FMAfrequency}{number of timesteps between DPMTA calculations}{positive integer}
-%%  {This parameter specifies the number of timesteps between each
-%%  invocation of the DPMTA algorithm.}
-
-\item
-\NAMDCONFWDEF{FMAtheta}{DPMTA theta parameter (radians)}{decimal}{0.715}
-{This parameter specifies the value of the theta parameter
-used in the DPMTA calculation.  The default value is based on
-recommendations by the developers of the code.}
-
-\item
-\NAMDCONFWDEF{FMAFFTBlock}{blocking factor for FMA FFT}{positive integer}{4}
-{The blocking factor for the FFT enhancement to DPMTA.
-This parameter is only used if both {\tt FMA} and {\tt FMAFFT} 
-are set to {\tt on}.  The default value of 4 should be suitable
-for most applications.}
 
 \end{itemize}
 
