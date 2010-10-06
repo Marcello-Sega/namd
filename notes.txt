@@ -244,8 +244,7 @@ NAMD only uses the GPU for nonbonded force evaluation.  Energy evaluation
 is done on the CPU.  To benefit from GPU acceleration you should set
 outputEnergies to 100 or higher in the simulation config file.  Some
 features are unavailable in CUDA builds, including alchemical free
-energy perturbation and non-isotropic (flexible cell) pressure control
-(the scalar pressure is correct but the pressure tensor is incorrect).
+energy perturbation.
 
 As this is a new feature you are encouraged to test all simulations
 before beginning production runs.  Forces evaluated on the GPU differ
