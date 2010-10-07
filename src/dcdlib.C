@@ -1113,7 +1113,7 @@ void close_dcd_write(int fd)
 
 {
 #ifdef WIN32
-  if ( _fsync(fd) || _close(fd) )
+  if ( _close(fd) )
 #else
   if ( fsync(fd) || close(fd) )
 #endif
