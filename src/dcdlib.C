@@ -1113,9 +1113,12 @@ void close_dcd_write(int fd)
 
 {
 #ifdef WIN32
-	_close(fd);
+  if ( _fsync(fd) || _close(fd) )
 #else
-	close(fd);
+  if ( fsync(fd) || close(fd) )
 #endif
+  {
+    NAMD_err("Error closing DCD file");
+  }
 }
 
