@@ -329,12 +329,6 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       int tupleCount = 0;
       int numAtomTypes = T::pressureProfileAtomTypes;
       int numAtomTypePairs = numAtomTypes*numAtomTypes;
-
-      if ( ! Node::Object()->simParameters->commOnly ) {
-      if ( doLoadTuples ) {
-        loadTuples();
-        doLoadTuples = false;
-      }
     
       for ( int i = 0; i < T::reductionDataSize; ++i ) reductionData[i] = 0;
       if (pressureProfileData) {
@@ -345,6 +339,12 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         const Lattice &lattice = newap->p->lattice;
         T::pressureProfileThickness = lattice.c().z / pressureProfileSlabs;
         T::pressureProfileMin = lattice.origin().z - 0.5*lattice.c().z;
+      }
+
+      if ( ! Node::Object()->simParameters->commOnly ) {
+      if ( doLoadTuples ) {
+        loadTuples();
+        doLoadTuples = false;
       }
       // take triplet and pass with tuple info to force eval
       T *al = tupleList.begin();
