@@ -489,14 +489,15 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   int sum_npes = numTransPes + numGridPes;
   int max_npes = (numTransPes > numGridPes)?numTransPes:numGridPes;
 
-#if USE_TOPOMAP
+#if 0 // USE_TOPOMAP
+  /* This code is being disabled permanently for slab PME on Blue Gene machines */
   PatchMap * pmap = PatchMap::Object();
   
   int patch_pes = pmap->numNodesWithPatches();
   TopoManager tmgr;
   if(tmgr.hasMultipleProcsPerNode())
     patch_pes *= 2;
- 
+
   bool done = false;
   if(CkNumPes() > 2*sum_npes + patch_pes) {    
     done = generateBGLORBPmePeList(transPeMap, numTransPes);
@@ -2251,9 +2252,9 @@ bool generateBGLORBPmePeList(int *pemap, int numPes,
 
   int xsize = 0, ysize = 0, zsize = 0;
 
-  xsize = tmgr.getDimX();
-  ysize = tmgr.getDimY();
-  zsize = tmgr.getDimZ();
+  xsize = tmgr.getDimNX();
+  ysize = tmgr.getDimNY();
+  zsize = tmgr.getDimNZ();
   
   int nx = xsize, ny = ysize, nz = zsize;
   DimensionMap dm;
