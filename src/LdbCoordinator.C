@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: jim $
- * $Date: 2010/07/18 19:34:40 $
- * $Revision: 1.100 $
+ * $Author: bhatele $
+ * $Date: 2010/10/21 20:33:14 $
+ * $Revision: 1.101 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -459,32 +459,32 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     }
   }
 
-/*------------------------------------------------------------------------------*
- * ---------------------------------------------------------------------------- *
- * Comments inserted by Abhinav to clarify relation between ldbCycleNum,  	*
- * load balancing step numbers (printed by the step() function) and       	*
- * tracing of the steps						    	 	*
- * ---------------------------------------------------------------------------- *
- * If trace is turned off in the beginning, then tracing is turned on     	*
- * at ldbCycleNum = 4 and turned off at ldbCycleNum = 8. ldbCycleNum can   	*
- * be adjusted by specifying firstLdbStep and ldbPeriod which are set by  	*
- * default to 5*stepspercycle and 200*stepspercycle if not specified.     	*
- * 									  	*
- * If we choose firstLdbStep = 20 and ldbPeriod = 100, we have the        	*
- * following timeline (for these particular numbers):                     	*
- *									  	*
- * Tracing	   :  <------ off ------><------------- on ------------><-- off	*
- * Ldb Step() No   :              1     2     3        4      5        6      7 *
- * Iteration Steps : 00====20====40====60====80======160====180======260====280 *
- * ldbCycleNum     :  1     2     3     4     5        6      7        8      9 *
- * Instrumention   :          Inst  Inst  Inst           Inst            Inst   *
- * LDB Strategy    :             Alg7  Ref   Ref             Ref            Ref *
- *									  	*
- * Alg7 = AlgSeven							  	*
- * Ref  = Refine (NamdCentLB.C, Rebalancer.C)				  	*
- * Inst = Instrumentation Phase (no real load balancing)		  	*
- * ---------------------------------------------------------------------------- *
- *------------------------------------------------------------------------------*
+/*-----------------------------------------------------------------------------*
+ * --------------------------------------------------------------------------- *
+ * Comments inserted by Abhinav to clarify relation between ldbCycleNum,       *
+ * load balancing step numbers (printed by the step() function) and            *
+ * tracing of the steps                                                        *
+ * --------------------------------------------------------------------------- *
+ * If trace is turned off in the beginning, then tracing is turned on          *
+ * at ldbCycleNum = 4 and turned off at ldbCycleNum = 8. ldbCycleNum can       *
+ * be adjusted by specifying firstLdbStep and ldbPeriod which are set by       *
+ * default to 5*stepspercycle and 200*stepspercycle if not specified.          *
+ *                                                                             *
+ * If we choose firstLdbStep = 20 and ldbPeriod = 100, we have the             *
+ * following timeline (for these particular numbers):                          *
+ *                                                                             *
+ * Tracing         :  <------ off ------><------------- on -----------><-- off *
+ * Ldb Step() No   :              1     2     3        4      5       6      7 *
+ * Iteration Steps : 00====20====40====60====80======160====180=====260====280 *
+ * ldbCycleNum     :  1     2     3     4     5        6      7       8      9 *
+ * Instrumention   :          Inst  Inst  Inst           Inst            Inst  *
+ * LDB Strategy    :              TLB  RLB   RLB            RLB            RLB *
+ *                                                                             *
+ * TLB = TorusLB                                                               *
+ * RLB = RefineTorusLB                                                         *
+ * Inst = Instrumentation Phase (no real load balancing)                       *
+ * --------------------------------------------------------------------------- *
+ *-----------------------------------------------------------------------------*
  */
 
   if (traceAvailable()) {
