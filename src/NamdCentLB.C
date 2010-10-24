@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2010/04/12 22:59:07 $
- * $Revision: 1.96 $
+ * $Date: 2010/10/24 16:41:56 $
+ * $Revision: 1.97 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -562,13 +562,13 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
 {
   enum proxyHere { No, Yes };
-  int numNodes = CkNumPes();
-  proxyHere *proxyNodes = new proxyHere[numNodes];
+  int numPes = CkNumPes();
+  proxyHere *proxyNodes = new proxyHere[numPes];
   int nProxyNodes;
   int i;
 
   // Note all home patches.
-  for ( i = 0; i < numNodes; ++i )
+  for ( i = 0; i < numPes; ++i )
   {
     proxyNodes[i] = No;
   }
@@ -605,10 +605,10 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
 
 #if 1
   int numPatches = patchMap->numPatches();
-  int emptyNodes = numNodes - numPatches;
+  int emptyNodes = numPes - numPatches;
   if ( emptyNodes > numPatches ) {
     int nodesPerPatch = nProxyNodes + 1 + (emptyNodes-1) / numPatches;
-    int proxyNode = (myNode + 1) % numNodes;
+    int proxyNode = (myNode + 1) % numPes;
     while ( nProxyNodes < nodesPerPatch &&
 			! patchMap->numPatchesOnNode(proxyNode) ) {
       if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
@@ -616,9 +616,9 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
         neighborNodes[nProxyNodes] = proxyNode;
         nProxyNodes++;
       }
-      proxyNode = (proxyNode + 1) % numNodes;
+      proxyNode = (proxyNode + 1) % numPes;
     }
-    proxyNode = (myNode - 1 + numNodes) % numNodes;
+    proxyNode = (myNode - 1 + numPes) % numPes;
     while ( nProxyNodes < nodesPerPatch &&
 			! patchMap->numPatchesOnNode(proxyNode) ) {
       if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
@@ -626,9 +626,9 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
         neighborNodes[nProxyNodes] = proxyNode;
         nProxyNodes++;
       }
-      proxyNode = (proxyNode - 1 + numNodes) % numNodes;
+      proxyNode = (proxyNode - 1 + numPes) % numPes;
     }
-    proxyNode = (myNode + 1) % numNodes;
+    proxyNode = (myNode + 1) % numPes;
     int count = 0;
     while ( nProxyNodes < nodesPerPatch ) {
       if ( ! patchMap->numPatchesOnNode(proxyNode) &&
@@ -637,8 +637,8 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
         neighborNodes[nProxyNodes] = proxyNode;
         nProxyNodes++;
       }
-      proxyNode = (proxyNode + 1) % numNodes;
-      count ++; if (count == numNodes) break;   // we looped all
+      proxyNode = (proxyNode + 1) % numPes;
+      count ++; if (count == numPes) break;   // we looped all
     }
   } else {
     int proxyNode = myNode - 1;
@@ -650,7 +650,7 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
       }
     }
     proxyNode = myNode + 1;
-    if ( proxyNode < numNodes && ! patchMap->numPatchesOnNode(proxyNode) ) {
+    if ( proxyNode < numPes && ! patchMap->numPatchesOnNode(proxyNode) ) {
       if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
         proxyNodes[proxyNode] = Yes;
         neighborNodes[nProxyNodes] = proxyNode;
@@ -669,56 +669,55 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
 // without regard for non-bonded computes.  This code is swiped from
 // ProxyMgr, and changes there probable need to be propagated here.
 // The proxies are placed on nearby processors on the 3d-grid along
-// the X,Y,Z dimensions
+// the X, Y, Z and T dimensions
 
 int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 {
   enum proxyHere { No, Yes };
-  int numNodes = CkNumPes();
-  proxyHere *proxyNodes = new proxyHere[numNodes];
+  int numPes = CkNumPes();
+  proxyHere *proxyNodes = new proxyHere[numPes];
   int nProxyNodes;
-  int i,j,k;
+  int i, j, k, l;
 
-  int xsize = 0, ysize = 0, zsize = 0;
-  int my_x =0, my_y = 0, my_z = 0;
+  int xsize = 0, ysize = 0, zsize = 0, tsize = 0;
+  int my_x = 0, my_y = 0, my_z = 0, my_t = 0;
 
   PatchMap* patchMap = PatchMap::Object();
   int myNode = patchMap->node(id);
     
   TopoManager tmgr;
-  xsize = tmgr.getDimX();
-  ysize = tmgr.getDimY();
-  zsize = tmgr.getDimZ();
+  xsize = tmgr.getDimNX();
+  ysize = tmgr.getDimNY();
+  zsize = tmgr.getDimNZ();
+  tsize = tmgr.getDimNT();
   
-  tmgr.rankToCoordinates(myNode, my_x, my_y, my_z);
+  tmgr.rankToCoordinates(myNode, my_x, my_y, my_z, my_t);
   
-  if(xsize * ysize * zsize != CkNumPes()) {
+  if(xsize * ysize * zsize * tsize != CkNumPes()) {
     delete [] proxyNodes;
     return requiredProxies(id, neighborNodes);
   }  
 
-
   // Note all home patches.
-  for ( i = 0; i < numNodes; ++i )
+  for ( i = 0; i < numPes; ++i )
   {
     proxyNodes[i] = No;
   }
-  nProxyNodes=0;
+  nProxyNodes = 0;
 
   // Check all two-away neighbors.
   // This is really just one-away neighbors, since 
   // two-away always returns zero: RKB
   PatchID neighbors[1 + PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
 
-  //Assign a proxy to all your neighbors. But dont increment counter
-  //because these have to be there anyway.
-  
+  // Assign a proxy to all your neighbors. But dont increment counter
+  // because these have to be there anyway.
   neighbors[0] = id;  
   int numNeighbors = 1 + patchMap->downstreamNeighbors(id,neighbors+1);
   
-  //Small Flag chooses between different loadbalancing schemes.
-  //Small Flag == true, patches are close to each other
-  //false, patches are far from each other
+  // Small Flag chooses between different loadbalancing schemes.
+  // Small Flag == true, patches are close to each other
+  // false, patches are far from each other
   CmiBool smallFlag = CmiFalse;
   double pnodes = CkNumPes();
   pnodes *= 0.25;    
@@ -746,10 +745,10 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
     return nProxyNodes;
   }
  
-  //Place numNodesPerPatch proxies on the 3d torus neighbors of a processor
+  // Place numPesPerPatch proxies on the 3d torus neighbors of a processor
 
   int numPatches = patchMap->numPatches();
-  int emptyNodes = numNodes - numPatches;
+  int emptyNodes = numPes - numPatches;
   //if ( emptyNodes > numPatches ) {
   
   int nodesPerPatch = nProxyNodes + 4 * (emptyNodes-1) / numPatches + 1;
@@ -765,46 +764,13 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
     for(j=-1; j <= 1; j++) {
       proxy_y = (my_y + j + ysize) % ysize;
       for(i = -1; i <= 1; i++) {
-	if(i == 0 && j == 0 && k == 0)
-	  continue;
-
 	proxy_x = (my_x + i + xsize) % xsize;
-	proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
-
-	if((! patchMap->numPatchesOnNode(proxyNode) || !smallFlag) &&
-	   proxyNodes[proxyNode] == No) {
-	  proxyNodes[proxyNode] = Yes;
-	  neighborNodes[nProxyNodes] = proxyNode;
-	  nProxyNodes++;
-	}
-	
-	if(nProxyNodes >= nodesPerPatch || 
-	   nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
-	  break;	  
-      }
-      
-      if(nProxyNodes >= nodesPerPatch || 
-	 nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
-	break;	  
-    }
-    if(nProxyNodes >= nodesPerPatch || 
-       nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
-      break;	  
-  }        
-
-#if 1
-  if(!smallFlag) {
-    for(k=-2; k<= 2; k+=2) {
-      proxy_z = (my_z + k + zsize) % zsize;
-      for(j=-2; j <= 2; j+=2) {
-	proxy_y = (my_y + j + ysize) % ysize;
-	for(i = -2; i <= 2; i+=2) {
-	  if(i == 0 && j == 0 && k == 0)
+	for(l = 0; l < tsize; l++) {
+	  if(i == 0 && j == 0 && k == 0 && l == 0)
 	    continue;
-	  
-	  proxy_x = (my_x + i + xsize) % xsize;
-	  proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z);
-	  
+
+	  proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z, l);
+
 	  if((! patchMap->numPatchesOnNode(proxyNode) || !smallFlag) &&
 	     proxyNodes[proxyNode] == No) {
 	    proxyNodes[proxyNode] = Yes;
@@ -814,20 +780,68 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
 	  
 	  if(nProxyNodes >= nodesPerPatch || 
 	     nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
-	    break;	  
-	}
+	    break;
+	} // end for
+
+	if(nProxyNodes >= nodesPerPatch || 
+	   nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	  break;
+      } // end for
+      
+      if(nProxyNodes >= nodesPerPatch || 
+	 nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	break;	  
+    } // end for
+
+    if(nProxyNodes >= nodesPerPatch || 
+       nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+      break;	  
+  } // end for
+
+#if 1
+  if(!smallFlag) {
+    for(k=-2; k<= 2; k+=2) {
+      proxy_z = (my_z + k + zsize) % zsize;
+      for(j=-2; j <= 2; j+=2) {
+	proxy_y = (my_y + j + ysize) % ysize;
+	for(i = -2; i <= 2; i+=2) {
+	  proxy_x = (my_x + i + xsize) % xsize;
+	  for(l = 0; l < tsize; l++) {
+	    if(i == 0 && j == 0 && k == 0 && l == 0)
+	      continue;
+	  
+	    proxyNode = tmgr.coordinatesToRank(proxy_x, proxy_y, proxy_z, l);
+	  
+	    if((! patchMap->numPatchesOnNode(proxyNode) || !smallFlag) &&
+	       proxyNodes[proxyNode] == No) {
+	      proxyNodes[proxyNode] = Yes;
+	      neighborNodes[nProxyNodes] = proxyNode;
+	      nProxyNodes++;
+	    }
+	    
+	    if(nProxyNodes >= nodesPerPatch || 
+	       nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	      break;
+	  } // end for
+
+	  if(nProxyNodes >= nodesPerPatch || 
+	     nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
+	    break;
+	} // end for
 	
 	if(nProxyNodes >= nodesPerPatch || 
 	   nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
 	  break;	  
-      }
+      } // end for
+
       if(nProxyNodes >= nodesPerPatch || 
 	 nProxyNodes >= PatchMap::MaxOneAway + PatchMap::MaxTwoAway)
 	break;	  
-    }        
+    } // end for
   }
 
 #else
+  #if 0
   const SimParameters* params = Node::Object()->simParameters;
 
   if(!smallFlag) {
@@ -906,6 +920,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
       }
     }
   }
+  #endif
 #endif
   
   // CkPrintf("Returning %d proxies\n", nProxyNodes);
