@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2010/06/15 19:39:28 $
- * $Revision: 1.1167 $
+ * $Author: chaomei2 $
+ * $Date: 2010/10/24 04:04:48 $
+ * $Revision: 1.1168 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -115,6 +115,11 @@ public:
 	BigReal ldbBackgroundScaling;	//  scaling factor for background load
 	BigReal ldbPMEBackgroundScaling;//  scaling factor for PME background
 	BigReal ldbHomeBackgroundScaling;//  scaling factor for home background
+	
+	int traceStartStep; //the timestep when trace is turned on, default to 3*firstLdbStep;
+	int numTraceSteps; //the number of timesteps that are traced, default to 2*ldbPeriod;
+	
+	
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension
 	int twoAwayZ;			//  half-size patches in Z dimension

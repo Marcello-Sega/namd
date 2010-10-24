@@ -33,6 +33,7 @@ public:
     virtual ~Controller(void);
     void run(void);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
+    void resumeAfterTraceBarrier(int);
 
 protected:
     friend class ScriptTcl;
@@ -142,7 +143,9 @@ protected:
     int ldbSteps;
     void rebalanceLoad(int);
       int fflush_count;
-    void cycleBarrier(int,int);
+    void cycleBarrier(int,int);	
+	
+	void traceBarrier(int, int);	
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void);

@@ -147,7 +147,15 @@ public:
   // entry methods for BG/P HPM (performance counters) library
   void startHPM();
   void stopHPM();
-
+  
+  //entry methods for trace barriers
+  int curTimeStep;
+  void traceBarrier(int turnOnTrace, int step);
+  void resumeAfterTraceBarrier(CkReductionMsg *msg);
+  
+  //to show whether +traceoff is specified
+  bool specialTracing;
+  
   // Made public for pmeAid;
   WorkDistrib *workDistrib;
 

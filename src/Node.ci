@@ -39,6 +39,9 @@ module Node {
 
     entry void startHPM();
     entry void stopHPM();
-  };
+	
+	entry void traceBarrier(int, int);
+	entry void resumeAfterTraceBarrier(CkReductionMsg *);
+	};
 }
 

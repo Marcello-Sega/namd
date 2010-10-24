@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jim $
- * $Date: 2010/09/15 19:52:28 $
- * $Revision: 1.1187 $
+ * $Author: chaomei2 $
+ * $Date: 2010/10/24 04:04:48 $
+ * $Revision: 1.1188 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -363,6 +363,14 @@ void Sequencer::integrate() {
         cycleBarrier(1, step);
 #endif
 
+	 if(Node::Object()->specialTracing){
+		 int bstep = simParams->traceStartStep;
+		 int estep = bstep + simParams->numTraceSteps;
+		 if(step == bstep || step == estep){
+			 traceBarrier(step);
+		 }			 
+	 }		 
+	  
 	rebalanceLoad(step);
 
 #if PME_BARRIER
@@ -1768,6 +1776,10 @@ void Sequencer::cycleBarrier(int doBarrier, int step) {
 	if (doBarrier)
 	  broadcast->cycleBarrier.get(step);
 #endif
+}
+
+void Sequencer::traceBarrier(int step){
+	broadcast->traceBarrier.get(step);
 }
 
 void Sequencer::terminate() {

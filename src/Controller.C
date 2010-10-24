@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: dhardy $
- * $Date: 2010/10/05 22:01:05 $
- * $Revision: 1.1249 $
+ * $Author: chaomei2 $
+ * $Date: 2010/10/24 04:04:47 $
+ * $Revision: 1.1250 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -338,7 +338,6 @@ void Controller::integrate() {
     //  (namd_sighandler_t)my_sigint_handler);
     for ( ++step ; step <= numberOfSteps; ++step )
     {
-
         rescaleVelocities(step);
 	tcoupleVelocities(step);
 	berendsenPressure(step);
@@ -365,7 +364,18 @@ void Controller::integrate() {
 #elif  STEP_BARRIER
         cycleBarrier(1, step);
 #endif
-
+		
+	if(Node::Object()->specialTracing){		
+		 int bstep = simParams->traceStartStep;
+		 int estep = bstep + simParams->numTraceSteps;		
+		 if(step == bstep){
+			 traceBarrier(1, step);
+		 }
+		 if(step == estep){			
+			 traceBarrier(0, step);
+		 }
+	 }	
+	 
         rebalanceLoad(step);
 
 #if  PME_BARRIER
@@ -2103,6 +2113,20 @@ void Controller::cycleBarrier(int doBarrier, int step) {
 	}
 #endif
 }
+
+void Controller::traceBarrier(int turnOnTrace, int step) {
+	CkPrintf("Cycle time at trace sync (begin) Wall at step %d: %f CPU %f\n", step, CmiWallTimer()-firstWTime,CmiTimer()-firstCTime);	
+	CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+	nd.traceBarrier(turnOnTrace, step);
+	CthSuspend();
+}
+
+void Controller::resumeAfterTraceBarrier(int step){
+	broadcast->traceBarrier.publish(step,1);
+	CkPrintf("Cycle time at trace sync (end) Wall at step %d: %f CPU %f\n", step, CmiWallTimer()-firstWTime,CmiTimer()-firstCTime);	
+	awaken();
+}
+
 
 void Controller::terminate(void) {
   BackEnd::awaken();

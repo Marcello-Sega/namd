@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: bhatele $
- * $Date: 2010/10/21 20:33:14 $
- * $Revision: 1.101 $
+ * $Author: chaomei2 $
+ * $Date: 2010/10/24 04:04:47 $
+ * $Revision: 1.102 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -486,7 +486,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
  * --------------------------------------------------------------------------- *
  *-----------------------------------------------------------------------------*
  */
-
+#if 0 //replaced by traceBarrier at Controller and Sequencer
   if (traceAvailable()) {
     static int specialTracing = 0; // XXX static variables are unsafe for SMP
     if (ldbCycleNum == 1 && traceIsOn() == 0)  specialTracing = 1;
@@ -495,7 +495,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       if (ldbCycleNum == 8) traceEnd();
     }
   }
-
+#endif
+  
   nPatchesReported = 0;
   nPatchesExpected = nLocalPatches;
   nComputesReported = 0;

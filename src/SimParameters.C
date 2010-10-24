@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2010/09/16 16:47:20 $
- * $Revision: 1.1310 $
+ * $Author: chaomei2 $
+ * $Date: 2010/10/24 04:04:48 $
+ * $Revision: 1.1311 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1476,6 +1476,12 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "ldbHomeBackgroundScaling",
      "home node background load scaling", &ldbHomeBackgroundScaling);
    opts.range("ldbHomeBackgroundScaling", NOT_NEGATIVE);
+   
+   opts.optional("main", "traceStartStep", "when to start tracing", &traceStartStep);
+   opts.range("traceStartStep", POSITIVE);
+   opts.optional("main", "numTraceSteps", "the number of timesteps to be traced", &numTraceSteps);
+   opts.range("numTraceSteps", POSITIVE);
+   
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);
    opts.optionalB("main", "ldbUnloadZero", "no load on pe zero",
@@ -2462,6 +2468,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
   if (!opts.defined("lastLdbStep")) {
     lastLdbStep = -1;
+  }
+  
+  //Set default values related with loadbalancing
+  if(!opts.defined("traceStartStep")){
+	  traceStartStep = 3*firstLdbStep;
+  }
+  if(!opts.defined("numTraceSteps")){
+	  numTraceSteps = 2*ldbPeriod;
   }
 
 #ifdef MEM_OPT_VERSION

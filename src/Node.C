@@ -138,6 +138,8 @@ Node::Node(GroupInitMsg *msg)
   delete tmgr;
 #endif
 
+  specialTracing = traceAvailable() && (traceIsOn()==0);
+
   DebugM(4,"Creating PatchMap, AtomMap, ComputeMap\n");
   patchMap = PatchMap::Instance();
   atomMap = AtomMap::Instance();
@@ -1069,6 +1071,23 @@ void Node::stopHPM() {
   HPM_Stop("500 steps", localRankOnNode);
   HPM_Print(CkMyPe(), localRankOnNode);
 #endif
+}
+
+void Node::traceBarrier(int turnOnTrace, int step){
+	curTimeStep = step;
+	if(turnOnTrace) traceBegin();
+	else traceEnd();
+
+	//CkPrintf("traceBarrier (%d) at step %d called on proc %d\n", turnOnTrace, step, CkMyPe());	
+	CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+	CkCallback cb(CkIndex_Node::resumeAfterTraceBarrier(NULL), nd[0]);
+	contribute(0, NULL, CkReduction::sum_int, cb);
+	
+}
+
+void Node::resumeAfterTraceBarrier(CkReductionMsg *msg){
+	delete msg;	
+	state->controller->resumeAfterTraceBarrier(curTimeStep);
 }
 
 //======================================================================
