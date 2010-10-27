@@ -63,7 +63,7 @@ Units static next(Units u) {
 // convert from a string to Units
 Units ParseOptions::atoUnits(const char *s) {
    Units u;
-   for (u=N_UNIT; u!=N_UNITS_UNDEFINED; u = next(u)) {
+   for (u=N_UNIT; u!=N_UNITS_UNDEFINED; u = ::next(u)) {
       if (!strcasecmp(unit_string_array[u], s)) return u;
    }
    if (!strcasecmp(s, "Angstrom")) return N_ANGSTROM;
