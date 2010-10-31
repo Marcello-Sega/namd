@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2010/10/24 04:04:48 $
- * $Revision: 1.1311 $
+ * $Author: bhatele $
+ * $Date: 2010/10/31 04:40:46 $
+ * $Revision: 1.1312 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2469,13 +2469,29 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   if (!opts.defined("lastLdbStep")) {
     lastLdbStep = -1;
   }
-  
-  //Set default values related with loadbalancing
-  if(!opts.defined("traceStartStep")){
-	  traceStartStep = 3*firstLdbStep;
+
+  // tracing will be done if trace is available and user says +traceOff
+  // in that case we set nice values for some functions
+  bool specialTracing = traceAvailable() && (traceIsOn() == 0);
+
+  if(!opts.defined("traceStartStep")) {
+    traceStartStep = 4 * firstLdbStep + 2 * ldbPeriod;
   }
-  if(!opts.defined("numTraceSteps")){
-	  numTraceSteps = 2*ldbPeriod;
+  if(!opts.defined("numTraceSteps")) {
+    numTraceSteps = 100;
+  }
+
+  if(specialTracing) {
+    firstLdbStep = 20;
+    ldbPeriod = 100;
+
+    if(!opts.defined("traceStartStep")) {
+      traceStartStep = 4 * firstLdbStep + 2 * ldbPeriod; // 380
+    }
+
+    if(!opts.defined("numTraceSteps")) {
+      numTraceSteps = 80;
+    }
   }
 
 #ifdef MEM_OPT_VERSION
