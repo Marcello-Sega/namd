@@ -735,12 +735,24 @@ void ComputeNonbondedUtil :: NAME
 
   int maxPart = params->numParts - 1;
   int groupCount = params->minPart;
-
-  for ( i = 0; i < (i_upper SELF(- 1)); ++i )
-  {
+  plint *i_index;
+  PAIR( 
+      if ( savePairlists || ! usePairlists ) 
+      { 
+      i=0; 
+      pairlists.addIndex(); 
+      }else 
+      {
+      pairlists.getIndexPointer(&i_index);
+      i = *i_index;
+      }
+      )
+   PAIR(for ( ; i < (i_upper);)) SELF(for ( i=0; i < (i_upper- 1);i++))
+    {
     const CompAtom &p_i = p_0[i];
     const CompAtomExt &pExt_i = pExt_0[i];
 
+    PAIR(if (savePairlists || ! usePairlists){)
     if ( p_i.hydrogenGroupSize ) {
       if ( groupCount ) {  // skip this group
         --groupCount;
@@ -748,11 +760,13 @@ void ComputeNonbondedUtil :: NAME
 #ifdef ARCH_POWERPC
         __dcbt((void *) &(p_0[i+1]));
 #endif
+        PAIR(i++;)
         continue;
       } else {  // compute this group
         groupCount = maxPart;
       }
     }
+    PAIR(})
 
     register const BigReal p_i_x = p_i.position.x + offset_x;
     register const BigReal p_i_y = p_i.position.y + offset_y;
@@ -770,7 +784,7 @@ void ComputeNonbondedUtil :: NAME
 
   if ( savePairlists || ! usePairlists ) {
 
-    if ( ! savePairlists ) pairlists.reset();  // limit space usage
+    //if ( ! savePairlists ) pairlists.reset();  // limit space usage
 
     #ifdef MEM_OPT_VERSION
     const ExclusionCheck *exclcheck = mol->get_excl_check_for_idx(pExt_i.exclId);        
@@ -1360,13 +1374,8 @@ void ComputeNonbondedUtil :: NAME
       )
       }
     }
-
-
 #if 1 ALCH(-1)
     npairn = plin - pln;
-    pairlistn_save = pln;
-    pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
-    pairlists.newsize(plin - pairlistn + 1);
 #else
     plint *plinA0 = pairlistnA0;
     int unsortedNpairn = plin - pln;
@@ -1380,32 +1389,51 @@ void ComputeNonbondedUtil :: NAME
     }
     
     npairn = plinA0 - pairlistnA0;
-    // FB preallocation (incl extra for overhead) seems to be necessary
-    pairlistn_save = pairlists.newlist(j_upper + 30);
-    for ( k=0; k<npairn; ++k ) {
-      pairlistn_save[k] = pairlistnA0[k];
-    }
-    pairlistn_save[k] = k ? pairlistn_save[k-1] : -1;
-    pairlists.newsize(npairn + 1);
-
 #endif
-    
     npairx = plix - pairlistx;
-    pairlistx_save = pairlists.newlist(npairx + 1);
-    for ( k=0; k<npairx; ++k ) {
-      pairlistx_save[k] = pairlistx[k];
-    }
-    pairlistx_save[k] = k ? pairlistx_save[k-1] : -1;
-    pairlists.newsize(npairx + 1);
-
     npairm = plim - pairlistm;
-    pairlistm_save = pairlists.newlist(npairm + 1);
-    for ( k=0; k<npairm; ++k ) {
-      pairlistm_save[k] = pairlistm[k];
-    }
-    pairlistm_save[k] = k ? pairlistm_save[k-1] : -1;
-    pairlists.newsize(npairm + 1);
 
+    PAIR(if(npairn!= 0 || npairx!= 0 ||npairm != 0))
+    {
+        PAIR(
+            pairlists.setIndexValue(i); 
+            )
+#if 1 ALCH(-1)
+        pairlistn_save = pln;
+        pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
+        pairlists.newsize(plin - pairlistn + 1);
+#else
+    // FB preallocation (incl extra for overhead) seems to be necessary
+         pairlistn_save = pairlists.newlist(j_upper + 30);
+         for ( k=0; k<npairn; ++k ) {
+             pairlistn_save[k] = pairlistnA0[k];
+         }
+         pairlistn_save[k] = k ? pairlistn_save[k-1] : -1;
+         pairlists.newsize(npairn + 1);
+#endif
+
+         pairlistx_save = pairlists.newlist(npairx + 1);
+         for ( k=0; k<npairx; ++k ) {
+             pairlistx_save[k] = pairlistx[k];
+         }
+         pairlistx_save[k] = k ? pairlistx_save[k-1] : -1;
+         pairlists.newsize(npairx + 1);
+
+         pairlistm_save = pairlists.newlist(npairm + 1);
+         for ( k=0; k<npairm; ++k ) {
+             pairlistm_save[k] = pairlistm[k];
+         }
+         pairlistm_save[k] = k ? pairlistm_save[k-1] : -1;
+         pairlists.newsize(npairm + 1);
+         PAIR( 
+              pairlists.addIndex();
+             )
+    } PAIR(else 
+        {
+          i++;
+          continue;
+        }
+        )
     
 #if 0 ALCH(+1)
 #define PAIRLISTFROMARRAY(NPAIRS,PL1,PL2,PLSAVE) \
@@ -1771,12 +1799,27 @@ void ComputeNonbondedUtil :: NAME
     FULL( fullf_0[i].y += fullf_i_y; )
     FULL( fullf_0[i].z += fullf_i_z; )
 #endif
+PAIR(
+    if ( savePairlists || ! usePairlists )
+    {
+    i++;
+    }else
+    {
+    pairlists.getIndexPointer(&i_index);
+    i = *i_index;
+    }
+    )
 
 	// PAIR( iout << i << " " << i_upper << " end\n" << endi;)
   } // for i
 
   // PAIR(iout << "++++++++\n" << endi;)
-
+PAIR(
+    if ( savePairlists || ! usePairlists )
+      {
+      pairlists.setIndexValue(i); 
+      }
+      )
 #ifdef f_1
 #undef f_1
 #endif
