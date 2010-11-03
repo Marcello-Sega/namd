@@ -489,7 +489,13 @@ void registerUserEventsForAllComputeObjs()
 {
 #ifdef TRACE_COMPUTE_OBJECTS
     ComputeMap *map = ComputeMap::Object();
+    PatchMap *pmap = PatchMap::Object();     
     char user_des[50];
+    int p1, p2;
+    int adim, bdim, cdim;
+    int t1, t2;
+    int x1, y1, z1, x2, y2, z2;
+    int dx, dy, dz;
     for (int i=0; i<map->numComputes(); i++)
     {
         memset(user_des, 0, 50);
@@ -499,7 +505,24 @@ void registerUserEventsForAllComputeObjs()
             sprintf(user_des, "computeNonBondedSelfType_%d", i);
             break;
         case computeNonbondedPairType:
-            sprintf(user_des, "computeNonBondedPairType_%d", i);
+            
+            adim = pmap->gridsize_a();
+            bdim = pmap->gridsize_b();
+            cdim = pmap->gridsize_c();
+            p1 = map->pid(i, 0);
+            t1 = map->trans(i, 0);
+            x1 = pmap->index_a(p1) + adim * Lattice::offset_a(t1);
+            y1 = pmap->index_b(p1) + bdim * Lattice::offset_b(t1);
+            z1 = pmap->index_c(p1) + cdim * Lattice::offset_c(t1);
+            p2 = map->pid(i, 1);
+            t2 = map->trans(i, 1);
+            x2 = pmap->index_a(p2) + adim * Lattice::offset_a(t2);
+            y2 = pmap->index_b(p2) + bdim * Lattice::offset_b(t2);
+            z2 = pmap->index_c(p2) + cdim * Lattice::offset_c(t2);
+            dx = abs(x1-x2);
+            dy = abs(y1-y2);
+            dz = abs(z1-z2);
+            sprintf(user_des, "computeNonBondedPairType_%d(%d,%d,%d)", i, dx,dy,dz);
             break;
         case computeExclsType:
             sprintf(user_des, "computeExclsType_%d", i);
