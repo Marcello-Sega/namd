@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
- * $Author: gzheng $
- * $Date: 2010/03/18 00:10:04 $
- * $Revision: 1.5 $
+ * $Author: bhatele $
+ * $Date: 2010/11/06 23:20:29 $
+ * $Revision: 1.6 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -50,11 +50,16 @@ private:
 
   CmiBool QueryBalanceNow(int step);
   CmiBool QueryDumpData();
-//  LBVectorMigrateMsg* VectorStrategy(LDStats* stats,int count);
-  LBMigrateMsg* Strategy(LDStats* stats,int count);
-  LBMigrateMsg* GrpLevelStrategy(LDStats* stats,int count);
+//  LBVectorMigrateMsg* VectorStrategy(LDStats* stats);
+#if CHARM_VERSION > 60301
+  LBMigrateMsg* Strategy(LDStats* stats);
+  LBMigrateMsg* GrpLevelStrategy(LDStats* stats);
+#else
+  LBMigrateMsg* Strategy(LDStats* stats, int n_pes);
+  LBMigrateMsg* GrpLevelStrategy(LDStats* stats, int n_pes);
+#endif
   
-  int buildData(CentralLB::LDStats* stats, int count);
+  int buildData(LDStats* stats);
   int requiredProxies(PatchID id, int neighborNodes[]);
   void dumpDataASCII(char *file, int numProcessors, int numPatches,
                 int numComputes);

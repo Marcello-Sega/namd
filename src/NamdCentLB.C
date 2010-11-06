@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2010/10/24 16:41:56 $
- * $Revision: 1.97 $
+ * $Date: 2010/11/06 23:20:29 $
+ * $Revision: 1.98 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -83,13 +83,21 @@ CmiBool NamdCentLB::QueryDumpData()
 #endif
   return CmiFalse;
 }
-            
-CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
+
+#if CHARM_VERSION > 60301
+CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats)
+#else
+CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
+#endif
 {
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
   //  CmiTimer(),CmiWallTimer());
 
-  int numProcessors = count;
+#if CHARM_VERSION > 60301
+  int numProcessors = stats->n_pes;
+#else
+  int numProcessors = n_pes;
+#endif
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
   const int numComputes = computeMap->numComputes();
@@ -100,7 +108,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(CentralLB::LDStats* stats, int count)
   if ( ! patchArray ) patchArray = new patchInfo[numPatches];
   if ( ! computeArray ) computeArray = new computeInfo[numComputes];
 
-  int nMoveableComputes = buildData(stats,count);
+  int nMoveableComputes = buildData(stats);
 
 #if LDB_DEBUG
 #define DUMP_LDBDATA 1
@@ -384,8 +392,14 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
 
 extern int isPmeProcessor(int); 
 
-int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
+int NamdCentLB::buildData(LDStats* stats)
 {
+#if CHARM_VERSION > 60301
+  int n_pes = stats->n_pes;
+#else
+  int n_pes = stats->count;
+#endif
+
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
   const SimParameters* simParams = Node::Object()->simParameters;
@@ -400,7 +414,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   int unLoadOne = simParams->ldbUnloadOne;
 
   int i;
-  for (i=0; i<count; ++i) {
+  for (i=0; i<n_pes; ++i) {
     processorArray[i].Id = i;
     processorArray[i].available = CmiTrue;
     if ( pmeOn && isPmeProcessor(i) ) {
@@ -420,7 +434,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   if ( bgfactor > 2.0 ) bgfactor = 2.0;
   iout << iINFO << "Scaling background load by " << bgfactor << ".\n" << endi;
   int i;
-  for (i=0; i<count; i++) {
+  for (i=0; i<n_pes; i++) {
     processorArray[i].Id = i;
     processorArray[i].backgroundLoad = bgfactor * stats[i].bg_walltime;
   }
@@ -428,7 +442,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   double bg_weight = 0.7;
 
   int i;
-  for (i=0; i<count; i++) {
+  for (i=0; i<n_pes; i++) {
     processorArray[i].Id = i;
     if (patchMap->numPatchesOnNode(i) > 0)
       processorArray[i].backgroundLoad = bg_weight * stats->procs[i].bg_walltime;
@@ -443,7 +457,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
   if(simParams->PMEOn) {
     double bgfactor = 1.0 + 1.0 * CkNumPes()/1000.0;
     if ( bgfactor > 2.0 ) bgfactor = 2.0;
-    for (i=0; i<count; i++) {
+    for (i=0; i<n_pes; i++) {
       // CkPrintf("BG[%d] =  %5.5lf,", i, processorArray[i].backgroundLoad);
       if(isPmeProcessor(i)) {
 	processorArray[i].backgroundLoad *= bgfactor;
@@ -460,17 +474,17 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
   // if all pes are Pme, disable this flag
   if (pmeOn && unLoadPme) {
-    for (i=0; i<count; i++) {
+    for (i=0; i<n_pes; i++) {
       if (!isPmeProcessor(i))  break;
     }
-    if (i==count) {
+    if (i == n_pes) {
       iout << iINFO << "Turned off unLoadPme flag!\n"  << endi;
       unLoadPme = 0;
     }
   }
   
   if (pmeOn && unLoadPme) {
-    for (i=0; i<count; i++) {
+    for (i=0; i<n_pes; i++) {
       if ((pmeBarrier && i==0) || isPmeProcessor(i)) 
 	processorArray[i].available = CmiFalse;
     }
@@ -534,9 +548,9 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 
 /* *********** this code is defunct *****************
 #if 0
-  int averageProxy = nProxies / count;
+  int averageProxy = nProxies / n_pes;
   CkPrintf("total proxies: %d, avervage: %d\n", nProxies, averageProxy);
-  for (i=0; i<count; i++) {
+  for (i=0; i<n_pes; i++) {
     // too many proxies on this node, weight the background load
     int proxies = processorArray[i].proxies.numElements();
     if (proxies > averageProxy) {
@@ -548,7 +562,7 @@ int NamdCentLB::buildData(CentralLB::LDStats* stats, int count)
 #endif
 *********** end of defunct code *********** */
 
-  for (i=0; i<count; i++) {
+  for (i=0; i<n_pes; i++) {
     processorArray[i].load = processorArray[i].backgroundLoad + processorArray[i].computeLoad;
   }
   stats->clear();

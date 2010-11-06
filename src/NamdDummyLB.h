@@ -25,7 +25,11 @@ class NamdDummyLB : public CentralLB {
 public:
   NamdDummyLB();
   NamdDummyLB(CkMigrateMessage *);
-  void work(LDStats* stats,int count);
+#if CHARM_VERSION > 60301
+  void work(LDStats* stats);
+#else
+  void work(LDStats* stats, int n_pes);
+#endif
 
 private:
   CmiBool QueryBalanceNow(int step);

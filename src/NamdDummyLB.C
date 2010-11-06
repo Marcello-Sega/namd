@@ -39,6 +39,11 @@ CmiBool NamdDummyLB::QueryDumpData() {
 }
 
 // Dummy work function
-void NamdDummyLB::work(LDStats* stats,int count) {
+
+#if CHARM_VERSION > 60301
+void NamdDummyLB::work(LDStats* stats) {
+#else
+void NamdDummyLB::work(LDStats* stats, int n_pes) {
+#endif
   // CkPrintf("[%d] NamdDummyLB At WORK\n",CkMyPe());
 }

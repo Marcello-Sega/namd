@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.h,v $
- * $Author: emeneses $
- * $Date: 2010/03/06 23:24:36 $
- * $Revision: 1.13 $
+ * $Author: bhatele $
+ * $Date: 2010/11/06 23:20:29 $
+ * $Revision: 1.14 $
  *****************************************************************************/
 
 /** \file NamdCentLB.h
@@ -54,12 +54,16 @@ class NamdCentLB : public CentralLB {
 public:
   NamdCentLB();
   NamdCentLB(CkMigrateMessage *);
-  CLBMigrateMsg* Strategy(CentralLB::LDStats* stats, int count);
+#if CHARM_VERSION > 60301
+  CLBMigrateMsg* Strategy(LDStats* stats);
+#else
+  CLBMigrateMsg* Strategy(LDStats* stats, int n_pes);
+#endif
 
 private:
   CmiBool QueryBalanceNow(int step);
   CmiBool QueryDumpData();
-  int buildData(CentralLB::LDStats* stats, int count);
+  int buildData(LDStats* stats);
   int requiredProxies(PatchID id, int neighborNodes[]);
 #if USE_TOPOMAP 
   int requiredProxiesOnProcGrid(PatchID id, int neighborNodes[]);

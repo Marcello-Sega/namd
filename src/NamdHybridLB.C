@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: gzheng $
- * $Date: 2010/03/18 19:48:07 $
- * $Revision: 1.15 $
+ * $Author: bhatele $
+ * $Date: 2010/11/06 23:20:29 $
+ * $Revision: 1.16 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -88,7 +88,7 @@ CmiBool NamdHybridLB::QueryDumpData() {
  *  Note: now, it is just calling the Strategy, but eventually will have
  *  its own code.
  */
-LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats,int count){
+LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats){
   CkPrintf("[%d] Using Vector Strategy to balance the load\n",CkMyPe());
   LBVectorMigrateMsg* msg = new(0,0) LBVectorMigrateMsg;
   msg->n_moves = 0;
@@ -100,22 +100,35 @@ LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats,int count){
 /*
  * Runs the load balancing strategy
  */
-CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int count){
+#if CHARM_VERSION > 60301
+CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats) {
+#else
+CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes) {
+#endif
   	// CkPrintf("[%d] NamdHybridLB at Strategy\n",CkMyPe());
 	
 	// calling the centralLB for level 1		
 	if(currentLevel == 1){
 		LevelData *lData = levelData[currentLevel];
 		CLBMigrateMsg *msg, *newMsg;
-		msg = GrpLevelStrategy(stats, count);
+	     #if CHARM_VERSION > 60301
+		msg = GrpLevelStrategy(stats);
+	     #else
+		msg = GrpLevelStrategy(stats, n_pes);
+	     #endif
 
 		// creating a new message to send to its parent
 		newMsg = (LBMigrateMsg *)CkCopyMsg((void **)&msg);
 		thisProxy[0].UpdateComputeMap(newMsg);
 		return msg;
 	}else{
-		dummyLB->work(stats,count);	
-		return createMigrateMsg(stats,count);
+	     #if CHARM_VERSION > 60301
+		dummyLB->work(stats);
+		return createMigrateMsg(stats);
+	     #else
+		dummyLB->work(stats, n_pes);
+		return createMigrateMsg(stats, n_pes);
+	     #endif
 	}
 }
 
@@ -160,8 +173,13 @@ void NamdHybridLB::UpdateComputeMap(CLBMigrateMsg *msg){
  * This function implements a strategy similar to the one used in the 
  * centralized case in NamdCentLB.
  */
-CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
-  int numProcessors = count;	// number of processors at group level
+#if CHARM_VERSION > 60301
+CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
+  int numProcessors = stats->n_pes;	// number of processors at group level
+#else
+CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
+  int numProcessors = stats->count;	// number of processors at group level
+#endif
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
   const int numComputes = computeMap->numComputes();
@@ -174,7 +192,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
   if ( ! computeArray ) computeArray = new computeInfo[numGroupComputes];
   if ( ! from_procs ) from_procs = new int[numGroupComputes];
 
-  int nMoveableComputes = buildData(stats, count);
+  int nMoveableComputes = buildData(stats);
   CmiAssert(nMoveableComputes <= numGroupComputes);
 
 
@@ -274,7 +292,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
       migrateMe->obj = computeArray[i].handle;
       //migrateMe->from_pe = computeArray[i].oldProcessor;
       int frompe = from_procs[i];
-      if (frompe == count)
+      if (frompe == numProcessors)
         frompe = -1;
       else
         frompe = frompe + stats->procs[0].pe;
@@ -299,7 +317,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int count) {
 
   LBMigrateMsg* msg;
 #if CHARM_VERSION > 60300
-  msg = createMigrateMsg(migrateInfo, count);
+  msg = createMigrateMsg(migrateInfo, numProcessors);
 #else
   CmiAbort("NamdHybridLB is not supported, please install a newer version of charm.");
 #endif
@@ -392,7 +410,13 @@ void NamdHybridLB::dumpDataASCII(char *file, int numProcessors,
 /**
  * @brief Builds the data structures required for the load balancing strategies in NAMD.
  */ 
-int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
+int NamdHybridLB::buildData(LDStats* stats) {
+#if CHARM_VERSION > 60301
+  int n_pes = stats->n_pes;
+#else
+  int n_pes = stats->count;
+#endif
+
   PatchMap* patchMap = PatchMap::Object();
   ComputeMap* computeMap = ComputeMap::Object();
   const SimParameters* simParams = Node::Object()->simParameters;
@@ -408,7 +432,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 
   // traversing the list of processors and getting their load information
   int i, pe_no;
-  for (i=0; i<count; ++i) {
+  for (i=0; i<n_pes; ++i) {
     pe_no = stats->procs[i].pe;
 
     // BACKUP processorArray[i].Id = i; 
@@ -435,17 +459,17 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 
   // if all pes are Pme, disable this flag
   if (pmeOn && unLoadPme) {
-    for (i=0; i<count; i++) {
+    for (i=0; i<n_pes; i++) {
       if(!isPmeProcessor(stats->procs[i].pe))  break;
     }
-    if (i == count) {
+    if (i == n_pes) {
       iout << iINFO << "Turned off unLoadPme flag!\n"  << endi;
       unLoadPme = 0;
     }
   }
 
   if (pmeOn && unLoadPme) {
-    for (i=0; i<count; i++) {
+    for (i=0; i<n_pes; i++) {
       if ((pmeBarrier && i==0) || isPmeProcessor(stats->procs[i].pe)) 
 	processorArray[i].available = CmiFalse;
     }
@@ -482,7 +506,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
         	nProxies += numProxies;
 
 		for (int k=0; k<numProxies; k++) {
-			if( (neighborNodes[k] >= stats->procs[0].pe) && (neighborNodes[k] <= stats->procs[count-1].pe) ){
+			if( (neighborNodes[k] >= stats->procs[0].pe) && (neighborNodes[k] <= stats->procs[n_pes-1].pe) ){
 				index = neighborNodes[k] - stats->procs[0].pe;
   				//BACKUP processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
   				processorArray[index].proxies.insert(&patchArray[pid]);
@@ -502,8 +526,8 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
 			else p1 = p0;
 			computeArray[nMoveableComputes].Id = cid;
 			//BACKUP computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
-			if (stats->from_proc[j] >= count) {  // from outside
-			  computeArray[nMoveableComputes].oldProcessor = CrnRand()%count + stats->procs[0].pe;     // random
+			if (stats->from_proc[j] >= n_pes) {  // from outside
+			  computeArray[nMoveableComputes].oldProcessor = CrnRand()%n_pes + stats->procs[0].pe;     // random
 			}
 			else {
 			  computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j] + stats->procs[0].pe;
@@ -525,7 +549,7 @@ int NamdHybridLB::buildData(CentralLB::LDStats* stats, int count){
       	}
 	}
 
-  	for (i=0; i<count; i++) {
+  	for (i=0; i<n_pes; i++) {
 	  processorArray[i].load = processorArray[i].backgroundLoad + processorArray[i].computeLoad;
   	}
   	stats->clear();
