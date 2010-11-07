@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: bhatele $
- * $Date: 2010/11/06 23:20:29 $
- * $Revision: 1.16 $
+ * $Author: gzheng $
+ * $Date: 2010/11/07 07:08:00 $
+ * $Revision: 1.17 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -100,11 +100,7 @@ LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats){
 /*
  * Runs the load balancing strategy
  */
-#if CHARM_VERSION > 60301
-CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats) {
-#else
 CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes) {
-#endif
   	// CkPrintf("[%d] NamdHybridLB at Strategy\n",CkMyPe());
 	
 	// calling the centralLB for level 1		
@@ -175,7 +171,7 @@ void NamdHybridLB::UpdateComputeMap(CLBMigrateMsg *msg){
  */
 #if CHARM_VERSION > 60301
 CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats) {
-  int numProcessors = stats->n_pes;	// number of processors at group level
+  int numProcessors = stats->nprocs();	// number of processors at group level
 #else
 CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
   int numProcessors = stats->count;	// number of processors at group level
@@ -412,7 +408,7 @@ void NamdHybridLB::dumpDataASCII(char *file, int numProcessors,
  */ 
 int NamdHybridLB::buildData(LDStats* stats) {
 #if CHARM_VERSION > 60301
-  int n_pes = stats->n_pes;
+  int n_pes = stats->nprocs();
 #else
   int n_pes = stats->count;
 #endif

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
- * $Author: bhatele $
- * $Date: 2010/11/06 23:20:29 $
- * $Revision: 1.6 $
+ * $Author: gzheng $
+ * $Date: 2010/11/07 07:08:00 $
+ * $Revision: 1.7 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -51,11 +51,10 @@ private:
   CmiBool QueryBalanceNow(int step);
   CmiBool QueryDumpData();
 //  LBVectorMigrateMsg* VectorStrategy(LDStats* stats);
+  CLBMigrateMsg* Strategy(LDStats* stats, int n_pes);
 #if CHARM_VERSION > 60301
-  LBMigrateMsg* Strategy(LDStats* stats);
   LBMigrateMsg* GrpLevelStrategy(LDStats* stats);
 #else
-  LBMigrateMsg* Strategy(LDStats* stats, int n_pes);
   LBMigrateMsg* GrpLevelStrategy(LDStats* stats, int n_pes);
 #endif
   

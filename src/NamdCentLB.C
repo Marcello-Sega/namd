@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: bhatele $
- * $Date: 2010/11/06 23:20:29 $
- * $Revision: 1.98 $
+ * $Author: gzheng $
+ * $Date: 2010/11/07 07:08:00 $
+ * $Revision: 1.99 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -84,19 +84,15 @@ CmiBool NamdCentLB::QueryDumpData()
   return CmiFalse;
 }
 
-#if CHARM_VERSION > 60301
-CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats)
-#else
-CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
-#endif
+CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int nprocs)  //ignore nprocs
 {
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
   //  CmiTimer(),CmiWallTimer());
 
 #if CHARM_VERSION > 60301
-  int numProcessors = stats->n_pes;
+  int numProcessors = stats->nprocs();
 #else
-  int numProcessors = n_pes;
+  int numProcessors = nprocs;
 #endif
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
@@ -395,7 +391,7 @@ extern int isPmeProcessor(int);
 int NamdCentLB::buildData(LDStats* stats)
 {
 #if CHARM_VERSION > 60301
-  int n_pes = stats->n_pes;
+  int n_pes = stats->nprocs();
 #else
   int n_pes = stats->count;
 #endif
