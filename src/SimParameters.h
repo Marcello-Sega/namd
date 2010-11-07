@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2010/10/24 04:04:48 $
- * $Revision: 1.1168 $
+ * $Author: gzheng $
+ * $Date: 2010/11/07 07:10:57 $
+ * $Revision: 1.1169 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -62,7 +62,7 @@ typedef int  MTSChoices;
 #define LDBAL_CENTRALIZED	1	// default
 #define LDBAL_HYBRID		2
 
-#define LDBSTRAT_ASB		10	// default
+#define LDBSTRAT_DEFAULT	10	// default
 #define LDBSTRAT_COMPREHENSIVE	11
 #define LDBSTRAT_REFINEONLY	12
 #define LDBSTRAT_OLD		13

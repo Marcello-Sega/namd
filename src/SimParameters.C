@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: bhatele $
- * $Date: 2010/10/31 04:40:46 $
- * $Revision: 1.1312 $
+ * $Author: gzheng $
+ * $Date: 2010/11/07 07:10:57 $
+ * $Revision: 1.1313 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2450,7 +2450,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      else
        NAMD_die("Unknown ldbStrategy selected");
    } else {
-     ldbStrategy = LDBSTRAT_ASB;
+     ldbStrategy = LDBSTRAT_DEFAULT;
    }
 
   if (!opts.defined("ldbPeriod")) {
@@ -2950,8 +2950,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        iout << iINFO << "LOAD BALANCER  Hybrid\n" << endi;
      }
 
-     if (ldbStrategy == LDBSTRAT_ASB) {
-       iout << iINFO << "LOAD BALANCING STRATEGY  New Load Balancers -- ASB\n";
+     if (ldbStrategy == LDBSTRAT_DEFAULT) {
+       iout << iINFO << "LOAD BALANCING STRATEGY  New Load Balancers -- DEFAULT\n";
      } else if (ldbStrategy == LDBSTRAT_REFINEONLY) {
        iout << iINFO << "LOAD BALANCING STRATEGY  Refinement Only\n";
      } else if (ldbStrategy == LDBSTRAT_COMPREHENSIVE) {
