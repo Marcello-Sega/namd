@@ -632,8 +632,6 @@ void ComputeNonbondedUtil :: NAME
   NBWORKARRAY(plint,pairlist,arraysize);
   NBWORKARRAY(plint,pairlist2,arraysize);
   ALCH(
-  NBWORKARRAY(plint,pairlistnAlch,arraysize);
-  NBWORKARRAY(plint,pairlistnA0,arraysize);
   NBWORKARRAY(plint,pairlistnA1,arraysize);
   NBWORKARRAY(plint,pairlistxA1,arraysize);
   NBWORKARRAY(plint,pairlistmA1,arraysize);
@@ -749,11 +747,11 @@ void ComputeNonbondedUtil :: NAME
     if ( p_i.hydrogenGroupSize ) {
       if ( groupCount ) {  // skip this group
         --groupCount;
-        i += p_i.hydrogenGroupSize - 1;
+        i += p_i.hydrogenGroupSize;
 #ifdef ARCH_POWERPC
-        __dcbt((void *) &(p_0[i+1]));
+        __dcbt((void *) &(p_0[i]));
 #endif
-        PAIR(i++;)
+        SELF(--i;)
         continue;
       } else {  // compute this group
         groupCount = maxPart;
@@ -1078,12 +1076,11 @@ void ComputeNonbondedUtil :: NAME
     // make sure padded element on pairlist points to real data
     if ( pairlistindex ) {
        pairlist[pairlistindex] = pairlist[pairlistindex-1];
-    } /* PAIR( else {  // skip empty loops if no pairs were found
-       int nbgs = p_i.nonbondedGroupSize;
-       i += nbgs - 1;
+    } PAIR( else {  // skip empty loops if no pairs were found
+       i += p_i.nonbondedGroupSize;
        continue;
-    } ) */
-  } // if i is hydrogen group parent
+    } )
+  } // if i is nonbonded group parent
   SELF
     (
     // self-comparisions require list to be incremented
@@ -1094,19 +1091,15 @@ void ComputeNonbondedUtil :: NAME
     const int atomfixed = ( fixedAtomsOn && pExt_i.atomFixed );
 
     register plint *pli = pairlist2;
-#if 1 ALCH(-1)
-    plint *pairlistn = pairlists.newlist(j_upper + 5 + 5);
-#else
-    plint *pairlistn = pairlistnAlch;
-#endif
-    register plint *plin = pairlistn;
 
+    plint *pairlistn = pairlists.newlist(j_upper + 5 + 5 ALCH( + 20 ));
+    register plint *plin = pairlistn;
 
     INT(
     if ( pairInteractionOn ) {
       const int ifep_type = p_i.partition;
       if (pairInteractionSelf) {
-        if (ifep_type != 1) continue;
+        if (ifep_type != 1) { PAIR(++i;) continue; }
         for (int k=pairlistoffset; k<pairlistindex; k++) {
           j = pairlist[k];
           const int jfep_type = p_1[j].partition;
@@ -1116,7 +1109,7 @@ void ComputeNonbondedUtil :: NAME
           }
         }
       } else {
-        if (ifep_type != 1 && ifep_type != 2) continue;
+        if (ifep_type != 1 && ifep_type != 2) { PAIR(++i;) continue; }
         for (int k=pairlistoffset; k<pairlistindex; k++) {
           j = pairlist[k];
           const int jfep_type = p_1[j].partition;
@@ -1332,17 +1325,15 @@ void ComputeNonbondedUtil :: NAME
     }
 
     PAIR(
-    if ( pli != pairlist2 || plin != pairlistn ) {
-      pairlists.setIndexValue(i); 
-    } else {
+    if ( plin == pairlistn && pli == pairlist2 ) {
       ++i;
       continue;
     }
+    pairlists.setIndexValue(i); 
     )
 
     plint *plix = pairlistx;
     plint *plim = pairlistm;
-    plint *pln = pairlistn;
     ALCH(
     plint *plinA1 = pairlistnA1;
     plint *plixA1 = pairlistxA1;
@@ -1376,34 +1367,23 @@ void ComputeNonbondedUtil :: NAME
       }
     }
 
-
-#if 1 ALCH(-1)
-    npairn = plin - pln;
-    pairlistn_save = pln;
-    pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
-    pairlists.newsize(plin - pairlistn + 1);
-#else
-    plint *plinA0 = pairlistnA0;
-    int unsortedNpairn = plin - pln;
+#if 0 ALCH(+1)
+    int unsortedNpairn = plin - pairlistn;
+    plin = pairlistn;
     for ( k=0; k<unsortedNpairn; ++k ) {
-      int j = pln[k];
+      int j = pairlistn[k];
       switch(pswitchTable[p_i_partition + 3*(p_1[j].partition)]) {
-        case 0:  *(plinA0++) = j; break;
+        case 0:  *(plin++) = j; break;
         case 1:  *(plinA1++) = j; break;
         case 2:  *(plinA2++) = j; break;
       }
     }
-    
-    npairn = plinA0 - pairlistnA0;
-    // FB preallocation (incl extra for overhead) seems to be necessary
-    pairlistn_save = pairlists.newlist(j_upper + 30);
-    for ( k=0; k<npairn; ++k ) {
-      pairlistn_save[k] = pairlistnA0[k];
-    }
-    pairlistn_save[k] = k ? pairlistn_save[k-1] : -1;
-    pairlists.newsize(npairn + 1);
-
 #endif
+
+    npairn = plin - pairlistn;
+    pairlistn_save = pairlistn;
+    pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
+    pairlists.newsize(npairn + 1);
 
     npairx = plix - pairlistx;
     pairlistx_save = pairlists.newlist(npairx + 1);
