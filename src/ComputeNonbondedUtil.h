@@ -56,23 +56,12 @@ public:
     *list = &data[curpos+1];
     curpos += ( *list_size = data[curpos] ) + 1;
   }
-  void *getIndexPointer( plint **list)
-  {
-      *list = &data[curpos];
-      curpos++;
-  }
- 
-  void setIndexValue(int i)
-  {
-      data[curpos-1] = i;
-  }
-  
-  void addIndex()
-  {
-      int reqnewsize = curpos + + 1;
-      int newsize = size;
-      while ( newsize < reqnewsize ) { newsize += newsize >> 1; }
-      if ( newsize > size ) {
+
+  void addIndex() {
+    int reqnewsize = curpos + 1;
+    int newsize = size;
+    while ( newsize < reqnewsize ) { newsize += newsize >> 1; }
+    if ( newsize > size ) {
       plint *newdata = new plint[newsize];
       CmiMemcpy(newdata,data,curpos*sizeof(plint));
       delete [] data;
@@ -80,6 +69,13 @@ public:
       size = newsize;
     }
     curpos++;
+  }
+  void setIndexValue(plint i) {
+    data[curpos-1] = i;
+  }
+
+  plint getIndexValue() {
+    return data[curpos++];
   }
 
 };

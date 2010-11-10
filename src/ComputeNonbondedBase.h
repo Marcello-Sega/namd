@@ -688,15 +688,12 @@ void ComputeNonbondedUtil :: NAME
 
     #endif // NAMD_ComputeNonbonded_SortAtoms != 0
 
-    *(pairlists.newlist(1)) = i_upper;
-    pairlists.newsize(1);
+    pairlists.addIndex();
+    pairlists.setIndexValue(i_upper);
 
   } else { // if ( savePairlists || ! usePairlists )
 
-    plint *i_upper_check;
-    int i_upper_check_count;
-    pairlists.nextlist(&i_upper_check,&i_upper_check_count);
-    if ( i_upper_check[0] != i_upper )
+    if ( pairlists.getIndexValue() != i_upper )
       NAMD_bug("pairlist i_upper mismatch!");
 
   } // if ( savePairlists || ! usePairlists )
@@ -735,18 +732,14 @@ void ComputeNonbondedUtil :: NAME
 
   int maxPart = params->numParts - 1;
   int groupCount = params->minPart;
-  plint *i_index;
   PAIR( 
-      if ( savePairlists || ! usePairlists ) 
-      { 
-      i=0; 
+    if ( savePairlists || ! usePairlists ) { 
+      i = 0;
       pairlists.addIndex(); 
-      }else 
-      {
-      pairlists.getIndexPointer(&i_index);
-      i = *i_index;
-      }
-      )
+    } else {
+      i = pairlists.getIndexValue();
+    }
+  )
    PAIR(for ( ; i < (i_upper);)) SELF(for ( i=0; i < (i_upper- 1);i++))
     {
     const CompAtom &p_i = p_0[i];
@@ -783,8 +776,6 @@ void ComputeNonbondedUtil :: NAME
   SELF ( if ( p_i.hydrogenGroupSize ) j_hgroup = i + p_i.hydrogenGroupSize; )
 
   if ( savePairlists || ! usePairlists ) {
-
-    //if ( ! savePairlists ) pairlists.reset();  // limit space usage
 
     #ifdef MEM_OPT_VERSION
     const ExclusionCheck *exclcheck = mol->get_excl_check_for_idx(pExt_i.exclId);        
@@ -1339,8 +1330,15 @@ void ComputeNonbondedUtil :: NAME
 	}
       }
     }
-    int npair2 = pli - pairlist2;
-    if ( npair2 ) pairlist2[npair2] = pairlist2[npair2-1];
+
+    PAIR(
+    if ( pli != pairlist2 || plin != pairlistn ) {
+      pairlists.setIndexValue(i); 
+    } else {
+      ++i;
+      continue;
+    }
+    )
 
     plint *plix = pairlistx;
     plint *plim = pairlistm;
@@ -1353,9 +1351,12 @@ void ComputeNonbondedUtil :: NAME
     plint *plixA2 = pairlistxA2;
     plint *plimA2 = pairlistmA2;
     )
-    int k=0;
+
+    int npair2 = pli - pairlist2;
+    // if ( npair2 ) pairlist2[npair2] = pairlist2[npair2-1];
+    int k;
     // removed code for implicit exclusions within hydrogen groups -JCP
-    for (; k < npair2; ++k ) {
+    for (k=0; k < npair2; ++k ) {
       int j = pairlist2[k];
       int atom2 = pExt_1[j].id;
       int excl_flag = excl_flags[atom2];
@@ -1374,8 +1375,13 @@ void ComputeNonbondedUtil :: NAME
       )
       }
     }
+
+
 #if 1 ALCH(-1)
     npairn = plin - pln;
+    pairlistn_save = pln;
+    pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
+    pairlists.newsize(plin - pairlistn + 1);
 #else
     plint *plinA0 = pairlistnA0;
     int unsortedNpairn = plin - pln;
@@ -1389,52 +1395,33 @@ void ComputeNonbondedUtil :: NAME
     }
     
     npairn = plinA0 - pairlistnA0;
-#endif
-    npairx = plix - pairlistx;
-    npairm = plim - pairlistm;
-
-    PAIR(if(npairn!= 0 || npairx!= 0 ||npairm != 0))
-    {
-        PAIR(
-            pairlists.setIndexValue(i); 
-            )
-#if 1 ALCH(-1)
-        pairlistn_save = pln;
-        pairlistn_save[npairn] = npairn ? pairlistn_save[npairn-1] : -1;
-        pairlists.newsize(plin - pairlistn + 1);
-#else
     // FB preallocation (incl extra for overhead) seems to be necessary
-         pairlistn_save = pairlists.newlist(j_upper + 30);
-         for ( k=0; k<npairn; ++k ) {
-             pairlistn_save[k] = pairlistnA0[k];
-         }
-         pairlistn_save[k] = k ? pairlistn_save[k-1] : -1;
-         pairlists.newsize(npairn + 1);
+    pairlistn_save = pairlists.newlist(j_upper + 30);
+    for ( k=0; k<npairn; ++k ) {
+      pairlistn_save[k] = pairlistnA0[k];
+    }
+    pairlistn_save[k] = k ? pairlistn_save[k-1] : -1;
+    pairlists.newsize(npairn + 1);
+
 #endif
 
-         pairlistx_save = pairlists.newlist(npairx + 1);
-         for ( k=0; k<npairx; ++k ) {
-             pairlistx_save[k] = pairlistx[k];
-         }
-         pairlistx_save[k] = k ? pairlistx_save[k-1] : -1;
-         pairlists.newsize(npairx + 1);
+    npairx = plix - pairlistx;
+    pairlistx_save = pairlists.newlist(npairx + 1);
+    for ( k=0; k<npairx; ++k ) {
+      pairlistx_save[k] = pairlistx[k];
+    }
+    pairlistx_save[k] = k ? pairlistx_save[k-1] : -1;
+    pairlists.newsize(npairx + 1);
 
-         pairlistm_save = pairlists.newlist(npairm + 1);
-         for ( k=0; k<npairm; ++k ) {
-             pairlistm_save[k] = pairlistm[k];
-         }
-         pairlistm_save[k] = k ? pairlistm_save[k-1] : -1;
-         pairlists.newsize(npairm + 1);
-         PAIR( 
-              pairlists.addIndex();
-             )
-    } PAIR(else 
-        {
-          i++;
-          continue;
-        }
-        )
-    
+    npairm = plim - pairlistm;
+    pairlistm_save = pairlists.newlist(npairm + 1);
+    for ( k=0; k<npairm; ++k ) {
+      pairlistm_save[k] = pairlistm[k];
+    }
+    pairlistm_save[k] = k ? pairlistm_save[k-1] : -1;
+    pairlists.newsize(npairm + 1);
+
+
 #if 0 ALCH(+1)
 #define PAIRLISTFROMARRAY(NPAIRS,PL1,PL2,PLSAVE) \
 { \
@@ -1457,6 +1444,8 @@ void ComputeNonbondedUtil :: NAME
 
 #endif
     
+    if ( ! savePairlists ) pairlists.reset();  // limit space usage
+    PAIR( pairlists.addIndex(); )
     
 	// PAIR( iout << i << " " << i_upper << " save\n" << endi;)
   } else { // if ( savePairlists || ! usePairlists )
@@ -1800,26 +1789,19 @@ void ComputeNonbondedUtil :: NAME
     FULL( fullf_0[i].z += fullf_i_z; )
 #endif
 PAIR(
-    if ( savePairlists || ! usePairlists )
-    {
-    i++;
-    }else
-    {
-    pairlists.getIndexPointer(&i_index);
-    i = *i_index;
+    if ( savePairlists || ! usePairlists ) {
+      i++;
+    } else {
+      i = pairlists.getIndexValue();
     }
-    )
+)
 
 	// PAIR( iout << i << " " << i_upper << " end\n" << endi;)
   } // for i
 
   // PAIR(iout << "++++++++\n" << endi;)
-PAIR(
-    if ( savePairlists || ! usePairlists )
-      {
-      pairlists.setIndexValue(i); 
-      }
-      )
+  PAIR( if ( savePairlists ) { pairlists.setIndexValue(i); } )
+
 #ifdef f_1
 #undef f_1
 #endif
