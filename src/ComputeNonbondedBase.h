@@ -1387,7 +1387,7 @@ void ComputeNonbondedUtil :: NAME
     pairlists.newsize(npairn + 1);
 
     npairx = plix - pairlistx;
-    pairlistx_save = pairlists.newlist(npairx + 1);
+    pairlistx_save = pairlists.newlist();
     for ( k=0; k<npairx; ++k ) {
       pairlistx_save[k] = pairlistx[k];
     }
@@ -1395,7 +1395,7 @@ void ComputeNonbondedUtil :: NAME
     pairlists.newsize(npairx + 1);
 
     npairm = plim - pairlistm;
-    pairlistm_save = pairlists.newlist(npairm + 1);
+    pairlistm_save = pairlists.newlist();
     for ( k=0; k<npairm; ++k ) {
       pairlistm_save[k] = pairlistm[k];
     }
@@ -1407,7 +1407,7 @@ void ComputeNonbondedUtil :: NAME
 #define PAIRLISTFROMARRAY(NPAIRS,PL1,PL2,PLSAVE) \
 { \
   (NPAIRS) = (PL2) - (PL1); \
-  (PLSAVE) = pairlists.newlist((NPAIRS) + 1); \
+  (PLSAVE) = pairlists.newlist(); \
   for ( k=0; k<(NPAIRS); ++k ) { \
     (PLSAVE)[k] = (PL1)[k]; \
   } \

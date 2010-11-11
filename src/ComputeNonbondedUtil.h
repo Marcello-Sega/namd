@@ -47,6 +47,12 @@ public:
     }
     return &data[curpos+1];
   }
+
+  // don't specify size if previous allocation should have extra space
+  plint *newlist() {  // get a new list assuming already allocated
+    return &data[curpos+1];
+  }
+
   void newsize(int list_size) {  // set the size of the last list gotten
     data[curpos] = list_size;
     curpos += list_size + 1;
@@ -57,20 +63,10 @@ public:
     curpos += ( *list_size = data[curpos] ) + 1;
   }
 
-  void addIndex() {
-    int reqnewsize = curpos + 1;
-    int newsize = size;
-    while ( newsize < reqnewsize ) { newsize += newsize >> 1; }
-    if ( newsize > size ) {
-      plint *newdata = new plint[newsize];
-      CmiMemcpy(newdata,data,curpos*sizeof(plint));
-      delete [] data;
-      data = newdata;
-      size = newsize;
-    }
+  void addIndex() {  // assume space for index already allocated
     curpos++;
   }
-  void setIndexValue(plint i) {
+  void setIndexValue(plint i) {  // assume no newsize since addIndex
     data[curpos-1] = i;
   }
 
