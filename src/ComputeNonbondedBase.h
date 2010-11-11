@@ -1343,9 +1343,23 @@ void ComputeNonbondedUtil :: NAME
     plint *plimA2 = pairlistmA2;
     )
 
+    int k;
+
+#if 0 ALCH(+1)
+    int unsortedNpairn = plin - pairlistn;
+    plin = pairlistn;
+    for ( k=0; k<unsortedNpairn; ++k ) {
+      int j = pairlistn[k];
+      switch(pswitchTable[p_i_partition + 3*(p_1[j].partition)]) {
+        case 0:  *(plin++) = j; break;
+        case 1:  *(plinA1++) = j; break;
+        case 2:  *(plinA2++) = j; break;
+      }
+    }
+#endif
+
     int npair2 = pli - pairlist2;
     // if ( npair2 ) pairlist2[npair2] = pairlist2[npair2-1];
-    int k;
     // removed code for implicit exclusions within hydrogen groups -JCP
     for (k=0; k < npair2; ++k ) {
       int j = pairlist2[k];
@@ -1366,19 +1380,6 @@ void ComputeNonbondedUtil :: NAME
       )
       }
     }
-
-#if 0 ALCH(+1)
-    int unsortedNpairn = plin - pairlistn;
-    plin = pairlistn;
-    for ( k=0; k<unsortedNpairn; ++k ) {
-      int j = pairlistn[k];
-      switch(pswitchTable[p_i_partition + 3*(p_1[j].partition)]) {
-        case 0:  *(plin++) = j; break;
-        case 1:  *(plinA1++) = j; break;
-        case 2:  *(plinA2++) = j; break;
-      }
-    }
-#endif
 
     npairn = plin - pairlistn;
     pairlistn_save = pairlistn;
