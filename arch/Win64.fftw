@@ -1,5 +1,5 @@
 
-FFTDIR = $(HOME)/fftw-win32
+FFTDIR = $(HOME)/fftw-win64
 FFTINCL = -I$(FFTDIR)/include
 FFTLIB = -L$(FFTDIR)/lib -lsfftw -lsrfftw
 FFTFLAGS = -DNAMD_FFTW
