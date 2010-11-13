@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: gzheng $
- * $Date: 2010/11/07 07:10:57 $
- * $Revision: 1.1313 $
+ * $Author: chaomei2 $
+ * $Date: 2010/11/13 00:36:17 $
+ * $Revision: 1.1314 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -485,7 +485,7 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
 //   opts.require("main", "structure", "initial PSF structure file",
 //    PARSE_STRING);
    opts.optional("main", "structure", "initial PSF structure file",
-    PARSE_STRING);
+    PARSE_STRING);   
 
 //   opts.require("main", "parameters",
 //"CHARMm 19 or CHARMm 22 compatable force field file (multiple "
@@ -507,14 +507,17 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
 
    opts.optional("main", "auxFile", "Filename for data stream output",
      auxFilename);
-////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Parallel Input Change
-//// Osman Sarood
-   opts.optional("main", "numinputprocs", "Number of pes to use for parallel input"
-    "timesteps", &numinputprocs, 1);
-  opts.range("numinputprocs", NOT_NEGATIVE);
-////////////////////////////////////////////////////////////////////////////////////////////////////
 
+   opts.optional("main", "numinputprocs", "Number of pes to use for parallel input", 
+                 &numinputprocs, 0);
+   opts.range("numinputprocs", NOT_NEGATIVE);
+
+   opts.optional("main", "numoutputprocs", "Number of pes to use for parallel output", 
+                 &numoutputprocs, 0);
+   opts.range("numoutputprocs", NOT_NEGATIVE);
+   opts.optional("main", "numoutputwriters", "Number of output processors that simultaneously write to an output file", 
+                 &numoutputwrts, 1);
+   opts.range("numoutputwriters", NOT_NEGATIVE);
 
    opts.optional("main", "DCDfreq", "Frequency of DCD trajectory output, in "
     "timesteps", &dcdFrequency, 0);
@@ -1071,6 +1074,8 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.optional("fixedatoms", "fixedAtomsCol", "Column in the fixedAtomsFile "
      "containing the flags (nonzero means fixed);\n"
      "default is 'O'", PARSE_STRING);
+   opts.optional("fixedatoms", "fixedAtomListFile", "the text input file for fixed atoms "
+                 "used for parallel input IO", PARSE_STRING);
 
    ////  Harmonic Constraints
    opts.optionalB("main", "constraints", "Are harmonic constraints active?",
@@ -1497,9 +1502,7 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optionalB("main", "genCompressedPsf", "Generate the compressed version of the psf file",
                   &genCompressedPsf, FALSE);
    opts.optionalB("main", "usePluginIO", "Use the plugin I/O to load the molecule system", 
-                  &usePluginIO, FALSE);
-   opts.optionalB("main", "shiftIOToOne", "shift I/O operation to pe one",
-     &shiftIOToOne, FALSE);
+                  &usePluginIO, FALSE);   
    opts.optional("main", "proxySendSpanningTree", "using spanning tree to send proxies",
                   &proxySendSpanningTree, -1);
    opts.optional("main", "proxyRecvSpanningTree", "using spanning tree to receive proxies",
@@ -1605,10 +1608,19 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
 }
 
+#ifdef MEM_OPT_VERSION
+//This global var is defined in mainfunc.C
+extern char *gWorkDir;
+#endif
+
 void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&cwd) {
    
    int len;    //  String length
    StringList *current; //  Pointer to config option list
+
+#ifdef MEM_OPT_VERSION
+   char *namdWorkDir = NULL;
+#endif
 
    //  Take care of cwd processing
    if (opts.defined("cwd"))
@@ -1636,6 +1648,27 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       strcat(cwd, PATHSEPSTR);
    }
 
+#ifdef MEM_OPT_VERSION
+   if(cwd!=NULL)namdWorkDir = cwd;     
+   else namdWorkDir = gWorkDir;
+   int dirlen = strlen(namdWorkDir);
+   //only support the path representation on UNIX-like platforms
+   char *tmpDir;
+   if(namdWorkDir[dirlen-1]=='/'){
+     tmpDir = new char[dirlen+1];
+     tmpDir[dirlen] = 0;
+   }else{
+     tmpDir = new char[dirlen+2];
+     tmpDir[dirlen]='/';
+     tmpDir[dirlen+1]=0;
+   } 
+   memcpy(tmpDir, namdWorkDir, dirlen);
+   namdWorkDir = tmpDir;
+ //finished recording the per atom files, free the space for gWorkDir
+   delete [] gWorkDir;
+#endif
+
+
    // Don't try to specify coordinates with pluginIO
    if ( usePluginIO && opts.defined("coordinates") ) {
      NAMD_die("Separate coordinates file not allowed with plugin IO, coordinates will be taken from structure file.");
@@ -1645,8 +1678,15 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    // and "parameters" must be specified.
    if (!amberOn && !gromacsOn) {
 #ifndef MEM_OPT_VERSION
-     if (!usePluginIO && !opts.defined("coordinates"))
+     if (!usePluginIO && !genCompressedPsf && !opts.defined("coordinates"))
        NAMD_die("coordinates not found in the configuration file!");
+#else
+     if(!usePluginIO && !opts.defined("bincoordinates")) {
+       NAMD_die("bincoordinates not found in the configuration file for the memory optimized version!");
+     }
+     if(!usePluginIO && opts.defined("coordinates")) {
+       NAMD_die("coordinates not allowed in the configuration file for the memory optimized version!");
+     }
 #endif
      if (!opts.defined("structure"))
        NAMD_die("structure not found in the configuration file!");
@@ -1659,7 +1699,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (opts.defined("coordinates") && opts.defined("ambercoor"))
      NAMD_die("Cannot specify both coordinates and ambercoor!");
 #ifndef MEM_OPT_VERSION
-   if (!opts.defined("coordinates") && !opts.defined("ambercoor")
+   if (!genCompressedPsf && !opts.defined("coordinates") && !opts.defined("ambercoor")
        && !opts.defined("grocoorfile") && !usePluginIO)
      NAMD_die("Coordinate file not found!");
 #endif
@@ -1671,6 +1711,96 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    {
       NAMD_die("Cannot specify both an initial temperature and a velocity file");
    }
+
+#ifdef MEM_OPT_VERSION
+//record the absolute file name for binAtomFile, binCoorFile and binVelFile etc.
+   binAtomFile = NULL;
+   binCoorFile = NULL;
+   binVelFile = NULL;   
+
+   char *curfile = NULL;
+   dirlen = strlen(namdWorkDir);
+   current = config->find("structure");;
+   curfile = current->data;
+   int filelen = strlen(curfile);
+   if(*curfile == '/' || *curfile=='~') {
+     //check whether it is an absolute path
+     //WARNING: Only works on Unix-like platforms!
+     //Needs to fix on Windows platform.
+     //-Chao Mei     
+     //adding 5 because of ".bin"+"\0"
+     binAtomFile = new char[filelen+5];
+     memcpy(binAtomFile, curfile, filelen);
+     memcpy(binAtomFile+filelen, ".bin", 4);
+     binAtomFile[filelen+4] = 0;
+   }else{
+     binAtomFile = new char[dirlen+filelen+5];
+     memcpy(binAtomFile, namdWorkDir, dirlen);
+     memcpy(binAtomFile+dirlen, curfile, filelen);
+     memcpy(binAtomFile+dirlen+filelen, ".bin", 4);
+     binAtomFile[dirlen+filelen+4] = 0;
+   }
+
+   current = config->find("bincoordinates");
+   curfile = current->data;
+   filelen = strlen(curfile);
+   if(*curfile == '/' || *curfile=='~') {
+     binCoorFile = new char[filelen+1];
+     memcpy(binCoorFile, curfile, filelen);
+     binCoorFile[filelen] = 0;
+   }else{
+     binCoorFile = new char[dirlen+filelen+1];
+     memcpy(binCoorFile, namdWorkDir, dirlen);
+     memcpy(binCoorFile+dirlen, curfile, filelen);
+     binCoorFile[dirlen+filelen] = 0;
+   }
+
+   if(opts.defined("binvelocities")){
+     current = config->find("binvelocities");
+     curfile = current->data;
+     filelen = strlen(curfile);
+     if(*curfile == '/' || *curfile=='~') {
+       binVelFile = new char[filelen+1];
+       memcpy(binVelFile, curfile, filelen);
+       binVelFile[filelen] = 0;
+     }else{
+       binVelFile = new char[dirlen+filelen+1];
+       memcpy(binVelFile, namdWorkDir, dirlen);
+       memcpy(binVelFile+dirlen, curfile, filelen);
+       binVelFile[dirlen+filelen] = 0;
+     }
+   }
+
+   //deal with output file name to make it absolute path for parallel output
+   //TODO: files that have names not starting with outputFilename
+   //should also get such processing, such as the name for dcd file
+   //if it is specified in the configuration file. --Chao Mei 
+   if(outputFilename[0] != '/' && outputFilename[0]!='~') {
+     filelen = strlen(outputFilename);
+     char *tmpout = new char[filelen];
+     memcpy(tmpout, outputFilename, filelen);
+     CmiAssert(filelen+dirlen <= 120); //leave 8 chars for file suffix
+     memcpy(outputFilename, namdWorkDir, dirlen);
+     memcpy(outputFilename+dirlen, tmpout, filelen);
+     outputFilename[filelen+dirlen+1] = 0;     
+     delete [] tmpout;
+   }
+   delete [] namdWorkDir;
+
+   if (opts.defined("numinputprocs")) {	
+     if(numinputprocs > CkNumPes()) {
+       iout << iWARN << "The number of input processors exceeds the total number of processors. Resetting to half of the number of total processors.\n" << endi;
+       numinputprocs = (CkNumPes()>>1)+(CkNumPes()&1);
+     }
+   }
+
+   if (opts.defined("numoutputprocs")) {	
+     if(numoutputprocs > CkNumPes()) {
+       iout << iWARN << "The number of output processors exceeds the total number of processors. Resetting to half of the number of total processors.\n" << endi;
+       numoutputprocs = (CkNumPes()>>1)+(CkNumPes()&1);
+     }
+   }
+#endif
 
    if (! opts.defined("auxFile")) {
      strcpy(auxFilename,outputFilename);
@@ -2984,9 +3114,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 #endif
      if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
      iout << endi;
-     if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";
-     iout << endi;
-     if ( shiftIOToOne ) iout << iINFO << "SHIFTING I/O OPERATION TO PROCESSOR 1\n";
+     if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";     
      iout << endi;
    }
 
@@ -4728,6 +4856,22 @@ void SimParameters::send_SimParameters(MOStream *msg)
     msg->put(tcllen,tclBCScript);
   }
 
+#ifdef MEM_OPT_VERSION
+  int filelen = strlen(binAtomFile)+1;
+  msg->put(filelen);
+  msg->put(filelen, binAtomFile);
+
+  filelen = strlen(binCoorFile)+1;
+  msg->put(filelen);
+  msg->put(filelen, binCoorFile);
+
+  if(binVelFile) {
+    filelen = strlen(binVelFile)+1;
+    msg->put(filelen);
+    msg->put(filelen, binVelFile);
+  }
+#endif
+
   mgridforcelist.pack_data(msg);
   
   msg->end();
@@ -4762,6 +4906,24 @@ void SimParameters::receive_SimParameters(MIStream *msg)
     tclBCScript = new char[tcllen];
     msg->get(tcllen,tclBCScript);
   }
+
+#ifdef MEM_OPT_VERSION
+  int filelen;
+  msg->get(filelen);
+  binAtomFile = new char[filelen];
+  msg->get(filelen, binAtomFile);
+  
+  msg->get(filelen);
+  binCoorFile = new char[filelen];
+  msg->get(filelen, binCoorFile);
+
+  if(binVelFile) {    
+    msg->get(filelen);
+    binVelFile = new char[filelen];
+    msg->get(filelen, binVelFile);
+  }
+#endif
+
 
   // The simParameters bit copy above put illegal values in the list pointers
   // So this resets everything so that unpacking will work.

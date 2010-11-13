@@ -82,6 +82,12 @@ template <class Elem> class ResizeArray {
       return (*this);
     }
 
+    // Set the initial allocation size to s with growth factor as growthFactor
+    void setParams(int s, float growthFactor) {      
+      rep->setResizeParams(s, growthFactor);
+    }
+
+
     // If array is expanded - new elements are default constructed
     // if array is reduced, removed elements have ~Elem() run
     void resize(int i) { rep->resize(i); }

@@ -61,5 +61,49 @@ public :
 						//  timestep
 };
 
+#ifdef MEM_OPT_VERSION
+class ParOutput{
+private:
+    void output_veldcdfile_master(int timestep, int n);
+    void output_veldcdfile_slave(int timestep, int fID, int tID, Vector *vecs);
+    void output_restart_velocities_master(int timestep, int n);
+    void output_restart_velocities_slave(int timestep, int parN, Vector *vecs, int64 offset);
+    void output_final_velocities_master(int n);
+    void output_final_velocities_slave(int parN, Vector *vecs, int64 offset);
+
+    void output_dcdfile_master(int timestep, int n, const Lattice *lat);
+    void output_dcdfile_slave(int timestep, int fID, int tID, FloatVector *fvecs);
+    void output_restart_coordinates_master(int timestep, int n);
+    void output_restart_coordinates_slave(int timestep, int parN, Vector *vecs, int64 offset);
+    void output_final_coordinates_master(int n);
+    void output_final_coordinates_slave(int parN, Vector *vecs, int64 offset);
+
+    void write_binary_file_master(char *fname, int n);
+    void write_binary_file_slave(char *fname, int parN, Vector *vecs, int64 offset);
+
+    int dcdFileID;
+    Bool dcdFirst;
+    float *dcdX, *dcdY, *dcdZ;
+
+    int veldcdFileID;
+    Bool veldcdFirst;    
+    float *veldcdX, *veldcdY, *veldcdZ;
+
+public:
+    ParOutput(){
+        dcdFileID=veldcdFileID=-99999;
+        dcdFirst=veldcdFirst=TRUE;
+        dcdX=dcdY=dcdZ=veldcdX=veldcdY=veldcdZ=NULL;        
+    }
+    ~ParOutput() {}
+
+    void velocityMaster(int timestep, int n);
+    void velocitySlave(int timestep, int fID, int tID, Vector *vecs);
+
+    void coordinateMaster(int timestep, int n, Lattice &lat);
+    void coordinateSlave(int timestep, int fID, int tID, Vector *vecs, FloatVector *fvecs);
+};
+#endif
+
 #endif
 

@@ -10,8 +10,8 @@
  * RCS INFORMATION:
  *
  *      $RCSfile: largefiles.h,v $
- *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.1 $       $Date: 2006/01/20 20:24:01 $
+ *      $Author: chaomei2 $       $Locker:  $             $State: Exp $
+ *      $Revision: 1.2 $       $Date: 2010/11/13 00:36:18 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -19,6 +19,9 @@
  *
  ***************************************************************************/
  
+#ifndef _LARGEFILES_H
+#define _LARGEFILES_H
+
 #if defined(_AIX)
 /* Define to enable large file extensions on AIX */
 #define _LARGE_FILE
@@ -32,3 +35,4 @@
 #define _FILE_OFFSET_BITS 64
 #endif
 
+#endif

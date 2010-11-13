@@ -33,6 +33,12 @@
 
 void after_backend_init(int argc, char **argv);
 
+#ifdef MEM_OPT_VERSION
+//record the working directory when reading the configuration file
+//for Parallel IO Input --Chao Mei
+char *gWorkDir = NULL;
+#endif
+
 int main(int argc, char **argv) {
   BackEnd::init(argc,argv);
   after_backend_init(argc, argv);
@@ -72,9 +78,28 @@ void after_backend_init(int argc, char **argv){
     *tmp = 0; confFile = tmp + 1;
     if ( CHDIR(currentdir) ) NAMD_die("chdir() failed!");
     iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
+    currentdir = GETCWD(0,0);
   }
-  else if ( *tmp == PATHSEP ) // config file in / is odd, but it might happen
-    if ( CHDIR(PATHSEPSTR) ) NAMD_die("chdir() failed!");
+  else{
+      if ( *tmp == PATHSEP ){ // config file in / is odd, but it might happen
+          if ( CHDIR(PATHSEPSTR) ) NAMD_die("chdir() failed!");
+      }else{ // just a config file name, so the path is the current working path
+          char tmpcurdir[3];
+          tmpcurdir[0] = '.';
+          tmpcurdir[1] = PATHSEP;
+          tmpcurdir[2] = 0;
+          currentdir = tmpcurdir;
+          iout << iINFO << "Working in the current directory " << oldcwd << "\n" << endi;
+      }
+  }
+
+#ifdef MEM_OPT_VERSION
+    int dirlen = strlen(currentdir);
+    gWorkDir = new char[dirlen+1];
+    gWorkDir[dirlen]=0;
+    memcpy(gWorkDir, currentdir, dirlen);
+#endif
+
   currentdir = NULL;
 
   iout << iINFO << "Configuration file is " << confFile << "\n" << endi;

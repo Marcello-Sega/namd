@@ -82,6 +82,41 @@ void NamdState:: runController(void)
 
 extern void read_binary_coors(char *fname, PDB *pdbobj);
 
+#ifdef MEM_OPT_VERSION
+ //Check features that are not supported in the memory optimized 
+ //version.  --Chao Mei
+void NamdState::checkMemOptCompatibility(){
+    if(simParameters->genCompressedPsf) {
+        iout << "In the memory optimized version, the compression of molecule information is not supported! "
+                << "Please use the non-memory optimized version.\n" <<endi;
+        NAMD_die("MEMOPT: unsupported usage");
+    }
+
+    if(simParameters->langevinOn && simParameters->langevinDamping == 0.0) {
+        iout << iWARN << "langevinDamping MUST NOT BE 0.0 IF LANGEVIN IS"
+            <<" TURNED ON IN MEMORY OPTIMIZED VERSION\n" <<endi;
+        NAMD_die("MEMOPT: unsupported feature");
+    }
+    if(simParameters->tCoupleOn)
+        NAMD_die("MEMOPT: tCouple is not supported in memory optimized version");
+    if(simParameters->pairInteractionOn)
+        NAMD_die("MEMOPT: pairInteractionOn could not be enabled in memory optimized version");
+    if(simParameters->alchFepOn || simParameters->alchOn){
+        iout << iWARN << "ALCH: AUTOMATIC DELETION OF BONDED INTERACTIONS "
+        << "BETWEEN INITIAL AND FINAL GROUPS IS NOT SUPPORTED IN MEMORY "
+        << "OPTIMISED VERSION - MANUAL PROCESSING IS NECESSARY\n" << endi;
+        NAMD_die("MEMOPT: unsupported feature");
+    }
+    if(simParameters->alchThermIntOn)
+        NAMD_die("MEMOPT: alchThermIntOn could not be enabled in memory optimized version");
+    if(simParameters->lesOn)
+        NAMD_die("MEMOPT: lesOn could not be enabled in memory optimized version");
+    if(simParameters->lonepairs) {
+        NAMD_die("MEMOPT: lonepairs could not be enabled in memory optimized version");
+    }
+}
+#endif
+
 int NamdState::configListInit(ConfigList *cfgList) {
   configList = cfgList;
   if (!configList->okay()) {
@@ -93,6 +128,20 @@ int NamdState::configListInit(ConfigList *cfgList) {
   simParameters =  new SimParameters(configList,currentdir);
   fflush(stdout);
   lattice = simParameters->lattice;
+
+ //Check features that are not supported in the memory optimized 
+ //version.  --Chao Mei
+#ifdef MEM_OPT_VERSION
+  checkMemOptCompatibility();
+#endif
+
+  //Check rigidBonds type when generating the compressed psf files.
+  if(simParameters->genCompressedPsf) {
+      if(simParameters->rigidBonds == RIGID_NONE){
+          //default to RIGID_ALL
+          simParameters->rigidBonds = RIGID_ALL;
+      }
+  }
 
   StringList *molInfoFilename;
   // If it's AMBER force field, read the AMBER style files;
@@ -144,9 +193,9 @@ int NamdState::configListInit(ConfigList *cfgList) {
     parameters->print_param_summary();
   }
   else if (simParameters->usePluginIO){
-    if(simParameters->useCompressedPsf) {
-        NAMD_die("Compressed psf file is not supported currently when using plugin IO");
-    }
+#ifdef MEM_OPT_VERSION  	
+	NAMD_die("Using plugin IO is not supported in memory optimized version!");
+#else    
     PluginIOMgr *pIOMgr = new PluginIOMgr();
     
     iout << iWARN << "Plugin-based I/O is still in development and may still have bugs" << endl;
@@ -195,10 +244,11 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
     pIOHandle->close_file_read(plgFile);
     delete pIOMgr;
+#endif    
   }
   else
   { 
-StringList *moleculeFilename = configList->find("structure");
+    StringList *moleculeFilename = configList->find("structure");
     molInfoFilename = moleculeFilename; 
     StringList *parameterFilename = configList->find("parameters");
     //****** BEGIN CHARMM/XPLOR type changes
@@ -210,10 +260,47 @@ StringList *moleculeFilename = configList->find("structure");
 
     double fileReadTime = CmiWallTimer();
     molecule = new Molecule(simParameters, parameters, moleculeFilename->data, configList);
-    iout << iINFO << "TIME FOR READING PSF FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;    
-  }
+    iout << iINFO << "TIME FOR READING PSF FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+}
+
   fflush(stdout);
 
+#ifdef MEM_OPT_VERSION
+  //upon knowing the number of atoms, it's good time to estimate the number of
+  //input/output processors if their value is not set
+  if(simParameters->numinputprocs==0){
+    int numatoms = molecule->numAtoms;
+    long estval = (sizeof(InputAtom)+2*sizeof(int)+1)*((long)(numatoms));
+    int numprocs = estval>>26; //considering every input proc consumes about 64M.
+    if(numprocs==0){
+        numprocs=1;
+    }else if(numprocs>CkNumPes()){
+        numprocs=CkNumPes();
+    }
+    simParameters->numinputprocs=numprocs;
+  }
+  if(simParameters->numoutputprocs==0){
+    int numatoms = molecule->numAtoms;
+    long estval = (sizeof(Vector)*2)*((long)(numatoms));
+    int numprocs = estval>>26; //considering every input proc consumes about 64M.
+    if(numprocs==0){
+      numprocs=1;
+    }else if(numprocs>CkNumPes()){
+      numprocs=CkNumPes();
+    }
+    simParameters->numoutputprocs=numprocs;    
+  }
+  //check the number of output procs that simultaneously write to a file
+  if(simParameters->numoutputwrts > simParameters->numoutputprocs) {
+      simParameters->numoutputwrts = simParameters->numoutputprocs;
+  }
+
+  if (simParameters->fixedAtomsOn){
+      double fileReadTime = CmiWallTimer();
+      molecule->load_fixed_atoms(configList->find("fixedAtomListFile"));
+      iout << iINFO << "TIME FOR READING FIXED ATOMS FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+  }
+#else
   if (simParameters->extraBondsOn) {        
     //The extra bonds building will be executed in read_compressed_psf in
     //the memory optimized version, so avoid calling this function in the 
@@ -222,43 +309,33 @@ StringList *moleculeFilename = configList->find("structure");
       molecule->build_extra_bonds(parameters, configList->find("extraBondsFile"));         
   }
   if(simParameters->genCompressedPsf) {
-    #ifdef MEM_OPT_VERSION
-      iout << "In the memory optimized version, the compression of molecule information is not supported! "
-              << "Please use the non-memory optimized version.\n" <<endi;
-    #else
       double fileReadTime = CmiWallTimer();
       compress_molecule_info(molecule, molInfoFilename->data, parameters, simParameters, configList);
       iout << "Finished compressing molecule information, which takes " << CmiWallTimer()-fileReadTime <<"(s)\n"<<endi;
-    #endif
       CkExit();
   }
 
   //If using plugin-based IO, the PDB object is already created!
   StringList *coordinateFilename = NULL;
   if(!simParameters->usePluginIO) {
-      coordinateFilename = configList->find("coordinates");
-    
+      //In the memory opt version, the coordinates of atoms
+      //are read during startup in parallel with a bincoordinates input
+      //-Chao Mei
+      coordinateFilename = configList->find("coordinates");    
       double fileReadTime = CmiWallTimer();
-    #ifdef MEM_OPT_VERSION
-      if (coordinateFilename != NULL)
-        NAMD_die("Do not specify PDB coordinate file with memopt version.");
-    #else
       if (coordinateFilename != NULL)
         pdb = new PDB(coordinateFilename->data);
       if (pdb->num_atoms() != molecule->numAtoms) {
         NAMD_die("Number of pdb and psf atoms are not the same!");
       }
       iout << iINFO << "TIME FOR READING PDB FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
-    #endif
       iout << iINFO << "\n" << endi;
   }
 
-#ifndef MEM_OPT_VERSION
   StringList *binCoordinateFilename = configList->find("bincoordinates");
   if ( binCoordinateFilename ) {
     read_binary_coors(binCoordinateFilename->data, pdb);
   }
-#endif
 
 	//  If constraints are active, build the parameters necessary
 	if (simParameters->constraintsOn)
@@ -289,15 +366,7 @@ StringList *moleculeFilename = configList->find("structure");
 				       NULL);
 	}
 
-	/*if (simParameters->extraBondsOn) {
-       #ifdef MEM_OPT_VERSION
-       iout << "Information about the extra bonds have been already integrated into the compressed psf file!\n" <<endi;
-       #else
-	   molecule->build_extra_bonds(parameters,
-				configList->find("extraBondsFile"));
-       #endif
-	}*/
-	
+
 	if (simParameters->fixedAtomsOn)
 	{
 	   molecule->build_fixed_atoms(configList->find("fixedatomsfile"),
@@ -371,26 +440,18 @@ StringList *moleculeFilename = configList->find("structure");
 	if (simParameters->langevinOn)
 	{
 	  if (simParameters->langevinDamping == 0.0) {
-#ifdef MEM_OPT_VERSION
-            NAMD_die("langevinfile not supported in memopt version");
-#endif
 	    molecule->build_langevin_params(configList->find("langevinfile"),
 					    configList->find("langevincol"),
 					    pdb,
 					    NULL);
-#ifndef MEM_OPT_VERSION
 	  } else {
 	    molecule->build_langevin_params(simParameters->langevinDamping,
                                             simParameters->drudeDamping,
 					    simParameters->langevinHydrogen);
-#endif
 	  }
 	}
 	else if (simParameters->tCoupleOn)
 	{
-#ifdef MEM_OPT_VERSION
-            NAMD_die("tcouplefile not supported in memopt version");
-#endif
 	   //  Temperature coupling uses the same parameters, but with different
 	   //  names . . .
 	   molecule->build_langevin_params(configList->find("tcouplefile"),
@@ -404,13 +465,7 @@ StringList *moleculeFilename = configList->find("structure");
         if (simParameters->alchOn) {
            molecule->build_fep_flags(configList->find("alchfile"),
                 configList->find("alchcol"), pdb, NULL);
-#ifndef MEM_OPT_VERSION
            molecule->delete_alch_bonded();
-#else
-           iout << iWARN << "ALCH: AUTOMATIC DELETION OF BONDED INTERACTIONS "
-           << "BETWEEN INITIAL AND FINAL GROUPS IS NOT SUPPORTED IN MEMORY "
-           << "OPTIMISED VERSION - MANUAL PROCESSING IS NECESSARY\n" << endi;
-#endif
         }
 //fepe
         if (simParameters->lesOn) {
@@ -588,7 +643,6 @@ StringList *moleculeFilename = configList->find("structure");
 			" HYDROGEN GROUPS WITH ALL ATOMS FIXED\n";
 	}
 
-#ifndef MEM_OPT_VERSION
         {
           BigReal totalMass = 0;
           BigReal totalCharge = 0;

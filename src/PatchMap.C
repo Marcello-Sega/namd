@@ -163,6 +163,10 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
     p.cIndex = index_c(i);
     p.myPatch = 0;
     p.myHomePatch = 0;
+#ifdef MEM_OPT_VERSION
+    p.numAtoms = 0;
+    p.numFixedAtoms = 0;
+#endif
     p.aMin = ((float)p.aIndex/(float)aDim) * aLength + aOrigin;
     p.bMin = ((float)p.bIndex/(float)bDim) * bLength + bOrigin;
     p.cMin = ((float)p.cIndex/(float)cDim) * cLength + cOrigin;
@@ -611,21 +615,6 @@ void PatchMap::printPatchMap(void)
   }
 
 }
-//////////////////////////////////////////////////////////////
-// Osman Sarood
-// // Parallel Input Change
-void PatchMap::registerMyPatch(PatchID pid, HomePatch *pptr)
-{
-  patchData[pid].myPatch = (Patch*)pptr;
-}
-
-void PatchMap::initPatchData()
-{
-  for(int i=0;i<nPatches;i++)
-    patchData[i].myPatch=NULL;
-}
-//////////////////////////////////////////////////////////
-
 
 //----------------------------------------------------------------------
 void PatchMap::registerPatch(PatchID pid, HomePatch *pptr) {

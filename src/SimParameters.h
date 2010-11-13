@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: gzheng $
- * $Date: 2010/11/07 07:10:57 $
- * $Revision: 1.1169 $
+ * $Author: chaomei2 $
+ * $Date: 2010/11/13 00:36:17 $
+ * $Revision: 1.1170 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -128,7 +128,7 @@ public:
 	Bool ldbUnloadOne;		//  unload processor 1 
 	Bool noPatchesOnZero;		//  no patches on processor 0
 	Bool noPatchesOnOne;		//  no patches on processor 1
-	Bool shiftIOToOne;		//  shift I/O operation (say, DCD output) to proc 1
+	
 	BigReal initialTemp;   		//  Initial temperature for the 
 					//  simulation
 	Bool comMove;     		//  Should the center of mass be 
@@ -645,12 +645,16 @@ public:
 	//default value is -1
 	int proxySendSpanningTree;
 	int proxyRecvSpanningTree;
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Parallel Input Change
-//// Osman Sarood
-        int numinputprocs;
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//
+
+    //fields needed for Parallel IO Input
+    int numinputprocs;
+    char *binAtomFile;
+    char *binCoorFile;
+    char *binVelFile; 
+    
+    //fields needed for Parallel IO Output
+    int numoutputprocs; 
+    int numoutputwrts;
 
 	char computeMapFilename[128];		//  store compute map
         Bool storeComputeMap;

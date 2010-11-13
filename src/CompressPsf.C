@@ -46,6 +46,12 @@ struct BasicAtomInfo
     int resID;
 };
 
+void OutputAtomRecord::flip(){
+    flipNum((char *)&sSet, sizeof(short), sizeof(sSet)/sizeof(short));
+    flipNum((char *)&iSet, sizeof(int), sizeof(iSet)/sizeof(int));
+    flipNum((char *)&fSet, sizeof(float), sizeof(fSet)/sizeof(float));
+}
+
 struct AtomSigInfo
 {
     vector<SigIndex> bondSigIndices;
@@ -311,8 +317,6 @@ int *eachAtomClusterID = NULL;
 vector<int> eachClusterSize;
 vector<int> eachClusterID;
 int g_numClusters = 0;
-//indicate whether the atom ids in a cluster are contiguous or not
-int g_isClusterContiguous = 0;
 
 HashPool<TupleSignature> sigsOfBonds;
 HashPool<TupleSignature> sigsOfAngles;
@@ -487,20 +491,11 @@ void loadMolInfo()
     //initialize eachAtomSigs
     eachAtomSigs = new AtomSigInfo[g_mol->numAtoms];    
 
-    if (g_mol->numBonds)
-        buildBondData();
-
-    if (g_mol->numAngles)
-        buildAngleData();
-
-    if (g_mol->numDihedrals)
-        buildDihedralData();
-
-    if (g_mol->numImpropers)
-        buildImproperData();
-
-    if (g_mol->numCrossterms)
-        buildCrosstermData();
+    buildBondData();
+    buildAngleData();
+    buildDihedralData();
+    buildImproperData();
+    buildCrosstermData();
 
     //  analyze the data and find the status of each atom
     //build_atom_status();
@@ -533,33 +528,14 @@ void integrateAllAtomSigs()
 }
 
 /**
- * Per-atom data structure is as follows (the order of fields is
- * very important as it has to be preserved when reading them in 
- * the memory optimized version)
- * The hydrogenGroup information is organized in the atom ID's order
- * so it needs to be re-sorted after being loaded system.
- * "hydrogenList" which indicates the array index in the hydrogenGroup
- * array that this atom maps to. This field can be used to do re-sorting.
- *"isGP" is not recorded as it could be determined by atomsInGroup.
- *
- * 1. unsigned short: segNameIdx 
- * 2. unsigned short: resNameIdx 
- * 3. unsigned short: atomNameIdx 
- * 4. unsigned short: atomTypeIdx 
- * 5. unsigned short: chargeIdx 
- * 6. unsigned short: massIdx 
- * 7. unsigned short: atom's signature idx
- * 8. unsigned short: atom's exclusion signature idx
- * 9. int: atom's residue idx 
- * 10. int: atom's cluster idx 
- * //following fields (11- 15) are related to hydrogen group 
- * 11. int: atom's partner 
- * 12. int: atom's hydrogenList 
- * 13. int: hydrogenGroup's atomsInGroup 
- * 14. int: hydrogenGroup's GPID 
- * 15. int: hydrogenGroup's waterVal 
- * 16. float: atom's occupancy 
- * 17. float: atom's bfactor (temperature's factor) 
+ * Output the compressed psf files. The binary per-atom file 
+ * contains two part. The first part is used for the parallel 
+ * input containing info such as atom signature ids; the second 
+ * part is used for the parallel output containing infor such as 
+ * cluster ids and whether an atom is water or not. 
+ *  
+ * -Chao Mei 
+ *  
  */
 void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
 {
@@ -676,7 +652,6 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
 
     //3. Output the cluster information
     fprintf(txtOfp, "%d !NCLUSTERS\n", g_numClusters);
-    fprintf(txtOfp, "%d !CLUSTERCONTIGUITY\n", g_isClusterContiguous);
 
     //4. Output atom info
     fprintf(txtOfp, "%d !NATOM\n", g_mol->numAtoms);
@@ -684,6 +659,10 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
     fprintf(txtOfp, "%d !MAXHYDROGENGROUPSIZE\n", g_mol->maxHydrogenGroupSize);
     fprintf(txtOfp, "%d !NMIGRATIONGROUP\n", g_mol->numMigrationGroups);
     fprintf(txtOfp, "%d !MAXMIGRATIONGROUPSIZE\n", g_mol->maxMigrationGroupSize);
+
+    //5. Output rigid bond type
+    fprintf(txtOfp, "%d !RIGIDBONDTYPE\n", g_simParam->rigidBonds);
+#if 0
     const float *atomOccupancy = g_mol->getOccupancyData();
     const float *atomBFactor = g_mol->getBFactorData();
     fprintf(txtOfp, "%d !OCCUPANCYVALID\n", (atomOccupancy==NULL)?0:1);
@@ -696,75 +675,76 @@ void outputCompressedFile(FILE *txtOfp, FILE *binOfp)
         if(atomOccupancy==NULL) atomOccupancy = (const float *)zeroFloats;
         if(atomBFactor==NULL) atomBFactor = (const float *)zeroFloats;
     }
+#endif
 
     Atom *atoms = g_mol->getAtoms(); //need to output its partner and hydrogenList
     HydrogenGroupID *hg = g_mol->hydrogenGroup.begin();
 
-#if BINARY_PERATOM_OUTPUT
     //First, output magic number
     int magicNum = COMPRESSED_PSF_MAGICNUM;
     fwrite(&magicNum, sizeof(int), 1, binOfp);
     //Second, version number
     float verNum = (float)COMPRESSED_PSF_VER;
     fwrite(&verNum, sizeof(float), 1, binOfp);
-    //Third, each atom info
-    Index sIdx[9];
-    int iIdx[9];
-    float tmpf[2];
+    //Third, the per-atom record size
+    int recSize = sizeof(OutputAtomRecord);
+    fwrite(&recSize, sizeof(int), 1, binOfp);
+    //Fourth, each atom info
+    OutputAtomRecord oneRec;
     for(int i=0; i<g_mol->numAtoms; i++)
     {                
-        sIdx[0] = atomData[i].segNameIdx;
-        sIdx[1] = atomData[i].resNameIdx;
-        sIdx[2] = atomData[i].atomNameIdx;
-        sIdx[3] = atomData[i].atomTypeIdx;
-        sIdx[4] = atomData[i].chargeIdx;
-        sIdx[5] = atomData[i].massIdx;
-        sIdx[6] = atomData[i].atomSigIdx;
-        sIdx[7] = atomData[i].exclSigIdx;        
-	sIdx[8] = atoms[i].vdw_type;
+        oneRec.sSet.segNameIdx = atomData[i].segNameIdx;
+        oneRec.sSet.resNameIdx = atomData[i].resNameIdx;
+        oneRec.sSet.atomNameIdx = atomData[i].atomNameIdx;
+        oneRec.sSet.atomTypeIdx = atomData[i].atomTypeIdx;
+        oneRec.sSet.chargeIdx = atomData[i].chargeIdx;
+        oneRec.sSet.massIdx = atomData[i].massIdx;
+        oneRec.iSet.atomSigIdx = atomData[i].atomSigIdx;
 
-        iIdx[0] = atomData[i].resID;
-        iIdx[1] = eachAtomClusterID[i];
-        iIdx[2] = atoms[i].partner;
-        iIdx[3] = atoms[i].hydrogenList;
-        iIdx[4] = hg[iIdx[3]].atomsInGroup;
-        iIdx[5] = hg[iIdx[3]].GPID;
-        iIdx[6] = hg[iIdx[3]].waterVal;
-        iIdx[7] = hg[iIdx[3]].atomsInMigrationGroup;
-        iIdx[8] = hg[iIdx[3]].MPID;
-        tmpf[0] = atomOccupancy[i];
-        tmpf[1] = atomBFactor[i];
-        fwrite(sIdx, sizeof(Index), 9, binOfp);
-        fwrite(iIdx, sizeof(int), 9, binOfp);
-        fwrite(tmpf, sizeof(float), 2, binOfp);
+        oneRec.iSet.exclSigIdx = atomData[i].exclSigIdx;        
+        oneRec.sSet.vdw_type = atoms[i].vdw_type;
+        oneRec.iSet.resID = atomData[i].resID;        
+        int hydIdx = atoms[i].hydrogenList;       
+        oneRec.iSet.hydrogenList = hydIdx;
+        oneRec.iSet.atomsInGroup = hg[hydIdx].atomsInGroup;
+        oneRec.iSet.GPID = hg[hydIdx].GPID;
+        //oneRec.waterVal = hg[hydIdx].waterVal;
+        oneRec.iSet.atomsInMigrationGroup = hg[hydIdx].atomsInMigrationGroup;
+        oneRec.iSet.MPID = hg[hydIdx].MPID;
+        //oneRec.fSet.occupancy = atomOccupancy[i];
+        //oneRec.fSet.bfactor = atomBFactor[i];
+        oneRec.fSet.rigidBondLength = g_mol->rigid_bond_length(i);
+        fwrite(&oneRec, sizeof(OutputAtomRecord), 1, binOfp);
     }
-#else
-    XXX THIS BRANCH NOT UPDATED FOR MIGRATION GROUP XXX
-    for(int i=0; i<g_mol->numAtoms; i++)
-    {
-        BasicAtomInfo &one = atomData[i];
-	int hgIdx = atoms[i].hydrogenList;
-        fprintf(txtOfp, "%d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %f %f\n", 
-                one.segNameIdx, one.resNameIdx, one.atomNameIdx,
-                one.atomTypeIdx, one.chargeIdx, one.massIdx, one.atomSigIdx, one.exclSigIdx, one.resID,
-                eachAtomClusterID[i], atoms[i].partner, hgIdx,
-                hg[hgIdx].atomsInGroup, hg[hgIdx].GPID, hg[hgIdx].waterVal,
-                atomOccupancy[i], atomBFactor[i]);
-    }
-#endif
-    //fprintf(txtOfp, "\n");
+    //if(zeroFloats) delete[] zeroFloats;
+    delete[] atomData;
 
-    if(zeroFloats) delete[] zeroFloats;
+    //Output the info required for parallel output:
+    //1. Cluster ids of each atom
+    //Since the cluster info is only when doing output under
+    //wrapAll or wrapWater conditions, for the purpose of parallel
+    //output, it is reasonable to separate the cluster info from
+    //the above per-atom info. So whole the binary per-atom file
+    //contains two parts, one for parallel input to create patches
+    //and computes; the other for parallel output -Chao Mei
+    //Fifth: output the cluster id of each atoms
+    fwrite(eachAtomClusterID, sizeof(int), g_mol->numAtoms, binOfp);    
+    //2. Whether each atom is water or not
+    char *isWater = new char[g_mol->numAtoms];
+    for(int i=0; i<g_mol->numAtoms; i++){
+        isWater[i] = g_mol->is_water(i);
+    }
+    fwrite(isWater, sizeof(char), g_mol->numAtoms, binOfp);
+    delete [] isWater;
     delete[] atoms;
     g_mol->hydrogenGroup.resize(0);
-    delete[] atomData;
-    delete[] eachAtomClusterID;
+    delete[] eachAtomClusterID;    
 
-    //4.Output the parameter new values if extraBonds are present.
+    //Output the parameter new values if extraBonds are present.
     //The parameters are not needed since now extraBonds' parameters will be
     //read again during running the simulation
 
-    //5. Output the "multiplicity" field TUPLE_array of the Parameter object
+    //6. Output the "multiplicity" field TUPLE_array of the Parameter object
     fprintf(txtOfp, "!DIHEDRALPARAMARRAY\n");
     for(int i=0; i<g_param->NumDihedralParams; i++)
     {
@@ -937,14 +917,18 @@ void buildBondData()
     for(int i=0; i<g_mol->numAtoms; i++)
         eachAtomClusterID[i] = -1;
 
+    //It is guaranteed that the clusters found in this way use the
+    //smallest atom id of this cluster because each atom is at least
+    //connected to one of the atoms in its cluster (by atomListOfBonded
+    //constructed above).
+    //--Chao Mei
     for(int i=0; i<g_mol->numAtoms; i++)
     {
         int curClusterID=eachAtomClusterID[i];
-        if(curClusterID==-1)
-        {
-            curClusterID=i;
-        }
-
+        //if the atom's cluster id is not -1, the atom has been visited
+        if(curClusterID!=-1) continue;
+                
+        curClusterID=i;
         deque<int> toVisitAtoms;
         toVisitAtoms.push_back(i);
         while(!toVisitAtoms.empty())
@@ -961,9 +945,10 @@ void buildBondData()
         }
     }
 
-		//Now the clusterID of each atom should be usually in the non-decreasing
-		//order. In other words, the atom ids of a cluster are generally contiguous.
-		//If this is the case, the temporary memory usage of output IO during
+#if 0
+    //Now the clusterID of each atom should be usually in the non-decreasing
+    //order. In other words, the atom ids of a cluster are generally contiguous.
+    //If this is the case, the temporary memory usage of output IO during
     //the simulation can be dramatically reduced. So g_isClusterContiguous
     //is used to differentiate the two cases: 
 
@@ -1074,6 +1059,7 @@ void buildBondData()
     free(newClusterIDs);
     eachClusterSize.clear();
     eachClusterID.clear();
+#endif 
 		
 /*
     //check whether cluster is built correctly

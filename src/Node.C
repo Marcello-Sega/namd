@@ -60,13 +60,9 @@
 #include "Sync.h"
 #include "BackEnd.h"
 #include "PDB.h"
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////^M
-//// Osman Sarood
-//// Parallel Input Change
 #include "packmsg.h"
 #include "CollectionMgr.decl.h"
 #include "ParallelIOMgr.decl.h"
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // BEGIN LA
 #include "Random.h"
 // END LA
@@ -145,22 +141,9 @@ Node::Node(GroupInitMsg *msg)
   atomMap = AtomMap::Instance();
   if ( CkMyRank() == 0 ) ComputeMap::Instance();
 
-  DebugM(4,"Binding to BOC's\n");
-  CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
-  patchMgr = pm.ckLocalBranch();
-  CProxy_ProxyMgr prm(CkpvAccess(BOCclass_group).proxyMgr);
-  proxyMgr = prm.ckLocalBranch();
-  CProxy_WorkDistrib wd(CkpvAccess(BOCclass_group).workDistrib);
-  workDistrib = wd.ckLocalBranch();
-  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
-  computeMgr = cm.ckLocalBranch();
-  CProxy_LdbCoordinator lc(CkpvAccess(BOCclass_group).ldbCoordinator);
-  ldbCoordinator = lc.ckLocalBranch();
-#ifdef MEM_OPT_VERSION
-    // Parallel Input Change
-  CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
-  ioMgr = io.ckLocalBranch();
-#endif
+  //Note: Binding BOC vars such as workDistrib has been moved
+  //to the 1st phase of startup because the in-order message delivery
+  //is not always guaranteed --Chao Mei
 }
 
 //----------------------------------------------------------------------
@@ -176,6 +159,24 @@ Node::~Node(void)
   // BEGIN LA
   delete rand;
   // END LA
+}
+
+void Node::bindBocVars(){
+    DebugM(4,"Binding to BOC's\n");
+    CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
+    patchMgr = pm.ckLocalBranch();
+    CProxy_ProxyMgr prm(CkpvAccess(BOCclass_group).proxyMgr);
+    proxyMgr = prm.ckLocalBranch();
+    CProxy_WorkDistrib wd(CkpvAccess(BOCclass_group).workDistrib);
+    workDistrib = wd.ckLocalBranch();
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+    computeMgr = cm.ckLocalBranch();
+    CProxy_LdbCoordinator lc(CkpvAccess(BOCclass_group).ldbCoordinator);
+    ldbCoordinator = lc.ckLocalBranch();
+  #ifdef MEM_OPT_VERSION      
+    CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
+    ioMgr = io.ckLocalBranch();
+  #endif
 }
 
 //----------------------------------------------------------------------
@@ -195,328 +196,6 @@ Parameters *node_parameters;
 Molecule *node_molecule;
 
 extern void registerUserEventsForAllComputeObjs(void);
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Osman Sarood
-//// Parallel Input Change
-void Node::namdOneRecvPar() {
-#ifdef MEM_OPT_VERSION
-  if ( CmiMyRank() ) return;
-  MIStream *conv_msg;
-  simParameters = node_simParameters = new SimParameters;
-  parameters = node_parameters = new Parameters();
-  DebugM(4, "Getting SimParameters\n");
-  conv_msg = CkpvAccess(comm)->newInputStream(0, SIMPARAMSTAG);
-  simParameters->receive_SimParameters(conv_msg);
-  DebugM(4, "Getting Parameters\n");
-  conv_msg = CkpvAccess(comm)->newInputStream(0, STATICPARAMSTAG);
-  parameters->receive_Parameters(conv_msg);
- molecule = node_molecule = new Molecule(simParameters,parameters);
-
-  if(!ioMgr->isInputProc(CkMyPe())){
-        molecule->read_compressed_psf_file((Node::Object()->state->getConfigList()->find("structure"))->data, parameters,configList);
-  }
-  else ioMgr->setMolecule(molecule);
-#endif
-}
-
-void Node::namdOneSendPar() {
-#ifdef MEM_OPT_VERSION
-  node_simParameters = simParameters;
-  node_parameters = parameters;
-  node_molecule = molecule;
-  MOStream *conv_msg;
-  DebugM(4, "Sending SimParameters\n");
-  conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, SIMPARAMSTAG, BUFSIZE);
-  simParameters->send_SimParameters(conv_msg);
-
-  DebugM(4, "Sending Parameters\n");
-  conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, STATICPARAMSTAG, BUFSIZE);
-  parameters->send_Parameters(conv_msg);
-#endif
-}
-
-
-#ifdef MEM_OPT_VERSION
-void Node::startup() {
-  int gotoRun = false;
-  double newTime;
-  double mytime=0.;
-
-  if (!CkMyPe()) {
-    if (!startupPhase) {
-      iout << iINFO << "\n";
-      startupTime = CmiWallTimer();
-      iout << iINFO << "Entering startup at " << startupTime << " s, ";
-    } else {
-      newTime = CmiWallTimer();
-      iout << iINFO << "Startup phase " << startupPhase-1 << " took "
-           << newTime - startupTime << " s, ";
-      startupTime = newTime;
-    }
-    iout << memusage_MB() << " MB of memory in use\n" << endi;
-    fflush(stdout);
-  }
-  double startT1=-1.0,t1;
-  switch (startupPhase) {
-
-  case 0:
-
-          mytime=CmiWallTimer();
-    #ifdef CHARMIZE_NAMD
-    populateAtomDisArrs(startupPhase);
-    #endif
-
-
-    #if DMK_DEBUG_AUE^M
-
-      CkPrintf("[DEBUG] :: Node::startup() - Registering additional user events...\n");
-
-      traceRegisterUserEvent("Patch::positionsReady()", DMK_DEBUG_AUE_PATCH_POSITIONSREADY);
-
-      traceRegisterUserEvent("HomePatch::positionsReady()", DMK_DEBUG_AUE_HOMEPATCH_POSITIONSREADY);
-
-    #endif
-computeMap = ComputeMap::Object();
-
-          startT1=CmiWallTimer();
-    namdOneCommInit(); // Namd1.X style
-  break;
-
-  case 1:
-    if (CkMyPe()) {
-      namdOneRecvPar();
-    } else {
-      namdOneSendPar();
-    }
-#ifdef MEM_OPT_VERSION
-    if (! CkMyPe()) {
-      iout << iINFO << "Parallel I/O being used for reading files\n" << endi;
-    }
-  if(ioMgr->isInputProc(CkMyPe())) {
-    CProxy_Node cm(thisgroup);
-    ioMgr->setPointers(molecule,cm,state,patchMgr,this->simParameters);
-//  we just sent and received this above!!
-//    StringList *cfgFile=(ioMgr->getState()->configList->find("parameters"));
-//    char *currentdir = 0;
-//    parameters=new Parameters(simParameters,cfgFile);
-    ioMgr->readMolecule();
-    ioMgr->redistributionAtomInfoParallel2();
-  }
-
-  else
-  {
-    CProxy_Node cm(thisgroup);
-    ioMgr->setPointers(molecule,cm,state,patchMgr,this->simParameters);
-  }
-if(ioMgr->isInputProc(CkMyPe()))
-        ioMgr->sendAtomsToMigrationGpParents();
-#endif
-    #ifdef CHARMIZE_NAMD
-    if(!CkMyPe()){
-        AllCharmArrsMsg *arrsMsg = new AllCharmArrsMsg;
-        arrsMsg->atomsDis = atomDisArr;
-        ((CProxy_Node)thisgroup).sendCharmArrProxies(arrsMsg);
-    }
-    #endif
-
-break;
-case 2:
-        #ifdef MEM_OPT_VERSION
-
-    simParameters = node_simParameters;
-    parameters = node_parameters;
-    molecule = node_molecule;
-
-        if(ioMgr->isInputProc(CkMyPe()))
-                ioMgr->updateHydrogenGroup();
-        if (!CkMyPe()) {
-      output = new Output; // create output object just on PE(0)^M
-      workDistrib->patchMapInit(); // create space division^M
-      workDistrib->sendMaps();
-      }
-#endif
-
-  break;
-
-  case 3:
-if(!CkMyPe()) ioMgr->updateExclusions();
-    if (!CkMyPe()) {
-        ioMgr->initAtomsPerPatchParallel();
-        }
-    #if USE_HPM
-    HPM_Init(localRankOnNode);
-    #endif
-    #ifdef MEM_OPT_VERSION
-    if(!CkMyPe()){
-        CkChareID collectionMaster;
-        if(CkNumPes()>1 && simParameters->shiftIOToOne)
-           collectionMaster = CProxy_CollectionMaster::ckNew(1);
-        else
-            collectionMaster = CProxy_CollectionMaster::ckNew(0);
-        CollectionMasterHandler::Object()->setRealMaster(collectionMaster);
-        CProxy_CollectionMgr cmgr(CkpvAccess(BOCclass_group).collectionMgr);
-        SlaveInitMsg *bcmaster = new SlaveInitMsg;
-        bcmaster->master = collectionMaster;
-        cmgr.setCollectionMaster(bcmaster);
-    }
-    #endif
-    threadInit();
-    AtomMap::Object()->allocateMap(molecule->numAtoms);
-    if (!CkMyPe()) {
-      if (simParameters->useOptPME)
-        CkpvAccess(BOCclass_group).computePmeMgr = CProxy_OptPmeMgr::ckNew();
-      else
-        CkpvAccess(BOCclass_group).computePmeMgr = CProxy_ComputePmeMgr::ckNew();
-    }
-  break;
-  case 4:
-          if(!CkMyPe()) molecule->getCountsToMaster();
-    if(simParameters->isSendSpanningTreeOn()) {
-        ProxyMgr::Object()->setSendSpanning();
-    }
-    if(simParameters->isRecvSpanningTreeOn()) {
-        ProxyMgr::Object()->setRecvSpanning();
-    }
-    #ifdef PROCTRACE_DEBUG
-    DebugFileTrace::Instance("procTrace");
-    #endif
-workDistrib->setMapsArrived(false);
-        if(!CkMyPe())
-        {
-      #ifdef MEM_OPT_VERSION
-      #else
-      workDistrib->createHomePatches(); // load atoms into HomePatch(es)
-      #endif
-      workDistrib->assignNodeToPatch();
-        ioMgr->initAssignedNodesParallel();
-      workDistrib->mapComputes();
-      ComputeMap::Object()->printComputeMap();
-      registerUserEventsForAllComputeObjs();
-      workDistrib->sendMaps();
-      #ifdef USE_NODEPATCHMGR
-      CProxy_NodeProxyMgr npm(CkpvAccess(BOCclass_group).nodeProxyMgr);
-      npm.createProxyInfo(PatchMap::Object()->numPatches());
-      #endif
-    }
-    {
-        #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
-        CProxy_NodeProxyMgr npm(CkpvAccess(BOCclass_group).nodeProxyMgr);
-        if(CkMyRank()==0) {
-            npm[CkMyNode()].ckLocalBranch()->registerLocalProxyMgr(CkpvAccess(BOCclass_group).proxyMgr);
-        }
-        npm[CkMyNode()].ckLocalBranch()->registerLocalPatchMap(CkMyRank(), PatchMap::Object());
-        #endif
-    }
-  break;
-  case 5:
-    if ( simParameters->PMEOn ) {
-      if ( simParameters->useOptPME ) {
-        CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-        pme[CkMyPe()].initialize(new CkQdMsg);
-      }
-      else {
-        CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-        pme[CkMyPe()].initialize(new CkQdMsg);
-      }
-    }
-    break;
-  case 6:
-        if(!CkMyPe())
-        {
-                CProxy_WorkDistrib wd(thisgroup);
-        int *inProcs=ioMgr->getInputProcArray();
-ioMgr->atomExchangeForPatchCreation();
-        }
-
-    if ( simParameters->PMEOn ) {
-      if ( simParameters->useOptPME ) {
-        CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-        pme[CkMyPe()].initialize_pencils(new CkQdMsg);
-      }
-      else {
-        CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-        pme[CkMyPe()].initialize_pencils(new CkQdMsg);
-      }
-    }
-    if (!CkMyPe()) {
-    #ifdef MEM_OPT_VERSION
-    #else
-      workDistrib->distributeHomePatches();
-    #endif
-    }
-  break;
-case 7:
-          #ifdef MEM_OPT_VERSION
-patchMap->initPatchData();
-ioMgr->createPatchesThisProc();
-#endif
-
-break;
-  case 8:
-    if ( simParameters->PMEOn ) {
-      if ( simParameters->useOptPME ) {
-        CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-        pme[CkMyPe()].activate_pencils(new CkQdMsg);
-      }
-      else {
-        CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-        pme[CkMyPe()].activate_pencils(new CkQdMsg);
-      }
-    }
-    proxyMgr->createProxies();  // need Home patches before this^M
-    if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
-  break;
-  case 9:
-    if (!CkMyPe()) {
-      ComputeMap::Object()->printComputeMap();
-    }
-    Sync::Object()->openSync();  // decide if to open local Sync
-    if (proxySendSpanning || proxyRecvSpanning )
-      proxyMgr->buildProxySpanningTree();
-    DebugM(4,"Creating Computes\n");
-    computeMgr->createComputes(ComputeMap::Object());
-    DebugM(4,"Building Sequencers\n");
-    buildSequencers();
-    DebugM(4,"Initializing LDB\n");
-    LdbCoordinator::Object()->initialize(patchMap,computeMap);
-  break;
-  case 10:
-    #ifdef MEM_OPT_VERSION
-        ioMgr->deleteAtomHoldPatchTransfer();
-        if(ioMgr->isInputProc(CkMyPe()))
-        {
-                ioMgr->deleteParallelStorage(simParameters->initialTemp < 0.0 );
-        }
-    if(!CkMyPe()){
-    }
-    if(simParameters->wrapAll || simParameters->wrapWater){
-        int peOfCollectionMaster = 0;
-        if(CkNumPes()>1 && simParameters->shiftIOToOne) peOfCollectionMaster = 1;
-        if(CkNumPes()>1 && CkMyPe()!=peOfCollectionMaster)
-            molecule->delClusterSigs();
-    }else{
-        molecule->delClusterSigs();
-    }
-    #endif
-    gotoRun = true;
-fflush(stdout);
-  break;
-  default:
-    NAMD_bug("Startup Phase has a bug - check case statement");
-  break;
-  }
-  startupPhase++;
-  if (!CkMyPe()) {
-    if (!gotoRun) {
-      CkStartQD(CkIndex_Node::startUp((CkQdMsg*)0),&thishandle);
-    } else {
-
-      Node::messageRun();
-    }
-  }
-}
-#else
 
 void Node::startup() {
   int gotoRun = false;
@@ -540,60 +219,57 @@ void Node::startup() {
   switch (startupPhase) {
 
   case 0:
-    #ifdef CHARMIZE_NAMD
-    populateAtomDisArrs(startupPhase);
-    #endif
-
     computeMap = ComputeMap::Object();
 
     namdOneCommInit(); // Namd1.X style
   break;
 
   case 1:
+      bindBocVars();
+
     // send & receive molecule, simparameters... (Namd1.X style)
     if (CkMyPe()) {
       namdOneRecv();
     } else {
       namdOneSend();
     }
-
-    #ifdef CHARMIZE_NAMD
-    //send charm array proxies
-    if(!CkMyPe()){
-        AllCharmArrsMsg *arrsMsg = new AllCharmArrsMsg;
-        arrsMsg->atomsDis = atomDisArr;
-        ((CProxy_Node)thisgroup).sendCharmArrProxies(arrsMsg);        
-    }    
-    #endif
   break;
 
   case 2:
-    // fix up one-per-node objects
+    // fix up one-per-node objects (for SMP version)
     simParameters = node_simParameters;
     parameters = node_parameters;
     molecule = node_molecule;
+    
+    #ifdef MEM_OPT_VERSION
+    //At this point, each Node object has received the simParameters,
+    //parameters and the atom signatures info from the master Node
+    //(proc 0). It's time to initialize the parallel IO manager and
+    //read the binary per-atom file --Chao Mei
+
+    //Step 1: initialize the parallel IO manager per Node
+    ioMgr->initialize(this);
+
+    //Step 2: read the binary per-atom files (signater index, coordinates etc.)
+    ioMgr->readPerAtomInfo();
+
+    //Step 3: update counters of tuples and exclusions inside Molecule object
+    ioMgr->updateMolInfo();
+
+    //Step 4: prepare distributing the atoms to neighboring procs if necessary
+    ioMgr->migrateAtomsMGrp();
+
+    //step 5: initialize patchMap and send it to every other processors
+    //to decide atoms to patch distribution on every input processor
+    if(!CkMyPe()) {
+        workDistrib->patchMapInit(); // create space division
+        workDistrib->sendMaps();
+    }
+    #endif
 
     #if USE_HPM
     HPM_Init(localRankOnNode);
-    #endif
-
-    #ifdef MEM_OPT_VERSION
-    //Allocate CollectionMaster which handles I/O depending on the shiftIOToOne parameter
-    if(!CkMyPe()){
-	CkChareID collectionMaster;
-	if(CkNumPes()>1 && simParameters->shiftIOToOne)
-	    collectionMaster = CProxy_CollectionMaster::ckNew(1);
-	else
-	    collectionMaster = CProxy_CollectionMaster::ckNew(0);
-	
-	//set CollectionMgr and CollectionMasterHandler's field for CollectionMaster
-	CollectionMasterHandler::Object()->setRealMaster(collectionMaster);
-	CProxy_CollectionMgr cmgr(CkpvAccess(BOCclass_group).collectionMgr);
-	SlaveInitMsg *bcmaster = new SlaveInitMsg;
-	bcmaster->master = collectionMaster;
-	cmgr.setCollectionMaster(bcmaster);
-    }
-    #endif
+    #endif    
 
     // take care of inital thread setting
     threadInit();
@@ -615,7 +291,30 @@ void Node::startup() {
 
   break;
 
-  case 3:     
+  case 3:
+    #ifdef MEM_OPT_VERSION
+    //Now, every input proc has received all the atoms necessary
+    //to decide the patches those atoms belong to
+    
+    //step 1: integrate the migrated atoms into the atom list that
+    //contains the initally distributed atoms, and sort the atoms
+    //based on hydrogenList value
+    ioMgr->integrateMigratedAtoms();
+
+    //step 2: integrate the cluster size of each atom on each output proc
+    ioMgr->integrateClusterSize();
+
+    //step 3: calculate the number of atoms in each patch on every
+    //input procs (atoms belonging to a patch may lie on different
+    //procs), and reduce such info on proc 0. Such info is required
+    //for determing which node a particular patch is assigned to.
+    ioMgr->calcAtomsInEachPatch();
+
+    //set to false to re-send PatchMap and ComputeMap later
+    workDistrib->setMapsArrived(false);
+    #endif
+    break;
+  case 4:     
     if(simParameters->isSendSpanningTreeOn()) {
         ProxyMgr::Object()->setSendSpanning();
     }
@@ -625,24 +324,24 @@ void Node::startup() {
     #ifdef PROCTRACE_DEBUG
     DebugFileTrace::Instance("procTrace");
     #endif
-
+    
     if (!CkMyPe()) {
       output = new Output; // create output object just on PE(0)
-      workDistrib->patchMapInit(); // create space division
 
-      #ifdef MEM_OPT_VERSION
-      //create patches without populating them with atoms
-      workDistrib->preCreateHomePatches();
-      #else      
+      #ifndef MEM_OPT_VERSION
+      workDistrib->patchMapInit(); // create space division
       workDistrib->createHomePatches(); // load atoms into HomePatch(es)
       #endif
       
       workDistrib->assignNodeToPatch();
       workDistrib->mapComputes();
-      // ComputeMap::Object()->printComputeMap();
+      //ComputeMap::Object()->printComputeMap();
 
       registerUserEventsForAllComputeObjs();
 
+      //in MEM_OPT_VERSION, patchMap and computeMap are resent
+      //because they have been updated since creation including
+      //#atoms per patch, the proc a patch should stay etc. --Chao Mei
       workDistrib->sendMaps();
       #ifdef USE_NODEPATCHMGR
       CProxy_NodeProxyMgr npm(CkpvAccess(BOCclass_group).nodeProxyMgr);
@@ -662,23 +361,28 @@ void Node::startup() {
     }
   break;
 
-  case 4:
-    if ( simParameters->PMEOn ) {
-      if ( simParameters->useOptPME ) {
-	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-	pme[CkMyPe()].initialize(new CkQdMsg);
-      }
-      else {
-	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
-	pme[CkMyPe()].initialize(new CkQdMsg);
-      }
-    }
-    break;
-    
   case 5:
     if ( simParameters->PMEOn ) {
       if ( simParameters->useOptPME ) {
 	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].initialize(new CkQdMsg);
+      }
+      else {
+	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
+	pme[CkMyPe()].initialize(new CkQdMsg);
+      }
+    }
+
+    #ifdef MEM_OPT_VERSION
+    //migrate atoms to HomePatch processors
+    ioMgr->sendAtomsToHomePatchProcs();
+    #endif
+    break;
+    
+  case 6:
+    if ( simParameters->PMEOn ) {
+      if ( simParameters->useOptPME ) {
+	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
 	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
       }
       else {
@@ -686,16 +390,18 @@ void Node::startup() {
 	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
       }
     }
-    if (!CkMyPe()) {
     #ifdef MEM_OPT_VERSION
-      workDistrib->initAndSendHomePatch();
+    //Now every processor has all the atoms it needs to create the HomePatches.
+    //The HomePatches are created in parallel on every home patch procs.
+    ioMgr->createHomePatches();
     #else
-      workDistrib->distributeHomePatches();      
-    #endif
+    if (!CkMyPe()) {
+      workDistrib->distributeHomePatches();          
     }
+    #endif
   break;
 
-  case 6:
+  case 7:
     if ( simParameters->PMEOn ) {
       if ( simParameters->useOptPME ) {
 	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
@@ -710,7 +416,7 @@ void Node::startup() {
     if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
   break;
 
-  case 7:
+  case 8:
     if (!CkMyPe()) {
       iout << iINFO << "CREATING " << ComputeMap::Object()->numComputes()
            << " COMPUTE OBJECTS\n" << endi;
@@ -723,10 +429,10 @@ void Node::startup() {
     DebugM(4,"Building Sequencers\n");
     buildSequencers();
     DebugM(4,"Initializing LDB\n");
-    LdbCoordinator::Object()->initialize(patchMap,computeMap);
+    LdbCoordinator::Object()->initialize(PatchMap::Object(),ComputeMap::Object());
   break;
 
-  case 8:
+  case 9:
     {
 	//For debugging
 	/*if(!CkMyPe()){
@@ -736,27 +442,8 @@ void Node::startup() {
 	}*/
     }
     #ifdef MEM_OPT_VERSION
-    if(!CkMyPe()){
-	molecule->delEachAtomSigs();
-	molecule->delChargeSpace();
-	if(!simParameters->freeEnergyOn)
-	    molecule->delMassSpace();
-	molecule->delOtherEachAtomStructs();
-	//we can free the pdb data here to save memory because output
-	//is always in the binary format thus saving 3 doubles * numAtoms bytes.
-	pdb->delPDBCoreData();
-    }
-    //decide whether to free memory space for cluster information
-    //the condition could be referred to comment for function
-    //wrap_coor_int in Output.C
-    if(simParameters->wrapAll || simParameters->wrapWater){
-	int peOfCollectionMaster = 0;
-	if(CkNumPes()>1 && simParameters->shiftIOToOne) peOfCollectionMaster = 1;
-	if(CkNumPes()>1 && CkMyPe()!=peOfCollectionMaster)
-	    molecule->delClusterSigs();	
-    }else{
-	molecule->delClusterSigs();
-    }
+    //free space in the Molecule object that are not used anymore
+    ioMgr->freeMolSpace();
     #endif
     gotoRun = true;
   break;
@@ -776,8 +463,7 @@ void Node::startup() {
     }
   }
 }
-#endif
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 void Node::namdOneCommInit()
 {
   if (CkpvAccess(comm) == NULL) {
@@ -787,34 +473,6 @@ void Node::namdOneCommInit()
 #endif
   }
 }
-
-#ifdef CHARMIZE_NAMD
-//It is only executed on pe(0) and called at startup phase 0
-void Node::populateAtomDisArrs(int startupPhase){
-    if(CkMyPe()) return;
-    if(startupPhase) return;
-
-    int disArrSize = molecule->numAtoms/AtomsDisInfo::ATOMDISNUM;
-    int remainAtoms = molecule->numAtoms%AtomsDisInfo::ATOMDISNUM;
-
-    int totalArrSize = disArrSize + (remainAtoms!=0);
-    atomDisArr = CProxy_AtomsDisInfo::ckNew(totalArrSize);
-
-    int atomIndex = 0;
-    Atom *allAtoms = molecule->getAllAtoms();
-    for(int i=0; i<totalArrSize; i++){
-        int actualAtomCnt = AtomsDisInfo::ATOMDISNUM;
-        if(i==disArrSize) actualAtomCnt = remainAtoms;
-
-        AtomStaticInfoMsg *staticMsg = new(actualAtomCnt, 0)AtomStaticInfoMsg;
-        staticMsg->actualNumAtoms = actualAtomCnt;
-        for(int j=0; j<actualAtomCnt; j++, atomIndex++){
-            staticMsg->atoms[j] = allAtoms[atomIndex];
-        }       
-        atomDisArr[i].recvStaticInfo(staticMsg);
-    }    
-}
-#endif
 
 // Namd 1.X style Send/Recv of simulation information
 
@@ -865,17 +523,6 @@ void Node::namdOneSend() {
   if(molecule->numAtoms>=1000000) bufSize = 16*BUFSIZE;
   conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
   molecule->send_Molecule(conv_msg);
-}
-
-void Node::sendCharmArrProxies(AllCharmArrsMsg *msg){
-#ifdef CHARMIZE_NAMD
-    if(CkMyPe()){
-        atomDisArr = msg->atomsDis;        
-    }
-    delete msg;
-#else
-    NAMD_die("sendCharmArrProxies should not be called in this case!");
-#endif
 }
 
 // Initial thread setup

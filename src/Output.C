@@ -138,18 +138,6 @@ int Output::coordinateNeeded(int timestep)
   return positionsNeeded;
 }
 
-/*
- * In order to reduce memory usage, the conditions for calling
- * Molecule::get_cluster_size and Molecule::is_water are very important. 
- *
- * 1. If get_cluster_size is called (wrapAll==true or wrapWater==true), the cluster
- * information has to be maintained. And it is only needed to store on pe 1 (where CollectionMaster resides on)
- * if namd runs with more than 1 processors.
- *
- * 2. If is_water is called (wrapAll==false and wrapWater==true), the "hydrogenGroup" 
- * and "atoms" fields in Molecule object have to be maintained. And such fields are only needed to store on
- * pe 1 (where CollectionMaster resides on) if namd runs with more than 1 processors.
- */
 template <class xVector, class xDone>
 void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
   SimParameters *simParams = Node::Object()->simParameters;
@@ -160,60 +148,8 @@ void wrap_coor_int(xVector *coor, Lattice &lattice, xDone *done) {
   const int wrapAll = simParams->wrapAll;
   Molecule *molecule = Node::Object()->molecule;
   int n = molecule->numAtoms;
-#ifdef MEM_OPT_VERSION
-  if(molecule->get_cluster_contiguity()) {
-      //the general case where the atom ids of a cluster are contiguous
-      //iterate over every cluster
-      for(int aid=0; aid<n;){
-          int curClusterSize = molecule->get_cluster_size_con(aid);
-          if(curClusterSize<0) NAMD_bug("Cluster size is less than 0 at wrap_coor_int");
-          //we encountered the beginning of a cluster, and aid is the current cluster id          
-          Position curClusterCon = 0;
-          //This cluster begins from atom "aid" to atom "aid+curClusterSize-1"
-          for(int i=aid; i<aid+curClusterSize; i++){
-              curClusterCon += coor[i];
-          }
-    
-          //The order of evaluating the following if-condition is very important since it
-          //is related with reducting memory usage. Two points worth noting:
-          //1. molecule->is_water is more expensive to evaluate, so evaluatte wrapAll first
-          //2. if molecule->is_water is actually called, we have to reserve a memory space (O(numAtoms)) 
-          //   for its correctness
-          if(wrapAll || molecule->is_water(aid)){
-              Vector coni = curClusterCon/curClusterSize;
-              Vector trans = ( wrapNearest ? lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni));
-              curClusterCon = trans;
-          }
-          for(int i=aid; i<aid+curClusterSize; i++){
-              if(!wrapAll && !molecule->is_water(i)) continue;
-              coor[i] = coor[i] + curClusterCon;
-          }
-          aid += curClusterSize;
-      }
-  }else{
-      int numClusters = molecule->get_num_clusters();
-      Position *con = new Position[numClusters];
-      for(int i=0; i<numClusters; i++) con[i] = 0;
-      for(int i=0; i<n; i++) {
-          int ci = molecule->get_cluster_idx(i);
-          con[ci] += coor[i];
-      }
-
-      for(int i=0; i<numClusters; i++) {
-          Vector coni = con[i] / molecule->get_cluster_size_uncon(i);
-          Vector trans = ( wrapNearest ? lattice.wrap_nearest_delta(coni) : lattice.wrap_delta(coni));
-          con[i] = trans;
-      }
-
-      for (int i = 0; i < n; ++i ) {
-          if ( ! wrapAll && ! molecule->is_water(i) ) continue;
-          int ci = molecule->get_cluster_idx(i);
-          coor[i] = coor[i] + con[ci];
-      }
-      delete [] con;    
-  }
-#else
   int i;
+#ifndef MEM_OPT_VERSION
   Position *con = new Position[n];
   for ( i = 0; i < n; ++i ) {
     con[i] = 0;
@@ -532,9 +468,7 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
   static Bool first=TRUE;  //  Flag indicating first call
   static int fileid;  //  File id for the dcd file
 
-#ifndef MEM_OPT_VERSION
   static float *x, *y, *z; // Arrays to hold x, y, and z arrays
-#endif
   
   int i;      //  Loop counter
   int ret_code;    //  Return code from DCD calls
@@ -554,7 +488,6 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
 
   if (first)
   {
-#ifndef MEM_OPT_VERSION
     //  Allocate x, y, and z arrays since the DCD file routines
     //  need them passed as three independant arrays to be
     //  efficient
@@ -566,7 +499,6 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     {
       NAMD_err("memory allocation failed in Output::output_dcdfile");
     }
-#endif
 
     //  Open the DCD file
     iout << "OPENING COORDINATE DCD FILE\n" << endi;
@@ -614,7 +546,6 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     first = FALSE;
   }
 
-#ifndef MEM_OPT_VERSION
   //  Copy the coordinates for output
   for (i=0; i<n; i++)
   {
@@ -622,7 +553,6 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
     y[i] = coor[i].y;
     z[i] = coor[i].z;
   }
-#endif
 
   //  Write out the values for this timestep
   iout << "WRITING COORDINATES TO DCD FILE AT STEP "
@@ -650,17 +580,9 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
       unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
       unitcell[1] = unitcell[3] = unitcell[4] = 0.0;
     }
-#ifdef MEM_OPT_VERSION
-    ret_code = write_dcdstep(fileid, n, coor, unitcell);
-#else
     ret_code = write_dcdstep(fileid, n, x, y, z, unitcell);
-#endif
   } else {
-#ifdef MEM_OPT_VERSION
-    ret_code = write_dcdstep(fileid, n, coor, NULL);
-#else
     ret_code = write_dcdstep(fileid, n, x, y, z, NULL);
-#endif
   }
   if (ret_code < 0)
   {
@@ -903,7 +825,7 @@ void Output::write_binary_file(char *fname, int n, Vector *vecs)
 
   //  open the file and die if the open fails
 #ifdef WIN32
-  if ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,                                _S_IREAD|_S_IWRITE)) < 0)
+  if ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,_S_IREAD|_S_IWRITE)) < 0)
 #else
 #ifdef NAMD_NO_O_EXCL
   if ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
@@ -964,3 +886,685 @@ void Output::scale_vels(Vector *v, int n, Real fact)
 }
 /*      END OF FUNCTION scale_vels      */
 
+
+#ifdef MEM_OPT_VERSION
+//////Beginning of Functions related with velocity output//////
+void ParOutput::velocityMaster(int timestep, int n){
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    if ( timestep >= 0 ) {
+
+      //  Output velocity DCD trajectory
+      if ( simParams->velDcdFrequency &&
+         ((timestep % simParams->velDcdFrequency) == 0) )
+      {         
+        output_veldcdfile_master(timestep, n);        
+      }
+
+    //  Output restart file
+      if ( simParams->restartFrequency &&
+         ((timestep % simParams->restartFrequency) == 0) )
+      {
+        iout << "WRITING VELOCITIES TO RESTART FILE AT STEP "
+                  << timestep << "\n" << endi;
+        output_restart_velocities_master(timestep, n);
+        iout << "FINISHED WRITING RESTART VELOCITIES\n" <<endi;
+        fflush(stdout);
+      }
+
+    }
+
+    //  Output final velocities
+    if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
+    {
+      iout << "WRITING VELOCITIES TO OUTPUT FILE AT STEP "
+                  << simParams->N << "\n" << endi;
+      fflush(stdout);
+      output_final_velocities_master(n);
+    }
+
+    //  Close trajectory files
+    if (timestep == END_OF_RUN)
+    {
+      if (simParams->velDcdFrequency) output_veldcdfile_master(END_OF_RUN,0);
+    }
+
+}
+
+//output atoms' velocities from id fID to tID.
+void ParOutput::velocitySlave(int timestep, int fID, int tID, Vector *vecs){
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    if ( timestep >= 0 ) {
+
+      //  Output velocity DCD trajectory
+      if ( simParams->velDcdFrequency &&
+         ((timestep % simParams->velDcdFrequency) == 0) )
+      {         
+        output_veldcdfile_slave(timestep, fID, tID, vecs);
+      }
+
+    //  Output restart file
+      if ( simParams->restartFrequency &&
+         ((timestep % simParams->restartFrequency) == 0) )
+      {
+          int parN = tID-fID+1;
+          int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
+          output_restart_velocities_slave(timestep, parN, vecs, offset);     
+      }
+
+    }
+
+    //  Output final velocities
+    if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
+    {
+        int parN = tID-fID+1;
+        int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
+        output_final_velocities_slave(parN, vecs, offset);
+    }
+
+    //  Close trajectory files
+    if (timestep == END_OF_RUN)
+    {
+      if (simParams->velDcdFrequency) output_veldcdfile_slave(END_OF_RUN, 0, 0, NULL);
+    }
+}
+
+void ParOutput::output_veldcdfile_master(int timestep, int n){
+    int ret_code;    //  Return code from DCD calls
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    //  If this is the last time we will be writing coordinates,
+    //  close the file before exiting
+    if ( timestep == END_OF_RUN ) {
+      if ( ! veldcdFirst ) {
+        iout << "CLOSING VELOCITY DCD FILE\n" << endi;
+        close_dcd_write(veldcdFileID);
+      } else {
+        iout << "VELOCITY DCD FILE WAS NOT CREATED\n" << endi;
+      }
+      return;      
+    }
+
+    if (veldcdFirst)
+    {
+      //  Open the DCD file
+      iout << "OPENING VELOCITY DCD FILE\n" << endi;
+
+      veldcdFileID=open_dcd_write(namdMyNode->simParams->velDcdFilename);
+
+      if (veldcdFileID == DCD_FILEEXISTS)
+      {
+        char err_msg[257];
+
+        sprintf(err_msg, "Velocity DCD file %s already exists!!",
+          namdMyNode->simParams->velDcdFilename);
+
+        NAMD_err(err_msg);
+      }
+      else if (veldcdFileID < 0)
+      {
+        char err_msg[257];
+
+        sprintf(err_msg, "Couldn't open velocity DCD file %s",
+          namdMyNode->simParams->velDcdFilename);
+
+        NAMD_err(err_msg);
+      }
+
+      int NSAVC, NFILE, NPRIV, NSTEP;
+      NSAVC = simParams->velDcdFrequency;
+      NSTEP = NSAVC * (simParams->N/NSAVC);
+      NPRIV = simParams->firstTimestep+NSAVC;
+      NPRIV = NSAVC * (NPRIV/NSAVC);
+      NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+
+      //  Write out the header
+      const int with_unitcell = 0;
+      ret_code = write_dcdheader(veldcdFileID, 
+          simParams->velDcdFilename,
+          n, NFILE, NPRIV, NSAVC, NSTEP,
+          simParams->dt/TIMEFACTOR, with_unitcell);
+
+
+      if (ret_code<0)
+      {
+        NAMD_err("Writing of velocity DCD header failed!!");
+      }
+
+      veldcdFirst = FALSE;
+    }
+
+    //  Write out the values for this timestep
+    iout << "WRITING VELOCITIES TO DCD FILE AT STEP "
+      << timestep << "\n" << endi;
+    fflush(stdout);
+
+    //The following seek will set the stream position to the
+    //beginning of the place where a new timestep output should
+    //be performed.
+    seek_dcdfile(veldcdFileID, 0, SEEK_END);
+
+    // Write out the Cell data which is not necessary right now
+    
+    //write X,Y,Z headers
+    int totalAtoms = namdMyNode->molecule->numAtoms;
+    write_dcdstep_par_XYZUnits(veldcdFileID, totalAtoms);
+
+    //update the header
+    update_dcdstep_par_header(veldcdFileID);    
+}
+
+void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *vecs){
+    int ret_code;    //  Return code from DCD calls
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    //  If this is the last time we will be writing coordinates,
+    //  close the file before exiting
+    if ( timestep == END_OF_RUN ) {
+      if ( ! veldcdFirst ) {        
+        close_dcd_write(veldcdFileID);
+      }
+      delete [] veldcdX;
+      delete [] veldcdY;
+      delete [] veldcdZ;      
+      return;
+    }
+
+    int parN = tID-fID+1;
+
+    if (veldcdFirst)
+    {
+      veldcdFileID=open_dcd_write_par_slave(namdMyNode->simParams->velDcdFilename);
+      if(veldcdFileID < 0)
+      {
+        char err_msg[257];
+
+        sprintf(err_msg, "Couldn't open velocity DCD file %s",
+          namdMyNode->simParams->velDcdFilename);
+
+        NAMD_err(err_msg);
+      }
+      
+      veldcdX = new float[parN];
+      veldcdY = new float[parN];
+      veldcdZ = new float[parN];
+
+      veldcdFirst = FALSE;
+    }
+
+    //The following seek will set the stream position to the
+    //beginning of the place where a new timestep output should
+    //be performed.
+    CmiAssert(sizeof(off_t)==8);
+    int totalAtoms = namdMyNode->molecule->numAtoms;
+    off_t offset = 3*((off_t)totalAtoms)*sizeof(float)+6*sizeof(int);
+    seek_dcdfile(veldcdFileID, -offset, SEEK_END);
+
+    for(int i=0; i<parN; i++){
+        veldcdX[i] = vecs[i].x;
+        veldcdY[i] = vecs[i].y;
+        veldcdZ[i] = vecs[i].z;
+    }
+
+    write_dcdstep_par_slave(veldcdFileID, fID, tID, totalAtoms, veldcdX, veldcdY, veldcdZ);
+}
+
+void ParOutput::output_restart_velocities_master(int timestep, int n){
+    char timestepstr[20];
+
+    int baselen = strlen(namdMyNode->simParams->restartFilename);
+    char *restart_name = new char[baselen+26];
+
+    strcpy(restart_name, namdMyNode->simParams->restartFilename);
+    if ( namdMyNode->simParams->restartSave ) {
+      sprintf(timestepstr,".%d",timestep);
+      strcat(restart_name, timestepstr);
+    }
+    strcat(restart_name, ".vel");
+
+    NAMD_backup_file(restart_name,".old");
+
+    //Always output a binary file
+    write_binary_file_master(restart_name, n);
+
+    delete [] restart_name;
+}
+
+void ParOutput::output_restart_velocities_slave(int timestep, int parN, Vector *vecs, int64 offset){    
+    char timestepstr[20];
+
+    int baselen = strlen(namdMyNode->simParams->restartFilename);
+    char *restart_name = new char[baselen+26];
+
+    strcpy(restart_name, namdMyNode->simParams->restartFilename);
+    if ( namdMyNode->simParams->restartSave ) {
+      sprintf(timestepstr,".%d",timestep);
+      strcat(restart_name, timestepstr);
+    }
+    strcat(restart_name, ".vel");    
+
+    //Always output a binary file
+    write_binary_file_slave(restart_name, parN, vecs, offset);
+
+    delete [] restart_name;
+}
+
+void ParOutput::output_final_velocities_master(int n){
+    char output_name[140];  //  Output filename
+
+    //  Build the output filename
+    strcpy(output_name, namdMyNode->simParams->outputFilename);
+    strcat(output_name, ".vel");
+
+    NAMD_backup_file(output_name);
+
+    //Write the coordinates to a binary file
+    write_binary_file_master(output_name, n);
+}
+
+void ParOutput::output_final_velocities_slave(int parN, Vector *vecs, int64 offset){
+    char output_name[140];  //  Output filename
+
+    //  Build the output filename
+    strcpy(output_name, namdMyNode->simParams->outputFilename);
+    strcat(output_name, ".vel");
+    
+    //Write the coordinates to a binary file
+    write_binary_file_slave(output_name, parN, vecs, offset);
+}
+
+void ParOutput::write_binary_file_master(char *fname, int n){
+    char errmsg[256];
+    int fd;    //  File descriptor
+    int32 n32 = n;
+
+    //  open the file and die if the open fails
+  #ifdef WIN32
+    if ( (fd = _open(fname, O_WRONLY|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,_S_IREAD|_S_IWRITE)) < 0)
+  #else
+  #ifdef NAMD_NO_O_EXCL
+    if ( (fd = open(fname, O_WRONLY|O_CREAT|O_TRUNC|O_LARGEFILE,
+  #else
+    if ( (fd = open(fname, O_WRONLY|O_CREAT|O_EXCL|O_LARGEFILE,
+  #endif
+                             S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
+  #endif
+    {
+      sprintf(errmsg, "Unable to open binary file %s", fname);
+      NAMD_err(errmsg);
+    }
+
+    //  Write out the number of atoms and the vectors
+    NAMD_write(fd, (char *) &n32, sizeof(int32), errmsg);
+
+  #ifdef WIN32
+    if ( _close(fd) )
+  #else
+    if ( close(fd) )
+  #endif
+    {
+      sprintf(errmsg, "Error on closing binary file %s", fname);
+      NAMD_err(errmsg);
+    }
+}
+
+void ParOutput::write_binary_file_slave(char *fname, int parN, Vector *vecs, int64 offset){
+    FILE *ofp = fopen(fname, "rb+");
+    fseek(ofp, 0, SEEK_SET);
+    while(offset > LONG_MAX){
+        fseek(ofp, LONG_MAX, SEEK_CUR);
+        offset -= LONG_MAX;
+    }
+    fseek(ofp, offset, SEEK_CUR);
+
+    fwrite(vecs, sizeof(Vector), parN, ofp);
+    fclose(ofp);
+}
+//////End of Functions related with velocity output//////
+
+
+//////Beginning of Functions related with coordinate output//////
+void ParOutput::coordinateMaster(int timestep, int n, Lattice &lat){
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    if ( timestep >= 0 ) {
+      //  Output a DCD trajectory 
+      if ( simParams->dcdFrequency &&
+         ((timestep % simParams->dcdFrequency) == 0) )
+      {        
+        output_dcdfile_master(timestep, n, 
+            simParams->dcdUnitCell ? &lat : NULL);
+      }
+
+      //  Output a restart file
+      if ( simParams->restartFrequency &&
+         ((timestep % simParams->restartFrequency) == 0) )
+      {
+        iout << "WRITING COORDINATES TO RESTART FILE AT STEP "
+                  << timestep << "\n" << endi;
+        output_restart_coordinates_master(timestep, n);
+        iout << "FINISHED WRITING RESTART COORDINATES\n" <<endi;
+        fflush(stdout);
+      }
+
+/*  Interactive MD is not supported in Parallel IO
+      //  Interactive MD
+      if ( simParams->IMDon &&
+         ( ((timestep % simParams->IMDfreq) == 0) ||
+           (timestep == simParams->firstTimestep) ) )
+      {
+        IMDOutput *imd = Node::Object()->imd;
+        wrap_coor(fcoor,lattice,&fcoor_wrapped);
+        if (imd != NULL) imd->gather_coordinates(timestep, n, fcoor);
+      }
+*/
+    }
+
+/*  EVAL_MEASURE of a timestep is not supported in Parallel IO 
+    if (timestep == EVAL_MEASURE)
+    {
+  #ifdef NAMD_TCL
+      wrap_coor(coor,lattice,&coor_wrapped);
+      Node::Object()->getScript()->measure(coor);
+  #endif
+    }
+*/
+    //  Output final coordinates
+    if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
+    {
+      iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
+                  << simParams->N << "\n" << endi;
+      fflush(stdout);      
+      output_final_coordinates_master(n);
+    }
+
+    //  Close trajectory files
+    if (timestep == END_OF_RUN)
+    {
+      if (simParams->dcdFrequency) output_dcdfile_master(END_OF_RUN,0,NULL);
+    }
+}
+
+void ParOutput::coordinateSlave(int timestep, int fID, int tID, Vector *vecs, FloatVector *fvecs){
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    if ( timestep >= 0 ) {
+      //  Output a DCD trajectory 
+      if ( simParams->dcdFrequency &&
+         ((timestep % simParams->dcdFrequency) == 0) )
+      {        
+        output_dcdfile_slave(timestep, fID, tID, fvecs);
+      }
+
+      //  Output a restart file
+      if ( simParams->restartFrequency &&
+         ((timestep % simParams->restartFrequency) == 0) )
+      {
+        int parN = tID-fID+1;
+        int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
+        output_restart_coordinates_slave(timestep, parN, vecs, offset);
+      }
+
+/*  Interactive MD is not supported in Parallel IO
+      //  Interactive MD
+      if ( simParams->IMDon &&
+         ( ((timestep % simParams->IMDfreq) == 0) ||
+           (timestep == simParams->firstTimestep) ) )
+      {
+        IMDOutput *imd = Node::Object()->imd;
+        wrap_coor(fcoor,lattice,&fcoor_wrapped);
+        if (imd != NULL) imd->gather_coordinates(timestep, n, fcoor);
+      }
+*/
+    }
+
+/*  EVAL_MEASURE of a timestep is not supported in Parallel IO 
+    if (timestep == EVAL_MEASURE)
+    {
+  #ifdef NAMD_TCL
+      wrap_coor(coor,lattice,&coor_wrapped);
+      Node::Object()->getScript()->measure(coor);
+  #endif
+    }
+*/
+    //  Output final coordinates
+    if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
+    {
+      int parN = tID-fID+1;
+      int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
+      output_final_coordinates_slave(parN, vecs, offset);
+    }
+
+    //  Close trajectory files
+    if (timestep == END_OF_RUN)
+    {
+      if (simParams->dcdFrequency) output_dcdfile_slave(END_OF_RUN,0,0,NULL);
+    }
+}
+
+void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattice){
+    int ret_code;    //  Return code from DCD calls
+    SimParameters *simParams = namdMyNode->simParams;
+
+    //  If this is the last time we will be writing coordinates,
+    //  close the file before exiting
+    if ( timestep == END_OF_RUN ) {
+      if ( ! dcdFirst ) {
+        iout << "CLOSING COORDINATE DCD FILE\n" << endi;
+        close_dcd_write(dcdFileID);
+      } else {
+        iout << "COORDINATE DCD FILE WAS NOT CREATED\n" << endi;
+      }
+      return;
+    }
+
+    if (dcdFirst)
+    {
+      //  Open the DCD file
+      iout << "OPENING COORDINATE DCD FILE\n" << endi;
+
+      dcdFileID=open_dcd_write(simParams->dcdFilename);
+
+      if (dcdFileID == DCD_FILEEXISTS)
+      {
+        char err_msg[257];
+
+        sprintf(err_msg, "DCD file %s already exists!!",
+          simParams->dcdFilename);
+
+        NAMD_err(err_msg);
+      }
+      else if (dcdFileID < 0)
+      {
+        char err_msg[257];
+
+        sprintf(err_msg, "Couldn't open DCD file %s",
+          simParams->dcdFilename);
+
+        NAMD_err(err_msg);
+      }
+
+      int NSAVC, NFILE, NPRIV, NSTEP;
+      NSAVC = simParams->dcdFrequency;
+      NSTEP = NSAVC * (simParams->N/NSAVC);
+      NPRIV = simParams->firstTimestep+NSAVC;
+      NPRIV = NSAVC * (NPRIV/NSAVC);
+      NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+
+      //  Write out the header
+      ret_code = write_dcdheader(dcdFileID, 
+          simParams->dcdFilename,
+          n, NFILE, NPRIV, NSAVC, NSTEP,
+          simParams->dt/TIMEFACTOR, lattice != NULL);
+
+
+      if (ret_code<0)
+      {
+        NAMD_err("Writing of DCD header failed!!");
+      }
+
+      dcdFirst = FALSE;
+    }
+
+    //  Write out the values for this timestep
+    iout << "WRITING COORDINATES TO DCD FILE AT STEP "
+      << timestep << "\n" << endi;
+    fflush(stdout);
+
+    //The following seek will set the stream position to the
+    //beginning of the place where a new timestep output should
+    //be performed.
+    seek_dcdfile(dcdFileID, 0, SEEK_END);
+
+    // Write out the Cell data
+    if (lattice) {
+      double unitcell[6];
+      if (lattice->a_p() && lattice->b_p() && lattice->c_p()) {
+        const Vector &a=lattice->a();
+        const Vector &b=lattice->b();
+        const Vector &c=lattice->c();
+        unitcell[0] = a.length();
+        unitcell[2] = b.length();
+        unitcell[5] = c.length();
+        double cosAB = (a*b)/(unitcell[0]*unitcell[2]);
+        double cosAC = (a*c)/(unitcell[0]*unitcell[5]);
+        double cosBC = (b*c)/(unitcell[2]*unitcell[5]);
+        if (cosAB > 1.0) cosAB = 1.0; else if (cosAB < -1.0) cosAB = -1.0;
+        if (cosAC > 1.0) cosAC = 1.0; else if (cosAC < -1.0) cosAC = -1.0;
+        if (cosBC > 1.0) cosBC = 1.0; else if (cosBC < -1.0) cosBC = -1.0;
+        unitcell[1] = cosAB;
+        unitcell[3] = cosAC;
+        unitcell[4] = cosBC;
+      } else {
+        unitcell[0] = unitcell[2] = unitcell[5] = 1.0;
+        unitcell[1] = unitcell[3] = unitcell[4] = 0.0;
+      }
+      write_dcdstep_par_cell(dcdFileID, unitcell);
+    }
+            
+    //write X,Y,Z headers
+    int totalAtoms = namdMyNode->molecule->numAtoms;
+    write_dcdstep_par_XYZUnits(dcdFileID, totalAtoms);
+
+    //update the header
+    update_dcdstep_par_header(dcdFileID);
+}
+void ParOutput::output_dcdfile_slave(int timestep, int fID, int tID, FloatVector *fvecs){
+    int ret_code;    //  Return code from DCD calls
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    //  If this is the last time we will be writing coordinates,
+    //  close the file before exiting
+    if ( timestep == END_OF_RUN ) {
+      if ( ! dcdFirst ) {        
+        close_dcd_write(dcdFileID);
+      }
+      delete [] dcdX;
+      delete [] dcdY;
+      delete [] dcdZ;      
+      return;
+    }
+
+    int parN = tID-fID+1;
+
+    if (dcdFirst)
+    {
+      dcdFileID=open_dcd_write_par_slave(namdMyNode->simParams->dcdFilename);
+      if(dcdFileID < 0)
+      {
+        char err_msg[257];
+
+        sprintf(err_msg, "Couldn't open DCD file %s", namdMyNode->simParams->dcdFilename);
+
+        NAMD_err(err_msg);
+      }
+
+      dcdX = new float[parN];
+      dcdY = new float[parN];
+      dcdZ = new float[parN];
+
+      dcdFirst = FALSE;
+    }
+
+    //The following seek will set the stream position to the
+    //beginning of the place where a new timestep output should
+    //be performed.
+    CmiAssert(sizeof(off_t)==8);
+    int totalAtoms = namdMyNode->molecule->numAtoms;
+    off_t offset = 3*((off_t)totalAtoms)*sizeof(float)+6*sizeof(int);
+    seek_dcdfile(dcdFileID, -offset, SEEK_END);
+
+    for(int i=0; i<parN; i++){
+        dcdX[i] = fvecs[i].x;
+        dcdY[i] = fvecs[i].y;
+        dcdZ[i] = fvecs[i].z;
+    }
+
+    write_dcdstep_par_slave(dcdFileID, fID, tID, totalAtoms, dcdX, dcdY, dcdZ);
+}
+
+void ParOutput::output_restart_coordinates_master(int timestep, int n){
+    char timestepstr[20];
+
+    int baselen = strlen(namdMyNode->simParams->restartFilename);
+    char *restart_name = new char[baselen+26];
+
+    strcpy(restart_name, namdMyNode->simParams->restartFilename);
+    if ( namdMyNode->simParams->restartSave ) {
+      sprintf(timestepstr,".%d",timestep);
+      strcat(restart_name, timestepstr);
+    }
+    strcat(restart_name, ".coor");
+
+    NAMD_backup_file(restart_name,".old");
+
+    //  Generate a binary restart file
+    write_binary_file_master(restart_name, n);
+
+    delete [] restart_name;
+}
+void ParOutput::output_restart_coordinates_slave(int timestep, int parN, Vector *vecs, int64 offset){
+    char timestepstr[20];
+
+    int baselen = strlen(namdMyNode->simParams->restartFilename);
+    char *restart_name = new char[baselen+26];
+
+    strcpy(restart_name, namdMyNode->simParams->restartFilename);
+    if ( namdMyNode->simParams->restartSave ) {
+      sprintf(timestepstr,".%d",timestep);
+      strcat(restart_name, timestepstr);
+    }
+    strcat(restart_name, ".coor");
+
+    //  Generate a binary restart file
+    write_binary_file_slave(restart_name, parN, vecs, offset);
+
+    delete [] restart_name;
+}
+
+void ParOutput::output_final_coordinates_master(int n){
+    char output_name[140];  //  Output filename    
+
+    //  Built the output filename
+    strcpy(output_name, namdMyNode->simParams->outputFilename);
+    strcat(output_name, ".coor");
+
+    NAMD_backup_file(output_name);
+
+    //  Write the velocities to a binary file
+    write_binary_file_master(output_name, n);
+
+}
+void ParOutput::output_final_coordinates_slave(int parN, Vector *vecs, int64 offset){
+    char output_name[140];  //  Output filename
+
+    //  Built the output filename
+    strcpy(output_name, namdMyNode->simParams->outputFilename);
+    strcat(output_name, ".coor");
+
+    //  Write the velocities to a binary file
+    write_binary_file_slave(output_name, parN, vecs, offset);
+}
+//////End of Functions related with coordinate output//////
+#endif

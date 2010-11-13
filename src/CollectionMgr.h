@@ -36,6 +36,8 @@ public:
   void submitPositions(int seq, FullAtomList &a, Lattice l, int prec);
   void submitVelocities(int seq, int zero, FullAtomList &a);
   void sendDataStream(const char *);
+  
+  CkChareID getMasterChareID() { return master; }  
 
   class CollectVectorInstance
   {
@@ -52,17 +54,27 @@ public:
       precisions = p;
       remaining = PatchMap::Object()->numHomePatches();
       aid.resize(0);
+#ifdef MEM_OPT_VERSION
+      outRank.resize(0);
+#endif
       data.resize(0);
       fdata.resize(0);
     }
 
     // true -> send it and delete it!
+#ifdef MEM_OPT_VERSION
+    int append(AtomIDList &a, ResizeArray<int> &oRank, ResizeArray<Vector> &d)
+#else
     int append(AtomIDList &a, ResizeArray<Vector> &d)
+#endif
     {
       int size = a.size();
       for( int i = 0; i < size; ++i )
       {
 	aid.add(a[i]);
+#ifdef MEM_OPT_VERSION
+    outRank.add(oRank[i]);
+#endif
 	if ( precisions & 2 ) data.add(d[i]);
 	if ( precisions & 1 ) fdata.add(d[i]);
       }
@@ -71,6 +83,10 @@ public:
 
     int seq;
     AtomIDList aid;
+#ifdef MEM_OPT_VERSION
+    //record the dest output proc rank the atom goes to
+    ResizeArray<int> outRank;
+#endif
     int precisions;
     ResizeArray<Vector> data;
     ResizeArray<FloatVector> fdata;
@@ -83,9 +99,13 @@ public:
   class CollectVectorSequence
   {
   public:
-
-    CollectVectorInstance* submitData(
-	int seq, AtomIDList &i, ResizeArray<Vector> &d, int prec=2)
+#ifdef MEM_OPT_VERSION
+    CollectVectorInstance* submitData(int seq, AtomIDList &i, ResizeArray<int> &oRank,
+                                      ResizeArray<Vector> &d, int prec=2)
+#else
+    CollectVectorInstance* submitData(int seq, AtomIDList &i, 
+                                      ResizeArray<Vector> &d, int prec=2)
+#endif
     {
       CollectVectorInstance **c = data.begin();
       CollectVectorInstance **c_e = data.end();
@@ -100,7 +120,11 @@ public:
        }
        (*c)->reset(seq,prec);
       }
+#ifdef MEM_OPT_VERSION
+      if ( (*c)->append(i, oRank, d) )
+#else
       if ( (*c)->append(i,d) )
+#endif
       {
         return *c;
       }
@@ -117,15 +141,9 @@ private:
 
   CkChareID master;
 
-
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
 
-public:
-  void setCollectionMaster(SlaveInitMsg *msg){ 
-    master = msg->master; 
-    delete msg;
-  }
 };
 
 #endif

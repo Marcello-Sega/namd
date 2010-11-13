@@ -241,10 +241,13 @@ void RecBisection::compute_patch_load()
    float total_icompute;
 
    for(i=0; i<numPatches; i++) { 
-
+#ifdef MEM_OPT_VERSION
+     numAtoms = patchMap->numAtoms(i);
+     numFixed = patchMap->numFixedAtoms(i);
+#else
      numAtoms      = patchMap->patch(i)->getNumAtoms();
      numFixed      = patchMap->patch(i)->getNumFixedAtoms();
-
+#endif
      patchload[i].total = 0.0;
      patchload[i].edge  = 0.0;
 
@@ -260,8 +263,13 @@ void RecBisection::compute_patch_load()
      
      for(nix=0; nix<nNeighbors; nix++) {
        neighbour = neighbors[nix];
+#ifdef MEM_OPT_VERSION      
+       numNeighAtoms = patchMap->numAtoms(neighbour);
+       numNeighFixed = patchMap->numFixedAtoms(neighbour);
+#else
        numNeighAtoms = patchMap->patch(neighbour)->getNumAtoms();
        numNeighFixed = patchMap->patch(neighbour)->getNumFixedAtoms();
+#endif
        patchload[i].icompute[nix] = 
 	 c_icompute0 +
 	 c_icompute1*(numNeighAtoms*numAtoms-numNeighFixed*numFixed);

@@ -17,10 +17,6 @@
 
 #include "main.h"
 
-#ifdef CHARMIZE_NAMD
-#include "AtomsDisInfo.h"
-#endif
-
 // BEGIN LA
 class Random;
 // END LA
@@ -53,11 +49,10 @@ class LdbCoordinator;
 class ScriptTcl;
 class IMDOutput;
 class Vector;
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Osman Sarood
-// Parallel Input change
+
+#ifdef MEM_OPT_VERSION
 class ParallelIOMgr;
-//////////////////////////////////////////////////////////
+#endif
 
 // Message to send our per processor BOC's list of groupIDs of
 // all other BOC's
@@ -65,14 +60,6 @@ class GroupInitMsg : public CMessage_GroupInitMsg
 {
 public:
   BOCgroup group;
-};
-
-class AllCharmArrsMsg : public CMessage_AllCharmArrsMsg
-{
-#ifdef CHARMIZE_NAMD
-public:
-  CProxy_AtomsDisInfo atomsDis;
-#endif
 };
 
 #define MAX_SCRIPT_PARAM_SIZE 128
@@ -117,19 +104,14 @@ public:
   // Charm Entry point - Read in system data, get all ready to simulate
   static void messageStartUp();
   void startup();  
-  void startUp(CkQdMsg *);  
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Parallel Input Change
-//// Osman Sarood
-  PatchMgr *getPatchMgr(){return patchMgr;}
-  PatchMap *getPatchMap(){return patchMap;}
+  void startUp(CkQdMsg *);
+  
+#ifdef MEM_OPT_VERSION
   ParallelIOMgr *ioMgr;
+#endif
+
   float initVM, initRSS;
   float measureMemory();
-  void namdOneRecvPar();
-  void namdOneSendPar();
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
   // Charm Entry point - synchronize on BOC creation and startup
   static void messageBOCCheckIn();
@@ -138,11 +120,6 @@ public:
 
   // Utility for storing away simulation data for Node
   void saveMolDataPointers(NamdState *);
-
-  //#ifdef CHARMIZE_NAMD  
-  //It is an entry method which has to be declared
-  void sendCharmArrProxies(AllCharmArrsMsg *msg);
-  //#endif
 
   // entry methods for BG/P HPM (performance counters) library
   void startHPM();
@@ -177,11 +154,6 @@ public:
   IMDOutput *imd;
   Vector *coords;  // Only exists during measure from Tcl
 
-  #ifdef CHARMIZE_NAMD
-  CProxy_AtomsDisInfo atomDisArr;
-  #endif
-
-
   // Remove these calls?
   int myid() { return CkMyPe(); }
   int numNodes() { return CkNumPes(); }
@@ -196,11 +168,9 @@ protected:
   ComputeMap *computeMap;
   LdbCoordinator *ldbCoordinator;
 
-private:
-  #ifdef CHARMIZE_NAMD  
-  void populateAtomDisArrs(int startupPhase);
-  #endif
-  
+private:  
+  void bindBocVars();
+
   void namdOneCommInit();
   void namdOneRecv();
   void namdOneSend();

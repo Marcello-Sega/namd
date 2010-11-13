@@ -33,7 +33,6 @@
 /* END gf */
 
 #include "molfile_plugin.h"
-#include "ParallelIOMgr.h"
 
 #include <vector>
 using namespace std;
@@ -54,6 +53,9 @@ class TholeElem;  // Drude model
 class AnisoElem;  // Drude model
 class CrosstermElem;
 class ResidueLookupElem;
+
+struct OutputAtomRecord;
+
 template<class Type> class ObjectArena;
 
 class ExclusionCheck {
@@ -145,6 +147,19 @@ typedef struct constorque_params
    Vector p;            //  Rotation pivot point
 } ConsTorqueParams;
 
+#ifdef MEM_OPT_VERSION
+//indicate a range of atoms from aid1 to aid2
+struct AtomSet{
+    AtomID aid1;
+    AtomID aid2;
+
+    int operator < (const AtomSet &a) const{
+		return aid1 < a.aid1;
+	}
+};
+typedef ResizeArray<AtomSet> AtomSetList;
+#endif
+
 friend class ExclElem;
 friend class BondElem;
 friend class AngleElem;
@@ -156,43 +171,73 @@ friend class CrosstermElem;
 friend class WorkDistrib;
 
 private:
-  void initialize(SimParameters *, Parameters *param);
-            // Sets most data to zero
 
-  #ifdef MEM_OPT_VERSION 
-  //Indexing to constant pools to save space
-  AtomCstInfo *atoms;
-  Index *eachAtomMass; //after initialization, this could be freed (possibly)
-  Index *eachAtomCharge; //after initialization, this could be freed (possibly)
-  AtomNameIdx *atomNames;
-  ObjectArena<char> *nameArena; //the space for names to be allocated  
-  #else
-  Atom *atoms;    //  Array of atom structures
-  ObjectArena<char> *nameArena;
-  AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained on node 0 for VMD interface
-  #endif
+#ifndef MEM_OPT_VERSION
+	Atom *atoms;    //  Array of atom structures
+	ObjectArena<char> *nameArena;
+	AtomNameInfo *atomNames;//  Array of atom name info.  Only maintained on node 0 for VMD interface
+	//replaced by atom signatures
+	Bond *bonds;    //  Array of bond structures
+	Angle *angles;    //  Array of angle structures
+	Dihedral *dihedrals;  //  Array of dihedral structures
+	Improper *impropers;  //  Array of improper structures                          
+	Crossterm *crossterms;  //  Array of cross-term structures
 
+	//These will be replaced by exclusion signatures
+	Exclusion *exclusions;  //  Array of exclusion structures
+	UniqueSet<Exclusion> exclusionSet;  //  Used for building
+
+	int32 *cluster;   //  first atom of connected cluster
+
+	ObjectArena<int32> *tmpArena;
+	int32 **bondsWithAtom;  //  List of bonds involving each atom
+	ObjectArena<int32> *arena;
+
+	//function is replaced by atom signatures
+	int32 **bondsByAtom;  //  List of bonds owned by each atom
+	int32 **anglesByAtom;     //  List of angles owned by each atom
+	int32 **dihedralsByAtom;  //  List of dihedrals owned by each atom
+	int32 **impropersByAtom;  //  List of impropers owned by each atom
+	int32 **crosstermsByAtom;  //  List of crossterms owned by each atom
+
+	int32 **exclusionsByAtom; //  List of exclusions owned by each atom
+	int32 **fullExclusionsByAtom; //  List of atoms excluded for each atom
+	int32 **modExclusionsByAtom; //  List of atoms modified for each atom
+	ObjectArena<char> *exclArena;
+	ExclusionCheck *all_exclusions;
+
+	// DRUDE
+	int32 **tholesByAtom;  // list of Thole correction terms owned by each atom
+	int32 **anisosByAtom;  // list of anisotropic terms owned by each atom
+	// DRUDE
+
+#else
+	//Indexing to constant pools to save space
+	AtomCstInfo *atoms;
+	Index *eachAtomMass; //after initialization, this could be freed (possibly)
+	Index *eachAtomCharge; //after initialization, this could be freed (possibly)
+	AtomNameIdx *atomNames;
+	ObjectArena<char> *nameArena; //the space for names to be allocated  
+
+	//A generally true assumption: all atoms are arranged in the order of clusters. In other words,
+	//all atoms for a cluster must appear before/after any atoms in other clusters
+	//The first atom in the cluster (which has the lowest atom id) stores the cluster size
+	//other atoms in the cluster stores -1
+	int32 *clusterSigs;
+	int32 numClusters;
+	
+	AtomSigID *eachAtomSig;
+	ExclSigID *eachAtomExclSig;
+
+    AtomSetList *fixedAtomsSet;    
+#endif
+ 
   ResidueLookupElem *resLookup; // find residues by name
 
   AtomSegResInfo *atomSegResids; //only used for generating compressed molecule info
 
-  #ifndef MEM_OPT_VERSION
-  //replaced by atom signatures
-  Bond *bonds;    //  Array of bond structures
-  Angle *angles;    //  Array of angle structures
-  Dihedral *dihedrals;  //  Array of dihedral structures
-  Improper *impropers;  //  Array of improper structures                          
-  Crossterm *crossterms;  //  Array of cross-term structures
-  #endif
-  
   Bond *donors;         //  Array of hydrogen bond donor structures
   Bond *acceptors;  //  Array of hydrogen bond acceptor
-
-  #ifndef MEM_OPT_VERSION
-  //These will be replaced by exclusion signatures
-  Exclusion *exclusions;  //  Array of exclusion structures
-  UniqueSet<Exclusion> exclusionSet;  //  Used for building
-  #endif
 
   // DRUDE
   DrudeConst *drudeConsts;  // supplement Atom data (length of Atom array)
@@ -226,74 +271,37 @@ private:
   int32 *fixedAtomFlags;  //  1 for fixed, -1 for fixed group, else 0
   int32 *exPressureAtomFlags; // 1 for excluded, -1 for excluded group.
 
-  #ifdef MEM_OPT_VERSION  
-  //A generally true assumption: all atoms are arranged in the order of clusters. In other words,
-  //all atoms for a cluster must appear before/after any atoms in other clusters
-  //The first atom in the cluster (which has the lowest atom id) stores the cluster size
-  //other atoms in the cluster stores -1
-  int32 *clusterSigs;
-  int32 numClusters;
-  //indicate whether the atom ids of a cluster are contiguous. If not, then
-  //the general true assumption above mentioned will not hold. 
-  int32 isClusterContiguous;
-  #else
-        int32 *cluster;   //  first atom of connected cluster
-  #endif
   //In the memory optimized version: it will be NULL if the general
   //true assumption mentioned above holds. If not, its size is numClusters.
   //In the ordinary version: its size is numAtoms, and indicates the size
   //of connected cluster or 0.
-  int32 *clusterSize;
-                            // 
-        Real *rigidBondLengths;  //  if H, length to parent or 0. or
-        //  if not H, length between children or 0.
+  int32 *clusterSize;                            
+
+	Real *rigidBondLengths;  //  if H, length to parent or 0. or
+	//  if not H, length between children or 0.
 //fepb
-        unsigned char *fepAtomFlags; 
+	unsigned char *fepAtomFlags; 
 //fepe
-
-#ifndef MEM_OPT_VERSION
-  ObjectArena<int32> *tmpArena;
-  int32 **bondsWithAtom;  //  List of bonds involving each atom
-  ObjectArena<int32> *arena;
-#endif
-
-#ifdef MEM_OPT_VERSION
-  AtomSigID *eachAtomSig;
-  ExclSigID *eachAtomExclSig;
-#else
-//function is replaced by atom signatures
-  int32 **bondsByAtom;  //  List of bonds owned by each atom
-  int32 **anglesByAtom;     //  List of angles owned by each atom
-  int32 **dihedralsByAtom;  //  List of dihedrals owned by each atom
-  int32 **impropersByAtom;  //  List of impropers owned by each atom
-  int32 **crosstermsByAtom;  //  List of crossterms owned by each atom
-    
-  int32 **exclusionsByAtom; //  List of exclusions owned by each atom
-  int32 **fullExclusionsByAtom; //  List of atoms excluded for each atom
-  int32 **modExclusionsByAtom; //  List of atoms modified for each atom
-  ObjectArena<char> *exclArena;
-  ExclusionCheck *all_exclusions;
-
-  // DRUDE
-  int32 **tholesByAtom;  // list of Thole correction terms owned by each atom
-  int32 **anisosByAtom;  // list of anisotropic terms owned by each atom
-  // DRUDE
-#endif
-
 
   //occupancy and bfactor data from plugin-based IO implementation of loading structures
   float *occupancy;
   float *bfactor;
 
-        //  List of all exclusions, including
-        //  explicit exclusions and those calculated
-        //  from the bonded structure based on the
-        //  exclusion policy.  Also includes 1-4's.
 
-  void build_lists_by_atom();
-        //  Build the list of structures by atom
+  // added during the trasition from 1x to 2
+  SimParameters *simParams;
+  Parameters *params;
+
+private:
+	void initialize(SimParameters *, Parameters *param);
+	// Sets most data to zero
+
+#ifndef MEM_OPT_VERSION
+	void read_psf_file(char *, Parameters *);
+        //  Read in a .psf file given
+        //  the filename and the parameter
+        //  object to use          
   
-
   void read_atoms(FILE *, Parameters *);
         //  Read in atom info from .psf
   void read_bonds(FILE *, Parameters *);
@@ -328,6 +336,12 @@ private:
   void plgLoadImpropers(int *plgImpropers);
   void plgLoadCrossterms(int *plgCterms);
 
+	//  List of all exclusions, including
+	//  explicit exclusions and those calculated
+	//  from the bonded structure based on the
+	//  exclusion policy.  Also includes 1-4's.
+  void build_lists_by_atom();
+	//  Build the list of structures by atom
 
   void build12excl(void);
   void build13excl(void);
@@ -336,24 +350,23 @@ private:
   // DRUDE: extend exclusions for Drude and LP
   void build_inherited_excl(int);
   // DRUDE
-  #ifdef MEM_OPT_VERSION
-  void stripFepFixedExcl(void);
-  #else
   void stripFepExcl(void);
-  #endif
 
   void build_exclusions();
-
   // analyze the atoms, and determine which are oxygen, hb donors, etc.
   // this is called after a molecule is sent our (or received in)
   void build_atom_status(void);
 
-  // added during the trasition from 1x to 2
-  SimParameters *simParams;
-  Parameters *params;
+#else
+  //the method to load the signatures of atoms etc. (i.e. reading the file in 
+  //text fomrat of the compressed psf file)
+  void read_mol_signatures(char *fname, Parameters *params, ConfigList *cfgList=0);	
+  void load_one_inputatom(int aid, OutputAtomRecord *one, InputAtom *fAtom);
+  void build_excl_check_signatures();  
+#endif
 
-  void read_parm(const GromacsTopFile *);  
-
+	void read_parm(const GromacsTopFile *);  
+	  
 public:
   // DRUDE
   int is_drude_psf;      // flag for reading Drude PSF
@@ -367,8 +380,6 @@ public:
   // data for tail corrections
   BigReal tail_corr_ener;
   BigReal tail_corr_virial;
-
-
 
 #ifdef MEM_OPT_VERSION
   AtomCstInfo *getAtoms() const { return atoms; }
@@ -528,14 +539,10 @@ public:
 
   ~Molecule();    //  Destructor
 
-  void read_psf_file(char *, Parameters *);
-        //  Read in a .psf file given
-        //  the filename and the parameter
-        //  object to use  
-
   void send_Molecule(MOStream *);
         //  send the molecular structure 
         //  from the master to the clients
+
   void receive_Molecule(MIStream *);
         //  receive the molecular structure
         //  from the master on a client
@@ -572,6 +579,10 @@ public:
       Bool doHydrogen);
   void build_langevin_params(StringList *, StringList *, PDB *, char *);
         //  Build the set of langevin dynamics parameters
+
+#ifdef MEM_OPT_VERSION
+  void load_fixed_atoms(StringList *fixedFile);
+#endif
 
   void build_fixed_atoms(StringList *, StringList *, PDB *, char *);
         //  Determine which atoms are fixed (if any)
@@ -611,12 +622,12 @@ public:
   int get_cluster_size_uncon(int cIdx) const { return clusterSize[cIdx]; }
   int get_cluster_idx(int aid) const { return clusterSigs[aid]; }
   int get_num_clusters() const { return numClusters; }
-  int get_cluster_contiguity() { return isClusterContiguous; }
   #else
   int get_cluster(int anum) const { return cluster[anum]; }
   int get_clusterSize(int anum) const { return clusterSize[anum]; }
   #endif
 
+#ifndef MEM_OPT_VERSION
   const float *getOccupancyData() { return (const float *)occupancy; }
   void setOccupancyData(molfile_atom_t *atomarray);
   void freeOccupancyData() { delete [] occupancy; occupancy=NULL; }
@@ -624,12 +635,7 @@ public:
   const float *getBFactorData() { return (const float *)bfactor; }
   void setBFactorData(molfile_atom_t *atomarray);
   void freeBFactorData() { delete [] bfactor; bfactor=NULL; }
-
-  #ifdef CHARMIZE_NAMD
-  Atom *getAllAtoms() {
-      return atoms;
-  }
-  #endif
+#endif
 
   //  Get the mass of an atom
   Real atommass(int anum) const
@@ -927,11 +933,21 @@ public:
         }
 //fepe
 
+#ifndef MEM_OPT_VERSION
   Bool is_atom_fixed(int atomnum) const
   {
     return (numFixedAtoms && fixedAtomFlags[atomnum]);
   }
-
+#else
+  //Since binary search is more expensive than direct array access,
+  //and this function is usually called for consecutive atoms in this context,
+  //the *listIdx returns the index to the range of atoms [aid1, aid2]
+  //that are fixed. If the atom aid is fixed, then aid1=<aid<=aid2;
+  //If the atom aid is not fixed, then aid1 indicates the smallest fixed atom
+  //id that is larger than aid; so the listIdx could be equal the size of
+  //fixedAtomsSet. --Chao Mei
+  Bool is_atom_fixed(int aid, int *listIdx=NULL) const;
+#endif
         
   Bool is_atom_stirred(int atomnum) const
   {
@@ -970,19 +986,17 @@ public:
   void print_exclusions();//  Print out list of exclusions
 
 public:  
-//////////////////////////////////////////////////////////////////////////////////////////////////////
-// Osman Sarood
-// Parallel Input
-// comment out the read_compressed_psf_file from above and make it public. Declare the following new methods as well.
   int isOccupancyValid, isBFactorValid;
 
-  void read_hdr_info(char *fname, Parameters *params, ConfigList *cfgList=0);
+#ifdef MEM_OPT_VERSION
+  //read the per-atom file for the memory optimized version where the file 
+  //name already exists the range of atoms to be read are 
+  //[fromAtomID, toAtomID].
+  void read_binary_atom_info(int fromAtomID, int toAtomID, InputAtomList &inAtoms);
+
   int getNumCalcExclusions(){return numCalcExclusions;}
   void setNumCalcExclusions(int x){numCalcExclusions= x;}
-  void read_compressed_psf_file(char *, Parameters *, ConfigList *cfgList);
-  void read_basic_info(char *, Parameters *, ConfigList *cfgList);
-  void getCountsToMaster();
-#ifdef MEM_OPT_VERSION
+
   Index getEachAtomMass(int i){return eachAtomMass[i];}
   Index getEachAtomCharge(int i){return eachAtomCharge[i];}
 
@@ -990,11 +1004,10 @@ public:
       return eachAtomExclSig[aid];
   }
 
-  void read_compressed_psf_file_parallelIO(char *fname, Parameters *params);
   Real *getAtomMassPool(){return atomMassPool;}
   Real *getAtomChargePool(){return atomChargePool;}
-  AtomCstInfo *getAtoms(){return atoms;}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  AtomCstInfo *getAtoms(){return atoms;}  
+
   int atomSigPoolSize;
   AtomSignature *atomSigPool;
 
@@ -1029,9 +1042,7 @@ public:
   //This is the final data structure we want to store  
   ExclusionCheck *exclChkSigPool;
 
-  void addNewExclSigPool(const vector<ExclusionSignature>&);
-
-  void build_excl_check_signatures();
+  void addNewExclSigPool(const vector<ExclusionSignature>&);  
 
   void delEachAtomSigs(){    
       //for NAMD-smp version, only one Molecule object is held
@@ -1072,8 +1083,19 @@ public:
       clusterSigs = NULL;
   }
 
-  void delOtherEachAtomStructs();
+  void delAtomNames(){
+      if(CmiMyRank()) return;
+      delete [] atomNamePool;
+      delete [] atomNames;
+      atomNamePool = NULL;
+      atomNames = NULL;
+  }
 
+  void delFixedAtoms(){
+      if(CmiMyRank()) return;
+      delete fixedAtomsSet;
+      fixedAtomsSet = NULL;
+  }
 
 private:
   Index insert_new_mass(Real newMass);

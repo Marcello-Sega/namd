@@ -1,7 +1,5 @@
 #include <stdio.h>
 #include "BOCgroup.h"
-#include "ParallelIOMgr.decl.h"
-#include "ParallelIOMgr.h"
 #include "Molecule.h"
 #include "Node.h"
 #include "Node.decl.h"
@@ -12,1308 +10,1560 @@
 #include "PatchMap.inl"
 #include "packmsg.h"
 #include "HomePatch.h"
-#ifdef MEM_OPT_VERSION
+#include "InfoStream.h"
+#include "CollectionMaster.h"
+#include "CollectionMgr.h"
 
-// Method used to distribute assigned nodes inof
-void ParallelIOMgr::initAssignedNodesParallel()
-{
-  PatchMap *patchMap=Node::Object()->getPatchMap();
-  assignedNodesParallel=new int[patchMap->numPatches()];
-  for(int p=0;p<patchMap->numPatches();p++)
-  {
-          assignedNodesParallel[p]=patchMap->node(p);
-  }
-  broadcastPatchInfo();
-}
+#include "ParallelIOMgr.decl.h"
+#include "ParallelIOMgr.h"
 
-// Helper method which calls method to calculate atom-to-patch assignment method
-void ParallelIOMgr::calcAtomsEachPatch()
-{
-  CProxy_ParallelIOMgr pIO(thisgroup);
-  pIO.caclNumAtomsInEachPatchParallel();
-}
-#endif
-// does the atom-to-patch assignment
-void ParallelIOMgr::caclNumAtomsInEachPatchParallel(){
-#ifdef MEM_OPT_VERSION
-  PatchMap *patchMap = PatchMap::Object();
-  int numPatches=patchMap->numPatches();
-  if(Node::Object()->ioMgr->isInputProc(CkMyPe()))
-  {
-    patchMap->initTmpPatchAtomsList();
-    StringList *current;
-    int i;
-    CProxy_Node nd(CpvAccess(BOCclass_group).node);
-    Node *node = nd.ckLocalBranch();
-    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
-    PatchMgr *patchMgr = pm.ckLocalBranch();
-    SimParameters *params = node->simParameters;
-    Molecule *molecule = node->molecule;
-    PDB *pdb = node->pdb;
-
-
-    int numAtomsPerProc=Node::Object()->ioMgr->getNewTotalAtoms();
-
-    vector<int> *eachPatchAtomList = patchMap->getTmpPatchAtomsList();
-    int *patchAtomCnt = new int[numPatches];    
-    memset(patchAtomCnt, 0, sizeof(int)*numPatches);
-
-    const Lattice lattice = params->lattice;
-
-    Position eachAtomPos;
-    if (params->splitPatch == SPLIT_PATCH_HYDROGEN)
-    {
-
-      int aid, pid=0;
-      for(i=0; i < numAtomsPerProc; i++)
-        {        
-        aid = hydrogenGroupPar[i].atomID;
-        Node::Object()->ioMgr->get_position_for_atom_Parallel(&eachAtomPos,aid);
-        if(hydrogenGroupPar[i].isMP)
-            pid = patchMap->assignToPatch(eachAtomPos,lattice);
-        
-	patchAtomCnt[pid]++;
-        eachPatchAtomList[pid].push_back(aid);
-        }
-      }
-    else
-    {
-      for(i=0; i < numAtomsPerProc; i++)
-      {
-	Node::Object()->ioMgr->get_position_for_atom_Parallel(&eachAtomPos,i);
-        int pid ;
-        pid= patchMap->assignToPatch(eachAtomPos,lattice);        
-        patchAtomCnt[pid]++;
-        eachPatchAtomList[pid].push_back(i);
-        }
-    }   
-      AtomsPerPatchMsg *msg1=new AtomsPerPatchMsg;
-      msg1->patchAtomCnt=patchAtomCnt;
-      msg1->numPatches=numPatches;
-
-      CProxy_ParallelIOMgr pIO(thisgroup);
-      pIO[0].receiveNumAtomsPerPatch((AtomsPerPatchMsg*)AtomsPerPatchMsg::pack(msg1));
-  }
-#endif
-}
-
-#ifdef MEM_OPT_VERSION
-//gets the velocities for a given atom id
-void ParallelIOMgr::get_position_for_patch_creationVel(Vector *pos,int aid,int aidIdx)
-{
-  int i=aidIdx;
-  FullAtom *recvAt=this->finalAtomList.begin();
-  pos->x=recvAt[i].velocity.x;
-  pos->y=recvAt[i].velocity.y;
-  pos->z=recvAt[i].velocity.z;
-}
-
-// gets the position for a given atoms id
-void ParallelIOMgr::get_position_for_patch_creation(Vector *pos,int aid,int aidIdx)
-{
-  int i=aidIdx;
-  FullAtom *recvAt=this->finalAtomList.begin();
-  pos->x=recvAt[i].position.x;
-  pos->y=recvAt[i].position.y;
-  pos->z=recvAt[i].position.z;
-}
-
-// helper method which broadcasts the patch-to-node assignment
-void ParallelIOMgr::broadcastPatchInfo()
-{
-  CProxy_ParallelIOMgr pIO(thisgroup);
-  PatchMap *patchMap=Node::Object()->getPatchMap();
-  for(int p=0;p<CkNumPes();p++)
-  {
-    NodeAssignmentMsg *msg=new NodeAssignmentMsg;
-    msg->totalPatches=patchMap->numPatches();
-    msg->atomsPerPatchParallel=atomsPerPatchParallel;
-    msg->nodeAssigned=assignedNodesParallel;                
-    pIO[p].sendAssignedNode((NodeAssignmentMsg*)NodeAssignmentMsg::pack(msg));
-  }  
-}
+#ifndef _LARGEFILE_SOURCE
+#include "largefiles.h"
 #endif
 
-// entry method through which each chare obtains patch-to-node assignment
-void ParallelIOMgr::sendAssignedNode(NodeAssignmentMsg *msg)
-{
-#ifdef MEM_OPT_VERSION
-  CProxy_Node nd(CpvAccess(BOCclass_group).node);
-  Node *node = nd.ckLocalBranch();
-  Molecule *molecule = node->molecule;
-
-  PatchMap *patchMap = PatchMap::Object();
-
-
-  if(patchMap->numPatches()==0) NAMD_bug("Number of patches are zero in WorkDistrib.C!");
-    assignedNodesParallel=new int[patchMap->numPatches()];
-  for(int i=0;i<patchMap->numPatches();i++)
-  {
-    assignedNodesParallel[i]=msg->nodeAssigned[i];
-  }
-  atomsPerPatchParallel=msg->atomsPerPatchParallel;
-  Node::Object()->ioMgr->createAtomHoldPatchTransfer(msg->totalPatches);
-#endif
-}
-
-#ifdef MEM_OPT_VERSION
-// to free space taken by patches
-void ParallelIOMgr::deleteAtomHoldPatchTransfer()
-{
-  delete [] patchesAfterPatchExchange;
-  delete [] patchAtomList;// = new vector<int>[numPatches];
-  delete [] patchAtomIdMappingList;// = new vector<int>[numPatches];
-  hydrogenGroupPerProc.resize(0);
-}
-
-// space allocated to hold atom data just before the creation of patches
-void ParallelIOMgr::createAtomHoldPatchTransfer(int numPatches)
-{
-
-  currentAtomsAfterPatchExchange=0;
-  int totalAtomsOnProc=0;
-  for(int i=0;i<numPatches;i++)
-  {
-                
-    if(CkMyPe()==assignedNodesParallel[i])
-    {
-               
-      totalAtomsOnProc+=atomsPerPatchParallel[i];
-    }       
-  }
-  patchesAfterPatchExchange=new int[totalAtomsOnProc];
-  patchAtomList = new vector<int>[numPatches];
-  patchAtomIdMappingList = new vector<int>[numPatches];
-  hydrogenGroupPerProc.resize(totalAtomsOnProc);
-}
-
-// method that creates the patches after the data has moved to approporate processors
-void ParallelIOMgr::createPatchesThisProc()
-{
-  Vector *velocities = new Velocity[currentAtomsAfterPatchExchange];
-  if ( simParameters->initialTemp < 0.0 ) {
-  }
-  else
-    Node::Object()->workDistrib->random_velocities_parallel(simParameters->initialTemp,molecule,velocities,currentAtomsAfterPatchExchange);
-  hydrogenGroupPerProc.sort();
-  mappingHydGPPerProc=new int[hydrogenGroupPerProc.size()];
-  mapHydGPPerProc();
-  for(int i=0;i<hydrogenGroupPerProc.size();i++)
-  {
-    int aid=hydrogenGroupPerProc[i].atomID;
-    int aidIdx=hydrogenGroupPerProc[i].atomHoldIdxPar;
-    int patchID=patchesAfterPatchExchange[aidIdx];
-    patchAtomList[patchID].push_back(aid);
-    patchAtomIdMappingList[patchID].push_back(aidIdx);
-  }
-  for(int i=0; i < Node::Object()->getPatchMap()->numPatches(); i++)
-  {
-    if(assignedNodesParallel[i]==CkMyPe())
-    {
-      FullAtomList *onePatchAtoms = new FullAtomList;
-      Node::Object()->workDistrib->fillOnePatchCreationParallelIO(i, onePatchAtoms, velocities);
-      Node::Object()->getPatchMgr()->createHomePatch(i,*onePatchAtoms);
-    }
-  }
-  delete [] velocities;
-}
-#endif
-// entry method that receives the atoms transferred in order to complete migration groups at each proc
-void ParallelIOMgr::receiveMigrationChildren(MoveFullAtomsMsg *msg)
-{
-#ifdef MEM_OPT_VERSION
-
-  atomsEnteringProc=msg->atom.size();
-  FullAtom *recvList=msg->atom.begin();
-  for(int i=0;i<msg->atom.size();i++)
-  {
-
-    FullAtom newAt;
-    newAt=recvList[i];
-    recvAtomList.add(newAt);
-  }
-
-  if(checkForSendAndRecv() && hydrogenGPUpated==false)
-    hydrogenGPUpated=true;
-    
-#endif
-}
-
-// used to recevie the number of atoms per patch so that the total can be calculated. Called on pe0
-void ParallelIOMgr::receiveNumAtomsPerPatch(AtomsPerPatchMsg *msg1)
-{
-#ifdef MEM_OPT_VERSION
-  procsReceived++;
-  numProcsSentNumAtomsPerPatch++;
-  for(int i=0;i<msg1->numPatches;i++)
-    atomsPerPatchParallel[i]=atomsPerPatchParallel[i]+msg1->patchAtomCnt[i];
-  
-  PatchMap *patchMap=Node::Object()->getPatchMap();
-  int numPatches = patchMap->numPatches();
-  int numAts=0;
-  for(int i=0; i < numPatches; i++)
-    numAts+=atomsPerPatchParallel[i];
-    
-  if(procsReceived==numInputProcs)
-  {
-    for(int i=0;i<patchMap->numPatches();i++)
-    {
-      HomePatch *patch = new HomePatch(i, atomsPerPatchParallel[i]);
-      patchMap->registerMyPatch(i,patch);
-    }
-  }
-  delete [] msg1->patchAtomCnt;
-  delete msg1;
-#endif
-}
-
-// helper function to intiate final atom transfer before patch creation
-void ParallelIOMgr::atomExchangeForPatchCreation()
-{
-#ifdef MEM_OPT_VERSION
-    CProxy_ParallelIOMgr pIO(thisgroup);
-    for(int i=0;i<numInputProcs;i++)
-      pIO[inputProcArray[i]].sendCoordinatesToProcs();  
-#endif
-}
-
-// preparing messages to be sent to other procs so that patches can be created
-void ParallelIOMgr::sendCoordinatesToProcs()
-{
-#ifdef MEM_OPT_VERSION
-
-  AtomListForPatchCreateMsg **msg=new AtomListForPatchCreateMsg*[CkNumPes()];
-  FullAtomList *migrationAtoms=new FullAtomList[CkNumPes()];
-
-
-  PatchMap *patchMap = Node::Object()->getPatchMap();        
-  if(isInputProc(CkMyPe()))
-  {
-    int **atomsPerPatch=new int*[CkNumPes()];
-    int **patcheNumsToSend=new int*[CkNumPes()];
-    int *patchesToSend=new int[CkNumPes()];
-
-    for(int inProc=0;inProc<CkNumPes();inProc++)
-    {
-      int patchesToThisProc=0;
-      for(int i=0;i<patchMap->numPatches();i++)
-      {
-	if(inProc==assignedNodesParallel[i])
-	  patchesToThisProc++;
-	             
-      }
-      atomsPerPatch[inProc]=new int[patchesToThisProc];
-      patcheNumsToSend[inProc]=new int[patchesToThisProc];
-      patchesToSend[inProc]=0;
-    }
-
-    fflush(stdout);
-    for(int p=0;p<patchMap->numPatches();p++)
-    {
-      vector<int> *eachPatchAtomsList = patchMap->getTmpPatchAtomsList();
-      vector<int> *thisPatchAtomsList = &eachPatchAtomsList[p];
-      int inProc=assignedNodesParallel[p];
-      {
-        HydrogenGroupID *hg = molecule->hydrogenGroup.begin();
-        HydrogenGroupID *hgPar = hydrogenGroupPar.begin();
-
-        int startAtom=getRecordOffset();
-
-        int endAtom=startAtom+getAtomsAssignedThisProc();
-        for(int at=0;at<thisPatchAtomsList->size();at++)
-        {
-	  int aid = thisPatchAtomsList->at(at);
-	  Position pos;
-	  Position vel;
-
-	  get_position_for_atom_Parallel(&pos,aid);
-	  if ( simParameters->initialTemp < 0.0 ) {
-	    get_position_for_atom_ParallelVel(&vel, aid);
-	  }
-	  FullAtom newAt;
-	  newAt.id=aid;
-	  newAt.position.x=pos.x;
-	  newAt.position.y=pos.y;
-	  newAt.position.z=pos.z;
-          if ( simParameters->initialTemp < 0.0 ) {
-	    newAt.velocity.x=vel.x;
-	    newAt.velocity.y=vel.y;
-	    newAt.velocity.z=vel.z;
-          }
-          bool found=false;
-          if(!isAtomSent(aid))
-          {
-            if(aid>=startAtom && aid<endAtom)
-            {
-              found=true;
-	      newAt.GPID=hg[aid-recordOffset].GPID;
-	      newAt.atomsInGroup=hg[aid-recordOffset].atomsInGroup;
-	      newAt.isMP=hg[aid-recordOffset].isMP;
-	      newAt.migrationGroupSize=hg[aid-recordOffset].atomsInMigrationGroup;
-	      newAt.MPID=hg[aid-recordOffset].MPID;
-	      newAt.waterVal=hg[aid-recordOffset].waterVal;
-
-            }
-          }
-          if(newRecvAtom(aid))
-          {
-	    for(int i=0;i<getNewTotalAtoms();i++)
-            {
-	      if(hgPar[i].atomID==aid)
-              {
-		found=true;
-		newAt.GPID=hgPar[i].GPID;
-		newAt.atomsInGroup=hgPar[i].atomsInGroup;
-		newAt.isMP=hgPar[i].isMP;
-		newAt.migrationGroupSize=hgPar[i].atomsInMigrationGroup;
-		newAt.MPID=hgPar[i].MPID;
-		newAt.waterVal=hgPar[i].waterVal;
-              }
-	    }
-          }
-          if(found==false)
-            NAMD_bug("In workDistrib.C there is a problem in sendAssignedNodeToEachInputProc()");
-          #ifdef MEM_OPT_VERSION
-	  newAt.sigId=atomsigIDPar(aid);
-          #endif
-	  newAt.exclId=atomexclsigIDPar(aid);
-	  newAt.vdwType=atomvdwtypePar(aid);
-	  newAt.mass=atommassPar(aid);
-	  newAt.charge=atomchargePar(aid);
-                                                
-	  migrationAtoms[inProc].add(newAt);                                                
-        }
-        atomsPerPatch[inProc][patchesToSend[inProc]]=thisPatchAtomsList->size();
-        patcheNumsToSend[inProc][patchesToSend[inProc]]=p;
-        patchesToSend[inProc]++;
-
-
-                                
-      }
-    }
-    CProxy_Node cm(thisgroup);
-    for(int inProc=0;inProc<CkNumPes();inProc++)
-    {
-      if(migrationAtoms[inProc].size()>0)
-      {
-	msg[inProc] = new AtomListForPatchCreateMsg();
-	msg[inProc]->patchesToSend=patchesToSend[inProc];
-	msg[inProc]->atom=migrationAtoms[inProc];
-	msg[inProc]->atomsPerPatch=atomsPerPatch[inProc];
-	msg[inProc]->patcheNumsToSend=patcheNumsToSend[inProc];
-                        
-        CProxy_ParallelIOMgr ioMgrP(thisgroup);
-	ioMgrP[inProc].getPatchCoordinates((AtomListForPatchCreateMsg*)AtomListForPatchCreateMsg::pack(msg[inProc]));
-
-      }
-      delete [] atomsPerPatch[inProc];
-      delete [] patcheNumsToSend[inProc];
-    }
-    delete [] atomsPerPatch;
-    delete [] patcheNumsToSend;
-
-
-  }
-                
-  fflush(stdout);
-#endif
-}
-                        
-
-// method which is called to transfer atom data before patch creation
-void ParallelIOMgr::getPatchCoordinates(AtomListForPatchCreateMsg *msg)
-{
-#ifdef MEM_OPT_VERSION
-  int totalAtomsOnProc=0;
-  PatchMap *patchMap=Node::Object()->getPatchMap();
-  for(int i=0;i<patchMap->numPatches();i++)
-  {
-    // if the patch is assigned to this proc^M
-    if(CkMyPe()==assignedNodesParallel[i])
-    {                        //add the num of atoms in that patch to get the total number of atoms on this proc.
-     totalAtomsOnProc+=atomsPerPatchParallel[i];
-    }
-  }
-  // for every patch in the system
-  int allAtomCount=0;
-  // iterate for numPatchesSent
-  for(int p=0;p<msg->patchesToSend;p++)
-  {
-    int atomsInThisPatch=msg->atomsPerPatch[p];
-    // for each of the atoms present in the patch.
-    FullAtom *recvAtom=msg->atom.begin();
-    for(int at=0;at<atomsInThisPatch;at++)
-    {
-      FullAtom newAt;
-      int aid = recvAtom[allAtomCount].id;
-      if ( simParameters->initialTemp < 0.0 ) {
-
-	newAt.velocity.x=recvAtom[allAtomCount].velocity.x;
-	newAt.velocity.y=recvAtom[allAtomCount].velocity.y;
-	newAt.velocity.z=recvAtom[allAtomCount].velocity.z;
-      }
-
-      newAt.position.x=recvAtom[allAtomCount].position.x;
-      newAt.position.y=recvAtom[allAtomCount].position.y;
-      newAt.position.z=recvAtom[allAtomCount].position.z;
-
-      patchesAfterPatchExchange[currentAtomsAfterPatchExchange]=msg->patcheNumsToSend[p];
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomID=aid;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomsInGroup=recvAtom[allAtomCount].atomsInGroup;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].GPID=recvAtom[allAtomCount].GPID;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].isGP=1;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].isMP=recvAtom[allAtomCount].isMP;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomsInMigrationGroup=recvAtom[allAtomCount].migrationGroupSize;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].MPID=recvAtom[allAtomCount].MPID;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].waterVal=recvAtom[allAtomCount].waterVal;
-
-      if(hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomsInGroup==0) 
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].isGP = 0;
-      hydrogenGroupPerProc[currentAtomsAfterPatchExchange].atomHoldIdxPar=currentAtomsAfterPatchExchange;
-
-      newAt.id=aid;
-      newAt.mass=recvAtom[allAtomCount].mass;
-      newAt.charge=recvAtom[allAtomCount].charge;
-      newAt.sigId=recvAtom[allAtomCount].sigId;
-      newAt.exclId=recvAtom[allAtomCount].exclId;
-      newAt.vdwType=recvAtom[allAtomCount].vdwType;
-      finalAtomList.add(newAt);
-
-      currentAtomsAfterPatchExchange++;
-      allAtomCount++;
-    }
-  }
-  delete [] msg->atomsPerPatch;
-  delete [] msg->patcheNumsToSend;
-  delete msg;
-#endif
-}
-                
-#ifdef MEM_OPT_VERSION
-// initialization to determine which procs would be the input procs
-void ParallelIOMgr::initInputProcArray(int inputProcs)
-{
-  inputProcArray=new int[inputProcs];
-  numInputProcs=inputProcs;
-  for(int p=0;p<inputProcs;p++)
-    inputProcArray[p]=p;
-}
-
-// to determine whether a given proc is an input proc
-bool ParallelIOMgr::isInputProc(int proc)
-{
-  for(int i=0;i<numInputProcs;i++)
-  {
-    if(proc==inputProcArray[i])
-      return true;
-  }
-  return false;
-}
-
-//get the idx for a proc in the input proc array
-int ParallelIOMgr::inputProcIndex(int proc)
-{
-  for(int i=0;i<numInputProcs;i++)
-  {
-    if(proc==inputProcArray[i])
-      return i;
-  }
-  return -1;
-}
-
-// checking for conditions not yet compatible with parallel IO
-void ParallelIOMgr::checkConfigParas()
-{
-  if(Node::Object()->simParameters->numinputprocs>CkNumPes())
-    NAMD_bug("Num of Input Processors exceed the total number of processors! They can not be more than p-1.\n");
-  
-  if(Node::Object()->simParameters->pairInteractionOn)
-    NAMD_bug("pairInteractionOn can not work with ParallelIO\n");
-
-  if(Node::Object()->simParameters->alchFepOn)
-    NAMD_bug("alchFepOn can not work with ParallelIO\n");
-
-  if(Node::Object()->simParameters->alchThermIntOn)
-    NAMD_bug("alchThermIntOn can not work with ParallelIO\n");
-
-  if(Node::Object()->simParameters->lesOn)
-    NAMD_bug("lesOn can not work with ParallelIO\n");
-
-  if((Node::Object()->state->getConfigList()->find("bincoordinates"))==NULL)
-    NAMD_bug("Please specify the bincoordinates file for ParallelIO\n");
-  
-}
-
-// initialization needed for the parallel IO manager. Entry point through Scripttcl
-void ParallelIOMgr::initParallelInput(){
-  checkConfigParas();
-  CProxy_Node cml(thisgroup);
-  setPointers(Node::Object()->molecule,cml,Node::Object()->state,Node::Object()->getPatchMgr(),Node::Object()->simParameters);
-  int inputProcs = Node::Object()->simParameters->numinputprocs;
-
-for(int i=0;i<CkNumPes();i++)
-{
-  ConfigListMessage *pmsg=new ConfigListMessage();
-  if(state->getConfigList()!=NULL) pmsg->cfgList=state->getConfigList();
-  initInputProcArray(inputProcs);
-  pmsg->numAtoms=molecule->numAtoms;
-  pmsg->doFlip=doFlip;
-  CProxy_ParallelIOMgr pIO(thisgroup);
-  pIO[i].readCoordinatesAndVel((ConfigListMessage*)ConfigListMessage::pack(pmsg));
-}
-
-}
-#endif
-// read assigned atoms positions and velocities
-void ParallelIOMgr::readCoordinatesAndVel(ConfigListMessage *pmsg)
-{
-#ifdef MEM_OPT_VERSION
-  int inP = Node::Object()->simParameters->numinputprocs;
-
-  if(CkMyPe())
-  {
-    state=new NamdState();
-    Node::Object()->state=state;
-    state->setConfigList(pmsg->cfgList);
-  }
-  initInputProcArray(inP);
-  totalAtomsSys=pmsg->numAtoms;
-  if(isInputProc(CkMyPe()))
-  {
-    char *coorFileN;
-
-    if(state==NULL) printf("PROC#%d There is a PROBLEM IN NODE.C STATE is NULL !!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n",CkMyPe());
-    if (state->getConfigList()==NULL) printf("PROC#%d There is a PROBLEM IN NODE.C CONFIGLIST is NULL !!!!!!!!!!!!!!!!!!!!!!!!!!!!\n\n",CkMyPe());
-    coorFileN=(state->getConfigList()->find("bincoordinates"))->data;
-    int inputProcIdx=inputProcIndex(CkMyPe());
-    int numInProcs=inP;
-    int numAtom=pmsg->numAtoms;
-    bool flip=pmsg->doFlip;
-    initParallelIOMgr(CkMyPe(),numInProcs,numAtom,coorFileN,flip,inputProcArray);
-    numInputProcs=numInProcs;
-    int atomsAssignedThisProc=getAtomsAssignedThisProc();
-    if(CkMyPe()==0)
-    {
-      this->setAtomsAssignedThisProc(atomsAssignedThisProc);
-      this->setRecordOffset(getAtomsPerProcOnetoNMinus1()*inputProcIdx);
-    }
-    double startT=CmiWallTimer();
-
-    readCoordinates();
-    StringList *cfgFile=(state->getConfigList()->find("parameters"));
-    char *fileN;
-    if(state->getConfigList()->find("binvelocities")==NULL)
-      fileN=NULL;
-    else
-    {
-      fileN=(state->getConfigList()->find("binvelocities"))->data;
-      this->readAtomInfoParallelInputVel(fileN,CkMyPe());
-    }
-  }
-
-  delete pmsg;
-#endif
-}
-#ifdef MEM_OPT_VERSION
-// check whether an atom is recevived as a result of migration exchange
-bool ParallelIOMgr::newRecvAtom(int atomID)
-{
-  FullAtom *recvAtom=this->recvAtomList.begin();
-  for(int i=0;i<atomsEnteringProc;i++)
-  {
-    if(recvAtom[i].id==atomID)
-      return true;
-                
-  }
-  return false;
-}
-
-// index for the atom recvd due to migration atoms exchange
-long long ParallelIOMgr::newRecvAtomIdx(int atomID)
-{
-  FullAtom *recvAtom=this->recvAtomList.begin();
-  for(long long i=0;i<atomsEnteringProc;i++)
-  {
-    if(recvAtom[i].id==atomID)
-      return i;
-                
-  }
-  return -1;
-}
-
-// whether an  atom is no longer part of this proc due to migration atom exchange
-bool ParallelIOMgr::isAtomSent(int atomID)
-{
-  for(int i=0;i<atomsLeavingProc;i++)
-  {
-    if(atomsLeaving[i]==atomID)
-      return true;
-      
-  }
-  return false;
-}
-
-// whether all send and recveives have oiccured for migration atoms exchange
-bool ParallelIOMgr::checkForSendAndRecv()
-{
-  bool hasToRecv=false;
-  bool hasToSend=false;
-  FullAtom *migList=migrationList->begin();
-  for(int i=0;i<getNumMigrationAtoms();i++)
-  {
-    if(migList[i].readProc==CkMyPe())
-      hasToSend=true;
-    if(migList[i].destProc==CkMyPe())
-      hasToRecv=true;
-      
-  }
-  if(hasToRecv && hasToSend)
-  {
-    if(atomsLeavingProc>0 && atomsEnteringProc>0)
-      return true;
-      
-  }
-  else if(hasToRecv && !hasToSend)
-  {
-    if(atomsEnteringProc>0)
-      return true;
-      
-  }
-  else if(!hasToRecv && hasToSend)
-  {
-    if(atomsLeavingProc>0)
-      return true;
-      
-  }
-  else
-  {
-    return true;
-  }
-  return false;
-}
-
-// build a mapping for hydrogen group
-void ParallelIOMgr::mapHydGPPerProc()
-{
-   HydrogenGroupID *hg = hydrogenGroupPerProc.begin();
-   for(int i=0;i<hydrogenGroupPerProc.size();i++)
-   {
-    mappingHydGPPerProc[hg[i].atomHoldIdxPar]=i;
-  }
-}
-
-// value of vdwtype for a given atom id
-short ParallelIOMgr::atomvdwtypePar(int aid)
-{
-  int startAtom=getRecordOffset();
-  int endAtom=startAtom+getAtomsAssignedThisProc();
-  if(!isAtomSent(aid))
-  {
-    if(aid>=startAtom && aid<endAtom)
-      return molecule->atomvdwtype(aid-recordOffset);
-  }
-  if(newRecvAtom(aid))
-  {
-    FullAtom *recvAtom=this->recvAtomList.begin();
-    long long myIdx=newRecvAtomIdx(aid);
-    return recvAtom[myIdx].vdwType;
-  }
-  NAMD_bug("There is a  problem in random_velocities_parallel");
-}
-
-// value of sigId for a given atom id
-short ParallelIOMgr::atomsigIDPar(int aid)
-{
-  int startAtom=getRecordOffset();
-  int endAtom=startAtom+getAtomsAssignedThisProc();
-  if(!isAtomSent(aid))
-  {
-    if(aid>=startAtom && aid<endAtom)
-      return molecule->getAtomSigId(aid-recordOffset);
-  }
-  if(newRecvAtom(aid))
-  {
-    FullAtom *recvAtom=this->recvAtomList.begin();
-    long long myIdx=newRecvAtomIdx(aid);
-    return recvAtom[myIdx].sigId;
-  }
-  NAMD_bug("There is a  problem in random_velocities_parallel");
-}
-
-// value of exclSigId for a given atom id
-short ParallelIOMgr::atomexclsigIDPar(int aid)
-{
-  int startAtom=getRecordOffset();
-  int endAtom=startAtom+getAtomsAssignedThisProc();
-  if(!isAtomSent(aid))
-  {
-    if(aid>=startAtom && aid<endAtom)
-      return molecule->getAtomExclSigId(aid-recordOffset);
-  }
-  if(newRecvAtom(aid))
-  {
-    FullAtom *recvAtom=this->recvAtomList.begin();
-    long long myIdx=newRecvAtomIdx(aid);
-    return recvAtom[myIdx].exclId;
-  }
-  NAMD_bug("There is a  problem in random_velocities_parallel");
-}
-
-// value of charge for a given atom id
-unsigned int ParallelIOMgr::atomchargePar(int aid)
-{
-  int startAtom=getRecordOffset();
-  int endAtom=startAtom+getAtomsAssignedThisProc();
-  if(!isAtomSent(aid))
-  {
-    if(aid>=startAtom && aid<endAtom)
-      return molecule->getEachAtomCharge(aid-recordOffset);
-  }
-  if(newRecvAtom(aid))
-  {
-    FullAtom *recvAtom=this->recvAtomList.begin();
-    long long myIdx=newRecvAtomIdx(aid);
-    return recvAtom[myIdx].charge;
-  }
-  NAMD_bug("There is a  problem in random_velocities_parallel");
-}
-
-// value of mass for a given atom id
-unsigned int ParallelIOMgr::atommassPar(int aid)
-{
-  int startAtom=getRecordOffset();
-  int endAtom=startAtom+getAtomsAssignedThisProc();
-  bool found=false;
-  if(!isAtomSent(aid))
-  {
-    if(aid>=startAtom && aid<endAtom)
-    {
-      found=true;
-      return molecule->getEachAtomMass(aid-recordOffset);
-    }
-
-  }
-  if(newRecvAtom(aid))
-  {
-    FullAtom *recvAtom=this->recvAtomList.begin();
-    long long myIdx=newRecvAtomIdx(aid);
-    return recvAtom[myIdx].mass;
-  }
-}
-
-// helper method for calculating atom-to-patch assignment
-void ParallelIOMgr::initAtomsPerPatchParallel()
-{
-  numProcsSentNumAtomsPerPatch=0;
-  PatchMap *patchMap=Node::Object()->getPatchMap();
-  atomsPerPatchParallel=new int[patchMap->numPatches()];
-  for(int p=0;p<patchMap->numPatches();p++)
-    atomsPerPatchParallel[p]=0;
-  calcAtomsEachPatch();
-}
-
-// method for updating exclusions. Some options are not covered like alchFepOn etc
-void ParallelIOMgr::updateExclusions()
-{
-  molecule->numTotalExclusions/=2;
-  molecule->setNumCalcExclusions(molecule->getNumCalcExclusions()/2);
-}
-
-#endif
-
-// accumulating the counters on pe0
-void ParallelIOMgr::updateCounters(int numBonds,int numAngles, int numDihedrals, int numImpropers, int numCrossterms, int numTotalExclusions,int numCalcExclusions)
-{
-#ifdef MEM_OPT_VERSION
-  molecule->numBonds+=numBonds;
-  molecule->numDihedrals+=numDihedrals;
-  molecule->numAngles+=numAngles;
-  molecule->numImpropers+=numImpropers;
-  molecule->numCrossterms+=numCrossterms;
-  molecule->numTotalExclusions+=numTotalExclusions;
-  molecule->setNumCalcExclusions(molecule->getNumCalcExclusions()+numCalcExclusions);
-#endif
-}
-
-
-#ifdef MEM_OPT_VERSION
-// updating hydrogen group info after migration group exchange
-void ParallelIOMgr::updateHydrogenGP()
-{
-  newTotalAtoms=this->getAtomsAssignedThisProc()-atomsLeavingProc+atomsEnteringProc;
-  hydrogenGroupPar.resize(newTotalAtoms);
-  HydrogenGroupID *hgPar = hydrogenGroupPar.begin();
-  HydrogenGroupID *hg = molecule->hydrogenGroup.begin();
-  int count=0;
-  for(int i=0;i<atomsAssignedThisProc;i++)
-  {
-    int atomID=hg[i].atomID;
-    int startAtom=this->getRecordOffset();
-    int endAtom=startAtom+this->getAtomsAssignedThisProc();
-    // this atom was not sent and still part of this input proc
-    if(!isAtomSent(atomID))
-    {
-      if(atomID>=startAtom && atomID<endAtom)
-      {
-	hgPar[count].atomID=hg[i].atomID;  // currently unsorted
-	hgPar[count].atomsInGroup=hg[i].atomsInGroup;  // currently only 1 in group                
-        hgPar[count].isGP=hg[i].isGP;  // assume it is a group parent
-        hgPar[count].GPID=hg[i].GPID;  // assume it is a group parent
-	hgPar[count].isMP=hg[i].isMP;
-	hgPar[count].atomsInMigrationGroup=hg[i].atomsInMigrationGroup;
-	hgPar[count].MPID=hg[i].MPID;
-	hgPar[count].waterVal=hg[i].waterVal;
-        count++;
-      }
-    }
-  }
-  FullAtom *recvAtom=this->recvAtomList.begin();
-  for(int i=0;i<atomsEnteringProc;i++)
-  {
-    hgPar[count].atomID=recvAtom[i].id;  // currently unsorted
-    hgPar[count].atomsInGroup=recvAtom[i].atomsInGroup;  // currently only 1 in group
-    hgPar[count].GPID=recvAtom[i].GPID;  // assume it is a group parent
-    hgPar[count].isGP = 1;
-    hgPar[count].isMP=recvAtom[i].isMP;
-    hgPar[count].atomsInMigrationGroup=recvAtom[i].migrationGroupSize;
-    hgPar[count].MPID=recvAtom[i].MPID;
-    hgPar[count].waterVal=recvAtom[i].waterVal;
-    if(hgPar[count].atomsInGroup==0) hgPar[count].isGP = 0;
-    count++;
-  }
-}
-
-// helper method for calling method which updates hydrogen group structure after migration exchange
-void ParallelIOMgr::updateHydrogenGroup()
-{
-  updateHydrogenGP();
-  molecule->numCalcExclusions=molecule->numTotalExclusions;
-  CProxy_ParallelIOMgr pIO(thisgroup);
-  if(CkMyPe())
-    pIO[0].updateCounters(molecule->numBonds,molecule->numAngles,molecule->numDihedrals,molecule->numImpropers,molecule->numCrossterms,molecule->numTotalExclusions,molecule->numCalcExclusions);
-}
-
-// method for reading molecule file
-void ParallelIOMgr::readMolecule()
-{
-  molecule->read_compressed_psf_file_parallelIO((state->getConfigList()->find("structure"))->data,Node::Object()->parameters);
-}
-#endif
+#include <algorithm>
+using namespace std;
 
 ParallelIOMgr::ParallelIOMgr()
 {
+    CkpvAccess(BOCclass_group).ioMgr = thisgroup;
+
+    numInputProcs=-1;
+    inputProcArray = NULL;
+    numOutputProcs=-1;
+    outputProcArray = NULL;
+
+    procsReceived=0;
+    hydroMsgRecved=0;
+
+    totalMV.x = totalMV.y = totalMV.z = 0.0;
+    totalMass = 0.0;
+    totalCharge = 0.0;
+
+    isOKToRecvHPAtoms = false;
+    hpAtomsList = NULL;
+
+    clusterID = NULL;
+    clusterSize = NULL;
+
 #ifdef MEM_OPT_VERSION
-  CkpvAccess(BOCclass_group).ioMgr = thisgroup;
-  numInputProcs=-99;
-  procsReceived=0;
+    midCM = NULL;
+#endif
+
+    isWater = NULL;
+
+    numCSMAck = 0;
+    numReqRecved = 0;
+
+#if COLLECT_PERFORMANCE_DATA
+    numFixedAtomLookup = 0;
 #endif
 }
+
+ParallelIOMgr::~ParallelIOMgr()
+{
+    delete [] inputProcArray;
+    delete [] outputProcArray;
+    delete [] clusterID;
+    delete [] clusterSize;
+
 #ifdef MEM_OPT_VERSION
-// init method which is called from scripttcl.C
-void ParallelIOMgr::initParallelIOMgr(long prc,long numinputprocs,long numRecords,char *pdb,bool flip,int *inputProcArr){
-  procsReceived=0;
-  CkpvAccess(BOCclass_group).ioMgr = thisgroup;
-  atomsLeavingProc=atomsEnteringProc=0;
-  proc=prc;
-  inputProcArray=inputProcArr;
-  doFlip=flip;
-  pdbFileName=pdb;
-  totalAtomsSys=numRecords;
-  numInputProcs=numinputprocs;
+    delete midCM;
+#endif
 
-	// remainderAtoms will have the remaining atoms if the total num of atoms are not divisible with the num of output procs. These aditional atoms
-	// are assigned to the last processor.
-  long remainderAtoms=totalAtomsSys%numInputProcs;
-  long atomsPerProc=totalAtomsSys/numInputProcs;
-	// this atomsPerProcNew is different only is the total number of atoms are not divisible by the number of output procs.
-  atomsInLastProc=atomsPerProc;
-  atomsPerProcOnetoNMinus1=atomsPerProc;
-  atomsAssignedThisProc=atomsPerProc;
-
-
-	// this to assign the remaining atoms to the last proc
-  if(remainderAtoms>0) atomsInLastProc+=remainderAtoms; 
-  if(proc==inputProcArray[numinputprocs-1]) atomsAssignedThisProc=atomsInLastProc;
-	
-  int inputProcIdx=-1;
-  for(int i=0;i<numInputProcs;i++)
-  {
-    if(inputProcArray[i]==proc)
-    {
-      inputProcIdx=i;
-      break;
-    }
-  }
-  recordOffset=atomsPerProcOnetoNMinus1*inputProcIdx;
+    delete [] isWater;
 }
 
 
-// method called for doing the migration atom exchange
-void ParallelIOMgr::sendAtomsToMigrationGpParents()
+// initialization needed for the parallel IO manager. Entry point through Scripttcl
+void ParallelIOMgr::initialize(Node *node)
 {
-  hydrogenGPUpated=false;
-  int *countArr;
-  countArr=new int[numInputProcs];
-  atomsLeavingProc=0;
-  MoveFullAtomsMsg **msg=new MoveFullAtomsMsg*[numInputProcs];
-  FullAtomList *migrationAtoms=new FullAtomList[numInputProcs];
-  FullAtom *migList=migrationList->begin();
-  FullAtom *a=migrationList->begin();
-  int procsToSend=0;
-  for(int j=0;j<numInputProcs;j++)
-  {
-    int count=0;
-    int inputProcNum=inputProcArray[j];
-    for(int i=0;i<getNumMigrationAtoms();i++)
-    {
-      if(migList[i].readProc==CkMyPe() && inputProcNum==migList[i].destProc)
-      {
-	FullAtom at;
-        at.readProc=a[i].readProc;
-        at.destProc=a[i].destProc;
-        migrationAtoms[j].add(at);
-        count++;
-      }
+    simParameters = node->simParameters;
+    molecule = node->molecule;
+
+    numInputProcs = simParameters->numinputprocs;
+    numOutputProcs = simParameters->numoutputprocs;
+    numOutputWrts = simParameters->numoutputwrts;
+
+
+    if(!CkMyPe()) {
+        iout << iINFO << "Running with " <<numInputProcs<<" input processors.\n"<<endi;
+        iout << iINFO << "Running with " <<numOutputProcs<<" output processors ("<<numOutputWrts<<" of them will output simultaneously).\n"<<endi;
     }
-    countArr[j]=count;
-    FullAtom *atomsThisProc=migrationAtoms[j].begin();
 
-    if(countArr[j]>0)
-    {
-      HydrogenGroupID *hg = molecule->hydrogenGroup.begin();
-      count=0;
-      for(int i=0;i<getNumMigrationAtoms();i++)
-      {
-	if(migList[i].readProc==CkMyPe() && inputProcNum==migList[i].destProc)
-        {
-	  int atomIDIdx=migList[i].id%getAtomsPerProcOnetoNMinus1();
-	  int atomDiv=migList[i].id%getAtomsPerProcOnetoNMinus1();
-          if(atomDiv>=numInputProcs)
-	    atomIDIdx+=getAtomsPerProcOnetoNMinus1();
-        
-	  CoordinateRecord *recs=getRecords();
-	  atomsThisProc[count].id=migList[i].id;
-          atomsThisProc[count].GPID=hg[migList[i].id-recordOffset].GPID;
-	  atomsThisProc[count].isMP=hg[migList[i].id-recordOffset].isMP;
-	  atomsThisProc[count].migrationGroupSize=hg[migList[i].id-recordOffset].atomsInMigrationGroup;
-	  atomsThisProc[count].MPID=hg[migList[i].id-recordOffset].MPID;
-	  atomsThisProc[count].waterVal=hg[migList[i].id-recordOffset].waterVal;
-	  atomsThisProc[count].atomsInGroup=hg[migList[i].id-recordOffset].atomsInGroup;
-          AtomCstInfo *ats=molecule->getAtoms();
-          atomsThisProc[count].mass=molecule->getEachAtomMass(migList[i].id-recordOffset);
-          atomsThisProc[count].charge=molecule->getEachAtomCharge(migList[i].id-recordOffset);
-          atomsThisProc[count].sigId=molecule->getAtomSigId(migList[i].id-recordOffset);
-          atomsThisProc[count].exclId=molecule->getAtomExclSigId(migList[i].id-recordOffset);
-          atomsThisProc[count].status=ats[migList[i].id-recordOffset].status;
-          atomsThisProc[count].vdwType=ats[migList[i].id-recordOffset].vdw_type;
-          atomsThisProc[count].position.x=recs[atomIDIdx].x;
-          atomsThisProc[count].position.y=recs[atomIDIdx].y;
-          atomsThisProc[count].position.z=recs[atomIDIdx].z;
+    //build inputProcArray
+    inputProcArray = new int[numInputProcs];
+    for(int i=0; i<numInputProcs; i++) {
+        inputProcArray[i] = i;
+    }
+    //The special setting because of the current inputProcArray initialization
+    if(CkMyPe()>=0 && CkMyPe()<numInputProcs) {
+        myInputRank = CkMyPe();
+    } else {
+        myInputRank = -1;
+    }
 
-          if ( simParameters->initialTemp < 0.0 ) {
-	    atomsThisProc[count].velocity.x=atomArrayParallelInputVel[atomIDIdx].x;
-	    atomsThisProc[count].velocity.y=atomArrayParallelInputVel[atomIDIdx].y;
-	    atomsThisProc[count].velocity.z=atomArrayParallelInputVel[atomIDIdx].z;
-          }
-          count++;
+    if(myInputRank!=-1) {
+        //NOTE: this could further be optimized by pre-allocate the memory
+        //for incoming atoms --Chao Mei
+        int numMyAtoms = numInitMyAtomsOnInput();
+        float growthRate = 100.0f/numMyAtoms;
+        initAtoms.setParams(numMyAtoms+100, growthRate);
+        initAtoms.resize(numMyAtoms);
+        tmpRecvAtoms.resize(0);
+    } else {
+        initAtoms.resize(0);
+        tmpRecvAtoms.resize(0);
+    }
+    hpIDList.resize(0);
+
+    //build outputProcArray
+    //spread the output processors across all the processors
+    outputProcArray = new int[numOutputProcs];
+    int stride = CkNumPes()/numOutputProcs;
+    int startpe = 0;
+    for(int i=0; i<numOutputProcs; i++) {
+        outputProcArray[i] = startpe + i*stride;
+    }
+    //The special setting because of the current otputProcArray initialization    
+    int residue = (CkMyPe()-startpe)%stride;
+    if(residue==0) {
+        int rank = (CkMyPe()-startpe)/stride;
+        myOutputRank = rank<numOutputProcs ? rank : -1;
+    } else {
+        myOutputRank = -1;
+    }   
+
+#ifdef MEM_OPT_VERSION
+    if(myOutputRank!=-1) {
+        midCM = new CollectionMidMaster(this);
+    }
+    remoteClusters.clear();
+    csmBuf.resize(0);
+    remoteCoors.clear();
+    ccmBuf.resize(0);
+
+    mainMaster = CollectionMgr::Object()->getMasterChareID();
+#endif
+}
+
+void ParallelIOMgr::readPerAtomInfo()
+{
+#ifdef MEM_OPT_VERSION
+    if(myInputRank!=-1) {
+        int myAtomLIdx, myAtomUIdx;
+        getMyAtomsInitRangeOnInput(myAtomLIdx, myAtomUIdx);
+
+        //1. read the file that contains per-atom info such as signature index
+        molecule->read_binary_atom_info(myAtomLIdx, myAtomUIdx, initAtoms);
+
+        //2. read coordinates and velocities of each atom if the velocity file
+        //exists, otherwise, the velocity of each atom is randomly generated.
+        //This has to be DONE AFTER THE FIRST STEP as the atom mass is required
+        //if the velocity is generated randomly.
+        readCoordinatesAndVelocity();
+
+        //3. set every atom's output processor rank, i.e. the dest pe this
+        //atom will be sent for writing positions and velocities etc.
+        int oRank=atomRankOnOutput(myAtomLIdx);
+        for(int i=oRank; i<numOutputProcs; i++) {
+            int lIdx, uIdx; //indicates the range of atom ids outputProcArray[i] has
+            getAtomsRangeOnOutput(lIdx, uIdx, i);
+            if(lIdx > myAtomUIdx) break;
+            int fid = lIdx>myAtomLIdx?lIdx:myAtomLIdx;
+            int tid = uIdx>myAtomUIdx?myAtomUIdx:uIdx;
+            for(int j=fid; j<=tid; j++) initAtoms[j-myAtomLIdx].outputRank = i;
         }
-      }
-      msg[procsToSend] = new MoveFullAtomsMsg(inputProcNum,CkMyPe(), migrationAtoms[j]);
-      atomsLeavingProc+=count;
-      procsToSend++;
-    }
-  }
-  atomsLeaving=new int[atomsLeavingProc];
-  int count=0;
-  for(int i=0;i<getNumMigrationAtoms();i++)
-  {
-    if(migList[i].readProc==CkMyPe())
-    {
-      atomsLeaving[count]=migList[i].id;
-      count++;
-    }
-  }
-
-  for(int i=0;i<procsToSend;i++)
-  {
-    CProxy_ParallelIOMgr pIO(thisgroup);
-    pIO[msg[i]->toProc].receiveMigrationChildren((MoveFullAtomsMsg*)MoveFullAtomsMsg::pack(msg[i]));
-  }
-
-  if(checkForSendAndRecv())
-    hydrogenGPUpated=true;
-}
-
-// helper method which calculates where each atom needs to move for migration atom exchange
-void ParallelIOMgr::redistributionAtomInfoParallel2()
-{
-  AtomCstInfo *atoms=this->molecule->getAtoms();
-  setNumMigrationAtoms(0);
-  HydrogenGroupID *hg = molecule->hydrogenGroup.begin();
-  for(int i=0;i<atomsAssignedThisProc;i++)
-  {
-    if(atoms[i].status==HydrogenAtom)
-    {
-      int parent=hg[i].MPID;
-      int inputProcIdxForHead=parent/getAtomsPerProcOnetoNMinus1();
-      int inputProcIdx=hg[i].atomID/getAtomsPerProcOnetoNMinus1();
-      if(inputProcIdx==numInputProcs) inputProcIdx=inputProcIdx-1;
-      if(inputProcIdxForHead==numInputProcs) inputProcIdxForHead=inputProcIdxForHead-1;
-      if(inputProcIdxForHead!=inputProcIdx)
-	setNumMigrationAtoms(getNumMigrationAtoms()+1);
-    }
-  }
-  migrationList = new FullAtomList;
-  for(int i=0;i<getNumMigrationAtoms();i++)
-  {
-    FullAtom a;
-    a.readProc=-1;
-    a.destProc=-1;
-    migrationList->add(a);	      
-  }
-
-  int count=0;
-  hg = molecule->hydrogenGroup.begin();
-  FullAtom *migList=migrationList->begin();
-  for(int i=0;i<atomsAssignedThisProc;i++)
-  {
-    if(atoms[i].status==HydrogenAtom)
-    {
-      int parent=hg[i].MPID;
-      int inputProcIdxForHead=parent/getAtomsPerProcOnetoNMinus1();
-      int inputProcIdx=hg[i].atomID/getAtomsPerProcOnetoNMinus1();
-      if(inputProcIdx==numInputProcs) inputProcIdx=inputProcIdx-1;
-      if(inputProcIdxForHead==numInputProcs) inputProcIdxForHead=inputProcIdxForHead-1;
-      if(inputProcIdxForHead!=inputProcIdx)
-      {
-	migList[count].id=hg[i].atomID;
-        migList[count].destProc=inputProcArray[inputProcIdxForHead];
-        migList[count].readProc=inputProcArray[inputProcIdx];
-        count++;
-      }
-    }
-  }
-}
-            
-// getting the position for atom recvd as a result of migration exchange
-void ParallelIOMgr::get_position_for_atom_ParallelVel(Vector *pos, int aid){
-  for(int i=0;i<atomsLeavingProc;i++)
-  {
-    if(aid==atomsLeaving[i])
-      NAMD_bug("This atom is no longer part of this input proc (in PDB.C)");
-  }
-  FullAtom *recvAtom=this->recvAtomList.begin();
-  long long myIdx=newRecvAtomIdx(aid);
-  if(myIdx!=-1)
-  {
-    pos->x=recvAtom[myIdx].velocity.x;
-    pos->y=recvAtom[myIdx].velocity.y;
-    pos->z=recvAtom[myIdx].velocity.z;
-    return;	    
-  }
-
-  int atomNo=aid%atomsPerProcOnetoNMinus1;
-  int atomDiv=aid/atomsPerProcOnetoNMinus1;
-  if(atomDiv>=numInputProcs)
-    atomNo+=atomsPerProcOnetoNMinus1;
-
-  pos->x = atomArrayParallelInputVel[atomNo].x;
-  pos->y = atomArrayParallelInputVel[atomNo].y;
-  pos->z = atomArrayParallelInputVel[atomNo].z;
-
-}
-
-// method used to read velocity file
-void ParallelIOMgr::readAtomInfoParallelInputVel(const char *pdbfilename,int proc)
-{
-  atomArrayParallelInputVel = new Velocity[atomsAssignedThisProc];
-  if ( atomArrayParallelInputVel == NULL )
-    NAMD_die("memory allocation failed in PDB::PDB");
-  FILE *fp;
-  if ( (fp = fopen(pdbfilename, "rb")) == NULL)
-  {
-    char errmsg[256];
-     printf(errmsg, "Uggggggggggggggggnable 1111111  to open binary file 111111111 name=/u/ac/sarood/apoa1/osman.dcd\n" );
-  }
-
-  off_t startbyte=sizeof(int)+recordOffset*24;        
-  for(int i=0;i<atomsAssignedThisProc;i++)
-  {
-    fseek(fp,startbyte+i*24,SEEK_SET);
-    BigReal filen[3];
-    if (fread(filen, sizeof(double), 3, fp) != (size_t)3)
-    {
-      char errmsg[256];
-      printf("Error reading file in ParallelIOMgr\n");
-    }
-    else
-    {
-      if(doFlip) flipNum((char *)filen, sizeof(double), 3);
-      atomArrayParallelInputVel[i].x=filen[0];
-      atomArrayParallelInputVel[i].y=filen[1];
-      atomArrayParallelInputVel[i].z=filen[2];
     }
 
-  }
-}
-
-// delete storage created for final atom exchange
-void ParallelIOMgr::deleteParallelStorage(bool isVel)
-{
-  delete [] records;
-  if(atomsLeavingProc>0)  delete [] atomsLeaving;
-}
-
-// get atom position from parallel IO mgr
-void ParallelIOMgr::get_position_for_atom_Parallel(Vector *pos, int aid){
-  for(int i=0;i<atomsLeavingProc;i++)
-  {
-    if(aid==atomsLeaving[i])
-      NAMD_bug("This atom is no longer part of this input proc (in PDB.C)");
-  }
-  FullAtom* recvAtom=this->recvAtomList.begin();
-  long long myIdx=newRecvAtomIdx(aid);
-  if(myIdx!=-1) 
-  {
-    pos->x=recvAtom[myIdx].position.x;
-    pos->y=recvAtom[myIdx].position.y;
-    pos->z=recvAtom[myIdx].position.z;
-    return;
-  }
-  int atomNo=aid%atomsPerProcOnetoNMinus1;
-  int atomDiv=aid/atomsPerProcOnetoNMinus1;
-  if(atomDiv>=numInputProcs)
-    atomNo+=atomsPerProcOnetoNMinus1;
-  pos->x = records[atomNo].x;
-  pos->y = records[atomNo].y;
-  pos->z = records[atomNo].z;
-}
-
-//method used to read position
-void ParallelIOMgr::readCoordinates()
-{
-  records = new CoordinateRecord[atomsAssignedThisProc];
-  if ( records == NULL )
-  {
-    NAMD_die("memory allocation failed in PDB::PDB");
-  }
-
-  FILE *fp;    //  File descriptor
-  char *coorFileN;
-  coorFileN=pdbFileName;
-
-  fp = fopen(coorFileN, "rb");
-
-  if (! fp) {
-    char s[500];
-    sprintf(s, "The coordinate restart file '%s' specified as parameter 'bincoordinates' in config file can not be opened", pdbFileName);
-    NAMD_err(s);
-  }
-  long long startbyte1=sizeof(int)+recordOffset*24;
-  off_t startbyte=sizeof(int)+recordOffset*24;
-  double t0=CmiWallTimer();
-  fseek(fp,startbyte,SEEK_SET);//77 is the length of one line in bytes
-  double t1=CmiWallTimer();	
-  fflush(stdout);
-  for(int i=0;i<atomsAssignedThisProc;i++)
-  {
-//    fseek(fp,startbyte+i*24,SEEK_SET);//77 is the length of one line in bytes
-    BigReal filen[3];
-    if (fread(filen, sizeof(double), 3, fp) != (size_t)3)
-    {
-      char errmsg[256];
-      printf(errmsg, "Error reading binary file 22222222 11111 aaaaaaaaaaaa");
+    //read clusters
+    if(myOutputRank!=-1) {
+        //only when wrapAll or wrapWater is set, cluster info is required
+        if(!(simParameters->wrapAll || simParameters->wrapWater)) return;
+        readInfoForParOutput();
     }
-    else
-    {
-      if(doFlip) flipNum((char *)filen, sizeof(double), 3);
-      records[i].x=filen[0];
-      records[i].y=filen[1];
-      records[i].z=filen[2];
-    }
-  }
-  double t2=CmiWallTimer();
-//printf("+++++ PROC#%d seek time=%f read time=%f total time=%f input file=%s ++++++++++\n",proc,t1-t0,t2-t1,t2-t0,coorFileN);
-}
 #endif
-ParallelIOMgr::~ParallelIOMgr(void){
-
-}
-// Packs the linked list associated with ConfigList
-void* ConfigListMessage::pack(ConfigListMessage* inmsg)
-{
-  char *buf=inmsg->cfgList->packHelper(inmsg);
-  delete inmsg;
-  return (void*) buf;
 }
 
-
-//To unpack the ConfigList at each input proc
-ConfigListMessage* ConfigListMessage::unpack(void *inbuf)
+void ParallelIOMgr::readCoordinatesAndVelocity()
 {
+#ifdef MEM_OPT_VERSION
+    int needFlip = 0;
+    int myAtomLIdx, myAtomUIdx;
+    getMyAtomsInitRangeOnInput(myAtomLIdx, myAtomUIdx);
+    int myNumAtoms = myAtomUIdx-myAtomLIdx+1;
 
-  char *buf=(char*)inbuf;
-  ConfigListMessage *pmsg=(ConfigListMessage*)CkAllocBuffer(inbuf, sizeof(ConfigListMessage));
-  pmsg->cfgList=new ConfigList();
-  ConfigList *cfgLst=pmsg->cfgList;
+    //contains the data for Position and Velocity
+    Vector *tmpData = new Vector[myNumAtoms];
 
-  int readStart=0;char test[100];
-  int numParams,atoms;
-  bool flip;
-  memcpy(&numParams,buf,sizeof(int));
-  memcpy(&atoms,(buf+sizeof(int)),sizeof(int));
-  memcpy(&flip,(buf+sizeof(int)*2),sizeof(bool));
-  pmsg->doFlip=flip;
-  readStart+=sizeof(int)*2+sizeof(bool);
-  pmsg->numAtoms=atoms;
-  for(int i=0;i<numParams;i++)
-  {
-    int nameLen;char name[100];
-    memcpy(&nameLen,(void*)(buf+readStart),sizeof(int));
-    readStart+=sizeof(int);
-    memcpy(name,(void*)(buf+readStart),nameLen);
-    name[nameLen]='\0';
-    readStart+=nameLen;
-
-    int numData;
-    memcpy(&numData,(void*)(buf+readStart),sizeof(int));
-    readStart+=sizeof(int);
-    for(int j=0;j<numData;j++)
-    {
-      int dataLen;char data[100];
-      memcpy(&dataLen,(void*)(buf+readStart),sizeof(int));
-      readStart+=sizeof(int);
-      memcpy(data,(void*)(buf+readStart),dataLen);
-      data[dataLen]='\0';
-      readStart+=dataLen;
-      cfgLst->add_element(name,nameLen,data,dataLen);
+    //begin to read coordinates
+    //step1: open the file
+    FILE *ifp = fopen(simParameters->binCoorFile, "rb");
+    if(!ifp) {
+        char s[256];
+        sprintf(s, "The binary coordinate file %s cannot be opened on proc %d\n", simParameters->binCoorFile, CkMyPe());
+        NAMD_die(s);
     }
-  }
-  CkFreeMsg(inbuf);
-  return pmsg;
+    //step2: check whether flip is needed
+    int filelen;
+    fread(&filelen, sizeof(int32),1,ifp);
+    char lenbuf[sizeof(int32)];
+    memcpy(lenbuf, (const char *)&filelen, sizeof(int32));
+    flipNum(lenbuf, sizeof(int32), 1);
+    if(!memcmp(lenbuf, (const char *)&filelen, sizeof(int32))) {
+        iout << iWARN << "Number of atoms in binary file " << simParameters->binCoorFile
+             <<" is palindromic, assuming same endian.\n" << endi;
+    }
+    if(filelen!=molecule->numAtoms) {
+        needFlip = 1;
+        memcpy((void *)&filelen, lenbuf,sizeof(int32));
+    }
+    if(filelen!=molecule->numAtoms) {
+        char s[256];
+        sprintf(s, "Incorrect atom count in binary file %s", simParameters->binCoorFile);
+        NAMD_die(s);
+    }
+    //step3: read the file specified by the range
+    int64 offsetPos = ((int64)myAtomLIdx)*sizeof(Position);
+    while(offsetPos > LONG_MAX) {
+        offsetPos -= LONG_MAX;
+        fseek(ifp, LONG_MAX, SEEK_CUR);
+    }
+    fseek(ifp, offsetPos, SEEK_CUR);
+    size_t totalRead = fread(tmpData, sizeof(Vector), myNumAtoms, ifp);
+    if(totalRead!=myNumAtoms) {
+        char s[256];
+        sprintf(s, "Error in reading binary file %s on proc %d",  simParameters->binCoorFile, CkMyPe());
+        NAMD_die(s);
+    }
+    if(needFlip) flipNum((char *)tmpData, sizeof(BigReal), myNumAtoms*3);
+    fclose(ifp);
+    for(int i=0; i<myNumAtoms; i++) initAtoms[i].position = tmpData[i];
+
+    //begin to read velocity
+    //step1: generate velocity randomly or open the file
+    if(!simParameters->binVelFile) {
+        //generate velocity randomly
+        Node::Object()->workDistrib->random_velocities_parallel(simParameters->initialTemp, initAtoms);
+    } else {
+        ifp = fopen(simParameters->binVelFile, "rb");
+        if(!ifp) {
+            char s[256];
+            sprintf(s, "The binary velocity file %s cannot be opened on proc %d\n", simParameters->binCoorFile, CkMyPe());
+            NAMD_die(s);
+        }
+        //step2: check whether flip is needed
+        fread(&filelen, sizeof(int32),1,ifp);
+        memcpy(lenbuf, (const char *)&filelen, sizeof(int32));
+        flipNum(lenbuf, sizeof(int32), 1);
+        if(!memcmp(lenbuf, (const char *)&filelen, sizeof(int32))) {
+            iout << iWARN << "Number of atoms in binary file " << simParameters->binVelFile
+                 <<" is palindromic, assuming same endian.\n" << endi;
+        }
+        if(filelen!=molecule->numAtoms) {
+            needFlip = 1;
+            memcpy((void *)&filelen, lenbuf,sizeof(int32));
+        }
+        if(filelen!=molecule->numAtoms) {
+            char s[256];
+            sprintf(s, "Incorrect atom count in binary file %s", simParameters->binVelFile);
+            NAMD_die(s);
+        }
+
+        //step3: read the file specified by the range
+        int64 offsetPos = ((int64)myAtomLIdx)*sizeof(Velocity);
+        while(offsetPos > LONG_MAX) {
+            offsetPos -= LONG_MAX;
+            fseek(ifp, LONG_MAX, SEEK_CUR);
+        }
+        fseek(ifp, offsetPos, SEEK_CUR);
+        totalRead = fread(tmpData, sizeof(Vector), myNumAtoms, ifp);
+        if(totalRead!=myNumAtoms) {
+            char s[256];
+            sprintf(s, "Error in reading binary file %s on proc %d",  simParameters->binVelFile, CkMyPe());
+            NAMD_die(s);
+        }
+        if(needFlip) flipNum((char *)tmpData, sizeof(BigReal), myNumAtoms*3);
+        fclose(ifp);
+        for(int i=0; i<myNumAtoms; i++) initAtoms[i].velocity = tmpData[i];
+    }
+
+    delete [] tmpData;
+#endif
 }
-PACK_MSG(AtomsPerPatchMsg,
-  PACK_AND_NEW_ARRAY(patchAtomCnt,numPatches);
-  PACK(numPatches);
-)
-PACK_MSG(NodeAssignmentMsg,
-  PACK_AND_NEW_ARRAY(nodeAssigned,totalPatches);
-  PACK_AND_NEW_ARRAY(atomsPerPatchParallel,totalPatches);
-  PACK(totalPatches);
-)
 
-PACK_MSG(MoveFullAtomsMsg,
-  PACK(toProc);
-  PACK(fromProc);
-  PACK_RESIZE(atom);
-)
+void ParallelIOMgr::readInfoForParOutput()
+{
+    int fromIdx, toIdx; //atoms' range
+    getMyAtomsRangeOnOutput(fromIdx,toIdx);
+    int numMyAtoms = toIdx-fromIdx+1;
 
-PACK_MSG(AtomListForPatchCreateMsg,
-  PACK_RESIZE(atom);
-  PACK(patchesToSend);
-  PACK_AND_NEW_ARRAY(atomsPerPatch,patchesToSend);
-  PACK_AND_NEW_ARRAY(patcheNumsToSend,patchesToSend);
-)
+    clusterID = new int[numMyAtoms];
+    clusterSize = new int[numMyAtoms];
+
+    //Since the input proc also reads this file, all the checks
+    //(file version check, atom record size check) are omitted here
+    FILE *ifp = fopen(simParameters->binAtomFile, "rb");
+    //read magic number to set needFlip
+    int needFlip = 0;
+    int magicNum;
+    fread(&magicNum, sizeof(int), 1, ifp);
+    if (magicNum!=COMPRESSED_PSF_MAGICNUM) {
+        needFlip = 1;
+    }
+
+    //need to load isWater info
+    isWater = new char[numMyAtoms];
+    //seek from the end of the file (note offset is negative!)
+    int64 offset = sizeof(char)*((int64)(fromIdx-molecule->numAtoms));
+    fseek(ifp, offset, SEEK_END);
+    fread(isWater, sizeof(char), numMyAtoms, ifp);
+    //there's no need for flipping as it's a char array
+
+    //seek from the end of the file (note offset is negative!)
+    offset = sizeof(int)*((int64)(fromIdx-molecule->numAtoms))
+                   - sizeof(char)*((int64)(molecule->numAtoms));
+    fseek(ifp, 0, SEEK_END);
+    while(offset < LONG_MIN){
+        fseek(ifp, LONG_MIN, SEEK_CUR);
+        offset -= LONG_MIN;
+    }
+    fseek(ifp, offset, SEEK_CUR);
+    fread(clusterID, sizeof(int), numMyAtoms, ifp);
+    if(needFlip) flipNum((char *)clusterID, sizeof(int), numMyAtoms);
+    fclose(ifp);
+
+    //calculate cluster size (communication may be neccessary)
+    ClusterElem one;
+    for(int i=0; i<numMyAtoms; i++) {
+        clusterSize[i] = 0;        
+        int cid = clusterID[i];
+        //check if the cluster id (i.e. the header of the atom of
+        //the cluster) is in my local repository. If the cluster id
+        //is not in my local repository, then it must appear in output
+        //processors that are in front of this one because of the way
+        //of determing cluster info for the molecular system.
+        CmiAssert(cid<=toIdx);
+        if(cid<fromIdx) {
+            //on output procs ahead of me
+            one.clusterId = cid;
+            ClusterElem *ret = remoteClusters.find(one);
+            if(ret==NULL) {
+                one.atomsCnt = 1;
+                remoteClusters.add(one);
+            } else {
+                ret->atomsCnt++;
+            }
+        } else {
+            int lidx = cid-fromIdx;
+            CmiAssert(lidx<=i);
+            clusterSize[lidx]++;
+        }
+    }
+
+    //Prepare to send msgs to remote output procs to reduce the cluster size
+    //Since the expected number of msgs to be very small, msgs to the same proc
+    //are not aggregated. --Chao Mei
+#if 0
+    printf("output[%d]=%d: prepare to send %d remote msgs for cluster size\n",
+           myOutputRank, CkMyPe(), remoteClusters.size());
+#endif
+
+    numRemoteClusters = remoteClusters.size();
+    numCSMAck = 0; //set to 0 to prepare recving the final cluster size update
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    ClusterSetIter iter(remoteClusters);
+    for(iter=iter.begin(); iter!=iter.end(); iter++) {
+        ClusterSizeMsg *msg = new ClusterSizeMsg;
+        msg->srcRank = myOutputRank;
+        msg->clusterId = iter->clusterId;
+        msg->atomsCnt = iter->atomsCnt;
+        int dstRank = atomRankOnOutput(iter->clusterId);
+        pIO[outputProcArray[dstRank]].recvClusterSize(msg);
+    }
+}
+
+void ParallelIOMgr::recvClusterSize(ClusterSizeMsg *msg)
+{
+    csmBuf.add(msg); //added to buffer for reuse to send back to src
+
+    //update cluster size has to be delayed to integration to prevent
+    //data racing where the clusterSize has not been created!
+}
+
+void ParallelIOMgr::integrateClusterSize()
+{
+    if(myOutputRank==-1) return;
+    if(!(simParameters->wrapAll || simParameters->wrapWater)) return;
+
+    int fromIdx, toIdx; //atoms' range
+    getMyAtomsRangeOnOutput(fromIdx,toIdx);
+
+    //calculated the final cluster size
+    for(int i=0; i<csmBuf.size(); i++) {
+        ClusterSizeMsg *msg = csmBuf[i];
+        int lidx = msg->clusterId - fromIdx;
+        clusterSize[lidx] += msg->atomsCnt;
+    }
+
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    for(int i=0; i<csmBuf.size(); i++) {
+        ClusterSizeMsg *msg = csmBuf[i];
+        int lidx = msg->clusterId - fromIdx;
+        msg->atomsCnt = clusterSize[lidx];
+        pIO[outputProcArray[msg->srcRank]].recvFinalClusterSize(msg);
+    }
+    numRemoteReqs = csmBuf.size();
+    csmBuf.resize(0);
+
+    //There's a possible msg race problem here that recvFinalClusterSize 
+    //executes before integrateClusterSize because other proc finishes faster
+    //in calculating the cluster size. The recvFinalClusterSize should be
+    //executed after integrateClusterSize. To avoid this, a self message is
+    //sent to participate the reduction.
+    if(numRemoteClusters!=0){
+        recvFinalClusterSize(NULL);
+    }else{
+        //this output proc already has the final cluster size for each atom
+        int numMyAtoms = toIdx-fromIdx+1;
+        for(int i=0; i<numMyAtoms; i++) {
+            int lidx = clusterID[i]-fromIdx;
+            clusterSize[i] = clusterSize[lidx];
+        }
+        
+        #if 0 //write out cluster debug info
+        char fname[128];
+        sprintf(fname, "cluster.par.%d", CkMyPe());
+        FILE *ofp = fopen(fname, "w");
+        for(int i=0; i<numMyAtoms; i++) {
+            fprintf(ofp, "%d: %d: %d\n", i+fromIdx, clusterID[i], clusterSize[i]);
+        }
+        fclose(ofp);
+        #endif
+    }
+}
+
+void ParallelIOMgr::recvFinalClusterSize(ClusterSizeMsg *msg)
+{
+    //only process the message sent by other procs
+    if(msg!=NULL) {
+        //indicating a message from other procs
+        ClusterElem one(msg->clusterId);
+        ClusterElem *ret = remoteClusters.find(one);
+        CmiAssert(ret!=NULL);
+        ret->atomsCnt = msg->atomsCnt;
+    }
+    delete msg;
+
+    //include a msg sent by itself for reduction
+    if(++numCSMAck == (numRemoteClusters+1)) {
+        //recved all the msgs needed to update the cluster size for each atom finally
+        int fromIdx, toIdx; //atoms' range
+        getMyAtomsRangeOnOutput(fromIdx,toIdx);
+        int numMyAtoms = toIdx-fromIdx+1;
+        ClusterElem tmp;
+        for(int i=0; i<numMyAtoms; i++) {
+            int cid = clusterID[i];
+            int lidx = cid-fromIdx;
+            if(lidx<0) {
+                //this cid should be inside remoteClusters
+                tmp.clusterId = cid;
+                ClusterElem *fone = remoteClusters.find(tmp);
+                clusterSize[i] = fone->atomsCnt;
+            } else {
+                clusterSize[i] = clusterSize[lidx];
+            }
+        }
+        numCSMAck = 0;
+        remoteClusters.clear();
+
+#if 0 //write out cluster debug info
+        char fname[128];
+        sprintf(fname, "cluster.par.%d", CkMyPe());
+        FILE *ofp = fopen(fname, "w");
+        for(int i=0; i<numMyAtoms; i++) {
+            fprintf(ofp, "%d: %d: %d\n", i+fromIdx, clusterID[i], clusterSize[i]);
+        }
+        fclose(ofp);
+#endif
+
+    }
+}
+
+void ParallelIOMgr::migrateAtomsMGrp()
+{
+    if(myInputRank==-1) return;
+
+    //1. first get the list of atoms to be migrated
+    //which should be few compared with the number of atoms
+    //initially assigned to this input proc.
+    AtomIDList toMigrateList; //the list of atoms to be migrated
+    //the max distance from this processor of atoms to be sent
+    int maxOffset = 0;
+    for(int i=0; i<initAtoms.size(); i++) {
+        //returns the proc id on which atom MPID resides on
+        int parentRank = atomInitRankOnInput(initAtoms[i].MPID);
+        if(parentRank != myInputRank) {
+            toMigrateList.add(i);
+            initAtoms[i].isValid = false;
+            int tmp = parentRank - myInputRank;
+            tmp = tmp>0 ? tmp : -tmp;
+            if(tmp > maxOffset) maxOffset = tmp;
+        }
+    }
+
+    //2. prepare atom migration messages
+    //the messages are indexed as [-maxOffset,..., -1,0,1,..., maxOffset]
+    //where the "0" is not used at all. It is added for the sake of
+    //computing the index easily.
+    InputAtomList *migLists = new InputAtomList[2*maxOffset+1];
+    for(int i=0; i<toMigrateList.size(); i++) {
+        int idx = toMigrateList[i];
+        int parentRank = atomInitRankOnInput(initAtoms[idx].MPID);
+        //decide which migList to put this atom
+        int offset = parentRank - myInputRank + maxOffset;
+        migLists[offset].add(initAtoms[idx]);
+    }
+
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    for(int i=0; i<2*maxOffset+1; i++) {
+        int migLen = migLists[i].size();
+        if(migLen>0) {
+            MoveInputAtomsMsg *msg = new (migLen, 0)MoveInputAtomsMsg;
+            msg->length = migLen;
+            memcpy(msg->atomList, migLists[i].begin(), sizeof(InputAtom)*migLen);
+            int destRank = i-maxOffset+myInputRank;
+            pIO[inputProcArray[destRank]].recvAtomsMGrp(msg);
+        }
+    }
+
+    toMigrateList.resize(0);
+    delete [] migLists;
+}
+
+void ParallelIOMgr::recvAtomsMGrp(MoveInputAtomsMsg *msg)
+{
+    for(int i=0; i<msg->length; i++) {
+        tmpRecvAtoms.add((msg->atomList)[i]);
+    }
+    delete msg;
+}
+
+void ParallelIOMgr::integrateMigratedAtoms()
+{
+    if(myInputRank==-1) return;
+
+    for(int i=0; i<tmpRecvAtoms.size(); i++) {
+        tmpRecvAtoms[i].isValid = true;
+        initAtoms.add(tmpRecvAtoms[i]);
+    }
+    tmpRecvAtoms.resize(0);
+
+    //sort atom list based on hydrogenList value
+    std::sort(initAtoms.begin(), initAtoms.end());
+
+    //now compute the counters inside Molecule such as numFixedRigidBonds
+    //which is based on the hydrogen group info
+
+    int numFixedRigidBonds = 0;
+    if(molecule->numRigidBonds){
+        int parentIsFixed = 0;
+        for(int i=0; i<initAtoms.size(); i++) {
+            InputAtom *one = &(initAtoms[i]);
+            if(!one->isValid) continue;
+            if(one->isGP) {
+                parentIsFixed = one->atomFixed;
+                InputAtom *a1 = &(initAtoms[i+1]);
+                InputAtom *a2 = &(initAtoms[i+2]);
+                if((one->rigidBondLength>0.0) &&
+                   a1->atomFixed && a2->atomFixed) {
+                    numFixedRigidBonds++;
+                }
+            }else{
+                if((one->rigidBondLength>0.0) &&
+                   one->atomFixed && parentIsFixed) {
+                    numFixedRigidBonds++;
+                }
+            }
+        }
+    }
+
+    int numFixedGroups = 0;
+    if(molecule->numFixedAtoms){        
+        for(int i=0; i<initAtoms.size();) {
+            InputAtom *one = &(initAtoms[i]);
+            if(!one->isValid){
+                i++;
+                continue;
+            }
+            if(one->isGP) {
+                int allFixed = 1;                
+                for(int j=0; j<one->hydrogenGroupSize; j++){
+                    InputAtom *a1 = &(initAtoms[i+j]);
+                    allFixed = allFixed & a1->atomFixed;
+                    if(!allFixed) break;
+                }
+                if(allFixed) numFixedGroups++;                
+                i += one->hydrogenGroupSize;
+            }
+        }
+    }
+    
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    HydroBasedMsg *msg = new HydroBasedMsg;
+    msg->numFixedGroups = numFixedGroups;
+    msg->numFixedRigidBonds = numFixedRigidBonds;
+    pIO[0].recvHydroBasedCounter(msg);
+}
+
+void ParallelIOMgr::updateMolInfo()
+{
+#ifdef MEM_OPT_VERSION
+    if(myInputRank==-1) return;
+
+    CProxy_ParallelIOMgr pIO(thisgroup);
+
+    MolInfoMsg *msg = new MolInfoMsg;
+    msg->numBonds = msg->numCalcBonds = 0;
+    msg->numAngles = msg->numCalcAngles = 0;
+    msg->numDihedrals = msg->numCalcDihedrals = 0;
+    msg->numImpropers = msg->numCalcImpropers = 0;
+    msg->numCrossterms = msg->numCalcCrossterms = 0;
+    msg->numExclusions = msg->numCalcExclusions = 0;    
+    msg->numRigidBonds = 0;
+    msg->totalMass = 0.0;
+    msg->totalCharge = 0.0;
+
+    //calculate the tuples this input processor have
+    AtomSignature *atomSigPool = molecule->atomSigPool;
+    ExclusionSignature *exclSigPool = molecule->exclSigPool;
+    for(int i=0; i<initAtoms.size(); i++) {
+        AtomSignature *thisSig = &atomSigPool[initAtoms[i].sigId];
+        msg->numBonds += thisSig->bondCnt;
+        msg->numAngles += thisSig->angleCnt;
+        msg->numDihedrals += thisSig->dihedralCnt;
+        msg->numImpropers += thisSig->improperCnt;
+        msg->numCrossterms += thisSig->crosstermCnt;
+
+        ExclusionSignature *exclSig = &exclSigPool[initAtoms[i].exclId];
+        msg->numExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
+
+        if(initAtoms[i].rigidBondLength > 0.0) msg->numRigidBonds++;
+
+        msg->totalMass += initAtoms[i].mass;
+        msg->totalCharge += initAtoms[i].charge;
+    }
+
+    //deal with numCalc* which is related with fixed atoms!
+    if(molecule->numFixedAtoms>0) {
+        //if there's fixed atoms, calcExclusions needs to be calculated
+        //Since it's possible the atom inside the this exclusion set is on
+        //another input processor, we have to resort to the global fixed atoms
+        //info inside the Molecule object. The number of such accesses should
+        //be very small! --Chao Mei
+        int sAId = initAtoms[0].id;
+        int remoteCnt=0; //stats info
+        for(int i=0; i<initAtoms.size(); i++) {
+            //When all the atoms in the set are fixed, the elem (Bond etc.)
+            //is not counted as a calc*.
+            int myAId = initAtoms[i].id;
+            AtomSignature *thisSig = &atomSigPool[initAtoms[i].sigId];
+            ExclusionSignature *exclSig = &exclSigPool[initAtoms[i].exclId];
+            if(!initAtoms[i].atomFixed) {
+                msg->numCalcBonds += thisSig->bondCnt;                
+                msg->numCalcAngles += thisSig->angleCnt;
+                msg->numCalcDihedrals += thisSig->dihedralCnt;
+                msg->numCalcImpropers += thisSig->improperCnt;
+                msg->numCalcCrossterms += thisSig->crosstermCnt;
+                msg->numCalcExclusions+=(exclSig->fullExclCnt+exclSig->modExclCnt);
+                continue;
+            }
+                       
+            //1. Bonds
+            for(int j=0; j<thisSig->bondCnt; j++) {            
+                TupleSignature *bsig = &(thisSig->bondSigs[j]);
+                int a1 = myAId + bsig->offset[0];
+                if(!isAtomFixed(sAId, a1)) msg->numCalcBonds++;
+            }
+            
+            //2. Angles
+            for(int j=0; j<thisSig->angleCnt; j++) {            
+                TupleSignature *bsig = &(thisSig->angleSigs[j]);
+                int a1 = myAId + bsig->offset[0];
+                int a2 = myAId + bsig->offset[1];
+                if(!isAtomFixed(sAId, a1) || !isAtomFixed(sAId, a2)) 
+                    msg->numCalcAngles++;
+            }
+
+            //3. Dihedrals
+            for(int j=0; j<thisSig->dihedralCnt; j++) {            
+                TupleSignature *bsig = &(thisSig->dihedralSigs[j]);
+                int a1 = myAId + bsig->offset[0];
+                int a2 = myAId + bsig->offset[1];
+                int a3 = myAId + bsig->offset[2];
+                if(!isAtomFixed(sAId, a1) || 
+                   !isAtomFixed(sAId, a2) ||
+                   !isAtomFixed(sAId, a3)) 
+                    msg->numCalcDihedrals++;
+            }
+
+            //4. Impropers
+            for(int j=0; j<thisSig->improperCnt; j++) {            
+                TupleSignature *bsig = &(thisSig->improperSigs[j]);
+                int a1 = myAId + bsig->offset[0];
+                int a2 = myAId + bsig->offset[1];
+                int a3 = myAId + bsig->offset[2];
+                if(!isAtomFixed(sAId, a1) || 
+                   !isAtomFixed(sAId, a2) ||
+                   !isAtomFixed(sAId, a3)) 
+                    msg->numCalcImpropers++;
+            }
+
+            //5. Crossterms
+            for(int j=0; j<thisSig->crosstermCnt; j++) {            
+                TupleSignature *bsig = &(thisSig->crosstermSigs[j]);
+                int a1 = myAId + bsig->offset[0];
+                int a2 = myAId + bsig->offset[1];
+                int a3 = myAId + bsig->offset[2];
+                int a4 = myAId + bsig->offset[3];
+                int a5 = myAId + bsig->offset[4];
+                int a6 = myAId + bsig->offset[5];
+                int a7 = myAId + bsig->offset[6];
+
+                if(!isAtomFixed(sAId, a1) || 
+                   !isAtomFixed(sAId, a2) ||
+                   !isAtomFixed(sAId, a3) ||
+                   !isAtomFixed(sAId, a4) ||
+                   !isAtomFixed(sAId, a5) ||
+                   !isAtomFixed(sAId, a6) ||
+                   !isAtomFixed(sAId, a7)) 
+                    msg->numCalcDihedrals++;
+            }
+            
+            //6: Exclusions            
+            //this atom is fixed, check atoms in the exclusion set
+            for(int j=0; j<exclSig->fullExclCnt; j++) {
+                int thisAId = exclSig->fullOffset[j]+myAId;
+                if(!isAtomFixed(sAId, thisAId)) msg->numCalcExclusions++;
+            }
+            for(int j=0; j<exclSig->modExclCnt; j++) {
+                int thisAId = exclSig->modOffset[j]+myAId;
+                if(!isAtomFixed(sAId, thisAId)) msg->numCalcExclusions++;
+            }
+        }
+#if COLLECT_PERFORMANCE_DATA
+        printf("Num fixedAtom lookup on proc %d is %d\n", CkMyPe(), numFixedAtomLookup);
+#endif
+    } else {
+        //no fixed atoms, numCalc* is same with numExclusions
+        msg->numCalcBonds = msg->numBonds;
+        msg->numCalcAngles = msg->numAngles;
+        msg->numCalcDihedrals = msg->numDihedrals;
+        msg->numCalcImpropers = msg->numImpropers;
+        msg->numCalcCrossterms = msg->numCrossterms;
+        msg->numCalcExclusions = msg->numExclusions;
+    }
 
 
+    if(!simParameters->comMove) {
+        //to remove the center of mass motion from a molecule.
+        //first calculate the values on every input proc, then reduce.
+        //For more info, refer to WorkDistrib::remove_com_motion
+        //-Chao Mei
+        (msg->totalMV).x = 0.0;
+        (msg->totalMV).y = 0.0;
+        (msg->totalMV).z = 0.0;
+        for (int i=0; i<initAtoms.size(); i++) {            
+            msg->totalMV += initAtoms[i].mass * initAtoms[i].velocity;
+        }
+    }
+
+    //always send to the master processor (proc 0)
+    pIO[0].recvMolInfo(msg);
+#endif
+}
+
+//only executed on proc 0
+void ParallelIOMgr::recvMolInfo(MolInfoMsg *msg)
+{
+    molecule->numBonds += msg->numBonds;
+    molecule->numCalcBonds += msg->numCalcBonds;
+    molecule->numAngles += msg->numAngles;
+    molecule->numCalcAngles += msg->numCalcAngles;
+    molecule->numDihedrals += msg->numDihedrals;
+    molecule->numCalcDihedrals += msg->numCalcDihedrals;
+    molecule->numImpropers += msg->numImpropers;
+    molecule->numCalcImpropers += msg->numCalcImpropers;
+    molecule->numCrossterms += msg->numCrossterms;
+    molecule->numCalcCrossterms += msg->numCalcCrossterms;
+    molecule->numTotalExclusions += msg->numExclusions;
+    molecule->numCalcExclusions += msg->numCalcExclusions;
+    molecule->numRigidBonds += msg->numRigidBonds;
+
+    totalMass += msg->totalMass;
+    totalCharge += msg->totalCharge;
+
+    if(!simParameters->comMove) {
+        totalMV += msg->totalMV;        
+    }
+
+    if(++procsReceived == numInputProcs) {
+        //received all the counters
+        msg->numBonds = molecule->numBonds;
+        msg->numCalcBonds = molecule->numCalcBonds;
+        msg->numAngles = molecule->numAngles;
+        msg->numCalcAngles = molecule->numCalcAngles;
+        msg->numDihedrals = molecule->numDihedrals;
+        msg->numCalcDihedrals = molecule->numCalcDihedrals;
+        msg->numImpropers = molecule->numImpropers;
+        msg->numCalcImpropers = molecule->numCalcImpropers;
+        msg->numCrossterms = molecule->numCrossterms;
+        msg->numCalcCrossterms = molecule->numCalcCrossterms;
+        msg->numExclusions = molecule->numTotalExclusions/2;
+        msg->numCalcExclusions = molecule->numCalcExclusions/2;
+        msg->numRigidBonds = molecule->numRigidBonds;
+
+        msg->totalMass = totalMass;
+        msg->totalCharge = totalCharge;
+
+        if(!simParameters->comMove) {
+            msg->totalMV = totalMV;            
+        }
+
+        CProxy_ParallelIOMgr pIO(thisgroup);
+        pIO.bcastMolInfo(msg);
+
+        //reset to 0 for the next p2p-based reduction on input procs
+        procsReceived = 0;
+    } else delete msg;
+}
+
+void ParallelIOMgr::bcastMolInfo(MolInfoMsg *msg)
+{
+#ifdef MEM_OPT_VERSION
+    if(myInputRank!=-1) {
+        if(!simParameters->comMove) {
+            //needs to remove the center of mass motion from a molecule
+            Vector val = msg->totalMV / msg->totalMass;
+            for (int i=0; i<initAtoms.size(); i++) initAtoms[i].velocity -= val;
+        }
+    }
+
+    //only the rank 0 in the SMP node update the Molecule object
+    if(CmiMyRank()) {
+        delete msg;
+        return;
+    }
+
+    molecule->numBonds = msg->numBonds;
+    molecule->numCalcBonds = msg->numCalcBonds;
+    molecule->numAngles = msg->numAngles;
+    molecule->numCalcAngles = msg->numCalcAngles;
+    molecule->numDihedrals = msg->numDihedrals;
+    molecule->numCalcDihedrals = msg->numCalcDihedrals;
+    molecule->numImpropers = msg->numImpropers;
+    molecule->numCalcImpropers = msg->numCalcImpropers;
+    molecule->numCrossterms = msg->numCrossterms;
+    molecule->numCalcCrossterms = msg->numCalcCrossterms;
+
+    molecule->numTotalExclusions = msg->numExclusions;
+    molecule->numCalcExclusions = msg->numCalcExclusions;
+
+    molecule->numRigidBonds = msg->numRigidBonds;
+    delete msg;
+
+    if(!CkMyPe()) {
+        if(!simParameters->comMove) {
+            iout << iINFO << "REMOVING COM VELOCITY "
+                 << (PDBVELFACTOR * (msg->totalMV / msg->totalMass))<< "\n" <<endi;
+        }
+    }
+#endif
+}
+
+//only called on PE0
+void ParallelIOMgr::recvHydroBasedCounter(HydroBasedMsg *msg){
+    molecule->numFixedRigidBonds += msg->numFixedRigidBonds;
+    molecule->numFixedGroups += msg->numFixedGroups;
+
+    if(++hydroMsgRecved == numInputProcs){
+        msg->numFixedRigidBonds = molecule->numFixedRigidBonds;
+        msg->numFixedGroups = molecule->numFixedGroups;
+        CProxy_ParallelIOMgr pIO(thisgroup);
+        pIO.bcastHydroBasedCounter(msg);
+        hydroMsgRecved = 0;
+    }else delete msg;
+}
+
+void ParallelIOMgr::bcastHydroBasedCounter(HydroBasedMsg *msg){
+#ifdef MEM_OPT_VERSION
+    //only the rank 0 in the SMP node update the Molecule object
+    if(CmiMyRank()) {
+        delete msg;
+        return;
+    }
+    molecule->numFixedRigidBonds = msg->numFixedRigidBonds;
+    molecule->numFixedGroups = msg->numFixedGroups;
+    delete msg;
+
+    if(!CkMyPe()) {
+        iout << iINFO << "****************************\n";
+        iout << iINFO << "STRUCTURE SUMMARY:\n";
+        iout << iINFO << molecule->numAtoms << " ATOMS\n";
+        iout << iINFO << molecule->numBonds << " BONDS\n";
+        iout << iINFO << molecule->numAngles << " ANGLES\n";
+        iout << iINFO << molecule->numDihedrals << " DIHEDRALS\n";
+        iout << iINFO << molecule->numImpropers << " IMPROPERS\n";
+        iout << iINFO << molecule->numCrossterms << " CROSSTERMS\n";
+        iout << iINFO << molecule->numExclusions << " EXCLUSIONS\n";
+
+            //****** BEGIN CHARMM/XPLOR type changes
+        if ((molecule->numMultipleDihedrals) && (simParameters->paraTypeXplorOn)){
+            iout << iINFO << molecule->numMultipleDihedrals 
+             << " DIHEDRALS WITH MULTIPLE PERIODICITY (BASED ON PSF FILE)\n";
+        }
+        if ((molecule->numMultipleDihedrals) && (simParameters->paraTypeCharmmOn)){
+            iout << iINFO << molecule->numMultipleDihedrals 
+         << " DIHEDRALS WITH MULTIPLE PERIODICITY IGNORED (BASED ON PSF FILE) \n";
+            iout << iINFO  
+         << " CHARMM MULTIPLICITIES BASED ON PARAMETER FILE INFO! \n";
+        }
+            //****** END CHARMM/XPLOR type changes
+
+        if (molecule->numMultipleImpropers){
+            iout << iINFO << molecule->numMultipleImpropers 
+                 << " IMPROPERS WITH MULTIPLE PERIODICITY\n";
+        }
+
+        if (simParameters->fixedAtomsOn)
+           iout << iINFO << molecule->numFixedAtoms << " FIXED ATOMS\n";
+        
+
+        if (simParameters->rigidBonds)        
+           iout << iINFO << molecule->numRigidBonds << " RIGID BONDS\n";        
+
+        if (simParameters->fixedAtomsOn && simParameters->rigidBonds)        
+           iout << iINFO << molecule->numFixedRigidBonds <<
+                " RIGID BONDS BETWEEN FIXED ATOMS\n";
+
+        iout << iINFO << molecule->num_deg_freedom(1)
+             << " DEGREES OF FREEDOM\n";
+
+        iout << iINFO << molecule->numHydrogenGroups << " HYDROGEN GROUPS\n";
+        iout << iINFO << molecule->maxHydrogenGroupSize
+            << " ATOMS IN LARGEST HYDROGEN GROUP\n";
+        iout << iINFO << molecule->numMigrationGroups << " MIGRATION GROUPS\n";
+        iout << iINFO << molecule->maxMigrationGroupSize
+            << " ATOMS IN LARGEST MIGRATION GROUP\n";
+        if (simParameters->fixedAtomsOn)
+        {
+           iout << iINFO << molecule->numFixedGroups <<
+                " HYDROGEN GROUPS WITH ALL ATOMS FIXED\n";
+        }
+        
+        iout << iINFO << "TOTAL MASS = " << totalMass << " amu\n"; 
+        iout << iINFO << "TOTAL CHARGE = " << totalCharge << " e\n"; 
+
+        BigReal volume = simParameters->lattice.volume();
+        if ( volume ) {
+            iout << iINFO << "MASS DENSITY = "
+                << ((totalMass/volume) / 0.6022) << " g/cm^3\n";
+            iout << iINFO << "ATOM DENSITY = "
+                << (molecule->numAtoms/volume) << " atoms/A^3\n";
+        }
+    
+        iout << iINFO << "*****************************\n";
+        iout << endi;
+        fflush(stdout);               
+    }
+#endif
+}
+
+void ParallelIOMgr::calcAtomsInEachPatch()
+{
+    if(myInputRank==-1) return;
+
+    PatchMap *patchMap = PatchMap::Object();
+    int numPatches = patchMap->numPatches();
+
+    patchMap->initTmpPatchAtomsList();
+    //each list contains the atom index to the initAtoms
+    vector<int> *eachPatchAtomList = patchMap->getTmpPatchAtomsList();
+
+    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+    PatchMgr *patchMgr = pm.ckLocalBranch();
+
+    int pid=0;
+    const Lattice lattice = simParameters->lattice;
+    for(int i=0; i<initAtoms.size(); i++) {
+        InputAtom *atom = &(initAtoms[i]);
+        if(!atom->isValid) continue;
+        if(atom->isMP) {
+            pid = patchMap->assignToPatch(atom->position, lattice);
+        }
+        eachPatchAtomList[pid].push_back(i);
+    }
+
+    CProxy_ParallelIOMgr pIO(thisgroup);
+
+    int patchCnt = 0;
+    for(int i=0; i<numPatches; i++) {
+        int cursize = eachPatchAtomList[i].size();
+        if(cursize>0) patchCnt++;
+    }
+
+    AtomsCntPerPatchMsg *msg = NULL;
+    if(simParameters->fixedAtomsOn) {
+        msg = new (patchCnt, patchCnt, patchCnt, 0)AtomsCntPerPatchMsg;
+    } else {
+        msg = new (patchCnt, patchCnt, 0, 0)AtomsCntPerPatchMsg;
+    }
+
+    msg->length = patchCnt;
+    patchCnt = 0;
+    for(int i=0; i<numPatches; i++) {
+        int cursize = eachPatchAtomList[i].size();
+        if(cursize>0) {
+            msg->pidList[patchCnt] = i;
+            msg->atomsCntList[patchCnt] = cursize;
+            patchCnt++;
+        }
+    }
+
+    if(simParameters->fixedAtomsOn) {
+        patchCnt = 0;
+        for(int i=0; i<numPatches; i++) {
+            int cursize = eachPatchAtomList[i].size();
+            if(cursize>0) {
+                int fixedCnt = 0;
+                for(int j=0; j<cursize; j++) {
+                    int aid = eachPatchAtomList[i][j];
+                    //atomFixed is either 0 or 1
+                    fixedCnt += initAtoms[aid].atomFixed;
+                }
+                msg->fixedAtomsCntList[patchCnt] = fixedCnt;
+                patchCnt++;
+            }
+        }
+    }
+
+    pIO[0].recvAtomsCntPerPatch(msg);
+
+}
+
+void ParallelIOMgr::recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg)
+{
+#ifdef MEM_OPT_VERSION
+    PatchMap *patchMap = PatchMap::Object();
+    for(int i=0; i<msg->length; i++) {
+        int pid = msg->pidList[i];
+        int oldNum = patchMap->numAtoms(pid);
+        patchMap->setNumAtoms(pid, oldNum+msg->atomsCntList[i]);
+        if(simParameters->fixedAtomsOn) {
+            oldNum = patchMap->numFixedAtoms(pid);
+            patchMap->setNumFixedAtoms(pid, oldNum+msg->fixedAtomsCntList[i]);
+        }
+    }
+    delete msg;
+
+    if(++procsReceived == numInputProcs) {
+        //print max PATCH info
+        int maxAtoms = -1;
+        int maxPatch = -1;
+        for(int i=0; i<patchMap->numPatches(); i++) {
+            int cnt = patchMap->numAtoms(i);
+            if(cnt>maxAtoms) {
+                maxAtoms = cnt;
+                maxPatch = i;
+            }
+        }
+        procsReceived = 0;
+        iout << iINFO << "LARGEST PATCH (" << maxPatch <<
+             ") HAS " << maxAtoms << " ATOMS\n" << endi;
+    }
+#endif
+}
+
+void ParallelIOMgr::sendAtomsToHomePatchProcs()
+{
+#ifdef MEM_OPT_VERSION
+    if(myInputRank==-1) return;
+
+    PatchMap *patchMap = PatchMap::Object();
+    int numPatches = patchMap->numPatches();
+    vector<int> *eachPatchAtomList = patchMap->getTmpPatchAtomsList();
+
+    //each element (proc) contains the list of ids of patches which will stay
+    //on that processor
+    ResizeArray<int> *procList = new ResizeArray<int>[CkNumPes()];
+    for(int i=0; i<numPatches; i++) {
+        if(eachPatchAtomList[i].size()==0) continue;
+        int onPE = patchMap->node(i);
+        procList[onPE].add(i);
+    }
+
+    //go over every processor to send a message if necessary
+    //TODO: Optimization for local home patches to save temp memory usage??? -CHAOMEI
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    for(int i=0; i<CkNumPes(); i++) {
+        int len = procList[i].size();
+        if(len==0) continue;
+
+        //prepare a message to send
+        int patchCnt = len;
+        int totalAtomCnt = 0;
+        for(int j=0; j<len; j++) {
+            int pid = procList[i][j];
+            int atomCnt = eachPatchAtomList[pid].size();
+            totalAtomCnt += atomCnt;
+        }
+
+        MovePatchAtomsMsg *msg = new (patchCnt, patchCnt, totalAtomCnt, 0)MovePatchAtomsMsg;
+        msg->patchCnt = patchCnt;
+        int atomIdx = 0;
+        for(int j=0; j<len; j++) {
+            int pid = procList[i][j];
+            int atomCnt = eachPatchAtomList[pid].size();
+            msg->pidList[j] = pid;
+            msg->sizeList[j] = atomCnt;
+            for(int k=0; k<atomCnt; k++, atomIdx++) {
+                int aid = eachPatchAtomList[pid][k];
+                FullAtom one = initAtoms[aid];
+                //HACK to re-sort the atom list after receiving the atom list on
+                //home patch processor -Chao Mei
+                one.hydVal = initAtoms[aid].hydList;
+                msg->allAtoms[atomIdx] = one;
+            }
+        }
+        pIO[i].recvAtomsToHomePatchProcs(msg);
+    }
+
+    //clean up to free space
+    delete [] procList;
+    patchMap->delTmpPatchAtomsList();
+
+    //free the space occupied by the list that contains the input atoms
+    initAtoms.resize(0);
+#endif
+}
+
+void ParallelIOMgr::recvAtomsToHomePatchProcs(MovePatchAtomsMsg *msg)
+{
+    if(!isOKToRecvHPAtoms) {
+        prepareHomePatchAtomList();
+        isOKToRecvHPAtoms = true;
+    }
+
+    int numRecvPatches = msg->patchCnt;
+    int aid = 0;
+    for(int i=0; i<numRecvPatches; i++) {
+        int pid = msg->pidList[i];
+        int size = msg->sizeList[i];
+        int idx = binaryFindHPID(pid);
+        for(int j=0; j<size; j++, aid++) {
+            hpAtomsList[idx].add(msg->allAtoms[aid]);
+        }
+    }
+    delete msg;
+}
+
+void ParallelIOMgr::prepareHomePatchAtomList()
+{
+    PatchMap *patchMap = PatchMap::Object();
+    for(int i=0; i<patchMap->numPatches(); i++) {
+        if(patchMap->node(i)==CkMyPe()) {
+            hpIDList.add(i);
+        }
+    }
+    if(hpIDList.size()>0)
+        hpAtomsList = new FullAtomList[hpIDList.size()];
+}
+
+int ParallelIOMgr::binaryFindHPID(int pid)
+{
+    //hpIDList should be in increasing order!!
+    int lIdx, rIdx;
+    int retIdx = -1;
+
+    rIdx=0;
+    lIdx=hpIDList.size()-1;
+
+    while(rIdx<=lIdx ) {
+        int idx = (rIdx+lIdx)/2;
+        int curPid = hpIDList[idx];
+        if(pid>curPid) {
+            //in the left
+            rIdx = idx+1;
+        } else if(pid<curPid) {
+            //in the right
+            lIdx = idx-1;
+        } else {
+            //found!
+            retIdx = idx;
+            break;
+        }
+    }
+    CmiAssert(retIdx!=-1);
+    return retIdx;
+}
+
+void ParallelIOMgr::createHomePatches()
+{
+#ifdef MEM_OPT_VERSION
+
+    int assignedPids = PatchMap::Object()->numPatchesOnNode(CkMyPe());
+    int numPids = hpIDList.size();
+    if(numPids==0){
+        //this node actually contains no homepatches
+        if(assignedPids == 0) return; 
+
+        //Entering the rare condition that all the homepatches this node has
+        //are empty so that "recvAtomsToHomePatchProcs" is never called!
+        //But we still need to create those empty homepatches!
+        CmiAssert(isOKToRecvHPAtoms == false);        
+        PatchMap *patchMap = PatchMap::Object();
+        CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
+        PatchMgr *patchMgr = pm.ckLocalBranch();
+        FullAtomList emptyone;
+        emptyone.resize(0);
+        for(int i=0; i<patchMap->numPatches(); i++) {
+            if(patchMap->node(i)==CkMyPe()) {
+                patchMgr->createHomePatch(i, emptyone);
+            }
+        }        
+        return;
+    }
+
+    CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
+    PatchMgr *patchMgr = pm.ckLocalBranch();
+
+    //go through the home patch list
+    for(int i=0; i<numPids; i++) {
+        int pid = hpIDList[i];
+
+        //re-sort the atom list of this patch
+        std::sort(hpAtomsList[i].begin(), hpAtomsList[i].end());
+        Node::Object()->workDistrib->fillAtomListForOnePatch(pid, hpAtomsList[i]);
+        patchMgr->createHomePatch(pid, hpAtomsList[i]);
+    }
+
+    hpIDList.resize(0);
+    delete [] hpAtomsList;
+    hpAtomsList = NULL;
+#endif
+}
+
+void ParallelIOMgr::freeMolSpace()
+{
+#ifdef MEM_OPT_VERSION
+    molecule->delAtomNames();
+    molecule->delChargeSpace();
+
+    //???TODO NOT SURE WHETHER freeEnergyOn is support in MEM_OPT_VERSION
+    //-CHAOMEI
+    if(!CkMyPe() && !simParameters->freeEnergyOn)
+        molecule->delMassSpace();
+
+    molecule->delFixedAtoms();
+#endif
+}
+
+//The initial distribution of atoms:
+//(avgNum+1),...,(avgNum+1),avgNum,...,avgNum where
+//avgNum equals to the total number of atoms in the system
+//divided by number of input processors --Chao Mei
+int ParallelIOMgr::numMyAtoms(int rank, int numProcs)
+{
+    if(rank==-1) return -1;
+    int avgNum = molecule->numAtoms/numProcs;
+    int remainder = molecule->numAtoms%numProcs;
+    if(rank<remainder) return avgNum+1;
+    else return avgNum;
+}
+
+int ParallelIOMgr::atomRank(int atomID, int numProcs)
+{
+    int avgNum = molecule->numAtoms/numProcs;
+    int remainder = molecule->numAtoms%numProcs;
+    int midLimit = remainder*(avgNum+1);
+    int idx;
+    if(atomID<midLimit) {
+        idx = atomID/(avgNum+1);
+    } else {
+        idx = remainder+(atomID-midLimit)/avgNum;
+    }
+    return idx;
+}
+
+void ParallelIOMgr::getMyAtomsRange(int &lowerIdx, int &upperIdx, int rank, int numProcs)
+{
+    if(rank==-1) {
+        //just to make sure upperIdx-lowerIdx+1 == -1
+        lowerIdx=-1;
+        upperIdx=-3;
+        return;
+    }
+    int avgNum = molecule->numAtoms/numProcs;
+    int remainder = molecule->numAtoms%numProcs;
+    if(rank<remainder) {
+        lowerIdx = rank*(avgNum+1);
+        upperIdx = lowerIdx+avgNum;
+    } else {
+        int midLimit = remainder*(avgNum+1);
+        lowerIdx = midLimit+(rank-remainder)*avgNum;
+        upperIdx = lowerIdx+avgNum-1;
+    }
+}
+
+void ParallelIOMgr::receivePositions(CollectVectorVarMsg *msg)
+{
+#ifdef MEM_OPT_VERSION
+    int ready = midCM->receivePositions(msg);
+    if(ready) {
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.receiveOutputPosReady(msg->seq);
+    }
+    delete msg;
+#endif
+}
+
+void ParallelIOMgr::receiveVelocities(CollectVectorVarMsg *msg)
+{
+#ifdef MEM_OPT_VERSION
+    int ready = midCM->receiveVelocities(msg);
+    if(ready) {
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.receiveOutputVelReady(msg->seq);        
+    }
+    delete msg;
+#endif
+}
+
+void ParallelIOMgr::disposePositions(int seq)
+{
+#ifdef MEM_OPT_VERSION
+    midCM->disposePositions(seq);
+    
+    if(myOutputRank == getMyOutputGroupHighestRank()) {
+        //notify the CollectionMaster to start the next round
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.startNextRoundOutputPos();
+    } else {
+        CProxy_ParallelIOMgr io(thisgroup);
+        io[outputProcArray[myOutputRank+1]].disposePositions(seq);
+    }
+#endif
+}
+
+void ParallelIOMgr::disposeVelocities(int seq)
+{
+#ifdef MEM_OPT_VERSION
+    midCM->disposeVelocities(seq);
+    
+    if(myOutputRank==getMyOutputGroupHighestRank()) {
+        //notify the CollectionMaster to start the next round
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.startNextRoundOutputVel();
+    } else {
+        CProxy_ParallelIOMgr io(thisgroup);
+        io[outputProcArray[myOutputRank+1]].disposeVelocities(seq);
+    }
+#endif
+}
+
+void ParallelIOMgr::wrapCoor(int seq, Lattice lat)
+{
+#ifdef MEM_OPT_VERSION
+    coorInstance = midCM->getReadyPositions(seq);
+
+    coorInstance->lattice = lat; //record the lattice to use for wrapAll/Water!
+    int fromAtomID = coorInstance->fromAtomID;
+    int toAtomID = coorInstance->toAtomID;
+
+    //only reference copies
+    ResizeArray<Vector> data = coorInstance->data;
+    ResizeArray<FloatVector> fdata = coorInstance->fdata;
+    //if both data and fdata are not empty, they contain exact values, the only
+    //difference lies in their precisions. Therefore, we only need to compute 
+    //the higher precision coordinate array. -Chao Mei
+    int dsize = data.size();    
+    int numMyAtoms = toAtomID-fromAtomID+1;
+    tmpCoorCon = new Vector[numMyAtoms];    
+    ClusterCoorElem one;
+    //1. compute wrapped coordinates locally 
+    for(int i=0; i<numMyAtoms; i++){
+        tmpCoorCon[i] = 0.0;
+        int cid = clusterID[i];
+        if(cid<fromAtomID){
+            //on output procs ahead of me
+            one.clusterId = cid;
+            ClusterCoorElem *ret = remoteCoors.find(one);
+            if(ret==NULL){
+                if(dsize==0) 
+                    one.dsum = fdata[i];
+                else 
+                    one.dsum = data[i];
+                                
+                remoteCoors.add(one);                 
+            }else{
+                if(dsize==0) 
+                    ret->dsum += fdata[i];
+                else 
+                    ret->dsum += data[i];               
+            }
+        }else{
+            if(dsize==0) 
+                tmpCoorCon[cid-fromAtomID] += fdata[i];
+            else 
+                tmpCoorCon[cid-fromAtomID] += data[i];
+        }
+    }
+
+    //2. Prepare to send msgs to remote output procs to reduce coordinates 
+    //values of a cluster
+    CmiAssert(numRemoteClusters == remoteCoors.size());
+    numCSMAck = 0; //set to 0 to prepare recving the final coor update
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    ClusterCoorSetIter iter(remoteCoors);
+    for(iter=iter.begin(); iter!=iter.end(); iter++){
+        ClusterCoorMsg *msg = new ClusterCoorMsg;
+        msg->srcRank = myOutputRank;
+        msg->clusterId = iter->clusterId;
+        msg->dsum = iter->dsum;
+        int dstRank = atomRankOnOutput(iter->clusterId);
+        pIO[outputProcArray[dstRank]].recvClusterCoor(msg);
+    }
+    
+    //Just send a local NULL msg to indicate the local wrapping
+    //coordinates has finished.
+    recvClusterCoor(NULL);
+#endif
+}
+
+//On the output proc, it's possible (could be a rare case) that recvClusterCoor
+//is executed before wrapCoor, so we need to make sure the local tmpCoorCon has
+//been calculated. This is why (numRemoteReqs+1) msgs are expected as the 
+//additional one is sent by itself when it finishes wrapping coordinates.
+// --Chao Mei
+void ParallelIOMgr::recvClusterCoor(ClusterCoorMsg *msg){
+    //only add the msg from remote procs
+    if(msg!=NULL) ccmBuf.add(msg);
+
+    //include a msg sent by itself
+    if(++numReqRecved == (numRemoteReqs+1)){
+        numReqRecved = 0;
+        integrateClusterCoor();
+    }
+}
+
+void ParallelIOMgr::integrateClusterCoor(){
+#ifdef MEM_OPT_VERSION
+    int fromIdx = coorInstance->fromAtomID;
+    int toIdx = coorInstance->toAtomID;
+    for(int i=0; i<ccmBuf.size(); i++){
+        ClusterCoorMsg *msg = ccmBuf[i];
+        int lidx = msg->clusterId - fromIdx;        
+        tmpCoorCon[lidx] += msg->dsum;
+    }
+
+    //send back those msgs
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    for(int i=0; i<ccmBuf.size(); i++){
+        ClusterCoorMsg *msg = ccmBuf[i];
+        int lidx = msg->clusterId - fromIdx;        
+        if(simParameters->wrapAll || isWater[lidx]) {
+            Lattice *lat = &(coorInstance->lattice);
+            Vector coni = tmpCoorCon[lidx]/clusterSize[lidx];
+            msg->dsum = (simParameters->wrapNearest ?
+                  lat->wrap_nearest_delta(coni) : lat->wrap_delta(coni));
+        }else{
+            msg->dsum = 0.0;
+        }
+        pIO[outputProcArray[msg->srcRank]].recvFinalClusterCoor(msg);
+    }
+    ccmBuf.resize(0);
+
+    //It's possible that recvFinalClusterCoor is executed before integrateClusterCoor
+    //on this processor (the other proc executes faster in doing wrapCoor). So avoid
+    //this msg race, do send a message to itself to participate the reduction.
+    if(numRemoteClusters!=0){
+        recvFinalClusterCoor(NULL);
+    } else {
+        //this output proc is ready has the sum of coordinates of each cluster
+        //on it, so it is ready to do the final wrap coor computation        
+        int numMyAtoms = toIdx-fromIdx+1;
+        ResizeArray<Vector> data = coorInstance->data;
+        ResizeArray<FloatVector> fdata = coorInstance->fdata;
+        for(int i=0; i<numMyAtoms; i++){
+            if(!simParameters->wrapAll && !isWater[i]) continue;
+            int lidx = clusterID[i]-fromIdx;
+            if(lidx==i){
+                //the head atom of the cluster
+                Lattice *lat = &(coorInstance->lattice);
+                Vector coni = tmpCoorCon[lidx]/clusterSize[lidx];
+                tmpCoorCon[lidx] = (simParameters->wrapNearest ?
+                  lat->wrap_nearest_delta(coni) : lat->wrap_delta(coni));
+            }
+            if(data.size()) data[i] += tmpCoorCon[lidx]; 
+            //no operator += (FloatVector, Vector)
+            if(fdata.size()) fdata[i] = fdata[i] + tmpCoorCon[lidx]; 
+        }
+        
+        delete [] tmpCoorCon;
+        tmpCoorCon = NULL;
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.wrapCoorFinished();
+    }
+#endif    
+}
+
+void ParallelIOMgr::recvFinalClusterCoor(ClusterCoorMsg *msg){
+#ifdef MEM_OPT_VERSION
+    if(msg!=NULL){
+        //only process the message sent from other procs!
+        ClusterCoorElem one(msg->clusterId);
+        ClusterCoorElem *ret = remoteCoors.find(one);
+        ret->dsum = msg->dsum;
+        delete msg;
+    }
+    
+    if(++numCSMAck == (numRemoteClusters+1)){        
+        //final wrap coor computation
+        int fromIdx = coorInstance->fromAtomID;
+        int toIdx = coorInstance->toAtomID;
+        int numMyAtoms = toIdx-fromIdx+1;
+        ResizeArray<Vector> data = coorInstance->data;
+        ResizeArray<FloatVector> fdata = coorInstance->fdata;
+        ClusterCoorElem tmp;
+        for(int i=0; i<numMyAtoms; i++){
+            if(!simParameters->wrapAll && !isWater[i]) continue;
+            int cid = clusterID[i];
+            int lidx = cid-fromIdx;
+            if(lidx<0){
+                //this cid should be inside remoteCoors
+                tmp.clusterId = cid;
+                ClusterCoorElem *fone = remoteCoors.find(tmp);
+                if(data.size()) data[i] += fone->dsum; 
+                if(fdata.size()) fdata[i] = fdata[i] + fone->dsum; 
+            }else{
+                if(lidx==i){
+                    Lattice *lat = &(coorInstance->lattice);
+                    Vector coni = tmpCoorCon[lidx]/clusterSize[lidx];
+                    tmpCoorCon[lidx] = (simParameters->wrapNearest ?
+                    lat->wrap_nearest_delta(coni) : lat->wrap_delta(coni));
+                }
+                if(data.size()) data[i] += tmpCoorCon[lidx]; 
+                if(fdata.size()) fdata[i] = fdata[i] + tmpCoorCon[lidx];
+            }
+        }
+
+        delete [] tmpCoorCon;
+        tmpCoorCon = NULL;
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.wrapCoorFinished();
+        numCSMAck = 0;
+        remoteCoors.clear();
+    }
+#endif
+}
 #include "ParallelIOMgr.def.h"

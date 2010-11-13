@@ -7,24 +7,48 @@
 module ParallelIOMgr {
   // Handles messages to Patch(s)
 
-  message ConfigListMessage;
-  message [packed] AtomsPerPatchMsg;
-  message [packed] NodeAssignmentMsg;
-  message [packed] MoveFullAtomsMsg;
-  message [packed] AtomListForPatchCreateMsg;
+  message MolInfoMsg;
+  message HydroBasedMsg;
+  message MoveInputAtomsMsg{
+    InputAtom atomList[];
+  };
+  message AtomsCntPerPatchMsg{
+    PatchID pidList[];
+    int atomsCntList[];
+    int fixedAtomsCntList[];
+  };
+  message MovePatchAtomsMsg{
+    PatchID pidList[];
+    int sizeList[];
+    FullAtom allAtoms[];
+  };
+
+  message ClusterSizeMsg;
+  message ClusterCoorMsg;
 
   group ParallelIOMgr
   {
     entry ParallelIOMgr(void);
-    entry void readCoordinatesAndVel(ConfigListMessage *pmsg);
-    entry void getPatchCoordinates(AtomListForPatchCreateMsg *msg);
-    entry void sendCoordinatesToProcs();
-    entry void receiveNumAtomsPerPatch(AtomsPerPatchMsg *msg1);
-    entry void updateCounters(int numBonds,int numAngles, int numDihedrals, int numImpropers, int numCrossterms, int numTotalExclusions,int numCalcExclusions);
-    entry void receiveMigrationChildren(MoveFullAtomsMsg *msg);    
-    entry void sendAssignedNode(NodeAssignmentMsg *msg);
-    entry void caclNumAtomsInEachPatchParallel();
-    entry void atomExchangeForPatchCreation();
+    entry void recvAtomsMGrp(MoveInputAtomsMsg *msg);
+    entry void recvMolInfo(MolInfoMsg *msg);
+    entry void bcastMolInfo(MolInfoMsg *msg);
+    entry void recvHydroBasedCounter(HydroBasedMsg *msg);
+    entry void bcastHydroBasedCounter(HydroBasedMsg *msg);
+    entry void recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg);
+    entry void recvAtomsToHomePatchProcs(MovePatchAtomsMsg *msg);
+
+    entry void recvClusterSize(ClusterSizeMsg *msg);
+    entry void recvFinalClusterSize(ClusterSizeMsg *msg);
+
+    entry void receivePositions(CollectVectorVarMsg *msg);
+    entry void receiveVelocities(CollectVectorVarMsg *msg);
+    entry void disposePositions(int seq);
+    entry void disposeVelocities(int seq);
+    
+    entry void wrapCoor(int seq, Lattice lat);
+    entry void recvClusterCoor(ClusterCoorMsg *msg);
+    entry void recvFinalClusterCoor(ClusterCoorMsg *msg);
+
   } ;
 }
 

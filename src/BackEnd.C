@@ -31,12 +31,10 @@
 #include "BroadcastMgr.decl.h"
 #include "LdbCoordinator.decl.h"
 #include "Sync.decl.h"
-///////////////////////////////////////////////////
-//// Parallel Input change
-//// Osman Sarood
+
+#ifdef MEM_OPT_VERSION
 #include "ParallelIOMgr.decl.h"
-/////////////////////////////////////////////////////
-//
+#endif
 
 extern void _initCharm(int, char**);
 
@@ -149,15 +147,10 @@ void master_init(int argc, char **argv){
   group.computeGridForceNodeMgr = CProxy_ComputeGridForceNodeMgr::ckNew();
   group.computeGridForceMgr = CProxy_ComputeGridForceMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
-///////////////////////////////////////////////////////////////////////////
-//// Osman Sarood
-//// Parallel Input change
-// ParallelIOMgr group required for Parallel IO
 #ifdef MEM_OPT_VERSION
   group.ioMgr=CProxy_ParallelIOMgr::ckNew();
 #endif
-//  //////////////////////////////////////////////////////////////////
-//
+
   group.sync = CProxy_Sync::ckNew();
 
   //group.computePmeMgr = CProxy_OptPmeMgr::ckNew();
@@ -167,19 +160,11 @@ void master_init(int argc, char **argv){
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
   #endif 
 
-#ifdef MEM_OPT_VERSION
-  MasterHandlerInitMsg *initmsg8 = new MasterHandlerInitMsg;
-  //initmsg8->master = collectionMaster;
-  CkChareID collectionMasterHanlder = CProxy_CollectionMasterHandler::ckNew(initmsg8, 0);
-#else
-  CkChareID collectionMaster = CProxy_CollectionMaster::ckNew(0);
-#endif
-
+  CkChareID collectionMaster = CProxy_CollectionMaster::ckNew(0);  
   SlaveInitMsg *initmsg7 = new SlaveInitMsg;
-#ifndef MEM_OPT_VERSION
   initmsg7->master = collectionMaster;
-#endif
   group.collectionMgr = CProxy_CollectionMgr::ckNew(initmsg7);
+
   group.broadcastMgr = CProxy_BroadcastMgr::ckNew();
   group.ldbCoordinator = CProxy_LdbCoordinator::ckNew();
   GroupInitMsg *msg = new GroupInitMsg;

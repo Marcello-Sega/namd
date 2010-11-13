@@ -86,13 +86,28 @@ template <class T, class S, class P> class ComputeSelfTuples :
              }
              if ( samepatch ) {
                t.scale = has_les ? invLesFactor : 1;
-	       TuplePatchElem *p;
-	       p = this->tuplePatchList.find(TuplePatchElem(homepatch));
-               for (i=0; i < T::size; i++) {
-	         t.p[i] = p;
-	         t.localIndex[i] = aid[i].index;
+               TuplePatchElem *p;
+               p = this->tuplePatchList.find(TuplePatchElem(homepatch));
+               for(i=0; i < T::size; i++) {
+                   t.p[i] = p;
+                   t.localIndex[i] = aid[i].index;
                }
+             #ifdef MEM_OPT_VERSION
+               //avoid adding Tuples whose atoms are all fixed
+	       if(node->simParameters->fixedAtomsOn &&
+                  !node->simParameters->fixedAtomsForces) {
+   		 int allfixed = 1;
+                 for(i=0; i<T::size; i++){
+                   CompAtomExt *one = &(p->xExt[aid[i].index]);
+                   allfixed = allfixed & one->atomFixed;
+                 }
+                 if(!allfixed) this->tupleList.add(t);
+               }else{
+                 this->tupleList.add(t);
+               }
+             #else
                this->tupleList.add(t);
+             #endif               
              }
            }
         }

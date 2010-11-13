@@ -9,8 +9,7 @@ module CollectionMgr {
 
   group CollectionMgr
   {
-    entry CollectionMgr(SlaveInitMsg *);
-    entry void setCollectionMaster(SlaveInitMsg *);
+    entry CollectionMgr(SlaveInitMsg *);    
   };
 }
 

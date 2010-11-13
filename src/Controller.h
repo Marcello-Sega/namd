@@ -163,11 +163,8 @@ protected:
     int pressureProfileCount;
     BigReal *pressureProfileAverage;
 
-    #ifdef MEM_OPT_VERSION
-    CollectionMasterHandler *const collection;
-    #else
     CollectionMaster *const collection;
-    #endif
+    
     ControllerBroadcasts * broadcast;
     std::ofstream xstFile;
     void outputExtendedSystem(int step);

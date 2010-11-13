@@ -14,7 +14,6 @@
 class AtomMap;
 class BroadcastMgr;
 class CollectionMaster;
-class CollectionMasterHandler;
 class CollectionMgr;
 class LdbCoordinator;
 class Node;
@@ -24,11 +23,6 @@ class ProxyMgr;
 class ReductionMgr;
 class Communicate;
 class Sync;
-///////////////////////////
-//// Osman Sarood
-//// Parallel Input
-class ParallelIOMgr;
-/////////////////////////////
 
 #ifdef PROCTRACE_DEBUG
 class DebugFileTrace;
@@ -39,7 +33,6 @@ class DebugFileTrace;
 CkpvExtern(AtomMap*, AtomMap_instance);
 CkpvExtern(BroadcastMgr*, BroadcastMgr_instance);
 CkpvExtern(CollectionMaster*, CollectionMaster_instance);
-CkpvExtern(CollectionMasterHandler*, CollectionMasterHandler_instance);
 CkpvExtern(CollectionMgr*, CollectionMgr_instance);
 CkpvExtern(LdbCoordinator*, LdbCoordinator_instance);
 CkpvExtern(Node*, Node_instance);
@@ -48,11 +41,6 @@ CkpvExtern(PatchMgr*, PatchMgr_instance);
 CkpvExtern(ProxyMgr*, ProxyMgr_instance);
 CkpvExtern(ReductionMgr*, ReductionMgr_instance);
 CkpvExtern(Sync*, Sync_instance);
-//////////////////////////
-//// Osman Sarood
-//// Parallel Input
-CkpvExtern(ParallelIOMgr*,ParallelIOMgr_instance);
-///////////////////////
 //
 #ifdef PROCTRACE_DEBUG
 CkpvExtern(DebugFileTrace*, DebugFileTrace_instance);

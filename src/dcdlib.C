@@ -10,30 +10,7 @@
    output, so its pretty ugly.  If you are squimish, don't look!
 */
 
-#include "largefiles.h"
-
 #include "dcdlib.h"
-#include "common.h" // for int32 definition
-#include "Vector.h"
-#include <stdio.h>
-#include <string.h>
-#ifndef _NO_MALLOC_H
-#include <malloc.h>
-#endif
-#ifndef WIN32
-#include <unistd.h>
-#endif
-#include <fcntl.h>
-#include <sys/stat.h>
-#include <sys/types.h>
-#include <errno.h>
-#ifndef WIN32
-#include <pwd.h>
-#endif
-#include <time.h>
-#ifdef WIN32
-#include <io.h>
-#endif
 
 #define NAMD_write NAMD_write64
 // same as write, only does error checking internally
@@ -686,8 +663,11 @@ int open_dcd_write_par_slave(char *dcdname)
 	if ( (dcdfd = _open(dcdname, O_RDWR|O_BINARY|O_LARGEFILE,
 				_S_IREAD|_S_IWRITE)) < 0)
 #else
-
-	if ( (dcdfd = open(dcdname, O_RDWR|O_LARGEFILE,
+#ifdef NAMD_NO_O_EXCL
+	if ( (dcdfd = open(dcdname, O_RDWR|O_TRUNC|O_LARGEFILE,
+#else
+	if ( (dcdfd = open(dcdname, O_RDWR|O_EXCL|O_LARGEFILE,
+#endif
 				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
 #endif
 	{
@@ -743,14 +723,6 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 	NAMD_write(fd, (char *) Z, out_integer);
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
-#ifdef WIN32
-#define LSEEK _lseek
-#define READ _read
-#else
-#define LSEEK lseek
-#define READ read
-#endif
-
 	/* don't update header until after write succeeds */
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
@@ -767,6 +739,16 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 	LSEEK(fd,0,SEEK_END);
 
 	return(0);
+}
+
+int write_dcdstep_par_cell(int fd, double *cell){
+	if (cell) {
+	  int32 out_integer = 48;
+	  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	  NAMD_write(fd, (char *) cell, out_integer);
+	  NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+	}
+	return 0;
 }
 
 /*   No useful file format description of the DCD format can be found.  */
@@ -782,42 +764,33 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 /*   Master then broadcasts a command for the slaves to write.  They    */
 /*   contribute to a reduction which roots at the master.  Which then   */
 /*   updates the header.                                                */  
-
-
-/*   Here we have a function to handle the the unit cell, and           */
-/*   natom count fields.                                                */
-int write_dcdstep_par_units(int fd, int N, float *X, float *Y, float *Z, double *cell, int unitoffset)
-
+/*   Update the X/Y/Z headers for each X,Y and Z fields starting the current */
+/*   position of the file                                                    */
+int write_dcdstep_par_XYZUnits(int fd, int N)
 {
-	int32 NSAVC,NSTEP,NFILE;
-	int32 out_integer;
+  int32 out_integer;
 
-  /* Unit cell */
-  if (cell) {
-    LSEEK(fd, unitoffset, SEEK_SET);
-    out_integer = 48;
-    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-    NAMD_write(fd, (char *) cell, out_integer);
-    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-  }
   // number of elements
-  out_integer = N*4;
+  out_integer = N*sizeof(float);
   NAMD_write(fd, (char *) &out_integer, sizeof(int32));
   // seek to the end of each x y z block and write out the count
-  LSEEK(fd, out_integer, SEEK_SET);
+  LSEEK(fd, out_integer, SEEK_CUR);
   NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+
   NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-  LSEEK(fd, out_integer, SEEK_SET);
+  LSEEK(fd, out_integer, SEEK_CUR);
   NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+
   NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-  LSEEK(fd, out_integer, SEEK_SET);
+  LSEEK(fd, out_integer, SEEK_CUR);
   NAMD_write(fd, (char *) &out_integer, sizeof(int32));
+
   return(0);
 }
 
 /*  A function to update the header.                                      */
 /*  Once all slaves have written the master updates the header.           */
-int write_dcdstep_par_header(int fd, int N, float *X, float *Y, float *Z, double *cell)
+int update_dcdstep_par_header(int fd)
 {
 	int32 NSAVC,NSTEP,NFILE;
 	/* don't update header until after write succeeds */
@@ -838,114 +811,30 @@ int write_dcdstep_par_header(int fd, int N, float *X, float *Y, float *Z, double
 	return(0);
 }
 
-/* The version of writing coordinates in the format of FloatVector */
-int write_dcdstep(int fd, int N, FloatVector *coor, double *cell)
-
-{
-	int32 NSAVC,NSTEP,NFILE;
-	int32 out_integer;
-
-  /* Unit cell */
-  if (cell) {
-    out_integer = 48;
-    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-    NAMD_write(fd, (char *) cell, out_integer);
-    NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-  }
-
-  /* Coordinates */
-#define FBUFSIZE 4096
-    float fBuf[FBUFSIZE];
-
-    int32 remains = N;
-    int32 coorstart = 0;
-
-	out_integer = N*4;
-	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-    //writing X-coor in batch mode
-    while(remains>0){
-        int32 writesize = FBUFSIZE;
-        if(remains<FBUFSIZE) writesize=remains;
-        for(int i=0; i<writesize; i++)
-            fBuf[i] = coor[i+coorstart].x;
-        NAMD_write(fd, (char *)fBuf, writesize*4);
-        coorstart += writesize;
-        remains -= FBUFSIZE;
-    }    
-	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-
-	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-    //writing Y-coor in batch mode
-    remains = N;
-    coorstart = 0;
-    while(remains>0){
-        int32 writesize = FBUFSIZE;
-        if(remains<FBUFSIZE) writesize=remains;
-        for(int i=0; i<writesize; i++)
-            fBuf[i] = coor[i+coorstart].y;
-        NAMD_write(fd, (char *)fBuf, writesize*4);
-        coorstart += writesize;
-        remains -= FBUFSIZE;
-    }    
-	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-
-	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-    //writing Z-coor in batch mode
-    remains = N;
-    coorstart = 0;
-    while(remains>0){
-        int32 writesize = FBUFSIZE;
-        if(remains<FBUFSIZE) writesize=remains;
-        for(int i=0; i<writesize; i++)
-            fBuf[i] = coor[i+coorstart].z;
-        NAMD_write(fd, (char *)fBuf, writesize*4);
-        coorstart += writesize;
-        remains -= FBUFSIZE;
-    }	
-	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
-
-#ifdef WIN32
-#define LSEEK _lseek
-#define READ _read
-#else
-#define LSEEK lseek
-#define READ read
-#endif
-
-	/* don't update header until after write succeeds */
-
-	LSEEK(fd,NSAVC_POS,SEEK_SET);
-	READ(fd,(void*) &NSAVC,sizeof(int32));
-	LSEEK(fd,NSTEP_POS,SEEK_SET);
-	READ(fd,(void*) &NSTEP,sizeof(int32));
-	LSEEK(fd,NFILE_POS,SEEK_SET);
-	READ(fd,(void*) &NFILE,sizeof(int32));
-	NSTEP += NSAVC;
-	NFILE += 1;
-	LSEEK(fd,NSTEP_POS,SEEK_SET);
-	NAMD_write(fd,(char*) &NSTEP,sizeof(int32));
-	LSEEK(fd,NFILE_POS,SEEK_SET);
-	NAMD_write(fd,(char*) &NFILE,sizeof(int32));
-	LSEEK(fd,0,SEEK_END);
-	return(0);
-}
 /* Each slave writer has a sequential block of atoms to output */
-/* Seek to your x,y,z offset and output the coordinates.              */
-int write_dcdstep_par_slave(int fd, int N, float *X, float *Y, float *Z, double *cell, int xoffset, int yoffset, int zoffset)
+/* The stream file position needs to be put at the beginning of each */
+/* timestep X/Y/Z output                                             */
+int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *Y, float *Z){
 
-{
+	int parN = parU-parL+1;
 	int32 out_integer;
   /* Coordinates for the N elements handled by this writer */
-	out_integer = N*4;
-	LSEEK(fd, xoffset, SEEK_SET);
+	out_integer = parN*4;
+
+	/* x's 1st number of Xs */
+	off_t xoffset = sizeof(int)+sizeof(float)*((off_t)parL);
+	LSEEK(fd, xoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) X, out_integer);
-	LSEEK(fd, yoffset, SEEK_SET);
+
+	off_t yoffset = 2*sizeof(int)+sizeof(float)*((off_t)(N-parU+parL-1));
+	LSEEK(fd, yoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) Y, out_integer);
-	LSEEK(fd, zoffset, SEEK_SET);
+
+	off_t zoffset = yoffset;
+	LSEEK(fd, zoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) Z, out_integer);
 	return(0);
 }
-
 
 /*****************************************************************************/
 /*									     */

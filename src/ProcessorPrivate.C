@@ -17,7 +17,6 @@
 CkpvDeclare(AtomMap*, AtomMap_instance);
 CkpvDeclare(BroadcastMgr*, BroadcastMgr_instance);
 CkpvDeclare(CollectionMaster*, CollectionMaster_instance);
-CkpvDeclare(CollectionMasterHandler*, CollectionMasterHandler_instance);
 CkpvDeclare(CollectionMgr*, CollectionMgr_instance);
 CkpvDeclare(LdbCoordinator*, LdbCoordinator_instance);
 CkpvDeclare(Node*, Node_instance);
@@ -25,11 +24,6 @@ CkpvDeclare(PatchMap*, PatchMap_instance);
 CkpvDeclare(PatchMgr*, PatchMgr_instance);
 CkpvDeclare(ProxyMgr*, ProxyMgr_instance);
 CkpvDeclare(ReductionMgr*, ReductionMgr_instance);
-/////////////////////////////////////////////////////////
-//// Osman Sarood
-//// Parallel Input
-CkpvDeclare(ParallelIOMgr*, ParallelIOMgr_instance);
-/////////////////////////////////////////////////////////
 
 #ifdef PROCTRACE_DEBUG
 CkpvDeclare(DebugFileTrace*, DebugFileTrace_instance);
@@ -55,19 +49,12 @@ void ProcessorPrivateInit(void)
   CkpvAccess(BroadcastMgr_instance) = 0;
   CkpvInitialize(CollectionMaster*, CollectionMaster_instance);
   CkpvAccess(CollectionMaster_instance) = 0;
-  CkpvInitialize(CollectionMasterHandler*, CollectionMasterHandler_instance);
-  CkpvAccess(CollectionMasterHandler_instance) = 0;
   CkpvInitialize(CollectionMgr*, CollectionMgr_instance);
   CkpvAccess(CollectionMgr_instance) = 0;
   CkpvInitialize(LdbCoordinator*, LdbCoordinator_instance);
   CkpvAccess(LdbCoordinator_instance) = 0;
   CkpvInitialize(Node*, Node_instance);
   CkpvAccess(Node_instance) = 0;
-///////////////////////////////////////////////////////////
-//// Osman Sarood
-//  CkpvInitialize(ParallelIOMgr*, ParallelIOMgr_instance);
-//  CkpvAccess(ParallelIOMgr_instance) = 0;
-///////////////////////////////////////////////
 
   CkpvInitialize(PatchMap*, PatchMap_instance);
   CkpvAccess(PatchMap_instance) = 0;

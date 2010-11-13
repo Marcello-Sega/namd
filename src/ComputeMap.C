@@ -284,6 +284,42 @@ void ComputeMap::printComputeMap(void)
     DebugM(2,"---------------------------------------\n");
 
   }
+
+char *fname;
+#ifdef MEM_OPT_VERSION
+fname = "computeMap.opt";
+#else
+fname = "computeMap.orig";
+#endif
+
+FILE *ofp = fopen(fname, "w");
+  fprintf(ofp,"---------------------------------------");
+  fprintf(ofp,"---------------------------------------\n");
+
+  fprintf(ofp,"nComputes = %d\n", nComputes);
+  fprintf(ofp,"nPatchBased = %d\n", nPatchBased);
+  fprintf(ofp,"nAtomBased = %d\n", nAtomBased);
+  fprintf(ofp,"nAllocated = %d\n", nComputes);
+  for(int i=0; i < nComputes; i++)
+  {
+    fprintf(ofp,"Compute %d\n", i);
+    fprintf(ofp,"  node = %d\n",computeData[i].node);
+    fprintf(ofp,"  patchBased = %d\n",computeData[i].patchBased);
+    fprintf(ofp,"  numPids = %d\n",computeData[i].numPids);
+    fprintf(ofp,"  numPidsAllocated = %d\n",computeData[i].numPidsAllocated);
+    for(int j=0; j < computeData[i].numPids; j++)
+    {
+      fprintf(ofp,"%d ",computeData[i].pids[j].pid);
+      if (!((j+1) % 6))
+	fprintf(ofp,"\n");
+    }
+    fprintf(ofp,"\n---------------------------------------");
+    fprintf(ofp,"---------------------------------------\n");
+
+  }
+
+fclose(ofp);
+
 }
 
 void ComputeMap::saveComputeMap(const char *fname)

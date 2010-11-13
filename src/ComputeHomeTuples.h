@@ -167,25 +167,40 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
              }
              if ( homepatch != notUsed && isBasePatch[homepatch] ) {
                for (i=0; i < T::size; i++) {
-	         TuplePatchElem *p;
-	         t.p[i] = p = tuplePatchList.find(TuplePatchElem(aid[i].pid));
-	         if ( ! p ) {
-               #ifdef MEM_OPT_VERSION
-               iout << iWARN << "Tuple with atoms ";
-               #else
-	           iout << iWARN << "Tuple " << *curTuple << " with atoms ";
-               #endif
-	           int erri;
-	           for( erri = 0; erri < T::size; erri++ ) {
-	             iout << t.atomID[erri] << "(" <<  aid[erri].pid << ") ";
-	           }
-	           iout << "missing patch " << aid[i].pid << "\n" << endi;
-	           
-	           NAMD_die("Patch needed for tuple is missing.\n");
-	         }
-	         t.localIndex[i] = aid[i].index;
+      	         TuplePatchElem *p;
+      	         t.p[i] = p = tuplePatchList.find(TuplePatchElem(aid[i].pid));
+      	         if ( ! p ) {
+                     #ifdef MEM_OPT_VERSION
+                     iout << iWARN << "Tuple with atoms ";
+                     #else
+      	           iout << iWARN << "Tuple " << *curTuple << " with atoms ";
+                     #endif
+      	           int erri;
+      	           for( erri = 0; erri < T::size; erri++ ) {
+      	             iout << t.atomID[erri] << "(" <<  aid[erri].pid << ") ";
+      	           }
+      	           iout << "missing patch " << aid[i].pid << "\n" << endi;
+      	           
+      	           NAMD_die("Patch needed for tuple is missing.\n");
+      	         }
+      	         t.localIndex[i] = aid[i].index;
                }
+             #ifdef MEM_OPT_VERSION
+               //avoid adding Tuples whose atoms are all fixed
+               if(node->simParameters->fixedAtomsOn &&
+		  !node->simParameters->fixedAtomsForces) {
+                 int allfixed = 1;
+                 for(i=0; i<T::size; i++){
+                   CompAtomExt *one = &(t.p[i]->xExt[aid[i].index]);
+                   allfixed = allfixed & one->atomFixed;
+                 }
+                 if(!allfixed) tupleList.add(t);
+               }else{
+                 tupleList.add(t);
+               }
+             #else
                tupleList.add(t);
+             #endif               
              }
            }
         }

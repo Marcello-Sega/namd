@@ -7,20 +7,47 @@
 #include <ckhashtable.h>
 using namespace std;
 
-#define COMPRESSED_PSF_VER 1.63
+#define COMPRESSED_PSF_VER 1.72
 
 //used to detemine big-endian or little-endian for 
 //the per-atom binary file
 #define COMPRESSED_PSF_MAGICNUM 1234
-
-#define BINARY_PERATOM_OUTPUT 1
 
 class Molecule;
 class Parameters;
 class SimParameters;
 class ConfigList;
 
-void compress_psf_file(Molecule *mol, char *psfFileName, Parameters *param, SimParameters *simParam, ConfigList* cfgList);
+//if the compiler supports anonymous struct, then sSet, iSet
+//and fSet could be omitted for simplicity. -Chao Mei
+struct OutputAtomRecord{
+  struct shortVals{
+    short segNameIdx;
+    short resNameIdx;
+    short atomNameIdx;
+    short atomTypeIdx;
+    short chargeIdx;
+    short massIdx;    
+    short vdw_type;
+  }sSet;
+
+  struct integerVals{
+    int atomSigIdx;
+    int exclSigIdx;
+    int resID;      
+    int hydrogenList;
+    int atomsInGroup;
+    int GPID;      
+    int atomsInMigrationGroup;
+    int MPID;    
+  }iSet;
+
+  struct floatVals{
+    Real rigidBondLength;
+  }fSet;
+           
+  void flip();
+};
 
 void compress_molecule_info(Molecule *mol, char *psfFileName, Parameters *param, SimParameters *simParam, ConfigList* cfgList);
 

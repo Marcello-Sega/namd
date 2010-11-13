@@ -13,7 +13,28 @@
 #ifndef DCDLIB_H
 #define DCDLIB_H
 
+#include "largefiles.h"
+#include "common.h" // for int32 definition
 #include "Vector.h"
+#include <stdio.h>
+#include <string.h>
+#ifndef _NO_MALLOC_H
+#include <malloc.h>
+#endif
+#ifndef WIN32
+#include <unistd.h>
+#endif
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <errno.h>
+#ifndef WIN32
+#include <pwd.h>
+#endif
+#include <time.h>
+#ifdef WIN32
+#include <io.h>
+#endif
 
 /*  DEFINE ERROR CODES THAT MAY BE RETURNED BY DCD ROUTINES		*/
 #define DCD_DNE		-2	/*  DCD file does not exist		*/
@@ -24,6 +45,13 @@
 #define DCD_FILEEXISTS  -7	/*  output file already exists		*/
 #define DCD_BADMALLOC   -8	/*  malloc failed			*/
 
+#ifdef WIN32
+#define LSEEK _lseek
+#define READ _read
+#else
+#define LSEEK lseek
+#define READ read
+#endif
 
 /*			FUNCTION ALLUSIONS				*/
 int open_dcd_read(char *);      /*  Open a DCD file for reading 	*/
@@ -33,23 +61,29 @@ int read_dcdstep(int, int, float*, float*, float*, int, int, int*);
 				/*  Read a timestep's values		*/
 int open_dcd_write(char *);     /*  Open a DCD file for writing		*/
 
-int open_dcd_write_par_slave(char *dcdname);
-/* Slaves open existing file created by master */
-
 int write_dcdstep(int, int, float *, float *, float *, double *unitcell);
-int write_dcdstep(int, int, FloatVector *, double *unitcell);
 				/*  Write out a timesteps values	*/
-int write_dcdstep_par_units(int fd, int N, float *X, float *Y, float *Z, double *cell, int unitoffset);
-     /* Master writes unit cell and natom info */
-int write_dcdstep_par_header(int fd, int N, float *X, float *Y, float *Z, double *cell); 
-     /* Master updates header */
-int write_dcdstep_par_slave(int fd, int N, float *X, float *Y, float *Z, double *cell, int xoffset, int yoffset, int zoffset);
-				/*  Write out a timesteps values parallel*/
 int write_dcdheader(int, char*, int, int, int, int, int, double, int);	
 				/*  Write a dcd header			*/
 void close_dcd_read(int, int, int *);
 				/*  Close a dcd file open for reading   */
 void close_dcd_write(int);	/*  Close a dcd file open for writing   */
+
+int open_dcd_write_par_slave(char *dcdname);
+/* Slaves open existing file created by master */
+int write_dcdstep_par_cell(int fd, double *cell);
+int write_dcdstep_par_XYZUnits(int fd, int N);
+     /* Master writes unit cell and natom info */
+int update_dcdstep_par_header(int fd); 
+     /* Master updates header */
+
+/* Write out a timesteps values partially in parallel for part [parL, parU] */
+int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *Y, float *Z);
+    
+/* wrapper for seeking the dcd file */
+inline int seek_dcdfile(int fd, off_t offset, int whence){
+    return LSEEK(fd, offset, whence);
+}
 
 #endif /* ! DCDLIB_H */
 

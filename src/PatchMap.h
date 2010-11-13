@@ -61,12 +61,6 @@ public:
   inline int gridsize_a(void) const { return aDim; }
   inline int gridsize_b(void) const { return bDim; }
   inline int gridsize_c(void) const { return cDim; }
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Osman Sarood
-//// Parallel Input change
-  void initPatchData();
-  void registerMyPatch(PatchID pid, HomePatch *pptr);
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
   // returns the number of patches in each dimension
   inline int numaway_a(void) const { return aAway; }
   inline int numaway_b(void) const { return bAway; }
@@ -123,6 +117,14 @@ public:
   // cid(pid,i) returns the i-th compute id registered
   inline int cid(int pid, int i) const { return patchData[pid].cids[i]; }
 
+#ifdef MEM_OPT_VERSION
+  inline int numAtoms(int pid) const { return patchData[pid].numAtoms; }
+  inline void setNumAtoms(int pid, int num) { patchData[pid].numAtoms = num; }
+
+  inline int numFixedAtoms(int pid) const { return patchData[pid].numFixedAtoms; }
+  inline void setNumFixedAtoms(int pid, int num) { patchData[pid].numFixedAtoms = num; }
+#endif
+
   void assignNode(PatchID, NodeID);
   void assignBaseNode(PatchID, NodeID);
   void assignBaseNode(PatchID);
@@ -178,6 +180,12 @@ private:
     ComputeID *cids;
     Patch *myPatch;
     HomePatch *myHomePatch;
+#ifdef MEM_OPT_VERSION
+    //added to record #atoms in each patch initially
+    //--Chao Mei
+    int numAtoms;
+    int numFixedAtoms;
+#endif
   };
   int nPatches;
   int nNodesWithPatches;

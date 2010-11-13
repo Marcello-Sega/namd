@@ -46,6 +46,7 @@
 #include "Debug.h"
 
 #include "CompressPsf.h"
+#include "ParallelIOMgr.h"
 #include <deque>
 #include <algorithm>
 
@@ -254,6 +255,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   exclChkSigPool = NULL;
   exclSigPoolSize = 0;
   eachAtomExclSig = NULL;
+
+  fixedAtomsSet = NULL;
   #else
   exclusionsByAtom=NULL;
   fullExclusionsByAtom=NULL;
@@ -384,14 +387,12 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
 {
   initialize(simParams,param);
 
+#ifdef MEM_OPT_VERSION
   if(simParams->useCompressedPsf)
-//      read_compressed_psf_file(filename, param, cfgList);
-      read_basic_info(filename, param, cfgList);
-  /*else if(simParams->genCompressedPsf){      
-      compress_psf_file(this, filename, param, simParams, cfgList);
-  }*/      
-  else
-      read_psf_file(filename, param);
+      read_mol_signatures(filename, param, cfgList);
+#else
+	read_psf_file(filename, param);	
+#endif      
 }
 
 /************************************************************************/
@@ -405,7 +406,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
 {
 #ifdef MEM_OPT_VERSION
   NAMD_die("Sorry, plugin IO is not supported in the memory optimized version.");
-#endif
+#else
     initialize(simParams, param);
     numAtoms = natoms;
     int optflags = MOLFILE_BADOPTIONS;
@@ -477,7 +478,7 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
 
   numRealBonds = numBonds;
   build_atom_status();
-
+#endif
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -550,6 +551,7 @@ Molecule::~Molecule()
   if(exclSigPool) delete [] exclSigPool;
   if(exclChkSigPool) delete [] exclChkSigPool;
   if(eachAtomExclSig) delete [] eachAtomExclSig;
+  if(fixedAtomsSet) delete fixedAtomsSet;
   #else
   if (bondsByAtom != NULL)
        delete [] bondsByAtom;
@@ -624,6 +626,10 @@ Molecule::~Molecule()
 }
 /*      END OF FUNCTION Molecule      */
 
+#ifndef MEM_OPT_VERSION
+
+//===Non-memory optimized version of functions that read Molecule file===//
+
 /************************************************************************/
 /*                  */
 /*        FUNCTION read_psf_file      */
@@ -644,9 +650,6 @@ Molecule::~Molecule()
 void Molecule::read_psf_file(char *fname, Parameters *params)
 
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   char err_msg[512];  //  Error message for NAMD_die
   char buffer[512];  //  Buffer for file reading
   int i;      //  Loop counter
@@ -1001,393 +1004,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   build_atom_status();
 
   return;
-#endif
 }
-
-
-void Molecule::read_basic_info(char *fname, Parameters *params,ConfigList *cfgList)
-{
-#ifdef MEM_OPT_VERSION
-	read_hdr_info(fname,params,cfgList);
-/*
-    FILE *psf_file;    //  pointer to .psf file
-    int ret_code;    //  ret_code from NAMD_read_line calls
-    char buffer[512];
-
-
-    if ( (psf_file = Fopen(fname, "r")) == NULL)
-    {
-        char err_msg[512];
-        sprintf(err_msg, "UNABLE TO OPEN THE COMPRESSED .psf FILE %s", fname);
-        NAMD_die(err_msg);
-    }
-*/
-#if BINARY_PERATOM_OUTPUT
-
-        char *binFName = new char[strlen(fname)+10];
-        sprintf(binFName, "%s.bin", fname);
-        FILE *perAtomFile = Fopen(binFName, "rb");
-        if(perAtomFile==NULL) {
-            char err_msg[512];
-            sprintf(err_msg, "UNABLE TO OPEN THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s", binFName);
-            NAMD_die(err_msg);
-        }
-
-        int needFlip = 0;
-        int magicNum = COMPRESSED_PSF_MAGICNUM;
-        int rMagicNum = COMPRESSED_PSF_MAGICNUM;
-                Node::Object()->ioMgr->setDoFlip(false);
-
-        flipNum((char *)&rMagicNum, sizeof(int), 1);
-        int fMagicNum;
-        fread(&fMagicNum, sizeof(int), 1, perAtomFile);
-        if(fMagicNum==magicNum) {
-            needFlip = 0;
-        }else if(fMagicNum==rMagicNum){
-            needFlip = 1;
-                        Node::Object()->ioMgr->setDoFlip(true);
-
-        }else{
-            char err_msg[512];
-            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS CORRUPTED", binFName);
-            NAMD_die(err_msg);
-        }
-#endif
-#endif
-}
-
-void Molecule::read_hdr_info(char *fname, Parameters *params, ConfigList *cfgList){
-#ifndef MEM_OPT_VERSION
-    return;
-#else
-    FILE *psf_file;    //  pointer to .psf file
-    int ret_code;    //  ret_code from NAMD_read_line calls
-    char buffer[512];
-
-    
-    if ( (psf_file = Fopen(fname, "r")) == NULL)
-    {
-        char err_msg[512];
-        sprintf(err_msg, "UNABLE TO OPEN THE COMPRESSED .psf FILE %s", fname);
-        NAMD_die(err_msg);
-    }
-
-    char strBuf[12];
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "FORMAT VERSION")) {
-        NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
-    }
-    float psfVer = 0.0f;
-    sscanf(buffer, "FORMAT VERSION: %f\n", &psfVer);
-    if(fabs(psfVer - COMPRESSED_PSF_VER)>1e-6) {
-        NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
-    }
-
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NSEGMENTNAMES"))
-        NAMD_die("UNABLE TO FIND NSEGMENTNAMES");
-    sscanf(buffer, "%d", &segNamePoolSize);
-    if(segNamePoolSize!=0)
-        segNamePool = new char *[segNamePoolSize];
-    for(int i=0; i<segNamePoolSize; i++){
-        NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%s", strBuf);
-        segNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
-        strcpy(segNamePool[i], strBuf);
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NRESIDUENAMES"))
-        NAMD_die("UNABLE TO FIND NRESIDUENAMES");
-    sscanf(buffer, "%d", &resNamePoolSize);
-    if(resNamePoolSize!=0)
-        resNamePool = new char *[resNamePoolSize];
-    for(int i=0; i<resNamePoolSize; i++){
-        NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%s", strBuf);
-        resNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
-        strcpy(resNamePool[i], strBuf);
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NATOMNAMES"))
-        NAMD_die("UNABLE TO FIND NATOMNAMES");
-    sscanf(buffer, "%d", &atomNamePoolSize);
-    if(atomNamePoolSize!=0)
-        atomNamePool = new char *[atomNamePoolSize];
-    for(int i=0; i<atomNamePoolSize; i++){
-        NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%s", strBuf);
-        atomNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
-        strcpy(atomNamePool[i], strBuf);
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NATOMTYPES"))
-        NAMD_die("UNABLE TO FIND NATOMTYPES");
-    sscanf(buffer, "%d", &atomTypePoolSize);
-    if(atomTypePoolSize!=0)
-        atomTypePool = new char *[atomTypePoolSize];
-    for(int i=0; i<atomTypePoolSize; i++){
-        NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%s", strBuf);
-        atomTypePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
-        strcpy(atomTypePool[i], strBuf);
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NCHARGES"))
-        NAMD_die("UNABLE TO FIND NCHARGES");
-    sscanf(buffer, "%d", &chargePoolSize);
-    if(chargePoolSize!=0)
-        atomChargePool = new Real[chargePoolSize];
-    for(int i=0; i<chargePoolSize; i++){
-        NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%f", atomChargePool+i);
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NMASSES"))
-        NAMD_die("UNABLE TO FIND NMASSES");
-    sscanf(buffer, "%d", &massPoolSize);
-    if(massPoolSize!=0)
-        atomMassPool = new Real[massPoolSize];
-    for(int i=0; i<massPoolSize; i++){
-        NAMD_read_line(psf_file, buffer);
-        sscanf(buffer, "%f", atomMassPool+i);
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "ATOMSIGS"))
-        NAMD_die("UNABLE TO FIND ATOMSIGS");
-    sscanf(buffer, "%d", &atomSigPoolSize);
-    atomSigPool = new AtomSignature[atomSigPoolSize];
-    int typeCnt;
-    int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
-    int tisReal;
-    int ttype;
-    for(int i=0; i<atomSigPoolSize; i++){
-        
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NBONDSIGS"))
-            NAMD_die("UNABLE TO FIND NBONDSIGS");
-        sscanf(buffer, "%d", &typeCnt);
-        if(typeCnt!=0){
-            atomSigPool[i].bondCnt = typeCnt;
-            atomSigPool[i].bondSigs = new TupleSignature[typeCnt];
-        }
-        for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);
-            sscanf(buffer, "%d | %d | %d", &tmp1, &ttype, &tisReal);
-            TupleSignature oneSig(1, BOND, (Index)ttype, (char)tisReal);
-            oneSig.offset[0] = tmp1;
-            atomSigPool[i].bondSigs[j]=oneSig;
-            if(tisReal) numRealBonds++;
-        }
-
-        
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NTHETASIGS"))
-            NAMD_die("UNABLE TO FIND NTHETASIGS");
-        sscanf(buffer, "%d", &typeCnt);
-        if(typeCnt!=0){
-            atomSigPool[i].angleCnt = typeCnt;
-            atomSigPool[i].angleSigs = new TupleSignature[typeCnt];
-        }
-        for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);
-            sscanf(buffer, "%d %d | %d | %d", &tmp1, &tmp2, &ttype, &tisReal);
-            TupleSignature oneSig(2,ANGLE,(Index)ttype, (char)tisReal);
-            oneSig.offset[0] = tmp1;
-            oneSig.offset[1] = tmp2;
-            atomSigPool[i].angleSigs[j] = oneSig;
-        }
-        
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NPHISIGS"))
-            NAMD_die("UNABLE TO FIND NPHISIGS");
-        sscanf(buffer, "%d", &typeCnt);
-        if(typeCnt!=0){
-            atomSigPool[i].dihedralCnt = typeCnt;
-            atomSigPool[i].dihedralSigs = new TupleSignature[typeCnt];
-        }
-        for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);
-            sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
-            TupleSignature oneSig(3,DIHEDRAL,(Index)ttype, (char)tisReal);
-            oneSig.offset[0] = tmp1;
-            oneSig.offset[1] = tmp2;
-            oneSig.offset[2] = tmp3;
-            atomSigPool[i].dihedralSigs[j] = oneSig;
-        }
-        
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NIMPHISIGS"))
-            NAMD_die("UNABLE TO FIND NIMPHISIGS");
-        sscanf(buffer, "%d", &typeCnt);
-        if(typeCnt!=0){
-            atomSigPool[i].improperCnt = typeCnt;
-            atomSigPool[i].improperSigs = new TupleSignature[typeCnt];
-        }
-        for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);
-            sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
-            TupleSignature oneSig(3,IMPROPER,(Index)ttype, (char)tisReal);
-            oneSig.offset[0] = tmp1;
-            oneSig.offset[1] = tmp2;
-            oneSig.offset[2] = tmp3;
-            atomSigPool[i].improperSigs[j] = oneSig;
-        }
-        
-        NAMD_read_line(psf_file, buffer);
-        if(!NAMD_find_word(buffer, "NCRTERMSIGS"))
-            NAMD_die("UNABLE TO FIND NCRTERMSIGS");
-        sscanf(buffer, "%d", &typeCnt);
-        if(typeCnt!=0){
-            atomSigPool[i].crosstermCnt = typeCnt;
-            atomSigPool[i].crosstermSigs = new TupleSignature[typeCnt];
-        }
-        for(int j=0; j<typeCnt; j++){
-            NAMD_read_line(psf_file, buffer);
-            sscanf(buffer, "%d %d %d %d %d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &tmp7, &ttype, &tisReal);
-            TupleSignature oneSig(7,CROSSTERM,(Index)ttype, (char)tisReal);
-            oneSig.offset[0] = tmp1;
-            oneSig.offset[1] = tmp2;
-            oneSig.offset[2] = tmp3;
-            oneSig.offset[3] = tmp4;
-            oneSig.offset[4] = tmp5;
-            oneSig.offset[5] = tmp6;
-            oneSig.offset[6] = tmp7;
-            atomSigPool[i].crosstermSigs[j] = oneSig;
-        }
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NEXCLSIGS")){
-        NAMD_die("UNABLE TO FIND NEXCLSIGS");
-    }
-    sscanf(buffer, "%d", &exclSigPoolSize);
-    if(exclSigPoolSize>0) exclSigPool = new ExclusionSignature[exclSigPoolSize];
-    vector<int> fullExcls;
-    vector<int> modExcls;
-    for(int i=0; i<exclSigPoolSize; i++){
-        int fullExclCnt = NAMD_read_int(psf_file, buffer);
-        for(int j=0; j<fullExclCnt; j++)
-            fullExcls.push_back(NAMD_read_int(psf_file, buffer));
-        int modExclCnt = NAMD_read_int(psf_file, buffer);
-        for(int j=0; j<modExclCnt; j++)
-            modExcls.push_back(NAMD_read_int(psf_file, buffer));
-
-        
-        exclSigPool[i].setOffsets(fullExcls, modExcls);
-
-        fullExcls.clear();
-        modExcls.clear();
-    }
-
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NCLUSTERS")) {
-        NAMD_die("UNABLE TO FIND NCLUSTERS");
-    }
-    sscanf(buffer, "%d", &numClusters);
-
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "CLUSTERCONTIGUITY")) {
-        NAMD_die("UNABLE TO FIND CLUSTERCONTIGUITY");
-    }
-    sscanf(buffer, "%d", &isClusterContiguous);
-    if(!isClusterContiguous) {
-        clusterSize = new int32[numClusters];
-        memset(clusterSize, 0, sizeof(int32)*numClusters);
-    }
-
-    
-    
-    
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NATOM"))
-        NAMD_die("UNABLE TO FIND NATOM");
-    sscanf(buffer, "%d", &numAtoms);
-
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NHYDROGENGROUP"))
-        NAMD_die("UNABLE TO FIND NHYDROGENGROUP");
-    sscanf(buffer, "%d", &numHydrogenGroups);
-
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "MAXHYDROGENGROUPSIZE"))
-        NAMD_die("UNABLE TO FIND MAXHYDROGENGROUPSIZE");
-    sscanf(buffer, "%d", &maxHydrogenGroupSize);
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "NMIGRATIONGROUP"))
-        NAMD_die("UNABLE TO FIND NMIGRATIONGROUP");
-    sscanf(buffer, "%d", &numMigrationGroups);
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "MAXMIGRATIONGROUPSIZE"))
-        NAMD_die("UNABLE TO FIND MAXMIGRATIONGROUPSIZE");
-    sscanf(buffer, "%d", &maxMigrationGroupSize);
-
-
-//    int isOccupancyValid, isBFactorValid;
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "OCCUPANCYVALID"))
-        NAMD_die("UNABLE TO FIND OCCUPANCYVALID");
-    sscanf(buffer, "%d", &isOccupancyValid);
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "TEMPFACTORVALID"))
-        NAMD_die("UNABLE TO FIND TEMPFACTORVALID");
-    sscanf(buffer, "%d", &isBFactorValid);
-    NAMD_read_line(psf_file, buffer);
-
-    //Just reading for the parameters values; extra Bonds, Dihedrals etc.
-    //have been taken into account when compressing the molecule object.
-    //The actual number of Bonds, Dihedrals etc. will be calculated based
-    //on atom signatures.
-    if(cfgList && simParams->extraBondsOn)
-        build_extra_bonds(params, cfgList->find("extraBondsFile"));
-
-    if(!NAMD_find_word(buffer, "DIHEDRALPARAMARRAY"))
-        NAMD_die("UNABLE TO FIND DIHEDRALPARAMARRAY");
-    for(int i=0; i<params->NumDihedralParams; i++){
-        params->dihedral_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
-    }
-    
-
-    NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line
-    NAMD_read_line(psf_file, buffer);
-    if(!NAMD_find_word(buffer, "IMPROPERPARAMARRAY"))
-        NAMD_die("UNABLE TO FIND IMPROPERPARAMARRAY");
-    for(int i=0; i<params->NumImproperParams; i++){
-        params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
-    }
-    
-    Fclose(psf_file);
-
-#endif
-
-}
-    
-void Molecule::read_compressed_psf_file(char *fname, Parameters *params,ConfigList *cfgList){
-#ifndef MEM_OPT_VERSION
-    return;
-#else
-  read_basic_info(fname,params,cfgList);  
-  build_excl_check_signatures();
-
-#endif
-}
-
-/*      END OF FUNCTION read_compressed_psf_file      */
 
 /************************************************************************/
 /*                  */
@@ -1409,9 +1026,6 @@ void Molecule::read_compressed_psf_file(char *fname, Parameters *params,ConfigLi
 void Molecule::read_atoms(FILE *fd, Parameters *params)
 
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   char buffer[512];  // Buffer for reading from file
   int atom_number=0;  // Atom number 
   int last_atom_number=0; // Last atom number, used to assure
@@ -1451,7 +1065,7 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
   while (atom_number < numAtoms)
   {
     // Standard PSF format has 8 columns:
-    //   ATOMNUM  SEGNAME  RESIDUE  RESNAME  ATOMNAME  ATOMTYPE  CHARGE  MASS
+    // ATOMNUM  SEGNAME  RESIDUE  RESNAME  ATOMNAME  ATOMTYPE  CHARGE  MASS
 
     /*  Get the line from the file        */
     NAMD_read_line(fd, buffer);
@@ -1573,7 +1187,6 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
         }
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_atoms      */
 
@@ -1592,9 +1205,6 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
 void Molecule::read_bonds(FILE *fd, Parameters *params)
 
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int atom_nums[2];  // Atom indexes for the bonded atoms
   char atom1name[11];  // Atom type for atom #1
   char atom2name[11];  // Atom type for atom #2
@@ -1679,7 +1289,6 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
   }
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_bonds      */
 
@@ -1702,9 +1311,6 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
 void Molecule::read_angles(FILE *fd, Parameters *params)
 
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int atom_nums[3];  //  Atom numbers for the three atoms
   char atom1name[11];  //  Atom type for atom 1
   char atom2name[11];  //  Atom type for atom 2
@@ -1791,7 +1397,6 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
   }
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_angles      */
 
@@ -1812,9 +1417,6 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
 
 void Molecule::read_dihedrals(FILE *fd, Parameters *params)
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int atom_nums[4];  // The 4 atom indexes
   int last_atom_nums[4];  // Atom numbers from previous bond
   char atom1name[11];  // Atom type for atom 1
@@ -1917,7 +1519,6 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
   numDihedrals = num_unique;
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_dihedral      */
 
@@ -1938,9 +1539,6 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
 
 void Molecule::read_impropers(FILE *fd, Parameters *params)
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int atom_nums[4];  //  Atom indexes for the 4 atoms
   int last_atom_nums[4];  //  Atom indexes from previous bond
   char atom1name[11];  //  Atom type for atom 1
@@ -2044,7 +1642,6 @@ void Molecule::read_impropers(FILE *fd, Parameters *params)
   numImpropers = num_unique;
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_impropers      */
 
@@ -2065,9 +1662,6 @@ void Molecule::read_impropers(FILE *fd, Parameters *params)
 void Molecule::read_crossterms(FILE *fd, Parameters *params)
 
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int atom_nums[8];  //  Atom indexes for the 4 atoms
   int last_atom_nums[8];  //  Atom indexes from previous bond
   char atom1name[11];  //  Atom type for atom 1
@@ -2163,7 +1757,6 @@ void Molecule::read_crossterms(FILE *fd, Parameters *params)
   numCrossterms = num_read;
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_impropers      */
 
@@ -2186,9 +1779,6 @@ void Molecule::read_crossterms(FILE *fd, Parameters *params)
 
 void Molecule::read_donors(FILE *fd)
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int d[2];               // temporary storage of donor atom index
   register int j;      // Loop counter
   int num_read=0;    // Number of bonds read so far
@@ -2239,7 +1829,6 @@ void Molecule::read_donors(FILE *fd)
   }
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_donors      */
 
@@ -2264,9 +1853,6 @@ void Molecule::read_donors(FILE *fd)
 
 void Molecule::read_acceptors(FILE *fd)
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int d[2];               // temporary storage of atom index
   register int j;      // Loop counter
   int num_read=0;    // Number of bonds read so far
@@ -2315,7 +1901,6 @@ void Molecule::read_acceptors(FILE *fd)
   }
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_acceptors      */
 
@@ -2350,9 +1935,6 @@ void Molecule::read_acceptors(FILE *fd)
 void Molecule::read_exclusions(FILE *fd)
 
 {
-#ifdef MEM_OPT_VERSION
-    return;
-#else
   int *exclusion_atoms;  //  Array of indexes of excluded atoms
   register int num_read=0;    //  Number fo exclusions read in
   int current_index;  //  Current index value
@@ -2445,7 +2027,6 @@ void Molecule::read_exclusions(FILE *fd)
   delete [] exclusion_atoms;
 
   return;
-#endif
 }
 /*      END OF FUNCTION read_exclusions      */
 
@@ -2542,22 +2123,8 @@ void Molecule::read_anisos(FILE *fd)
 }
 /*      END OF FUNCTION read_anisos     */
 
-void Molecule::setOccupancyData(molfile_atom_t *atomarray){
-    occupancy = new float[numAtoms];
-    for(int i=0; i<numAtoms; i++) {
-        occupancy[i] = atomarray[i].occupancy;
-    }
-}
-
-void Molecule::setBFactorData(molfile_atom_t *atomarray){
-    bfactor = new float[numAtoms];
-    for(int i=0; i<numAtoms; i++) {
-        bfactor[i] = atomarray[i].bfactor;
-    }
-}
 
 void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
-#ifndef MEM_OPT_VERSION
     atoms = new Atom[numAtoms];
     atomNames = new AtomNameInfo[numAtoms];
     if(simParams->genCompressedPsf) {
@@ -2606,11 +2173,9 @@ void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
         //Lookk up the vdw constants for this atom
         params->assign_vdw_index(atomNames[i].atomtype, &atoms[i]);
     }
-#endif
 }
 
 void Molecule::plgLoadBonds(int *from, int *to){
-#ifndef MEM_OPT_VERSION
     bonds = new Bond[numBonds];
     char atom1name[11];
     char atom2name[11];
@@ -2654,12 +2219,10 @@ void Molecule::plgLoadBonds(int *from, int *to){
         iout << iWARN << "Will get H-H distance in rigid H20 from H-O-H angle.\n" <<endi;
     }
     numBonds = realNumBonds;
-#endif
 }
 
 void Molecule::plgLoadAngles(int *plgAngles)
 {    
-#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2703,12 +2266,10 @@ void Molecule::plgLoadAngles(int *plgAngles)
             " angles with zero force constants.\n" << endi; 
     }
     numAngles = numRealAngles;
-#endif
 }
 
 void Molecule::plgLoadDihedrals(int *plgDihedrals)
 {
-#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2759,12 +2320,10 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
     }
 
     numDihedrals = numRealDihedrals;
-#endif
 }
 
 void Molecule::plgLoadImpropers(int *plgImpropers)
 {
-#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2811,12 +2370,10 @@ void Molecule::plgLoadImpropers(int *plgImpropers)
     }
 
     numImpropers = numRealImpropers;
-#endif
 }
 
 void Molecule::plgLoadCrossterms(int *plgCterms)
 {
-#ifndef MEM_OPT_VERSION
     char atom1name[11];
     char atom2name[11];
     char atom3name[11];
@@ -2873,1072 +2430,21 @@ void Molecule::plgLoadCrossterms(int *plgCterms)
     }
 
     numCrossterms = numRealCrossterms;
-#endif
 }
 
-
-/************************************************************************/
-/*                  */
-/*      FUNCTION print_atoms        */
-/*                  */
-/*  print_atoms prints out the list of atoms stored in this object. */
-/*  It is inteded mainly for debugging purposes.      */
-/*                  */
-/************************************************************************/
-
-void Molecule::print_atoms(Parameters *params)
-
-{
-  register int i;
-  Real sigma;
-  Real epsilon;
-  Real sigma14;
-  Real epsilon14;
-
-  DebugM(2,"ATOM LIST\n" \
-      << "******************************************\n" \
-                  << "NUM  NAME TYPE RES  MASS    CHARGE CHARGE   FEP-CHARGE"  \
-      << "SIGMA   EPSILON SIGMA14 EPSILON14\n" \
-        << endi);
-
-  for (i=0; i<numAtoms; i++)
-  {
-    params->get_vdw_params(&sigma, &epsilon, &sigma14, &epsilon14, 
-        atoms[i].vdw_type);
-
-#ifdef MEM_OPT_VERSION
-     DebugM(2,i+1 << " " << atomNamePool[atomNames[i].atomnameIdx]  \
-              << " " << atomTypePool[atomNames[i].atomtypeIdx] << " " \
-              << resNamePool[atomNames[i].resnameIdx]  << " "  \
-	    << atommass(i)  \
-        << " " << atomcharge(i) << " " << sigma \
-        << " " << epsilon << " " << sigma14 \
-        << " " << epsilon14 << "\n" \
-        << endi);
-#else
-    DebugM(2,i+1 << " " << atomNames[i].atomname  \
-              << " " << atomNames[i].atomtype << " " \
-              << atomNames[i].resname  << " " << atoms[i].mass  \
-        << " " << atoms[i].charge << " " << sigma \
-        << " " << epsilon << " " << sigma14 \
-        << " " << epsilon14 << "\n" \
-        << endi);
-#endif
-  }
-}
-/*      END OF FUNCTION print_atoms      */
-
-/************************************************************************/
-/*                  */
-/*      FUNCTION print_bonds        */
-/*                  */
-/*  print_bonds prints out the list of bonds stored in this object. */
-/*  It is inteded mainly for debugging purposes.      */
-/*                  */
-/************************************************************************/
-
-void Molecule::print_bonds(Parameters *params)
-
-{
-  register int i;
-  Real k;
-  Real x0;
-
-  DebugM(2,"BOND LIST\n" << "********************************\n" \
-      << "ATOM1 ATOM2 TYPE1 TYPE2      k        x0" \
-      << endi);
-
-  #ifdef MEM_OPT_VERSION
-  for(i=0; i<numAtoms; i++){
-      AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
-      int bCnt = sig->bondCnt;
-      TupleSignature *bSigs = sig->bondSigs;
-      for(int j=0; j<bCnt; j++){
-          Bond aBond;
-          aBond.atom1 = i;
-          aBond.atom2 = i+bSigs[j].offset[0];
-          aBond.bond_type = bSigs[j].tupleParamType;
-          params->get_bond_params(&k, &x0, aBond.bond_type);
-
-          DebugM(2,aBond.atom1+1 << " " \
-             << aBond.atom2+1 << " "   \
-             << get_atomtype(aBond.atom1) << " "  \
-             << get_atomtype(aBond.atom2) << " " << k \
-             << " " << x0 << endi);
-      }
-  }
-  #else
-  for (i=0; i<numBonds; i++)
-  {
-    params->get_bond_params(&k, &x0, bonds[i].bond_type);
-
-    DebugM(2,bonds[i].atom1+1 << " " \
-       << bonds[i].atom2+1 << " "   \
-       << atomNames[bonds[i].atom1].atomtype << " "  \
-       << atomNames[bonds[i].atom2].atomtype << " " << k \
-       << " " << x0 << endi);
-  }
-  #endif
-}
-/*      END OF FUNCTION print_bonds      */
-
-/************************************************************************/
-/*                  */
-/*      FUNCTION print_exclusions      */
-/*                  */
-/*  print_exlcusions prints out the list of exlcusions stored in    */
-/*  this object.  It is inteded mainly for debugging purposes.    */
-/*                  */
-/************************************************************************/
-
-void Molecule::print_exclusions()
-{
-#ifdef MEM_OPT_VERSION
-    DebugM(2, "WARNING: this function is not availabe in memory optimized version!\n" << endi);
-#else
-  register int i;
-
-  DebugM(2,"EXPLICIT EXCLUSION LIST\n" \
-      << "********************************\n" \
-            << "ATOM1 ATOM2 " \
-      << endi);
-
-  for (i=0; i<numExclusions; i++)
-  {
-    DebugM(2,exclusions[i].atom1+1 << "  " \
-       << exclusions[i].atom2+1 << endi);
-  }
-#endif
-}
-/*      END OF FUNCTION print_exclusions    */
-
-/************************************************************************/
-/*                  */
-/*      FUNCTION send_Molecule        */
-/*                  */
-/*  send_Molecule is used by the Master node to distribute the      */
-/*   structural information to all the client nodes.  It is NEVER called*/
-/*   by the client nodes.              */
-/*                  */
-/************************************************************************/
-
-
-void Molecule::send_Molecule(MOStream *msg)
-
-{
-    #ifdef MEM_OPT_VERSION
-    //  Now build arrays of indexes into these arrays by atom      
-    //generating all the new atom signatures and exclusion signatures only on pe0
-    build_lists_by_atom();
-    #endif
-      
-  /*//  Message to send to clients
-  int bufSize = BUFSIZE;
-  // When the simulation system is very large, then the buffer size should be expanded to reduce the number of one-to-all broadcasts.
-  if(numAtoms>=1000000) bufSize=16*BUFSIZE;
-  MOStream *msg=com_obj->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
-  if ( msg == NULL )
-  {
-    NAMD_die("Memory allocation failed in Molecule::send_Molecule");
-  }*/
-
-  #ifdef MEM_OPT_VERSION
-      msg->put(numAtoms);
-      //mass and charge pool needed to be sent to other processors
-      //for the sake of function call: build_atom_status
-      msg->put(massPoolSize);
-      msg->put(massPoolSize, atomMassPool);
-      msg->put(numAtoms*sizeof(Index), (char *)eachAtomMass);
-
-      msg->put(chargePoolSize);
-      msg->put(chargePoolSize, atomChargePool);
-      msg->put(numAtoms*sizeof(Index), (char *)eachAtomCharge);
-
-      //vdw_type, partner etc.
-      msg->put(numAtoms*sizeof(AtomCstInfo), (char *)atoms);
-
-      //put atoms' signatures
-      msg->put(atomSigPoolSize);
-      for(int i=0; i<atomSigPoolSize; i++)
-          atomSigPool[i].pack(msg);
-
-      //put atom's exclusion signatures
-      msg->put(exclSigPoolSize);
-      for(int i=0; i<exclSigPoolSize; i++)
-          exclSigPool[i].pack(msg);
-
-      //put eachAtomSig and eachAtomExclSig
-      msg->put(numAtoms*sizeof(Index), (char *)eachAtomSig);
-      msg->put(numAtoms*sizeof(Index), (char *)eachAtomExclSig);
-
-      msg->put(numAtoms*sizeof(int32), (char *)clusterSigs);
-  #else
-      msg->put(numAtoms);
-      msg->put(numAtoms*sizeof(Atom), (char*)atoms);
-  #endif
-      //  Send the bond information
-      msg->put(numRealBonds);
-      msg->put(numBonds);
-
-      #ifndef MEM_OPT_VERSION
-      if (numBonds)
-      {
-        msg->put(numBonds*sizeof(Bond), (char*)bonds);
-      }
-      #endif
-
-      //  Send the angle information
-      msg->put(numAngles);
-
-      #ifndef MEM_OPT_VERSION
-      if (numAngles)
-      {
-        msg->put(numAngles*sizeof(Angle), (char*)angles);
-      }
-      #endif
-
-      //  Send the dihedral information
-      msg->put(numDihedrals);
-
-      #ifndef MEM_OPT_VERSION
-      if (numDihedrals)
-      {
-        msg->put(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
-      }
-      #endif
-
-      //  Send the improper information
-      msg->put(numImpropers);
-
-      #ifndef MEM_OPT_VERSION
-      if (numImpropers)
-      {
-        msg->put(numImpropers*sizeof(Improper), (char*)impropers);
-      }
-      #endif
-
-      //  Send the crossterm information
-      msg->put(numCrossterms);
-
-      #ifndef MEM_OPT_VERSION
-      if (numCrossterms)
-      {
-        msg->put(numCrossterms*sizeof(Crossterm), (char*)crossterms);
-      }
-      #endif
-
-      // send the hydrogen bond donor information
-      msg->put(numDonors);
-
-      if(numDonors)
-      {
-        msg->put(numDonors*sizeof(Bond), (char*)donors);
-      }
-
-      // send the hydrogen bond acceptor information
-      msg->put(numAcceptors);
-
-      if(numAcceptors)
-      {
-        msg->put(numAcceptors*sizeof(Bond), (char*)acceptors);
-      }
-
-      //  Send the exclusion information
-      #ifndef MEM_OPT_VERSION
-      msg->put(numExclusions);
-
-      if (numExclusions)
-      {
-        msg->put(numExclusions*sizeof(Exclusion), (char*)exclusions);
-      }
-      #endif
-
-      //hydrogen group info is calculated when generating the compressed molecule
-      //information, so this has to be distributed to other nodes instead of
-      //being recalculated in build_atom_status in receive_Molecule function
-      #ifdef MEM_OPT_VERSION
-      msg->put(numHydrogenGroups);      
-      msg->put(maxHydrogenGroupSize);      
-      msg->put(numMigrationGroups);      
-      msg->put(maxMigrationGroupSize);      
-      msg->put(numAtoms*sizeof(HydrogenGroupID), (char *)hydrogenGroup.begin());      
-      #endif
-      
-      //  Send the constraint information, if used
-      if (simParams->constraintsOn)
-      {
-         msg->put(numConstraints);
-         
-         msg->put(numAtoms, consIndexes);
-         
-         if (numConstraints)
-         {
-           msg->put(numConstraints*sizeof(ConstraintParams), (char*)consParams);
-         }
-      }
-      
-      /* BEGIN gf */
-      // Send the gridforce information, if used
-      if (simParams->mgridforceOn)
-      {
-	 DebugM(3, "Sending gridforce info\n");
-	 msg->put(numGridforceGrids);
-	 
-	 for (int grid = 0; grid < numGridforceGrids; grid++) {
-	     msg->put(numGridforces[grid]);
-	     msg->put(numAtoms, gridfrcIndexes[grid]);
-	     if (numGridforces[grid])
-	     {
-		 msg->put(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
-	     }
-	     gridfrcGrid[grid]->pack(msg);	// grid object writes its private data to message itself
-	 }
-      }
-      /* END gf */
-
-      //  Send the stirring information, if used
-      if (simParams->stirOn)
-      {
-	       //CkPrintf ("DEBUG: putting numStirredAtoms..\n");
-         msg->put(numStirredAtoms);
-	       //CkPrintf ("DEBUG: putting numAtoms,stirIndexes.. numAtoms=%d\n",numStirredAtoms);
-         msg->put(numAtoms, stirIndexes);
-	       //CkPrintf ("DEBUG: if numStirredAtoms..\n");
-         if (numStirredAtoms)
-         {
-           //CkPrintf ("DEBUG: big put, with (char*)stirParams\n");
-           msg->put(numStirredAtoms*sizeof(StirParams), (char*)stirParams);
-         }
-      }
-      
-      
-      //  Send the moving drag information, if used
-      if (simParams->movDragOn) {
-         msg->put(numMovDrag);
-         msg->put(numAtoms, movDragIndexes);
-         if (numMovDrag)
-         {
-           msg->put(numMovDrag*sizeof(MovDragParams), (char*)movDragParams);
-         }
-      }
-      
-      //  Send the rotating drag information, if used
-      if (simParams->rotDragOn) {
-         msg->put(numRotDrag);
-         msg->put(numAtoms, rotDragIndexes);
-         if (numRotDrag)
-         {
-           msg->put(numRotDrag*sizeof(RotDragParams), (char*)rotDragParams);
-         }
-      }
-      
-      //  Send the "constant" torque information, if used
-      if (simParams->consTorqueOn) {
-         msg->put(numConsTorque);
-         msg->put(numAtoms, consTorqueIndexes);
-         if (numConsTorque)
-         {
-           msg->put(numConsTorque*sizeof(ConsTorqueParams), (char*)consTorqueParams);
-         }
-      }
-      
-      // Send the constant force information, if used
-      if (simParams->consForceOn)
-      { msg->put(numConsForce);
-        msg->put(numAtoms, consForceIndexes);
-        if (numConsForce)
-          msg->put(numConsForce*sizeof(Vector), (char*)consForce);
-      }
-
-      //  Send the langevin parameters, if active
-      if (simParams->langevinOn || simParams->tCoupleOn)
-      {
-        msg->put(numAtoms, langevinParams);
-      }
-
-      //  Send fixed atoms, if active
-      if (simParams->fixedAtomsOn)
-      {
-        msg->put(numFixedAtoms);
-        msg->put(numAtoms, fixedAtomFlags);
-	msg->put(numFixedRigidBonds);
-      }
-
-      if (simParams->excludeFromPressure) {
-        msg->put(numExPressureAtoms);
-        msg->put(numAtoms, exPressureAtomFlags);
-      }
-
-//fepb
-      // send fep atom info
-      if (simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn || simParams->pairInteractionOn) {
-        msg->put(numFepInitial);
-        msg->put(numFepFinal);
-        msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
-      }
-//fepe
-
-      // DRUDE: send data read from PSF
-      msg->put(is_lonepairs_psf);
-      if (is_lonepairs_psf) {
-        msg->put(numLphosts);
-        msg->put(numLphosts*sizeof(Lphost), (char*)lphosts);
-      }
-      msg->put(is_drude_psf);
-      if (is_drude_psf) {
-        msg->put(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
-        msg->put(numAnisos);
-        msg->put(numAnisos*sizeof(Aniso), (char*)anisos);
-      }
-      // DRUDE
-
-      // Broadcast the message to the other nodes
-      msg->end();
-      delete msg;
-
-      #ifdef MEM_OPT_VERSION
-      build_excl_check_signatures();
-      #else      
-      //  Now build arrays of indexes into these arrays by atom      
-      build_lists_by_atom();
-      #endif
-
-}
-    /*      END OF FUNCTION send_Molecule      */
-
-    /************************************************************************/
-    /*                  */
-    /*      FUNCTION receive_Molecule      */
-    /*                  */
-    /*  receive_Molecule is used by all the clients to receive the  */
-    /*   structural data sent out by the master node.  It is NEVER called   */
-    /*   by the Master node.            */
-    /*                  */
-    /************************************************************************/
-
-void Molecule::receive_Molecule(MIStream *msg)
-{
-      //  Get the atom information
-      msg->get(numAtoms);
-
-  #ifdef MEM_OPT_VERSION   
-      //are mass and charge pool needed to be sent to other processors???
-      msg->get(massPoolSize);
-      if(atomMassPool) delete [] atomMassPool;
-      atomMassPool = new Real[massPoolSize];
-      msg->get(massPoolSize, atomMassPool);
-      if(eachAtomMass) delete [] eachAtomMass;
-      eachAtomMass = new Index[numAtoms];
-      msg->get(numAtoms*sizeof(Index), (char *)eachAtomMass);
-      
-      msg->get(chargePoolSize);
-      if(atomChargePool) delete [] atomChargePool;
-      atomChargePool = new Real[chargePoolSize];
-      msg->get(chargePoolSize, atomChargePool);
-      if(eachAtomCharge) delete [] eachAtomCharge;
-      eachAtomCharge = new Index[numAtoms];
-      msg->get(numAtoms*sizeof(Index), (char *)eachAtomCharge);
-
-      //vdw_type, partner etc.
-      if(atoms) delete [] atoms;
-      atoms = new AtomCstInfo[numAtoms];
-      msg->get(numAtoms*sizeof(AtomCstInfo), (char *)atoms);
-
-      //get atoms' signatures
-      msg->get(atomSigPoolSize);
-      if(atomSigPool) delete [] atomSigPool;
-      atomSigPool = new AtomSignature[atomSigPoolSize];
-      for(int i=0; i<atomSigPoolSize; i++)
-          atomSigPool[i].unpack(msg);
-
-      //get exclusions' signatures
-      msg->get(exclSigPoolSize);
-      if(exclSigPool) delete [] exclSigPool;
-      exclSigPool = new ExclusionSignature[exclSigPoolSize];
-      for(int i=0; i<exclSigPoolSize; i++)
-          exclSigPool[i].unpack(msg);
-
-      //get eachAtomSig and eachAtomExclSig
-      if(eachAtomSig) delete [] eachAtomSig;
-      eachAtomSig = new Index[numAtoms];
-      msg->get(numAtoms*sizeof(Index), (char *)eachAtomSig);
-      if(eachAtomExclSig) delete [] eachAtomExclSig;
-      eachAtomExclSig = new Index[numAtoms];
-      msg->get(numAtoms*sizeof(Index), (char *)eachAtomExclSig);
-
-      if(clusterSigs) delete [] clusterSigs;
-      clusterSigs = new int32[numAtoms];
-      msg->get(numAtoms*sizeof(int32), (char *)clusterSigs); 
-  #else
-      delete [] atoms;
-      atoms= new Atom[numAtoms];
-
-      msg->get(numAtoms*sizeof(Atom), (char*)atoms);
-  #endif
-
-      //  Get the bond information
-      msg->get(numRealBonds);
-      msg->get(numBonds);
-
-      #ifndef MEM_OPT_VERSION
-      if (numBonds)
-      {
-        delete [] bonds;
-        bonds=new Bond[numBonds];
-
-        msg->get(numBonds*sizeof(Bond), (char*)bonds);
-      }
-      #endif
-
-      //  Get the angle information
-      msg->get(numAngles);
-
-      #ifndef MEM_OPT_VERSION
-      if (numAngles)
-      {
-        delete [] angles;
-        angles=new Angle[numAngles];
-
-        msg->get(numAngles*sizeof(Angle), (char*)angles);
-      }
-      #endif
-
-      //  Get the dihedral information
-      msg->get(numDihedrals);
-
-      #ifndef MEM_OPT_VERSION
-      if (numDihedrals)
-      {
-        delete [] dihedrals;
-        dihedrals=new Dihedral[numDihedrals];
-
-        msg->get(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
-      }
-      #endif
-
-      //  Get the improper information
-      msg->get(numImpropers);
-
-      #ifndef MEM_OPT_VERSION
-      if (numImpropers)
-      {
-        delete [] impropers;
-        impropers=new Improper[numImpropers];
-
-        msg->get(numImpropers*sizeof(Improper), (char*)impropers);
-      }
-      #endif
-
-      //  Get the crossterm information
-      msg->get(numCrossterms);
-
-      #ifndef MEM_OPT_VERSION
-      if (numCrossterms)
-      {
-        delete [] crossterms;
-        crossterms=new Crossterm[numCrossterms];
-
-        msg->get(numCrossterms*sizeof(Crossterm), (char*)crossterms);
-      }
-      #endif
-
-      //  Get the hydrogen bond donors
-      msg->get(numDonors);
-
-      if (numDonors)
-      {
-        delete [] donors;
-        donors=new Bond[numDonors];
-
-        msg->get(numDonors*sizeof(Bond), (char*)donors);
-      }
-
-      //  Get the hydrogen bond acceptors
-      msg->get(numAcceptors);
-
-      if (numAcceptors)
-      {
-        delete [] acceptors;
-        acceptors=new Bond[numAcceptors];
-
-        msg->get(numAcceptors*sizeof(Bond), (char*)acceptors);
-      }
-
-      //  Get the exclusion information
-      #ifndef MEM_OPT_VERSION
-      msg->get(numExclusions);
-
-      if (numExclusions)
-      {
-        delete [] exclusions;
-        exclusions=new Exclusion[numExclusions];
-
-        msg->get(numExclusions*sizeof(Exclusion), (char*)exclusions);
-      }
-      #endif
-
-      #ifdef MEM_OPT_VERSION
-      msg->get(numHydrogenGroups);      
-      msg->get(maxHydrogenGroupSize);      
-      msg->get(numMigrationGroups);      
-      msg->get(maxMigrationGroupSize);      
-      hydrogenGroup.resize(numAtoms);
-      msg->get(numAtoms*sizeof(HydrogenGroupID), (char *)hydrogenGroup.begin());     
-      #endif
-      
-      //  Get the constraint information, if they are active
-      if (simParams->constraintsOn)
-      {
-         msg->get(numConstraints);
-
-         delete [] consIndexes;
-         consIndexes = new int32[numAtoms];
-         
-         msg->get(numAtoms, consIndexes);
-         
-         if (numConstraints)
-         {
-           delete [] consParams;
-           consParams = new ConstraintParams[numConstraints];
-      
-           msg->get(numConstraints*sizeof(ConstraintParams), (char*)consParams);
-         }
-      }
-
-      /* BEGIN gf */
-      if (simParams->mgridforceOn)
-      {
-	 DebugM(3, "Receiving gridforce info\n");
-	 
-	 msg->get(numGridforceGrids);
-	 
-	 delete [] numGridforces;
-	 numGridforces = new int[numGridforceGrids];
-	 
-	 delete [] gridfrcIndexes;	// Should I be deleting elements of these first?
-	 delete [] gridfrcParams;
-	 delete [] gridfrcGrid;
-	 gridfrcIndexes = new int32*[numGridforceGrids];
-	 gridfrcParams = new GridforceParams*[numGridforceGrids];
-	 gridfrcGrid = new GridforceGrid*[numGridforceGrids];
-	 
-	 for (int grid = 0; grid < numGridforceGrids; grid++) {
-	     msg->get(numGridforces[grid]);
-	     
-	     gridfrcIndexes[grid] = new int32[numAtoms];
-	     msg->get(numAtoms, gridfrcIndexes[grid]);
-	 
-	     if (numGridforces[grid])
-	     {
-		 gridfrcParams[grid] = new GridforceParams[numGridforces[grid]];
-		 msg->get(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
-	     }
-	     
-	     gridfrcGrid[grid] = new GridforceGrid(grid);
-	     gridfrcGrid[grid]->unpack(msg);
-             CProxy_ComputeGridForceNodeMgr 
-               mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
-             GridDepositMsg *outmsg = new GridDepositMsg;
-             outmsg->gridnum = grid;
-             outmsg->grid = gridfrcGrid[grid];
-             outmsg->num_grids = numGridforceGrids;
-             mgr[CkMyNode()].depositInitialGrid(outmsg);
-	 }
-      }
-      /* END gf */
-      
-      //  Get the stirring information, if stirring is  active
-      if (simParams->stirOn)
-      {
-         msg->get(numStirredAtoms);
-
-         delete [] stirIndexes;
-         stirIndexes = new int32[numAtoms];
-         
-         msg->get(numAtoms, stirIndexes);
-         
-         if (numStirredAtoms)
-         {
-           delete [] stirParams;
-           stirParams = new StirParams[numStirredAtoms];
-      
-           msg->get(numStirredAtoms*sizeof(StirParams), (char*)stirParams);
-         }
-      }
-      
-      //  Get the moving drag information, if it is active
-      if (simParams->movDragOn) {
-         msg->get(numMovDrag);
-         delete [] movDragIndexes;
-         movDragIndexes = new int32[numAtoms];
-         msg->get(numAtoms, movDragIndexes);
-         if (numMovDrag)
-         {
-           delete [] movDragParams;
-           movDragParams = new MovDragParams[numMovDrag];
-           msg->get(numMovDrag*sizeof(MovDragParams), (char*)movDragParams);
-         }
-      }
-      
-      //  Get the rotating drag information, if it is active
-      if (simParams->rotDragOn) {
-         msg->get(numRotDrag);
-         delete [] rotDragIndexes;
-         rotDragIndexes = new int32[numAtoms];
-         msg->get(numAtoms, rotDragIndexes);
-         if (numRotDrag)
-         {
-           delete [] rotDragParams;
-           rotDragParams = new RotDragParams[numRotDrag];
-           msg->get(numRotDrag*sizeof(RotDragParams), (char*)rotDragParams);
-         }
-      }
-      
-      //  Get the "constant" torque information, if it is active
-      if (simParams->consTorqueOn) {
-         msg->get(numConsTorque);
-         delete [] consTorqueIndexes;
-         consTorqueIndexes = new int32[numAtoms];
-         msg->get(numAtoms, consTorqueIndexes);
-         if (numConsTorque)
-         {
-           delete [] consTorqueParams;
-           consTorqueParams = new ConsTorqueParams[numConsTorque];
-           msg->get(numConsTorque*sizeof(ConsTorqueParams), (char*)consTorqueParams);
-         }
-      }
-      
-      // Get the constant force information, if it's active
-      if (simParams->consForceOn)
-      { msg->get(numConsForce);
-        delete [] consForceIndexes;
-        consForceIndexes = new int32[numAtoms];
-        msg->get(numAtoms, consForceIndexes);
-        if (numConsForce)
-        { delete [] consForce;
-          consForce = new Vector[numConsForce];
-          msg->get(numConsForce*sizeof(Vector), (char*)consForce);
-        }
-      }
-
-      //  Get the langevin parameters, if they are active
-      if (simParams->langevinOn || simParams->tCoupleOn)
-      {
-        delete [] langevinParams;
-        langevinParams = new Real[numAtoms];
-
-        msg->get(numAtoms, langevinParams);
-      }
-
-      //  Get the fixed atoms, if they are active
-      if (simParams->fixedAtomsOn)
-      {
-        delete [] fixedAtomFlags;
-        fixedAtomFlags = new int32[numAtoms];
-
-        msg->get(numFixedAtoms);
-        msg->get(numAtoms, fixedAtomFlags);
-        msg->get(numFixedRigidBonds);
-      }
-
-      if (simParams->excludeFromPressure) {
-        exPressureAtomFlags = new int32[numAtoms];
-        msg->get(numExPressureAtoms);
-        msg->get(numAtoms, exPressureAtomFlags);
-      }
-
-//fepb
-      //receive fep atom info
-      if (simParams->alchFepOn || simParams->lesOn || simParams->alchThermIntOn || simParams->pairInteractionOn) {
-        delete [] fepAtomFlags;
-        fepAtomFlags = new unsigned char[numAtoms];
-
-        msg->get(numFepInitial);
-        msg->get(numFepFinal);
-        msg->get(numAtoms*sizeof(unsigned char), (char*)fepAtomFlags);
-      }
-//fepe
-
-      // DRUDE: receive data read from PSF
-      msg->get(is_lonepairs_psf);
-      if (is_lonepairs_psf) {
-        msg->get(numLphosts);
-        delete[] lphosts;
-        lphosts = new Lphost[numLphosts];
-        msg->get(numLphosts*sizeof(Lphost), (char*)lphosts);
-      }
-      msg->get(is_drude_psf);
-      if (is_drude_psf) {
-        delete[] drudeConsts;
-        drudeConsts = new DrudeConst[numAtoms];
-        msg->get(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
-        msg->get(numAnisos);
-        delete[] anisos;
-        anisos = new Aniso[numAnisos];
-        msg->get(numAnisos*sizeof(Aniso), (char*)anisos);
-      }
-      // DRUDE
-
-      //  Now free the message 
-      delete msg;
-      
-      //  analyze the data and find the status of each atom
-      build_atom_status();
-
-      //  Now build arrays of indexes into these arrays by atom
-      #ifdef MEM_OPT_VERSION
-      build_excl_check_signatures();
-      #else
-      build_lists_by_atom();      
-      #endif
-
-      #ifdef MEM_OPT_VERSION
-      delEachAtomSigs();
-      delChargeSpace();
-      delMassSpace();
-      delOtherEachAtomStructs();
-      #endif
+void Molecule::setOccupancyData(molfile_atom_t *atomarray){
+    occupancy = new float[numAtoms];
+    for(int i=0; i<numAtoms; i++) {
+        occupancy[i] = atomarray[i].occupancy;
     }
-    /*      END OF FUNCTION receive_Molecule    */
-
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Osman Sarood
-//// Parallel Input Change
-// // This method is the same as read_compressed_psf_file. But it is reading only the atom data assigned to this Input proc.
-void Molecule::getCountsToMaster()
-{
-       numCalcBonds = numBonds;
-       numCalcAngles = numAngles;
-       numCalcDihedrals = numDihedrals;
-       numCalcImpropers = numImpropers;
-       numCalcCrossterms = numCrossterms;
 }
 
-#ifdef MEM_OPT_VERSION
-void Molecule::read_compressed_psf_file_parallelIO(char *fname, Parameters *params){
-read_hdr_info(fname,params);
-  
-    long long numAtomsPar=Node::Object()->ioMgr->getAtomsAssignedThisProc();
-    if(numAtomsPar>0){
-        atoms = new AtomCstInfo[numAtomsPar];
-        atomNames = new AtomNameIdx[numAtomsPar];
-        eachAtomMass = new Index[numAtomsPar];
-        eachAtomCharge = new Index[numAtomsPar];
-        eachAtomSig = new Index[numAtomsPar];
-        eachAtomExclSig = new Index[numAtomsPar];
-
-        clusterSigs = new int[numAtomsPar];
-
-        hydrogenGroup.resize(numAtomsPar);
-        HydrogenGroupID *hg = hydrogenGroup.begin();
-        ResidueLookupElem *tmpResLookup = resLookup;
-
-        if(isOccupancyValid) {
-            occupancy = new float[numAtomsPar];
-        }
-        if(isBFactorValid) {
-            bfactor = new float[numAtomsPar];
-        }
-
-        int residue_number; //for residue number
-        char *segment_name;
-        int read_count;
-        float tmpf[2];
-        char *binFName = new char[strlen(fname)+10];
-        sprintf(binFName, "%s.bin", fname);
-        FILE *perAtomFile = Fopen(binFName, "rb");
-        if(perAtomFile==NULL) {
-            char err_msg[512];
-            sprintf(err_msg, "UNABLE TO OPEN THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s", binFName);
-            NAMD_die(err_msg);
-        }
-        int needFlip = 0;
-        int magicNum = COMPRESSED_PSF_MAGICNUM;
-        int rMagicNum = COMPRESSED_PSF_MAGICNUM;
-        flipNum((char *)&rMagicNum, sizeof(int), 1);
-        int fMagicNum;
-        fread(&fMagicNum, sizeof(int), 1, perAtomFile);
-        if(fMagicNum==magicNum) {
-            needFlip = 0;
-        }else if(fMagicNum==rMagicNum){
-            needFlip = 1;
-        }else{
-            char err_msg[512];
-            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS CORRUPTED", binFName);
-            NAMD_die(err_msg);
-        }
-
-        float verNum =  0.0f;
-        fread(&verNum, sizeof(float), 1, perAtomFile);
-        if(needFlip) flipNum((char *)&verNum, sizeof(float), 1);
-        if(fabs(verNum - COMPRESSED_PSF_VER)>1e-6) {
-            char err_msg[512];
-            sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS INCORRECT, PLEASE RE-GENERATE!\n", binFName);
-            NAMD_die(err_msg);
-        }
-        delete[] binFName;
-        Index sIdx[9];
-        int iIdx[9];
-	int sizePerRecord=9*sizeof(Index)+9*sizeof(int)+2*sizeof(float);
-off_t startbyte=Node::Object()->ioMgr->getRecordOffset()*sizePerRecord+sizeof(int)+sizeof(float);
-fseek(perAtomFile,startbyte,SEEK_SET);
-        for(int i=0; i<numAtomsPar; i++){
-            fread(sIdx, sizeof(Index), 9, perAtomFile);
-            fread(iIdx, sizeof(int), 9, perAtomFile);
-            fread(tmpf, sizeof(float), 2, perAtomFile);
-            if(needFlip) {
-                flipNum((char *)sIdx, sizeof(Index), 9);
-                flipNum((char *)iIdx, sizeof(int), 9);
-                flipNum((char *)tmpf, sizeof(float), 2);
-            }
-                segment_name = segNamePool[sIdx[0]];
-                atomNames[i].resnameIdx = sIdx[1];
-                atomNames[i].atomnameIdx = sIdx[2];
-                atomNames[i].atomtypeIdx = sIdx[3];
-                eachAtomCharge[i] = sIdx[4];
-                eachAtomMass[i] = sIdx[5];
-                eachAtomSig[i] = sIdx[6];
-                eachAtomExclSig[i] = sIdx[7];
-
-		atoms[i].vdw_type = sIdx[8];
-
-                residue_number = iIdx[0];
-                clusterSigs[i] = iIdx[1];
-                if(!isClusterContiguous)
-                clusterSize[iIdx[1]]++;
-
-                atoms[i].partner = iIdx[2];
-                atoms[i].hydrogenList= iIdx[3];
-
-                hg[i].atomID = i+Node::Object()->ioMgr->getRecordOffset();
-                hg[i].atomsInGroup=iIdx[4];
-                hg[i].GPID = iIdx[5];
-		hg[i].waterVal=iIdx[6];
-		hg[i].atomsInMigrationGroup= iIdx[7];
-		hg[i].MPID=iIdx[8];
-		hg[i].isMP = ( hg[i].atomsInMigrationGroup ? 1 : 0 );
-                hg[i].isGP = 1;
-
-
-                if(hg[i].atomsInGroup==0) hg[i].isGP = 0;
-
-
-                if(isOccupancyValid)
-                        occupancy[i] = tmpf[0];
-                if(isBFactorValid)
-                        bfactor[i] = tmpf[1];
-                if(tmpResLookup) tmpResLookup =
-                        tmpResLookup->append(segment_name, residue_number, i);
-                Real thisAtomMass = atomMassPool[eachAtomMass[i]];
-
-                if (thisAtomMass <= 0.05) {
-                        atoms[i].status |= LonepairAtom;
-                } else if (thisAtomMass < 1.0) {
-                        atoms[i].status |= DrudeAtom;
-                } else if(thisAtomMass <= 3.5){
-                        atoms[i].status = HydrogenAtom;
-                }else if(atomNamePool[atomNames[i].atomnameIdx][0]=='O' &&
-                     (thisAtomMass >= 14.0) && (thisAtomMass <= 18.0)){
-                        atoms[i].status = OxygenAtom;
-                }
-
-//                params->assign_vdw_index(atomTypePool[atomNames[i].atomtypeIdx],
-  //                                   &(atoms[i]));
-                } //end of reading per-atom information
+void Molecule::setBFactorData(molfile_atom_t *atomarray){
+    bfactor = new float[numAtoms];
+    for(int i=0; i<numAtoms; i++) {
+        bfactor[i] = atomarray[i].bfactor;
     }
-    numBonds=0;
-    numAngles=0;
-    numDihedrals=0;
-    numImpropers=0;
-    numCrossterms=0;
-    numTotalExclusions=0;
-int c1,c2,c3,c4;
-c1=c2=c3=c4=0;
-
-    for(int i=0; i<numAtomsPar; i++){
-        AtomSignature *thisSig = &atomSigPool[eachAtomSig[i]];
-        numBonds += thisSig->bondCnt;
-        numAngles += thisSig->angleCnt;
-        numDihedrals += thisSig->dihedralCnt;
-        numImpropers += thisSig->improperCnt;
-        numCrossterms += thisSig->crosstermCnt;
-
-        ExclusionSignature *exclSig = &exclSigPool[eachAtomExclSig[i]];
-        numTotalExclusions += (exclSig->fullExclCnt + exclSig->modExclCnt);
-int div=i/23056;
-if(div==0) c1+=(exclSig->fullExclCnt + exclSig->modExclCnt);
-else if(div==1) c2+=(exclSig->fullExclCnt + exclSig->modExclCnt);
-else if(div==2) c3+=(exclSig->fullExclCnt + exclSig->modExclCnt);
-else if(div==3) c4+=(exclSig->fullExclCnt + exclSig->modExclCnt);
-    }
-//    numTotalExclusions /= 2;
-
-
-build_excl_check_signatures();
-
-
-
-
 }
-#endif
-
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-#ifdef MEM_OPT_VERSION
-    //Well, the exclusion check signatures could also done on PE0 and
-    //sent to other processors through send_Molecule/receive_Molecule 
-    //two procedures.
-    void Molecule::build_excl_check_signatures(){
-       exclChkSigPool = new ExclusionCheck[exclSigPoolSize];
-       for(int i=0; i<exclSigPoolSize; i++){
-           ExclusionSignature *sig = &exclSigPool[i];
-           ExclusionCheck *sigChk = &exclChkSigPool[i];
-           if(sig->fullExclCnt){
-               if(!sig->modExclCnt){ //only having fullExclusion
-                   sigChk->min = sig->fullOffset[0];
-                   sigChk->max = sig->fullOffset[sig->fullExclCnt-1];
-               }else{ //have both full and modified exclusion
-                   int fullMin, fullMax, modMin, modMax;
-                   
-                   fullMin = sig->fullOffset[0];
-                   fullMax = sig->fullOffset[sig->fullExclCnt-1];
-               
-                   modMin = sig->modOffset[0];
-                   modMax = sig->modOffset[sig->modExclCnt-1];
-                   
-                   if(fullMin < modMin)
-                       sigChk->min = fullMin;
-                   else
-                       sigChk->min = modMin;
-                   if(fullMax < modMax)
-                       sigChk->max = modMax;
-                   else
-                       sigChk->max = fullMax;
-               }        
-           }else{
-               if(sig->modExclCnt){
-                   sigChk->min = sig->modOffset[0];
-                   sigChk->max = sig->modOffset[sig->modExclCnt-1];
-               }else{ //both count are 0
-                   if(CkMyPe()==0)
-                       printf("Warning: an empty exclusion signature with index %d!\n", i);               
-                   continue;
-               }
-           }           
-
-           sigChk->flags = new char[sigChk->max-sigChk->min+1];
-           memset(sigChk->flags, 0, sizeof(char)*(sigChk->max-sigChk->min+1));
-           for(int j=0; j<sig->fullExclCnt; j++){
-               int dist = sig->fullOffset[j] - sigChk->min;
-               sigChk->flags[dist] = EXCHCK_FULL;
-           }
-           for(int j=0; j<sig->modExclCnt; j++){
-               int dist = sig->modOffset[j] - sigChk->min;
-               sigChk->flags[dist] = EXCHCK_MOD;
-           }
-       }
-    }
-#endif
 
     /************************************************************************/
     /*                  */
@@ -3951,225 +2457,7 @@ build_excl_check_signatures();
     /*  thing!                */
     /*                  */
     /************************************************************************/
-#ifdef MEM_OPT_VERSION
-
-    //In memory optimized version, this function is only performed on PE0 since other nodes
-    //may have less memory than the master node.
-    //3 tasks is performed in the function: 1) cluster building 2) atom signatures changed due to
-    // fixed atoms and alch atoms 3) exclusion signatures (in the format of offset) changed due to
-    //hydrogen group/alch/fixed atoms.
-    void Molecule::build_lists_by_atom()
-       
-    {
-       register int i;      //  Loop counter
-
-       register int numFixedAtoms = this->numFixedAtoms;
-       // if we want forces on fixed atoms then just pretend
-       // there are none for the purposes of this routine;
-       if ( simParams->fixedAtomsForces ) numFixedAtoms = 0;
-                     
-       const int pair_self = 
-         simParams->pairInteractionOn ? simParams->pairInteractionSelf : 0;
-
-       //Cluster building is done when compressing the psf file
-       
-       //The safety check for bonds has been already done
-       //in the period of generating compressed psf file
-       DebugM(3, "Building the atom list for each signature.\n");
-
-       //build up tuplesByAtom structure where each atom's signature may be updated
-       //because of fixed atoms, atom signature pool will be changed.       
-       //The method to update the current signature pool:
-
-       //For each atom signature, go through those atoms that belong to this signature
-       //and split the current signature correspondingly. 
-       // Note: 1.The splitted signatures originating from the same atom signature will always
-       // be different. But two splitted signatures may be same if they originate from two different
-       // atom signatures. Currently, this redundancy is not handled for the sake of convenience
-       // and simplicity. I believe practically this will not blow up memory since
-       // the space for atom signatures will always remain very low (~10K) 
-       //       2. This method is used under the assumption that chance of splitting a current
-       // atom signature is small
-
-       // There is another way to do this: (The following code is an implementation of this
-       // 1. Finding all the tuples that are not needed to be considered either for 
-       // fixed number or for pair_self
-       // 2. Build atom signatures for them
-       // 3. Add these new signatures to the existing atom signature pool
-       // -- Chao Mei       
-
-       numCalcBonds = numBonds;
-       numCalcAngles = numAngles;
-       numCalcDihedrals = numDihedrals;
-       numCalcImpropers = numImpropers;
-       numCalcCrossterms = numCrossterms;
-       if(numFixedAtoms || pair_self){ //either condition holds                            
-           vector<AtomSignature> newAtomSigPool;
-           //we assume there are always one empty atom signature which is indexed
-           //at 0 in the newAtomSigPool but with atomSigPoolSize in the final combined
-           //atom signature pool
-           AtomSignature emptyAtomSig;
-           newAtomSigPool.push_back(emptyAtomSig);
-
-           //begin to building new atom signatures for those atoms
-           //affected by fixed atoms and fepAtomFlags. Besides,
-           //the affected atoms' signature index should be updated too
-           AtomSignature newAtomSig;           
-           for(i=0; i<numAtoms; i++){ //"i" is the id of atom
-               AtomSignature *curAtomSig = &atomSigPool[eachAtomSig[i]];
-
-               //deal with fep atoms
-               if(pair_self && fepAtomFlags[i]!=1){
-                   //all tuples associated with this atom are gone                   
-                   //update the number of calculated tuples
-                   numCalcBonds -= curAtomSig->bondCnt;
-                   numCalcAngles -= curAtomSig->angleCnt;
-                   numCalcDihedrals -= curAtomSig->dihedralCnt;
-                   numCalcImpropers -= curAtomSig->improperCnt;
-                   numCalcCrossterms -= curAtomSig->crosstermCnt;
-
-                   //update this atom's signature
-                   eachAtomSig[i] = (Index)atomSigPoolSize;                   
-                   
-                   continue;
-               }
-
-               //deal with fixed atoms
-               int sigChanged = 0;
-               if(numFixedAtoms && fixedAtomFlags[i]){
-                   //examine all the tuples associated with this atom                   
-                   newAtomSig = *curAtomSig;
-
-                   //1. bonds
-                   int tupleCnt = curAtomSig->bondCnt;
-                   TupleSignature *tupleSigs = curAtomSig->bondSigs;
-                   for(int j=0; j<tupleCnt; j++){
-                       int atom2 = i+tupleSigs[j].offset[0];
-                       if(fixedAtomFlags[atom2]){ // find a fixed tuple                           
-                           newAtomSig.bondSigs[j].setEmpty();
-                           numCalcBonds--;
-                           sigChanged = 1;
-                       }
-                   }
-
-                   //2. angles
-                   tupleCnt = curAtomSig->angleCnt;
-                   tupleSigs = curAtomSig->angleSigs;
-                   for(int j=0; j<tupleCnt; j++){
-                       int atom2 = i+tupleSigs[j].offset[0];
-                       int atom3 = i+tupleSigs[j].offset[1];
-                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]){ // find a fixed tuple                           
-                           newAtomSig.angleSigs[j].setEmpty();
-                           numCalcAngles--;
-                           sigChanged = 1;
-                       }
-                   }
-
-                   //3. dihedrals
-                   tupleCnt = curAtomSig->dihedralCnt;
-                   tupleSigs = curAtomSig->dihedralSigs;
-                   for(int j=0; j<tupleCnt; j++){
-                       int atom2 = i+tupleSigs[j].offset[0];
-                       int atom3 = i+tupleSigs[j].offset[1];
-                       int atom4 = i+tupleSigs[j].offset[2];
-                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]
-                          && fixedAtomFlags[atom4]){ // find a fixed tuple                           
-                           newAtomSig.dihedralSigs[j].setEmpty();
-                           numCalcDihedrals--;
-                           sigChanged = 1;
-                       }
-                   }
-
-                   //4. impropers
-                   tupleCnt = curAtomSig->improperCnt;
-                   tupleSigs = curAtomSig->improperSigs;
-                   for(int j=0; j<tupleCnt; j++){
-                       int atom2 = i+tupleSigs[j].offset[0];
-                       int atom3 = i+tupleSigs[j].offset[1];
-                       int atom4 = i+tupleSigs[j].offset[2];
-                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]
-                          && fixedAtomFlags[atom4]){ // find a fixed tuple                           
-                           newAtomSig.improperSigs[j].setEmpty();
-                           numCalcImpropers--;
-                           sigChanged = 1;
-                       }
-                   }
-
-                   //5. crossterms
-                   tupleCnt = curAtomSig->crosstermCnt;
-                   tupleSigs = curAtomSig->crosstermSigs;
-                   for(int j=0; j<tupleCnt; j++){
-                       int atom2 = i+tupleSigs[j].offset[0];
-                       int atom3 = i+tupleSigs[j].offset[1];
-                       int atom4 = i+tupleSigs[j].offset[2];
-                       int atom5 = i+tupleSigs[j].offset[3];
-                       int atom6 = i+tupleSigs[j].offset[4];
-                       int atom7 = i+tupleSigs[j].offset[5];
-                       int atom8 = i+tupleSigs[j].offset[6];
-
-                       if(fixedAtomFlags[atom2] && fixedAtomFlags[atom3]
-                          && fixedAtomFlags[atom4] && fixedAtomFlags[atom5]
-                          && fixedAtomFlags[atom6] && fixedAtomFlags[atom7]
-                          && fixedAtomFlags[atom8]){ // find a fixed tuple                           
-                           newAtomSig.crosstermSigs[j].setEmpty();
-                           numCalcCrossterms--;
-                           sigChanged = 1;
-                       }
-                   }
-
-                   //update the newAtomSig to remove all empty tuple signatures
-                   if(sigChanged){
-                       newAtomSig.removeEmptyTupleSigs();
-
-                       //add the new atom signature to the newAtomSigPool if it is not in it
-                       int poolIndex = lookupCstPool(newAtomSigPool, newAtomSig);
-                       if(poolIndex==-1){
-                           poolIndex = newAtomSigPool.size();
-                           newAtomSigPool.push_back(newAtomSig);
-                       }
-                       eachAtomSig[i] = (Index)(poolIndex+atomSigPoolSize);
-                   }
-               }
-           }
-           //update the atom signature pool from the new one                      
-           AtomSignature *tmpAtomSigPool = new AtomSignature[atomSigPoolSize+newAtomSigPool.size()];
-           for(i=0; i<atomSigPoolSize; i++)
-               tmpAtomSigPool[i] = atomSigPool[i];           
-           for(i=0; i<newAtomSigPool.size(); i++)
-               tmpAtomSigPool[atomSigPoolSize+i] = newAtomSigPool[i];
-
-           delete [] atomSigPool;
-           atomSigPoolSize += newAtomSigPool.size();
-           atomSigPool = tmpAtomSigPool;
-           newAtomSigPool.clear();
-
-           if(CkMyPe()==0){
-               printf("Current number of atom signatures: %d\n", atomSigPoolSize);
-           }
-       }
-          
-       DebugM(3,"Building exclusion data.\n");
-
-
-       //  Build the arrays of exclusions for each atom       
-       //inside this function call, unnecessary exclusions are eliminated in the
-       //case of fep atoms and fixed atoms
-       if(CkMyPe()==0){
-           CkPrintf("Current exclusion signatures: %d\n", exclSigPoolSize);
-       }
-       build_exclusions();       
-       
-       if(CkMyPe()==0){
-           CkPrintf("After stripping, exclusion signatures: %d\n", exclSigPoolSize);
-       }
-       
-       //Finally build the exclChkSigPool of type ExclusionCheck which is separated
-       //from this function for saving memory
-       //build_excl_check_signature();
-    }
-#else
-    void Molecule::build_lists_by_atom()
-       
+    void Molecule::build_lists_by_atom()       
     {
        register int i;      //  Loop counter
 
@@ -4533,6 +2821,7 @@ build_excl_check_signatures();
          byAtomSize[exclusions[i].atom1]++;
          numCalcExclusions++;
        }
+
        for (i=0; i<numAtoms; i++)
        {
          exclusionsByAtom[i] = arena->getNewArray(byAtomSize[i]+1);
@@ -4796,9 +3085,7 @@ build_excl_check_signatures();
              all_exclusions[a2].flags[a1-all_exclusions[a2].min] = EXCHCK_FULL;
          }
        }
-
     }
-#endif
 
     /*    END OF FUNCTION build_lists_by_atom    */
 
@@ -4826,11 +3113,6 @@ build_excl_check_signatures();
 
     void Molecule::build_exclusions()
     {
-#ifdef MEM_OPT_VERSION
-        numCalcExclusions = numTotalExclusions*2;        
-        stripFepFixedExcl();
-        return;
-#else
       register int i;          //  Loop counter
       ExclusionSettings exclude_flag;    //  Exclusion policy
 
@@ -4877,7 +3159,6 @@ build_excl_check_signatures();
       if (is_lonepairs_psf) {
         build_inherited_excl(SCALED14 == exclude_flag);
       }
-#endif
     }
     /*      END OF FUNCTION build_exclusions    */
 
@@ -4896,9 +3177,6 @@ build_excl_check_signatures();
     //      Drude particle or a lone pair, the these light (or massless)
     //      particles are also excluded from interacting with each other.
     void Molecule::build_inherited_excl(int modified) {
-#ifdef MEM_OPT_VERSION
-      NAMD_die("Drude and LP particles not supported in memopt version.");
-#else
       ExclusionSettings exclude_flag = simParams->exclude;
       int32 *bond1, *bond2, *bond3, *bond4, *bond5;
       int32 i, j, mid1, mid2, mid3, mid4;
@@ -5114,7 +3392,7 @@ build_excl_check_signatures();
                       exclusionSet.add(Exclusion(i, mid4, modi));
                     }
                     else if (mid4 < i) {
-                      exclusionSet.add(Exclusion(mid4, i, modi));
+                      exclusionSet.add(Exclusion(mid4, i, modi));                    
                     }
 
                     // also exclude any Drude particles or LPs bonded to mid4
@@ -5133,7 +3411,6 @@ build_excl_check_signatures();
                       }
                       bond5++;
                     }
-
                     ++bond4;
                   } // while bond4
 
@@ -5150,8 +3427,6 @@ build_excl_check_signatures();
         } // else (if ONETWO or ONETHREE or ONEFOUR or SCALED14)
 
       } // for i
-
-#endif
     } 
     // DRUDE
 
@@ -5162,10 +3437,8 @@ build_excl_check_signatures();
     /*                  */
     /************************************************************************/
 
-    void Molecule::build12excl(void)
-       
+    void Molecule::build12excl(void)       
     {
-#ifndef MEM_OPT_VERSION
        int32 *current_val;  //  Current value to check
        register int i;    //  Loop counter to loop through all atoms
        
@@ -5195,7 +3468,6 @@ build_excl_check_signatures();
          ++current_val;
       }
        }
-#endif
     }
     /*      END OF FUNCTION build12excl      */
 
@@ -5205,10 +3477,8 @@ build_excl_check_signatures();
     /*                  */
     /************************************************************************/
 
-    void Molecule::build13excl(void)
-       
+    void Molecule::build13excl(void)       
     {
-#ifndef MEM_OPT_VERSION
        int32 *bond1, *bond2;  //  The two bonds being checked
        int middle_atom;  //  Common third atom
        register int i;    //  Loop counter to loop through all atoms
@@ -5258,7 +3528,6 @@ build_excl_check_signatures();
         ++bond1;
       }
        }
-#endif
     }
     /*      END OF FUNCTION build13excl      */
 
@@ -5269,10 +3538,8 @@ build_excl_check_signatures();
     /************************************************************************/
 
 
-    void Molecule::build14excl(int modified)
-       
+    void Molecule::build14excl(int modified)       
     {
-#ifndef MEM_OPT_VERSION
        int32 *bond1, *bond2, *bond3;  //  The two bonds being checked
        int mid1, mid2;    //  Middle atoms
        register int i;      //  Counter to loop through all atoms
@@ -5360,7 +3627,6 @@ build_excl_check_signatures();
         ++bond1;
       }
        }
-#endif
     }
     /*      END OF FUNCTION build14excl      */
 
@@ -5370,154 +3636,8 @@ build_excl_check_signatures();
     /*        FUNCTION stripFepExcl                                         */
     /*                                                                      */
     /************************************************************************/
-
-#ifdef MEM_OPT_VERSION
-  void Molecule::stripFepFixedExcl(void)
-  {
-      int delExclCnt=0;
-
-      vector<ExclusionSignature> newExclSigPool;
-      if(simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn){
-          for(int i=0; i<numAtoms; i++){
-              int atom1 = i;
-              int t1 = get_fep_type(atom1);
-              if(t1==0) continue;
-              ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[atom1]];
-              int sigChanged = 0;
-              for(int j=0; j<a1Sig.fullExclCnt; j++){
-                  int atom2 = atom1 + a1Sig.fullOffset[j];
-                  int t2 = get_fep_type(atom2);
-                  if(t2 && t1!=t2){
-                      a1Sig.fullOffset[j] = 0;
-                      sigChanged = 1;
-                      delExclCnt++;
-                  }                  
-              }
-              for(int j=0; j<a1Sig.modExclCnt; j++){
-                  int atom2 = atom1 + a1Sig.modOffset[j];
-                  int t2 = get_fep_type(atom2);
-                  if(t2 && t1!=t2){
-                      a1Sig.modOffset[j] = 0;
-                      sigChanged = 1;
-                      delExclCnt++;
-                  }
-              }
-
-              //deal with the new signature
-              if(sigChanged){
-                  a1Sig.removeEmptyOffset();
-                  int poolIndex = lookupCstPool(newExclSigPool, a1Sig);
-                  if(poolIndex==-1){
-                      poolIndex = newExclSigPool.size();
-                      newExclSigPool.push_back(a1Sig);
-                  }
-                  eachAtomExclSig[atom1] = poolIndex + exclSigPoolSize;
-              }                            
-          }
-          //integerate new exclusion signatures into the old one
-          addNewExclSigPool(newExclSigPool);
-          newExclSigPool.clear();
-      }else if(simParams->pairInteractionOn){
-          for(int i=0; i<numAtoms; i++){
-              int atom1 = i;
-              int t1 = get_fep_type(atom1);              
-              ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[atom1]];
-              int sigChanged = 0;
-              for(int j=0; j<a1Sig.fullExclCnt; j++){
-                  int atom2 = atom1 + a1Sig.fullOffset[j];
-                  int t2 = get_fep_type(atom2);
-
-                  int cond1 = simParams->pairInteractionSelf && (t1!=1 || t2!=1);
-                  int cond2 = (t1!=1 || t2!=2) && (t1!=2 || t2!=1);
-                  if(cond1 || cond2){                                   
-                      a1Sig.fullOffset[j] = 0;
-                      sigChanged = 1;
-                      delExclCnt++;
-                  }                  
-              }
-              for(int j=0; j<a1Sig.modExclCnt; j++){
-                  int atom2 = atom1 + a1Sig.modOffset[j];
-                  int t2 = get_fep_type(atom2);
-                  int cond1 = simParams->pairInteractionSelf && (t1!=1 || t2!=1);
-                  int cond2 = (t1!=1 || t2!=2) && (t1!=2 || t2!=1);
-                  if(cond1 || cond2){                  
-                      a1Sig.modOffset[j] = 0;
-                      sigChanged = 1;
-                      delExclCnt++;
-                  }
-              }
-
-              //deal with the new signature
-              if(sigChanged){
-                  a1Sig.removeEmptyOffset();
-                  int poolIndex = lookupCstPool(newExclSigPool, a1Sig);
-                  if(poolIndex==-1){
-                      poolIndex = newExclSigPool.size();
-                      newExclSigPool.push_back(a1Sig);
-                  }
-                  eachAtomExclSig[atom1] = poolIndex + exclSigPoolSize;
-              }                            
-          }
-          //integerate new exclusion signatures into the old one
-          addNewExclSigPool(newExclSigPool);
-          newExclSigPool.clear();
-      }
-      numTotalExclusions -= (delExclCnt/2); 
-
-      //deal with fixed atoms
-      if(!numFixedAtoms){
-    	for(int i=0; i<numAtoms; i++){
-    	    ExclusionSignature *a1Sig = &exclSigPool[eachAtomExclSig[i]];
-    	}
-      }else{
-          for(int i=0; i<numAtoms; i++){
-              int atom1 = i;
-              int t1 = fixedAtomFlags[atom1];
-              ExclusionSignature a1Sig = exclSigPool[eachAtomExclSig[atom1]];
-              if(t1==0){
-                  continue;
-              }              
-              int sigChanged = 0;
-              for(int j=0; j<a1Sig.fullExclCnt; j++){
-                  int atom2 = atom1 + a1Sig.fullOffset[j];
-                  int t2 = fixedAtomFlags[atom2];
-                  if(t2){
-                      a1Sig.fullOffset[j] = 0;
-                      sigChanged = 1;
-                      delExclCnt++;
-                  }                  
-              }
-              for(int j=0; j<a1Sig.modExclCnt; j++){
-                  int atom2 = atom1 + a1Sig.modOffset[j];
-                  int t2 = fixedAtomFlags[atom2];
-                  if(t2){
-                      a1Sig.modOffset[j] = 0;
-                      sigChanged = 1;
-                      delExclCnt++;
-                  }
-              }
-
-              //deal with the new signature
-              if(sigChanged){
-                  a1Sig.removeEmptyOffset();
-                  int poolIndex = lookupCstPool(newExclSigPool, a1Sig);
-                  if(poolIndex==-1){
-                      poolIndex = newExclSigPool.size();
-                      newExclSigPool.push_back(a1Sig);
-                  }
-                  eachAtomExclSig[atom1] = poolIndex + exclSigPoolSize;
-              }              
-          }
-          //integerate new exclusion signatures into the old one
-          addNewExclSigPool(newExclSigPool);
-          newExclSigPool.clear();
-      }      
-
-      numCalcExclusions = (numCalcExclusions - delExclCnt)/2;      
-  }
-#else
   void Molecule::stripFepExcl(void)
-  {      
+  {   
     UniqueSet<Exclusion> fepExclusionSet;
     UniqueSetIter<Exclusion> exclIter(exclusionSet);
 
@@ -5557,9 +3677,1454 @@ build_excl_check_signatures();
       exclusionSet.del(*fepIter);
     }
   }
-#endif
     /*      END OF FUNCTION stripFepExcl      */
 
+#else
+
+//===Memory optimized version of functions that read Molecule file===//
+void Molecule::read_mol_signatures(char *fname, Parameters *params, ConfigList *cfgList){
+    FILE *psf_file;    //  pointer to .psf file
+    int ret_code;    //  ret_code from NAMD_read_line calls
+    char buffer[512];
+
+    
+    if ( (psf_file = Fopen(fname, "r")) == NULL)
+    {
+        char err_msg[512];
+        sprintf(err_msg, "UNABLE TO OPEN THE COMPRESSED .psf FILE %s", fname);
+        NAMD_die(err_msg);
+    }
+
+    char strBuf[12];
+
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "FORMAT VERSION")) {
+        NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
+    }
+    float psfVer = 0.0f;
+    sscanf(buffer, "FORMAT VERSION: %f\n", &psfVer);
+    if(fabs(psfVer - COMPRESSED_PSF_VER)>1e-6) {
+        NAMD_die("The compressed psf file format is incorrect, please re-generate!\n");
+    }
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NSEGMENTNAMES"))
+        NAMD_die("UNABLE TO FIND NSEGMENTNAMES");
+    sscanf(buffer, "%d", &segNamePoolSize);
+#if 0
+    if(segNamePoolSize!=0)
+        segNamePool = new char *[segNamePoolSize];
+    for(int i=0; i<segNamePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        segNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(segNamePool[i], strBuf);
+    }
+#else
+    for(int i=0; i<segNamePoolSize; i++) NAMD_read_line(psf_file, buffer);
+#endif
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NRESIDUENAMES"))
+        NAMD_die("UNABLE TO FIND NRESIDUENAMES");
+    sscanf(buffer, "%d", &resNamePoolSize);
+#if 0
+    if(resNamePoolSize!=0)
+        resNamePool = new char *[resNamePoolSize];
+    for(int i=0; i<resNamePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        resNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(resNamePool[i], strBuf);
+    }
+#else
+    for(int i=0; i<resNamePoolSize; i++) NAMD_read_line(psf_file, buffer);
+#endif
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NATOMNAMES"))
+        NAMD_die("UNABLE TO FIND NATOMNAMES");
+    sscanf(buffer, "%d", &atomNamePoolSize);
+    if(atomNamePoolSize!=0)
+        atomNamePool = new char *[atomNamePoolSize];
+    for(int i=0; i<atomNamePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        atomNamePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(atomNamePool[i], strBuf);
+    }
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NATOMTYPES"))
+        NAMD_die("UNABLE TO FIND NATOMTYPES");
+    sscanf(buffer, "%d", &atomTypePoolSize);
+#if 0
+    if(atomTypePoolSize!=0)
+        atomTypePool = new char *[atomTypePoolSize];
+    for(int i=0; i<atomTypePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%s", strBuf);
+        atomTypePool[i] = nameArena->getNewArray(strlen(strBuf)+1);
+        strcpy(atomTypePool[i], strBuf);
+    }
+#else
+    for(int i=0; i<atomTypePoolSize; i++) NAMD_read_line(psf_file, buffer);
+#endif
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NCHARGES"))
+        NAMD_die("UNABLE TO FIND NCHARGES");
+    sscanf(buffer, "%d", &chargePoolSize);
+    if(chargePoolSize!=0)
+        atomChargePool = new Real[chargePoolSize];
+    for(int i=0; i<chargePoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%f", atomChargePool+i);
+    }
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NMASSES"))
+        NAMD_die("UNABLE TO FIND NMASSES");
+    sscanf(buffer, "%d", &massPoolSize);
+    if(massPoolSize!=0)
+        atomMassPool = new Real[massPoolSize];
+    for(int i=0; i<massPoolSize; i++){
+        NAMD_read_line(psf_file, buffer);
+        sscanf(buffer, "%f", atomMassPool+i);
+    }
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "ATOMSIGS"))
+        NAMD_die("UNABLE TO FIND ATOMSIGS");
+    sscanf(buffer, "%d", &atomSigPoolSize);
+    atomSigPool = new AtomSignature[atomSigPoolSize];
+    int typeCnt;
+    int tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+    int tisReal;
+    int ttype;
+    for(int i=0; i<atomSigPoolSize; i++){
+        
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NBONDSIGS"))
+            NAMD_die("UNABLE TO FIND NBONDSIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].bondCnt = typeCnt;
+            atomSigPool[i].bondSigs = new TupleSignature[typeCnt];
+        }
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);
+            sscanf(buffer, "%d | %d | %d", &tmp1, &ttype, &tisReal);
+            TupleSignature oneSig(1, BOND, (Index)ttype, (char)tisReal);
+            oneSig.offset[0] = tmp1;
+            atomSigPool[i].bondSigs[j]=oneSig;
+            if(tisReal) numRealBonds++;
+        }
+
+        
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NTHETASIGS"))
+            NAMD_die("UNABLE TO FIND NTHETASIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].angleCnt = typeCnt;
+            atomSigPool[i].angleSigs = new TupleSignature[typeCnt];
+        }
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);
+            sscanf(buffer, "%d %d | %d | %d", &tmp1, &tmp2, &ttype, &tisReal);
+            TupleSignature oneSig(2,ANGLE,(Index)ttype, (char)tisReal);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            atomSigPool[i].angleSigs[j] = oneSig;
+        }
+        
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NPHISIGS"))
+            NAMD_die("UNABLE TO FIND NPHISIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].dihedralCnt = typeCnt;
+            atomSigPool[i].dihedralSigs = new TupleSignature[typeCnt];
+        }
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);
+            sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
+            TupleSignature oneSig(3,DIHEDRAL,(Index)ttype, (char)tisReal);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            oneSig.offset[2] = tmp3;
+            atomSigPool[i].dihedralSigs[j] = oneSig;
+        }
+        
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NIMPHISIGS"))
+            NAMD_die("UNABLE TO FIND NIMPHISIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].improperCnt = typeCnt;
+            atomSigPool[i].improperSigs = new TupleSignature[typeCnt];
+        }
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);
+            sscanf(buffer, "%d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &ttype, &tisReal);
+            TupleSignature oneSig(3,IMPROPER,(Index)ttype, (char)tisReal);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            oneSig.offset[2] = tmp3;
+            atomSigPool[i].improperSigs[j] = oneSig;
+        }
+        
+        NAMD_read_line(psf_file, buffer);
+        if(!NAMD_find_word(buffer, "NCRTERMSIGS"))
+            NAMD_die("UNABLE TO FIND NCRTERMSIGS");
+        sscanf(buffer, "%d", &typeCnt);
+        if(typeCnt!=0){
+            atomSigPool[i].crosstermCnt = typeCnt;
+            atomSigPool[i].crosstermSigs = new TupleSignature[typeCnt];
+        }
+        for(int j=0; j<typeCnt; j++){
+            NAMD_read_line(psf_file, buffer);
+            sscanf(buffer, "%d %d %d %d %d %d %d | %d | %d", &tmp1, &tmp2, &tmp3, &tmp4, &tmp5, &tmp6, &tmp7, &ttype, &tisReal);
+            TupleSignature oneSig(7,CROSSTERM,(Index)ttype, (char)tisReal);
+            oneSig.offset[0] = tmp1;
+            oneSig.offset[1] = tmp2;
+            oneSig.offset[2] = tmp3;
+            oneSig.offset[3] = tmp4;
+            oneSig.offset[4] = tmp5;
+            oneSig.offset[5] = tmp6;
+            oneSig.offset[6] = tmp7;
+            atomSigPool[i].crosstermSigs[j] = oneSig;
+        }
+    }
+
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NEXCLSIGS")){
+        NAMD_die("UNABLE TO FIND NEXCLSIGS");
+    }
+    sscanf(buffer, "%d", &exclSigPoolSize);
+    if(exclSigPoolSize>0) exclSigPool = new ExclusionSignature[exclSigPoolSize];
+    vector<int> fullExcls;
+    vector<int> modExcls;
+    for(int i=0; i<exclSigPoolSize; i++){
+        int fullExclCnt = NAMD_read_int(psf_file, buffer);
+        for(int j=0; j<fullExclCnt; j++)
+            fullExcls.push_back(NAMD_read_int(psf_file, buffer));
+        int modExclCnt = NAMD_read_int(psf_file, buffer);
+        for(int j=0; j<modExclCnt; j++)
+            modExcls.push_back(NAMD_read_int(psf_file, buffer));
+
+        
+        exclSigPool[i].setOffsets(fullExcls, modExcls);
+
+        fullExcls.clear();
+        modExcls.clear();
+    }
+
+    
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NCLUSTERS")) {
+        NAMD_die("UNABLE TO FIND NCLUSTERS");
+    }
+    sscanf(buffer, "%d", &numClusters);
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NATOM"))
+        NAMD_die("UNABLE TO FIND NATOM");
+    sscanf(buffer, "%d", &numAtoms);
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NHYDROGENGROUP"))
+        NAMD_die("UNABLE TO FIND NHYDROGENGROUP");
+    sscanf(buffer, "%d", &numHydrogenGroups);
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "MAXHYDROGENGROUPSIZE"))
+        NAMD_die("UNABLE TO FIND MAXHYDROGENGROUPSIZE");
+    sscanf(buffer, "%d", &maxHydrogenGroupSize);
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "NMIGRATIONGROUP"))
+        NAMD_die("UNABLE TO FIND NMIGRATIONGROUP");
+    sscanf(buffer, "%d", &numMigrationGroups);
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "MAXMIGRATIONGROUPSIZE"))
+        NAMD_die("UNABLE TO FIND MAXMIGRATIONGROUPSIZE");
+    sscanf(buffer, "%d", &maxMigrationGroupSize);
+
+    int inputRigidType = -1;
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "RIGIDBONDTYPE"))
+      NAMD_die("UNABLE TO FIND RIGIDBONDTYPE");
+    sscanf(buffer, "%d", &inputRigidType);
+    if(simParams->rigidBonds != RIGID_NONE){
+      //check whether the input rigid bond type matches
+      if(simParams->rigidBonds != inputRigidType){
+        char *tmpstr[]={"RIGID_ALL", "RIGID_WATER"};
+        char errmsg[125];
+        sprintf(errmsg, "RIGIDBOND TYPE MISMATCH BETWEEN INPUT (%s) AND CURRENT RUN (%s)", 
+                tmpstr[inputRigidType-1], tmpstr[simParams->rigidBonds-1]);
+        NAMD_die(errmsg);
+      }
+    }
+#if 0
+//    int isOccupancyValid, isBFactorValid;
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "OCCUPANCYVALID"))
+        NAMD_die("UNABLE TO FIND OCCUPANCYVALID");
+    sscanf(buffer, "%d", &isOccupancyValid);
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "TEMPFACTORVALID"))
+        NAMD_die("UNABLE TO FIND TEMPFACTORVALID");
+    sscanf(buffer, "%d", &isBFactorValid);    
+#endif
+
+    //Just reading for the parameters values; extra Bonds, Dihedrals etc.
+    //have been taken into account when compressing the molecule object.
+    //The actual number of Bonds, Dihedrals etc. will be calculated based
+    //on atom signatures.
+    if(cfgList && simParams->extraBondsOn)
+        build_extra_bonds(params, cfgList->find("extraBondsFile"));
+
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "DIHEDRALPARAMARRAY"))
+        NAMD_die("UNABLE TO FIND DIHEDRALPARAMARRAY");
+    for(int i=0; i<params->NumDihedralParams; i++){
+        params->dihedral_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
+    }
+    
+
+    NAMD_read_line(psf_file, buffer); //to read a simple single '\n' line
+    NAMD_read_line(psf_file, buffer);
+    if(!NAMD_find_word(buffer, "IMPROPERPARAMARRAY"))
+        NAMD_die("UNABLE TO FIND IMPROPERPARAMARRAY");
+    for(int i=0; i<params->NumImproperParams; i++){
+        params->improper_array[i].multiplicity = NAMD_read_int(psf_file, buffer);
+    }
+    
+    Fclose(psf_file);
+}
+
+/*
+ * The following method is called on every input processors. However, in SMP mode, two 
+ * input procs are likely to be inside the same SMP node. Additionally, there's only one 
+ * Molecule object per SMP node. Therefore, if there are any assignments to the molecule 
+ * object in this function, there's going to be  DATA RACE !!  That's why the calculation of 
+ * numTupes(Bonds, Angles, etc) and numExclusions has to be done in ParallelIOMgr, and 
+ * then reduce those values.   
+ * -Chao Mei
+ */
+void Molecule::read_binary_atom_info(int fromAtomID, int toAtomID, InputAtomList& inAtoms){
+    int numAtomsPar = toAtomID-fromAtomID+1;
+    CmiAssert(numAtomsPar > 0);
+    CmiAssert(inAtoms.size() == numAtomsPar);
+    
+    /*
+    //all the following vars are not needed as the
+    //atom info is loaded into inAtoms.
+    atoms = new AtomCstInfo[numAtomsPar];
+    atomNames = new AtomNameIdx[numAtomsPar];
+    eachAtomMass = new Index[numAtomsPar];
+    eachAtomCharge = new Index[numAtomsPar];
+    eachAtomSig = new Index[numAtomsPar];
+    eachAtomExclSig = new Index[numAtomsPar];
+    */
+    /*
+    atoms = new AtomCstInfo[numAtomsPar];
+    atomNames = new AtomNameIdx[numAtomsPar];
+    */
+
+    atoms = NULL;
+    atomNames = NULL;
+    eachAtomMass = NULL;
+    eachAtomCharge = NULL;
+    eachAtomSig = NULL;
+    eachAtomExclSig = NULL;
+    clusterSigs = NULL;
+
+    /* HydrogenGroup is not needed here anymore
+    hydrogenGroup.resize(numAtomsPar);
+    ResidueLookupElem *tmpResLookup = resLookup;
+    */
+/*
+    if (isOccupancyValid) {
+        occupancy = new float[numAtomsPar];
+    }
+    if (isBFactorValid) {
+        bfactor = new float[numAtomsPar];
+    }
+*/
+    occupancy = NULL;
+    bfactor = NULL;
+    
+    char *segment_name; 
+
+    //use "fopen" instead of "Fopen" because "stat" call inside Fopen may 
+    //fail on some platforms (such as BG/P) for very large file because of 
+    //EOVERFLOW, say a 2GB file. -Chao Mei
+    FILE *perAtomFile = fopen(simParams->binAtomFile, "rb");
+    if (perAtomFile==NULL) {
+        char err_msg[512];
+        sprintf(err_msg, "UNABLE TO OPEN THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s", simParams->binAtomFile);
+        NAMD_die(err_msg);
+    }
+    int needFlip = 0;
+    int magicNum = COMPRESSED_PSF_MAGICNUM;
+    int rMagicNum = COMPRESSED_PSF_MAGICNUM;
+    flipNum((char *)&rMagicNum, sizeof(int), 1);
+    int fMagicNum;
+    fread(&fMagicNum, sizeof(int), 1, perAtomFile);
+    if (fMagicNum==magicNum) {
+        needFlip = 0;
+    } else if (fMagicNum==rMagicNum) {
+        needFlip = 1;
+    } else {
+        char err_msg[512];
+        sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS CORRUPTED", simParams->binAtomFile);
+        NAMD_die(err_msg);
+    }
+
+    float verNum =  0.0f;
+    fread(&verNum, sizeof(float), 1, perAtomFile);
+    if (needFlip) flipNum((char *)&verNum, sizeof(float), 1);
+    if (fabs(verNum - COMPRESSED_PSF_VER)>1e-6) {
+        char err_msg[512];
+        sprintf(err_msg, "THE ASSOCIATED PER-ATOM FILE FOR THE COMPRESSED .psf FILE %s IS INCORRECT, PLEASE RE-GENERATE!\n", simParams->binAtomFile);
+        NAMD_die(err_msg);
+    }
+
+    int recSize = 0;
+    fread(&recSize, sizeof(int), 1, perAtomFile);
+    if(needFlip) flipNum((char *)&recSize, sizeof(int), 1);
+    if(recSize != sizeof(OutputAtomRecord)){
+      char err_msg[512];
+      sprintf(err_msg, "THE ASSOCIATED PER-ATOM RECORD SIZE FOR THE COMPRESSED .psf FILE %s IS INCORRECT, PLEASE RE-GENERATE!\n", simParams->binAtomFile);
+      NAMD_die(err_msg);
+    }
+    
+    const int BUFELEMS = 32*1024; //32K elems
+
+    //remember to convert to long in case of int overflow!
+    //on BG/P with 32-bit compiler, the off_t is still of 4 bytes, the safest
+    //way is to use long long. However, the fseek takes "long" as offset
+    //which may be again of 4 bytes with 32-bit compiler. So the safest
+    //way is to use "int64"  -Chao Mei
+    int64 startbyte=((int64)fromAtomID)*sizeof(OutputAtomRecord);
+    //since startbyte may be larger than LONG_MAX, do the seek multiple times
+    while(startbyte > LONG_MAX) {
+      startbyte -= LONG_MAX;
+      fseek(perAtomFile,LONG_MAX,SEEK_CUR);   
+    }
+    fseek(perAtomFile,startbyte,SEEK_CUR);   
+
+    //reduce the number of fread calls as file I/O is expensive.
+    OutputAtomRecord *elemsBuf = new OutputAtomRecord[BUFELEMS];
+    int atomsCnt = numAtomsPar;
+    int curIdx=0;
+    OutputAtomRecord *oneRec = NULL;
+    while(atomsCnt >= BUFELEMS) {
+      fread((char *)elemsBuf, sizeof(OutputAtomRecord), BUFELEMS, perAtomFile);    
+      oneRec = elemsBuf;
+      for(int i=0; i<BUFELEMS; i++, curIdx++, oneRec++) {
+        InputAtom *fAtom = &(inAtoms[curIdx]);
+        int aid = curIdx+fromAtomID;
+        if(needFlip) oneRec->flip();
+        load_one_inputatom(aid, oneRec, fAtom);        
+      }
+      atomsCnt -= BUFELEMS;
+    }
+
+    fread(elemsBuf, sizeof(OutputAtomRecord), atomsCnt, perAtomFile);
+    oneRec = elemsBuf;    
+    for(int i=curIdx; i<numAtomsPar; i++, oneRec++) {
+      InputAtom *fAtom = &(inAtoms[i]);
+      int aid = i+fromAtomID;
+      if(needFlip) oneRec->flip();
+      load_one_inputatom(aid,oneRec,fAtom);      
+    }
+
+    delete [] elemsBuf;
+
+    //deal with fixed atoms info
+    if(simParams->fixedAtomsOn){
+        int listIdx=0;
+        is_atom_fixed(fromAtomID, &listIdx);
+        for(int i=listIdx; i<fixedAtomsSet->size(); i++){
+            const AtomSet one = fixedAtomsSet->item(i);
+            //set the atoms in this range to be fixed
+            int sAtomId = one.aid1>fromAtomID ? one.aid1:fromAtomID;
+            int eAtomId = one.aid2>toAtomID? toAtomID:one.aid2;
+            for(int j=sAtomId; j<=eAtomId; j++)
+                inAtoms[j-fromAtomID].atomFixed = 1;
+        }
+    }
+}
+
+void Molecule::load_one_inputatom(int aid, OutputAtomRecord *one, InputAtom *fAtom){
+
+  char *thisAtomName = NULL;
+  fAtom->isValid=true;
+  
+  //segment_name = segNamePool[sIdx[0]];
+  /*
+  atomNames[i].resnameIdx = sIdx[1];
+  atomNames[i].atomnameIdx = sIdx[2];
+  atomNames[i].atomtypeIdx = sIdx[3]; 
+  */
+  thisAtomName = atomNamePool[one->sSet.atomNameIdx];
+         
+  fAtom->charge = atomChargePool[one->sSet.chargeIdx];
+  fAtom->mass = atomMassPool[one->sSet.massIdx];
+  fAtom->sigId = one->iSet.atomSigIdx;
+  fAtom->exclId = one->iSet.exclSigIdx;
+  fAtom->vdwType = one->sSet.vdw_type;
+  
+  //atoms[i].vdw_type = sIdx[8];
+  
+  int residue_number; //for residue number
+  residue_number = one->iSet.resID;
+  
+  /*
+  atoms[i].partner = iIdx[2];
+  atoms[i].hydrogenList= iIdx[3];
+  */
+  
+  fAtom->id=aid;
+  fAtom->atomFixed = 0;
+  fAtom->hydList = one->iSet.hydrogenList;
+  fAtom->hydrogenGroupSize=one->iSet.atomsInGroup;
+  fAtom->GPID=one->iSet.GPID;        
+  //fAtom->waterVal=one->waterVal;
+  fAtom->migrationGroupSize=one->iSet.atomsInMigrationGroup;
+  fAtom->MPID=one->iSet.MPID;
+  fAtom->isGP=(fAtom->hydrogenGroupSize ? 1 : 0);
+  fAtom->isMP=( fAtom->migrationGroupSize ? 1 : 0 ); 
+  
+  if(simParams->rigidBonds) {
+    fAtom->rigidBondLength = one->fSet.rigidBondLength;
+  }else{
+    fAtom->rigidBondLength = 0.0;
+  }
+  
+  //Node::Object()->ioMgr->maxAtom=fAtom.id;        
+  
+  /*if (isOccupancyValid)
+      occupancy[i] = tmpf[0];
+  if (isBFactorValid)
+      bfactor[i] = tmpf[1];*/
+  
+  /*
+  ////TODO: DEAL WITH RESIDUE LOOKUP --CHAOMEI
+  if (tmpResLookup) tmpResLookup =
+          tmpResLookup->append(segment_name, residue_number, i);
+  */
+  
+  Real thisAtomMass = fAtom->mass;
+  
+  if (thisAtomMass <= 0.05) {
+      fAtom->status |= LonepairAtom;
+  } else if (thisAtomMass < 1.0) {
+      fAtom->status |= DrudeAtom;
+  } else if (thisAtomMass <= 3.5) {
+      fAtom->status = HydrogenAtom;
+  } else if (thisAtomName[0]=='O' &&
+             (thisAtomMass >= 14.0) && (thisAtomMass <= 18.0)) {
+      fAtom->status = OxygenAtom;
+  }
+  
+  //Move the langevinParam setting which depends on atom's status
+  //to the time when each home patch is filled with their atoms
+  //(WorkDistrib::fillAtomListForOnePatch so that "langevinParam"
+  //could be shared with the "hydVal".
+  //--Chao Mei 
+}
+
+//Well, the exclusion check signatures could also done on PE0 and
+//sent to other processors through send_Molecule/receive_Molecule 
+//two procedures.
+void Molecule::build_excl_check_signatures(){
+   exclChkSigPool = new ExclusionCheck[exclSigPoolSize];
+   for(int i=0; i<exclSigPoolSize; i++){
+       ExclusionSignature *sig = &exclSigPool[i];
+       ExclusionCheck *sigChk = &exclChkSigPool[i];
+       if(sig->fullExclCnt){
+           if(!sig->modExclCnt){ //only having fullExclusion
+               sigChk->min = sig->fullOffset[0];
+               sigChk->max = sig->fullOffset[sig->fullExclCnt-1];
+           }else{ //have both full and modified exclusion
+               int fullMin, fullMax, modMin, modMax;
+               
+               fullMin = sig->fullOffset[0];
+               fullMax = sig->fullOffset[sig->fullExclCnt-1];
+           
+               modMin = sig->modOffset[0];
+               modMax = sig->modOffset[sig->modExclCnt-1];
+               
+               if(fullMin < modMin)
+                   sigChk->min = fullMin;
+               else
+                   sigChk->min = modMin;
+               if(fullMax < modMax)
+                   sigChk->max = modMax;
+               else
+                   sigChk->max = fullMax;
+           }        
+       }else{
+           if(sig->modExclCnt){
+               sigChk->min = sig->modOffset[0];
+               sigChk->max = sig->modOffset[sig->modExclCnt-1];
+           }else{ //both count are 0
+               if(CkMyPe()==0)
+                   printf("Warning: an empty exclusion signature with index %d!\n", i);               
+               continue;
+           }
+       }           
+
+       sigChk->flags = new char[sigChk->max-sigChk->min+1];
+       memset(sigChk->flags, 0, sizeof(char)*(sigChk->max-sigChk->min+1));
+       for(int j=0; j<sig->fullExclCnt; j++){
+           int dist = sig->fullOffset[j] - sigChk->min;
+           sigChk->flags[dist] = EXCHCK_FULL;
+       }
+       for(int j=0; j<sig->modExclCnt; j++){
+           int dist = sig->modOffset[j] - sigChk->min;
+           sigChk->flags[dist] = EXCHCK_MOD;
+       }
+   }
+}
+
+/**
+ * This function loads the fixed atoms into Molecule object. 
+ * The input is a text file, each line specifies a range of 
+ * fixed atoms in the format of atomid1[-atomid2]. The atom id
+ * starts from 0, not 1! This function should be called only on 
+ * the master proc. 
+ * -Chao Mei
+ */
+void Molecule::load_fixed_atoms(StringList *fixedfile){
+  if(fixedfile == NULL) NAMD_die("The text input file for fixed atoms is not found!");
+  FILE *ifp = fopen(fixedfile->data, "r");
+  
+  if(ifp==NULL){
+      char errmsg[128];
+      sprintf(errmsg, "ERROR IN OPENING FIXED ATOMS FILE: %s\n", fixedfile->data);
+      NAMD_die(errmsg);
+  }
+
+  char oneline[128];
+  numFixedAtoms = 0;
+  AtomSet one;
+  fixedAtomsSet = new AtomSetList();  
+  while(1) {
+    int ret = NAMD_read_line(ifp, oneline, 128);
+    if(ret!=0) break;
+    if(NAMD_blank_string(oneline)) continue;
+    bool hasDash = false;
+    for(int i=0; i<512; i++){
+      if(oneline[i]=='-') {
+        hasDash = true;
+        break;
+      }
+    }
+    if(hasDash) {
+      sscanf(oneline,"%d-%d", &(one.aid1), &(one.aid2));
+      if(one.aid1>one.aid2 || one.aid1<0 || one.aid2<0) {
+        char errmsg[512];
+        sprintf(errmsg, "The input for fixed atoms is wrong: %s\n", oneline);
+        NAMD_die(errmsg);
+      }
+      numFixedAtoms += (one.aid2-one.aid1+1);
+    }else{
+      sscanf(oneline, "%d", &(one.aid1));
+      if(one.aid1<0) {
+        char errmsg[512];
+        sprintf(errmsg, "The input for fixed atoms is wrong: %s\n", oneline);
+        NAMD_die(errmsg);      
+      }
+      one.aid2 = one.aid1;
+      numFixedAtoms++;
+    }
+    fixedAtomsSet->add(one);
+  }
+  //sort the fixedAtomsSet for binary search to decide 
+  //whether an atom is fixed or not
+  std::sort(fixedAtomsSet->begin(), fixedAtomsSet->end());  
+}
+
+Bool Molecule::is_atom_fixed(int aid, int *listIdx) const{
+  int idx = fixedAtomsSet->size();
+  int rIdx = 0;
+  int lIdx = fixedAtomsSet->size()-1;
+  
+  while(rIdx <= lIdx){
+    int mIdx = (rIdx+lIdx)/2;
+    const AtomSet one = fixedAtomsSet->item(mIdx);
+
+    if(aid < one.aid1){
+      //aid could be in [rIdx, mIdx);
+      idx = mIdx;
+      lIdx = mIdx-1;
+    }else if(aid > one.aid1){
+      //aid could be inside the atom set "one" or in (mIdx, lIdx];
+      if(aid<=one.aid2){
+        //found, aid in the atom set "one"
+        if(listIdx) *listIdx = mIdx;
+        return 1;
+      }else{
+        rIdx = mIdx+1;
+      }
+    }else{
+      //found, aid is exactly same with one.aid1
+      if(listIdx) *listIdx = mIdx;
+      return 1;
+    }
+  }
+
+  //not found
+  if(listIdx) *listIdx = idx;
+  return 0;
+}
+#endif
+
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION print_atoms        */
+/*                  */
+/*  print_atoms prints out the list of atoms stored in this object. */
+/*  It is inteded mainly for debugging purposes.      */
+/*                  */
+/************************************************************************/
+
+void Molecule::print_atoms(Parameters *params)
+{
+#ifdef MEM_OPT_VERSION
+    DebugM(2, "WARNING: this function is not availabe in memory optimized version!\n" << endi);
+#else	
+  register int i;
+  Real sigma;
+  Real epsilon;
+  Real sigma14;
+  Real epsilon14;
+
+  DebugM(2,"ATOM LIST\n" \
+      << "******************************************\n" \
+                  << "NUM  NAME TYPE RES  MASS    CHARGE CHARGE   FEP-CHARGE"  \
+      << "SIGMA   EPSILON SIGMA14 EPSILON14\n" \
+        << endi);
+
+  for (i=0; i<numAtoms; i++)
+  {
+    params->get_vdw_params(&sigma, &epsilon, &sigma14, &epsilon14, 
+        atoms[i].vdw_type);
+
+    DebugM(2,i+1 << " " << atomNames[i].atomname  \
+              << " " << atomNames[i].atomtype << " " \
+              << atomNames[i].resname  << " " << atoms[i].mass  \
+        << " " << atoms[i].charge << " " << sigma \
+        << " " << epsilon << " " << sigma14 \
+        << " " << epsilon14 << "\n" \
+        << endi);
+  }
+#endif  
+}
+/*      END OF FUNCTION print_atoms      */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION print_bonds        */
+/*                  */
+/*  print_bonds prints out the list of bonds stored in this object. */
+/*  It is inteded mainly for debugging purposes.      */
+/*                  */
+/************************************************************************/
+
+void Molecule::print_bonds(Parameters *params)
+{
+#ifdef MEM_OPT_VERSION
+    DebugM(2, "WARNING: this function is not availabe in memory optimized version!\n" << endi);
+#else	
+  register int i;
+  Real k;
+  Real x0;
+
+  DebugM(2,"BOND LIST\n" << "********************************\n" \
+      << "ATOM1 ATOM2 TYPE1 TYPE2      k        x0" \
+      << endi);
+
+  for (i=0; i<numBonds; i++)
+  {
+    params->get_bond_params(&k, &x0, bonds[i].bond_type);
+
+    DebugM(2,bonds[i].atom1+1 << " " \
+       << bonds[i].atom2+1 << " "   \
+       << atomNames[bonds[i].atom1].atomtype << " "  \
+       << atomNames[bonds[i].atom2].atomtype << " " << k \
+       << " " << x0 << endi);
+  }
+  
+#endif  
+}
+/*      END OF FUNCTION print_bonds      */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION print_exclusions      */
+/*                  */
+/*  print_exlcusions prints out the list of exlcusions stored in    */
+/*  this object.  It is inteded mainly for debugging purposes.    */
+/*                  */
+/************************************************************************/
+
+void Molecule::print_exclusions()
+{
+#ifdef MEM_OPT_VERSION
+    DebugM(2, "WARNING: this function is not availabe in memory optimized version!\n" << endi);
+#else
+  register int i;
+
+  DebugM(2,"EXPLICIT EXCLUSION LIST\n" \
+      << "********************************\n" \
+            << "ATOM1 ATOM2 " \
+      << endi);
+
+  for (i=0; i<numExclusions; i++)
+  {
+    DebugM(2,exclusions[i].atom1+1 << "  " \
+       << exclusions[i].atom2+1 << endi);
+  }
+#endif
+}
+/*      END OF FUNCTION print_exclusions    */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION send_Molecule        */
+/*                  */
+/*  send_Molecule is used by the Master node to distribute the      */
+/*   structural information to all the client nodes.  It is NEVER called*/
+/*   by the client nodes.              */
+/*                  */
+/************************************************************************/
+
+void Molecule::send_Molecule(MOStream *msg){
+#ifdef MEM_OPT_VERSION
+//in the memory optimized version, only the atom signatures are broadcast
+//to other Nodes. --Chao Mei
+
+  msg->put(numAtoms);
+
+  msg->put(massPoolSize);
+  msg->put(massPoolSize, atomMassPool);
+
+  msg->put(chargePoolSize);
+  msg->put(chargePoolSize, atomChargePool); 
+
+  //put atoms' signatures
+  msg->put(atomSigPoolSize);
+  for(int i=0; i<atomSigPoolSize; i++)
+      atomSigPool[i].pack(msg);
+
+  //put atom's exclusion signatures
+  msg->put(exclSigPoolSize);
+  for(int i=0; i<exclSigPoolSize; i++)
+      exclSigPool[i].pack(msg);
+
+  msg->put(numHydrogenGroups);      
+  msg->put(maxHydrogenGroupSize);      
+  msg->put(numMigrationGroups);      
+  msg->put(maxMigrationGroupSize);            
+  msg->put(isOccupancyValid);
+  msg->put(isBFactorValid);
+  
+  //put names for atoms
+  msg->put(atomNamePoolSize);
+  for(int i=0; i<atomNamePoolSize;i++) {
+    int len = strlen(atomNamePool[i]);
+    msg->put(len);
+    msg->put(len*sizeof(char), atomNamePool[i]);
+  } 
+  
+  if(simParams->fixedAtomsOn){
+    int numFixedAtomsSet = fixedAtomsSet->size();
+    msg->put(numFixedAtoms);
+    msg->put(numFixedAtomsSet);
+    msg->put(numFixedAtomsSet*sizeof(AtomSet), (char *)(fixedAtomsSet->begin()));
+  }
+    
+  // Broadcast the message to the other nodes
+  msg->end();
+  delete msg;
+
+  build_excl_check_signatures();
+
+  //set num{Calc}Tuples(Bonds,...,Impropers} to 0
+  numBonds = numCalcBonds = 0;
+  numAngles = numCalcAngles = 0;
+  numDihedrals = numCalcDihedrals = 0;
+  numImpropers = numCalcImpropers = 0;
+  numCrossterms = numCalcCrossterms = 0;
+  numTotalExclusions = numCalcExclusions = 0;  
+
+#else
+  msg->put(numAtoms);
+  msg->put(numAtoms*sizeof(Atom), (char*)atoms);
+  
+  //  Send the bond information
+  msg->put(numRealBonds);
+  msg->put(numBonds);
+ 
+  if (numBonds)
+  {
+    msg->put(numBonds*sizeof(Bond), (char*)bonds);
+  }
+
+  //  Send the angle information
+  msg->put(numAngles);  
+  if (numAngles)
+  {
+    msg->put(numAngles*sizeof(Angle), (char*)angles);
+  }  
+
+  //  Send the dihedral information
+  msg->put(numDihedrals);
+  if (numDihedrals)
+  {
+    msg->put(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
+  }  
+
+  //  Send the improper information
+  msg->put(numImpropers);  
+  if (numImpropers)
+  {
+    msg->put(numImpropers*sizeof(Improper), (char*)impropers);
+  }
+
+  //  Send the crossterm information
+  msg->put(numCrossterms);
+  if (numCrossterms)
+  {
+    msg->put(numCrossterms*sizeof(Crossterm), (char*)crossterms);
+  }
+
+  // send the hydrogen bond donor information
+  msg->put(numDonors);
+  if(numDonors)
+  {
+    msg->put(numDonors*sizeof(Bond), (char*)donors);
+  }
+
+  // send the hydrogen bond acceptor information
+  msg->put(numAcceptors);
+  if(numAcceptors)
+  {
+    msg->put(numAcceptors*sizeof(Bond), (char*)acceptors);
+  }
+
+  //  Send the exclusion information  
+  msg->put(numExclusions);
+  if (numExclusions)
+  {
+    msg->put(numExclusions*sizeof(Exclusion), (char*)exclusions);
+  }      
+  //  Send the constraint information, if used
+  if (simParams->constraintsOn)
+  {
+     msg->put(numConstraints);
+     
+     msg->put(numAtoms, consIndexes);
+     
+     if (numConstraints)
+     {
+       msg->put(numConstraints*sizeof(ConstraintParams), (char*)consParams);
+     }
+  }
+  
+  /* BEGIN gf */
+  // Send the gridforce information, if used
+  if (simParams->mgridforceOn)
+  {
+    DebugM(3, "Sending gridforce info\n");
+    msg->put(numGridforceGrids);
+    
+    for (int grid = 0; grid < numGridforceGrids; grid++) {
+      msg->put(numGridforces[grid]);
+      msg->put(numAtoms, gridfrcIndexes[grid]);
+      if (numGridforces[grid])
+      {
+       msg->put(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
+      }
+      gridfrcGrid[grid]->pack(msg);	// grid object writes its private data to message itself
+    }
+  }
+  /* END gf */
+  
+  //  Send the stirring information, if used
+  if (simParams->stirOn)
+  {
+     //CkPrintf ("DEBUG: putting numStirredAtoms..\n");
+     msg->put(numStirredAtoms);
+     //CkPrintf ("DEBUG: putting numAtoms,stirIndexes.. numAtoms=%d\n",numStirredAtoms);
+     msg->put(numAtoms, stirIndexes);
+     //CkPrintf ("DEBUG: if numStirredAtoms..\n");
+     if (numStirredAtoms)
+     {
+       //CkPrintf ("DEBUG: big put, with (char*)stirParams\n");
+       msg->put(numStirredAtoms*sizeof(StirParams), (char*)stirParams);
+     }
+  }
+  
+  
+  //  Send the moving drag information, if used
+  if (simParams->movDragOn) {
+     msg->put(numMovDrag);
+     msg->put(numAtoms, movDragIndexes);
+     if (numMovDrag)
+     {
+       msg->put(numMovDrag*sizeof(MovDragParams), (char*)movDragParams);
+     }
+  }
+  
+  //  Send the rotating drag information, if used
+  if (simParams->rotDragOn) {
+     msg->put(numRotDrag);
+     msg->put(numAtoms, rotDragIndexes);
+     if (numRotDrag)
+     {
+       msg->put(numRotDrag*sizeof(RotDragParams), (char*)rotDragParams);
+     }
+  }
+  
+  //  Send the "constant" torque information, if used
+  if (simParams->consTorqueOn) {
+     msg->put(numConsTorque);
+     msg->put(numAtoms, consTorqueIndexes);
+     if (numConsTorque)
+     {
+       msg->put(numConsTorque*sizeof(ConsTorqueParams), (char*)consTorqueParams);
+     }
+  }
+  
+  // Send the constant force information, if used
+  if (simParams->consForceOn)
+  { msg->put(numConsForce);
+    msg->put(numAtoms, consForceIndexes);
+    if (numConsForce)
+      msg->put(numConsForce*sizeof(Vector), (char*)consForce);
+  }
+  
+  //  Send the langevin parameters, if active
+  if (simParams->langevinOn || simParams->tCoupleOn)
+  {
+    msg->put(numAtoms, langevinParams);
+  }
+  
+  //  Send fixed atoms, if active
+  if (simParams->fixedAtomsOn)
+  {
+    msg->put(numFixedAtoms);
+    msg->put(numAtoms, fixedAtomFlags);
+  msg->put(numFixedRigidBonds);
+  }
+  
+  if (simParams->excludeFromPressure) {
+    msg->put(numExPressureAtoms);
+    msg->put(numAtoms, exPressureAtomFlags);
+  }
+  
+  //fepb
+  // send fep atom info
+  if (simParams->alchFepOn || simParams->alchThermIntOn || simParams->lesOn || simParams->pairInteractionOn) {
+    msg->put(numFepInitial);
+    msg->put(numFepFinal);
+    msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
+  }
+  //fepe
+  
+  // DRUDE: send data read from PSF
+  msg->put(is_lonepairs_psf);
+  if (is_lonepairs_psf) {
+    msg->put(numLphosts);
+    msg->put(numLphosts*sizeof(Lphost), (char*)lphosts);
+  }
+  msg->put(is_drude_psf);
+  if (is_drude_psf) {
+    msg->put(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
+    msg->put(numAnisos);
+    msg->put(numAnisos*sizeof(Aniso), (char*)anisos);
+  }
+  // DRUDE
+  
+  // Broadcast the message to the other nodes
+  msg->end();
+  delete msg;
+
+  //  Now build arrays of indexes into these arrays by atom      
+  build_lists_by_atom();
+#endif
+}
+ /*      END OF FUNCTION send_Molecule      */
+
+    /************************************************************************/
+    /*                  */
+    /*      FUNCTION receive_Molecule      */
+    /*                  */
+    /*  receive_Molecule is used by all the clients to receive the  */
+    /*   structural data sent out by the master node.  It is NEVER called   */
+    /*   by the Master node.            */
+    /*                  */
+    /************************************************************************/
+
+void Molecule::receive_Molecule(MIStream *msg){
+  //  Get the atom information
+  msg->get(numAtoms);
+
+#ifdef MEM_OPT_VERSION
+//in the memory optimized version, only the atom signatures are recved
+//from the master Node. --Chao Mei
+
+  msg->get(massPoolSize);
+  if(atomMassPool) delete [] atomMassPool;
+  atomMassPool = new Real[massPoolSize];
+  msg->get(massPoolSize, atomMassPool);
+
+  msg->get(chargePoolSize);
+  if(atomChargePool) delete [] atomChargePool;
+  atomChargePool = new Real[chargePoolSize];
+  msg->get(chargePoolSize, atomChargePool);
+
+  //get atoms' signatures
+  msg->get(atomSigPoolSize);
+  if(atomSigPool) delete [] atomSigPool;
+  atomSigPool = new AtomSignature[atomSigPoolSize];
+  for(int i=0; i<atomSigPoolSize; i++)
+      atomSigPool[i].unpack(msg);
+
+  //get exclusions' signatures
+  msg->get(exclSigPoolSize);
+  if(exclSigPool) delete [] exclSigPool;
+  exclSigPool = new ExclusionSignature[exclSigPoolSize];
+  for(int i=0; i<exclSigPoolSize; i++)
+      exclSigPool[i].unpack(msg);
+ 
+  msg->get(numHydrogenGroups);      
+  msg->get(maxHydrogenGroupSize);      
+  msg->get(numMigrationGroups);      
+  msg->get(maxMigrationGroupSize);      
+  msg->get(isOccupancyValid);
+  msg->get(isBFactorValid);
+
+   //get names for atoms
+  msg->get(atomNamePoolSize);
+  atomNamePool = new char *[atomNamePoolSize];
+  for(int i=0; i<atomNamePoolSize;i++) {
+    int len;
+    msg->get(len);
+    atomNamePool[i] = nameArena->getNewArray(len+1);
+    msg->get(len, atomNamePool[i]);
+  }
+  
+  if(simParams->fixedAtomsOn){
+    int numFixedAtomsSet;
+    msg->get(numFixedAtoms);
+    msg->get(numFixedAtomsSet);
+    fixedAtomsSet = new AtomSetList(numFixedAtomsSet);
+    msg->get(numFixedAtomsSet*sizeof(AtomSet), (char *)(fixedAtomsSet->begin()));
+  } 
+
+      //  Now free the message 
+      delete msg;
+
+      build_excl_check_signatures();
+
+    //set num{Calc}Tuples(Bonds,...,Impropers} to 0
+    numBonds = numCalcBonds = 0;
+    numAngles = numCalcAngles = 0;
+    numDihedrals = numCalcDihedrals = 0;
+    numImpropers = numCalcImpropers = 0;
+    numCrossterms = numCalcCrossterms = 0;
+    numTotalExclusions = numCalcExclusions = 0;  
+#else
+  delete [] atoms;
+  atoms= new Atom[numAtoms];  
+  msg->get(numAtoms*sizeof(Atom), (char*)atoms);
+
+  //  Get the bond information
+  msg->get(numRealBonds);
+  msg->get(numBonds);    
+  if (numBonds)
+  {
+    delete [] bonds;
+    bonds=new Bond[numBonds]; 
+    msg->get(numBonds*sizeof(Bond), (char*)bonds);
+  }  
+  
+  //  Get the angle information
+  msg->get(numAngles);  
+  if (numAngles)
+  {
+    delete [] angles;
+    angles=new Angle[numAngles];  
+    msg->get(numAngles*sizeof(Angle), (char*)angles);
+  }  
+  
+  //  Get the dihedral information
+  msg->get(numDihedrals);    
+  if (numDihedrals)
+  {
+    delete [] dihedrals;
+    dihedrals=new Dihedral[numDihedrals];  
+    msg->get(numDihedrals*sizeof(Dihedral), (char*)dihedrals);
+  }  
+  
+  //  Get the improper information
+  msg->get(numImpropers);
+  if (numImpropers)
+  {
+    delete [] impropers;
+    impropers=new Improper[numImpropers];  
+    msg->get(numImpropers*sizeof(Improper), (char*)impropers);
+  }
+  
+  //  Get the crossterm information
+  msg->get(numCrossterms);
+  if (numCrossterms)
+  {
+    delete [] crossterms;
+    crossterms=new Crossterm[numCrossterms];  
+    msg->get(numCrossterms*sizeof(Crossterm), (char*)crossterms);
+  }
+  
+  //  Get the hydrogen bond donors
+  msg->get(numDonors);  
+  if (numDonors)
+  {
+    delete [] donors;
+    donors=new Bond[numDonors];  
+    msg->get(numDonors*sizeof(Bond), (char*)donors);
+  }
+  
+  //  Get the hydrogen bond acceptors
+  msg->get(numAcceptors);  
+  if (numAcceptors)
+  {
+    delete [] acceptors;
+    acceptors=new Bond[numAcceptors];  
+    msg->get(numAcceptors*sizeof(Bond), (char*)acceptors);
+  }
+  
+  //  Get the exclusion information 
+  msg->get(numExclusions);  
+  if (numExclusions)
+  {
+    delete [] exclusions;
+    exclusions=new Exclusion[numExclusions];  
+    msg->get(numExclusions*sizeof(Exclusion), (char*)exclusions);
+  }
+        
+      //  Get the constraint information, if they are active
+      if (simParams->constraintsOn)
+      {
+         msg->get(numConstraints);
+
+         delete [] consIndexes;
+         consIndexes = new int32[numAtoms];
+         
+         msg->get(numAtoms, consIndexes);
+         
+         if (numConstraints)
+         {
+           delete [] consParams;
+           consParams = new ConstraintParams[numConstraints];
+      
+           msg->get(numConstraints*sizeof(ConstraintParams), (char*)consParams);
+         }
+      }
+
+      /* BEGIN gf */
+      if (simParams->mgridforceOn)
+      {
+	 DebugM(3, "Receiving gridforce info\n");
+	 
+	 msg->get(numGridforceGrids);
+	 
+	 delete [] numGridforces;
+	 numGridforces = new int[numGridforceGrids];
+	 
+	 delete [] gridfrcIndexes;	// Should I be deleting elements of these first?
+	 delete [] gridfrcParams;
+	 delete [] gridfrcGrid;
+	 gridfrcIndexes = new int32*[numGridforceGrids];
+	 gridfrcParams = new GridforceParams*[numGridforceGrids];
+	 gridfrcGrid = new GridforceGrid*[numGridforceGrids];
+	 
+	 for (int grid = 0; grid < numGridforceGrids; grid++) {
+	     msg->get(numGridforces[grid]);
+	     
+	     gridfrcIndexes[grid] = new int32[numAtoms];
+	     msg->get(numAtoms, gridfrcIndexes[grid]);
+	 
+	     if (numGridforces[grid])
+	     {
+		 gridfrcParams[grid] = new GridforceParams[numGridforces[grid]];
+		 msg->get(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
+	     }
+	     
+	     gridfrcGrid[grid] = new GridforceGrid(grid);
+	     gridfrcGrid[grid]->unpack(msg);
+             CProxy_ComputeGridForceNodeMgr 
+               mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
+             GridDepositMsg *outmsg = new GridDepositMsg;
+             outmsg->gridnum = grid;
+             outmsg->grid = gridfrcGrid[grid];
+             outmsg->num_grids = numGridforceGrids;
+             mgr[CkMyNode()].depositInitialGrid(outmsg);
+	 }
+      }
+      /* END gf */
+      
+      //  Get the stirring information, if stirring is  active
+      if (simParams->stirOn)
+      {
+         msg->get(numStirredAtoms);
+
+         delete [] stirIndexes;
+         stirIndexes = new int32[numAtoms];
+         
+         msg->get(numAtoms, stirIndexes);
+         
+         if (numStirredAtoms)
+         {
+           delete [] stirParams;
+           stirParams = new StirParams[numStirredAtoms];
+      
+           msg->get(numStirredAtoms*sizeof(StirParams), (char*)stirParams);
+         }
+      }
+      
+      //  Get the moving drag information, if it is active
+      if (simParams->movDragOn) {
+         msg->get(numMovDrag);
+         delete [] movDragIndexes;
+         movDragIndexes = new int32[numAtoms];
+         msg->get(numAtoms, movDragIndexes);
+         if (numMovDrag)
+         {
+           delete [] movDragParams;
+           movDragParams = new MovDragParams[numMovDrag];
+           msg->get(numMovDrag*sizeof(MovDragParams), (char*)movDragParams);
+         }
+      }
+      
+      //  Get the rotating drag information, if it is active
+      if (simParams->rotDragOn) {
+         msg->get(numRotDrag);
+         delete [] rotDragIndexes;
+         rotDragIndexes = new int32[numAtoms];
+         msg->get(numAtoms, rotDragIndexes);
+         if (numRotDrag)
+         {
+           delete [] rotDragParams;
+           rotDragParams = new RotDragParams[numRotDrag];
+           msg->get(numRotDrag*sizeof(RotDragParams), (char*)rotDragParams);
+         }
+      }
+      
+      //  Get the "constant" torque information, if it is active
+      if (simParams->consTorqueOn) {
+         msg->get(numConsTorque);
+         delete [] consTorqueIndexes;
+         consTorqueIndexes = new int32[numAtoms];
+         msg->get(numAtoms, consTorqueIndexes);
+         if (numConsTorque)
+         {
+           delete [] consTorqueParams;
+           consTorqueParams = new ConsTorqueParams[numConsTorque];
+           msg->get(numConsTorque*sizeof(ConsTorqueParams), (char*)consTorqueParams);
+         }
+      }
+      
+      // Get the constant force information, if it's active
+      if (simParams->consForceOn)
+      { msg->get(numConsForce);
+        delete [] consForceIndexes;
+        consForceIndexes = new int32[numAtoms];
+        msg->get(numAtoms, consForceIndexes);
+        if (numConsForce)
+        { delete [] consForce;
+          consForce = new Vector[numConsForce];
+          msg->get(numConsForce*sizeof(Vector), (char*)consForce);
+        }
+      }
+
+      //  Get the langevin parameters, if they are active
+      if (simParams->langevinOn || simParams->tCoupleOn)
+      {
+        delete [] langevinParams;
+        langevinParams = new Real[numAtoms];
+
+        msg->get(numAtoms, langevinParams);
+      }
+
+      //  Get the fixed atoms, if they are active
+      if (simParams->fixedAtomsOn)
+      {
+        delete [] fixedAtomFlags;
+        fixedAtomFlags = new int32[numAtoms];
+
+        msg->get(numFixedAtoms);
+        msg->get(numAtoms, fixedAtomFlags);
+        msg->get(numFixedRigidBonds);
+      }
+
+      if (simParams->excludeFromPressure) {
+        exPressureAtomFlags = new int32[numAtoms];
+        msg->get(numExPressureAtoms);
+        msg->get(numAtoms, exPressureAtomFlags);
+      }
+
+//fepb
+      //receive fep atom info
+      if (simParams->alchFepOn || simParams->lesOn || simParams->alchThermIntOn || simParams->pairInteractionOn) {
+        delete [] fepAtomFlags;
+        fepAtomFlags = new unsigned char[numAtoms];
+
+        msg->get(numFepInitial);
+        msg->get(numFepFinal);
+        msg->get(numAtoms*sizeof(unsigned char), (char*)fepAtomFlags);
+      }
+//fepe
+
+      // DRUDE: receive data read from PSF
+      msg->get(is_lonepairs_psf);
+      if (is_lonepairs_psf) {
+        msg->get(numLphosts);
+        delete[] lphosts;
+        lphosts = new Lphost[numLphosts];
+        msg->get(numLphosts*sizeof(Lphost), (char*)lphosts);
+      }
+      msg->get(is_drude_psf);
+      if (is_drude_psf) {
+        delete[] drudeConsts;
+        drudeConsts = new DrudeConst[numAtoms];
+        msg->get(numAtoms*sizeof(DrudeConst), (char*)drudeConsts);
+        msg->get(numAnisos);
+        delete[] anisos;
+        anisos = new Aniso[numAnisos];
+        msg->get(numAnisos*sizeof(Aniso), (char*)anisos);
+      }
+      // DRUDE
+
+      //  Now free the message 
+      delete msg;
+      
+      //  analyze the data and find the status of each atom
+      build_atom_status();
+      build_lists_by_atom();      
+#endif
+}
+ /*      END OF FUNCTION receive_Molecule    */
 
 /* BEGIN gf */
     /************************************************************************/
@@ -7437,7 +7002,7 @@ void Molecule::build_langevin_params(BigReal coupling,
       fixedAtomFlags[i] = 0;
     }
        }
-       
+
        //  If we had to create a PDB object, delete it now
        if (fixedfile != NULL)
        {
@@ -8400,6 +7965,7 @@ void Molecule::reloadCharges(float charge[], int n){
 #endif
 }
 
+#ifndef MEM_OPT_VERSION	
 // go through the molecular structure, analyze the status of each atom,
 // and save the data in the Atom structures stored for each atom.  This
 // could be built up incrementally while the molecule is being read in,
@@ -8407,7 +7973,6 @@ void Molecule::reloadCharges(float charge[], int n){
 // over the network and have each node calculate the rest of the data on
 // it's own.
 void Molecule::build_atom_status(void) {
-
   register int i;
   int a1, a2, a3;
   int numDrudeWaters = 0;
@@ -8415,11 +7980,6 @@ void Molecule::build_atom_status(void) {
   // if any atoms have a mass of zero set to 0.001 and warn user
   int numZeroMassAtoms = 0;
   for (i=0; i < numAtoms; i++) {
-    #ifdef MEM_OPT_VERSION
-    if(atomMassPool[eachAtomMass[i]]<=0){
-        ++numZeroMassAtoms;
-    }
-    #else
     if ( atoms[i].mass <= 0. ) {
       if (simParams->watmodel == WAT_TIP4 ||
           simParams->lonepairs) {
@@ -8432,20 +7992,12 @@ void Molecule::build_atom_status(void) {
     else if (atoms[i].mass < 1.) {
       ++numDrudeAtoms;
     }
-    #endif
   }
   // DRUDE: verify number of LPs
   if (simParams->lonepairs && numLonepairs != numLphosts) {
     NAMD_die("must have same number of LP hosts as lone pairs");
   }
   // DRUDE
-  #ifdef MEM_OPT_VERSION
-  for(i=0; i<massPoolSize; i++){
-      if(atomMassPool[i]<=0.)
-          atomMassPool[i] = 0.001;
-  }
-  #endif
-
   if ( ! CkMyPe() ) {
     if (simParams->watmodel == WAT_TIP4 || simParams->lonepairs) {
       iout << iWARN << "CORRECTION OF ZERO MASS ATOMS TURNED OFF "
@@ -8455,13 +8007,6 @@ void Molecule::build_atom_status(void) {
         " ATOMS WITH ZERO OR NEGATIVE MASSES!  CHANGED TO 0.001\n" << endi;
     }
   }
-
-//In the memory optimization, hydrogen group related information is already
-//recorded in the per-Atom file, therefore there's no need re-calculating the
-//hydrogen group
-//#if 1
-#ifndef MEM_OPT_VERSION
-
   // initialize information for each atom (note that the status has
   // already been initialized during the read/receive phase)
   hydrogenGroup.resize(numAtoms);
@@ -8478,28 +8023,6 @@ void Molecule::build_atom_status(void) {
   // deal with H-H bonds in a sane manner
   // this information will be rewritten later if bonded elsewhere
   int hhbondcount = 0;
-#if 0 
-//#ifdef MEM_OPT_VERSION
-  for(i=0; i<numAtoms; i++){
-    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
-    TupleSignature *bSigs = sig->bondSigs;
-    for(int j=0; j<sig->bondCnt; j++){
-	a1 = i;
-	a2 = i+bSigs[j].offset[0];
-    if(!bSigs[j].isReal) continue;
-	if (is_hydrogen(a1) && is_hydrogen(a2)) {
-	    ++hhbondcount;
-	    // make H atoms point at each other for now
-	    atoms[a1].partner = a2;
-	    atoms[a2].partner = a1;
-	    hg[a1].atomsInGroup++;
-	    hg[a1].GPID = a2;
-	    hg[a2].atomsInGroup++;
-	    hg[a2].GPID = a1;
-	}
-    }
-  }
-#else
   for (i=0; i < numRealBonds; i++) {
     a1 = bonds[i].atom1;
     a2 = bonds[i].atom2;
@@ -8514,7 +8037,6 @@ void Molecule::build_atom_status(void) {
       hg[a2].GPID = a1;
     }
   }
-#endif
 
   if ( hhbondcount && ! CkMyPe() ) {
     iout << iWARN << "Found " << hhbondcount << " H-H bonds.\n" << endi;
@@ -8522,37 +8044,6 @@ void Molecule::build_atom_status(void) {
 
   // find which atom each hydrogen is bound to
   // also determine number of atoms in each group
-#if 0  
-//#ifdef MEM_OPT_VERSION
-  for(i=0; i<numAtoms; i++){
-    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
-    TupleSignature *bSigs = sig->bondSigs;
-    for(int j=0; j<sig->bondCnt; j++){
-	a1 = i;
-	a2 = i+bSigs[j].offset[0];
-    if(!bSigs[j].isReal) continue;
-	if (is_hydrogen(a1)) {
-	    if (is_hydrogen(a2)) continue;
-	    atoms[a1].partner = a2;
-	    hg[a2].atomsInGroup++;
-	    hg[a1].atomsInGroup = 0;
-	    hg[a1].GPID = a2;
-	    hg[a1].isGP = 0;
-	    // check for waters (put them in their own groups: OH or OHH)
-	    if (is_oxygen(a2))  hg[a2].waterVal++;
-	}
-	if (is_hydrogen(a2)) {
-	    atoms[a2].partner = a1;
-	    hg[a1].atomsInGroup++;
-	    hg[a2].atomsInGroup = 0;
-	    hg[a2].GPID = a1;
-	    hg[a2].isGP = 0;
-	    // check for waters (put them in their own groups: OH or OHH)
-	    if (is_oxygen(a1))  hg[a1].waterVal++;
-        }
-    }
-  }
-#else
   for (i=0; i < numRealBonds; i++) {
     a1 = bonds[i].atom1;
     a2 = bonds[i].atom2;
@@ -8624,8 +8115,6 @@ void Molecule::build_atom_status(void) {
     }
 
   }
-
-#endif
 
   // check up on our H-H bonds and general sanity check
   int hGPcount = 0;
@@ -8977,7 +8466,6 @@ void Molecule::build_atom_status(void) {
       }
 
     } // LJcorrection 
-#endif
 
   #if 0 
   // debugging code for showing sorted atoms
@@ -9010,25 +8498,11 @@ void Molecule::build_atom_status(void) {
     if ( simParams->mollyOn ) mode = RIGID_ALL;
 
     // add H-mother lengths or 0 if not constrained
-#ifdef MEM_OPT_VERSION
-  for(i=0; i<numAtoms; i++){
-    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
-    TupleSignature *bSigs = sig->bondSigs;
-    for(int j=0; j<sig->bondCnt; j++){
-	a1 = i;
-	a2 = i+bSigs[j].offset[0];
-    if(!bSigs[j].isReal) continue;
-#else
     for (i=0; i < numRealBonds; i++) {
       a1 = bonds[i].atom1;
       a2 = bonds[i].atom2;
-#endif
       Real dum, x0;
-    #ifdef MEM_OPT_VERSION
-      params->get_bond_params(&dum,&x0,bSigs[j].tupleParamType);
-    #else
       params->get_bond_params(&dum,&x0,bonds[i].bond_type);
-    #endif
       if (is_hydrogen(a2)) { int tmp = a1;  a1 = a2;  a2 = tmp; } // swap
       if (is_hydrogen(a1)) {
         if ( is_hydrogen(a2) ) {  // H-H
@@ -9082,10 +8556,6 @@ void Molecule::build_atom_status(void) {
           }
         }
       }
-
-#ifdef MEM_OPT_VERSION
-    }
-#endif
     }
 
     // zero out H-H lengths - water handled below
@@ -9096,25 +8566,6 @@ void Molecule::build_atom_status(void) {
     }
 
     // fill in H-H lengths for water by searching angles - yuck
-#ifdef MEM_OPT_VERSION
-  for(i=0; i<numAtoms; i++){
-    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
-    TupleSignature *aSigs = sig->angleSigs;
-    for(int j=0; j<sig->angleCnt; j++){
-	a1 = i;
-	a2 = i+aSigs[j].offset[0];
-	if(!is_water(a2)) continue;
-	a3 = i+aSigs[j].offset[1];
-	if ( rigidBondLengths[a1] != rigidBondLengths[a3] ) {
-	    NAMD_die("Asymmetric water molecule found???  This can't be right.\n");
-	}
-	Real dum, t0;
-	params->get_angle_params(&dum,&t0,&dum,&dum,aSigs[j].tupleParamType);
-	rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
-      r_hh = rigidBondLengths[a2];
-    }
-}
-#else
     for (i=0; i < numAngles; i++) {
       a2 = angles[i].atom2;
       if ( ! is_water(a2) ) continue;
@@ -9134,25 +8585,14 @@ void Molecule::build_atom_status(void) {
       rigidBondLengths[a2] = 2. * rigidBondLengths[a1] * sin(0.5*t0);
       r_hh = rigidBondLengths[a2];
     }
-#endif
 
     // fill in H-H lengths for waters that are missing angles
     int numBondWaters = 0;
     int numFailedWaters = 0;
 
-#ifdef MEM_OPT_VERSION
-  for(i=0; i<numAtoms; i++){
-    AtomSignature *sig = &atomSigPool[eachAtomSig[i]];
-    TupleSignature *bSigs = sig->bondSigs;
-    for(int j=0; j<sig->bondCnt; j++){
-	a1 = i;
-	a2 = i+bSigs[j].offset[0];
-    if(!bSigs[j].isReal) continue;
-#else
     for (i=0; i < numRealBonds; i++) {
       a1 = bonds[i].atom1;
       a2 = bonds[i].atom2;
-#endif
       if ( ! is_hydrogen(a1) ) continue;
       if ( ! is_hydrogen(a2) ) continue;
       int ma1 = get_mother_atom(a1);
@@ -9161,16 +8601,9 @@ void Molecule::build_atom_status(void) {
       if ( ! is_water(ma1) ) continue;
       if ( rigidBondLengths[ma1] != 0. ) continue;
       Real dum, x0;
-    #ifdef MEM_OPT_VERSION
-      params->get_bond_params(&dum,&x0,bSigs[j].tupleParamType);
-    #else
       params->get_bond_params(&dum,&x0,bonds[i].bond_type);
-    #endif
       rigidBondLengths[ma1] = x0;
     }
-#ifdef MEM_OPT_VERSION
-    }
-#endif
     
     // We now should be able to set the parameters needed for water lonepairs
     // make sure that there is water in the system
@@ -9243,8 +8676,8 @@ void Molecule::build_atom_status(void) {
     }
 
   }
-
-}
+  }
+#endif
 
 #ifdef MEM_OPT_VERSION
 //idx1: atom1's exclusion check signature
@@ -9890,34 +9323,6 @@ Bond *Molecule::get_bond(int bnum){
 #endif
 
 #ifdef MEM_OPT_VERSION
-
-void Molecule::delOtherEachAtomStructs(){
-    if(CmiMyRank()) return;
-
-    delete [] fixedAtomFlags;
-    fixedAtomFlags = NULL;
-
-    //decide whether to free space for hydrogenGroup and atoms fields
-    //the condition can be referred to the comment before wrap_coor_int
-    //in Output.C
-    int peOfCollectionMaster = 0;
-    if(CkNumPes()>1 && simParams->shiftIOToOne) peOfCollectionMaster = 1;
-    if(CkNumPes()==1 && simParams->wrapWater && !simParams->wrapAll){
-	//considering namd runs on a single processor
-	return;
-    }else if(CkMyPe()==peOfCollectionMaster){
-	if(simParams->wrapAll || !simParams->wrapWater){
-	    hydrogenGroup.resize(0);
-	    delete [] atoms;
-	    atoms = NULL;
-	} 
-    }else{	      
-	hydrogenGroup.resize(0);
-	delete [] atoms;
-	atoms = NULL;
-    }
-}
-
 //return the index of the new mass in the mass pool
 Index Molecule::insert_new_mass(Real newMass){
     //first search

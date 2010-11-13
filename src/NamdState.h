@@ -32,17 +32,16 @@ class NamdState {
     Controller *controller;
     Lattice lattice;
     //char *currentdir;
-  public:
+
+#ifdef MEM_OPT_VERSION
+    void checkMemOptCompatibility();
+#endif
+
+public:
     NamdState(void);
     ~NamdState() {}
     int configFileInit(char *);
     friend class ScriptTcl;
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-////// Parallel Input Change
-////// Osman Sarood
-    ConfigList *getConfigList(){return configList;}
-    void setConfigList(ConfigList *c){configList=c;}
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     int configListInit(ConfigList *);
     int status();
     void useController(Controller *controllerPtr);

@@ -8,70 +8,16 @@
 
 #include "InfoStream.h"
 #include "CollectionMaster.h"
-#include "Node.h"
-#include "Output.h"
 #include "ProcessorPrivate.h"
 #include "SimParameters.h"
 #include "packmsg.h"
 #include "CollectionMaster.decl.h"
+#include "Molecule.h"
+
+#include "memusage.h"
 
 // #define DEBUGM
 #include "Debug.h"
-
-//CollectionMasterHandler should always be on processor 0
-CollectionMasterHandler::CollectionMasterHandler(MasterHandlerInitMsg *msg): realMaster(msg->master)
-{
-  delete msg;
-  if (CkpvAccess(CollectionMasterHandler_instance) == 0) {
-    CkpvAccess(CollectionMasterHandler_instance) = this;
-  } else {
-    DebugM(1, "CollectionMasterHandler::CollectionMasterHandler() - another instance of CollectionMasterHandler exists!\n");
-  }
-  enqueuePhase = 0;
-}
-
-
-CollectionMasterHandler::~CollectionMasterHandler(void)
-{
-}
-
-void CollectionMasterHandler::enqueuePositions(EnqueueDataMsg *msg){
-    if(enqueuePhase==0){
-	CProxy_CollectionMaster cm(realMaster);
-	EnqueueDataMsg *newmsg = new EnqueueDataMsg;
-	newmsg->timestep = msg->timestep;
-	newmsg->l = msg->l;
-	cm.enqueuePositionsFromHandler(newmsg);
-	delete msg;
-    }else if(enqueuePhase==1){
-	enqueuePhase = 0;
-	CkStartQD(CkIndex_CollectionMasterHandler::enqueuePositions((CkQdMsg*)0), &thishandle);
-    }else{
-	NAMD_die("Enqueue phase at enqueuePositions in the CollectionMasterHandler has wrong value!\n");
-    }
-}
-
-void CollectionMasterHandler::enqueueVelocities(int seq){
-    if(enqueuePhase==0){
-	CProxy_CollectionMaster cm(realMaster);
-	cm.enqueueVelocitiesFromHandler(seq);
-    }else if(enqueuePhase==1){
-	enqueuePhase = 0;
-	CkStartQD(CkIndex_CollectionMasterHandler::enqueueVelocities((CkQdMsg*)0), &thishandle);
-    }else{
-	NAMD_die("Enqueue phase at enqueueVelocities in the CollectionMasterHandler has wrong value!\n");
-    }
-}
-
-void CollectionMasterHandler::enqueuePositions(CkQdMsg *qmsg){
-    delete qmsg;
-    Object()->enqueuePositions((EnqueueDataMsg *)NULL);
-}
-
-void CollectionMasterHandler::enqueueVelocities(CkQdMsg *qmsg){
-    delete qmsg;
-    Object()->enqueueVelocities(0);
-}
 
 CollectionMaster::CollectionMaster()
 {
@@ -81,6 +27,13 @@ CollectionMaster::CollectionMaster()
     DebugM(1, "CollectionMaster::CollectionMaster() - another instance of CollectionMaster exists!\n");
   }
   dataStreamFile = 0;
+
+#ifdef MEM_OPT_VERSION
+  wrapCoorDoneCnt = 0;
+  posDoneCnt = 0;
+  velDoneCnt = 0;
+  parOut = new ParOutput();
+#endif
 }
 
 
@@ -88,74 +41,85 @@ CollectionMaster::~CollectionMaster(void)
 {
 }
 
-
 void CollectionMaster::receivePositions(CollectVectorMsg *msg)
 {
+#ifndef MEM_OPT_VERSION
   positions.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
-  delete msg;
-
+  
   CollectVectorInstance *c;
   while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
+#endif
 }
 
 void CollectionMaster::enqueuePositions(int seq, Lattice &lattice)
 {
   positions.enqueue(seq,lattice);
 
+#ifndef MEM_OPT_VERSION
   CollectVectorInstance *c;
   while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
-}
-
-void CollectionMaster::enqueuePositionsFromHandler(EnqueueDataMsg *msg){
-    enqueuePositions(msg->timestep, msg->l);
-    delete msg;
+#else
+  checkPosReady();
+#endif
 }
 
 void CollectionMaster::disposePositions(CollectVectorInstance *c)
 {
+#ifndef MEM_OPT_VERSION
     DebugM(3,"Collected positions at " << c->seq << std::endl);
     int seq = c->seq;
     int size = c->data.size();
     if ( ! size ) size = c->fdata.size();
     Vector *data = c->data.begin();
     FloatVector *fdata = c->fdata.begin();
+    double exectime = CmiWallTimer();
+    double mem = memusage_MB();
     Node::Object()->output->coordinate(seq,size,data,fdata,c->lattice);
     c->free();
+    exectime = CmiWallTimer()-exectime;
+    CkPrintf("The last position output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+#endif
 }
 
 
 void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
 {
+#ifndef MEM_OPT_VERSION
   velocities.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
   delete msg;
 
   CollectVectorInstance *c;
   while ( ( c = velocities.removeReady() ) ) { disposeVelocities(c); }
+#endif
 }
 
 void CollectionMaster::enqueueVelocities(int seq)
 {
   Lattice dummy;
   velocities.enqueue(seq,dummy);
-
+#ifndef MEM_OPT_VERSION
   CollectVectorInstance *c;
   while ( ( c = velocities.removeReady() ) ) { disposeVelocities(c); }
-}
-
-void CollectionMaster::enqueueVelocitiesFromHandler(int seq){
-    enqueueVelocities(seq);
+#else
+  checkVelReady();
+#endif
 }
 
 void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 {
+#ifndef MEM_OPT_VERSION
     DebugM(3,"Collected velocities at " << c->seq << std::endl);
     int seq = c->seq;
     int size = c->data.size();
     Vector *data = c->data.begin();
+    double exectime = CmiWallTimer();
+    double mem = memusage_MB();
     Node::Object()->output->velocity(seq,size,data);
     c->free();
+    exectime = CmiWallTimer()-exectime;
+    CkPrintf("The last velocity output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+#endif
 }
-
 
 void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
     if ( ! dataStreamFile ) {
@@ -174,7 +138,6 @@ void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
     delete msg;
 }
 
-
 PACK_MSG(CollectVectorMsg,
   PACK(seq);
   PACK_RESIZE(aid);
@@ -186,10 +149,188 @@ PACK_MSG(DataStreamMsg,
   PACK_RESIZE(data);
 )
 
-PACK_MSG(EnqueueDataMsg,
-  PACK(timestep);
-  PACK(l);
-)
+//The timesteps on CollectionMaster will be always in increasing order
+//because they are enqueued on PE0 by controller in order. -Chao Mei
+//
+//The computation of wrap_coor is also serialized for the sake of easy
+//implementation (easier management of output)
+void CollectionMaster::receiveOutputPosReady(int seq){
+#ifdef MEM_OPT_VERSION
+    positions.submitData(seq);
+    checkPosReady();
+#endif
+}
+
+void CollectionMaster::receiveOutputVelReady(int seq){
+#ifdef MEM_OPT_VERSION
+    velocities.submitData(seq);
+    checkVelReady();
+#endif
+}
+
+void CollectionMaster::startNextRoundOutputPos(){
+#ifdef MEM_OPT_VERSION
+    if(++posDoneCnt < Node::Object()->simParameters->numoutputwrts)  return;
+    posDoneCnt = 0;
+
+    //retrieve the last ready instance
+    CollectVectorInstance *c = positions.getReady();
+    int seq = c->seq;
+    CmiAssert(c->status == IN_PROCESS);
+    double mem = memusage_MB();
+    positions.removeFirstReady();
+    c->free();
+    posOutTime = CmiWallTimer()-posOutTime;
+    CkPrintf("The last position output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, posOutTime, mem);
+
+    //Actually the c->status doesn't need to be checked because it is
+    //certain that the new ready one will not be in  IN_PROCESS status 
+    checkPosReady();
+#endif
+}
+
+void CollectionMaster::startNextRoundOutputVel(){
+#ifdef MEM_OPT_VERSION
+    if(++velDoneCnt < Node::Object()->simParameters->numoutputwrts)  return;
+    velDoneCnt = 0;
+
+    //retrieve the last ready instance
+    CollectVectorInstance *c = velocities.getReady();
+    int seq = c->seq;
+    CmiAssert(c->status == IN_PROCESS);
+    double mem = memusage_MB();
+    velocities.removeFirstReady();
+    c->free();
+    velOutTime = CmiWallTimer()-velOutTime;
+    CkPrintf("The last velocity output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, velOutTime, mem);
+
+    //Actually the c->status doesn't need to be checked because it is
+    //certain that the new ready one will not be in  IN_PROCESS status 
+    checkVelReady();
+#endif
+}
+
+void CollectionMaster::wrapCoorFinished(){
+#ifdef MEM_OPT_VERSION
+    if(++wrapCoorDoneCnt == Node::Object()->simParameters->numoutputprocs){
+        wrapCoorDoneCnt = 0;
+
+        //it's ready to output positions
+        CollectVectorInstance *c = positions.getReady();
+
+        //notify output procs to do Token based output
+        CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
+        ParallelIOMgr *ioMgr = io.ckLocalBranch();
+
+        int grpsize = ioMgr->numOutputProcs / ioMgr->numOutputWrts;
+        int remains = ioMgr->numOutputProcs % ioMgr->numOutputWrts;
+        int outrank = 0;
+        int i;
+        for(i=0; i<remains; i++){
+            io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+            outrank += (grpsize+1);
+        }
+        for(; i<ioMgr->numOutputWrts; i++){
+            io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+            outrank += grpsize;
+        }
+    }
+#endif
+}
+
+#ifdef MEM_OPT_VERSION
+void CollectionMaster::checkPosReady(){
+    CollectVectorInstance *c;
+    if((c = positions.getReady())){
+        if(c->status == IN_PROCESS){
+            //indicating in the process of outputing coordinates
+            return;
+        }        
+        c->status = IN_PROCESS;
+
+        posOutTime = CmiWallTimer();
+        SimParameters *simParam = Node::Object()->simParameters;
+        CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
+        ParallelIOMgr *ioMgr = io.ckLocalBranch();
+        if(simParam->wrapAll || simParam->wrapWater){
+            for(int i=0; i<ioMgr->numOutputProcs; i++){
+                io[ioMgr->outputProcArray[i]].wrapCoor(c->seq, c->lattice);
+            }
+            //write the header to overlap with the computation of 
+            //wrapping coordinates
+            parOut->coordinateMaster(c->seq,Node::Object()->molecule->numAtoms,c->lattice);
+        }else{
+            //write the header 
+            parOut->coordinateMaster(c->seq,Node::Object()->molecule->numAtoms,c->lattice);            
+
+            int grpsize = ioMgr->numOutputProcs / ioMgr->numOutputWrts;
+            int remains = ioMgr->numOutputProcs % ioMgr->numOutputWrts;
+            int outrank = 0;
+            int i;
+            for(i=0; i<remains; i++){
+                io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+                outrank += (grpsize+1);
+            }
+            for(; i<ioMgr->numOutputWrts; i++){
+                io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+                outrank += grpsize;
+            }
+        }
+        //this instance c is freed in the next round of output invocation.
+    }
+}
+
+void CollectionMaster::checkVelReady(){
+    CollectVectorInstance *c;
+    if((c = velocities.getReady())){
+        if(c->status == IN_PROCESS){
+            //indicating in the process of outputing velocities
+            return;
+        }
+
+        c->status = IN_PROCESS;
+
+        velOutTime = CmiWallTimer();
+        //write the header
+        parOut->velocityMaster(c->seq, Node::Object()->molecule->numAtoms);
+
+        //notify output procs to do Token based output
+        CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
+        ParallelIOMgr *ioMgr = io.ckLocalBranch();
+
+        int grpsize = ioMgr->numOutputProcs / ioMgr->numOutputWrts;
+        int remains = ioMgr->numOutputProcs % ioMgr->numOutputWrts;
+        int outrank = 0;
+        int i;
+        for(i=0; i<remains; i++){
+            io[ioMgr->outputProcArray[outrank]].disposeVelocities(c->seq);
+            outrank += (grpsize+1);
+        }
+        for(; i<ioMgr->numOutputWrts; i++){
+            io[ioMgr->outputProcArray[outrank]].disposeVelocities(c->seq);
+            outrank += grpsize;
+        }
+        //this instance c is freed in the next round of output invocation.        
+    }
+}
+
+void CollectionMidMaster::disposePositions(int seq)
+{
+    CollectMidVectorInstance *c = positions.getReady(seq);
+    CmiAssert(c!=NULL);
+    parOut->coordinateSlave(seq,c->fromAtomID,c->toAtomID,
+                               c->data.begin(),c->fdata.begin());
+    c->free();
+}
+
+void CollectionMidMaster::disposeVelocities(int seq)
+{
+    CollectMidVectorInstance *c = velocities.getReady(seq);
+    CmiAssert(c!=NULL);    
+    parOut->velocitySlave(seq,c->fromAtomID,c->toAtomID,c->data.begin()); 
+    c->free();
+}
+#endif
 
 #include "CollectionMaster.def.h"
 

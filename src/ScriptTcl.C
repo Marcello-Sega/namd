@@ -42,11 +42,7 @@
 
 #include <molfile_plugin.h>
 #include <libmolfile_plugin.h>
-/////////////////////////////////////////////
-//// Osman Sarood
-#include "ParallelIOMgr.h"
-////////////////////////////////////////////////
-//
+
 static molfile_plugin_t *dcdplugin;
 static int register_cb(void *v, vmdplugin_t *p) {
 	dcdplugin = (molfile_plugin_t *)p;
@@ -82,23 +78,9 @@ void ScriptTcl::initcheck() {
     runWasCalled = 1;
 
     state->configListInit(config);
-///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//// Parallel Input Change
-//// Osman Sarood
-////#ifdef USE_PARALLEL_IO
-// Entry point for Parallel IO
-#ifdef  MEM_OPT_VERSION
-    Node::Object()->saveMolDataPointers(state);
-    Node::Object()->ioMgr->initParallelInput();
-////////////////////////////////////////////////////////////////////////////////////
-    Node::messageStartUp();
-    suspend();
-#else
-
     Node::Object()->saveMolDataPointers(state);
     Node::messageStartUp();
     suspend();
-#endif
   }
 }
 

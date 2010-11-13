@@ -87,26 +87,54 @@ struct FullAtom : CompAtom, CompAtomExt{
   Velocity velocity;
   Position fixedPosition;
   Mass mass;
-  Real langevinParam;
+  union{
+      Real langevinParam;
+#ifdef MEM_OPT_VERSION
+      int hydVal;
+#endif      
+  };  
   int32 status;
   Transform transform;
   int migrationGroupSize;
-  #ifdef MEM_OPT_VERSION
-  int aidIdx;
-  int readProc;
-  int destProc;
-  int GPID;
-  int atomsInGroup;
-  int isMP;
-  int MPID;
-  int waterVal;
-  #endif
+  Real rigidBondLength;
+
+#ifdef MEM_OPT_VERSION
+  int outputRank;
+#endif
+
+#ifdef MEM_OPT_VERSION
+  //a HACK to re-sort FullAtom list used in Parallel IO
+  //When every home patch processor receives its atoms list for a patch,
+  //the atoms inside this patch may not sorted according to hydList value
+  //To save space, use anonymous union data structure to share the space
+  //of "langevinParam" to store "hydList" from an InputAtom and then sort the 
+  //atom list. The "langevinParam" value is not initialized until home 
+  //patch creation -Chao Mei
+  virtual int operator < (const FullAtom &a) const {
+      return hydVal < a.hydVal;
+  }
+#endif
+};
+
+//InputAtom is used to contain the info of the atoms
+//loaded into input processors.
+struct InputAtom: FullAtom{
+	bool isValid;
+	short isGP;
+	short isMP;
+	int hydList;
+	int GPID;
+	int MPID;
+    	
+	virtual int operator < (const InputAtom &a) const{
+		return hydList < a.hydList;
+	}
 };
 
 typedef ResizeArray<CompAtom> CompAtomList;
-
 typedef ResizeArray<CompAtomExt> CompAtomExtList;
 typedef ResizeArray<FullAtom> FullAtomList;
+typedef ResizeArray<InputAtom> InputAtomList;
 typedef ResizeArray<Position> PositionList;
 typedef ResizeArray<Velocity> VelocityList;
 typedef ResizeArray<Force> ForceList;

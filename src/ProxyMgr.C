@@ -448,7 +448,6 @@ void ProxyMgr::createProxies(void)
       }
     }
   }
-  
   // Create proxy list
   for ( i = 0; i < numPatches; ++i ) {
     if ( patchFlag[i] == NeedProxy )

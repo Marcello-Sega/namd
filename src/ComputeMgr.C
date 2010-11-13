@@ -502,10 +502,9 @@ void registerUserEventsForAllComputeObjs()
         switch ( map->type(i) )
         {
         case computeNonbondedSelfType:
-            sprintf(user_des, "computeNonBondedSelfType_%d", i);
+            sprintf(user_des, "computeNonBondedSelfType_%d_pid_%d", i, map->pid(i,0));
             break;
         case computeNonbondedPairType:
-            
             adim = pmap->gridsize_a();
             bdim = pmap->gridsize_b();
             cdim = pmap->gridsize_c();

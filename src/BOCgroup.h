@@ -26,12 +26,7 @@ public:
   CkGroupID ldbCoordinator;
   CkGroupID sync;
   CkGroupID node;
-/////////////////////////////////////// 
-// Osman Sarood
-// Parallel Input
-// entry for the new group added for parallel io
   CkGroupID ioMgr;
-// ///////////////////////////////////////////
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   CkGroupID nodeProxyMgr;
   #endif

@@ -1534,7 +1534,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
   if (!settle1isinitted()) {
     for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
       // find a water
-      if (mol->rigid_bond_length(atom[ig].id) > 0) {
+      if (atom[ig].rigidBondLength > 0) {
         int oatm;
         if (simParams->watmodel == WAT_SWM4) {
           oatm = ig+3;  // skip over Drude and Lonepair
@@ -1551,8 +1551,8 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
 
         // initialize settle water parameters
         settle1init(atom[ig].mass, atom[oatm].mass, 
-                    mol->rigid_bond_length(atom[ig].id), 
-                    mol->rigid_bond_length(atom[oatm].id));
+                    atom[ig].rigidBondLength,
+                    atom[oatm].rigidBondLength);
         break; // done with init
       }
     }
@@ -1586,7 +1586,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       if ( fixed[i] ) rmass[i] = 0.; else pos[i] += vel[i] * dt;
     }
     int icnt = 0;
-    if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) > 0 ) {  // for water
+    if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
       if (hgs != wathgsize) {
         NAMD_bug("Hydrogen group error caught in rattle1().");
       }
@@ -1656,7 +1656,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       }
     }
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-      if ( ( tmp = mol->rigid_bond_length(atom[ig+i].id) ) > 0 ) {
+      if ( ( tmp = atom[ig+i].rigidBondLength ) > 0 ) {
 	if ( !(fixed[0] && fixed[i]) ) {
 	  dsq[icnt] = tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	}
@@ -1799,7 +1799,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
       if ( fixed[i] ) rmass[i] = 0.;
     }
     int icnt = 0;
-    if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) > 0 ) {  // for water
+    if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
       if ( wathgsize != 4 ) {
         NAMD_bug("Hydrogen group error caught in rattle2().");
       }
@@ -1818,7 +1818,7 @@ void HomePatch::rattle2(const BigReal timestep, Tensor *virial)
     }
     //    CkPrintf("Loop 2\n");
     for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-      if ( ( tmp = mol->rigid_bond_length(atom[ig+i].id) ) > 0 ) {
+      if ( ( tmp = atom[ig+i].rigidBondLength ) > 0 ) {
         if ( !(fixed[0] && fixed[i]) ) {
 	  redmass[icnt] = 1. / (rmass[0] + rmass[i]);
 	  dsqi[icnt] = 1. / (tmp * tmp);  ial[icnt] = 0;
@@ -1931,7 +1931,7 @@ void HomePatch::mollyAverage()
 	avg = &(p_avg[ig]);
 	int icnt = 0;
 
-	if ( ( tmp = mol->rigid_bond_length(atom[ig].id) ) ) {  // for water
+  if ( ( tmp = atom[ig].rigidBondLength ) > 0 ) {  // for water
 	  if ( hgs != 3 ) {
 	    NAMD_die("Hydrogen group error caught in mollyAverage().  It's a bug!\n");
 	  }
@@ -1940,7 +1940,7 @@ void HomePatch::mollyAverage()
 	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-	  if ( ( tmp = mol->rigid_bond_length(atom[ig+i].id) ) ) {
+    if ( ( tmp = atom[ig+i].rigidBondLength ) > 0 ) {
 	    if ( !(fixed[0] && fixed[i]) ) {
 	      dsq[icnt] =  tmp * tmp;  ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	    }
@@ -1999,7 +1999,7 @@ void HomePatch::mollyMollify(Tensor *virial)
 	}
 	int icnt = 0;
 	// c-ji I'm only going to mollify water for now
-	if ( ( mol->rigid_bond_length(atom[ig].id) ) ) {  // for water
+  if ( atom[ig].rigidBondLength > 0 ) {  // for water
 	  if ( hgs != 3 ) {
 	    NAMD_die("Hydrogen group error caught in mollyMollify().  It's a bug!\n");
 	  }
@@ -2008,7 +2008,7 @@ void HomePatch::mollyMollify(Tensor *virial)
 	  }
 	}
 	for ( i = 1; i < hgs; ++i ) {  // normal bonds to mother atom
-	  if ( ( mol->rigid_bond_length(atom[ig+i].id) ) ) {
+    if ( atom[ig+i].rigidBondLength > 0 ) {
 	    if ( !(fixed[0] && fixed[i]) ) {
 	      ial[icnt] = 0;  ibl[icnt] = i;  ++icnt;
 	    }

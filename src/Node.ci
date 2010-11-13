@@ -8,8 +8,7 @@ module Node {
   // Node is on each Pe - 
 
   message GroupInitMsg;
-  message ScriptParamMsg;
-  message AllCharmArrsMsg;
+  message ScriptParamMsg;  
 
   group Node
   {
@@ -34,8 +33,6 @@ module Node {
     // clean early exit after quiescence
     entry void recvEnableEarlyExit(CkQdMsg *);
     entry void earlyExit(CkQdMsg *);
-      
-    entry void sendCharmArrProxies(AllCharmArrsMsg *);
 
     entry void startHPM();
     entry void stopHPM();
