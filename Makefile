@@ -215,9 +215,7 @@ OBJS = \
 	$(DSTDIR)/imd.o \
 	$(DSTDIR)/CompressPsf.o \
 	$(DSTDIR)/PluginIOMgr.o \
-	$(DSTDIR)/ParallelIOMgr.o \
-	$(DSTDIR)/AtomsDisInfo.o \
-	$(DSTDIR)/FileIO.o 
+	$(DSTDIR)/ParallelIOMgr.o 
 
 
 # Add new modules here.
@@ -266,11 +264,7 @@ CIFILES = 	\
 		$(INCDIR)/ParallelIOMgr.decl.h \
 		$(INCDIR)/ParallelIOMgr.def.h \
 		$(INCDIR)/main.decl.h \
-		$(INCDIR)/main.def.h \
-		$(INCDIR)/AtomsDisInfo.decl.h \
-		$(INCDIR)/AtomsDisInfo.def.h \
-		$(INCDIR)/FileIO.decl.h \
-		$(INCDIR)/FileIO.def.h
+		$(INCDIR)/main.def.h 
 
 # Add new source files here.
 
