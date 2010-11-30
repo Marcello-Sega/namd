@@ -141,6 +141,8 @@ typedef ResizeArray<Force> ForceList;
 typedef ResizeArray<Transform> TransformList;
 
 typedef ResizeArray<AtomID> AtomIDList;
+typedef ResizeArray<BigReal> BigRealList;
+typedef ResizeArray<Real> RealList;
 
 typedef int PatchID;
 typedef int ComputeID;

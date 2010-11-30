@@ -24,6 +24,7 @@ public:
   // BEGIN LA
   int doLoweAndersen;
   // END LA
+  int doGBIS;// gbis
   int submitLoadStats;
   int maxForceUsed;		// may ignore slower force classes
   int maxForceMerged;		// add this and faster to normal

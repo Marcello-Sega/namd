@@ -21,6 +21,7 @@ mainmodule main {
   extern module ComputeGridForceMgr;
   extern module OptPmeMgr;
   extern module ComputeExtMgr;
+  extern module ComputeGBISserMgr;
   extern module CollectionMgr;
   extern module CollectionMaster;
   extern module BroadcastMgr;

@@ -13,6 +13,7 @@
 
 #include "NamdTypes.h"
 #include "ReductionMgr.h"
+#include "Molecule.h"
 class LJTable;
 class Molecule;
 
@@ -62,6 +63,7 @@ public:
     *list = &data[curpos+1];
     curpos += ( *list_size = data[curpos] ) + 1;
   }
+  int getSize() { return size; }
 
   void addIndex() {  // assume space for index already allocated
     curpos++;
@@ -122,6 +124,39 @@ public:
   ResizeArray<plint> pairlist2;
   ResizeArray<Force> f_0;
   ResizeArray<Force> fullf_0;
+};
+
+//struct sent to CalcGBIS
+struct GBISParamStruct {
+  int cid;
+  int patchID[2];
+  int sequence;
+  int doSmoothing;
+  int doGBIS;
+  int numPatches;
+  int gbisPhase;
+  Real *intRad[2];
+  BigReal *psiSum[2];
+  BigReal *bornRad[2];
+  BigReal *dEdaSum[2];
+  BigReal *dHdrPrefix[2];
+  BigReal epsilon_s;
+  BigReal epsilon_p;
+  BigReal rho_0;
+  BigReal kappa;
+  BigReal cutoff;
+  BigReal a_cut;
+  BigReal fsMax;
+  BigReal delta;
+  BigReal beta;
+  BigReal gamma;
+  BigReal alpha_max;
+  BigReal gbSelfEnergy;
+  BigReal gbInterEnergy;
+  int doFullElectrostatics;
+  int doEnergy;
+  Pairlists *gbisStepPairlists[4];
+  BigReal maxGroupRadius;
 };
 
 // function arguments
@@ -396,6 +431,8 @@ public:
   static void calc_self_energy_merge_fullelect_tabener (nonbonded *);
   static void calc_self_slow_fullelect_tabener (nonbonded *);
   static void calc_self_energy_slow_fullelect_tabener (nonbonded *);
+
+  void calcGBIS(nonbonded *params, GBISParamStruct *gbisParams);
 };
 
 #endif

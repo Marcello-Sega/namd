@@ -147,6 +147,7 @@ void master_init(int argc, char **argv){
   group.computeGridForceNodeMgr = CProxy_ComputeGridForceNodeMgr::ckNew();
   group.computeGridForceMgr = CProxy_ComputeGridForceMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
+  group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
 #ifdef MEM_OPT_VERSION
   group.ioMgr=CProxy_ParallelIOMgr::ckNew();
 #endif

@@ -9,6 +9,12 @@
 #include "Patch.h"
 #include "LdbCoordinator.h"
 #include "PatchMap.h"
+#include "ComputeMgr.h"
+#include "Molecule.h"
+#include "ComputeGBIS.inl"
+
+#include "Node.h"
+#include "SimParameters.h"
 
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
@@ -41,6 +47,12 @@ void ComputeNonbondedPair::initialize() {
     // BEGIN LA
     velocityBox[i] = patch[i]->registerVelocityPickup(cid,trans[i]);
     // END LA
+
+    psiSumBox[i] = patch[i]->registerPsiSumDeposit(cid);
+    intRadBox[i] = patch[i]->registerIntRadPickup(cid,trans[i]);
+    bornRadBox[i] = patch[i]->registerBornRadPickup(cid,trans[i]);
+    dEdaSumBox[i] = patch[i]->registerDEdaSumDeposit(cid);
+    dHdrPrefixBox[i] = patch[i]->registerDHdrPrefixPickup(cid,trans[i]);
   }
 #ifdef NAMD_CUDA
   register_cuda_compute_pair(cid, patchID, trans);
@@ -61,28 +73,40 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
       patch[i]->unregisterVelocityPickup(cid,&velocityBox[i]);
     }
     // END LA
+
+    if (psiSumBox[i] != NULL) {
+      patch[i]->unregisterPsiSumDeposit(cid,&psiSumBox[i]);
+    }
+    if (intRadBox[i] != NULL) {
+      patch[i]->unregisterIntRadPickup(cid,&intRadBox[i]);
+    }
+    if (bornRadBox[i] != NULL) {
+      patch[i]->unregisterBornRadPickup(cid,&bornRadBox[i]);
+    }
+    if (dEdaSumBox[i] != NULL) {
+      patch[i]->unregisterDEdaSumDeposit(cid,&dEdaSumBox[i]);
+    }
+    if (dHdrPrefixBox[i] != NULL) {
+      patch[i]->unregisterDHdrPrefixPickup(cid,&dHdrPrefixBox[i]);
+    }
   }
 }
 
 int ComputeNonbondedPair::noWork() {
-
-  // return 0;  // for testing
-  if ( numAtoms[0] && numAtoms[1] && patch[0]->flags.doNonbonded
+  if ( patch[0]->flags.doNonbonded && ((numAtoms[0] && numAtoms[1]) || patch[0]->flags.doGBIS)
 #ifdef NAMD_CUDA
 	&& patch[0]->flags.doEnergy
 #endif
  )
   {
     return 0;  // work to do, enqueue as usual
-  } else
-  {
+  } else {
     // Inform load balancer
 #ifndef NAMD_CUDA
     LdbCoordinator::Object()->skipWork(cid);
 #endif
     // fake out patches and reduction system
 
-    BigReal reductionData[reductionDataSize];
     int i;
     for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
     if (pressureProfileOn) {
@@ -94,6 +118,13 @@ int ComputeNonbondedPair::noWork() {
     // BEGIN LA
     CompAtom* v[2];
     // END LA
+
+    BigReal* psiSum[2];
+    Real* intRad[2];
+    BigReal* bornRad[2];
+    BigReal* dEdaSum[2];
+    BigReal* dHdrPrefix[2];
+
     Results* r[2];
 
     // Open up positionBox, forceBox, and atomBox
@@ -104,8 +135,15 @@ int ComputeNonbondedPair::noWork() {
       // BEGIN LA
       if (patch[0]->flags.doLoweAndersen) v[i] = velocityBox[i]->open();
       // END LA
-    }
 
+      if (patch[0]->flags.doGBIS) {
+        psiSum[i] = psiSumBox[i]->open();
+        intRad[i] = intRadBox[i]->open();
+        bornRad[i] = bornRadBox[i]->open();
+        dEdaSum[i] = dEdaSumBox[i]->open();
+        dHdrPrefix[i] = dHdrPrefixBox[i]->open();
+      }
+    }
     // Close up boxes
     for (i=0; i<2; i++) {
       positionBox[i]->close(&p[i]);
@@ -114,6 +152,14 @@ int ComputeNonbondedPair::noWork() {
       // BEGIN LA
       if (patch[0]->flags.doLoweAndersen) velocityBox[i]->close(&v[i]);
       // END LA
+
+      if (patch[0]->flags.doGBIS) {
+        psiSumBox[i]->close(&psiSum[i]);
+        intRadBox[i]->close(&intRad[i]);
+        bornRadBox[i]->close(&bornRad[i]);
+        dEdaSumBox[i]->close(&dEdaSum[i]);
+        dHdrPrefixBox[i]->close(&dHdrPrefix[i]);
+      }
     }
 
     submitReductionData(reductionData,reduction);
@@ -132,9 +178,22 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
+
+  //single phase declarations
+  int doEnergy = patch[0]->flags.doEnergy;
+  int a = 0;  int b = 1;
+  // swap to place more atoms in inner loop (second patch)
+  if ( numAtoms[0] > numAtoms[1] ) { a = 1; b = 0; }
+  CompAtom* v[2];
+
 #ifndef NAMD_CUDA
   LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
 #endif
+
+/*******************************************************************************
+ * Prepare Parameters
+*******************************************************************************/
+  if (!patch[0]->flags.doGBIS || gbisPhase == 1) {
 
 #ifdef TRACE_COMPUTE_OBJECTS
     double traceObjStartTime = CmiWallTimer();
@@ -144,8 +203,9 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
   DebugM(2, numAtoms[0] << " patch #1 atoms and " <<
 	numAtoms[1] << " patch #2 atoms\n");
 
-  BigReal reductionData[reductionDataSize];
-  for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
+
+  for ( int i = 0; i < reductionDataSize; ++i )
+    reductionData[i] = 0;
   if (pressureProfileOn) {
     int n = pressureProfileAtomTypes; 
     memset(pressureProfileData, 0, 3*n*n*pressureProfileSlabs*sizeof(BigReal));
@@ -154,9 +214,7 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
     pressureProfileThickness = lattice.c().z / pressureProfileSlabs;
     pressureProfileMin = lattice.origin().z - 0.5*lattice.c().z;
   }
-  if ( numAtoms[0] && numAtoms[1] )
-  {
-    nonbonded params;
+
     params.reduction = reductionData;
     params.pressureProfileReduction = pressureProfileData;
 
@@ -195,9 +253,6 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
       params.groupplcutoff += pairlistTolerance;
     }
 
-    // swap to place more atoms in inner loop (second patch)
-    int a = 0;  int b = 1;
-    if ( numAtoms[0] > numAtoms[1] ) { a = 1; b = 0; }
 
     const Lattice &lattice = patch[0]->lattice;
     params.offset = lattice.offset(trans[a]) - lattice.offset(trans[b]);
@@ -238,14 +293,12 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
 
     #endif
 
-    int doEnergy = patch[0]->flags.doEnergy;
       params.p[0] = p[a];
       params.p[1] = p[b];
       params.pExt[0] = pExt[a]; 
       params.pExt[1] = pExt[b];
       // BEGIN LA
       params.doLoweAndersen = patch[0]->flags.doLoweAndersen;
-      CompAtom* v[2];
       if (params.doLoweAndersen) {
 	  DebugM(4, "opening velocity boxes\n");
 	  v[0] = velocityBox[0]->open();
@@ -265,12 +318,20 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
         params.numWaterAtoms[1] = numWaterAtoms[b];
       #endif
 
+
+/*******************************************************************************
+ * Call Nonbonded Functions
+*******************************************************************************/
+      if (numAtoms[0] && numAtoms[1]) {//only do if has atoms since gbis noWork doesn't account for no atoms
+
+      //force calculation calls
       if ( patch[0]->flags.doFullElectrostatics )
       {
 	params.fullf[0] = r[a]->f[Results::slow];
 	params.fullf[1] = r[b]->f[Results::slow];
 	if ( patch[0]->flags.doMolly ) {
-          if ( doEnergy ) calcPairEnergy(&params);
+          if ( doEnergy )
+            calcPairEnergy(&params);
 	  else calcPair(&params);
 	  CompAtom *p_avg[2];
 	  p_avg[0] = avgPositionBox[0]->open();
@@ -283,15 +344,17 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
 	  avgPositionBox[1]->close(&p_avg[1]);
         } else if ( patch[0]->flags.maxForceMerged == Results::slow ) {
           if ( doEnergy ) calcMergePairEnergy(&params);
-	  else calcMergePair(&params);
-	} else {
-	  if ( doEnergy ) calcFullPairEnergy(&params);
-	  else calcFullPair(&params);
-	}
+    else calcMergePair(&params);
+  } else {
+    if ( doEnergy ) calcFullPairEnergy(&params);
+    else calcFullPair(&params);
+  }
       }
       else
         if ( doEnergy ) calcPairEnergy(&params);
         else calcPair(&params);
+
+      }//end if has atoms
       
       // BEGIN LA
       if (params.doLoweAndersen) {
@@ -300,8 +363,86 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
 	  velocityBox[1]->close(&v[1]);
       }
       // END LA
+    }// end not gbis
+
+/*******************************************************************************
+ * gbis Loop
+*******************************************************************************/
+if (patch[0]->flags.doGBIS) {
+  SimParameters *simParams = Node::Object()->simParameters;
+  gbisParams.sequence = sequence();
+  gbisParams.doGBIS = patch[0]->flags.doGBIS;
+  gbisParams.numPatches = 2;//pair
+  gbisParams.gbisPhase = gbisPhase;
+  gbisParams.doFullElectrostatics = patch[0]->flags.doFullElectrostatics;
+  gbisParams.epsilon_s = simParams->solvent_dielectric;
+  gbisParams.epsilon_p = simParams->dielectric;
+  gbisParams.rho_0 = simParams->coulomb_radius_offset;
+  gbisParams.kappa = simParams->kappa;
+  gbisParams.cutoff = simParams->cutoff;
+  gbisParams.doSmoothing = simParams->switchingActive;
+  gbisParams.a_cut = simParams->alpha_cutoff;
+  gbisParams.delta = simParams->gbis_delta;
+  gbisParams.beta = simParams->gbis_beta;
+  gbisParams.gamma = simParams->gbis_gamma;
+  gbisParams.alpha_max = simParams->alpha_max;
+  gbisParams.cid = cid;
+  gbisParams.patchID[0] = patch[a]->getPatchID();
+  gbisParams.patchID[1] = patch[b]->getPatchID();
+  gbisParams.maxGroupRadius = patch[0]->flags.maxGroupRadius;
+  if (patch[1]->flags.maxGroupRadius > gbisParams.maxGroupRadius)
+    gbisParams.maxGroupRadius = patch[1]->flags.maxGroupRadius;
+  gbisParams.doEnergy = doEnergy;
+  gbisParams.fsMax = simParams->fsMax;
+  for (int i = 0; i < numGBISPairlists; i++)
+    gbisParams.gbisStepPairlists[i] = &gbisStepPairlists[i];
+
+  //open boxes
+  if (gbisPhase == 1) {
+      gbisParams.intRad[0] = intRadBox[a]->open();
+      gbisParams.intRad[1] = intRadBox[b]->open();
+      gbisParams.psiSum[0] = psiSumBox[a]->open();
+      gbisParams.psiSum[1] = psiSumBox[b]->open();
+      gbisParams.gbInterEnergy=0;
+      gbisParams.gbSelfEnergy=0;
+
+  } else if (gbisPhase == 2) {
+      gbisParams.bornRad[0] = bornRadBox[a]->open();
+      gbisParams.bornRad[1] = bornRadBox[b]->open();
+      gbisParams.dEdaSum[0] = dEdaSumBox[a]->open();
+      gbisParams.dEdaSum[1] = dEdaSumBox[b]->open();
+  } else if (gbisPhase == 3) {
+      gbisParams.dHdrPrefix[0] = dHdrPrefixBox[a]->open();
+      gbisParams.dHdrPrefix[1] = dHdrPrefixBox[b]->open();
   }
 
+  //make call to calculate GBIS
+    calcGBIS(&params,&gbisParams);
+
+  //close boxes
+  if (gbisPhase == 1) {
+      psiSumBox[0]->close(&(gbisParams.psiSum[a]));
+      psiSumBox[1]->close(&(gbisParams.psiSum[b]));
+  } else if (gbisPhase == 2) {
+      dEdaSumBox[0]->close(&(gbisParams.dEdaSum[a]));
+      dEdaSumBox[1]->close(&(gbisParams.dEdaSum[b]));
+
+
+  } else if (gbisPhase == 3) {
+      bornRadBox[0]->close(&(gbisParams.bornRad[a]));
+      bornRadBox[1]->close(&(gbisParams.bornRad[b]));
+      reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbInterEnergy;
+      reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbSelfEnergy;
+      intRadBox[0]->close(&(gbisParams.intRad[a]));
+      intRadBox[1]->close(&(gbisParams.intRad[b]));
+      dHdrPrefixBox[0]->close(&(gbisParams.dHdrPrefix[a]));
+      dHdrPrefixBox[1]->close(&(gbisParams.dHdrPrefix[b]));
+  }
+
+}//end if doGBIS
+
+
+  if (!patch[0]->flags.doGBIS || gbisPhase == 3) {
   submitReductionData(reductionData,reduction);
   if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
@@ -310,13 +451,22 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
     traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+cid, traceObjStartTime, CmiWallTimer());
 #endif
 
-  // Inform load balancer
-#ifndef NAMD_CUDA
-  LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
-#endif
 
   reduction->submit();
   if (pressureProfileOn)
     pressureProfileReduction->submit();
-}
+  }//end gbis end phase
+
+  // Inform load balancer
+  if (patch[0]->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
+#endif
+  } else {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
+
+  }
+}//end do Force
 

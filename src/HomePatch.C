@@ -14,6 +14,7 @@
    superclass: 	Patch		
 */
 
+#include "time.h"
 #include <math.h>
 #include "charm++.h"
 
@@ -34,6 +35,8 @@
 #include "ReductionMgr.h"
 #include "Sync.h"
 #include "Random.h"
+#include "Priorities.h"
+#include "ComputeGBIS.inl"
 #include "Priorities.h"
 
 #define TINY 1.0e-20;
@@ -77,6 +80,14 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   ,tempAtom()
 #endif
 {
+  //tracking the end of gbis phases
+  numGBISP1Arrived = 0;
+  numGBISP2Arrived = 0;
+  numGBISP3Arrived = 0;
+  phase1BoxClosedCalled = false;
+  phase2BoxClosedCalled = false;
+  phase3BoxClosedCalled = false;
+
   min.x = PatchMap::Object()->min_a(patchID);
   min.y = PatchMap::Object()->min_b(patchID);
   min.z = PatchMap::Object()->min_c(patchID);
@@ -151,6 +162,13 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   ,tempAtom()
 #endif
 { 
+  numGBISP1Arrived = 0;
+  numGBISP2Arrived = 0;
+  numGBISP3Arrived = 0;
+  phase1BoxClosedCalled = false;
+  phase2BoxClosedCalled = false;
+  phase3BoxClosedCalled = false;
+
   min.x = PatchMap::Object()->min_a(patchID);
   min.y = PatchMap::Object()->min_b(patchID);
   min.z = PatchMap::Object()->min_c(patchID);
@@ -331,10 +349,41 @@ HomePatch::~HomePatch()
 }
 
 
-void HomePatch::boxClosed(int)
-{
-  if ( ! --boxesOpen )
-  {
+void HomePatch::boxClosed(int box) {
+
+  // begin gbis
+  if (box == 5) {// end of phase 1
+    phase1BoxClosedCalled = true;
+    if (!psiSumBox.isOpen() && numGBISP1Arrived == proxy.size()) {
+      if (flags.doGBIS && flags.doNonbonded) {
+        sequencer->awaken();
+      }
+    } else {
+      //need to wait until proxies arrive before awakening
+    }
+  } else if (box == 6) {// intRad
+    //do nothing
+  } else if (box == 7) {// bornRad
+    //do nothing
+  } else if (box == 8) {// end of phase 2
+    phase2BoxClosedCalled = true;
+    //if no proxies, AfterP1 can't be called from receive
+    //so it will be called from here
+    if (!dEdaSumBox.isOpen() && numGBISP2Arrived == proxy.size()) {
+      if (flags.doGBIS && flags.doNonbonded) {
+        sequencer->awaken();
+      }
+    } else {
+      //need to wait until proxies arrive before awakening
+    }
+  } else if (box == 9) {
+    //do nothing
+  } else {
+    //do nothing
+  }
+  // end gbis
+
+  if ( ! --boxesOpen ) {
     if ( replacementForces ) {
       for ( int i = 0; i < numAtoms; ++i ) {
         if ( replacementForces[i].replace ) {
@@ -347,11 +396,22 @@ void HomePatch::boxClosed(int)
     DebugM(1,patchID << ": " << CthSelf() << " awakening sequencer "
 	<< sequencer->thread << "(" << patchID << ") @" << CmiTimer() << "\n");
     // only awaken suspended threads.  Then say it is suspended.
-    sequencer->awaken();
-    return;
-  }
-  else
-  {
+
+    phase3BoxClosedCalled = true;
+    if (flags.doGBIS) {
+      if (flags.doNonbonded) {
+        sequencer->awaken();
+      } else {
+        if (numGBISP1Arrived == proxy.size() &&
+          numGBISP2Arrived == proxy.size() &&
+          numGBISP3Arrived == proxy.size()) {
+          sequencer->awaken();//all boxes closed and all proxies arrived
+        }
+      }
+    } else {//non-gbis awaken
+      sequencer->awaken();
+    }
+  } else {
     DebugM(1,patchID << ": " << boxesOpen << " boxes left to close.\n");
   }
 }
@@ -738,8 +798,12 @@ void HomePatch::buildSpanningTree(void)
 #endif
 
 
-void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg){
+void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg) {
+
+    numGBISP3Arrived++;
     DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
+    //CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
+    int n = msg->node;
     Results *r = forceBox.clientOpen();
 
     char *iszeroPtr = msg->isZero;
@@ -759,9 +823,10 @@ void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg){
     delete msg;
 }
 
-void HomePatch::receiveResults(ProxyResultMsg *msg)
-{
+void HomePatch::receiveResults(ProxyResultMsg *msg) {
+  numGBISP3Arrived++;
   DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
+  int n = msg->node;
   Results *r = forceBox.clientOpen();
   for ( int k = 0; k < Results::maxNumForces; ++k )
   {
@@ -777,8 +842,8 @@ void HomePatch::receiveResults(ProxyResultMsg *msg)
 
 void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
 {
+    numGBISP3Arrived++;
   DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodeSize<<")\n");
-  //CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
     Results *r = forceBox.clientOpen(msg->nodeSize);
       register char* isNonZero = msg->isForceNonZero;
       register Force* f_i = msg->forceArr;
@@ -843,6 +908,18 @@ void HomePatch::positionsReady(int doMigration)
   if (flags.doLoweAndersen) loweAndersenVelocities();
   // END LA
 
+    if (flags.doGBIS) {
+      //reset for next time step
+      numGBISP1Arrived = 0;
+      phase1BoxClosedCalled = false;
+      numGBISP2Arrived = 0;
+      phase2BoxClosedCalled = false;
+      numGBISP3Arrived = 0;
+      phase3BoxClosedCalled = false;
+      if (doMigration || isNewProxyAdded)
+        setGBISIntrinsicRadii();
+    }
+
   // Must Add Proxy Changes when migration completed!
   NodeIDList::iterator pli;
   int *pids = NULL;
@@ -884,7 +961,7 @@ void HomePatch::positionsReady(int doMigration)
     for (int i=0; i<nChild; i++) pids[i] = child[i];
 #endif
   }
-  if (npid) {
+  if (npid) { //have proxies
 #if CMK_PERSISTENT_COMM
     if (phsReady == 0)
       {
@@ -910,11 +987,19 @@ void HomePatch::positionsReady(int doMigration)
 	pdMsgVLLen = v.size();
     }
     // END LA
+
+    int intRadLen = 0;
+    if (flags.doGBIS && (doMigration || isNewProxyAdded)) {
+	    intRadLen = numAtoms * 2;
+    }
+
     int pdMsgPLExtLen = 0;
     if(doMigration || isNewProxyAdded) {
         pdMsgPLExtLen = pExt.size();
     }
-    ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgVLLen, pdMsgPLExtLen, PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
+    ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgVLLen, intRadLen,
+      pdMsgPLExtLen,  PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
+
     SET_PRIORITY(nmsg,seq,priority);
     nmsg->patch = patchID;
     nmsg->flags = flags;
@@ -931,6 +1016,13 @@ void HomePatch::positionsReady(int doMigration)
 	memcpy(nmsg->velocityList, v.begin(), sizeof(CompAtom)*pdMsgVLLen);
     }
     // END LA
+
+    if (flags.doGBIS && (doMigration || isNewProxyAdded)) {
+      for (int i = 0; i < numAtoms * 2; i++) {
+        nmsg->intRadList[i] = intRad[i];
+      }
+    }
+
     nmsg->plExtLen = pdMsgPLExtLen;
     if(doMigration || isNewProxyAdded){     
         memcpy(nmsg->positionExtList, pExt.begin(), sizeof(CompAtomExt)*pdMsgPLExtLen);
@@ -1895,6 +1987,183 @@ void HomePatch::loweAndersenFinish()
 }
 // END LA
 
+//set intrinsic radii of atom when doMigration
+void HomePatch::setGBISIntrinsicRadii() {
+  intRad.resize(numAtoms*2);
+  intRad.setall(0);
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+  Real offset = simParams->coulomb_radius_offset;
+  for (int i = 0; i < numAtoms; i++) {
+    Real rad = MassToRadius(atom[i].mass);//in ComputeGBIS.inl
+    Real screen = MassToScreen(atom[i].mass);//same
+    intRad[2*i+0] = rad - offset;//r0
+    intRad[2*i+1] = screen*(rad - offset);//s0
+  }
+}
+
+//compute born radius after phase 1, before phase 2
+void HomePatch::gbisComputeAfterP1() {
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  BigReal alphaMax = simParams->alpha_max;
+  BigReal delta = simParams->gbis_delta;
+  BigReal beta = simParams->gbis_beta;
+  BigReal gamma = simParams->gbis_gamma;
+  BigReal coulomb_radius_offset = simParams->coulomb_radius_offset;
+
+  BigReal rhoi;
+  BigReal rhoi0;
+  //calculate bornRad from psiSum
+  for (int i = 0; i < numAtoms; i++) {
+    rhoi0 = intRad[2*i];
+    rhoi = rhoi0+coulomb_radius_offset;
+    psiFin[i] += psiSum[i];
+    psiFin[i] *= rhoi0;
+    bornRad[i]=1/(1/rhoi0-1/rhoi*tanh(psiFin[i]*(delta+psiFin[i]*(-beta+gamma*psiFin[i]))));
+    bornRad[i] = (bornRad[i] > alphaMax) ? alphaMax : bornRad[i];
+#ifdef PRINT_COMP
+    CkPrintf("BORNRAD(%04i)[%04i] = % .4e\n", flags.sequence, pExt[i].id, bornRad[i]);
+#endif
+  }
+
+  gbisP2Ready();
+}
+
+//compute dHdrPrefix after phase 2, before phase 3
+void HomePatch::gbisComputeAfterP2() {
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  BigReal delta = simParams->gbis_delta;
+  BigReal beta = simParams->gbis_beta;
+  BigReal gamma = simParams->gbis_gamma;
+  BigReal epsilon_s = simParams->solvent_dielectric;
+  BigReal epsilon_p = simParams->dielectric;
+  BigReal epsilon_s_i = 1/simParams->solvent_dielectric;
+  BigReal epsilon_p_i = 1/simParams->dielectric;
+  BigReal coulomb_radius_offset = simParams->coulomb_radius_offset;
+  BigReal kappa = simParams->kappa;
+  BigReal fij, expkappa, Dij, dEdai, dedasum;
+  BigReal rhoi, rhoi0, psii, nbetapsi;
+  BigReal gammapsi2, tanhi, daidr;
+  for (int i = 0; i < numAtoms; i++) {
+    //add diagonal dEda term
+    dHdrPrefix[i] += dEdaSum[i];//accumulated from proxies
+    fij = bornRad[i];//inf
+    expkappa = exp(-kappa*fij);//0
+    Dij = epsilon_p_i - expkappa*epsilon_s_i;//dielectric term
+    //calculate dHij prefix
+    dEdai = -0.5*COULOMB*atom[i].charge*atom[i].charge
+                  *(kappa*epsilon_s_i*expkappa-Dij/fij)/bornRad[i];
+    dHdrPrefix[i] += dEdai;
+    dedasum = dHdrPrefix[i];
+
+    rhoi0 = intRad[2*i];
+    rhoi = rhoi0+coulomb_radius_offset;
+    psii = psiFin[i];
+    nbetapsi = -beta*psii;
+    gammapsi2 = gamma*psii*psii;
+    tanhi = tanh(psii*(delta+nbetapsi+gammapsi2));
+    daidr = bornRad[i]*bornRad[i]*rhoi0/rhoi*(1-tanhi*tanhi)
+           * (delta+nbetapsi+nbetapsi+gammapsi2+gammapsi2+gammapsi2);
+    dHdrPrefix[i] *= daidr;//dHdrPrefix previously equaled dEda
+#ifdef PRINT_COMP
+    CkPrintf("DHDR(%04i)[%04i] = % .4e\n",flags.sequence,pExt[i].id,dHdrPrefix[i]);
+#endif
+  }
+  gbisP3Ready();
+}
+
+//send born radius to proxies to begin phase 2
+void HomePatch::gbisP2Ready() {
+  if (proxy.size() > 0) {
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+    for (int i = 0; i < proxy.size(); i++) {
+      int node = proxy[i];
+      ProxyGBISP2DataMsg *msg=new(numAtoms,PRIORITY_SIZE) ProxyGBISP2DataMsg;
+      msg->patch = patchID;
+      msg->origPe = CkMyPe();
+      memcpy(msg->bornRad,bornRad.begin(),numAtoms*sizeof(BigReal));
+      msg->destPe = node;
+      int seq = flags.sequence;
+      int priority = GB2_PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);
+      SET_PRIORITY(msg,seq,priority);
+      cp[node].recvData(msg);
+    }
+  }
+  Patch::gbisP2Ready();
+}
+
+//send dHdrPrefix to proxies to begin phase 3
+void HomePatch::gbisP3Ready() {
+  if (proxy.size() > 0) {
+    CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+    for (int i = 0; i < proxy.size(); i++) {
+      int node = proxy[i];
+      ProxyGBISP3DataMsg *msg = new(numAtoms,PRIORITY_SIZE) ProxyGBISP3DataMsg;
+      msg->patch = patchID;
+      msg->origPe = CkMyPe();
+      memcpy(msg->dHdrPrefix, dHdrPrefix.begin(), numAtoms*sizeof(BigReal));
+      msg->destPe = node;
+      int seq = flags.sequence;
+      int priority = GB3_PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);
+      SET_PRIORITY(msg,seq,priority);
+      cp[node].recvData(msg);
+    }
+  }
+  Patch::gbisP3Ready();
+}
+
+//receive proxy results from phase 1
+void HomePatch::receiveResult(ProxyGBISP1ResultMsg *msg) {
+  ++numGBISP1Arrived;
+  for ( int i = 0; i < numAtoms; ++i ) {
+    psiFin[i] += msg->psiSum[i];
+  }
+  delete msg;
+
+  if (flags.doNonbonded) {
+    //awaken if phase 1 done
+    if (phase1BoxClosedCalled == true &&
+        numGBISP1Arrived==proxy.size() ) {
+        sequencer->awaken();
+    }
+  } else {
+    //awaken if all phases done on noWork step
+    if (boxesOpen == 0 &&
+        numGBISP1Arrived == proxy.size() &&
+        numGBISP2Arrived == proxy.size() &&
+        numGBISP3Arrived == proxy.size()) {
+      sequencer->awaken();
+    }
+  }
+}
+
+//receive proxy results from phase 2
+void HomePatch::receiveResult(ProxyGBISP2ResultMsg *msg) {
+  ++numGBISP2Arrived;
+  //accumulate dEda
+  for ( int i = 0; i < numAtoms; ++i ) {
+    dHdrPrefix[i] += msg->dEdaSum[i];
+  }
+  delete msg;
+
+  if (flags.doNonbonded) {
+    //awaken if phase 2 done
+    if (phase2BoxClosedCalled == true &&
+        numGBISP2Arrived==proxy.size() ) {
+      sequencer->awaken();
+    }
+  } else {
+    //awaken if all phases done on noWork step
+    if (boxesOpen == 0 &&
+        numGBISP1Arrived == proxy.size() &&
+        numGBISP2Arrived == proxy.size() &&
+        numGBISP3Arrived == proxy.size()) {
+      sequencer->awaken();
+    }
+  }
+}
 
 //  MOLLY algorithm part 1
 void HomePatch::mollyAverage()

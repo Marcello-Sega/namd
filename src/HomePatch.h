@@ -30,6 +30,8 @@ class ProxyResultMsg;
 class ProxyCombinedResultRawMsg;
 class Sequencer;
 class SubmitReduction;
+class ProxyGBISP1ResultMsg;
+class ProxyGBISP2ResultMsg;
 
 class ProxyNodeAwareSpanningTreeMsg;
 
@@ -58,6 +60,10 @@ private:
   // migrate), otherwise, program will crash without such 
   // information when doing force calculations --Chao Mei
   Bool isNewProxyAdded;
+  int numGBISP1Arrived, numGBISP2Arrived, numGBISP3Arrived;
+  bool phase1BoxClosedCalled;
+  bool phase2BoxClosedCalled;
+  bool phase3BoxClosedCalled;
 
 public:
   ~HomePatch();
@@ -70,6 +76,9 @@ public:
   // ProxyPatch sends Forces back to here (via ProxyMgr)  
   void receiveResults(ProxyResultVarsizeMsg *msg);
   void receiveResults(ProxyResultMsg *msg);     
+  //gbis receiving results from intermediate phases
+  void receiveResult(ProxyGBISP1ResultMsg *msg);//after P1
+  void receiveResult(ProxyGBISP2ResultMsg *msg);//after P2
   
   //direct function calls, not as entry methods
   void receiveResults(ProxyCombinedResultRawMsg *msg);
@@ -110,6 +119,12 @@ public:
   void loweAndersenVelocities();
   void loweAndersenFinish();
   // END LA
+
+  void setGBISIntrinsicRadii();
+  void gbisComputeAfterP1();//calculate bornRad
+  void gbisComputeAfterP2();//calculate dHdrPrefix or self energies
+  void gbisP2Ready();
+  void gbisP3Ready();
 
   // methods for CONTRA, etc
   void checkpoint(void);

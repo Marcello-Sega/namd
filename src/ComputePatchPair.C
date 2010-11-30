@@ -10,6 +10,7 @@
 #include "Priorities.h"
 #include "PatchMap.inl"
 #include "Patch.h"
+#include "ComputeMap.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -18,6 +19,7 @@
 ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[], int t[]) 
     : Compute(c) {
 
+  gbisPhase = 1;
   setNumPatches(2);
 
   for (int i=0; i<2; i++) {
@@ -75,15 +77,36 @@ void ComputePatchPair::initialize() {
     int myNode = CkMyPe();
     int p0 = PATCH_PRIORITY(patchID[0]);
     if ( PatchMap::Object()->node(patchID[0]) == myNode ) {
-      p0 += COMPUTE_HOME_PRIORITY;
+      p0 += GB1_COMPUTE_HOME_PRIORITY;
     } else {
-      p0 += COMPUTE_PROXY_PRIORITY;
+      p0 += GB1_COMPUTE_PROXY_PRIORITY;
     }
     int p1 = PATCH_PRIORITY(patchID[1]);
     if ( PatchMap::Object()->node(patchID[1]) == myNode ) {
-      p1 += COMPUTE_HOME_PRIORITY;
+      p1 += GB1_COMPUTE_HOME_PRIORITY;
     } else {
-      p1 += COMPUTE_PROXY_PRIORITY;
+      p1 += GB1_COMPUTE_PROXY_PRIORITY;
+    }
+    if (p0<p1) { //base phase priorities off of p0
+      if ( PatchMap::Object()->node(patchID[0]) == myNode ) {
+        gbisPhasePriority[0] = 0;
+        gbisPhasePriority[1] = GB2_COMPUTE_HOME_PRIORITY-GB1_COMPUTE_HOME_PRIORITY;
+        gbisPhasePriority[2] = COMPUTE_HOME_PRIORITY-GB1_COMPUTE_HOME_PRIORITY;
+      } else {
+        gbisPhasePriority[0] = 0;
+        gbisPhasePriority[1] = GB2_COMPUTE_PROXY_PRIORITY-GB1_COMPUTE_PROXY_PRIORITY;
+        gbisPhasePriority[2] = COMPUTE_PROXY_PRIORITY-GB1_COMPUTE_PROXY_PRIORITY;
+      }
+    } else { //base phase priorities off of p1
+      if ( PatchMap::Object()->node(patchID[1]) == myNode ) {
+        gbisPhasePriority[0] = 0;
+        gbisPhasePriority[1] = GB2_COMPUTE_HOME_PRIORITY-GB1_COMPUTE_HOME_PRIORITY;
+        gbisPhasePriority[2] = COMPUTE_HOME_PRIORITY-GB1_COMPUTE_HOME_PRIORITY;
+      } else {
+        gbisPhasePriority[0] = 0;
+        gbisPhasePriority[1] = GB2_COMPUTE_PROXY_PRIORITY-GB1_COMPUTE_PROXY_PRIORITY;
+        gbisPhasePriority[2] = COMPUTE_PROXY_PRIORITY-GB1_COMPUTE_PROXY_PRIORITY;
+      }
     }
     basePriority = ((p0<p1)?p0:p1);   // most urgent wins
 
@@ -121,35 +144,33 @@ void ComputePatchPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results* r[
 // overloaded with specific calculation
 //---------------------------------------------------------------------
 void ComputePatchPair::doWork() {
-  CompAtom* p[2];
-  Results* r[2];
-  int i;
 
-  // Open up positionBox, forceBox, and atomBox
-  for (i=0; i<2; i++) {
+  if ( (computeType != computeNonbondedSelfType && 
+        computeType != computeNonbondedPairType ) ||
+        (!patch[0]->flags.doGBIS || gbisPhase == 1) ) {
+    // Open up positionBox, forceBox, and atomBox
+    for (int i=0; i<2; i++) {
       p[i] = positionBox[i]->open();
       r[i] = forceBox[i]->open();
+      pExt[i] = patch[i]->getCompAtomExtInfo();
+    }
   }
 
-  // Pass pointers to doForce
-
-  //Just for debugging
-/*
-  Patch *patch0 = positionBox[0]->getOwner();
-  Patch *patch1 = positionBox[1]->getOwner();
-  CmiAssert(patch0 == patch[0]);
-  CmiAssert(patch1 == patch[1]);
-*/
-
-  CompAtomExt *pExt[2];
-  pExt[0] = patch[0]->getCompAtomExtInfo();
-  pExt[1] = patch[1]->getCompAtomExtInfo();
   doForce(p, pExt, r);
 
   // Close up boxes
-  for (i=0; i<2; i++) {
+  if ( (computeType != computeNonbondedSelfType && 
+        computeType != computeNonbondedPairType ) ||
+      (!patch[0]->flags.doGBIS || gbisPhase == 3) ) {
+    for (int i=0; i<2; i++) {
       positionBox[i]->close(&p[i]);
       forceBox[i]->close(&r[i]);
+    }
+  }
+
+  //increment gbisPhase
+  if (patch[0]->flags.doGBIS) {
+    gbisPhase = 1 + (gbisPhase % 3);//1->2,2->3,3->1
   }
 }
 

@@ -17,6 +17,8 @@ public:
 	ComputeNonbondedWorkArrays* _workArrays,
 	int minPartition = 0, int maxPartition = 1, int numPartitions = 1);
   ~ComputeNonbondedPair();
+  nonbonded params;
+  GBISParamStruct gbisParams;
 
 protected :
   virtual void initialize();
@@ -27,6 +29,16 @@ protected :
   Box<Patch,CompAtom> *velocityBox[2];
   // END LA
 
+  Real *intRad[2];
+  Box<Patch,Real> *intRadBox[2];//write
+  Box<Patch,BigReal> *psiSumBox[2];//write
+  Box<Patch,BigReal> *bornRadBox[2];//read
+  Box<Patch,BigReal> *dEdaSumBox[2];//write
+  Box<Patch,BigReal> *dHdrPrefixBox[2];//read
+  static const int numGBISPairlists = 4;
+  Pairlists gbisStepPairlists[numGBISPairlists];//lasts a step
+
+  BigReal reductionData[reductionDataSize];
   SubmitReduction *reduction;
   SubmitReduction *pressureProfileReduction;
   BigReal *pressureProfileData;

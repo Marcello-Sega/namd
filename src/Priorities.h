@@ -40,14 +40,36 @@
 #define PROXY_DATA_PRIORITY (3<<8)
 #endif
 
-#define COMPUTE_PROXY_PRIORITY (4<<8)
+//used in HomePatch::positionsReady
+//gbis positions distributed with normal PROXY_DATA_PRIORITY
+//compute priorities are inited in ComputePatch* and added in Compute.C
 
-#define PROXY_RESULTS_PRIORITY (5<<8)
+//use in Compute::patchReady              DONE
+#define GB1_COMPUTE_PROXY_PRIORITY (4<<8)
+//use in ProxyPatch::boxClosed            DONE
+#define GB1_PROXY_RESULTS_PRIORITY (5<<8)
+//use in Compute::patchReady              DONE
+#define GB1_COMPUTE_HOME_PRIORITY (6<<8)
+//used in HomePatch::gbisP2Ready          DONE
+#define GB2_PROXY_DATA_PRIORITY (7<<8)
+//use in Compute::gbisP2PatchReady        DONE
+#define GB2_COMPUTE_PROXY_PRIORITY (8<<8)
+//use in ProxyPatch::boxClosed            DONE
+#define GB2_PROXY_RESULTS_PRIORITY (9<<8)
+//use in Compute::patchReady              DONE
+#define GB2_COMPUTE_HOME_PRIORITY (10<<8)
+//used in HomePatch::gbisP3Ready          DONE
+#define GB3_PROXY_DATA_PRIORITY (11<<8)
 
-// pme ungrid messages only affect home patches
-#define PME_UNGRID_PRIORITY (6<<8)
-
-#define COMPUTE_HOME_PRIORITY (7<<8)
+// from here on GB computes use normal compute priorities
+//use in Compute::gbisP3PatchReady        DONE
+#define COMPUTE_PROXY_PRIORITY (12<<8)
+//use in ProxyPatch::send
+#define PROXY_RESULTS_PRIORITY (13<<8) // DONE
+#define PME_UNGRID_PRIORITY (14<<8)
+//use in Compute::patchReady              DONE
+#define COMPUTE_HOME_PRIORITY (15<<8)
+//end gbis
 
 #endif // PRIORITIES_H
 

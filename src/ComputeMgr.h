@@ -18,6 +18,7 @@
 
 #include "GlobalMaster.h"
 #include "GlobalMasterServer.h"
+#include "ComputeMgr.decl.h"
 
 class Compute;
 class ComputeMap;

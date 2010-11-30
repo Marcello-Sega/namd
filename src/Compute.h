@@ -30,12 +30,14 @@ private:
   int patchReadyCounter;
   int numPatches;
   int doAtomUpdate;
-  int computeType;
   int sequenceNumber;
 
 protected:
+  int computeType;
   int basePriority;
   void enqueueWork();
+  int gbisPhase;//earlier phases have higher priority
+  int gbisPhasePriority[3];//earlier phases have higher priority
 
 public:
   const ComputeID cid;
@@ -58,7 +60,12 @@ public:
   virtual int noWork(); // cleans up and returns 1 if no work to do
   virtual void doWork(); // actually does the work if noWork() returns 0
   int sequence(void) { return sequenceNumber; }
-  int priority(void) { return basePriority; }
+  int priority(void) { return basePriority+gbisPhasePriority[gbisPhase]; }
+  int getGBISPhase(void) {return gbisPhase;}
+
+  virtual void gbisP2PatchReady(PatchID, int seq);
+  virtual void gbisP3PatchReady(PatchID, int seq);
+
 };
 
 /* For projection's usage: each compute object's work is associated 

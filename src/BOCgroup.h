@@ -20,6 +20,7 @@ public:
   CkGroupID computeGridForceMgr;
   //  CkGroupID delegateMgr;
   CkGroupID computeExtMgr;
+  CkGroupID computeGBISserMgr;
   CkGroupID reductionMgr;
   CkGroupID collectionMgr;
   CkGroupID broadcastMgr;

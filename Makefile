@@ -91,6 +91,8 @@ OBJS = \
 	$(DSTDIR)/ComputeEField.o \
 	$(DSTDIR)/ComputeEwald.o \
 	$(DSTDIR)/ComputeExt.o \
+	$(DSTDIR)/ComputeGBISser.o \
+	$(DSTDIR)/ComputeGBIS.o \
 	$(DSTDIR)/ComputeFullDirect.o \
 	$(DSTDIR)/ComputeHomePatch.o \
 	$(DSTDIR)/ComputeHomePatches.o \
@@ -239,6 +241,8 @@ CIFILES = 	\
 		$(INCDIR)/PmeFFTLib.def.h \
 		$(INCDIR)/ComputeExtMgr.decl.h \
 		$(INCDIR)/ComputeExtMgr.def.h \
+		$(INCDIR)/ComputeGBISserMgr.decl.h \
+		$(INCDIR)/ComputeGBISserMgr.def.h \
 		$(INCDIR)/LdbCoordinator.decl.h \
 		$(INCDIR)/LdbCoordinator.def.h \
 		$(INCDIR)/NamdCentLB.decl.h \
@@ -538,7 +542,6 @@ $(INCDIR)/OptPm%Mgr.decl.h $(INCDIR)/OptPm%Mgr.def.h: $(SRCDIR)/OptPme.ci
 	$(RM) $(INCDIR)/OptPme.ci
 	$(MOVE) OptPmeMgr.def.h $(INCDIR)
 	$(MOVE) OptPmeMgr.decl.h $(INCDIR)
-
 
 DEPENDFILE = .rootdir/Make.depends
 

@@ -39,6 +39,7 @@
 #include "ComputeGlobal.h"
 #include "ComputeGlobalMsgs.h"
 #include "ComputeExt.h"
+#include "ComputeGBISser.h"
 #include "ComputeDPMTA.h"
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
@@ -434,6 +435,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         break;
     case computeExtType:
         c = new ComputeExt(i); // unknown delete
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
+    case computeGBISserType: //gbis serial
+        c = new ComputeGBISser(i);
         map->registerCompute(i,c);
         c->initialize();
         break;

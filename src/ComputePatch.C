@@ -14,6 +14,7 @@
 #include "Priorities.h"
 #include "PatchMap.inl"
 #include "Patch.h"
+#include "ComputeMap.h" //needed for checking GBIS type
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -25,6 +26,7 @@ ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
     patch = NULL;
     positionBox = NULL;
     forceBox = NULL;
+    gbisPhase = 1;
 }
 
 ComputePatch::~ComputePatch() {
@@ -59,13 +61,16 @@ void ComputePatch::initialize() {
     Compute::initialize();
 
     int myNode = CkMyPe();
-    if ( PatchMap::Object()->node(patchID) != myNode )
-    {
-      basePriority = COMPUTE_PROXY_PRIORITY + PATCH_PRIORITY(patchID);
-    }
-    else
-    {
-      basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
+    if ( PatchMap::Object()->node(patchID) != myNode ) {
+      basePriority = GB1_COMPUTE_PROXY_PRIORITY + PATCH_PRIORITY(patchID);
+      gbisPhasePriority[0] = 0;
+      gbisPhasePriority[1] = GB2_COMPUTE_PROXY_PRIORITY-GB1_COMPUTE_PROXY_PRIORITY;//sub GB1_PRIOR
+      gbisPhasePriority[2] = COMPUTE_PROXY_PRIORITY-GB1_COMPUTE_PROXY_PRIORITY;
+    } else {
+      basePriority = GB1_COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
+      gbisPhasePriority[0] = 0;
+      gbisPhasePriority[1] = GB2_COMPUTE_HOME_PRIORITY-GB1_COMPUTE_HOME_PRIORITY;
+      gbisPhasePriority[2] = COMPUTE_HOME_PRIORITY-GB1_COMPUTE_HOME_PRIORITY;
     }
 }
 
@@ -81,22 +86,31 @@ void ComputePatch::atomUpdate() {
 }
 
 void ComputePatch::doWork() {
-  CompAtom* p;
-  Results* r;
-
   DebugM(3,patchID << ": doWork() called.\n");
 
-  // Open up positionBox, forceBox
-  p = positionBox->open();
-  r = forceBox->open();
+  if ( (computeType != computeNonbondedSelfType && 
+        computeType != computeNonbondedPairType ) ||
+       (!patch->flags.doGBIS || gbisPhase == 1) ) {
+    // Open up positionBox, forceBox
+    p = positionBox->open();
+    r = forceBox->open();
+    pExt = patch->getCompAtomExtInfo();
+  }
 
   // Pass pointers to doForce
-  doForce(p, patch->getCompAtomExtInfo(), r);
+  doForce(p, pExt, r);
 
   // Close up boxes
-  positionBox->close(&p);
-  forceBox->close(&r);
-
+  if ( (computeType != computeNonbondedSelfType && 
+        computeType != computeNonbondedPairType   ) ||
+       (!patch->flags.doGBIS || gbisPhase == 3) ) {
+    positionBox->close(&p);
+    forceBox->close(&r);
+  }
+  //increment gbisPhase
+  if (patch->flags.doGBIS) {
+    gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
+  }
   DebugM(2,patchID << ": doWork() completed.\n");
 }
 

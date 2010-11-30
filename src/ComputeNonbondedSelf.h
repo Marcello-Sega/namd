@@ -13,10 +13,13 @@
 class ComputeNonbondedSelf : public ComputePatch, private ComputeNonbondedUtil {
 
 public:
+  nonbonded params;
+  GBISParamStruct gbisParams;
   ComputeNonbondedSelf(ComputeID c, PatchID pid,
 	ComputeNonbondedWorkArrays* _workArrays,
 	int minPartition = 0, int maxPartition = 1, int numPartitions = 1);
   virtual ~ComputeNonbondedSelf();
+  BigReal reductionData[reductionDataSize];
 
 protected :
   virtual void initialize();
@@ -27,6 +30,15 @@ protected :
   Box<Patch,CompAtom> *velocityBox;
   // END LA
 
+  Real *intRad;
+  Box<Patch,Real> *intRadBox;
+  Box<Patch,BigReal> *psiSumBox;
+  Box<Patch,BigReal> *bornRadBox;
+  Box<Patch,BigReal> *dEdaSumBox;
+  Box<Patch,BigReal> *dHdrPrefixBox;
+  static const int numGBISPairlists = 4;
+  Pairlists gbisStepPairlists[numGBISPairlists];
+
   SubmitReduction *reduction;
   SubmitReduction *pressureProfileReduction;
   BigReal *pressureProfileData;
@@ -36,6 +48,7 @@ protected :
   Pairlists pairlists;
   int pairlistsValid;
   BigReal pairlistTolerance;
+
 
   int minPart, maxPart, numParts;
 

@@ -29,10 +29,15 @@ Patch::Patch(PatchID pd) :
    patchID(pd), numAtoms(0), numFixedAtoms(0),
    avgPositionPtrBegin(0), avgPositionPtrEnd(0),
    velocityPtrBegin(0), velocityPtrEnd(0),	// BEGIN LA, END LA
-   positionBox(this,&Patch::positionBoxClosed),
-   avgPositionBox(this,&Patch::avgPositionBoxClosed),
-   velocityBox(this,&Patch::velocityBoxClosed), // BEGIN LA, END LA
-   forceBox(this,&Patch::forceBoxClosed),
+   positionBox(this,&Patch::positionBoxClosed,pd,0),
+   avgPositionBox(this,&Patch::avgPositionBoxClosed,pd,3),
+   velocityBox(this,&Patch::velocityBoxClosed,pd,4), // BEGIN LA, END LA
+   psiSumBox(this,&Patch::psiSumBoxClosed,pd,5), // begin gbis
+   intRadBox(this,&Patch::intRadBoxClosed,pd,6),
+   bornRadBox(this,&Patch::bornRadBoxClosed,pd,7),
+   dEdaSumBox(this,&Patch::dEdaSumBoxClosed,pd,8),
+   dHdrPrefixBox(this,&Patch::dHdrPrefixBoxClosed,pd,9), //end gbis
+   forceBox(this,&Patch::forceBoxClosed,pd,1),
    boxesOpen(0), _hasNewAtoms(0)
 
    // DMK - Atom Separation (water vs. non-water)
@@ -40,6 +45,7 @@ Patch::Patch(PatchID pd) :
      ,numWaterAtoms(-1)
    #endif
 {
+  //CkPrintf("GBIS: PatchCreated\n");
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
     positionPtrBegin = 0;
     positionPtrEnd = 0;
@@ -65,7 +71,7 @@ Box<Patch,CompAtom>* Patch::registerPositionPickup(ComputeID cid, int trans)
      DebugM(7, "registerPositionPickup() failed for cid " << cid << std::endl);
      return NULL;
    }
-   return positionBox.checkOut();
+   return positionBox.checkOut(cid);
 }
 
 void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
@@ -79,7 +85,7 @@ void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const 
 Box<Patch,CompAtom>* Patch::registerAvgPositionPickup(ComputeID cid, int trans)
 {
    //DebugM(4, "registerAvgPositionPickup("<<patchID<<") from " << cid << "\n");
-   return avgPositionBox.checkOut();
+   return avgPositionBox.checkOut(cid);
 }
 
 void Patch::unregisterAvgPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
@@ -93,7 +99,7 @@ void Patch::unregisterAvgPositionPickup(ComputeID cid, Box<Patch,CompAtom> **con
 Box<Patch,CompAtom>* Patch::registerVelocityPickup(ComputeID cid, int trans)
 {
    //DebugM(4, "registerVelocityPickup("<<patchID<<") from " << cid << "\n");
-   return velocityBox.checkOut();
+   return velocityBox.checkOut(cid);
 }
 
 void Patch::unregisterVelocityPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
@@ -104,6 +110,63 @@ void Patch::unregisterVelocityPickup(ComputeID cid, Box<Patch,CompAtom> **const 
 }
 // END LA
 
+//begin gbis
+//deposit, not pickup
+Box<Patch,BigReal>* Patch::registerPsiSumDeposit(ComputeID cid) {
+
+  if (psiSumComputeList.add(cid) < 0) {
+    DebugM(7, "registerPsiSumDeposit() failed for cid " << cid << std::endl);
+    DebugM(7, "  size of psiSumCompueList " << psiSumComputeList.size() << std::endl);
+     return NULL;
+  }
+  return psiSumBox.checkOut(cid);
+}
+
+void Patch::unregisterPsiSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box) {
+  psiSumComputeList.del(cid);
+  psiSumBox.checkIn(*box);
+  *box = 0;
+}
+Box<Patch,Real>* Patch::registerIntRadPickup(ComputeID cid, int trans) {
+  return intRadBox.checkOut(cid);
+}
+void Patch::unregisterIntRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
+  intRadBox.checkIn(*box);
+  *box = 0;
+}
+
+Box<Patch,BigReal>* Patch::registerBornRadPickup(ComputeID cid, int trans) {
+  return bornRadBox.checkOut(cid);
+}
+void Patch::unregisterBornRadPickup(ComputeID cid,Box<Patch,BigReal> **const box) {
+  bornRadBox.checkIn(*box);
+  *box = 0;
+}
+
+Box<Patch,BigReal>* Patch::registerDEdaSumDeposit(ComputeID cid) {
+  if (dEdaSumComputeList.add(cid) < 0) {
+    DebugM(7, "registerDEdaSumDeposit() failed for cid " << cid << std::endl);
+    DebugM(7, "  size of dEdaSumCompueList " << dEdaSumComputeList.size() << std::endl);
+     return NULL;
+  }
+  return dEdaSumBox.checkOut(cid);
+}
+void Patch::unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box){
+  dEdaSumComputeList.del(cid);
+  dEdaSumBox.checkIn(*box);
+  *box = 0;
+}
+
+Box<Patch,BigReal>* Patch::registerDHdrPrefixPickup(ComputeID cid, int trans)
+{
+  return dHdrPrefixBox.checkOut(cid);
+}
+void Patch::unregisterDHdrPrefixPickup(ComputeID cid,Box<Patch,BigReal> **const box) {
+  dHdrPrefixBox.checkIn(*box);
+  *box = 0;
+}
+//end gbis
+
 Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
 {
    if (forceComputeList.add(cid) < 0)
@@ -112,7 +175,7 @@ Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
      DebugM(7, "  size of forceCompueList " << forceComputeList.size() << std::endl);
      return NULL;
    }
-   return forceBox.checkOut();
+   return forceBox.checkOut(cid);
 }
 
 void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box)
@@ -155,6 +218,28 @@ void Patch::velocityBoxClosed(void)
 // END LA
 
 // void Patch::boxClosed(int box) is virtual
+
+// begin gbis
+void Patch::psiSumBoxClosed(void) {
+  this->boxClosed(5);
+}
+void Patch::intRadBoxClosed(void) {
+   //dHdrPrefixPtr = 0;
+   this->boxClosed(6);
+}
+void Patch::bornRadBoxClosed(void) {
+   //bornRadPtr = 0;
+   this->boxClosed(7);
+}
+void Patch::dEdaSumBoxClosed(void) {
+   //dEdaSumPtr = 0;
+   this->boxClosed(8);
+}
+void Patch::dHdrPrefixBoxClosed(void) {
+   //dHdrPrefixPtr = 0;
+   this->boxClosed(9);
+}
+// end gbis
 
 void Patch::positionsReady(int doneMigration)
 {
@@ -200,7 +285,27 @@ void Patch::positionsReady(int doneMigration)
        velocityBox.open(velocityPtrBegin);
    }
    // END LA
-   
+   // begin gbis
+    if (flags.doGBIS) {
+      boxesOpen += 5;
+      //intRad should already be taken care of
+      intRadBox.open(intRad.begin());
+      psiSum.resize(numAtoms);//resize array
+      psiSum.setall(0);
+      psiSumBox.open(psiSum.begin());
+      psiFin.resize(numAtoms);//has no box
+      psiFin.setall(0);
+      bornRad.resize(numAtoms);
+      bornRad.setall(0);
+      bornRadBox.open(bornRad.begin());
+      dEdaSum.resize(numAtoms);//resize array
+      dEdaSum.setall(0);
+      dEdaSumBox.open(dEdaSum.begin());
+      dHdrPrefix.resize(numAtoms);
+      dHdrPrefix.setall(0);
+      dHdrPrefixBox.open(dHdrPrefix.begin());
+    }
+   // end gbis
 
 #if CMK_BLUEGENEL
    CmiNetworkProgressAfter (0);
@@ -241,4 +346,37 @@ void Patch::positionsReady(int doneMigration)
    }
 }
 
+// begin gbis
 
+void Patch::gbisP2Ready() {
+ ComputeMap *computeMap = ComputeMap::Object();
+ ComputeIDListIter cid(positionComputeList);
+
+  int compute_count = 0;
+  int seq = flags.sequence;
+  for(cid = cid.begin(); cid != cid.end(); cid++) {
+    if ( computeMap->compute(*cid)->type() == computeNonbondedSelfType ||
+         computeMap->compute(*cid)->type() == computeNonbondedPairType) {
+      compute_count++;
+      computeMap->compute(*cid)->gbisP2PatchReady(patchID,seq);
+    }
+  }
+}
+
+void Patch::gbisP3Ready() {
+
+  ComputeMap *computeMap = ComputeMap::Object();
+  ComputeIDListIter cid(positionComputeList);
+
+  int compute_count = 0;
+  int seq = flags.sequence;
+  for(cid = cid.begin(); cid != cid.end(); cid++) {
+    if ( computeMap->compute(*cid)->type() == computeNonbondedSelfType ||
+         computeMap->compute(*cid)->type() == computeNonbondedPairType) {
+      compute_count++;
+      computeMap->compute(*cid)->gbisP3PatchReady(patchID,seq);
+    }
+  }
+}
+
+//end gbis

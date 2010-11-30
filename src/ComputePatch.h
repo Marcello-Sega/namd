@@ -33,6 +33,10 @@ public:
 
 protected :
   int numAtoms;
+  int gbisPhase;
+  CompAtomExt *pExt;
+  CompAtom* p;
+  Results* r;
 
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0

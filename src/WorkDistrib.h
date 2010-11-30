@@ -52,10 +52,18 @@ public:
   void enqueueAniso(LocalWorkMsg *msg);  // Drude model
   void enqueueCrossterms(LocalWorkMsg *msg);
   void enqueuePme(LocalWorkMsg *msg);
-  void enqueueSelfA(LocalWorkMsg *msg);
-  void enqueueSelfB(LocalWorkMsg *msg);
-  void enqueueWorkA(LocalWorkMsg *msg);
-  void enqueueWorkB(LocalWorkMsg *msg);
+  void enqueueSelfA1(LocalWorkMsg *msg);
+  void enqueueSelfA2(LocalWorkMsg *msg);
+  void enqueueSelfA3(LocalWorkMsg *msg);
+  void enqueueSelfB1(LocalWorkMsg *msg);
+  void enqueueSelfB2(LocalWorkMsg *msg);
+  void enqueueSelfB3(LocalWorkMsg *msg);
+  void enqueueWorkA1(LocalWorkMsg *msg);
+  void enqueueWorkA2(LocalWorkMsg *msg);
+  void enqueueWorkA3(LocalWorkMsg *msg);
+  void enqueueWorkB1(LocalWorkMsg *msg);
+  void enqueueWorkB2(LocalWorkMsg *msg);
+  void enqueueWorkB3(LocalWorkMsg *msg);
   void enqueueWorkC(LocalWorkMsg *msg);
   void enqueueCUDA(LocalWorkMsg *msg);
 

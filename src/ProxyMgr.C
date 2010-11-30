@@ -1656,5 +1656,32 @@ void NodeProxyMgr::registerPatch(int patchID, int numPes, int *pes){
     }
 }
 
+void ProxyMgr::sendResult(ProxyGBISP1ResultMsg *msg) { //pp -r> hp
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+  NodeID node = PatchMap::Object()->node(msg->patch);
+  cp[node].recvResult(msg);
+}
+void ProxyMgr::recvResult(ProxyGBISP1ResultMsg *msg) { //pp -r> hp
+  HomePatch *homePatch = PatchMap::Object()->homePatch(msg->patch);
+  homePatch->receiveResult(msg); // message deleted in registerProxy()
+}
+void ProxyMgr::recvData(  ProxyGBISP2DataMsg *msg) {  //hp -d> pp
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms() ?
+}
+void ProxyMgr::sendResult(ProxyGBISP2ResultMsg *msg) { //pp -r> hp
+  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+  NodeID node = PatchMap::Object()->node(msg->patch);
+  cp[node].recvResult(msg);
+}
+void ProxyMgr::recvResult(ProxyGBISP2ResultMsg *msg) { //pp -r> hp
+  HomePatch *homePatch = PatchMap::Object()->homePatch(msg->patch);
+  homePatch->receiveResult(msg); // message deleted in registerProxy()
+}
+void ProxyMgr::recvData(  ProxyGBISP3DataMsg *msg) {   //hp -d> pp
+  ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
+  proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms() ?
+}
+
 #include "ProxyMgr.def.h"
 

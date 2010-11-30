@@ -15,7 +15,10 @@ template <class Owner, class Data> class Box {
 
   private:
 
-    Box(OwnerBox<Owner,Data>* o): ownerBox(o) { state = CLOSED; };
+    Box(OwnerBox<Owner,Data>* o): openCount(0), ownerBox(o), user(-1) { state = CLOSED; };
+    Box(OwnerBox<Owner,Data>* o,int n): openCount(0), ownerBox(o), user(n) {
+      state = CLOSED;
+    };
 
     ~Box(void) {};
 
@@ -23,23 +26,34 @@ template <class Owner, class Data> class Box {
     OwnerBox<Owner,Data> *ownerBox;	
 
   public:
+  int user;
+  int openCount;
 
     Data* open(void) {
       if (state != OPEN) {
+        openCount++;
         state = OPEN; 
         ownerBox->openCount--;
+      } else {
+        //do nothing
       }
       return ownerBox->data; 
     }
+
     void close(Data ** const t) {
       if (state != CLOSED) {
         state = CLOSED;
         *t = NULL;
 
         // Trigger callback!
-        if ( ! --ownerBox->closeCount ) {
-	  ownerBox->close();
+        --ownerBox->closeCount;
+        if (ownerBox->closeCount < 0)
+          CmiAbort("GBISERROR! Box closed too many times!\n");
+        if ( ! ownerBox->closeCount ) {
+	        ownerBox->close();
         }
+      } else {
+        //do nothing
       }
     }
 

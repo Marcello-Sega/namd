@@ -48,6 +48,7 @@ enum ComputeType
   computeFullDirectType,
   computeGlobalType,
   computeExtType,
+  computeGBISserType,
   computeEFieldType,
 /* BEGIN gf */
   computeGridForceType,

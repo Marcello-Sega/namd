@@ -15,11 +15,20 @@ template <class Owner, class Data> class OwnerBox {
 
   friend class Box<Owner,Data>;
 
+  int bid, type;
+
   public:
 
     OwnerBox(Owner *o, void (Owner::*fn)() ) :
+      bid(-1), type(-1),
       owner(o), callback(fn), data(0),
       numberUsers(0), openCount(0), closeCount(0) {};
+
+   OwnerBox(Owner *o, void (Owner::*fn)(), int id ,int tp) :
+      bid(id), type(tp),
+      owner(o), callback(fn), data(0),
+      numberUsers(0), openCount(0), closeCount(0) {};
+
 
     ~OwnerBox(void) {
       if (numberUsers) {
@@ -35,7 +44,7 @@ template <class Owner, class Data> class OwnerBox {
   
     inline void close(void);
 
-    inline Box<Owner,Data> *checkOut(void);
+    inline Box<Owner,Data> *checkOut(int id);
 
     inline void checkIn(Box<Owner,Data> * box);
   
@@ -70,9 +79,9 @@ inline void OwnerBox<Owner,Data>::clientAdd(void) {
 }
 
 template <class Owner, class Data>
-inline Box<Owner,Data> *OwnerBox<Owner,Data>::checkOut(void) {
+inline Box<Owner,Data> *OwnerBox<Owner,Data>::checkOut(int id) {
   clientAdd();
-  return (new Box<Owner,Data>(this));
+  return (new Box<Owner,Data>(this,id));
 }
 
 template <class Owner, class Data>

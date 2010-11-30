@@ -23,6 +23,39 @@ extern int proxySendSpanning, proxyRecvSpanning;
 extern const int proxySpanDim;
 extern const int inNodeProxySpanDim;
 
+class ProxyGBISP1ResultMsg: public CMessage_ProxyGBISP1ResultMsg {
+  public:
+    int destPe;
+    int origPe;
+    PatchID patch;
+    BigReal *psiSum;
+    int psiSumLen;// = numAtoms
+};
+class ProxyGBISP2DataMsg: public CMessage_ProxyGBISP2DataMsg {
+public:
+    int origPe;
+    int destPe;
+    PatchID patch;
+    BigReal *bornRad;//numAtoms
+    int bornRadLen;
+  };
+class ProxyGBISP2ResultMsg: public CMessage_ProxyGBISP2ResultMsg {
+public:
+    int destPe;
+    int origPe;
+    PatchID patch;
+    BigReal *dEdaSum;
+    int dEdaSumLen;//numAtoms
+  };
+class ProxyGBISP3DataMsg: public CMessage_ProxyGBISP3DataMsg {
+public:
+    int origPe;
+    int destPe;
+    PatchID patch;
+    BigReal *dHdrPrefix;//numAtoms
+    int dHdrPrefixLen;
+  };
+
 class RegisterProxyMsg : public CMessage_RegisterProxyMsg {
 public:
   NodeID node;
@@ -73,6 +106,8 @@ public:
   int vlLen;
   CompAtom *velocityList;
   // END LA
+
+  Real *intRadList;// gbis atom intrinsic radii
 
   //1. The following field will be only
   //useful for memory optimized version.
@@ -335,6 +370,14 @@ public:
   void sendResults(ProxyResultMsg *);
   void recvResults(ProxyResultMsg *);
   void sendResults(ProxyCombinedResultMsg *);
+
+  void sendResult(ProxyGBISP1ResultMsg *);//psiSum
+  void recvResult(ProxyGBISP1ResultMsg *);
+  void recvData(   ProxyGBISP2DataMsg *);
+  void sendResult(ProxyGBISP2ResultMsg *);//dEdaSum
+  void recvResult(ProxyGBISP2ResultMsg *);
+  void recvData(   ProxyGBISP3DataMsg *);
+
   void recvResults(ProxyCombinedResultRawMsg *);
   void recvImmediateResults(ProxyCombinedResultRawMsg *);
 

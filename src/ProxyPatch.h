@@ -27,6 +27,9 @@ class ProxyPatch : public Patch
      void receiveAtoms(ProxyAtomsMsg*);
      void receiveData(ProxyDataMsg*);
      void receiveAll(ProxyDataMsg*);
+     //include gbis phase 1 data with std message
+     void receiveData(ProxyGBISP2DataMsg*);//receive P1 results; begin P2
+     void receiveData(ProxyGBISP3DataMsg*);//receive P2 results; begin P3
 
      void setSpanningTree(int, int*, int);
      int  getSpanningTreeParent() { return parent; }

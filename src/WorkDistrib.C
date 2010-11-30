@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: chaomei2 $
- * $Date: 2010/11/13 00:36:17 $
- * $Revision: 1.1210 $
+ * $Author: dtanner $
+ * $Date: 2010/11/30 18:33:32 $
+ * $Revision: 1.1211 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1246,6 +1246,9 @@ void WorkDistrib::mapComputes(void)
   if ( node->simParameters->extForcesOn )
     mapComputeHomePatches(computeExtType);
 
+  if ( node->simParameters->GBISserOn )
+    mapComputeHomePatches(computeGBISserType);
+
 #ifdef NAMD_CUDA
   mapComputeNode(computeNonbondedCUDAType);
   mapComputeHomeTuples(computeExclsType);
@@ -1539,6 +1542,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   LocalWorkMsg *msg = compute->localWorkMsg;
   int seq = compute->sequence();
+  int gbisPhase = compute->getGBISPhase();
 
   if ( seq < 0 ) {
     NAMD_bug("compute->sequence() < 0 in WorkDistrib::messageEnqueueWork");
@@ -1548,6 +1552,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 
   msg->compute = compute; // pointer is valid since send is to local Pe
   int type = compute->type();
+  int cid = compute->cid;
 
   CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
   switch ( type ) {
@@ -1586,10 +1591,32 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   case computeNonbondedSelfType:
     switch ( seq % 2 ) {
     case 0:
-      wdProxy[CkMyPe()].enqueueSelfA(msg);
+      //wdProxy[CkMyPe()].enqueueSelfA(msg);
+      switch ( gbisPhase ) {
+         case 1:
+           wdProxy[CkMyPe()].enqueueSelfA1(msg);
+           break;
+         case 2:
+           wdProxy[CkMyPe()].enqueueSelfA2(msg);
+           break;
+         case 3:
+           wdProxy[CkMyPe()].enqueueSelfA3(msg);
+           break;
+      }
       break;
     case 1:
-      wdProxy[CkMyPe()].enqueueSelfB(msg);
+      //wdProxy[CkMyPe()].enqueueSelfB(msg);
+      switch ( gbisPhase ) {
+         case 1:
+           wdProxy[CkMyPe()].enqueueSelfB1(msg);
+           break;
+         case 2:
+           wdProxy[CkMyPe()].enqueueSelfB2(msg);
+           break;
+         case 3:
+           wdProxy[CkMyPe()].enqueueSelfB3(msg);
+           break;
+      }
       break;
     default:
       NAMD_bug("WorkDistrib::messageEnqueueSelf case statement error!");
@@ -1598,10 +1625,32 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   case computeNonbondedPairType:
     switch ( seq % 2 ) {
     case 0:
-      wdProxy[CkMyPe()].enqueueWorkA(msg);
+      //wdProxy[CkMyPe()].enqueueWorkA(msg);
+      switch ( gbisPhase ) {
+         case 1:
+           wdProxy[CkMyPe()].enqueueWorkA1(msg);
+           break;
+         case 2:
+           wdProxy[CkMyPe()].enqueueWorkA2(msg);
+           break;
+         case 3:
+           wdProxy[CkMyPe()].enqueueWorkA3(msg);
+           break;
+      }
       break;
     case 1:
-      wdProxy[CkMyPe()].enqueueWorkB(msg);
+      //wdProxy[CkMyPe()].enqueueWorkB(msg);
+      switch ( gbisPhase ) {
+         case 1:
+           wdProxy[CkMyPe()].enqueueWorkB1(msg);
+           break;
+         case 2:
+           wdProxy[CkMyPe()].enqueueWorkB2(msg);
+           break;
+         case 3:
+           wdProxy[CkMyPe()].enqueueWorkB3(msg);
+           break;
+      }
       break;
     case 2:
       wdProxy[CkMyPe()].enqueueWorkC(msg);
@@ -1699,29 +1748,71 @@ void WorkDistrib::enqueuePme(LocalWorkMsg *msg) {
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
-void WorkDistrib::enqueueSelfA(LocalWorkMsg *msg) {
+void WorkDistrib::enqueueSelfA1(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueSelfA2(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueSelfA3(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
-void WorkDistrib::enqueueSelfB(LocalWorkMsg *msg) {
+void WorkDistrib::enqueueSelfB1(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueSelfB2(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueSelfB3(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
-void WorkDistrib::enqueueWorkA(LocalWorkMsg *msg) {
+void WorkDistrib::enqueueWorkA1(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueWorkA2(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueWorkA3(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
-void WorkDistrib::enqueueWorkB(LocalWorkMsg *msg) {
+void WorkDistrib::enqueueWorkB1(LocalWorkMsg *msg) {
   msg->compute->doWork();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
+void WorkDistrib::enqueueWorkB2(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueWorkB3(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+
+
 
 void WorkDistrib::enqueueWorkC(LocalWorkMsg *msg) {
   msg->compute->doWork();

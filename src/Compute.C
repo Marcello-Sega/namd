@@ -28,9 +28,11 @@
 // #define DEBUGM
 #include "Debug.h"
 
-
-Compute::Compute(ComputeID c) : basePriority(0), cid(c),
+Compute::Compute(ComputeID c) : gbisPhase(1),basePriority(0), cid(c),
 	localWorkMsg(new (PRIORITY_SIZE) LocalWorkMsg) { 
+  gbisPhasePriority[0] = 0;
+  gbisPhasePriority[1] = 0;
+  gbisPhasePriority[2] = 0;
   doAtomUpdate = false;
   computeType = ComputeMap::Object()->type(c);
 }
@@ -41,11 +43,14 @@ Compute::~Compute() {
 
 void Compute::enqueueWork() {
   if (!this) { DebugM(4,"This Compute is NULL!!!\n"); }
-  if ( ! noWork() )
-  {
+  if ( ! noWork() ) {
+    gbisPhase = 1; //first phase
     WorkDistrib::messageEnqueueWork(this);  // should be in ComputeMgr?
+  } else {
+    //don't enqueue work
   }
 }
+
 
 //---------------------------------------------------------------------
 // Signal from patch or proxy that data is ready.
@@ -69,6 +74,25 @@ void Compute::patchReady(PatchID patchID, int doneMigration, int seq) {
       }
       enqueueWork();
     }
+  }
+}
+
+void Compute::gbisP2PatchReady(PatchID pid, int seq) {
+
+  if (! --patchReadyCounter) {
+    patchReadyCounter = numPatches;
+    sequenceNumber = seq;
+    gbisPhase = 2; //second phase
+    WorkDistrib::messageEnqueueWork(this);
+  }
+}
+
+void Compute::gbisP3PatchReady(PatchID pid, int seq) {
+  if (! --patchReadyCounter) {
+    patchReadyCounter = numPatches;
+    sequenceNumber = seq;
+    gbisPhase = 3; //third phase
+    WorkDistrib::messageEnqueueWork(this);
   }
 }
 

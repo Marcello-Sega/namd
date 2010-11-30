@@ -6,10 +6,13 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: chaomei2 $
- * $Date: 2010/10/24 04:04:48 $
- * $Revision: 1.1188 $
+ * $Author: dtanner $
+ * $Date: 2010/11/30 18:33:31 $
+ * $Revision: 1.1189 $
  *****************************************************************************/
+
+//for gbis debugging; print net force on each atom
+#define PRINT_FORCES 0
 
 #include "InfoStream.h"
 #include "Node.h"
@@ -186,6 +189,9 @@ void Sequencer::integrate() {
     doLoweAndersen = simParams->loweAndersenOn && doNonbonded;
     // END LA
 
+    int &doGBIS = patch->flags.doGBIS;
+    doGBIS = simParams->GBISOn;
+
     int zeroMomentum = simParams->zeroMomentum;
     
     // Do we need to return forces to TCL script or Colvar module?
@@ -294,7 +300,7 @@ void Sequencer::integrate() {
       // BEGIN LA
       doLoweAndersen = simParams->loweAndersenOn && doNonbonded;
       // END LA
-      
+
       maxForceUsed = Results::normal;
       if ( doNonbonded ) maxForceUsed = Results::nbond;
       if ( doFullElectrostatics ) maxForceUsed = Results::slow;
@@ -458,6 +464,10 @@ void Sequencer::minimize() {
   int &doLoweAndersen = patch->flags.doLoweAndersen;
   doLoweAndersen = 0;
   // END LA
+
+  int &doGBIS = patch->flags.doGBIS;
+  doGBIS = simParams->GBISOn;
+
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;
 
@@ -1664,6 +1674,13 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
 
+  if ( patch->flags.doGBIS && patch->flags.doNonbonded) {
+    patch->gbisComputeAfterP1();
+    suspend();
+    patch->gbisComputeAfterP2();
+    suspend();
+  }
+
   if ( patch->flags.savePairlists && patch->flags.doNonbonded ) {
     pairlistsAreValid = 1;
     pairlistsAge = 0;
@@ -1725,6 +1742,8 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
     patch->mollyMollify(&virial);
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_SLOW,virial);
   }
+
+
   // BEGIN LA
   if (patch->flags.doLoweAndersen) {
       patch->loweAndersenFinish();
@@ -1757,6 +1776,41 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
         patch->f[Results::nbond][i].z,
         patch->f[Results::slow][i].z);
   }
+#endif
+
+#if PRINT_FORCES
+  int numAtoms = patch->numAtoms;
+  FullAtom *a = patch->atom.begin();
+  for ( int i=0; i<numAtoms; ++i ) {
+    if (a[i].id != 0 && a[i].id != 1) continue;
+    float fxNo = patch->f[Results::normal][i].x;
+    float fxNb = patch->f[Results::nbond][i].x;
+    float fxSl = patch->f[Results::slow][i].x;
+    float fyNo = patch->f[Results::normal][i].y;
+    float fyNb = patch->f[Results::nbond][i].y;
+    float fySl = patch->f[Results::slow][i].y;
+    float fzNo = patch->f[Results::normal][i].z;
+    float fzNb = patch->f[Results::nbond][i].z;
+    float fzSl = patch->f[Results::slow][i].z;
+    float fx = fxNo+fxNb+fxSl;
+    float fy = fyNo+fyNb+fySl;
+    float fz = fzNo+fzNb+fzSl;
+
+		float f = sqrt(fx*fx+fy*fy+fz*fz);
+    int id = patch->pExt[i].id;
+    int seq = patch->flags.sequence;
+    float x = patch->p[i].position.x;
+    float y = patch->p[i].position.y;
+    float z = patch->p[i].position.z;
+    //CkPrintf("FORCE(%04i)[%04i] = <% .4e, % .4e, % .4e> <% .4e, % .4e, % .4e> <% .4e, % .4e, % .4e> <<% .4e, % .4e, % .4e>>\n", seq,id,
+    CkPrintf("FORCE(%04i)[%04i] = % .9e % .9e % .9e\n", seq,id,
+    //CkPrintf("FORCE(%04i)[%04i] = <% .4e, % .4e, % .4e> <% .4e, % .4e, % .4e> <% .4e, % .4e, % .4e>\n", seq,id,
+//fxNo,fyNo,fzNo,
+//fxNb,fyNb,fzNb,
+//fxSl,fySl,fzSl,
+fx,fy,fz
+);
+	}
 #endif
 }
 

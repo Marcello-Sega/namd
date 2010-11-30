@@ -33,10 +33,18 @@ module WorkDistrib {
     entry void enqueueCrossterms(LocalWorkMsg *);
     entry void enqueueCUDA(LocalWorkMsg *);
     entry void enqueuePme(LocalWorkMsg *);
-    entry void enqueueSelfA(LocalWorkMsg *);
-    entry void enqueueSelfB(LocalWorkMsg *);
-    entry void enqueueWorkA(LocalWorkMsg *);
-    entry void enqueueWorkB(LocalWorkMsg *);
+    entry void enqueueSelfA1(LocalWorkMsg *);
+    entry void enqueueSelfA2(LocalWorkMsg *);
+    entry void enqueueSelfA3(LocalWorkMsg *);
+    entry void enqueueSelfB1(LocalWorkMsg *);
+    entry void enqueueSelfB2(LocalWorkMsg *);
+    entry void enqueueSelfB3(LocalWorkMsg *);
+    entry void enqueueWorkA1(LocalWorkMsg *);
+    entry void enqueueWorkA2(LocalWorkMsg *);
+    entry void enqueueWorkA3(LocalWorkMsg *);
+    entry void enqueueWorkB1(LocalWorkMsg *);
+    entry void enqueueWorkB2(LocalWorkMsg *);
+    entry void enqueueWorkB3(LocalWorkMsg *);
     entry void enqueueWorkC(LocalWorkMsg *);
   } ;
 }

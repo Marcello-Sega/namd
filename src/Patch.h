@@ -45,6 +45,24 @@ class Patch
      void unregisterVelocityPickup(ComputeID cid,
                                   Box<Patch,CompAtom>**const box);
      // END LA
+
+    //begin gbis
+    Box<Patch,Real>* registerIntRadPickup(ComputeID cid, int trans = 13);
+    void unregisterIntRadPickup(ComputeID cid, Box<Patch,Real>**const box);
+
+    Box<Patch,BigReal>* registerPsiSumDeposit(ComputeID cid);
+    void unregisterPsiSumDeposit(ComputeID cid, Box<Patch,BigReal>**const box);
+
+    Box<Patch,BigReal>* registerBornRadPickup(ComputeID cid, int trans = 13);
+    void unregisterBornRadPickup(ComputeID cid, Box<Patch,BigReal>**const box);
+
+    Box<Patch,BigReal>* registerDEdaSumDeposit(ComputeID cid);
+    void unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box);
+
+    Box<Patch,BigReal>* registerDHdrPrefixPickup(ComputeID cid, int trans = 13);
+    void unregisterDHdrPrefixPickup(ComputeID cid, Box<Patch,BigReal>**const box);
+     //end gbis
+
      Box<Patch,Results>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box);
 
@@ -59,6 +77,16 @@ class Patch
      // BEGIN LA
      void velocityBoxClosed(void);
      // END LA
+
+     //begin gbis
+     void intRadBoxClosed(void);// intrinsic radii
+     void psiSumBoxClosed(void);// sum screening 
+     void bornRadBoxClosed(void);// born radius
+     void dEdaSumBoxClosed(void);// sum dEda contributions
+     void dHdrPrefixBoxClosed(void);//dHdr prefix
+     void gbisP2Ready();
+     void gbisP3Ready();
+     //end gbis
 
      int getNumAtoms() { return numAtoms; }
 
@@ -87,6 +115,15 @@ class Patch
      // BEGIN LA
      CompAtomList  v;
      // END LA
+
+     // begin gbis
+     RealList intRad;
+     BigRealList psiSum;
+     BigRealList psiFin;
+     BigRealList bornRad;
+     BigRealList dHdrPrefix;
+     BigRealList dEdaSum;
+     // end gbis
 
      // DMK - Atom Separation (water vs. non-water)
      #if NAMD_SeparateWaters != 0
@@ -132,6 +169,20 @@ class Patch
      OwnerBox<Patch,CompAtom> velocityBox;
      ComputeIDList              velocityComputeList;
      // END LA
+
+     //begin gbis
+     OwnerBox<Patch,Real> intRadBox;
+     ComputeIDList           intRadComputeList;
+     OwnerBox<Patch,BigReal> psiSumBox;
+     ComputeIDList           psiSumComputeList;
+     OwnerBox<Patch,BigReal> bornRadBox;
+     ComputeIDList           bornRadComputeList;
+     OwnerBox<Patch,BigReal> dEdaSumBox;
+     ComputeIDList           dEdaSumComputeList;
+     OwnerBox<Patch,BigReal> dHdrPrefixBox;
+     ComputeIDList           dHdrPrefixComputeList;
+     //end gbis
+
      OwnerBox<Patch,Results>    forceBox;
      ComputeIDList              forceComputeList;
 

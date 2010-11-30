@@ -8,6 +8,11 @@
 #include "ReductionMgr.h"
 #include "Patch.h"
 #include "LdbCoordinator.h"
+#include "Molecule.h"
+#include "ComputeGBIS.inl"
+
+#include "Node.h"
+#include "SimParameters.h"
 
 #define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
@@ -39,6 +44,13 @@ void ComputeNonbondedSelf::initialize() {
   // BEGIN LA
   velocityBox = patch->registerVelocityPickup(cid);
   // END LA
+
+  psiSumBox = patch->registerPsiSumDeposit(cid);
+  intRadBox = patch->registerIntRadPickup(cid);
+  bornRadBox = patch->registerBornRadPickup(cid);
+  dEdaSumBox = patch->registerDEdaSumDeposit(cid);
+  dHdrPrefixBox = patch->registerDHdrPrefixPickup(cid);
+
 #ifdef NAMD_CUDA
   register_cuda_compute_self(cid, patchID);
 #endif
@@ -57,20 +69,29 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
       patch->unregisterVelocityPickup(cid,&velocityBox);
   }
   // END LA
+
+  if (psiSumBox != NULL)
+  patch->unregisterPsiSumDeposit(cid, &psiSumBox);
+  if (intRadBox != NULL)
+  patch->unregisterIntRadPickup(cid, &intRadBox);
+  if (bornRadBox != NULL)
+  patch->unregisterBornRadPickup(cid, &bornRadBox);
+  if (dEdaSumBox != NULL)
+  patch->unregisterDEdaSumDeposit(cid, &dEdaSumBox);
+  if (dHdrPrefixBox != NULL)
+  patch->unregisterDHdrPrefixPickup(cid, &dHdrPrefixBox);
 }
 
 int ComputeNonbondedSelf::noWork() {
 
-  // return 0;  // for testing
-  if ( numAtoms && patch->flags.doNonbonded
+  if ( patch->flags.doNonbonded && (numAtoms || patch->flags.doGBIS)
 #ifdef NAMD_CUDA
         && patch->flags.doEnergy
 #endif
  )
   {
     return 0;  // work to do, enqueue as usual
-  } else
-  {
+  } else {
     // Inform load balancer
 #ifndef NAMD_CUDA
     LdbCoordinator::Object()->skipWork(cid);
@@ -90,6 +111,11 @@ int ComputeNonbondedSelf::noWork() {
     CompAtom* v;
     // END LA
     Results* r;
+    BigReal* psiSum;
+    Real* intRad;
+    BigReal* bornRad;
+    BigReal* dEdaSum;
+    BigReal* dHdrPrefix;
 
     // Open up positionBox, forceBox, and atomBox
       p = positionBox->open();
@@ -98,6 +124,18 @@ int ComputeNonbondedSelf::noWork() {
       // BEGIN LA
       if (patch->flags.doLoweAndersen) v = velocityBox->open();
       // END LA
+      if (patch->flags.doGBIS) {
+        psiSum = psiSumBox->open();
+        psiSumBox->close(&psiSum);
+        intRad = intRadBox->open();
+        intRadBox->close(&intRad);
+        bornRad = bornRadBox->open();
+        bornRadBox->close(&bornRad);
+        dEdaSum = dEdaSumBox->open();
+        dEdaSumBox->close(&dEdaSum);
+        dHdrPrefix = dHdrPrefixBox->open();
+        dHdrPrefixBox->close(&dHdrPrefix);
+      }
 
     // Close up boxes
       positionBox->close(&p);
@@ -123,9 +161,21 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
 {
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
+  //single phase declarations
+  CompAtom* v;
+  int doEnergy = patch->flags.doEnergy;
+
+
 #ifndef NAMD_CUDA
-  LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+  // Inform load balancer. 
+  // I assume no threads will suspend until endWork is called
+    LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
 #endif
+
+/*******************************************************************************
+   * Prepare Parameters
+ ******************************************************************************/
+  if (!patch->flags.doGBIS || gbisPhase == 1) {
 
 #ifdef TRACE_COMPUTE_OBJECTS
   double traceObjStartTime = CmiWallTimer();
@@ -135,7 +185,6 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
   DebugM(1,numAtoms << " patch 1 atoms\n");
   DebugM(3, "NUMATOMSxNUMATOMS = " << numAtoms*numAtoms << "\n");
 
-  BigReal reductionData[reductionDataSize];
   for ( int i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
   if (pressureProfileOn) {
     int n = pressureProfileAtomTypes;
@@ -145,8 +194,7 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     pressureProfileThickness = lattice.c().z / pressureProfileSlabs;
     pressureProfileMin = lattice.origin().z - 0.5*lattice.c().z;
   }
-  if ( patch->flags.doNonbonded )
-  {
+
     plint maxa = (plint)(-1);
     if ( numAtoms > maxa ) {
       char estr[1024];
@@ -154,8 +202,6 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
       NAMD_die(estr); 
     }
 
-    int doEnergy = patch->flags.doEnergy;
-    nonbonded params;
     params.offset = 0.;
     params.p[0] = p;
     params.p[1] = p;
@@ -163,7 +209,6 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     params.pExt[1] = pExt;
     // BEGIN LA
     params.doLoweAndersen = patch->flags.doLoweAndersen;
-    CompAtom* v;
     if (params.doLoweAndersen) {
 	DebugM(4, "opening velocity box\n");
 	v = velocityBox->open();
@@ -217,30 +262,37 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
       params.groupplcutoff += pairlistTolerance;
     }
 
+
+/*******************************************************************************
+ * Call Nonbonded Functions
+ ******************************************************************************/
+
+    if (numAtoms) {
     if ( patch->flags.doFullElectrostatics )
     {
       params.fullf[0] = r->f[Results::slow];
       params.fullf[1] = r->f[Results::slow];
       if ( patch->flags.doMolly ) {
         if ( doEnergy ) calcSelfEnergy(&params);
-	else calcSelf(&params);
+  else calcSelf(&params);
         CompAtom *p_avg = avgPositionBox->open();
         params.p[0] = p_avg;
         params.p[1] = p_avg;
         if ( doEnergy ) calcSlowSelfEnergy(&params);
-	else calcSlowSelf(&params);
+  else calcSlowSelf(&params);
         avgPositionBox->close(&p_avg);
       } else if ( patch->flags.maxForceMerged == Results::slow ) {
         if ( doEnergy ) calcMergeSelfEnergy(&params);
-	else calcMergeSelf(&params);
+  else calcMergeSelf(&params);
       } else {
         if ( doEnergy ) calcFullSelfEnergy(&params);
-	else calcFullSelf(&params);
+  else calcFullSelf(&params);
       }
     }
     else
       if ( doEnergy ) calcSelfEnergy(&params);
       else calcSelf(&params);
+    }//end if atoms
     
     // BEGIN LA
     if (params.doLoweAndersen) {
@@ -248,8 +300,79 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
 	velocityBox->close(&v);
     }
     // END LA
+  }//end if not gbis
+
+/*******************************************************************************
+ * gbis Loop
+*******************************************************************************/
+if (patch->flags.doGBIS) {
+  SimParameters *simParams = Node::Object()->simParameters;
+  gbisParams.sequence = sequence();
+  gbisParams.doGBIS = patch->flags.doGBIS;
+  gbisParams.numPatches = 1;//self
+  gbisParams.gbisPhase = gbisPhase;
+  gbisParams.doFullElectrostatics = patch->flags.doFullElectrostatics;
+  gbisParams.epsilon_s = simParams->solvent_dielectric;
+  gbisParams.epsilon_p = simParams->dielectric;
+  gbisParams.rho_0 = simParams->coulomb_radius_offset;
+  gbisParams.kappa = simParams->kappa;
+  gbisParams.cutoff = simParams->cutoff;
+  gbisParams.doSmoothing = simParams->switchingActive;
+  gbisParams.a_cut = simParams->alpha_cutoff;
+  gbisParams.delta = simParams->gbis_delta;
+  gbisParams.beta = simParams->gbis_beta;
+  gbisParams.gamma = simParams->gbis_gamma;
+  gbisParams.alpha_max = simParams->alpha_max;
+  gbisParams.cid = cid;
+  gbisParams.patchID[0] = patch->getPatchID();
+  gbisParams.patchID[1] = patch->getPatchID();
+  gbisParams.maxGroupRadius = patch->flags.maxGroupRadius;
+  gbisParams.doEnergy = doEnergy;
+  gbisParams.fsMax = simParams->fsMax;
+  for (int i = 0; i < numGBISPairlists; i++)
+    gbisParams.gbisStepPairlists[i] = &gbisStepPairlists[i];
+
+  //open boxes
+  if (gbisPhase == 1) {
+      gbisParams.intRad[0] = intRadBox->open();
+      gbisParams.intRad[1] = gbisParams.intRad[0];
+      gbisParams.psiSum[0] = psiSumBox->open();
+      gbisParams.psiSum[1] = gbisParams.psiSum[0];
+      gbisParams.gbInterEnergy=0;
+      gbisParams.gbSelfEnergy=0;
+  } else if (gbisPhase == 2) {
+      gbisParams.bornRad[0] = bornRadBox->open();
+      gbisParams.bornRad[1] = gbisParams.bornRad[0];
+      gbisParams.dEdaSum[0] = dEdaSumBox->open();
+      gbisParams.dEdaSum[1] = gbisParams.dEdaSum[0];
+  } else if (gbisPhase == 3) {
+      gbisParams.dHdrPrefix[0] = dHdrPrefixBox->open();
+      gbisParams.dHdrPrefix[1] = gbisParams.dHdrPrefix[0];
   }
 
+  //make call to calculate GBIS
+    calcGBIS(&params,&gbisParams);
+
+  //close boxes
+  if (gbisPhase == 1) {
+      psiSumBox->close(&(gbisParams.psiSum[0]));
+  } else if (gbisPhase == 2) {
+      dEdaSumBox->close(&(gbisParams.dEdaSum[0]));
+  } else if (gbisPhase == 3) {
+      bornRadBox->close(&(gbisParams.bornRad[0]));
+      reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbInterEnergy;
+      reduction->item(REDUCTION_ELECT_ENERGY) += gbisParams.gbSelfEnergy;
+      intRadBox->close(&(gbisParams.intRad[0]));
+      dHdrPrefixBox->close(&(gbisParams.dHdrPrefix[0]));
+  }
+
+}// end if doGBIS
+
+
+/*******************************************************************************
+ * Reduction
+*******************************************************************************/
+  if (!patch->flags.doGBIS || gbisPhase == 3) {
   submitReductionData(reductionData,reduction);
   if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
@@ -258,13 +381,21 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
     traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+cid, traceObjStartTime, CmiWallTimer());
 #endif
 
-  // Inform load balancer
-#ifndef NAMD_CUDA
-  LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
-#endif
-
   reduction->submit();
   if (pressureProfileOn)
     pressureProfileReduction->submit();
+  }// end not gbis
+
+  // Inform load balancer
+  if (patch->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
+#endif
+  } else {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
+
+  }
 }
 

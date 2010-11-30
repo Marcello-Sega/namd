@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2010/11/13 00:36:17 $
- * $Revision: 1.1314 $
+ * $Author: dtanner $
+ * $Date: 2010/11/30 18:33:31 $
+ * $Revision: 1.1315 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1145,6 +1145,32 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.require("extForces", "extForceFilename",
       "External forces force filename", extForceFilename);
 
+   /* GBIS generalized born implicit solvent*/
+
+   opts.optionalB("main", "gbis", "Use GB implicit solvent?",
+      &GBISOn, FALSE);
+   opts.optionalB("main", "gbis_ser", "Use GB implicit solvent?",
+      &GBISserOn, FALSE);
+
+   opts.optional("gbis", "solvent_dielectric",
+      "Solvent Dielectric", &solvent_dielectric, 78.5);
+   opts.optional("gbis", "coulomb_radius_offset",
+      "Coulomb Radius Offset", &coulomb_radius_offset, 0.09);
+   opts.optional("gbis", "ion_concentration",
+      "Ion Concentration", &ion_concentration, 0.2); //0.2 mol/L
+   opts.optional("gbis", "gbis_delta",
+      "delta from GBOBC", &gbis_delta, 1.0); //0.8 or 1.0
+   opts.optional("gbis", "gbis_beta",
+      "beta from GBOBC", &gbis_beta, 0.8);   //0.0 or 0.8
+   opts.optional("gbis", "gbis_gamma",
+      "gamma from GBOBC", &gbis_gamma, 4.85);//2.290912 or 4.85
+   opts.optional("gbis", "alpha_cutoff",
+      "cutoff for calculating effective born radius", &alpha_cutoff, 15);
+   opts.optional("gbis", "alpha_max",
+      "maximum allowable born radius", &alpha_max, 30);
+   opts.optional("gbis", "fsMax",
+      "maximum screened intrinsic radius", &fsMax, 1.728);
+
    //****** BEGIN SMD constraints changes 
 
    // SMD constraints
@@ -2252,6 +2278,38 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    patchDimension += margin;
 
+    //ensure patch can handle alpha_cutoff for gbis
+    if (GBISOn) {
+      if (alpha_cutoff > patchDimension) {
+        patchDimension = alpha_cutoff; 
+      }
+      //calculate kappa
+      //righthere
+      BigReal tmp = (initialTemp > 0) ? initialTemp : 300;
+      kappa = 50.29216*sqrt(ion_concentration/solvent_dielectric/tmp);
+      /*magic number = 1/sqrt(eps0*kB/(2*nA*e^2*1000))*/
+
+      //default scaling parameters
+      if (!opts.defined("numAtomsSelf")) {
+        numAtomsSelf = 35;
+      }
+      if (!opts.defined("numAtomsSelf2")) {
+        numAtomsSelf2 = 35;
+      }
+      if (!opts.defined("numAtomsPair")) {
+        numAtomsPair = 35*2;
+      }
+      if (!opts.defined("numAtomsPair2")) {
+        numAtomsPair2 = 35*3;
+      }
+      if (!opts.defined("maxSelfPart")) {
+        maxSelfPart = 100;
+      }
+      if (!opts.defined("maxPairPart")) {
+        maxPairPart = 100;
+      }
+    }
+
    //  Turn on global integration if not explicitly specified
 
    if ( dihedralOn ) globalOn = TRUE;
@@ -2792,7 +2850,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("stepsPerCycle must be a multiple of nonbondedFreq");
    }
 
-   if (!FMAOn && !PMEOn && !fullDirectOn)
+   if (!GBISOn && !GBISserOn && !FMAOn && !PMEOn && !fullDirectOn)
    {
      fullElectFrequency = 0;
    }
@@ -3113,6 +3171,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      noPatchesOnOne = FALSE;
 #endif
      if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
+     iout << endi;
+     if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";
      iout << endi;
      if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";     
      iout << endi;
@@ -3653,6 +3713,29 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "EXT FORCES COMMAND: " << extForcesCommand << "\n";
      iout << iINFO << "EXT COORD FILENAME: " << extCoordFilename << "\n";
      iout << iINFO << "EXT FORCE FILENAME: " << extForceFilename << "\n";
+     iout << endi;
+   }
+
+   // gbis gbobc implicit solvent parameters
+
+   if (GBISserOn) {
+      GBISOn = 0;//turning gbis-ser on turns gbis-parallel off
+     iout << iINFO<< "GBIS GENERALIZED BORN IMPLICIT SOLVENT ACTIVE (SERIAL)\n";
+    }
+   if (GBISOn) {
+     iout << iINFO << "GBIS GENERALIZED BORN IMPLICIT SOLVENT ACTIVE\n";
+    }
+  if (GBISOn || GBISserOn) {
+     iout << iINFO << "GBIS SOLVENT DIELECTRIC: " << solvent_dielectric<< "\n";
+     iout << iINFO << "GBIS PROTEIN DIELECTRIC: " << dielectric<< "\n";
+     iout <<iINFO<<"GBIS COULOMB RADIUS OFFSET: "<< coulomb_radius_offset<<" Ang\n";
+     iout << iINFO << "GBIS ION CONCENTRATION: " << ion_concentration << " M\n";
+     iout << iINFO << "GBIS DEBYE SCREENING LENGTH: " << 1.0/kappa << " Ang\n";
+     iout << iINFO << "GBIS DELTA: " << gbis_delta << "\n";
+     iout << iINFO << "GBIS BETA: " << gbis_beta << "\n";
+     iout << iINFO << "GBIS GAMMA: " << gbis_gamma << "\n";
+     iout << iINFO << "GBIS BORN RADIUS CUTOFF: " << alpha_cutoff << " Ang\n";
+     iout << iINFO << "GBIS MAX BORN RADIUS: " << alpha_max << " Ang\n";
      iout << endi;
    }
 

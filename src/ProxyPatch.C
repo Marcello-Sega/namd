@@ -89,16 +89,41 @@ ProxyPatch::~ProxyPatch()
 #endif
 }
 
-void ProxyPatch::boxClosed(int box)
-{
-  if ( box == 1 ) {	
+void ProxyPatch::boxClosed(int box) {
+    ProxyGBISP1ResultMsg *msg1;
+    ProxyGBISP2ResultMsg *msg2;
+ 
+  if (box == 1) { // force Box
     // Note: delay the deletion of proxyDataMsg (of the 
     // current step) until the next step. This is done 
     // for the sake of atom migration (ProxyDataMsg) 
     // as the ProxyPatch has to  unregister the atoms 
-    // of the previous step in the AtomMap data structure. 
+    // of the previous step in the AtomMap data structure 
+    // also denotes end of gbis phase 3
     sendResults();
+  } else if ( box == 5) {//end phase 1
+    msg1 = new (numAtoms,PRIORITY_SIZE) ProxyGBISP1ResultMsg;
+    for (int i = 0; i < numAtoms; i++) {
+      msg1->psiSum[i] = psiSum[i];
+    }
+    msg1->patch = patchID;
+    msg1->origPe = CkMyPe();
+    SET_PRIORITY(msg1,flags.sequence,GB1_PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
+    ProxyMgr::Object()->sendResult(msg1);
+  } else if ( box == 8) {//end phase 2
+    msg2 = new (numAtoms,PRIORITY_SIZE) ProxyGBISP2ResultMsg;
+    for (int i = 0; i < numAtoms; i++) {
+      msg2->dEdaSum[i] = dEdaSum[i];
+    }
+    msg2->patch = patchID;
+    msg2->dEdaSumLen = numAtoms;
+    msg2->origPe = CkMyPe();
+    SET_PRIORITY(msg2,flags.sequence,GB2_PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
+    ProxyMgr::Object()->sendResult(msg2);
+  } else if (box == 9) {
+    //nothing
   }
+
   if ( ! --boxesOpen ) {
     DebugM(2,patchID << ": " << "Checking message buffer.\n");    
     
@@ -123,6 +148,7 @@ void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
   delete msg;
 }
 
+//each timestep
 void ProxyPatch::receiveData(ProxyDataMsg *msg)
 {
   DebugM(3, "receiveData(" << patchID << ")\n");
@@ -186,6 +212,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
   }
 }
 
+//every doMigration
 void ProxyPatch::receiveAll(ProxyDataMsg *msg)
 {
   DebugM(3, "receiveAll(" << patchID << ")\n");
@@ -237,6 +264,13 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
   velocityPtrEnd = msg->velocityList + msg->vlLen;
   // END LA
 
+  if (flags.doGBIS) {
+    intRad.resize(numAtoms*2);
+    for (int i = 0; i < numAtoms*2;i++) {
+      intRad[i] = msg->intRadList[i];
+    }
+  }
+
   //We cannot reuse the CompAtomExt list inside the msg because
   //the information is needed at every step. In the current implementation
   //scheme, the ProxyDataMsg msg will be deleted for every step.
@@ -282,6 +316,7 @@ void ProxyPatch::sendResults(void)
       msg->forceList[i] = f[i];
 #endif
     SET_PRIORITY(msg,flags.sequence,PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
+    //sending results to HomePatch
     ProxyMgr::Object()->sendResults(msg);
   }
   else {
@@ -292,6 +327,7 @@ void ProxyPatch::sendResults(void)
     msg->patch = patchID;
     for ( i = 0; i < Results::maxNumForces; ++i ) 
       msg->forceList[i] = f[i];
+    //sending results to HomePatch
     ProxyMgr::Object()->sendResults(msg);
   }
 #if CMK_PERSISTENT_COMM
@@ -406,6 +442,19 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
 #endif
 
   return NULL;
+}
+
+//receive data after phase 1 to begin phase 2
+void ProxyPatch::receiveData(ProxyGBISP2DataMsg *msg) {
+  memcpy(bornRad.begin(), msg->bornRad, sizeof(BigReal)*numAtoms);
+  delete msg;
+  Patch::gbisP2Ready();
+}
+
+void ProxyPatch::receiveData(ProxyGBISP3DataMsg *msg) {
+  memcpy(dHdrPrefix.begin(), msg->dHdrPrefix, sizeof(BigReal)*numAtoms);
+  delete msg;
+  Patch::gbisP3Ready();
 }
 
 ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultRawMsg(ProxyCombinedResultRawMsg *msg) {

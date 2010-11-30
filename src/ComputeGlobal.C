@@ -42,7 +42,7 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
   for (i=0; i<numAtoms; ++i)
     isRequested[i] = 0;
   SimParameters *sp = Node::Object()->simParameters;
-  dofull = (sp->fullDirectOn || sp->FMAOn || sp->PMEOn);
+  dofull = (sp->GBISserOn || sp->GBISOn || sp->fullDirectOn || sp->FMAOn || sp->PMEOn);
   fid = new AtomIDList;
   totalForce = new ForceList;
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);

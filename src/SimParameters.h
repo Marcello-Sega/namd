@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2010/11/13 00:36:17 $
- * $Revision: 1.1170 $
+ * $Author: dtanner $
+ * $Date: 2010/11/30 18:33:32 $
+ * $Revision: 1.1171 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -334,6 +334,20 @@ public:
         char extForcesCommand[256];
         char extCoordFilename[128];
         char extForceFilename[128];
+
+  //gbis implicit solvent parameters
+  Bool GBISOn;                    //do generalized born implicit solvent
+  BigReal fsMax;
+  Bool GBISserOn;                 //do generalized born implicit solvent serial
+  BigReal solvent_dielectric;     //epsilon_s
+  BigReal coulomb_radius_offset;  //rho_0
+  BigReal kappa;      //debye screening length; k = sqrt(ion concentration mol/L ) / 0.304
+  BigReal ion_concentration;
+	BigReal gbis_delta;							//three parameters for born radius calc
+	BigReal gbis_beta;
+	BigReal gbis_gamma;
+	BigReal alpha_cutoff;						//pairwise cutoff for integrating born radius
+	BigReal alpha_max;								//maximum allowable born radius
 
         Bool drudeOn;       // Perform integration of Drude oscillators?
         BigReal drudeTemp;  // (low) temperature for freezing Drude oscillators

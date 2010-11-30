@@ -30,8 +30,27 @@ module ProxyMgr {
     // BEGIN LA
     CompAtom velocityList[];
     // END LA
+    // begin gbis
+    Real intRadList[];
+    // end gbis
+
     CompAtomExt positionExtList[];
   };
+
+  // begin gbis
+  message ProxyGBISP1ResultMsg {
+    double psiSum[];
+  };
+  message ProxyGBISP2DataMsg {
+    double bornRad[];
+  };
+  message ProxyGBISP2ResultMsg {
+    double dEdaSum[];
+  };
+  message ProxyGBISP3DataMsg {
+    double dHdrPrefix[];
+  };
+  // end gbis
 
   message ProxyResultVarsizeMsg{
     //Make sure forceArr is the first varsize type declaration
@@ -65,6 +84,13 @@ module ProxyMgr {
     entry void recvNodeAwareSTParent(int, int);
     entry void buildProxySpanningTree2();
     entry void recvProxies(int pid, int list[n], int n);
+
+    entry void sendResult(ProxyGBISP1ResultMsg *);
+    entry void recvResult(ProxyGBISP1ResultMsg *);
+    entry void recvData(  ProxyGBISP2DataMsg *);
+    entry void sendResult(ProxyGBISP2ResultMsg *);
+    entry void recvResult(ProxyGBISP2ResultMsg *);
+    entry void recvData(  ProxyGBISP3DataMsg *);
   };
   
   nodegroup NodeProxyMgr{
