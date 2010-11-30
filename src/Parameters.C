@@ -6397,7 +6397,7 @@ int Parameters::read_energy_type_bothcubspline(FILE* enertable, const int typein
 			continue;
 		}
     if (strncmp(tableline,"TYPE",4)==0) {
-      fseek(enertable, -1 * strlen(tableline), SEEK_CUR); 
+      fseek(enertable, -1 * (long) strlen(tableline), SEEK_CUR); 
       break;
     }
 
@@ -6631,7 +6631,7 @@ int Parameters::read_energy_type_cubspline(FILE* enertable, const int typeindex,
 			continue;
 		}
     if (strncmp(tableline,"TYPE",4)==0) {
-      fseek(enertable, -1 * strlen(tableline), SEEK_CUR); 
+      fseek(enertable, -1 * (long) strlen(tableline), SEEK_CUR); 
       break;
     }
 
@@ -6904,7 +6904,7 @@ int Parameters::read_energy_type(FILE* enertable, const int typeindex, BigReal* 
   }
 
   // Go back one line, since we should now be into the next TYPE block
-  fseek(enertable, -1 * strlen(tableline), SEEK_CUR); 
+  fseek(enertable, -1 * (long) strlen(tableline), SEEK_CUR); 
 
   // Clean up and make sure everything worked ok
   distbin--;
