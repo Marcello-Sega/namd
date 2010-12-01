@@ -218,7 +218,6 @@ obj/BackEnd.o: \
 	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
 	inc/PmeFFTLib.decl.h \
-	inc/CollectionMgr.decl.h \
 	inc/ComputeExtMgr.decl.h \
 	inc/ComputeGBISserMgr.decl.h \
 	inc/CollectionMgr.decl.h \
@@ -910,7 +909,6 @@ obj/ComputeDPME.o: \
 	inc/ComputeMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
-	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -926,6 +924,7 @@ obj/ComputeDPME.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/PatchMgr.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
@@ -964,11 +963,22 @@ obj/ComputeDPMTA.o: \
 	src/MStream.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
 	src/PatchMap.inl \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/ResizeArrayIter.h \
 	src/AtomMap.h \
 	src/ComputeDPMTA.h \
@@ -984,17 +994,6 @@ obj/ComputeDPMTA.o: \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
 	src/PatchMgr.h \
-	src/Molecule.h \
-	src/parm.h \
-	src/structures.h \
-	src/ConfigList.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
-	src/Hydrogen.h \
-	src/GromacsTopFile.h \
-	src/GridForceGrid.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeDPMTA.o $(COPTC) src/ComputeDPMTA.C
@@ -1160,15 +1159,10 @@ obj/ComputeExt.o: \
 	src/varsizemsg.h \
 	inc/ComputeExtMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeExt.o $(COPTC) src/ComputeExt.C
-
-obj/ComputeGBIS.o: \
-	src/ComputeGBIS.C \
-	src/ComputeGBIS.inl \
-	src/ComputeNonbondedUtil.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGBIS.o $(COPTC) src/ComputeGBIS.C
-
 obj/ComputeGBISser.o: \
 	src/ComputeGBISser.C \
+	src/Vector.h \
+	src/common.h \
 	src/InfoStream.h \
 	src/Node.h \
 	src/main.h \
@@ -1177,8 +1171,6 @@ obj/ComputeGBISser.o: \
 	inc/Node.decl.h \
 	src/PatchMap.h \
 	src/NamdTypes.h \
-	src/common.h \
-	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/HomePatchList.h \
@@ -1230,6 +1222,39 @@ obj/ComputeGBISser.o: \
 	src/varsizemsg.h \
 	inc/ComputeGBISserMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGBISser.o $(COPTC) src/ComputeGBISser.C
+obj/ComputeGBIS.o: \
+	src/ComputeGBIS.C \
+	src/ComputeNonbondedUtil.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ComputeGBIS.inl
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGBIS.o $(COPTC) src/ComputeGBIS.C
 obj/ComputeFullDirect.o: \
 	src/ComputeFullDirect.C \
 	src/InfoStream.h \
@@ -1266,18 +1291,13 @@ obj/ComputeFullDirect.o: \
 	inc/PatchMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
-	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
 	src/ConfigList.h \
-	src/ParallelIOMgr.h \
-	src/CompressPsf.h \
-	src/Hydrogen.h \
-	src/NamdState.h \
-	inc/ParallelIOMgr.decl.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
 	src/SimParameters.h \
@@ -1286,6 +1306,7 @@ obj/ComputeFullDirect.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/PatchMgr.h \
 	src/Communicate.h \
 	src/Debug.h \
 	src/ComputeFullDirectBase.h
@@ -1616,6 +1637,19 @@ obj/ComputeMgr.o: \
 	src/Compute.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/Hydrogen.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
 	src/ComputeNonbondedSelf.h \
 	src/ComputePatch.h \
 	src/Box.h \
@@ -1624,26 +1658,13 @@ obj/ComputeMgr.o: \
 	src/ComputePatchPair.h \
 	src/ComputeNonbondedCUDA.h \
 	src/ComputeHomeTuples.h \
-	src/structures.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/SimParameters.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/MStream.h \
 	src/PatchMgr.h \
-	src/Molecule.h \
-	src/parm.h \
-	src/ConfigList.h \
-	src/Hydrogen.h \
-	src/GromacsTopFile.h \
-	src/GridForceGrid.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
 	src/Parameters.h \
 	src/Priorities.h \
 	src/ComputeAngles.h \
@@ -1742,16 +1763,35 @@ obj/ComputeNonbondedSelf.o: \
 	src/ReductionMgr.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	inc/NamdHybridLB.decl.h \
 	inc/NamdDummyLB.decl.h \
+	src/ComputeGBIS.inl \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedSelf.o $(COPTC) src/ComputeNonbondedSelf.C
 obj/ComputeNonbondedPair.o: \
@@ -1774,10 +1814,26 @@ obj/ComputeNonbondedPair.o: \
 	src/ReductionMgr.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
-	src/SortableResizeArray.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
@@ -1787,6 +1843,13 @@ obj/ComputeNonbondedPair.o: \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
+	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
+	src/ComputeGBIS.inl \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedPair.o $(COPTC) src/ComputeNonbondedPair.C
 obj/ComputeNonbondedUtil.o: \
@@ -1802,14 +1865,6 @@ obj/ComputeNonbondedUtil.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/MStream.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -1820,8 +1875,16 @@ obj/ComputeNonbondedUtil.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/LJTable.h \
 	src/Parameters.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
@@ -1838,15 +1901,6 @@ obj/ComputeNonbondedStd.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/InfoStream.h \
-	src/MStream.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -1857,8 +1911,17 @@ obj/ComputeNonbondedStd.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -1883,15 +1946,6 @@ obj/ComputeNonbondedFEP.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/InfoStream.h \
-	src/MStream.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -1902,8 +1956,17 @@ obj/ComputeNonbondedFEP.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -1928,15 +1991,6 @@ obj/ComputeNonbondedLES.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/InfoStream.h \
-	src/MStream.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -1947,8 +2001,17 @@ obj/ComputeNonbondedLES.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -1973,15 +2036,6 @@ obj/ComputeNonbondedPProf.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/InfoStream.h \
-	src/MStream.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -1992,8 +2046,17 @@ obj/ComputeNonbondedPProf.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2018,15 +2081,6 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
-	src/SimParameters.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/InfoStream.h \
-	src/MStream.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -2037,8 +2091,17 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
 	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/Node.h \
+	inc/Node.decl.h \
 	src/LJTable.h \
 	src/ReserveArray.h \
 	src/PressureProfile.h \
@@ -2066,11 +2129,30 @@ obj/ComputeNonbondedCUDA.o: \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
 	src/ComputeNonbondedCUDA.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
-	src/ComputeHomeTuples.h \
+	src/Molecule.h \
+	src/parm.h \
 	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ComputeHomeTuples.h \
 	src/Compute.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -2078,36 +2160,18 @@ obj/ComputeNonbondedCUDA.o: \
 	src/Box.h \
 	src/UniqueSortedArray.h \
 	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/Lattice.h \
-	src/Tensor.h \
 	src/PatchTypes.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
-	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
-	src/UniqueSet.h \
-	src/UniqueSetRaw.h \
 	src/Node.h \
 	inc/Node.decl.h \
-	src/SimParameters.h \
-	src/MGridforceParams.h \
-	src/strlib.h \
-	src/MStream.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/PatchMgr.h \
-	src/Molecule.h \
-	src/parm.h \
-	src/ConfigList.h \
-	src/Hydrogen.h \
-	src/GromacsTopFile.h \
-	src/GridForceGrid.h \
-	plugins/include/molfile_plugin.h \
-	plugins/include/vmdplugin.h \
 	src/Parameters.h \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
@@ -2212,6 +2276,7 @@ obj/ComputePatch.o: \
 	src/AtomMap.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
+	src/ComputeMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatch.o $(COPTC) src/ComputePatch.C
 obj/ComputePatchPair.o: \
@@ -2244,6 +2309,7 @@ obj/ComputePatchPair.o: \
 	src/AtomMap.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
+	src/ComputeMap.h \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatchPair.o $(COPTC) src/ComputePatchPair.C
 obj/ComputePme.o: \
@@ -2288,7 +2354,6 @@ obj/ComputePme.o: \
 	src/PmeKSpace.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
-	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -2304,6 +2369,7 @@ obj/ComputePme.o: \
 	src/MStream.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/PatchMgr.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
@@ -2364,7 +2430,6 @@ obj/OptPme.o: \
 	src/PmeKSpace.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
-	src/PatchMgr.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -2376,6 +2441,7 @@ obj/OptPme.o: \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/PatchMgr.h \
 	inc/ComputeMgr.decl.h \
 	src/Debug.h \
 	src/WorkDistrib.h \
@@ -2654,37 +2720,6 @@ obj/ConfigList.o: \
 	src/InfoStream.h \
 	src/ConfigList.h \
 	src/common.h \
-	src/ParallelIOMgr.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
-	src/CompressPsf.h \
-	src/structures.h \
-	src/Hydrogen.h \
-	src/NamdTypes.h \
-	src/Vector.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/SortableResizeArray.h \
-	src/NamdState.h \
-	src/Lattice.h \
-	src/Tensor.h \
-	inc/ParallelIOMgr.decl.h \
-	inc/Node.decl.h \
-	src/PatchMgr.h \
-	src/SortedArray.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/UniqueSortedArray.h \
-	src/PatchTypes.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/ResizeArrayIter.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
-	src/main.h \
 	src/strlib.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ConfigList.o $(COPTC) src/ConfigList.C
 obj/Controller.o: \
@@ -2813,7 +2848,6 @@ obj/DumpBench.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
-	src/LJTable.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -2826,6 +2860,7 @@ obj/DumpBench.o: \
 	src/GridForceGrid.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
+	src/LJTable.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMap.h \
@@ -3614,6 +3649,7 @@ obj/HomePatch.o: \
 	src/ResizeArrayPrimIter.h \
 	src/Random.h \
 	src/Priorities.h \
+	src/ComputeGBIS.inl \
 	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/HomePatch.o $(COPTC) src/HomePatch.C
 obj/IMDOutput.o: \
@@ -3706,8 +3742,8 @@ obj/LdbCoordinator.o: \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
-	src/packmsg.h \
 	inc/ComputeMgr.decl.h \
+	src/packmsg.h \
 	inc/LdbCoordinator.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/LdbCoordinator.o $(COPTC) src/LdbCoordinator.C
 obj/LJTable.o: \
@@ -4285,6 +4321,7 @@ obj/Node.o: \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
 	src/Molecule.h \
 	src/parm.h \
 	src/structures.h \
@@ -4319,7 +4356,6 @@ obj/Node.o: \
 	src/BroadcastMgr.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	inc/ComputeMgr.decl.h \
 	inc/ComputePmeMgr.decl.h \
 	inc/ComputeGridForceMgr.decl.h \
 	inc/OptPmeMgr.decl.h \
@@ -4334,11 +4370,6 @@ obj/Node.o: \
 	inc/ParallelIOMgr.decl.h \
 	src/Random.h \
 	src/DumpBench.h \
-	src/CollectionMgr.h \
-	src/CollectionMaster.h \
-	inc/CollectionMaster.decl.h \
-	src/ParallelIOMgr.h \
-	src/CompressPsf.h \
 	inc/Node.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Node.o $(COPTC) src/Node.C
 obj/Output.o: \
@@ -4943,7 +4974,10 @@ obj/ScriptTcl.o: \
 	src/DumpBench.h \
 	src/TclCommands.h \
 	src/Debug.h \
-	plugins/include/libmolfile_plugin.h
+	plugins/include/molfile_plugin.h \
+	plugins/include/libmolfile_plugin.h \
+	src/ComputeConsForceMsgs.h \
+	inc/ComputeMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
 obj/Sequencer.o: \
 	src/Sequencer.C \
@@ -5017,6 +5051,7 @@ obj/Sequencer.o: \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
 	src/ComputeGlobal.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
@@ -5048,15 +5083,25 @@ obj/SimParameters.o: \
 	src/main.h \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
 	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
 	src/SimParameters.h \
 	src/Lattice.h \
-	src/Tensor.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
 	src/ParseOptions.h \
-	src/structures.h \
 	src/Communicate.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
@@ -5112,7 +5157,10 @@ obj/TclCommands.o: \
 	src/common.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
-	src/ResizeArrayRaw.h
+	src/ResizeArrayRaw.h \
+	src/Matrix4.C \
+	src/Matrix4.h \
+	src/TclVec.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/TclCommands.o $(COPTC) src/TclCommands.C
 obj/TorusLB.o: \
 	src/TorusLB.C \
