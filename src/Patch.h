@@ -34,32 +34,32 @@ class Patch
      virtual ~Patch(void) { };
 
      // methods for use by Compute objects
-     Box<Patch,CompAtom>* registerPositionPickup(ComputeID cid, int trans = 13);
+     Box<Patch,CompAtom>* registerPositionPickup(ComputeID cid);
      void unregisterPositionPickup(ComputeID cid,
 				   Box<Patch,CompAtom>**const box);
-     Box<Patch,CompAtom>* registerAvgPositionPickup(ComputeID cid, int trans = 13);
+     Box<Patch,CompAtom>* registerAvgPositionPickup(ComputeID cid);
      void unregisterAvgPositionPickup(ComputeID cid,
 				   Box<Patch,CompAtom>**const box);
      // BEGIN LA
-     Box<Patch,CompAtom>* registerVelocityPickup(ComputeID cid, int trans = 13);
+     Box<Patch,CompAtom>* registerVelocityPickup(ComputeID cid);
      void unregisterVelocityPickup(ComputeID cid,
                                   Box<Patch,CompAtom>**const box);
      // END LA
 
     //begin gbis
-    Box<Patch,Real>* registerIntRadPickup(ComputeID cid, int trans = 13);
+    Box<Patch,Real>* registerIntRadPickup(ComputeID cid);
     void unregisterIntRadPickup(ComputeID cid, Box<Patch,Real>**const box);
 
     Box<Patch,BigReal>* registerPsiSumDeposit(ComputeID cid);
     void unregisterPsiSumDeposit(ComputeID cid, Box<Patch,BigReal>**const box);
 
-    Box<Patch,BigReal>* registerBornRadPickup(ComputeID cid, int trans = 13);
+    Box<Patch,BigReal>* registerBornRadPickup(ComputeID cid);
     void unregisterBornRadPickup(ComputeID cid, Box<Patch,BigReal>**const box);
 
     Box<Patch,BigReal>* registerDEdaSumDeposit(ComputeID cid);
     void unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box);
 
-    Box<Patch,BigReal>* registerDHdrPrefixPickup(ComputeID cid, int trans = 13);
+    Box<Patch,BigReal>* registerDHdrPrefixPickup(ComputeID cid);
     void unregisterDHdrPrefixPickup(ComputeID cid, Box<Patch,BigReal>**const box);
      //end gbis
 

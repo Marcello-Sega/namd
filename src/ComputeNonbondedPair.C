@@ -43,16 +43,16 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
 void ComputeNonbondedPair::initialize() {
   ComputePatchPair::initialize();
   for (int i=0; i<2; i++) {
-    avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid,trans[i]);
+    avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid);
     // BEGIN LA
-    velocityBox[i] = patch[i]->registerVelocityPickup(cid,trans[i]);
+    velocityBox[i] = patch[i]->registerVelocityPickup(cid);
     // END LA
 
     psiSumBox[i] = patch[i]->registerPsiSumDeposit(cid);
-    intRadBox[i] = patch[i]->registerIntRadPickup(cid,trans[i]);
-    bornRadBox[i] = patch[i]->registerBornRadPickup(cid,trans[i]);
+    intRadBox[i] = patch[i]->registerIntRadPickup(cid);
+    bornRadBox[i] = patch[i]->registerBornRadPickup(cid);
     dEdaSumBox[i] = patch[i]->registerDEdaSumDeposit(cid);
-    dHdrPrefixBox[i] = patch[i]->registerDHdrPrefixPickup(cid,trans[i]);
+    dHdrPrefixBox[i] = patch[i]->registerDHdrPrefixPickup(cid);
   }
 #ifdef NAMD_CUDA
   register_cuda_compute_pair(cid, patchID, trans);

@@ -61,7 +61,7 @@ void ComputePatchPair::initialize() {
 	      DebugM(5,"invalid patch(" << patchID[i] 
 		   << ")  pointer!\n");
 	    }
-	    positionBox[i] = patch[i]->registerPositionPickup(cid,trans[i]);
+	    positionBox[i] = patch[i]->registerPositionPickup(cid);
 	    forceBox[i] = patch[i]->registerForceDeposit(cid);
 	}
 	numAtoms[i] = patch[i]->getNumAtoms();

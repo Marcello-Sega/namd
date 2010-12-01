@@ -63,7 +63,7 @@ Patch::Patch(PatchID pd) :
   lattice = Node::Object()->simParameters->lattice;
 }
 
-Box<Patch,CompAtom>* Patch::registerPositionPickup(ComputeID cid, int trans)
+Box<Patch,CompAtom>* Patch::registerPositionPickup(ComputeID cid)
 {
    //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid << "\n");
    if (positionComputeList.add(cid) < 0)
@@ -82,7 +82,7 @@ void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const 
    *box = 0;
 }
 
-Box<Patch,CompAtom>* Patch::registerAvgPositionPickup(ComputeID cid, int trans)
+Box<Patch,CompAtom>* Patch::registerAvgPositionPickup(ComputeID cid)
 {
    //DebugM(4, "registerAvgPositionPickup("<<patchID<<") from " << cid << "\n");
    return avgPositionBox.checkOut(cid);
@@ -96,7 +96,7 @@ void Patch::unregisterAvgPositionPickup(ComputeID cid, Box<Patch,CompAtom> **con
 }
 
 // BEGIN LA
-Box<Patch,CompAtom>* Patch::registerVelocityPickup(ComputeID cid, int trans)
+Box<Patch,CompAtom>* Patch::registerVelocityPickup(ComputeID cid)
 {
    //DebugM(4, "registerVelocityPickup("<<patchID<<") from " << cid << "\n");
    return velocityBox.checkOut(cid);
@@ -127,7 +127,7 @@ void Patch::unregisterPsiSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box
   psiSumBox.checkIn(*box);
   *box = 0;
 }
-Box<Patch,Real>* Patch::registerIntRadPickup(ComputeID cid, int trans) {
+Box<Patch,Real>* Patch::registerIntRadPickup(ComputeID cid) {
   return intRadBox.checkOut(cid);
 }
 void Patch::unregisterIntRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
@@ -135,7 +135,7 @@ void Patch::unregisterIntRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
   *box = 0;
 }
 
-Box<Patch,BigReal>* Patch::registerBornRadPickup(ComputeID cid, int trans) {
+Box<Patch,BigReal>* Patch::registerBornRadPickup(ComputeID cid) {
   return bornRadBox.checkOut(cid);
 }
 void Patch::unregisterBornRadPickup(ComputeID cid,Box<Patch,BigReal> **const box) {
@@ -157,7 +157,7 @@ void Patch::unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,BigReal> **const bo
   *box = 0;
 }
 
-Box<Patch,BigReal>* Patch::registerDHdrPrefixPickup(ComputeID cid, int trans)
+Box<Patch,BigReal>* Patch::registerDHdrPrefixPickup(ComputeID cid)
 {
   return dHdrPrefixBox.checkOut(cid);
 }
