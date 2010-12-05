@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dtanner $
- * $Date: 2010/11/30 18:33:31 $
- * $Revision: 1.1315 $
+ * $Author: char $
+ * $Date: 2010/12/05 07:08:33 $
+ * $Revision: 1.1316 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -83,8 +83,8 @@ void SimParameters::initialize_config_data(ConfigList *config, char *&cwd)
 
    config_parser(opts);
 
-   ///////////////////////////////// check the internal consistancy
-   if (!opts.check_consistancy()) 
+   ///////////////////////////////// check the internal consistency
+   if (!opts.check_consistency()) 
    {
       NAMD_die("Internal error in configuration file parser");
    }

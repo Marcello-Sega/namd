@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dtanner $
- * $Date: 2010/11/30 18:33:31 $
- * $Revision: 1.1189 $
+ * $Author: char $
+ * $Date: 2010/12/05 07:08:32 $
+ * $Revision: 1.1190 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -647,7 +647,7 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
     int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
-    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    BigReal kbT = BOLTZMANN*(simParams->langevinTemp);
 
     int lesReduceTemp = simParams->lesOn && simParams->lesReduceTemp;
     BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
@@ -741,14 +741,14 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
     int numAtoms = patch->numAtoms;
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
-    BigReal kbT = BOLTZMAN*(simParams->langevinTemp);
+    BigReal kbT = BOLTZMANN*(simParams->langevinTemp);
 
     int lesReduceTemp = simParams->lesOn && simParams->lesReduceTemp;
     BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
     int i;
 
     if (simParams->drudeOn) {
-      BigReal kbT_bnd = BOLTZMAN*(simParams->drudeTemp);  // drude bond Temp
+      BigReal kbT_bnd = BOLTZMANN*(simParams->drudeTemp);  // drude bond Temp
 
       for (i = 0;  i < numAtoms;  i++) {
 
@@ -989,7 +989,7 @@ void Sequencer::reassignVelocities(BigReal timestep, int step)
       if ( newTemp < simParams->reassignHold )
         newTemp = simParams->reassignHold;
     }
-    BigReal kbT = BOLTZMAN * newTemp;
+    BigReal kbT = BOLTZMANN * newTemp;
 
     int lesReduceTemp = simParams->lesOn && simParams->lesReduceTemp;
     BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
@@ -1010,7 +1010,7 @@ void Sequencer::reinitVelocities(void)
   FullAtom *a = patch->atom.begin();
   int numAtoms = patch->numAtoms;
   BigReal newTemp = simParams->initialTemp;
-  BigReal kbT = BOLTZMAN * newTemp;
+  BigReal kbT = BOLTZMANN * newTemp;
 
   int lesReduceTemp = simParams->lesOn && simParams->lesReduceTemp;
   BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;

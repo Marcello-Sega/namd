@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dtanner $
- * $Date: 2010/11/30 18:33:32 $
- * $Revision: 1.1211 $
+ * $Author: char $
+ * $Date: 2010/12/05 07:08:33 $
+ * $Revision: 1.1212 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -268,7 +268,7 @@ void WorkDistrib::random_velocities_parallel(BigReal Temp,InputAtomList &inAtoms
   int lesReduceTemp = lesOn && simParams->lesReduceTemp;
   BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
 
-  kbT = Temp*BOLTZMAN;
+  kbT = Temp*BOLTZMANN;
   int count=0;
   int totalAtoms = inAtoms.size();
   for(i=0;i<totalAtoms;i++)
@@ -1929,7 +1929,7 @@ void WorkDistrib::random_velocities(BigReal Temp,Molecule *structure,
   int lesReduceTemp = lesOn && simParams->lesReduceTemp;
   BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
 
-  kbT = Temp*BOLTZMAN;
+  kbT = Temp*BOLTZMANN;
 
   //  Loop through all the atoms and assign velocities in
   //  the x, y and z directions for each one

@@ -384,7 +384,7 @@ int ParseOptions::check_children(int idx, int *flgs)
 // see if there are elements which have no parent (except main)
 // or elements inaccessible via main
 // returns a 0 if there was an error
-Bool ParseOptions::check_consistancy(void) {
+Bool ParseOptions::check_consistency(void) {
    int i;
    // check for lack of parent
    {
@@ -425,7 +425,7 @@ Bool ParseOptions::check_consistancy(void) {
 		   << "Found data in ParseOptions which are inaccessible "
 		   << "to" << "\n" << endi;
 	       iout << iERROR 
-		  << "the main data heirarchy.  Errors in:" << "\n" << endi;
+		  << "the main data hierarchy.  Errors in:" << "\n" << endi;
 	       has_error = TRUE;
 	    }
 	    iout << iERROR << "   '" << data_array[i]->name << "' depends on '"

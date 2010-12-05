@@ -1482,7 +1482,7 @@ void ComputeNonbondedUtil :: NAME
 	BigReal loweAndersenCutoff2 = (loweAndersenCutoff * loweAndersenCutoff) + r2_delta;
 	BigReal loweAndersenProb = simParams->loweAndersenRate * (simParams->dt * simParams->nonbondedFrequency) * 0.001; // loweAndersenRate is in 1/ps
 	const bool loweAndersenUseCOMvelocity = (simParams->rigidBonds != RIGID_NONE);
-	const BigReal kbT = BOLTZMAN * (simParams->loweAndersenTemp);
+	const BigReal kbT = BOLTZMANN * (simParams->loweAndersenTemp);
 	const BigReal dt_inv = TIMEFACTOR / (simParams->dt * simParams->nonbondedFrequency);
 	//const BigReal dt_inv = 1.0 / simParams->dt;
 	//BigReal kbT = 8.3145e-7 * (simParams->loweAndersenTemp); // in A^2/fs^2 * K

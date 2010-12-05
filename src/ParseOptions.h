@@ -208,7 +208,7 @@ class ParseOptions {
    // set the range of the given variable
    void range(const char *name, Range newrange);
  private:
-   // find the children of the given element; used by check_consistancy
+   // find the children of the given element; used by check_consistency
    int check_children(int idx, int *flg);
 
    // read a string into the appropriate data type; do units if need be
@@ -229,7 +229,7 @@ class ParseOptions {
    void set_string(DataElement *el);
  public:
    // make sure the options were defined properly; return TRUE okay, FALSE not
-   Bool check_consistancy(void);
+   Bool check_consistency(void);
    // returns TRUE if everything set okay or FALSE if not
    Bool set(const ConfigList& configlist);
 

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: chaomei2 $
- * $Date: 2010/11/13 00:36:14 $
- * $Revision: 1.1251 $
+ * $Author: char $
+ * $Date: 2010/12/05 07:08:32 $
+ * $Revision: 1.1252 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -649,7 +649,7 @@ void Controller::langevinPiston1(int step)
     int cellDims = simParams->useFlexibleCell ? 1 : 3;
     BigReal dt = simParams->dt;
     BigReal dt_long = slowFreq * dt;
-    BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
+    BigReal kT = BOLTZMANN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
     BigReal mass = controlNumDegFreedom * kT * tau * tau * cellDims;
 
@@ -763,7 +763,7 @@ void Controller::langevinPiston2(int step)
     int cellDims = simParams->useFlexibleCell ? 1 : 3;
     BigReal dt = simParams->dt;
     BigReal dt_long = slowFreq * dt;
-    BigReal kT = BOLTZMAN * simParams->langevinPistonTemp;
+    BigReal kT = BOLTZMANN * simParams->langevinPistonTemp;
     BigReal tau = simParams->langevinPistonPeriod;
     BigReal mass = controlNumDegFreedom * kT * tau * tau * cellDims;
 
@@ -1034,13 +1034,13 @@ void Controller::receivePressure(int step, int minimize)
 	reduction->item(REDUCTION_INT_CENTERED_KINETIC_ENERGY);
 
     BigReal atomTempHalfstep = 2.0 * kineticEnergyHalfstep
-					/ ( numDegFreedom * BOLTZMAN );
+					/ ( numDegFreedom * BOLTZMANN );
     BigReal atomTempCentered = 2.0 * kineticEnergyCentered
-					/ ( numDegFreedom * BOLTZMAN );
+					/ ( numDegFreedom * BOLTZMANN );
     BigReal groupTempHalfstep = 2.0 * groupKineticEnergyHalfstep
-					/ ( numGroupDegFreedom * BOLTZMAN );
+					/ ( numGroupDegFreedom * BOLTZMANN );
     BigReal groupTempCentered = 2.0 * groupKineticEnergyCentered
-					/ ( numGroupDegFreedom * BOLTZMAN );
+					/ ( numGroupDegFreedom * BOLTZMANN );
 
     /*  test code for comparing different temperatures  
     iout << "TEMPTEST: " << step << " " << 
@@ -1076,7 +1076,7 @@ void Controller::receivePressure(int step, int minimize)
 
 
     kineticEnergy = kineticEnergyCentered;
-    temperature = 2.0 * kineticEnergyCentered / ( numDegFreedom * BOLTZMAN );
+    temperature = 2.0 * kineticEnergyCentered / ( numDegFreedom * BOLTZMANN );
 
     if (simParameters->drudeOn) {
       BigReal drudeComKE
@@ -1085,8 +1085,8 @@ void Controller::receivePressure(int step, int minimize)
         = reduction->item(REDUCTION_DRUDEBOND_CENTERED_KINETIC_ENERGY);
       int g_bond = 3 * molecule->numDrudeAtoms;
       int g_com = numDegFreedom - g_bond;
-      drudeComTemp = 2.0 * drudeComKE / (g_com * BOLTZMAN);
-      drudeBondTemp = (g_bond!=0 ? (2.*drudeBondKE/(g_bond*BOLTZMAN)) : 0.);
+      drudeComTemp = 2.0 * drudeComKE / (g_com * BOLTZMANN);
+      drudeBondTemp = (g_bond!=0 ? (2.*drudeBondKE/(g_bond*BOLTZMANN)) : 0.);
     }
 
     if ( (volume=lattice.volume()) != 0. )
@@ -1845,7 +1845,7 @@ void Controller::outputFepEnergy(int step) {
   }
   BigReal dE = electEnergy_f + electEnergySlow_f + ljEnergy_f
 		- (electEnergy + electEnergySlow + ljEnergy);
-  BigReal RT = BOLTZMAN * simParams->alchTemp;
+  BigReal RT = BOLTZMANN * simParams->alchTemp;
   FepNo++;
   exp_dE_ByRT += exp(-dE/RT);
   net_dE += dE;
@@ -1961,7 +1961,7 @@ void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   BigReal eeng = electEnergy+electEnergySlow;
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
   BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
-  BigReal RT = BOLTZMAN * simParams->alchTemp;
+  BigReal RT = BOLTZMANN * simParams->alchTemp;
   dG = -(RT * log(exp_dE_ByRT/FepNo));
   BigReal dE_avg = net_dE/FepNo;
   fepFile << FEPTITLE(step);
