@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: gzheng $
- * $Date: 2010/11/07 07:10:56 $
- * $Revision: 1.18 $
+ * $Author: bhatele $
+ * $Date: 2010/12/06 21:51:22 $
+ * $Revision: 1.19 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -100,7 +100,12 @@ LBVectorMigrateMsg* NamdHybridLB::VectorStrategy(LDStats* stats){
 /*
  * Runs the load balancing strategy
  */
-CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes) {
+#if CHARM_VERSION > 60301
+CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats)
+#else
+CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
+#endif
+{
   	// CkPrintf("[%d] NamdHybridLB at Strategy\n",CkMyPe());
 	
 	// calling the centralLB for level 1		

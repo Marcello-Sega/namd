@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: gzheng $
- * $Date: 2010/11/07 07:10:56 $
- * $Revision: 1.100 $
+ * $Author: bhatele $
+ * $Date: 2010/12/06 21:51:21 $
+ * $Revision: 1.101 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -84,7 +84,12 @@ CmiBool NamdCentLB::QueryDumpData()
   return CmiFalse;
 }
 
-CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int nprocs)  //ignore nprocs
+#if CHARM_VERSION > 60301
+CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats)
+#else
+// ignore n_pes in the function below
+CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
+#endif
 {
   //  CkPrintf("LDB: All statistics received at %f, %f\n",
   //  CmiTimer(),CmiWallTimer());
@@ -92,7 +97,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int nprocs)  //ignore nprocs
 #if CHARM_VERSION > 60301
   int numProcessors = stats->nprocs();
 #else
-  int numProcessors = nprocs;
+  int numProcessors = stats->count;
 #endif
   int numPatches = PatchMap::Object()->numPatches();
   ComputeMap *computeMap = ComputeMap::Object();
