@@ -1088,24 +1088,25 @@ public:
 inline cvm::real colvar::dihedral::dist2 (colvarvalue const &x1,
                                           colvarvalue const &x2) const
 {
-  // This version is asymptotically accurate for small distances,
-  // other choices are possible
-  cvm::real const diff = x1.real_value - x2.real_value;
-  return (180.0*180.0/PI/PI) * 2.0 * (1.0 - std::cos (diff * (PI/180.00)));
+  cvm::real diff = x1.real_value - x2.real_value;
+  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
+  return diff * diff;
 }
 
 inline colvarvalue colvar::dihedral::dist2_lgrad (colvarvalue const &x1,
                                                   colvarvalue const &x2) const
 {
-  cvm::real const diff = x1.real_value - x2.real_value;
-  return colvarvalue ((180.0/PI) * 2.0 * std::sin ( diff * (PI/180.0)));
+  cvm::real diff = x1.real_value - x2.real_value;
+  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
+  return 2.0 * diff;
 }
 
 inline colvarvalue colvar::dihedral::dist2_rgrad (colvarvalue const &x1,
                                                   colvarvalue const &x2) const
 {
-  cvm::real const diff = x1.real_value - x2.real_value;
-  return colvarvalue ((180.0/PI) * (-2.0) * std::sin ( diff * (PI/180.0)));
+  cvm::real diff = x1.real_value - x2.real_value;
+  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
+  return (-2.0) * diff;
 }
 
 inline cvm::real colvar::dihedral::compare (colvarvalue const &x1,
@@ -1132,24 +1133,25 @@ inline void colvar::dihedral::wrap (colvarvalue &x) const
 inline cvm::real colvar::spin_angle::dist2 (colvarvalue const &x1,
                                           colvarvalue const &x2) const
 {
-  // This version is asymptotically accurate for small distances,
-  // other choices are possible
-  cvm::real const diff = x1.real_value - x2.real_value;
-  return (180.0*180.0/PI/PI) * 2.0 * (1.0 - std::cos (diff * (PI/180.00)));
+  cvm::real diff = x1.real_value - x2.real_value;
+  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
+  return diff * diff;
 }
 
 inline colvarvalue colvar::spin_angle::dist2_lgrad (colvarvalue const &x1,
                                                   colvarvalue const &x2) const
 {
-  cvm::real const diff = x1.real_value - x2.real_value;
-  return colvarvalue ((180.0/PI) * 2.0 * std::sin ( diff * (PI/180.0)));
+  cvm::real diff = x1.real_value - x2.real_value;
+  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
+  return 2.0 * diff;
 }
 
 inline colvarvalue colvar::spin_angle::dist2_rgrad (colvarvalue const &x1,
                                                   colvarvalue const &x2) const
 {
-  cvm::real const diff = x1.real_value - x2.real_value;
-  return colvarvalue ((180.0/PI) * (-2.0) * std::sin ( diff * (PI/180.0)));
+  cvm::real diff = x1.real_value - x2.real_value;
+  diff = (diff < -180.0 ? diff + 360.0 : (diff > 180.0 ? diff - 360.0 : diff));
+  return (-2.0) * diff;
 }
 
 inline cvm::real colvar::spin_angle::compare (colvarvalue const &x1,
