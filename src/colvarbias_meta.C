@@ -243,7 +243,7 @@ colvarbias_meta::delete_hill (hill_iter &h)
 }
 
 
-void colvarbias_meta::update()
+cvm::real colvarbias_meta::update()
 {
   if (cvm::debug())
     cvm::log ("Updating the metadynamics bias \""+this->name+"\".\n");
@@ -350,11 +350,11 @@ void colvarbias_meta::update()
   }
 
   // add a new hill if the required time interval has passed
-  if ((cvm::it % new_hill_freq) == 0) {
+  if ((cvm::step_absolute() % new_hill_freq) == 0) {
 
     if (cvm::debug())
       cvm::log ("Adding a new hill under the bias \""+
-                this->name+"\", at step "+cvm::to_str (cvm::it)+".\n");
+                this->name+"\", at step "+cvm::to_str (cvm::step_absolute())+".\n");
 
     switch (comm) {
 
@@ -370,7 +370,7 @@ void colvarbias_meta::update()
 
   // syncronise with the other replicas if specified
   if (comm != single_replica) {
-    if ((cvm::it % replica_update_freq) == 0) {
+    if ((cvm::step_absolute() % replica_update_freq) == 0) {
       // the buffer should be always emptied to keep the other
       // replicas as much in sync as possible
       replica_out_file.flush();
@@ -382,7 +382,7 @@ void colvarbias_meta::update()
   }
 
   // calculate the biasing energy and forces
-  colvar_energy = 0.0;
+  bias_energy = 0.0;
   for (size_t i = 0; i < colvars.size(); i++) {
     colvar_forces[i].reset();
   }
@@ -392,7 +392,7 @@ void colvarbias_meta::update()
 
     // get the forces from the grid
 
-    if ((cvm::step_relative() % grids_freq) == 0) {
+    if ((cvm::step_absolute() % grids_freq) == 0) {
       // map the most recent gaussians to the grids
       project_hills (new_hills_begin, hills.end(),
                      hills_energy,    hills_energy_gradients);
@@ -408,7 +408,7 @@ void colvarbias_meta::update()
 
       // within the grid: add the energy and the forces from there
 
-      colvar_energy += hills_energy->value (curr_bin);
+      bias_energy += hills_energy->value (curr_bin);
       for (size_t i = 0; i < colvars.size(); i++) {
         cvm::real const *f = &(hills_energy_gradients->value (curr_bin));
         colvar_forces[i].real_value += -1.0 * f[i]; // the gradients
@@ -421,7 +421,7 @@ void colvarbias_meta::update()
       // we're off the grid, computing analytically only the hills
       // within range
 
-      calc_hills (hills_off_grid.begin(), hills_off_grid.end(), colvar_energy);
+      calc_hills (hills_off_grid.begin(), hills_off_grid.end(), bias_energy);
       for (size_t i = 0; i < colvars.size(); i++) {
         calc_hills_force (i, hills_off_grid.begin(), hills_off_grid.end(), colvar_forces);
       }
@@ -429,8 +429,8 @@ void colvarbias_meta::update()
 
   } else {
 
-    // calculate the current value of each hill and add it to colvar_energy
-    calc_hills (hills.begin(), hills.end(), colvar_energy);
+    // calculate the current value of each hill and add it to bias_energy
+    calc_hills (hills.begin(), hills.end(), bias_energy);
   
     // calculate the current derivatives of each hill and add them to
     // colvar_forces
@@ -440,8 +440,9 @@ void colvarbias_meta::update()
   }
 
   if (cvm::debug()) 
-    cvm::log ("Hills energy = "+cvm::to_str (colvar_energy)+
+    cvm::log ("Hills energy = "+cvm::to_str (bias_energy)+
               ", hills forces = "+cvm::to_str (colvar_forces)+".\n");
+  return bias_energy;
 }
 
 
