@@ -294,11 +294,12 @@ void colvarmodule::init_biases (std::string const &conf)
 
 
 void colvarmodule::calc() {
+  cvm::real total_bias_energy = 0.0;
 
   if (cvm::debug()) {
     cvm::log (cvm::line_marker);
     cvm::log ("Collective variables module, step no. "+
-              cvm::to_str (cvm::step_relative())+"\n");
+              cvm::to_str (cvm::step_absolute())+"\n");
   }
 
   // calculate collective variables and their gradients
@@ -320,9 +321,10 @@ void colvarmodule::calc() {
   for (std::vector<colvarbias *>::iterator bi = biases.begin();
        bi != biases.end();
        bi++) {
-    (*bi)->update(); 
+    total_bias_energy += (*bi)->update(); 
   }
   cvm::decrease_depth();
+  proxy->add_energy (total_bias_energy);
 
   // sum the forces from all biases for each collective variable
   if (cvm::debug() && biases.size())
@@ -387,7 +389,7 @@ void colvarmodule::calc() {
   // write restart file, if needed
   if (restart_out_freq && !cvm::b_analysis) {
     if ( (cvm::step_relative() > 0) &&
-         ((cvm::step_relative() % restart_out_freq) == 0) ) {
+         ((cvm::step_absolute() % restart_out_freq) == 0) ) {
       cvm::log ("Writing the current state to the restart file.\n");
       proxy->backup_file (restart_out_name.c_str());
       restart_out_os.open (restart_out_name.c_str());
@@ -419,9 +421,9 @@ void colvarmodule::calc() {
       cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
     }
 
-    // write labels in the traj file every 1000 lines
+    // write labels in the traj file every 1000 lines and at first ts
     cvm::increase_depth();
-    if ((cvm::step_relative() % (cv_traj_freq * 1000)) == 0) {
+    if ((cvm::step_absolute() % (cv_traj_freq * 1000)) == 0 || cvm::step_relative() == 0) {
       cv_traj_os << "# " << cvm::wrap_string ("step", cvm::it_width-2)
                  << " ";
       if (cvm::debug()) 
@@ -439,7 +441,7 @@ void colvarmodule::calc() {
 
     // write collective variable values to the traj file
     cvm::increase_depth();
-    if ((cvm::step_relative() % cv_traj_freq) == 0) {
+    if ((cvm::step_absolute() % cv_traj_freq) == 0) {
       cv_traj_os << std::setw (cvm::it_width) << it
                  << " ";
       for (std::vector<colvar *>::iterator cvi = colvars.begin();
@@ -456,7 +458,7 @@ void colvarmodule::calc() {
     if (restart_out_freq) { 
       // flush the trajectory file if we are at the restart frequency
       if ( (cvm::step_relative() > 0) &&
-           ((cvm::step_relative() % restart_out_freq) == 0) ) {
+           ((cvm::step_absolute() % restart_out_freq) == 0) ) {
         cvm::log ("Synchronizing trajectory file.\n");
         cv_traj_os.flush();
       }
@@ -533,8 +535,9 @@ void colvarmodule::write_output_files()
   out.setf (std::ios::scientific, std::ios::floatfield);
   this->write_restart (out);
   out.close();
-
-  cv_traj_os.close();
+  
+  // do not close to avoid problems with multiple NAMD runs
+  cv_traj_os.flush();
 }
 
 
