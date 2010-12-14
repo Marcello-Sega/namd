@@ -2,7 +2,7 @@
 #define COLVARMODULE_H
 
 #ifndef COLVARS_VERSION
-#define COLVARS_VERSION "20091218"
+#define COLVARS_VERSION "2010-11-23"
 #endif
 
 #ifndef COLVARS_DEBUG
@@ -224,6 +224,9 @@ public:
   /// \brief Time step of MD integrator (fs)
   static real dt();
   
+  /// Request calculation of system force from MD engine
+  static void request_system_force();
+  
   /// Print a message to the main log
   static void log (std::string const &message);
 
@@ -398,6 +401,11 @@ inline cvm::real cvm::temperature()
 inline cvm::real cvm::dt()
 {
   return proxy->dt();
+}
+
+inline void cvm::request_system_force()
+{
+  proxy->request_system_force (true);
 }
   
 inline void cvm::select_closest_image (atom_pos &pos,
