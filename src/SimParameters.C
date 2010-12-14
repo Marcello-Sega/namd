@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: char $
- * $Date: 2010/12/05 07:08:33 $
- * $Revision: 1.1316 $
+ * $Date: 2010/12/14 20:44:01 $
+ * $Revision: 1.1317 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -322,6 +322,11 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
      &switchingDist);
    opts.range("switchdist", POSITIVE);
    opts.units("switchdist", N_ANGSTROM);
+   
+   opts.optionalB("main", "martiniSwitching",
+     "Use Martini residue-based coarse-grain switching?", &martiniSwitching, FALSE);
+   opts.optionalB("main", "martiniDielAllow",
+     "Allow use of dielectric != 15.0 when using Martini", &martiniDielAllow, FALSE);
 
    opts.optional("main", "pairlistdist",  "Pairlist inclusion distance",
      &pairlistDist);
@@ -2248,6 +2253,32 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    }
 
+   if ( martiniSwitching )
+   {
+     if ( switchingActive ) 
+     { 
+       NAMD_die("martiniSwitching and vdwForceSwitching are exclusive to one another. Select only one."); 
+     }
+     if ( dielectric != 15.0 && ! martiniDielAllow ) 
+     {
+       iout << iWARN << "USE DIELECTRIC OF 15.0 WITH MARTINI.\n";
+       iout << iWARN << "SETTING dielectric 15.0\n";
+       iout << iWARN << "FOR NON-STANDARD DIELECTRIC WITH MARTINI, SET: martiniDielAllow on\n";
+       dielectric = 15.0;
+     }
+     if ( ! cosAngles )
+     {
+       iout << iWARN << "USE COSINE BASED ANGLES WITH MARTINI.\n";
+       iout << iWARN << "SETTING cosAngles on\n";
+       cosAngles = TRUE;
+     }
+     if ( PMEOn )
+     {
+       NAMD_die("Do not use Particle Mesh Ewald with Martini.  Set: PMEOn off");
+     }
+   }
+
+
    if (!opts.defined("pairlistDist"))
    {
   pairlistDist = cutoff;
@@ -3361,6 +3392,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << iINFO << "CUTOFF                 " 
          << cutoff << "\n";
    }
+
+   if ( martiniSwitching ) { 
+     iout << iINFO << "MARTINI RESIDUE-BASED COARSE-GRAIN SWITCHING ACTIVE\n";
+   }
+
    iout << iINFO << "PAIRLIST DISTANCE      " << pairlistDist << "\n";
    iout << iINFO << "PAIRLIST SHRINK RATE   " << pairlistShrink << "\n";
    iout << iINFO << "PAIRLIST GROW RATE     " << pairlistGrow << "\n";

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dtanner $
- * $Date: 2010/11/30 18:33:32 $
- * $Revision: 1.1171 $
+ * $Author: char $
+ * $Date: 2010/12/14 20:44:12 $
+ * $Revision: 1.1172 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -183,6 +183,10 @@ public:
 					//  function for vdw
 	BigReal switchingDist;		//  Distance at which switching
 					//  becomes active
+	Bool martiniSwitching;		//  Flag TRUE->use Martini residue-based
+                                        //  coarse-grain switching function
+	Bool martiniDielAllow;          //  Allow non-standard dielectric constant 
+                                        //  for use with Martini when dielectric != 15.0
 	BigReal pairlistDist;		//  Distance within which atom pairs 
 					//  should be added to pairlist
 	int pairlistMinProcs;		//  Minimum number of processors
@@ -362,7 +366,7 @@ public:
 	int pairInteractionGroup2;	//  Interaction group 2.
         Bool pairInteractionSelf;       //  Compute just within group.
      
-  Bool cosAngles;    // Can some angles be cos-based
+        Bool cosAngles;    // Can some angles be cos-based
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
 	Bool tclBCOn;			//  Are Tcl boundary forces present
