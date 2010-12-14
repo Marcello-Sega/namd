@@ -29,6 +29,12 @@ public:
   /// \brief Time step of the simulation (fs)
   virtual cvm::real dt() = 0;
 
+  /// Pass restraint energy value for current timestep to MD engine
+  virtual void add_energy (cvm::real energy) = 0;
+
+  /// Tell the proxy whether system forces are needed
+  virtual void request_system_force (bool yesno) = 0;
+
   /// Print a message to the main log
   virtual void log (std::string const &message) = 0;
 
@@ -52,8 +58,6 @@ public:
 
   /// \brief Restarts will be fritten each time this number of steps has passed
   virtual size_t restart_frequency() = 0;
-
-
 
   // **************** PERIODIC BOUNDARY CONDITIONS ****************
 
