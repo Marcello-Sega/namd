@@ -86,12 +86,14 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
 
   // get the initial restraint centers
   colvar_centers.resize (colvars.size());
+  colvar_centers_raw.resize (colvars.size());
   for (size_t i = 0; i < colvars.size(); i++) {
     colvar_centers[i].type (colvars[i]->type());
   }
   if (get_keyval (conf, "centers", colvar_centers, colvar_centers)) {
     for (size_t i = 0; i < colvars.size(); i++) {
       colvar_centers[i].apply_constraints();
+      colvar_centers_raw[i] = colvar_centers[i];
     }
   } else {
     colvar_centers.clear();
@@ -148,8 +150,10 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
 }
 
 
-void colvarbias_harmonic::update()
+cvm::real colvarbias_harmonic::update()
 {
+  bias_energy = 0.0;
+
   if (cvm::debug())
     cvm::log ("Updating the harmonic bias \""+this->name+"\".\n");
   
@@ -159,6 +163,8 @@ void colvarbias_harmonic::update()
       (colvars[i]->width * colvars[i]->width) *
       colvars[i]->dist2_lgrad (colvars[i]->value(),
                                colvar_centers[i]);
+    bias_energy += 0.5 * force_k / (colvars[i]->width * colvars[i]->width) *
+              colvars[i]->dist2(colvars[i]->value(), colvar_centers[i]);
     if (cvm::debug())
       cvm::log ("dist_grad["+cvm::to_str (i)+
                 "] = "+cvm::to_str (colvars[i]->dist2_lgrad (colvars[i]->value(),
@@ -174,11 +180,12 @@ void colvarbias_harmonic::update()
     if (!centers_incr.size()) {
       // if this is the first calculation, calculate the advancement
       // at each simulation step (or stage, if applicable)
+      // (take current stage into account: it can be non-zero
+      //  if we are restarting a staged calculation)
       centers_incr.resize (colvars.size());
       for (size_t i = 0; i < colvars.size(); i++) {
-        centers_incr[i] = (std::sqrt (colvars[i]->dist2 (colvar_centers[i],
-                                                      target_centers[i]))) /
-          cvm::real ( target_nstages ? target_nstages :
+        centers_incr[i] = (target_centers[i] - colvar_centers[i]) /
+          cvm::real ( target_nstages ? (target_nstages - stage) :
                                       (target_nsteps - cvm::step_absolute()));
       }
       if (cvm::debug())
@@ -193,26 +200,26 @@ void colvarbias_harmonic::update()
     if (target_nstages) {
       if (cvm::step_absolute() > 0
             && (cvm::step_absolute() % target_nsteps) == 0
-            && stage <= target_nstages) {
+            && stage < target_nstages) {
 
           // TODO: any per-stage calculation, e.g. free energy things
           for (size_t i = 0; i < colvars.size(); i++) {
-            colvarvalue const d2grad =
-              colvars[i]->dist2_lgrad (colvar_centers[i],
-                                       target_centers[i]);
-            colvar_centers[i] += centers_incr[i] * (-1.0/d2grad.norm()) * d2grad;
+            colvar_centers_raw[i] += centers_incr[i];
+            colvar_centers[i] = colvar_centers_raw[i];
+            colvars[i]->wrap(colvar_centers[i]);
             colvar_centers[i].apply_constraints();
           }
           stage++;
+          cvm::log ("Moving restraint stage " + cvm::to_str(stage) +
+              " : setting centers to " + cvm::to_str (colvar_centers));
       }
     } else if (cvm::step_absolute() < target_nsteps) {
       // move the restraint centers in the direction of the targets
       // (slow growth)
       for (size_t i = 0; i < colvars.size(); i++) {
-        colvarvalue const d2grad =
-          colvars[i]->dist2_lgrad (colvar_centers[i],
-                                   target_centers[i]);
-        colvar_centers[i] += centers_incr[i] * (-1.0/d2grad.norm()) * d2grad;
+        colvar_centers_raw[i] += centers_incr[i];
+        colvar_centers[i] = colvar_centers_raw[i];
+        colvars[i]->wrap(colvar_centers[i]);
         colvar_centers[i].apply_constraints();
       }
     }
@@ -258,6 +265,7 @@ void colvarbias_harmonic::update()
 
   if (cvm::debug())
     cvm::log ("Done updating the harmonic bias \""+this->name+"\".\n");
+  return bias_energy;
 }
 
 
@@ -300,6 +308,8 @@ std::istream & colvarbias_harmonic::read_restart (std::istream &is)
     cvm::log ("Reading the updated restraint centers from the restart.\n");
     if (!get_keyval (conf, "centers", colvar_centers))
       cvm::fatal_error ("Error: restraint centers are missing from the restart.\n");
+    if (!get_keyval (conf, "centers_raw", colvar_centers_raw))
+      cvm::fatal_error ("Error: \"raw\" restraint centers are missing from the restart.\n");
   }
 
   if (b_chg_force_k) {
@@ -336,6 +346,11 @@ std::ostream & colvarbias_harmonic::write_restart (std::ostream &os)
     os << "    centers ";
     for (size_t i = 0; i < colvars.size(); i++) {
       os << " " << colvar_centers[i];
+    }
+    os << "\n";
+    os << "    centers_raw ";
+    for (size_t i = 0; i < colvars.size(); i++) {
+      os << " " << colvar_centers_raw[i];
     }
     os << "\n";
   }
