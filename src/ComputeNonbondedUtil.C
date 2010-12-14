@@ -627,6 +627,49 @@ void ComputeNonbondedUtil::select(void)
       vdwa_gradient = -6.0 * r_2 * r_12;
       vdwb_gradient = -3.0 * r_2 * r_6;
     }
+  } else if ( simParams->martiniSwitching ) { // switching fxn for Martini RBCG
+
+    BigReal r12 = (r-switchOn)*(r-switchOn);        BigReal r13 = (r-switchOn)*(r-switchOn)*(r-switchOn);
+
+    BigReal p6 = 6;
+    BigReal A6temp = p6 * ((p6+1)*switchOn-(p6+4)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,2));
+    BigReal B6temp = -p6 * ((p6+1)*switchOn-(p6+3)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,3));        
+    BigReal C6temp = 1.0/pow(cutoff,p6)-A6temp/3.0*pow(cutoff-switchOn,3)-B6temp/4.0*pow(cutoff-switchOn,4);        BigReal A6 = -A6temp;
+    BigReal B6 = -B6temp;        BigReal C6 = -C6temp;
+
+    BigReal p12 = 12;
+    BigReal A12 = p12 * ((p12+1)*switchOn-(p12+4)*cutoff)/(pow(cutoff,p12+2)*pow(cutoff-switchOn,2));
+    BigReal B12 = -p12 * ((p12+1)*switchOn-(p12+3)*cutoff)/(pow(cutoff,p12+2)*pow(cutoff-switchOn,3));
+    BigReal C12 = 1.0/pow(cutoff,p12)-A12/3.0*pow(cutoff-switchOn,3)-B12/4.0*pow(cutoff-switchOn,4);
+
+    BigReal LJshifttempA = -(A12/3)*r13 - (B12/4)*r12*r12 - C12;
+    BigReal LJshifttempB = -(A6/3)*r13 - (B6/4)*r12*r12 - C6;
+    const BigReal shiftValA =         // used for Lennard-Jones
+                        ( r2 > switchOn2 ? LJshifttempA : -C12);
+    const BigReal shiftValB =         // used for Lennard-Jones
+                        ( r2 > switchOn2 ? LJshifttempB : -C6);
+
+    BigReal LJdshifttempA = A12*r12 + B12*r13;
+    BigReal LJdshifttempB = A6*r12 + B6*r13;
+    const BigReal dshiftValA =         // used for Lennard-Jones
+                        ( r2 > switchOn2 ? LJdshifttempA*0.5*r_1 : 0 );
+    const BigReal dshiftValB =         // used for Lennard-Jones
+                        ( r2 > switchOn2 ? LJdshifttempB*0.5*r_1 : 0 );
+
+
+
+
+    //have not addressed r > cutoff
+
+    //  dshiftValA*= 0.5*r_1;
+    //  dshiftValB*= 0.5*r_1;
+
+    vdwa_energy = r_12 - shiftValA;
+    vdwb_energy = r_6 - shiftValB;
+   
+    vdwa_gradient = -6/pow(r,14) + dshiftValA ;
+    vdwb_gradient = -3/pow(r,8) + dshiftValB;
+
   } else {  // switch energy
     const BigReal c2 = cutoff2-r2;
     const BigReal c4 = c2*(c3-2.0*c2);
