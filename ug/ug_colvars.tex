@@ -7,12 +7,6 @@ Marseille, France). Please send feedback and suggestions
 to the NAMD mailing list.}}
 \label{section:colvars}
 
-The collective variables module replaces and greatly extends the
-functionality of the older \texttt{freeEnergy} module for free energy
-of conformational change calculations.  The older module is still
-available in the code, but has been removed from the documentation to
-discourage future use.
-
 In today's molecular dynamics simulations, it is often useful to
 reduce the great number of degrees of freedom of a into a few
 parameters which can be either analyzed individually, or manipulated
@@ -29,7 +23,9 @@ number of atoms:
   \ldots \right)\;, \;\; 1 \leq i,j,k\ldots \leq N
 \end{equation}
 
-The colvars module in NAMD offers several features:
+The colvars module in NAMD may be used in both MD simulation and
+energy minimization runs (except free energy methods).
+It offers several features:
 \begin{itemize}
 
 \item define an arbitrary number of colvars, and perform a
@@ -259,12 +255,13 @@ Three global options are available:
 \item %
   \NAMDCONFWDEF{%
     analysis}{%
-    (global) Turn on analysis calculations}{%
+    (global) Turn on run-time statistical analysis }{%
     boolean}{%
     \texttt{off}}{%
-    If this flag is enabled, the analysis mode is turned on, and all
-    the colvars and their biasing methods are instructed to perform
-    whatever analysis they are configured to.}
+    If this flag is enabled, each colvar is instructed to perform
+    whatever run-time statistical analysis it is configured to, such as
+    correlation functions, or running averages and standard deviations.
+    See section~\ref{sec:colvar_acf} for details.}
 
 % \item %
 %   \NAMDCONF{%
@@ -343,7 +340,7 @@ a colvar.  \ref{sec:cvc} lists the available colvar components;
 create new types of colvars; \ref{sec:colvar_atom_groups} documents
 how to define in a compact way \emph{atom groups}, which are used by
 most components; \ref{sec:colvar_acf} lists the available option for
-runtime analysis of the colvars.
+runtime statistical analysis of the colvars.
 
 \ref{sec:colvarbias} lists the available methods to perform biased
 simulations and multidimensional analysis (ABF, harmonic restraint,
@@ -2569,7 +2566,10 @@ applied, the block accepts the following options:
 \subsubsection{Harmonic restraints and Steered Molecular Dynamics}
 \label{sec:colvarbias_harmonic}
 
-The harmonic restraint is defined by a \texttt{harmonic~\{...\}}
+The harmonic biasing method may be used to enforce fixed or moving restraints,
+including variants of Steered and Targeted MD. Within energy minimization
+runs, it allows for restrained minimization, e.g. to calculate relaxed potential
+energy surfaces. Such a restraint is set up by a \texttt{harmonic~\{...\}}
 block, which may contain (in addition to the standard option
 \texttt{colvars}) the following keywords:
 \begin{itemize}
@@ -2587,7 +2587,7 @@ block, which may contain (in addition to the standard option
     are effectively dimensionless and of commensurate size.
     For instance, setting a scaled force constant of 10~kcal/mol acting
     on two colvars, an angle with a \texttt{width} of 5~degrees and a distance
-    with a width of 0.5~\AA will apply actual force constants of
+    with a width of 0.5~\AA{} will apply actual force constants of
     0.4~kcal/mol$\times$degree$^{-2}$ for the angle and
     40~kcal/mol/\AA$^2$ for the distance.}
 
@@ -2620,15 +2620,7 @@ block, which may contain (in addition to the standard option
     change is performed in discrete stages, lasting \texttt{targetNumSteps}
     steps \emph{each}. This second mode may be used to sample successive
     windows in the context of an Umbrella Sampling simulation.
-    The intermediate values will be evolved by taking
-    into account periodicities or symmetries (the closest image of the
-    target is assumed for each colvar) and intrinsic constraints to
-    the colvar value.  For example, when moving the restraint center
-    of a \texttt{dihedral}, the total movement in a single run will be
-    at most 180$^{\circ}$ (a rotation of 210$^{\circ}$ will be
-    interpreted as one of -150$^{\circ}$); if a complete 360$^{\circ}$
-    turn of a dihedral is desired, multiple runs (at least two) with
-    different targets should be used.  When continuing a simulation
+    When continuing a simulation
     run, the \texttt{centers} specified in the configuration file
     \texttt{$<$colvarsConfig$>$} will be overridden by those saved in
     the restart file \texttt{$<$colvarsInput$>$}.  To perform Steered
