@@ -114,7 +114,7 @@ colvarbias_abf::~colvarbias_abf()
 /// Update the FE gradient, compute and apply biasing force
 /// also output data to disk if needed
 
-void colvarbias_abf::update()
+cvm::real colvarbias_abf::update()
 {
   if (cvm::debug()) cvm::log ("Updating ABF bias " + this->name);
 
@@ -194,10 +194,11 @@ void colvarbias_abf::update()
     }
   }
 
-  if (output_freq && (cvm::step_relative() % output_freq) == 0) {
+  if (output_freq && (cvm::step_absolute() % output_freq) == 0) {
     if (cvm::debug()) cvm::log ("ABF bias trying to write gradients and samples to disk");
     write_gradients_samples ();
   }
+  return 0.0; // TODO compute bias energy whenever possible (i.e. rarely)
 }
 
 void colvarbias_abf::write_gradients_samples ()
@@ -374,7 +375,7 @@ colvarbias_histogram::~colvarbias_histogram()
 }
 
 /// Update the grid
-void colvarbias_histogram::update()
+cvm::real colvarbias_histogram::update()
 {
   if (cvm::debug()) cvm::log ("Updating Grid bias " + this->name);
 
@@ -386,7 +387,7 @@ void colvarbias_histogram::update()
     grid->incr_count (bin);
   }
 
-  if (output_freq && (cvm::step_relative() % output_freq) == 0) {
+  if (output_freq && (cvm::step_absolute() % output_freq) == 0) {
     if (cvm::debug()) cvm::log ("Histogram bias trying to write grid to disk");
 
     grid_os.open (out_name.c_str());
@@ -394,6 +395,7 @@ void colvarbias_histogram::update()
     grid->write_multicol (grid_os);
     grid_os.close ();
   }
+  return 0.0; // no bias energy for histogram
 }
 
 
