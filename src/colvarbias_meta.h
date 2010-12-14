@@ -31,7 +31,7 @@ public:
   /// Destructor
   virtual ~colvarbias_meta();
   
-  virtual void update();
+  virtual cvm::real update();
 
   /// Perform analysis
   virtual void analyse();
@@ -80,7 +80,7 @@ protected:
   virtual std::list<hill>::const_iterator delete_hill (std::list<hill>::iterator &h);
 
   /// \brief Calculate the values of the hills, incrementing
-  /// colvar_energy
+  /// bias_energy
   virtual void calc_hills (hill_iter  h_first,
                            hill_iter  h_last,
                            cvm::real &energy,
