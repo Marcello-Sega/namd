@@ -253,7 +253,7 @@ private:
 /* BEGIN gf */
   int32 **gridfrcIndexes;
   GridforceParams **gridfrcParams;
-  GridforceGrid **gridfrcGrid;
+  GridforceMainGrid **gridfrcGrid;
 /* END gf */
 
         //  Parameters for each atom constrained
@@ -872,7 +872,7 @@ public:
       q = gridfrcParams[gridnum][gridfrcIndexes[gridnum][atomnum]].q;
   }
   
-  GridforceGrid* get_gridfrc_grid(int gridnum) const
+  GridforceMainGrid* get_gridfrc_grid(int gridnum) const
   {
       return gridfrcGrid[gridnum];
   }

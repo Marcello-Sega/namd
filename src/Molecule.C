@@ -4957,8 +4957,9 @@ void Molecule::receive_Molecule(MIStream *msg){
 	 delete [] gridfrcGrid;
 	 gridfrcIndexes = new int32*[numGridforceGrids];
 	 gridfrcParams = new GridforceParams*[numGridforceGrids];
-	 gridfrcGrid = new GridforceGrid*[numGridforceGrids];
+	 gridfrcGrid = new GridforceMainGrid*[numGridforceGrids];
 	 
+	 int grandTotalGrids = 0;
 	 for (int grid = 0; grid < numGridforceGrids; grid++) {
 	     msg->get(numGridforces[grid]);
 	     
@@ -4971,15 +4972,26 @@ void Molecule::receive_Molecule(MIStream *msg){
 		 msg->get(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
 	     }
 	     
-	     gridfrcGrid[grid] = new GridforceGrid(grid);
+	     gridfrcGrid[grid] = new GridforceMainGrid(grid);
 	     gridfrcGrid[grid]->unpack(msg);
-             CProxy_ComputeGridForceNodeMgr 
-               mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
-             GridDepositMsg *outmsg = new GridDepositMsg;
-             outmsg->gridnum = grid;
-             outmsg->grid = gridfrcGrid[grid];
-             outmsg->num_grids = numGridforceGrids;
-             mgr[CkMyNode()].depositInitialGrid(outmsg);
+	     
+	     grandTotalGrids += gridfrcGrid[grid]->getTotalGrids();
+	 }
+	 
+	 CProxy_ComputeGridForceNodeMgr mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
+	 int startIdx = 0;
+	 for (int grid = 0; grid < numGridforceGrids; grid++) {
+	     int totalGrids = gridfrcGrid[grid]->getTotalGrids();
+	     GridDepositMsg **outmsgs = new GridDepositMsg *[totalGrids];
+	     int num_msgs = gridfrcGrid[grid]->buildDepositMsgs(outmsgs, startIdx, grandTotalGrids);
+	     if (num_msgs != totalGrids) {
+		 NAMD_die("Problem!");
+	     }
+	     startIdx += num_msgs;
+	     for (int i = 0; i < num_msgs; i++) {
+		 mgr[CkMyNode()].depositInitialGrid(outmsgs[i]);
+	     }
+	     delete[] outmsgs;
 	 }
       }
       /* END gf */
@@ -5171,8 +5183,10 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     
     gridfrcIndexes = new int32*[numGridforceGrids];
     gridfrcParams = new GridforceParams*[numGridforceGrids];
-    gridfrcGrid = new GridforceGrid*[numGridforceGrids];
+    gridfrcGrid = new GridforceMainGrid*[numGridforceGrids];
     numGridforces = new int[numGridforceGrids];
+    
+    int grandTotalGrids = 0;	// including all subgrids
     
     mgridParams = simParams->mgridforcelist.get_first();
     for (int gridnum = 0; gridnum < numGridforceGrids; gridnum++) {
@@ -5296,9 +5310,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	//  Allocate an array that will store an index into the constraint
 	//  parameters for each atom.  If the atom is not constrained, its
 	//  value will be set to -1 in this array.
-	DebugM(4, "Here!\n" << endi);
 	gridfrcIndexes[gridnum] = new int32[numAtoms];
-	DebugM(4, "There!\n" << endi);
        
 	if (gridfrcIndexes[gridnum] == NULL)
 	{
@@ -5435,25 +5447,45 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 //        iout << iINFO << "Allocating grid " << gridnum
 //             << "\n" << endi;
              
-	gridfrcGrid[gridnum] = new GridforceGrid(gridnum);
-	//	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
+	gridfrcGrid[gridnum] = new GridforceMainGrid(gridnum);
+//	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
+	DebugM(4, "Calling init1\n" << endi);
 	gridfrcGrid[gridnum]->init1(potfilename, simParams, mgridParams);
+	DebugM(4, "Returned from init1\n" << endi);
 //        ComputeGridForceNodeMgr* mgr = CProxy_ComputeGridForceNodeMgr::
 //          ckLocalBranch(CkpvAccess(BOCclass_group).
 //          computeGridForceNodeMgr);
 //      mgr->depositInitialGrid(gridnum,gridfrcGrid[gridnum],numGridforceGrids);
-
-        CProxy_ComputeGridForceNodeMgr 
-          mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
-          
-        GridDepositMsg *outmsg = new GridDepositMsg;
-        outmsg->gridnum = gridnum;
-        outmsg->grid = gridfrcGrid[gridnum];
-        outmsg->num_grids = numGridforceGrids;
-        mgr[CkMyNode()].depositInitialGrid(outmsg);        
- 
+	grandTotalGrids += gridfrcGrid[gridnum]->getTotalGrids();
+	DebugM(4, "grandTotalGrids = " << grandTotalGrids << "\n" << endi);
+	
 	// Finally, get next mgridParams pointer
 	mgridParams = mgridParams->next;
+    }
+    
+    CProxy_ComputeGridForceNodeMgr 
+	mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
+    
+    int startIdx = 0;
+    iout << iINFO << "READ " << numGridforceGrids << " GRIDFORCE " << (numGridforceGrids == 1 ? "GRID\n" : "GRIDS\n") << endi;
+    for (int gridnum = 0; gridnum < numGridforceGrids; gridnum++) {
+	int totalGrids = gridfrcGrid[gridnum]->getTotalGrids();
+	iout << iINFO << "    GRID " << gridnum+1 << ": " << totalGrids-1 << " SUBGRIDS\n" << endi;
+	GridDepositMsg **outmsgs = new GridDepositMsg *[totalGrids];
+	DebugM(4, "Building deposit messages\n" << endi);
+	int num_msgs = gridfrcGrid[gridnum]->buildDepositMsgs(outmsgs, startIdx, grandTotalGrids);
+	if (num_msgs != totalGrids) {
+	    NAMD_die("Problem!");
+	}
+	startIdx += num_msgs;
+	for (int i = 0; i < num_msgs; i++) {
+	    DebugM(4, "Depositing grid " << i+1 << " / " << num_msgs << "\n" << endi);
+	    DebugM(4, "  msg->gridnum = " << outmsgs[i]->gridnum << "\n" << endi);
+	    DebugM(4, "  msg->num_grids = " << outmsgs[i]->num_grids << "\n" << endi);
+	    mgr[CkMyNode()].depositInitialGrid(outmsgs[i]);
+	}
+	delete[] outmsgs;
+	DebugM(4, "Done\n" << endi);
     }
 }
 /* END gf */

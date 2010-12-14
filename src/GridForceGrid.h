@@ -15,59 +15,57 @@
 #include "NamdTypes.h"
 #include "MStream.h"
 #include "charm++.h"
+//#include "ComputeGridForce.h"
 
 #include "MGridforceParams.h"
+
+class GridDepositMsg;
+class GridforceSubGrid;
 
 #define GRIDBLOCKX 32
 #define GRIDBLOCKY 32
 #define GRIDBLOCKZ 32
 
 class GridforceGrid {
-private:
+    friend class GridforceMainGrid;
+    friend class GridforceSubGrid;
     
 public:
-    GridforceGrid(int gridnum);
-    //GridforceGrid(GridforceGrid g);
-    ~GridforceGrid();
+    GridforceGrid(void);
+    virtual ~GridforceGrid();
     
-    struct _box
-    {
-	Vector loc;	// Position within grid
-	float b[64];	// b[0 .. 7] = V (eight corners)
-			// b[8 ..15] = dV/dx
-			// b[16..23] = dV/dy
-			// b[24..31] = dV/dz
-			// b[32..39] = d2V/dxdy
-			// b[40..47] = d2V/dxdz
-			// b[48..55] = d2V/dydz
-			// b[56..63] = d3V/dxdydz
-	Tensor scale;
-    };
-    typedef struct _box Box;
-    
-//    void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
     int request_box(Vector pos);
-    int get_box(Box *box, Vector pos) const;
+//    int get_box(Box *box, Vector pos) const;
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
     
-    void init1(char *potfilename, 
-               SimParameters *simParams,
-               MGridforceParams *mgridParams);
-    void init2();
+    virtual void init1(char *potfilename, 
+		       SimParameters *simParams,
+		       MGridforceParams *mgridParams) = 0;
+    virtual void init2();
     void init3(float *grid, int *start, int *count);
-    void init4(float *grid, int start, int count);
+    virtual void init4(float *grid, int start, int count) = 0;
+    
     inline Position get_center(void) const { return center; }
     inline Position get_origin(void) const { return origin; }
     inline Tensor get_e (void) const { return e; }
     inline Tensor get_inv(void) const { return inv; }
     inline Vector get_scale(void) const { return scale; }
 
+    int compute_VdV(Position pos, float &V, Vector &dV) const;
+    
+    inline int get_k0(void) const { return k[0]; }
+    inline int get_k1(void) const { return k[1]; }
+    inline int get_k2(void) const { return k[2]; }
+    
     inline void req_grid(const int myrank, const int i) {
       int bi, boffset;
       
+      //CkPrintf("req_grid: i = %d myrank = %d\n", i, myrank);
+      
       getGridBlockIdxOffset(i,bi,boffset);
       if (!isGridValAvail(bi,boffset)) {
+	//CkPrintf("calling addGridProcRequest(%d, %d)\n", myrank, bi);
         addGridProcRequest(myrank,bi);
       }
       return; 
@@ -77,15 +75,18 @@ public:
       int bi, boffset;
       
       getGridBlockIdxOffset(i,bi,boffset);
+      //CkPrintf("get_grid: i = %d bi = %d boffset = %d pointer = %d\n", i, bi, boffset, (int64)this);
       
-//      if (grid_cache[bi] == 0) {
-//          iout << iINFO << "ELEM[" << CkMyPe() << "][" << i
-//             << "] not in grid cache "
-//             << " gridnum=" << mygridnum
-//             << " block=" << bi
-//             << " boff" << boffset
-//             << "\n" << endi;
-//      }
+//       if (grid_cache[bi] == 0) {
+// 	  iout << iINFO << "ELEM[" << CkMyPe() << "][" << i
+// 	       << "] not in grid cache "
+// 	       << " gridnum=" << mygridnum
+// 	       << " block=" << bi
+// 	       << " boff=" << boffset
+// 	       << " pointer=" << (int64)this
+// 	       << "\n" << endi;
+//       }
+      //CkPrintf("grid_cache[bi][boffset] = %f\n", grid_cache[bi][boffset]);
       return grid_cache[bi][boffset];
     }
     
@@ -136,23 +137,22 @@ public:
       block = (bx * bysz + by) * bzsz + bz;
       offset = (ox * GRIDBLOCKY +  oy) * GRIDBLOCKZ + oz;
       
-//      iout << iINFO << "Idx " << idx 
-//           << " ix=" << ix << "," << iy << "," << iz
-//           << " bx=" << bx << "," << by << "," << bz
-//           << " ox=" << ox << "," << oy << "," << oz
-//           << " ox=" << ox << "," << oy << "," << oz
-//           << " bxsz=" << bysz << "," << bzsz
-//           << " block=" << block
-//           << " offset=" << offset
-//           << "\n" << endi;
+//       iout << iINFO << "Idx " << idx 
+// 	   << " ix=" << ix << "," << iy << "," << iz
+// 	   << " bx=" << bx << "," << by << "," << bz
+// 	   << " ox=" << ox << "," << oy << "," << oz
+// 	   << " ox=" << ox << "," << oy << "," << oz
+// 	   << " bxsz=" << bysz << "," << bzsz
+// 	   << " block=" << block
+// 	   << " offset=" << offset
+// 	   << "\n" << endi;
       
       return;
     }
     
 
     inline int getBlockSize(int blk) const {
-//      CkPrintf("Blk %d sz %d %d %d %d %d %d\n",
-//                blk,k[0],k[1],k[2],bxsz,bysz,bzsz);
+      //CkPrintf("Blk %d sz %d %d %d %d %d %d\n",blk,k[0],k[1],k[2],bxsz,bysz,bzsz);
       const int bz = blk % bzsz;
       const int by = (blk / bzsz) % bysz;
       const int bx = blk / (bysz * bzsz);
@@ -179,10 +179,10 @@ public:
         if (sz == 0) sz = GRIDBLOCKZ;
       }
       
-//      if (sx * sy * sz != GRIDBLOCKX * GRIDBLOCKY * GRIDBLOCKZ) {
-//        CkPrintf("Returning partial block %d (%d,%d,%d) = %d,%d,%d\n",
-//                  blk, bx,by,bz,sx,sy,sz);
-//      }
+//       if (sx * sy * sz != GRIDBLOCKX * GRIDBLOCKY * GRIDBLOCKZ) {
+// 	  CkPrintf("Returning partial block %d (%d,%d,%d) = %d,%d,%d\n",
+// 		   blk, bx,by,bz,sx,sy,sz);
+//       }
       
       return sx * sy * sz;
     }
@@ -228,16 +228,6 @@ public:
     }
     
     inline int getGridValHomeNode(int blk) const {
-//      const int blksz = 17;
-//      const int bk0 = (k[0]+blksz-1) / blksz;
-//      const int bk1 = (k[1]+blksz-1) / blksz;
-      
-//      const int i0 = ind / dk[0];
-//      const int i1 = (ind - i0*dk[0]) / dk[1];
-//      const int i2 = (ind - i0*dk[0] - i1*dk[1]) / dk[2];
-      
-//      const int new_ind = ((i0 / blksz * bk0) + i1/blksz) * bk1 + i2/blksz;
-      
       return blk % CkNumNodes();
     }
 
@@ -247,7 +237,7 @@ public:
     }
 
     inline Bool isGridValAvail(int bi,int boffset) const {
-//      CkPrintf("%d %d\n",bi,boffset);
+	//CkPrintf("isGridValAvail(%d, %d) called\n",bi,boffset);
       return (grid_cache[bi] != 0);
     }
 
@@ -256,8 +246,8 @@ public:
       getGridBlockIdxOffset(index,bi,boffset);
       
       if (grid_cache[bi] == 0)  {
-//        CkPrintf("[%d] adding index %d %d %d %f\n",
-//                 CkMyPe(),index,bi,boffset,val);
+// 	CkPrintf("[%d] adding index %d %d %d %f\n",
+// 		   CkMyPe(),index,bi,boffset,val);
         allocateGridEntry(bi);
       }
        
@@ -272,32 +262,49 @@ public:
                                int *gridProcCount);
     
     inline void addGridProcRequest(int rank, int bi) {
+      //CkPrintf("addGridProcRequest(%d, %d)\n", rank, bi);
       grid_proc_request[rank][bi] = true;
     };
     
     inline int getNumGridRequests() const { 
+      //CkPrintf("num_requests = %d\n", num_requests);
       return num_requests;
     };
     
-    inline int get_k0(void) const { return k[0]; }
-    inline int get_k1(void) const { return k[1]; }
-    inline int get_k2(void) const { return k[2]; }
-    
-private:
+protected:
     struct GridIndices {
       int inds2;
       int dk_hi;
       int dk_lo;
-      Bool zero_derivs;      
+      Bool zero_derivs;
     };
    
     void precomputeIndexing();
     
+    // Utility functions
+    void readHeader(SimParameters *simParams, MGridforceParams *mgridParams);
+    
+    //virtual int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const = 0;
+    int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const;
+    void compute_a(float *a, float *b) const;
+    virtual void compute_b(float *b, int *inds, Vector gapscale)  const = 0;
+    float compute_V(float *a, float *x, float *y, float *z) const;
+    Vector compute_dV(float *a, float *x, float *y, float *z) const;
+    Vector compute_d2V(float *a, float *x, float *y, float *z) const;
+    float compute_d3V(float *a, float *x, float *y, float *z) const;
+    
+    void addDepositMsg(GridDepositMsg **outmsgs, int &arrayIdx, int startIdx, int grandTotalGrids);
+    void readSubgridHierarchy(FILE *poten, int &totalGrids);
+    
     FILE *poten_fp;
     //    float *grid;	// Actual grid
     
+    GridforceSubGrid **subgrids;
+    int numSubgrids;
+    int generation;	// Subgrid level (0 = main grid)
+    
     int k[3];		// Grid dimensions
-    int k_nopad[3];		// Grid dimensions
+    int k_nopad[3];	// Grid dimensions
     int size;
     int size_nopad;
     int dk[3];
@@ -320,7 +327,6 @@ private:
 
     Vector scale;
     
-    static const int border = 1; // Size of border (for generality)
     float **grid_cache;
     Bool *grid_request;
     Bool **grid_proc_request;
@@ -328,12 +334,89 @@ private:
     
     Bool *gridvals_needed;
     int grid_elems_read;
-    int mygridnum;
     GridIndices *grid_index_table[8][3];
     int *block_index[3];
     int *block_offset[3];
     int bxsz, bysz, bzsz;  // Dimensions of grid in grid blocks
 };
 
+
+class GridforceMainGrid : public GridforceGrid {
+    friend class GridforceGrid;
+    friend class GridforceSubGrid;
+
+public:
+    GridforceMainGrid(int gridnum);
+    
+    void init1(char *potfilename,
+	       SimParameters *simParams,
+	       MGridforceParams *mgridParams);
+    void init2();
+    void init4(float *grid, int start, int count);
+    
+    void pack(MOStream *msg) const;
+    void unpack(MIStream *msg);
+    
+    inline int getTotalGrids(void) const { return totalGrids; }
+    int buildDepositMsgs(GridDepositMsg **outmsgs, int startIdx, int grandTotalGrids);
+    
+protected:
+    //int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const;
+    void compute_b(float *b, int *inds, Vector gapscale)  const;
+    void buildSubgridsFlat(void);
+    
+    int totalGrids;
+    GridforceSubGrid **subgrids_flat;
+    int mygridnum;
+    
+    static const int border = 1;
+};
+
+
+class GridforceSubGrid : public GridforceGrid {
+    friend class GridforceGrid;
+    friend class GridforceMainGrid;
+
+public:
+    GridforceSubGrid(GridforceGrid *parent_in);
+    
+    void init1(char *potfilename,
+	       SimParameters *simParams,
+	       MGridforceParams *mgridParams);
+    void init2();
+    void init4(float *grid, int start, int count);
+    
+    void pack(MOStream *msg) const;
+    void unpack(MIStream *msg);
+    
+    inline Tensor tensorMult (const Tensor &t1, const Tensor &t2) {
+	Tensor tmp;
+	tmp.xx = t1.xx * t2.xx + t1.xy * t2.yx + t1.xz * t2.zx;
+	tmp.xy = t1.xx * t2.xy + t1.xy * t2.yy + t1.xz * t2.zy;
+	tmp.xz = t1.xx * t2.xz + t1.xy * t2.yz + t1.xz * t2.zz;
+	tmp.yx = t1.yx * t2.xx + t1.yy * t2.yx + t1.yz * t2.zx;
+	tmp.yy = t1.yx * t2.xy + t1.yy * t2.yy + t1.yz * t2.zy;
+	tmp.yz = t1.yx * t2.xz + t1.yy * t2.yz + t1.yz * t2.zz;
+	tmp.zx = t1.zx * t2.xx + t1.zy * t2.yx + t1.zz * t2.zx;
+	tmp.zy = t1.zx * t2.xy + t1.zy * t2.yy + t1.zz * t2.zy;
+	tmp.zz = t1.zx * t2.xz + t1.zy * t2.yz + t1.zz * t2.zz;
+	return tmp;
+    }
+    
+protected:
+    //int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const;
+    void compute_b(float *b, int *inds, Vector gapscale) const;
+    void addToSubgridsFlat(void);
+    
+    // Utility numbers
+    Tensor scale_dV;
+    Tensor scale_d2V;
+    float scale_d3V;
+    
+    GridforceGrid *parent;
+    int pmin[3], pmax[3];
+    GridforceMainGrid *maingrid;
+    int subgridIdx;
+};
 
 #endif
