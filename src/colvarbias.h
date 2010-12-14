@@ -19,7 +19,8 @@ public:
   void add_colvar (std::string const &cv_name);
 
   /// Retrieve colvar values and calculate their biasing forces
-  virtual void update() = 0;
+  /// Return bias energy
+  virtual cvm::real update() = 0;
 
   /// Perform analysis tasks
   virtual inline void analyse() {}
@@ -54,7 +55,7 @@ protected:
 
   /// \brief Current energy of this bias (colvar_forces should be
   /// obtained by deriving this)
-  cvm::real                colvar_energy;
+  cvm::real                bias_energy;
 
 };
 
@@ -66,7 +67,7 @@ class colvarbias_harmonic : public colvarbias {
 public:
 
   /// Retrieve colvar values and calculate their biasing forces
-  virtual void update();
+  virtual cvm::real update();
 
   /// Read the bias configuration from a restart file
   virtual std::istream & read_restart (std::istream &is);
@@ -85,6 +86,9 @@ protected:
 
   /// \brief Restraint centers
   std::vector<colvarvalue> colvar_centers;
+
+  /// \brief Restraint centers without wrapping or constraints applied
+  std::vector<colvarvalue> colvar_centers_raw;
 
   /// \brief Restraint force constant
   cvm::real force_k;
