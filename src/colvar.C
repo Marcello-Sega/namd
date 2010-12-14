@@ -476,10 +476,14 @@ void colvar::enable (colvar::task const &t)
     break;
 
   case task_system_force:
-    if (!tasks[task_extended_lagrangian] && !b_inverse_gradients)
-      cvm::fatal_error ("Error: one or more of the components of "
-                        "colvar \""+this->name+
-                        "\" is unable to calculate system forces.\n");
+    if (!tasks[task_extended_lagrangian]) {
+      if (!b_inverse_gradients) {
+        cvm::fatal_error ("Error: one or more of the components of "
+                          "colvar \""+this->name+
+                          "\" is unable to calculate system forces.\n");
+      }
+      cvm::request_system_force();
+    }
     ft.type (this->type());
     ft_reported.type (this->type());
     break;
