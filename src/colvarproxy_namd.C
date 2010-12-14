@@ -5,6 +5,7 @@
 #include "Molecule.h"
 #include "PDB.h"
 #include "PDBData.h"
+#include "ReductionMgr.h"
 
 #include "colvarmodule.h"
 #include "colvaratoms.h"
@@ -14,6 +15,9 @@
 
 colvarproxy_namd::colvarproxy_namd()
 {
+  first_timestep = true;
+  system_force_requested = false;
+
   // initialize pointers to NAMD configuration data
   simparams = Node::Object()->simParameters;
   lattice = &(simparams->lattice);
@@ -65,6 +69,9 @@ colvarproxy_namd::colvarproxy_namd()
     cvm::log (cvm::line_marker);
   }
 
+  // Initialize reduction object to submit restraint energy as MISC
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+
   if (cvm::debug())
     iout << "Info: done initializing the colvars proxy object.\n" << endi;
 }
@@ -72,6 +79,7 @@ colvarproxy_namd::colvarproxy_namd()
 
 colvarproxy_namd::~colvarproxy_namd()
 {
+  delete reduction;
   if (colvars != NULL) {
     delete colvars;
     colvars = NULL;
@@ -81,6 +89,21 @@ colvarproxy_namd::~colvarproxy_namd()
 // Reimplemented function from GlobalMaster
 void colvarproxy_namd::calculate()
 {
+
+  if (first_timestep) {
+    first_timestep = false;
+  } else {
+    // Use the time step number inherited from GlobalMaster
+    if ( step - previous_NAMD_step == 1 ) {
+      colvars->it++;
+    }
+    // Other cases could mean:
+    // - run 0
+    // - beginning of a new run statement
+    // then the internal counter should not be incremented
+  }
+  previous_NAMD_step = step;
+
   if (cvm::debug()) {
     cvm::log (cvm::line_marker+
               "colvarproxy_namd, step no. "+cvm::to_str (colvars->it)+"\n"+
@@ -120,12 +143,13 @@ void colvarproxy_namd::calculate()
   }
 
 
-  if (cvm::step_relative() > 0) {
+  if (system_force_requested && cvm::step_relative() > 0) {
 
     // sort the array of total forces from the previous step (but only
     // do it if there *is* a previous step!)
     for (size_t i = 0; i < colvars_atoms.size(); i++) {
       bool found_total_force = false;
+      //found_total_force = false;
       AtomIDList::const_iterator a_i = this->getForceIdBegin();
       AtomIDList::const_iterator a_e = this->getForceIdEnd();
       PositionList::const_iterator f_i = this->getTotalForce();
@@ -142,9 +166,11 @@ void colvarproxy_namd::calculate()
         }
       }
       if (!found_total_force)
-        cvm::fatal_error ("Error: cannot find the total force of atom "+
-                          cvm::to_str (colvars_atoms[i]+1)+". Is energy minimization"+
-                          " (instead of MD) enabled?\n");
+        cvm::fatal_error ("Error: system forces were requested, but total force on atom "+
+              cvm::to_str (colvars_atoms[i]+1) + " was not\n"
+              "found. The most probable cause is combination of energy minimization with a\n"
+              "biasing method that requires MD (e.g. ABF). Always run minimization\n"
+              "and ABF separately.");
     }
 
     // do the same for applied forces
@@ -169,17 +195,26 @@ void colvarproxy_namd::calculate()
 
   // call the collective variable module
   colvars->calc();
+  // send MISC energy
+  reduction->submit();
 
   // NAMD does not destruct GlobalMaster objects, so we must remember
   // to write all output files at the end of the run
-  if (colvars->it >= (colvars->it_restart + simparams->N)) {
+  if (step == simparams->N) {
     colvars->write_output_files();
   }
-
-  // increment the step number: XX TODO: synchronise with NAMD's counter?
-  (colvars->it)++;
 }
 
+
+void colvarproxy_namd::add_energy (cvm::real energy)
+{
+  reduction->item(REDUCTION_MISC_ENERGY) += energy;
+}
+
+void colvarproxy_namd::request_system_force (bool yesno)
+{
+  system_force_requested = yesno;
+}
 
 void colvarproxy_namd::log (std::string const &message)
 {

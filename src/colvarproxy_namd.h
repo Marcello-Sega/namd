@@ -27,6 +27,9 @@ protected:
 
   std::string input_prefix_str, output_prefix_str, restart_output_prefix_str;
   size_t      restart_frequency_s;
+  size_t      previous_NAMD_step;
+  bool        first_timestep;
+  bool        system_force_requested;
 
   std::vector<int>          colvars_atoms;
   std::vector<size_t>       colvars_atoms_ncopies;
@@ -36,6 +39,7 @@ protected:
 
   size_t init_namd_atom (AtomID const &aid);
 
+  SubmitReduction *reduction;
 public:
 
   friend class cvm::atom;
@@ -47,6 +51,8 @@ public:
   /// at every step
   void calculate();
 
+  void add_energy (cvm::real energy);
+  void request_system_force (bool yesno);
   void log (std::string const &message);
   void fatal_error (std::string const &message);
   void exit (std::string const &message);
