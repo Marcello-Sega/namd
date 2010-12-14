@@ -25,7 +25,7 @@ public:
   colvarbias_abf (std::string const &conf, char const *key);
   ~colvarbias_abf ();
 
-  void update ();
+  cvm::real update ();
 
 private:
 
@@ -76,7 +76,7 @@ public:
   colvarbias_histogram (std::string const &conf, char const *key);
   ~colvarbias_histogram ();
 
-  void update ();
+  cvm::real update ();
 
 private:
 
