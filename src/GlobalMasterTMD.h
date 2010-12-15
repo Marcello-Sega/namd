@@ -8,6 +8,11 @@
 #define GLOBALMASTERTMD_H
 
 #include "GlobalMaster.h"
+#include "PDBData.h"
+#include <map>
+//#include <ext/hash_map>
+#include <vector>
+//namespace std { using namespace __gnu_cxx; }
 
 class GlobalMasterTMD : public GlobalMaster {
 public:
@@ -15,19 +20,23 @@ public:
   ~GlobalMasterTMD();
 
 private:
-  virtual void calculate();
+ 
+  void calculate();
   void parseAtoms(const char *file, int);
+  void NewTarget(int);
+  int numatoms;
+  Vector *atompos;
 
+  map <int, vector<int>  > dmap;
+  map <int, BigReal > kmap;
   int numTMDatoms;
-  BigReal k;
+  BigReal K;
   BigReal initialRMS, finalRMS;
   int outputFreq;
   int currentStep, firstStep, lastStep;
   BigReal *target;
-  int *target_aid;
-
+  //int *target_aid;
   // mapping of atom id's to array positions
-  int *aidmap;
+  //int *aidmap;
 };
 #endif
-

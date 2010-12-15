@@ -126,7 +126,7 @@ BigReal MatrixFitRMS(int n, BigReal *v1, BigReal *v2, const BigReal *wt, BigReal
 #if 0
   maxiter = (int)SettingGet(cSetting_fit_iterations);
 #else
-  maxiter = 1000;
+  maxiter = 10000;
 #endif
 
   /* Calculate center-of-mass vectors */

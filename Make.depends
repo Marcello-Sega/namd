@@ -3165,6 +3165,66 @@ obj/GlobalMasterTMD.o: \
 	src/ConfigList.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/GlobalMasterTMD.h \
+	src/GlobalMaster.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/fitrms.h \
+	src/Debug.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTMD.o $(COPTC) src/GlobalMasterTMD.C
+obj/Matrix4Symmetry.o: \
+  src/Matrix4Symmetry.C \
+  src/NamdTypes.h 
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/Matrix4Symmetry.o $(COPTC) src/Matrix4Symmetry.C
+obj/GlobalMasterSymmetry.o: \
+	src/GlobalMasterSymmetry.C \
+	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/ParallelIOMgr.h \
+	src/CompressPsf.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/NamdState.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	inc/ParallelIOMgr.decl.h \
+	src/PatchMgr.h \
+	src/SortedArray.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
 	src/Hydrogen.h \
 	src/SortableResizeArray.h \
 	src/GromacsTopFile.h \
@@ -3183,7 +3243,7 @@ obj/GlobalMasterTMD.o: \
 	src/PDBData.h \
 	src/fitrms.h \
 	src/Debug.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterTMD.o $(COPTC) src/GlobalMasterTMD.C
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GlobalMasterSymmetry.o $(COPTC) src/GlobalMasterSymmetry.C
 obj/GlobalMasterFreeEnergy.o: \
 	src/GlobalMasterFreeEnergy.C \
 	src/InfoStream.h \

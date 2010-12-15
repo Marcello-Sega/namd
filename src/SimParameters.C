@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2010/12/14 20:44:01 $
- * $Revision: 1.1317 $
+ * $Author: ryanmcgreevy $
+ * $Date: 2010/12/15 23:19:42 $
+ * $Revision: 1.1318 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1211,7 +1211,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
    // TMD parameters
    opts.optionalB("main", "TMD", "Perform Targeted MD?", &TMDOn, FALSE);
-   opts.require("TMD", "TMDk", "Elastic constant for TMD", &TMDk);
+   opts.optional("TMD", "TMDk", "Elastic constant for TMD", &TMDk, 0); 
    opts.range("TMDk", NOT_NEGATIVE);
    opts.require("TMD", "TMDFile", "File for TMD information", TMDFile);
    opts.optional("TMD", "TMDOutputFreq", "Frequency of TMD output", 
@@ -1220,11 +1220,24 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.require("TMD", "TMDLastStep", "Last TMD timestep", &TMDLastStep);
    opts.range("TMDLastStep", POSITIVE);
    opts.optional("TMD", "TMDFirstStep", "First TMD step (default 0)", &TMDFirstStep, 0);
-   opts.optional("TMD", "TMDInitialRMSD", "Target RMSD at first TMD step (default 0 to use initial coordinates)", &TMDInitialRMSD);
+   opts.optional("TMD", "TMDInitialRMSD", "Target RMSD at first TMD step (default -1 to use initial coordinates)", &TMDInitialRMSD);
+   TMDInitialRMSD = -1;
    opts.optional("TMD", "TMDFinalRMSD", "Target RMSD at last TMD step (default 0 )", &TMDFinalRMSD, 0);
    opts.range("TMDInitialRMSD", NOT_NEGATIVE);
-
    // End of TMD parameters
+
+   // Symmetry restraint parameters
+   opts.optionalB("main", "symmetryRestraints", "Enable symmetry restraints?", &symmetryOn, FALSE); 
+   opts.optional("symmetryRestraints", "symmetryk", "Elastic constant for symmetry restraints", &symmetryk, 0);
+   opts.range("symmetryk", NOT_NEGATIVE);
+   opts.optionalB("symmetryRestraints", "symmetryScaleForces", "Scale applied forces over time?", &symmetryScaleForces, FALSE);
+   opts.require("symmetryRestraints", "symmetryFile", "File for symmetry information", symmetryFile);
+   opts.optional("symmetryRestraints", "symmetryMatrixFile", "File for transfromation matrices", symmetryMatrixFile);
+   opts.optional("symmetryRestraints", "symmetryLastStep", "Last symmetry timestep", &symmetryLastStep, -1);
+   opts.optional("symmetryRestraints", "symmetryFirstStep", "First symmetry step (default 0)", &symmetryFirstStep, 0);
+   opts.optional("symmetryRestraints", "symmetryLastFullStep", "Last full force symmetry timestep (default symmetryLastStep)", &symmetryLastFullStep, symmetryLastStep);
+   opts.optional("symmetryRestraints", "symmetryFirstFullStep", "First full force symmetry step (default symmetryFirstStep)", &symmetryFirstFullStep, symmetryFirstStep);
+  //End of symmetry restraint parameters.
 
    ////  Global Forces / Tcl
    opts.optionalB("main", "tclForces", "Are Tcl global forces active?",
@@ -3660,7 +3673,31 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
-   
+   if (symmetryOn) {
+     if (symmetryLastStep == -1){
+       iout << iINFO << "SYMMETRY RESTRAINTS ACTIVE BETWEEN STEPS " << symmetryFirstStep << " and " << "INFINITY" << "\n";
+     }
+     else{
+       iout << iINFO << "SYMMETRY RESTRAINTS ACTIVE BETWEEN STEPS " << symmetryFirstStep << " and " << symmetryLastStep << "\n";
+     }
+     iout << iINFO << "SYMMETRY FILE " << symmetryFile << "\n";
+     iout << iINFO << "SYMMETRY MATRIX FILE " << symmetryMatrixFile << "\n";
+     iout << iINFO << "SYMMETRY FORCE CONSTANT " << symmetryk << "\n";
+     if (symmetryScaleForces){
+      iout << iINFO << "SYMMETRY SCALE FORCES ON\n";
+     }
+     iout << iINFO << "SYMMETRY FIRST FULL STEP " << symmetryFirstFullStep << "\n";
+     if (symmetryLastFullStep == -1){
+      iout << iINFO << "SYMMETRY LAST FULL STEP " << "INFINITY" << "\n"; 
+      //iout << iINFO << "FULL SYMMETRY FORCE BETWEEN STEPS " << symmetryFirstFullStep << " and " << "INFINITY" << "\n";
+     }
+     else {
+      iout << iINFO << "SYMMETRY LAST FULL STEP " << symmetryLastFullStep << "\n"; 
+     // iout << iINFO << "FULL SYMMETRY FORCE BETWEEN STEPS " << symmetryFirstFullStep << " and " << symmetryLastFullStep << "\n";
+     }
+
+     iout << endi;
+   }
 //Modifications for alchemical fep
 //  Alchemical FEP status
 
@@ -3790,7 +3827,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    // Global forces configuration
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
-                      (IMDon) || SMDOn || TMDOn || colvarsOn );
+                      (IMDon) || SMDOn || TMDOn || colvarsOn || symmetryOn );
 
 
    if (tclForcesOn)

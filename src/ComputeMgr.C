@@ -74,6 +74,7 @@
 #include "GlobalMasterTcl.h"
 #include "GlobalMasterSMD.h"
 #include "GlobalMasterTMD.h"
+#include "GlobalMasterSymmetry.h"
 #include "GlobalMasterEasy.h"
 #include "GlobalMasterMisc.h"
 #include "GlobalMasterFreeEnergy.h"
@@ -682,6 +683,11 @@ ComputeMgr::createComputes(ComputeMap *map)
                                     simParams->firstTimestep, simParams->SMDFile,
                                     node->molecule->numAtoms)
             );
+            
+        if (simParams->symmetryOn && 
+          (simParams->firstTimestep < simParams->symmetryLastStep || 
+          simParams->symmetryLastStep == -1))
+            masterServerObject->addClient(new GlobalMasterSymmetry());    
         if (simParams->TMDOn)
             masterServerObject->addClient(new GlobalMasterTMD());
         if (simParams->miscForcesOn)

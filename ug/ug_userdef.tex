@@ -360,6 +360,78 @@ through the pivot point.}
 
 \end{itemize}
 
+\subsection{Symmetry Restraints}
+Symmetry restraints are based on symmetrical relationships
+between monomers.  Defined monomers are transformed to overlap
+and an average position for each atom is calculated.  After the average 
+structure is transformed back, a harmonic force is calculated which 
+drives each monomer to the average.
+
+\begin{itemize}
+\item
+\NAMDCONFWDEF{symmetryRestraints}{Is Symmetry restraint active}{{\tt on} or {\tt off}}{{\tt off}}
+{Should Symmetry constraining forces be applied to the system.  If symmetry restraints are enabled,
+{\tt symmetryk}* and {\tt symmetryFile} must be defined in the 
+input file as well.  *See {\tt symmetryk} entry for details.}
+
+\item
+\NAMDCONFWDEF{symmetryFirstFullStep}{First step to apply full harmonic force}{{\tt symmetryFirstStep}}
+{Force constant {\tt symmetryk} linearly increased from {\tt symmetryFirstStep} to {\tt symmetryFirstFullStep}}
+
+\item
+\NAMDCONFWDEF{symmetryLastFullStep}{Last step to apply full harmonic force}{{\tt symmetryLastStep}}
+{Force constant {\tt symmetryk} linearly decreased from {\tt symmetryLastFullStep} to {\tt symmetryLastStep}} 
+
+\item
+\NAMDCONF{symmetryk}{Constant for harmonic restraining forces}
+{Positive value}
+{Harmonic force constant.  Scaled down by number of atoms in the monomer.  If this setting is omitted, the value in the occupancy column
+of the pdb file specified by {\tt symmetryFile} will be used as the constant for that atom.  
+This allows the user to specify the constant on a per-atom basis.}
+
+\item
+\NAMDCONFWDEF{symmetryScaleForces}{Scale symmetry restraints over time.}{{\tt on} or {\tt off}}{{\tt off}}
+{If turned on, the harmonic force applied by the symmetry restraints will linearly evolve with each time step based on
+{\tt symmetryFirstFullStep} and {\tt symmetryLastFullStep}.}
+
+\item
+\NAMDCONF{symmetryFile}{File for symmetry information}
+{Path to PDB file}
+{
+Restrained atoms are those whose occupancy (O) is nonzero in the SYMD PDB file.
+The file must contain the same number of atoms as the structure file.  The value in
+the atom's beta column represents its monomer designation.  This should be an integer
+value starting at 1 and proceeding in ascending order.
+}
+
+\item
+\NAMDCONF{symmetryMatrixFile}{File for transformation matrices}
+{Path to matrix file}
+{
+The {\tt symmetryMatrixFile} is a path to a file that contains a list of transformation
+matrices to make the monomers overlap.  The file should contain one (and only one)
+matrix for each monomer in the order of monomer ID designated in the symmetryFile.  
+These should be formatted with spaces between columns and
+NO spaces between rows as follows:
+
+1 0 0 0
+0 1 0 0
+0 0 1 0
+0 0 0 1
+
+with different matrices separated by a single blank line (and no line before the first or after
+the last matrix).  This file is
+OPTIONAL.  Leave this line out to have namd generate the transformations
+for you.
+}
+\item
+\NAMDCONFWDEF{symmetryFirstStep}{first symmetry restraint timestep}{Positive integer}{0} {}
+\item
+\NAMDCONFWDEF{symmetryLastStep}{last symmetry restraint timestep}{Positive integer}{infinity}
+{ Symmetry restraints are applied only between {\tt symmetryFirstStep} and {\tt symmetryLastStep}.
+Use these settings with caution and ensure restraints are only being applied when necessary (e.g. not
+during equilibration).  }
+
 \subsection{Targeted Molecular Dynamics (TMD)}
 
 In TMD, subset of atoms in the simulation is guided towards a 
@@ -376,7 +448,10 @@ where $RMS(t)$ is the instantaneous best-fit RMS distance of the current
 coordinates from the target coordinates, and $RMS^*(t)$ evolves linearly
 from the initial RMSD at the first TMD step to the final RMSD at the last 
 TMD step.  The spring constant $k$ is scaled down by the number $N$ of targeted
-atoms.  
+atoms. Atoms can be separated into non-overlapping constraint domains by
+assigning integer values in the beta column of the .pdb file.  Forces on
+the atoms will be calculated for each domain independently of the other domains.
+ 
 
 \begin{itemize}
 \item
@@ -389,7 +464,9 @@ input file as well.}
 \NAMDCONF{TMDk}{Elastic constant for TMD forces}
 {Positive value in $kcal/mol/$\AA$^2$.}
 {The value of $k$ in Eq.~\ref{eq:tmdpotential}.  A value of 200 seems to work
-well in many cases.}
+well in many cases.  If this setting is omitted, the value in the occupancy column
+of the pdb file specified by {\tt TMDFile} will be used as the constant for that atom.  
+This allows the user to specify the constant on a per-atom basis.}
 
 \item
 \NAMDCONFWDEF{TMDOutputFreq}{How often to print TMD output}{Positive integer}
@@ -405,7 +482,9 @@ timestep, and {\tt currentRMS} is the actual RMSD.}
 Target atoms are those whose occupancy (O) is nonzero in the TMD PDB file.
 The file must contain the same number of atoms as the structure file.  The
 coordinates for the target structure are also taken from the targeted
-atoms in this file.  Non-targeted atoms are ignored.
+atoms in this file.  Non-targeted atoms are ignored.  The beta column of targetted
+atoms is used to designate non-overlapping constraint domains.  Forces will be
+calculated for atoms within a domain separately from atoms of other domains.
 }
 
 \item

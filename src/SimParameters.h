@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2010/12/14 20:44:12 $
- * $Revision: 1.1172 $
+ * $Author: ryanmcgreevy $
+ * $Date: 2010/12/15 23:19:43 $
+ * $Revision: 1.1173 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -297,6 +297,13 @@ public:
         int TMDOutputFreq;
         int TMDFirstStep, TMDLastStep;
         BigReal TMDInitialRMSD, TMDFinalRMSD;
+
+        //Symmetry restraints
+        Bool symmetryOn, symmetryScaleForces;
+        BigReal symmetryk;
+        char symmetryFile[128];
+        char symmetryMatrixFile[128];
+        int symmetryFirstStep, symmetryLastStep, symmetryFirstFullStep, symmetryLastFullStep;
 
         
 // Modifications for alchemical simulations
