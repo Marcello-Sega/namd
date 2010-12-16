@@ -9382,7 +9382,6 @@ void Molecule::addNewExclSigPool(const vector<ExclusionSignature>& newExclSigPoo
     exclSigPoolSize += newExclSigPool.size();
     exclSigPool = tmpExclSigPool;
 }
-#endif
 
 void TupleSignature::pack(MOStream *msg){
     msg->put((short)tupleType);
@@ -9713,6 +9712,7 @@ void ExclusionSignature::unpack(MIStream *msg){
     modOffset = new int[modExclCnt];
     msg->get(modExclCnt*sizeof(int), (char *)modOffset);    
 }
+#endif
 
 #endif  // MOLECULE2_C defined = second object file
 
