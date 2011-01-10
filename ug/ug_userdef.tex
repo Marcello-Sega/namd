@@ -79,7 +79,7 @@ parameters. This is specified using a tag field in each of the mgridforceXXX com
 The tag is an alphanumeric string without spaces which identifies to which grid the 
 specified field applies.
 
-The grid file format is a subset of the DataExplorer DX file format. as shown below:
+The grid file format is a subset of the DataExplorer DX file format, as shown below:
 \begin{verbatim}
 # Lines at the beginning of the file starting with a # symbol 
 # are ignored as comments
@@ -93,7 +93,8 @@ The grid file format is a subset of the DataExplorer DX file format. as shown be
 #      z(i,j,k) = zorg + i * x3del + j * y3del + k * z3del
 #
 #   Grid data follows, with three values per line, ordered z fast, y medium,
-#   and x slow. Exactly xn*yn*zn values should be given
+#   and x slow. Exactly xn*yn*zn values should be given. Grid data is then
+#   terminated with a field object.
 #   
 #  Note: Other features of the DX file format are not handled by this code
 #
@@ -109,11 +110,43 @@ f4 f5 f6
 .
 .
 .
+object 4 class field
+component "positions" value 1
+component "connections" value 2
+component "data" value 3
 \end{verbatim}
 
 Each dimension of the grid may be specified as continuous or not. If the grid is not continuous in a particular dimension, the potential grid is padded with one border slices on each non-continuous face of the grid, and border grid values are computed so that the force felt by an atom outside the grid goes to zero. If the grid is continuous along a particular dimension, atoms outside the grid are affected by a potential that is interpolated from the grid and its corresponding periodic image along that dimension.
 
 To calculate the force on an atom due to the grid, the atom's coordinates are transformed according to the current basis vectors of the simulation box to a coordinate frame that is centered at the center of the specified grid. Note that the size and spatial coordinates of the grid remain fixed, and are not scaled as the size of the simulation box fluctuates. For atoms within the grid, the force is computed by analytically determining the gradient of the tricubic polynomial used to interpolate the potential from surrounding grid values. For atoms outside the grid, the state of the {\tt mgridforcecont[1,2,3]} determine whether the force is zero, or computed from the images of the grid as described above. Note that if the grid is ever larger than the periodic box, it is truncated at the edge of that box. The consequence of this is that the computed potential will not vary smoothly at the edges, introducing numerical instability.
+
+NAMD also supports non-uniform grids, allowing regions of a grid to be defined at higher resolution.
+Non-uniform grids are structured hierarchically, with a single \emph{maingrid} which has one or more \emph{subgrid}s.
+Each subgrid spans a number of maingrid cells in each of the three dimensions, and effectively redefines the data in that region.
+The subgrids are usually defined at higher resolution, with the restriction that the number of cells along each dimension is an integral number of the original number in the maingrid.
+Note that the maingrid still has data points in regions where subgrids are defined, and that, on the boundary of a subgrid, \emph{they must agree with the values in the subgrid}.
+Subgrids, in turn, may have subgrids of their own, which may have subgrids of their own, etc.
+
+A non-uniform grid file takes the form of a special comment block followed by multiple normal grid definitions.
+The special comment block defines the grid hierarchy, and consists of comments beginning with {\tt \# namdnugrid}.
+An example follows:
+\begin{verbatim}
+# namdnugrid version 1.0
+# namdnugrid maingrid subgrids count 2
+# namdnugrid subgrid 1 generation 1 min x1 y1 z1 max x2 y2 z2 subgrids count 2
+# namdnugrid subgrid 2 generation 2 min x3 y3 z3 max x4 y4 z4 subgrids count 0
+# namdnugrid subgrid 3 generation 2 min x5 y5 z5 max x6 y6 z6 subgrids count 0
+# namdnugrid subgrid 4 generation 1 min x7 y7 z7 max x8 y8 z8 subgrids count 0
+\end{verbatim}
+The maingrid is described by the number of subgrids.
+Subgrids are additionally described by a subgrid number; a generation number, which should be one higher than the generation of its supergrid; and {\tt min} and {\tt max} attributes, which describe the location of the subgrid within its supergrid.
+In this example, the maingrid has two subgrids, subgrid 1 and subgrid 4, labeled {\tt generation 1}.
+The first of these subgrids has two subgrids of its own ({\tt generation 2}).
+Notice that subgrids are described immediately after their supergrid.
+The {\tt min} and {\tt max} attributes are given in units of grid \emph{cells} of the supergrid.
+For example, a subgrid with {\tt min 0 0 0 max 1 1 1} would redefine 8 cells of its supergrid, the space between gridpoints (0, 0, 0) and (2, 2, 2) in grid coordinates.
+Following the comment block, the maingrid and subgrids are defined in the format described above, in the same order as the comment block.
+
 
 The following parameters describe the grid-based potentials.
 
@@ -431,6 +464,8 @@ for you.
 { Symmetry restraints are applied only between {\tt symmetryFirstStep} and {\tt symmetryLastStep}.
 Use these settings with caution and ensure restraints are only being applied when necessary (e.g. not
 during equilibration).  }
+
+\end{itemize}
 
 \subsection{Targeted Molecular Dynamics (TMD)}
 
