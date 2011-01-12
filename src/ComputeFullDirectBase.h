@@ -24,11 +24,11 @@
 
 #ifdef FULLDIRECT_PERIODIC
   Vector a1 = lattice->a();
-  Vector b1;  if ( lattice->a_p() ) b1 = lattice->a_r();
+  Vector b1(0);  if ( lattice->a_p() ) b1 = lattice->a_r();
   Vector a2 = lattice->b();
-  Vector b2;  if ( lattice->b_p() ) b2 = lattice->b_r();
+  Vector b2(0);  if ( lattice->b_p() ) b2 = lattice->b_r();
   Vector a3 = lattice->c();
-  Vector b3;  if ( lattice->c_p() ) b3 = lattice->c_r();
+  Vector b3(0);  if ( lattice->c_p() ) b3 = lattice->c_r();
 #endif
 
   for(int i=0; i<n1; ++i)
