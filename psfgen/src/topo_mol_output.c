@@ -227,8 +227,11 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
       /* Test the existence of segid:resid for the patch */
       if (!topo_mol_validate_patchres(mol,patch->pname,patchres->segid, patchres->resid)) {
 	break;
-      };
+      }
+    }
+    if ( patchres ) continue;
 
+    for ( patchres = patch->patchresids; patchres; patchres = patchres->next ) {
       if (ipres==0) {
         ntitle_count++;
         fprintf(file," REMARKS %spatch %s ", defpatch, patch->pname);
@@ -240,7 +243,7 @@ int topo_mol_write_psf(topo_mol *mol, FILE *file, int charmmfmt, int nocmap,
       fprintf(file,"%s:%s  ", patchres->segid, patchres->resid);
       if (ipres==npres-1) fprintf(file,"\n");
       ipres++;
-     }
+    }
   }
   fprintf(file,"\n");
   fgetpos(file,&save_pos);

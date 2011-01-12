@@ -13,7 +13,7 @@
 
 int charmm_get_tokens(char **tok, int toklen,
 			char *sbuf, int sbuflen,
-			FILE *stream) {
+			FILE *stream, int all_caps) {
 
   int ntok;
   int fullline;
@@ -46,7 +46,7 @@ int charmm_get_tokens(char **tok, int toklen,
     while ( *s ) {
       if ( ntok < toklen ) { tok[ntok] = s; ++ntok; }  /* in a token */
       while ( *s && *s != '!' && *s != '\n' && ! isspace(*s) ) {
-        *s = toupper(*s);
+        if ( all_caps ) *s = toupper(*s);
         ++s;
       }
       if ( *s == '!' || *s == '\n' ) *s = 0;

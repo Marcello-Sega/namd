@@ -114,6 +114,7 @@ psfgen_data* psfgen_data_create(Tcl_Interp *interp) {
   topo_mol_error_handler(data->mol,interp,newhandle_msg);
   data->id = id;
   data->in_use = 0;
+  data->all_caps = 1;
   *countptr = id+1;
   sprintf(namebuf,"Psfgen_%d",id);
   Tcl_SetAssocData(interp,namebuf,psfgen_deleteproc,(ClientData)data);
@@ -129,6 +130,7 @@ void psfgen_data_reset(Tcl_Interp *interp, psfgen_data *data) {
   data->aliases = stringhash_create();
   data->mol = topo_mol_create(data->defs);
   topo_mol_error_handler(data->mol,interp,newhandle_msg);
+  data->all_caps = 1;
 }
 
 int tcl_psfcontext(ClientData data, Tcl_Interp *interp, int argc, CONST84 char *argv[]);
@@ -238,16 +240,27 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.4.7");
+  Tcl_PkgProvide(interp, "psfgen", "1.5.0");
+
+#ifdef NAMD_VERSION
+  {
+    char buf[1024];
+    sprintf(buf, "puts \"PSFGEN [package require psfgen] from NAMD %s for %s\"",
+                                             NAMD_VERSION, NAMD_PLATFORM);
+    Tcl_Eval(interp, buf);
+  }
+#endif
 
   return TCL_OK;
 }
 
-char *strtoupper(const char *str) {
+char *strtoupper(const char *str, int all_caps) {
   char *s, *tmp;
   tmp = strdup(str);
-  s=tmp;
-  while ( *s ) { *s = toupper(*s); ++s; }
+  if ( all_caps ) {
+    s=tmp;
+    while ( *s ) { *s = toupper(*s); ++s; }
+  }
   return tmp;
 }
 
@@ -319,8 +332,23 @@ int tcl_psfcontext(ClientData data, Tcl_Interp *interp,
     return TCL_OK;
   }
 
+  if ( argc == 2 && ! strcmp(argv[1],"allcaps") ) {
+    newhandle_msg(interp,"mapping names to all caps on input");
+    (*cur)->all_caps = 1;
+    return TCL_OK;
+  }
+
+  if ( argc == 2 && ! strcmp(argv[1],"mixedcase") ) {
+    newhandle_msg(interp,"preserving case of names on input");
+    (*cur)->all_caps = 0;
+    return TCL_OK;
+  }
+
   if ( argc == 2 && ! strcmp(argv[1],"reset") ) {
     newhandle_msg(interp,"clearing structure, topology, and aliases");
+    if ( ! (*cur)->all_caps ) {
+      newhandle_msg(interp,"mapping names to all caps on input");
+    }
     psfgen_data_reset(interp,*cur);
     return TCL_OK;
   }
@@ -515,7 +543,7 @@ int tcl_topology(ClientData data, Tcl_Interp *interp,
   } else {
     sprintf(msg,"reading topology file %s\n",filename);
     newhandle_msg(interp,msg);
-    charmm_parse_topo_defs(psf->defs,defs_file,interp,newhandle_msg);
+    charmm_parse_topo_defs(psf->defs,defs_file,psf->all_caps,interp,newhandle_msg);
     topo_defs_add_topofile(psf->defs, filename);
     fclose(defs_file);
   }
@@ -587,7 +615,7 @@ int tcl_readplugin(ClientData data, Tcl_Interp *interp,
     if (!strcmp(argv[curarg], "segment")) {
       curarg++;
       if (curarg<argc) {
-        segid = strtoupper(argv[curarg]);
+        segid = strtoupper(argv[curarg], psf->all_caps);
         newhandle_msg(interp, "Info: read mode: coordinates for segment");
       }
     }
@@ -609,7 +637,7 @@ int tcl_readplugin(ClientData data, Tcl_Interp *interp,
 
   sprintf(msg,"Info: reading file %s using plugin %s", filename, pluginname);
   if ( topo_mol_read_plugin(psf->mol, pluginname, filename, 
-                            segid, psf->aliases,
+                            segid, psf->aliases, psf->all_caps,
                             coordinatesonly, residuesonly,
                             interp, newhandle_msg) ) { 
     if (segid != NULL)
@@ -753,7 +781,13 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
       atoms = seg->residue_array[resindex].atoms;
       while (atoms) {
         if (!strcmp(atoms->name, argv[4])) {
+#if TCL_MINOR_VERSION >= 6
+          char buf[512];
+          sprintf(buf, "%f %f %f", atoms->x, atoms->y, atoms->z);
+          Tcl_AppendResult(interp, buf, NULL);
+#else
           sprintf(interp->result, "%f %f %f", atoms->x, atoms->y, atoms->z);
+#endif
           return TCL_OK;
         }
         atoms = atoms->next;
@@ -780,7 +814,7 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  seg=strtoupper(argv[1]);
+  seg=strtoupper(argv[1], psf->all_caps);
   if ( strlen(seg) > 7 ) {
     Tcl_SetResult(interp,"segment name more than 7 characters",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
@@ -829,9 +863,9 @@ int tcl_residue(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  resid=strtoupper(argv[1]);
-  resname=strtoupper(argv[2]);
-  chain=strtoupper(argc==4 ? argv[3] : "");
+  resid=strtoupper(argv[1], psf->all_caps);
+  resname=strtoupper(argv[2], psf->all_caps);
+  chain=strtoupper(argc==4 ? argv[3] : "", psf->all_caps);
 
   if ( topo_mol_residue(psf->mol,resid,resname,chain) ) {
     free(resid);
@@ -862,8 +896,8 @@ int tcl_mutate(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  resid=strtoupper(argv[1]);
-  resname=strtoupper(argv[2]);
+  resid=strtoupper(argv[1], psf->all_caps);
+  resname=strtoupper(argv[2], psf->all_caps);
 
   if ( topo_mol_mutate(psf->mol,resid, resname) ) {
     free(resid);
@@ -910,7 +944,7 @@ int tcl_multiply(ClientData data, Tcl_Interp *interp,
   newhandle_msg(interp,msg);
   for ( i=2; i<argc; ++i ) {
     char *ctmp;
-    tmp[i-2] = strtoupper(argv[i]);
+    tmp[i-2] = strtoupper(argv[i], psf->all_caps);
     targets[i-2].segid = ctmp = tmp[i-2];
     targets[i-2].resid = ctmp = splitcolon(ctmp);
     targets[i-2].aname = splitcolon(ctmp);
@@ -954,9 +988,9 @@ int tcl_coord(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  segid=strtoupper(argv[1]);
-  resid=strtoupper(argv[2]);
-  atomname=strtoupper(argv[3]);
+  segid=strtoupper(argv[1], psf->all_caps);
+  resid=strtoupper(argv[2], psf->all_caps);
+  atomname=strtoupper(argv[3], psf->all_caps);
   target.segid = segid;
   target.resid = resid;
   target.aname = atomname;
@@ -1081,8 +1115,8 @@ int tcl_alias(ClientData data, Tcl_Interp *interp,
       psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
-    altres=strtoupper(argv[2]);
-    realres=strtoupper(argv[3]);
+    altres=strtoupper(argv[2], psf->all_caps);
+    realres=strtoupper(argv[3], psf->all_caps);
     sprintf(msg,"aliasing residue %s to %s",argv[2],argv[3]);
     newhandle_msg(interp,msg);
     rc = extract_alias_residue_define(psf->aliases,altres, realres);
@@ -1100,9 +1134,9 @@ int tcl_alias(ClientData data, Tcl_Interp *interp,
       psfgen_kill_mol(interp,psf);
       return TCL_ERROR;
     }
-    resname=strtoupper(argv[2]);
-    altatom=strtoupper(argv[3]);
-    realatom=strtoupper(argv[4]);
+    resname=strtoupper(argv[2], psf->all_caps);
+    altatom=strtoupper(argv[3], psf->all_caps);
+    realatom=strtoupper(argv[4], psf->all_caps);
     sprintf(msg,"aliasing residue %s atom %s to %s",argv[2],argv[3],argv[4]);
     newhandle_msg(interp,msg);
     rc=extract_alias_atom_define(psf->aliases,resname,altatom,realatom);
@@ -1146,7 +1180,7 @@ int tcl_pdb(ClientData data, Tcl_Interp *interp,
   } else {
     sprintf(msg,"reading residues from pdb file %s",filename);
     newhandle_msg(interp,msg);
-    if ( pdb_file_extract_residues(psf->mol,res_file,psf->aliases,interp,newhandle_msg) ) {
+    if ( pdb_file_extract_residues(psf->mol,res_file,psf->aliases,psf->all_caps,interp,newhandle_msg) ) {
       Tcl_AppendResult(interp,"ERROR: failed on reading residues from pdb file",NULL);
       fclose(res_file);
       psfgen_kill_mol(interp,psf);
@@ -1189,14 +1223,14 @@ int tcl_coordpdb(ClientData data, Tcl_Interp *interp,
       /* Read only coordinates for given segid */
       sprintf(msg,"reading coordinates from pdb file %s for segment %s",filename,argv[2]);
       newhandle_msg(interp,msg);
-      segid = strtoupper(argv[2]);
+      segid = strtoupper(argv[2], psf->all_caps);
     } else {
       /* Read all segid's in pdb file */
       sprintf(msg,"reading coordinates from pdb file %s",filename);
       newhandle_msg(interp,msg);
       segid = NULL;
     } 
-    rc=pdb_file_extract_coordinates(psf->mol,res_file,segid,psf->aliases,interp,newhandle_msg);
+    rc=pdb_file_extract_coordinates(psf->mol,res_file,segid,psf->aliases,psf->all_caps,interp,newhandle_msg);
     if (segid) free(segid);
     if (rc) {
       Tcl_AppendResult(interp,"ERROR: failed on reading coordinates from pdb file",NULL);
@@ -1331,25 +1365,92 @@ int tcl_writeplugin(ClientData data, Tcl_Interp *interp,
                     int argc, CONST84 char *argv[]) {
   const char *filename, *pluginname;
   char msg[2048];
+  struct image_spec images;
   psfgen_data *psf = *(psfgen_data **)data;
   PSFGEN_TEST_MOL(interp,psf);
 
+  images.na = 1; images.nb = 1; images.nc = 1;
+  images.ax = 0.; images.ay = 0.; images.az = 0.; 
+  images.bx = 0.; images.by = 0.; images.bz = 0.; 
+  images.cx = 0.; images.cy = 0.; images.cz = 0.; 
+
+  if ( argc == 1 ) {
+    Tcl_SetResult(interp,"arguments: format filename ?na { x y z }? ?nb { x y z }? ?nc { x y z }?",TCL_VOLATILE);
+    psfgen_kill_mol(interp,psf);
+    return TCL_ERROR;
+  }
   if ( argc < 3 ) {
     Tcl_SetResult(interp,"missing file format and/or output filename",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
+
+  pluginname = argv[1]; 
+  filename = argv[2];
+
   if ( argc > 3 ) {
+    if ( sscanf(argv[3],"%d",&images.na) != 1 || images.na < 1 ) {
+      Tcl_SetResult(interp,"image count not a positive integer",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    if ( argc == 4 ) {
+      Tcl_SetResult(interp,"image count without offset vector",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    if ( sscanf(argv[4],"%lf %lf %lf",&images.ax,&images.ay,&images.az) != 3 ) {
+      Tcl_SetResult(interp,"bad image offset vector format",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+  }
+
+  if ( argc > 5 ) {
+    if ( sscanf(argv[5],"%d",&images.nb) != 1 || images.nb < 1 ) {
+      Tcl_SetResult(interp,"image count not a positive integer",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    if ( argc == 6 ) {
+      Tcl_SetResult(interp,"image count without offset vector",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    if ( sscanf(argv[6],"%lf %lf %lf",&images.bx,&images.by,&images.bz) != 3 ) {
+      Tcl_SetResult(interp,"bad image offset vector format",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+  }
+
+  if ( argc > 7 ) {
+    if ( sscanf(argv[7],"%d",&images.nc) != 1 || images.nc < 1 ) {
+      Tcl_SetResult(interp,"image count not a positive integer",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    if ( argc == 8 ) {
+      Tcl_SetResult(interp,"image count without offset vector",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+    if ( sscanf(argv[8],"%lf %lf %lf",&images.cx,&images.cy,&images.cz) != 3 ) {
+      Tcl_SetResult(interp,"bad image offset vector format",TCL_VOLATILE);
+      psfgen_kill_mol(interp,psf);
+      return TCL_ERROR;
+    }
+  }
+
+  if ( argc > 9 ) {
     Tcl_SetResult(interp,"too many arguments specified",TCL_VOLATILE);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  pluginname = argv[1]; 
-  filename = argv[2];
 
   sprintf(msg,"Info: writing file %s using plugin %s", filename, pluginname);
   newhandle_msg(interp,msg);
-  if ( topo_mol_write_plugin(psf->mol, pluginname, filename, interp, newhandle_msg) ) {
+  if ( topo_mol_write_plugin(psf->mol, pluginname, filename, &images, interp, newhandle_msg) ) {
     Tcl_AppendResult(interp,"ERROR: failed writing to file", NULL);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
@@ -1372,7 +1473,7 @@ int tcl_first(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  first = strtoupper(argv[1]);
+  first = strtoupper(argv[1], psf->all_caps);
 
   sprintf(msg,"setting patch for first residue to %s",first);
   newhandle_msg(interp,msg);
@@ -1399,7 +1500,7 @@ int tcl_last(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  last=strtoupper(argv[1]);
+  last=strtoupper(argv[1], psf->all_caps);
 
   sprintf(msg,"setting patch for last residue to %s",last);
   newhandle_msg(interp,msg);
@@ -1428,7 +1529,7 @@ static int tcl_num_patch_targets(psfgen_data *psf, Tcl_Interp *interp,
   int maxres = 0;
 
   {
-    char *pres = strtoupper(presname);
+    char *pres = strtoupper(presname, psf->all_caps);
     idef = hasharray_index(defs->residue_hash, pres);
     free(pres);
   }
@@ -1527,11 +1628,11 @@ int tcl_patch(ClientData data, Tcl_Interp *interp,
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  pres=strtoupper(argv[1]);
+  pres=strtoupper(argv[1], psf->all_caps);
   sprintf(msg,"applying patch %s to %d residues",pres,(argc-2));
   newhandle_msg(interp,msg);
   for ( i=2; i<argc; ++i ) {
-    tmp[i-2]=strtoupper(argv[i]);
+    tmp[i-2]=strtoupper(argv[i], psf->all_caps);
     targets[i-2].segid = tmp[i-2];
     targets[i-2].resid = splitcolon(tmp[i-2]);
     targets[i-2].aname = 0;

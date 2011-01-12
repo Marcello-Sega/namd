@@ -7,6 +7,11 @@
 #include "topo_defs.h"
 #include "charmm_parse_topo_defs.h"
 
+#ifdef WIN32
+#define strcasecmp  stricmp
+#define strncasecmp strnicmp
+#endif
+
 #define TOKLEN 100
 #define BUFLEN 200
 
@@ -28,7 +33,7 @@ static void debug_msg(const char *s) {
   ;
 }
 
-int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
+int charmm_parse_topo_defs(topo_defs *defs, FILE *file, int all_caps, void *v,
 				void (*print_msg)(void *,const char *)) {
 
   char *tok[TOKLEN];
@@ -54,7 +59,7 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
   if ( ! file ) return -2;
   if ( print_msg == 0 ) print_msg = null_print_msg;
 
-  while ( (ntok = charmm_get_tokens(tok,TOKLEN,sbuf,BUFLEN,file)) ) {
+  while ( (ntok = charmm_get_tokens(tok,TOKLEN,sbuf,BUFLEN,file,all_caps)) ) {
     if ( ! tok[0][0] ) {
       print_msg(v,tok[1]);
       continue;
@@ -65,16 +70,16 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
     }
     if ( first ) {
       first = 0;
-      if ( ! strncmp("READ",tok[0],4) && ! strncmp("RTF",tok[1],4) ) {
+      if ( ! strncasecmp("READ",tok[0],4) && ! strncasecmp("RTF",tok[1],4) ) {
         print_msg (v, "reading topology from stream file");
         first = 1;
         stream = 1;
         continue;
-      } else if ( ! strncmp("READ",tok[0],4) && ! strncmp("PARA",tok[1],4) ) {
+      } else if ( ! strncasecmp("READ",tok[0],4) && ! strncasecmp("PARA",tok[1],4) ) {
         print_msg (v, "skipping parameters in stream file");
         skip = 1;
         continue;
-      } else if ( ! strncmp("READ",tok[0],4) ) {
+      } else if ( ! strncasecmp("READ",tok[0],4) ) {
         print_msg (v, "skipping unknown section in stream file");
         skip = 1;
         continue;
@@ -87,13 +92,13 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
     }
 
     if ( skip ) {
-      if ( ! strncmp("END",tok[0],4) ) {
+      if ( ! strncasecmp("END",tok[0],4) ) {
         debug_msg("Recognized file end statement in skipped section.");
         skip = 0;
         first = 1;
       }
     }
-    else if ( ! strncmp("END",tok[0],4) ) {
+    else if ( ! strncasecmp("END",tok[0],4) ) {
       debug_msg("Recognized file end statement.");
       if ( stream ) {
         stream = 0;
@@ -102,19 +107,19 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         skipall = 1;
       }
     }
-    else if ( ! strncmp("RETURN",tok[0],4) ) {
+    else if ( ! strncasecmp("RETURN",tok[0],4) ) {
       debug_msg("Recognized return statement.");
         skipall = 1;
     }
-    else if ( ! strncmp("ACCE",tok[0],4) ) {
+    else if ( ! strncasecmp("ACCE",tok[0],4) ) {
       debug_msg("Recognized acceptor statement.");
     }
-    else if ( ! strncmp("DONO",tok[0],4) ) {
+    else if ( ! strncasecmp("DONO",tok[0],4) ) {
       debug_msg("Recognized donor statement.");
     }
-    else if ( ! strncmp("BOND",tok[0],4) ||
-		! strncmp("DOUB",tok[0],4) ||
-		! strncmp("TRIP",tok[0],4) ) {
+    else if ( ! strncasecmp("BOND",tok[0],4) ||
+		! strncasecmp("DOUB",tok[0],4) ||
+		! strncasecmp("TRIP",tok[0],4) ) {
       debug_msg("Recognized bond statement.");
       if ( ntok < 3 || (ntok-1)%2 ) {
         print_msg(v,"ERROR!  Failed to parse bond statement.");
@@ -127,8 +132,8 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         }
       }
     }
-    else if ( ! strncmp("ANGL",tok[0],4) ||
-		! strncmp("THET",tok[0],4) ) {
+    else if ( ! strncasecmp("ANGL",tok[0],4) ||
+		! strncasecmp("THET",tok[0],4) ) {
       debug_msg("Recognized angle statement.");
       if ( ntok < 4 || (ntok-1)%3 ) {
         print_msg(v,"ERROR!  Failed to parse angle statement.");
@@ -142,7 +147,7 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         }
       }
     }
-    else if ( ! strncmp("DIHE",tok[0],4) ) {
+    else if ( ! strncasecmp("DIHE",tok[0],4) ) {
       debug_msg("Recognized dihedral statement.");
       if ( ntok < 5 || (ntok-1)%4 ) {
         print_msg(v,"ERROR!  Failed to parse dihedral statement.");
@@ -157,8 +162,8 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         }
       }
     }
-    else if ( ! strncmp("IMPH",tok[0],4) ||
-		! strncmp("IMPR",tok[0],4) ) {
+    else if ( ! strncasecmp("IMPH",tok[0],4) ||
+		! strncasecmp("IMPR",tok[0],4) ) {
       debug_msg("Recognized improper statement.");
       if ( ntok < 5 || (ntok-1)%4 ) {
         print_msg(v,"ERROR!  Failed to parse improper statement.");
@@ -173,7 +178,7 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         }
       }
     }
-    else if ( ! strncmp("CMAP",tok[0],4) ) {
+    else if ( ! strncasecmp("CMAP",tok[0],4) ) {
       debug_msg("Recognized CMAP statement.");
       if ( ntok != 9 ) {
         print_msg(v,"ERROR!  Failed to parse CMAP statement.");
@@ -186,10 +191,10 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
             print_msg(v,"ERROR!  Failed to parse CMAP statement.");
       }
     }
-    else if ( ! strncmp("DECL",tok[0],4) ) {
+    else if ( ! strncasecmp("DECL",tok[0],4) ) {
       debug_msg("Recognized atom declaration statement.");
     }
-    else if ( ! strncmp("ATOM",tok[0],4) ) {
+    else if ( ! strncasecmp("ATOM",tok[0],4) ) {
       debug_msg("Recognized atom statement.");
       if ( ntok < 4 ) {
         print_msg(v,"ERROR!  Failed to parse atom statement.");
@@ -202,34 +207,34 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         }
       }
     }
-    else if ( ! strncmp("MASS",tok[0],4) ) {
+    else if ( ! strncasecmp("MASS",tok[0],4) ) {
       debug_msg("Recognized mass statement.");
       if ( ntok < 4 || topo_defs_type(defs,tok[2],(ntok>4?tok[4]:""),atof(tok[3]),atoi(tok[1])) ) {
         print_msg(v,"ERROR!  Failed to parse mass statement.");
       }
     }
-    else if ( ! strncmp("AUTO",tok[0],4) ) {
+    else if ( ! strncasecmp("AUTO",tok[0],4) ) {
       debug_msg("Recognized autogenerate statement.");
       for ( itok = 1; itok < ntok; itok += 1 ) {
-        if ( ! strncmp("ANGL",tok[itok],4) ) {
+        if ( ! strncasecmp("ANGL",tok[itok],4) ) {
           topo_defs_auto_angles(defs,1);
-        } else if ( ! strncmp("DIHE",tok[itok],4) ) {
+        } else if ( ! strncasecmp("DIHE",tok[itok],4) ) {
           topo_defs_auto_dihedrals(defs,1);
         } else {
           print_msg(v,"ERROR!  Failed to parse autogenerate statement.");
         }
       }
     }
-    else if ( ! strncmp("DEFA",tok[0],4) ) {
+    else if ( ! strncasecmp("DEFA",tok[0],4) ) {
       debug_msg("Recognized default patch statement.");
       if ( ntok < 3 || (ntok-1)%2 ) {
         print_msg(v,"ERROR!  Failed to parse default patching statement.");
       } else {
         i1 = i2 = 0;
         for ( itok = 1; itok < ntok; itok += 2 ) {
-          if ( ! strncmp("FIRS",tok[itok],4) ) {
+          if ( ! strncasecmp("FIRS",tok[itok],4) ) {
               i1 = topo_defs_default_patching_first(defs,tok[itok+1]);
-          } else if ( ! strncmp("LAST",tok[itok],4) ) {
+          } else if ( ! strncasecmp("LAST",tok[itok],4) ) {
               i2 = topo_defs_default_patching_last(defs,tok[itok+1]);
           } else {
             print_msg(v,"ERROR!  Failed to parse default patching statement.");
@@ -239,8 +244,8 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
           print_msg(v,"ERROR!  Failed to parse default patching statement.");
       }
     }
-    else if ( ! strncmp("BILD",tok[0],4) ||
-		! strncmp("IC",tok[0],4) ) {
+    else if ( ! strncasecmp("BILD",tok[0],4) ||
+		! strncasecmp("IC",tok[0],4) ) {
       debug_msg("Recognized internal coordinate statement.");
       if ( ntok < 10 ) {
         print_msg(v,"ERROR!  Failed to parse internal coordinate statement.");
@@ -257,12 +262,12 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
           print_msg(v,"ERROR!  Failed to parse internal coordinate statement.");
       }
     }
-    else if ( ! strncmp("DELE",tok[0],4) ) {
+    else if ( ! strncasecmp("DELE",tok[0],4) ) {
       debug_msg("Recognized delete statement.");
       if ( ntok < 2 ) {
         print_msg(v,"ERROR!  Failed to parse delete statement.");
       } else {
-        if ( ! strncmp("ATOM",tok[1],4) ) {
+        if ( ! strncasecmp("ATOM",tok[1],4) ) {
           if ( ntok < 3 ) {
             print_msg(v,"ERROR!  Failed to parse delete atom statement.");
           } else {
@@ -271,13 +276,13 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
               print_msg(v,"ERROR!  Failed to parse delete atom statement.");
             }
           }
-        } else if ( ! strncmp("ACCE",tok[1],4) ) {
+        } else if ( ! strncasecmp("ACCE",tok[1],4) ) {
           ;
-        } else if ( ! strncmp("DONO",tok[1],4) ) {
+        } else if ( ! strncasecmp("DONO",tok[1],4) ) {
           ;
-        } else if ( ! strncmp("BOND",tok[1],4) ||
-		! strncmp("DOUB",tok[1],4) ||
-		! strncmp("TRIP",tok[1],4) ) {
+        } else if ( ! strncasecmp("BOND",tok[1],4) ||
+		! strncasecmp("DOUB",tok[1],4) ||
+		! strncasecmp("TRIP",tok[1],4) ) {
           if ( ntok < 4 || (ntok-2)%2 ) {
             print_msg(v,"ERROR!  Failed to parse delete bond statement.");
           } else {
@@ -288,8 +293,8 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
                 print_msg(v,"ERROR!  Failed to parse delete bond statement.");
             }
           }
-        } else if ( ! strncmp("ANGL",tok[1],4) ||
-		! strncmp("THET",tok[1],4) ) {
+        } else if ( ! strncasecmp("ANGL",tok[1],4) ||
+		! strncasecmp("THET",tok[1],4) ) {
           if ( ntok < 5 || (ntok-2)%3 ) {
             print_msg(v,"ERROR!  Failed to parse delete angle statement.");
           } else {
@@ -301,7 +306,7 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
                 print_msg(v,"ERROR!  Failed to parse delete angle statement.");
             }
           }
-        } else if ( ! strncmp("DIHE",tok[1],4) ) {
+        } else if ( ! strncasecmp("DIHE",tok[1],4) ) {
           if ( ntok < 6 || (ntok-2)%4 ) {
             print_msg(v,"ERROR!  Failed to parse delete dihedral statement.");
           } else {
@@ -314,8 +319,8 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
                 print_msg(v,"ERROR!  Failed to parse delete dihedral statement.");
             }
           }
-        } else if ( ! strncmp("IMPH",tok[1],4) ||
-		! strncmp("IMPR",tok[1],4) ) {
+        } else if ( ! strncasecmp("IMPH",tok[1],4) ||
+		! strncasecmp("IMPR",tok[1],4) ) {
           if ( ntok < 6 || (ntok-2)%4 ) {
             print_msg(v,"ERROR!  Failed to parse delete improper statement.");
           } else {
@@ -328,8 +333,8 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
                 print_msg(v,"ERROR!  Failed to parse delete improper statement.");
             }
           }
-        } else if ( ! strncmp("BILD",tok[1],4) ||
-		! strncmp("IC",tok[1],4) ) {
+        } else if ( ! strncasecmp("BILD",tok[1],4) ||
+		! strncasecmp("IC",tok[1],4) ) {
           if ( ntok < 6 ) {
             print_msg(v,"ERROR!  Failed to parse delete internal coordinate statement.");
           } else {
@@ -348,19 +353,19 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
         }
       }
     }
-    else if ( ! strncmp("GROU",tok[0],4) ) {
+    else if ( ! strncasecmp("GROU",tok[0],4) ) {
       debug_msg("Recognized group statement.");
     }
-    else if ( ! strncmp("PATC",tok[0],4) ) {
+    else if ( ! strncasecmp("PATC",tok[0],4) ) {
       debug_msg("Recognized patching statement.");
       if ( ntok < 3 || (ntok-1)%2 ) {
         print_msg(v,"ERROR!  Failed to parse patching statement.");
       } else {
         i1 = i2 = 0;
         for ( itok = 1; itok < ntok; itok += 2 ) {
-          if ( ! strncmp("FIRS",tok[itok],4) ) {
+          if ( ! strncasecmp("FIRS",tok[itok],4) ) {
               i1 = topo_defs_patching_first(defs,0,tok[itok+1]);
-          } else if ( ! strncmp("LAST",tok[itok],4) ) {
+          } else if ( ! strncasecmp("LAST",tok[itok],4) ) {
               i2 = topo_defs_patching_last(defs,0,tok[itok+1]);
           } else {
             print_msg(v,"ERROR!  Failed to parse patching statement.");
@@ -370,13 +375,13 @@ int charmm_parse_topo_defs(topo_defs *defs, FILE *file, void *v,
           print_msg(v,"ERROR!  Failed to parse patching statement.");
       }
     }
-    else if ( ! strncmp("RESI",tok[0],4) ) {
+    else if ( ! strncasecmp("RESI",tok[0],4) ) {
       debug_msg("Recognized residue statement.");
       if ( ntok < 2 || topo_defs_residue(defs,tok[1],0) ) {
         print_msg(v,"ERROR!  Failed to parse residue statement.");
       }
     }
-    else if ( ! strncmp("PRES",tok[0],4) ) {
+    else if ( ! strncasecmp("PRES",tok[0],4) ) {
       debug_msg("Recognized patch residue statement.");
       if ( ntok < 2 || topo_defs_residue(defs,tok[1],1) ) {
         print_msg(v,"ERROR!  Failed to parse patch residue statement.");

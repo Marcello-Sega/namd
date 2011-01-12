@@ -13,7 +13,7 @@ static void strtoupper(char *s) {
   while ( *s ) { *s = toupper(*s); ++s; }
 }
 
-int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
+int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h, int all_caps,
                                 void *v,void (*print_msg)(void *,const char *)) {
 
   char record[PDB_RECORD_LENGTH+2];
@@ -36,8 +36,8 @@ int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
       if ( strcmp(oldresid,resid) ) {
         strcpy(oldresid,resid);
         ++rcount;
-        strtoupper(resname);
-        strtoupper(chain);
+        if ( all_caps ) strtoupper(resname);
+        if ( all_caps ) strtoupper(chain);
         realres = extract_alias_residue_check(h,resname);
         if ( topo_mol_residue(mol,resid,realres,chain) ) {
           sprintf(msg,"ERROR: failed on residue %s from pdb file",resname);
@@ -53,7 +53,7 @@ int pdb_file_extract_residues(topo_mol *mol, FILE *file, stringhash *h,
 }
 
 int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
-                                const char *segid, stringhash *h,
+                                const char *segid, stringhash *h, int all_caps,
                                 void *v,void (*print_msg)(void *,const char *)) {
 
   char record[PDB_RECORD_LENGTH+2];
@@ -74,9 +74,9 @@ int pdb_file_extract_coordinates(topo_mol *mol, FILE *file,
       get_pdb_fields(record, name, resname, chain,
                    segname, element, resid, insertion, &x, &y, &z, &o, &b);
       target.resid = resid;
-      strtoupper(resname);
-      strtoupper(name);
-      strtoupper(chain);
+      if ( all_caps ) strtoupper(resname);
+      if ( all_caps ) strtoupper(name);
+      if ( all_caps ) strtoupper(chain);
       target.aname = extract_alias_atom_check(h,resname,name);
       /* Use PDB segid if no segid given */
       if (!segid) {

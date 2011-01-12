@@ -539,6 +539,21 @@ interface, but it would not be easy.  Please employ the following revised
 {\ARGDEF{context}{Context ID returned by psfcontext.}}
 {At any time.}
 
+\item \COMMAND{\IKEY{psfcontext mixedcase}}
+{Make context case sensitive by preserving case of all segment, residue,
+atom, and patch names on input.}
+{}
+{Before reading files requiring case sensitive behavior,
+normally as the first command.}
+
+\item \COMMAND{\IKEY{psfcontext allcaps}}
+{Make context case insensitive by converting all segment, residue, atom,
+and patch names to upper case characters on input.  This is the default
+behavior and should match the behavior of versions prior to 1.5.0.}
+{}
+{Before reading files requiring case insensitive behavior,
+not needed in normal use.}
+
 \item \COMMAND{\IKEY{psfcontext reset}}
 {Clears the structure, topology definitions, and aliases, creating
 clean environment just like a new context.}

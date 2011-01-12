@@ -6,7 +6,7 @@
 
 int charmm_get_tokens(char **tok, int toklen,
 			char *sbuf, int sbuflen,
-			FILE *stream);
+			FILE *stream, int all_caps);
 
 #endif
 

@@ -24,8 +24,11 @@ topo_defs * topo_defs_create(void) {
     defs->residue_hash = hasharray_create(
 	(void**) &(defs->residue_array), sizeof(topo_defs_residue_t));
     defs->arena = memarena_create();
-    if ( ! defs->type_hash || ! defs->residue_hash || ! defs->arena || ! defs->topo_hash ||
-			topo_defs_residue(defs,"NONE",1) ) {
+    if ( ! defs->type_hash || ! defs->residue_hash ||
+	! defs->arena || ! defs->topo_hash ||
+	topo_defs_residue(defs,"NONE",1) ||
+	topo_defs_residue(defs,"None",1) ||
+	topo_defs_residue(defs,"none",1) ) {
       topo_defs_destroy(defs);
       return 0;
     }

@@ -6,6 +6,10 @@
 #include "topo_defs_struct.h"
 #include "topo_mol_struct.h"
 
+#ifdef WIN32
+#define strcasecmp  stricmp
+#define strncasecmp strnicmp
+#endif
 
 topo_mol * topo_mol_create(topo_defs *defs) {
   topo_mol *mol;
@@ -1196,7 +1200,10 @@ int topo_mol_end(topo_mol *mol) {
             &(seg->residue_array[ires2]), confdef->atom2,
             &(seg->residue_array[ires3]), confdef->atom3,
             &(seg->residue_array[ires4]), confdef->atom4, confdef)) {
-        fprintf(stderr, "Missing atoms for conformation definition\n");
+        sprintf(errmsg, "Warning: missing atoms for conformation %s %s-%s-%s-%s; skipping.",
+            res->name, confdef->atom1, confdef->atom2, confdef->atom3, 
+            confdef->atom4);
+        topo_mol_log_error(mol, errmsg);
       }
     }
   }
@@ -1513,7 +1520,7 @@ int topo_mol_patch(topo_mol *mol, const topo_mol_ident_t *targets,
     }
   }
 
-  if (strncmp(rname,"NONE",4)) {
+  if (strncasecmp(rname,"NONE",4)) {
     int ret;
     ret = topo_mol_add_patch(mol,rname,deflt);
     if (ret<0) {
@@ -1934,6 +1941,7 @@ int topo_mol_clear_xyz(topo_mol *mol, const topo_mol_ident_t *target) {
 int topo_mol_guess_xyz(topo_mol *mol) {
   char msg[128];
   int iseg,nseg,ires,nres,ucount,i,nk,nu,gcount,gwild,okwild,wcount,hcount;
+  int ipass;
   topo_mol_segment_t *seg;
   topo_mol_residue_t *res;
   topo_mol_atom_t *atom, *a1, *a2, *a3;
@@ -2157,18 +2165,20 @@ int topo_mol_guess_xyz(topo_mol *mol) {
   }
 
   /* fallback rules for atoms without conformation records */
+  for ( ipass=0; ipass<2; ++ipass ) {  /* don't do entire chain */
   for ( i=0; i<ucount; ++i ) { atom = uatoms[i];
     if ( atom->xyz_state != TOPO_MOL_XYZ_VOID ) continue;
 
-    /* pick heaviest atom we are bonded to (to deal with water) */
+    /* pick heaviest known atom we are bonded to (to deal with water) */
     a1 = 0;
     for ( bondtmp = atom->bonds; bondtmp;
 		bondtmp = topo_mol_bond_next(bondtmp,atom) ) {
       if ( bondtmp->atom[0] == atom ) a2 = bondtmp->atom[1];
       else a2 = bondtmp->atom[0];
+      if ( a2->xyz_state == TOPO_MOL_XYZ_VOID ) continue;
       if ( a1 == 0 || a2->mass > a1->mass ) a1 = a2;
     }
-    if ( a1 == 0 || a1->xyz_state == TOPO_MOL_XYZ_VOID ) continue;
+    if ( a1 == 0 ) continue;
     atom = a1;
 
     /* find all bonded atoms known and unknown coordinates */
@@ -2183,6 +2193,12 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       } else {
         if ( nk < 4 ) ka[nk++] = a2;
       }
+    }
+
+    if ( ipass ) {  /* hydrogens only on second pass */
+      int j;
+      for ( j=0; j<nu && ua[j]->mass < 2.5; ++j );
+      if ( j != nu ) continue;
     }
 
     if ( nu + nk > 4 ) continue;  /* no intuition beyond this case */
@@ -2213,16 +2229,70 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       a = sqrt(jx*jx+jy*jy+jz*jz);
       if ( a ) a = 1.0 / a;  else continue;
       jx *= a; jy *= a; jz *= a;
-      angle234 = 109.0*M_PI/180.0;
-      a = cos(angle234);
-      b = sin(angle234);
-      a2 = ua[0];
-      a2->x = atom->x + a * ix + b * jx;
-      a2->y = atom->y + a * iy + b * jy;
-      a2->z = atom->z + a * iz + b * jz;
-      a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
-      ++gcount;  ++wcount;
-      if ( a2->mass > 2.5 ) ++hcount;
+      if ( nu == 1 ) {  /* one unknown atom */
+        a = cos(109.0*M_PI/180.0);
+        b = sin(109.0*M_PI/180.0);
+        a2 = ua[0];
+        a2->x = atom->x + a * ix + b * jx;
+        a2->y = atom->y + a * iy + b * jy;
+        a2->z = atom->z + a * iz + b * jz;
+        a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
+        ++gcount;  ++wcount;
+        if ( a2->mass > 2.5 ) ++hcount;
+      } else if ( nu == 2 ) {  /* two unknown atoms */
+        a = cos(120.0*M_PI/180.0);
+        b = sin(120.0*M_PI/180.0);
+        a1 = ua[0];
+        a2 = ua[1];
+        a1->x = atom->x + a * ix + b * jx;
+        a1->y = atom->y + a * iy + b * jy;
+        a1->z = atom->z + a * iz + b * jz;
+        a2->x = atom->x + a * ix - b * jx;
+        a2->y = atom->y + a * iy - b * jy;
+        a2->z = atom->z + a * iz - b * jz;
+        a1->xyz_state = TOPO_MOL_XYZ_BADGUESS;
+        ++gcount;  ++wcount;
+        if ( a1->mass > 2.5 ) ++hcount;
+        a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
+        ++gcount;  ++wcount;
+        if ( a2->mass > 2.5 ) ++hcount;
+      } else { /* three unknown atoms */
+        a1 = ua[0];
+        a2 = ua[1];
+        a3 = ua[2];
+        /* only handle this case if at least two are hydrogens */
+        if ( a1->mass > 2.5 && a2->mass > 2.5 ) continue;
+        if ( a1->mass > 2.5 && a3->mass > 2.5 ) continue;
+        if ( a2->mass > 2.5 && a3->mass > 2.5 ) continue;
+        kx = iy*jz - iz*jy;
+        ky = iz*jx - ix*jz;
+        kz = ix*jy - iy*jx;
+        a = sqrt(kx*kx+ky*ky+kz*kz);
+        if ( a ) a = 1.0 / a;  else continue;
+        kx *= a; ky *= a; kz *= a;
+        a = cos(109.0*M_PI/180.0);
+        b = sin(109.0*M_PI/180.0);
+        a1->x = atom->x + a * ix + b * jx;
+        a1->y = atom->y + a * iy + b * jy;
+        a1->z = atom->z + a * iz + b * jz;
+        c = b * sin(120.0*M_PI/180.0);
+        b *= cos(120.0*M_PI/180.0);
+        a2->x = atom->x + a * ix + b * jx + c * kx;
+        a2->y = atom->y + a * iy + b * jy + c * ky;
+        a2->z = atom->z + a * iz + b * jz + c * kz;
+        a3->x = atom->x + a * ix + b * jx - c * kx;
+        a3->y = atom->y + a * iy + b * jy - c * ky;
+        a3->z = atom->z + a * iz + b * jz - c * kz;
+        a1->xyz_state = TOPO_MOL_XYZ_BADGUESS;
+        ++gcount;  ++wcount;
+        if ( a1->mass > 2.5 ) ++hcount;
+        a2->xyz_state = TOPO_MOL_XYZ_BADGUESS;
+        ++gcount;  ++wcount;
+        if ( a2->mass > 2.5 ) ++hcount;
+        a3->xyz_state = TOPO_MOL_XYZ_BADGUESS;
+        ++gcount;  ++wcount;
+        if ( a3->mass > 2.5 ) ++hcount;
+      }
       continue;
     }
 
@@ -2256,6 +2326,10 @@ int topo_mol_guess_xyz(topo_mol *mol) {
         ++gcount;  ++wcount;
         if ( a2->mass > 2.5 ) ++hcount;
       } else {  /* two unknown atoms */
+        a1 = ua[0];
+        a2 = ua[1];
+        /* only handle this case if both are hydrogens */
+        if ( a1->mass > 2.5 || a2->mass > 2.5 ) continue;
         a = sqrt(kx*kx+ky*ky+kz*kz);
         if ( a ) a = 1.0 / a;  else continue;
         kx *= a; ky *= a; kz *= a;
@@ -2268,8 +2342,6 @@ int topo_mol_guess_xyz(topo_mol *mol) {
         angle234 = (180.0-0.5*109.0)*M_PI/180.0;
         a = sin(angle234);
         b = cos(angle234);
-        a1 = ua[0];
-        a2 = ua[1];
         a1->x = atom->x + a * ix + b * jx;
         a1->y = atom->y + a * iy + b * jy;
         a1->z = atom->z + a * iz + b * jz;
@@ -2323,6 +2395,7 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       continue;
     }
 
+  }
   }
 
   gcount = 0;
