@@ -936,10 +936,11 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
   for ( ia = 0; ia < images->na; ++ia ) {
     for ( ib = 0; ib < images->nb; ++ib ) {
       for ( ic = 0; ic < images->nc; ++ic ) {
+        double offx, offy, offz;
         if ( ia == 0 && ib == 0 && ic == 0 ) continue;
-        double offx = ia * images->ax + ib * images->bx + ic * images->cx;
-        double offy = ia * images->ay + ib * images->by + ic * images->cy;
-        double offz = ia * images->az + ib * images->bz + ic * images->cz;
+        offx = ia * images->ax + ib * images->bx + ic * images->cx;
+        offy = ia * images->ay + ib * images->by + ic * images->cy;
+        offz = ia * images->az + ib * images->bz + ic * images->cz;
         memcpy(&atomarray[atomid], atomarray, nmolatoms*sizeof(molfile_atom_t));
         for ( ii=0 ; ii < nmolatoms; ++ii, ++atomid ) {
           atomcoords[atomid*3    ] = atomcoords[ii*3]     + offx;
