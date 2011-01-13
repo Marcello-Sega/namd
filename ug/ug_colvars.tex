@@ -566,7 +566,7 @@ Each colvar accepts the following parameters:
     extendedTimeConstant}{%
     (\texttt{colvar}) Oscillation period of the fictitious particle (fs)}{%
     positive decimal}{%
-    \texttt{80.0 $\times$ timestep}}{%
+    \texttt{20.0 $\times$ timestep}}{%
     Defines the inertial mass of the fictitious particle, by setting the
     oscillation period of the harmonic oscillator formed by the fictitious
     particle and the spring. The period
@@ -2569,7 +2569,13 @@ applied, the block accepts the following options:
 The harmonic biasing method may be used to enforce fixed or moving restraints,
 including variants of Steered and Targeted MD. Within energy minimization
 runs, it allows for restrained minimization, e.g. to calculate relaxed potential
-energy surfaces. Such a restraint is set up by a \texttt{harmonic~\{...\}}
+energy surfaces. In the context of the colvars module, 
+harmonic potentials are meant according to their textbook definition:
+$\displaystyle V(\bm{x}) = \frac{1}{2} k (\bm{x} - \bm{x_0})^2$.
+Note that this differs from harmonic bond and angle potentials in common
+force fields, where the factor of one half is typically omitted,
+resulting in a non-standard definition of the force constant.
+A harmonic restraint is set up by a \texttt{harmonic~\{...\}}
 block, which may contain (in addition to the standard option
 \texttt{colvars}) the following keywords:
 \begin{itemize}
