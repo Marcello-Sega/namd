@@ -268,8 +268,9 @@ colvar::colvar (std::string const &conf)
     get_keyval (conf, "extendedLagrangian", b_extended_lagrangian, false);
 
     if (b_extended_lagrangian) {
+      cvm::real temp;
 
-      cvm::log ("Enabling the extended lagrangian term for colvar \""+
+      cvm::log ("Enabling the extended Lagrangian term for colvar \""+
                 this->name+"\".\n");
     
       enable (task_extended_lagrangian);
@@ -278,17 +279,24 @@ colvar::colvar (std::string const &conf)
       vr.type (this->type());
       fr.type (this->type());
 
+      if ( (temp = cvm::temperature()) == 0.0) {
+        cvm::log ("WARNING: no thermostat detected - assuming average temperature of 300 K.");
+        temp = 300.0;
+      }
+
       get_keyval (conf, "extendedFluctuation", ext_tolerance, 0.2*width);
       if (ext_tolerance <= 0.0)
         cvm::fatal_error ("Error: \"extendedFluctuation\" must be positive.\n");
-      ext_force_k = cvm::boltzmann() * cvm::temperature() / (ext_tolerance * ext_tolerance);
+      ext_force_k = cvm::boltzmann() * temp / (ext_tolerance * ext_tolerance);
 
-      get_keyval (conf, "extendedTimeConstant", ext_period, 80.0 * cvm::dt());
+      get_keyval (conf, "extendedTimeConstant", ext_period, 20.0 * cvm::dt());
       if (ext_period <= 0.0)
         cvm::fatal_error ("Error: \"extendedTimeConstant\" must be positive.\n");
-      ext_mass = (cvm::boltzmann() * cvm::temperature() * ext_period * ext_period)
+      ext_mass = (cvm::boltzmann() * temp * ext_period * ext_period)
                  / (4.0 * PI * PI * ext_tolerance * ext_tolerance);
     }
+
+    energy = 0.0;
   }
 
   {
@@ -751,10 +759,12 @@ void colvar::calc()
   if (tasks[task_extended_lagrangian]) {
 
     // initialize the restraint center in the first step to the value
-    // just calculated from the cvcs; XX TODO: put it in the
-    // restart information
-    if (cvm::step_relative() == 0)
+    // just calculated from the cvcs
+    // TODO: put it in the restart information
+    if (cvm::step_relative() == 0) {
       xr = x;
+      vr = 0.0; // (already 0; added for clarity)
+    }
 
     // report the restraint center as "value"
     x_reported = xr;
@@ -775,7 +785,7 @@ void colvar::calc()
 }
 
 
-void colvar::update()
+cvm::real colvar::update()
 {
   if (cvm::debug())
     cvm::log ("Updating colvar \""+this->name+"\".\n");
@@ -852,17 +862,19 @@ void colvar::update()
 
     // the total force is applied to the fictitious mass, while the
     // atoms only feel the harmonic force
+    // fr: extended coordinate force; f: colvar force applied to atomic coordinates
     fr   = f;
     fr  += (-0.5 * ext_force_k) * this->dist2_lgrad (xr, x);
     f    = (-0.5 * ext_force_k) * this->dist2_rgrad (xr, x);
 
-    // leap frog
+    // leap frog: starting from x_i, f_i, v_(i-1/2)
     vr  += (0.5 * dt) * fr / ext_mass;
+    // Because of leapfrog, kinetic energy at time i is approximate
+    energy = 0.5 * (ext_mass * vr * vr + ext_force_k * this->dist2(xr, x));
+    vr  += (0.5 * dt) * fr / ext_mass; 
     xr  += dt * vr;
-    // if the colvarvalue is set to a type with constraints, apply them
     xr.apply_constraints();
     this->wrap (xr);
-    vr  += (0.5 * dt) * fr / ext_mass; 
   }
 
 
@@ -873,6 +885,7 @@ void colvar::update()
 
   if (cvm::debug())
     cvm::log ("Done updating colvar \""+this->name+"\".\n");
+  return energy;
 }
 
 

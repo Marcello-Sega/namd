@@ -295,6 +295,7 @@ void colvarmodule::init_biases (std::string const &conf)
 
 void colvarmodule::calc() {
   cvm::real total_bias_energy = 0.0;
+  cvm::real total_colvar_energy = 0.0;
 
   if (cvm::debug()) {
     cvm::log (cvm::line_marker);
@@ -324,7 +325,6 @@ void colvarmodule::calc() {
     total_bias_energy += (*bi)->update(); 
   }
   cvm::decrease_depth();
-  proxy->add_energy (total_bias_energy);
 
   // sum the forces from all biases for each collective variable
   if (cvm::debug() && biases.size())
@@ -369,9 +369,10 @@ void colvarmodule::calc() {
   for (std::vector<colvar *>::iterator cvi = colvars.begin();
        cvi != colvars.end();
        cvi++) {
-    (*cvi)->update();
+    total_colvar_energy += (*cvi)->update();
   }
   cvm::decrease_depth();
+  proxy->add_energy (total_bias_energy + total_colvar_energy);
 
   // make collective variables communicate their forces to their
   // coupled degrees of freedom (i.e. atoms)

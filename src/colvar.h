@@ -295,7 +295,8 @@ public:
   /// \brief Collect all forces on this colvar, integrate internal
   /// equations of motion of internal degrees of freedom; see also
   /// colvar::communicate_forces()
-  void update();
+  /// return colvar energy if extended Lagrandian active
+  cvm::real update();
 
   /// \brief Communicate forces (previously calculated in
   /// colvar::update()) to the external degrees of freedom
@@ -442,7 +443,8 @@ protected:
   /// Calculate the running average and its standard deviation
   void calc_runave();
 
-
+  /// If extended Lagrangian active: colvar energy (kinetic + harmonic potential)
+  cvm::real energy;
 public:
 
 
