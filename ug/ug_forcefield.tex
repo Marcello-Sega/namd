@@ -544,6 +544,96 @@ full electrostatics should be performed.}
 \end{itemize}
 
 
+\subsubsection{Tabulated nonbonded interaction parameters}
+
+In order to support coarse grained models and semiconductor force fields,
+the tabulated energies feature replaces the normal van der Waals potential
+for specified pairs of atom types with one interpolated from user-supplied
+energy tables.  The electrostatic potential is not altered.
+
+Pairs of atom types to which the modified interactions apply are specified
+in a CHARMM parameter file by an {\tt NBTABLE} section consisting of lines
+with two atom types and a corresponding interaction type name.
+For example, tabulated interactions for SI-O, O-O, and SI-SI pairs would
+be specified in a parameter file as:
+\begin{verbatim}
+NBTABLE
+SI O SIO
+O O OO
+SI SI SISI
+\end{verbatim}
+
+Each interaction type must correspond to an entry in the energy table file.
+The table file consists of a header formatted as:
+\begin{verbatim}
+# multiple comment lines
+<number_of_tables> <table_spacing (A)> <maximum_distance (A)>
+\end{verbatim}
+followed by {\em number\_of\_tables} energy tables formatted as:
+\begin{verbatim}
+TYPE <interaction type name>
+0 <energy (kcal/mol)> <force (kcal/mol/A)>
+<table_spacing> <energy (kcal/mol)> <force (kcal/mol/A)>
+<2*table_spacing> <energy (kcal/mol)> <force (kcal/mol/A)>
+<3*table_spacing> <energy (kcal/mol)> <force (kcal/mol/A)>
+...
+<maximum_distance - 3*table_spacing> <energy (kcal/mol)> <force (kcal/mol/A)>
+<maximum_distance - 2*table_spacing> <energy (kcal/mol)> <force (kcal/mol/A)>
+<maximum_distance - table_spacing> <energy (kcal/mol)> <force (kcal/mol/A)>
+\end{verbatim}
+
+The table entry at {\em maximum\_distance} will match the energy of the
+previous entry but have a force of zero.  The maximum distance must be at
+least equal to the nonbonded cutoff distance and entries beyond the cutoff
+distance will be ignored.  For the above example with a cutoff of 12 \AA\
+the table file could look like:
+\begin{verbatim}
+# parameters for silicon dioxide
+3 0.01 14.0
+TYPE SIO
+0 5.092449e+26 3.055469e+31
+0.01 5.092449e+14 3.055469e+17
+0.02 7.956951e+12 2.387085e+15
+0.03 6.985526e+11 1.397105e+14
+...
+13.98 0.000000e+00 -0.000000e+00
+13.99 0.000000e+00 -0.000000e+00
+TYPE OO
+0 1.832907e+27 1.099744e+32
+0.01 1.832907e+15 1.099744e+18
+0.02 2.863917e+13 8.591751e+15
+0.03 2.514276e+12 5.028551e+14
+...
+13.98 0.000000e+00 -0.000000e+00
+13.99 0.000000e+00 -0.000000e+00
+TYPE SISI
+0 0.000000e+00 -0.000000e+00
+0.01 0.000000e+00 -0.000000e+00
+...
+13.98 0.000000e+00 -0.000000e+00
+13.99 0.000000e+00 -0.000000e+00
+\end{verbatim}
+
+The following three parameters are required for tabulated energies.
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{tabulatedEnergies}{use tabulated energies}{{\tt yes} or {\tt no}}{{\tt no}}
+{Specifies whether or not tabulated energies will be used for
+van der Waals interactions between specified pairs of atom types.}
+
+\item
+\NAMDCONF{tabulatedEnergiesFile}{file containing energy table}{file name}
+{Provides one energy table for each interaction type in parameter file.
+See format above.}
+
+\item
+\NAMDCONF{tableInterpType}{cubic or linear interpolation}{{\tt cubic} or {\tt linear}}
+{Specifies the order for interpolating between energy table entries.}
+
+\end{itemize}
+
 
 \subsection{Water Models}
 \label{section:water_models}
