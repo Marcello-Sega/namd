@@ -5467,6 +5467,11 @@ obj/jsplugin.o: \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/jsplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_jsplugin plugins/molfile_plugin/src/jsplugin.c
+obj/namdbinplugin.o: \
+	plugins/molfile_plugin/src/namdbinplugin.c \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h
+	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/namdbinplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_namdbinplugin plugins/molfile_plugin/src/namdbinplugin.c
 obj/pdbplugin.o: \
 	plugins/molfile_plugin/src/pdbplugin.c \
 	plugins/molfile_plugin/src/largefiles.h \

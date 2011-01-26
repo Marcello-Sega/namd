@@ -277,6 +277,7 @@ CIFILES = 	\
 PLUGINOBJS = \
 	$(DSTDIR)/dcdplugin.o \
 	$(DSTDIR)/jsplugin.o \
+	$(DSTDIR)/namdbinplugin.o \
 	$(DSTDIR)/pdbplugin.o \
 	$(DSTDIR)/psfplugin.o
 
