@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: bhatele $
- * $Date: 2010/12/06 21:51:22 $
- * $Revision: 1.19 $
+ * $Author: emeneses $
+ * $Date: 2011/01/26 21:30:32 $
+ * $Revision: 1.20 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -23,11 +23,22 @@
 
 extern int isPmeProcessor(int); 
 
+// Load array defined in NamdCentLB.C
+extern double *cpuloads;
+
 /**
  * Creates the chare array for the hybrid load balancer.
  */ 
 void CreateNamdHybridLB() {
-  CProxy_NamdHybridLB::ckNew();
+	CProxy_NamdHybridLB::ckNew();
+
+	// creating an array to store the loads of all processors
+	// to be used with proxy spanning tree
+	if (CkMyPe() == 0 && cpuloads == NULL) {
+		cpuloads = new double[CkNumPes()];
+		CmiAssert(cpuloads != NULL);
+		for (int i=0; i<CkNumPes(); i++) cpuloads[i] = 0.0;
+	}
 }
 
 /**
