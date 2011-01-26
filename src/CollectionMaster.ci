@@ -23,8 +23,8 @@ module CollectionMaster {
 
     entry void receiveOutputPosReady(int seq);
     entry void receiveOutputVelReady(int seq);
-    entry void startNextRoundOutputPos();
-    entry void startNextRoundOutputVel();
+    entry void startNextRoundOutputPos(double totalT);
+    entry void startNextRoundOutputVel(double totalT);
     entry void wrapCoorFinished();
     
   };

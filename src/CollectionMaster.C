@@ -168,10 +168,18 @@ void CollectionMaster::receiveOutputVelReady(int seq){
 #endif
 }
 
-void CollectionMaster::startNextRoundOutputPos(){
+void CollectionMaster::startNextRoundOutputPos(double totalT){
 #ifdef MEM_OPT_VERSION
+
+	if(totalT > posIOTime) posIOTime = totalT;
+
+#if OUTPUT_SINGLE_FILE
     if(++posDoneCnt < Node::Object()->simParameters->numoutputwrts)  return;
-    posDoneCnt = 0;
+#else
+	if(++posDoneCnt < Node::Object()->simParameters->numoutputprocs)  return;
+#endif
+
+	posDoneCnt = 0;
 
     //retrieve the last ready instance
     CollectVectorInstance *c = positions.getReady();
@@ -181,7 +189,7 @@ void CollectionMaster::startNextRoundOutputPos(){
     positions.removeFirstReady();
     c->free();
     posOutTime = CmiWallTimer()-posOutTime;
-    CkPrintf("The last position output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, posOutTime, mem);
+    CkPrintf("The last position output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, posOutTime, posIOTime, mem);
 
     //Actually the c->status doesn't need to be checked because it is
     //certain that the new ready one will not be in  IN_PROCESS status 
@@ -189,9 +197,17 @@ void CollectionMaster::startNextRoundOutputPos(){
 #endif
 }
 
-void CollectionMaster::startNextRoundOutputVel(){
+void CollectionMaster::startNextRoundOutputVel(double totalT){
 #ifdef MEM_OPT_VERSION
+	
+	if(totalT > velIOTime) velIOTime = totalT;
+
+#if OUTPUT_SINGLE_FILE
     if(++velDoneCnt < Node::Object()->simParameters->numoutputwrts)  return;
+#else
+	if(++velDoneCnt < Node::Object()->simParameters->numoutputprocs)  return;
+#endif
+
     velDoneCnt = 0;
 
     //retrieve the last ready instance
@@ -202,7 +218,7 @@ void CollectionMaster::startNextRoundOutputVel(){
     velocities.removeFirstReady();
     c->free();
     velOutTime = CmiWallTimer()-velOutTime;
-    CkPrintf("The last velocity output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, velOutTime, mem);
+    CkPrintf("The last velocity output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, velOutTime, velIOTime, mem);
 
     //Actually the c->status doesn't need to be checked because it is
     //certain that the new ready one will not be in  IN_PROCESS status 
@@ -215,25 +231,36 @@ void CollectionMaster::wrapCoorFinished(){
     if(++wrapCoorDoneCnt == Node::Object()->simParameters->numoutputprocs){
         wrapCoorDoneCnt = 0;
 
+		//count the wrapping-coor time into master writing time
+		posIOTime = CmiWallTimer()-posOutTime; 
+
         //it's ready to output positions
         CollectVectorInstance *c = positions.getReady();
 
-        //notify output procs to do Token based output
-        CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
-        ParallelIOMgr *ioMgr = io.ckLocalBranch();
+		CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
+		ParallelIOMgr *ioMgr = io.ckLocalBranch();
 
+#if OUTPUT_SINGLE_FILE
+        //notify output procs to do Token based output
         int grpsize = ioMgr->numOutputProcs / ioMgr->numOutputWrts;
         int remains = ioMgr->numOutputProcs % ioMgr->numOutputWrts;
         int outrank = 0;
         int i;
         for(i=0; i<remains; i++){
-            io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+            io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq, posIOTime);
             outrank += (grpsize+1);
         }
         for(; i<ioMgr->numOutputWrts; i++){
-            io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+            io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq, posIOTime);
             outrank += grpsize;
         }
+#else
+		//output multiple files
+		for(int i=0; i<ioMgr->numOutputProcs; i++) {
+			io[ioMgr->outputProcArray[i]].disposePositions(c->seq, posIOTime);
+		}
+#endif
+
     }
 #endif
 }
@@ -261,20 +288,28 @@ void CollectionMaster::checkPosReady(){
             parOut->coordinateMaster(c->seq,Node::Object()->molecule->numAtoms,c->lattice);
         }else{
             //write the header 
-            parOut->coordinateMaster(c->seq,Node::Object()->molecule->numAtoms,c->lattice);            
+            parOut->coordinateMaster(c->seq,Node::Object()->molecule->numAtoms,c->lattice);
+			posIOTime = CmiWallTimer() - posOutTime;            
 
+		#if OUTPUT_SINGLE_FILE
             int grpsize = ioMgr->numOutputProcs / ioMgr->numOutputWrts;
             int remains = ioMgr->numOutputProcs % ioMgr->numOutputWrts;
             int outrank = 0;
             int i;
             for(i=0; i<remains; i++){
-                io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+                io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq, posIOTime);
                 outrank += (grpsize+1);
             }
             for(; i<ioMgr->numOutputWrts; i++){
-                io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq);
+                io[ioMgr->outputProcArray[outrank]].disposePositions(c->seq, posIOTime);
                 outrank += grpsize;
             }
+		#else
+			//output multiple files
+			for(int i=0; i<ioMgr->numOutputProcs; i++) {
+				io[ioMgr->outputProcArray[i]].disposePositions(c->seq, posIOTime);
+			}
+		#endif
         }
         //this instance c is freed in the next round of output invocation.
     }
@@ -293,23 +328,31 @@ void CollectionMaster::checkVelReady(){
         velOutTime = CmiWallTimer();
         //write the header
         parOut->velocityMaster(c->seq, Node::Object()->molecule->numAtoms);
+		velIOTime = CmiWallTimer() - velOutTime;
 
         //notify output procs to do Token based output
         CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
         ParallelIOMgr *ioMgr = io.ckLocalBranch();
 
+	#if OUTPUT_SINGLE_FILE
         int grpsize = ioMgr->numOutputProcs / ioMgr->numOutputWrts;
         int remains = ioMgr->numOutputProcs % ioMgr->numOutputWrts;
         int outrank = 0;
         int i;
         for(i=0; i<remains; i++){
-            io[ioMgr->outputProcArray[outrank]].disposeVelocities(c->seq);
+            io[ioMgr->outputProcArray[outrank]].disposeVelocities(c->seq, velIOTime);
             outrank += (grpsize+1);
         }
         for(; i<ioMgr->numOutputWrts; i++){
-            io[ioMgr->outputProcArray[outrank]].disposeVelocities(c->seq);
+            io[ioMgr->outputProcArray[outrank]].disposeVelocities(c->seq, velIOTime);
             outrank += grpsize;
         }
+	#else
+		//output multiple files
+		for(int i=0; i<ioMgr->numOutputProcs; i++) {
+			io[ioMgr->outputProcArray[i]].disposeVelocities(c->seq, velIOTime);
+		}
+	#endif
         //this instance c is freed in the next round of output invocation.        
     }
 }

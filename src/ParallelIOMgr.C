@@ -21,6 +21,8 @@
 #include "largefiles.h"
 #endif
 
+#include "Output.h"
+
 #include <algorithm>
 using namespace std;
 
@@ -1339,35 +1341,55 @@ void ParallelIOMgr::receiveVelocities(CollectVectorVarMsg *msg)
 #endif
 }
 
-void ParallelIOMgr::disposePositions(int seq)
+void ParallelIOMgr::disposePositions(int seq, double prevT)
 {
 #ifdef MEM_OPT_VERSION
+	double iotime = CmiWallTimer();
     midCM->disposePositions(seq);
-    
+	iotime = CmiWallTimer()-iotime+prevT;
+
+#if OUTPUT_SINGLE_FILE    
+	//Token-based file output
     if(myOutputRank == getMyOutputGroupHighestRank()) {
         //notify the CollectionMaster to start the next round
         CProxy_CollectionMaster cm(mainMaster);
-        cm.startNextRoundOutputPos();
+        cm.startNextRoundOutputPos(iotime);
     } else {
         CProxy_ParallelIOMgr io(thisgroup);
-        io[outputProcArray[myOutputRank+1]].disposePositions(seq);
+        io[outputProcArray[myOutputRank+1]].disposePositions(seq, iotime);
     }
+#else
+	//notify the CollectionMaster to start the next round
+	CProxy_CollectionMaster cm(mainMaster);
+	cm.startNextRoundOutputPos(iotime);
+#endif
+
 #endif
 }
 
-void ParallelIOMgr::disposeVelocities(int seq)
+void ParallelIOMgr::disposeVelocities(int seq, double prevT)
 {
 #ifdef MEM_OPT_VERSION
+	double iotime = CmiWallTimer();
     midCM->disposeVelocities(seq);
+	iotime = CmiWallTimer()-iotime+prevT;
     
+#if OUTPUT_SINGLE_FILE
+	//Token-based file output
     if(myOutputRank==getMyOutputGroupHighestRank()) {
         //notify the CollectionMaster to start the next round
         CProxy_CollectionMaster cm(mainMaster);
-        cm.startNextRoundOutputVel();
+        cm.startNextRoundOutputVel(iotime);
     } else {
         CProxy_ParallelIOMgr io(thisgroup);
-        io[outputProcArray[myOutputRank+1]].disposeVelocities(seq);
+        io[outputProcArray[myOutputRank+1]].disposeVelocities(seq, iotime);
     }
+#else
+	//notify the CollectionMaster to start the next round
+	CProxy_CollectionMaster cm(mainMaster);
+	cm.startNextRoundOutputVel(iotime);	
+#endif
+
 #endif
 }
 

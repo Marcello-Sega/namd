@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: ryanmcgreevy $
- * $Date: 2010/12/15 23:19:43 $
- * $Revision: 1.1173 $
+ * $Author: chaomei2 $
+ * $Date: 2011/01/26 22:36:31 $
+ * $Revision: 1.1174 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -738,6 +738,8 @@ private:
 	void check_config(ParseOptions &opts, ConfigList *config, char *&cwd);
 
 	void print_config(ParseOptions &opts, ConfigList *config, char *&cwd);
+
+	void create_output_directories(const char *dirname);
 
 	int fmaFrequency;		//  outdated parameter name
 	char loadBalancer[64];		//  Load balancer

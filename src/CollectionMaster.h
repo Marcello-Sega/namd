@@ -49,10 +49,9 @@ public:
   /////Beginning of declarations for comm with CollectionMidMaster/////
   void receiveOutputPosReady(int seq);
   void receiveOutputVelReady(int seq);
-  //currently using Token based output to avoid simultaneous output 
-  //to the same file which may cause problems --Chao Mei
-  void startNextRoundOutputPos();
-  void startNextRoundOutputVel();
+  //totalT is the time taken to do file I/O for each output workflow -Chao Mei  
+  void startNextRoundOutputPos(double totalT);
+  void startNextRoundOutputVel(double totalT);
 
   void wrapCoorFinished();
 
@@ -275,6 +274,8 @@ private:
   ParOutput *parOut;
   double posOutTime; //record the output time
   double velOutTime; //record the output time
+  double posIOTime; //record the max time spent on real file IO for one output
+  double velIOTime; //record the max time spent on real file IO for one output
   
   //for the sake of simultaneous writing to the same file
   int posDoneCnt;
@@ -395,7 +396,7 @@ class CollectMidVectorInstance{
 class CollectionMidMaster{
 public:
 
-  CollectionMidMaster(ParallelIOMgr *pIO_) : pIO(pIO_) { parOut = new ParOutput(); }
+  CollectionMidMaster(ParallelIOMgr *pIO_) : pIO(pIO_) { parOut = new ParOutput(pIO_->myOutputRank); }
   ~CollectionMidMaster(void) { delete parOut; }
 
   int receivePositions(CollectVectorVarMsg *msg) {return positions.submitData(msg);}

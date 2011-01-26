@@ -37,9 +37,15 @@
 #include <io.h>
 #endif
 
+#if defined(WIN32) && !defined(__CYGWIN__)
+#define PATHSEPSTR "\\"
+#else
+#define PATHSEPSTR "/"
+#endif
+
 #define NAMD_write NAMD_write64
 // same as write, only does error checking internally
-void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg) {
+void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg=NULL) {
   while ( count ) {
 #if defined(WIN32) && !defined(__CYGWIN__)
     long retval = _write(fd,buf,count);
@@ -947,10 +953,9 @@ void ParOutput::velocitySlave(int timestep, int fID, int tID, Vector *vecs){
     //  Output restart file
       if ( simParams->restartFrequency &&
          ((timestep % simParams->restartFrequency) == 0) )
-      {
-          int parN = tID-fID+1;
+      {          
           int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
-          output_restart_velocities_slave(timestep, parN, vecs, offset);     
+          output_restart_velocities_slave(timestep, fID, tID, vecs, offset);     
       }
 
     }
@@ -958,9 +963,8 @@ void ParOutput::velocitySlave(int timestep, int fID, int tID, Vector *vecs){
     //  Output final velocities
     if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
     {
-        int parN = tID-fID+1;
         int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
-        output_final_velocities_slave(parN, vecs, offset);
+        output_final_velocities_slave(fID, tID, vecs, offset);
     }
 
     //  Close trajectory files
@@ -990,27 +994,37 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
     {
       //  Open the DCD file
       iout << "OPENING VELOCITY DCD FILE\n" << endi;
+	  
+	#if OUTPUT_SINGLE_FILE
+	  char *veldcdFilename = simParams->velDcdFilename;
+	#else	  
+	  char *veldcdFilename = buildFileName(veldcdType);
+	#endif
 
-      veldcdFileID=open_dcd_write(namdMyNode->simParams->velDcdFilename);
+      veldcdFileID=open_dcd_write(veldcdFilename);
 
       if (veldcdFileID == DCD_FILEEXISTS)
       {
         char err_msg[257];
-
-        sprintf(err_msg, "Velocity DCD file %s already exists!!",
-          namdMyNode->simParams->velDcdFilename);
-
+        sprintf(err_msg, "Velocity DCD file %s already exists!",veldcdFilename);
         NAMD_err(err_msg);
       }
       else if (veldcdFileID < 0)
       {
         char err_msg[257];
-
-        sprintf(err_msg, "Couldn't open velocity DCD file %s",
-          namdMyNode->simParams->velDcdFilename);
-
+        sprintf(err_msg, "Couldn't open velocity DCD file %s",veldcdFilename);
         NAMD_err(err_msg);
       }
+
+	#if !OUTPUT_SINGLE_FILE
+	  // Write out extra fields as MAGIC number etc.
+	  int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	  float tmpFlt = OUTPUT_FILE_VERSION;
+	  NAMD_write(veldcdFileID, (char *) &tmpInt, sizeof(int32));
+	  NAMD_write(veldcdFileID, (char *) &tmpFlt, sizeof(float));
+	  tmpInt = simParams->numoutputprocs;
+	  NAMD_write(veldcdFileID, (char *) &tmpInt, sizeof(int32));
+	#endif
 
       int NSAVC, NFILE, NPRIV, NSTEP;
       NSAVC = simParams->velDcdFrequency;
@@ -1022,7 +1036,7 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
       //  Write out the header
       const int with_unitcell = 0;
       ret_code = write_dcdheader(veldcdFileID, 
-          simParams->velDcdFilename,
+          veldcdFilename,
           n, NFILE, NPRIV, NSAVC, NSTEP,
           simParams->dt/TIMEFACTOR, with_unitcell);
 
@@ -1032,6 +1046,11 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
         NAMD_err("Writing of velocity DCD header failed!!");
       }
 
+	#if !OUTPUT_SINGLE_FILE
+	  //In this case, the file name is dynamically allocated
+	  delete [] veldcdFilename;
+	#endif
+
       veldcdFirst = FALSE;
     }
 
@@ -1040,6 +1059,11 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
       << timestep << "\n" << endi;
     fflush(stdout);
 
+	//In the case of writing to multiple files, only the header
+	//of the dcd file needs to be updated. Note that the format of
+	//the new dcd file has also changed! -Chao Mei 
+
+#if OUTPUT_SINGLE_FILE
     //The following seek will set the stream position to the
     //beginning of the place where a new timestep output should
     //be performed.
@@ -1050,9 +1074,11 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
     //write X,Y,Z headers
     int totalAtoms = namdMyNode->molecule->numAtoms;
     write_dcdstep_par_XYZUnits(veldcdFileID, totalAtoms);
+#endif
 
     //update the header
     update_dcdstep_par_header(veldcdFileID);    
+
 }
 
 void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *vecs){
@@ -1065,9 +1091,11 @@ void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *
       if ( ! veldcdFirst ) {        
         close_dcd_write(veldcdFileID);
       }
+#if OUTPUT_SINGLE_FILE
       delete [] veldcdX;
       delete [] veldcdY;
-      delete [] veldcdZ;      
+      delete [] veldcdZ;
+#endif
       return;
     }
 
@@ -1075,24 +1103,45 @@ void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *
 
     if (veldcdFirst)
     {
-      veldcdFileID=open_dcd_write_par_slave(namdMyNode->simParams->velDcdFilename);
+
+	#if OUTPUT_SINGLE_FILE
+	  char *veldcdFilename = namdMyNode->simParams->velDcdFilename;
+	#else	  
+	  char *veldcdFilename = buildFileName(veldcdType);
+	#endif
+      veldcdFileID=open_dcd_write_par_slave(veldcdFilename);
       if(veldcdFileID < 0)
       {
         char err_msg[257];
-
-        sprintf(err_msg, "Couldn't open velocity DCD file %s",
-          namdMyNode->simParams->velDcdFilename);
-
+        sprintf(err_msg, "Couldn't open velocity DCD file %s",veldcdFilename);
         NAMD_err(err_msg);
       }
-      
+	#if OUTPUT_SINGLE_FILE
+	  //If outputting to a single file, dcd files conforms to the old format
+	  //as data are organized as 3 seperate arrays of X,Y,Z, while in the new
+	  //format used in outputing multiple files, the data are organized as an
+	  //array of XYZs.
       veldcdX = new float[parN];
       veldcdY = new float[parN];
       veldcdZ = new float[parN];
+	#endif
 
+	#if !OUTPUT_SINGLE_FILE
+	  delete [] veldcdFilename;
+	  // Write out extra fields as MAGIC number etc.
+	  int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	  float tmpFlt = OUTPUT_FILE_VERSION;
+	  NAMD_write(veldcdFileID, (char *) &tmpInt, sizeof(int32));
+	  NAMD_write(veldcdFileID, (char *) &tmpFlt, sizeof(float));	  
+	  NAMD_write(veldcdFileID, (char *) &outputID, sizeof(int));
+	  NAMD_write(veldcdFileID, (char *) &fID, sizeof(int));
+	  NAMD_write(veldcdFileID, (char *) &tID, sizeof(int));
+	#endif
+	  
       veldcdFirst = FALSE;
     }
 
+#if OUTPUT_SINGLE_FILE
     //The following seek will set the stream position to the
     //beginning of the place where a new timestep output should
     //be performed.
@@ -1108,10 +1157,17 @@ void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *
     }
 
     write_dcdstep_par_slave(veldcdFileID, fID, tID, totalAtoms, veldcdX, veldcdY, veldcdZ);
+#else
+	//write the timestep
+	NAMD_write(veldcdFileID, (char *)&timestep, sizeof(int));
+	//write the values for this timestep
+	NAMD_write(veldcdFileID, (char *)vecs, sizeof(Vector)*parN);
+#endif
 }
 
 void ParOutput::output_restart_velocities_master(int timestep, int n){
-    char timestepstr[20];
+#if OUTPUT_SINGLE_FILE
+	char timestepstr[20];
 
     int baselen = strlen(namdMyNode->simParams->restartFilename);
     char *restart_name = new char[baselen+26];
@@ -1122,6 +1178,13 @@ void ParOutput::output_restart_velocities_master(int timestep, int n){
       strcat(restart_name, timestepstr);
     }
     strcat(restart_name, ".vel");
+#else
+	char *restart_name = NULL;
+	if ( namdMyNode->simParams->restartSave )
+		restart_name = buildFileName(velType);
+	else
+		restart_name = buildFileName(velType,timestep);	
+#endif
 
     NAMD_backup_file(restart_name,".old");
 
@@ -1131,7 +1194,8 @@ void ParOutput::output_restart_velocities_master(int timestep, int n){
     delete [] restart_name;
 }
 
-void ParOutput::output_restart_velocities_slave(int timestep, int parN, Vector *vecs, int64 offset){    
+void ParOutput::output_restart_velocities_slave(int timestep, int fID, int tID, Vector *vecs, int64 offset){    
+#if OUTPUT_SINGLE_FILE
     char timestepstr[20];
 
     int baselen = strlen(namdMyNode->simParams->restartFilename);
@@ -1143,35 +1207,53 @@ void ParOutput::output_restart_velocities_slave(int timestep, int parN, Vector *
       strcat(restart_name, timestepstr);
     }
     strcat(restart_name, ".vel");    
+#else
+	char *restart_name = NULL;
+	if ( namdMyNode->simParams->restartSave )
+		restart_name = buildFileName(velType);
+	else
+		restart_name = buildFileName(velType,timestep);	
 
-    //Always output a binary file
-    write_binary_file_slave(restart_name, parN, vecs, offset);
+	NAMD_backup_file(restart_name,".old");
+#endif
+
+    //Always output a binary file	
+    write_binary_file_slave(restart_name, fID, tID, vecs, offset);
 
     delete [] restart_name;
 }
 
 void ParOutput::output_final_velocities_master(int n){
-    char output_name[140];  //  Output filename
-
+#if OUTPUT_SINGLE_FILE
+    char *output_name = new char[strlen(namdMyNode->simParams->outputFilename)+8];
     //  Build the output filename
     strcpy(output_name, namdMyNode->simParams->outputFilename);
     strcat(output_name, ".vel");
+#else	
+	char *output_name = buildFileName(velType);
+#endif
 
     NAMD_backup_file(output_name);
 
-    //Write the coordinates to a binary file
+    //Write the velocities to a binary file
     write_binary_file_master(output_name, n);
 }
 
-void ParOutput::output_final_velocities_slave(int parN, Vector *vecs, int64 offset){
-    char output_name[140];  //  Output filename
-
+void ParOutput::output_final_velocities_slave(int fID, int tID, Vector *vecs, int64 offset){
+#if OUTPUT_SINGLE_FILE
+    char *output_name = new char[strlen(namdMyNode->simParams->outputFilename)+8];
     //  Build the output filename
     strcpy(output_name, namdMyNode->simParams->outputFilename);
     strcat(output_name, ".vel");
+#else
+	char *output_name = buildFileName(velType);
+	NAMD_backup_file(output_name);
+#endif
     
-    //Write the coordinates to a binary file
-    write_binary_file_slave(output_name, parN, vecs, offset);
+    //Write the velocities to a binary file
+    write_binary_file_slave(output_name, fID, tID, vecs, offset);
+
+	delete [] output_name;
 }
 
 void ParOutput::write_binary_file_master(char *fname, int n){
@@ -1195,6 +1277,16 @@ void ParOutput::write_binary_file_master(char *fname, int n){
       NAMD_err(errmsg);
     }
 
+  #if !OUTPUT_SINGLE_FILE
+	// Write out extra fields as MAGIC number etc.
+	int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	float tmpFlt = OUTPUT_FILE_VERSION;
+	NAMD_write(fd, (char *) &tmpInt, sizeof(int32), errmsg);
+	NAMD_write(fd, (char *) &tmpFlt, sizeof(float), errmsg);
+	tmpInt = namdMyNode->simParams->numoutputprocs;
+	NAMD_write(fd, (char *) &tmpInt, sizeof(int32), errmsg);
+  #endif
+
     //  Write out the number of atoms and the vectors
     NAMD_write(fd, (char *) &n32, sizeof(int32), errmsg);
 
@@ -1209,17 +1301,37 @@ void ParOutput::write_binary_file_master(char *fname, int n){
     }
 }
 
-void ParOutput::write_binary_file_slave(char *fname, int parN, Vector *vecs, int64 offset){
-    FILE *ofp = fopen(fname, "rb+");
+void ParOutput::write_binary_file_slave(char *fname, int fID, int tID, Vector *vecs, int64 offset){
+
+#if OUTPUT_SINGLE_FILE
+	//the mode has to be "r+" because the file already exists
+	FILE *ofp = fopen(fname, "rb+");
+
+	//if the output is a single file, then the file position needs to be set correctly
     fseek(ofp, 0, SEEK_SET);
     while(offset > LONG_MAX){
         fseek(ofp, LONG_MAX, SEEK_CUR);
         offset -= LONG_MAX;
     }
     fseek(ofp, offset, SEEK_CUR);
+#else
+	//the mode has to be "w+" because the file doesn't exist yet
+	FILE *ofp = fopen(fname, "wb+"); 
 
+	// Write out extra fields as MAGIC number etc.
+	int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	float tmpFlt = OUTPUT_FILE_VERSION;	
+	fwrite(&tmpInt, sizeof(int32), 1, ofp);	
+	fwrite(&tmpFlt, sizeof(float), 1, ofp);
+	fwrite(&outputID, sizeof(int), 1, ofp);
+	fwrite(&fID, sizeof(int), 1, ofp);
+	fwrite(&tID, sizeof(int), 1, ofp);
+#endif
+
+	int parN = tID-fID+1;
     fwrite(vecs, sizeof(Vector), parN, ofp);
-    fclose(ofp);
+
+	fclose(ofp);
 }
 //////End of Functions related with velocity output//////
 
@@ -1301,9 +1413,8 @@ void ParOutput::coordinateSlave(int timestep, int fID, int tID, Vector *vecs, Fl
       if ( simParams->restartFrequency &&
          ((timestep % simParams->restartFrequency) == 0) )
       {
-        int parN = tID-fID+1;
         int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
-        output_restart_coordinates_slave(timestep, parN, vecs, offset);
+        output_restart_coordinates_slave(timestep, fID, tID, vecs, offset);
       }
 
 /*  Interactive MD is not supported in Parallel IO
@@ -1331,9 +1442,8 @@ void ParOutput::coordinateSlave(int timestep, int fID, int tID, Vector *vecs, Fl
     //  Output final coordinates
     if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
     {
-      int parN = tID-fID+1;
       int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
-      output_final_coordinates_slave(parN, vecs, offset);
+      output_final_coordinates_slave(fID, tID, vecs, offset);
     }
 
     //  Close trajectory files
@@ -1364,26 +1474,37 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
       //  Open the DCD file
       iout << "OPENING COORDINATE DCD FILE\n" << endi;
 
-      dcdFileID=open_dcd_write(simParams->dcdFilename);
+	#if OUTPUT_SINGLE_FILE
+	  char *dcdFilename = simParams->dcdFilename;
+	#else	  
+	  char *dcdFilename = buildFileName(dcdType);
+	#endif
+
+
+      dcdFileID=open_dcd_write(dcdFilename);
 
       if (dcdFileID == DCD_FILEEXISTS)
       {
         char err_msg[257];
-
-        sprintf(err_msg, "DCD file %s already exists!!",
-          simParams->dcdFilename);
-
+        sprintf(err_msg, "DCD file %s already exists!!",dcdFilename);
         NAMD_err(err_msg);
       }
       else if (dcdFileID < 0)
       {
         char err_msg[257];
-
-        sprintf(err_msg, "Couldn't open DCD file %s",
-          simParams->dcdFilename);
-
+        sprintf(err_msg, "Couldn't open DCD file %s",dcdFilename);
         NAMD_err(err_msg);
       }
+
+	#if !OUTPUT_SINGLE_FILE
+	  // Write out extra fields as MAGIC number etc.
+	  int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	  float tmpFlt = OUTPUT_FILE_VERSION;
+	  NAMD_write(dcdFileID, (char *) &tmpInt, sizeof(int32));
+	  NAMD_write(dcdFileID, (char *) &tmpFlt, sizeof(float));
+	  tmpInt = simParams->numoutputprocs;
+	  NAMD_write(dcdFileID, (char *) &tmpInt, sizeof(int32));
+	#endif
 
       int NSAVC, NFILE, NPRIV, NSTEP;
       NSAVC = simParams->dcdFrequency;
@@ -1394,7 +1515,7 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
 
       //  Write out the header
       ret_code = write_dcdheader(dcdFileID, 
-          simParams->dcdFilename,
+          dcdFilename,
           n, NFILE, NPRIV, NSAVC, NSTEP,
           simParams->dt/TIMEFACTOR, lattice != NULL);
 
@@ -1404,6 +1525,11 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
         NAMD_err("Writing of DCD header failed!!");
       }
 
+	  #if !OUTPUT_SINGLE_FILE
+	  //dcdFilename needs to be freed as it is dynamically allocated
+	  delete [] dcdFilename;
+	  #endif
+
       dcdFirst = FALSE;
     }
 
@@ -1412,10 +1538,17 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
       << timestep << "\n" << endi;
     fflush(stdout);
 
+	//In the case of writing to multiple files, the header of the
+	//dcd file needs to be updated. In addition, the lattice data
+	//needs to be written if necessary. Note that the format of	
+	//the new dcd file has also changed! -Chao Mei
+
+#if OUTPUT_SINGLE_FILE
     //The following seek will set the stream position to the
     //beginning of the place where a new timestep output should
     //be performed.
     seek_dcdfile(dcdFileID, 0, SEEK_END);
+#endif
 
     // Write out the Cell data
     if (lattice) {
@@ -1443,9 +1576,11 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
       write_dcdstep_par_cell(dcdFileID, unitcell);
     }
             
+#if OUTPUT_SINGLE_FILE
     //write X,Y,Z headers
     int totalAtoms = namdMyNode->molecule->numAtoms;
     write_dcdstep_par_XYZUnits(dcdFileID, totalAtoms);
+#endif
 
     //update the header
     update_dcdstep_par_header(dcdFileID);
@@ -1460,9 +1595,11 @@ void ParOutput::output_dcdfile_slave(int timestep, int fID, int tID, FloatVector
       if ( ! dcdFirst ) {        
         close_dcd_write(dcdFileID);
       }
+#if OUTPUT_SINGLE_FILE
       delete [] dcdX;
       delete [] dcdY;
-      delete [] dcdZ;      
+      delete [] dcdZ; 
+#endif	       
       return;
     }
 
@@ -1470,23 +1607,42 @@ void ParOutput::output_dcdfile_slave(int timestep, int fID, int tID, FloatVector
 
     if (dcdFirst)
     {
-      dcdFileID=open_dcd_write_par_slave(namdMyNode->simParams->dcdFilename);
+
+	#if OUTPUT_SINGLE_FILE
+	  char *dcdFilename = simParams->dcdFilename;
+	#else
+	  char *dcdFilename = buildFileName(dcdType);
+	#endif
+      dcdFileID=open_dcd_write_par_slave(dcdFilename);
       if(dcdFileID < 0)
       {
         char err_msg[257];
-
-        sprintf(err_msg, "Couldn't open DCD file %s", namdMyNode->simParams->dcdFilename);
-
+        sprintf(err_msg, "Couldn't open DCD file %s", dcdFilename);
         NAMD_err(err_msg);
       }
-
+	
+	#if OUTPUT_SINGLE_FILE
       dcdX = new float[parN];
       dcdY = new float[parN];
       dcdZ = new float[parN];
+	#endif
 
+	#if !OUTPUT_SINGLE_FILE
+	  delete [] dcdFilename;
+
+	  // Write out extra fields as MAGIC number etc.
+	  int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	  float tmpFlt = OUTPUT_FILE_VERSION;
+	  NAMD_write(dcdFileID, (char *) &tmpInt, sizeof(int32));
+	  NAMD_write(dcdFileID, (char *) &tmpFlt, sizeof(float));
+	  NAMD_write(dcdFileID, (char *) &outputID, sizeof(int));
+	  NAMD_write(dcdFileID, (char *) &fID, sizeof(int));
+	  NAMD_write(dcdFileID, (char *) &tID, sizeof(int));
+	#endif
       dcdFirst = FALSE;
     }
 
+#if OUTPUT_SINGLE_FILE
     //The following seek will set the stream position to the
     //beginning of the place where a new timestep output should
     //be performed.
@@ -1502,10 +1658,17 @@ void ParOutput::output_dcdfile_slave(int timestep, int fID, int tID, FloatVector
     }
 
     write_dcdstep_par_slave(dcdFileID, fID, tID, totalAtoms, dcdX, dcdY, dcdZ);
+#else
+	//write the timestep
+	NAMD_write(dcdFileID, (char *)&timestep, sizeof(int));
+	//write the values for this timestep
+	NAMD_write(dcdFileID, (char *)fvecs, sizeof(FloatVector)*parN);
+#endif
 }
 
 void ParOutput::output_restart_coordinates_master(int timestep, int n){
-    char timestepstr[20];
+#if OUTPUT_SINGLE_FILE
+	char timestepstr[20];
 
     int baselen = strlen(namdMyNode->simParams->restartFilename);
     char *restart_name = new char[baselen+26];
@@ -1516,6 +1679,13 @@ void ParOutput::output_restart_coordinates_master(int timestep, int n){
       strcat(restart_name, timestepstr);
     }
     strcat(restart_name, ".coor");
+#else
+	char *restart_name = NULL;
+	if ( namdMyNode->simParams->restartSave )
+		restart_name = buildFileName(coorType);
+	else
+		restart_name = buildFileName(coorType,timestep);
+#endif
 
     NAMD_backup_file(restart_name,".old");
 
@@ -1524,8 +1694,9 @@ void ParOutput::output_restart_coordinates_master(int timestep, int n){
 
     delete [] restart_name;
 }
-void ParOutput::output_restart_coordinates_slave(int timestep, int parN, Vector *vecs, int64 offset){
-    char timestepstr[20];
+void ParOutput::output_restart_coordinates_slave(int timestep, int fID, int tID, Vector *vecs, int64 offset){
+#if OUTPUT_SINGLE_FILE
+	char timestepstr[20];
 
     int baselen = strlen(namdMyNode->simParams->restartFilename);
     char *restart_name = new char[baselen+26];
@@ -1536,35 +1707,149 @@ void ParOutput::output_restart_coordinates_slave(int timestep, int parN, Vector 
       strcat(restart_name, timestepstr);
     }
     strcat(restart_name, ".coor");
+#else
+	char *restart_name = NULL;
+	if ( namdMyNode->simParams->restartSave )
+		restart_name = buildFileName(coorType);
+	else
+		restart_name = buildFileName(coorType,timestep);
+
+	NAMD_backup_file(restart_name,".old");
+#endif
 
     //  Generate a binary restart file
-    write_binary_file_slave(restart_name, parN, vecs, offset);
+    write_binary_file_slave(restart_name, fID, tID, vecs, offset);
 
     delete [] restart_name;
 }
 
 void ParOutput::output_final_coordinates_master(int n){
-    char output_name[140];  //  Output filename    
+#if OUTPUT_SINGLE_FILE
+	char *output_name = new char[strlen(namdMyNode->simParams->outputFilename)+8];
 
     //  Built the output filename
     strcpy(output_name, namdMyNode->simParams->outputFilename);
     strcat(output_name, ".coor");
+#else	
+	char *output_name = buildFileName(coorType);
+#endif
 
     NAMD_backup_file(output_name);
 
-    //  Write the velocities to a binary file
+    //  Write the coordinates to a binary file
     write_binary_file_master(output_name, n);
 
+	delete [] output_name;
 }
-void ParOutput::output_final_coordinates_slave(int parN, Vector *vecs, int64 offset){
-    char output_name[140];  //  Output filename
+void ParOutput::output_final_coordinates_slave(int fID, int tID, Vector *vecs, int64 offset){
+#if OUTPUT_SINGLE_FILE
+    char *output_name = new char[strlen(namdMyNode->simParams->outputFilename)+8];
 
     //  Built the output filename
     strcpy(output_name, namdMyNode->simParams->outputFilename);
     strcat(output_name, ".coor");
+#else	
+	char *output_name = buildFileName(coorType);	
+	NAMD_backup_file(output_name);
+#endif
 
-    //  Write the velocities to a binary file
-    write_binary_file_slave(output_name, parN, vecs, offset);
+    //  Write the coordinates to a binary file
+    write_binary_file_slave(output_name, fID, tID, vecs, offset);
+
+	delete [] output_name;
 }
 //////End of Functions related with coordinate output//////
+
+//////Beginning of Utility Functions for ParOutput//////
+#if !OUTPUT_SINGLE_FILE
+char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
+	char *filename = NULL;
+	const char *typeName = NULL;
+	switch(type) {
+	case dcdType:
+		typeName = "dcd";
+		break;
+	case veldcdType:
+		typeName = "veldcd";
+		break;
+	case coorType:
+		typeName = "coor";
+		break;
+	case velType:
+		typeName = "vel";
+		break;
+	default:
+		typeName = "invalid";
+		break;
+	}
+	int baselen = strlen(namdMyNode->simParams->outputFilename);	
+	filename = new char[baselen+32];
+	memset(filename, 0, baselen+32);
+
+#if 0
+	strcpy(filename, namdMyNode->simParams->outputFilename);
+
+	//check if the directory exists or not
+	struct stat st;
+	if(stat(filename, &st)!=0) {
+		int ret = mkdir(filename, 0777);
+		if(ret!=0) {
+			char errmsg[512];
+			sprintf(errmsg, "Error in creating top-level directory %s!", filename);
+			NAMD_err(errmsg);
+		}
+	}
+
+	strcat(filename, PATHSEPSTR);
+	strcat(filename, typeName);
+
+	//check if the directory exists or not	
+	if(stat(filename, &st)!=0) {
+		int ret = mkdir(filename, 0777);
+		if(ret!=0) {
+			char errmsg[512];
+			sprintf(errmsg, "Error in creating middle-level directory %s!", filename);
+			NAMD_err(errmsg);
+		}
+	}
+#else
+	sprintf(filename, "%s%s%s", namdMyNode->simParams->outputFilename, PATHSEPSTR, typeName);
+#endif
+
+	char tmpstr[20];
+	if(outputID == -1) {
+		//indicating the output from master			
+		if(timestep!=-9999) {
+			//not the default value
+			sprintf(tmpstr, "%smeta.%d", PATHSEPSTR, timestep);
+		}else{
+			sprintf(tmpstr, "%smeta", PATHSEPSTR);
+		}
+	}else{
+		//indicating the output from slave		
+		sprintf(tmpstr, "%s%d", PATHSEPSTR, outputID);
+		strcat(filename, tmpstr);
+		#if 0
+		if(stat(filename, &st)!=0) {
+			int ret = mkdir(filename, 0777);
+			if(ret!=0) {
+				char errmsg[512];
+				sprintf(errmsg, "Error in creating last-level directory %s!", filename);
+				NAMD_err(errmsg);
+			}
+		}
+		#endif
+		if(timestep!=-9999) {
+			//not the default value
+			sprintf(tmpstr, "%s%s_%d.%d", PATHSEPSTR,typeName,outputID,timestep);
+		}else{
+			sprintf(tmpstr,"%s%s_%d", PATHSEPSTR,typeName,outputID);
+		}	
+	}
+
+	strcat(filename, tmpstr);
+	return filename;
+}
+#endif
+//////End of Utility Functions for ParOutput//////
 #endif

@@ -22,6 +22,17 @@ class Lattice;
 #define END_OF_RUN -2
 #define EVAL_MEASURE -3
 
+#define OUTPUT_SINGLE_FILE 1
+#define OUTPUT_MAGIC_NUMBER 123456
+#define OUTPUT_FILE_VERSION 1.00
+
+enum OUTPUTFILETYPE {
+	dcdType,
+	veldcdType,
+	coorType,
+	velType
+};
+
 class Output 
 {
 
@@ -67,19 +78,23 @@ private:
     void output_veldcdfile_master(int timestep, int n);
     void output_veldcdfile_slave(int timestep, int fID, int tID, Vector *vecs);
     void output_restart_velocities_master(int timestep, int n);
-    void output_restart_velocities_slave(int timestep, int parN, Vector *vecs, int64 offset);
+    void output_restart_velocities_slave(int timestep, int fID, int tID, Vector *vecs, int64 offset);
     void output_final_velocities_master(int n);
-    void output_final_velocities_slave(int parN, Vector *vecs, int64 offset);
+    void output_final_velocities_slave(int fID, int tID, Vector *vecs, int64 offset);
 
     void output_dcdfile_master(int timestep, int n, const Lattice *lat);
     void output_dcdfile_slave(int timestep, int fID, int tID, FloatVector *fvecs);
     void output_restart_coordinates_master(int timestep, int n);
-    void output_restart_coordinates_slave(int timestep, int parN, Vector *vecs, int64 offset);
+    void output_restart_coordinates_slave(int timestep, int fID, int tID, Vector *vecs, int64 offset);
     void output_final_coordinates_master(int n);
-    void output_final_coordinates_slave(int parN, Vector *vecs, int64 offset);
+    void output_final_coordinates_slave(int fID, int tID, Vector *vecs, int64 offset);
 
     void write_binary_file_master(char *fname, int n);
-    void write_binary_file_slave(char *fname, int parN, Vector *vecs, int64 offset);
+    void write_binary_file_slave(char *fname, int fID, int tID, Vector *vecs, int64 offset);
+
+	#if !OUTPUT_SINGLE_FILE
+	char *buildFileName(OUTPUTFILETYPE type, int timestep=-9999);
+	#endif
 
     int dcdFileID;
     Bool dcdFirst;
@@ -89,11 +104,14 @@ private:
     Bool veldcdFirst;    
     float *veldcdX, *veldcdY, *veldcdZ;
 
+	int outputID; //the sequence of this output
+
 public:
-    ParOutput(){
+    ParOutput(int oid=-1){
         dcdFileID=veldcdFileID=-99999;
         dcdFirst=veldcdFirst=TRUE;
-        dcdX=dcdY=dcdZ=veldcdX=veldcdY=veldcdZ=NULL;        
+        dcdX=dcdY=dcdZ=veldcdX=veldcdY=veldcdZ=NULL;
+		outputID=oid;
     }
     ~ParOutput() {}
 

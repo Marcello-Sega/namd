@@ -11,6 +11,7 @@
 */
 
 #include "dcdlib.h"
+#include "Output.h"
 
 #define NAMD_write NAMD_write64
 // same as write, only does error checking internally
@@ -589,10 +590,22 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 }
 #endif
 
+#if OUTPUT_SINGLE_FILE
 #define NFILE_POS (off_t) 8
 #define NPRIV_POS (off_t) 12
 #define NSAVC_POS (off_t) 16
 #define NSTEP_POS (off_t) 20
+#else
+//Need to consider extra fields: 
+//1. magic number (int32)
+//2. file version (float)
+//3. number of files that contain portion of data (int32)
+//So the total offset is 12 bytes.
+#define NFILE_POS (off_t) 20
+#define NPRIV_POS (off_t) 24
+#define NSAVC_POS (off_t) 28
+#define NSTEP_POS (off_t) 32
+#endif
 
 /*********************************************************************/
 /*								     */
@@ -657,7 +670,10 @@ int open_dcd_write(char *dcdname)
 int open_dcd_write_par_slave(char *dcdname)
 
 {
-	struct stat sbuf;
+#if OUTPUT_SINGLE_FILE
+	//In the case of single file, the dcd output by slaves has been created
+	//by the master, so the dcd file doesn't need to be created again and
+	//backed up. --Chao Mei
 	int dcdfd;
 #ifdef WIN32
 	if ( (dcdfd = _open(dcdname, O_RDWR|O_BINARY|O_LARGEFILE,
@@ -675,6 +691,11 @@ int open_dcd_write_par_slave(char *dcdname)
 	}
 
 	return(dcdfd);
+#else
+	//In the case of multiple output files, each slave has its own output file and
+	//it needs to be created. --Chao Mei
+	return open_dcd_write(dcdname);
+#endif
 }
 
 /************************************************************************/

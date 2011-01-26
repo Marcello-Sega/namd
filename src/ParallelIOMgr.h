@@ -370,8 +370,8 @@ public:
 
     void receivePositions(CollectVectorVarMsg *msg);
     void receiveVelocities(CollectVectorVarMsg *msg);
-    void disposePositions(int seq);
-    void disposeVelocities(int seq);
+    void disposePositions(int seq, double prevT);
+    void disposeVelocities(int seq, double prevT);
 
     void wrapCoor(int seq, Lattice lat);
     void recvClusterCoor(ClusterCoorMsg *msg);

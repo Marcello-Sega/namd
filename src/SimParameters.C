@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: ryanmcgreevy $
- * $Date: 2010/12/15 23:19:42 $
- * $Revision: 1.1318 $
+ * $Author: chaomei2 $
+ * $Date: 2011/01/26 22:36:31 $
+ * $Revision: 1.1319 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -25,6 +25,7 @@
 #include "structures.h"
 #include "Communicate.h"
 #include "MStream.h"
+#include "Output.h"
 #include <stdio.h>
 #include <time.h>
 #ifdef NAMD_FFTW
@@ -46,6 +47,11 @@
 #define CHDIR chdir
 #define PATHSEP '/'
 #define PATHSEPSTR "/"
+#endif
+#include <fcntl.h>
+#include <sys/stat.h>
+#ifdef WIN32
+#include <io.h>
 #endif
 #include <fstream>
 using namespace std;
@@ -1844,6 +1850,24 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        numoutputprocs = (CkNumPes()>>1)+(CkNumPes()&1);
      }
    }
+
+   #if !OUTPUT_SINGLE_FILE
+   //create directories for multi-file output scheme   
+   create_output_directories("coor");
+   create_output_directories("vel");
+   if(dcdFrequency) {
+	   create_output_directories("dcd");
+	   if(opts.defined("dcdfile")){
+		   iout << iWARN << "The dcd file output has been changed to directory: " << outputFilename << ".\n" << endi; 
+	   }
+   }
+   if (velDcdFrequency) {
+	   create_output_directories("veldcd");
+	   if(opts.defined("veldcdfile")){       
+		   iout << iWARN << "The veldcd file output has been changed to directory: " << outputFilename << ".\n" << endi;
+	   }
+   }
+   #endif
 #endif
 
    if (! opts.defined("auxFile")) {
@@ -4929,6 +4953,56 @@ void SimParameters::parse_mgrid_string_param(ConfigList *cl,
       strncpy(*dest,val,len+1);
     }
   }
+}
+   
+//This function is used to create directories when outputing into
+//multiple files, i.e. used for Parallel IO. -Chao Mei
+void SimParameters::create_output_directories(const char *dirname){
+	//output files organization:
+	//$outputFilename/$dirname/$outputproc_rank
+	
+	//Step 1: create $outputFilename if necessary
+	int baselen = strlen(outputFilename);
+	char *filename = new char[baselen+32];
+	memset(filename, 0, baselen+32);
+	strcpy(filename, outputFilename);
+	struct stat st;
+	if(stat(filename, &st)!=0) {
+		int ret = mkdir(filename, 0777);
+		if(ret!=0) {
+			char errmsg[512];
+			sprintf(errmsg, "Error in creating top-level directory %s!", filename);
+			NAMD_die(errmsg);
+		}
+	}
+
+	//Step 2: create $dirname if necessary
+	strcat(filename, PATHSEPSTR);
+	strcat(filename, dirname);
+	//check if the directory exists or not	
+	if(stat(filename, &st)!=0) {
+		int ret = mkdir(filename, 0777);
+		if(ret!=0) {
+			char errmsg[512];
+			sprintf(errmsg, "Error in creating middle-level directory %s!", filename);
+			NAMD_die(errmsg);
+		}
+	}
+
+	//step 3: create $outputproc_rank if necessary
+	char tmpstr[256];
+	for(int i=0; i<numoutputprocs; i++) {
+		memset(tmpstr, 0, 256);
+		sprintf(tmpstr, "%s%s%d", filename, PATHSEPSTR, i);
+		if(stat(tmpstr, &st)!=0) {
+			int ret = mkdir(tmpstr, 0777);
+			if(ret!=0) {
+				char errmsg[512];
+				sprintf(errmsg, "Error in creating last-level directory %s!", tmpstr);
+				NAMD_die(errmsg);
+			}
+		}
+	}
 }
    
 /****************************************************************/
