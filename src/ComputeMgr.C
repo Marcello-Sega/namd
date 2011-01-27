@@ -708,7 +708,6 @@ ComputeMgr::createComputes(ComputeMap *map)
         DebugM(1,"Compute " << i << '\n');
         DebugM(1,"  node = " << map->computeData[i].node << '\n');
         DebugM(1,"  type = " << map->computeData[i].type << '\n');
-        DebugM(1,"  patchBased = " << map->computeData[i].patchBased << '\n');
         DebugM(1,"  numPids = " << map->computeData[i].numPids << '\n');
         DebugM(1,"  numPidsAllocated = " << map->computeData[i].numPidsAllocated << '\n');
         for (int j=0; j < map->computeData[i].numPids; j++)

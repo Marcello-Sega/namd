@@ -11,15 +11,18 @@ module WorkDistrib {
   message ComputeMapChangeMsg {
     int newNodes[];
   };
-  message MapDistribMsg {
+  message PatchMapMsg {
     char patchMapData[];
-    char computeMapData[];
+  };
+  message ComputeMapMsg {
+    ComputeMap::ComputeData computeMapData[];
   };
 
   group WorkDistrib
   {
     entry WorkDistrib(void);
-    entry void saveMaps(MapDistribMsg *);
+    entry void savePatchMap(PatchMapMsg *);
+    entry void saveComputeMap(ComputeMapMsg *);
     entry void recvComputeMapChanges(ComputeMapChangeMsg *);
     entry void doneSaveComputeMap(void);
     entry void enqueueWork(LocalWorkMsg *);

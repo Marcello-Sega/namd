@@ -437,7 +437,7 @@ void ProxyMgr::createProxies(void)
   int nc = computeMap->numComputes();
   for ( i = 0; i < nc; ++i )
   {
-    if ( computeMap->node(i) != myNode || !computeMap->isPatchBased(i) ) 
+    if ( computeMap->node(i) != myNode ) 
       continue;
     int numPid = computeMap->numPids(i);
     for ( j = 0; j < numPid; ++j )

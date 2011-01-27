@@ -263,7 +263,7 @@ void Node::startup() {
     //to decide atoms to patch distribution on every input processor
     if(!CkMyPe()) {
         workDistrib->patchMapInit(); // create space division
-        workDistrib->sendMaps();
+        workDistrib->sendPatchMap();
     }
     #endif
 
@@ -310,8 +310,8 @@ void Node::startup() {
     //for determing which node a particular patch is assigned to.
     ioMgr->calcAtomsInEachPatch();
 
-    //set to false to re-send PatchMap and ComputeMap later
-    workDistrib->setMapsArrived(false);
+    //set to false to re-send PatchMap later
+    workDistrib->setPatchMapArrived(false);
     #endif
     break;
   case 4:     
@@ -339,10 +339,10 @@ void Node::startup() {
 
       registerUserEventsForAllComputeObjs();
 
-      //in MEM_OPT_VERSION, patchMap and computeMap are resent
+      //in MEM_OPT_VERSION, patchMap is resent
       //because they have been updated since creation including
       //#atoms per patch, the proc a patch should stay etc. --Chao Mei
-      workDistrib->sendMaps();
+      workDistrib->sendPatchMap();
       #ifdef USE_NODEPATCHMGR
       CProxy_NodeProxyMgr npm(CkpvAccess(BOCclass_group).nodeProxyMgr);
       //a node broadcast
@@ -371,6 +371,10 @@ void Node::startup() {
 	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
 	pme[CkMyPe()].initialize(new CkQdMsg);
       }
+    }
+
+    if (!CkMyPe()) {
+      workDistrib->sendComputeMap();
     }
 
     #ifdef MEM_OPT_VERSION

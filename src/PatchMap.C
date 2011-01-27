@@ -177,7 +177,7 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
     p.center.y = (((double)(p.bIndex)+0.5)/(double)bDim) * bLength + bOrigin;
     p.center.z = (((double)(p.cIndex)+0.5)/(double)cDim) * cLength + cOrigin;
     p.numCids = 0;
-    int max_computes = 200;
+    int max_computes = 30;
     p.cids = new int[max_computes];
     for ( int j = 0; j < max_computes; ++j ) p.cids[j] = -1;
     p.numCidsAllocated = max_computes;
@@ -399,7 +399,7 @@ void PatchMap::newCid(int pid, int cid)
   { // allocate more
 //    NAMD_die("PatchMap::newCid - not enough compute ID's allocated.");
     ComputeID *old = patchData[pid].cids;
-    patchData[pid].numCidsAllocated += 200;
+    patchData[pid].numCidsAllocated += 10;
     patchData[pid].cids = new int[patchData[pid].numCidsAllocated];
     int i;
     for (i=0; i<patchData[pid].numCids; i++) 

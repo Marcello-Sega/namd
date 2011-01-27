@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: char $
- * $Date: 2010/12/05 07:08:33 $
- * $Revision: 1.1212 $
+ * $Author: jim $
+ * $Date: 2011/01/27 19:48:02 $
+ * $Revision: 1.1213 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -71,8 +71,8 @@ VARSIZE_MSG(ComputeMapChangeMsg,
 WorkDistrib::WorkDistrib()
 {
   CkpvAccess(BOCclass_group).workDistrib = thisgroup;
-  mapsArrived = false;
-  awaitingMaps = false;
+  patchMapArrived = false;
+  computeMapArrived = false;
 }
 
 //----------------------------------------------------------------------
@@ -603,25 +603,15 @@ void WorkDistrib::reinitAtoms() {
 
 //----------------------------------------------------------------------
 
-class MapDistribMsg: public CMessage_MapDistribMsg {
+class PatchMapMsg : public CMessage_PatchMapMsg {
   public:
     char *patchMapData;
-    char *computeMapData;
-
-//  VARSIZE_DECL(MapDistribMsg);
 };
 
-/*
-VARSIZE_MSG(MapDistribMsg,
-  VARSIZE_ARRAY(patchMapData);
-  VARSIZE_ARRAY(computeMapData);
-)
-*/
-
-void WorkDistrib::sendMaps(void)
+void WorkDistrib::sendPatchMap(void)
 {
   if ( CkNumPes() == 1 ) {
-    mapsArrived = true;
+    patchMapArrived = true;
     return;
   }
 
@@ -632,21 +622,18 @@ void WorkDistrib::sendMaps(void)
   if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendSpanningTreeUnset())
     ProxyMgr::Object()->setSendSpanning();
 
-  int sizes[2];
-  sizes[0] = PatchMap::Object()->packSize();
-  sizes[1] = ComputeMap::Object()->packSize();
+  int size = PatchMap::Object()->packSize();
 
-  MapDistribMsg *mapMsg = new (sizes[0], sizes[1], 0) MapDistribMsg;
+  PatchMapMsg *mapMsg = new (size, 0) PatchMapMsg;
 
   PatchMap::Object()->pack(mapMsg->patchMapData);
-  ComputeMap::Object()->pack(mapMsg->computeMapData);
 
   CProxy_WorkDistrib workProxy(thisgroup);
-  workProxy[0].saveMaps(mapMsg);
+  workProxy[0].savePatchMap(mapMsg);
 }
 
 // saveMaps() is called when the map message is received
-void WorkDistrib::saveMaps(MapDistribMsg *msg)
+void WorkDistrib::savePatchMap(PatchMapMsg *msg)
 {
   // Use a resend to forward messages before processing.  Otherwise the
   // map distribution is slow on many CPUs.  We need to use a tree
@@ -654,9 +641,8 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   // generate a copy of the message on the sender for each recipient.
   // This is because MPI doesn't allow re-use of an outstanding buffer.
 
-  if ( mapsArrived && CkMyPe() ) {
+  if ( patchMapArrived && CkMyPe() ) {
     PatchMap::Object()->unpack(msg->patchMapData);
-    if ( ! CkMyRank() ) ComputeMap::Object()->unpack(msg->computeMapData);
 
     //Automatically enable spanning tree
     CProxy_Node nd(CkpvAccess(BOCclass_group).node);
@@ -665,12 +651,13 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
     if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendSpanningTreeUnset())
       ProxyMgr::Object()->setSendSpanning();
   }
-  if ( mapsArrived ) {
+
+  if ( patchMapArrived ) {
     delete msg;
     return;
   }
 
-  mapsArrived = true;
+  patchMapArrived = true;
 
   int pids[3];
   int basePe = 2 * CkMyPe() + 1;
@@ -678,7 +665,67 @@ void WorkDistrib::saveMaps(MapDistribMsg *msg)
   if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
   if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
   pids[npid] = CkMyPe(); ++npid;  // always send the message to ourselves
-  CProxy_WorkDistrib(thisgroup).saveMaps(msg,npid,pids);
+  CProxy_WorkDistrib(thisgroup).savePatchMap(msg,npid,pids);
+}
+
+
+class ComputeMapMsg : public CMessage_ComputeMapMsg {
+  public:
+    int nComputes;
+    ComputeMap::ComputeData *computeMapData;
+};
+
+void WorkDistrib::sendComputeMap(void)
+{
+  if ( CkNumNodes() == 1 ) {
+    computeMapArrived = true;
+    ComputeMap::Object()->initPtrs();
+    return;
+  }
+
+  int size = ComputeMap::Object()->numComputes();
+
+  ComputeMapMsg *mapMsg = new (size, 0) ComputeMapMsg;
+
+  mapMsg->nComputes = size;
+  ComputeMap::Object()->pack(mapMsg->computeMapData);
+
+  CProxy_WorkDistrib workProxy(thisgroup);
+  workProxy[0].saveComputeMap(mapMsg);
+}
+
+// saveMaps() is called when the map message is received
+void WorkDistrib::saveComputeMap(ComputeMapMsg *msg)
+{
+  // Use a resend to forward messages before processing.  Otherwise the
+  // map distribution is slow on many CPUs.  We need to use a tree
+  // rather than a broadcast because some implementations of broadcast
+  // generate a copy of the message on the sender for each recipient.
+  // This is because MPI doesn't allow re-use of an outstanding buffer.
+
+  if ( CkMyRank() ) {
+    NAMD_bug("WorkDistrib::saveComputeMap called on non-rank-zero pe");
+  }
+
+  if ( computeMapArrived && CkMyPe() ) {
+    ComputeMap::Object()->unpack(msg->nComputes, msg->computeMapData);
+  }
+
+  if ( computeMapArrived ) {
+    delete msg;
+    ComputeMap::Object()->initPtrs();
+    return;
+  }
+
+  computeMapArrived = true;
+
+  int pids[3];
+  int baseNid = 2 * CkMyNode() + 1;
+  int npid = 0;
+  if ( (baseNid+npid) < CkNumNodes() ) { pids[npid] = CkNodeFirst(baseNid + npid); ++npid; }
+  if ( (baseNid+npid) < CkNumNodes() ) { pids[npid] = CkNodeFirst(baseNid + npid); ++npid; }
+  pids[npid] = CkMyPe(); ++npid;  // always send the message to ourselves
+  CProxy_WorkDistrib(thisgroup).saveComputeMap(msg,npid,pids);
 }
 
 
@@ -1323,18 +1370,12 @@ void WorkDistrib::mapComputeHomeTuples(ComputeType type)
   Node *node = nd.ckLocalBranch();
 
   int numNodes = node->numNodes();
-  int numPatches = patchMap->numPatches();
-  ComputeID cid;
   PatchIDList basepids;
 
   for(int i=0; i<numNodes; i++) {
     patchMap->basePatchIDList(i,basepids);
     if ( basepids.size() ) {
-      cid=computeMap->storeCompute(i,basepids.size(),type);
-      for(int j=0; j<basepids.size(); ++j) {
-        patchMap->newCid(basepids[j],cid);
-        computeMap->newPid(cid,basepids[j]);
-      }
+      computeMap->storeCompute(i,0,type);
     }
   }
 }
@@ -1348,24 +1389,12 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
   Node *node = nd.ckLocalBranch();
 
   int numNodes = node->numNodes();
-  int numPatches = patchMap->numPatches();
-  ComputeID *cid = new ComputeID[numNodes];
 
   for(int i=0; i<numNodes; i++) {
     if ( patchMap->numPatchesOnNode(i) ) {
-      cid[i]=computeMap->storeCompute(i,patchMap->numPatchesOnNode(i),type);
+      computeMap->storeCompute(i,0,type);
     }
   }
-
-  PatchID j;
-
-  for(j=0;j<numPatches;j++)
-  {
-    patchMap->newCid(j,cid[patchMap->node(j)]);
-    computeMap->newPid(cid[patchMap->node(j)],j);
-  }
-
-  delete [] cid;
 }
 
 //----------------------------------------------------------------------

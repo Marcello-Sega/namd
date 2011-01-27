@@ -74,7 +74,7 @@ public:
   ~ComputeMap(void);
 
   void registerCompute(ComputeID cid, Compute *c) {
-    computeData[cid].compute = c;
+    computePtrs[cid] = c;
   }
 
   // numComputes() returns the number of compute objects known
@@ -82,22 +82,6 @@ public:
   inline int numComputes(void) {
     return nComputes;
   }
-
-  // numPatchBased() returns the number of compute objects
-  // that are patch-based
-  int numPatchBased(void);
-
-  // numAtomBased() returns the number of compute objects
-  // that are atom-based
-  int numAtomBased(void);
-
-  // isPatchBased(cid) returns true if the compute object
-  // is patch based.
-  int isPatchBased(ComputeID cid);
-
-  // isAtomBased(cid) returns true if the compute object
-  // is atom based.
-  int isAtomBased(ComputeID cid);
 
   // node(cid) returns the node where the compute object currently exists.
   inline int node(ComputeID cid) {
@@ -148,7 +132,7 @@ public:
   void saveComputeMap(const char *fname);
   void loadComputeMap(const char *fname);
 
-  Compute *compute(ComputeID cid) { return (computeData[cid].compute); };
+  Compute *compute(ComputeID cid) { return computePtrs[cid]; };
 
   friend class ComputeMgr;
 
@@ -160,38 +144,34 @@ public:
     PatchRec() : pid(-1), trans(-1) { ; }
   };
 
+  enum { numPidsAllocated=2 };
+
   struct ComputeData
   {
     ComputeData() { 
       node = -1; moveToNode = -1; 
-      patchBased = false; numPids = 0; numPidsAllocated = 0; 
-      pids = NULL; compute = NULL; 
+      numPids = 0;
     }
-    Compute *compute;
     int node;
     int moveToNode;
     ComputeType type;
-    int partition;
-    int numPartitions;
-    int patchBased;
-    int numPids;
-    int numPidsAllocated;
-    PatchRec *pids;
+    char partition;
+    char numPartitions;
+    char numPids;
+    PatchRec pids[numPidsAllocated];
   };
 protected:
   friend class WorkDistrib;
-  int packSize(void);
-  void pack(char* buf);
-  void unpack(char *buf);
+  void pack(ComputeData *buf);
+  void unpack(int n, ComputeData *buf);
+  void initPtrs();
 
   ComputeMap(void);
 
 private:
-  int nPatchBased;
-  int nAtomBased;
   int nComputes;
   ResizeArray<ComputeData> computeData;
-  ObjectArena<PatchRec> *patchArena;
+  Compute **computePtrs;
 
   static ComputeMap *instance;
 };

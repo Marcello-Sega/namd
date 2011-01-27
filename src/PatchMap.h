@@ -172,19 +172,19 @@ private:
   struct PatchData
   {
     int node, basenode;
-    int aIndex, bIndex, cIndex;
+    short aIndex, bIndex, cIndex;
     Coordinate aMin, aMax, bMin, bMax, cMin, cMax;
     ScaledPosition center;
-    int numCids;
-    int numCidsAllocated;
+    short numCids;
+    short numCidsAllocated;
     ComputeID *cids;
     Patch *myPatch;
     HomePatch *myHomePatch;
 #ifdef MEM_OPT_VERSION
     //added to record #atoms in each patch initially
     //--Chao Mei
-    int numAtoms;
-    int numFixedAtoms;
+    short numAtoms;
+    short numFixedAtoms;
 #endif
   };
   int nPatches;

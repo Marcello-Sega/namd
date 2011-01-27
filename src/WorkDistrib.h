@@ -29,7 +29,8 @@ public:
 
 enum { maxPatchDepends = 126 };
 
-class MapDistribMsg;
+class PatchMapMsg;
+class ComputeMapMsg;
 class ComputeMapChangeMsg;
 
 class WorkDistrib : public BOCclass
@@ -68,7 +69,8 @@ public:
   void enqueueCUDA(LocalWorkMsg *msg);
 
   void mapComputes(void);
-  void sendMaps(void);
+  void sendPatchMap(void);
+  void sendComputeMap(void);
   void saveComputeMapChanges(int,CkGroupID);
   void recvComputeMapChanges(ComputeMapChangeMsg *);
   void doneSaveComputeMap();
@@ -81,8 +83,9 @@ public:
   void patchMapInit(void);
   void assignNodeToPatch(void);
 
-  void saveMaps(MapDistribMsg *msg);
-  inline void setMapsArrived(bool s) {mapsArrived=s;}
+  void savePatchMap(PatchMapMsg *msg);
+  void saveComputeMap(ComputeMapMsg *msg);
+  inline void setPatchMapArrived(bool s) {patchMapArrived=s;}
 
 #ifdef MEM_OPT_VERSION
   void fillAtomListForOnePatch(int pid, FullAtomList &alist);
@@ -110,9 +113,8 @@ private:
 			 Vector *v, int totalAtoms);
   void remove_com_motion(Vector *vel, Molecule *structure, int n);
 
-  bool mapsArrived;
-  bool awaitingMaps;
-  CthThread awaitingMapsTh;
+  bool patchMapArrived;
+  bool computeMapArrived;
 
   int saveComputeMapReturnEP;
   CkGroupID saveComputeMapReturnChareID;
