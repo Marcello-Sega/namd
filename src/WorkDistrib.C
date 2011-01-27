@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2011/01/27 19:48:02 $
- * $Revision: 1.1213 $
+ * $Date: 2011/01/27 21:45:46 $
+ * $Revision: 1.1214 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -641,6 +641,8 @@ void WorkDistrib::savePatchMap(PatchMapMsg *msg)
   // generate a copy of the message on the sender for each recipient.
   // This is because MPI doesn't allow re-use of an outstanding buffer.
 
+  if ( CkMyRank() ) patchMapArrived = true;
+
   if ( patchMapArrived && CkMyPe() ) {
     PatchMap::Object()->unpack(msg->patchMapData);
 
@@ -653,17 +655,21 @@ void WorkDistrib::savePatchMap(PatchMapMsg *msg)
   }
 
   if ( patchMapArrived ) {
-    delete msg;
+    if ( CkMyRank() + 1 < CkNodeSize(CkMyNode()) ) {
+      CProxy_WorkDistrib(thisgroup)[CkMyPe()+1].savePatchMap(msg);
+    } else {
+      delete msg;
+    }
     return;
   }
 
   patchMapArrived = true;
 
   int pids[3];
-  int basePe = 2 * CkMyPe() + 1;
+  int baseNid = 2 * CkMyNode() + 1;
   int npid = 0;
-  if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
-  if ( (basePe+npid) < CkNumPes() ) { pids[npid] = basePe + npid; ++npid; }
+  if ( (baseNid+npid) < CkNumNodes() ) { pids[npid] = CkNodeFirst(baseNid + npid); ++npid; }
+  if ( (baseNid+npid) < CkNumNodes() ) { pids[npid] = CkNodeFirst(baseNid + npid); ++npid; }
   pids[npid] = CkMyPe(); ++npid;  // always send the message to ourselves
   CProxy_WorkDistrib(thisgroup).savePatchMap(msg,npid,pids);
 }
