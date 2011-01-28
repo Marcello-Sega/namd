@@ -23,6 +23,10 @@
 #define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
 
+int *PatchMap::nPatchesOnNode = 0;
+PatchMap::PatchData *PatchMap::patchData = 0;
+ObjectArena<ComputeID> *PatchMap::computeIdArena = 0;
+
 // Safe singleton creation
 PatchMap *PatchMap::Instance() {
   if (CkpvAccess(PatchMap_instance) == 0) {
@@ -36,12 +40,18 @@ PatchMap::PatchMap(void)
   nPatches = 0;
   nNodesWithPatches = 0;
   int npes = CkNumPes();
-  nPatchesOnNode = new int[npes];
-  for ( int i=0; i<npes; ++i ) {
-    nPatchesOnNode[i] = 0;
+  if ( ! CkMyRank() ) {
+    nPatchesOnNode = new int[npes];
+    memset(nPatchesOnNode,0,npes*sizeof(int));
+    patchData = NULL;
+    computeIdArena = NULL;
   }
-  patchData = NULL;
-  computeIdArena = NULL;
+  patchBounds_a = 0;
+  patchBounds_b = 0;
+  patchBounds_c = 0;
+  myPatch = 0;
+  myHomePatch = 0;
+
   aDim = bDim = cDim = 0;
   aAway = bAway = cAway = 1;
   aPeriodic = bPeriodic = cPeriodic = 0;
@@ -153,6 +163,19 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
   nPatches=aDim*bDim*cDim;
   patchData = new PatchData[nPatches];
 
+  patchBounds_a = new BigReal[2*aDim+1];
+  patchBounds_b = new BigReal[2*bDim+1];
+  patchBounds_c = new BigReal[2*cDim+1];
+  for ( int i=0; i<(2*aDim+1); ++i ) {
+    patchBounds_a[i] = ((0.5*(double)i)/(double)aDim) * aLength + aOrigin;
+  }
+  for ( int i=0; i<(2*bDim+1); ++i ) {
+    patchBounds_b[i] = ((0.5*(double)i)/(double)bDim) * bLength + bOrigin;
+  }
+  for ( int i=0; i<(2*cDim+1); ++i ) {
+    patchBounds_c[i] = ((0.5*(double)i)/(double)cDim) * cLength + cOrigin;
+  }
+
   for(int i=0; i<nPatches; ++i)
   {
     PatchData &p = patchData[i];
@@ -161,21 +184,10 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
     p.aIndex = index_a(i);
     p.bIndex = index_b(i);
     p.cIndex = index_c(i);
-    p.myPatch = 0;
-    p.myHomePatch = 0;
 #ifdef MEM_OPT_VERSION
     p.numAtoms = 0;
     p.numFixedAtoms = 0;
 #endif
-    p.aMin = ((float)p.aIndex/(float)aDim) * aLength + aOrigin;
-    p.bMin = ((float)p.bIndex/(float)bDim) * bLength + bOrigin;
-    p.cMin = ((float)p.cIndex/(float)cDim) * cLength + cOrigin;
-    p.aMax = ((float)(p.aIndex+1)/(float)aDim) * aLength + aOrigin;
-    p.bMax = ((float)(p.bIndex+1)/(float)bDim) * bLength + bOrigin;
-    p.cMax = ((float)(p.cIndex+1)/(float)cDim) * cLength + cOrigin;
-    p.center.x = (((double)(p.aIndex)+0.5)/(double)aDim) * aLength + aOrigin;
-    p.center.y = (((double)(p.bIndex)+0.5)/(double)bDim) * bLength + bOrigin;
-    p.center.z = (((double)(p.cIndex)+0.5)/(double)cDim) * cLength + cOrigin;
     p.numCids = 0;
     int max_computes = 30;
     p.cids = new int[max_computes];
@@ -183,16 +195,24 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
     p.numCidsAllocated = max_computes;
   }
 
+  if ( ! myPatch ) {
+    myPatch = new Patch*[nPatches];
+  }
+  memset(myPatch,0,nPatches*sizeof(Patch*));
+  if ( ! myHomePatch ) {
+    myHomePatch = new HomePatch*[nPatches];
+  }
+  memset(myHomePatch,0,nPatches*sizeof(HomePatch*));
 }
 
 void PatchMap::checkMap(void)
 {
   int patchCount=0;
   for (int i=0; i<nPatches; i++) {
-    if (patchData[i].myPatch) {
+    if (myPatch[i]) {
       patchCount++;
-      if ( patchData[i].myPatch->getPatchID() != i) {
-	DebugM(4, "patchID("<<patchData[i].myPatch->getPatchID()
+      if ( myPatch[i]->getPatchID() != i) {
+	DebugM(4, "patchID("<<myPatch[i]->getPatchID()
 	  <<") != patchID(" 
 	  <<i<<")\n");
       }
@@ -204,21 +224,21 @@ void PatchMap::checkMap(void)
 
 PatchMap::~PatchMap(void)
 {
-  if (patchData)
-  {
-    int i;
-
-    if ( ! computeIdArena ) {
-      for (i=0; i<nPatches; i++) {
+  if ( ! CkMyRank() ) {
+    if (patchData && ! computeIdArena ) {
+      for (int i=0; i<nPatches; i++) {
         delete [] patchData[i].cids;
       }
     }
     delete [] patchData;
-    patchData=NULL;
-    nPatches=0;
+    delete [] nPatchesOnNode;
+    delete computeIdArena;
   }
-  delete [] nPatchesOnNode;
-  delete computeIdArena;
+  delete [] patchBounds_a;
+  delete [] patchBounds_b;
+  delete [] patchBounds_c;
+  delete [] myPatch;
+  delete [] myHomePatch;
 }
 
 #undef PACK
@@ -229,6 +249,7 @@ int PatchMap::packSize(void)
 {
   int i, size = 0;
   size += 14 * sizeof(int) + 6 * sizeof(BigReal);
+  size += (2*(aDim+bDim+cDim)+3) * sizeof(BigReal);
   size += CkNumPes() * sizeof(int);
   for(i=0;i<nPatches;++i)
   {
@@ -254,14 +275,15 @@ void PatchMap::pack (char *buffer)
   PACK(BigReal,aOrigin); PACK(BigReal,bOrigin); PACK(BigReal,cOrigin);
   PACK(BigReal,aLength); PACK(BigReal,bLength); PACK(BigReal,cLength);
   PACK(int,nNodesWithPatches);
+  PACKN(BigReal,patchBounds_a,2*aDim+1);
+  PACKN(BigReal,patchBounds_b,2*bDim+1);
+  PACKN(BigReal,patchBounds_c,2*cDim+1);
   PACKN(int,nPatchesOnNode,CkNumPes());
-  for(i=0;i<nPatches;++i)
-  {
+  PACKN(PatchData,patchData,nPatches);
+  for(i=0;i<nPatches;++i) {
     DebugM(3,"Packing Patch " << i << " is on node " << patchData[i].node << 
-	" with " << patchData[i].numCidsAllocated << " allocated.\n");
-    PACK(PatchData,patchData[i]);
-    for(j=0;j<patchData[i].numCidsAllocated;++j)
-      PACK(ComputeID,patchData[i].cids[j]);
+	" with " << patchData[i].numCids << " cids.\n");
+    PACKN(ComputeID,patchData[i].cids,patchData[i].numCids);
   }
   //DebugM(3,buffer + size - b << " == 0 ?" << std::endl);
 }
@@ -269,10 +291,12 @@ void PatchMap::pack (char *buffer)
 #undef UNPACK
 #define UNPACK(type,data) { memcpy(&data, b, sizeof(type)); b += sizeof(type); }
 #define UNPACKN(type,data,cnt) { memcpy(data, b, (cnt)*sizeof(type)); b += (cnt)*sizeof(type); }
+#define SKIPN(type,cnt) { b += (cnt)*sizeof(type); }
 
 void PatchMap::unpack (char *ptr)
 {
   DebugM(4,"Unpacking PatchMap on node " << CkMyPe() << std::endl);
+
   int i,j;
   char *b = (char*)ptr;
   {
@@ -282,6 +306,16 @@ void PatchMap::unpack (char *ptr)
     nPatches = nPatches_tmp;
   }
   DebugM(3,"nPatches = " << nPatches << std::endl);
+
+  if ( ! myPatch ) {
+    myPatch = new Patch*[nPatches];
+  }
+  memset(myPatch,0,nPatches*sizeof(Patch*));
+  if ( ! myHomePatch ) {
+    myHomePatch = new HomePatch*[nPatches];
+  }
+  memset(myHomePatch,0,nPatches*sizeof(HomePatch*));
+
   UNPACK(int,aDim); UNPACK(int,bDim); UNPACK(int,cDim);
   UNPACK(int,aAway); UNPACK(int,bAway); UNPACK(int,cAway);
   UNPACK(int,aPeriodic); UNPACK(int,bPeriodic); UNPACK(int,cPeriodic);
@@ -289,26 +323,36 @@ void PatchMap::unpack (char *ptr)
   UNPACK(BigReal,aOrigin); UNPACK(BigReal,bOrigin); UNPACK(BigReal,cOrigin);
   UNPACK(BigReal,aLength); UNPACK(BigReal,bLength); UNPACK(BigReal,cLength);
   UNPACK(int,nNodesWithPatches);
+
+  if ( ! patchBounds_a ) patchBounds_a = new BigReal[2*aDim+1];
+  if ( ! patchBounds_b ) patchBounds_b = new BigReal[2*bDim+1];
+  if ( ! patchBounds_c ) patchBounds_c = new BigReal[2*cDim+1];
+  UNPACKN(BigReal,patchBounds_a,2*aDim+1);
+  UNPACKN(BigReal,patchBounds_b,2*bDim+1);
+  UNPACKN(BigReal,patchBounds_c,2*cDim+1);
+ 
+  if ( CkMyRank() ) return;
+
   UNPACKN(int,nPatchesOnNode,CkNumPes());
-  patchData = new PatchData[nPatches];
+
+  if ( ! patchData ) patchData = new PatchData[nPatches];
+  else if ( ! computeIdArena ) {
+    for(i=0;i<nPatches;++i) {
+      delete [] patchData[i].cids;
+    }
+  }
+  UNPACKN(PatchData,patchData,nPatches);
 
   delete computeIdArena;
   computeIdArena = new ObjectArena<ComputeID>;
-  computeIdArena->setBlockSize(256);
+  computeIdArena->setBlockSize(1024);
 
-  for(i=0;i<nPatches;++i)
-  {
-    UNPACK(PatchData,patchData[i]);
-    if (CkMyPe()) {
-      patchData[i].myPatch = 0;
-      patchData[i].myHomePatch = 0;
-    }
+  for(i=0;i<nPatches;++i) {
     DebugM(3,"Unpacking Patch " << i << " is on node " << patchData[i].node << 
-	" with " << patchData[i].numCidsAllocated << " allocated.\n");
-    patchData[i].cids = computeIdArena->getNewArray(patchData[i].numCidsAllocated);
-    //    patchData[i].cids = new ComputeID[patchData[i].numCidsAllocated];
-    for(j=0;j<patchData[i].numCidsAllocated;++j)
-      UNPACK(ComputeID,patchData[i].cids[j]);
+	" with " << patchData[i].numCids << " cids.\n");
+    patchData[i].cids = computeIdArena->getNewArray(patchData[i].numCids);
+    patchData[i].numCidsAllocated = patchData[i].numCids;
+    UNPACKN(ComputeID,patchData[i].cids,patchData[i].numCids);
   }
 }
 
@@ -598,10 +642,6 @@ void PatchMap::printPatchMap(void)
     CkPrintf("  node = %d\n",patchData[i].node);
     CkPrintf("  xi,yi,zi = %d, %d, %d\n",
 	    patchData[i].aIndex,patchData[i].bIndex,patchData[i].cIndex);
-    CkPrintf("  x0,y0,z0 = %f, %f, %f\n",
-	    patchData[i].aMin,patchData[i].bMin,patchData[i].cMin);
-    CkPrintf("  x1,y1,z1 = %f, %f, %f\n",
-	    patchData[i].aMax,patchData[i].bMax,patchData[i].cMax);
     CkPrintf("  numCids = %d\n",patchData[i].numCids);
     CkPrintf("  numCidsAllocated = %d\n",patchData[i].numCidsAllocated);
     for(int j=0; j < patchData[i].numCids; j++)
@@ -619,44 +659,38 @@ void PatchMap::printPatchMap(void)
 //----------------------------------------------------------------------
 void PatchMap::registerPatch(PatchID pid, HomePatch *pptr) {
   registerPatch(pid,(Patch*)pptr);
-  if (patchData[pid].myHomePatch != 0) {
+  if (myHomePatch[pid] != 0) {
     iout << iPE << iERRORF 
       << "homePatchID("<<pid<<") is being re-registered!\n" << endi;
   }
-  patchData[pid].myHomePatch = pptr;
+  myHomePatch[pid] = pptr;
 }
 
 //----------------------------------------------------------------------
 void PatchMap::unregisterPatch(PatchID pid, HomePatch *pptr) {
   unregisterPatch(pid,(Patch*)pptr);
-  if (pptr == patchData[pid].myHomePatch) {
+  if (pptr == myHomePatch[pid]) {
       DebugM(4, "UnregisterHomePatch("<<pid<<") at " << pptr << "\n");
-      patchData[pid].myHomePatch = NULL;
+      myHomePatch[pid] = NULL;
   }
 }
 
 //----------------------------------------------------------------------
 void PatchMap::registerPatch(PatchID pid, Patch *pptr)
 {
-  if (patchData[pid].myPatch != 0) {
+  if (myPatch[pid] != 0) {
     iout << iPE << iERRORF 
       << "patchID("<<pid<<") is being re-registered!\n" << endi;
   }
-  patchData[pid].myPatch = pptr;
+  myPatch[pid] = pptr;
 }
 
 //----------------------------------------------------------------------
 void PatchMap::unregisterPatch(PatchID pid, Patch *pptr)
 {
-  if (pptr == patchData[pid].myPatch) {
+  if (pptr == myPatch[pid]) {
       DebugM(4, "UnregisterPatch("<<pid<<") at " << pptr << "\n");
-      patchData[pid].myPatch = NULL;
+      myPatch[pid] = NULL;
   }
-}
-
-//----------------------------------------------------------------------
-HomePatch *PatchMap::homePatch(PatchID pid)
-{
-  return patchData[pid].myHomePatch;
 }
 

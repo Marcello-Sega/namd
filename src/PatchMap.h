@@ -85,15 +85,20 @@ public:
   inline int index_c(int pid) const { return pid / (aDim*bDim); }
 
   // returns the min/max [abc] scaled coordinate
-  inline BigReal min_a(int pid) const { return patchData[pid].aMin; }
-  inline BigReal max_a(int pid) const { return patchData[pid].aMax; }
-  inline BigReal min_b(int pid) const { return patchData[pid].bMin; }
-  inline BigReal max_b(int pid) const { return patchData[pid].bMax; }
-  inline BigReal min_c(int pid) const { return patchData[pid].cMin; }
-  inline BigReal max_c(int pid) const { return patchData[pid].cMax; }
+  inline BigReal min_a(int pid) const { return patchBounds_a[patchData[pid].aIndex*2]; }
+  inline BigReal max_a(int pid) const { return patchBounds_a[patchData[pid].aIndex*2+2]; }
+  inline BigReal min_b(int pid) const { return patchBounds_b[patchData[pid].bIndex*2]; }
+  inline BigReal max_b(int pid) const { return patchBounds_b[patchData[pid].bIndex*2+2]; }
+  inline BigReal min_c(int pid) const { return patchBounds_c[patchData[pid].cIndex*2]; }
+  inline BigReal max_c(int pid) const { return patchBounds_c[patchData[pid].cIndex*2+2]; }
 
   // returns the center of patch scaled position
-  inline ScaledPosition center(int pid) const { return patchData[pid].center; }
+  inline ScaledPosition center(int pid) const {
+    const PatchData &pd = patchData[pid];
+    return ScaledPosition(patchBounds_a[pd.aIndex*2+1],
+                          patchBounds_b[pd.bIndex*2+1],
+                          patchBounds_c[pd.cIndex*2+1]);
+  }
 
   // asssigns atom to patch based on position and lattice
   inline PatchID assignToPatch(Position p, const Lattice &l);
@@ -152,7 +157,7 @@ public:
   void printPatchMap(void);
 
   inline Patch *patch(PatchID pid);
-  HomePatch *homePatch(PatchID pid);
+  inline HomePatch *homePatch(PatchID pid);
 
   void registerPatch(PatchID pid, HomePatch *pptr);
   void unregisterPatch(PatchID pid, HomePatch *pptr);
@@ -173,13 +178,9 @@ private:
   {
     int node, basenode;
     short aIndex, bIndex, cIndex;
-    Coordinate aMin, aMax, bMin, bMax, cMin, cMax;
-    ScaledPosition center;
     short numCids;
     short numCidsAllocated;
     ComputeID *cids;
-    Patch *myPatch;
-    HomePatch *myHomePatch;
 #ifdef MEM_OPT_VERSION
     //added to record #atoms in each patch initially
     //--Chao Mei
@@ -189,9 +190,14 @@ private:
   };
   int nPatches;
   int nNodesWithPatches;
-  int *nPatchesOnNode;
-  PatchData *patchData;
-  ObjectArena<ComputeID> *computeIdArena;
+  static int *nPatchesOnNode;
+  static PatchData *patchData;
+  static ObjectArena<ComputeID> *computeIdArena;
+  BigReal *patchBounds_a;
+  BigReal *patchBounds_b;
+  BigReal *patchBounds_c;
+  Patch **myPatch;
+  HomePatch **myHomePatch;
   int aDim, bDim, cDim;
   int aAway, bAway, cAway;
   int aPeriodic, bPeriodic, cPeriodic;
@@ -227,7 +233,12 @@ public:
 
 inline Patch *PatchMap::patch(PatchID pid)
 {
-  return patchData[pid].myPatch;
+  return myPatch[pid];
+}
+
+HomePatch *PatchMap::homePatch(PatchID pid)
+{
+  return myHomePatch[pid];
 }
 
 #endif /* PATCHMAP_H */
