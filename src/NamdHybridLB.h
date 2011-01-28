@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
- * $Author: bhatele $
- * $Date: 2010/12/06 21:51:22 $
- * $Revision: 1.8 $
+ * $Author: emeneses $
+ * $Date: 2011/01/28 15:23:52 $
+ * $Revision: 1.9 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -25,12 +25,38 @@
 
 void CreateNamdHybridLB();
 
+/**
+ * Class for message containing CPU loads.
+ */
+class LocalLBInfoMsg: public CMessage_LocalLBInfoMsg{
+public:
+	int n_moves;
+	int startPE;
+	int endPE;
+	MigrateInfo *moves;
+	double *cpuloads;
+
+	// Constructor
+	LocalLBInfoMsg(): n_moves(0), startPE(0), endPE(0){}
+
+	// Pup method
+	void pup(PUP::er &p) {
+		int i;
+		p | n_moves;
+		p | startPE;
+		p | endPE;
+		for (i=0; i<n_moves; ++i) p | moves[i];
+		for (i=0; i<endPE-startPE+1; ++i) p | cpuloads[i];
+	}
+
+};
+
 class NamdHybridLB : public HybridBaseLB {
 
 public:
   NamdHybridLB();
   NamdHybridLB(CkMigrateMessage *m):HybridBaseLB(m) {}
-  void UpdateComputeMap(CLBMigrateMsg *msg);
+  void UpdateLocalLBInfo(LocalLBInfoMsg *msg);
   //void CollectInfo(Location *loc, int n, int fromlevel);
 
 private:
@@ -47,6 +73,10 @@ private:
   computeInfo *computeArray;
   patchInfo *patchArray;
   processorInfo *processorArray;
+
+	double *peLoads;
+	int startPE;
+	int endPE;
 
   CmiBool QueryBalanceNow(int step);
   CmiBool QueryDumpData();

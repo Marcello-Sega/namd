@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: emeneses $
- * $Date: 2011/01/26 21:30:32 $
- * $Revision: 1.20 $
+ * $Date: 2011/01/28 15:23:52 $
+ * $Revision: 1.21 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -117,12 +117,14 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats)
 CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
 #endif
 {
+	int i;
   	// CkPrintf("[%d] NamdHybridLB at Strategy\n",CkMyPe());
 	
 	// calling the centralLB for level 1		
 	if(currentLevel == 1){
 		LevelData *lData = levelData[currentLevel];
-		CLBMigrateMsg *msg, *newMsg;
+		CLBMigrateMsg *msg;
+		LocalLBInfoMsg *newMsg;
 	     #if CHARM_VERSION > 60301
 		msg = GrpLevelStrategy(stats);
 	     #else
@@ -130,8 +132,18 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
 	     #endif
 
 		// creating a new message to send to its parent
-		newMsg = (LBMigrateMsg *)CkCopyMsg((void **)&msg);
-		thisProxy[0].UpdateComputeMap(newMsg);
+		newMsg = new(msg->n_moves,endPE-startPE+1) LocalLBInfoMsg;
+		newMsg->n_moves = msg->n_moves;
+		newMsg->startPE = startPE;
+		newMsg->endPE = endPE;
+		for(i=0; i<msg->n_moves; i++){
+			newMsg->moves[i] = msg->moves[i];
+		}
+		for(i=0; i<endPE-startPE+1; i++){
+			newMsg->cpuloads[i] = peLoads[i];
+		}
+		free(peLoads);
+		thisProxy[0].UpdateLocalLBInfo(newMsg);
 		return msg;
 	}else{
 	     #if CHARM_VERSION > 60301
@@ -146,10 +158,11 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
 
 
 /**
- * Updates the compute map with the migration information from its children
+ * Updates the compute map with the migration information from its children.
  */
-void NamdHybridLB::UpdateComputeMap(CLBMigrateMsg *msg){
+void NamdHybridLB::UpdateLocalLBInfo(LocalLBInfoMsg *msg){
 	int children;
+	int i;
 
 	// getting the number of children
 	children = tree->numNodes(currentLevel);
@@ -162,6 +175,12 @@ void NamdHybridLB::UpdateComputeMap(CLBMigrateMsg *msg){
 	for(int i=0; i<msg->n_moves; i++){
 	    if (msg->moves[i].to_pe != -1)
 		computeMap->setNewNode(msg->moves[i].obj.id.id[0],msg->moves[i].to_pe);	
+	}
+
+	// CODING
+	// updating cpuloads array
+	for(i=msg->startPE; i<=msg->endPE; i++){
+		cpuloads[i] = msg->cpuloads[i-startPE];
 	}
 
 	// checking if all children have sent the update
@@ -334,10 +353,14 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
   CmiAbort("NamdHybridLB is not supported, please install a newer version of charm.");
 #endif
 
-/*Not needed  for (i=0; i<numProcessors; i++) {
-    cpuloads[i] = processorArray[i].load;
-  }
-*/
+	peLoads = (double *) malloc(numProcessors * sizeof(double));
+	startPE = processorArray[0].Id;
+	endPE = processorArray[numProcessors-1].Id;
+	// CkPrintf("[%d] numProcessors=%d, %d to %d\n",CkMyPe(),numProcessors,processorArray[0].Id,processorArray[numProcessors-1].Id);
+	for (i=0; i<numProcessors; i++) {
+		peLoads[i] = processorArray[i].load;
+	}
+
 
   delete [] from_procs;
   delete [] processorArray;
