@@ -8,6 +8,7 @@
 
 int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
                          const char *filename, 
+                         const char *coorpluginname, const char *coorfilename,
                          const char *segid, stringhash *h, int all_caps,
                          int coordinatesonly, int residuesonly,
                          void *, void (*print_msg)(void *, const char *));

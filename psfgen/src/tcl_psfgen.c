@@ -595,6 +595,8 @@ int tcl_readpsf(ClientData data, Tcl_Interp *interp,
 int tcl_readplugin(ClientData data, Tcl_Interp *interp,
 					int argc, CONST84 char *argv[]) {
   const char *filename, *pluginname;
+  const char *coorpluginname=0;
+  const char *coorfilename=0;
   char msg[2048];
   psfgen_data *psf = *(psfgen_data **)data;
   char *segid=NULL;
@@ -611,32 +613,37 @@ int tcl_readplugin(ClientData data, Tcl_Interp *interp,
   pluginname = argv[1];
   filename = argv[2];
 
+  sprintf(msg,"Info: reading file %s using plugin %s", filename, pluginname);
+  newhandle_msg(interp,msg);
+
   for (curarg=3; curarg<argc; curarg++) {
     if (!strcmp(argv[curarg], "segment")) {
       curarg++;
       if (curarg<argc) {
         segid = strtoupper(argv[curarg], psf->all_caps);
-        newhandle_msg(interp, "Info: read mode: coordinates for segment");
+        sprintf(msg, "Info: read mode: coordinates for segment %s, segid");
+        newhandle_msg(interp,msg);
       }
-    }
-    if (!strcmp(argv[curarg], "coordinatesonly")) {
+    } else if (!strcmp(argv[curarg], "coordinatesonly")) {
       coordinatesonly=1;
       newhandle_msg(interp, "Info: read mode: coordinates only");
-    }
-    if (!strcmp(argv[curarg], "residuesonly")) {
+    } else if (!strcmp(argv[curarg], "residuesonly")) {
       residuesonly=1;
       newhandle_msg(interp, "Info: read mode: residue sequence only");
+    } else { /* positional arguments for second coordinate file */
+      if ( curarg == 3 ) coorpluginname = argv[3];
+      if ( curarg == 4 ) coorfilename = argv[4];
     }
   }
 
-  if (segid != NULL)
-    sprintf(msg,"Info: reading coordinates from file %s for segment %s", filename, segid);
-  else
-    sprintf(msg,"Info: reading coordinates from file %s",filename);
-  newhandle_msg(interp,msg);
+  if ( coorpluginname && coorpluginname ) {
+    sprintf(msg,"Info: reading coordinates from file %s using plugin %s",
+            coorfilename, coorpluginname);
+    newhandle_msg(interp,msg);
+  }
 
-  sprintf(msg,"Info: reading file %s using plugin %s", filename, pluginname);
-  if ( topo_mol_read_plugin(psf->mol, pluginname, filename, 
+  if ( topo_mol_read_plugin(psf->mol, pluginname, filename,
+                            coorpluginname, coorfilename,
                             segid, psf->aliases, psf->all_caps,
                             coordinatesonly, residuesonly,
                             interp, newhandle_msg) ) { 

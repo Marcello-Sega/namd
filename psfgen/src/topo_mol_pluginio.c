@@ -18,6 +18,7 @@
  */
 int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
                          const char *filename, 
+                         const char *coorpluginname, const char *coorfilename, 
                          const char *segid, stringhash *h, int all_caps,
                          int coordinatesonly, int residuesonly,
                          void *v, void (*print_msg)(void *, const char *)) {
@@ -352,8 +353,9 @@ static int plugin_read_angles(molfile_plugin_t *plg, void *rv,
  */
 int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
                          const char *filename, 
-                         const char *segid, stringhash *h,
-                         int coordinatesonly, int residuesonly, int all_caps,
+                         const char *coorpluginname, const char *coorfilename, 
+                         const char *segid, stringhash *h, int all_caps,
+                         int coordinatesonly, int residuesonly,
                          void *v, void (*print_msg)(void *, const char *)) {
   char msg[2048];
   molfile_plugin_t *plg=NULL; /* plugin handle */
@@ -382,9 +384,8 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
   }
 
   /* check for one or more usable input scenarios */
-  if (plg->open_file_read == NULL &&
-      plg->read_structure == NULL && 
-      plg->read_timestep == NULL) {
+  if (plg->open_file_read == NULL ||
+      plg->read_structure == NULL) { 
     print_msg(v, "ERROR: selected plugin type cannot load structure information");
     return -1; 
   }
@@ -431,13 +432,63 @@ int topo_mol_read_plugin(topo_mol *mol, const char *pluginname,
   ts.A = ts.B = ts.C = 0.0f;
   ts.alpha = ts.beta = ts.gamma = 90.0f; 
 
-  atomcoords = (float *) malloc(3*natoms*sizeof(float));
-  memset(atomcoords, 0, 3*natoms*sizeof(float));
-  ts.coords = atomcoords;
+  /* optionally read coordinates from second file at same time */
+  if ( coorpluginname && coorfilename ) {
+
+    molfile_plugin_t *coorplg=NULL; /* plugin handle */
+    void *coorrv=NULL;              /* opaque plugin read handle */
+    int coornatoms=0;
+
+    if ((coorplg = get_plugin(coorpluginname)) == NULL) {
+      print_msg(v, "ERROR: Failed to match requested coordinate plugin type");
+      free(atomarray);
+      return -1; 
+    }
+    if (coorplg->open_file_read == NULL ||
+        coorplg->read_next_timestep == NULL) { 
+      print_msg(v, "ERROR: selected plugin type cannot load atom coordinates");
+      free(atomarray);
+      return -1; 
+    }
+    if ((coorrv = coorplg->open_file_read(
+                     coorfilename, coorplg->name, &coornatoms)) == NULL) {
+      free(atomarray);
+      return -1;
+    }
+    if ( coornatoms != natoms ) {
+      print_msg(v, "ERROR: structure file and coordinate file atom counts do not match");
+      free(atomarray);
+      return -1; 
+    }
+
+    atomcoords = (float *) malloc(3*natoms*sizeof(float));
+    memset(atomcoords, 0, 3*natoms*sizeof(float));
+    ts.coords = atomcoords;
   
-  if (plg->read_next_timestep(rv, natoms, &ts)) {
-    print_msg(v, "ERROR: failed reading atom coordinates");
-    free(atomcoords);
+    if (coorplg->read_next_timestep(coorrv, natoms, &ts)) {
+      print_msg(v, "ERROR: failed reading atom coordinates");
+      free(atomcoords);
+      free(atomarray);
+      coorplg->close_file_read(coorrv);
+      return -1;
+    }
+
+    coorplg->close_file_read(coorrv);
+
+  } else if ( plg->read_next_timestep ) {
+    atomcoords = (float *) malloc(3*natoms*sizeof(float));
+    memset(atomcoords, 0, 3*natoms*sizeof(float));
+    ts.coords = atomcoords;
+  
+    if (plg->read_next_timestep(rv, natoms, &ts)) {
+      print_msg(v, "ERROR: failed reading atom coordinates");
+      free(atomcoords);
+      free(atomarray);
+      plg->close_file_read(rv);
+      return -1;
+    }
+  } else if ( coordinatesonly ) {
+    print_msg(v, "ERROR: selected plugin type cannot load atom coordinates");
     free(atomarray);
     plg->close_file_read(rv);
     return -1;
