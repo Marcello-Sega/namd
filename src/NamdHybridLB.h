@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
  * $Author: emeneses $
- * $Date: 2011/01/28 15:23:52 $
- * $Revision: 1.9 $
+ * $Date: 2011/01/28 23:10:07 $
+ * $Revision: 1.10 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -40,6 +40,7 @@ public:
 	LocalLBInfoMsg(): n_moves(0), startPE(0), endPE(0){}
 
 	// Pup method
+#if CHARM_VERSION > 60301
 	void pup(PUP::er &p) {
 		int i;
 		p | n_moves;
@@ -48,6 +49,7 @@ public:
 		for (i=0; i<n_moves; ++i) p | moves[i];
 		for (i=0; i<endPE-startPE+1; ++i) p | cpuloads[i];
 	}
+#endif
 
 };
 
