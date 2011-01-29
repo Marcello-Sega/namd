@@ -136,6 +136,18 @@ template <class Elem> class ResizeArray {
     void reduce(void) { rep->reduce(); }
 
     inline int find(const Elem &e) { return rep->find(e); }
+
+	// Difference with resize(0): 
+	// This function will free the space occupied by rep,
+	// while resize(0) will not.	
+	void clear() { 
+		if (!--rep->refCount){
+			delete rep;
+			rep = new ResizeArrayRaw<Elem>();
+			rep->resize(0);
+			rep->refCount = 1; 
+		}
+	}
 };
 
 #endif

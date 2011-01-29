@@ -417,7 +417,7 @@ void ParallelIOMgr::integrateClusterSize()
     }
     numRemoteReqs = csmBuf.size();
     csmBuf.resize(0);
-
+    
     //There's a possible msg race problem here that recvFinalClusterSize 
     //executes before integrateClusterSize because other proc finishes faster
     //in calculating the cluster size. The recvFinalClusterSize should be
@@ -536,10 +536,11 @@ void ParallelIOMgr::migrateAtomsMGrp()
             memcpy(msg->atomList, migLists[i].begin(), sizeof(InputAtom)*migLen);
             int destRank = i-maxOffset+myInputRank;
             pIO[inputProcArray[destRank]].recvAtomsMGrp(msg);
+            migLists[i].clear();
         }
     }
-
-    toMigrateList.resize(0);
+    
+    toMigrateList.clear();
     delete [] migLists;
 }
 
@@ -559,7 +560,7 @@ void ParallelIOMgr::integrateMigratedAtoms()
         tmpRecvAtoms[i].isValid = true;
         initAtoms.add(tmpRecvAtoms[i]);
     }
-    tmpRecvAtoms.resize(0);
+    tmpRecvAtoms.clear();
 
     //sort atom list based on hydrogenList value
     std::sort(initAtoms.begin(), initAtoms.end());
@@ -989,6 +990,7 @@ void ParallelIOMgr::calcAtomsInEachPatch()
     int numPatches = patchMap->numPatches();
 
     patchMap->initTmpPatchAtomsList();
+
     //each list contains the atom index to the initAtoms
     vector<int> *eachPatchAtomList = patchMap->getTmpPatchAtomsList();
 
@@ -1138,6 +1140,8 @@ void ParallelIOMgr::sendAtomsToHomePatchProcs()
             }
         }
         pIO[i].recvAtomsToHomePatchProcs(msg);
+
+        procList[i].clear();
     }
 
     //clean up to free space
@@ -1145,7 +1149,7 @@ void ParallelIOMgr::sendAtomsToHomePatchProcs()
     patchMap->delTmpPatchAtomsList();
 
     //free the space occupied by the list that contains the input atoms
-    initAtoms.resize(0);
+    initAtoms.clear();
 #endif
 }
 
@@ -1249,8 +1253,9 @@ void ParallelIOMgr::createHomePatches()
         patchMgr->createHomePatch(pid, hpAtomsList[i]);
     }
 
-    hpIDList.resize(0);
+    hpIDList.clear();   
     delete [] hpAtomsList;
+
     hpAtomsList = NULL;
 #endif
 }
@@ -1503,7 +1508,7 @@ void ParallelIOMgr::integrateClusterCoor(){
         }
         pIO[outputProcArray[msg->srcRank]].recvFinalClusterCoor(msg);
     }
-    ccmBuf.resize(0);
+    ccmBuf.resize(0);    
 
     //It's possible that recvFinalClusterCoor is executed before integrateClusterCoor
     //on this processor (the other proc executes faster in doing wrapCoor). So avoid
