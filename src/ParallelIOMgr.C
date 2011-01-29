@@ -90,7 +90,11 @@ void ParallelIOMgr::initialize(Node *node)
 
     if(!CkMyPe()) {
         iout << iINFO << "Running with " <<numInputProcs<<" input processors.\n"<<endi;
+        #if OUTPUT_SINGLE_FILE
         iout << iINFO << "Running with " <<numOutputProcs<<" output processors ("<<numOutputWrts<<" of them will output simultaneously).\n"<<endi;
+        #else
+        iout << iINFO << "Running with " <<numOutputProcs<<" output processors, and each of them will output to its own separate file.\n"<<endi;
+        #endif
     }
 
     //build inputProcArray
