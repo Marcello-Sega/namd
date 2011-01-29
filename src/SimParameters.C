@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/01/26 22:36:31 $
- * $Revision: 1.1319 $
+ * $Author: jim $
+ * $Date: 2011/01/29 15:57:23 $
+ * $Revision: 1.1320 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -40,11 +40,13 @@
 #if defined(WIN32) && !defined(__CYGWIN__)
 #include <direct.h>
 #define CHDIR _chdir
+#define MKDIR(X) mkdir(X)
 #define PATHSEP '\\'
 #define PATHSEPSTR "\\"
 #else
 #include <unistd.h>
 #define CHDIR chdir
+#define MKDIR(X) mkdir(X,0777)
 #define PATHSEP '/'
 #define PATHSEPSTR "/"
 #endif
@@ -4968,7 +4970,7 @@ void SimParameters::create_output_directories(const char *dirname){
 	strcpy(filename, outputFilename);
 	struct stat st;
 	if(stat(filename, &st)!=0) {
-		int ret = mkdir(filename, 0777);
+		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
 			sprintf(errmsg, "Error in creating top-level directory %s!", filename);
@@ -4981,7 +4983,7 @@ void SimParameters::create_output_directories(const char *dirname){
 	strcat(filename, dirname);
 	//check if the directory exists or not	
 	if(stat(filename, &st)!=0) {
-		int ret = mkdir(filename, 0777);
+		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
 			sprintf(errmsg, "Error in creating middle-level directory %s!", filename);
@@ -4995,7 +4997,7 @@ void SimParameters::create_output_directories(const char *dirname){
 		memset(tmpstr, 0, 256);
 		sprintf(tmpstr, "%s%s%d", filename, PATHSEPSTR, i);
 		if(stat(tmpstr, &st)!=0) {
-			int ret = mkdir(tmpstr, 0777);
+			int ret = MKDIR(tmpstr);
 			if(ret!=0) {
 				char errmsg[512];
 				sprintf(errmsg, "Error in creating last-level directory %s!", tmpstr);

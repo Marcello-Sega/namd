@@ -39,8 +39,10 @@
 
 #if defined(WIN32) && !defined(__CYGWIN__)
 #define PATHSEPSTR "\\"
+#define MKDIR(X) mkdir(X)
 #else
 #define PATHSEPSTR "/"
+#define MKDIR(X) mkdir(X,0777)
 #endif
 
 #define NAMD_write NAMD_write64
@@ -1792,7 +1794,7 @@ char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
 	//check if the directory exists or not
 	struct stat st;
 	if(stat(filename, &st)!=0) {
-		int ret = mkdir(filename, 0777);
+		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
 			sprintf(errmsg, "Error in creating top-level directory %s!", filename);
@@ -1805,7 +1807,7 @@ char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
 
 	//check if the directory exists or not	
 	if(stat(filename, &st)!=0) {
-		int ret = mkdir(filename, 0777);
+		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
 			sprintf(errmsg, "Error in creating middle-level directory %s!", filename);
@@ -1831,7 +1833,7 @@ char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
 		strcat(filename, tmpstr);
 		#if 0
 		if(stat(filename, &st)!=0) {
-			int ret = mkdir(filename, 0777);
+			int ret = MKDIR(filename);
 			if(ret!=0) {
 				char errmsg[512];
 				sprintf(errmsg, "Error in creating last-level directory %s!", filename);
