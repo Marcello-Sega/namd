@@ -621,7 +621,7 @@ int tcl_readplugin(ClientData data, Tcl_Interp *interp,
       curarg++;
       if (curarg<argc) {
         segid = strtoupper(argv[curarg], psf->all_caps);
-        sprintf(msg, "Info: read mode: coordinates for segment %s, segid");
+        sprintf(msg, "Info: read mode: coordinates for segment %s", segid);
         newhandle_msg(interp,msg);
       }
     } else if (!strcmp(argv[curarg], "coordinatesonly")) {
