@@ -984,21 +984,34 @@ int topo_mol_write_plugin(topo_mol *mol, const char *pluginname,
     }
   }
 
-  for ( ia = 0; ia < images->na; ++ia ) {
-    for ( ib = 0; ib < images->nb; ++ib ) {
-      for ( ic = 0; ic < images->nc; ++ic ) {
-        double offx, offy, offz;
-        if ( ia == 0 && ib == 0 && ic == 0 ) continue;
-        offx = ia * images->ax + ib * images->bx + ic * images->cx;
-        offy = ia * images->ay + ib * images->by + ic * images->cy;
-        offz = ia * images->az + ib * images->bz + ic * images->cz;
-        memcpy(&atomarray[atomid], atomarray, nmolatoms*sizeof(molfile_atom_t));
-        for ( ii=0 ; ii < nmolatoms; ++ii, ++atomid ) {
-          atomcoords[atomid*3    ] = atomcoords[ii*3]     + offx;
-          atomcoords[atomid*3 + 1] = atomcoords[ii*3 + 1] + offy;
-          atomcoords[atomid*3 + 2] = atomcoords[ii*3 + 2] + offz;
+  {
+    double sa, sb, sc, offx, offy, offz;
+    sa = 0.5 * (images->na - 1.);
+    sb = 0.5 * (images->nb - 1.);
+    sc = 0.5 * (images->nc - 1.);
+    for ( ia = 0; ia < images->na; ++ia ) {
+      for ( ib = 0; ib < images->nb; ++ib ) {
+        for ( ic = 0; ic < images->nc; ++ic ) {
+          if ( ia == 0 && ib == 0 && ic == 0 ) continue;
+          offx = (ia-sa) * images->ax + (ib-sb) * images->bx + (ic-sc) * images->cx;
+          offy = (ia-sa) * images->ay + (ib-sb) * images->by + (ic-sc) * images->cy;
+          offz = (ia-sa) * images->az + (ib-sb) * images->bz + (ic-sc) * images->cz;
+          memcpy(&atomarray[atomid], atomarray, nmolatoms*sizeof(molfile_atom_t));
+          for ( ii=0 ; ii < nmolatoms; ++ii, ++atomid ) {
+            atomcoords[atomid*3    ] = atomcoords[ii*3]     + offx;
+            atomcoords[atomid*3 + 1] = atomcoords[ii*3 + 1] + offy;
+            atomcoords[atomid*3 + 2] = atomcoords[ii*3 + 2] + offz;
+          }
         }
       }
+    }
+    offx = sa * images->ax + sb * images->bx + sc * images->cx;
+    offy = sa * images->ay + sb * images->by + sc * images->cy;
+    offz = sa * images->az + sb * images->bz + sc * images->cz;
+    for ( ii=0 ; ii < nmolatoms; ++ii) {
+      atomcoords[ii*3]     -= offx;
+      atomcoords[ii*3 + 1] -= offy;
+      atomcoords[ii*3 + 2] -= offz;
     }
   }
 
