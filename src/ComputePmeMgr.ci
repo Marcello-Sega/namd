@@ -20,6 +20,13 @@ module ComputePmeMgr {
     PmeReduction evir[];
   };
 
+  nodegroup PmePencilMapData {
+    entry PmePencilMapData(int n, int d[n]);
+  };
+  group PmePencilMap : CkArrayMap {
+    entry PmePencilMap(int i_a, int i_b, int n_b, CProxy_PmePencilMapData dp);
+  };
+
   message PmePencilInitMsg;
 
   array [3D] PmeZPencil {
@@ -46,8 +53,8 @@ module ComputePmeMgr {
           }
         }
       }
-      // atomic CkPrintf("pencil %d %d receiving from %d nodes\n",
-      //       thisIndex.x, thisIndex.y, grid_msgs.size());
+      // atomic { CkPrintf("pencil %d %d receiving from %d nodes\n",
+      //       thisIndex.x, thisIndex.y, grid_msgs.size()); }
 
       // ready to go
       while ( 1 ) {

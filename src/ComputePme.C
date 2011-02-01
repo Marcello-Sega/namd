@@ -85,6 +85,55 @@ public:
 
 };
 
+class PmePencilMapData : public CBase_PmePencilMapData {
+public:
+  PmePencilMapData(int n, int *d) : size(n), data(newcopyint(n,d)) { }
+  ~PmePencilMapData() { delete [] data; }
+  const int* const data;
+  const int size;
+private:
+  static int* newcopyint(int n, int *d) {
+    int *newd = new int[n];
+    memcpy(newd, d, n*sizeof(int));
+    return newd;
+  }
+};
+
+class PmePencilMap : public CBase_PmePencilMap {
+public:
+  PmePencilMap(int i_a, int i_b, int n_b, CProxy_PmePencilMapData dp)
+    : ia(i_a), ib(i_b), nb(n_b),
+      size(dp.ckLocalBranch()->size),
+      data(dp.ckLocalBranch()->data) {
+  }
+  virtual int registerArray(CkArrayIndexMax&, CkArrayID) {
+    //Return an ``arrayHdl'', given some information about the array
+    return 0;
+  }
+  virtual int procNum(int, const CkArrayIndex &i) {
+    //Return the home processor number for this element of this array
+    return data[ i.data()[ia] * nb + i.data()[ib] ];
+  }
+  virtual void populateInitial(int, CkArrayIndexMax &, void *msg, CkArrMgr *mgr) {
+    int mype = CkMyPe();
+    for ( int i=0; i < size; ++i ) {
+      if ( data[i] == mype ) {
+        CkArrayIndex3D ai(0,0,0);
+        ai.data()[ia] = i / nb;
+        ai.data()[ib] = i % nb;
+        if ( procNum(0,ai) != mype ) NAMD_bug("PmePencilMap is inconsistent");
+        if ( ! msg ) NAMD_bug("PmePencilMap multiple pencils on a pe?");
+        mgr->insertInitial(ai,msg);
+        msg = 0;
+      }
+    }
+    mgr->doneInserting();
+    if ( msg ) CkFreeMsg(msg);
+  }
+private:
+  const int ia, ib, nb, size;
+  const int* const data;
+};
 
 // use this idiom since messages don't have copy constructors
 struct PmePencilInitMsgData {
@@ -692,6 +741,27 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
 	// creating the pencil arrays
 	if ( CkMyPe() == 0 ){
+#if 1
+	CProxy_PmePencilMapData xd,yd,zd;
+        zd = CProxy_PmePencilMapData::ckNew(xBlocks*yBlocks,zprocs.begin());
+        yd = CProxy_PmePencilMapData::ckNew(zBlocks*xBlocks,yprocs.begin());
+        xd = CProxy_PmePencilMapData::ckNew(yBlocks*zBlocks,xprocs.begin());
+        CProxy_PmePencilMap xm,ym,zm;
+        zm = CProxy_PmePencilMap::ckNew(0,1,yBlocks,zd);
+        ym = CProxy_PmePencilMap::ckNew(2,0,xBlocks,yd);
+        xm = CProxy_PmePencilMap::ckNew(1,2,zBlocks,xd);
+        CkArrayOptions zo(xBlocks,yBlocks,1);  zo.setMap(zm);
+        CkArrayOptions yo(xBlocks,1,zBlocks);  yo.setMap(ym);
+        CkArrayOptions xo(1,yBlocks,zBlocks);  xo.setMap(xm);
+#if CHARM_VERSION > 60301
+        zo.setAnytimeMigration(false);  zo.setStaticInsertion(true);
+        yo.setAnytimeMigration(false);  yo.setStaticInsertion(true);
+        xo.setAnytimeMigration(false);  xo.setStaticInsertion(true);
+#endif
+        zPencil = CProxy_PmeZPencil::ckNew(zo);  // (xBlocks,yBlocks,1);
+        yPencil = CProxy_PmeYPencil::ckNew(yo);  // (xBlocks,1,zBlocks);
+        xPencil = CProxy_PmeXPencil::ckNew(xo);  // (1,yBlocks,zBlocks);
+#else
 		zPencil = CProxy_PmeZPencil::ckNew();  // (xBlocks,yBlocks,1);
       	yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
       	xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
@@ -714,6 +784,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	  			xPencil(0,y,z).insert(xprocs[pe]);
 			}
 		xPencil.doneInserting();     
+#endif
 
 		pmeProxy.recvArrays(xPencil,yPencil,zPencil);
 		PmePencilInitMsgData msgdata;
