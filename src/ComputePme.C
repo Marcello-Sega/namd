@@ -1805,13 +1805,11 @@ void ComputePme::sendPencils() {
     int fcount = 0;
     for ( int g=0; g<numGrids; ++g ) {
       char *f = f_arr + g*fsize;
-      int fcount_g = 0;
       for ( int i=ibegin; i<iend; ++i ) {
        for ( int j=jbegin; j<jend; ++j ) {
-        fcount_g += ( f[i*dim2+j] ? 1 : 0 );
+        fcount += f[i*dim2+j];
        }
       }
-      fcount += fcount_g;
     }
 
 #ifdef NETWORK_PROGRESS
@@ -1984,11 +1982,9 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
     int g;
     for ( g=0; g<numGrids; ++g ) {
       char *f = f_arr + fstart + g*fsize;
-      int fcount_g = 0;
       for ( i=0; i<flen; ++i ) {
-        fcount_g += ( f[i] ? 1 : 0 );
+        fcount += f[i];
       }
-      fcount += fcount_g;
       if ( ! recipPeDest[pe] ) {
         int errfound = 0;
         for ( i=0; i<flen; ++i ) {
