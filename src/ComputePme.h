@@ -39,6 +39,8 @@ public:
   BigReal elecLambdaDown;
   
   double **q_arr;
+  double **q_list;
+  int q_count;
   char *f_arr;
   char *fz_arr;
   PmeReduction evir[PME_MAX_EVALS];

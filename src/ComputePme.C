@@ -258,6 +258,12 @@ bool generateBGLORBPmePeList(int *pemap, int numPes, int *block_pes=0,
 			     int nbpes=0);
 #endif
 
+struct ijpair {
+  int i,j;
+  ijpair() {;}
+  ijpair(int I, int J) : i(I), j(J) {;}
+};
+
 class ComputePmeMgr : public BOCclass {
 public:
   friend class ComputePme;
@@ -354,6 +360,7 @@ private:
   CProxy_PmeYPencil yPencil;
   CProxy_PmeZPencil zPencil;
   char *pencilActive;
+  ijpair *activePencils;
   int numPencilsActive;
 };
 
@@ -1033,6 +1040,17 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
       }
     }
   }
+  activePencils = new ijpair[numPencilsActive];
+  numPencilsActive = 0;
+  for ( int i=0; i<xBlocks; ++i ) {
+    for ( int j=0; j<yBlocks; ++j ) {
+      if ( pencilActive[i*yBlocks+j] ) {
+        activePencils[numPencilsActive++] = ijpair(i,j);
+      }
+    }
+  }
+  Random rand(CkMyPe());
+  rand.reorder(activePencils,numPencilsActive);
   //if ( numPencilsActive ) {
   //  CkPrintf("node %d sending to %d pencils\n", CkMyPe(), numPencilsActive);
   //}
@@ -1445,7 +1463,11 @@ ComputePme::ComputePme(ComputeID c) :
   fsize = myGrid.K1 * myGrid.dim2;
   q_arr = new double*[fsize*numGrids];
   memset( (void*) q_arr, 0, fsize*numGrids * sizeof(double*) );
+  q_list = new double*[fsize*numGrids];
+  memset( (void*) q_list, 0, fsize*numGrids * sizeof(double*) );
+  q_count = 0;
   f_arr = new char[fsize*numGrids];
+  memset( (void*) f_arr, 2, fsize*numGrids * sizeof(char) );
   fz_arr = new char[myGrid.K3];
 }
 
@@ -1457,6 +1479,7 @@ ComputePme::~ComputePme()
     }
   }
   delete [] q_arr;
+  delete [] q_list;
   delete [] f_arr;
   delete [] fz_arr;
 }
@@ -1644,6 +1667,12 @@ void ComputePme::doWork()
 
   memset( (void*) fz_arr, 0, myGrid.K3 * sizeof(char) );
 
+  for (int i=0; i<q_count; ++i) {
+    memset( (void*) (q_list[i]), 0, myGrid.dim3 * sizeof(double) );
+  }
+
+  strayChargeErrors = 0;
+
   // calculate self energy
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
   for ( g=0; g<numGrids; ++g ) {
@@ -1664,17 +1693,52 @@ void ComputePme::doWork()
     evir[g][0] += selfEnergy;
 
     double **q = q_arr + g*fsize;
-    for (i=0; i<fsize; ++i) {
-      if ( q[i] ) {
-        memset( (void*) (q[i]), 0, myGrid.dim3 * sizeof(double) );
+    char *f = f_arr + g*fsize;
+
+    if ( myMgr->usePencils ) {
+      int xBlocks = myMgr->xBlocks;
+      int yBlocks = myMgr->yBlocks;
+      int K1 = myGrid.K1;
+      int K2 = myGrid.K2;
+      int block1 = ( K1 + xBlocks - 1 ) / xBlocks;
+      int block2 = ( K2 + yBlocks - 1 ) / yBlocks;
+      int dim2 = myGrid.dim2;
+      const ijpair *activePencils = myMgr->activePencils;
+      const int numPencilsActive = myMgr->numPencilsActive;
+      for (int ap=0; ap<numPencilsActive; ++ap) {
+        int ib = activePencils[ap].i;
+        int jb = activePencils[ap].j;
+        int ibegin = ib*block1;
+        int iend = ibegin + block1;  if ( iend > K1 ) iend = K1;
+        int jbegin = jb*block2;
+        int jend = jbegin + block2;  if ( jend > K2 ) jend = K2;
+        int flen = numGrids * (iend - ibegin) * (jend - jbegin);
+        for ( int i=ibegin; i<iend; ++i ) {
+          for ( int j=jbegin; j<jend; ++j ) {
+            f[i*dim2+j] = 0;
+          }
+        }
+      }
+    } else {
+      int numRecipPes = myMgr->numGridPes;
+      int block1 = ( myGrid.K1 + numRecipPes - 1 ) / numRecipPes;
+      bsize = block1 * myGrid.dim2 * myGrid.dim3;
+      for (int pe=0; pe<numRecipPes; pe++) {
+        if ( ! myMgr->recipPeDest[pe] ) continue;
+        int start = pe * bsize;
+        int len = bsize;
+        if ( start >= qsize ) { start = 0; len = 0; }
+        if ( start + len > qsize ) { len = qsize - start; }
+        int zdim = myGrid.dim3;
+        int fstart = start / zdim;
+        int flen = len / zdim;
+        memset(f + fstart, 0, flen*sizeof(char));
       }
     }
 
-    char *f = f_arr + g*fsize;
-    memset( (void*) f, 0, fsize * sizeof(char) );
     myRealSpace[g] = new PmeRealSpace(myGrid,numGridAtoms[g]);
     scale_coordinates(localGridData[g], numGridAtoms[g], lattice, myGrid);
-    myRealSpace[g]->fill_charges(q, f, fz_arr, localGridData[g]);
+    myRealSpace[g]->fill_charges(q, q_list, q_count, strayChargeErrors, f, fz_arr, localGridData[g]);
   }
 
 #ifdef TRACE_COMPUTE_OBJECTS
@@ -1720,48 +1784,38 @@ void ComputePme::sendPencils() {
 
   resultsRemaining = myMgr->numPencilsActive;
   const char *pencilActive = myMgr->pencilActive;
+  const ijpair *activePencils = myMgr->activePencils;
+  const int numPencilsActive = myMgr->numPencilsActive;
 
-  strayChargeErrors = 0;
   // int savedMessages = 0;
 
-  for (int ib=0; ib<xBlocks; ++ib) {
-   for (int jb=0; jb<yBlocks; ++jb) {
+  for (int ap=0; ap<numPencilsActive; ++ap) {
+    int ib = activePencils[ap].i;
+    int jb = activePencils[ap].j;
     int ibegin = ib*block1;
     int iend = ibegin + block1;  if ( iend > K1 ) iend = K1;
     int jbegin = jb*block2;
     int jend = jbegin + block2;  if ( jend > K2 ) jend = K2;
     int flen = numGrids * (iend - ibegin) * (jend - jbegin);
-    int fcount = 0;
 
+    int fcount = 0;
     for ( int g=0; g<numGrids; ++g ) {
       char *f = f_arr + g*fsize;
       int fcount_g = 0;
       for ( int i=ibegin; i<iend; ++i ) {
        for ( int j=jbegin; j<jend; ++j ) {
-        fcount_g += ( f[i*dim2+j] ? 1 : 0 );
+        fcount_g += ( f[i*dim2+j] == 1 ? 1 : 0 );
        }
       }
       fcount += fcount_g;
-      if ( ! pencilActive[ib*yBlocks+jb] ) {
-        if ( fcount_g ) {
-          ++strayChargeErrors;
-          iout << iERROR << "Stray PME grid charges detected: "
-		<< CkMyPe() << " sending to (x,y)";
-          for ( int i=ibegin; i<iend; ++i ) {
-           for ( int j=jbegin; j<jend; ++j ) {
-            if ( f[i*dim2+j] ) { iout << " (" << i << "," << j << ")"; }
-           }
-          }
-          iout << "\n" << endi;
-        }
-      }
     }
 
 #ifdef NETWORK_PROGRESS
     CmiNetworkProgress();
 #endif
 
-    if ( ! pencilActive[ib*yBlocks+jb] ) continue;
+    if ( ! pencilActive[ib*yBlocks+jb] )
+      NAMD_bug("PME activePencils list inconsistent");
 
     int zlistlen = 0;
     for ( int i=0; i<myGrid.K3; ++i ) {
@@ -1796,12 +1850,14 @@ void ComputePme::sendPencils() {
       char *f = f_arr + g*fsize;
       double **q = q_arr + g*fsize;
       for ( int i=ibegin; i<iend; ++i ) {
-       for ( int j=jbegin; j<jend; ++j ) {
-        *(fmsg++) = f[i*dim2+j];
-        if( f[i*dim2+j] ) {
+       for ( int j=jbegin; j<jend; ++j, ++fmsg ) {
+        if( f[i*dim2+j] == 1 ) {
+          *fmsg = 1;
           for ( int k=0; k<zlistlen; ++k ) {
             *(qmsg++) = q[i*dim2+j][zlist[k]];
           }
+        } else {
+          *fmsg = 0;
         }
        }
       }
@@ -1813,18 +1869,46 @@ void ComputePme::sendPencils() {
     msg->sequence = sequence();
     SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
     myMgr->zPencil(ib,jb,0).recvGrid(msg);
+  }
+
+  if ( strayChargeErrors ) {
+   iout << iERROR << "Stray PME grid charges detected: "
+ 	<< CkMyPe() << " sending to (x,y)";
+   for (int ib=0; ib<xBlocks; ++ib) {
+    for (int jb=0; jb<yBlocks; ++jb) {
+     int ibegin = ib*block1;
+     int iend = ibegin + block1;  if ( iend > K1 ) iend = K1;
+     int jbegin = jb*block2;
+     int jend = jbegin + block2;  if ( jend > K2 ) jend = K2;
+     int flen = numGrids * (iend - ibegin) * (jend - jbegin);
+
+     for ( int g=0; g<numGrids; ++g ) {
+       char *f = f_arr + g*fsize;
+       if ( ! pencilActive[ib*yBlocks+jb] ) {
+           for ( int i=ibegin; i<iend; ++i ) {
+            for ( int j=jbegin; j<jend; ++j ) {
+             if ( f[i*dim2+j] == 3 ) {
+               f[i*dim2+j] = 2;
+               iout << " (" << i << "," << j << ")";
+             }
+            }
+           }
+       }
+     }
+    }
    }
+   iout << "\n" << endi;
   }
 
   // if ( savedMessages ) {
   //   CkPrintf("Pe %d eliminated %d PME messages\n",CkMyPe(),savedMessages);
   // }
 
-  for (int i=0; i<fsize; ++i) {
-    if ( q_arr[i] ) {
-      memset( (void*) (q_arr[i]), -1, myGrid.dim3 * sizeof(double) );
-    }
-  }
+  // for (int i=0; i<fsize; ++i) {
+  //   if ( q_arr[i] ) {
+  //     memset( (void*) (q_arr[i]), -1, myGrid.dim3 * sizeof(double) );
+  //   }
+  // }
 
 }
 
@@ -1886,11 +1970,10 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
 
   resultsRemaining = numRecipPes;
 
-  strayChargeErrors = 0;
-
   CProxy_ComputePmeMgr pmeProxy(CkpvAccess(BOCclass_group).computePmeMgr);
   for (int j=0; j<numRecipPes; j++) {
     int pe = recipPeOrder[j];  // different order
+    if ( ! recipPeDest[pe] && ! strayChargeErrors ) continue;
     int start = pe * bsize;
     int len = bsize;
     if ( start >= qsize ) { start = 0; len = 0; }
@@ -1910,13 +1993,20 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       }
       fcount += fcount_g;
       if ( ! recipPeDest[pe] ) {
-        if ( fcount_g ) {
-          ++strayChargeErrors;
+        int errfound = 0;
+        for ( i=0; i<flen; ++i ) {
+          if ( f[i] == 3 ) {
+            errfound = 1;
+            break;
+          }
+        }
+        if ( errfound ) {
           iout << iERROR << "Stray PME grid charges detected: "
 		<< CkMyPe() << " sending to " << gridPeMap[pe] << " for planes";
           int iz = -1;
           for ( i=0; i<flen; ++i ) {
-            if ( f[i] ) {
+            if ( f[i] == 3 ) {
+              f[i] = 2;
               int jz = (i+fstart)/myGrid.K2;
               if ( iz != jz ) { iout << " " << jz;  iz = jz; }
             }
@@ -1949,16 +2039,19 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
     for ( i=0; i<myGrid.K3; ++i ) {
       if ( fz_arr[i] ) zlist[zlistlen++] = i;
     }
+    char *fmsg = msg->fgrid;
     float *qmsg = msg->qgrid;
     for ( g=0; g<numGrids; ++g ) {
       char *f = f_arr + fstart + g*fsize;
-      CmiMemcpy((void*)(msg->fgrid+g*flen),(void*)f,flen*sizeof(char));
       double **q = q_arr + fstart + g*fsize;
-      for ( i=0; i<flen; ++i ) {
-        if ( f[i] ) {
+      for ( i=0; i<flen; ++i, ++fmsg ) {
+        if( f[i] == 1 ) {
+          *fmsg = 1;
           for ( int k=0; k<zlistlen; ++k ) {
             *(qmsg++) = q[i][zlist[k]];
           }
+        } else {
+          *fmsg = 0;
         }
       }
     }
@@ -2138,7 +2231,7 @@ void ComputePme::ungridForces() {
       Force *f = r->f[Results::slow];
       int numAtoms = (*ap).p->getNumAtoms();
 
-      if ( ! strayChargeErrors && ! simParams->commOnly ) {
+      if ( ! simParams->commOnly ) {
         for(int i=0; i<numAtoms; ++i) {
           f[i].x += results_ptr->x;
           f[i].y += results_ptr->y;

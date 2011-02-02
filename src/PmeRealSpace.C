@@ -38,7 +38,8 @@ void PmeRealSpace::fill_b_spline(PmeParticle p[]) {
   }
 }
 
-void PmeRealSpace::fill_charges(double **q_arr, char *f_arr, char *fz_arr, PmeParticle p[]) {
+void PmeRealSpace::fill_charges(double **q_arr, double **q_arr_list, int &q_arr_count, 
+                       int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]) {
   
   int i, j, k, l;
   int stride;
@@ -46,7 +47,7 @@ void PmeRealSpace::fill_charges(double **q_arr, char *f_arr, char *fz_arr, PmePa
   order = myGrid.order;
 
   if ( order == 4 ) {
-    fill_charges_order4(q_arr, f_arr, fz_arr, p);
+    fill_charges_order4(q_arr, q_arr_list, q_arr_count, stray_count, f_arr, fz_arr, p);
     return;
   }
 
@@ -83,7 +84,13 @@ void PmeRealSpace::fill_charges(double **q_arr, char *f_arr, char *fz_arr, PmePa
 	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
 	double *qline = q_arr[ind2];
 	if ( ! qline ) {
+          if ( f_arr[ind2] ) {
+	    f_arr[ind2] = 3;
+            ++stray_count;
+            continue;
+          }
 	  q_arr[ind2] = qline = new double[dim3];
+          q_arr_list[q_arr_count++] = qline;
 	  memset( (void*) qline, 0, dim3 * sizeof(double) );
 	}
 	f_arr[ind2] = 1;
@@ -155,6 +162,7 @@ void PmeRealSpace::compute_forces(const double * const *q_arr,
 	u2++;
 	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
 	const double *qline = q_arr[ind2];
+	if ( ! qline ) continue;
         for (l=0; l<order; l++) {
 	  double term, m3, d3;
 	  int ind;
@@ -180,7 +188,8 @@ void PmeRealSpace::compute_forces(const double * const *q_arr,
 // this should definitely help the compiler
 #define order 4
 
-void PmeRealSpace::fill_charges_order4(double **q_arr, char *f_arr, char *fz_arr, PmeParticle p[]) {
+void PmeRealSpace::fill_charges_order4(double **q_arr, double **q_arr_list, int &q_arr_count, 
+                       int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]) {
   
   int i, j, k, l;
   int stride;
@@ -261,7 +270,13 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, char *f_arr, char *fz_arr
 	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
 	double *qline = q_arr[ind2];
 	if ( ! qline ) {
+          if ( f_arr[ind2] ) {
+	    f_arr[ind2] = 3;
+            ++stray_count;
+            continue;
+          }
 	  q_arr[ind2] = qline = new double[dim3];
+          q_arr_list[q_arr_count++] = qline;
 	  memset( (void*) qline, 0, dim3 * sizeof(double) );
 	}
 	f_arr[ind2] = 1;
@@ -330,6 +345,7 @@ void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
 	u2++;
 	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
 	const double *qline = q_arr[ind2];
+	if ( ! qline ) continue;
         for (l=0; l<order; l++) {
 	  double term, m3, d3;
 	  int ind;
