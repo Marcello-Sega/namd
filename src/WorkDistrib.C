@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2011/01/27 21:45:46 $
- * $Revision: 1.1214 $
+ * $Date: 2011/02/03 05:47:51 $
+ * $Revision: 1.1215 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1376,14 +1376,21 @@ void WorkDistrib::mapComputeHomeTuples(ComputeType type)
   Node *node = nd.ckLocalBranch();
 
   int numNodes = node->numNodes();
-  PatchIDList basepids;
+  char *isBaseNode = new char[numNodes];
+  memset(isBaseNode,0,numNodes*sizeof(char));
+
+  int numPatches = patchMap->numPatches();
+  for(int j=0; j<numPatches; j++) {
+    isBaseNode[patchMap->basenode(j)] = 1;
+  }
 
   for(int i=0; i<numNodes; i++) {
-    patchMap->basePatchIDList(i,basepids);
-    if ( basepids.size() ) {
+    if ( isBaseNode[i] ) {
       computeMap->storeCompute(i,0,type);
     }
   }
+
+  delete [] isBaseNode;
 }
 
 //----------------------------------------------------------------------
