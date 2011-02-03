@@ -102,21 +102,26 @@ void ProxyPatch::boxClosed(int box) {
     // also denotes end of gbis phase 3
     sendResults();
   } else if ( box == 5) {//end phase 1
-    msg1 = new (numAtoms,PRIORITY_SIZE) ProxyGBISP1ResultMsg;
-    for (int i = 0; i < numAtoms; i++) {
+    //this msg should only have nonzero atoms if flags.doNonbonded
+    int msgAtoms = (flags.doNonbonded) ? numAtoms : 0;
+    msg1 = new (msgAtoms,PRIORITY_SIZE) ProxyGBISP1ResultMsg;
+    for (int i = 0; i < msgAtoms; i++) {
       msg1->psiSum[i] = psiSum[i];
     }
     msg1->patch = patchID;
+    msg1->psiSumLen = msgAtoms;
     msg1->origPe = CkMyPe();
     SET_PRIORITY(msg1,flags.sequence,GB1_PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
     ProxyMgr::Object()->sendResult(msg1);
   } else if ( box == 8) {//end phase 2
-    msg2 = new (numAtoms,PRIORITY_SIZE) ProxyGBISP2ResultMsg;
-    for (int i = 0; i < numAtoms; i++) {
+    //this msg should only have nonzero atoms if flags.doFullElectrostatics
+    int msgAtoms = (flags.doFullElectrostatics) ? numAtoms : 0;
+    msg2 = new (msgAtoms,PRIORITY_SIZE) ProxyGBISP2ResultMsg;
+    for (int i = 0; i < msgAtoms; i++) {
       msg2->dEdaSum[i] = dEdaSum[i];
     }
     msg2->patch = patchID;
-    msg2->dEdaSumLen = numAtoms;
+    msg2->dEdaSumLen = msgAtoms;
     msg2->origPe = CkMyPe();
     SET_PRIORITY(msg2,flags.sequence,GB2_PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
     ProxyMgr::Object()->sendResult(msg2);
@@ -452,7 +457,7 @@ void ProxyPatch::receiveData(ProxyGBISP2DataMsg *msg) {
 }
 
 void ProxyPatch::receiveData(ProxyGBISP3DataMsg *msg) {
-  memcpy(dHdrPrefix.begin(), msg->dHdrPrefix, sizeof(BigReal)*numAtoms);
+  memcpy(dHdrPrefix.begin(), msg->dHdrPrefix, sizeof(BigReal)*msg->dHdrPrefixLen);
   delete msg;
   Patch::gbisP3Ready();
 }

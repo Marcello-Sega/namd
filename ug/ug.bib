@@ -10,8 +10,8 @@
 % RCS INFORMATION:
 %
 %       $RCSfile: ug.bib,v $
-%       $Author: jim $        $Locker:  $                $State: Exp $
-%       $Revision: 1.13 $      $Date: 2010/09/12 21:49:32 $
+%       $Author: dtanner $        $Locker:  $                $State: Exp $
+%       $Revision: 1.14 $      $Date: 2011/02/03 16:41:27 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug.bib,v $
+% Revision 1.14  2011/02/03 16:41:27  dtanner
+% adding users guide chapter for implicit solvent as well as shortening superfluous gbis communication by sending messages of size zero instead of messages of size nAtoms
+%
 % Revision 1.13  2010/09/12 21:49:32  jim
 % update from Jerome Henin
 %
@@ -87,6 +90,8 @@
 @string{JCP = "J.\ Chem.\ Phys."}
 @string{JACS = "J.\ Am. Chem.\ Soc."}
 @string{ANM = "Ann.\ Numer.\ Math."}
+@string{JPC = "J.~Phys.\ Chem."}
+@string{TCA = "Theor\ Chem\ Acc"}
 
 @inproceedings{CRUZ93,
   author={Carolina Cruz-Neira and Dan J. Sandin and Thomas A. DeFanti},
@@ -820,3 +825,62 @@ number=35,
     number = {1}
 }
 
+#GBIS references from dtanner
+@article{BOND64,
+  author = {A. Bondi},
+  title ={van der {Waals} volumes and radii },
+  journal=JPC,
+  volume={68},
+  pages={441--451},
+  year={1964}
+}
+@Article{ONUF04,
+ author = {Alexey Onufriev and Donald Bashford and David A. Case},
+ title = {Exploring Protein Native States and Large-Scale Conformational Changes With a Modified Generalized Born Model},
+ journal = PRO,
+ year = 2004,
+ volume = 55,
+ pages = {383-394},
+}
+@Article{ONUF00,
+ author = {Alexey Onufriev and Doland Bashford and David A. Case},
+ title = {Modification of the Generalised Born Model Suitable for Macromolecules},
+ journal = JPC,
+ year = 2000,
+ volume = 104,
+ pages = {3712-3720},
+}
+@Article{HAWK96,
+ author = {Gregory D. Hawkins and Christopher J. Cramer and Donald G. Truhlar},
+ title = {Parametrized Models of Aqueous Free Energies of Solvation Based on Pairwise Descreening of Solute Atomic Charges from a Dielectric Medium},
+ journal = JPC,
+ year = 1996,
+ volume = 100,
+ pages = {19824-19839},
+}
+@Article{SCHA90,
+ author = {Michael Schaefer and Cornelius Froemmel},
+ title = {A Precise Analytical Method for Calculating the Electrostatic Energy of Macromolecules in Aqueous Solution},
+ journal = JMB,
+ year = 1990,
+ volume = 216,
+ pages = {1045-1066},
+}
+@Article{SRIN99,
+ author = {Jayashree Srinivasan and Megan W. Trevathan and Paul Beroza and David A. Case},
+ title = {Application of a pairwise generalized Born model to proteins and nucleic acids: inclusion of salt eff􏰟ects},
+ journal = TCA,
+ year = 1999,
+ volume = 101,
+ pages = {426-434},
+}
+@Article{STIL90,
+ author = {W. Clark Still and Anna Tempczyk and Ronald C. Hawley and Thomas Hendrickson},
+ title = {Semianalytical Treatment of Solvation for Molecular Mechanics and Dynamics},
+ journal = JACS,
+ year = 1990,
+ volume = 112,
+ pages = {6127-6129},
+}
+
+#end GBIS references from dtanner

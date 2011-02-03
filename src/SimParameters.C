@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/01/29 15:57:23 $
- * $Revision: 1.1320 $
+ * $Author: dtanner $
+ * $Date: 2011/02/03 16:41:23 $
+ * $Revision: 1.1321 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1160,28 +1160,28 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
    /* GBIS generalized born implicit solvent*/
 
-   opts.optionalB("main", "gbis", "Use GB implicit solvent?",
+   opts.optionalB("main", "GBIS", "Use GB implicit solvent?",
       &GBISOn, FALSE);
-   opts.optionalB("main", "gbis_ser", "Use GB implicit solvent?",
+   opts.optionalB("main", "GBISSer", "Use GB implicit solvent?",
       &GBISserOn, FALSE);
 
-   opts.optional("gbis", "solvent_dielectric",
+   opts.optional("GBIS", "solventDielectric",
       "Solvent Dielectric", &solvent_dielectric, 78.5);
-   opts.optional("gbis", "coulomb_radius_offset",
+   opts.optional("GBIS", "intrinsicRadiusOffset",
       "Coulomb Radius Offset", &coulomb_radius_offset, 0.09);
-   opts.optional("gbis", "ion_concentration",
+   opts.optional("GBIS", "ionConcentration",
       "Ion Concentration", &ion_concentration, 0.2); //0.2 mol/L
-   opts.optional("gbis", "gbis_delta",
+   opts.optional("GBIS", "GBISDelta",
       "delta from GBOBC", &gbis_delta, 1.0); //0.8 or 1.0
-   opts.optional("gbis", "gbis_beta",
+   opts.optional("GBIS", "GBISBeta",
       "beta from GBOBC", &gbis_beta, 0.8);   //0.0 or 0.8
-   opts.optional("gbis", "gbis_gamma",
+   opts.optional("GBIS", "GBISGamma",
       "gamma from GBOBC", &gbis_gamma, 4.85);//2.290912 or 4.85
-   opts.optional("gbis", "alpha_cutoff",
+   opts.optional("GBIS", "alphaCutoff",
       "cutoff for calculating effective born radius", &alpha_cutoff, 15);
-   opts.optional("gbis", "alpha_max",
+   opts.optional("GBIS", "alphaMax",
       "maximum allowable born radius", &alpha_max, 30);
-   opts.optional("gbis", "fsMax",
+   opts.optional("GBIS", "fsMax",
       "maximum screened intrinsic radius", &fsMax, 1.728);
 
    //****** BEGIN SMD constraints changes 
@@ -2361,22 +2361,22 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
       //default scaling parameters
       if (!opts.defined("numAtomsSelf")) {
-        numAtomsSelf = 35;
+        numAtomsSelf = 50;
       }
       if (!opts.defined("numAtomsSelf2")) {
-        numAtomsSelf2 = 35;
+        numAtomsSelf2 = 50;
       }
       if (!opts.defined("numAtomsPair")) {
-        numAtomsPair = 35*2;
+        numAtomsPair = 100;
       }
       if (!opts.defined("numAtomsPair2")) {
-        numAtomsPair2 = 35*3;
+        numAtomsPair2 = 150;
       }
       if (!opts.defined("maxSelfPart")) {
-        maxSelfPart = 100;
+        maxSelfPart = 11;
       }
       if (!opts.defined("maxPairPart")) {
-        maxPairPart = 100;
+        maxPairPart = 22;
       }
     }
 

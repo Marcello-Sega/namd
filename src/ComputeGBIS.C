@@ -724,6 +724,7 @@ nops = 0;
   double t2;
   int nops = 0;
 #endif
+  //CkPrintf("GBIS(%3i)[%2i]::P3 %3i(%3i) %3i(%3i)\n",gbisParams->sequence,gbisParams->cid, gbisParams->patchID[0],params->numAtoms[0],gbisParams->patchID[1],params->numAtoms[1]);
 
   register double dx, dy, dz, r2;
   register double r, r_i;

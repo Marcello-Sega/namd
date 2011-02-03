@@ -5614,3 +5614,4 @@ obj/stringhash.o: \
 	sb/src/hasharray.h \
 	sb/src/stringhash.h
 	$(CC) $(SBCFLAGS) $(COPTO)obj/stringhash.o $(COPTC) sb/src/stringhash.c
+

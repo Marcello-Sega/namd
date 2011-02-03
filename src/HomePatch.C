@@ -2098,12 +2098,15 @@ void HomePatch::gbisP2Ready() {
 void HomePatch::gbisP3Ready() {
   if (proxy.size() > 0) {
     CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+    //only nonzero message should be sent for doFullElec
+    int msgAtoms = (flags.doFullElectrostatics) ? numAtoms : 0;
     for (int i = 0; i < proxy.size(); i++) {
       int node = proxy[i];
-      ProxyGBISP3DataMsg *msg = new(numAtoms,PRIORITY_SIZE) ProxyGBISP3DataMsg;
+      ProxyGBISP3DataMsg *msg = new(msgAtoms,PRIORITY_SIZE) ProxyGBISP3DataMsg;
       msg->patch = patchID;
+      msg->dHdrPrefixLen = msgAtoms;
       msg->origPe = CkMyPe();
-      memcpy(msg->dHdrPrefix, dHdrPrefix.begin(), numAtoms*sizeof(BigReal));
+      memcpy(msg->dHdrPrefix, dHdrPrefix.begin(), msgAtoms*sizeof(BigReal));
       msg->destPe = node;
       int seq = flags.sequence;
       int priority = GB3_PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);
@@ -2117,9 +2120,11 @@ void HomePatch::gbisP3Ready() {
 //receive proxy results from phase 1
 void HomePatch::receiveResult(ProxyGBISP1ResultMsg *msg) {
   ++numGBISP1Arrived;
-  for ( int i = 0; i < numAtoms; ++i ) {
-    psiFin[i] += msg->psiSum[i];
-  }
+  //if (flags.doNonbonded) {//msg only has data if doNonbonded
+    for ( int i = 0; i < msg->psiSumLen; ++i ) {
+      psiFin[i] += msg->psiSum[i];
+    }
+  //}
   delete msg;
 
   if (flags.doNonbonded) {
@@ -2143,7 +2148,7 @@ void HomePatch::receiveResult(ProxyGBISP1ResultMsg *msg) {
 void HomePatch::receiveResult(ProxyGBISP2ResultMsg *msg) {
   ++numGBISP2Arrived;
   //accumulate dEda
-  for ( int i = 0; i < numAtoms; ++i ) {
+  for ( int i = 0; i < msg->dEdaSumLen; ++i ) {
     dHdrPrefix[i] += msg->dEdaSum[i];
   }
   delete msg;
