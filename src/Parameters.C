@@ -3636,7 +3636,8 @@ void Parameters::assign_bond_index(char *atom1, char *atom2, Bond *bond_ptr)
     else {
       char err_msg[128];
 
-      sprintf(err_msg, "CAN'T FIND BOND PARAMETERS FOR BOND %s - %s IN PARAMETER FILES", atom1, atom2);
+      sprintf(err_msg, "UNABLE TO FIND BOND PARAMETERS FOR %s %s (ATOMS %i %i)",
+         atom1, atom2, bond_ptr->atom1+1, bond_ptr->atom2+1);
       NAMD_die(err_msg);
     }
   }
@@ -3733,8 +3734,8 @@ void Parameters::assign_angle_index(char *atom1, char *atom2, char*atom3,
   {
     char err_msg[128];
 
-    sprintf(err_msg, "UNABLE TO FIND ANGLE PARAMETERS FOR %s %s %s",
-       atom1, atom2, atom3);
+    sprintf(err_msg, "UNABLE TO FIND ANGLE PARAMETERS FOR %s %s %s (ATOMS %i %i %i)",
+       atom1, atom2, atom3, angle_ptr->atom1+1, angle_ptr->atom2+1, angle_ptr->atom3+1);
 
     if ( notFoundIndex ) {
       angle_ptr->angle_type = notFoundIndex;
@@ -3819,8 +3820,9 @@ void Parameters::assign_dihedral_index(char *atom1, char *atom2, char *atom3,
   {
     char err_msg[128];
 
-    sprintf(err_msg, "CAN'T FIND DIHEDRAL PARAMETERS FOR %s  %s  %s  %s",
-       atom1, atom2, atom3, atom4);
+    sprintf(err_msg, "UNABLE TO FIND DIHEDRAL PARAMETERS FOR %s %s %s %s (ATOMS %i %i %i %i)",
+       atom1, atom2, atom3, atom4, dihedral_ptr->atom1+1, dihedral_ptr->atom2+1,
+       dihedral_ptr->atom3+1, dihedral_ptr->atom4+1);
     
     if ( notFoundIndex ) {
       dihedral_ptr->dihedral_type = notFoundIndex;
@@ -3933,8 +3935,9 @@ void Parameters::assign_improper_index(char *atom1, char *atom2, char *atom3,
   {
     char err_msg[128];
 
-    sprintf(err_msg, "CAN'T FIND IMPROPER PARAMETERS FOR %s  %s  %s  %s",
-       atom1, atom2, atom3, atom4);
+    sprintf(err_msg, "UNABLE TO FIND IMPROPER PARAMETERS FOR %s %s %s %s (ATOMS %i %i %i %i)",
+       atom1, atom2, atom3, atom4, improper_ptr->atom1+1, improper_ptr->atom2+1,
+       improper_ptr->atom3+1, improper_ptr->atom4+1);
     
     NAMD_die(err_msg);
   }
@@ -4057,8 +4060,11 @@ void Parameters::assign_crossterm_index(char *atom1, char *atom2, char *atom3,
   {
     char err_msg[128];
 
-    sprintf(err_msg, "CAN'T FIND CROSSTERM PARAMETERS FOR %s  %s  %s  %s  %s  %s  %s  %s",
-       atom1, atom2, atom3, atom4, atom5, atom6, atom7, atom8);
+    sprintf(err_msg, "UNABLE TO FIND CROSSTERM PARAMETERS FOR %s  %s  %s  %s  %s  %s  %s  %s\n"
+      "(ATOMS %i %i %i %i %i %i %i %i)",
+      atom1, atom2, atom3, atom4, atom5, atom6, atom7, atom8,
+      crossterm_ptr->atom1+1, crossterm_ptr->atom1+2, crossterm_ptr->atom1+3, crossterm_ptr->atom4+1,
+      crossterm_ptr->atom1+5, crossterm_ptr->atom1+6, crossterm_ptr->atom1+7, crossterm_ptr->atom8+1);
     
     NAMD_die(err_msg);
   }

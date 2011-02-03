@@ -1257,14 +1257,14 @@ void Molecule::read_bonds(FILE *fd, Parameters *params)
       strcpy(atom1name, atomNames[atom_nums[1]].atomtype);
     }
 
-    /*  Query the parameter object for the constants for    */
-    /*  this bond            */
-    Bond *b = &(bonds[num_read]);
-    params->assign_bond_index(atom1name, atom2name, b);
-
     /*  Assign the atom indexes to the array element  */
+    Bond *b = &(bonds[num_read]);
     b->atom1=atom_nums[0];
     b->atom2=atom_nums[1];
+
+    /*  Query the parameter object for the constants for    */
+    /*  this bond            */
+    params->assign_bond_index(atom1name, atom2name, b);
 
     /*  Make sure this isn't a fake bond meant for shake in x-plor.  */
     Real k, x0;
@@ -1368,6 +1368,11 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
       strcpy(atom3name, atomNames[atom_nums[0]].atomtype);
     }
 
+    /*  Assign the three atom indices      */
+    angles[num_read].atom1=atom_nums[0];
+    angles[num_read].atom2=atom_nums[1];
+    angles[num_read].atom3=atom_nums[2];
+
     /*  Get the constant values for this bond from the  */
     /*  parameter object          */
     params->assign_angle_index(atom1name, atom2name, 
@@ -1376,11 +1381,6 @@ void Molecule::read_angles(FILE *fd, Parameters *params)
       iout << iWARN << "ALCHEMY MODULE WILL REMOVE ANGLE OR RAISE ERROR\n"
            << endi;
     }
-
-    /*  Assign the three atom indices      */
-    angles[num_read].atom1=atom_nums[0];
-    angles[num_read].atom2=atom_nums[1];
-    angles[num_read].atom3=atom_nums[2];
 
     /*  Make sure this isn't a fake angle meant for shake in x-plor.  */
     Real k, t0, k_ub, r_ub;
@@ -1498,6 +1498,12 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
       num_unique++;
     }
 
+    /*  Assign the atom indexes        */
+    dihedrals[num_unique-1].atom1=atom_nums[0];
+    dihedrals[num_unique-1].atom2=atom_nums[1];
+    dihedrals[num_unique-1].atom3=atom_nums[2];
+    dihedrals[num_unique-1].atom4=atom_nums[3];
+
     /*  Get the constants for this dihedral bond    */
     params->assign_dihedral_index(atom1name, atom2name, 
        atom3name, atom4name, &(dihedrals[num_unique-1]),
@@ -1506,12 +1512,6 @@ void Molecule::read_dihedrals(FILE *fd, Parameters *params)
       iout << iWARN << "ALCHEMY MODULE WILL REMOVE DIHEDRAL OR RAISE ERROR\n"
            << endi;
     }
-
-    /*  Assign the atom indexes        */
-    dihedrals[num_unique-1].atom1=atom_nums[0];
-    dihedrals[num_unique-1].atom2=atom_nums[1];
-    dihedrals[num_unique-1].atom3=atom_nums[2];
-    dihedrals[num_unique-1].atom4=atom_nums[3];
 
     num_read++;
   }
@@ -1622,16 +1622,16 @@ void Molecule::read_impropers(FILE *fd, Parameters *params)
       num_unique++;
     }
 
-    /*  Look up the constants for this bond      */
-    params->assign_improper_index(atom1name, atom2name, 
-       atom3name, atom4name, &(impropers[num_unique-1]),
-       multiplicity);
-
     /*  Assign the atom indexes        */
     impropers[num_unique-1].atom1=atom_nums[0];
     impropers[num_unique-1].atom2=atom_nums[1];
     impropers[num_unique-1].atom3=atom_nums[2];
     impropers[num_unique-1].atom4=atom_nums[3];
+
+    /*  Look up the constants for this bond      */
+    params->assign_improper_index(atom1name, atom2name, 
+       atom3name, atom4name, &(impropers[num_unique-1]),
+       multiplicity);
 
     num_read++;
   }
@@ -1736,11 +1736,6 @@ void Molecule::read_crossterms(FILE *fd, Parameters *params)
       iout << iWARN << "Duplicate cross-term detected.\n" << endi;
     }
 
-    /*  Look up the constants for this bond      */
-    params->assign_crossterm_index(atom1name, atom2name, 
-       atom3name, atom4name, atom5name, atom6name,
-       atom7name, atom8name, &(crossterms[num_read]));
-
     /*  Assign the atom indexes        */
     crossterms[num_read].atom1=atom_nums[0];
     crossterms[num_read].atom2=atom_nums[1];
@@ -1750,6 +1745,11 @@ void Molecule::read_crossterms(FILE *fd, Parameters *params)
     crossterms[num_read].atom6=atom_nums[5];
     crossterms[num_read].atom7=atom_nums[6];
     crossterms[num_read].atom8=atom_nums[7];
+
+    /*  Look up the constants for this bond      */
+    params->assign_crossterm_index(atom1name, atom2name, 
+       atom3name, atom4name, atom5name, atom6name,
+       atom7name, atom8name, &(crossterms[num_read]));
 
     if(!duplicate_bond) num_read++;
   }
@@ -2170,7 +2170,7 @@ void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
                  (atoms[i].mass>=14.0) && (atoms[i].mass<=18.0)){
             atoms[i].status |= OxygenAtom;
         }
-        //Lookk up the vdw constants for this atom
+        //Look up the vdw constants for this atom
         params->assign_vdw_index(atomNames[i].atomtype, &atoms[i]);
     }
 }
@@ -2306,6 +2306,11 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
             numRealDihedrals++;
         }
 
+        thisDihedral->atom1 = atomid[0]-1;
+        thisDihedral->atom2 = atomid[1]-1;
+        thisDihedral->atom3 = atomid[2]-1;
+        thisDihedral->atom4 = atomid[3]-1;
+
         params->assign_dihedral_index(atom1name, atom2name,
                                       atom3name, atom4name, thisDihedral,
                                       multiplicity, simParams->alchOn ? -1 : 0);
@@ -2313,10 +2318,6 @@ void Molecule::plgLoadDihedrals(int *plgDihedrals)
           iout << iWARN << "ALCHEMY MODULE WILL REMOVE DIHEDRAL OR RAISE ERROR\n"
                << endi;
         }
-        thisDihedral->atom1 = atomid[0]-1;
-        thisDihedral->atom2 = atomid[1]-1;
-        thisDihedral->atom3 = atomid[2]-1;
-        thisDihedral->atom4 = atomid[3]-1;
     }
 
     numDihedrals = numRealDihedrals;
@@ -2360,13 +2361,14 @@ void Molecule::plgLoadImpropers(int *plgImpropers)
             numRealImpropers++;
         }
 
-        params->assign_improper_index(atom1name, atom2name,
-                                      atom3name, atom4name, thisImproper,
-                                      multiplicity);
         thisImproper->atom1 = atomid[0]-1;
         thisImproper->atom2 = atomid[1]-1;
         thisImproper->atom3 = atomid[2]-1;
         thisImproper->atom4 = atomid[3]-1;
+
+        params->assign_improper_index(atom1name, atom2name,
+                                      atom3name, atom4name, thisImproper,
+                                      multiplicity);
     }
 
     numImpropers = numRealImpropers;
@@ -2411,13 +2413,8 @@ void Molecule::plgLoadCrossterms(int *plgCterms)
 
         if(duplicate_bond) {
             iout << iWARN <<"Duplicate cross-term detected.\n" << endi;
-        }else
+        } else
             numRealCrossterms++;
-
-        params->assign_crossterm_index(atom1name, atom2name,
-                                       atom3name, atom4name, atom5name,
-                                       atom6name, atom7name, atom8name,
-                                       thisCrossterm);
 
         thisCrossterm->atom1 = atomid[0]-1;
         thisCrossterm->atom2 = atomid[1]-1;
@@ -2427,6 +2424,11 @@ void Molecule::plgLoadCrossterms(int *plgCterms)
         thisCrossterm->atom6 = atomid[5]-1;
         thisCrossterm->atom7 = atomid[6]-1;
         thisCrossterm->atom8 = atomid[7]-1;
+
+        params->assign_crossterm_index(atom1name, atom2name,
+                                       atom3name, atom4name, atom5name,
+                                       atom6name, atom7name, atom8name,
+                                       thisCrossterm);
     }
 
     numCrossterms = numRealCrossterms;
