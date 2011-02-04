@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dtanner $
- * $Date: 2011/02/03 16:41:23 $
- * $Revision: 1.1321 $
+ * $Author: jim $
+ * $Date: 2011/02/04 17:58:44 $
+ * $Revision: 1.1322 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1730,6 +1730,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    // and "parameters" must be specified.
    if (!amberOn && !gromacsOn) {
 #ifndef MEM_OPT_VERSION
+     if (useCompressedPsf)
+       NAMD_die("useCompressedPsf requires memory-optimized build!");
      if (!usePluginIO && !genCompressedPsf && !opts.defined("coordinates"))
        NAMD_die("coordinates not found in the configuration file!");
 #else
