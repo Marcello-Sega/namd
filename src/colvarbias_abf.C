@@ -6,7 +6,6 @@
 #include "colvar.h"
 #include "colvarbias_abf.h"
 
-
 /// ABF bias constructor; parses the config file
 
 colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
@@ -33,6 +32,8 @@ colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
 
   get_keyval (conf, "inputprefix",  input_prefix, std::vector<std::string> ());
   get_keyval (conf, "outputfreq", output_freq, cvm::restart_out_freq);
+  get_keyval (conf, "historyfreq", history_freq, 0);
+  b_history_files = (history_freq > 0);
 
   // ************* checking the associated colvars *******************
 
@@ -94,9 +95,6 @@ colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
 /// Destructor
 colvarbias_abf::~colvarbias_abf()
 {
-  if (gradients_os.good())	gradients_os.close();
-  if (samples_os.good())	samples_os.close();
-
   if (samples) {
     delete samples;
     samples = NULL;
@@ -126,17 +124,9 @@ cvm::real colvarbias_abf::update()
 
     if ( cvm::n_abf_biases == 1 && cvm::n_meta_biases == 0 ) {
       // This is the only ABF bias
-      samples_out_name = cvm::output_prefix + ".count";
-      gradients_out_name = cvm::output_prefix + ".grad";
-      if ( colvars.size() == 1 ) {
-        pmf_out_name = cvm::output_prefix + ".pmf";
-      }
+      output_prefix = cvm::output_prefix;
     } else {
-      samples_out_name = cvm::output_prefix + "." + this->name + ".count";
-      gradients_out_name = cvm::output_prefix + "." + this->name + ".grad";
-      if ( colvars.size() == 1 ) {
-        pmf_out_name = cvm::output_prefix + "." + this->name + ".pmf";
-      }
+      output_prefix = cvm::output_prefix + "." + this->name;
     }
 
     for (size_t i=0; i<colvars.size(); i++) {
@@ -174,7 +164,8 @@ cvm::real colvarbias_abf::update()
 
     // Factor that ensures smooth introduction of the force
     if ( count < full_samples ) {
-      fact = ( count < min_samples) ? 0.0 : (cvm::real (count - min_samples)) / (cvm::real (full_samples - min_samples));
+      fact = ( count < min_samples) ? 0.0 :
+        (cvm::real (count - min_samples)) / (cvm::real (full_samples - min_samples));
     }
 	
     const cvm::real * grad  = &(gradients->value (bin));
@@ -196,28 +187,42 @@ cvm::real colvarbias_abf::update()
 
   if (output_freq && (cvm::step_absolute() % output_freq) == 0) {
     if (cvm::debug()) cvm::log ("ABF bias trying to write gradients and samples to disk");
-    write_gradients_samples ();
+    write_gradients_samples (output_prefix);
+  }
+  if (b_history_files && (cvm::step_absolute() % history_freq) == 0) {
+    write_gradients_samples (output_prefix + ".hist", true);
   }
   return 0.0; // TODO compute bias energy whenever possible (i.e. rarely)
 }
 
-void colvarbias_abf::write_gradients_samples ()
+
+void colvarbias_abf::write_gradients_samples (const std::string &prefix, bool append)
 {
-  samples_os.open (samples_out_name.c_str());
+  std::string  samples_out_name = prefix + ".count";
+  std::string  gradients_out_name = prefix + ".grad";
+  std::ios::openmode mode = (append ? std::ios::app : std::ios::out);
+
+  std::ofstream samples_os;
+  std::ofstream gradients_os;
+
+  samples_os.open (samples_out_name.c_str(), mode);
   if (!samples_os.good()) cvm::fatal_error ("Error opening ABF samples file " + samples_out_name + " for writing");
   samples->write_multicol (samples_os);
   samples_os.close ();
 
-  gradients_os.open (gradients_out_name.c_str());
+  gradients_os.open (gradients_out_name.c_str(), mode);
   if (!gradients_os.good())	cvm::fatal_error ("Error opening ABF gradient file " + gradients_out_name + " for writing");
   gradients->write_multicol (gradients_os);
   gradients_os.close ();
 
-  if ( colvars.size () == 1 ) {
+  if (colvars.size () == 1) {
+    std::string  pmf_out_name = prefix + ".pmf";
+    std::ofstream pmf_os;
     // Do numerical integration and output a PMF
-    pmf_os.open (pmf_out_name.c_str());
+    pmf_os.open (pmf_out_name.c_str(), mode);
     if (!pmf_os.good())	cvm::fatal_error ("Error opening pmf file " + pmf_out_name + " for writing");
     gradients->write_1D_integral (pmf_os);
+    pmf_os << std::endl;
     pmf_os.close ();
   }
   return;

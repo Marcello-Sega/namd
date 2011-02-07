@@ -2052,9 +2052,18 @@ The following parameters can be set in the ABF configuration block
 \item \NAMDCONFWDEF{outputFreq}{(ABF) Frequency (in timesteps) at which ABF data files are refreshed}
   {positive integer}
   {Colvar module restart frequency}
-  {The files containing the free energy gradient estimate and the sampling histogram
-    (and the PMF if the calculation is one-dimensional) are written on disk at the given
+  {The files containing the free energy gradient estimate and sampling histogram
+    (and the PMF in one-dimensional calculations) are written on disk at the given
     time interval.}
+
+\item \NAMDCONFWDEF{historyFreq}{(ABF) Frequency (in timesteps) at which ABF history files are
+  accumulated}
+  {positive integer}
+  {0}
+  {If this number is non-zero, the free energy gradient estimate and sampling histogram
+    (and the PMF in one-dimensional calculations) are appended to files on disk at
+    the given time interval. History file names use the same prefix as output files, with
+    ``\texttt{.hist}'' appended.}
 
 \item \NAMDCONF{inputPrefix}{(ABF) Filename prefix for reading ABF data}
   {list of strings}

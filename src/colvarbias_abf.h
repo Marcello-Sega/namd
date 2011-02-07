@@ -29,10 +29,8 @@ public:
 
 private:
 
-  /// Filenames for human-readable gradient/sample count output (updated at restartFreq and end-of-run)
-  std::string	gradients_out_name;
-  std::string	samples_out_name;
-  std::string	pmf_out_name;		// only used for 1D calculations
+  /// Filename prefix for human-readable gradient/sample count output
+  std::string	output_prefix;
 
   /// Base filename(s) for reading previous gradient data (replaces data from restart file)
   std::vector<std::string> input_prefix;
@@ -43,6 +41,9 @@ private:
   size_t	min_samples;
   /// frequency for updating output files (default: same as restartFreq?)
   int		output_freq;
+  /// Write combined files with a history of all output data?
+  bool      b_history_files;
+  size_t    history_freq;
 
   // Internal data and methods
 
@@ -55,10 +56,7 @@ private:
   colvar_grid_count     *samples;
 
   /// Write human-readable FE gradients and sample count
-  void		  write_gradients_samples ();
-  std::ofstream	  gradients_os;  /// Stream for writing FE gradients to disk
-  std::ofstream	  samples_os;    /// Stream for writing sampling to disk
-  std::ofstream	  pmf_os;		 /// Stream for writing 1D pmf to disk
+  void		  write_gradients_samples (const std::string &prefix, bool append = false);
 
   /// Read human-readable FE gradients and sample count (if not using restart)
   void		  read_gradients_samples ();
