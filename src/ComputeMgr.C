@@ -451,7 +451,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         break;
         /* BEGIN gf */
     case computeGridForceType:
-        c = new ComputeGridForce(i);
+        c = new ComputeGridForce(i,map->computeData[i].pids[0].pid);
         map->registerCompute(i,c);
         c->initialize();
         break;

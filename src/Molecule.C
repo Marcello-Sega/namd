@@ -4647,7 +4647,7 @@ void Molecule::send_Molecule(MOStream *msg){
   // Send the gridforce information, if used
   if (simParams->mgridforceOn)
   {
-    DebugM(3, "Sending gridforce info\n");
+    DebugM(3, "Sending gridforce info\n" << endi);
     msg->put(numGridforceGrids);
     
     for (int grid = 0; grid < numGridforceGrids; grid++) {
@@ -4951,6 +4951,8 @@ void Molecule::receive_Molecule(MIStream *msg){
 	 
 	 msg->get(numGridforceGrids);
 	 
+	 DebugM(3, "numGridforceGrids = " << numGridforceGrids << "\n");
+	 
 	 delete [] numGridforces;
 	 numGridforces = new int[numGridforceGrids];
 	 
@@ -4978,22 +4980,6 @@ void Molecule::receive_Molecule(MIStream *msg){
 	     gridfrcGrid[grid]->unpack(msg);
 	     
 	     grandTotalGrids += gridfrcGrid[grid]->getTotalGrids();
-	 }
-	 
-	 CProxy_ComputeGridForceNodeMgr mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
-	 int startIdx = 0;
-	 for (int grid = 0; grid < numGridforceGrids; grid++) {
-	     int totalGrids = gridfrcGrid[grid]->getTotalGrids();
-	     GridDepositMsg **outmsgs = new GridDepositMsg *[totalGrids];
-	     int num_msgs = gridfrcGrid[grid]->buildDepositMsgs(outmsgs, startIdx, grandTotalGrids);
-	     if (num_msgs != totalGrids) {
-		 NAMD_die("Problem!");
-	     }
-	     startIdx += num_msgs;
-	     for (int i = 0; i < num_msgs; i++) {
-		 mgr[CkMyNode()].depositInitialGrid(outmsgs[i]);
-	     }
-	     delete[] outmsgs;
 	 }
       }
       /* END gf */
@@ -5183,6 +5169,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	mgridParams = mgridParams->next;
     }
     
+    DebugM(3, "numGridforceGrids = " << numGridforceGrids << "\n");
     gridfrcIndexes = new int32*[numGridforceGrids];
     gridfrcParams = new GridforceParams*[numGridforceGrids];
     gridfrcGrid = new GridforceMainGrid*[numGridforceGrids];
@@ -5318,7 +5305,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 	{
 	    NAMD_die("memory allocation failed in Molecule::build_gridforce_params()");
 	}
-
+	
 	//  Loop through all the atoms and find out which ones are constrained
 	for (i=0; i<numAtoms; i++)
 	{
@@ -5448,46 +5435,16 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     
 //        iout << iINFO << "Allocating grid " << gridnum
 //             << "\n" << endi;
-             
+	
+	DebugM(3, "allocating GridforceMainGrid(" << gridnum << ")\n");
 	gridfrcGrid[gridnum] = new GridforceMainGrid(gridnum);
-//	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
-	DebugM(4, "Calling init1\n" << endi);
-	gridfrcGrid[gridnum]->init1(potfilename, simParams, mgridParams);
-	DebugM(4, "Returned from init1\n" << endi);
-//        ComputeGridForceNodeMgr* mgr = CProxy_ComputeGridForceNodeMgr::
-//          ckLocalBranch(CkpvAccess(BOCclass_group).
-//          computeGridForceNodeMgr);
-//      mgr->depositInitialGrid(gridnum,gridfrcGrid[gridnum],numGridforceGrids);
+	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
+	
 	grandTotalGrids += gridfrcGrid[gridnum]->getTotalGrids();
 	DebugM(4, "grandTotalGrids = " << grandTotalGrids << "\n" << endi);
 	
 	// Finally, get next mgridParams pointer
 	mgridParams = mgridParams->next;
-    }
-    
-    CProxy_ComputeGridForceNodeMgr 
-	mgr(CkpvAccess(BOCclass_group).computeGridForceNodeMgr);
-    
-    int startIdx = 0;
-    iout << iINFO << "READ " << numGridforceGrids << " GRIDFORCE " << (numGridforceGrids == 1 ? "GRID\n" : "GRIDS\n") << endi;
-    for (int gridnum = 0; gridnum < numGridforceGrids; gridnum++) {
-	int totalGrids = gridfrcGrid[gridnum]->getTotalGrids();
-	iout << iINFO << "    GRID " << gridnum+1 << ": " << totalGrids-1 << " SUBGRIDS\n" << endi;
-	GridDepositMsg **outmsgs = new GridDepositMsg *[totalGrids];
-	DebugM(4, "Building deposit messages\n" << endi);
-	int num_msgs = gridfrcGrid[gridnum]->buildDepositMsgs(outmsgs, startIdx, grandTotalGrids);
-	if (num_msgs != totalGrids) {
-	    NAMD_die("Problem!");
-	}
-	startIdx += num_msgs;
-	for (int i = 0; i < num_msgs; i++) {
-	    DebugM(4, "Depositing grid " << i+1 << " / " << num_msgs << "\n" << endi);
-	    DebugM(4, "  msg->gridnum = " << outmsgs[i]->gridnum << "\n" << endi);
-	    DebugM(4, "  msg->num_grids = " << outmsgs[i]->num_grids << "\n" << endi);
-	    mgr[CkMyNode()].depositInitialGrid(outmsgs[i]);
-	}
-	delete[] outmsgs;
-	DebugM(4, "Done\n" << endi);
     }
 }
 /* END gf */
