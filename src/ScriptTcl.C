@@ -134,6 +134,33 @@ int ScriptTcl::Tcl_abort(ClientData,
   return TCL_OK;
 }
 
+int ScriptTcl::Tcl_numPes(ClientData, Tcl_Interp *interp, int argc, char **) {
+  if ( argc > 1 ) {
+    Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(CkNumPes()));
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_numNodes(ClientData, Tcl_Interp *interp, int argc, char **) {
+  if ( argc > 1 ) {
+    Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(CkNumNodes()));
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_numPhysicalNodes(ClientData, Tcl_Interp *interp, int argc, char **) {
+  if ( argc > 1 ) {
+    Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(CmiNumPhysicalNodes()));
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   Tcl_DString msg;
@@ -792,6 +819,12 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "exit", Tcl_exit,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "abort", Tcl_abort,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "numPes", Tcl_numPes,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "numNodes", Tcl_numNodes,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "numPhysicalNodes", Tcl_numPhysicalNodes,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);

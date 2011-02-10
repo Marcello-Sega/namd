@@ -50,6 +50,9 @@ private:
   Tcl_Interp *interp;
   static int Tcl_exit(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_abort(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_numPes(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_numNodes(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_numPhysicalNodes(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_config(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_param(ClientData, Tcl_Interp *, int, char **);
