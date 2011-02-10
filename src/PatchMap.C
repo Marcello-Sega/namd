@@ -71,15 +71,11 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
   bAway = bsplit;
   cAway = csplit;
 
-  maxNumPatches *= aAway * bAway * cAway;
-
   int minNumPatches = 1;
   if ( aPeriodic ) minNumPatches *= aAway;
   if ( bPeriodic ) minNumPatches *= bAway;
   if ( cPeriodic ) minNumPatches *= cAway;
   if ( maxNumPatches < minNumPatches ) maxNumPatches = minNumPatches;
-
-  do {
 
   if ( aPeriodic ) {
     BigReal sysDim = lattice.a_r().unit() * lattice.a();
@@ -112,16 +108,51 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
     NAMD_die("Bug in PatchMap::sizeGrid - negative grid dimension.");
   }
 
-  if ( aDim == 0 ) aDim = 1;
-  if ( bDim == 0 ) bDim = 1;
-  if ( cDim == 0 ) cDim = 1;
+  const int amin = (aPeriodic ? aAway : 1);
+  const int bmin = (bPeriodic ? bAway : 1);
+  const int cmin = (cPeriodic ? cAway : 1);
 
-  if ( aPeriodic && aDim < aAway ) aDim = aAway;
-  if ( bPeriodic && bDim < bAway ) bDim = bAway;
-  if ( cPeriodic && cDim < cAway ) cDim = cAway;
+  // CkPrintf("searching %d-away %d-away %d-away max %d\n",aAway,bAway,cAway,(int)maxNumPatches);
 
-  } while ( ( aDim*bDim*cDim > maxNumPatches ) && ( patchSize *= 1.01 ) );
+  if ( aDim < amin ) aDim = amin;
+  if ( bDim < bmin ) bDim = bmin;
+  if ( cDim < cmin ) cDim = cmin;
 
+  if ( maxNumPatches > aDim*bDim*cDim ) {
+    maxNumPatches = aDim*bDim*cDim;
+  }
+
+  int abest = amin;
+  int bbest = bmin;
+  int cbest = cmin;
+  int cdim = maxNumPatches;
+  cdim /= aDim;  cdim /= bDim;
+  if ( cdim < cmin ) cdim = cmin;
+  for ( ; cdim <= cDim; ++cdim ) {
+    int bdim = maxNumPatches;
+    bdim /= aDim;  bdim /= cdim;
+    if ( bdim < bmin ) bdim = bmin;
+    for ( ; bdim <= bDim; ++bdim ) {
+      int adim = maxNumPatches;
+      adim /= bdim;  adim /= cdim;
+      if ( adim < amin ) adim = amin;
+      for ( ; adim <= aDim; ++adim ) {
+        if ( adim*bdim*cdim > maxNumPatches ) break;
+        // CkPrintf("testing %d * %d * %d == %d\n",adim,bdim,cdim,adim*bdim*cdim);
+        if ( adim*bdim*cdim > abest*bbest*cbest ) {
+          abest = adim;  bbest = bdim;  cbest = cdim;
+        }
+        if ( abest*bbest*cbest == maxNumPatches ) break;
+      }
+      if ( abest*bbest*cbest == maxNumPatches ) break;
+    }
+    if ( abest*bbest*cbest == maxNumPatches ) break;
+  }
+  aDim = abest;
+  bDim = bbest;
+  cDim = cbest;
+
+  // CkPrintf("found %d * %d * %d == %d\n",aDim,bDim,cDim,aDim*bDim*cDim);
   return aDim*bDim*cDim;
 }
 

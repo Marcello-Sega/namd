@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2011/01/26 22:36:31 $
- * $Revision: 1.1174 $
+ * $Author: jim $
+ * $Date: 2011/02/10 15:46:17 $
+ * $Revision: 1.1175 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -123,6 +123,7 @@ public:
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension
 	int twoAwayZ;			//  half-size patches in Z dimension
+	int maxPatches;			//  maximum patch count
 	Bool ldbUnloadPME;		//  unload processors doing PME
 	Bool ldbUnloadZero;		//  unload processor 0
 	Bool ldbUnloadOne;		//  unload processor 1 

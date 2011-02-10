@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dbwells2 $
- * $Date: 2011/02/09 20:32:27 $
- * $Revision: 1.1216 $
+ * $Author: jim $
+ * $Date: 2011/02/10 15:46:17 $
+ * $Revision: 1.1217 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -748,7 +748,7 @@ void WorkDistrib::patchMapInit(void)
 
   ScaledPosition xmin, xmax;
 
-  double maxNumPatches = 1000000;  // need to adjust fractional values
+  double maxNumPatches = 1.e9;  // need to adjust fractional values
   if ( params->minAtomsPerPatch > 0 )
 #ifndef MEM_OPT_VERSION
     maxNumPatches = node->pdb->num_atoms() / params->minAtomsPerPatch;
@@ -789,6 +789,16 @@ void WorkDistrib::patchMapInit(void)
   int twoAwayY = params->twoAwayY;
   int twoAwayZ = params->twoAwayZ;
 
+  // if you think you know what you're doing go right ahead
+  if ( twoAwayX > 0 ) maxNumPatches = 1.e9;
+  if ( twoAwayY > 0 ) maxNumPatches = 1.e9;
+  if ( twoAwayZ > 0 ) maxNumPatches = 1.e9;
+  if ( params->maxPatches > 0 ) {
+      maxNumPatches = params->maxPatches;
+      iout << iINFO << "LIMITING NUMBER OF PATCHES TO " <<
+                                maxNumPatches << "\n" << endi;
+  }
+
 #ifdef NAMD_CUDA
   // for CUDA be sure there are more patches than pes
 
@@ -814,7 +824,17 @@ void WorkDistrib::patchMapInit(void)
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
   if ( numPatches < CkNumPes() ) {
-    NAMD_die("CUDA-enabled NAMD requires more patches than processes.");
+    NAMD_die("CUDA-enabled NAMD requires at least one patch per process.");
+  }
+  if ( numPatches <= 1.4 * CkNumPes() ) {
+    int exactFit = numPatches - numPatches % CkNumPes();
+    int newNumPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,exactFit,
+	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
+    if ( newNumPatches == exactFit ) {
+      iout << iINFO << "REDUCING NUMBER OF PATCHES TO IMPROVE LOAD BALANCE\n" << endi;
+      maxNumPatches = exactFit;
+    }
   }
 
   patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
@@ -822,26 +842,46 @@ void WorkDistrib::patchMapInit(void)
 
 #else
 
+  int availPes = CkNumPes();
+  if ( params->noPatchesOnZero && CkNumPes() > 1 ) {
+      availPes -= 1;
+      if(params->noPatchesOnOne && CkNumPes() > 2)
+        availPes -= 1;
+  }
+  int maxShrink = 1.4 * availPes;
+
   int numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
-  if ( numPatches > (CkNumPes() - 1) && twoAwayZ < 0 ) {
+  if ( ( numPatches > maxShrink || numPatches > maxNumPatches
+       ) && twoAwayZ < 0 ) {
     twoAwayZ = 0;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
-  if ( numPatches > (CkNumPes() - 1) && twoAwayY < 0 ) {
+  if ( ( numPatches > maxShrink || numPatches > maxNumPatches
+       ) && twoAwayY < 0 ) {
     twoAwayY = 0;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
-  if ( numPatches > (CkNumPes() - 1) && twoAwayX < 0 ) {
+  if ( ( numPatches > maxShrink || numPatches > maxNumPatches
+       ) && twoAwayX < 0 ) {
     twoAwayX = 0;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
+  }
+  if ( numPatches <= maxShrink && availPes <= maxNumPatches ) {
+    int newNumPatches = patchMap->sizeGrid(
+	xmin,xmax,lattice,patchSize,availPes,
+	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
+    if ( numPatches <= 1.4 * newNumPatches ) {
+      iout << iINFO << "REDUCING NUMBER OF PATCHES TO IMPROVE LOAD BALANCE\n" << endi;
+      maxNumPatches = availPes;
+    }
   }
 
   patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,

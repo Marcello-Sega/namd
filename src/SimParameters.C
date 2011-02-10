@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/02/04 17:58:44 $
- * $Revision: 1.1322 $
+ * $Date: 2011/02/10 15:46:17 $
+ * $Revision: 1.1323 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1561,10 +1561,11 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                   &proxyRecvSpanningTree, -1);
    opts.optionalB("main", "twoAwayX", "half-size patches in 1st dimension",
      &twoAwayX, -1);
-   opts.optionalB("main", "twoAwayY", "half-size patches in 1st dimension",
+   opts.optionalB("main", "twoAwayY", "half-size patches in 2nd dimension",
      &twoAwayY, -1);
-   opts.optionalB("main", "twoAwayZ", "half-size patches in 1st dimension",
+   opts.optionalB("main", "twoAwayZ", "half-size patches in 3rd dimension",
      &twoAwayZ, -1);
+   opts.optional("main", "maxPatches", "maximum patch count", &maxPatches, -1);
 
    /////  Restart timestep option
    opts.optional("main", "firsttimestep", "Timestep to start simulation at",
