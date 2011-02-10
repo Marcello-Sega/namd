@@ -868,6 +868,22 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
 
 }
 
+void ScriptTcl::eval(char *script) {
+
+#ifdef NAMD_TCL
+  int code = Tcl_Eval(interp,script);
+  const char *result = Tcl_GetStringResult(interp);
+  if (*result != 0) CkPrintf("TCL: %s\n",result);
+  if (code != TCL_OK) {
+    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
+    NAMD_die(errorInfo);
+  }
+#else
+  NAMD_bug("ScriptTcl::eval called without Tcl.");
+#endif
+
+}
+
 void ScriptTcl::load(char *scriptFile) {
 
 #ifdef NAMD_TCL
@@ -884,18 +900,11 @@ void ScriptTcl::load(char *scriptFile) {
 
 }
 
+#ifdef NAMD_TCL
+void ScriptTcl::run() {
+#else
 void ScriptTcl::run(char *scriptFile) {
 
-#ifdef NAMD_TCL
-  int code = Tcl_EvalFile(interp,scriptFile);
-  const char *result = Tcl_GetStringResult(interp);
-  if (*result != 0) CkPrintf("TCL: %s\n",result);
-  if (code != TCL_OK) {
-    const char *errorInfo = Tcl_GetVar(interp,"errorInfo",0);
-    NAMD_die(errorInfo);
-  }
-
-#else
   if ( NULL == scriptFile || NULL == (config = new ConfigList(scriptFile)) ) {
     NAMD_die("Simulation config file is empty.");
   }

@@ -53,15 +53,27 @@ void after_backend_init(int argc, char **argv){
   if ( argc < 2 ) {
     NAMD_die("No simulation config file specified on command line.");
   }
+  char *origcwd = GETCWD(0,0);
 #ifdef NAMD_TCL
-  if (argc>2)
-    iout << iINFO << "Found " << (argc-1) << " config files.\n" << endi;
   for(int i = 1; i < argc; ++i) {
+  if ( strstr(argv[i],"--") == argv[i] ) {
+    char buf[1024];
+    if ( i + 1 == argc ) {
+      sprintf(buf, "missing argument for command line option %s", argv[i]);
+      NAMD_die(buf);
+    }
+    sprintf(buf, "%s %s", argv[i]+2, argv[i+1]);
+    iout << iINFO << "Command-line argument is --" << buf << "\n" << endi;
+    script->eval(buf);
+    ++i;
+    continue;
+  }
   char *confFile = argv[i];
 #else
   char *confFile = argv[argc-1];
 #endif
-  char *oldcwd = GETCWD(0,0);
+  iout << iINFO << "Configuration file is " << confFile << "\n" << endi;
+
   char *currentdir=confFile;
   char *tmp;
   for(tmp=confFile;*tmp;++tmp); // find final null
@@ -73,23 +85,24 @@ void after_backend_init(int argc, char **argv){
     for( ; tmp != confFile && *tmp != '/'; --tmp); // find last '/'
   }
 #endif
+  if ( CHDIR(origcwd) ) NAMD_err(origcwd);
   if ( tmp != confFile )
   {
     *tmp = 0; confFile = tmp + 1;
-    if ( CHDIR(currentdir) ) NAMD_die("chdir() failed!");
+    if ( CHDIR(currentdir) ) NAMD_err(currentdir);
     iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
     currentdir = GETCWD(0,0);
   }
   else{
       if ( *tmp == PATHSEP ){ // config file in / is odd, but it might happen
-          if ( CHDIR(PATHSEPSTR) ) NAMD_die("chdir() failed!");
+          if ( CHDIR(PATHSEPSTR) ) NAMD_err(PATHSEPSTR);
       }else{ // just a config file name, so the path is the current working path
           char tmpcurdir[3];
           tmpcurdir[0] = '.';
           tmpcurdir[1] = PATHSEP;
           tmpcurdir[2] = 0;
           currentdir = tmpcurdir;
-          iout << iINFO << "Working in the current directory " << oldcwd << "\n" << endi;
+          iout << iINFO << "Working in the current directory " << origcwd << "\n" << endi;
       }
   }
 
@@ -102,25 +115,20 @@ void after_backend_init(int argc, char **argv){
 
   currentdir = NULL;
 
-  iout << iINFO << "Configuration file is " << confFile << "\n" << endi;
-
   struct stat statBuf;
   if (stat(confFile, &statBuf)) {
     NAMD_die("Simulation config file is not accessible.");
   }
 
 #ifdef NAMD_TCL
-  if ( i == argc - 1 ) script->run(confFile);
-  else script->load(confFile);
+  script->load(confFile);
 #else
   script->run(confFile);
 #endif
 
-  CHDIR(oldcwd);
-//  free(oldcwd);
-
 #ifdef NAMD_TCL
 }
+  script->run();
 #endif
 
   BackEnd::exit();

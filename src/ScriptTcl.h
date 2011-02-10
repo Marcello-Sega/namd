@@ -27,8 +27,13 @@ class ScriptTcl {
 public:
   ScriptTcl();
   ~ScriptTcl();
+  void eval(char *script);
   void load(char *scriptFile);
+#ifdef NAMD_TCL
+  void run();
+#else
   void run(char *scriptFile);
+#endif
   void measure(Vector *);
 private:
   char *scriptFile;
