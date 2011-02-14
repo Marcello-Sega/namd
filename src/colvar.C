@@ -137,8 +137,15 @@ colvar::colvar (std::string const &conf)
   b_inverse_gradients = true;
   b_Jacobian_force    = true;
 
-  this->period = 0.0;
-  b_periodic = false;
+  // Decide whether the colvar is periodic
+  // Note: this info is not currently used by biases
+  if (cvcs.size() == 1 && (cvcs[0])->b_periodic && (cvcs[0])->sup_np == 1) {
+    this->b_periodic = true;
+    this->period = (cvcs[0])->period * (cvcs[0])->sup_coeff;
+  } else {
+    b_periodic = false;
+    this->period = 0.0;
+  }
 
   // check the available features of each cvc
   for (size_t i = 0; i < cvcs.size(); i++) {
@@ -146,25 +153,23 @@ colvar::colvar (std::string const &conf)
     if ((cvcs[i])->sup_np != 1) {
       if (cvm::debug() && b_linear)
         cvm::log ("Warning: You are using a non-linear polynomial "
-                  "superposition to define this collective variable, "
+                  "combination to define this collective variable, "
                   "some biasing methods may be unavailable.\n");
       b_linear = false;
 
       if ((cvcs[i])->sup_np < 0) {
-        cvm::log ("Warning: you chose a negative exponent in the superposition; "
+        cvm::log ("Warning: you chose a negative exponent in the combination; "
                   "if you apply forces, the simulation may become unstable "
                   "when the component \""+
                   (cvcs[i])->function_type+"\" approaches zero.\n");
       }
     }
 
-
-    this->b_periodic = (cvcs[i])->b_periodic;
-    this->period = (cvcs[i])->period;
-
-    if (this->b_periodic && (cvcs.size() > 1)) {
-      cvm::fatal_error ("Error: superposition of periodic "
-                        "components is unsupported.\n");
+    if ((cvcs[i])->b_periodic && !b_periodic) {
+        cvm::log ("Warning: although this component is periodic, the colvar will "
+                  "not be treated as periodic, either because the exponent is not "
+                  "1, or because multiple components are present. Make sure that "
+                  "you know what you are doing!");
     }
 
     if (! (cvcs[i])->b_inverse_gradients)
@@ -186,6 +191,7 @@ colvar::colvar (std::string const &conf)
       }
     }
   }
+
 
   {
     colvarvalue::Type const value_type = (cvcs[0])->type();
@@ -288,15 +294,25 @@ colvar::colvar (std::string const &conf)
       if (ext_tolerance <= 0.0)
         cvm::fatal_error ("Error: \"extendedFluctuation\" must be positive.\n");
       ext_force_k = cvm::boltzmann() * temp / (ext_tolerance * ext_tolerance);
+      cvm::log ("Computed extended system force constant: " + cvm::to_str(ext_force_k) + " kcal/mol/U^2");
 
-      get_keyval (conf, "extendedTimeConstant", ext_period, 20.0 * cvm::dt());
+      get_keyval (conf, "extendedTimeConstant", ext_period, 40.0 * cvm::dt());
       if (ext_period <= 0.0)
         cvm::fatal_error ("Error: \"extendedTimeConstant\" must be positive.\n");
       ext_mass = (cvm::boltzmann() * temp * ext_period * ext_period)
                  / (4.0 * PI * PI * ext_tolerance * ext_tolerance);
+      cvm::log ("Computed fictitious mass: " + cvm::to_str(ext_mass) + " kcal/mol/(U/fs)^2   (U: colvar unit)");
     }
 
-    energy = 0.0;
+    kinetic_energy = 0.0;
+    potential_energy = 0.0;
+    {
+      bool b_output_value;
+      get_keyval (conf, "outputEnergy", b_output_value, true);
+      if (b_output_value) {
+        enable (task_output_energy);
+      }
+    }
   }
 
   {
@@ -474,7 +490,7 @@ void colvar::enable (colvar::task const &t)
                           "\" does not have Jacobian forces implemented.\n");
       if (!b_linear) 
         cvm::fatal_error ("Error: colvar \""+this->name+
-                          "\" must be defined as a linear superposition "
+                          "\" must be defined as a linear combination "
                           "to calculate the Jacobian force.\n");
       if (cvm::debug())
         cvm::log ("Enabling calculation of the Jacobian force "
@@ -488,7 +504,7 @@ void colvar::enable (colvar::task const &t)
       if (!b_inverse_gradients) {
         cvm::fatal_error ("Error: one or more of the components of "
                           "colvar \""+this->name+
-                          "\" is unable to calculate system forces.\n");
+                          "\" does not support system force calculation.\n");
       }
       cvm::request_system_force();
     }
@@ -647,7 +663,7 @@ void colvar::calc()
   x.reset();
   if (x.type() == colvarvalue::type_scalar) {
 
-    // scalar variable, polynomial superposition allowed
+    // scalar variable, polynomial combination allowed
     for (size_t i = 0; i < cvcs.size(); i++) {
       cvm::increase_depth();
       (cvcs[i])->calc_value();
@@ -732,7 +748,7 @@ void colvar::calc()
       // get from the cvcs the system forces from the PREVIOUS step
       for (size_t i = 0; i < cvcs.size(); i++) {
         (cvcs[i])->calc_force_invgrads();
-        // linear superposition is assumed
+        // linear combination is assumed
         cvm::increase_depth();
         ft += (cvcs[i])->system_force() / ((cvcs[i])->sup_coeff * cvm::real (cvcs.size()));
         cvm::decrease_depth();
@@ -843,7 +859,7 @@ cvm::real colvar::update()
 
     fj.reset();
     for (size_t i = 0; i < cvcs.size(); i++) {
-      // linear superposition is assumed
+      // linear combination is assumed
       fj += 1.0 / ( cvm::real (cvcs.size()) *  cvm::real ((cvcs[i])->sup_coeff) ) *
         (cvcs[i])->Jacobian_derivative();
     }
@@ -870,7 +886,8 @@ cvm::real colvar::update()
     // leap frog: starting from x_i, f_i, v_(i-1/2)
     vr  += (0.5 * dt) * fr / ext_mass;
     // Because of leapfrog, kinetic energy at time i is approximate
-    energy = 0.5 * (ext_mass * vr * vr + ext_force_k * this->dist2(xr, x));
+    kinetic_energy = 0.5 * ext_mass * vr * vr;
+    potential_energy = 0.5 * ext_force_k * this->dist2(xr, x);
     vr  += (0.5 * dt) * fr / ext_mass; 
     xr  += dt * vr;
     xr.apply_constraints();
@@ -885,7 +902,7 @@ cvm::real colvar::update()
 
   if (cvm::debug())
     cvm::log ("Done updating colvar \""+this->name+"\".\n");
-  return energy;
+  return (potential_energy + kinetic_energy);
 }
 
 
@@ -1184,6 +1201,13 @@ std::ostream & colvar::write_traj_label (std::ostream & os)
     }
   }
 
+  if (tasks[task_output_energy]) {
+      os << " Ep_"
+         << cvm::wrap_string (this->name, this_cv_width-3)
+         << " Ek_"
+         << cvm::wrap_string (this->name, this_cv_width-3);
+  }
+
   if (tasks[task_output_system_force]) {
 
     os << " fs_"
@@ -1234,6 +1258,15 @@ std::ostream & colvar::write_traj (std::ostream &os)
        << std::setprecision (cvm::cv_prec) << std::setw (cvm::cv_width)
        << v_reported;
   }
+
+  if (tasks[task_output_energy]) {
+      os << " "
+         << std::setprecision (cvm::cv_prec) << std::setw (cvm::cv_width)
+         << potential_energy
+         << " "
+         << kinetic_energy;
+  }
+
 
   if (tasks[task_output_system_force]) {
 

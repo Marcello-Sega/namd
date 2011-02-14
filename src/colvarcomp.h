@@ -71,9 +71,9 @@ public:
   /// provides
   colvarvalue::Type type() const;
 
-  /// \brief Coefficient in the polynomial superposition (default: 1.0)
+  /// \brief Coefficient in the polynomial combination (default: 1.0)
   cvm::real sup_coeff;
-  /// \brief Exponent in the polynomial superposition (default: 1)
+  /// \brief Exponent in the polynomial combination (default: 1)
   int       sup_np;
 
   /// \brief Period of this cvc value, (default: 0.0, non periodic)

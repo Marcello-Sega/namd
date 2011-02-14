@@ -77,7 +77,7 @@ public:
   cvm::real width;
 
   /// \brief True if this \link colvar \endlink is a linear
-  /// superposition of \link cvc \endlink elements
+  /// combination of \link cvc \endlink elements
   bool b_linear;
 
   /// \brief True if all \link cvc \endlink objects are capable
@@ -106,6 +106,9 @@ public:
     /// center with fictitious mass; bias forces will be applied to
     /// the center
     task_extended_lagrangian,
+    /// \brief Output the potential and kinetic energies
+    /// (for extended Lagrangian colvars only)
+    task_output_energy,
     /// \brief Compute analytically the "force" arising from the
     /// largest entropy component (for example, that from the angular
     /// states orthogonal to a distance vector)
@@ -443,8 +446,9 @@ protected:
   /// Calculate the running average and its standard deviation
   void calc_runave();
 
-  /// If extended Lagrangian active: colvar energy (kinetic + harmonic potential)
-  cvm::real energy;
+  /// If extended Lagrangian active: colvar energies (kinetic and harmonic potential)
+  cvm::real kinetic_energy;
+  cvm::real potential_energy;
 public:
 
 
