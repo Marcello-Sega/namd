@@ -54,7 +54,7 @@ ABFdata::ABFdata(const char *gradFileName)
         // format is: xiMin dxi Nbins PBCflag
         gradFile >> mins[i] >> widths[i] >> sizes[i] >> PBC[i];
         std::cout << "min = " << mins[i] << " width = " << widths[i]
-            << " n = " << sizes[i] << " PBC: " << PBC[i] << "\n";
+            << " n = " << sizes[i] << " PBC: " << (PBC[i]?"yes":"no") << "\n";
 
         if (sizes[i] == 0) {
             std::cout << "ERROR: size should not be zero!\n";
