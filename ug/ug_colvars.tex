@@ -658,8 +658,8 @@ illegal elsewhere):
 \item %
   \NAMDCONFWDEF{%
     wrapAround}{%
-    (\texttt{distanceZ}, \texttt{dihedral} or \texttt{spinAngle}) Wrap
-    periodic variables around this value}{%
+    (\texttt{distanceZ}, \texttt{dihedral} or \texttt{spinAngle}) Center
+    of the wrapping interval for periodic variables}{%
     decimal}{%
     0.0}{%
     By default, values of the periodic components are centered around
@@ -671,8 +671,7 @@ illegal elsewhere):
 \end{itemize}
 All differences between two values of a periodic colvar are handled
 internally using the two periodic images that are least distant
-between each other.  Periodic components cannot be summed or
-superimposed together with regular ones.
+between each other.
 
 
 \paragraph*{Non-scalar components.}  When one of the following are
@@ -1909,6 +1908,10 @@ see references~\cite{Henin2004} and \cite{Henin2010}. \textbf{When
 publishing research that makes use of this functionality, please cite
 references~\cite{Darve2008} and \cite{Henin2010}.}
 
+An alternate usage of this feature is the application of custom
+tabulated biasing potentials to one or more colvars. See
+\texttt{inputPrefix} and \texttt{updateBias} below.
+
 ABF is based on the thermodynamic integration (TI) scheme for
 computing free energy profiles. The free energy as a function
 of a set of collective variables $\bm{\xi}=(\xi_{i})_{i\in[1,n]}$
@@ -2103,6 +2106,18 @@ The following parameters can be set in the ABF configuration block
     biasing force is not applied. Data is still collected to compute
     the free energy gradient. This is mostly intended for testing purposes, and should
     not be used in routine simulations.
+  }
+
+\item \NAMDCONFWDEF{updateBias}{(ABF) Update the ABF bias?}
+  {boolean}
+  {\texttt{yes}}
+  { If this is set to no, the initial biasing force (e.g. read from a restart file or 
+    through \texttt{inputPrefix}) is not updated during the simulation.
+    As a result, a constant bias is applied. This can be used to apply a custom, tabulated
+    biasing potential to any combination of colvars. To that effect, one should prepare
+    a gradient file containing the biasing force to be applied (negative gradient
+    of the potential), and a count file containing only values greater than
+    \texttt{fullSamples}. These files must match the grid parameters of the colvars.
   }
 \end{itemize}
 
