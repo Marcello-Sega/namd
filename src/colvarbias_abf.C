@@ -15,24 +15,27 @@ colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
 {
   // ************* parsing general ABF options ***********************
 
-  get_keyval (conf, "applybias",  apply_bias, true);
+  get_keyval (conf, "applyBias",  apply_bias, true);
   if (!apply_bias) cvm::log ("WARNING: ABF biases will *not* be applied!\n");
 
-  get_keyval (conf, "hidejacobian", hide_Jacobian, false);
+  get_keyval (conf, "updateBias",  update_bias, true);
+  if (!update_bias) cvm::log ("WARNING: ABF biases will *not* be updated!\n");
+
+  get_keyval (conf, "hideJacobian", hide_Jacobian, false);
   if (hide_Jacobian) {
     cvm::log ("Jacobian (geometric) forces will be handled internally.\n");
   } else {
     cvm::log ("Jacobian (geometric) forces will be included in reported free energy gradients.\n");
   }
 
-  get_keyval (conf, "fullsamples", full_samples, 200);
+  get_keyval (conf, "fullSamples", full_samples, 200);
   if ( full_samples <= 1 ) full_samples = 1; 
   min_samples = full_samples / 2;
   // full_samples - min_samples >= 1 is guaranteed
 
-  get_keyval (conf, "inputprefix",  input_prefix, std::vector<std::string> ());
-  get_keyval (conf, "outputfreq", output_freq, cvm::restart_out_freq);
-  get_keyval (conf, "historyfreq", history_freq, 0);
+  get_keyval (conf, "inputPrefix",  input_prefix, std::vector<std::string> ());
+  get_keyval (conf, "outputFreq", output_freq, cvm::restart_out_freq);
+  get_keyval (conf, "historyFreq", history_freq, 0);
   b_history_files = (history_freq > 0);
 
   // ************* checking the associated colvars *******************
@@ -49,24 +52,26 @@ colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
 
     colvars[i]->enable (colvar::task_gradients);
 
-    // Request calculation of system force (which also checks for availability)
-    colvars[i]->enable (colvar::task_system_force);
+    if (update_bias) {
+      // Request calculation of system force (which also checks for availability)
+      colvars[i]->enable (colvar::task_system_force);
 
-    if (!colvars[i]->tasks[colvar::task_extended_lagrangian]) {
-      // request computation of Jacobian force
-      colvars[i]->enable (colvar::task_Jacobian_force);
+      if (!colvars[i]->tasks[colvar::task_extended_lagrangian]) {
+        // request computation of Jacobian force
+        colvars[i]->enable (colvar::task_Jacobian_force);
 
-      // request Jacobian force as part as system force
-      // except if the user explicitly requires the "silent" Jacobian
-      // correction AND the colvar has a single component
-      if (hide_Jacobian) {
-        if (colvars[i]->n_components() > 1) {
-          cvm::log ("WARNING: colvar \"" + colvars[i]->name
-          + "\" has multiple components; reporting its Jacobian forces\n");
+        // request Jacobian force as part as system force
+        // except if the user explicitly requires the "silent" Jacobian
+        // correction AND the colvar has a single component
+        if (hide_Jacobian) {
+          if (colvars[i]->n_components() > 1) {
+            cvm::log ("WARNING: colvar \"" + colvars[i]->name
+            + "\" has multiple components; reporting its Jacobian forces\n");
+            colvars[i]->enable (colvar::task_report_Jacobian_force);
+          }
+        } else {
           colvars[i]->enable (colvar::task_report_Jacobian_force);
         }
-      } else {
-        colvars[i]->enable (colvar::task_report_Jacobian_force);
       }
     }
 
@@ -139,9 +144,10 @@ cvm::real colvarbias_abf::update()
       bin[i] = samples->current_bin_scalar(i);
     }
 
-    if ( samples->index_ok (prev_bin) ) {	  // Only within bounds of the grid...
+    if ( update_bias && samples->index_ok (prev_bin) ) {
+      // Only if requested and within bounds of the grid...
 
-      for (size_t i=0; i<colvars.size(); i++) {	  // get forces (lagging by 1 timestep) from colvars...
+      for (size_t i=0; i<colvars.size(); i++) {	  // get forces (lagging by 1 timestep) from colvars
         prev_force[i] = colvars[i]->system_force();
       }
       gradients->acc_force (prev_bin, prev_force);

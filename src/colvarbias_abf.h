@@ -36,6 +36,7 @@ private:
   std::vector<std::string> input_prefix;
 
   bool		apply_bias;
+  bool		update_bias;
   bool		hide_Jacobian;
   size_t	full_samples;
   size_t	min_samples;
