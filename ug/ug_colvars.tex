@@ -506,6 +506,19 @@ Each colvar accepts the following parameters:
 
 \item %
   \NAMDCONFWDEF{%
+    outputEnergy}{%
+    (\texttt{colvar}) Output an energy trajectory for this colvar}{%
+    boolean}{%
+    \texttt{on}}{%
+    This option applies only to extended Lagrangian colvars. If
+    \texttt{colvarsTrajFrequency} is defined, the kinetic energy of
+    the extended degree and freedom and the potential energy of the
+    restraining spring are are written to the trajectory file under
+    the labels ``\texttt{Ek\_}$<$\texttt{name}$>$'' and
+    ``\texttt{Ep\_}$<$\texttt{name}$>$''.}
+
+\item %
+  \NAMDCONFWDEF{%
     outputSystemForce}{%
     (\texttt{colvar}) Output a system force trajectory for this
     colvar}{%
@@ -546,7 +559,9 @@ Each colvar accepts the following parameters:
     and \texttt{extendedFluctuation}, described below. Biasing forces on the
     colvar are applied to this fictitious particle, rather than to the
     atoms directly.  This implements the extended Lagrangian formalism
-    used in some metadynamics simulations~\cite{Iannuzzi2003}.}
+    used in some metadynamics simulations~\cite{Iannuzzi2003}.
+    The energy associated with the extended degree of freedom is reported
+    under the MISC title in NAMD's energy output.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -566,7 +581,7 @@ Each colvar accepts the following parameters:
     extendedTimeConstant}{%
     (\texttt{colvar}) Oscillation period of the fictitious particle (fs)}{%
     positive decimal}{%
-    \texttt{20.0 $\times$ timestep}}{%
+    \texttt{40.0 $\times$ timestep}}{%
     Defines the inertial mass of the fictitious particle, by setting the
     oscillation period of the harmonic oscillator formed by the fictitious
     particle and the spring. The period
@@ -2584,6 +2599,7 @@ $\displaystyle V(\bm{x}) = \frac{1}{2} k (\bm{x} - \bm{x_0})^2$.
 Note that this differs from harmonic bond and angle potentials in common
 force fields, where the factor of one half is typically omitted,
 resulting in a non-standard definition of the force constant.
+The restraint energy is reported by NAMD under the MISC title.
 A harmonic restraint is set up by a \texttt{harmonic~\{...\}}
 block, which may contain (in addition to the standard option
 \texttt{colvars}) the following keywords:
