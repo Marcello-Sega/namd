@@ -47,7 +47,7 @@ int main(int argc, char *argv[])
 
     if (!(data_file = parse_cl(argc, argv, &nsteps, &temp, &meta, &hill, &hill_fact))) {
         std::cerr << "\nabf_integrate: MC-based integration of multidimensional free energy gradient\n";
-        std::cerr << "Version 20091111\n\n";
+        std::cerr << "Version 20110120\n\n";
         std::cerr << "Syntax: " << argv[0] <<
             " <filename> [-n <nsteps>] [-t <temp>] [-m [0|1] (metadynamics)]"
             " [-h <hill_height>] [-f <variable_hill_factor>]\n\n";
