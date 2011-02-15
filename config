@@ -354,6 +354,8 @@ begin:
     if ( $ARCH =~ *-MX* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MX
     if ( $ARCH =~ *-Elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
   endif
+  if ( $use_cuda ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CUDA
+  if ( $use_memopt ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-memopt
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
 
   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Make.config
