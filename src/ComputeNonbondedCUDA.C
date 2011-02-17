@@ -22,10 +22,38 @@ extern cudaStream_t stream;
 void cuda_errcheck(const char *msg) {
   cudaError_t err;
   if ((err = cudaGetLastError()) != cudaSuccess) {
+    char host[128];
+#ifdef NOHOSTNAME
+    sprintf(host,"physical node %d", CmiPhysicalNodeID(CkMyPe()));
+#else
+    gethostname(host, 128);  host[127] = 0;
+#endif
+    char devstr[128] = "";
+    int devnum;
+    if ( cudaGetDevice(&devnum) == cudaSuccess ) {
+      sprintf(devstr, " device %d", devnum);
+    }
     char errmsg[1024];
-    sprintf(errmsg,"CUDA error %s: %s", msg, cudaGetErrorString(err));
+    sprintf(errmsg,"CUDA error %s on Pe %d (%s%s): %s", msg, CkMyPe(), host, devstr, cudaGetErrorString(err));
     NAMD_die(errmsg);
   }
+}
+
+void cuda_die(const char *msg) {
+    char host[128];
+#ifdef NOHOSTNAME
+    sprintf(host,"physical node %d", CmiPhysicalNodeID(CkMyPe()));
+#else
+    gethostname(host, 128);  host[127] = 0;
+#endif
+    char devstr[128] = "";
+    int devnum;
+    if ( cudaGetDevice(&devnum) == cudaSuccess ) {
+      sprintf(devstr, " device %d", devnum);
+    }
+    char errmsg[1024];
+    sprintf(errmsg,"CUDA error on Pe %d (%s%s): %s", CkMyPe(), host, devstr, msg);
+    NAMD_die(errmsg);
 }
 
 char *devicelist;
@@ -49,7 +77,7 @@ void cuda_initialize() {
 
   char host[128];
 #ifdef NOHOSTNAME
-  sprintf(host,"unknown");
+  sprintf(host,"physical node %d", CmiPhysicalNodeID(CkMyPe()));
 #else
   gethostname(host, 128);  host[127] = 0;
 #endif
@@ -87,8 +115,9 @@ void cuda_initialize() {
 
   int deviceCount = 0;
   cudaGetDeviceCount(&deviceCount);
+  cuda_errcheck("in cudaGetDeviceCount");
   if ( deviceCount <= 0 ) {
-    NAMD_die("No CUDA devices found.");
+    cuda_die("No CUDA devices found.");
   }
 
   int *devices;
@@ -112,6 +141,7 @@ void cuda_initialize() {
 #if CUDA_VERSION >= 2020
       cudaDeviceProp deviceProp;
       cudaGetDeviceProperties(&deviceProp, dev);
+      cuda_errcheck("in cudaGetDeviceProperties");
       if ( deviceProp.computeMode != cudaComputeModeProhibited
            && deviceProp.multiProcessorCount > 2 ) {  // exclude weak cards
         devices[ndevices++] = dev;
@@ -126,7 +156,7 @@ void cuda_initialize() {
   }
 
   if ( ! ndevices ) {
-    NAMD_die("All CUDA devices are in prohibited mode.");
+    cuda_die("All CUDA devices are in prohibited mode.");
   }
 
   shared_gpu = 0;
@@ -178,16 +208,19 @@ void cuda_initialize() {
     NAMD_die(buf);
   }
 
+  cudaError_t err;
   cudaDeviceProp deviceProp;
   cudaGetDeviceProperties(&deviceProp, dev);
-  CkPrintf("Pe %d physical rank %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
+  if ((err = cudaGetLastError()) != cudaSuccess) {
+    CkPrintf("Pe %d physical rank %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
              CkMyPe(), myRankInPhysicalNode, dev, host,
              deviceProp.name, deviceProp.totalGlobalMem / (1024*1024),
              deviceProp.major, deviceProp.minor);
 
-  cudaSetDevice(dev);
-  cudaError_t err;
-  if ((err = cudaGetLastError()) != cudaSuccess) {
+    cudaSetDevice(dev);
+    err = cudaGetLastError();
+  }
+  if ( err != cudaSuccess) {
     char errmsg[1024];
     sprintf(errmsg,"CUDA error binding to device %d on pe %d: %s",
 			dev, CkMyPe(), cudaGetErrorString(err));
@@ -196,10 +229,10 @@ void cuda_initialize() {
 
  }  // just let CUDA pick a device for us
 
-  if ( sizeof(patch_pair) & 15 ) NAMD_die("sizeof(patch_pair) % 16 != 0");
-  if ( sizeof(force_list) & 15 ) NAMD_die("sizeof(force_list) % 16 != 0");
-  if ( sizeof(atom) & 15 ) NAMD_die("sizeof(atom) % 16 != 0");
-  if ( sizeof(atom_param) & 15 ) NAMD_die("sizeof(atom_param) % 16 != 0");
+  if ( sizeof(patch_pair) & 15 ) NAMD_bug("sizeof(patch_pair) % 16 != 0");
+  if ( sizeof(force_list) & 15 ) NAMD_bug("sizeof(force_list) % 16 != 0");
+  if ( sizeof(atom) & 15 ) NAMD_bug("sizeof(atom) % 16 != 0");
+  if ( sizeof(atom_param) & 15 ) NAMD_bug("sizeof(atom_param) % 16 != 0");
 
   cuda_init();
 
@@ -416,7 +449,7 @@ void ComputeNonbondedCUDA::build_exclusions() {
 
 void register_cuda_compute_self(ComputeID c, PatchID pid) {
 
-  if ( ! cudaCompute ) NAMD_die("register_self called early");
+  if ( ! cudaCompute ) NAMD_bug("register_self called early");
 
   cudaCompute->requirePatch(pid);
 
@@ -433,7 +466,7 @@ void register_cuda_compute_self(ComputeID c, PatchID pid) {
 
 void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]) {
 
-  if ( ! cudaCompute ) NAMD_die("register_pair called early");
+  if ( ! cudaCompute ) NAMD_bug("register_pair called early");
  
   cudaCompute->requirePatch(pid[0]);
   cudaCompute->requirePatch(pid[1]);
@@ -467,7 +500,7 @@ void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]) {
 
 void unregister_cuda_compute(ComputeID c) {  // static
 
-  NAMD_die("unregister_compute unimplemented");
+  NAMD_bug("unregister_compute unimplemented");
 
 }
 
@@ -1146,7 +1179,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 
 int ComputeNonbondedCUDA::finishWork() {
 
-  cuda_errcheck("cuda stream completed");
+  cuda_errcheck("at cuda stream completed");
 
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
@@ -1280,18 +1313,18 @@ int ComputeNonbondedCUDA::finishWork() {
   float local_calc_ms, local_download_ms, total_ms;
   cuda_errcheck("before event timers");
   cudaEventElapsedTime(&upload_ms, start_upload, start_calc);
-  cuda_errcheck("event timer 1");
+  cuda_errcheck("in event timer 1");
   cudaEventElapsedTime(&remote_calc_ms, start_calc, end_remote_calc);
-  cuda_errcheck("event timer 2");
+  cuda_errcheck("in event timer 2");
   cudaEventElapsedTime(&remote_download_ms, end_remote_calc, end_remote_download);
-  cuda_errcheck("event timer 3");
+  cuda_errcheck("in event timer 3");
   cudaEventElapsedTime(&local_calc_ms, end_remote_download, end_local_calc);
-  cuda_errcheck("event timer 4");
+  cuda_errcheck("in event timer 4");
   cudaEventElapsedTime(&local_download_ms, end_local_calc, end_local_download);
-  cuda_errcheck("event timer 5");
+  cuda_errcheck("in event timer 5");
   cudaEventElapsedTime(&total_ms, start_upload, end_local_download);
-  cuda_errcheck("event timer 6");
-  cuda_errcheck("event timers");
+  cuda_errcheck("in event timer 6");
+  cuda_errcheck("in event timers");
 
   cuda_timer_total += kernel_time;
   if ( simParams->outputCudaTiming &&
