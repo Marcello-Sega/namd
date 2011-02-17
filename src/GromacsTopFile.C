@@ -951,7 +951,7 @@ void DihedralTable::getParams(int num, float *c, int *mult, int *funct) const {
     }
   } else { /* error */
     fprintf(stderr,"Bad function number %d - don't know what to do!\n",
-	    funct);
+	    *funct);
     exit(1);
   }
 
