@@ -210,15 +210,14 @@ void cuda_initialize() {
 
   cudaError_t err;
   cudaDeviceProp deviceProp;
-  cudaGetDeviceProperties(&deviceProp, dev);
-  if ((err = cudaGetLastError()) != cudaSuccess) {
+  err = cudaGetDeviceProperties(&deviceProp, dev);
+  if (err == cudaSuccess) {
     CkPrintf("Pe %d physical rank %d binding to CUDA device %d on %s: '%s'  Mem: %dMB  Rev: %d.%d\n",
              CkMyPe(), myRankInPhysicalNode, dev, host,
              deviceProp.name, deviceProp.totalGlobalMem / (1024*1024),
              deviceProp.major, deviceProp.minor);
 
-    cudaSetDevice(dev);
-    err = cudaGetLastError();
+    err = cudaSetDevice(dev);
   }
   if ( err != cudaSuccess) {
     char errmsg[1024];
