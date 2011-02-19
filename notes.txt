@@ -216,10 +216,41 @@ would not multiply $#NODES by two.
 Note that these example scripts and the setenv command are for the csh or 
 tcsh shells.  They must be translated to work with sh or bash.
 
--- Windows Workstation Networks ---
+-- Windows Clusters and Workstation Networks ---
 
-These are no longer supported, but NAMD has been reported to compile
-on Windows HPC Server.
+The Win64-MPI version of NAMD runs on Windows HPC Server and should be
+launched as you would any other MPI program.
+
+-- Cray XT --
+
+You will need to load the GPU compiler module, build Charm++ for mpi-crayxt
+and NAMD for CRAY-XT-g++, use the following command in your batch script:
+
+  aprun -n $PBS_NNODES -cc cpu namd2
+
+To reduce memory usage, build Charm++ mpi-crayxt-smp instead and use
+(assuming you have 12 cores per node on your machine):
+
+setenv MPICH_PTL_UNEX_EVENTS 100000
+@ NPROC = $PBS_NNODES / 12
+aprun -n $NPROC -N 1 -d 12 namd2 +ppn 11 +setcpuaffinity +pemap 1-11 +commap 0
+
+For two processes per node (for possibly better scaling) use:
+
+setenv MPICH_PTL_UNEX_EVENTS 100000
+@ NPROC = $PBS_NNODES / 6
+aprun -n $NPROC -N 2 -d 6 namd2 +ppn 5 +setcpuaffinity \
+                                +pemap 1-8,10,11 +commap 0,9 ...
+
+For three processes per node use:
+
+setenv MPICH_PTL_UNEX_EVENTS 100000
+@ NPROC = $PBS_NNODES / 4
+aprun -n $NPROC -N 3 -d 4 namd2 +ppn 3 +setcpuaffinity \
+                                +pemap 1-5,7,8,10,11 +commap 0,6,9 ...
+
+The strange +pemap and +commap settings place the communication threads
+on cores that have been observed to have higher operating system loads.
 
 -- SGI Altix UV --
 
