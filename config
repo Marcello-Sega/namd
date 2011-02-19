@@ -360,7 +360,9 @@ begin:
   if ( $CHARM_ARCH =~ *-ibverbs* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ibverbs
   if ( $CHARM_ARCH =~ *-smp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-SMP
   if ( $CHARM_ARCH =~ *multicore-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-multicore
-  if ( $?ARCH_SUFFIX_ARG ) set ARCH_SUFFIX = ${ARCH_SUFFIX}${ARCH_SUFFIX_ARG}
+  if ( $?ARCH_SUFFIX_ARG ) then
+    set ARCH_SUFFIX = ${ARCH_SUFFIX}${ARCH_SUFFIX_ARG}
+  endif
   if ( $use_cuda ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CUDA
   if ( $use_memopt ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-memopt
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
