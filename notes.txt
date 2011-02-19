@@ -264,7 +264,7 @@ If needed, specific cores for the Charm++ PEs (processing elements) and
 communication threads (on all SMP builds and on multicore builds when
 the +commthread option is specified) can be set by adding the +pemap
 and (if needed) +commap options with lists of core sets in the form
-"lower[-upper[:stride[.run]]][,..]".  A single number identifies a
+"lower[-upper[:stride[.run]]][,...]".  A single number identifies a
 particular core.  Two numbers separated by a dash identify an inclusive
 range (lower bound and upper bound).  If they are followed by a colon and
 another number (a stride), that range will be stepped through in increments
