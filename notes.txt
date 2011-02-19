@@ -8,6 +8,7 @@ This file contains the following sections:
 
   - Problems?  Found a bug?
   - Running NAMD
+  - CPU Affinity
   - CUDA GPU Acceleration
   - Compiling NAMD
   - Memory Usage
@@ -220,12 +221,19 @@ tcsh shells.  They must be translated to work with sh or bash.
 These are no longer supported, but NAMD has been reported to compile
 on Windows HPC Server.
 
--- SGI Altix --
+-- SGI Altix UV --
 
-Be sure that the MPI_DSM_DISTRIBUTE environment variable is set, then use 
-the Linux-Itanium-MPI-Altix version of NAMD along with the system mpirun:
+Use Linux-x86_64-multicore and the following script to set CPU affinity:
 
-  mpirun -np <procs> <configfile>
+  namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
+     "+p%d +pemap %d",(NF-1),$2; for(i=3;i<=NF;++i){printf ",%d",$i}}'` ...
+
+For runs on large numbers of cores (you will need to experiment) use the
+following to enable the Charm++ communication thread:
+
+  namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
+     "+p%d +pemap %d",(NF-2),$2; for(i=3;i<NF;++i){printf ",%d",$i}; \
+     print " +commthread +commap",$NF}'`
 
 -- IBM POWER Clusters --
 
@@ -235,6 +243,53 @@ consult your local documentation for recommended settings.  As an example,
 to run on Blue Horizon one would specify:
 
   poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
+
+----------------------------------------------------------------------
+
+CPU Affinity
+
+NAMD may run faster on some machines if threads or processes are set to
+run on (or not run on) specific processor cores (or hardware threads).
+On Linux this can be done at the process level with the numactl utility,
+but NAMD provides its own options for assigning threads to cores.  This
+feature is enabled by adding +setcpuaffinity to the namd2 command line,
+which by itself will cause NAMD (really the underlying Charm++ library)
+to assign threads/processes round-robin to available cores in the order
+they are numbered by the operating system.  This may not be the fastest
+configuration if NAMD is running fewer threads than there are cores
+available and consecutively numbered cores shared resources such as
+memory bandwidth or are hardware threads on the same physical core.
+
+If needed, specific cores for the Charm++ PEs (processor elements) and
+communication threads (on all SMP builds and on multicore builds when
+the +commthread option is specified) can be set by adding the +pemap
+and (if needed) +commap options with lists of core sets in the form
+"lower[-upper[:stride[.run]]][,..]".  A single number identifies a
+particular core.  Two numbers separated by a dash identify an inclusive
+range (lower bound and upper bound).  If they are followed by a colon and
+another number (a stride), that range will be stepped through in increments
+of the additional number.  Within each stride, a dot followed by a run will
+indicate how many cores to use from that starting point.  For example, the
+sequence 0-8:2,16,20-24 includes cores 0, 2, 4, 6, 8, 16, 20, 21, 22, 23, 24.
+On a 4-way quad-core system three cores from each socket would be 0-15:4.3
+if cores on the same chip are numbered consecutively.  There is no need
+to repeat cores for each node in a run as they are reused in order.
+
+For example, the IBM POWER7 has four hardware threads per core and the
+first thread can use all of the core's resources if the other threads are
+idle; threads 0 and 1 split the core if threads 2 and 3 are idle, but
+if either of threads 2 or 3 are active the core is split four ways.  The
+fastest configuration of 32 threads or processes on a 128-thread 32-core 
+is therefore "+setcpuaffinity +pemap 0-127:4".  For 64 threads we need
+cores 0,1,4,5,8,9,... or 0-127:4.2.  Running 4 processes with +ppn 31
+would be "+setcpuaffinity +pemap 0-127:32.31 +commap 31-127:32"
+
+For an Altix UV or other machines where the queueing system assigns cores
+to jobs this information must be obtained with numactl --show and passed
+to NAMD in order to set thread affinity (which will improve performance):
+
+  namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
+     "+p%d +pemap %d",(NF-1),$2; for(i=3;i<=NF;++i){printf ",%d",$i}}'` ...
 
 ----------------------------------------------------------------------
 
