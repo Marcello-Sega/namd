@@ -257,10 +257,10 @@ which by itself will cause NAMD (really the underlying Charm++ library)
 to assign threads/processes round-robin to available cores in the order
 they are numbered by the operating system.  This may not be the fastest
 configuration if NAMD is running fewer threads than there are cores
-available and consecutively numbered cores shared resources such as
+available and consecutively numbered cores share resources such as
 memory bandwidth or are hardware threads on the same physical core.
 
-If needed, specific cores for the Charm++ PEs (processor elements) and
+If needed, specific cores for the Charm++ PEs (processing elements) and
 communication threads (on all SMP builds and on multicore builds when
 the +commthread option is specified) can be set by adding the +pemap
 and (if needed) +commap options with lists of core sets in the form
@@ -281,7 +281,7 @@ idle; threads 0 and 1 split the core if threads 2 and 3 are idle, but
 if either of threads 2 or 3 are active the core is split four ways.  The
 fastest configuration of 32 threads or processes on a 128-thread 32-core 
 is therefore "+setcpuaffinity +pemap 0-127:4".  For 64 threads we need
-cores 0,1,4,5,8,9,... or 0-127:4.2.  Running 4 processes with +ppn 31
+cores 0,1,4,5,8,9,... or 0-127:4.2.  Running 4 processes with ++ppn 31
 would be "+setcpuaffinity +pemap 0-127:32.31 +commap 31-127:32"
 
 For an Altix UV or other machines where the queueing system assigns cores
