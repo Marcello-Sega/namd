@@ -161,7 +161,7 @@ begin:
   endif
 
   if ( $#argv > 0 && $1 !~ --* ) then
-    set ARCH_SUFFIX = -$1
+    set ARCH_SUFFIX_ARG = -$1
     shift
   endif
 
@@ -174,7 +174,7 @@ begin:
 
       case --arch-suffix:
         shift
-        set ARCH_SUFFIX = -$1
+        set ARCH_SUFFIX_ARG = -$1
       breaksw
 
       case --with-debug:
@@ -327,8 +327,8 @@ begin:
     echo "Using Charm++ build found in main build directory"
     echo 'CHARMBASE = .rootdir/charm' >> Make.config
   else
-    echo "Using Charm++ build found in Make.charm:"
-    cat .rootdir/Make.charm
+    set CHARM_BASE = `awk '/^CHARMBASE =/ {print $3}' .rootdir/Make.charm`
+    echo "Using Charm++ build found in Make.charm: $CHARM_BASE"
     echo include .rootdir/Make.charm >! Make.config
   endif
 
@@ -336,24 +336,30 @@ begin:
 
   if ( $?CHARM_ARCH ) then
     echo "CHARMARCH = $CHARM_ARCH" >> Make.config
+  else
+    set CHARM_ARCH = `awk '/^CHARMARCH =/ {print $3}' .rootdir/arch/$ARCH.arch`
+  endif
+  if ( ! -d $CHARM_BASE/$CHARM_ARCH ) then
+    echo "Warning: No such directory $CHARM_BASE/$CHARM_ARCH"
   endif
   if ( $?CHARM_OPTS ) then
     echo "CHARMOPTS = $CHARM_OPTS" >> Make.config
   endif
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Make.config
-  if ( ! $?ARCH_SUFFIX ) then
-    set ARCH_SUFFIX = ""
-    if ( $ARCH =~ *-Scyld* ) set ARCH_SUFFIX = -Scyld
-    if ( $ARCH =~ *-Clustermatic* ) set ARCH_SUFFIX = -Clustermatic
-    if ( $ARCH =~ *-MPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
-    if ( $ARCH =~ *-CMPI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CMPI
-    if ( $ARCH =~ *-MPT* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPT
-    if ( $ARCH =~ *-VMI* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
-    if ( $ARCH =~ *-TCP* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
-    if ( $ARCH =~ *-GM* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
-    if ( $ARCH =~ *-MX* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MX
-    if ( $ARCH =~ *-Elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
-  endif
+  set ARCH_SUFFIX = ""
+  if ( $CHARM_ARCH =~ *-scyld* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Scyld
+  if ( $CHARM_ARCH =~ *-clustermatic* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Clustermatic
+  if ( $CHARM_ARCH =~ *mpi-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
+  if ( $CHARM_ARCH =~ lapi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-LAPI
+  if ( $CHARM_ARCH =~ pami* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-PAMI
+  if ( $CHARM_ARCH =~ *-vmi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
+  if ( $CHARM_ARCH =~ *-tcp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
+  if ( $CHARM_ARCH =~ *-gm* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
+  if ( $CHARM_ARCH =~ *-mx* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MX
+  if ( $CHARM_ARCH =~ *-elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
+  if ( $CHARM_ARCH =~ *-smp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-SMP
+  if ( $CHARM_ARCH =~ *multicore-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-multicore
+  if ( $?ARCH_SUFFIX_ARG ) set ARCH_SUFFIX = ${ARCH_SUFFIX}${ARCH_SUFFIX_ARG}
   if ( $use_cuda ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CUDA
   if ( $use_memopt ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-memopt
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
