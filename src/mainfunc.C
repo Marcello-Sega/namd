@@ -90,13 +90,35 @@ void after_backend_init(int argc, char **argv){
   {
     *tmp = 0; confFile = tmp + 1;
     if ( CHDIR(currentdir) ) NAMD_err(currentdir);
+    struct stat statBuf;
+    if (stat(confFile, &statBuf)) {
+      char buf[1024];
+      sprintf(buf,"Unable to access config file %s%c%s",currentdir,PATHSEP,confFile);
+      NAMD_die(buf);
+    }
     iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
     currentdir = GETCWD(0,0);
   }
   else{
       if ( *tmp == PATHSEP ){ // config file in / is odd, but it might happen
           if ( CHDIR(PATHSEPSTR) ) NAMD_err(PATHSEPSTR);
+          struct stat statBuf;
+          if (stat(confFile, &statBuf)) {
+            char buf[1024];
+            sprintf(buf,"Unable to access config file %s",confFile);
+            NAMD_die(buf);
+          }
       }else{ // just a config file name, so the path is the current working path
+          struct stat statBuf;
+          if (stat(confFile, &statBuf)) {
+            char buf[1024];
+            if ( confFile[0] == '-' || confFile[0] == '+' ) {
+              sprintf(buf,"Unknown command-line option %s",confFile);
+            } else {
+              sprintf(buf,"Unable to access config file %s",confFile);
+            }
+            NAMD_die(buf);
+          }
           char tmpcurdir[3];
           tmpcurdir[0] = '.';
           tmpcurdir[1] = PATHSEP;
@@ -114,11 +136,6 @@ void after_backend_init(int argc, char **argv){
 #endif
 
   currentdir = NULL;
-
-  struct stat statBuf;
-  if (stat(confFile, &statBuf)) {
-    NAMD_die("Simulation config file is not accessible.");
-  }
 
 #ifdef NAMD_TCL
   script->load(confFile);
