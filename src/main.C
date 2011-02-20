@@ -154,7 +154,7 @@ public:
 #else
          << iINFO << "\n"
          << iINFO << "Please visit http://www.ks.uiuc.edu/Research/namd/\n"
-         << iINFO << "and send feedback or bug reports to namd@ks.uiuc.edu\n"
+         << iINFO << "for updates, documentation, and support information.\n"
 #endif
 << iINFO << "\n"
 << iINFO << "Please cite Phillips et al., J. Comp. Chem. 26:1781-1802 (2005)\n"
