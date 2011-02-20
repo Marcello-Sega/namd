@@ -652,35 +652,32 @@ both 25 and 50 cycles (see the stepspercycle parameter) and base your
 estimate on the additional time needed for the longer simulation in
 order to exclude startup costs and allow for initial load balancing.
 
-We provide both standard (UDP) and new TCP based precompiled binaries
-for Linux clusters.  We have observed that the TCP version is better
-on our dual processor clusters with gigabit ethernet while the basic
-UDP version is superior on our single processor fast ethernet cluster.
-When using the UDP version with gigabit you can add the +giga option
-to adjust several tuning parameters.  Additional performance may be
-gained by building NAMD against an SMP version of Charm++ such as
-net-linux-smp or net-linux-smp-icc.  This will use a communication
-thread for each process to respond to network activity more rapidly.
-For dual processor clusters we have found it that running two separate
-processes per node, each with its own communication thread, is faster
-than using the charmrun ++ppn option to run multiple worker threads.
-However, we have observed that when running on a single hyperthreaded
-processor (i.e., a newer Pentium 4) there is an additional 15% boost
-from running standalone with two threads (namd2 +p2) beyond running
-two processors (charmrun namd2 ++local +p2).  For a cluster of single
-processor hyperthreaded machines an SMP version should provide very
-good scaling running one process per node since the communication
-thread can run very efficiently on the second virtual processor.  We
-are unable to ship an SMP build for Linux due to portability problems
-with the Linux pthreads implementation needed by Charm++.
+Multicore builds scale well within a single node.  On machines with more
+than 32 cores it may be necessary to add a communication thread and run
+on one fewer core than the machine has.  On a 48-core machine this would
+be run as "namd2 +p47 +commthread".  Performance may also benefit from
+setting CPU affinity using the +setcpuaffinity +pemap <map> +commap <map>
+options described in CPU Affinity above.  Experimentation is needed.
 
-Extremely short cycle lengths (less than 10 steps) will also limit
-parallel scaling, since the atom migration at the end of each cycle
-sends many more messages than a normal force evaluation.  Increasing
-pairlistdist from, e.g., cutoff + 1.5 to cutoff + 2.5, while also
-doubling stepspercycle from 10 to 20, may increase parallel scaling,
-but it is important to measure.  When increasing stepspercycle, also
-try increasing pairlistspercycle by the same proportion.
+We provide standard (UDP), TCP, and ibverbs (InfiniBand) precompiled
+binaries for Linux clusters.  The TCP version may be faster on some
+networks but the UDP version now performs well on gigabit ethernet.
+The ibverbs version should be used on any cluster with InfiniBand,
+and for any other high-speed network you should compile an MPI version.
+
+SMP builds generally do not scale as well across nodes as single-threaded
+non-SMP builds because the communication thread is both a bottleneck and
+occupies a core that could otherwise be used for computation.  As such
+they should only be used to reduce memory consumption or if for scaling
+reasons you are not using all of the cores on a node anyway, and you
+should run benchmarks to determine the optimal configuration.
+
+Extremely short cycle lengths (less than 10 steps) will limit parallel
+scaling, since the atom migration at the end of each cycle sends many
+more messages than a normal force evaluation.  Increasing margin from
+0 to 1 while doubling stepspercycle and pairlistspercycle may help,
+but it is important to benchmark.  The pairlist distance will adjust
+automatically, and one pairlist per ten steps is a good ratio.
 
 NAMD should scale very well when the number of patches (multiply the
 dimensions of the patch grid) is larger or rougly the same as the
