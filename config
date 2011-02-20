@@ -160,8 +160,10 @@ begin:
 
   endif
 
+  set ARCH_SUFFIX_ARG = ""
+
   if ( $#argv > 0 && $1 !~ --* ) then
-    set ARCH_SUFFIX_ARG = -$1
+    set ARCH_SUFFIX_ARG = ${ARCH_SUFFIX_ARG}-$1
     shift
   endif
 
@@ -174,7 +176,7 @@ begin:
 
       case --arch-suffix:
         shift
-        set ARCH_SUFFIX_ARG = -$1
+        set ARCH_SUFFIX_ARG = ${ARCH_SUFFIX_ARG}-$1
       breaksw
 
       case --with-debug:
@@ -348,22 +350,33 @@ begin:
   echo 'CHARM = $(CHARMBASE)/$(CHARMARCH)' >> Make.config
   set ARCH_SUFFIX = ""
   if ( $CHARM_ARCH =~ *-scyld* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Scyld
-  if ( $CHARM_ARCH =~ *-clustermatic* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Clustermatic
-  if ( $CHARM_ARCH =~ *mpi-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MPI
-  if ( $CHARM_ARCH =~ lapi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-LAPI
-  if ( $CHARM_ARCH =~ pami* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-PAMI
-  if ( $CHARM_ARCH =~ *-vmi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-VMI
+  if ( $CHARM_ARCH =~ *-clustermatic* ) then
+    set SUF = "-Clustermatic"
+    if ( "$ARCH_SUFFIX_ARG" =~ *-Clustermatic* ) set SUF = ""
+    set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
+  endif
+  if ( $CHARM_ARCH =~ mpi-* ) then
+    set SUF = "-MPI"
+    if ( "$ARCH_SUFFIX_ARG" =~ *-MVAPICH* ) set SUF = ""
+    if ( "$ARCH_SUFFIX_ARG" =~ *-OpenMPI* ) set SUF = ""
+    set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
+  endif
+  if ( $CHARM_ARCH =~ lapi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-lapi
+  if ( $CHARM_ARCH =~ pami* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-pami
+  if ( $CHARM_ARCH =~ *-vmi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-vmi
   if ( $CHARM_ARCH =~ *-tcp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
-  if ( $CHARM_ARCH =~ *-gm* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-GM
-  if ( $CHARM_ARCH =~ *-mx* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-MX
+  if ( $CHARM_ARCH =~ *-gm* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-gm
+  if ( $CHARM_ARCH =~ *-mx* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-mx
   if ( $CHARM_ARCH =~ *-elan* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-Elan
   if ( $CHARM_ARCH =~ *-ibverbs* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ibverbs
-  if ( $CHARM_ARCH =~ *-smp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-SMP
+  if ( $CHARM_ARCH =~ *-smp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-smp
   if ( $CHARM_ARCH =~ *multicore-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-multicore
-  if ( $?ARCH_SUFFIX_ARG ) then
-    set ARCH_SUFFIX = ${ARCH_SUFFIX}${ARCH_SUFFIX_ARG}
+  set ARCH_SUFFIX = ${ARCH_SUFFIX}${ARCH_SUFFIX_ARG}
+  if ( $use_cuda ) then
+    set SUF = "-CUDA"
+    if ( "$ARCH_SUFFIX_ARG" =~ *CUDA* ) set SUF = ""
+    set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
   endif
-  if ( $use_cuda ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-CUDA
   if ( $use_memopt ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-memopt
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
 
