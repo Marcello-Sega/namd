@@ -23,7 +23,6 @@ public:
    int patch1, patch2;
    int processor; // caller to ReBalancer MAY leave this field -1, 
    int oldProcessor; // stores the current assignment of the compute object.
-   double minTime, maxTime;       // min and max compute time
    LDObjHandle handle;
 };
 

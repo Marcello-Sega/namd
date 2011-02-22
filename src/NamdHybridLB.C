@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: emeneses $
- * $Date: 2011/01/28 15:23:52 $
- * $Revision: 1.21 $
+ * $Author: bhatele $
+ * $Date: 2011/02/22 00:45:57 $
+ * $Revision: 1.22 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -404,7 +404,6 @@ void NamdHybridLB::dumpDataASCII(char *file, int numProcessors,
     computeInfo* c = computeArray + i;
     fprintf(fp,"%d %e %d %d %d %d",c->Id,c->load,c->patch1,c->patch2,
             c->processor,c->oldProcessor);
-    fprintf(fp, " %e %e", c->minTime, c->maxTime);
     fprintf(fp, "\n");
   }
 
@@ -578,8 +577,6 @@ int NamdHybridLB::buildData(LDStats* stats) {
 			computeArray[nMoveableComputes].patch2 = p1;
 			computeArray[nMoveableComputes].handle = this_obj.handle;
 			computeArray[nMoveableComputes].load = this_obj.wallTime;
-			computeArray[nMoveableComputes].minTime = this_obj.minWall;
-			computeArray[nMoveableComputes].maxTime = this_obj.maxWall;
 			nMoveableComputes++;
       	}
 	}

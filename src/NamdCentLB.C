@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: bhatele $
- * $Date: 2010/12/06 21:51:21 $
- * $Revision: 1.101 $
+ * $Date: 2011/02/22 00:45:57 $
+ * $Revision: 1.102 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -272,7 +272,6 @@ void NamdCentLB::dumpDataASCII(char *file, int numProcessors,
     computeInfo* c = computeArray + i;
     fprintf(fp,"%d %e %d %d %d %d",c->Id,c->load,c->patch1,c->patch2,
 	    c->processor,c->oldProcessor);
-    fprintf(fp, " %e %e", c->minTime, c->maxTime);
     fprintf(fp, "\n");
   }
 
@@ -355,11 +354,10 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
     computeInfo* c = computeArray + i;
     fscanf(fp,"%d %le %d %d %d %d",&c->Id,&c->load,&c->patch1,&c->patch2,
 	    &c->processor,&c->oldProcessor);
-    fscanf(fp, " %le %le", &c->minTime, &c->maxTime);
 
     if (c->patch1 < 0 || c->patch1 > numPatches || c->patch2 < 0 || c->patch2 > numPatches)
       CmiAbort("Reading computeArray error!");
-//  printf("%d %e %d %d %d %d %e %e\n", c->Id,c->load,c->patch1,c->patch2,c->processor,c->oldProcessor,c->minTime,c->maxTime);
+  // printf("%d %e %d %d %d %d\n", c->Id,c->load,c->patch1,c->patch2,c->processor,c->oldProcessor);
   }
 
   // dump patchSet
@@ -539,8 +537,6 @@ int NamdCentLB::buildData(LDStats* stats)
 	computeArray[nMoveableComputes].patch2 = p1;
 	computeArray[nMoveableComputes].handle = this_obj.handle;
 	computeArray[nMoveableComputes].load = this_obj.wallTime;
-	computeArray[nMoveableComputes].minTime = this_obj.minWall;
-	computeArray[nMoveableComputes].maxTime = this_obj.maxWall;
 	nMoveableComputes++;
       } else {
 	processorArray[stats->from_proc[j]].backgroundLoad += this_obj.wallTime;
