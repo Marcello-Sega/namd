@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/08 22:42:51 $
- * $Revision: 1.88 $
+ * $Author: bhatele $
+ * $Date: 2011/02/22 00:22:02 $
+ * $Revision: 1.89 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -16,6 +16,7 @@
 #include "Rebalancer.h"
 #include "ProxyMgr.h"
 #include "PatchMap.h"
+#include "memusage.h"
 
 #define ST_NODE_LOAD 		0.005
 #define PROXY_LOAD              0.001
@@ -856,7 +857,7 @@ void Rebalancer::printLoads()
    iout << "LDB: TIME " << CmiWallTimer() << " LOAD: AVG " << averageLoad 
      << " MAX " << max << "  PROXIES: TOTAL " << total << " MAXPE " << 
      maxproxies << " MAXPATCH " << maxpatchproxies << " " << strategyName 
-     << " " << avgBgLoad << "\n" << endi;
+     << " MEM: " << memusage_MB() << " MB\n" << endi;
    fflush(stdout);
 
 }
