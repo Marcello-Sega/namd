@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2011/02/22 05:07:14 $
- * $Revision: 1.1219 $
+ * $Date: 2011/02/22 05:32:32 $
+ * $Revision: 1.1220 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -873,11 +873,11 @@ void WorkDistrib::patchMapInit(void)
 	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
-  if ( numPatches <= (1.4*availPes) && availPes <= maxNumPatches ) {
+  if ( numPatches > availPes && numPatches <= (1.4*availPes) && availPes <= maxNumPatches ) {
     int newNumPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,availPes,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
-    if ( numPatches <= 1.4 * newNumPatches ) {
+    if ( newNumPatches <= availPes && numPatches <= (1.4*newNumPatches) ) {
       iout << iINFO << "REDUCING NUMBER OF PATCHES TO IMPROVE LOAD BALANCE\n" << endi;
       maxNumPatches = availPes;
     }
