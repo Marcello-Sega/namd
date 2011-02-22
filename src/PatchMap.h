@@ -107,9 +107,6 @@ public:
   // given patches must be neighbors!!!
   inline int downstream(int pid1, int pid2);
 
-  // if not neighbors use this slower version
-  inline int downstream2(int pid1, int pid2);
-
   // returns the node where the patch currently exists.
   inline int node(int pid) const { return patchData[pid].node; }
 
@@ -139,20 +136,18 @@ public:
   // the pid.
   void newCid(int pid, int cid);
 
-  // oneAwayNeighbors(pid, &n, neighbor_ids) returns the number 
+  // oneAwayNeighbors(pid, neighbor_ids) returns the number 
   // and ids of adjacent patches.  The caller is expected to provide
   // sufficient storage for the neighbors.
 
-  int oneAwayNeighbors(int pid, PatchID *neighbor_ids=0, int *transform_ids=0);
+  int oneAwayNeighbors(int pid, PatchID *neighbor_ids=0);
 
   int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids,
-			    int *transform_ids = 0);
+		        PatchID *downstream_ids = 0, int *transform_ids = 0);
 
-  int upstreamNeighbors(int pid, PatchID *neighbor_ids, 
-			int *transform_ids = 0);
+  int upstreamNeighbors(int pid, PatchID *neighbor_ids);
 
-  int downstreamNeighbors(int pid, PatchID *neighbor_ids, 
-			  int *transform_ids = 0);
+  int downstreamNeighbors(int pid, PatchID *neighbor_ids); 
 
   void printPatchMap(void);
 

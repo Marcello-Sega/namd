@@ -488,7 +488,7 @@ void PatchMap::newCid(int pid, int cid)
 }
 
 //----------------------------------------------------------------------
-int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids)
+int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids)
 {
   int xi, yi, zi;
   int xinc, yinc, zinc;
@@ -515,6 +515,7 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_id
 
 	if (neighbor_ids)
 	  neighbor_ids[n]=this->pid(xi,yi,zi);
+#if 0
 	if ( transform_ids )
 	{
 	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
@@ -522,6 +523,7 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_id
 	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
 	}
+#endif
 	n++;
       }
     }
@@ -533,20 +535,23 @@ int PatchMap::oneAwayNeighbors(int pid, PatchID *neighbor_ids, int *transform_id
 
 //----------------------------------------------------------------------
 // Only returns half of neighbors!
-int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transform_ids)
+int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, PatchID *downstream_ids, int *transform_ids)
 {
   int xi, yi, zi;
   int xinc, yinc, zinc;
   int n=0;
+  const int xs = patchData[pid].aIndex;
+  const int ys = patchData[pid].bIndex;
+  const int zs = patchData[pid].cIndex;
 
   for(zinc=0;zinc<=cAway;zinc++)
   {
-    zi = patchData[pid].cIndex + zinc;
+    zi = zs + zinc;
     if ((zi < 0) || (zi >= cDim))
       if ( ! cPeriodic ) continue;
     for(yinc=(zinc>0 ? -bAway : 0);yinc<=bAway;yinc++)
     {
-      yi = patchData[pid].bIndex + yinc;
+      yi = ys + yinc;
       if ((yi < 0) || (yi >= bDim))
 	if ( ! bPeriodic ) continue;
       for(xinc=((zinc>0 || yinc>0) ? -aAway : 0);xinc<=aAway;xinc++)
@@ -554,17 +559,24 @@ int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transf
 	if ((xinc==0) && (yinc==0) && (zinc==0))
 	  continue;
 
-	xi = patchData[pid].aIndex + xinc;
+	xi = xs + xinc;
 	if ((xi < 0) || (xi >= aDim))
 	  if ( ! aPeriodic ) continue;
 
-	neighbor_ids[n]=this->pid(xi,yi,zi);
+	neighbor_ids[n] = this->pid(xi,yi,zi);
 	if ( transform_ids )
 	{
 	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
 	  int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= bDim ) yt = 1;
 	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
+	}
+	if ( downstream_ids )
+	{
+	  int xd = ( xi < xs ? xi : xs );
+	  int yd = ( yi < ys ? yi : ys );
+	  int zd = ( zi < zs ? zi : zs );
+	  downstream_ids[n] = this->pid(xd,yd,zd);
 	}
 	n++;
       }
@@ -574,7 +586,7 @@ int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids,  int *transf
   return n;
 }
 //----------------------------------------------------------------------
-int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_ids)
+int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids)
 {
   int xi, yi, zi;
   int xinc, yinc, zinc;
@@ -601,6 +613,7 @@ int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_i
 
 	if (neighbor_ids)
 	  neighbor_ids[n]=this->pid(xi,yi,zi);
+#if 0
 	if ( transform_ids )
 	{
 	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
@@ -608,6 +621,7 @@ int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_i
 	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
 	}
+#endif
 	n++;
       }
     }
@@ -617,8 +631,7 @@ int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids, int *transform_i
 }
 
 //----------------------------------------------------------------------
-int PatchMap::downstreamNeighbors(int pid, PatchID *neighbor_ids,
-				  int *transform_ids)
+int PatchMap::downstreamNeighbors(int pid, PatchID *neighbor_ids)
 {
   int xi, yi, zi;
   int xinc, yinc, zinc;
@@ -645,6 +658,7 @@ int PatchMap::downstreamNeighbors(int pid, PatchID *neighbor_ids,
 
 	if (neighbor_ids)
 	  neighbor_ids[n]=this->pid(xi,yi,zi);
+#if 0
 	if ( transform_ids )
 	{
 	  int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
@@ -652,6 +666,7 @@ int PatchMap::downstreamNeighbors(int pid, PatchID *neighbor_ids,
 	  int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
 	  transform_ids[n] = Lattice::index(xt,yt,zt);
 	}
+#endif
 	n++;
       }
     }

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2011/02/10 15:46:17 $
- * $Revision: 1.1217 $
+ * $Date: 2011/02/22 02:58:33 $
+ * $Revision: 1.1218 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1498,7 +1498,8 @@ void WorkDistrib::mapComputeNonbonded(void)
   Node *node = nd.ckLocalBranch();
 
   PatchID oneAway[PatchMap::MaxOneOrTwoAway];
-  PatchID oneAwayTrans[PatchMap::MaxOneOrTwoAway];
+  PatchID oneAwayDownstream[PatchMap::MaxOneOrTwoAway];
+  int oneAwayTrans[PatchMap::MaxOneOrTwoAway];
 
   PatchID i;
   ComputeID cid;
@@ -1541,10 +1542,11 @@ void WorkDistrib::mapComputeNonbonded(void)
   for(int p1=0; p1 <patchMap->numPatches(); p1++) // do the pairs
   {
     // this only returns half of neighbors, which is what we want
-    numNeighbors=patchMap->oneOrTwoAwayNeighbors(p1,oneAway,oneAwayTrans);
+    numNeighbors=patchMap->oneOrTwoAwayNeighbors(p1,oneAway,oneAwayDownstream,oneAwayTrans);
     for(j=0;j<numNeighbors;j++)
     {
 	int p2 = oneAway[j];
+	int dsp = oneAwayDownstream[j];
 
 #ifdef  MEM_OPT_VERSION        
         int64 numAtoms1 = patchMap->numAtoms(p1);
@@ -1607,8 +1609,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 //	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
 	for(int partition=0; partition < numPartitions; partition++)
 	{
-	  cid=computeMap->storeCompute(
-		patchMap->basenode(patchMap->downstream2(p1,p2)),
+	  cid=computeMap->storeCompute( patchMap->basenode(dsp),
 		2,computeNonbondedPairType,partition,numPartitions);
 	  computeMap->newPid(cid,p1);
 	  computeMap->newPid(cid,p2,oneAwayTrans[j]);
