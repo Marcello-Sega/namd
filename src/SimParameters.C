@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/02/10 15:46:17 $
- * $Revision: 1.1323 $
+ * $Date: 2011/02/22 05:09:02 $
+ * $Revision: 1.1324 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1651,7 +1651,7 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("numAtomsPair2",NOT_NEGATIVE);
    opts.optional("main", "minAtomsPerPatch", 
                "minimum average atoms per patch", 
-               &minAtomsPerPatch, 100);
+               &minAtomsPerPatch, 40);
    opts.range("minAtomsPerPatch",NOT_NEGATIVE);
 
    // Maximum exclusion flags per atom
