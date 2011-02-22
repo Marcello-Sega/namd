@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2011/02/22 02:58:33 $
- * $Revision: 1.1218 $
+ * $Date: 2011/02/22 05:07:14 $
+ * $Revision: 1.1219 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -848,33 +848,32 @@ void WorkDistrib::patchMapInit(void)
       if(params->noPatchesOnOne && CkNumPes() > 2)
         availPes -= 1;
   }
-  int maxShrink = 1.4 * availPes;
 
   int numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
-  if ( ( numPatches > maxShrink || numPatches > maxNumPatches
+  if ( ( numPatches > (0.3*availPes) || numPatches > maxNumPatches
        ) && twoAwayZ < 0 ) {
     twoAwayZ = 0;
     numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
-  if ( ( numPatches > maxShrink || numPatches > maxNumPatches
+  if ( ( numPatches > (0.6*availPes) || numPatches > maxNumPatches
        ) && twoAwayY < 0 ) {
     twoAwayY = 0;
     numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
-  if ( ( numPatches > maxShrink || numPatches > maxNumPatches
+  if ( ( numPatches > availPes || numPatches > maxNumPatches
        ) && twoAwayX < 0 ) {
     twoAwayX = 0;
     numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,1.e9,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
-  if ( numPatches <= maxShrink && availPes <= maxNumPatches ) {
+  if ( numPatches <= (1.4*availPes) && availPes <= maxNumPatches ) {
     int newNumPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,availPes,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
