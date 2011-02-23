@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: char $
- * $Date: 2010/12/05 07:08:32 $
- * $Revision: 1.1252 $
+ * $Author: jim $
+ * $Date: 2011/02/23 03:32:18 $
+ * $Revision: 1.1253 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1211,7 +1211,7 @@ void Controller::compareChecksums(int step, int forgiving) {
 
     checksum = reduction->item(REDUCTION_COMPUTE_CHECKSUM);
     if ( ((int)checksum) != computeChecksum ) {
-      if ( computeChecksum )
+      if ( ((int)checksum) && computeChecksum )
         NAMD_bug("Bad global compute count!\n");
       else
         computeChecksum = ((int)checksum);

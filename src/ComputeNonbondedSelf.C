@@ -97,14 +97,6 @@ int ComputeNonbondedSelf::noWork() {
     LdbCoordinator::Object()->skipWork(cid);
 #endif
     // fake out patches and reduction system
-
-    BigReal reductionData[reductionDataSize];
-    int i;
-    for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
-    if (pressureProfileOn) {
-      int n = pressureProfileAtomTypes;
-      memset(pressureProfileData, 0, 3*n*n*pressureProfileSlabs*sizeof(BigReal));
-    }
     CompAtom* p;
     CompAtom* p_avg;
     // BEGIN LA
@@ -144,10 +136,6 @@ int ComputeNonbondedSelf::noWork() {
       // BEGIN LA
       if (patch->flags.doLoweAndersen) velocityBox->close(&v);
       // END LA
-
-    submitReductionData(reductionData,reduction);
-    if (pressureProfileOn)
-      submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
     reduction->submit();
     if (pressureProfileOn)

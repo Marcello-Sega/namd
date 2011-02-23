@@ -106,13 +106,6 @@ int ComputeNonbondedPair::noWork() {
     LdbCoordinator::Object()->skipWork(cid);
 #endif
     // fake out patches and reduction system
-
-    int i;
-    for ( i = 0; i < reductionDataSize; ++i ) reductionData[i] = 0;
-    if (pressureProfileOn) {
-      int n = pressureProfileAtomTypes;
-      memset(pressureProfileData, 0, 3*n*n*pressureProfileSlabs*sizeof(BigReal));
-    }
     CompAtom* p[2];
     CompAtom* p_avg[2];
     // BEGIN LA
@@ -127,6 +120,7 @@ int ComputeNonbondedPair::noWork() {
 
     Results* r[2];
 
+    int i;
     // Open up positionBox, forceBox, and atomBox
     for (i=0; i<2; i++) {
       p[i] = positionBox[i]->open();
@@ -161,10 +155,6 @@ int ComputeNonbondedPair::noWork() {
         dHdrPrefixBox[i]->close(&dHdrPrefix[i]);
       }
     }
-
-    submitReductionData(reductionData,reduction);
-    if (pressureProfileOn)
-      submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
     reduction->submit();
     if (pressureProfileOn) 
