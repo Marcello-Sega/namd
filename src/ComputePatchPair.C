@@ -145,8 +145,7 @@ void ComputePatchPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results* r[
 //---------------------------------------------------------------------
 void ComputePatchPair::doWork() {
 
-  if ( (computeType != computeNonbondedSelfType && 
-        computeType != computeNonbondedPairType ) ||
+  if ( ( computeType != computeNonbondedPairType ) ||
         (!patch[0]->flags.doGBIS || gbisPhase == 1) ) {
     // Open up positionBox, forceBox, and atomBox
     for (int i=0; i<2; i++) {
@@ -159,8 +158,7 @@ void ComputePatchPair::doWork() {
   doForce(p, pExt, r);
 
   // Close up boxes
-  if ( (computeType != computeNonbondedSelfType && 
-        computeType != computeNonbondedPairType ) ||
+  if ( ( computeType != computeNonbondedPairType ) ||
       (!patch[0]->flags.doGBIS || gbisPhase == 3) ) {
     for (int i=0; i<2; i++) {
       positionBox[i]->close(&p[i]);

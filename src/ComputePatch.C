@@ -88,8 +88,7 @@ void ComputePatch::atomUpdate() {
 void ComputePatch::doWork() {
   DebugM(3,patchID << ": doWork() called.\n");
 
-  if ( (computeType != computeNonbondedSelfType && 
-        computeType != computeNonbondedPairType ) ||
+  if ( (computeType != computeNonbondedSelfType ) ||
        (!patch->flags.doGBIS || gbisPhase == 1) ) {
     // Open up positionBox, forceBox
     p = positionBox->open();
@@ -101,8 +100,7 @@ void ComputePatch::doWork() {
   doForce(p, pExt, r);
 
   // Close up boxes
-  if ( (computeType != computeNonbondedSelfType && 
-        computeType != computeNonbondedPairType   ) ||
+  if ( (computeType != computeNonbondedSelfType   ) ||
        (!patch->flags.doGBIS || gbisPhase == 3) ) {
     positionBox->close(&p);
     forceBox->close(&r);
