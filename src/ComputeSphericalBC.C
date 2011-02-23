@@ -23,7 +23,7 @@
 /************************************************************************/
 
 ComputeSphericalBC::ComputeSphericalBC(ComputeID c, PatchID pid)
-  : ComputePatch(c,pid)
+  : ComputeHomePatch(c,pid)
 {
 	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -83,7 +83,7 @@ ComputeSphericalBC::~ComputeSphericalBC()
 /*   boundary conditions for this patch.				*/
 /*									*/
 /************************************************************************/
-void ComputeSphericalBC::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
+void ComputeSphericalBC::doForce(FullAtom* p, Results* r)
 {
 	Vector diff;		//  Distance from atom to center of sphere
 	Vector f;		//  Calculated force vector

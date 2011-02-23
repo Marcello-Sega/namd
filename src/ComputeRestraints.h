@@ -7,10 +7,10 @@
 #ifndef COMPUTERESTRAINTS_H
 #define COMPUTERESTRAINTS_H
 
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
 #include "ReductionMgr.h"
 
-class ComputeRestraints : public ComputePatch
+class ComputeRestraints : public ComputeHomePatch
 {
 private:
 	int consExp;		//  Exponent for energy function from SimParameters
@@ -35,7 +35,7 @@ private:
 public:
 	ComputeRestraints(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeRestraints();			//  Destructor
-	virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r);
+	virtual void doForce(FullAtom* p, Results* r);
 	SubmitReduction *reduction;
 
 };

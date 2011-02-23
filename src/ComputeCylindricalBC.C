@@ -23,7 +23,7 @@
 /************************************************************************/
 
 ComputeCylindricalBC::ComputeCylindricalBC(ComputeID c, PatchID pid)
-  : ComputePatch(c,pid)
+  : ComputeHomePatch(c,pid)
 {
 	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -90,7 +90,7 @@ ComputeCylindricalBC::~ComputeCylindricalBC()
 /*									*/
 /************************************************************************/
 
-void ComputeCylindricalBC::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
+void ComputeCylindricalBC::doForce(FullAtom* p, Results* r)
 {
 	Vector diff;		//  Distance from atom to center of cylinder
 	Vector f;		//  Calculated force vector

@@ -7,10 +7,10 @@
 #ifndef COMPUTECYLINDRICALBC_H
 #define COMPUTECYLINDRICALBC_H
 
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
 #include "ReductionMgr.h"
 
-class ComputeCylindricalBC : public ComputePatch
+class ComputeCylindricalBC : public ComputeHomePatch
 {
 private:
 	char axis;			//  'x', 'y', or 'z'
@@ -33,7 +33,7 @@ public:
 	ComputeCylindricalBC(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeCylindricalBC();			//  Destructor
 
-	virtual void doForce(CompAtom*p, CompAtomExt* pExt, Results* r);
+	virtual void doForce(FullAtom* p, Results* r);
 	SubmitReduction *reduction;
 
 };

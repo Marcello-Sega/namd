@@ -7,10 +7,10 @@
 #ifndef COMPUTESPHERICALBC_H
 #define COMPUTESPHERICALBC_H
 
-#include "ComputePatch.h"
+#include "ComputeHomePatch.h"
 #include "ReductionMgr.h"
 
-class ComputeSphericalBC : public ComputePatch
+class ComputeSphericalBC : public ComputeHomePatch
 {
 private:
 	BigReal r1;			//  Radius of first sphere
@@ -28,7 +28,7 @@ private:
 public:
 	ComputeSphericalBC(ComputeID c, PatchID pid); 	//  Constructor
 	virtual ~ComputeSphericalBC();			//  Destructor
-	virtual void doForce(CompAtom* p, CompAtomExt* pExt, Results* r);
+	virtual void doForce(FullAtom* p, Results* r);
 	SubmitReduction *reduction;
 
 };

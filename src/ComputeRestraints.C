@@ -18,7 +18,7 @@
 /************************************************************************/
 
 ComputeRestraints::ComputeRestraints(ComputeID c, PatchID pid)
-  : ComputePatch(c,pid)
+  : ComputeHomePatch(c,pid)
 {
 	reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -74,7 +74,7 @@ ComputeRestraints::~ComputeRestraints()
 /*				FUNCTION force				*/
 /*									*/
 /************************************************************************/
-void ComputeRestraints::doForce(CompAtom* p, CompAtomExt* pExt, Results* res)
+void ComputeRestraints::doForce(FullAtom* p, Results* res)
 {
 	Molecule *molecule = Node::Object()->molecule;
 	Real k;			//  Force constant
@@ -107,9 +107,9 @@ void ComputeRestraints::doForce(CompAtom* p, CompAtomExt* pExt, Results* res)
 	  
 	if (scaling != 0.) for (int localID=0; localID<numAtoms; ++localID)
 	{
-	  if (molecule->is_atom_constrained(pExt[localID].id))
+	  if (molecule->is_atom_constrained(p[localID].id))
 	  {
-	    molecule->get_cons_params(k, refPos, pExt[localID].id);
+	    molecule->get_cons_params(k, refPos, p[localID].id);
 
 	    k *= scaling;
 
