@@ -64,14 +64,7 @@ void ComputeHomePatch::initialize() {
     Compute::initialize();
 
     int myNode = CkMyPe();
-    if ( PatchMap::Object()->node(patchID) != myNode )
-    {
-      basePriority = COMPUTE_PROXY_PRIORITY + PATCH_PRIORITY(patchID);
-    }
-    else
-    {
-      basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
-    }
+    basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
 }
 
 void ComputeHomePatch::atomUpdate() {
