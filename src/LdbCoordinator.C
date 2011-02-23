@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: chaomei2 $
- * $Date: 2010/10/24 04:04:47 $
- * $Revision: 1.102 $
+ * $Author: jim $
+ * $Date: 2011/02/23 16:47:49 $
+ * $Revision: 1.103 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -693,40 +693,25 @@ void LdbCoordinator::awakenSequencers()
 
 int LdbCoordinator::requiredProxies(PatchID id, int neighborNodes[])
 {
-  enum proxyHere { No, Yes };
-  int numNodes = CkNumPes();
-  proxyHere *proxyNodes = new proxyHere[numNodes];
-  int nProxyNodes;
-  int i;
-
-  // Note all home patches.
-  for ( i = 0; i < numNodes; ++i )
-  {
-    proxyNodes[i] = No;
-  }
-  nProxyNodes=0;
-
-  // Check all two-away neighbors.
-  // This is really just one-away neighbors, since 
-  // two-away always returns zero: RKB
-  PatchID neighbors[1 + PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
-
-  int myNode = patchMap->node(id);
+  PatchID neighbors[1 + PatchMap::MaxOneAway];
   neighbors[0] = id;
   int numNeighbors = 1 + patchMap->downstreamNeighbors(id,neighbors+1);
-  for ( i = 0; i < numNeighbors; ++i )
-  {
-    const int proxyNode = patchMap->basenode(neighbors[i]);
-    if (proxyNode != myNode)
-      if (proxyNodes[proxyNode] == No)
-      {
-	proxyNodes[proxyNode] = Yes;
-	neighborNodes[nProxyNodes] = proxyNode;
-	nProxyNodes++;
-      }
-  }
 
-  delete [] proxyNodes;
+  int nProxyNodes = 0;
+  int myNode = patchMap->node(id);
+  for ( int i = 0; i < numNeighbors; ++i ) {
+    const int proxyNode = patchMap->basenode(neighbors[i]);
+    if ( proxyNode != myNode ) {
+      int j;
+      for ( j = 0; j < nProxyNodes; ++j ) {
+        if ( neighborNodes[j] == proxyNode ) break;
+      }
+      if ( j == nProxyNodes ) {
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
+      }
+    }
+  }
   return nProxyNodes;
 }
 
