@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2011/02/23 16:47:49 $
- * $Revision: 1.103 $
+ * $Date: 2011/02/23 16:58:44 $
+ * $Revision: 1.104 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -370,49 +370,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	    elemID.id[1] =  computeMap->pid(i,0);
 	  else elemID.id[1] = -1;
 
-          int migratable = 1;
-
-         //computes with light work not migratable
-         if ( computeMap->type(i) == computeNonbondedPairType ) {
-            int adim = patchMap->gridsize_a();
-            int bdim = patchMap->gridsize_b();
-            int cdim = patchMap->gridsize_c();
-
-            int p1 = computeMap->pid(i, 0);
-            int t1 = computeMap->trans(i, 0);
-            int x1 = patchMap->index_a(p1) + adim * Lattice::offset_a(t1);
-            int y1 = patchMap->index_b(p1) + bdim * Lattice::offset_b(t1);
-            int z1 = patchMap->index_c(p1) + cdim * Lattice::offset_c(t1);
-
-            int p2 = computeMap->pid(i, 1);
-            int t2 = computeMap->trans(i, 1);
-            int x2 = patchMap->index_a(p2) + adim * Lattice::offset_a(t2);
-            int y2 = patchMap->index_b(p2) + bdim * Lattice::offset_b(t2);
-            int z2 = patchMap->index_c(p2) + cdim * Lattice::offset_c(t2);
-
-            int sub_x = abs(x2-x1);
-            int sub_y = abs(y2-y1);
-            int sub_z = abs(z2-z1);
-
-            int distance = sub_x + sub_y + sub_z;
-
-            if ( sub_x > patchMap->numaway_a() ||
-                 sub_y > patchMap->numaway_b() ||
-                 sub_z > patchMap->numaway_c() )
-              NAMD_bug("Bad patch distance in LdbCoordinator::initialize");
-
-            if( distance >2 &&( sub_x==2  || sub_y ==2 ||  sub_z ==2 )) {
-              migratable = 0;
-            }
-
-            // if ( migratable ) {
-            //   CkPrintf("(%d %d %d) (%d %d %d) (%d %d %d) %d %d %d %d\n",
-            //     x1,y1,z1, x2,y2,z2, sub_x,sub_y,sub_z,
-            //     t1,t2, distance, migratable);
-            // }
-          }
-
-          objHandles[i] = theLbdb->RegisterObj(myHandle,elemID,0,migratable);
+          objHandles[i] = theLbdb->RegisterObj(myHandle,elemID,0,1);
 	}
       }
     }
