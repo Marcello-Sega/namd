@@ -20,11 +20,8 @@ module ComputePmeMgr {
     PmeReduction evir[];
   };
 
-  nodegroup PmePencilMapData {
-    entry PmePencilMapData(int n, int d[n]);
-  };
   group PmePencilMap : CkArrayMap {
-    entry PmePencilMap(int i_a, int i_b, int n_b, CProxy_PmePencilMapData dp);
+    entry PmePencilMap(int i_a, int i_b, int n_b, int n, int d[n]);
   };
 
   message PmePencilInitMsg;

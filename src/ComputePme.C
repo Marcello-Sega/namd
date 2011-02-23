@@ -85,26 +85,11 @@ public:
 
 };
 
-class PmePencilMapData : public CBase_PmePencilMapData {
-public:
-  PmePencilMapData(int n, int *d) : size(n), data(newcopyint(n,d)) { }
-  ~PmePencilMapData() { delete [] data; }
-  const int* const data;
-  const int size;
-private:
-  static int* newcopyint(int n, int *d) {
-    int *newd = new int[n];
-    memcpy(newd, d, n*sizeof(int));
-    return newd;
-  }
-};
-
 class PmePencilMap : public CBase_PmePencilMap {
 public:
-  PmePencilMap(int i_a, int i_b, int n_b, CProxy_PmePencilMapData dp)
+  PmePencilMap(int i_a, int i_b, int n_b, int n, int *d)
     : ia(i_a), ib(i_b), nb(n_b),
-      size(dp.ckLocalBranch()->size),
-      data(dp.ckLocalBranch()->data) {
+      size(n), data(newcopyint(n,d)) {
   }
   virtual int registerArray(CkArrayIndexMax&, CkArrayID) {
     //Return an ``arrayHdl'', given some information about the array
@@ -133,6 +118,11 @@ public:
 private:
   const int ia, ib, nb, size;
   const int* const data;
+  static int* newcopyint(int n, int *d) {
+    int *newd = new int[n];
+    memcpy(newd, d, n*sizeof(int));
+    return newd;
+  }
 };
 
 // use this idiom since messages don't have copy constructors
@@ -749,14 +739,10 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	// creating the pencil arrays
 	if ( CkMyPe() == 0 ){
 #if 1
-	CProxy_PmePencilMapData xd,yd,zd;
-        zd = CProxy_PmePencilMapData::ckNew(xBlocks*yBlocks,zprocs.begin());
-        yd = CProxy_PmePencilMapData::ckNew(zBlocks*xBlocks,yprocs.begin());
-        xd = CProxy_PmePencilMapData::ckNew(yBlocks*zBlocks,xprocs.begin());
         CProxy_PmePencilMap xm,ym,zm;
-        zm = CProxy_PmePencilMap::ckNew(0,1,yBlocks,zd);
-        ym = CProxy_PmePencilMap::ckNew(2,0,xBlocks,yd);
-        xm = CProxy_PmePencilMap::ckNew(1,2,zBlocks,xd);
+        zm = CProxy_PmePencilMap::ckNew(0,1,yBlocks,xBlocks*yBlocks,zprocs.begin());
+        ym = CProxy_PmePencilMap::ckNew(2,0,xBlocks,zBlocks*xBlocks,yprocs.begin());
+        xm = CProxy_PmePencilMap::ckNew(1,2,zBlocks,yBlocks*zBlocks,xprocs.begin());
         CkArrayOptions zo(xBlocks,yBlocks,1);  zo.setMap(zm);
         CkArrayOptions yo(xBlocks,1,zBlocks);  yo.setMap(ym);
         CkArrayOptions xo(1,yBlocks,zBlocks);  xo.setMap(xm);
