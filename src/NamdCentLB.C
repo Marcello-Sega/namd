@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: bhatele $
- * $Date: 2011/02/22 00:45:57 $
- * $Revision: 1.102 $
+ * $Author: jim $
+ * $Date: 2011/02/23 21:14:50 $
+ * $Revision: 1.103 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -122,6 +122,40 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
   loadDataASCII("ldbd_before.5", numProcessors, numPatches, nMoveableComputes);
   // CkExit();
 #endif
+
+  {
+   int i;
+   double total = 0.;
+   double maxCompute = 0.;
+   for (i=0; i<nMoveableComputes; i++) {
+      double load = computeArray[i].load;
+      total += load;
+      if ( load > maxCompute ) maxCompute = load;
+   }
+   double avgCompute = total / nMoveableComputes;
+
+#if CHARM_VERSION > 60301
+    int P = stats->nprocs();
+#else
+    int P = stats->count;
+#endif
+   int numPesAvailable = 0;
+   for (i=0; i<P; i++) {
+      if (processorArray[i].available) {
+        ++numPesAvailable;
+        total += processorArray[i].backgroundLoad;
+      }
+   }
+   if (numPesAvailable == 0) {
+     CmiPrintf("Warning: no processors available for load balancing!\n");
+   } else {
+     double averageLoad = total/numPesAvailable;
+     CkPrintf("LDB: Largest compute is %.1f%% of average load\n",
+                     100. * maxCompute / averageLoad);
+     CkPrintf("LDB: Average compute is %.1f%% of average load\n",
+                     100. * avgCompute / averageLoad);
+   }
+  }
 
   if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
     if (step() < 2)
