@@ -7,6 +7,8 @@
 #ifndef BOX_H
 #define BOX_H
 
+// #define BOX_DEBUG
+
 #include "OwnerBox.h"
 
 template <class Owner, class Data> class Box {
@@ -15,45 +17,59 @@ template <class Owner, class Data> class Box {
 
   private:
 
-    Box(OwnerBox<Owner,Data>* o): openCount(0), ownerBox(o), user(-1) { state = CLOSED; };
-    Box(OwnerBox<Owner,Data>* o,int n): openCount(0), ownerBox(o), user(n) {
-      state = CLOSED;
-    };
+    Box(OwnerBox<Owner,Data>* o, int n = -1):
+#ifdef BOX_DEBUG
+      state(CLOSED), user(n),
+#endif
+      ownerBox(o) {}
 
     ~Box(void) {};
 
+#ifdef BOX_DEBUG
     enum box_state {OPEN, CLOSED} state;
+#endif
+
     OwnerBox<Owner,Data> *ownerBox;	
 
   public:
+#ifdef BOX_DEBUG
   int user;
-  int openCount;
+#endif
 
     Data* open(void) {
-      if (state != OPEN) {
-        openCount++;
-        state = OPEN; 
-        ownerBox->openCount--;
-      } else {
-        //do nothing
-      }
+      ownerBox->openCount--;
+#ifdef BOX_DEBUG
+      if (ownerBox->openCount < 0) NAMD_bug("too many boxes opened");
+      if (state != CLOSED) NAMD_bug("box re-opened");
+      state = OPEN; 
+#endif
       return ownerBox->data; 
     }
 
     void close(Data ** const t) {
-      if (state != CLOSED) {
-        state = CLOSED;
-        *t = NULL;
+      *t = NULL;
+      ownerBox->closeCount--;
+#ifdef BOX_DEBUG
+      if (ownerBox->closeCount < 0) NAMD_bug("too many boxes closed");
+      if (state != OPEN) NAMD_bug("box re-closed");
+      state = CLOSED;
+#endif
+      // Trigger callback!
+      if ( ! ownerBox->closeCount ) {
+	ownerBox->close();
+      }
+    }
 
-        // Trigger callback!
-        --ownerBox->closeCount;
-        if (ownerBox->closeCount < 0)
-          CmiAbort("GBISERROR! Box closed too many times!\n");
-        if ( ! ownerBox->closeCount ) {
-	        ownerBox->close();
-        }
-      } else {
-        //do nothing
+    void skip(void) {
+      ownerBox->openCount--;
+      ownerBox->closeCount--;
+#ifdef BOX_DEBUG
+      if (state != CLOSED) NAMD_bug("box skipped while open");
+      if (ownerBox->openCount < 0) NAMD_bug("too many boxes opened");
+      if (ownerBox->closeCount < 0) NAMD_bug("too many boxes closed");
+#endif
+      if ( ! ownerBox->closeCount ) {
+        ownerBox->close();
       }
     }
 

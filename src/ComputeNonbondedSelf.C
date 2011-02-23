@@ -96,46 +96,21 @@ int ComputeNonbondedSelf::noWork() {
 #ifndef NAMD_CUDA
     LdbCoordinator::Object()->skipWork(cid);
 #endif
-    // fake out patches and reduction system
-    CompAtom* p;
-    CompAtom* p_avg;
+
+    // skip all boxes
+    positionBox->skip();
+    forceBox->skip();
+    if ( patch->flags.doMolly ) avgPositionBox->skip();
     // BEGIN LA
-    CompAtom* v;
+    if (patch->flags.doLoweAndersen) velocityBox->skip();
     // END LA
-    Results* r;
-    BigReal* psiSum;
-    Real* intRad;
-    BigReal* bornRad;
-    BigReal* dEdaSum;
-    BigReal* dHdrPrefix;
-
-    // Open up positionBox, forceBox, and atomBox
-      p = positionBox->open();
-      r = forceBox->open();
-      if ( patch->flags.doMolly ) p_avg = avgPositionBox->open();
-      // BEGIN LA
-      if (patch->flags.doLoweAndersen) v = velocityBox->open();
-      // END LA
-      if (patch->flags.doGBIS) {
-        psiSum = psiSumBox->open();
-        psiSumBox->close(&psiSum);
-        intRad = intRadBox->open();
-        intRadBox->close(&intRad);
-        bornRad = bornRadBox->open();
-        bornRadBox->close(&bornRad);
-        dEdaSum = dEdaSumBox->open();
-        dEdaSumBox->close(&dEdaSum);
-        dHdrPrefix = dHdrPrefixBox->open();
-        dHdrPrefixBox->close(&dHdrPrefix);
-      }
-
-    // Close up boxes
-      positionBox->close(&p);
-      forceBox->close(&r);
-      if ( patch->flags.doMolly ) avgPositionBox->close(&p_avg);
-      // BEGIN LA
-      if (patch->flags.doLoweAndersen) velocityBox->close(&v);
-      // END LA
+    if (patch->flags.doGBIS) {
+      psiSumBox->skip();
+      intRadBox->skip();
+      bornRadBox->skip();
+      dEdaSumBox->skip();
+      dHdrPrefixBox->skip();
+    }
 
     reduction->submit();
     if (pressureProfileOn)

@@ -105,54 +105,22 @@ int ComputeNonbondedPair::noWork() {
 #ifndef NAMD_CUDA
     LdbCoordinator::Object()->skipWork(cid);
 #endif
-    // fake out patches and reduction system
-    CompAtom* p[2];
-    CompAtom* p_avg[2];
-    // BEGIN LA
-    CompAtom* v[2];
-    // END LA
 
-    BigReal* psiSum[2];
-    Real* intRad[2];
-    BigReal* bornRad[2];
-    BigReal* dEdaSum[2];
-    BigReal* dHdrPrefix[2];
-
-    Results* r[2];
-
-    int i;
-    // Open up positionBox, forceBox, and atomBox
-    for (i=0; i<2; i++) {
-      p[i] = positionBox[i]->open();
-      r[i] = forceBox[i]->open();
-      if ( patch[0]->flags.doMolly ) p_avg[i] = avgPositionBox[i]->open();
+    // skip all boxes
+    for (int i=0; i<2; i++) {
+      positionBox[i]->skip();
+      forceBox[i]->skip();
+      if ( patch[0]->flags.doMolly ) avgPositionBox[i]->skip();
       // BEGIN LA
-      if (patch[0]->flags.doLoweAndersen) v[i] = velocityBox[i]->open();
+      if (patch[0]->flags.doLoweAndersen) velocityBox[i]->skip();
       // END LA
 
       if (patch[0]->flags.doGBIS) {
-        psiSum[i] = psiSumBox[i]->open();
-        intRad[i] = intRadBox[i]->open();
-        bornRad[i] = bornRadBox[i]->open();
-        dEdaSum[i] = dEdaSumBox[i]->open();
-        dHdrPrefix[i] = dHdrPrefixBox[i]->open();
-      }
-    }
-    // Close up boxes
-    for (i=0; i<2; i++) {
-      positionBox[i]->close(&p[i]);
-      forceBox[i]->close(&r[i]);
-      if ( patch[0]->flags.doMolly ) avgPositionBox[i]->close(&p_avg[i]);
-      // BEGIN LA
-      if (patch[0]->flags.doLoweAndersen) velocityBox[i]->close(&v[i]);
-      // END LA
-
-      if (patch[0]->flags.doGBIS) {
-        psiSumBox[i]->close(&psiSum[i]);
-        intRadBox[i]->close(&intRad[i]);
-        bornRadBox[i]->close(&bornRad[i]);
-        dEdaSumBox[i]->close(&dEdaSum[i]);
-        dHdrPrefixBox[i]->close(&dHdrPrefix[i]);
+        psiSumBox[i]->skip();
+        intRadBox[i]->skip();
+        bornRadBox[i]->skip();
+        dEdaSumBox[i]->skip();
+        dHdrPrefixBox[i]->skip();
       }
     }
 
