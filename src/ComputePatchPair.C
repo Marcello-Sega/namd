@@ -11,6 +11,7 @@
 #include "PatchMap.inl"
 #include "Patch.h"
 #include "ComputeMap.h"
+#include "LdbCoordinator.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
@@ -145,6 +146,9 @@ void ComputePatchPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results* r[
 //---------------------------------------------------------------------
 void ComputePatchPair::doWork() {
 
+#ifndef NAMD_CUDA
+  LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+#endif
   if ( ( computeType != computeNonbondedPairType ) ||
         (!patch[0]->flags.doGBIS || gbisPhase == 1) ) {
     // Open up positionBox, forceBox, and atomBox
@@ -156,6 +160,18 @@ void ComputePatchPair::doWork() {
   }
 
   doForce(p, pExt, r);
+ // Inform load balancer
+  if (patch[0]->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
+#endif
+  } else {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
+
+  }
+
 
   // Close up boxes
   if ( ( computeType != computeNonbondedPairType ) ||

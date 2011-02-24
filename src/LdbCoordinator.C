@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: jim $
- * $Date: 2011/02/23 16:58:44 $
- * $Revision: 1.104 $
+ * $Author: jessie $
+ * $Date: 2011/02/24 18:09:21 $
+ * $Revision: 1.105 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -489,7 +489,8 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
 void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
 {
   CmiAssert(id >=0 && id < numComputes);
-  theLbdb->ObjectStart(objHandles[id]);
+  if (objHandles[id].objID().id[0] >= 0)
+     theLbdb->ObjectStart(objHandles[id]);
 }
 
 void LdbCoordinator::pauseWork(ComputeID id)

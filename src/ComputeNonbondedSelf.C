@@ -129,12 +129,6 @@ void ComputeNonbondedSelf::doForce(CompAtom* p, CompAtomExt* pExt, Results* r)
   int doEnergy = patch->flags.doEnergy;
 
 
-#ifndef NAMD_CUDA
-  // Inform load balancer. 
-  // I assume no threads will suspend until endWork is called
-    LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
-#endif
-
 /*******************************************************************************
    * Prepare Parameters
  ******************************************************************************/
@@ -349,16 +343,5 @@ if (patch->flags.doGBIS) {
     pressureProfileReduction->submit();
   }// end not gbis
 
-  // Inform load balancer
-  if (patch->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
-#ifndef NAMD_CUDA
-    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
-#endif
-  } else {
-#ifndef NAMD_CUDA
-    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
-#endif
-
-  }
 }
 

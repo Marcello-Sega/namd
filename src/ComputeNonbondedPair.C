@@ -144,9 +144,6 @@ void ComputeNonbondedPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results
   if ( numAtoms[0] > numAtoms[1] ) { a = 1; b = 0; }
   CompAtom* v[2];
 
-#ifndef NAMD_CUDA
-  LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
-#endif
 
 /*******************************************************************************
  * Prepare Parameters
@@ -415,16 +412,5 @@ if (patch[0]->flags.doGBIS) {
     pressureProfileReduction->submit();
   }//end gbis end phase
 
-  // Inform load balancer
-  if (patch[0]->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
-#ifndef NAMD_CUDA
-    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
-#endif
-  } else {
-#ifndef NAMD_CUDA
-    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
-#endif
-
-  }
 }//end do Force
 

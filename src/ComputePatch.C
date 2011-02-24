@@ -15,6 +15,7 @@
 #include "PatchMap.inl"
 #include "Patch.h"
 #include "ComputeMap.h" //needed for checking GBIS type
+#include "LdbCoordinator.h"
 
 #define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
@@ -88,6 +89,11 @@ void ComputePatch::atomUpdate() {
 void ComputePatch::doWork() {
   DebugM(3,patchID << ": doWork() called.\n");
 
+#ifndef NAMD_CUDA
+  // Inform load balancer. 
+  // I assume no threads will suspend until endWork is called
+    LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+#endif
   if ( (computeType != computeNonbondedSelfType ) ||
        (!patch->flags.doGBIS || gbisPhase == 1) ) {
     // Open up positionBox, forceBox
@@ -98,7 +104,17 @@ void ComputePatch::doWork() {
 
   // Pass pointers to doForce
   doForce(p, pExt, r);
+// Inform load balancer
+  if (patch->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
+#endif
+  } else {
+#ifndef NAMD_CUDA
+    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+#endif
 
+  }
   // Close up boxes
   if ( (computeType != computeNonbondedSelfType   ) ||
        (!patch->flags.doGBIS || gbisPhase == 3) ) {
