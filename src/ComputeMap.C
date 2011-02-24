@@ -83,6 +83,17 @@ void ComputeMap::initPtrs() {
   }
 }
 
+void ComputeMap::extendPtrs() {
+  if ( ! computePtrs ) NAMD_bug("ComputeMap::extendPtrs() 1");
+  int oldN = nComputes;
+  Compute **oldPtrs = computePtrs;
+  nComputes = computeData.size();
+  computePtrs = new Compute*[nComputes];
+  memcpy(computePtrs, oldPtrs, oldN*sizeof(Compute*));
+  memset(computePtrs+oldN, 0, (nComputes-oldN)*sizeof(Compute*));
+  delete [] oldPtrs;
+}
+
 //----------------------------------------------------------------------
 int ComputeMap::numPids(ComputeID cid)
 {
@@ -155,6 +166,19 @@ ComputeID ComputeMap::storeCompute(int inode, int maxPids,
   computeData[cid].numPartitions = numPartitions;
 
   computeData[cid].numPids = 0;
+
+  return cid;
+}
+
+//----------------------------------------------------------------------
+ComputeID ComputeMap::cloneCompute(ComputeID src, int partition)
+{
+  const int cid = computeData.size();
+  computeData.resize(cid+1);
+
+  computeData[cid] = computeData[src];
+  computeData[cid].partition = partition;
+  computeData[cid].node = -1;
 
   return cid;
 }

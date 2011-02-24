@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2011/02/22 05:32:32 $
- * $Revision: 1.1220 $
+ * $Date: 2011/02/24 21:08:47 $
+ * $Revision: 1.1221 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -53,7 +53,9 @@ class ComputeMapChangeMsg : public CMessage_ComputeMapChangeMsg
 public:
 
   int numNewNodes;
+  int numNewNumPartitions;
   int *newNodes;
+  char *newNumPartitions;
 
 //  VARSIZE_DECL(ComputeMapChangeMsg);
 };
@@ -92,11 +94,14 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
   int i;
   int nc = computeMap->numComputes();
   
-  ComputeMapChangeMsg *mapMsg = new (nc, 0) ComputeMapChangeMsg ;
+  ComputeMapChangeMsg *mapMsg = new (nc, nc, 0) ComputeMapChangeMsg ;
 
   mapMsg->numNewNodes = nc;
   for(i=0; i<nc; i++)
     mapMsg->newNodes[i] = computeMap->newNode(i);
+  mapMsg->numNewNumPartitions = nc;
+  for(i=0; i<nc; i++)
+    mapMsg->newNumPartitions[i] = computeMap->newNumPartitions(i);
 
   CProxy_WorkDistrib(thisgroup).recvComputeMapChanges(mapMsg);
 
@@ -114,9 +119,16 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
   
   if ( ! CkMyRank() ) {
     ComputeMap *computeMap = ComputeMap::Object();
+    int nc = computeMap->numComputes();
+    if ( nc != msg->numNewNodes ) NAMD_bug("recvComputeMapChanges 1");
     int i;
-    for(i=0; i<computeMap->numComputes(); i++)
+    for(i=0; i<nc; i++)
       computeMap->setNewNode(i,msg->newNodes[i]);
+    if ( msg->numNewNumPartitions ) {
+      if ( nc != msg->numNewNumPartitions ) NAMD_bug("recvComputeMapChanges 2");
+      for(i=0; i<nc; i++)
+        computeMap->setNewNumPartitions(i,msg->newNumPartitions[i]);
+    }
   }
 
   delete msg;
@@ -1508,6 +1520,7 @@ void WorkDistrib::mapComputeNonbonded(void)
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
 
+#if 0
 #ifdef  MEM_OPT_VERSION    
     int64 numFixed = patchMap->numFixedAtoms(i);
     int64 numAtoms = patchMap->numAtoms(i);
@@ -1528,6 +1541,8 @@ void WorkDistrib::mapComputeNonbonded(void)
     // self-interaction
     DebugM(4,"Mapping " << numPartitions << " ComputeNonbondedSelf objects for patch " << i << "\n");
 //    iout <<"Self numPartitions = " <<numPartitions <<" numAtoms " <<numAtoms <<std::endl;
+#endif
+    int numPartitions = 1;
     for(int partition=0; partition < numPartitions; partition++)
     {
       cid=computeMap->storeCompute(patchMap->node(i),1,
@@ -1547,6 +1562,7 @@ void WorkDistrib::mapComputeNonbonded(void)
 	int p2 = oneAway[j];
 	int dsp = oneAwayDownstream[j];
 
+#if 0
 #ifdef  MEM_OPT_VERSION        
         int64 numAtoms1 = patchMap->numAtoms(p1);
         int64 numAtoms2 = patchMap->numAtoms(p2);
@@ -1606,6 +1622,8 @@ void WorkDistrib::mapComputeNonbonded(void)
         if ( numPartitions > node->simParameters->maxPairPart )
 			numPartitions = node->simParameters->maxPairPart;
 //	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
+#endif
+        int numPartitions = 1;
 	for(int partition=0; partition < numPartitions; partition++)
 	{
 	  cid=computeMap->storeCompute( patchMap->basenode(dsp),

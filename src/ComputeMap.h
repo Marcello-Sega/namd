@@ -116,17 +116,29 @@ public:
   int partition(ComputeID cid);
   int numPartitions(ComputeID cid);
 
+  inline void setNumPartitions(ComputeID cid, char numPartitions) {
+    computeData[cid].numPartitions = numPartitions;
+  }
+  inline char newNumPartitions(ComputeID cid) {
+    return (computeData[cid].newNumPartitions);
+  }
+  inline void setNewNumPartitions(ComputeID cid, char numPartitions) {
+    computeData[cid].newNumPartitions = numPartitions;
+  }
+
   int allocateCids();
 
   // storeCompute(cid,node,maxPids) tells the ComputeMap to store
   // information about the indicated patch, and allocate space
   // for up to maxPids dependents
   ComputeID storeCompute(int node,int maxPids,ComputeType type,
-			 int partition=0, int numPartitions=1);
+			 int partition=-1, int numPartitions=0);
 
   // newPid(cid,pid) stores the n patch ids associated with
   // compute id cid.
   void newPid(ComputeID cid, int pid, int trans = 13);
+
+  ComputeID cloneCompute(ComputeID src, int partition);
 
   void printComputeMap(void);
   void saveComputeMap(const char *fname);
@@ -150,6 +162,7 @@ public:
   {
     ComputeData() { 
       node = -1; moveToNode = -1; 
+      newNumPartitions = 0;
       numPids = 0;
     }
     int node;
@@ -157,6 +170,7 @@ public:
     ComputeType type;
     char partition;
     char numPartitions;
+    char newNumPartitions;
     char numPids;
     PatchRec pids[numPidsAllocated];
   };
@@ -165,6 +179,7 @@ protected:
   void pack(ComputeData *buf);
   void unpack(int n, ComputeData *buf);
   void initPtrs();
+  void extendPtrs();
 
   ComputeMap(void);
 

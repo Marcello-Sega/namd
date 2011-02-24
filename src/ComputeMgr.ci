@@ -23,6 +23,8 @@ module ComputeMgr {
     entry ComputeMgr(void);
     entry void updateComputes2(CkQdMsg *);
     entry void updateComputes3(void);
+    entry void splitComputes(void);
+    entry void splitComputes2(CkQdMsg *);
     entry void updateLocalComputes(void);
     entry void updateLocalComputes2(CkQdMsg *);
     entry void updateLocalComputes3(void);

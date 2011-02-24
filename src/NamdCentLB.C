@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2011/02/23 21:14:50 $
- * $Revision: 1.103 $
+ * $Date: 2011/02/24 21:08:47 $
+ * $Revision: 1.104 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -123,14 +123,16 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
   // CkExit();
 #endif
 
+  double averageLoad = 0.;
   {
    int i;
    double total = 0.;
    double maxCompute = 0.;
+   int maxi = 0;
    for (i=0; i<nMoveableComputes; i++) {
       double load = computeArray[i].load;
       total += load;
-      if ( load > maxCompute ) maxCompute = load;
+      if ( load > maxCompute ) { maxCompute = load;  maxi = i; }
    }
    double avgCompute = total / nMoveableComputes;
 
@@ -146,18 +148,48 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
         total += processorArray[i].backgroundLoad;
       }
    }
-   if (numPesAvailable == 0) {
-     CmiPrintf("Warning: no processors available for load balancing!\n");
-   } else {
-     double averageLoad = total/numPesAvailable;
-     CkPrintf("LDB: Largest compute is %.1f%% of average load\n",
-                     100. * maxCompute / averageLoad);
-     CkPrintf("LDB: Average compute is %.1f%% of average load\n",
-                     100. * avgCompute / averageLoad);
-   }
+   if (numPesAvailable == 0)
+     NAMD_die("No processors available for load balancing!\n");
+
+   averageLoad = total/numPesAvailable;
+   CkPrintf("LDB: Largest compute %d load %f is %.1f%% of average load %f\n",
+            computeArray[maxi].handle.id.id[0],
+            maxCompute, 100. * maxCompute / averageLoad, averageLoad);
+   CkPrintf("LDB: Average compute %f is %.1f%% of average load %f\n",
+            avgCompute, 100. * avgCompute / averageLoad, averageLoad);
   }
 
-  if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
+  if ( step() == 0 ) {
+    // compute splitting only
+    // partitions are stored as char but mostly limited by
+    // high load noise at low outer-loop iteration counts
+    int maxParts = 10;
+    int totalAddedParts = 0;
+    double maxCompute = averageLoad / 20.;
+    CkPrintf("LDB: Partitioning computes with target load %f\n", maxCompute);
+    double maxUnsplit = 0.;
+    for (int i=0; i<nMoveableComputes; i++) {
+      computeArray[i].processor = computeArray[i].oldProcessor;
+      const int cid = computeArray[i].handle.id.id[0];
+      const double load = computeArray[i].load;
+      if ( computeMap->numPartitions(cid) == 0 ) {
+        if ( load > maxUnsplit ) maxUnsplit = load;
+        continue;
+      }
+      int nparts = (int) ceil(load / maxCompute);
+      if ( nparts > maxParts ) nparts = maxParts;
+      if ( nparts < 1 ) nparts = 1;
+      if ( load > averageLoad ) {
+        CkPrintf("LDB: Partitioning compute %d with load %f by %d\n",
+                  cid, load, nparts);
+      }
+      computeMap->setNewNumPartitions(cid,nparts);
+      totalAddedParts += nparts - 1;
+    }
+    CkPrintf("LDB: Increased migratable compute count from %d to %d\n",
+              nMoveableComputes,nMoveableComputes+totalAddedParts);
+    CkPrintf("LDB: Largest unpartitionable compute is %f\n", maxUnsplit);
+  } else if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
     if (step() < 2)
       TorusLB(computeArray, patchArray, processorArray,
 	          nMoveableComputes, numPatches, numProcessors);

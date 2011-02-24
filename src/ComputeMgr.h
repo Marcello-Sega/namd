@@ -51,6 +51,8 @@ public:
   void updateComputes(int,CkGroupID);
   void updateComputes2(CkQdMsg *);
   void updateComputes3();
+  void splitComputes();
+  void splitComputes2(CkQdMsg *);
   void updateLocalComputes();
   void updateLocalComputes2(CkQdMsg *);
   void updateLocalComputes3();

@@ -10,6 +10,7 @@ module WorkDistrib {
   message LocalWorkMsg;
   message ComputeMapChangeMsg {
     int newNodes[];
+    char newNumPartitions[];
   };
   message PatchMapMsg {
     char patchMapData[];

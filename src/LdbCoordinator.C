@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: jessie $
- * $Date: 2011/02/24 18:09:21 $
- * $Revision: 1.105 $
+ * $Author: jim $
+ * $Date: 2011/02/24 21:08:46 $
+ * $Revision: 1.106 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -181,8 +181,8 @@ LdbCoordinator::LdbCoordinator()
     AddLocalBarrierClient((LDResumeFn)staticResumeFromSync,
 			  (void*)this);
   objHandles = 0;
-  reg_all_objs = 1;
-
+  numComputes = 0;
+  reg_all_objs = 2;
 }
 
 LdbCoordinator::~LdbCoordinator(void)
@@ -277,6 +277,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   if (nLocalPatches != patchMap->numHomePatches())
     NAMD_die("Disaggreement in patchMap data.\n");
  
+  const int oldNumComputes = numComputes;
   nLocalComputes = 0;
   numComputes = computeMap->numComputes();
 
@@ -311,6 +312,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
     // registering them.
     theLbdb->RegisteringObjects(myHandle);
     
+   --reg_all_objs;
+   if ( reg_all_objs ) {
     patchHandles = new LDObjHandle[nLocalPatches];
     int patch_count=0;
     int i;
@@ -329,15 +332,20 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	  = theLbdb->RegisterObj(myHandle,elemID,0,0);
 	patch_count++;
       }
+   }
   
     // Allocate new object handles
-    if (objHandles == 0) {
+    {
+      LDObjHandle *oldObjHandles = objHandles;
       objHandles = new LDObjHandle[numComputes];
-      for(i=0; i<numComputes; i++)
+      for(i=0; i<oldNumComputes; i++)
+        objHandles[i] = oldObjHandles[i];
+      delete [] oldObjHandles;
+      for(i=oldNumComputes; i<numComputes; i++)
 	objHandles[i].id.id[0] = -1; // Use -1 to mark unused entries
 
       // Register computes
-      for(i=0; i<numComputes; i++)  {
+      for(i=oldNumComputes; i<numComputes; i++)  {
 	if ( (computeMap->node(i) == Node::Object()->myid())
 	     && ( 0
 #ifndef NAMD_CUDA
@@ -375,7 +383,6 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       }
     }
     theLbdb->DoneRegisteringObjects(myHandle);
-    reg_all_objs = 0;
   }
 
   // Fixup to take care of the extra timestep at startup
@@ -387,8 +394,8 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   {
     totalStepsDone += firstLdbStep;
     numStepsToRun = firstLdbStep;
-    takingLdbData = 0;
-    theLbdb->CollectStatsOff();
+    takingLdbData = 1;
+    theLbdb->CollectStatsOn();
   }
   else if ( (ldbCycleNum <= 4) || !takingLdbData )
   {

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/02/23 03:32:18 $
- * $Revision: 1.1253 $
+ * $Date: 2011/02/24 21:08:46 $
+ * $Revision: 1.1254 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1211,7 +1211,8 @@ void Controller::compareChecksums(int step, int forgiving) {
 
     checksum = reduction->item(REDUCTION_COMPUTE_CHECKSUM);
     if ( ((int)checksum) != computeChecksum ) {
-      if ( ((int)checksum) && computeChecksum )
+      if ( ((int)checksum) && computeChecksum &&
+           step - simParams->firstTimestep != simParams->firstLdbStep )
         NAMD_bug("Bad global compute count!\n");
       else
         computeChecksum = ((int)checksum);

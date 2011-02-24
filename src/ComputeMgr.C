@@ -122,6 +122,46 @@ void ComputeMgr::updateComputes2(CkQdMsg *msg)
 
 void ComputeMgr::updateComputes3()
 {
+    CProxy_ComputeMgr(thisgroup).splitComputes();
+}
+
+void ComputeMgr::splitComputes()
+{
+  if ( ! CkMyRank() ) {
+    ComputeMap *computeMap = ComputeMap::Object();
+    const int nc = computeMap->numComputes();
+
+    for (int i=0; i<nc; i++) {
+      int nnp = computeMap->newNumPartitions(i);
+      if ( nnp > 0 ) {
+        if ( computeMap->numPartitions(i) != 1 ) {
+          CkPrintf("Warning: unable to partition compute %d\n", i);
+          computeMap->setNewNumPartitions(i,0);
+          continue;
+        }
+        //CkPrintf("splitting compute %d by %d\n",i,nnp);
+        computeMap->setNumPartitions(i,nnp);
+        if (computeMap->newNode(i) == -1) {
+          computeMap->setNewNode(i,computeMap->node(i));
+        }
+        for ( int j=1; j<nnp; ++j ) {
+          int newcid = computeMap->cloneCompute(i,j);
+          //CkPrintf("compute %d partition %d is %d\n",i,j,newcid);
+        }
+      }
+    }
+    computeMap->extendPtrs();
+  }
+
+  if (!CkMyPe())
+  {
+    CkStartQD(CkIndex_ComputeMgr::splitComputes2((CkQdMsg*)0), &thishandle);
+  }
+}
+
+void ComputeMgr::splitComputes2(CkQdMsg *msg)
+{
+    delete msg;
     CProxy_ComputeMgr(thisgroup).updateLocalComputes();
 }
 
@@ -137,6 +177,13 @@ void ComputeMgr::updateLocalComputes()
     for (int i=0; i<nc; i++) {
         computeFlag[i] = 0;
 
+        if ( computeMap->node(i) == CkMyPe() &&
+             computeMap->newNumPartitions(i) > 1 ) {
+           delete computeMap->compute(i);
+           computeMap->registerCompute(i,NULL);
+           if ( computeMap->newNode(i) == CkMyPe() ) computeFlag[i] = 1;
+           else computeFlag[i] = -1;
+        } else
         if (computeMap->newNode(i) == CkMyPe() && computeMap->node(i) != CkMyPe())
         {
             computeFlag[i] = 1;
@@ -181,6 +228,7 @@ ComputeMgr::updateLocalComputes3()
 
     if ( ! CkMyRank() ) {
       for (int i=0; i<nc; i++) {
+        computeMap->setNewNumPartitions(i,0);
         if (computeMap->newNode(i) != -1) {
           computeMap->setNode(i,computeMap->newNode(i));
           computeMap->setNewNode(i,-1);
@@ -218,7 +266,9 @@ ComputeMgr::updateLocalComputes4(CkQdMsg *msg)
     }
 }
 
+#if 0
 int firstphase = 1;
+#endif
 
 void
 ComputeMgr::updateLocalComputes5()
