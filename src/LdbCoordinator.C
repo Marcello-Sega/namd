@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2011/02/24 21:08:46 $
- * $Revision: 1.106 $
+ * $Date: 2011/02/25 02:34:07 $
+ * $Revision: 1.107 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -394,8 +394,13 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   {
     totalStepsDone += firstLdbStep;
     numStepsToRun = firstLdbStep;
-    takingLdbData = 1;
-    theLbdb->CollectStatsOn();
+    if ( simParams->ldBalancer == LDBAL_CENTRALIZED ) {
+      takingLdbData = 1;
+      theLbdb->CollectStatsOn();
+    } else {
+      takingLdbData = 0;
+      theLbdb->CollectStatsOff();
+    }
   }
   else if ( (ldbCycleNum <= 4) || !takingLdbData )
   {
