@@ -183,9 +183,9 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
   bMaxIndex = ( ! bPeriodic || bDim == 2 ) ? 10000 : bDim;
   cMaxIndex = ( ! cPeriodic || cDim == 2 ) ? 10000 : cDim;
 
-  aLength = aPeriodic ? 1.0 : aDim * patchSize;
-  bLength = bPeriodic ? 1.0 : bDim * patchSize;
-  cLength = cPeriodic ? 1.0 : cDim * patchSize;
+  aLength = aPeriodic ? 1.0 : aDim * (patchSize / aAway);
+  bLength = bPeriodic ? 1.0 : bDim * (patchSize / bAway);
+  cLength = cPeriodic ? 1.0 : cDim * (patchSize / cAway);
 
   aOrigin = aPeriodic ? -0.5 : 0.5 * (xmin.x + xmax.x - aLength);
   bOrigin = bPeriodic ? -0.5 : 0.5 * (xmin.y + xmax.y - bLength);
