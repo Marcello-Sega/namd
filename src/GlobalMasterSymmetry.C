@@ -25,8 +25,8 @@
 //using namespace __gnu_cxx;
 using namespace std;
 //Read in and parse matrix file
-void GlobalMasterSymmetry::parseMatrix(char fileName []){
-  
+void GlobalMasterSymmetry::parseMatrix(int id, char fileName []){
+  int count = 1;
   string line;
   ifstream matrixFile (fileName);
   if (matrixFile.is_open()){
@@ -41,11 +41,13 @@ void GlobalMasterSymmetry::parseMatrix(char fileName []){
       }
       getline(matrixFile, line);
       Matrix4Symmetry tmpmatrix;
+      if (tmp.size() < 16){NAMD_die("Error reading matrix file.  Please check layout of the matrix file(s).");}
       for(int j = 0; j < 16; j++){
         tmpmatrix.mat[j] = atof(tmp[j].c_str());
       }
       tmpmatrix.transpose();
-      matrices.add(tmpmatrix);
+      matrices.push_back(tmpmatrix);
+      count++;
     }
     matrixFile.close();
   } 
@@ -59,17 +61,22 @@ GlobalMasterSymmetry::GlobalMasterSymmetry() {
   firstFullStep = params->symmetryFirstFullStep;
   lastFullStep = params->symmetryLastFullStep;
   K = params->symmetryk;
+  if (!K){
+    if (!params->symmetrykfile){NAMD_die("A pdb file containing per-atom force constants must be specified if symmetryk is not in configuration file!");}
+    symmetrykfile = params->symmetrykfile;
+  }
   scaleForces = params->symmetryScaleForces;
   if (scaleForces && lastStep == -1){
     NAMD_die("symmetryLastStep must be specified if symmetryScaleForces is enabled!");
   }
+  StringList *matrixList = Node::Object()->configList->find("symmetryMatrixFile");
   parseAtoms(params->symmetryFile, Node::Object()->molecule->numAtoms);
-  if (params->symmetryMatrixFile[0] != '\0'){
-    parseMatrix(params->symmetryMatrixFile);
+  map<int, vector<int> >::iterator it = simmap.begin();
+  if (!matrixList) {initialTransform();}
+  for (; matrixList; matrixList = matrixList->next, ++it){
+      parseMatrix(it->first, matrixList->data);
   }
-  else{
-    initialTransform();
-  }
+
   DebugM(1,"done with initialize\n");
 }
 
@@ -78,12 +85,15 @@ GlobalMasterSymmetry::GlobalMasterSymmetry() {
 void GlobalMasterSymmetry::alignMonomers(){
   //this is assuming the matrices are written
   //in order of monomer id designation (0, 1, 2,..etc)
-  map<int, vector<int> >::iterator mit = dmap.begin();
-  for (; mit!=dmap.end(); ++mit){
+  map<int, vector<int> >::iterator simit = simmap.begin();
+  for (; simit!=simmap.end(); ++simit){
+    for(int x = 0; x < simit->second.size(); x++){
+    map<int, vector<int> >::iterator mit = dmap.find(simit->second[x]);
     for (int i = 0; i < mit->second.size(); i++){
       map<int, BigReal *>::iterator it = posmap.find(mit->second[i]);
       matrices[(mit->first)-1].multpoint(it->second);
     }
+  }
   }
 }
 
@@ -138,10 +148,13 @@ bool GlobalMasterSymmetry::gluInvertMatrix(const BigReal m[16], BigReal invOut[1
 }
 
 void GlobalMasterSymmetry::initialTransform(){
-  map<int, vector<int> >::iterator fit = dmap.find(1);
+  map<int, vector<int> >::iterator simit = simmap.begin();
+
+  for (; simit!=simmap.end(); ++simit){
+  map<int, vector<int> >::iterator fit = dmap.find(simit->second[0]);
   BigReal * first = new BigReal [3*fit->second.size()];
   for(int i = 0; i < fit->second.size(); i++){
-    map<int, BigReal *>::iterator sit = startmap.find(fit->second[i]);
+    map<int, BigReal *>::iterator sit = posmap.find(fit->second[i]);
     first[3*i] = sit->second[0];
     first[3*i+1] = sit->second[1];
     first[3*i+2] = sit->second[2];  
@@ -149,9 +162,10 @@ void GlobalMasterSymmetry::initialTransform(){
 
   map<int, vector<int> >::iterator it = dmap.begin();
   for(; it != dmap.end(); ++it){
-    BigReal * arr = new BigReal [3*it->second.size()];
+  if (std::find(simit->second.begin(), simit->second.end(), it->first)!=simit->second.end()){
+  BigReal * arr = new BigReal [3*it->second.size()];
     for (int i = 0; i<it->second.size(); i++){
-      map<int, BigReal *>::iterator sit = startmap.find(it->second[i]);
+      map<int, BigReal *>::iterator sit = posmap.find(it->second[i]);
       arr[3*i] = sit->second[0];
       arr[3*i+1] = sit->second[1];
       arr[3*i+2] = sit->second[2];  
@@ -169,12 +183,15 @@ void GlobalMasterSymmetry::initialTransform(){
       result.translate(pre);
       result.multmatrix(Matrix4Symmetry(ttt));
       result.translate(post);
-      matrices.add(result);
+      matrices.push_back(result);
 
       delete [] arr;
   }
+  }
   delete [] first;
+  }
 }
+
 void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
   DebugM(3,"parseAtoms called\n");
   PDB tmdpdb(file);
@@ -188,6 +205,9 @@ void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
 
   Vector * atompos = new Vector[numatoms];  
   tmdpdb.get_all_positions(atompos);
+  if (K){symmetrykfile = file;} 
+  PDB kpdb(symmetrykfile);
+
   int i;
   for (i=0; i<numatoms; i++) {
 #ifdef MEM_OPT_VERSION
@@ -195,72 +215,115 @@ void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
 #else
     PDBAtom *atom = tmdpdb.atom(i); // get an atom from the file
 #endif
+
     if (atom->occupancy() && atom->temperaturefactor()) { // if occupancy and beta are not 0, then add it!
       // add the atom to the list
       modifyRequestedAtoms().add(i);
-      if(!K){ kmap[i] = atom->occupancy();}
+      if(!K){
+        #ifdef MEM_OPT_VERSION
+          PDBCoreData *atomk = kpdb.atom(i);
+        #else
+          PDBAtom *atomk = kpdb.atom(i); // get an atom from the file
+        #endif
+        
+        kmap[i] = atomk->occupancy();
+      }
+      BigReal *arr = new BigReal [3];
+      arr[0] = atompos[i].x;
+      arr[1] = atompos[i].y;
+      arr[2] = atompos[i].z;
+      posmap[i] = arr;
 
+      bmap[atom->temperaturefactor()] = atom->occupancy();
         //check to see if monomer id is already in the map
       map <int, vector<int> >::iterator it = dmap.find((int)atom->temperaturefactor());
+      map <int, vector<int> >::iterator simit = simmap.find((int)atom->occupancy());
       if (it != dmap.end()){
         it->second.push_back(i); //add atomid to vector in proper existing monomer id
       }
       else{
          dmap[(int)atom->temperaturefactor()] = vector <int> (1,i); //create new monomer id with atomid
-      }  
+      }
+      if (simit != simmap.end()){
+        if (std::find(simit->second.begin(), simit->second.end(), atom->temperaturefactor()) == simit->second.end()){
+        simit->second.push_back(atom->temperaturefactor()); 
+        }
+      }
+      else {
+        simmap[(int)atom->occupancy()] = vector <int> (1, atom->temperaturefactor());
+      }
     }
   }
-  map <int, vector<int> >::iterator it = dmap.begin();
-  int atoms_in_monomer = it->second.size();
-  for (; it!=dmap.end(); ++it){
-    if (it->second.size() != atoms_in_monomer){
-      NAMD_die("Every monomer must contain the same number of atoms!");
+
+   map <int, vector<int> >::iterator simit = simmap.begin();
+   for (; simit != simmap.end(); ++simit){
+    map <int, vector<int> >::iterator sit = dmap.find(simit->second[0]);
+    int numatoms = sit->second.size();
+    for (int i = 0; i<simit->second.size(); i++){
+      map <int, vector<int> >::iterator fit = dmap.find(simit->second[i]);
+      if (fit->second.size() != numatoms){
+        NAMD_die("Every monomer must contain the same number of atoms!");
+      }
     }
-  }
+   }  
   delete [] atompos;
 }
 
 void GlobalMasterSymmetry::determineAverage() {
-   for(int i=0; i<averagePos.size(); i++){delete [] averagePos[i];}
-   averagePos.erase(averagePos.begin(), averagePos.end());
-
-   map <int, vector<int> >::iterator it = dmap.begin();
-   map <int, BigReal *>::iterator posit;
-   int numatoms = it->second.size();
-   for (int i = 0; i < numatoms; i++){
-     BigReal *arr = new BigReal [3];
-     arr[0] = 0;
-     arr[1] = 0;
-     arr[2] = 0;
-     for (; it!=dmap.end(); ++it){
-       posit = posmap.find(it->second[i]);
-       arr[0] += posit->second[0];
-       arr[1] += posit->second[1];
-       arr[2] += posit->second[2];
+   map <int, vector<BigReal *> >::iterator delit = averagePos.begin();
+   for (; delit != averagePos.end(); ++delit){
+     for (int i = 0; i < delit->second.size(); i++){
+       delete [] delit->second[i];
      }
-     it = dmap.begin();
-     BigReal *avg = new BigReal[3];
-     avg[0] = arr[0]/(dmap.size());
-     avg[1] = arr[1]/(dmap.size());
-     avg[2] = arr[2]/(dmap.size());
-     averagePos.push_back(avg);
-     delete [] arr;
+     delit->second.erase(delit->second.begin(), delit->second.end());
+   }
+
+   map <int, BigReal *>::iterator posit;
+   map <int, vector<int> >::iterator simit = simmap.begin();
+   for (; simit != simmap.end(); ++simit){
+    averagePos[simit->first] = vector <BigReal *> (); 
+    map <int, vector<int> >::iterator it = dmap.begin();
+    map <int, vector<int> >::iterator sit = dmap.find(simit->second[0]);
+    int numatoms = sit->second.size();
+    for (int i = 0; i < numatoms; i++){
+       BigReal *arr = new BigReal [3];
+      arr[0] = 0;
+      arr[1] = 0;
+      arr[2] = 0;
+      for (; it!=dmap.end(); ++it){
+        if (std::find(simit->second.begin(), simit->second.end(), it->first)!=simit->second.end()){
+          posit = posmap.find(it->second[i]);
+          arr[0] += posit->second[0];
+          arr[1] += posit->second[1];
+          arr[2] += posit->second[2];
+        }
+      }
+      it = dmap.begin();
+      BigReal *avg = new BigReal[3];
+      avg[0] = arr[0]/(simit->second.size());
+      avg[1] = arr[1]/(simit->second.size());
+      avg[2] = arr[2]/(simit->second.size());
+      averagePos[simit->first].push_back(avg);
+      delete [] arr;
+    }
    }
 }
 
 void GlobalMasterSymmetry::backTransform(){
   map <int, vector<int> >::iterator it = dmap.begin();
-  int numatoms = it->second.size();
   map <int, BigReal *>::iterator bit = backavg.begin();
   for (; bit != backavg.end(); ++bit){delete [] bit->second;}
-
   backavg.clear();
   for (; it!=dmap.end(); ++it){
-    BigReal *avg = new BigReal [3*averagePos.size()];
+    map<int, int >::iterator bmit = bmap.find(it->first);
+    int bm = bmit->second;
+    map<int, vector <BigReal *> >::iterator avit = averagePos.find(bmit->second);
+    int numatoms = it->second.size();
+    BigReal *avg = new BigReal [3*numatoms];
     for (int i = 0; i < numatoms; i++){
-      avg[3*i] = averagePos[i][0];
-      avg[3*i+1] = averagePos[i][1];
-      avg[3*i+2] = averagePos[i][2];
+      avg[3*i] = avit->second[i][0];
+      avg[3*i+1] = avit->second[i][1];
+      avg[3*i+2] = avit->second[i][2];
     }
     BigReal inverse[16];
     matrices[it->first-1].transpose();
@@ -278,7 +341,6 @@ void GlobalMasterSymmetry::backTransform(){
 GlobalMasterSymmetry::~GlobalMasterSymmetry() { 
   map <int, BigReal *>::iterator pit = posmap.begin();
   for (; pit != posmap.end(); ++pit){delete pit->second;}
-  for(int i=0; i<averagePos.size(); i++){delete averagePos[i];}
 }
 void GlobalMasterSymmetry::calculate() {
   // have to reset my forces every time.  

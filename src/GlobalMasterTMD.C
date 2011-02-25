@@ -92,14 +92,16 @@ GlobalMasterTMD::GlobalMasterTMD() {
   currentStep = params->firstTimestep;
   firstStep = params->TMDFirstStep;
   lastStep = params->TMDLastStep;
+  qDiffRMSD=params->TMDDiffRMSD;
+  if (qDiffRMSD) parseAtoms(params->TMDFile2,Node::Object()->molecule->numAtoms, 1);
+  parseAtoms(params->TMDFile,Node::Object()->molecule->numAtoms, 0);
 
-  parseAtoms(params->TMDFile,Node::Object()->molecule->numAtoms);
  // k /= numTMDatoms;
   iout << iINFO << numTMDatoms << " TMD ATOMS\n" << endi;
   DebugM(1,"done with initialize\n");
 }
 
-void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms) {
+void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms, bool isTwo) {
   DebugM(3,"parseAtoms called\n");
   PDB tmdpdb(file);
   numatoms = tmdpdb.num_atoms();
@@ -111,10 +113,17 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms) {
     NAMD_bug("GlobalMasterTMD::parseAtoms() modifyRequestedAtoms() not empty");
 
   numTMDatoms = 0;
-  target = new BigReal[3*numatoms];
- // aidmap = new int[numatoms];
-  atompos = new Vector[numatoms];
-  tmdpdb.get_all_positions(atompos);
+  if(isTwo){
+    target2 = new BigReal[3*numatoms];
+    atompos2 = new Vector[numatoms];
+    tmdpdb.get_all_positions(atompos2);
+
+  }
+  else{
+    target = new BigReal[3*numatoms];
+    atompos = new Vector[numatoms];
+    tmdpdb.get_all_positions(atompos);
+  }
   int i;
   for (i=0; i<numatoms; i++) {
 #ifdef MEM_OPT_VERSION
@@ -123,21 +132,28 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms) {
     PDBAtom *atom = tmdpdb.atom(i); // get an atom from the file
 #endif
     if (atom->occupancy()) { // if occupancy is not 0, then add it!
-      target[3*numTMDatoms  ] = atompos[i].x;
-      target[3*numTMDatoms+1] = atompos[i].y;
-      target[3*numTMDatoms+2] = atompos[i].z;
- //     aidmap[i] = numTMDatoms++;
-      // add the atom to the list
-      modifyRequestedAtoms().add(i);
-      if(!K){ kmap[i] = atom->occupancy();}
-      //check to see if domain is already in the map
-      map <int, vector<int> >::iterator it = dmap.find((int)atom->temperaturefactor());
-      if (it != dmap.end()){
-        it->second.push_back(i); //add atomid to vector in proper existing domain
+      if(isTwo){
+        target2[3*numTMDatoms  ] = atompos2[i].x;
+        target2[3*numTMDatoms+1] = atompos2[i].y;
+        target2[3*numTMDatoms+2] = atompos2[i].z;
       }
       else{
-         dmap[(int)atom->temperaturefactor()] = vector <int> (1,i); //create new domain with atomid
-      }  
+        target[3*numTMDatoms  ] = atompos[i].x;
+        target[3*numTMDatoms+1] = atompos[i].y;
+        target[3*numTMDatoms+2] = atompos[i].z;
+ //       aidmap[i] = numTMDatoms++;
+        // add the atom to the list
+        modifyRequestedAtoms().add(i);
+        if(!K){ kmap[i] = atom->occupancy();}
+        //check to see if domain is already in the map
+        map <int, vector<int> >::iterator it = dmap.find((int)atom->temperaturefactor());
+        if (it != dmap.end()){
+          it->second.push_back(i); //add atomid to vector in proper existing domain
+        }
+        else{
+           dmap[(int)atom->temperaturefactor()] = vector <int> (1,i); //create new domain with atomid
+        }
+      }
     }
   }
   DebugM(1,"done with parseAtoms\n");
@@ -154,9 +170,19 @@ void GlobalMasterTMD::NewTarget(int domain)
    target[3*i  ] = atompos[it->second[i]].x;
    target[3*i+1] = atompos[it->second[i]].y;
    target[3*i+2] = atompos[it->second[i]].z; 
+  }
+  if(qDiffRMSD){
+   delete [] target2;
+   target2 = new BigReal [3*it->second.size()];
+   for(int i = 0; i<it->second.size(); i++){
+     target2[3*i  ] = atompos2[it->second[i]].x;
+     target2[3*i+1] = atompos2[it->second[i]].y;
+     target2[3*i+2] = atompos2[it->second[i]].z; 
+   }   
+  }
 //   target_aid[i] = it->second[i];
 //   aidmap[it->second[i]] = i; 
-  }
+
 }
 GlobalMasterTMD::~GlobalMasterTMD() { 
   delete [] target;
@@ -199,7 +225,13 @@ void GlobalMasterTMD::calculate() {
     curpos[3*i+2] = positions[it->second[i]].z;
   }
 
-
+  BigReal *curpos2 = new BigReal[3*(it->second.size())];
+  for (int i = 0; i < it->second.size(); i++){
+    //int ind = 3*aidmap[it->second[i]];
+    curpos2[3*i  ] = positions[it->second[i]].x;
+    curpos2[3*i+1] = positions[it->second[i]].y;
+    curpos2[3*i+2] = positions[it->second[i]].z;
+  }
   // align target with current coordinates.   Uses same weight for all
   // atoms.  Maybe instead use weight from occupancy?
   BigReal ttt[16], pre[3], post[3];
@@ -208,6 +240,16 @@ void GlobalMasterTMD::calculate() {
   if (initialRMS < 0) {
     initialRMS = curRMS;
   }
+
+  BigReal curRMS0 = curRMS;
+  BigReal curRMS1 =  1.; 
+  BigReal ttt1[16]; 
+  if(qDiffRMSD){
+    curRMS1 = MatrixFitRMS(it->second.size(), target2, curpos2, NULL, ttt1);
+    curRMS = curRMS0 - curRMS1 ;
+  }
+
+
   BigReal frac = (BigReal(currentStep-firstStep)) /
                             (lastStep-firstStep);
   
@@ -216,8 +258,10 @@ void GlobalMasterTMD::calculate() {
   
   BigReal maxforce2 = 0.;
 //orig finalRMS < initialRMS...changed to <= when allowing initialRMS = 0
-  if ((finalRMS <= initialRMS && targetRMS <= curRMS) ||
-      (finalRMS >= initialRMS && targetRMS > curRMS)) {
+//qdiff part and the whole && section new finalRMS <=initialRMS
+  if (((finalRMS < initialRMS && targetRMS <= curRMS) ||
+      (finalRMS >= initialRMS && targetRMS > curRMS) ||
+      qDiffRMSD) && (curRMS0 > 0. && curRMS1 > 0) ) {
 
 
     // compute transformation to align target structure with current structure
@@ -245,7 +289,8 @@ void GlobalMasterTMD::calculate() {
       else{
         k = K/it->second.size();  
       }
-      BigReal prefac = k * (targetRMS / curRMS - 1); 
+   //   BigReal prefac = k * (targetRMS / curRMS - 1); 
+      BigReal prefac = k * (targetRMS - curRMS)/curRMS0;
       result.multpoint(target+3*i);
       BigReal dx = curpos[3*i  ] - target[3*i  ];
       BigReal dy = curpos[3*i+1] - target[3*i+1];
@@ -258,9 +303,52 @@ void GlobalMasterTMD::calculate() {
       BigReal force2 = force.length2();
       if ( force2 > maxforce2 ) maxforce2 = force2;
     }
+
+    if(qDiffRMSD){
+       int j;
+      for (j=0; j<3; j++) {
+        post[j] = ttt1[4*j+3];
+        ttt1[4*j+3] = 0;
+        pre[j] = ttt1[12+j];
+        ttt1[12+j] = 0;
+      }
+  //    Matrix4TMD result;
+      result.identity();
+      result.translate(pre);
+      result.multmatrix(Matrix4TMD(ttt1));
+      result.translate(post);
+    
+      // compute forces on each atom
+      BigReal myrms = 0;
+        for (int i=0; i<it->second.size(); i++) {
+        BigReal k;  
+        if(!K){
+          k = kmap[it->second[i]];  
+        }
+        else{
+          k = K/it->second.size();  
+        }
+     //   BigReal prefac = k * (targetRMS / curRMS - 1); 
+  //      BigReal prefac = k * (targetRMS - curRMS)/curRMS0;
+          BigReal prefac1 = - k * (targetRMS  - curRMS)/curRMS1; // included with a negative term in the potential
+
+        result.multpoint(target2+3*i);
+        BigReal dx = curpos2[3*i  ] - target2[3*i  ];
+        BigReal dy = curpos2[3*i+1] - target2[3*i+1];
+        BigReal dz = curpos2[3*i+2] - target2[3*i+2];
+      
+        BigReal fvec[3] = { dx, dy, dz };
+        Vector force(fvec[0]*prefac1, fvec[1]*prefac1, fvec[2]*prefac1);
+        modifyForcedAtoms().add(it->second[i]);
+        modifyAppliedForces().add(force);
+        BigReal force2 = force.length2();
+        if ( force2 > maxforce2 ) maxforce2 = force2;
+      }   
+    }
   }
   //delete [] target_aid;
   delete [] curpos;
+  if(qDiffRMSD){delete [] curpos2;}
 // write output if needed
   if (currentStep % outputFreq == 0) {
     iout << "TMD  " << currentStep << " Domain: "<< it->first << " " << targetRMS << ' ' << curRMS << '\n' << endi; //*it

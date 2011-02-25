@@ -135,7 +135,7 @@ template <class Elem> class ResizeArray {
     // reduce storage size
     void reduce(void) { rep->reduce(); }
 
-    inline int find(const Elem &e) { return rep->find(e); }
+    inline int find(const Elem &e) const { return rep->find(e); }
 
 	// Difference with resize(0): 
 	// This function will free the space occupied by rep,

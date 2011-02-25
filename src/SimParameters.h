@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2011/02/10 15:46:17 $
- * $Revision: 1.1175 $
+ * $Author: ryanmcgreevy $
+ * $Date: 2011/02/25 20:28:06 $
+ * $Revision: 1.1176 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -292,9 +292,9 @@ public:
   //****** END tabulated energy section
 
         // TMD
-        Bool TMDOn;
+        Bool TMDOn, TMDDiffRMSD;
         BigReal TMDk;
-        char TMDFile[128];
+        char TMDFile[128], TMDFile2[128];
         int TMDOutputFreq;
         int TMDFirstStep, TMDLastStep;
         BigReal TMDInitialRMSD, TMDFinalRMSD;
@@ -302,6 +302,7 @@ public:
         //Symmetry restraints
         Bool symmetryOn, symmetryScaleForces;
         BigReal symmetryk;
+        char symmetrykfile[128];
         char symmetryFile[128];
         char symmetryMatrixFile[128];
         int symmetryFirstStep, symmetryLastStep, symmetryFirstFullStep, symmetryLastFullStep;

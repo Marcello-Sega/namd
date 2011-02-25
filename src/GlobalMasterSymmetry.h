@@ -19,7 +19,8 @@ public:
   ~GlobalMasterSymmetry();
 
 private:
-  ResizeArray <Matrix4Symmetry> matrices;
+//  map <int, vector <Matrix4Symmetry> > matrices;
+vector <Matrix4Symmetry> matrices;
   map < int, Matrix4Symmetry > backmatrices;
 
   bool gluInvertMatrix(const BigReal [16], BigReal invOut[16]);
@@ -27,18 +28,22 @@ private:
   void backTransform();
   void alignMonomers();
   void determineAverage();  
-  void parseMatrix(char fileName []);
+  void parseMatrix(int, char fileName []);
   void calculate();
   void parseAtoms(const char *file, int);
 
-  vector < BigReal * > averagePos;
+  map <int, vector < BigReal * > > averagePos;
   map <int, BigReal *> backavg;
   map <int, vector<int>  > dmap;
   map <int, BigReal * > posmap;
   map <int, BigReal * > startmap;
   map <int, BigReal > kmap;
+  map <int, vector <int> > simmap;
+  map <int, int> bmap;
+
 
   BigReal K;
+  const char *symmetrykfile;
   int currentStep, firstStep, lastStep, firstFullStep, lastFullStep;
   bool scaleForces;
 };

@@ -22,11 +22,12 @@ public:
 private:
  
   void calculate();
-  void parseAtoms(const char *file, int);
+  void parseAtoms(const char *file, int, bool);
   void NewTarget(int);
   int numatoms;
   Vector *atompos;
-
+  Vector *atompos2;
+  bool qDiffRMSD;
   map <int, vector<int>  > dmap;
   map <int, BigReal > kmap;
   int numTMDatoms;
@@ -35,6 +36,7 @@ private:
   int outputFreq;
   int currentStep, firstStep, lastStep;
   BigReal *target;
+  BigReal *target2;
   //int *target_aid;
   // mapping of atom id's to array positions
   //int *aidmap;

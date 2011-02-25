@@ -402,28 +402,32 @@ drives each monomer to the average.
 
 \begin{itemize}
 \item
-\NAMDCONFWDEF{symmetryRestraints}{Is Symmetry restraint active}{{\tt on} or {\tt off}}{{\tt off}}
+\NAMDCONFWDEF{symmetryRestraints}{Are symmetry restraints active?}{{\tt on} or {\tt off}}{{\tt off}}
 {Should Symmetry constraining forces be applied to the system.  If symmetry restraints are enabled,
 {\tt symmetryk}* and {\tt symmetryFile} must be defined in the 
 input file as well.  *See {\tt symmetryk} entry for details.}
 
 \item
-\NAMDCONFWDEF{symmetryFirstFullStep}{First step to apply full harmonic force}{{\tt symmetryFirstStep}}
+\NAMDCONFWDEF{symmetryFirstFullStep}{First step to apply full harmonic force}{Non-negative integer}{{\tt symmetryFirstStep}}
 {Force constant {\tt symmetryk} linearly increased from {\tt symmetryFirstStep} to {\tt symmetryFirstFullStep}}
 
 \item
-\NAMDCONFWDEF{symmetryLastFullStep}{Last step to apply full harmonic force}{{\tt symmetryLastStep}}
+\NAMDCONFWDEF{symmetryLastFullStep}{Last step to apply full harmonic force}{Non-negative integer}{{\tt symmetryLastStep}}
 {Force constant {\tt symmetryk} linearly decreased from {\tt symmetryLastFullStep} to {\tt symmetryLastStep}} 
 
 \item
 \NAMDCONF{symmetryk}{Constant for harmonic restraining forces}
 {Positive value}
 {Harmonic force constant.  Scaled down by number of atoms in the monomer.  If this setting is omitted, the value in the occupancy column
-of the pdb file specified by {\tt symmetryFile} will be used as the constant for that atom.  
+of the pdb file specified by {\tt symmetrykFile} will be used as the constant for that atom.  
 This allows the user to specify the constant on a per-atom basis.}
 
 \item
-\NAMDCONFWDEF{symmetryScaleForces}{Scale symmetry restraints over time.}{{\tt on} or {\tt off}}{{\tt off}}
+\NAMDCONF{symmetrykFile}{pdb containing per atom force constants}{Path to pdb file}
+{pdb where the occupancy column specifies the per atom force constants.}
+
+\item
+\NAMDCONFWDEF{symmetryScaleForces}{Scale symmetry restraints over time}{{\tt on} or {\tt off}}{{\tt off}}
 {If turned on, the harmonic force applied by the symmetry restraints will linearly evolve with each time step based on
 {\tt symmetryFirstFullStep} and {\tt symmetryLastFullStep}.}
 
@@ -431,10 +435,17 @@ This allows the user to specify the constant on a per-atom basis.}
 \NAMDCONF{symmetryFile}{File for symmetry information}
 {Path to PDB file}
 {
-Restrained atoms are those whose occupancy (O) is nonzero in the SYMD PDB file.
+Restrained atoms are those whose occupancy (O) is nonzero in the symmetry pdb file.
 The file must contain the same number of atoms as the structure file.  The value in
-the atom's beta column represents its monomer designation.  This should be an integer
-value starting at 1 and proceeding in ascending order.
+the occupancy column represent the "symmetry group" the atom belongs to.  These symmetry
+groups are used for denoting monomers of the same type.  These groups will be transformed by the
+matrices in their own {\tt symmetryMatrixFile} and averaged separetely from other groups.  
+The designation in the occupancy column should be an integer value starting at 1 and proceeding
+in ascending order, mirroring the order of the corresponding matrix file within the configuration file
+(e.g. the first symmetryMatrixFile contains the matrices for symmetry group 1).
+The value in the atom's beta column represents its monomer designation.  This should be an integer
+value starting at 1 and proceeding in ascending order, relative to the order of the corresponding
+transformation matrix found in the symmetry group's {\tt symmetryMatrixFile}.
 }
 
 \item
@@ -443,14 +454,16 @@ value starting at 1 and proceeding in ascending order.
 {
 The {\tt symmetryMatrixFile} is a path to a file that contains a list of transformation
 matrices to make the monomers overlap.  The file should contain one (and only one)
-matrix for each monomer in the order of monomer ID designated in the symmetryFile.  
+matrix for each monomer in the order of monomer ID designated in the symmetryFile.
+Each symmetry group should have its own symmetryMatrixFile file containing only the matrices
+used by the monomers in that group.  
 These should be formatted with spaces between columns and
 NO spaces between rows as follows:
 
-1 0 0 0
-0 1 0 0
-0 0 1 0
-0 0 0 1
+1 0 0 0 \\
+0 1 0 0 \\
+0 0 1 0 \\ 
+0 0 0 1 \\
 
 with different matrices separated by a single blank line (and no line before the first or after
 the last matrix).  This file is
@@ -458,7 +471,7 @@ OPTIONAL.  Leave this line out to have namd generate the transformations
 for you.
 }
 \item
-\NAMDCONFWDEF{symmetryFirstStep}{first symmetry restraint timestep}{Positive integer}{0} {}
+\NAMDCONFWDEF{symmetryFirstStep}{first symmetry restraint timestep}{Non-negative integer}{0} {}
 \item
 \NAMDCONFWDEF{symmetryLastStep}{last symmetry restraint timestep}{Positive integer}{infinity}
 { Symmetry restraints are applied only between {\tt symmetryFirstStep} and {\tt symmetryLastStep}.
@@ -548,6 +561,29 @@ first TMD step.  {\tt TMDFinalRMSD} may be less than or greater than
 towards or away from a target structure, respectively.  Forces are applied
 only if $RMS(t)$ is betwween {\tt TMDInitialRMSD} and $RMS*(t)$; in other
 words, only if the current RMSD fails to keep pace with the target value.}
+
+\item
+\NAMDCONFWDEF{TMDDiffRMSD}{Is double-sided TMD active?}{{\tt on} or {\tt off}}{{\tt off}}
+{Turns on the double-sided TMD feature which targets the transition between two structures. 
+This is accomplished by modifying the TMD force such that the potential is based on the
+difference of RMSD's from the two structures:
+\begin{equation}
+U_{TMD} = \frac{1}{2} \frac{k}{N} \left[ DRMS(t) - DRMS^*(t) \right]^2
+\label{eq:tmdpotential}
+\end{equation}
+where $DRMS(t)$ is RMS1(t) - RMS2(2) (RMS1 being the RMSD from structure 1 and RMS2 the RMSD from structure 2).
+The first structure is specified as normal in {\tt TMDFile} and the second structure should
+be specified in {\tt TMDFile2}, preserving any domain designations found in {\tt TMDFile}. 
+}
+
+\item
+\NAMDCONF{TMDFile2}{Second structure file for double-sided TMD}
+{Path to PDB file}
+{PDB file defining the second structure of a double sided TMD. This file
+should contain the same number of atoms as {\tt TMDFile} along with the 
+same domain designations if any are specified.
+}
+
 \end{itemize}
 
 \subsection{Steered Molecular Dynamics (SMD)}
