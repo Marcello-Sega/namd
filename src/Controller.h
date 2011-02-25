@@ -197,6 +197,7 @@ private:
     double firstWTime;
     double startBenchTime;
 
+    int computesPartitioned;
 };
 
 #endif // CONTROLLER_H

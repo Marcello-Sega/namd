@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/02/24 21:08:46 $
- * $Revision: 1.1254 $
+ * $Date: 2011/02/25 21:15:30 $
+ * $Revision: 1.1255 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1210,12 +1210,15 @@ void Controller::compareChecksums(int step, int forgiving) {
       NAMD_bug("Bad global atom count!\n");
 
     checksum = reduction->item(REDUCTION_COMPUTE_CHECKSUM);
-    if ( ((int)checksum) != computeChecksum ) {
-      if ( ((int)checksum) && computeChecksum &&
-           step - simParams->firstTimestep != simParams->firstLdbStep )
+    if ( ((int)checksum) && ((int)checksum) != computeChecksum ) {
+      if ( ! computeChecksum ) {
+        computesPartitioned = 0;
+      } else if ( (int)checksum > computeChecksum && ! computesPartitioned ) {
+        computesPartitioned = 1;
+      } else {
         NAMD_bug("Bad global compute count!\n");
-      else
-        computeChecksum = ((int)checksum);
+      }
+      computeChecksum = ((int)checksum);
     }
 
     checksum_b = checksum = reduction->item(REDUCTION_BOND_CHECKSUM);
