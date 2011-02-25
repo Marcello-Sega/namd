@@ -1,3 +1,4 @@
+
 /**
 ***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
 ***  The Board of Trustees of the University of Illinois.
@@ -24,14 +25,14 @@ largest pairlist lasting all cycle*/
 inline void pairlistFromAll(
   nonbonded *params,
   GBISParamStruct *gbisParams,
-  int minI,
+  int minIg,
+  int strideIg,
   int maxI
 ) {
   const BigReal offset_x = params->offset.x;
   const BigReal offset_y = params->offset.y;
   const BigReal offset_z = params->offset.z;
 
-  int numI = maxI - minI;
   int unique = (gbisParams->numPatches == 1) ? 1 : 0;
 
   int maxPairs = params->numAtoms[1];
@@ -71,7 +72,7 @@ inline void pairlistFromAll(
   short *groupPairs = new short[maxGroupPairs];/*delete*/
 
   //foreach nonbonded group i
-  for (int ngi = minI; ngi < maxI; ngi+=params->p[0][ngi].nonbondedGroupSize) {
+  for (int ngi = minIg; ngi < maxI; /*ngi updated at loop bottom*/ ) {
     int numGroupPairs = 0;
     ngri = params->p[0][ngi].position;
     ngri.x += offset_x;
@@ -218,6 +219,12 @@ inline void pairlistFromAll(
     delete[] size;
     delete[] pairs;
     }//end i all atom loop
+
+    //jump to next nbg for round-robin
+    //same iteration patter followed in all three gbisPhases below
+    for (int s = 0; s < strideIg; s++) {
+      ngi+=params->p[0][ngi].nonbondedGroupSize;
+    }
   }//end i-group loop
     delete[] groupPairs;
   for (int k = 0; k < numGBISPairlists; k++)
@@ -233,6 +240,7 @@ inline void pairlistFromAll(
  * Calculate GBIS 3 Phases
 *******************************************************************************/
 void ComputeNonbondedUtil::calcGBIS(nonbonded *params, GBISParamStruct *gbisParams) {
+//CkPrintf("SEQ%03i, P%i, CID%05i(%02i,%02i) ENTER\n",gbisParams->sequence,gbisParams->gbisPhase,gbisParams->cid,gbisParams->patchID[0],gbisParams->patchID[1]);
 #if CHECK_PRIORITIES
 CkPrintf("PE%i, S%09i, P%i\n",CkMyPe(),gbisParams->sequence,gbisParams->gbisPhase);
 #endif
@@ -243,23 +251,12 @@ CkPrintf("PE%i, S%09i, P%i\n",CkMyPe(),gbisParams->sequence,gbisParams->gbisPhas
   const BigReal offset_z = params->offset.z;
 
   int partSize = params->numAtoms[0] / params->numParts;
-  int minI = partSize * params->minPart;
-  int maxI = partSize * params->maxPart;
-
-  if (params->numParts > 1) {
-    //CkPrintf("[%5i, %5i]\n", minI,maxI);
-    while (0 == params->p[0][minI].nonbondedGroupSize) {
-      //CkPrintf("rewinding minI[%i].%i\n",minI,params->p[0][minI].nonbondedGroupSize);
-      minI--;
-    }
-    while (0 == params->p[0][maxI].nonbondedGroupSize) {
-      //CkPrintf("rewinding maxI[%i].%i\n",maxI,params->p[0][maxI].nonbondedGroupSize);
-      maxI--;
-    }
+  int minIg = 0;
+  for (int s = 0; s < params->minPart; s++) {
+    minIg+=params->p[0][minIg].nonbondedGroupSize;
   }
-  //last partition gets rest of atoms
-  if (params->maxPart == params->numParts)
-    maxI = params->numAtoms[0];
+  int maxI = params->numAtoms[0];
+  int strideIg = params->numParts;
 
   int unique = (gbisParams->numPatches == 1) ? 1 : 0;//should inner loop be unique from ourter loop
   int numGBISPairlists = 4;
@@ -279,8 +276,9 @@ CkPrintf("PE%i, S%09i, P%i\n",CkMyPe(),gbisParams->sequence,gbisParams->gbisPhas
 * GBIS Phase 1
 ***********************************************************/
 if (gbisParams->gbisPhase == 1) {
+//CkPrintf("SEQ%03i, P%i, CID%05i(%02i,%02i):[%03i,%03i]\n",gbisParams->sequence,gbisParams->gbisPhase,gbisParams->cid,gbisParams->patchID[0],gbisParams->patchID[1],minI,maxI);
 
-  pairlistFromAll(params,gbisParams,minI,maxI);
+  pairlistFromAll(params,gbisParams,minIg,strideIg,maxI);
 
 #ifdef BENCHMARK
   int nops = 0;
@@ -310,7 +308,9 @@ if (gbisParams->gbisPhase == 1) {
 
   //calculate piecewise-22 Pairs
   int c = 0;
-  for (register int i = minI; i < maxI; i++) {
+  for (int ngi = minIg; ngi < maxI; /**/ ) {
+    int iGroupSize = params->p[0][ngi].nonbondedGroupSize;
+  for (int i = ngi; i < ngi+iGroupSize; i++) {
     ri = params->p[0][i].position;
     ri.x += offset_x;
     ri.y += offset_y;
@@ -366,7 +366,10 @@ if (gbisParams->gbisPhase == 1) {
     }//end inner j
     gbisParams->psiSum[0][i] += psiI;
   }//end outer i
-
+  for (int s = 0; s < strideIg; s++) {
+    ngi+=params->p[0][ngi].nonbondedGroupSize;
+  }
+  }
 #ifdef BENCHMARK
   double t2 = 1.0*clock()/CLOCKS_PER_SEC;
   //nops *= (9 + 2*DIV_FLOPS+SQRT_FLOPS) + (14 + 0*DIV_FLOPS + 0*LOG_FLOPS);
@@ -389,7 +392,9 @@ nops = 0;
 
   //calculate piecewise-11 pairs
   c = 1;
-  for (register int i = minI; i < maxI; i++) {
+  for (int ngi = minIg; ngi < maxI; /**/ ) {
+    int iGroupSize = params->p[0][ngi].nonbondedGroupSize;
+  for (int i = ngi; i < ngi+iGroupSize; i++) {
     ri = params->p[0][i].position;
     ri.x += offset_x;
     ri.y += offset_y;
@@ -462,6 +467,10 @@ nops = 0;
     }//end inner j
     gbisParams->psiSum[0][i] += psiI;
   }//end outer i
+  for (int s = 0; s < strideIg; s++) {
+    ngi+=params->p[0][ngi].nonbondedGroupSize;
+  }
+  }
 #ifdef BENCHMARK
   t2 = 1.0*clock()/CLOCKS_PER_SEC;
   CkPrintf("PHASE1.2: %8.3f ms @ %8.3f ns/iter for %i iter\n",1000.0*(t2-t1), 1000000000.0*(t2-t1)/nops, nops);
@@ -472,7 +481,9 @@ nops = 0;
 
   //calculate all other piecewise pairs
   c = 2;
-  for (register int i = minI; i < maxI; i++) {
+  for (int ngi = minIg; ngi < maxI; /**/ ) {
+    int iGroupSize = params->p[0][ngi].nonbondedGroupSize;
+  for (int i = ngi; i < ngi+iGroupSize; i++) {
     ri = params->p[0][i].position;
     ri.x += offset_x;
     ri.y += offset_y;
@@ -531,6 +542,10 @@ nops = 0;
     }//end inner j
     gbisParams->psiSum[0][i] += psiI;
   }//end outer i
+  for (int s = 0; s < strideIg; s++) {
+    ngi+=params->p[0][ngi].nonbondedGroupSize;
+  }
+  }
 
 #ifdef BENCHMARK
   t2 = 1.0*clock()/CLOCKS_PER_SEC;
@@ -571,13 +586,15 @@ nops = 0;
   BigReal aiaj,expr2aiaj4,fij,f_i,expkappa,Dij;
   BigReal aiaj4,ddrDij,ddrf_i,ddrfij,tmp_dEda;
 
-  for (int c = 0; c < 4/*dEdrPLs*/; c++)
-  for (int i = minI; i < maxI; i++) {
+  for (int c = 0; c < 4/*dEdrPLs*/; c++) {
+  for (int ngi = minIg; ngi < maxI; /**/ ) {
+    int iGroupSize = params->p[0][ngi].nonbondedGroupSize;
+  for (int i = ngi; i < ngi+iGroupSize; i++) {
     ri = params->p[0][i].position;
     ri.x += offset_x;
     ri.y += offset_y;
     ri.z += offset_z;
-    qi = - COULOMB * params->p[0][i].charge;
+    qi = - COULOMB * params->p[0][i].charge * scaling;
     int numPairs;
     plint *pairs;
     gbisParams->gbisStepPairlists[c]->nextlist(&pairs,&numPairs);
@@ -705,6 +722,11 @@ nops = 0;
       gbisParams->gbSelfEnergy += 0.5*gbEij;//self energy
     }
   }// end outer i
+  for (int s = 0; s < strideIg; s++) {
+    ngi+=params->p[0][ngi].nonbondedGroupSize;
+  }//end i
+  }//end ig
+  }//end c
 #ifdef BENCHMARK
   double t2 = 1.0*clock()/CLOCKS_PER_SEC;
   //double flops = 1.0 * nops / (t2 - t1);
@@ -742,7 +764,7 @@ nops = 0;
   double dHdrPrefixJ;
   register Position ri;
   register Position rj;
-  register int c, numPairs, jj, i, j;
+  register int c, numPairs, jj, j;
   register BigReal k;
   register BigReal da = DA;
   register BigReal db = DB;
@@ -753,7 +775,9 @@ nops = 0;
 
   //piecewise 22
   c = 0;
-  for (i = minI; i < maxI; i++) {
+  for (int ngi = minIg; ngi < maxI; /**/ ) {
+    int iGroupSize = params->p[0][ngi].nonbondedGroupSize;
+  for (int i = ngi; i < ngi+iGroupSize; i++) {
     ri = params->p[0][i].position;
     ri.x += offset_x;
     ri.y += offset_y;
@@ -824,6 +848,11 @@ nops = 0;
     params->fullf[0][i].y += fIy;
     params->fullf[0][i].z += fIz;
   }//end outer i
+  for (int s = 0; s < strideIg; s++) {
+    ngi+=params->p[0][ngi].nonbondedGroupSize;
+  }
+  }
+
 #ifdef BENCHMARK
   t2 = 1.0*clock()/CLOCKS_PER_SEC;
   CkPrintf("PHASE3.1: %8.3f ms @ %8.3f ns/iter for %i iter\n",1000.0*(t2-t1), 1000000000.0*(t2-t1)/nops,nops);
@@ -844,7 +873,9 @@ nops = 0;
 
   //piecewise 11
   c = 1;
-  for (i = minI; i < maxI; i++) {
+  for (int ngi = minIg; ngi < maxI; /**/ ) {
+    int iGroupSize = params->p[0][ngi].nonbondedGroupSize;
+  for (int i = ngi; i < ngi+iGroupSize; i++) {
     ri = params->p[0][i].position;
     ri.x += offset_x;
     ri.y += offset_y;
@@ -923,6 +954,10 @@ nops = 0;
     params->fullf[0][i].y += fIy;
     params->fullf[0][i].z += fIz;
   }//end outer i
+  for (int s = 0; s < strideIg; s++) {
+    ngi+=params->p[0][ngi].nonbondedGroupSize;
+  }
+  }
 
 #ifdef BENCHMARK
   t2 = 1.0*clock()/CLOCKS_PER_SEC;
@@ -934,7 +969,9 @@ nops = 0;
 
   //piecewise all others
   c = 2;
-  for (i = minI; i < maxI; i++) {
+  for (int ngi = minIg; ngi < maxI; /**/ ) {
+    int iGroupSize = params->p[0][ngi].nonbondedGroupSize;
+  for (int i = ngi; i < ngi+iGroupSize; i++) {
     ri = params->p[0][i].position;
     ri.x += offset_x;
     ri.y += offset_y;
@@ -1008,6 +1045,10 @@ nops = 0;
     params->fullf[0][i].y += fIy;
     params->fullf[0][i].z += fIz;
   }//end outer i
+  for (int s = 0; s < strideIg; s++) {
+    ngi+=params->p[0][ngi].nonbondedGroupSize;
+  }
+  }
 
 
 #ifdef BENCHMARK

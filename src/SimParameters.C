@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: ryanmcgreevy $
- * $Date: 2011/02/25 20:28:06 $
- * $Revision: 1.1325 $
+ * $Author: dtanner $
+ * $Date: 2011/02/25 21:23:17 $
+ * $Revision: 1.1326 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2357,6 +2357,29 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
     //ensure patch can handle alpha_cutoff for gbis
     if (GBISOn) {
+#ifdef NAMD_CUDA
+       NAMD_die("GBIS not compatible with CUDA at this time");
+#endif
+      //Check compatibility
+      if (fullDirectOn) {
+        NAMD_die("GBIS not compatible with FullDirect");
+      }
+      if (PMEOn) {
+        NAMD_die("GBIS not compatible with PME");
+      }
+      if (alchOn) {
+        NAMD_die("GBIS not compatible with Alchemical Transformations");
+      }
+      if (lesOn) {
+        NAMD_die("GBIS not compatible with Locally Enhanced Sampling");
+      }
+      if (FMAOn) {
+        NAMD_die("GBIS not compatible with FMA");
+      }
+      if (drudeOn) {
+        NAMD_die("GBIS not compatible with Drude Polarization");
+      }
+
       if (alpha_cutoff > patchDimension) {
         patchDimension = alpha_cutoff; 
       }
@@ -2365,26 +2388,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       BigReal tmp = (initialTemp > 0) ? initialTemp : 300;
       kappa = 50.29216*sqrt(ion_concentration/solvent_dielectric/tmp);
       /*magic number = 1/sqrt(eps0*kB/(2*nA*e^2*1000))*/
-
-      //default scaling parameters
-      if (!opts.defined("numAtomsSelf")) {
-        numAtomsSelf = 50;
-      }
-      if (!opts.defined("numAtomsSelf2")) {
-        numAtomsSelf2 = 50;
-      }
-      if (!opts.defined("numAtomsPair")) {
-        numAtomsPair = 100;
-      }
-      if (!opts.defined("numAtomsPair2")) {
-        numAtomsPair2 = 150;
-      }
-      if (!opts.defined("maxSelfPart")) {
-        maxSelfPart = 11;
-      }
-      if (!opts.defined("maxPairPart")) {
-        maxPairPart = 22;
-      }
     }
 
    //  Turn on global integration if not explicitly specified

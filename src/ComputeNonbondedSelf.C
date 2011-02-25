@@ -308,7 +308,9 @@ if (patch->flags.doGBIS) {
   }
 
   //make call to calculate GBIS
+  if ( !ComputeNonbondedUtil::commOnly ) {
     calcGBIS(&params,&gbisParams);
+  }
 
   //close boxes
   if (gbisPhase == 1) {
