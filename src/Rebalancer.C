@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
- * $Author: bhatele $
- * $Date: 2011/02/22 00:22:02 $
- * $Revision: 1.89 $
+ * $Author: jim $
+ * $Date: 2011/02/26 17:21:58 $
+ * $Revision: 1.90 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -42,6 +42,10 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
    numPesAvailable = 0;
    firstAssignInRefine = 0;
 
+  const int beginGroup = processors[0].Id;
+  const int endGroup = beginGroup + P;
+#define INGROUP(PROC) ((PROC) >= beginGroup && (PROC) < endGroup)
+
    int i;
    int index;
    for (i=0; i<P; i++)
@@ -58,13 +62,13 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 
    for (i=0; i<nPatches; i++) {
      // Only for those patches which are in my group (hierarchical case)
-     if(patches[i].processor >= processors[0].Id && patches[i].processor < processors[0].Id + P) {
+     if INGROUP(patches[i].processor) {
        index = patches[i].processor - processors[0].Id;
        if (!patches[i].proxiesOn.find(&(processors[index]))) {
-       	 patches[i].proxiesOn.insert(&(processors[index]));
-       	 processors[index].proxies.insert(&(patches[i]));
+       	 patches[i].proxiesOn.unchecked_insert(&(processors[index]));
+       	 processors[index].proxies.unchecked_insert(&(patches[i]));
        }
-       processors[index].patchSet.insert(&patches[i]);
+       processors[index].patchSet.unchecked_insert(&patches[i]);
      }
    }		          
 
@@ -75,8 +79,7 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 
    for (i=0; i < numComputes; i++) {
      // Only for those computes which are in my group (hierarchical case)
-     if(computes[i].oldProcessor >= processors[0].Id && 
-	computes[i].oldProcessor < processors[0].Id + P) {
+     if INGROUP(computes[i].oldProcessor) {
        index = computes[i].oldProcessor - processors[0].Id;
        processors[index].computeLoad += computes[i].load;
      }
@@ -351,7 +354,7 @@ void Rebalancer::assign(computeInfo *c, int processor)
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
    c->processor = p->Id;
-   p->computeSet.insert((InfoRecord *) c);
+   p->computeSet.unchecked_insert((InfoRecord *) c);
 #if COMPUTE_CORRECTION
    if(firstAssignInRefine)
      p->computeLoad += c->load + COMPUTE_LOAD;
@@ -363,9 +366,9 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
    patchInfo* patch1 = (patchInfo *) &(patches[c->patch1]);
    patchInfo* patch2 = (patchInfo *) &(patches[c->patch2]);
 
-   if (!p->proxies.find(patch1))   p->proxies.insert(patch1); 
    if (!patch1->proxiesOn.find(p)) {
-     patch1->proxiesOn.insert(p); 
+     p->proxies.unchecked_insert(patch1); 
+     patch1->proxiesOn.unchecked_insert(p); 
      numProxies++;
 #if PROXY_CORRECTION
      if(firstAssignInRefine) {
@@ -375,9 +378,9 @@ void Rebalancer::assign(computeInfo *c, processorInfo *p)
 #endif
    }
 
-   if (!p->proxies.find(patch2))   p->proxies.insert(patch2); 
    if (!patch2->proxiesOn.find(p)) {
-     patch2->proxiesOn.insert(p);
+     p->proxies.unchecked_insert(patch2); 
+     patch2->proxiesOn.unchecked_insert(p);
      numProxies++;
 #if PROXY_CORRECTION
      if(firstAssignInRefine) {
@@ -571,7 +574,7 @@ int Rebalancer::refine()
 
       processorInfo *donor;
       while (donor = (processorInfo*)heavyProcessors->deleteMax()) {
-	if (donor->computeSet.numElements()) break;
+	if (donor->computeSet.hasElements()) break;
         if ( ! no_new_proxies ) {
           /*
           iout << iINFO << "Most-loaded processor " << donor->Id
@@ -958,7 +961,7 @@ double Rebalancer::computeMax()
 
 int Rebalancer::isAvailableOn(patchInfo *patch, processorInfo *p)
 {
-   return  p->proxies.find(patch);
+   return  patch->proxiesOn.find(p);
 }
 
 void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
@@ -969,6 +972,9 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
    int patch_count = 0;
    int proxy_count = 0;
 
+  const int beginGroup = processors[0].Id;
+  const int endGroup = beginGroup + P;
+
    patchInfo &pa1 = patches[c->patch1];
    patchInfo &pa2 = patches[c->patch2];
    int pa1_avail = 1;
@@ -976,7 +982,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
 
    if (pa1.processor == p->Id) {
      patch_count++;
-   } else if ( p->proxies.find(&pa1) ) {
+   } else if ( pa1.proxiesOn.find(p) ) {
      proxy_count++;
    } else {
      pa1_avail = 0;
@@ -985,7 +991,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
    // self computes get one patch for free here
    if (c->patch1 == c->patch2 || pa2.processor == p->Id) {
      patch_count++;
-   } else if ( p->proxies.find(&pa2) ) {
+   } else if ( pa2.proxiesOn.find(p) ) {
      proxy_count++;
    } else {
      pa2_avail = 0;
@@ -1011,7 +1017,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
        if ( ! bad && ! pa1_avail ) {
 	 // HYBRID check for range in local group
 	 realPe = pa1.processor;
-	 if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+	 if INGROUP(realPe) {
 	   index = realPe - processors[0].Id;
            //BACKUP if ( processors[pa1.processor].backgroundLoad > bgLoadLimit) bad = 1;
            if (processors[index].backgroundLoad > bgLoadLimit) bad = 1;
@@ -1022,7 +1028,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
        if ( ! bad && ! pa2_avail ) {
 	 // HYBRID check for range in local group
 	 realPe = pa2.processor;
-	 if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+	 if INGROUP(realPe) {
 	   index = realPe - processors[0].Id;
 	   // BACKUP if ( processors[pa2.processor].backgroundLoad > bgLoadLimit) bad = 1;
 	   if ( processors[index].backgroundLoad > bgLoadLimit) bad = 1;

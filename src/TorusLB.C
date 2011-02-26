@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/08 22:42:52 $
- * $Revision: 1.19 $
+ * $Author: jim $
+ * $Date: 2011/02/26 17:22:00 $
+ * $Revision: 1.20 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -37,6 +37,10 @@ void TorusLB::strategy() {
   // two heaps of self and pair computes
   makeTwoHeaps();
 
+  const int beginGroup = processors[0].Id;
+  const int endGroup = beginGroup + P;
+#define INGROUP(PROC) ((PROC) >= beginGroup && (PROC) < endGroup)
+
   computeInfo *c;
   processorInfo *p, *minp;
   Iterator nextP;
@@ -60,14 +64,14 @@ void TorusLB::strategy() {
 
   // HYBRID check if processor is in local group
   realPe = patches[c->patch1].processor;
-  if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+  if INGROUP(realPe) {
     index = realPe - processors[0].Id;
     p = &processors[index];	// patch 1
     selectPes(p, c);
   }
 	
   realPe = patches[c->patch2].processor;
-  if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+  if INGROUP(realPe) {
     index = realPe - processors[0].Id;
     p = &processors[index];	// patch 2
     selectPes(p, c); 
@@ -76,15 +80,13 @@ void TorusLB::strategy() {
   // Try the processors which have the patches' proxies
   p = (processorInfo *)(patches[c->patch1].proxiesOn.iterator((Iterator *)&nextP));
   while(p) {						// patch 1
-    if(p->Id >= processors[0].Id && p->Id < processors[0].Id + P)
-      selectPes(p, c);
+    if INGROUP(p->Id) selectPes(p, c);
     p = (processorInfo *)(patches[c->patch1].proxiesOn.next((Iterator *)&nextP));
   } 
 
   p = (processorInfo *)(patches[c->patch2].proxiesOn.iterator((Iterator *)&nextP));
   while(p) {						// patch 2
-    if(p->Id >= processors[0].Id && p->Id < processors[0].Id + P)
-      selectPes(p, c);
+    if INGROUP(p->Id) selectPes(p, c);
     p = (processorInfo *)(patches[c->patch2].proxiesOn.next((Iterator *)&nextP));
   }
 

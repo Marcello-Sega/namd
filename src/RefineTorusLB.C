@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/08 22:42:51 $
- * $Revision: 1.23 $
+ * $Author: jim $
+ * $Date: 2011/02/26 17:21:59 $
+ * $Revision: 1.24 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -46,11 +46,15 @@ RefineTorusLB::~RefineTorusLB() { }
 void RefineTorusLB::strategy() {
   int index, realPe;
 
+  const int beginGroup = processors[0].Id;
+  const int endGroup = beginGroup + P;
+#define INGROUP(PROC) ((PROC) >= beginGroup && (PROC) < endGroup)
+
   firstAssignInRefine = 0;
   for(int i=0; i<numComputes; i++){
     // HYBRID check if processor is in local group
     realPe = computes[i].oldProcessor;
-    if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+    if INGROUP(realPe) {
       index = realPe - processors[0].Id;
       assign((computeInfo *) &(computes[i]), (processorInfo *) &(processors[index]));
     }
@@ -113,6 +117,9 @@ int RefineTorusLB::newRefine() {
   double thresholdLoad = overLoad * averageLoad;
   int index, realPe;
 
+  const int beginGroup = processors[0].Id;
+  const int endGroup = beginGroup + P;
+
   // create a heap and set of heavy and light pes respectively
   for(int i=0; i<P; i++) {
     if (processors[i].load > thresholdLoad)
@@ -135,7 +142,7 @@ int RefineTorusLB::newRefine() {
 
   while(1) {
     while(donor = (processorInfo*)heavyPes->deleteMax())
-      if(donor->computeSet.numElements())
+      if(donor->computeSet.hasElements())
 	break;
     
     if(!donor) break;
@@ -153,14 +160,14 @@ int RefineTorusLB::newRefine() {
 
       // HYBRID check if processor is in local group
       realPe = patches[c->patch1].processor;
-      if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+      if INGROUP(realPe) {
 	index = realPe - processors[0].Id;
   	p = &processors[index];	// patch 1
   	selectPes(p, c);
       }
 
       realPe = patches[c->patch2].processor;
-      if(realPe >= processors[0].Id && realPe < processors[0].Id + P) {
+      if INGROUP(realPe) {
 	index = realPe - processors[0].Id;
 	p = &processors[index];	// patch 2
   	selectPes(p, c); 
@@ -169,15 +176,13 @@ int RefineTorusLB::newRefine() {
       // Try the processors which have the patches' proxies
       p = (processorInfo *)(patches[c->patch1].proxiesOn.iterator((Iterator *)&nextP));
       while(p) {                                            // patch 1
-	if(p->Id >= processors[0].Id && p->Id < processors[0].Id + P)
-	  selectPes(p, c);
+        if INGROUP(p->Id) selectPes(p, c);
 	p = (processorInfo *)(patches[c->patch1].proxiesOn.next((Iterator *)&nextP));
       }
   
       p = (processorInfo *)(patches[c->patch2].proxiesOn.iterator((Iterator *)&nextP));
       while(p) {                                            //patch 2
-	if(p->Id >= processors[0].Id && p->Id < processors[0].Id + P)
-	  selectPes(p, c);
+        if INGROUP(p->Id) selectPes(p, c);
         p = (processorInfo *)(patches[c->patch2].proxiesOn.next((Iterator *)&nextP));
       }
       

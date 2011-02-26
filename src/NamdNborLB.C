@@ -258,8 +258,8 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
 
 	for (int k=0; k<numProxies; k++) {
 	  if (NeighborIndex(neighborNodes[k]) != -1) {
-	    processorArray[neighborNodes[k]].proxies.insert(&patchArray[i]);
-	    patchArray[i].proxiesOn.insert(&processorArray[neighborNodes[k]]);
+	    processorArray[neighborNodes[k]].proxies.unchecked_insert(&patchArray[i]);
+	    patchArray[i].proxiesOn.unchecked_insert(&processorArray[neighborNodes[k]]);
 	  }
 	}
   }
@@ -282,8 +282,8 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
         nProxies += numProxies;
 
 	for (int k=0; k<numProxies; k++) {
-	  processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
-	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
+	  processorArray[neighborNodes[k]].proxies.unchecked_insert(&patchArray[pid]);
+	  patchArray[pid].proxiesOn.unchecked_insert(&processorArray[neighborNodes[k]]);
 	}
 */
       } else if (this_obj.migratable) { // Its a compute

@@ -69,7 +69,7 @@ void AlgNbor::strategy()
     processorInfo* bestP;
 
     Iterator nextProcessor;
-    if (lightProcessors->numElements() == 0) break;
+    if (lightProcessors->hasElements() == 0) break;
     processorInfo *p = (processorInfo *)lightProcessors->iterator((Iterator *) &nextProcessor);
     for(i=0; i < 3; i++)
         for(j=0; j<3; j++) {
@@ -81,7 +81,7 @@ void AlgNbor::strategy()
     {
       Iterator nextCompute;
       nextCompute.id = 0;
-      if (processors[mype].computeSet.numElements() == 0) break;
+      if (processors[mype].computeSet.hasElements() == 0) break;
       computeInfo *c = (computeInfo *)
 		processors[mype].computeSet.iterator((Iterator *)&nextCompute);
       while (c) {

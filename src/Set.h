@@ -26,10 +26,12 @@ class IRSet {
 
 private:
  listNode *head;
+ int nElements;
 
 public:
  IRSet();
  ~IRSet();
+ void unchecked_insert(InfoRecord *);
  void insert(InfoRecord *);
  int find(InfoRecord *) ;
  int remove(InfoRecord *);
@@ -37,7 +39,14 @@ public:
  InfoRecord *iterator(Iterator *);
  InfoRecord *next(Iterator *);
  int numElements();
+ int hasElements();
  void print();
+};
+
+class LargeIRSet : public IRSet {
+private:
+ void insert(InfoRecord *);
+ int find(InfoRecord *);
 };
 
 #endif

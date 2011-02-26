@@ -11,6 +11,7 @@
 IRSet::IRSet() 
 {
   head = (listNode *) 0;
+  nElements = 0;
 }
 
 IRSet::~IRSet() {
@@ -22,10 +23,20 @@ IRSet::~IRSet() {
   }
 }
 
+void IRSet::unchecked_insert(InfoRecord *info) 
+{
+    ++nElements;
+    listNode *node = new listNode(info);
+    node->next = head;
+    head = node;
+}
+
+
 void IRSet::insert(InfoRecord *info) 
 {
   if (!find(info))
   {
+    ++nElements;
     listNode *node = new listNode(info);
     node->next = head;
     head = node;
@@ -53,6 +64,7 @@ int IRSet::remove(InfoRecord * r)
   if (p->info == r){
     head = q;
     delete p;
+    --nElements;
     return 1;
   }
 
@@ -60,6 +72,7 @@ int IRSet::remove(InfoRecord * r)
     if (q->info == r){
       p->next = q->next;
       delete q;
+      --nElements;
       return 1;
     }
     else {
@@ -104,14 +117,12 @@ InfoRecord * IRSet::next(Iterator *iter)
 
 int IRSet::numElements()
 {
-int n;
-  n = 0;
-  listNode *p = head;
-  while (p){
-    n++;
-    p = p->next;
-  }
-  return n;
+  return nElements;
+}
+
+int IRSet::hasElements()
+{
+  return ! ! head;
 }
 
 void IRSet::print() 

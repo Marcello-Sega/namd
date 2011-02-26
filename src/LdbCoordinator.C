@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2011/02/25 02:34:07 $
- * $Revision: 1.107 $
+ * $Date: 2011/02/26 17:21:56 $
+ * $Revision: 1.108 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -182,7 +182,7 @@ LdbCoordinator::LdbCoordinator()
 			  (void*)this);
   objHandles = 0;
   numComputes = 0;
-  reg_all_objs = 2;
+  reg_all_objs = 1;
 }
 
 LdbCoordinator::~LdbCoordinator(void)
@@ -238,6 +238,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   stepsPerLdbCycle = simParams->ldbPeriod;
   firstLdbStep = simParams->firstLdbStep;
   int lastLdbStep = simParams->lastLdbStep;
+  int stepsPerCycle = simParams->stepsPerCycle;
 
   computeMap = cMap;
   patchMap = pMap;
@@ -307,13 +308,15 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   // zero will get all migrations
 
   // If this is the first time through, we need it register patches
-  if (reg_all_objs) {
+  if (ldbCycleNum == reg_all_objs) {
+    if ( Node::Object()->simParameters->ldBalancer == LDBAL_CENTRALIZED ) {
+      reg_all_objs = 3;
+    }
     // Tell the lbdb that I'm registering objects, until I'm done
     // registering them.
     theLbdb->RegisteringObjects(myHandle);
     
-   --reg_all_objs;
-   if ( reg_all_objs ) {
+   if ( ldbCycleNum == 1 ) {
     patchHandles = new LDObjHandle[nLocalPatches];
     int patch_count=0;
     int i;
@@ -390,17 +393,51 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
   
   // iout << "LDB Cycle Num: " << ldbCycleNum << "\n";
 
+ if ( simParams->ldBalancer == LDBAL_CENTRALIZED ) {
+  if (ldbCycleNum == 1 || ldbCycleNum == 3) {
+    numStepsToRun = stepsPerCycle;
+    totalStepsDone += numStepsToRun;
+    takingLdbData = 0;
+    theLbdb->CollectStatsOff();
+  } else if (ldbCycleNum == 2 || ldbCycleNum == 4) {
+    numStepsToRun = firstLdbStep - stepsPerCycle;
+    while ( numStepsToRun <= 0 ) numStepsToRun += stepsPerCycle;
+    totalStepsDone += numStepsToRun;
+    takingLdbData = 1;
+    theLbdb->CollectStatsOn();
+  } else if ( (ldbCycleNum <= 6) || !takingLdbData )
+  {
+    totalStepsDone += firstLdbStep;
+    if(lastLdbStep != -1 && totalStepsDone > lastLdbStep) {
+      numStepsToRun = -1;
+      takingLdbData = 0;
+      theLbdb->CollectStatsOff();
+    } else {
+      numStepsToRun = firstLdbStep;
+      takingLdbData = 1;
+      theLbdb->CollectStatsOn();
+    }
+  }
+  else 
+  {
+    totalStepsDone += stepsPerLdbCycle - firstLdbStep;
+    if(lastLdbStep != -1 && totalStepsDone > lastLdbStep) {
+      numStepsToRun = -1;
+      takingLdbData = 0;
+      theLbdb->CollectStatsOff();
+    } else {
+      numStepsToRun = stepsPerLdbCycle - firstLdbStep;
+      takingLdbData = 0;
+      theLbdb->CollectStatsOff();
+    }
+  }
+ } else {
   if (ldbCycleNum==1)
   {
     totalStepsDone += firstLdbStep;
     numStepsToRun = firstLdbStep;
-    if ( simParams->ldBalancer == LDBAL_CENTRALIZED ) {
-      takingLdbData = 1;
-      theLbdb->CollectStatsOn();
-    } else {
-      takingLdbData = 0;
-      theLbdb->CollectStatsOff();
-    }
+    takingLdbData = 0;
+    theLbdb->CollectStatsOff();
   }
   else if ( (ldbCycleNum <= 4) || !takingLdbData )
   {
@@ -428,6 +465,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       theLbdb->CollectStatsOff();
     }
   }
+ }
 
 /*-----------------------------------------------------------------------------*
  * --------------------------------------------------------------------------- *
@@ -565,7 +603,7 @@ void LdbCoordinator::nodeDone(void)
   nodesDone++;
 
   if (nodesDone==Node::Object()->numNodes()) {
-    iout << "LDB: ============== END OF LOAD BALANCING =============== " << CmiWallTimer() << "\n\n" << endi;
+    iout << "LDB: ============== END OF LOAD BALANCING =============== " << CmiWallTimer() << "\n" << endi;
     nodesDone=0;
     ExecuteMigrations();
   }
@@ -624,6 +662,7 @@ void LdbCoordinator::resume(void)
 
 void LdbCoordinator::resumeReady(CkQdMsg *msg) {
 
+  iout << "LDB: =============== DONE WITH MIGRATION ================ " << CmiWallTimer() << "\n" << endi;
   DebugM(3,"resumeReady()\n");
   delete msg;
 

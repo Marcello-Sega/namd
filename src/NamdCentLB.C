@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2011/02/24 21:08:47 $
- * $Revision: 1.104 $
+ * $Date: 2011/02/26 17:21:57 $
+ * $Revision: 1.105 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -159,7 +159,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
             avgCompute, 100. * avgCompute / averageLoad, averageLoad);
   }
 
-  if ( step() == 0 ) {
+  if ( step() == 1 ) {
     // compute splitting only
     // partitions are stored as char but mostly limited by
     // high load noise at low outer-loop iteration counts
@@ -190,7 +190,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
               nMoveableComputes,nMoveableComputes+totalAddedParts);
     CkPrintf("LDB: Largest unpartitionable compute is %f\n", maxUnsplit);
   } else if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
-    if (step() < 2)
+    if (step() < 4)
       TorusLB(computeArray, patchArray, processorArray,
 	          nMoveableComputes, numPatches, numProcessors);
     else
@@ -435,7 +435,7 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
       for (int j=0; j<num; j++) {
           int id;
           fscanf(fp,"%d",&id);
-          processorArray[i].proxies.insert(&patchArray[id]);
+          processorArray[i].proxies.unchecked_insert(&patchArray[id]);
       }
   }
   // dump proxiesOn
@@ -583,8 +583,8 @@ int NamdCentLB::buildData(LDStats* stats)
         nProxies += numProxies;
 
 	for (int k=0; k<numProxies; k++) {
-	  processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
-	  patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
+	  processorArray[neighborNodes[k]].proxies.unchecked_insert(&patchArray[pid]);
+	  patchArray[pid].proxiesOn.unchecked_insert(&processorArray[neighborNodes[k]]);
 	}
       } else if (this_obj.migratable) { // Its a compute
 	const int cid = this_obj.id().id[0];

@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: bhatele $
- * $Date: 2011/02/22 00:45:57 $
- * $Revision: 1.22 $
+ * $Author: jim $
+ * $Date: 2011/02/26 17:21:57 $
+ * $Revision: 1.23 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -543,9 +543,9 @@ int NamdHybridLB::buildData(LDStats* stats) {
 			if( (neighborNodes[k] >= stats->procs[0].pe) && (neighborNodes[k] <= stats->procs[n_pes-1].pe) ){
 				index = neighborNodes[k] - stats->procs[0].pe;
   				//BACKUP processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
-  				processorArray[index].proxies.insert(&patchArray[pid]);
+  				processorArray[index].proxies.unchecked_insert(&patchArray[pid]);
   				//BACKUP patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
-  				patchArray[pid].proxiesOn.insert(&processorArray[index]);
+  				patchArray[pid].proxiesOn.unchecked_insert(&processorArray[index]);
 			}
 		}
       	} else if (this_obj.migratable) { // Its a compute
