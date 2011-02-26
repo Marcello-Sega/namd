@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: jim $
- * $Date: 2011/02/26 17:21:58 $
- * $Revision: 1.90 $
+ * $Date: 2011/02/26 19:40:13 $
+ * $Revision: 1.91 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -17,6 +17,7 @@
 #include "ProxyMgr.h"
 #include "PatchMap.h"
 #include "memusage.h"
+#include <iomanip>
 
 #define ST_NODE_LOAD 		0.005
 #define PROXY_LOAD              0.001
@@ -857,7 +858,20 @@ void Rebalancer::printLoads()
    computeAverage();
    max = computeMax();
 
-   iout << "LDB: TIME " << CmiWallTimer() << " LOAD: AVG " << averageLoad 
+   iout << "LDB:";
+   if ( P != CkNumPes() ) {
+     int w = 1;   
+     int maxinw = 10;
+     while ( maxinw < CkNumPes() ) {
+       ++w;
+       maxinw = 10*maxinw;
+     }
+     iout << " PES " <<
+             std::setw(w) << std::right << processors[0].Id << "-" <<
+             std::setw(w) << std::left  << processors[P-1].Id <<
+             std::right;
+   }
+   iout << " TIME " << CmiWallTimer() << " LOAD: AVG " << averageLoad 
      << " MAX " << max << "  PROXIES: TOTAL " << total << " MAXPE " << 
      maxproxies << " MAXPATCH " << maxpatchproxies << " " << strategyName 
      << " MEM: " << memusage_MB() << " MB\n" << endi;
