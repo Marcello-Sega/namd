@@ -56,6 +56,9 @@ syntax:
           breaksw
         endsw
       breaksw
+      case AIX:
+        set ARCH_PAT = AIX
+      breaksw
       case SunOS:
         set ARCH_PAT = Solaris
         switch ( `uname -p` )
@@ -323,9 +326,11 @@ begin:
   if ( $?CHARM_BASE ) then
     echo "CHARMBASE = $CHARM_BASE" >> Make.config
   else if ( -d .rootdir/charm-6.3.0 ) then
+    set CHARM_BASE = .rootdir/charm-6.3.0
     echo "Using Charm++ 6.3.0 build found in main build directory"
     echo 'CHARMBASE = .rootdir/charm-6.3.0' >> Make.config
   else if ( -d .rootdir/charm ) then
+    set CHARM_BASE = .rootdir/charm
     echo "Using Charm++ build found in main build directory"
     echo 'CHARMBASE = .rootdir/charm' >> Make.config
   else

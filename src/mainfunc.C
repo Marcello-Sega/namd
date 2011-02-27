@@ -46,6 +46,10 @@ int main(int argc, char **argv) {
 }
 
 void after_backend_init(int argc, char **argv){
+#define CWDSIZE 1024
+  char origcwd_buf[CWDSIZE];
+  char currentdir_buf[CWDSIZE];
+
   ScriptTcl *script = new ScriptTcl;
   Node::Object()->setScript(script);
 
@@ -53,7 +57,8 @@ void after_backend_init(int argc, char **argv){
   if ( argc < 2 ) {
     NAMD_die("No simulation config file specified on command line.");
   }
-  char *origcwd = GETCWD(0,0);
+  char *origcwd = GETCWD(origcwd_buf,CWDSIZE);
+  if ( ! origcwd ) NAMD_err("getcwd");
 #ifdef NAMD_TCL
   for(int i = 1; i < argc; ++i) {
   if ( strstr(argv[i],"--") == argv[i] ) {
@@ -97,7 +102,8 @@ void after_backend_init(int argc, char **argv){
       NAMD_die(buf);
     }
     iout << iINFO << "Changed directory to " << currentdir << "\n" << endi;
-    currentdir = GETCWD(0,0);
+    currentdir = GETCWD(currentdir_buf,CWDSIZE);
+    if ( ! currentdir ) NAMD_err("getcwd after chdir");
   }
   else{
       if ( *tmp == PATHSEP ){ // config file in / is odd, but it might happen
