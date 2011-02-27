@@ -8,6 +8,12 @@
 #include "Set.h"
 #include "elements.h"
 
+//#define DEBUG_IRSET
+
+#ifdef DEBUG_IRSET
+void NAMD_bug(const char *);
+#endif
+
 IRSet::IRSet() 
 {
   head = (listNode *) 0;
@@ -25,10 +31,18 @@ IRSet::~IRSet() {
 
 void IRSet::unchecked_insert(InfoRecord *info) 
 {
+#ifdef DEBUG_IRSET
+  if (find(info)) NAMD_bug("IRSet::unchecked_insert duplicate");
+#endif
     ++nElements;
     listNode *node = new listNode(info);
     node->next = head;
     head = node;
+#ifdef DEBUG_IRSET
+  int n = 0;
+  while (node) { ++n; node = node->next; }
+  if ( n != nElements ) NAMD_bug("IRSet::unchecked_insert count");
+#endif
 }
 
 
@@ -40,6 +54,11 @@ void IRSet::insert(InfoRecord *info)
     listNode *node = new listNode(info);
     node->next = head;
     head = node;
+#ifdef DEBUG_IRSET
+    int n = 0;
+    while (node) { ++n; node = node->next; }
+    if ( n != nElements ) NAMD_bug("IRSet::insert count");
+#endif
   }
    
 }
@@ -55,6 +74,13 @@ void IRSet::myRemove(listNode **n, InfoRecord *r)
 
 int IRSet::remove(InfoRecord * r) 
 {
+#ifdef DEBUG_IRSET
+    listNode *node = head;
+    int n = 0;
+    while (node) { ++n; node = node->next; }
+    if ( n != nElements ) NAMD_bug("IRSet::remove count");
+#endif
+
   if (!head)
     return 0;
 
