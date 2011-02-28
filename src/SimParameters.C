@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dtanner $
- * $Date: 2011/02/25 21:23:17 $
- * $Revision: 1.1326 $
+ * $Author: yiwang $
+ * $Date: 2011/02/28 00:46:42 $
+ * $Revision: 1.1327 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1294,6 +1294,8 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
       "configuration for the collective variables", PARSE_STRING);
     opts.optional("colvars", "colvarsInput",
       "input restart file for the collective variables", PARSE_STRING);
+
+   //// aMD parameters
 }
 
 
