@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2011/02/26 17:21:57 $
- * $Revision: 1.105 $
+ * $Date: 2011/02/28 06:33:19 $
+ * $Revision: 1.106 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -203,7 +203,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
     RefineTorusLB(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors, 1);
   } else if (simParams->ldbStrategy == LDBSTRAT_OLD) {
-    if (step() < 2)
+    if (step() < 4)
       Alg7(computeArray, patchArray, processorArray,
 	          nMoveableComputes, numPatches, numProcessors);
     else
