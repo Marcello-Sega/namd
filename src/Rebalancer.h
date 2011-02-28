@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.h,v $
- * $Author: bhatele $
- * $Date: 2008/06/18 21:42:44 $
- * $Revision: 1.32 $
+ * $Author: jim $
+ * $Date: 2011/02/28 06:55:50 $
+ * $Revision: 1.33 $
  *****************************************************************************/
 
 /** \file Rebalancer.h
@@ -138,6 +138,7 @@ protected:
   int numProxies;
   int numPesAvailable;
   double averageLoad;
+  double origMaxLoad;
   int firstAssignInRefine;
 #if USE_TOPOMAP
   TopoManager tmgr;

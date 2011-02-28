@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: jim $
- * $Date: 2011/02/26 19:40:13 $
- * $Revision: 1.91 $
+ * $Date: 2011/02/28 06:55:50 $
+ * $Revision: 1.92 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -95,6 +95,8 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
       processors[i].load += processors[i].computeLoad;
    }
 
+   origMaxLoad = computeMax();
+
    // iout << iINFO << "Initial load" << "\n";
    printLoads();
 
@@ -134,6 +136,32 @@ Rebalancer::Rebalancer(computeInfo *computeArray, patchInfo *patchArray,
 
 Rebalancer::~Rebalancer()
 {
+  if ( computeMax() > origMaxLoad ) {
+   iout << "LDB:";
+   if ( P != CkNumPes() ) {
+     int w = 1;   
+     int maxinw = 10;
+     while ( maxinw < CkNumPes() ) {
+       ++w;
+       maxinw = 10*maxinw;
+     }
+     iout << " PES " <<
+             std::setw(w) << std::right << processors[0].Id << "-" <<
+             std::setw(w) << std::left  << processors[P-1].Id <<
+             std::right;
+   }
+   iout << " Reverting to original mapping\n" << endi;
+   fflush(stdout);
+   const int beginGroup = processors[0].Id;
+   const int endGroup = beginGroup + P;
+   for (int i=0; i < numComputes; i++) {
+     // Only for those computes which are in my group (hierarchical case)
+     if INGROUP(computes[i].oldProcessor) {
+       computes[i].processor = computes[i].oldProcessor;
+     }
+   }
+  }
+
   //for(int i=0; i<P; i++)
   //  delete [] processors[i].proxyUsage;
    delete pes;
