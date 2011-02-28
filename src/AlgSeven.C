@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/AlgSeven.C,v $
- * $Author: emeneses $
- * $Date: 2010/03/06 23:24:36 $
- * $Revision: 1.57 $
+ * $Author: jim $
+ * $Date: 2011/02/28 07:13:05 $
+ * $Revision: 1.58 $
  *****************************************************************************/
 
 #include "common.h"
@@ -262,9 +262,11 @@ void Alg7::strategy()
 
   printLoads();
 
-  // binary-search refinement procedure
-  multirefine(1.05);
-  printLoads();
+  if ( computeMax() <= origMaxLoad ) {
+    // binary-search refinement procedure
+    multirefine(1.05);
+    printLoads();
+  }
 
 }
 

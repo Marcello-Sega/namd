@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/02/26 17:22:00 $
- * $Revision: 1.20 $
+ * $Date: 2011/02/28 07:13:04 $
+ * $Revision: 1.21 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -21,8 +21,10 @@ int npas, int npes) : RefineTorusLB(cs, pas, pes, ncs, npas, npes, 0)
 {
   strategyName = "TorusLB";
   strategy();
-  binaryRefine();
-  printLoads();
+  if ( computeMax() <= origMaxLoad ) {
+    binaryRefine();
+    printLoads();
+  }
   // CREATE THE SPANNING TREE IN THE LOAD BALANCER
   //if(proxySendSpanning || proxyRecvSpanning)
   //  createSpanningTree();
