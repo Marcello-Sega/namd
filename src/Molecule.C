@@ -3963,10 +3963,10 @@ void Molecule::read_mol_signatures(char *fname, Parameters *params, ConfigList *
     if(simParams->rigidBonds != RIGID_NONE){
       //check whether the input rigid bond type matches
       if(simParams->rigidBonds != inputRigidType){
-        char *tmpstr[]={"RIGID_ALL", "RIGID_WATER"};
+        char *tmpstr[]={"RIGID_NONE", "RIGID_ALL", "RIGID_WATER"};
         char errmsg[125];
         sprintf(errmsg, "RIGIDBOND TYPE MISMATCH BETWEEN INPUT (%s) AND CURRENT RUN (%s)", 
-                tmpstr[inputRigidType-1], tmpstr[simParams->rigidBonds-1]);
+                tmpstr[inputRigidType], tmpstr[simParams->rigidBonds]);
         NAMD_die(errmsg);
       }
     }
