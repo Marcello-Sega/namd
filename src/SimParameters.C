@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: yiwang $
- * $Date: 2011/02/28 00:46:42 $
- * $Revision: 1.1327 $
+ * $Author: jim $
+ * $Date: 2011/03/03 21:08:09 $
+ * $Revision: 1.1328 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1561,6 +1561,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                   &genCompressedPsf, FALSE);
    opts.optionalB("main", "usePluginIO", "Use the plugin I/O to load the molecule system", 
                   &usePluginIO, FALSE);   
+   opts.optionalB("main", "mallocTest", "test how much memory all PEs can allocate", 
+                  &mallocTest, FALSE);   
    opts.optional("main", "proxySendSpanningTree", "using spanning tree to send proxies",
                   &proxySendSpanningTree, -1);
    opts.optional("main", "proxyRecvSpanningTree", "using spanning tree to receive proxies",

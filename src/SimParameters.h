@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: ryanmcgreevy $
- * $Date: 2011/02/25 20:28:06 $
- * $Revision: 1.1176 $
+ * $Author: jim $
+ * $Date: 2011/03/03 21:08:10 $
+ * $Revision: 1.1177 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -668,6 +668,8 @@ public:
 	Bool genCompressedPsf;
 
 	Bool usePluginIO;
+
+        Bool mallocTest;
 
 	//default value is -1
 	int proxySendSpanningTree;

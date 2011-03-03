@@ -180,6 +180,33 @@ void Node::bindBocVars(){
 }
 
 //----------------------------------------------------------------------
+// Malloc Test Sequence
+void Node::mallocTest(int step) {
+  int MB = 1024*1024;
+  int size = 100;
+  char* foo = (char*) malloc(size*MB);
+  if ( ! foo ) {
+    char buf[256];
+    sprintf(buf,"Malloc fails on Pe %d at %d MB.\n",CkMyPe(),step*size);
+    NAMD_die(buf);
+  }
+  memset(foo,0,size*MB*sizeof(char));
+}
+
+void Node::mallocTestQd(CkQdMsg *qmsg) {
+  delete qmsg;
+  if ( mallocTest_size ) {
+    CkPrintf("All PEs successfully allocated %d MB.\n", 100*mallocTest_size);
+  } else {
+    CkPrintf("Starting malloc test on all PEs.\n");
+  }
+  fflush(stdout);
+  ++mallocTest_size;
+  CkStartQD(CkIndex_Node::mallocTestQd((CkQdMsg*)0),&thishandle);
+  (CProxy_Node(CkpvAccess(BOCclass_group).node)).mallocTest(mallocTest_size);
+}
+
+//----------------------------------------------------------------------
 // Startup Sequence
 
 void Node::messageStartUp() {
@@ -200,6 +227,14 @@ extern void registerUserEventsForAllComputeObjs(void);
 void Node::startup() {
   int gotoRun = false;
   double newTime;
+
+  if ( simParameters->mallocTest ) {
+    if (!CkMyPe()) {
+      mallocTest_size = 0;
+      CkStartQD(CkIndex_Node::mallocTestQd((CkQdMsg*)0),&thishandle);
+    }
+    return;
+  }
 
   if (!CkMyPe()) {
     if (!startupPhase) {

@@ -105,6 +105,10 @@ public:
   static void messageStartUp();
   void startup();  
   void startUp(CkQdMsg *);
+
+  void mallocTest(int);
+  void mallocTestQd(CkQdMsg *);
+  int mallocTest_size;
   
 #ifdef MEM_OPT_VERSION
   ParallelIOMgr *ioMgr;
