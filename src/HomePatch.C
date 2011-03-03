@@ -80,6 +80,8 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   ,tempAtom()
 #endif
 {
+  settle_initialized = 0;
+
   //tracking the end of gbis phases
   numGBISP1Arrived = 0;
   numGBISP2Arrived = 0;
@@ -162,6 +164,8 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   ,tempAtom()
 #endif
 { 
+  settle_initialized = 0;
+
   numGBISP1Arrived = 0;
   numGBISP2Arrived = 0;
   numGBISP3Arrived = 0;
@@ -1623,7 +1627,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
   // and will generate bad results if they are not.
   // XXX this will move to Molecule::build_atom_status when that 
   // version is debugged
-  if (!settle1isinitted()) {
+  if ( ! settle_initialized ) {
     for ( int ig = 0; ig < numAtoms; ig += atom[ig].hydrogenGroupSize ) {
       // find a water
       if (atom[ig].rigidBondLength > 0) {
@@ -1644,7 +1648,10 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
         // initialize settle water parameters
         settle1init(atom[ig].mass, atom[oatm].mass, 
                     atom[ig].rigidBondLength,
-                    atom[oatm].rigidBondLength);
+                    atom[oatm].rigidBondLength,
+                    settle_mOrmT, settle_mHrmT, settle_ra,
+                    settle_rb, settle_rc, settle_rra);
+        settle_initialized = 1;
         break; // done with init
       }
     }
@@ -1695,7 +1702,9 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
           ref[2] = ref[0];
           pos[2] = pos[0];
           vel[2] = vel[0];
-          settle1(ref+2, pos+2, vel+2, invdt);
+          settle1(ref+2, pos+2, vel+2, invdt,
+                  settle_mOrmT, settle_mHrmT, settle_ra,
+                  settle_rb, settle_rc, settle_rra);
           ref[0] = ref[2];
           pos[0] = pos[2];
           vel[0] = vel[2];
@@ -1706,7 +1715,9 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
           swm4_omrepos(ref, pos, vel, invdt);
         }
         else {
-          settle1(ref, pos, vel, invdt);
+          settle1(ref, pos, vel, invdt,
+                  settle_mOrmT, settle_mHrmT, settle_ra,
+                  settle_rb, settle_rc, settle_rra);
           if (simParams->watmodel == WAT_TIP4) {
             tip4_omrepos(ref, pos, vel, invdt);
           }

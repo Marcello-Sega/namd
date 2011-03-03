@@ -244,6 +244,11 @@ private:
   int nChild;
 #endif
 
+  // Cached settle1 parameters
+  int settle_initialized;
+  BigReal settle_mOrmT; BigReal settle_mHrmT; BigReal settle_ra;
+  BigReal settle_rb; BigReal settle_rc; BigReal settle_rra;
+
   // Drude lone pairs
   void redistrib_lonepair_forces(const int, Tensor *);
 

@@ -37,14 +37,15 @@ vel: on input: velocities after unconstrained step; on output: the new
 ra, rb, rc: canonical positions of water atoms; see above diagram
 */
 
-/// return whether or not the settle algorithm is ready to use
-extern int settle1isinitted(void);
-
 /// initialize cached water properties
-extern int settle1init(BigReal mO, BigReal mH, BigReal hhdist, BigReal ohdist);
+void settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist,
+                 BigReal &mOrmT, BigReal &mHrmT, BigReal &ra,
+                 BigReal &rb, BigReal &rc, BigReal &rra);
 
 /// optimized settle1 algorithm, reuses water properties as much as possible
-extern int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt);
+int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt,
+                 BigReal mOrmT, BigReal mHrmT, BigReal ra,
+                 BigReal rb, BigReal rc, BigReal rra);
 
 extern int settle2(BigReal mO, BigReal mH, const Vector *pos,
                    Vector *vel, BigReal dt, Tensor *virial); 

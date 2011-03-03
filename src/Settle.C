@@ -34,21 +34,13 @@
 // in use in NAMD.
 //
 
-static BigReal mOrmT, mHrmT;
-static BigReal ra, rb, rc;
-static BigReal rra;
-static int settle_first_time = 1;
-
-int settle1isinitted(void) {
-  return !settle_first_time;
-}
-
 // Initialize various properties of the waters
 // settle1() assumes all waters are identical, 
 // and will generate bad results if they are not.
-int settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist) {
-  if (settle_first_time) {
-    settle_first_time = 0;
+void settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist,
+                 BigReal &mOrmT, BigReal &mHrmT, BigReal &ra,
+                 BigReal &rb, BigReal &rc, BigReal &rra) {
+
     BigReal rmT = 1.0 / (pmO+pmH+pmH);
     mOrmT = pmO * rmT;
     mHrmT = pmH * rmT;
@@ -57,13 +49,12 @@ int settle1init(BigReal pmO, BigReal pmH, BigReal hhdist, BigReal ohdist) {
     ra = sqrt(ohdist*ohdist-rc*rc)/(1.0+t1);
     rb = t1*ra;
     rra = 1.0 / ra;
-  }
-
-  return 0;
 }
 
 
-int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt) {
+int settle1(const Vector *ref, Vector *pos, Vector *vel, BigReal invdt,
+                 BigReal mOrmT, BigReal mHrmT, BigReal ra,
+                 BigReal rb, BigReal rc, BigReal rra) {
 #if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
   // SSE acceleration of some of the costly parts of settle using
   // the Intel C/C++ classes.  This implementation uses the SSE units
