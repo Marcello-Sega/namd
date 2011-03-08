@@ -124,6 +124,7 @@ int ComputeNonbondedPair::noWork() {
       }
     }
 
+    reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
     reduction->submit();
     if (pressureProfileOn) 
       pressureProfileReduction->submit();
