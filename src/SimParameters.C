@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/03/08 17:52:32 $
- * $Revision: 1.1330 $
+ * $Date: 2011/03/08 21:32:09 $
+ * $Revision: 1.1331 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -283,6 +283,9 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
    
    //  So first we set up the ParseOptions objects so that it will check
    //  all of the logical rules that the configuration file must follow.
+
+   opts.optional("main", "obsolete", "used to flag obsolete options",
+    PARSE_STRING);
 
    ////// basic options
    opts.require("main", "timestep", "size of the timestep, in fs",
@@ -1635,27 +1638,27 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      FALSE);
 
    // Maximum Partition options
-   opts.optional("main", "maxSelfPart", 
+   opts.optional("obsolete", "maxSelfPart", 
      "maximum number of self partitions in one patch", &maxSelfPart, 20);
    opts.range("maxSelfPart",POSITIVE);
-   opts.optional("main", "maxPairPart", 
+   opts.optional("obsolete", "maxPairPart", 
      "maximum number of pair partitions in one patch", &maxPairPart, 8);
    opts.range("maxPairPart",POSITIVE);
-   opts.optional("main", "numAtomsSelf", 
+   opts.optional("obsolete", "numAtomsSelf", 
 		 "maximum number of atoms in one self compute distribution", 
 		 &numAtomsSelf, 154);
    opts.range("numAtomsSelf",NOT_NEGATIVE);
 
-   opts.optional("main", "numAtomsSelf2", 
+   opts.optional("obsolete", "numAtomsSelf2", 
 		 "maximum number of atoms in one self compute distribution", 
 		 &numAtomsSelf2, 154);
    opts.range("numAtomsSelf2",NOT_NEGATIVE);
 
-   opts.optional("main", "numAtomsPair", 
+   opts.optional("obsolete", "numAtomsPair", 
 		 "maximum number of atoms in one pair compute distribution", 
 		 &numAtomsPair, 318);
    opts.range("numAtomsPair",NOT_NEGATIVE);
-   opts.optional("main", "numAtomsPair2", 
+   opts.optional("obsolete", "numAtomsPair2", 
                "maximum number of atoms in one pair compute distribution", 
                &numAtomsPair2, 637);
    opts.range("numAtomsPair2",NOT_NEGATIVE);
@@ -1684,6 +1687,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 #ifdef MEM_OPT_VERSION
    char *namdWorkDir = NULL;
 #endif
+
+  if ( opts.defined("obsolete") ) {
+    iout << iWARN <<
+      "\"obsolete\" defined, silently ignoring obsolete options\n" << endi;
+  }
 
    //  Take care of cwd processing
    if (opts.defined("cwd"))
