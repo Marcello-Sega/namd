@@ -1049,7 +1049,7 @@ void Parameters::add_angle_param(char *buf)
   new_node->angle = angle;
 
   if (cosAngles) {
-    if (strcmp("cos",norm)==0) {
+    if (strcasecmp("cos",norm)==0) {
 //      iout << "Info: Using cos mode for angle " << buf << endl;
       NumCosAngles++;
       new_node->normal = 0;
