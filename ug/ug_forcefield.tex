@@ -638,8 +638,6 @@ See format above.}
 \subsection{Water Models}
 \label{section:water_models}
 
-\subsubsection{Water model parameters}
-
 \NAMD~currently supports the 3-site TIP3P water model and the 4-site TIP4P water model.  TIP3P is the current default water model.  Usage of alternate water models is described below. 
 
 \begin{itemize}
@@ -647,6 +645,45 @@ See format above.}
   \item
     \NAMDCONFWDEF{waterModel}{using which water model?}{ {\tt tip3} or {\tt tip4}}{ {\tt tip3}}
     {Specifies if the TIP3P or TIP4P water model is to be used.  When using the TIP4P water model, the ordering of atoms within each TIP4P water molecule must be oxygen, hydrogen, hydrogen, lone pair.  Alternate orderings will fail. } 
+
+\end{itemize}
+
+
+\subsection{MARTINI Residue-Based Coarse-Grain Forcefield}
+%\label{sec:martini}
+
+The MARTINI forcefield for residue-based coarse-grain models allows simulation of several tens of atoms as only several large coarse-grained particles~\cite{MARR2004, MARR2007, MONT2008}.  In the MARTINI model, each protein residue is represented by a backbone bead and usually one or more sidechain beads.  
+
+When preparing MARTINI simulations it is important to include only those
+dihedrals specified by the forcefield.  Using the ``auto dihedrals'' or 
+``regenerate dihedrals'' feature of psfgen will create dihedrals for all
+possible sets of four bonded atoms.  This is incorrect for MARTINI and
+will result in energy jumps because the dihedral potential function is
+degenerate for the angles of 180 degrees allowed by cosine-based angles.
+
+When using MARTINI the following configuration parameters should be set as indicated:
+
+\begin{verbatim}
+cosAngles on
+martiniSwitching on
+dielectric 15.0
+PME off
+\end{verbatim}
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{cosAngles}{enable the MARTINI cosine-based angle potential function}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not the MARTINI forcefield is being used, specifically cosine-based angle potential function.
+The cosine-based potential will only be used for angles in CHARMM parameter files that specify the cos keyword.} 
+
+\item
+\NAMDCONFWDEF{martiniSwitching}{enable the MARTINI Lennard-Jones switching function?}{{\tt on} or {\tt off}}{{\tt off}}
+{Specifies whether or not the MARTINI forcefield is being used, specifically the Lennard-Jones switching function.} 
+
+\item
+\NAMDCONF{martiniDielAllow}{Allow dielectrics != 15.0 for use with MARTINI}{{\tt on} or {\tt off}}{{\tt off}}
+{Allows user to specify a {\tt dielectric} not equal to 15.0, ie a non-standard dielectric for MARTINI.}
 
 \end{itemize}
 
@@ -872,30 +909,5 @@ In all cases {\tt <atom>} is a {\bf zero-based} atom index
 {\tt <ref>} is a reference distance in \AA\ (bond) or angle in degrees (others),
 and {\tt <k>} is a spring constant in the potential energy function
 $U(x) = k (x-x_{ref})^2$.
-
-\subsubsection{MARTINI Residue-Based Coarse-Grain Forcefield}
-%\label{sec:martini}
-
-The MARTINI forcefield for residue-based coarse-grain models allows simulation of several tens of atoms as only several large coarse-grained particles~\cite{MARR2004, MARR2007, MONT2008}.  In the MARTINI model, each protein residue is represented by a "backbone bead" and usually one or more "sidechain beads."  
-
-When using MARTINI in NAMD the following configuration parameters should be set as indicated:
-
-\begin{verbatim}
-cosAngles on
-PMEOn on
-dielectric 15.0
-\end{verbatim}
-
-\begin{itemize}
-
-\item
-\NAMDCONFWDEF{martiniSwitching}{enable the MARTINI Lennard-Jones switching function?}{{\tt on} or {\tt off}}{{\tt off}}
-{Specifies whether or not the MARTINI forcefield is being used, specifically the Lennard-Jones switching function.} 
-
-\item
-\NAMDCONF{martiniDielAllow}{Allow dielectrics != 15.0 for use with MARTINI}{{\tt on} or {\tt off}}{{\tt off}}
-{Allows user to specify a {\tt dielectric} not equal to 15.0, ie a non-standard dielectric for MARTINI.}
-
-\end{itemize}
 
 
