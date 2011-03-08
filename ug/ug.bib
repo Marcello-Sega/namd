@@ -10,8 +10,8 @@
 % RCS INFORMATION:
 %
 %       $RCSfile: ug.bib,v $
-%       $Author: dtanner $        $Locker:  $                $State: Exp $
-%       $Revision: 1.14 $      $Date: 2011/02/03 16:41:27 $
+%       $Author: jim $        $Locker:  $                $State: Exp $
+%       $Revision: 1.15 $      $Date: 2011/03/08 17:51:58 $
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % DESCRIPTION:
@@ -21,6 +21,9 @@
 % REVISION HISTORY:
 %
 % $Log: ug.bib,v $
+% Revision 1.15  2011/03/08 17:51:58  jim
+% Add MARTINI forcefield references.
+%
 % Revision 1.14  2011/02/03 16:41:27  dtanner
 % adding users guide chapter for implicit solvent as well as shortening superfluous gbis communication by sending messages of size zero instead of messages of size nAtoms
 %
@@ -884,3 +887,36 @@ number=35,
 }
 
 #end GBIS references from dtanner
+
+#begin MARTINI forcefield
+
+@article{MARR2004,
+        author={Siewert J. Marrink and Alex H. de Vries and Alan E. Mark},
+        title={Coarse Grained Model for Semiquantitative Lipid Simulations},
+        journal=JPCB,
+        volume=108,
+        pages={750--760},
+        year=2004
+}
+
+@article{MARR2007,
+  author={S. J. Marrink and H. J. Risselada and S. Yefimov and D. P. Tieleman and A. H. de Vries},
+  title={The MARTINI forcefield: coarse grained model for biomolecular simulations},
+  journal=JPCB,
+  year=2007,
+  volume=111,
+  pages={7812--7824},
+  owner={char}
+}
+
+@article{MONT2008,
+   author = {L. Monticelli and S.K. Kandasamy and X. Periole and R.G. Larson D.P. Tieleman S.J. Marrink},
+   title = {The MARTINI coarse grained forcefield: extension to proteins},
+   journal = JCTC,
+   volume = {4},
+   pages = {819-834},
+   year = {2008}
+}
+
+#end MARTINI forcefield
+
