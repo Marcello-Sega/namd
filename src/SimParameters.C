@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/03/03 21:08:09 $
- * $Revision: 1.1328 $
+ * $Date: 2011/03/08 16:58:21 $
+ * $Revision: 1.1329 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1563,6 +1563,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
                   &usePluginIO, FALSE);   
    opts.optionalB("main", "mallocTest", "test how much memory all PEs can allocate", 
                   &mallocTest, FALSE);   
+   opts.optionalB("main", "printExclusions", "print exclusion lists to stdout", 
+                  &printExclusions, FALSE);   
    opts.optional("main", "proxySendSpanningTree", "using spanning tree to send proxies",
                   &proxySendSpanningTree, -1);
    opts.optional("main", "proxyRecvSpanningTree", "using spanning tree to receive proxies",

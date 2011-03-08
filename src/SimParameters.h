@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2011/03/03 21:08:10 $
- * $Revision: 1.1177 $
+ * $Date: 2011/03/08 16:58:21 $
+ * $Revision: 1.1178 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -670,6 +670,7 @@ public:
 	Bool usePluginIO;
 
         Bool mallocTest;
+        Bool printExclusions;
 
 	//default value is -1
 	int proxySendSpanningTree;

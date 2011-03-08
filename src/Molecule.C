@@ -2885,6 +2885,25 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
          l2[++(*l2)] = a1;
        }
 
+       if ( ! CkMyPe() && simParams->printExclusions ) {
+         for (i=0; i<numAtoms; i++) {
+           int32 *lf = fullExclusionsByAtom[i];
+           iout << "EXCL " << i << " FULL";
+           int nf = *(lf++);
+           for ( int j = 0; j < nf; ++j ) {
+             iout << " " << *(lf++);
+           }
+           iout << "\n";
+           int32 *lm = modExclusionsByAtom[i];
+           iout << "EXCL " << i << " MOD";
+           int nm = *(lm++);
+           for ( int j = 0; j < nm; ++j ) {
+             iout << " " << *(lm++);
+           }
+           iout << "\n" << endi;
+         }
+       }
+
        // DRUDE
        if (is_drude_psf) {
 
