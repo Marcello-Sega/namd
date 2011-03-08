@@ -11,11 +11,18 @@
 #include "ComputeGlobalMsgs.h"
 #include "ComputeMgr.h"
 #include "NamdTypes.h"
-
+#include "InfoStream.h"
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 1
 #include "Debug.h"
+#include <stdlib.h>
+#include <vector>
 
+using namespace std;
+struct position_index {
+  int atomID;
+  int index;
+};
 void GlobalMasterServer::addClient(GlobalMaster *newClient) {
   DebugM(3,"Adding client\n");
   clientList.add(newClient);
@@ -168,6 +175,14 @@ void GlobalMasterServer::resetForceList(AtomIDList atomsForced,
   DebugM(1,"Done restting forces\n");
 }
 
+struct atomID_less {
+      bool operator ()(position_index const& a, position_index const& b) const {
+        if (a.atomID < b.atomID) return true;
+        if (a.atomID > b.atomID) return false;
+
+        return false;
+}
+};
 
 void GlobalMasterServer::callClients() {
   DebugM(3,"Calling clients\n");
@@ -215,12 +230,32 @@ void GlobalMasterServer::callClients() {
   ForceList::iterator forces_i = lastForces.begin();
   GlobalMaster **m_i = clientList.begin();
   GlobalMaster **m_e = clientList.end();
+    AtomIDList::iterator f_i = receivedForceIDs.begin();
+    AtomIDList::iterator f_e = receivedForceIDs.end();
 
   /* use these to check whether anything has changed for any master */
   bool requested_atoms_changed=false;
   bool requested_forces_changed=false;
   bool requested_groups_changed=false;
   
+  int total_num_atoms_requested = 0;
+  int total_num_groups_requested = 0;
+  while (m_i != m_e) {
+    GlobalMaster *master = *m_i;
+    total_num_atoms_requested += master->requestedAtoms().size();
+    total_num_groups_requested += master->requestedGroups().size();
+    m_i++;
+  }
+  m_i = clientList.begin(); 
+  vector <position_index> positions;
+  for (int j = 0; a_i != a_e; ++a_i, ++j) {
+    position_index temp;
+    temp.atomID = *a_i;
+    temp.index = j;
+    positions.push_back(temp); 
+  }
+  sort(positions.begin(), positions.end(), atomID_less());
+
   /* call each of the masters with the coordinates */
   while(m_i != m_e) {
     int num_atoms_requested, num_groups_requested;
@@ -230,25 +265,50 @@ void GlobalMasterServer::callClients() {
     num_atoms_requested = master->requestedAtoms().size();
     num_groups_requested = master->requestedGroups().size();
 
+    AtomIDList   clientAtomIDs;
+    PositionList clientAtomPositions;
+    AtomIDList   clientReceivedForceIDs;
+    ForceList    clientReceivedTotalForces;
+
+    vector <int> rqAtoms;
+    for (int i = 0; i < master->requestedAtoms().size(); i++){
+      rqAtoms.push_back(master->requestedAtoms()[i]);
+    }
+    sort(rqAtoms.begin(), rqAtoms.end());
+    int j = 0;
+    for (int i = 0; i < positions.size(); i++){
+      if (positions[i].atomID == rqAtoms[j]){
+        clientAtomPositions.add(receivedAtomPositions[positions[i].index]);
+        clientAtomIDs.add(rqAtoms[j]);
+        j++;  
+      }
+      else continue;
+    }
+
+    AtomIDList::iterator ma_i = clientAtomIDs.begin();
+    AtomIDList::iterator ma_e = clientAtomIDs.end();
+    PositionList::iterator mp_i = clientAtomPositions.begin();
+    AtomIDList::iterator mf_i = clientReceivedForceIDs.begin();
+    AtomIDList::iterator mf_e = clientReceivedForceIDs.end();
+    ForceList::iterator mtf_i = clientReceivedTotalForces.begin();
+
     /* check to make sure we have some atoms left.  This must work for
      zero requested atoms, as well! */
-    if(a_i+num_atoms_requested > a_e)
-      NAMD_die("GlobalMasterServer ran out of atom IDs!");
-
-    /* check for condition that will exercise bug */
-    if ( CkNumPes() > 1 &&
-         num_atoms_requested && a_i+num_atoms_requested != a_e ) {
-      NAMD_die("Due to a design error, GlobalMasterServer does not support individual atom requests from multiple global force clients on parallel runs.");
-    }
+   // if(a_i+num_atoms_requested > a_e)
+   //   NAMD_die("GlobalMasterServer ran out of atom IDs!");
 
     /* update this master */
     master->clearChanged();
     master->step = step;
-    master->processData(a_i,a_i+num_atoms_requested,
-			p_i,g_i,g_i+num_groups_requested,
+    master->processData(ma_i,ma_e,
+			mp_i,g_i,g_i+total_num_groups_requested,
 			forced_atoms_i,forced_atoms_e,forces_i,
-     receivedForceIDs.begin(),receivedForceIDs.end(),receivedTotalForces.begin());
+      receivedForceIDs.begin(),receivedForceIDs.end(),receivedTotalForces.begin());
 
+    a_i = receivedAtomIDs.begin();
+    p_i = receivedAtomPositions.begin();
+    g_i = receivedGroupPositions.begin();
+//}
     /* check to see if anything changed */
     if(master->changedAtoms()) {
       requested_atoms_changed = true;
@@ -265,11 +325,11 @@ void GlobalMasterServer::callClients() {
 
 // XXX Completely wrong if multiple clients request atoms in parallel! XXX
 
-    /* next atoms/groups start farther down the lists */
+    /* next atoms/groups start farther down the lists
     a_i += num_atoms_requested;
     p_i += num_atoms_requested;
-    g_i += num_groups_requested;
-  }
+    g_i += num_groups_requested; */
+  } 
   
   /* make a new message */
   ComputeGlobalResultsMsg *msg = new ComputeGlobalResultsMsg;

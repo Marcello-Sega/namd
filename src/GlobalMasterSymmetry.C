@@ -190,6 +190,16 @@ void GlobalMasterSymmetry::initialTransform(){
   }
   delete [] first;
   }
+
+  for (int i = 0; i < matrices.size(); i++) {
+    matrices[i].transpose();
+    //iout << "Matrix: " << i << " " << matrices[i].mat[0] << " " << matrices[i].mat[1] << " " << matrices[i].mat[2] << " "<<matrices[i].mat[3] << "\n";
+    //iout << "Matrix: " << i << " " << matrices[i].mat[4] << " " << matrices[i].mat[5] << " " << matrices[i].mat[6] << " "<<matrices[i].mat[7] << "\n";  
+    //iout << "Matrix: " << i << " " << matrices[i].mat[8] << " " << matrices[i].mat[9] << " " << matrices[i].mat[10] << " "<<matrices[i].mat[11] << "\n";
+    //iout << "Matrix: " << i << " " << matrices[i].mat[12] << " " << matrices[i].mat[13] << " " << matrices[i].mat[14] << " "<<matrices[i].mat[15] << "\n";
+    //iout <<"\n"<<endi;
+    matrices[i].transpose();
+  }
 }
 
 void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
@@ -426,6 +436,7 @@ void GlobalMasterSymmetry::calculate() {
 
     }
     BigReal dx = curpos[3*i  ] - tmpavg[3*i];
+//    iout << "DX: " << dx << "\n" << endi;
     BigReal dy = curpos[3*i+1] - tmpavg[3*i+1];
     BigReal dz = curpos[3*i+2] - tmpavg[3*i+2];
     BigReal fvec[3] = { dx, dy, dz };

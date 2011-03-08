@@ -156,6 +156,7 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms, bool isTwo
       }
     }
   }
+  
   DebugM(1,"done with parseAtoms\n");
 }
 
@@ -189,6 +190,8 @@ GlobalMasterTMD::~GlobalMasterTMD() {
  // delete [] target_aid;
 //  delete [] aidmap;
   delete [] atompos;
+  delete [] atompos2;
+  delete [] target2;
 }
 void GlobalMasterTMD::calculate() {
   // have to reset my forces every time.  
@@ -224,14 +227,16 @@ void GlobalMasterTMD::calculate() {
     curpos[3*i+1] = positions[it->second[i]].y;
     curpos[3*i+2] = positions[it->second[i]].z;
   }
-
-  BigReal *curpos2 = new BigReal[3*(it->second.size())];
+  BigReal *curpos2;
+if(qDiffRMSD){
+  curpos2 = new BigReal[3*(it->second.size())];
   for (int i = 0; i < it->second.size(); i++){
     //int ind = 3*aidmap[it->second[i]];
     curpos2[3*i  ] = positions[it->second[i]].x;
     curpos2[3*i+1] = positions[it->second[i]].y;
     curpos2[3*i+2] = positions[it->second[i]].z;
   }
+}
   // align target with current coordinates.   Uses same weight for all
   // atoms.  Maybe instead use weight from occupancy?
   BigReal ttt[16], pre[3], post[3];
@@ -312,11 +317,11 @@ void GlobalMasterTMD::calculate() {
         pre[j] = ttt1[12+j];
         ttt1[12+j] = 0;
       }
-  //    Matrix4TMD result;
-      result.identity();
-      result.translate(pre);
-      result.multmatrix(Matrix4TMD(ttt1));
-      result.translate(post);
+      Matrix4TMD result2;
+      result2.identity();
+      result2.translate(pre);
+      result2.multmatrix(Matrix4TMD(ttt1));
+      result2.translate(post);
     
       // compute forces on each atom
       BigReal myrms = 0;
@@ -332,11 +337,10 @@ void GlobalMasterTMD::calculate() {
   //      BigReal prefac = k * (targetRMS - curRMS)/curRMS0;
           BigReal prefac1 = - k * (targetRMS  - curRMS)/curRMS1; // included with a negative term in the potential
 
-        result.multpoint(target2+3*i);
+        result2.multpoint(target2+3*i);
         BigReal dx = curpos2[3*i  ] - target2[3*i  ];
         BigReal dy = curpos2[3*i+1] - target2[3*i+1];
         BigReal dz = curpos2[3*i+2] - target2[3*i+2];
-      
         BigReal fvec[3] = { dx, dy, dz };
         Vector force(fvec[0]*prefac1, fvec[1]*prefac1, fvec[2]*prefac1);
         modifyForcedAtoms().add(it->second[i]);
