@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/03/08 16:58:21 $
- * $Revision: 1.1329 $
+ * $Date: 2011/03/08 17:52:32 $
+ * $Revision: 1.1330 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2326,7 +2326,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      }
      if ( PMEOn )
      {
-       NAMD_die("Do not use Particle Mesh Ewald with Martini.  Set: PMEOn off");
+       NAMD_die("Do not use Particle Mesh Ewald with Martini.  Set: PME off");
      }
    }
 
