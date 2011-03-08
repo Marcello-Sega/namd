@@ -228,14 +228,6 @@ void Node::startup() {
   int gotoRun = false;
   double newTime;
 
-  if ( simParameters->mallocTest ) {
-    if (!CkMyPe()) {
-      mallocTest_size = 0;
-      CkStartQD(CkIndex_Node::mallocTestQd((CkQdMsg*)0),&thishandle);
-    }
-    return;
-  }
-
   if (!CkMyPe()) {
     if (!startupPhase) {
       iout << iINFO << "\n";
@@ -275,6 +267,14 @@ void Node::startup() {
     simParameters = node_simParameters;
     parameters = node_parameters;
     molecule = node_molecule;
+
+    if ( simParameters->mallocTest ) {
+      if (!CkMyPe()) {
+        mallocTest_size = 0;
+        CkStartQD(CkIndex_Node::mallocTestQd((CkQdMsg*)0),&thishandle);
+      }
+      return;
+    }
     
     #ifdef MEM_OPT_VERSION
     //At this point, each Node object has received the simParameters,
