@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2011/03/08 16:58:21 $
- * $Revision: 1.1178 $
+ * $Author: char $
+ * $Date: 2011/03/09 21:32:41 $
+ * $Revision: 1.1179 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -413,6 +413,17 @@ public:
 
 	int rescaleFreq;		//  Velocity rescale frequency
 	BigReal rescaleTemp;		//  Temperature to rescale to
+
+        Bool accelMDOn;                     //  Perform accelMD
+        Bool accelMDdihe;                   //  Apply boost to the dihedral potential
+        Bool accelMDdual;                   //  dual boost mode  
+        Bool accelMDDebugOn;                //  Debugging accelMD
+        BigReal accelMDskip;                //  Skip the first accelMDskip num of steps
+        int accelMDOutFreq;                 //  accelMD output frequency
+        BigReal accelMDE;                   //  accelMD E
+        BigReal accelMDalpha;               //  accelMD alpha
+        BigReal accelMDTE;                  //  E for total potential in the dual boost mode
+        BigReal accelMDTalpha;              //  alpha for total potential in the dual boost mode
 
 	int reassignFreq;		//  Velocity reassignment frequency
 	BigReal reassignTemp;		//  Temperature to reassign to

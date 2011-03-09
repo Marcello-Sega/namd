@@ -37,6 +37,7 @@ enum {
 #endif
   scriptBarrierTag,
   traceBarrierTag,
+  accelMDRescaleFactorTag,
   dummyTag
 };
 
@@ -53,6 +54,7 @@ struct ControllerBroadcasts
 #endif
   SimpleBroadcastObject<int> scriptBarrier;
   SimpleBroadcastObject<int> traceBarrier;
+  SimpleBroadcastObject<Vector> accelMDRescaleFactor;
 
   ControllerBroadcasts() : 
     velocityRescaleFactor(velocityRescaleFactorTag),
@@ -63,6 +65,7 @@ struct ControllerBroadcasts
 #if USE_BARRIER
     cycleBarrier(cycleBarrierTag),
 #endif
+    accelMDRescaleFactor(accelMDRescaleFactorTag),
     scriptBarrier(scriptBarrierTag),
 	traceBarrier(traceBarrierTag)
   { ; }

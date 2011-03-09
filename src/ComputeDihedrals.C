@@ -216,6 +216,25 @@ void DihedralElem::computeForce(BigReal *reduction,
   p[3]->f[localIndex[3]].y += -f3.y;
   p[3]->f[localIndex[3]].z += -f3.z;  
 
+    /* store the force for dihedral-only accelMD */
+  if ( p[0]->af ) {
+    p[0]->af[localIndex[0]].x += f1.x;
+    p[0]->af[localIndex[0]].y += f1.y;
+    p[0]->af[localIndex[0]].z += f1.z;
+
+    p[1]->af[localIndex[1]].x += f2.x - f1.x;
+    p[1]->af[localIndex[1]].y += f2.y - f1.y;
+    p[1]->af[localIndex[1]].z += f2.z - f1.z;
+
+    p[2]->af[localIndex[2]].x += f3.x - f2.x;
+    p[2]->af[localIndex[2]].y += f3.y - f2.y;
+    p[2]->af[localIndex[2]].z += f3.z - f2.z;
+
+    p[3]->af[localIndex[3]].x += -f3.x;
+    p[3]->af[localIndex[3]].y += -f3.y;
+    p[3]->af[localIndex[3]].z += -f3.z;
+  }
+
   DebugM(3, "::computeForce() -- ending with delta energy " << K << std::endl);
   reduction[dihedralEnergyIndex] += K;
   reduction[virialIndex_XX] += ( f1.x * r12.x + f2.x * r23.x + f3.x * r34.x );
@@ -266,5 +285,6 @@ void DihedralElem::submitReductionData(BigReal *data, SubmitReduction *reduction
 {
   reduction->item(REDUCTION_DIHEDRAL_ENERGY) += data[dihedralEnergyIndex];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_AMD_DIHE,data,virialIndex);
 }
 

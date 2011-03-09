@@ -421,6 +421,17 @@ CkPrintf("%d %d-%d-%d-%d %d-%d-%d-%d\n", CkMyPe(),
   p[6]->f[localIndex[6]] += f6 - f5;
   p[7]->f[localIndex[7]] += -f6;
 
+  if ( p[0]->af ) {
+    p[0]->af[localIndex[0]] += f1;
+    p[1]->af[localIndex[1]] += f2 - f1;
+    p[2]->af[localIndex[2]] += f3 - f2;
+    p[3]->af[localIndex[3]] += -f3;
+    p[4]->af[localIndex[4]] += f4;
+    p[5]->af[localIndex[5]] += f5 - f4;
+    p[6]->af[localIndex[6]] += f6 - f5;
+    p[7]->af[localIndex[7]] += -f6;
+  }
+
   DebugM(3, "::computeForce() -- ending with delta energy " << energy << std::endl);
   reduction[crosstermEnergyIndex] += energy;
   reduction[virialIndex_XX] += ( f1.x * r12.x + f2.x * r23.x + f3.x * r34.x );
@@ -503,6 +514,7 @@ void CrosstermElem::submitReductionData(BigReal *data, SubmitReduction *reductio
 {
   reduction->item(REDUCTION_CROSSTERM_ENERGY) += data[crosstermEnergyIndex];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NORMAL,data,virialIndex);
+  ADD_TENSOR(reduction,REDUCTION_VIRIAL_AMD_DIHE,data,virialIndex);
 }
 
 

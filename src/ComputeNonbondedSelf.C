@@ -25,6 +25,11 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  if (accelMDOn) {
+     amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+  } else {
+     amd_reduction = NULL;
+  }
   if (pressureProfileOn) {
     int n = pressureProfileAtomTypes;
     pressureProfileData = new BigReal[3*n*n*pressureProfileSlabs];
@@ -59,6 +64,7 @@ void ComputeNonbondedSelf::initialize() {
 ComputeNonbondedSelf::~ComputeNonbondedSelf()
 {
   delete reduction;
+  delete amd_reduction;
   delete pressureProfileReduction;
   delete [] pressureProfileData;
   if (avgPositionBox != NULL) {
@@ -334,6 +340,7 @@ if (patch->flags.doGBIS) {
 *******************************************************************************/
   if (!patch->flags.doGBIS || gbisPhase == 3) {
   submitReductionData(reductionData,reduction);
+  if (accelMDOn) submitReductionData(reductionData,amd_reduction);
   if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
@@ -342,6 +349,7 @@ if (patch->flags.doGBIS) {
 #endif
 
   reduction->submit();
+  if (accelMDOn) amd_reduction->submit();
   if (pressureProfileOn)
     pressureProfileReduction->submit();
   }// end not gbis

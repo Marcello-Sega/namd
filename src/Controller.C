@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2011/02/25 21:15:30 $
- * $Revision: 1.1255 $
+ * $Author: char $
+ * $Date: 2011/03/09 21:32:40 $
+ * $Revision: 1.1256 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -135,6 +135,12 @@ Controller::Controller(NamdState *s) :
 {
     broadcast = new ControllerBroadcasts;
     reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_BASIC);
+    // for accelMD
+    if (simParams->accelMDOn) {
+       amd_reduction = ReductionMgr::Object()->willRequire(REDUCTIONS_AMD);
+    } else {
+       amd_reduction = NULL;
+    }
     // pressure profile reductions
     pressureProfileSlabs = 0;
     pressureProfileCount = 0;
@@ -197,6 +203,7 @@ Controller::~Controller(void)
 {
     delete broadcast;
     delete reduction;
+    delete amd_reduction;
     delete ppbonded;
     delete ppnonbonded;
     delete ppint;
@@ -315,6 +322,7 @@ void Controller::integrate() {
       slowFreq = simParams->nonbondedFrequency;
 
     reassignVelocities(step);  // only for full-step velecities
+    rescaleaccelMD(step);
     receivePressure(step);
     if ( zeroMomentum && dofull && ! (step % slowFreq) )
 						correctMomentum(step);
@@ -338,6 +346,7 @@ void Controller::integrate() {
 	tcoupleVelocities(step);
 	berendsenPressure(step);
 	langevinPiston1(step);
+        rescaleaccelMD(step);
 	enqueueCollections(step);  // after lattice scaling!
 	receivePressure(step);
         if ( zeroMomentum && dofull && ! (step % slowFreq) )
@@ -976,6 +985,7 @@ void Controller::receivePressure(int step, int minimize)
     Tensor virial_normal;
     Tensor virial_nbond;
     Tensor virial_slow;
+    Tensor pressure_amd;
 #ifdef ALTVIRIAL
     Tensor altVirial_normal;
     Tensor altVirial_nbond;
@@ -1103,6 +1113,12 @@ void Controller::receivePressure(int step, int minimize)
       pressure_normal = virial_normal / volume;
       groupPressure_normal = ( virial_normal - intVirial_normal ) / volume;
 
+      if (simParameters->accelMDOn) {
+        pressure_amd = virial_amd / volume;
+        pressure_normal += pressure_amd;
+        groupPressure_normal +=  pressure_amd;
+      }
+
       if ( minimize || ! ( step % nbondFreq ) )
       {
         pressure_nbond = virial_nbond / volume;
@@ -1195,7 +1211,178 @@ void Controller::receivePressure(int step, int minimize)
       " = " << controlPressure_normal << " + " <<
       controlPressure_nbond << " + " << controlPressure_slow << "\n" << endi;
 #endif
+    if ( simParams->accelMDOn && simParams->accelMDDebugOn && ! (step % simParameters->accelMDOutFreq) ) {
+        iout << " PRESS " << trace(pressure)*PRESSUREFACTOR/3. << "\n"
+             << " PNORMAL " << trace(pressure_normal)*PRESSUREFACTOR/3. << "\n"
+             << " PNBOND " << trace(pressure_nbond)*PRESSUREFACTOR/3. << "\n"
+             << " PSLOW " << trace(pressure_slow)*PRESSUREFACTOR/3. << "\n"
+             << " PAMD " << trace(pressure_amd)*PRESSUREFACTOR/3. << "\n"
+             << " GPRESS " << trace(groupPressure)*PRESSUREFACTOR/3. << "\n"
+             << " GPNORMAL " << trace(groupPressure_normal)*PRESSUREFACTOR/3. << "\n"
+             << " GPNBOND " << trace(groupPressure_nbond)*PRESSUREFACTOR/3. << "\n"
+             << " GPSLOW " << trace(groupPressure_slow)*PRESSUREFACTOR/3. << "\n"
+             << endi;
+   }
+}
 
+void Controller::rescaleaccelMD(int step, int minimize)
+{
+    if ( !simParams->accelMDOn ) return;
+
+    amd_reduction->require();
+
+    if (step == simParams->firstTimestep) accelMDdVAverage = 0;
+    if ( minimize || !(step >= simParams->accelMDskip + simParams->firstTimestep) ) return;
+
+    Node *node = Node::Object();
+    Molecule *molecule = node->molecule;
+    Lattice &lattice = state->lattice;
+
+    const BigReal accelMDE = simParams->accelMDE;
+    const BigReal accelMDalpha = simParams->accelMDalpha;
+    const BigReal accelMDTE = simParams->accelMDTE;
+    const BigReal accelMDTalpha = simParams->accelMDTalpha;
+    const int accelMDOutFreq = simParams->accelMDOutFreq;
+
+    BigReal bondEnergy;
+    BigReal angleEnergy;
+    BigReal dihedralEnergy;
+    BigReal improperEnergy;
+    BigReal crosstermEnergy;
+    BigReal amd_electEnergy;
+    BigReal amd_ljEnergy;
+    BigReal amd_electEnergySlow;
+    BigReal potentialEnergy;
+    BigReal factor_dihe = 1;
+    BigReal factor_tot = 1;
+    BigReal testV;
+    BigReal dV = 0;
+    Vector  accelMDfactor;
+    Tensor vir;
+    Tensor vir_dihe;
+    Tensor vir_normal;
+    Tensor vir_nbond;
+    Tensor vir_slow;
+
+    bondEnergy = amd_reduction->item(REDUCTION_BOND_ENERGY);
+    angleEnergy = amd_reduction->item(REDUCTION_ANGLE_ENERGY);
+    dihedralEnergy = amd_reduction->item(REDUCTION_DIHEDRAL_ENERGY);
+    improperEnergy = amd_reduction->item(REDUCTION_IMPROPER_ENERGY);
+    crosstermEnergy = amd_reduction->item(REDUCTION_CROSSTERM_ENERGY);
+
+    GET_TENSOR(vir_dihe,amd_reduction,REDUCTION_VIRIAL_AMD_DIHE);
+    GET_TENSOR(vir_normal,amd_reduction,REDUCTION_VIRIAL_NORMAL);
+    GET_TENSOR(vir_nbond,amd_reduction,REDUCTION_VIRIAL_NBOND);
+    GET_TENSOR(vir_slow,amd_reduction,REDUCTION_VIRIAL_SLOW);
+
+    if ( !( step % nbondFreq ) ) {
+      amd_electEnergy = amd_reduction->item(REDUCTION_ELECT_ENERGY);
+      amd_ljEnergy = amd_reduction->item(REDUCTION_LJ_ENERGY);
+    } else {
+      amd_electEnergy = electEnergy;
+      amd_ljEnergy = ljEnergy;
+    }
+
+    if ( !( step % slowFreq ) ) {
+      amd_electEnergySlow = amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW);
+    } else {
+      amd_electEnergySlow = electEnergySlow;
+    }
+
+    potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy + improperEnergy 
+	       + crosstermEnergy + amd_electEnergy + amd_electEnergySlow + amd_ljEnergy;
+
+    if (simParams->accelMDdihe) {
+
+        testV = dihedralEnergy + crosstermEnergy;
+        if ( testV < accelMDE ) {
+           factor_dihe = accelMDalpha/(accelMDalpha + accelMDE - testV);
+           factor_dihe *= factor_dihe;
+           vir = vir_dihe * (factor_dihe - 1.0);
+           dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
+           accelMDdVAverage += dV;
+        }  
+
+    } else if (simParams->accelMDdual) {
+
+        testV = dihedralEnergy + crosstermEnergy;
+        if ( testV < accelMDE ) {
+           factor_dihe = accelMDalpha/(accelMDalpha + accelMDE - testV);
+           factor_dihe *= factor_dihe;
+           vir = vir_dihe * (factor_dihe - 1.0) ;
+           dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
+        }
+ 
+        testV = potentialEnergy - dihedralEnergy - crosstermEnergy;
+        if ( testV < accelMDTE ) {
+           factor_tot = accelMDTalpha/(accelMDTalpha + accelMDTE - testV);
+           factor_tot *= factor_tot;
+           vir += (vir_normal - vir_dihe + vir_nbond + vir_slow) * (factor_tot - 1.0);
+           dV += (accelMDTE - testV)*(accelMDTE - testV)/(accelMDTalpha + accelMDTE - testV);
+        }
+       accelMDdVAverage += dV;
+
+    } else {
+
+        testV = potentialEnergy;
+        if ( testV < accelMDE ) {
+           factor_tot = accelMDalpha/(accelMDalpha + accelMDE - testV);
+           factor_tot *= factor_tot;
+           vir = (vir_normal + vir_nbond + vir_slow) * (factor_tot - 1.0);
+           dV = (accelMDE - testV)*(accelMDE - testV)/(accelMDalpha + accelMDE - testV);
+           accelMDdVAverage += dV;
+        }
+    } 
+ 
+    accelMDfactor[0]=factor_dihe;
+    accelMDfactor[1]=factor_tot;
+    accelMDfactor[2]=1;
+    broadcast->accelMDRescaleFactor.publish(step,accelMDfactor);
+    virial_amd = vir; 
+
+    if ( factor_tot < 0.001 ) {
+       iout << iWARN << "accelMD is using a very high boost potential, simulation may become unstable!"
+            << "\n" << endi;
+    }
+
+    if ( ! (step % accelMDOutFreq) ) {
+        if ( !(step == simParams->firstTimestep) ) {
+             accelMDdVAverage = accelMDdVAverage/accelMDOutFreq; 
+        }
+        iout << "ACCELERATED MD: STEP " << step
+             << " dV "   << dV
+             << " dVAVG " << accelMDdVAverage 
+             << " BOND " << bondEnergy
+             << " ANGLE " << angleEnergy
+             << " DIHED " << dihedralEnergy+crosstermEnergy
+             << " IMPRP " << improperEnergy
+             << " ELECT " << amd_electEnergy+amd_electEnergySlow
+             << " VDW "  << amd_ljEnergy
+             << " POTENTIAL "  << potentialEnergy << "\n"
+             << endi;
+
+        accelMDdVAverage = 0;
+
+        if (simParams->accelMDDebugOn) {
+           BigReal volume;
+           Tensor p_normal;
+           Tensor p_nbond;
+           Tensor p_slow;
+           Tensor p;
+           if ( (volume=lattice.volume()) != 0. )  {
+                 p_normal = vir_normal/volume;
+                 p_nbond  = vir_nbond/volume;
+                 p_slow = vir_slow/volume;
+                 p = vir/volume;
+           }    
+           iout << " accelMD Scaling Factor: " << accelMDfactor << "\n" 
+                << " accelMD PNORMAL " << trace(p_normal)*PRESSUREFACTOR/3. << "\n"
+                << " accelMD PNBOND " << trace(p_nbond)*PRESSUREFACTOR/3. << "\n"
+                << " accelMD PSLOW " << trace(p_slow)*PRESSUREFACTOR/3. << "\n"
+                << " accelMD PAMD " << trace(p)*PRESSUREFACTOR/3. << "\n" 
+                << endi;
+        }
+   }
 }
 
 void Controller::compareChecksums(int step, int forgiving) {
@@ -1348,6 +1535,7 @@ void Controller::printTiming(int step) {
 
 void Controller::printMinimizeEnergies(int step) {
 
+    rescaleaccelMD(step,1);
     receivePressure(step,1);
 
     Node *node = Node::Object();

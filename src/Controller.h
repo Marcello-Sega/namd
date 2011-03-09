@@ -46,6 +46,7 @@ protected:
       Tensor pressure_normal;
       Tensor pressure_nbond;
       Tensor pressure_slow;
+      Tensor virial_amd;
       Tensor groupPressure_normal;
       Tensor groupPressure_nbond;
       Tensor groupPressure_slow;
@@ -154,6 +155,7 @@ protected:
     SimParameters *const simParams;	// for convenience
     NamdState *const state;		// access data in state
     RequireReduction *reduction;
+    RequireReduction *amd_reduction;
 
     // data for pressure profile reductions and output
     PressureProfileReduction *ppbonded;
@@ -186,6 +188,10 @@ protected:
     Tensor checkpoint_langevinPiston_strainRate;
     Tensor checkpoint_berendsenPressure_avg;
     int checkpoint_berendsenPressure_count;
+
+//for accelMD
+   void rescaleaccelMD (int step, int minimize = 0);
+   BigReal accelMDdVAverage;
 
 private:
     CthThread thread;

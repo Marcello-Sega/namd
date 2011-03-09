@@ -62,6 +62,7 @@ public:
   int nzlines;
   PmeReduction evir[PME_MAX_EVALS];
   SubmitReduction *reduction;
+  SubmitReduction *amd_reduction;
   int strayChargeErrors;
   int numLocalAtoms;
   PmeParticle  * localData;

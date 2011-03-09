@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/03/08 21:32:09 $
- * $Revision: 1.1331 $
+ * $Author: char $
+ * $Date: 2011/03/09 21:32:41 $
+ * $Revision: 1.1332 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1074,6 +1074,27 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("pressureProfile", "pressureProfileEwaldZ",
        "Ewald grid size Z", &pressureProfileEwaldZ, 10);
    opts.range("pressureProfileEwaldZ", POSITIVE);
+
+   /// accelerated MD parameters
+   opts.optionalB("main", "accelMD", "Perform acclerated MD?", &accelMDOn, FALSE);
+   opts.optional("accelMD", "accelMDskip", "Skip the first num of steps", &accelMDskip, 0);
+   opts.range("accelMDskip", NOT_NEGATIVE);
+   opts.optional("accelMD", "accelMDOutFreq", "Frequency of accelMD output", &accelMDOutFreq, 1);
+   opts.range("accelMDOutFreq", POSITIVE);
+   opts.optionalB("accelMD", "accelMDdihe", "Apply boost to dihedral potential", &accelMDdihe, TRUE);
+   opts.optionalB("accelMD", "accelMDDebugOn", "Debugging accelMD", &accelMDDebugOn, FALSE);
+   opts.require("accelMD", "accelMDE","E for AMD", &accelMDE);
+   opts.units("accelMDE", N_KCAL);
+   opts.require("accelMD", "accelMDalpha","alpha for AMD", &accelMDalpha);
+   opts.units("accelMDalpha", N_KCAL);
+   opts.range("accelMDalpha", POSITIVE);
+   opts.optionalB("accelMD", "accelMDdual", "Apply dual boost", &accelMDdual, FALSE);
+   opts.require("accelMDdual", "accelMDTE","E for total potential under accelMDdual mode", &accelMDTE);
+   opts.units("accelMDTE", N_KCAL);
+   opts.require("accelMDdual", "accelMDTalpha","alpha for total potential under accelMDdual mode", &accelMDTalpha);
+   opts.units("accelMDTalpha", N_KCAL);
+   opts.range("accelMDTalpha", POSITIVE);
+
 }
 
 void SimParameters::config_parser_constraints(ParseOptions &opts) {
@@ -1298,7 +1319,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
     opts.optional("colvars", "colvarsInput",
       "input restart file for the collective variables", PARSE_STRING);
 
-   //// aMD parameters
+   //// accelMD parameters
 }
 
 
@@ -4312,6 +4333,28 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    } else {
      pressureProfileEwaldOn = 0;
      pressureProfileAtomTypes = 1;
+   }
+
+   if (accelMDOn) {
+     iout << iINFO << "ACCELERATED MD ACTIVE\n";
+
+     if ( accelMDdual) {
+        accelMDdihe = FALSE;
+        iout << iINFO << "APPLYING DUAL BOOST\n";
+     }
+     else if ( accelMDdihe ) {
+        iout << iINFO << "BOOSTING DIHEDRAL POTENTIAL\n";
+     } else {
+        iout << iINFO << "BOOSTING TOTAL POTENTIAL\n";
+     }
+
+     iout << iINFO << "accelMDE: " << accelMDE << " KCAL/MOL, accelMDalpha: " << accelMDalpha << " KCAL/MOL\n";
+     if (accelMDdual) {
+        iout << iINFO << "accelMDTE: " << accelMDTE << " KCAL/MOL, accelMDTalpha: " << accelMDTalpha << " KCAL/MOL\n";
+     }
+     iout << iINFO << "accelMD SKIPPING " << accelMDskip << " TIMESTEPS\n";
+     iout << iINFO << "accelMD OUTPUT FREQUENCY " << accelMDOutFreq << "\n";
+     iout << endi;
    }
 
    if (FMAOn)

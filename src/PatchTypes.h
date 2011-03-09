@@ -48,7 +48,8 @@ public:
 class Results
 {
 public:
-  enum { normal=0, nbond=1, slow=2, maxNumForces=3 };
+  enum { normal=0, nbond=1, slow=2, amdf=3, maxNumForces=4 };
+//  enum { normal=0, nbond=1, slow=2, maxNumForces=3 };
   Force *f[maxNumForces];
 };
 

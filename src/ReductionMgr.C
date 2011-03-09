@@ -75,9 +75,9 @@ public:
 };
 
 ReductionSet::ReductionSet(int setID, int size, int numChildren) {
-  if ( setID == REDUCTIONS_BASIC ) {
+  if ( setID == REDUCTIONS_BASIC || setID == REDUCTIONS_AMD ) {
     if ( size != -1 ) {
-      NAMD_bug("ReductionSet size specified for REDUCTIONS_BASIC.");
+      NAMD_bug("ReductionSet size specified for REDUCTIONS_BASIC or REDUCTIONS_AMD.");
     }
     size = REDUCTION_MAX_RESERVED;
   }

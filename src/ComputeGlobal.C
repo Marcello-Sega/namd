@@ -286,6 +286,19 @@ void ComputeGlobal::sendData()
 // there's no "slow" part.
 void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
 {
+  if ( Node::Object()->simParameters->accelMDOn && Node::Object()->simParameters->accelMDDebugOn && Node::Object()->simParameters->accelMDdihe ) {
+    int i, index, num=homePatch->numAtoms;
+    FullAtomList atoms = homePatch->atom;
+    ForceList af=homePatch->f[Results::amdf];
+
+    for (i=0; i<num; ++i)
+      if (isRequested[index=atoms[i].id]) {
+        fid->add(index);
+        totalForce->add(af[i]);
+      }
+    return;
+  }
+
   int fixedAtomsOn = Node::Object()->simParameters->fixedAtomsOn;
   int i, index, num=homePatch->numAtoms;
   FullAtomList atoms = homePatch->atom;

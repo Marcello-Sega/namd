@@ -311,6 +311,8 @@ public:
   static BigReal pressureProfileThickness;
   static BigReal pressureProfileMin;
 
+  static Bool accelMDOn;
+
   // for particle mesh Ewald
   static BigReal ewaldcof;
   static BigReal pi_ewaldcof;

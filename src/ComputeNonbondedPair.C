@@ -27,6 +27,11 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
     minPart(minPartition), maxPart(maxPartition), numParts(numPartitions)
 {
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  if (accelMDOn) {
+     amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+  } else {
+     amd_reduction = NULL;
+  }
   if (pressureProfileOn) {
     int n = pressureProfileAtomTypes; 
     pressureProfileData = new BigReal[3*n*n*pressureProfileSlabs];
@@ -62,6 +67,7 @@ void ComputeNonbondedPair::initialize() {
 ComputeNonbondedPair::~ComputeNonbondedPair()
 {
   delete reduction;
+  delete amd_reduction;
   delete pressureProfileReduction;
   delete [] pressureProfileData;
   for (int i=0; i<2; i++) {
@@ -126,6 +132,7 @@ int ComputeNonbondedPair::noWork() {
 
     reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
     reduction->submit();
+    if (accelMDOn) amd_reduction->submit();
     if (pressureProfileOn) 
       pressureProfileReduction->submit();
 
@@ -402,6 +409,7 @@ if (patch[0]->flags.doGBIS) {
 
   if (!patch[0]->flags.doGBIS || gbisPhase == 3) {
   submitReductionData(reductionData,reduction);
+  if (accelMDOn) submitReductionData(reductionData,amd_reduction);
   if (pressureProfileOn)
     submitPressureProfileData(pressureProfileData, pressureProfileReduction);
 
@@ -411,6 +419,7 @@ if (patch[0]->flags.doGBIS) {
 
 
   reduction->submit();
+  if (accelMDOn) amd_reduction->submit();
   if (pressureProfileOn)
     pressureProfileReduction->submit();
   }//end gbis end phase

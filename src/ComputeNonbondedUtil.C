@@ -96,6 +96,8 @@ int             ComputeNonbondedUtil::pressureProfileAtomTypes;
 BigReal         ComputeNonbondedUtil::pressureProfileThickness;
 BigReal         ComputeNonbondedUtil::pressureProfileMin;
 
+Bool            ComputeNonbondedUtil::accelMDOn;
+
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
@@ -241,6 +243,8 @@ void ComputeNonbondedUtil::select(void)
   pairInteractionOn = simParams->pairInteractionOn;
   pairInteractionSelf = simParams->pairInteractionSelf;
   pressureProfileOn = simParams->pressureProfileOn;
+
+  accelMDOn = simParams->accelMDOn;
 
   if ( alchFepOn ) {
     alchLambda = simParams->alchLambda;

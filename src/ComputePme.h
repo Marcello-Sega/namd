@@ -45,6 +45,7 @@ public:
   char *fz_arr;
   PmeReduction evir[PME_MAX_EVALS];
   SubmitReduction *reduction;
+  SubmitReduction *amd_reduction;
   int strayChargeErrors;
   int resultsRemaining;
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];

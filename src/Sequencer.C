@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: char $
- * $Date: 2010/12/05 07:08:32 $
- * $Revision: 1.1190 $
+ * $Date: 2011/03/09 21:32:40 $
+ * $Revision: 1.1191 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -182,6 +182,12 @@ void Sequencer::integrate() {
     if ( dofull && (fullElectFrequency == 1) && !(simParams->mollyOn) )
 					maxForceMerged = Results::slow;
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;
+
+    const Bool accelMDOn = simParams->accelMDOn;
+    const Bool accelMDdihe = simParams->accelMDdihe;
+    const Bool accelMDdual = simParams->accelMDdual;
+    if ( accelMDOn && (accelMDdihe || accelMDdual)) maxForceUsed = Results::amdf;
+
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
     // BEGIN LA
@@ -217,7 +223,9 @@ void Sequencer::integrate() {
     }
 
     doEnergy = ! ( step % energyFrequency );
+    if ( accelMDOn && !accelMDdihe ) doEnergy=1;
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
+    rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD 
 
     if ( staleForces || doTcl || doColvars ) {
       if ( doNonbonded ) saveForce(Results::nbond);
@@ -304,11 +312,15 @@ void Sequencer::integrate() {
       maxForceUsed = Results::normal;
       if ( doNonbonded ) maxForceUsed = Results::nbond;
       if ( doFullElectrostatics ) maxForceUsed = Results::slow;
+      if ( accelMDOn && (accelMDdihe || accelMDdual))  maxForceUsed = Results::amdf;
 
       // Migrate Atoms on stepsPerCycle
       doEnergy = ! ( step % energyFrequency );
+      if ( accelMDOn && !accelMDdihe ) doEnergy=1;
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
-      
+
+      rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
+     
       if ( staleForces || doTcl || doColvars ) {
         if ( doNonbonded ) saveForce(Results::nbond);
         if ( doFullElectrostatics ) saveForce(Results::slow);
@@ -972,6 +984,48 @@ void Sequencer::rescaleVelocities(int step)
       rescaleVelocities_numTemps = 0;
     }
   }
+}
+
+void Sequencer::rescaleaccelMD (int step, int doNonbonded, int doFullElectrostatics)
+{
+   if (!simParams->accelMDOn) return;
+   if (!(step >= simParams->accelMDskip+simParams->firstTimestep)) return;
+
+   Vector accelMDfactor = broadcast->accelMDRescaleFactor.get(step);
+   const BigReal factor_dihe = accelMDfactor[0];
+   const BigReal factor_tot  = accelMDfactor[1];
+   const int numAtoms = patch->numAtoms;
+
+   if (simParams->accelMDdihe && factor_tot <1 )
+       NAMD_die("accelMD broadcasting error!\n");
+   if (!simParams->accelMDdihe && !simParams->accelMDdual && factor_dihe <1 )
+       NAMD_die("accelMD broadcasting error!\n");
+
+   if (simParams->accelMDdihe && factor_dihe < 1) {
+        for (int i = 0; i < numAtoms; ++i)
+          if (patch->f[Results::amdf][i][0] || patch->f[Results::amdf][i][1] || patch->f[Results::amdf][i][2])
+              patch->f[Results::normal][i] += patch->f[Results::amdf][i]*(factor_dihe - 1);         
+   }
+
+   if ( !simParams->accelMDdihe && factor_tot < 1) {
+        for (int i = 0; i < numAtoms; ++i)
+            patch->f[Results::normal][i] *= factor_tot;
+        if (doNonbonded) {
+            for (int i = 0; i < numAtoms; ++i)
+                 patch->f[Results::nbond][i] *= factor_tot;
+        }
+        if (doFullElectrostatics) {
+            for (int i = 0; i < numAtoms; ++i)
+                 patch->f[Results::slow][i] *= factor_tot;
+        }
+   }
+
+   if (simParams->accelMDdual && factor_dihe < 1) {
+        for (int i = 0; i < numAtoms; ++i)
+           if (patch->f[Results::amdf][i][0] || patch->f[Results::amdf][i][1] || patch->f[Results::amdf][i][2])
+               patch->f[Results::normal][i] += patch->f[Results::amdf][i]*(factor_dihe - factor_tot);
+   }
+
 }
 
 void Sequencer::reassignVelocities(BigReal timestep, int step)

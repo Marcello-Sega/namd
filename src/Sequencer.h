@@ -68,6 +68,7 @@ protected:
     void reloadCharges();
 
     void rescaleVelocities(int);
+    void rescaleaccelMD(int, int, int); // for accelMD
     int rescaleVelocities_numTemps;
     void reassignVelocities(BigReal,int);
     void reinitVelocities(void);

@@ -15,6 +15,7 @@ class SubmitReduction;
 class ComputeFullDirect : public ComputeHomePatches {
 private:
   SubmitReduction *reduction;
+  SubmitReduction *amd_reduction;
 public:
   ComputeFullDirect(ComputeID c);
   virtual ~ComputeFullDirect();

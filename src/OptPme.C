@@ -79,6 +79,7 @@ private:
   int    numPencilsActive;
   int    ungrid_count, usePencils;
   SubmitReduction *reduction;
+  SubmitReduction *amd_reduction;
   int    _iter;
   void   *handle;
   bool   constant_pressure;    //Does the simulation need constant pressure
@@ -338,6 +339,11 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
       zPencil.init(new OptPmePencilInitMsg(msgdata));
       
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+      if (simParams->accelMDOn) {
+         amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+      } else {
+         amd_reduction = NULL;
+      }
 
 #ifndef NAMD_FFTW
       NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -467,12 +473,26 @@ void OptPmeMgr::recvEvir (CkReductionMsg *msg) {
   reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += data[5] * scale;
   reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += data[6] * scale;   
 
+  if (amd_reduction) {
+    amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[0] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XX) += data[1] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XY) += data[2] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += data[3] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YX) += data[2] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YY) += data[4] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += data[5] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += data[3] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += data[5] * scale;
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += data[6] * scale;
+  }
+
   delete msg;
 
   SimParameters *simParams = Node::Object()->simParameters;
   int fef = simParams->fullElectFrequency;
   for (int i = 0; i < fef; i++)
     reduction->submit();
+    if (amd_reduction) amd_reduction->submit();
 }
 
 OptPmeCompute::OptPmeCompute(ComputeID c) :
@@ -488,6 +508,12 @@ OptPmeCompute::OptPmeCompute(ComputeID c) :
   useAvgPositions = 1;
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  SimParameters *simParams = Node::Object()->simParameters;
+  if (simParams->accelMDOn) {
+    amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+  } else {
+    amd_reduction = NULL;
+  }
 }
 
 void recv_ungrid_done (void *m) {
@@ -718,6 +744,7 @@ void OptPmeCompute::doWork()
       (*ap).forceBox->close(&r);
     }
     reduction->submit();
+    if (amd_reduction) amd_reduction->submit();
     return;
   }
 
@@ -935,6 +962,10 @@ void OptPmeCompute::ungridForces() {
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     strayChargeErrors = 0;
     reduction->submit();
+    if (amd_reduction) {
+      amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0][0] * scale;
+      amd_reduction->submit();
+    }
 }
 
 
