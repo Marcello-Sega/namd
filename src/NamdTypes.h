@@ -110,7 +110,7 @@ struct FullAtom : CompAtom, CompAtomExt{
   //of "langevinParam" to store "hydList" from an InputAtom and then sort the 
   //atom list. The "langevinParam" value is not initialized until home 
   //patch creation -Chao Mei
-  virtual int operator < (const FullAtom &a) const {
+  int operator < (const FullAtom &a) const {
       return hydVal < a.hydVal;
   }
 #endif
@@ -126,7 +126,7 @@ struct InputAtom: FullAtom{
 	int GPID;
 	int MPID;
     	
-	virtual int operator < (const InputAtom &a) const{
+	int operator < (const InputAtom &a) const{
 		return hydList < a.hydList;
 	}
 };
