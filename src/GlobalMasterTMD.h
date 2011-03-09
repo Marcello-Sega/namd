@@ -28,8 +28,8 @@ private:
   Vector *atompos;
   Vector *atompos2;
   bool qDiffRMSD;
-  map <int, vector<int>  > dmap;
-  map <int, BigReal > kmap;
+  std::map <int, std::vector<int>  > dmap;
+  std::map <int, BigReal > kmap;
   int numTMDatoms;
   BigReal K;
   BigReal initialRMS, finalRMS;

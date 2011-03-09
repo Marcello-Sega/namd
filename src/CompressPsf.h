@@ -5,7 +5,6 @@
 #include <string>
 #include <deque>
 #include <ckhashtable.h>
-using namespace std;
 
 #define COMPRESSED_PSF_VER 1.72
 
@@ -54,7 +53,7 @@ void compress_molecule_info(Molecule *mol, char *psfFileName, Parameters *param,
 void flipNum(char *elem, int elemSize, int numElems);
 
 template <typename T>
-int lookupCstPool(const vector<T>& pool, const T& val)
+int lookupCstPool(const std::vector<T>& pool, const T& val)
 {
     for(int i=0; i<pool.size(); i++)
     {
@@ -167,7 +166,7 @@ public:
 
 private:
   CkHashtableT<HashPoolAdaptorT<T>,int> index_table;
-  vector<HashPoolAdaptorT<T>*> pool;
+  std::vector<HashPoolAdaptorT<T>*> pool;
 };
 
 #endif

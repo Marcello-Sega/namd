@@ -280,7 +280,7 @@ inline void sortEntries_mergeSort_v1(SortEntry * &se, SortEntry * &buf, int seLe
 
       /// Setup pointers and counts for sublists in the pair. ///
 
-      register int numElements = min(2 * subListSize, seLen - firstListOffset);
+      register int numElements = std::min(2 * subListSize, seLen - firstListOffset);
       register int list0len;
       register int list1len;
       if (numElements > subListSize) {

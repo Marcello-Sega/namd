@@ -9,7 +9,6 @@
 
 #include "common.h"
 #include <vector>
-using namespace std;
 
 
 // status elements, used for Atom status 
@@ -525,7 +524,7 @@ struct ExclusionSignature{
 	    return 1;
 	}
     //both input should be sorted in increasing order
-    void setOffsets(vector<int>& fullVec, vector<int>& modVec){
+    void setOffsets(std::vector<int>& fullVec, std::vector<int>& modVec){
     	fullExclCnt = fullVec.size();
     	modExclCnt = modVec.size();
     	if(fullExclCnt>0) {        

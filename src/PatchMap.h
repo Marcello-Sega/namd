@@ -13,7 +13,6 @@
 #include "ProcessorPrivate.h"
 
 #include <vector>
-using namespace std;
 
 
 class Patch;
@@ -205,10 +204,10 @@ private:
   //we need this structure because we want to create and distribute
   //each patch one by one rather than creat all home patches at a time and then
   //send them later
-  vector<int> *tmpPatchAtomsList;
+  std::vector<int> *tmpPatchAtomsList;
 public:
   void initTmpPatchAtomsList(){
-      tmpPatchAtomsList = new vector<int>[nPatches];
+      tmpPatchAtomsList = new std::vector<int>[nPatches];
   }
   void delTmpPatchAtomsList() {
       for(int i=0; i<nPatches; i++){
@@ -217,7 +216,7 @@ public:
       delete [] tmpPatchAtomsList;
       tmpPatchAtomsList = NULL;
   }
-  vector<int> *getTmpPatchAtomsList(){
+  std::vector<int> *getTmpPatchAtomsList(){
       return tmpPatchAtomsList;
   }
 

@@ -198,7 +198,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 #else    
     PluginIOMgr *pIOMgr = new PluginIOMgr();
     
-    iout << iWARN << "Plugin-based I/O is still in development and may still have bugs" << endl;
+    iout << iWARN << "Plugin-based I/O is still in development and may still have bugs\n" << endi;
 
     molfile_plugin_t *pIOHandle = pIOMgr->getPlugin();
     if (pIOHandle == NULL) {

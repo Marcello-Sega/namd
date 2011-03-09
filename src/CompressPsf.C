@@ -8,6 +8,7 @@
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
 
+using namespace std;
 
 /**
  * Very tricky part: 

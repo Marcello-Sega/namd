@@ -20,8 +20,8 @@ public:
 
 private:
 //  map <int, vector <Matrix4Symmetry> > matrices;
-vector <Matrix4Symmetry> matrices;
-  map < int, Matrix4Symmetry > backmatrices;
+  std::vector <Matrix4Symmetry> matrices;
+  std::map < int, Matrix4Symmetry > backmatrices;
 
   bool gluInvertMatrix(const BigReal [16], BigReal invOut[16]);
   void initialTransform();
@@ -32,14 +32,14 @@ vector <Matrix4Symmetry> matrices;
   void calculate();
   void parseAtoms(const char *file, int);
 
-  map <int, vector < BigReal * > > averagePos;
-  map <int, BigReal *> backavg;
-  map <int, vector<int>  > dmap;
-  map <int, BigReal * > posmap;
-  map <int, BigReal * > startmap;
-  map <int, BigReal > kmap;
-  map <int, vector <int> > simmap;
-  map <int, int> bmap;
+  std::map <int, std::vector < BigReal * > > averagePos;
+  std::map <int, BigReal *> backavg;
+  std::map <int, std::vector<int>  > dmap;
+  std::map <int, BigReal * > posmap;
+  std::map <int, BigReal * > startmap;
+  std::map <int, BigReal > kmap;
+  std::map <int, std::vector <int> > simmap;
+  std::map <int, int> bmap;
 
 
   BigReal K;

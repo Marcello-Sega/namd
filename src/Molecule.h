@@ -35,7 +35,6 @@
 #include "molfile_plugin.h"
 
 #include <vector>
-using namespace std;
 
 class SimParameters;
 class Parameters;
@@ -1042,7 +1041,7 @@ public:
   //This is the final data structure we want to store  
   ExclusionCheck *exclChkSigPool;
 
-  void addNewExclSigPool(const vector<ExclusionSignature>&);  
+  void addNewExclSigPool(const std::vector<ExclusionSignature>&);  
 
   void delEachAtomSigs(){    
       //for NAMD-smp version, only one Molecule object is held
