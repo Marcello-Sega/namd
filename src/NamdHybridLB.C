@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: jim $
- * $Date: 2011/02/26 17:21:57 $
- * $Revision: 1.23 $
+ * $Author: gzheng $
+ * $Date: 2011/03/09 22:16:28 $
+ * $Revision: 1.24 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -142,7 +142,7 @@ CLBMigrateMsg* NamdHybridLB::Strategy(LDStats* stats, int n_pes)
 		for(i=0; i<endPE-startPE+1; i++){
 			newMsg->cpuloads[i] = peLoads[i];
 		}
-		free(peLoads);
+		delete [] peLoads;
 		thisProxy[0].UpdateLocalLBInfo(newMsg);
 		return msg;
 	}else{
@@ -172,7 +172,7 @@ void NamdHybridLB::UpdateLocalLBInfo(LocalLBInfoMsg *msg){
 	ComputeMap *computeMap = ComputeMap::Object();
 
 	// traversing the set of moves in msg
-	for(int i=0; i<msg->n_moves; i++){
+	for(i=0; i<msg->n_moves; i++){
 	    if (msg->moves[i].to_pe != -1)
 		computeMap->setNewNode(msg->moves[i].obj.id.id[0],msg->moves[i].to_pe);	
 	}
@@ -180,7 +180,7 @@ void NamdHybridLB::UpdateLocalLBInfo(LocalLBInfoMsg *msg){
 	// CODING
 	// updating cpuloads array
 	for(i=msg->startPE; i<=msg->endPE; i++){
-		cpuloads[i] = msg->cpuloads[i-startPE];
+		cpuloads[i] = msg->cpuloads[i-msg->startPE];
 	}
 
 	// checking if all children have sent the update
@@ -198,6 +198,7 @@ void NamdHybridLB::UpdateLocalLBInfo(LocalLBInfoMsg *msg){
 		thisProxy[parent_backup].CollectInfo(loc_backup, n_backup, fromlevel_backup);
 	}
 
+        delete msg;
 }
 
 /**
@@ -353,13 +354,13 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
   CmiAbort("NamdHybridLB is not supported, please install a newer version of charm.");
 #endif
 
-	peLoads = (double *) malloc(numProcessors * sizeof(double));
-	startPE = processorArray[0].Id;
-	endPE = processorArray[numProcessors-1].Id;
-	// CkPrintf("[%d] numProcessors=%d, %d to %d\n",CkMyPe(),numProcessors,processorArray[0].Id,processorArray[numProcessors-1].Id);
-	for (i=0; i<numProcessors; i++) {
-		peLoads[i] = processorArray[i].load;
-	}
+  peLoads = new double [numProcessors]; 
+  startPE = processorArray[0].Id;
+  endPE = processorArray[numProcessors-1].Id;
+  // CkPrintf("[%d] numProcessors=%d, %d to %d\n",CkMyPe(),numProcessors,processorArray[0].Id,processorArray[numProcessors-1].Id);
+  for (i=0; i<numProcessors; i++) {
+	peLoads[i] = processorArray[i].load;
+  }
 
 
   delete [] from_procs;
