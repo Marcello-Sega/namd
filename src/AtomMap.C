@@ -153,7 +153,7 @@ void AtomMap::allocateMap(int nAtomIds)
 {
 #ifdef MEM_OPT_VERSION
   if ( nAtomIds > MAXNUMATOMS ) {
-    entries = new (AtomMapEntry*)[MAXNUMATOMS];
+    entries = new AtomMapEntry*[MAXNUMATOMS];
     memset(entries,0,MAXNUMATOMS*sizeof(AtomMapEntry*));
     return;
   } // else use non-memopt strategy
