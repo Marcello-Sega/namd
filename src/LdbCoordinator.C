@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2011/02/26 17:21:56 $
- * $Revision: 1.108 $
+ * $Date: 2011/03/09 16:30:12 $
+ * $Revision: 1.109 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -605,7 +605,11 @@ void LdbCoordinator::nodeDone(void)
   if (nodesDone==Node::Object()->numNodes()) {
     iout << "LDB: ============== END OF LOAD BALANCING =============== " << CmiWallTimer() << "\n" << endi;
     nodesDone=0;
-    ExecuteMigrations();
+    if ( takingLdbData ) {
+      ExecuteMigrations();
+    } else {
+      updateComputesReady();
+    }
   }
 }
 
