@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: char $
- * $Date: 2011/03/09 21:32:40 $
- * $Revision: 1.1191 $
+ * $Author: jim $
+ * $Date: 2011/03/09 22:54:49 $
+ * $Revision: 1.1192 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -213,8 +213,8 @@ void Sequencer::integrate() {
     rattle1(0.,0);  // enforce rigid bond constraints on initial positions
 
     if (simParams->lonepairs) {
-      AtomMap::Object()->registerIDsFullAtom(
-		patch->patchID,patch->atom.begin(),patch->atom.end());
+      patch->atomMapper->registerIDsFullAtom(
+		patch->atom.begin(),patch->atom.end());
     }
 
     const int reassignFreq = simParams->reassignFreq;
@@ -484,8 +484,8 @@ void Sequencer::minimize() {
   doEnergy = 1;
 
   if (simParams->lonepairs) {
-    AtomMap::Object()->registerIDsFullAtom(
-		patch->patchID,patch->atom.begin(),patch->atom.end());
+    patch->atomMapper->registerIDsFullAtom(
+		patch->atom.begin(),patch->atom.end());
   }
 
   runComputeObjects(1,step<numberOfSteps); // must migrate here!

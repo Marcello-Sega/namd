@@ -19,7 +19,7 @@ typedef SortedArray<ComputeID> ComputeIDList;
 class Compute;
 class Sequencer;
 class PatchMap;
-
+class AtomMapper;
 
 // This the base class of homepatches and proxy patches. It maintains
 // common functions of these patches. These include managing dependences
@@ -31,7 +31,7 @@ class Patch
 
      Patch(PatchID pd);
      int hasNewAtoms() { return _hasNewAtoms; }
-     virtual ~Patch(void) { };
+     virtual ~Patch();
 
      // methods for use by Compute objects
      Box<Patch,CompAtom>* registerPositionPickup(ComputeID cid);
@@ -115,6 +115,8 @@ class Patch
      // BEGIN LA
      CompAtomList  v;
      // END LA
+
+     AtomMapper *atomMapper;
 
      // begin gbis
      RealList intRad;

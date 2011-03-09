@@ -17,28 +17,14 @@
 #include "NamdTypes.h"
 
 #ifdef MEM_OPT_VERSION
-#include "ckhashtable.h"
 
-class MyHashtable: public CkHashtableT<int, LocalID>{
-public:	
-	
-	MyHashtable(int initLen, float loadFactor, CkHashFunction hf, CkHashCompare hcmp) : 
-		CkHashtableT<int, LocalID>(initLen, loadFactor, hf, hcmp) {}
-	
-	~MyHashtable() { empty(); }
-	
-	inline LocalID *getEntry(int key){
-		return (LocalID *)CkHashtable::get((const void *)&key);
-	}
-	
-	inline void putEntry(int key, LocalID &ent){
-		LocalID *pos = (LocalID *)CkHashtable::put((const void *)&key);
-		*pos = ent;		
-	}
-	
-	//return -1 if not found because atom id will never be -1.
-	int getCollidedEntry(int key, LocalID **retEnt);	
+struct AtomMapEntry {
+  AtomMapEntry *next;
+  int pid;
+  short index;
+  short aid_upper;
 };
+
 #endif
 
 enum { notUsed = -1 };
@@ -53,33 +39,26 @@ public:
 
   void allocateMap(int nAtomIDs);
 
-  int registerIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
-  int registerIDsFullAtom(PatchID pid, const FullAtom *begin, const FullAtom *end);
-  int unregisterIDs(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
-  int unregisterIDs(PatchID pid, const FullAtom *begin, const FullAtom *end);
-
   LocalID localID(AtomID id);
 
-  void clearMap(void);
-  void print(void);
-
+  friend class AtomMapper;
 
 protected:
   AtomMap(void);
 
 private:
+  int registerIDsCompAtomExt(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
+  int registerIDsFullAtom(PatchID pid, const FullAtom *begin, const FullAtom *end);
+  int unregisterIDsCompAtomExt(PatchID pid, const CompAtomExt *begin, const CompAtomExt *end);
+  int unregisterIDsFullAtom(PatchID pid, const FullAtom *begin, const FullAtom *end);
+
 #ifdef MEM_OPT_VERSION
-	int *keys; //one-to-one mapping to the localIDTable
-	LocalID *localIDTable; //the first-level mapped values;
-	int tableSz; //it should be less than "1<<MAXBITS"
-	bool onlyUseTbl;
-	MyHashtable *collidedAtoms; //the second-level mapped values;
-	bool *isCollided;
-#else
+  AtomMapEntry **entries;
+  bool onlyUseTbl;
+#endif
+
   LocalID *localIDTable;
   int tableSz;
-  bool cleared;
-#endif
 
 };
 
@@ -92,6 +71,28 @@ inline LocalID AtomMap::localID(AtomID id)
   return localIDTable[id];
 }
 #endif
+
+
+class AtomMapper {
+public:
+  AtomMapper(PatchID _pid) : pid(_pid), mapped(0), map(AtomMap::Object()) {}
+  ~AtomMapper() {
+    if ( mapped ) NAMD_bug("deleted AtomMapper with atoms still mapped");
+  }
+  void registerIDsCompAtomExt(const CompAtomExt *begin, const CompAtomExt *end);
+  void registerIDsFullAtom(const FullAtom *begin, const FullAtom *end);
+  void unregisterIDsCompAtomExt(const CompAtomExt *begin, const CompAtomExt *end);
+  void unregisterIDsFullAtom(const FullAtom *begin, const FullAtom *end);
+
+private:
+  const PatchID pid;
+  int mapped;
+  AtomMap *map;
+#ifdef MEM_OPT_VERSION
+  ResizeArray<AtomMapEntry> entries;
+#endif
+};
+
 
 #endif /* ATOMMAP_H */
 

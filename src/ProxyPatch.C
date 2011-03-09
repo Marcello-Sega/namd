@@ -64,7 +64,7 @@ ProxyPatch::~ProxyPatch()
 // #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
 //       AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin, positionPtrEnd);
 // #else
-      AtomMap::Object()->unregisterIDs(patchID,pExt.begin(),pExt.end());
+      atomMapper->unregisterIDsCompAtomExt(pExt.begin(),pExt.end());
 // #endif      
       delete prevProxyMsg;
       prevProxyMsg = NULL;
@@ -235,7 +235,7 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
 // #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
 //       AtomMap::Object()->unregisterIDs(patchID,positionPtrBegin,positionPtrEnd);
 // #else
-      AtomMap::Object()->unregisterIDs(patchID, pExt.begin(), pExt.end());
+      atomMapper->unregisterIDsCompAtomExt(pExt.begin(), pExt.end());
 // #endif
   }
   //Now delete the ProxyDataMsg of the previous step

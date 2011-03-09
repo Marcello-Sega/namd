@@ -341,6 +341,7 @@ void HomePatch::readPatchMap() {
 
 HomePatch::~HomePatch()
 {
+    atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
     ptnTree.resize(0);
     delete [] children;
@@ -2330,7 +2331,7 @@ void HomePatch::checkpoint(void) {
 }
 
 void HomePatch::revert(void) {
-  AtomMap::Object()->unregisterIDs(patchID,atom.begin(),atom.end());
+  atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
 
   FullAtomList tmp_a(&checkpoint_atom); atom = tmp_a;
   numAtoms = atom.size();
@@ -2548,7 +2549,7 @@ HomePatch::doAtomMigration()
   }
 
   // Purge the AtomMap
-  AtomMap::Object()->unregisterIDs(patchID,atom.begin(),atom.end());
+  atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
 
   // Determine atoms that need to migrate
 

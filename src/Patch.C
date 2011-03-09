@@ -24,6 +24,10 @@ typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
 
+Patch::~Patch() {
+  delete atomMapper;
+}
+
 Patch::Patch(PatchID pd) :
    lattice(flags.lattice),
    patchID(pd), numAtoms(0), numFixedAtoms(0),
@@ -61,6 +65,7 @@ Patch::Patch(PatchID pd) :
 #endif
 
   lattice = Node::Object()->simParameters->lattice;
+  atomMapper = new AtomMapper(pd);
 }
 
 Box<Patch,CompAtom>* Patch::registerPositionPickup(ComputeID cid)
@@ -250,7 +255,7 @@ void Patch::positionsReady(int doneMigration)
 // #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
 //       AtomMap::Object()->registerIDs(patchID,positionPtrBegin,positionPtrEnd);       
 // #else
-       AtomMap::Object()->registerIDs(patchID,pExt.begin(),pExt.end());
+       atomMapper->registerIDsCompAtomExt(pExt.begin(),pExt.end());
 // #endif
    }
 
