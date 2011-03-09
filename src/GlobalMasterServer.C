@@ -17,6 +17,7 @@
 #include "Debug.h"
 #include <stdlib.h>
 #include <vector>
+#include <algorithm>
 
 using namespace std;
 struct position_index {
