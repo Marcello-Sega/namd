@@ -107,6 +107,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedUtil.o \
 	$(DSTDIR)/ComputeNonbondedStd.o \
 	$(DSTDIR)/ComputeNonbondedFEP.o \
+	$(DSTDIR)/ComputeNonbondedTI.o \
 	$(DSTDIR)/ComputeNonbondedLES.o \
 	$(DSTDIR)/ComputeNonbondedPProf.o \
 	$(DSTDIR)/ComputeNonbondedTabEnergies.o \
