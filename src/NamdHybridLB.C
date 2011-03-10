@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: gzheng $
- * $Date: 2011/03/09 22:16:28 $
- * $Revision: 1.24 $
+ * $Author: jim $
+ * $Date: 2011/03/10 19:25:16 $
+ * $Revision: 1.25 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -510,12 +510,52 @@ int NamdHybridLB::buildData(LDStats* stats) {
     }
   }
 
+  // need to go over all patches to get all required proxies
+  int numPatches = patchMap->numPatches();
+  int totalLocalProxies = 0;
+  int totalProxies = 0;
+  for ( int pid=0; pid<numPatches; ++pid ) {
+	int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
+
+	patchArray[pid].Id = pid;
+	patchArray[pid].numAtoms = 0;
+	patchArray[pid].processor = patchMap->node(pid);
+
+	const int numProxies = 
+#if 0 // USE_TOPOMAP - this function needs to be there for the hybrid case
+	requiredProxiesOnProcGrid(pid,neighborNodes);
+#else
+	requiredProxies(pid, neighborNodes);
+#endif
+
+        int numLocalProxies = 0;
+	for (int k=0; k<numProxies; k++) {
+		if( (neighborNodes[k] >= stats->procs[0].pe) && (neighborNodes[k] <= stats->procs[n_pes-1].pe) ){
+			++numLocalProxies;
+			int index = neighborNodes[k] - stats->procs[0].pe;
+  			processorArray[index].proxies.unchecked_insert(&patchArray[pid]);
+  			patchArray[pid].proxiesOn.unchecked_insert(&processorArray[index]);
+		}
+	}
+#if 0
+	if ( numLocalProxies ) {
+	    CkPrintf("LDB Pe %d patch %d has %d local of %d total proxies\n",
+		CkMyPe(), pid, numLocalProxies, numProxies);
+	}
+#endif
+	totalLocalProxies += numLocalProxies;
+	totalProxies += numProxies;
+  }
+#if 0
+  CkPrintf("LDB Pe %d has %d local of %d total proxies\n",
+		CkMyPe(), totalLocalProxies, totalProxies);
+#endif
+  
   int nMoveableComputes=0;
-  int nProxies = 0;		// total number of estimated proxies
   int index;
 
   int j;
-  
+
   // this loop goes over only the objects in this group
   for(j=0; j < stats->n_objs; j++) {
 	const LDObjData &this_obj = stats->objData[j];
@@ -525,30 +565,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
       	if (this_obj.omID().id.idx != 1) continue;
 
       	if (this_obj.id().id[1] == -2) { // Its a patch
-		const int pid = this_obj.id().id[0];
-		int neighborNodes[PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
-
-		patchArray[pid].Id = pid;
-		patchArray[pid].numAtoms = 0;
-		patchArray[pid].processor = stats->from_proc[j] + processorArray[0].Id;
-		const int numProxies = 
-#if 0 // USE_TOPOMAP - this function needs to be there for the hybrid case
-		requiredProxiesOnProcGrid(pid,neighborNodes);
-#else
-		requiredProxies(pid, neighborNodes);
-#endif
-
-        	nProxies += numProxies;
-
-		for (int k=0; k<numProxies; k++) {
-			if( (neighborNodes[k] >= stats->procs[0].pe) && (neighborNodes[k] <= stats->procs[n_pes-1].pe) ){
-				index = neighborNodes[k] - stats->procs[0].pe;
-  				//BACKUP processorArray[neighborNodes[k]].proxies.insert(&patchArray[pid]);
-  				processorArray[index].proxies.unchecked_insert(&patchArray[pid]);
-  				//BACKUP patchArray[pid].proxiesOn.insert(&processorArray[neighborNodes[k]]);
-  				patchArray[pid].proxiesOn.unchecked_insert(&processorArray[index]);
-			}
-		}
+		// handled above to get required proxies from all patches
       	} else if (this_obj.migratable) { // Its a compute
 
 		const int cid = this_obj.id().id[0];
@@ -562,6 +579,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
 			computeArray[nMoveableComputes].Id = cid;
 			//BACKUP computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
 			if (stats->from_proc[j] >= n_pes) {  // from outside
+CkPrintf("assigning random old processor...this looks broken\n");
 			  computeArray[nMoveableComputes].oldProcessor = CrnRand()%n_pes + stats->procs[0].pe;     // random
 			}
 			else {
@@ -580,7 +598,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
 			computeArray[nMoveableComputes].load = this_obj.wallTime;
 			nMoveableComputes++;
       	}
-	}
+  }
 
   	for (i=0; i<n_pes; i++) {
 	  processorArray[i].load = processorArray[i].backgroundLoad + processorArray[i].computeLoad;
@@ -592,39 +610,26 @@ int NamdHybridLB::buildData(LDStats* stats) {
 
 int NamdHybridLB::requiredProxies(PatchID id, int neighborNodes[])
 {
-  enum proxyHere { No, Yes };
-  int numNodes = CkNumPes();
-  proxyHere *proxyNodes = new proxyHere[numNodes];
-  int nProxyNodes;
-  int i;
-
-  // Note all home patches.
-  for ( i = 0; i < numNodes; ++i )
-  {
-    proxyNodes[i] = No;
-  }
-  nProxyNodes=0;
-
-  // Check all two-away neighbors.
-  // This is really just one-away neighbors, since 
-  // two-away always returns zero: RKB
-  PatchID neighbors[1 + PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
-
   PatchMap* patchMap = PatchMap::Object();
-
   int myNode = patchMap->node(id);
+  int nProxyNodes = 0;
+
+#define IF_NEW_NODE \
+    int j; \
+    for ( j=0; j<nProxyNodes && neighborNodes[j] != proxyNode; ++j ); \
+    if ( j == nProxyNodes )
+
+  PatchID neighbors[1 + PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
   neighbors[0] = id;
   int numNeighbors = 1 + patchMap->downstreamNeighbors(id,neighbors+1);
-  for ( i = 0; i < numNeighbors; ++i )
-  {
+  for ( int i = 0; i < numNeighbors; ++i ) {
     const int proxyNode = patchMap->basenode(neighbors[i]);
-    if (proxyNode != myNode)
-      if (proxyNodes[proxyNode] == No)
-      {
-	proxyNodes[proxyNode] = Yes;
-	neighborNodes[nProxyNodes] = proxyNode;
-	nProxyNodes++;
+    if ( proxyNode != myNode ) {
+      IF_NEW_NODE {
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
       }
+    }
   }
 
   // Distribute initial default proxies across empty processors.
@@ -635,38 +640,43 @@ int NamdHybridLB::requiredProxies(PatchID id, int neighborNodes[])
   // shifted to the load balancers -ASB
 
 #if 1
+  int numNodes = CkNumPes();
   int numPatches = patchMap->numPatches();
   int emptyNodes = numNodes - numPatches;
   if ( emptyNodes > numPatches ) {
     int nodesPerPatch = nProxyNodes + 1 + (emptyNodes-1) / numPatches;
+    int maxNodesPerPatch = PatchMap::MaxOneAway + PatchMap::MaxTwoAway;
+    if ( nodesPerPatch > maxNodesPerPatch ) nodesPerPatch = maxNodesPerPatch;
     int proxyNode = (myNode + 1) % numNodes;
     while ( nProxyNodes < nodesPerPatch &&
 			! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
       proxyNode = (proxyNode + 1) % numNodes;
     }
     proxyNode = (myNode - 1 + numNodes) % numNodes;
     while ( nProxyNodes < nodesPerPatch &&
 			! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
       proxyNode = (proxyNode - 1 + numNodes) % numNodes;
     }
     proxyNode = (myNode + 1) % numNodes;
     int count = 0;
     while ( nProxyNodes < nodesPerPatch ) {
-      if ( ! patchMap->numPatchesOnNode(proxyNode) &&
-           proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( ! patchMap->numPatchesOnNode(proxyNode) && proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
       proxyNode = (proxyNode + 1) % numNodes;
       count ++; if (count == numNodes) break;   // we looped all
@@ -674,24 +684,25 @@ int NamdHybridLB::requiredProxies(PatchID id, int neighborNodes[])
   } else {
     int proxyNode = myNode - 1;
     if ( proxyNode >= 0 && ! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
     }
     proxyNode = myNode + 1;
     if ( proxyNode < numNodes && ! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
     }
   }
 #endif
 
-  delete [] proxyNodes;
   return nProxyNodes;
 }
 
