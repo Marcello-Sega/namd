@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2011/03/09 21:32:41 $
- * $Revision: 1.1332 $
+ * $Author: jim $
+ * $Date: 2011/03/10 14:03:11 $
+ * $Revision: 1.1333 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3297,12 +3297,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
     maxSelfPart = maxPairPart = 1;
 #endif
 
-   iout << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
-        << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n"
-        << iINFO << "SELF PARTITION ATOMS   " << numAtomsSelf << "\n"
-        << iINFO << "SELF2 PARTITION ATOMS   " << numAtomsSelf2 << "\n"
-        << iINFO << "PAIR PARTITION ATOMS   " << numAtomsPair << "\n"
-        << iINFO << "PAIR2 PARTITION ATOMS  " << numAtomsPair2 << "\n"
+   iout // << iINFO << "MAX SELF PARTITIONS    " << maxSelfPart << "\n"
+        // << iINFO << "MAX PAIR PARTITIONS    " << maxPairPart << "\n"
+        // << iINFO << "SELF PARTITION ATOMS   " << numAtomsSelf << "\n"
+        // << iINFO << "SELF2 PARTITION ATOMS   " << numAtomsSelf2 << "\n"
+        // << iINFO << "PAIR PARTITION ATOMS   " << numAtomsPair << "\n"
+        // << iINFO << "PAIR2 PARTITION ATOMS  " << numAtomsPair2 << "\n"
         << iINFO << "MIN ATOMS PER PATCH    " << minAtomsPerPatch << "\n"
         << endi;
    
