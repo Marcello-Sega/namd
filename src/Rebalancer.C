@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: jim $
- * $Date: 2011/02/28 06:55:50 $
- * $Revision: 1.92 $
+ * $Date: 2011/03/10 16:41:56 $
+ * $Revision: 1.93 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -864,6 +864,7 @@ void Rebalancer::printLoads()
    for (i=0; i<P; i++) {
       int nproxies = processors[i].proxies.numElements() - 
 			processors[i].patchSet.numElements();
+      total += nproxies;
       if ( nproxies > maxproxies ) maxproxies = nproxies;
       avgBgLoad += processors[i].backgroundLoad;
       Iterator p;
@@ -879,7 +880,6 @@ void Rebalancer::printLoads()
          count += myProxies;
          patch = (patchInfo *)processors[i].patchSet.next(&p);
       }
-      total += count;
    }
 
    avgBgLoad /= P;
