@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/11 14:14:30 $
- * $Revision: 1.26 $
+ * $Date: 2011/03/11 22:25:21 $
+ * $Revision: 1.27 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -254,6 +254,7 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
     RefineTorusLB(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors, 1);
   } else if (simParams->ldbStrategy == LDBSTRAT_OLD) {
+    NAMD_die("Old load balancer strategy is not compatible with hybrid balancer.");
     if (step() < 2)
       Alg7(computeArray, patchArray, processorArray,
                   nMoveableComputes, numPatches, numProcessors);
