@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/10 19:25:16 $
- * $Revision: 1.25 $
+ * $Date: 2011/03/11 14:14:30 $
+ * $Revision: 1.26 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -50,7 +50,7 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
   lbname = (char *)"NamdHybridLB";
 
     // can only do shrink strategy on levels > 1
-  if (tree->numLevels() > 2) statsStrategy = SHRINK;
+  if (tree->numLevels() > 2) statsStrategy = SHRINK_NULL;
 
   // initializing thisProxy
   thisProxy = CProxy_NamdHybridLB(thisgroup);
