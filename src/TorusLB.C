@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/11 20:33:56 $
- * $Revision: 1.23 $
+ * $Date: 2011/03/11 22:06:09 $
+ * $Revision: 1.24 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -343,8 +343,8 @@ void TorusLB::selectPes(processorInfo *p, computeInfo *c) {
   // HP HP HP HP HP HP
   // 02 11 20 01 10 00
   //  5  4  3  2  1  0
-  int numPatches, numProxies, badForComm, index;
-  numAvailable(c, p, &numPatches, &numProxies, &badForComm); 
+  int numPatches, numProxies, /* badForComm, */ index;
+  numAvailable(c, p, &numPatches, &numProxies, 0 /* &badForComm */); 
   index = ((numPatches==2) ? (numPatches+1) : numPatches) + (numProxies * 2 + 1);
 
   if (numPatches==0 && numProxies==1)
