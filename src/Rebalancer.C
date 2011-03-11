@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
  * $Author: jim $
- * $Date: 2011/03/10 16:41:56 $
- * $Revision: 1.93 $
+ * $Date: 2011/03/11 14:18:38 $
+ * $Revision: 1.94 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -375,10 +375,11 @@ void Rebalancer::makeTwoHeaps()
    }
 }
 
-void Rebalancer::assign(computeInfo *c, int processor)
-{
-   assign(c, &(processors[processor]));
-}
+// not safe with hybrid balancer
+//void Rebalancer::assign(computeInfo *c, int processor)
+//{
+//   assign(c, &(processors[processor]));
+//}
 
 void Rebalancer::assign(computeInfo *c, processorInfo *p)
 {
@@ -1064,7 +1065,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
            //BACKUP if ( processors[pa1.processor].backgroundLoad > bgLoadLimit) bad = 1;
            if (processors[index].backgroundLoad > bgLoadLimit) bad = 1;
            else if ( pa1.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
-	 }
+	 } else bad = 1;  // patch has proxies we don't know about
        }
 
        if ( ! bad && ! pa2_avail ) {
@@ -1075,7 +1076,7 @@ void Rebalancer::numAvailable(computeInfo *c, processorInfo *p,
 	   // BACKUP if ( processors[pa2.processor].backgroundLoad > bgLoadLimit) bad = 1;
 	   if ( processors[index].backgroundLoad > bgLoadLimit) bad = 1;
 	   else if ( pa2.proxiesOn.numElements() > proxiesPerPatchLimit ) bad = 1;
-	 }
+	 } else bad = 1;  // patch has proxies we don't know about
        }
 
      }
