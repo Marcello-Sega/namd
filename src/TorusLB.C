@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
- * $Author: jessie $
- * $Date: 2011/03/11 05:39:04 $
- * $Revision: 1.22 $
+ * $Author: jim $
+ * $Date: 2011/03/11 20:33:56 $
+ * $Revision: 1.23 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -62,22 +62,64 @@ void TorusLB::strategy() {
     badPe[j] = 0;
   }
 
-  // Look at the processors which have the compute's patches first
+      // Look at pes on the nodes which have the compute's patches
 
-  // HYBRID check if processor is in local group
-  realPe = patches[c->patch1].processor;
-  if INGROUP(realPe) {
-    index = realPe - processors[0].Id;
-    p = &processors[index];	// patch 1
-    selectPes(p, c);
-  }
-	
-  realPe = patches[c->patch2].processor;
-  if INGROUP(realPe) {
-    index = realPe - processors[0].Id;
-    p = &processors[index];	// patch 2
-    selectPes(p, c); 
-  }
+      // HYBRID check if processor is in local group
+#define SELECT_REALPE(X) if INGROUP((X)) { \
+        selectPes(&processors[(X) - beginGroup], c); \
+      }
+
+      int realNode, nodeSize;
+      realPe = patches[c->patch1].processor;
+      if ( CmiNumNodes() == 1 ) {
+        // multicore or smp with single node
+        SELECT_REALPE(realPe)
+      } else if ( (nodeSize=CmiNodeSize(realNode = CmiNodeOf(realPe))) > 1 ) {
+        // smp with multiple multi-core nodes
+        for ( int rpe = CmiNodeFirst(realNode); rpe < nodeSize; ++rpe ) {
+          SELECT_REALPE(rpe)
+        }
+      } else if ( CmiNumPhysicalNodes() == 1 ) {
+        // non-smp on single host
+        SELECT_REALPE(realPe)
+      } else {
+        // non-smp with multiple hosts
+        realNode = CmiPhysicalNodeID(realPe);
+        int *rpelist;
+        CmiGetPesOnPhysicalNode(realNode, &rpelist, &nodeSize);
+        for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+          int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+        }
+      }
+
+      int realPe1 = realPe;
+      realPe = patches[c->patch2].processor;
+      if ( realPe == realPe1 ) {
+        // got it already
+      } else if ( CmiNumNodes() == 1 ) {
+        // multicore or smp with single node
+        SELECT_REALPE(realPe)
+      } else if ( (nodeSize=CmiNodeSize(realNode = CmiNodeOf(realPe))) > 1 ) {
+        // smp with multiple multi-core nodes
+        if ( realNode != CmiNodeOf(realPe1) ) {
+          for ( int rpe = CmiNodeFirst(realNode); rpe < nodeSize; ++rpe ) {
+            SELECT_REALPE(rpe)
+          }
+        }
+      } else if ( CmiNumPhysicalNodes() == 1 ) {
+        // non-smp on single host
+        SELECT_REALPE(realPe)
+      } else {
+        // non-smp with multiple hosts
+        realNode = CmiPhysicalNodeID(realPe);
+        if ( realNode != CmiPhysicalNodeID(realPe1) ) {
+          int *rpelist;
+          CmiGetPesOnPhysicalNode(realNode, &rpelist, &nodeSize);
+          for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+            int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+          }
+        }
+      }
 
   // Try the processors which have the patches' proxies
   p = (processorInfo *)(patches[c->patch1].proxiesOn.iterator((Iterator *)&nextP));
