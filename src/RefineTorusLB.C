@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: jessie $
- * $Date: 2011/03/11 05:39:04 $
- * $Revision: 1.25 $
+ * $Author: jim $
+ * $Date: 2011/03/11 14:22:35 $
+ * $Revision: 1.26 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -71,7 +71,7 @@ void RefineTorusLB::binaryRefine() {
   computeAverage();
   double max = computeMax();
 
-  double step = 0.01, start = 1.05;
+  double step = 0.01, start = 1.01 + ((double)P)/((double)numComputes);
   double dCurLoad = max/averageLoad;
   int curLoad;
   int minLoad = 0;
