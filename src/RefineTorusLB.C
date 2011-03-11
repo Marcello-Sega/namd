@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: jim $
- * $Date: 2011/02/26 17:21:59 $
- * $Revision: 1.24 $
+ * $Author: jessie $
+ * $Date: 2011/03/11 05:39:04 $
+ * $Revision: 1.25 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -61,6 +61,7 @@ void RefineTorusLB::strategy() {
   }
   firstAssignInRefine = 1;
 
+  printLoads();
   binaryRefine();
   printLoads();
 }
