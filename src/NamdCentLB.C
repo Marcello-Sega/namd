@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2011/02/28 06:33:19 $
- * $Revision: 1.106 $
+ * $Date: 2011/03/11 14:53:22 $
+ * $Revision: 1.107 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -638,81 +638,73 @@ int NamdCentLB::buildData(LDStats* stats)
 
 int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
 {
-  enum proxyHere { No, Yes };
-  int numPes = CkNumPes();
-  proxyHere *proxyNodes = new proxyHere[numPes];
-  int nProxyNodes;
-  int i;
-
-  // Note all home patches.
-  for ( i = 0; i < numPes; ++i )
-  {
-    proxyNodes[i] = No;
-  }
-  nProxyNodes=0;
-
-  // Check all two-away neighbors.
-  // This is really just one-away neighbors, since 
-  // two-away always returns zero: RKB
-  PatchID neighbors[1 + PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
-
   PatchMap* patchMap = PatchMap::Object();
-
   int myNode = patchMap->node(id);
+  int nProxyNodes = 0;
+
+#define IF_NEW_NODE \
+    int j; \
+    for ( j=0; j<nProxyNodes && neighborNodes[j] != proxyNode; ++j ); \
+    if ( j == nProxyNodes )
+
+  PatchID neighbors[1 + PatchMap::MaxOneAway + PatchMap::MaxTwoAway];
   neighbors[0] = id;
   int numNeighbors = 1 + patchMap->downstreamNeighbors(id,neighbors+1);
-  for ( i = 0; i < numNeighbors; ++i )
-  {
+  for ( int i = 0; i < numNeighbors; ++i ) {
     const int proxyNode = patchMap->basenode(neighbors[i]);
-    if (proxyNode != myNode)
-      if (proxyNodes[proxyNode] == No)
-      {
-	proxyNodes[proxyNode] = Yes;
-	neighborNodes[nProxyNodes] = proxyNode;
-	nProxyNodes++;
+    if ( proxyNode != myNode ) {
+      IF_NEW_NODE {
+        neighborNodes[nProxyNodes] = proxyNode;
+        nProxyNodes++;
       }
+    }
   }
 
   // Distribute initial default proxies across empty processors.
   // This shouldn't be necessary, but may constrain the load balancer
   // and avoid placing too many proxies on a single processor.  -JCP
-  
+
   // This code needs to be turned off when the creation of ST is
   // shifted to the load balancers -ASB
 
 #if 1
+  int numPes = CkNumPes();
   int numPatches = patchMap->numPatches();
   int emptyNodes = numPes - numPatches;
   if ( emptyNodes > numPatches ) {
     int nodesPerPatch = nProxyNodes + 1 + (emptyNodes-1) / numPatches;
+    int maxNodesPerPatch = PatchMap::MaxOneAway + PatchMap::MaxTwoAway;
+    if ( nodesPerPatch > maxNodesPerPatch ) nodesPerPatch = maxNodesPerPatch;
     int proxyNode = (myNode + 1) % numPes;
     while ( nProxyNodes < nodesPerPatch &&
-			! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+                        ! patchMap->numPatchesOnNode(proxyNode) ) {
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
       proxyNode = (proxyNode + 1) % numPes;
     }
     proxyNode = (myNode - 1 + numPes) % numPes;
     while ( nProxyNodes < nodesPerPatch &&
-			! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+                        ! patchMap->numPatchesOnNode(proxyNode) ) {
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
       proxyNode = (proxyNode - 1 + numPes) % numPes;
     }
     proxyNode = (myNode + 1) % numPes;
     int count = 0;
     while ( nProxyNodes < nodesPerPatch ) {
-      if ( ! patchMap->numPatchesOnNode(proxyNode) &&
-           proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( ! patchMap->numPatchesOnNode(proxyNode) && proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
       proxyNode = (proxyNode + 1) % numPes;
       count ++; if (count == numPes) break;   // we looped all
@@ -720,24 +712,25 @@ int NamdCentLB::requiredProxies(PatchID id, int neighborNodes[])
   } else {
     int proxyNode = myNode - 1;
     if ( proxyNode >= 0 && ! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
     }
     proxyNode = myNode + 1;
     if ( proxyNode < numPes && ! patchMap->numPatchesOnNode(proxyNode) ) {
-      if (proxyNode != myNode && proxyNodes[proxyNode] == No) {
-        proxyNodes[proxyNode] = Yes;
-        neighborNodes[nProxyNodes] = proxyNode;
-        nProxyNodes++;
+      if ( proxyNode != myNode ) {
+        IF_NEW_NODE {
+          neighborNodes[nProxyNodes] = proxyNode;
+          nProxyNodes++;
+        }
       }
     }
   }
 #endif
 
-  delete [] proxyNodes;
   return nProxyNodes;
 }
 
