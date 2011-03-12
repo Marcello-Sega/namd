@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2011/02/24 21:08:47 $
- * $Revision: 1.1221 $
+ * $Date: 2011/03/12 21:34:39 $
+ * $Revision: 1.1222 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1507,6 +1507,7 @@ void WorkDistrib::mapComputeNonbonded(void)
   ComputeMap *computeMap = ComputeMap::Object();
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
+  SimParameters *simParams = Node::Object()->simParameters;
 
   PatchID oneAway[PatchMap::MaxOneOrTwoAway];
   PatchID oneAwayDownstream[PatchMap::MaxOneOrTwoAway];
@@ -1516,11 +1517,16 @@ void WorkDistrib::mapComputeNonbonded(void)
   ComputeID cid;
   int numNeighbors;
   int j;
+  double partScaling = 1.0;
+  if ( CkNumPes() < patchMap->numPatches() ) {
+    partScaling = ((double)CkNumPes()) / ((double)patchMap->numPatches());
+  }
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
   {
 
-#if 0
+   int numPartitions = 1;
+   if ( simParams->ldBalancer == LDBAL_HYBRID ) {
 #ifdef  MEM_OPT_VERSION    
     int64 numFixed = patchMap->numFixedAtoms(i);
     int64 numAtoms = patchMap->numAtoms(i);
@@ -1529,11 +1535,10 @@ void WorkDistrib::mapComputeNonbonded(void)
     int64 numAtoms = patchMap->patch(i)->getNumAtoms();
 #endif
 
-    int numPartitions = 0;
     int divide = node->simParameters->numAtomsSelf;
     if (divide > 0) {
-      numPartitions = (int) ( 0.5 +
-        (numAtoms*numAtoms-numFixed*numFixed) / (double)(2*divide*divide) );
+      numPartitions = (int) ( partScaling * ( 0.5 +
+        (numAtoms*numAtoms-numFixed*numFixed) / (double)(2*divide*divide) ) );
     }
     if (numPartitions < 1) numPartitions = 1;
     if ( numPartitions > node->simParameters->maxSelfPart )
@@ -1541,8 +1546,8 @@ void WorkDistrib::mapComputeNonbonded(void)
     // self-interaction
     DebugM(4,"Mapping " << numPartitions << " ComputeNonbondedSelf objects for patch " << i << "\n");
 //    iout <<"Self numPartitions = " <<numPartitions <<" numAtoms " <<numAtoms <<std::endl;
-#endif
-    int numPartitions = 1;
+   }
+
     for(int partition=0; partition < numPartitions; partition++)
     {
       cid=computeMap->storeCompute(patchMap->node(i),1,
@@ -1562,7 +1567,8 @@ void WorkDistrib::mapComputeNonbonded(void)
 	int p2 = oneAway[j];
 	int dsp = oneAwayDownstream[j];
 
-#if 0
+      int numPartitions = 1;
+      if ( simParams->ldBalancer == LDBAL_HYBRID ) {
 #ifdef  MEM_OPT_VERSION        
         int64 numAtoms1 = patchMap->numAtoms(p1);
         int64 numAtoms2 = patchMap->numAtoms(p2);
@@ -1613,17 +1619,15 @@ void WorkDistrib::mapComputeNonbonded(void)
 	} else {
 	  divide = node->simParameters->numAtomsPair2;
 	}
-        int numPartitions = 0;
 	if (divide > 0) {
-          numPartitions = (int) ( 0.5 +
-	    (numAtoms1*numAtoms2-numFixed1*numFixed2)/(double)(divide*divide) );
+          numPartitions = (int) ( partScaling * ( 0.5 +
+	    (numAtoms1*numAtoms2-numFixed1*numFixed2)/(double)(divide*divide) ) );
 	}
         if ( numPartitions < 1 ) numPartitions = 1;
         if ( numPartitions > node->simParameters->maxPairPart )
 			numPartitions = node->simParameters->maxPairPart;
 //	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
-#endif
-        int numPartitions = 1;
+      }
 	for(int partition=0; partition < numPartitions; partition++)
 	{
 	  cid=computeMap->storeCompute( patchMap->basenode(dsp),

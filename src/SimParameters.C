@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/03/10 14:03:11 $
- * $Revision: 1.1333 $
+ * $Date: 2011/03/12 21:34:38 $
+ * $Revision: 1.1334 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1659,27 +1659,27 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      FALSE);
 
    // Maximum Partition options
-   opts.optional("obsolete", "maxSelfPart", 
+   opts.optional("ldBalancer", "maxSelfPart", 
      "maximum number of self partitions in one patch", &maxSelfPart, 20);
    opts.range("maxSelfPart",POSITIVE);
-   opts.optional("obsolete", "maxPairPart", 
+   opts.optional("ldBalancer", "maxPairPart", 
      "maximum number of pair partitions in one patch", &maxPairPart, 8);
    opts.range("maxPairPart",POSITIVE);
-   opts.optional("obsolete", "numAtomsSelf", 
+   opts.optional("ldBalancer", "numAtomsSelf", 
 		 "maximum number of atoms in one self compute distribution", 
 		 &numAtomsSelf, 154);
    opts.range("numAtomsSelf",NOT_NEGATIVE);
 
-   opts.optional("obsolete", "numAtomsSelf2", 
+   opts.optional("ldBalancer", "numAtomsSelf2", 
 		 "maximum number of atoms in one self compute distribution", 
 		 &numAtomsSelf2, 154);
    opts.range("numAtomsSelf2",NOT_NEGATIVE);
 
-   opts.optional("obsolete", "numAtomsPair", 
+   opts.optional("ldBalancer", "numAtomsPair", 
 		 "maximum number of atoms in one pair compute distribution", 
 		 &numAtomsPair, 318);
    opts.range("numAtomsPair",NOT_NEGATIVE);
-   opts.optional("obsolete", "numAtomsPair2", 
+   opts.optional("ldBalancer", "numAtomsPair2", 
                "maximum number of atoms in one pair compute distribution", 
                &numAtomsPair2, 637);
    opts.range("numAtomsPair2",NOT_NEGATIVE);
