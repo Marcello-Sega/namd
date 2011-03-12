@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/11 22:25:21 $
- * $Revision: 1.27 $
+ * $Date: 2011/03/12 21:32:07 $
+ * $Revision: 1.28 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -239,6 +239,42 @@ CLBMigrateMsg* NamdHybridLB::GrpLevelStrategy(LDStats* stats, int n_pes) {
   loadDataASCII("ldbd_before.5", numProcessors, numPatches, nMoveableComputes);
   // CkExit();
 #endif
+
+  double averageLoad = 0.;
+  {
+   int i;
+   double total = 0.;
+   double maxCompute = 0.;
+   int maxi = 0;
+   for (i=0; i<nMoveableComputes; i++) {
+      double load = computeArray[i].load;
+      total += load;
+      if ( load > maxCompute ) { maxCompute = load;  maxi = i; }
+   }
+   double avgCompute = total / nMoveableComputes;
+
+#if CHARM_VERSION > 60301
+    int P = stats->nprocs();
+#else
+    int P = stats->count;
+#endif
+   int numPesAvailable = 0;
+   for (i=0; i<P; i++) {
+      if (processorArray[i].available) {
+        ++numPesAvailable;
+        total += processorArray[i].backgroundLoad;
+      }
+   }
+   if (numPesAvailable == 0)
+     NAMD_die("No processors available for load balancing!\n");
+
+   averageLoad = total/numPesAvailable;
+   CkPrintf("LDB: Largest compute %d load %f is %.1f%% of average load %f\n",
+            computeArray[maxi].handle.id.id[0],
+            maxCompute, 100. * maxCompute / averageLoad, averageLoad);
+   CkPrintf("LDB: Average compute %f is %.1f%% of average load %f\n",
+            avgCompute, 100. * avgCompute / averageLoad, averageLoad);
+  }
 
   if (simParams->ldbStrategy == LDBSTRAT_DEFAULT) { // default
     if (step() < 2)
