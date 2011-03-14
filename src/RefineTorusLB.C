@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 21:19:44 $
- * $Revision: 1.33 $
+ * $Date: 2011/03/14 21:32:51 $
+ * $Revision: 1.34 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -206,13 +206,13 @@ int RefineTorusLB::newRefine() {
 #if USE_TOPOMAP
     else REASSIGN(goodPe[3])
 #endif
-    else REASSIGN(bestPe[2])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[2])
-#endif
     else REASSIGN(bestPe[1])
 #if USE_TOPOMAP
     else REASSIGN(goodPe[1])
+#endif
+    else REASSIGN(bestPe[2])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[2])
 #endif
     else REASSIGN(bestPe[0])
 #if USE_TOPOMAP
@@ -528,13 +528,13 @@ int RefineTorusLB::newRefine() {
 #if USE_TOPOMAP
       else REASSIGN(goodPe[3])
 #endif
-      else REASSIGN(bestPe[2])
-#if USE_TOPOMAP
-      else REASSIGN(goodPe[2])
-#endif
       else REASSIGN(bestPe[1])
 #if USE_TOPOMAP
       else REASSIGN(goodPe[1])
+#endif
+      else REASSIGN(bestPe[2])
+#if USE_TOPOMAP
+      else REASSIGN(goodPe[2])
 #endif
       else REASSIGN(bestPe[0])
 #if USE_TOPOMAP

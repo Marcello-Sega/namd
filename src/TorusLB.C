@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 21:19:44 $
- * $Revision: 1.29 $
+ * $Date: 2011/03/14 21:32:52 $
+ * $Revision: 1.30 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -104,13 +104,13 @@ void TorusLB::strategy() {
 #if USE_TOPOMAP
   || (p = goodPe[3])
 #endif
-  || (p = bestPe[2])
-#if USE_TOPOMAP
-  || (p = goodPe[2])
-#endif
   || (p = bestPe[1])
 #if USE_TOPOMAP
   || (p = goodPe[1])
+#endif
+  || (p = bestPe[2])
+#if USE_TOPOMAP
+  || (p = goodPe[2])
 #endif
   || (p = bestPe[0])
 #if USE_TOPOMAP
@@ -334,13 +334,13 @@ void TorusLB::strategy() {
 #if USE_TOPOMAP
     || (p = goodPe[3])
 #endif
-    || (p = bestPe[2])
-#if USE_TOPOMAP
-    || (p = goodPe[2])
-#endif
     || (p = bestPe[1])
 #if USE_TOPOMAP
     || (p = goodPe[1])
+#endif
+    || (p = bestPe[2])
+#if USE_TOPOMAP
+    || (p = goodPe[2])
 #endif
     || (p = bestPe[0])
 #if USE_TOPOMAP
@@ -358,8 +358,8 @@ void TorusLB::strategy() {
     if((p = badPe[5])
     || (p = badPe[4])
     || (p = badPe[3])
-    || (p = badPe[2])
     || (p = badPe[1])
+    || (p = badPe[2])
     || (p = badPe[0])) {
       assign(c, p);
       found = 1;
