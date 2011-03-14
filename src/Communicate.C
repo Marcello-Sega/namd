@@ -14,7 +14,14 @@ CkpvStaticDeclare(CmmTable, CsmMessages);
 
 static void CsmHandler(void *msg)
 {
-  if ( CmiMyRank() ) { CmiFree(msg); return; }
+  if ( CmiMyRank() ) NAMD_bug("Communicate CsmHandler on non-rank-zero pe");
+  int size = SIZEFIELD(msg);
+  for ( int i = 2; i >= 1; --i ) {
+    int node = CmiMyNode() * 2 + i;
+    if ( node < CmiNumNodes() ) {
+      CmiSyncSend(CmiNodeFirst(node),size,(char*)msg);
+    }
+  }
   // get start of user message
   int *m = (int *) ((char *)msg+CmiMsgHeaderSizeBytes);
   // sending node  & tag act as tags
@@ -70,7 +77,13 @@ void Communicate::sendMessage(int PE, void *msg, int size)
       //CmiSyncBroadcastAll(size, (char *)msg);
       break;
     case ALLBUTME:
-      CmiSyncBroadcast(size, (char *)msg);
+      //CmiSyncBroadcast(size, (char *)msg);
+      if ( CmiNumNodes() > 2 ) {
+        CmiSyncSend(CmiNodeFirst(2),size,(char*)msg);
+      }
+      if ( CmiNumNodes() > 1 ) {
+        CmiSyncSend(CmiNodeFirst(1),size,(char*)msg);
+      }
       break;
     default:
       NAMD_bug("Unexpected Communicate::sendMessage(PEL,...)");
