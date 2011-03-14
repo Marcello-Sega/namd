@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 15:42:54 $
- * $Revision: 1.30 $
+ * $Date: 2011/03/14 17:03:42 $
+ * $Revision: 1.31 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -262,6 +262,63 @@ int RefineTorusLB::newRefine() {
 #if USE_TOPOMAP
     else REASSIGN(goodPe[0])
 #endif
+
+  // Try all pes on the physical nodes of the home patches
+    if ( ! bestP && CmiNumPhysicalNodes() > 1 ) {  // else not useful
+      nextC.id = 0;
+      c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
+      while(c) {
+        int realPe1 = patches[c->patch1].processor;
+        int realNode1 = CmiPhysicalNodeID(realPe1);
+        int *rpelist;
+        if ( CmiNodeSize(realPe1) > 1 ) {  // else did it already
+          int nodeSize;
+          CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
+          for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+            int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+          }
+        }
+        int realPe2 = patches[c->patch2].processor;
+        if ( (realPe2 != realPe1) && (CmiNodeSize(realPe2) > 1) ) {
+          int realNode2 = CmiPhysicalNodeID(realPe2);
+          if ( realNode2 != realNode1 ) {  // else did it already
+            int nodeSize;
+            CmiGetPesOnPhysicalNode(realNode2, &rpelist, &nodeSize);
+            for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+              int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+            }
+          }
+        }
+        nextC.id++;
+        c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
+      } // end of compute loop
+
+    REASSIGN(bestPe[5])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[5])
+#endif
+    else REASSIGN(bestPe[4])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[4])
+#endif
+    else REASSIGN(bestPe[3])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[3])
+#endif
+    else REASSIGN(bestPe[2])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[2])
+#endif
+    else REASSIGN(bestPe[1])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[1])
+#endif
+    else REASSIGN(bestPe[0])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[0])
+#endif
+
+    }
 
     if(bestP) {
       if(bestP->load > averageLoad) {

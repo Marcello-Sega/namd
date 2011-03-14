@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 15:42:54 $
- * $Revision: 1.26 $
+ * $Date: 2011/03/14 17:03:42 $
+ * $Revision: 1.27 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -94,6 +94,7 @@ void TorusLB::strategy() {
 
       int realPe1 = realPe;
       realPe = patches[c->patch2].processor;
+      int realPe2 = realPe;
       if ( realPe == realPe1 ) {
         // got it already
       } else if ( CmiNumNodes() == 1 ) {
@@ -164,6 +165,59 @@ void TorusLB::strategy() {
     assign(c, p);
     continue;
   }
+
+  // Try all pes on the physical nodes of the home patches
+      if ( CmiNumPhysicalNodes() > 1 ) {  // else not useful
+        int realNode1 = CmiPhysicalNodeID(realPe1);
+        int *rpelist;
+        if ( CmiNodeSize(realPe1) > 1 ) {  // else did it already
+          CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
+          for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+            int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+          }
+        }
+        if ( (realPe2 != realPe1) && (CmiNodeSize(realPe2) > 1) ) {
+          int realNode2 = CmiPhysicalNodeID(realPe2);
+          if ( realNode2 != realNode1 ) {  // else did it already
+            CmiGetPesOnPhysicalNode(realNode2, &rpelist, &nodeSize);
+            for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+              int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+            }
+          }
+        }
+
+  p = 0;
+  if((p = bestPe[5])
+#if USE_TOPOMAP
+  || (p = goodPe[5])
+#endif
+  || (p = bestPe[4])
+#if USE_TOPOMAP
+  || (p = goodPe[4])
+#endif
+  || (p = bestPe[3])
+#if USE_TOPOMAP
+  || (p = goodPe[3])
+#endif
+  || (p = bestPe[2])
+#if USE_TOPOMAP
+  || (p = goodPe[2])
+#endif
+  || (p = bestPe[1])
+#if USE_TOPOMAP
+  || (p = goodPe[1])
+#endif
+  || (p = bestPe[0])
+#if USE_TOPOMAP
+  || (p = goodPe[0])
+#endif
+  ) {
+    assign(c, p);
+    continue;
+  }
+
+      }
+
  
   int found = 0;
 #if USE_TOPOMAP
