@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 19:05:29 $
- * $Revision: 1.32 $
+ * $Date: 2011/03/14 21:19:44 $
+ * $Revision: 1.33 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -221,6 +221,8 @@ int RefineTorusLB::newRefine() {
 
   // Try all pes on the nodes of the home patches
     if ( ! bestP && CmiNumNodes() > 1 ) {  // else not useful
+      double minLoad = overLoad * averageLoad;
+      good.c = 0; good.p = 0;
       nextC.id = 0;
       c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
       while(c) {
@@ -229,7 +231,14 @@ int RefineTorusLB::newRefine() {
         int nodeSize = CmiNodeSize(realNode1);
         if ( nodeSize > 1 ) {  // else did it already
           for ( int rpe = CmiNodeFirst(realNode1); rpe < nodeSize; ++rpe ) {
-            SELECT_REALPE(rpe)
+            if INGROUP(rpe) {
+              p = &processors[rpe - beginGroup];
+              if ( p->available && ( p->load + c->load < minLoad ) ) {
+                minLoad = p->load + c->load;
+                good.c = c;
+                good.p = p;
+              }
+            }
           }
         }
         int realPe2 = patches[c->patch2].processor;
@@ -239,7 +248,14 @@ int RefineTorusLB::newRefine() {
             nodeSize = CmiNodeSize(realNode2);
             if ( nodeSize > 1 ) {
               for ( int rpe = CmiNodeFirst(realNode2); rpe < nodeSize; ++rpe ) {
-                SELECT_REALPE(rpe)
+                if INGROUP(rpe) {
+                  p = &processors[rpe - beginGroup];
+                  if ( p->available && ( p->load + c->load < minLoad ) ) {
+                    minLoad = p->load + c->load;
+                    good.c = c;
+                    good.p = p;
+                  }
+                }
               }
             }
           }
@@ -248,35 +264,14 @@ int RefineTorusLB::newRefine() {
         c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
       } // end of compute loop
 
-    REASSIGN(bestPe[5])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[5])
-#endif
-    else REASSIGN(bestPe[4])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[4])
-#endif
-    else REASSIGN(bestPe[3])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[3])
-#endif
-    else REASSIGN(bestPe[2])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[2])
-#endif
-    else REASSIGN(bestPe[1])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[1])
-#endif
-    else REASSIGN(bestPe[0])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[0])
-#endif
-
+      REASSIGN((&good))
     }
 
   // Try all pes on the physical nodes of the home patches
-    if ( ! bestP && CmiNumPhysicalNodes() > 1 ) {  // else not useful
+    if ( ! bestP && ( CmiNumPhysicalNodes() > 1 ) &&
+         ( CmiNumPhysicalNodes() < CmiNumNodes() ) ) {  // else not useful
+      double minLoad = overLoad * averageLoad;
+      good.c = 0; good.p = 0;
       nextC.id = 0;
       c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
       while(c) {
@@ -287,7 +282,15 @@ int RefineTorusLB::newRefine() {
         CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
         if ( nodeSize > 1 ) {  // else did it already
           for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-            int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+            int rpe = rpelist[ipe];
+            if INGROUP(rpe) {
+              p = &processors[rpe - beginGroup];
+              if ( p->available && ( p->load + c->load < minLoad ) ) {
+                minLoad = p->load + c->load;
+                good.c = c;
+                good.p = p;
+              }
+            }
           }
         }
         int realPe2 = patches[c->patch2].processor;
@@ -297,7 +300,15 @@ int RefineTorusLB::newRefine() {
             CmiGetPesOnPhysicalNode(realNode2, &rpelist, &nodeSize);
             if ( nodeSize > 1 ) {  // else did it already
               for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-                int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+                int rpe = rpelist[ipe];
+                if INGROUP(rpe) {
+                  p = &processors[rpe - beginGroup];
+                  if ( p->available && ( p->load + c->load < minLoad ) ) {
+                    minLoad = p->load + c->load;
+                    good.c = c;
+                    good.p = p;
+                  }
+                }
               }
             }
           }
@@ -306,31 +317,7 @@ int RefineTorusLB::newRefine() {
         c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
       } // end of compute loop
 
-    REASSIGN(bestPe[5])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[5])
-#endif
-    else REASSIGN(bestPe[4])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[4])
-#endif
-    else REASSIGN(bestPe[3])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[3])
-#endif
-    else REASSIGN(bestPe[2])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[2])
-#endif
-    else REASSIGN(bestPe[1])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[1])
-#endif
-    else REASSIGN(bestPe[0])
-#if USE_TOPOMAP
-    else REASSIGN(goodPe[0])
-#endif
-
+      REASSIGN((&good))
     }
 
     if(bestP) {

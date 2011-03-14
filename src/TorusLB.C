@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 19:05:29 $
- * $Revision: 1.28 $
+ * $Date: 2011/03/14 21:19:44 $
+ * $Revision: 1.29 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -123,11 +123,19 @@ void TorusLB::strategy() {
 
     // Try all pes on the nodes of the home patches
     if ( CmiNumNodes() > 1 ) {  // else not useful
+      double minLoad = overLoad * averageLoad;
+      minp = 0;
       int realNode1 = CmiNodeOf(realPe1);
       int nodeSize = CmiNodeSize(realNode1);
       if ( nodeSize > 1 ) {  // else did it already
         for ( int rpe = CmiNodeFirst(realNode1); rpe < nodeSize; ++rpe ) {
-          SELECT_REALPE(rpe)
+          if INGROUP(rpe) {
+            p = &processors[rpe - beginGroup];
+            if ( p->available && ( p->load + c->load < minLoad ) ) {
+              minLoad = p->load + c->load;
+              minp = p;
+            }
+          }
         }
       }
       if ( realPe2 != realPe1 ) {
@@ -136,53 +144,42 @@ void TorusLB::strategy() {
           nodeSize = CmiNodeSize(realNode2);
           if ( nodeSize > 1 ) {
             for ( int rpe = CmiNodeFirst(realNode2); rpe < nodeSize; ++rpe ) {
-              SELECT_REALPE(rpe)
+              if INGROUP(rpe) {
+                p = &processors[rpe - beginGroup];
+                if ( p->available && ( p->load + c->load < minLoad ) ) {
+                  minLoad = p->load + c->load;
+                  minp = p;
+                }
+              }
             }
           }
         }
       }
-
-  p = 0;
-  if((p = bestPe[5])
-#if USE_TOPOMAP
-  || (p = goodPe[5])
-#endif
-  || (p = bestPe[4])
-#if USE_TOPOMAP
-  || (p = goodPe[4])
-#endif
-  || (p = bestPe[3])
-#if USE_TOPOMAP
-  || (p = goodPe[3])
-#endif
-  || (p = bestPe[2])
-#if USE_TOPOMAP
-  || (p = goodPe[2])
-#endif
-  || (p = bestPe[1])
-#if USE_TOPOMAP
-  || (p = goodPe[1])
-#endif
-  || (p = bestPe[0])
-#if USE_TOPOMAP
-  || (p = goodPe[0])
-#endif
-  ) {
-    assign(c, p);
-    continue;
-  }
-
+      if(minp) {
+        assign(c, minp);
+        continue;
+      }
     }
 
     // Try all pes on the physical nodes of the home patches
-    if ( CmiNumPhysicalNodes() > 1 ) {  // else not useful
+    if ( ( CmiNumPhysicalNodes() > 1 ) &&
+         ( CmiNumPhysicalNodes() < CmiNumNodes() ) ) {  // else not useful
+      double minLoad = overLoad * averageLoad;
+      minp = 0;
       int realNode1 = CmiPhysicalNodeID(realPe1);
       int *rpelist;
       int nodeSize;
       CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
       if ( nodeSize > 1 ) {  // else did it already
         for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-          int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+          int rpe = rpelist[ipe];
+          if INGROUP(rpe) {
+            p = &processors[rpe - beginGroup];
+            if ( p->available && ( p->load + c->load < minLoad ) ) {
+              minLoad = p->load + c->load;
+              minp = p;
+            }
+          }
         }
       }
       if ( realPe2 != realPe1 ) {
@@ -191,42 +188,22 @@ void TorusLB::strategy() {
           CmiGetPesOnPhysicalNode(realNode2, &rpelist, &nodeSize);
           if ( nodeSize > 1 ) {  // else did it already
             for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-              int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+              int rpe = rpelist[ipe];
+              if INGROUP(rpe) {
+                p = &processors[rpe - beginGroup];
+                if ( p->available && ( p->load + c->load < minLoad ) ) {
+                  minLoad = p->load + c->load;
+                  minp = p;
+                }
+              }
             }
           }
         }
       }
-
-  p = 0;
-  if((p = bestPe[5])
-#if USE_TOPOMAP
-  || (p = goodPe[5])
-#endif
-  || (p = bestPe[4])
-#if USE_TOPOMAP
-  || (p = goodPe[4])
-#endif
-  || (p = bestPe[3])
-#if USE_TOPOMAP
-  || (p = goodPe[3])
-#endif
-  || (p = bestPe[2])
-#if USE_TOPOMAP
-  || (p = goodPe[2])
-#endif
-  || (p = bestPe[1])
-#if USE_TOPOMAP
-  || (p = goodPe[1])
-#endif
-  || (p = bestPe[0])
-#if USE_TOPOMAP
-  || (p = goodPe[0])
-#endif
-  ) {
-    assign(c, p);
-    continue;
-  }
-
+      if(minp) {
+        assign(c, minp);
+        continue;
+      }
     }
 
  
