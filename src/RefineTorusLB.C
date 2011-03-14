@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/11 22:06:09 $
- * $Revision: 1.28 $
+ * $Date: 2011/03/14 14:34:27 $
+ * $Revision: 1.29 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -521,16 +521,8 @@ void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
   //  5  4  3  2  1  0
   int numPatches, numProxies, /* badForComm, */ index;
   numAvailable(c, p, &numPatches, &numProxies, 0 /* &badForComm */); 
-  index = ((numPatches==2) ? (numPatches+1) : numPatches) + (numProxies * 2 + 1);
-
-  if (numPatches==0 && numProxies==1)
-    index--;
-  if (numProxies==0)
-    index--; 
-  /*if(numPatches == 2 || numProxies == 2) index = 5;
-  if(numPatches == 1 && numProxies == 1) index = 5;
-  else if(numPatches == 1 || numProxies == 1) index = 4;
-  else index = 3;*/
+  int numEither = numPatches + numProxies;
+  index = (numEither*(numEither+1))/2 + numProxies;
 
 #if USE_TOPOMAP
   int x, y, z, t;
