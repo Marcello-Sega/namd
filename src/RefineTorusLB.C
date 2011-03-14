@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 17:03:42 $
- * $Revision: 1.31 $
+ * $Date: 2011/03/14 19:05:29 $
+ * $Revision: 1.32 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -157,63 +157,19 @@ int RefineTorusLB::newRefine() {
     c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
 
     while(c) {
-      // Look at pes on the nodes which have the compute's patches
+      // Look at pes which have the compute's patches
 
       // HYBRID check if processor is in local group
 #define SELECT_REALPE(X) if INGROUP((X)) { \
         selectPes(&processors[(X) - beginGroup], c); \
       }
 
-      int realNode, nodeSize;
-      realPe = patches[c->patch1].processor;
-      if ( CmiNumNodes() == 1 ) {
-        // multicore or smp with single node
-        SELECT_REALPE(realPe)
-      } else if ( (nodeSize=CmiNodeSize(realNode = CmiNodeOf(realPe))) > 1 ) {
-        // smp with multiple multi-core nodes
-        for ( int rpe = CmiNodeFirst(realNode); rpe < nodeSize; ++rpe ) {
-          SELECT_REALPE(rpe)
-        }
-      } else if ( CmiNumPhysicalNodes() == 1 ) {
-        // non-smp on single host
-        SELECT_REALPE(realPe)
-      } else {
-        // non-smp with multiple hosts
-        realNode = CmiPhysicalNodeID(realPe);
-        int *rpelist;
-        CmiGetPesOnPhysicalNode(realNode, &rpelist, &nodeSize);
-        for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-          int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
-        }
-      }
+      int realPe1 = patches[c->patch1].processor;
+      SELECT_REALPE(realPe1)
 
-      int realPe1 = realPe;
-      realPe = patches[c->patch2].processor;
-      if ( realPe == realPe1 ) {
-        // got it already
-      } else if ( CmiNumNodes() == 1 ) {
-        // multicore or smp with single node
-        SELECT_REALPE(realPe)
-      } else if ( (nodeSize=CmiNodeSize(realNode = CmiNodeOf(realPe))) > 1 ) {
-        // smp with multiple multi-core nodes
-        if ( realNode != CmiNodeOf(realPe1) ) {
-          for ( int rpe = CmiNodeFirst(realNode); rpe < nodeSize; ++rpe ) {
-            SELECT_REALPE(rpe)
-          }
-        }
-      } else if ( CmiNumPhysicalNodes() == 1 ) {
-        // non-smp on single host
-        SELECT_REALPE(realPe)
-      } else {
-        // non-smp with multiple hosts
-        realNode = CmiPhysicalNodeID(realPe);
-        if ( realNode != CmiPhysicalNodeID(realPe1) ) {
-          int *rpelist;
-          CmiGetPesOnPhysicalNode(realNode, &rpelist, &nodeSize);
-          for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-            int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
-          }
-        }
+      int realPe2 = patches[c->patch2].processor;
+      if ( realPe2 != realPe1 ) {
+        SELECT_REALPE(realPe2)
       }
 
       // Try the processors which have the patches' proxies
@@ -263,6 +219,62 @@ int RefineTorusLB::newRefine() {
     else REASSIGN(goodPe[0])
 #endif
 
+  // Try all pes on the nodes of the home patches
+    if ( ! bestP && CmiNumNodes() > 1 ) {  // else not useful
+      nextC.id = 0;
+      c = (computeInfo *)donor->computeSet.iterator((Iterator *)&nextC);
+      while(c) {
+        int realPe1 = patches[c->patch1].processor;
+        int realNode1 = CmiNodeOf(realPe1);
+        int nodeSize = CmiNodeSize(realNode1);
+        if ( nodeSize > 1 ) {  // else did it already
+          for ( int rpe = CmiNodeFirst(realNode1); rpe < nodeSize; ++rpe ) {
+            SELECT_REALPE(rpe)
+          }
+        }
+        int realPe2 = patches[c->patch2].processor;
+        if ( realPe2 != realPe1 ) {
+          int realNode2 = CmiNodeOf(realPe2);
+          if ( realNode2 != realNode1 ) {  // else did it already
+            nodeSize = CmiNodeSize(realNode2);
+            if ( nodeSize > 1 ) {
+              for ( int rpe = CmiNodeFirst(realNode2); rpe < nodeSize; ++rpe ) {
+                SELECT_REALPE(rpe)
+              }
+            }
+          }
+        }
+        nextC.id++;
+        c = (computeInfo *) donor->computeSet.next((Iterator *)&nextC);
+      } // end of compute loop
+
+    REASSIGN(bestPe[5])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[5])
+#endif
+    else REASSIGN(bestPe[4])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[4])
+#endif
+    else REASSIGN(bestPe[3])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[3])
+#endif
+    else REASSIGN(bestPe[2])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[2])
+#endif
+    else REASSIGN(bestPe[1])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[1])
+#endif
+    else REASSIGN(bestPe[0])
+#if USE_TOPOMAP
+    else REASSIGN(goodPe[0])
+#endif
+
+    }
+
   // Try all pes on the physical nodes of the home patches
     if ( ! bestP && CmiNumPhysicalNodes() > 1 ) {  // else not useful
       nextC.id = 0;
@@ -271,21 +283,22 @@ int RefineTorusLB::newRefine() {
         int realPe1 = patches[c->patch1].processor;
         int realNode1 = CmiPhysicalNodeID(realPe1);
         int *rpelist;
-        if ( CmiNodeSize(realPe1) > 1 ) {  // else did it already
-          int nodeSize;
-          CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
+        int nodeSize;
+        CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
+        if ( nodeSize > 1 ) {  // else did it already
           for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
             int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
           }
         }
         int realPe2 = patches[c->patch2].processor;
-        if ( (realPe2 != realPe1) && (CmiNodeSize(realPe2) > 1) ) {
+        if ( realPe2 != realPe1 ) {
           int realNode2 = CmiPhysicalNodeID(realPe2);
           if ( realNode2 != realNode1 ) {  // else did it already
-            int nodeSize;
             CmiGetPesOnPhysicalNode(realNode2, &rpelist, &nodeSize);
-            for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-              int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+            if ( nodeSize > 1 ) {  // else did it already
+              for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+                int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+              }
             }
           }
         }

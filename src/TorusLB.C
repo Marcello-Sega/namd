@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/14 17:03:42 $
- * $Revision: 1.27 $
+ * $Date: 2011/03/14 19:05:29 $
+ * $Revision: 1.28 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -33,7 +33,7 @@ int npas, int npes) : RefineTorusLB(cs, pas, pes, ncs, npas, npes, 0)
 TorusLB::~TorusLB() { }
 
 void TorusLB::strategy() {
-  int index, realPe;
+  int index;
   // compute the average load by (compute load + background load) / numPesAvailable
   computeAverage();
   // two heaps of self and pair computes
@@ -62,65 +62,20 @@ void TorusLB::strategy() {
     badPe[j] = 0;
   }
 
-      // Look at pes on the nodes which have the compute's patches
+  // Look at pes which have the compute's patches
 
-      // HYBRID check if processor is in local group
+  // HYBRID check if processor is in local group
 #define SELECT_REALPE(X) if INGROUP((X)) { \
-        selectPes(&processors[(X) - beginGroup], c); \
-      }
+  selectPes(&processors[(X) - beginGroup], c); \
+  }
 
-      int realNode, nodeSize;
-      realPe = patches[c->patch1].processor;
-      if ( CmiNumNodes() == 1 ) {
-        // multicore or smp with single node
-        SELECT_REALPE(realPe)
-      } else if ( (nodeSize=CmiNodeSize(realNode = CmiNodeOf(realPe))) > 1 ) {
-        // smp with multiple multi-core nodes
-        for ( int rpe = CmiNodeFirst(realNode); rpe < nodeSize; ++rpe ) {
-          SELECT_REALPE(rpe)
-        }
-      } else if ( CmiNumPhysicalNodes() == 1 ) {
-        // non-smp on single host
-        SELECT_REALPE(realPe)
-      } else {
-        // non-smp with multiple hosts
-        realNode = CmiPhysicalNodeID(realPe);
-        int *rpelist;
-        CmiGetPesOnPhysicalNode(realNode, &rpelist, &nodeSize);
-        for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-          int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
-        }
-      }
+  const int realPe1 = patches[c->patch1].processor;
+  SELECT_REALPE(realPe1)
 
-      int realPe1 = realPe;
-      realPe = patches[c->patch2].processor;
-      int realPe2 = realPe;
-      if ( realPe == realPe1 ) {
-        // got it already
-      } else if ( CmiNumNodes() == 1 ) {
-        // multicore or smp with single node
-        SELECT_REALPE(realPe)
-      } else if ( (nodeSize=CmiNodeSize(realNode = CmiNodeOf(realPe))) > 1 ) {
-        // smp with multiple multi-core nodes
-        if ( realNode != CmiNodeOf(realPe1) ) {
-          for ( int rpe = CmiNodeFirst(realNode); rpe < nodeSize; ++rpe ) {
-            SELECT_REALPE(rpe)
-          }
-        }
-      } else if ( CmiNumPhysicalNodes() == 1 ) {
-        // non-smp on single host
-        SELECT_REALPE(realPe)
-      } else {
-        // non-smp with multiple hosts
-        realNode = CmiPhysicalNodeID(realPe);
-        if ( realNode != CmiPhysicalNodeID(realPe1) ) {
-          int *rpelist;
-          CmiGetPesOnPhysicalNode(realNode, &rpelist, &nodeSize);
-          for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-            int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
-          }
-        }
-      }
+  const int realPe2 = patches[c->patch2].processor;
+  if ( realPe2 != realPe1 ) {
+    SELECT_REALPE(realPe2)
+  }
 
   // Try the processors which have the patches' proxies
   p = (processorInfo *)(patches[c->patch1].proxiesOn.iterator((Iterator *)&nextP));
@@ -166,25 +121,26 @@ void TorusLB::strategy() {
     continue;
   }
 
-  // Try all pes on the physical nodes of the home patches
-      if ( CmiNumPhysicalNodes() > 1 ) {  // else not useful
-        int realNode1 = CmiPhysicalNodeID(realPe1);
-        int *rpelist;
-        if ( CmiNodeSize(realPe1) > 1 ) {  // else did it already
-          CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
-          for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-            int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
-          }
+    // Try all pes on the nodes of the home patches
+    if ( CmiNumNodes() > 1 ) {  // else not useful
+      int realNode1 = CmiNodeOf(realPe1);
+      int nodeSize = CmiNodeSize(realNode1);
+      if ( nodeSize > 1 ) {  // else did it already
+        for ( int rpe = CmiNodeFirst(realNode1); rpe < nodeSize; ++rpe ) {
+          SELECT_REALPE(rpe)
         }
-        if ( (realPe2 != realPe1) && (CmiNodeSize(realPe2) > 1) ) {
-          int realNode2 = CmiPhysicalNodeID(realPe2);
-          if ( realNode2 != realNode1 ) {  // else did it already
-            CmiGetPesOnPhysicalNode(realNode2, &rpelist, &nodeSize);
-            for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
-              int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+      }
+      if ( realPe2 != realPe1 ) {
+        int realNode2 = CmiNodeOf(realPe2);
+        if ( realNode2 != realNode1 ) {  // else did it already
+          nodeSize = CmiNodeSize(realNode2);
+          if ( nodeSize > 1 ) {
+            for ( int rpe = CmiNodeFirst(realNode2); rpe < nodeSize; ++rpe ) {
+              SELECT_REALPE(rpe)
             }
           }
         }
+      }
 
   p = 0;
   if((p = bestPe[5])
@@ -216,7 +172,62 @@ void TorusLB::strategy() {
     continue;
   }
 
+    }
+
+    // Try all pes on the physical nodes of the home patches
+    if ( CmiNumPhysicalNodes() > 1 ) {  // else not useful
+      int realNode1 = CmiPhysicalNodeID(realPe1);
+      int *rpelist;
+      int nodeSize;
+      CmiGetPesOnPhysicalNode(realNode1, &rpelist, &nodeSize);
+      if ( nodeSize > 1 ) {  // else did it already
+        for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+          int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+        }
       }
+      if ( realPe2 != realPe1 ) {
+        int realNode2 = CmiPhysicalNodeID(realPe2);
+        if ( realNode2 != realNode1 ) {  // else did it already
+          CmiGetPesOnPhysicalNode(realNode2, &rpelist, &nodeSize);
+          if ( nodeSize > 1 ) {  // else did it already
+            for ( int ipe = 0; ipe < nodeSize; ++ipe ) {
+              int rpe = rpelist[ipe];  SELECT_REALPE(rpe)
+            }
+          }
+        }
+      }
+
+  p = 0;
+  if((p = bestPe[5])
+#if USE_TOPOMAP
+  || (p = goodPe[5])
+#endif
+  || (p = bestPe[4])
+#if USE_TOPOMAP
+  || (p = goodPe[4])
+#endif
+  || (p = bestPe[3])
+#if USE_TOPOMAP
+  || (p = goodPe[3])
+#endif
+  || (p = bestPe[2])
+#if USE_TOPOMAP
+  || (p = goodPe[2])
+#endif
+  || (p = bestPe[1])
+#if USE_TOPOMAP
+  || (p = goodPe[1])
+#endif
+  || (p = bestPe[0])
+#if USE_TOPOMAP
+  || (p = goodPe[0])
+#endif
+  ) {
+    assign(c, p);
+    continue;
+  }
+
+    }
 
  
   int found = 0;
