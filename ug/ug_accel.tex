@@ -74,60 +74,60 @@ The following parameters are used to enable accelerated MD:
 \begin{itemize}
 
 \item
-\NAMDCONFWDEF{aMDOn}{Is accelerated molecular dynamics active?}{{\tt on} or {\tt
+\NAMDCONFWDEF{accelMDOn}{Is accelerated molecular dynamics active?}{{\tt on} or {\tt
 off}}{{\tt off}}
 {Specifies if accelerated MD is active.}
 
 \item
-\NAMDCONFWDEF{aMDdihe}{Apply boost to dihedrals?}{{\tt on} or {\tt off}} {{\tt on}} 
+\NAMDCONFWDEF{accelMDdihe}{Apply boost to dihedrals?}{{\tt on} or {\tt off}} {{\tt on}} 
 {Only applies boost to the dihedral potential. 
-When {\tt aMDdihe} is on, the boost energy is applied to the dihedral potential of the simulated system.
-When {\tt aMDdihe} is turned off, aMD switches to the {\tt aMDT} mode, and the boost is applied to the total potential.
+When {\tt accelMDdihe} is on, the boost energy is applied to the dihedral potential of the simulated system.
+When {\tt accelMDdihe} is turned off, aMD switches to the {\tt accelMDT} mode, and the boost is applied to the total potential.
 }
 
 \item
-\NAMDCONF{aMDE}{Threshold energy $E$}
+\NAMDCONF{accelMDE}{Threshold energy $E$}
 {Real number}
 {Specifies the threshold energy $E$ in the aMD equations. 
 }
 
 \item
-\NAMDCONF{aMDalpha}{Acceleration factor $\alpha$}
+\NAMDCONF{accelMDalpha}{Acceleration factor $\alpha$}
 {Positive real number}
 {Specifies the acceleration factor $\alpha$ in the aMD equations. 
 }
 
 \item
-\NAMDCONFWDEF{aMDdual}{Use dual boost mode?}{{\tt on} or {\tt off}}{{\tt off}}
-{When {\tt aMDdual} is on, aMD switches to the dual boost mode. Two independent boost potentials 
-will be applied: one to the dihedral potential that is controlled by the parameters {\tt aMDE} and {\tt aMDalpha},
-and a second to the (Total - Dihedral) potential that is controlled by the  {\tt aMDTE} and {\tt aMDTalpha} parameters described below.
+\NAMDCONFWDEF{accelMDdual}{Use dual boost mode?}{{\tt on} or {\tt off}}{{\tt off}}
+{When {\tt accelMDdual} is on, aMD switches to the dual boost mode. Two independent boost potentials 
+will be applied: one to the dihedral potential that is controlled by the parameters {\tt accelMDE} and {\tt accelMDalpha},
+and a second to the (Total - Dihedral) potential that is controlled by the  {\tt accelMDTE} and {\tt accelMDTalpha} parameters described below.
 }
 
 \item
-\NAMDCONF{aMDTE}{Threshold energy $E$ in the dual boost mode}
+\NAMDCONF{accelMDTE}{Threshold energy $E$ in the dual boost mode}
 {Real number}
 {Specifies the threshold energy $E$ used in the calculation of boost energy for the (Total - Dihedral) potential. 
-This option is only available when {\tt aMDdual} is turned on.
+This option is only available when {\tt accelMDdual} is turned on.
 }
 
 \item
-\NAMDCONF{aMDTalpha}{Acceleration factor $\alpha$ in the dual boost mode}
+\NAMDCONF{accelMDTalpha}{Acceleration factor $\alpha$ in the dual boost mode}
 {Positive real number}
 {Specifies the acceleration factor $\alpha$ used in the calculation of boost energy for the (Total - Dihedral) potential. 
-This option is only available when {\tt aMDdual} is turned on.
+This option is only available when {\tt accelMDdual} is turned on.
 }
 
 \item
-\NAMDCONFWDEF{aMDskip}{Do not perform aMD for the first aMDskip steps}
+\NAMDCONFWDEF{accelMDskip}{Do not perform aMD for the first accelMDskip steps}
 {Zero or positive integer}{0}
-{aMD will not be performed for the first few steps specified by {\tt aMDskip}. Regular MD will be performed in these steps.
+{aMD will not be performed for the first few steps specified by {\tt accelMDskip}. Regular MD will be performed in these steps.
 }
 
 \item
-\NAMDCONFWDEF{aMDOutFreq}{Frequency in steps of aMD output}
+\NAMDCONFWDEF{accelMDOutFreq}{Frequency in steps of aMD output}
 {Positive integer}{1}
-{An aMD output line will be printed to the log file at the frequency specified by {\tt aMDOutFreq}.
+{An aMD output line will be printed to the log file at the frequency specified by {\tt accelMDOutFreq}.
 The aMD output will contain the boost potential ($dV$) at the current timestep, 
 the average boost potential ($dVAVG$) since the last aMD output, and various potential energy values at the current timestep.
 The boost potential $dV$ can be used to reconstruct the ensemble average described earlier.
