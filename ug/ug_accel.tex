@@ -13,13 +13,11 @@ As a result, barriers separating adjacent energy basins are reduced, allowing th
 conformational space that cannot be easily accessed in a classical MD simulation.
 
 Please include the following two references in your work using the NAMD implementation of aMD:
-\\
-Accelerated Molecular Dynamics: A Promising and Efficient Simulation Method for Biomolecules, D.\,Hamelberg, 
-J.\,Mongan, and J.\,A. McCammon. {\it J. Chem. Phys.}, 120:11919-11929, 2004.
-\\
-\\
-Implementation of Accelerated Molecular Dynamics in NAMD, Y.\,Wang, C.\,Harrison, 
-K.,Schulten, and J.\,A. McCammon, {\it Comp.\,Sci.\,Discov.}, 4:015002, 2011.
+\begin{itemize}
+  \item {Accelerated Molecular Dynamics: A Promising and Efficient Simulation Method for Biomolecules, D.\,Hamelberg, J.\,Mongan, and J.\,A. McCammon. {\it J. Chem. Phys.}, 120:11919-11929, 2004.}
+  \item{Implementation of Accelerated Molecular Dynamics in NAMD, Y.\,Wang, C.\,Harrison, K.,Schulten, and J.\,A. McCammon, {\it Comp.\,Sci.\,Discov.}, 4:015002, 2011.}
+\end{itemize}
+
 \subsubsection{Theoretical background}
 In the original form of aMD~\cite{HAME2004mc}, when the system's potential energy falls       
 below a threshold energy, $E$, a boost potential is added, 
@@ -69,7 +67,7 @@ is applied to the dihedral potential in the aMDd mode, and to the total potentia
 In the dual boost mode (aMDdual)~\cite{HAME2007mc}, two independent boost energies are applied, one on the dihedral potential and the other
 on the (total-dihedral) potential.
 
-\subsubsection{Simulation}
+\subsubsection{NAMD parameters}
 
 The following parameters are used to enable accelerated MD:
 
@@ -83,8 +81,8 @@ off}}{{\tt off}}
 \item
 \NAMDCONFWDEF{aMDdihe}{Apply boost to dihedrals?}{{\tt on} or {\tt off}} {{\tt on}} 
 {Only applies boost to the dihedral potential. 
-When aMDdihe is on, the boost energy is applied to the dihedral potential of the simulated system.
-When aMDdihe is turned off, aMD switches to the aMDT mode, and the boost is applied to the total potential.
+When {\tt aMDdihe} is on, the boost energy is applied to the dihedral potential of the simulated system.
+When {\tt aMDdihe} is turned off, aMD switches to the {\tt aMDT} mode, and the boost is applied to the total potential.
 }
 
 \item
@@ -101,35 +99,35 @@ When aMDdihe is turned off, aMD switches to the aMDT mode, and the boost is appl
 
 \item
 \NAMDCONFWDEF{aMDdual}{Use dual boost mode?}{{\tt on} or {\tt off}}{{\tt off}}
-{When aMDdual is on, aMD switches to the dual boost mode. Two independent boost potentials 
-will be applied: one on the dihedral potential and controlled by the parameters aMDE and aMDalpha,
-the other on the (total - dihedral) potential and controlled the aMDTE and aMDTalpha parameters described below.
+{When {\tt aMDdual} is on, aMD switches to the dual boost mode. Two independent boost potentials 
+will be applied: one to the dihedral potential that is controlled by the parameters {\tt aMDE} and {\tt aMDalpha},
+and a second to the (Total - Dihedral) potential that is controlled by the  {\tt aMDTE} and {\tt aMDTalpha} parameters described below.
 }
 
 \item
 \NAMDCONF{aMDTE}{Threshold energy $E$ in the dual boost mode}
 {Real number}
-{Specifies the threshold energy $E$ used in the calculation of boost energy for the (total - dihedral) potential. 
-This option is only available when aMDdual is turned on.
+{Specifies the threshold energy $E$ used in the calculation of boost energy for the (Total - Dihedral) potential. 
+This option is only available when {\tt aMDdual} is turned on.
 }
 
 \item
 \NAMDCONF{aMDTalpha}{Acceleration factor $\alpha$ in the dual boost mode}
 {Positive real number}
-{Specifies the acceleration factor $\alpha$ used in the calculation of boost energy for the (total - dihedral) potential. 
-This option is only available when aMDdual is turned on.
+{Specifies the acceleration factor $\alpha$ used in the calculation of boost energy for the (Total - Dihedral) potential. 
+This option is only available when {\tt aMDdual} is turned on.
 }
 
 \item
 \NAMDCONFWDEF{aMDskip}{Do not perform aMD for the first aMDskip steps}
 {Zero or positive integer}{0}
-{aMD will not be performed for the first few steps specified by aMDskip. Regular MD will be performed in these steps.
+{aMD will not be performed for the first few steps specified by {\tt aMDskip}. Regular MD will be performed in these steps.
 }
 
 \item
 \NAMDCONFWDEF{aMDOutFreq}{Frequency in steps of aMD output}
 {Positive integer}{1}
-{An aMD output line will be printed to the log file at the frequency specified by aMDOutFreq.
+{An aMD output line will be printed to the log file at the frequency specified by {\tt aMDOutFreq}.
 The aMD output will contain the boost potential ($dV$) at the current timestep, 
 the average boost potential ($dVAVG$) since the last aMD output, and various potential energy values at the current timestep.
 The boost potential $dV$ can be used to reconstruct the ensemble average described earlier.
