@@ -1,7 +1,141 @@
-
 \section{Accelerated Sampling Methods}
 \label{section:accel}
 
+\subsection{Accelerated Molecular Dynamics}
+\label{section:accelmd}
+Accelerated molecular dynamics (aMD)~\cite{HAME2004mc} is an enhanced-sampling method that
+improves the conformational space sampling by 
+reducing energy barriers separating different states of a system.
+The method modifies the potential 
+energy landscape by raising energy wells that are below
+a certain threshold level, while leaving those above this level unaffected.
+As a result, barriers separating adjacent energy basins are reduced, allowing the system to sample
+conformational space that cannot be easily accessed in a classical MD simulation.
+
+Please include the following two references in your work using the NAMD implementation of aMD:
+\\
+Accelerated Molecular Dynamics: A Promising and Efficient Simulation Method for Biomolecules, D.\,Hamelberg, 
+J.\,Mongan, and J.\,A. McCammon. {\it J. Chem. Phys.}, 120:11919-11929, 2004.
+\\
+\\
+Implementation of Accelerated Molecular Dynamics in NAMD, Y.\,Wang, C.\,Harrison, 
+K.,Schulten, and J.\,A. McCammon, {\it Comp.\,Sci.\,Discov.}, 4:015002, 2011.
+\subsubsection{Theoretical background}
+In the original form of aMD~\cite{HAME2004mc}, when the system's potential energy falls       
+below a threshold energy, $E$, a boost potential is added, 
+such that the modified potential, $V^*({\bf r})$, is related to the original
+potential, $V({\bf r})$, via
+\begin{equation}
+V^*({\bf r})= V({\bf r}) + \Delta V({\bf r}),
+\end{equation}
+where $\Delta V({\bf r})$ is the boost potential, 
+\begin{equation} 
+\Delta V({\bf r})= \left \{
+\begin{array}{l l}
+0   & \quad \quad V({\bf r})\geq E \\  
+\frac{(E-V({\bf r}))^2}{\alpha+E-V({\bf r})}  & \quad \quad V({\bf r})<E. \\
+\end{array} \right. 
+\end{equation}
+As shown in the following figure, the threshold energy $E$ controls the portion of 
+the potential surface affected by the boost, while the acceleration factor 
+$\alpha$ determines the shape of the modified potential.
+%as $\alpha$ increases, the modified potential asymptotically approaches the original potential;
+%as $\alpha$ decreases, the energy surface below $E$ begins to resemble a constant potential.
+Note that $\alpha$ cannot be set to zero, otherwise the derivative of the modified potential
+is discontinuous.
+
+\begin{figure}[!ht]
+  \centering
+  \includegraphics[width=6.5cm]{figures/amd_schematic.jpg}
+  \caption{Schematics of the aMD method. When the original potential (thick line) falls below a threshold energy $E$ (dashed line),
+          a boost potential is added. The modified energy profiles (thin lines) have smaller barriers separating adjacent
+	  energy basins. 
+	  %Two parameters, $E$ and $\alpha$, controls the portion of the affected potential landscape and the
+	  %shape of the modified potential, respectively.
+	  }
+  \label{fig:amd_schematic}
+\end{figure}
+From an aMD simulation, the ensemble average, $\langle A \rangle$, of an observable, $A({\bf r})$, can be calculated
+using the following reweighting procedure:
+\begin{equation}
+\langle A \rangle =\frac{\langle A({\bf r})\,\text{exp} (\beta \Delta V({\bf r})) \rangle^* }
+{\langle \text{exp}  (\beta \Delta V({\bf r})) \rangle^*},
+\end{equation}
+in which $\beta$=$1/k_BT$, and $\langle ... \rangle$ and $\langle...\rangle^*$ represent 
+the ensemble average in the original and the aMD ensembles, respectively. 
+
+Currently, aMD can be applied in three modes in NAMD: aMDd, aMDT, and aMDdual~\cite{WANG2011mc}. The boost energy
+is applied to the dihedral potential in the aMDd mode, and to the total potential in the aMDT mode.
+In the dual boost mode (aMDdual)~\cite{HAME2007mc}, two independent boost energies are applied, one on the dihedral potential and the other
+on the (total-dihedral) potential.
+
+\subsubsection{Simulation}
+
+The following parameters are used to enable accelerated MD:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{aMDOn}{Is accelerated molecular dynamics active?}{{\tt on} or {\tt
+off}}{{\tt off}}
+{Specifies if accelerated MD is active.}
+
+\item
+\NAMDCONFWDEF{aMDdihe}{Apply boost to dihedrals?}{{\tt on} or {\tt off}} {{\tt on}} 
+{Only applies boost to the dihedral potential. 
+When aMDdihe is on, the boost energy is applied to the dihedral potential of the simulated system.
+When aMDdihe is turned off, aMD switches to the aMDT mode, and the boost is applied to the total potential.
+}
+
+\item
+\NAMDCONF{aMDE}{Threshold energy $E$}
+{Real number}
+{Specifies the threshold energy $E$ in the aMD equations. 
+}
+
+\item
+\NAMDCONF{aMDalpha}{Acceleration factor $\alpha$}
+{Positive real number}
+{Specifies the acceleration factor $\alpha$ in the aMD equations. 
+}
+
+\item
+\NAMDCONFWDEF{aMDdual}{Use dual boost mode?}{{\tt on} or {\tt off}}{{\tt off}}
+{When aMDdual is on, aMD switches to the dual boost mode. Two independent boost potentials 
+will be applied: one on the dihedral potential and controlled by the parameters aMDE and aMDalpha,
+the other on the (total - dihedral) potential and controlled the aMDTE and aMDTalpha parameters described below.
+}
+
+\item
+\NAMDCONF{aMDTE}{Threshold energy $E$ in the dual boost mode}
+{Real number}
+{Specifies the threshold energy $E$ used in the calculation of boost energy for the (total - dihedral) potential. 
+This option is only available when aMDdual is turned on.
+}
+
+\item
+\NAMDCONF{aMDTalpha}{Acceleration factor $\alpha$ in the dual boost mode}
+{Positive real number}
+{Specifies the acceleration factor $\alpha$ used in the calculation of boost energy for the (total - dihedral) potential. 
+This option is only available when aMDdual is turned on.
+}
+
+\item
+\NAMDCONFWDEF{aMDskip}{Do not perform aMD for the first aMDskip steps}
+{Positive integer}{0}
+{aMD will not be performed for the first few steps specified by aMDskip. Regular MD will be performed in these steps.
+}
+
+\item
+\NAMDCONFWDEF{aMDOutFreq}{Frequency in steps of aMD output}
+{Positive integer}{1}
+{An aMD output line will be printed to the log file at the frequency specified by aMDOutFreq.
+The aMD output will contain the boost potential ($dV$) at the current timestep, 
+the average boost potential ($dVAVG$) since the last aMD output, and various potential energy values at the current timestep.
+The boost potential $dV$ can be used to reconstruct the ensemble average described earlier.
+}
+
+\end{itemize}
 
 \subsection{Locally enhanced sampling}
 \label{section:les}
