@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/03/15 16:35:21 $
- * $Revision: 1.1335 $
+ * $Author: char $
+ * $Date: 2011/03/15 19:01:35 $
+ * $Revision: 1.1336 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1076,22 +1076,22 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("pressureProfileEwaldZ", POSITIVE);
 
    /// accelerated MD parameters
-   opts.optionalB("main", "accelMD", "Perform acclerated MD?", &accelMDOn, FALSE);
-   opts.optional("accelMD", "accelMDskip", "Skip the first num of steps", &accelMDskip, 0);
+   opts.optionalB("main", "aMD", "Perform acclerated MD?", &accelMDOn, FALSE);
+   opts.optional("accelMD", "aMDskip", "Skip the first num of steps", &accelMDskip, 0);
    opts.range("accelMDskip", NOT_NEGATIVE);
-   opts.optional("accelMD", "accelMDOutFreq", "Frequency of accelMD output", &accelMDOutFreq, 1);
+   opts.optional("accelMD", "aMDOutFreq", "Frequency of accelMD output", &accelMDOutFreq, 1);
    opts.range("accelMDOutFreq", POSITIVE);
-   opts.optionalB("accelMD", "accelMDdihe", "Apply boost to dihedral potential", &accelMDdihe, TRUE);
-   opts.optionalB("accelMD", "accelMDDebugOn", "Debugging accelMD", &accelMDDebugOn, FALSE);
-   opts.require("accelMD", "accelMDE","E for AMD", &accelMDE);
+   opts.optionalB("accelMD", "aMDdihe", "Apply boost to dihedral potential", &accelMDdihe, TRUE);
+   opts.optionalB("accelMD", "aMDDebugOn", "Debugging accelMD", &accelMDDebugOn, FALSE);
+   opts.require("accelMD", "aMDE","E for AMD", &accelMDE);
    opts.units("accelMDE", N_KCAL);
-   opts.require("accelMD", "accelMDalpha","alpha for AMD", &accelMDalpha);
+   opts.require("accelMD", "aMDalpha","alpha for AMD", &accelMDalpha);
    opts.units("accelMDalpha", N_KCAL);
    opts.range("accelMDalpha", POSITIVE);
-   opts.optionalB("accelMD", "accelMDdual", "Apply dual boost", &accelMDdual, FALSE);
-   opts.require("accelMDdual", "accelMDTE","E for total potential under accelMDdual mode", &accelMDTE);
+   opts.optionalB("accelMD", "aMDdual", "Apply dual boost", &accelMDdual, FALSE);
+   opts.require("accelMDdual", "aMDTE","E for total potential under accelMDdual mode", &accelMDTE);
    opts.units("accelMDTE", N_KCAL);
-   opts.require("accelMDdual", "accelMDTalpha","alpha for total potential under accelMDdual mode", &accelMDTalpha);
+   opts.require("accelMDdual", "aMDTalpha","alpha for total potential under accelMDdual mode", &accelMDTalpha);
    opts.units("accelMDTalpha", N_KCAL);
    opts.range("accelMDTalpha", POSITIVE);
 
@@ -1319,7 +1319,6 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
     opts.optional("colvars", "colvarsInput",
       "input restart file for the collective variables", PARSE_STRING);
 
-   //// accelMD parameters
 }
 
 
@@ -4350,12 +4349,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         iout << iINFO << "BOOSTING TOTAL POTENTIAL\n";
      }
 
-     iout << iINFO << "accelMDE: " << accelMDE << " KCAL/MOL, accelMDalpha: " << accelMDalpha << " KCAL/MOL\n";
+     iout << iINFO << "aMDE: " << accelMDE << " KCAL/MOL, aMDalpha: " << accelMDalpha << " KCAL/MOL\n";
      if (accelMDdual) {
         iout << iINFO << "accelMDTE: " << accelMDTE << " KCAL/MOL, accelMDTalpha: " << accelMDTalpha << " KCAL/MOL\n";
      }
-     iout << iINFO << "accelMD SKIPPING " << accelMDskip << " TIMESTEPS\n";
-     iout << iINFO << "accelMD OUTPUT FREQUENCY " << accelMDOutFreq << "\n";
+     iout << iINFO << "aMD SKIPPING " << accelMDskip << " TIMESTEPS\n";
+     iout << iINFO << "aMD OUTPUT FREQUENCY " << accelMDOutFreq << "\n";
      iout << endi;
    }
 
