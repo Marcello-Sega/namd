@@ -110,6 +110,7 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   inMigration = false;
   numMlBuf = 0;
   flags.sequence = -1;
+  flags.maxForceUsed = -1;
 
   numAtoms = atomCnt;
   replacementForces = 0;
@@ -193,6 +194,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   inMigration = false;
   numMlBuf = 0;
   flags.sequence = -1;
+  flags.maxForceUsed = -1;
 
   numAtoms = atom.size();
   replacementForces = 0;
