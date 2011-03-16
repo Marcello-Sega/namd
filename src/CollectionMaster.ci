@@ -19,12 +19,15 @@ module CollectionMaster {
     entry CollectionMaster(void);
     entry void receivePositions(CollectVectorMsg *);
     entry void receiveVelocities(CollectVectorMsg *);
+    entry void receiveForces(CollectVectorMsg *);
     entry void receiveDataStream(DataStreamMsg *);
 
     entry void receiveOutputPosReady(int seq);
     entry void receiveOutputVelReady(int seq);
+    entry void receiveOutputForceReady(int seq);
     entry void startNextRoundOutputPos(double totalT);
     entry void startNextRoundOutputVel(double totalT);
+    entry void startNextRoundOutputForce(double totalT);
     entry void wrapCoorFinished();
     
   };

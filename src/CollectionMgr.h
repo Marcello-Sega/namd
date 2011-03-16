@@ -35,6 +35,7 @@ public:
 
   void submitPositions(int seq, FullAtomList &a, Lattice l, int prec);
   void submitVelocities(int seq, int zero, FullAtomList &a);
+  void submitForces(int seq, FullAtomList &a, int maxForceUsed, ForceList *f);
   void sendDataStream(const char *);
   
   CkChareID getMasterChareID() { return master; }  
@@ -143,6 +144,7 @@ private:
 
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
+  CollectVectorSequence forces;
 
 };
 

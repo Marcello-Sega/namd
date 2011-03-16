@@ -445,13 +445,32 @@ int ScriptTcl::Tcl_output(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
-  if (argc != 2) {
-    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+  if (argc < 2) {
+    Tcl_SetResult(interp,"too few args",TCL_VOLATILE);
     return TCL_ERROR;
   }
-  if (strlen(argv[1]) > MAX_SCRIPT_PARAM_SIZE) {
+  if (argc > 3) {
+    Tcl_SetResult(interp,"too many args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int filenamearg = argc-1;
+  if (strlen(argv[filenamearg]) > MAX_SCRIPT_PARAM_SIZE) {
     Tcl_SetResult(interp,"file name too long",TCL_VOLATILE);
     return TCL_ERROR;
+  }
+  int dorestart = 1;
+  int doforces = 0;
+  if (argc == 3) {
+    if ( ! strcmp(argv[1], "withforces") ) {
+      doforces = 1;
+    } else if ( ! strcmp(argv[1], "onlyforces") ) {
+      dorestart = 0;
+      doforces = 1;
+    }  else {
+      Tcl_SetResult(interp,
+        "first arg not withforces or onlyforces",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
   }
 
   SimParameters *simParams = Node::Object()->simParameters;
@@ -459,12 +478,13 @@ int ScriptTcl::Tcl_output(ClientData clientData,
   char oldname[MAX_SCRIPT_PARAM_SIZE+1];
   strncpy(oldname,simParams->outputFilename,MAX_SCRIPT_PARAM_SIZE);
 
-  script->setParameter("outputname",argv[1]);
+  script->setParameter("outputname",argv[filenamearg]);
 
   iout << "TCL: Writing to files with basename " <<
 		simParams->outputFilename << ".\n" << endi;
 
-  script->runController(SCRIPT_OUTPUT);
+  if ( dorestart ) script->runController(SCRIPT_OUTPUT);
+  if ( doforces ) script->runController(SCRIPT_FORCEOUTPUT);
 
   script->setParameter("outputname",oldname);
 

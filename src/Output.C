@@ -341,10 +341,81 @@ void Output::velocity(int timestep, int n, Vector *vel)
   if (timestep == END_OF_RUN)
   {
     if (simParams->velDcdFrequency) output_veldcdfile(END_OF_RUN,0,0);
+    // close force dcd file here since no final force output below
+    if (simParams->forceDcdFrequency) output_forcedcdfile(END_OF_RUN,0,0);
   }
 
 }
 /*      END OF FUNCTION velocity      */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION force */
+/*                  */
+/*   INPUTS:                */
+/*  timestep - Timestep forces were accumulated for    */
+/*  n - This is the number of forces accumulated.    */
+/*  frc - Array of Vectors containing the forces */
+/*                  */
+/*  This function receives the forces accumulated for a given   */
+/*   timestep from the Collect object and calls the appropriate output  */
+/*   functions.  ALL routines used to output force information should*/
+/*   be called from here.            */
+/*                  */
+/************************************************************************/
+
+int Output::forceNeeded(int timestep)
+{
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  int forcesNeeded = 0;
+
+  if ( timestep >= 0 ) {
+
+    //  Output a force DCD trajectory
+    if ( simParams->forceDcdFrequency &&
+       ((timestep % simParams->forceDcdFrequency) == 0) )
+      { forcesNeeded |= 1; }
+
+  }
+
+  //  Output forces
+  if (timestep == FORCE_OUTPUT)
+  {
+    forcesNeeded |= 2;
+  }
+
+  return forcesNeeded;
+}
+
+void Output::force(int timestep, int n, Vector *frc)
+{
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  if ( timestep >= 0 ) {
+
+    //  Output force DCD trajectory
+    if ( simParams->forceDcdFrequency &&
+       ((timestep % simParams->forceDcdFrequency) == 0) )
+    {
+      output_forcedcdfile(timestep, n, frc);
+    }
+
+  }
+
+  //  Output forces
+  if (timestep == FORCE_OUTPUT)
+  {
+    iout << "WRITING FORCES TO OUTPUT FILE AT STEP "
+				<< simParams->N << "\n" << endi;
+    fflush(stdout);
+    output_forces(simParams->N, n, frc);
+  }
+
+  //  Trajectory file closed by velocity() above
+
+}
+/*      END OF FUNCTION force */
 
 /************************************************************************/
 /*                  */
@@ -812,6 +883,170 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION output_forces    */
+/*                  */
+/*   INPUTS:                */
+/*  frc - Array of vectors containing final forces */
+/*  timestep - Timestep that vleocities are being written in  */
+/*                  */
+/*  This function writes out the final vleocities for the    */
+/*   simulation in PDB format to the file specified in the config  */
+/*   file.                */
+/*                  */
+/************************************************************************/
+
+void Output::output_forces(int timestep, int n, Vector *frc)
+
+{
+  char output_name[140];  //  Output filename
+  char comment[128];    //  Comment for PDB header
+
+  //  Build the output filename
+  strcpy(output_name, namdMyNode->simParams->outputFilename);
+  strcat(output_name, ".force");
+
+  NAMD_backup_file(output_name);
+
+  //  Check to see if we should write a PDB or binary file
+  if (!(namdMyNode->simParams->binaryOutput))
+  {
+    //  Write the forces to a PDB file
+    sprintf(comment, "FORCES WRITTEN BY NAMD AT TIMESTEP %d", timestep);
+
+    namdMyNode->pdbData->set_all_positions(frc);
+    namdMyNode->pdbData->write(output_name, comment);
+  }
+  else
+  {
+    //  Write the coordinates to a binary file
+    write_binary_file(output_name, n, frc);
+  }
+
+}
+/*      END OF FUNCTION output_forces */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION output_forcedcdfile      */
+/*                  */
+/*   INPUTS:                */
+/*  timestep - Current timestep          */
+/*  n - Number of atoms in simulation        */
+/*  frc - force vectors for all atoms        */
+/*                  */
+/*  This function maintains the interface between the Output object */
+/*   and the dcd writing routines contained in dcdlib.  This fucntion   */
+/*   writes out the force vectors in DCD format.      */
+/*                  */
+/************************************************************************/
+
+void Output::output_forcedcdfile(int timestep, int n, Vector *frc)
+
+{
+  static Bool first=TRUE;  //  Flag indicating first call
+  static int fileid;  //  File id for the dcd file
+  static float *x, *y, *z; // Arrays to hold x, y, and z arrays
+  int i;      //  Loop counter
+  int ret_code;    //  Return code from DCD calls
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  //  If this is the last time we will be writing coordinates,
+  //  close the file before exiting
+  if ( timestep == END_OF_RUN ) {
+    if ( ! first ) {
+      iout << "CLOSING FORCE DCD FILE\n" << endi;
+      close_dcd_write(fileid);
+    } else {
+      iout << "FORCE DCD FILE WAS NOT CREATED\n" << endi;
+    }
+    return;
+  }
+
+  if (first)
+  {
+    //  Allocate x, y, and z arrays since the DCD file routines
+    //  need them passed as three independant arrays to be
+    //  efficient
+    x = new float[n];
+    y = new float[n];
+    z = new float[n];
+
+    if ( (x==NULL) || (y==NULL) || (z==NULL) )
+    {
+      NAMD_err("memory allocation failed in Output::output_forcedcdfile");
+    }
+
+    //  Open the DCD file
+    iout << "OPENING FORCE DCD FILE\n" << endi;
+
+    fileid=open_dcd_write(namdMyNode->simParams->forceDcdFilename);
+
+    if (fileid == DCD_FILEEXISTS)
+    {
+      char err_msg[257];
+
+      sprintf(err_msg, "Force DCD file %s already exists!!",
+        namdMyNode->simParams->forceDcdFilename);
+
+      NAMD_err(err_msg);
+    }
+    else if (fileid < 0)
+    {
+      char err_msg[257];
+
+      sprintf(err_msg, "Couldn't open force DCD file %s",
+        namdMyNode->simParams->forceDcdFilename);
+
+      NAMD_err(err_msg);
+    }
+
+    int NSAVC, NFILE, NPRIV, NSTEP;
+    NSAVC = simParams->forceDcdFrequency;
+    NSTEP = NSAVC * (simParams->N/NSAVC);
+    NPRIV = simParams->firstTimestep+NSAVC;
+    NPRIV = NSAVC * (NPRIV/NSAVC);
+    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+
+    //  Write out the header
+    const int with_unitcell = 0;
+    ret_code = write_dcdheader(fileid, 
+        simParams->forceDcdFilename,
+        n, NFILE, NPRIV, NSAVC, NSTEP,
+        simParams->dt/TIMEFACTOR, with_unitcell);
+
+
+    if (ret_code<0)
+    {
+      NAMD_err("Writing of force DCD header failed!!");
+    }
+
+    first = FALSE;
+  }
+
+  //  Copy the coordinates for output
+  for (i=0; i<n; i++)
+  {
+    x[i] = frc[i].x;
+    y[i] = frc[i].y;
+    z[i] = frc[i].z;
+  }
+
+  //  Write out the values for this timestep
+  iout << "WRITING FORCES TO DCD FILE AT STEP "
+	<< timestep << "\n" << endi;
+  fflush(stdout);
+  ret_code = write_dcdstep(fileid, n, x, y, z, NULL);
+
+  if (ret_code < 0)
+  {
+    NAMD_err("Writing of force DCD step failed!!");
+  }
+
+}
+/*      END OF FUNCTION output_forcedcdfile    */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION write_binary_file      */
 /*                  */
 /*   INPUTS:                */
@@ -935,6 +1170,7 @@ void ParOutput::velocityMaster(int timestep, int n){
     if (timestep == END_OF_RUN)
     {
       if (simParams->velDcdFrequency) output_veldcdfile_master(END_OF_RUN,0);
+      if (simParams->forceDcdFrequency) output_forcedcdfile_master(END_OF_RUN,0);
     }
 
 }
@@ -973,6 +1209,7 @@ void ParOutput::velocitySlave(int timestep, int fID, int tID, Vector *vecs){
     if (timestep == END_OF_RUN)
     {
       if (simParams->velDcdFrequency) output_veldcdfile_slave(END_OF_RUN, 0, 0, NULL);
+      if (simParams->forceDcdFrequency) output_forcedcdfile_slave(END_OF_RUN, 0, 0, NULL);
     }
 }
 
@@ -1336,6 +1573,284 @@ void ParOutput::write_binary_file_slave(char *fname, int fID, int tID, Vector *v
 	fclose(ofp);
 }
 //////End of Functions related with velocity output//////
+
+
+//////Beginning of Functions related with force output//////
+void ParOutput::forceMaster(int timestep, int n){
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    if ( timestep >= 0 ) {
+
+      //  Output force DCD trajectory
+      if ( simParams->forceDcdFrequency &&
+         ((timestep % simParams->forceDcdFrequency) == 0) )
+      {         
+        output_forcedcdfile_master(timestep, n);        
+      }
+
+    }
+
+    //  Output forces
+    if (timestep == FORCE_OUTPUT)
+    {
+      iout << "WRITING FORCES TO OUTPUT FILE AT STEP "
+                  << simParams->N << "\n" << endi;
+      fflush(stdout);
+      output_forces_master(n);
+    }
+
+    //  Close trajectory files in velocityMaster above
+}
+
+//output atoms' forces from id fID to tID.
+void ParOutput::forceSlave(int timestep, int fID, int tID, Vector *vecs){
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    if ( timestep >= 0 ) {
+
+      //  Output force DCD trajectory
+      if ( simParams->forceDcdFrequency &&
+         ((timestep % simParams->forceDcdFrequency) == 0) )
+      {         
+        output_forcedcdfile_slave(timestep, fID, tID, vecs);
+      }
+
+    }
+
+    //  Output forces
+    if (timestep == FORCE_OUTPUT)
+    {
+        int64 offset = sizeof(int)+sizeof(Vector)*((int64)fID);
+        output_forces_slave(fID, tID, vecs, offset);
+    }
+
+    //  Close trajectory files in velocitySlave above
+}
+
+void ParOutput::output_forcedcdfile_master(int timestep, int n){
+    int ret_code;    //  Return code from DCD calls
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    //  If this is the last time we will be writing coordinates,
+    //  close the file before exiting
+    if ( timestep == END_OF_RUN ) {
+      if ( ! forcedcdFirst ) {
+        iout << "CLOSING FORCE DCD FILE\n" << endi;
+        close_dcd_write(forcedcdFileID);
+      } else {
+        iout << "FORCE DCD FILE WAS NOT CREATED\n" << endi;
+      }
+      return;      
+    }
+
+    if (forcedcdFirst)
+    {
+      //  Open the DCD file
+      iout << "OPENING FORCE DCD FILE\n" << endi;
+	  
+	#if OUTPUT_SINGLE_FILE
+	  char *forcedcdFilename = simParams->forceDcdFilename;
+	#else	  
+	  char *forcedcdFilename = buildFileName(forcedcdType);
+	#endif
+
+      forcedcdFileID=open_dcd_write(forcedcdFilename);
+
+      if (forcedcdFileID == DCD_FILEEXISTS)
+      {
+        char err_msg[257];
+        sprintf(err_msg, "Force DCD file %s already exists!",forcedcdFilename);
+        NAMD_err(err_msg);
+      }
+      else if (forcedcdFileID < 0)
+      {
+        char err_msg[257];
+        sprintf(err_msg, "Couldn't open force DCD file %s",forcedcdFilename);
+        NAMD_err(err_msg);
+      }
+
+	#if !OUTPUT_SINGLE_FILE
+	  // Write out extra fields as MAGIC number etc.
+	  int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	  float tmpFlt = OUTPUT_FILE_VERSION;
+	  NAMD_write(forcedcdFileID, (char *) &tmpInt, sizeof(int32));
+	  NAMD_write(forcedcdFileID, (char *) &tmpFlt, sizeof(float));
+	  tmpInt = simParams->numoutputprocs;
+	  NAMD_write(forcedcdFileID, (char *) &tmpInt, sizeof(int32));
+	#endif
+
+      int NSAVC, NFILE, NPRIV, NSTEP;
+      NSAVC = simParams->forceDcdFrequency;
+      NSTEP = NSAVC * (simParams->N/NSAVC);
+      NPRIV = simParams->firstTimestep+NSAVC;
+      NPRIV = NSAVC * (NPRIV/NSAVC);
+      NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+
+      //  Write out the header
+      const int with_unitcell = 0;
+      ret_code = write_dcdheader(forcedcdFileID, 
+          forcedcdFilename,
+          n, NFILE, NPRIV, NSAVC, NSTEP,
+          simParams->dt/TIMEFACTOR, with_unitcell);
+
+
+      if (ret_code<0)
+      {
+        NAMD_err("Writing of force DCD header failed!!");
+      }
+
+	#if !OUTPUT_SINGLE_FILE
+	  //In this case, the file name is dynamically allocated
+	  delete [] forcedcdFilename;
+	#endif
+
+      forcedcdFirst = FALSE;
+    }
+
+    //  Write out the values for this timestep
+    iout << "WRITING FORCES TO DCD FILE AT STEP "
+      << timestep << "\n" << endi;
+    fflush(stdout);
+
+	//In the case of writing to multiple files, only the header
+	//of the dcd file needs to be updated. Note that the format of
+	//the new dcd file has also changed! -Chao Mei 
+
+#if OUTPUT_SINGLE_FILE
+    //The following seek will set the stream position to the
+    //beginning of the place where a new timestep output should
+    //be performed.
+    seek_dcdfile(forcedcdFileID, 0, SEEK_END);
+
+    // Write out the Cell data which is not necessary right now
+    
+    //write X,Y,Z headers
+    int totalAtoms = namdMyNode->molecule->numAtoms;
+    write_dcdstep_par_XYZUnits(forcedcdFileID, totalAtoms);
+#endif
+
+    //update the header
+    update_dcdstep_par_header(forcedcdFileID);    
+
+}
+
+void ParOutput::output_forcedcdfile_slave(int timestep, int fID, int tID, Vector *vecs){
+    int ret_code;    //  Return code from DCD calls
+    SimParameters *simParams = Node::Object()->simParameters;
+
+    //  If this is the last time we will be writing coordinates,
+    //  close the file before exiting
+    if ( timestep == END_OF_RUN ) {
+      if ( ! forcedcdFirst ) {        
+        close_dcd_write(forcedcdFileID);
+      }
+#if OUTPUT_SINGLE_FILE
+      delete [] forcedcdX;
+      delete [] forcedcdY;
+      delete [] forcedcdZ;
+#endif
+      return;
+    }
+
+    int parN = tID-fID+1;
+
+    if (forcedcdFirst)
+    {
+
+	#if OUTPUT_SINGLE_FILE
+	  char *forcedcdFilename = namdMyNode->simParams->forceDcdFilename;
+	#else	  
+	  char *forcedcdFilename = buildFileName(forcedcdType);
+	#endif
+      forcedcdFileID=open_dcd_write_par_slave(forcedcdFilename);
+      if(forcedcdFileID < 0)
+      {
+        char err_msg[257];
+        sprintf(err_msg, "Couldn't open force DCD file %s",forcedcdFilename);
+        NAMD_err(err_msg);
+      }
+	#if OUTPUT_SINGLE_FILE
+	  //If outputting to a single file, dcd files conforms to the old format
+	  //as data are organized as 3 seperate arrays of X,Y,Z, while in the new
+	  //format used in outputing multiple files, the data are organized as an
+	  //array of XYZs.
+      forcedcdX = new float[parN];
+      forcedcdY = new float[parN];
+      forcedcdZ = new float[parN];
+	#endif
+
+	#if !OUTPUT_SINGLE_FILE
+	  delete [] forcedcdFilename;
+	  // Write out extra fields as MAGIC number etc.
+	  int32 tmpInt = OUTPUT_MAGIC_NUMBER;
+	  float tmpFlt = OUTPUT_FILE_VERSION;
+	  NAMD_write(forcedcdFileID, (char *) &tmpInt, sizeof(int32));
+	  NAMD_write(forcedcdFileID, (char *) &tmpFlt, sizeof(float));	  
+	  NAMD_write(forcedcdFileID, (char *) &outputID, sizeof(int));
+	  NAMD_write(forcedcdFileID, (char *) &fID, sizeof(int));
+	  NAMD_write(forcedcdFileID, (char *) &tID, sizeof(int));
+	#endif
+	  
+      forcedcdFirst = FALSE;
+    }
+
+#if OUTPUT_SINGLE_FILE
+    //The following seek will set the stream position to the
+    //beginning of the place where a new timestep output should
+    //be performed.
+    CmiAssert(sizeof(off_t)==8);
+    int totalAtoms = namdMyNode->molecule->numAtoms;
+    off_t offset = 3*((off_t)totalAtoms)*sizeof(float)+6*sizeof(int);
+    seek_dcdfile(forcedcdFileID, -offset, SEEK_END);
+
+    for(int i=0; i<parN; i++){
+        forcedcdX[i] = vecs[i].x;
+        forcedcdY[i] = vecs[i].y;
+        forcedcdZ[i] = vecs[i].z;
+    }
+
+    write_dcdstep_par_slave(forcedcdFileID, fID, tID, totalAtoms, forcedcdX, forcedcdY, forcedcdZ);
+#else
+	//write the timestep
+	NAMD_write(forcedcdFileID, (char *)&timestep, sizeof(int));
+	//write the values for this timestep
+	NAMD_write(forcedcdFileID, (char *)vecs, sizeof(Vector)*parN);
+#endif
+}
+
+void ParOutput::output_forces_master(int n){
+#if OUTPUT_SINGLE_FILE
+    char *output_name = new char[strlen(namdMyNode->simParams->outputFilename)+8];
+    //  Build the output filename
+    strcpy(output_name, namdMyNode->simParams->outputFilename);
+    strcat(output_name, ".force");
+#else	
+	char *output_name = buildFileName(forceType);
+#endif
+
+    NAMD_backup_file(output_name);
+
+    //Write the force to a binary file
+    write_binary_file_master(output_name, n);
+}
+
+void ParOutput::output_forces_slave(int fID, int tID, Vector *vecs, int64 offset){
+#if OUTPUT_SINGLE_FILE
+    char *output_name = new char[strlen(namdMyNode->simParams->outputFilename)+8];
+    //  Build the output filename
+    strcpy(output_name, namdMyNode->simParams->outputFilename);
+    strcat(output_name, ".force");
+#else
+	char *output_name = buildFileName(forceType);
+	NAMD_backup_file(output_name);
+#endif
+    
+    //Write the forces to a binary file
+    write_binary_file_slave(output_name, fID, tID, vecs, offset);
+
+	delete [] output_name;
+}
+//////End of Functions related with force output//////
 
 
 //////Beginning of Functions related with coordinate output//////
@@ -1771,11 +2286,17 @@ char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
 	case dcdType:
 		typeName = "dcd";
 		break;
+	case forcedcdType:
+		typeName = "forcedcd";
+		break;
 	case veldcdType:
 		typeName = "veldcd";
 		break;
 	case coorType:
 		typeName = "coor";
+		break;
+	case forceType:
+		typeName = "force";
 		break;
 	case velType:
 		typeName = "vel";

@@ -21,6 +21,7 @@ class Lattice;
 #define FILE_OUTPUT -1
 #define END_OF_RUN -2
 #define EVAL_MEASURE -3
+#define FORCE_OUTPUT -4
 
 #define OUTPUT_SINGLE_FILE 1
 #define OUTPUT_MAGIC_NUMBER 123456
@@ -28,8 +29,10 @@ class Lattice;
 
 enum OUTPUTFILETYPE {
 	dcdType,
+	forcedcdType,
 	veldcdType,
 	coorType,
+	forceType,
 	velType
 };
 
@@ -43,6 +46,8 @@ private:
    void output_dcdfile(int, int, FloatVector *, const Lattice *); 
    void output_veldcdfile(int, int, Vector *); 	//  output velocities to
 						//  dcd file
+   void output_forcedcdfile(int, int, Vector *); //  output forces to
+						//  dcd file
 
    void output_restart_coordinates(Vector *, int, int);
 						//  output coords to 
@@ -52,6 +57,7 @@ private:
 						//  restart file
    void output_final_coordinates(Vector *, int, int);//  output final coordinates
    void output_final_velocities(int, int, Vector *);	//  output final coordinates
+   void output_forces(int, int, Vector *);	//  output forces
 
    void scale_vels(Vector *, int, Real);	//  scale velocity vectors before output
    void write_binary_file(char *, int, Vector *); // Write a binary restart file with
@@ -70,6 +76,10 @@ public :
    void velocity(int, int, Vector *);		//  Produce appropriate velocity
 						//  output for the current 
 						//  timestep
+   static int forceNeeded(int);
+   void force(int, int, Vector *);		//  Produce appropriate force
+						//  output for the current 
+						//  timestep
 };
 
 #ifdef MEM_OPT_VERSION
@@ -81,6 +91,11 @@ private:
     void output_restart_velocities_slave(int timestep, int fID, int tID, Vector *vecs, int64 offset);
     void output_final_velocities_master(int n);
     void output_final_velocities_slave(int fID, int tID, Vector *vecs, int64 offset);
+
+    void output_forcedcdfile_master(int timestep, int n);
+    void output_forcedcdfile_slave(int timestep, int fID, int tID, Vector *vecs);
+    void output_forces_master(int n);
+    void output_forces_slave(int fID, int tID, Vector *vecs, int64 offset);
 
     void output_dcdfile_master(int timestep, int n, const Lattice *lat);
     void output_dcdfile_slave(int timestep, int fID, int tID, FloatVector *fvecs);
@@ -104,19 +119,29 @@ private:
     Bool veldcdFirst;    
     float *veldcdX, *veldcdY, *veldcdZ;
 
+    int forcedcdFileID;
+    Bool forcedcdFirst;    
+    float *forcedcdX, *forcedcdY, *forcedcdZ;
+
 	int outputID; //the sequence of this output
 
 public:
     ParOutput(int oid=-1){
         dcdFileID=veldcdFileID=-99999;
+        forcedcdFileID=-99999;
         dcdFirst=veldcdFirst=TRUE;
+        forcedcdFirst=TRUE;
         dcdX=dcdY=dcdZ=veldcdX=veldcdY=veldcdZ=NULL;
+        forcedcdX=forcedcdY=forcedcdZ=NULL;
 		outputID=oid;
     }
     ~ParOutput() {}
 
     void velocityMaster(int timestep, int n);
     void velocitySlave(int timestep, int fID, int tID, Vector *vecs);
+
+    void forceMaster(int timestep, int n);
+    void forceSlave(int timestep, int fID, int tID, Vector *vecs);
 
     void coordinateMaster(int timestep, int n, Lattice &lat);
     void coordinateSlave(int timestep, int fID, int tID, Vector *vecs, FloatVector *fvecs);

@@ -36,22 +36,27 @@ public:
 
   void receivePositions(CollectVectorMsg *msg);
   void receiveVelocities(CollectVectorMsg *msg);
+  void receiveForces(CollectVectorMsg *msg);
 
   void receiveDataStream(DataStreamMsg *msg);
 
   void enqueuePositions(int seq, Lattice &lattice);
   void enqueueVelocities(int seq);
+  void enqueueForces(int seq);
 
   class CollectVectorInstance;
   void disposePositions(CollectVectorInstance *c);
   void disposeVelocities(CollectVectorInstance *c);
+  void disposeForces(CollectVectorInstance *c);
 
   /////Beginning of declarations for comm with CollectionMidMaster/////
   void receiveOutputPosReady(int seq);
   void receiveOutputVelReady(int seq);
+  void receiveOutputForceReady(int seq);
   //totalT is the time taken to do file I/O for each output workflow -Chao Mei  
   void startNextRoundOutputPos(double totalT);
   void startNextRoundOutputVel(double totalT);
+  void startNextRoundOutputForce(double totalT);
 
   void wrapCoorFinished();
 
@@ -267,6 +272,7 @@ private:
 
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
+  CollectVectorSequence forces;
   FILE *dataStreamFile;
 
 #ifdef MEM_OPT_VERSION
@@ -274,15 +280,19 @@ private:
   ParOutput *parOut;
   double posOutTime; //record the output time
   double velOutTime; //record the output time
+  double forceOutTime; //record the output time
   double posIOTime; //record the max time spent on real file IO for one output
   double velIOTime; //record the max time spent on real file IO for one output
+  double forceIOTime; //record the max time spent on real file IO for one output
   
   //for the sake of simultaneous writing to the same file
   int posDoneCnt;
   int velDoneCnt;
+  int forceDoneCnt;
 
   void checkPosReady();
   void checkVelReady();
+  void checkForceReady();
 #endif
 };
 
@@ -401,9 +411,11 @@ public:
 
   int receivePositions(CollectVectorVarMsg *msg) {return positions.submitData(msg);}
   int receiveVelocities(CollectVectorVarMsg *msg) {return velocities.submitData(msg);}
+  int receiveForces(CollectVectorVarMsg *msg) {return forces.submitData(msg);}
 
   void disposePositions(int seq);
   void disposeVelocities(int seq);
+  void disposeForces(int seq);
   
   CollectMidVectorInstance *getReadyPositions(int seq) { return positions.getReady(seq); }
 
@@ -450,6 +462,7 @@ public:
 private:
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
+  CollectVectorSequence forces;
   ParallelIOMgr *pIO; 
   ParOutput *parOut; 
 }; //end of declaration for CollectionMidMaster

@@ -150,6 +150,62 @@ void CollectionMgr::submitVelocities(int seq, int zero, FullAtomList &a)
         delete [] perOList;         
   }
 }
+
+void CollectionMgr::submitForces(int seq, FullAtomList &a, int maxForceUsed, ForceList *f)
+{
+  int numAtoms = a.size();
+  AtomIDList aid(numAtoms);
+  ResizeArray<int> oRank(numAtoms);
+  ForceList d(numAtoms);
+  for ( int i=0; i<numAtoms; ++i ) {
+    aid[i] = a[i].id;
+    oRank[i] = a[i].outputRank;
+    d[i] = 0.;
+  }
+  for ( int j=0; j<=maxForceUsed; ++j ) {
+    Force *fptr = f[j].begin();
+    for ( int i=0; i<numAtoms; ++i ) {
+      d[i] += fptr[i];
+    }
+  }
+  if ( Node::Object()->simParameters->fixedAtomsOn ) {
+    for ( int i=0; i<numAtoms; ++i ) {
+      if ( a[i].atomFixed ) d[i] = 0.;
+    }
+  }
+  CollectVectorInstance *c;
+  if ( ( c = forces.submitData(seq,aid,oRank,d) ) )
+  {
+      CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
+      ParallelIOMgr *ioMgr = io.ckLocalBranch();
+
+      //construct per output proc atoms list
+      AtomIDList *perOList = new AtomIDList[ioMgr->numOutputProcs];
+      for(int i=0; i<c->aid.size(); i++){
+          perOList[c->outRank[i]].add(i);
+      }    
+      CollectVectorVarMsg::DataStatus vstatus = CollectVectorVarMsg::VectorValid;
+      //send msg to output proc if there's one    
+        for(int i=0; i<ioMgr->numOutputProcs; i++){
+            int numAtoms = perOList[i].size();
+            if(!numAtoms) continue;
+            CollectVectorVarMsg *msg;            
+            msg = new(numAtoms, numAtoms, 0, 0)CollectVectorVarMsg;
+            msg->seq = c->seq;
+            msg->size = numAtoms;
+            msg->status = vstatus;
+            for(int j=0; j<numAtoms; j++){
+                int lIdx = perOList[i][j];
+                msg->aid[j] = c->aid[lIdx];
+                msg->data[j] = c->data[lIdx];
+            }
+            io[ioMgr->outputProcArray[i]].receiveForces(msg);            
+        }
+        c->free();
+        delete [] perOList;         
+  }
+}
+
 #else
 void CollectionMgr::submitPositions(int seq, FullAtomList &a,
 				Lattice l, int prec)
@@ -194,6 +250,39 @@ void CollectionMgr::submitVelocities(int seq, int zero, FullAtomList &a)
     msg->data = c->data;
     CProxy_CollectionMaster cm(master);
     cm.receiveVelocities(msg);
+    c->free();
+  }
+}
+ 
+void CollectionMgr::submitForces(int seq, FullAtomList &a, int maxForceUsed, ForceList *f)
+{
+  int numAtoms = a.size();
+  AtomIDList aid(numAtoms);
+  ForceList d(numAtoms);
+  for ( int i=0; i<numAtoms; ++i ) {
+    aid[i] = a[i].id;
+    d[i] = 0.;
+  }
+  for ( int j=0; j<=maxForceUsed; ++j ) {
+    Force *fptr = f[j].begin();
+    for ( int i=0; i<numAtoms; ++i ) {
+      d[i] += fptr[i];
+    }
+  }
+  if ( Node::Object()->simParameters->fixedAtomsOn ) {
+    for ( int i=0; i<numAtoms; ++i ) {
+      if ( a[i].atomFixed ) d[i] = 0.;
+    }
+  }
+  CollectVectorInstance *c;
+  if ( ( c = forces.submitData(seq,aid,d) ) )
+  {
+    CollectVectorMsg * msg = new CollectVectorMsg;
+    msg->seq = c->seq;
+    msg->aid = c->aid;
+    msg->data = c->data;
+    CProxy_CollectionMaster cm(master);
+    cm.receiveForces(msg);
     c->free();
   }
 }

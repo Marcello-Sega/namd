@@ -1350,6 +1350,19 @@ void ParallelIOMgr::receiveVelocities(CollectVectorVarMsg *msg)
 #endif
 }
 
+void ParallelIOMgr::receiveForces(CollectVectorVarMsg *msg)
+{
+#ifdef MEM_OPT_VERSION
+    int ready = midCM->receiveForces(msg);
+    if(ready) {
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.receiveOutputForceReady(msg->seq);        
+    }
+    delete msg;
+#endif
+}
+
+
 void ParallelIOMgr::disposePositions(int seq, double prevT)
 {
 #ifdef MEM_OPT_VERSION
@@ -1401,6 +1414,33 @@ void ParallelIOMgr::disposeVelocities(int seq, double prevT)
 
 #endif
 }
+
+void ParallelIOMgr::disposeForces(int seq, double prevT)
+{
+#ifdef MEM_OPT_VERSION
+	double iotime = CmiWallTimer();
+    midCM->disposeForces(seq);
+	iotime = CmiWallTimer()-iotime+prevT;
+    
+#if OUTPUT_SINGLE_FILE
+	//Token-based file output
+    if(myOutputRank==getMyOutputGroupHighestRank()) {
+        //notify the CollectionMaster to start the next round
+        CProxy_CollectionMaster cm(mainMaster);
+        cm.startNextRoundOutputForce(iotime);
+    } else {
+        CProxy_ParallelIOMgr io(thisgroup);
+        io[outputProcArray[myOutputRank+1]].disposeForces(seq, iotime);
+    }
+#else
+	//notify the CollectionMaster to start the next round
+	CProxy_CollectionMaster cm(mainMaster);
+	cm.startNextRoundOutputForce(iotime);	
+#endif
+
+#endif
+}
+
 
 void ParallelIOMgr::wrapCoor(int seq, Lattice lat)
 {

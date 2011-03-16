@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2011/03/09 22:54:49 $
- * $Revision: 1.1192 $
+ * $Date: 2011/03/16 14:39:45 $
+ * $Revision: 1.1193 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -104,6 +104,9 @@ void Sequencer::algorithm(void)
     switch ( scriptTask ) {
       case SCRIPT_OUTPUT:
 	submitCollections(FILE_OUTPUT);
+	break;
+      case SCRIPT_FORCEOUTPUT:
+	submitCollections(FORCE_OUTPUT);
 	break;
       case SCRIPT_MEASURE:
 	submitCollections(EVAL_MEASURE);
@@ -1703,6 +1706,11 @@ void Sequencer::submitCollections(int step, int zeroVel)
     collection->submitPositions(step,patch->atom,patch->lattice,prec);
   if ( Output::velocityNeeded(step) )
     collection->submitVelocities(step,zeroVel,patch->atom);
+  if ( Output::forceNeeded(step) ) {
+    int maxForceUsed = patch->flags.maxForceUsed;
+    if ( maxForceUsed > Results::slow ) maxForceUsed = Results::slow;
+    collection->submitForces(step,patch->atom,maxForceUsed,patch->f);
+  }
 }
 
 void Sequencer::runComputeObjects(int migration, int pairlists)

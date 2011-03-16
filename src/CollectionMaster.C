@@ -121,6 +121,47 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 #endif
 }
 
+
+void CollectionMaster::receiveForces(CollectVectorMsg *msg)
+{
+#ifndef MEM_OPT_VERSION
+  forces.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
+  delete msg;
+
+  CollectVectorInstance *c;
+  while ( ( c = forces.removeReady() ) ) { disposeForces(c); }
+#endif
+}
+
+void CollectionMaster::enqueueForces(int seq)
+{
+  Lattice dummy;
+  forces.enqueue(seq,dummy);
+#ifndef MEM_OPT_VERSION
+  CollectVectorInstance *c;
+  while ( ( c = forces.removeReady() ) ) { disposeForces(c); }
+#else
+  checkForceReady();
+#endif
+}
+
+void CollectionMaster::disposeForces(CollectVectorInstance *c)
+{
+#ifndef MEM_OPT_VERSION
+    DebugM(3,"Collected forces at " << c->seq << std::endl);
+    int seq = c->seq;
+    int size = c->data.size();
+    Vector *data = c->data.begin();
+    double exectime = CmiWallTimer();
+    double mem = memusage_MB();
+    Node::Object()->output->force(seq,size,data);
+    c->free();
+    exectime = CmiWallTimer()-exectime;
+    CkPrintf("The last force output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+#endif
+}
+
+
 void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
     if ( ! dataStreamFile ) {
       char *fname = Node::Object()->simParameters->auxFilename;
@@ -167,6 +208,14 @@ void CollectionMaster::receiveOutputVelReady(int seq){
     checkVelReady();
 #endif
 }
+
+void CollectionMaster::receiveOutputForceReady(int seq){
+#ifdef MEM_OPT_VERSION
+    forces.submitData(seq);
+    checkForceReady();
+#endif
+}
+
 
 void CollectionMaster::startNextRoundOutputPos(double totalT){
 #ifdef MEM_OPT_VERSION
@@ -225,6 +274,36 @@ void CollectionMaster::startNextRoundOutputVel(double totalT){
     checkVelReady();
 #endif
 }
+
+void CollectionMaster::startNextRoundOutputForce(double totalT){
+#ifdef MEM_OPT_VERSION
+	
+	if(totalT > forceIOTime) forceIOTime = totalT;
+
+#if OUTPUT_SINGLE_FILE
+    if(++forceDoneCnt < Node::Object()->simParameters->numoutputwrts)  return;
+#else
+	if(++forceDoneCnt < Node::Object()->simParameters->numoutputprocs)  return;
+#endif
+
+    forceDoneCnt = 0;
+
+    //retrieve the last ready instance
+    CollectVectorInstance *c = forces.getReady();
+    int seq = c->seq;
+    CmiAssert(c->status == IN_PROCESS);
+    double mem = memusage_MB();
+    forces.removeFirstReady();
+    c->free();
+    forceOutTime = CmiWallTimer()-forceOutTime;
+    CkPrintf("The last force output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, forceOutTime, forceIOTime, mem);
+
+    //Actually the c->status doesn't need to be checked because it is
+    //certain that the new ready one will not be in  IN_PROCESS status 
+    checkForceReady();
+#endif
+}
+
 
 void CollectionMaster::wrapCoorFinished(){
 #ifdef MEM_OPT_VERSION
@@ -357,6 +436,49 @@ void CollectionMaster::checkVelReady(){
     }
 }
 
+void CollectionMaster::checkForceReady(){
+    CollectVectorInstance *c;
+    if((c = forces.getReady())){
+        if(c->status == IN_PROCESS){
+            //indicating in the process of outputing forces
+            return;
+        }
+
+        c->status = IN_PROCESS;
+
+        forceOutTime = CmiWallTimer();
+        //write the header
+        parOut->forceMaster(c->seq, Node::Object()->molecule->numAtoms);
+		forceIOTime = CmiWallTimer() - forceOutTime;
+
+        //notify output procs to do Token based output
+        CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
+        ParallelIOMgr *ioMgr = io.ckLocalBranch();
+
+	#if OUTPUT_SINGLE_FILE
+        int grpsize = ioMgr->numOutputProcs / ioMgr->numOutputWrts;
+        int remains = ioMgr->numOutputProcs % ioMgr->numOutputWrts;
+        int outrank = 0;
+        int i;
+        for(i=0; i<remains; i++){
+            io[ioMgr->outputProcArray[outrank]].disposeForces(c->seq, forceIOTime);
+            outrank += (grpsize+1);
+        }
+        for(; i<ioMgr->numOutputWrts; i++){
+            io[ioMgr->outputProcArray[outrank]].disposeForces(c->seq, forceIOTime);
+            outrank += grpsize;
+        }
+	#else
+		//output multiple files
+		for(int i=0; i<ioMgr->numOutputProcs; i++) {
+			io[ioMgr->outputProcArray[i]].disposeForces(c->seq, forceIOTime);
+		}
+	#endif
+        //this instance c is freed in the next round of output invocation.        
+    }
+}
+
+
 void CollectionMidMaster::disposePositions(int seq)
 {
     CollectMidVectorInstance *c = positions.getReady(seq);
@@ -371,6 +493,14 @@ void CollectionMidMaster::disposeVelocities(int seq)
     CollectMidVectorInstance *c = velocities.getReady(seq);
     CmiAssert(c!=NULL);    
     parOut->velocitySlave(seq,c->fromAtomID,c->toAtomID,c->data.begin()); 
+    c->free();
+}
+
+void CollectionMidMaster::disposeForces(int seq)
+{
+    CollectMidVectorInstance *c = forces.getReady(seq);
+    CmiAssert(c!=NULL);    
+    parOut->forceSlave(seq,c->fromAtomID,c->toAtomID,c->data.begin()); 
     c->free();
 }
 #endif

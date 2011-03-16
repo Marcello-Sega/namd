@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2011/03/15 19:01:36 $
- * $Revision: 1.1180 $
+ * $Author: jim $
+ * $Date: 2011/03/16 14:39:46 $
+ * $Revision: 1.1181 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -150,11 +150,14 @@ public:
   int dcdUnitCell;  // Whether to write unit cell information in the DCD
 	int velDcdFrequency;		//  How often (in timesteps) should
 					//  a velocity DCD file be updated
+	int forceDcdFrequency;		//  How often (in timesteps) should
+					//  a force DCD file be updated
 	int xstFrequency;		//  How often (in timesteps) should
 					//  a XST trajectory file be updated
 	char auxFilename[128];		//  auxilary output filename
 	char dcdFilename[128];		//  DCD filename
 	char velDcdFilename[128];       //  Velocity DCD filename
+	char forceDcdFilename[128];     //  Force DCD filename
 	char xstFilename[128];		//  Extended system trajectory filename
 	char outputFilename[128];	//  Output file name.  This name will
 					//  have .coor appended to it 

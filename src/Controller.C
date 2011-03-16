@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: char $
- * $Date: 2011/03/09 21:32:40 $
- * $Revision: 1.1256 $
+ * $Author: jim $
+ * $Date: 2011/03/16 14:39:45 $
+ * $Revision: 1.1257 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -239,6 +239,9 @@ void Controller::algorithm(void)
       case SCRIPT_OUTPUT:
         enqueueCollections(FILE_OUTPUT);
         outputExtendedSystem(FILE_OUTPUT);
+        break;
+      case SCRIPT_FORCEOUTPUT:
+        enqueueCollections(FORCE_OUTPUT);
         break;
       case SCRIPT_MEASURE:
         enqueueCollections(EVAL_MEASURE);
@@ -2007,6 +2010,8 @@ void Controller::enqueueCollections(int timestep)
   }
   if ( Output::velocityNeeded(timestep) )
     collection->enqueueVelocities(timestep);
+  if ( Output::forceNeeded(timestep) )
+    collection->enqueueForces(timestep);
 }
 
 //Modifications for alchemical fep

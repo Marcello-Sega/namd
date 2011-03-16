@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2011/03/15 20:46:00 $
- * $Revision: 1.1337 $
+ * $Author: jim $
+ * $Date: 2011/03/16 14:39:46 $
+ * $Revision: 1.1338 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -548,6 +548,12 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.range("velDCDfreq", NOT_NEGATIVE);
    opts.optional("velDCDfreq", "velDCDfile", "velocity DCD output file name",
      velDcdFilename);
+   
+   opts.optional("main", "forceDCDfreq", "Frequency of force"
+    "DCD output, in timesteps", &forceDcdFrequency, 0);
+   opts.range("forceDCDfreq", NOT_NEGATIVE);
+   opts.optional("forceDCDfreq", "forceDCDfile", "force DCD output file name",
+     forceDcdFilename);
    
    opts.optional("main", "XSTfreq", "Frequency of XST trajectory output, in "
     "timesteps", &xstFrequency, 0);
@@ -1910,6 +1916,12 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 		   iout << iWARN << "The veldcd file output has been changed to directory: " << outputFilename << ".\n" << endi;
 	   }
    }
+   if (forceDcdFrequency) {
+	   create_output_directories("forcedcd");
+	   if(opts.defined("forcedcdfile")){       
+		   iout << iWARN << "The forcedcd file output has been changed to directory: " << outputFilename << ".\n" << endi;
+	   }
+   }
    #endif
 #endif
 
@@ -1935,6 +1947,15 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      }
    } else {
      velDcdFilename[0] = STRINGNULL;
+   }
+   
+   if (forceDcdFrequency) {
+     if (! opts.defined("forcedcdfile")) {
+       strcpy(forceDcdFilename,outputFilename);
+       strcat(forceDcdFilename,".forcedcd");
+     }
+   } else {
+     forceDcdFilename[0] = STRINGNULL;
    }
    
    if (xstFrequency) {
@@ -3424,6 +3445,21 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    else
    {
      iout << iINFO << "NO VELOCITY DCD OUTPUT\n";
+   }
+   iout << endi;
+   
+   if (forceDcdFrequency > 0)
+   {
+     iout << iINFO << "FORCE DCD FILENAME  " 
+        << forceDcdFilename << "\n";
+     iout << iINFO << "FORCE DCD FREQUENCY " 
+        << forceDcdFrequency << "\n";
+     iout << iINFO << "FORCE DCD FIRST STEP         " 
+        << ( firstTimestep + forceDcdFrequency ) << "\n";
+   }
+   else
+   {
+     iout << iINFO << "NO FORCE DCD OUTPUT\n";
    }
    iout << endi;
    
