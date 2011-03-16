@@ -114,23 +114,42 @@ Additional features include:
     minimization for the specified number of force evaluations.
  \item The ``\icommand{output}'' command takes an output file basename and causes
     .coor, .vel, and .xsc files to be written with that name.
- \item Between ``run'' commands the reassignTemp, rescaleTemp, and
-    langevinTemp parameters can be changed to allow simulated
+    Alternatively, ``\icommand{output withforces}'' and
+    ``\icommand{output onlyforces}'' will write a .force file
+    either in addition to or instead of the regular files.
+ \item Between ``run'' commands the \iparam{reassignTemp},
+    \iparam{rescaleTemp}, and
+    \iparam{langevinTemp} parameters can be changed to allow simulated
     annealing protocols within a single config file.
-    The useGroupPressure, useFlexibleCell, useConstantArea, useConstantRatio,
-    LangevinPiston, LangevinPistonTarget, LangevinPistonPeriod,
-    LangevinPistonDecay, LangevinPistonTemp, SurfaceTensionTarget,
-    BerendsenPressure, BerendsenPressureTarget,
-    BerendsenPressureCompressibility, and BerendsenPressureRelaxationTime
+    The \iparam{useGroupPressure}, \iparam{useFlexibleCell},
+    \iparam{useConstantArea}, \iparam{useConstantRatio},
+    \iparam{LangevinPiston}, \iparam{LangevinPistonTarget},
+    \iparam{LangevinPistonPeriod}, \iparam{LangevinPistonDecay},
+    \iparam{LangevinPistonTemp}, \iparam{SurfaceTensionTarget},
+    \iparam{BerendsenPressure}, \iparam{BerendsenPressureTarget},
+    \iparam{BerendsenPressureCompressibility}, and
+    \iparam{BerendsenPressureRelaxationTime}
     parameters may be changed to allow pressure equilibration.
-    The fixedAtoms, constraintScaling, and nonbondedScaling parameters may be
+    The \iparam{fixedAtoms}, \iparam{constraintScaling}, and
+    \iparam{nonbondedScaling} parameters may be
     changed to preserve macromolecular conformation during minimization and
     equilibration (fixedAtoms may only be disabled, and requires that
-    fixedAtomsForces is enabled to do this).
-    The consForceScaling parameter may be changed to vary steering forces
+    \iparam{fixedAtomsForces} is enabled to do this).
+    The \iparam{consForceScaling} parameter may be changed to vary steering forces
     or to implement a time-varying electric field that affects specific atoms.
+    The \iparam{eField}, \iparam{eFieldFreq}, and
+    \iparam{eFieldPhase} parameters may be changed to implement
+    at time-varying electric field that affects all atoms.
+    The \iparam{alchLambda} and \iparam{alchLambda2}
+    parameters may be changed during alchemical free energy runs.
  \item The ``\icommand{checkpoint}'' and ``revert'' commands (no arguments) allow
     a scripted simulation to save and restore to a prior state.
+ \item The ``\icommand{exit}'' command writes output files and exits cleanly.
+ \item The ``\icommand{abort}'' command concatenates its arguments into
+    an error message and exits immediately without writing output files.
+ \item The ``\icommand{numPes}'', ``\icommand{numNodes}'', and
+    ``\icommand{numPhysicalNodes}'' commands allow performance-tuning
+    parameters to be set based on the parallel execution environment.
  \item The ``\icommand{reinitvels}'' command reinitializes velocities to a
     random distribution based on the given temperature.
  \item The ``\icommand{rescalevels}'' command rescales velocities by
@@ -138,6 +157,9 @@ Additional features include:
  \item The ``\icommand{reloadCharges}'' command reads new atomic charges from
     the given file, which should contain one number for each atom, separated
     by spaces and/or line breaks.
+ \item The ``\icommand{consForceConfig}'' command takes a list of
+    0-based atom indices and a list of forces which replace the existing
+    set of constant forces (\iparam{constantForce} must be on).
  \item The ``\icommand{measure}'' command allows user-programmed calculations to
     be executed in order to facilitate automated methods.  (For
     example, to revert or change a parameter.)  A number of measure
