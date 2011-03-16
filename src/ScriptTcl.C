@@ -760,6 +760,10 @@ int ScriptTcl::Tcl_consForceConfig(ClientData clientData,
     Tcl_Interp *interp, int objc, Tcl_Obj *const objv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
   script->initcheck();
+  if ( ! Node::Object()->simParameters->consForceOn ) {
+    Tcl_AppendResult(interp, "consForceConfig requires constantForce on", NULL);
+    return TCL_ERROR;
+  }
   if (objc != 3) {
     Tcl_WrongNumArgs(interp, 1, objv, (char *)"<atomids> <forces>");
     return TCL_ERROR;
