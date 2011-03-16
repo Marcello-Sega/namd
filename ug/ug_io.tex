@@ -34,13 +34,15 @@ This is the standard format for coordinate data
 for most other molecular dynamics programs as well, including X-PLOR and CHARMM.
 A full description of this file format can be obtained from the PDB web site
 at {\tt http://www.rcsb.org/pdb/}.
+Velocities in PDB files are stored in \AA/ps and may be
+\index{units used for output}
+divided by PDBVELFACTOR=20.45482706
+to convert to the NAMD internal units used in binary files.
 
 \subsubsection{X-PLOR format PSF files}
 
 \NAMD\ uses the same protein structure files that X-PLOR does.
-At this time, the
-easiest way to generate these files is using X-PLOR or CHARMM,
-although it is possible to build them by hand.
+These files may be generated with psfgen, VMD, X-PLOR, or CHARMM.
 CHARMM can generate an X-PLOR format PSF file with the command
 ``{\tt write psf card xplor}''.
 
@@ -67,6 +69,24 @@ The utility programs {\tt flipdcd} and {\tt flipbinpdb} are
 provided with the Linux/Intel version to reformat these files.)
 The exact format of these files is very ugly but supported by 
 a wide range of analysis and display programs.  
+The timestep is stored in the DCD file in NAMD internal units
+\index{units used for output}
+and must be multiplied by TIMEFACTOR=48.88821 to convert to ps.
+
+\subsubsection{NAMD binary files}
+
+\NAMD\ uses a trivial double-precision binary file format for
+coordinates and velocities.  The file consists of the atom count
+as a 32-bit integer followed by all three position or velocity
+components for each atom as 64-bit double-precision floating point,
+i.e., NXYZXYZXYZXYZ... where N is a 4-byte int and X, Y, and Z
+are 8-byte doubles.  If the number of atoms the file contains is
+known then the atom count can be used to determine endianness.
+VMD refers to NAMD binary file format as the "namdbin" format.
+Velocities in NAMD binary and DCD files are stored in NAMD internal
+\index{units used for output}
+units and must be multiplied by PDBVELFACTOR=20.45482706
+to convert to \AA/ps.
 
 \subsection{\NAMD\ configuration parameters}
 \label{section:file_config}
@@ -183,13 +203,14 @@ which contains the configuration file given on the command line}.}
 
 \begin{itemize}
 \item
-\NAMDCONF{outputname}{output PDB file}{UNIX filename prefix}
+\NAMDCONF{outputname}{output file prefix}{UNIX filename prefix}
 {\label{param:outputname}
 %% This parameter is {\it required\/} for every simulation.
-At the end of every simulation, \NAMD\ writes two PDB files, one 
+At the end of every simulation, \NAMD\ writes two files, one 
 containing the final coordinates and another containing 
 the final velocities of all atoms in the simulation.  
-This option specifies the file prefix for these two files.  
+This option specifies the file prefix for these two files as
+well as the default prefix for trajectory and restart files.  
 The position coordinates will be saved to a file named as this prefix 
 with {\tt .coor} appended.  
 The velocities will be saved to a file 
@@ -203,22 +224,23 @@ would be {\tt /tmp/output.coor} and {\tt /tmp/output.vel}.}
 \NAMDCONFWDEF{binaryoutput}{use binary output files?}
 {{\tt yes} or {\tt no}}{{\tt yes}}
 {
-Activates the use of binary output files.  
-If this option is set to {\tt yes}, then the final output files 
+Enables the use of binary output files.  
+If this option is not set to {\tt no}, then the final output files 
 will be written in binary rather than PDB format.  
 Binary files preserve more accuracy between \NAMD\ restarts 
 than ASCII PDB files, 
 but the binary files are not guaranteed to be transportable 
-between computer architectures.  
-(The utility program {\tt flipbinpdb} is provided with the Linux/Intel
-version to reformat these files.)
+between computer architectures. (The atom count record is used
+to detect wrong-endian files, which works for most atom counts.
+The utility program {\tt flipbinpdb} is provided
+to reformat these files if necessary.)
 }
 
 \item
-\NAMDCONF{restartname}{restart files}{UNIX filename prefix}
+\NAMDCONFWDEF{restartname}{restart files prefix}{UNIX filename prefix}{{\it outputname}{\tt.restart}}
 {
 The prefix to use for restart filenames.  
-\NAMD\ produces PDB restart files 
+\NAMD\ produces restart files 
 that store the current positions and velocities of all 
 atoms at some step of the simulation.  
 This option specifies the prefix to use for restart 
@@ -232,8 +254,7 @@ the parameter {\tt restartfreq} must also be defined.}
 \NAMDCONF{restartfreq}{frequency of restart file generation}{positive integer}
 {
 The number of timesteps between the generation of restart files.  
-If {\tt restartfreq} is defined, then {\tt restartname} 
-must also be defined.}
+}
 
 \item
 \NAMDCONFWDEF{restartsave}{use timestep in restart filenames?}
@@ -247,19 +268,20 @@ a sequence of restart files rather than only the last version written.
 \NAMDCONFWDEF{binaryrestart}{use binary restart files?}
 {{\tt yes} or {\tt no}}{{\tt yes}}
 {
-Activates the use of binary restart files.  
-If this option is set to {\tt yes}, then the restart files
+Enables the use of binary restart files.  
+If this option is not set to {\tt no}, then the restart files 
 will be written in binary rather than PDB format.  
 Binary files preserve more accuracy between \NAMD\ restarts 
 than ASCII PDB files, 
 but the binary files are not guaranteed to be transportable 
-between computer architectures.  
-(The utility program {\tt flipbinpdb} is provided with the Linux/Intel
-version to reformat these files.)
+between computer architectures. (The atom count record is used
+to detect wrong-endian files, which works for most atom counts.
+The utility program {\tt flipbinpdb} is provided
+to reformat these files if necessary.)
 }
 
 \item
-\NAMDCONF{DCDfile}{coordinate trajectory output file}{UNIX filename}
+\NAMDCONFWDEF{DCDfile}{coordinate trajectory output file}{UNIX filename}{{\it outputname}{\tt.dcd}}
 {
 The binary DCD position coordinate trajectory filename.  
 This file stores the trajectory of all atom position coordinates 
@@ -288,7 +310,7 @@ in all three dimensions and disabled otherwise.
 }
 
 \item
-\NAMDCONF{velDCDfile}{velocity trajectory output file}{UNIX filename}
+\NAMDCONFWDEF{velDCDfile}{velocity trajectory output file}{UNIX filename}{{\it outputname}{\tt.veldcd}}
 {
 The binary DCD velocity trajectory filename.  
 This file stores the trajectory of 
@@ -307,47 +329,26 @@ velocities to the trajectory file.
 The initial velocities will not be included in the trajectory file.
 }
 
-%\item
-%\NAMDCONF{electForceDCDfile}
-%{electrostatic force trajectory file}
-%{UNIX filename prefix}
-%{
-%The binary DCD short and long range electrostatic force 
-%trajectory filename prefix.  
-%The short and long range electrostatic force trajectories 
-%will be respectively stored in files with 
-%{\tt .s} and {\tt .l} appended to this prefix.  
-%If {\tt electForceDCDfile} is defined, then {\tt electForceDCDfreq} 
-%must also be defined.  
-%}
-%
-%\item
-%\NAMDCONF{electForceDCDfreq}
-%{timesteps between writing electrostatic forces to trajectory file}
-%{positive integer}
-%{
-%The number of timesteps between writing 
-%to the long and short range electrostatic force trajectory files.  
-%}
-%
-%\item
-%\NAMDCONF{allForceDCDfile}{total force trajectory file}{UNIX filename}
-%{
-%The binary DCD total force trajectory filename.  
-%This file stores the trajectory of the total forces 
-%on each atom.  
-%If {\tt allForceDCDfile} is defined, then 
-%{\tt allForceDCDfreq} must also be defined.  
-%}
-%
-%\item
-%\NAMDCONF{allForceDCDfreq}
-%{timesteps between writing total forces to trajectory file}
-%{positive integer}
-%{
-%The number of timesteps between the writing of total forces 
-%to the trajectory file.  
-%}
+\item
+\NAMDCONFWDEF{forceDCDfile}{force trajectory output file}{UNIX filename}{{\it outputname}{\tt.forcedcd}}
+{
+The binary DCD force trajectory filename.  
+This file stores the trajectory of 
+all atom forces using the same format (binary DCD) as X-PLOR.  
+If {\tt forceDCDfile} is defined, then {\tt forceDCDfreq} must also 
+be defined.  
+}
+
+\item
+\NAMDCONF{forceDCDfreq}
+{timesteps between writing force to trajectory file}
+{positive integer}
+{
+The number of timesteps between the writing of 
+forces to the trajectory file.  
+The initial forces will not be included in the trajectory file.
+}
+
 
 \end{itemize}
 
