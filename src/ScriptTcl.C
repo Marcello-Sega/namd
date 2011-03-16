@@ -66,7 +66,7 @@ void ScriptTcl::barrier() {
   BackEnd::barrier();
 }
 
-void ScriptTcl::initcheck() {
+void ScriptTcl::initcheck(int runAtEnd) {
   if ( runWasCalled == 0 ) {
 #ifdef NAMD_TCL
     CkPrintf("TCL: Suspending until startup complete.\n");
@@ -78,6 +78,9 @@ void ScriptTcl::initcheck() {
     runWasCalled = 1;
 
     state->configListInit(config);
+    if ( ! runAtEnd ) {
+      state->simParameters->N = state->simParameters->firstTimestep;
+    }
     Node::Object()->saveMolDataPointers(state);
     Node::messageStartUp();
     suspend();
@@ -931,7 +934,7 @@ void ScriptTcl::run(char *scriptFile) {
 #endif
 
   if (runWasCalled == 0) {
-    initcheck();
+    initcheck(1);
     SimParameters *simParams = Node::Object()->simParameters;
     if ( simParams->minimizeCGOn ) runController(SCRIPT_MINIMIZE);
     else runController(SCRIPT_RUN);

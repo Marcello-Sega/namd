@@ -42,7 +42,7 @@ private:
   void suspend(void);
   int runWasCalled;
   void barrier();
-  void initcheck();
+  void initcheck(int runAtEnd=0);
   void reinitAtoms();
   SimpleBroadcastObject<int> scriptBarrier;
   int barrierStep;
