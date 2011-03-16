@@ -118,6 +118,8 @@ void ScriptTcl::reinitAtoms(void) {
 int ScriptTcl::Tcl_exit(ClientData clientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  CkPrintf("TCL: Exiting due to exit command.\n");
   script->runController(SCRIPT_END);
   BackEnd::exit();
   return TCL_OK;
