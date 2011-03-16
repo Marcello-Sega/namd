@@ -37,7 +37,7 @@ The following parameters are used to define these boundary conditions.
 {In addition to .coor and .vel output files, \NAMD\ generates a .xsc (eXtended System Configuration) file which contains the periodic cell parameters and extended system variables, such as the strain rate in constant pressure simulations.  Periodic cell parameters will be read from this file if this option is present, ignoring the above parameters.}
 
 \item
-\NAMDCONF{XSTfile}{XST file to write cell trajectory to}{file name}
+\NAMDCONFWDEF{XSTfile}{XST file to write cell trajectory to}{file name}{{\it outputname}{\tt.xst}}
 {\NAMD\ can also generate a .xst (eXtended System Trajectory) file which contains a record of the periodic cell parameters and extended system variables during the simulation.  If {\tt XSTfile} is defined, then {\tt XSTfreq} must also be defined.}
 
 \item
