@@ -28,16 +28,21 @@ Section \ref{section:formats}.
 \label{section:formats}
 
 \subsubsection{PDB files}
-The PDB (Protein Data Bank) format is used to store coordinate or velocity data 
-being input or output from \NAMD.
+The PDB (Protein Data Bank) format is used for
+coordinate, velocity, force, or other data 
+being read or written by NAMD.
 This is the standard format for coordinate data
 for most other molecular dynamics programs as well, including X-PLOR and CHARMM.
 A full description of this file format can be obtained from the PDB web site
 at {\tt http://www.rcsb.org/pdb/}.
+Positions in PDB files are stored in \AA.
 Velocities in PDB files are stored in \AA/ps and may be
 \index{units used for output}
 divided by PDBVELFACTOR=20.45482706
-to convert to the NAMD internal units used in binary files.
+to convert to the NAMD internal units used in DCD and NAMD binary files.
+Forces in PDB files are stored in kcal/mol/\AA.
+NAMD binary files (below) should be preferred to PDB files
+in most cases due to their higher precision.
 
 \subsubsection{X-PLOR format PSF files}
 
@@ -62,31 +67,45 @@ used in these files, see the X-PLOR and CHARMM User's Manual
 X-PLOR and CHARMM.  
 The DCD files are single precision binary FORTRAN files, 
 so are transportable between computer architectures.  
-They are not, unfortunately, transportable between big-endian (most
-workstations) and little endian (Intel) architectures.
-(This same caveat applies to binary velocity and coordinate files.
-The utility programs {\tt flipdcd} and {\tt flipbinpdb} are
-provided with the Linux/Intel version to reformat these files.)
+The file readers in NAMD and VMD can detect and
+adapt to the endianness of the machine on which the DCD
+file was written, and the utility program {\tt flipdcd}
+is also provided to reformat these files if needed.
 The exact format of these files is very ugly but supported by 
 a wide range of analysis and display programs.  
 The timestep is stored in the DCD file in NAMD internal units
 \index{units used for output}
 and must be multiplied by TIMEFACTOR=48.88821 to convert to fs.
+Positions in DCD files are stored in \AA.
+Velocities in DCD files are stored in NAMD internal
+\index{units used for output}
+units and must be multiplied by PDBVELFACTOR=20.45482706
+to convert to \AA/ps.
+Forces in DCD files are stored in kcal/mol/\AA.
 
 \subsubsection{NAMD binary files}
 
 \NAMD\ uses a trivial double-precision binary file format for
-coordinates and velocities.  The file consists of the atom count
+coordinates, velocities, and forces.
+Due to its high precision this is the default output
+and restart format.
+VMD refers to these files as the ``namdbin'' format.
+The file consists of the atom count
 as a 32-bit integer followed by all three position or velocity
 components for each atom as 64-bit double-precision floating point,
 i.e., NXYZXYZXYZXYZ... where N is a 4-byte int and X, Y, and Z
 are 8-byte doubles.  If the number of atoms the file contains is
 known then the atom count can be used to determine endianness.
-VMD refers to NAMD binary file format as the "namdbin" format.
-Velocities in NAMD binary and DCD files are stored in NAMD internal
+The file readers in NAMD and VMD can detect and
+adapt to the endianness of the machine on which the binary
+file was written, and the utility program {\tt flipbinpdb}
+is also provided to reformat these files if needed.
+Positions in NAMD binary files are stored in \AA.
+Velocities in NAMD binary files are stored in NAMD internal
 \index{units used for output}
 units and must be multiplied by PDBVELFACTOR=20.45482706
 to convert to \AA/ps.
+Forces in NAMD binary files are stored in kcal/mol/\AA.
 
 \subsection{\NAMD\ configuration parameters}
 \label{section:file_config}
@@ -297,6 +316,7 @@ If {\tt DCDfile} is defined, then {\tt DCDfreq} must also be defined.
 The number of timesteps between the writing of position coordinates 
 to the trajectory file.  
 The initial positions will not be included in the trajectory file.
+Positions in DCD files are stored in \AA.
 }
 
 \item
@@ -327,6 +347,10 @@ be defined.
 The number of timesteps between the writing of 
 velocities to the trajectory file.  
 The initial velocities will not be included in the trajectory file.
+Velocities in DCD files are stored in NAMD internal
+\index{units used for output}
+units and must be multiplied by PDBVELFACTOR=20.45482706
+to convert to \AA/ps.
 }
 
 \item
@@ -347,6 +371,13 @@ be defined.
 The number of timesteps between the writing of 
 forces to the trajectory file.  
 The initial forces will not be included in the trajectory file.
+Forces in DCD files are stored in kcal/mol/\AA.
+{\em In the current implementation only those forces that are
+evaluated during the timestep that a frame is written are
+included in that frame.  This is different from the behavior
+of TclForces and is likely to change based on user feedback.
+For this reason it is strongly recommended that forceDCDfreq
+be a multiple of fullElectFrequency.}
 }
 
 
