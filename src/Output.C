@@ -610,10 +610,9 @@ void Output::output_dcdfile(int timestep, int n, FloatVector *coor,
 
     int NSAVC, NFILE, NPRIV, NSTEP;
     NSAVC = simParams->dcdFrequency;
-    NSTEP = NSAVC * (simParams->N/NSAVC);
-    NPRIV = simParams->firstTimestep+NSAVC;
-    NPRIV = NSAVC * (NPRIV/NSAVC);
-    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+    NPRIV = timestep;
+    NSTEP = NPRIV - NSAVC;
+    NFILE = 0;
 
     //  Write out the header
     ret_code = write_dcdheader(fileid, 
@@ -843,10 +842,9 @@ void Output::output_veldcdfile(int timestep, int n, Vector *vel)
 
     int NSAVC, NFILE, NPRIV, NSTEP;
     NSAVC = simParams->velDcdFrequency;
-    NSTEP = NSAVC * (simParams->N/NSAVC);
-    NPRIV = simParams->firstTimestep+NSAVC;
-    NPRIV = NSAVC * (NPRIV/NSAVC);
-    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+    NPRIV = timestep;
+    NSTEP = NPRIV - NSAVC;
+    NFILE = 0;
 
     //  Write out the header
     const int with_unitcell = 0;
@@ -1007,10 +1005,9 @@ void Output::output_forcedcdfile(int timestep, int n, Vector *frc)
 
     int NSAVC, NFILE, NPRIV, NSTEP;
     NSAVC = simParams->forceDcdFrequency;
-    NSTEP = NSAVC * (simParams->N/NSAVC);
-    NPRIV = simParams->firstTimestep+NSAVC;
-    NPRIV = NSAVC * (NPRIV/NSAVC);
-    NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+    NPRIV = timestep;
+    NSTEP = NPRIV - NSAVC;
+    NFILE = 0;
 
     //  Write out the header
     const int with_unitcell = 0;
@@ -1274,10 +1271,9 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
 
       int NSAVC, NFILE, NPRIV, NSTEP;
       NSAVC = simParams->velDcdFrequency;
-      NSTEP = NSAVC * (simParams->N/NSAVC);
-      NPRIV = simParams->firstTimestep+NSAVC;
-      NPRIV = NSAVC * (NPRIV/NSAVC);
-      NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+      NPRIV = timestep;
+      NSTEP = NPRIV - NSAVC;
+      NFILE = 0;
 
       //  Write out the header
       const int with_unitcell = 0;
@@ -1689,10 +1685,9 @@ void ParOutput::output_forcedcdfile_master(int timestep, int n){
 
       int NSAVC, NFILE, NPRIV, NSTEP;
       NSAVC = simParams->forceDcdFrequency;
-      NSTEP = NSAVC * (simParams->N/NSAVC);
-      NPRIV = simParams->firstTimestep+NSAVC;
-      NPRIV = NSAVC * (NPRIV/NSAVC);
-      NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+      NPRIV = timestep;
+      NSTEP = NPRIV - NSAVC;
+      NFILE = 0;
 
       //  Write out the header
       const int with_unitcell = 0;
@@ -2035,10 +2030,9 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
 
       int NSAVC, NFILE, NPRIV, NSTEP;
       NSAVC = simParams->dcdFrequency;
-      NSTEP = NSAVC * (simParams->N/NSAVC);
-      NPRIV = simParams->firstTimestep+NSAVC;
-      NPRIV = NSAVC * (NPRIV/NSAVC);
-      NFILE = (NSTEP-NPRIV)/NSAVC + 1;
+      NPRIV = timestep;
+      NSTEP = NPRIV - NSAVC;
+      NFILE = 0;
 
       //  Write out the header
       ret_code = write_dcdheader(dcdFileID, 
