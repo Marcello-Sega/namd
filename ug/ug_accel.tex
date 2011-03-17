@@ -15,7 +15,7 @@ conformational space that cannot be easily accessed in a classical MD simulation
 Please include the following two references in your work using the NAMD implementation of aMD:
 \begin{itemize}
   \item {Accelerated Molecular Dynamics: A Promising and Efficient Simulation Method for Biomolecules, D.\,Hamelberg, J.\,Mongan, and J.\,A. McCammon. {\it J. Chem. Phys.}, 120:11919-11929, 2004.}
-  \item{Implementation of Accelerated Molecular Dynamics in NAMD, Y.\,Wang, C.\,Harrison, K.,Schulten, and J.\,A. McCammon, {\it Comp.\,Sci.\,Discov.}, 4:015002, 2011.}
+  \item{Implementation of Accelerated Molecular Dynamics in NAMD, Y.\,Wang, C.\,Harrison, K.\,Schulten, and J.\,A. McCammon, {\it Comp.\,Sci.\,Discov.}, 4:015002, 2011.}
 \end{itemize}
 
 \subsubsection{Theoretical background}
@@ -119,9 +119,14 @@ This option is only available when {\tt accelMDdual} is turned on.
 }
 
 \item
-\NAMDCONFWDEF{accelMDskip}{Do not perform aMD for the first accelMDskip steps}
+\NAMDCONFWDEF{accelMDFirstStep}{First accelerated MD step}
 {Zero or positive integer}{0}
-{aMD will not be performed for the first few steps specified by {\tt accelMDskip}. Regular MD will be performed in these steps.
+{Accelerated MD will only be performed when the current step is equal to or higher than {\tt accelMDFirstStep}, and equal to or lower than {\tt accelMDLastStep}. Otherwise regular MD will be performed.
+}
+\item
+\NAMDCONFWDEF{accelMDLastStep}{Last accelerated MD step}
+{Zero or positive integer}{0}
+{Accelerated MD will only be performed when the current step is equal to or higher than {\tt accelMDFirstStep}, and equal to or lower than {\tt accelMDLastStep}. Otherwise regular MD will be performed.
 }
 
 \item

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2011/03/16 14:39:46 $
- * $Revision: 1.1181 $
+ * $Author: char $
+ * $Date: 2011/03/17 02:06:27 $
+ * $Revision: 1.1182 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -421,7 +421,8 @@ public:
         Bool accelMDdihe;               //  Apply boost to the dihedral potential
         Bool accelMDdual;               //  dual boost mode  
         Bool accelMDDebugOn;            //  Debugging accelerated MD
-        BigReal accelMDskip;            //  Skip the first aMDskip num of steps
+        BigReal accelMDFirstStep;       //  First aMD step
+        BigReal accelMDLastStep;        //  Last aMD step
         int accelMDOutFreq;             //  aMD output frequency
         BigReal accelMDE;               //  aMD E
         BigReal accelMDalpha;           //  aMD alpha

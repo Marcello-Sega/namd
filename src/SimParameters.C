@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/03/17 01:46:57 $
- * $Revision: 1.1339 $
+ * $Author: char $
+ * $Date: 2011/03/17 02:06:26 $
+ * $Revision: 1.1340 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1083,8 +1083,10 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
 
    /// accelerated MD parameters
    opts.optionalB("main", "accelMD", "Perform acclerated MD?", &accelMDOn, FALSE);
-   opts.optional("accelMD", "accelMDskip", "Skip the first num of steps", &accelMDskip, 0);
-   opts.range("accelMDskip", NOT_NEGATIVE);
+   opts.optional("accelMD", "accelMDFirstStep", "First accelMD step", &accelMDFirstStep, 0);
+   opts.range("accelMDFirstStep", NOT_NEGATIVE);
+   opts.optional("accelMD", "accelMDLastStep", "Last accelMD step", &accelMDLastStep, 0);
+   opts.range("accelMDLastStep", NOT_NEGATIVE);
    opts.optional("accelMD", "accelMDOutFreq", "Frequency of accelMD output", &accelMDOutFreq, 1);
    opts.range("accelMDOutFreq", POSITIVE);
    opts.optionalB("accelMD", "accelMDdihe", "Apply boost to dihedral potential", &accelMDdihe, TRUE);
@@ -4389,7 +4391,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if (accelMDdual) {
         iout << iINFO << "accelMDTE: " << accelMDTE << " KCAL/MOL, accelMDTalpha: " << accelMDTalpha << " KCAL/MOL\n";
      }
-     iout << iINFO << "accelMD SKIPPING " << accelMDskip << " TIMESTEPS\n";
+     iout << iINFO << "accelMD WILL BE DONE FROM STEP" << accelMDFirstStep << "TO STEP" << accelMDLastStep << "\n";
      iout << iINFO << "accelMD OUTPUT FREQUENCY " << accelMDOutFreq << "\n";
      iout << endi;
    }
