@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: char $
- * $Date: 2011/03/17 02:06:26 $
- * $Revision: 1.1194 $
+ * $Author: yiwang $
+ * $Date: 2011/03/17 19:34:48 $
+ * $Revision: 1.1195 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -992,7 +992,7 @@ void Sequencer::rescaleVelocities(int step)
 void Sequencer::rescaleaccelMD (int step, int doNonbonded, int doFullElectrostatics)
 {
    if (!simParams->accelMDOn) return;
-   if ((step < simParams->accelMDFirstStep) || (step > simParams->accelMDLastStep)) return;
+   if ((step < simParams->accelMDFirstStep) || ( simParams->accelMDLastStep >0 && step > simParams->accelMDLastStep)) return;
 
    Vector accelMDfactor = broadcast->accelMDRescaleFactor.get(step);
    const BigReal factor_dihe = accelMDfactor[0];
