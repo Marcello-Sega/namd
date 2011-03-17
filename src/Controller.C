@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: char $
- * $Date: 2011/03/17 02:06:26 $
- * $Revision: 1.1259 $
+ * $Author: yiwang $
+ * $Date: 2011/03/17 19:29:22 $
+ * $Revision: 1.1260 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1235,7 +1235,8 @@ void Controller::rescaleaccelMD(int step, int minimize)
     amd_reduction->require();
 
     if (step == simParams->firstTimestep) accelMDdVAverage = 0;
-    if ( minimize || ((step < simParams->accelMDFirstStep ) || (step > simParams->accelMDLastStep ))) return;
+//    if ( minimize || ((step < simParams->accelMDFirstStep ) || (step > simParams->accelMDLastStep ))) return;
+    if ( minimize || (step < simParams->accelMDFirstStep ) || ( simParams->accelMDLastStep > 0 && step > simParams->accelMDLastStep )) return;
 
     Node *node = Node::Object();
     Molecule *molecule = node->molecule;
