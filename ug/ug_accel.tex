@@ -126,7 +126,8 @@ This option is only available when {\tt accelMDdual} is turned on.
 \item
 \NAMDCONFWDEF{accelMDLastStep}{Last accelerated MD step}
 {Zero or positive integer}{0}
-{Accelerated MD will only be performed when the current step is equal to or higher than {\tt accelMDFirstStep}, and equal to or lower than {\tt accelMDLastStep}. Otherwise regular MD will be performed.
+{Accelerated MD will only be performed when the current step is equal to or higher than {\tt accelMDFirstStep}, and equal to or lower than {\tt accelMDLastStep}. Otherwise regular MD will be performed. Note that the accelMDLastStep parameter only has an effect when it is positive. When accelMDLastStep is set to zero (the default), aMD is `open-ended' and will be performed
+till the end of the simulation. 
 }
 
 \item
