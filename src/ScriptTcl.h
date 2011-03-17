@@ -41,8 +41,9 @@ private:
   NamdState *state;
   void suspend(void);
   int runWasCalled;
+  int initWasCalled;
   void barrier();
-  void initcheck(int runAtEnd=0);
+  void initcheck();
   void reinitAtoms();
   SimpleBroadcastObject<int> scriptBarrier;
   int barrierStep;

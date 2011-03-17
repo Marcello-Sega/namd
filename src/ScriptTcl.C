@@ -66,8 +66,8 @@ void ScriptTcl::barrier() {
   BackEnd::barrier();
 }
 
-void ScriptTcl::initcheck(int runAtEnd) {
-  if ( runWasCalled == 0 ) {
+void ScriptTcl::initcheck() {
+  if ( initWasCalled == 0 ) {
 #ifdef NAMD_TCL
     CkPrintf("TCL: Suspending until startup complete.\n");
     Tcl_CreateCommand(interp, "param", Tcl_param,
@@ -75,12 +75,9 @@ void ScriptTcl::initcheck(int runAtEnd) {
     Tcl_CreateCommand(interp, "unknown", Tcl_param,
       (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
 #endif
-    runWasCalled = 1;
+    initWasCalled = 1;
 
     state->configListInit(config);
-    if ( ! runAtEnd ) {
-      state->simParameters->N = state->simParameters->firstTimestep;
-    }
     Node::Object()->saveMolDataPointers(state);
     Node::messageStartUp();
     suspend();
@@ -325,11 +322,16 @@ int ScriptTcl::Tcl_run(ClientData clientData,
     Tcl_SetResult(interp,"number of steps must be a multiple of stepsPerCycle",TCL_VOLATILE);
     return TCL_ERROR;
   }
+  if ( simParams->N != simParams->firstTimestep ) {
+    iout << "TCL: Original numsteps " << simParams->N
+         << " will be ignored.\n";
+  }
   iout << "TCL: Running for " << numsteps << " steps\n" << endi;
 
   script->setParameter("numsteps",simParams->firstTimestep + numsteps);
 
   script->runController(SCRIPT_RUN);
+  script->runWasCalled = 1;
 
   script->setParameter("firsttimestep",simParams->N);
 
@@ -357,11 +359,16 @@ int ScriptTcl::Tcl_minimize(ClientData clientData,
     Tcl_SetResult(interp,"number of steps must be a multiple of stepsPerCycle",TCL_VOLATILE);
     return TCL_ERROR;
   }
+  if ( simParams->N != simParams->firstTimestep ) {
+    iout << "TCL: Original numsteps " << simParams->N
+         << " will be ignored.\n";
+  }
   iout << "TCL: Minimizing for " << numsteps << " steps\n" << endi;
 
   script->setParameter("numsteps",simParams->firstTimestep + numsteps);
 
   script->runController(SCRIPT_MINIMIZE);
+  script->runWasCalled = 1;
 
   script->setParameter("firsttimestep",simParams->N);
 
@@ -487,6 +494,9 @@ int ScriptTcl::Tcl_output(ClientData clientData,
 
   iout << "TCL: Writing to files with basename " <<
 		simParams->outputFilename << ".\n" << endi;
+
+  if ( doforces && ! script->runWasCalled ) NAMD_die(
+    "No forces to output; must call run or minimize first.");
 
   if ( dorestart ) script->runController(SCRIPT_OUTPUT);
   if ( doforces ) script->runController(SCRIPT_FORCEOUTPUT);
@@ -837,6 +847,7 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   molfile_dcdplugin_init();
   molfile_dcdplugin_register(NULL, register_cb);
 
+  initWasCalled = 0;
   runWasCalled = 0;
 
 #ifdef NAMD_TCL
@@ -940,10 +951,11 @@ void ScriptTcl::run(char *scriptFile) {
 #endif
 
   if (runWasCalled == 0) {
-    initcheck(1);
+    initcheck();
     SimParameters *simParams = Node::Object()->simParameters;
     if ( simParams->minimizeCGOn ) runController(SCRIPT_MINIMIZE);
     else runController(SCRIPT_RUN);
+    runWasCalled = 1;
   }
 
   runController(SCRIPT_END);
