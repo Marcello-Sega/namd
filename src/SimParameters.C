@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/03/16 14:39:46 $
- * $Revision: 1.1338 $
+ * $Date: 2011/03/17 01:46:57 $
+ * $Revision: 1.1339 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3409,7 +3409,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "DCD FREQUENCY          " 
         << dcdFrequency << "\n";
      iout << iINFO << "DCD FIRST STEP         " 
-        << ( firstTimestep + dcdFrequency ) << "\n";
+        << ( ((firstTimestep + dcdFrequency)/dcdFrequency)*dcdFrequency ) << "\n";
      if ( dcdUnitCell ) {
        iout << iINFO << "DCD FILE WILL CONTAIN UNIT CELL DATA\n";
      }
@@ -3435,12 +3435,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    if (velDcdFrequency > 0)
    {
-     iout << iINFO << "VELOCITY DCD FILENAME  " 
+     iout << iINFO << "VELOCITY DCD FILENAME    " 
         << velDcdFilename << "\n";
-     iout << iINFO << "VELOCITY DCD FREQUENCY " 
+     iout << iINFO << "VELOCITY DCD FREQUENCY   " 
         << velDcdFrequency << "\n";
-     iout << iINFO << "VELOCITY DCD FIRST STEP         " 
-        << ( firstTimestep + velDcdFrequency ) << "\n";
+     iout << iINFO << "VELOCITY DCD FIRST STEP  " 
+        << ( ((firstTimestep + velDcdFrequency)/velDcdFrequency)*velDcdFrequency ) << "\n";
    }
    else
    {
@@ -3450,12 +3450,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    
    if (forceDcdFrequency > 0)
    {
-     iout << iINFO << "FORCE DCD FILENAME  " 
+     iout << iINFO << "FORCE DCD FILENAME     " 
         << forceDcdFilename << "\n";
-     iout << iINFO << "FORCE DCD FREQUENCY " 
+     iout << iINFO << "FORCE DCD FREQUENCY    " 
         << forceDcdFrequency << "\n";
-     iout << iINFO << "FORCE DCD FIRST STEP         " 
-        << ( firstTimestep + forceDcdFrequency ) << "\n";
+     iout << iINFO << "FORCE DCD FIRST STEP   " 
+        << ( ((firstTimestep + forceDcdFrequency)/forceDcdFrequency)*forceDcdFrequency ) << "\n";
    }
    else
    {
