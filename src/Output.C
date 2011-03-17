@@ -240,11 +240,13 @@ void Output::coordinate(int timestep, int n, Vector *coor, FloatVector *fcoor,
   //  Output final coordinates
   if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
   {
+    int realstep = ( timestep == FILE_OUTPUT ?
+          simParams->firstTimestep : simParams->N );
     iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
-				<< simParams->N << "\n" << endi;
+				<< realstep << "\n" << endi;
     fflush(stdout);
     wrap_coor(coor,lattice,&coor_wrapped);
-    output_final_coordinates(coor, n, simParams->N);
+    output_final_coordinates(coor, n, realstep);
   }
 
   //  Close trajectory files
@@ -331,10 +333,12 @@ void Output::velocity(int timestep, int n, Vector *vel)
   //  Output final velocities
   if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
   {
+    int realstep = ( timestep == FILE_OUTPUT ?
+          simParams->firstTimestep : simParams->N );
     iout << "WRITING VELOCITIES TO OUTPUT FILE AT STEP "
-				<< simParams->N << "\n" << endi;
+				<< realstep << "\n" << endi;
     fflush(stdout);
-    output_final_velocities(simParams->N, n, vel);
+    output_final_velocities(realstep, n, vel);
   }
 
   //  Close trajectory files
@@ -406,10 +410,11 @@ void Output::force(int timestep, int n, Vector *frc)
   //  Output forces
   if (timestep == FORCE_OUTPUT)
   {
+    int realstep = simParams->firstTimestep;
     iout << "WRITING FORCES TO OUTPUT FILE AT STEP "
-				<< simParams->N << "\n" << endi;
+				<< realstep << "\n" << endi;
     fflush(stdout);
-    output_forces(simParams->N, n, frc);
+    output_forces(realstep, n, frc);
   }
 
   //  Trajectory file closed by velocity() above
@@ -1160,8 +1165,10 @@ void ParOutput::velocityMaster(int timestep, int n){
     //  Output final velocities
     if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
     {
+      int realstep = ( timestep == FILE_OUTPUT ?
+          simParams->firstTimestep : simParams->N );
       iout << "WRITING VELOCITIES TO OUTPUT FILE AT STEP "
-                  << simParams->N << "\n" << endi;
+                  << realstep << "\n" << endi;
       fflush(stdout);
       output_final_velocities_master(n);
     }
@@ -1593,8 +1600,9 @@ void ParOutput::forceMaster(int timestep, int n){
     //  Output forces
     if (timestep == FORCE_OUTPUT)
     {
+      int realstep = simParams->firstTimestep;
       iout << "WRITING FORCES TO OUTPUT FILE AT STEP "
-                  << simParams->N << "\n" << endi;
+                  << realstep << "\n" << endi;
       fflush(stdout);
       output_forces_master(n);
     }
@@ -1902,8 +1910,10 @@ void ParOutput::coordinateMaster(int timestep, int n, Lattice &lat){
     //  Output final coordinates
     if (timestep == FILE_OUTPUT || timestep == END_OF_RUN)
     {
+      int realstep = ( timestep == FILE_OUTPUT ?
+          simParams->firstTimestep : simParams->N );
       iout << "WRITING COORDINATES TO OUTPUT FILE AT STEP "
-                  << simParams->N << "\n" << endi;
+                  << realstep << "\n" << endi;
       fflush(stdout);      
       output_final_coordinates_master(n);
     }

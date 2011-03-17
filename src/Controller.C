@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/03/16 14:39:45 $
- * $Revision: 1.1257 $
+ * $Date: 2011/03/17 00:49:05 $
+ * $Revision: 1.1258 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2245,8 +2245,10 @@ void Controller::outputExtendedSystem(int step)
   //  Output final coordinates
   if (step == FILE_OUTPUT || step == END_OF_RUN)
   {
+    int realstep = ( step == FILE_OUTPUT ?
+        simParams->firstTimestep : simParams->N );
     iout << "WRITING EXTENDED SYSTEM TO OUTPUT FILE AT STEP "
-		<< simParams->N << "\n" << endi;
+		<< realstep << "\n" << endi;
     static char fname[140];
     strcpy(fname, simParams->outputFilename);
     strcat(fname, ".xsc");
@@ -2259,7 +2261,7 @@ void Controller::outputExtendedSystem(int step)
     } 
     xscFile << "# NAMD extended system configuration output file" << std::endl;
     writeExtendedSystemLabels(xscFile);
-    writeExtendedSystemData(simParams->N,xscFile);
+    writeExtendedSystemData(realstep,xscFile);
     if (!xscFile) {
       char err_msg[257];
       sprintf(err_msg, "Error writing XSC output file %s",fname);
