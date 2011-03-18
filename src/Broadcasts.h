@@ -39,6 +39,9 @@ enum {
   scriptBarrierTag,
   traceBarrierTag,
   accelMDRescaleFactorTag,
+#ifdef MEASURE_NAMD_WITH_PAPI
+  papiMeasureTag,
+#endif
   dummyTag
 };
 
@@ -56,6 +59,9 @@ struct ControllerBroadcasts
   SimpleBroadcastObject<int> scriptBarrier;
   SimpleBroadcastObject<int> traceBarrier;
   SimpleBroadcastObject<Vector> accelMDRescaleFactor;
+#ifdef MEASURE_NAMD_WITH_PAPI
+  SimpleBroadcastObject<int> papiMeasureBarrier;
+#endif
 
   ControllerBroadcasts() : 
     velocityRescaleFactor(velocityRescaleFactorTag),
@@ -68,6 +74,9 @@ struct ControllerBroadcasts
 #endif
     accelMDRescaleFactor(accelMDRescaleFactorTag),
     scriptBarrier(scriptBarrierTag),
+#ifdef MEASURE_NAMD_WITH_PAPI
+	papiMeasureBarrier(papiMeasureTag),
+#endif
 	traceBarrier(traceBarrierTag)
   { ; }
 };

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: yiwang $
- * $Date: 2011/03/17 22:27:38 $
- * $Revision: 1.1341 $
+ * $Author: chaomei2 $
+ * $Date: 2011/03/18 07:09:57 $
+ * $Revision: 1.1342 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1575,7 +1575,15 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.range("traceStartStep", POSITIVE);
    opts.optional("main", "numTraceSteps", "the number of timesteps to be traced", &numTraceSteps);
    opts.range("numTraceSteps", POSITIVE);
-   
+ 
+#ifdef MEASURE_NAMD_WITH_PAPI
+   opts.optionalB("main", "papiMeasure", "whether use PAPI to measure performacne", &papiMeasure, FALSE);
+   opts.optional("main", "papiMeasureStartStep", "when to measure performacne using PAPI", &papiMeasureStartStep);
+   opts.range("papiMeasureStartStep", POSITIVE);
+   opts.optional("main", "numPapiMeasureSteps", "the number of timesteps to be measured using PAPI", &numPapiMeasureSteps);
+   opts.range("numPapiMeasureSteps", POSITIVE);
+#endif
+
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);
    opts.optionalB("main", "ldbUnloadZero", "no load on pe zero",
@@ -2818,6 +2826,17 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       numTraceSteps = 80;
     }
   }
+
+#ifdef MEASURE_NAMD_WITH_PAPI
+  if(papiMeasure){
+	  if(!opts.defined("papiMeasureStartStep")) {
+		  papiMeasureStartStep = 3 * firstLdbStep;
+	  }
+	  if(!opts.defined("numPapiMeasureSteps")) {
+		  numPapiMeasureSteps = 8; //including two pme steps
+	  }
+  }
+#endif
 
 #ifdef MEM_OPT_VERSION
   //Some constraints on the values of load balancing parameters.

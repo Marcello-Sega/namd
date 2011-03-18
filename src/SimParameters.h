@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2011/03/17 02:06:27 $
- * $Revision: 1.1182 $
+ * $Author: chaomei2 $
+ * $Date: 2011/03/18 07:09:58 $
+ * $Revision: 1.1183 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -119,6 +119,11 @@ public:
 	int traceStartStep; //the timestep when trace is turned on, default to 3*firstLdbStep;
 	int numTraceSteps; //the number of timesteps that are traced, default to 2*ldbPeriod;
 	
+#ifdef MEASURE_NAMD_WITH_PAPI
+	Bool papiMeasure; //default to false
+	int papiMeasureStartStep; //the timestep when to measure using PAPI, default to 3*firstLdbStep;
+	int numPapiMeasureSteps; //the number of timesteps when performance are measured with PAPI, default to 40;
+#endif
 	
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension

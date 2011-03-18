@@ -42,6 +42,11 @@ module Node {
 	
 	entry void traceBarrier(int, int);
 	entry void resumeAfterTraceBarrier(CkReductionMsg *);
+
+#ifdef MEASURE_NAMD_WITH_PAPI
+	entry void papiMeasureBarrier(int, int);
+	entry void resumeAfterPapiMeasureBarrier(CkReductionMsg *);
+#endif
 	};
 }
 

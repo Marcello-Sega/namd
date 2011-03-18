@@ -34,6 +34,9 @@ public:
     void run(void);             // spawn thread, etc.
     void awaken(void) { CthAwaken(thread); };
     void resumeAfterTraceBarrier(int);
+#ifdef MEASURE_NAMD_WITH_PAPI
+	void resumeAfterPapiMeasureBarrier(int step);
+#endif
 
 protected:
     friend class ScriptTcl;
@@ -146,7 +149,11 @@ protected:
       int fflush_count;
     void cycleBarrier(int,int);	
 	
-	void traceBarrier(int, int);	
+	void traceBarrier(int, int);
+
+#ifdef MEASURE_NAMD_WITH_PAPI
+	void papiMeasureBarrier(int, int);
+#endif
 
     // void suspend(void) { CthSuspend(); };
     void terminate(void);

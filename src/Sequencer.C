@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: yiwang $
- * $Date: 2011/03/17 19:34:48 $
- * $Revision: 1.1195 $
+ * $Author: chaomei2 $
+ * $Date: 2011/03/18 07:09:57 $
+ * $Revision: 1.1196 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -390,7 +390,17 @@ void Sequencer::integrate() {
 		 if(step == bstep || step == estep){
 			 traceBarrier(step);
 		 }			 
-	 }		 
+	 }
+
+#ifdef MEASURE_NAMD_WITH_PAPI	 
+	 if(simParams->papiMeasure) {
+		 int bstep = simParams->papiMeasureStartStep;
+		 int estep = bstep + simParams->numPapiMeasureSteps;
+		 if(step == bstep || step==estep) {
+			 papiMeasureBarrier(step);
+		 }
+	 }
+#endif
 	  
 	rebalanceLoad(step);
 
@@ -1897,6 +1907,12 @@ void Sequencer::cycleBarrier(int doBarrier, int step) {
 void Sequencer::traceBarrier(int step){
 	broadcast->traceBarrier.get(step);
 }
+
+#ifdef MEASURE_NAMD_WITH_PAPI
+void Sequencer::papiMeasureBarrier(int step){
+	broadcast->papiMeasureBarrier.get(step);
+}
+#endif
 
 void Sequencer::terminate() {
   CthFree(thread);

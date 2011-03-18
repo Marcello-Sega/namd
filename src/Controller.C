@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: yiwang $
- * $Date: 2011/03/17 19:29:22 $
- * $Revision: 1.1260 $
+ * $Author: chaomei2 $
+ * $Date: 2011/03/18 07:09:55 $
+ * $Revision: 1.1261 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -382,7 +382,20 @@ void Controller::integrate() {
 		 if(step == estep){			
 			 traceBarrier(0, step);
 		 }
-	 }	
+	 }
+
+#ifdef MEASURE_NAMD_WITH_PAPI
+	if(simParams->papiMeasure) {
+		int bstep = simParams->papiMeasureStartStep;
+		int estep = bstep + simParams->numPapiMeasureSteps;
+		if(step == bstep) {
+			papiMeasureBarrier(1, step);
+		}
+		if(step == estep) {
+			papiMeasureBarrier(0, step);
+		}
+	}
+#endif
 	 
         rebalanceLoad(step);
 
@@ -2316,6 +2329,20 @@ void Controller::resumeAfterTraceBarrier(int step){
 	awaken();
 }
 
+#ifdef MEASURE_NAMD_WITH_PAPI
+void Controller::papiMeasureBarrier(int turnOnMeasure, int step){
+	CkPrintf("Cycle time at PAPI measurement sync (begin) Wall at step %d: %f CPU %f\n", step, CmiWallTimer()-firstWTime,CmiTimer()-firstCTime);	
+	CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+	nd.papiMeasureBarrier(turnOnMeasure, step);
+	CthSuspend();
+}
+
+void Controller::resumeAfterPapiMeasureBarrier(int step){
+	broadcast->papiMeasureBarrier.publish(step,1);
+	CkPrintf("Cycle time at PAPI measurement sync (end) Wall at step %d: %f CPU %f\n", step, CmiWallTimer()-firstWTime,CmiTimer()-firstCTime);	
+	awaken();
+}
+#endif
 
 void Controller::terminate(void) {
   BackEnd::awaken();

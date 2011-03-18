@@ -87,6 +87,15 @@ extern "C" void HPM_Stop(char *label, int);
 extern "C" void HPM_Print(int, int);
 #endif
 
+#ifdef MEASURE_NAMD_WITH_PAPI
+#include "papi.h"
+#if CMK_SMP
+#include <pthread.h>
+#endif
+#define NUM_PAPI_EVENTS 2
+CkpvDeclare(int *, papiEvents);
+#endif
+
 //======================================================================
 // Public Functions
 
@@ -159,6 +168,9 @@ Node::~Node(void)
   // BEGIN LA
   delete rand;
   // END LA
+#ifdef MEASURE_NAMD_WITH_PAPI
+  delete CkpvAccess(papiEvents);
+#endif
 }
 
 void Node::bindBocVars(){
@@ -775,6 +787,80 @@ void Node::resumeAfterTraceBarrier(CkReductionMsg *msg){
 	delete msg;	
 	state->controller->resumeAfterTraceBarrier(curTimeStep);
 }
+
+#ifdef MEASURE_NAMD_WITH_PAPI
+static void namdInitPapiCounters(){
+	if(CkMyRank()) return;
+	//only initialize per OS process (i.e. a charm node)
+	int retval = PAPI_library_init(PAPI_VER_CURRENT);
+	if(retval != PAPI_VER_CURRENT) {
+		if(CkMyPe()==0){
+			CkPrintf("ERROR: PAPI library is not compatitible!");
+			CkExit();
+		}
+	}
+#if CMK_SMP
+	//now only consider systems that are compatible with POSIX
+	if(PAPI_thread_init(pthread_self)!=PAPI_OK) {
+		if(CkMyPe()==0){
+			CkPrintf("ERROR: multi-thread mode in PAPI could not be initialized!");
+			CkExit();
+		}
+	}
+#endif
+	CkpvInitialize(int *, papiEvents);
+	CkpvAccess(papiEvents) = new int[NUM_PAPI_EVENTS];
+	
+	if(PAPI_query_event(PAPI_FP_INS)==PAPI_OK) {
+		CkpvAccess(papiEvents)[0] = PAPI_FP_INS;
+	}else{
+		if(CkMyPe()==0){
+			CkPrintf("ERROR: PAPI_FP_INS doesn't exsit on this platform!\n");
+			CkExit();
+		}
+	}
+
+	if(PAPI_query_event(PAPI_FMA_INS)==PAPI_OK) {
+		CkpvAccess(papiEvents)[1] = PAPI_FMA_INS;
+	}else{
+		//if not default to PAPI_TOT_CYC
+		CkpvAccess(papiEvents)[1] = PAPI_TOT_CYC;
+	}
+}
+
+void Node::papiMeasureBarrier(int turnOnMeasure, int step){
+	curMFlopStep = step;
+	double totalFPIns = 0.0;	
+	if(turnOnMeasure){
+		namdInitPapiCounters();
+		PAPI_start_counters(CkpvAccess(papiEvents), NUM_PAPI_EVENTS);
+	}else{
+		long long counters[NUM_PAPI_EVENTS];
+		PAPI_read_counters(counters, NUM_PAPI_EVENTS);
+		totalFPIns += ((double)counters[0])/1e6;
+		if(CkpvAccess(papiEvents)[1] == PAPI_FMA_INS) {
+			totalFPIns += ((double)counters[1])*2/1e6;
+		}
+		PAPI_stop_counters(counters, NUM_PAPI_EVENTS);	
+	}
+	//CkPrintf("traceBarrier (%d) at step %d called on proc %d\n", turnOnTrace, step, CkMyPe());
+	CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+	CkCallback cb(CkIndex_Node::resumeAfterPapiMeasureBarrier(NULL), nd[0]);
+	contribute(sizeof(double), &totalFPIns, CkReduction::sum_double, cb);
+	
+}
+
+void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
+	if(simParameters->papiMeasureStartStep != curMFlopStep) {
+		double totalFPIns = *((double *)msg->getData());
+		int bstep = simParameters->papiMeasureStartStep;
+		int estep = bstep + simParameters->numPapiMeasureSteps;
+		CkPrintf("FLOPS INFO: from timestep %d to %d, the total FP instruction of NAMD is %lf(x1e6)\n", bstep, estep, totalFPIns);
+	}
+	delete msg;	
+	state->controller->resumeAfterPapiMeasureBarrier(curMFlopStep);
+}
+#endif
 
 //======================================================================
 // Private functions

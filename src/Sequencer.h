@@ -85,6 +85,9 @@ protected:
 
     void cycleBarrier(int,int);
 	void traceBarrier(int);
+#ifdef MEASURE_NAMD_WITH_PAPI
+	void papiMeasureBarrier(int);
+#endif
     void terminate(void);
 
     Random *random;
