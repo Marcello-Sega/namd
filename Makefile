@@ -44,7 +44,14 @@ SBSRCDIR = sb/src
 # to compile version that uses node aware spanning tree, add -DNODEAWARE_PROXY_SPANNINGTREE
 # to the variable EXTRADEFINES
 #EXTRADEFINES=-DREMOVE_PROXYDATAMSG_EXTRACOPY -DREMOVE_PROXYRESULTMSG_EXTRACOPY
-EXTRADEFINES=-DREMOVE_PROXYRESULTMSG_EXTRACOPY 
+EXTRADEFINES=-DREMOVE_PROXYRESULTMSG_EXTRACOPY
+EXTRAINCS=
+EXTRALINKLIBS=
+# to compile namd using PAPI counters to measure flops and modify include and library path
+# correspondingly
+#EXTRADEFINES=-DREMOVE_PROXYRESULTMSG_EXTRACOPY -DMEASURE_NAMD_WITH_PAPI
+#EXTRAINCS=-I$(HOME)/papi/include
+#EXTRALINKLIBS=-lpapi -L$(HOME)/papi/lib
 
 # defaults for special cases
 CXXTHREADOPTS = $(CXXOPTS) 
@@ -315,7 +322,7 @@ SBOBJS = \
 
 # definitions for Charm routines
 CHARMC = $(CHARM)/bin/charmc
-CHARMXI = $(CHARM)/bin/charmc
+CHARMXI = $(CHARM)/bin/charmc -E $(EXTRADEFINES)
 CHARMINC = $(CHARM)/include $(COPTD)CMK_OPTIMIZE=1
 CHARMLIB = $(CHARM)/lib
 
@@ -323,7 +330,7 @@ CHARMLIB = $(CHARM)/lib
 LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS)
 CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
 CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
 CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
@@ -366,6 +373,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB) \
 	$(PLUGINLIB) \
 	$(CHARMOPTS) \
+	$(EXTRALINKLIBS) \
 	-lm -o namd2
 
 charmrun: $(CHARM)/bin/charmrun # XXX
@@ -456,6 +464,7 @@ tracecomputes: updatefiles $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB) \
 	$(PLUGINLIB) \
 	$(CHARMOPTS) \
+	$(EXTRALINKLIBS) \
 	-lm -o namd2.tc.prj
 
 projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
@@ -474,6 +483,7 @@ projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB) \
 	$(PLUGINLIB) \
 	$(CHARMOPTS) \
+	$(EXTRALINKLIBS) \
 	-lm -o namd2.prj
 
 summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
@@ -492,6 +502,7 @@ summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(FFTLIB) \
 	$(PLUGINLIB) \
 	$(CHARMOPTS) \
+	$(EXTRALINKLIBS) \
 	-lm -o namd2.sum
 
 $(DPMTADIR)/mpole/libmpole.a: $(DPMTADIR)/src/libdpmta2.a
