@@ -322,7 +322,7 @@ SBOBJS = \
 
 # definitions for Charm routines
 CHARMC = $(CHARM)/bin/charmc
-CHARMXI = $(CHARM)/bin/charmc -E $(EXTRADEFINES)
+CHARMXI = $(CHARM)/bin/charmc
 CHARMINC = $(CHARM)/include $(COPTD)CMK_OPTIMIZE=1
 CHARMLIB = $(CHARM)/lib
 

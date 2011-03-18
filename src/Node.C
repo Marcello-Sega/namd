@@ -832,8 +832,8 @@ void Node::resumeAfterTraceBarrier(CkReductionMsg *msg){
 	state->controller->resumeAfterTraceBarrier(curTimeStep);
 }
 
-#ifdef MEASURE_NAMD_WITH_PAPI
 void Node::papiMeasureBarrier(int turnOnMeasure, int step){
+#ifdef MEASURE_NAMD_WITH_PAPI
 	curMFlopStep = step;
 	double totalFPIns = 0.0;	
 	if(turnOnMeasure){		
@@ -852,9 +852,11 @@ void Node::papiMeasureBarrier(int turnOnMeasure, int step){
 	CkCallback cb(CkIndex_Node::resumeAfterPapiMeasureBarrier(NULL), nd[0]);
 	contribute(sizeof(double), &totalFPIns, CkReduction::sum_double, cb);
 	
+#endif
 }
 
 void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
+#ifdef MEASURE_NAMD_WITH_PAPI
 	if(simParameters->papiMeasureStartStep != curMFlopStep) {
 		double totalFPIns = *((double *)msg->getData());
 		int bstep = simParameters->papiMeasureStartStep;
@@ -863,8 +865,8 @@ void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
 	}
 	delete msg;	
 	state->controller->resumeAfterPapiMeasureBarrier(curMFlopStep);
-}
 #endif
+}
 
 //======================================================================
 // Private functions

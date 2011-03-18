@@ -134,12 +134,10 @@ public:
   void traceBarrier(int turnOnTrace, int step);
   void resumeAfterTraceBarrier(CkReductionMsg *msg);
 
-#ifdef MEASURE_NAMD_WITH_PAPI
   //entry methods for measuring flops barriers
   int curMFlopStep;
   void papiMeasureBarrier(int turnOnMeasure, int step);
   void resumeAfterPapiMeasureBarrier(CkReductionMsg *msg);
-#endif
   
   //to show whether +traceoff is specified
   bool specialTracing;
