@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
- * $Author: jim $
- * $Date: 2010/06/30 20:38:37 $
- * $Revision: 1.41 $
+ * $Author: gzheng $
+ * $Date: 2011/03/18 17:15:00 $
+ * $Revision: 1.42 $
  *****************************************************************************/
 
 #ifndef LDBCOORDINATOR_H
@@ -57,7 +57,7 @@ public:
   void endWork(ComputeID id, int timestep=0);  // both
   void rebalance(Sequencer *seq, PatchID id);
   void rebalance(Controller *seq);
-  void nodeDone(void);
+  void nodeDone(CkReductionMsg *);
   void updateComputesReady();
   void barrier(void);
   void resume(void);
@@ -108,7 +108,6 @@ public:
   int totalStepsDone;	// keeps a count of the total number of
 			// time steps to stop load balancing
   int takingLdbData;
-  int nodesDone;
 
   FILE *ldbStatsFP;
   computeInfo *computeArray;

@@ -18,7 +18,7 @@ module LdbCoordinator {
   {
     entry LdbCoordinator(void);
     entry void barrier(void);
-    entry void nodeDone(void);
+    entry void nodeDone(CkReductionMsg *);
     entry void resume(void);
     entry void resumeReady(CkQdMsg *);
     entry void resume2(void);

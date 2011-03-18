@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: jim $
- * $Date: 2011/03/09 16:30:12 $
- * $Revision: 1.109 $
+ * $Author: gzheng $
+ * $Date: 2011/03/18 17:15:00 $
+ * $Revision: 1.110 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -116,8 +116,8 @@ void LdbCoordinator::ResumeFromSync()
     }
   }
 #endif
-  CProxy_LdbCoordinator cl(thisgroup);
-  cl[0].nodeDone();
+  CkCallback cb(CkIndex_LdbCoordinator::nodeDone(NULL), 0, thisgroup);
+  contribute(NULL, 0, CkReduction::random, cb);
 }
 
 LdbCoordinator::LdbCoordinator()
@@ -149,8 +149,6 @@ LdbCoordinator::LdbCoordinator()
   computeArray = NULL;
   patchArray = NULL;
   processorArray = NULL;
-
-  nodesDone = 0;
 
   // Register self as an object manager for new charm++ balancer framework
   theLbdb = LBDatabase::Object(); 
@@ -598,18 +596,15 @@ void LdbCoordinator::barrier(void)
   theLbdb->AtLocalBarrier(ldBarrierHandle);
 }
 
-void LdbCoordinator::nodeDone(void)
+void LdbCoordinator::nodeDone(CkReductionMsg *msg)
 {
-  nodesDone++;
+  delete msg;
 
-  if (nodesDone==Node::Object()->numNodes()) {
-    iout << "LDB: ============== END OF LOAD BALANCING =============== " << CmiWallTimer() << "\n" << endi;
-    nodesDone=0;
-    if ( takingLdbData ) {
+  iout << "LDB: ============== END OF LOAD BALANCING =============== " << CmiWallTimer() << "\n" << endi;
+  if ( takingLdbData ) {
       ExecuteMigrations();
-    } else {
+  } else {
       updateComputesReady();
-    }
   }
 }
 
