@@ -421,6 +421,9 @@ psfgen:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS)
 psfgen.exe:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS) $(TCLDLL)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(PLUGINOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
+diffbinpdb:	$(SRCDIR)/diffbinpdb.c
+	$(CC) $(CFLAGS) -o diffbinpdb $(SRCDIR)/diffbinpdb.c -lm
+
 flipdcd:	$(SRCDIR)/flipdcd.c
 	$(CC) $(CFLAGS) -o $@ $(SRCDIR)/flipdcd.c || \
 	echo "#!/bin/sh\necho unavailable on this platform" > $@; \
