@@ -23,6 +23,8 @@ struct __align__(16) patch_pair {  // must be multiple of 16!
   unsigned int virial_start;  // virial output location padded to 16
   unsigned int patch1_force_list_index;
   unsigned int patch1_force_list_size;
+  unsigned int pad1;
+  unsigned int pad2;
 };
 
 #define FORCE_LIST_SIZE 8
