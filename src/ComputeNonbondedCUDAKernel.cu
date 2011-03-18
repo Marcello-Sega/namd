@@ -274,7 +274,7 @@ __global__ static void dev_nonbonded(
         float4 *forces, float *virials,
         float4 *slow_forces, float *slow_virials,
         float3 lata, float3 latb, float3 latc,
-	float cutoff2, float plcutoff2) {
+	float cutoff2, float plcutoff2, int doSlow) {
 // call with one block per patch_pair
 // call with BLOCK_SIZE threads per block
 // call with no shared memory
@@ -479,14 +479,14 @@ __global__ static void dev_nonbonded(
     } /* end of FORCE_INNER_LOOP macro */
 
     if ( plcutoff2 == 0 ) {  // use pairlist
-      if ( slow_force_buffers ) {
+      if ( doSlow ) {
         FORCE_INNER_LOOP(ipq,iap,1,{)
       } else {
         FORCE_INNER_LOOP(ipq,iap,0,{)
       }
     } else {  // create pairlist
       bool plpli = 0;
-      if ( slow_force_buffers ) {
+      if ( doSlow ) {
         FORCE_INNER_LOOP(ipq,iap,1,if(r2<plcutoff2){plpli=1;)
       } else {
         FORCE_INNER_LOOP(ipq,iap,0,if(r2<plcutoff2){plpli=1;)
@@ -500,7 +500,7 @@ __global__ static void dev_nonbonded(
   if ( blocki + threadIdx.x < myPatchPair.patch1_force_size ) {
     int i_out = myPatchPair.patch1_force_start + blocki + threadIdx.x;
     force_buffers[i_out] = ife;
-    if ( slow_force_buffers ) {
+    if ( doSlow ) {
       slow_force_buffers[i_out] = ife_slow;
     }
     // accumulate net force to shared memory, warp-synchronous
@@ -511,7 +511,7 @@ __global__ static void dev_nonbonded(
         sumf.a2d[subwarp][0] += ife.x;
         sumf.a2d[subwarp][1] += ife.y;
         sumf.a2d[subwarp][2] += ife.z;
-        if ( slow_force_buffers ) {
+        if ( doSlow ) {
           sumf_slow.a2d[subwarp][0] += ife_slow.x;
           sumf_slow.a2d[subwarp][1] += ife_slow.y;
           sumf_slow.a2d[subwarp][2] += ife_slow.z;
@@ -560,7 +560,7 @@ __global__ static void dev_nonbonded(
         virial_buffers[i_out] = sumf.a1d[threadIdx.x];
       }
     }
-    if ( slow_force_buffers ) { // repeat above for slow forces
+    if ( doSlow ) { // repeat above for slow forces
       float fs;
       fs = sumf_slow.a1d[threadIdx.x] + sumf_slow.a1d[threadIdx.x + 24] + 
            sumf_slow.a1d[threadIdx.x + 48] + sumf_slow.a1d[threadIdx.x + 72];
@@ -603,7 +603,7 @@ __global__ static void dev_nonbonded(
        atoms,force_lists,force_buffers,
        virial_buffers,forces,virials);
 
-    if ( slow_force_buffers ) {
+    if ( doSlow ) {
       dev_sum_forces(myPatchPair.patch1_force_list_index,
          atoms,force_lists,slow_force_buffers,
          slow_virial_buffers,slow_forces,slow_virials);
@@ -770,8 +770,9 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
 	     (doSlow?slow_force_buffers:0), block_flags,
              virial_buffers, (doSlow?slow_virial_buffers:0),
              force_list_counters, force_lists,
-             forces, virials, slow_forces, slow_virials,
-	     lata, latb, latc, cutoff2, plcutoff2);
+             forces, virials,
+             (doSlow?slow_forces:0), (doSlow?slow_virials:0),
+	     lata, latb, latc, cutoff2, plcutoff2, doSlow);
      cuda_errcheck("dev_nonbonded");
    }
  }
