@@ -6,5 +6,5 @@ LIBCUDARTSO=libcudart.so.2
 CUDAFLAGS=-DNAMD_CUDA
 CUDAOBJS=$(CUDAOBJSRAW)
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
-CUDACC=$(CUDADIR)/bin/nvcc -O3 --maxrregcount 32 -Xcompiler "-m64" $(CUDA)
+CUDACC=$(CUDADIR)/bin/nvcc -O3 --maxrregcount 32 -arch sm_11 -Xcompiler "-m64" $(CUDA)
 
