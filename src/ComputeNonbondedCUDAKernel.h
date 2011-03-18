@@ -8,8 +8,8 @@ void cuda_errcheck(const char *msg);
 #define __align__(X)
 #endif
 
-#define PATCH_PAIR_SIZE 12
-#define PATCH_PAIR_USED 12
+#define PATCH_PAIR_SIZE 16
+#define PATCH_PAIR_USED 14
 
 struct __align__(16) patch_pair {  // must be multiple of 16!
   float4 offset;
@@ -21,6 +21,8 @@ struct __align__(16) patch_pair {  // must be multiple of 16!
   unsigned int patch1_force_start;
   unsigned int block_flags_start;
   unsigned int virial_start;  // virial output location padded to 16
+  unsigned int patch1_force_list_index;
+  unsigned int patch1_force_list_size;
 };
 
 #define FORCE_LIST_SIZE 8

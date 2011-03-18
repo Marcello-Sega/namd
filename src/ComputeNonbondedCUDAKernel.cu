@@ -48,6 +48,7 @@ static unsigned int *block_flags;
 
 static int force_lists_size;
 static force_list *force_lists;
+static unsigned int *force_list_counters;
 
 static int force_buffers_size;
 static float4 *force_buffers;
@@ -82,6 +83,7 @@ void cuda_init() {
   force_buffers = 0;
   slow_force_buffers = 0;
   force_lists = 0;
+  force_list_counters = 0;
   patch_pairs = 0;
   virial_buffers = 0;
   slow_virial_buffers = 0;
@@ -136,6 +138,7 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   if ( force_buffers ) cudaFree(force_buffers);
   if ( slow_force_buffers ) cudaFree(slow_force_buffers);
   if ( force_lists ) cudaFree(force_lists);
+  if ( force_list_counters ) cudaFree(force_list_counters);
   if ( virials ) cudaFree(virials);
   if ( patch_pairs ) cudaFree(patch_pairs);
   if ( virial_buffers ) cudaFree(virial_buffers);
@@ -162,6 +165,7 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   cudaMalloc((void**) &virials, 2 * force_lists_alloc * 16*sizeof(float));
   slow_virials = virials + force_lists_size * 16;
   cudaMalloc((void**) &force_lists, force_lists_alloc * sizeof(force_list));
+  cudaMalloc((void**) &force_list_counters, force_lists_alloc * sizeof(unsigned int));
   cudaMalloc((void**) &force_buffers, force_buffers_alloc * sizeof(float4));
   cudaMalloc((void**) &slow_force_buffers, force_buffers_alloc * sizeof(float4));
   cudaMalloc((void**) &atoms, atoms_alloc * sizeof(atom));
@@ -179,6 +183,9 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   cudaMemcpy(force_lists, fl, nfl * sizeof(force_list),
 				cudaMemcpyHostToDevice);
   cuda_errcheck("memcpy to force_lists");
+
+  cudaMemset(force_list_counters, 0, nfl * sizeof(unsigned int));
+  cuda_errcheck("memset force_list_counters");
 }
 
 void cuda_bind_atom_params(const atom_param *t) {
@@ -245,6 +252,14 @@ __host__ __device__ static int3 patch_offset_from_neighbor(int neighbor) {
 #define BLOCK_SIZE 128
 #define SHARED_SIZE 32
 
+__device__ __forceinline__ static void dev_sum_forces(
+        const int force_list_index,
+	const atom *atoms,
+	const force_list *force_lists,
+	const float4 *force_buffers,
+	const float *virial_buffers,
+	float4 *forces, float *virials);
+
 __global__ static void dev_nonbonded(
 	const patch_pair *patch_pairs,
 	const atom *atoms,
@@ -254,11 +269,29 @@ __global__ static void dev_nonbonded(
 	unsigned int *block_flags,
 	float *virial_buffers,
 	float *slow_virial_buffers,
+        unsigned int *force_list_counters,
+        const force_list *force_lists,
+        float4 *forces, float *virials,
+        float4 *slow_forces, float *slow_virials,
         float3 lata, float3 latb, float3 latc,
 	float cutoff2, float plcutoff2) {
 // call with one block per patch_pair
 // call with BLOCK_SIZE threads per block
 // call with no shared memory
+
+#ifdef __DEVICE_EMULATION__
+  #define myPatchPair (*(patch_pair*)(&pp.i))
+#else
+  #define myPatchPair pp.pp
+#endif
+  __shared__ union {
+#ifndef __DEVICE_EMULATION__
+    patch_pair pp;
+#endif
+    unsigned int i[PATCH_PAIR_SIZE];
+  } pp;
+
+ { // start of nonbonded calc
 
   #define pl plu.c
   __shared__ union {
@@ -300,18 +333,6 @@ __global__ static void dev_nonbonded(
 #endif
     unsigned int i[4*SHARED_SIZE];
   } japu;
-
-#ifdef __DEVICE_EMULATION__
-  #define myPatchPair (*(patch_pair*)(&pp.i))
-#else
-  #define myPatchPair pp.pp
-#endif
-  __shared__ union {
-#ifndef __DEVICE_EMULATION__
-    patch_pair pp;
-#endif
-    unsigned int i[PATCH_PAIR_SIZE];
-  } pp;
 
   if ( threadIdx.x < PATCH_PAIR_USED ) {
     unsigned int tmp = ((unsigned int*)patch_pairs)[
@@ -559,10 +580,42 @@ __global__ static void dev_nonbonded(
     }
   }
 
+ } // end of nonbonded calc
+
+ { // start of force sum
+
+  // make sure forces are visible in global memory
+  __threadfence();
+
+  __shared__ bool sumForces;
+
+  if (threadIdx.x == 0) {
+    int fli = myPatchPair.patch1_force_list_index;
+    int fls = myPatchPair.patch1_force_list_size;
+    int old = atomicInc(force_list_counters+fli,fls-1);
+    sumForces = ( old == fls - 1 );
+  }
+
+  __syncthreads();
+
+  if ( sumForces ) {
+    dev_sum_forces(myPatchPair.patch1_force_list_index,
+       atoms,force_lists,force_buffers,
+       virial_buffers,forces,virials);
+
+    if ( slow_force_buffers ) {
+      dev_sum_forces(myPatchPair.patch1_force_list_index,
+         atoms,force_lists,slow_force_buffers,
+         slow_virial_buffers,slow_forces,slow_virials);
+    }
+  }
+
+ } // end of force sum
 }
 
 
-__global__ static void dev_sum_forces(
+__device__ __forceinline__ static void dev_sum_forces(
+        const int force_list_index,
 	const atom *atoms,
 	const force_list *force_lists,
 	const float4 *force_buffers,
@@ -580,7 +633,7 @@ __global__ static void dev_sum_forces(
 
   if ( threadIdx.x < FORCE_LIST_USED ) {
     unsigned int tmp = ((unsigned int*)force_lists)[
-                        FORCE_LIST_SIZE*blockIdx.x+threadIdx.x];
+                        FORCE_LIST_SIZE*force_list_index+threadIdx.x];
     fl.i[threadIdx.x] = tmp;
   }
 
@@ -716,11 +769,14 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
 	>>>(patch_pairs+cbegin+cstart,atoms,atom_params,force_buffers,
 	     (doSlow?slow_force_buffers:0), block_flags,
              virial_buffers, (doSlow?slow_virial_buffers:0),
+             force_list_counters, force_lists,
+             forces, virials, slow_forces, slow_virials,
 	     lata, latb, latc, cutoff2, plcutoff2);
      cuda_errcheck("dev_nonbonded");
    }
  }
 
+#if 0
  if ( pcount ) {
   // printf("%d %d %d\n",pbegin,pcount,force_lists_size);
   dev_sum_forces<<< pcount, BLOCK_SIZE, 0, stream
@@ -733,6 +789,7 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
   }
   cuda_errcheck("dev_sum_forces");
  }
+#endif
 
 }
 

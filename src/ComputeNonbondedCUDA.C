@@ -748,6 +748,14 @@ void ComputeNonbondedCUDA::doWork() {
       pp.offset.z = cr.offset.z;
     }
 
+    for ( int i=0; i<ncomputes; ++i ) {
+      ComputeNonbondedCUDA::compute_record &cr = computeRecords[i];
+      int lp1 = patchRecords[cr.pid[0]].localIndex;
+      patch_pair &pp = patch_pairs[i];
+      pp.patch1_force_list_index = lp1;
+      pp.patch1_force_list_size = force_lists[lp1].force_list_size;
+    }
+
    if ( simParams->outputCudaTiming ) {
     CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
 	CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
