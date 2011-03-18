@@ -998,7 +998,7 @@ void ParallelIOMgr::calcAtomsInEachPatch()
     //each list contains the atom index to the initAtoms
     vector<int> *eachPatchAtomList = patchMap->getTmpPatchAtomsList();
 
-    CProxy_PatchMgr pm(CpvAccess(BOCclass_group).patchMgr);
+    CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
     PatchMgr *patchMgr = pm.ckLocalBranch();
 
     int pid=0;
