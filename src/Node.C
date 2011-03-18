@@ -94,6 +94,46 @@ extern "C" void HPM_Print(int, int);
 #endif
 #define NUM_PAPI_EVENTS 2
 CkpvDeclare(int *, papiEvents);
+
+static void namdInitPapiCounters(){
+	if(CkMyRank()==0){
+		//only initialize per OS process (i.e. a charm node)
+		int retval = PAPI_library_init(PAPI_VER_CURRENT);
+		if(retval != PAPI_VER_CURRENT) {
+			if(CkMyPe()==0){
+				CkPrintf("ERROR: PAPI library is not compatitible!");
+				CkExit();
+			}
+		}
+	#if CMK_SMP
+		//now only consider systems that are compatible with POSIX
+		if(PAPI_thread_init(pthread_self)!=PAPI_OK) {
+			if(CkMyPe()==0){
+				CkPrintf("ERROR: multi-thread mode in PAPI could not be initialized!");
+				CkExit();
+			}
+		}
+	#endif
+	}
+	CkpvInitialize(int *, papiEvents);
+	CkpvAccess(papiEvents) = new int[NUM_PAPI_EVENTS];
+	
+	if(PAPI_query_event(PAPI_FP_INS)==PAPI_OK) {
+		CkpvAccess(papiEvents)[0] = PAPI_FP_INS;
+	}else{
+		if(CkMyPe()==0){
+			CkPrintf("ERROR: PAPI_FP_INS doesn't exsit on this platform!\n");
+			CkExit();
+		}
+	}
+
+	if(PAPI_query_event(PAPI_FMA_INS)==PAPI_OK) {
+		CkpvAccess(papiEvents)[1] = PAPI_FMA_INS;
+	}else{
+		//if not default to PAPI_TOT_CYC
+		CkpvAccess(papiEvents)[1] = PAPI_TOT_CYC;
+	}
+}
 #endif
 
 //======================================================================
@@ -287,6 +327,10 @@ void Node::startup() {
       }
       return;
     }
+
+	#ifdef MEASURE_NAMD_WITH_PAPI
+	if(simParameters->papiMeasure) namdInitPapiCounters();	
+	#endif
     
     #ifdef MEM_OPT_VERSION
     //At this point, each Node object has received the simParameters,
@@ -789,50 +833,10 @@ void Node::resumeAfterTraceBarrier(CkReductionMsg *msg){
 }
 
 #ifdef MEASURE_NAMD_WITH_PAPI
-static void namdInitPapiCounters(){
-	if(CkMyRank()) return;
-	//only initialize per OS process (i.e. a charm node)
-	int retval = PAPI_library_init(PAPI_VER_CURRENT);
-	if(retval != PAPI_VER_CURRENT) {
-		if(CkMyPe()==0){
-			CkPrintf("ERROR: PAPI library is not compatitible!");
-			CkExit();
-		}
-	}
-#if CMK_SMP
-	//now only consider systems that are compatible with POSIX
-	if(PAPI_thread_init(pthread_self)!=PAPI_OK) {
-		if(CkMyPe()==0){
-			CkPrintf("ERROR: multi-thread mode in PAPI could not be initialized!");
-			CkExit();
-		}
-	}
-#endif
-	CkpvInitialize(int *, papiEvents);
-	CkpvAccess(papiEvents) = new int[NUM_PAPI_EVENTS];
-	
-	if(PAPI_query_event(PAPI_FP_INS)==PAPI_OK) {
-		CkpvAccess(papiEvents)[0] = PAPI_FP_INS;
-	}else{
-		if(CkMyPe()==0){
-			CkPrintf("ERROR: PAPI_FP_INS doesn't exsit on this platform!\n");
-			CkExit();
-		}
-	}
-
-	if(PAPI_query_event(PAPI_FMA_INS)==PAPI_OK) {
-		CkpvAccess(papiEvents)[1] = PAPI_FMA_INS;
-	}else{
-		//if not default to PAPI_TOT_CYC
-		CkpvAccess(papiEvents)[1] = PAPI_TOT_CYC;
-	}
-}
-
 void Node::papiMeasureBarrier(int turnOnMeasure, int step){
 	curMFlopStep = step;
 	double totalFPIns = 0.0;	
-	if(turnOnMeasure){
-		namdInitPapiCounters();
+	if(turnOnMeasure){		
 		PAPI_start_counters(CkpvAccess(papiEvents), NUM_PAPI_EVENTS);
 	}else{
 		long long counters[NUM_PAPI_EVENTS];
