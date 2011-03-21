@@ -113,9 +113,9 @@ void cuda_bind_atom_params(const atom_param *t);
 
 void cuda_bind_atoms(const atom *a);
 
-void cuda_load_forces(float4 *f, float4 *f_slow, int begin, int count);
+void cuda_bind_forces(float4 *f, float4 *f_slow);
 
-void cuda_load_virials(float *v, int doSlow);
+void cuda_bind_virials(float *v);
 
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
                 float cutoff2, float plcutoff2,

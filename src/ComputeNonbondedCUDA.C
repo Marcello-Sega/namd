@@ -143,6 +143,8 @@ void cuda_initialize() {
       cudaGetDeviceProperties(&deviceProp, dev);
       cuda_errcheck("in cudaGetDeviceProperties");
       if ( deviceProp.computeMode != cudaComputeModeProhibited
+           && (deviceProp.major > 1 || deviceProp.minor >= 1)
+           && deviceProp.canMapHostMemory
            && deviceProp.multiProcessorCount > 2 ) {  // exclude weak cards
         devices[ndevices++] = dev;
       }
@@ -156,7 +158,7 @@ void cuda_initialize() {
   }
 
   if ( ! ndevices ) {
-    cuda_die("All CUDA devices are in prohibited mode.");
+    cuda_die("All CUDA devices are in prohibited mode, of compute capability 1.0, or otherwise unusable.");
   }
 
   shared_gpu = 0;
@@ -227,6 +229,22 @@ void cuda_initialize() {
   }
 
  }  // just let CUDA pick a device for us
+
+  cudaSetDeviceFlags(cudaDeviceMapHost);
+  cuda_errcheck("in cudaSetDeviceFlags");
+
+  int dev;
+  if ( cudaGetDevice(&dev) == cudaSuccess ) {
+    cudaDeviceProp deviceProp;
+    cudaGetDeviceProperties(&deviceProp, dev);
+    cuda_errcheck("in cudaGetDeviceProperties");
+    if ( deviceProp.computeMode == cudaComputeModeProhibited )
+      cuda_die("device in prohibited mode");
+    if ( deviceProp.major < 2 && deviceProp.minor < 1 )
+      cuda_die("device not of compute capability 1.1 or higher");
+    if ( ! deviceProp.canMapHostMemory )
+      cuda_die("device cannot map host memory");
+  }
 
   if ( sizeof(patch_pair) & 15 ) NAMD_bug("sizeof(patch_pair) % 16 != 0");
   if ( sizeof(force_list) & 15 ) NAMD_bug("sizeof(force_list) % 16 != 0");
@@ -699,9 +717,11 @@ void ComputeNonbondedCUDA::doWork() {
     if ( num_virials > num_virials_allocated ) {
       if ( num_virials_allocated ) {
         cudaFreeHost(virials);
+        cuda_errcheck("in cudaFreeHost virials");
       }
       num_virials_allocated = 1.1 * num_virials + 1;
-      cudaMallocHost((void**)&virials,2*16*sizeof(float)*num_virials_allocated);
+      cudaHostAlloc((void**)&virials,2*16*sizeof(float)*num_virials_allocated,cudaHostAllocMapped);
+      cuda_errcheck("in cudaHostAlloc virials");
       slow_virials = virials + 16*num_virials;
     }
 
@@ -812,13 +832,16 @@ void ComputeNonbondedCUDA::doWork() {
       cudaFreeHost(atoms);
       cudaFreeHost(forces);
       cudaFreeHost(slow_forces);
+      cuda_errcheck("in cudaFreeHost");
     }
     num_atom_records_allocated = 1.1 * num_atom_records + 1;
     atom_order = new int[num_atom_records_allocated];
     cudaMallocHost((void**)&atom_params,sizeof(atom_param)*num_atom_records_allocated);
     cudaMallocHost((void**)&atoms,sizeof(atom)*num_atom_records_allocated);
-    cudaMallocHost((void**)&forces,sizeof(float4)*num_atom_records_allocated);
-    cudaMallocHost((void**)&slow_forces,sizeof(float4)*num_atom_records_allocated);
+    cuda_errcheck("in cudaMallocHost atoms");
+    cudaHostAlloc((void**)&forces,sizeof(float4)*num_atom_records_allocated,cudaHostAllocMapped);
+    cudaHostAlloc((void**)&slow_forces,sizeof(float4)*num_atom_records_allocated,cudaHostAllocMapped);
+    cuda_errcheck("in cudaHostAlloc forces");
   }
 
   int bfstart = 0;
@@ -1143,14 +1166,16 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     }
 
     cuda_bind_atoms(atoms);
+    cuda_bind_forces(forces, slow_forces);
+    cuda_bind_virials(virials);
     cudaEventRecord(start_calc, stream);
     cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size(),
 	doSlow, usePairlists, savePairlists);
     cudaEventRecord(end_remote_calc, stream);
-    cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
-        num_local_atom_records,num_remote_atom_records);
+    //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
+    //    num_local_atom_records,num_remote_atom_records);
     cudaEventRecord(end_remote_download, stream);
     ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
     if ( shared_gpu ) {
@@ -1166,9 +1191,9 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 	0,localActivePatches.size(),
 	doSlow, usePairlists, savePairlists);
     cudaEventRecord(end_local_calc, stream);
-    cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
-        0,num_local_atom_records);
-    cuda_load_virials(virials, doSlow);  // slow_virials follows virials
+    //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
+    //    0,num_local_atom_records);
+    //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
     cudaEventRecord(end_local_download, stream);
     if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
     if ( shared_gpu ) {

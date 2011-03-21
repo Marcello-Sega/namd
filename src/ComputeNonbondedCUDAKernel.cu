@@ -131,15 +131,17 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   force_lists_alloc = (int) (1.2 * force_lists_size);
   atoms_alloc = (int) (1.2 * atoms_size);
 
-  if ( forces ) cudaFree(forces);
-  if ( slow_forces ) cudaFree(slow_forces);
+  // if ( forces ) cudaFree(forces);
+  // if ( slow_forces ) cudaFree(slow_forces);
+  forces = slow_forces = 0;
   if ( atom_params ) cudaFree(atom_params);
   if ( atoms ) cudaFree(atoms);
   if ( force_buffers ) cudaFree(force_buffers);
   if ( slow_force_buffers ) cudaFree(slow_force_buffers);
   if ( force_lists ) cudaFree(force_lists);
   if ( force_list_counters ) cudaFree(force_list_counters);
-  if ( virials ) cudaFree(virials);
+  // if ( virials ) cudaFree(virials);
+  virials = slow_virials = 0;
   if ( patch_pairs ) cudaFree(patch_pairs);
   if ( virial_buffers ) cudaFree(virial_buffers);
   if ( slow_virial_buffers ) cudaFree(slow_virial_buffers);
@@ -162,16 +164,16 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   cudaMalloc((void**) &virial_buffers, patch_pairs_alloc * 16*sizeof(float));
   cudaMalloc((void**) &slow_virial_buffers, patch_pairs_alloc * 16*sizeof(float));
   cudaMalloc((void**) &patch_pairs, patch_pairs_alloc * sizeof(patch_pair));
-  cudaMalloc((void**) &virials, 2 * force_lists_alloc * 16*sizeof(float));
-  slow_virials = virials + force_lists_size * 16;
+  // cudaMalloc((void**) &virials, 2 * force_lists_alloc * 16*sizeof(float));
+  // slow_virials = virials + force_lists_size * 16;
   cudaMalloc((void**) &force_lists, force_lists_alloc * sizeof(force_list));
   cudaMalloc((void**) &force_list_counters, force_lists_alloc * sizeof(unsigned int));
   cudaMalloc((void**) &force_buffers, force_buffers_alloc * sizeof(float4));
   cudaMalloc((void**) &slow_force_buffers, force_buffers_alloc * sizeof(float4));
   cudaMalloc((void**) &atoms, atoms_alloc * sizeof(atom));
   cudaMalloc((void**) &atom_params, atoms_alloc * sizeof(atom_param));
-  cudaMalloc((void**) &forces, atoms_alloc * sizeof(float4));
-  cudaMalloc((void**) &slow_forces, atoms_alloc * sizeof(float4));
+  // cudaMalloc((void**) &forces, atoms_alloc * sizeof(float4));
+  // cudaMalloc((void**) &slow_forces, atoms_alloc * sizeof(float4));
   cuda_errcheck("malloc everything");
 
  }
@@ -201,6 +203,20 @@ void cuda_bind_atoms(const atom *a) {
   cuda_errcheck("memcpy to atoms");
 }
 
+void cuda_bind_forces(float4 *f, float4 *f_slow) {
+  cudaHostGetDevicePointer(&forces, f, 0);
+  cuda_errcheck("cudaHostGetDevicePointer forces");
+  cudaHostGetDevicePointer(&slow_forces, f_slow, 0);
+  cuda_errcheck("cudaHostGetDevicePointer slow_forces");
+}
+
+void cuda_bind_virials(float *v) {
+  cudaHostGetDevicePointer(&virials, v, 0);
+  cuda_errcheck("cudaHostGetDevicePointer virials");
+  slow_virials = virials + force_lists_size*16;
+}
+
+#if 0
 void cuda_load_forces(float4 *f, float4 *f_slow, int begin, int count) {
   // printf("load forces %d %d %d\n",begin,count,atoms_size);
   cudaMemcpyAsync(f+begin, forces+begin, count * sizeof(float4),
@@ -219,6 +235,7 @@ void cuda_load_virials(float *v, int doSlow) {
 				cudaMemcpyDeviceToHost, stream);
   cuda_errcheck("memcpy from virials");
 }
+#endif
 
 #if 0
 __host__ __device__ static int3 patch_coords_from_id(
