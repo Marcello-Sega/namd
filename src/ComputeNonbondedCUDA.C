@@ -532,9 +532,7 @@ static float plcutoff2 = 0;
 
 static cudaEvent_t start_upload;
 static cudaEvent_t start_calc;
-static cudaEvent_t end_remote_calc;
 static cudaEvent_t end_remote_download;
-static cudaEvent_t end_local_calc;
 static cudaEvent_t end_local_download;
 
 ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compute(c) {
@@ -558,9 +556,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compu
 
   cudaEventCreate(&start_upload);
   cudaEventCreate(&start_calc);
-  cudaEventCreate(&end_remote_calc);
   cudaEventCreate(&end_remote_download);
-  cudaEventCreate(&end_local_calc);
   cudaEventCreate(&end_local_download);
 }
 
@@ -1173,7 +1169,6 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size(),
 	doSlow, usePairlists, savePairlists);
-    cudaEventRecord(end_remote_calc, stream);
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    num_local_atom_records,num_remote_atom_records);
     cudaEventRecord(end_remote_download, stream);
@@ -1190,7 +1185,6 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 	0,localComputeRecords.size(),
 	0,localActivePatches.size(),
 	doSlow, usePairlists, savePairlists);
-    cudaEventRecord(end_local_calc, stream);
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    0,num_local_atom_records);
     //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
@@ -1341,30 +1335,26 @@ int ComputeNonbondedCUDA::finishWork() {
   // CkPrintf("Pe %d CUDA kernel %f ms, total %f ms, wpa %f\n", CkMyPe(),
 	// 	kernel_time * 1.e3, time * 1.e3, wpa);
 
-  float upload_ms, remote_calc_ms, remote_download_ms;
-  float local_calc_ms, local_download_ms, total_ms;
+  float upload_ms, remote_calc_ms;
+  float local_calc_ms, total_ms;
   cuda_errcheck("before event timers");
   cudaEventElapsedTime(&upload_ms, start_upload, start_calc);
   cuda_errcheck("in event timer 1");
-  cudaEventElapsedTime(&remote_calc_ms, start_calc, end_remote_calc);
+  cudaEventElapsedTime(&remote_calc_ms, start_calc, end_remote_download);
   cuda_errcheck("in event timer 2");
-  cudaEventElapsedTime(&remote_download_ms, end_remote_calc, end_remote_download);
+  cudaEventElapsedTime(&local_calc_ms, end_remote_download, end_local_download);
   cuda_errcheck("in event timer 3");
-  cudaEventElapsedTime(&local_calc_ms, end_remote_download, end_local_calc);
-  cuda_errcheck("in event timer 4");
-  cudaEventElapsedTime(&local_download_ms, end_local_calc, end_local_download);
-  cuda_errcheck("in event timer 5");
   cudaEventElapsedTime(&total_ms, start_upload, end_local_download);
-  cuda_errcheck("in event timer 6");
+  cuda_errcheck("in event timer 4");
   cuda_errcheck("in event timers");
 
   cuda_timer_total += kernel_time;
   if ( simParams->outputCudaTiming &&
 	cuda_timer_count % simParams->outputCudaTiming == 0 ) {
     cuda_timer_total /= (cuda_timer_count + 1);
-    CkPrintf("CUDA EVENT TIMING: %d %f %f %f %f %f %f\n",
-	CkMyPe(), upload_ms, remote_calc_ms, remote_download_ms,
-			local_calc_ms, local_download_ms, total_ms);
+    CkPrintf("CUDA EVENT TIMING: %d %f %f %f %f\n",
+	CkMyPe(), upload_ms, remote_calc_ms,
+			local_calc_ms, total_ms);
     CkPrintf("CUDA TIMING: %f ms/step on node %d\n",
 			cuda_timer_total * 1.e3, CkMyPe());
     cuda_timer_count = 0;
