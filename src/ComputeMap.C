@@ -86,12 +86,14 @@ void ComputeMap::initPtrs() {
 void ComputeMap::extendPtrs() {
   if ( ! computePtrs ) NAMD_bug("ComputeMap::extendPtrs() 1");
   int oldN = nComputes;
-  Compute **oldPtrs = computePtrs;
   nComputes = computeData.size();
-  computePtrs = new Compute*[nComputes];
-  memcpy(computePtrs, oldPtrs, oldN*sizeof(Compute*));
-  memset(computePtrs+oldN, 0, (nComputes-oldN)*sizeof(Compute*));
-  delete [] oldPtrs;
+  if ( nComputes > oldN ) {
+    Compute **oldPtrs = computePtrs;
+    computePtrs = new Compute*[nComputes];
+    memcpy(computePtrs, oldPtrs, oldN*sizeof(Compute*));
+    memset(computePtrs+oldN, 0, (nComputes-oldN)*sizeof(Compute*));
+    delete [] oldPtrs;
+  }
 }
 
 //----------------------------------------------------------------------
