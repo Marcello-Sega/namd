@@ -100,7 +100,7 @@ int ComputeNonbondedSelf::noWork() {
   } else {
     // Inform load balancer
 #ifndef NAMD_CUDA
-    LdbCoordinator::Object()->skipWork(cid);
+    LdbCoordinator::Object()->skipWork(ldObjHandle);
 #endif
 
     // skip all boxes

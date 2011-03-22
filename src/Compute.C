@@ -35,6 +35,7 @@ Compute::Compute(ComputeID c) : gbisPhase(1),basePriority(0), cid(c),
   gbisPhasePriority[2] = 0;
   doAtomUpdate = false;
   computeType = ComputeMap::Object()->type(c);
+  ldObjHandle.id.id[0] = -1;
 }
 
 Compute::~Compute() {

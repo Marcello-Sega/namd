@@ -41,6 +41,7 @@ protected:
 
 public:
   const ComputeID cid;
+  LDObjHandle ldObjHandle;
 
   LocalWorkMsg *const localWorkMsg;
   Compute(ComputeID);

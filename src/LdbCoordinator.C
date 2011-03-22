@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2011/03/22 16:03:02 $
- * $Revision: 1.111 $
+ * $Date: 2011/03/22 20:31:19 $
+ * $Revision: 1.112 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -34,6 +34,7 @@
 #include "Sequencer.h"
 #include "RefineOnly.h"
 #include "ComputeMgr.h"
+#include "Compute.h"
 #include "packmsg.h"
 
 #include "elements.h"
@@ -67,8 +68,12 @@ void LdbCoordinator::Migrate(LDObjHandle handle, int dest)
   msg->handle = handle;
   msg->from = CkMyPe();
   msg->to = dest;
-  CProxy_LdbCoordinator ldbProxy(thisgroup);
-  ldbProxy[CkMyPe()].RecvMigrate(msg);
+  if ( msg->to != CkMyPe() ) {
+    CProxy_LdbCoordinator ldbProxy(thisgroup);
+    ldbProxy[CkMyPe()].RecvMigrate(msg);
+  } else {
+    ExpectMigrate(msg);
+  }
 }
 
 void LdbCoordinator::staticStatsFn(LDOMHandle h, int state)
@@ -178,7 +183,7 @@ LdbCoordinator::LdbCoordinator()
   ldBarrierHandle = theLbdb->
     AddLocalBarrierClient((LDResumeFn)staticResumeFromSync,
 			  (void*)this);
-  objHandles = 0;
+  migrateMsgs = 0; // linked list
   numComputes = 0;
   reg_all_objs = 1;
 }
@@ -187,7 +192,6 @@ LdbCoordinator::~LdbCoordinator(void)
 {
   delete [] patchNAtoms;
   delete [] sequencerThreads;
-  delete [] objHandles;
   if (CkMyPe() == 0)
   {
     delete [] computeArray;
@@ -335,16 +339,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
       }
    }
   
-    // Allocate new object handles
     if ( numComputes > oldNumComputes ) {
-      LDObjHandle *oldObjHandles = objHandles;
-      objHandles = new LDObjHandle[numComputes];
-      for(i=0; i<oldNumComputes; i++)
-        objHandles[i] = oldObjHandles[i];
-      delete [] oldObjHandles;
-      for(i=oldNumComputes; i<numComputes; i++)
-	objHandles[i].id.id[0] = -1; // Use -1 to mark unused entries
-
       // Register computes
       for(i=oldNumComputes; i<numComputes; i++)  {
 	if ( (computeMap->node(i) == Node::Object()->myid())
@@ -379,11 +374,24 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	    elemID.id[1] =  computeMap->pid(i,0);
 	  else elemID.id[1] = -1;
 
-          objHandles[i] = theLbdb->RegisterObj(myHandle,elemID,0,1);
+          Compute *c = computeMap->compute(i);
+          if ( ! c ) NAMD_bug("LdbCoordinator::initialize() null compute pointer");
+
+          c->ldObjHandle = theLbdb->RegisterObj(myHandle,elemID,0,1);
 	}
       }
     }
     theLbdb->DoneRegisteringObjects(myHandle);
+  }
+
+  // process saved migration messages, if any
+  while ( migrateMsgs ) {
+    LdbMigrateMsg *m = migrateMsgs;
+    migrateMsgs = m->next;
+    Compute *c = computeMap->compute(m->handle.id.id[0]);
+    if ( ! c ) NAMD_bug("LdbCoordinator::initialize() null compute pointer 2");
+    c->ldObjHandle = m->handle;
+    delete m;
   }
 
   // Fixup to take care of the extra timestep at startup
@@ -534,32 +542,6 @@ void LdbCoordinator::patchLoad(PatchID id, int nAtoms, int /* timestep */)
   }
 }
 
-void LdbCoordinator::startWork(ComputeID id, int /* timestep */ )
-{
-  CmiAssert(id >=0 && id < numComputes);
-  if (objHandles[id].objID().id[0] >= 0)
-     theLbdb->ObjectStart(objHandles[id]);
-}
-
-void LdbCoordinator::pauseWork(ComputeID id)
-{
-  CmiAssert(id >=0 && id < numComputes);
-  theLbdb->ObjectStop(objHandles[id]);
-}
-
-void LdbCoordinator::skipWork(ComputeID id)
-{
-  CmiAssert(id >=0 && id < numComputes);
-  nComputesReported++;
-}
-
-void LdbCoordinator::endWork(ComputeID id, int /* timestep */)
-{
-  CmiAssert(id >=0 && id < numComputes);
-  theLbdb->ObjectStop(objHandles[id]);
-  nComputesReported++;
-}
-
 void LdbCoordinator::rebalance(Sequencer *seq, PatchID pid)
 {
   if (Node::Object()->simParameters->ldBalancer == LDBAL_NONE)
@@ -624,23 +606,26 @@ void LdbCoordinator::RecvMigrate(LdbMigrateMsg* m)
 {
   // This method receives the migration from the framework,
   // unregisters it, and sends it to the destination PE
-  const int id = m->handle.id.id[0];
 
-  theLbdb->UnregisterObj(objHandles[id]);
-  objHandles[id].id.id[0] = -1;
+  if ( m->to != CkMyPe() ) {
+    theLbdb->UnregisterObj(m->handle);
 
-  CProxy_LdbCoordinator  ldbProxy(thisgroup);
-  ldbProxy[m->to].ExpectMigrate(m);
+    CProxy_LdbCoordinator  ldbProxy(thisgroup);
+    ldbProxy[m->to].ExpectMigrate(m);
+  } else {
+    ExpectMigrate(m);
+  }
 }
 
 void LdbCoordinator::ExpectMigrate(LdbMigrateMsg* m)
 {
-  objHandles[m->handle.id.id[0]] 
-    = theLbdb->RegisterObj(myHandle,m->handle.id,0,1);
+  if ( m->from != CkMyPe() ) {
+    m->handle = theLbdb->RegisterObj(myHandle,m->handle.id,0,1);
+    theLbdb->Migrated(m->handle);
+  }
 
-  theLbdb->Migrated(objHandles[m->handle.id.id[0]]);
-
-  delete m;
+  m->next = migrateMsgs;
+  migrateMsgs = m;
 }
 
 void LdbCoordinator::updateComputesReady() {

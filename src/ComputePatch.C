@@ -92,7 +92,7 @@ void ComputePatch::doWork() {
 #ifndef NAMD_CUDA
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
-    LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+    LdbCoordinator::Object()->startWork(ldObjHandle);
 #endif
   if ( (computeType != computeNonbondedSelfType ) ||
        (!patch->flags.doGBIS || gbisPhase == 1) ) {
@@ -107,11 +107,11 @@ void ComputePatch::doWork() {
 // Inform load balancer
   if (patch->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
 #ifndef NAMD_CUDA
-    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
+    LdbCoordinator::Object()->pauseWork(ldObjHandle);
 #endif
   } else {
 #ifndef NAMD_CUDA
-    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+    LdbCoordinator::Object()->endWork(ldObjHandle);
 #endif
 
   }

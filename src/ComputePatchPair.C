@@ -147,7 +147,7 @@ void ComputePatchPair::doForce(CompAtom* p[2], CompAtomExt* pExt[2], Results* r[
 void ComputePatchPair::doWork() {
 
 #ifndef NAMD_CUDA
-  LdbCoordinator::Object()->startWork(cid,0); // Timestep not used
+  LdbCoordinator::Object()->startWork(ldObjHandle);
 #endif
   if ( ( computeType != computeNonbondedPairType ) ||
         (!patch[0]->flags.doGBIS || gbisPhase == 1) ) {
@@ -163,11 +163,11 @@ void ComputePatchPair::doWork() {
  // Inform load balancer
   if (patch[0]->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
 #ifndef NAMD_CUDA
-    LdbCoordinator::Object()->pauseWork(cid); // Timestep not used
+    LdbCoordinator::Object()->pauseWork(ldObjHandle);
 #endif
   } else {
 #ifndef NAMD_CUDA
-    LdbCoordinator::Object()->endWork(cid,0); // Timestep not used
+    LdbCoordinator::Object()->endWork(ldObjHandle);
 #endif
 
   }

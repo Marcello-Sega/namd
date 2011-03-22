@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.h,v $
- * $Author: gzheng $
- * $Date: 2011/03/18 17:15:00 $
- * $Revision: 1.42 $
+ * $Author: jim $
+ * $Date: 2011/03/22 20:31:19 $
+ * $Revision: 1.43 $
  *****************************************************************************/
 
 #ifndef LDBCOORDINATOR_H
@@ -51,10 +51,21 @@ public:
   void initialize(PatchMap *pmap, ComputeMap *cmap, int reinit=0);
   void createLoadBalancer();
   void patchLoad(PatchID id, int nAtoms, int timestep);
-  void startWork(ComputeID id, int timestep=0);  // start timer
-  void pauseWork(ComputeID id);  // stop timer only
-  void skipWork(ComputeID id);  // increment counter only
-  void endWork(ComputeID id, int timestep=0);  // both
+
+  void startWork(const LDObjHandle &handle) {  // start timer
+    theLbdb->ObjectStart(handle);
+  }
+  void pauseWork(const LDObjHandle &handle) {  // stop timer only
+    theLbdb->ObjectStop(handle);
+  }
+  void skipWork(const LDObjHandle &handle) {  // increment counter only
+    nComputesReported++;
+  }
+  void endWork(const LDObjHandle &handle) {  // both
+    theLbdb->ObjectStop(handle);
+    nComputesReported++;
+  }
+
   void rebalance(Sequencer *seq, PatchID id);
   void rebalance(Controller *seq);
   void nodeDone(CkReductionMsg *);
@@ -72,7 +83,6 @@ public:
   void ReceiveAtSync(void);
   void Migrate(LDObjHandle handle, int dest);
   void RecvMigrate(LdbMigrateMsg*);
-  void ProcessMigrate(LdbMigrateMsg*);
   void ExpectMigrate(LdbMigrateMsg*);
   void ResumeFromSync(void);
 
@@ -116,7 +126,7 @@ public:
   LBDatabase *theLbdb;
   LDOMid myOMid;
   LDOMHandle myHandle;
-  LDObjHandle* objHandles;
+  LdbMigrateMsg *migrateMsgs;
   int numComputes;
   int nRegisteredObjs;
   LDBarrierClient ldBarrierHandle;
@@ -130,6 +140,7 @@ public:
   LDObjHandle handle;
   int from;
   int to;
+  LdbMigrateMsg *next;
 };
 
 

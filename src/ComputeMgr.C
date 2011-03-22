@@ -59,6 +59,8 @@
 #include "ComputeConsForceMsgs.h"
 #include "WorkDistrib.h"
 
+#include "LdbCoordinator.h"
+
 /* include all of the specific masters we need here */
 #include "FreeEnergyEnums.h"
 #include "FreeEnergyAssert.h"
@@ -170,6 +172,7 @@ void ComputeMgr::updateLocalComputes()
     ComputeMap *computeMap = ComputeMap::Object();
     CProxy_ProxyMgr pm(CkpvAccess(BOCclass_group).proxyMgr);
     ProxyMgr *proxyMgr = pm.ckLocalBranch();
+    LdbCoordinator *ldbCoordinator = LdbCoordinator::Object();
 
     computeFlag = new int[computeMap->numComputes()];
 
@@ -179,7 +182,9 @@ void ComputeMgr::updateLocalComputes()
 
         if ( computeMap->node(i) == CkMyPe() &&
              computeMap->newNumPartitions(i) > 1 ) {
-           delete computeMap->compute(i);
+           Compute *c = computeMap->compute(i);
+           ldbCoordinator->Migrate(c->ldObjHandle,CkMyPe());
+           delete c;
            computeMap->registerCompute(i,NULL);
            if ( computeMap->newNode(i) == CkMyPe() ) computeFlag[i] = 1;
            else computeFlag[i] = -1;
