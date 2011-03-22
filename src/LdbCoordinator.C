@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: gzheng $
- * $Date: 2011/03/18 17:15:00 $
- * $Revision: 1.110 $
+ * $Author: jim $
+ * $Date: 2011/03/22 16:03:02 $
+ * $Revision: 1.111 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -336,7 +336,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
    }
   
     // Allocate new object handles
-    {
+    if ( numComputes > oldNumComputes ) {
       LDObjHandle *oldObjHandles = objHandles;
       objHandles = new LDObjHandle[numComputes];
       for(i=0; i<oldNumComputes; i++)
