@@ -490,9 +490,10 @@ void OptPmeMgr::recvEvir (CkReductionMsg *msg) {
 
   SimParameters *simParams = Node::Object()->simParameters;
   int fef = simParams->fullElectFrequency;
-  for (int i = 0; i < fef; i++)
+  for (int i = 0; i < fef; i++) {
     reduction->submit();
     if (amd_reduction) amd_reduction->submit();
+  }
 }
 
 OptPmeCompute::OptPmeCompute(ComputeID c) :
