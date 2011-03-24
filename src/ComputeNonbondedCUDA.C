@@ -11,6 +11,7 @@
 #include "ComputeMgr.h"
 #include "ComputeNonbondedCUDA.h"
 #include "ComputeNonbondedCUDAKernel.h"
+#include "LJTable.h"
 #include "ObjectArena.h"
 #include "SortAtoms.h"
 #include <algorithm>
@@ -257,7 +258,34 @@ void cuda_initialize() {
 
 
 void build_cuda_force_table() {
+  ComputeNonbondedCUDA::build_lj_table();
   ComputeNonbondedCUDA::build_force_table();
+}
+
+void ComputeNonbondedCUDA::build_lj_table() {  // static
+
+  float2 t[LJ_TABLE_SIZE*LJ_TABLE_SIZE];
+  const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
+  const int dim = ljTable->get_table_dim();
+
+  if ( dim > LJ_TABLE_SIZE ) {
+    NAMD_die("Number of VDW types exceeds CUDA LJ_TABLE_SIZE");
+  }
+
+  float2 *row = t;
+  for ( int i=0; i<dim; ++i, row += LJ_TABLE_SIZE ) {
+    for ( int j=0; j<dim; ++j ) {
+      const LJTable::TableEntry *e = ljTable->table_val(i,j);
+      row[j].x = e->A * scaling;
+      row[j].y = e->B * scaling;
+    }
+  }
+
+  cuda_bind_lj_table(t);
+
+  if ( ! CkMyPe() ) {
+    CkPrintf("Info: Updated CUDA LJ table with %d x %d elements.\n", dim, dim);
+  }
 }
 
 void ComputeNonbondedCUDA::build_force_table() {  // static
@@ -374,12 +402,12 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
 static ComputeNonbondedCUDA* cudaCompute = 0;
 static ComputeMgr *computeMgr = 0;
 
-static ushort2 *exclusionsByAtom;
+static int2 *exclusionsByAtom;
 
 void ComputeNonbondedCUDA::build_exclusions() {
   Molecule *mol = Node::Object()->molecule;
   int natoms = mol->numAtoms; 
-  exclusionsByAtom = new ushort2[natoms];
+  exclusionsByAtom = new int2[natoms];
 
   // create unique sorted lists
 
@@ -943,15 +971,10 @@ void ComputeNonbondedCUDA::doWork() {
       atom_param *ap = atom_params + start;
       for ( int k=0; k<n; ++k ) {
         int j = ao[k];
+        ap[k].vdw_type = a[j].vdwType;
         ap[k].index = aExt[j].id;
         ap[k].excl_index = exclusionsByAtom[aExt[j].id].y;
         ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
-        int vdwtype = mol->atomvdwtype(aExt[j].id);
-        Real sig, eps, sig14, eps14;
-        params->get_vdw_params(&sig,&eps,&sig14,&eps14,vdwtype);
-        ap[k].sqrt_epsilon = sqrt(4.0 * scaling * eps);
-        ap[k].half_sigma = 0.5 * sig;
-// CkPrintf("%d %d %f %f\n", k, vdwtype, sig, eps);
       }
     }
     {
@@ -1223,8 +1246,8 @@ int ComputeNonbondedCUDA::finishWork() {
   }
 
   // long long int wcount = 0;
-  double virial = 0.;
-  double virial_slow = 0.;
+  // double virial = 0.;
+  // double virial_slow = 0.;
 
   for ( int i=0; i<patches.size(); ++i ) {
     patch_record &pr = patchRecords[patches[i]];
@@ -1244,16 +1267,16 @@ int ComputeNonbondedCUDA::finishWork() {
       f[j].y += af[k].y;
       f[j].z += af[k].z;
       // wcount += af[k].w;
-      virial += af[k].w;
+      // virial += af[k].w;
       if ( doSlow ) {
         f_slow[j].x += af_slow[k].x;
         f_slow[j].y += af_slow[k].y;
         f_slow[j].z += af_slow[k].z;
-        virial_slow += af_slow[k].w;
+        // virial_slow += af_slow[k].w;
       }
     }
 
-#if 0
+#if 1
     // check exclusions reported as w
     if ( CkNumPes() == 1 ) {
       const CompAtomExt *aExt = pr.xExt;

@@ -5,15 +5,45 @@
 #ifdef NAMD_CUDA
 
 
-__constant__ unsigned int exclusions[MAX_EXCLUSIONS];
+__constant__ unsigned int const_exclusions[MAX_CONST_EXCLUSIONS];
+
+static unsigned int *overflow_exclusions;
 
 #define SET_EXCL(EXCL,BASE,DIFF) \
          (EXCL)[((BASE)+(DIFF))>>5] |= (1<<(((BASE)+(DIFF))&31))
 
 void cuda_bind_exclusions(const unsigned int *t, int n) {
 
-  cudaMemcpyToSymbol(exclusions, t, n*sizeof(unsigned int), 0);
-  cuda_errcheck("memcpy to exclusions");
+  cudaMalloc((void**) &overflow_exclusions, n*sizeof(unsigned int));
+  cuda_errcheck("malloc overflow_exclusions");
+  cudaMemcpy(overflow_exclusions, t,
+		n*sizeof(unsigned int), cudaMemcpyHostToDevice);
+  cuda_errcheck("memcpy to overflow_exclusions");
+  int nconst = ( n < MAX_CONST_EXCLUSIONS ? n : MAX_CONST_EXCLUSIONS );
+  cudaMemcpyToSymbol(const_exclusions, t, nconst*sizeof(unsigned int), 0);
+  cuda_errcheck("memcpy to const_exclusions");
+}
+
+
+texture<float2, 1, cudaReadModeElementType> lj_table;
+
+void cuda_bind_lj_table(const float2 *t) {
+    static float2 *ct;
+    if ( ! ct ) {
+      cudaMalloc((void**) &ct, LJ_TABLE_SIZE*LJ_TABLE_SIZE*sizeof(float2));
+      cuda_errcheck("allocating lj table");
+    }
+    cudaMemcpy(ct, t, LJ_TABLE_SIZE*LJ_TABLE_SIZE*sizeof(float2),
+                                            cudaMemcpyHostToDevice);
+    cuda_errcheck("memcpy to lj table");
+
+    lj_table.normalized = false;
+    lj_table.addressMode[0] = cudaAddressModeClamp;
+    lj_table.filterMode = cudaFilterModePoint;
+
+    cudaBindTexture((size_t*)0, lj_table, ct,
+        LJ_TABLE_SIZE*LJ_TABLE_SIZE*sizeof(float2));
+    cuda_errcheck("binding lj table to texture");
 }
 
 
@@ -286,6 +316,7 @@ __global__ static void dev_nonbonded(
 	unsigned int *block_flags,
 	float *virial_buffers,
 	float *slow_virial_buffers,
+        const unsigned int *overflow_exclusions,
         unsigned int *force_list_counters,
         const force_list *force_lists,
         float4 *forces, float *virials,
@@ -388,8 +419,7 @@ __global__ static void dev_nonbonded(
 
   atom ipq;
   struct {
-    float sqrt_epsilon;
-    float half_sigma;
+    int vdw_type;
     int index; } iap;
 
   // load patch 1
@@ -404,9 +434,8 @@ __global__ static void dev_nonbonded(
 
     uint4 tmpap = ((uint4*)atom_params)[i];
 
-    iap.sqrt_epsilon = __int_as_float(tmpap.x);
-    iap.half_sigma = __int_as_float(tmpap.y);
-    iap.index = tmpap.z;
+    iap.vdw_type = tmpap.x;
+    iap.index = tmpap.y;
   }
 
   // avoid syncs by having all warps load pairlist
@@ -446,7 +475,10 @@ __global__ static void dev_nonbonded(
   if ( threadIdx.x < 4 * shared_size ) {
     int j = myPatchPair.patch2_atom_start + blockj;
     jpqu.i[threadIdx.x] = ((unsigned int *)(atoms + j))[threadIdx.x];
-    japu.i[threadIdx.x] = ((unsigned int *)(atom_params + j))[threadIdx.x];
+    int aptmp = ((unsigned int *)(atom_params + j))[threadIdx.x];
+    // scale vdw_type field, which is first in struct
+    if ( (threadIdx.x & 3) == 0 ) aptmp *= LJ_TABLE_SIZE;
+    japu.i[threadIdx.x] = aptmp;
   }
   __syncthreads();
 
@@ -466,32 +498,33 @@ __global__ static void dev_nonbonded(
       DO_PAIRLIST \
       if ( r2 < cutoff2 ) { \
         float4 fi = tex1D(force_table, rsqrtf(r2)); \
+        float2 ljab = tex1Dfetch(lj_table, \
+                /* LJ_TABLE_SIZE * */ japs[j].vdw_type + IAP.vdw_type); \
         bool excluded = false; \
         int indexdiff = (int)(IAP.index) - (int)(japs[j].index); \
         if ( abs(indexdiff) <= (int) japs[j].excl_maxdiff ) { \
           indexdiff += japs[j].excl_index; \
-          excluded = ((exclusions[indexdiff>>5] & (1<<(indexdiff&31))) != 0); \
+          int indexword = indexdiff >> 5; \
+          if ( indexword < MAX_CONST_EXCLUSIONS ) \
+               indexword = const_exclusions[indexword]; \
+          else indexword = overflow_exclusions[indexword]; \
+          excluded = ((indexword & (1<<(indexdiff&31))) != 0); \
         } \
-        float e = IAP.half_sigma + japs[j].half_sigma;  /* sigma */ \
-        e *= e*e;  /* sigma^3 */ \
-        e *= e;  /* sigma^6 */ \
-        e *= ( e * fi.z + fi.y );  /* s^12 * fi.z - s^6 * fi.y */ \
-        e *= IAP.sqrt_epsilon * japs[j].sqrt_epsilon;  /* full L-J */ \
         float e_slow = IPQ.charge * jpqs[j].charge; \
-        e += e_slow * fi.x; \
+        float e = ljab.x * fi.z + ljab.y * fi.y + e_slow * fi.x; \
         if ( DO_SLOW ) e_slow *= fi.w; \
         if ( ! excluded ) { \
-          ife.w += r2 * e; \
+          /* ife.w += r2 * e; */ \
           ife.x += tmpx * e; \
           ife.y += tmpy * e; \
           ife.z += tmpz * e; \
           if ( DO_SLOW ) { \
-          ife_slow.w += r2 * e_slow; \
+          /* ife_slow.w += r2 * e_slow; */ \
           ife_slow.x += tmpx * e_slow; \
           ife_slow.y += tmpy * e_slow; \
           ife_slow.z += tmpz * e_slow; \
           } \
-        } \
+        } else ife.w += 1.f; \
       } }  /* cutoff */ \
     } /* end of FORCE_INNER_LOOP macro */
 
@@ -786,7 +819,7 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
 	>>>(patch_pairs+cbegin+cstart,atoms,atom_params,force_buffers,
 	     (doSlow?slow_force_buffers:0), block_flags,
              virial_buffers, (doSlow?slow_virial_buffers:0),
-             force_list_counters, force_lists,
+             overflow_exclusions, force_list_counters, force_lists,
              forces, virials,
              (doSlow?slow_forces:0), (doSlow?slow_virials:0),
 	     lata, latb, latc, cutoff2, plcutoff2, doSlow);

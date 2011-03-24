@@ -47,21 +47,10 @@ struct __align__(16) atom {  // must be multiple of 16!
 };
 
 struct __align__(16) atom_param {  // must be multiple of 16!
-  float sqrt_epsilon;
-  float half_sigma;
-  unsigned int index;
-  unsigned short excl_index;
-  unsigned short excl_maxdiff;  // maxdiff == 0 -> only excluded from self
-};
-
-struct shared_atom {  // do not align, size to avoid bank conflicts
-  float3 position;
-  float charge;
-  float sqrt_epsilon;
-  float half_sigma;
-  unsigned int index;
-  unsigned int excl_index;
-  unsigned int excl_maxdiff;  // maxdiff == 0 -> only excluded from self
+  int vdw_type;
+  int index;
+  int excl_index;
+  int excl_maxdiff;  // maxdiff == 0 -> only excluded from self
 };
 
 #define COPY_ATOM( DEST, SOURCE ) { \
@@ -90,9 +79,17 @@ struct shared_atom {  // do not align, size to avoid bank conflicts
   }
 
 // 2^11 ints * 2^5 bits = 2^16 bits = range of unsigned short excl_index
-#define MAX_EXCLUSIONS 2048  // cache size is 8k
+// 2^26 ints * 2^5 bits = 2^32 bits = range of int excl_index
+#define MAX_EXCLUSIONS (1<<26)
+#define MAX_CONST_EXCLUSIONS 2048  // cache size is 8k
 
 void cuda_bind_exclusions(const unsigned int *t, int n);
+
+// use stride of 11*16 = 176 to reduce cache collisions
+// index in table can be calculated using signed short
+#define LJ_TABLE_SIZE 176
+
+void cuda_bind_lj_table(const float2 *t);
 
 // #define FORCE_TABLE_SIZE 512
 // maximum size of CUDA array 1D texture reference is 2^13 = 8192

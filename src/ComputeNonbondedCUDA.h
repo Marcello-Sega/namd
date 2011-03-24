@@ -45,6 +45,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int workStarted;
     int finishWork();  // returns true when finished, false to continue
 
+    static void build_lj_table();
     static void build_force_table();
 
     void build_exclusions();
