@@ -174,11 +174,10 @@ void ComputeMgr::updateLocalComputes()
     ProxyMgr *proxyMgr = pm.ckLocalBranch();
     LdbCoordinator *ldbCoordinator = LdbCoordinator::Object();
 
-    computeFlag = new int[computeMap->numComputes()];
+     computeFlag.resize(0);
 
     const int nc = computeMap->numComputes();
     for (int i=0; i<nc; i++) {
-        computeFlag[i] = 0;
 
         if ( computeMap->node(i) == CkMyPe() &&
              computeMap->newNumPartitions(i) > 1 ) {
@@ -186,12 +185,11 @@ void ComputeMgr::updateLocalComputes()
            ldbCoordinator->Migrate(c->ldObjHandle,CkMyPe());
            delete c;
            computeMap->registerCompute(i,NULL);
-           if ( computeMap->newNode(i) == CkMyPe() ) computeFlag[i] = 1;
-           else computeFlag[i] = -1;
+           if ( computeMap->newNode(i) == CkMyPe() ) computeFlag.add(i); 
         } else
         if (computeMap->newNode(i) == CkMyPe() && computeMap->node(i) != CkMyPe())
         {
-            computeFlag[i] = 1;
+	    computeFlag.add(i);
             for (int n=0; n < computeMap->numPids(i); n++)
             {
                 proxyMgr->createProxy(computeMap->pid(i,n));
@@ -200,7 +198,6 @@ void ComputeMgr::updateLocalComputes()
         else if (computeMap->node(i) == CkMyPe() &&
                  (computeMap->newNode(i) != -1 && computeMap->newNode(i) != CkMyPe() ))
         {
-            computeFlag[i] = -1;
             // CkPrintf("delete compute %d on pe %d\n",i,CkMyPe());
             delete computeMap->compute(i);
             computeMap->registerCompute(i,NULL);
@@ -241,13 +238,8 @@ ComputeMgr::updateLocalComputes3()
       }
     }
  
-    for (int i=0; i<nc; i++) {
-        if (1 == computeFlag[i]) {
-            createCompute(i, computeMap);
-            // CkPrintf("create compute %d on pe %d\n",i,CkMyPe());
-        }
-    }
-    delete[] computeFlag;
+    for(int i=0; i<computeFlag.size(); i++) createCompute(computeFlag[i], computeMap);
+    computeFlag.clear();
 
     proxyMgr->removeUnusedProxies();
 

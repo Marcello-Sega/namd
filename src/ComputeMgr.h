@@ -101,7 +101,7 @@ private:
   int updateComputesReturnEP;
   CkGroupID updateComputesReturnChareID;
 
-  int *computeFlag;
+  ResizeArray<int> computeFlag;
 };
 
 #endif /* COMPUTEMGR_H */
