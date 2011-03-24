@@ -302,7 +302,7 @@ void ComputeNonbondedUtil :: NAME
 	 		params->groupplcutoff * params->groupplcutoff;
   const BigReal dielectric_1 = ComputeNonbondedUtil:: dielectric_1;
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
-  LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0; TABENERGY(ljNull.tabletype=-1;)
+  LJTable::TableEntry ljNull;  ljNull.A = 0; ljNull.B = 0;
   const LJTable::TableEntry* const lj_null_pars = &ljNull;
   const Molecule* const mol = ComputeNonbondedUtil:: mol;
   SHORT

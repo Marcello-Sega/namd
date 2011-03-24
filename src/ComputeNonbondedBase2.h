@@ -55,7 +55,7 @@ ALCHPAIR(
 #endif
       
       TABENERGY(
-      register const int tabtype = lj_pars->tabletype;
+      register const int tabtype = -1 - ( lj_pars->A < 0 ? lj_pars->A : 0 );
       register int eneraddress;
       register BigReal r1;
       )

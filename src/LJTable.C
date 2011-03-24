@@ -47,31 +47,39 @@ void LJTable::compute_vdw_params(int i, int j,
 				 LJTable::TableEntry *cur_scaled)
 {
   Parameters *params = Node::Object()->parameters;
-  int useGeom = Node::Object()->simParameters->vdwGeometricSigma;
+  SimParameters *simParams = Node::Object()->simParameters;
+  int useGeom = simParams->vdwGeometricSigma;
+  Bool tabulatedEnergies = simParams->tabulatedEnergies;
 
   Real A, B, A14, B14;
-  int K;
+  int K = -1;
   // BigReal sigma_max;
   //  We need the A and B parameters for the Van der Waals.  These can
   //  be explicitly be specified for this pair or calculated from the
   //  sigma and epsilon values for the two atom types
 //  printf("Looking at interaction of  %i with %i\n", i, j);
-  if (params->get_table_pair_params(i,j,&K)) {
+  if ( tabulatedEnergies && params->get_table_pair_params(i,j,&K)) {
 //    printf("Making this interaction tabulated. %i %i %i\n", i, j, K);
-    cur->tabletype = K;
-    cur_scaled->tabletype = K;
-  } else {
-    cur->tabletype = -1;
-    cur_scaled->tabletype = -1;
-  }
+#ifdef NAMD_CUDA
+    NAMD_die("Tabulated energies are not supported in CUDA-enabled NAMD");
+#endif
+    if ( K < 0 ) NAMD_bug(
+        "LJTable::compute_vdw_params: energy table index is negative");
 
-  if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14))
+    cur->A = -1 - K;
+    cur->B = 0;
+    cur_scaled->A = -1 - K;
+    cur_scaled->B = 0;
+  }
+  else if (params->get_vdw_pair_params(i,j, &A, &B, &A14, &B14))
   {
     cur->A = A;
     cur->B = B;
     cur_scaled->A = A14;
     cur_scaled->B = B14;
 
+    if ( tabulatedEnergies && ( cur->A < 0 || cur_scaled->A < 0 ) )
+      NAMD_die("LJ A is negative with tabulatedEnergies enabled");
 
     // BigReal sigma_ij, sigma_ij14;
 
@@ -116,6 +124,9 @@ void LJTable::compute_vdw_params(int i, int j,
     cur->A = cur->B * sigma_ij;
     cur_scaled->B = 4.0 * sigma_ij14 * epsilon_ij14;
     cur_scaled->A = cur_scaled->B * sigma_ij14;
+
+    if ( tabulatedEnergies && ( cur->A < 0 || cur_scaled->A < 0 ) )
+      NAMD_die("LJ A is negative with tabulatedEnergies enabled");
   }
   //  Calculate exclcut2
   // cur_scaled->exclcut2 = cur->exclcut2 = 0.64 * sigma_max * sigma_max;
