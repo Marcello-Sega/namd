@@ -25,7 +25,7 @@ module WorkDistrib {
     entry void savePatchMap(PatchMapMsg *);
     entry void saveComputeMap(ComputeMapMsg *);
     entry void recvComputeMapChanges(ComputeMapChangeMsg *);
-    entry void doneSaveComputeMap(void);
+    entry void doneSaveComputeMap(CkReductionMsg *);
     entry void enqueueWork(LocalWorkMsg *);
     entry void enqueueExcls(LocalWorkMsg *);
     entry void enqueueBonds(LocalWorkMsg *);

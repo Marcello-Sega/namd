@@ -73,7 +73,7 @@ public:
   void sendComputeMap(void);
   void saveComputeMapChanges(int,CkGroupID);
   void recvComputeMapChanges(ComputeMapChangeMsg *);
-  void doneSaveComputeMap();
+  void doneSaveComputeMap(CkReductionMsg *);
 
   FullAtomList *createAtomLists(void);
   void createHomePatches(void);
@@ -118,7 +118,6 @@ private:
 
   int saveComputeMapReturnEP;
   CkGroupID saveComputeMapReturnChareID;
-  int saveComputeMapCount;
 };
 
 #endif /* WORKDISTRIB_H */

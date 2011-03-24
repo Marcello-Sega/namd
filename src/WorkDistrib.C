@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2011/03/12 21:34:39 $
- * $Revision: 1.1222 $
+ * $Author: gzheng $
+ * $Date: 2011/03/24 19:14:35 $
+ * $Revision: 1.1223 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -87,7 +87,6 @@ void WorkDistrib::saveComputeMapChanges(int ep, CkGroupID chareID)
 {
   saveComputeMapReturnEP = ep;
   saveComputeMapReturnChareID = chareID;
-  saveComputeMapCount = CkNumPes();
 
   ComputeMap *computeMap = ComputeMap::Object();
 
@@ -133,14 +132,14 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
 
   delete msg;
 
-  CProxy_WorkDistrib workProxy(thisgroup);
-  workProxy[0].doneSaveComputeMap();
+  CkCallback cb(CkIndex_WorkDistrib::doneSaveComputeMap(NULL), 0, thisgroup);
+  contribute(NULL, 0, CkReduction::random, cb);
 }
 
-void WorkDistrib::doneSaveComputeMap() {
-  if (!--saveComputeMapCount) { 
-    CkSendMsgBranch(saveComputeMapReturnEP, CkAllocMsg(0,0,0), 0, saveComputeMapReturnChareID);
-  }
+void WorkDistrib::doneSaveComputeMap(CkReductionMsg *msg) {
+  delete msg;
+
+  CkSendMsgBranch(saveComputeMapReturnEP, CkAllocMsg(0,0,0), 0, saveComputeMapReturnChareID);
 }
 
 #ifdef MEM_OPT_VERSION
