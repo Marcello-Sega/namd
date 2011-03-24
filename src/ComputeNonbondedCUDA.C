@@ -402,6 +402,12 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
 static ComputeNonbondedCUDA* cudaCompute = 0;
 static ComputeMgr *computeMgr = 0;
 
+struct exlist_sortop {
+  bool operator() (int32 *li, int32 *lj) {
+    return ( li[1] < lj[1] );
+  }
+};
+
 static int2 *exclusionsByAtom;
 
 void ComputeNonbondedCUDA::build_exclusions() {
@@ -413,8 +419,8 @@ void ComputeNonbondedCUDA::build_exclusions() {
 
   ObjectArena<int32> listArena;
   ResizeArray<int32*> unique_lists;
+  int32 **listsByAtom = new int32*[natoms];
   SortableResizeArray<int32> curList;
-  int totalbits = 0;
   for ( int i=0; i<natoms; ++i ) {
     const int32 *mol_list = mol->get_full_exclusions_for_atom(i);
     curList.resize(0);
@@ -439,16 +445,28 @@ void ComputeNonbondedCUDA::build_exclusions() {
       maxdiff = -1 * curList[0];
       if ( curList[n-1] > maxdiff ) maxdiff = curList[n-1];
       list[1] = maxdiff;
-      list[2] = totalbits + maxdiff;
-      totalbits += 2*maxdiff + 1;
       for ( int k=0; k<n; ++k ) {
         list[k+3] = curList[k];
       }
       unique_lists.add(list);
     }
-    exclusionsByAtom[i].x = unique_lists[j][1];  // maxdiff
-    exclusionsByAtom[i].y = unique_lists[j][2];  // start
+    listsByAtom[i] = unique_lists[j];
   }
+  // sort lists by maxdiff
+  std::stable_sort(unique_lists.begin(), unique_lists.end(), exlist_sortop());
+  int totalbits = 0;
+  int nlists = unique_lists.size();
+  for ( int j=0; j<nlists; ++j ) {
+    int32 *list = unique_lists[j];
+    int maxdiff = list[1];
+    list[2] = totalbits + maxdiff;
+    totalbits += 2*maxdiff + 1;
+  }
+  for ( int i=0; i<natoms; ++i ) {
+    exclusionsByAtom[i].x = listsByAtom[i][1];  // maxdiff
+    exclusionsByAtom[i].y = listsByAtom[i][2];  // start
+  }
+  delete [] listsByAtom;
 
   if ( totalbits & 31 ) totalbits += ( 32 - ( totalbits & 31 ) );
 
