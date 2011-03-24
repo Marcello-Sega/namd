@@ -31,66 +31,6 @@ inline BigReal FastTanH( BigReal x ) {
   return (a)/(a+12);
 }
 
-//vdwType for all22,27
-inline Real TypeToScreen(int vdwType) {
-return
-  (vdwType <  18 ) ? 0.85 : // H
-  (vdwType <  50 ) ? 0.72 : // C
-  (vdwType <  62 ) ? 0.79 : // N
-  (vdwType <  79 ) ? 0.85 : // O
-  (vdwType <  84 ) ? 0.96 : // S
-  (vdwType <  87 ) ? 0.80 : // HE&Ne, Default
-  (vdwType <  90 ) ? 0.72 : // C
-  (vdwType <  92 ) ? 0.80 : // Fe&Cl, Default
-  (vdwType <  96 ) ? 0.88 : // F
-  (vdwType == 99 ) ? 0.80 : // dummy, Default
-  (vdwType < 116 ) ? 0.85 : // H
-  (vdwType < 145 ) ? 0.72 : // C
-  (vdwType < 164 ) ? 0.79 : // N
-  (vdwType < 180 ) ? 0.85 : // O
-  (vdwType < 182 ) ? 0.88 : // F
-  (vdwType < 185 ) ? 0.86 : // P
-  (vdwType < 197 ) ? 0.80 : // Several Defaults
-  (vdwType < 215 ) ? 0.72 : // C
-  (vdwType < 222 ) ? 0.79 : // N
-  (vdwType ==222 ) ? 0.96 : // S
-                     0.80 ; // All Others, Default
-}
-
-//vdwType for all22,27
-inline Real TypeToRadius(int vdwType) {//, Mass mj) {
-return
-  (vdwType <  18 ) ? 1.20 : // H
-  (vdwType <  50 ) ? 1.70 : // C
-  (vdwType <  62 ) ? 1.55 : // N
-  (vdwType <  79 ) ? 1.50 : // O
-  (vdwType <  84 ) ? 1.80 : // S
-  (vdwType == 85 ) ? 1.40 : // HE
-  (vdwType == 86 ) ? 1.54 : // Ne
-  (vdwType <  90 ) ? 1.70 : // C
-  (vdwType == 90 ) ? 1.50 : // Fe, Default
-  (vdwType == 91 ) ? 1.70 : // Cl
-  (vdwType <  96 ) ? 1.50 : // F
-  (vdwType == 99 ) ? 1.20 : // dummy
-  (vdwType < 116 ) ? 1.20 : // H
-  (vdwType < 145 ) ? 1.70 : // C
-  (vdwType < 164 ) ? 1.55 : // N
-  (vdwType < 180 ) ? 1.50 : // O
-  (vdwType < 182 ) ? 1.50 : // F
-  (vdwType < 185 ) ? 1.85 : // P
-  (vdwType ==190 ) ? 2.27 : // Na
-  (vdwType ==191 ) ? 1.73 : // Mg
-  (vdwType ==192 ) ? 2.75 : // K
-  (vdwType ==193 ) ? 1.50 : // Cs, Default
-  (vdwType ==194 ) ? 0.20 : // Ca, Default
-  (vdwType ==195 ) ? 1.70 : // Cl
-  (vdwType ==196 ) ? 1.39 : // Zn
-  (vdwType < 215 ) ? 1.70 : // C
-  (vdwType < 222 ) ? 1.55 : // N
-  (vdwType ==222 ) ? 1.80 : // S
-                     1.50 ; // All Others, Default
-}
-
 /******************************************************************************
  * use mass to determine element
  * return Bondi radius
