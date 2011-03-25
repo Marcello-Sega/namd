@@ -37,9 +37,6 @@ Windows, Mac OX X (Intel), and Linux-x86\_64-multicore released binaries
 are based on ``multicore'' builds of Charm++ that can run multiple threads.
 These multicore builds lack a network layer, so they can only be used on a
 single machine.
-The Solaris (Sparc and x86-64) released binaries are based on ``smp''
-builds of Charm++ that can be used with multiple threads on either a
-single machine like a multicore build, or across a network.
 For best performance use one thread per processor with the +p option:
 
 \begin{verbatim}
@@ -55,6 +52,11 @@ required to specify that only the local machine is being used:
 \end{verbatim}
 
 You may need to specify the full path to the namd2 binary.
+
+\subsection{Windows Clusters and Workstation Networks}
+
+The Win64-MPI version of NAMD runs on Windows HPC Server and should be
+launched as you would any other MPI program.
 
 \subsection{Linux Clusters with InfiniBand or Other High-Performance Networks}
 
@@ -181,10 +183,35 @@ machines you would not multiply \$\#NODES by two.
 Note that these example scripts and the setenv command are for the csh
 or tcsh shells.  They must be translated to work with sh or bash.
 
-\subsection{Windows Clusters and Workstation Networks}
+\subsection{Shared-Memory and Network-Based Parallelism (SMP Builds)}
 
-The Win64-MPI version of NAMD runs on Windows HPC Server and should be
-launched as you would any other MPI program.
+The Linux-x86\_64-ibverbs-smp and Solaris-x86\_64-smp released binaries are
+based on "smp" builds of Charm++ that can be used with multiple threads
+on either a single machine like a multicore build, or across a network.
+SMP builds combine multiple worker threads and an extra communication
+thread into a single process.  Since one core per process is used for
+the communication thread SMP builds are typically slower than non-SMP
+builds.  The advantage of SMP builds is that many data structures are
+shared among the threads, reducing the per-core memory footprint when
+scaling large simulations to large numbers of cores.
+
+SMP builds launched with charmrun use +p to specify the total number of
+PEs (worker threads) and +ppn to specify the number of PEs per process.
+Thus, to run one process with one communication and three worker threads
+on each of four quad-core nodes one would specify:
+
+\begin{verbatim}
+  charmrun namd2 +p12 +ppn 3 <configfile>
+\end{verbatim}
+
+For MPI-based SMP builds one would specify any mpiexec options needed
+for the required number of processes and pass +ppn to the NAMD binary as:
+
+\begin{verbatim}
+  mpiexec -np 4 namd2 +ppn 3 <configfile>
+\end{verbatim}
+
+See the Cray XT directions below for a more complex example.
 
 \subsection{Cray XT}
 
