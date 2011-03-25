@@ -15,11 +15,25 @@ is supported by the NIH National Center for Research Resources.
 
 NAMD 2.8b1 has many advantages over NAMD 2.7, among these are:
 
--
+- Generalized Born implicit solvent model
 
--
+- Accelerated molecular dynamics method
 
--
+- MARTINI residue-based coarse-grain forcefield
+
+- Non-uniform grids in grid forces
+
+- Symmetry and domain restraints
+
+- Collective variables module improvements
+
+- Force output and trajectory files
+
+- Shared-memory single-node and multiple-node builds
+
+- Measurement-based grain-size adjustment in load balancer
+
+- Experimental memory-optimized version with parallel I/O
 
 - Enhanced performance and scalability
 
