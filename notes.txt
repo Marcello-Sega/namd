@@ -85,8 +85,8 @@ processor core you can run the namd2 binary directly:
 
   namd2 <configfile>
 
-For multicore workstations, Windows and Mac OX X (Intel) released binaries 
-are based on "multicore" builds of Charm++ that can run multiple threads. 
+Windows, Mac OX X (Intel), and Linux-x86_64-multicore released binaries 
+are based on "multicore" builds of Charm++ that can run multiple threads.
 These multicore builds lack a network layer, so they can only be used on a 
 single machine. The Solaris (Sparc and x86_64) released binaries are based 
 on "smp" builds of Charm++ that can be used with multiple threads on 
@@ -103,7 +103,7 @@ required to specify that only the local machine is being used:
 
 You may need to specify the full path to the namd2 binary.
 
--- Linux Clusters with InfiniBand Or Other High-Performance Networks --
+-- Linux Clusters with InfiniBand or Other High-Performance Networks --
 
 Charm++ provides a special ibverbs network layer that uses InfiniBand
 networks directly through the OpenFabrics OFED ibverbs library.  This
@@ -223,7 +223,7 @@ launched as you would any other MPI program.
 
 -- Cray XT --
 
-You will need to load the GPU compiler module, build Charm++ for mpi-crayxt
+You will need to load the GNU compiler module, build Charm++ for mpi-crayxt
 and NAMD for CRAY-XT-g++, use the following command in your batch script:
 
   aprun -n $PBS_NNODES -cc cpu namd2
