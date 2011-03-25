@@ -35,6 +35,10 @@ NAMD 2.8b1 has many advantages over NAMD 2.7, among these are:
 
 - Experimental memory-optimized version with parallel I/O
 
+- Microsoft Windows HPC Server port and released binaries
+
+- Support for NBFIX parameters in CUDA builds
+
 - Enhanced performance and scalability
 
 Details at http://www.ks.uiuc.edu/Research/namd/2.8/features.html
