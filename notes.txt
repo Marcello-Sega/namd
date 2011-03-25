@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                       NAMD 2.7 Release Notes                       |
+|                      NAMD 2.8b1 Release Notes                      |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -340,8 +340,8 @@ scalar pressure values than in energies.
 To benefit from GPU acceleration you will need a CUDA build of NAMD
 and a recent high-end NVIDIA video card.  CUDA builds will not function
 without a CUDA-capable GPU.  You will also need to be running the
-NVIDIA Linux driver version 195.17 or newer (NAMD 2.7 released binaries
-are built with CUDA 2.3, but can be built with 3.0 or 3.1 as well).
+NVIDIA Linux driver version 195.17 or newer (NAMD 2.8b1 released binaries
+are built with CUDA 2.3, but can be built with newer versions as well).
 
 Finally, the libcudart.so.2 included with the binary (the one copied from
 the version of CUDA it was built with) must be in a directory in your
@@ -369,6 +369,7 @@ example processes 0 and 2 will share device 0 and processes 1 and 3 will
 share device 2.  One could also specify +devices 0,0,2,2 to cause device
 0 to be shared by processes 0 and 1, etc.  GPUs with two or fewer
 multiprocessors are ignored unless specifically requested with +devices.
+GPUs of compute capability 1.0 are no longer supported and are ignored.
 
 While charmrun with ++local will preserve LD_LIBRARY_PATH, normal
 charmrun does not.  You can use charmrun ++runscript to add the namd2
@@ -411,8 +412,8 @@ to set the path to TCL and FFTW libraries correctly.
 As an example, here is the build sequence for 64-bit Linux workstations:
 
 Unpack NAMD and matching Charm++ source code and enter directory:
-  tar xzf NAMD_2.7_Source.tar.gz
-  cd NAMD_2.7_Source
+  tar xzf NAMD_2.8b1_Source.tar.gz
+  cd NAMD_2.8b1_Source
   tar xf charm-6.3.0.tar
   cd charm-6.3.0
 
@@ -431,7 +432,7 @@ Build and test the Charm++/Converse library (MPI version):
   cd ../../../../..
 
 Download and install TCL and FFTW libraries:
-  (cd to NAMD_2.7_Source if you're not already there)
+  (cd to NAMD_2.8b1_Source if you're not already there)
   wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
   tar xzf fftw-linux-x86_64.tar.gz
   mv linux-x86_64 fftw
@@ -440,7 +441,7 @@ Download and install TCL and FFTW libraries:
   mv linux-x86_64 tcl
 
 Optionally edit various configuration files:
-  (not needed if charm-6.3.0, fftw, and tcl are in NAMD_2.7_Source)
+  (not needed if charm-6.3.0, fftw, and tcl are in NAMD_2.8b1_Source)
   vi Make.charm  (set CHARMBASE to full path to charm)
   vi arch/Linux-x86_64.fftw     (fix library name and path to files)
   vi arch/Linux-x86_64.tcl      (fix library version and path to TCL files)
