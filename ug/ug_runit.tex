@@ -33,7 +33,7 @@ one processor core you can run the any non-MPI namd2 binary directly:
   namd2 <configfile>
 \end{verbatim}
 
-For multicore workstations, Windows and Mac OX X (Intel) released binaries
+Windows, Mac OX X (Intel), and Linux-x86\_64-multicore released binaries
 are based on ``multicore'' builds of Charm++ that can run multiple threads.
 These multicore builds lack a network layer, so they can only be used on a
 single machine.
@@ -56,7 +56,7 @@ required to specify that only the local machine is being used:
 
 You may need to specify the full path to the namd2 binary.
 
-\subsection{Linux Clusters with InfiniBand Or Other High-Performance Networks}
+\subsection{Linux Clusters with InfiniBand or Other High-Performance Networks}
 
 Charm++ provides a special ibverbs network layer that uses InfiniBand
 networks directly through the OpenFabrics OFED ibverbs library.  This
@@ -66,7 +66,7 @@ pre-built ibverbs NAMD binaries or specify ibverbs when building Charm++.
 Writing batch job scripts to run charmrun in a queueing system can be
 challenging.  Since most clusters provide directions for using mpiexec
 to launch MPI jobs, charmrun provides a ++mpiexec option to use mpiexec
-to launch non-MPI binaries.  If "mpiexec -np {\em procs} ..." is not
+to launch non-MPI binaries.  If ``mpiexec -np {\em procs} ...'' is not
 sufficient to launch jobs on your cluster you will need to write an
 executable mympiexec script like the following from TACC:
 
@@ -181,18 +181,66 @@ machines you would not multiply \$\#NODES by two.
 Note that these example scripts and the setenv command are for the csh
 or tcsh shells.  They must be translated to work with sh or bash.
 
-\subsection{Windows Workstation Networks}
+\subsection{Windows Clusters and Workstation Networks}
 
-These are no longer supported, but NAMD has been reported to compile
-on Windows HPC Server.
+The Win64-MPI version of NAMD runs on Windows HPC Server and should be
+launched as you would any other MPI program.
 
-\subsection{SGI Altix}
+\subsection{Cray XT}
 
-Be sure that the {\tt MPI\_DSM\_DISTRIBUTE} environment variable is set, then
-use the Linux-Itanium-MPI-Altix version of NAMD along with the system mpirun:
+You will need to load the GNU compiler module, build Charm++ for mpi-crayxt
+and NAMD for CRAY-XT-g++, use the following command in your batch script:
 
 \begin{verbatim}
-mpirun -np <procs> <configfile>
+  aprun -n $PBS_NNODES -cc cpu namd2
+\end{verbatim}
+
+To reduce memory usage, build Charm++ mpi-crayxt-smp instead and use
+(assuming you have 12 cores per node on your machine):
+
+\begin{verbatim}
+setenv MPICH_PTL_UNEX_EVENTS 100000
+@ NPROC = $PBS_NNODES / 12
+aprun -n $NPROC -N 1 -d 12 namd2 +ppn 11 +setcpuaffinity +pemap 1-11 +commap 0
+\end{verbatim}
+
+For two processes per node (for possibly better scaling) use:
+
+\begin{verbatim}
+setenv MPICH_PTL_UNEX_EVENTS 100000
+@ NPROC = $PBS_NNODES / 6
+aprun -n $NPROC -N 2 -d 6 namd2 +ppn 5 +setcpuaffinity \
+                                +pemap 1-8,10,11 +commap 0,9 ...
+\end{verbatim}
+
+For three processes per node use:
+
+\begin{verbatim}
+setenv MPICH_PTL_UNEX_EVENTS 100000
+@ NPROC = $PBS_NNODES / 4
+aprun -n $NPROC -N 3 -d 4 namd2 +ppn 3 +setcpuaffinity \
+                                +pemap 1-5,7,8,10,11 +commap 0,6,9 ...
+\end{verbatim}
+
+The strange +pemap and +commap settings place the communication threads
+on cores that have been observed to have higher operating system loads.
+
+\subsection{SGI Altix UV}
+
+Use Linux-x86\_64-multicore and the following script to set CPU affinity:
+
+\begin{verbatim}
+  namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
+     "+p%d +pemap %d",(NF-1),$2; for(i=3;i<=NF;++i){printf ",%d",$i}}'` ...
+\end{verbatim}
+
+For runs on large numbers of cores (you will need to experiment) use the
+following to enable the Charm++ communication thread:
+
+\begin{verbatim}
+  namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
+     "+p%d +pemap %d",(NF-2),$2; for(i=3;i<NF;++i){printf ",%d",$i}; \
+     print " +commthread +commap",$NF}'`
 \end{verbatim}
 
 \subsection{IBM POWER Clusters}
@@ -204,6 +252,53 @@ example, to run on Blue Horizon one would specify:
 
 \begin{verbatim}
   poe namd2 <configfile> -nodes <procs/8> -tasks_per_node 8
+\end{verbatim}
+
+\subsection{CPU Affinity}
+
+NAMD may run faster on some machines if threads or processes are set to
+run on (or not run on) specific processor cores (or hardware threads).
+On Linux this can be done at the process level with the numactl utility,
+but NAMD provides its own options for assigning threads to cores.  This
+feature is enabled by adding +setcpuaffinity to the namd2 command line,
+which by itself will cause NAMD (really the underlying Charm++ library)
+to assign threads/processes round-robin to available cores in the order
+they are numbered by the operating system.  This may not be the fastest
+configuration if NAMD is running fewer threads than there are cores
+available and consecutively numbered cores share resources such as
+memory bandwidth or are hardware threads on the same physical core.
+
+If needed, specific cores for the Charm++ PEs (processing elements) and
+communication threads (on all SMP builds and on multicore builds when
+the +commthread option is specified) can be set by adding the +pemap
+and (if needed) +commap options with lists of core sets in the form
+``lower[-upper[:stride[.run]]][,...]''.  A single number identifies a
+particular core.  Two numbers separated by a dash identify an inclusive
+range (lower bound and upper bound).  If they are followed by a colon and
+another number (a stride), that range will be stepped through in increments
+of the additional number.  Within each stride, a dot followed by a run will
+indicate how many cores to use from that starting point.  For example, the
+sequence 0-8:2,16,20-24 includes cores 0, 2, 4, 6, 8, 16, 20, 21, 22, 23, 24.
+On a 4-way quad-core system three cores from each socket would be 0-15:4.3
+if cores on the same chip are numbered consecutively.  There is no need
+to repeat cores for each node in a run as they are reused in order.
+
+For example, the IBM POWER7 has four hardware threads per core and the
+first thread can use all of the core's resources if the other threads are
+idle; threads 0 and 1 split the core if threads 2 and 3 are idle, but
+if either of threads 2 or 3 are active the core is split four ways.  The
+fastest configuration of 32 threads or processes on a 128-thread 32-core
+is therefore ``+setcpuaffinity +pemap 0-127:4''.  For 64 threads we need
+cores 0,1,4,5,8,9,... or 0-127:4.2.  Running 4 processes with ++ppn 31
+would be ``+setcpuaffinity +pemap 0-127:32.31 +commap 31-127:32''
+
+For an Altix UV or other machines where the queueing system assigns cores
+to jobs this information must be obtained with numactl --show and passed
+to NAMD in order to set thread affinity (which will improve performance):
+
+\begin{verbatim}
+  namd2 +setcpuaffinity `numactl --show | awk '/^physcpubind/ {printf \
+     "+p%d +pemap %d",(NF-1),$2; for(i=3;i<=NF;++i){printf ",%d",$i}}'` ...
 \end{verbatim}
 
 \subsection{CUDA GPU Acceleration}
@@ -255,6 +350,7 @@ example processes 0 and 2 will share device 0 and processes 1 and 3 will
 share device 2.  One could also specify +devices 0,0,2,2 to cause device
 0 to be shared by processes 0 and 1, etc.  GPUs with two or fewer
 multiprocessors are ignored unless specifically requested with +devices.
+GPUs of compute capability 1.0 are no longer supported and are ignored.
 
 While charmrun with ++local will preserve LD\_LIBRARY\_PATH, normal
 charmrun does not.  You can use charmrun ++runscript to add the namd2
@@ -322,35 +418,32 @@ both 25 and 50 cycles (see the stepspercycle parameter) and base your
 estimate on the additional time needed for the longer simulation in
 order to exclude startup costs and allow for initial load balancing.
 
-We provide both standard (UDP) and TCP based precompiled binaries
-for Linux clusters.  We have observed that the TCP version is better
-on our dual processor clusters with gigabit ethernet while the basic
-UDP version is superior on our single processor fast ethernet cluster.
-When using the UDP version with gigabit you can add the +giga option
-to adjust several tuning parameters.  Additional performance may be
-gained by building NAMD against an SMP version of Charm++ such as
-net-linux-smp or net-linux-smp-icc.  This will use a communication
-thread for each process to respond to network activity more rapidly.
-For dual processor clusters we have found it that running two separate
-processes per node, each with its own communication thread, is faster
-than using the charmrun ++ppn option to run multiple worker threads.
-However, we have observed that when running on a single hyperthreaded
-processor (i.e., a newer Pentium 4) there is an additional 15\% boost
-from running standalone with two threads (namd2 +p2) beyond running
-two processors (charmrun namd2 ++local +p2).  For a cluster of single
-processor hyperthreaded machines an SMP version should provide very
-good scaling running one process per node since the communication
-thread can run very efficiently on the second virtual processor.  We
-are unable to ship an SMP build for Linux due to portability problems
-with the Linux pthreads implementation needed by Charm++.
+Multicore builds scale well within a single node.  On machines with more
+than 32 cores it may be necessary to add a communication thread and run
+on one fewer core than the machine has.  On a 48-core machine this would
+be run as ``namd2 +p47 +commthread''.  Performance may also benefit from
+setting CPU affinity using the +setcpuaffinity +pemap <map> +commap <map>
+options described in CPU Affinity above.  Experimentation is needed.
 
-Extremely short cycle lengths (less than 10 steps) will also limit
-parallel scaling, since the atom migration at the end of each cycle
-sends many more messages than a normal force evaluation.  Increasing
-pairlistdist from, e.g., cutoff + 1.5 to cutoff + 2.5, while also
-doubling stepspercycle from 10 to 20, may increase parallel scaling,
-but it is important to measure.  When increasing stepspercycle, also
-try increasing pairlistspercycle by the same proportion.
+We provide standard (UDP), TCP, and ibverbs (InfiniBand) precompiled
+binaries for Linux clusters.  The TCP version may be faster on some
+networks but the UDP version now performs well on gigabit ethernet.
+The ibverbs version should be used on any cluster with InfiniBand,
+and for any other high-speed network you should compile an MPI version.
+
+SMP builds generally do not scale as well across nodes as single-threaded
+non-SMP builds because the communication thread is both a bottleneck and
+occupies a core that could otherwise be used for computation.  As such
+they should only be used to reduce memory consumption or if for scaling
+reasons you are not using all of the cores on a node anyway, and you
+should run benchmarks to determine the optimal configuration.
+
+Extremely short cycle lengths (less than 10 steps) will limit parallel
+scaling, since the atom migration at the end of each cycle sends many
+more messages than a normal force evaluation.  Increasing margin from
+0 to 1 while doubling stepspercycle and pairlistspercycle may help,
+but it is important to benchmark.  The pairlist distance will adjust
+automatically, and one pairlist per ten steps is a good ratio.
 
 NAMD should scale very well when the number of patches (multiply the
 dimensions of the patch grid) is larger or rougly the same as the
