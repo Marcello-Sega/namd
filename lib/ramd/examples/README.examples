@@ -1,6 +1,13 @@
 RAMD and RAMD-MD simulations examples README
 --------------------------------------------
 
+***************************************************************************
+  Large input and output files have been removed from this directory.
+  The complete examples may be downloaded from the following locations:
+  http://www.ks.uiuc.edu/Research/namd/utilities/ramd-4.1-examples.tar.gz
+  http://www.ks.uiuc.edu/Research/namd/utilities/ramd-4.1-examples.zip
+***************************************************************************
+
 The examples provided are the RAMD and RAMD-MD simulations 
 of (R)-2,3-dichloropropane-1-ol (DCL) exit from the active site of haloalkane wild type dehalogenase DhaA (PDBid 1CQW),
 obtained using NAMD v2.7 on 1 processor, applying Berendsen temperature control.
