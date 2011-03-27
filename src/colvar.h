@@ -478,7 +478,7 @@ public:
   class alpha_angles;
 
   // non-scalar components
-//   class distance_vec;
+  class distance_vec;
   class distance_dir;
   class orientation;
 

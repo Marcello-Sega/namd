@@ -11,8 +11,10 @@
 /// \file cvc_distance.cpp \brief Collective variables
 /// determining various type of distances between two groups
 
+// "twogroup" flag defaults to true; set to false by selfCoordNum
+// (only distance-derived component based on only one group)
 
-colvar::distance::distance (std::string const &conf)
+colvar::distance::distance (std::string const &conf, bool twogroups)
   : cvc (conf)
 {
   function_type = "distance";
@@ -21,15 +23,18 @@ colvar::distance::distance (std::string const &conf)
   if (get_keyval (conf, "forceNoPBC", b_no_PBC, false)) {
     cvm::log ("Computing distance using absolute positions (not minimal-image)");
   }
-  if (get_keyval (conf, "oneSiteSystemForce", b_1site_force, false)) {
+  if (twogroups && get_keyval (conf, "oneSiteSystemForce", b_1site_force, false)) {
     cvm::log ("Computing system force on group 1 only");
   }
   parse_group (conf, "group1", group1);
-  parse_group (conf, "group2", group2);
   atom_groups.push_back (&group1);
-  atom_groups.push_back (&group2);
+  if (twogroups) {
+    parse_group (conf, "group2", group2);
+    atom_groups.push_back (&group2);
+  }
   x.type (colvarvalue::type_scalar);
 }
+
 
 colvar::distance::distance()
   : cvc ()
@@ -92,48 +97,50 @@ void colvar::distance::apply_force (colvarvalue const &force)
 
 
 
+colvar::distance_vec::distance_vec (std::string const &conf)
+  : distance (conf)
+{
+  function_type = "distance_vec";
+  x.type (colvarvalue::type_vector);
+}
 
-// colvar::distance_vec::distance_vec (std::string const &conf)
-//   : distance (conf)
-// {
-//   function_type = "distance_vec";
-//   x.type (colvarvalue::type_vector);
-// }
+colvar::distance_vec::distance_vec()
+  : distance()
+{
+  function_type = "distance_vec";
+  x.type (colvarvalue::type_vector);
+}
 
-// colvar::distance_vec::distance_vec()
-//   : distance()
-// {
-//   function_type = "distance_vec";
-//   x.type (colvarvalue::type_vector);
-// }
+void colvar::distance_vec::calc_value()
+{
+  group1.reset_atoms_data();
+  group2.reset_atoms_data();
 
-// void colvar::distance_vec::calc_value()
-// {
-//   group1.reset_atoms_data();
-//   group2.reset_atoms_data();
+  group1.read_positions();
+  group2.read_positions();
 
-//   group1.read_positions();
-//   group2.read_positions();
+  if (b_no_PBC) {
+    x.rvector_value = group2.center_of_mass() - group1.center_of_mass();
+  } else {
+    x.rvector_value = cvm::position_distance (group1.center_of_mass(),
+                                              group2.center_of_mass());
+  }
+}
 
-//   cvm::rvector const dist_v = cvm::position_distance (group1.center_of_mass(),
-//                                                       group2.center_of_mass());
-//   x.rvector_value = dist_v;
-// }
+void colvar::distance_vec::calc_gradients()
+{ 
+  // gradients are not stored: a 3x3 matrix for each atom would be
+  // needed to store just the identity matrix
+}
 
-// void colvar::distance_vec::calc_gradients()
-// { 
-//   // gradients are not stored: a 3x3 matrix for each atom would be
-//   // needed to store just the identity matrix
-// }
+void colvar::distance_vec::apply_force (colvarvalue const &force)
+{
+  if (!group1.noforce)
+    group1.apply_force (-1.0 * force.rvector_value);
 
-// void colvar::distance_vec::apply_force (colvarvalue const &force)
-// {
-//   if (!group1.noforce)
-//     group1.apply_force (-1.0 * force.rvector_value);
-
-//   if (!group2.noforce)
-//     group2.apply_force (       force.rvector_value);
-// }
+  if (!group2.noforce)
+    group2.apply_force (       force.rvector_value);
+}
 
 
 

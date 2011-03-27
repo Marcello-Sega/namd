@@ -89,6 +89,7 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
   colvar_centers_raw.resize (colvars.size());
   for (size_t i = 0; i < colvars.size(); i++) {
     colvar_centers[i].type (colvars[i]->type());
+    colvar_centers_raw[i].type (colvars[i]->type());
   }
   if (get_keyval (conf, "centers", colvar_centers, colvar_centers)) {
     for (size_t i = 0; i < colvars.size(); i++) {
@@ -104,8 +105,7 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
     cvm::fatal_error ("Error: number of harmonic centers does not match "
                       "that of collective variables.\n");
 
-  target_centers = colvar_centers;
-  if (get_keyval (conf, "targetCenters", target_centers, target_centers)) {
+  if (get_keyval (conf, "targetCenters", target_centers, colvar_centers)) {
     b_chg_centers = true;
     for (size_t i = 0; i < target_centers.size(); i++) {
       target_centers[i].apply_constraints();
@@ -184,6 +184,7 @@ cvm::real colvarbias_harmonic::update()
       //  if we are restarting a staged calculation)
       centers_incr.resize (colvars.size());
       for (size_t i = 0; i < colvars.size(); i++) {
+        centers_incr[i].type (colvars[i]->type());
         centers_incr[i] = (target_centers[i] - colvar_centers[i]) /
           cvm::real ( target_nstages ? (target_nstages - stage) :
                                       (target_nsteps - cvm::step_absolute()));

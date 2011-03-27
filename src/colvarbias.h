@@ -110,7 +110,7 @@ protected:
 
   /// \brief Amplitude of the restraint centers' increment at each step
   /// (or stage) towards the new values (calculated from target_nsteps)
-  std::vector<cvm::real> centers_incr;
+  std::vector<colvarvalue> centers_incr;
 
   /// \brief Exponent for varying the force constant
   cvm::real force_k_exp;

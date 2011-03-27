@@ -349,9 +349,9 @@ void colvarparse::strip_values (std::string &conf)
 
 void colvarparse::check_keywords (std::string &conf, char const *key)
 {
-  //   if (cvm::debug())
-  //     cvm::log ("Configuration string for \""+std::string (key)+
-  //               ": \"\n"+conf+"\".\n");
+  if (cvm::debug())
+    cvm::log ("Configuration string for \""+std::string (key)+
+              "\": \"\n"+conf+"\".\n");
 
   strip_values (conf);
   // after stripping, the config string has either empty lines, or
@@ -370,7 +370,7 @@ void colvarparse::check_keywords (std::string &conf, char const *key)
     std::istringstream line_is (line);
     line_is >> uk;
     if (cvm::debug())
-      cvm::log ("Checking the validity of \""+uk+"\".\n");
+      cvm::log ("Checking the validity of \""+uk+"\" from line:\n" + line);
     uk = to_lower_cppstr (uk);
 
     bool found_keyword = false;

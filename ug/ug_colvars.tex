@@ -2,8 +2,8 @@
 
 \section{Collective Variable-based Calculations\footnote{ The features
 described in this section were contributed by Giacomo Fiorin (ICMS,
-Temple University, Philadelphia, PA, USA) and J\'er\^ome H\'enin (CNRS,
-Marseille, France). Please send feedback and suggestions
+Temple University, Philadelphia, PA, USA) and J\'er\^ome H\'enin (LISM,
+CNRS, Marseille, France). Please send feedback and suggestions
 to the NAMD mailing list.}}
 \label{section:colvars}
 
@@ -52,6 +52,10 @@ It offers several features:
   functions, and multidimensional histograms, without the need to save
   very large trajectory files.
 
+\item compute collective variable values from existing coordinates
+(e.g. an MD trajectory): use NAMD's \texttt{coorfile read} command,
+and perform a 0-timestep run for each set of coordinates, as
+illustrated in \ref{section:sample}. 
 \end{itemize}
 
 
@@ -235,8 +239,8 @@ Three global options are available:
     \texttt{off}}{%
     If this flag is enabled, and a file with the same name as the
     trajectory file is already present, new data is appended to that
-    file.  Otherwise, a new file is created.  \textbf{Note:} \emph{if
-      you're running consecutive simulations with the same
+    file.  Otherwise, a new file is created.  \textbf{Note:} \emph{when
+      running consecutive simulations with the same
     }\texttt{outputName}\emph{ (e.g.~in FEP calculations), you should
       enable this option to preserve the previous contents of the
       trajectory file}.}
@@ -373,7 +377,11 @@ where each component appears with a unique coefficient $c_{i}$ (1.0 by
 default) the positive integer exponent $n_{i}$ (1 by default).
 For information on setting these parameters, see \ref{sec:cvc_superp}.
 
-Each colvar accepts the following parameters:
+
+\subsubsection{General collective variable options}
+
+\paragraph*{Colvar grid parameters}
+
 \begin{itemize}
 
 \item %
@@ -445,7 +453,10 @@ Each colvar accepts the following parameters:
     the grid.  \textbf{Note:} \emph{this option cannot be used when
       the initial boundaries already span the full period of a periodic
       colvar}.}
+\end{itemize}
 
+\paragraph*{Boundary potentials (walls)}
+\begin{itemize}
 \item %
   \NAMDCONFWDEF{%
     lowerWall}{%
@@ -454,7 +465,6 @@ Each colvar accepts the following parameters:
     \texttt{lowerBoundary}}{%
     Defines the value below which a lower bounding restraint on the
     colvar is applied, in the form of a ``half-harmonic'' potential.
-    It is a good idea to set this value a little higher than
     \texttt{lowerBoundary}.}
 
 \item %
@@ -472,8 +482,7 @@ Each colvar accepts the following parameters:
     (\texttt{colvar}) Position of the upper wall}{%
     decimal}{%
     \texttt{upperBoundary}}{%
-    Similar to \texttt{lowerWall}.  It's a good idea to make it a
-    little \emph{lower} than \texttt{upperBoundary}.}
+    Similar to \texttt{lowerWall}.}
 
 \item %
   \NAMDCONF{%
@@ -481,7 +490,10 @@ Each colvar accepts the following parameters:
     (\texttt{colvar}) Upper wall force constant (kcal/mol)}{%
     positive decimal}{%
     Similar to \texttt{lowerWallConstant}.}
+\end{itemize}
 
+\paragraph*{Trajectory output}
+\begin{itemize}
 \item %
   \NAMDCONFWDEF{%
     outputValue}{%
@@ -546,7 +558,10 @@ Each colvar accepts the following parameters:
     written to the trajectory under the label
     ``\texttt{fa\_}$<$\texttt{name}$>$''.  The physical unit for this
     force is kcal/mol divided by the colvar unit.}
+\end{itemize}
 
+\paragraph*{Extended Lagrangian}
+\begin{itemize}
 \item %
   \NAMDCONFWDEF{%
     extendedLagrangian}{%
@@ -611,6 +626,8 @@ one or more instances of the following components:
 \item \texttt{distance}: distance between two groups;
 \item \texttt{distanceZ}: projection of a distance vector on an axis;
 \item \texttt{distanceXY}: projection of a distance vector on a plane;
+\item \texttt{distanceVec}: distance vector between two groups;
+\item \texttt{distanceDir}: unit vector parallel to distanceVec;
 \item \texttt{angle}: angle between three groups;
 \item \texttt{coordNum}: coordination number between two groups;
 \item \texttt{selfCoordNum}: coordination number of atoms within a
@@ -669,14 +686,22 @@ illegal elsewhere):
     \texttt{lowerWall} and \texttt{upperWall} in an order that would
     not otherwise be allowed.}
 \end{itemize}
-All differences between two values of a periodic colvar are handled
-internally using the two periodic images that are least distant
-between each other.
+Internally, all differences between two values of a periodic colvar
+follow the minimum image convention: they are calculated based on
+the two periodic images that are closest to each other.
+
+\emph{Note: linear or polynomial combinations of periodic components
+  may become meaningless when components cross the periodic boundary.
+  Use such combinations carefully: estimate the range of possible values
+  of each component in a given simulation, and make use of
+  \texttt{wrapAround} to limit this problem whenever possible.}
 
 
 \paragraph*{Non-scalar components.}  When one of the following are
 used, the colvar returns a value that is not a scalar number:
 \begin{itemize}
+\item \texttt{distanceVec}: 3-dimensional vector of the distance
+  between two groups;
 \item \texttt{distanceDir}: 3-dimensional unit vector of the distance
   between two groups;
 \item \texttt{orientation}: 4-dimensional unit quaternion representing
@@ -689,21 +714,30 @@ orientation represented by $\mathsf{q}$ is the same as the one
 represented by $-\mathsf{q}$, distances between two quaternions are
 computed considering the closest of the two symmetric images.
 
-Each colvar can only contain one non-scalar component.  Also, binning
-on a grid (\texttt{abf}, \texttt{histogram} and \texttt{metadynamics}
-with \texttt{useGrids} enabled) is currently not supported for colvars
-based on such components.
+Non-scalar components carry the following restrictions:
+\begin{itemize}
+\item Calculation of system forces (\texttt{outputSystemForce} option)
+  is currently not implemented.
+\item Each colvar can only contain one non-scalar component.
+\item Binning on a grid (\texttt{abf}, \texttt{histogram} and
+  \texttt{metadynamics} with \texttt{useGrids} enabled) is currently
+  not implemented for colvars based on such components.
+\end{itemize}
+
+\emph{Note: while these restrictions apply to individual colvars based
+  on non-scalar components, no limit is set to the number of scalar
+  colvars.  To compute multi-dimensional histograms and PMFs, use sets
+  of scalar colvars of arbitrary size.}
 
 
-\paragraph*{Restrictions on certain components.}  In addition to the
-type of value returned, components may have other differences.  For
-instance, properties like the system force (\texttt{outputSystemForce}
-option) can be calculated and used only from certain ones
-(\texttt{distance}, \texttt{distanceZ}, \texttt{distanceXY},
-\texttt{dihedral}, \texttt{rmsd}, \texttt{eigenvector} and
-\texttt{gyration}).  \emph{Note: restrictions only apply to the type
-  of an individual colvar; Instead, all of the implemented biasing
-  methods can be applied to any number of colvars.}
+\paragraph*{Calculating system forces.}  In addition to the
+restrictions due to the type of value computed (scalar or non-scalar),
+a final restriction can arise when calculating system force
+(\texttt{outputSystemForce} option or application of a \texttt{abf}
+bias).  System forces are available currently only for the following
+components: \texttt{distance}, \texttt{distanceZ},
+\texttt{distanceXY}, \texttt{dihedral}, \texttt{rmsd},
+\texttt{eigenvector} and \texttt{gyration}.
 
 
 \paragraph*{Syntax of a component definition.}  Most components make
@@ -854,14 +888,21 @@ defined using the \texttt{axis} parameter or as the vector joining
 \texttt{ref} and \texttt{ref2} (see \texttt{distanceZ} above).
 
 
+\paragraph*{Component \texttt{distanceVec}: distance vector
+  between two groups.}  The \texttt{distanceVec~\{...\}} block defines
+a distance vector component, which accepts the same keywords as
+\texttt{distance}: \texttt{group1}, \texttt{group2}, and
+\texttt{forceNoPBC}. Its value is the 3-vector joining the centers
+of mass of \texttt{group1} and \texttt{group2}.
+
+
 \paragraph*{Component \texttt{distanceDir}: distance unit vector
   between two groups.}  The \texttt{distanceDir~\{...\}} block defines
 a distance unit vector component, which accepts the same keywords as
 \texttt{distance}: \texttt{group1}, \texttt{group2}, and
 \texttt{forceNoPBC}.  It returns a
 3-dimensional unit vector $\mathbf{d} = (d_{x}, d_{y}, d_{z})$, with
-$|\mathbf{d}| = 1$.  $d_{x}$, $d_{y}$ and $d_{z}$ all lie within the
-$[-1:1]$ interval.
+$|\mathbf{d}| = 1$.
 
 
 \paragraph*{Component \texttt{angle}: angle between three groups.}
@@ -1899,7 +1940,7 @@ recognize the following options:
 \end{itemize}
 
 
-\subsubsection{Adaptive Biasing Force calculations}
+\subsubsection{Adaptive Biasing Force}
 \label{sec:colvarbias_abf}
 
 For a full description of the Adaptive Biasing Force method, see
@@ -2212,7 +2253,7 @@ sampling and discretization on a grid).
 
 
 
-\subsubsection{Metadynamics calculations}
+\subsubsection{Metadynamics}
 \label{sec:colvarbias_meta}
 
 Many methods have been introduced in the past that make use of an

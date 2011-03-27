@@ -32,7 +32,7 @@ colvar::colvar (std::string const &conf)
   }
 
   // read the configuration and set up corresponding instances, for
-  // each type of forcepar implemented
+  // each type of component implemented
 #define initialize_components(def_desc,def_config_key,def_class_name)   \
   {                                                                     \
     size_t def_count = 0;                                               \
@@ -48,23 +48,25 @@ colvar::colvar (std::string const &conf)
                 (cvm::debug() ? ", with configuration:\n"+def_conf      \
                  : ".\n"));                                             \
       cvm::increase_depth();                                            \
-      cvc *cvdp = new colvar::def_class_name (def_conf);                \
-      if (cvdp != NULL) {                                               \
-        cvcs.push_back (cvdp);                                          \
-        cvdp->check_keywords (def_conf, def_config_key);                \
+      cvc *cvcp = new colvar::def_class_name (def_conf);                \
+      if (cvcp != NULL) {                                               \
+        cvcs.push_back (cvcp);                                          \
+        cvcp->check_keywords (def_conf, def_config_key);                \
         cvm::decrease_depth();                                          \
       } else {                                                          \
         cvm::fatal_error ("Error: in allocating component \""           \
                           def_config_key"\".\n");                       \
       }                                                                 \
-      if ( (cvdp->period != 0.0) || (cvdp->wrap_center != 0.0) ) {      \
-        if ( (cvdp->function_type != std::string ("distance_z")) &&     \
-             (cvdp->function_type != std::string ("dihedral")) &&       \
-             (cvdp->function_type != std::string ("spin_angle")) ) {    \
+      if ( (cvcp->period != 0.0) || (cvcp->wrap_center != 0.0) ) {      \
+        if ( (cvcp->function_type != std::string ("distance_z")) &&     \
+             (cvcp->function_type != std::string ("dihedral")) &&       \
+             (cvcp->function_type != std::string ("spin_angle")) ) {    \
           cvm::fatal_error ("Error: invalid use of period and/or "      \
                             "wrapAround in a \""+                       \
                             std::string (def_config_key)+               \
-                            "\" component.\n");                         \
+                            "\" component.\n"+                          \
+                            "Period: "+cvm::to_str(cvcp->period) +      \
+                        " wrapAround: "+cvm::to_str(cvcp->wrap_center));\
         }                                                               \
       }                                                                 \
       if ( ! cvcs.back()->name.size())                                  \
@@ -86,7 +88,7 @@ colvar::colvar (std::string const &conf)
 
 
   initialize_components ("distance",         "distance",       distance);
-  //   initialize_components ("distance vector",  "distanceVec",    distance_vec);
+  initialize_components ("distance vector",  "distanceVec",    distance_vec);
   initialize_components ("distance vector "
                          "direction",        "distanceDir",    distance_dir);
   initialize_components ("distance projection "
@@ -302,15 +304,15 @@ colvar::colvar (std::string const &conf)
       ext_mass = (cvm::boltzmann() * temp * ext_period * ext_period)
                  / (4.0 * PI * PI * ext_tolerance * ext_tolerance);
       cvm::log ("Computed fictitious mass: " + cvm::to_str(ext_mass) + " kcal/mol/(U/fs)^2   (U: colvar unit)");
-    }
 
-    kinetic_energy = 0.0;
-    potential_energy = 0.0;
-    {
-      bool b_output_value;
-      get_keyval (conf, "outputEnergy", b_output_value, true);
-      if (b_output_value) {
-        enable (task_output_energy);
+      kinetic_energy = 0.0;
+      potential_energy = 0.0;
+      {
+        bool b_output_value;
+        get_keyval (conf, "outputEnergy", b_output_value, false);
+        if (b_output_value) {
+          enable (task_output_energy);
+        }
       }
     }
   }

@@ -341,12 +341,16 @@ cvm::real colvar::selfcoordnum::switching_function (cvm::real const &r0,
 
 
 colvar::selfcoordnum::selfcoordnum (std::string const &conf)
+ : distance (conf, false)
 { 
   function_type = "selfcoordnum";
   x.type (colvarvalue::type_scalar);
 
-  parse_group (conf, "group1", group1);
-  atom_groups.push_back (&group1);
+  // group1 is already initialized by distance()
+
+  // need to specify this explicitly because the distance() constructor
+  // has set it to true
+  b_inverse_gradients = false;
 
   get_keyval (conf, "cutoff", r0, cvm::real (4.0 * cvm::unit_angstrom()));
   get_keyval (conf, "expNumer", en, int (6) );

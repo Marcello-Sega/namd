@@ -325,7 +325,7 @@ protected:
   /// coupling to other colvars (see e.g. Ciccotti et al., 2005)
   bool b_1site_force;
 public:
-  distance (std::string const &conf);
+  distance (std::string const &conf, bool twogroups = true);
   distance();
   virtual inline ~distance() {}
   virtual void calc_value();
@@ -344,32 +344,32 @@ public:
 };
 
 
-// // \brief Colvar component: distance vector between centers of mass
-// // of two groups (\link colvarvalue::type_vector \endlink type,
-// // range (-*:*)x(-*:*)x(-*:*))
-// class colvar::distance_vec
-//   : public colvar::distance
-// {
-// public:
-//   distance_vec (std::string const &conf);
-//   distance_vec();
-//   virtual inline ~distance_vec() {}
-//   virtual void calc_value();
-//   virtual void calc_gradients();
-//   virtual void apply_force (colvarvalue const &force);
-//   /// Redefined to handle the box periodicity
-//   virtual cvm::real dist2 (colvarvalue const &x1,
-//                            colvarvalue const &x2) const;
-//   /// Redefined to handle the box periodicity
-//   virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
-//                                    colvarvalue const &x2) const;
-//   /// Redefined to handle the box periodicity
-//   virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
-//                                    colvarvalue const &x2) const;
-//   /// Redefined to handle the box periodicity
-//   virtual cvm::real compare (colvarvalue const &x1,
-//                              colvarvalue const &x2) const;
-// };
+// \brief Colvar component: distance vector between centers of mass
+// of two groups (\link colvarvalue::type_vector \endlink type,
+// range (-*:*)x(-*:*)x(-*:*))
+class colvar::distance_vec
+  : public colvar::distance
+{
+public:
+  distance_vec (std::string const &conf);
+  distance_vec();
+  virtual inline ~distance_vec() {}
+  virtual void calc_value();
+  virtual void calc_gradients();
+  virtual void apply_force (colvarvalue const &force);
+  /// Redefined to handle the box periodicity
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  /// Redefined to handle the box periodicity
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  /// Redefined to handle the box periodicity
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  /// Redefined to handle the box periodicity
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
 
 
 /// \brief Colvar component: distance unit vector (direction) between
@@ -1254,30 +1254,30 @@ inline void colvar::distance_z::wrap (colvarvalue &x) const
 
 // distance between three dimensional vectors
 
-// inline cvm::real colvar::distance_vec::dist2 (colvarvalue const &x1,
-//                                               colvarvalue const &x2) const
-// {
-//   return (x1.rvector_value - x2.rvector_value).norm2();
-// }
+inline cvm::real colvar::distance_vec::dist2 (colvarvalue const &x1,
+                                              colvarvalue const &x2) const
+{
+  return (x1.rvector_value - x2.rvector_value).norm2();
+}
 
-// inline colvarvalue colvar::distance_vec::dist2_lgrad (colvarvalue const &x1,
-//                                                       colvarvalue const &x2) const
-// {
-//   return (x1.rvector_value - x2.rvector_value);
-// }
+inline colvarvalue colvar::distance_vec::dist2_lgrad (colvarvalue const &x1,
+                                                      colvarvalue const &x2) const
+{
+  return (x1.rvector_value - x2.rvector_value);
+}
 
-// inline colvarvalue colvar::distance_vec::dist2_rgrad (colvarvalue const &x1,
-//                                                       colvarvalue const &x2) const
-// {
-//   return (x2.rvector_value - x1.rvector_value);
-// }
+inline colvarvalue colvar::distance_vec::dist2_rgrad (colvarvalue const &x1,
+                                                      colvarvalue const &x2) const
+{
+  return (x2.rvector_value - x1.rvector_value);
+}
 
-// inline cvm::real colvar::distance_vec::compare (colvarvalue const &x1,
-//                                                 colvarvalue const &x2) const
-// {
-//   cvm::fatal_error ("Error: cannot compare() two distance vectors.\n");
-//   return 0.0;
-// }
+inline cvm::real colvar::distance_vec::compare (colvarvalue const &x1,
+                                                colvarvalue const &x2) const
+{
+  cvm::fatal_error ("Error: cannot compare() two distance vectors.\n");
+  return 0.0;
+}
 
 inline cvm::real colvar::distance_dir::dist2 (colvarvalue const &x1,
                                               colvarvalue const &x2) const
