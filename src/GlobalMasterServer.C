@@ -271,19 +271,22 @@ void GlobalMasterServer::callClients() {
     AtomIDList   clientReceivedForceIDs;
     ForceList    clientReceivedTotalForces;
 
-    vector <int> rqAtoms;
-    for (int i = 0; i < master->requestedAtoms().size(); i++){
-      rqAtoms.push_back(master->requestedAtoms()[i]);
-    }
-    sort(rqAtoms.begin(), rqAtoms.end());
-    int j = 0;
-    for (int i = 0; i < positions.size(); i++){
-      if (positions[i].atomID == rqAtoms[j]){
-        clientAtomPositions.add(receivedAtomPositions[positions[i].index]);
-        clientAtomIDs.add(rqAtoms[j]);
-        j++;  
+    if (num_atoms_requested) {
+      vector <int> rqAtoms;
+      for (int i = 0; i < master->requestedAtoms().size(); i++){
+        rqAtoms.push_back(master->requestedAtoms()[i]);
       }
-      else continue;
+      sort(rqAtoms.begin(), rqAtoms.end());
+      int j = 0;
+      for (int i = 0; i < positions.size(); i++){
+        if (positions[i].atomID == rqAtoms[j]){
+          clientAtomPositions.add(receivedAtomPositions[positions[i].index]);
+          clientAtomIDs.add(rqAtoms[j]);
+          if ( ++j == num_atoms_requested ) break;
+        }
+      }
+      if ( j != num_atoms_requested ) NAMD_bug(
+        "GlobalMasterServer::callClients() did not find all requested atoms");
     }
 
     AtomIDList::iterator ma_i = clientAtomIDs.begin();
