@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: gzheng $
- * $Date: 2011/03/28 06:25:39 $
- * $Revision: 1.1184 $
+ * $Author: chaomei2 $
+ * $Date: 2011/03/28 22:48:09 $
+ * $Revision: 1.1185 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -126,6 +126,8 @@ public:
 	int numPapiMeasureSteps; //the number of timesteps when performance are measured with PAPI, default to 40;
 #endif
 	
+	Bool outputMaps; //control whether to dump compute/patch map before load balancing
+
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension
 	int twoAwayZ;			//  half-size patches in Z dimension

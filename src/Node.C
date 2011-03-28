@@ -828,6 +828,7 @@ void Node::traceBarrier(int turnOnTrace, int step){
 }
 
 void Node::resumeAfterTraceBarrier(CkReductionMsg *msg){
+	CmiAssert(CmiMyPe()==0);
 	delete msg;	
 	state->controller->resumeAfterTraceBarrier(curTimeStep);
 }
@@ -867,6 +868,38 @@ void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
 	state->controller->resumeAfterPapiMeasureBarrier(curMFlopStep);
 #endif
 }
+
+void Node::outputPatchComputeMaps(const char *filename, int tag){
+	if(!simParameters->outputMaps) return;
+
+	char fname[128];
+	sprintf(fname, "mapdump_%s.%d_%d_%d", filename, CkNumPes(), CkMyNodeSize(), tag);
+
+	FILE *fp = fopen(fname, "w");
+	if(fp == NULL) {
+		NAMD_die("Error in outputing PatchMap and ComputeMap info!\n");
+		return;
+	}
+	PatchMap *pMap = PatchMap::Object();
+	ComputeMap *cMap = ComputeMap::Object();
+	int numPatches = pMap->numPatches();
+	int numComputes = cMap->numComputes();
+	fprintf(fp, "%d %d %d %d\n", CkNumPes(), CkMyNodeSize(), numPatches, numComputes);
+	//output PatchMap info
+	for(int i=0; i<numPatches; i++) {
+	#ifdef MEM_OPT_VERSION
+		fprintf(fp, "%d %d\n", pMap->numAtoms(i), pMap->node(i));
+	#else
+		fprintf(fp, "%d %d\n", pMap->patch(i)->getNumAtoms(), pMap->node(i));
+	#endif
+	}
+
+	//output ComputeMap info
+	for(int i=0; i<numComputes; i++) {		
+		fprintf(fp, "%d %d %d %d\n", cMap->node(i), cMap->type(i), cMap->pid(i,0), cMap->pid(i,1));		
+	}
+}
+
 
 //======================================================================
 // Private functions

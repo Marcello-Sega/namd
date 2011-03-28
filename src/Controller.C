@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: chaomei2 $
- * $Date: 2011/03/18 07:09:55 $
- * $Revision: 1.1261 $
+ * $Date: 2011/03/28 22:48:09 $
+ * $Revision: 1.1262 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2293,15 +2293,16 @@ void Controller::outputExtendedSystem(int step)
 
 }
 
-void Controller::rebalanceLoad(int)
+void Controller::rebalanceLoad(int step)
 {
   if ( ! ldbSteps ) { 
     ldbSteps = LdbCoordinator::Object()->getNumStepsToRun();
   }
   if ( ! --ldbSteps ) {
     startBenchTime -= CmiWallTimer();
-    LdbCoordinator::Object()->rebalance(this);
-    startBenchTime += CmiWallTimer();
+	Node::Object()->outputPatchComputeMaps("before_ldb", step);
+    LdbCoordinator::Object()->rebalance(this);	
+	startBenchTime += CmiWallTimer();
     fflush_count = 3;
   }
 }

@@ -224,7 +224,7 @@ fname = "computeMap.opt";
 fname = "computeMap.orig";
 #endif
 
-FILE *ofp = fopen(fname, "w");
+  FILE *ofp = fopen(fname, "w");
   fprintf(ofp,"---------------------------------------");
   fprintf(ofp,"---------------------------------------\n");
 
@@ -235,6 +235,7 @@ FILE *ofp = fopen(fname, "w");
     fprintf(ofp,"Compute %d\n", i);
     fprintf(ofp,"  node = %d\n",computeData[i].node);
     fprintf(ofp,"  numPids = %d\n",computeData[i].numPids);
+	fprintf(ofp,"  type = %d\n",computeData[i].type);
     for(int j=0; j < computeData[i].numPids; j++)
     {
       fprintf(ofp,"%d ",computeData[i].pids[j].pid);

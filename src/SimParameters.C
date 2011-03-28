@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: gzheng $
- * $Date: 2011/03/28 06:25:39 $
- * $Revision: 1.1343 $
+ * $Author: chaomei2 $
+ * $Date: 2011/03/28 22:48:09 $
+ * $Revision: 1.1344 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1585,6 +1585,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "numPapiMeasureSteps", "the number of timesteps to be measured using PAPI", &numPapiMeasureSteps);
    opts.range("numPapiMeasureSteps", POSITIVE);
 #endif
+
+   opts.optionalB("main", "outputMaps", "whether to dump compute map and patch map for analysis just before load balancing", &outputMaps, FALSE);
 
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);

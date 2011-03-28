@@ -139,6 +139,8 @@ public:
   void papiMeasureBarrier(int turnOnMeasure, int step);
   void resumeAfterPapiMeasureBarrier(CkReductionMsg *msg);
   
+  void outputPatchComputeMaps(const char *filename, int tag);
+
   //to show whether +traceoff is specified
   bool specialTracing;
   
