@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: jim $
- * $Date: 2011/03/12 21:32:07 $
- * $Revision: 1.28 $
+ * $Author: gzheng $
+ * $Date: 2011/03/28 06:25:39 $
+ * $Revision: 1.29 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -49,8 +49,20 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
   // setting the name
   lbname = (char *)"NamdHybridLB";
 
+  delete tree;        // delete the tree built from the base class
+  if (CkNumPes() <= 128)  {
+    tree = new TwoLevelTree;   // similar to centralized load balancing
+  }
+  else {
+#if CHARM_VERSION > 60303
+    const SimParameters* simParams = Node::Object()->simParameters;
+    tree = new ThreeLevelTree(simParams->hybridGroupSize);
+#else
+    tree = new ThreeLevelTree();
+#endif
     // can only do shrink strategy on levels > 1
-  if (tree->numLevels() > 2) statsStrategy = SHRINK_NULL;
+    statsStrategy = SHRINK_NULL;
+  }
 
   // initializing thisProxy
   thisProxy = CProxy_NamdHybridLB(thisgroup);
@@ -508,7 +520,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
     pe_no = stats->procs[i].pe;
 
     // BACKUP processorArray[i].Id = i; 
-    processorArray[i].Id = pe_no;
+    processorArray[i].Id = pe_no;               // absolute pe number
     processorArray[i].available = CmiTrue;
     // BACKUP if ( pmeOn && isPmeProcessor(i) )
     if ( pmeOn && isPmeProcessor(pe_no) ) {

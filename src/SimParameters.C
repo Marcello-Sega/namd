@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/03/18 07:09:57 $
- * $Revision: 1.1342 $
+ * $Author: gzheng $
+ * $Date: 2011/03/28 06:25:39 $
+ * $Revision: 1.1343 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1561,6 +1561,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "lastLdbStep", "when to stop load balancing",
      &lastLdbStep);
    opts.range("lastLdbStep", POSITIVE);
+   opts.optional("main", "hybridGroupSize", "Hybrid load balancing group size",
+     &hybridGroupSize);
    opts.optional("main", "ldbBackgroundScaling",
      "background load scaling", &ldbBackgroundScaling);
    opts.range("ldbBackgroundScaling", NOT_NEGATIVE);
@@ -2803,6 +2805,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
     lastLdbStep = -1;
   }
 
+  if (!opts.defined("hybridGroupSize")) {
+    hybridGroupSize = 512;
+  }
+
   // tracing will be done if trace is available and user says +traceOff
   // in that case we set nice values for some functions
   bool specialTracing = traceAvailable() && (traceIsOn() == 0);
@@ -3306,6 +3312,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
      iout << iINFO << "LDB PERIOD             " << ldbPeriod << " steps\n";
      iout << iINFO << "FIRST LDB TIMESTEP     " << firstLdbStep << "\n";
+     if (ldBalancer == LDBAL_HYBRID)
+       iout << iINFO << "HYBRIDLB GROUP SIZE     " << hybridGroupSize << "\n";
      iout << iINFO << "LAST LDB TIMESTEP     " << lastLdbStep << "\n";
      iout << iINFO << "LDB BACKGROUND SCALING " << ldbBackgroundScaling << "\n";
      iout << iINFO << "HOM BACKGROUND SCALING " << ldbHomeBackgroundScaling << "\n";

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2011/03/18 07:09:58 $
- * $Revision: 1.1183 $
+ * $Author: gzheng $
+ * $Date: 2011/03/28 06:25:39 $
+ * $Revision: 1.1184 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -112,6 +112,7 @@ public:
                                         //  load-balance on.
 	int lastLdbStep;		//  What step to do the last
                                         //  load-balance on.
+        int hybridGroupSize;            //  hybrid group size
 	BigReal ldbBackgroundScaling;	//  scaling factor for background load
 	BigReal ldbPMEBackgroundScaling;//  scaling factor for PME background
 	BigReal ldbHomeBackgroundScaling;//  scaling factor for home background
