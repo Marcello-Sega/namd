@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: chaomei2 $
- * $Date: 2011/03/28 22:48:09 $
- * $Revision: 1.1344 $
+ * $Date: 2011/03/28 22:55:32 $
+ * $Revision: 1.1345 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2823,8 +2823,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   }
 
   if(specialTracing) {
-    firstLdbStep = 20;
-    ldbPeriod = 100;
+    if (!opts.defined("firstLdbStep")) firstLdbStep = 20;
+    if (!opts.defined("ldbPeriod")) ldbPeriod = 100;
 
     if(!opts.defined("traceStartStep")) {
       traceStartStep = 4 * firstLdbStep + 2 * ldbPeriod; // 380
