@@ -85,11 +85,7 @@ struct __align__(16) atom_param {  // must be multiple of 16!
 
 void cuda_bind_exclusions(const unsigned int *t, int n);
 
-// use stride of 11*16 = 176 to reduce cache collisions
-// index in table can be calculated using signed short
-#define LJ_TABLE_SIZE 176
-
-void cuda_bind_lj_table(const float2 *t);
+void cuda_bind_lj_table(const float2 *t, int _lj_table_size);
 
 // #define FORCE_TABLE_SIZE 512
 // maximum size of CUDA array 1D texture reference is 2^13 = 8192

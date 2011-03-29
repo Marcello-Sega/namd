@@ -26,14 +26,23 @@ void cuda_bind_exclusions(const unsigned int *t, int n) {
 
 
 texture<float2, 1, cudaReadModeElementType> lj_table;
+int lj_table_size;
 
-void cuda_bind_lj_table(const float2 *t) {
+void cuda_bind_lj_table(const float2 *t, int _lj_table_size) {
     static float2 *ct;
+    static int lj_table_alloc;
+    lj_table_size = _lj_table_size;
+    if ( ct && lj_table_alloc < lj_table_size ) {
+      cudaFree(ct);
+      cuda_errcheck("freeing lj table");
+      ct = 0;
+    }
     if ( ! ct ) {
-      cudaMalloc((void**) &ct, LJ_TABLE_SIZE*LJ_TABLE_SIZE*sizeof(float2));
+      lj_table_alloc = lj_table_size;
+      cudaMalloc((void**) &ct, lj_table_size*lj_table_size*sizeof(float2));
       cuda_errcheck("allocating lj table");
     }
-    cudaMemcpy(ct, t, LJ_TABLE_SIZE*LJ_TABLE_SIZE*sizeof(float2),
+    cudaMemcpy(ct, t, lj_table_size*lj_table_size*sizeof(float2),
                                             cudaMemcpyHostToDevice);
     cuda_errcheck("memcpy to lj table");
 
@@ -42,7 +51,7 @@ void cuda_bind_lj_table(const float2 *t) {
     lj_table.filterMode = cudaFilterModePoint;
 
     cudaBindTexture((size_t*)0, lj_table, ct,
-        LJ_TABLE_SIZE*LJ_TABLE_SIZE*sizeof(float2));
+        lj_table_size*lj_table_size*sizeof(float2));
     cuda_errcheck("binding lj table to texture");
 }
 
@@ -321,6 +330,7 @@ __global__ static void dev_nonbonded(
         const force_list *force_lists,
         float4 *forces, float *virials,
         float4 *slow_forces, float *slow_virials,
+        int lj_table_size,
         float3 lata, float3 latb, float3 latc,
 	float cutoff2, float plcutoff2, int doSlow) {
 // call with one block per patch_pair
@@ -477,7 +487,7 @@ __global__ static void dev_nonbonded(
     jpqu.i[threadIdx.x] = ((unsigned int *)(atoms + j))[threadIdx.x];
     int aptmp = ((unsigned int *)(atom_params + j))[threadIdx.x];
     // scale vdw_type field, which is first in struct
-    if ( (threadIdx.x & 3) == 0 ) aptmp *= LJ_TABLE_SIZE;
+    if ( (threadIdx.x & 3) == 0 ) aptmp *= lj_table_size;
     japu.i[threadIdx.x] = aptmp;
   }
   __syncthreads();
@@ -499,7 +509,7 @@ __global__ static void dev_nonbonded(
       if ( r2 < cutoff2 ) { \
         float4 fi = tex1D(force_table, rsqrtf(r2)); \
         float2 ljab = tex1Dfetch(lj_table, \
-                /* LJ_TABLE_SIZE * */ japs[j].vdw_type + IAP.vdw_type); \
+                /* lj_table_size * */ japs[j].vdw_type + IAP.vdw_type); \
         bool excluded = false; \
         int indexdiff = (int)(IAP.index) - (int)(japs[j].index); \
         if ( abs(indexdiff) <= (int) japs[j].excl_maxdiff ) { \
@@ -822,6 +832,7 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
              overflow_exclusions, force_list_counters, force_lists,
              forces, virials,
              (doSlow?slow_forces:0), (doSlow?slow_virials:0),
+             lj_table_size,
 	     lata, latb, latc, cutoff2, plcutoff2, doSlow);
      cuda_errcheck("dev_nonbonded");
    }

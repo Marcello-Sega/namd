@@ -264,16 +264,16 @@ void build_cuda_force_table() {
 
 void ComputeNonbondedCUDA::build_lj_table() {  // static
 
-  float2 t[LJ_TABLE_SIZE*LJ_TABLE_SIZE];
   const LJTable* const ljTable = ComputeNonbondedUtil:: ljTable;
   const int dim = ljTable->get_table_dim();
 
-  if ( dim > LJ_TABLE_SIZE ) {
-    NAMD_die("Number of VDW types exceeds CUDA LJ_TABLE_SIZE");
-  }
+  // round dim up to odd multiple of 16
+  int tsize = (((dim+16+31)/32)*32)-16;
+  if ( tsize < dim ) NAMD_bug("ComputeNonbondedCUDA::build_lj_table bad tsize");
 
+  float2 *t = new float2[tsize*tsize];
   float2 *row = t;
-  for ( int i=0; i<dim; ++i, row += LJ_TABLE_SIZE ) {
+  for ( int i=0; i<dim; ++i, row += tsize ) {
     for ( int j=0; j<dim; ++j ) {
       const LJTable::TableEntry *e = ljTable->table_val(i,j);
       row[j].x = e->A * scaling;
@@ -281,7 +281,8 @@ void ComputeNonbondedCUDA::build_lj_table() {  // static
     }
   }
 
-  cuda_bind_lj_table(t);
+  cuda_bind_lj_table(t,tsize);
+  delete [] t;
 
   if ( ! CkMyPe() ) {
     CkPrintf("Info: Updated CUDA LJ table with %d x %d elements.\n", dim, dim);
