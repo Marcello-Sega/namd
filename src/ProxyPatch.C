@@ -29,9 +29,9 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   numAtoms = -1;
   parent = -1;
 
-#ifdef NODEAWARE_PROXY_SPANNINGTREE
-  /*numChild = 0;
-  children = NULL;*/
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) || defined(USE_TWOLEVEL_PROXY_SENDRECV)
+  /*nChild = 0;
+  child = NULL;*/
 #else
   nChild = 0;
   child = new int[proxySpanDim];
@@ -72,13 +72,11 @@ ProxyPatch::~ProxyPatch()
 
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
-  delete [] children;
   #ifdef USE_NODEPATCHMGR
   delete [] nodeChildren;  
   #endif
-#else
-  delete [] child;
 #endif
+  delete [] child;
 
   p.resize(0);
   pExt.resize(0);
@@ -310,7 +308,14 @@ void ProxyPatch::sendResults(void)
 #if CMK_PERSISTENT_COMM
 //  CmiUsePersistentHandle(&localphs, 1);
 #endif
-  if (proxyRecvSpanning == 0) {
+
+  int isProxyRecvSpanning = proxyRecvSpanning;
+#ifdef USE_TWOLEVEL_PROXY_SENDRECV
+  //always send to its parent
+  isProxyRecvSpanning = 1;
+#endif
+
+  if (isProxyRecvSpanning == 0) {
 #ifdef REMOVE_PROXYRESULTMSG_EXTRACOPY
     ProxyResultVarsizeMsg *msg = ProxyResultVarsizeMsg::getANewMsg(CkMyPe(), patchID, PRIORITY_SIZE, f); 
 #else
@@ -342,30 +347,25 @@ void ProxyPatch::sendResults(void)
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
 void ProxyPatch::setSpanningTree(int p, int *c, int n) { 
-  parent=p; numChild = n; nWait = 0;
-  delete [] children;
+  parent=p; nChild = n; nWait = 0;
+  delete [] child;
   if(n==0) {
-      children = NULL;
+      child = NULL;
       return;
   }
-  children = new int[n];
-  for (int i=0; i<n; i++) children[i] = c[i];
+  child = new int[n];
+  for (int i=0; i<n; i++) child[i] = c[i];
 
   #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
     DebugFileTrace *dft = DebugFileTrace::Object();
     dft->openTrace();
-    dft->writeTrace("ProxyPatch[%d] has %d children: ", patchID, numChild);
-    for(int i=0; i<numChild; i++)
-        dft->writeTrace("%d ", children[i]);
+    dft->writeTrace("ProxyPatch[%d] has %d children: ", patchID, nChild);
+    for(int i=0; i<nChild; i++)
+        dft->writeTrace("%d ", child[i]);
     dft->writeTrace("\n");
     dft->closeTrace();
   #endif
 //CkPrintf("setSpanningTree: [%d:%d] %d %d:%d %d\n", CkMyPe(), patchID, parent, nChild, child[0], child[1]);
-}
-
-int ProxyPatch::getSpanningTreeChild(int *c) { 
-  for (int i=0; i<numChild; i++) c[i] = children[i];
-  return numChild;
 }
 
 #ifdef USE_NODEPATCHMGR
@@ -381,18 +381,41 @@ void ProxyPatch::setSTNodeChildren(int numNids, int *nids){
 }
 #endif
 
-#else //branch for not defined NODEAWARE_PROXY_SPANNINGTREE
+#else //branch for NODEAWARE_PROXY_SPANNINGTREE not defined
 void ProxyPatch::setSpanningTree(int p, int *c, int n) { 
   parent=p; nChild = n; nWait = 0;
   for (int i=0; i<n; i++) child[i] = c[i];
 //CkPrintf("setSpanningTree: [%d:%d] %d %d:%d %d\n", CkMyPe(), patchID, parent, nChild, child[0], child[1]);
 }
+#endif
 
 int ProxyPatch::getSpanningTreeChild(int *c) { 
   for (int i=0; i<nChild; i++) c[i] = child[i];
   return nChild;
 }
-#endif
+
+void ProxyPatch::setSendRecvStrategyTree(int parentid, int *subtree, int n){
+	parent = parentid;
+	nWait = 0;
+	delete [] child;
+	if(n>1) {
+		CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+		//this means the subtree also contains other pes besides myself
+		nChild = n-1;
+		child = new int[nChild];
+		for(int i=0, cidx=0; i<n; i++) {
+			if(subtree[i] != CkMyPe()) {
+				child[cidx++] = subtree[i];
+				//we need to send the info to children
+				cp[subtree[i]].recvSendRecvStrategyTree(patchID, CkMyPe(), NULL, 0);
+			}
+		}
+	}else{
+		nChild = 0;
+		child = NULL;
+	}
+}
+
 
 ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResultMsg *msg) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
@@ -429,11 +452,7 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
     delete msg;
   }
 //CkPrintf("[%d:%d] wait: %d of %d (%d %d %d)\n", CkMyPe(), patchID, nWait, nChild+1, parent, child[0],child[1]);
-#ifdef NODEAWARE_PROXY_SPANNINGTREE
-  if(nWait == numChild+1) {
-#else
   if (nWait == nChild + 1) {
-#endif
     nWait = 0;
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     CmiUnlock(depositLock);
@@ -495,11 +514,7 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultRawMsg(ProxyCombinedRes
     delete msg;
   }
 //CkPrintf("[%d:%d] wait: %d of %d (%d %d %d)\n", CkMyPe(), patchID, nWait, nChild+1, parent, child[0],child[1]);
-#ifdef NODEAWARE_PROXY_SPANNINGTREE
-  if(nWait == numChild+1) {
-#else
   if (nWait == nChild + 1) {
-#endif
     nWait = 0;
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     CmiUnlock(depositLock);

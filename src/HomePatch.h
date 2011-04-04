@@ -152,6 +152,10 @@ public:
   void buildSpanningTree(void);
 #endif
 
+  //just build a two-level spanning tree (node/proc)
+  //without branch factor constraints
+  void buildSendRecvStrategy();
+
   void sendNodeAwareSpanningTree();
   void recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg);
 

@@ -35,11 +35,7 @@ class ProxyPatch : public Patch
      int  getSpanningTreeParent() { return parent; }
      int  getSpanningTreeChild(int *);
      inline int getSpanningTreeNChild(void) {
-        #ifdef NODEAWARE_PROXY_SPANNINGTREE
-            return numChild;
-        #else
-            return nChild; 
-        #endif
+		 return nChild;
      }
 
     #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
@@ -51,6 +47,9 @@ class ProxyPatch : public Patch
      int getSTNNodeChild() { return numNodeChild; }
      #endif
 
+	 void setSendRecvStrategyTree(int parentid, int *subtree, int n);
+	 int *getSendRecvStrategyTreeChildren(){ return child; }
+	 int getSendRecvStrategyTreeNumChildren() { return nChild; }
 
      ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
 	 ProxyCombinedResultMsg *depositCombinedResultRawMsg(ProxyCombinedResultRawMsg *);
@@ -77,14 +76,15 @@ class ProxyPatch : public Patch
      // for spanning tree
      ProxyCombinedResultMsg *msgCBuffer;
      int parent;
-#ifdef NODEAWARE_PROXY_SPANNINGTREE
+//#ifdef NODEAWARE_PROXY_SPANNINGTREE
      /* Moved to Patch.h */
      //int *children;
      //int numChild;
-#else
-     int *child; // spanning tree for recvResults()
-     int nChild;
-#endif
+//#else
+     /* Moved to Patch.h */
+     //int *child; // spanning tree for recvResults()
+     //int nChild;
+//#endif
      int nWait;
      
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)

@@ -45,6 +45,10 @@
 //#define DEBUGM
 #include "Debug.h"
 
+#include <vector>
+#include <algorithm>
+using namespace std;
+
 typedef int HGArrayInt[MAXHGS];
 typedef BigReal HGArrayBigReal[MAXHGS];
 typedef zVector HGArrayVector[MAXHGS];
@@ -346,13 +350,11 @@ HomePatch::~HomePatch()
     atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
     ptnTree.resize(0);
-    delete [] children;
     #ifdef USE_NODEPATCHMGR
     delete [] nodeChildren;    
     #endif
-#else
-  delete [] child;
 #endif
+  delete [] child;
 }
 
 
@@ -518,9 +520,9 @@ void HomePatch::buildNodeAwareSpanningTree(void){
 
 void HomePatch::setupChildrenFromProxySpanningTree(){
     if(ptnTree.size()==0) {
-        numChild = 0;
-        delete [] children;
-        children = NULL;
+        nChild = 0;
+        delete [] child;
+        child = NULL;
         #ifdef USE_NODEPATCHMGR
         numNodeChild = 0;
         delete [] nodeChildren;
@@ -546,24 +548,24 @@ void HomePatch::setupChildrenFromProxySpanningTree(){
         externalChild = (proxySpanDim>(treesize-1))?(treesize-1):proxySpanDim;
         numChild += externalChild;        
 
-        delete [] children;
+        delete [] child;
         #ifdef USE_NODEPATCHMGR
         delete [] nodeChildren;
         #endif
-        if(numChild==0){
-            children = NULL;
+        if(nChild==0){
+            child = NULL;
             #ifdef USE_NODEPATCHMGR
             nodeChildren = NULL;
             numNodeChild = 0;
             #endif
             return;
         }
-        children = new int[numChild];    
+        child = new int[numChild];    
         for(int i=0; i<externalChild; i++) {
-            children[i] = ptnTree.item(i+1).peIDs[0];
+            child[i] = ptnTree.item(i+1).peIDs[0];
         }
         for(int i=externalChild, j=1; i<numChild; i++, j++) {
-            children[i] = rootnode->peIDs[j];
+            child[i] = rootnode->peIDs[j];
         }
     }
 
@@ -596,8 +598,8 @@ void HomePatch::setupChildrenFromProxySpanningTree(){
     DebugFileTrace *dft = DebugFileTrace::Object();
     dft->openTrace();
     dft->writeTrace("HomePatch[%d] has %d children: ", patchID, numChild);
-    for(int i=0; i<numChild; i++)
-        dft->writeTrace("%d ", children[i]);
+    for(int i=0; i<nChild; i++)
+        dft->writeTrace("%d ", child[i]);
     dft->writeTrace("\n");
     dft->closeTrace();
     #endif
@@ -681,6 +683,148 @@ void HomePatch::sendSpanningTree()
 void HomePatch::recvSpanningTree(int *t, int n){}
 void HomePatch::sendSpanningTree(){}
 #endif
+
+void HomePatch::buildSendRecvStrategy()
+{
+	PatchMap *pmap = PatchMap::Object();
+	nChild = 0;
+	int psize = proxy.size();
+	if (psize == 0) return;
+	vector<int> pelist;
+	//records the index of each first node id in pelist
+	vector<int> splitter;
+	//records the children
+	for(int i=0; i<psize; i++) pelist.push_back(proxy[i]);
+	//pelist is sorted in increasing order
+	std::sort(pelist.begin(), pelist.end());
+
+#ifdef TWOLEVEL_SENDRECV_DEBUG
+	char fname[24];
+	sprintf(fname, "/tmp/patchInfo.%d", patchID);
+	FILE *fp = fopen(fname, "w");
+	fprintf(fp, "Patch %d on pe %d has %d proxies on pes: ", patchID, CkMyPe(), proxy.size());
+	for(int i=0; i<proxy.size(); i++) {
+		fprintf(fp, "%d, ", proxy[i]);
+	}
+	fprintf(fp, "\n");
+	fprintf(fp, "Sorted proxies list: ");
+	for(int i=0; i<pelist.size(); i++) {
+		fprintf(fp, "%d, ", pelist[i]);
+	}
+	fprintf(fp, "\n");
+#endif
+
+	int maxSubTreeSize = 0;
+	int startPE = pelist[0];
+	splitter.push_back(0);	
+	//pelist[intraProxySplitterIdx...intraProxySplitterIdx+1) contains intra-node proxies
+	int intraProxySplitterIdx = -1;
+
+	//fprintf(fp, "initial intraProxySplitterIdx=%d\n", intraProxySplitterIdx);
+
+	for(int i=1; i<psize; i++) {
+		int curPE = pelist[i];
+		if(CkNodeOf(curPE)!=CkNodeOf(startPE)) {
+			if(CkNodeOf(startPE)==CkMyNode()) intraProxySplitterIdx=splitter.size()-1;
+			int subTreeSize = i-splitter.back();
+			if(subTreeSize > maxSubTreeSize) maxSubTreeSize = subTreeSize;
+			splitter.push_back(i);
+			startPE = curPE;
+		}
+	}
+	if(CkNodeOf(startPE)==CkMyNode()) intraProxySplitterIdx=splitter.size()-1;
+	int subTreeSize = psize-splitter.back();
+	if(subTreeSize > maxSubTreeSize) maxSubTreeSize = subTreeSize;
+	splitter.push_back(psize);
+	
+#ifdef TWOLEVEL_SENDRECV_DEBUG
+	fprintf(fp, "Splitter has %d splitters: ", splitter.size());
+	for(int i=0; i<splitter.size(); i++) fprintf(fp, "%d, ", splitter[i]);
+	fprintf(fp, "\n");
+	
+	fprintf(fp, "after intraProxySplitterIdx=%d\n", intraProxySplitterIdx);
+#endif
+	//now calculate the number of children including local children	
+	int remotes = splitter.size()-1;
+	int locals = 0;
+	if(intraProxySplitterIdx!=-1) {
+		remotes--;
+		locals = splitter[intraProxySplitterIdx+1] - splitter[intraProxySplitterIdx];				
+	}
+	nChild = remotes+locals;
+#ifdef TWOLEVEL_SENDRECV_DEBUG
+	fprintf(fp, "#remotes=%d, #locals=%d, maxSubTreeSize=%d\n", remotes, locals, maxSubTreeSize);
+#endif
+	delete [] child;
+	child = new int[nChild];
+	
+	CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+
+	int *subTree = new int[maxSubTreeSize];
+	int curSubTreeSize = 0;
+	int forwardIdx=0, backwardIdx=remotes-1;
+	int patchNodesLast = (pmap->numNodesWithPatches()<0.7*CkNumPes());
+	//excluding the last splitter which is psize
+	for(int i=0; i<splitter.size()-1; i++) {
+		if(i==intraProxySplitterIdx) continue;
+		curSubTreeSize = 0;
+		//select the proc that fewest patches
+		int candidatePE = pelist[splitter[i]];
+		int candidatePatches = pmap->numPatchesOnNode(candidatePE);
+		subTree[curSubTreeSize++] = candidatePE;
+		for(int j=splitter[i]+1; j<splitter[i+1]; j++) {
+			int curPE = pelist[j];
+			subTree[curSubTreeSize++] = curPE;
+			int curPatches = pmap->numPatchesOnNode(curPE);
+			if(curPatches<candidatePatches) {
+				candidatePE = curPE;
+				candidatePatches = curPatches;
+			}
+		}
+		//now candidatePE becomes one of children, and it is the root
+		//of subTree with curSubTreeSize.
+		if(patchNodesLast && pmap->numPatchesOnNode(candidatePE)) {
+			child[backwardIdx--] = candidatePE;
+		}else{
+			child[forwardIdx++] = candidatePE;
+		}
+		//now send subTree to candidatePE to setup the proc-level tree
+		//note the subTree contains the candidatePE!!		
+		cp[candidatePE].recvSendRecvStrategyTree(patchID, CkMyPe(), subTree, curSubTreeSize);
+#ifdef TWOLEVEL_SENDRECV_DEBUG
+		fprintf(fp, "Send to remote proc %d with subtree as (totals=%d): ", candidatePE, curSubTreeSize);
+		for(int i=0; i<curSubTreeSize; i++) {
+			fprintf(fp, "%d, ", subTree[i]);
+		}
+		fprintf(fp, "\n");
+#endif
+	}
+	delete [] subTree;
+
+	//now deal with intra-node children
+	forwardIdx = remotes;
+	backwardIdx = nChild-1;
+	if(intraProxySplitterIdx!=-1) {
+		for(int j=splitter[intraProxySplitterIdx]; j<splitter[intraProxySplitterIdx+1]; j++) {
+			int curPE = pelist[j];
+			if(patchNodesLast && pmap->numPatchesOnNode(curPE)) {
+				child[backwardIdx--] = curPE;
+			}else{
+				child[forwardIdx++] = curPE;
+			}
+			//send to intra-node children the info			
+			cp[curPE].recvSendRecvStrategyTree(patchID, CkMyPe(), NULL, 0);
+		}
+	}
+#ifdef TWOLEVEL_SENDRECV_DEBUG
+	fprintf(fp, "Having %d children: ", nChild);
+	for(int i=0; i<nChild; i++) {
+		fprintf(fp, "%d, ", child[i]);
+	}
+	fprintf(fp, "\n");
+	fclose(fp);
+#endif
+}
 
 #ifndef NODEAWARE_PROXY_SPANNINGTREE
 void HomePatch::buildSpanningTree(void)
@@ -930,10 +1074,16 @@ void HomePatch::positionsReady(int doMigration)
   // Must Add Proxy Changes when migration completed!
   NodeIDList::iterator pli;
   int *pids = NULL;
+  int pidsPreAllocated = 1;
   int npid;
   if (proxySendSpanning == 0) {
+#ifdef USE_TWOLEVEL_PROXY_SENDRECV
+	npid = nChild;
+	pids = child;
+#else
     npid = proxy.size();
     pids = new int[npid];
+	pidsPreAllocated = 0;
     int *pidi = pids;
     int *pide = pids + proxy.size();
     int patchNodesLast =
@@ -946,24 +1096,20 @@ void HomePatch::positionsReady(int doMigration)
         *(pidi++) = *pli;
       }
     }
+#endif
   }
   else {
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
     #ifdef USE_NODEPATCHMGR
     npid = numNodeChild;
-    if(numNodeChild>0) {
-        pids = new int[npid];
-        memcpy(pids, nodeChildren, sizeof(int)*npid);
-    }
+	pids = nodeChildren;
     #else
-    npid = numChild;
-    if(numChild>0) {
-        pids = new int[numChild];
-        memcpy(pids, children, sizeof(int)*numChild);
-    }
+    npid = nChild;
+	pids = child;
     #endif
 #else
     npid = nChild;
+	pidsPreAllocated = 0;
     pids = new int[proxySpanDim];
     for (int i=0; i<nChild; i++) pids[i] = child[i];
 #endif
@@ -1065,7 +1211,7 @@ void HomePatch::positionsReady(int doMigration)
 #endif
     isNewProxyAdded = 0;
   }
-  delete [] pids;
+  if(!pidsPreAllocated) delete [] pids;
   DebugM(4, "patchID("<<patchID<<") doing positions Ready\n");
 
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY

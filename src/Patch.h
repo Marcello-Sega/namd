@@ -195,8 +195,6 @@ class Patch
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE    
     //its own children in proxy tree
-    int *children;
-    int numChild;
     #ifdef USE_NODEPATCHMGR
     //the immediate children (in terms of node id) also cotains two parts
     //as the above variable shows
@@ -210,7 +208,8 @@ class Patch
     int numNodeChild;
     #endif
 #endif
-
+	int *child;
+	int nChild;
 
   private:
   

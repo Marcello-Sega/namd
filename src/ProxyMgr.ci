@@ -85,6 +85,8 @@ module ProxyMgr {
     entry void buildProxySpanningTree2();
     entry void recvProxies(int pid, int list[n], int n);
 
+	entry void recvSendRecvStrategyTree(int pid, int parentid, int subtree[n], int n);
+
     entry void sendResult(ProxyGBISP1ResultMsg *);
     entry void recvResult(ProxyGBISP1ResultMsg *);
     entry void recvData(  ProxyGBISP2DataMsg *);

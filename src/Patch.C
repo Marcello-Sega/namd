@@ -55,9 +55,9 @@ Patch::Patch(PatchID pd) :
     positionPtrEnd = 0;
 #endif
 
+	nChild = 0;
+	child = NULL;
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
-  numChild = 0;
-  children = NULL;
   #ifdef USE_NODEPATCHMGR
   nodeChildren = NULL;
   numNodeChild = 0;

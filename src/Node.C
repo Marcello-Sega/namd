@@ -425,7 +425,7 @@ void Node::startup() {
       #endif
       
       workDistrib->assignNodeToPatch();
-      workDistrib->mapComputes();
+      workDistrib->mapComputes();	  
       //ComputeMap::Object()->printComputeMap();
 
       registerUserEventsForAllComputeObjs();
@@ -517,8 +517,12 @@ void Node::startup() {
            << " COMPUTE OBJECTS\n" << endi;
     }
     Sync::Object()->openSync();  // decide if to open local Sync 
-    if (proxySendSpanning || proxyRecvSpanning )
-      proxyMgr->buildProxySpanningTree();
+
+	if (proxySendSpanning || proxyRecvSpanning ) proxyMgr->buildProxySpanningTree();
+#ifdef USE_TWOLEVEL_PROXY_SENDRECV
+	else proxyMgr->buildProxySendRecvStrategy();
+#endif
+
     DebugM(4,"Creating Computes\n");
     computeMgr->createComputes(ComputeMap::Object());
     DebugM(4,"Building Sequencers\n");
