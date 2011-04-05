@@ -28,6 +28,7 @@ class UnregisterProxyMsg;
 class ProxyResultVarsizeMsg;
 class ProxyResultMsg;
 class ProxyCombinedResultRawMsg;
+class ProxyCombinedResultMsg;
 class Sequencer;
 class SubmitReduction;
 class ProxyGBISP1ResultMsg;
@@ -75,13 +76,16 @@ public:
 
   // ProxyPatch sends Forces back to here (via ProxyMgr)  
   void receiveResults(ProxyResultVarsizeMsg *msg);
-  void receiveResults(ProxyResultMsg *msg);     
+  void receiveResults(ProxyResultMsg *msg);
+        
   //gbis receiving results from intermediate phases
   void receiveResult(ProxyGBISP1ResultMsg *msg);//after P1
   void receiveResult(ProxyGBISP2ResultMsg *msg);//after P2
   
   //direct function calls, not as entry methods
   void receiveResults(ProxyCombinedResultRawMsg *msg);
+  void receiveResults(ProxyCombinedResultMsg *msg);
+  ProxyCombinedResultMsg *depositCombinedResultRawMsg(ProxyCombinedResultRawMsg *msg);   
 
   // AtomMigration messages passes from neighbor HomePatches to here.
   void depositMigration(MigrateAtomsMsg *);
@@ -247,6 +251,8 @@ private:
   int *child;	// spanning tree of proxies - immediate children
   int nChild;
 #endif
+
+  
 
   // Cached settle1 parameters
   int settle_initialized;

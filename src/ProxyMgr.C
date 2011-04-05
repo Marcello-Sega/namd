@@ -1376,10 +1376,22 @@ void ProxyMgr::recvResults(ProxyCombinedResultRawMsg *omsg) {
 void ProxyMgr::recvImmediateResults(ProxyCombinedResultRawMsg *omsg) {
   HomePatch *home = PatchMap::Object()->homePatch(omsg->patch);
   if (home) {
+#ifdef USE_TWOLEVEL_PROXY_SENDRECV
+	//Here the "root" of the tree is the home patch processor, so
+	//we need to wait until all my children arrives
+	ProxyCombinedResultMsg *ocMsg = home->depositCombinedResultRawMsg(omsg);
+    if (ocMsg) home->receiveResults(ocMsg);
+#else
+	//The following codes may be buggy since the if the root of the tree (i.e.
+	//home patch) receives this message, it has to wait untill all its
+	//children deposit the result. But this code will let home patch to
+	//receive the results as if it has received all the msgs from its children.
+	//So how is "root" set in the normal proxySpanningTree codes needs to
+	//be examined!!!! --Chao Mei
     CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);        
     cp[CkMyPe()].recvResults(omsg);
-  }
-  else {
+#endif
+  } else {
     ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(omsg->patch);
 	ProxyCombinedResultMsg *ocMsg = patch->depositCombinedResultRawMsg(omsg);
     if (ocMsg) {
