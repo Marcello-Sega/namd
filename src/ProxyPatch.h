@@ -74,6 +74,7 @@ class ProxyPatch : public Patch
      ProxyDataMsg* prevProxyMsg;
 
      // for spanning tree
+     ProxyCombinedResultMsg *msgCBuffer;
      int parent;
 //#ifdef NODEAWARE_PROXY_SPANNINGTREE
      /* Moved to Patch.h */
@@ -83,7 +84,8 @@ class ProxyPatch : public Patch
      /* Moved to Patch.h */
      //int *child; // spanning tree for recvResults()
      //int nChild;
-//#endif     
+//#endif
+     int nWait;
      
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     CmiNodeLock depositLock;

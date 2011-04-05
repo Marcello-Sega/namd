@@ -57,8 +57,6 @@ Patch::Patch(PatchID pd) :
 
 	nChild = 0;
 	child = NULL;
-	nWait = 0;
-	msgCBuffer = NULL;
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   #ifdef USE_NODEPATCHMGR
   nodeChildren = NULL;

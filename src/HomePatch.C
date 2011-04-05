@@ -688,9 +688,6 @@ void HomePatch::buildSendRecvStrategy()
 {
 	PatchMap *pmap = PatchMap::Object();
 	nChild = 0;
-	nWait = 0;
-	delete [] child;
-	child = NULL;
 	int psize = proxy.size();
 	if (psize == 0) return;
 	vector<int> pelist;
@@ -757,7 +754,8 @@ void HomePatch::buildSendRecvStrategy()
 	nChild = remotes+locals;
 #ifdef TWOLEVEL_SENDRECV_DEBUG
 	fprintf(fp, "#remotes=%d, #locals=%d, maxSubTreeSize=%d\n", remotes, locals, maxSubTreeSize);
-#endif	
+#endif
+	delete [] child;
 	child = new int[nChild];
 	
 	CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
@@ -996,11 +994,11 @@ void HomePatch::receiveResults(ProxyResultMsg *msg) {
 void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
 {
     numGBISP3Arrived++;
-	DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodeSize<<")\n");
+  DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodeSize<<")\n");
     Results *r = forceBox.clientOpen(msg->nodeSize);
-	 register char* isNonZero = msg->isForceNonZero;
-	 register Force* f_i = msg->forceArr;
-	for ( int k = 0; k < Results::maxNumForces; ++k )
+      register char* isNonZero = msg->isForceNonZero;
+      register Force* f_i = msg->forceArr;
+      for ( int k = 0; k < Results::maxNumForces; ++k )
       {
         Force *f = r->f[k];
 		int nf = msg->flLen[k];
@@ -1019,25 +1017,6 @@ void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
       }
     forceBox.clientClose(msg->nodeSize);
 
-    delete msg;
-}
-
-void HomePatch::receiveResults(ProxyCombinedResultMsg* msg)
-{
-	numGBISP3Arrived++;
-	DebugM(4, "patchID("<<patchID<<") receiveRes() #nodes("<<msg->nodes.size()<<")\n");
-	Results *r = forceBox.clientOpen(msg->nodes.size());
-	for ( int k = 0; k < Results::maxNumForces; ++k ){
-		Force *f = r->f[k];
-		register ForceList::iterator f_i, f_e;
-		f_i = msg->forceList[k].begin();
-		f_e = msg->forceList[k].end();
-#ifdef ARCH_POWERPC
-#pragma disjoint (*f_i, *f)
-#endif
-		for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
-	}
-	forceBox.clientClose(msg->nodes.size());
     delete msg;
 }
 
@@ -3620,42 +3599,3 @@ void HomePatch::destoryPersistComm()
      phsReady = 0;
 }
 #endif
-
-ProxyCombinedResultMsg *HomePatch::depositCombinedResultRawMsg(ProxyCombinedResultRawMsg *msg) {
-  nWait++;
-  if (nWait == 1) msgCBuffer = ProxyCombinedResultMsg::fromRaw(msg);
-  else {
-    for (int i=0; i<msg->nodeSize; i++) msgCBuffer->nodes.add(msg->nodes[i]);
-
-    register char* isNonZero = msg->isForceNonZero;
-	register Force* f_i = msg->forceArr;
-	for ( int k = 0; k < Results::maxNumForces; ++k )
-    {
-		register ForceList::iterator r_i;
-		r_i = msgCBuffer->forceList[k].begin();
-        int nf = msg->flLen[k];
-
-#ifdef ARCH_POWERPC
-#pragma disjoint (*f_i, *r_i)
-#endif
-		for (int count = 0; count < nf; count++) {
-			if(*isNonZero){
-				r_i[count].x += f_i->x;
-				r_i[count].y += f_i->y;
-				r_i[count].z += f_i->z;
-				f_i++;
-			}
-			isNonZero++;
-		}
-    }
-    delete msg;
-  }
-
-  if (nWait == nChild) {
-	  //since it's a home patch, it should not include itself
-	  nWait = 0;
-	  return msgCBuffer;
-  }
-  return NULL;
-}
-

@@ -21,8 +21,6 @@ class Sequencer;
 class PatchMap;
 class AtomMapper;
 
-class ProxyCombinedResultMsg;
-
 // This the base class of homepatches and proxy patches. It maintains
 // common functions of these patches. These include managing dependences
 // between compute (force) objects and the patch and updating atom map.
@@ -212,9 +210,6 @@ class Patch
 #endif
 	int *child;
 	int nChild;
-
-	int nWait;
-	ProxyCombinedResultMsg *msgCBuffer;
 
   private:
   
