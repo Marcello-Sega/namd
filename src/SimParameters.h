@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: chaomei2 $
- * $Date: 2011/03/28 22:48:09 $
- * $Revision: 1.1185 $
+ * $Date: 2011/04/05 02:06:52 $
+ * $Revision: 1.1186 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -127,6 +127,9 @@ public:
 #endif
 	
 	Bool outputMaps; //control whether to dump compute/patch map before load balancing
+	Bool simulateInitialMapping; //if true, the initial mapping during startup is dumped and exit
+	int simulatedPEs;
+	int simulatedNodeSize;
 
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension

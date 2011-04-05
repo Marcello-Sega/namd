@@ -427,6 +427,14 @@ void Node::startup() {
       workDistrib->assignNodeToPatch();
       workDistrib->mapComputes();	  
       //ComputeMap::Object()->printComputeMap();
+	  
+	  if(simParameters->simulateInitialMapping) {
+    	  iout << iINFO << "Simulating initial mapping with " << simParameters->simulatedPEs
+			  << " PEs with " << simParameters->simulatedNodeSize << " PEs per node\n" << endi;
+		  outputPatchComputeMaps("init_mapping", 0);
+		  iout << iINFO << "Simulating initial mapping is done, now NAMD exits\n" << endi;
+		  CkExit();
+	  }
 
       registerUserEventsForAllComputeObjs();
 
@@ -874,10 +882,17 @@ void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
 }
 
 void Node::outputPatchComputeMaps(const char *filename, int tag){
-	if(!simParameters->outputMaps) return;
+	if(!simParameters->outputMaps && !simParameters->simulateInitialMapping) return;
+
+	int numpes = CkNumPes();
+	int nodesize = CkMyNodeSize();
+	if(simParameters->simulateInitialMapping) {
+		numpes = simParameters->simulatedPEs;
+		nodesize = simParameters->simulatedNodeSize;
+	}
 
 	char fname[128];
-	sprintf(fname, "mapdump_%s.%d_%d_%d", filename, CkNumPes(), CkMyNodeSize(), tag);
+	sprintf(fname, "mapdump_%s.%d_%d_%d", filename, numpes, nodesize, tag);
 
 	FILE *fp = fopen(fname, "w");
 	if(fp == NULL) {
@@ -888,7 +903,8 @@ void Node::outputPatchComputeMaps(const char *filename, int tag){
 	ComputeMap *cMap = ComputeMap::Object();
 	int numPatches = pMap->numPatches();
 	int numComputes = cMap->numComputes();
-	fprintf(fp, "%d %d %d %d\n", CkNumPes(), CkMyNodeSize(), numPatches, numComputes);
+	fprintf(fp, "%d %d %d %d %d %d %d\n", numpes, nodesize, numPatches, numComputes, 
+			pMap->gridsize_a(), pMap->gridsize_b(), pMap->gridsize_c());
 	//output PatchMap info
 	for(int i=0; i<numPatches; i++) {
 	#ifdef MEM_OPT_VERSION

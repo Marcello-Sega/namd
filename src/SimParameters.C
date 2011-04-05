@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: chaomei2 $
- * $Date: 2011/03/28 22:55:32 $
- * $Revision: 1.1345 $
+ * $Date: 2011/04/05 02:06:52 $
+ * $Revision: 1.1346 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1588,6 +1588,12 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    opts.optionalB("main", "outputMaps", "whether to dump compute map and patch map for analysis just before load balancing", &outputMaps, FALSE);
 
+   opts.optionalB("main", "simulateInitialMapping", "whether to study the initial mapping scheme", &simulateInitialMapping, FALSE);
+   opts.optional("main", "simulatedPEs", "the number of PEs to be used for studying initial mapping", &simulatedPEs);
+   opts.range("simulatedPEs", POSITIVE);
+   opts.optional("main", "simulatedNodeSize", "the node size to be used for studying initial mapping", &simulatedNodeSize);
+   opts.range("simulatedNodeSize", POSITIVE);
+
    opts.optionalB("main", "ldbUnloadPME", "no load on PME nodes",
      &ldbUnloadPME, FALSE);
    opts.optionalB("main", "ldbUnloadZero", "no load on pe zero",
@@ -2845,6 +2851,15 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 	  }
   }
 #endif
+
+  if(simulateInitialMapping) {
+	  if(!opts.defined("simulatedPEs")){
+		  simulatedPEs = CkNumPes();
+	  }
+	  if(!opts.defined("simulatedNodeSize")){
+		  simulatedNodeSize = CkMyNodeSize();
+	  }
+  }
 
 #ifdef MEM_OPT_VERSION
   //Some constraints on the values of load balancing parameters.

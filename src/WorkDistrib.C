@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: gzheng $
- * $Date: 2011/03/24 19:14:35 $
- * $Revision: 1.1223 $
+ * $Author: chaomei2 $
+ * $Date: 2011/04/05 02:06:53 $
+ * $Revision: 1.1224 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -46,7 +46,6 @@
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
-
 
 class ComputeMapChangeMsg : public CMessage_ComputeMapChangeMsg
 {
@@ -810,35 +809,44 @@ void WorkDistrib::patchMapInit(void)
                                 maxNumPatches << "\n" << endi;
   }
 
+  int numpes = CkNumPes();
+  SimParameters *simparam = Node::Object()->simParameters;
+  if(simparam->simulateInitialMapping) {
+    numpes = simparam->simulatedPEs;
+    delete [] patchMap->nPatchesOnNode;
+    patchMap->nPatchesOnNode = new int[numpes];
+    memset(patchMap->nPatchesOnNode, 0, numpes*sizeof(int));	
+  }
+
 #ifdef NAMD_CUDA
   // for CUDA be sure there are more patches than pes
 
   int numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,maxNumPatches,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
-  if ( numPatches < CkNumPes() && twoAwayX < 0 ) {
+  if ( numPatches < numpes && twoAwayX < 0 ) {
     twoAwayX = 1;
     numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,maxNumPatches,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
-  if ( numPatches < CkNumPes() && twoAwayY < 0 ) {
+  if ( numPatches < numpes && twoAwayY < 0 ) {
     twoAwayY = 1;
     numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,maxNumPatches,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
-  if ( numPatches < CkNumPes() && twoAwayZ < 0 ) {
+  if ( numPatches < numpes && twoAwayZ < 0 ) {
     twoAwayZ = 1;
     numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,maxNumPatches,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
-  if ( numPatches < CkNumPes() ) {
+  if ( numPatches < numpes ) {
     NAMD_die("CUDA-enabled NAMD requires at least one patch per process.");
   }
-  if ( numPatches <= 1.4 * CkNumPes() ) {
-    int exactFit = numPatches - numPatches % CkNumPes();
+  if ( numPatches <= 1.4 * numpes ) {
+    int exactFit = numPatches - numPatches % numpes;
     int newNumPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,exactFit,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
@@ -853,10 +861,10 @@ void WorkDistrib::patchMapInit(void)
 
 #else
 
-  int availPes = CkNumPes();
-  if ( params->noPatchesOnZero && CkNumPes() > 1 ) {
+  int availPes = numpes;
+  if ( params->noPatchesOnZero && numpes > 1 ) {
       availPes -= 1;
-      if(params->noPatchesOnOne && CkNumPes() > 2)
+      if(params->noPatchesOnOne && numpes > 2)
         availPes -= 1;
   }
 
@@ -907,6 +915,10 @@ void WorkDistrib::assignNodeToPatch()
 {
   PatchMap *patchMap = PatchMap::Object();
   int nNodes = Node::Object()->numNodes();
+  SimParameters *simparam = Node::Object()->simParameters;
+  if(simparam->simulateInitialMapping) {
+	  nNodes = simparam->simulatedPEs;
+  }
 
 #if USE_TOPOMAP 
   TopoManager tmgr;
@@ -922,7 +934,7 @@ void WorkDistrib::assignNodeToPatch()
 #if (CMK_BLUEGENEP | CMK_BLUEGENEL)
       assignPatchesRecursiveBisection();
 #else
-      assignPatchesSpaceFillingCurve();
+      assignPatchesSpaceFillingCurve();	  
 #endif
       // assignPatchesRoundRobin();
       // assignPatchesToLowestLoadNode();
@@ -939,14 +951,14 @@ void WorkDistrib::assignNodeToPatch()
     //	 << patchMap->patch(i)->getNumAtoms() << " atoms and "
     //	 << patchMap->patch(i)->getNumAtoms() * 
     //            patchMap->patch(i)->getNumAtoms() 
-    //	 << " pairs.\n" << endi;
+    //	 << " pairs.\n" << endi;	 
 #ifdef MEM_OPT_VERSION
       numAtoms += patchMap->numAtoms(i);
-      nAtoms[patchMap->node(i)] += patchMap->numAtoms(i);
+      nAtoms[patchMap->node(i)] += patchMap->numAtoms(i);	  
 #else
     if (patchMap->patch(i)) {
       numAtoms += patchMap->patch(i)->getNumAtoms();
-      nAtoms[patchMap->node(i)] += patchMap->patch(i)->getNumAtoms();
+      nAtoms[patchMap->node(i)] += patchMap->patch(i)->getNumAtoms();	  
     }
 #endif
   }
@@ -1006,23 +1018,27 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
+  int ncpus = node->numNodes();
+  if(simParams->simulateInitialMapping) {
+	  ncpus = simParams->simulatedPEs;
+  }
 
-  int *load = new int[node->numNodes()];
+  int *load = new int[ncpus];
   int *assignedNodes = new int[patchMap->numPatches()];
-  for (int i=0; i<node->numNodes(); i++) {
+  for (int i=0; i<ncpus; i++) {
     load[i] = 0;
   }
 
   int defaultNode = 0;
-  if ( simParams->noPatchesOnZero && node->numNodes() > 1 ){
+  if ( simParams->noPatchesOnZero && ncpus > 1 ){
     defaultNode = 1;
-    if( simParams->noPatchesOnOne && node->numNodes() > 2)
+    if( simParams->noPatchesOnOne && ncpus > 2)
       defaultNode = 2;
   }
   // Assign patch to node with least atoms assigned.
   for(pid=0; pid < patchMap->numPatches(); pid++) {
     assignedNode = defaultNode;
-    for (int i=assignedNode + 1; i < node->numNodes(); i++) {
+    for (int i=assignedNode + 1; i < ncpus; i++) {
       if (load[i] < load[assignedNode]) assignedNode = i;
     }
     assignedNodes[pid] = assignedNode;
@@ -1045,8 +1061,12 @@ void WorkDistrib::assignPatchesBitReversal()
   PatchMap *patchMap = PatchMap::Object();
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
+  SimParameters *simparam = node->simParameters;
 
   int ncpus = node->numNodes();
+  if(simparam->simulateInitialMapping) {
+	  ncpus = simparam->simulatedPEs;
+  }
   int npatches = patchMap->numPatches();
   if ( ncpus <= npatches )
     NAMD_bug("WorkDistrib::assignPatchesBitReversal called improperly");
@@ -1107,16 +1127,19 @@ struct nodesort {
   }
 };
 
-
 void WorkDistrib::sortNodesAndAssign(int *assignedNode, int baseNodes) {
   // if baseNodes is zero (default) then set both nodes and basenodes
   // if baseNodes is nonzero then this is a second call to set basenodes only
   int i, pid; 
   PatchMap *patchMap = PatchMap::Object();
+  int npatches = patchMap->numPatches();
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   int nnodes = node->numNodes();
-  int npatches = patchMap->numPatches();
+  SimParameters *simparam = node->simParameters;
+  if(simparam->simulateInitialMapping) {
+	  nnodes = simparam->simulatedPEs;
+  }
 
   ResizeArray<nodesort> allnodes(nnodes);
   for ( i=0; i < nnodes; ++i ) {
@@ -1145,9 +1168,9 @@ void WorkDistrib::sortNodesAndAssign(int *assignedNode, int baseNodes) {
   for ( pid=0; pid<npatches; ++pid ) {
     // iout << pid << " " <<  allnodes[assignedNode[pid]].node << "\n" << endi;
     if ( ! baseNodes ) {
-      patchMap->assignNode(pid, allnodes[assignedNode[pid]].node);
+      patchMap->assignNode(pid, allnodes[assignedNode[pid]].node);	
     }
-    patchMap->assignBaseNode(pid, allnodes[assignedNode[pid]].node);
+    patchMap->assignBaseNode(pid, allnodes[assignedNode[pid]].node);	
   }
 }
 
@@ -1158,10 +1181,15 @@ void WorkDistrib::assignPatchesRoundRobin()
   PatchMap *patchMap = PatchMap::Object();
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
+  SimParameters *simparam = node->simParameters;
+  int ncpus = node->numNodes();
+  if(simparam->simulateInitialMapping) {
+	  ncpus = simparam->simulatedPEs;
+  }
   int *assignedNode = new int[patchMap->numPatches()];
 
   for(pid=0; pid < patchMap->numPatches(); pid++) {
-    assignedNode[pid] = pid % node->numNodes();
+    assignedNode[pid] = pid % ncpus;
   }
 
   sortNodesAndAssign(assignedNode);
@@ -1173,8 +1201,12 @@ void WorkDistrib::assignPatchesRecursiveBisection()
 {
   PatchMap *patchMap = PatchMap::Object();
   int *assignedNode = new int[patchMap->numPatches()];
-  int numNodes = Node::Object()->numNodes();
   SimParameters *simParams = Node::Object()->simParameters;
+  int numNodes = Node::Object()->numNodes();
+  if(simParams->simulateInitialMapping) {
+	  numNodes = simParams->simulatedPEs;
+  }
+  
   int usedNodes = numNodes;
   int unusedNodes = 0;
   if ( simParams->noPatchesOnZero && numNodes > 1 ){
@@ -1212,6 +1244,9 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   int *assignedNode = new int[patchMap->numPatches()];
   int numNodes = Node::Object()->numNodes();
   SimParameters *simParams = Node::Object()->simParameters;
+  if(simParams->simulateInitialMapping) {
+	  numNodes = simParams->simulatedPEs;
+  }
   int usedNodes = numNodes;
   int unusedNodes = 0;
   if ( simParams->noPatchesOnZero && numNodes > 1 ){
@@ -1283,9 +1318,12 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
     binc *= -1;  b += binc;
   }
 
-  for ( int i=0; i<patchMap->numPatches(); ++i ) {
-    assignedNode[i] += unusedNodes;
+  if(unusedNodes>0) {
+	  for ( int i=0; i<patchMap->numPatches(); ++i ) {
+		assignedNode[i] += unusedNodes;
+	  }
   }
+
   sortNodesAndAssign(assignedNode);
   delete [] assignedNode; 
 }
@@ -1426,6 +1464,11 @@ void WorkDistrib::mapComputeHomeTuples(ComputeType type)
   Node *node = nd.ckLocalBranch();
 
   int numNodes = node->numNodes();
+  SimParameters *simparam = node->simParameters;
+  if(simparam->simulateInitialMapping) {
+	  numNodes = simparam->simulatedPEs;
+  }
+
   char *isBaseNode = new char[numNodes];
   memset(isBaseNode,0,numNodes*sizeof(char));
 
@@ -1452,6 +1495,10 @@ void WorkDistrib::mapComputeHomePatches(ComputeType type)
   Node *node = nd.ckLocalBranch();
 
   int numNodes = node->numNodes();
+  SimParameters *simparam = node->simParameters;
+  if(simparam->simulateInitialMapping) {
+	  numNodes = simparam->simulatedPEs;
+  }
 
   for(int i=0; i<numNodes; i++) {
     if ( patchMap->numPatchesOnNode(i) ) {
@@ -1488,7 +1535,13 @@ void WorkDistrib::mapComputeNode(ComputeType type)
   PatchID i;
   ComputeID cid;
 
-  for(int i=0; i<CkNumPes(); i++) {
+  int ncpus = CkNumPes();
+  SimParameters *simparam = Node::Object()->simParameters;
+  if(simparam->simulateInitialMapping) {
+	  ncpus = simparam->simulatedPEs;
+  }
+
+  for(int i=0; i<ncpus; i++) {
     computeMap->storeCompute(i,0,type);
   }
 
@@ -1507,6 +1560,12 @@ void WorkDistrib::mapComputeNonbonded(void)
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = Node::Object()->simParameters;
+  int ncpus = CkNumPes();
+  int nodesize = CkMyNodeSize();
+  if(simParams->simulateInitialMapping) {
+	  ncpus = simParams->simulatedPEs;
+	  nodesize = simParams->simulatedNodeSize;
+  }
 
   PatchID oneAway[PatchMap::MaxOneOrTwoAway];
   PatchID oneAwayDownstream[PatchMap::MaxOneOrTwoAway];
@@ -1517,8 +1576,8 @@ void WorkDistrib::mapComputeNonbonded(void)
   int numNeighbors;
   int j;
   double partScaling = 1.0;
-  if ( CkNumPes() < patchMap->numPatches() ) {
-    partScaling = ((double)CkNumPes()) / ((double)patchMap->numPatches());
+  if ( ncpus < patchMap->numPatches() ) {
+    partScaling = ((double)ncpus) / ((double)patchMap->numPatches());
   }
 
   for(i=0; i<patchMap->numPatches(); i++) // do the self 
@@ -1627,18 +1686,17 @@ void WorkDistrib::mapComputeNonbonded(void)
 			numPartitions = node->simParameters->maxPairPart;
 //	if ( numPartitions > 1 ) iout << "Mapping " << numPartitions << " ComputeNonbondedPair objects for patches " << p1 << "(" << numAtoms1 << ") and " << p2 << "(" << numAtoms2 << ")\n" << endi;
       }
-	for(int partition=0; partition < numPartitions; partition++)
-	{
-	  cid=computeMap->storeCompute( patchMap->basenode(dsp),
-		2,computeNonbondedPairType,partition,numPartitions);
-	  computeMap->newPid(cid,p1);
-	  computeMap->newPid(cid,p2,oneAwayTrans[j]);
-	  patchMap->newCid(p1,cid);
-	  patchMap->newCid(p2,cid);
-        }
+		for(int partition=0; partition < numPartitions; partition++)
+		{
+		  cid=computeMap->storeCompute( patchMap->basenode(dsp),
+			2,computeNonbondedPairType,partition,numPartitions);
+		  computeMap->newPid(cid,p1);
+		  computeMap->newPid(cid,p2,oneAwayTrans[j]);
+		  patchMap->newCid(p1,cid);
+		  patchMap->newCid(p2,cid);
+		}
     }
   }
-
 }
 
 //----------------------------------------------------------------------
@@ -2130,6 +2188,10 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   int *assignedNode = new int[patchMap->numPatches()];
   int numNodes = Node::Object()->numNodes();
   SimParameters *simParams = Node::Object()->simParameters;
+  if(simParams->simulateInitialMapping) {
+	  numNodes = simParams->simulatedPEs;
+  }
+
   int usedNodes = numNodes;
   
   if ( simParams->noPatchesOnZero && numNodes > 1 ) usedNodes -= 1;
