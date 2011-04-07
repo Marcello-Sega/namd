@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: chaomei2 $
- * $Date: 2011/04/05 02:06:52 $
- * $Revision: 1.1186 $
+ * $Date: 2011/04/07 05:25:20 $
+ * $Revision: 1.1187 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -130,6 +130,8 @@ public:
 	Bool simulateInitialMapping; //if true, the initial mapping during startup is dumped and exit
 	int simulatedPEs;
 	int simulatedNodeSize;
+
+	Bool benchTimestep; //only cares about benchmarking the timestep, so no file output to save SUs for large-scale benchmarking
 
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension

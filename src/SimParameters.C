@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: chaomei2 $
- * $Date: 2011/04/05 02:06:52 $
- * $Revision: 1.1346 $
+ * $Date: 2011/04/07 05:25:20 $
+ * $Revision: 1.1347 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1587,6 +1587,7 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 #endif
 
    opts.optionalB("main", "outputMaps", "whether to dump compute map and patch map for analysis just before load balancing", &outputMaps, FALSE);
+   opts.optionalB("main", "benchTimestep", "whether to do benchmarking timestep in which case final file output is disabled", &benchTimestep, FALSE);
 
    opts.optionalB("main", "simulateInitialMapping", "whether to study the initial mapping scheme", &simulateInitialMapping, FALSE);
    opts.optional("main", "simulatedPEs", "the number of PEs to be used for studying initial mapping", &simulatedPEs);

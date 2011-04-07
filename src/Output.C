@@ -114,6 +114,8 @@ int Output::coordinateNeeded(int timestep)
 {
   SimParameters *simParams = Node::Object()->simParameters;
 
+  if(simParams->benchTimestep) return 0;
+
   int positionsNeeded = 0;
 
   if ( timestep >= 0 ) {
@@ -279,6 +281,8 @@ int Output::velocityNeeded(int timestep)
 {
   SimParameters *simParams = Node::Object()->simParameters;
 
+  if(simParams->benchTimestep) return 0;
+
   int velocitiesNeeded = 0;
 
   if ( timestep >= 0 ) {
@@ -371,6 +375,8 @@ void Output::velocity(int timestep, int n, Vector *vel)
 int Output::forceNeeded(int timestep)
 {
   SimParameters *simParams = Node::Object()->simParameters;
+
+  if(simParams->benchTimestep) return 0;
 
   int forcesNeeded = 0;
 
