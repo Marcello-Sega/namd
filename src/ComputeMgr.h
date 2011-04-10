@@ -97,6 +97,7 @@ private:
 
   ComputeNonbondedWorkArrays *computeNonbondedWorkArrays;
 
+  int skipSplitting;
   int updateComputesCount;
   int updateComputesReturnEP;
   CkGroupID updateComputesReturnChareID;

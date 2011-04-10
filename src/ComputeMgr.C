@@ -90,6 +90,7 @@ ComputeMgr::ComputeMgr()
     computeEwaldObject = 0;
     computeNonbondedCUDAObject = 0;
     computeNonbondedWorkArrays = new ComputeNonbondedWorkArrays;
+    skipSplitting = 0;
 }
 
 ComputeMgr::~ComputeMgr(void)
@@ -124,7 +125,12 @@ void ComputeMgr::updateComputes2(CkQdMsg *msg)
 
 void ComputeMgr::updateComputes3()
 {
-    CProxy_ComputeMgr(thisgroup).splitComputes();
+    if ( skipSplitting ) {
+      CProxy_ComputeMgr(thisgroup).updateLocalComputes();
+    } else {
+      CProxy_ComputeMgr(thisgroup).splitComputes();
+      skipSplitting = 1;
+    }
 }
 
 void ComputeMgr::splitComputes()
