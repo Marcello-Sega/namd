@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2011/03/12 23:26:14 $
- * $Revision: 1.108 $
+ * $Date: 2011/04/10 20:40:55 $
+ * $Revision: 1.109 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -168,6 +168,9 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
     int totalAddedParts = 0;
     double maxCompute = averageLoad / 20.;
     if ( maxCompute < avgCompute ) maxCompute = avgCompute;
+    if ( simParams->ldbRelativeGrainsize > 0. ) {
+      maxCompute = averageLoad * simParams->ldbRelativeGrainsize;
+    }
     CkPrintf("LDB: Partitioning computes with target load %f\n", maxCompute);
     double maxUnsplit = 0.;
     for (int i=0; i<nMoveableComputes; i++) {

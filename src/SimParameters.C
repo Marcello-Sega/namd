@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/04/07 05:25:20 $
- * $Revision: 1.1347 $
+ * $Author: jim $
+ * $Date: 2011/04/10 20:40:56 $
+ * $Revision: 1.1348 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1572,6 +1572,9 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "ldbHomeBackgroundScaling",
      "home node background load scaling", &ldbHomeBackgroundScaling);
    opts.range("ldbHomeBackgroundScaling", NOT_NEGATIVE);
+   opts.optional("main", "ldbRelativeGrainsize",
+     "fraction of average load per compute", &ldbRelativeGrainsize, 0.);
+   opts.range("ldbRelativeGrainsize", NOT_NEGATIVE);
    
    opts.optional("main", "traceStartStep", "when to start tracing", &traceStartStep);
    opts.range("traceStartStep", POSITIVE);
@@ -3333,6 +3336,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if (ldBalancer == LDBAL_HYBRID)
        iout << iINFO << "HYBRIDLB GROUP SIZE     " << hybridGroupSize << "\n";
      iout << iINFO << "LAST LDB TIMESTEP     " << lastLdbStep << "\n";
+     if ( ldbRelativeGrainsize > 0. )
+       iout << iINFO << "LDB RELATIVE GRAINSIZE " << ldbRelativeGrainsize << "\n";
      iout << iINFO << "LDB BACKGROUND SCALING " << ldbBackgroundScaling << "\n";
      iout << iINFO << "HOM BACKGROUND SCALING " << ldbHomeBackgroundScaling << "\n";
      if ( PMEOn ) {
