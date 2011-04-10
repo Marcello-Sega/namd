@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
- * $Author: jim $
- * $Date: 2011/03/14 21:32:52 $
- * $Revision: 1.30 $
+ * $Author: gzheng $
+ * $Date: 2011/04/10 21:23:24 $
+ * $Revision: 1.31 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -128,7 +128,8 @@ void TorusLB::strategy() {
       int realNode1 = CmiNodeOf(realPe1);
       int nodeSize = CmiNodeSize(realNode1);
       if ( nodeSize > 1 ) {  // else did it already
-        for ( int rpe = CmiNodeFirst(realNode1); rpe < nodeSize; ++rpe ) {
+        int firstpe = CmiNodeFirst(realNode1);
+        for ( int rpe = firstpe; rpe < firstpe+nodeSize; ++rpe ) {
           if INGROUP(rpe) {
             p = &processors[rpe - beginGroup];
             if ( p->available && ( p->load + c->load < minLoad ) ) {
@@ -143,7 +144,8 @@ void TorusLB::strategy() {
         if ( realNode2 != realNode1 ) {  // else did it already
           nodeSize = CmiNodeSize(realNode2);
           if ( nodeSize > 1 ) {
-            for ( int rpe = CmiNodeFirst(realNode2); rpe < nodeSize; ++rpe ) {
+            int firstpe = CmiNodeFirst(realNode2);
+            for ( int rpe = firstpe; rpe < firstpe+nodeSize; ++rpe ) {
               if INGROUP(rpe) {
                 p = &processors[rpe - beginGroup];
                 if ( p->available && ( p->load + c->load < minLoad ) ) {

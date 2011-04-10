@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: jim $
- * $Date: 2011/03/14 21:32:51 $
- * $Revision: 1.34 $
+ * $Author: gzheng $
+ * $Date: 2011/04/10 21:23:24 $
+ * $Revision: 1.35 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -230,7 +230,8 @@ int RefineTorusLB::newRefine() {
         int realNode1 = CmiNodeOf(realPe1);
         int nodeSize = CmiNodeSize(realNode1);
         if ( nodeSize > 1 ) {  // else did it already
-          for ( int rpe = CmiNodeFirst(realNode1); rpe < nodeSize; ++rpe ) {
+          int firstpe = CmiNodeFirst(realNode1);
+          for ( int rpe = firstpe; rpe < firstpe+nodeSize; ++rpe ) {
             if INGROUP(rpe) {
               p = &processors[rpe - beginGroup];
               if ( p->available && ( p->load + c->load < minLoad ) ) {
@@ -247,7 +248,8 @@ int RefineTorusLB::newRefine() {
           if ( realNode2 != realNode1 ) {  // else did it already
             nodeSize = CmiNodeSize(realNode2);
             if ( nodeSize > 1 ) {
-              for ( int rpe = CmiNodeFirst(realNode2); rpe < nodeSize; ++rpe ) {
+              int firstpe = CmiNodeFirst(realNode2);
+              for ( int rpe = firstpe; rpe < firstpe+nodeSize; ++rpe ) {
                 if INGROUP(rpe) {
                   p = &processors[rpe - beginGroup];
                   if ( p->available && ( p->load + c->load < minLoad ) ) {
