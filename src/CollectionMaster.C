@@ -45,6 +45,7 @@ void CollectionMaster::receivePositions(CollectVectorMsg *msg)
 {
 #ifndef MEM_OPT_VERSION
   positions.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
+  delete msg;
   
   CollectVectorInstance *c;
   while ( ( c = positions.removeReady() ) ) { disposePositions(c); }
