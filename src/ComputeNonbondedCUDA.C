@@ -455,7 +455,7 @@ void ComputeNonbondedCUDA::build_exclusions() {
   }
   // sort lists by maxdiff
   std::stable_sort(unique_lists.begin(), unique_lists.end(), exlist_sortop());
-  int totalbits = 0;
+  long int totalbits = 0;
   int nlists = unique_lists.size();
   for ( int j=0; j<nlists; ++j ) {
     int32 *list = unique_lists[j];
@@ -472,15 +472,15 @@ void ComputeNonbondedCUDA::build_exclusions() {
   if ( totalbits & 31 ) totalbits += ( 32 - ( totalbits & 31 ) );
 
   if ( ! CkMyPe() ) {
-    int bytesneeded = totalbits / 8;
-    CkPrintf("Info: Found %d unique exclusion lists needing %d bytes\n",
+    long int bytesneeded = totalbits / 8;
+    CkPrintf("Info: Found %d unique exclusion lists needing %ld bytes\n",
 		unique_lists.size(), bytesneeded);
 
-    int bytesavail = MAX_EXCLUSIONS * sizeof(unsigned int);
+    long int bytesavail = MAX_EXCLUSIONS * sizeof(unsigned int);
     if ( bytesneeded > bytesavail ) {
       char errmsg[512];
-      sprintf(errmsg,"%d bytes of CUDA constant memory needed for exclusions, "
-                     "but only %d bytes available.  Increase MAX_EXCLUSIONS.",
+      sprintf(errmsg,"%ld bytes of CUDA memory needed for exclusions "
+                     "but only %ld bytes can be addressed with 32-bit int.",
                      bytesneeded, bytesavail);
       NAMD_die(errmsg);
     }
@@ -492,7 +492,7 @@ void ComputeNonbondedCUDA::build_exclusions() {
   unsigned int *exclusion_bits = new unsigned int[totalbits/32];
   memset(exclusion_bits, 0, totalbits/8);
 
-  int base = 0;
+  long int base = 0;
   for ( int i=0; i<unique_lists.size(); ++i ) {
     base += unique_lists[i][1];
     if ( base != unique_lists[i][2] ) {
