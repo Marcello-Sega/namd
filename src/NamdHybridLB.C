@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: gzheng $
- * $Date: 2011/03/28 06:25:39 $
- * $Revision: 1.29 $
+ * $Date: 2011/04/15 01:16:33 $
+ * $Revision: 1.30 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -54,9 +54,10 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
     tree = new TwoLevelTree;   // similar to centralized load balancing
   }
   else {
-#if CHARM_VERSION > 60303
+#if CHARM_VERSION > 60304
     const SimParameters* simParams = Node::Object()->simParameters;
     tree = new ThreeLevelTree(simParams->hybridGroupSize);
+    initTree();
 #else
     tree = new ThreeLevelTree();
 #endif
@@ -611,7 +612,11 @@ int NamdHybridLB::buildData(LDStats* stats) {
       	int frompe = stats->from_proc[j];
 
 	// filter out non-NAMD managed objects (like PME array)
-      	if (this_obj.omID().id.idx != 1) continue;
+      	if (this_obj.omID().id.idx != 1) {
+                // CmiAssert(frompe>=0 && frompe<n_pes);
+		// processorArray[frompe].backgroundLoad += this_obj.wallTime;
+        	continue;
+	}
 
       	if (this_obj.id().id[1] == -2) { // Its a patch
 		// handled above to get required proxies from all patches
@@ -627,14 +632,14 @@ int NamdHybridLB::buildData(LDStats* stats) {
 			else p1 = p0;
 			computeArray[nMoveableComputes].Id = cid;
 			//BACKUP computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j];
-			if (stats->from_proc[j] >= n_pes) {  // from outside
+			if (frompe >= n_pes) {  // from outside
 CkPrintf("assigning random old processor...this looks broken\n");
 			  computeArray[nMoveableComputes].oldProcessor = CrnRand()%n_pes + stats->procs[0].pe;     // random
 			}
 			else {
-			  computeArray[nMoveableComputes].oldProcessor = stats->from_proc[j] + stats->procs[0].pe;
+			  computeArray[nMoveableComputes].oldProcessor = frompe + stats->procs[0].pe;
 			}
-			from_procs[nMoveableComputes] = stats->from_proc[j];
+			from_procs[nMoveableComputes] = frompe;
 
 			//BACKUP2 index = stats->from_proc[j] - stats->procs[0].pe;
 			//BACKUP processorArray[stats->from_proc[j]].computeLoad += this_obj.wallTime;
