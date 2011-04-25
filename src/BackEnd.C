@@ -172,8 +172,18 @@ void master_init(int argc, char **argv){
  
 }
 
+char *gNAMDBinaryName = NULL;
 // called by main on one or all procs
 void BackEnd::init(int argc, char **argv) {
+
+  gNAMDBinaryName = argv[0]+strlen(argv[0])-1;
+  while(gNAMDBinaryName != argv[0]){
+    if(*gNAMDBinaryName=='/' || *gNAMDBinaryName=='\\'){
+      gNAMDBinaryName++;
+      break;
+    }
+    gNAMDBinaryName--;
+  }
 
 #ifdef NAMD_CUDA
   // look for but don't remove +idlepoll on command line
