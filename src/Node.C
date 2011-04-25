@@ -406,16 +406,18 @@ void Node::startup() {
     #endif
     break;
   case 4:     
-    if(simParameters->isSendSpanningTreeOn()) {
-        ProxyMgr::Object()->setSendSpanning();
+    if(simParameters->isSendSpanningTreeOn()) {				
+			ProxyMgr::Object()->setSendSpanning();
+			ProxyMgr::Object()->setProxyTreeBranchFactor(simParameters->proxyTreeBranchFactor);				
     }
-    if(simParameters->isRecvSpanningTreeOn()) {
-        ProxyMgr::Object()->setRecvSpanning();
+    if(simParameters->isRecvSpanningTreeOn()) {				
+			ProxyMgr::Object()->setRecvSpanning();
+			ProxyMgr::Object()->setProxyTreeBranchFactor(simParameters->proxyTreeBranchFactor);				
     }
     #ifdef PROCTRACE_DEBUG
     DebugFileTrace::Instance("procTrace");
     #endif
-    
+
     if (!CkMyPe()) {
       output = new Output; // create output object just on PE(0)
 
@@ -881,6 +883,7 @@ void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
 #endif
 }
 
+extern char *gNAMDBinaryName;
 void Node::outputPatchComputeMaps(const char *filename, int tag){
 	if(!simParameters->outputMaps && !simParameters->simulateInitialMapping) return;
 
@@ -892,7 +895,7 @@ void Node::outputPatchComputeMaps(const char *filename, int tag){
 	}
 
 	char fname[128];
-	sprintf(fname, "mapdump_%s.%d_%d_%d", filename, numpes, nodesize, tag);
+	sprintf(fname, "mapdump_%s.%d_%d_%d_%s", filename, numpes, nodesize, tag, gNAMDBinaryName);
 
 	FILE *fp = fopen(fname, "w");
 	if(fp == NULL) {

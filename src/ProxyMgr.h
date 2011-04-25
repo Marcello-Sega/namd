@@ -20,8 +20,8 @@
 #include "ProxyMgr.decl.h"
 
 extern int proxySendSpanning, proxyRecvSpanning;
-extern const int proxySpanDim;
-extern const int inNodeProxySpanDim;
+extern int proxySpanDim;
+extern int inNodeProxySpanDim;
 
 class ProxyGBISP1ResultMsg: public CMessage_ProxyGBISP1ResultMsg {
   public:
@@ -339,6 +339,8 @@ public:
   void setRecvSpanning();
   int  getRecvSpanning();
 
+  void setProxyTreeBranchFactor(int dim);
+
   void buildProxySpanningTree();
   void buildProxySendRecvStrategy();
   void sendSpanningTrees();
@@ -363,7 +365,7 @@ public:
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   void buildNodeAwareSpanningTree0();
   static void buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &proxyList, 
-                                                    proxyTreeNodeList &ptnTree, int *proxyNodeMap);
+                                                    proxyTreeNodeList &ptnTree);
 #else
   void buildSpanningTree0();
 #endif

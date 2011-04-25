@@ -492,24 +492,24 @@ void HomePatch::sendProxies()
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
 void HomePatch::buildNodeAwareSpanningTree(void){
-    //build the naive spanning tree for this home patch    
-    int *proxyNodeMap = new int[CkNumNodes()]; //each element indiates the number of proxies residing on this node 
+#if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
+	DebugFileTrace *dft = DebugFileTrace::Object();
+	dft->openTrace();
+	dft->writeTrace("HomePatch[%d] has %d proxy on proc[%d] node[%d]\n", patchID, proxy.size(), CkMyPe(), CkMyNode());
+	dft->writeTrace("Proxies are: ");
+	for(int i=0; i<proxy.size(); i++) dft->writeTrace("%d(%d), ", proxy[i], CkNodeOf(proxy[i]));
+	dft->writeTrace("\n");
+	dft->closeTrace();
+#endif
+ 
+    //build the naive spanning tree for this home patch
     if(! proxy.size()) {
         //this case will not happen in practice.
         //In debugging state where spanning tree is enforced, then this could happen
         //Chao Mei        
-        #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
-        DebugFileTrace *dft = DebugFileTrace::Object();
-        dft->openTrace();
-        dft->writeTrace("HomePatch[%d] has 0 proxy on proc[%d] node[%d]\n", patchID, CkMyPe(), CkMyNode());
-        dft->closeTrace();
-        #endif
-        return;
+       return;
     }
-    ProxyMgr::buildSinglePatchNodeAwareSpanningTree(patchID, proxy, ptnTree, proxyNodeMap);    
-    delete [] proxyNodeMap;
-    proxyPeList.resize(0);
-
+    ProxyMgr::buildSinglePatchNodeAwareSpanningTree(patchID, proxy, ptnTree);
     //optimize on the naive spanning tree
 
     //setup the children
@@ -535,41 +535,34 @@ void HomePatch::setupChildrenFromProxySpanningTree(){
     //set up children
     //1. add external children (the first proc inside the proxy tree node)    
     //2. add internal children (with threshold that would enable spanning    
-    int internalChild;
-    int externalChild;
-    internalChild = rootnode->numPes-1;
-    numChild = internalChild;
-    if(numChild > inNodeProxySpanDim) {        
-        //tree construction within a node)
-        CmiAbort("Enabling in-node spanning tree construction has not been implemented yet!\n");
-    }else{
-        //exclude the root node
-        int treesize = ptnTree.size();
-        externalChild = (proxySpanDim>(treesize-1))?(treesize-1):proxySpanDim;
-        numChild += externalChild;        
+    int internalChild = rootnode->numPes-1;
+    int externalChild = ptnTree.size()-1;
+    externalChild = (proxySpanDim>externalChild)?externalChild:proxySpanDim;
+    int internalSlots = proxySpanDim-externalChild;
+    if(internalChild>0){
+      if(internalSlots==0) {
+         //at least having one internal child
+        internalChild = 1;
+      }else{
+        internalChild = (internalSlots>internalChild)?internalChild:internalSlots;
+      }
+    }
+    
+    nChild = externalChild+internalChild;
+    CmiAssert(nChild>0);
 
-        delete [] child;
-        #ifdef USE_NODEPATCHMGR
-        delete [] nodeChildren;
-        #endif
-        if(nChild==0){
-            child = NULL;
-            #ifdef USE_NODEPATCHMGR
-            nodeChildren = NULL;
-            numNodeChild = 0;
-            #endif
-            return;
-        }
-        child = new int[numChild];    
-        for(int i=0; i<externalChild; i++) {
-            child[i] = ptnTree.item(i+1).peIDs[0];
-        }
-        for(int i=externalChild, j=1; i<numChild; i++, j++) {
-            child[i] = rootnode->peIDs[j];
-        }
+    //exclude the root node        
+    delete [] child;
+    child = new int[nChild];    
+
+    for(int i=0; i<externalChild; i++) {
+        child[i] = ptnTree.item(i+1).peIDs[0];
+    }
+    for(int i=externalChild, j=1; i<nChild; i++, j++) {
+        child[i] = rootnode->peIDs[j];
     }
 
-    #ifdef USE_NODEPATCHMGR
+#ifdef USE_NODEPATCHMGR
     //only register the cores that have proxy patches. The HomePach's core
     //doesn't need to be registered.
     CProxy_NodeProxyMgr pm(CkpvAccess(BOCclass_group).nodeProxyMgr);
@@ -584,6 +577,7 @@ void HomePatch::setupChildrenFromProxySpanningTree(){
     //set up childrens in terms of node ids
     numNodeChild = externalChild;
     if(internalChild) numNodeChild++;
+    delete [] nodeChildren;
     nodeChildren = new int[numNodeChild];    
     for(int i=0; i<externalChild; i++) {
         nodeChildren[i] = ptnTree.item(i+1).nodeID;        
@@ -592,18 +586,17 @@ void HomePatch::setupChildrenFromProxySpanningTree(){
     //on other cores of the same node for this patch.
     if(internalChild)
         nodeChildren[numNodeChild-1] = rootnode->nodeID;
-    #endif
+#endif
     
-    #if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
+#if defined(PROCTRACE_DEBUG) && defined(NAST_DEBUG)
     DebugFileTrace *dft = DebugFileTrace::Object();
     dft->openTrace();
-    dft->writeTrace("HomePatch[%d] has %d children: ", patchID, numChild);
+    dft->writeTrace("HomePatch[%d] has %d children: ", patchID, nChild);
     for(int i=0; i<nChild; i++)
         dft->writeTrace("%d ", child[i]);
     dft->writeTrace("\n");
     dft->closeTrace();
-    #endif
-    
+#endif   
 }
 #endif
 
@@ -616,7 +609,7 @@ void HomePatch::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
     int *pAllPes = msg->allPes;
     for(int i=0; i<treesize; i++) {
         proxyTreeNode *oneNode = &ptnTree.item(i);
-        delete oneNode->peIDs;
+        delete [] oneNode->peIDs;
         oneNode->numPes = msg->numPesOfNode[i];
         oneNode->nodeID = CkNodeOf(*pAllPes);
         oneNode->peIDs = new int[oneNode->numPes];

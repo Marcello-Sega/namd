@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2011/04/10 20:40:56 $
- * $Revision: 1.1188 $
+ * $Author: chaomei2 $
+ * $Date: 2011/04/25 21:13:08 $
+ * $Revision: 1.1189 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -704,6 +704,9 @@ public:
 	//default value is -1
 	int proxySendSpanningTree;
 	int proxyRecvSpanningTree;
+
+    int proxyTreeBranchFactor;
+
 
     //fields needed for Parallel IO Input
     int numinputprocs;
