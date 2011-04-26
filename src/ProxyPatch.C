@@ -29,10 +29,7 @@ ProxyPatch::ProxyPatch(PatchID pd) :
   numAtoms = -1;
   parent = -1;
 
-#if defined(NODEAWARE_PROXY_SPANNINGTREE) || defined(USE_TWOLEVEL_PROXY_SENDRECV)
-  /*nChild = 0;
-  child = NULL;*/
-#else
+#ifndef NODEAWARE_PROXY_SPANNINGTREE
   nChild = 0;
   child = new int[proxySpanDim];
 #endif
@@ -309,13 +306,7 @@ void ProxyPatch::sendResults(void)
 //  CmiUsePersistentHandle(&localphs, 1);
 #endif
 
-  int isProxyRecvSpanning = proxyRecvSpanning;
-#ifdef USE_TWOLEVEL_PROXY_SENDRECV
-  //always send to its parent
-  isProxyRecvSpanning = 1;
-#endif
-
-  if (isProxyRecvSpanning == 0) {
+  if (proxyRecvSpanning == 0) {
 #ifdef REMOVE_PROXYRESULTMSG_EXTRACOPY
     ProxyResultVarsizeMsg *msg = ProxyResultVarsizeMsg::getANewMsg(CkMyPe(), patchID, PRIORITY_SIZE, f); 
 #else
@@ -393,29 +384,6 @@ int ProxyPatch::getSpanningTreeChild(int *c) {
   for (int i=0; i<nChild; i++) c[i] = child[i];
   return nChild;
 }
-
-void ProxyPatch::setSendRecvStrategyTree(int parentid, int *subtree, int n){
-	parent = parentid;
-	nWait = 0;
-	delete [] child;
-	if(n>1) {
-		CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
-		//this means the subtree also contains other pes besides myself
-		nChild = n-1;
-		child = new int[nChild];
-		for(int i=0, cidx=0; i<n; i++) {
-			if(subtree[i] != CkMyPe()) {
-				child[cidx++] = subtree[i];
-				//we need to send the info to children
-				cp[subtree[i]].recvSendRecvStrategyTree(patchID, CkMyPe(), NULL, 0);
-			}
-		}
-	}else{
-		nChild = 0;
-		child = NULL;
-	}
-}
-
 
 ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResultMsg *msg) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)

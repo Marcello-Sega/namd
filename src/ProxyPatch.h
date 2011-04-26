@@ -47,10 +47,6 @@ class ProxyPatch : public Patch
      int getSTNNodeChild() { return numNodeChild; }
      #endif
 
-	 void setSendRecvStrategyTree(int parentid, int *subtree, int n);
-	 int *getSendRecvStrategyTreeChildren(){ return child; }
-	 int getSendRecvStrategyTreeNumChildren() { return nChild; }
-
      ProxyCombinedResultMsg *depositCombinedResultMsg(ProxyCombinedResultMsg *);
 	 ProxyCombinedResultMsg *depositCombinedResultRawMsg(ProxyCombinedResultRawMsg *);
 

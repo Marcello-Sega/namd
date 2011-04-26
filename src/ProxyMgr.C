@@ -555,23 +555,6 @@ ProxyMgr::buildProxySpanningTree()
   }
 }
 
-void ProxyMgr::buildProxySendRecvStrategy(){
-	PatchIDList pids;
-	if (!CkMyPe()) iout << iINFO << "Building two-level proxy send/recv scheme (node-level -> proc level)\n" << endi;
-	PatchMap::Object()->homePatchIDList(pids);
-	for (int i=0; i<pids.size(); i++) {
-	  HomePatch *home = PatchMap::Object()->homePatch(pids[i]);
-	  if (home == NULL) CkPrintf("ERROR: homepatch NULL\n");
-	  home->buildSendRecvStrategy();
-	}
-}
-
-void ProxyMgr::recvSendRecvStrategyTree(int pid, int parentid, int *subtree, int n){
-	ProxyPatch *proxy = (ProxyPatch *)PatchMap::Object()->patch(pid);
-	CmiAssert(proxy!=NULL);
-	proxy->setSendRecvStrategyTree(parentid, subtree, n);
-}
-
 void 
 ProxyMgr::buildProxySpanningTree2()
 {
@@ -1516,17 +1499,6 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
       #endif
     }
   }
-#ifdef USE_TWOLEVEL_PROXY_SENDRECV
-  else{
-	  int *pids = proxy->getSendRecvStrategyTreeChildren();
-	  int npids = proxy->getSendRecvStrategyTreeNumChildren();
-	  if(npids) {
-		  ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
-		  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
-		  cp.recvImmediateProxyData(newmsg,npids,pids);
-	  }
-  }
-#endif
   /* send to self via EP method to preserve priority */
   CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp[CkMyPe()].recvProxyData(msg);
@@ -1623,17 +1595,6 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
       ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
     }
   }
-#ifdef USE_TWOLEVEL_PROXY_SENDRECV
-  else{
-	  int *pids = proxy->getSendRecvStrategyTreeChildren();
-	  int npids = proxy->getSendRecvStrategyTreeNumChildren();
-	  if(npids) {
-		  ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
-		  CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
-		  cp.recvImmediateProxyAll(newmsg,npids,pids);
-	  }
-  }
-#endif
   /* send to self via EP method to preserve priority */
   CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   cp[CkMyPe()].recvProxyAll(msg);

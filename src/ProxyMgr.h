@@ -342,7 +342,6 @@ public:
   void setProxyTreeBranchFactor(int dim);
 
   void buildProxySpanningTree();
-  void buildProxySendRecvStrategy();
   void sendSpanningTrees();
   void sendSpanningTreeToHomePatch(int pid, int *tree, int n);
   void recvSpanningTreeOnHomePatch(int pid, int *tree, int n);
@@ -359,8 +358,6 @@ public:
   void buildProxySpanningTree2();               // centralized version
   void sendProxies(int pid, int *list, int n);
   void recvProxies(int pid, int *list, int n);
-
-  void recvSendRecvStrategyTree(int pid, int parentid, int *subtree, int n);
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   void buildNodeAwareSpanningTree0();

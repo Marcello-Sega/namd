@@ -285,10 +285,6 @@ ComputeMgr::updateLocalComputes5()
     // distributed building of ST called in Node.C only
     if (proxySendSpanning || proxyRecvSpanning)
         ProxyMgr::Object()->buildProxySpanningTree2();
-#ifdef USE_TWOLEVEL_PROXY_SENDRECV
-	else
-		ProxyMgr::Object()->buildProxySendRecvStrategy();
-#endif
 
     // this code needs to be turned on if we want to
     // shift the creation of ST to the load balancer
