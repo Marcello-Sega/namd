@@ -41,9 +41,7 @@ SBSRCDIR = sb/src
 
 # to compile a memory optimized version, uncomment or config --with-memopt
 #MEMOPT=-DMEM_OPT_VERSION
-# to compile version that uses node aware spanning tree, add 
-#-DNODEAWARE_PROXY_SPANNINGTREE to the variable EXTRADEFINES
-# to compile version that uses node-aware proxy send/recv,
+# to compile version that uses node-aware proxy send/recv spanning tree,
 # add -DNODEAWARE_PROXY_SPANNINGTREE to the variable EXTRADEFINES
 #EXTRADEFINES=-DREMOVE_PROXYDATAMSG_EXTRACOPY -DREMOVE_PROXYRESULTMSG_EXTRACOPY
 #EXTRADEFINES=-DREMOVE_PROXYRESULTMSG_EXTRACOPY -DNODEAWARE_PROXY_SPANNINGTREE
