@@ -54,6 +54,7 @@ void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg=NULL) 
 #else
     ssize_t retval = write(fd,buf,count);
 #endif
+    if ( retval < 0 && errno == EINTR ) retval = 0;
     if ( retval < 0 ) NAMD_err(errmsg);
     if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write64()");
     buf += retval;

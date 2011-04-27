@@ -22,6 +22,7 @@ void NAMD_write(int fd, const char *buf, size_t count) {
 #else
     ssize_t retval = write(fd,buf,count);
 #endif
+    if ( retval < 0 && errno == EINTR ) retval = 0;
     if ( retval < 0 ) NAMD_die(strerror(errno));
     if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write64()");
     buf += retval;
@@ -647,18 +648,18 @@ int open_dcd_write(char *dcdname)
 	   delete [] newdcdname;
 	} 
 #ifdef WIN32
-	if ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,
+	while ( (dcdfd = _open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_BINARY|O_LARGEFILE,
 				_S_IREAD|_S_IWRITE)) < 0)
 #else
 #ifdef NAMD_NO_O_EXCL
-	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_TRUNC|O_LARGEFILE,
+	while ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_TRUNC|O_LARGEFILE,
 #else
-	if ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_LARGEFILE,
+	while ( (dcdfd = open(dcdname, O_RDWR|O_CREAT|O_EXCL|O_LARGEFILE,
 #endif
 				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
 #endif
 	{
-		return(DCD_OPENFAILED);
+		if ( errno != EINTR ) return(DCD_OPENFAILED);
 	}
 
 	return(dcdfd);
@@ -676,18 +677,18 @@ int open_dcd_write_par_slave(char *dcdname)
 	//backed up. --Chao Mei
 	int dcdfd;
 #ifdef WIN32
-	if ( (dcdfd = _open(dcdname, O_RDWR|O_BINARY|O_LARGEFILE,
+	while ( (dcdfd = _open(dcdname, O_RDWR|O_BINARY|O_LARGEFILE,
 				_S_IREAD|_S_IWRITE)) < 0)
 #else
 #ifdef NAMD_NO_O_EXCL
-	if ( (dcdfd = open(dcdname, O_RDWR|O_TRUNC|O_LARGEFILE,
+	while ( (dcdfd = open(dcdname, O_RDWR|O_TRUNC|O_LARGEFILE,
 #else
-	if ( (dcdfd = open(dcdname, O_RDWR|O_EXCL|O_LARGEFILE,
+	while ( (dcdfd = open(dcdname, O_RDWR|O_EXCL|O_LARGEFILE,
 #endif
 				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
 #endif
 	{
-		return(DCD_OPENFAILED);
+		if ( errno != EINTR ) return(DCD_OPENFAILED);
 	}
 
 	return(dcdfd);

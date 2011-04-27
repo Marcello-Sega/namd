@@ -148,6 +148,7 @@ void NAMD_write(int fd, const char *buf, size_t count) {
 #else
     ssize_t retval = write(fd,buf,count);
 #endif
+    if ( retval < 0 && errno == EINTR ) retval = 0;
     if ( retval < 0 ) NAMD_die(strerror(errno));
     if ( retval > count ) NAMD_bug("extra bytes written in NAMD_write()");
     buf += retval;
@@ -175,13 +176,22 @@ FILE *Fopen	(const char *filename, const char *mode)
 #if defined(NOCOMPRESSED)
   if (!stat(filename,&buf))
     {
-      return(fopen(filename,mode));
+      FILE *rval;
+      while ( ! (rval = fopen(filename,mode)) ) {
+        if ( errno != EINTR ) break;
+      }
+      return(rval);
     }
 #else
   if (!stat(filename,&buf))
     {
-      if (!S_ISDIR(buf.st_mode))
-	return(fopen(filename,mode));
+      if (!S_ISDIR(buf.st_mode)) {
+        FILE *rval;
+        while ( ! (rval = fopen(filename,mode)) ) {
+          if ( errno != EINTR ) break;
+        }
+        return(rval);
+      }
     }
   // check for a compressed file
   char *realfilename;
