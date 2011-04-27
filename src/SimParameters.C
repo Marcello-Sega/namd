@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/04/25 21:13:08 $
- * $Revision: 1.1349 $
+ * $Author: ryanmcgreevy $
+ * $Date: 2011/04/27 15:54:04 $
+ * $Revision: 1.1350 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3843,7 +3843,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        iout << iINFO << "SYMMETRY RESTRAINTS ACTIVE BETWEEN STEPS " << symmetryFirstStep << " and " << symmetryLastStep << "\n";
      }
      iout << iINFO << "SYMMETRY FILE " << symmetryFile << "\n";
-     iout << iINFO << "SYMMETRY MATRIX FILE " << symmetryMatrixFile << "\n";
+
+     current = config->find("symmetryMatrixFile");
+     for ( ; current; current = current->next ) {
+      iout << iINFO << "SYMMETRY MATRIX FILE " << current->data << "\n";
+     }
      iout << iINFO << "SYMMETRY FORCE CONSTANT " << symmetryk << "\n";
      if (symmetryScaleForces){
       iout << iINFO << "SYMMETRY SCALE FORCES ON\n";
