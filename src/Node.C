@@ -95,6 +95,9 @@ extern "C" void HPM_Print(int, int);
 #define NUM_PAPI_EVENTS 2
 CkpvDeclare(int *, papiEvents);
 
+#define MEASURE_PAPI_CACHE 1
+#define MEASURE_PAPI_FLOPS 0
+
 static void namdInitPapiCounters(){
 	if(CkMyRank()==0){
 		//only initialize per OS process (i.e. a charm node)
@@ -117,14 +120,33 @@ static void namdInitPapiCounters(){
 	}
 	CkpvInitialize(int *, papiEvents);
 	CkpvAccess(papiEvents) = new int[NUM_PAPI_EVENTS];
-	
+
+#if MEASURE_PAPI_CACHE
+	if(PAPI_query_event(PAPI_L1_DCM)==PAPI_OK) {
+		CkpvAccess(papiEvents)[0] = PAPI_L1_DCM;
+	}else{
+		if(CkMyPe()==0){
+			CkPrintf("WARNING: PAPI_L1_DCM doesn't exsit on this platform!\n");			
+		}
+		//if not default to PAPI_TOT_INS
+		CkpvAccess(papiEvents)[0] = PAPI_TOT_INS;
+	}
+
+	if(PAPI_query_event(PAPI_L2_DCM)==PAPI_OK) {
+		CkpvAccess(papiEvents)[1] = PAPI_L2_DCM;
+	}else{
+		//if not default to PAPI_TOT_CYC
+		CkpvAccess(papiEvents)[1] = PAPI_TOT_CYC;
+	}	
+#elif MEASURE_PAPI_FLOPS
 	if(PAPI_query_event(PAPI_FP_INS)==PAPI_OK) {
 		CkpvAccess(papiEvents)[0] = PAPI_FP_INS;
 	}else{
 		if(CkMyPe()==0){
-			CkPrintf("ERROR: PAPI_FP_INS doesn't exsit on this platform!\n");
-			CkExit();
+			CkPrintf("WARNING: PAPI_FP_INS doesn't exsit on this platform!\n");
 		}
+		//if not default to PAPI_TOT_INS
+		CkpvAccess(papiEvents)[0] = PAPI_TOT_INS;
 	}
 
 	if(PAPI_query_event(PAPI_FMA_INS)==PAPI_OK) {
@@ -133,6 +155,7 @@ static void namdInitPapiCounters(){
 		//if not default to PAPI_TOT_CYC
 		CkpvAccess(papiEvents)[1] = PAPI_TOT_CYC;
 	}
+#endif
 }
 #endif
 
@@ -847,33 +870,45 @@ void Node::resumeAfterTraceBarrier(CkReductionMsg *msg){
 void Node::papiMeasureBarrier(int turnOnMeasure, int step){
 #ifdef MEASURE_NAMD_WITH_PAPI
 	curMFlopStep = step;
-	double totalFPIns = 0.0;	
+	double results[NUM_PAPI_EVENTS];
+
 	if(turnOnMeasure){		
 		PAPI_start_counters(CkpvAccess(papiEvents), NUM_PAPI_EVENTS);
 	}else{
 		long long counters[NUM_PAPI_EVENTS];
 		PAPI_read_counters(counters, NUM_PAPI_EVENTS);
-		totalFPIns += ((double)counters[0])/1e6;
-		if(CkpvAccess(papiEvents)[1] == PAPI_FMA_INS) {
-			totalFPIns += ((double)counters[1])*2/1e6;
-		}
+		results[0] = (double)counters[0]/1e6;
+		results[1] = (double)counters[1]/1e6;
 		PAPI_stop_counters(counters, NUM_PAPI_EVENTS);	
 	}
 	//CkPrintf("traceBarrier (%d) at step %d called on proc %d\n", turnOnTrace, step, CkMyPe());
 	CProxy_Node nd(CkpvAccess(BOCclass_group).node);
 	CkCallback cb(CkIndex_Node::resumeAfterPapiMeasureBarrier(NULL), nd[0]);
-	contribute(sizeof(double), &totalFPIns, CkReduction::sum_double, cb);
-	
+	contribute(sizeof(double)*NUM_PAPI_EVENTS, &results, CkReduction::sum_double, cb);	
 #endif
 }
 
 void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
 #ifdef MEASURE_NAMD_WITH_PAPI
 	if(simParameters->papiMeasureStartStep != curMFlopStep) {
-		double totalFPIns = *((double *)msg->getData());
+		double *results = (double *)msg->getData();
 		int bstep = simParameters->papiMeasureStartStep;
 		int estep = bstep + simParameters->numPapiMeasureSteps;
-		CkPrintf("FLOPS INFO: from timestep %d to %d, the total FP instruction of NAMD is %lf(x1e6)\n", bstep, estep, totalFPIns);
+		if(CkpvAccess(papiEvents)[0] == PAPI_FP_INS){
+			double totalFPIns = results[0];
+			if(CkpvAccess(papiEvents)[1] == PAPI_FMA_INS) totalFPIns += (results[1]*2);
+			CkPrintf("FLOPS INFO: from timestep %d to %d, the total FP instruction of NAMD is %lf(x1e6) per processor\n", 
+					 bstep, estep, totalFPIns/CkNumPes());
+		}else{
+			char nameBuf[PAPI_MAX_STR_LEN];
+			CkPrintf("PAPI COUNTERS INFO: from timestep %d to %d, ", 
+					 bstep, estep);
+			for(int i=0; i<NUM_PAPI_EVENTS; i++) {
+				PAPI_event_code_to_name(CkpvAccess(papiEvents)[i], nameBuf);
+				CkPrintf("%s is %lf(x1e6), ", nameBuf, results[i]/CkNumPes());
+			}
+			CkPrintf("per processor\n");
+		}		
 	}
 	delete msg;	
 	state->controller->resumeAfterPapiMeasureBarrier(curMFlopStep);
