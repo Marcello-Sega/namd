@@ -690,16 +690,15 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
     //Step1: foward to the first patch that has proxies
     //Now proxyNodeMap records the info that how many intermediate nodes on a node
         //each element indiates the number of proxies residing on this node    
-    int *proxyNodeMap = new int[CkNumNodes()];
-    memset(proxyNodeMap, 0, sizeof(int)*CkNumNodes());
     int pid=0;
     for(;pid<numPatches; pid++) {
         if(ptree.proxylist[pid].size()>0) break;
     }
     if(pid==numPatches) {
-        delete [] proxyNodeMap;
         return;
     }
+    int *proxyNodeMap = new int[CkNumNodes()];
+    memset(proxyNodeMap, 0, sizeof(int)*CkNumNodes());
     proxyTreeNodeList onePatchT = ptree.naTrees[pid];
     //If a node is an intermediate node, then its idx should satisfy
     //idx*proxySpanDim + 1 < onePatchT.size()
@@ -781,17 +780,16 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
         //No need to perform the second optimization as every node has only 1 core
         return;
     }
-    int *proxyCoreMap = new int[CkNumPes()];
-    memset(proxyCoreMap, 0, sizeof(int)*CkNumPes());
     //Step1: forward to the first patch that has proxies
     pid=0;
     for(;pid<numPatches; pid++) {
         if(ptree.proxylist[pid].size()>0) break;
     }
     if(pid==numPatches) {
-        delete [] proxyCoreMap;
         return;
     }
+    int *proxyCoreMap = new int[CkNumPes()];
+    memset(proxyCoreMap, 0, sizeof(int)*CkNumPes());
     onePatchT = ptree.naTrees[pid];
     //If a node is an intermediate node, then its idx should satisfy
     //idx*proxySpanDim + 1 < onePatchT.size()
@@ -950,6 +948,8 @@ ProxyMgr::buildSpanningTree0()
     if (numProxies == 0) {
       CkPrintf ("This is sheer evil!\n\n");
       //ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, NULL, 0);
+      delete [] ntrees;
+      delete [] numPatchesOnNode;
       return;
     }
     NodeIDList &tree = ptree.trees[pid];   // spanning tree
@@ -1088,7 +1088,7 @@ void ProxyMgr::sendNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
 void 
 ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   int size = msg->tree.size();
-  int child[proxySpanDim];
+  int *child = new int[proxySpanDim];
   int nChild = 0;
   int i;
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
@@ -1100,7 +1100,7 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   }
 
   // build subtree and pass down
-  if (nChild == 0) return;
+ if (nChild > 0) {
 
   nodecount ++;
   //if (nodecount > MAX_INTERNODE) 
@@ -1134,6 +1134,9 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
   }
 
   delete [] tree;
+ }
+
+  delete [] child;
   delete msg;
 }
 
@@ -1183,6 +1186,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
         //set children in terms of node ids
         proxy->setSTNodeChildren(0, NULL);       
 #endif
+        delete msg;
         return;
     }
 
