@@ -1,5 +1,5 @@
 
-FFTDIR=$(HOME)/work/fftw/fftw-mac
+FFTDIR=/Projects/namd2/fftw/macosx-x86_64
 FFTINCL=-I$(FFTDIR)/include
 FFTLIB=-L$(FFTDIR)/lib -lsrfftw -lsfftw
 FFTFLAGS=-DNAMD_FFTW
