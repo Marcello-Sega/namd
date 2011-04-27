@@ -1485,8 +1485,10 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);  
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int *pids = (int*)alloca(proxy->getSpanningTreeNChild()*sizeof(int));
-    int npid = proxy->getSpanningTreeChild(pids);
+    //int *pids = (int*)alloca(proxy->getSpanningTreeNChild()*sizeof(int));
+    //int npid = proxy->getSpanningTreeChild(pids);
+    int npid = proxy->getSpanningTreeNChild();
+    int *pids = (int *)proxy->getSpanningTreeChildPtr();
     if (npid) {        
         ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);     
 
@@ -1588,11 +1590,13 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
   #endif
   if (proxySendSpanning == 1) {
     // copy the message and send to spanning children
-    int *pids = (int*)alloca(proxy->getSpanningTreeNChild()*sizeof(int));
-    int npid = proxy->getSpanningTreeChild(pids);
+    //int *pids = (int*)alloca(proxy->getSpanningTreeNChild()*sizeof(int));
+    //int npid = proxy->getSpanningTreeChild(pids);
+    int npid = proxy->getSpanningTreeNChild();
+    int *pids = (int *)proxy->getSpanningTreeChildPtr();
     if (npid) {
         ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);      
-      ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
+        ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
     }
   }
   /* send to self via EP method to preserve priority */

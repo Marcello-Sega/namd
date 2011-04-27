@@ -34,9 +34,8 @@ class ProxyPatch : public Patch
      void setSpanningTree(int, int*, int);
      int  getSpanningTreeParent() { return parent; }
      int  getSpanningTreeChild(int *);
-     inline int getSpanningTreeNChild(void) {
-		 return nChild;
-     }
+     const int *getSpanningTreeChildPtr() { return child; }
+     inline int getSpanningTreeNChild(void) { return nChild; }
 
     #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
      void setSTNodeChildren(int numNids, int *nids);
