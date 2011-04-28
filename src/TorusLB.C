@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/TorusLB.C,v $
- * $Author: gzheng $
- * $Date: 2011/04/10 21:23:24 $
- * $Revision: 1.31 $
+ * $Author: jim $
+ * $Date: 2011/04/28 20:47:16 $
+ * $Revision: 1.32 $
  *****************************************************************************/
  
 /** \file TorusLB.C
@@ -251,7 +251,8 @@ void TorusLB::strategy() {
         for(int l=0; l<dimNT; l++)
         {
           pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-          p = &processors[pe];
+          if ( ! INGROUP(pe) ) continue;
+          p = &processors[pe - beginGroup];
           if(c->load + p->load < minLoad) { 
             minLoad = c->load + p->load;
             minp = p;
@@ -270,7 +271,8 @@ void TorusLB::strategy() {
           for(int l=0; l<dimNT; l++)
           {
             pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-            p = &processors[pe];
+            if ( ! INGROUP(pe) ) continue;
+            p = &processors[pe - beginGroup];
             if(c->load + p->load < minLoad) { 
               minp = p;
 	      found = 1; break;
@@ -285,7 +287,8 @@ void TorusLB::strategy() {
           for(int l=0; l<dimNT; l++)
           {
             pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-            p = &processors[pe];
+            if ( ! INGROUP(pe) ) continue;
+            p = &processors[pe - beginGroup];
             if(c->load + p->load < minLoad) { 
               minp = p;
 	      found = 1; break;
@@ -300,7 +303,8 @@ void TorusLB::strategy() {
           for(int l=0; l<dimNT; l++)
           {
             pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-            p = &processors[pe];
+            if ( ! INGROUP(pe) ) continue;
+            p = &processors[pe - beginGroup];
             if(c->load + p->load < minLoad) { 
               minp = p;
 	      found = 1; break;

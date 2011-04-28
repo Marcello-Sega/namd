@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: gzheng $
- * $Date: 2011/04/10 21:23:24 $
- * $Revision: 1.35 $
+ * $Author: jim $
+ * $Date: 2011/04/28 20:47:16 $
+ * $Revision: 1.36 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -388,7 +388,8 @@ int RefineTorusLB::newRefine() {
 	    for(int l=0; l<dimNT; l++)
 	    {
 	      pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-	      p = &processors[pe];
+	      if ( ! INGROUP(pe) ) continue;
+	      p = &processors[pe - beginGroup];
 	      if(c->load + p->load < minLoad) {
                 minLoad = c->load + p->load;
 	        good.c = c;
@@ -437,7 +438,8 @@ int RefineTorusLB::newRefine() {
 	      for(int l=0; l<dimNT; l++)
 	      {
 	        pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-	        p = &processors[pe];
+	        if ( ! INGROUP(pe) ) continue;
+	        p = &processors[pe - beginGroup];
 	        if(c->load + p->load < minLoad) {
 	          good.c = c;
 	          good.p = p;
@@ -454,7 +456,8 @@ int RefineTorusLB::newRefine() {
 	        for(int l=0; l<dimNT; l++)
 	        {
 		  pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-		  p = &processors[pe];
+	          if ( ! INGROUP(pe) ) continue;
+	          p = &processors[pe - beginGroup];
 		  if(c->load + p->load < minLoad) {
 		    good.c = c;
 		    good.p = p;
@@ -472,7 +475,8 @@ int RefineTorusLB::newRefine() {
 	        for(int l=0; l<dimNT; l++)
 	        {
 		  pe = tmgr.coordinatesToRank(i%dimNX, j%dimNY, k%dimNZ, l);
-		  p = &processors[pe];
+	          if ( ! INGROUP(pe) ) continue;
+	          p = &processors[pe - beginGroup];
 		  if(c->load + p->load < minLoad) {
 		    good.c = c;
 		    good.p = p;
