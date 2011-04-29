@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2011/04/10 20:40:55 $
- * $Revision: 1.109 $
+ * $Date: 2011/04/29 13:58:53 $
+ * $Revision: 1.110 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -569,7 +569,12 @@ int NamdCentLB::buildData(LDStats* stats)
       int frompe = stats->from_proc[j];
 
       // filter out non-NAMD managed objects (like PME array)
-      if (this_obj.omID().id.idx != 1) continue;
+      if (this_obj.omID().id.idx != 1) {
+        // CkPrintf("non-NAMD object %d on pe %d with walltime %lf\n",
+        // this_obj.id().id[0], stats->from_proc[j], this_obj.wallTime);
+        processorArray[stats->from_proc[j]].backgroundLoad += this_obj.wallTime;
+        continue;
+      }
 
       if (this_obj.id().id[1] == -2) { // Its a patch
 	const int pid = this_obj.id().id[0];

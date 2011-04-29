@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: gzheng $
- * $Date: 2011/04/15 01:16:33 $
- * $Revision: 1.30 $
+ * $Author: jim $
+ * $Date: 2011/04/29 13:58:53 $
+ * $Revision: 1.31 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -614,7 +614,9 @@ int NamdHybridLB::buildData(LDStats* stats) {
 	// filter out non-NAMD managed objects (like PME array)
       	if (this_obj.omID().id.idx != 1) {
                 // CmiAssert(frompe>=0 && frompe<n_pes);
-		// processorArray[frompe].backgroundLoad += this_obj.wallTime;
+                // CkPrintf("non-NAMD object %d on pe %d with walltime %lf\n",
+                // this_obj.id().id[0], frompe + stats->procs[0].pe, this_obj.wallTime);
+		processorArray[frompe].backgroundLoad += this_obj.wallTime;
         	continue;
 	}
 
