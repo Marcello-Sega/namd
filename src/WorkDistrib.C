@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/04/05 02:06:53 $
- * $Revision: 1.1224 $
+ * $Author: jim $
+ * $Date: 2011/04/29 17:30:54 $
+ * $Revision: 1.1225 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2194,7 +2194,11 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
 
   int usedNodes = numNodes;
   
-  if ( simParams->noPatchesOnZero && numNodes > 1 ) usedNodes -= 1;
+  if ( simParams->noPatchesOnZero && numNodes > 1 ) {
+    usedNodes -= 1;
+    if ( simParams->noPatchesOnOne && numNodes > 2 )
+      usedNodes -= 1;
+  }
   RecBisection recBisec(patchMap->numPatches(), PatchMap::Object());
   
   int xsize = 0, ysize = 0, zsize = 0;
