@@ -313,6 +313,8 @@ public:
 
   static Bool accelMDOn;
 
+  static Bool drudeNbthole;
+
   // for particle mesh Ewald
   static BigReal ewaldcof;
   static BigReal pi_ewaldcof;

@@ -1476,9 +1476,12 @@ void ComputeNonbondedUtil :: NAME
 	r2_delta, r2list);
 
 // BEGIN NBTHOLE OF DRUDE MODEL
-    if(simParams->drudeOn && (simParams->drudeNbtholeCut > 0.0)) {
+#if (FAST(1+)0)
+    if (drudeNbthole && p_i.hydrogenGroupSize > 1) {
   
       Parameters *parameters = Node::Object()->parameters;
+      const NbtholePairValue * const nbthole_array = parameters->nbthole_array;
+      const int NumNbtholePairParams = parameters->NumNbtholePairParams;
       BigReal drudeNbtholeCut = simParams -> drudeNbtholeCut;
       BigReal drudeNbtholeCut2 = (drudeNbtholeCut * drudeNbtholeCut) + r2_delta;
       BigReal CC = COULOMB * scaling * dielectric_1;
@@ -1489,16 +1492,22 @@ void ComputeNonbondedUtil :: NAME
   
             const int j = pairlisti[k];
             const CompAtom& p_j = p_1[j];
-  
-        for (kk = 0;kk < parameters->NumNbtholePairParams; kk++) {
 
-               if (((parameters->nbthole_array[kk].ind1 == p_i.vdwType) &&
-                  (parameters->nbthole_array[kk].ind2 == p_j.vdwType)) ||
-                  ((parameters->nbthole_array[kk].ind2 == p_i.vdwType) &&
-                   (parameters->nbthole_array[kk].ind1 == p_j.vdwType))) {
+            if ( p_j.hydrogenGroupSize < 2 ) { continue; }
+  
+        for (kk = 0;kk < NumNbtholePairParams; kk++) {
+
+               if (((nbthole_array[kk].ind1 == p_i.vdwType) &&
+                  (nbthole_array[kk].ind2 == p_j.vdwType)) ||
+                  ((nbthole_array[kk].ind2 == p_i.vdwType) &&
+                   (nbthole_array[kk].ind1 == p_j.vdwType))) {
+                 break;
+               }
+        }
+        if ( kk < NumNbtholePairParams ) {
     
-                BigReal aprod = parameters->nbthole_array[kk].alphai * parameters->nbthole_array[kk].alphaj;
-                const BigReal aa = parameters->nbthole_array[kk].tholeij * powf(aprod, -1.f/6);
+                BigReal aprod = nbthole_array[kk].alphai * nbthole_array[kk].alphaj;
+                const BigReal aa = nbthole_array[kk].tholeij * powf(aprod, -1.f/6);
                 const BigReal qqaa = CC * p_0[i].charge * p_1[j].charge;
                 const BigReal qqad = CC * p_0[i].charge * p_1[j+1].charge;
                 const BigReal qqda = CC * p_0[i+1].charge * p_1[j].charge;
@@ -1579,11 +1588,10 @@ void ComputeNonbondedUtil :: NAME
                 reduction[virialIndex_ZZ] += faa.z * raa.z + fad.z * rad.z
                 + fda.z * rda.z + fdd.z * rdd.z;
                 reduction[electEnergyIndex] += ethole;
-               }
-               else { continue;}
           }
        }
     }
+#endif
 // END NBTHOLE OF DRUDE MODEL
     
     // BEGIN LA

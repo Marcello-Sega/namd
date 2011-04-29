@@ -98,6 +98,8 @@ BigReal         ComputeNonbondedUtil::pressureProfileMin;
 
 Bool            ComputeNonbondedUtil::accelMDOn;
 
+Bool            ComputeNonbondedUtil::drudeNbthole;
+
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
@@ -245,6 +247,8 @@ void ComputeNonbondedUtil::select(void)
   pressureProfileOn = simParams->pressureProfileOn;
 
   accelMDOn = simParams->accelMDOn;
+
+  drudeNbthole = simParams->drudeOn && (simParams->drudeNbtholeCut > 0.0);
 
   if ( alchFepOn ) {
     alchLambda = simParams->alchLambda;
