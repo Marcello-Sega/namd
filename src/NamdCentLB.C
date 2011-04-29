@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2011/04/29 13:58:53 $
- * $Revision: 1.110 $
+ * $Date: 2011/04/29 19:15:11 $
+ * $Revision: 1.111 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -166,7 +166,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
     // high load noise at low outer-loop iteration counts
     int maxParts = 10;
     int totalAddedParts = 0;
-    double maxCompute = averageLoad / 20.;
+    double maxCompute = averageLoad / 10.;
     if ( maxCompute < avgCompute ) maxCompute = avgCompute;
     if ( simParams->ldbRelativeGrainsize > 0. ) {
       maxCompute = averageLoad * simParams->ldbRelativeGrainsize;
