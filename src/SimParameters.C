@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/04/29 17:42:33 $
- * $Revision: 1.1353 $
+ * $Date: 2011/04/29 20:17:18 $
+ * $Revision: 1.1354 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -877,6 +877,9 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("drude", "drudeBondConst", "Drude oscillator restraining "
        "force constant", &drudeBondConst);
    opts.range("drudeBondConst", POSITIVE);
+   opts.optional("drude", "drudeNbtholeCut", "Nonbonded Thole interactions "
+       "interaction radius", &drudeNbtholeCut);
+   opts.range("drudeNbtholeCut", POSITIVE);
 
    // Pair interaction calculations
     opts.optionalB("main", "pairInteraction", 
@@ -2774,6 +2777,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        }
        drudeBondLen = 0;
      }
+     if ( ! opts.defined("drudeNbtholeCut")) {
+       drudeNbtholeCut = 0;
+         iout << iWARN << "Resetting 'drudeNbtholeCut' to 0 "
+           "since 'drudeNbtholeCut' is unset\n" << endi;
+     }
    }
 
    //  Set up load balancing variables
@@ -4213,6 +4221,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
              << drudeBondLen << "\n";
         iout << iINFO << "DRUDE BOND RESTRAINT CONSTANT IS                "
              << drudeBondConst << "\n";
+      }
+      if (drudeNbtholeCut > 0.0) {
+        iout << iINFO << "DRUDE NBTHOLE IS ACTIVE\n";
+        iout << iINFO << "DRUDE NBTHOLE RADIUS IS   "
+             << drudeNbtholeCut << "\n";
       }
    }
 

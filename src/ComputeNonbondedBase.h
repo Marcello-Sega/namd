@@ -28,7 +28,7 @@
   #include "Molecule.h"
   #include "ComputeNonbondedUtil.h"
 #endif // )
-
+  #include "Parameters.h"
 #if NAMD_ComputeNonbonded_SortAtoms != 0
   #include "PatchMap.h"
 #endif
@@ -1474,6 +1474,117 @@ void ComputeNonbondedUtil :: NAME
     npairi = pairlist_from_pairlist(ComputeNonbondedUtil::cutoff2,
 	p_i_x, p_i_y, p_i_z, p_1, pairlistn_save, npairn, pairlisti,
 	r2_delta, r2list);
+
+// BEGIN NBTHOLE OF DRUDE MODEL
+    if(simParams->drudeOn && (simParams->drudeNbtholeCut > 0.0)) {
+  
+      Parameters *parameters = Node::Object()->parameters;
+      BigReal drudeNbtholeCut = simParams -> drudeNbtholeCut;
+      BigReal drudeNbtholeCut2 = (drudeNbtholeCut * drudeNbtholeCut) + r2_delta;
+      BigReal CC = COULOMB * scaling * dielectric_1;
+      int kk;
+
+      for (k = 0; k < npairi; k++) {
+            if (r2list[k] > drudeNbtholeCut2) { continue; }
+  
+            const int j = pairlisti[k];
+            const CompAtom& p_j = p_1[j];
+  
+        for (kk = 0;kk < parameters->NumNbtholePairParams; kk++) {
+
+               if (((parameters->nbthole_array[kk].ind1 == p_i.vdwType) &&
+                  (parameters->nbthole_array[kk].ind2 == p_j.vdwType)) ||
+                  ((parameters->nbthole_array[kk].ind2 == p_i.vdwType) &&
+                   (parameters->nbthole_array[kk].ind1 == p_j.vdwType))) {
+    
+                BigReal aprod = parameters->nbthole_array[kk].alphai * parameters->nbthole_array[kk].alphaj;
+                const BigReal aa = parameters->nbthole_array[kk].tholeij * powf(aprod, -1.f/6);
+                const BigReal qqaa = CC * p_0[i].charge * p_1[j].charge;
+                const BigReal qqad = CC * p_0[i].charge * p_1[j+1].charge;
+                const BigReal qqda = CC * p_0[i+1].charge * p_1[j].charge;
+                const BigReal qqdd = CC * p_0[i+1].charge * p_1[j+1].charge;
+
+                Vector raa = (p_0[i].position + params->offset) - p_1[j].position;
+                Vector rad = (p_0[i].position + params->offset) - p_1[j+1].position;
+                Vector rda = (p_0[i+1].position + params->offset) - p_1[j].position;
+                Vector rdd = (p_0[i+1].position + params->offset) - p_1[j+1].position;
+
+                BigReal raa_invlen = raa.rlength();  // reciprocal of length
+                BigReal rad_invlen = rad.rlength();
+                BigReal rda_invlen = rda.rlength();
+                BigReal rdd_invlen = rdd.rlength();
+
+                BigReal auaa = aa / raa_invlen;
+                BigReal auad = aa / rad_invlen;
+                BigReal auda = aa / rda_invlen;
+                BigReal audd = aa / rdd_invlen;
+
+                BigReal expauaa = exp(-auaa);
+                BigReal expauad = exp(-auad);
+                BigReal expauda = exp(-auda);
+                BigReal expaudd = exp(-audd);
+
+                BigReal polyauaa = 1 + 0.5*auaa;
+                BigReal polyauad = 1 + 0.5*auad;
+                BigReal polyauda = 1 + 0.5*auda;
+                BigReal polyaudd = 1 + 0.5*audd;
+
+                BigReal ethole = 0;
+                ethole += qqaa * raa_invlen * (- polyauaa * expauaa);
+                ethole += qqad * rad_invlen * (- polyauad * expauad);
+                ethole += qqda * rda_invlen * (- polyauda * expauda);
+                ethole += qqdd * rdd_invlen * (- polyaudd * expaudd);
+
+                polyauaa = 1 + auaa*polyauaa;
+                polyauad = 1 + auad*polyauad;
+                polyauda = 1 + auda*polyauda;
+                polyaudd = 1 + audd*polyaudd;
+
+                BigReal raa_invlen3 = raa_invlen * raa_invlen * raa_invlen;
+                BigReal rad_invlen3 = rad_invlen * rad_invlen * rad_invlen;
+                BigReal rda_invlen3 = rda_invlen * rda_invlen * rda_invlen;
+                BigReal rdd_invlen3 = rdd_invlen * rdd_invlen * rdd_invlen;
+
+                BigReal dfaa = qqaa * raa_invlen3 * (polyauaa*expauaa);
+                BigReal dfad = qqad * rad_invlen3 * (polyauad*expauad);
+                BigReal dfda = qqda * rda_invlen3 * (polyauda*expauda);
+                BigReal dfdd = qqdd * rdd_invlen3 * (polyaudd*expaudd);
+
+                Vector faa = -dfaa * raa;
+                Vector fad = -dfad * rad;
+                Vector fda = -dfda * rda;
+                Vector fdd = -dfdd * rdd;
+
+                params->ff[0][i] += faa + fad;
+                params->ff[0][i+1] += fda + fdd;
+                params->ff[1][j] -= faa + fda;
+                params->ff[1][j+1] -= fad + fdd;
+
+                reduction[virialIndex_XX] += faa.x * raa.x + fad.x * rad.x
+                + fda.x * rda.x + fdd.x * rdd.x;
+                reduction[virialIndex_XY] += faa.x * raa.y + fad.x * rad.y
+                + fda.x * rda.y + fdd.x * rdd.y;
+                reduction[virialIndex_XZ] += faa.x * raa.z + fad.x * rad.z
+                + fda.x * rda.z + fdd.x * rdd.z;
+                reduction[virialIndex_YX] += faa.y * raa.x + fad.y * rad.x
+                + fda.y * rda.x + fdd.y * rdd.x;
+                reduction[virialIndex_YY] += faa.y * raa.y + fad.y * rad.y
+                + fda.y * rda.y + fdd.y * rdd.y;
+                reduction[virialIndex_YZ] += faa.y * raa.z + fad.y * rad.z
+                + fda.y * rda.z + fdd.y * rdd.z;
+                reduction[virialIndex_ZX] += faa.z * raa.x + fad.z * rad.x
+                + fda.z * rda.x + fdd.z * rdd.x;
+                reduction[virialIndex_ZY] += faa.z * raa.y + fad.z * rad.y
+                + fda.z * rda.y + fdd.z * rdd.y;
+                reduction[virialIndex_ZZ] += faa.z * raa.z + fad.z * rad.z
+                + fda.z * rda.z + fdd.z * rdd.z;
+                reduction[electEnergyIndex] += ethole;
+               }
+               else { continue;}
+          }
+       }
+    }
+// END NBTHOLE OF DRUDE MODEL
     
     // BEGIN LA
 #if (FAST(1+)0)

@@ -172,6 +172,17 @@ struct table_pair_params
   struct table_pair_params *next;
 };
 
+struct nbthole_pair_params
+{
+  char atom1name[11];
+  char atom2name[11];
+  Real alphai;
+  Real alphaj;
+  Real tholeij;
+  Index index;
+  struct nbthole_pair_params *next;
+};
+
 Parameters::Parameters() {
   initialize();
 }
@@ -189,6 +200,7 @@ void Parameters::initialize() {
   crosstermp=NULL;
   vdwp=NULL;
   vdw_pairp=NULL;
+  nbthole_pairp=NULL;
   table_pairp=NULL;
   bond_array=NULL;
   angle_array=NULL;
@@ -197,6 +209,7 @@ void Parameters::initialize() {
   crossterm_array=NULL;
   vdw_array=NULL;
   vdw_pair_tree=NULL;
+  nbthole_pair_tree=NULL;
   tab_pair_tree=NULL;
   maxDihedralMults=NULL;
   maxImproperMults=NULL;
@@ -210,6 +223,7 @@ void Parameters::initialize() {
   NumCrosstermParams=0;
   NumVdwParams=0;
   NumVdwPairParams=0;
+  NumNbtholePairParams=0;
   NumTablePairParams=0;
   NumCosAngles=0;
   numenerentries=0;
@@ -317,6 +331,9 @@ Parameters::~Parameters()
   if (vdw_pairp != NULL)
     free_vdw_pair_list();
 
+  if (nbthole_pairp != NULL)
+    free_nbthole_pair_list();
+
   if (bond_array != NULL)
     delete [] bond_array;
 
@@ -340,6 +357,9 @@ Parameters::~Parameters()
 
   if (vdw_pair_tree != NULL)
     free_vdw_pair_tree(vdw_pair_tree);
+
+  if (nbthole_pair_tree != NULL)
+    free_nbthole_pair_tree(nbthole_pair_tree);
 
   if (maxDihedralMults != NULL)
     delete [] maxDihedralMults;
@@ -604,6 +624,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         par_type=9; skipline=1;
       }
+      else if (strncasecmp(first_word, "thol", 4)==0)
+      {
+        par_type=10; skipline=1;
+      }
       else if (strncasecmp(first_word, "read", 4)==0)
       {
         skip_stream_read(buffer, pfile);  skipline=1;
@@ -718,6 +742,11 @@ void Parameters::read_charmm_parameter_file(char *fname)
 
         add_table_pair_param(buffer);                  
         NumTablePairParams++;
+      }
+      else if (par_type == 10)
+      {
+        add_nbthole_pair_param(buffer);
+        NumNbtholePairParams++;
       }
       else
       {
@@ -2606,6 +2635,72 @@ void Parameters::add_vdw_pair_param(char *buf)
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION add_nbthole_pair_param      */
+/*                  */
+/*   INPUTS:                */
+/*  buf - line containing the nbthole_pair information      */
+/*                  */
+/*  this function adds a nbthole_pair parameter to the current          */
+/*   parameters.              */
+/*                  */
+/************************************************************************/
+
+void Parameters::add_nbthole_pair_param(char *buf)
+
+{
+  char atom1name[11];      //  Atom 1 name
+  char atom2name[11];      //  Atom 2 name
+  Real alphai;            //  nonbonded thole pair alpha
+  Real alphaj;            //  nonbonded thole pair alpha
+  Real tholeij;            //  nonbonded thole pair thole
+  int read_count;        //  count from sscanf
+  struct nbthole_pair_params *new_node;  //  new node
+
+  /*  Parse up the input line using sscanf      */
+  if (paramType == paraCharmm)
+  {
+    /* read CHARMM format */
+    read_count=sscanf(buf, "%s %s %f %f %f\n", atom1name,
+       atom2name, &tholeij, &alphai, &alphaj);
+  }
+
+  /*  Check to make sure we got what we expected      */
+  if ((read_count != 5) && (paramType == paraCharmm))
+  {
+    char err_msg[512];
+
+    sprintf(err_msg, "BAD NBTHOLE PAIR FORMAT IN CHARMM PARAMETER FILE\nLINE=*%s*", buf);
+    NAMD_die(err_msg);
+  }
+
+
+  /*  Allocate a new node            */
+  new_node = new nbthole_pair_params;
+
+  if (new_node == NULL)
+  {
+    NAMD_die("memory allocation failed in Parameters::nbthole_pair_param\n");
+  }
+
+  strcpy(new_node->atom1name, atom1name);
+  strcpy(new_node->atom2name, atom2name);
+
+  /*  Assign values to this node          */
+  new_node->alphai = alphai;
+  new_node->alphaj = alphaj;
+  new_node->tholeij = tholeij;
+
+  new_node->next = NULL;
+
+  /*  Add this node to the tree          */
+  add_to_nbthole_pair_list(new_node);
+
+  return;
+}
+/*      END OF FUNCTION add_nbthole_par_param    */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION add_hb_pair_param      */
 /*                  */
 /*   INPUTS:                */
@@ -2807,6 +2902,40 @@ void Parameters::add_to_vdw_pair_list(struct vdw_pair_params *new_node)
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION add_to_nbthole_pair_list      */
+/*                  */
+/*   INPUTS:                */
+/*  new_node - node to be added to list        */
+/*                  */
+/*  This function adds a link to the end of the nbthole_pair_list list  */
+/*                  */
+/************************************************************************/
+
+void Parameters::add_to_nbthole_pair_list(struct nbthole_pair_params *new_node)
+
+{
+     static struct nbthole_pair_params *tail=NULL;
+  struct nbthole_pair_params *ptr;
+  int compare_code;
+
+
+  //  If the list was empty, then just make the new node the list
+  if (nbthole_pairp == NULL)
+  {
+     nbthole_pairp = new_node;
+     tail = new_node;
+     return;
+  }
+
+  ptr = nbthole_pairp;
+
+  tail->next = new_node;
+  tail = new_node;
+}
+/*      END OF FUNCTION add_to_nbthole_pair_list    */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION done_reading_files      */
 /*                  */
 /*  This function is used to signal the Parameters object that all  */
@@ -2881,7 +3010,15 @@ void Parameters::done_reading_files()
       NAMD_die("memory allocation of vdw_array failed!");
     }
   }
+  if (NumNbtholePairParams)
+  {
+    nbthole_array = new NbtholePairValue[NumNbtholePairParams];
 
+    if(nbthole_array == NULL)
+    {
+      NAMD_die("memory allocation of nbthole_array failed!");
+    }
+  }
   //  Assign indexes to each of the parameters and populate the
   //  arrays using the binary trees and linked lists that we have
   //  already read in
@@ -2891,7 +3028,7 @@ void Parameters::done_reading_files()
   index_dihedrals();
   index_impropers();
   index_crossterms();
-  
+  convert_nbthole_pairs();
   //  Convert the vdw pairs
   convert_vdw_pairs();
   convert_table_pairs();
@@ -4295,6 +4432,33 @@ void Parameters::free_vdw_pair_list()
 }
 /*      END OF FUNCTION free_vdw_pair_list    */
 
+/************************************************************************/
+/*                  */
+/*      FUNCTION free_nbthole_pair_list      */
+/*                  */
+/*  This function frees the nbthole_pair_list        */
+/*                  */
+/************************************************************************/
+
+void Parameters::free_nbthole_pair_list()
+{
+   struct nbthole_pair_params *ptr, *next;
+
+   ptr=nbthole_pairp;
+
+   while (ptr != NULL)
+   {
+      next = ptr->next;
+
+      delete ptr;
+
+      ptr = next;
+   }
+
+   nbthole_pairp = NULL;
+}
+/*      END OF FUNCTION free_vdw_pair_list    */
+
 /************************************************************************
  * FUNCTION free_table_pair_tree
  *
@@ -4350,6 +4514,39 @@ void Parameters::free_vdw_pair_tree(IndexedVdwPair *vdw_pair_ptr)
   return;
 }
 /*      END OF FUNCTION free_vdw_pair_tree    */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION free_nbthole_pair_tree      */
+/*                  */
+/*   INPUTS:                */
+/*  nbthole_pair_ptr - pointer to nbthole_pair tree to free      */
+/*                  */
+/*  this is a recursive function that is used to free the memory    */
+/*   allocated for a nbthole_pair paramter tree.  It makes recursive calls  */
+/*   to free the left an right subtress, and then frees the head.  It is*/
+/*   only called by the destructor          */
+/*                  */
+/************************************************************************/
+
+void Parameters::free_nbthole_pair_tree(IndexedNbtholePair *nbthole_pair_ptr)
+
+{
+  if (nbthole_pair_ptr->left != NULL)
+  {
+    free_nbthole_pair_tree(nbthole_pair_ptr->left);
+  }
+
+  if (nbthole_pair_ptr->right != NULL)
+  {
+    free_nbthole_pair_tree(nbthole_pair_ptr->right);
+  }
+
+  delete nbthole_pair_ptr;
+
+  return;
+}
+/*      END OF FUNCTION free_nbthole_pair_tree    */
 
 /************************************************************************/
 /*                  */
@@ -4564,6 +4761,31 @@ void Parameters::traverse_vdw_pair_params(struct vdw_pair_params *list)
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION traverse_nbthole_pair_params    */
+/*                  */
+/*   INPUTS:                */
+/*  list - the nbthole_pair list to traverse        */
+/*                  */
+/*  This call simply prints out the nbthole_pair list      */
+/*                  */
+/************************************************************************/
+
+void Parameters::traverse_nbthole_pair_params(struct nbthole_pair_params *list)
+
+{
+  if (list==NULL)
+    return;
+
+  DebugM(3,"NBTHOLE PAIR  " << list->atom1name << "  "  \
+      << list->atom2name << " tholeij =" << list->tholeij \
+      );
+
+  traverse_nbthole_pair_params(list->next);
+}
+/*      END OF FUNCTION traverse_nbthole_pair_params  */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION print_bond_params      */
 /*                  */
 /*  This is a debugging routine used to print out all the bond  */
@@ -4666,6 +4888,23 @@ void Parameters::print_vdw_pair_params()
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION print_nbthole_pair_params      */
+/*                  */
+/*  This is a debugging routine used to print out all the nbthole_pair  */
+/*  parameters                */
+/*                  */
+/************************************************************************/
+
+void Parameters::print_nbthole_pair_params()
+{
+  DebugM(3,NumNbtholePairParams << " NBTHOLE PAIR PARAMETERS\n" \
+      << "*****************************************" );
+
+  traverse_nbthole_pair_params(nbthole_pairp);
+} 
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION print_param_summary      */
 /*                  */
 /*  This function just prints out a brief summary of the paramters  */
@@ -4686,7 +4925,8 @@ void Parameters::print_param_summary()
        << iINFO << NumImproperParams << " IMPROPER\n"
        << iINFO << NumCrosstermParams << " CROSSTERM\n"
        << iINFO << NumVdwParams << " VDW\n"
-       << iINFO << NumVdwPairParams << " VDW_PAIRS\n" << endi;
+       << iINFO << NumVdwPairParams << " VDW_PAIRS\n"
+       << iINFO << NumNbtholePairParams << " NBTHOLE_PAIRS\n" << endi;
 }
 
 
@@ -5034,6 +5274,38 @@ void Parameters::send_Parameters(MOStream *msg)
     msg->put(NumVdwPairParams, a1);
     msg->put(NumVdwPairParams, a2)->put(NumVdwPairParams, a3);
     msg->put(NumVdwPairParams, a4);
+  }
+
+  //  Send the nbthole pair parameters
+  msg->put(NumNbtholePairParams);
+
+  if (NumNbtholePairParams)
+  {
+    a1 = new Real[NumNbtholePairParams];
+    a2 = new Real[NumNbtholePairParams];
+    a3 = new Real[NumNbtholePairParams];
+    i1 = new int[NumNbtholePairParams];
+    i2 = new int[NumNbtholePairParams];
+
+    if ( (a1 == NULL) || (a2 == NULL) || (a3 == NULL) || (i1 == NULL) || (i2 == NULL) )
+    {
+      NAMD_die("memory allocation failed in Parameters::send_Parameters");
+    }
+
+    nbthole_pair_to_arrays(i1, i2, a1, a2, a3, 0, nbthole_pair_tree);
+
+   for (i=0; i<NumNbtholePairParams; i++)
+   {
+    nbthole_array[i].ind1 = i1[i];
+    nbthole_array[i].ind2 = i2[i];
+    nbthole_array[i].alphai = a1[i];
+    nbthole_array[i].alphaj = a2[i];
+    nbthole_array[i].tholeij = a3[i];
+   }
+
+    msg->put(NumNbtholePairParams, i1)->put(NumNbtholePairParams, i2);
+    msg->put(NumNbtholePairParams, a1);
+    msg->put(NumNbtholePairParams, a2)->put(NumNbtholePairParams, a3);
   }
   
   //  Send the table pair parameters
@@ -5399,6 +5671,48 @@ void Parameters::receive_Parameters(MIStream *msg)
     delete [] a4;
   }
  
+  //  Get the nbthole_pair_parameters
+  msg->get(NumNbtholePairParams); 
+    
+  if (NumNbtholePairParams)
+  {
+    nbthole_array = new NbtholePairValue[NumNbtholePairParams];
+    a1 = new Real[NumNbtholePairParams];
+    a2 = new Real[NumNbtholePairParams];
+    a3 = new Real[NumNbtholePairParams];
+    i1 = new int[NumNbtholePairParams];
+    i2 = new int[NumNbtholePairParams];
+
+    if ( (nbthole_array == NULL) || (a1 == NULL) || (a2 == NULL) || (a3 == NULL)
+         || (i1 == NULL) || (i2 == NULL) )
+    {
+      NAMD_die("memory allocation failed in Parameters::receive_Parameters");
+    }
+
+    msg->get(NumNbtholePairParams, i1);
+    msg->get(NumNbtholePairParams, i2);
+    msg->get(NumNbtholePairParams, a1);
+    msg->get(NumNbtholePairParams, a2);
+    msg->get(NumNbtholePairParams, a3);
+
+    for (i=0; i<NumNbtholePairParams; i++)
+    {
+
+      nbthole_array[i].ind1 = i1[i];
+      nbthole_array[i].ind2 = i2[i];
+      nbthole_array[i].alphai = a1[i];
+      nbthole_array[i].alphaj = a2[i];
+      nbthole_array[i].tholeij = a3[i];
+
+    }
+
+    delete [] i1;
+    delete [] i2;
+    delete [] a1;
+    delete [] a2;
+    delete [] a3;
+  }
+
   //  Get the table_pair_parameters
   msg->get(NumTablePairParams);
   
@@ -5527,6 +5841,83 @@ void Parameters::convert_vdw_pairs()
 
 }
 /*      END OF FUNCTION convert_vdw_pairs    */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION convert_nbthole_pairs      */
+/*                  */
+/*  This function converts the linked list of nbthole_pairs indexed by  */
+/*  atom name into a binary search tree of parameters stored by vdw     */
+/*  type index.  This tree is what will be used for real when searching */
+/*  for parameters during the simulation.        */
+/*                  */
+/************************************************************************/
+
+void Parameters::convert_nbthole_pairs()
+
+{
+   #ifdef MEM_OPT_VERSION
+   AtomCstInfo atom_struct;
+   #else
+   Atom atom_struct;    //  Dummy structure for getting indexes
+   #endif
+   Index index1, index2;  //  Indexes for the two atoms
+   IndexedNbtholePair *new_node;  //  New node for tree
+   struct nbthole_pair_params *ptr, *next;  //  Pointers for traversing list
+
+   ptr = nbthole_pairp;
+
+   //  Go down then entire list and insert each node into the
+   //  binary search tree
+   while (ptr != NULL)
+   {
+      new_node = (IndexedNbtholePair *) malloc(sizeof(IndexedNbtholePair));
+
+      if (new_node == NULL)
+      {
+   NAMD_die("memory allocation failed in Parameters::convert_nbthole_pairs");
+      }
+
+      //  Get the vdw indexes for the two atoms.  This is kind of a hack
+      //  using the goofy Atom structure, but hey, it works
+      assign_vdw_index(ptr->atom1name, &atom_struct);
+      index1 = atom_struct.vdw_type;
+      assign_vdw_index(ptr->atom2name, &atom_struct);
+      index2 = atom_struct.vdw_type;
+
+      if (index1 > index2)
+      {
+   new_node->ind1 = index2;
+   new_node->ind2 = index1;
+      }
+      else
+      {
+   new_node->ind1 = index1;
+   new_node->ind2 = index2;
+      }
+
+      new_node->alphai = ptr->alphai;
+      new_node->alphaj = ptr->alphaj;
+      new_node->tholeij = ptr->tholeij;
+
+      new_node->left = NULL;
+      new_node->right = NULL;
+
+      //  Add it to the tree
+      nbthole_pair_tree = add_to_indexed_nbthole_pairs(new_node, nbthole_pair_tree);
+
+      //  Free the current node and move to the next
+      next = ptr->next;
+
+      delete ptr;
+
+      ptr = next;
+   }
+
+   nbthole_pairp = NULL;
+
+}
+/*      END OF FUNCTION convert_nbthole_pairs    */
 
 /************************************************************************/
 /*                  */
@@ -5675,6 +6066,40 @@ IndexedVdwPair *Parameters::add_to_indexed_vdw_pairs(IndexedVdwPair *new_node,
 
 /************************************************************************/
 /*                  */
+/*      FUNCTION add_to_indexed_nbthole_pairs    */
+/*                  */
+/*   INPUTS:                */
+/*  new_node - new node to be added to the tree      */
+/*  tree - tree to add the node to          */
+/*                  */ 
+/*  This is a recursive function that adds a node to the    */
+/*   binary search tree of nbthole_pair parameters        */
+/*                  */
+/************************************************************************/
+
+IndexedNbtholePair *Parameters::add_to_indexed_nbthole_pairs(IndexedNbtholePair *new_node,
+                 IndexedNbtholePair *tree)
+
+{
+   if (tree == NULL)
+      return(new_node);
+
+   if ( (new_node->ind1 < tree->ind1) ||
+        ((new_node->ind1 == tree->ind1) && (new_node->ind2 < tree->ind2)) )
+   {
+      tree->left = add_to_indexed_nbthole_pairs(new_node, tree->left);
+   }
+   else
+   {
+      tree->right = add_to_indexed_nbthole_pairs(new_node, tree->right);
+   }
+
+   return(tree);
+}
+/*      END OF FUNCTION add_to_indexed_nbthole_pairs  */
+
+/************************************************************************/
+/*                  */
 /*      FUNCTION vdw_pair_to_arrays      */
 /*                  */
 /*   INPUTS:                */
@@ -5720,6 +6145,49 @@ int Parameters::vdw_pair_to_arrays(int *ind1_array, int *ind2_array,
    return(arr_index);
 }
 /*      END OF FUNCTION vdw_pair_to_arrays    */
+
+/************************************************************************/
+/*                  */
+/*      FUNCTION nbthole_pair_to_arrays      */
+/*                  */
+/*   INPUTS:                */
+/*  ind1_array - Array of index 1 values        */
+/*  ind2_array - Array of index 2 values        */
+/*  tholeij - Array of tholeij values            */
+/*  arr_index - current position in arrays        */
+/*  tree - tree to traverse            */
+/*                  */
+/*  This is a recursive function that places all the entries of     */
+/*   the tree passed in into arrays of values.  This is done so that    */
+/*   the parameters can be sent from the master node to the other       */
+/*   nodes.                */
+/*                  */
+/************************************************************************/
+
+int Parameters::nbthole_pair_to_arrays(int *ind1_array, int *ind2_array,
+          Real *alphai, Real *alphaj, Real *tholeij,
+          int arr_index, IndexedNbtholePair *tree)
+
+{
+   if (tree == NULL)
+      return(arr_index);
+
+   ind1_array[arr_index] = tree->ind1;
+   ind2_array[arr_index] = tree->ind2;
+   alphai[arr_index] = tree->alphai;
+   alphaj[arr_index] = tree->alphaj;
+   tholeij[arr_index] = tree->tholeij;
+
+   arr_index++;
+
+   arr_index = nbthole_pair_to_arrays(ind1_array, ind2_array, alphai,
+          alphaj, tholeij, arr_index, tree->left);
+   arr_index = nbthole_pair_to_arrays(ind1_array, ind2_array, alphai,
+          alphaj, tholeij, arr_index, tree->right);
+
+   return(arr_index);
+}
+/*      END OF FUNCTION nbthole_pair_to_arrays    */
 
 /************************************************************************/
 /*                  */

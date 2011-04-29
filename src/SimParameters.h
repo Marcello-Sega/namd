@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2011/04/25 21:13:08 $
- * $Revision: 1.1189 $
+ * $Author: jim $
+ * $Date: 2011/04/29 20:17:18 $
+ * $Revision: 1.1190 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -386,6 +386,7 @@ public:
         BigReal drudeBondLen;    // Length beyond which to apply quartic
                                  //   restraining potential to Drude bond
         BigReal drudeBondConst;  // Force constant for restraining potential
+	BigReal drudeNbtholeCut;             // Radius of thole pair interaction
 
 	Bool pairInteractionOn;		//  Calculate pair interactions?
 	int pairInteractionGroup1;	//  Interaction group 1.
