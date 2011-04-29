@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: ryanmcgreevy $
- * $Date: 2011/04/27 15:54:04 $
- * $Revision: 1.1350 $
+ * $Author: jim $
+ * $Date: 2011/04/29 13:55:01 $
+ * $Revision: 1.1351 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3349,23 +3349,20 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "REMOVING LOAD FROM PME NODES" << "\n";
      }
      if ( ldbUnloadZero ) iout << iINFO << "REMOVING LOAD FROM NODE 0\n";
-     iout << endi;
      if ( ldbUnloadOne ) iout << iINFO << "REMOVING LOAD FROM NODE 1\n";
      iout << endi;
-     if ( CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
-       noPatchesOnZero = TRUE;
-     }
-#ifdef NAMD_CUDA
-     noPatchesOnZero = FALSE;
-     noPatchesOnOne = FALSE;
-#endif
-     if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
-     iout << endi;
-     if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";
-     iout << endi;
-     if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";     
-     iout << endi;
    }
+
+   if ( CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
+     noPatchesOnZero = TRUE;
+   }
+#ifdef NAMD_CUDA
+   noPatchesOnZero = FALSE;
+   noPatchesOnOne = FALSE;
+#endif
+   if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
+   if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";     
+   iout << endi;
 
 #ifdef NAMD_CUDA
     maxSelfPart = maxPairPart = 1;
