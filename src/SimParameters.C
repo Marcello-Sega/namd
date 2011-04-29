@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/04/29 13:55:01 $
- * $Revision: 1.1351 $
+ * $Date: 2011/04/29 14:56:25 $
+ * $Revision: 1.1352 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3314,6 +3314,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
+   if ( CkNumPes() > 128 ) ldbUnloadZero = TRUE;
+   if ( CkNumPes() > 512 ) ldbUnloadOne = TRUE;
+
    if (ldBalancer == LDBAL_NONE) {
      iout << iINFO << "LOAD BALANCER  None\n" << endi;
    } else {
@@ -3353,9 +3356,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
-   if ( CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
+   if ( ldbUnloadZero || CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
      noPatchesOnZero = TRUE;
    }
+   if ( ldbUnloadOne || CkNumPes() > 256 ) noPatchesOnOne = TRUE;
 #ifdef NAMD_CUDA
    noPatchesOnZero = FALSE;
    noPatchesOnOne = FALSE;
