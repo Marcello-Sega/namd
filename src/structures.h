@@ -464,10 +464,18 @@ struct ExclusionSignature{
     int *fullOffset; //should be in increasing order
     int modExclCnt; //1-4 exclusion
     int *modOffset; //should be in increasing order
+#ifdef NAMD_CUDA
+    int allExclCnt;
+    TupleSignature *allTuples;
+#endif
 
     ExclusionSignature(){
     	fullExclCnt = modExclCnt = 0;
     	fullOffset = modOffset = NULL;
+#ifdef NAMD_CUDA
+    	allExclCnt = 0;
+    	allTuples = NULL;
+#endif
     }    
     ExclusionSignature(const ExclusionSignature& sig){
         fullOffset = modOffset = NULL;
@@ -484,10 +492,22 @@ struct ExclusionSignature{
             for(int i=0; i<modExclCnt; i++)
                 modOffset[i] = sig.modOffset[i];
         }
+#ifdef NAMD_CUDA
+    	allTuples = NULL;
+    	allExclCnt = sig.allExclCnt;
+        if(allExclCnt>0){
+            allTuples = new TupleSignature[allExclCnt];
+            for(int i=0; i<allExclCnt; i++)
+                allTuples[i] = sig.allTuples[i];
+        }
+#endif
     }
     ~ExclusionSignature(){
     	if(fullOffset) delete [] fullOffset;
     	if(modOffset) delete [] modOffset;
+#ifdef NAMD_CUDA
+    	if(allTuples) delete [] allTuples;
+#endif
     }
     
     ExclusionSignature& operator=(const ExclusionSignature& sig){
@@ -508,6 +528,16 @@ struct ExclusionSignature{
                 modOffset[i] = sig.modOffset[i];
         }else
             modOffset = NULL;
+#ifdef NAMD_CUDA
+    	allExclCnt = sig.allExclCnt;
+    	if(allTuples) delete [] allTuples;
+        if(allExclCnt>0){
+            allTuples = new TupleSignature[allExclCnt];
+            for(int i=0; i<allExclCnt; i++)
+                allTuples[i] = sig.allTuples[i];
+        }else
+            allTuples = NULL;
+#endif
 
         return *this;
     }
@@ -538,6 +568,34 @@ struct ExclusionSignature{
     	    for(int i=0; i<modExclCnt; i++)
                 modOffset[i] = modVec[i];	
         }
+#ifdef NAMD_CUDA
+        buildTuples();
+    }
+    void buildTuples() {
+        delete [] allTuples;
+        allTuples = NULL;
+    	allExclCnt = 0;
+    	for(int i=0; i<fullExclCnt; i++)
+            if ( fullOffset[i] > 0 ) ++allExclCnt;
+    	for(int i=0; i<modExclCnt; i++)
+            if ( modOffset[i] > 0 ) ++allExclCnt;
+        if(allExclCnt>0){
+            allTuples = new TupleSignature[allExclCnt];
+            int j = 0;
+            for(int i=0; i<fullExclCnt; i++){
+                if ( fullOffset[i] <= 0 ) continue;
+                TupleSignature oneSig(1,EXCLUSION,0);
+                oneSig.offset[0] = fullOffset[i];
+                allTuples[j++] = oneSig;
+            }
+            for(int i=0; i<modExclCnt; i++){
+                if ( modOffset[i] <= 0 ) continue;
+                TupleSignature oneSig(1,EXCLUSION,1);
+                oneSig.offset[0] = modOffset[i];
+                allTuples[j++] = oneSig;
+            }
+        }
+#endif
     }
 
     int hash() const {

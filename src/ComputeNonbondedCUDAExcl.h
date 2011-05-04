@@ -30,9 +30,11 @@ public:
 
     static void getMoleculePointers(Molecule*, int*, int32***, Exclusion**);
     static void getParameterPointers(Parameters*, const int**);
-    static void getTupleInfo(AtomSignature* sig, int *count, TupleSignature** t) {
-	*count = sig->bondCnt;
-	*t = sig->bondSigs;
+    static void getTupleInfo(ExclusionSignature* sig, int *count, TupleSignature** t) {
+#ifdef NAMD_CUDA
+	*count = sig->allExclCnt;
+	*t = sig->allTuples;
+#endif
     }
 
     // pressure profile parameters

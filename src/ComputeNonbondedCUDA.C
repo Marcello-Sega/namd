@@ -413,7 +413,13 @@ static int2 *exclusionsByAtom;
 
 void ComputeNonbondedCUDA::build_exclusions() {
   Molecule *mol = Node::Object()->molecule;
+
+#ifdef MEM_OPT_VERSION
+  int natoms = mol->exclSigPoolSize;
+#else
   int natoms = mol->numAtoms; 
+#endif
+
   exclusionsByAtom = new int2[natoms];
 
   // create unique sorted lists
@@ -423,11 +429,18 @@ void ComputeNonbondedCUDA::build_exclusions() {
   int32 **listsByAtom = new int32*[natoms];
   SortableResizeArray<int32> curList;
   for ( int i=0; i<natoms; ++i ) {
-    const int32 *mol_list = mol->get_full_exclusions_for_atom(i);
     curList.resize(0);
-    int n = mol_list[0] + 1;
     curList.add(0);  // always excluded from self
+#ifdef MEM_OPT_VERSION
+    const ExclusionSignature *sig = mol->exclSigPool + i;
+    int n = sig->fullExclCnt;
+    for ( int j=0; j<n; ++j ) { curList.add(sig->fullOffset[j]); }
+    n += 1;
+#else
+    const int32 *mol_list = mol->get_full_exclusions_for_atom(i);
+    int n = mol_list[0] + 1;
     for ( int j=1; j<n; ++j ) { curList.add(mol_list[j] - i); }
+#endif
     curList.sort();
 
     int j;
@@ -992,8 +1005,13 @@ void ComputeNonbondedCUDA::doWork() {
         int j = ao[k];
         ap[k].vdw_type = a[j].vdwType;
         ap[k].index = aExt[j].id;
+#ifdef MEM_OPT_VERSION
+        ap[k].excl_index = exclusionsByAtom[aExt[j].exclId].y;
+        ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].exclId].x;
+#else
         ap[k].excl_index = exclusionsByAtom[aExt[j].id].y;
         ap[k].excl_maxdiff = exclusionsByAtom[aExt[j].id].x;
+#endif
       }
     }
     {
@@ -1301,7 +1319,11 @@ int ComputeNonbondedCUDA::finishWork() {
       const CompAtomExt *aExt = pr.xExt;
       for ( int k=0; k<nfree; ++k ) {
         int j = ao[k];
+#ifdef MEM_OPT_VERSION
+        int excl_expected = mol->exclSigPool[aExt[j].exclId].fullExclCnt + 1;
+#else
         int excl_expected = mol->get_full_exclusions_for_atom(aExt[j].id)[0] + 1;
+#endif
         if ( af[k].w != excl_expected ) {
           CkPrintf("%d:%d(%d) atom %d found %d exclusions but expected %d\n",
 		i, j, k, aExt[j].id, (int)af[k].w, excl_expected );

@@ -19,7 +19,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
       int numTuples;
 
       #ifdef MEM_OPT_VERSION
-      AtomSignature *allSigs;
+      ElemTraits<T>::signature *allSigs;
       #else
       int32 **tuplesByAtom;
       /* const (need to propagate const) */ S *tupleStructs;
@@ -29,7 +29,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
       Node *node = Node::Object();
 
       #ifdef MEM_OPT_VERSION
-      allSigs = node->molecule->atomSigPool;
+      allSigs = ElemTraits<T>::get_sig_pointer(node->molecule);
       #else
       T::getMoleculePointers(node->molecule,
 		    &numTuples, &tuplesByAtom, &tupleStructs);
@@ -62,7 +62,8 @@ template <class T, class S, class P> class ComputeSelfTuples :
         for (int j=0; j < numAtoms; j++)
         {
            #ifdef MEM_OPT_VERSION
-           AtomSignature *thisAtomSig = &allSigs[atomExt[j].sigId];
+           ElemTraits<T>::signature *thisAtomSig =
+                   &allSigs[ElemTraits<T>::get_sig_id(atomExt[j])];
            TupleSignature *allTuples;
            T::getTupleInfo(thisAtomSig, &numTuples, &allTuples);
            for(int k=0; k<numTuples; k++) {

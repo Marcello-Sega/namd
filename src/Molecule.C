@@ -9689,6 +9689,9 @@ void ExclusionSignature::unpack(MIStream *msg){
     delete [] modOffset;
     modOffset = new int[modExclCnt];
     msg->get(modExclCnt*sizeof(int), (char *)modOffset);    
+#ifdef NAMD_CUDA
+    buildTuples();
+#endif
 }
 #endif
 
