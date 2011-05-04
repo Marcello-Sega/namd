@@ -114,7 +114,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       int numTuples;
 
       #ifdef MEM_OPT_VERSION
-      ElemTraits<T>::signature *allSigs;      
+      typename ElemTraits<T>::signature *allSigs;      
       #else
       int32 **tuplesByAtom;
       /* const (need to propagate const) */ S *tupleStructs;
@@ -156,7 +156,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         {              
            /* cycle through each tuple */
            #ifdef MEM_OPT_VERSION
-           ElemTraits<T>::signature *thisAtomSig =
+           typename ElemTraits<T>::signature *thisAtomSig =
                    &allSigs[ElemTraits<T>::get_sig_id(atomExt[j])];
            TupleSignature *allTuples;
            T::getTupleInfo(thisAtomSig, &numTuples, &allTuples);
