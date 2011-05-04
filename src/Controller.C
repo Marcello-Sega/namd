@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/03/28 22:48:09 $
- * $Revision: 1.1262 $
+ * $Author: jim $
+ * $Date: 2011/05/04 21:08:05 $
+ * $Revision: 1.1263 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -37,6 +37,7 @@
 #include "IMDOutput.h"
 #include "BackEnd.h"
 #include <iomanip>
+#include <errno.h>
 
 #if(CMK_CCS_AVAILABLE && CMK_WEB_MODE)
 extern "C" void CApplicationDepositNode0Data(char *);
@@ -2211,9 +2212,20 @@ void Controller::outputExtendedSystem(int step)
     {
       if ( ! xstFile.rdbuf()->is_open() )
       {
+        iout << "OPENING EXTENDED SYSTEM TRAJECTORY FILE\n" << endi;
         NAMD_backup_file(simParams->xstFilename);
         xstFile.open(simParams->xstFilename);
-        iout << "OPENING EXTENDED SYSTEM TRAJECTORY FILE\n" << endi;
+        while (!xstFile) {
+          if ( errno == EINTR ) {
+            CkPrintf("Warning: Interrupted system call opening XST trajectory file, retrying.\n");
+            xstFile.clear();
+            xstFile.open(simParams->xstFilename);
+            continue;
+          }
+          char err_msg[257];
+          sprintf(err_msg, "Error opening XST trajectory file %s",simParams->xstFilename);
+          NAMD_err(err_msg);
+        }
         xstFile << "# NAMD extended system trajectory file" << std::endl;
         writeExtendedSystemLabels(xstFile);
       }
@@ -2239,7 +2251,13 @@ void Controller::outputExtendedSystem(int step)
       strcat(fname, ".xsc");
       NAMD_backup_file(fname,".old");
       std::ofstream xscFile(fname);
-      if (!xscFile) {
+      while (!xscFile) {
+        if ( errno == EINTR ) {
+          CkPrintf("Warning: Interrupted system call opening XSC restart file, retrying.\n");
+          xscFile.clear();
+          xscFile.open(fname);
+          continue;
+        }
         char err_msg[257];
         sprintf(err_msg, "Error opening XSC restart file %s",fname);
         NAMD_err(err_msg);
@@ -2268,7 +2286,13 @@ void Controller::outputExtendedSystem(int step)
     strcat(fname, ".xsc");
     NAMD_backup_file(fname);
     std::ofstream xscFile(fname);
-    if (!xscFile) {
+    while (!xscFile) {
+      if ( errno == EINTR ) {
+        CkPrintf("Warning: Interrupted system call opening XSC output file, retrying.\n");
+        xscFile.clear();
+        xscFile.open(fname);
+        continue;
+      }
       char err_msg[257];
       sprintf(err_msg, "Error opening XSC output file %s",fname);
       NAMD_err(err_msg);
