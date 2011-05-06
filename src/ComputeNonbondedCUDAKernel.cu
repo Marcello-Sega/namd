@@ -357,12 +357,12 @@ __global__ static void dev_nonbonded(
     char c[4*BLOCK_SIZE];
   } plu;
 
-  volatile __shared__ union {
+  __shared__ volatile union {
     float a2d[32][3];
     float a1d[32*3];
   } sumf;
 
-  volatile __shared__ union {
+  __shared__ volatile union {
     float a2d[32][3];
     float a1d[32*3];
   } sumf_slow;
@@ -697,7 +697,7 @@ __device__ __forceinline__ static void dev_sum_forces(
     fl.i[threadIdx.x] = tmp;
   }
 
-  volatile __shared__ union {
+  __shared__ volatile union {
     float a3d[32][3][3];
     float a2d[32][9];
     float a1d[32*9];
