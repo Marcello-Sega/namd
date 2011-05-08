@@ -3,7 +3,8 @@
  * Specialized for 32-bit little endian architectures.
  */
 
-#ifdef WIN32  /* Real math libraries provide erf(). */
+/* Real math libraries provide erf(), CUDA also provides an implementation. */
+#if defined(WIN32) && !defined(NAMD_CUDA)
 
 /*
  * ====================================================
