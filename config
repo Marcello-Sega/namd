@@ -417,21 +417,30 @@ begin:
   endif
 
   if ( $use_cuda ) then
+    set CUDA_SO_PAT = 'lib64/libcudart.so.[1-9]'
+    switch ( `uname -s` )
+      case Darwin:
+        set CUDA_SO_PAT = 'lib/libcudart.dylib'
+      breaksw
+      case CYGWIN*:
+        set CUDA_SO_PAT = 'bin/cudart64_*.dll'
+      breaksw
+    endsw
     if ( $?CUDA_PREFIX ) then
       echo "CUDADIR = $CUDA_PREFIX" >> Make.config
-      set CUDA_SO_FULL=`ls $CUDA_PREFIX/lib/libcudart.so.[1-9]`
+      set CUDA_SO_FULL=`ls $CUDA_PREFIX/$CUDA_SO_PAT`
     else if ( -d .rootdir/cuda/lib && -d .rootdir/cuda/include ) then
       echo "Using CUDA build found in main build directory"
       echo 'CUDADIR = .rootdir/cuda' >> Make.config
-      set CUDA_SO_FULL=`ls .rootdir/cuda/lib/libcudart.so.[1-9]`
+      set CUDA_SO_FULL=`ls .rootdir/cuda/$CUDA_SO_PAT`
     else if ( -d $HOME/cuda/lib && -d $HOME/cuda/include ) then
       echo "Using CUDA build found in $HOME/cuda"
       echo 'CUDADIR = $(HOME)/cuda' >> Make.config
-      set CUDA_SO_FULL=`ls $HOME/cuda/lib/libcudart.so.[1-9]`
+      set CUDA_SO_FULL=`ls $HOME/cuda/$CUDA_SO_PAT`
     endif
     if ( $?CUDA_SO_FULL ) then
-      set CUDA_SO=$CUDA_SO_FULL:t
-      echo "LIBCUDARTSO = $CUDA_SO" >> Make.config
+      echo "CUDASODIR = $CUDA_SO_FULL:h" >> Make.config
+      echo "LIBCUDARTSO = $CUDA_SO_FULL:t" >> Make.config
     endif
   endif
 

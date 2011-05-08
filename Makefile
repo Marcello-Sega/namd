@@ -60,6 +60,7 @@ CXXSIMPARAMOPTS = $(CXXOPTS)
 CXXNOALIASOPTS = $(CXXOPTS) 
 CUDACC = $(CXX)
 CUDAOBJS =
+NATIVEPATH = echo
 
 include Make.config
 
@@ -298,9 +299,9 @@ CUDAOBJSRAW = \
 $(DSTDIR)/ComputeNonbondedCUDAKernel.o: \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.cu \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.h
-	$(CUDACC) -ptx $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
+	$(CUDACC) -ptx "`$(NATIVEPATH) $(SRCDIR)/`ComputeNonbondedCUDAKernel.cu"
 	grep global ComputeNonbondedCUDAKernel.ptx
-	$(CUDACC) -Xptxas -v $(COPTO)$(DSTDIR)/ComputeNonbondedCUDAKernel.o $(COPTC) $(SRCDIR)/ComputeNonbondedCUDAKernel.cu
+	$(CUDACC) -Xptxas -v $(COPTO) "`$(NATIVEPATH) $(DSTDIR)/`ComputeNonbondedCUDAKernel.o" $(COPTC) "`$(NATIVEPATH) $(SRCDIR)/`ComputeNonbondedCUDAKernel.cu"
 
 SBOBJS = \
 	$(DSTDIR)/tcl_main.o \
@@ -381,11 +382,7 @@ charmrun: $(CHARM)/bin/charmrun # XXX
 	$(COPY) $(CHARM)/bin/charmrun $@
 
 $(LIBCUDARTSO):
-	if [ -r $(CUDADIR)/lib64/$(LIBCUDARTSO) ]; then \
-	  $(COPY) $(CUDADIR)/lib64/$(LIBCUDARTSO) $@; \
-	else \
-	  $(COPY) $(CUDADIR)/lib/$(LIBCUDARTSO) $@; \
-	fi
+	$(COPY) $(CUDASODIR)/$(LIBCUDARTSO) $@;
 
 WINDOWSBINARIES = namd2.exe psfgen.exe
 # WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
