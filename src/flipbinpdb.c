@@ -18,7 +18,7 @@ int main(int argc, char *argv[]) {
 
 int fd;
 struct stat statbuf;
-int i, j, n;
+long int i, j, n;
 char b[8];
 char *d;
 
