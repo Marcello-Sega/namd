@@ -629,7 +629,7 @@ DOC_FILES = README.txt announce.txt license.txt notes.txt
 
 RELEASE_FILES = $(LIBCUDARTSO) flipdcd flipbinpdb psfgen charmrun namd2
 
-WINDOWS_RELEASE_FILES = $(WINDOWSBINARIES) $(TCLDLL)
+WINDOWS_RELEASE_FILES = $(LIBCUDARTSO) $(WINDOWSBINARIES) $(TCLDLL)
 
 release: all
 	$(ECHO) Creating release $(RELEASE_DIR_NAME)
