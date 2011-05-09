@@ -12,7 +12,8 @@ int main(int argc, char *argv[]) {
 
 int fd1, fd2;
 struct stat statbuf;
-int i, j, n1, n2, s1, s2;
+int i, j, n1, n2;
+long int s1, s2;
 double dmax;
 
 if ( argc != 3 ) {
@@ -34,14 +35,14 @@ if ( fstat(fd1,&statbuf) < 0 ) {
 s1 = statbuf.st_size;
 
 if ( (s1 < 4) || ((s1-4) % 24) ) {
-  fprintf(stderr,"Size %d of %s is not 4 plus a multiple of 24.\n",s1,argv[1]);
+  fprintf(stderr,"Size %ld of %s is not 4 plus a multiple of 24.\n",s1,argv[1]);
   exit(-1);
 }
 
 read(fd1,&n1,4);
 
-if ( s1 != 4 + n1 * 24 ) {
-  fprintf(stderr,"Size %d of %s is not 4 plus %d times 24.\n",s1,argv[1],n1);
+if ( s1 != 4 + (long int)n1 * 24 ) {
+  fprintf(stderr,"Size %ld of %s is not 4 plus %d times 24.\n",s1,argv[1],n1);
   exit(-1);
 }
 
@@ -58,14 +59,14 @@ if ( fstat(fd2,&statbuf) < 0 ) {
 s2 = statbuf.st_size;
 
 if ( (s2 < 4) || ((s2-4) % 24) ) {
-  fprintf(stderr,"Size %d of %s is not 4 plus a multiple of 24.\n",s2,argv[2]);
+  fprintf(stderr,"Size %ld of %s is not 4 plus a multiple of 24.\n",s2,argv[2]);
   exit(-1);
 }
 
 read(fd2,&n2,4);
 
-if ( s2 != 4 + n2 * 24 ) {
-  fprintf(stderr,"Size %d of %s is not 4 plus %d times 24.\n",s2,argv[2],n2);
+if ( s2 != 4 + (long int)n2 * 24 ) {
+  fprintf(stderr,"Size %ld of %s is not 4 plus %d times 24.\n",s2,argv[2],n2);
   exit(-1);
 }
 
