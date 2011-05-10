@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2011/04/29 20:17:18 $
- * $Revision: 1.1190 $
+ * $Author: johanstr $
+ * $Date: 2011/05/10 21:28:45 $
+ * $Revision: 1.1191 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -443,6 +443,26 @@ public:
         BigReal accelMDalpha;           //  aMD alpha
         BigReal accelMDTE;              //  E for total potential in the dual boost mode
         BigReal accelMDTalpha;          //  alpha for total potential in the dual boost mode
+
+        /* Begin Adaptive Temperature Sampling */
+        Bool adaptTempOn;                      //  is adaptTempOn
+        Bool adaptTempDebug;                   //  Debuggin adaptive temperature sampling
+        int adaptTempFirstStep;                //  First adaptTemp step
+        int adaptTempLastStep;                 //  Last adaptTemp step
+        int adaptTempOutFreq;                  //  adaptTemp output frequency
+        int adaptTempFreq;                     //  Steps between adaptTemp updates
+        BigReal adaptTempTmin;                 //  Lower temperature bound
+        BigReal adaptTempTmax;                 //  Upper temperature bound
+        int adaptTempBins;                     //  Number of bins to store average energy values
+        BigReal adaptTempDt;                   //  timestep for adaptTemp updates - only affects Temperature random walk
+        BigReal adaptTempCgamma;               //  Cgamma variable for adaptive bin averaging Cgamma = 0 is normal Averaging. 1 > Cgamma >= 0
+        Bool adaptTempLangevin;                //  Couple to Langevin Thermostat
+        Bool adaptTempRescale;                 //  Couple to Vel. Rescaling
+        char adaptTempInFile[128];             //  Restart information for adaptTemp to read
+        char adaptTempRestartFile[128];        //  File to write restart information
+        int  adaptTempRestartFreq;             //  Frequency of writing restart output
+        Bool adaptTempRandom;                  //  Do we assign random temperatures when we step out of [Tmin,Tmax]?
+        /* End Adaptive Temperature Sampling */
 
 	int reassignFreq;		//  Velocity reassignment frequency
 	BigReal reassignTemp;		//  Temperature to reassign to

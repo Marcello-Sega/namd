@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2011/05/04 21:08:05 $
- * $Revision: 1.1263 $
+ * $Author: johanstr $
+ * $Date: 2011/05/10 21:28:44 $
+ * $Revision: 1.1264 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -327,6 +327,8 @@ void Controller::integrate() {
 
     reassignVelocities(step);  // only for full-step velecities
     rescaleaccelMD(step);
+    adaptTempUpdate(step); // Init adaptive tempering;
+
     receivePressure(step);
     if ( zeroMomentum && dofull && ! (step % slowFreq) )
 						correctMomentum(step);
@@ -346,6 +348,7 @@ void Controller::integrate() {
     //  (namd_sighandler_t)my_sigint_handler);
     for ( ++step ; step <= numberOfSteps; ++step )
     {
+        adaptTempUpdate(step);
         rescaleVelocities(step);
 	tcoupleVelocities(step);
 	berendsenPressure(step);
@@ -877,7 +880,11 @@ void Controller::rescaleVelocities(int step)
     rescaleVelocities_sumTemps += temperature;  ++rescaleVelocities_numTemps;
     if ( rescaleVelocities_numTemps == rescaleFreq ) {
       BigReal avgTemp = rescaleVelocities_sumTemps / rescaleVelocities_numTemps;
-      const BigReal rescaleTemp = simParams->rescaleTemp;
+      BigReal rescaleTemp = simParams->rescaleTemp;
+      if ( simParams->adaptTempOn && simParams->adaptTempRescale && (step > simParams->adaptTempFirstStep ) && 
+                (!(simParams->adaptTempLastStep > 0) || step < simParams->adaptTempLastStep )) {
+        rescaleTemp = adaptTempT;
+      }
       BigReal factor = sqrt(rescaleTemp/avgTemp);
       broadcast->velocityRescaleFactor.publish(step,factor);
       iout << "RESCALING VELOCITIES AT STEP " << step
@@ -1402,6 +1409,354 @@ void Controller::rescaleaccelMD(int step, int minimize)
         }
    }
 }
+
+void Controller::adaptTempInit(int step) {
+    if (!simParams->adaptTempOn) return;
+    iout << iINFO << "INITIALISING ADAPTIVE TEMPERING\n" << endi;
+    if (simParams->adaptTempBins == 0) {
+      iout << iINFO << "READING ADAPTIVE TEMPERING RESTART FILE\n" << endi;
+      std::ifstream adaptTempRead(simParams->adaptTempInFile);
+      if (adaptTempRead) {
+        int readInt;
+        BigReal readReal;
+        bool readBool;
+        // step
+        adaptTempRead >> readInt;
+        // Start with min and max temperatures
+        adaptTempRead >> adaptTempT;     // KELVIN
+        adaptTempRead >> adaptTempBetaMin;  // KELVIN
+        adaptTempRead >> adaptTempBetaMax;  // KELVIN
+        adaptTempBetaMin = 1./adaptTempBetaMin; // KELVIN^-1
+        adaptTempBetaMax = 1./adaptTempBetaMax; // KELVIN^-1
+        // In case file is manually edited
+        if (adaptTempBetaMin > adaptTempBetaMax){
+            readReal = adaptTempBetaMax;
+            adaptTempBetaMax = adaptTempBetaMin;
+            adaptTempBetaMin = adaptTempBetaMax;
+        }
+        adaptTempRead >> adaptTempBins;     
+        adaptTempRead >> adaptTempCg;
+        adaptTempRead >> adaptTempDt;
+        adaptTempPotEnergyAveNum = new BigReal[adaptTempBins];
+        adaptTempPotEnergyAveDen = new BigReal[adaptTempBins];
+        adaptTempPotEnergySamples = new int[adaptTempBins];
+        adaptTempPotEnergyVarNum = new BigReal[adaptTempBins];
+        adaptTempPotEnergyVar    = new BigReal[adaptTempBins];
+        adaptTempPotEnergyAve    = new BigReal[adaptTempBins];
+        adaptTempBetaN           = new BigReal[adaptTempBins];
+        adaptTempDBeta = (adaptTempBetaMax - adaptTempBetaMin)/(adaptTempBins);
+        for(int j = 0; j < adaptTempBins; ++j) {
+          adaptTempRead >> adaptTempPotEnergyAve[j];
+          adaptTempRead >> adaptTempPotEnergyVar[j];
+          adaptTempRead >> adaptTempPotEnergySamples[j];
+          adaptTempRead >> adaptTempPotEnergyAveNum[j];
+          adaptTempRead >> adaptTempPotEnergyVarNum[j];
+          adaptTempRead >> adaptTempPotEnergyAveDen[j];
+          adaptTempBetaN[j] = adaptTempBetaMin + j * adaptTempDBeta;
+        } 
+        adaptTempRead.close();
+      }
+      else NAMD_die("Could not open ADAPTIVE TEMPERING restart file.\n");
+    } 
+    else {
+      adaptTempBins = simParams->adaptTempBins;
+      adaptTempPotEnergyAveNum = new BigReal[adaptTempBins];
+      adaptTempPotEnergyAveDen = new BigReal[adaptTempBins];
+      adaptTempPotEnergySamples = new int[adaptTempBins];
+      adaptTempPotEnergyVarNum = new BigReal[adaptTempBins];
+      adaptTempPotEnergyVar    = new BigReal[adaptTempBins];
+      adaptTempPotEnergyAve    = new BigReal[adaptTempBins];
+      adaptTempBetaN           = new BigReal[adaptTempBins];
+      adaptTempBetaMax = 1./simParams->adaptTempTmin;
+      adaptTempBetaMin = 1./simParams->adaptTempTmax;
+      adaptTempCg = simParams->adaptTempCgamma;   
+      adaptTempDt  = simParams->adaptTempDt;
+      adaptTempDBeta = (adaptTempBetaMax - adaptTempBetaMin)/(adaptTempBins);
+      adaptTempT = (simParams->adaptTempTmin+simParams->adaptTempTmax)/2;
+      for(int j = 0; j < adaptTempBins; ++j){
+          adaptTempPotEnergyAveNum[j] = 0.;
+          adaptTempPotEnergyAveDen[j] = 0.;
+          adaptTempPotEnergySamples[j] = 0;
+          adaptTempPotEnergyVarNum[j] = 0.;
+          adaptTempPotEnergyVar[j] = 0.;
+          adaptTempPotEnergyAve[j] = 0.;
+          adaptTempBetaN[j] = adaptTempBetaMin + j * adaptTempDBeta;
+      }
+    }
+    iout << iINFO << "ADAPTIVE TEMPERING: TEMPERATURE RANGE: [" << 1./adaptTempBetaMax << "," << 1./adaptTempBetaMin << "] KELVIN\n";
+    iout << iINFO << "ADAPTIVE TEMPERING: NUMBER OF BINS TO STORE POT. ENERGY: " << adaptTempBins << "\n";
+    iout << iINFO << "ADAPTIVE TEMPERING: ADAPTIVE BIN AVERAGING PARAMETER: " << adaptTempCg << "\n";
+    iout << iINFO << "ADAPTIVE TEMPERING: SCALING CONSTANT FOR LANGEVIN TEMPERATURE UPDATES: " << adaptTempDt << "\n";
+    iout << iINFO << "ADAPTIVE TEMPERING: INITIAL TEMPERATURE: " << adaptTempT<< "\n";
+    if (simParams->adaptTempRestartFreq > 0) {
+      NAMD_backup_file(simParams->adaptTempRestartFile);
+      adaptTempRestartFile.open(simParams->adaptTempRestartFile);
+       if(!adaptTempRestartFile)
+        NAMD_die("Error opening restart file");
+    }
+}
+
+void Controller::adaptTempWriteRestart(int step) {
+    if (simParams->adaptTempOn && !(step%simParams->adaptTempRestartFreq)) {
+        adaptTempRestartFile.seekp(std::ios::beg);        
+        iout << "ADAPTIVE TEMPERING: WRITING RESTART FILE AT STEP " << step << "\n" << endi;
+        adaptTempRestartFile << step << " ";
+        // Start with min and max temperatures
+        adaptTempRestartFile << adaptTempT<< " ";     // KELVIN
+        adaptTempRestartFile << 1./adaptTempBetaMin << " ";  // KELVIN
+        adaptTempRestartFile << 1./adaptTempBetaMax << " ";  // KELVIN
+        adaptTempRestartFile << adaptTempBins << " ";     
+        adaptTempRestartFile << adaptTempCg << " ";
+        adaptTempRestartFile << adaptTempDt ;
+        adaptTempRestartFile << "\n" ;
+        for(int j = 0; j < adaptTempBins; ++j) {
+          adaptTempRestartFile << adaptTempPotEnergyAve[j] << " ";
+          adaptTempRestartFile << adaptTempPotEnergyVar[j] << " ";
+          adaptTempRestartFile << adaptTempPotEnergySamples[j] << " ";
+          adaptTempRestartFile << adaptTempPotEnergyAveNum[j] << " ";
+          adaptTempRestartFile << adaptTempPotEnergyVarNum[j] << " ";
+          adaptTempRestartFile << adaptTempPotEnergyAveDen[j] << " ";
+          adaptTempRestartFile << "\n";          
+        }
+        adaptTempRestartFile.flush(); 
+    }
+}    
+
+void Controller::adaptTempUpdate(int step, int minimize)
+{
+    //Beta = 1./T
+    if ( !simParams->adaptTempOn ) return;
+    int j = 0;
+    if (step == simParams->firstTimestep) {
+        adaptTempInit(step);
+        return;
+    }
+    if ( minimize || (step < simParams->adaptTempFirstStep ) || 
+        ( simParams->adaptTempLastStep > 0 && step > simParams->adaptTempLastStep )) return;
+    const int adaptTempOutFreq  = simParams->adaptTempOutFreq;
+    const bool adaptTempDebug  = simParams->adaptTempDebug;
+    //Calculate Current inverse temperature and bin 
+    BigReal adaptTempBeta = 1./adaptTempT;
+    adaptTempBin   = (int)floor((adaptTempBeta - adaptTempBetaMin)/adaptTempDBeta);
+
+    if (adaptTempBin < 0 || adaptTempBin > adaptTempBins)
+        iout << iWARN << " adaptTempBin out of range: adaptTempBin: " << adaptTempBin  
+                               << " adaptTempBeta: " << adaptTempBeta 
+                              << " adaptTempDBeta: " << adaptTempDBeta 
+                               << " betaMin:" << adaptTempBetaMin 
+                               << " betaMax: " << adaptTempBetaMax << "\n";
+    adaptTempPotEnergySamples[adaptTempBin] += 1;
+    BigReal gammaAve = 1.-adaptTempCg/adaptTempPotEnergySamples[adaptTempBin];
+
+    BigReal potentialEnergy;
+    BigReal potEnergyAverage;
+    BigReal potEnergyVariance;
+    potentialEnergy = totalEnergy-kineticEnergy;
+
+    //calculate new bin average and variance using adaptive averaging
+    adaptTempPotEnergyAveNum[adaptTempBin] = adaptTempPotEnergyAveNum[adaptTempBin]*gammaAve + potentialEnergy;
+    adaptTempPotEnergyAveDen[adaptTempBin] = adaptTempPotEnergyAveDen[adaptTempBin]*gammaAve + 1;
+    adaptTempPotEnergyVarNum[adaptTempBin] = adaptTempPotEnergyVarNum[adaptTempBin]*gammaAve + potentialEnergy*potentialEnergy;
+    
+    potEnergyAverage = adaptTempPotEnergyAveNum[adaptTempBin]/adaptTempPotEnergyAveDen[adaptTempBin];
+    potEnergyVariance = adaptTempPotEnergyVarNum[adaptTempBin]/adaptTempPotEnergyAveDen[adaptTempBin];
+    potEnergyVariance -= potEnergyAverage*potEnergyAverage;
+
+    adaptTempPotEnergyAve[adaptTempBin] = potEnergyAverage;
+    adaptTempPotEnergyVar[adaptTempBin] = potEnergyVariance;
+    
+    // Weighted integral of <Delta E^2>_beta dbeta <= Eq 4 of JCP 132 244101
+    // Integrals of Eqs 5 and 6 is done as piecewise assuming <Delta E^2>_beta
+    // is constant for each bin. This is to estimate <E(beta)> where beta \in
+    // (beta_i,beta_{i+1}) using Eq 2 of JCP 132 244101
+    if ( ! ( step % simParams->adaptTempFreq ) ) {
+  // If adaptTempBin not at the edge, calculate improved average:
+      if (adaptTempBin > 0 && adaptTempBin < adaptTempBins-1) {
+          // Get Averaging Limits:
+          BigReal deltaBeta = 0.04*adaptTempBeta; //0.08 used in paper - make variable
+          BigReal betaPlus;
+          BigReal betaMinus;
+          int     nMinus =0;
+          int     nPlus = 0;
+          if ( adaptTempBeta-adaptTempBetaMin < deltaBeta ) deltaBeta = adaptTempBeta-adaptTempBetaMin;
+          if ( adaptTempBetaMax-adaptTempBeta < deltaBeta ) deltaBeta = adaptTempBetaMax-adaptTempBeta;
+          betaMinus = adaptTempBeta - deltaBeta;
+          betaPlus =  adaptTempBeta + deltaBeta;
+          BigReal betaMinus2 = betaMinus*betaMinus;
+          BigReal betaPlus2  = betaPlus*betaPlus;
+          nMinus = (int)floor((betaMinus-adaptTempBetaMin)/adaptTempDBeta);
+          nPlus  = (int)floor((betaPlus-adaptTempBetaMin)/adaptTempDBeta);
+          // Variables for <E(beta)> estimate:
+          BigReal potEnergyAve0 = 0.0;
+          BigReal potEnergyAve1 = 0.0;
+          // Integral terms
+          BigReal A0 = 0;
+          BigReal A1 = 0;
+          BigReal A2 = 0;
+          //A0 phi_s integral for beta_minus < beta < beta_{i+1}
+          BigReal betaNp1 = adaptTempBetaN[adaptTempBin+1]; 
+          BigReal DeltaE2Ave;
+          BigReal DeltaE2AveSum = 0;
+          BigReal betaj;
+          for (j = nMinus+1; j <= adaptTempBin; ++j) {
+              potEnergyAve0 += adaptTempPotEnergyAve[j]; 
+              DeltaE2Ave = adaptTempPotEnergyVar[j];
+              DeltaE2AveSum += DeltaE2Ave;
+              A0 += j*DeltaE2Ave;
+          }
+          A0 *= adaptTempDBeta;
+          A0 += (adaptTempBetaMin+0.5*adaptTempDBeta-betaMinus)*DeltaE2AveSum;
+          A0 *= adaptTempDBeta;
+          betaj = adaptTempBetaN[nMinus+1]-betaMinus; 
+          betaj *= betaj;
+          A0 += 0.5*betaj*adaptTempPotEnergyVar[nMinus];
+          A0 /= (betaNp1-betaMinus);
+
+          //A1 phi_s integral for beta_{i+1} < beta < beta_plus
+          DeltaE2AveSum = 0;
+          for (j = adaptTempBin+1; j < nPlus; j++) {
+              potEnergyAve1 += adaptTempPotEnergyAve[j];
+              DeltaE2Ave = adaptTempPotEnergyVar[j];
+              DeltaE2AveSum += DeltaE2Ave;
+              A1 += j*DeltaE2Ave;
+          }
+          A1 *= adaptTempDBeta;   
+          A1 += (adaptTempBetaMin+0.5*adaptTempDBeta-betaPlus)*DeltaE2AveSum;
+          A1 *= adaptTempDBeta;
+          if ( nPlus < adaptTempBins ) {
+            betaj = betaPlus-adaptTempBetaN[nPlus];
+            betaj *= betaj;
+            A1 -= 0.5*betaj*adaptTempPotEnergyVar[nPlus];
+          }
+          A1 /= (betaPlus-betaNp1);
+
+          //A2 phi_t integral for beta_i
+          A2 = 0.5*adaptTempDBeta*potEnergyVariance;
+
+          // Now calculate a+ and a-
+          BigReal aplus = (A0-A2)/(A0-A1);
+          if (aplus < 0) {
+                aplus = 0;
+          }
+          if (aplus > 1)  {
+                aplus = 1;
+          }
+          BigReal aminus = 1-aplus;
+          potEnergyAve0 *= adaptTempDBeta;
+          potEnergyAve0 += adaptTempPotEnergyAve[nMinus]*(adaptTempBetaN[nMinus+1]-betaMinus);
+          potEnergyAve0 /= (betaNp1-betaMinus);
+          potEnergyAve1 *= adaptTempDBeta;
+          if ( nPlus < adaptTempBins ) {
+            potEnergyAve1 += adaptTempPotEnergyAve[nPlus]*(betaPlus-adaptTempBetaN[nPlus]);
+          }
+          potEnergyAve1 /= (betaPlus-betaNp1);
+          potEnergyAverage = aminus*potEnergyAve0;
+          potEnergyAverage += aplus*potEnergyAve1;
+
+          if (simParams->adaptTempDebug) {
+       iout << "ADAPTIVE TEMPERING DEBUG:"  << "\n"
+            << "     adaptTempBin:    " << adaptTempBin << "\n"
+            << "     Samples:   " << adaptTempPotEnergySamples[adaptTempBin] << "\n"
+            << "     adaptTempBeta:   " << adaptTempBeta << "\n" 
+            << "     adaptTemp:   " << adaptTempT<< "\n"
+            << "     betaMin:   " << adaptTempBetaMin << "\n"
+            << "     betaMax:   " << adaptTempBetaMax << "\n"
+            << "     gammaAve:  " << gammaAve << "\n"
+            << "     deltaBeta: " << deltaBeta << "\n"
+            << "     betaMinus: " << betaMinus << "\n"
+            << "     betaPlus:  " << betaPlus << "\n"
+            << "     nMinus:    " << nMinus << "\n"
+            << "     nPlus:     " << nPlus << "\n"
+            << "     A0:        " << A0 << "\n"
+            << "     A1:        " << A1 << "\n"
+            << "     A2:        " << A2 << "\n"
+            << "     a+:        " << aplus << "\n"
+            << "     a-:        " << aminus << "\n"
+            << endi;
+          }
+      }
+      else {
+          if (simParams->adaptTempDebug) {
+       iout << "ADAPTIVE TEMPERING DEBUG:"  << "\n"
+            << "     adaptTempBin:    " << adaptTempBin << "\n"
+            << "     Samples:   " << adaptTempPotEnergySamples[adaptTempBin] << "\n"
+            << "     adaptTempBeta:   " << adaptTempBeta << "\n" 
+            << "     adaptTemp:   " << adaptTempT<< "\n"
+            << "     betaMin:   " << adaptTempBetaMin << "\n"
+            << "     betaMax:   " << adaptTempBetaMax << "\n"
+            << "     gammaAve:  " << gammaAve << "\n"
+            << "     deltaBeta:  N/A\n"
+            << "     betaMinus:  N/A\n"
+            << "     betaPlus:   N/A\n"
+            << "     nMinus:     N/A\n"
+            << "     nPlus:      N/A\n"
+            << "     A0:         N/A\n"
+            << "     A1:         N/A\n"
+            << "     A2:         N/A\n"
+            << "     a+:         N/A\n"
+            << "     a-:         N/A\n"
+            << endi;
+          }
+      }
+      
+      BigReal dT = ((potentialEnergy-potEnergyAverage)/BOLTZMANN-adaptTempT)*adaptTempDt;
+      dT += random->gaussian()*sqrt(2.*adaptTempDt)*adaptTempT;
+      dT += adaptTempT;
+
+     // Check if dT in [adaptTempTmin,adaptTempTmax]. If not try simpler estimate of mean
+     // This helps sampling with poor statistics in the bins surrounding adaptTempBin.
+      if ( dT > 1./adaptTempBetaMin || dT  < 1./adaptTempBetaMax ) {
+        dT = ((potentialEnergy-adaptTempPotEnergyAve[adaptTempBin])/BOLTZMANN-adaptTempT)*adaptTempDt;
+        dT += random->gaussian()*sqrt(2.*adaptTempDt)*adaptTempT;
+        dT += adaptTempT;
+        // Check again, if not then keep original adaptTempTor assign random.
+        if ( dT > 1./adaptTempBetaMin ) {
+          if (!simParams->adaptTempRandom) {
+             iout << iWARN << "ADAPTEMP: " << step << " T= " << dT 
+                  << " K higher than adaptTempTmax."
+                  << " Keeping temperature at " 
+                  << adaptTempT<< "\n"<< endi;
+             dT = adaptTempT;
+          }
+          else {
+             iout << iWARN << "ADAPTEMP: " << step << " T= " << dT 
+                  << " K higher than adaptTempTmax."
+                  << " Assigning random temperature in range\n" << endi;
+             dT = adaptTempBetaMin +  random->uniform()*(adaptTempBetaMax-adaptTempBetaMin);
+             dT = 1./dT;
+          }
+        } 
+        else if ( dT  < 1./adaptTempBetaMax ) {
+          if (!simParams->adaptTempRandom) {
+            iout << iWARN << "ADAPTEMP: " << step << " T= "<< dT 
+                 << " K lower than adaptTempTmin."
+                 << " Keeping temperature at " << adaptTempT<< "\n" << endi;
+            dT = adaptTempT;
+          }
+          else {
+            iout << iWARN << "ADAPTEMP: " << step << " T= "<< dT 
+                 << " K lower than adaptTempTmin."
+                 << " Assigning random temperature in range\n" << endi;
+            dT = adaptTempBetaMin +  random->uniform()*(adaptTempBetaMax-adaptTempBetaMin);
+            dT = 1./dT;
+          }
+        }
+      }
+      adaptTempT = dT; 
+      broadcast->adaptTemperature.publish(step,adaptTempT);
+    }
+    adaptTempWriteRestart(step);
+    if ( ! (step % adaptTempOutFreq) ) {
+        iout << "ADAPTEMP: STEP " << step
+             << " TEMP "   << adaptTempT
+             << " ENERGY " << std::setprecision(10) << potentialEnergy   
+             << " ENERGYAVG " << std::setprecision(10) << potEnergyAverage
+             << " ENERGYVAR " << std::setprecision(10) << potEnergyVariance
+             << "\n" << endi;
+   }
+   
+}
+
 
 void Controller::compareChecksums(int step, int forgiving) {
     Node *node = Node::Object();

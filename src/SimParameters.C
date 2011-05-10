@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/04/29 20:17:18 $
- * $Revision: 1.1354 $
+ * $Author: johanstr $
+ * $Date: 2011/05/10 21:28:45 $
+ * $Revision: 1.1355 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1106,6 +1106,37 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.units("accelMDTalpha", N_KCAL);
    opts.range("accelMDTalpha", POSITIVE);
 
+   // Adaptive Temperature Sampling (adaptTemp) parameters
+   opts.optionalB("main", "adaptTempMD", "Perform adaptive temperature sampling", &adaptTempOn, FALSE);
+   opts.optional("adaptTempMD", "adaptTempFirstStep", "First adaptTemp step", &adaptTempFirstStep, 0);
+   opts.range("adaptTempFirstStep", NOT_NEGATIVE);
+   opts.optional("adaptTempMD", "adaptTempLastStep", "Last adaptTemp step", &adaptTempLastStep, 0);
+   opts.range("adaptTempLastStep", NOT_NEGATIVE);
+   opts.optional("adaptTempMD", "adaptTempOutFreq", "Frequency of adaptTemp output", &adaptTempOutFreq, 10);
+   opts.range("adaptTempOutFreq", POSITIVE);
+   opts.optional("adaptTempMD", "adaptTempFreq", "Frequency of writing average energies to adaptTempOutFile", &adaptTempFreq, 10);
+   opts.range("adaptTempFreq", POSITIVE);
+   opts.optionalB("adaptTempMD", "adaptTempDebug", "Print debug output for adaptTemp", &adaptTempDebug, FALSE);
+   opts.optional("adaptTempMD", "adaptTempTmin","Minimun temperature for adaptTemp", &adaptTempTmin);
+   opts.units("adaptTempTmin", N_KELVIN);
+   opts.range("adaptTempTmin", POSITIVE);
+   opts.optional("adaptTempMD", "adaptTempTmax","Maximum temperature for adaptTemp", &adaptTempTmax);
+   opts.units("adaptTempTmax", N_KELVIN);
+   opts.range("adaptTempTmax", POSITIVE);
+   opts.optional("adaptTempMD", "adaptTempBins","Number of bins to store average energies", &adaptTempBins,0);
+   opts.range("adaptTempBins", NOT_NEGATIVE);
+   opts.optional("adaptTempMD", "adaptTempDt", "Integration timestep for Temp. updates", &adaptTempDt, 0.0001);
+   opts.units("adaptTempDt", N_FSEC);
+   opts.range("adaptTempDt", POSITIVE);
+   opts.optional("adaptTempMD", "adaptTempCgamma", "Adaptive bin averaging constant", &adaptTempCgamma, 0.1);
+   opts.range("adaptTempCgamma", NOT_NEGATIVE);
+   opts.optionalB("adaptTempMD","adaptTempLangevin","Send adaptTemp temperature to langevin thermostat",&adaptTempLangevin,TRUE);
+   opts.optionalB("adaptTempMD","adaptTempRescaling","Send adaptTemp temperature to velocity rescaling thermostat", &adaptTempRescale,TRUE);
+   opts.optional("adaptTempMD", "adaptTempInFile", "File containing restart information for adaptTemp", adaptTempInFile);
+   opts.optional("adaptTempMD", "adaptTempRestartFile", "File for writing adaptTemp restart information", adaptTempRestartFile);
+   opts.require("adaptTempRestartFile","adaptTempRestartFreq", "Frequency of writing restart file", &adaptTempRestartFreq,0);
+   opts.range("adaptTempRestartFreq",NOT_NEGATIVE);
+   opts.optionalB("adaptTempMD", "adaptTempRandom", "Randomly assign a temperature if we step out of range", &adaptTempRandom, FALSE);
 }
 
 void SimParameters::config_parser_constraints(ParseOptions &opts) {
@@ -2555,6 +2586,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (minimizeOn && (maximumMove == 0.0)) 
    {
       maximumMove = 0.75 * pairlistDist/stepsPerCycle;
+   }
+   if (adaptTempOn) {
+     if (!adaptTempRescale && !adaptTempLangevin) 
+        NAMD_die("Adaptive tempering needs to be coupled to either the Langevin thermostat or velocity rescaling.");
    }
 
    if (langevinOn) {
@@ -4469,6 +4504,24 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }        
      iout << iINFO << "accelMD OUTPUT FREQUENCY " << accelMDOutFreq << "\n";
      iout << endi;
+   }
+
+   if (adaptTempOn) {
+     iout << iINFO << "ADAPTIVE TEMPERING ACTIVE:\n";
+     iout << iINFO << "      OUTPUT FREQUENCY: " << adaptTempOutFreq << "\n";
+     iout << iINFO << "      TEMPERATURE UPDATE FREQUENCY: " << adaptTempFreq << "\n";
+     if ( adaptTempLastStep > 0 )
+        iout << iINFO << "      ADAPTIVE TEMPERING WILL BE DONE FROM STEP " << adaptTempFirstStep  << " TO " << adaptTempLastStep << "\n";
+     else
+        iout << iINFO << "      ADAPTIVE TEMPERING WILL BE DONE FROM STEP " << adaptTempFirstStep << "\n";
+     if ( adaptTempLangevin )
+        iout << iINFO << "      ADAPTIVE TEMPERING COUPLED TO LANGEVIN THERMOSTAT\n";
+     if ( adaptTempRescale )
+        iout << iINFO << "      ADAPTIVE TEMPERING COUPLED TO VELOCITY RESCALING\n";
+     if (adaptTempRestartFreq > 0) {
+        iout << iINFO << "      WRITING RESTART INFORMATION TO " << adaptTempRestartFile << " EVERY " << adaptTempRestartFreq << " STEPS\n";
+     }
+        
    }
 
    if (FMAOn)

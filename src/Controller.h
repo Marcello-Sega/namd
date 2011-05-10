@@ -200,6 +200,27 @@ protected:
    void rescaleaccelMD (int step, int minimize = 0);
    BigReal accelMDdVAverage;
 
+//JS for adaptive temperature sampling
+   void adaptTempInit(int step);
+   void adaptTempUpdate(int step, int minimize = 0);
+   void adaptTempWriteRestart(int step);
+   BigReal *adaptTempPotEnergyAveNum;
+   BigReal *adaptTempPotEnergyAveDen;
+   BigReal *adaptTempPotEnergyVarNum;
+   BigReal *adaptTempPotEnergyAve;
+   BigReal *adaptTempPotEnergyVar;
+   int     *adaptTempPotEnergySamples;
+   BigReal *adaptTempBetaN;
+   BigReal adaptTempT;
+   BigReal adaptTempBetaMin;
+   BigReal adaptTempBetaMax;
+   int     adaptTempBin;
+   int     adaptTempBins;
+   BigReal adaptTempDBeta;
+   BigReal adaptTempCg;
+   BigReal adaptTempDt;
+   std::ofstream adaptTempRestartFile;
+  
 private:
     CthThread thread;
     static void threadRun(Controller*);

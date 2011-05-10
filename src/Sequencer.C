@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/03/18 07:09:57 $
- * $Revision: 1.1196 $
+ * $Author: johanstr $
+ * $Date: 2011/05/10 21:28:44 $
+ * $Revision: 1.1197 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -191,6 +191,9 @@ void Sequencer::integrate() {
     const Bool accelMDdual = simParams->accelMDdual;
     if ( accelMDOn && (accelMDdihe || accelMDdual)) maxForceUsed = Results::amdf;
 
+    // Is adaptive tempering on?
+    const Bool adaptTempOn = simParams->adaptTempOn;
+
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
     // BEGIN LA
@@ -227,8 +230,11 @@ void Sequencer::integrate() {
 
     doEnergy = ! ( step % energyFrequency );
     if ( accelMDOn && !accelMDdihe ) doEnergy=1;
+    //Update energy every timestep for adaptive tempering
+    if ( adaptTempOn ) doEnergy=1;
     runComputeObjects(1,step<numberOfSteps); // must migrate here!
     rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD 
+    adaptTempUpdate(step); // update adaptive tempering temperature
 
     if ( staleForces || doTcl || doColvars ) {
       if ( doNonbonded ) saveForce(Results::nbond);
@@ -320,8 +326,9 @@ void Sequencer::integrate() {
       // Migrate Atoms on stepsPerCycle
       doEnergy = ! ( step % energyFrequency );
       if ( accelMDOn && !accelMDdihe ) doEnergy=1;
+      if ( adaptTempOn ) doEnergy=1; 
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
-
+ 
       rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
      
       if ( staleForces || doTcl || doColvars ) {
@@ -375,7 +382,9 @@ void Sequencer::integrate() {
 
 	submitReductions(step);
 	submitCollections(step);
-
+       //Update adaptive tempering temperature
+        adaptTempUpdate(step);
+ 
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle), step);
 #elif PME_BARRIER
@@ -673,6 +682,10 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
     BigReal kbT = BOLTZMANN*(simParams->langevinTemp);
+    if (simParams->adaptTempOn && simParams->adaptTempLangevin)
+    {
+        kbT = BOLTZMANN*adaptTempT;
+    }
 
     int lesReduceTemp = simParams->lesOn && simParams->lesReduceTemp;
     BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
@@ -767,7 +780,10 @@ void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
     Molecule *molecule = Node::Object()->molecule;
     BigReal dt = dt_fs * 0.001;  // convert to ps
     BigReal kbT = BOLTZMANN*(simParams->langevinTemp);
-
+    if (simParams->adaptTempOn && simParams->adaptTempLangevin)
+    {
+        kbT = BOLTZMANN*adaptTempT;
+    }
     int lesReduceTemp = simParams->lesOn && simParams->lesReduceTemp;
     BigReal tempFactor = lesReduceTemp ? 1.0 / simParams->lesFactor : 1.0;
     int i;
@@ -1039,6 +1055,21 @@ void Sequencer::rescaleaccelMD (int step, int doNonbonded, int doFullElectrostat
                patch->f[Results::normal][i] += patch->f[Results::amdf][i]*(factor_dihe - factor_tot);
    }
 
+}
+
+void Sequencer::adaptTempUpdate(int step)
+{
+   //check if adaptive tempering is enabled and in the right timestep range
+   if (!simParams->adaptTempOn) return;
+   if ( (step < simParams->adaptTempFirstStep ) || 
+     ( simParams->adaptTempLastStep > 0 && step > simParams->adaptTempLastStep )) {
+        if (simParams->langevinOn) // restore langevin temperature
+            adaptTempT = simParams->langevinTemp;
+        return;
+   }
+   // Get Updated Temperature
+   if ( !(step % simParams->adaptTempFreq ) && (step > simParams->firstTimestep ))
+    adaptTempT = broadcast->adaptTemperature.get(step);
 }
 
 void Sequencer::reassignVelocities(BigReal timestep, int step)
