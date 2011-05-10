@@ -1,10 +1,10 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                  NAMD 2.8b1 Release Announcement                   |
+|                  NAMD 2.8b2 Release Announcement                   |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                       March 25, 2011
+                                                         May 12, 2011
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
@@ -13,7 +13,7 @@ high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
 is supported by the NIH National Center for Research Resources.
 
-NAMD 2.8b1 has many advantages over NAMD 2.7, among these are:
+NAMD 2.8b2 has many advantages over NAMD 2.7, among these are:
 
 - Generalized Born implicit solvent model
 
