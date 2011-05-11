@@ -17,8 +17,9 @@ ABFdata::ABFdata(const char *gradFileName)
     double xi;
     char *countFileName;
 
-    countFileName = new char[strlen (gradFileName) + 4];
-    strncpy (countFileName, gradFileName, strlen (gradFileName) - 4); 
+    countFileName = new char[strlen (gradFileName) + 2];
+    strcpy (countFileName, gradFileName); 
+    countFileName[strlen (gradFileName) - 4] = '\0';
     strcat (countFileName, "count");
 
     std::cout << "Opening file " << gradFileName << " for reading\n";
