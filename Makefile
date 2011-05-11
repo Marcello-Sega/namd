@@ -602,7 +602,10 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	    -e "/obj\/SimParameters.o/ s/CXXFLAGS/CXXSIMPARAMFLAGS/" \
 	    -e "/obj\/ComputeNonbondedStd.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    -e "/obj\/ComputeNonbondedFEP.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
+	    -e "/obj\/ComputeNonbondedTI.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    -e "/obj\/ComputeNonbondedLES.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
+	    -e "/obj\/ComputeNonbondedPProf.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
+	    -e "/obj\/ComputeNonbondedTabEnergies.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
 	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 
