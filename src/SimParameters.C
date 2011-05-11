@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/05/11 00:58:26 $
- * $Revision: 1.1356 $
+ * $Date: 2011/05/11 02:22:28 $
+ * $Revision: 1.1357 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2790,8 +2790,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      //NAMD_die("Alchemcial decoupling was requested but alchemical free energy calculation is not active.\n");
    }
 
-   if ( lesOn && ( lesFactor < 1 || lesFactor > 15 ) ) {
-     NAMD_die("lesFactor must be positive and less than 16");
+   if ( lesOn && ( lesFactor < 1 || lesFactor > 255 ) ) {
+     NAMD_die("lesFactor must be positive and less than 256");
    }
    if ((pairInteractionOn && alchFepOn) || (pairInteractionOn && lesOn) || (pairInteractionOn && alchThermIntOn) ) 
      NAMD_die("Sorry, pair interactions may not be calculated when LES, FEP or TI is enabled.");
