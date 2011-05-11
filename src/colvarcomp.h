@@ -1209,8 +1209,7 @@ inline void colvar::spin_angle::wrap (colvarvalue &x) const
                                                                         \
 
   simple_scalar_dist_functions (distance)
-  // *** NOTE: distance_z has also a wrap() function, see below ***
-  simple_scalar_dist_functions (distance_z)
+  // NOTE: distance_z has explicit functions, see below 
   simple_scalar_dist_functions (distance_xy)
   simple_scalar_dist_functions (min_distance)
   simple_scalar_dist_functions (angle)
@@ -1227,6 +1226,47 @@ inline void colvar::spin_angle::wrap (colvarvalue &x) const
   simple_scalar_dist_functions (alpha_angles)
 
 
+// Projected distance
+// Differences should always be wrapped around 0 (ignoring wrap_center)
+inline cvm::real colvar::distance_z::dist2 (colvarvalue const &x1,
+                                            colvarvalue const &x2) const
+{
+  cvm::real diff = x1.real_value - x2.real_value;
+  if (period != 0.0) {
+    cvm::real shift = floor (diff/period + 0.5);
+    diff -= shift * period;
+  }
+  return diff * diff;
+}
+
+inline colvarvalue colvar::distance_z::dist2_lgrad (colvarvalue const &x1,
+                                                    colvarvalue const &x2) const
+{
+  cvm::real diff = x1.real_value - x2.real_value;
+  if (period != 0.0) {
+    cvm::real shift = floor (diff/period + 0.5);
+    diff -= shift * period;
+  }
+  return 2.0 * diff;
+}
+
+inline colvarvalue colvar::distance_z::dist2_rgrad (colvarvalue const &x1,
+                                                    colvarvalue const &x2) const
+{
+  cvm::real diff = x1.real_value - x2.real_value;
+  if (period != 0.0) {
+    cvm::real shift = floor (diff/period + 0.5);
+    diff -= shift * period;
+  }
+  return (-2.0) * diff;
+}
+
+inline cvm::real colvar::distance_z::compare (colvarvalue const &x1,
+                                              colvarvalue const &x2) const
+{
+  return dist2_lgrad (x1, x2);
+}
+
 inline void colvar::distance_z::wrap (colvarvalue &x) const
 {
   if (period == 0.0) {
@@ -1234,42 +1274,33 @@ inline void colvar::distance_z::wrap (colvarvalue &x) const
     return;
   }
 
-  if ((x.real_value - wrap_center) >= period/2.0) {
-    x.real_value -= period;
-    return;
-  } 
-
-  if ((x.real_value - wrap_center) < -period/2.0) {
-    x.real_value += period;
-    return;
-  } 
-
+  cvm::real shift = floor ((x.real_value - wrap_center) / period + 0.5);
+  x.real_value -= shift * period;
   return;
 }
 
 
-
-// generic definitions
-
-
 // distance between three dimensional vectors
+//
+// TODO apply PBC to distance_vec
+// Note: differences should be centered around (0, 0, 0)!
 
 inline cvm::real colvar::distance_vec::dist2 (colvarvalue const &x1,
                                               colvarvalue const &x2) const
 {
-  return (x1.rvector_value - x2.rvector_value).norm2();
+  return cvm::position_dist2 (x1.rvector_value, x2.rvector_value);
 }
 
 inline colvarvalue colvar::distance_vec::dist2_lgrad (colvarvalue const &x1,
                                                       colvarvalue const &x2) const
 {
-  return (x1.rvector_value - x2.rvector_value);
+  return 2.0 * cvm::position_distance(x2.rvector_value, x1.rvector_value);
 }
 
 inline colvarvalue colvar::distance_vec::dist2_rgrad (colvarvalue const &x1,
                                                       colvarvalue const &x2) const
 {
-  return (x2.rvector_value - x1.rvector_value);
+  return 2.0 * cvm::position_distance(x2.rvector_value, x1.rvector_value);
 }
 
 inline cvm::real colvar::distance_vec::compare (colvarvalue const &x1,

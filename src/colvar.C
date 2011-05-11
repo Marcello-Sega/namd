@@ -140,12 +140,16 @@ colvar::colvar (std::string const &conf)
   b_Jacobian_force    = true;
 
   // Decide whether the colvar is periodic
-  // Note: this info is not currently used by biases
-  if (cvcs.size() == 1 && (cvcs[0])->b_periodic && (cvcs[0])->sup_np == 1) {
+  // Used to wrap extended DOF if extendedLagrangian is on
+  if (cvcs.size() == 1 && (cvcs[0])->b_periodic && (cvcs[0])->sup_np == 1 
+                                                && (cvcs[0])->sup_coeff == 1.0 ) {
     this->b_periodic = true;
-    this->period = (cvcs[0])->period * (cvcs[0])->sup_coeff;
+    this->period = (cvcs[0])->period;
+    // TODO write explicit wrap() function for colvars to allow for
+    // sup_coeff different from 1
+    // this->period = (cvcs[0])->period * (cvcs[0])->sup_coeff;
   } else {
-    b_periodic = false;
+    this->b_periodic = false;
     this->period = 0.0;
   }
 
@@ -893,7 +897,7 @@ cvm::real colvar::update()
     vr  += (0.5 * dt) * fr / ext_mass; 
     xr  += dt * vr;
     xr.apply_constraints();
-    this->wrap (xr);
+    if (this->b_periodic) this->wrap (xr);
   }
 
 

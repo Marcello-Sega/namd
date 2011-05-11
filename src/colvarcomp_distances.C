@@ -152,8 +152,15 @@ colvar::distance_z::distance_z (std::string const &conf)
   b_Jacobian_derivative = true;
   x.type (colvarvalue::type_scalar);
 
+  // TODO detect PBC from MD engine (in simple cases)
+  // and then update period in real time
   if (period != 0.0)
     b_periodic = true;    
+
+  if ((wrap_center != 0.0) && (period == 0.0)) {
+    cvm::fatal_error ("Error: wrapAround was defined in a distanceZ component,"
+                      " but its period has not been set.\n");
+  }
 
   parse_group (conf, "main", main);
   parse_group (conf, "ref", ref1);
@@ -225,16 +232,7 @@ void colvar::distance_z::calc_value()
     axis = axis.unit();
   }
   x.real_value = axis * dist_v;
-
-  if (wrap_center != 0.0) {
-    if (period == 0.0) {
-      cvm::fatal_error ("Error: wrapAround was defined in a distanceZ component,"
-                        " but its period has not been set.\n");
-    }
-    colvarvalue x_tmp (x);
-    this->wrap (x_tmp);
-    x = x_tmp;
-  }
+  this->wrap (x);
 }
 
 void colvar::distance_z::calc_gradients()

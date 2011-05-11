@@ -201,6 +201,7 @@ void colvar::dihedral::calc_value()
   cvm::real const sin_phi = n1 * r34 * r23.norm();
 
   x.real_value = (180.0/PI) * std::atan2 (sin_phi, cos_phi);
+  this->wrap (x);
 }
 
 

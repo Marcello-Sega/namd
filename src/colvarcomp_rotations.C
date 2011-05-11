@@ -312,6 +312,7 @@ void colvar::spin_angle::calc_value()
   rot.calc_optimal_rotation (ref_pos, atoms.positions_shifted (-1.0 * atoms_cog));
 
   x.real_value = rot.spin_angle (axis);
+  this->wrap (x);
 }
 
 
