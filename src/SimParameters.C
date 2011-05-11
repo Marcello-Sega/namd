@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: johanstr $
- * $Date: 2011/05/10 21:28:45 $
- * $Revision: 1.1355 $
+ * $Author: jim $
+ * $Date: 2011/05/11 00:58:26 $
+ * $Revision: 1.1356 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -125,6 +125,8 @@ int atobool(const char *s) {
 };
                          
 void SimParameters::scriptSet(const char *param, const char *value) {
+
+  if ( CkMyRank() ) return;
 
 #define MAX_SCRIPT_PARAM_SIZE 128
 #define SCRIPT_PARSE_BOOL(NAME,VAR) { if ( ! strncasecmp(param,(NAME),MAX_SCRIPT_PARAM_SIZE) ) { (VAR) = atobool(value); return; } }
