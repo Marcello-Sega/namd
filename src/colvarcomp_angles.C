@@ -11,6 +11,8 @@ colvar::angle::angle (std::string const &conf)
   : cvc (conf)
 {
   function_type = "angle";
+  b_inverse_gradients = true;
+  b_Jacobian_derivative = true;
   parse_group (conf, "group1", group1);
   parse_group (conf, "group2", group2);
   parse_group (conf, "group3", group3);
@@ -30,6 +32,8 @@ colvar::angle::angle (cvm::atom const &a1,
     group3 (std::vector<cvm::atom> (1, a3))
 {
   function_type = "angle";
+  b_inverse_gradients = true;
+  b_Jacobian_derivative = true;
   atom_groups.push_back (&group1);
   atom_groups.push_back (&group2);
   atom_groups.push_back (&group3);
@@ -71,28 +75,50 @@ void colvar::angle::calc_gradients()
   cvm::real const cos_theta = (r21*r23)/(r21l*r23l);
   cvm::real const dxdcos = -1.0 / std::sqrt (1.0 - cos_theta*cos_theta);
     
-  cvm::rvector const dthetadr21 = (180.0/PI) * dxdcos *
-    ( (r23)/(r21l*r23l) +
-      (r21l*cos_theta) * (-1.0/(r21l*r21l)) * r21/r21l );
+  dxdr1 = (180.0/PI) * dxdcos *
+    (1.0/r21l) * ( r23/r23l + (-1.0) * cos_theta * r21/r21l );
 
-  cvm::rvector const dthetadr23 = (180.0/PI) * dxdcos *
-    ( (r21)/(r21l*r23l) +
-      (r23l*cos_theta) * (-1.0/(r23l*r23l)) * r23/r23l );
+  dxdr3 = (180.0/PI) * dxdcos *
+    (1.0/r23l) * ( r21/r21l + (-1.0) * cos_theta * r23/r23l );
 
   for (size_t i = 0; i < group1.size(); i++) {
     group1[i].grad = (group1[i].mass/group1.total_mass) *
-      (dthetadr21);
+      (dxdr1);
   }
 
   for (size_t i = 0; i < group2.size(); i++) {
     group2[i].grad = (group2[i].mass/group2.total_mass) *
-      (dthetadr21 + dthetadr23) * (-1.0);
+      (dxdr1 + dxdr3) * (-1.0);
   }
 
   for (size_t i = 0; i < group3.size(); i++) {
     group3[i].grad = (group3[i].mass/group3.total_mass) *
-      (dthetadr23);
+      (dxdr3);
   }
+}
+
+void colvar::angle::calc_force_invgrads()
+{
+  // This uses a force measurement on groups 1 and 3 only
+  // to keep in line with the implicit variable change used to
+  // evaluate the Jacobian term (essentially polar coordinates
+  // centered on group2, which means group2 is kept fixed
+  // when propagating changes in the angle)
+  cvm::real norm_fact = 1.0 / (dxdr1.norm2() + dxdr3.norm2());
+
+  group1.read_system_forces();
+  group3.read_system_forces();
+
+  ft.real_value = norm_fact * ( dxdr1 * group1.system_force()
+                              + dxdr3 * group3.system_force());
+}
+
+void colvar::angle::calc_Jacobian_derivative()
+{
+  // det(J) = r^2 * sin(theta)
+  // hence Jd = cot(theta)
+  const cvm::real theta = x.real_value * PI / 180.0;
+  jd = PI / 180.0 * (theta != 0.0 ? std::cos(theta) / std::sin(theta) : 0.0);
 }
 
 
