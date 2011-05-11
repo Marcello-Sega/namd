@@ -1925,6 +1925,7 @@ obj/ComputeNonbondedStd.o: \
 	src/PressureProfile.h \
 	src/Random.h \
 	src/ComputeNonbondedBase.h \
+	src/Parameters.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
@@ -1970,6 +1971,7 @@ obj/ComputeNonbondedFEP.o: \
 	src/PressureProfile.h \
 	src/Random.h \
 	src/ComputeNonbondedBase.h \
+	src/Parameters.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
@@ -2015,12 +2017,13 @@ obj/ComputeNonbondedTI.o: \
 	src/PressureProfile.h \
 	src/Random.h \
 	src/ComputeNonbondedBase.h \
+	src/Parameters.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedTI.o $(COPTC) src/ComputeNonbondedTI.C
+	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedTI.o $(COPTC) src/ComputeNonbondedTI.C
 obj/ComputeNonbondedLES.o: \
 	src/ComputeNonbondedLES.C \
 	src/ComputeNonbondedInl.h \
@@ -2060,6 +2063,7 @@ obj/ComputeNonbondedLES.o: \
 	src/PressureProfile.h \
 	src/Random.h \
 	src/ComputeNonbondedBase.h \
+	src/Parameters.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
@@ -2105,12 +2109,13 @@ obj/ComputeNonbondedPProf.o: \
 	src/PressureProfile.h \
 	src/Random.h \
 	src/ComputeNonbondedBase.h \
+	src/Parameters.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedPProf.o $(COPTC) src/ComputeNonbondedPProf.C
+	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedPProf.o $(COPTC) src/ComputeNonbondedPProf.C
 obj/ComputeNonbondedTabEnergies.o: \
 	src/ComputeNonbondedTabEnergies.C \
 	src/ComputeNonbondedInl.h \
@@ -2150,12 +2155,13 @@ obj/ComputeNonbondedTabEnergies.o: \
 	src/PressureProfile.h \
 	src/Random.h \
 	src/ComputeNonbondedBase.h \
+	src/Parameters.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/SortedArray.h \
 	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedTabEnergies.o $(COPTC) src/ComputeNonbondedTabEnergies.C
+	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedTabEnergies.o $(COPTC) src/ComputeNonbondedTabEnergies.C
 obj/ComputeNonbondedCUDA.o: \
 	src/ComputeNonbondedCUDA.C \
 	src/common.h \
@@ -2219,6 +2225,7 @@ obj/ComputeNonbondedCUDA.o: \
 	src/UniqueSetIter.h \
 	src/Priorities.h \
 	src/ComputeNonbondedCUDAKernel.h \
+	src/LJTable.h \
 	src/ObjectArena.h \
 	src/SortAtoms.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedCUDA.o $(COPTC) src/ComputeNonbondedCUDA.C
@@ -3837,6 +3844,7 @@ obj/LdbCoordinator.o: \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
 	inc/ComputeMgr.decl.h \
+	src/Compute.h \
 	src/packmsg.h \
 	inc/LdbCoordinator.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/LdbCoordinator.o $(COPTC) src/LdbCoordinator.C
