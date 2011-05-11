@@ -1233,7 +1233,7 @@ inline cvm::real colvar::distance_z::dist2 (colvarvalue const &x1,
 {
   cvm::real diff = x1.real_value - x2.real_value;
   if (period != 0.0) {
-    cvm::real shift = floor (diff/period + 0.5);
+    cvm::real shift = std::floor (diff/period + 0.5);
     diff -= shift * period;
   }
   return diff * diff;
@@ -1244,7 +1244,7 @@ inline colvarvalue colvar::distance_z::dist2_lgrad (colvarvalue const &x1,
 {
   cvm::real diff = x1.real_value - x2.real_value;
   if (period != 0.0) {
-    cvm::real shift = floor (diff/period + 0.5);
+    cvm::real shift = std::floor (diff/period + 0.5);
     diff -= shift * period;
   }
   return 2.0 * diff;
@@ -1255,7 +1255,7 @@ inline colvarvalue colvar::distance_z::dist2_rgrad (colvarvalue const &x1,
 {
   cvm::real diff = x1.real_value - x2.real_value;
   if (period != 0.0) {
-    cvm::real shift = floor (diff/period + 0.5);
+    cvm::real shift = std::floor (diff/period + 0.5);
     diff -= shift * period;
   }
   return (-2.0) * diff;
@@ -1274,7 +1274,7 @@ inline void colvar::distance_z::wrap (colvarvalue &x) const
     return;
   }
 
-  cvm::real shift = floor ((x.real_value - wrap_center) / period + 0.5);
+  cvm::real shift = std::floor ((x.real_value - wrap_center) / period + 0.5);
   x.real_value -= shift * period;
   return;
 }
