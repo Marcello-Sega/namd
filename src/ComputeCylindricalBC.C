@@ -103,7 +103,7 @@ void ComputeCylindricalBC::doForce(FullAtom* p, Results* r)
 	BigReal fval;		//  Force magnitude for this atom
 
 	// aliases to work with old code
-	CompAtom *x = p;
+	FullAtom *x = p;
 	Force *forces = r->f[Results::normal];
 	BigReal energy = 0;
 
