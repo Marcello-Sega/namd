@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/05/11 02:22:28 $
- * $Revision: 1.1357 $
+ * $Date: 2011/05/12 17:49:47 $
+ * $Revision: 1.1358 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2418,7 +2418,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    if ( martiniSwitching )
    {
-     if ( switchingActive ) 
+     if ( ! switchingActive ) 
+     { 
+       NAMD_die("martiniSwitching requires switching");
+     }
+     if ( vdwForceSwitching ) 
      { 
        NAMD_die("martiniSwitching and vdwForceSwitching are exclusive to one another. Select only one."); 
      }
@@ -3604,6 +3608,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       if ( vdwForceSwitching ) {
         iout << iINFO << "VDW FORCE SWITCHING ACTIVE\n";
       }
+      if ( martiniSwitching ) { 
+        iout << iINFO << "MARTINI RESIDUE-BASED COARSE-GRAIN SWITCHING ACTIVE\n";
+      }
       iout << iINFO << "SWITCHING ON           "
                << switchingDist << "\n";
       iout << iINFO << "SWITCHING OFF          "
@@ -3613,10 +3620,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    {
       iout << iINFO << "CUTOFF                 " 
          << cutoff << "\n";
-   }
-
-   if ( martiniSwitching ) { 
-     iout << iINFO << "MARTINI RESIDUE-BASED COARSE-GRAIN SWITCHING ACTIVE\n";
    }
 
    iout << iINFO << "PAIRLIST DISTANCE      " << pairlistDist << "\n";
