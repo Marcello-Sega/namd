@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: johanstr $
- * $Date: 2011/05/12 18:22:03 $
- * $Revision: 1.1265 $
+ * $Date: 2011/05/12 20:43:18 $
+ * $Revision: 1.1266 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1570,7 +1570,7 @@ void Controller::adaptTempUpdate(int step, int minimize)
     // is constant for each bin. This is to estimate <E(beta)> where beta \in
     // (beta_i,beta_{i+1}) using Eq 2 of JCP 132 244101
     if ( ! ( step % simParams->adaptTempFreq ) ) {
-  // If adaptTempBin not at the edge, calculate improved average:
+      // If adaptTempBin not at the edge, calculate improved average:
       if (adaptTempBin > 0 && adaptTempBin < adaptTempBins-1) {
           // Get Averaging Limits:
           BigReal deltaBeta = 0.04*adaptTempBeta; //0.08 used in paper - make variable
@@ -1634,10 +1634,10 @@ void Controller::adaptTempUpdate(int step, int minimize)
           A2 = 0.5*adaptTempDBeta*potEnergyVariance;
 
           // Now calculate a+ and a-
-          deltaE2 = A0-A1;
+          DeltaE2Ave = A0-A1;
           BigReal aplus = 0;
           BigReal aminus = 0;
-          if (deltaE2 != 0) {
+          if (DeltaE2Ave != 0) {
             aplus = (A0-A2)/(A0-A1);
             if (aplus < 0) {
                     aplus = 0;
