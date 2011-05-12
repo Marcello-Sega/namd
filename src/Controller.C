@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: johanstr $
- * $Date: 2011/05/10 21:28:44 $
- * $Revision: 1.1264 $
+ * $Date: 2011/05/12 18:22:03 $
+ * $Revision: 1.1265 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1634,25 +1634,29 @@ void Controller::adaptTempUpdate(int step, int minimize)
           A2 = 0.5*adaptTempDBeta*potEnergyVariance;
 
           // Now calculate a+ and a-
-          BigReal aplus = (A0-A2)/(A0-A1);
-          if (aplus < 0) {
-                aplus = 0;
+          deltaE2 = A0-A1;
+          BigReal aplus = 0;
+          BigReal aminus = 0;
+          if (deltaE2 != 0) {
+            aplus = (A0-A2)/(A0-A1);
+            if (aplus < 0) {
+                    aplus = 0;
+            }
+            if (aplus > 1)  {
+                    aplus = 1;
+            }
+            aminus = 1-aplus;
+            potEnergyAve0 *= adaptTempDBeta;
+            potEnergyAve0 += adaptTempPotEnergyAve[nMinus]*(adaptTempBetaN[nMinus+1]-betaMinus);
+            potEnergyAve0 /= (betaNp1-betaMinus);
+            potEnergyAve1 *= adaptTempDBeta;
+            if ( nPlus < adaptTempBins ) {
+                potEnergyAve1 += adaptTempPotEnergyAve[nPlus]*(betaPlus-adaptTempBetaN[nPlus]);
+            }
+            potEnergyAve1 /= (betaPlus-betaNp1);
+            potEnergyAverage = aminus*potEnergyAve0;
+            potEnergyAverage += aplus*potEnergyAve1;
           }
-          if (aplus > 1)  {
-                aplus = 1;
-          }
-          BigReal aminus = 1-aplus;
-          potEnergyAve0 *= adaptTempDBeta;
-          potEnergyAve0 += adaptTempPotEnergyAve[nMinus]*(adaptTempBetaN[nMinus+1]-betaMinus);
-          potEnergyAve0 /= (betaNp1-betaMinus);
-          potEnergyAve1 *= adaptTempDBeta;
-          if ( nPlus < adaptTempBins ) {
-            potEnergyAve1 += adaptTempPotEnergyAve[nPlus]*(betaPlus-adaptTempBetaN[nPlus]);
-          }
-          potEnergyAve1 /= (betaPlus-betaNp1);
-          potEnergyAverage = aminus*potEnergyAve0;
-          potEnergyAverage += aplus*potEnergyAve1;
-
           if (simParams->adaptTempDebug) {
        iout << "ADAPTIVE TEMPERING DEBUG:"  << "\n"
             << "     adaptTempBin:    " << adaptTempBin << "\n"
@@ -1711,32 +1715,32 @@ void Controller::adaptTempUpdate(int step, int minimize)
         dT += adaptTempT;
         // Check again, if not then keep original adaptTempTor assign random.
         if ( dT > 1./adaptTempBetaMin ) {
-          if (!simParams->adaptTempRandom) {
-             iout << iWARN << "ADAPTEMP: " << step << " T= " << dT 
-                  << " K higher than adaptTempTmax."
-                  << " Keeping temperature at " 
-                  << adaptTempT<< "\n"<< endi;
+          if (!simParams->adaptTempRandom) {             
+             //iout << iWARN << "ADAPTEMP: " << step << " T= " << dT 
+             //     << " K higher than adaptTempTmax."
+             //     << " Keeping temperature at " 
+             //     << adaptTempT<< "\n"<< endi;             
              dT = adaptTempT;
           }
-          else {
-             iout << iWARN << "ADAPTEMP: " << step << " T= " << dT 
-                  << " K higher than adaptTempTmax."
-                  << " Assigning random temperature in range\n" << endi;
-             dT = adaptTempBetaMin +  random->uniform()*(adaptTempBetaMax-adaptTempBetaMin);
+          else {             
+             //iout << iWARN << "ADAPTEMP: " << step << " T= " << dT 
+             //     << " K higher than adaptTempTmax."
+             //     << " Assigning random temperature in range\n" << endi;
+             //dT = adaptTempBetaMin +  random->uniform()*(adaptTempBetaMax-adaptTempBetaMin);             
              dT = 1./dT;
           }
         } 
         else if ( dT  < 1./adaptTempBetaMax ) {
-          if (!simParams->adaptTempRandom) {
-            iout << iWARN << "ADAPTEMP: " << step << " T= "<< dT 
-                 << " K lower than adaptTempTmin."
-                 << " Keeping temperature at " << adaptTempT<< "\n" << endi;
+          if (!simParams->adaptTempRandom) {            
+            //iout << iWARN << "ADAPTEMP: " << step << " T= "<< dT 
+            //     << " K lower than adaptTempTmin."
+            //     << " Keeping temperature at " << adaptTempT<< "\n" << endi; 
             dT = adaptTempT;
           }
           else {
-            iout << iWARN << "ADAPTEMP: " << step << " T= "<< dT 
-                 << " K lower than adaptTempTmin."
-                 << " Assigning random temperature in range\n" << endi;
+            //iout << iWARN << "ADAPTEMP: " << step << " T= "<< dT 
+            //     << " K lower than adaptTempTmin."
+            //     << " Assigning random temperature in range\n" << endi;
             dT = adaptTempBetaMin +  random->uniform()*(adaptTempBetaMax-adaptTempBetaMin);
             dT = 1./dT;
           }
