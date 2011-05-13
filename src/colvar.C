@@ -31,6 +31,9 @@ colvar::colvar (std::string const &conf)
     tasks[i] = false;
   }
 
+  kinetic_energy = 0.0;
+  potential_energy = 0.0;
+
   // read the configuration and set up corresponding instances, for
   // each type of component implemented
 #define initialize_components(def_desc,def_config_key,def_class_name)   \
@@ -309,12 +312,10 @@ colvar::colvar (std::string const &conf)
                  / (4.0 * PI * PI * ext_tolerance * ext_tolerance);
       cvm::log ("Computed fictitious mass: " + cvm::to_str(ext_mass) + " kcal/mol/(U/fs)^2   (U: colvar unit)");
 
-      kinetic_energy = 0.0;
-      potential_energy = 0.0;
       {
-        bool b_output_value;
-        get_keyval (conf, "outputEnergy", b_output_value, false);
-        if (b_output_value) {
+        bool b_output_energy;
+        get_keyval (conf, "outputEnergy", b_output_energy, false);
+        if (b_output_energy) {
           enable (task_output_energy);
         }
       }
