@@ -480,6 +480,16 @@ Bool ParseOptions::scan_float(DataElement *data, const char *s)
    char units_str[80];  // sscanf
    char tmp_str[80];
    int count = sscanf(s, "%lf%s%s", &input_value, units_str, tmp_str);
+   if (count > 1 && units_str[0] == '.' &&
+       input_value == (double)(long int)input_value) {  // for final . on Mac
+     long int input_long;
+     count = sscanf(s, "%ld.%s%s", &input_long, units_str, tmp_str);
+     if ( count < 1 || input_value != (double)input_long ) {
+	 iout << iERROR << "Could not parse option '"
+		 << data->name << " = " << s << "'\n" << endi;
+	 return FALSE;
+     }
+   }
    fval = input_value;
    if (count == 1) {     // no units given, so simply apply the number
       data->fdata = fval;
