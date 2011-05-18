@@ -66,7 +66,7 @@ public:
   int strayChargeErrors;
   int numLocalAtoms;
   PmeParticle  * localData;
-  char         * localPartition;
+  unsigned char * localPartition;
   OptPmeRealSpace * myRealSpace;
   OptPmeMgr * myMgr;
 

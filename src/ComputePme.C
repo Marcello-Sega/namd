@@ -1564,7 +1564,7 @@ void ComputePme::doWork()
 
   localData = new PmeParticle[numLocalAtoms*(numGrids+
 					((numGrids>1 || selfOn)?1:0))];
-  localPartition = new char[numLocalAtoms];
+  localPartition = new unsigned char[numLocalAtoms];
 
   int g;
   for ( g=0; g<numGrids; ++g ) {
@@ -1573,7 +1573,7 @@ void ComputePme::doWork()
 
   // get positions and charges
   PmeParticle * data_ptr = localData;
-  char * part_ptr = localPartition;
+  unsigned char * part_ptr = localPartition;
   const BigReal coulomb_sqrt = sqrt( COULOMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1 );
 

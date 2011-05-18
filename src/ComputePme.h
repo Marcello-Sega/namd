@@ -51,7 +51,7 @@ public:
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];
   int numLocalAtoms;
   PmeParticle *localData;
-  char *localPartition;
+  unsigned char *localPartition;
   int numGridAtoms[PME_MAX_EVALS];
   PmeParticle *localGridData[PME_MAX_EVALS];
   ComputePmeMgr *myMgr;
