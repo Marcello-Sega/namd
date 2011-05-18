@@ -32,7 +32,7 @@ struct PmeParticle {
 
 void compute_b_spline(double frac[3], double *M, double *dM, int order);
 
-#define PME_MAX_EVALS 15 
+#define PME_MAX_EVALS 255 
 typedef MathArray<double,7> PmeReduction;
 
 #ifndef SQRT_PI
