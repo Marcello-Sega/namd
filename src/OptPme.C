@@ -795,7 +795,7 @@ void OptPmeCompute::doWork()
 
   // calculate self energy
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
-  evir[0] = 0;
+  evir = 0;
   BigReal selfEnergy = 0;
   data_ptr = localData;
   int i;
@@ -805,15 +805,15 @@ void OptPmeCompute::doWork()
     ++data_ptr;
   }
   selfEnergy *= -1. * ewaldcof / SQRT_PI;
-  evir[0][0] += selfEnergy;
+  evir[0] += selfEnergy;
 
   double **q = q_arr;
   memset( (void*) zline_storage, 0, zlen * nzlines * sizeof(double) );
 
-  myRealSpace[0] = new OptPmeRealSpace(myGrid,numLocalAtoms);
+  myRealSpace = new OptPmeRealSpace(myGrid,numLocalAtoms);
   //scale_coordinates(localData, numLocalAtoms, lattice, myGrid);
   if (!strayChargeErrors)
-    myRealSpace[0]->fill_charges(q, localData, zstart, zlen);
+    myRealSpace->fill_charges(q, localData, zstart, zlen);
 
 #ifdef TRACE_COMPUTE_OBJECTS
   traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+this->cid, traceObjStartTime, CmiWallTimer());
@@ -926,10 +926,10 @@ void OptPmeCompute::ungridForces() {
 #endif
       
       if (!strayChargeErrors) {
-	myRealSpace[0]->compute_forces(q_arr, localData, gridResults, zstart, zlen);
+	myRealSpace->compute_forces(q_arr, localData, gridResults, zstart, zlen);
 	scale_forces(gridResults, numLocalAtoms, lattice);
       }
-      delete myRealSpace[0];
+      delete myRealSpace;
     }
     delete [] localData;
     //    delete [] localPartition;
@@ -959,12 +959,12 @@ void OptPmeCompute::ungridForces() {
    
     double scale = 1.;
 
-    reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0][0] * scale;
+    reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0] * scale;
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     strayChargeErrors = 0;
     reduction->submit();
     if (amd_reduction) {
-      amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0][0] * scale;
+      amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += evir[0] * scale;
       amd_reduction->submit();
     }
 }

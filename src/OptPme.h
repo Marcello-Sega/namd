@@ -60,14 +60,14 @@ public:
   
   double **q_arr;
   int nzlines;
-  PmeReduction evir[PME_MAX_EVALS];
+  PmeReduction evir;
   SubmitReduction *reduction;
   SubmitReduction *amd_reduction;
   int strayChargeErrors;
   int numLocalAtoms;
   PmeParticle  * localData;
   char         * localPartition;
-  OptPmeRealSpace * myRealSpace[PME_MAX_EVALS];
+  OptPmeRealSpace * myRealSpace;
   OptPmeMgr * myMgr;
 
   ResizeArray <PencilElement>   pencilVec;
