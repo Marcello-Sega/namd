@@ -86,7 +86,11 @@ inline unsigned long memusage_ps() {
   return 0;
 #else
   char pscmd[100];
+#ifdef NAMD_CUDA
+  sprintf(pscmd, "/bin/ps -o rss= -p %d", getpid());
+#else
   sprintf(pscmd, "/bin/ps -o vsz= -p %d", getpid());
+#endif
   unsigned long vsz = 0;
   FILE *p = popen(pscmd, "r");
   if ( p ) {
@@ -123,7 +127,7 @@ unsigned long memusage(const char **source) {
   unsigned long memtotal = 0;
   const char* s = "ERROR";
 
-  if (CmiMemoryIs(CMI_MEMORY_IS_GNU) ) {
+  if ( ! CmiMemoryIs(CMI_MEMORY_IS_OS) ) {
     memtotal = CmiMemoryUsage();  s = "CmiMemoryUsage";
   }
 
@@ -133,9 +137,11 @@ unsigned long memusage(const char **source) {
   }
 #endif
 
+#ifndef NAMD_CUDA
   if ( ! memtotal ) {
     memtotal = memusage_proc_self_stat();  s = "/proc/self/stat";
   }
+#endif
 
   if ( ! memtotal ) { memtotal = memusage_mstats(); s = "mstats"; }
 
@@ -144,6 +150,8 @@ unsigned long memusage(const char **source) {
   if ( ! memtotal ) { memtotal = memusageinit::memusage_sbrk(); s = "sbrk"; }
 
   if ( ! memtotal ) { memtotal = memusage_ps(); s = "ps"; }
+
+  if ( ! memtotal ) { memtotal = CmiMemoryUsage();  s = "CmiMemoryUsage"; }
 
   if ( ! memtotal ) s = "nothing";
 
