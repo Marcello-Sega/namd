@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/05/12 17:49:47 $
- * $Revision: 1.1358 $
+ * $Author: char $
+ * $Date: 2011/05/19 14:30:35 $
+ * $Revision: 1.1359 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -4503,9 +4503,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
         iout << iINFO << "accelMDTE: " << accelMDTE << " KCAL/MOL, accelMDTalpha: " << accelMDTalpha << " KCAL/MOL\n";
      }
      if ( accelMDLastStep > 0) {
-        iout << iINFO << "accelMD WILL BE DONE FROM STEP" << accelMDFirstStep << "TO STEP" << accelMDLastStep << "\n";
+        iout << iINFO << "accelMD WILL BE DONE FROM STEP " << accelMDFirstStep << " TO STEP " << accelMDLastStep << "\n";
      } else {
-        iout << iINFO << "accelMD WILL BE DONE FROM STEP" << accelMDFirstStep << "TO THE END OF THE SIMULATION \n";
+        iout << iINFO << "accelMD WILL BE DONE FROM STEP " << accelMDFirstStep << " TO THE END OF THE SIMULATION \n";
      }        
      iout << iINFO << "accelMD OUTPUT FREQUENCY " << accelMDOutFreq << "\n";
      iout << endi;
