@@ -5,7 +5,12 @@
 **/
 
 module CollectionMaster {
-  message [packed] CollectVectorMsg;
+  message CollectVectorMsg {
+    AtomID aid[];
+    Vector data[];
+    FloatVector fdata[];
+  };
+
   message [packed] DataStreamMsg;
 
   message CollectVectorVarMsg{

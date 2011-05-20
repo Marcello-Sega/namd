@@ -44,7 +44,7 @@ CollectionMaster::~CollectionMaster(void)
 void CollectionMaster::receivePositions(CollectVectorMsg *msg)
 {
 #ifndef MEM_OPT_VERSION
-  positions.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
+  positions.submitData(msg);
   delete msg;
   
   CollectVectorInstance *c;
@@ -86,7 +86,7 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
 void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
 {
 #ifndef MEM_OPT_VERSION
-  velocities.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
+  velocities.submitData(msg);
   delete msg;
 
   CollectVectorInstance *c;
@@ -126,7 +126,7 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 void CollectionMaster::receiveForces(CollectVectorMsg *msg)
 {
 #ifndef MEM_OPT_VERSION
-  forces.submitData(msg->seq,msg->aid,msg->data,msg->fdata);
+  forces.submitData(msg);
   delete msg;
 
   CollectVectorInstance *c;
@@ -179,13 +179,6 @@ void CollectionMaster::receiveDataStream(DataStreamMsg *msg) {
     fflush(dataStreamFile);
     delete msg;
 }
-
-PACK_MSG(CollectVectorMsg,
-  PACK(seq);
-  PACK_RESIZE(aid);
-  PACK_RESIZE(data);
-  PACK_RESIZE(fdata);
-)
 
 PACK_MSG(DataStreamMsg,
   PACK_RESIZE(data);

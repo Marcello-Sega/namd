@@ -220,11 +220,18 @@ void CollectionMgr::submitPositions(int seq, FullAtomList &a,
   CollectVectorInstance *c;
   if ( ( c = positions.submitData(seq,aid,d,prec) ) )
   {
-    CollectVectorMsg * msg = new CollectVectorMsg;
+    int aid_size = c->aid.size();
+    int data_size = c->data.size();
+    int fdata_size = c->fdata.size();
+    CollectVectorMsg *msg
+      = new (aid_size, data_size, fdata_size,0) CollectVectorMsg;
     msg->seq = c->seq;
-    msg->aid = c->aid;
-    msg->data = c->data;
-    msg->fdata = c->fdata;
+    msg->aid_size = aid_size;
+    msg->data_size = data_size;
+    msg->fdata_size = fdata_size;
+    memcpy(msg->aid,c->aid.begin(),aid_size*sizeof(AtomID));
+    memcpy(msg->data,c->data.begin(),data_size*sizeof(Vector));
+    memcpy(msg->fdata,c->fdata.begin(),fdata_size*sizeof(FloatVector));
     CProxy_CollectionMaster cm(master);
     cm.receivePositions(msg);
     c->free();
@@ -244,10 +251,15 @@ void CollectionMgr::submitVelocities(int seq, int zero, FullAtomList &a)
   CollectVectorInstance *c;
   if ( ( c = velocities.submitData(seq,aid,d) ) )
   {
-    CollectVectorMsg * msg = new CollectVectorMsg;
+    int aid_size = c->aid.size();
+    int data_size = c->data.size();
+    CollectVectorMsg *msg = new (aid_size, data_size, 0, 0) CollectVectorMsg;
     msg->seq = c->seq;
-    msg->aid = c->aid;
-    msg->data = c->data;
+    msg->aid_size = aid_size;
+    msg->data_size = data_size;
+    msg->fdata_size = 0;
+    memcpy(msg->aid,c->aid.begin(),aid_size*sizeof(AtomID));
+    memcpy(msg->data,c->data.begin(),data_size*sizeof(Vector));
     CProxy_CollectionMaster cm(master);
     cm.receiveVelocities(msg);
     c->free();
@@ -277,10 +289,15 @@ void CollectionMgr::submitForces(int seq, FullAtomList &a, int maxForceUsed, For
   CollectVectorInstance *c;
   if ( ( c = forces.submitData(seq,aid,d) ) )
   {
-    CollectVectorMsg * msg = new CollectVectorMsg;
+    int aid_size = c->aid.size();
+    int data_size = c->data.size();
+    CollectVectorMsg *msg = new (aid_size, data_size, 0, 0) CollectVectorMsg;
     msg->seq = c->seq;
-    msg->aid = c->aid;
-    msg->data = c->data;
+    msg->aid_size = aid_size;
+    msg->data_size = data_size;
+    msg->fdata_size = 0;
+    memcpy(msg->aid,c->aid.begin(),aid_size*sizeof(AtomID));
+    memcpy(msg->data,c->data.begin(),data_size*sizeof(Vector));
     CProxy_CollectionMaster cm(master);
     cm.receiveForces(msg);
     c->free();

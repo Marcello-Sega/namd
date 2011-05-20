@@ -22,7 +22,19 @@
 #include "ParallelIOMgr.h"
 #include "Output.h"
 
-class CollectVectorMsg;
+class CollectVectorMsg : public CMessage_CollectVectorMsg
+{
+public:
+
+  int seq;
+  int aid_size;
+  int data_size;
+  int fdata_size;
+  AtomID *aid;
+  Vector *data;
+  FloatVector *fdata;
+};
+
 class DataStreamMsg;
 
 class CollectionMaster : public Chare
@@ -189,13 +201,16 @@ public:
     }
 
     // true -> send it and delete it!
-    void append(AtomIDList &a, ResizeArray<Vector> &d, ResizeArray<FloatVector> &fd)
+    void append(CollectVectorMsg *msg)
     {
-      int size = a.size();
-      if ( d.size() ) {
+      AtomID *a = msg->aid;
+      Vector *d = msg->data;
+      FloatVector *fd = msg->fdata;
+      int size = msg->aid_size;
+      if ( msg->data_size ) {
 	for( int i = 0; i < size; ++i ) { data.item(a[i]) = d[i]; }
       }
-      if ( fd.size() ) {
+      if ( msg->fdata_size ) {
 	for( int i = 0; i < size; ++i ) { fdata.item(a[i]) = fd[i]; }
       }
       --remaining;
@@ -218,9 +233,9 @@ public:
   {
   public:
 
-    void submitData(
-	int seq, AtomIDList &i, ResizeArray<Vector> &d, ResizeArray<FloatVector> &fd)
+    void submitData(CollectVectorMsg *msg)
     {
+      int seq = msg->seq;
       CollectVectorInstance **c = data.begin();
       CollectVectorInstance **c_e = data.end();
       for( ; c != c_e && (*c)->seq != seq; ++c );
@@ -234,7 +249,7 @@ public:
         }
         (*c)->reset(seq);
       }
-      (*c)->append(i,d,fd);
+      (*c)->append(msg);
     }
 
     void enqueue(int seq, Lattice &lattice) {
@@ -295,21 +310,6 @@ private:
   void checkForceReady();
 #endif
 };
-
-class CollectVectorMsg : public CMessage_CollectVectorMsg
-{
-public:
-
-  int seq;
-  AtomIDList aid;
-  ResizeArray<Vector> data;
-  ResizeArray<FloatVector> fdata;
-
-  static void* pack(CollectVectorMsg* msg);
-  static CollectVectorMsg* unpack(void *ptr);
-
-};
-
 
 class DataStreamMsg : public CMessage_DataStreamMsg {
 public:
