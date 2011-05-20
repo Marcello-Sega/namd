@@ -10,7 +10,6 @@
 #include "Patch.h"
 
 class ProxyDataMsg;
-class ProxyAtomsMsg;
 //class ProxyAllMsg;
 
 #define PROXYMSGNOTBUFFERED 0
@@ -24,7 +23,6 @@ class ProxyPatch : public Patch
      ProxyPatch(PatchID pd);
      virtual ~ProxyPatch(void);
 
-     void receiveAtoms(ProxyAtomsMsg*);
      void receiveData(ProxyDataMsg*);
      void receiveAll(ProxyDataMsg*);
      //include gbis phase 1 data with std message

@@ -41,11 +41,6 @@ int proxyRecvSpanning	= 0;
 int proxySpanDim	= 4;
 int inNodeProxySpanDim = 16;
 
-PACK_MSG(ProxyAtomsMsg,
-  PACK(patch);
-  PACK_RESIZE(atomIDList);
-)
-
 PACK_MSG(ProxySpanningTreeMsg,
   PACK(patch);
   PACK(node);

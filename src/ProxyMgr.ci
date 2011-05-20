@@ -9,7 +9,6 @@ module ProxyMgr {
 
   message RegisterProxyMsg;
   message UnregisterProxyMsg;
-  message [packed] ProxyAtomsMsg;
 
   message [packed] ProxyResultMsg;
   message [packed] ProxySpanningTreeMsg;

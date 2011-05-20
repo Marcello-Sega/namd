@@ -68,14 +68,6 @@ public:
   PatchID patch;
 };
 
-class ProxyAtomsMsg : public CMessage_ProxyAtomsMsg {
-public:
-  PatchID patch;
-  AtomIDList atomIDList;
-  static void* pack(ProxyAtomsMsg *msg);
-  static ProxyAtomsMsg* unpack(void *ptr);
-};
-
 //1. This class represents for both msg types: one that
 //is originally known as ProxyAllMsg which is sent
 //at the step where atoms migrate; and the other is

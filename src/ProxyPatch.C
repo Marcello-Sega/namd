@@ -141,13 +141,6 @@ void ProxyPatch::boxClosed(int box) {
   }
 }
 
-void ProxyPatch::receiveAtoms(ProxyAtomsMsg *msg)
-{
-  DebugM(3, "receiveAtoms(" << patchID << ")\n");
-  numAtoms = msg->atomIDList.size();
-  delete msg;
-}
-
 //each timestep
 void ProxyPatch::receiveData(ProxyDataMsg *msg)
 {
