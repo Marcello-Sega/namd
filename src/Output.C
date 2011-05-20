@@ -47,7 +47,7 @@
 
 #define NAMD_write NAMD_write64
 // same as write, only does error checking internally
-void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg=NULL) {
+void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg="NAMD_write64") {
   while ( count ) {
 #if defined(WIN32) && !defined(__CYGWIN__)
     long retval = _write(fd,buf,count);
