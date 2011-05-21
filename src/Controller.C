@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: johanstr $
- * $Date: 2011/05/12 20:43:18 $
- * $Revision: 1.1266 $
+ * $Author: chaomei2 $
+ * $Date: 2011/05/21 22:24:25 $
+ * $Revision: 1.1267 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -309,7 +309,8 @@ extern "C" {
 }
 
 void Controller::integrate() {
-
+    char traceNote[24];
+  
     int step = simParams->firstTimestep;
 
     const int numberOfSteps = simParams->N;
@@ -337,7 +338,11 @@ void Controller::integrate() {
     printDynamicsEnergies(step);
     outputFepEnergy(step);
     outputTiEnergy(step);
-    traceUserEvent(eventEndOfTimeStep);
+    if(traceIsOn()){
+        traceUserEvent(eventEndOfTimeStep);
+        sprintf(traceNote, "s:%d", step);
+        traceUserSuppliedNote(traceNote);
+    }
     outputExtendedSystem(step);
     rebalanceLoad(step);
 
@@ -363,7 +368,11 @@ void Controller::integrate() {
         printDynamicsEnergies(step);
         outputFepEnergy(step);
         outputTiEnergy(step);
-        traceUserEvent(eventEndOfTimeStep);
+        if(traceIsOn()){
+            traceUserEvent(eventEndOfTimeStep);
+            sprintf(traceNote, "s:%d", step);
+            traceUserSuppliedNote(traceNote);
+        }
   // if (gotsigint) {
   //   iout << iINFO << "Received SIGINT; shutting down.\n" << endi;
   //   NAMD_quit();

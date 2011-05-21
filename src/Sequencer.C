@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: johanstr $
- * $Date: 2011/05/10 21:28:44 $
- * $Revision: 1.1197 $
+ * $Author: chaomei2 $
+ * $Date: 2011/05/21 22:24:26 $
+ * $Revision: 1.1198 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -142,8 +142,12 @@ void Sequencer::algorithm(void)
 }
 
 
-void Sequencer::integrate() {
+extern int eventEndOfTimeStep;
 
+void Sequencer::integrate() {
+    char traceNote[24];
+    char tracePrefix[20];
+    sprintf(tracePrefix, "p:%d,s:",patch->patchID);
 //    patch->write_tip4_props();
 
     int &step = patch->flags.step;
@@ -270,6 +274,11 @@ void Sequencer::integrate() {
 		addForceToMomentum(-0.5*slowstep,Results::slow,staleForces,1);
     }
     submitReductions(step);
+    if(traceIsOn()){
+        traceUserEvent(eventEndOfTimeStep);
+        sprintf(traceNote, "%s%d",tracePrefix,step); 
+        traceUserSuppliedNote(traceNote);
+    }
     rebalanceLoad(step);
 
     for ( ++step; step <= numberOfSteps; ++step )
@@ -411,6 +420,11 @@ void Sequencer::integrate() {
 	 }
 #endif
 	  
+        if(traceIsOn()){
+            traceUserEvent(eventEndOfTimeStep);
+            sprintf(traceNote, "%s%d",tracePrefix,step); 
+            traceUserSuppliedNote(traceNote);
+        }
 	rebalanceLoad(step);
 
 #if PME_BARRIER
