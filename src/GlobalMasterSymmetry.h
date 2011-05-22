@@ -26,12 +26,13 @@ private:
   bool gluInvertMatrix(const BigReal [16], BigReal invOut[16]);
   void initialTransform();
   void backTransform();
-  void alignMonomers();
+ // void alignMonomers();
   void determineAverage();  
   void parseMatrix(int, char fileName []);
   void calculate();
   void parseAtoms(const char *file, int);
 
+  std::map <int, Position> positions;
   std::map <int, std::vector < BigReal * > > averagePos;
   std::map <int, BigReal *> backavg;
   std::map <int, std::vector<int>  > dmap;

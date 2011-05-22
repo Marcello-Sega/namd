@@ -442,10 +442,13 @@ groups are used for denoting monomers of the same type.  These groups will be tr
 matrices in their own {\tt symmetryMatrixFile} and averaged separetely from other groups.  
 The designation in the occupancy column should be an integer value starting at 1 and proceeding
 in ascending order, mirroring the order of the corresponding matrix file within the configuration file
-(e.g. the first symmetryMatrixFile contains the matrices for symmetry group 1).
+(e.g. the first symmetryMatrixFile contains the matrices for symmetry group 1).  
 The value in the atom's beta column represents its monomer designation.  This should be an integer
 value starting at 1 and proceeding in ascending order, relative to the order of the corresponding
 transformation matrix found in the symmetry group's {\tt symmetryMatrixFile}.
+If an atom is contained in more than one symmetry group, additional pdb files can be listed.
+These pdb files should follow the same rules as the first one (unique group and monomer identifiers
+in increasing order).  
 }
 
 \item

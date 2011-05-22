@@ -70,7 +70,11 @@ GlobalMasterSymmetry::GlobalMasterSymmetry() {
     NAMD_die("symmetryLastStep must be specified if symmetryScaleForces is enabled!");
   }
   StringList *matrixList = Node::Object()->configList->find("symmetryMatrixFile");
-  parseAtoms(params->symmetryFile, Node::Object()->molecule->numAtoms);
+  StringList *symmetryList = Node::Object()->configList->find("symmetryFile");
+  for (; symmetryList; symmetryList = symmetryList->next) {  
+    parseAtoms(symmetryList->data, Node::Object()->molecule->numAtoms);
+  }
+
   map<int, vector<int> >::iterator it = simmap.begin();
   if (!matrixList) {initialTransform();}
   for (; matrixList; matrixList = matrixList->next, ++it){
@@ -82,6 +86,7 @@ GlobalMasterSymmetry::GlobalMasterSymmetry() {
 
 //Aligns monomers based on transformation matrices
 //found in matrix file
+/*
 void GlobalMasterSymmetry::alignMonomers(){
   //this is assuming the matrices are written
   //in order of monomer id designation (0, 1, 2,..etc)
@@ -96,7 +101,7 @@ void GlobalMasterSymmetry::alignMonomers(){
   }
   }
 }
-
+*/
 bool GlobalMasterSymmetry::gluInvertMatrix(const BigReal m[16], BigReal invOut[16])
 {
   BigReal inv[16], det;
@@ -234,8 +239,7 @@ void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
           PDBCoreData *atomk = kpdb.atom(i);
         #else
           PDBAtom *atomk = kpdb.atom(i); // get an atom from the file
-        #endif
-        
+        #endif 
         kmap[i] = atomk->occupancy();
       }
       BigReal *arr = new BigReal [3];
@@ -288,9 +292,26 @@ void GlobalMasterSymmetry::determineAverage() {
      delit->second.erase(delit->second.begin(), delit->second.end());
    }
 
+   //std::map <int, BigReal * > posmap;
    map <int, BigReal *>::iterator posit;
    map <int, vector<int> >::iterator simit = simmap.begin();
-   for (; simit != simmap.end(); ++simit){
+   for (; simit != simmap.end(); ++simit){     
+    
+    map <int, BigReal *>::iterator pit = posmap.begin();
+    for (; pit != posmap.end(); ++pit){delete [] pit->second;}
+    posmap.clear();
+
+    map <int, vector<int> >::iterator dit = dmap.begin();
+    for (; dit!=dmap.end(); ++dit){
+      for (int i = 0; i < dit->second.size(); i++){
+        BigReal* arr = new BigReal[3];
+        arr[0] = positions[dit->second[i]].x;
+        arr[1] = positions[dit->second[i]].y;
+        arr[2] = positions[dit->second[i]].z;
+
+        posmap[dit->second[i]] = arr;
+      } 
+    }
     averagePos[simit->first] = vector <BigReal *> (); 
     map <int, vector<int> >::iterator it = dmap.begin();
     map <int, vector<int> >::iterator sit = dmap.find(simit->second[0]);
@@ -303,6 +324,7 @@ void GlobalMasterSymmetry::determineAverage() {
       for (; it!=dmap.end(); ++it){
         if (std::find(simit->second.begin(), simit->second.end(), it->first)!=simit->second.end()){
           posit = posmap.find(it->second[i]);
+          matrices[(it->first)-1].multpoint(posit->second);
           arr[0] += posit->second[0];
           arr[1] += posit->second[1];
           arr[2] += posit->second[2];
@@ -363,7 +385,7 @@ void GlobalMasterSymmetry::calculate() {
     return;
   }
 
-  map<int, Position> positions;
+  //map<int, Position> positions;
   AtomIDList::const_iterator a_i = getAtomIdBegin();
   AtomIDList::const_iterator a_e = getAtomIdEnd();
   PositionList::const_iterator p_i = getAtomPositionBegin();
@@ -375,12 +397,13 @@ void GlobalMasterSymmetry::calculate() {
   }
 
   map <int, vector<int> >::iterator it;
-  map <int, BigReal *>::iterator pit = posmap.begin();
-  for (; pit != posmap.end(); ++pit){delete [] pit->second;}
+  //map <int, BigReal *>::iterator pit = posmap.begin();
+  //for (; pit != posmap.end(); ++pit){delete [] pit->second;}
 
-  posmap.clear();
-  for (it = dmap.begin(); it != dmap.end(); ++it){
+ // posmap.clear();
+  //for (it = dmap.begin(); it != dmap.end(); ++it){
     // fetch the current coordinates
+    /*
     for (int i = 0; i < it->second.size(); i++){
 
       BigReal* arr = new BigReal[3];
@@ -391,8 +414,8 @@ void GlobalMasterSymmetry::calculate() {
       posmap[it->second[i]] = arr;
     } 
 }
-
-  alignMonomers();
+*/
+//  alignMonomers();
   determineAverage();
   backTransform();
 

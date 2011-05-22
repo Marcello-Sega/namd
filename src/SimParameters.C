@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2011/05/19 14:30:35 $
- * $Revision: 1.1359 $
+ * $Author: ryanmcgreevy $
+ * $Date: 2011/05/22 07:36:40 $
+ * $Revision: 1.1360 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1311,7 +1311,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.range("symmetryk", NOT_NEGATIVE);
    opts.optional("symmetryRestraints", "symmetrykfile", "PDB file specifying force contants on a per-atom basis", symmetrykfile);
    opts.optionalB("symmetryRestraints", "symmetryScaleForces", "Scale applied forces over time?", &symmetryScaleForces, FALSE);
-   opts.require("symmetryRestraints", "symmetryFile", "File for symmetry information", symmetryFile);
+   opts.require("symmetryRestraints", "symmetryFile", "File for symmetry information", PARSE_MULTIPLES);
    opts.optional("symmetryRestraints", "symmetryMatrixFile", "File(s) for transfromation matrices", PARSE_MULTIPLES);
    opts.optional("symmetryRestraints", "symmetryLastStep", "Last symmetry timestep", &symmetryLastStep, -1);
    opts.optional("symmetryRestraints", "symmetryFirstStep", "First symmetry step (default 0)", &symmetryFirstStep, 0);
@@ -3892,7 +3892,12 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      else{
        iout << iINFO << "SYMMETRY RESTRAINTS ACTIVE BETWEEN STEPS " << symmetryFirstStep << " and " << symmetryLastStep << "\n";
      }
-     iout << iINFO << "SYMMETRY FILE " << symmetryFile << "\n";
+    // iout << iINFO << "SYMMETRY FILE " << symmetryFile << "\n";
+
+     current = config->find("symmetryFile");
+     for ( ; current; current = current->next ) {
+       iout << iINFO << "SYMMETRY FILE  " << current->data << "\n";
+     }
 
      current = config->find("symmetryMatrixFile");
      for ( ; current; current = current->next ) {
