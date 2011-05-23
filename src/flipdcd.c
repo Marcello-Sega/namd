@@ -8,6 +8,8 @@
 /* and to process multiple files.                                   */
 /* D. Barsky March 2002 LLNL                                        */
 
+#include "largefiles.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/mman.h>
