@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: ryanmcgreevy $
- * $Date: 2011/05/22 07:36:40 $
- * $Revision: 1.1360 $
+ * $Author: jim $
+ * $Date: 2011/05/23 20:15:55 $
+ * $Revision: 1.1361 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1943,7 +1943,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      CmiAssert(filelen+dirlen <= 120); //leave 8 chars for file suffix
      memcpy(outputFilename, namdWorkDir, dirlen);
      memcpy(outputFilename+dirlen, tmpout, filelen);
-     outputFilename[filelen+dirlen+1] = 0;     
+     outputFilename[filelen+dirlen] = 0;     
      delete [] tmpout;
    }
    delete [] namdWorkDir;
