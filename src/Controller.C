@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/05/21 22:24:25 $
- * $Revision: 1.1267 $
+ * $Author: jim $
+ * $Date: 2011/05/23 23:41:57 $
+ * $Revision: 1.1268 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1764,8 +1764,8 @@ void Controller::adaptTempUpdate(int step, int minimize)
              << " TEMP "   << adaptTempT
              << " ENERGY " << std::setprecision(10) << potentialEnergy   
              << " ENERGYAVG " << std::setprecision(10) << potEnergyAverage
-             << " ENERGYVAR " << std::setprecision(10) << potEnergyVariance
-             << "\n" << endi;
+             << " ENERGYVAR " << std::setprecision(10) << potEnergyVariance;
+        iout << "\n" << endi;
    }
    
 }
