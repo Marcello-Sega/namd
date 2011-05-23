@@ -309,12 +309,14 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::fromRaw(ProxyCombinedResultRawMs
   #endif
   msg->patch = ptr->patch;
 
+  char *nonzero = ptr->isForceNonZero;
+  Force* farr = ptr->forceArr;
+
   for ( int j = 0; j < Results::maxNumForces; ++j ) {
     int array_size = ptr->flLen[j];
     msg->forceList[j].resize(array_size);
-        char *nonzero = ptr->isForceNonZero;
-    Force* farr = ptr->forceArr;
     Force* f = msg->forceList[j].begin();
+
     for ( int i = 0; i < array_size; ++i, nonzero++ ) {
       if ( *nonzero ) {
                 f[i].x = farr->x;
@@ -660,6 +662,8 @@ static int noInterNode(int p)
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
 //only on PE 0
 void ProxyMgr::buildNodeAwareSpanningTree0(){
+	CkPrintf("Info: build node-aware spanning tree with send: %d, recv: %d with branch factor %d\n", 
+			 proxySendSpanning, proxyRecvSpanning, proxySpanDim);
     int numPatches = PatchMap::Object()->numPatches();
     if (ptree.naTrees == NULL) ptree.naTrees = new proxyTreeNodeList[numPatches];
     for (int pid=0; pid<numPatches; pid++)     
@@ -918,6 +922,9 @@ void ProxyMgr::buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &pr
 void 
 ProxyMgr::buildSpanningTree0()
 {
+	CkPrintf("Info: build spanning tree with send: %d, recv: %d with branch factor %d\n", 
+			 proxySendSpanning, proxyRecvSpanning, proxySpanDim);
+
   int i;
 
   processCpuLoad();
@@ -1352,7 +1359,8 @@ void ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
 	ProxyCombinedResultRawMsg *cMsg = ProxyCombinedResultMsg::toRaw(ocMsg);        
     int destPe = patch->getSpanningTreeParent();
     CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
-    if(destPe != CkMyPe()) {
+    CmiAssert(destPe!=CkMyPe());
+    //if(destPe != CkMyPe()) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
       /*CkPrintf("ready to call node::recvImmRes on pe[%d] to dest[%d]\n", CkMyPe(), destPe);
       fflush(stdout);*/
@@ -1363,10 +1371,11 @@ void ProxyMgr::sendResults(ProxyCombinedResultMsg *msg) {
 #else
       cp[destPe].recvImmediateResults(cMsg);
 #endif
-    }
-    else{
-      cp[destPe].recvResults(cMsg);
-    }
+    //}
+    //else{
+    ////IT SHOULD NEVER BE ENTERED
+    //  cp[destPe].recvResults(cMsg);
+    //}
   }
 }
 
@@ -1435,7 +1444,7 @@ void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultRawMsg *omsg){
     }
     else {
         ProxyPatch *patch = (ProxyPatch *)pmap->patch(msg->patch);
-        ProxyCombinedResultMsg *ocMsg = patch->depositCombinedResultMsgNew(msg); 
+        ProxyCombinedResultMsg *ocMsg = patch->depositCombinedResultRawMsg(msg); 
         if (ocMsg) {
             CProxy_NodeProxyMgr cnp(thisgroup);
             cMsg->destPe = patch->getSpanningTreeParent();
