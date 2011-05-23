@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2011/05/23 20:15:55 $
- * $Revision: 1.1361 $
+ * $Date: 2011/05/23 21:05:06 $
+ * $Revision: 1.1362 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1933,9 +1933,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    }
 
    //deal with output file name to make it absolute path for parallel output
-   //TODO: files that have names not starting with outputFilename
-   //should also get such processing, such as the name for dcd file
-   //if it is specified in the configuration file. --Chao Mei 
    if(outputFilename[0] != '/' && outputFilename[0]!='~') {
      filelen = strlen(outputFilename);
      char *tmpout = new char[filelen];
@@ -1946,6 +1943,55 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      outputFilename[filelen+dirlen] = 0;     
      delete [] tmpout;
    }
+
+   if ( dcdFrequency && opts.defined("dcdfile") &&
+        dcdFilename[0] != '/' && dcdFilename[0]!='~' ) {
+     filelen = strlen(dcdFilename);
+     char *tmpout = new char[filelen];
+     memcpy(tmpout, dcdFilename, filelen);
+     CmiAssert(filelen+dirlen <= 120); //leave 8 chars for file suffix
+     memcpy(dcdFilename, namdWorkDir, dirlen);
+     memcpy(dcdFilename+dirlen, tmpout, filelen);
+     dcdFilename[filelen+dirlen] = 0;     
+     delete [] tmpout;
+   }
+
+   if ( velDcdFrequency && opts.defined("veldcdfile") &&
+        velDcdFilename[0] != '/' && velDcdFilename[0]!='~' ) {
+     filelen = strlen(velDcdFilename);
+     char *tmpout = new char[filelen];
+     memcpy(tmpout, velDcdFilename, filelen);
+     CmiAssert(filelen+dirlen <= 120); //leave 8 chars for file suffix
+     memcpy(velDcdFilename, namdWorkDir, dirlen);
+     memcpy(velDcdFilename+dirlen, tmpout, filelen);
+     velDcdFilename[filelen+dirlen] = 0;     
+     delete [] tmpout;
+   }
+
+   if ( forceDcdFrequency && opts.defined("forcedcdfile") &&
+        forceDcdFilename[0] != '/' && forceDcdFilename[0]!='~' ) {
+     filelen = strlen(forceDcdFilename);
+     char *tmpout = new char[filelen];
+     memcpy(tmpout, forceDcdFilename, filelen);
+     CmiAssert(filelen+dirlen <= 120); //leave 8 chars for file suffix
+     memcpy(forceDcdFilename, namdWorkDir, dirlen);
+     memcpy(forceDcdFilename+dirlen, tmpout, filelen);
+     forceDcdFilename[filelen+dirlen] = 0;     
+     delete [] tmpout;
+   }
+
+   if ( restartFrequency && opts.defined("restartname") &&
+        restartFilename[0] != '/' && restartFilename[0]!='~' ) {
+     filelen = strlen(restartFilename);
+     char *tmpout = new char[filelen];
+     memcpy(tmpout, restartFilename, filelen);
+     CmiAssert(filelen+dirlen <= 120); //leave 8 chars for file suffix
+     memcpy(restartFilename, namdWorkDir, dirlen);
+     memcpy(restartFilename+dirlen, tmpout, filelen);
+     restartFilename[filelen+dirlen] = 0;     
+     delete [] tmpout;
+   }
+
    delete [] namdWorkDir;
 
    if (opts.defined("numinputprocs")) {	
