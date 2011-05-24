@@ -424,7 +424,8 @@ This allows the user to specify the constant on a per-atom basis.}
 
 \item
 \NAMDCONF{symmetrykFile}{pdb containing per atom force constants}{Path to pdb file}
-{pdb where the occupancy column specifies the per atom force constants.}
+{pdb where the occupancy column specifies the per atom force constants.  If using overlapping
+symmetry groups, you must include one additional {\tt symmetrykfile} per {\tt symmetryFile} }
 
 \item
 \NAMDCONFWDEF{symmetryScaleForces}{Scale symmetry restraints over time}{{\tt on} or {\tt off}}{{\tt off}}

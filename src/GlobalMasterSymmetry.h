@@ -30,9 +30,10 @@ private:
   void determineAverage();  
   void parseMatrix(int, char fileName []);
   void calculate();
-  void parseAtoms(const char *file, int);
+  void parseAtoms(const char *file, int, int);
 
-  std::map <int, Position> positions;
+  std::map <int, std::map <int, int> > kdmap; //domain/atomid/k
+  std::map <int, Position> positions; //atomid/position
   std::map <int, std::vector < BigReal * > > averagePos;
   std::map <int, BigReal *> backavg;
   std::map <int, std::vector<int>  > dmap;

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/05/23 21:05:06 $
- * $Revision: 1.1362 $
+ * $Author: ryanmcgreevy $
+ * $Date: 2011/05/24 02:56:04 $
+ * $Revision: 1.1363 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1309,7 +1309,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.optionalB("main", "symmetryRestraints", "Enable symmetry restraints?", &symmetryOn, FALSE); 
    opts.optional("symmetryRestraints", "symmetryk", "Elastic constant for symmetry restraints", &symmetryk, 0);
    opts.range("symmetryk", NOT_NEGATIVE);
-   opts.optional("symmetryRestraints", "symmetrykfile", "PDB file specifying force contants on a per-atom basis", symmetrykfile);
+   opts.optional("symmetryRestraints", "symmetrykfile", "PDB file specifying force contants on a per-atom basis", PARSE_MULTIPLES);
    opts.optionalB("symmetryRestraints", "symmetryScaleForces", "Scale applied forces over time?", &symmetryScaleForces, FALSE);
    opts.require("symmetryRestraints", "symmetryFile", "File for symmetry information", PARSE_MULTIPLES);
    opts.optional("symmetryRestraints", "symmetryMatrixFile", "File(s) for transfromation matrices", PARSE_MULTIPLES);

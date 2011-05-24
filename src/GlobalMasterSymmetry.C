@@ -61,9 +61,12 @@ GlobalMasterSymmetry::GlobalMasterSymmetry() {
   firstFullStep = params->symmetryFirstFullStep;
   lastFullStep = params->symmetryLastFullStep;
   K = params->symmetryk;
+
+  StringList *klist = Node::Object()->configList->find("symmetrykfile");
   if (!K){
-    if (!params->symmetrykfile){NAMD_die("A pdb file containing per-atom force constants must be specified if symmetryk is not in configuration file!");}
-    symmetrykfile = params->symmetrykfile;
+    //if (!params->symmetrykfile){NAMD_die("A pdb file containing per-atom force constants must be specified if symmetryk is not in configuration file!");}
+    if (!klist){NAMD_die("A pdb file containing per-atom force constants must be specified if symmetryk is not in configuration file!");}
+    //symmetrykfile = params->symmetrykfile;
   }
   scaleForces = params->symmetryScaleForces;
   if (scaleForces && lastStep == -1){
@@ -71,8 +74,14 @@ GlobalMasterSymmetry::GlobalMasterSymmetry() {
   }
   StringList *matrixList = Node::Object()->configList->find("symmetryMatrixFile");
   StringList *symmetryList = Node::Object()->configList->find("symmetryFile");
+  int symfileindex = 0;
+  if (!K) {symmetrykfile = klist->data;}
   for (; symmetryList; symmetryList = symmetryList->next) {  
-    parseAtoms(symmetryList->data, Node::Object()->molecule->numAtoms);
+    parseAtoms(symmetryList->data, Node::Object()->molecule->numAtoms, symfileindex);
+    if(!K){
+      klist = klist->next;
+     if (klist){ symmetrykfile = klist->data;}
+    }
   }
 
   map<int, vector<int> >::iterator it = simmap.begin();
@@ -207,7 +216,7 @@ void GlobalMasterSymmetry::initialTransform(){
   }
 }
 
-void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
+void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms, int symfileindex) {
   DebugM(3,"parseAtoms called\n");
   PDB tmdpdb(file);
   int numatoms = tmdpdb.num_atoms();
@@ -215,8 +224,8 @@ void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
     NAMD_die("No atoms found in symmetryFile\n");
   if (numatoms != numTotalAtoms)
     NAMD_die("The number of atoms in symmetryFile must be equal to the total number of atoms in the structure!");
-  if ( modifyRequestedAtoms().size() )
-    NAMD_bug("GlobalMasterSymmetry::parseAtoms() modifyRequestedAtoms() not empty");
+ // if ( modifyRequestedAtoms().size() )
+ //   NAMD_bug("GlobalMasterSymmetry::parseAtoms() modifyRequestedAtoms() not empty");
 
   Vector * atompos = new Vector[numatoms];  
   tmdpdb.get_all_positions(atompos);
@@ -240,7 +249,8 @@ void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
         #else
           PDBAtom *atomk = kpdb.atom(i); // get an atom from the file
         #endif 
-        kmap[i] = atomk->occupancy();
+        //kmap[i] = atomk->occupancy();
+        kdmap[atom->temperaturefactor()][i] = atomk->occupancy();
       }
       BigReal *arr = new BigReal [3];
       arr[0] = atompos[i].x;
@@ -284,6 +294,7 @@ void GlobalMasterSymmetry::parseAtoms(const char *file, int numTotalAtoms) {
 }
 
 void GlobalMasterSymmetry::determineAverage() {
+
    map <int, vector<BigReal *> >::iterator delit = averagePos.begin();
    for (; delit != averagePos.end(); ++delit){
      for (int i = 0; i < delit->second.size(); i++){
@@ -291,12 +302,12 @@ void GlobalMasterSymmetry::determineAverage() {
      }
      delit->second.erase(delit->second.begin(), delit->second.end());
    }
-
    //std::map <int, BigReal * > posmap;
    map <int, BigReal *>::iterator posit;
    map <int, vector<int> >::iterator simit = simmap.begin();
    for (; simit != simmap.end(); ++simit){     
     
+
     map <int, BigReal *>::iterator pit = posmap.begin();
     for (; pit != posmap.end(); ++pit){delete [] pit->second;}
     posmap.clear();
@@ -304,12 +315,15 @@ void GlobalMasterSymmetry::determineAverage() {
     map <int, vector<int> >::iterator dit = dmap.begin();
     for (; dit!=dmap.end(); ++dit){
       for (int i = 0; i < dit->second.size(); i++){
-        BigReal* arr = new BigReal[3];
-        arr[0] = positions[dit->second[i]].x;
-        arr[1] = positions[dit->second[i]].y;
-        arr[2] = positions[dit->second[i]].z;
+        if (std::find(simit->second.begin(), simit->second.end(), dit->first)!=simit->second.end()){
 
-        posmap[dit->second[i]] = arr;
+          BigReal* arr = new BigReal[3];
+          arr[0] = positions[dit->second[i]].x;
+          arr[1] = positions[dit->second[i]].y;
+          arr[2] = positions[dit->second[i]].z;
+
+          posmap[dit->second[i]] = arr;
+        }
       } 
     }
     averagePos[simit->first] = vector <BigReal *> (); 
@@ -338,14 +352,17 @@ void GlobalMasterSymmetry::determineAverage() {
       averagePos[simit->first].push_back(avg);
       delete [] arr;
     }
+    
    }
+
 }
 
 void GlobalMasterSymmetry::backTransform(){
-  map <int, vector<int> >::iterator it = dmap.begin();
   map <int, BigReal *>::iterator bit = backavg.begin();
   for (; bit != backavg.end(); ++bit){delete [] bit->second;}
   backavg.clear();
+
+  map <int, vector<int> >::iterator it = dmap.begin();
   for (; it!=dmap.end(); ++it){
     map<int, int >::iterator bmit = bmap.find(it->first);
     int bm = bmit->second;
@@ -369,6 +386,7 @@ void GlobalMasterSymmetry::backTransform(){
     }
     backavg[it->first] = avg;
    }
+
 }
 GlobalMasterSymmetry::~GlobalMasterSymmetry() { 
   map <int, BigReal *>::iterator pit = posmap.begin();
@@ -403,18 +421,18 @@ void GlobalMasterSymmetry::calculate() {
  // posmap.clear();
   //for (it = dmap.begin(); it != dmap.end(); ++it){
     // fetch the current coordinates
-    /*
-    for (int i = 0; i < it->second.size(); i++){
+    
+    //for (int i = 0; i < it->second.size(); i++){
 
-      BigReal* arr = new BigReal[3];
-      arr[0] = positions[it->second[i]].x;
-      arr[1] = positions[it->second[i]].y;
-      arr[2] = positions[it->second[i]].z;
+      //BigReal* arr = new BigReal[3];
+      //arr[0] = positions[it->second[i]].x;
+      //arr[1] = positions[it->second[i]].y;
+      //arr[2] = positions[it->second[i]].z;
 
-      posmap[it->second[i]] = arr;
-    } 
-}
-*/
+     // posmap[it->second[i]] = arr;
+   // } 
+//}
+
 //  alignMonomers();
   determineAverage();
   backTransform();
@@ -434,9 +452,10 @@ void GlobalMasterSymmetry::calculate() {
   BigReal *tmpavg = backavg[it->first];
 
   for (int i=0; i<it->second.size(); i++) {
-    BigReal k;  
+    BigReal k; 
     if(!K){
-     k = kmap[it->second[i]];  
+     //k = kmap[it->second[i]];  
+     k = kdmap[it->first][it->second[i]];
     }
     else{
      k = K/it->second.size();  
@@ -471,5 +490,6 @@ void GlobalMasterSymmetry::calculate() {
   } 
   delete [] curpos;
  }
+   
   currentStep++;
 }
