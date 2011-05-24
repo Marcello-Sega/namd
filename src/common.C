@@ -123,7 +123,7 @@ void NAMD_backup_file(const char *filename, const char *extension)
     strcpy(backup, filename);
     strcat(backup, extension);
 #if defined(WIN32) && !defined(__CYGWIN__)
-    if ( remove(backup) ) {
+    if ( remove(backup) ) if ( errno != ENOENT ) {
       char *sys_err_msg = strerror(errno);
       if ( ! sys_err_msg ) sys_err_msg = "(unknown error)";
       iout << iERROR << "Error on removing file "
