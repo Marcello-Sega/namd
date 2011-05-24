@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 int fd1, fd2;
 struct stat statbuf;
 int i, j, n1, n2;
-long int s1, s2;
+off_t s1, s2;
 double dmax;
 
 if ( argc != 3 ) {
@@ -43,7 +43,7 @@ if ( (s1 < 4) || ((s1-4) % 24) ) {
 
 read(fd1,&n1,4);
 
-if ( s1 != 4 + (long int)n1 * 24 ) {
+if ( s1 != 4 + (off_t)n1 * 24 ) {
   fprintf(stderr,"Size %ld of %s is not 4 plus %d times 24.\n",s1,argv[1],n1);
   exit(-1);
 }
@@ -67,7 +67,7 @@ if ( (s2 < 4) || ((s2-4) % 24) ) {
 
 read(fd2,&n2,4);
 
-if ( s2 != 4 + (long int)n2 * 24 ) {
+if ( s2 != 4 + (off_t)n2 * 24 ) {
   fprintf(stderr,"Size %ld of %s is not 4 plus %d times 24.\n",s2,argv[2],n2);
   exit(-1);
 }

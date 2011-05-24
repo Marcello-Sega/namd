@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 
 int fd;
 struct stat statbuf;
-long int n;
+off_t n;
 int i, j, isbig, itmp, argcount=0;
 int status_only=0, make_big_only=0, make_little_only=0;
 char b[8];
@@ -141,7 +141,7 @@ while (++argcount < argc){
       FLIPFOUR;  /* 84 */
       FLIPFOUR;  /* TITLE SIZE */
       READINT(itmp); FLIPFOUR;  /* NTITLE */
-      if ( n <= (80*(long int)itmp + 4) ) {
+      if ( n <= (80*(off_t)itmp + 4) ) {
         fprintf(stderr,"%s is too short for DCD format.\n",argv[argcount]);
         goto end;
       }

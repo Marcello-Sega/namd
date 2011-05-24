@@ -20,7 +20,8 @@ int main(int argc, char *argv[]) {
 
 int fd;
 struct stat statbuf;
-int i, j, n, isbig, itmp;
+int i, j, isbig, itmp;
+off_t n;
 double delta;
 float delta4;
 char b[8];

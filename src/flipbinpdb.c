@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 
 int fd;
 struct stat statbuf;
-long int i, j, n;
+off_t i, j, n;
 char b[8];
 char *d;
 
