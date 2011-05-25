@@ -74,6 +74,11 @@ while (++argcount < argc){
         fprintf(stderr,"%s is not in DCD format.\n",argv[argcount]);
         goto end;
       }
+
+      if ( ( sizeof(char*) < 8 ) && ( n >> 32 ) ) {
+        fprintf(stderr,"%s is too large, 64-bit build required\n",argv[argcount]);
+        goto end;
+      }
       
       if ( n % 4 ) {
         fprintf(stderr,"%s is not in DCD format.\n",argv[argcount]);
