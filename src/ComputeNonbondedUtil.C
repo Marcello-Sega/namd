@@ -267,6 +267,9 @@ void ComputeNonbondedUtil::select(void)
   }
 
   if ( alchFepOn ) {
+#ifdef NAMD_CUDA
+    NAMD_die("Alchemical free-energy perturbation is not supported in CUDA version");
+#endif
     alchLambda = simParams->alchLambda;
     alchLambda2 = simParams->alchLambda2;
     ComputeNonbondedUtil::calcPair = calc_pair_energy_fep;
@@ -286,6 +289,9 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowSelf = calc_self_energy_slow_fullelect_fep;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_fep;
   }  else if ( alchThermIntOn ) {
+#ifdef NAMD_CUDA
+    NAMD_die("Alchemical thermodynamic integration is not supported in CUDA version");
+#endif
     alchLambda = simParams->alchLambda;
     ComputeNonbondedUtil::calcPair = calc_pair_ti;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_ti;
@@ -304,6 +310,9 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_ti;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_ti;
   } else if ( lesOn ) {
+#ifdef NAMD_CUDA
+    NAMD_die("Locally enhanced sampling is not supported in CUDA version");
+#endif
     lesFactor = simParams->lesFactor;
     lesScaling = 1.0 / (double)lesFactor;
     lambda_table = new BigReal[(lesFactor+1)*(lesFactor+1)];
@@ -337,6 +346,9 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_les;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_les;
   } else if ( pressureProfileOn) {
+#ifdef NAMD_CUDA
+    NAMD_die("Pressure profile calculation is not supported in CUDA version");
+#endif
     pressureProfileSlabs = simParams->pressureProfileSlabs;
     pressureProfileAtomTypes = simParams->pressureProfileAtomTypes;
 
@@ -357,6 +369,9 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_pprof;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_pprof;
   } else if ( pairInteractionOn ) {
+#ifdef NAMD_CUDA
+    NAMD_die("Pair interaction calculation is not supported in CUDA version");
+#endif
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_int;
     ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_int;
     ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_int;
@@ -364,6 +379,9 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_int;
     ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_int;
   } else if ( tabulatedEnergies ) {
+#ifdef NAMD_CUDA
+    NAMD_die("Tabulated energies is not supported in CUDA version");
+#endif
     ComputeNonbondedUtil::calcPair = calc_pair_tabener;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_tabener;
     ComputeNonbondedUtil::calcSelf = calc_self_tabener;
