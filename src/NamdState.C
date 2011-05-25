@@ -332,11 +332,6 @@ int NamdState::configListInit(ConfigList *cfgList) {
       iout << iINFO << "\n" << endi;
   }
 
-  StringList *binCoordinateFilename = configList->find("bincoordinates");
-  if ( binCoordinateFilename ) {
-    read_binary_coors(binCoordinateFilename->data, pdb);
-  }
-
 	//  If constraints are active, build the parameters necessary
 	if (simParameters->constraintsOn)
 	{
@@ -666,6 +661,11 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	iout << iINFO << "*****************************\n";
 	iout << endi;
         fflush(stdout);
+
+  StringList *binCoordinateFilename = configList->find("bincoordinates");
+  if ( binCoordinateFilename ) {
+    read_binary_coors(binCoordinateFilename->data, pdb);
+  }
 
   DebugM(4, "::configFileInit() - printing Molecule Information\n");
 
