@@ -141,6 +141,119 @@ The boost potential $dV$ can be used to reconstruct the ensemble average describ
 
 \end{itemize}
 
+\subsection{Adaptive Tempering}
+\label{section:adapttemp}
+Adaptive tempering is akin to a single-copy replica exchange method for dynamically updating the simulation temperature. The temperature $T$ is a new random variable in the range $[Tmin,Tmax]$ that is governed by the equation $dE/dT = E-E(T)-1/T+sqrt(2)T\xi$, where $\xi$ is Gaussian white noise. The effect is that when the potential energy for a given structure is lower than the (so far calculated) average energy, the temperature is lowered. Conversely when the current energy is higher than the average energy, the temperature is raised. The effect is faster conformational sampling to find minimum energy structures. The method is implemented exactly as described by Zhang and Ma in J. Chem. Phys. 132, 244101 (2010) (using Equation 18 of their paper to calculate the average energy at a given temperature from the histogram of energies). 
+
+The dynamic temperature is realized either by changing the temperature of the Langevin thermostat or by velocity rescaling. 
+
+\subsubsection{NAMD parameters}
+
+The following parameters are used to adaptive tempering:
+
+\begin{itemize}
+
+\item
+\NAMDCONFWDEF{adaptTempMD}{Is adaptive tempering active?}{{\tt on} or {\tt
+off}}{{\tt off}}
+{Specifies whether or not adaptive tempering is used. If set to on then the following parameters are required to be set: either all of ({\tt adaptTempTmin}, {\tt adaptTempTmax}, {\tt adaptTempBins}, {\tt adaptTempDt}) or {\tt adaptTempInFile} (but not both).
+}
+
+\item
+\NAMDCONFWDEF{adaptTempFreq}{steps between temperature updates}
+{Positive integers}{10}
+{The number of steps between temperature updates. Note that the potential energy at the current is calculated and added to the temperature-energy histogram at every step.
+}
+
+\item
+\NAMDCONF{adaptTempTmin}{minimum temperature (K)}
+{Positive real number} 
+{Sets the minimum temperature to be used in the simulation.
+}
+
+\item
+\NAMDCONF{adaptTempTmax}{maximum temperature (K)}
+{Positive real number}
+{Sets the maximum temperature to be used in the simulation.
+}
+
+\item
+\NAMDCONFWDEF{adaptTempBins}{number of temperature bins}
+{Positive integer}{1000}
+{Sets the number of bins to subdivide the temperature range. Each bin stores the average energy for the given temperature 
+}
+
+\item
+\NAMDCONFWDEF{adaptTempDt}{stepsize for temperature updates}{Positive real numbers}{$10^{-4}$}
+{Integration timestep for temperature updates. This is unrelated to the simulation timestep and only scales the size of the step taken in temperature space every {\tt adaptTempFreq} steps.
+}
+
+\item
+\NAMDCONF{adaptTempInFile}{adaptive tempering input filename}
+{UNIX filename}
+{The input file containing restart information for adaptive tempering (written out by {\tt adaptTempRestartFile}).
+}
+
+\item
+\NAMDCONF{adaptTempRestartFile}{adaptive tempering restart filename}
+{UNIX filename}
+{The file to write out restart information for adaptive tempering.
+}
+
+\item
+\NAMDCONF{adaptTempRestartFreq}{steps between writing restart file}
+{Positive integer}
+{Frequency of writing restart file.
+}
+
+\item
+\NAMDCONFWDEF{adaptTempLangevin}{send temperature updates to langevin thermostat?}
+{{\tt on} or {\tt off}}{{\tt on}}
+{Setting this to on will cause the langevin thermostat to use the updated temperatures from adaptive tempering. Note that either one of adaptTempLangevin or adaptTempRescaling have to be on.
+}
+
+\item
+\NAMDCONFWDEF{adaptTempRescaling}{send temperature to velocity rescaling thermostat?}
+{{\tt on} or {\tt off}}{{\tt on}}
+{Setting this to on will cause the veloctiy rescaling thermostat to use the updated temperatures from adaptive tempering.  Note that either one of adaptTempLangevin or adaptTempRescaling have to be on.
+}
+
+\item
+\NAMDCONFWDEF{adaptTempOutFreq}{steps between printing adaptive tempering output}
+{Positive integers}{10}
+{The number of timesteps between printing adaptive tempering output to the log file.
+}
+
+\item
+\NAMDCONFWDEF{adaptTempFirstStep}{step to start adaptive tempering}
+{Non-negative integers}{0}
+{The first timestep from which adaptive tempering will be run.}
+
+\item
+\NAMDCONF{adaptTempLastStep}{step to stop adaptive tempering}
+{Positive integers}
+{The last timestep to apply adaptive tempering.}
+
+\item
+\NAMDCONFWDEF{adaptTempCgamma}{dynamic bin averaging constant}
+{Non-negative real number}{0.1}
+{The calculation of the mean energy for a given bin is weighted by a factor of 1 - Cgamma / samples to damp out old statistics. Setting Cgamma to zero restores the use of a standard arithmetic mean to calculate the mean energy for each bin.}
+
+\item
+\NAMDCONFWDEF{adaptTempRandom}{assign random temperature if we step out of range?}
+{{\tt on} or {\tt off}}{{\tt off}}
+{If set to on and the temperature steps out of [{\tt adaptTempTmin}, {\tt adaptTempTmax}], a random temperature in that range is assigned. Otherwise the previous temperature is kept.
+}
+
+%\item
+%\NAMDCONFWDEF{adaptTempDebug}{print debug output?}
+%{{\tt on} or {\tt off}}{{\tt off}}
+%{Print adaptive tempering debug output.
+%}
+
+\end{itemize}
+
+
 \subsection{Locally enhanced sampling}
 \label{section:les}
 
