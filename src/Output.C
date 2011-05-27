@@ -1373,6 +1373,10 @@ void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *
       veldcdX = new float[parN];
       veldcdY = new float[parN];
       veldcdZ = new float[parN];
+	  //seek to beginning of X,Y,Z sections which means skipping header. 
+	  //Cell data is not needed because this is velocity trajectory
+	  int skipbytes = get_dcdheader_size();
+	  seek_dcdfile(veldcdFileID, skipbytes, SEEK_SET);
 	#endif
 
 	#if !OUTPUT_SINGLE_FILE
@@ -1396,8 +1400,6 @@ void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *
     //be performed.
     CmiAssert(sizeof(off_t)==8);
     int totalAtoms = namdMyNode->molecule->numAtoms;
-    off_t offset = 3*((off_t)totalAtoms)*sizeof(float)+6*sizeof(int);
-    seek_dcdfile(veldcdFileID, -offset, SEEK_END);
 
     for(int i=0; i<parN; i++){
         veldcdX[i] = vecs[i].x;
@@ -1406,6 +1408,13 @@ void ParOutput::output_veldcdfile_slave(int timestep, int fID, int tID, Vector *
     }
 
     write_dcdstep_par_slave(veldcdFileID, fID, tID, totalAtoms, veldcdX, veldcdY, veldcdZ);
+
+	//same with the slave output for coordiantes trajectory file
+	//but cell data is not needed because this is velocity trajectory
+	int atomsRemains = (totalAtoms-1)-(tID+1)+1;
+	off_t offset = ((off_t)atomsRemains)*sizeof(float)+1*sizeof(int);
+	seek_dcdfile(veldcdFileID, offset, SEEK_CUR);
+
 #else
 	//write the timestep
 	NAMD_write(veldcdFileID, (char *)&timestep, sizeof(int));
@@ -1787,6 +1796,10 @@ void ParOutput::output_forcedcdfile_slave(int timestep, int fID, int tID, Vector
       forcedcdX = new float[parN];
       forcedcdY = new float[parN];
       forcedcdZ = new float[parN];
+	  //seek to beginning of X,Y,Z sections which means skipping header. 
+	  //Cell data is not needed because this is force trajectory
+	  int skipbytes = get_dcdheader_size();
+	  seek_dcdfile(forcedcdFileID, skipbytes, SEEK_SET);
 	#endif
 
 	#if !OUTPUT_SINGLE_FILE
@@ -1810,8 +1823,6 @@ void ParOutput::output_forcedcdfile_slave(int timestep, int fID, int tID, Vector
     //be performed.
     CmiAssert(sizeof(off_t)==8);
     int totalAtoms = namdMyNode->molecule->numAtoms;
-    off_t offset = 3*((off_t)totalAtoms)*sizeof(float)+6*sizeof(int);
-    seek_dcdfile(forcedcdFileID, -offset, SEEK_END);
 
     for(int i=0; i<parN; i++){
         forcedcdX[i] = vecs[i].x;
@@ -1820,6 +1831,11 @@ void ParOutput::output_forcedcdfile_slave(int timestep, int fID, int tID, Vector
     }
 
     write_dcdstep_par_slave(forcedcdFileID, fID, tID, totalAtoms, forcedcdX, forcedcdY, forcedcdZ);
+	//same with the slave output for coordiantes trajectory file
+	//but cell data is not needed because this is force trajectory
+	int atomsRemains = (totalAtoms-1)-(tID+1)+1;
+	off_t offset = ((off_t)atomsRemains)*sizeof(float)+1*sizeof(int);
+	seek_dcdfile(forcedcdFileID, offset, SEEK_CUR);
 #else
 	//write the timestep
 	NAMD_write(forcedcdFileID, (char *)&timestep, sizeof(int));
@@ -2153,6 +2169,13 @@ void ParOutput::output_dcdfile_slave(int timestep, int fID, int tID, FloatVector
       dcdX = new float[parN];
       dcdY = new float[parN];
       dcdZ = new float[parN];
+	  //seek to beginning of X,Y,Z sections which means skipping header 
+	  //skip the cell data if necessary
+	  int skipbytes = get_dcdheader_size();
+	  if(simParams->dcdUnitCell) {
+		  skipbytes += sizeof(int)*2 + 6*sizeof(double);
+	  }
+	  seek_dcdfile(dcdFileID, skipbytes, SEEK_SET);
 	#endif
 
 	#if !OUTPUT_SINGLE_FILE
@@ -2176,8 +2199,6 @@ void ParOutput::output_dcdfile_slave(int timestep, int fID, int tID, FloatVector
     //be performed.
     CmiAssert(sizeof(off_t)==8);
     int totalAtoms = namdMyNode->molecule->numAtoms;
-    off_t offset = 3*((off_t)totalAtoms)*sizeof(float)+6*sizeof(int);
-    seek_dcdfile(dcdFileID, -offset, SEEK_END);
 
     for(int i=0; i<parN; i++){
         dcdX[i] = fvecs[i].x;
@@ -2186,6 +2207,24 @@ void ParOutput::output_dcdfile_slave(int timestep, int fID, int tID, FloatVector
     }
 
     write_dcdstep_par_slave(dcdFileID, fID, tID, totalAtoms, dcdX, dcdY, dcdZ);
+
+	//1. Always foward to the beginning position of X,Y,Z sections in the
+	//next timeframe.	
+	//2. SHOULD AVOID USING SEEK_END: although the file size is updated on the
+	//master proc, slave procs should rely on this update by seeking 
+	//from SEEK_END because such info may not be updated in a timely manner
+	//when this slave proc needs it.
+
+	//We know the current position of file after slave writing is at the
+	//end of Z output for atom "tID" (tID is the atom id indexed from 0)
+	//(totalAtoms-1) is the last atom id, (tID+1) is the next atom id
+	int atomsRemains = (totalAtoms-1)-(tID+1)+1;
+	off_t offset = ((off_t)atomsRemains)*sizeof(float)+1*sizeof(int);
+	//then skip the cell data if necessary
+	if(simParams->dcdUnitCell) {
+		offset += sizeof(int)*2 + 6*sizeof(double);		
+	}
+	seek_dcdfile(dcdFileID, offset, SEEK_CUR);
 #else
 	//write the timestep
 	NAMD_write(dcdFileID, (char *)&timestep, sizeof(int));

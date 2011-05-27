@@ -844,10 +844,15 @@ int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *
 	out_integer = parN*4;
 
 	/* x's 1st number of Xs */
+	/* skip field for the bytes in X, and the first parL atoms in X*/
 	off_t xoffset = sizeof(int)+sizeof(float)*((off_t)parL);
 	LSEEK(fd, xoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) X, out_integer);
 
+	/* skip field for the bytes in X and Y; */
+	/* skip the remaining atoms in X at number of (N-1)-(parU+1)+1
+	 * where N-1 is the last atom id, paru+1 is the next atom id. */
+	/* skip the first parL atoms in Y; */
 	off_t yoffset = 2*sizeof(int)+sizeof(float)*((off_t)(N-parU+parL-1));
 	LSEEK(fd, yoffset, SEEK_CUR);
 	NAMD_write(fd, (char *) Y, out_integer);
@@ -878,6 +883,8 @@ int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *
 /*	This function prints the "header" information to the DCD file.  Since*/
 /*   this is duplicating an unformatted binary output from FORTRAN, its ugly.*/
 /*   So if you're squimish, don't look.					     */
+/* Whenever you are updating this function by removing or adding fields, please */
+/* also update get_dcdheader_size function to reflect the changes! */
 /*									     */
 /*****************************************************************************/
 
@@ -969,6 +976,15 @@ int write_dcdheader(int fd, char *filename, int N, int NFILE, int NPRIV,
 	NAMD_write(fd, (char *) & out_integer, sizeof(int32));
 
 	return(0);
+}
+
+int get_dcdheader_size(){
+	int headersize = 0;
+	int totalInt32s = 27; /* 27 writes from out_integer */
+	int totalChars = 164; /* 3 writes from title_string */
+	int totalFloats = 1; /* 1 write from out_float */
+	headersize = sizeof(int32)*totalInt32s+totalChars+sizeof(float)*totalFloats;
+	return headersize;
 }
 
 /****************************************************************/

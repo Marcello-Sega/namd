@@ -65,6 +65,8 @@ int write_dcdstep(int, int, float *, float *, float *, double *unitcell);
 				/*  Write out a timesteps values	*/
 int write_dcdheader(int, char*, int, int, int, int, int, double, int);	
 				/*  Write a dcd header			*/
+int get_dcdheader_size(); 
+				/* Get the total size of the header */
 void close_dcd_read(int, int, int *);
 				/*  Close a dcd file open for reading   */
 void close_dcd_write(int);	/*  Close a dcd file open for writing   */
