@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: ryanmcgreevy $
- * $Date: 2011/05/24 02:56:04 $
- * $Revision: 1.1363 $
+ * $Author: johanstr $
+ * $Date: 2011/05/27 21:28:04 $
+ * $Revision: 1.1364 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2642,8 +2642,19 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (adaptTempOn) {
      if (!adaptTempRescale && !adaptTempLangevin) 
         NAMD_die("Adaptive tempering needs to be coupled to either the Langevin thermostat or velocity rescaling.");
+     if (opts.defined("adaptTempInFile") && (opts.defined("adaptTempTmin") ||
+                                             opts.defined("adaptTempTmax") ||
+                                             opts.defined("adaptTempBins") ||
+                                             opts.defined("adaptTempDt")   ||
+                                             opts.defined("adaptTempCgamma")))
+        NAMD_die("cannot simultaneously specify adaptTempInFile and any of {adaptTempTmin, adaptTempTmax,adaptTempBins, adaptTempDt, adaptTempCgamma} as these are read from the input file");
+     if (!opts.defined("adaptTempInFile") && !(opts.defined("adaptTempTmin") &&
+                                             opts.defined("adaptTempTmax") &&
+                                             opts.defined("adaptTempBins") &&
+                                             opts.defined("adaptTempDt")   &&
+                                             opts.defined("adaptTempCgamma")))  
+        NAMD_die("Need to specify either adaptTempInFile or all of {adaptTempTmin, adaptTempTmax,adaptTempBins, adaptTempDt, adaptTempCgamma} if adaptTempMD is on.");
    }
-
    if (langevinOn) {
      if ( ! opts.defined("langevinDamping") ) langevinDamping = 0.0;
      if ( ! opts.defined("langevinHydrogen") ) langevinHydrogen = TRUE;
