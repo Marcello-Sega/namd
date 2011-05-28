@@ -677,14 +677,10 @@ int open_dcd_write_par_slave(char *dcdname)
 	//backed up. --Chao Mei
 	int dcdfd;
 #ifdef WIN32
-	while ( (dcdfd = _open(dcdname, O_RDWR|O_BINARY|O_LARGEFILE,
+	while ( (dcdfd = _open(dcdname, O_WRONLY|O_BINARY|O_LARGEFILE,
 				_S_IREAD|_S_IWRITE)) < 0)
 #else
-#ifdef NAMD_NO_O_EXCL
-	while ( (dcdfd = open(dcdname, O_RDWR|O_TRUNC|O_LARGEFILE,
-#else
-	while ( (dcdfd = open(dcdname, O_RDWR|O_EXCL|O_LARGEFILE,
-#endif
+	while ( (dcdfd = open(dcdname, O_WRONLY|O_LARGEFILE,
 				S_IRUSR|S_IWUSR|S_IRGRP|S_IROTH)) < 0)
 #endif
 	{
