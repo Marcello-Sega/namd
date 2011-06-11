@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: johanstr $
- * $Date: 2011/05/10 21:28:45 $
- * $Revision: 1.1191 $
+ * $Author: jim $
+ * $Date: 2011/06/11 21:42:04 $
+ * $Revision: 1.1192 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -396,6 +396,9 @@ public:
         Bool cosAngles;    // Can some angles be cos-based
 	Bool globalForcesOn;		//  Are global forces present?
 	Bool tclForcesOn;		//  Are Tcl forces present?
+#ifdef NAMD_TCL
+        Bool tclIsThreaded;             //  Is Tcl library thread-safe?
+#endif
 	Bool tclBCOn;			//  Are Tcl boundary forces present
 	char *tclBCScript;		//  Script defining tclBC calcforces
 	char tclBCArgs[128];		//  Extra args for calcforces command

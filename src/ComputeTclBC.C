@@ -34,6 +34,10 @@ ComputeTclBC::ComputeTclBC(ComputeID c)
   cleardrops();
 
 #ifdef NAMD_TCL
+  if ( CkMyRank() && ! simParams->tclIsThreaded ) {
+    NAMD_die("Sorry, tclBC requires TCL to be built with --enable-threads to use multiple threads per process.");
+  }
+
   interp = Tcl_CreateInterp();
   tcl_vector_math_init(interp);
 

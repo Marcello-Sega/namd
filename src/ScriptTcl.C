@@ -79,6 +79,11 @@ void ScriptTcl::initcheck() {
 
     state->configListInit(config);
     Node::Object()->saveMolDataPointers(state);
+#ifdef NAMD_TCL
+    SimParameters *simParams = Node::Object()->simParameters;
+    simParams->tclIsThreaded =
+      ! ! Tcl_GetVar2(interp, "tcl_platform", "threaded", TCL_GLOBAL_ONLY);
+#endif
     Node::messageStartUp();
     suspend();
   }
