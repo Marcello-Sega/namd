@@ -101,6 +101,16 @@ inline unsigned long memusage_ps() {
 #endif
 }
 
+#if CMK_BLUEGENEP
+/* Report the memusage according to the wiki page:
+ * https://wiki.alcf.anl.gov/index.php/Debugging#How_do_I_get_information_on_used.2Favailable_memory_in_my_code.3F
+ */
+#include <malloc.h>
+inline long long memusage_bgp(){
+    struct mallinfo m = mallinfo();
+    return m.hblkhd + m.uordblks;
+}
+#endif
 
 inline unsigned long memusage_proc_self_stat() {
 #ifdef NO_PS
@@ -141,6 +151,10 @@ unsigned long memusage(const char **source) {
   if ( ! memtotal ) {
     memtotal = memusage_proc_self_stat();  s = "/proc/self/stat";
   }
+#endif
+
+#if CMK_BLUEGENEP
+  if( ! memtotal) { memtotal = memusage_bgp(); s="mallinfo on BG/P"; }
 #endif
 
   if ( ! memtotal ) { memtotal = memusage_mstats(); s = "mstats"; }
