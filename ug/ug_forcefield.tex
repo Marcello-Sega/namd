@@ -862,9 +862,10 @@ The energies from extra bonded terms are included with the normal
 bond, angle, and dihedral energies in \NAMD\ output.
 
 All extra bonded terms are harmonic potentials of the form
-$U(x) = k (x-x_{ref})^2$;
-sinusoidal dihedral potentials are not supported.
-Impropers are supported, but the only difference between dihedrals and
+$U(x) = k (x-x_{ref})^2$ except dihedrals and impropers with
+a non-zero periodicity specified, which use
+$U(x) = k (1 + cos(n x - x_{ref}))$.
+The only difference between dihedrals and
 impropers is the output field that their potential energy is added to.
 
 The extra bonded term implementation shares the parallel implementation
@@ -899,7 +900,11 @@ The extra bonds file(s) should contain lines of the following formats:
 \item
 {\tt dihedral <atom> <atom> <atom> <atom> <k> <ref>}
 \item
+{\tt dihedral <atom> <atom> <atom> <atom> <k> <n> <ref>}
+\item
 {\tt improper <atom> <atom> <atom> <atom> <k> <ref>}
+\item
+{\tt improper <atom> <atom> <atom> <atom> <k> <n> <ref>}
 \item
 {\tt \# <comment ...>}
 \end{itemize}
@@ -908,6 +913,9 @@ In all cases {\tt <atom>} is a {\bf zero-based} atom index
 (the first atom has index 0),
 {\tt <ref>} is a reference distance in \AA\ (bond) or angle in degrees (others),
 and {\tt <k>} is a spring constant in the potential energy function
-$U(x) = k (x-x_{ref})^2$.
+$U(x) = k (x-x_{ref})^2$ or, for dihedrals and impropers with 
+periodicity {\tt <n>} specified and not 0, $U(x) = k (1 + cos(n x - x_{ref}))$.
+Note that $x_{ref}$ is only a minimum for the harmonic potential;
+the sinusoidal potential has minima at $(x_{ref} + 180)/n + i \times 360/n$.
 
 

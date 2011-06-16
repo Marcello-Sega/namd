@@ -7348,8 +7348,14 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
         angle_params.add(tmpv);      
               
       } else if ( ! strncasecmp(type,"dihedral",4) ) {
-        if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
-	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
+        int n = 0;
+        int ret = 1 + sscanf(buffer, "%s %d %d %d %d %f %f %s",
+	                 type, &a1, &a2, &a3, &a4, &k, &ref, err_msg);
+        if ( ret != 8 ) {
+          ret = sscanf(buffer, "%s %d %d %d %d %f %d %f %s",
+	                 type, &a1, &a2, &a3, &a4, &k, &n, &ref, err_msg);
+        }
+        if ( ret != 8 ) badline = 1;
         else {
           CHECKATOMID(a1)
           CHECKATOMID(a2)
@@ -7364,12 +7370,18 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
         #endif
 
         DihedralValue tmpv;
-        tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
+        tmpv.multiplicity = 1;  tmpv.values[0].n = n;
         tmpv.values[0].k = k;  tmpv.values[0].delta = ref / 180. * PI;
         dihedral_params.add(tmpv);
       } else if ( ! strncasecmp(type,"improper",4) ) {
-        if ( sscanf(buffer, "%s %d %d %d %d %f %f %s",
-	    type, &a1, &a2, &a3, &a4, &k, &ref, err_msg) != 7 ) badline = 1;
+        int n = 0;
+        int ret = 1 + sscanf(buffer, "%s %d %d %d %d %f %f %s",
+	                 type, &a1, &a2, &a3, &a4, &k, &ref, err_msg);
+        if ( ret != 8 ) {
+          ret = sscanf(buffer, "%s %d %d %d %d %f %d %f %s",
+	                 type, &a1, &a2, &a3, &a4, &k, &n, &ref, err_msg);
+        }
+        if ( ret != 8 ) badline = 1;
         else {
           CHECKATOMID(a1)
           CHECKATOMID(a2)
@@ -7384,7 +7396,7 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
         #endif
 
         ImproperValue tmpv;
-        tmpv.multiplicity = 1;  tmpv.values[0].n = 0;
+        tmpv.multiplicity = 1;  tmpv.values[0].n = n;
         tmpv.values[0].k = k;  tmpv.values[0].delta = ref / 180. * PI;
         improper_params.add(tmpv);
       } else if ( ! strncasecmp(type,"#",1) ) {
