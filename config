@@ -392,9 +392,19 @@ begin:
 
   if ( $use_memopt ) echo 'MEMOPT=-DMEM_OPT_VERSION' >> Make.config
 
+  set threaded = 0
+  if ( $CHARM_ARCH =~ *-smp* ) set threaded = 1
+  if ( $CHARM_ARCH =~ *multicore-* ) set threaded = 1
+
   if ( $use_tcl ) then
     if ( $?TCL_PREFIX ) then
       echo "TCLDIR = $TCL_PREFIX" >> Make.config
+    else if ( $threaded && -d .rootdir/tcl-threaded/lib && -d .rootdir/tcl-threaded/include ) then
+      echo "Using Tcl build found in main build directory"
+      echo 'TCLDIR = .rootdir/tcl-threaded' >> Make.config
+    else if ( $threaded && -d $HOME/tcl-threaded/lib && -d $HOME/tcl-threaded/include ) then
+      echo "Using Tcl build found in $HOME/tcl-threaded"
+      echo 'TCLDIR = $(HOME)/tcl-threaded' >> Make.config
     else if ( -d .rootdir/tcl/lib && -d .rootdir/tcl/include ) then
       echo "Using Tcl build found in main build directory"
       echo 'TCLDIR = .rootdir/tcl' >> Make.config
