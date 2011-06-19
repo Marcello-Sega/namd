@@ -1,8 +1,8 @@
 
-TCLDIR = $(HOME)/tcl-win32
+TCLDIR = $(HOME)/tcl8.5.9-win32-threaded
 TCLINCL = -I$(TCLDIR)/include
-TCLLIB = -L$(TCLDIR)/lib -ltcl85
-TCLDLL = tcl85.dll
+TCLLIB = -L$(TCLDIR)/lib -ltcl85t
+TCLDLL = tcl85t.dll
 TCLFLAGS = -DNAMD_TCL
 TCL = $(TCLINCL) $(TCLFLAGS)
 
