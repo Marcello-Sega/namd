@@ -931,7 +931,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
 
   int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
-  CkPrintf("myGrid values %d %d %d\n",n[0], n[1],n[2]);
+  // CkPrintf("myGrid values %d %d %d\n",n[0], n[1],n[2]);
 
 #ifdef NAMD_FFTW
   CmiLock(fftw_plan_lock);
