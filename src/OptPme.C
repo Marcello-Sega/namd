@@ -5,12 +5,16 @@
 **/
 
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+#include <fftw3.h>
+#else
 #ifdef NAMD_FFTW_NO_TYPE_PREFIX
 #include <fftw.h>
 #include <rfftw.h>
 #else
 #include <sfftw.h>
 #include <srfftw.h>
+#endif
 #endif
 #endif
 

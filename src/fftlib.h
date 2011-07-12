@@ -122,7 +122,11 @@ public:
 private:
     ResizeArray<OptPmeGridMsg *> grid_msgs;
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_plan  forward_plan, backward_plan;
+#else
     rfftwnd_plan forward_plan, backward_plan;
+#endif
 #endif
     int nx, ny;
     PatchGridElem  * m2m_recv_grid;
@@ -150,7 +154,11 @@ public:
     void many_to_many_recv_untrans();	
 private:
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_plan  forward_plan, backward_plan;
+#else
     fftw_plan forward_plan, backward_plan;
+#endif
 #endif
     int nx, nz;
     CkCallbackWrapper  cbw_recvtrans;
@@ -173,7 +181,11 @@ public:
     void send_untrans();
     void many_to_many_send_untrans();
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_plan  forward_plan, backward_plan;
+#else
     fftw_plan forward_plan, backward_plan;
+#endif
 #endif
     int ny, nz;
     PmeKSpace *myKSpace;

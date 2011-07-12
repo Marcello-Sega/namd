@@ -5,12 +5,16 @@
 **/
 
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+#include <fftw3.h>
+#else
 #ifdef NAMD_FFTW_NO_TYPE_PREFIX
 #include <fftw.h>
 #include <rfftw.h>
 #else
 #include <sfftw.h>
 #include <srfftw.h>
+#endif
 #endif
 #endif
 
@@ -303,9 +307,15 @@ private:
   float *kgrid;
 
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_plan *forward_plan_x, *backward_plan_x;
+  fftwf_plan *forward_plan_yz, *backward_plan_yz;
+  fftwf_complex *work;
+#else
   fftw_plan forward_plan_x, backward_plan_x;
   rfftwnd_plan forward_plan_yz, backward_plan_yz;
   fftw_complex *work;
+#endif
 #else
   float *work;
 #endif
@@ -399,7 +409,6 @@ void ComputePmeMgr::recvArrays(
 	CProxy_PmeXPencil x, CProxy_PmeYPencil y, CProxy_PmeZPencil z) {
   xPencil = x;  yPencil = y;  zPencil = z;
 }
-
 
 void ComputePmeMgr::initialize(CkQdMsg *msg) {
   delete msg;
@@ -922,10 +931,101 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
 
   int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
+  CkPrintf("myGrid values %d %d %d\n",n[0], n[1],n[2]);
 
 #ifdef NAMD_FFTW
   CmiLock(fftw_plan_lock);
+#ifdef NAMD_FFTW_3
+  int fftwFlags = simParams->FFTWPatient ? FFTW_PATIENT  : simParams->FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
+  if ( myTransPe >= 0 ) {
+    forward_plan_yz=new fftwf_plan[numGrids];
+    backward_plan_yz=new fftwf_plan[numGrids];
+    forward_plan_x=new fftwf_plan[numGrids];
+    backward_plan_x=new fftwf_plan[numGrids];
+  }
+  /* need one plan per grid */
+  if ( ! CkMyPe() ) iout << iINFO << "Optimizing 4 FFT steps.  1..." << endi;
+  if ( myGridPe >= 0 ) {
+    for( int g=0; g<numGrids; g++)
+      {
+	forward_plan_yz[g] = fftwf_plan_many_dft_r2c(2, n+1, 
+						     localInfo[g].nx,
+						     qgrid + qgrid_size * g,
+						     NULL,
+						     1,
+						     myGrid.dim2 * myGrid.dim3,
+						     (fftwf_complex *) 
+						     qgrid + qgrid_size * g,
+						     NULL,
+						     1,
+						     myGrid.dim2 * myGrid.dim3/2,
+						     fftwFlags);
+      }
+  }
+  int zdim = myGrid.dim3;
+  int xStride=localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2;
+  if ( ! CkMyPe() ) iout << " 2..." << endi;
+  if ( myTransPe >= 0 ) {
+    for( int g=0; g<numGrids; g++)
+      {
+	CkPrintf("[%d] forward_plan_x rank %d size %d howmany %d input %p istride %d idist %d output %p ostride %d odist %d oldplanstride %d \n",CkMyPe(), 1, n[0], ny *zdim/2, 						    (kgrid+qgrid_size*g), ny *zdim/2,1,
+		 (fftwf_complex *) (kgrid+qgrid_size*g), ny * zdim/2,1, localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2);
 
+	forward_plan_x[g] = fftwf_plan_many_dft(1, n, xStride,
+						(fftwf_complex *)
+						(kgrid+qgrid_size*g),
+						NULL,
+						xStride,
+						1,
+						(fftwf_complex *)
+						(kgrid+qgrid_size*g),
+						NULL,
+						xStride,
+						1,
+						FFTW_FORWARD,fftwFlags);
+	
+      }
+  }
+  if ( ! CkMyPe() ) iout << " 3..." << endi;
+  if ( myTransPe >= 0 ) {
+    for( int g=0; g<numGrids; g++)
+      {
+	backward_plan_x[g] = fftwf_plan_many_dft(1, n, xStride,
+						 (fftwf_complex *)
+						 (kgrid+qgrid_size*g),
+						 NULL,
+						 xStride,
+						 1,
+						 (fftwf_complex *)
+						 (kgrid+qgrid_size*g),
+						 NULL,
+						 xStride,
+						 1,
+						 FFTW_BACKWARD, fftwFlags);
+
+      }
+  }
+  if ( ! CkMyPe() ) iout << " 4..." << endi;
+  if ( myGridPe >= 0 ) {
+    for( int g=0; g<numGrids; g++)
+      {
+	backward_plan_yz[g] = fftwf_plan_many_dft_c2r(2, n+1, 
+						      localInfo[g].nx,
+						      (fftwf_complex *)
+						      qgrid + qgrid_size * g,
+						      NULL,
+						      1,
+						      myGrid.dim2*myGrid.dim3/2,
+						      qgrid + qgrid_size * g,
+						      NULL,
+						      1,
+						      myGrid.dim2 * myGrid.dim3,
+						      fftwFlags);
+      }
+  }
+  if ( ! CkMyPe() ) iout << "   Done.\n" << endi;
+
+#else
   work = new fftw_complex[n[0]];
 
   if ( ! CkMyPe() ) iout << iINFO << "Optimizing 4 FFT steps.  1..." << endi;
@@ -936,14 +1036,14 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
   if ( ! CkMyPe() ) iout << " 2..." << endi;
   if ( myTransPe >= 0 ) {
-  forward_plan_x = fftw_create_plan_specific(n[0], FFTW_REAL_TO_COMPLEX,
+      forward_plan_x = fftw_create_plan_specific(n[0], FFTW_FORWARD,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
 	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
   }
   if ( ! CkMyPe() ) iout << " 3..." << endi;
   if ( myTransPe >= 0 ) {
-  backward_plan_x = fftw_create_plan_specific(n[0], FFTW_COMPLEX_TO_REAL,
+  backward_plan_x = fftw_create_plan_specific(n[0], FFTW_BACKWARD,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) kgrid,
 	localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2, work, 1);
@@ -955,7 +1055,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, qgrid, 1, 0, 0);
   }
   if ( ! CkMyPe() ) iout << "   Done.\n" << endi;
-
+#endif
   CmiUnlock(fftw_plan_lock);
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -967,6 +1067,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
   trans_count = numGridPes;
 }
+
 
 
 void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
@@ -1116,14 +1217,62 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
     if ( useBarrier ) pmeProxyDir[0].sendTransBarrier();
   }
 }
+#ifdef MANUAL_DEBUG_FFTW3
+
+/* utility functions for manual debugging */
+void dumpMatrixFloat(const char *infilename, float *matrix, int xdim, int ydim, int zdim,int pe)
+{
+
+  char fmt[1000];
+  char filename[1000];
+  strncpy(fmt,infilename,999);
+  strncat(fmt,"_%d.out",999);
+  sprintf(filename,fmt, pe);
+  FILE *loutfile = fopen(filename, "w");
+#ifdef PAIRCALC_TEST_DUMP
+  fprintf(loutfile,"%d\n",ydim);
+#endif
+  fprintf(loutfile,"%d %d %d\n",xdim,ydim, zdim);
+  for(int i=0;i<xdim;i++)
+    for(int j=0;j<ydim;j++)
+      for(int k=0;k<zdim;k++)
+	fprintf(loutfile,"%d %d %d %.8f\n",i,j,k,matrix[i*zdim*ydim+j*zdim +k]);
+  fclose(loutfile);
+
+}
+
+void dumpMatrixFloat3(const char *infilename, float *matrix, int xdim, int ydim, int zdim,int x, int y, int z)
+{
+  char fmt[1000];
+  char filename[1000];
+  strncpy(fmt,infilename,999);
+  strncat(fmt,"_%d_%d_%d.out",999);
+  sprintf(filename,fmt, x,y,z);
+  FILE *loutfile = fopen(filename, "w");
+  CkAssert(loutfile!=NULL);
+  CkPrintf("opened %s for dump\n",filename);
+  fprintf(loutfile,"%d %d %d\n",xdim,ydim, zdim);
+  for(int i=0;i<xdim;i++)
+    for(int j=0;j<ydim;j++)
+      for(int k=0;k<zdim;k++)
+	fprintf(loutfile,"%d %d %d %.8f\n",i,j,k,matrix[i*zdim*ydim+j*zdim +k]);
+  fclose(loutfile);
+}
+
+#endif
 
 void ComputePmeMgr::gridCalc1(void) {
   // CkPrintf("gridCalc1 on Pe(%d)\n",CkMyPe());
 
 #ifdef NAMD_FFTW
   for ( int g=0; g<numGrids; ++g ) {
+#ifdef NAMD_FFTW_3
+    fftwf_execute(forward_plan_yz[g]);
+#else
     rfftwnd_real_to_complex(forward_plan_yz, localInfo[myGridPe].nx,
 	qgrid + qgrid_size * g, 1, myGrid.dim2 * myGrid.dim3, 0, 0, 0);
+#endif
+
   }
 #endif
 
@@ -1220,8 +1369,12 @@ void ComputePmeMgr::gridCalc2(void) {
   for ( int g=0; g<numGrids; ++g ) {
     // finish forward FFT (x dimension)
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_execute(forward_plan_x[g]);
+#else
     fftw(forward_plan_x, ny * zdim / 2, (fftw_complex *)(kgrid+qgrid_size*g),
 	ny * zdim / 2, 1, work, 1, 0);
+#endif
 #endif
 
     // reciprocal space portion of PME
@@ -1232,11 +1385,15 @@ void ComputePmeMgr::gridCalc2(void) {
 
     // start backward FFT (x dimension)
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_execute(backward_plan_x[g]);
+#else
     fftw(backward_plan_x, ny * zdim / 2, (fftw_complex *)(kgrid+qgrid_size*g),
 	ny * zdim / 2, 1, work, 1, 0);
 #endif
+#endif
   }
-
+  
   pmeProxyDir[CkMyPe()].sendUntrans();
 }
 
@@ -1325,11 +1482,17 @@ void ComputePmeMgr::gridCalc3(void) {
 
   // finish backward FFT
 #ifdef NAMD_FFTW
+
   for ( int g=0; g<numGrids; ++g ) {
+#ifdef NAMD_FFTW_3
+    fftwf_execute(backward_plan_yz[g]);
+#else
     rfftwnd_complex_to_real(backward_plan_yz, localInfo[myGridPe].nx,
 	(fftw_complex *) (qgrid + qgrid_size * g),
 	1, myGrid.dim2 * myGrid.dim3 / 2, 0, 0, 0);
+#endif
   }
+
 #endif
 
   pmeProxyDir[CkMyPe()].sendUngrid();
@@ -2570,7 +2733,11 @@ public:
 private:
     ResizeArray<PmeGridMsg *> grid_msgs;
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_plan forward_plan, backward_plan;
+#else
     rfftwnd_plan forward_plan, backward_plan;
+#endif
 #endif
     int nx, ny;
 };
@@ -2589,8 +2756,13 @@ public:
     void send_untrans();
 private:
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_plan forward_plan, backward_plan;
+#else
     fftw_plan forward_plan, backward_plan;
 #endif
+#endif
+
     int nx, nz;
 };
 
@@ -2606,7 +2778,11 @@ public:
     void backward_fft();
     void send_untrans();
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_plan forward_plan, backward_plan;
+#else
     fftw_plan forward_plan, backward_plan;
+#endif
 #endif
     int ny, nz;
     PmeKSpace *myKSpace;
@@ -2636,14 +2812,34 @@ void PmeZPencil::fft_init() {
 
 #ifdef NAMD_FFTW
   CmiLock(ComputePmeMgr::fftw_plan_lock);
+#ifdef NAMD_FFTW_3
+  /* need array of sizes for the how many */
 
+  int fftwFlags = simParams->FFTWPatient ? FFTW_PATIENT  : simParams->FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
+  int sizeLines=nx*ny;
+  int planLineSizes[1];
+  planLineSizes[0]=K3;
+  forward_plan = fftwf_plan_many_dft_r2c(1, planLineSizes, sizeLines,
+					 (float *) data, NULL, 1, 
+					 initdata.grid.dim3,
+					 (fftwf_complex *) data, NULL, 1,
+					 initdata.grid.dim3/2,
+					 fftwFlags);
+
+  backward_plan = fftwf_plan_many_dft_c2r(1, planLineSizes, sizeLines,
+					  (fftwf_complex *) data, NULL, 1, 
+					  initdata.grid.dim3/2,
+					  (float *) data, NULL, 1, 
+					  initdata.grid.dim3,
+					  fftwFlags);
+#else
   forward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_REAL_TO_COMPLEX,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, data, 1, work, 1);
   backward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_COMPLEX_TO_REAL,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, data, 1, work, 1);
-
+#endif
   CmiUnlock(ComputePmeMgr::fftw_plan_lock);
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -2668,13 +2864,35 @@ void PmeYPencil::fft_init() {
   if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
 
   data = new float[nx*dim2*nz*2];
+  //  data = (float *) fftwf_malloc(nx*dim2*nz*2*sizeof(float));
   work = new float[2*K2];
 
   order_init(initdata.yBlocks);
 
 #ifdef NAMD_FFTW
   CmiLock(ComputePmeMgr::fftw_plan_lock);
-
+#ifdef NAMD_FFTW_3
+  /* need array of sizes for the dimensions */
+  /* ideally this should be implementable as a single multidimensional
+   *  plan, but that has proven tricky to implement, so we maintain the
+   *  loop of 1d plan executions. */
+  int sizeLines=nz;
+  int planLineSizes[1];
+  planLineSizes[0]=K2;
+  int fftwFlags = simParams->FFTWPatient ? FFTW_PATIENT  : simParams->FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
+  forward_plan = fftwf_plan_many_dft(1, planLineSizes, sizeLines, 
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				     FFTW_FORWARD, 
+				     fftwFlags);
+  backward_plan = fftwf_plan_many_dft(1, planLineSizes, sizeLines, 
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				     FFTW_FORWARD, 
+				      fftwFlags);
+  CkAssert(forward_plan != NULL);
+  CkAssert(backward_plan != NULL);
+#else
   forward_plan = fftw_create_plan_specific(K2, FFTW_FORWARD,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
@@ -2683,7 +2901,7 @@ void PmeYPencil::fft_init() {
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
 	nz, (fftw_complex *) work, 1);
-
+#endif
   CmiUnlock(ComputePmeMgr::fftw_plan_lock);
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -2713,7 +2931,23 @@ void PmeXPencil::fft_init() {
 
 #ifdef NAMD_FFTW
   CmiLock(ComputePmeMgr::fftw_plan_lock);
-
+#ifdef NAMD_FFTW_3
+  /* need array of sizes for the how many */
+  int fftwFlags = simParams->FFTWPatient ? FFTW_PATIENT  : simParams->FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
+  int sizeLines=ny*nz;
+  int planLineSizes[1];
+  planLineSizes[0]=K1;
+  forward_plan = fftwf_plan_many_dft(1, planLineSizes, sizeLines,
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				   FFTW_FORWARD,
+				     fftwFlags);
+  backward_plan = fftwf_plan_many_dft(1, planLineSizes, sizeLines,
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				     (fftwf_complex *) data, NULL, sizeLines, 1,
+				   FFTW_BACKWARD,
+				      fftwFlags);
+#else
   forward_plan = fftw_create_plan_specific(K1, FFTW_FORWARD,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
@@ -2722,7 +2956,7 @@ void PmeXPencil::fft_init() {
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
 	ny*nz, (fftw_complex *) work, 1);
-
+#endif
   CmiUnlock(ComputePmeMgr::fftw_plan_lock);
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -2781,8 +3015,12 @@ void PmeZPencil::forward_fft() {
   }
 #endif
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(forward_plan);
+#else
   rfftwnd_real_to_complex(forward_plan, nx*ny,
 	data, 1, initdata.grid.dim3, (fftw_complex *) work, 1, 0);
+#endif
 #endif
 #ifdef ZEROCHECK
   int dim3 = initdata.grid.dim3;
@@ -2869,13 +3107,19 @@ void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
 }
 
 void PmeYPencil::forward_fft() {
-#ifdef NAMD_FFTW
+
   for ( int i=0; i<nx; ++i ) {
+#ifdef NAMD_FFTW_3
+    fftwf_execute_dft(forward_plan, ((fftwf_complex *) data) + i 
+		      * nz * initdata.grid.K2, 	
+		      ((fftwf_complex *) data) + i * nz * initdata.grid.K2);
+#else
     fftw(forward_plan, nz,
 	((fftw_complex *) data) + i * nz * initdata.grid.K2,
 	nz, 1, (fftw_complex *) work, 1, 0);
-  }
 #endif
+  }
+
 }
 
 void PmeYPencil::send_trans() {
@@ -2955,8 +3199,12 @@ void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
 
 void PmeXPencil::forward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(forward_plan);
+#else
   fftw(forward_plan, ny*nz,
 	((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+#endif
 #endif
 }
 
@@ -2980,8 +3228,12 @@ void PmeXPencil::pme_kspace() {
 
 void PmeXPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(backward_plan);
+#else
   fftw(backward_plan, ny*nz,
 	((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+#endif
 #endif
 }
 
@@ -3057,11 +3309,15 @@ void PmeYPencil::backward_fft() {
 #if CMK_BLUEGENEL
     CmiNetworkProgress();
 #endif
-
+#ifdef NAMD_FFTW_3
+    fftwf_execute_dft(backward_plan, 	((fftwf_complex *) data) + i * nz * initdata.grid.K2,    	((fftwf_complex *) data) + i * nz * initdata.grid.K2);
+#else
     fftw(backward_plan, nz,
 	((fftw_complex *) data) + i * nz * initdata.grid.K2,
 	nz, 1, (fftw_complex *) work, 1, 0);
+#endif
   }
+
 #endif
 }
 
@@ -3133,8 +3389,12 @@ void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
 
 void PmeZPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(backward_plan);
+#else
   rfftwnd_complex_to_real(backward_plan, nx*ny,
 	    (fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
+#endif
 #endif
   
 #if CMK_BLUEGENEL

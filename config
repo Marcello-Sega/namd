@@ -16,7 +16,8 @@ syntax:
   echo '  --tcl-prefix <directory containing Tcl lib and include>'
   echo '      (defaults to ./tcl or ~/tcl)'
   echo '  --with-fftw (default)  --without-fftw'
-  echo '  --fftw-prefix <directory containing FFTW 2.1.3 lib and include>'
+  echo '  --with-fftw3 (use fftw3 API, your fftw-prefix should match) '
+  echo '  --fftw-prefix <directory containing FFTW lib and include>'
   echo '      (defaults to ./fftw or ~/fftw)'
   echo '  --cxx <C++ compiler command>'
   echo '  --cxx-opts <C++ compiler options (quote list)>'
@@ -97,6 +98,7 @@ begin:
   set use_debug = 0
   set use_tcl = 1
   set use_fftw = 1
+  set use_fftw3 = 0
   set use_cuda = 0
   set use_memopt = 0
 
@@ -204,8 +206,12 @@ begin:
       case --with-fftw:
         set use_fftw = 1
       breaksw
+      case --with-fftw3:
+        set use_fftw3 = 1
+      breaksw
       case --without-fftw:
         set use_fftw = 0
+        set use_fftw3 = 0
       breaksw
       case --fftw-prefix:
         shift
@@ -387,7 +393,10 @@ begin:
 
   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Make.config
   if ( $use_tcl ) echo 'include .rootdir/arch/$(NAMD_ARCH).tcl' >> Make.config
-  if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
+  if ( $use_fftw3 ) then
+    echo 'include .rootdir/arch/$(NAMD_ARCH).fftw3' >> Make.config
+  else if ( $use_fftw ) echo 'include .rootdir/arch/$(NAMD_ARCH).fftw' >> Make.config
+  endif
   if ( $use_cuda ) echo 'include .rootdir/arch/$(NAMD_ARCH).cuda' >> Make.config
 
   if ( $use_memopt ) echo 'MEMOPT=-DMEM_OPT_VERSION' >> Make.config

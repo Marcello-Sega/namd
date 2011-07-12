@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2011/06/11 21:42:04 $
- * $Revision: 1.1192 $
+ * $Author: bohm $
+ * $Date: 2011/07/12 18:23:10 $
+ * $Revision: 1.1193 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -543,6 +543,7 @@ public:
 	                                //  This flag requres useOptPME to be set.
 
 	Bool FFTWEstimate;
+	Bool FFTWPatient;
 	Bool FFTWUseWisdom;
 	char FFTWWisdomFile[128];
 	char *FFTWWisdomString;

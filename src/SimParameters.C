@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: johanstr $
- * $Date: 2011/05/27 21:28:04 $
- * $Revision: 1.1364 $
+ * $Author: bohm $
+ * $Date: 2011/07/12 18:23:10 $
+ * $Revision: 1.1365 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -29,12 +29,16 @@
 #include <stdio.h>
 #include <time.h>
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+#include <fftw3.h>
+#else
 #ifdef NAMD_FFTW_NO_TYPE_PREFIX
 #include <fftw.h>
 #include <rfftw.h>
 #else
 #include <sfftw.h>
 #include <srfftw.h>
+#endif
 #endif
 #endif
 #if defined(WIN32) && !defined(__CYGWIN__)
@@ -712,6 +716,12 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.optionalB("PME", "useDPME", "Use old DPME code?", &useDPME, FALSE);
 #else
    useDPME = 0;
+#endif
+   opts.optionalB("main", "FFTWPatient", "Use intensive plan creation to optimize FFTW?",
+#ifdef WIN32
+	&FFTWPatient, TRUE);
+#else
+	&FFTWPatient, FALSE);
 #endif
 
    opts.optionalB("main", "FFTWEstimate", "Use estimates to optimize FFTW?",
@@ -3533,7 +3543,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    {
      iout << iINFO << "NONBONDED SCALING    " << nonbondedScaling << "\n" << endi;
    }
-
    iout << iINFO << "EXCLUDE                ";
 
    switch (exclude)
@@ -3829,7 +3838,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
       iout << endi;
       //****** END rotating constraints changes 
    }
-
 
    // moving drag
    if (movDragOn) {
@@ -4203,10 +4211,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << endi;
    }
 
-   if (globalOn && ! dihedralOn)
+   if (globalOn && !dihedralOn)
    {
       iout << iINFO << "GLOBAL INTEGRATION TEST MODE ACTIVE\n";
    }
+
 
    if (dihedralOn)
    {
@@ -4217,6 +4226,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
          iout << iINFO << "PLEASE CONSIDER USING THE COLD OPTION AS WELL\n";
       }
    }
+
+   // This function is so long that it exceeds the emacs brace
+   // matching default max length of 25600 (a bit before this comment). We
+   // should take this is a not too subtle hint about scale of this
+   // violation of good coding practices.  Especially considering the
+   // fact that this function still has about a thousand lines to go
+   // before its done, and is doomed to grow with new features. 
 
    if (COLDOn)
    {
@@ -4274,7 +4290,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
                << sphericalCenter.y << ", " << sphericalCenter.z << ")\n";
       iout << endi;
    }
-   
+
    if (eFieldOn)
    {
       iout << iINFO << "ELECTRIC FIELD ACTIVE\n";
@@ -4622,6 +4638,10 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      if ( useDPME ) iout << iINFO << "USING OLD DPME CODE\n";
 #ifdef NAMD_FFTW
      else if ( FFTWUseWisdom ) {  // handle FFTW wisdom
+#ifdef NAMD_FFTW_3
+       iout << iINFO << "Attempting to read FFTW data from system" <<"\n" <<endi;
+       fftwf_import_system_wisdom();
+#endif
        if (! opts.defined("FFTWWisdomFile")) {
          strcpy(FFTWWisdomFile,"FFTW_NAMD_");
          strcat(FFTWWisdomFile,NAMD_VERSION);
@@ -4629,14 +4649,18 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	 strcat(FFTWWisdomFile,NAMD_PLATFORM);
 	 strcat(FFTWWisdomFile,".txt");
        }
+
        iout << iINFO << "Attempting to read FFTW data from "
 		<< FFTWWisdomFile << "\n" << endi;
        FILE *wisdom_file = fopen(FFTWWisdomFile,"r");
        if ( wisdom_file ) {
+#ifdef NAMD_FFTW_3
+	 fftwf_import_wisdom_from_file(wisdom_file);
+#else
 	 fftw_import_wisdom_from_file(wisdom_file);
+#endif
 	 fclose(wisdom_file);
        }
-
        int nrp = 1;
 
        // rules based on work available
@@ -4680,8 +4704,74 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
        int n[3]; n[0] = PMEGridSizeX; n[1] = PMEGridSizeY; n[2] = PMEGridSizeZ;
        fftw_complex *work = new fftw_complex[n[0]];
        float *grid1 = new float[n[1]*dim3];
-       float *grid2 = new float[n[0]*block2*dim3];
+       float *grid2 = new float[n[0]*block2*dim3*2];
        iout << iINFO << "Optimizing 6 FFT steps.  1..." << endi;
+#ifdef NAMD_FFTW_3
+       int fftwFlags = FFTWPatient ? FFTW_PATIENT  : FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
+       int planLineSizes[1];
+       planLineSizes[0]=n[2];
+       int nx= n[0];
+       int ny=block2;
+       int sizeLines=nx*ny;
+       int zdim = dim3;
+       int nz=zdim;
+       int xStride=block2 * dim3 / 2;
+       fftwf_destroy_plan(
+			 fftwf_plan_many_dft_r2c(1, planLineSizes, sizeLines,
+						 (float *) grid2, NULL, 1, 
+						 dim3,
+						 (fftwf_complex *) grid2, 
+						 NULL, 1,
+						 dim3/2,
+						 fftwFlags));
+
+       iout << " 2..." << endi;
+       fftwf_destroy_plan(
+			 fftwf_plan_many_dft_c2r(1, planLineSizes, sizeLines,
+						 (fftwf_complex *) grid2,
+						 NULL, 1, 
+						 dim3/2,
+						 (float *) grid2, NULL, 1,
+						 dim3,
+						 fftwFlags));
+       iout << " 3..." << endi;
+       sizeLines=nz;
+       planLineSizes[0]=block2;
+       fftwf_destroy_plan(fftwf_plan_many_dft(1, planLineSizes, sizeLines, 
+					      (fftwf_complex *) grid2, NULL, 
+					      sizeLines, 1,
+					      (fftwf_complex *) grid2, NULL, 
+					      sizeLines, 1,
+					      FFTW_FORWARD, 
+					      fftwFlags));
+       iout << " 4..." << endi;
+       fftwf_destroy_plan(fftwf_plan_many_dft(1, planLineSizes, sizeLines, 
+					      (fftwf_complex *) grid2, NULL, 
+					      sizeLines, 1,
+					      (fftwf_complex *) grid2, NULL, 
+					      sizeLines, 1,
+					      FFTW_FORWARD, 
+					      fftwFlags));
+       iout << " 5..." << endi;
+       sizeLines=ny*nz;
+       planLineSizes[0]=n[0];
+       fftwf_destroy_plan(fftwf_plan_many_dft(1, planLineSizes, sizeLines,
+					      (fftwf_complex *) grid2, NULL,
+					      sizeLines, 1,
+					      (fftwf_complex *) grid2, NULL, 
+					      sizeLines, 1,
+					      FFTW_FORWARD,
+					      fftwFlags));
+       iout << " 6..." << endi;
+       fftwf_destroy_plan(fftwf_plan_many_dft(1, planLineSizes, sizeLines,
+					      (fftwf_complex *) grid2, NULL, 
+					      sizeLines, 1,
+					      (fftwf_complex *) grid2, NULL, 
+					      sizeLines, 1,
+					      FFTW_BACKWARD,
+					      fftwFlags));
+
+#else
        rfftwnd_destroy_plan( rfftwnd_create_plan_specific(
 	 2, n+1, FFTW_REAL_TO_COMPLEX,
 	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
@@ -4711,6 +4801,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 	 2, n+1, FFTW_COMPLEX_TO_REAL,
 	 ( FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	 | FFTW_IN_PLACE | FFTW_USE_WISDOM, grid1, 1, 0, 0) );
+#endif
        iout << "   Done.\n" << endi;
        delete [] work;
        delete [] grid1;
@@ -4720,16 +4811,23 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 		<< FFTWWisdomFile << "\n" << endi;
        wisdom_file = fopen(FFTWWisdomFile,"w");
        if ( wisdom_file ) {
+#ifdef NAMD_FFTW_3 
+	 fftwf_export_wisdom_to_file(wisdom_file);
+#else
 	 fftw_export_wisdom_to_file(wisdom_file);
+#endif
 	 fclose(wisdom_file);
        }
 
+#ifdef NAMD_FFTW_3 
+       FFTWWisdomString = fftwf_export_wisdom_to_string();
+#else
        FFTWWisdomString = fftw_export_wisdom_to_string();
+#endif
      }
 #endif
      iout << endi;
    }
-
    if (fullDirectOn)
    {
      iout << iINFO << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
@@ -5430,7 +5528,11 @@ void SimParameters::receive_SimParameters(MIStream *msg)
     FFTWWisdomString = new char[fftwlen];
     msg->get(fftwlen,FFTWWisdomString);
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+    fftwf_import_wisdom_from_string(FFTWWisdomString);
+#else
     fftw_import_wisdom_from_string(FFTWWisdomString);
+#endif
 #endif
   }
   if ( tclBCScript ) {

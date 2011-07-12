@@ -40,6 +40,25 @@ void OptPmeZPencil::fft_init() {
 
 #ifdef NAMD_FFTW
   CmiLock(fftw_plan_lock);
+#ifdef NAMD_FFTW_3
+  /* need array of sizes for the how many */
+  int numLines=nx*ny;
+  int planLineSizes[1];
+  planLineSizes[0]=K3;
+  CkAbort("what are we doing in here?");
+  forward_plan = fftwf_plan_many_dft_r2c(1, planLineSizes, numLines,
+				     (float *) data, NULL, 1, 
+					 initdata.grid.dim3,
+					 (fftwf_complex *) data, NULL, 1, 0,
+				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+				     : FFTW_MEASURE ));
+  backward_plan = fftwf_plan_many_dft_c2r(1, planLineSizes, numLines,
+				     (fftwf_complex *) data, NULL, 1, 
+					 initdata.grid.dim3/2,
+				     (float *) data, NULL, 1, 0,
+				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+				     : FFTW_MEASURE ));
+#else
 
   forward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_REAL_TO_COMPLEX,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
@@ -47,7 +66,7 @@ void OptPmeZPencil::fft_init() {
   backward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_COMPLEX_TO_REAL,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, data, 1, work, 1);
-
+#endif
   CmiUnlock(fftw_plan_lock);
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -89,6 +108,25 @@ void OptPmeYPencil::fft_init() {
 
 #ifdef NAMD_FFTW
   CmiLock(fftw_plan_lock);
+#ifdef NAMD_FFTW_3
+  /* need array of sizes for the dimensions */
+  int numLines=nz;
+  int planLineSizes[2];
+  planLineSizes[0]=initdata.grid.K2;
+  planLineSizes[1]=nz;
+  forward_plan = fftwf_plan_many_dft(2, planLineSizes, numLines, 
+				     (fftwf_complex *) data, NULL, nz, 1,
+				     (fftwf_complex *) data, NULL, 1, 0,
+				     FFTW_FORWARD, 
+				     ( simParams->FFTWEstimate 
+				       ? FFTW_ESTIMATE : FFTW_MEASURE ));
+  backward_plan = fftwf_plan_many_dft(2, planLineSizes, numLines, 
+				     (fftwf_complex *) data, NULL, nz, 1,
+				     (fftwf_complex *) data, NULL, 1, 0,
+				     FFTW_FORWARD, 
+				     ( simParams->FFTWEstimate 
+				       ? FFTW_ESTIMATE : FFTW_MEASURE ));
+#else
 
   forward_plan = fftw_create_plan_specific(K2, FFTW_FORWARD,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
@@ -98,7 +136,7 @@ void OptPmeYPencil::fft_init() {
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
 	| FFTW_IN_PLACE | FFTW_USE_WISDOM, (fftw_complex *) data,
 	nz, (fftw_complex *) work, 1);
-
+#endif
   CmiUnlock(fftw_plan_lock);
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -143,6 +181,24 @@ void OptPmeXPencil::fft_init() {
 
 #ifdef NAMD_FFTW
   CmiLock(fftw_plan_lock);
+#ifdef NAMD_FFTW_3
+  /* need array of sizes for the how many */
+  int numLines=ny*nz;
+  int planLineSizes[1];
+  planLineSizes[0]=K1;
+  forward_plan = fftwf_plan_many_dft(1, planLineSizes, numLines,
+				     (fftwf_complex *) data, NULL, K1, 1,
+				     (fftwf_complex *) data, NULL, 1, 0,
+				   FFTW_FORWARD,
+				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+				     : FFTW_MEASURE ));
+  backward_plan = fftwf_plan_many_dft(1, planLineSizes, numLines,
+				     (fftwf_complex *) data, NULL, K1, 1,
+				     (fftwf_complex *) data, NULL, 1, 0,
+				   FFTW_BACKWARD,
+				   ( simParams->FFTWEstimate ? FFTW_ESTIMATE 
+				     : FFTW_MEASURE ));
+#else
 
   forward_plan = fftw_create_plan_specific(K1, FFTW_FORWARD,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
@@ -154,6 +210,7 @@ void OptPmeXPencil::fft_init() {
 	ny*nz, (fftw_complex *) work, 1);
 
   CmiUnlock(fftw_plan_lock);
+#endif
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
@@ -251,8 +308,12 @@ void OptPmeZPencil::forward_fft() {
   }
 #endif
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(forward_plan);
+#else
   rfftwnd_real_to_complex(forward_plan, nx*ny,
 			  data, 1, initdata.grid.dim3, (fftw_complex *) work, 1, 0);
+#endif
 #endif
 }
 
@@ -307,11 +368,15 @@ void OptPmeYPencil::recv_trans(const OptPmeFFTMsg *msg) {
 
 void OptPmeYPencil::forward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(forward_plan);
+#else
   for ( int i=0; i<nx; ++i ) {
     fftw(forward_plan, nz,
 	 ((fftw_complex *) data) + i * nz * initdata.grid.K2,
 	 nz, 1, (fftw_complex *) work, 1, 0);
   }
+#endif
 #endif
 }
 
@@ -369,8 +434,13 @@ void OptPmeXPencil::recv_trans(const OptPmeFFTMsg *msg) {
 
 void OptPmeXPencil::forward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(forward_plan);
+#else
+
   fftw(forward_plan, ny*nz,
        ((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+#endif
 #endif
 }
 
@@ -392,8 +462,13 @@ void OptPmeXPencil::pme_kspace() {
 
 void OptPmeXPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(backward_plan);
+#else
+
   fftw(backward_plan, ny*nz,
        ((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+#endif
 #endif
 }
 
@@ -448,6 +523,9 @@ void OptPmeYPencil::recv_untrans(const OptPmeFFTMsg *msg) {
 
 void OptPmeYPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(backward_plan);
+#else
   for ( int i=0; i<nx; ++i ) {
 #if CMK_BLUEGENEL
     CmiNetworkProgress();
@@ -457,6 +535,7 @@ void OptPmeYPencil::backward_fft() {
 	 ((fftw_complex *) data) + i * nz * initdata.grid.K2,
 	 nz, 1, (fftw_complex *) work, 1, 0);
   }
+#endif
 #endif
 }
 
@@ -514,8 +593,12 @@ void OptPmeZPencil::recv_untrans(const OptPmeFFTMsg *msg) {
 
 void OptPmeZPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+  fftwf_execute(backward_plan);
+#else
   rfftwnd_complex_to_real(backward_plan, nx*ny,
 			  (fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
+#endif
 #endif
   
 #if CMK_BLUEGENEL
