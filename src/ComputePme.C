@@ -931,8 +931,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   }
 
   int n[3]; n[0] = myGrid.K1; n[1] = myGrid.K2; n[2] = myGrid.K3;
-  // CkPrintf("myGrid values %d %d %d\n",n[0], n[1],n[2]);
-
 #ifdef NAMD_FFTW
   CmiLock(fftw_plan_lock);
 #ifdef NAMD_FFTW_3
@@ -968,8 +966,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( myTransPe >= 0 ) {
     for( int g=0; g<numGrids; g++)
       {
-	CkPrintf("[%d] forward_plan_x rank %d size %d howmany %d input %p istride %d idist %d output %p ostride %d odist %d oldplanstride %d \n",CkMyPe(), 1, n[0], ny *zdim/2, 						    (kgrid+qgrid_size*g), ny *zdim/2,1,
-		 (fftwf_complex *) (kgrid+qgrid_size*g), ny * zdim/2,1, localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2);
 
 	forward_plan_x[g] = fftwf_plan_many_dft(1, n, xStride,
 						(fftwf_complex *)
