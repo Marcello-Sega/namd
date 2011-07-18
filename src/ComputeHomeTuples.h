@@ -184,8 +184,8 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
 	         homepatch = patchMap->downstream(homepatch,aid[i].pid);
              }
              if ( homepatch != notUsed && isBasePatch[homepatch] ) {
+      	       TuplePatchElem *p;
                for (i=0; i < T::size; i++) {
-      	         TuplePatchElem *p;
       	         t.p[i] = p = tuplePatchList.find(TuplePatchElem(aid[i].pid));
       	         if ( ! p ) {
                      #ifdef MEM_OPT_VERSION
@@ -198,11 +198,11 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       	             iout << t.atomID[erri] << "(" <<  aid[erri].pid << ") ";
       	           }
       	           iout << "missing patch " << aid[i].pid << "\n" << endi;
-      	           
-      	           NAMD_die("Patch needed for tuple is missing.\n");
+      	           break;
       	         }
       	         t.localIndex[i] = aid[i].index;
                }
+      	       if ( ! p ) continue;
              #ifdef MEM_OPT_VERSION
                //avoid adding Tuples whose atoms are all fixed
                if(node->simParameters->fixedAtomsOn &&
