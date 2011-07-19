@@ -309,6 +309,8 @@ void ::HomePatch::init_swm4() {
 
 
 void HomePatch::reinitAtoms(FullAtomList al) {
+  atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
+
   atom = al;
   numAtoms = atom.size();
 
