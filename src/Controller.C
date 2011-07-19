@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/07/19 22:25:18 $
- * $Revision: 1.1269 $
+ * $Date: 2011/07/19 22:39:49 $
+ * $Revision: 1.1270 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2037,8 +2037,10 @@ void Controller::printEnergies(int step, int minimize)
       // only adjust based on most accurate energies
       BigReal s = (4.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
       if ( smooth2_avg == XXXBIGREAL ) smooth2_avg = s;
-      smooth2_avg *= 0.9375;
-      smooth2_avg += 0.0625 * s;
+      if ( step != simParams->firstTimestep ) {
+        smooth2_avg *= 0.9375;
+        smooth2_avg += 0.0625 * s;
+      }
     }
     smoothEnergy = flatEnergy + smooth2_avg -
         (4.0/3.0)*( kineticEnergyHalfstep - kineticEnergyCentered);
