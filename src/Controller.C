@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/05/23 23:41:57 $
- * $Revision: 1.1268 $
+ * $Date: 2011/07/19 22:25:18 $
+ * $Revision: 1.1269 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -263,6 +263,7 @@ void Controller::algorithm(void)
         checkpoint_langevinPiston_strainRate = langevinPiston_strainRate;
         checkpoint_berendsenPressure_avg = berendsenPressure_avg;
         checkpoint_berendsenPressure_count = berendsenPressure_count;
+        checkpoint_smooth2_avg = smooth2_avg;
         break;
       case SCRIPT_REVERT:
         iout << "REVERTING POSITIONS AT STEP " << simParams->firstTimestep
@@ -273,6 +274,7 @@ void Controller::algorithm(void)
         langevinPiston_strainRate = checkpoint_langevinPiston_strainRate;
         berendsenPressure_avg = checkpoint_berendsenPressure_avg;
         berendsenPressure_count = checkpoint_berendsenPressure_count;
+        smooth2_avg = checkpoint_smooth2_avg;
         break;
       case SCRIPT_MINIMIZE:
         minimize();

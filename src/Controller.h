@@ -195,6 +195,7 @@ protected:
     Tensor checkpoint_langevinPiston_strainRate;
     Tensor checkpoint_berendsenPressure_avg;
     int checkpoint_berendsenPressure_count;
+    BigReal checkpoint_smooth2_avg;
 
 //for accelMD
    void rescaleaccelMD (int step, int minimize = 0);
