@@ -84,6 +84,7 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
     BigReal sysDim = xmax.x - xmin.x;
     aDim = (int)(sysDim * aAway / patchSize);
     if ((aDim * patchSize) < (sysDim * aAway)) aDim++;
+    if ( aDim < aAway + 1 ) aDim = aAway + 1;
   }
 
   if ( bPeriodic ) {
@@ -93,6 +94,7 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
     BigReal sysDim = xmax.y - xmin.y;
     bDim = (int)(sysDim * bAway / patchSize);
     if ((bDim * patchSize) < (sysDim * bAway)) bDim++;
+    if ( bDim < bAway + 1 ) bDim = bAway + 1;
   }
 
   if ( cPeriodic ) {
@@ -102,6 +104,7 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
     BigReal sysDim = xmax.z - xmin.z;
     cDim = (int)(sysDim * cAway / patchSize);
     if ((cDim * patchSize) < (sysDim * cAway)) cDim++;
+    if ( cDim < cAway + 1 ) cDim = cAway + 1;
   }
 
   if ( aDim < 0 || bDim < 0 || cDim < 0 ) {
@@ -183,9 +186,12 @@ void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
   bMaxIndex = ( ! bPeriodic || bDim == 2 ) ? 10000 : bDim;
   cMaxIndex = ( ! cPeriodic || cDim == 2 ) ? 10000 : cDim;
 
-  aLength = aPeriodic ? 1.0 : aDim * (patchSize / aAway);
-  bLength = bPeriodic ? 1.0 : bDim * (patchSize / bAway);
-  cLength = cPeriodic ? 1.0 : cDim * (patchSize / cAway);
+  aLength = aPeriodic ? 1.0 :
+      ( aDim > aAway + 1 ? aDim * (patchSize / aAway) : xmax.x - xmin.x );
+  bLength = bPeriodic ? 1.0 :
+      ( bDim > bAway + 1 ? bDim * (patchSize / bAway) : xmax.y - xmin.y );
+  cLength = cPeriodic ? 1.0 :
+      ( cDim > cAway + 1 ? cDim * (patchSize / cAway) : xmax.z - xmin.z );
 
   aOrigin = aPeriodic ? -0.5 : 0.5 * (xmin.x + xmax.x - aLength);
   bOrigin = bPeriodic ? -0.5 : 0.5 * (xmin.y + xmax.y - bLength);

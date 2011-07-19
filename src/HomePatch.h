@@ -50,7 +50,7 @@ private:
 
   void reinitAtoms(FullAtomList);
   ScaledPosition min, max, center;
-  int aAway, bAway, cAway;
+  BigReal aAwayDist, bAwayDist, cAwayDist;
 
   //Note: If new proxies are added to this HomePatch
   // after load balancing, and it is not the immediate step

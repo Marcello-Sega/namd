@@ -102,9 +102,27 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   max.z = PatchMap::Object()->max_c(patchID);
   center = 0.5*(min+max);
 
-  aAway = PatchMap::Object()->numaway_a();
-  bAway = PatchMap::Object()->numaway_b();
-  cAway = PatchMap::Object()->numaway_c();
+  int aAway = PatchMap::Object()->numaway_a();
+  if ( PatchMap::Object()->periodic_a() ||
+       PatchMap::Object()->gridsize_a() > aAway + 1 ) {
+    aAwayDist = (max.x - min.x) * aAway;
+  } else {
+    aAwayDist = Node::Object()->simParameters->patchDimension;
+  }
+  int bAway = PatchMap::Object()->numaway_b();
+  if ( PatchMap::Object()->periodic_b() ||
+       PatchMap::Object()->gridsize_b() > bAway + 1 ) {
+    bAwayDist = (max.y - min.y) * bAway;
+  } else {
+    bAwayDist = Node::Object()->simParameters->patchDimension;
+  }
+  int cAway = PatchMap::Object()->numaway_c();
+  if ( PatchMap::Object()->periodic_c() ||
+       PatchMap::Object()->gridsize_c() > cAway + 1 ) {
+    cAwayDist = (max.z - min.z) * cAway;
+  } else {
+    cAwayDist = Node::Object()->simParameters->patchDimension;
+  }
 
   migrationSuspended = false;
   allMigrationIn = false;
@@ -186,9 +204,27 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   max.z = PatchMap::Object()->max_c(patchID);
   center = 0.5*(min+max);
 
-  aAway = PatchMap::Object()->numaway_a();
-  bAway = PatchMap::Object()->numaway_b();
-  cAway = PatchMap::Object()->numaway_c();
+  int aAway = PatchMap::Object()->numaway_a();
+  if ( PatchMap::Object()->periodic_a() ||
+       PatchMap::Object()->gridsize_a() > aAway + 1 ) {
+    aAwayDist = (max.x - min.x) * aAway;
+  } else {
+    aAwayDist = Node::Object()->simParameters->patchDimension;
+  }
+  int bAway = PatchMap::Object()->numaway_b();
+  if ( PatchMap::Object()->periodic_b() ||
+       PatchMap::Object()->gridsize_b() > bAway + 1 ) {
+    bAwayDist = (max.y - min.y) * bAway;
+  } else {
+    bAwayDist = Node::Object()->simParameters->patchDimension;
+  }
+  int cAway = PatchMap::Object()->numaway_c();
+  if ( PatchMap::Object()->periodic_c() ||
+       PatchMap::Object()->gridsize_c() > cAway + 1 ) {
+    cAwayDist = (max.z - min.z) * cAway;
+  } else {
+    cAwayDist = Node::Object()->simParameters->patchDimension;
+  }
 
   migrationSuspended = false;
   allMigrationIn = false;
@@ -2467,9 +2503,9 @@ void HomePatch::doMarginCheck()
 
   BigReal minSize = simParams->patchDimension - simParams->margin;
 
-  if ( ( (max.x - min.x)*aAway*sysdima < minSize*0.9999 ) ||
-       ( (max.y - min.y)*bAway*sysdimb < minSize*0.9999 ) ||
-       ( (max.z - min.z)*cAway*sysdimc < minSize*0.9999 ) ) {
+  if ( ( aAwayDist*sysdima < minSize*0.9999 ) ||
+       ( bAwayDist*sysdimb < minSize*0.9999 ) ||
+       ( cAwayDist*sysdimc < minSize*0.9999 ) ) {
 
     NAMD_die("Periodic cell has become too small for original patch grid!\n"
       "Possible solutions are to restart from a recent checkpoint,\n"
@@ -2478,9 +2514,9 @@ void HomePatch::doMarginCheck()
 
   BigReal cutoff = simParams->cutoff;
 
-  BigReal margina = 0.5 * ( (max.x - min.x) * aAway - cutoff / sysdima );
-  BigReal marginb = 0.5 * ( (max.y - min.y) * bAway - cutoff / sysdimb );
-  BigReal marginc = 0.5 * ( (max.z - min.z) * cAway - cutoff / sysdimc );
+  BigReal margina = 0.5 * ( aAwayDist - cutoff / sysdima );
+  BigReal marginb = 0.5 * ( bAwayDist - cutoff / sysdimb );
+  BigReal marginc = 0.5 * ( cAwayDist - cutoff / sysdimc );
 
   if ( (margina < -0.0001) || (marginb < -0.0001) || (marginc < -0.0001) ) {
     NAMD_die("Periodic cell has become too small for original patch grid!\n"
