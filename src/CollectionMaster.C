@@ -34,6 +34,8 @@ CollectionMaster::CollectionMaster()
   velDoneCnt = 0;
   parOut = new ParOutput();
 #endif
+
+  posTimings = 10;  velTimings = forceTimings = 5;
 }
 
 
@@ -78,7 +80,10 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
     Node::Object()->output->coordinate(seq,size,data,fdata,c->lattice);
     c->free();
     exectime = CmiWallTimer()-exectime;
-    CkPrintf("The last position output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+    if ( posTimings ) {
+      CkPrintf("The last position output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+      --posTimings;
+    }
 #endif
 }
 
@@ -118,7 +123,10 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
     Node::Object()->output->velocity(seq,size,data);
     c->free();
     exectime = CmiWallTimer()-exectime;
-    CkPrintf("The last velocity output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+    if ( velTimings ) {
+      CkPrintf("The last velocity output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+      --velTimings;
+    }
 #endif
 }
 
@@ -158,7 +166,10 @@ void CollectionMaster::disposeForces(CollectVectorInstance *c)
     Node::Object()->output->force(seq,size,data);
     c->free();
     exectime = CmiWallTimer()-exectime;
-    CkPrintf("The last force output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+    if ( forceTimings ) {
+      CkPrintf("The last force output (seq=%d) takes %.3f seconds, %.3f MB of memory in use\n", seq, exectime, mem);
+      --forceTimings;
+    }
 #endif
 }
 
@@ -232,7 +243,10 @@ void CollectionMaster::startNextRoundOutputPos(double totalT){
     positions.removeFirstReady();
     c->free();
     posOutTime = CmiWallTimer()-posOutTime;
-    CkPrintf("The last position output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, posOutTime, posIOTime, mem);
+    if ( posTimings ) {
+      CkPrintf("The last position output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, posOutTime, posIOTime, mem);
+      --posTimings;
+    }
 
     //Actually the c->status doesn't need to be checked because it is
     //certain that the new ready one will not be in  IN_PROCESS status 
@@ -261,7 +275,10 @@ void CollectionMaster::startNextRoundOutputVel(double totalT){
     velocities.removeFirstReady();
     c->free();
     velOutTime = CmiWallTimer()-velOutTime;
-    CkPrintf("The last velocity output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, velOutTime, velIOTime, mem);
+    if ( velTimings ) {
+      CkPrintf("The last velocity output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, velOutTime, velIOTime, mem);
+      --velTimings;
+    }
 
     //Actually the c->status doesn't need to be checked because it is
     //certain that the new ready one will not be in  IN_PROCESS status 
@@ -290,7 +307,10 @@ void CollectionMaster::startNextRoundOutputForce(double totalT){
     forces.removeFirstReady();
     c->free();
     forceOutTime = CmiWallTimer()-forceOutTime;
-    CkPrintf("The last force output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, forceOutTime, forceIOTime, mem);
+    if ( forceTimings ) {
+      CkPrintf("The last force output (seq=%d) takes %.3f seconds(file I/O: %.3f secs), %.3f MB of memory in use\n", seq, forceOutTime, forceIOTime, mem);
+      --forceTimings;
+    }
 
     //Actually the c->status doesn't need to be checked because it is
     //certain that the new ready one will not be in  IN_PROCESS status 

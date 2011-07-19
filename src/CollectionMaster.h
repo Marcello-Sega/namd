@@ -288,6 +288,7 @@ private:
   CollectVectorSequence positions;
   CollectVectorSequence velocities;
   CollectVectorSequence forces;
+  int posTimings, velTimings, forceTimings;
   FILE *dataStreamFile;
 
 #ifdef MEM_OPT_VERSION
