@@ -5,7 +5,7 @@ CHARMARCH = mpi-crayxt
 # The GNU compilers produce significantly faster NAMD binaries than PGI.
 #
 
-CXX = CC -DNOHOSTNAME
+CXX = CC -DNOHOSTNAME -DNO_GETPWUID
 CXXOPTS = -O
 CXXNOALIASOPTS = -fast -Mnodepchk -Msafeptr=arg,global,local,static -Minfo=all -Mneginfo=loop
 

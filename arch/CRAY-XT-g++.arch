@@ -13,7 +13,7 @@ CHARMARCH = mpi-crayxt
 # the the psfgen compilation to succeed.
 #
 
-CXX = CC -DNOHOSTNAME
+CXX = CC -DNOHOSTNAME -DNO_GETPWUID
 CXXOPTS = -O3 -ffast-math -fexpensive-optimizations -fomit-frame-pointer
 
 CC = cc
