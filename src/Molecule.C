@@ -2905,7 +2905,7 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
        }
 
        // DRUDE
-       if (is_drude_psf) {
+       if (is_drude_psf || simParams->drudeOn) {
 
          // build Thole (screened Coulomb) correction terms;
          // they are constructed implicitly from exclusions
