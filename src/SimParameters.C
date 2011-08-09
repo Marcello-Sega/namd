@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: bohm $
- * $Date: 2011/07/12 18:23:10 $
- * $Revision: 1.1365 $
+ * $Date: 2011/08/09 17:56:26 $
+ * $Revision: 1.1366 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -4647,6 +4647,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
          strcat(FFTWWisdomFile,NAMD_VERSION);
 	 strcat(FFTWWisdomFile,"_");
 	 strcat(FFTWWisdomFile,NAMD_PLATFORM);
+#ifdef NAMD_FFTW_3
+	 strcat(FFTWWisdomFile,"_FFTW3");
+#endif
 	 strcat(FFTWWisdomFile,".txt");
        }
 

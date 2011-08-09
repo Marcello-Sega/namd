@@ -5,6 +5,7 @@
 **/
 
 #ifdef NAMD_FFTW
+//#define MANUAL_DEBUG_FFTW3 1
 #ifdef NAMD_FFTW_3
 #include <fftw3.h>
 #else
@@ -2815,18 +2816,20 @@ void PmeZPencil::fft_init() {
   int sizeLines=nx*ny;
   int planLineSizes[1];
   planLineSizes[0]=K3;
+  int ndim=initdata.grid.dim3; // storage space is initdata.grid.dim3
+  int ndimHalf=ndim/2;
   forward_plan = fftwf_plan_many_dft_r2c(1, planLineSizes, sizeLines,
 					 (float *) data, NULL, 1, 
-					 initdata.grid.dim3,
+					 ndim,
 					 (fftwf_complex *) data, NULL, 1,
-					 initdata.grid.dim3/2,
+					 ndimHalf,
 					 fftwFlags);
 
   backward_plan = fftwf_plan_many_dft_c2r(1, planLineSizes, sizeLines,
 					  (fftwf_complex *) data, NULL, 1, 
-					  initdata.grid.dim3/2,
+					  ndimHalf,
 					  (float *) data, NULL, 1, 
-					  initdata.grid.dim3,
+					  ndim,
 					  fftwFlags);
 #else
   forward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_REAL_TO_COMPLEX,
@@ -2884,7 +2887,7 @@ void PmeYPencil::fft_init() {
   backward_plan = fftwf_plan_many_dft(1, planLineSizes, sizeLines, 
 				     (fftwf_complex *) data, NULL, sizeLines, 1,
 				     (fftwf_complex *) data, NULL, sizeLines, 1,
-				     FFTW_FORWARD, 
+				     FFTW_BACKWARD, 
 				      fftwFlags);
   CkAssert(forward_plan != NULL);
   CkAssert(backward_plan != NULL);
@@ -3011,12 +3014,19 @@ void PmeZPencil::forward_fft() {
   }
 #endif
 #ifdef NAMD_FFTW
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("fw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
 #ifdef NAMD_FFTW_3
   fftwf_execute(forward_plan);
 #else
   rfftwnd_real_to_complex(forward_plan, nx*ny,
 	data, 1, initdata.grid.dim3, (fftw_complex *) work, 1, 0);
 #endif
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("fw_z_a", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
+
 #endif
 #ifdef ZEROCHECK
   int dim3 = initdata.grid.dim3;
@@ -3104,7 +3114,12 @@ void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
 
 void PmeYPencil::forward_fft() {
 
+#ifdef NAMD_FFTW
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("fw_y_b", data, nx, initdata.grid.K2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
   for ( int i=0; i<nx; ++i ) {
+
 #ifdef NAMD_FFTW_3
     fftwf_execute_dft(forward_plan, ((fftwf_complex *) data) + i 
 		      * nz * initdata.grid.K2, 	
@@ -3114,8 +3129,12 @@ void PmeYPencil::forward_fft() {
 	((fftw_complex *) data) + i * nz * initdata.grid.K2,
 	nz, 1, (fftw_complex *) work, 1, 0);
 #endif
-  }
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("fw_y_a", data, nx, initdata.grid.dim2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
 
+  }
+#endif
 }
 
 void PmeYPencil::send_trans() {
@@ -3195,12 +3214,21 @@ void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
 
 void PmeXPencil::forward_fft() {
 #ifdef NAMD_FFTW
+
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("fw_x_b", data, initdata.grid.K1, ny, nz, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
+
 #ifdef NAMD_FFTW_3
   fftwf_execute(forward_plan);
 #else
   fftw(forward_plan, ny*nz,
 	((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
 #endif
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("fw_x_a", data, initdata.grid.K1, ny, nz, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
+
 #endif
 }
 
@@ -3224,11 +3252,18 @@ void PmeXPencil::pme_kspace() {
 
 void PmeXPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("bw_x_b", data, initdata.grid.K1, ny, nz, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
+
 #ifdef NAMD_FFTW_3
   fftwf_execute(backward_plan);
 #else
   fftw(backward_plan, ny*nz,
 	((fftw_complex *) data), ny*nz, 1, (fftw_complex *) work, 1, 0);
+#endif
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("bw_x_a", data, initdata.grid.K1, ny, nz, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 #endif
 }
@@ -3301,6 +3336,10 @@ void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
 
 void PmeYPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("bw_y_b", data, nx, initdata.grid.K2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
+
   for ( int i=0; i<nx; ++i ) {
 #if CMK_BLUEGENEL
     CmiNetworkProgress();
@@ -3313,6 +3352,9 @@ void PmeYPencil::backward_fft() {
 	nz, 1, (fftw_complex *) work, 1, 0);
 #endif
   }
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("bw_y_a", data, nx, initdata.grid.K2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
 
 #endif
 }
@@ -3385,12 +3427,19 @@ void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
 
 void PmeZPencil::backward_fft() {
 #ifdef NAMD_FFTW
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("bw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
 #ifdef NAMD_FFTW_3
   fftwf_execute(backward_plan);
 #else
   rfftwnd_complex_to_real(backward_plan, nx*ny,
 	    (fftw_complex *) data, 1, initdata.grid.dim3/2, work, 1, 0);
 #endif
+#ifdef MANUAL_DEBUG_FFTW3
+  dumpMatrixFloat3("bw_z_a", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
+#endif
+
 #endif
   
 #if CMK_BLUEGENEL
