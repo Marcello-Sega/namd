@@ -41,14 +41,19 @@ struct sortop_z : public sortop_base {
 static void partition(int *order, const CompAtom *atoms, int begin, int end) {
 
   //  Applies orthogonal recursive bisection with splittings limited
-  //  to multiples of 32 for warps.  Partitions containing a multiple
-  //  of 16 but not a multiple of 32 are sorted but not split.
+  //  to multiples of 32 for warps and a final split on multiples of 16.
 
-  // must have at least 3 atoms for sorting to matter 
-  if ( end - begin < 3 ) return;
-
-  // must be a multiple of 16 between begin and end for sorting to matter
-  if ( (begin+16)/16 > (end-1)/16 ) return;
+  int split;
+  // must be a multiple of 32 or 16 between begin and end to split at
+  if ( begin/32 < (end-1)/32 ) {
+    // find a multiple of 32 near the median
+    split = ((begin + end + 32) / 64) * 32;
+  } else if ( begin/16 < (end-1)/16 ) {
+    // find a multiple of 16 near the median
+    split = ((begin + end + 16) / 32) * 16;
+  } else {
+    return;
+  }
 
   BigReal xmin, ymin, zmin, xmax, ymax, zmax;
   {
@@ -72,22 +77,16 @@ static void partition(int *order, const CompAtom *atoms, int begin, int end) {
   xmax -= xmin;
   ymax -= ymin;
   zmax -= zmin;
+
   if ( xmax >= ymax && xmax >= zmax ) {
-    std::sort(order+begin, order+end, sortop_x(atoms));
+    std::nth_element(order+begin, order+split, order+end, sortop_x(atoms));
   } else if ( ymax >= xmax && ymax >= zmax ) {
-    std::sort(order+begin, order+end, sortop_y(atoms));
+    std::nth_element(order+begin, order+split, order+end, sortop_y(atoms));
   } else {
-    std::sort(order+begin, order+end, sortop_z(atoms));
+    std::nth_element(order+begin, order+split, order+end, sortop_z(atoms));
   }
 
-  // must be a multiple of 32 between begin and end to split at
-  if ( (begin+32)/32 > (end-1)/32 ) {
-    // CkPrintf("%d %d %f %f %f\n", begin, end, xmax, ymax, zmax);
-    return;
-  }
-
-  // find a multiple of 32 near the median
-  int split = ((begin + end + 32) / 64) * 32;
+  if ( split & 16 ) return;
 
   // recursively partition before and after split
   partition(order, atoms, begin, split);
