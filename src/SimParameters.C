@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: bohm $
- * $Date: 2011/08/09 17:56:26 $
- * $Revision: 1.1366 $
+ * $Author: dhardy $
+ * $Date: 2011/08/14 13:49:12 $
+ * $Revision: 1.1367 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -676,6 +676,28 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.optionalB("main", "FullDirect", "Should direct calculations of full electrostatics be performed?",
       &fullDirectOn, FALSE);
 
+
+   ///////////  Multilevel Summation Method
+
+   opts.optionalB("main", "MSM",
+       "Use multilevel summation method for electrostatics?",
+       &MSMOn, FALSE);
+   opts.optional("MSM", "MSMApprox", "MSM approximation",
+       &MSMApprox, 0);
+   opts.optional("MSM", "MSMSplit", "MSM splitting",
+       &MSMSplit, 0);
+   opts.optional("MSM", "MSMLevels", "MSM maximum number of levels",
+       &MSMLevels, 0);  // set to 0 adapts to as many as needed
+   opts.optional("MSM", "MSMGridSpacing", "MSM grid spacing (Angstroms)",
+       &MSMGridSpacing, 2.5);
+   opts.optional("MSM", "MSMPadding", "MSM padding (Angstroms)",
+       &MSMPadding, 2.5);
+
+   opts.optionalB("MSM", "MsmSerial",
+       "Use MSM serial version for long-range calculation?",
+       &MsmSerialOn, FALSE);
+
+   if (MSMOn) MsmSerialOn = TRUE;  // XXX required for now
 
    ///////////  Particle Mesh Ewald
 
@@ -2499,6 +2521,10 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      {
        NAMD_die("Do not use Particle Mesh Ewald with Martini.  Set: PME off");
      }
+     if ( MSMOn )
+     {
+       NAMD_die("Do not use Multilevel Summation Method with Martini.  Set: MSM off");
+     }
    }
 
 
@@ -2543,6 +2569,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       }
       if (PMEOn) {
         NAMD_die("GBIS not compatible with PME");
+      }
+      if (MSMOn) {
+        NAMD_die("GBIS not compatible with MSM");
       }
       if (alchOn) {
         NAMD_die("GBIS not compatible with Alchemical Transformations");
@@ -3009,6 +3038,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      int i = 0;
      if ( FMAOn ) ++i;
      if ( PMEOn ) ++i;
+     if ( MSMOn ) ++i;
      if ( fullDirectOn ) ++i;
      if ( i > 1 )
 	NAMD_die("More than one full electrostatics algorithm selected!!!");
@@ -3151,7 +3181,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("stepsPerCycle must be a multiple of nonbondedFreq");
    }
 
-   if (!GBISOn && !GBISserOn && !FMAOn && !PMEOn && !fullDirectOn)
+   if (!GBISOn && !GBISserOn && !FMAOn && !PMEOn && !MSMOn && !fullDirectOn)
    {
      fullElectFrequency = 0;
    }
@@ -4836,8 +4866,18 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
      iout << endi;
    }
+   if (MSMOn)
+   {
+     iout << iINFO
+       << "MULTILEVEL SUMMATION METHOD (MSM) FOR ELECTROSTATICS ACTIVE\n";
+     if (MsmSerialOn) {
+       iout << iINFO
+         << "PERFORMING SERIAL MSM CALCULATION FOR LONG-RANGE PART\n";
+       iout << endi;
+     }
+   }
 
-   if ( FMAOn || PMEOn || fullDirectOn )
+   if ( FMAOn || PMEOn || MSMOn || fullDirectOn )
    {
      iout << iINFO << "FULL ELECTROSTATIC EVALUATION FREQUENCY      "
 	<< fullElectFrequency << "\n";

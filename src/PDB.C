@@ -391,10 +391,12 @@ PDBAtom *PDB::atom(int place)
 
 
 // find the lowest and highest bounds based on a fraction of the atoms
-void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) const
+//void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) const
+void PDB::find_extremes_helper(
+    SortableResizeArray<BigReal> &coor,
+    BigReal &min, BigReal &max, Vector rec, BigReal frac
+    )
 {
-    SortableResizeArray<BigReal> coor;
-    coor.resize(atomCount);
     SortableResizeArray<BigReal>::iterator c_i = coor.begin();
 #ifdef MEM_OPT_VERSION
     PDBCoreData *atomptr = atomArray;
@@ -417,8 +419,65 @@ void PDB::find_extremes(BigReal *min, BigReal *max, Vector rec, BigReal frac) co
     int ihigh = atomCount - ilow - 1;
     BigReal span = coor[ihigh] - coor[ilow];
     BigReal extension = (1.0 - frac) * span / (2.0 * frac - 1.0);
-    *max = coor[ihigh] + extension;
-    *min = coor[ilow] - extension;
+    max = coor[ihigh] + extension;
+    min = coor[ilow] - extension;
+}
+
+// Find the extreme edges of molecule in scaled coordinates,
+// where "frac" sets bounds based on a fraction of the atoms.
+void PDB::find_extremes(const Lattice &lattice, BigReal frac) {
+  if (atomCount == 0) {
+    smin = smax = 0;
+  }
+  else if (frac < 1.0) {
+    // for now use the previous "sort the array" approach
+    // for solving "frac"th largest and smallest selection problems
+    SortableResizeArray<BigReal> coor;
+    coor.resize(atomCount);  // allocate array space once
+    find_extremes_helper(coor, smin.x, smax.x, lattice.a_r(), frac);
+    find_extremes_helper(coor, smin.y, smax.y, lattice.b_r(), frac);
+    find_extremes_helper(coor, smin.z, smax.z, lattice.c_r(), frac);
+  }
+  else {
+    // finding absolute min and max does not require sorting
+#ifdef MEM_OPT_VERSION
+    PDBCoreData *atomptr = atomArray;
+    Vector p(atomptr->xcoor(),atomptr->ycoor(),atomptr->zcoor());
+#else
+    PDBAtomPtr *atomptr = atomArray;
+    PDBAtom *atom = *atomptr;
+    Vector p(atom->xcoor(),atom->ycoor(),atom->zcoor());
+#endif
+    Vector s(lattice.a_r()*p, lattice.b_r()*p, lattice.c_r()*p);
+    smin = smax = s;
+    atomptr++;
+    for(int i=1; i<atomCount; i++, atomptr++){
+#ifdef MEM_OPT_VERSION
+      p = Vector(atomptr->xcoor(),atomptr->ycoor(),atomptr->zcoor());
+#else
+      atom = *atomptr;
+      p = Vector (atom->xcoor(),atom->ycoor(),atom->zcoor());
+#endif
+      s = Vector(lattice.a_r()*p, lattice.b_r()*p, lattice.c_r()*p);
+      if      (smin.x > s.x) smin.x = s.x;
+      else if (smax.x < s.x) smax.x = s.x;
+      if      (smin.y > s.y) smin.y = s.y;
+      else if (smax.y < s.y) smax.y = s.y;
+      if      (smin.z > s.z) smin.z = s.z;
+      else if (smax.z < s.z) smax.z = s.z;
+    }
+  }
+  // shift using the origin
+  BigReal origin_shift;
+  origin_shift = lattice.a_r() * lattice.origin();
+  smin.x -= origin_shift;
+  smax.x -= origin_shift;
+  origin_shift = lattice.b_r() * lattice.origin();
+  smin.y -= origin_shift;
+  smax.y -= origin_shift;
+  origin_shift = lattice.c_r() * lattice.origin();
+  smin.z -= origin_shift;
+  smax.z -= origin_shift;
 }
 
 //#define TEST_PDB_CLASS

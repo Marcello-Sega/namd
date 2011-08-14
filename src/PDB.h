@@ -45,6 +45,13 @@ class PDB {
     void add_atom_element(PDBAtom *newAtom); 
     int atomCount;
     
+    ScaledPosition smin, smax;  // extreme edges of the molecular system
+
+    void find_extremes_helper(
+        SortableResizeArray<BigReal> &coor,
+        BigReal &min, BigReal &max, Vector rec, BigReal frac
+        );
+
   public:
     PDB(const char *pdbfilename);   // read in PDB from a file
 
@@ -78,10 +85,21 @@ class PDB {
 #endif    
          // return linked list containing all atoms
     PDBAtomList *atoms(void ) { return atomListHead; }  
-         
+
+#if 0
 	// Find the extreme edges of the molecule
     void find_extremes(BigReal *min, BigReal *max, Vector rec,
                                                   BigReal frac=1.0) const;
+#else
+    // Find the extreme edges of molecule in scaled coordinates,
+    // where "frac" sets bounds based on a fraction of the atoms.
+    void find_extremes(const Lattice &, BigReal frac=1.0);
+
+    // Obtain results after find_extremes().
+    void get_extremes(ScaledPosition &xmin, ScaledPosition &xmax) const {
+      xmin = smin;  xmax = smax;
+    }
+#endif
 
     void set_all_positions(Vector *);	//  Reset all the positions in PDB
 

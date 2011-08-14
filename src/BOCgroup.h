@@ -19,6 +19,7 @@ public:
   //  CkGroupID delegateMgr;
   CkGroupID computeExtMgr;
   CkGroupID computeGBISserMgr;
+  CkGroupID computeMsmSerialMgr;
   CkGroupID reductionMgr;
   CkGroupID collectionMgr;
   CkGroupID broadcastMgr;

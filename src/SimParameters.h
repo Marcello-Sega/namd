@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: bohm $
- * $Date: 2011/07/12 18:23:10 $
- * $Revision: 1.1193 $
+ * $Author: dhardy $
+ * $Date: 2011/08/14 13:49:12 $
+ * $Revision: 1.1194 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -522,6 +522,14 @@ public:
 
 	Bool fullDirectOn;		//  Should direct calculations of
 					//  full electrostatics be performed?
+
+        Bool MSMOn;
+        int MSMApprox;
+        int MSMSplit;
+        int MSMLevels;
+        BigReal MSMGridSpacing;
+        BigReal MSMPadding;
+        Bool MsmSerialOn;
 
 	Bool PMEOn;			//  Flag TRUE -> PME active
 	BigReal PMETolerance;		//  Direct space tolerance

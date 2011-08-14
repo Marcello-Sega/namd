@@ -22,6 +22,7 @@ extern "C" {
 #include "LJTable.h"
 #include "ReductionMgr.h"
 #include "Parameters.h"
+#include "MsmMacros.h"
 #include <stdio.h>
 
 #ifdef NAMD_CUDA
@@ -468,6 +469,8 @@ void ComputeNonbondedUtil::select(void)
   c8 = 0;
 
   const int PMEOn = simParams->PMEOn;
+  const int MSMOn = simParams->MSMOn;
+  const int MSMSplit = simParams->MSMSplit;
 
   if ( PMEOn ) {
     ewaldcof = simParams->PMEEwaldCoefficient;
@@ -477,7 +480,7 @@ void ComputeNonbondedUtil::select(void)
 
   int splitType = SPLIT_NONE;
   if ( simParams->switchingActive ) splitType = SPLIT_SHIFT;
-  if ( simParams->fullDirectOn || simParams->FMAOn || PMEOn ) {
+  if ( simParams->fullDirectOn || simParams->FMAOn || PMEOn || MSMOn ) {
     switch ( simParams->longSplitting ) {
       case C2:
       splitType = SPLIT_C2;
@@ -585,6 +588,13 @@ void ComputeNonbondedUtil::select(void)
       BigReal tmp_b = erfc(tmp_a);
       corr_energy = tmp_b;
       corr_gradient = pi_ewaldcof*exp(-(tmp_a*tmp_a))*r + tmp_b;
+    } else if ( MSMOn ) {
+      BigReal a_1 = 1.0/cutoff;
+      BigReal r_a = r * a_1;
+      BigReal g, dg;
+      SPOLY(&g, &dg, r_a, MSMSplit);
+      corr_energy = 1 - r_a * g;
+      corr_gradient = 1 + r_a*r_a * dg;
     } else {
       corr_energy = corr_gradient = 0;
     }

@@ -146,6 +146,7 @@ void master_init(int argc, char **argv){
   group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
+  group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();
 #ifdef MEM_OPT_VERSION
   group.ioMgr=CProxy_ParallelIOMgr::ckNew();
 #endif

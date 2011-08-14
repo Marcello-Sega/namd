@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2011/04/29 17:30:54 $
- * $Revision: 1.1225 $
+ * $Author: dhardy $
+ * $Date: 2011/08/14 13:49:12 $
+ * $Revision: 1.1226 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -769,20 +769,36 @@ void WorkDistrib::patchMapInit(void)
   DebugM(3,"Mapping patches\n");
   if ( lattice.a_p() && lattice.b_p() && lattice.c_p() ) {
     xmin = 0.;  xmax = 0.;
-  } else {
+  }
+  else if ( params->FMAOn || params->MSMOn ) {
   // Need to use full box for FMA to match NAMD 1.X results.
-  if ( params->FMAOn ) {
+#if 0
     node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r());
     node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r());
     node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r());
+#endif
+    node->pdb->find_extremes(lattice);
+    node->pdb->get_extremes(xmin, xmax);
+#if 0
+    printf("+++ center=%.4f %.4f %.4f\n",
+        lattice.origin().x, lattice.origin().y, lattice.origin().z);
+    printf("+++ xmin=%.4f  xmax=%.4f\n", xmin.x, xmax.x);
+    printf("+++ ymin=%.4f  ymax=%.4f\n", xmin.y, xmax.y);
+    printf("+++ zmin=%.4f  zmax=%.4f\n", xmin.z, xmax.z);
+#endif
   // Otherwise, this allows a small number of stray atoms.
-  } else {
+  }
+  else {
+#if 0
     node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r(),0.9);
     node->pdb->find_extremes(&(xmin.y),&(xmax.y),lattice.b_r(),0.9);
     node->pdb->find_extremes(&(xmin.z),&(xmax.z),lattice.c_r(),0.9);
-  }
+#endif
+    node->pdb->find_extremes(lattice, 0.9);
+    node->pdb->get_extremes(xmin, xmax);
   }
 
+#if 0
   BigReal origin_shift;
   origin_shift = lattice.a_r() * lattice.origin();
   xmin.x -= origin_shift;
@@ -793,6 +809,7 @@ void WorkDistrib::patchMapInit(void)
   origin_shift = lattice.c_r() * lattice.origin();
   xmin.z -= origin_shift;
   xmax.z -= origin_shift;
+#endif
 
   // SimParameters default is -1 for unset
   int twoAwayX = params->twoAwayX;
@@ -1389,6 +1406,9 @@ void WorkDistrib::mapComputes(void)
 
   if ( node->simParameters->GBISserOn )
     mapComputeHomePatches(computeGBISserType);
+
+  if ( node->simParameters->MsmSerialOn )
+    mapComputeHomePatches(computeMsmSerialType);
 
 #ifdef NAMD_CUDA
   mapComputeNode(computeNonbondedCUDAType);
