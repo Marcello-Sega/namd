@@ -9,6 +9,14 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
+
+#ifdef WIN32
+#define strcasecmp(s,t) stricmp(s,t)
+#define strncasecmp(s,t,n) strnicmp(s,t,n)
+#else
+#include <strings.h>
+#endif
+
 #include "msm.h"
 
 #include "wkfutils.h"  /* timers from John Stone */
