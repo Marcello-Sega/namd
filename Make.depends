@@ -1,3 +1,107 @@
+obj/ComputeMsmSerial.o: \
+	src/ComputeMsmSerial.C \
+	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PatchMap.h \
+	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/Lattice.h \
+	src/Tensor.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/ComputeMsmSerial.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	inc/ComputeMsmSerialMgr.decl.h \
+	src/PatchMgr.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
+	src/Debug.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/varsizemsg.h \
+	src/msm.h \
+	inc/ComputeMsmSerialMgr.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsmSerial.o $(COPTC) src/ComputeMsmSerial.C
+obj/msm.o: \
+	src/msm.c \
+	src/msm_defn.h \
+	src/msm.h \
+	src/wkfutils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm.o $(COPTC) src/msm.c
+obj/msm_longrng.o: \
+	src/msm_longrng.c \
+	src/msm_defn.h \
+	src/msm.h \
+	src/wkfutils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_longrng.o $(COPTC) src/msm_longrng.c
+obj/msm_longrng_sprec.o: \
+	src/msm_longrng_sprec.c \
+	src/msm_defn.h \
+	src/msm.h \
+	src/wkfutils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_longrng_sprec.o $(COPTC) src/msm_longrng_sprec.c
+obj/msm_setup.o: \
+	src/msm_setup.c \
+	src/msm_defn.h \
+	src/msm.h \
+	src/wkfutils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_setup.o $(COPTC) src/msm_setup.c
+obj/msm_shortrng.o: \
+	src/msm_shortrng.c \
+	src/msm_defn.h \
+	src/msm.h \
+	src/wkfutils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_shortrng.o $(COPTC) src/msm_shortrng.c
+obj/msm_shortrng_sprec.o: \
+	src/msm_shortrng_sprec.c \
+	src/msm_defn.h \
+	src/msm.h \
+	src/wkfutils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/msm_shortrng_sprec.o $(COPTC) src/msm_shortrng_sprec.c
+obj/wkfutils.o: \
+	src/wkfutils.c \
+	src/wkfutils.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/wkfutils.o $(COPTC) src/wkfutils.c
 obj/common.o: \
 	src/common.C \
 	src/common.h \
@@ -46,6 +150,7 @@ obj/main.o: \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
 	inc/ComputeGBISserMgr.decl.h \
+	inc/ComputeMsmSerialMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -219,6 +324,7 @@ obj/BackEnd.o: \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
 	inc/ComputeGBISserMgr.decl.h \
+	inc/ComputeMsmSerialMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -1690,6 +1796,7 @@ obj/ComputeMgr.o: \
 	src/ComputeGlobalMsgs.h \
 	src/ComputeExt.h \
 	src/ComputeGBISser.h \
+	src/ComputeMsmSerial.h \
 	src/ComputeDPMTA.h \
 	src/ComputeDPME.h \
 	src/ComputeDPMEMsgs.h \
@@ -1884,7 +1991,8 @@ obj/ComputeNonbondedUtil.o: \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/LJTable.h \
-	src/Parameters.h
+	src/Parameters.h \
+	src/MsmMacros.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedUtil.o $(COPTC) src/ComputeNonbondedUtil.C
 obj/ComputeNonbondedStd.o: \
 	src/ComputeNonbondedStd.C \
@@ -4393,6 +4501,7 @@ obj/Node.o: \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
 	inc/ComputeGBISserMgr.decl.h \
+	inc/ComputeMsmSerialMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -4650,6 +4759,7 @@ obj/PatchMgr.o: \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
 	inc/ComputeGBISserMgr.decl.h \
+	inc/ComputeMsmSerialMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -4840,6 +4950,7 @@ obj/ProxyPatch.o: \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
 	inc/ComputeGBISserMgr.decl.h \
+	inc/ComputeMsmSerialMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \
@@ -5320,6 +5431,7 @@ obj/WorkDistrib.o: \
 	inc/PmeFFTLib.decl.h \
 	inc/ComputeExtMgr.decl.h \
 	inc/ComputeGBISserMgr.decl.h \
+	inc/ComputeMsmSerialMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	inc/BroadcastMgr.decl.h \

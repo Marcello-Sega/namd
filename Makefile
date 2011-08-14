@@ -67,6 +67,14 @@ include Make.config
 # Add new source files here.
 
 OBJS = \
+	$(DSTDIR)/ComputeMsmSerial.o \
+	$(DSTDIR)/msm.o \
+	$(DSTDIR)/msm_longrng.o \
+	$(DSTDIR)/msm_longrng_sprec.o \
+	$(DSTDIR)/msm_setup.o \
+	$(DSTDIR)/msm_shortrng.o \
+	$(DSTDIR)/msm_shortrng_sprec.o \
+	$(DSTDIR)/wkfutils.o \
 	$(DSTDIR)/common.o \
 	$(DSTDIR)/dcdlib.o \
 	$(DSTDIR)/erf.o \
@@ -235,6 +243,8 @@ OBJS = \
 # Add new modules here.
 
 CIFILES = 	\
+		$(INCDIR)/ComputeMsmSerialMgr.decl.h \
+		$(INCDIR)/ComputeMsmSerialMgr.def.h \
 		$(INCDIR)/BroadcastMgr.decl.h \
 		$(INCDIR)/BroadcastMgr.def.h \
 		$(INCDIR)/CollectionMaster.decl.h \
@@ -364,7 +374,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -language charm++ \
+	-module msa -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
@@ -570,6 +580,9 @@ depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
 	touch $(DEPENDFILE); \
 	for i in $(OBJS) ; do \
 	      SRCFILE=$(SRCDIR)/`basename $$i .o`.C ; \
+	      if [ ! -f $$SRCFILE ]; then \
+	            SRCFILE=$(SRCDIR)/`basename $$i .o`.c ; \
+              fi; \
 	      $(ECHO) "checking dependencies for $$SRCFILE" ; \
 	      g++ -MM $(GXXFLAGS) $$SRCFILE | \
 	      perl $(SRCDIR)/dc.pl $(CHARMINC) $(TCLDIR) $(FFTDIR) /usr/include /usr/local >> $(DEPENDFILE); \
