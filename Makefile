@@ -374,7 +374,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module msa -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -language charm++ \
+	-module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
