@@ -143,7 +143,7 @@ void master_init(int argc, char **argv){
   group.patchMgr = CProxy_PatchMgr::ckNew();
   group.computeMgr = CProxy_ComputeMgr::ckNew();
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
-  group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
+  // group.computePmeMgr set in constructor during startup
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
   group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();
@@ -152,9 +152,6 @@ void master_init(int argc, char **argv){
 #endif
 
   group.sync = CProxy_Sync::ckNew();
-
-  //group.computePmeMgr = CProxy_OptPmeMgr::ckNew();
-  //group.computePmeMgr = CProxy_ComputePmeMgr::ckNew();
 
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
