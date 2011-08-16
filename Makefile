@@ -67,6 +67,7 @@ include Make.config
 # Add new source files here.
 
 OBJS = \
+	$(DSTDIR)/ComputeMsm.o \
 	$(DSTDIR)/ComputeMsmSerial.o \
 	$(DSTDIR)/msm.o \
 	$(DSTDIR)/msm_longrng.o \
@@ -243,6 +244,8 @@ OBJS = \
 # Add new modules here.
 
 CIFILES = 	\
+		$(INCDIR)/ComputeMsmMgr.decl.h \
+		$(INCDIR)/ComputeMsmMgr.def.h \
 		$(INCDIR)/ComputeMsmSerialMgr.decl.h \
 		$(INCDIR)/ComputeMsmSerialMgr.def.h \
 		$(INCDIR)/BroadcastMgr.decl.h \
@@ -337,12 +340,15 @@ CHARMC = $(CHARM)/bin/charmc
 CHARMXI = $(CHARM)/bin/charmc
 CHARMINC = $(CHARM)/include $(COPTD)CMK_OPTIMIZE=1
 CHARMLIB = $(CHARM)/lib
+CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB
+#CHARM_MODULES = -module msa -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB
+#MSA = -DCHARM_HAS_MSA
 
 # Libraries we may have changed
 LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA)
 CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
 CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
 CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
@@ -374,7 +380,7 @@ namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -language charm++ \
+	"$(CHARM_MODULES)" -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
