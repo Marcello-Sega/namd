@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: dhardy $
- * $Date: 2011/08/14 13:49:12 $
- * $Revision: 1.1194 $
+ * $Date: 2011/08/16 21:23:44 $
+ * $Revision: 1.1195 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -527,6 +527,9 @@ public:
         int MSMApprox;
         int MSMSplit;
         int MSMLevels;
+        int MSMBlockSizeX;
+        int MSMBlockSizeY;
+        int MSMBlockSizeZ;
         BigReal MSMGridSpacing;
         BigReal MSMPadding;
         Bool MsmSerialOn;

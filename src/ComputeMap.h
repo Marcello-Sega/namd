@@ -50,6 +50,7 @@ enum ComputeType
   computeExtType,
   computeGBISserType,
   computeMsmSerialType,
+  computeMsmType,
   computeEFieldType,
 /* BEGIN gf */
   computeGridForceType,

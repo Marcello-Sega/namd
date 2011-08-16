@@ -39,6 +39,7 @@
 #include "memusage.h"
 
 #include "Lattice.h"
+#include "ComputeMsm.h"  // needed for MsmData definition
 #include "main.decl.h"
 #include "main.h"
 

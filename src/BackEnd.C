@@ -16,13 +16,16 @@
 #endif
 
 #include "Lattice.h"
+#include "ComputeMsm.h"  // needed for MsmData definition
 #include "main.decl.h"
 #include "main.h"
 #include "BOCgroup.h"
 #include "WorkDistrib.decl.h"
 #include "ProxyMgr.decl.h"
 #include "PatchMgr.decl.h"
+#ifdef CHARM_HAS_MSA
 #include "ComputeMgr.decl.h"
+#endif
 #include "ReductionMgr.decl.h"
 #include "CollectionMgr.decl.h"
 #include "CollectionMaster.decl.h"
@@ -147,6 +150,9 @@ void master_init(int argc, char **argv){
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
   group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();
+#ifdef CHARM_HAS_MSA
+  group.computeMsmMgr = CProxy_ComputeMsmMgr::ckNew();
+#endif
 #ifdef MEM_OPT_VERSION
   group.ioMgr=CProxy_ParallelIOMgr::ckNew();
 #endif

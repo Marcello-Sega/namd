@@ -41,6 +41,7 @@
 #include "ComputeExt.h"
 #include "ComputeGBISser.h"
 #include "ComputeMsmSerial.h"
+#include "ComputeMsm.h"
 #include "ComputeDPMTA.h"
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
@@ -503,6 +504,13 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
         break;
+#ifdef CHARM_HAS_MSA
+    case computeMsmType: // MSM parallel long-range part using MSA
+        c = new ComputeMsm(i);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
+#endif
     case computeEFieldType:
         c = new ComputeEField(i,map->computeData[i].pids[0].pid); // unknown delete
         map->registerCompute(i,c);

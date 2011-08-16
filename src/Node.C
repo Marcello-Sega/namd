@@ -30,6 +30,7 @@
 #include "memusage.h"
 #include "IMDOutput.h"
 #include "Lattice.h"
+#include "ComputeMsm.h"  // needed for MsmData definition
 #include "main.decl.h"
 #include "main.h"
 #include "WorkDistrib.h"
@@ -496,6 +497,12 @@ void Node::startup() {
 	pme[CkMyPe()].initialize(new CkQdMsg);
       }
     }
+#ifdef CHARM_HAS_MSA
+    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      msm[CkMyPe()].initialize(new CkQdMsg);
+    }
+#endif
 
     if (!CkMyPe()) {
       workDistrib->sendComputeMap();
@@ -518,6 +525,13 @@ void Node::startup() {
 	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
       }
     }
+#ifdef CHARM_HAS_MSA
+    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      msm[CkMyPe()].initWorkers(new CkQdMsg);
+    }
+#endif
+
     #ifdef MEM_OPT_VERSION
     //Now every processor has all the atoms it needs to create the HomePatches.
     //The HomePatches are created in parallel on every home patch procs.
@@ -540,6 +554,12 @@ void Node::startup() {
 	pme[CkMyPe()].activate_pencils(new CkQdMsg);
       }
     }
+#ifdef CHARM_HAS_MSA
+    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      msm[CkMyPe()].startWorkers(new CkQdMsg);
+    }
+#endif
     proxyMgr->createProxies();  // need Home patches before this
     if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
   break;

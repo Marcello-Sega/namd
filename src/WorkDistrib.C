@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: dhardy $
- * $Date: 2011/08/14 13:49:12 $
- * $Revision: 1.1226 $
+ * $Date: 2011/08/16 21:23:45 $
+ * $Revision: 1.1227 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -25,6 +25,7 @@
 #include "WorkDistrib.decl.h"
 #include "WorkDistrib.h"
 #include "Lattice.h"
+#include "ComputeMsm.h"  // needed for MsmData definition
 #include "main.decl.h"
 #include "main.h"
 #include "Node.h"
@@ -1409,6 +1410,10 @@ void WorkDistrib::mapComputes(void)
 
   if ( node->simParameters->MsmSerialOn )
     mapComputeHomePatches(computeMsmSerialType);
+#ifdef CHARM_HAS_MSA
+  else if ( node->simParameters->MSMOn )
+    mapComputeHomePatches(computeMsmType);
+#endif
 
 #ifdef NAMD_CUDA
   mapComputeNode(computeNonbondedCUDAType);

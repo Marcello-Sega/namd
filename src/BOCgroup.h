@@ -20,6 +20,7 @@ public:
   CkGroupID computeExtMgr;
   CkGroupID computeGBISserMgr;
   CkGroupID computeMsmSerialMgr;
+  CkGroupID computeMsmMgr;
   CkGroupID reductionMgr;
   CkGroupID collectionMgr;
   CkGroupID broadcastMgr;

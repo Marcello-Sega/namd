@@ -1,54 +1,64 @@
 #ifndef MSM_MACROS_H
 #define MSM_MACROS_H
 
-    enum {
-      APPROX_CUBIC = 0, /**< C1 degree 3 poly (numerical Hermite) */
-      APPROX_QUINTIC,   /**< C1 degree 5 poly (linear blend of degree 4) */
-      APPROX_QUINTIC2,  /**< C2 degree 5 poly */
-      APPROX_SEPTIC,    /**< C1 degree 7 poly (linear blend of degree 6) */
-      APPROX_SEPTIC3,   /**< C3 degree 7 poly */
-      APPROX_NONIC,     /**< C1 degree 9 poly (linear blend of degree 8) */
-      APPROX_NONIC4,    /**< C4 degree 9 poly */
-      APPROX_BSPLINE,   /**< C2 degree 3 B-spline */
-      APPROX_END        /**< (for internal use) */
-    };
+#define ROUNDUP_QUOTIENT(n, k)  (((n)/(k)) + (((n)%(k)) != 0))
 
-    enum {
-      SPLIT_TAYLOR2 = 0,  /**< C2 Taylor */
-      SPLIT_TAYLOR3,      /**< C3 Taylor */
-      SPLIT_TAYLOR4,      /**< C4 Taylor */
-      SPLIT_TAYLOR5,      /**< C5 Taylor */
-      SPLIT_TAYLOR6,      /**< C6 Taylor */
-      SPLIT_TAYLOR7,      /**< C7 Taylor */
-      SPLIT_TAYLOR8,      /**< C8 Taylor */
-      SPLIT_TAYLOR1,      /**< C1 Taylor */
+enum {
+  PERIODIC_NONE = 0,
+  PERIODIC_VEC1 = 0x01,
+  PERIODIC_VEC2 = 0x02,
+  PERIODIC_VEC3 = 0x04,
+  PERIODIC_ALL = PERIODIC_VEC1 | PERIODIC_VEC2 | PERIODIC_VEC2
+};
 
-      SPLIT_SIGMA2_3,     /**< C2, degree 3 (the "perfect" smoothing) */
-      SPLIT_SIGMA3_5,     /**< C3, degree 5 */
-      SPLIT_SIGMA4_6,     /**< C4, degree 6 */
-      SPLIT_SIGMA4_7,     /**< C4, degree 7 */
-      SPLIT_SIGMA5_8,     /**< C5, degree 8 */
-      SPLIT_SIGMA5_9,     /**< C5, degree 9 */
-      SPLIT_SIGMA6_9,     /**< C6, degree 9 */
-      SPLIT_SIGMA6_10,    /**< C6, degree 10 */
-      SPLIT_SIGMA6_11,    /**< C6, degree 11 */
-      SPLIT_SIGMA7_11,    /**< C7, degree 11 */
-      SPLIT_SIGMA7_12,    /**< C7, degree 12 */
-      SPLIT_SIGMA7_13,    /**< C7, degree 13 */
-      SPLIT_SIGMA8_12,    /**< C8, degree 12 */
-      SPLIT_SIGMA8_13,    /**< C8, degree 13 */
-      SPLIT_SIGMA8_14,    /**< C8, degree 14 */
-      SPLIT_SIGMA8_15,    /**< C8, degree 15 */
+enum {
+  APPROX_CUBIC = 0, /**< C1 degree 3 poly (numerical Hermite) */
+  APPROX_QUINTIC,   /**< C1 degree 5 poly (linear blend of degree 4) */
+  APPROX_QUINTIC2,  /**< C2 degree 5 poly */
+  APPROX_SEPTIC,    /**< C1 degree 7 poly (linear blend of degree 6) */
+  APPROX_SEPTIC3,   /**< C3 degree 7 poly */
+  APPROX_NONIC,     /**< C1 degree 9 poly (linear blend of degree 8) */
+  APPROX_NONIC4,    /**< C4 degree 9 poly */
+  APPROX_BSPLINE,   /**< C2 degree 3 B-spline */
+  APPROX_END        /**< (for internal use) */
+};
 
-      SPLIT_SIGMA2_6,     /**< C2, degree 6, even powers of r,
-                                 chosen to minimize error bound */
+enum {
+  SPLIT_TAYLOR2 = 0,  /**< C2 Taylor */
+  SPLIT_TAYLOR3,      /**< C3 Taylor */
+  SPLIT_TAYLOR4,      /**< C4 Taylor */
+  SPLIT_TAYLOR5,      /**< C5 Taylor */
+  SPLIT_TAYLOR6,      /**< C6 Taylor */
+  SPLIT_TAYLOR7,      /**< C7 Taylor */
+  SPLIT_TAYLOR8,      /**< C8 Taylor */
+  SPLIT_TAYLOR1,      /**< C1 Taylor */
 
-      SPLIT_SWITCH1_2,    /**< C2, switching at r/a=1/2 */
-      SPLIT_SWITCH3_4,    /**< C2, switching at r/a=3/4 */
-      SPLIT_SWITCH7_8,    /**< C2, switching at r/a=7/8 */
+  SPLIT_SIGMA2_3,     /**< C2, degree 3 (the "perfect" smoothing) */
+  SPLIT_SIGMA3_5,     /**< C3, degree 5 */
+  SPLIT_SIGMA4_6,     /**< C4, degree 6 */
+  SPLIT_SIGMA4_7,     /**< C4, degree 7 */
+  SPLIT_SIGMA5_8,     /**< C5, degree 8 */
+  SPLIT_SIGMA5_9,     /**< C5, degree 9 */
+  SPLIT_SIGMA6_9,     /**< C6, degree 9 */
+  SPLIT_SIGMA6_10,    /**< C6, degree 10 */
+  SPLIT_SIGMA6_11,    /**< C6, degree 11 */
+  SPLIT_SIGMA7_11,    /**< C7, degree 11 */
+  SPLIT_SIGMA7_12,    /**< C7, degree 12 */
+  SPLIT_SIGMA7_13,    /**< C7, degree 13 */
+  SPLIT_SIGMA8_12,    /**< C8, degree 12 */
+  SPLIT_SIGMA8_13,    /**< C8, degree 13 */
+  SPLIT_SIGMA8_14,    /**< C8, degree 14 */
+  SPLIT_SIGMA8_15,    /**< C8, degree 15 */
 
-      SPLIT_END           /**< (for internal use) */
-    };
+  SPLIT_SIGMA2_6,     /**< C2, degree 6, even powers of r,
+                             chosen to minimize error bound */
+
+  SPLIT_SWITCH1_2,    /**< C2, switching at r/a=1/2 */
+  SPLIT_SWITCH3_4,    /**< C2, switching at r/a=3/4 */
+  SPLIT_SWITCH7_8,    /**< C2, switching at r/a=7/8 */
+
+  SPLIT_END           /**< (for internal use) */
+};
 
 /** SPOLY() calculates the polynomial part of the
  * normalized smoothing of 1/r.
@@ -271,7 +281,7 @@
     float *phi = _phi; \
     float t = _delta; \
     switch (_approx) { \
-      case Msm::APPROX_CUBIC: \
+      case APPROX_CUBIC: \
         phi[0] = 0.5f * (1 - t) * (2 - t) * (2 - t); \
         t--; \
         phi[1] = (1 - t) * (1 + t - 1.5f * t * t); \
@@ -280,7 +290,7 @@
         t--; \
         phi[3] = 0.5f * (1 + t) * (2 + t) * (2 + t); \
         break; \
-      case Msm::APPROX_QUINTIC: \
+      case APPROX_QUINTIC: \
         phi[0] = (1.f/24) * (1-t) * (2-t) * (3-t) * (3-t) * (4-t); \
         t--; \
         phi[1] = (1-t) * (2-t) * (3-t) * ((1.f/6) + t * (0.375f - (5.f/24)*t));\
@@ -293,7 +303,7 @@
         t--; \
         phi[5] = (1.f/24) * (1+t) * (2+t) * (3+t) * (3+t) * (4+t); \
         break; \
-      case Msm::APPROX_QUINTIC2: \
+      case APPROX_QUINTIC2: \
         phi[0] = (1.f/24) * (3-t) * (3-t) * (3-t) * (t-2) * (5*t-8); \
         t--; \
         phi[1] = (-1.f/24) * (2-t) * (t-1) * (-48+t*(153+t*(-114+t*25))); \
@@ -306,7 +316,7 @@
         t--; \
         phi[5] = (1.f/24) * (3+t) * (3+t) * (3+t) * (t+2) * (5*t+8); \
         break; \
-      case Msm::APPROX_SEPTIC: \
+      case APPROX_SEPTIC: \
         phi[0] = (-1.f/720)*(t-1)*(t-2)*(t-3)*(t-4)*(t-4)*(t-5)*(t-6); \
         t--; \
         phi[1] = (1.f/720)*(t-1)*(t-2)*(t-3)*(t-4)*(t-5)*(-6+t*(-20+7*t)); \
@@ -323,7 +333,7 @@
         t--; \
         phi[7] = (1.f/720)*(t+1)*(t+2)*(t+3)*(t+4)*(t+4)*(t+5)*(t+6); \
         break; \
-      case Msm::APPROX_SEPTIC3: \
+      case APPROX_SEPTIC3: \
         phi[0] = (3632.f/5) + t*((-7456.f/5) + t*((58786.f/45) + t*(-633 \
                 + t*((26383.f/144) + t*((-22807.f/720) + t*((727.f/240) \
                       + t*(-89.f/720))))))); \
@@ -354,7 +364,7 @@
                 + t*((26383.f/144) + t*((22807.f/720) + t*((727.f/240) \
                       + t*(89.f/720))))))); \
         break; \
-      case Msm::APPROX_NONIC: \
+      case APPROX_NONIC: \
         phi[0] = (-1.f/40320)*(t-8)*(t-7)*(t-6)*(t-5)*(t-5)*(t-4)*(t-3)* \
           (t-2)*(t-1); \
         t--; \
@@ -385,7 +395,7 @@
         phi[9] = (1.f/40320)*(t+1)*(t+2)*(t+3)*(t+4)*(t+5)*(t+5)*(t+6)* \
           (t+7)*(t+8); \
         break; \
-      case Msm::APPROX_NONIC4: \
+      case APPROX_NONIC4: \
         phi[0] = 439375.f/7+t*(-64188125.f/504+t*(231125375.f/2016 \
               +t*(-17306975.f/288+t*(7761805.f/384+t*(-2895587.f/640 \
                     +t*(129391.f/192+t*(-259715.f/4032+t*(28909.f/8064 \
@@ -431,7 +441,7 @@
                     +t*(129391.f/192+t*(259715.f/4032+t*(28909.f/8064 \
                           +t*(3569.f/40320))))))))); \
         break; \
-      case Msm::APPROX_BSPLINE: \
+      case APPROX_BSPLINE: \
         phi[0] = (1.f/6) * (2-t) * (2-t) * (2-t); \
         t--; \
         phi[1] = (2.f/3) + t*t*(-1 + 0.5f*t); \
@@ -461,7 +471,7 @@
     float h_1 = _h_1; \
     float t = _delta; \
     switch (_approx) { \
-      case Msm::APPROX_CUBIC: \
+      case APPROX_CUBIC: \
         phi[0] = 0.5f * (1 - t) * (2 - t) * (2 - t); \
         dphi[0] = (1.5f * t - 2) * (2 - t) * h_1; \
         t--; \
@@ -474,7 +484,7 @@
         phi[3] = 0.5f * (1 + t) * (2 + t) * (2 + t); \
         dphi[3] = (1.5f * t + 2) * (2 + t) * h_1; \
         break; \
-      case Msm::APPROX_QUINTIC: \
+      case APPROX_QUINTIC: \
         phi[0] = (1.f/24) * (1-t) * (2-t) * (3-t) * (3-t) * (4-t); \
         dphi[0] = ((-1.f/24) * ((3-t) * (3-t) * (14 + t * (-14 + 3*t)) \
               + 2 * (1-t) * (2-t) * (3-t) * (4-t))) * h_1; \
@@ -499,7 +509,7 @@
         dphi[5] = ((1.f/24) * ((3+t) * (3+t) * (14 + t * (14 + 3*t)) \
               + 2 * (1+t) * (2+t) * (3+t) * (4+t))) * h_1; \
         break; \
-      case Msm::APPROX_QUINTIC2: \
+      case APPROX_QUINTIC2: \
         phi[0] = (1.f/24) * (3-t) * (3-t) * (3-t) * (t-2) * (5*t-8); \
         dphi[0] = ((1.f/24) * (3-t) * (3-t) * ((3-t)*(5*t-8) - 3*(t-2)*(5*t-8) \
               + 5*(t-2)*(3-t))) * h_1; \
@@ -526,7 +536,7 @@
         dphi[5] = ((1.f/24) * (3+t) * (3+t) * ((3+t)*(5*t+8) + 3*(t+2)*(5*t+8) \
               + 5*(t+2)*(3+t))) * h_1; \
         break; \
-      case Msm::APPROX_SEPTIC: \
+      case APPROX_SEPTIC: \
         phi[0] = (-1.f/720)*(t-1)*(t-2)*(t-3)*(t-4)*(t-4)*(t-5)*(t-6); \
         dphi[0] = (-1.f/720)*(t-4)*(-1944+t*(3644+t*(-2512+t*(807 \
                   +t*(-122+t*7))))) * h_1; \
@@ -559,7 +569,7 @@
         dphi[7] = (1.f/720)*(t+4)*(1944+t*(3644+t*(2512+t*(807 \
                   +t*(122+t*7))))) * h_1; \
         break; \
-      case Msm::APPROX_SEPTIC3: \
+      case APPROX_SEPTIC3: \
         phi[0] = (3632.f/5) + t*((-7456.f/5) + t*((58786.f/45) + t*(-633 \
                 + t*((26383.f/144) + t*((-22807.f/720) + t*((727.f/240) \
                       + t*(-89.f/720))))))); \
@@ -608,7 +618,7 @@
         dphi[7] = ((7456.f/5) + t*((117572.f/45) + t*(1899 + t*((26383.f/36) \
                   + t*((22807.f/144) + t*((727.f/40) + t*(623.f/720)))))))*h_1; \
         break; \
-      case Msm::APPROX_NONIC: \
+      case APPROX_NONIC: \
         phi[0] = (-1.f/40320)*(t-8)*(t-7)*(t-6)*(t-5)*(t-5)*(t-4)*(t-3)* \
           (t-2)*(t-1); \
         dphi[0] = (-1.f/40320)*(t-5)*(-117648+t*(256552+t*(-221416 \
@@ -661,7 +671,7 @@
         dphi[9] = (1.f/40320)*(t+5)*(117648+t*(256552+t*(221416 \
                 +t*(99340+t*(25261+t*(3667+t*(283+t*9)))))))*h_1; \
         break; \
-      case Msm::APPROX_NONIC4: \
+      case APPROX_NONIC4: \
         phi[0] = 439375.f/7+t*(-64188125.f/504+t*(231125375.f/2016 \
               +t*(-17306975.f/288+t*(7761805.f/384+t*(-2895587.f/640 \
                     +t*(129391.f/192+t*(-259715.f/4032+t*(28909.f/8064 \
@@ -745,7 +755,7 @@
                     +t*(129391.f/32+t*(259715.f/576+t*(28909.f/1008 \
                           +t*(3569.f/4480)))))))))*h_1; \
         break; \
-      case Msm::APPROX_BSPLINE: \
+      case APPROX_BSPLINE: \
         phi[0] = (1.f/6) * (2-t) * (2-t) * (2-t); \
         dphi[0] = -0.5f * (2-t) * (2-t) * h_1; \
         t--; \

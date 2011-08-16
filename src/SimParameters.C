@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dhardy $
- * $Date: 2011/08/14 13:49:12 $
- * $Revision: 1.1367 $
+ * $Date: 2011/08/16 21:23:44 $
+ * $Revision: 1.1368 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -692,12 +692,20 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
        &MSMGridSpacing, 2.5);
    opts.optional("MSM", "MSMPadding", "MSM padding (Angstroms)",
        &MSMPadding, 2.5);
+   opts.optional("MSM", "MSMBlockSizeX",
+       "MSM grid block size along X direction (for decomposing parallel work)",
+       &MSMBlockSizeX, 4);
+   opts.optional("MSM", "MSMBlockSizeY",
+       "MSM grid block size along Y direction (for decomposing parallel work)",
+       &MSMBlockSizeY, 4);
+   opts.optional("MSM", "MSMBlockSizeZ",
+       "MSM grid block size along Z direction (for decomposing parallel work)",
+       &MSMBlockSizeZ, 4);
 
    opts.optionalB("MSM", "MsmSerial",
        "Use MSM serial version for long-range calculation?",
        &MsmSerialOn, FALSE);
 
-   if (MSMOn) MsmSerialOn = TRUE;  // XXX required for now
 
    ///////////  Particle Mesh Ewald
 
@@ -4870,6 +4878,9 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    {
      iout << iINFO
        << "MULTILEVEL SUMMATION METHOD (MSM) FOR ELECTROSTATICS ACTIVE\n";
+#if !defined(CHARM_HAS_MSA)
+     if (MSMOn) MsmSerialOn = TRUE;
+#endif
      if (MsmSerialOn) {
        iout << iINFO
          << "PERFORMING SERIAL MSM CALCULATION FOR LONG-RANGE PART\n";
