@@ -311,6 +311,7 @@ CUDAOBJSRAW = \
 
 $(DSTDIR)/ComputeNonbondedCUDAKernel.o: \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.cu \
+	$(SRCDIR)/ComputeNonbondedCUDAKernelBase.h \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.h
 	$(CUDACC) -ptx "`$(NATIVEPATH) $(SRCDIR)/`ComputeNonbondedCUDAKernel.cu"
 	grep global ComputeNonbondedCUDAKernel.ptx
