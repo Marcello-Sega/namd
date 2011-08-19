@@ -9,7 +9,7 @@ void cuda_errcheck(const char *msg);
 #endif
 
 #define PATCH_PAIR_SIZE 16
-#define PATCH_PAIR_USED 14
+#define PATCH_PAIR_USED 15
 
 struct __align__(16) patch_pair {  // must be multiple of 16!
   float4 offset;
@@ -23,7 +23,7 @@ struct __align__(16) patch_pair {  // must be multiple of 16!
   unsigned int virial_start;  // virial output location padded to 16
   unsigned int patch1_force_list_index;
   unsigned int patch1_force_list_size;
-  unsigned int pad1;
+  unsigned int patch2_force_size;  // used for fixed-atom energy
   unsigned int pad2;
 };
 

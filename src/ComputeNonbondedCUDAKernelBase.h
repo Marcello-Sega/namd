@@ -272,7 +272,12 @@ __global__ static void NAME(dev_nonbonded)(
           totalev += ev;
           totalee += ee;
           SLOW( totales += es; )
-          /* if ( j >= free_size ) add them again if fixed */
+          if ( blockj + j >= myPatchPair.patch2_force_size ) {
+            /* add fixed atoms twice */
+            totalev += ev;
+            totalee += ee;
+            SLOW( totales += es; )
+          }
           )
           /* ife.w += r2 * f; */
           ife.x += tmpx * f;

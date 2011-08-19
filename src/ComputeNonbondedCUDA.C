@@ -937,6 +937,7 @@ void ComputeNonbondedCUDA::doWork() {
 	                         16 * force_lists[lp1].force_list_size;
     pp.patch1_size = patchRecords[p1].numAtoms;
     pp.patch1_force_size = patchRecords[p1].numFreeAtoms;
+    pp.patch2_force_size = patchRecords[p2].numFreeAtoms;
     pp.block_flags_start = bfstart;
     bfstart += ((pp.patch1_force_size + 127) >> 7) << 5;
     // istart += pp.patch1_size;
