@@ -12,33 +12,33 @@
 
 
 struct sortop_base {
-  const CompAtom * const a;
-  sortop_base(const CompAtom* atoms) : a(atoms) { }
+  const FullAtom * const a;
+  sortop_base(const FullAtom* atoms) : a(atoms) { }
 };
 
 struct sortop_x : public sortop_base {
-  sortop_x(const CompAtom* atoms) : sortop_base(atoms) { }
+  sortop_x(const FullAtom* atoms) : sortop_base(atoms) { }
   bool operator() (int i, int j) const {
     return ( a[i].position.x < a[j].position.x );
   }
 };
 
 struct sortop_y : public sortop_base {
-  sortop_y(const CompAtom* atoms) : sortop_base(atoms) { }
+  sortop_y(const FullAtom* atoms) : sortop_base(atoms) { }
   bool operator() (int i, int j) const {
     return ( a[i].position.y < a[j].position.y );
   }
 };
 
 struct sortop_z : public sortop_base {
-  sortop_z(const CompAtom* atoms) : sortop_base(atoms) { }
+  sortop_z(const FullAtom* atoms) : sortop_base(atoms) { }
   bool operator() (int i, int j) const {
     return ( a[i].position.z < a[j].position.z );
   }
 };
 
 
-static void partition(int *order, const CompAtom *atoms, int begin, int end) {
+static void partition(int *order, const FullAtom *atoms, int begin, int end) {
 
   //  Applies orthogonal recursive bisection with splittings limited
   //  to multiples of 32 for warps and a final split on multiples of 16.
@@ -94,7 +94,7 @@ static void partition(int *order, const CompAtom *atoms, int begin, int end) {
 
 }
 
-void sortAtomsForCUDA(int *order, const CompAtom *atoms, int nfree, int n) {
+void sortAtomsForCUDA(int *order, const FullAtom *atoms, int nfree, int n) {
 
   // partition free atoms
   // CkPrintf("%d %d\n", 0, nfree);

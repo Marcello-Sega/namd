@@ -7,9 +7,9 @@
 #ifndef SORTATOMS_H
 #define SORTATOMS_H
 
-class CompAtom;
+class FullAtom;
 
-void sortAtomsForCUDA(int *order, const CompAtom *atoms, int nfree, int n);
+void sortAtomsForCUDA(int *order, const FullAtom *atoms, int nfree, int n);
 
 #endif // SORTATOMS_H
 

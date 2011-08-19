@@ -78,6 +78,9 @@ struct CompAtomExt {
   AtomSigID sigId;
   ExclSigID exclId;
   #endif
+  #ifdef NAMD_CUDA
+  int sortOrder;  // used to reorder atoms for CUDA
+  #endif
   int id : 30;  // minimum for 100M atoms is 28 signed, 27 unsigned
   unsigned int atomFixed : 1;
   unsigned int groupFixed : 1;

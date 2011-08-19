@@ -38,6 +38,7 @@
 #include "Priorities.h"
 #include "ComputeGBIS.inl"
 #include "Priorities.h"
+#include "SortAtoms.h"
 
 #define TINY 1.0e-20;
 #define MAXHGS 10
@@ -923,6 +924,39 @@ void HomePatch::positionsReady(int doMigration)
       doMarginCheck();
     }
   }
+
+#ifdef NAMD_CUDA
+  if ( doMigration ) {
+    int n = numAtoms;
+    FullAtom *a_i = atom.begin();
+    int *ao = new int[n];
+    int nfree;
+    SimParameters *simParams = Node::Object()->simParameters;
+    if ( simParams->fixedAtomsOn && ! simParams->fixedAtomsForces ) {
+      int k = 0;
+      int k2 = n;
+      for ( int j=0; j<n; ++j ) {
+        // put fixed atoms at end
+        if ( a_i[j].atomFixed ) ao[--k2] = j;
+        else ao[k++] = j;
+      }
+      nfree = k;
+    } else {
+      nfree = n;
+      for ( int j=0; j<n; ++j ) {
+        ao[j] = j;
+      }
+    }
+
+    sortAtomsForCUDA(ao,a_i,nfree,n);
+  
+    for ( int i=0; i<n; ++i ) { 
+      a_i[i].sortOrder = ao[i];
+    }
+    delete [] ao;
+  }
+#endif
+
   doMigration = (doMigration && numNeighbors) || ! patchMapRead;
 
   // Workaround for oversize groups

@@ -1027,8 +1027,9 @@ void ComputeNonbondedCUDA::doWork() {
     int n = pr.numAtoms;
     const CompAtom *a = pr.x;
     const CompAtomExt *aExt = pr.xExt;
-    int *ao = atom_order + start;
+    // int *ao = atom_order + start;
     if ( atomsChanged ) {
+#if 0
       int nfree = pr.numFreeAtoms;
       if ( nfree != n ) {
         int k = 0;
@@ -1047,10 +1048,11 @@ void ComputeNonbondedCUDA::doWork() {
       }
 
       sortAtomsForCUDA(ao,a,nfree,n);
+#endif
 
       atom_param *ap = atom_params + start;
       for ( int k=0; k<n; ++k ) {
-        int j = ao[k];
+        int j = aExt[k].sortOrder;
         ap[k].vdw_type = a[j].vdwType;
         ap[k].index = aExt[j].id;
 #ifdef MEM_OPT_VERSION
@@ -1067,7 +1069,7 @@ void ComputeNonbondedCUDA::doWork() {
         pr.p->flags.lattice.unscale(cudaCompute->patchMap->center(pr.patchID));
       atom *ap = atoms + start;
       for ( int k=0; k<n; ++k ) {
-        int j = ao[k];
+        int j = aExt[k].sortOrder;
         ap[k].position.x = a[j].position.x - center.x;
         ap[k].position.y = a[j].position.y - center.y;
         ap[k].position.z = a[j].position.z - center.z;
@@ -1344,12 +1346,12 @@ int ComputeNonbondedCUDA::finishWork() {
     Force *f_slow = pr.r->f[Results::slow];
     const CompAtom *a = pr.x;
     const CompAtomExt *aExt = pr.xExt;
-    int *ao = atom_order + start;
+    // int *ao = atom_order + start;
     float4 *af = forces + start;
     float4 *af_slow = slow_forces + start;
     // only free atoms return forces
     for ( int k=0; k<nfree; ++k ) {
-      int j = ao[k];
+      int j = aExt[k].sortOrder;
       f[j].x += af[k].x;
       f[j].y += af[k].y;
       f[j].z += af[k].z;
@@ -1368,7 +1370,7 @@ int ComputeNonbondedCUDA::finishWork() {
     if ( CkNumPes() == 1 ) {
       const CompAtomExt *aExt = pr.xExt;
       for ( int k=0; k<nfree; ++k ) {
-        int j = ao[k];
+        int j = aExt[k].sortOrder;
 #ifdef MEM_OPT_VERSION
         int excl_expected = mol->exclSigPool[aExt[j].exclId].fullExclCnt + 1;
 #else
