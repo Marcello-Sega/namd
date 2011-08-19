@@ -331,24 +331,32 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     switch ( map->type(i) )
     {
     case computeNonbondedSelfType:
+#ifdef NAMD_CUDA
+        register_cuda_compute_self(i,map->computeData[i].pids[0].pid);
+#else
         c = new ComputeNonbondedSelf(i,map->computeData[i].pids[0].pid,
                                      computeNonbondedWorkArrays,
                                      map->partition(i),map->partition(i)+1,
                                      map->numPartitions(i)); // unknown delete
         map->registerCompute(i,c);
         c->initialize();
+#endif
         break;
     case computeNonbondedPairType:
         pid2[0] = map->computeData[i].pids[0].pid;
         trans2[0] = map->computeData[i].pids[0].trans;
         pid2[1] = map->computeData[i].pids[1].pid;
         trans2[1] = map->computeData[i].pids[1].trans;
+#ifdef NAMD_CUDA
+        register_cuda_compute_pair(i,pid2,trans2);
+#else
         c = new ComputeNonbondedPair(i,pid2,trans2,
                                      computeNonbondedWorkArrays,
                                      map->partition(i),map->partition(i)+1,
                                      map->numPartitions(i)); // unknown delete
         map->registerCompute(i,c);
         c->initialize();
+#endif
         break;
 #ifdef NAMD_CUDA
     case computeNonbondedCUDAType:
