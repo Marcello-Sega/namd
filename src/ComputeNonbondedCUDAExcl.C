@@ -66,6 +66,7 @@ void ExclElem::computeForce(BigReal *reduction,
     BigReal diffa = r2 - r2_table[table_i];
 
     const int doFull = flags.doFullElectrostatics;
+    const int doEnergy = flags.doEnergy;
 
     BigReal fast_a = 0., fast_b = 0., fast_c = 0., fast_d = 0.;
     BigReal slow_a, slow_b, slow_c, slow_d;
@@ -87,10 +88,10 @@ void ExclElem::computeForce(BigReal *reduction,
     const BigReal kqq = (1.0 - scale14) *
             COULOMB * p_i.charge * p_j.charge * scaling * dielectric_1;
 
-    fast_a = vdw_a +      kqq * fast_table[4*table_i+0];  // not used!
-    fast_b = vdw_b + 2. * kqq * fast_table[4*table_i+1];
-    fast_c = vdw_c + 4. * kqq * fast_table[4*table_i+2];
-    fast_d = vdw_d + 6. * kqq * fast_table[4*table_i+3];
+    fast_a =      kqq * fast_table[4*table_i+0];  // not used!
+    fast_b = 2. * kqq * fast_table[4*table_i+1];
+    fast_c = 4. * kqq * fast_table[4*table_i+2];
+    fast_d = 6. * kqq * fast_table[4*table_i+3];
 
     if ( doFull ) {
       slow_a =      kqq * slow_table[4*table_i+0];  // not used!
@@ -98,6 +99,25 @@ void ExclElem::computeForce(BigReal *reduction,
       slow_c = 4. * kqq * slow_table[4*table_i+2];
       slow_d = 6. * kqq * slow_table[4*table_i+3];
     }
+
+    if ( doEnergy ) {
+      reduction[vdwEnergyIndex] -=
+		( ( diffa * (1./6.)*vdw_d + 0.25*vdw_c ) * diffa
+			+ 0.5*vdw_b ) * diffa + vdw_a;
+      reduction[electEnergyIndex] -=
+		( ( diffa * (1./6.)*fast_d + 0.25*fast_c ) * diffa
+			+ 0.5*fast_b ) * diffa + fast_a;
+      if ( doFull ) {
+        reduction[fullElectEnergyIndex] -=
+		( ( diffa * (1./6.)*slow_d + 0.25*slow_c ) * diffa
+			+ 0.5*slow_b ) * diffa + slow_a;
+      }
+    }
+
+    fast_a += vdw_a;
+    fast_b += vdw_b;
+    fast_c += vdw_c;
+    fast_d += vdw_d;
 
   } else if ( doFull ) {  // full exclusion
 
@@ -109,6 +129,11 @@ void ExclElem::computeForce(BigReal *reduction,
     slow_b = kqq * ( table_four_i[10] - table_four_i[14] );
     slow_a = kqq * ( table_four_i[11] - table_four_i[15] );  // not used!
 
+    if ( doEnergy ) {
+      reduction[fullElectEnergyIndex] -=
+		( ( diffa * (1./6.)*slow_d + 0.25*slow_c ) * diffa
+			+ 0.5*slow_b ) * diffa + slow_a;
+    }
   }
 
   register BigReal fast_dir =
@@ -156,7 +181,9 @@ void ExclElem::computeForce(BigReal *reduction,
 
 void ExclElem::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
-  // reduction->item(REDUCTION_BOND_ENERGY) += data[bondEnergyIndex];
+  reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex];
+  reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_NBOND,data,virialIndex);
   ADD_TENSOR(reduction,REDUCTION_VIRIAL_SLOW,data,slowVirialIndex);
 }

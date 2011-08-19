@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/07/19 22:39:49 $
- * $Revision: 1.1270 $
+ * $Date: 2011/08/19 07:06:21 $
+ * $Revision: 1.1271 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1909,7 +1909,7 @@ void Controller::printTiming(int step) {
 #ifdef NAMD_CUDA
       if ( simParams->outputEnergies < 60 &&
            step < (simParams->firstTimestep + 10 * simParams->outputTiming) ) {
-        iout << iWARN << "Energy evaluation is done on CPU, increase outputEnergies to improve performance.\n" << endi;
+        iout << iWARN << "Energy evaluation is expensive, increase outputEnergies to improve performance.\n" << endi;
       }
 #endif
       if ( step >= (simParams->firstTimestep + simParams->outputTiming) ) {
@@ -2120,7 +2120,7 @@ void Controller::printEnergies(int step, int minimize)
      if ( benchPhase > 0 && benchPhase < 7 ) {
 #ifdef NAMD_CUDA
       if ( simParams->outputEnergies < 60 ) {
-        iout << iWARN << "Energy evaluation is done on CPU, increase outputEnergies to improve performance.\n";
+        iout << iWARN << "Energy evaluation is expensive, increase outputEnergies to improve performance.\n";
       }
 #endif
       iout << iINFO;

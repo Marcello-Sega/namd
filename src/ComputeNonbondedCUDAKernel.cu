@@ -57,24 +57,40 @@ void cuda_bind_lj_table(const float2 *t, int _lj_table_size) {
 
 
 texture<float4, 1, cudaReadModeElementType> force_table;
+texture<float4, 1, cudaReadModeElementType> energy_table;
 
-void cuda_bind_force_table(const float4 *t) {
+void cuda_bind_force_table(const float4 *t, const float4 *et) {
     static cudaArray *ct;
+    static cudaArray *ect;
     if ( ! ct ) {
       cudaMallocArray(&ct, &force_table.channelDesc, FORCE_TABLE_SIZE, 1);
       cuda_errcheck("allocating force table");
     }
+    if ( ! ect ) {
+      cudaMallocArray(&ect, &energy_table.channelDesc, FORCE_TABLE_SIZE, 1);
+      cuda_errcheck("allocating energy table");
+    }
     cudaMemcpyToArray(ct, 0, 0, t, FORCE_TABLE_SIZE*sizeof(float4), cudaMemcpyHostToDevice);
     // cudaMemcpy(ct, t, FORCE_TABLE_SIZE*sizeof(float4), cudaMemcpyHostToDevice);
     cuda_errcheck("memcpy to force table");
+    cudaMemcpyToArray(ect, 0, 0, et, FORCE_TABLE_SIZE*sizeof(float4), cudaMemcpyHostToDevice);
+    cuda_errcheck("memcpy to energy table");
 
     force_table.normalized = true;
     force_table.addressMode[0] = cudaAddressModeClamp;
     force_table.addressMode[1] = cudaAddressModeClamp;
     force_table.filterMode = cudaFilterModeLinear;
 
+    energy_table.normalized = true;
+    energy_table.addressMode[0] = cudaAddressModeClamp;
+    energy_table.addressMode[1] = cudaAddressModeClamp;
+    energy_table.filterMode = cudaFilterModeLinear;
+
     cudaBindTextureToArray(force_table, ct);
     cuda_errcheck("binding force table to texture");
+
+    cudaBindTextureToArray(energy_table, ect);
+    cuda_errcheck("binding energy table to texture");
 }
 
 static int patch_pairs_size;
@@ -336,7 +352,7 @@ __host__ __device__ static int3 patch_offset_from_neighbor(int neighbor) {
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
 		float cutoff2, float plcutoff2,
 		int cbegin, int ccount, int pbegin, int pcount,
-		int doSlow, int usePairlists, int savePairlists) {
+		int doSlow, int doEnergy, int usePairlists, int savePairlists) {
 
  if ( ccount ) {
    if ( usePairlists ) {
@@ -359,7 +375,6 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
              lj_table_size, \
 	     lata, latb, latc, cutoff2, plcutoff2, doSlow)
 
-     int doEnergy = 0;
      if ( doEnergy ) {
        if ( doSlow ) {
          if ( plcutoff2 != 0. ) CALL(dev_nonbonded_slow_energy_pairlist);
@@ -404,6 +419,11 @@ int cuda_stream_finished() {
   return ( cudaStreamQuery(stream) == cudaSuccess );
 }
 
+
+#else  // NAMD_CUDA
+
+// for make depends
+#include "ComputeNonbondedCUDAKernelBase.h"
 
 #endif  // NAMD_CUDA
 

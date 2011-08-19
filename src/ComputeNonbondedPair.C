@@ -99,17 +99,14 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
 }
 
 int ComputeNonbondedPair::noWork() {
-  if ( patch[0]->flags.doNonbonded && ((numAtoms[0] && numAtoms[1]) || patch[0]->flags.doGBIS)
-#ifdef NAMD_CUDA
-	&& patch[0]->flags.doEnergy
-#endif
- )
-  {
+#ifndef NAMD_CUDA
+  if ( patch[0]->flags.doNonbonded && ((numAtoms[0] && numAtoms[1]) || patch[0]->flags.doGBIS) ) {
     return 0;  // work to do, enqueue as usual
   } else {
     // Inform load balancer
-#ifndef NAMD_CUDA
     LdbCoordinator::Object()->skipWork(ldObjHandle);
+#else
+  {
 #endif
 
     // skip all boxes

@@ -93,7 +93,7 @@ void cuda_bind_lj_table(const float2 *t, int _lj_table_size);
 // CUDA docs lie, older devices can only handle 4096
 #define FORCE_TABLE_SIZE 4096
 
-void cuda_bind_force_table(const float4 *t);
+void cuda_bind_force_table(const float4 *t, const float4 *et);
 
 void cuda_init();
 
@@ -113,7 +113,7 @@ void cuda_bind_virials(float *v);
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
                 float cutoff2, float plcutoff2,
                 int cbegin, int ccount, int pbegin, int pcount,
-                int doSlow, int usePairlists, int savePairlists);
+                int doSlow, int doEnergy, int usePairlists, int savePairlists);
 
 int cuda_stream_finished();
 

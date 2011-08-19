@@ -292,6 +292,7 @@ void ComputeNonbondedCUDA::build_lj_table() {  // static
 void ComputeNonbondedCUDA::build_force_table() {  // static
 
   float4 t[FORCE_TABLE_SIZE];
+  float4 et[FORCE_TABLE_SIZE];  // energy table
 
   const BigReal r2_delta = ComputeNonbondedUtil:: r2_delta;
   const int r2_delta_exp = ComputeNonbondedUtil:: r2_delta_exp;
@@ -317,6 +318,10 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
       t[i].y = 0.;
       t[i].z = 0.;
       t[i].w = 0.;
+      et[i].x = 0.;
+      et[i].y = 0.;
+      et[i].z = 0.;
+      et[i].w = 0.;
       continue;
     }
 
@@ -325,52 +330,64 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
     // coulomb 1/r or fast force
     // t[i].x = 1. / (r2 * r);  // -1/r * d/dr r^-1
     {
-      // BigReal table_a = fast_table[4*table_i];
+      BigReal table_a = fast_table[4*table_i];
       BigReal table_b = fast_table[4*table_i+1];
       BigReal table_c = fast_table[4*table_i+2];
       BigReal table_d = fast_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
       t[i].x = 2. * grad;
+      BigReal ener = table_a + diffa *
+		( ( table_d * diffa + table_c ) * diffa + table_b);
+      et[i].x = ener;
     }
 
 
     // pme correction for slow force
     // t[i].w = 0.;
     {
-      // BigReal table_a = scor_table[4*table_i];
+      BigReal table_a = scor_table[4*table_i];
       BigReal table_b = scor_table[4*table_i+1];
       BigReal table_c = scor_table[4*table_i+2];
       BigReal table_d = scor_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
       t[i].w = 2. * grad;
+      BigReal ener = table_a + diffa *
+		( ( table_d * diffa + table_c ) * diffa + table_b);
+      et[i].w = ener;
     }
 
 
     // vdw 1/r^6
     // t[i].y = 6. / (r8);  // -1/r * d/dr r^-6
     {
-      // BigReal table_a = vdwb_table[4*table_i];
+      BigReal table_a = vdwb_table[4*table_i];
       BigReal table_b = vdwb_table[4*table_i+1];
       BigReal table_c = vdwb_table[4*table_i+2];
       BigReal table_d = vdwb_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
       t[i].y = 2. * -1. * grad;
+      BigReal ener = table_a + diffa *
+		( ( table_d * diffa + table_c ) * diffa + table_b);
+      et[i].y = -1. * ener;
     }
 
 
     // vdw 1/r^12
     // t[i].z = 12e / (r8 * r4 * r2);  // -1/r * d/dr r^-12
     {
-      // BigReal table_a = vdwa_table[4*table_i];
+      BigReal table_a = vdwa_table[4*table_i];
       BigReal table_b = vdwa_table[4*table_i+1];
       BigReal table_c = vdwa_table[4*table_i+2];
       BigReal table_d = vdwa_table[4*table_i+3];
       BigReal grad =
 		( 3. * table_d * diffa + 2. * table_c ) * diffa + table_b;
       t[i].z = 2. * grad;
+      BigReal ener = table_a + diffa *
+		( ( table_d * diffa + table_c ) * diffa + table_b);
+      et[i].z = ener;
     }
 
     // CkPrintf("%d %g %g %g %g %g %g\n", i, r, diffa,
@@ -392,8 +409,12 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
   t[0].y = 0.f;
   t[0].z = 0.f;
   t[0].w = 0.f;
+  et[0].x = et[1].x;
+  et[0].y = et[1].y;
+  et[0].z = et[1].z;
+  et[0].w = et[1].w;
 
-  cuda_bind_force_table(t);
+  cuda_bind_force_table(t,et);
 
   if ( ! CkMyPe() ) {
     CkPrintf("Info: Updated CUDA force table with %d elements.\n", FORCE_TABLE_SIZE);
@@ -1198,6 +1219,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 
   Flags &flags = patchRecords[activePatches[0]].p->flags;
   int doSlow = flags.doFullElectrostatics;
+  int doEnergy = flags.doEnergy;
 
   Lattice &lattice = flags.lattice;
   float3 lata, latb, latc;
@@ -1228,7 +1250,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size(),
-	doSlow, usePairlists, savePairlists);
+	doSlow, doEnergy, usePairlists, savePairlists);
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    num_local_atom_records,num_remote_atom_records);
     cudaEventRecord(end_remote_download, stream);
@@ -1244,7 +1266,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
 	0,localComputeRecords.size(),
 	0,localActivePatches.size(),
-	doSlow, usePairlists, savePairlists);
+	doSlow, doEnergy, usePairlists, savePairlists);
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    0,num_local_atom_records);
     //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
@@ -1272,6 +1294,7 @@ int ComputeNonbondedCUDA::finishWork() {
 
   Flags &flags = patchRecords[activePatches[0]].p->flags;
   int doSlow = flags.doFullElectrostatics;
+  int doEnergy = flags.doEnergy;
 
   ResizeArray<int> &patches( workStarted == 1 ?
 				remoteActivePatches : localActivePatches );
@@ -1361,6 +1384,9 @@ int ComputeNonbondedCUDA::finishWork() {
 
   {
     Tensor virial_tensor;
+    BigReal energyv = 0.;
+    BigReal energye = 0.;
+    BigReal energys = 0.;
     for ( int i = 0; i < num_virials; ++i ) {
       virial_tensor.xx += virials[16*i];
       virial_tensor.xy += virials[16*i+1];
@@ -1371,8 +1397,16 @@ int ComputeNonbondedCUDA::finishWork() {
       virial_tensor.zx += virials[16*i+6];
       virial_tensor.zy += virials[16*i+7];
       virial_tensor.zz += virials[16*i+8];
+      energyv += virials[16*i+9];
+      energye += virials[16*i+10];
+      energys += virials[16*i+11];
     }
     ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NBOND,virial_tensor);
+    if ( doEnergy ) {
+      reduction->item(REDUCTION_LJ_ENERGY) += energyv;
+      reduction->item(REDUCTION_ELECT_ENERGY) += energye;
+      reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += energys;
+    }
   }
   if ( doSlow ) {
     Tensor virial_slow_tensor;

@@ -90,17 +90,14 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
 
 int ComputeNonbondedSelf::noWork() {
 
-  if ( patch->flags.doNonbonded && (numAtoms || patch->flags.doGBIS)
-#ifdef NAMD_CUDA
-        && patch->flags.doEnergy
-#endif
- )
-  {
+#ifndef NAMD_CUDA
+  if ( patch->flags.doNonbonded && (numAtoms || patch->flags.doGBIS) ) {
     return 0;  // work to do, enqueue as usual
   } else {
     // Inform load balancer
-#ifndef NAMD_CUDA
     LdbCoordinator::Object()->skipWork(ldObjHandle);
+#else
+  {
 #endif
 
     // skip all boxes

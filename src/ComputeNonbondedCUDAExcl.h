@@ -48,7 +48,7 @@ public:
     // Internal data
     int modified;
 
-  enum { bondEnergyIndex, TENSOR(virialIndex),
+  enum { vdwEnergyIndex, electEnergyIndex, fullElectEnergyIndex, TENSOR(virialIndex),
            TENSOR(slowVirialIndex), reductionDataSize };
   enum { reductionChecksumLabel = REDUCTION_EXCLUSION_CHECKSUM };
   static void submitReductionData(BigReal*,SubmitReduction*);

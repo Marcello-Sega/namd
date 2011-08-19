@@ -1,4 +1,5 @@
 
+#ifdef NAMD_CUDA
 
 #define NAME(X) SLOWNAME( X )
 
@@ -152,6 +153,12 @@ __global__ static void NAME(dev_nonbonded)(
 
   __syncthreads();
 
+  ENERGY(
+  float totalev = 0.f;
+  float totalee = 0.f;
+  SLOW( float totales = 0.f; )
+  )
+
   for ( int blocki = 0;
         blocki < myPatchPair.patch1_force_size;
         blocki += BLOCK_SIZE ) {
@@ -237,7 +244,9 @@ __global__ static void NAME(dev_nonbonded)(
       float r2 = tmpx*tmpx + tmpy*tmpy + tmpz*tmpz;
       GENPAIRLIST( if(r2<plcutoff2) ) { GENPAIRLIST( plpli=1; )
       if ( r2 < cutoff2 ) {
-        float4 fi = tex1D(force_table, rsqrtf(r2));
+        ENERGY( float rsqrtfr2; )
+        float4 fi = tex1D(force_table, ENERGY(rsqrtfr2 =) rsqrtf(r2));
+        ENERGY( float4 ei = tex1D(energy_table, rsqrtfr2); )
         float2 ljab = tex1Dfetch(lj_table,
                 /* lj_table_size * */ japs[j].vdw_type + iap.vdw_type);
         bool excluded = false;
@@ -250,19 +259,30 @@ __global__ static void NAME(dev_nonbonded)(
           else indexword = overflow_exclusions[indexword];
           excluded = ((indexword & (1<<(indexdiff&31))) != 0);
         }
-        float e_slow = ipq.charge * jpqs[j].charge;
-        float e = ljab.x * fi.z + ljab.y * fi.y + e_slow * fi.x;
-        SLOW( e_slow *= fi.w; )
+        float f_slow = ipq.charge * jpqs[j].charge;
+        float f = ljab.x * fi.z + ljab.y * fi.y + f_slow * fi.x;
+        ENERGY(
+        float ev = ljab.x * ei.z + ljab.y * ei.y;
+        float ee = f_slow * ei.x;
+        SLOW( float es = f_slow * ei.w; )
+        )
+        SLOW( f_slow *= fi.w; )
         if ( ! excluded ) { \
-          /* ife.w += r2 * e; */
-          ife.x += tmpx * e;
-          ife.y += tmpy * e;
-          ife.z += tmpz * e;
+          ENERGY(
+          totalev += ev;
+          totalee += ee;
+          SLOW( totales += es; )
+          /* if ( j >= free_size ) add them again if fixed */
+          )
+          /* ife.w += r2 * f; */
+          ife.x += tmpx * f;
+          ife.y += tmpy * f;
+          ife.z += tmpz * f;
           SLOW(
-          /* ife_slow.w += r2 * e_slow; */
-          ife_slow.x += tmpx * e_slow;
-          ife_slow.y += tmpy * e_slow;
-          ife_slow.z += tmpz * e_slow;
+          /* ife_slow.w += r2 * f_slow; */
+          ife_slow.x += tmpx * f_slow;
+          ife_slow.y += tmpy * f_slow;
+          ife_slow.z += tmpz * f_slow;
           )
         } else ife.w += 1.f;
       } }  /* cutoff */
@@ -373,6 +393,44 @@ __global__ static void NAME(dev_nonbonded)(
       }
     }
   }
+#if ENERGY(1 +) 0
+  {
+    __syncthreads();
+    // accumulate energies to shared memory, warp-synchronous
+    const int subwarp = threadIdx.x >> 2;  // 32 entries in table
+    const int thread = threadIdx.x & 3;  // 4 threads share each entry
+    if ( thread == 0 ) {
+      sumf.a2d[subwarp][0] = totalev;
+      sumf.a2d[subwarp][1] = totalee;
+      sumf.a2d[subwarp][2] = 0.f SLOW( + totales ) ;
+    }
+    for ( int g = 1; g < 4; ++g ) {
+      if ( thread == g ) {
+        sumf.a2d[subwarp][0] += totalev;
+        sumf.a2d[subwarp][1] += totalee;
+        SLOW( sumf.a2d[subwarp][2] += totales; )
+      }
+    }
+    __syncthreads();
+    if ( threadIdx.x < 24 ) { // reduce energies, warp-synchronous
+                             // 3 components, 8 threads per component
+      const int i_out = myPatchPair.virial_start + threadIdx.x;
+      float f;
+      f = sumf.a1d[threadIdx.x] + sumf.a1d[threadIdx.x + 24] + 
+          sumf.a1d[threadIdx.x + 48] + sumf.a1d[threadIdx.x + 72];
+      sumf.a1d[threadIdx.x] = f;
+      f += sumf.a1d[threadIdx.x + 12];
+      sumf.a1d[threadIdx.x] = f;
+      f += sumf.a1d[threadIdx.x + 6];
+      sumf.a1d[threadIdx.x] = f;
+      f += sumf.a1d[threadIdx.x + 3];
+      f *= 0.5f;  // compensate for double-counting
+      if ( threadIdx.x < 3 ) {  // write out output buffer
+        virial_buffers[i_out+9] = f;
+      }
+    }
+  }
+#endif
 
  } // end of nonbonded calc
 
@@ -432,12 +490,12 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
   }
 
   __shared__ volatile union {
-    float a3d[32][3][3];
-    float a2d[32][9];
-    float a1d[32*9];
+    float a3d[32][3 ENERGY(+1)][3];
+    float a2d[32][9 ENERGY(+3)];
+    float a1d[32*(9 ENERGY(+3))];
   } virial;
 
-  for ( int i = threadIdx.x; i < 32*9; i += BLOCK_SIZE ) {
+  for ( int i = threadIdx.x; i < 32*(9 ENERGY(+3)); i += BLOCK_SIZE ) {
     virial.a1d[i] = 0.f;
   }
 
@@ -511,7 +569,7 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
   { // accumulate per-compute virials to shared memory, data-parallel
     const int halfwarp = threadIdx.x >> 4;  // 8 half-warps
     const int thread = threadIdx.x & 15;
-    if ( thread < 9 ) {
+    if ( thread < (9 ENERGY(+3)) ) {
       for ( int i = halfwarp; i < myForceList.force_list_size; i += 8 ) {
         virial.a2d[halfwarp][thread] +=
           virial_buffers[myForceList.virial_list_start + 16*i + thread];
@@ -522,7 +580,7 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
   { // reduce virials in shared memory, warp-synchronous
     const int subwarp = threadIdx.x >> 3;  // 16 quarter-warps
     const int thread = threadIdx.x & 7;  // 8 threads per component
-    if ( subwarp < 9 ) {  // 9 components
+    if ( subwarp < (9 ENERGY(+3)) ) {  // 9 components
       float v;
       v = virial.a2d[thread][subwarp] + virial.a2d[thread+8][subwarp] +
           virial.a2d[thread+16][subwarp] + virial.a2d[thread+24][subwarp];
@@ -536,11 +594,12 @@ __device__ __forceinline__ static void NAME(dev_sum_forces)(
     }
   }
   __syncthreads();
-  if ( threadIdx.x < 9 ) {  // 9 components
+  if ( threadIdx.x < (9 ENERGY(+3)) ) {  // 9 components
     virials[myForceList.virial_output_start + threadIdx.x] =
                                               virial.a2d[0][threadIdx.x];
   }
 
 }
 
+#endif // NAMD_CUDA
 
