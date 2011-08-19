@@ -6,6 +6,10 @@ class ComputeMgr;
 
 class ComputeNonbondedCUDAKernel;
 
+int cuda_device_pe();
+
+bool cuda_device_shared_with_pe(int pe);
+
 class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
   public:
 

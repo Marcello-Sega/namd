@@ -774,12 +774,31 @@ ComputeMgr::createComputes(ComputeMap *map)
 
     }
 
+#ifdef NAMD_CUDA
+    bool deviceIsMine = ( cuda_device_pe() == CkMyPe() );
+#endif
+
     for (int i=0; i < map->nComputes; i++)
     {
         if ( ! ( i % 100 ) )
         {
         }
+#ifdef NAMD_CUDA
+        switch ( map->type(i) )
+        {
+          case computeNonbondedSelfType:
+          case computeNonbondedPairType:
+            if ( ! deviceIsMine ) continue;
+            if ( ! cuda_device_shared_with_pe(map->computeData[i].node) ) continue;
+          break;
+          case computeNonbondedCUDAType:
+            if ( ! deviceIsMine ) continue;
+          default:
+            if ( map->computeData[i].node != myNode ) continue;
+        }
+#else
         if ( map->computeData[i].node != myNode ) continue;
+#endif
         DebugM(1,"Compute " << i << '\n');
         DebugM(1,"  node = " << map->computeData[i].node << '\n');
         DebugM(1,"  type = " << map->computeData[i].type << '\n');

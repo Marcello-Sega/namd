@@ -9,6 +9,7 @@
 
 #include "WorkDistrib.h"
 #include "ComputeMgr.h"
+#include "ProxyMgr.h"
 #include "ComputeNonbondedCUDA.h"
 #include "ComputeNonbondedCUDAKernel.h"
 #include "LJTable.h"
@@ -71,8 +72,20 @@ void cuda_getargs(char **argv) {
 static int shared_gpu;
 static int first_pe_sharing_gpu;
 static int next_pe_sharing_gpu;
+static int devicePe;
+static int numPesSharingDevice;
+static int *pesSharingDevice;
 
 static int gpu_is_mine;
+
+int cuda_device_pe() { return devicePe; }
+
+bool cuda_device_shared_with_pe(int pe) {
+  for ( int i=0; i<numPesSharingDevice; ++i ) {
+    if ( pesSharingDevice[i] == pe ) return true;
+  }
+  return false;
+}
 
 void cuda_initialize() {
 
@@ -89,6 +102,7 @@ void cuda_initialize() {
   int *pesOnPhysicalNode;
   CmiGetPesOnPhysicalNode(myPhysicalNodeID,
                            &pesOnPhysicalNode,&numPesOnPhysicalNode);
+
   {
     int i;
     for ( i=0; i < numPesOnPhysicalNode; ++i ) {
@@ -167,21 +181,22 @@ void cuda_initialize() {
   first_pe_sharing_gpu = CkMyPe();
   next_pe_sharing_gpu = CkMyPe();
 
- if ( (ndevices >= numPesOnPhysicalNode) || (nexclusive == 0) ) {
+ /* if ( (ndevices >= numPesOnPhysicalNode) || (nexclusive == 0) ) */ {
 
   int dev;
   if ( numPesOnPhysicalNode > 1 ) {
-    dev = devices[myRankInPhysicalNode % ndevices];
+    int myDeviceRank = myRankInPhysicalNode * ndevices / numPesOnPhysicalNode;
+    dev = devices[myDeviceRank];
+    devicePe = CkMyPe();
     if ( ! ignoresharing ) {
-     for ( int i = (myRankInPhysicalNode + 1) % numPesOnPhysicalNode;
-          i != myRankInPhysicalNode;
-          i = (i + 1) % numPesOnPhysicalNode ) {
-      if (devices[i % ndevices] == dev) {
-        shared_gpu = 1;
-        next_pe_sharing_gpu = pesOnPhysicalNode[i];
-        break;
+      pesSharingDevice = new int[numPesOnPhysicalNode];
+      numPesSharingDevice = 0;
+      for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
+        if ( i * ndevices / numPesOnPhysicalNode == myDeviceRank ) {
+          devicePe = pesOnPhysicalNode[i];
+          pesSharingDevice[numPesSharingDevice++] = devicePe;
+        }
       }
-     }
     }
     if ( shared_gpu ) {
       for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
@@ -195,6 +210,16 @@ void cuda_initialize() {
     }
   } else {  // in case phys node code is lying
     dev = devices[CkMyPe() % ndevices];
+    devicePe = CkMyPe();
+    pesSharingDevice = new int[1];
+    pesSharingDevice[0] = CkMyPe();
+    numPesSharingDevice = 1;
+  }
+
+  if ( devicePe != CkMyPe() ) {
+    CkPrintf("Pe %d physical rank %d will use CUDA device of pe %d\n",
+             CkMyPe(), myRankInPhysicalNode, devicePe);
+    return;
   }
 
   // disable token-passing but don't submit local until remote finished
@@ -661,6 +686,7 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
     activePatches.add(pid);
     setNumPatches(activePatches.size());
     pr.patchID = pid;
+    ProxyMgr::Object()->createProxy(pid);
     pr.p = patchMap->patch(pid);
     pr.positionBox = pr.p->registerPositionPickup(cid);
     pr.forceBox = pr.p->registerForceDeposit(cid);
