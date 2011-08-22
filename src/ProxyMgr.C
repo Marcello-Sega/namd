@@ -445,6 +445,11 @@ void ProxyMgr::createProxies(void)
   int nc = computeMap->numComputes();
   for ( i = 0; i < nc; ++i )
   {
+#ifdef NAMD_CUDA
+    ComputeType t = computeMap->type(i);
+    if ( t == computeNonbondedSelfType || t == computeNonbondedPairType )
+      continue;
+#endif
     if ( computeMap->node(i) != myNode ) 
       continue;
     int numPid = computeMap->numPids(i);
