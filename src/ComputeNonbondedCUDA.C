@@ -87,6 +87,13 @@ bool cuda_device_shared_with_pe(int pe) {
   return false;
 }
 
+static inline bool sortop_bitreverse(int a, int b) {
+  for ( int bit = 1; bit; bit *= 2 ) {
+    if ( (a&bit) != (b&bit) ) return ((a&bit) < (b&bit));
+  }
+  return 0;
+}
+
 void cuda_initialize() {
 
   char host[128];
@@ -190,11 +197,14 @@ void cuda_initialize() {
     devicePe = CkMyPe();
     if ( ! ignoresharing ) {
       pesSharingDevice = new int[numPesOnPhysicalNode];
+      devicePe = -1;
       numPesSharingDevice = 0;
       for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
         if ( i * ndevices / numPesOnPhysicalNode == myDeviceRank ) {
-          devicePe = pesOnPhysicalNode[i];
-          pesSharingDevice[numPesSharingDevice++] = devicePe;
+          int thisPe = pesOnPhysicalNode[i];
+          pesSharingDevice[numPesSharingDevice++] = thisPe;
+          if ( devicePe < 1 ) devicePe = thisPe;
+          if ( sortop_bitreverse(thisPe,devicePe) ) devicePe = thisPe;
         }
       }
     }
