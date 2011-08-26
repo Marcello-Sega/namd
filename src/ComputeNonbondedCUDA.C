@@ -289,6 +289,7 @@ void cuda_initialize() {
 
 
 void build_cuda_force_table() {
+  if ( devicePe != CkMyPe() ) return;
   ComputeNonbondedCUDA::build_lj_table();
   ComputeNonbondedCUDA::build_force_table();
 }
