@@ -207,16 +207,12 @@ void cuda_initialize() {
           if ( sortop_bitreverse(thisPe,devicePe) ) devicePe = thisPe;
         }
       }
-    }
-    if ( shared_gpu ) {
-      for ( int i = 0; i < numPesOnPhysicalNode; ++i ) {
-        if (devices[i % ndevices] == dev) {
-          first_pe_sharing_gpu = pesOnPhysicalNode[i];
-          break;
-        }
+      for ( int j = 0; j < ndevices; ++j ) {
+        if ( devices[j] == dev && j != myDeviceRank ) shared_gpu = 1;
       }
-      CkPrintf("Pe %d sharing CUDA device %d first %d next %d\n",
-		CkMyPe(), dev, first_pe_sharing_gpu, next_pe_sharing_gpu);
+    }
+    if ( shared_gpu && devicePe == CkMyPe() ) {
+      CkPrintf("Pe %d sharing CUDA device %d\n", CkMyPe(), dev);
     }
   } else {  // in case phys node code is lying
     dev = devices[CkMyPe() % ndevices];
