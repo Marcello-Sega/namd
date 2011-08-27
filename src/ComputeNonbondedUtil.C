@@ -26,7 +26,7 @@ extern "C" {
 #include <stdio.h>
 
 #ifdef NAMD_CUDA
-  void build_cuda_force_table();
+  void send_build_cuda_force_table();
 #endif
 
 Bool		ComputeNonbondedUtil::commOnly;
@@ -980,7 +980,7 @@ void ComputeNonbondedUtil::select(void)
 #endif
 
 #ifdef NAMD_CUDA
-  build_cuda_force_table();
+  send_build_cuda_force_table();
 #endif
 
 }

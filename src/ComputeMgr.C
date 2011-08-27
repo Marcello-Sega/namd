@@ -986,5 +986,24 @@ void ComputeMgr::recvYieldDevice(int pe) {
 #endif
 }
 
+void ComputeMgr::sendBuildCudaForceTable() {
+    CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+    int pe = CkNodeFirst(CkMyNode());
+    int end = pe + CkNodeSize(CkMyNode());
+    for( ; pe != end; ++pe ) {
+      cm[pe].recvBuildCudaForceTable();
+    }
+}
+
+#ifdef NAMD_CUDA
+  void build_cuda_force_table();
+#endif
+
+void ComputeMgr::recvBuildCudaForceTable() {
+#ifdef NAMD_CUDA
+    build_cuda_force_table();
+#endif
+}
+
 #include "ComputeMgr.def.h"
 

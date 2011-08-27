@@ -19,7 +19,11 @@
 
 #ifdef NAMD_CUDA
 
-extern cudaStream_t stream;
+#ifdef WIN32
+#define __thread __declspec(thread)
+#endif
+
+extern __thread cudaStream_t stream;
 
 void cuda_errcheck(const char *msg) {
   cudaError_t err;
@@ -59,8 +63,8 @@ void cuda_die(const char *msg) {
 }
 
 char *devicelist;
-static int usedevicelist;
-static int ignoresharing;
+static __thread int usedevicelist;
+static __thread int ignoresharing;
 
 void cuda_getargs(char **argv) {
   devicelist = 0;
@@ -69,14 +73,14 @@ void cuda_getargs(char **argv) {
   ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
 }
 
-static int shared_gpu;
-static int first_pe_sharing_gpu;
-static int next_pe_sharing_gpu;
-static int devicePe;
-static int numPesSharingDevice;
-static int *pesSharingDevice;
+static __thread int shared_gpu;
+static __thread int first_pe_sharing_gpu;
+static __thread int next_pe_sharing_gpu;
+static __thread int devicePe;
+static __thread int numPesSharingDevice;
+static __thread int *pesSharingDevice;
 
-static int gpu_is_mine;
+static __thread int gpu_is_mine;
 
 int cuda_device_pe() { return devicePe; }
 
@@ -287,6 +291,12 @@ void cuda_initialize() {
 
 }
 
+static __thread ComputeNonbondedCUDA* cudaCompute = 0;
+static __thread ComputeMgr *computeMgr = 0;
+
+void send_build_cuda_force_table() {
+  computeMgr->sendBuildCudaForceTable();
+}
 
 void build_cuda_force_table() {
   if ( devicePe != CkMyPe() ) return;
@@ -453,16 +463,13 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
   }
 }
 
-static ComputeNonbondedCUDA* cudaCompute = 0;
-static ComputeMgr *computeMgr = 0;
-
 struct exlist_sortop {
   bool operator() (int32 *li, int32 *lj) {
     return ( li[1] < lj[1] );
   }
 };
 
-static int2 *exclusionsByAtom;
+static __thread int2 *exclusionsByAtom;
 
 void ComputeNonbondedCUDA::build_exclusions() {
   Molecule *mol = Node::Object()->molecule;
@@ -634,19 +641,24 @@ void unregister_cuda_compute(ComputeID c) {  // static
 
 }
 
-static int atomsChanged = 0;
-static int computesChanged = 0;
+static __thread int atomsChanged = 0;
+static __thread int computesChanged = 0;
 
-static int pairlistsValid = 0;
-static float pairlistTolerance = 0.;
-static int usePairlists = 0;
-static int savePairlists = 0;
-static float plcutoff2 = 0;
+static __thread int pairlistsValid = 0;
+static __thread float pairlistTolerance = 0.;
+static __thread int usePairlists = 0;
+static __thread int savePairlists = 0;
+static __thread float plcutoff2 = 0;
 
-static cudaEvent_t start_upload;
-static cudaEvent_t start_calc;
-static cudaEvent_t end_remote_download;
-static cudaEvent_t end_local_download;
+static __thread cudaEvent_t start_upload;
+static __thread cudaEvent_t start_calc;
+static __thread cudaEvent_t end_remote_download;
+static __thread cudaEvent_t end_local_download;
+
+static __thread ResizeArray<patch_pair> *patch_pairs_ptr;
+static __thread ResizeArray<force_list> *force_lists_ptr;
+#define PATCH_PAIRS_REF ResizeArray<patch_pair> &patch_pairs(*patch_pairs_ptr);
+#define FORCE_LISTS_REF ResizeArray<force_list> &force_lists(*force_lists_ptr);
 
 ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compute(c) {
   // CkPrintf("create ComputeNonbondedCUDA\n");
@@ -671,6 +683,9 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compu
   cudaEventCreate(&start_calc);
   cudaEventCreate(&end_remote_download);
   cudaEventCreate(&end_local_download);
+
+  patch_pairs_ptr = new ResizeArray<patch_pair>;
+  force_lists_ptr = new ResizeArray<force_list>;
 }
 
 
@@ -705,26 +720,23 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
   pr.refCount += 1;
 }
 
-static ResizeArray<patch_pair> patch_pairs;
-static ResizeArray<force_list> force_lists;
+static __thread int num_atom_records_allocated;
+static __thread int* atom_order;
+static __thread atom_param* atom_params;
+static __thread atom* atoms;
+static __thread float4* forces;
+static __thread float4* slow_forces;
+static __thread int num_virials;
+static __thread int num_virials_allocated;
+static __thread float *virials;
+static __thread float *slow_virials;
 
-static int num_atom_records_allocated;
-static int* atom_order;
-static atom_param* atom_params;
-static atom* atoms;
-static float4* forces;
-static float4* slow_forces;
-static int num_virials;
-static int num_virials_allocated;
-static float *virials;
-static float *slow_virials;
+static __thread int cuda_timer_count;
+static __thread double cuda_timer_total;
+static __thread double kernel_time;
 
-static int cuda_timer_count;
-static double cuda_timer_total;
-static double kernel_time;
-
-static int ccd_index_remote_download;
-static int ccd_index_local_download;
+static __thread int ccd_index_remote_download;
+static __thread int ccd_index_local_download;
 #define CUDA_CONDITION CcdPERIODIC
 
 void cuda_check_remote_progress(void *arg, double) {
@@ -759,7 +771,7 @@ void cuda_check_progress(void *arg, double) {
 
 void ComputeNonbondedCUDA::atomUpdate() { atomsChanged = 1; }
 
-static int kernel_launch_state = 0;
+static __thread int kernel_launch_state = 0;
 
 struct cr_sortop {
   const Lattice &l;
@@ -776,6 +788,9 @@ struct cr_sortop {
 };
 
 void ComputeNonbondedCUDA::doWork() {
+
+  PATCH_PAIRS_REF;
+  FORCE_LISTS_REF;
 
   // Skip computations if nothing to do.
   if ( ! patchRecords[activePatches[0]].p->flags.doNonbonded ) {
@@ -1220,7 +1235,7 @@ void ComputeNonbondedCUDA::doWork() {
 #endif
 }
 
-static int ccd_index_remote_calc;
+static __thread int ccd_index_remote_calc;
 void cuda_check_remote_calc(void *arg, double) {
   // in theory we only need end_remote_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_remote_calc) == cudaSuccess ) {
@@ -1233,7 +1248,7 @@ void cuda_check_remote_calc(void *arg, double) {
   }
 }
 
-static int ccd_index_local_calc;
+static __thread int ccd_index_local_calc;
 void cuda_check_local_calc(void *arg, double) {
   // in theory we only need end_local_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_local_calc) == cudaSuccess ) {

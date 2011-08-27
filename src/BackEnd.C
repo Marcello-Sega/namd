@@ -100,7 +100,7 @@ void all_init(int argc, char **argv)
   _initCharm(argc, argv);  // message main Chare
 
 #ifdef NAMD_CUDA
-  cuda_initialize();
+  if ( CkMyPe() < CkNumPes() ) cuda_initialize();
 #endif
 }
 

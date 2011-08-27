@@ -45,6 +45,7 @@ module ComputeMgr {
     entry void recvComputeEwaldResults(ComputeEwaldMsg *);
 
     entry void recvYieldDevice(int pe);
+    entry void recvBuildCudaForceTable();
   } ;
 }
 

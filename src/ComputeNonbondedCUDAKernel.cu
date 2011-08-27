@@ -4,10 +4,15 @@
 
 #ifdef NAMD_CUDA
 
+#ifdef WIN32
+//  not supported by nvcc on Windows
+// #define __thread __declspec(thread)
+#define __thread
+#endif
 
 __constant__ unsigned int const_exclusions[MAX_CONST_EXCLUSIONS];
 
-static unsigned int *overflow_exclusions;
+static __thread unsigned int *overflow_exclusions;
 
 #define SET_EXCL(EXCL,BASE,DIFF) \
          (EXCL)[((BASE)+(DIFF))>>5] |= (1<<(((BASE)+(DIFF))&31))
@@ -26,11 +31,11 @@ void cuda_bind_exclusions(const unsigned int *t, int n) {
 
 
 texture<float2, 1, cudaReadModeElementType> lj_table;
-int lj_table_size;
+static __thread int lj_table_size;
 
 void cuda_bind_lj_table(const float2 *t, int _lj_table_size) {
-    static float2 *ct;
-    static int lj_table_alloc;
+    static __thread float2 *ct;
+    static __thread int lj_table_alloc;
     lj_table_size = _lj_table_size;
     if ( ct && lj_table_alloc < lj_table_size ) {
       cudaFree(ct);
@@ -60,8 +65,8 @@ texture<float4, 1, cudaReadModeElementType> force_table;
 texture<float4, 1, cudaReadModeElementType> energy_table;
 
 void cuda_bind_force_table(const float4 *t, const float4 *et) {
-    static cudaArray *ct;
-    static cudaArray *ect;
+    static __thread cudaArray *ct;
+    static __thread cudaArray *ect;
     if ( ! ct ) {
       cudaMallocArray(&ct, &force_table.channelDesc, FORCE_TABLE_SIZE, 1);
       cuda_errcheck("allocating force table");
@@ -93,40 +98,40 @@ void cuda_bind_force_table(const float4 *t, const float4 *et) {
     cuda_errcheck("binding energy table to texture");
 }
 
-static int patch_pairs_size;
-static patch_pair *patch_pairs;
-static float *virial_buffers;  // one per patch pair
-static float *slow_virial_buffers;  // one per patch pair
+static __thread int patch_pairs_size;
+static __thread patch_pair *patch_pairs;
+static __thread float *virial_buffers;  // one per patch pair
+static __thread float *slow_virial_buffers;  // one per patch pair
 
-static int block_flags_size;
-static unsigned int *block_flags;
+static __thread int block_flags_size;
+static __thread unsigned int *block_flags;
 
-static int force_lists_size;
-static force_list *force_lists;
-static unsigned int *force_list_counters;
+static __thread int force_lists_size;
+static __thread force_list *force_lists;
+static __thread unsigned int *force_list_counters;
 
-static int force_buffers_size;
-static float4 *force_buffers;
-static float4 *slow_force_buffers;
+static __thread int force_buffers_size;
+static __thread float4 *force_buffers;
+static __thread float4 *slow_force_buffers;
 
-static int atoms_size;
-static atom *atoms;
-static atom_param *atom_params;
-static float4 *forces;
-static float4 *slow_forces;
-static float *virials;  // one per patch
-static float *slow_virials;  // one per patch
+static __thread int atoms_size;
+static __thread atom *atoms;
+static __thread atom_param *atom_params;
+static __thread float4 *forces;
+static __thread float4 *slow_forces;
+static __thread float *virials;  // one per patch
+static __thread float *slow_virials;  // one per patch
 
-static int patch_pairs_alloc;
-static int block_flags_alloc;
-static int force_buffers_alloc;
-static int force_lists_alloc;
-static int atoms_alloc;
+static __thread int patch_pairs_alloc;
+static __thread int block_flags_alloc;
+static __thread int force_buffers_alloc;
+static __thread int force_lists_alloc;
+static __thread int atoms_alloc;
 
-static int max_atoms_per_patch;
+static __thread int max_atoms_per_patch;
 
 // static cudaStream_t stream;
-cudaStream_t stream;
+__thread cudaStream_t stream;
  
 void cuda_init() {
   forces = 0;

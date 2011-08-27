@@ -84,6 +84,8 @@ public:
 
   void sendYieldDevice(int pe);
   void recvYieldDevice(int pe);
+  void sendBuildCudaForceTable();
+  void recvBuildCudaForceTable();
   
 private:
   void createCompute(ComputeID, ComputeMap *);
