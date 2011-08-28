@@ -38,6 +38,7 @@ class ComputeEwald;
 class ComputeEwaldMsg;
 
 class ComputeNonbondedCUDA;
+class NonbondedCUDASlaveMsg;
 
 class ComputeNonbondedWorkArrays;
 
@@ -86,6 +87,11 @@ public:
   void recvYieldDevice(int pe);
   void sendBuildCudaForceTable();
   void recvBuildCudaForceTable();
+  void sendCreateNonbondedCUDASlave(int,int);
+  void recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *);
+  void sendNonbondedCUDASlaveReady(int,int,int,int);
+  void recvNonbondedCUDASlaveReady(int,int,int);
+  void sendNonbondedCUDASlaveEnqueue(Compute *c, int,int,int);
   
 private:
   void createCompute(ComputeID, ComputeMap *);

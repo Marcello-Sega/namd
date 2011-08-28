@@ -18,6 +18,8 @@ module ComputeMgr {
     float eik[];
   };
 
+  message NonbondedCUDASlaveMsg;
+
   group ComputeMgr
   {
     entry ComputeMgr(void);
@@ -46,6 +48,8 @@ module ComputeMgr {
 
     entry void recvYieldDevice(int pe);
     entry void recvBuildCudaForceTable();
+    entry void recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *);
+    entry void recvNonbondedCUDASlaveReady(int, int, int);
   } ;
 }
 

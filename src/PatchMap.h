@@ -25,6 +25,9 @@ class PatchMap
 public:
   static PatchMap *Instance();
   inline static PatchMap *Object() { return CkpvAccess(PatchMap_instance); }
+  inline static PatchMap *ObjectOnPe(int pe) {
+    return CkpvAccessOther(PatchMap_instance, CmiRankOf(pe));
+  }
 
   int sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 			const Lattice &lattice, BigReal patchSize,

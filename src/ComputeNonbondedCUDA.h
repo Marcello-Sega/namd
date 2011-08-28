@@ -6,6 +6,8 @@ class ComputeMgr;
 
 class ComputeNonbondedCUDAKernel;
 
+class float4;
+
 int cuda_device_pe();
 
 bool cuda_device_shared_with_pe(int pe);
@@ -26,6 +28,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int numFreeAtoms;
     int refCount;
     int isLocal;
+    int hostPe;
     PatchID patchID;
     Patch *p;
     Box<Patch,CompAtom> *positionBox;
@@ -38,11 +41,13 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     patch_record() { refCount = 0; }
   };
 
-    ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr);
+    ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
+		ComputeNonbondedCUDA *m = 0, int idx = -1);
     ~ComputeNonbondedCUDA();
 
     void atomUpdate();
     void doWork();
+    int noWork();
 
     void recvYieldDevice(int pe);
 
@@ -55,7 +60,10 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     void build_exclusions();
 
     void requirePatch(int pid);
+    void assignPatches();
+    void registerPatches();
     ResizeArray<int> activePatches, localActivePatches, remoteActivePatches;
+    ResizeArray<int> hostedPatches, remoteHostedPatches;
     ResizeArray<patch_record> patchRecords;
     ResizeArray<compute_record> computeRecords;
     ResizeArray<compute_record> localComputeRecords, remoteComputeRecords;
@@ -65,12 +73,20 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int num_remote_atom_records;
     int num_force_records;
 
+    float4 *forces;
+    float4 *slow_forces;
+
     PatchMap *patchMap;
     AtomMap *atomMap;
     SubmitReduction *reduction;
 
     ComputeNonbondedCUDAKernel *kernel;
 
+    ComputeNonbondedCUDA *master;
+    int slaveIndex;
+    ComputeNonbondedCUDA **slaves;
+    int *slavePes;
+    int numSlaves;
 };
 
 

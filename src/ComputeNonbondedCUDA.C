@@ -92,6 +92,7 @@ bool cuda_device_shared_with_pe(int pe) {
 }
 
 static inline bool sortop_bitreverse(int a, int b) {
+  if ( a == b ) return 0; 
   for ( int bit = 1; bit; bit *= 2 ) {
     if ( (a&bit) != (b&bit) ) return ((a&bit) < (b&bit));
   }
@@ -199,7 +200,11 @@ void cuda_initialize() {
     int myDeviceRank = myRankInPhysicalNode * ndevices / numPesOnPhysicalNode;
     dev = devices[myDeviceRank];
     devicePe = CkMyPe();
-    if ( ! ignoresharing ) {
+    if ( ignoresharing ) {
+      pesSharingDevice = new int[1];
+      pesSharingDevice[0] = CkMyPe();
+      numPesSharingDevice = 1;
+    } else {
       pesSharingDevice = new int[numPesOnPhysicalNode];
       devicePe = -1;
       numPesSharingDevice = 0;
@@ -660,14 +665,15 @@ static __thread ResizeArray<force_list> *force_lists_ptr;
 #define PATCH_PAIRS_REF ResizeArray<patch_pair> &patch_pairs(*patch_pairs_ptr);
 #define FORCE_LISTS_REF ResizeArray<force_list> &force_lists(*force_lists_ptr);
 
-ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compute(c) {
+ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
+		ComputeNonbondedCUDA *m, int idx) : Compute(c), slaveIndex(idx) {
   // CkPrintf("create ComputeNonbondedCUDA\n");
+  master = m ? m : this;
   cudaCompute = this;
   computeMgr = mgr;
   patchMap = PatchMap::Object();
   atomMap = AtomMap::Object();
   reduction = 0;
-  build_exclusions();
 
   SimParameters *params = Node::Object()->simParameters;
   if (params->pressureProfileOn) {
@@ -679,6 +685,18 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr) : Compu
   workStarted = 0;
   basePriority = PROXY_DATA_PRIORITY;
 
+  if ( master != this ) { // I am slave
+    master->slaves[slaveIndex] = this;
+    if ( master->slavePes[slaveIndex] != CkMyPe() ) {
+      NAMD_bug("ComputeNonbondedCUDA slavePes[slaveIndex] != CkMyPe");
+    }
+    registerPatches();
+    return;
+  }
+
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+
+  build_exclusions();
   cudaEventCreate(&start_upload);
   cudaEventCreate(&start_calc);
   cudaEventCreate(&end_remote_download);
@@ -693,9 +711,6 @@ ComputeNonbondedCUDA::~ComputeNonbondedCUDA() { ; }
 
 void ComputeNonbondedCUDA::requirePatch(int pid) {
 
-  if ( ! reduction ) {
-    reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-  }
   computesChanged = 1;
   patch_record &pr = patchRecords.item(pid);
   if ( pr.refCount == 0 ) {
@@ -706,12 +721,13 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
       remoteActivePatches.add(pid);
     }
     activePatches.add(pid);
-    setNumPatches(activePatches.size());
+    // setNumPatches(activePatches.size());
     pr.patchID = pid;
-    ProxyMgr::Object()->createProxy(pid);
-    pr.p = patchMap->patch(pid);
-    pr.positionBox = pr.p->registerPositionPickup(cid);
-    pr.forceBox = pr.p->registerForceDeposit(cid);
+    pr.hostPe = -1;
+    // ProxyMgr::Object()->createProxy(pid);
+    // pr.p = patchMap->patch(pid);
+    // pr.positionBox = pr.p->registerPositionPickup(cid);
+    // pr.forceBox = pr.p->registerForceDeposit(cid);
     pr.x = NULL;
     pr.xExt = NULL;
     pr.r = NULL;
@@ -720,12 +736,159 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
   pr.refCount += 1;
 }
 
+void ComputeNonbondedCUDA::registerPatches() {
+  int npatches = master->activePatches.size();
+  int *pids = master->activePatches.begin();
+  patch_record *recs = master->patchRecords.begin();
+  for ( int i=0; i<npatches; ++i ) {
+    int pid = pids[i];
+    patch_record &pr = recs[pid];
+    if ( pr.hostPe == CkMyPe() ) {
+      //if ( ! reduction ) {
+      //  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+      //}
+      hostedPatches.add(pid);
+      if ( ! pr.isLocal ) {
+        remoteHostedPatches.add(pid);
+      }
+      ProxyMgr::Object()->createProxy(pid);
+      pr.p = patchMap->patch(pid);
+      pr.positionBox = pr.p->registerPositionPickup(cid);
+      pr.forceBox = pr.p->registerForceDeposit(cid);
+    }
+  }
+  if ( master == this ) setNumPatches(activePatches.size());
+  else setNumPatches(hostedPatches.size());
+  CkPrintf("Pe %d hosts %d patches for pe %d\n", CkMyPe(), hostedPatches.size(), devicePe);
+}
+
+void ComputeNonbondedCUDA::assignPatches() {
+
+  int *pesOnNodeSharingDevice = new int[numPesSharingDevice];
+  int numPesOnNodeSharingDevice = 0;
+  int masterIndex = -1;
+  for ( int i=0; i<numPesSharingDevice; ++i ) {
+    int pe = pesSharingDevice[i];
+    if ( pe == CkMyPe() ) masterIndex = numPesOnNodeSharingDevice;
+    if ( CkNodeOf(pe) == CkMyNode() ) {
+      pesOnNodeSharingDevice[numPesOnNodeSharingDevice++] = pe;
+    }
+  }
+
+  int npatches = activePatches.size();
+  int *count = new int[npatches];
+  memset(count, 0, sizeof(int)*npatches);
+  int *pcount = new int[numPesOnNodeSharingDevice];
+  memset(pcount, 0, sizeof(int)*numPesOnNodeSharingDevice);
+  char *table = new char[npatches*numPesOnNodeSharingDevice];
+  memset(table, 0, npatches*numPesOnNodeSharingDevice);
+
+  int unassignedpatches = npatches;
+
+  if ( 0 ) { // assign all to device pe
+    for ( int i=0; i<npatches; ++i ) {
+      int pid = activePatches[i];
+      patch_record &pr = patchRecords[pid];
+      pr.hostPe = CkMyPe();
+    }
+    unassignedpatches = 0;
+    pcount[masterIndex] = npatches;
+  } else 
+
+  // assign if home pe and build table of natural proxies
+  for ( int i=0; i<npatches; ++i ) {
+    int pid = activePatches[i];
+    patch_record &pr = patchRecords[pid];
+    int homePe = patchMap->node(pid);
+    for ( int j=0; j<numPesOnNodeSharingDevice; ++j ) {
+      int pe = pesOnNodeSharingDevice[j];
+      if ( pe == homePe ) {
+        pr.hostPe = pe;  --unassignedpatches;
+        pcount[j] += 1;
+      }
+      if ( PatchMap::ObjectOnPe(pe)->patch(pid) ) {
+        table[i*numPesOnNodeSharingDevice+j] = 1;
+      }
+    }
+  }
+  // assign if only one pe has a required proxy
+  int assignj = 0;
+  for ( int i=0; i<npatches; ++i ) {
+    int pid = activePatches[i];
+    patch_record &pr = patchRecords[pid];
+    if ( pr.hostPe != -1 ) continue;
+    int c = 0;
+    int lastj;
+    for ( int j=0; j<numPesOnNodeSharingDevice; ++j ) {
+      if ( table[i*numPesOnNodeSharingDevice+j] ) { ++c; lastj=j; }
+    }
+    count[i] = c;
+    if ( c == 1 ) {
+      pr.hostPe = pesOnNodeSharingDevice[lastj];
+      --unassignedpatches;
+      pcount[lastj] += 1;
+    }
+  }
+  while ( unassignedpatches ) {
+    int i;
+    for ( i=0; i<npatches; ++i ) {
+      if ( ! table[i*numPesOnNodeSharingDevice+assignj] ) continue;
+      int pid = activePatches[i];
+      patch_record &pr = patchRecords[pid];
+      if ( pr.hostPe != -1 ) continue;
+      pr.hostPe = pesOnNodeSharingDevice[assignj];
+      --unassignedpatches;
+      pcount[assignj] += 1;
+      if ( ++assignj == numPesOnNodeSharingDevice ) assignj = 0;
+      break;
+    }
+    if ( i<npatches ) continue;  // start search again
+    for ( i=0; i<npatches; ++i ) {
+      int pid = activePatches[i];
+      patch_record &pr = patchRecords[pid];
+      if ( pr.hostPe != -1 ) continue;
+      if ( count[i] ) continue;
+      pr.hostPe = pesOnNodeSharingDevice[assignj];
+      --unassignedpatches;
+      pcount[assignj] += 1;
+      if ( ++assignj == numPesOnNodeSharingDevice ) assignj = 0;
+      break;
+    }
+    if ( i<npatches ) continue;  // start search again
+    if ( ++assignj == numPesOnNodeSharingDevice ) assignj = 0;
+  }
+
+  for ( int i=0; i<npatches; ++i ) {
+    int pid = activePatches[i];
+    patch_record &pr = patchRecords[pid];
+    // CkPrintf("Pe %d patch %d hostPe %d\n", CkMyPe(), pid, pr.hostPe);
+  }
+
+  slavePes = new int[numPesOnNodeSharingDevice];
+  slaves = new ComputeNonbondedCUDA*[numPesOnNodeSharingDevice];
+  numSlaves = 0;
+  for ( int j=0; j<numPesOnNodeSharingDevice; ++j ) {
+    if ( ! pcount[j] ) continue;
+    int pe = pesOnNodeSharingDevice[j];
+    if ( pe == CkMyPe() ) continue;
+    slavePes[numSlaves] = pe;
+    computeMgr->sendCreateNonbondedCUDASlave(pe,numSlaves);
+    ++numSlaves;
+  }
+  registerPatches();
+
+  delete [] pesOnNodeSharingDevice;
+  delete [] count;
+  delete [] pcount;
+  delete [] table;
+}
+
 static __thread int num_atom_records_allocated;
-static __thread int* atom_order;
+// static __thread int* atom_order;
 static __thread atom_param* atom_params;
 static __thread atom* atoms;
-static __thread float4* forces;
-static __thread float4* slow_forces;
+// static __thread float4* forces;
+// static __thread float4* slow_forces;
 static __thread int num_virials;
 static __thread int num_virials_allocated;
 static __thread float *virials;
@@ -787,23 +950,44 @@ struct cr_sortop {
   }
 };
 
-void ComputeNonbondedCUDA::doWork() {
+int ComputeNonbondedCUDA::noWork() {
 
-  PATCH_PAIRS_REF;
-  FORCE_LISTS_REF;
-
-  // Skip computations if nothing to do.
-  if ( ! patchRecords[activePatches[0]].p->flags.doNonbonded ) {
-    for ( int i=0; i<activePatches.size(); ++i ) {
-      patch_record &pr = patchRecords[activePatches[i]];
+  if ( ! master->patchRecords[hostedPatches[0]].p->flags.doNonbonded ) {
+    for ( int i=0; i<hostedPatches.size(); ++i ) {
+      patch_record &pr = master->patchRecords[hostedPatches[i]];
       CompAtom *x = pr.positionBox->open();
       Results *r = pr.forceBox->open();
       pr.positionBox->close(&x);
       pr.forceBox->close(&r);
     }
-    reduction->submit();
-    return;
+    if ( reduction ) reduction->submit();
+    return 1;
   }
+
+  if ( master == this ) return 0;
+
+  for ( int i=0; i<hostedPatches.size(); ++i ) {
+    patch_record &pr = master->patchRecords[hostedPatches[i]];
+    pr.x = pr.positionBox->open();
+    pr.xExt = pr.p->getCompAtomExtInfo();
+  }
+
+  // message devicePe
+  computeMgr->sendNonbondedCUDASlaveReady(devicePe,
+			hostedPatches.size(),atomsChanged,sequence());
+
+  workStarted = 1;
+  basePriority = COMPUTE_PROXY_PRIORITY;
+
+  return 1;
+}
+
+void ComputeNonbondedCUDA::doWork() {
+
+  // CkPrintf("ComputeNonbondedCUDA::doWork on Pe %d workStarted %d\n", CkMyPe(), workStarted);
+
+  PATCH_PAIRS_REF;
+  FORCE_LISTS_REF;
 
   if ( workStarted ) {
     if ( finishWork() ) {  // finished
@@ -823,8 +1007,8 @@ void ComputeNonbondedCUDA::doWork() {
   Parameters *params = Node::Object()->parameters;
   SimParameters *simParams = Node::Object()->simParameters;
 
-  for ( int i=0; i<activePatches.size(); ++i ) {
-    patch_record &pr = patchRecords[activePatches[i]];
+  for ( int i=0; i<hostedPatches.size(); ++i ) {
+    patch_record &pr = master->patchRecords[hostedPatches[i]];
     pr.x = pr.positionBox->open();
     pr.xExt = pr.p->getCompAtomExtInfo();
   }
@@ -859,7 +1043,7 @@ void ComputeNonbondedCUDA::doWork() {
     }
 
     // sort computes by distance between patches
-    cr_sortop so(patchRecords[activePatches[0]].p->flags.lattice);
+    cr_sortop so(patchRecords[localActivePatches[0]].p->flags.lattice);
     std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),so);
     std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),so);
  
@@ -952,7 +1136,7 @@ void ComputeNonbondedCUDA::doWork() {
   num_remote_atom_records = num_atom_records - num_local_atom_records;
   if ( num_atom_records > num_atom_records_allocated ) {
     if ( num_atom_records_allocated ) {
-      delete [] atom_order;
+      // delete [] atom_order;
       cudaFreeHost(atom_params);
       cudaFreeHost(atoms);
       cudaFreeHost(forces);
@@ -960,7 +1144,7 @@ void ComputeNonbondedCUDA::doWork() {
       cuda_errcheck("in cudaFreeHost");
     }
     num_atom_records_allocated = 1.1 * num_atom_records + 1;
-    atom_order = new int[num_atom_records_allocated];
+    // atom_order = new int[num_atom_records_allocated];
     cudaMallocHost((void**)&atom_params,sizeof(atom_param)*num_atom_records_allocated);
     cudaMallocHost((void**)&atoms,sizeof(atom)*num_atom_records_allocated);
     cuda_errcheck("in cudaMallocHost atoms");
@@ -1032,7 +1216,7 @@ void ComputeNonbondedCUDA::doWork() {
 
   double charge_scaling = sqrt(COULOMB * scaling * dielectric_1);
 
-  Flags &flags = patchRecords[activePatches[0]].p->flags;
+  Flags &flags = patchRecords[localActivePatches[0]].p->flags;
   float maxAtomMovement = 0.;
   float maxPatchTolerance = 0.;
 
@@ -1134,7 +1318,7 @@ void ComputeNonbondedCUDA::doWork() {
 #if 0
   // calculate warp divergence
   if ( 1 ) {
-    Flags &flags = patchRecords[activePatches[0]].p->flags;
+    Flags &flags = patchRecords[localActivePatches[0]].p->flags;
     Lattice &lattice = flags.lattice;
     float3 lata, latb, latc;
     lata.x = lattice.a().x;
@@ -1268,7 +1452,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 // CkPrintf("Pe %d entering state %d via yield from pe %d\n",
 //           CkMyPe(), kernel_launch_state, pe);
 
-  Flags &flags = patchRecords[activePatches[0]].p->flags;
+  Flags &flags = patchRecords[localActivePatches[0]].p->flags;
   int doSlow = flags.doFullElectrostatics;
   int doEnergy = flags.doEnergy;
 
@@ -1338,20 +1522,27 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 
 int ComputeNonbondedCUDA::finishWork() {
 
+  if ( workStarted == 1 && master == this ) {
+    for ( int i = 0; i < numSlaves; ++i ) {
+      computeMgr->sendNonbondedCUDASlaveEnqueue(slaves[i],slavePes[i],sequence(),priority());
+    }
+  }
+
   cuda_errcheck("at cuda stream completed");
 
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
 
-  Flags &flags = patchRecords[activePatches[0]].p->flags;
+  Flags &flags = master->patchRecords[
+           master==this?localActivePatches[0]:hostedPatches[0] ].p->flags;
   int doSlow = flags.doFullElectrostatics;
   int doEnergy = flags.doEnergy;
 
   ResizeArray<int> &patches( workStarted == 1 ?
-				remoteActivePatches : localActivePatches );
+				remoteHostedPatches : localActivePatches );
 
   for ( int i=0; i<patches.size(); ++i ) {
-    patch_record &pr = patchRecords[patches[i]];
+    patch_record &pr = master->patchRecords[patches[i]];
     pr.r = pr.forceBox->open();
     pr.f = pr.r->f[Results::nbond];
   }
@@ -1361,7 +1552,8 @@ int ComputeNonbondedCUDA::finishWork() {
   // double virial_slow = 0.;
 
   for ( int i=0; i<patches.size(); ++i ) {
-    patch_record &pr = patchRecords[patches[i]];
+    // CkPrintf("Pe %d patch %d of %d pid %d\n",CkMyPe(),i,patches.size(),patches[i]);
+    patch_record &pr = master->patchRecords[patches[i]];
     int start = pr.localStart;
     int nfree = pr.numFreeAtoms;
     Force *f = pr.f;
@@ -1369,8 +1561,8 @@ int ComputeNonbondedCUDA::finishWork() {
     const CompAtom *a = pr.x;
     const CompAtomExt *aExt = pr.xExt;
     // int *ao = atom_order + start;
-    float4 *af = forces + start;
-    float4 *af_slow = slow_forces + start;
+    float4 *af = master->forces + start;
+    float4 *af_slow = master->slow_forces + start;
     // only free atoms return forces
     for ( int k=0; k<nfree; ++k ) {
       int j = aExt[k].sortOrder;
@@ -1431,6 +1623,10 @@ int ComputeNonbondedCUDA::finishWork() {
   }
 #endif
 
+  if ( master != this ) {  // finished
+    atomsChanged = 0;
+    return 1;
+  }
   if ( workStarted == 1 ) return 0;  // not finished, call again
 
   {

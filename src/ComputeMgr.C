@@ -817,6 +817,12 @@ ComputeMgr::createComputes(ComputeMap *map)
 
     }
 
+#ifdef NAMD_CUDA
+    if ( computeNonbondedCUDAObject ) {
+      computeNonbondedCUDAObject->assignPatches();
+    }
+#endif
+
 }
 
 #if 0
@@ -1003,6 +1009,54 @@ void ComputeMgr::recvBuildCudaForceTable() {
 #ifdef NAMD_CUDA
     build_cuda_force_table();
 #endif
+}
+
+class NonbondedCUDASlaveMsg : public CMessage_NonbondedCUDASlaveMsg {
+public:
+  int index;
+  ComputeNonbondedCUDA *master;
+};
+
+void ComputeMgr::sendCreateNonbondedCUDASlave(int pe, int index) {
+  NonbondedCUDASlaveMsg *msg = new NonbondedCUDASlaveMsg;
+  msg->master = computeNonbondedCUDAObject;
+  msg->index = index;
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+  cm[pe].recvCreateNonbondedCUDASlave(msg);
+}
+
+void ComputeMgr::recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *msg) {
+#ifdef NAMD_CUDA
+  ComputeMap *map = ComputeMap::Object();
+  int i;
+  for (i=0; i < map->nComputes; i++) {
+    if ( map->type(i) == computeNonbondedCUDAType
+         && map->computeData[i].node == CkMyPe() ) break;
+  }
+  computeNonbondedCUDAObject = new ComputeNonbondedCUDA(i,this,msg->master,msg->index);
+  map->registerCompute(i,computeNonbondedCUDAObject);
+#endif
+}
+
+void ComputeMgr::sendNonbondedCUDASlaveReady(int pe, int np, int ac, int seq) {
+  CProxy_ComputeMgr cm(CkpvAccess(BOCclass_group).computeMgr);
+  cm[pe].recvNonbondedCUDASlaveReady(np,ac,seq);
+}
+
+void ComputeMgr::recvNonbondedCUDASlaveReady(int np, int ac, int seq) {
+  for ( int i=0; i<np; ++i ) {
+    computeNonbondedCUDAObject->patchReady(-1,ac,seq);
+  }
+}
+
+void ComputeMgr::sendNonbondedCUDASlaveEnqueue(Compute *c, int pe, int seq, int prio) {
+  LocalWorkMsg *msg = c->localWorkMsg;
+  msg->compute = c;
+  int type = c->type();
+  int cid = c->cid;
+  SET_PRIORITY(msg,seq,prio);
+  CProxy_WorkDistrib wdProxy(CkpvAccess(BOCclass_group).workDistrib);
+  wdProxy[pe].enqueueCUDA(msg);
 }
 
 #include "ComputeMgr.def.h"
