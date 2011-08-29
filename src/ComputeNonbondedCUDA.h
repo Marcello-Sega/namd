@@ -52,6 +52,8 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     void recvYieldDevice(int pe);
 
     int workStarted;
+    Lattice lattice;
+    int doSlow, doEnergy;
     int finishWork();  // returns true when finished, false to continue
 
     static void build_lj_table();

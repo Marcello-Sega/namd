@@ -65,12 +65,14 @@ void cuda_die(const char *msg) {
 char *devicelist;
 static __thread int usedevicelist;
 static __thread int ignoresharing;
+static __thread int mergegrids;
 
 void cuda_getargs(char **argv) {
   devicelist = 0;
   usedevicelist = CmiGetArgStringDesc(argv, "+devices", &devicelist,
 	"comma-delimited list of CUDA device numbers such as 0,2,1,2");
   ignoresharing = CmiGetArgFlag(argv, "+ignoresharing");
+  mergegrids = CmiGetArgFlag(argv, "+mergegrids");
 }
 
 static __thread int shared_gpu;
@@ -599,7 +601,7 @@ void register_cuda_compute_self(ComputeID c, PatchID pid) {
   cr.c = c;
   cr.pid[0] = pid;  cr.pid[1] = pid;
   cr.offset = 0.;
-  if ( cudaCompute->patchMap->node(pid) == CkMyPe() ) {
+  if ( cudaCompute->patchMap->node(pid) == CkMyPe() && ! mergegrids ) {
     cudaCompute->localComputeRecords.add(cr);
   } else {
     cudaCompute->remoteComputeRecords.add(cr);
@@ -628,12 +630,12 @@ void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]) {
   cr.offset = offset;
   cr2.offset = -1. * offset;
     
-  if ( cudaCompute->patchMap->node(pid[0]) == CkMyPe() ) {
+  if ( cudaCompute->patchMap->node(pid[0]) == CkMyPe() && ! mergegrids ) {
     cudaCompute->localComputeRecords.add(cr);
   } else {
     cudaCompute->remoteComputeRecords.add(cr);
   }
-  if ( cudaCompute->patchMap->node(pid[1]) == CkMyPe() ) {
+  if ( cudaCompute->patchMap->node(pid[1]) == CkMyPe() && ! mergegrids ) {
     cudaCompute->localComputeRecords.add(cr2);
   } else {
     cudaCompute->remoteComputeRecords.add(cr2);
@@ -714,7 +716,7 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
   computesChanged = 1;
   patch_record &pr = patchRecords.item(pid);
   if ( pr.refCount == 0 ) {
-    pr.isLocal = ( patchMap->node(pid) == CkMyPe() );
+    pr.isLocal = ( patchMap->node(pid) == CkMyPe() && ! mergegrids );
     if ( pr.isLocal ) {
       localActivePatches.add(pid);
     } else {
@@ -952,7 +954,12 @@ struct cr_sortop {
 
 int ComputeNonbondedCUDA::noWork() {
 
-  if ( ! master->patchRecords[hostedPatches[0]].p->flags.doNonbonded ) {
+  Flags &flags = master->patchRecords[hostedPatches[0]].p->flags;
+  lattice = flags.lattice;
+  doSlow = flags.doFullElectrostatics;
+  doEnergy = flags.doEnergy;
+
+  if ( ! flags.doNonbonded ) {
     for ( int i=0; i<hostedPatches.size(); ++i ) {
       patch_record &pr = master->patchRecords[hostedPatches[i]];
       CompAtom *x = pr.positionBox->open();
@@ -1043,7 +1050,7 @@ void ComputeNonbondedCUDA::doWork() {
     }
 
     // sort computes by distance between patches
-    cr_sortop so(patchRecords[localActivePatches[0]].p->flags.lattice);
+    cr_sortop so(lattice);
     std::stable_sort(localComputeRecords.begin(),localComputeRecords.end(),so);
     std::stable_sort(remoteComputeRecords.begin(),remoteComputeRecords.end(),so);
  
@@ -1085,7 +1092,7 @@ void ComputeNonbondedCUDA::doWork() {
       pp.patch1_force_list_size = force_lists[lp1].force_list_size;
     }
 
-   if ( simParams->outputCudaTiming ) {
+   if ( 1 || simParams->outputCudaTiming ) {
     CkPrintf("Pe %d has %d local and %d remote patches and %d local and %d remote computes.\n",
 	CkMyPe(), localActivePatches.size(), remoteActivePatches.size(),
 	localComputeRecords.size(), remoteComputeRecords.size());
@@ -1216,7 +1223,7 @@ void ComputeNonbondedCUDA::doWork() {
 
   double charge_scaling = sqrt(COULOMB * scaling * dielectric_1);
 
-  Flags &flags = patchRecords[localActivePatches[0]].p->flags;
+  Flags &flags = patchRecords[hostedPatches[0]].p->flags;
   float maxAtomMovement = 0.;
   float maxPatchTolerance = 0.;
 
@@ -1318,7 +1325,7 @@ void ComputeNonbondedCUDA::doWork() {
 #if 0
   // calculate warp divergence
   if ( 1 ) {
-    Flags &flags = patchRecords[localActivePatches[0]].p->flags;
+    Flags &flags = patchRecords[hostedPatches[0]].p->flags;
     Lattice &lattice = flags.lattice;
     float3 lata, latb, latc;
     lata.x = lattice.a().x;
@@ -1452,11 +1459,6 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 // CkPrintf("Pe %d entering state %d via yield from pe %d\n",
 //           CkMyPe(), kernel_launch_state, pe);
 
-  Flags &flags = patchRecords[localActivePatches[0]].p->flags;
-  int doSlow = flags.doFullElectrostatics;
-  int doEnergy = flags.doEnergy;
-
-  Lattice &lattice = flags.lattice;
   float3 lata, latb, latc;
   lata.x = lattice.a().x;
   lata.y = lattice.a().y;
@@ -1490,7 +1492,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     //    num_local_atom_records,num_remote_atom_records);
     cudaEventRecord(end_remote_download, stream);
     ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
-    if ( shared_gpu ) {
+    if ( shared_gpu && ! mergegrids ) {
       ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_calc,this);
       break;
     }
@@ -1507,7 +1509,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
     cudaEventRecord(end_local_download, stream);
     if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
-    if ( shared_gpu ) {
+    if ( shared_gpu && ! mergegrids ) {
       ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_calc,this);
       break;
     }
@@ -1532,11 +1534,6 @@ int ComputeNonbondedCUDA::finishWork() {
 
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
-
-  Flags &flags = master->patchRecords[
-           master==this?localActivePatches[0]:hostedPatches[0] ].p->flags;
-  int doSlow = flags.doFullElectrostatics;
-  int doEnergy = flags.doEnergy;
 
   ResizeArray<int> &patches( workStarted == 1 ?
 				remoteHostedPatches : localActivePatches );
@@ -1627,7 +1624,7 @@ int ComputeNonbondedCUDA::finishWork() {
     atomsChanged = 0;
     return 1;
   }
-  if ( workStarted == 1 ) return 0;  // not finished, call again
+  if ( workStarted == 1 && ! mergegrids ) return 0;  // not finished, call again
 
   {
     Tensor virial_tensor;
