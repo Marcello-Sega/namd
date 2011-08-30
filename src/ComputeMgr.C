@@ -1049,8 +1049,9 @@ void ComputeMgr::recvNonbondedCUDASlaveReady(int np, int ac, int seq) {
   }
 }
 
-void ComputeMgr::sendNonbondedCUDASlaveEnqueue(Compute *c, int pe, int seq, int prio) {
-  LocalWorkMsg *msg = c->localWorkMsg;
+void ComputeMgr::sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int pe, int seq, int prio, int ws) {
+  if ( ws == 2 && c->localHostedPatches.size() == 0 ) return;
+  LocalWorkMsg *msg = ( ws == 1 ? c->localWorkMsg : c->localWorkMsg2 );
   msg->compute = c;
   int type = c->type();
   int cid = c->cid;

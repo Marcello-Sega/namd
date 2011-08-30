@@ -50,11 +50,13 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int noWork();
 
     void recvYieldDevice(int pe);
+    LocalWorkMsg *localWorkMsg2;
 
     int workStarted;
     Lattice lattice;
     int doSlow, doEnergy;
     int finishWork();  // returns true when finished, false to continue
+    void messageFinishWork();
 
     static void build_lj_table();
     static void build_force_table();
@@ -65,7 +67,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     void assignPatches();
     void registerPatches();
     ResizeArray<int> activePatches, localActivePatches, remoteActivePatches;
-    ResizeArray<int> hostedPatches, remoteHostedPatches;
+    ResizeArray<int> hostedPatches, localHostedPatches, remoteHostedPatches;
     ResizeArray<patch_record> patchRecords;
     ResizeArray<compute_record> computeRecords;
     ResizeArray<compute_record> localComputeRecords, remoteComputeRecords;

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dhardy $
- * $Date: 2011/08/16 21:23:45 $
- * $Revision: 1.1227 $
+ * $Author: jim $
+ * $Date: 2011/08/30 14:54:24 $
+ * $Revision: 1.1228 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -2008,8 +2008,9 @@ void WorkDistrib::enqueueWorkC(LocalWorkMsg *msg) {
 
 void WorkDistrib::enqueueCUDA(LocalWorkMsg *msg) {
   msg->compute->doWork();
-  if ( msg->compute->localWorkMsg != msg )
-    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+  // ComputeNonbondedCUDA *c = msg->compute;
+  // if ( c->localWorkMsg != msg && c->localWorkMsg2 != msg )
+  //   NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 

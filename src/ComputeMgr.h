@@ -91,7 +91,7 @@ public:
   void recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *);
   void sendNonbondedCUDASlaveReady(int,int,int,int);
   void recvNonbondedCUDASlaveReady(int,int,int);
-  void sendNonbondedCUDASlaveEnqueue(Compute *c, int,int,int);
+  void sendNonbondedCUDASlaveEnqueue(ComputeNonbondedCUDA *c, int,int,int,int);
   
 private:
   void createCompute(ComputeID, ComputeMap *);

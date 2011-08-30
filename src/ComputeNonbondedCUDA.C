@@ -601,7 +601,7 @@ void register_cuda_compute_self(ComputeID c, PatchID pid) {
   cr.c = c;
   cr.pid[0] = pid;  cr.pid[1] = pid;
   cr.offset = 0.;
-  if ( cudaCompute->patchMap->node(pid) == CkMyPe() && ! mergegrids ) {
+  if ( cudaCompute->patchRecords[pid].isLocal ) {
     cudaCompute->localComputeRecords.add(cr);
   } else {
     cudaCompute->remoteComputeRecords.add(cr);
@@ -630,12 +630,12 @@ void register_cuda_compute_pair(ComputeID c, PatchID pid[], int t[]) {
   cr.offset = offset;
   cr2.offset = -1. * offset;
     
-  if ( cudaCompute->patchMap->node(pid[0]) == CkMyPe() && ! mergegrids ) {
+  if ( cudaCompute->patchRecords[pid[0]].isLocal ) {
     cudaCompute->localComputeRecords.add(cr);
   } else {
     cudaCompute->remoteComputeRecords.add(cr);
   }
-  if ( cudaCompute->patchMap->node(pid[1]) == CkMyPe() && ! mergegrids ) {
+  if ( cudaCompute->patchRecords[pid[1]].isLocal ) {
     cudaCompute->localComputeRecords.add(cr2);
   } else {
     cudaCompute->remoteComputeRecords.add(cr2);
@@ -686,6 +686,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   computesChanged = 1;
   workStarted = 0;
   basePriority = PROXY_DATA_PRIORITY;
+  localWorkMsg2 = new (PRIORITY_SIZE) LocalWorkMsg;
 
   if ( master != this ) { // I am slave
     master->slaves[slaveIndex] = this;
@@ -716,7 +717,13 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
   computesChanged = 1;
   patch_record &pr = patchRecords.item(pid);
   if ( pr.refCount == 0 ) {
-    pr.isLocal = ( patchMap->node(pid) == CkMyPe() && ! mergegrids );
+    if ( mergegrids ) {
+      pr.isLocal = 0;
+    } else if ( CkNumNodes() < 2 ) {
+      pr.isLocal = ( patchMap->node(pid) == CkMyPe() );
+    } else {
+      pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
+    }
     if ( pr.isLocal ) {
       localActivePatches.add(pid);
     } else {
@@ -750,7 +757,9 @@ void ComputeNonbondedCUDA::registerPatches() {
       //  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       //}
       hostedPatches.add(pid);
-      if ( ! pr.isLocal ) {
+      if ( pr.isLocal ) {
+        localHostedPatches.add(pid);
+      } else {
         remoteHostedPatches.add(pid);
       }
       ProxyMgr::Object()->createProxy(pid);
@@ -761,7 +770,7 @@ void ComputeNonbondedCUDA::registerPatches() {
   }
   if ( master == this ) setNumPatches(activePatches.size());
   else setNumPatches(hostedPatches.size());
-  CkPrintf("Pe %d hosts %d patches for pe %d\n", CkMyPe(), hostedPatches.size(), devicePe);
+  CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), devicePe);
 }
 
 void ComputeNonbondedCUDA::assignPatches() {
@@ -906,8 +915,7 @@ static __thread int ccd_index_local_download;
 
 void cuda_check_remote_progress(void *arg, double) {
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
-    // ((ComputeNonbondedCUDA *) arg)->finishWork();
-    WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
+    ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
   } else {
     ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION, cuda_check_remote_progress, arg);
   }
@@ -916,7 +924,7 @@ void cuda_check_remote_progress(void *arg, double) {
 void cuda_check_local_progress(void *arg, double) {
   if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
     kernel_time += CkWallTimer();
-    WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
+    ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
   } else {
     ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION, cuda_check_local_progress, arg);
   }
@@ -1002,8 +1010,8 @@ void ComputeNonbondedCUDA::doWork() {
       basePriority = PROXY_DATA_PRIORITY;  // higher to aid overlap
     } else {  // need to call again
       workStarted = 2;
-      basePriority = COMPUTE_HOME_PRIORITY;  // lower for local
-      if ( kernel_launch_state > 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
+      basePriority = PROXY_RESULTS_PRIORITY;  // lower for local
+      if ( master == this && kernel_launch_state > 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
     }
     return;
   }
@@ -1522,21 +1530,27 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
 }
 
 
-int ComputeNonbondedCUDA::finishWork() {
-
-  if ( workStarted == 1 && master == this ) {
-    for ( int i = 0; i < numSlaves; ++i ) {
-      computeMgr->sendNonbondedCUDASlaveEnqueue(slaves[i],slavePes[i],sequence(),priority());
-    }
-  }
+void ComputeNonbondedCUDA::messageFinishWork() {
 
   cuda_errcheck("at cuda stream completed");
+
+  for ( int i = 0; i < numSlaves; ++i ) {
+    computeMgr->sendNonbondedCUDASlaveEnqueue(slaves[i],slavePes[i],sequence(),priority(),workStarted);
+  }
+
+  WorkDistrib::messageEnqueueWork(this);
+
+}
+
+int ComputeNonbondedCUDA::finishWork() {
+
+  // CkPrintf("Pe %d finishWork workStarted=%d\n", CkMyPe(), workStarted);
 
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
 
   ResizeArray<int> &patches( workStarted == 1 ?
-				remoteHostedPatches : localActivePatches );
+				remoteHostedPatches : localHostedPatches );
 
   for ( int i=0; i<patches.size(); ++i ) {
     patch_record &pr = master->patchRecords[patches[i]];
@@ -1620,11 +1634,11 @@ int ComputeNonbondedCUDA::finishWork() {
   }
 #endif
 
+  if ( workStarted == 1 && ! mergegrids && localHostedPatches.size() ) return 0;  // not finished, call again
   if ( master != this ) {  // finished
     atomsChanged = 0;
     return 1;
   }
-  if ( workStarted == 1 && ! mergegrids ) return 0;  // not finished, call again
 
   {
     Tensor virial_tensor;
