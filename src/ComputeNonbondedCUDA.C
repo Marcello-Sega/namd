@@ -294,8 +294,6 @@ void cuda_initialize() {
   if ( sizeof(atom) & 15 ) NAMD_bug("sizeof(atom) % 16 != 0");
   if ( sizeof(atom_param) & 15 ) NAMD_bug("sizeof(atom_param) % 16 != 0");
 
-  cuda_init();
-
 }
 
 static __thread ComputeNonbondedCUDA* cudaCompute = 0;
@@ -699,6 +697,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
+  cuda_init();
   build_exclusions();
   cudaEventCreate(&start_upload);
   cudaEventCreate(&start_calc);
