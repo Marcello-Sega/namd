@@ -935,10 +935,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 #ifdef NAMD_FFTW
   CmiLock(fftw_plan_lock);
 #ifdef NAMD_FFTW_3
+  work = new fftwf_complex[n[0]];
   int fftwFlags = simParams->FFTWPatient ? FFTW_PATIENT  : simParams->FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
-  if ( myTransPe >= 0 ) {
+  if ( myGridPe >= 0 ) {
     forward_plan_yz=new fftwf_plan[numGrids];
     backward_plan_yz=new fftwf_plan[numGrids];
+  }
+  if ( myTransPe >= 0 ) {
     forward_plan_x=new fftwf_plan[numGrids];
     backward_plan_x=new fftwf_plan[numGrids];
   }
@@ -948,7 +951,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     for( int g=0; g<numGrids; g++)
       {
 	forward_plan_yz[g] = fftwf_plan_many_dft_r2c(2, n+1, 
-						     localInfo[g].nx,
+						     localInfo[myGridPe].nx,
 						     qgrid + qgrid_size * g,
 						     NULL,
 						     1,
@@ -957,12 +960,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 						     qgrid + qgrid_size * g,
 						     NULL,
 						     1,
-						     myGrid.dim2 * myGrid.dim3/2,
+						     myGrid.dim2 * (myGrid.dim3/2),
 						     fftwFlags);
       }
   }
   int zdim = myGrid.dim3;
-  int xStride=localInfo[myTransPe].ny_after_transpose * myGrid.dim3 / 2;
+  int xStride=localInfo[myTransPe].ny_after_transpose *( myGrid.dim3 / 2);
   if ( ! CkMyPe() ) iout << " 2..." << endi;
   if ( myTransPe >= 0 ) {
     for( int g=0; g<numGrids; g++)
@@ -1007,12 +1010,12 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     for( int g=0; g<numGrids; g++)
       {
 	backward_plan_yz[g] = fftwf_plan_many_dft_c2r(2, n+1, 
-						      localInfo[g].nx,
+						      localInfo[myGridPe].nx,
 						      (fftwf_complex *)
 						      qgrid + qgrid_size * g,
 						      NULL,
 						      1,
-						      myGrid.dim2*myGrid.dim3/2,
+						      myGrid.dim2*(myGrid.dim3/2),
 						      qgrid + qgrid_size * g,
 						      NULL,
 						      1,

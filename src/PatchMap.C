@@ -18,7 +18,7 @@
 #include "Lattice.h"
 #include "HomePatchList.h"
 #include "AtomMap.h"
-
+#include "memusage.h"
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 5
 #include "Debug.h"
@@ -360,6 +360,9 @@ void PatchMap::unpack (char *ptr)
   UNPACK(BigReal,aOrigin); UNPACK(BigReal,bOrigin); UNPACK(BigReal,cOrigin);
   UNPACK(BigReal,aLength); UNPACK(BigReal,bLength); UNPACK(BigReal,cLength);
   UNPACK(int,nNodesWithPatches);
+
+
+//  CkPrintf("[%d] has bounds a %d b %d c %d npatches %d mem %d\n",CkMyPe(),aDim, bDim, cDim, nPatches, memusage_MB() );
 
   if ( ! patchBounds_a ) patchBounds_a = new BigReal[2*aDim+1];
   if ( ! patchBounds_b ) patchBounds_b = new BigReal[2*bDim+1];
