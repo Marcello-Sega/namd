@@ -908,15 +908,13 @@ static __thread int cuda_timer_count;
 static __thread double cuda_timer_total;
 static __thread double kernel_time;
 
-static __thread int ccd_index_remote_download;
-static __thread int ccd_index_local_download;
-#define CUDA_CONDITION CcdPERIODIC
+#define CUDA_POLL(FN,ARG) CcdCallFnAfter(FN,ARG,0.1)
 
 void cuda_check_remote_progress(void *arg, double) {
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
   } else {
-    ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION, cuda_check_remote_progress, arg);
+    CUDA_POLL(cuda_check_remote_progress, arg);
   }
 }
 
@@ -925,7 +923,7 @@ void cuda_check_local_progress(void *arg, double) {
     kernel_time += CkWallTimer();
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
   } else {
-    ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION, cuda_check_local_progress, arg);
+    CUDA_POLL(cuda_check_local_progress, arg);
   }
 }
 
@@ -934,7 +932,7 @@ void cuda_check_local_progress(void *arg, double) {
 void cuda_check_progress(void *arg, double) {
   if ( cuda_stream_finished() ) {
     kernel_time += CkWallTimer();
-    CcdCallOnCondition(CUDA_CONDITION, ccd_index);
+    CUDA_POLL(ccd_index);
     // ((ComputeNonbondedCUDA *) arg)->finishWork();
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
   }
@@ -1010,7 +1008,7 @@ void ComputeNonbondedCUDA::doWork() {
     } else {  // need to call again
       workStarted = 2;
       basePriority = PROXY_RESULTS_PRIORITY;  // lower for local
-      if ( master == this && kernel_launch_state > 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
+      if ( master == this && kernel_launch_state > 2 ) CUDA_POLL(cuda_check_local_progress,this);
     }
     return;
   }
@@ -1424,7 +1422,7 @@ void ComputeNonbondedCUDA::doWork() {
 
   // finishWork();
 
-  ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
+  CUDA_POLL(cuda_check_remote_progress,this);
 #else
 
   kernel_launch_state = 1;
@@ -1433,7 +1431,6 @@ void ComputeNonbondedCUDA::doWork() {
 #endif
 }
 
-static __thread int ccd_index_remote_calc;
 void cuda_check_remote_calc(void *arg, double) {
   // in theory we only need end_remote_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_remote_calc) == cudaSuccess ) {
@@ -1442,11 +1439,10 @@ void cuda_check_remote_calc(void *arg, double) {
     computeMgr->sendYieldDevice(next_pe_sharing_gpu);
 // CkPrintf("Pe %d yielded to %d after remote calc\n", CkMyPe(), next_pe_sharing_gpu);
   } else {
-    ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION, cuda_check_remote_calc, arg);
+    CUDA_POLL(cuda_check_remote_calc, arg);
   }
 }
 
-static __thread int ccd_index_local_calc;
 void cuda_check_local_calc(void *arg, double) {
   // in theory we only need end_local_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_local_calc) == cudaSuccess ) {
@@ -1455,7 +1451,7 @@ void cuda_check_local_calc(void *arg, double) {
     computeMgr->sendYieldDevice(next_pe_sharing_gpu);
 // CkPrintf("Pe %d yielded to %d after local calc\n", CkMyPe(), next_pe_sharing_gpu);
   } else {
-    ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION, cuda_check_local_calc, arg);
+    CUDA_POLL(cuda_check_local_calc, arg);
   }
 }
 
@@ -1498,9 +1494,9 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    num_local_atom_records,num_remote_atom_records);
     cudaEventRecord(end_remote_download, stream);
-    ccd_index_remote_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_progress,this);
+    CUDA_POLL(cuda_check_remote_progress,this);
     if ( shared_gpu && ! mergegrids ) {
-      ccd_index_remote_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_remote_calc,this);
+      CUDA_POLL(cuda_check_remote_calc,this);
       break;
     }
  
@@ -1515,9 +1511,9 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
     //    0,num_local_atom_records);
     //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
     cudaEventRecord(end_local_download, stream);
-    if ( workStarted == 2 ) ccd_index_local_download = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_progress,this);
+    if ( workStarted == 2 ) CUDA_POLL(cuda_check_local_progress,this);
     if ( shared_gpu && ! mergegrids ) {
-      ccd_index_local_calc = CcdCallOnCondition(CUDA_CONDITION,cuda_check_local_calc,this);
+      CUDA_POLL(cuda_check_local_calc,this);
       break;
     }
 
