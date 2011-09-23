@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2011/08/16 21:23:44 $
- * $Revision: 1.1368 $
+ * $Author: char $
+ * $Date: 2011/09/23 22:52:45 $
+ * $Revision: 1.1369 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -4026,7 +4026,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 //  Alchemical FEP status
 
 //   current = config->find("alchOutFile");
-   if (alchOn)
+   if (alchFepOn)
    {
      iout << iINFO << "ALCHEMICAL FEP ON\n";
      iout << iINFO << "FEP CURRENT LAMBDA VALUE     "
