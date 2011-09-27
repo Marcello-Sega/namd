@@ -620,7 +620,7 @@ void ComputeNonbondedUtil::select(void)
 	break;
       case SPLIT_MARTINI: { 
         // in Martini, the Coulomb switching distance is zero
-        const COUL_SWITCH = 0.;
+        const BigReal COUL_SWITCH = 0.;
         // Gromacs shifting function
         const BigReal p1 = 1.;
         BigReal A1 = p1 * ((p1+1)*COUL_SWITCH-(p1+4)*cutoff)/(pow(cutoff,p1+2)*pow(cutoff-COUL_SWITCH,2));
