@@ -101,7 +101,42 @@ static inline bool sortop_bitreverse(int a, int b) {
   return 0;
 }
 
+#define CUDA_EVENT_ID_BASE 100
+#define CUDA_TRACE_REMOTE(START,END) \
+  do { int dev; cudaGetDevice(&dev); traceUserBracketEvent( \
+       CUDA_EVENT_ID_BASE + 2 * dev, START, END); } while (0)
+#define CUDA_TRACE_LOCAL(START,END) \
+  do { int dev; cudaGetDevice(&dev); traceUserBracketEvent( \
+       CUDA_EVENT_ID_BASE + 2 * dev + 1, START, END); } while (0)
+
+void cuda_register_user_events() {
+
+#define REGISTER_DEVICE_EVENTS(DEV) \
+  traceRegisterUserEvent("CUDA device " #DEV " remote", CUDA_EVENT_ID_BASE + 2 * DEV); \
+  traceRegisterUserEvent("CUDA device " #DEV " local", CUDA_EVENT_ID_BASE + 2 * DEV + 1);
+
+  REGISTER_DEVICE_EVENTS(0)
+  REGISTER_DEVICE_EVENTS(1)
+  REGISTER_DEVICE_EVENTS(2)
+  REGISTER_DEVICE_EVENTS(3)
+  REGISTER_DEVICE_EVENTS(4)
+  REGISTER_DEVICE_EVENTS(5)
+  REGISTER_DEVICE_EVENTS(6)
+  REGISTER_DEVICE_EVENTS(7)
+  REGISTER_DEVICE_EVENTS(8)
+  REGISTER_DEVICE_EVENTS(9)
+  REGISTER_DEVICE_EVENTS(10)
+  REGISTER_DEVICE_EVENTS(11)
+  REGISTER_DEVICE_EVENTS(12)
+  REGISTER_DEVICE_EVENTS(13)
+  REGISTER_DEVICE_EVENTS(14)
+  REGISTER_DEVICE_EVENTS(15)
+
+}
+
 void cuda_initialize() {
+
+  if ( 0 == CkMyPe() ) cuda_register_user_events();
 
   char host[128];
 #ifdef NOHOSTNAME
@@ -907,11 +942,15 @@ static __thread float *slow_virials;
 static __thread int cuda_timer_count;
 static __thread double cuda_timer_total;
 static __thread double kernel_time;
+static __thread double remote_submit_time;
+static __thread double local_submit_time;
 
 #define CUDA_POLL(FN,ARG) CcdCallFnAfter(FN,ARG,0.1)
 
 void cuda_check_remote_progress(void *arg, double) {
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
+    local_submit_time = CkWallTimer();
+    CUDA_TRACE_REMOTE(remote_submit_time,local_submit_time);
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
   } else {
     CUDA_POLL(cuda_check_remote_progress, arg);
@@ -920,7 +959,9 @@ void cuda_check_remote_progress(void *arg, double) {
 
 void cuda_check_local_progress(void *arg, double) {
   if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
-    kernel_time += CkWallTimer();
+    double wall_time = CkWallTimer();
+    CUDA_TRACE_LOCAL(local_submit_time,wall_time);
+    kernel_time = wall_time - kernel_time;
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
   } else {
     CUDA_POLL(cuda_check_local_progress, arg);
@@ -931,7 +972,7 @@ void cuda_check_local_progress(void *arg, double) {
 // don't use this one unless timer is part of stream, above is better
 void cuda_check_progress(void *arg, double) {
   if ( cuda_stream_finished() ) {
-    kernel_time += CkWallTimer();
+    kernel_time = CkWallTimer() - kernel_time;
     CUDA_POLL(ccd_index);
     // ((ComputeNonbondedCUDA *) arg)->finishWork();
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
@@ -1390,7 +1431,7 @@ void ComputeNonbondedCUDA::doWork() {
   }
 #endif
 
-  kernel_time = -1. * CkWallTimer();
+  kernel_time = CkWallTimer();
 #if 0
   kernel_launch_state = 3;
 
@@ -1477,6 +1518,7 @@ void ComputeNonbondedCUDA::recvYieldDevice(int pe) {
   case 1:
     ++kernel_launch_state;
     gpu_is_mine = 0;
+    remote_submit_time = CkWallTimer();
     cudaEventRecord(start_upload, stream);
 
     if ( atomsChanged ) {
