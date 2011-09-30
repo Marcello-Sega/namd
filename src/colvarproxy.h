@@ -160,6 +160,7 @@ inline cvm::real colvarproxy::rand_gaussian (void)
 {
   cvm::fatal_error ("Error: colvarproxy::rand_gaussian() has not been (re)redefined, "
                     "__FILE__ at line __LINE__.\n");
+  return 999999.;
 }
 
 
