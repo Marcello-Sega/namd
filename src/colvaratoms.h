@@ -157,10 +157,10 @@ public:
   /// \brief In case b_center or b_rotate is true, use these reference
   /// coordinates
   std::vector<cvm::atom_pos> ref_pos;
-  /// \brief Center of mass of the reference coordinates; regardless
+  /// \brief Center of geometry of the reference coordinates; regardless
   /// of whether b_center is true, ref_pos is centered to zero at
-  /// initialization, and ref_pos_com serves to center the positions
-  cvm::atom_pos              ref_pos_com;
+  /// initialization, and ref_pos_cog serves to center the positions
+  cvm::atom_pos              ref_pos_cog;
   /// \brief In case b_center or b_rotate is true, fit this group to
   /// the reference positions (default: the parent group itself)
   atom_group                *ref_pos_group;

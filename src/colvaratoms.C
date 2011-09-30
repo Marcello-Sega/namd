@@ -14,7 +14,7 @@ cvm::atom_group::atom_group (std::string const &conf,
                              atom_group        *ref_pos_group_in)
   : b_center (false), b_rotate (false),
     ref_pos_group (NULL), // this is always set within parse(),
-                          // regardless fo ref_pos_group_in
+                          // regardless of ref_pos_group_in
     noforce (false)
 {
   cvm::log ("Defining atom group \""+
@@ -292,20 +292,16 @@ void cvm::atom_group::parse (std::string const &conf,
       // save the center of mass of ref_pos and then subtract it from
       // them; in this way it is possible to use the coordinates for
       // the rotational fit, if needed
-      ref_pos_com = cvm::atom_pos (0.0, 0.0, 0.0);
-
-      atom_group *ag = ref_pos_group ? ref_pos_group : this;
-
-      cvm::atom_iter ai = ag->begin();
+      ref_pos_cog = cvm::atom_pos (0.0, 0.0, 0.0);
       std::vector<cvm::atom_pos>::iterator pi = ref_pos.begin();
-      for ( ; ai != ag->end(); pi++, ai++) {
-        ref_pos_com += ai->mass * (*pi);
+      for ( ; pi != ref_pos.end(); pi++) {
+        ref_pos_cog += *pi;
       }
-      ref_pos_com /= ag->total_mass;
+      ref_pos_cog /= (cvm::real) ref_pos.size();
 
       for (std::vector<cvm::atom_pos>::iterator pi = ref_pos.begin();
            pi != ref_pos.end(); pi++) {
-        (*pi) -= ref_pos_com;
+        (*pi) -= ref_pos_cog;
       }
     } else {
 #if (! defined (COLVARS_STANDALONE))
@@ -427,18 +423,18 @@ void cvm::atom_group::read_positions()
   atom_group *fit_group = ref_pos_group ? ref_pos_group : this;
 
   if (b_center) {
-    // store aside the current center of mass (all positions will be
+    // store aside the current center of geometry (all positions will be
     // set to the closest images to the first one) and then center on
     // the origin
-    cvm::atom_pos const com = fit_group->center_of_mass();
+    cvm::atom_pos const cog = fit_group->center_of_geometry();
     for (cvm::atom_iter ai = this->begin();
          ai != this->end(); ai++) {
-      ai->pos -= com;
+      ai->pos -= cog;
     }
   }
 
   if (b_rotate) {
-    // rotate the group (around the center of mass if b_center is
+    // rotate the group (around the center of geometry if b_center is
     // true, around the origin otherwise); store the rotation, in
     // order to bring back the forces to the original frame before
     // applying them
@@ -451,10 +447,10 @@ void cvm::atom_group::read_positions()
   }
 
   if (b_center) {
-    // use the center of mass of ref_pos
+    // use the center of geometry of ref_pos
     for (cvm::atom_iter ai = this->begin();
          ai != this->end(); ai++) {
-      ai->pos += ref_pos_com;
+      ai->pos += ref_pos_cog;
     }
   }
 }

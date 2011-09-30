@@ -855,11 +855,16 @@ colvar::eigenvector::eigenvector (std::string const &conf)
   parse_group (conf, "atoms", atoms);
   atom_groups.push_back (&atoms);
 
+  if (atoms.b_rotate) {
+    cvm::fatal_error ("Error: rotateReference should be disabled:"
+        "eigenvector component will set it internally.");
+  }
+
   if (get_keyval (conf, "refPositions", ref_pos, ref_pos)) {
     cvm::log ("Using reference positions from input file.\n");
     if (ref_pos.size() != atoms.size()) {
       cvm::fatal_error ("Error: reference positions do not "
-                        "match the number of atom indexes.\n");
+                        "match the number of requested atoms.\n");
     }
   }
 
@@ -885,12 +890,17 @@ colvar::eigenvector::eigenvector (std::string const &conf)
     }
   }
 
+  // Set mobile frame of reference for atom group
+  atoms.b_center = true;
+  atoms.b_rotate = true;
+  atoms.ref_pos = ref_pos;
+
   // now load the eigenvector
   if (get_keyval (conf, "vector", eigenvec, eigenvec)) {
-    cvm::log ("Using reference positions from input file.\n");
+    cvm::log ("Using vector components from input file.\n");
     if (eigenvec.size() != atoms.size()) {
-      cvm::fatal_error ("Error: reference positions do not "
-                        "match the number of atom indexes.\n");
+      cvm::fatal_error ("Error: vector components do not "
+                        "match the number of requested atoms.\n");
     }
   }
 
@@ -915,8 +925,8 @@ colvar::eigenvector::eigenvector (std::string const &conf)
   }
 
   if (!ref_pos.size() || !eigenvec.size()) {
-    cvm::fatal_error ("Error: must define both reference "
-                      "coordinates and eigenvector.\n");
+    cvm::fatal_error ("Error: both reference coordinates"
+                      "and eigenvector must be defined.\n");
   }
 
   cvm::rvector center (0.0, 0.0, 0.0);
@@ -944,7 +954,7 @@ colvar::eigenvector::eigenvector (std::string const &conf)
 void colvar::eigenvector::calc_value()
 {
   atoms.reset_atoms_data();
-  atoms.read_positions();
+  atoms.read_positions(); // this will also update atoms.rot
 
   x.real_value = 0.0;
   for (size_t i = 0; i < atoms.size(); i++) {
@@ -955,12 +965,80 @@ void colvar::eigenvector::calc_value()
 
 void colvar::eigenvector::calc_gradients()
 {
-  for (size_t i = 0; i < atoms.size(); i++) {
-    atoms[i].grad = eigenvec[i];
+  // There are two versions of this code
+  // The simple version is not formally exact, but its
+  // results are numerically indistinguishable from the
+  // exact one. The exact one is more expensive and possibly
+  // less stable in cases where the optimal rotation
+  // becomes ill-defined.
+
+  // Version A: simple, intuitive, cheap, robust. Wrong.
+  // Works just fine in practice.
+  for (size_t ia = 0; ia < atoms.size(); ia++) {
+    atoms[ia].grad = eigenvec[ia];
   }
 
-  // WARNING: either the gradient must be rotated, or the automatic
-  // rotation of forces within the atom group should be disabled.
+/*
+  // Version B: complex, expensive, fragile. Right.
+ 
+  // gradient of the rotation matrix
+  cvm::matrix2d <cvm::rvector, 3, 3> grad_rot_mat;
+
+  cvm::quaternion &quat0 = atoms.rot.q;
+
+  // gradients of products of 2 quaternion components
+  cvm::rvector g11, g22, g33, g01, g02, g03, g12, g13, g23;
+
+  // a term that involves the rotation gradients
+  cvm::rvector rot_grad_term;
+
+  cvm::atom_pos x_relative;
+  cvm::atom_pos atoms_cog = atoms.center_of_geometry();
+
+  for (size_t ia = 0; ia < atoms.size(); ia++) {
+
+    // Gradient of optimal quaternion wrt current Cartesian position
+    // WARNING: we want derivatives wrt the FIRST group here (unlike RMSD)
+    cvm::vector1d< cvm::rvector, 4 >      &dq = atoms.rot.dQ0_1[ia];
+
+    g11 = 2.0 * quat0[1]*dq[1];
+    g22 = 2.0 * quat0[2]*dq[2];
+    g33 = 2.0 * quat0[3]*dq[3];
+    g01 = quat0[0]*dq[1] + quat0[1]*dq[0];
+    g02 = quat0[0]*dq[2] + quat0[2]*dq[0];
+    g03 = quat0[0]*dq[3] + quat0[3]*dq[0];
+    g12 = quat0[1]*dq[2] + quat0[2]*dq[1];
+    g13 = quat0[1]*dq[3] + quat0[3]*dq[1];
+    g23 = quat0[2]*dq[3] + quat0[3]*dq[2];
+
+    // Gradient of the rotation matrix wrt current Cartesian position
+    grad_rot_mat[0][0] = -2.0 * (g22 + g33);
+    grad_rot_mat[1][0] =  2.0 * (g12 + g03);
+    grad_rot_mat[2][0] =  2.0 * (g13 - g02);
+    grad_rot_mat[0][1] =  2.0 * (g12 - g03);
+    grad_rot_mat[1][1] = -2.0 * (g11 + g33);
+    grad_rot_mat[2][1] =  2.0 * (g01 + g23);
+    grad_rot_mat[0][2] =  2.0 * (g02 + g13);
+    grad_rot_mat[1][2] =  2.0 * (g23 - g01);
+    grad_rot_mat[2][2] = -2.0 * (g11 + g22);
+
+    // this term needs to be rotated back, so we sum it separately
+    rot_grad_term.reset();
+
+    for (size_t ja = 0; ja < atoms.size(); ja++) {
+      x_relative = atoms[ja].pos - atoms_cog;
+
+      for (size_t i = 0; i < 3; i++) {
+        for (size_t j = 0; j < 3; j++) {
+          rot_grad_term += eigenvec[ja][i] * grad_rot_mat[i][j] * x_relative[j];
+        }
+      }
+    }
+
+    // Rotate correction term back to reference frame
+    atoms[ia].grad = eigenvec[ia] + quat0.rotate (rot_grad_term);
+  }
+*/
 }
 
 

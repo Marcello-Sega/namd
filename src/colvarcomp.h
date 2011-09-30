@@ -592,6 +592,10 @@ protected:
   /// Derivatives wrt group centers of mass
   cvm::rvector dxdr1, dxdr3;
 
+  /// Compute system force on first site only to avoid unwanted
+  /// coupling to other colvars (see e.g. Ciccotti et al., 2005)
+  /// (or to allow dummy atoms)
+  bool b_1site_force;
 public:
 
   /// Initialize by parsing the configuration
@@ -1273,7 +1277,7 @@ inline cvm::real colvar::distance_z::compare (colvarvalue const &x1,
 
 inline void colvar::distance_z::wrap (colvarvalue &x) const
 {
-  if (period == 0.0) {
+  if (! this->b_periodic) {
     // don't wrap if the period has not been set
     return;
   }

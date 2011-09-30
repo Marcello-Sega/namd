@@ -106,6 +106,9 @@ public:
     /// center with fictitious mass; bias forces will be applied to
     /// the center
     task_extended_lagrangian,
+    /// \brief The extended system coordinate undergoes Langevin
+    /// dynamics
+    task_langevin,
     /// \brief Output the potential and kinetic energies
     /// (for extended Lagrangian colvars only)
     task_output_energy,
@@ -205,10 +208,10 @@ protected:
   cvm::real ext_mass;
   /// Restraint force constant
   cvm::real ext_force_k;
-  /// Restraint time scale (period)
-  cvm::real ext_period;
-  /// Restraint tolerance (fluctuation width)
-  cvm::real ext_tolerance;
+  /// Friction coefficient for Langevin extended dynamics
+  cvm::real ext_gamma;
+  /// Amplitude of Gaussian white noise for Langevin extended dynamics
+  cvm::real ext_sigma;
   
   /// \brief Harmonic restraint force
   colvarvalue fr;

@@ -283,7 +283,7 @@ colvar::colvar (std::string const &conf)
     get_keyval (conf, "extendedLagrangian", b_extended_lagrangian, false);
 
     if (b_extended_lagrangian) {
-      cvm::real temp;
+      cvm::real temp, tolerance, period;
 
       cvm::log ("Enabling the extended Lagrangian term for colvar \""+
                 this->name+"\".\n");
@@ -294,22 +294,26 @@ colvar::colvar (std::string const &conf)
       vr.type (this->type());
       fr.type (this->type());
 
-      if ( (temp = cvm::temperature()) == 0.0) {
-        cvm::log ("WARNING: no thermostat detected - assuming average temperature of 300 K.");
-        temp = 300.0;
+      const bool found = get_keyval (conf, "extendedTemp", temp, cvm::temperature());
+      if (temp <= 0.0) {
+        if (found)
+          cvm::fatal_error ("Error: \"extendedTemp\" must be positive.\n");
+        else
+          cvm::fatal_error ("Error: a positive temperature must be provided, either "
+                            "by enabling a thermostat, or through \"extendedTemp\".\n");
       }
 
-      get_keyval (conf, "extendedFluctuation", ext_tolerance, 0.2*width);
-      if (ext_tolerance <= 0.0)
+      get_keyval (conf, "extendedFluctuation", tolerance, 0.2*width);
+      if (tolerance <= 0.0)
         cvm::fatal_error ("Error: \"extendedFluctuation\" must be positive.\n");
-      ext_force_k = cvm::boltzmann() * temp / (ext_tolerance * ext_tolerance);
+      ext_force_k = cvm::boltzmann() * temp / (tolerance * tolerance);
       cvm::log ("Computed extended system force constant: " + cvm::to_str(ext_force_k) + " kcal/mol/U^2");
 
-      get_keyval (conf, "extendedTimeConstant", ext_period, 40.0 * cvm::dt());
-      if (ext_period <= 0.0)
+      get_keyval (conf, "extendedTimeConstant", period, 40.0 * cvm::dt());
+      if (period <= 0.0)
         cvm::fatal_error ("Error: \"extendedTimeConstant\" must be positive.\n");
-      ext_mass = (cvm::boltzmann() * temp * ext_period * ext_period)
-                 / (4.0 * PI * PI * ext_tolerance * ext_tolerance);
+      ext_mass = (cvm::boltzmann() * temp * period * period)
+                 / (4.0 * PI * PI * tolerance * tolerance);
       cvm::log ("Computed fictitious mass: " + cvm::to_str(ext_mass) + " kcal/mol/(U/fs)^2   (U: colvar unit)");
 
       {
@@ -318,6 +322,15 @@ colvar::colvar (std::string const &conf)
         if (b_output_energy) {
           enable (task_output_energy);
         }
+      }
+
+      get_keyval (conf, "extendedLangevinDamping", ext_gamma, 0.0);
+      if (ext_gamma < 0.0)
+        cvm::fatal_error ("Error: \"extendedLangevinDamping\" may not be negative.\n");
+      if (ext_gamma != 0.0) {
+        enable (task_langevin);
+        ext_gamma *= 1.0e-3; // convert from ps-1 to fs-1
+        ext_sigma = sqrt(2.0 * cvm::boltzmann() * temp * ext_gamma * ext_mass / cvm::dt());
       }
     }
   }
@@ -895,6 +908,11 @@ cvm::real colvar::update()
     // Because of leapfrog, kinetic energy at time i is approximate
     kinetic_energy = 0.5 * ext_mass * vr * vr;
     potential_energy = 0.5 * ext_force_k * this->dist2(xr, x);
+    // leap to v_(i+1/2)
+    if (tasks[task_langevin]) {
+      vr -= dt * ext_gamma * vr.real_value;
+      vr += dt * ext_sigma * cvm::rand_gaussian() / ext_mass; 
+    } 
     vr  += (0.5 * dt) * fr / ext_mass; 
     xr  += dt * vr;
     xr.apply_constraints();

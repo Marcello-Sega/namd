@@ -19,7 +19,9 @@ colvar::angle::angle (std::string const &conf)
   atom_groups.push_back (&group1);
   atom_groups.push_back (&group2);
   atom_groups.push_back (&group3);
-
+  if (get_keyval (conf, "oneSiteSystemForce", b_1site_force, false)) {
+    cvm::log ("Computing system force on group 1 only");
+  }
   x.type (colvarvalue::type_scalar);
 }
 
@@ -34,6 +36,7 @@ colvar::angle::angle (cvm::atom const &a1,
   function_type = "angle";
   b_inverse_gradients = true;
   b_Jacobian_derivative = true;
+  b_1site_force = false;
   atom_groups.push_back (&group1);
   atom_groups.push_back (&group2);
   atom_groups.push_back (&group3);
@@ -104,18 +107,24 @@ void colvar::angle::calc_force_invgrads()
   // evaluate the Jacobian term (essentially polar coordinates
   // centered on group2, which means group2 is kept fixed
   // when propagating changes in the angle)
-  cvm::real norm_fact = 1.0 / (dxdr1.norm2() + dxdr3.norm2());
 
-  group1.read_system_forces();
-  group3.read_system_forces();
-
-  ft.real_value = norm_fact * ( dxdr1 * group1.system_force()
-                              + dxdr3 * group3.system_force());
+  if (b_1site_force) {
+    group1.read_system_forces();
+    cvm::real norm_fact = 1.0 / dxdr1.norm2();
+    ft.real_value = norm_fact * dxdr1 * group1.system_force();
+  } else {
+    group1.read_system_forces();
+    group3.read_system_forces();
+    cvm::real norm_fact = 1.0 / (dxdr1.norm2() + dxdr3.norm2());
+    ft.real_value = norm_fact * ( dxdr1 * group1.system_force()
+                                + dxdr3 * group3.system_force());
+  }
+  return;
 }
 
 void colvar::angle::calc_Jacobian_derivative()
 {
-  // det(J) = r^2 * sin(theta)
+  // det(J) = (2 pi) r^2 * sin(theta)
   // hence Jd = cot(theta)
   const cvm::real theta = x.real_value * PI / 180.0;
   jd = PI / 180.0 * (theta != 0.0 ? std::cos(theta) / std::sin(theta) : 0.0);

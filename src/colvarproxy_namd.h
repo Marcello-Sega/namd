@@ -7,6 +7,7 @@
 #include "SimParameters.h"
 #include "Lattice.h"
 #include "GlobalMaster.h"
+#include "Random.h"
 
 #include "colvarmodule.h"
 #include "colvarproxy.h"
@@ -24,6 +25,9 @@ protected:
   Lattice const       *lattice;
 
   BigReal thermostat_temperature;
+
+  /// NAMD-style PRNG object
+  Random random;
 
   std::string input_prefix_str, output_prefix_str, restart_output_prefix_str;
   size_t      restart_frequency_s;
@@ -116,6 +120,10 @@ public:
 
   void backup_file (char const *filename);
 
+  cvm::real rand_gaussian (void)
+  {
+    return random.gaussian();
+  }
 };
 
 

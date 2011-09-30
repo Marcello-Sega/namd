@@ -112,6 +112,9 @@ public:
   /// the MD program
   virtual void backup_file (char const *filename);
 
+  /// \brief Pseudo-random number with Gaussian distribution
+  virtual cvm::real rand_gaussian (void);
+
   virtual inline ~colvarproxy() {}
 };
 
@@ -151,6 +154,12 @@ inline void colvarproxy::backup_file (char const *filename)
 {
 //   cvm::fatal_error ("Error: colvarproxy::backup_file() has not been (re)redefined, "
 //                     "__FILE__ at line __LINE__.\n"); 
+}
+
+inline cvm::real colvarproxy::rand_gaussian (void)
+{
+  cvm::fatal_error ("Error: colvarproxy::rand_gaussian() has not been (re)redefined, "
+                    "__FILE__ at line __LINE__.\n");
 }
 
 

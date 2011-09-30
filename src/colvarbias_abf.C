@@ -13,6 +13,9 @@ colvarbias_abf::colvarbias_abf (std::string const &conf, char const *key)
     gradients (NULL),
     samples (NULL)
 {
+  if (cvm::temperature() == 0.0)
+    cvm::log ("WARNING: ABF should not be run without a thermostat or at 0 Kelvin!\n");
+  
   // ************* parsing general ABF options ***********************
 
   get_keyval (conf, "applyBias",  apply_bias, true);
@@ -196,9 +199,11 @@ cvm::real colvarbias_abf::update()
     write_gradients_samples (output_prefix);
   }
   if (b_history_files && (cvm::step_absolute() % history_freq) == 0) {
-    write_gradients_samples (output_prefix + ".hist", true);
+    // append to existing file only if cvm::step_absolute() > 0
+    // otherwise, backup and replace
+    write_gradients_samples (output_prefix + ".hist", (cvm::step_absolute() > 0));
   }
-  return 0.0; // TODO compute bias energy whenever possible (i.e. rarely)
+  return 0.0; // TODO compute bias energy whenever possible (i.e. 1D with updateBias off)
 }
 
 
@@ -211,11 +216,13 @@ void colvarbias_abf::write_gradients_samples (const std::string &prefix, bool ap
   std::ofstream samples_os;
   std::ofstream gradients_os;
 
+  if (!append) cvm::backup_file (samples_out_name.c_str());
   samples_os.open (samples_out_name.c_str(), mode);
   if (!samples_os.good()) cvm::fatal_error ("Error opening ABF samples file " + samples_out_name + " for writing");
   samples->write_multicol (samples_os);
   samples_os.close ();
 
+  if (!append) cvm::backup_file (gradients_out_name.c_str());
   gradients_os.open (gradients_out_name.c_str(), mode);
   if (!gradients_os.good())	cvm::fatal_error ("Error opening ABF gradient file " + gradients_out_name + " for writing");
   gradients->write_multicol (gradients_os);
@@ -223,6 +230,7 @@ void colvarbias_abf::write_gradients_samples (const std::string &prefix, bool ap
 
   if (colvars.size () == 1) {
     std::string  pmf_out_name = prefix + ".pmf";
+    if (!append) cvm::backup_file (pmf_out_name.c_str());
     std::ofstream pmf_os;
     // Do numerical integration and output a PMF
     pmf_os.open (pmf_out_name.c_str(), mode);
@@ -327,7 +335,9 @@ std::istream & colvarbias_abf::read_restart (std::istream& is)
     is.setstate (std::ios::failbit);
     return is;
   }
-  samples->read_raw (is);
+  if (! samples->read_raw (is)) {
+    samples->read_raw_error();
+  }
 
   if ( !(is >> key)   || !(key == "gradient")) {
     cvm::log ("Error: in reading restart configuration for ABF bias \""+
@@ -338,7 +348,9 @@ std::istream & colvarbias_abf::read_restart (std::istream& is)
     is.setstate (std::ios::failbit);
     return is;
   }
-  gradients->read_raw (is);
+  if (! gradients->read_raw (is)) {
+    gradients->read_raw_error();
+  }
 
   is >> brace;
   if (brace != "}") {
@@ -450,7 +462,9 @@ std::istream & colvarbias_histogram::read_restart (std::istream& is)
     is.setstate (std::ios::failbit);
     return is;
   }
-  grid->read_raw (is);
+  if (! grid->read_raw (is)) {
+    grid->read_raw_error();
+  }
 
   is >> brace;
   if (brace != "}") {

@@ -222,6 +222,9 @@ void colvar::coordnum::apply_force (colvarvalue const &force)
 colvar::h_bond::h_bond (std::string const &conf)
   : cvc (conf)
 {
+  if (cvm::debug())
+    cvm::log ("Initializing h_bond object.\n");
+
   function_type = "h_bond";
   x.type (colvarvalue::type_scalar);
 
@@ -246,6 +249,9 @@ colvar::h_bond::h_bond (std::string const &conf)
   if ( (en%2) || (ed%2) ) {
     cvm::fatal_error ("Error: odd exponents provided, can only use even ones.\n");
   }
+
+  if (cvm::debug())
+    cvm::log ("Done initializing h_bond object.\n");
 }
 
 

@@ -162,7 +162,7 @@ std::istream & colvarmodule::read_restart (std::istream &is)
        bi != biases.end();
        bi++) {
     if (!((*bi)->read_restart (is)))
-      fatal_error ("ERROR: in reading restart configuration for bias \""+
+      fatal_error ("Error: in reading restart configuration for bias \""+
                    (*bi)->name+"\".\n");
   }
   cvm::decrease_depth();
@@ -391,7 +391,8 @@ void colvarmodule::calc() {
   if (restart_out_freq && !cvm::b_analysis) {
     if ( (cvm::step_relative() > 0) &&
          ((cvm::step_absolute() % restart_out_freq) == 0) ) {
-      cvm::log ("Writing the current state to the restart file.\n");
+      cvm::log ("Writing the state file \""+
+                restart_out_name+"\".\n");
       proxy->backup_file (restart_out_name.c_str());
       restart_out_os.open (restart_out_name.c_str());
       restart_out_os.setf (std::ios::scientific, std::ios::floatfield);
@@ -460,7 +461,8 @@ void colvarmodule::calc() {
       // flush the trajectory file if we are at the restart frequency
       if ( (cvm::step_relative() > 0) &&
            ((cvm::step_absolute() % restart_out_freq) == 0) ) {
-        cvm::log ("Synchronizing trajectory file.\n");
+        cvm::log ("Synchronizing (emptying the buffer of) trajectory file \""+
+                  cv_traj_name+"\".\n");
         cv_traj_os.flush();
       }
     }
@@ -468,10 +470,10 @@ void colvarmodule::calc() {
 }
 
 
-void colvarmodule::analyse()
+void colvarmodule::analyze()
 {
   if (cvm::debug()) {
-    cvm::log ("colvarmodule::analyse(), step = "+cvm::to_str (it)+".\n");
+    cvm::log ("colvarmodule::analyze(), step = "+cvm::to_str (it)+".\n");
   }
 
   if (cvm::step_relative() == 0)

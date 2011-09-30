@@ -28,25 +28,38 @@ public:
   /// Constructor
   colvarbias_meta (std::string const &conf, char const *key);
 
+  /// Default constructor
+  colvarbias_meta();
+
   /// Destructor
   virtual ~colvarbias_meta();
   
   virtual cvm::real update();
 
-  /// Perform analysis
-  virtual void analyse();
-
   virtual std::istream & read_restart (std::istream &is);
 
   virtual std::ostream & write_restart (std::ostream &os);
+
+  virtual void write_pmf();
 
   class hill;
   typedef std::list<hill>::iterator hill_iter;
 
 protected:
 
-  /// Parse analysis tasks and options
-//   virtual void parse_analysis (std::string const &conf);
+  /// \brief width of a hill
+  ///
+  /// The local width of each collective variable, multiplied by this
+  /// number, provides the hill width along that direction
+  cvm::real  hill_width;
+
+  /// \brief Number of simulation steps between two hills
+  size_t     new_hill_freq;
+
+  /// Write the hill logfile
+  bool           b_hills_traj;
+  /// Logfile of hill management (creation and deletion)
+  std::ofstream  hills_traj_os;
 
   /// \brief List of hills used on this bias (total); if a grid is
   /// employed, these don't need to be updated at every time step
@@ -70,6 +83,13 @@ protected:
   /// Read a hill from a file
   std::istream & read_hill (std::istream &is);
 
+  /// \brief step present in a state file
+  /// 
+  /// When using grids and reading state files containing them
+  /// (multiple replicas), this is used to check whether a hill is
+  /// newer or older than the grids
+  size_t                   state_file_step;
+
   /// \brief Add a new hill; if a .hills trajectory is written,
   /// write it there; if there is more than one replica, communicate
   /// it to the others
@@ -77,7 +97,7 @@ protected:
 
   /// \brief Remove a previously saved hill (returns an iterator for
   /// the next hill in the list)
-  virtual std::list<hill>::const_iterator delete_hill (std::list<hill>::iterator &h);
+  virtual std::list<hill>::const_iterator delete_hill (hill_iter &h);
 
   /// \brief Calculate the values of the hills, incrementing
   /// bias_energy
@@ -94,6 +114,7 @@ protected:
                                  hill_iter h_last,
                                  std::vector<colvarvalue> &forces,
                                  std::vector<colvarvalue> const &values = std::vector<colvarvalue> (0));
+
 
   /// Height of new hills
   cvm::real  hill_weight;
@@ -122,122 +143,77 @@ protected:
   /// iterations, appending a step number to each
   bool       dump_fes_save;
 
+  /// \brief Try to read the restart information by allocating new
+  /// grids before replacing the current ones (used e.g. in
+  /// multiple_replicas)
+  bool       safely_read_restart;
+
   /// Hill energy, cached on a grid
   colvar_grid_scalar    *hills_energy;
 
   /// Hill forces, cached on a grid
   colvar_grid_gradient  *hills_energy_gradients;
 
-  /// Project the selected hills onto grids
+  /// \brief Project the selected hills onto grids
   void project_hills (hill_iter h_first, hill_iter h_last,
-                      colvar_grid_scalar *ge, colvar_grid_gradient *gf,
-                      cvm::real const scale_factor = 1.0);
+                      colvar_grid_scalar *ge, colvar_grid_gradient *gf);
 
 
+  // Multiple Replicas variables and functions
 
-  /// \brief width of a hill
-  ///
-  /// The local width of each collective variable, multiplied by this
-  /// number, provides the hill width along that direction
-  cvm::real  hill_width;
+  /// \brief Identifier for this replica
+  std::string            replica_id;
 
-  /// \brief Number of simulation steps between two hills
-  size_t     new_hill_freq;
+  /// \brief File containing the paths to the output files from this replica
+  std::string            replica_file_name;
 
-  /// Write the hill logfile
-  bool           b_hills_traj;
-  /// Logfile of hill management (creation and deletion)
-  std::ofstream  hills_traj_os;
+  /// \brief Read the existing replicas on registry
+  virtual void update_replicas_registry();
 
-
-  /// Identifier for this replica
-  std::string    replica;
-
-  /// \brief Add this replica to the registry (called only when \link
-  /// comm \endlink != \link single_replica \endlink)
-  virtual void register_replica_file (std::string const &new_file);
-
-  /// \brief Read the names all replica output files which have been
-  /// added, skipping the one which is currently being written to
-  /// (called only when \link colvarbias_meta::comm \endlink != \link
-  /// colvarbias_meta::single_replica \endlink)
-  virtual void update_replica_files_registry();
-
-  /// \brief Read new data from replicas' files (called only when \link
-  /// colvarbias_meta::comm \endlink != \link
-  /// colvarbias_meta::single_replica \endlink)
+  /// \brief Read new data from replicas' files
   virtual void read_replica_files();
 
-  /// \brief Frequency at which output files from other replicas are
-  /// checked
+  /// \brief Write data to other replicas
+  virtual void write_replica_state_file();
+
+  /// \brief Additional, "mirror" metadynamics biases, to collect info
+  /// from the other replicas
+  ///
+  /// These are supposed to be synchronized by reading data from the
+  /// other replicas, and not be modified by the "local" replica
+  std::vector<colvarbias_meta *> replicas;
+
+  /// \brief Frequency at which data the "mirror" biases are updated
   size_t                 replica_update_freq;
 
-  /// List of hill files from all the replicas
-  std::string            replica_files_registry;
+  /// List of replicas (and their output list files): contents are
+  /// copied into replicas_registry for convenience
+  std::string            replicas_registry_file;
+  /// List of replicas (and their output list files)
+  std::string            replicas_registry;
+  /// List of files written by this replica
+  std::string            replica_list_file;
 
-  /// Replicas file names
-  std::list<std::string> replica_files;
+  /// Hills energy and gradients written specifically for other
+  /// replica (in addition to its own restart file)
+  std::string            replica_state_file;
+  /// Whether a mirror bias has read the latest version of its state file
+  bool                   replica_state_file_in_sync;
 
-  /// Positions in replica files (files are reopened at these positions)
-  std::list<size_t>      replica_files_pos;
+  /// If there was a failure reading one of the files (because they
+  /// are not complete), this counter is incremented
+  size_t                 update_status;
 
-  /// \brief File to contain the hills created by this replica in this run
-  std::ofstream          replica_out_file;
+  /// Explicit hills communicated between replicas
+  ///
+  /// This file becomes empty after replica_state_file is rewritten
+  std::string            replica_hills_file;
 
-  /// \brief File to contain the hills created by this replica in this run (name)
-  std::string            replica_out_file_name;
+  /// \brief Output stream corresponding to replica_hills_file
+  std::ofstream          replica_hills_os;
 
-
-  // Analysis
-
-  /// \brief Select only hills after this step
-  size_t                 free_energy_begin;
-
-  /// \brief Select only hills before this step
-  size_t                 free_energy_end;
-
-  /// \brief Make the free energy surface be larger than or equal to zero
-  bool                   shift_fes;
-
-  /// \brief Subtract this value from the free energy (after 
-  cvm::real              free_energy_offset;
-
-  /// \brief Free energy surface output file
-  std::string            free_energy_file;
-
-  /// \brief Free energy gradients output file
-  std::string            free_energy_gradients_file;
-
-  /// \brief Boltzmann weights output file
-  std::string            boltzmann_weights_file;
-
-  /// \brief Boltzmann counts output file.
-  /// 
-  /// These are discretized Boltzmann weights, useful e.g. to
-  /// initialize the samples of an ABF calculation.
-  /// boltzmann_weights_scale must be much larger than 1 for a proper
-  /// discretization
-  std::string            boltzmann_counts_file;
-
-  // weight = scale * exp (-(fe-offset)/(kB*temp))
-
-  /// \brief Multiply the exponential weights by this constant
-  cvm::real              boltzmann_weights_scale;
-
-  /// \brief Temperature (in K) for Boltzmann weights
-  cvm::real              boltzmann_weights_temp;
-
-  /// Free energy values
-  colvar_grid_scalar    *free_energy;
-
-  /// Free energy gradients
-  colvar_grid_gradient  *free_energy_gradients;
-
-  /// Boltzmann populations (real version)
-  colvar_grid_scalar    *boltzmann_weights;
-
-  /// Boltzmann populations (integer version)
-  colvar_grid_count     *boltzmann_counts;
+  /// Position within replica_hills_file (when reading it)
+  size_t                 replica_hills_file_pos;
 
 };
 
@@ -297,7 +273,7 @@ public:
     }
     if (cvm::debug()) 
       cvm::log ("New hill, applied to "+cvm::to_str (cv.size())+
-                " collective variables, with reference values "+
+                " collective variables, with centers "+
                 cvm::to_str (centers)+", widths "+
                 cvm::to_str (widths)+" and weight "+
                 cvm::to_str (W)+".\n");

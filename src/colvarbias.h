@@ -30,9 +30,12 @@ public:
 
   /// \brief Constructor
   /// 
-  /// Constructor of the base class colvarbias is protected, so that
-  /// it can only be called from inherited classes
+  /// The constructor of the colvarbias base class is protected, so
+  /// that it can only be called from inherited classes
   colvarbias (std::string const &conf, char const *key);
+
+  /// Default constructor
+  colvarbias();
 
   /// Destructor
   virtual inline ~colvarbias() {}
@@ -56,6 +59,10 @@ protected:
   /// \brief Current energy of this bias (colvar_forces should be
   /// obtained by deriving this)
   cvm::real                bias_energy;
+
+  /// \brief Whether this bias has already accumulated information
+  /// (when relevant)
+  bool                     has_data;
 
 };
 

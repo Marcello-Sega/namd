@@ -48,8 +48,12 @@ colvarproxy_namd::colvarproxy_namd()
     thermostat_temperature = simparams->langevinTemp;
   else if (simparams->tCoupleOn)
     thermostat_temperature = simparams->tCoupleTemp;
+  else if (simparams->loweAndersenOn)
+    thermostat_temperature = simparams->loweAndersenTemp;
   else 
     thermostat_temperature = 0.0;
+
+  random = Random (simparams->randomSeed);
 
   // take the output prefixes from the namd input
   output_prefix_str = std::string (simparams->outputFilename);
@@ -309,6 +313,7 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
     pdb_field_index = pdb_field_str2enum (pdb_field_str);
   }
 
+  // next index to be looked up in PDB file (if list is supplied)
   std::vector<int>::const_iterator current_index = indices.begin();
 
   PDB *pdb = new PDB (pdb_filename);
@@ -354,8 +359,8 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
 
       } else {
         // Atom ID mode: use predefined atom IDs from the atom group
-        // Skip atoms not in the list
         if (ipdb != *current_index) {
+          // Skip atoms not in the list
           continue;
         } else {
           current_index++;
@@ -368,17 +373,15 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
         cvm::fatal_error ("Error: the PDB file \""+
                           std::string (pdb_filename)+
                           "\" contains coordinates for "
-                          "more atoms ("+
-                          cvm::to_str (ipos+1)+
-                          ") than needed ("+
-                          cvm::to_str (pos.size())+").\n");
+                          "more atoms than needed.\n");
       }
 
       pos[ipos] = cvm::atom_pos ((pdb->atom (ipdb))->xcoor(),
                                  (pdb->atom (ipdb))->ycoor(),
                                  (pdb->atom (ipdb))->zcoor());
       ipos++;
-
+      if (!use_pdb_field && current_index == indices.end())
+        break;
     }
 
     if (ipos < pos.size())
@@ -389,6 +392,9 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
                         " atoms, but "+cvm::to_str (pos.size())+
                         " are needed.\n");
 
+    if (current_index != indices.end())
+      cvm::fatal_error ("Error: not all atoms found in PDB file.\n");
+
   } else {
 
     // when the PDB contains exactly the number of atoms of the array,
@@ -398,10 +404,6 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
                                (pdb->atom (ia))->ycoor(),
                                (pdb->atom (ia))->zcoor());
     }
-  }
-
-  if (current_index != indices.end()) {
-    cvm::fatal_error ("Error: not all atoms found in PDB file.\n");
   }
 
   delete pdb;
@@ -490,7 +492,6 @@ size_t colvarproxy_namd::init_namd_atom (AtomID const &aid)
 
   return (colvars_atoms.size()-1);
 }
-
 
 // atom member functions, NAMD specific implementations
 

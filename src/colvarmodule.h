@@ -2,7 +2,7 @@
 #define COLVARMODULE_H
 
 #ifndef COLVARS_VERSION
-#define COLVARS_VERSION "2011-02-03"
+#define COLVARS_VERSION "2011-09-29"
 #endif
 
 #ifndef COLVARS_DEBUG
@@ -117,9 +117,19 @@ public:
   static std::string restart_in_name;
 
 
-  /// Collective variables array
+  /// Array of collective variables
   static std::vector<colvar *>     colvars;
-  /// Collective variable biases array
+
+  /* TODO: implement named CVCs
+  /// Array of named (reusable) collective variable components
+  static std::vector<cvc *>     cvcs;
+  /// Named cvcs register themselves at initialization time
+  inline void register_cvc (cvc *p) {
+    cvcs.push_back(p);
+  }
+  */
+
+  /// Array of collective variable biases
   static std::vector<colvarbias *> biases;
   /// \brief Number of ABF biases initialized (in normal conditions
   /// should be 1)
@@ -162,9 +172,11 @@ public:
   std::ostream & write_restart (std::ostream &os);
   /// Write all output files (called by the proxy)
   void write_output_files();
+  /// \brief Call colvarproxy::backup_file()
+  static void backup_file (char const *filename);
 
   /// Perform analysis
-  void analyse();
+  void analyze();
   /// \brief Read a collective variable trajectory (post-processing
   /// only, not called at runtime)
   bool read_traj (char const *traj_filename,
@@ -284,6 +296,7 @@ public:
                            std::string const &pdb_field,
                            double const pdb_field_value = 0.0);
 
+
   /// Frequency for collective variables trajectory output
   static size_t cv_traj_freq;
 
@@ -295,6 +308,8 @@ public:
   /// Output restart file name
   std::string   restart_out_name;
 
+  /// Pseudo-random number with Gaussian distribution
+  static real rand_gaussian (void);
 protected:
 
   /// Configuration file
@@ -449,6 +464,15 @@ inline void cvm::load_coords (char const *file_name,
   proxy->load_coords (file_name, pos, indices, pdb_field, pdb_field_value);
 }
 
+inline void cvm::backup_file (char const *filename)
+{
+  proxy->backup_file (filename);
+}
+
+inline cvm::real cvm::rand_gaussian (void)
+{
+  return proxy->rand_gaussian();
+}
 
 #endif
 

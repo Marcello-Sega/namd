@@ -76,6 +76,9 @@ public:
   /// True if this is a count grid related to another grid of data
   bool has_parent_data;
 
+  /// Whether this grid has been filled with data or is still empty
+  bool has_data;
+
   /// Return the number of colvars
   inline size_t number_of_colvars() const
   {
@@ -142,7 +145,7 @@ public:
 
 
   /// Default constructor
-  colvar_grid()
+  colvar_grid() : has_data (false)
   {
     save_delimiters = false;
     nd = nt = 0;
@@ -155,15 +158,15 @@ public:
   /// \brief "Almost copy-constructor": only copies configuration
   /// parameters from another grid, but doesn't reallocate stuff;
   /// create() must be called after that;
-  colvar_grid (colvar_grid<T> const &g)
-    : nd (g.nd),
-      mult (g.mult),
-      cv (g.cv),
-      lower_boundaries (g.lower_boundaries),
-      upper_boundaries (g.upper_boundaries),
-      periodic (g.periodic),
-      widths (g.widths),
-      data()
+  colvar_grid (colvar_grid<T> const &g) : has_data (false),
+                                          nd (g.nd),
+                                          mult (g.mult),
+                                          cv (g.cv),
+                                          lower_boundaries (g.lower_boundaries),
+                                          upper_boundaries (g.upper_boundaries),
+                                          periodic (g.periodic),
+                                          widths (g.widths),
+                                          data()
   {
     save_delimiters = false;
   }
@@ -174,7 +177,7 @@ public:
   /// of each value
   colvar_grid (std::vector<int> const &nx_i,
                T const &t = T(),
-               size_t const &mult_i = 1)
+               size_t const &mult_i = 1) : has_data (false)
   {
     save_delimiters = false;
     this->create (nx_i, t, mult_i);
@@ -185,7 +188,7 @@ public:
                T const &t = T(),
                size_t const &mult_i = 1,
                bool margin = false)
-    : cv (colvars)
+    : cv (colvars), has_data (false)
   {
     save_delimiters = false;
 
@@ -279,7 +282,7 @@ public:
   /// \brief Report the bin corresponding to the current value of variable i
   inline int current_bin_scalar(int const i) const
   {
-      return value_to_bin_scalar (cv[i]->value(), i);
+    return value_to_bin_scalar (cv[i]->value(), i);
   }
 
   /// \brief Use the lower boundary and the width to report which bin
@@ -309,15 +312,16 @@ public:
                                           colvarvalue const &new_offset,
                                           cvm::real const &new_width) const
   {
-      return new_offset.real_value + new_width * (0.5 + i_bin);
+    return new_offset.real_value + new_width * (0.5 + i_bin);
   }
 
   /// Set the value at the point with index ix
   inline void set_value (std::vector<int> const &ix,
                          T const &t,
                          size_t const &imult = 0)
-  {
+  { 
     data[this->address (ix)+imult] = t;
+    has_data = true;
   }
 
 
@@ -335,6 +339,7 @@ public:
   {
     for (size_t i = 0; i < nt; i++) 
       data[i] += t;
+    has_data = true;
   }
 
   /// \brief Multiply all elements by a scalar constant (fast loop)
@@ -367,22 +372,23 @@ public:
     return index;
   }
 
-  /// \brief Get the minimum distance (in number of bins) from the
-  /// boundaries; give a negative number if the point is off-grid
+  /// \brief Get the minimal distance (in number of bins) from the
+  /// boundaries; a negative number is returned if the given point is
+  /// off-grid
   inline cvm::real bin_distance_from_boundaries (std::vector<colvarvalue> const &values)
   {
     cvm::real minimum = 1.0E+16;
     for (size_t i = 0; i < nd; i++) {
 
+      if (periodic[i]) continue;
+
       cvm::real dl = std::sqrt (cv[i]->dist2 (values[i], lower_boundaries[i])) / widths[i];
       cvm::real du = std::sqrt (cv[i]->dist2 (values[i], upper_boundaries[i])) / widths[i];
 
-      if (! periodic[i]) {
-        if (values[i].real_value < lower_boundaries[i])
-          dl *= -1.0;
-        if (values[i].real_value > upper_boundaries[i])
-          du *= -1.0;
-      }
+      if (values[i].real_value < lower_boundaries[i])
+        dl *= -1.0;
+      if (values[i].real_value > upper_boundaries[i])
+        du *= -1.0;
 
       if (dl < minimum) 
         minimum = dl;
@@ -394,11 +400,8 @@ public:
   }
 
 
-  /// \brief Add data from another grid of the same type \param grid
-  /// Reference to the other grid \param other_grid_boundaries Lower
-  /// boundaries in the other grid (by default same as this) \param
-  /// other_grid_widths in the other grid (by default same as this)
-  ///
+  /// \brief Add data from another grid of the same type
+  /// 
   /// Note: this function maps other_grid inside this one regardless
   /// of whether it fits or not.
   void map_grid (colvar_grid<T> const &other_grid)
@@ -434,8 +437,30 @@ public:
         this->set_value (ix, other_grid.value (oix, im), im);
       }
     }
+
+    has_data = true;
     if (cvm::debug())
       cvm::log ("Remapping done.\n");
+  }
+
+  /// \brief Add data from another grid of the same type, AND
+  /// identical definition (boundaries, widths)
+  void add_grid (colvar_grid<T> const &other_grid,
+                 cvm::real scale_factor = 1.0)
+  {
+    if (other_grid.multiplicity() != this->multiplicity())
+      cvm::fatal_error ("Error: trying to sum togetehr two grids with values of "
+                        "different multiplicity.\n");
+    if (scale_factor != 1.0) 
+      for (size_t i = 0; i < data.size(); i++) {
+        data[i] += scale_factor * other_grid.data[i];
+      }
+    else 
+      // skip multiplication if possible
+      for (size_t i = 0; i < data.size(); i++) {
+        data[i] += other_grid.data[i];
+      }
+    has_data = true;
   }
 
   /// \brief Return the value suitable for output purposes (so that it
@@ -447,8 +472,8 @@ public:
   }
 
   /// \brief Get the value from a formatted output and transform it
-  /// into the internal representation (it may have been rescaled or
-  /// manipulated)
+  /// into the internal representation (the two may be different,
+  /// e.g. when using colvar_grid_count)
   virtual inline void value_input (std::vector<int> const &ix,
                                    T const &t,
                                    size_t const &imult = 0,
@@ -458,6 +483,7 @@ public:
       data[address (ix) + imult] += t;
     else
       data[address (ix) + imult] = t;
+    has_data = true;
   }
 
   //   /// Get the pointer to the binned value indexed by ix
@@ -570,7 +596,7 @@ public:
     for (size_t i = 0; i < nd; i++) {
       if ( (old_nx[i] != nx[i]) ||
            (std::sqrt (cv[i]->dist2 (old_lb[i],
-                                  lower_boundaries[i])) > 1.0E-10) ) {
+                                     lower_boundaries[i])) > 1.0E-10) ) {
         new_params = true;
       }
     }
@@ -591,21 +617,44 @@ public:
   {
     for (size_t i = 0; i < nd; i++) {
       if ( (std::sqrt (cv[i]->dist2 (cv[i]->lower_boundary,
-                                  lower_boundaries[i])) > 1.0E-10) || 
+                                     lower_boundaries[i])) > 1.0E-10) || 
            (std::sqrt (cv[i]->dist2 (cv[i]->upper_boundary,
-                                  upper_boundaries[i])) > 1.0E-10) || 
+                                     upper_boundaries[i])) > 1.0E-10) || 
            (std::sqrt (cv[i]->dist2 (cv[i]->width,
-                                  widths[i])) > 1.0E-10) ) {
+                                     widths[i])) > 1.0E-10) ) {
         cvm::fatal_error ("Error: restart information for a grid is "
                           "inconsistent with that of its colvars.\n");
       }
     }
   }
+
+
+  /// \brief Check that the grid information inside (boundaries,
+  /// widths, ...) is consistent with the one of another grid
+  void check_consistency (colvar_grid<T> const &other_grid)
+  {
+    for (size_t i = 0; i < nd; i++) {
+      // we skip dist2(), because periodicities and the like should
+      // matter: boundaries should be EXACTLY the same (otherwise,
+      // map_grid() should be used)
+      if ( (std::fabs (other_grid.lower_boundaries[i] -
+                       lower_boundaries[i]) > 1.0E-10) || 
+           (std::fabs (other_grid.upper_boundaries[i] -
+                       upper_boundaries[i]) > 1.0E-10) || 
+           (std::fabs (other_grid.widths[i] -
+                       widths[i]) > 1.0E-10) || 
+           (data.size() != other_grid.data.size()) ) {
+      cvm::fatal_error ("Error: inconsistency between "
+                        "two grids that are supposed to be equal, "
+                        "aside from the data stored.\n");
+    }
+  }
+}
   
 
-  /// \brief Write the grid data without labels, as they are
-  /// represented in memory
-  /// \param buf_size Number of values per line
+/// \brief Write the grid data without labels, as they are
+/// represented in memory
+/// \param buf_size Number of values per line
   std::ostream & write_raw (std::ostream &os,
                             size_t const buf_size = 3)
   {
@@ -630,165 +679,168 @@ public:
     return os;
   }
 
-  /// \brief Read data written by colvar_grid::write_raw()
-  std::istream & read_raw (std::istream &is)
-  {
-    std::vector<int> ix = new_index();
-    size_t count = 0;
-    for ( ; index_ok (ix); incr (ix)) {
-      for (size_t imult = 0; imult < mult; imult++) {
-        T new_value;
-        if (is >> new_value) {
-          value_input (ix, new_value, imult);
-          count++;
-        } else {
-          cvm::fatal_error ("Error: malformed grid data in input.\n");
-        }
+/// \brief Read data written by colvar_grid::write_raw()
+std::istream & read_raw (std::istream &is)
+{
+  size_t const start_pos = is.tellg();
+    
+  for (std::vector<int> ix = new_index(); index_ok (ix); incr (ix)) {
+    for (size_t imult = 0; imult < mult; imult++) {
+      T new_value;
+      if (is >> new_value) {
+        value_input (ix, new_value, imult);
+      } else {
+        is.clear();
+        is.seekg (start_pos, std::ios::beg);
+        is.setstate (std::ios::failbit);
+        return is;
       }
     }
-
-    if (count != number_of_points()) {
-      cvm::log ("Error: number of grid points read from file ("+
-                cvm::to_str (count)+") is wrong (should be "+
-                cvm::to_str (number_of_points())+").\n");
-      cvm::fatal_error ("Possible explanations: grid parameters in the configuration (lowerBoundary, upperBoundary, width) are different from those in the file, or the file is corrupt.\n");
-    }
-
-    return is;
   }
 
-  /// \brief Write the grid in a format which is both human readable
-  /// and suitable for visualization e.g. with gnuplot
-  void write_multicol (std::ostream &os)
-  {
-    std::streamsize const w = os.width();
-    std::streamsize const p = os.precision();
+  has_data = true;
+  return is;
+}
 
-    // Data in the header: nColvars, then for each
-    // xiMin, dXi, nPoints, periodic
+/// \brief To be called after colvar_grid::read_raw() returns an error
+void read_raw_error()
+{
+  cvm::fatal_error ("Error: failed to read all of the grid points from file.  Possible explanations: grid parameters in the configuration (lowerBoundary, upperBoundary, width) are different from those in the file, or the file is corrupt/incomplete.\n");
+}
 
-    os << std::setw (2) << "# " << nd << "\n";
-    for (size_t i = 0; i < nd; i++) {
-      os << "# "
-         << std::setw (10) << lower_boundaries[i]
-         << std::setw (10) << widths[i]
-         << std::setw (10) << nx[i] << "  "
-         << periodic[i] << "\n";
-    }
+/// \brief Write the grid in a format which is both human readable
+/// and suitable for visualization e.g. with gnuplot
+void write_multicol (std::ostream &os)
+{
+  std::streamsize const w = os.width();
+  std::streamsize const p = os.precision();
 
-    for (std::vector<int> ix = new_index(); index_ok (ix); incr (ix) ) {
+  // Data in the header: nColvars, then for each
+  // xiMin, dXi, nPoints, periodic
 
-      if (ix.back() == 0) {
-        // if the last index is 0, add a new line to mark the new record
-        os << "\n";
-      }
+  os << std::setw (2) << "# " << nd << "\n";
+  for (size_t i = 0; i < nd; i++) {
+    os << "# "
+       << std::setw (10) << lower_boundaries[i]
+       << std::setw (10) << widths[i]
+       << std::setw (10) << nx[i] << "  "
+       << periodic[i] << "\n";
+  }
 
-      for (size_t i = 0; i < nd; i++) {
-        os << " "
-           << std::setw (w) << std::setprecision (p)
-           << bin_to_value_scalar (ix[i], i);
-      }
-      os << " ";
-      for (size_t imult = 0; imult < mult; imult++) {
-        os << " "
-           << std::setw (w) << std::setprecision (p)
-           << value_output (ix, imult);
-      }
+  for (std::vector<int> ix = new_index(); index_ok (ix); incr (ix) ) {
+
+    if (ix.back() == 0) {
+      // if the last index is 0, add a new line to mark the new record
       os << "\n";
     }
+
+    for (size_t i = 0; i < nd; i++) {
+      os << " "
+         << std::setw (w) << std::setprecision (p)
+         << bin_to_value_scalar (ix[i], i);
+    }
+    os << " ";
+    for (size_t imult = 0; imult < mult; imult++) {
+      os << " "
+         << std::setw (w) << std::setprecision (p)
+         << value_output (ix, imult);
+    }
+    os << "\n";
+  }
+}
+
+/// \brief Read a grid written by colvar_grid::write_multicol()
+/// Adding data if add is true, replacing if false
+std::istream & read_multicol (std::istream &is, bool add = false)
+{
+  // Data in the header: nColvars, then for each
+  // xiMin, dXi, nPoints, periodic
+
+  std::string   hash;
+  cvm::real     lower, width, x;
+  size_t        n, periodic;
+  bool          remap;
+  std::vector<T>        new_value;
+  std::vector<int>      nx_read;
+  std::vector<int>      bin;
+
+  if ( cv.size() != nd ) {
+    cvm::fatal_error ("Cannot read grid file: missing reference to colvars.");
   }
 
-  /// \brief Read a grid written by colvar_grid::write_multicol()
-  /// Adding data if add is true, replacing if false
-  void read_multicol (std::istream &is, bool add = false)
-  {
-    // Data in the header: nColvars, then for each
-    // xiMin, dXi, nPoints, periodic
+  if ( !(is >> hash) || (hash != "#") ) {
+    cvm::fatal_error ("Error reading grid at position "+
+                      cvm::to_str (is.tellg())+" in stream (read \"" + hash + "\")\n");
+  }
 
-    std::string   hash;
-    cvm::real     lower, width, x;
-    size_t        n, periodic;
-    bool          remap;
-    std::vector<T>        new_value;
-    std::vector<int>      nx_read;
-    std::vector<int>      bin;
+  is >> n;
+  if ( n != nd ) {
+    cvm::fatal_error ("Error reading grid: wrong number of collective variables.\n");
+  }
 
-    if ( cv.size() != nd ) {
-      cvm::fatal_error ("Cannot read grid file: missing reference to colvars.");
-    }
+  nx_read.resize (n);
+  bin.resize (n);
+  new_value.resize (mult);
 
+  if (this->has_parent_data && add) {
+    new_data.resize (data.size());
+  }
+
+  remap = false;
+  for (size_t i = 0; i < nd; i++ ) {
     if ( !(is >> hash) || (hash != "#") ) {
       cvm::fatal_error ("Error reading grid at position "+
                         cvm::to_str (is.tellg())+" in stream (read \"" + hash + "\")\n");
     }
 
-    is >> n;
-    if ( n != nd ) {
-      cvm::fatal_error ("Error reading grid: wrong number of collective variables.\n");
+    is >> lower >> width >> nx_read[i] >> periodic;
+
+
+    if ( (std::fabs (lower - lower_boundaries[i].real_value) > 1.0e-10) ||
+         (std::fabs (width - widths[i] ) > 1.0e-10) ||
+         (nx_read[i] != nx[i]) ) {
+      cvm::log ("Warning: reading from different grid definition (colvar "
+                + cvm::to_str (i+1) + "); remapping data on new grid.\n");
+      remap = true;
     }
-
-    nx_read.resize (n);
-    bin.resize (n);
-    new_value.resize (mult);
-
-    if (this->has_parent_data && add) {
-      new_data.resize (data.size());
-    }
-
-    remap = false;
-    for (size_t i = 0; i < nd; i++ ) {
-      if ( !(is >> hash) || (hash != "#") ) {
-        cvm::fatal_error ("Error reading grid at position "+
-                          cvm::to_str (is.tellg())+" in stream (read \"" + hash + "\")\n");
-      }
-
-      is >> lower >> width >> nx_read[i] >> periodic;
-
-
-      if ( (std::fabs (lower - lower_boundaries[i].real_value) > 1.0e-10) ||
-           (std::fabs (width - widths[i] ) > 1.0e-10) ||
-           (nx_read[i] != nx[i]) ) {
-        cvm::log ("Warning: reading from different grid definition (colvar "
-                  + cvm::to_str (i+1) + "); remapping data on new grid.\n");
-        remap = true;
-      }
-    }
-
-    if ( remap ) {
-      // re-grid data
-      while (is.good()) {
-        bool end_of_file = false;
-
-        for (size_t i = 0; i < nd; i++ ) {
-          if ( !(is >> x) ) end_of_file = true;
-          bin[i] = value_to_bin_scalar (x, i);
-        }
-        if (end_of_file) break;	
-
-        for (size_t imult = 0; imult < mult; imult++) {
-          is >> new_value[imult];
-        }
-
-        if ( index_ok(bin) ) {
-          for (size_t imult = 0; imult < mult; imult++) {
-            value_input (bin, new_value[imult], imult, add);
-          }
-        }
-      }
-    } else {
-      // do not re-grid the data but assume the same grid is used
-      for (std::vector<int> ix = new_index(); index_ok (ix); incr (ix) ) {
-        for (size_t i = 0; i < nd; i++ ) {
-          is >> x;
-        }
-        for (size_t imult = 0; imult < mult; imult++) {
-          is >> new_value[imult];
-          value_input (ix, new_value[imult], imult, add);
-        }
-      }
-    }
-    return;
   }
+
+  if ( remap ) {
+    // re-grid data
+    while (is.good()) {
+      bool end_of_file = false;
+
+      for (size_t i = 0; i < nd; i++ ) {
+        if ( !(is >> x) ) end_of_file = true;
+        bin[i] = value_to_bin_scalar (x, i);
+      }
+      if (end_of_file) break;	
+
+      for (size_t imult = 0; imult < mult; imult++) {
+        is >> new_value[imult];
+      }
+
+      if ( index_ok(bin) ) {
+        for (size_t imult = 0; imult < mult; imult++) {
+          value_input (bin, new_value[imult], imult, add);
+        }
+      }
+    }
+  } else {
+    // do not re-grid the data but assume the same grid is used
+    for (std::vector<int> ix = new_index(); index_ok (ix); incr (ix) ) {
+      for (size_t i = 0; i < nd; i++ ) {
+        is >> x;
+      }
+      for (size_t imult = 0; imult < mult; imult++) {
+        is >> new_value[imult];
+        value_input (ix, new_value[imult], imult, add);
+      }
+    }
+  }
+  has_data = true;
+  return is;
+}
 
 };
 
@@ -851,6 +903,7 @@ public:
     } else {
       data[address (ix)] = t;
     }
+    has_data = true;
   }
 };
 
@@ -889,6 +942,7 @@ public:
     data[address (ix)] += new_value;
     if (samples)
       samples->incr_count (ix);
+    has_data = true;
   }
 
   /// Return the gradient of the scalar field from finite differences
@@ -949,6 +1003,7 @@ public:
       else
         data[address (ix)] = new_value;
     }
+    has_data = true;
   }
 
   /// \brief Read the grid from a restart
@@ -977,7 +1032,7 @@ public:
     return min;
   }
 
-  private:
+private:
   // gradient
   cvm::real * grad;
 };
@@ -1057,6 +1112,7 @@ public:
       else
         data[address (ix) + imult] = new_value;
     }
+    has_data = true;
   }
 
 

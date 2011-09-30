@@ -22,7 +22,7 @@ colvar::orientation::orientation (std::string const &conf)
     cvm::log ("Using reference positions from input file.\n");
     if (ref_pos.size() != atoms.size()) {
       cvm::fatal_error ("Error: reference positions do not "
-                        "match the number of atom indexes.\n");
+                        "match the number of requested atoms.\n");
     }
   }
 

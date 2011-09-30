@@ -4,23 +4,23 @@
 
 
 colvarbias::colvarbias (std::string const &conf, char const *key)
-  : colvarparse()
+  : colvarparse(), has_data (false)
 {
   cvm::log ("Initializing a new \""+std::string (key)+"\" instance.\n");
 
   size_t rank = 1;
   std::string const key_str (key);
 
-  if (colvarparse::to_lower_cppstr (key_str) == std::string ("abf")) {
+  if (to_lower_cppstr (key_str) == std::string ("abf")) {
     rank = cvm::n_abf_biases+1;
   }
-  if (colvarparse::to_lower_cppstr (key_str) == std::string ("harmonic")) {
+  if (to_lower_cppstr (key_str) == std::string ("harmonic")) {
     rank = cvm::n_harm_biases+1;
   }
-  if (colvarparse::to_lower_cppstr (key_str) == std::string ("histogram")) {
+  if (to_lower_cppstr (key_str) == std::string ("histogram")) {
     rank = cvm::n_histo_biases+1;
   }
-  if (colvarparse::to_lower_cppstr (key_str) == std::string ("metadynamics")) {
+  if (to_lower_cppstr (key_str) == std::string ("metadynamics")) {
     rank = cvm::n_meta_biases+1;
   }
 
@@ -38,6 +38,11 @@ colvarbias::colvarbias (std::string const &conf, char const *key)
     cvm::fatal_error ("Error: no collective variables specified.\n");
   }
 }
+
+
+colvarbias::colvarbias()
+  : colvarparse(), has_data (false)
+{}
 
 
 void colvarbias::add_colvar (std::string const &cv_name)
@@ -203,7 +208,8 @@ cvm::real colvarbias_harmonic::update()
             && (cvm::step_absolute() % target_nsteps) == 0
             && stage < target_nstages) {
 
-          // TODO: any per-stage calculation, e.g. free energy things
+          // any per-stage calculation, e.g. free energy stuff
+          // should be done here
           for (size_t i = 0; i < colvars.size(); i++) {
             colvar_centers_raw[i] += centers_incr[i];
             colvar_centers[i] = colvar_centers_raw[i];

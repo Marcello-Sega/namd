@@ -90,8 +90,6 @@ std::istream & colvar_grid_scalar::read_restart (std::istream &is)
     is.seekg (start_pos, std::ios::beg);
   }
   read_raw (is);
-  if (cvm::debug()) 
-    cvm::log ("Here\n");
   return is;
 }
 
