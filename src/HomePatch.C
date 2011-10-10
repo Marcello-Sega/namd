@@ -1038,7 +1038,7 @@ void HomePatch::positionsReady(int doMigration)
       {
 //CmiPrintf("Build on %d phs0:%d\n", CkMyPe(), localphs[0]);
      for (int i=0; i<npid; i++) {
-       localphs[i] = CmiCreatePersistent(pids[i], 30000);
+       localphs[i] = CmiCreatePersistent(pids[i], 20000);
      }
      nphs = npid;
      phsReady = 1;
@@ -1119,6 +1119,9 @@ void HomePatch::positionsReady(int doMigration)
     dft->closeTrace();
     #endif
 
+#if CMK_PERSISTENT_COMM
+    CmiUsePersistentHandle(localphs, nphs);
+#endif
     if(doMigration || isNewProxyAdded) {
         ProxyMgr::Object()->sendProxyAll(nmsg,npid,pids);
     }else{
@@ -3515,5 +3518,6 @@ void HomePatch::destoryPersistComm()
        CmiDestoryPersistent(localphs[i]);
      }
      phsReady = 0;
+     nphs = 0;
 }
 #endif

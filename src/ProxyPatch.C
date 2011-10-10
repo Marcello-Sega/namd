@@ -37,7 +37,7 @@ ProxyPatch::ProxyPatch(PatchID pd) :
 
 #if CMK_PERSISTENT_COMM
   localphs = 0;
-  localphs = CmiCreatePersistent(PatchMap::Object()->node(patchID), 300000);
+  localphs = CmiCreatePersistent(PatchMap::Object()->node(patchID), 30000);
 #endif
 
   // DMK - Atom Separation (water vs. non-water)
@@ -297,7 +297,7 @@ void ProxyPatch::sendResults(void)
     f[i].resize(0);
 
 #if CMK_PERSISTENT_COMM
-//  CmiUsePersistentHandle(&localphs, 1);
+  CmiUsePersistentHandle(&localphs, 1);
 #endif
 
   if (proxyRecvSpanning == 0) {
