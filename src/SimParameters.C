@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2011/09/23 22:52:45 $
- * $Revision: 1.1369 $
+ * $Author: bohm $
+ * $Date: 2011/10/13 19:34:22 $
+ * $Revision: 1.1370 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -32,6 +32,9 @@
 #ifdef NAMD_FFTW_3
 #include <fftw3.h>
 #else
+// fftw2 doesn't have these defined
+#define fftwf_malloc fftw_malloc
+#define fftwf_free fftw_free
 #ifdef NAMD_FFTW_NO_TYPE_PREFIX
 #include <fftw.h>
 #include <rfftw.h>
@@ -4744,8 +4747,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
        int n[3]; n[0] = PMEGridSizeX; n[1] = PMEGridSizeY; n[2] = PMEGridSizeZ;
        fftw_complex *work = new fftw_complex[n[0]];
-       float *grid1 = new float[n[1]*dim3];
-       float *grid2 = new float[n[0]*block2*dim3*2];
+       float *grid1 = (float *) fftwf_malloc(sizeof(float) *n[1]*dim3);
+       float *grid2 = (float *) fftwf_malloc(sizeof(float) *n[0]*block2*dim3*2);
        iout << iINFO << "Optimizing 6 FFT steps.  1..." << endi;
 #ifdef NAMD_FFTW_3
        int fftwFlags = FFTWPatient ? FFTW_PATIENT  : FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
@@ -4845,8 +4848,8 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 #endif
        iout << "   Done.\n" << endi;
        delete [] work;
-       delete [] grid1;
-       delete [] grid2;
+       fftwf_free(grid1);
+       fftwf_free(grid2);
 
        iout << iINFO << "Writing FFTW data to "
 		<< FFTWWisdomFile << "\n" << endi;

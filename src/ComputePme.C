@@ -9,6 +9,9 @@
 #ifdef NAMD_FFTW_3
 #include <fftw3.h>
 #else
+// fftw2 doesn't have these defined
+#define fftwf_malloc fftw_malloc
+#define fftwf_free fftw_free
 #ifdef NAMD_FFTW_NO_TYPE_PREFIX
 #include <fftw.h>
 #include <rfftw.h>
@@ -2691,7 +2694,7 @@ public:
     needs_reply = 0;
   }
   ~PmePencil() {
-    delete [] data;
+    fftwf_free(data);
     delete [] work;
     delete [] send_order;
     delete [] needs_reply;
@@ -2805,7 +2808,7 @@ void PmeZPencil::fft_init() {
   ny = block2;
   if ( (thisIndex.y + 1) * block2 > K2 ) ny = K2 - thisIndex.y * block2;
 
-  data = new float[nx*ny*dim3];
+  data = (float *) fftwf_malloc( sizeof(float) *nx*ny*dim3);
   work = new float[dim3];
 
   order_init(initdata.zBlocks);
@@ -2865,8 +2868,7 @@ void PmeYPencil::fft_init() {
   nz = block3;
   if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
 
-  data = new float[nx*dim2*nz*2];
-  //  data = (float *) fftwf_malloc(nx*dim2*nz*2*sizeof(float));
+  data = (float *) fftwf_malloc( sizeof(float) * nx*dim2*nz*2);
   work = new float[2*K2];
 
   order_init(initdata.yBlocks);
@@ -2926,7 +2928,7 @@ void PmeXPencil::fft_init() {
   nz = block3;
   if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
 
-  data = new float[K1*block2*block3*2];
+  data = (float *) fftwf_malloc( sizeof(float) * K1*block2*block3*2);
   work = new float[2*K1];
 
   order_init(initdata.xBlocks);
