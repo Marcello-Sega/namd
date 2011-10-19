@@ -628,6 +628,10 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         par_type=10; skipline=1;
       }
+      else if (strncasecmp(first_word, "atom", 4)==0)
+      {
+        par_type=11; skipline=1;
+      }
       else if (strncasecmp(first_word, "read", 4)==0)
       {
         skip_stream_read(buffer, pfile);  skipline=1;
@@ -747,6 +751,14 @@ void Parameters::read_charmm_parameter_file(char *fname)
       {
         add_nbthole_pair_param(buffer);
         NumNbtholePairParams++;
+      }
+      else if (par_type == 11)
+      {
+        if ( strncasecmp(first_word, "mass", 4) != 0 ) {
+          char err_msg[512];
+          sprintf(err_msg, "UNKNOWN PARAMETER IN CHARMM PARAMETER FILE %s\nLINE=*%s*",fname, buffer);
+          NAMD_die(err_msg);
+        }
       }
       else
       {
