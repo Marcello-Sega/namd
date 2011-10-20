@@ -11,28 +11,35 @@
 #include "charm++.h"
 
 CkpvStaticDeclare(CmmTable, CsmMessages);
+CkpvStaticDeclare(int, CsmAcks);
 
 static void CsmHandler(void *msg)
 {
   if ( CmiMyRank() ) NAMD_bug("Communicate CsmHandler on non-rank-zero pe");
-  int size = SIZEFIELD(msg);
-  for ( int i = 2; i >= 1; --i ) {
-    int node = CmiMyNode() * 2 + i;
-    if ( node < CmiNumNodes() ) {
-      CmiSyncSend(CmiNodeFirst(node),size,(char*)msg);
-    }
-  }
   // get start of user message
   int *m = (int *) ((char *)msg+CmiMsgHeaderSizeBytes);
   // sending node  & tag act as tags
   CmmPut(CkpvAccess(CsmMessages), 2, m, msg);
 }
 
+static void CsmAckHandler(void *msg)
+{
+  if ( CmiMyRank() ) NAMD_bug("Communicate CsmAckHandler on non-rank-zero pe");
+  CmiFree(msg);
+  CkpvAccess(CsmAcks) += 1;
+}
+
 Communicate::Communicate(void) 
 {
   CkpvInitialize(CmmTable, CsmMessages);
   CsmHandlerIndex = CmiRegisterHandler((CmiHandler) CsmHandler);
+  CsmAckHandlerIndex = CmiRegisterHandler((CmiHandler) CsmAckHandler);
   CkpvAccess(CsmMessages) = CmmNew();
+  if ( CmiMyNode() * 2 + 2 < CmiNumNodes() ) nchildren = 2;
+  else if ( CmiMyNode() * 2 + 1 < CmiNumNodes() ) nchildren = 1;
+  else nchildren = 0;
+  CkpvInitialize(int, CsmAcks);
+  CkpvAccess(CsmAcks) = nchildren;
 }
 
 
@@ -56,6 +63,7 @@ MOStream *Communicate::newOutputStream(int PE, int tag, unsigned int bufSize)
 void *Communicate::getMessage(int PE, int tag)
 {
   if ( CmiMyRank() ) NAMD_bug("Communicate::getMessage called on non-rank-zero Pe\n");
+
   int itag[2], rtag[2];
   void *msg;
 
@@ -64,12 +72,36 @@ void *Communicate::getMessage(int PE, int tag)
   while((msg=CmmGet(CkpvAccess(CsmMessages),2,itag,rtag))==0) {
     CmiDeliverMsgs(0);
   }
+
+  char *ackmsg = (char *) CmiAlloc(CmiMsgHeaderSizeBytes);
+  CmiSetHandler(ackmsg, CsmAckHandlerIndex);
+  CmiSyncSend(CmiNodeFirst((CmiMyNode()-1)/2), CmiMsgHeaderSizeBytes, ackmsg);
+
+  while ( CkpvAccess(CsmAcks) < nchildren ) {
+    CmiDeliverMsgs(0);
+  }
+  CkpvAccess(CsmAcks) = 0;
+
+  int size = SIZEFIELD(msg);
+  for ( int i = 2; i >= 1; --i ) {
+    int node = CmiMyNode() * 2 + i;
+    if ( node < CmiNumNodes() ) {
+      CmiSyncSend(CmiNodeFirst(node),size,(char*)msg);
+    }
+  }
+
   return msg;
 }
 
 void Communicate::sendMessage(int PE, void *msg, int size)
 {
   if ( CmiMyPe() ) NAMD_bug("Communicate::sendMessage not from Pe 0");
+
+  while ( CkpvAccess(CsmAcks) < nchildren ) {
+    CmiDeliverMsgs(0);
+  }
+  CkpvAccess(CsmAcks) = 0;
+
   CmiSetHandler(msg, CsmHandlerIndex);
   switch(PE) {
     case ALL:
