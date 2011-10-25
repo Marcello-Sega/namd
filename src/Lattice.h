@@ -14,10 +14,12 @@
 
 #ifdef ARCH_POWERPC
 extern "builtin" double __tanint(double); //IEEE round
-#define floor(x)  __tanint(x-0.5)
+#define latticenearbyint(x)  __tanint(x)
+#else
+#define latticenearbyint(x)  floor((x)+0.5)
 #endif
 
-// Use floor(0.5 + X) instead of rint(X) because rint() is sensitive
+// Use latticenearbyint(X) instead of rint(X) because rint() is sensitive
 // to the current rounding mode and floor() is not.  It's just safer.
 
 typedef Vector ScaledPosition;
@@ -99,13 +101,13 @@ public:
   {
     ScaledPosition sn = scale(data);
     if ( p1 ) {
-      sn.x -= floor(0.5 + sn.x - ref.x);
+      sn.x -= latticenearbyint(sn.x - ref.x);
     }
     if ( p2 ) {
-      sn.y -= floor(0.5 + sn.y - ref.y);
+      sn.y -= latticenearbyint(sn.y - ref.y);
     }
     if ( p3 ) {
-      sn.z -= floor(0.5 + sn.z - ref.z);
+      sn.z -= latticenearbyint(sn.z - ref.z);
     }
     return unscale(sn);
   }
@@ -117,19 +119,19 @@ public:
     ScaledPosition sn = scale(data);
     if ( p1 ) {
       BigReal tmp = sn.x - ref.x;
-      BigReal rit = floor(0.5 + tmp);
+      BigReal rit = latticenearbyint(tmp);
       sn.x -= rit;
       t->i -= (int) rit;
     }
     if ( p2 ) {
       BigReal tmp = sn.y - ref.y;
-      BigReal rit = floor(0.5 + tmp);
+      BigReal rit = latticenearbyint(tmp);
       sn.y -= rit;
       t->j -= (int) rit;
     }
     if ( p3 ) {
       BigReal tmp = sn.z - ref.z;
-      BigReal rit = floor(0.5 + tmp);
+      BigReal rit = latticenearbyint(tmp);
       sn.z -= rit;
       t->k -= (int) rit;
     }
@@ -155,28 +157,28 @@ public:
 #ifdef ARCH_POWERPC   //Prevents stack temporaries
     Vector result = diff;
     if ( p1 ) {
-      BigReal fval = floor(0.5 + b1*diff); 
+      BigReal fval = latticenearbyint(b1*diff); 
       result.x -= a1.x *fval;    
       result.y -= a1.y *fval;    
       result.z -= a1.z *fval;    
     }
     if ( p2 ) {
-      BigReal fval = floor(0.5 + b2*diff);
+      BigReal fval = latticenearbyint(b2*diff);
       result.x -= a2.x * fval;
       result.y -= a2.y * fval;
       result.z -= a2.z * fval;
     }
     if ( p3 ) {
-      BigReal fval = floor(0.5 + b3*diff);
+      BigReal fval = latticenearbyint(b3*diff);
       result.x -= a3.x * fval;
       result.y -= a3.y * fval;
       result.z -= a3.z * fval;
     }
     return result;
 #else
-    BigReal f1 = p1 ? floor(0.5 + b1*diff) : 0.;
-    BigReal f2 = p2 ? floor(0.5 + b2*diff) : 0.;
-    BigReal f3 = p3 ? floor(0.5 + b3*diff) : 0.;
+    BigReal f1 = p1 ? latticenearbyint(b1*diff) : 0.;
+    BigReal f2 = p2 ? latticenearbyint(b2*diff) : 0.;
+    BigReal f3 = p3 ? latticenearbyint(b3*diff) : 0.;
     diff.x -= f1*a1.x + f2*a2.x + f3*a3.x;
     diff.y -= f1*a1.y + f2*a2.y + f3*a3.y;
     diff.z -= f1*a1.z + f2*a2.z + f3*a3.z;
@@ -189,9 +191,9 @@ public:
   {
     Vector diff = pos1 - o;
     Vector result = diff;
-    if ( p1 ) result -= a1*floor(0.5 + b1*diff);
-    if ( p2 ) result -= a2*floor(0.5 + b2*diff);
-    if ( p3 ) result -= a3*floor(0.5 + b3*diff);
+    if ( p1 ) result -= a1*latticenearbyint(b1*diff);
+    if ( p2 ) result -= a2*latticenearbyint(b2*diff);
+    if ( p3 ) result -= a3*latticenearbyint(b3*diff);
     return result;
   }
 
@@ -200,9 +202,9 @@ public:
   {
     Vector diff = pos1 - o;
     Vector result(0.,0.,0.);
-    if ( p1 ) result -= a1*floor(0.5 + b1*diff);
-    if ( p2 ) result -= a2*floor(0.5 + b2*diff);
-    if ( p3 ) result -= a3*floor(0.5 + b3*diff);
+    if ( p1 ) result -= a1*latticenearbyint(b1*diff);
+    if ( p2 ) result -= a2*latticenearbyint(b2*diff);
+    if ( p3 ) result -= a3*latticenearbyint(b3*diff);
     return result;
   }
 
@@ -211,9 +213,9 @@ public:
   {
     Vector diff = pos1 - o;
     Vector result0(0.,0.,0.);
-    if ( p1 ) result0 -= a1*floor(0.5 + b1*diff);
-    if ( p2 ) result0 -= a2*floor(0.5 + b2*diff);
-    if ( p3 ) result0 -= a3*floor(0.5 + b3*diff);
+    if ( p1 ) result0 -= a1*latticenearbyint(b1*diff);
+    if ( p2 ) result0 -= a2*latticenearbyint(b2*diff);
+    if ( p3 ) result0 -= a3*latticenearbyint(b3*diff);
     diff += result0;
     BigReal dist = diff.length2();
     Vector result(0.,0.,0.);
