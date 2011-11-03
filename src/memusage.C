@@ -122,9 +122,16 @@ inline unsigned long memusage_proc_self_stat() {
   FILE *f = fopen("/proc/self/stat","r");
   if ( ! f ) { failed_once = 1; return 0; }
   for ( int i=0; i<22; ++i ) fscanf(f,"%*s");
+#ifdef NAMD_CUDA
+  // skip vss, next value is rss in pages
+  fscanf(f,"%*s");
+#endif
   unsigned long vsz = 0;  // should remain 0 on failure
   fscanf(f,"%lu",&vsz);
   fclose(f);
+#ifdef NAMD_CUDA
+  vsz *= sysconf(_SC_PAGESIZE);
+#endif
   if ( ! vsz ) failed_once = 1;
   // printf("/proc/self/stat reports %d MB\n", vsz/(1024*1024));
   return vsz;
@@ -147,11 +154,9 @@ unsigned long memusage(const char **source) {
   }
 #endif
 
-#ifndef NAMD_CUDA
   if ( ! memtotal ) {
     memtotal = memusage_proc_self_stat();  s = "/proc/self/stat";
   }
-#endif
 
 #if CMK_BLUEGENEP
   if( ! memtotal) { memtotal = memusage_bgp(); s="mallinfo on BG/P"; }
