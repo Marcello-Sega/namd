@@ -46,7 +46,7 @@ CollectionMaster::~CollectionMaster(void)
 void CollectionMaster::receivePositions(CollectVectorMsg *msg)
 {
 #ifndef MEM_OPT_VERSION
-  positions.submitData(msg);
+  positions.submitData(msg,Node::Object()->molecule->numAtoms);
   delete msg;
   
   CollectVectorInstance *c;
@@ -91,7 +91,7 @@ void CollectionMaster::disposePositions(CollectVectorInstance *c)
 void CollectionMaster::receiveVelocities(CollectVectorMsg *msg)
 {
 #ifndef MEM_OPT_VERSION
-  velocities.submitData(msg);
+  velocities.submitData(msg,Node::Object()->molecule->numAtoms);
   delete msg;
 
   CollectVectorInstance *c;
@@ -134,7 +134,7 @@ void CollectionMaster::disposeVelocities(CollectVectorInstance *c)
 void CollectionMaster::receiveForces(CollectVectorMsg *msg)
 {
 #ifndef MEM_OPT_VERSION
-  forces.submitData(msg);
+  forces.submitData(msg,Node::Object()->molecule->numAtoms);
   delete msg;
 
   CollectVectorInstance *c;

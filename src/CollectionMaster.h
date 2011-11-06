@@ -201,17 +201,21 @@ public:
     }
 
     // true -> send it and delete it!
-    void append(CollectVectorMsg *msg)
+    void append(CollectVectorMsg *msg, int max_index)
     {
       AtomID *a = msg->aid;
       Vector *d = msg->data;
       FloatVector *fd = msg->fdata;
       int size = msg->aid_size;
       if ( msg->data_size ) {
-	for( int i = 0; i < size; ++i ) { data.item(a[i]) = d[i]; }
+        data.resize(max_index);
+        Vector *ptr = data.begin();
+	for( int i = 0; i < size; ++i ) { ptr[a[i]] = d[i]; }
       }
       if ( msg->fdata_size ) {
-	for( int i = 0; i < size; ++i ) { fdata.item(a[i]) = fd[i]; }
+        fdata.resize(max_index);
+        FloatVector *ptr = fdata.begin();
+	for( int i = 0; i < size; ++i ) { ptr[a[i]] = fd[i]; }
       }
       --remaining;
     }
@@ -233,7 +237,7 @@ public:
   {
   public:
 
-    void submitData(CollectVectorMsg *msg)
+    void submitData(CollectVectorMsg *msg, int max_index)
     {
       int seq = msg->seq;
       CollectVectorInstance **c = data.begin();
@@ -249,7 +253,7 @@ public:
         }
         (*c)->reset(seq);
       }
-      (*c)->append(msg);
+      (*c)->append(msg, max_index);
     }
 
     void enqueue(int seq, Lattice &lattice) {
@@ -372,10 +376,14 @@ class CollectMidVectorInstance{
     // timestep have been received
     int append(int size, AtomID *a, Vector *d, FloatVector *fd){      
       if (d) {
-        for(int i = 0; i < size; ++i) { data.item(a[i]-fromAtomID) = d[i]; }
+        if ( size ) data.resize(toAtomID-fromAtomID+1);
+        Vector *ptr = data.begin();
+        for(int i = 0; i < size; ++i) { ptr[a[i]-fromAtomID] = d[i]; }
       }
       if (fd) {
-        for(int i = 0; i < size; ++i) { fdata.item(a[i]-fromAtomID) = fd[i]; }
+        if ( size ) fdata.resize(toAtomID-fromAtomID+1);
+        FloatVector *ptr = fdata.begin();
+        for(int i = 0; i < size; ++i) { ptr[a[i]-fromAtomID] = fd[i]; }
       }
       remaining -= size;
 
