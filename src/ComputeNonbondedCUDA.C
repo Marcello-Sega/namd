@@ -1722,6 +1722,10 @@ int ComputeNonbondedCUDA::finishWork() {
   atomsChanged = 0;
   reduction->submit();
 
+  cuda_timer_total += kernel_time;
+  if ( simParams->outputCudaTiming &&
+	cuda_timer_count % simParams->outputCudaTiming == 0 ) {
+
   // int natoms = mol->numAtoms; 
   // double wpa = wcount;  wpa /= natoms;
 
@@ -1741,9 +1745,6 @@ int ComputeNonbondedCUDA::finishWork() {
   cuda_errcheck("in event timer 4");
   cuda_errcheck("in event timers");
 
-  cuda_timer_total += kernel_time;
-  if ( simParams->outputCudaTiming &&
-	cuda_timer_count % simParams->outputCudaTiming == 0 ) {
     cuda_timer_total /= (cuda_timer_count + 1);
     CkPrintf("CUDA EVENT TIMING: %d %f %f %f %f\n",
 	CkMyPe(), upload_ms, remote_calc_ms,
