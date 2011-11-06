@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/08/19 07:06:21 $
- * $Revision: 1.1271 $
+ * $Date: 2011/11/06 21:55:45 $
+ * $Revision: 1.1272 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2128,7 +2128,6 @@ void Controller::printEnergies(int step, int minimize)
       else iout << "Benchmark time: ";
       iout << CkNumPes() << " CPUs ";
       {
-        BigReal wallTime = CmiWallTimer() - startBenchTime;
         BigReal wallPerStep =
 		(CmiWallTimer() - startBenchTime) / simParams->firstLdbStep;
 	BigReal ns = simParams->dt / 1000000.0;
