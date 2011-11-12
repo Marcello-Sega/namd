@@ -48,7 +48,7 @@ public:
     
     float get_grid(int i0, int i1, int i2) const;
     void set_grid(int i0, int i1, int i2, float V);
-
+    
     int compute_VdV(Position pos, float &V, Vector &dV) const;
     
     inline int get_k0(void) const { return k[0]; }
@@ -125,9 +125,13 @@ public:
     virtual ~GridforceMainGrid();
     
     void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
+    void reinitialize(SimParameters *simParams, MGridforceParams *mgridParams);
     
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
+    
+    int get_all_gridvals(float** all_gridvals) const;
+    void set_all_gridvals(float* all_gridvals, int sz);
     
     inline int getTotalGrids(void) const { return totalGrids; }
     
@@ -136,6 +140,7 @@ protected:
     void compute_b(float *b, int *inds, Vector gapscale)  const;
     void buildSubgridsFlat(void);
     
+    char filename[129];
     int totalGrids;
     GridforceSubGrid **subgrids_flat;
     int mygridnum;

@@ -837,6 +837,32 @@ int ScriptTcl::Tcl_reloadCharges(ClientData clientData,
   return TCL_OK;
 }
 
+// BEGIN gf
+int ScriptTcl::Tcl_reloadGridforceGrid(ClientData clientData,
+	Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  
+  char *key = NULL;
+  if (argc == 1) {
+      // nothing ... key is NULL, then Node::reloadGridforceGrid uses the
+      // default key, which is used internally when the gridforce*
+      // keywords are used (as opposed to the mgridforce* keywords)
+  } else if (argc == 2) {
+      key = argv[1];
+  } else {
+      Tcl_AppendResult(interp, "usage: reloadGridforceGrid [<gridkey>]", NULL);
+      return TCL_ERROR;
+  }
+  
+  Node::Object()->reloadGridforceGrid(key);
+  script->barrier();
+  //script->runController(SCRIPT_RELOADGRID); // NOT NEEDED?
+
+  return TCL_OK;
+}
+// END gf
+
 #endif  // NAMD_TCL
 
 
@@ -909,6 +935,10 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "reloadCharges", Tcl_reloadCharges,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  // BEGIN gf
+  Tcl_CreateCommand(interp, "reloadGridforceGrid", Tcl_reloadGridforceGrid,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  // END gf
 #endif
 
 }

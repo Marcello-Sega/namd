@@ -91,6 +91,9 @@ public:
   void reloadCharges(const char *filename);
   void reloadCharges(float charge[], int n);
 
+  void reloadGridforceGrid(const char *key);
+  void reloadGridforceGrid(int gridnum, float gridvals[], int n);
+  
   void sendEnableExitScheduler(void);
   void recvEnableExitScheduler(CkQdMsg *);
   void enableExitScheduler(void);

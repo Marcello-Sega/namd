@@ -873,7 +873,11 @@ public:
   
   GridforceMainGrid* get_gridfrc_grid(int gridnum) const
   {
-      return gridfrcGrid[gridnum];
+      GridforceMainGrid *result = NULL;
+      if (gridnum >= 0 && gridnum < numGridforceGrids) {
+	  result = gridfrcGrid[gridnum];
+      }
+      return result;
   }
 /* END gf */
 

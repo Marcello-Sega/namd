@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: bohm $
- * $Date: 2011/10/13 19:34:22 $
- * $Revision: 1.1370 $
+ * $Author: dbwells2 $
+ * $Date: 2011/11/12 01:08:07 $
+ * $Revision: 1.1371 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5096,7 +5096,7 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
   // If the old gridforce commands are still in use, parse them too.
   if (gridforceOn) {
     mgridforceOn = TRUE;
-    char *default_key = "BaseGridForceParams";
+    char *default_key = MGRIDFORCEPARAMS_DEFAULTKEY;
     MGridforceParams* mgfp = NULL;
     mgfp = mgridforcelist.find_key(default_key);
     if (mgfp != NULL) {

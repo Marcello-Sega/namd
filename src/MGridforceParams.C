@@ -29,6 +29,27 @@ MGridforceParams* MGridforceParamsList::find_key(const char* key)
     return result;
 }
   
+int MGridforceParamsList::index_for_key(const char* key)
+{
+    MGFElem* cur = head;
+    MGFElem* found = NULL;
+    int result = -1;
+    
+    int idx = 0;
+    while (found == NULL && cur != NULL) {
+       if (!strcasecmp((cur->elem).gridforceKey,key)) {
+        found = cur;
+      } else {
+        cur = cur->nxt;
+	idx++;
+      }
+    }
+    if (found != NULL) {
+	result = idx;
+    }
+    return result;
+}
+  
 MGridforceParams* MGridforceParamsList::add(const char* key) 
 {
     // If the key is already in the list, we can't add it

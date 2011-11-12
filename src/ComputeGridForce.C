@@ -11,7 +11,7 @@
 #include "HomePatch.h"
 #include "Molecule.h"
 
-#define MIN_DEBUG_LEVEL 2
+#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
@@ -56,7 +56,18 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     int numAtoms = homePatch->getNumAtoms();
     
     for (int gridnum = 0; gridnum < mol->numGridforceGrids; gridnum++) {
-	const GridforceGrid *grid = mol->get_gridfrc_grid(gridnum);
+	const GridforceMainGrid *grid = mol->get_gridfrc_grid(gridnum);
+	
+#ifdef DEBUGM
+	if (homePatch->flags.step % 100 == 1) {
+	    float* grid_flat = NULL;
+	    int sz = grid->get_all_gridvals(&grid_flat);
+	    for (int i = 0; i < sz; i++) {
+		DebugM(4, "(step " << homePatch->flags.step << ") grid_flat[" << gridnum << "][" << i << "] = " << grid_flat[i] << "\n" << endi);
+	    }
+	    delete [] grid_flat;
+	}
+#endif
 	
 	Position center = grid->get_center();
 //	Tensor inv = grid->get_inv();

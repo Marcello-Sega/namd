@@ -15,6 +15,8 @@
 #include "InfoStream.h"
 #include "MStream.h"
 
+#define MGRIDFORCEPARAMS_DEFAULTKEY "BaseGridForceParams"
+
 class MGridforceParams {
 public:
   MGridforceParams() {
@@ -67,6 +69,7 @@ public:
   }
   
   MGridforceParams* find_key(const char* key);  
+  int index_for_key(const char* key);
   MGridforceParams* add(const char* key);
   
   MGridforceParams *get_first() {

@@ -17,7 +17,7 @@
 
 #include "MGridforceParams.h"
 
-#define MIN_DEBUG_LEVEL 1
+#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
@@ -252,6 +252,32 @@ int GridforceGrid::get_inds(Position pos, int *inds, Vector &dg, Vector &gapscal
     }
     
     return 0;
+}
+
+
+float GridforceGrid::get_grid(int i0, int i1, int i2) const
+{
+    register int i, inds[3] = {i0, i1, i2};
+    for (i = 0; i < 3; i++) {
+	if (inds[i] < 0) inds[i] += k[i];
+	inds[i] %= k[i];
+    }
+    int ind = grid_index(inds[0], inds[1], inds[2]);
+    DebugM(1, "retrieving grid[" << ind << "; " << i0 << "," << i1 << "," << i2 << "] = " << grid[ind] << "\n" << endi);
+    return grid[ind];
+}
+
+
+void GridforceGrid::set_grid(int i0, int i1, int i2, float V)
+{
+    register int i, inds[3] = {i0, i1, i2};
+    for (i = 0; i < 3; i++) {
+	if (inds[i] < 0) inds[i] += k[i];
+	inds[i] %= k[i];
+    }
+    int ind = grid_index(inds[0], inds[1], inds[2]);
+    grid[ind] = V;
+    DebugM(1, "setting grid[" << ind << "; " << i0 << "," << i1 << "," << i2 << "] = " << grid[ind] << " = " << V << "\n" << endi);
 }
 
 
@@ -611,6 +637,9 @@ void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, 
 	NAMD_die("Problem reading grid force potential file");
     }
     
+    // save file name so that grid can be re-read via Tcl
+    strcpy(filename, potfilename);
+    
     // Read special comment fields and create subgrid objects
     totalGrids = 1;
     char line[256];
@@ -674,11 +703,6 @@ void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, 
     Avec[2] = simParams->lattice.c();
     
     // Decide whether we're wrapping
-    Bool gridforceCont[3];
-    gridforceCont[0] = simParams->gridforceContA1;
-    gridforceCont[1] = simParams->gridforceContA2;
-    gridforceCont[2] = simParams->gridforceContA3;
-    
     for (int i0 = 0; i0 < 3; i0++) {
 	if (mgridParams->gridforceCont[i0])
 	{
@@ -872,29 +896,74 @@ void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, 
 }
 
 
-float GridforceGrid::get_grid(int i0, int i1, int i2) const
+void GridforceMainGrid::reinitialize(SimParameters *simParams, MGridforceParams *mgridParams)
 {
-    register int i, inds[3] = {i0, i1, i2};
-    for (i = 0; i < 3; i++) {
-	if (inds[i] < 0) inds[i] += k[i];
-	inds[i] %= k[i];
-    }
-    int ind = grid_index(inds[0], inds[1], inds[2]);
-    DebugM(1, "retrieving grid[" << ind << "; " << i0 << "," << i1 << "," << i2 << "] = " << grid[ind] << "\n" << endi);
-    return grid[ind];
+    DebugM(4, "reinitializing grid\n" << endi);
+    this->initialize(filename, simParams, mgridParams);
 }
 
 
-void GridforceGrid::set_grid(int i0, int i1, int i2, float V)
+int GridforceMainGrid::get_all_gridvals(float** all_gridvals) const
 {
-    register int i, inds[3] = {i0, i1, i2};
-    for (i = 0; i < 3; i++) {
-	if (inds[i] < 0) inds[i] += k[i];
-	inds[i] %= k[i];
+    // Creates a flat array of all grid values, including subgrids,
+    // and puts it in the value pointed to by the 'grids'
+    // argument. Returns the resulting array size. Caller is
+    // responsible for destroying the array via 'delete []'
+    
+    DebugM(4, "get_all_gridvals called\n" << endi);
+    
+    int sz = 0;
+    sz += size;
+    for (int i = 0; i < totalGrids-1; i++) {
+	sz += subgrids_flat[i]->size;
     }
-    int ind = grid_index(inds[0], inds[1], inds[2]);
-    grid[ind] = V;
-    DebugM(1, "setting grid[" << ind << "; " << i0 << "," << i1 << "," << i2 << "] = " << grid[ind] << " = " << V << "\n" << endi);
+    DebugM(4, "size = " << sz << "\n" << endi);
+    
+    float *grid_vals = new float[sz];
+    int idx = 0;
+    for (int i = 0; i < size; i++) {
+	grid_vals[idx++] = grid[i];
+    }
+    for (int j = 0; j < totalGrids-1; j++) {
+	for (int i = 0; i < subgrids_flat[j]->size; i++) {
+	    grid_vals[idx++] = subgrids_flat[j]->grid[i];
+	}
+    }
+    CmiAssert(idx == sz);
+    
+    *all_gridvals = grid_vals;
+    
+    DebugM(4, "get_all_gridvals finished\n" << endi);
+    
+    return sz;
+}
+
+
+void GridforceMainGrid::set_all_gridvals(float* all_gridvals, int sz)
+{
+    DebugM(4, "set_all_gridvals called\n" << endi);
+    
+    int sz_calc = 0;
+    sz_calc += size;
+    for (int i = 0; i < totalGrids-1; i++) {
+	sz_calc += subgrids_flat[i]->size;
+    }
+    CmiAssert(sz == sz_calc);
+    
+    int idx = 0;
+    for (int i = 0; i < size; i++) {
+	DebugM(4, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
+	grid[i] = all_gridvals[idx++];
+    }
+    for (int j = 0; j < totalGrids-1; j++) {
+	for (int i = 0; i < subgrids_flat[j]->size; i++) {
+	    DebugM(4, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
+	    subgrids_flat[j]->grid[i] = all_gridvals[idx++];
+	}
+    }
+    CmiAssert(idx == sz);
+
+    DebugM(4, "set_all_gridvals finished\n" << endi);
 }
 
 

@@ -789,6 +789,53 @@ void Node::reloadCharges(float charge[], int n) {
 }
 
 
+// BEGIN gf
+void Node::reloadGridforceGrid(const char *key) {
+    DebugM(4, "reloadGridforceGrid(const char*) called\n" << endi);
+    
+    int gridnum;
+    MGridforceParams *mgridParams;
+    if (key == NULL) {
+	gridnum = simParameters->mgridforcelist.index_for_key(MGRIDFORCEPARAMS_DEFAULTKEY);
+	mgridParams = simParameters->mgridforcelist.find_key(MGRIDFORCEPARAMS_DEFAULTKEY);
+    } else {
+	gridnum = simParameters->mgridforcelist.index_for_key(key);
+	mgridParams = simParameters->mgridforcelist.find_key(key);
+    }
+    
+    if (gridnum < 0 || mgridParams == NULL) {
+	NAMD_die("Node::reloadGridforceGrid(const char*):Could not find grid.");
+    }
+    
+    GridforceMainGrid *grid = molecule->get_gridfrc_grid(gridnum);
+    if (grid == NULL) {
+	NAMD_bug("Node::reloadGridforceGrid(const char*):grid not found");
+    }
+    
+    grid->reinitialize(simParameters, mgridParams);
+    float *gridvals = NULL;
+    int n = grid->get_all_gridvals(&gridvals);
+    DebugM(4, "gridvals = " << gridvals << "\n" << endi);
+    CProxy_Node(thisgroup).reloadGridforceGrid(gridnum,gridvals,n);
+    delete [] gridvals;
+    
+    DebugM(4, "reloadGridforceGrid(const char*) finished\n" << endi);
+}
+
+void Node::reloadGridforceGrid(int gridnum, float gridvals[], int n) {
+    DebugM(4, "reloadGridforceGrid(int, float[], int) called\n" << endi);
+    
+    GridforceMainGrid *grid = molecule->get_gridfrc_grid(gridnum);
+    if (grid == NULL) {
+	NAMD_bug("Node::reloadGridforceGrid(int,float[],size_t):grid not found");
+    }
+    grid->set_all_gridvals(gridvals, n);
+    
+    DebugM(4, "reloadGridforceGrid(int, float[], int) finished\n" << endi);
+}
+// END gf
+
+
 void Node::sendEnableExitScheduler(void) {
   //CmiPrintf("sendEnableExitScheduler\n");
   CkQdMsg *msg = new CkQdMsg;
