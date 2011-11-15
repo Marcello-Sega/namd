@@ -755,6 +755,7 @@ void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, 
     
     DebugM(3, "size = " << size << ", size_nopad = " << size_nopad << "\n" << endi);
     
+    delete [] grid;
     grid = new float[size];
     
     n_sum[0] = n_sum[1] = n_sum[2] = 0;
@@ -1263,6 +1264,7 @@ void GridforceSubGrid::initialize(SimParameters *simParams, MGridforceParams *mg
     
     // Set real grid
     DebugM(3, "allocating grid\n" << endi);
+    delete [] grid;
     grid = new float[size];
     for (int i0 = 0; i0 < k_nopad[0]; i0++) {
 	for (int i1 = 0; i1 < k_nopad[1]; i1++) {
