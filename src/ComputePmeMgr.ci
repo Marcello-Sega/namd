@@ -15,10 +15,12 @@ module ComputePmeMgr {
   message PmeTransMsg {
     float qgrid[];
   };
+  message PmeSharedTransMsg;
   message PmeUntransMsg{
     float qgrid[];
     PmeReduction evir[];
   };
+  message PmeSharedUntransMsg;
 
   group PmePencilMap : CkArrayMap {
     entry PmePencilMap(int i_a, int i_b, int n_b, int n, int d[n]);
@@ -173,6 +175,11 @@ module ComputePmeMgr {
     };
   };
 
+  nodegroup NodePmeMgr {
+    entry NodePmeMgr(void);
+    entry [immediate] void recvTrans(PmeTransMsg *);
+    entry [immediate] void recvUntrans(PmeUntransMsg *);
+  };
 
   group ComputePmeMgr {
 
@@ -186,9 +193,11 @@ module ComputePmeMgr {
     entry void gridCalc1(void);
     entry void sendTransBarrier(void);
     entry void sendTrans(void);
+    entry void recvSharedTrans(PmeSharedTransMsg *);
     entry void recvTrans(PmeTransMsg *);
     entry void gridCalc2(void);
     entry void sendUntrans(void);
+    entry void recvSharedUntrans(PmeSharedUntransMsg *);
     entry void recvUntrans(PmeUntransMsg *);
     entry void gridCalc3(void);
     entry void sendUngrid(void);

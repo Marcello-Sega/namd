@@ -147,6 +147,7 @@ void master_init(int argc, char **argv){
   group.computeMgr = CProxy_ComputeMgr::ckNew();
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
   // group.computePmeMgr set in constructor during startup
+  group.nodePmeMgr = CProxy_NodePmeMgr::ckNew();
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
   group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();

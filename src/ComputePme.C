@@ -83,6 +83,12 @@ public:
   float *qgrid;
 };
 
+class PmeSharedTransMsg : public CMessage_PmeSharedTransMsg {
+public:
+  PmeTransMsg *msg;
+  int *count;
+  CmiNodeLock lock;
+};
 
 class PmeUntransMsg : public CMessage_PmeUntransMsg {
 public:
@@ -94,6 +100,13 @@ public:
   int ny;
   float *qgrid;
 
+};
+
+class PmeSharedUntransMsg : public CMessage_PmeSharedUntransMsg {
+public:
+  PmeUntransMsg *msg;
+  int *count;
+  CmiNodeLock lock;
 };
 
 class PmePencilMap : public CBase_PmePencilMap {
@@ -156,6 +169,10 @@ public:
 struct LocalPmeInfo {
   int nx, x_start;
   int ny_after_transpose, y_start_after_transpose;
+};
+
+struct NodePmeInfo {
+  int npe, pe_start, real_node;
 };
 
 
@@ -268,6 +285,7 @@ struct ijpair {
 class ComputePmeMgr : public BOCclass {
 public:
   friend class ComputePme;
+  friend class NodePmeMgr;
   ComputePmeMgr();
   ~ComputePmeMgr();
 
@@ -281,10 +299,16 @@ public:
   void gridCalc1(void);
   void sendTransBarrier(void);
   void sendTrans(void);
+  void fwdSharedTrans(PmeTransMsg *);
+  void recvSharedTrans(PmeSharedTransMsg *);
   void recvTrans(PmeTransMsg *);
+  void procTrans(PmeTransMsg *);
   void gridCalc2(void);
+  void fwdSharedUntrans(PmeUntransMsg *);
+  void recvSharedUntrans(PmeSharedUntransMsg *);
   void sendUntrans(void);
   void recvUntrans(PmeUntransMsg *);
+  void procUntrans(PmeUntransMsg *);
   void gridCalc3(void);
   void sendUngrid(void);
   void recvUngrid(PmeGridMsg *);
@@ -303,6 +327,7 @@ public:
 private:
   CProxy_ComputePmeMgr pmeProxy;
   CProxy_ComputePmeMgr pmeProxyDir;
+  CProxy_NodePmeMgr pmeNodeProxy;
   ComputePme *pmeCompute;
   PmeGrid myGrid;
   Lattice lattice;
@@ -332,6 +357,8 @@ private:
 
   
   LocalPmeInfo *localInfo;
+  NodePmeInfo *gridNodeInfo;
+  NodePmeInfo *transNodeInfo;
   int qgrid_size;
   int qgrid_start;
   int qgrid_len;
@@ -341,14 +368,16 @@ private:
   int numSources;
   int numGridPes;
   int numTransPes;
+  int numGridNodes;
+  int numTransNodes;
   int numDestRecipPes;
-  int myGridPe;
-  int myTransPe;
+  int myGridPe, myGridNode;
+  int myTransPe, myTransNode;
   int *gridPeMap;
   int *transPeMap;
   int *recipPeDest;
   int *gridPeOrder;
-  int *transPeOrder;
+  int *transNodeOrder;
   char *isPmeFlag;
   int grid_count;
   int trans_count;
@@ -384,10 +413,53 @@ int ComputePmeMgr::isPmeProcessor(int p){
   return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
 }
 
+class NodePmeMgr : public CBase_NodePmeMgr {
+public:
+  friend class ComputePmeMgr;
+  NodePmeMgr();
+  ~NodePmeMgr();
+  void initialize();
+  void recvTrans(PmeTransMsg *);
+  void recvUntrans(PmeUntransMsg *);
+
+private:
+  CProxy_ComputePmeMgr mgrProxy;
+  ComputePmeMgr *mgrObject;
+  ComputePmeMgr **mgrObjects;
+};
+
+NodePmeMgr::NodePmeMgr() {
+  mgrObjects = new ComputePmeMgr*[CkNodeSize(CkMyNode())];
+}
+
+NodePmeMgr::~NodePmeMgr() {
+  delete [] mgrObjects;
+}
+
+void NodePmeMgr::initialize() {
+  CProxy_ComputePmeMgr proxy = CkpvAccess(BOCclass_group).computePmeMgr;
+  mgrObjects[CkMyRank()] = proxy.ckLocalBranch();
+  if ( CkMyRank() == 0 ) {
+    mgrProxy = proxy;
+    mgrObject = proxy.ckLocalBranch();
+  }
+}
+
+void NodePmeMgr::recvTrans(PmeTransMsg *msg) {
+  mgrObject->fwdSharedTrans(msg);
+}
+
+void NodePmeMgr::recvUntrans(PmeUntransMsg *msg) {
+  mgrObject->fwdSharedUntrans(msg);
+}
+
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
 				 pmeProxyDir(thisgroup), pmeCompute(0) {
 
   CkpvAccess(BOCclass_group).computePmeMgr = thisgroup;
+  pmeNodeProxy = CkpvAccess(BOCclass_group).nodePmeMgr;
+
+  pmeNodeProxy.ckLocalBranch()->initialize();
 
 #ifdef NAMD_FFTW
   if ( CmiMyRank() == 0 ) {
@@ -418,11 +490,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   delete msg;
 
   localInfo = new LocalPmeInfo[CkNumPes()];
+  gridNodeInfo = new NodePmeInfo[CkNumNodes()];
+  transNodeInfo = new NodePmeInfo[CkNumNodes()];
   gridPeMap = new int[CkNumPes()];
   transPeMap = new int[CkNumPes()];
   recipPeDest = new int[CkNumPes()];
   gridPeOrder = new int[CkNumPes()];
-  transPeOrder = new int[CkNumPes()];
+  transNodeOrder = new int[CkNumNodes()];
   isPmeFlag = new char[CkNumPes()];  
 
   SimParameters *simParams = Node::Object()->simParameters;
@@ -536,18 +610,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     iout << iINFO << "PME using " << numGridPes << " and " << numTransPes <<
       " processors for FFT and reciprocal sum.\n" << endi;
   }
-  { // generate random orderings for grid and trans messages
-    int i;
-    for ( i = 0; i < numGridPes; ++i ) {
-      gridPeOrder[i] = i;
-    }
-    for ( i = 0; i < numTransPes; ++i ) {
-      transPeOrder[i] = i;
-    }
-    Random rand(CkMyPe());
-    rand.reorder(gridPeOrder,numGridPes);
-    rand.reorder(transPeOrder,numTransPes);
-  }
 
   int sum_npes = numTransPes + numGridPes;
   int max_npes = (numTransPes > numGridPes)?numTransPes:numGridPes;
@@ -581,20 +643,52 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     }
   
   myGridPe = -1;
+  myGridNode = -1;
   int i = 0;
   for ( i=0; i<CkNumPes(); ++i )
     isPmeFlag[i] = 0;
+  int node = -1;
+  int real_node = -1;
   for ( i=0; i<numGridPes; ++i ) {
     if ( gridPeMap[i] == CkMyPe() ) myGridPe = i;
     isPmeFlag[gridPeMap[i]] |= 1;
+    int real_node_i = CkNodeOf(gridPeMap[i]);
+    if ( real_node_i == real_node ) {
+      gridNodeInfo[node].npe += 1;
+    } else {
+      real_node = real_node_i;
+      ++node;
+      gridNodeInfo[node].real_node = real_node;
+      gridNodeInfo[node].pe_start = i;
+      gridNodeInfo[node].npe = 1;
+    }
+    if ( CkMyNode() == real_node_i ) myGridNode = node;
   }
+  numGridNodes = node + 1;
   myTransPe = -1;
+  myTransNode = -1;
+  node = -1;
+  real_node = -1;
   for ( i=0; i<numTransPes; ++i ) {
     if ( transPeMap[i] == CkMyPe() ) myTransPe = i;
     isPmeFlag[transPeMap[i]] |= 2;
+    int real_node_i = CkNodeOf(transPeMap[i]);
+    if ( real_node_i == real_node ) {
+      transNodeInfo[node].npe += 1;
+    } else {
+      real_node = real_node_i;
+      ++node;
+      transNodeInfo[node].real_node = real_node;
+      transNodeInfo[node].pe_start = i;
+      transNodeInfo[node].npe = 1;
+    }
+    if ( CkMyNode() == real_node_i ) myTransNode = node;
   }
-  
+  numTransNodes = node + 1;
+
   if ( ! CkMyPe() ) {
+    iout << iINFO << "PME USING " << numGridNodes << " GRID NODES AND "
+         << numTransNodes << " TRANS NODES\n" << endi;
     iout << iINFO << "PME GRID LOCATIONS:";
     int i;
     for ( i=0; i<numGridPes && i<10; ++i ) {
@@ -610,6 +704,31 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     iout << "\n" << endi;
   }
 
+  { // generate random orderings for grid and trans messages
+    int i;
+    for ( i = 0; i < numGridPes; ++i ) {
+      gridPeOrder[i] = i;
+    }
+    Random rand(CkMyPe());
+    if ( myGridPe < 0 ) {
+      rand.reorder(gridPeOrder,numGridPes);
+    } else {  // self last
+      gridPeOrder[myGridPe] = numGridPes-1;
+      gridPeOrder[numGridPes-1] = myGridPe;
+      rand.reorder(gridPeOrder,numGridPes-1);
+    } 
+    for ( i = 0; i < numTransNodes; ++i ) {
+      transNodeOrder[i] = i;
+    }
+    if ( myTransNode < 0 ) {
+      rand.reorder(transNodeOrder,numTransNodes);
+    } else {  // self last
+      transNodeOrder[myTransNode] = numTransNodes-1;
+      transNodeOrder[numTransNodes-1] = myTransNode;
+      rand.reorder(transNodeOrder,numTransNodes-1);
+    }
+  }
+  
   } // ! usePencils
 
   myGrid.K1 = simParams->PMEGridSizeX;
@@ -1169,11 +1288,13 @@ ComputePmeMgr::~ComputePmeMgr() {
 
   delete myKSpace;
   delete [] localInfo;
+  delete [] gridNodeInfo;
+  delete [] transNodeInfo;
   delete [] gridPeMap;
   delete [] transPeMap;
   delete [] recipPeDest;
   delete [] gridPeOrder;
-  delete [] transPeOrder;
+  delete [] transNodeOrder;
   delete [] isPmeFlag;
   delete [] qgrid;
   if ( kgrid != qgrid ) delete [] kgrid;
@@ -1293,7 +1414,7 @@ void ComputePmeMgr::sendTransBarrier(void) {
 }
 
 void ComputePmeMgr::sendTrans(void) {
-  // CkPrintf("sendTrans on %d\n",myTransPe);
+  // CkPrintf("sendTrans on Pe(%d)\n",CkMyPe());
 
   // send data for transpose
   int zdim = myGrid.dim3;
@@ -1301,56 +1422,120 @@ void ComputePmeMgr::sendTrans(void) {
   int x_start = localInfo[myGridPe].x_start;
   int slicelen = myGrid.K2 * zdim;
 
+  ComputePmeMgr **mgrObjects = pmeNodeProxy.ckLocalBranch()->mgrObjects;
+
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
-  for (int j=0; j<numTransPes; j++) {
-    int pe = transPeOrder[j];  // different order on each node
-    LocalPmeInfo &li = localInfo[pe];
-    int cpylen = li.ny_after_transpose * zdim;
-    PmeTransMsg *newmsg = new (nx * cpylen * numGrids,
+  for (int j=0; j<numTransNodes; j++) {
+    int node = transNodeOrder[j];  // different order on each node
+    int pe = transNodeInfo[node].pe_start;
+    int npe = transNodeInfo[node].npe;
+    int totlen = 0;
+    if ( node != myTransNode ) for (int i=0; i<npe; ++i, ++pe) {
+      LocalPmeInfo &li = localInfo[pe];
+      int cpylen = li.ny_after_transpose * zdim;
+      totlen += cpylen;
+    }
+    PmeTransMsg *newmsg = new (nx * totlen * numGrids,
 				PRIORITY_SIZE) PmeTransMsg;
     newmsg->sourceNode = myGridPe;
     newmsg->lattice = lattice;
     newmsg->x_start = x_start;
     newmsg->nx = nx;
     for ( int g=0; g<numGrids; ++g ) {
-      float *q = qgrid + qgrid_size * g + li.y_start_after_transpose * zdim;
-      float *qmsg = newmsg->qgrid + nx * cpylen * g;
-      for ( int x = 0; x < nx; ++x ) {
-        CmiMemcpy((void*)qmsg, (void*)q, cpylen*sizeof(float));
-        q += slicelen;
-        qmsg += cpylen;
+      float *qmsg = newmsg->qgrid + nx * totlen * g;
+      pe = transNodeInfo[node].pe_start;
+      for (int i=0; i<npe; ++i, ++pe) {
+        LocalPmeInfo &li = localInfo[pe];
+        int cpylen = li.ny_after_transpose * zdim;
+        if ( node == myTransNode ) {
+          ComputePmeMgr *m = mgrObjects[CkRankOf(transPeMap[pe])];
+          qmsg = m->kgrid + m->qgrid_size * g + x_start*cpylen;
+        }
+        float *q = qgrid + qgrid_size * g + li.y_start_after_transpose * zdim;
+        for ( int x = 0; x < nx; ++x ) {
+          CmiMemcpy((void*)qmsg, (void*)q, cpylen*sizeof(float));
+          q += slicelen;
+          qmsg += cpylen;
+        }
       }
     }
     newmsg->sequence = sequence;
     SET_PRIORITY(newmsg,sequence,PME_TRANS_PRIORITY)
-    pmeProxy[transPeMap[pe]].recvTrans(newmsg);
+    if ( node == myTransNode ) newmsg->nx = 0;
+    if ( npe > 1 ) {
+      if ( node == myTransNode ) fwdSharedTrans(newmsg);
+      else pmeNodeProxy[transNodeInfo[node].real_node].recvTrans(newmsg);
+    } else pmeProxy[transPeMap[transNodeInfo[node].pe_start]].recvTrans(newmsg);
   }
  
   untrans_count = numTransPes;
 
 }
 
+void ComputePmeMgr::fwdSharedTrans(PmeTransMsg *msg) {
+  // CkPrintf("fwdSharedTrans on Pe(%d)\n",CkMyPe());
+  int pe = transNodeInfo[myTransNode].pe_start;
+  int npe = transNodeInfo[myTransNode].npe;
+  CmiNodeLock lock = CmiCreateLock();
+  int *count = new int; *count = npe;
+  for (int i=0; i<npe; ++i, ++pe) {
+    PmeSharedTransMsg *shmsg = new (PRIORITY_SIZE) PmeSharedTransMsg;
+    SET_PRIORITY(shmsg,msg->sequence,PME_TRANS_PRIORITY)
+    shmsg->msg = msg;
+    shmsg->count = count;
+    shmsg->lock = lock;
+    pmeProxy[transPeMap[pe]].recvSharedTrans(shmsg);
+  }
+}
+
+void ComputePmeMgr::recvSharedTrans(PmeSharedTransMsg *msg) {
+  procTrans(msg->msg);
+  CmiLock(msg->lock);
+  int count = --(*msg->count);
+  CmiUnlock(msg->lock);
+  if ( count == 0 ) {
+    CmiDestroyLock(msg->lock);
+    delete msg->count;
+    delete msg->msg;
+  }
+  delete msg;
+}
+
 void ComputePmeMgr::recvTrans(PmeTransMsg *msg) {
-  // CkPrintf("recvTrans on Pe(%d)\n",CkMyPe());
+  procTrans(msg);
+  delete msg;
+}
+
+void ComputePmeMgr::procTrans(PmeTransMsg *msg) {
+  // CkPrintf("procTrans on Pe(%d)\n",CkMyPe());
   if ( trans_count == numGridPes ) {
     lattice = msg->lattice;
     sequence = msg->sequence;
   }
 
+ if ( msg->nx ) {
   int zdim = myGrid.dim3;
-  // int y_start = localInfo[myTransPe].y_start_after_transpose;
+  NodePmeInfo &nodeInfo(transNodeInfo[myTransNode]);
+  int first_pe = nodeInfo.pe_start;
+  int last_pe = first_pe+nodeInfo.npe-1;
+  int y_skip = localInfo[myTransPe].y_start_after_transpose
+             - localInfo[first_pe].y_start_after_transpose;
+  int ny_msg = localInfo[last_pe].y_start_after_transpose
+             + localInfo[last_pe].ny_after_transpose
+             - localInfo[first_pe].y_start_after_transpose;
   int ny = localInfo[myTransPe].ny_after_transpose;
   int x_start = msg->x_start;
   int nx = msg->nx;
   for ( int g=0; g<numGrids; ++g ) {
     CmiMemcpy((void*)(kgrid + qgrid_size * g + x_start*ny*zdim),
-	(void*)(msg->qgrid + nx*ny*zdim*g), nx*ny*zdim*sizeof(float));
+	(void*)(msg->qgrid + nx*(ny_msg*g+y_skip)*zdim),
+	nx*ny*zdim*sizeof(float));
   }
+ }
 
-  delete msg;
   --trans_count;
 
   if ( trans_count == 0 ) {
@@ -1438,7 +1623,39 @@ void ComputePmeMgr::sendUntrans(void) {
   trans_count = numGridPes;
 }
 
+void ComputePmeMgr::fwdSharedUntrans(PmeUntransMsg *msg) {
+  int pe = gridNodeInfo[myGridNode].pe_start;
+  int npe = gridNodeInfo[myGridNode].npe;
+  CmiNodeLock lock = CmiCreateLock();
+  int *count = new int; *count = npe;
+  for (int i=0; i<npe; ++i, ++pe) {
+    PmeSharedUntransMsg *shmsg = new PmeSharedUntransMsg;
+    shmsg->msg = msg;
+    shmsg->count = count;
+    shmsg->lock = lock;
+    pmeProxy[gridPeMap[pe]].recvSharedUntrans(shmsg);
+  }
+}
+
+void ComputePmeMgr::recvSharedUntrans(PmeSharedUntransMsg *msg) {
+  procUntrans(msg->msg);
+  CmiLock(msg->lock);
+  int count = --(*msg->count);
+  CmiUnlock(msg->lock);
+  if ( count == 0 ) {
+    CmiDestroyLock(msg->lock);
+    delete msg->count;
+    delete msg->msg;
+  }
+  delete msg;
+}
+
 void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
+  procUntrans(msg);
+  delete msg;
+}
+
+void ComputePmeMgr::procUntrans(PmeUntransMsg *msg) {
   // CkPrintf("recvUntrans on Pe(%d)\n",CkMyPe());
   if ( untrans_count == numTransPes ) {
     for ( int g=0; g<numGrids; ++g ) {
@@ -1472,7 +1689,6 @@ void ComputePmeMgr::recvUntrans(PmeUntransMsg *msg) {
     }
   }
 
-  delete msg;
   --untrans_count;
 
   if ( untrans_count == 0 ) {

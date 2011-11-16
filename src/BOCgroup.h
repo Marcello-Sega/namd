@@ -16,6 +16,7 @@ public:
   CkGroupID proxyMgr;
   CkGroupID computeMgr;
   CkGroupID computePmeMgr;
+  CkGroupID nodePmeMgr;
   //  CkGroupID delegateMgr;
   CkGroupID computeExtMgr;
   CkGroupID computeGBISserMgr;
