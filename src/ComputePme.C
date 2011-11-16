@@ -377,6 +377,7 @@ private:
   int *transPeMap;
   int *recipPeDest;
   int *gridPeOrder;
+  int *gridNodeOrder;
   int *transNodeOrder;
   char *isPmeFlag;
   int grid_count;
@@ -496,6 +497,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   transPeMap = new int[CkNumPes()];
   recipPeDest = new int[CkNumPes()];
   gridPeOrder = new int[CkNumPes()];
+  gridNodeOrder = new int[CkNumNodes()];
   transNodeOrder = new int[CkNumNodes()];
   isPmeFlag = new char[CkNumPes()];  
 
@@ -717,6 +719,16 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       gridPeOrder[numGridPes-1] = myGridPe;
       rand.reorder(gridPeOrder,numGridPes-1);
     } 
+    for ( i = 0; i < numGridNodes; ++i ) {
+      gridNodeOrder[i] = i;
+    }
+    if ( myGridNode < 0 ) {
+      rand.reorder(gridNodeOrder,numGridNodes);
+    } else {  // self last
+      gridNodeOrder[myGridNode] = numGridNodes-1;
+      gridNodeOrder[numGridNodes-1] = myGridNode;
+      rand.reorder(gridNodeOrder,numGridNodes-1);
+    }
     for ( i = 0; i < numTransNodes; ++i ) {
       transNodeOrder[i] = i;
     }
@@ -1294,6 +1306,7 @@ ComputePmeMgr::~ComputePmeMgr() {
   delete [] transPeMap;
   delete [] recipPeDest;
   delete [] gridPeOrder;
+  delete [] gridNodeOrder;
   delete [] transNodeOrder;
   delete [] isPmeFlag;
   delete [] qgrid;
@@ -1590,18 +1603,26 @@ void ComputePmeMgr::sendUntrans(void) {
   int zdim = myGrid.dim3;
   int y_start = localInfo[myTransPe].y_start_after_transpose;
   int ny = localInfo[myTransPe].ny_after_transpose;
+  int slicelen = myGrid.K2 * zdim;
+
+  ComputePmeMgr **mgrObjects = pmeNodeProxy.ckLocalBranch()->mgrObjects;
 
 #if CMK_BLUEGENEL
   CmiNetworkProgressAfter (0);
 #endif
 
   // send data for reverse transpose
-  for (int j=0; j<numGridPes; j++) {
-    int pe = gridPeOrder[j];  // different order on each node
-    LocalPmeInfo &li = localInfo[pe];
-    int x_start =li.x_start;
-    int nx = li.nx;
-    PmeUntransMsg *newmsg = new (nx*ny*zdim*numGrids,numGrids,
+  for (int j=0; j<numGridNodes; j++) {
+    int node = gridNodeOrder[j];  // different order on each node
+    int pe = gridNodeInfo[node].pe_start;
+    int npe = gridNodeInfo[node].npe;
+    int totlen = 0;
+    if ( node != myGridNode ) for (int i=0; i<npe; ++i, ++pe) {
+      LocalPmeInfo &li = localInfo[pe];
+      int cpylen = li.nx * zdim;
+      totlen += cpylen;
+    }
+    PmeUntransMsg *newmsg = new (ny * totlen * numGrids,numGrids,
 				PRIORITY_SIZE) PmeUntransMsg;
     newmsg->sourceNode = myTransPe;
     newmsg->y_start = y_start;
@@ -1612,12 +1633,34 @@ void ComputePmeMgr::sendUntrans(void) {
       } else {
         newmsg->evir[g] = 0.;
       }
-      CmiMemcpy((void*)(newmsg->qgrid+nx*ny*zdim*g),
-		(void*)(kgrid + qgrid_size*g + x_start*ny*zdim),
-		nx*ny*zdim*sizeof(float));
+      float *qmsg = newmsg->qgrid + ny * totlen * g;
+      pe = gridNodeInfo[node].pe_start;
+      for (int i=0; i<npe; ++i, ++pe) {
+        LocalPmeInfo &li = localInfo[pe];
+        if ( node == myGridNode ) {
+          ComputePmeMgr *m = mgrObjects[CkRankOf(gridPeMap[pe])];
+          qmsg = m->qgrid + m->qgrid_size * g + y_start * zdim;
+          float *q = kgrid + qgrid_size*g + li.x_start*ny*zdim;
+          int cpylen = ny * zdim;
+          for ( int x = 0; x < li.nx; ++x ) {
+            CmiMemcpy((void*)qmsg, (void*)q, cpylen*sizeof(float));
+            q += cpylen;
+            qmsg += slicelen;
+          }
+        } else {
+          CmiMemcpy((void*)qmsg,
+		(void*)(kgrid + qgrid_size*g + li.x_start*ny*zdim),
+		li.nx*ny*zdim*sizeof(float));
+          qmsg += li.nx*ny*zdim;
+        }
+      }
     }
     SET_PRIORITY(newmsg,sequence,PME_UNTRANS_PRIORITY)
-    pmeProxy[gridPeMap[pe]].recvUntrans(newmsg);
+    if ( node == myGridNode ) newmsg->ny = 0;
+    if ( npe > 1 ) {
+      if ( node == myGridNode ) fwdSharedUntrans(newmsg);
+      else pmeNodeProxy[gridNodeInfo[node].real_node].recvUntrans(newmsg);
+    } else pmeProxy[gridPeMap[gridNodeInfo[node].pe_start]].recvUntrans(newmsg);
   }
 
   trans_count = numGridPes;
@@ -1667,13 +1710,21 @@ void ComputePmeMgr::procUntrans(PmeUntransMsg *msg) {
   CmiNetworkProgressAfter (0);
 #endif
 
+  NodePmeInfo &nodeInfo(gridNodeInfo[myGridNode]);
+  int first_pe = nodeInfo.pe_start;
   int g;
-  for ( g=0; g<numGrids; ++g ) {
+  if ( myGridPe == first_pe ) for ( g=0; g<numGrids; ++g ) {
     recip_evir[g] += msg->evir[g];
   }
 
+ if ( msg->ny ) {
   int zdim = myGrid.dim3;
-  // int x_start = localInfo[myGridPe].x_start;
+  int last_pe = first_pe+nodeInfo.npe-1;
+  int x_skip = localInfo[myGridPe].x_start
+             - localInfo[first_pe].x_start;
+  int nx_msg = localInfo[last_pe].x_start
+             + localInfo[last_pe].nx
+             - localInfo[first_pe].x_start;
   int nx = localInfo[myGridPe].nx;
   int y_start = msg->y_start;
   int ny = msg->ny;
@@ -1681,13 +1732,14 @@ void ComputePmeMgr::procUntrans(PmeUntransMsg *msg) {
   int cpylen = ny * zdim;
   for ( g=0; g<numGrids; ++g ) {
     float *q = qgrid + qgrid_size * g + y_start * zdim;
-    float *qmsg = msg->qgrid + nx * cpylen * g;
+    float *qmsg = msg->qgrid + (nx_msg*g+x_skip) * cpylen;
     for ( int x = 0; x < nx; ++x ) {
       CmiMemcpy((void*)q, (void*)qmsg, cpylen*sizeof(float));
       q += slicelen;
       qmsg += cpylen;
     }
   }
+ }
 
   --untrans_count;
 
