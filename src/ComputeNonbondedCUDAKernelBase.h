@@ -399,6 +399,7 @@ __global__ static void NAME(dev_nonbonded)(
     }
   }
 #if ENERGY(1 +) 0
+  if ( threadIdx.x < 512 )  // workaround for compiler bug
   {
     __syncthreads();
     // accumulate energies to shared memory, warp-synchronous
@@ -443,6 +444,7 @@ __global__ static void NAME(dev_nonbonded)(
 
   // make sure forces are visible in global memory
   __threadfence();
+  __syncthreads();
 
   __shared__ bool sumForces;
 
