@@ -75,6 +75,10 @@ BigReal         ComputeNonbondedUtil::c8;
 // fepb
 Bool      ComputeNonbondedUtil::alchFepOn;
 Bool      ComputeNonbondedUtil::alchThermIntOn;
+Bool      ComputeNonbondedUtil::Fep_WCA_repuOn;
+Bool      ComputeNonbondedUtil::Fep_WCA_dispOn;
+BigReal   ComputeNonbondedUtil::WCA_rcut1;
+BigReal   ComputeNonbondedUtil::WCA_rcut2;
 BigReal   ComputeNonbondedUtil::alchLambda;
 BigReal   ComputeNonbondedUtil::alchLambda2;
 BigReal   ComputeNonbondedUtil::alchVdwShiftCoeff;
@@ -130,7 +134,6 @@ void (*ComputeNonbondedUtil::calcSlowSelfEnergy)(nonbonded *);
 #define SPLIT_C1	3
 #define SPLIT_XPLOR	4
 #define SPLIT_C2	5
-#define SPLIT_MARTINI	6
 
 void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *reduction)
 {
@@ -230,12 +233,16 @@ void ComputeNonbondedUtil::select(void)
 
 //fepb
   alchFepOn = simParams->alchFepOn;
+  Fep_WCA_repuOn = simParams->alchFepWCARepuOn;
+  Fep_WCA_dispOn = simParams->alchFepWCADispOn;
   alchThermIntOn = simParams->alchThermIntOn;
   alchLambda = alchLambda2 = 0;
   lesOn = simParams->lesOn;
   lesScaling = lesFactor = 0;
   Bool tabulatedEnergies = simParams->tabulatedEnergies;
   alchVdwShiftCoeff = simParams->alchVdwShiftCoeff;
+  WCA_rcut1 = simParams->alchFepWCArcut1;
+  WCA_rcut2 = simParams->alchFepWCArcut2;
   alchVdwLambdaEnd = simParams->alchVdwLambdaEnd;
   alchElecLambdaStart = simParams->alchElecLambdaStart;
 
@@ -481,7 +488,6 @@ void ComputeNonbondedUtil::select(void)
 
   int splitType = SPLIT_NONE;
   if ( simParams->switchingActive ) splitType = SPLIT_SHIFT;
-  if ( simParams->martiniSwitching ) splitType = SPLIT_MARTINI;
   if ( simParams->fullDirectOn || simParams->FMAOn || PMEOn || MSMOn ) {
     switch ( simParams->longSplitting ) {
       case C2:
@@ -614,24 +620,6 @@ void ComputeNonbondedUtil::select(void)
 	BigReal dShiftVal = 2.0 * (r2/cutoff2 - 1.0) * 2.0*r/cutoff2;
         fast_energy = shiftVal/r;
         fast_gradient = dShiftVal/r - shiftVal/r2;
-        scor_energy = scor_gradient = 0;
-        slow_energy = slow_gradient = 0;
-        } 
-	break;
-      case SPLIT_MARTINI: { 
-        // in Martini, the Coulomb switching distance is zero
-        const BigReal COUL_SWITCH = 0.;
-        // Gromacs shifting function
-        const BigReal p1 = 1.;
-        BigReal A1 = p1 * ((p1+1)*COUL_SWITCH-(p1+4)*cutoff)/(pow(cutoff,p1+2)*pow(cutoff-COUL_SWITCH,2));
-        BigReal B1 = -p1 * ((p1+1)*COUL_SWITCH-(p1+3)*cutoff)/(pow(cutoff,p1+2)*pow(cutoff-COUL_SWITCH,3));
-        BigReal X1 = 1.0/pow(cutoff,p1)-A1/3.0*pow(cutoff-COUL_SWITCH,3)-B1/4.0*pow(cutoff-COUL_SWITCH,4);
-        BigReal r12 = (r-COUL_SWITCH)*(r-COUL_SWITCH);
-        BigReal r13 = (r-COUL_SWITCH)*(r-COUL_SWITCH)*(r-COUL_SWITCH);
-        BigReal shiftVal = -(A1/3.0)*r13 - (B1/4.0)*r12*r12 - X1;
-        BigReal dShiftVal = A1*r12 + B1*r13;
-        fast_energy = (1/r) + shiftVal;
-        fast_gradient = 1/(r2) + dShiftVal;
         scor_energy = scor_gradient = 0;
         slow_energy = slow_gradient = 0;
         } 

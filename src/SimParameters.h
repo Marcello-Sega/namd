@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2011/08/16 21:23:44 $
- * $Revision: 1.1195 $
+ * $Author: char $
+ * $Date: 2011/11/17 04:31:30 $
+ * $Revision: 1.1196 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -331,9 +331,13 @@ public:
   Bool alchOn;              //  Doing alchemical simulation?
   Bool alchFepOn;           //  Doing alchemical simulation?
   Bool alchThermIntOn;      //  Doing thermodynamic integration?
+  Bool alchFepWCARepuOn;    //  Doing WCA decomposition repulsion interaction?
+  Bool alchFepWCADispOn;    //  Doing WCA decomposition dispersion interaction?
   int alchMethod;           //  Which alchemical method to use? fep or ti
   BigReal alchLambda;       //  lambda for dynamics
   BigReal alchLambda2;      //  lambda for comparison
+  BigReal alchFepWCArcut1;  //  rcut1 of WCA decompistion repulsion
+  BigReal alchFepWCArcut2;  //  rcut2 of WCA decomposition repulsion
   BigReal alchTemp;         //  temperature for alchemical calculation
   int alchOutFreq;          //  freq. of alchemical output
   char alchOutFile[128];    //  alchemical output filename

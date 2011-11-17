@@ -344,6 +344,10 @@ void ComputeNonbondedUtil :: NAME
     const BigReal alchElecLambdaStart = ComputeNonbondedUtil::alchElecLambdaStart;
     const BigReal alchVdwLambdaEnd = ComputeNonbondedUtil::alchVdwLambdaEnd;
     const BigReal alchVdwShiftCoeff = ComputeNonbondedUtil::alchVdwShiftCoeff;
+    const Bool Fep_WCA_repuOn = ComputeNonbondedUtil::Fep_WCA_repuOn;
+    const Bool Fep_WCA_dispOn = ComputeNonbondedUtil::Fep_WCA_dispOn;
+    const BigReal WCA_rcut1 = ComputeNonbondedUtil::WCA_rcut1;
+    const BigReal WCA_rcut2 = ComputeNonbondedUtil::WCA_rcut2;
 
     /*lambda values 'up' are for atoms scaled up with lambda (partition 1)*/
     BigReal lambdaUp = ComputeNonbondedUtil::alchLambda;

@@ -145,7 +145,8 @@ ALCHPAIR(
         // tidy the code
 
         FEP(fep_vdw_forceandenergies(A,B,r2,myVdwShift,myVdwShift2,switchdist2,
-          cutoff2, myVdwLambda, myVdwLambda2, switchfactor, &alch_vdw_energy, 
+          cutoff2, myVdwLambda, myVdwLambda2, Fep_WCA_repuOn, Fep_WCA_dispOn,
+          WCA_rcut1, WCA_rcut2, switchfactor, &alch_vdw_energy, 
           &alch_vdw_force,&alch_vdw_energy_2);)
         TI(ti_vdw_force_energy_dUdl(A,B,r2,myVdwShift,switchdist2,
           cutoff2, myVdwLambda, alchVdwShiftCoeff, switchfactor, 

@@ -294,6 +294,10 @@ public:
   static BigReal alchVdwShiftCoeff;
   static BigReal alchElecLambdaStart;
   static BigReal alchVdwLambdaEnd;
+  static Bool Fep_WCA_repuOn;
+  static Bool Fep_WCA_dispOn;
+  static BigReal WCA_rcut1;
+  static BigReal WCA_rcut2; 
   static Bool alchDecouple;
 //sd-de
   static Bool lesOn;

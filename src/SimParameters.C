@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dbwells2 $
- * $Date: 2011/11/12 01:08:07 $
- * $Revision: 1.1371 $
+ * $Author: char $
+ * $Date: 2011/11/17 04:31:30 $
+ * $Revision: 1.1372 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -838,6 +838,16 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
      &alchOn, FALSE);
    opts.optional("alch", "alchType", "Which alchemical method to use?", 
        PARSE_STRING);
+   opts.optionalB("alch", "alchFepWCARepuOn", "WCA decomposition repu interaction in use?",
+     &alchFepWCARepuOn, FALSE);
+   opts.optionalB("alch", "alchFepWCADispOn", "WCA decomposition disp interaction in use?",
+     &alchFepWCADispOn, FALSE);
+   opts.optional("alch", "alchFepWCArcut1", "WCA repulsion Coeff1 used for generating"
+     "the altered alchemical vDW interactions", &alchFepWCArcut1, 0.0);
+   opts.optional("alch", "alchFepWCArcut2", "WCA repulsion Coeff2 used for generating"
+     "the altered alchemical vDW interactions", &alchFepWCArcut2, 1.0);
+   opts.range("alchFepWCArcut1", NOT_NEGATIVE); 
+   opts.range("alchFepWCArcut2", NOT_NEGATIVE);
    opts.require("alch", "alchLambda", "Coupling parameter value", 
        &alchLambda);
    opts.require("alch", "alchLambda2", "Coupling comparison value",
@@ -2869,6 +2879,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        strcpy(alchOutFile, outputFilename);
        strcat(alchOutFile, ".fep");
        }
+       if (alchFepWCARepuOn && alchFepWCADispOn)
+          NAMD_die("With WCA decomposition, repulsion and dispersion can NOT be in the same FEP stage");
+       if (alchFepWCARepuOn && (!opts.defined("alchFepWCArcut1")||!opts.defined("alchFepWCArcut2")))
+          NAMD_die("When using WCA repulsion,  alchFepWCArcut1 and alchFepWCArcut2 must be defined!");
+       if (alchFepWCARepuOn && (alchFepWCArcut1 >= alchFepWCArcut2))
+           NAMD_die("When using WCA repulsion,  alchFepWCArcut2 must be larger than alchFEPWCArcut1!");
+       if ((alchFepWCARepuOn || alchFepWCADispOn) && (alchElecLambdaStart < 1.0))
+           NAMD_die("When using WCA decomposition,  repulsion, dispersion and electrostatic must be in 3 different stages!");
      }
      else if (alchThermIntOn)
      {
@@ -4050,6 +4068,15 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "FEP VDW ACTIVE FOR EXNIHILATED "
           << "PARTICLES BETWEEN LAMBDA = 0 AND LAMBDA = "
           << alchVdwLambdaEnd << "\n";
+     if (alchFepWCADispOn)
+     {
+       iout << iINFO << "FEP WEEKS-CHANDLER-ANDERSEN DECOMPOSITION (DISPERSION) ON\n";
+     }
+     if (alchFepWCARepuOn)
+     {
+       iout << iINFO << "FEP WEEKS-CHANDLER-ANDERSEN DECOMPOSITION (REPULSION) ON\n";
+       iout << iINFO << "FEP WEEKS-CHANDLER-ANDERSEN RCUT1 = " << alchFepWCArcut1 << " AND RCUT2 = " << alchFepWCArcut2 << "\n";
+     }
    }
 //fepe
 
