@@ -35,14 +35,20 @@ inline void fep_vdw_forceandenergies (BigReal A, BigReal B, BigReal r2,
     const BigReal r2_2 = r2 + (1.-WCA_rcut2)*(1.-WCA_rcut2)*powf(2.0*A/B, 1.f/3);
     const BigReal r6_1 = r2_1*r2_1*r2_1;
     const BigReal r6_2 = r2_2*r2_2*r2_2;
-    const BigReal WCA_rcut1_energy = r2 <= powf(2.0*A/B, 1.f/3) * (1.0 - (1.0-WCA_rcut1)*(1.0-WCA_rcut1))? \ 
-      A/(r6_1*r6_1) - B/r6_1 + B*B/(4.0*A): 0.;
-    const BigReal WCA_rcut2_energy = r2 <= powf(2.0*A/B, 1.f/3) * (1.0 - (1.0-WCA_rcut2)*(1.0-WCA_rcut2))? \ 
-      A/(r6_2*r6_2) - B/r6_2 + B*B/(4.0*A): 0.;
-    const BigReal WCA_rcut1_force = r2 <= powf(2.0*A/B, 1.f/3) * (1.0 - (1.0-WCA_rcut1)*(1.0-WCA_rcut1))? \ 
-      (12.*(WCA_rcut1_energy) + 6.*B/r6_1 - 3.0 *B*B/A)/r2_1: 0.;
-    const BigReal WCA_rcut2_force = r2 <= powf(2.0*A/B, 1.f/3) * (1.0 - (1.0-WCA_rcut2)*(1.0-WCA_rcut2))? \ 
-      (12.*(WCA_rcut2_energy) + 6.*B/r6_2 - 3.0 *B*B/A)/r2_2: 0.;
+    const BigReal WCA_rcut1_energy = r2 <= powf(2.0*A/B, 1.f/3) * \
+                                     (1.0 - (1.0-WCA_rcut1)*(1.0-WCA_rcut1))? \
+                                     A/(r6_1*r6_1) - B/r6_1 + B*B/(4.0*A): 0.;
+    const BigReal WCA_rcut2_energy = r2 <= powf(2.0*A/B, 1.f/3) * \
+                                     (1.0 - (1.0-WCA_rcut2)*(1.0-WCA_rcut2))? \
+                                     A/(r6_2*r6_2) - B/r6_2 + B*B/(4.0*A): 0.;
+    const BigReal WCA_rcut1_force = r2 <= powf(2.0*A/B, 1.f/3) * \
+                                    (1.0 - (1.0-WCA_rcut1)*(1.0-WCA_rcut1))? \
+                                    (12.*(WCA_rcut1_energy) \
+                                     + 6.*B/r6_1 - 3.0 *B*B/A)/r2_1: 0.;
+    const BigReal WCA_rcut2_force = r2 <= powf(2.0*A/B, 1.f/3) * \
+                                    (1.0 - (1.0-WCA_rcut2)*(1.0-WCA_rcut2))? \
+                                    (12.*(WCA_rcut2_energy) \
+                                     + 6.*B/r6_2 - 3.0 *B*B/A)/r2_2: 0.;
   // separation-shifted repulsion force and energy
     *alch_vdw_energy = (1.-myVdwLambda)*WCA_rcut1_energy + myVdwLambda*WCA_rcut2_energy; 
     *alch_vdw_force =  (1.-myVdwLambda)*WCA_rcut1_force + myVdwLambda*WCA_rcut2_force;
@@ -54,13 +60,17 @@ inline void fep_vdw_forceandenergies (BigReal A, BigReal B, BigReal r2,
     const BigReal r6_1 = r2_1*r2_1*r2_1;
     const BigReal r6_2 = r2_2*r2_2*r2_2;
   // separation-shifted dispersion force and energy
-    *alch_vdw_energy = r2 > powf(2.0*A/B, 1.f/3)? myVdwLambda*(A/(r6_1*r6_1) - B/r6_1): \ 
-      A/(r6_1*r6_1) - B/r6_1 + (1.-myVdwLambda)*B*B/(4.0*A);
-    *alch_vdw_force =  r2 > powf(2.0*A/B, 1.f/3)? (12.*(*alch_vdw_energy) + 6.*myVdwLambda*B/r6_1)/r2_1 * switchmul \ 
-      + (*alch_vdw_energy) * switchmul2:(12.*(*alch_vdw_energy) + 6.*B/r6_1 - 3.0*(1.-myVdwLambda)*B*B/A)/r2_1;
+    *alch_vdw_energy = r2 > powf(2.0*A/B, 1.f/3)? \
+                       myVdwLambda*(A/(r6_1*r6_1) - B/r6_1): \
+                       A/(r6_1*r6_1) - B/r6_1 + (1.-myVdwLambda)*B*B/(4.0*A);
+    *alch_vdw_force =  r2 > powf(2.0*A/B, 1.f/3)? \
+                       (12.*(*alch_vdw_energy) + 6.*myVdwLambda*B/r6_1)/r2_1 * switchmul \
+                       + (*alch_vdw_energy) * switchmul2:(12.*(*alch_vdw_energy) \
+                       + 6.*B/r6_1 - 3.0*(1.-myVdwLambda)*B*B/A)/r2_1;
     *alch_vdw_energy *= switchmul; 
-    *alch_vdw_energy_2 = r2 > powf(2.0*A/B, 1.f/3)? myVdwLambda2*switchmul*(A/(r6_1*r6_1) - B/r6_1): \ 
-      A/(r6_1*r6_1) - B/r6_1 + (1.-myVdwLambda2)*B*B/(4.0*A);
+    *alch_vdw_energy_2 = r2 > powf(2.0*A/B, 1.f/3)? \
+                         myVdwLambda2*switchmul*(A/(r6_1*r6_1) - B/r6_1): \
+                         A/(r6_1*r6_1) - B/r6_1 + (1.-myVdwLambda2)*B*B/(4.0*A);
   } 
   else {
     const BigReal r2_1 = r2 + myVdwShift;  //myVdwShift already multplied by relevant (1-vdwLambda)
@@ -69,8 +79,8 @@ inline void fep_vdw_forceandenergies (BigReal A, BigReal B, BigReal r2,
     const BigReal r6_2 = r2_2*r2_2*r2_2;
   // separation-shifted vdW force and energy
     *alch_vdw_energy = A/(r6_1*r6_1) - B/r6_1;
-    *alch_vdw_force =  myVdwLambda * (  \ 
-        + (12.*(*alch_vdw_energy) + 6.*B/r6_1)/r2_1 * switchmul \ 
+    *alch_vdw_force =  myVdwLambda * (  \
+        + (12.*(*alch_vdw_energy) + 6.*B/r6_1)/r2_1 * switchmul \
         + (*alch_vdw_energy) * switchmul2);
     *alch_vdw_energy *= myVdwLambda*switchmul;
     *alch_vdw_energy_2 = (A/(r6_2*r6_2) - B/r6_2) * myVdwLambda2 * switchmul;
