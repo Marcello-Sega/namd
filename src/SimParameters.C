@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2011/11/17 04:31:30 $
- * $Revision: 1.1372 $
+ * $Author: johanstr $
+ * $Date: 2011/11/28 22:52:11 $
+ * $Revision: 1.1373 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1182,7 +1182,9 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.range("adaptTempBins", NOT_NEGATIVE);
    opts.optional("adaptTempMD", "adaptTempDt", "Integration timestep for Temp. updates", &adaptTempDt, 0.0001);
    opts.units("adaptTempDt", N_FSEC);
-   opts.range("adaptTempDt", POSITIVE);
+   opts.range("adaptTempDt", NOT_NEGATIVE);
+   opts.optional("adaptTempMD", "adaptTempAutoDt", "Average temperature update in percent of temperature range", &adaptTempAutoDt, 0.0);
+   opts.range("adaptTempAutoDt", NOT_NEGATIVE);
    opts.optional("adaptTempMD", "adaptTempCgamma", "Adaptive bin averaging constant", &adaptTempCgamma, 0.1);
    opts.range("adaptTempCgamma", NOT_NEGATIVE);
    opts.optionalB("adaptTempMD","adaptTempLangevin","Send adaptTemp temperature to langevin thermostat",&adaptTempLangevin,TRUE);
@@ -2704,16 +2706,12 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
         NAMD_die("Adaptive tempering needs to be coupled to either the Langevin thermostat or velocity rescaling.");
      if (opts.defined("adaptTempInFile") && (opts.defined("adaptTempTmin") ||
                                              opts.defined("adaptTempTmax") ||
-                                             opts.defined("adaptTempBins") ||
-                                             opts.defined("adaptTempDt")   ||
-                                             opts.defined("adaptTempCgamma")))
-        NAMD_die("cannot simultaneously specify adaptTempInFile and any of {adaptTempTmin, adaptTempTmax,adaptTempBins, adaptTempDt, adaptTempCgamma} as these are read from the input file");
+                                             adaptTempBins != 0)) 
+        NAMD_die("cannot simultaneously specify adaptTempInFile and any of {adaptTempTmin, adaptTempTmax,adaptTempBins} as these are read from the input file");
      if (!opts.defined("adaptTempInFile") && !(opts.defined("adaptTempTmin") &&
                                              opts.defined("adaptTempTmax") &&
-                                             opts.defined("adaptTempBins") &&
-                                             opts.defined("adaptTempDt")   &&
-                                             opts.defined("adaptTempCgamma")))  
-        NAMD_die("Need to specify either adaptTempInFile or all of {adaptTempTmin, adaptTempTmax,adaptTempBins, adaptTempDt, adaptTempCgamma} if adaptTempMD is on.");
+                                             adaptTempBins != 0 ))  
+        NAMD_die("Need to specify either adaptTempInFile or all of {adaptTempTmin, adaptTempTmax,adaptTempBins} if adaptTempMD is on.");
    }
    if (langevinOn) {
      if ( ! opts.defined("langevinDamping") ) langevinDamping = 0.0;

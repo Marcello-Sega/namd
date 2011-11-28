@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2011/11/06 21:55:45 $
- * $Revision: 1.1272 $
+ * $Author: johanstr $
+ * $Date: 2011/11/28 22:52:11 $
+ * $Revision: 1.1273 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -898,9 +898,9 @@ void Controller::rescaleVelocities(int step)
       }
       BigReal factor = sqrt(rescaleTemp/avgTemp);
       broadcast->velocityRescaleFactor.publish(step,factor);
-      iout << "RESCALING VELOCITIES AT STEP " << step
-           << " FROM AVERAGE TEMPERATURE OF " << avgTemp
-           << " TO " << rescaleTemp << " KELVIN.\n" << endi;
+      //iout << "RESCALING VELOCITIES AT STEP " << step
+      //     << " FROM AVERAGE TEMPERATURE OF " << avgTemp
+      //     << " TO " << rescaleTemp << " KELVIN.\n" << endi;
       rescaleVelocities_sumTemps = 0;  rescaleVelocities_numTemps = 0;
     }
   }
@@ -1424,6 +1424,9 @@ void Controller::rescaleaccelMD(int step, int minimize)
 void Controller::adaptTempInit(int step) {
     if (!simParams->adaptTempOn) return;
     iout << iINFO << "INITIALISING ADAPTIVE TEMPERING\n" << endi;
+    adaptTempDtMin = 0;
+    adaptTempDtMax = 0;
+    adaptTempAutoDt = false;
     if (simParams->adaptTempBins == 0) {
       iout << iINFO << "READING ADAPTIVE TEMPERING RESTART FILE\n" << endi;
       std::ifstream adaptTempRead(simParams->adaptTempInFile);
@@ -1494,6 +1497,13 @@ void Controller::adaptTempInit(int step) {
           adaptTempBetaN[j] = adaptTempBetaMin + j * adaptTempDBeta;
       }
     }
+    if (simParams->adaptTempAutoDt > 0.0) {
+       adaptTempAutoDt = true;
+       adaptTempDtMin =  simParams->adaptTempAutoDt - 0.01;
+       adaptTempDtMax =  simParams->adaptTempAutoDt + 0.01;
+    }
+    adaptTempDTave = 0;
+    adaptTempDTavenum = 0;
     iout << iINFO << "ADAPTIVE TEMPERING: TEMPERATURE RANGE: [" << 1./adaptTempBetaMax << "," << 1./adaptTempBetaMin << "] KELVIN\n";
     iout << iINFO << "ADAPTIVE TEMPERING: NUMBER OF BINS TO STORE POT. ENERGY: " << adaptTempBins << "\n";
     iout << iINFO << "ADAPTIVE TEMPERING: ADAPTIVE BIN AVERAGING PARAMETER: " << adaptTempCg << "\n";
@@ -1510,7 +1520,7 @@ void Controller::adaptTempInit(int step) {
 void Controller::adaptTempWriteRestart(int step) {
     if (simParams->adaptTempOn && !(step%simParams->adaptTempRestartFreq)) {
         adaptTempRestartFile.seekp(std::ios::beg);        
-        iout << "ADAPTIVE TEMPERING: WRITING RESTART FILE AT STEP " << step << "\n" << endi;
+        iout << "ADAPTEMP: WRITING RESTART FILE AT STEP " << step << "\n" << endi;
         adaptTempRestartFile << step << " ";
         // Start with min and max temperatures
         adaptTempRestartFile << adaptTempT<< " ";     // KELVIN
@@ -1714,10 +1724,11 @@ void Controller::adaptTempUpdate(int step, int minimize)
           }
       }
       
+      //dT is new temperature
       BigReal dT = ((potentialEnergy-potEnergyAverage)/BOLTZMANN-adaptTempT)*adaptTempDt;
       dT += random->gaussian()*sqrt(2.*adaptTempDt)*adaptTempT;
       dT += adaptTempT;
-
+      
      // Check if dT in [adaptTempTmin,adaptTempTmax]. If not try simpler estimate of mean
      // This helps sampling with poor statistics in the bins surrounding adaptTempBin.
       if ( dT > 1./adaptTempBetaMin || dT  < 1./adaptTempBetaMax ) {
@@ -1737,7 +1748,7 @@ void Controller::adaptTempUpdate(int step, int minimize)
              //iout << iWARN << "ADAPTEMP: " << step << " T= " << dT 
              //     << " K higher than adaptTempTmax."
              //     << " Assigning random temperature in range\n" << endi;
-             //dT = adaptTempBetaMin +  random->uniform()*(adaptTempBetaMax-adaptTempBetaMin);             
+             dT = adaptTempBetaMin +  random->uniform()*(adaptTempBetaMax-adaptTempBetaMin);             
              dT = 1./dT;
           }
         } 
@@ -1756,7 +1767,74 @@ void Controller::adaptTempUpdate(int step, int minimize)
             dT = 1./dT;
           }
         }
+        else if (adaptTempAutoDt) {
+          //update temperature step size counter
+          //FOR "TRUE" ADAPTIVE TEMPERING 
+          BigReal adaptTempTdiff = fabs(dT-adaptTempT);
+          if (adaptTempTdiff > 0) {
+            adaptTempDTave += adaptTempTdiff; 
+            adaptTempDTavenum++;
+//            iout << "ADAPTEMP: adapTempTdiff = " << adaptTempTdiff << "\n";
+          }
+          else {
+            iout << "ADAPTEMP: Warning adapTempTdiff = 0\n";
+          }
+          if(adaptTempDTavenum == 100){
+                BigReal Frac;
+                adaptTempDTave /= adaptTempDTavenum;
+                //reuse potEnergyAve0 and potEnergyAve1 variables
+                Frac = 1./adaptTempBetaMin-1./adaptTempBetaMax;
+                Frac = adaptTempDTave/Frac;
+                //if average temperature jump is > 3% of temperature range,
+                //modify jump size to match 3%
+                iout << "ADAPTEMP: " << step << " FRAC " << Frac << "\n"; 
+                if (Frac > adaptTempDtMax || Frac < adaptTempDtMin) {
+                    Frac = adaptTempDtMax/Frac;
+                    iout << "ADAPTEMP: Updating adaptTempDt to ";
+                    adaptTempDt *= Frac;
+                    iout << adaptTempDt << "\n" << endi;
+                }
+                adaptTempDTave = 0;
+                adaptTempDTavenum = 0;
+          }
+        }
       }
+      else if (adaptTempAutoDt) {
+          //update temperature step size counter
+          // FOR "TRUE" ADAPTIVE TEMPERING
+          BigReal adaptTempTdiff = fabs(dT-adaptTempT);
+          if (adaptTempTdiff > 0) {
+            adaptTempDTave += adaptTempTdiff; 
+            adaptTempDTavenum++;
+//            iout << "ADAPTEMP: adapTempTdiff = " << adaptTempTdiff << "\n";
+          }
+          else {
+            iout << "ADAPTEMP: Warning adaptTempTdiff = 0\n";
+          }
+          if(adaptTempDTavenum == 100){
+                BigReal Frac;
+                adaptTempDTave /= adaptTempDTavenum;
+                //reuse potEnergyAve0 and potEnergyAve1 variables
+                Frac = 1./adaptTempBetaMin-1./adaptTempBetaMax;
+                Frac = adaptTempDTave/Frac;
+                //if average temperature jump is > 3% of temperature range,
+                //modify jump size to match 3%
+                iout << "ADAPTEMP: " << step << " FRAC " << Frac << "\n"; 
+                if (Frac > adaptTempDtMax || Frac < adaptTempDtMin) {
+                    Frac = adaptTempDtMax/Frac;
+                    iout << "ADAPTEMP: Updating adaptTempDt to ";
+                    adaptTempDt *= Frac;
+                    //if (adaptTempDt < 1e-6)
+                    //    adaptTempDt = 1e-6;
+                    iout << adaptTempDt << "\n" << endi;
+                }
+                adaptTempDTave = 0;
+                adaptTempDTavenum = 0;
+
+          }
+          
+      }
+      
       adaptTempT = dT; 
       broadcast->adaptTemperature.publish(step,adaptTempT);
     }

@@ -213,6 +213,8 @@ protected:
    int     *adaptTempPotEnergySamples;
    BigReal *adaptTempBetaN;
    BigReal adaptTempT;
+   BigReal adaptTempDTave;
+   BigReal adaptTempDTavenum;
    BigReal adaptTempBetaMin;
    BigReal adaptTempBetaMax;
    int     adaptTempBin;
@@ -220,6 +222,9 @@ protected:
    BigReal adaptTempDBeta;
    BigReal adaptTempCg;
    BigReal adaptTempDt;
+   Bool    adaptTempAutoDt;
+   BigReal adaptTempDtMin;
+   BigReal adaptTempDtMax;
    std::ofstream adaptTempRestartFile;
   
 private:

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2011/11/17 04:31:30 $
- * $Revision: 1.1196 $
+ * $Author: johanstr $
+ * $Date: 2011/11/28 22:52:12 $
+ * $Revision: 1.1197 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -460,6 +460,7 @@ public:
         int adaptTempFreq;                     //  Steps between adaptTemp updates
         BigReal adaptTempTmin;                 //  Lower temperature bound
         BigReal adaptTempTmax;                 //  Upper temperature bound
+        BigReal adaptTempAutoDt;               //  Auto jump size. Value determines upper bound, adaotTempDt determines lower bound 
         int adaptTempBins;                     //  Number of bins to store average energy values
         BigReal adaptTempDt;                   //  timestep for adaptTemp updates - only affects Temperature random walk
         BigReal adaptTempCgamma;               //  Cgamma variable for adaptive bin averaging Cgamma = 0 is normal Averaging. 1 > Cgamma >= 0
