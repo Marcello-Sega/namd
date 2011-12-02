@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: johanstr $
- * $Date: 2011/11/28 22:52:12 $
- * $Revision: 1.1197 $
+ * $Author: dbwells2 $
+ * $Date: 2011/12/02 22:49:51 $
+ * $Revision: 1.1198 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -229,6 +229,7 @@ public:
 	Bool gridforceContA2;		//  Flag TRUE -> grid continuous in A2 direction
 	Bool gridforceContA3;		//  Flag TRUE -> grid continuous in A3 direction
 	zVector gridforceVOffset;	//  Gridforce potential offsets
+	Bool gridforceLite;		//  Flag TRUE -> use lightweight, fast, feature-poor gridforce
 	/* END gf */
         Bool mgridforceOn;
         MGridforceParamsList mgridforcelist;

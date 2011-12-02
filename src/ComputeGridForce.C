@@ -11,7 +11,7 @@
 #include "HomePatch.h"
 #include "Molecule.h"
 
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 2
 //#define DEBUGM
 #include "Debug.h"
 
@@ -56,18 +56,18 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     int numAtoms = homePatch->getNumAtoms();
     
     for (int gridnum = 0; gridnum < mol->numGridforceGrids; gridnum++) {
-	const GridforceMainGrid *grid = mol->get_gridfrc_grid(gridnum);
+	const GridforceGrid *grid = mol->get_gridfrc_grid(gridnum);
 	
-#ifdef DEBUGM
-	if (homePatch->flags.step % 100 == 1) {
-	    float* grid_flat = NULL;
-	    int sz = grid->get_all_gridvals(&grid_flat);
-	    for (int i = 0; i < sz; i++) {
-		DebugM(4, "(step " << homePatch->flags.step << ") grid_flat[" << gridnum << "][" << i << "] = " << grid_flat[i] << "\n" << endi);
-	    }
-	    delete [] grid_flat;
-	}
-#endif
+// #ifdef DEBUGM
+// 	if (homePatch->flags.step % 100 == 1) {
+// 	    float* grid_flat = NULL;
+// 	    int sz = grid->get_all_gridvals(&grid_flat);
+// 	    for (int i = 0; i < sz; i++) {
+// 		DebugM(4, "(step " << homePatch->flags.step << ") grid_flat[" << gridnum << "][" << i << "] = " << grid_flat[i] << "\n" << endi);
+// 	    }
+// 	    delete [] grid_flat;
+// 	}
+// #endif
 	
 	Position center = grid->get_center();
 //	Tensor inv = grid->get_inv();
@@ -102,9 +102,11 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		
 		Force force = scale * Tensor::diagonal(gfScale) * (-charge * dV);
 		
+		DebugM(2, "scale = " << scale << " gfScale = " << gfScale << " charge = " << charge << "\n" << endi);
+		
 		DebugM(2, "V = " << V << "\n" << endi);
 		DebugM(2, "dV = " << dV << "\n" << endi);
-		DebugM(2, "force = " << force << " pos = " << pos << " V = " << V << " dV = " << dV << " step = " << homePatch->flags.step << " index = " << p[i].id << "\n" << endi);
+		DebugM(2, "grid = " << gridnum << " force = " << force << " pos = " << pos << " V = " << V << " dV = " << dV << " step = " << homePatch->flags.step << " index = " << p[i].id << "\n" << endi);
 		
 		if (V != V) {
 		    iout << iWARN << "V is NaN!\natomid = " << p[i].id << " loc = " << p[i].position << " V = " << V << "\n" << endi;

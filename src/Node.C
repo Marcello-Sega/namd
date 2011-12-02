@@ -807,7 +807,7 @@ void Node::reloadGridforceGrid(const char *key) {
 	NAMD_die("Node::reloadGridforceGrid(const char*):Could not find grid.");
     }
     
-    GridforceMainGrid *grid = molecule->get_gridfrc_grid(gridnum);
+    GridforceGrid *grid = molecule->get_gridfrc_grid(gridnum);
     if (grid == NULL) {
 	NAMD_bug("Node::reloadGridforceGrid(const char*):grid not found");
     }
@@ -825,7 +825,7 @@ void Node::reloadGridforceGrid(const char *key) {
 void Node::reloadGridforceGrid(int gridnum, float gridvals[], int n) {
     DebugM(4, "reloadGridforceGrid(int, float[], int) called\n" << endi);
     
-    GridforceMainGrid *grid = molecule->get_gridfrc_grid(gridnum);
+    GridforceGrid *grid = molecule->get_gridfrc_grid(gridnum);
     if (grid == NULL) {
 	NAMD_bug("Node::reloadGridforceGrid(int,float[],size_t):grid not found");
     }

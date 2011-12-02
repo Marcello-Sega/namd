@@ -252,7 +252,7 @@ private:
 /* BEGIN gf */
   int32 **gridfrcIndexes;
   GridforceParams **gridfrcParams;
-  GridforceMainGrid **gridfrcGrid;
+  GridforceGrid **gridfrcGrid;
 /* END gf */
 
         //  Parameters for each atom constrained
@@ -871,9 +871,9 @@ public:
       q = gridfrcParams[gridnum][gridfrcIndexes[gridnum][atomnum]].q;
   }
   
-  GridforceMainGrid* get_gridfrc_grid(int gridnum) const
+  GridforceGrid* get_gridfrc_grid(int gridnum) const
   {
-      GridforceMainGrid *result = NULL;
+      GridforceGrid *result = NULL;
       if (gridnum >= 0 && gridnum < numGridforceGrids) {
 	  result = gridfrcGrid[gridnum];
       }

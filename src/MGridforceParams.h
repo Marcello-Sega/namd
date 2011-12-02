@@ -29,6 +29,7 @@ public:
     gridforceVOffset = Vector(0);
     gridforceCont[0] = gridforceCont[1] = gridforceCont[2] = FALSE;
     gridforceVolts = FALSE;
+    gridforceLite = FALSE;
   }
   
   char *gridforceKey;
@@ -40,6 +41,7 @@ public:
   zVector gridforceVOffset;
   Bool gridforceCont[3];
   Bool gridforceVolts;
+  Bool gridforceLite;
   MGridforceParams *next;
 };
 

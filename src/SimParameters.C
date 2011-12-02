@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: johanstr $
- * $Date: 2011/11/28 22:52:11 $
- * $Revision: 1.1373 $
+ * $Author: dbwells2 $
+ * $Date: 2011/12/02 22:49:51 $
+ * $Revision: 1.1374 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1446,6 +1446,8 @@ void SimParameters::config_parser_mgridforce(ParseOptions &opts) {
 		   "in K3 direction?", PARSE_MULTIPLES);
     opts.optional("mgridforce", "mgridforcevoff", "Gridforce potential offsets",
                   PARSE_MULTIPLES);
+    opts.optional("mgridforce", "mgridforcelite", "Use Gridforce Lite?",
+		  PARSE_MULTIPLES);
 }
 
 void SimParameters::config_parser_gridforce(ParseOptions &opts) {
@@ -1472,6 +1474,8 @@ void SimParameters::config_parser_gridforce(ParseOptions &opts) {
 		   "in A3 direction?", &gridforceContA3, FALSE);
     opts.optional("gridforce", "gridforcevoff", "Gridforce potential offsets",
 		  &gridforceVOffset);
+    opts.optionalB("gridforce", "gridforcelite", "Use Gridforce Lite?",
+		   &gridforceLite, FALSE);
 }
 /* END gf */
 
@@ -5142,6 +5146,8 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
     mgfp->gridforceCont[1] = gridforceContA2;
     mgfp->gridforceCont[2] = gridforceContA3;
     mgfp->gridforceVOffset = gridforceVOffset;
+    
+    mgfp->gridforceLite = gridforceLite;
   }
   
   // Create multigrid parameter structures
@@ -5386,6 +5392,32 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
     
     current = current->next;
   }
+  
+  current = config->find("mgridforcelite");
+  while (current != NULL) {
+    //    iout << iINFO << "MGRIDFORCELITE " << current->data << "\n"  
+    //         << endi;
+    int curlen = strlen(current->data);
+    sscanf(current->data,"%80s%255s",key,valstr);
+    
+    MGridforceParams* mgfp = NULL;
+    mgfp = mgridforcelist.find_key(key);
+    if ( mgfp == NULL) {
+      iout << iINFO << "MGRIDFORCELITE no key " 
+      << key << " defined for file " << valstr << "\n" << endi;
+    } else {
+      int boolval = MGridforceParamsList::atoBool(valstr);
+      if (boolval == -1) {
+        iout << iINFO << "MGRIDFORCELITE  key " 
+          << key << " boolval " << valstr << " badly defined" << endi;
+      } else {
+        mgfp->gridforceLite = (boolval == 1);
+      }
+    }
+
+    current = current->next;
+  }
+  
   delete [] valstr;
   delete [] key;
 
@@ -5405,6 +5437,16 @@ void SimParameters::parse_mgrid_params(ConfigList *config)
       sprintf(errmsg,"Value undefined for gridforceCol for key %s\n",
               params->gridforceKey);
          NAMD_die(errmsg);
+    }
+    if (params->gridforceLite) {
+	for (int i = 0; i < 3; i++) {
+	    if (params->gridforceCont[i]) {
+		char errmsg[255];
+		sprintf(errmsg, "Cannot use gridforceCont and gridforceLite together for key %s\n",
+			params->gridforceKey);
+		NAMD_die(errmsg);
+	    }
+	}
     }
     params = params->next;
   }
@@ -5530,6 +5572,9 @@ void SimParameters::print_mgrid_params()
       << "\n" << endi;
     iout << iINFO << "           Volts " 
       << BoolToString(params->gridforceVolts)
+      << "\n" << endi;
+    iout << iINFO << "           Gridforce-Lite " 
+      << BoolToString(params->gridforceLite)
       << "\n" << endi;
     params = params->next;
   }

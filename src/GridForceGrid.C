@@ -5,6 +5,7 @@
 **/
 
 #include <iostream>
+#include <typeinfo>
 
 #include "GridForceGrid.h"
 #include "Vector.h"
@@ -17,12 +18,71 @@
 
 #include "MGridforceParams.h"
 
-#define MIN_DEBUG_LEVEL 4
+#define MIN_DEBUG_LEVEL 1
 //#define DEBUGM
 #include "Debug.h"
 
 
-GridforceGrid::GridforceGrid(void)
+/*****************/
+/* GRIDFORCEGRID */
+/*****************/
+
+// Class methods
+
+GridforceGrid * GridforceGrid::new_grid(int gridnum, char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams)
+{
+    GridforceGrid *grid = NULL;
+    if (mgridParams->gridforceLite) {
+	grid = new GridforceLiteGrid(gridnum);
+    } else {
+	grid = new GridforceFullMainGrid(gridnum);
+    }
+    
+    grid->initialize(potfilename, simParams, mgridParams);
+    
+    return grid;
+}
+
+void GridforceGrid::pack_grid(GridforceGrid *grid, MOStream *msg)
+{
+    // Abstract interface for packing a grid into a message.  This
+    // could easily be a non-static function as it was before, but is
+    // static to make it similar to unpack_grid below, which does need
+    // to be static since it creates a GridforceGrid object.
+    msg->put(grid->get_grid_type());
+    grid->pack(msg);
+}
+
+GridforceGrid * GridforceGrid::unpack_grid(int gridnum, MIStream *msg)
+{
+    // Abstract interface for unpacking a grid from a message.
+    GridforceGrid *grid = NULL;
+    int type;
+    
+    msg->get(type);
+    
+    switch (type) {
+    case GridforceGridTypeFull:
+	grid = new GridforceFullMainGrid(gridnum);
+	break;
+    case GridforceGridTypeLite:
+	grid = new GridforceLiteGrid(gridnum);
+	break;
+    default:
+	NAMD_bug("GridforceGrid::unpack_grid called with unknown grid type!");
+    }
+    
+    grid->unpack(msg);
+    
+    return grid;
+}
+
+
+/*************************/
+/* GRIDFORCEFULLBASEGRID */
+/*************************/
+
+GridforceFullBaseGrid::GridforceFullBaseGrid(void)
 {
     cont[0] = cont[1] = cont[2] = FALSE;
     grid = NULL;
@@ -30,16 +90,17 @@ GridforceGrid::GridforceGrid(void)
     subgrids = NULL;
 }
 
-GridforceGrid::~GridforceGrid() {
-    delete [] grid;
+GridforceFullBaseGrid::~GridforceFullBaseGrid()
+{
+    delete[] grid;
     for (int i = 0; i < numSubgrids; i++) {
 	delete subgrids[i];
     }
-    delete [] subgrids;
+    delete[] subgrids;
 }
 
 
-void GridforceGrid::pack(MOStream *msg) const
+void GridforceFullBaseGrid::pack(MOStream *msg) const
 {
     DebugM(2, "Packing message\n" << endi);
     
@@ -78,7 +139,7 @@ void GridforceGrid::pack(MOStream *msg) const
     }
 }
 
-void GridforceGrid::unpack(MIStream *msg)
+void GridforceFullBaseGrid::unpack(MIStream *msg)
 {
     DebugM(3, "Unpacking message\n" << endi);
 //    iout << iINFO << CkMyPe() << " Unpacking message\n" << endi;
@@ -114,7 +175,7 @@ void GridforceGrid::unpack(MIStream *msg)
     
     if (size) {
 	DebugM(3, "deleting grid\n" << endi);
-	delete [] grid;
+	delete[] grid;
 	DebugM(3, "allocating grid, size = " << size << "\n" << endi);
 	grid = new float[size];
 	msg->get(size*sizeof(float), (char*)grid);
@@ -122,17 +183,17 @@ void GridforceGrid::unpack(MIStream *msg)
     
     if (numSubgrids) {
 	DebugM(3, "Creating subgrids array, size " << numSubgrids << "\n" << endi);
-	delete [] subgrids;
-	subgrids = new GridforceSubGrid *[numSubgrids];
+	delete[] subgrids;
+	subgrids = new GridforceFullSubGrid *[numSubgrids];
 	for (int i = 0; i < numSubgrids; i++) {
-	    subgrids[i] = new GridforceSubGrid(this);
+	    subgrids[i] = new GridforceFullSubGrid(this);
 	    subgrids[i]->unpack(msg);
 	}
     }
 }
 
 
-void GridforceGrid::readHeader(SimParameters *simParams, MGridforceParams *mgridParams)
+void GridforceFullBaseGrid::readHeader(SimParameters *simParams, MGridforceParams *mgridParams)
 {
   char line[256];
   long int poten_offset;
@@ -183,16 +244,16 @@ void GridforceGrid::readHeader(SimParameters *simParams, MGridforceParams *mgrid
   DebugM(4, "inv = " << inv << "\n" << endi);
 }
 
-void GridforceGrid::readSubgridHierarchy(FILE *poten, int &totalGrids)
+void GridforceFullBaseGrid::readSubgridHierarchy(FILE *poten, int &totalGrids)
 {
     DebugM(4, "Beginning of readSubgridHierarchy, generation = " << generation << ", totalGrids = " << totalGrids << "\n" << endi);
     
     int elems, generation_in;
     
-    subgrids = new GridforceSubGrid *[numSubgrids];
+    subgrids = new GridforceFullSubGrid *[numSubgrids];
     
     for (int i = 0; i < numSubgrids; i++) {
-	subgrids[i] = new GridforceSubGrid(this);
+	subgrids[i] = new GridforceFullSubGrid(this);
 	elems = fscanf(poten_fp, "# namdnugrid subgrid %d generation %d min %d %d %d max %d %d %d subgrids count %d\n",
 	       &subgrids[i]->subgridIdx, &generation_in,
 	       &subgrids[i]->pmin[0], &subgrids[i]->pmin[1], &subgrids[i]->pmin[2],
@@ -226,7 +287,7 @@ void GridforceGrid::readSubgridHierarchy(FILE *poten, int &totalGrids)
 }
 
 
-int GridforceGrid::get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const
+int GridforceFullBaseGrid::get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const
 {
     Vector p = pos - origin;
     Vector g;
@@ -255,37 +316,10 @@ int GridforceGrid::get_inds(Position pos, int *inds, Vector &dg, Vector &gapscal
 }
 
 
-float GridforceGrid::get_grid(int i0, int i1, int i2) const
+int GridforceFullBaseGrid::compute_VdV(Position pos, float &V, Vector &dV) const
 {
-    register int i, inds[3] = {i0, i1, i2};
-    for (i = 0; i < 3; i++) {
-	if (inds[i] < 0) inds[i] += k[i];
-	inds[i] %= k[i];
-    }
-    int ind = grid_index(inds[0], inds[1], inds[2]);
-    DebugM(1, "retrieving grid[" << ind << "; " << i0 << "," << i1 << "," << i2 << "] = " << grid[ind] << "\n" << endi);
-    return grid[ind];
-}
-
-
-void GridforceGrid::set_grid(int i0, int i1, int i2, float V)
-{
-    register int i, inds[3] = {i0, i1, i2};
-    for (i = 0; i < 3; i++) {
-	if (inds[i] < 0) inds[i] += k[i];
-	inds[i] %= k[i];
-    }
-    int ind = grid_index(inds[0], inds[1], inds[2]);
-    grid[ind] = V;
-    DebugM(1, "setting grid[" << ind << "; " << i0 << "," << i1 << "," << i2 << "] = " << grid[ind] << " = " << V << "\n" << endi);
-}
-
-
-int GridforceGrid::compute_VdV(Position pos, float &V, Vector &dV) const
-{
-    SimParameters *simParams = Node::Object()->simParameters;
+    //SimParameters *simParams = Node::Object()->simParameters;
     int inds[3];
-    int ind;
     Vector g, dg;
     Vector gapscale = Vector(1, 1, 1);
     
@@ -298,8 +332,6 @@ int GridforceGrid::compute_VdV(Position pos, float &V, Vector &dV) const
     DebugM(1, "dg = " << dg << "\n");
     DebugM(1, "ind + dg = " << inds[0]+dg[0] << " " << inds[1]+dg[1] << " " << inds[2]+dg[2] << "\n");
     DebugM(3, "compute_VdV: generation = " << generation << "\n" << endi);
-    
-    ind = inds[0]*dk[0] + inds[1]*dk[1] + inds[2]*dk[2];
     
     // Pass to subgrid if one exists here
     for (int i = 0; i < numSubgrids; i++) {
@@ -338,7 +370,7 @@ int GridforceGrid::compute_VdV(Position pos, float &V, Vector &dV) const
 }
 
 
-float GridforceGrid::compute_V(float *a, float *x, float *y, float *z) const
+float GridforceFullBaseGrid::compute_V(float *a, float *x, float *y, float *z) const
 {
     float V = 0.0;
     int ind = 0;
@@ -354,7 +386,7 @@ float GridforceGrid::compute_V(float *a, float *x, float *y, float *z) const
 }
 
 
-Vector GridforceGrid::compute_dV(float *a, float *x, float *y, float *z) const
+Vector GridforceFullBaseGrid::compute_dV(float *a, float *x, float *y, float *z) const
 {
     Vector dV = 0;
     int ind = 0;
@@ -372,7 +404,7 @@ Vector GridforceGrid::compute_dV(float *a, float *x, float *y, float *z) const
 }
 
 
-Vector GridforceGrid::compute_d2V(float *a, float *x, float *y, float *z) const
+Vector GridforceFullBaseGrid::compute_d2V(float *a, float *x, float *y, float *z) const
 {
     Vector d2V = 0;
     int ind = 0;
@@ -390,7 +422,7 @@ Vector GridforceGrid::compute_d2V(float *a, float *x, float *y, float *z) const
 }
 
 
-float GridforceGrid::compute_d3V(float *a, float *x, float *y, float *z) const
+float GridforceFullBaseGrid::compute_d3V(float *a, float *x, float *y, float *z) const
 {
     float d3V = 0.0;
     int ind = 0;
@@ -406,7 +438,7 @@ float GridforceGrid::compute_d3V(float *a, float *x, float *y, float *z) const
 }
 
 
-void GridforceGrid::compute_a(float *a, float *b) const
+void GridforceFullBaseGrid::compute_a(float *a, float *b) const
 {
     // Static sparse 64x64 matrix times vector ... nicer looking way than this?
     a[0] = b[0];
@@ -556,11 +588,11 @@ void GridforceGrid::compute_a(float *a, float *b) const
 }
 
 
-/*********************/
-/* GRIDFORCEMAINGRID */
-/*********************/
+/*************************/
+/* GRIDFORCEFULLMAINGRID */
+/*************************/
 
-GridforceMainGrid::GridforceMainGrid(int gridnum)
+GridforceFullMainGrid::GridforceFullMainGrid(int gridnum)
 {
     mygridnum = gridnum;
     generation = 0;
@@ -568,13 +600,13 @@ GridforceMainGrid::GridforceMainGrid(int gridnum)
 }
 
 
-GridforceMainGrid::~GridforceMainGrid()
+GridforceFullMainGrid::~GridforceFullMainGrid()
 {
-    delete [] subgrids_flat;
+    delete[] subgrids_flat;
 }
 
 
-void GridforceMainGrid::pack(MOStream *msg) const
+void GridforceFullMainGrid::pack(MOStream *msg) const
 {
     DebugM(4, "Packing maingrid\n" << endi);
     
@@ -582,14 +614,15 @@ void GridforceMainGrid::pack(MOStream *msg) const
 //     msg->put(3*sizeof(float), (char*)pad_n);
     msg->put(totalGrids);
     msg->put(mygridnum);
+    msg->put(129*sizeof(char), (char*)filename);
     
-    DebugM(3, "calling GridforceGrid::pack\n" << endi);
+    DebugM(3, "calling GridforceFullBaseGrid::pack\n" << endi);
     
-    GridforceGrid::pack(msg);
+    GridforceFullBaseGrid::pack(msg);
 }
 
 
-void GridforceMainGrid::unpack(MIStream *msg)
+void GridforceFullMainGrid::unpack(MIStream *msg)
 {
     DebugM(4, "Unpacking maingrid\n" << endi);
     
@@ -597,23 +630,25 @@ void GridforceMainGrid::unpack(MIStream *msg)
 //     msg->get(3*sizeof(float), (char*)pad_n);
     msg->get(totalGrids);
     msg->get(mygridnum);
+    msg->get(129*sizeof(char), (char*)filename);
     
-    GridforceGrid::unpack(msg);
+    GridforceFullBaseGrid::unpack(msg);
     
     DebugM(4, "size  = " << size << "\n");
     DebugM(4, "numSubgrids = " << numSubgrids << "\n");
     DebugM(4, "gapinv = " << gapinv[0] << " " << gapinv[2] << " " << gapinv[2] << " " << "\n");
     DebugM(4, "generation = " << generation << "\n" << endi);
+    DebugM(4, "filename = " << filename << "\n" << endi);
     
     buildSubgridsFlat();
 }
 
 
-void GridforceMainGrid::buildSubgridsFlat(void)
+void GridforceFullMainGrid::buildSubgridsFlat(void)
 {
     DebugM(4, "buildSubgridsFlat() called, totalGrids-1 = " << totalGrids-1 << "\n" << endi);
-    delete [] subgrids_flat;
-    subgrids_flat = new GridforceSubGrid *[totalGrids-1];
+    delete[] subgrids_flat;
+    subgrids_flat = new GridforceFullSubGrid *[totalGrids-1];
     for (int i = 0; i < numSubgrids; i++) {
 	DebugM(3, "adding to subgridsFlat\n" << endi);
 	subgrids[i]->addToSubgridsFlat();
@@ -628,8 +663,14 @@ void GridforceMainGrid::buildSubgridsFlat(void)
 }
 
 
-void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams)
+void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams, int brd)
 {
+    if (brd >= 0) {
+	border = brd;
+    } else {
+	border = default_border;
+    }
+    
     // FROM init1
     //FILE *poten = Fopen(potfilename, "r");
     poten_fp = Fopen(potfilename, "r");
@@ -755,7 +796,7 @@ void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, 
     
     DebugM(3, "size = " << size << ", size_nopad = " << size_nopad << "\n" << endi);
     
-    delete [] grid;
+    delete[] grid;
     grid = new float[size];
     
     n_sum[0] = n_sum[1] = n_sum[2] = 0;
@@ -877,14 +918,14 @@ void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, 
     for (int i0 = 0; i0 < k[0]; i0++) {
 	for (int i1 = 0; i1 < k[1]; i1++) {
 	    for (int i2 = 0; i2 < k[2]; i2++) {
-		DebugM(2, "grid[" << i0 << ", " << i1 << ", " << i2 << "] = " << get_grid(i0,i1,i2) << "\n" << endi);
+		DebugM(1, "grid[" << i0 << ", " << i1 << ", " << i2 << "] = " << get_grid(i0,i1,i2) << "\n" << endi);
 	    }
 	}
     }
     
     // Clean up
     DebugM(3, "clean up\n" << endi);
-    delete [] grid_nopad;
+    delete[] grid_nopad;
     
     // Call initialize for each subgrid
     for (int i = 0; i < numSubgrids; i++) {
@@ -897,19 +938,19 @@ void GridforceMainGrid::initialize(char *potfilename, SimParameters *simParams, 
 }
 
 
-void GridforceMainGrid::reinitialize(SimParameters *simParams, MGridforceParams *mgridParams)
+void GridforceFullMainGrid::reinitialize(SimParameters *simParams, MGridforceParams *mgridParams)
 {
     DebugM(4, "reinitializing grid\n" << endi);
-    this->initialize(filename, simParams, mgridParams);
+    initialize(filename, simParams, mgridParams);
 }
 
 
-int GridforceMainGrid::get_all_gridvals(float** all_gridvals) const
+int GridforceFullMainGrid::get_all_gridvals(float **all_gridvals) const
 {
     // Creates a flat array of all grid values, including subgrids,
     // and puts it in the value pointed to by the 'grids'
     // argument. Returns the resulting array size. Caller is
-    // responsible for destroying the array via 'delete []'
+    // responsible for destroying the array via 'delete[]'
     
     DebugM(4, "get_all_gridvals called\n" << endi);
     
@@ -940,7 +981,7 @@ int GridforceMainGrid::get_all_gridvals(float** all_gridvals) const
 }
 
 
-void GridforceMainGrid::set_all_gridvals(float* all_gridvals, int sz)
+void GridforceFullMainGrid::set_all_gridvals(float *all_gridvals, int sz)
 {
     DebugM(4, "set_all_gridvals called\n" << endi);
     
@@ -953,12 +994,12 @@ void GridforceMainGrid::set_all_gridvals(float* all_gridvals, int sz)
     
     int idx = 0;
     for (int i = 0; i < size; i++) {
-	DebugM(4, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
+	DebugM(1, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
 	grid[i] = all_gridvals[idx++];
     }
     for (int j = 0; j < totalGrids-1; j++) {
 	for (int i = 0; i < subgrids_flat[j]->size; i++) {
-	    DebugM(4, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
+	    DebugM(1, "all_gridvals[" << idx << "] = " << all_gridvals[idx] << "\n" << endi);
 	    subgrids_flat[j]->grid[i] = all_gridvals[idx++];
 	}
     }
@@ -968,11 +1009,10 @@ void GridforceMainGrid::set_all_gridvals(float* all_gridvals, int sz)
 }
 
 
-void GridforceMainGrid::compute_b(float *b, int *inds, Vector gapscale) const
+void GridforceFullMainGrid::compute_b(float *b, int *inds, Vector gapscale) const
 {
     for (int i0 = 0; i0 < 8; i0++) {
 	int inds2[3];
-	int ind2 = 0;
 	int zero_derivs = FALSE;
 	int dk_hi[3], dk_lo[3];
 	
@@ -1030,8 +1070,8 @@ void GridforceMainGrid::compute_b(float *b, int *inds, Vector gapscale) const
 // 	DebugM(2, "zero_derivs = " << zero_derivs << "\n" << endi);
 // 	DebugM(2, "dk_hi = " << dk_hi[0] << " " << dk_hi[1] << " " << dk_hi[2] << "\n" << endi);
 // 	DebugM(2, "dk_lo = " << dk_lo[0] << " " << dk_lo[1] << " " << dk_lo[2] << "\n" << endi);
- 	DebugM(2, "dscales = " << dscales[0] << " " << dscales[1] << " " << dscales[2] << "\n" << endi);
- 	DebugM(2, "voffs = " << voffs[0] << " " << voffs[1] << " " << voffs[2] << "\n" << endi);
+ 	DebugM(1, "dscales = " << dscales[0] << " " << dscales[1] << " " << dscales[2] << "\n" << endi);
+ 	DebugM(1, "voffs = " << voffs[0] << " " << voffs[1] << " " << voffs[2] << "\n" << endi);
 	
 	// V
 	b[i0] = get_grid(inds2[0],inds2[1],inds2[2]) + voff;
@@ -1046,58 +1086,58 @@ void GridforceMainGrid::compute_b(float *b, int *inds, Vector gapscale) const
 	    b[48+i0] = 0.0;
 	    b[56+i0] = 0.0;
 	} else {
-	    b[8+i0]  = dscales[0] * (get_grid(inds2[0]+1,inds2[1],inds2[2]) - get_grid(inds2[0]-1,inds2[1],inds2[2]) + voffs[0]);	//  dV/dx
-	    b[16+i0] = dscales[1] * (get_grid(inds2[0],inds2[1]+1,inds2[2]) - get_grid(inds2[0],inds2[1]-1,inds2[2]) + voffs[1]);	//  dV/dy
-	    b[24+i0] = dscales[2] * (get_grid(inds2[0],inds2[1],inds2[2]+1) - get_grid(inds2[0],inds2[1],inds2[2]-1) + voffs[2]);	//  dV/dz
+	    b[8+i0]  = dscales[0] * (get_grid_d(inds2[0]+1,inds2[1],inds2[2]) - get_grid_d(inds2[0]-1,inds2[1],inds2[2]) + voffs[0]);	//  dV/dx
+	    b[16+i0] = dscales[1] * (get_grid_d(inds2[0],inds2[1]+1,inds2[2]) - get_grid_d(inds2[0],inds2[1]-1,inds2[2]) + voffs[1]);	//  dV/dy
+	    b[24+i0] = dscales[2] * (get_grid_d(inds2[0],inds2[1],inds2[2]+1) - get_grid_d(inds2[0],inds2[1],inds2[2]-1) + voffs[2]);	//  dV/dz
 	    b[32+i0] = dscales[0] * dscales[1]
-		* (get_grid(inds2[0]+1,inds2[1]+1,inds2[2]) - get_grid(inds2[0]-1,inds2[1]+1,inds2[2]) -
-		   get_grid(inds2[0]+1,inds2[1]-1,inds2[2]) + get_grid(inds2[0]-1,inds2[1]-1,inds2[2]));	//  d2V/dxdy
+		* (get_grid_d(inds2[0]+1,inds2[1]+1,inds2[2]) - get_grid_d(inds2[0]-1,inds2[1]+1,inds2[2]) -
+		   get_grid_d(inds2[0]+1,inds2[1]-1,inds2[2]) + get_grid_d(inds2[0]-1,inds2[1]-1,inds2[2]));	//  d2V/dxdy
 	    b[40+i0] = dscales[0] * dscales[2]
-		* (get_grid(inds2[0]+1,inds2[1],inds2[2]+1) - get_grid(inds2[0]-1,inds2[1],inds2[2]+1)
-		   - get_grid(inds2[0]+1,inds2[1],inds2[2]-1) + get_grid(inds2[0]-1,inds2[1],inds2[2]-1));	//  d2V/dxdz
+		* (get_grid_d(inds2[0]+1,inds2[1],inds2[2]+1) - get_grid_d(inds2[0]-1,inds2[1],inds2[2]+1)
+		   - get_grid_d(inds2[0]+1,inds2[1],inds2[2]-1) + get_grid_d(inds2[0]-1,inds2[1],inds2[2]-1));	//  d2V/dxdz
 	    b[48+i0] = dscales[1] * dscales[2]
-		* (get_grid(inds2[0],inds2[1]+1,inds2[2]+1) - get_grid(inds2[0],inds2[1]-1,inds2[2]+1)
-		   - get_grid(inds2[0],inds2[1]+1,inds2[2]-1) + get_grid(inds2[0],inds2[1]-1,inds2[2]-1));	//  d2V/dydz
+		* (get_grid_d(inds2[0],inds2[1]+1,inds2[2]+1) - get_grid_d(inds2[0],inds2[1]-1,inds2[2]+1)
+		   - get_grid_d(inds2[0],inds2[1]+1,inds2[2]-1) + get_grid_d(inds2[0],inds2[1]-1,inds2[2]-1));	//  d2V/dydz
 	
 	    b[56+i0] = dscales[0] * dscales[1] * dscales[2]					// d3V/dxdydz
-		* (get_grid(inds2[0]+1,inds2[1]+1,inds2[2]+1) - get_grid(inds2[0]+1,inds2[1]+1,inds2[2]-1) -
-		   get_grid(inds2[0]+1,inds2[1]-1,inds2[2]+1) - get_grid(inds2[0]-1,inds2[1]+1,inds2[2]+1) +
-		   get_grid(inds2[0]+1,inds2[1]-1,inds2[2]-1) + get_grid(inds2[0]-1,inds2[1]+1,inds2[2]-1) +
-		   get_grid(inds2[0]-1,inds2[1]-1,inds2[2]+1) - get_grid(inds2[0]-1,inds2[1]-1,inds2[2]-1));
+		* (get_grid_d(inds2[0]+1,inds2[1]+1,inds2[2]+1) - get_grid_d(inds2[0]+1,inds2[1]+1,inds2[2]-1) -
+		   get_grid_d(inds2[0]+1,inds2[1]-1,inds2[2]+1) - get_grid_d(inds2[0]-1,inds2[1]+1,inds2[2]+1) +
+		   get_grid_d(inds2[0]+1,inds2[1]-1,inds2[2]-1) + get_grid_d(inds2[0]-1,inds2[1]+1,inds2[2]-1) +
+		   get_grid_d(inds2[0]-1,inds2[1]-1,inds2[2]+1) - get_grid_d(inds2[0]-1,inds2[1]-1,inds2[2]-1));
 	}
 	
-	DebugM(2, "V = " << b[i0] << "\n");
+	DebugM(1, "V = " << b[i0] << "\n");
 	
-	DebugM(2, "dV/dx = " << b[8+i0] << "\n");
-	DebugM(2, "dV/dy = " << b[16+i0] << "\n");
-	DebugM(2, "dV/dz = " << b[24+i0] << "\n");
+	DebugM(1, "dV/dx = " << b[8+i0] << "\n");
+	DebugM(1, "dV/dy = " << b[16+i0] << "\n");
+	DebugM(1, "dV/dz = " << b[24+i0] << "\n");
 	
-	DebugM(2, "d2V/dxdy = " << b[32+i0] << "\n");
-	DebugM(2, "d2V/dxdz = " << b[40+i0] << "\n");
-	DebugM(2, "d2V/dydz = " << b[48+i0] << "\n");
+	DebugM(1, "d2V/dxdy = " << b[32+i0] << "\n");
+	DebugM(1, "d2V/dxdz = " << b[40+i0] << "\n");
+	DebugM(1, "d2V/dydz = " << b[48+i0] << "\n");
 	
-	DebugM(2, "d3V/dxdydz = " << b[56+i0] << "\n" << endi);
+	DebugM(1, "d3V/dxdydz = " << b[56+i0] << "\n" << endi);
     }
 }
 
 
-/********************/
-/* GRIDFORCESUBGRID */
-/********************/
+/************************/
+/* GRIDFORCEFULLSUBGRID */
+/************************/
 
-GridforceSubGrid::GridforceSubGrid(GridforceGrid *parent_in) {
+GridforceFullSubGrid::GridforceFullSubGrid(GridforceFullBaseGrid *parent_in) {
     parent = parent_in;
     generation = parent->generation + 1;
-    GridforceGrid *tmp = parent;
+    GridforceFullBaseGrid *tmp = parent;
     while (tmp->generation > 0) {
-	tmp = ((GridforceSubGrid *)tmp)->parent;
+	tmp = ((GridforceFullSubGrid *)tmp)->parent;
     }
-    maingrid = (GridforceMainGrid *)tmp;
+    maingrid = (GridforceFullMainGrid *)tmp;
     DebugM(4, "generation = " << generation << "\n" << endi);
 }
 
 
-void GridforceSubGrid::initialize(SimParameters *simParams, MGridforceParams *mgridParams)
+void GridforceFullSubGrid::initialize(SimParameters *simParams, MGridforceParams *mgridParams)
 {
     int tmp;
     char line[256];
@@ -1168,9 +1208,10 @@ void GridforceSubGrid::initialize(SimParameters *simParams, MGridforceParams *mg
 	} else {
 	    cont[i] = false;
 	    if (parent->generation == 0) {
-		// Add one to pmin, pmax since parent got an extra gridpoint layer
-		pmin[i] += GridforceMainGrid::border;
-		pmax[i] += GridforceMainGrid::border;
+		// Add to pmin, pmax since parent got extra gridpoint layer(s) (maybe)
+		int brd = parent->get_border();
+		pmin[i] += brd;
+		pmax[i] += brd;
 	    }
 	}		
     }
@@ -1264,7 +1305,7 @@ void GridforceSubGrid::initialize(SimParameters *simParams, MGridforceParams *mg
     
     // Set real grid
     DebugM(3, "allocating grid\n" << endi);
-    delete [] grid;
+    delete[] grid;
     grid = new float[size];
     for (int i0 = 0; i0 < k_nopad[0]; i0++) {
 	for (int i1 = 0; i1 < k_nopad[1]; i1++) {
@@ -1278,13 +1319,13 @@ void GridforceSubGrid::initialize(SimParameters *simParams, MGridforceParams *mg
     for (int i0 = 0; i0 < k[0]; i0++) {
 	for (int i1 = 0; i1 < k[1]; i1++) {
 	    for (int i2 = 0; i2 < k[2]; i2++) {
-		DebugM(2, "grid[" << i0 << ", " << i1 << ", " << i2 << "] = " << get_grid(i0,i1,i2) << "\n" << endi);
+		DebugM(1, "grid[" << i0 << ", " << i1 << ", " << i2 << "] = " << get_grid(i0,i1,i2) << "\n" << endi);
 	    }
 	}
     }
     
     // Clean up
-    delete [] grid_tmp;
+    delete[] grid_tmp;
     
     // Call initialize for each subgrid
     for (int i = 0; i < numSubgrids; i++) {
@@ -1293,7 +1334,7 @@ void GridforceSubGrid::initialize(SimParameters *simParams, MGridforceParams *mg
 }
 
 
-void GridforceSubGrid::pack(MOStream *msg) const
+void GridforceFullSubGrid::pack(MOStream *msg) const
 {
     DebugM(4, "Packing subgrid\n" << endi);
     
@@ -1305,13 +1346,13 @@ void GridforceSubGrid::pack(MOStream *msg) const
     msg->put(3*sizeof(int), (char*)pmax);
     msg->put(subgridIdx);
     
-    DebugM(3, "calling GridforceGrid::pack\n" << endi);
+    DebugM(3, "calling GridforceFullBaseGrid::pack\n" << endi);
     
-    GridforceGrid::pack(msg);
+    GridforceFullBaseGrid::pack(msg);
 }
 
 
-void GridforceSubGrid::unpack(MIStream *msg)
+void GridforceFullSubGrid::unpack(MIStream *msg)
 {
     DebugM(4, "Unpacking subgrid\n" << endi);
     
@@ -1323,7 +1364,7 @@ void GridforceSubGrid::unpack(MIStream *msg)
     msg->get(3*sizeof(int), (char*)pmax);
     msg->get(subgridIdx);
     
-    GridforceGrid::unpack(msg);
+    GridforceFullBaseGrid::unpack(msg);
     
     DebugM(4, "size  = " << size << "\n");
     DebugM(4, "numSubgrids = " << numSubgrids << "\n");
@@ -1332,7 +1373,7 @@ void GridforceSubGrid::unpack(MIStream *msg)
 }
 
 
-void GridforceSubGrid::addToSubgridsFlat(void)
+void GridforceFullSubGrid::addToSubgridsFlat(void)
 {
     DebugM(4, "addToSubgridsFlat() called, subgridIdx = " << subgridIdx << ", maingrid->numSubgrids = " << maingrid->numSubgrids << "\n" << endi);
     maingrid->subgrids_flat[subgridIdx-1] = this;
@@ -1342,11 +1383,10 @@ void GridforceSubGrid::addToSubgridsFlat(void)
 }
 
 
-void GridforceSubGrid::compute_b(float *b, int *inds, Vector gapscale) const
+void GridforceFullSubGrid::compute_b(float *b, int *inds, Vector gapscale) const
 {
     for (int i0 = 0; i0 < 8; i0++) {
 	int inds2[3];
-	int ind2 = 0;
 	int dk_hi[3], dk_lo[3];
 	
 	float voff = 0.0;
@@ -1444,39 +1484,326 @@ void GridforceSubGrid::compute_b(float *b, int *inds, Vector gapscale) const
 	} else {
 	    b[i0] = get_grid(inds2[0],inds2[1],inds2[2]) + voff;	// V
 	    
-	    b[8+i0]  = dscales[0] * (get_grid(inds2[0]+1,inds2[1],inds2[2]) - get_grid(inds2[0]-1,inds2[1],inds2[2]) + voffs[0]);	//  dV/dx
-	    b[16+i0] = dscales[1] * (get_grid(inds2[0],inds2[1]+1,inds2[2]) - get_grid(inds2[0],inds2[1]-1,inds2[2]) + voffs[1]);	//  dV/dy
-	    b[24+i0] = dscales[2] * (get_grid(inds2[0],inds2[1],inds2[2]+1) - get_grid(inds2[0],inds2[1],inds2[2]-1) + voffs[2]);	//  dV/dz
+	    b[8+i0]  = dscales[0] * (get_grid_d(inds2[0]+1,inds2[1],inds2[2]) - get_grid_d(inds2[0]-1,inds2[1],inds2[2]) + voffs[0]);	//  dV/dx
+	    b[16+i0] = dscales[1] * (get_grid_d(inds2[0],inds2[1]+1,inds2[2]) - get_grid_d(inds2[0],inds2[1]-1,inds2[2]) + voffs[1]);	//  dV/dy
+	    b[24+i0] = dscales[2] * (get_grid_d(inds2[0],inds2[1],inds2[2]+1) - get_grid_d(inds2[0],inds2[1],inds2[2]-1) + voffs[2]);	//  dV/dz
 	    b[32+i0] = dscales[0] * dscales[1]
-		* (get_grid(inds2[0]+1,inds2[1]+1,inds2[2]) - get_grid(inds2[0]-1,inds2[1]+1,inds2[2]) -
-		   get_grid(inds2[0]+1,inds2[1]-1,inds2[2]) + get_grid(inds2[0]-1,inds2[1]-1,inds2[2]));	//  d2V/dxdy
+		* (get_grid_d(inds2[0]+1,inds2[1]+1,inds2[2]) - get_grid_d(inds2[0]-1,inds2[1]+1,inds2[2]) -
+		   get_grid_d(inds2[0]+1,inds2[1]-1,inds2[2]) + get_grid_d(inds2[0]-1,inds2[1]-1,inds2[2]));	//  d2V/dxdy
 	    b[40+i0] = dscales[0] * dscales[2]
-		* (get_grid(inds2[0]+1,inds2[1],inds2[2]+1) - get_grid(inds2[0]-1,inds2[1],inds2[2]+1)
-		   - get_grid(inds2[0]+1,inds2[1],inds2[2]-1) + get_grid(inds2[0]-1,inds2[1],inds2[2]-1));	//  d2V/dxdz
+		* (get_grid_d(inds2[0]+1,inds2[1],inds2[2]+1) - get_grid_d(inds2[0]-1,inds2[1],inds2[2]+1)
+		   - get_grid_d(inds2[0]+1,inds2[1],inds2[2]-1) + get_grid_d(inds2[0]-1,inds2[1],inds2[2]-1));	//  d2V/dxdz
 	    b[48+i0] = dscales[1] * dscales[2]
-		* (get_grid(inds2[0],inds2[1]+1,inds2[2]+1) - get_grid(inds2[0],inds2[1]-1,inds2[2]+1)
-		   - get_grid(inds2[0],inds2[1]+1,inds2[2]-1) + get_grid(inds2[0],inds2[1]-1,inds2[2]-1));	//  d2V/dydz
+		* (get_grid_d(inds2[0],inds2[1]+1,inds2[2]+1) - get_grid_d(inds2[0],inds2[1]-1,inds2[2]+1)
+		   - get_grid_d(inds2[0],inds2[1]+1,inds2[2]-1) + get_grid_d(inds2[0],inds2[1]-1,inds2[2]-1));	//  d2V/dydz
 	
 	    b[56+i0] = dscales[0] * dscales[1] * dscales[2]					// d3V/dxdydz
-		* (get_grid(inds2[0]+1,inds2[1]+1,inds2[2]+1) - get_grid(inds2[0]+1,inds2[1]+1,inds2[2]-1) -
-		   get_grid(inds2[0]+1,inds2[1]-1,inds2[2]+1) - get_grid(inds2[0]-1,inds2[1]+1,inds2[2]+1) +
-		   get_grid(inds2[0]+1,inds2[1]-1,inds2[2]-1) + get_grid(inds2[0]-1,inds2[1]+1,inds2[2]-1) +
-		   get_grid(inds2[0]-1,inds2[1]-1,inds2[2]+1) - get_grid(inds2[0]-1,inds2[1]-1,inds2[2]-1));
+		* (get_grid_d(inds2[0]+1,inds2[1]+1,inds2[2]+1) - get_grid_d(inds2[0]+1,inds2[1]+1,inds2[2]-1) -
+		   get_grid_d(inds2[0]+1,inds2[1]-1,inds2[2]+1) - get_grid_d(inds2[0]-1,inds2[1]+1,inds2[2]+1) +
+		   get_grid_d(inds2[0]+1,inds2[1]-1,inds2[2]-1) + get_grid_d(inds2[0]-1,inds2[1]+1,inds2[2]-1) +
+		   get_grid_d(inds2[0]-1,inds2[1]-1,inds2[2]+1) - get_grid_d(inds2[0]-1,inds2[1]-1,inds2[2]-1));
 	}
 	
 	if (inds2[0] == 1 && inds2[1] == 1 && inds2[2] == 0) {
-	    DebugM(2, "Sub V = " << b[i0] << "\n");
+	    DebugM(1, "Sub V = " << b[i0] << "\n");
 	
-	    DebugM(2, "Sub dV/dx = " << b[8+i0] << "\n");
-	    DebugM(2, "Sub dV/dy = " << b[16+i0] << "\n");
-	    DebugM(2, "Sub dV/dz = " << b[24+i0] << "\n");
+	    DebugM(1, "Sub dV/dx = " << b[8+i0] << "\n");
+	    DebugM(1, "Sub dV/dy = " << b[16+i0] << "\n");
+	    DebugM(1, "Sub dV/dz = " << b[24+i0] << "\n");
 	
-	    DebugM(2, "Sub d2V/dxdy = " << b[32+i0] << "\n");
-	    DebugM(2, "Sub d2V/dxdz = " << b[40+i0] << "\n");
-	    DebugM(2, "Sub d2V/dydz = " << b[48+i0] << "\n");
+	    DebugM(1, "Sub d2V/dxdy = " << b[32+i0] << "\n");
+	    DebugM(1, "Sub d2V/dxdz = " << b[40+i0] << "\n");
+	    DebugM(1, "Sub d2V/dydz = " << b[48+i0] << "\n");
 	
-	    DebugM(2, "Sub d3V/dxdydz = " << b[56+i0] << "\n" << endi);
+	    DebugM(1, "Sub d3V/dxdydz = " << b[56+i0] << "\n" << endi);
 	}
     }
 }
 
+
+/*********************/
+/* GRIDFORCELITEGRID */
+/*********************/
+
+GridforceLiteGrid::GridforceLiteGrid(int gridnum)
+{
+    mygridnum = gridnum;
+    grid = NULL;
+}
+
+
+GridforceLiteGrid::~GridforceLiteGrid()
+{
+    delete[] grid;
+}
+
+
+void GridforceLiteGrid::initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams)
+{
+    // cheat and use GridforceFullMainGrid to read the file, set border to zero (i.e. no padding)
+    GridforceFullMainGrid *tmp_grid = new GridforceFullMainGrid(mygridnum);
+    tmp_grid->initialize(potfilename, simParams, mgridParams, 1);
+    
+    if (tmp_grid->get_total_grids() != 1) {
+	NAMD_die("Cannot use gridforcelite option with multi-resolution grid!");
+    }
+    
+    // save file name so that grid can be re-read via Tcl
+    strcpy(filename, potfilename);
+    
+    // copy parameters
+    k[0] = tmp_grid->get_k0();
+    k[1] = tmp_grid->get_k1();
+    k[2] = tmp_grid->get_k2();
+    k[3] = 4;	// for V, dV/dx, dV/dy, dV/dz grids
+    origin = tmp_grid->get_origin();
+    center = tmp_grid->get_center();
+    e = tmp_grid->get_e();
+    inv = tmp_grid->get_inv();
+    scale = tmp_grid->get_scale();
+    
+    // calculate rest of parameters
+    size = k[0] * k[1] * k[2] * k[3];
+    dk[0] = k[1] * k[2] * k[3];
+    dk[1] = k[2] * k[3];
+    dk[2] = k[3];
+    dk[3] = 1;
+    
+    // copy the potential grid
+    delete[] grid;
+    grid = new float[size];
+    for (int i0 = 0; i0 < k[0]; i0++) {
+	for (int i1 = 0; i1 < k[1]; i1++) {
+	    for (int i2 = 0; i2 < k[2]; i2++) {
+		float V = tmp_grid->get_grid(i0, i1, i2);
+		set_grid(i0, i1, i2, 0, V);
+		DebugM(1, "V[" << i0 << "," << i1 << "," << i2 << "] = " << get_grid(i0, i1, i2, 0) << "(" << V << ")\n" << endi);
+	    }
+	}
+    }
+    
+    delete tmp_grid;
+    
+    compute_derivative_grids();
+}
+
+
+void GridforceLiteGrid::compute_derivative_grids(void)
+{
+    // calculate derivative grids
+    // separate loop so all V values have been set already
+    for (int i0 = 0; i0 < k[0]; i0++) {
+	for (int i1 = 0; i1 < k[1]; i1++) {
+	    for (int i2 = 0; i2 < k[2]; i2++) {
+		float dx, dy, dz;
+		if (i0 == 0 || i0 == k[0]-1 || i1 == 0 || i1 == k[1]-1 || i2 == 0 || i2 == k[2]-1) {
+		    // on edge, set ALL derivatives to zero (make up for lack of padding)
+		    dx = 0;
+		    dy = 0;
+		    dz = 0;
+		} else {
+		    dx = 0.5 * (get_grid_d(i0+1,i1,i2,0) - get_grid_d(i0-1,i1,i2,0));
+		    dy = 0.5 * (get_grid_d(i0,i1+1,i2,0) - get_grid_d(i0,i1-1,i2,0));
+		    dz = 0.5 * (get_grid_d(i0,i1,i2+1,0) - get_grid_d(i0,i1,i2-1,0));
+		}
+		set_grid(i0, i1, i2, 1, dx);
+		set_grid(i0, i1, i2, 2, dy);
+		set_grid(i0, i1, i2, 3, dz);
+		DebugM(1, "dx[" << i0 << "," << i1 << "," << i2 << "] = " << get_grid(i0, i1, i2, 1) << "(" << dx << ")\n" << endi);
+		DebugM(1, "dy[" << i0 << "," << i1 << "," << i2 << "] = " << get_grid(i0, i1, i2, 2) << "(" << dy << ")\n" << endi);
+		DebugM(1, "dz[" << i0 << "," << i1 << "," << i2 << "] = " << get_grid(i0, i1, i2, 3) << "(" << dz << ")\n" << endi);
+	    }
+	}
+    }
+}
+
+
+void GridforceLiteGrid::reinitialize(SimParameters *simParams, MGridforceParams *mgridParams)
+{
+    initialize(filename, simParams, mgridParams);
+}
+
+
+void GridforceLiteGrid::pack(MOStream *msg) const
+{
+    msg->put(4*sizeof(int), (char*)k);
+    msg->put(size);
+    msg->put(4*sizeof(int), (char*)dk);
+    
+    msg->put(sizeof(Vector), (char*)&origin);
+    msg->put(sizeof(Vector), (char*)&center);
+    msg->put(sizeof(Tensor), (char*)&e);
+    msg->put(sizeof(Tensor), (char*)&inv);
+    msg->put(sizeof(Vector), (char*)&scale);
+    
+    msg->put(129*sizeof(char), (char*)filename);
+    
+    msg->put(size*sizeof(float), (char*)grid);
+}
+
+
+void GridforceLiteGrid::unpack(MIStream *msg)
+{
+    msg->get(4*sizeof(int), (char*)k);
+    msg->get(size);
+    msg->get(4*sizeof(int), (char*)dk);
+    
+    msg->get(sizeof(Vector), (char*)&origin);
+    msg->get(sizeof(Vector), (char*)&center);
+    msg->get(sizeof(Tensor), (char*)&e);
+    msg->get(sizeof(Tensor), (char*)&inv);
+    msg->get(sizeof(Vector), (char*)&scale);
+    
+    msg->get(129*sizeof(char), (char*)filename);
+    
+    if (size) {
+	delete[] grid;
+	grid = new float[size];
+	msg->get(size*sizeof(float), (char*)grid);
+    }
+}
+
+
+int GridforceLiteGrid::get_all_gridvals(float** all_gridvals) const
+{
+    // Creates a flat array of all grid values and puts it in the
+    // value pointed to by the 'all_gridvals' argument. Returns the
+    // resulting array size. Caller is responsible for destroying the
+    // array via 'delete[]'
+    
+    DebugM(4, "GridforceLiteGrid::get_all_gridvals called\n" << endi);
+    
+    int sz = size;
+    DebugM(4, "size = " << sz << "\n" << endi);
+    
+    float *grid_vals = new float[sz];
+    int idx = 0;
+    for (int i = 0; i < size; i++) {
+	grid_vals[idx++] = grid[i];
+    }
+    CmiAssert(idx == sz);
+    
+    *all_gridvals = grid_vals;
+    
+    DebugM(4, "GridforceLiteGrid::get_all_gridvals finished\n" << endi);
+    
+    return sz;
+}
+
+
+void GridforceLiteGrid::set_all_gridvals(float* all_gridvals, int sz)
+{
+    DebugM(4, "GridforceLiteGrid::set_all_gridvals called\n" << endi);
+    
+    int sz_calc = size;
+    CmiAssert(sz == sz_calc);
+    
+    int idx = 0;
+    for (int i = 0; i < size; i++) {
+	grid[i] = all_gridvals[idx++];
+    }
+    CmiAssert(idx == sz);
+    
+    //compute_derivative_grids();	// not needed if we're sending all 4 grids
+    
+    DebugM(4, "GridforceLiteGrid::set_all_gridvals finished\n" << endi);
+}
+
+    
+int GridforceLiteGrid::get_inds(Position pos, int *inds, Vector &dg) const
+{
+    Vector p = pos - origin;
+    Vector g;
+    
+    g = inv * p;
+    
+    for (int i = 0; i < 3; i++) {
+	inds[i] = (int)floor(g[i]);
+	dg[i] = g[i] - inds[i];
+    }
+    
+    for (int i = 0; i < 3; i++) {
+	if (inds[i] < 0 || inds[i] >= k[i]-1) {
+	    return -1;	// Outside potential and grid is not continuous
+	}
+    }
+    
+    return 0;
+}
+
+
+void GridforceLiteGrid::compute_wts(float *wts, const Vector &dg) const
+{
+    wts[0] = (1-dg.x) * (1-dg.y) * (1-dg.z);
+    wts[1] = (1-dg.x) * (1-dg.y) *   dg.z;
+    wts[2] = (1-dg.x) *   dg.y   * (1-dg.z);
+    wts[3] = (1-dg.x) *   dg.y   *   dg.z;
+    wts[4] =   dg.x   * (1-dg.y) * (1-dg.z);
+    wts[5] =   dg.x   * (1-dg.y) *   dg.z;
+    wts[6] =   dg.x   *   dg.y   * (1-dg.z);
+    wts[7] =   dg.x   *   dg.y   *   dg.z;
+    DebugM(2, "dg = " << dg << "\n" << endi);
+}
+
+
+float GridforceLiteGrid::linear_interpolate(int i0, int i1, int i2, int i3, const float *wts) const
+{
+    float vals[8];
+    vals[0] = get_grid(i0,   i1,   i2,   i3);
+    vals[1] = get_grid(i0,   i1,   i2+1, i3);
+    vals[2] = get_grid(i0,   i1+1, i2,   i3);
+    vals[3] = get_grid(i0,   i1+1, i2+1, i3);
+    vals[4] = get_grid(i0+1, i1,   i2,   i3);
+    vals[5] = get_grid(i0+1, i1,   i2+1, i3);
+    vals[6] = get_grid(i0+1, i1+1, i2,   i3);
+    vals[7] = get_grid(i0+1, i1+1, i2+1, i3);
+    
+    switch (i3) {
+    case 0:
+	DebugM(2, "V\n" << endi);
+	break;
+    case 1:
+	DebugM(2, "dV/dx\n" << endi);
+	break;
+    case 2:
+	DebugM(2, "dV/dy\n" << endi);
+	break;
+    case 3:
+	DebugM(2, "dV/dz\n" << endi);
+	break;
+    }
+    
+    float result = 0;
+    for (int i = 0; i < 8; i++) {
+	DebugM(2, "vals[" << i << "] = " << vals[i] << " wts[" << i << "] = " << wts[i] << "\n" << endi);
+	result += wts[i] * vals[i];
+    }
+    DebugM(2, "result = " << result << "\n" << endi);
+    
+    return result;
+}
+
+
+int GridforceLiteGrid::compute_VdV(Position pos, float &V, Vector &dV) const
+{
+    int inds[3];
+    Vector g, dg;
+    
+    int err = get_inds(pos, inds, dg);
+    if (err) {
+	return -1;
+    }
+    
+    float wts[8];
+    float results[4];
+    
+    compute_wts(wts, dg);
+    for (int i = 0; i < 4; i++) {
+	results[i] = linear_interpolate(inds[0], inds[1], inds[2], i, wts);
+    }
+    
+    V = results[0];
+    dV = Vector(results[1], results[2], results[3]) * inv;
+    
+    return 0;
+}

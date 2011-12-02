@@ -19,35 +19,80 @@
 
 #include "MGridforceParams.h"
 
-class GridforceSubGrid;
 
-/*
-#define GRIDBLOCKX 32
-#define GRIDBLOCKY 32
-#define GRIDBLOCKZ 32
-*/
+class GridforceFullMainGrid;
+class GridforceFullSubGrid;
 
+
+// GridforceGrid is now an abstract class to act as an interface to both GridforceFullMainGrid's and GridforceLiteGrid's
 class GridforceGrid {
-    friend class GridforceMainGrid;
-    friend class GridforceSubGrid;
+public:
+    static GridforceGrid * new_grid(int gridnum, char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
+    
+    virtual void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams) = 0;
+    virtual void reinitialize(SimParameters *simParams, MGridforceParams *mgridParams) = 0;
+    
+    virtual Position get_center(void) const = 0;
+    virtual Position get_origin(void) const = 0;
+    virtual Tensor get_e (void) const = 0;
+    virtual Tensor get_inv(void) const = 0;
+    virtual Vector get_scale(void) const = 0;
+    virtual int get_k0(void) const = 0;
+    virtual int get_k1(void) const = 0; 
+    virtual int get_k2(void) const = 0;
+    virtual int get_total_grids(void) const = 0;
+    
+    virtual int get_all_gridvals(float** all_gridvals) const = 0;
+    virtual void set_all_gridvals(float* all_gridvals, int sz) = 0;
+    
+    virtual int compute_VdV(Position pos, float &V, Vector &dV) const = 0;
+
+    static void pack_grid(GridforceGrid *grid, MOStream *msg);
+    static GridforceGrid * unpack_grid(int gridnum, MIStream *msg);
+    
+protected:    
+    virtual void pack(MOStream *msg) const = 0;
+    virtual void unpack(MIStream *msg) = 0;
+
+    typedef enum {
+	GridforceGridTypeUndefined = 0,
+	GridforceGridTypeFull,
+	GridforceGridTypeLite
+    } GridforceGridType;
+    
+    int mygridnum;
+    
+    virtual GridforceGridType get_grid_type(void) = 0;	// icky, but necessary since RTTI is turned off for some reason
+};
+
+
+class GridforceFullBaseGrid {
+    friend class GridforceFullMainGrid;
+    friend class GridforceFullSubGrid;
     
 public:
-    GridforceGrid(void);
-    virtual ~GridforceGrid();
+    GridforceFullBaseGrid(void);
+    virtual ~GridforceFullBaseGrid();
     
 //    int request_box(Vector pos);
 //    int get_box(Box *box, Vector pos) const;
-    void pack(MOStream *msg) const;
-    void unpack(MIStream *msg);
   
     inline Position get_center(void) const { return center; }
     inline Position get_origin(void) const { return origin; }
     inline Tensor get_e (void) const { return e; }
     inline Tensor get_inv(void) const { return inv; }
     inline Vector get_scale(void) const { return scale; }
+    virtual int get_border(void) const = 0;
     
-    float get_grid(int i0, int i1, int i2) const;
-    void set_grid(int i0, int i1, int i2, float V);
+    inline float get_grid(int i0, int i1, int i2) const {
+	return grid[grid_index(i0, i1, i2)];
+    }
+    inline double get_grid_d(int i0, int i1, int i2) const {
+	return double(get_grid(i0, i1, i2));
+    }
+    inline void set_grid(int i0, int i1, int i2, float V) {
+	grid[grid_index(i0, i1, i2)] = V;
+    }
     
     int compute_VdV(Position pos, float &V, Vector &dV) const;
     
@@ -56,6 +101,9 @@ public:
     inline int get_k2(void) const { return k[2]; }
     
 protected:
+    virtual void pack(MOStream *msg) const;
+    virtual void unpack(MIStream *msg);
+    
     struct GridIndices {
       int inds2;
       int dk_hi;
@@ -66,9 +114,13 @@ protected:
     // Utility functions
     void readHeader(SimParameters *simParams, MGridforceParams *mgridParams);
     
-    inline int grid_index(int i0, int i1, int i2) const
-    {
-	return i0*dk[0] + i1*dk[1] + i2*dk[2];
+    inline int grid_index(int i0, int i1, int i2) const {
+	register int i, inds[3] = {i0, i1, i2};
+	for (i = 0; i < 3; i++) {
+	    if (inds[i] < 0) inds[i] += k[i];
+	    inds[i] %= k[i];
+	}
+	return inds[0]*dk[0] + inds[1]*dk[1] + inds[2]*dk[2];
     }
     
     //virtual int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const = 0;
@@ -85,7 +137,7 @@ protected:
     FILE *poten_fp;
     float *grid;	// Actual grid
     
-    GridforceSubGrid **subgrids;
+    GridforceFullSubGrid **subgrids;
     int numSubgrids;
     int generation;	// Subgrid level (0 = main grid)
     
@@ -116,50 +168,67 @@ protected:
 };
 
 
-class GridforceMainGrid : public GridforceGrid {
-    friend class GridforceGrid;
-    friend class GridforceSubGrid;
+class GridforceFullMainGrid : public GridforceGrid, public GridforceFullBaseGrid {
+    friend class GridforceFullBaseGrid;
+    friend class GridforceFullSubGrid;
 
 public:
-    GridforceMainGrid(int gridnum);
-    virtual ~GridforceMainGrid();
+    explicit GridforceFullMainGrid(int gridnum);
+    virtual ~GridforceFullMainGrid();
     
-    void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
+    void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams, int border);
+    inline void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams) {
+	initialize(potfilename, simParams, mgridParams, default_border);
+    }
     void reinitialize(SimParameters *simParams, MGridforceParams *mgridParams);
     
+    inline Position get_center(void) const { return GridforceFullBaseGrid::get_center(); };
+    inline Position get_origin(void) const { return GridforceFullBaseGrid::get_origin(); };
+    inline Tensor get_e (void) const { return GridforceFullBaseGrid::get_e(); };
+    inline Tensor get_inv(void) const { return GridforceFullBaseGrid::get_inv(); };
+    inline Vector get_scale(void) const { return GridforceFullBaseGrid::get_scale(); };
+    inline int get_k0(void) const { return GridforceFullBaseGrid::get_k0(); };
+    inline int get_k1(void) const { return GridforceFullBaseGrid::get_k1(); };
+    inline int get_k2(void) const { return GridforceFullBaseGrid::get_k2(); };
+    inline int get_border(void) const { return border; }
+    
+    int compute_VdV(Position pos, float &V, Vector &dV) const { return GridforceFullBaseGrid::compute_VdV(pos, V, dV); };
+    
+    inline int get_total_grids(void) const { return totalGrids; }
+    
+protected:
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
     
-    int get_all_gridvals(float** all_gridvals) const;
-    void set_all_gridvals(float* all_gridvals, int sz);
+    inline GridforceGridType get_grid_type(void) { return GridforceGridTypeFull; };
     
-    inline int getTotalGrids(void) const { return totalGrids; }
+    int get_all_gridvals(float **all_gridvals) const;
+    void set_all_gridvals(float *all_gridvals, int sz);
     
-protected:
     //int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const;
     void compute_b(float *b, int *inds, Vector gapscale)  const;
     void buildSubgridsFlat(void);
     
     char filename[129];
     int totalGrids;
-    GridforceSubGrid **subgrids_flat;
-    int mygridnum;
+    GridforceFullSubGrid **subgrids_flat;
+    //int mygridnum;
     
-    static const int border = 1;
+    static const int default_border = 1;
+    int border;
 };
 
 
-class GridforceSubGrid : public GridforceGrid {
-    friend class GridforceGrid;
-    friend class GridforceMainGrid;
+class GridforceFullSubGrid : public GridforceFullBaseGrid {
+    friend class GridforceFullBaseGrid;
+    friend class GridforceFullMainGrid;
 
 public:
-    GridforceSubGrid(GridforceGrid *parent_in);
+    GridforceFullSubGrid(GridforceFullBaseGrid *parent_in);
     
     void initialize(SimParameters *simParams, MGridforceParams *mgridParams);
     
-    void pack(MOStream *msg) const;
-    void unpack(MIStream *msg);
+    inline int get_border(void) const { return 0; }
     
     inline Tensor tensorMult (const Tensor &t1, const Tensor &t2) {
 	Tensor tmp;
@@ -176,6 +245,9 @@ public:
     }
     
 protected:
+    void pack(MOStream *msg) const;
+    void unpack(MIStream *msg);
+    
     //int get_inds(Position pos, int *inds, Vector &dg, Vector &gapscale) const;
     void compute_b(float *b, int *inds, Vector gapscale) const;
     void addToSubgridsFlat(void);
@@ -185,10 +257,82 @@ protected:
     Tensor scale_d2V;
     float scale_d3V;
     
-    GridforceGrid *parent;
+    GridforceFullBaseGrid *parent;
     int pmin[3], pmax[3];
-    GridforceMainGrid *maingrid;
+    GridforceFullMainGrid *maingrid;
     int subgridIdx;
+};
+
+
+class GridforceLiteGrid : public GridforceGrid {
+public:
+    explicit GridforceLiteGrid(int gridnum);
+    virtual ~GridforceLiteGrid();
+    
+    void initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams);
+    void reinitialize(SimParameters *simParams, MGridforceParams *mgridParams);
+    
+    inline Position get_center(void) const { return center; }
+    inline Position get_origin(void) const { return origin; }
+    inline Tensor get_e (void) const { return e; }
+    inline Tensor get_inv(void) const { return inv; }
+    inline Vector get_scale(void) const { return scale; }
+    inline int get_k0(void) const { return k[0]; }
+    inline int get_k1(void) const { return k[1]; }
+    inline int get_k2(void) const { return k[2]; }
+    inline int get_total_grids(void) const { return 1; }
+    
+    inline float get_grid(int i0, int i1, int i2, int i3) const {
+	return grid[grid_index(i0, i1, i2, i3)];
+    }
+    inline double get_grid_d(int i0, int i1, int i2, int i3) const {
+	return double(grid[grid_index(i0, i1, i2, i3)]);
+    }
+    inline void set_grid(int i0, int i1, int i2, int i3, float V) {
+	grid[grid_index(i0, i1, i2, i3)] = V;
+    }
+    
+    int get_all_gridvals(float** all_gridvals) const;
+    void set_all_gridvals(float* all_gridvals, int sz);
+    
+    int compute_VdV(Position pos, float &V, Vector &dV) const;
+    
+protected:
+    void compute_derivative_grids(void);
+    void compute_wts(float *wts, const Vector &dg) const;
+    int get_inds(Position pos, int *inds, Vector &dg) const;
+    float linear_interpolate(int i0, int i1, int i2, int i3, const float *wts) const;
+    
+    void pack(MOStream *msg) const;
+    void unpack(MIStream *msg);
+    
+    inline int grid_index(int i0, int i1, int i2, int i3) const {
+	// 'i3' is an index for the grid itself (0=V, 1=dV/dx, 2=dV/dy, 3=dV/dz)
+	// wrapping 'i3' may be bad idea: could hide errors
+	register int i, inds[4] = {i0, i1, i2, i3};
+	for (i = 0; i < 4; i++) {
+	    if (inds[i] < 0) inds[i] += k[i];
+	    inds[i] %= k[i];
+	}
+	return inds[0]*dk[0] + inds[1]*dk[1] + inds[2]*dk[2] + inds[3]*dk[3];
+    }
+    
+    inline GridforceGridType get_grid_type(void) { return GridforceGridTypeLite; };
+    
+    float *grid;
+    
+    int k[4];		// Grid dimensions ... 4th is always 4, for the different grid types
+    int size;
+    int dk[4];
+    
+    Position origin;	// Grid origin
+    Position center;	// Center of grid (for wrapping)
+    Tensor e;		// Grid unit vectors
+    Tensor inv;		// Inverse of unit vectors
+    
+    Vector scale;
+    
+    char filename[129];
 };
 
 #endif

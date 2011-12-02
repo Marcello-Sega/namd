@@ -4669,14 +4669,14 @@ void Molecule::send_Molecule(MOStream *msg){
     DebugM(3, "Sending gridforce info\n" << endi);
     msg->put(numGridforceGrids);
     
-    for (int grid = 0; grid < numGridforceGrids; grid++) {
-      msg->put(numGridforces[grid]);
-      msg->put(numAtoms, gridfrcIndexes[grid]);
-      if (numGridforces[grid])
+    for (int gridnum = 0; gridnum < numGridforceGrids; gridnum++) {
+      msg->put(numGridforces[gridnum]);
+      msg->put(numAtoms, gridfrcIndexes[gridnum]);
+      if (numGridforces[gridnum])
       {
-       msg->put(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
+       msg->put(numGridforces[gridnum]*sizeof(GridforceParams), (char*)gridfrcParams[gridnum]);
       }
-      gridfrcGrid[grid]->pack(msg);	// grid object writes its private data to message itself
+      GridforceGrid::pack_grid(gridfrcGrid[gridnum], msg);
     }
   }
   /* END gf */
@@ -4980,25 +4980,24 @@ void Molecule::receive_Molecule(MIStream *msg){
 	 delete [] gridfrcGrid;
 	 gridfrcIndexes = new int32*[numGridforceGrids];
 	 gridfrcParams = new GridforceParams*[numGridforceGrids];
-	 gridfrcGrid = new GridforceMainGrid*[numGridforceGrids];
+	 gridfrcGrid = new GridforceGrid*[numGridforceGrids];
 	 
 	 int grandTotalGrids = 0;
-	 for (int grid = 0; grid < numGridforceGrids; grid++) {
-	     msg->get(numGridforces[grid]);
+	 for (int gridnum = 0; gridnum < numGridforceGrids; gridnum++) {
+	     msg->get(numGridforces[gridnum]);
 	     
-	     gridfrcIndexes[grid] = new int32[numAtoms];
-	     msg->get(numAtoms, gridfrcIndexes[grid]);
+	     gridfrcIndexes[gridnum] = new int32[numAtoms];
+	     msg->get(numAtoms, gridfrcIndexes[gridnum]);
 	 
-	     if (numGridforces[grid])
+	     if (numGridforces[gridnum])
 	     {
-		 gridfrcParams[grid] = new GridforceParams[numGridforces[grid]];
-		 msg->get(numGridforces[grid]*sizeof(GridforceParams), (char*)gridfrcParams[grid]);
+		 gridfrcParams[gridnum] = new GridforceParams[numGridforces[gridnum]];
+		 msg->get(numGridforces[gridnum]*sizeof(GridforceParams), (char*)gridfrcParams[gridnum]);
 	     }
 	     
-	     gridfrcGrid[grid] = new GridforceMainGrid(grid);
-	     gridfrcGrid[grid]->unpack(msg);
+	     gridfrcGrid[gridnum] = GridforceGrid::unpack_grid(gridnum, msg);
 	     
-	     grandTotalGrids += gridfrcGrid[grid]->getTotalGrids();
+	     grandTotalGrids += gridfrcGrid[gridnum]->get_total_grids();
 	 }
       }
       /* END gf */
@@ -5191,7 +5190,7 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
     DebugM(3, "numGridforceGrids = " << numGridforceGrids << "\n");
     gridfrcIndexes = new int32*[numGridforceGrids];
     gridfrcParams = new GridforceParams*[numGridforceGrids];
-    gridfrcGrid = new GridforceMainGrid*[numGridforceGrids];
+    gridfrcGrid = new GridforceGrid*[numGridforceGrids];
     numGridforces = new int[numGridforceGrids];
     
     int grandTotalGrids = 0;	// including all subgrids
@@ -5455,11 +5454,10 @@ void Molecule::build_gridforce_params(StringList *gridfrcfile,
 //        iout << iINFO << "Allocating grid " << gridnum
 //             << "\n" << endi;
 	
-	DebugM(3, "allocating GridforceMainGrid(" << gridnum << ")\n");
-	gridfrcGrid[gridnum] = new GridforceMainGrid(gridnum);
-	gridfrcGrid[gridnum]->initialize(potfilename, simParams, mgridParams);
+	DebugM(3, "allocating GridforceGrid(" << gridnum << ")\n");
+	gridfrcGrid[gridnum] = GridforceGrid::new_grid(gridnum, potfilename, simParams, mgridParams);
 	
-	grandTotalGrids += gridfrcGrid[gridnum]->getTotalGrids();
+	grandTotalGrids += gridfrcGrid[gridnum]->get_total_grids();
 	DebugM(4, "grandTotalGrids = " << grandTotalGrids << "\n" << endi);
 	
 	// Finally, get next mgridParams pointer
