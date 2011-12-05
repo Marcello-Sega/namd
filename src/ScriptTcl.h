@@ -59,6 +59,12 @@ private:
   static int Tcl_numPes(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_numNodes(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_numPhysicalNodes(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_numReplicas(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_myReplica(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_replicaSendrecv(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_replicaSend(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_replicaRecv(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_replicaBarrier(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_print(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_config(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_param(ClientData, Tcl_Interp *, int, char **);

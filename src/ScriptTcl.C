@@ -168,6 +168,110 @@ int ScriptTcl::Tcl_numPhysicalNodes(ClientData, Tcl_Interp *interp, int argc, ch
   return TCL_OK;
 }
 
+#if CMK_REPLICAS
+extern "C" {
+int CmiNumReplicas();
+int CmiMyReplica();
+void CmiReplicaSendrecv(void *sendbuf, int sendcount, int dest, void *recvbuf, int recvcount, int source);
+void CmiReplicaSend(void *buf, int count, int dest);
+void CmiReplicaRecv(void *buf, int count, int source);
+void CmiReplicaBarrier();
+}
+#endif
+
+int ScriptTcl::Tcl_numReplicas(ClientData, Tcl_Interp *interp, int argc, char **) {
+  if ( argc > 1 ) {
+    Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+#if CMK_REPLICAS
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(CmiNumReplicas()));
+#else
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(1));
+#endif
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_myReplica(ClientData, Tcl_Interp *interp, int argc, char **) {
+  if ( argc > 1 ) {
+    Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+#if CMK_REPLICAS
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(CmiMyReplica()));
+#else
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(0));
+#endif
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_replicaSendrecv(ClientData, Tcl_Interp *interp, int argc, char **argv) {
+  if ( argc < 3 || argc > 4 ) {
+    Tcl_SetResult(interp,"args: data dest ?source?",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_DString recvstr;
+  Tcl_DStringInit(&recvstr);
+  int sendcount = strlen(argv[1]);
+  int recvcount = 0;
+  int dest = atoi(argv[2]);
+  int source = -1;
+  if ( argc > 3 ) source = atoi(argv[3]);
+#if CMK_REPLICAS
+  CmiReplicaSendrecv(&sendcount,sizeof(int),dest,&recvcount,sizeof(int),source);
+  Tcl_DStringSetLength(&recvstr,recvcount);
+  CmiReplicaSendrecv(argv[1],sendcount,dest,Tcl_DStringValue(&recvstr),recvcount,source);
+#endif
+  Tcl_DStringResult(interp, &recvstr);
+  Tcl_DStringFree(&recvstr);
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_replicaSend(ClientData, Tcl_Interp *interp, int argc, char **argv) {
+  if ( argc != 3 ) {
+    Tcl_SetResult(interp,"args: data dest",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  int sendcount = strlen(argv[1]);
+  int dest = atoi(argv[2]);
+#if CMK_REPLICAS
+  CmiReplicaSend(&sendcount,sizeof(int),dest);
+  CmiReplicaSend(argv[1],sendcount,dest);
+#endif
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_replicaRecv(ClientData, Tcl_Interp *interp, int argc, char **argv) {
+  if (argc > 2 ) {
+    Tcl_SetResult(interp,"args: ?source?",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  Tcl_DString recvstr;
+  Tcl_DStringInit(&recvstr);
+  int recvcount = 0;
+  int source = -1;
+  if ( argc > 1 ) source = atoi(argv[1]);
+#if CMK_REPLICAS
+  CmiReplicaRecv(&recvcount,sizeof(int),source);
+  Tcl_DStringSetLength(&recvstr,recvcount);
+  CmiReplicaRecv(Tcl_DStringValue(&recvstr),recvcount,source);
+#endif
+  Tcl_DStringResult(interp, &recvstr);
+  Tcl_DStringFree(&recvstr);
+  return TCL_OK;
+}
+
+int ScriptTcl::Tcl_replicaBarrier(ClientData, Tcl_Interp *interp, int argc, char **) {
+  if ( argc > 1 ) {
+    Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+#if CMK_REPLICAS
+  CmiReplicaBarrier();
+#endif
+  return TCL_OK;
+}
+
 int ScriptTcl::Tcl_print(ClientData,
 	Tcl_Interp *, int argc, char *argv[]) {
   Tcl_DString msg;
@@ -896,6 +1000,18 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "numNodes", Tcl_numNodes,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "numPhysicalNodes", Tcl_numPhysicalNodes,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "numReplicas", Tcl_numReplicas,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "myReplica", Tcl_myReplica,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaSendrecv", Tcl_replicaSendrecv,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaSend", Tcl_replicaSend,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaRecv", Tcl_replicaRecv,
+    (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "replicaBarrier", Tcl_replicaBarrier,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "print", Tcl_print,
     (ClientData) NULL, (Tcl_CmdDeleteProc *) NULL);
