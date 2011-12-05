@@ -32,6 +32,7 @@ class NamdState {
     Controller *controller;
     Lattice lattice;
     //char *currentdir;
+    std::string callback_labelstring, callback_valuestring;
 
 #ifdef MEM_OPT_VERSION
     void checkMemOptCompatibility();

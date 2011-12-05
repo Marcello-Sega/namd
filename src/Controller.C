@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: johanstr $
- * $Date: 2011/11/28 22:52:11 $
- * $Revision: 1.1273 $
+ * $Author: jim $
+ * $Date: 2011/12/05 21:00:32 $
+ * $Revision: 1.1274 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2232,7 +2232,7 @@ void Controller::printEnergies(int step, int minimize)
 		labels << (LABEL) << " "; values << (VALUE) << " ";
 #define CALLBACKLIST(LABEL,VALUE) \
 		labels << (LABEL) << " "; values << "{" << (VALUE) << "} ";
-    if (node->getScript() && node->getScript()->doCallback()) {
+    if (step == simParams->N && node->getScript() && node->getScript()->doCallback()) {
       std::ostringstream labels, values;
 #if CMK_BLUEGENEL
       // the normal version below gives a compiler error
@@ -2269,9 +2269,9 @@ void Controller::printEnergies(int step, int minimize)
       }
 
       labels << '\0';  values << '\0';  // insane but makes Linux work
-      std::string labelstring = labels.str();
-      std::string valuestring = values.str();
-      node->getScript()->doCallback(labelstring.c_str(),valuestring.c_str());
+      state->callback_labelstring = labels.str();
+      state->callback_valuestring = values.str();
+      // node->getScript()->doCallback(labelstring.c_str(),valuestring.c_str());
     }
 #undef CALLBACKDATA
 #endif
