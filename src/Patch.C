@@ -20,6 +20,7 @@
 
 typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
+
 //#define  DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
@@ -117,7 +118,7 @@ void Patch::unregisterVelocityPickup(ComputeID cid, Box<Patch,CompAtom> **const 
 
 //begin gbis
 //deposit, not pickup
-Box<Patch,BigReal>* Patch::registerPsiSumDeposit(ComputeID cid) {
+Box<Patch,GBReal>* Patch::registerPsiSumDeposit(ComputeID cid) {
 
   if (psiSumComputeList.add(cid) < 0) {
     DebugM(7, "registerPsiSumDeposit() failed for cid " << cid << std::endl);
@@ -127,7 +128,7 @@ Box<Patch,BigReal>* Patch::registerPsiSumDeposit(ComputeID cid) {
   return psiSumBox.checkOut(cid);
 }
 
-void Patch::unregisterPsiSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box) {
+void Patch::unregisterPsiSumDeposit(ComputeID cid,Box<Patch,GBReal> **const box) {
   psiSumComputeList.del(cid);
   psiSumBox.checkIn(*box);
   *box = 0;
@@ -140,15 +141,15 @@ void Patch::unregisterIntRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
   *box = 0;
 }
 
-Box<Patch,BigReal>* Patch::registerBornRadPickup(ComputeID cid) {
+Box<Patch,Real>* Patch::registerBornRadPickup(ComputeID cid) {
   return bornRadBox.checkOut(cid);
 }
-void Patch::unregisterBornRadPickup(ComputeID cid,Box<Patch,BigReal> **const box) {
+void Patch::unregisterBornRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
   bornRadBox.checkIn(*box);
   *box = 0;
 }
 
-Box<Patch,BigReal>* Patch::registerDEdaSumDeposit(ComputeID cid) {
+Box<Patch,GBReal>* Patch::registerDEdaSumDeposit(ComputeID cid) {
   if (dEdaSumComputeList.add(cid) < 0) {
     DebugM(7, "registerDEdaSumDeposit() failed for cid " << cid << std::endl);
     DebugM(7, "  size of dEdaSumCompueList " << dEdaSumComputeList.size() << std::endl);
@@ -156,17 +157,17 @@ Box<Patch,BigReal>* Patch::registerDEdaSumDeposit(ComputeID cid) {
   }
   return dEdaSumBox.checkOut(cid);
 }
-void Patch::unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box){
+void Patch::unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,GBReal> **const box){
   dEdaSumComputeList.del(cid);
   dEdaSumBox.checkIn(*box);
   *box = 0;
 }
 
-Box<Patch,BigReal>* Patch::registerDHdrPrefixPickup(ComputeID cid)
+Box<Patch,Real>* Patch::registerDHdrPrefixPickup(ComputeID cid)
 {
   return dHdrPrefixBox.checkOut(cid);
 }
-void Patch::unregisterDHdrPrefixPickup(ComputeID cid,Box<Patch,BigReal> **const box) {
+void Patch::unregisterDHdrPrefixPickup(ComputeID cid,Box<Patch,Real> **const box) {
   dHdrPrefixBox.checkIn(*box);
   *box = 0;
 }
@@ -361,7 +362,8 @@ void Patch::gbisP2Ready() {
   int seq = flags.sequence;
   for(cid = cid.begin(); cid != cid.end(); cid++) {
     if ( computeMap->compute(*cid)->type() == computeNonbondedSelfType ||
-         computeMap->compute(*cid)->type() == computeNonbondedPairType) {
+         computeMap->compute(*cid)->type() == computeNonbondedPairType ||
+         computeMap->compute(*cid)->type() == computeNonbondedCUDAType) {
       compute_count++;
       computeMap->compute(*cid)->gbisP2PatchReady(patchID,seq);
     }
@@ -377,7 +379,8 @@ void Patch::gbisP3Ready() {
   int seq = flags.sequence;
   for(cid = cid.begin(); cid != cid.end(); cid++) {
     if ( computeMap->compute(*cid)->type() == computeNonbondedSelfType ||
-         computeMap->compute(*cid)->type() == computeNonbondedPairType) {
+         computeMap->compute(*cid)->type() == computeNonbondedPairType ||
+         computeMap->compute(*cid)->type() == computeNonbondedCUDAType) {
       compute_count++;
       computeMap->compute(*cid)->gbisP3PatchReady(patchID,seq);
     }

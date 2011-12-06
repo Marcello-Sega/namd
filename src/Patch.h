@@ -50,17 +50,17 @@ class Patch
     Box<Patch,Real>* registerIntRadPickup(ComputeID cid);
     void unregisterIntRadPickup(ComputeID cid, Box<Patch,Real>**const box);
 
-    Box<Patch,BigReal>* registerPsiSumDeposit(ComputeID cid);
-    void unregisterPsiSumDeposit(ComputeID cid, Box<Patch,BigReal>**const box);
+    Box<Patch,GBReal>* registerPsiSumDeposit(ComputeID cid);
+    void unregisterPsiSumDeposit(ComputeID cid, Box<Patch,GBReal>**const box);
 
-    Box<Patch,BigReal>* registerBornRadPickup(ComputeID cid);
-    void unregisterBornRadPickup(ComputeID cid, Box<Patch,BigReal>**const box);
+    Box<Patch,Real>* registerBornRadPickup(ComputeID cid);
+    void unregisterBornRadPickup(ComputeID cid, Box<Patch,Real>**const box);
 
-    Box<Patch,BigReal>* registerDEdaSumDeposit(ComputeID cid);
-    void unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,BigReal> **const box);
+    Box<Patch,GBReal>* registerDEdaSumDeposit(ComputeID cid);
+    void unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,GBReal> **const box);
 
-    Box<Patch,BigReal>* registerDHdrPrefixPickup(ComputeID cid);
-    void unregisterDHdrPrefixPickup(ComputeID cid, Box<Patch,BigReal>**const box);
+    Box<Patch,Real>* registerDHdrPrefixPickup(ComputeID cid);
+    void unregisterDHdrPrefixPickup(ComputeID cid, Box<Patch,Real>**const box);
      //end gbis
 
      Box<Patch,Results>* registerForceDeposit(ComputeID cid);
@@ -120,11 +120,11 @@ class Patch
 
      // begin gbis
      RealList intRad;
-     BigRealList psiSum;
-     BigRealList psiFin;
-     BigRealList bornRad;
-     BigRealList dHdrPrefix;
-     BigRealList dEdaSum;
+     GBRealList psiSum;
+     GBRealList psiFin;
+     RealList bornRad;
+     RealList dHdrPrefix;
+     GBRealList dEdaSum;
      // end gbis
 
      // DMK - Atom Separation (water vs. non-water)
@@ -173,15 +173,15 @@ class Patch
      // END LA
 
      //begin gbis
-     OwnerBox<Patch,Real> intRadBox;
+     OwnerBox<Patch,Real>    intRadBox;
      ComputeIDList           intRadComputeList;
-     OwnerBox<Patch,BigReal> psiSumBox;
+     OwnerBox<Patch,GBReal>  psiSumBox;
      ComputeIDList           psiSumComputeList;
-     OwnerBox<Patch,BigReal> bornRadBox;
+     OwnerBox<Patch,Real>    bornRadBox;
      ComputeIDList           bornRadComputeList;
-     OwnerBox<Patch,BigReal> dEdaSumBox;
+     OwnerBox<Patch,GBReal>  dEdaSumBox;
      ComputeIDList           dEdaSumComputeList;
-     OwnerBox<Patch,BigReal> dHdrPrefixBox;
+     OwnerBox<Patch,Real>    dHdrPrefixBox;
      ComputeIDList           dHdrPrefixComputeList;
      //end gbis
 

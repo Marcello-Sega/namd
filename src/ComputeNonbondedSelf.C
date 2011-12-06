@@ -9,7 +9,6 @@
 #include "Patch.h"
 #include "LdbCoordinator.h"
 #include "Molecule.h"
-#include "ComputeGBIS.inl"
 
 #include "Node.h"
 #include "SimParameters.h"

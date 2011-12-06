@@ -28,7 +28,7 @@ class ProxyGBISP1ResultMsg: public CMessage_ProxyGBISP1ResultMsg {
     int destPe;
     int origPe;
     PatchID patch;
-    BigReal *psiSum;
+    GBReal *psiSum;
     int psiSumLen;// = numAtoms
 };
 class ProxyGBISP2DataMsg: public CMessage_ProxyGBISP2DataMsg {
@@ -36,7 +36,7 @@ public:
     int origPe;
     int destPe;
     PatchID patch;
-    BigReal *bornRad;//numAtoms
+    Real *bornRad;//numAtoms
     int bornRadLen;
   };
 class ProxyGBISP2ResultMsg: public CMessage_ProxyGBISP2ResultMsg {
@@ -44,7 +44,7 @@ public:
     int destPe;
     int origPe;
     PatchID patch;
-    BigReal *dEdaSum;
+    GBReal *dEdaSum;
     int dEdaSumLen;//numAtoms
   };
 class ProxyGBISP3DataMsg: public CMessage_ProxyGBISP3DataMsg {
@@ -52,7 +52,7 @@ public:
     int origPe;
     int destPe;
     PatchID patch;
-    BigReal *dHdrPrefix;//numAtoms
+    Real *dHdrPrefix;//numAtoms
     int dHdrPrefixLen;
   };
 

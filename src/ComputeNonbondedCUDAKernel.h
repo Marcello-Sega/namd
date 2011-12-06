@@ -1,5 +1,6 @@
-
 #ifdef NAMD_CUDA
+//this type defined in multiple files
+typedef float GBReal;
 
 void cuda_errcheck(const char *msg);
 
@@ -114,6 +115,58 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
                 float cutoff2, float plcutoff2,
                 int cbegin, int ccount, int pbegin, int pcount,
                 int doSlow, int doEnergy, int usePairlists, int savePairlists);
+
+//GBIS methods
+void cuda_GBIS_P1(
+  int cbegin,
+  int ccount,
+  int pbegin,
+  int pcount,
+  float a_cut,
+  float rho_0,
+  float3 lata,
+  float3 latb,
+  float3 latc
+  );
+void cuda_GBIS_P2(
+  int cbegin,
+  int ccount,
+  int pbegin,
+  int pcount,
+  float a_cut,
+  float r_cut,
+  float scaling,
+  float kappa,
+  float smoothDist,
+  float epsilon_p,
+  float epsilon_s,
+  float3 lata,
+  float3 latb,
+  float3 latc,
+  int doEnergy,
+  int doFullElec
+  );
+void cuda_GBIS_P3(
+  int cbegin,
+  int ccount,
+  int pbegin,
+  int pcount,
+  float a_cut,
+  float rho_0,
+  float scaling,
+  float3 lata,
+  float3 latb,
+  float3 latc
+  );
+
+void cuda_bind_GBIS_intRad(float *intRad0H, float *intRadSH);
+void cuda_bind_GBIS_energy(float *energy_gbis);
+void cuda_bind_GBIS_psiSum(GBReal *psiSumH);
+void cuda_bind_GBIS_bornRad(float *bornRadH);
+void cuda_bind_GBIS_dEdaSum(GBReal *dEdaSumH);
+void cuda_bind_GBIS_dHdrPrefix(float *dHdrPrefixH);
+
+//end GBIS methods
 
 int cuda_stream_finished();
 

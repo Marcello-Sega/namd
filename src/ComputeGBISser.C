@@ -32,6 +32,7 @@
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.decl.h"
+#include "ComputeGBIS.inl"
 // #define DEBUGM
 #define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
@@ -46,9 +47,8 @@
   struct vect {
     BigReal x, y, z;
   };
-
 #ifndef COUL_CONST
-#define COUL_CONST 332.0636 /* ke [kcal*Ang/e^2] */
+#define COUL_CONST 332.0636 // ke [kcal*Ang/e^2] 
 #endif
 
 #ifndef TA
@@ -64,7 +64,7 @@
 #define DE 5.454545454545454 // 12*5/11
 #endif
 
-inline void Phase2_Pair(//doesn't do self energies
+inline void Phase2_PairSer(//doesn't do self energies
 
 //input values
   BigReal r,
@@ -88,7 +88,8 @@ inline void Phase2_Pair(//doesn't do self energies
   BigReal & dEdai,
   BigReal & dEdaj
 );
-inline void CalcHPair (
+
+inline void CalcHPairSer (
   BigReal r,//distance
   BigReal r2,
   BigReal ri,
@@ -101,7 +102,7 @@ inline void CalcHPair (
   int & dji,//domain 2
   BigReal & dhij,
   BigReal & dhji);
-inline void CalcDHPair (
+inline void CalcDHPairSer (
   BigReal r,//distance
   BigReal r2,
   BigReal ri,
@@ -245,7 +246,7 @@ ComputeGBISser::~ComputeGBISser()
  * (2) s(cutoff)  = 0
  * (4) s'(cutoff) = 0
  ******************************************************************************/
-inline void CalcScale (
+inline void CalcScaleSer (
   BigReal r,//rij
   BigReal t,//transition distance
   BigReal c,//cutoff distance
@@ -274,81 +275,6 @@ inline void CalcScale (
     s = 0;
     d = 0;
   }
-}
-
-/******************************************************************************
- * use mass to determine element
- * return Bondi radius
- * returns the radius of i, depends on j though
- ******************************************************************************/
-inline Real MassToRadius(Mass mi) {//, Mass mj) {
-return
-  (mi <   2.50 ) ? 1.20 : // AtmNum = 1;  Elem =  H ; Mass =   1.00
-  (mi <   5.47 ) ? 1.40 : // AtmNum = 2;  Elem =  He; Mass =   4.00
-  (mi <   7.98 ) ? 1.82 : // AtmNum = 3;  Elem =  Li; Mass =   6.94
-  (mi <   9.91 ) ? 2.13 : // AtmNum = 4;  Elem =  Be; Mass =   9.01
-  (mi <  11.41 ) ? 2.13 : // AtmNum = 5;  Elem =  B ; Mass =  10.81
-  (mi <  13.01 ) ? 1.70 : // AtmNum = 6;  Elem =  C ; Mass =  12.01
-  (mi <  15.00 ) ? 1.55 : // AtmNum = 7;  Elem =  N ; Mass =  14.00
-  (mi <  17.49 ) ? 1.50 : // AtmNum = 8;  Elem =  O ; Mass =  15.99
-  (mi <  19.58 ) ? 1.50 : // AtmNum = 9;  Elem =  F ; Mass =  18.99
-  (mi <  21.58 ) ? 1.54 : // AtmNum = 10; Elem =  Ne; Mass =  20.17
-  (mi <  23.64 ) ? 2.27 : // AtmNum = 11; Elem =  Na; Mass =  22.98
-  (mi <  25.64 ) ? 1.73 : // AtmNum = 12; Elem =  Mg; Mass =  24.30
-  (mi <  27.53 ) ? 2.51 : // AtmNum = 13; Elem =  Al; Mass =  26.98
-  (mi <  29.53 ) ? 2.10 : // AtmNum = 14; Elem =  Si; Mass =  28.08
-  (mi <  31.52 ) ? 1.85 : // AtmNum = 15; Elem =  P ; Mass =  30.97
-  (mi <  33.76 ) ? 1.80 : // AtmNum = 16; Elem =  S ; Mass =  32.06
-  (mi <  37.28 ) ? 1.70 : // AtmNum = 17; Elem =  Cl; Mass =  35.45
-  (mi <  39.29 ) ? 2.75 : // AtmNum = 19; Elem =  K ; Mass =  39.10
-  (mi <  49.09 ) ? 1.88 : // AtmNum = 18; Elem =  Ar; Mass =  39.48
-  (mi <  61.12 ) ? 1.63 : // AtmNum = 28; Elem =  Ni; Mass =  58.69
-  (mi <  64.46 ) ? 1.40 : // AtmNum = 29; Elem =  Cu; Mass =  63.54
-  (mi <  67.55 ) ? 1.39 : // AtmNum = 30; Elem =  Zn; Mass =  65.38
-  (mi <  71.18 ) ? 1.87 : // AtmNum = 31; Elem =  Ga; Mass =  69.72
-  (mi <  73.78 ) ? 2.19 : // AtmNum = 32; Elem =  Ge; Mass =  72.64
-  (mi <  76.94 ) ? 1.85 : // AtmNum = 33; Elem =  As; Mass =  74.92
-  (mi <  79.43 ) ? 1.90 : // AtmNum = 34; Elem =  Se; Mass =  78.96
-  (mi <  81.85 ) ? 1.85 : // AtmNum = 35; Elem =  Br; Mass =  79.90
-  (mi <  95.11 ) ? 2.02 : // AtmNum = 36; Elem =  Kr; Mass =  83.79
-  (mi < 107.14 ) ? 1.63 : // AtmNum = 46; Elem =  Pd; Mass = 106.42
-  (mi < 110.14 ) ? 1.72 : // AtmNum = 47; Elem =  Ag; Mass = 107.86
-  (mi < 113.61 ) ? 1.58 : // AtmNum = 48; Elem =  Cd; Mass = 112.41
-  (mi < 116.76 ) ? 1.93 : // AtmNum = 49; Elem =  In; Mass = 114.81
-  (mi < 120.24 ) ? 2.17 : // AtmNum = 50; Elem =  Sn; Mass = 118.71
-  (mi < 124.33 ) ? 2.09 : // AtmNum = 51; Elem =  Sb; Mass = 121.76
-  (mi < 127.25 ) ? 1.98 : // AtmNum = 53; Elem =  I ; Mass = 126.90
-  (mi < 129.45 ) ? 2.06 : // AtmNum = 52; Elem =  Te; Mass = 127.60
-  (mi < 163.19 ) ? 2.16 : // AtmNum = 54; Elem =  Xe; Mass = 131.29
-  (mi < 196.02 ) ? 1.75 : // AtmNum = 78; Elem =  Pt; Mass = 195.08
-  (mi < 198.78 ) ? 1.66 : // AtmNum = 79; Elem =  Au; Mass = 196.96
-  (mi < 202.49 ) ? 1.55 : // AtmNum = 80; Elem =  Hg; Mass = 200.59
-  (mi < 205.79 ) ? 1.96 : // AtmNum = 81; Elem =  Tl; Mass = 204.38
-  (mi < 222.61 ) ? 2.02 : // AtmNum = 82; Elem =  Pb; Mass = 207.20
-  (mi < 119.01 ) ? 1.86 : // AtmNum = 92; Elem =  U ; Mass = 238.02
-                   1.50 ;   // Unknown
-
-}
-
-/******************************************************************************
- * Screen radii
- * use masses to determine elements
- * use elements to lookup Sij
- * to scale the coulomb radius
- * from Hawkins, Cramer, Truhlar; 1996
- * mi is descreened atom - calculating it's alpha (outer loop index)
- * mj is descreening atom - contributor (inner loop index)
- ******************************************************************************/
-inline Real MassToScreen(Mass mi) {//, Mass mj) {
-    return
-      (mi <   1.500) ? 0.85 : //H
-      (mi <  12.500) ? 0.72 : //C
-      (mi <  14.500) ? 0.79 : //N
-      (mi <  16.500) ? 0.85 : //O
-      (mi <  19.500) ? 0.88 : //F
-      (mi <  31.500) ? 0.86 : //P
-      (mi <  32.500) ? 0.96 : //S
-                        0.8 ; //all others
 }
 
 
@@ -492,7 +418,7 @@ void ComputeGBISserMgr::calcGBISReg(int stat) {
           BigReal rhojs = coord[j].rhos;
           BigReal rhoj0 = coord[j].rho0;
           BigReal rhois = coord[i].rhos;
-      CalcHPair(r,r2,r_i,a_cut, coord[i].rho0, coord[j].rhos,
+      CalcHPairSer(r,r2,r_i,a_cut, coord[i].rho0, coord[j].rhos,
                 coord[j].rho0, coord[i].rhos,dij,dji,hij,hji);
 
 #ifdef PRINT_COMP
@@ -566,7 +492,7 @@ void ComputeGBISserMgr::calcGBISReg(int stat) {
 
       //calculate scaling for energy smoothing
       BigReal scale, ddrScale;
-      //CalcScale(r, trans, cutoff, scale, ddrScale);
+      //CalcScaleSer(r, trans, cutoff, scale, ddrScale);
       if ( false ) {
         BigReal ratio = r2 / cutoff2;
         scale = ratio - 1;
@@ -584,7 +510,7 @@ void ComputeGBISserMgr::calcGBISReg(int stat) {
       //CkPrintf("GBIS_SER_excl[%i,%i] %i\n",i,j,exclij);
       //CkPrintf("GBIS_DOFULL = %i\n",stat);
       
-      Phase2_Pair(r,r2,r_i,qiqj,a[i],a[j],epsilon_p_i,epsilon_s_i,kappa,exclij,
+      Phase2_PairSer(r,r2,r_i,qiqj,a[i],a[j],epsilon_p_i,epsilon_s_i,kappa,exclij,
           scale14,stat,coulEij,ddrCoulEij,gbEij,ddrGbEij,dEdai,dEdaj);
     int id1 = coord[i].id;
     int id2 = coord[j].id;
@@ -699,7 +625,7 @@ void ComputeGBISserMgr::calcGBISReg(int stat) {
       loop3Iter++;
       //calculate dHij for pair
       r = 1.0/r_i;
-      CalcDHPair(r,r2,r_i,a_cut,
+      CalcDHPairSer(r,r2,r_i,a_cut,
           coord[i].rho0,coord[j].rhos,
           coord[j].rho0,coord[i].rhos,
           dij,dji,dhij,dhji);
@@ -1050,16 +976,16 @@ void ComputeGBISser::doWork()
   h   return value
   dh  return value
 */
-inline void h0 ( BigReal r, BigReal r2, BigReal ri,// 5.3%
+inline void h0Ser ( BigReal r, BigReal r2, BigReal ri,// 5.3%
 Real rc, BigReal r0, BigReal rs, BigReal & h ) {
   h = 0;
 }
-inline void dh0 ( BigReal r, BigReal r2, BigReal ri,// 5.3%
+inline void dh0Ser ( BigReal r, BigReal r2, BigReal ri,// 5.3%
 Real rc, BigReal r0, BigReal rs, BigReal & dh ) {
   dh = 0;
 }
 
-inline void h1 ( BigReal r, BigReal r2, BigReal ri, //18.4%
+inline void h1Ser ( BigReal r, BigReal r2, BigReal ri, //18.4%
 BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
 
   BigReal rci = 1.0/rc;
@@ -1071,7 +997,7 @@ BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
   BigReal rci2 = rci*rci;
   h = 0.125*ri*(1 + 2*r*rmrsi + rci2*(r2 - 4*rc*r - rs2) + 2*logr);
 }
-inline void dh1 ( BigReal r, BigReal r2, BigReal ri, //18.4%
+inline void dh1Ser ( BigReal r, BigReal r2, BigReal ri, //18.4%
 BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
 
   BigReal rci = 1.0/rc;
@@ -1084,32 +1010,32 @@ BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
   dh = ri*ri*(-0.25*logr - (rc*rc - rmrs2)*(rs2 + r2)*0.125*rci2*rmrsi*rmrsi);
 }
 
-inline void h2 ( BigReal r, BigReal r2, BigReal ri,// 74.5%
+inline void h2Ser ( BigReal r, BigReal r2, BigReal ri,// 74.5%
 BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
 
     BigReal k = rs*ri; k*=k;//k=(rs/r)^2
     h = rs*ri*ri*k*(TA+k*(TB+k*(TC+k*(TD+k*TE))));
 }
-inline void dh2 ( BigReal r, BigReal r2, BigReal ri,// 74.5%
+inline void dh2Ser ( BigReal r, BigReal r2, BigReal ri,// 74.5%
 BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
 
     BigReal k = rs*ri; k*=k;//k=(rs/r)^2
     dh = -rs*ri*ri*ri*k*(DA+k*(DB+k*(DC+k*(DD+k*DE))));
 }
 
-inline void h3 ( BigReal r, BigReal r2, BigReal ri,// 1.4%
+inline void h3Ser ( BigReal r, BigReal r2, BigReal ri,// 1.4%
 BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
     BigReal r2mrs2i = 1.0/(r2-rs*rs);
     h = 0.5 * ( rs*r2mrs2i + 0.5 * log((r-rs)/(r+rs))*ri );
 }
-inline void dh3 ( BigReal r, BigReal r2, BigReal ri,// 1.4%
+inline void dh3Ser ( BigReal r, BigReal r2, BigReal ri,// 1.4%
 BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
     BigReal rs2 = rs*rs;
     BigReal r2mrs2i = 1.0/(r2-rs2);
     dh = -0.25*ri*(2*(r2+rs2)*rs*r2mrs2i*r2mrs2i + ri*log((r-rs)/(r+rs)));
 }
 
-inline void h4 ( BigReal r, BigReal r2, BigReal ri,// 0.4%
+inline void h4Ser ( BigReal r, BigReal r2, BigReal ri,// 0.4%
 BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
     BigReal ri2 = ri*ri;
     BigReal r02 = r0*r0;
@@ -1121,7 +1047,7 @@ BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
     BigReal rilogr = ri*logr;
     h = 0.25*( r0i*(2-0.5*(r0i*ri*(r2 + r02 - rs2))) - rspri + rilogr );
 }
-inline void dh4 ( BigReal r, BigReal r2, BigReal ri,// 0.4%
+inline void dh4Ser ( BigReal r, BigReal r2, BigReal ri,// 0.4%
 BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
     BigReal ri2 = ri*ri;
     BigReal r02 = r0*r0;
@@ -1135,7 +1061,7 @@ BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
         * 0.5*ri2*rspri*rspri)*r0i*r0i - ri*rilogr );
 }
 
-inline void h5 ( BigReal r, BigReal r2, BigReal ri,// 0%, r<0.7Ang
+inline void h5Ser ( BigReal r, BigReal r2, BigReal ri,// 0%, r<0.7Ang
 BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
     BigReal rs2 = rs*rs;
     BigReal r2mrs2i = 1/(r2-rs2);
@@ -1145,7 +1071,7 @@ BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
     BigReal logr = 0.5*ri*log(-rmrs/rprs);
     h = 0.5*( rsr2mrs2i + 2/r0 + logr );
 }
-inline void dh5 ( BigReal r, BigReal r2, BigReal ri,// 0%, r<0.7Ang
+inline void dh5Ser ( BigReal r, BigReal r2, BigReal ri,// 0%, r<0.7Ang
 BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
     BigReal rs2 = rs*rs;
     BigReal r2mrs2i = 1/(r2-rs2);
@@ -1156,52 +1082,52 @@ BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
     dh = -0.5*ri*((rs2+r2)*rsr2mrs2i*r2mrs2i+logr );
 }
 
-inline void h6 ( BigReal r, BigReal r2, BigReal ri,//0%, one atom within other
+inline void h6Ser ( BigReal r, BigReal r2, BigReal ri,//0%, one atom within other
 BigReal rc, BigReal r0, BigReal rs, BigReal & h ) {
   h = 0;
 }
-inline void dh6 ( BigReal r, BigReal r2, BigReal ri,//0%, one atom within other
+inline void dh6Ser ( BigReal r, BigReal r2, BigReal ri,//0%, one atom within other
 BigReal rc, BigReal r0, BigReal rs, BigReal & dh ) {
   dh = 0;
 }
 
-inline void CalcH ( BigReal r, BigReal r2, BigReal ri,
+inline void CalcHSer ( BigReal r, BigReal r2, BigReal ri,
 BigReal rc, BigReal r0, BigReal rs, BigReal & h, int & d) {
   if( r <= rc - rs && r > 4*rs ) {//II
-    h2(r,r2,ri,rc,r0,rs,h); d = 2;
+    h2Ser(r,r2,ri,rc,r0,rs,h); d = 2;
   } else if (r <= rc + rs && r > rc - rs) {//I
-    h1(r,r2,ri,rc,r0,rs,h); d = 1;
+    h1Ser(r,r2,ri,rc,r0,rs,h); d = 1;
   } else if (r > rc + rs) {//0
-    h0(r,r2,ri,rc,r0,rs,h); d = 0;
+    h0Ser(r,r2,ri,rc,r0,rs,h); d = 0;
   } else if( r <= 4*rs && r > r0 + rs ) {//III
-    h3(r,r2,ri,rc,r0,rs,h); d = 3;
+    h3Ser(r,r2,ri,rc,r0,rs,h); d = 3;
   } else if ( r <= r0 + rs && r > (r0>rs?r0-rs:rs-r0) ) {//IV
-    h4(r,r2,ri,rc,r0,rs,h); d = 4;
+    h4Ser(r,r2,ri,rc,r0,rs,h); d = 4;
   } else if (r0 < rs ) {//V
-    h5(r,r2,ri,rc,r0,rs,h); d = 5;
+    h5Ser(r,r2,ri,rc,r0,rs,h); d = 5;
   } else {//VI
-    h6(r,r2,ri,rc,r0,rs,h); d = 6;
+    h6Ser(r,r2,ri,rc,r0,rs,h); d = 6;
   }
 }
-inline void CalcDH ( BigReal r, BigReal r2, BigReal ri,
+inline void CalcDHSer ( BigReal r, BigReal r2, BigReal ri,
 BigReal rc, BigReal r0, BigReal rs, BigReal & dh, int & d) {
   if( r <= rc - rs && r > 4*rs ) {//II
-    dh2(r,r2,ri,rc,r0,rs,dh); d = 2;
+    dh2Ser(r,r2,ri,rc,r0,rs,dh); d = 2;
   } else if (r <= rc + rs && r > rc - rs) {//I
-    dh1(r,r2,ri,rc,r0,rs,dh); d = 1;
+    dh1Ser(r,r2,ri,rc,r0,rs,dh); d = 1;
   } else if (r > rc + rs) {//0
-    dh0(r,r2,ri,rc,r0,rs,dh); d = 0;
+    dh0Ser(r,r2,ri,rc,r0,rs,dh); d = 0;
   } else if( r <= 4*rs && r > r0 + rs ) {//III
-    dh3(r,r2,ri,rc,r0,rs,dh); d = 3;
+    dh3Ser(r,r2,ri,rc,r0,rs,dh); d = 3;
   } else if ( r <= r0 + rs && r > (r0>rs?r0-rs:rs-r0) ) {//IV
-    dh4(r,r2,ri,rc,r0,rs,dh); d = 4;
+    dh4Ser(r,r2,ri,rc,r0,rs,dh); d = 4;
   } else if (r0 < rs ) {//V
-    dh5(r,r2,ri,rc,r0,rs,dh); d = 5;
+    dh5Ser(r,r2,ri,rc,r0,rs,dh); d = 5;
   } else {//VI
-    dh6(r,r2,ri,rc,r0,rs,dh); d = 6;
+    dh6Ser(r,r2,ri,rc,r0,rs,dh); d = 6;
   }
 }
-inline void CalcHPair (
+inline void CalcHPairSer (
   BigReal r,//distance
   BigReal r2,//distance squared
   BigReal ri,//inverse distance
@@ -1215,10 +1141,10 @@ inline void CalcHPair (
   BigReal & hij,//output
   BigReal & hji//output
 ) {
-  CalcH(r,r2,ri,rc,ri0,rjs,hij,dij);//hij
-  CalcH(r,r2,ri,rc,rj0,ris,hji,dji);//hji
+  CalcHSer(r,r2,ri,rc,ri0,rjs,hij,dij);//hij
+  CalcHSer(r,r2,ri,rc,rj0,ris,hji,dji);//hji
 }
-inline void CalcDHPair (
+inline void CalcDHPairSer (
   BigReal r,//distance
   BigReal r2,
   BigReal ri,
@@ -1232,8 +1158,8 @@ inline void CalcDHPair (
   BigReal & dhij,
   BigReal & dhji
 ) {
-  CalcDH(r,r2,ri,rc,ri0,rjs,dhij,dij);//hij
-  CalcDH(r,r2,ri,rc,rj0,ris,dhji,dji);//hji
+  CalcDHSer(r,r2,ri,rc,ri0,rjs,dhij,dij);//hij
+  CalcDHSer(r,r2,ri,rc,rj0,ris,dhji,dji);//hji
 }
 
 
@@ -1246,7 +1172,7 @@ inline void CalcDHPair (
 /*
  * Calculate coulomb energy and force for single pair of atoms
  */
-inline void Calc_Coul_Pair(
+inline void Calc_Coul_PairSer(
   BigReal r_i,
   BigReal qiqj,
   BigReal epsilon_p_i,
@@ -1273,7 +1199,7 @@ inline void Calc_Coul_Pair(
  * Calculate GB Energy, GB dEdr force
  * also output intermediate values used in dEda
  */
-inline void Calc_dEdr_Pair(//no longer does i==j
+inline void Calc_dEdr_PairSer(//no longer does i==j
   BigReal r,
   BigReal r2,
   BigReal qiqj,
@@ -1318,7 +1244,7 @@ inline void Calc_dEdr_Pair(//no longer does i==j
  * Calculate summation element of dEda array
  * must calculate dEdr previously to retreive intermediate values
  */
-inline void Calc_dEda_Pair(
+inline void Calc_dEda_PairSer(
   BigReal r2,
   BigReal ai,
   BigReal aj,
@@ -1346,7 +1272,7 @@ inline void Calc_dEda_Pair(
  * Calculate Coulomb and GB interaction and dEda element
  * for a pair of atoms
  */
-inline void Phase2_Pair(//doesn't do self energies
+inline void Phase2_PairSer(//doesn't do self energies
 
 //input values
   BigReal r,
@@ -1378,12 +1304,12 @@ inline void Phase2_Pair(//doesn't do self energies
 
   //calculate GB energy and force
   BigReal aiaj,expr2aiaj4,fij,f_i,expkappa,Dij;
-  Calc_dEdr_Pair(r,r2,qiqj,ai,aj,kappa,epsilon_p_i,epsilon_s_i,
+  Calc_dEdr_PairSer(r,r2,qiqj,ai,aj,kappa,epsilon_p_i,epsilon_s_i,
       aiaj,expr2aiaj4,fij,f_i,expkappa,Dij,gbEij,ddrGbEij);
 
   //calculate dEda
   if (doSlow) {
-    Calc_dEda_Pair(r2,ai,aj,qiqj,kappa,aiaj,expkappa,expr2aiaj4,
+    Calc_dEda_PairSer(r2,ai,aj,qiqj,kappa,aiaj,expkappa,expr2aiaj4,
              fij,f_i,Dij,epsilon_s_i,dEdai,dEdaj);
   }
 }

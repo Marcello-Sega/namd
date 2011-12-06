@@ -40,6 +40,7 @@
 #include "Priorities.h"
 #include "SortAtoms.h"
 
+//#define PRINT_COMP
 #define TINY 1.0e-20;
 #define MAXHGS 10
 #define MIN_DEBUG_LEVEL 2
@@ -2104,7 +2105,7 @@ void HomePatch::gbisComputeAfterP1() {
     bornRad[i]=1/(1/rhoi0-1/rhoi*tanh(psiFin[i]*(delta+psiFin[i]*(-beta+gamma*psiFin[i]))));
     bornRad[i] = (bornRad[i] > alphaMax) ? alphaMax : bornRad[i];
 #ifdef PRINT_COMP
-    CkPrintf("BORNRAD(%04i)[%04i] = % .4e\n", flags.sequence, pExt[i].id, bornRad[i]);
+    CkPrintf("BORNRAD(%04i)[%04i] = % .4e\n",flags.sequence,pExt[i].id,bornRad[i]);
 #endif
   }
 
@@ -2164,7 +2165,7 @@ void HomePatch::gbisP2Ready() {
       ProxyGBISP2DataMsg *msg=new(numAtoms,PRIORITY_SIZE) ProxyGBISP2DataMsg;
       msg->patch = patchID;
       msg->origPe = CkMyPe();
-      memcpy(msg->bornRad,bornRad.begin(),numAtoms*sizeof(BigReal));
+      memcpy(msg->bornRad,bornRad.begin(),numAtoms*sizeof(Real));
       msg->destPe = node;
       int seq = flags.sequence;
       int priority = GB2_PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);
@@ -2187,7 +2188,7 @@ void HomePatch::gbisP3Ready() {
       msg->patch = patchID;
       msg->dHdrPrefixLen = msgAtoms;
       msg->origPe = CkMyPe();
-      memcpy(msg->dHdrPrefix, dHdrPrefix.begin(), msgAtoms*sizeof(BigReal));
+      memcpy(msg->dHdrPrefix, dHdrPrefix.begin(), msgAtoms*sizeof(Real));
       msg->destPe = node;
       int seq = flags.sequence;
       int priority = GB3_PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);

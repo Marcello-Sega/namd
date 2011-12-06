@@ -7,6 +7,7 @@
 
 //#define BENCHMARK
 #define CHECK_PRIORITIES 0
+//#define PRINT_COMP
 
 //approximate flop equivalence of transcendental functs
 #ifdef BENCHMARK
@@ -19,6 +20,7 @@
 #include "ComputeNonbondedUtil.h"
 #include "ComputeGBIS.inl"
 #include "time.h"
+
 
 /*Searches all pair of atoms to create
 largest pairlist lasting all cycle*/
@@ -42,12 +44,12 @@ inline void pairlistFromAll(
   int gbisPhase = gbisParams->gbisPhase;
 
   //determine long and short cutoff
-  BigReal fsMax = gbisParams->fsMax;
-  BigReal a_cut = gbisParams->a_cut - fsMax;
-  BigReal a_cut_ps2 = (a_cut+fsMax)*(a_cut+fsMax);
-  BigReal r_cut = gbisParams->cutoff;
-  BigReal a_cut2 = a_cut*a_cut;
-  BigReal r_cut2 = r_cut*r_cut;
+  float fsMax = FS_MAX; // gbisParams->fsMax;
+  float a_cut = gbisParams->a_cut - fsMax;
+  float a_cut_ps2 = (a_cut+fsMax)*(a_cut+fsMax);
+  float r_cut = gbisParams->cutoff;
+  float a_cut2 = a_cut*a_cut;
+  float r_cut2 = r_cut*r_cut;
   int s = 0;// 0 is short cutoff list
   int l = 1;// 1 is long-short cutoff list
 #ifdef BENCHMARK
@@ -56,12 +58,12 @@ inline void pairlistFromAll(
 #endif
   Position ri, rj;
   Position ngri, ngrj;
-  double r, dr, r2;
-  BigReal rhoi0, rhois, rhoj0, rhojs, rhois2, rhojs2, rhois2_16;
-  BigReal ami2, amj2, api2, apj2;
+  float r, dr, r2;
+  float rhoi0, rhois, rhoj0, rhojs, rhois2, rhojs2, rhois2_16;
+  float ami2, amj2, api2, apj2;
   int numGBISPairlists = 4;
 
-  BigReal max_gcut2  = r_cut;
+  float max_gcut2  = r_cut;
   if (a_cut+fsMax > r_cut)
     max_gcut2 = a_cut+fsMax;
   max_gcut2 += 2.0*gbisParams->maxGroupRadius;
@@ -260,13 +262,13 @@ CkPrintf("PE%i, S%09i, P%i\n",CkMyPe(),gbisParams->sequence,gbisParams->gbisPhas
 
   int unique = (gbisParams->numPatches == 1) ? 1 : 0;//should inner loop be unique from ourter loop
   int numGBISPairlists = 4;
-  BigReal r_cut = gbisParams->cutoff;
-  BigReal fsMax = gbisParams->fsMax;//FS_MAX;
-  BigReal a_cut = gbisParams->a_cut-fsMax;
-  BigReal a_cut2 = a_cut*a_cut;
-  BigReal a_cut_ps = a_cut + fsMax;//max screen radius
-  BigReal r_cut2 = r_cut*r_cut;
-  BigReal a_cut_ps2 = a_cut_ps*a_cut_ps;
+  float r_cut = gbisParams->cutoff;
+  float fsMax = FS_MAX; // gbisParams->fsMax;//FS_MAX;
+  float a_cut = gbisParams->a_cut-fsMax;
+  float a_cut2 = a_cut*a_cut;
+  float a_cut_ps = a_cut + fsMax;//max screen radius
+  float r_cut2 = r_cut*r_cut;
+  float a_cut_ps2 = a_cut_ps*a_cut_ps;
   //put PL pointer back to beginning of lists
   for (int k = 0; k < numGBISPairlists; k++)
     gbisParams->gbisStepPairlists[k]->reset();
@@ -286,25 +288,25 @@ if (gbisParams->gbisPhase == 1) {
   int numDom = 7;
   double t1 = 1.0*clock()/CLOCKS_PER_SEC;
 #endif
-  register double psiI;
+  register GBReal psiI;
 
-  register double dr;
-  register double r2;
-  register double r, r_i, r2_i;
-  double rhoi0, rhois, rhojs, rhoj0;
+  register float dr;
+  register float r2;
+  register float r, r_i, r2_i;
+  float rhoi0, rhois, rhojs, rhoj0;
   Position ri, rj;
   register int j;
   int numPairs;
-  register BigReal ta = TA;
-  register BigReal tb = TB;
-  register BigReal tc = TC;
-  register BigReal td = TD;
-  register BigReal te = TE;
+  register float ta = TA;
+  register float tb = TB;
+  register float tc = TC;
+  register float td = TD;
+  register float te = TE;
 
-  register BigReal hij,hji;
+  register float hij,hji;
   int dij,dji;
-  BigReal k;
-  BigReal rhois2, rhojs2;
+  float k;
+  float rhois2, rhojs2;
 
   //calculate piecewise-22 Pairs
   int c = 0;
@@ -315,6 +317,7 @@ if (gbisParams->gbisPhase == 1) {
     ri.x += offset_x;
     ri.y += offset_y;
     ri.z += offset_z;
+    rhoi0 = gbisParams->intRad[0][2*i+0];
     rhois = gbisParams->intRad[0][2*i+1];
     rhois2 = rhois*rhois;
     psiI = ZERO;
@@ -336,6 +339,7 @@ if (gbisParams->gbisPhase == 1) {
       r2 += dr*dr;
       r2_i = 1.0/r2;
 
+      rhoj0 = gbisParams->intRad[1][2*j+0];
       rhojs = gbisParams->intRad[1][2*j+1];
       rhojs2 = rhojs*rhojs;
 
@@ -345,20 +349,39 @@ if (gbisParams->gbisPhase == 1) {
       k = rhois2*r2_i;//k=(rs/r)^2
       hji = rhois*r2_i*k*(ta+k*(tb+k*(tc+k*(td+k*te))));
 
+//#if 1
 #ifdef PRINT_COMP
       int id1 = params->pExt[0][i].id;
       int id2 = params->pExt[1][j].id;
-      BigReal h1 = hij;
-      BigReal h2 = hji;
+      float h1 = hij;
+      float h2 = hji;
+      float r10 = rhoi0;
+      float r1s = rhojs;
+      float r20 = rhoj0;
+      float r2s = rhois;
+/*printf("PSIPAIR %05i %05i%9.5f%6.3f%6.3f%2i% 13.5e\n",
+id1,id2,sqrt(r2),
+rhoi0, rhojs,
+2,hij);
+printf("PSIPAIR %05i %05i%9.5f%6.3f%6.3f%2i% 13.5e\n",
+id2,id1,sqrt(r2),
+rhoj0, rhois,
+2,hji);
+*/
       if (id1 > id2) {
         int tmp = id1;
         id1 = id2;
         id2 = tmp;
         h1 = hji;
         h2 = hij;
+        r20 = rhoi0;
+        r2s = rhojs;
+        r10 = rhoj0;
+        r1s = rhois;
       }
-      CkPrintf("PSI(%04i)[%04i,%04i] = 22 % .4e % .4e\n",gbisParams->sequence,id1,id2,h1, h2);
-      CkPrintf("PPSI(%04i)[%04i,%04i] = 22\n",gbisParams->cid,id1,id2);
+//      CkPrintf("PSIPAIR%5i%5i%10.5f%5i%14.8f%7.4f%7.4f\n",id1,id2,sqrt(r2),2,h1,r10,r1s);
+//      CkPrintf("PSIPAIR%5i%5i%10.5f%5i%14.8f%7.4f%7.4f\n",id2,id1,sqrt(r2),2,h2,r20,r2s);
+      //CkPrintf("PPSI(%04i)[%04i,%04i] = 22\n",gbisParams->cid,id1,id2);
 #endif
 
       psiI += hij;
@@ -381,14 +404,14 @@ nops = 0;
   nops = 0;
 #endif
 
-  BigReal rmris, rmrjs;
-  BigReal rmrsi;
-  BigReal rmrs2;
-  BigReal rs2;
-  BigReal logri, logrj;
-  BigReal rci2;
-  BigReal a_cut_i = 1.0 / a_cut;
-  BigReal a_cut_i2 = a_cut_i*a_cut_i;
+  float rmris, rmrjs;
+  float rmrsi;
+  float rmrs2;
+  float rs2;
+  float logri, logrj;
+  float rci2;
+  float a_cut_i = 1.0 / a_cut;
+  float a_cut_i2 = a_cut_i*a_cut_i;
 
   //calculate piecewise-11 pairs
   c = 1;
@@ -399,6 +422,7 @@ nops = 0;
     ri.x += offset_x;
     ri.y += offset_y;
     ri.z += offset_z;
+    rhoi0 = gbisParams->intRad[0][2*i+0];
     rhois = gbisParams->intRad[0][2*i+1];
     psiI = ZERO;
     numPairs;
@@ -417,11 +441,12 @@ nops = 0;
       r_i = 1.0/sqrt(r2);
       r = r2*r_i;
 
+      rhoj0 = gbisParams->intRad[1][2*j+0];
       rhojs = gbisParams->intRad[1][2*j+1];
 
-      BigReal tmp1 = 0.125*r_i;
-      BigReal tmp2 = r2 - 4.0*a_cut*r;
-      BigReal rr = 2.0*r;
+      float tmp1 = 0.125*r_i;
+      float tmp2 = r2 - 4.0*a_cut*r;
+      float rr = 2.0*r;
 
 
       rmrjs = r-rhojs;
@@ -441,21 +466,39 @@ nops = 0;
       rs2 = rhois*rhois;
       hji = /*0.125*r_i*/tmp1*(1 + rr*rmrsi +
         a_cut_i2*(/*r2 - 4.0*a_cut*r*/tmp2 - rs2) + 2.0* logri);
-
+//#if 1
 #ifdef PRINT_COMP
       int id1 = params->pExt[0][i].id;
       int id2 = params->pExt[1][j].id;
-      BigReal h1 = hij;
-      BigReal h2 = hji;
+      float h1 = hij;
+      float h2 = hji;
+      float r10 = rhoi0;
+      float r1s = rhojs;
+      float r20 = rhoj0;
+      float r2s = rhois;
+/*printf("PSIPAIR %05i %05i%9.5f%6.3f%6.3f%2i% 13.5e\n",
+id1,id2,sqrt(r2),
+rhoi0, rhojs,
+1,hij);
+printf("PSIPAIR %05i %05i%9.5f%6.3f%6.3f%2i% 13.5e\n",
+id2,id1,sqrt(r2),
+rhoj0, rhois,
+1,hji);*/
       if (id1 > id2) {
         int tmp = id1;
         id1 = id2;
         id2 = tmp;
         h1 = hji;
         h2 = hij;
+        r20 = rhoi0;
+        r2s = rhojs;
+        r10 = rhoj0;
+        r1s = rhois;
       }
-      CkPrintf("PSI(%04i)[%04i,%04i] = 11 % .4e % .4e\n",gbisParams->sequence,id1,id2,h1, h2);
-      CkPrintf("PPSI(%04i)[%04i,%04i] = 11\n",gbisParams->cid,id1,id2);
+//      CkPrintf("PSIPAIR%5i%5i%10.5f%5i%14.8f%7.4f%7.4f\n",id1,id2,sqrt(r2),1,h1,r10,r1s);
+//      CkPrintf("PSIPAIR%5i%5i%10.5f%5i%14.8f%7.4f%7.4f\n",id2,id1,sqrt(r2),1,h2,r20,r2s);
+      //CkPrintf("PSI(%04i)[%04i,%04i] = 11 % .4e % .4e\n",gbisParams->sequence,id1,id2,h1, h2);
+      //CkPrintf("PPSI(%04i)[%04i,%04i] = 11\n",gbisParams->cid,id1,id2);
 #endif
 
 #ifdef BENCHMARK
@@ -513,14 +556,31 @@ nops = 0;
           rhoi0, rhojs,
           rhoj0, rhois,
           dij,dji,hij,hji);
-
+//#if 1
 #ifdef PRINT_COMP
       int id1 = params->pExt[0][i].id;
       int id2 = params->pExt[1][j].id;
-      BigReal h1 = hij;
-      BigReal h2 = hji;
+      float h1 = hij;
+      float h2 = hji;
       int d1 = dij;
       int d2 = dji;
+      float r10 = rhoi0;
+      float r1s = rhojs;
+      float r20 = rhoj0;
+      float r2s = rhois;
+/*  if (dij > 0 ) {
+printf("PSIPAIR %05i %05i%9.5f%6.3f%6.3f%2i% 13.5e\n",
+id1,id2,sqrt(r2),
+rhoi0, rhojs,
+dij,hij);
+  }
+  if (dji > 0 ) {
+printf("PSIPAIR %05i %05i%9.5f%6.3f%6.3f%2i% 13.5e\n",
+id2,id1,sqrt(r2),
+rhoj0, rhois,
+dji,hji);
+  }*/
+//      CkPrintf("PSIPAIR%5i%5i%10.5f%5i%14.8f%7.4f%7.4f\n",id1,id2,sqrt(r2),d1,h1,r10,r1s);
       if (id1 > id2) {
         int tmp = id1;
         id1 = id2;
@@ -529,9 +589,14 @@ nops = 0;
         h2 = hij;
         d1 = dji;
         d2 = dij;
+        r20 = rhoi0;
+        r2s = rhojs;
+        r10 = rhoj0;
+        r1s = rhois;
       }
-      CkPrintf("PSI(%04i)[%04i,%04i] = %i%i % .4e % .4e\n",gbisParams->sequence,id1,id2,d1,d2,h1, h2);
-      CkPrintf("PPSI(%04i)[%04i,%04i] = %i%i\n",gbisParams->cid,id1,id2,d1,d2);
+//      CkPrintf("PSIPAIR%5i%5i%10.5f%5i%14.8f%7.4f%7.4f\n",id2,id1,sqrt(r2),d2,h2,r20,r2s);
+      //CkPrintf("PSI(%04i)[%04i,%04i] = %i%i % .4e % .4e\n",gbisParams->sequence,id1,id2,d1,d2,h1, h2);
+      //CkPrintf("PPSI(%04i)[%04i,%04i] = %i%i\n",gbisParams->cid,id1,id2,d1,d2);
 #endif
 
 #ifdef BENCHMARK
@@ -557,34 +622,34 @@ nops = 0;
 ***********************************************************/
 } else if (gbisParams->gbisPhase == 2) {
 
-  BigReal epsilon_s = gbisParams->epsilon_s;
-  BigReal epsilon_p = gbisParams->epsilon_p;
-  BigReal epsilon_s_i = 1/epsilon_s;
-  BigReal epsilon_p_i = 1/epsilon_p;
-  BigReal kappa = gbisParams->kappa;
+  float epsilon_s = gbisParams->epsilon_s;
+  float epsilon_p = gbisParams->epsilon_p;
+  float epsilon_s_i = 1/epsilon_s;
+  float epsilon_p_i = 1/epsilon_p;
+  float kappa = gbisParams->kappa;
 
   //values used in loop
-  BigReal r_cut_2 = 1.0 / r_cut2;
-  BigReal r_cut_4 = 4.0*r_cut_2*r_cut_2;
-  BigReal coulEij=0,ddrCoulEij=0,gbEij=0,ddrGbEij=0;
-  BigReal dEdai=0,dEdaj=0, qiqj=0;
-  BigReal scale=0, ddrScale=0;
-  BigReal rnx=0,rny=0,rnz=0;
-  BigReal fx=0,fy=0,fz=0,forceCoul=0, forcedEdr=0;
+  float r_cut_2 = 1.0 / r_cut2;
+  float r_cut_4 = 4.0*r_cut_2*r_cut_2;
+  float coulEij=0,ddrCoulEij=0,gbEij=0,ddrGbEij=0;
+  float dEdai=0,dEdaj=0, qiqj=0;
+  float scale=0, ddrScale=0;
+  float rnx=0,rny=0,rnz=0;
+  float fx=0,fy=0,fz=0,forceCoul=0, forcedEdr=0;
 
   int nops = 0;
   double t1 = 1.0*clock()/CLOCKS_PER_SEC;
-  double r2;
-  double dr;
-  double dx, dy, dz;
-  double r, r_i, ratio;
-  double fIx, fIy, fIz;
-  double dEdaSumI;
-  double bornRadI, bornRadJ;
-  double qi;
+  float r2;
+  float dr;
+  BigReal dx, dy, dz;
+  float r, r_i, ratio;
+  float fIx, fIy, fIz;
+  GBReal dEdaSumI;
+  float bornRadI, bornRadJ;
+  float qi;
   Position ri, rj;
-  BigReal aiaj,expr2aiaj4,fij,f_i,expkappa,Dij;
-  BigReal aiaj4,ddrDij,ddrf_i,ddrfij,tmp_dEda;
+  float aiaj,expr2aiaj4,fij,f_i,expkappa,Dij;
+  float aiaj4,ddrDij,ddrf_i,ddrfij,tmp_dEda;
 
   for (int c = 0; c < 4/*dEdrPLs*/; c++) {
   for (int ngi = minIg; ngi < maxI; /**/ ) {
@@ -595,6 +660,7 @@ nops = 0;
     ri.y += offset_y;
     ri.z += offset_z;
     qi = - COULOMB * params->p[0][i].charge * scaling;
+  //printf("ATOM(%05i) %.3e %.3e %.3e\n", params->pExt[0][i].id, params->p[0][i].charge, COULOMB, scaling);
     int numPairs;
     plint *pairs;
     gbisParams->gbisStepPairlists[c]->nextlist(&pairs,&numPairs);
@@ -669,13 +735,14 @@ nops = 0;
         gbisParams->dEdaSum[1][j] += dEdaj*scale;
       }
 
-#ifdef PRINT_COMP
+#if 1
+//#ifdef PRINT_COMP
       int id1 = params->pExt[0][i].id;
       int id2 = params->pExt[1][j].id;
-      BigReal deda1 = dEdai;
-      BigReal deda2 = dEdaj;
-      BigReal bR1 = bornRadI;
-      BigReal bR2 = bornRadJ;
+      float deda1 = dEdai;
+      float deda2 = dEdaj;
+      float bR1 = bornRadI;
+      float bR2 = bornRadJ;
       if (id1 > id2) {
         int tmp = id1;
         id1 = id2;
@@ -685,9 +752,17 @@ nops = 0;
         bR1 = bornRadJ;
         bR2 = bornRadI;
       }
-      CkPrintf("DEDR(%04i)[%04i,%04i] = % .4e\n",gbisParams->sequence,id1,id2,forcedEdr);
-      CkPrintf("DASM(%04i)[%04i,%04i] = % .4e % .4e\n",gbisParams->sequence,id1, id2, deda1,deda2);
-      CkPrintf("P2RM(%04i)[%04i,%04i] = % .4e % .4e % .4e % .4e % .4e\n",gbisParams->sequence,id1, id2, r, bR1,bR2,epsilon_p_i,epsilon_s_i,kappa);
+      //CkPrintf("DEDR(%04i)[%04i,%04i] = % .4e\n",gbisParams->sequence,id1,id2,forcedEdr);
+      //CkPrintf("DASM(%04i)[%04i,%04i] = % .4e % .4e\n",gbisParams->sequence,id1, id2, deda1,deda2);
+      //CkPrintf("P2RM(%04i)[%04i,%04i] = % .4e % .4e % .4e % .4e % .4e\n",gbisParams->sequence,id1, id2, r, bR1,bR2,epsilon_p_i,epsilon_s_i,kappa);
+/*CkPrintf("P2PAIR %05i %05i%9.5f%6.3f%6.3f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e\n",
+params->pExt[0][i].id, params->pExt[1][j].id,sqrt(r2),
+bornRadI, bornRadJ, forcedEdr, dEdai, qiqj, Dij, scale
+);
+CkPrintf("P2PAIR %05i %05i%9.5f%6.3f%6.3f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e\n",
+params->pExt[1][j].id, params->pExt[0][i].id,sqrt(r2),
+bornRadJ, bornRadI, forcedEdr, dEdaj, qiqj, Dij, scale
+);*/
 #endif
 
       forcedEdr *= r_i;
@@ -715,10 +790,10 @@ nops = 0;
 
     //self energy of each atom
     if (c == 0 && gbisParams->doEnergy && gbisParams->numPatches == 1) {
-      BigReal fij = bornRadI;//inf
-      BigReal expkappa = exp(-kappa*fij);//0
-      BigReal Dij = epsilon_p_i - expkappa*epsilon_s_i;
-      BigReal gbEij = qi*params->p[0][i].charge*Dij/fij;
+      float fij = bornRadI;//inf
+      float expkappa = exp(-kappa*fij);//0
+      float Dij = epsilon_p_i - expkappa*epsilon_s_i;
+      float gbEij = qi*params->p[0][i].charge*Dij/fij;
       gbisParams->gbSelfEnergy += 0.5*gbEij;//self energy
     }
   }// end outer i
@@ -748,30 +823,31 @@ nops = 0;
 #endif
   //CkPrintf("GBIS(%3i)[%2i]::P3 %3i(%3i) %3i(%3i)\n",gbisParams->sequence,gbisParams->cid, gbisParams->patchID[0],params->numAtoms[0],gbisParams->patchID[1],params->numAtoms[1]);
 
-  register double dx, dy, dz, r2;
-  register double r, r_i;
-  register double rhoi0, rhois;
-  double rhojs, rhoj0;
-  double fx, fy, fz;
-  double forceAlpha;
-  register double fIx, fIy, fIz;
+  register BigReal dx, dy, dz;
+  register float  r2;
+  register float r, r_i;
+  register float rhoi0, rhois;
+  float rhojs, rhoj0;
+  float fx, fy, fz;
+  float forceAlpha;
+  register float fIx, fIy, fIz;
 
-  BigReal dhij;
-  BigReal dhji;
+  float dhij;
+  float dhji;
   int dij;
   int dji;
-  register double dHdrPrefixI;
-  double dHdrPrefixJ;
+  register float dHdrPrefixI;
+  float dHdrPrefixJ;
   register Position ri;
   register Position rj;
   register int c, numPairs, jj, j;
-  register BigReal k;
-  register BigReal da = DA;
-  register BigReal db = DB;
-  register BigReal dc = DC;
-  register BigReal dd = DD;
-  register BigReal de = DE;
-  BigReal r_i3;
+  register float k;
+  register float da = DA;
+  register float db = DB;
+  register float dc = DC;
+  register float dd = DD;
+  register float de = DE;
+  float r_i3;
 
   //piecewise 22
   c = 0;
@@ -824,11 +900,12 @@ nops = 0;
       fIy += fy;
       fIz += fz;
 
-#ifdef PRINT_COMP
+#if 1
+//#ifdef PRINT_COMP
       int id1 = params->pExt[0][i].id;
       int id2 = params->pExt[1][j].id;
-      BigReal h1 = dhij;
-      BigReal h2 = dhji;
+      float h1 = dhij;
+      float h2 = dhji;
       if (id1 > id2) {
         int tmp = id1;
         id1 = id2;
@@ -836,7 +913,15 @@ nops = 0;
         h1 = dhji;
         h2 = dhij;
       }
-      CkPrintf("DEDA(%04i)[%04i,%04i] = 22 % .4e % .4e % .4e\n",gbisParams->sequence,id1,id2,h1,h2, forceAlpha);
+/*CkPrintf("P3PAIR %05i %05i%9.5f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e %i\n",
+params->pExt[0][i].id, params->pExt[1][j].id,sqrt(r2),
+dHdrPrefixI, dHdrPrefixJ, dhij, dhji, forceAlpha, 2
+);
+CkPrintf("P3PAIR %05i %05i%9.5f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e %i\n",
+params->pExt[1][j].id, params->pExt[0][i].id,sqrt(r2),
+dHdrPrefixJ, dHdrPrefixI, dhji, dhij, forceAlpha, 2
+);*/
+      //CkPrintf("DEDA(%04i)[%04i,%04i] = 22 % .4e % .4e % .4e\n",gbisParams->sequence,id1,id2,h1,h2, forceAlpha);
 #endif
 
 #ifdef BENCHMARK
@@ -861,15 +946,15 @@ nops = 0;
   nops = 0;
 #endif
 
-  BigReal a_cut_i = 1.0/a_cut;
-  BigReal a_cut_i2 = a_cut_i*a_cut_i;
-  BigReal a_cut2 = a_cut*a_cut;
-  BigReal rmrs;
-  BigReal rmrsi;
-  BigReal rmrs2;
-  BigReal rhois2, rhojs2;
-  BigReal logri, logrj;
-  BigReal r_i2;
+  float a_cut_i = 1.0/a_cut;
+  float a_cut_i2 = a_cut_i*a_cut_i;
+  float a_cut2 = a_cut*a_cut;
+  float rmrs;
+  float rmrsi;
+  float rmrs2;
+  float rhois2, rhojs2;
+  float logri, logrj;
+  float r_i2;
 
   //piecewise 11
   c = 1;
@@ -930,11 +1015,12 @@ nops = 0;
       fIy += fy;
       fIz += fz;
 
-#ifdef PRINT_COMP
+#if 1
+//#ifdef PRINT_COMP
       int id1 = params->pExt[0][i].id;
       int id2 = params->pExt[1][j].id;
-      BigReal h1 = dhij;
-      BigReal h2 = dhji;
+      float h1 = dhij;
+      float h2 = dhji;
       if (id1 > id2) {
         int tmp = id1;
         id1 = id2;
@@ -942,7 +1028,15 @@ nops = 0;
         h1 = dhji;
         h2 = dhij;
       }
-      CkPrintf("DEDA(%04i)[%04i,%04i] = 11 % .4e % .4e % .4e\n",gbisParams->sequence,id1,id2,h1,h2, forceAlpha);
+      //CkPrintf("DEDA(%04i)[%04i,%04i] = 11 % .4e % .4e % .4e\n",gbisParams->sequence,id1,id2,h1,h2, forceAlpha);
+/*CkPrintf("P3PAIR %05i %05i%9.5f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e %i\n",
+params->pExt[0][i].id, params->pExt[1][j].id,sqrt(r2),
+dHdrPrefixI, dHdrPrefixJ, dhij, dhji, forceAlpha, 1
+);
+CkPrintf("P3PAIR %05i %05i%9.5f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e %i\n",
+params->pExt[1][j].id, params->pExt[0][i].id,sqrt(r2),
+dHdrPrefixJ, dHdrPrefixI, dhji, dhij, forceAlpha, 1
+);*/
 #endif
 
 #ifdef BENCHMARK
@@ -1004,7 +1098,7 @@ nops = 0;
           dij,dji,dhij,dhji);
 
       //add dEda*dadr force
-      forceAlpha = -r_i*(dHdrPrefixI*dhij+dHdrPrefixJ*dhji);
+      forceAlpha = -r_i*(dHdrPrefixI*dhij+dHdrPrefixJ*dhji); // *scaling ?
       fx = dx * forceAlpha;
       fy = dy * forceAlpha;
       fz = dz * forceAlpha;
@@ -1017,13 +1111,14 @@ nops = 0;
       params->fullf[1][j].y -= fy;
       params->fullf[1][j].z -= fz;
 
-#ifdef PRINT_COMP
+#if 1
+//#ifdef PRINT_COMP
       int id1 = params->pExt[0][i].id;
       int id2 = params->pExt[1][j].id;
       int d1 = dij;
       int d2 = dji;
-      BigReal h1 = dhij;
-      BigReal h2 = dhji;
+      float h1 = dhij;
+      float h2 = dhji;
       if (id1 > id2) {
         int tmp = id1;
         id1 = id2;
@@ -1033,7 +1128,20 @@ nops = 0;
         h1 = dhji;
         h2 = dhij;
       }
-      CkPrintf("DEDA(%04i)[%04i,%04i] = %i%i % .4e % .4e % .4e\n",gbisParams->sequence,id1,id2,d1,d2,h1,h2, forceAlpha);
+//      CkPrintf("DEDA(%04i)[%04i,%04i] = %i%i % .4e % .4e % .4e\n",gbisParams->sequence,id1,id2,d1,d2,h1,h2, forceAlpha);
+//      CkPrintf("DEDA(%04i)[%04i,%04i] = %i%i % .4e % .4e % .4e\n",gbisParams->sequence,id1,id2,d1,d2,h1,h2, forceAlpha);
+/*if ( dij > 0 ) {
+CkPrintf("P3PAIR %05i %05i%9.5f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e %i\n",
+params->pExt[0][i].id, params->pExt[1][j].id,sqrt(r2),
+dHdrPrefixI, dHdrPrefixJ, dhij, dhji, forceAlpha, dij
+);
+}
+if ( dji > 0 ) {
+CkPrintf("P3PAIR %05i %05i%9.5f% 13.5e% 13.5e% 13.5e% 13.5e% 13.5e %i\n",
+params->pExt[1][j].id, params->pExt[0][i].id,sqrt(r2),
+dHdrPrefixJ, dHdrPrefixI, dhji, dhij, forceAlpha, dji
+);
+}*/
 #endif
 
 #ifdef BENCHMARK

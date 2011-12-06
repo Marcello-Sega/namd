@@ -86,8 +86,8 @@ ProxyPatch::~ProxyPatch()
 }
 
 void ProxyPatch::boxClosed(int box) {
-    ProxyGBISP1ResultMsg *msg1;
-    ProxyGBISP2ResultMsg *msg2;
+  ProxyGBISP1ResultMsg *msg1;
+  ProxyGBISP2ResultMsg *msg2;
  
   if (box == 1) { // force Box
     // Note: delay the deletion of proxyDataMsg (of the 
@@ -432,13 +432,13 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
 
 //receive data after phase 1 to begin phase 2
 void ProxyPatch::receiveData(ProxyGBISP2DataMsg *msg) {
-  memcpy(bornRad.begin(), msg->bornRad, sizeof(BigReal)*numAtoms);
+  memcpy(bornRad.begin(), msg->bornRad, sizeof(Real)*numAtoms);
   delete msg;
   Patch::gbisP2Ready();
 }
 
 void ProxyPatch::receiveData(ProxyGBISP3DataMsg *msg) {
-  memcpy(dHdrPrefix.begin(), msg->dHdrPrefix, sizeof(BigReal)*msg->dHdrPrefixLen);
+  memcpy(dHdrPrefix.begin(), msg->dHdrPrefix, sizeof(Real)*msg->dHdrPrefixLen);
   delete msg;
   Patch::gbisP3Ready();
 }

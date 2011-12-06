@@ -11,7 +11,6 @@
 #include "PatchMap.h"
 #include "ComputeMgr.h"
 #include "Molecule.h"
-#include "ComputeGBIS.inl"
 
 #include "Node.h"
 #include "SimParameters.h"

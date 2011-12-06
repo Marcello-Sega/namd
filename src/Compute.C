@@ -83,7 +83,6 @@ void Compute::gbisP2PatchReady(PatchID pid, int seq) {
   if (! --patchReadyCounter) {
     patchReadyCounter = numPatches;
     sequenceNumber = seq;
-    gbisPhase = 2; //second phase
     WorkDistrib::messageEnqueueWork(this);
   }
 }
@@ -92,7 +91,6 @@ void Compute::gbisP3PatchReady(PatchID pid, int seq) {
   if (! --patchReadyCounter) {
     patchReadyCounter = numPatches;
     sequenceNumber = seq;
-    gbisPhase = 3; //third phase
     WorkDistrib::messageEnqueueWork(this);
   }
 }

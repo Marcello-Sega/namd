@@ -109,8 +109,7 @@ inline void OwnerBox<Owner,Data>::close(void) {
     data = 0; closeCount = openCount = numberUsers;
     (owner->*callback)();
   } else {
-    CkPrintf("OwnerBox::close() - close called, but \
-             closeCount %d openCount %d\n", closeCount, openCount);
+    CkPrintf("OwnerBox::close() - close called, but closeCount %d openCount %d\n", closeCount, openCount);
   }
 }
 

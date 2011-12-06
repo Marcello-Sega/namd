@@ -1,4 +1,3 @@
-
 #include "ComputeNonbondedUtil.h"
 #include "ComputeHomeTuples.h"
 
@@ -33,13 +32,24 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     Patch *p;
     Box<Patch,CompAtom> *positionBox;
     Box<Patch,Results> *forceBox;
+    Box<Patch,Real>   *intRadBox; //5 GBIS Boxes
+    Box<Patch,GBReal> *psiSumBox;
+    Box<Patch,Real>   *bornRadBox;
+    Box<Patch,GBReal> *dEdaSumBox;
+    Box<Patch,Real>   *dHdrPrefixBox;
     CompAtom *x;
     CompAtomExt *xExt;
     Results *r;
     Force *f;
+    Real   *intRad; //5 GBIS arrays
+    GBReal *psiSum;
+    Real   *bornRad;
+    GBReal *dEdaSum;
+    Real   *dHdrPrefix;
 
     patch_record() { refCount = 0; }
   };
+
 
     ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
 		ComputeNonbondedCUDA *m = 0, int idx = -1);
@@ -79,6 +89,8 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
 
     float4 *forces;
     float4 *slow_forces;
+    GBReal *psiSumH;
+    GBReal *dEdaSumH;
 
     PatchMap *patchMap;
     AtomMap *atomMap;

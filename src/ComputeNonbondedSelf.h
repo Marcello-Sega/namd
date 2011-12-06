@@ -32,10 +32,10 @@ protected :
 
   Real *intRad;
   Box<Patch,Real> *intRadBox;
-  Box<Patch,BigReal> *psiSumBox;
-  Box<Patch,BigReal> *bornRadBox;
-  Box<Patch,BigReal> *dEdaSumBox;
-  Box<Patch,BigReal> *dHdrPrefixBox;
+  Box<Patch,GBReal> *psiSumBox;
+  Box<Patch,Real> *bornRadBox;
+  Box<Patch,GBReal> *dEdaSumBox;
+  Box<Patch,Real> *dHdrPrefixBox;
   static const int numGBISPairlists = 4;
   Pairlists gbisStepPairlists[numGBISPairlists];
 

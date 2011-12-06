@@ -38,16 +38,16 @@ module ProxyMgr {
 
   // begin gbis
   message ProxyGBISP1ResultMsg {
-    double psiSum[];
+    GBReal psiSum[];
   };
   message ProxyGBISP2DataMsg {
-    double bornRad[];
+    float bornRad[];
   };
   message ProxyGBISP2ResultMsg {
-    double dEdaSum[];
+    GBReal dEdaSum[];
   };
   message ProxyGBISP3DataMsg {
-    double dHdrPrefix[];
+    float dHdrPrefix[];
   };
   // end gbis
 

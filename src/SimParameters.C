@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2011/12/06 01:59:04 $
- * $Revision: 1.1375 $
+ * $Author: dtanner $
+ * $Date: 2011/12/06 21:37:57 $
+ * $Revision: 1.1376 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1284,6 +1284,10 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
       "External forces coordinate filename", extCoordFilename);
    opts.require("extForces", "extForceFilename",
       "External forces force filename", extForceFilename);
+
+   //print which bad contacts are being moved downhill
+   opts.optionalB("main", "printBadContacts", "Print atoms with huge forces?",
+      &printBadContacts, FALSE);
 
    /* GBIS generalized born implicit solvent*/
 
@@ -2591,9 +2595,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
     //ensure patch can handle alpha_cutoff for gbis
     if (GBISOn) {
-#ifdef NAMD_CUDA
-       NAMD_die("GBIS not compatible with CUDA at this time");
-#endif
       //Check compatibility
       if (fullDirectOn) {
         NAMD_die("GBIS not compatible with FullDirect");
@@ -2616,12 +2617,16 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       if (drudeOn) {
         NAMD_die("GBIS not compatible with Drude Polarization");
       }
+      if (fixedAtomsOn) {
+#ifdef NAMD_CUDA
+        NAMD_die("GBIS CUDA not yet compatible with fixed atoms");
+#endif
+      }
 
       if (alpha_cutoff > patchDimension) {
         patchDimension = alpha_cutoff; 
       }
       //calculate kappa
-      //righthere
       BigReal tmp = (initialTemp > 0) ? initialTemp : 300;
       kappa = 50.29216*sqrt(ion_concentration/solvent_dielectric/tmp);
       /*magic number = 1/sqrt(eps0*kB/(2*nA*e^2*1000))*/

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dbwells2 $
- * $Date: 2011/12/02 22:49:51 $
- * $Revision: 1.1198 $
+ * $Author: dtanner $
+ * $Date: 2011/12/06 21:37:57 $
+ * $Revision: 1.1199 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -369,6 +369,8 @@ public:
         char extForcesCommand[256];
         char extCoordFilename[128];
         char extForceFilename[128];
+
+  Bool printBadContacts;        //print indices of bad contacts being moved downhill
 
   //gbis implicit solvent parameters
   Bool GBISOn;                    //do generalized born implicit solvent

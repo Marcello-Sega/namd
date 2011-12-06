@@ -312,10 +312,11 @@ CUDAOBJSRAW = \
 $(DSTDIR)/ComputeNonbondedCUDAKernel.o: \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.cu \
 	$(SRCDIR)/ComputeNonbondedCUDAKernelBase.h \
+	$(SRCDIR)/ComputeGBISCUDAKernel.h \
 	$(SRCDIR)/ComputeNonbondedCUDAKernel.h
 	$(CUDACC) -ptx "`$(NATIVEPATH) $(SRCDIR)/`ComputeNonbondedCUDAKernel.cu"
 	grep global ComputeNonbondedCUDAKernel.ptx
-	$(CUDACC) -Xptxas -v $(COPTO) "`$(NATIVEPATH) $(DSTDIR)/`ComputeNonbondedCUDAKernel.o" $(COPTC) "`$(NATIVEPATH) $(SRCDIR)/`ComputeNonbondedCUDAKernel.cu"
+	$(CUDACC) $(CUDACCOPTS) -Xptxas -v $(COPTO) "`$(NATIVEPATH) $(DSTDIR)/`ComputeNonbondedCUDAKernel.o" $(COPTC) "`$(NATIVEPATH) $(SRCDIR)/`ComputeNonbondedCUDAKernel.cu"
 
 SBOBJS = \
 	$(DSTDIR)/tcl_main.o \

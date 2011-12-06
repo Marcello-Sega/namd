@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2011/12/05 21:00:32 $
- * $Revision: 1.1274 $
+ * $Author: dtanner $
+ * $Date: 2011/12/06 21:37:55 $
+ * $Revision: 1.1275 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -480,10 +480,10 @@ void Controller::minimize() {
   int minSeq = 0;
 
   // just move downhill until initial bad contacts go away or 100 steps
-  int old_min_huge_count = -1;
+  int old_min_huge_count = 2000000000;
   int steps_at_same_min_huge_count = 0;
   for ( int i_slow = 0; min_huge_count && i_slow < 100; ++i_slow ) {
-    if ( min_huge_count == old_min_huge_count ) {
+    if ( min_huge_count >= old_min_huge_count ) {
       if ( ++steps_at_same_min_huge_count > 10 ) break;
     } else {
       old_min_huge_count = min_huge_count;

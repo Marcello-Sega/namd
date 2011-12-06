@@ -14,6 +14,7 @@
 #include "NamdTypes.h"
 #include "ReductionMgr.h"
 #include "Molecule.h"
+
 class LJTable;
 class Molecule;
 
@@ -136,10 +137,10 @@ struct GBISParamStruct {
   int numPatches;
   int gbisPhase;
   Real *intRad[2];
-  BigReal *psiSum[2];
-  BigReal *bornRad[2];
-  BigReal *dEdaSum[2];
-  BigReal *dHdrPrefix[2];
+  GBReal *psiSum[2];
+  Real *bornRad[2];
+  GBReal *dEdaSum[2];
+  Real *dHdrPrefix[2];
   BigReal epsilon_s;
   BigReal epsilon_p;
   BigReal rho_0;

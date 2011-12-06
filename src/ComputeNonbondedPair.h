@@ -31,10 +31,10 @@ protected :
 
   Real *intRad[2];
   Box<Patch,Real> *intRadBox[2];//write
-  Box<Patch,BigReal> *psiSumBox[2];//write
-  Box<Patch,BigReal> *bornRadBox[2];//read
-  Box<Patch,BigReal> *dEdaSumBox[2];//write
-  Box<Patch,BigReal> *dHdrPrefixBox[2];//read
+  Box<Patch,GBReal> *psiSumBox[2];//write
+  Box<Patch,Real> *bornRadBox[2];//read
+  Box<Patch,GBReal> *dEdaSumBox[2];//write
+  Box<Patch,Real> *dHdrPrefixBox[2];//read
   static const int numGBISPairlists = 4;
   Pairlists gbisStepPairlists[numGBISPairlists];//lasts a step
 

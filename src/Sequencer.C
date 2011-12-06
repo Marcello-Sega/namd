@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: chaomei2 $
- * $Date: 2011/05/21 22:24:26 $
- * $Revision: 1.1198 $
+ * $Author: dtanner $
+ * $Date: 2011/12/06 21:37:57 $
+ * $Revision: 1.1199 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -1672,6 +1672,9 @@ void Sequencer::submitMinimizeReductions(int step, BigReal fmax2)
     Force f = f1[i] + f2[i] + f3[i];
     BigReal ff = f * f;
     if ( ff > fmax2 ) {
+      if (simParams->printBadContacts) {
+        CkPrintf("STEP(%i) MIN_HUGE[%i] f=%e kcal/mol/A\n",patch->flags.sequence,patch->pExt[i].id,ff);
+      }
       ++numHuge;
       // pad scaling so minimizeMoveDownhill() doesn't miss them
       BigReal fmult = 1.01 * sqrt(fmax2/ff);
@@ -1790,7 +1793,6 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
 
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
-
   if ( patch->flags.doGBIS && patch->flags.doNonbonded) {
     patch->gbisComputeAfterP1();
     suspend();
@@ -1899,7 +1901,6 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
   int numAtoms = patch->numAtoms;
   FullAtom *a = patch->atom.begin();
   for ( int i=0; i<numAtoms; ++i ) {
-    if (a[i].id != 0 && a[i].id != 1) continue;
     float fxNo = patch->f[Results::normal][i].x;
     float fxNb = patch->f[Results::nbond][i].x;
     float fxSl = patch->f[Results::slow][i].x;
