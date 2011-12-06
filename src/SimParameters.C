@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dbwells2 $
- * $Date: 2011/12/02 22:49:51 $
- * $Revision: 1.1374 $
+ * $Author: jim $
+ * $Date: 2011/12/06 01:59:04 $
+ * $Revision: 1.1375 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -186,6 +186,10 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_VECTOR("eField",eField)
   SCRIPT_PARSE_FLOAT("eFieldFreq",eFieldFreq)
   SCRIPT_PARSE_FLOAT("eFieldPhase",eFieldPhase) 
+  SCRIPT_PARSE_FLOAT("accelMDE",accelMDE) 
+  SCRIPT_PARSE_FLOAT("accelMDalpha",accelMDalpha) 
+  SCRIPT_PARSE_FLOAT("accelMDTE",accelMDTE) 
+  SCRIPT_PARSE_FLOAT("accelMDTalpha",accelMDTalpha) 
   SCRIPT_PARSE_VECTOR("stirAxis",stirAxis)
   SCRIPT_PARSE_VECTOR("stirPivot",stirPivot)
   if ( ! strncasecmp(param,"mgridforcescale",MAX_SCRIPT_PARAM_SIZE) ) {
