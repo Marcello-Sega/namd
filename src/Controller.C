@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: dtanner $
- * $Date: 2011/12/06 21:37:55 $
- * $Revision: 1.1275 $
+ * $Author: johanstr $
+ * $Date: 2011/12/07 20:26:41 $
+ * $Revision: 1.1276 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1679,7 +1679,7 @@ void Controller::adaptTempUpdate(int step, int minimize)
             potEnergyAverage += aplus*potEnergyAve1;
           }
           if (simParams->adaptTempDebug) {
-       iout << "ADAPTIVE TEMPERING DEBUG:"  << "\n"
+       iout << "ADAPTEMP DEBUG:"  << "\n"
             << "     adaptTempBin:    " << adaptTempBin << "\n"
             << "     Samples:   " << adaptTempPotEnergySamples[adaptTempBin] << "\n"
             << "     adaptTempBeta:   " << adaptTempBeta << "\n" 
@@ -1702,7 +1702,7 @@ void Controller::adaptTempUpdate(int step, int minimize)
       }
       else {
           if (simParams->adaptTempDebug) {
-       iout << "ADAPTIVE TEMPERING DEBUG:"  << "\n"
+       iout << "ADAPTEMP DEBUG:"  << "\n"
             << "     adaptTempBin:    " << adaptTempBin << "\n"
             << "     Samples:   " << adaptTempPotEnergySamples[adaptTempBin] << "\n"
             << "     adaptTempBeta:   " << adaptTempBeta << "\n" 
@@ -1725,14 +1725,14 @@ void Controller::adaptTempUpdate(int step, int minimize)
       }
       
       //dT is new temperature
-      BigReal dT = ((potentialEnergy-potEnergyAverage)/BOLTZMANN-adaptTempT)*adaptTempDt;
+      BigReal dT = ((potentialEnergy-potEnergyAverage)/BOLTZMANN+adaptTempT)*adaptTempDt;
       dT += random->gaussian()*sqrt(2.*adaptTempDt)*adaptTempT;
       dT += adaptTempT;
       
      // Check if dT in [adaptTempTmin,adaptTempTmax]. If not try simpler estimate of mean
      // This helps sampling with poor statistics in the bins surrounding adaptTempBin.
       if ( dT > 1./adaptTempBetaMin || dT  < 1./adaptTempBetaMax ) {
-        dT = ((potentialEnergy-adaptTempPotEnergyAve[adaptTempBin])/BOLTZMANN-adaptTempT)*adaptTempDt;
+        dT = ((potentialEnergy-adaptTempPotEnergyAve[adaptTempBin])/BOLTZMANN+adaptTempT)*adaptTempDt;
         dT += random->gaussian()*sqrt(2.*adaptTempDt)*adaptTempT;
         dT += adaptTempT;
         // Check again, if not then keep original adaptTempTor assign random.
@@ -1776,13 +1776,9 @@ void Controller::adaptTempUpdate(int step, int minimize)
             adaptTempDTavenum++;
 //            iout << "ADAPTEMP: adapTempTdiff = " << adaptTempTdiff << "\n";
           }
-          else {
-            iout << "ADAPTEMP: Warning adapTempTdiff = 0\n";
-          }
           if(adaptTempDTavenum == 100){
                 BigReal Frac;
                 adaptTempDTave /= adaptTempDTavenum;
-                //reuse potEnergyAve0 and potEnergyAve1 variables
                 Frac = 1./adaptTempBetaMin-1./adaptTempBetaMax;
                 Frac = adaptTempDTave/Frac;
                 //if average temperature jump is > 3% of temperature range,
@@ -1808,13 +1804,9 @@ void Controller::adaptTempUpdate(int step, int minimize)
             adaptTempDTavenum++;
 //            iout << "ADAPTEMP: adapTempTdiff = " << adaptTempTdiff << "\n";
           }
-          else {
-            iout << "ADAPTEMP: Warning adaptTempTdiff = 0\n";
-          }
           if(adaptTempDTavenum == 100){
                 BigReal Frac;
                 adaptTempDTave /= adaptTempDTavenum;
-                //reuse potEnergyAve0 and potEnergyAve1 variables
                 Frac = 1./adaptTempBetaMin-1./adaptTempBetaMax;
                 Frac = adaptTempDTave/Frac;
                 //if average temperature jump is > 3% of temperature range,
@@ -1824,8 +1816,6 @@ void Controller::adaptTempUpdate(int step, int minimize)
                     Frac = adaptTempDtMax/Frac;
                     iout << "ADAPTEMP: Updating adaptTempDt to ";
                     adaptTempDt *= Frac;
-                    //if (adaptTempDt < 1e-6)
-                    //    adaptTempDt = 1e-6;
                     iout << adaptTempDt << "\n" << endi;
                 }
                 adaptTempDTave = 0;
