@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: johanstr $
- * $Date: 2011/12/07 20:26:41 $
- * $Revision: 1.1276 $
+ * $Date: 2011/12/11 09:03:43 $
+ * $Revision: 1.1277 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1486,7 +1486,11 @@ void Controller::adaptTempInit(int step) {
       adaptTempCg = simParams->adaptTempCgamma;   
       adaptTempDt  = simParams->adaptTempDt;
       adaptTempDBeta = (adaptTempBetaMax - adaptTempBetaMin)/(adaptTempBins);
-      adaptTempT = (simParams->adaptTempTmin+simParams->adaptTempTmax)/2;
+      adaptTempT = simParams->initialTemp; 
+      if (simParams->langevinOn)
+        adaptTempT = simParams->langevinTemp;
+      else if (simParams->rescaleFreq > 0)
+        adaptTempT = simParams->rescaleTemp;
       for(int j = 0; j < adaptTempBins; ++j){
           adaptTempPotEnergyAveNum[j] = 0.;
           adaptTempPotEnergyAveDen[j] = 0.;

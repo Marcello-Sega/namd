@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dtanner $
- * $Date: 2011/12/06 21:37:57 $
- * $Revision: 1.1199 $
+ * $Author: johanstr $
+ * $Date: 2011/12/11 09:03:43 $
+ * $Revision: 1.1200 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -197,6 +197,12 @@ void Sequencer::integrate() {
 
     // Is adaptive tempering on?
     const Bool adaptTempOn = simParams->adaptTempOn;
+    adaptTempT = simParams->initialTemp;
+    if (simParams->langevinOn)
+        adaptTempT = simParams->langevinTemp;
+    else if (simParams->rescaleFreq > 0)
+        adaptTempT = simParams->rescaleTemp;
+        
 
     int &doMolly = patch->flags.doMolly;
     doMolly = simParams->mollyOn && doFullElectrostatics;
