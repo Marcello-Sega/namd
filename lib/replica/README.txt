@@ -29,6 +29,14 @@ show_replicas.vmd - script for loading replicas into VMD, first source
 clone_reps.vmd - provides "clone_reps" commmand to copy graphical
   representation from top molecule to all others
 
+sortreplicas - found in namd2 binary directory, program to un-shuffle
+  replica trajectories to place same-temperature frames in the same file.
+  Usage: "sortreplicas <job_output_root> <num_replicas> <runs_per_frame>"
+  where <job_output_root> the job specific output base path, including
+  %s or %d for separate directories as in output/%s/fold_alanin.job1
+  Will be extended with .%d.dcd .%d.history for input files and
+  .%d.sort.dcd .%d.sort.history for output files.
+
 example subdirectory:
 
 alanin_base.namd - basic config options for NAMD
