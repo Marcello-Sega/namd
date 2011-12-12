@@ -364,7 +364,7 @@ SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN -
 
 # Add new executables here.
 
-BINARIES = namd2 psfgen charmrun flipdcd flipbinpdb
+BINARIES = namd2 psfgen sortreplicas charmrun flipdcd flipbinpdb
 
 # This should be rebuilt at every compile, but not on Win32.
 BUILDINFO = $(DSTDIR)/buildinfo
@@ -402,7 +402,7 @@ charmrun: $(CHARM)/bin/charmrun # XXX
 $(LIBCUDARTSO):
 	$(COPY) $(CUDASODIR)/$(LIBCUDARTSO) $@;
 
-WINDOWSBINARIES = namd2.exe psfgen.exe
+WINDOWSBINARIES = namd2.exe psfgen.exe sortreplicas.exe
 # WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 windowsbinaries: $(WINDOWSBINARIES)
 
@@ -436,6 +436,12 @@ psfgen:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS)
 
 psfgen.exe:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS) $(TCLDLL)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(PLUGINOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
+
+sortreplicas:	$(DSTDIR) $(SRCDIR)/sortreplicas.c $(PLUGINOBJS)
+	$(CC) $(SBCFLAGS) -o sortreplicas $(SRCDIR)/sortreplicas.c $(PLUGINOBJS) -lm
+
+sortreplicas.exe:	$(DSTDIR) $(SRCDIR)/sortreplicas.c $(PLUGINOBJS)
+	$(CC) $(SBCFLAGS) -o sortreplicas $(SRCDIR)/sortreplicas.c $(PLUGINOBJS) -lm
 
 diffbinpdb:	$(SRCDIR)/diffbinpdb.c
 	$(CC) $(CFLAGS) -o diffbinpdb $(SRCDIR)/diffbinpdb.c -lm
@@ -651,7 +657,7 @@ RELEASE_DIR_NAME = NAMD_$(NAMD_VERSION)_$(NAMD_PLATFORM)
 
 DOC_FILES = README.txt announce.txt license.txt notes.txt
 
-RELEASE_FILES = $(LIBCUDARTSO) flipdcd flipbinpdb psfgen charmrun namd2
+RELEASE_FILES = $(LIBCUDARTSO) flipdcd flipbinpdb sortreplicas psfgen charmrun namd2
 
 WINDOWS_RELEASE_FILES = $(LIBCUDARTSO) $(WINDOWSBINARIES) $(TCLDLL)
 
