@@ -14,6 +14,7 @@ extern int molfile_jsplugin_fini(void);
 
 static int register_cb(void *v, vmdplugin_t *p) {
   *((vmdplugin_t **)v) = p;
+  return VMDPLUGIN_SUCCESS;
 }
 
 #include <stdio.h>
