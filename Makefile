@@ -437,11 +437,14 @@ psfgen:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS)
 psfgen.exe:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS) $(TCLDLL)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(PLUGINOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
-sortreplicas:	$(DSTDIR) $(SRCDIR)/sortreplicas.c $(PLUGINOBJS)
-	$(CC) $(SBCFLAGS) -o sortreplicas $(SRCDIR)/sortreplicas.c $(PLUGINOBJS) -lm
+sortreplicas:	$(DSTDIR) $(DSTDIR)/sortreplicas.o $(PLUGINOBJS)
+	$(CC) $(SBCFLAGS) -o sortreplicas $(DSTDIR)/sortreplicas.o $(PLUGINOBJS) -lm
 
-sortreplicas.exe:	$(DSTDIR) $(SRCDIR)/sortreplicas.c $(PLUGINOBJS)
-	$(CC) $(SBCFLAGS) -o sortreplicas $(SRCDIR)/sortreplicas.c $(PLUGINOBJS) -lm
+sortreplicas.exe:	$(DSTDIR) $(DSTDIR)/sortreplicas.o $(PLUGINOBJS)
+	$(CC) $(SBCFLAGS) -o sortreplicas $(DSTDIR)/sortreplicas.o $(PLUGINOBJS) -lm
+
+$(DSTDIR)/sortreplicas.o:	$(DSTDIR) $(SRCDIR)/sortreplicas.c
+	$(CC) $(SBCFLAGS) $(COPTO)$(DSTDIR)/sortreplicas.o $(COPTC) $(SRCDIR)/sortreplicas.c
 
 diffbinpdb:	$(SRCDIR)/diffbinpdb.c
 	$(CC) $(CFLAGS) -o diffbinpdb $(SRCDIR)/diffbinpdb.c -lm
