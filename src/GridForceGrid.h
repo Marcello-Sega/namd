@@ -45,6 +45,9 @@ public:
     virtual int get_all_gridvals(float** all_gridvals) const = 0;
     virtual void set_all_gridvals(float* all_gridvals, int sz) = 0;
     
+    Position wrap_position(const Position &pos, const Lattice &lattice);
+    bool fits_lattice(const Lattice &lattice);
+    
     virtual int compute_VdV(Position pos, float &V, Vector &dV) const = 0;
 
     static void pack_grid(GridforceGrid *grid, MOStream *msg);
@@ -53,7 +56,9 @@ public:
 protected:    
     virtual void pack(MOStream *msg) const = 0;
     virtual void unpack(MIStream *msg) = 0;
-
+    
+    Position get_corner(int idx);
+    
     typedef enum {
 	GridforceGridTypeUndefined = 0,
 	GridforceGridTypeFull,
@@ -63,6 +68,9 @@ protected:
     int mygridnum;
     
     virtual GridforceGridType get_grid_type(void) = 0;	// icky, but necessary since RTTI is turned off for some reason
+
+private:
+    Vector corners[8];
 };
 
 

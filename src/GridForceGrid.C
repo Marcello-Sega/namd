@@ -18,7 +18,7 @@
 
 #include "MGridforceParams.h"
 
-#define MIN_DEBUG_LEVEL 1
+#define MIN_DEBUG_LEVEL 4
 //#define DEBUGM
 #include "Debug.h"
 
@@ -75,6 +75,64 @@ GridforceGrid * GridforceGrid::unpack_grid(int gridnum, MIStream *msg)
     grid->unpack(msg);
     
     return grid;
+}
+
+Position GridforceGrid::wrap_position(const Position &pos, const Lattice &lattice)
+{
+    // Wrap 'pos' about grid center, using periodic cell information in 'lattice'
+    Position pos_wrapped = pos;
+    Position center = get_center();
+    pos_wrapped += lattice.wrap_delta(pos);
+    pos_wrapped += lattice.delta(pos_wrapped, center) - (pos_wrapped - center);
+    return pos_wrapped;
+}
+
+bool GridforceGrid::fits_lattice(const Lattice &lattice)
+{
+    // Idea: Go through each grid corner and wrap it to the grid center;
+    // if the position moves, then the grid is too big and we return false
+    DebugM(4, "Checking whether grid fits periodic cell\n");
+    Position center = get_center();
+    for (int i = 0; i < 8; i++) {
+	Position pos = get_corner(i);
+	Position pos_wrapped = wrap_position(pos, lattice);
+	if ((pos - pos_wrapped).length() > 1.) {
+	    DebugM(5, "(" << pos << ") != (" << pos_wrapped << ")\n" << endi);
+	    return false;
+	}
+    }
+    return true;
+}
+
+Position GridforceGrid::get_corner(int idx)
+{
+    // idx -> (x,y,z) (cell basis coordinates)
+    // 0 -> (0,0,0)
+    // 1 -> (1,0,0)
+    // 2 -> (0,1,0)
+    // 3 -> (1,1,0)
+    // 4 -> (0,0,1)
+    // 5 -> (1,0,1)
+    // 6 -> (0,1,1)
+    // 7 -> (1,1,1)
+    Position pos;
+    if (idx >= 8 || idx < 0) {
+	// invalid index
+	pos = Vector();	// default value of Vector() is strange enough to be a decent "undefined" value (-99999, -99999, -999999)
+    } else if (corners[idx] != Vector()) {
+	// use cached value if possible
+	pos = corners[idx];
+    } else {
+	// must calculate
+	Tensor e = get_e();
+	pos = get_origin();
+	if (idx & (1 << 0)) pos += e * Vector(get_k0()-1, 0, 0);
+	if (idx & (1 << 1)) pos += e * Vector(0, get_k1()-1, 0);
+	if (idx & (1 << 2)) pos += e * Vector(0, 0, get_k2()-1);
+	corners[idx] = pos;	// cache for future use
+	DebugM(4, "corner " << idx << " = " << pos << "\n" << endi);
+    }
+    return pos;
 }
 
 
@@ -771,11 +829,11 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
 		NAMD_die("No Gridforce unit vector found parallel to requested continuous grid direction!");
 	    }
 	} else {
-	    // TO DO: must check for grid overlap in non-wrapping
-	    // dimensions taking non-orthogonal unit vectors into
-	    // consideration
+	    // check for grid overlap in non-wrapping dimensions
+	    // occurs below
 	}
     }
+    
     // Figure out size of true grid (padded on non-periodic sides)
     Vector delta = 0;
     for (int i = 0; i < 3; i++) {
@@ -788,6 +846,13 @@ void GridforceFullMainGrid::initialize(char *potfilename, SimParameters *simPara
     }
     DebugM(4, "delta = " << e * delta << " (" << delta << ")\n" << endi);
     origin += e * delta;
+    
+    // Check for grid overlap
+    if (!fits_lattice(simParams->lattice)) {
+	char errmsg[512];
+	sprintf(errmsg, "Periodic cell basis too small for Gridforce grid %d\n", mygridnum);
+	NAMD_die(errmsg);
+    }
     
     size = k[0] * k[1] * k[2];
     dk[0] = k[1] * k[2];
@@ -1540,7 +1605,7 @@ GridforceLiteGrid::~GridforceLiteGrid()
 
 void GridforceLiteGrid::initialize(char *potfilename, SimParameters *simParams, MGridforceParams *mgridParams)
 {
-    // cheat and use GridforceFullMainGrid to read the file, set border to zero (i.e. no padding)
+    // cheat and use GridforceFullMainGrid to read the file
     GridforceFullMainGrid *tmp_grid = new GridforceFullMainGrid(mygridnum);
     tmp_grid->initialize(potfilename, simParams, mgridParams, 1);
     

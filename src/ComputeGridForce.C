@@ -11,14 +11,15 @@
 #include "HomePatch.h"
 #include "Molecule.h"
 
-#define MIN_DEBUG_LEVEL 2
+#define MIN_DEBUG_LEVEL 1
 //#define DEBUGM
 #include "Debug.h"
 
 #include "MGridforceParams.h"
 
-#define GF_FORCE_OUTPUT
-#define GF_FORCE_OUTPUT_FREQ 100
+//#define GF_FORCE_OUTPUT
+//#define GF_FORCE_OUTPUT_FREQ 100
+#define GF_OVERLAPCHECK_FREQ 100
 
 
 ComputeGridForce::ComputeGridForce(ComputeID c, PatchID pid)
@@ -56,7 +57,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
     int numAtoms = homePatch->getNumAtoms();
     
     for (int gridnum = 0; gridnum < mol->numGridforceGrids; gridnum++) {
-	const GridforceGrid *grid = mol->get_gridfrc_grid(gridnum);
+	GridforceGrid *grid = mol->get_gridfrc_grid(gridnum);
 	
 // #ifdef DEBUGM
 // 	if (homePatch->flags.step % 100 == 1) {
@@ -68,6 +69,19 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 // 	    delete [] grid_flat;
 // 	}
 // #endif
+	
+	if (homePatch->flags.step % GF_OVERLAPCHECK_FREQ == 0) {
+	    // only check on node 0 and every GF_OVERLAPCHECK_FREQ steps
+	    if (simParams->langevinPistonOn || simParams->berendsenPressureOn) {
+		// check for grid overlap if pressure control is on
+		// not needed without pressure control, since the check is also performed on startup
+		if (!grid->fits_lattice(homePatch->lattice)) {
+		    char errmsg[512];
+		    sprintf(errmsg, "Periodic cell basis too small for Gridforce grid %d\n", gridnum);
+		    NAMD_die(errmsg);
+		}
+	    }
+	}
 	
 	Position center = grid->get_center();
 //	Tensor inv = grid->get_inv();
@@ -86,10 +100,7 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 		mol->get_gridfrc_params(scale, charge, p[i].id, gridnum);
 		
 		// Wrap coordinates using grid center
-		Position pos = p[i].position;
-		pos += homePatch->lattice.wrap_delta(p[i].position);
-		pos += homePatch->lattice.delta(pos, center) - (pos - center);
-		
+		Position pos = grid->wrap_position(p[i].position, homePatch->lattice);
 		DebugM(1, "pos = " << pos << "\n" << endi);
 		
 		// Here's where the action happens
