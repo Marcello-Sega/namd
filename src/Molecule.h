@@ -879,6 +879,16 @@ public:
       }
       return result;
   }
+  
+  int set_gridfrc_grid(int gridnum, GridforceGrid *grid)
+  {
+      if (grid && gridnum >= 0 && gridnum < numGridforceGrids) {
+	  gridfrcGrid[gridnum] = grid;
+	  return 0;
+      } else {
+	  return -1;
+      }
+  }
 /* END gf */
 
   Real langevin_param(int atomnum) const

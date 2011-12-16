@@ -963,10 +963,10 @@ int ScriptTcl::Tcl_reloadGridforceGrid(ClientData clientData,
       return TCL_ERROR;
   }
   
+  //(CProxy_Node(CkpvAccess(BOCclass_group).node)).reloadGridforceGrid(key);
   Node::Object()->reloadGridforceGrid(key);
   script->barrier();
-  //script->runController(SCRIPT_RELOADGRID); // NOT NEEDED?
-
+  
   return TCL_OK;
 }
 // END gf

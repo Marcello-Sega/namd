@@ -87,7 +87,10 @@ void ComputeGridForce::doForce(FullAtom* p, Results* r)
 //	Tensor inv = grid->get_inv();
 	Vector gfScale = grid->get_scale();
 	
-	DebugM(1, "center = " << center << "\n" << endi);
+	if (homePatch->flags.step % 100 == 1) {
+	    DebugM(3, "center = " << center << "\n" << endi);
+	    DebugM(3, "e = " << grid->get_e() << "\n" << endi);
+	}
 	
 	//  Loop through and check each atom
 	for (int i = 0; i < numAtoms; i++) {

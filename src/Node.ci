@@ -29,7 +29,7 @@ module Node {
     // used to change Molecule fields in mid-run
     entry void reloadCharges(float charge[n], int n);
 
-    entry void reloadGridforceGrid(int gridnum, float gridvals[n], int n);
+    entry void reloadGridforceGrid(int gridnum);
 
     // exit scheduler to return to front end
     entry void recvEnableExitScheduler(CkQdMsg *);

@@ -131,6 +131,7 @@ int  Fclose(FILE *fout);
 #define FULLTAG	104
 #define FULLFORCETAG 105
 #define DPMTATAG 106
+#define GRIDFORCEGRIDTAG 107
 
 #define CYCLE_BARRIER   0
 #define PME_BARRIER     0

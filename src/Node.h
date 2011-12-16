@@ -92,7 +92,7 @@ public:
   void reloadCharges(float charge[], int n);
 
   void reloadGridforceGrid(const char *key);
-  void reloadGridforceGrid(int gridnum, float gridvals[], int n);
+  void reloadGridforceGrid(int gridnum);
   
   void sendEnableExitScheduler(void);
   void recvEnableExitScheduler(CkQdMsg *);

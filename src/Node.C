@@ -790,8 +790,8 @@ void Node::reloadCharges(float charge[], int n) {
 
 
 // BEGIN gf
-void Node::reloadGridforceGrid(const char *key) {
-    DebugM(4, "reloadGridforceGrid(const char*) called\n" << endi);
+void Node::reloadGridforceGrid(const char * key) {
+    DebugM(4, "reloadGridforceGrid(const char*) called on node " << CkMyPe() << "\n" << endi);
     
     int gridnum;
     MGridforceParams *mgridParams;
@@ -811,27 +811,44 @@ void Node::reloadGridforceGrid(const char *key) {
     if (grid == NULL) {
 	NAMD_bug("Node::reloadGridforceGrid(const char*):grid not found");
     }
-    
     grid->reinitialize(simParameters, mgridParams);
-    float *gridvals = NULL;
-    int n = grid->get_all_gridvals(&gridvals);
-    DebugM(4, "gridvals = " << gridvals << "\n" << endi);
-    CProxy_Node(thisgroup).reloadGridforceGrid(gridnum,gridvals,n);
-    delete [] gridvals;
+    
+    CProxy_Node(thisgroup).reloadGridforceGrid(gridnum);
     
     DebugM(4, "reloadGridforceGrid(const char*) finished\n" << endi);
 }
 
-void Node::reloadGridforceGrid(int gridnum, float gridvals[], int n) {
-    DebugM(4, "reloadGridforceGrid(int, float[], int) called\n" << endi);
+void Node::reloadGridforceGrid(int gridnum) {
+    DebugM(4, "reloadGridforceGrid(int) called on node " << CkMyPe() << "\n" << endi);
     
     GridforceGrid *grid = molecule->get_gridfrc_grid(gridnum);
     if (grid == NULL) {
-	NAMD_bug("Node::reloadGridforceGrid(int,float[],size_t):grid not found");
+	NAMD_bug("Node::reloadGridforceGrid(int):grid not found");
     }
-    grid->set_all_gridvals(gridvals, n);
     
-    DebugM(4, "reloadGridforceGrid(int, float[], int) finished\n" << endi);
+    if (CkMyPe()) {
+	// not node 0 -> receive grid
+	if (CmiMyRank()) return;
+	
+	DebugM(4, "Receiving grid\n");
+	
+	delete grid;
+	
+	MIStream *msg = CkpvAccess(comm)->newInputStream(0, GRIDFORCEGRIDTAG);
+	grid = GridforceGrid::unpack_grid(gridnum, msg);
+	molecule->set_gridfrc_grid(gridnum, grid);
+	delete msg;
+    } else {
+	// node 0 -> send grid
+	DebugM(4, "Sending grid\n");
+	
+	MOStream *msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, GRIDFORCEGRIDTAG, BUFSIZE);
+	GridforceGrid::pack_grid(grid, msg);
+	msg->end();
+	delete msg;
+    }
+    
+    DebugM(4, "reloadGridforceGrid(int) finished\n" << endi);
 }
 // END gf
 
