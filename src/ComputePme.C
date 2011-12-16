@@ -532,24 +532,31 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( numGrids != 1 || simParams->PMEPencils == 0 ) usePencils = 0;
   else if ( simParams->PMEPencils > 0 ) usePencils = 1;
   else {
+    int nrps = simParams->PMEProcessors;
+    if ( nrps <= 0 ) nrps = CkNumPes();
+    if ( nrps > CkNumPes() ) nrps = CkNumPes();
     int dimx = simParams->PMEGridSizeX;
     int dimy = simParams->PMEGridSizeY;
     int maxslabs = 1 + (dimx - 1) / simParams->PMEMinSlices;
-    if ( maxslabs > CkNumPes() ) maxslabs = CkNumPes();
+    if ( maxslabs > nrps ) maxslabs = nrps;
     int maxpencils = ( simParams->PMEGridSizeX * simParams->PMEGridSizeY
 		* simParams->PMEGridSizeZ ) / simParams->PMEMinPoints;
-    if ( maxpencils > CkNumPes() ) maxpencils = CkNumPes();
+    if ( maxpencils > nrps ) maxpencils = nrps;
     if ( maxpencils > 3 * maxslabs ) usePencils = 1;
     else usePencils = 0;
   }
 
   if ( usePencils ) {
-    if ( simParams->PMEPencils > 1 ) {
+    int nrps = simParams->PMEProcessors;
+    if ( nrps <= 0 ) nrps = CkNumPes();
+    if ( nrps > CkNumPes() ) nrps = CkNumPes();
+    if ( simParams->PMEPencils > 1 &&
+         simParams->PMEPencils * simParams->PMEPencils <= nrps ) {
       xBlocks = yBlocks = zBlocks = simParams->PMEPencils;
     } else {
       int nb2 = ( simParams->PMEGridSizeX * simParams->PMEGridSizeY
 		* simParams->PMEGridSizeZ ) / simParams->PMEMinPoints;
-      if ( nb2 > CkNumPes() ) nb2 = CkNumPes();
+      if ( nb2 > nrps ) nb2 = nrps;
       int nb = (int) sqrt((float)nb2);
       xBlocks = zBlocks = nb;
       yBlocks = nb2 / nb;
