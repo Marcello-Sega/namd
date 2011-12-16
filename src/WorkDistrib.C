@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2011/08/30 14:54:24 $
- * $Revision: 1.1228 $
+ * $Author: dtanner $
+ * $Date: 2011/12/16 22:28:46 $
+ * $Revision: 1.1229 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1847,8 +1847,19 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     break;
   case computeNonbondedCUDAType:
 #ifdef NAMD_CUDA
-    // CkPrintf("CUDA %d %d %x\n", CkMyPe(), seq, compute->priority());
-    wdProxy[CkMyPe()].enqueueCUDA(msg);
+//     CkPrintf("WorkDistrib[%d]::CUDA seq=%d phase=%d\n", CkMyPe(), seq, gbisPhase);
+    //wdProxy[CkMyPe()].enqueueCUDA(msg);
+    switch ( gbisPhase ) {
+       case 1:
+         wdProxy[CkMyPe()].enqueueCUDA(msg);
+         break;
+       case 2:
+         wdProxy[CkMyPe()].enqueueCUDAP2(msg);
+         break;
+       case 3:
+         wdProxy[CkMyPe()].enqueueCUDAP3(msg);
+         break;
+    }
 #else
     msg->compute->doWork();
 #endif
@@ -2011,6 +2022,12 @@ void WorkDistrib::enqueueCUDA(LocalWorkMsg *msg) {
   // ComputeNonbondedCUDA *c = msg->compute;
   // if ( c->localWorkMsg != msg && c->localWorkMsg2 != msg )
   //   NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
+void WorkDistrib::enqueueCUDAP2(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+}
+void WorkDistrib::enqueueCUDAP3(LocalWorkMsg *msg) {
+  msg->compute->doWork();
 }
 
 

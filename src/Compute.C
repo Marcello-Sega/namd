@@ -45,7 +45,7 @@ Compute::~Compute() {
 void Compute::enqueueWork() {
   if (!this) { DebugM(4,"This Compute is NULL!!!\n"); }
   if ( ! noWork() ) {
-    gbisPhase = 1; //first phase
+    //gbisPhase = 1; //first phase - this should already be 1
     WorkDistrib::messageEnqueueWork(this);  // should be in ComputeMgr?
   } else {
     //don't enqueue work
@@ -68,6 +68,7 @@ void Compute::patchReady(PatchID patchID, int doneMigration, int seq) {
   } else {
     if (! --patchReadyCounter) {
       patchReadyCounter = numPatches;
+      //gbisPhase = 1;
       sequenceNumber = seq;  // breaks CUDA priority if done earlier
       if (doAtomUpdate) {
 	atomUpdate();
@@ -82,16 +83,18 @@ void Compute::gbisP2PatchReady(PatchID pid, int seq) {
 
   if (! --patchReadyCounter) {
     patchReadyCounter = numPatches;
+    //gbisPhase = 2;
     sequenceNumber = seq;
-    WorkDistrib::messageEnqueueWork(this);
+    enqueueWork();
   }
 }
 
 void Compute::gbisP3PatchReady(PatchID pid, int seq) {
   if (! --patchReadyCounter) {
     patchReadyCounter = numPatches;
+    //gbisPhase = 3;
     sequenceNumber = seq;
-    WorkDistrib::messageEnqueueWork(this);
+    enqueueWork();
   }
 }
 

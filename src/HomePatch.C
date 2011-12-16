@@ -399,7 +399,6 @@ HomePatch::~HomePatch()
 
 
 void HomePatch::boxClosed(int box) {
-
   // begin gbis
   if (box == 5) {// end of phase 1
     phase1BoxClosedCalled = true;
@@ -844,7 +843,6 @@ void HomePatch::receiveResults(ProxyResultVarsizeMsg *msg) {
 
     numGBISP3Arrived++;
     DebugM(4, "patchID("<<patchID<<") receiveRes() nodeID("<<msg->node<<")\n");
-    //CkPrintf("[%d] Homepatch: %d receiveResults from %d nodes\n", CkMyPe(), patchID, n);
     int n = msg->node;
     Results *r = forceBox.clientOpen();
 
@@ -2202,11 +2200,9 @@ void HomePatch::gbisP3Ready() {
 //receive proxy results from phase 1
 void HomePatch::receiveResult(ProxyGBISP1ResultMsg *msg) {
   ++numGBISP1Arrived;
-  //if (flags.doNonbonded) {//msg only has data if doNonbonded
     for ( int i = 0; i < msg->psiSumLen; ++i ) {
       psiFin[i] += msg->psiSum[i];
     }
-  //}
   delete msg;
 
   if (flags.doNonbonded) {

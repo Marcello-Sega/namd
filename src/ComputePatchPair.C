@@ -161,17 +161,13 @@ void ComputePatchPair::doWork() {
 
   doForce(p, pExt, r);
  // Inform load balancer
+#ifndef NAMD_CUDA
   if (patch[0]->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
-#ifndef NAMD_CUDA
     LdbCoordinator::Object()->pauseWork(ldObjHandle);
-#endif
   } else {
-#ifndef NAMD_CUDA
     LdbCoordinator::Object()->endWork(ldObjHandle);
-#endif
-
   }
-
+#endif
 
   // Close up boxes
   if ( ( computeType != computeNonbondedPairType ) ||

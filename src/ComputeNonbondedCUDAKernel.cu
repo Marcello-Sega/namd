@@ -234,6 +234,7 @@ void cuda_bind_patch_pairs(const patch_pair *pp, int npp,
   if ( GBIS_P3_counters ) cudaFree(GBIS_P3_counters);
   // if ( virials ) cudaFree(virials);
   virials = slow_virials = 0;
+  energy_gbis = 0;
   if ( patch_pairs ) cudaFree(patch_pairs);
   if ( virial_buffers ) cudaFree(virial_buffers);
   if ( energy_gbis_buffers ) cudaFree(energy_gbis_buffers);

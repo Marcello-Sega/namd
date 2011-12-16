@@ -92,7 +92,7 @@ void ComputePatch::doWork() {
 #ifndef NAMD_CUDA
   // Inform load balancer. 
   // I assume no threads will suspend until endWork is called
-    LdbCoordinator::Object()->startWork(ldObjHandle);
+  LdbCoordinator::Object()->startWork(ldObjHandle);
 #endif
   if ( (computeType != computeNonbondedSelfType ) ||
        (!patch->flags.doGBIS || gbisPhase == 1) ) {
@@ -105,16 +105,13 @@ void ComputePatch::doWork() {
   // Pass pointers to doForce
   doForce(p, pExt, r);
 // Inform load balancer
+#ifndef NAMD_CUDA
   if (patch->flags.doGBIS && (gbisPhase == 1 || gbisPhase == 2)) {
-#ifndef NAMD_CUDA
     LdbCoordinator::Object()->pauseWork(ldObjHandle);
-#endif
   } else {
-#ifndef NAMD_CUDA
     LdbCoordinator::Object()->endWork(ldObjHandle);
-#endif
-
   }
+#endif
   // Close up boxes
   if ( (computeType != computeNonbondedSelfType   ) ||
        (!patch->flags.doGBIS || gbisPhase == 3) ) {

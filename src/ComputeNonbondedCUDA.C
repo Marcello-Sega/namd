@@ -106,6 +106,13 @@ static inline bool sortop_bitreverse(int a, int b) {
   return 0;
 }
 
+/*
+BASE
+2 types (remote & local)
+16 pes per node
+3 phases (1, 2, 3)
+*/
+
 #define CUDA_EVENT_ID_BASE 100
 #define CUDA_TRACE_REMOTE(START,END) \
   do { int dev; cudaGetDevice(&dev); traceUserBracketEvent( \
@@ -1047,6 +1054,7 @@ int ComputeNonbondedCUDA::noWork() {
   doEnergy = flags.doEnergy;
 
   if ( ! flags.doNonbonded ) {
+GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
     for ( int i=0; i<hostedPatches.size(); ++i ) {
       patch_record &pr = master->patchRecords[hostedPatches[i]];
       pr.positionBox->skip();
@@ -1067,19 +1075,26 @@ int ComputeNonbondedCUDA::noWork() {
 
   for ( int i=0; i<hostedPatches.size(); ++i ) {
     patch_record &pr = master->patchRecords[hostedPatches[i]];
-    pr.x = pr.positionBox->open();
-    pr.xExt = pr.p->getCompAtomExtInfo();
+    if (!simParams->GBISOn || gbisPhase == 1) {
+GBISP("GBIS[%d] noWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
+      pr.x = pr.positionBox->open();
+      pr.xExt = pr.p->getCompAtomExtInfo();
+    }
+
     if (simParams->GBISOn) {
       if (gbisPhase == 1) {
+GBISP("GBIS[%d] noWork() P1[%d] open()\n",CkMyPe(),pr.patchID);
         pr.intRad     = pr.intRadBox->open();
         pr.psiSum     = pr.psiSumBox->open();
       } else if (gbisPhase == 2) {
+GBISP("GBIS[%d] noWork() P2[%d] open()\n",CkMyPe(),pr.patchID);
         pr.bornRad    = pr.bornRadBox->open();
         pr.dEdaSum    = pr.dEdaSumBox->open();
       } else if (gbisPhase == 3) {
+GBISP("GBIS[%d] noWork() P3[%d] open()\n",CkMyPe(),pr.patchID);
         pr.dHdrPrefix = pr.dHdrPrefixBox->open();
       }
-        //CkPrintf("opened GBIS boxes");
+GBISP("opened GBIS boxes");
     }
   }
 
@@ -1093,10 +1108,9 @@ int ComputeNonbondedCUDA::noWork() {
   return 1;
 }
 
-//dtanner
 void ComputeNonbondedCUDA::doWork() {
 GBISP("C.N.CUDA[%d]::doWork: seq %d, phase %d, workStarted %d\n", \
-CkMyPe(), sequence(), gbisPhase, workStarted)
+CkMyPe(), sequence(), gbisPhase, workStarted);
 
   PATCH_PAIRS_REF;
   FORCE_LISTS_REF;
@@ -1128,6 +1142,7 @@ CkMyPe(), sequence(), gbisPhase, workStarted)
   //open boxes to begin phase
   for ( int i=0; i<hostedPatches.size(); ++i ) {
     patch_record &pr = master->patchRecords[hostedPatches[i]];
+GBISP("GBIS[%d] doWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
     pr.x = pr.positionBox->open();
     pr.xExt = pr.p->getCompAtomExtInfo();
   }
@@ -1152,6 +1167,8 @@ CkMyPe(), sequence(), gbisPhase, workStarted)
       num_virials_allocated = 1.1 * num_virials + 1;
       cudaHostAlloc((void**)&virials,2*16*sizeof(float)*num_virials_allocated,cudaHostAllocMapped);
       cudaHostAlloc((void**)&energy_gbis,sizeof(float)*num_virials_allocated,cudaHostAllocMapped);
+      for (int i  = 0; i < num_virials_allocated; i++)
+        energy_gbis[i] = 0.f;
       cuda_errcheck("in cudaHostAlloc virials");
       slow_virials = virials + 16*num_virials;
     }
@@ -1422,7 +1439,7 @@ CkMyPe(), sequence(), gbisPhase, workStarted)
       }
     }
   }
-GBISP("finished active patches\n")
+//GBISP("finished active patches\n")
 
   //CkPrintf("maxMovement = %f  maxTolerance = %f  save = %d  use = %d\n",
   //  maxAtomMovement, maxPatchTolerance,
@@ -1558,10 +1575,13 @@ GBISP("finished active patches\n")
   //Do GBIS
   if (simParams->GBISOn) {
     //open GBIS boxes depending on phase
-    for ( int i=0; i<hostedPatches.size(); ++i ) {
-      patch_record &pr = master->patchRecords[hostedPatches[i]];
+    for ( int i=0; i<activePatches.size(); ++i ) {
+      patch_record &pr = master->patchRecords[activePatches[i]];
+GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
         if (gbisPhase == 1) {
           //Copy GBIS intRadius to Host
+GBISP("GBIS[%d] doWork() P1[%d] open()\n",CkMyPe(), pr.patchID);
+          if (i < hostedPatches.size())
           pr.intRad = pr.intRadBox->open();
           if (atomsChanged) {
             float *intRad0 = intRad0H + pr.localStart;
@@ -1573,16 +1593,22 @@ GBISP("finished active patches\n")
             }
           }
 
+          if (i < hostedPatches.size())
           pr.psiSum = pr.psiSumBox->open();
         } else if (gbisPhase == 2) {
+GBISP("GBIS[%d] doWork() P2[%d] open()\n",CkMyPe(), pr.patchID);
+          if (i < hostedPatches.size())
           pr.bornRad = pr.bornRadBox->open();
           float *bornRad = bornRadH + pr.localStart;
           for ( int k=0; k<pr.numAtoms; ++k ) {
             int j = pr.xExt[k].sortOrder;
             bornRad[k] = pr.bornRad[j];
           }
+          if (i < hostedPatches.size())
           pr.dEdaSum = pr.dEdaSumBox->open();
         } else if (gbisPhase == 3) {
+GBISP("GBIS[%d] doWork() P3[%d] open()\n",CkMyPe(), pr.patchID);
+          if (i < hostedPatches.size())
           pr.dHdrPrefix = pr.dHdrPrefixBox->open();
           float *dHdrPrefix = dHdrPrefixH + pr.localStart;
           for ( int k=0; k<pr.numAtoms; ++k ) {
@@ -1839,6 +1865,7 @@ CkMyPe(), workStarted, gbisPhase)
   if ( !simParams->GBISOn || gbisPhase == 1 ) {
     for ( int i=0; i<patches.size(); ++i ) {
       patch_record &pr = master->patchRecords[patches[i]];
+GBISP("GBIS[%d] fnWork() P0[%d] force.open()\n",CkMyPe(), pr.patchID);
       pr.r = pr.forceBox->open();
     }
   } // !GBISOn || gbisPhase==1
@@ -1914,6 +1941,7 @@ CkMyPe(), workStarted, gbisPhase)
           int j = aExt[k].sortOrder;
           pr.psiSum[j] += psiSumMaster[k];
         }
+GBISP("C.N.CUDA[%d]::fnWork: P1 psiSum.close()\n", CkMyPe());
         pr.psiSumBox->close(&(pr.psiSum));
 
       } else if (gbisPhase == 2) {
@@ -1923,9 +1951,11 @@ CkMyPe(), workStarted, gbisPhase)
           int j = aExt[k].sortOrder;
           pr.dEdaSum[j] += dEdaSumMaster[k];
         }
+GBISP("C.N.CUDA[%d]::fnWork: P2 dEdaSum.close()\n", CkMyPe());
         pr.dEdaSumBox->close(&(pr.dEdaSum));
 
       } else if (gbisPhase == 3) {
+GBISP("C.N.CUDA[%d]::fnWork: P3 all.close()\n", CkMyPe());
         pr.intRadBox->close(&(pr.intRad)); //box 6
         pr.bornRadBox->close(&(pr.bornRad)); //box 7
         pr.dHdrPrefixBox->close(&(pr.dHdrPrefix)); //box 9
@@ -1933,6 +1963,7 @@ CkMyPe(), workStarted, gbisPhase)
         pr.forceBox->close(&(pr.r));
       } //end phases
     } else { //not GBIS
+GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
       pr.positionBox->close(&(pr.x));
       pr.forceBox->close(&(pr.r));
     }
@@ -1951,10 +1982,14 @@ CkMyPe(), workStarted, gbisPhase)
   }
 #endif
 
-  if ( workStarted == 1 && ! mergegrids && localHostedPatches.size() )
+  if ( workStarted == 1 && ! mergegrids && localHostedPatches.size() ) {
+    GBISP("not finished, call again\n");
     return 0;  // not finished, call again
+  }
 
   if ( master != this ) {  // finished
+    GBISP("finished\n");
+    gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
     atomsChanged = 0;
     return 1;
   }
@@ -2011,10 +2046,8 @@ CkMyPe(), workStarted, gbisPhase)
   } // !GBISOn || gbisPhase==3  
 
   // Next GBIS Phase
-  if (workStarted == 2) {
 GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
     gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
-  }
 
   cuda_timer_total += kernel_time;
   if ( simParams->outputCudaTiming &&
@@ -2050,6 +2083,7 @@ GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
   }
   cuda_timer_count++;
 
+  GBISP("C.N.CUDA[%d] finished ready for next step\n",CkMyPe());
   return 1;  // finished and ready for next step
 }
 
