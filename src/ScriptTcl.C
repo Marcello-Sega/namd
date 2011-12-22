@@ -431,6 +431,10 @@ int ScriptTcl::Tcl_run(ClientData clientData,
     return TCL_ERROR;
   }
   SimParameters *simParams = Node::Object()->simParameters;
+  if (numsteps && simParams->firstTimestep % simParams->stepsPerCycle) {
+    Tcl_SetResult(interp,"firstTimestep must be a multiple of stepsPerCycle",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
   if (numsteps % simParams->stepsPerCycle) {
     Tcl_SetResult(interp,"number of steps must be a multiple of stepsPerCycle",TCL_VOLATILE);
     return TCL_ERROR;
@@ -468,6 +472,10 @@ int ScriptTcl::Tcl_minimize(ClientData clientData,
     return TCL_ERROR;
   }
   SimParameters *simParams = Node::Object()->simParameters;
+  if (numsteps && simParams->firstTimestep % simParams->stepsPerCycle) {
+    Tcl_SetResult(interp,"firstTimestep must be a multiple of stepsPerCycle",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
   if (numsteps % simParams->stepsPerCycle) {
     Tcl_SetResult(interp,"number of steps must be a multiple of stepsPerCycle",TCL_VOLATILE);
     return TCL_ERROR;

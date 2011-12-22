@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dtanner $
- * $Date: 2011/12/22 15:31:09 $
- * $Revision: 1.1201 $
+ * $Author: jim $
+ * $Date: 2011/12/22 16:31:52 $
+ * $Revision: 1.1202 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -175,7 +175,7 @@ void Sequencer::integrate() {
     slowFreq = nonbondedFrequency;
     const BigReal nbondstep = timestep * (staleForces?1:nonbondedFrequency);
     int &doNonbonded = patch->flags.doNonbonded;
-    doNonbonded = !(step%nonbondedFrequency);
+    doNonbonded = (step >= numberOfSteps) || !(step%nonbondedFrequency);
     if ( nonbondedFrequency == 1 ) maxForceMerged = Results::nbond;
     if ( doNonbonded ) maxForceUsed = Results::nbond;
 
@@ -185,7 +185,7 @@ void Sequencer::integrate() {
     if ( dofull ) slowFreq = fullElectFrequency;
     const BigReal slowstep = timestep * (staleForces?1:fullElectFrequency);
     int &doFullElectrostatics = patch->flags.doFullElectrostatics;
-    doFullElectrostatics = (dofull && !(step%fullElectFrequency));
+    doFullElectrostatics = (dofull && ((step >= numberOfSteps) || !(step%fullElectFrequency)));
     if ( dofull && (fullElectFrequency == 1) && !(simParams->mollyOn) )
 					maxForceMerged = Results::slow;
     if ( doFullElectrostatics ) maxForceUsed = Results::slow;

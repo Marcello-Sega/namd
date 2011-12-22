@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: johanstr $
- * $Date: 2011/12/11 09:03:43 $
- * $Revision: 1.1277 $
+ * $Author: jim $
+ * $Date: 2011/12/22 16:31:52 $
+ * $Revision: 1.1278 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -321,12 +321,12 @@ void Controller::integrate() {
     const int zeroMomentum = simParams->zeroMomentum;
 
     nbondFreq = simParams->nonbondedFrequency;
-    const int dofull = ( simParams->fullDirectOn ||
-			simParams->FMAOn || simParams->PMEOn );
+    const int dofull = ( simParams->fullElectFrequency ? 1 : 0 );
     if (dofull)
       slowFreq = simParams->fullElectFrequency;
     else
       slowFreq = simParams->nonbondedFrequency;
+    if ( step >= numberOfSteps ) slowFreq = nbondFreq = 1;
 
     reassignVelocities(step);  // only for full-step velecities
     rescaleaccelMD(step);
