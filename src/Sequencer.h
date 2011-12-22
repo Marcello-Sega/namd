@@ -8,6 +8,7 @@
 #define SEQUENCER_H
 
 #include "converse.h"
+#include "Priorities.h"
 #include "PatchTypes.h"
 
 class HomePatch;
@@ -25,7 +26,9 @@ public:
     Sequencer(HomePatch *p);
     virtual ~Sequencer(void);
     void run(void);             // spawn thread, etc.
-    void awaken(void) { CthAwaken(thread); }
+    void awaken(void) {
+      CthAwakenPrio(thread, CK_QUEUEING_IFIFO, PRIORITY_SIZE, &priority);
+    }
     void suspend(void) { CthSuspend(); }
 
 protected:
@@ -108,6 +111,7 @@ protected:
 
 private:
     CthThread thread;
+    unsigned int priority;
     static void threadRun(Sequencer*);
 
     LdbCoordinator *ldbCoordinator;

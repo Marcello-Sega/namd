@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2011/12/22 16:31:52 $
- * $Revision: 1.1202 $
+ * $Date: 2011/12/22 22:53:12 $
+ * $Revision: 1.1203 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -90,6 +90,7 @@ void Sequencer::run(void)
     DebugM(4, "::run() - this = " << this << "\n" );
     thread = CthCreate((CthVoidFn)&(threadRun),(void*)(this),SEQ_STK_SZ);
     CthSetStrategyDefault(thread);
+    priority = PATCH_PRIORITY(patch->getPatchID());
     awaken();
 }
 
@@ -1796,13 +1797,23 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
 	pairlists && ! pairlistsAreValid;
 
   if ( simParams->lonepairs ) patch->reposition_all_lonepairs();
-  patch->positionsReady(migration);
-  suspend(); // until all deposit boxes close
+
+  patch->positionsReady(migration);  // updates flags.sequence
+  int seq = patch->flags.sequence;
+  int basePriority = ( (seq & 0xffff) << 15 )
+                     + PATCH_PRIORITY(patch->getPatchID());
   if ( patch->flags.doGBIS && patch->flags.doNonbonded) {
+    priority = basePriority + GB1_COMPUTE_HOME_PRIORITY;
+    suspend(); // until all deposit boxes close
     patch->gbisComputeAfterP1();
+    priority = basePriority + GB2_COMPUTE_HOME_PRIORITY;
     suspend();
     patch->gbisComputeAfterP2();
+    priority = basePriority + COMPUTE_HOME_PRIORITY;
     suspend();
+  } else {
+    priority = basePriority + COMPUTE_HOME_PRIORITY;
+    suspend(); // until all deposit boxes close
   }
 
   if ( patch->flags.savePairlists && patch->flags.doNonbonded ) {
