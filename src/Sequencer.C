@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: johanstr $
- * $Date: 2011/12/11 09:03:43 $
- * $Revision: 1.1200 $
+ * $Author: dtanner $
+ * $Date: 2011/12/22 15:31:09 $
+ * $Revision: 1.1201 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -1796,7 +1796,6 @@ void Sequencer::runComputeObjects(int migration, int pairlists)
 	pairlists && ! pairlistsAreValid;
 
   if ( simParams->lonepairs ) patch->reposition_all_lonepairs();
-
   patch->positionsReady(migration);
   suspend(); // until all deposit boxes close
   if ( patch->flags.doGBIS && patch->flags.doNonbonded) {

@@ -34,7 +34,6 @@ public:
 
 protected :
   int numAtoms[2];
-  int gbisPhase;
   CompAtomExt *pExt[2];
   CompAtom* p[2];
   Results* r[2];
