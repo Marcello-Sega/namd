@@ -20,7 +20,7 @@
 ComputePatchPair::ComputePatchPair(ComputeID c, PatchID p[], int t[]) 
     : Compute(c) {
 
-  gbisPhase = 1;
+  gbisPhase = 3;
   setNumPatches(2);
 
   for (int i=0; i<2; i++) {
@@ -178,9 +178,5 @@ void ComputePatchPair::doWork() {
     }
   }
 
-  //increment gbisPhase
-  if (patch[0]->flags.doGBIS) {
-    gbisPhase = 1 + (gbisPhase % 3);//1->2,2->3,3->1
-  }
 }
 

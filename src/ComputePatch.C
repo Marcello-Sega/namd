@@ -27,7 +27,7 @@ ComputePatch::ComputePatch(ComputeID c, PatchID p) : Compute(c) {
     patch = NULL;
     positionBox = NULL;
     forceBox = NULL;
-    gbisPhase = 1;
+    gbisPhase = 3;
 }
 
 ComputePatch::~ComputePatch() {
@@ -117,10 +117,6 @@ void ComputePatch::doWork() {
        (!patch->flags.doGBIS || gbisPhase == 3) ) {
     positionBox->close(&p);
     forceBox->close(&r);
-  }
-  //increment gbisPhase
-  if (patch->flags.doGBIS) {
-    gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
   }
   DebugM(2,patchID << ": doWork() completed.\n");
 }

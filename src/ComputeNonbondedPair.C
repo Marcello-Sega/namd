@@ -98,15 +98,42 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
 }
 
 int ComputeNonbondedPair::noWork() {
+
+  if (patch[0]->flags.doGBIS) {
+    gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
+  }
+
 #ifndef NAMD_CUDA
-  if ( patch[0]->flags.doNonbonded && ((numAtoms[0] && numAtoms[1]) || patch[0]->flags.doGBIS) ) {
+  if ( patch[0]->flags.doNonbonded && (numAtoms[0] && numAtoms[1]) ) {
     return 0;  // work to do, enqueue as usual
   } else {
-    // Inform load balancer
-    LdbCoordinator::Object()->skipWork(ldObjHandle);
 #else
   {
 #endif
+
+    if (patch[0]->flags.doGBIS) {
+     if (gbisPhase == 1) {
+      for (int i=0; i<2; i++) {
+        psiSumBox[i]->skip();
+        intRadBox[i]->skip();
+      }
+      if (patch[0]->flags.doNonbonded) return 1;
+      else gbisPhase = 2;
+     }
+     if (gbisPhase == 2) {
+      for (int i=0; i<2; i++) {
+        bornRadBox[i]->skip();
+        dEdaSumBox[i]->skip();
+      }
+      if (patch[0]->flags.doNonbonded) return 1;
+      else gbisPhase = 3;
+     }
+     if (gbisPhase == 3) {
+      for (int i=0; i<2; i++) {
+        dHdrPrefixBox[i]->skip();
+      }
+     }
+    }
 
     // skip all boxes
     for (int i=0; i<2; i++) {
@@ -116,14 +143,6 @@ int ComputeNonbondedPair::noWork() {
       // BEGIN LA
       if (patch[0]->flags.doLoweAndersen) velocityBox[i]->skip();
       // END LA
-
-      if (patch[0]->flags.doGBIS) {
-        psiSumBox[i]->skip();
-        intRadBox[i]->skip();
-        bornRadBox[i]->skip();
-        dEdaSumBox[i]->skip();
-        dHdrPrefixBox[i]->skip();
-      }
     }
 
     reduction->item(REDUCTION_COMPUTE_CHECKSUM) += 1.;
@@ -131,6 +150,11 @@ int ComputeNonbondedPair::noWork() {
     if (accelMDOn) amd_reduction->submit();
     if (pressureProfileOn) 
       pressureProfileReduction->submit();
+
+#ifndef NAMD_CUDA
+    // Inform load balancer
+    LdbCoordinator::Object()->skipWork(ldObjHandle);
+#endif
 
     return 1;  // no work to do, do not enqueue
   }
