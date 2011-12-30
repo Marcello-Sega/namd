@@ -36,7 +36,7 @@ typedef float Mass;
 #define DE 5.454545454545454f // 12*5/11
 #endif
 
-inline float FastTanH( float x ) {
+static inline float FastTanH( float x ) {
   float a = 2.f*x+0.02f;;
   a *= (6.f + a*(3.f + a));
   return (a)/(a+12.f);
@@ -47,7 +47,7 @@ inline float FastTanH( float x ) {
  * return Bondi radius
  * returns the radius of i, depends on j though
  ******************************************************************************/
-inline float MassToRadius(Mass mi) {//, Mass mj) {
+static inline float MassToRadius(Mass mi) {//, Mass mj) {
 return
   (mi <   2.50f ) ? 1.20f : // AtmNum = 1;  Elem =  H ; Mass =   1.00
   (mi <   5.47f ) ? 1.40f : // AtmNum = 2;  Elem =  He; Mass =   4.00
@@ -104,7 +104,7 @@ return
  * mi is descreened atom - calculating it's alpha (outer loop index)
  * mj is descreening atom - contributor (inner loop index)
  ******************************************************************************/
-inline float MassToScreen(Mass mi) {//, Mass mj) {
+static inline float MassToScreen(Mass mi) {//, Mass mj) {
     return
       (mi <   1.500f) ? 0.85f : //H
       (mi <  12.500f) ? 0.72f : //C
@@ -131,7 +131,7 @@ inline float MassToScreen(Mass mi) {//, Mass mj) {
 #ifdef GBIS_CUDA
 __device__ void h0
 #else
-inline void h0
+static inline void h0
 #endif
 ( float r, float r2, float ri,//(0)*5.3%
     float rc, float r0, float rs, float & h ) {
@@ -140,7 +140,7 @@ inline void h0
 #ifdef GBIS_CUDA
 __device__ void dh0
 #else
-inline void dh0
+static inline void dh0
 #endif
 ( float r, float r2, float ri,//(0)*5.3%
     float rc, float r0, float rs, float & dh ) {
@@ -150,7 +150,7 @@ inline void dh0
 #ifdef GBIS_CUDA
 __device__ void h1
 #else
-inline void h1
+static inline void h1
 #endif
 ( float r, float r2, float ri, //(6+ 11* 2/ 1log)*18.4%
     float rc, float r0, float rs, float & h ) {
@@ -167,7 +167,7 @@ inline void h1
 #ifdef GBIS_CUDA
 __device__ void dh1
 #else
-inline void dh1
+static inline void dh1
 #endif
 ( float r, float r2, float ri, //(4+ 13* 2/ 1log)*18.4%
     float rc, float r0, float rs, float & dh ) {
@@ -185,7 +185,7 @@ inline void dh1
 #ifdef GBIS_CUDA
 __device__ void h2
 #else
-inline void h2
+static inline void h2
 #endif
 ( float r, float r2, float ri,//(4+ 10* )*74.5%
 float rc, float r0, float rs, float & h ) {
@@ -196,7 +196,7 @@ float rc, float r0, float rs, float & h ) {
 #ifdef GBIS_CUDA
 __device__ void dh2
 #else
-inline void dh2
+static inline void dh2
 #endif
 ( float r, float r2, float ri,//(4+ 11* )*74.5%
 float rc, float r0, float rs, float & dh ) {
@@ -208,7 +208,7 @@ float rc, float r0, float rs, float & dh ) {
 #ifdef GBIS_CUDA
 __device__ void h3
 #else
-inline void h3
+static inline void h3
 #endif
 ( float r, float r2, float ri,//(3+ 5* 2/ 1log) 1.4%
 float rc, float r0, float rs, float & h ) {
@@ -218,7 +218,7 @@ float rc, float r0, float rs, float & h ) {
 #ifdef GBIS_CUDA
 __device__ void dh3
 #else
-inline void dh3
+static inline void dh3
 #endif
 ( float r, float r2, float ri,//(5+ 8* 2/ 1log)*1.4%
 float rc, float r0, float rs, float & dh ) {
@@ -230,7 +230,7 @@ float rc, float r0, float rs, float & dh ) {
 #ifdef GBIS_CUDA
 __device__ void h4
 #else
-inline void h4
+static inline void h4
 #endif
 ( float r, float r2, float ri,//(6+ 9* 2/ 1log)*0.4%
 float rc, float r0, float rs, float & h ) {
@@ -247,7 +247,7 @@ float rc, float r0, float rs, float & h ) {
 #ifdef GBIS_CUDA
 __device__ void dh4
 #else
-inline void dh4
+static inline void dh4
 #endif
 ( float r, float r2, float ri,//(6+ 18* 2/ 1log)*0.4%
 float rc, float r0, float rs, float & dh ) {
@@ -266,7 +266,7 @@ float rc, float r0, float rs, float & dh ) {
 #ifdef GBIS_CUDA
 __device__ void h5
 #else
-inline void h5
+static inline void h5
 #endif
 ( float r, float r2, float ri,//(6+ 5* 3/ 1log)*0%, r<0.7Ang
 float rc, float r0, float rs, float & h ) {
@@ -281,7 +281,7 @@ float rc, float r0, float rs, float & h ) {
 #ifdef GBIS_CUDA
 __device__ void dh5
 #else
-inline void dh5
+static inline void dh5
 #endif
 ( float r, float r2, float ri,//(5+ 8* 2/ 1log)*0%, r<0.7Ang
 float rc, float r0, float rs, float & dh ) {
@@ -297,7 +297,7 @@ float rc, float r0, float rs, float & dh ) {
 #ifdef GBIS_CUDA
 __device__ void h6
 #else
-inline void h6
+static inline void h6
 #endif
 ( float r, float r2, float ri,//0%, one atom within other
 float rc, float r0, float rs, float & h ) {
@@ -306,7 +306,7 @@ float rc, float r0, float rs, float & h ) {
 #ifdef GBIS_CUDA
 __device__ void dh6
 #else
-inline void dh6
+static inline void dh6
 #endif
 ( float r, float r2, float ri,//0%, one atom within other
 float rc, float r0, float rs, float & dh ) {
@@ -316,7 +316,7 @@ float rc, float r0, float rs, float & dh ) {
 #ifdef GBIS_CUDA
 __device__ void CalcH 
 #else
-inline void CalcH 
+static inline void CalcH 
 #endif
 ( float r, float r2, float ri,
 float rc, float r0, float rs, float & h, int & d) {
@@ -350,7 +350,7 @@ if (r > 4*rs) { //change this to 1/4 r > rs
 #ifdef GBIS_CUDA
 __device__ void CalcDH
 #else
-inline void CalcDH
+static inline void CalcDH
 #endif
 ( float r, float r2, float ri,
 float rc, float r0, float rs, float & dh, int & d) {
@@ -377,7 +377,7 @@ if (r > 4*rs) {
 #ifdef GBIS_CUDA
 __device__  void CalcHPair
 #else
-inline void CalcHPair
+static inline void CalcHPair
 #endif
 (
   float r,//distance
@@ -399,7 +399,7 @@ inline void CalcHPair
 #ifdef GBIS_CUDA
 __device__ void CalcDHPair
 #else
-inline void CalcDHPair
+static inline void CalcDHPair
 #endif
 ( float r,//distance
   float r2,
@@ -426,7 +426,7 @@ inline void CalcDHPair
 #ifdef GBIS_CUDA
 __device__ void Calc_dEdr_Pair
 #else
-inline void Calc_dEdr_Pair
+static inline void Calc_dEdr_Pair
 #endif
 (//no longer does i==j
   const float & r,
@@ -476,7 +476,7 @@ inline void Calc_dEdr_Pair
 #ifdef GBIS_CUDA
 __device__ void Calc_dEda_Pair
 #else
-inline void Calc_dEda_Pair
+static inline void Calc_dEda_Pair
 #endif
 ( const float & r2,
   const float & ai,
@@ -509,7 +509,7 @@ inline void Calc_dEda_Pair
 #ifdef GBIS_CUDA
 __device__ void Phase2_Pair
 #else
-inline void Phase2_Pair
+static inline void Phase2_Pair
 #endif
 (//doesn't do self energies
 
@@ -551,7 +551,7 @@ inline void Phase2_Pair
 }
 
 #if 0
-inline void init_gbisTable (
+static inline void init_gbisTable (
 float **tablePtr,
 float kappa,
 float maxX,
