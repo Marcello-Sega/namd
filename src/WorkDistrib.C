@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/01/04 15:47:55 $
- * $Revision: 1.1230 $
+ * $Date: 2012/01/04 17:50:34 $
+ * $Revision: 1.1231 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1861,7 +1861,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
          break;
     }
 #else
-    msg->compute->doWork();  CmiNetworkProgressAfter(0);
+    msg->compute->doWork();  CmiMachineProgressImpl();
 #endif
     break;
   case computePmeType:
@@ -1869,7 +1869,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 #ifdef NAMD_CUDA
     wdProxy[CkMyPe()].enqueuePme(msg);
 #else
-    msg->compute->doWork();  CmiNetworkProgressAfter(0);
+    msg->compute->doWork();  CmiMachineProgressImpl();
 #endif
     break;
   case optPmeType:
@@ -1877,7 +1877,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 #ifdef NAMD_CUDA
     wdProxy[CkMyPe()].enqueuePme(msg);
 #else
-    msg->compute->doWork();  CmiNetworkProgressAfter(0);
+    msg->compute->doWork();  CmiMachineProgressImpl();
 #endif
     break;
   default:
@@ -1886,125 +1886,125 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
 }
 
 void WorkDistrib::enqueueWork(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueExcls(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueBonds(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueAngles(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueDihedrals(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueImpropers(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueThole(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueAniso(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueCrossterms(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueuePme(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueSelfA1(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueSelfA2(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueSelfA3(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueSelfB1(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueSelfB2(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueSelfB3(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueWorkA1(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueWorkA2(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueWorkA3(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueWorkB1(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueWorkB2(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueWorkB3(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
@@ -2012,22 +2012,22 @@ void WorkDistrib::enqueueWorkB3(LocalWorkMsg *msg) {
 
 
 void WorkDistrib::enqueueWorkC(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
 void WorkDistrib::enqueueCUDA(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
   // ComputeNonbondedCUDA *c = msg->compute;
   // if ( c->localWorkMsg != msg && c->localWorkMsg2 != msg )
   //   NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 void WorkDistrib::enqueueCUDAP2(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
 }
 void WorkDistrib::enqueueCUDAP3(LocalWorkMsg *msg) {
-  msg->compute->doWork();  CmiNetworkProgressAfter(0);
+  msg->compute->doWork();  CmiMachineProgressImpl();
 }
 
 
