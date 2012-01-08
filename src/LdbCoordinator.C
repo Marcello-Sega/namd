@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: jim $
- * $Date: 2011/03/22 20:31:19 $
- * $Revision: 1.112 $
+ * $Date: 2012/01/08 21:30:01 $
+ * $Revision: 1.113 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -36,6 +36,7 @@
 #include "ComputeMgr.h"
 #include "Compute.h"
 #include "packmsg.h"
+#include "Sync.h"
 
 #include "elements.h"
 #include "ComputeMgr.decl.h"
@@ -642,6 +643,8 @@ void LdbCoordinator::resume(void)
 
   ldbCycleNum++;
   initialize(PatchMap::Object(),ComputeMap::Object(),1);
+
+  Sync::Object()->openSync();
 }
 
 void LdbCoordinator::resumeReady(CkQdMsg *msg) {

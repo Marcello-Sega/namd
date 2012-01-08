@@ -1154,7 +1154,7 @@ void HomePatch::positionsReady(int doMigration)
   patchMapRead = 1;
 
   // gzheng
-  if (useSync) Sync::Object()->PatchReady();
+  Sync::Object()->PatchReady();
 }
 
 void HomePatch::replaceForces(ExtForce *f)

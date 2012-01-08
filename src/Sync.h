@@ -20,8 +20,6 @@
 #include "Sync.decl.h"
 #include "ResizeArrayPrimIter.h"
 
-extern int useSync, useProxySync;
-
 typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
 
 class Sync : public BOCclass
@@ -35,6 +33,9 @@ private:
     } *clist;
     const int INCREASE;
     int capacity;
+
+    int useSync, useProxySync;
+    int eventHoldComputes, eventReleaseComputes;
 
     int step;
     int counter;
@@ -51,7 +52,7 @@ public:
     ~Sync(void);
     inline static Sync *Object() { return CkpvAccess(Sync_instance); }
     void openSync(); 
-    int holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration);
+    int holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration, int seq);
     void PatchReady(void);
 };
 

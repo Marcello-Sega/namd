@@ -330,14 +330,12 @@ void Patch::positionsReady(int doneMigration)
 
    // Iterate over compute objects that need to be informed we are ready
    ComputeIDListIter cid(positionComputeList);
+   int seq = flags.sequence;
    // gzheng
-   if (useSync) {
-     if (Sync::Object()->holdComputes(patchID, cid, doneMigration))
+     if (Sync::Object()->holdComputes(patchID, cid, doneMigration, seq))
        return;
-   }
 
    int compute_count = 0;
-   int seq = flags.sequence;
    for(cid = cid.begin(); cid != cid.end(); cid++)
    {
          compute_count++;

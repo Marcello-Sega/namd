@@ -29,14 +29,12 @@
 
 // make sure all HomePatches get their positions data and sendProxyData to 
 // their proxies before computes get positionsReady.
-int useSync = 1;
 
 // useProxySync will make sure all proxies get updated before computes' 
 // positionsReady triggered so that real computation starts.
 // when these two combined, it will make sure that homepatch get all its force 
 // and positions data, and proxies receive its updated data before all 
 // computes start.
-int useProxySync = 0;
 
 Sync::Sync(): INCREASE(600), step(0), counter(0), homeReady(0)
 {
@@ -52,6 +50,8 @@ Sync::Sync(): INCREASE(600), step(0), counter(0), homeReady(0)
     cnum = 0;
     nPatcheReady = 0;
     numPatches = -1;
+    eventHoldComputes = traceRegisterUserEvent("Sync::holdComputes", 133);
+    eventReleaseComputes = traceRegisterUserEvent("Sync::releaseComputes", 134);
 }
 
 Sync::~Sync()
@@ -61,12 +61,16 @@ Sync::~Sync()
 
 void Sync::openSync(void)
 {
+  int reportPe = 1;
+  while ( 2 * reportPe < CkNumPes() ) reportPe *= 2;
+  useSync = 1;
+  useProxySync = 0;
   if (useSync) {
     // if use proxy spanning tree, proxy sync is forced
     if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
 #if !CMK_IMMEDIATE_MSG
       //Dont need proxy sync when immediate messges are turned on
-      if (CkMyPe() == 0)
+      if (CkMyPe() == reportPe)
       CmiPrintf("[%d] useProxySync is turned on. \n", CkMyPe());
       // Dont need proxy sync when immediate messges are turned on
       // If on BG/P, useProxySync should not be turned on for better performance
@@ -84,21 +88,24 @@ void Sync::openSync(void)
     // if no proxy sync and no home patch, then disable home patch sync as well
     if (!useProxySync && PatchMap::Object()->numHomePatches() == 0) useSync = 0;
   }
-  if(CkMyPe() == 0)
+  if(CkMyPe() == reportPe)
     iout << iINFO << "useSync: " << useSync << " useProxySync: " << useProxySync << "\n" << endi;
 }    
 
 // called from Patch::positionsReady()
-int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration)
+int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration, int seq)
 {
+  if (!useSync) return 0;
   if (!useProxySync) {
     // only hold when homepatches are not ready
     PatchMap *patchMap = PatchMap::Object();
-    if (homeReady) {
+    if (homeReady && seq == step) {
+      nPatcheReady++;
       triggerCompute();
       return 0;
     }
   }
+  traceUserEvent(eventHoldComputes);
 
   int slot = 0;
   for (; slot < cnum; slot++)
@@ -119,7 +126,7 @@ int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration)
   clist[slot].cid = cid;
   clist[slot].pid = pid;
   clist[slot].doneMigration  = doneMigration;
-  clist[slot].step = PatchMap::Object()->patch(pid)->flags.sequence;
+  clist[slot].step = seq;
 
 //  CkPrintf("REG[%d]: patch:%d step:%d-%d slot:%d\n", CkMyPe(), pid, patchMap->patch(pid)->flags.sequence, step, slot);
 
@@ -133,8 +140,10 @@ int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration)
 // called from HomePatch::positionsReady()
 void Sync::PatchReady(void)
 {
+ if ( useSync ) {
   counter ++;
   triggerCompute();
+ }
 }
 
 void Sync::releaseComputes()
@@ -142,13 +151,12 @@ void Sync::releaseComputes()
   PatchMap *patchMap = PatchMap::Object();
   ComputeMap *computeMap = ComputeMap::Object();
 
-  nPatcheReady = 0;
+  traceUserEvent(eventReleaseComputes);
+
   for (int i= 0; i<cnum; i++) {
     int &pid = clist[i].pid;
     if (pid == -1) continue;
     if (clist[i].step != step) {
-      // count for next step
-      if (clist[i].step == step + 1) nPatcheReady++;
       continue;
     }
     //         CkPrintf(" %d-%d-%d ",
@@ -181,23 +189,31 @@ void Sync::triggerCompute()
   if (numPatches == -1) 
     numPatches = ProxyMgr::Object()->numProxies() + patchMap->numHomePatches();
 
+// if (CkMyPe()==8) CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
 //  CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
 
-  if (homeReady == 0 && counter == patchMap->numHomePatches()) {
+  if (homeReady == 0 && counter >= patchMap->numHomePatches()) {
     homeReady = 1;
+// if (CkMyPe()==8) CkPrintf("HOMEREADY[%d]\n", CkMyPe());
     if (!useProxySync)  releaseComputes();
   }
 
   if (homeReady && nPatcheReady == numPatches)
   {
+// if (CkMyPe()==8) CkPrintf("TRIGGERED[%d]\n", CkMyPe());
 //     CkPrintf("TRIGGERED[%d]\n", CkMyPe());
     if (useProxySync) releaseComputes();
 
     // reset counter
-    counter = 0;
     numPatches = -1;
     step++;
+    nPatcheReady = 0;
+    for (int i= 0; i<cnum; i++) {
+      if (clist[i].pid != -1 && clist[i].step == step) ++nPatcheReady;
+    }
     homeReady = 0;
+    counter -= patchMap->numHomePatches();
+    if (counter >= patchMap->numHomePatches()) triggerCompute();
   }
 }
 
