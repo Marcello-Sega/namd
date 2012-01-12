@@ -63,6 +63,7 @@ void Sync::openSync(void)
 {
   int reportPe = 1;
   while ( 2 * reportPe < CkNumPes() ) reportPe *= 2;
+  step = -1;
   useSync = 1;
   useProxySync = 0;
   if (useSync) {
@@ -70,8 +71,6 @@ void Sync::openSync(void)
     if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
 #if !CMK_IMMEDIATE_MSG
       //Dont need proxy sync when immediate messges are turned on
-      if (CkMyPe() == reportPe)
-      CmiPrintf("[%d] useProxySync is turned on. \n", CkMyPe());
       // Dont need proxy sync when immediate messges are turned on
       // If on BG/P, useProxySync should not be turned on for better performance
       #if !CMK_BLUEGENEP
@@ -96,6 +95,7 @@ void Sync::openSync(void)
 int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration, int seq)
 {
   if (!useSync) return 0;
+  if (step < 0) step = seq;
   if (!useProxySync) {
     // only hold when homepatches are not ready
     PatchMap *patchMap = PatchMap::Object();
@@ -185,22 +185,23 @@ void Sync::releaseComputes()
 void Sync::triggerCompute()
 {
   PatchMap *patchMap = PatchMap::Object();
+  const int numHomePatches = patchMap->numHomePatches();
 
   if (numPatches == -1) 
-    numPatches = ProxyMgr::Object()->numProxies() + patchMap->numHomePatches();
+    numPatches = ProxyMgr::Object()->numProxies() + numHomePatches;
 
-// if (CkMyPe()==8) CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
+// if (CkMyPe()<=8) CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, numHomePatches, nPatcheReady, numPatches);
 //  CkPrintf("SYNC[%d]: PATCHREADY:%d %d patches:%d %d\n", CkMyPe(), counter, PatchMap::Object()->numHomePatches(), nPatcheReady, numPatches);
 
-  if (homeReady == 0 && counter >= patchMap->numHomePatches()) {
+  if (homeReady == 0 && counter >= numHomePatches) {
     homeReady = 1;
-// if (CkMyPe()==8) CkPrintf("HOMEREADY[%d]\n", CkMyPe());
+ // if (CkMyPe()<=8) CkPrintf("HOMEREADY[%d]\n", CkMyPe());
     if (!useProxySync)  releaseComputes();
   }
 
   if (homeReady && nPatcheReady == numPatches)
   {
-// if (CkMyPe()==8) CkPrintf("TRIGGERED[%d]\n", CkMyPe());
+// if (CkMyPe()<=8) CkPrintf("TRIGGERED[%d]\n", CkMyPe());
 //     CkPrintf("TRIGGERED[%d]\n", CkMyPe());
     if (useProxySync) releaseComputes();
 
@@ -212,8 +213,10 @@ void Sync::triggerCompute()
       if (clist[i].pid != -1 && clist[i].step == step) ++nPatcheReady;
     }
     homeReady = 0;
-    counter -= patchMap->numHomePatches();
-    if (counter >= patchMap->numHomePatches()) triggerCompute();
+    if ( numHomePatches ) {
+      counter -= numHomePatches;
+      if (counter >= numHomePatches) triggerCompute();
+    }
   }
 }
 
