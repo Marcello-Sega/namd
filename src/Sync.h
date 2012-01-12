@@ -35,7 +35,6 @@ private:
     int capacity;
 
     int useSync, useProxySync;
-    int eventHoldComputes, eventReleaseComputes;
 
     int step;
     int counter;

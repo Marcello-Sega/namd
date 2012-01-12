@@ -36,6 +36,9 @@
 // and positions data, and proxies receive its updated data before all 
 // computes start.
 
+static int eventHoldComputes;
+static int eventReleaseComputes;
+
 Sync::Sync(): INCREASE(600), step(0), counter(0), homeReady(0)
 {
     if (CkpvAccess(Sync_instance) == NULL) {
