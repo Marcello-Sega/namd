@@ -82,6 +82,10 @@ void Sync::openSync(void)
       #endif
 #endif
     }
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+    // immediate messages can be processed by any PE
+    if (CkMyNodeSize() > 2) useProxySync = 0;
+#endif
     // no proxies on this node, no need to use proxy sync.
     if (useProxySync && ProxyMgr::Object()->numProxies() == 0) {
       // CmiPrintf("[%d] useProxySync is turned off because no proxy. \n", CkMyPe());
