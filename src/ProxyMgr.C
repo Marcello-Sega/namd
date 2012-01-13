@@ -544,7 +544,7 @@ ProxyMgr::buildProxySpanningTree()
 {
   PatchIDList pids;
   if (!CkMyPe()) iout << iINFO << "Building spanning tree ... send: " << proxySendSpanning << " recv: " << proxyRecvSpanning 
-      << "with branch factor " << proxySpanDim <<"\n" << endi;
+      << " with branch factor " << proxySpanDim <<"\n" << endi;
   PatchMap::Object()->homePatchIDList(pids);
   for (int i=0; i<pids.size(); i++) {
     HomePatch *home = PatchMap::Object()->homePatch(pids[i]);
@@ -744,8 +744,8 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
                     leastIdx = swapPos;
                 }
             }
-            CmiAssert(leastIdx!=-1); //because the above loop at least executes once
             if(swapPos==onePatchT.size()) {
+                CmiAssert(leastIdx!=-1); //because the above loop at least executes once
                 //indicate we cannot find a physical node which
                 //still allows the intermediate proxy.
                 swapPos = leastIdx;
@@ -837,8 +837,8 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
                     leastIdx = swapPos;
                 }
             }
-            CmiAssert(leastIdx!=-1); //because the above loop body must execute at least once
             if(swapPos==curNode->numPes) {
+	        CmiAssert(leastIdx!=-1); //because the above loop body must execute at least once
                 //indicate we cannot find a physical node which
                 //still allows the intermediate proxy.
                 swapPos = leastIdx;
