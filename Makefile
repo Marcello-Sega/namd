@@ -25,6 +25,9 @@ PLUGINSRCDIR= plugins/molfile_plugin/src
 PLUGININCDIR= plugins/include
 SBSRCDIR = sb/src
 
+MKDSTDIR = $(DSTDIR)/.exists
+MKINCDIR = $(INCDIR)/.exists
+
 # comment/uncomment these lines for (D)PMTA routines
 #DPMTAINCL=$(COPTI)$(DPMTADIR)/mpole $(COPTI)$(DPMTADIR)/src
 #DPMTALIB=-L$(DPMTADIR)/mpole -L$(DPMTADIR)/src -ldpmta2 -lmpole -lpvmc
@@ -378,7 +381,7 @@ MAKEBUILDINFO = \
 
 all:	$(BINARIES) $(LIBCUDARTSO)
 
-namd2:	$(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+namd2:	$(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
@@ -406,7 +409,7 @@ WINDOWSBINARIES = namd2.exe psfgen.exe sortreplicas.exe
 # WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
 windowsbinaries: $(WINDOWSBINARIES)
 
-namd2.exe:  $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
+namd2.exe:  $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose \
 	-module NeighborLB -language charm++ \
@@ -431,19 +434,19 @@ charmd_faceless.exe:
 charmrun.exe:
 	$(COPY) $(CHARM)/bin/charmrun.exe charmrun.exe
 
-psfgen:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS)
+psfgen:	$(MKDSTDIR) $(SBOBJS) $(PLUGINOBJS)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(PLUGINOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
-psfgen.exe:	$(DSTDIR) $(SBOBJS) $(PLUGINOBJS) $(TCLDLL)
+psfgen.exe:	$(MKDSTDIR) $(SBOBJS) $(PLUGINOBJS) $(TCLDLL)
 	$(CC) $(SBCFLAGS) -o psfgen $(SBOBJS) $(PLUGINOBJS) $(TCLLIB) $(TCLAPPLIB) -lm
 
-sortreplicas:	$(DSTDIR) $(DSTDIR)/sortreplicas.o $(PLUGINOBJS)
+sortreplicas:	$(MKDSTDIR) $(DSTDIR)/sortreplicas.o $(PLUGINOBJS)
 	$(CC) $(SBCFLAGS) -o sortreplicas $(DSTDIR)/sortreplicas.o $(PLUGINOBJS) -lm
 
-sortreplicas.exe:	$(DSTDIR) $(DSTDIR)/sortreplicas.o $(PLUGINOBJS)
+sortreplicas.exe:	$(MKDSTDIR) $(DSTDIR)/sortreplicas.o $(PLUGINOBJS)
 	$(CC) $(SBCFLAGS) -o sortreplicas $(DSTDIR)/sortreplicas.o $(PLUGINOBJS) -lm
 
-$(DSTDIR)/sortreplicas.o:	$(DSTDIR) $(SRCDIR)/sortreplicas.c
+$(DSTDIR)/sortreplicas.o:	$(MKDSTDIR) $(SRCDIR)/sortreplicas.c
 	$(CC) $(SBCFLAGS) $(COPTO)$(DSTDIR)/sortreplicas.o $(COPTC) $(SRCDIR)/sortreplicas.c
 
 diffbinpdb:	$(SRCDIR)/diffbinpdb.c
@@ -476,7 +479,7 @@ updatefiles:
 	rm -f obj/OptPme.o
 
 #To compile tracecomputes, type the command "make tracecomputes TRACEOBJDEF=-DTRACE_COMPUTE_OBJECTS"
-tracecomputes: updatefiles $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+tracecomputes: updatefiles $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
@@ -495,7 +498,7 @@ tracecomputes: updatefiles $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(EXTRALINKLIBS) \
 	-lm -o namd2.tc.prj
 
-projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+projections: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
@@ -514,7 +517,7 @@ projections: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
 	$(EXTRALINKLIBS) \
 	-lm -o namd2.prj
 
-summary: $(INCDIR) $(DSTDIR) $(OBJS) $(LIBS)
+summary: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
@@ -558,8 +561,7 @@ include Make.config
 .SECONDARY:
 	# prevent gmake from deleting intermediate files
 
-$(INCDIR)/%.decl.h $(INCDIR)/%.def.h: $(SRCDIR)/%.ci
-	$(MKDIR) $(INCDIR)
+$(INCDIR)/%.decl.h $(INCDIR)/%.def.h: $(MKINCDIR) $(SRCDIR)/%.ci
 	$(COPY) $(SRCDIR)/$*.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/$*.ci
 	$(RM) $(INCDIR)/$*.ci
@@ -570,16 +572,14 @@ $(INCDIR)/%.decl.h $(INCDIR)/%.def.h: $(SRCDIR)/%.ci
 # Explicit rules for modules that don't match their file names.
 # Multiple targets must be a pattern to execute recipe only once.
 
-$(INCDIR)/PmeFF%Lib.decl.h $(INCDIR)/PmeFF%Lib.def.h: $(SRCDIR)/fftlib.ci
-	$(MKDIR) $(INCDIR)
+$(INCDIR)/PmeFF%Lib.decl.h $(INCDIR)/PmeFF%Lib.def.h: $(MKINCDIR) $(SRCDIR)/fftlib.ci
 	$(COPY) $(SRCDIR)/fftlib.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/fftlib.ci
 	$(RM) $(INCDIR)/fftlib.ci
 	$(MOVE) PmeFFTLib.def.h $(INCDIR)
 	$(MOVE) PmeFFTLib.decl.h $(INCDIR)
 
-$(INCDIR)/OptPm%Mgr.decl.h $(INCDIR)/OptPm%Mgr.def.h: $(SRCDIR)/OptPme.ci
-	$(MKDIR) $(INCDIR)
+$(INCDIR)/OptPm%Mgr.decl.h $(INCDIR)/OptPm%Mgr.def.h: $(MKINCDIR) $(SRCDIR)/OptPme.ci
 	$(COPY) $(SRCDIR)/OptPme.ci $(INCDIR)
 	$(CHARMXI) $(INCDIR)/OptPme.ci
 	$(RM) $(INCDIR)/OptPme.ci
@@ -589,7 +589,7 @@ $(INCDIR)/OptPm%Mgr.decl.h $(INCDIR)/OptPm%Mgr.def.h: $(SRCDIR)/OptPme.ci
 DEPENDFILE = .rootdir/Make.depends
 
 # This is a CPU killer...  Don't make depends if you don't need to.
-depends: $(INCDIR) $(CIFILES) $(DSTDIR) $(DEPENDFILE)
+depends: $(MKINCDIR) $(CIFILES) $(MKDSTDIR) $(DEPENDFILE)
 	$(ECHO) "Creating " $(DEPENDFILE) " ..."; \
 	if [ -f $(DEPENDFILE) ]; then \
 	   $(MOVE) -f $(DEPENDFILE) $(DEPENDFILE).old; \
@@ -644,11 +644,13 @@ $(DEPENDFILE):
 
 include Make.depends
 
-$(DSTDIR):
-	$(MKDIR) $(DSTDIR)
+$(MKDSTDIR):
+	if [ ! -d $(DSTDIR) ]; then $(MKDIR) $(DSTDIR); fi
+	if [ ! -e $(MKDSTDIR) ]; then touch $(MKDSTDIR); fi
 
-$(INCDIR):
-	$(MKDIR) $(INCDIR)
+$(MKINCDIR):
+	if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR); fi
+	if [ ! -e $(MKINCDIR) ]; then touch $(MKINCDIR); fi
 
 clean:
 	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
