@@ -263,7 +263,7 @@ ProxyCombinedResultRawMsg* ProxyCombinedResultMsg::toRaw(ProxyCombinedResultMsg 
     msg_buf->nodes[i] = msg->nodes[i];
   }
   #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
-  msg_cur->destPe = msg->destPe;
+  msg_buf->destPe = msg->destPe;
   #if CMK_SMP && defined(NAMDSRC_IMMQD_HACK)
   msg_buf->isFromImmMsgCall = msg->isFromImmMsgCall;
   #endif
@@ -1160,7 +1160,11 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
     //This function is divided into three parts. The tree root is msg->allPes[0]
     //1. set up its own immediate childrens
     int treesize = msg->numNodesWithProxies; //at least include one as its internal procs    
+#ifdef USE_NODEPATCHMGR
+    int iNChild = 0;
+#else
     int iNChild = msg->numPesOfNode[0]-1; //number of internal children
+#endif
     int eNChild = treesize-1; //number of external children
 
     CmiAssert(treesize>0);
@@ -1452,7 +1456,7 @@ void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultRawMsg *omsg){
         ProxyCombinedResultMsg *ocMsg = patch->depositCombinedResultRawMsg(msg); 
         if (ocMsg) {
             CProxy_NodeProxyMgr cnp(thisgroup);
-            cMsg->destPe = patch->getSpanningTreeParent();
+            ocMsg->destPe = patch->getSpanningTreeParent();
 			ProxyCombinedResultRawMsg *cMsg = ProxyCombinedResultMsg::toRaw(ocMsg);
             cnp[CkNodeOf(cMsg->destPe)].recvImmediateResults(cMsg);
         }
