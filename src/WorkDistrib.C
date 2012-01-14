@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/01/12 21:55:32 $
- * $Revision: 1.1232 $
+ * $Date: 2012/01/14 21:02:00 $
+ * $Revision: 1.1233 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -632,7 +632,11 @@ void WorkDistrib::sendPatchMap(void)
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *params = node->simParameters;
-  if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendSpanningTreeUnset())
+  if( ( PatchMap::Object()->numPatches() <= CkNumPes()/4
+#ifdef NODEAWARE_PROXY_SPANNINGTREE 
+      || CkNumPes() > CkNumNodes()
+#endif
+    ) && params->isSendSpanningTreeUnset() )
     ProxyMgr::Object()->setSendSpanning();
 
   int size = PatchMap::Object()->packSize();
@@ -663,7 +667,11 @@ void WorkDistrib::savePatchMap(PatchMapMsg *msg)
     CProxy_Node nd(CkpvAccess(BOCclass_group).node);
     Node *node = nd.ckLocalBranch();
     SimParameters *params = node->simParameters;
-    if(PatchMap::Object()->numPatches() <= CkNumPes()/4 && params->isSendSpanningTreeUnset())
+    if( ( PatchMap::Object()->numPatches() <= CkNumPes()/4
+#ifdef NODEAWARE_PROXY_SPANNINGTREE 
+        || CkNumPes() > CkNumNodes()
+#endif
+      ) && params->isSendSpanningTreeUnset() )
       ProxyMgr::Object()->setSendSpanning();
   }
 
