@@ -95,9 +95,9 @@ module ProxyMgr {
   nodegroup NodeProxyMgr{
     entry NodeProxyMgr();    
     entry void createProxyInfo(int);   
-    entry [immediate] void recvImmediateProxyData(ProxyDataMsg *);
-    entry [immediate] void recvImmediateProxyAll(ProxyDataMsg *);
-    entry [immediate] void recvImmediateResults(ProxyCombinedResultRawMsg *);
+    entry [expedited] void recvImmediateProxyData(ProxyDataMsg *);
+    entry [expedited] void recvImmediateProxyAll(ProxyDataMsg *);
+    entry [expedited] void recvImmediateResults(ProxyCombinedResultRawMsg *);
   };
 }
 

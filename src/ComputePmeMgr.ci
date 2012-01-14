@@ -177,8 +177,8 @@ module ComputePmeMgr {
 
   nodegroup NodePmeMgr {
     entry NodePmeMgr(void);
-    entry [immediate] void recvTrans(PmeTransMsg *);
-    entry [immediate] void recvUntrans(PmeUntransMsg *);
+    entry [expedited] void recvTrans(PmeTransMsg *);
+    entry [expedited] void recvUntrans(PmeUntransMsg *);
   };
 
   group ComputePmeMgr {
