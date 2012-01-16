@@ -41,7 +41,8 @@ __device__ __forceinline__ static void GBIS_Energy_Reduction_Kernel (
   }
   __syncthreads();
 
-  __shared__ float energySh[32];
+  __shared__ float energySh[BLOCK_SIZE];
+
   if (tx < myList.force_list_size) {
     energySh[tx] = sumBuffers[myList.virial_list_start/16 + tx];
   }
@@ -610,7 +611,7 @@ __global__ static void GBIS_P2_Kernel (
        force_lists, dEdaSumBuffers, dEdaSum);
     GBIS_Force_Reduction_Kernel(myPatchPair.patch1_force_list_index,
        force_lists, forceBuffers, forces);
-    if ( doEnergy) {
+    if ( doEnergy ) {
       GBIS_Energy_Reduction_Kernel(myPatchPair.patch1_force_list_index,
         force_lists, energyBuffers, energy);
     }
