@@ -569,10 +569,6 @@ void Node::startup() {
       iout << iINFO << "CREATING " << ComputeMap::Object()->numComputes()
            << " COMPUTE OBJECTS\n" << endi;
     }
-    Sync::Object()->openSync();  // decide if to open local Sync 
-
-	if (proxySendSpanning || proxyRecvSpanning ) proxyMgr->buildProxySpanningTree();
-
     DebugM(4,"Creating Computes\n");
     computeMgr->createComputes(ComputeMap::Object());
     DebugM(4,"Building Sequencers\n");
@@ -582,6 +578,12 @@ void Node::startup() {
   break;
 
   case 9:
+    // computes may create proxies on the fly so put these in separate phase
+    Sync::Object()->openSync();  // decide if to open local Sync 
+    if (proxySendSpanning || proxyRecvSpanning ) proxyMgr->buildProxySpanningTree();
+  break;
+
+  case 10:
     {
 	//For debugging
 	/*if(!CkMyPe()){
