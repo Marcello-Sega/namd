@@ -1227,6 +1227,7 @@ int Ambertoppar::moveto(FILE *fp, char *label)
 {
   char s[76],buf[81];
 
+ while ( 1 ) {
   // Find the string "%FLAG"
   do preadln(fp, "parm file", buf);
   while (strncmp(buf,"%FLAG",5));
@@ -1234,7 +1235,10 @@ int Ambertoppar::moveto(FILE *fp, char *label)
   // See if the label is what we expected
   sscanf(buf+5,"%s",s);
   if (strcasecmp(s,label))
-    return 0;
+    iout << iWARN << "Skipping " << s << " in parm file while seeking " << label << ".\n" << endi;
+  else
+    break;
+ }
 
   // The next line should begin with "%FORMAT"
   preadln(fp, "parm file", buf);
