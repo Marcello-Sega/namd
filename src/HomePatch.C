@@ -1746,7 +1746,7 @@ int HomePatch::rattle1(const BigReal timestep, Tensor *virial,
       ref[i] = atom[ig+i].position;
       pos[i] = atom[ig+i].position;
       vel[i] = atom[ig+i].velocity;
-      rmass[i] = (atom[ig+1].mass > 0. ? 1. / atom[ig+i].mass : 0.);
+      rmass[i] = (atom[ig+i].mass > 0. ? 1. / atom[ig+i].mass : 0.);
       //printf("rmass of %i is %f\n", ig+i, rmass[i]);
       fixed[i] = ( fixedAtomsOn && atom[ig+i].atomFixed );
       //printf("fixed status of %i is %i\n", i, fixed[i]);
