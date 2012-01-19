@@ -1662,6 +1662,7 @@ obj/ComputeGridForce.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/GridForceGrid.h \
+	src/GridForceGrid.inl \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
@@ -3753,6 +3754,7 @@ obj/colvargrid.o: \
 obj/GridForceGrid.o: \
 	src/GridForceGrid.C \
 	src/GridForceGrid.h \
+	src/GridForceGrid.inl \
 	src/Vector.h \
 	src/common.h \
 	src/Tensor.h \

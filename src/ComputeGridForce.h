@@ -10,9 +10,14 @@
 #include "ComputeHomePatch.h"
 #include "ReductionMgr.h"
 #include "GridForceGrid.h"
+#include "SimParameters.h"
+#include "HomePatch.h"
+#include "Molecule.h"
 
 class ComputeGridForce : public ComputeHomePatch
 {
+protected:
+    template <class T> void do_calc(T *grid, int gridnum, FullAtom *p, int numAtoms, Molecule *mol, Force *forces, BigReal &energy, Force &extForce, Tensor &extVirial);
 
 public:
     ComputeGridForce(ComputeID c, PatchID pid); 	//  Constructor

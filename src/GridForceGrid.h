@@ -48,16 +48,10 @@ public:
     Position wrap_position(const Position &pos, const Lattice &lattice);
     bool fits_lattice(const Lattice &lattice);
     
-    virtual int compute_VdV(Position pos, float &V, Vector &dV) const = 0;
+    inline int compute_VdV(Position pos, float &V, Vector &dV) const { return -1; }
 
     static void pack_grid(GridforceGrid *grid, MOStream *msg);
     static GridforceGrid * unpack_grid(int gridnum, MIStream *msg);
-    
-protected:    
-    virtual void pack(MOStream *msg) const = 0;
-    virtual void unpack(MIStream *msg) = 0;
-    
-    Position get_corner(int idx);
     
     typedef enum {
 	GridforceGridTypeUndefined = 0,
@@ -65,10 +59,17 @@ protected:
 	GridforceGridTypeLite
     } GridforceGridType;
     
+    inline GridforceGridType get_grid_type(void) { return type; }
+
+protected:    
+    virtual void pack(MOStream *msg) const = 0;
+    virtual void unpack(MIStream *msg) = 0;
+    
+    Position get_corner(int idx);
+    
+    GridforceGridType type;
     int mygridnum;
     
-    virtual GridforceGridType get_grid_type(void) = 0;	// icky, but necessary since RTTI is turned off for some reason
-
 private:
     Vector corners[8];
 };
@@ -123,11 +124,14 @@ protected:
     void readHeader(SimParameters *simParams, MGridforceParams *mgridParams);
     
     inline int grid_index(int i0, int i1, int i2) const {
-	register int i, inds[3] = {i0, i1, i2};
-	for (i = 0; i < 3; i++) {
-	    if (inds[i] < 0) inds[i] += k[i];
-	    inds[i] %= k[i];
+	register int inds[3] = {i0, i1, i2};
+#ifdef DEBUGM
+	if (i0 < 0 || i0 >= k[0] || i1 < 0 || i1 >= k[1] || i2 < 0 || i2 >= k[2]) {
+	    char buffer[256];
+	    sprintf(buffer, "Bad grid index! (%d %d %d)", i0, i1, i2);
+	    NAMD_bug(buffer);
 	}
+#endif
 	return inds[0]*dk[0] + inds[1]*dk[1] + inds[2]*dk[2];
     }
     
@@ -200,15 +204,13 @@ public:
     inline int get_k2(void) const { return GridforceFullBaseGrid::get_k2(); };
     inline int get_border(void) const { return border; }
     
-    int compute_VdV(Position pos, float &V, Vector &dV) const { return GridforceFullBaseGrid::compute_VdV(pos, V, dV); };
+    inline int compute_VdV(Position pos, float &V, Vector &dV) const { return GridforceFullBaseGrid::compute_VdV(pos, V, dV); };
     
     inline int get_total_grids(void) const { return totalGrids; }
     
 protected:
     void pack(MOStream *msg) const;
     void unpack(MIStream *msg);
-    
-    inline GridforceGridType get_grid_type(void) { return GridforceGridTypeFull; };
     
     int get_all_gridvals(float **all_gridvals) const;
     void set_all_gridvals(float *all_gridvals, int sz);
@@ -316,16 +318,9 @@ protected:
     
     inline int grid_index(int i0, int i1, int i2, int i3) const {
 	// 'i3' is an index for the grid itself (0=V, 1=dV/dx, 2=dV/dy, 3=dV/dz)
-	// wrapping 'i3' may be bad idea: could hide errors
-	register int i, inds[4] = {i0, i1, i2, i3};
-	for (i = 0; i < 4; i++) {
-	    if (inds[i] < 0) inds[i] += k[i];
-	    inds[i] %= k[i];
-	}
+	register int inds[4] = {i0, i1, i2, i3};
 	return inds[0]*dk[0] + inds[1]*dk[1] + inds[2]*dk[2] + inds[3]*dk[3];
     }
-    
-    inline GridforceGridType get_grid_type(void) { return GridforceGridTypeLite; };
     
     float *grid;
     
