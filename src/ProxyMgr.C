@@ -35,6 +35,8 @@
 #define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
 
+#define ALLOCA(TYPE,NAME,SIZE) TYPE *NAME = (TYPE *) alloca((SIZE)*sizeof(TYPE))
+
 int proxySendSpanning	= 0;
 int proxyRecvSpanning	= 0;
 //"proxySpanDim" is a configuration parameter as "proxyTreeBranchFactor" in configuration file
@@ -758,7 +760,7 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
             curNode->nodeID = swapNode->nodeID;
             swapNode->nodeID = tmp;
             tmp = curNode->numPes;
-            int tmpPes[tmp];
+            ALLOCA(int,tmpPes,tmp);
             memcpy(tmpPes, curNode->peIDs, sizeof(int)*tmp);
             delete [] curNode->peIDs;
             curNode->numPes = swapNode->numPes;
@@ -1210,7 +1212,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
         //in HomePatch::setupChildrenFromProxySpanningTree, so we
         //only care about the children setup for proxy patches here
         ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
-        int *children = (int*)alloca(numChild*sizeof(int));
+        ALLOCA(int,children,numChild);
         //add external children
         int *p = msg->allPes + msg->numPesOfNode[0];
         for(int i=0; i<eNChild; i++) {
@@ -1230,7 +1232,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
         npm->registerPatch(msg->patch, msg->numPesOfNode[0], msg->allPes);        
 
         //set children in terms of node ids
-        int nodeChildren[eNChild+1];
+        ALLOCA(int,nodeChildren,eNChild+1);
         p = msg->allPes + msg->numPesOfNode[0];
         for(int i=0; i<eNChild; i++) {
             nodeChildren[i] = CkNodeOf(*p);
@@ -1536,7 +1538,7 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
     ProxyPatch *ppatch = (ProxyPatch *)pmap->patch(msg->patch);
 
     int npid = ppatch->getSTNNodeChild();
-    int pids[npid];
+    ALLOCA(int,pids,npid);
     if(npid>0) {        
         ppatch->getSTNodeChild(pids);
         //only needs to send to other nodes, so check the last entry of pids.
@@ -1643,7 +1645,7 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
     ProxyPatch *ppatch = (ProxyPatch *)pmap->patch(msg->patch);
 
     int npid = ppatch->getSTNNodeChild();
-    int pids[npid];
+    ALLOCA(int,pids,npid);
     if(npid>0) {        
         ppatch->getSTNodeChild(pids);
         //only needs to send to other nodes, so check the last entry of pids.
