@@ -645,11 +645,11 @@ include Make.depends
 
 $(MKDSTDIR):
 	if [ ! -d $(DSTDIR) ]; then $(MKDIR) $(DSTDIR); fi
-	if [ ! -e $(MKDSTDIR) ]; then touch $(MKDSTDIR); fi
+	if [ ! -f $(MKDSTDIR) ]; then touch $(MKDSTDIR); fi
 
 $(MKINCDIR):
 	if [ ! -d $(INCDIR) ]; then $(MKDIR) $(INCDIR); fi
-	if [ ! -e $(MKINCDIR) ]; then touch $(MKINCDIR); fi
+	if [ ! -f $(MKINCDIR) ]; then touch $(MKINCDIR); fi
 
 clean:
 	rm -rf ptrepository Templates.DB SunWS_cache $(DSTDIR) $(INCDIR)
