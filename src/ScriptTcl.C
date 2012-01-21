@@ -92,10 +92,12 @@ void ScriptTcl::initcheck() {
 void ScriptTcl::runController(int task) {
   scriptBarrier.publish(barrierStep++,task);
   suspend();
+#ifdef NAMD_TCL
   if ( task == SCRIPT_RUN || task == SCRIPT_MINIMIZE  ) {
     doCallback(state->callback_labelstring.c_str(),
                state->callback_valuestring.c_str());
   }
+#endif
 }
 
 void ScriptTcl::setParameter(const char* param, const char* value) {
