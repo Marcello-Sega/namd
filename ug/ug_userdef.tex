@@ -217,9 +217,10 @@ in ${\rm kcal} / ({\rm mol} \; charge)$}
 {Operates the same as {\tt mgridforcecont1} except applies in the direction of the third basis vector}
 
 \item
-\NAMDCONFTAG{mgridforcevoff}
+\NAMDCONFTAGWDEF{mgridforcevoff}
 {Offset periodic images of the grid by specified amounts}
 {vector of decimals (x y z)}
+{(0 0 0)}
 {If a continuous grid is used along a particular basis vector, it may be desirable to shift the potentials in the image to manipulate the potential outside the grid. For example, consider the case where the potential is a ramp in the $x$ direction and the grid is defined for points $[0,N)$, with a potential $f(i,j,k)$ given by $f(i,j,k) = f_0 + i (f_1-f_0) / N$. By shifting the images of the grid, the potential can be transformed as illustrated in Fig.~\ref{fig:gridshift}.
 }
 
@@ -230,6 +231,17 @@ in ${\rm kcal} / ({\rm mol} \; charge)$}
   {\small Graph showing a slice of a ramp potential, with eight grid points along the axis, and a periodic cell size which just contains the grid. The Unshifted case shows how the pontential is not smooth when {\tt mgridforcevoff} is not specified, or set to zero. The Shifted potential shows the grid that results when {\tt mgridfocevoff} is set so that the wrapped potential is offset so that the potential has constant slope at the periodic boundaries.}
   \label{fig:gridshift}
 \end{figure}
+
+\item
+\NAMDCONFTAGWDEF{mgridforcelite}
+{Is grid to use Gridforce Lite interpolation?}
+{{\tt yes} or {\tt no}}
+{{\tt no}}
+{When Gridforce Lite is enabled, a faster but less accurate interpolation method is used to compute forces.
+Specifically, rather than computing a tri-cubic interpolation of the potential, from which the force is then computed analytically, Gridforce Lite computes force as a linear interpolation.
+This method also increases the memory required by Gridforce.
+Note that Gridforce Lite is incompatible with use of the {\tt mgridforcecont[123]} keywords and with non-uniform grids.
+}
 
 \end{itemize}
 
@@ -609,7 +621,7 @@ harmonic constraints:
 
 \item In harmonic constraints, each tagged atom is constrained in all three
   spatial dimensions.  In SMD, tagged atoms are constrained {\em only along
-  the constraint direction}.
+  the constraint direction} (unless the optional {\tt SMDk2} keyword is used.)
 \end{itemize}
 
 The center of mass of the SMD atoms will be harmonically constrained with 
@@ -625,7 +637,16 @@ Here, $t \equiv N_{ts} dt$ where $N_{ts}$ is the number of elapsed timesteps
 in the simulation and $dt$ is the size of the timestep in femtoseconds.
 Also, $\vec R(t)$ is the current center of mass of the SMD atoms and $R_0$ is
 the initial center of mass as defined by the coordinates in {\tt SMDFile}.
-Vector $\vec n$ is normalized by \NAMD\ before being used.  
+Vector $\vec n$ is normalized by \NAMD\ before being used.
+
+Optionally, one may also specify a transverse force constant $k_2$ ({\tt SMDk2}).
+The potential then becomes
+\begin{equation}
+\label{eq:SMDpotential2}
+U(\vec r_1, \vec r_2, ..., t) \; = \; \frac{1}{2} 
+  k\left[vt - (\vec R(t) - \vec R_0)\cdot \vec n \right]^2 + \frac{1}{2}k_2\left[\left(\vec R(t) - \vec R_0\right)^2 - \left((\vec R(t) - \vec R_0) \cdot \vec n\right)^2\right].
+\end{equation}
+In this case, the force constant $k$ controls the potential \emph{parallel} to the pulling direction $\vec n$, while the transverse force constant $k_2$ controls the potential \emph{perpendicular} to $\vec n$.
 
 \paragraph*{Output}
 
@@ -666,6 +687,14 @@ number field in this PDB file will be ignored.}
 {positive real}
 {SMD harmonic constraint force constant. Must be specified in
 kcal/mol/\AA$^2$. The conversion factor is 1 kcal/mol = 69.479 pN \AA.} 
+
+\item
+\NAMDCONFWDEF{SMDk2}{force constant for transverse direction to use in SMD simulation}
+{positive real}
+{0}
+{SMD transverse harmonic constraint force constant.
+Must be specified in kcal/mol/\AA$^2$.
+The conversion factor is 1 kcal/mol = 69.479 pN \AA.} 
 
 \item
 \NAMDCONF{SMDVel}{Velocity of the SMD reference position movement}
