@@ -37,10 +37,7 @@ class ProxyPatch : public Patch
 
     #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
      void setSTNodeChildren(int numNids, int *nids);
-     int getSTNodeChild(int *nodeChildren_) {
-         for(int i=0; i<numNodeChild; i++) nodeChildren_[i] = nodeChildren[i];         
-         return numNodeChild; 
-     }
+     int *getSTNodeChildPtr() { return nodeChildren; }
      int getSTNNodeChild() { return numNodeChild; }
      #endif
 

@@ -1162,11 +1162,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
     //This function is divided into three parts. The tree root is msg->allPes[0]
     //1. set up its own immediate childrens
     int treesize = msg->numNodesWithProxies; //at least include one as its internal procs    
-#ifdef USE_NODEPATCHMGR
-    int iNChild = 0;
-#else
     int iNChild = msg->numPesOfNode[0]-1; //number of internal children
-#endif
     int eNChild = treesize-1; //number of external children
 
     CmiAssert(treesize>0);
@@ -1187,8 +1183,15 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
         ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
         proxy->setSpanningTree(msg->procID, NULL, 0);
 #ifdef USE_NODEPATCHMGR
+		//When using NODEPATCHMGR, the proc-level is a flat list attached to the node
+		//while the node-level spanning tree obeys the branch factor.
+		//As a result, when passing down spanning trees, if this proc is on the same node
+		//of its parent, then the NodeProxyMgr has already been set by its parent. There's
+		//no need resetting here. However, the nodeChildren attached to this proxy has
+		//to be set to NULL. -Chao Mei
+		int onSameNode = (CkMyNode() == CkNodeOf(msg->procID));
         //set up proxyInfo inside NodeProxyMgr
-        if(!PatchMap::Object()->homePatch(msg->patch)){
+        if(!onSameNode && !PatchMap::Object()->homePatch(msg->patch)){
             //only when this processor contains a proxy patch of "msg->patch"
             //is the patch registeration in NodeProxyMgr needed,
             //and itself needs to be registered
@@ -1226,21 +1229,26 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
         proxy->setSpanningTree(msg->procID, children, numChild);
 
 #ifdef USE_NODEPATCHMGR
-        //set up proxyInfo inside NodeProxyMgr
-        CProxy_NodeProxyMgr pm(CkpvAccess(BOCclass_group).nodeProxyMgr);
-        NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();        
-        npm->registerPatch(msg->patch, msg->numPesOfNode[0], msg->allPes);        
-
-        //set children in terms of node ids
-        ALLOCA(int,nodeChildren,eNChild+1);
-        p = msg->allPes + msg->numPesOfNode[0];
-        for(int i=0; i<eNChild; i++) {
-            nodeChildren[i] = CkNodeOf(*p);
-            p += msg->numPesOfNode[i+1];
-        }
-        //the last entry always stores the node id that contains this proxy
-        nodeChildren[eNChild] = CkNodeOf(msg->allPes[0]);
-        proxy->setSTNodeChildren(eNChild+1, nodeChildren);
+		int onSameNode = (CkMyNode() == CkNodeOf(msg->procID));
+		if(!onSameNode) {
+			//set up proxyInfo inside NodeProxyMgr
+			CProxy_NodeProxyMgr pm(CkpvAccess(BOCclass_group).nodeProxyMgr);
+			NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();        
+			npm->registerPatch(msg->patch, msg->numPesOfNode[0], msg->allPes);        
+	
+			//set children in terms of node ids
+			ALLOCA(int,nodeChildren,eNChild+1);
+			p = msg->allPes + msg->numPesOfNode[0];
+			for(int i=0; i<eNChild; i++) {
+				nodeChildren[i] = CkNodeOf(*p);
+				p += msg->numPesOfNode[i+1];
+			}
+			//the last entry always stores the node id that contains this proxy
+			nodeChildren[eNChild] = CkNodeOf(msg->allPes[0]);
+			proxy->setSTNodeChildren(eNChild+1, nodeChildren);
+		} else {
+			proxy->setSTNodeChildren(0, NULL);
+		}
 #endif
     }
 
@@ -1538,12 +1546,11 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
     ProxyPatch *ppatch = (ProxyPatch *)pmap->patch(msg->patch);
 
     int npid = ppatch->getSTNNodeChild();
-    ALLOCA(int,pids,npid);
+    int *pids = ppatch->getSTNodeChildPtr();
     if(npid>0) {        
-        ppatch->getSTNodeChild(pids);
         //only needs to send to other nodes, so check the last entry of pids.
         //This is because the data for proxies on the same node have been sent
-        //by NodeProxyMgr.
+        //later in this function by NodeProxyMgr.
         if(pids[npid-1]==CkMyNode()) npid--;
     }    
     CProxy_NodeProxyMgr cnp(thisgroup);
@@ -1645,12 +1652,11 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
     ProxyPatch *ppatch = (ProxyPatch *)pmap->patch(msg->patch);
 
     int npid = ppatch->getSTNNodeChild();
-    ALLOCA(int,pids,npid);
+    int *pids = ppatch->getSTNodeChildPtr();
     if(npid>0) {        
-        ppatch->getSTNodeChild(pids);
         //only needs to send to other nodes, so check the last entry of pids.
         //This is because the data for proxies on the same node have been sent
-        //by NodeProxyMgr.
+        //later in this function by NodeProxyMgr.
         if(pids[npid-1]==CkMyNode()) npid--;
     }
     
