@@ -11,7 +11,7 @@
  *
  *      $RCSfile: molfile_plugin.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.4 $       $Date: 2010/03/19 21:44:02 $
+ *      $Revision: 1.5 $       $Date: 2012/01/27 01:41:43 $
  *
  ***************************************************************************/
 
@@ -24,6 +24,12 @@
 #define MOL_FILE_PLUGIN_H
 
 #include "vmdplugin.h"
+
+#if defined(DESRES_READ_TIMESTEP2)
+/* includes needed for large integer types used for frame counts */
+#include <sys/types.h>
+typedef ssize_t molfile_ssize_t;      /**< for frame counts */
+#endif
 
 /**
  * Define a common plugin type to be used when registering the plugin.
@@ -101,6 +107,9 @@ typedef struct {
   float charge;       /**< optional charge value                 */
   float radius;       /**< optional radius value                 */
   int atomicnumber;   /**< optional element atomic number        */
+#if defined(DESRES_CTNUMBER)
+  int ctnumber;       /**< mae ct block, 0-based, including meta */
+#endif
 } molfile_atom_t;
 
 /*@{*/
@@ -115,6 +124,9 @@ typedef struct {
 #define MOLFILE_ALTLOC        0x0040 /**< Multiple conformations present   */
 #define MOLFILE_ATOMICNUMBER  0x0080 /**< Atomic element number provided   */
 #define MOLFILE_BONDSSPECIAL  0x0100 /**< Only non-standard bonds provided */
+#if defined(DESRES_CTNUMBER)
+#define MOLFILE_CTNUMBER      0x0200 /**< ctnumber provided */
+#endif
 #define MOLFILE_BADOPTIONS    0xFFFFFFFF /**< Detect badly behaved plugins */
                               
 /*@}*/
@@ -160,6 +172,17 @@ typedef struct {
 #if vmdplugin_ABIVERSION > 10
   double physical_time; /**< physical time point associated with this frame */
 #endif
+
+#if defined(DESRES_READ_TIMESTEP2)
+  /* HACK to support generic trajectory information */
+  double total_energy;
+  double potential_energy;
+  double kinetic_energy;
+  double extended_energy;
+  double force_energy;
+  double total_pressure;
+#endif
+
 } molfile_timestep_t;
 
 
@@ -823,6 +846,22 @@ typedef struct {
 #endif
 #if vmdplugin_ABIVERSION > 11
   int (* read_qm_timestep_metadata)(void *, molfile_qm_timestep_metadata_t *);
+#endif
+
+#if defined(DESRES_READ_TIMESTEP2)
+  /**
+    * Read a specified timestep!
+    */
+  int (* read_timestep2)(void *, molfile_ssize_t index, molfile_timestep_t *);
+
+  /**
+    * write up to count times beginning at index start into the given
+    * space.  Return the number read, or -1 on error.
+    */
+  molfile_ssize_t (* read_times)( void *,
+                                  molfile_ssize_t start,
+                                  molfile_ssize_t count,
+                                  double * times );
 #endif
 
 #if vmdplugin_ABIVERSION > 13

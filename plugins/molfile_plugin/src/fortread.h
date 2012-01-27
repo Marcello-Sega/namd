@@ -11,7 +11,7 @@
  *
  *      $RCSfile: fortread.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.2 $       $Date: 2010/03/19 21:44:16 $
+ *      $Revision: 1.3 $       $Date: 2012/01/27 01:41:53 $
  *
  ***************************************************************************
  * DESCRIPTION:

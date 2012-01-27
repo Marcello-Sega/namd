@@ -11,7 +11,7 @@
  *
  *      $RCSfile: dcdplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.4 $       $Date: 2010/03/19 21:44:15 $
+ *      $Revision: 1.5 $       $Date: 2012/01/27 01:41:53 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -43,6 +43,7 @@
  ***************************************************************************/
 
 #include "largefiles.h"   /* platform dependent 64-bit file I/O defines */
+#include "fastio.h"       /* must come before others, for O_DIRECT...   */
 
 #include <stdio.h>
 #include <sys/stat.h>
@@ -52,7 +53,6 @@
 #include <math.h>
 #include <time.h>
 #include "endianswap.h"
-#include "fastio.h"
 #include "molfile_plugin.h"
 
 #ifndef M_PI_2
@@ -311,6 +311,25 @@ static int read_dcdheader(fio_fd fd, int *N, int *NSET, int *ISTART,
     CHECK_FREAD(ret_val, "reading NTITLE");
     CHECK_FEOF(ret_val, "reading NTITLE");
     if (*reverseEndian) swap4_aligned(&NTITLE, 1);
+
+    if (NTITLE < 0) {
+      printf("dcdplugin) WARNING: Bogus NTITLE value: %d (hex: %08x)\n", 
+             NTITLE, NTITLE);
+      return DCD_BADFORMAT;
+    }
+
+    if (NTITLE > 1000) {
+      printf("dcdplugin) WARNING: Bogus NTITLE value: %d (hex: %08x)\n", 
+             NTITLE, NTITLE);
+      if (NTITLE == 1095062083) {
+        printf("dcdplugin) WARNING: Broken Vega ZZ 2.4.0 DCD file detected\n");
+        printf("dcdplugin) Assuming 2 title lines, good luck...\n");
+        NTITLE = 2;
+      } else {
+        printf("dcdplugin) Assuming zero title lines, good luck...\n");
+        NTITLE = 0;
+      }
+    }
 
     for (i=0; i<NTITLE; i++) {
       fio_fseek(fd, 80, FIO_SEEK_CUR);
@@ -1108,9 +1127,9 @@ VMDPLUGIN_API int VMDPLUGIN_init() {
   plugin.type = MOLFILE_PLUGIN_TYPE;
   plugin.name = "dcd";
   plugin.prettyname = "CHARMM,NAMD,XPLOR DCD Trajectory";
-  plugin.author = "Justin Gullingsrud, John Stone";
+  plugin.author = "Axel Kohlmeyer, Justin Gullingsrud, John Stone";
   plugin.majorv = 1;
-  plugin.minorv = 10;
+  plugin.minorv = 11;
   plugin.is_reentrant = VMDPLUGIN_THREADSAFE;
   plugin.filename_extension = "dcd";
   plugin.open_file_read = open_dcd_read;

@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.2 $       $Date: 2010/03/19 21:44:17 $
+ *      $Revision: 1.3 $       $Date: 2012/01/27 01:41:54 $
  *
  ***************************************************************************/
 
@@ -153,6 +153,7 @@ static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int c
   char inbuf[PSF_RECORD_LENGTH+2];
   int i=0;
   size_t minlinesize;
+  int rc=0;
 
   while (i < nbond) {
     if ((i % 4) == 0) {
@@ -173,13 +174,26 @@ static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int c
       }
       bondptr = inbuf;
     }
-    if ((fromAtom[i] = atoi(bondptr)) < 1)
+    if ((fromAtom[i] = atoi(bondptr)) < 1) {
+      printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
+      rc=-1;
       break;
+    }
     if(charmmext == 1) bondptr += 10; else bondptr += 8;
-    if ((toAtom[i] = atoi(bondptr)) < 1)
+    if ((toAtom[i] = atoi(bondptr)) < 1) {
+      printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
+      rc=-1;
       break;
+    }
     if(charmmext == 1) bondptr += 10; else bondptr += 8;
     i++;
+  }
+
+  if (rc == -1) {
+    printf("psfplugin) ERROR: skipping bond info due to bad atom indices\n");
+  } else if (i != nbond) {
+    printf("psfplugin) ERROR: unable to read the specified number of bonds!\n");
+    printf("psfplugin) Expected %d bonds but only read %d\n", nbond, i);
   }
 
   return (i == nbond);
@@ -584,7 +598,11 @@ static void *open_psf_write(const char *path, const char *filetype,
   memset(psf, 0, sizeof(psfdata));
   psf->fp = fp; 
   psf->numatoms = natoms;
-  psf->charmmfmt = 0; /* initialize to off for now */
+  psf->charmmfmt = 0;   /* initialize to off for now */
+  psf->charmmext = 0;   /* off unless we discover we need it */
+  psf->charmmcmap = 0;  /* off unless we discover we need it */
+  psf->charmmcheq = 0;  /* off unless we discover we need it */
+  psf->charmmdrude = 0; /* off unless we discover we need it */
   psf->nbonds = 0;
   psf->to = NULL;
   psf->from = NULL;
@@ -597,19 +615,43 @@ static int write_psf_structure(void *v, int optflags,
   const molfile_atom_t *atom;
   int i, fullrows;
 
-  if (psf->numcterms == 0) {
-    fprintf(psf->fp, "PSF\n\n%8d !NTITLE\n", 1);
-  } else {
-    fprintf(psf->fp, "PSF CMAP\n\n%8d !NTITLE\n", 1);
+#if 1
+  /* determine if we must write out an EXT formatted PSF file */
+  /* check the field width of the PSF atom records */
+  for (i=0; i<psf->numatoms; i++) {
+    const char *atomname; 
+    atom = &atoms[i];
+    atomname = atom->name;
+
+    if ((strlen(atom->name) > 4) || 
+        (strlen(atom->type) > 4)) {
+      printf("psfplugin) Structure requires the EXTended PSF format\n");
+      psf->charmmext = 1; /* force output to CHARMM EXTended PSF format */
+      break;
+    }
+  }  
+#endif
+
+  /* check to see if we'll be writing cross-term maps */
+  if (psf->numcterms > 0) {
+    psf->charmmcmap = 1;
   }
 
+  /* write out the PSF header */
+  fprintf(psf->fp, "PSF");
+  if (psf->charmmext == 1)
+    fprintf(psf->fp, " EXT");
+  if (psf->charmmcmap == 1)
+    fprintf(psf->fp, " CMAP");
+  fprintf(psf->fp, "\n\n%8d !NTITLE\n", 1);
+
   if (psf->charmmfmt) {
-    fprintf(psf->fp," REMARKS %s\n","VMD generated structure charmm psf file");
+    fprintf(psf->fp," REMARKS %s\n","VMD-generated Charmm PSF structure file");
 
     printf("psfplugin) WARNING: Charmm format PSF file is incomplete, atom type ID\n");
     printf("psfplugin)          codes have been emitted as '0'. \n");
   } else {
-    fprintf(psf->fp," REMARKS %s\n","VMD generated structure x-plor psf file");
+    fprintf(psf->fp," REMARKS %s\n","VMD-generated NAMD/X-Plor PSF structure file");
   }
   fprintf(psf->fp, "\n");
 
@@ -626,7 +668,11 @@ static int write_psf_structure(void *v, int optflags,
     while (*atomname == ' ')
       atomname++;
 
-    if (psf->charmmfmt) {
+    if (psf->charmmext) {
+      fprintf(psf->fp, "%10d %-8s %-8d %-8s %-8s %-4s %10.6f     %9.4f  %10d\n",
+              i+1, atom->segid, atom->resid, atom->resname,
+              atomname, atom->type, atom->charge, atom->mass, 0);
+    } else if (psf->charmmfmt) {
       /* XXX replace hard-coded 0 with proper atom type ID code */
       fprintf(psf->fp, "%8d %-4s %-4d %-4s %-4s %4d %10.6f     %9.4f  %10d\n",
               i+1, atom->segid, atom->resid, atom->resname,
@@ -641,15 +687,28 @@ static int write_psf_structure(void *v, int optflags,
 
   /* write out bonds if we have bond information */
   if (psf->nbonds > 0 && psf->from != NULL && psf->to != NULL) {
-    fprintf(psf->fp, "%8d !NBOND: bonds\n", psf->nbonds);
-    for (i=0; i<psf->nbonds; i++) {
-      fprintf(psf->fp, "%8d%8d", psf->from[i], psf->to[i]);
-      if ((i % 4) == 3) 
+
+    if (psf->charmmext) {
+      fprintf(psf->fp, "%10d !NBOND: bonds\n", psf->nbonds);
+      for (i=0; i<psf->nbonds; i++) {
+        fprintf(psf->fp, "%10d%10d", psf->from[i], psf->to[i]);
+        if ((i % 4) == 3) 
+          fprintf(psf->fp, "\n");
+      }
+      if ((i % 4) != 0) 
         fprintf(psf->fp, "\n");
-    }
-    if ((i % 4) != 0) 
       fprintf(psf->fp, "\n");
-    fprintf(psf->fp, "\n");
+    } else {
+      fprintf(psf->fp, "%8d !NBOND: bonds\n", psf->nbonds);
+      for (i=0; i<psf->nbonds; i++) {
+        fprintf(psf->fp, "%8d%8d", psf->from[i], psf->to[i]);
+        if ((i % 4) == 3) 
+          fprintf(psf->fp, "\n");
+      }
+      if ((i % 4) != 0) 
+        fprintf(psf->fp, "\n");
+      fprintf(psf->fp, "\n");
+    }
   } else {
     fprintf(psf->fp, "%8d !NBOND: bonds\n", 0);
     fprintf(psf->fp, "\n\n");
@@ -850,7 +909,7 @@ VMDPLUGIN_API int VMDPLUGIN_init() {
   plugin.prettyname = "CHARMM,NAMD,XPLOR PSF";
   plugin.author = "Justin Gullingsrud, John Stone";
   plugin.majorv = 1;
-  plugin.minorv = 5;
+  plugin.minorv = 7;
   plugin.is_reentrant = VMDPLUGIN_THREADSAFE;
   plugin.filename_extension = "psf";
   plugin.open_file_read = open_psf_read;
