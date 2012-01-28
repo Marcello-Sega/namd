@@ -16,6 +16,8 @@
    information is then stored in arrays for use.
 */
 
+#include "largefiles.h"  // must be first!
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -4127,17 +4129,17 @@ void Molecule::read_binary_atom_info(int fromAtomID, int toAtomID, InputAtomList
     const int BUFELEMS = 32*1024; //32K elems
 
     //remember to convert to long in case of int overflow!
-    //on BG/P with 32-bit compiler, the off_t is still of 4 bytes, the safest
-    //way is to use long long. However, the fseek takes "long" as offset
-    //which may be again of 4 bytes with 32-bit compiler. So the safest
-    //way is to use "int64"  -Chao Mei
     int64 startbyte=((int64)fromAtomID)*sizeof(OutputAtomRecord);
-    //since startbyte may be larger than LONG_MAX, do the seek multiple times
-    while(startbyte > LONG_MAX) {
-      startbyte -= LONG_MAX;
-      fseek(perAtomFile,LONG_MAX,SEEK_CUR);   
+#ifdef WIN32
+    if ( _fseeki64(perAtomFile,startbyte,SEEK_CUR) )
+#else
+    if ( fseeko(perAtomFile,startbyte,SEEK_CUR) )
+#endif
+    {
+      char errmsg[512];
+      sprintf(errmsg, "Error on seeking binary file %s", simParams->binAtomFile);
+      NAMD_err(errmsg);
     }
-    fseek(perAtomFile,startbyte,SEEK_CUR);   
 
     //reduce the number of fread calls as file I/O is expensive.
     OutputAtomRecord *elemsBuf = new OutputAtomRecord[BUFELEMS];
@@ -4145,7 +4147,11 @@ void Molecule::read_binary_atom_info(int fromAtomID, int toAtomID, InputAtomList
     int curIdx=0;
     OutputAtomRecord *oneRec = NULL;
     while(atomsCnt >= BUFELEMS) {
-      fread((char *)elemsBuf, sizeof(OutputAtomRecord), BUFELEMS, perAtomFile);    
+      if ( fread((char *)elemsBuf, sizeof(OutputAtomRecord), BUFELEMS, perAtomFile) != BUFELEMS ) {
+        char errmsg[512];
+        sprintf(errmsg, "Error on reading binary file %s", simParams->binAtomFile);
+        NAMD_err(errmsg);
+      }
       oneRec = elemsBuf;
       for(int i=0; i<BUFELEMS; i++, curIdx++, oneRec++) {
         InputAtom *fAtom = &(inAtoms[curIdx]);
@@ -4156,13 +4162,23 @@ void Molecule::read_binary_atom_info(int fromAtomID, int toAtomID, InputAtomList
       atomsCnt -= BUFELEMS;
     }
 
-    fread(elemsBuf, sizeof(OutputAtomRecord), atomsCnt, perAtomFile);
+    if ( fread(elemsBuf, sizeof(OutputAtomRecord), atomsCnt, perAtomFile) != atomsCnt ) {
+      char errmsg[512];
+      sprintf(errmsg, "Error on reading binary file %s", simParams->binAtomFile);
+      NAMD_err(errmsg);
+    }
     oneRec = elemsBuf;    
     for(int i=curIdx; i<numAtomsPar; i++, oneRec++) {
       InputAtom *fAtom = &(inAtoms[i]);
       int aid = i+fromAtomID;
       if(needFlip) oneRec->flip();
       load_one_inputatom(aid,oneRec,fAtom);      
+    }
+
+    if ( fclose(perAtomFile) ) {
+      char errmsg[512];
+      sprintf(errmsg, "Error on closing binary file %s", simParams->binAtomFile);
+      NAMD_err(errmsg);
     }
 
     delete [] elemsBuf;

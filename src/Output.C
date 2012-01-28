@@ -8,7 +8,7 @@
    This object outputs the data collected on the master node
 */
 
-#include "largefiles.h"
+#include "largefiles.h"  // must be first!
 
 #include <string.h>
 #include <stdlib.h>
@@ -1560,21 +1560,33 @@ void ParOutput::write_binary_file_master(char *fname, int n){
 }
 
 void ParOutput::write_binary_file_slave(char *fname, int fID, int tID, Vector *vecs, int64 offset){
+    char errmsg[256];
 
 #if OUTPUT_SINGLE_FILE
 	//the mode has to be "r+" because the file already exists
 	FILE *ofp = fopen(fname, "rb+");
+        if ( ! ofp ) {
+          sprintf(errmsg, "Error on opening binary file %s", fname);
+          NAMD_err(errmsg);
+        }
 
 	//if the output is a single file, then the file position needs to be set correctly
-    fseek(ofp, 0, SEEK_SET);
-    while(offset > LONG_MAX){
-        fseek(ofp, LONG_MAX, SEEK_CUR);
-        offset -= LONG_MAX;
-    }
-    fseek(ofp, offset, SEEK_CUR);
+#ifdef WIN32
+        if ( _fseeki64(ofp, offset, SEEK_SET) )
+#else
+        if ( fseeko(ofp, offset, SEEK_SET) )
+#endif
+        {
+          sprintf(errmsg, "Error on seeking binary file %s", fname);
+          NAMD_err(errmsg);
+        }
 #else
 	//the mode has to be "w+" because the file doesn't exist yet
 	FILE *ofp = fopen(fname, "wb+"); 
+        if ( ! ofp ) {
+          sprintf(errmsg, "Error on opening binary file %s", fname);
+          NAMD_err(errmsg);
+        }
 
 	// Write out extra fields as MAGIC number etc.
 	int32 tmpInt = OUTPUT_MAGIC_NUMBER;
@@ -1587,9 +1599,15 @@ void ParOutput::write_binary_file_slave(char *fname, int fID, int tID, Vector *v
 #endif
 
 	int parN = tID-fID+1;
-    fwrite(vecs, sizeof(Vector), parN, ofp);
+        if ( fwrite(vecs, sizeof(Vector), parN, ofp) != parN ) {
+          sprintf(errmsg, "Error on writing to binary file %s", fname);
+          NAMD_err(errmsg);
+        }
 
-	fclose(ofp);
+	if ( fclose(ofp) ) {
+          sprintf(errmsg, "Error on closing binary file %s", fname);
+          NAMD_err(errmsg);
+        }
 }
 //////End of Functions related with velocity output//////
 

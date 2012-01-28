@@ -1,3 +1,6 @@
+
+#include "largefiles.h"  // must be first!
+
 #include <stdio.h>
 #include "BOCgroup.h"
 #include "Molecule.h"
@@ -16,10 +19,6 @@
 
 #include "ParallelIOMgr.decl.h"
 #include "ParallelIOMgr.h"
-
-#ifndef _LARGEFILE_SOURCE
-#include "largefiles.h"
-#endif
 
 #include "Output.h"
 
@@ -208,7 +207,7 @@ void ParallelIOMgr::readCoordinatesAndVelocity()
     if(!ifp) {
         char s[256];
         sprintf(s, "The binary coordinate file %s cannot be opened on proc %d\n", simParameters->binCoorFile, CkMyPe());
-        NAMD_die(s);
+        NAMD_err(s);
     }
     //step2: check whether flip is needed
     int filelen;
@@ -231,16 +230,21 @@ void ParallelIOMgr::readCoordinatesAndVelocity()
     }
     //step3: read the file specified by the range
     int64 offsetPos = ((int64)myAtomLIdx)*sizeof(Position);
-    while(offsetPos > LONG_MAX) {
-        offsetPos -= LONG_MAX;
-        fseek(ifp, LONG_MAX, SEEK_CUR);
+#ifdef WIN32
+    if ( _fseeki64(ifp, offsetPos, SEEK_CUR) )
+#else
+    if ( fseeko(ifp, offsetPos, SEEK_CUR) )
+#endif
+    {
+        char s[256];
+        sprintf(s, "Error in seeking binary file %s on proc %d",  simParameters->binCoorFile, CkMyPe());
+        NAMD_err(s);
     }
-    fseek(ifp, offsetPos, SEEK_CUR);
     size_t totalRead = fread(tmpData, sizeof(Vector), myNumAtoms, ifp);
     if(totalRead!=myNumAtoms) {
         char s[256];
         sprintf(s, "Error in reading binary file %s on proc %d",  simParameters->binCoorFile, CkMyPe());
-        NAMD_die(s);
+        NAMD_err(s);
     }
     if(needFlip) flipNum((char *)tmpData, sizeof(BigReal), myNumAtoms*3);
     fclose(ifp);
@@ -256,7 +260,7 @@ void ParallelIOMgr::readCoordinatesAndVelocity()
         if(!ifp) {
             char s[256];
             sprintf(s, "The binary velocity file %s cannot be opened on proc %d\n", simParameters->binCoorFile, CkMyPe());
-            NAMD_die(s);
+            NAMD_err(s);
         }
         //step2: check whether flip is needed
         fread(&filelen, sizeof(int32),1,ifp);
@@ -278,16 +282,21 @@ void ParallelIOMgr::readCoordinatesAndVelocity()
 
         //step3: read the file specified by the range
         int64 offsetPos = ((int64)myAtomLIdx)*sizeof(Velocity);
-        while(offsetPos > LONG_MAX) {
-            offsetPos -= LONG_MAX;
-            fseek(ifp, LONG_MAX, SEEK_CUR);
+#ifdef WIN32
+        if ( _fseeki64(ifp, offsetPos, SEEK_CUR) )
+#else
+        if ( fseeko(ifp, offsetPos, SEEK_CUR) )
+#endif
+        {
+            char s[256];
+            sprintf(s, "Error in seeking binary file %s on proc %d",  simParameters->binVelFile, CkMyPe());
+            NAMD_err(s);
         }
-        fseek(ifp, offsetPos, SEEK_CUR);
         totalRead = fread(tmpData, sizeof(Vector), myNumAtoms, ifp);
         if(totalRead!=myNumAtoms) {
             char s[256];
             sprintf(s, "Error in reading binary file %s on proc %d",  simParameters->binVelFile, CkMyPe());
-            NAMD_die(s);
+            NAMD_err(s);
         }
         if(needFlip) flipNum((char *)tmpData, sizeof(BigReal), myNumAtoms*3);
         fclose(ifp);
@@ -322,19 +331,32 @@ void ParallelIOMgr::readInfoForParOutput()
     isWater = new char[numMyAtoms];
     //seek from the end of the file (note offset is negative!)
     int64 offset = sizeof(char)*((int64)(fromIdx-molecule->numAtoms));
-    fseek(ifp, offset, SEEK_END);
+#ifdef WIN32
+    if ( _fseeki64(ifp, offset, SEEK_END) )
+#else
+    if ( fseeko(ifp, offset, SEEK_END) )
+#endif
+    {
+        char s[256];
+        sprintf(s, "Error in seeking binary file %s on proc %d",  simParameters->binAtomFile, CkMyPe());
+        NAMD_err(s);
+    }
     fread(isWater, sizeof(char), numMyAtoms, ifp);
     //there's no need for flipping as it's a char array
 
     //seek from the end of the file (note offset is negative!)
     offset = sizeof(int)*((int64)(fromIdx-molecule->numAtoms))
                    - sizeof(char)*((int64)(molecule->numAtoms));
-    fseek(ifp, 0, SEEK_END);
-    while(offset < LONG_MIN){
-        fseek(ifp, LONG_MIN, SEEK_CUR);
-        offset -= LONG_MIN;
+#ifdef WIN32
+    if ( _fseeki64(ifp, offset, SEEK_END) )
+#else
+    if ( fseeko(ifp, offset, SEEK_END) )
+#endif
+    {
+        char s[256];
+        sprintf(s, "Error in seeking binary file %s on proc %d",  simParameters->binAtomFile, CkMyPe());
+        NAMD_err(s);
     }
-    fseek(ifp, offset, SEEK_CUR);
     fread(clusterID, sizeof(int), numMyAtoms, ifp);
     if(needFlip) flipNum((char *)clusterID, sizeof(int), numMyAtoms);
     fclose(ifp);
