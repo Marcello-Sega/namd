@@ -13,7 +13,7 @@
 #ifndef DCDLIB_H
 #define DCDLIB_H
 
-#include "largefiles.h"
+#include "largefiles.h"  // must be first!
 #include "common.h" // for int32 definition
 #include "Vector.h"
 #include <stdio.h>

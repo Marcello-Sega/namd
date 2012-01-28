@@ -4,7 +4,7 @@
 ***  All rights reserved.
 **/
 
-#include "largefiles.h"
+#include "largefiles.h"  // must be first!
 
 #include "InfoStream.h"
 #include "CollectionMaster.h"
