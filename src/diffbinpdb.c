@@ -4,7 +4,7 @@
 /*                                                                  */
 /********************************************************************/
 
-#include "largefiles.h"
+#include "largefiles.h"  /* must be first! */
 
 #include <sys/stat.h>
 #include <fcntl.h>
