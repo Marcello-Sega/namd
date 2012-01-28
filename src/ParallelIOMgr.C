@@ -1032,6 +1032,11 @@ void ParallelIOMgr::calcAtomsInEachPatch()
     for(int i=0; i<numPatches; i++) {
         int cursize = eachPatchAtomList[i].size();
         if(cursize>0) {
+            if ( cursize > USHRT_MAX ) {
+              char errstr[512];
+              sprintf(errstr, "Patch %d exceeds %d atoms.", i, USHRT_MAX);
+              NAMD_die(errstr);
+            }
             msg->pidList[patchCnt] = i;
             msg->atomsCntList[patchCnt] = cursize;
             patchCnt++;
@@ -1066,6 +1071,11 @@ void ParallelIOMgr::recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg)
     for(int i=0; i<msg->length; i++) {
         int pid = msg->pidList[i];
         int oldNum = patchMap->numAtoms(pid);
+        if ( oldNum + msg->atomsCntList[i] > USHRT_MAX ) {
+          char errstr[512];
+          sprintf(errstr, "Patch %d exceeds %d atoms.", pid, USHRT_MAX);
+          NAMD_die(errstr);
+        }
         patchMap->setNumAtoms(pid, oldNum+msg->atomsCntList[i]);
         if(simParameters->fixedAtomsOn) {
             oldNum = patchMap->numFixedAtoms(pid);
@@ -1078,8 +1088,10 @@ void ParallelIOMgr::recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg)
         //print max PATCH info
         int maxAtoms = -1;
         int maxPatch = -1;
+        int totalAtoms = 0;
         for(int i=0; i<patchMap->numPatches(); i++) {
             int cnt = patchMap->numAtoms(i);
+            totalAtoms += cnt;
             if(cnt>maxAtoms) {
                 maxAtoms = cnt;
                 maxPatch = i;
@@ -1088,6 +1100,11 @@ void ParallelIOMgr::recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg)
         procsReceived = 0;
         iout << iINFO << "LARGEST PATCH (" << maxPatch <<
              ") HAS " << maxAtoms << " ATOMS\n" << endi;
+        if ( totalAtoms !=  Node::Object()->molecule->numAtoms ) {
+          char errstr[512];
+          sprintf(errstr, "Incorrect atom count in void ParallelIOMgr::recvAtomsCntPerPatch: %d vs %d", totalAtoms, Node::Object()->molecule->numAtoms);
+          NAMD_die(errstr);
+        }
     }
 #endif
 }

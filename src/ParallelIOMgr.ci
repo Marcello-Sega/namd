@@ -14,8 +14,8 @@ module ParallelIOMgr {
   };
   message AtomsCntPerPatchMsg{
     PatchID pidList[];
-    int atomsCntList[];
-    int fixedAtomsCntList[];
+    unsigned short atomsCntList[];
+    unsigned short fixedAtomsCntList[];
   };
   message MovePatchAtomsMsg{
     PatchID pidList[];

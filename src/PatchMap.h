@@ -181,8 +181,8 @@ private:
 #ifdef MEM_OPT_VERSION
     //added to record #atoms in each patch initially
     //--Chao Mei
-    short numAtoms;
-    short numFixedAtoms;
+    unsigned short numAtoms;
+    unsigned short numFixedAtoms;
 #endif
   };
   int nPatches;

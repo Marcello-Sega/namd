@@ -78,8 +78,8 @@ public:
     //one-to-one mapping between two lists
     int length;
     PatchID *pidList;
-    int *atomsCntList;
-    int *fixedAtomsCntList;
+    unsigned short *atomsCntList;
+    unsigned short *fixedAtomsCntList;
 };
 
 class MovePatchAtomsMsg: public CMessage_MovePatchAtomsMsg
