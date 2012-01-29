@@ -35,6 +35,7 @@ module ParallelIOMgr {
     entry void recvHydroBasedCounter(HydroBasedMsg *msg);
     entry void bcastHydroBasedCounter(HydroBasedMsg *msg);
     entry void recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg);
+    entry void ackAtomsToHomePatchProcs();
     entry void recvAtomsToHomePatchProcs(MovePatchAtomsMsg *msg);
 
     entry void recvClusterSize(ClusterSizeMsg *msg);

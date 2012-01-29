@@ -86,6 +86,7 @@ class MovePatchAtomsMsg: public CMessage_MovePatchAtomsMsg
 {
 public:
     //the total size of allAtoms could be calculated from sizeList
+    int from;
     int patchCnt;
     PatchID *pidList;
     int *sizeList;
@@ -352,7 +353,10 @@ public:
     void recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg);
 
     //distribute atoms to their homepatch processors
+    CthThread sendAtomsThread;
     void sendAtomsToHomePatchProcs();
+    int numAcksOutstanding;
+    void ackAtomsToHomePatchProcs();
     void recvAtomsToHomePatchProcs(MovePatchAtomsMsg *msg);
 
     //create home patches on this processor

@@ -21,6 +21,7 @@
 #include "ParallelIOMgr.h"
 
 #include "Output.h"
+#include "Random.h"
 
 #include <algorithm>
 using namespace std;
@@ -55,6 +56,8 @@ ParallelIOMgr::ParallelIOMgr()
 
     numCSMAck = 0;
     numReqRecved = 0;
+
+    sendAtomsThread = 0;
 
 #if COLLECT_PERFORMANCE_DATA
     numFixedAtomLookup = 0;
@@ -97,16 +100,20 @@ void ParallelIOMgr::initialize(Node *node)
     }
 
     //build inputProcArray
+   {
     inputProcArray = new int[numInputProcs];
+    myInputRank = -1;
+    int stride = (numInputProcs > 1) ? (CkNumPes()-1)/(numInputProcs-1) : 1;
+    int startpe = 0;
     for(int i=0; i<numInputProcs; i++) {
-        inputProcArray[i] = i;
+        int pe = inputProcArray[i] = startpe + i*stride;
+        if ( pe < 0 || pe >= CkNumPes() ) NAMD_bug("Input proc out of range");
+        if ( pe == CkMyPe() ) {
+          if ( myInputRank != -1 ) NAMD_bug("Duplicate input proc");
+          myInputRank = i;
+        }
     }
-    //The special setting because of the current inputProcArray initialization
-    if(CkMyPe()>=0 && CkMyPe()<numInputProcs) {
-        myInputRank = CkMyPe();
-    } else {
-        myInputRank = -1;
-    }
+   }
 
     if(myInputRank!=-1) {
         //NOTE: this could further be optimized by pre-allocate the memory
@@ -124,6 +131,7 @@ void ParallelIOMgr::initialize(Node *node)
 
     //build outputProcArray
     //spread the output processors across all the processors
+   {
     outputProcArray = new int[numOutputProcs];
     int stride = CkNumPes()/numOutputProcs;
     int startpe = 0;
@@ -138,6 +146,7 @@ void ParallelIOMgr::initialize(Node *node)
     } else {
         myOutputRank = -1;
     }   
+   }
 
 #ifdef MEM_OPT_VERSION
     if(myOutputRank!=-1) {
@@ -1131,10 +1140,23 @@ void ParallelIOMgr::recvAtomsCntPerPatch(AtomsCntPerPatchMsg *msg)
 #endif
 }
 
+void call_sendAtomsToHomePatchProcs(void *arg)
+{
+  ((ParallelIOMgr*)arg)->sendAtomsToHomePatchProcs();
+}
+
 void ParallelIOMgr::sendAtomsToHomePatchProcs()
 {
 #ifdef MEM_OPT_VERSION
     if(myInputRank==-1) return;
+
+    if ( sendAtomsThread == 0 ) {
+      sendAtomsThread = CthCreate((CthVoidFn)call_sendAtomsToHomePatchProcs,this,0);
+      CthAwaken(sendAtomsThread);
+      return;
+    }
+    sendAtomsThread = 0;
+    numAcksOutstanding = 0;
 
     PatchMap *patchMap = PatchMap::Object();
     int numPatches = patchMap->numPatches();
@@ -1143,18 +1165,32 @@ void ParallelIOMgr::sendAtomsToHomePatchProcs()
     //each element (proc) contains the list of ids of patches which will stay
     //on that processor
     ResizeArray<int> *procList = new ResizeArray<int>[CkNumPes()];
+    ResizeArray<int> pesToSend;
     for(int i=0; i<numPatches; i++) {
         if(eachPatchAtomList[i].size()==0) continue;
         int onPE = patchMap->node(i);
+        if ( procList[onPE].size() == 0 ) pesToSend.add(onPE);
         procList[onPE].add(i);
     }
+
+    Random(CkMyPe()).reorder(pesToSend.begin(),pesToSend.size());
+    //CkPrintf("Pe %d ParallelIOMgr::sendAtomsToHomePatchProcs sending to %d pes\n",CkMyPe(),pesToSend.size());
 
     //go over every processor to send a message if necessary
     //TODO: Optimization for local home patches to save temp memory usage??? -CHAOMEI
     CProxy_ParallelIOMgr pIO(thisgroup);
-    for(int i=0; i<CkNumPes(); i++) {
+    for(int k=0; k<pesToSend.size(); k++) {
+        const int i = pesToSend[k];
         int len = procList[i].size();
         if(len==0) continue;
+
+        if ( numAcksOutstanding >= 10 ) {
+          //CkPrintf("Pe %d ParallelIOMgr::sendAtomsToHomePatchProcs suspending at %d of %d pes\n",CkMyPe(),k,pesToSend.size());
+          //fflush(stdout);
+          sendAtomsThread = CthSelf();
+          CthSuspend();
+        }
+        ++numAcksOutstanding;
 
         //prepare a message to send
         int patchCnt = len;
@@ -1166,6 +1202,7 @@ void ParallelIOMgr::sendAtomsToHomePatchProcs()
         }
 
         MovePatchAtomsMsg *msg = new (patchCnt, patchCnt, totalAtomCnt, 0)MovePatchAtomsMsg;
+        msg->from = CkMyPe();
         msg->patchCnt = patchCnt;
         int atomIdx = 0;
         for(int j=0; j<len; j++) {
@@ -1196,8 +1233,20 @@ void ParallelIOMgr::sendAtomsToHomePatchProcs()
 #endif
 }
 
+void ParallelIOMgr::ackAtomsToHomePatchProcs()
+{
+  --numAcksOutstanding;
+  if ( sendAtomsThread ) {
+    CthAwaken(sendAtomsThread);
+    sendAtomsThread = 0;
+  }
+}
+
 void ParallelIOMgr::recvAtomsToHomePatchProcs(MovePatchAtomsMsg *msg)
 {
+    CProxy_ParallelIOMgr pIO(thisgroup);
+    pIO[msg->from].ackAtomsToHomePatchProcs();
+
     if(!isOKToRecvHPAtoms) {
         prepareHomePatchAtomList();
         isOKToRecvHPAtoms = true;
@@ -1213,6 +1262,7 @@ void ParallelIOMgr::recvAtomsToHomePatchProcs(MovePatchAtomsMsg *msg)
             hpAtomsList[idx].add(msg->allAtoms[aid]);
         }
     }
+    //CkPrintf("Pe %d recvAtomsToHomePatchProcs for %d patches %d atoms\n",CkMyPe(),numRecvPatches,aid);
     delete msg;
 }
 
