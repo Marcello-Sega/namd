@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/01/15 02:22:40 $
- * $Revision: 1.1234 $
+ * $Date: 2012/01/29 23:32:34 $
+ * $Revision: 1.1235 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -993,11 +993,10 @@ void WorkDistrib::assignNodeToPatch()
 #endif
   }
 
-//  for(i=0; i < nNodes; i++)
-//    iout << iINFO 
-//	 << nAtoms[i] << " atoms assigned to node " << i << "\n" << endi;
   if ( numAtoms != Node::Object()->molecule->numAtoms ) {
-printf("numAtoms=%d Node::Object()->molecule->numAtoms=%d\n",numAtoms,Node::Object()->molecule->numAtoms);
+    for(i=0; i < nNodes; i++)
+      iout << iINFO << nAtoms[i] << " atoms assigned to node " << i << "\n" << endi;
+    iout << iINFO << "Assigned " << numAtoms << " atoms but expected " << Node::Object()->molecule->numAtoms << "\n" << endi;
     NAMD_die("Incorrect atom count in WorkDistrib::assignNodeToPatch\n");
   }
 
