@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2011/12/22 16:31:52 $
- * $Revision: 1.1278 $
+ * $Date: 2012/01/29 23:23:19 $
+ * $Revision: 1.1279 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1967,6 +1967,9 @@ void Controller::printTiming(int step) {
       const double endWTime = CmiWallTimer() - firstWTime;
       const double endCTime = CmiTimer() - firstCTime;
 
+      // fflush about once per minute
+      if ( (((int)endWTime)>>6) != (((int)startWTime)>>6 ) ) fflush_count = 2;
+
       const double elapsedW = 
 	(endWTime - startWTime) / simParams->outputTiming;
       const double elapsedC = 
@@ -1989,6 +1992,7 @@ void Controller::printTiming(int step) {
 		  ", %g hours remaining, %f MB of memory in use.\n",
 		  step, endCTime, elapsedC, endWTime, elapsedW,
 		  remainingW_hours, memusage_MB());
+        if ( fflush_count ) { --fflush_count; fflush(stdout); }
       }
     }
 }
