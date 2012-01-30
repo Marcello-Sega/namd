@@ -265,8 +265,8 @@ if(qDiffRMSD){
   BigReal maxforce2 = 0.;
 //orig finalRMS < initialRMS...changed to <= when allowing initialRMS = 0
 //qdiff part and the whole && section new finalRMS <=initialRMS
-  if (((finalRMS < initialRMS && targetRMS <= curRMS) ||
-      (finalRMS >= initialRMS && targetRMS > curRMS) ||
+  if (((finalRMS <= initialRMS && targetRMS <= curRMS) ||
+      (finalRMS >= initialRMS && targetRMS >= curRMS) ||
       qDiffRMSD) && (curRMS0 > 0. && curRMS1 > 0) ) {
 
 
