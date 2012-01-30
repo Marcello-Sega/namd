@@ -863,7 +863,7 @@ void ProxyMgr::buildSinglePatchNodeAwareSpanningTree(PatchID pid, NodeIDList &pr
                                                      proxyTreeNodeList &ptnTree){       
     int numProxies = proxyList.size();
     if (numProxies == 0) {
-        CkPrintf ("This is sheer evil in building node-aware spanning tree!\n\n");            
+        //CkPrintf ("This is sheer evil in building node-aware spanning tree!\n\n");            
         return;
     }        
  
@@ -955,7 +955,7 @@ ProxyMgr::buildSpanningTree0()
   {
     int numProxies = ptree.proxylist[pid].size();
     if (numProxies == 0) {
-      CkPrintf ("This is sheer evil!\n\n");
+      //CkPrintf ("This is sheer evil!\n\n");
       //ProxyMgr::Object()->sendSpanningTreeToHomePatch(pid, NULL, 0);
       delete [] ntrees;
       delete [] numPatchesOnNode;
