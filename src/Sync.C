@@ -71,16 +71,13 @@ void Sync::openSync(void)
   useProxySync = 0;
   if (useSync) {
     // if use proxy spanning tree, proxy sync is forced
-    if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)) {
-#if !CMK_IMMEDIATE_MSG
-      //Dont need proxy sync when immediate messges are turned on
-      // Dont need proxy sync when immediate messges are turned on
+    if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)
+        && PatchMap::Object()->numPatches() < 4 * CkNumPes() ) {
       // If on BG/P, useProxySync should not be turned on for better performance
       #if !CMK_BLUEGENEP
       // CmiPrintf("[%d] useProxySync is turned on. \n", CkMyPe());
       useProxySync = 1;
       #endif
-#endif
     }
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
     // immediate messages can be processed by any PE
