@@ -52,8 +52,8 @@ firsttimestep $i_step
 
 proc replica_temp { i } {
   global num_replicas min_temp max_temp
-  return [expr round($min_temp * \
-         exp( log(1.0*$max_temp/$min_temp)*(1.0*$i/($num_replicas-1)) ) )]
+  return [format "%.2f" [expr ($min_temp * \
+         exp( log(1.0*$max_temp/$min_temp)*(1.0*$i/($num_replicas-1)) ) )]]
 }
 
 set replica(temperature) [replica_temp $replica(index)]
