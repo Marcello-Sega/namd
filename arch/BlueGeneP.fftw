@@ -1,7 +1,7 @@
 
-FFTDIR=/auto/bgd-public/abhatele/work/fftw
+FFTDIR=/soft/apps/fftw-2.1.5-float
 FFTINCL=-I$(FFTDIR)/include
-FFTLIB=-L$(FFTDIR)/lib -lrfftw -lfftw
-FFTFLAGS=-DNAMD_FFTW -DFFTW_ENABLE_FLOAT -DNAMD_FFTW_NO_TYPE_PREFIX
+FFTLIB=-L$(FFTDIR)/lib -lsrfftw -lsfftw
+FFTFLAGS=-DNAMD_FFTW
 FFT=$(FFTINCL) $(FFTFLAGS)
 
