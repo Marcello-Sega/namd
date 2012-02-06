@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dtanner $
- * $Date: 2011/12/06 21:37:57 $
- * $Revision: 1.1376 $
+ * $Author: jim $
+ * $Date: 2012/02/06 23:03:50 $
+ * $Revision: 1.1377 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -212,6 +212,18 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 
 //Modifications for alchemical fep
   SCRIPT_PARSE_INT("alchEquilSteps",alchEquilSteps)
+
+  if ( ! strncasecmp(param,"alchFepWCArcut1",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchFepWCArcut1 = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
+
+  if ( ! strncasecmp(param,"alchFepWCArcut2",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchFepWCArcut2 = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
 
   if ( ! strncasecmp(param,"alchLambda",MAX_SCRIPT_PARAM_SIZE) ) {
     alchLambda = atof(value);
@@ -846,6 +858,8 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
      &alchFepWCARepuOn, FALSE);
    opts.optionalB("alch", "alchFepWCADispOn", "WCA decomposition disp interaction in use?",
      &alchFepWCADispOn, FALSE);
+   opts.optionalB("alch", "alchEnsembleAvg", "Ensemble Average in use?",
+     &alchEnsembleAvg, TRUE);
    opts.optional("alch", "alchFepWCArcut1", "WCA repulsion Coeff1 used for generating"
      "the altered alchemical vDW interactions", &alchFepWCArcut1, 0.0);
    opts.optional("alch", "alchFepWCArcut2", "WCA repulsion Coeff2 used for generating"

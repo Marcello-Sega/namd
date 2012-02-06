@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2012/01/29 23:23:19 $
- * $Revision: 1.1279 $
+ * $Date: 2012/02/06 23:03:50 $
+ * $Revision: 1.1280 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2497,7 +2497,8 @@ void Controller::outputFepEnergy(int step) {
   const int alchEquilSteps = simParams->alchEquilSteps;
   const BigReal alchLambda = simParams->alchLambda;
   const BigReal alchLambda2 = simParams->alchLambda2;
-  if (stepInRun == 0 || stepInRun == alchEquilSteps) {
+  const bool alchEnsembleAvg = simParams->alchEnsembleAvg; 
+  if (alchEnsembleAvg && (stepInRun == 0 || stepInRun == alchEquilSteps)) {
     FepNo = 0;
     exp_dE_ByRT = 0.0;
     net_dE = 0.0;
@@ -2505,35 +2506,48 @@ void Controller::outputFepEnergy(int step) {
   BigReal dE = electEnergy_f + electEnergySlow_f + ljEnergy_f
 		- (electEnergy + electEnergySlow + ljEnergy);
   BigReal RT = BOLTZMANN * simParams->alchTemp;
+
+  if (alchEnsembleAvg){
   FepNo++;
   exp_dE_ByRT += exp(-dE/RT);
   net_dE += dE;
+  }
  
   if (stepInRun == 0) {
     if (!fepFile.rdbuf()->is_open()) {
-      fepSum = 0.0;
       NAMD_backup_file(simParams->alchOutFile);
       fepFile.open(simParams->alchOutFile);
       iout << "OPENING FEP ENERGY OUTPUT FILE\n" << endi;
+      if(alchEnsembleAvg){
+      fepSum = 0.0;
       fepFile << "#            STEP                 Elec                            "
               << "vdW                    dE           dE_avg         Temp             dG\n"
               << "#                           l             l+dl      "
               << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
+      }
+      else{
+      fepFile << "#            STEP                 Elec                            "
+              << "vdW                    dE         Temp\n"
+              << "#                           l             l+dl      "
+              << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
+      } 
     }
+    if(!step){
     fepFile << "#NEW FEP WINDOW: "
             << "LAMBDA SET TO " << alchLambda << " LAMBDA2 " 
             << alchLambda2 << std::endl;
+    }
   }
-  if (stepInRun == alchEquilSteps) {
+  if ((alchEquilSteps) && (stepInRun == alchEquilSteps)) {
     fepFile << "#" << alchEquilSteps << " STEPS OF EQUILIBRATION AT "
             << "LAMBDA " << simParams->alchLambda << " COMPLETED\n"
             << "#STARTING COLLECTION OF ENSEMBLE AVERAGE" << std::endl;
   }
-  if (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0)) {
+  if ((simParams->N) && (simParams->alchOutFreq && ((step%simParams->alchOutFreq)==0))) {
     writeFepEnergyData(step, fepFile);
     fepFile.flush();
   }
-  if (step == simParams->N) {
+  if (alchEnsembleAvg && (step == simParams->N)) {
     fepSum = fepSum + dG;
     fepFile << "#Free energy change for lambda window [ " << alchLambda
 	    << " " << alchLambda2 << " ] is " << dG << " ; net change until now is " << fepSum << std::endl;
@@ -2621,18 +2635,26 @@ void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
   BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
   BigReal RT = BOLTZMANN * simParams->alchTemp;
-  dG = -(RT * log(exp_dE_ByRT/FepNo));
-  BigReal dE_avg = net_dE/FepNo;
+  const bool alchEnsembleAvg = simParams->alchEnsembleAvg;
+  const int stepInRun = step - simParams->firstTimestep;
+  if(stepInRun){
   fepFile << FEPTITLE(step);
   fepFile << FORMAT(eeng);
   fepFile << FORMAT(eeng_f);
   fepFile << FORMAT(ljEnergy);
   fepFile << FORMAT(ljEnergy_f);
   fepFile << FORMAT(dE);
-  fepFile << FORMAT(dE_avg);
+  if(alchEnsembleAvg){
+  BigReal dE_avg = net_dE/FepNo;
+    fepFile << FORMAT(dE_avg);
+  }
   fepFile << FORMAT(temperature);
-  fepFile << FORMAT(dG);
+  if(alchEnsembleAvg){
+  dG = -(RT * log(exp_dE_ByRT/FepNo));
+    fepFile << FORMAT(dG);
+  } 
   fepFile << std::endl;
+  }
 }
 //fepe
 void Controller::writeTiEnergyData(int step, std::ofstream &file) {

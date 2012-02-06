@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dtanner $
- * $Date: 2011/12/06 21:37:57 $
- * $Revision: 1.1199 $
+ * $Author: jim $
+ * $Date: 2012/02/06 23:03:51 $
+ * $Revision: 1.1200 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -341,6 +341,7 @@ public:
   BigReal alchFepWCArcut2;  //  rcut2 of WCA decomposition repulsion
   BigReal alchTemp;         //  temperature for alchemical calculation
   int alchOutFreq;          //  freq. of alchemical output
+  Bool alchEnsembleAvg;      //if do ensemble average for the net free energy difference 
   char alchOutFile[128];    //  alchemical output filename
   int alchEquilSteps;       //  # of equil. steps in the window
   BigReal alchVdwShiftCoeff; //  r2 shift coeff used for generating  
