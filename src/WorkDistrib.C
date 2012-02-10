@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/01/29 23:32:34 $
- * $Revision: 1.1235 $
+ * $Date: 2012/02/10 21:03:08 $
+ * $Revision: 1.1236 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -961,11 +961,12 @@ void WorkDistrib::assignNodeToPatch()
     if (nNodes > patchMap->numPatches())
       assignPatchesBitReversal();
     else
-#if (CMK_BLUEGENEP | CMK_BLUEGENEL)
-      assignPatchesRecursiveBisection();
-#else
+#if ! (CMK_BLUEGENEP | CMK_BLUEGENEL)
+    if ( simparam->PMEOn )
       assignPatchesSpaceFillingCurve();	  
+    else
 #endif
+      assignPatchesRecursiveBisection();
       // assignPatchesRoundRobin();
       // assignPatchesToLowestLoadNode();
   
