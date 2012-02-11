@@ -468,7 +468,7 @@ void Node::startup() {
       //because they have been updated since creation including
       //#atoms per patch, the proc a patch should stay etc. --Chao Mei
       workDistrib->sendPatchMap();
-      #ifdef USE_NODEPATCHMGR
+      #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
       CProxy_NodeProxyMgr npm(CkpvAccess(BOCclass_group).nodeProxyMgr);
       //a node broadcast
       npm.createProxyInfo(PatchMap::Object()->numPatches());
@@ -560,8 +560,22 @@ void Node::startup() {
       msm[CkMyPe()].startWorkers(new CkQdMsg);
     }
 #endif
+
     proxyMgr->createProxies();  // need Home patches before this
     if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
+
+#ifdef USE_NODEPATCHMGR
+	//at this point, PatchMap info has been recved on PEs. It is time to create
+	//the home patch spanning tree for receiving proxy list info
+	if(simParameters->isSendSpanningTreeOn() ||
+	   simParameters->isRecvSpanningTreeOn()) {
+		if(CkMyRank()==0) {
+			CProxy_NodeProxyMgr npm(CkpvAccess(BOCclass_group).nodeProxyMgr);
+			npm[CkMyNode()].ckLocalBranch()->createSTForHomePatches(PatchMap::Object());
+		}
+	}
+#endif
+
   break;
 
   case 8:

@@ -63,6 +63,12 @@ module ProxyMgr {
     int allPes[];
   };
 
+  message PatchProxyListMsg{
+    int patchIDs[];
+	int proxyListLen[];
+	int proxyPEs[];
+  };
+
   group ProxyMgr
   {
     entry ProxyMgr(void);
@@ -83,6 +89,7 @@ module ProxyMgr {
     entry void recvNodeAwareSTParent(int, int);
     entry void buildProxySpanningTree2();
     entry void recvProxies(int pid, int list[n], int n);
+	entry void recvPatchProxyInfo(PatchProxyListMsg *msg);
 
     entry void sendResult(ProxyGBISP1ResultMsg *);
     entry void recvResult(ProxyGBISP1ResultMsg *);
@@ -98,6 +105,8 @@ module ProxyMgr {
     entry [expedited] void recvImmediateProxyData(ProxyDataMsg *);
     entry [expedited] void recvImmediateProxyAll(ProxyDataMsg *);
     entry [expedited] void recvImmediateResults(ProxyCombinedResultRawMsg *);
+
+	entry void sendProxyListInfo(PatchProxyListMsg *);
   };
 }
 

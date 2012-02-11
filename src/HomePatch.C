@@ -526,7 +526,13 @@ static int compDistance(const void *a, const void *b)
 
 void HomePatch::sendProxies()
 {
-  ProxyMgr::Object()->sendProxies(patchID, proxy.begin(), proxy.size());  
+#if USE_NODEPATCHMGR
+	CProxy_NodeProxyMgr pm(CkpvAccess(BOCclass_group).nodeProxyMgr);
+	NodeProxyMgr *npm = pm[CkMyNode()].ckLocalBranch();
+	npm->sendProxyList(patchID, proxy.begin(), proxy.size());
+#else
+	ProxyMgr::Object()->sendProxies(patchID, proxy.begin(), proxy.size());
+#endif
 }
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE

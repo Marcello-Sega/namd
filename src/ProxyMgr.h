@@ -350,6 +350,7 @@ public:
   void buildProxySpanningTree2();               // centralized version
   void sendProxies(int pid, int *list, int n);
   void recvProxies(int pid, int *list, int n);
+  void recvPatchProxyInfo(PatchProxyListMsg *msg);
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   void buildNodeAwareSpanningTree0();
@@ -397,20 +398,62 @@ private:
   void printProxySpanningTree();
 };
 
+struct ProxyListInfo{
+	int patchID;
+	int numProxies;
+	int *proxyList; //record which PE the proxy is on 
+};
+
+class PatchProxyListMsg: public CMessage_PatchProxyListMsg {
+public:
+	int numPatches;
+	int *patchIDs;
+	int *proxyListLen;
+	int *proxyPEs;
+
+public:
+	PatchProxyListMsg(int num) { numPatches = num; }
+	static PatchProxyListMsg *createPatchProxyListMsg(PatchProxyListMsg **bufs, int bufSize, ProxyListInfo *info, int size);
+};
+
 class NodeProxyMgr : public CBase_NodeProxyMgr
 {
 private:
+/*The following vars are for node-aware spanning tree if NodeProxyMgr is used*/
+	//Potential TODO: change it to a hashtable if necessary
     proxyTreeNode **proxyInfo;
     int numPatches;
 
     CkGroupID localProxyMgr; //a charm Group variable
     PatchMap **localPatchMaps;
 
+/* The following vars are for managing sending proxy list of a patch to PE 0*/
+	int parentNode; //-1 for root node
+	int numKidNodes;
+	int kidRecved;
+	//about local home patches
+	int numHomePatches; //the number of homepatches on this node
+	int homepatchRecved;
+	ProxyListInfo *localProxyLists;
+	PatchProxyListMsg **remoteProxyLists;
+	CmiNodeLock localDepositLock;
+	CmiNodeLock remoteDepositLock;
+
 public:
     NodeProxyMgr(){
         proxyInfo = NULL;
         numPatches = 0;
         localPatchMaps = new PatchMap *[CkMyNodeSize()];
+
+		parentNode = -1;
+		numKidNodes = 0;
+		kidRecved = 0;
+		numHomePatches = 0;
+		homepatchRecved = 0;
+		localProxyLists = NULL;
+		remoteProxyLists = NULL;
+		localDepositLock = CmiCreateLock();
+		remoteDepositLock = CmiCreateLock();
     }
     ~NodeProxyMgr(){
         for(int i=0; i<numPatches; i++) {
@@ -418,6 +461,9 @@ public:
         }
         delete [] proxyInfo;
         delete [] localPatchMaps;
+
+		CmiDestroyLock(localDepositLock);
+		CmiDestroyLock(remoteDepositLock);
     }
 
     void createProxyInfo(int numPs){
@@ -446,6 +492,14 @@ public:
     void recvImmediateProxyData(ProxyDataMsg *msg);
     void recvImmediateProxyAll(ProxyDataMsg *msg);
     void recvImmediateResults(ProxyCombinedResultRawMsg *);
+
+	//initialize the spanning tree of home patches
+	void createSTForHomePatches(PatchMap *pmap);
+	//direct call from local home patches
+	void sendProxyList(int pid, int *plist, int size);
+	//remote call to send this node's proxy list info
+	void sendProxyListInfo(PatchProxyListMsg *msg);
+	void contributeToParent();
 };
 
 #endif /* PATCHMGR_H */

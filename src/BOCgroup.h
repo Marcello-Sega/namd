@@ -29,7 +29,7 @@ public:
   CkGroupID sync;
   CkGroupID node;
   CkGroupID ioMgr;
-  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  #ifdef USE_NODEPATCHMGR
   CkGroupID nodeProxyMgr;
   #endif
 

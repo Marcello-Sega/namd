@@ -160,7 +160,7 @@ void master_init(int argc, char **argv){
 
   group.sync = CProxy_Sync::ckNew();
 
-  #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+  #ifdef USE_NODEPATCHMGR
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
   #endif 
 

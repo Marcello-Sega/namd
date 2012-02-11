@@ -26,6 +26,7 @@
 
 #include <map>
 #include <vector>
+#include <algorithm>
 
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
 #include "qd.h"
@@ -562,6 +563,9 @@ ProxyMgr::buildProxySpanningTree()
 void 
 ProxyMgr::buildProxySpanningTree2()
 {
+#if 0
+  //The homePatchIDList is an expensive as it goes through
+  //every patch ids.
   PatchIDList pids;
   PatchMap::Object()->homePatchIDList(pids);
   for (int i=0; i<pids.size(); i++) {
@@ -569,6 +573,14 @@ ProxyMgr::buildProxySpanningTree2()
     if (home == NULL) CkPrintf("ERROR: homepatch NULL\n");
     home->sendProxies();
   }
+#else
+  HomePatchList *hpl = PatchMap::Object()->homePatchList();
+  HomePatchListIter iter(*hpl);
+  for(iter=iter.begin(); iter!=iter.end(); iter++) {
+	  HomePatch *home = iter->patch;
+	  home->sendProxies();
+  }
+#endif
 }
 
 void 
@@ -583,6 +595,27 @@ ProxyMgr::sendProxies(int pid, int *list, int n)
 //on a physical node for proxy spanning tree
 #define MAX_INTERNODE 1
 
+//Only for debug
+static void outputProxyTree(ProxyTree &ptree, int np){
+	FILE *ofp = fopen("patch_proxylist.txt", "w");
+	std::vector<int> plist;
+	for(int i=0; i<np; i++) {
+		fprintf(ofp, "%d: ", i);
+		int listlen = ptree.proxylist[i].size();
+		fprintf(ofp, "#%d ", listlen);
+		plist.clear();
+		for(int j=0; j<listlen; j++) {
+			plist.push_back(ptree.proxylist[i][j]);
+		}
+		std::sort(plist.begin(), plist.end());
+		for(int j=0; j<listlen; j++) {
+			fprintf(ofp, "%d ", plist[j]);
+		}
+		fprintf(ofp, "\n");
+	}
+	fclose(ofp);
+}
+
 // only on PE 0
 void 
 ProxyMgr::recvProxies(int pid, int *list, int n)
@@ -595,6 +628,8 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
     ptree.proxylist[pid][i] = list[i];
   ptree.proxyMsgCount ++;
   if (ptree.proxyMsgCount == nPatches) {
+	outputProxyTree(ptree, nPatches);
+
     ptree.proxyMsgCount = 0;
     // building and sending of trees is done in two steps now
     // so that the building step can be shifted to the load balancer
@@ -605,6 +640,34 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
 #endif
     sendSpanningTrees();
   }
+}
+
+void ProxyMgr::recvPatchProxyInfo(PatchProxyListMsg *msg){
+	int nPatches = PatchMap::Object()->numPatches();
+	if(ptree.proxylist == NULL) ptree.proxylist = new NodeIDList[nPatches];
+	CmiAssert(msg->numPatches == nPatches);
+	int peIdx = 0;
+	for(int i=0; i<nPatches; i++) {
+		int pid = msg->patchIDs[i];
+		int plen = msg->proxyListLen[i];
+		ptree.proxylist[pid].resize(plen);
+		for(int j=0; j<plen; j++) {
+			ptree.proxylist[pid][j] = msg->proxyPEs[peIdx++];
+		}		
+	}
+	delete msg;
+
+	outputProxyTree(ptree, nPatches);
+
+	ptree.proxyMsgCount = 0;
+    // building and sending of trees is done in two steps now
+    // so that the building step can be shifted to the load balancer
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+    buildNodeAwareSpanningTree0();
+#else
+    buildSpanningTree0();
+#endif
+    sendSpanningTrees();
 }
 
 //
@@ -1182,7 +1245,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
         //Indicating this proxy is a leaf in the spanning tree
         ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
         proxy->setSpanningTree(msg->procID, NULL, 0);
-#ifdef USE_NODEPATCHMGR
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
 		//When using NODEPATCHMGR, the proc-level is a flat list attached to the node
 		//while the node-level spanning tree obeys the branch factor.
 		//As a result, when passing down spanning trees, if this proc is on the same node
@@ -1228,7 +1291,7 @@ void ProxyMgr::recvNodeAwareSpanningTree(ProxyNodeAwareSpanningTreeMsg *msg){
         }
         proxy->setSpanningTree(msg->procID, children, numChild);
 
-#ifdef USE_NODEPATCHMGR
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
 		int onSameNode = (CkMyNode() == CkNodeOf(msg->procID));
 		if(!onSameNode) {
 			//set up proxyInfo inside NodeProxyMgr
@@ -1749,6 +1812,142 @@ void ProxyMgr::recvResult(ProxyGBISP2ResultMsg *msg) { //pp -r> hp
 void ProxyMgr::recvData(  ProxyGBISP3DataMsg *msg) {   //hp -d> pp
   ProxyPatch *proxy = (ProxyPatch *) PatchMap::Object()->patch(msg->patch);
   proxy->receiveData(msg); // deleted in ProxyPatch::receiveAtoms() ?
+}
+
+PatchProxyListMsg *PatchProxyListMsg::createPatchProxyListMsg(PatchProxyListMsg **bufs, int bufSize, ProxyListInfo *info, int size){
+	//1. compute the total patches this node manages, and the total length of all proxy lists
+	int totalPatches = 0;
+	int totalProxies = 0;
+	for(int i=0; i<bufSize; i++) {
+		PatchProxyListMsg *one = bufs[i];
+		totalPatches += one->numPatches;
+		for(int j=0; j<one->numPatches; j++) totalProxies += one->proxyListLen[j];
+	}
+	totalPatches += size;
+	for(int i=0; i<size; i++) {
+		totalProxies += info[i].numProxies;
+	}
+
+	PatchProxyListMsg *msg = new(totalPatches, totalPatches, totalProxies, 0)PatchProxyListMsg(totalPatches);
+	int msgPatchIdx = 0;
+	int msgProxyPeIdx = 0;
+	for(int i=0; i<bufSize; i++) {
+		PatchProxyListMsg *one = bufs[i];
+		int curPeIdx = 0;
+		for(int j=0; j<one->numPatches; j++) {
+			msg->patchIDs[msgPatchIdx] = one->patchIDs[j];
+			int curListLen = one->proxyListLen[j];
+			msg->proxyListLen[msgPatchIdx++] = curListLen;
+			memcpy(msg->proxyPEs+msgProxyPeIdx, one->proxyPEs+curPeIdx, sizeof(int)*curListLen);
+			curPeIdx += curListLen;
+			msgProxyPeIdx += curListLen;
+		}
+	}
+	for(int i=0; i<size; i++) {
+		msg->patchIDs[msgPatchIdx] = info[i].patchID;
+		int curListLen = info[i].numProxies;
+		msg->proxyListLen[msgPatchIdx++] = curListLen;
+		memcpy(msg->proxyPEs+msgProxyPeIdx, info[i].proxyList, sizeof(int)*curListLen);
+		msgProxyPeIdx += curListLen;
+	}
+	return msg;
+}
+
+#define HOMEPATCH_TREE_BRFACTOR 2
+void NodeProxyMgr::createSTForHomePatches(PatchMap *pmap){
+	//We use implicit tree construction for all home patches
+	std::vector<int> nodesWithPatches; //record the id of node that has home patches
+	int myNodeIdx; //the index into the above vector of this node
+	for(int pe=0; pe<CkNumPes(); pe += CkMyNodeSize()) {
+		int hpCnt = 0;
+		for(int i=0; i<CkMyNodeSize(); i++) {
+			hpCnt += pmap->numPatchesOnNode(pe+i);
+		}
+		if(hpCnt==0) continue;
+
+		int nodeId = CkNodeOf(pe);
+		nodesWithPatches.push_back(nodeId);
+		if(CkMyNode() == nodeId) {
+			//on my node
+			myNodeIdx = nodesWithPatches.size()-1;
+			numHomePatches = hpCnt;
+			homepatchRecved = 0;
+			localProxyLists = new ProxyListInfo[hpCnt];
+			memset(localProxyLists, 0, sizeof(ProxyListInfo)*hpCnt);			
+		}
+	}
+
+	//calculate parent
+	if(myNodeIdx == 0) {
+		parentNode = -1;
+	}else{
+		int parentIdx = (myNodeIdx-1)/HOMEPATCH_TREE_BRFACTOR;
+		parentNode = nodesWithPatches[parentIdx];
+	}
+
+	//calculate kids
+	numKidNodes = 0;
+	int totalNodes = nodesWithPatches.size();
+	for(int i=1; i<=HOMEPATCH_TREE_BRFACTOR; i++) {
+		int kidId = myNodeIdx*HOMEPATCH_TREE_BRFACTOR+i;
+		if(kidId >= totalNodes) break;
+		numKidNodes++;
+	}
+	if(numKidNodes!=0) {
+		remoteProxyLists = new PatchProxyListMsg *[numKidNodes];
+	}
+	kidRecved = 0;
+
+	//CkPrintf("Node[%d] has %d homepatches with parent=%d and %d kids \n", CkMyNode(), numHomePatches, parentNode, numKidNodes);
+}
+
+void NodeProxyMgr::sendProxyList(int pid, int *plist, int size){
+	int insertIdx; //indexed from 0
+	CmiLock(localDepositLock);
+	insertIdx = homepatchRecved++; //ensure the atomic increment
+	CmiUnlock(localDepositLock);
+
+	localProxyLists[insertIdx].patchID = pid;
+	localProxyLists[insertIdx].numProxies = size;
+	localProxyLists[insertIdx].proxyList = plist;
+
+	if(insertIdx == (numHomePatches-1)) {
+		//all local home patches have contributed
+		contributeToParent();
+	}
+}
+
+void NodeProxyMgr::sendProxyListInfo(PatchProxyListMsg *msg){
+	int insertIdx; //indexed from 0
+	CmiLock(localDepositLock);
+	insertIdx = kidRecved++;
+	CmiUnlock(localDepositLock);
+	
+	remoteProxyLists[insertIdx] = msg;
+	if(insertIdx == (numKidNodes-1)) {
+		//all kids have contributed;
+		contributeToParent();
+	}
+}
+
+void NodeProxyMgr::contributeToParent(){
+	if(homepatchRecved!=numHomePatches || kidRecved != numKidNodes) return;
+
+	homepatchRecved = 0;
+	kidRecved = 0;
+	//construct the msg
+	PatchProxyListMsg *msg = PatchProxyListMsg::createPatchProxyListMsg(remoteProxyLists, numKidNodes, localProxyLists, numHomePatches);
+	if(parentNode == -1) {
+		//send to proxy mgr on PE[0] as this is the root node
+		CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
+		cp[0].recvPatchProxyInfo(msg);
+	}else{
+		CProxy_NodeProxyMgr cnp(thisgroup);
+		cnp[parentNode].sendProxyListInfo(msg);
+	}
+	for(int i=0; i<numKidNodes; i++) {
+		delete remoteProxyLists[i];
+	}
 }
 
 #include "ProxyMgr.def.h"
