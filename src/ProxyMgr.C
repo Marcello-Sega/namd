@@ -1858,14 +1858,15 @@ void NodeProxyMgr::createSTForHomePatches(PatchMap *pmap){
 	//We use implicit tree construction for all home patches
 	std::vector<int> nodesWithPatches; //record the id of node that has home patches
 	int myNodeIdx; //the index into the above vector of this node
-	for(int pe=0; pe<CkNumPes(); pe += CkMyNodeSize()) {
+	for(int nodeId=0; nodeId<CkNumNodes(); ++nodeId) {
 		int hpCnt = 0;
-		for(int i=0; i<CkMyNodeSize(); i++) {
-			hpCnt += pmap->numPatchesOnNode(pe+i);
+                int firstPe = CkNodeFirst(nodeId);
+                int endPe = firstPe + CkNodeSize(nodeId);
+		for(int pe=firstPe; pe < endPe; ++pe) {
+			hpCnt += pmap->numPatchesOnNode(pe);
 		}
 		if(hpCnt==0) continue;
 
-		int nodeId = CkNodeOf(pe);
 		nodesWithPatches.push_back(nodeId);
 		if(CkMyNode() == nodeId) {
 			//on my node
