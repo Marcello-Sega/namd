@@ -1905,7 +1905,6 @@ void NodeProxyMgr::sendProxyList(int pid, int *plist, int size){
 	int insertIdx; //indexed from 0
 	CmiLock(localDepositLock);
 	insertIdx = homepatchRecved++; //ensure the atomic increment
-	CmiUnlock(localDepositLock);
 
 	localProxyLists[insertIdx].patchID = pid;
 	localProxyLists[insertIdx].numProxies = size;
@@ -1915,19 +1914,20 @@ void NodeProxyMgr::sendProxyList(int pid, int *plist, int size){
 		//all local home patches have contributed
 		contributeToParent();
 	}
+	CmiUnlock(localDepositLock);
 }
 
 void NodeProxyMgr::sendProxyListInfo(PatchProxyListMsg *msg){
 	int insertIdx; //indexed from 0
 	CmiLock(localDepositLock);
 	insertIdx = kidRecved++;
-	CmiUnlock(localDepositLock);
 	
 	remoteProxyLists[insertIdx] = msg;
 	if(insertIdx == (numKidNodes-1)) {
 		//all kids have contributed;
 		contributeToParent();
 	}
+	CmiUnlock(localDepositLock);
 }
 
 void NodeProxyMgr::contributeToParent(){
