@@ -567,8 +567,7 @@ void Node::startup() {
 #ifdef USE_NODEPATCHMGR
 	//at this point, PatchMap info has been recved on PEs. It is time to create
 	//the home patch spanning tree for receiving proxy list info
-	if(simParameters->isSendSpanningTreeOn() ||
-	   simParameters->isRecvSpanningTreeOn()) {
+	if(proxyMgr->getSendSpanning() || proxyMgr->getRecvSpanning()) {
 		if(CkMyRank()==0) {
 			CProxy_NodeProxyMgr npm(CkpvAccess(BOCclass_group).nodeProxyMgr);
 			npm[CkMyNode()].ckLocalBranch()->createSTForHomePatches(PatchMap::Object());
