@@ -69,22 +69,23 @@ int dumpbench(FILE *file) {
     #ifdef MEM_OPT_VERSION
     Index exclIdx = mol->getAtomExclSigId(i);
     const ExclusionCheck *excl = mol->get_excl_check_for_idx(exclIdx);
-    if(excl->flags==NULL || excl->flags == (char *)-1){
-        fprintf(file,"%d: %d ====\n",i, vdw);
-        continue;
-    }
+    //if(excl->flags==NULL || excl->flags == (char *)-1){
+    //    fprintf(file,"%d: %d ====\n",i, vdw);
+    //    continue;
+    //}
     int min = i+excl->min;
     int max = i+excl->max;
     #else
     const ExclusionCheck *excl = mol->get_excl_check_for_atom(i);
-    if(excl->flags==NULL || excl->flags == (char *)-1){
-        fprintf(file,"%d: %d ====\n",i, vdw);
-        continue;
-    }
+    //if(excl->flags==NULL || excl->flags == (char *)-1){
+    //    fprintf(file,"%d: %d ====\n",i, vdw);
+    //    continue;
+    //}
     int min = excl->min;
     int max = excl->max;
     #endif
-    fprintf(file,"%d: %d %d %d |",i,vdw,min,max);
+    // fprintf(file,"%d: %d %d %d |",i,vdw,min,max);
+    fprintf(file,"%d %d %d",vdw,min,max);
     if ( min <= max ) {
       int s = max - min + 1;
       const char *f = excl->flags;
@@ -98,6 +99,7 @@ int dumpbench(FILE *file) {
 
   fprintf(file,"MOLECULE_END\n");
 
+#if 0
   fprintf(file, "BONDS_BEGIN\n");
   fprintf(file, "%d %d\n", mol->numBonds, mol->numCalcBonds);
 #ifdef MEM_OPT_VERSION
@@ -245,6 +247,7 @@ int dumpbench(FILE *file) {
   }
 #endif
   fprintf(file, "IMPROPERS_END\n");
+#endif
 
   fprintf(file,"PATCHLIST_BEGIN\n");
 
