@@ -1662,14 +1662,11 @@ obj/ComputeGridForce.o: \
 	src/BOCgroup.h \
 	src/ProcessorPrivate.h \
 	src/GridForceGrid.h \
-	src/GridForceGrid.inl \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
 	src/InfoStream.h \
 	src/MStream.h \
-	src/Node.h \
-	inc/Node.decl.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
@@ -1691,7 +1688,10 @@ obj/ComputeGridForce.o: \
 	src/GromacsTopFile.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h \
-	src/Debug.h
+	src/Node.h \
+	inc/Node.decl.h \
+	src/Debug.h \
+	src/GridForceGrid.inl
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeGridForce.o $(COPTC) src/ComputeGridForce.C
 obj/ComputeMap.o: \
 	src/ComputeMap.C \
@@ -2341,7 +2341,6 @@ obj/ComputeNonbondedCUDA.o: \
 	src/Parameters.h \
 	src/Priorities.h \
 	src/ComputeNonbondedCUDAKernel.h \
-	src/ComputeGBIS.inl \
 	src/LJTable.h \
 	src/ObjectArena.h \
 	src/SortAtoms.h
@@ -3754,7 +3753,6 @@ obj/colvargrid.o: \
 obj/GridForceGrid.o: \
 	src/GridForceGrid.C \
 	src/GridForceGrid.h \
-	src/GridForceGrid.inl \
 	src/Vector.h \
 	src/common.h \
 	src/Tensor.h \
@@ -3790,7 +3788,18 @@ obj/GridForceGrid.o: \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/ReductionMgr.h \
-	src/Debug.h
+	src/HomePatch.h \
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/Debug.h \
+	src/GridForceGrid.inl
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GridForceGrid.o $(COPTC) src/GridForceGrid.C
 obj/GromacsTopFile.o: \
 	src/GromacsTopFile.C \
@@ -3856,6 +3865,7 @@ obj/HomePatch.o: \
 	plugins/include/vmdplugin.h \
 	src/PatchMgr.h \
 	src/Sequencer.h \
+	src/Priorities.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
@@ -3868,7 +3878,6 @@ obj/HomePatch.o: \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
 	src/Random.h \
-	src/Priorities.h \
 	src/ComputeGBIS.inl \
 	src/SortAtoms.h \
 	src/Debug.h
@@ -3960,12 +3969,16 @@ obj/LdbCoordinator.o: \
 	src/Debug.h \
 	src/Controller.h \
 	src/Sequencer.h \
+	src/Priorities.h \
 	src/ComputeMgr.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterServer.h \
 	inc/ComputeMgr.decl.h \
 	src/Compute.h \
 	src/packmsg.h \
+	src/Sync.h \
+	inc/Sync.decl.h \
+	src/ResizeArrayPrimIter.h \
 	inc/LdbCoordinator.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/LdbCoordinator.o $(COPTC) src/LdbCoordinator.C
 obj/LJTable.o: \
@@ -4077,6 +4090,7 @@ obj/MigrateAtomsMsg.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/MigrateAtomsMsg.o $(COPTC) src/MigrateAtomsMsg.C
 obj/Molecule.o: \
 	src/Molecule.C \
+	src/largefiles.h \
 	src/InfoStream.h \
 	src/Molecule.h \
 	src/parm.h \
@@ -4119,26 +4133,27 @@ obj/Molecule.o: \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/ReductionMgr.h \
-	src/Debug.h \
-	src/CompressPsf.h \
-	src/ParallelIOMgr.h \
-	src/NamdState.h \
-	src/PatchMgr.h \
-	src/SortedArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
+	src/SortedArray.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Debug.h \
+	src/CompressPsf.h \
+	src/ParallelIOMgr.h \
+	src/NamdState.h \
+	src/PatchMgr.h \
 	inc/ParallelIOMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule.o $(COPTC) src/Molecule.C
 obj/Molecule2.o: \
 	src/Molecule2.C \
 	src/Molecule.C \
+	src/largefiles.h \
 	src/InfoStream.h \
 	src/Molecule.h \
 	src/parm.h \
@@ -4181,21 +4196,21 @@ obj/Molecule2.o: \
 	src/Box.h \
 	src/OwnerBox.h \
 	src/ReductionMgr.h \
-	src/Debug.h \
-	src/CompressPsf.h \
-	src/ParallelIOMgr.h \
-	src/NamdState.h \
-	src/PatchMgr.h \
-	src/SortedArray.h \
 	src/HomePatch.h \
 	src/Patch.h \
 	src/UniqueSortedArray.h \
+	src/SortedArray.h \
 	src/PatchMap.h \
 	src/HomePatchList.h \
 	src/ResizeArrayIter.h \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/Debug.h \
+	src/CompressPsf.h \
+	src/ParallelIOMgr.h \
+	src/NamdState.h \
+	src/PatchMgr.h \
 	inc/ParallelIOMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule2.o $(COPTC) src/Molecule2.C
 obj/NamdCentLB.o: \
@@ -4560,6 +4575,7 @@ obj/Node.o: \
 	plugins/include/vmdplugin.h \
 	src/AtomMap.h \
 	src/Sequencer.h \
+	src/Priorities.h \
 	src/Controller.h \
 	src/NamdState.h \
 	src/Output.h \
@@ -5199,6 +5215,7 @@ obj/ScriptTcl.o: \
 	src/DumpBench.h \
 	src/TclCommands.h \
 	src/Debug.h \
+	plugins/include/molfile_plugin.h \
 	plugins/include/libmolfile_plugin.h \
 	src/ComputeConsForceMsgs.h \
 	inc/ComputeMgr.decl.h
@@ -5223,6 +5240,7 @@ obj/Sequencer.o: \
 	src/strlib.h \
 	src/MStream.h \
 	src/Sequencer.h \
+	src/Priorities.h \
 	src/PatchTypes.h \
 	src/HomePatch.h \
 	src/Patch.h \
@@ -5560,6 +5578,7 @@ obj/PluginIOMgr.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PluginIOMgr.o $(COPTC) src/PluginIOMgr.C
 obj/ParallelIOMgr.o: \
 	src/ParallelIOMgr.C \
+	src/largefiles.h \
 	src/BOCgroup.h \
 	src/Molecule.h \
 	src/parm.h \
@@ -5621,22 +5640,23 @@ obj/ParallelIOMgr.o: \
 	src/Output.h \
 	src/CollectionMgr.h \
 	inc/CollectionMgr.decl.h \
+	src/Random.h \
 	inc/ParallelIOMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ParallelIOMgr.o $(COPTC) src/ParallelIOMgr.C
 obj/dcdplugin.o: \
 	plugins/molfile_plugin/src/dcdplugin.c \
 	plugins/molfile_plugin/src/largefiles.h \
-	plugins/molfile_plugin/src/endianswap.h \
 	plugins/molfile_plugin/src/fastio.h \
+	plugins/molfile_plugin/src/endianswap.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h
 	$(CC) $(PLUGINCFLAGS) $(COPTO)obj/dcdplugin.o $(COPTC) $(COPTD)VMDPLUGIN=molfile_dcdplugin plugins/molfile_plugin/src/dcdplugin.c
 obj/jsplugin.o: \
 	plugins/molfile_plugin/src/jsplugin.c \
 	plugins/molfile_plugin/src/largefiles.h \
+	plugins/molfile_plugin/src/fastio.h \
 	plugins/molfile_plugin/src/hash.h \
 	plugins/molfile_plugin/src/hash.c \
-	plugins/molfile_plugin/src/fastio.h \
 	plugins/molfile_plugin/src/endianswap.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/vmdplugin.h
