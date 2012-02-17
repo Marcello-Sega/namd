@@ -2092,6 +2092,52 @@ obj/ComputeNonbondedFEP.o: \
 	src/ResizeArrayIter.h \
 	src/ComputeNonbondedBase2.h
 	$(CXX) $(CXXNOALIASFLAGS) $(COPTO)obj/ComputeNonbondedFEP.o $(COPTC) src/ComputeNonbondedFEP.C
+obj/ComputeNonbondedGo.o: \
+	src/ComputeNonbondedGo.C \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/ComputeNonbondedInl.h \
+	src/ComputeNonbondedUtil.h \
+	src/ReductionMgr.h \
+	src/main.h \
+	src/BOCgroup.h \
+	src/ProcessorPrivate.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/Node.h \
+	inc/Node.decl.h \
+	src/LJTable.h \
+	src/ReserveArray.h \
+	src/PressureProfile.h \
+	src/Random.h \
+	src/ComputeNonbondedBase.h \
+	src/Parameters.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/ResizeArrayIter.h \
+	src/ComputeNonbondedBase2.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeNonbondedGo.o $(COPTC) src/ComputeNonbondedGo.C
 obj/ComputeNonbondedTI.o: \
 	src/ComputeNonbondedTI.C \
 	src/ComputeNonbondedInl.h \
@@ -4213,6 +4259,67 @@ obj/Molecule2.o: \
 	src/PatchMgr.h \
 	inc/ParallelIOMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule2.o $(COPTC) src/Molecule2.C
+obj/GoMolecule.o: \
+	src/GoMolecule.C \
+	src/InfoStream.h \
+	src/Molecule.h \
+	src/parm.h \
+	src/common.h \
+	src/NamdTypes.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/SortableResizeArray.h \
+	src/GromacsTopFile.h \
+	src/GridForceGrid.h \
+	src/Tensor.h \
+	src/SimParameters.h \
+	src/Lattice.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/Communicate.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/ObjectArena.h \
+	src/Parameters.h \
+	src/PDB.h \
+	src/PDBData.h \
+	src/UniqueSetIter.h \
+	src/ComputeGridForce.h \
+	src/ComputeHomePatch.h \
+	src/Compute.h \
+	src/PatchTypes.h \
+	src/Box.h \
+	src/OwnerBox.h \
+	src/ReductionMgr.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	src/Debug.h \
+	src/CompressPsf.h \
+	src/ParallelIOMgr.h \
+	src/NamdState.h \
+	src/PatchMgr.h \
+	inc/ParallelIOMgr.decl.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/GoMolecule.o $(COPTC) src/GoMolecule.C
 obj/NamdCentLB.o: \
 	src/NamdCentLB.C \
 	src/InfoStream.h \

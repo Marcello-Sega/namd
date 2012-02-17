@@ -42,7 +42,7 @@ int		ComputeNonbondedUtil::r2_delta_exp;
 int		ComputeNonbondedUtil::rowsize;
 int		ComputeNonbondedUtil::columnsize;
 BigReal*	ComputeNonbondedUtil::table_alloc = 0;
-BigReal*	        ComputeNonbondedUtil::table_ener = 0;
+BigReal*	ComputeNonbondedUtil::table_ener = 0;
 BigReal*	ComputeNonbondedUtil::table_short;
 BigReal*	ComputeNonbondedUtil::table_noshort;
 BigReal*	ComputeNonbondedUtil::fast_table;
@@ -108,6 +108,11 @@ Bool            ComputeNonbondedUtil::drudeNbthole;
 BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
+// Ported by JLai -- JE - Go
+Bool            ComputeNonbondedUtil::goForcesOn;
+int             ComputeNonbondedUtil::goMethod; //6.3.11
+// End of port -- JLai
+
 void (*ComputeNonbondedUtil::calcPair)(nonbonded *);
 void (*ComputeNonbondedUtil::calcPairEnergy)(nonbonded *);
 void (*ComputeNonbondedUtil::calcSelf)(nonbonded *);
@@ -142,6 +147,10 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_ELECT_ENERGY) += data[electEnergyIndex];
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
+  // Ported by JLai
+  reduction->item(REDUCTION_GO_NATIVE_ENERGY) += data[goNativeEnergyIndex];
+  reduction->item(REDUCTION_GO_NONNATIVE_ENERGY) += data[goNonnativeEnergyIndex];
+  // End of port -- JLai
 //fepb
   reduction->item(REDUCTION_ELECT_ENERGY_F) += data[electEnergyIndex_s];
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW_F) += data[fullElectEnergyIndex_s];
@@ -254,6 +263,11 @@ void ComputeNonbondedUtil::select(void)
   pairInteractionOn = simParams->pairInteractionOn;
   pairInteractionSelf = simParams->pairInteractionSelf;
   pressureProfileOn = simParams->pressureProfileOn;
+
+  // Ported by JLai -- Original JE - Go
+  goForcesOn = simParams->goForcesOn;
+  goMethod = simParams->goMethod; 
+  // End of port
 
   accelMDOn = simParams->accelMDOn;
 
@@ -407,6 +421,26 @@ void ComputeNonbondedUtil::select(void)
     ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_tabener;
     ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_tabener;
     ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_tabener;
+  } else if ( goForcesOn ) {
+#ifdef NAMD_CUDA
+    NAMD_die("Go forces is not supported in CUDA version");
+#endif
+    ComputeNonbondedUtil::calcPair = calc_pair_go;
+    ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy_go;
+    ComputeNonbondedUtil::calcSelf = calc_self_go;
+    ComputeNonbondedUtil::calcSelfEnergy = calc_self_energy_go;
+    ComputeNonbondedUtil::calcFullPair = calc_pair_fullelect_go;
+    ComputeNonbondedUtil::calcFullPairEnergy = calc_pair_energy_fullelect_go;
+    ComputeNonbondedUtil::calcFullSelf = calc_self_fullelect_go;
+    ComputeNonbondedUtil::calcFullSelfEnergy = calc_self_energy_fullelect_go;
+    ComputeNonbondedUtil::calcMergePair = calc_pair_merge_fullelect_go;
+    ComputeNonbondedUtil::calcMergePairEnergy = calc_pair_energy_merge_fullelect_go;
+    ComputeNonbondedUtil::calcMergeSelf = calc_self_merge_fullelect_go;
+    ComputeNonbondedUtil::calcMergeSelfEnergy = calc_self_energy_merge_fullelect_go;
+    ComputeNonbondedUtil::calcSlowPair = calc_pair_slow_fullelect_go;
+    ComputeNonbondedUtil::calcSlowPairEnergy = calc_pair_energy_slow_fullelect_go;
+    ComputeNonbondedUtil::calcSlowSelf = calc_self_slow_fullelect_go;
+    ComputeNonbondedUtil::calcSlowSelfEnergy = calc_self_energy_slow_fullelect_go;
   } else {
     ComputeNonbondedUtil::calcPair = calc_pair;
     ComputeNonbondedUtil::calcPairEnergy = calc_pair_energy;

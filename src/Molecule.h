@@ -6,7 +6,7 @@
 
 /*
    This class is used to store all of the structural       
-   information for a simulation.  It reas in this information 
+   information for a simulation.  It reads in this information 
    from a .psf file, cross checks and obtains some information
    from the Parameters object that is passed in, and then     
    stores all this information for later use. 
@@ -31,6 +31,11 @@
 #include "GridForceGrid.h"
 #include "Tensor.h"
 /* END gf */
+
+// Go -- JLai
+#define MAX_GO_CHAINS          10
+#define MAX_RESTRICTIONS       10
+// End of Go
 
 #include "molfile_plugin.h"
 
@@ -93,6 +98,20 @@ public:
 #define EXCHCK_FULL 1
 #define EXCHCK_MOD 2
 
+// Ported by JLai -- JE
+typedef struct go_val
+{
+  Real epsilon;      // Epsilon
+  int exp_a;         // First exponent for attractive L-J term
+  int exp_b;         // Second exponent for attractive L-J term
+  int exp_rep;       // Exponent for repulsive L-J term
+  Real sigmaRep;     // Sigma for repulsive term
+  Real epsilonRep;   // Epsilon for replusive term
+  Real cutoff;       // Cutoff distance for Go calculation
+  int  restrictions[MAX_RESTRICTIONS];  //  List of residue ID differences to be excluded from Go calculation
+} GoValue;
+// End of port - JL
+
 //only used for compressing the molecule information
 typedef struct seg_resid
 {
@@ -103,6 +122,7 @@ typedef struct seg_resid
 // List maintaining the global atom indicies sorted by helix groups.
 class Molecule
 {
+ private:
 typedef struct constraint_params
 {
    Real k;    //  Force constant
@@ -527,6 +547,21 @@ public:
   // indexes of "atoms" sorted by hydrogen groups
   HydrogenGroup hydrogenGroup;
 
+  // Ported by JLai -- JE - Go
+  int numGoAtoms;         //  Number of atoms subject to Go forces -- ported by JLai/ Original by JE
+  int32 *atomChainTypes;  //  Go chain type for each atom; from 1 to MAX_GO_CHAINS
+  int32 *goSigmaIndices;  //  Indices into goSigmas
+  Real  *goSigmas;        //  Sigma values for Go forces L-J type formula
+  bool *goWithinCutoff;   //  Whether the reference atom-atom distance is within the Go cutoff
+  Real  *goCoordinates;   //  Coordinates (x,y,z) for Go atoms in the native structure
+  int *goResids;          //  Residue ID from PDB
+  PDB *goPDB;             //  Pointer to PDB object to use
+  // GO ENERGY CALCULATION CODE
+  BigReal energyNative;    // Holds the energy value of the native structure
+  BigReal energyNonnative; // Holds the energy value of the nonnative structure
+  // GO ENERGY CALCULATION CODE
+  // End of port - JL
+
   Molecule(SimParameters *, Parameters *param);
   Molecule(SimParameters *, Parameters *param, char *filename, ConfigList *cfgList=NULL);  
   Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t *pIOHdl, void *pIOFileHdl, int natoms);
@@ -600,6 +635,23 @@ public:
   void build_exPressure_atoms(StringList *, StringList *, PDB *, char *);
         //  Determine which atoms are excluded from
                                 //  pressure (if any)
+
+  // Ported by JLai -- Original JE - Go -- Change the unsigned int to ints
+  void print_go_sigmas(); //  Print out Go sigma parameters
+    void build_go_sigmas(StringList *, char *);
+        //  Determine which atoms have Go forces applied
+        //  calculate sigmas from distances between Go atom pairs
+  void build_go_arrays(StringList *, char *);
+        //  Determine which atoms have Go forces applied
+  BigReal get_go_force(BigReal, int, int, BigReal *, BigReal *) const;
+        //  Calculate the go force between a pair of atoms -- Modified to 
+        //  output Go energies
+  BigReal get_go_force_new(BigReal, int, int, BigReal *, BigReal *) const;
+        //  Calculate the go force between a pair of atoms
+  BigReal get_go_energy_new(BigReal, int, int) const;
+        //  Calculate the go energy between a pair of atoms
+  Bool atoms_1to4(unsigned int, unsigned int);
+// End of port -- JL  
 
   void reloadCharges(float charge[], int n);
 
@@ -1115,6 +1167,58 @@ private:
 
 #endif
 
+// Go stuff
+public:
+
+GoValue go_array[MAX_GO_CHAINS*MAX_GO_CHAINS];    //  Array of Go params -- JLai
+int go_indices[MAX_GO_CHAINS+1];        //  Indices from chainIDS to go array -- JLai
+int NumGoChains;                        //  Number of Go chain types -- JLai
+
+// Declares and initializes Go variables
+void goInit();
+
+// Builds the initial Go parameters 
+void build_go_params(StringList *);
+
+//  Read Go parameter file
+void read_go_file(char *);
+
+//  Get Go cutoff for a given chain type pair
+Real get_go_cutoff(int chain1, int chain2) { return go_array[MAX_GO_CHAINS*chain1 + chain2].cutoff; };
+
+//  Get Go epsilonRep for a given chain type pair
+Real get_go_epsilonRep(int chain1, int chain2) { return go_array[MAX_GO_CHAINS*chain1 + chain2].epsilonRep; };
+
+//  Get Go sigmaRep for a given chain type pair
+Real get_go_sigmaRep(int chain1, int chain2) { return go_array[MAX_GO_CHAINS*chain1 + chain2].sigmaRep; };
+
+//  Get Go epsilon for a given chain type pair
+Real get_go_epsilon(int chain1, int chain2) { return go_array[MAX_GO_CHAINS*chain1 + chain2].epsilon; };
+
+//  Get Go exp_a for a given chain type pair
+int get_go_exp_a(int chain1, int chain2) { return go_array[MAX_GO_CHAINS*chain1 + chain2].exp_a; };
+
+//  Get Go exp_b for a given chain type pair
+int get_go_exp_b(int chain1, int chain2) { return go_array[MAX_GO_CHAINS*chain1 + chain2].exp_b; };
+
+//  Get Go exp_rep for a given chain type pair
+int get_go_exp_rep(int chain1, int chain2) { return go_array[MAX_GO_CHAINS*chain1 + chain2].exp_rep; };
+
+//  Whether residue IDs with this difference are restricted
+Bool go_restricted(int, int, int);
+
+// Prints Go Params
+void print_go_params();
+
+void initialize();
+
+void send_GoMolecule(MOStream *);
+//  send the molecular structure 
+//  from the master to the clients
+
+void receive_GoMolecule(MIStream *);
+//  receive the molecular structure
+//  from the master on a client
 };
 
 #endif

@@ -136,6 +136,7 @@
 #undef CUDA
 #undef ALCH
 #undef TI
+#undef GO
 #define FEPNAME(X) LAST( X )
 #define FEP(X)
 #define ALCHPAIR(X)
@@ -147,6 +148,7 @@
 #define CUDA(X)
 #define ALCH(X)
 #define TI(X)
+#define GO(X)
 #ifdef FEPFLAG
   #undef FEPNAME
   #undef FEP
@@ -184,6 +186,12 @@
   #define FEPNAME(X) LAST( X ## _pprof )
   #define INT(X) X
   #define PPROF(X) X
+#endif
+#ifdef GOFORCES
+  #undef FEPNAME
+  #undef GO
+  #define FEPNAME(X) LAST( X ## _go )
+  #define GO(X) X
 #endif
 #ifdef NAMD_CUDA
   #undef CUDA
@@ -250,7 +258,10 @@ void ComputeNonbondedUtil :: NAME
   int exclChecksum = 0;
   FAST
   (
-  ENERGY( BigReal vdwEnergy = 0; )
+   // JLai
+  ENERGY( BigReal vdwEnergy = 0;
+	  GO( BigReal goEnergyNative = 0;
+	      BigReal goEnergyNonnative = 0; ) )
   SHORT
   (
   ENERGY( BigReal electEnergy = 0; )
@@ -1965,7 +1976,10 @@ PAIR(
 #endif
   FAST
   (
-  ENERGY( reduction[vdwEnergyIndex] += vdwEnergy; )
+   // JLai
+  ENERGY( reduction[vdwEnergyIndex] += vdwEnergy;
+	  GO( reduction[goNativeEnergyIndex] += goEnergyNative;
+	      reduction[goNonnativeEnergyIndex] += goEnergyNonnative; ) )
   SHORT
   (
   ENERGY( reduction[electEnergyIndex] += electEnergy; )

@@ -127,6 +127,7 @@ OBJS = \
 	$(DSTDIR)/ComputeNonbondedUtil.o \
 	$(DSTDIR)/ComputeNonbondedStd.o \
 	$(DSTDIR)/ComputeNonbondedFEP.o \
+	$(DSTDIR)/ComputeNonbondedGo.o \
 	$(DSTDIR)/ComputeNonbondedTI.o \
 	$(DSTDIR)/ComputeNonbondedLES.o \
 	$(DSTDIR)/ComputeNonbondedPProf.o \
@@ -198,6 +199,7 @@ OBJS = \
 	$(DSTDIR)/MigrateAtomsMsg.o \
 	$(DSTDIR)/Molecule.o \
 	$(DSTDIR)/Molecule2.o \
+	$(DSTDIR)/GoMolecule.o \
 	$(DSTDIR)/NamdCentLB.o \
 	$(DSTDIR)/NamdNborLB.o \
 	$(DSTDIR)/NamdHybridLB.o \

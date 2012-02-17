@@ -333,6 +333,51 @@ ALCHPAIR(
       )
       }
 
+
+     /*****  JE - Go  *****/
+     // Now Go energy should appear in VDW place -- put vdw_b back into place
+     NORMAL (
+     GO (
+       BigReal goNative = 0;
+       BigReal goNonnative = 0;
+       BigReal goForce = 0;
+       //  Ported by JLai -- JE - added (
+       const BigReal r2go = square(p_ij_x, p_ij_y, p_ij_z);
+       const BigReal rgo = sqrt(r2go);
+       register const CompAtomExt *pExt_j = pExt_1 + j;
+       
+       if (ComputeNonbondedUtil::goMethod == 1) {
+	 goForce = mol->get_go_force(rgo, pExt_i.id, pExt_j->id, &goNative, &goNonnative);
+       } else {  // goMethod == 3
+	 goForce = mol->get_go_force_new(rgo, pExt_i.id, pExt_j->id, &goNative, &goNonnative);
+       }
+       
+       fast_b += goForce;
+       //       printf("FORCE: \t%4.2f\t%4.2f\t%4.2f\t%4.2f\n", goForce, p_ij_x, p_ij_y, p_ij_z);
+       //BigReal goEnergy = mol->get_go_energy_new(rgo, pExt_i.id, pExt_j->id);
+       {
+       ENERGY(
+	 NOT_ALCHPAIR (
+		       // JLai
+		       goEnergyNative +=  goNative;
+		       goEnergyNonnative += goNonnative;
+	 )
+       ) //ENERGY                                                                                                                                             	   
+	 INT(
+	   reduction[pairVDWForceIndex_X] +=  force_sign * goForce * p_ij_x;
+	   reduction[pairVDWForceIndex_Y] +=  force_sign * goForce * p_ij_y;
+	   reduction[pairVDWForceIndex_Z] +=  force_sign * goForce * p_ij_z;
+	 )
+       }
+       // End of INT 
+
+       //DebugM(3,"rgo:" << rgo << ", pExt_i.id:" << pExt_i.id << ", pExt_j->id:" << pExt_j->id << \
+	 //      ", goForce:" << goForce << ", fast_b:" << fast_b << std::endl);
+     ) // End of GO macro 
+     /*****  JE - End Go  *****/
+     // End of port JL
+     ) // End of Normal MACRO
+
       // Combined short-range electrostatics and VdW force:
       NOT_ALCHPAIR(
         fast_d += vdw_d;

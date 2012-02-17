@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/02/06 23:03:50 $
- * $Revision: 1.1377 $
+ * $Date: 2012/02/17 02:13:14 $
+ * $Revision: 1.1378 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -541,6 +541,17 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    opts.optionalB("parameters", "paraTypeXplor", "Parameter file in Xplor format?", &paraTypeXplorOn, FALSE);
    opts.optionalB("parameters", "paraTypeCharmm", "Parameter file in Charmm format?", &paraTypeCharmmOn, FALSE); 
    //****** END CHARMM/XPLOR type changes
+
+   // Ported by JLai -- JE - Go parameters
+   opts.optionalB("main", "GoForcesOn", "Go forces will be calculated", &goForcesOn, FALSE);
+   opts.require("GoForcesOn", "GoParameters", "Go parameter file", goParameters);
+   opts.require("GoForcesOn", "GoCoordinates", "target coordinates for Go forces", goCoordinates);
+   // Added by JLai -- Go-method parameter -- switches between using the matrix and sparse matrix representations [6.3.11] 
+   //   opts.optional("GoForcesOn", "GoMethod", "Which type of matrix should be used to store Go contacts?", &goMethod);
+   // Added by JLai -- Go-method parameter [8.2.11]
+   //opts.optional("GoForcesOn", "GoMethod", "Which type of matrix should be used to store Go contacts?", PARSE_STRING); 
+   opts.require("GoForcesOn", "GoMethod", "Which type of matrix should be used to store Go contacts?", PARSE_STRING); 
+  // End of Port -- JL
    
    opts.require("main", "outputname",
     "prefix for the final PDB position and velocity filenames", 
@@ -2431,6 +2442,45 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    if (watmodel == WAT_SWM4) {
      lonepairs = TRUE;
    }
+
+   // Added by JLai -- 8.2.11 -- Checks if Go method is defined
+   if (goForcesOn) {
+     iout << iINFO << "Go forces are on\n" << endi;
+   // Added by JLai -- 6.3.11 -- Checks if Go method is defined
+     int * gomethod = &goMethod;
+     if (!opts.defined("GoMethod")) {
+       *gomethod = 0;
+       //     printf("GO METHOD IS NOT DEFINED SO WE'LL SET IT TO SOME WEIRD VALUE\n");
+     } else {
+       opts.get("GoMethod",s);
+       // printf("GO METHOD IS DEFINED SO WE'LL PRINT IT OUT: %s\n",s);
+       *gomethod = atoi(s);
+     }
+     if (!strcasecmp(s, "matrix")) {
+       goMethod = 1;
+       //GoMethod = GO_MATRIX;
+     } else if (!strcasecmp(s, "sparse")) {
+       goMethod = 2;
+       //GoMethod = GO_SPARSE;
+     } else if (!strcasecmp(s, "lowmem")) {
+       goMethod = 3;
+       //GoMethod = GO_LOWMEM;
+       //} else if (!strcasecmp(s, "1")) {
+       //goMethod = 1;
+       //} else if (!strcasecmp(s, "2")) {
+       // goMethod = 2;
+       //} else if (!strcasecmp(s, "3")) {
+       //  goMethod = 3;
+     }
+     else {
+       char err_msg[129];     
+       sprintf(err_msg,
+	       "Illegal value '%s' for 'GoMethod' in configuration file",
+	       s);
+       NAMD_die(err_msg);
+     }
+   }  // End of NAMD code to check goMethod
+   // End of Port -- JL
 
    //  Get multiple timestep integration scheme
    if (!opts.defined("MTSAlgorithm"))

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2012/02/06 23:03:51 $
- * $Revision: 1.1200 $
+ * $Date: 2012/02/17 02:13:15 $
+ * $Revision: 1.1201 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -77,6 +77,14 @@ typedef int  MTSChoices;
 #define RIGID_NONE    0
 #define RIGID_ALL     1
 #define RIGID_WATER   2
+
+// Added by JLai -- The following definitions are used to distinguish
+// the different GoMethodologies available to the Go program
+// -- 6.3.11
+typedef int GoChoices;
+#define GO_MATRIX 1
+#define GO_SPARSE 2
+#define GO_LOWMEM 3
 
 class SimParameters
 {
@@ -247,6 +255,14 @@ public:
         Bool paraTypeXplorOn;           //  FLAG TRUE-> parametrs are XPLOR format (default)
         Bool paraTypeCharmmOn;          //  FLAG TRUE-> parametrs are CHARMM format
         //****** END CHARMM/XPLOR type changes
+
+	// Ported by JLai -- JE - Go
+        Bool goForcesOn;          //  FLAG TRUE-> Go forces will be calculated
+        char goParameters[128];   //  File for Go parameters
+        char goCoordinates[128];  //  File for Go structure and atom chain types
+        //JLai 6.3.11
+	GoChoices  goMethod;      //  Integer for Go method -- 1) Matrix-Go, 3) Low-mem-Go
+	// End of port -- JL
 
         //****** BEGIN moving constraints changes 
         Bool movingConstraintsOn;       //  Flag TRUE-> moving constraints 

@@ -232,8 +232,10 @@ public:
   static void (*calcSlowSelf)(nonbonded *);
   static void (*calcSlowSelfEnergy)(nonbonded *);
 
+  // Below modified by JLai -- Look at bottom 3rd line
   enum { exclChecksumIndex, pairlistWarningIndex,
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
+	 goNativeEnergyIndex, goNonnativeEnergyIndex,
 //sd-db
 	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s,
 	 electEnergyIndex_ti_1, fullElectEnergyIndex_ti_1, vdwEnergyIndex_ti_1,
@@ -323,6 +325,11 @@ public:
   // for particle mesh Ewald
   static BigReal ewaldcof;
   static BigReal pi_ewaldcof;
+
+  // Ported by JLai -- JE - Go
+  static Bool goForcesOn;
+  static int goMethod; //6.3.11
+  // End of port -- JL
 
   // for simplifying some common functions
   inline static BigReal square(	const BigReal &x,
@@ -440,6 +447,24 @@ public:
   static void calc_self_energy_merge_fullelect_tabener (nonbonded *);
   static void calc_self_slow_fullelect_tabener (nonbonded *);
   static void calc_self_energy_slow_fullelect_tabener (nonbonded *);
+
+  //Go forces nonbonded calcs
+  static void calc_pair_go(nonbonded *);
+  static void calc_pair_energy_go(nonbonded *);
+  static void calc_pair_fullelect_go(nonbonded *);
+  static void calc_pair_energy_fullelect_go(nonbonded *);
+  static void calc_pair_merge_fullelect_go(nonbonded *);
+  static void calc_pair_energy_merge_fullelect_go(nonbonded *);
+  static void calc_pair_slow_fullelect_go(nonbonded *);
+  static void calc_pair_energy_slow_fullelect_go(nonbonded *);
+  static void calc_self_go(nonbonded *);
+  static void calc_self_energy_go(nonbonded *);
+  static void calc_self_fullelect_go(nonbonded *);
+  static void calc_self_energy_fullelect_go(nonbonded *);
+  static void calc_self_merge_fullelect_go(nonbonded *);
+  static void calc_self_energy_merge_fullelect_go(nonbonded *);
+  static void calc_self_slow_fullelect_go(nonbonded *);
+  static void calc_self_energy_slow_fullelect_go(nonbonded *);
 
   void calcGBIS(nonbonded *params, GBISParamStruct *gbisParams);
 };

@@ -351,6 +351,34 @@ int NamdState::configListInit(ConfigList *cfgList) {
                                              NULL);
 	}
 	//CkPrintf ("DEBUG--check if StirOn to build stir params..\n");
+
+	// JLai checks to see if Go Forces are turned on
+	if (simParameters->goForcesOn) {
+	  StringList *moleculeFilename = configList->find("structure");
+	  StringList *parameterFilename = configList->find("parameters");
+	  StringList *goFilename = configList->find("goParameters");
+	  StringList *goStructureFilename = configList->find("goCoordinates");
+	  
+	  // Added by JLai -- 1.10.12 -- Code to build the Go parameters (from within the Go molecule instead of the parameters object)
+	  molecule->build_go_params(goFilename);
+	  // Added by JLai -- 6.3.11 -- flag to switch between the different goMethodologies
+	  int goMethod = simParameters->goMethod;
+	  if (goMethod == 1) { // should probably replace with switch statement
+	    iout << iINFO << "Using Go method matrix\n" << endi;
+	    molecule->build_go_sigmas(goStructureFilename, NULL);
+	  } else if (goMethod == 2) {
+	    iout << iINFO << "Using Go method sparse matrix\n" << endi;
+	    NAMD_die("Go method sparse not yet implemented.  Crashing");
+	    // Insert code to build sparse matrix
+	  } else if (goMethod == 3) {
+	    iout << iINFO << "Using Go method lowmem\n" << endi;
+	    molecule->build_go_arrays(goStructureFilename, NULL);
+	  } else {
+	    NAMD_die("Failed to read goMethod variable in NamdState.C");
+	  }
+	}
+	// End of Go code -- JLai
+
 	if (simParameters->stirOn)
 	{	
 	//CkPrintf ("DEBUG--now to build stir params..\n");

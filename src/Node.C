@@ -662,8 +662,14 @@ void Node::namdOneRecv() {
 
   DebugM(4, "Getting Molecule\n");
   conv_msg = CkpvAccess(comm)->newInputStream(0, MOLECULETAG);
+  // Modified by JLai -- 10.21.11
   molecule->receive_Molecule(conv_msg);
-
+  if(simParameters->goForcesOn) {
+    iout << iINFO << "Compute Nodes receiving GoMolecule Information" << "\n" << endi;
+    conv_msg = CkpvAccess(comm)->newInputStream(0, MOLECULETAG);
+    molecule->receive_GoMolecule(conv_msg);
+  } 
+  // End of modification
   DebugM(4, "Done Receiving\n");
 }
 
@@ -686,7 +692,13 @@ void Node::namdOneSend() {
   int bufSize = BUFSIZE;
   if(molecule->numAtoms>=1000000) bufSize = 16*BUFSIZE;
   conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
+  // Modified by JLai -- 10.21.11
   molecule->send_Molecule(conv_msg);
+  if(simParameters->goForcesOn) {
+    iout << iINFO <<  "Master Node sending GoMolecule Information" << "\n" << endi;
+    conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
+    molecule->send_GoMolecule(conv_msg);
+  } // End of modification
 }
 
 // Initial thread setup

@@ -28,7 +28,7 @@
 #include "strlib.h"
 #include "MStream.h"
 #include "Communicate.h"
- #include "Node.h"
+#include "Node.h"
 #include "ObjectArena.h"
 #include "Parameters.h"
 #include "PDB.h"
@@ -1004,7 +1004,7 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   //  analyze the data and find the status of each atom
   numRealBonds = numBonds;
   build_atom_status();
-
+  goInit();
   return;
 }
 
