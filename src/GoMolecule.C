@@ -211,7 +211,7 @@ void Molecule::read_go_file(char *fname)
 	  /*  Now, determine the apropriate parameter type.   */
 	  if (strncasecmp(first_word, "chaintypes", 10)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %d %d\n", &first_word, &int1, &int2);
+	      read_count=sscanf(buffer, "%s %d %d\n", first_word, &int1, &int2);
 	      if (read_count != 3) {
 		char err_msg[512];
 		sprintf(err_msg, "UNKNOWN PARAMETER IN GO PARAMETER FILE %s\nLINE=*%s*\nread_count=%d, int1=%d, int2=%d", fname, buffer, read_count, int1, int2);
@@ -249,7 +249,7 @@ void Molecule::read_go_file(char *fname)
 	    }
 	  else if (strncasecmp(first_word, "epsilonRep", 10)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %f\n", &first_word, &r1);
+	      read_count=sscanf(buffer, "%s %f\n", first_word, &r1);
 	      if (read_count != 2) {}
 	      goValue1->epsilonRep = r1;
 	      if (!sameGoChain) {
@@ -259,7 +259,7 @@ void Molecule::read_go_file(char *fname)
 	  else if (strncasecmp(first_word, "epsilon", 7)==0)
 	    {
 	      // Read in epsilon
-	      read_count=sscanf(buffer, "%s %f\n", &first_word, &r1);
+	      read_count=sscanf(buffer, "%s %f\n", first_word, &r1);
 	      if (read_count != 2) {}
 	      goValue1->epsilon = r1;
 	      if (!sameGoChain) {
@@ -268,7 +268,7 @@ void Molecule::read_go_file(char *fname)
 	    }
 	  else if (strncasecmp(first_word, "exp_a", 5)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %d\n", &first_word, &int1);
+	      read_count=sscanf(buffer, "%s %d\n", first_word, &int1);
 	      if (read_count != 2) {}
 	      goValue1->exp_a = int1;
 	      if (!sameGoChain) {
@@ -277,7 +277,7 @@ void Molecule::read_go_file(char *fname)
 	    }
 	  else if (strncasecmp(first_word, "exp_b", 5)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %d\n", &first_word, &int1);
+	      read_count=sscanf(buffer, "%s %d\n", first_word, &int1);
 	      if (read_count != 2) {}
 	      goValue1->exp_b = int1;
 	      if (!sameGoChain) {
@@ -286,7 +286,7 @@ void Molecule::read_go_file(char *fname)
 	    }
 	  else if (strncasecmp(first_word, "exp_rep", 5)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %d\n", &first_word, &int1);
+	      read_count=sscanf(buffer, "%s %d\n", first_word, &int1);
 	      if (read_count != 2) {}
 	      goValue1->exp_b = int1;
 	      if (!sameGoChain) {
@@ -295,7 +295,7 @@ void Molecule::read_go_file(char *fname)
 	    }
 	  else if (strncasecmp(first_word, "sigmaRep", 8)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %f\n", &first_word, &r1);
+	      read_count=sscanf(buffer, "%s %f\n", first_word, &r1);
 	      if (read_count != 2) {}
 	      goValue1->sigmaRep = r1;
 	      if (!sameGoChain) {
@@ -304,7 +304,7 @@ void Molecule::read_go_file(char *fname)
 	    }
 	  else if (strncasecmp(first_word, "cutoff", 6)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %f\n", &first_word, &r1);
+	      read_count=sscanf(buffer, "%s %f\n", first_word, &r1);
 	      if (read_count != 2) {}
 	      goValue1->cutoff = r1;
 	      if (!sameGoChain) {
@@ -313,7 +313,7 @@ void Molecule::read_go_file(char *fname)
 	    }
 	  else if (strncasecmp(first_word, "restriction", 10)==0)
 	    {
-	      read_count=sscanf(buffer, "%s %d\n", &first_word, &int1);
+	      read_count=sscanf(buffer, "%s %d\n", first_word, &int1);
 	      if (read_count != 2) {}
 	      if (int1 < 0) {
 		DebugM(3, "ERROR: residue restriction value must be nonnegative.  int1=" << int1 << "\n");
