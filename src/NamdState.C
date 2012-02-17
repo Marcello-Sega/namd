@@ -354,6 +354,9 @@ int NamdState::configListInit(ConfigList *cfgList) {
 
 	// JLai checks to see if Go Forces are turned on
 	if (simParameters->goForcesOn) {
+#ifdef MEM_OPT_VERSION
+          NAMD_die("Go forces are not supported in memory-optimized builds.");
+#else
 	  StringList *moleculeFilename = configList->find("structure");
 	  StringList *parameterFilename = configList->find("parameters");
 	  StringList *goFilename = configList->find("goParameters");
@@ -376,6 +379,7 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	  } else {
 	    NAMD_die("Failed to read goMethod variable in NamdState.C");
 	  }
+#endif
 	}
 	// End of Go code -- JLai
 

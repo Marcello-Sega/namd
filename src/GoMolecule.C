@@ -52,6 +52,9 @@
 /*                                                                      */
 /************************************************************************/
 void Molecule::goInit() {
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Go forces are not supported in memory-optimized builds.");
+#else
   numGoAtoms=0;
   energyNative=0;
   energyNonnative=0;
@@ -84,6 +87,7 @@ void Molecule::goInit() {
   delete goPDB;
 
   build_lists_by_atom();
+#endif
 }
 
 
@@ -595,6 +599,7 @@ void Molecule::print_go_params()
 }
 // End of port -- JLai
 
+#ifndef MEM_OPT_VERSION
 void Molecule::build_go_sigmas(StringList *goCoordFile, 
 			       char *cwd)
 {
@@ -965,6 +970,7 @@ void Molecule::build_go_arrays(StringList *goCoordFile,
   return;
 }
 /*      END OF FUNCTION build_go_arrays    */
+#endif // #ifndef MEM_OPT_VERSION
 
 /************************************************************************/
 /*                                                                      */
@@ -1294,6 +1300,7 @@ BigReal Molecule::get_go_energy_new(BigReal r,
 /*      END OF FUNCTION get_go_energy_new   */
 
 
+#ifndef MEM_OPT_VERSION
     /************************************************************************/
     /*                                                                      */
     /*      JE - FUNCTION atoms_1to4                                        */
@@ -1393,6 +1400,7 @@ Bool Molecule::atoms_1to4(unsigned int atom1,
   return FALSE;
 }
 /*      END OF FUNCTION atoms_1to4       */
+#endif // #ifndef MEM_OPT_VERSION
 
 //JLai
 /************************************************************************/
