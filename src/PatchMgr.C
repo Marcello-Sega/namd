@@ -51,6 +51,8 @@ PatchMgr::PatchMgr()
     // Message combining initialization
     migrationCountdown = 0;
     combineMigrationMsgs = new MigrateAtomsCombinedMsg*[CkNumPes()];
+    int numPes = CkNumPes();
+    for ( int i = 0; i < numPes; ++i ) combineMigrationMsgs[i] = 0;
 }
 
 PatchMgr::~PatchMgr()
@@ -178,8 +180,6 @@ void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
     // DebugM(3,"migrationCountdown (re)initialize\n");
     numHomePatches = patchMap->numHomePatches();
     migrationCountdown = numHomePatches;
-    int numPes = CkNumPes();
-    for ( int i = 0; i < numPes; ++i ) combineMigrationMsgs[i] = 0;
   }
   for (int i=0; i < numMsgs; i++) {  // buffer messages
     int destNodeID = m[i].destNodeID;
@@ -207,6 +207,7 @@ void PatchMgr::sendMigrationMsgs(PatchID src, MigrationInfo *m, int numMsgs) {
 	DebugM(3,"Sending MigrateAtomsCombinedMsg to node " << destNodeID << "\n");
         CProxy_PatchMgr cp(thisgroup);
         cp[destNodeID].recvMigrateAtomsCombined(combineMigrationMsgs[destNodeID]);
+        combineMigrationMsgs[destNodeID] = 0;
       }
   }
 }
