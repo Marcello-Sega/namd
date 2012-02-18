@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
  * $Author: jim $
- * $Date: 2011/12/22 22:53:12 $
- * $Revision: 1.1203 $
+ * $Date: 2012/02/18 23:13:55 $
+ * $Revision: 1.1204 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -1254,15 +1254,21 @@ void Sequencer::maximumMove(BigReal timestep)
       killme = killme || ( a[i].velocity.length2() > maxvel2 );
     }
     if ( killme ) {
+      killme = 0;
       for ( int i=0; i<numAtoms; ++i ) {
         if ( a[i].velocity.length2() > maxvel2 ) {
+          ++killme;
           iout << iERROR << "Atom " << (a[i].id + 1) << " velocity is "
             << ( PDBVELFACTOR * a[i].velocity ) << " (limit is "
-            << ( PDBVELFACTOR * maxvel ) << ")\n" << endi;
+            << ( PDBVELFACTOR * maxvel ) << ", atom "
+            << i << " of " << numAtoms << " on patch "
+            << patch->patchID << " pe " << CkMyPe() << ")\n" << endi;
         }
       }
       iout << iERROR << 
-        "Atoms moving too fast; simulation has become unstable.\n" << endi;
+        "Atoms moving too fast; simulation has become unstable ("
+        << killme << " atoms on patch " << patch->patchID
+        << " pe " << CkMyPe() << ").\n" << endi;
       Node::Object()->enableEarlyExit();
       terminate();
     }
