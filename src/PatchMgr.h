@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
  * $Author: jim $
- * $Date: 2010/06/22 22:38:51 $
- * $Revision: 1.1026 $
+ * $Date: 2012/02/19 22:17:07 $
+ * $Revision: 1.1027 $
  *****************************************************************************/
 
 #ifndef PATCHMGR_H
@@ -144,6 +144,7 @@ private:
 
   // data for combining migration messages
   MigrateAtomsCombinedMsg ** combineMigrationMsgs;
+  ResizeArray<int> combineMigrationDestPes;
   int migrationCountdown;
 
 public:
