@@ -2425,7 +2425,7 @@ void HomePatch::doPairlistCheck()
 {
   SimParameters *simParams = Node::Object()->simParameters;
 
-  if ( ! flags.usePairlists ) {
+  if ( numAtoms == 0 || ! flags.usePairlists ) {
     flags.pairlistTolerance = 0.;
     flags.maxAtomMovement = 99999.;
     return;
