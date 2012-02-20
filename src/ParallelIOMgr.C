@@ -1323,10 +1323,9 @@ void ParallelIOMgr::createHomePatches()
         PatchMap *patchMap = PatchMap::Object();
         CProxy_PatchMgr pm(CkpvAccess(BOCclass_group).patchMgr);
         PatchMgr *patchMgr = pm.ckLocalBranch();
-        FullAtomList emptyone;
-        emptyone.resize(0);
         for(int i=0; i<patchMap->numPatches(); i++) {
             if(patchMap->node(i)==CkMyPe()) {
+                FullAtomList emptyone;
                 patchMgr->createHomePatch(i, emptyone);
             }
         }        
