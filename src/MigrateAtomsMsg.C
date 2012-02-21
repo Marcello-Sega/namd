@@ -77,6 +77,7 @@ void MigrateAtomsCombinedMsg::distribute(void)
     }
     PatchMap::Object()->homePatch(msg->destPatchID)->depositMigration(msg);
   }
+  if ( m != totalAtoms ) NAMD_bug("MigrateAtomsCombinedMsg::distribute bad atom count");
 }
 
 
