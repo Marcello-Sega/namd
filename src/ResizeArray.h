@@ -40,7 +40,6 @@ template <class Elem> class ResizeArray {
     // Various Constructors
     ResizeArray(void) {
       rep = new ResizeArrayRaw<Elem>();
-      rep->resize(0);
       rep->refCount = 1;
     }
 
@@ -75,7 +74,7 @@ template <class Elem> class ResizeArray {
 
     // We copy reference to ResizeArrayRaw
     ResizeArray<Elem> & operator= (ResizeArray<Elem> &ra) {
-      if (rep != NULL && !(--rep->refCount) )
+      if ( !(--rep->refCount) )
         delete rep;
       rep = ra.rep;
       rep->refCount++;
@@ -91,6 +90,9 @@ template <class Elem> class ResizeArray {
     // If array is expanded - new elements are default constructed
     // if array is reduced, removed elements have ~Elem() run
     void resize(int i) { rep->resize(i); }
+
+    // destruct elements, free storage, set size to 0
+    void clear() { rep->clear(); }
 
     // Set all elements to a given value (like 0).
     void setall(const Elem &elem) {
@@ -133,21 +135,10 @@ template <class Elem> class ResizeArray {
     inline int size(void) const { return rep->size(); }
 
     // reduce storage size
-    void reduce(void) { rep->reduce(); }
+    // void reduce(void) { rep->reduce(); }
 
     inline int find(const Elem &e) const { return rep->find(e); }
 
-	// Difference with resize(0): 
-	// This function will free the space occupied by rep,
-	// while resize(0) will not.	
-	void clear() { 
-		if (!--rep->refCount){
-			delete rep;
-			rep = new ResizeArrayRaw<Elem>();
-			rep->resize(0);
-			rep->refCount = 1; 
-		}
-	}
 };
 
 #endif

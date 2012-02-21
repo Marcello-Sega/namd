@@ -70,7 +70,7 @@ template <class Elem> class ResizeArrayRaw {
 
     // Empty function for now.
     // eventually, this should get smaller storage and free
-    void reduce(void) {}; 
+    // void reduce(void) {}; 
 
   public:
     friend class ResizeArray<Elem>;
@@ -111,7 +111,7 @@ template <class Elem> class ResizeArrayRaw {
     }
   
     ~ResizeArrayRaw(void) {
-      for (int i=0; i < size(); i++) {
+      for (int i=0; i < arraySize; i++) {
         array[i].~Elem();
       }
       delete[] varray;
@@ -158,6 +158,18 @@ template <class Elem> class ResizeArrayRaw {
       arraySize = size;
     }
   
+    // resize to 0 and free storage
+    void clear(void) {
+      for (int i=0; i<arraySize; i++) {
+        array[i].~Elem();
+      }
+      delete [] varray;
+      array = 0;
+      varray = 0;
+      arraySize = 0;
+      allocSize = 0;
+    }
+
     inline int del(int index, int number) {
       int i;
   
