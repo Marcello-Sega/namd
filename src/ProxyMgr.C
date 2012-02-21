@@ -628,7 +628,8 @@ ProxyMgr::recvProxies(int pid, int *list, int n)
     ptree.proxylist[pid][i] = list[i];
   ptree.proxyMsgCount ++;
   if (ptree.proxyMsgCount == nPatches) {
-	outputProxyTree(ptree, nPatches);
+	//debug
+	//outputProxyTree(ptree, nPatches);
 
     ptree.proxyMsgCount = 0;
     // building and sending of trees is done in two steps now
@@ -656,8 +657,9 @@ void ProxyMgr::recvPatchProxyInfo(PatchProxyListMsg *msg){
 		}		
 	}
 	delete msg;
-
-	outputProxyTree(ptree, nPatches);
+	
+	//debug
+	//outputProxyTree(ptree, nPatches);
 
 	ptree.proxyMsgCount = 0;
     // building and sending of trees is done in two steps now
