@@ -147,6 +147,9 @@ public:
   int oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids,
 		        PatchID *downstream_ids = 0, int *transform_ids = 0);
 
+  //LCPO
+  int getPatchesInOctet(int pid, PatchID *pids, int *transform_ids = 0);
+
   int upstreamNeighbors(int pid, PatchID *neighbor_ids);
 
   int downstreamNeighbors(int pid, PatchID *neighbor_ids); 

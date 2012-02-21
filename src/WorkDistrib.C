@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2012/02/10 21:03:08 $
- * $Revision: 1.1236 $
+ * $Author: dtanner $
+ * $Date: 2012/02/21 14:43:49 $
+ * $Revision: 1.1237 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1435,6 +1435,10 @@ void WorkDistrib::mapComputes(void)
 
   mapComputeNonbonded();
 
+  if ( node->simParameters->LCPOOn ) {
+    mapComputeLCPO();
+  }
+
   // If we're doing true pair interactions, no need for bonded terms.
   // But if we're doing within-group interactions, we do need them.
   if ( !node->simParameters->pairInteractionOn || 
@@ -1737,6 +1741,50 @@ void WorkDistrib::mapComputeNonbonded(void)
 }
 
 //----------------------------------------------------------------------
+void WorkDistrib::mapComputeLCPO(void) {
+  //iterate over all needed objects
+
+  PatchMap *patchMap = PatchMap::Object();
+  ComputeMap *computeMap = ComputeMap::Object();
+  CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+  Node *node = nd.ckLocalBranch();
+  SimParameters *simParams = Node::Object()->simParameters;
+  int ncpus = CkNumPes();
+  int nodesize = CkMyNodeSize();
+  const int maxPatches = 8;
+
+  int numPatchesInOctet;
+  PatchID patchesInOctet[maxPatches];
+  int oneAwayTrans[maxPatches];
+
+  //partitioned after 1st timestep
+  int numPartitions = 1;
+
+  PatchID i;
+  ComputeID cid;
+
+  // one octet per patch
+  for(i=0; i<patchMap->numPatches(); i++) {
+    numPatchesInOctet =
+        patchMap->getPatchesInOctet(i, patchesInOctet, oneAwayTrans);
+
+		for(int partition=0; partition < numPartitions; partition++) {
+      cid=computeMap->storeCompute(patchMap->node(i),
+          numPatchesInOctet,
+				  computeLCPOType,
+				  partition,
+          numPartitions);
+      for (int p = 0; p < numPatchesInOctet; p++) {
+        computeMap->newPid(cid, patchesInOctet[p], oneAwayTrans[p]);
+      }
+      for (int p = 0; p < numPatchesInOctet; p++) {
+        patchMap->newCid(patchesInOctet[p],cid);
+      }
+    } // for partitions 
+  } // for patches
+} // mapComputeLCPO
+
+//----------------------------------------------------------------------
 void WorkDistrib::messageEnqueueWork(Compute *compute) {
   LocalWorkMsg *msg = compute->localWorkMsg;
   int seq = compute->sequence();
@@ -1785,6 +1833,9 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
   case computeCrosstermsType:
   case computeSelfCrosstermsType:
     wdProxy[CkMyPe()].enqueueCrossterms(msg);
+    break;
+  case computeLCPOType:
+    wdProxy[CkMyPe()].enqueueLCPO(msg);
     break;
   case computeNonbondedSelfType:
     switch ( seq % 2 ) {
@@ -1957,6 +2008,11 @@ void WorkDistrib::enqueuePme(LocalWorkMsg *msg) {
     NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
 }
 
+void WorkDistrib::enqueueLCPO(LocalWorkMsg *msg) {
+  msg->compute->doWork();
+  if ( msg->compute->localWorkMsg != msg )
+    NAMD_bug("WorkDistrib LocalWorkMsg recycling failed!");
+}
 void WorkDistrib::enqueueSelfA1(LocalWorkMsg *msg) {
   msg->compute->doWork();  traceUserEvent(eventMachineProgress);  CmiMachineProgressImpl();
   if ( msg->compute->localWorkMsg != msg )

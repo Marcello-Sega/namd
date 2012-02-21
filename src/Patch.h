@@ -63,6 +63,10 @@ class Patch
     void unregisterDHdrPrefixPickup(ComputeID cid, Box<Patch,Real>**const box);
      //end gbis
 
+    //LCPO
+    Box<Patch,int>* registerLcpoTypePickup(ComputeID cid);
+    void unregisterLcpoTypePickup(ComputeID cid, Box<Patch,int>**const box);
+
      Box<Patch,Results>* registerForceDeposit(ComputeID cid);
      void unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box);
 
@@ -87,6 +91,9 @@ class Patch
      void gbisP2Ready();
      void gbisP3Ready();
      //end gbis
+
+     //LCPO
+     void lcpoTypeBoxClosed(void);
 
      int getNumAtoms() { return numAtoms; }
 
@@ -126,6 +133,9 @@ class Patch
      RealList dHdrPrefix;
      GBRealList dEdaSum;
      // end gbis
+
+    //LCPO
+    IntList lcpoType;
 
      // DMK - Atom Separation (water vs. non-water)
      #if NAMD_SeparateWaters != 0
@@ -184,6 +194,10 @@ class Patch
      OwnerBox<Patch,Real>    dHdrPrefixBox;
      ComputeIDList           dHdrPrefixComputeList;
      //end gbis
+
+    //LCPO
+     OwnerBox<Patch,int>    lcpoTypeBox;
+     ComputeIDList          lcpoTypeComputeList;
 
      OwnerBox<Patch,Results>    forceBox;
      ComputeIDList              forceComputeList;

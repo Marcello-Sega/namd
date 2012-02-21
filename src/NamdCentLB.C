@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: jim $
- * $Date: 2011/04/29 19:53:26 $
- * $Revision: 1.112 $
+ * $Author: dtanner $
+ * $Date: 2012/02/21 14:43:47 $
+ * $Revision: 1.113 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -165,6 +165,12 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
     // partitions are stored as char but mostly limited by
     // high load noise at low outer-loop iteration counts
     int maxParts = 10;
+#ifdef NAMD_CUDA
+//split LCPO compute very small, else CUDA compute is delayed
+    if (simParams->LCPOOn) {
+      maxParts = 30;
+    }
+#endif
     int totalAddedParts = 0;
     double maxCompute = averageLoad / 10.;
     if ( maxCompute < 2. * avgCompute ) maxCompute = 2. * avgCompute;
@@ -184,7 +190,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
       int nparts = (int) ceil(load / maxCompute);
       if ( nparts > maxParts ) nparts = maxParts;
       if ( nparts < 1 ) nparts = 1;
-      if ( load > averageLoad ) {
+      if ( nparts > 1 ) {
         CkPrintf("LDB: Partitioning compute %d with load %f by %d\n",
                   cid, load, nparts);
       }

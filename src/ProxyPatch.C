@@ -79,6 +79,8 @@ ProxyPatch::~ProxyPatch()
   p.resize(0);
   pExt.resize(0);
 
+  lcpoType.resize(0);
+
 #if CMK_PERSISTENT_COMM
   CmiDestoryPersistent(localphs);
   localphs = 0;
@@ -123,7 +125,10 @@ void ProxyPatch::boxClosed(int box) {
     ProxyMgr::Object()->sendResult(msg2);
   } else if (box == 9) {
     //nothing
+  } else if (box == 10) {
+    // LCPO do nothing
   }
+
 
   if ( ! --boxesOpen ) {
     DebugM(2,patchID << ": " << "Checking message buffer.\n");    
@@ -262,6 +267,13 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
     intRad.resize(numAtoms*2);
     for (int i = 0; i < numAtoms*2;i++) {
       intRad[i] = msg->intRadList[i];
+    }
+  }
+
+  if (flags.doLCPO) {
+    lcpoType.resize(numAtoms);
+    for (int i = 0; i < numAtoms; i++) {
+      lcpoType[i] = msg->lcpoTypeList[i];
     }
   }
 

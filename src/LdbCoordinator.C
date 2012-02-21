@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: jim $
- * $Date: 2012/01/08 21:30:01 $
- * $Revision: 1.113 $
+ * $Author: dtanner $
+ * $Date: 2012/02/21 14:43:46 $
+ * $Revision: 1.114 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -292,6 +292,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	      || (computeMap->type(i) == computeNonbondedSelfType)
 	      || (computeMap->type(i) == computeNonbondedPairType)
 #endif
+	      || (computeMap->type(i) == computeLCPOType)
 	      || (computeMap->type(i) == computeSelfExclsType)
 	      || (computeMap->type(i) == computeSelfBondsType)
 	      || (computeMap->type(i) == computeSelfAnglesType)
@@ -349,6 +350,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	          || (computeMap->type(i) == computeNonbondedSelfType)
 	          || (computeMap->type(i) == computeNonbondedPairType)
 #endif
+	          || (computeMap->type(i) == computeLCPOType)
 	          || (computeMap->type(i) == computeSelfExclsType)
 	          || (computeMap->type(i) == computeSelfBondsType)
 	          || (computeMap->type(i) == computeSelfAnglesType)

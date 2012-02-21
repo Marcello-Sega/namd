@@ -42,6 +42,7 @@ Patch::Patch(PatchID pd) :
    bornRadBox(this,&Patch::bornRadBoxClosed,pd,7),
    dEdaSumBox(this,&Patch::dEdaSumBoxClosed,pd,8),
    dHdrPrefixBox(this,&Patch::dHdrPrefixBoxClosed,pd,9), //end gbis
+   lcpoTypeBox(this,&Patch::lcpoTypeBoxClosed,pd,10),
    forceBox(this,&Patch::forceBoxClosed,pd,1),
    boxesOpen(0), _hasNewAtoms(0)
 
@@ -138,6 +139,15 @@ Box<Patch,Real>* Patch::registerIntRadPickup(ComputeID cid) {
 }
 void Patch::unregisterIntRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
   intRadBox.checkIn(*box);
+  *box = 0;
+}
+
+//LCPO
+Box<Patch,int>* Patch::registerLcpoTypePickup(ComputeID cid) {
+  return lcpoTypeBox.checkOut(cid);
+}
+void Patch::unregisterLcpoTypePickup(ComputeID cid,Box<Patch,int> **const box) {
+  lcpoTypeBox.checkIn(*box);
   *box = 0;
 }
 
@@ -247,6 +257,11 @@ void Patch::dHdrPrefixBoxClosed(void) {
 }
 // end gbis
 
+//LCPO
+void Patch::lcpoTypeBoxClosed(void) {
+   this->boxClosed(10);
+}
+
 void Patch::positionsReady(int doneMigration)
 {
    DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<std::endl );
@@ -258,6 +273,7 @@ void Patch::positionsReady(int doneMigration)
 // #else
        atomMapper->registerIDsCompAtomExt(pExt.begin(),pExt.end());
 // #endif
+
    }
 
    boxesOpen = 2;
@@ -312,6 +328,12 @@ void Patch::positionsReady(int doneMigration)
       dHdrPrefixBox.open(dHdrPrefix.begin());
     }
    // end gbis
+
+  //LCPO
+  if (flags.doLCPO) {
+    boxesOpen++;
+    lcpoTypeBox.open(lcpoType.begin());
+  }
 
 #if CMK_BLUEGENEL
    CmiNetworkProgressAfter (0);

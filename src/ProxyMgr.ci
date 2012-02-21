@@ -32,6 +32,8 @@ module ProxyMgr {
     // begin gbis
     Real intRadList[];
     // end gbis
+    // LCPO
+    int lcpoTypeList[];
 
     CompAtomExt positionExtList[];
   };

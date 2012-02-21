@@ -208,6 +208,9 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   lphostIndexes=NULL;
   // DRUDE
 
+  //LCPO
+  lcpoParamType = NULL;
+
   //for compressing molecule info
   atomSegResids=NULL;
 
@@ -395,6 +398,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
 #else
 	read_psf_file(filename, param);	
 #endif      
+
+  //LCPO
+  assignLCPOTypes( 0 );
 }
 
 /************************************************************************/
@@ -481,6 +487,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
   numRealBonds = numBonds;
   build_atom_status();
 #endif
+
+  //LCPO
+  assignLCPOTypes( 2 );
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -519,6 +528,9 @@ Molecule::~Molecule()
   if (tholes != NULL) delete [] tholes;
   if (lphostIndexes != NULL) delete [] lphostIndexes;
   // DRUDE
+
+  //LCPO
+  if (lcpoParamType != NULL) delete [] lcpoParamType;
 
   #ifdef MEM_OPT_VERSION
   if(eachAtomSig) delete [] eachAtomSig;
@@ -590,6 +602,9 @@ Molecule::~Molecule()
   // DRUDE
   #endif
 
+  //LCPO
+  if (lcpoParamType != NULL)
+    delete [] lcpoParamType;
 
   if (fixedAtomFlags != NULL)
        delete [] fixedAtomFlags;
@@ -2125,6 +2140,186 @@ void Molecule::read_anisos(FILE *fd)
 }
 /*      END OF FUNCTION read_anisos     */
 
+//LCPO
+
+inline int getLCPOType(char atomType[11], int numBonds) {
+
+  //Hydrogen
+  if (atomType[0] == 'H') {
+    return 0;
+
+  //Carbon
+  } else if (atomType[0] == 'C') {
+    if (//Sp3 Carbon
+      atomType[1] == 'T' ||
+      strcmp(atomType, "CP1" )==0 ||
+      strcmp(atomType, "CP2" )==0 ||
+      strcmp(atomType, "CP3" )==0 ||
+      strcmp(atomType, "CS"  )==0 ) {
+      if (numBonds == 1)
+        return 1;
+      else if (numBonds == 2)
+        return 2;
+      else if (numBonds == 3)
+        return 3;
+      else if (numBonds == 4)
+        return 4;
+      else
+        return 1;
+
+    } else if (//Sp2
+      strcmp(atomType, "C"   )==0 ||
+      strcmp(atomType, "CA"  )==0 ||
+      strcmp(atomType, "CC"  )==0 ||
+      strcmp(atomType, "CD"  )==0 ||
+      strcmp(atomType, "CN"  )==0 ||
+      strcmp(atomType, "CY"  )==0 ||
+      strcmp(atomType, "C3"  )==0 ||
+      strcmp(atomType, "CE1" )==0 ||
+      strcmp(atomType, "CE2" )==0 ||
+      strcmp(atomType, "CST" )==0 ||
+      strcmp(atomType, "CAP" )==0 ||
+      strcmp(atomType, "COA" )==0 ||
+      strcmp(atomType, "CPT" )==0 ||
+      strcmp(atomType, "CPH1")==0 ||
+      strcmp(atomType, "CPH2")==0
+      ) {
+      if (numBonds == 2)
+        return 5;
+      else if (numBonds == 3)
+        return 6;
+      else
+        return 1;
+    } else { // other Carbon
+        return 1;
+    }
+
+  //Nitrogen
+  } else if (atomType[0] == 'N') {
+    if (//Sp3 Nitrogen
+      strcmp(atomType, "N"   )==0 ||
+      strcmp(atomType, "NH1" )==0 ||
+      strcmp(atomType, "NH2" )==0 ||
+      strcmp(atomType, "NH3" )==0 ||
+      strcmp(atomType, "NC2" )==0 ||
+      strcmp(atomType, "NY"  )==0 ||
+      strcmp(atomType, "NP"  )==0
+      ) {
+      if (numBonds == 1)
+        return 11;
+      else if (numBonds == 2)
+        return 12;
+      else if (numBonds == 3)
+        return 13;
+      else
+        return 11;
+
+    } else if (//SP2 Nitrogen
+      strcmp(atomType, "NR1" )==0 ||
+      strcmp(atomType, "NR2" )==0 ||
+      strcmp(atomType, "NR3" )==0 ||
+      strcmp(atomType, "NPH" )==0 ||
+      strcmp(atomType, "NC"  )==0
+      ) {
+      if (numBonds == 1)
+        return 14;
+      else if (numBonds == 2)
+        return 15;
+      else if (numBonds == 3)
+        return 16;
+      else
+        return 11;
+    } else { // other Nitrogen
+      return 11;
+    }
+
+  //Oxygen
+  } else if (atomType[0] == 'O') {
+    if (//Sp3 Oxygen
+      strcmp(atomType, "OH1" )==0 ||
+      strcmp(atomType, "OS"  )==0 ||
+      strcmp(atomType, "OT"  )==0
+      ) {
+      if (numBonds == 1)
+        return 7;
+      else if (numBonds == 2)
+        return 8;
+      else
+        return 7;
+    } else if ( // Sp2 Oxygen
+      strcmp(atomType, "O"   )==0 ||
+      strcmp(atomType, "OB"  )==0 ||
+      strcmp(atomType, "OST" )==0 ||
+      strcmp(atomType, "OCA" )==0 ||
+      strcmp(atomType, "OM"  )==0
+      ) {
+      return 9;
+    } else if ( // SP1 Oxygen
+      strcmp(atomType, "OC"  )==0
+      ) {
+      return 10;
+    } else { // other Oxygen
+      return 7;
+    }
+
+  //Sulfur
+  } else if (atomType[0] == 'S') {
+      if (numBonds == 1)
+        return 17;
+      else
+        return 18;
+
+  //Phosphorus
+  } else if (atomType[0] == 'P') {
+      if (numBonds == 3)
+        return 19;
+      else if (numBonds == 4)
+        return 20;
+      else
+        return 19;
+  } else { // unknown atom type
+    return 5;
+  }
+  return 5;
+}
+
+//input type is Charmm/Amber/other
+//0 - Charmm/Xplor
+//1 - Amber
+//2 - Plugin
+//3 - Gromacs
+void Molecule::assignLCPOTypes(int inputType) {
+//CkPrintf("Molecule::assignLCPOTypes() from input type %d\n", inputType);
+
+  int heavyBonds[numAtoms];
+  for (int i = 0; i < numAtoms; i++)
+    heavyBonds[i] = 0;
+  for (int i = 0; i < numBonds; i++ ) {
+    Bond curBond = bonds[i];
+    int a1 = bonds[i].atom1;
+    int a2 = bonds[i].atom2;
+    if (atoms[a1].mass > 2.f && atoms[a2].mass > 2.f) {
+      heavyBonds[a1]++;
+      heavyBonds[a2]++;
+    }
+  }
+
+  lcpoParamType = new int[numAtoms];
+
+  for (int i = 0; i < numAtoms; i++) {
+    //print vdw_type and numbonds
+
+    lcpoParamType[i] = getLCPOType(atomNames[i].atomtype, heavyBonds[i]);
+    /*CkPrintf("MOL: ATOM[%05d] = { %4s %d } : %d\n",
+      i,
+      atomNames[i].atomtype,
+      heavyBonds[i],
+      lcpoParamType[i]
+      );*/
+    //CkPrintf("VDW_TYPE %02d %4s\n", atoms[i].vdw_type, atomNames[i].atomtype);
+  } // for atoms
+
+} // buildLCPOTable
 
 void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
     atoms = new Atom[numAtoms];
@@ -4596,7 +4791,7 @@ void Molecule::send_Molecule(MOStream *msg){
 
   build_excl_check_signatures();
 
-  //set num{Calc}Tuples(Bonds,...,Impropers} to 0
+  //set num{Calc}Tuples(Bonds,...,Impropers) to 0
   numBonds = numCalcBonds = 0;
   numAngles = numCalcAngles = 0;
   numDihedrals = numCalcDihedrals = 0;
@@ -4792,6 +4987,11 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(numAnisos*sizeof(Aniso), (char*)anisos);
   }
   // DRUDE
+
+  //LCPO
+  if (simParams->LCPOOn) {
+    msg->put(numAtoms, (int*)lcpoParamType);
+  }
   
   // Broadcast the message to the other nodes
   msg->end();
@@ -4875,7 +5075,7 @@ void Molecule::receive_Molecule(MIStream *msg){
 
       build_excl_check_signatures();
 
-    //set num{Calc}Tuples(Bonds,...,Impropers} to 0
+    //set num{Calc}Tuples(Bonds,...,Impropers) to 0
     numBonds = numCalcBonds = 0;
     numAngles = numCalcAngles = 0;
     numDihedrals = numCalcDihedrals = 0;
@@ -5150,9 +5350,16 @@ void Molecule::receive_Molecule(MIStream *msg){
       }
       // DRUDE
 
+  //LCPO
+  if (simParams->LCPOOn) {
+    delete [] lcpoParamType;
+    lcpoParamType = new int[numAtoms];
+    msg->get(numAtoms, (int*)lcpoParamType);
+  }
+
       //  Now free the message 
       delete msg;
-      
+
       //  analyze the data and find the status of each atom
       build_atom_status();
       build_lists_by_atom();      
@@ -8752,6 +8959,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
   initialize(simParams,param);
 
   read_parm(amber_data);
+
+  //LCPO
+  assignLCPOTypes( 1 );
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -9084,6 +9294,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
   initialize(simParams,param);
 
   read_parm(gromacsTopFile);
+
+  //LCPO
+  assignLCPOTypes( 3 );
 }
 /*      END OF FUNCTION Molecule      */
 

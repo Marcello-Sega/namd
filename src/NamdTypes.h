@@ -148,6 +148,7 @@ typedef ResizeArray<BigReal> BigRealList;
 typedef ResizeArray<Real> RealList;
 typedef float GBReal;
 typedef ResizeArray<GBReal> GBRealList;
+typedef ResizeArray<int> IntList;
 
 typedef int PatchID;
 typedef int ComputeID;

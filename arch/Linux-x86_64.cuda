@@ -1,9 +1,9 @@
 
-CUDADIR=/usr/local/encap/cuda-2.3
+CUDADIR=/usr/local/encap/cuda-4.0
 CUDAINCL=-I$(CUDADIR)/include
 CUDALIB=-L$(CUDADIR)/lib64 -lcudart
 CUDASODIR=$(CUDADIR)/lib64
-LIBCUDARTSO=libcudart.so.2
+LIBCUDARTSO=libcudart.so.4
 CUDAFLAGS=-DNAMD_CUDA
 CUDAOBJS=$(CUDAOBJSRAW)
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)

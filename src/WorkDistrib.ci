@@ -52,6 +52,7 @@ module WorkDistrib {
     entry void enqueueWorkB2(LocalWorkMsg *);
     entry void enqueueWorkB3(LocalWorkMsg *);
     entry void enqueueWorkC(LocalWorkMsg *);
+    entry void enqueueLCPO(LocalWorkMsg *);
   } ;
 }
 

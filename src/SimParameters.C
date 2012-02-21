@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/02/17 02:13:14 $
- * $Revision: 1.1378 $
+ * $Author: dtanner $
+ * $Date: 2012/02/21 14:43:48 $
+ * $Revision: 1.1379 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1339,6 +1339,11 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
       "maximum allowable born radius", &alpha_max, 30);
    opts.optional("GBIS", "fsMax",
       "maximum screened intrinsic radius", &fsMax, 1.728);
+
+   opts.optionalB("main", "LCPO", "Use Linear Combination of Pairwise Overlaps for calculating SASA",
+      &LCPOOn, FALSE);
+   opts.optional("LCPO", "surfaceTension",
+      "Surfce Tension for LCPO (kcal/mol/Ang^2)", &surface_tension, 0.005);
 
    //****** BEGIN SMD constraints changes 
 
@@ -2685,6 +2690,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 #ifdef NAMD_CUDA
         NAMD_die("GBIS CUDA not yet compatible with fixed atoms");
 #endif
+      }
+      if (LCPOOn) {
+        if ( lattice.volume() > 0 ) {
+          NAMD_die("LCPO does not yet support periodic boundary conditions.");
+        }
       }
 
       if (alpha_cutoff > patchDimension) {
@@ -4220,13 +4230,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
 
    // gbis gbobc implicit solvent parameters
 
-   if (GBISserOn) {
+  if (GBISserOn) {
       GBISOn = 0;//turning gbis-ser on turns gbis-parallel off
      iout << iINFO<< "GBIS GENERALIZED BORN IMPLICIT SOLVENT ACTIVE (SERIAL)\n";
-    }
-   if (GBISOn) {
+  }
+  if (GBISOn) {
      iout << iINFO << "GBIS GENERALIZED BORN IMPLICIT SOLVENT ACTIVE\n";
-    }
+  }
   if (GBISOn || GBISserOn) {
      iout << iINFO << "GBIS SOLVENT DIELECTRIC: " << solvent_dielectric<< "\n";
      iout << iINFO << "GBIS PROTEIN DIELECTRIC: " << dielectric<< "\n";
@@ -4239,7 +4249,11 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      iout << iINFO << "GBIS BORN RADIUS CUTOFF: " << alpha_cutoff << " Ang\n";
      iout << iINFO << "GBIS MAX BORN RADIUS: " << alpha_max << " Ang\n";
      iout << endi;
-   }
+  }
+
+  if (LCPOOn) {
+    iout << iINFO << "LCPO SASA SURFACE TENSION: " << surface_tension<< "KCAL/ANG^3\n";
+  }
 
    tclBCScript = 0;
    if (tclBCOn) {

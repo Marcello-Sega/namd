@@ -126,6 +126,9 @@ public:
   void gbisP2Ready();
   void gbisP3Ready();
 
+  //LCPO
+  void setLcpoType();
+
   // methods for CONTRA, etc
   void checkpoint(void);
   void revert(void);

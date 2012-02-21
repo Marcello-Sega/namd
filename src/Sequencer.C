@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jim $
- * $Date: 2012/02/18 23:13:55 $
- * $Revision: 1.1204 $
+ * $Author: dtanner $
+ * $Date: 2012/02/21 14:43:48 $
+ * $Revision: 1.1205 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -214,6 +214,9 @@ void Sequencer::integrate() {
 
     int &doGBIS = patch->flags.doGBIS;
     doGBIS = simParams->GBISOn;
+
+    int &doLCPO = patch->flags.doLCPO;
+    doLCPO = simParams->LCPOOn;
 
     int zeroMomentum = simParams->zeroMomentum;
     
@@ -522,6 +525,9 @@ void Sequencer::minimize() {
 
   int &doGBIS = patch->flags.doGBIS;
   doGBIS = simParams->GBISOn;
+
+    int &doLCPO = patch->flags.doLCPO;
+    doLCPO = simParams->LCPOOn;
 
   int &doEnergy = patch->flags.doEnergy;
   doEnergy = 1;

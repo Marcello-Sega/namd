@@ -40,6 +40,7 @@
 #include "ComputeGlobalMsgs.h"
 #include "ComputeExt.h"
 #include "ComputeGBISser.h"
+#include "ComputeLCPO.h"
 #include "ComputeMsmSerial.h"
 #include "ComputeMsm.h"
 #include "ComputeDPMTA.h"
@@ -328,6 +329,10 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     int trans2[2];
     SimParameters *simParams = Node::Object()->simParameters;
 
+    const int numLCPOPatches = map->computeData[i].numPids;
+    PatchID pid8[numLCPOPatches];
+    int trans8[numLCPOPatches];
+
     switch ( map->type(i) )
     {
     case computeNonbondedSelfType:
@@ -341,6 +346,19 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         map->registerCompute(i,c);
         c->initialize();
 #endif
+        break;
+    case computeLCPOType:
+        for (int j = 0; j < numLCPOPatches; j++) {
+          pid8[j] = map->computeData[i].pids[j].pid;
+          trans8[j] = map->computeData[i].pids[j].trans;
+        }
+        c = new ComputeLCPO(i,pid8,trans8,
+             computeNonbondedWorkArrays,
+             map->partition(i),map->partition(i)+1,
+             map->numPartitions(i), numLCPOPatches);
+        map->registerCompute(i,c);
+        c->initialize();
+      
         break;
     case computeNonbondedPairType:
         pid2[0] = map->computeData[i].pids[0].pid;
@@ -585,6 +603,9 @@ void registerUserEventsForAllComputeObjs()
         {
         case computeNonbondedSelfType:
             sprintf(user_des, "computeNonBondedSelfType_%d_pid_%d", i, map->pid(i,0));
+            break;
+        case computeLCPOType:
+            sprintf(user_des, "computeLCPOType_%d_pid_%d", i, map->pid(i,0));
             break;
         case computeNonbondedPairType:
             adim = pmap->gridsize_a();

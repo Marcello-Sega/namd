@@ -315,6 +315,9 @@ private:
 	void initialize(SimParameters *, Parameters *param);
 	// Sets most data to zero
 
+  //LCPO
+  int *lcpoParamType;
+
 #ifndef MEM_OPT_VERSION
 	void read_psf_file(char *, Parameters *);
         //  Read in a .psf file given
@@ -346,6 +349,14 @@ private:
   void read_anisos(FILE *);
         //  Read in anisotropic terms from Drude PSF
   // DRUDE
+
+  //LCPO
+  //input type is Charmm/Amber/other
+  //0 - Charmm/Xplor
+  //1 - Amber TODO
+  //2 - Plugin TODO
+  //3 - Gromacs TODO
+  void assignLCPOTypes(int inputType);
 
   //pluginIO-based loading atoms' structure
   void plgLoadAtomBasics(molfile_atom_t *atomarray);
@@ -399,6 +410,10 @@ public:
   // data for tail corrections
   BigReal tail_corr_ener;
   BigReal tail_corr_virial;
+
+  int const * getLcpoParamType() {
+    return lcpoParamType;
+  }
 
 #ifdef MEM_OPT_VERSION
   AtomCstInfo *getAtoms() const { return atoms; }

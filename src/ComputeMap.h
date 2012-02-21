@@ -49,6 +49,7 @@ enum ComputeType
   computeGlobalType,
   computeExtType,
   computeGBISserType,
+  computeLCPOType,
   computeMsmSerialType,
   computeMsmType,
   computeEFieldType,
@@ -158,7 +159,7 @@ public:
     PatchRec() : pid(-1), trans(-1) { ; }
   };
 
-  enum { numPidsAllocated=2 };
+  enum { numPidsAllocated=8 };
 
   struct ComputeData
   {

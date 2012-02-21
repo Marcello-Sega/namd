@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2012/02/17 02:13:15 $
- * $Revision: 1.1201 $
+ * $Author: dtanner $
+ * $Date: 2012/02/21 14:43:49 $
+ * $Revision: 1.1202 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -402,6 +402,8 @@ public:
 	BigReal gbis_gamma;
 	BigReal alpha_cutoff;						//pairwise cutoff for integrating born radius
 	BigReal alpha_max;								//maximum allowable born radius
+  Bool LCPOOn;                    //do LCPO SASA for GBSA
+  BigReal surface_tension;        //surface tension (kcal/mol/Ang^2) for LCPO
 
         Bool drudeOn;       // Perform integration of Drude oscillators?
         BigReal drudeTemp;  // (low) temperature for freezing Drude oscillators

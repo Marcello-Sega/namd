@@ -69,6 +69,7 @@ public:
   void enqueueCUDA(LocalWorkMsg *msg);
   void enqueueCUDAP2(LocalWorkMsg *msg);
   void enqueueCUDAP3(LocalWorkMsg *msg);
+  void enqueueLCPO(LocalWorkMsg *msg);
 
   void mapComputes(void);
   void sendPatchMap(void);
@@ -96,6 +97,7 @@ public:
 
 private:
   void mapComputeNonbonded(void);
+  void mapComputeLCPO(void);
   void mapComputeNode(ComputeType);
   void mapComputeHomePatches(ComputeType);
   void mapComputeHomeTuples(ComputeType);

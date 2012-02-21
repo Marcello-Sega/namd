@@ -594,6 +594,45 @@ int PatchMap::oneOrTwoAwayNeighbors(int pid, PatchID *neighbor_ids, PatchID *dow
   DebugM(3,"Patch " << pid << " has " << n << " second neighbors.\n");
   return n;
 }
+
+//----------------------------------------------------------------------
+// Return all patches in corresponding octet (2x2x2 block of patches)
+// regardless of periodic boundary conditions
+// Used for LCPO Computes
+int PatchMap::getPatchesInOctet(int pid, PatchID *pids, int *transform_ids)
+{
+  int xi, yi, zi;
+  int xinc, yinc, zinc;
+  int n=0;
+  const int xs = patchData[pid].aIndex;
+  const int ys = patchData[pid].bIndex;
+  const int zs = patchData[pid].cIndex;
+
+  for(zinc=0; zinc<2; zinc++) {
+    zi = zs + zinc;
+    for(yinc=0; yinc<2; yinc++) {
+      yi = ys + yinc;
+      for(xinc=0; xinc<2; xinc++) {
+	      xi = xs + xinc;
+        int aIndex = MODULO(xi,aDim);
+        int bIndex = MODULO(yi,bDim);
+        int cIndex = MODULO(zi,cDim);
+        pids[n] = ((cIndex*bDim)+bIndex)*aDim + aIndex;
+      	if ( transform_ids ) {
+	        int xt = 0; if ( xi < 0 ) xt = -1; if ( xi >= aDim ) xt = 1;
+	        int yt = 0; if ( yi < 0 ) yt = -1; if ( yi >= bDim ) yt = 1;
+	        int zt = 0; if ( zi < 0 ) zt = -1; if ( zi >= cDim ) zt = 1;
+	        transform_ids[n] = Lattice::index(xt,yt,zt);
+	      }
+	      n++;
+      } // for x
+    } // for y
+  } // for z
+  DebugM(3,"Patch " << pid << " has " << n << " second neighbors.\n");
+  return n;
+}
+
+
 //----------------------------------------------------------------------
 int PatchMap::upstreamNeighbors(int pid, PatchID *neighbor_ids)
 {

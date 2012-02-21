@@ -426,6 +426,8 @@ void HomePatch::boxClosed(int box) {
     }
   } else if (box == 9) {
     //do nothing
+  } else if (box == 10) {
+    //lcpoType Box closed: do nothing
   } else {
     //do nothing
   }
@@ -999,6 +1001,12 @@ void HomePatch::positionsReady(int doMigration)
         setGBISIntrinsicRadii();
     }
 
+  if (flags.doLCPO) {
+    if (doMigration || isNewProxyAdded) {
+      setLcpoType();
+    }
+  }
+
   // Must Add Proxy Changes when migration completed!
   NodeIDList::iterator pli;
   int *pids = NULL;
@@ -1069,12 +1077,18 @@ void HomePatch::positionsReady(int doMigration)
 	    intRadLen = numAtoms * 2;
     }
 
+    //LCPO
+    int lcpoTypeLen = 0;
+    if (flags.doLCPO && (doMigration || isNewProxyAdded)) {
+	    lcpoTypeLen = numAtoms;
+    }
+
     int pdMsgPLExtLen = 0;
     if(doMigration || isNewProxyAdded) {
         pdMsgPLExtLen = pExt.size();
     }
     ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgVLLen, intRadLen,
-      pdMsgPLExtLen,  PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
+      lcpoTypeLen, pdMsgPLExtLen,  PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
 
     SET_PRIORITY(nmsg,seq,priority);
     nmsg->patch = patchID;
@@ -1096,6 +1110,12 @@ void HomePatch::positionsReady(int doMigration)
     if (flags.doGBIS && (doMigration || isNewProxyAdded)) {
       for (int i = 0; i < numAtoms * 2; i++) {
         nmsg->intRadList[i] = intRad[i];
+      }
+    }
+
+    if (flags.doLCPO && (doMigration || isNewProxyAdded)) {
+      for (int i = 0; i < numAtoms; i++) {
+        nmsg->lcpoTypeList[i] = lcpoType[i];
       }
     }
 
@@ -2072,6 +2092,17 @@ void HomePatch::loweAndersenFinish()
     v.resize(0);
 }
 // END LA
+
+//LCPO
+void HomePatch::setLcpoType() {
+  Molecule *mol = Node::Object()->molecule;
+  const int *lcpoParamType = mol->getLcpoParamType();
+
+  lcpoType.resize(numAtoms);
+  for (int i = 0; i < numAtoms; i++) {
+    lcpoType[i] = lcpoParamType[pExt[i].id];
+  }
+}
 
 //set intrinsic radii of atom when doMigration
 void HomePatch::setGBISIntrinsicRadii() {

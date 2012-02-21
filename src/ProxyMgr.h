@@ -101,6 +101,8 @@ public:
 
   Real *intRadList;// gbis atom intrinsic radii
 
+  int *lcpoTypeList;// LCPO atom type
+
   //1. The following field will be only
   //useful for memory optimized version.
   //2. In normal case, adding this field only
