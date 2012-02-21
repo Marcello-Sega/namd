@@ -329,9 +329,8 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
     int trans2[2];
     SimParameters *simParams = Node::Object()->simParameters;
 
-    const int numLCPOPatches = map->computeData[i].numPids;
-    PatchID pid8[numLCPOPatches];
-    int trans8[numLCPOPatches];
+    PatchID pid8[8];
+    int trans8[8];
 
     switch ( map->type(i) )
     {
@@ -348,14 +347,14 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
 #endif
         break;
     case computeLCPOType:
-        for (int j = 0; j < numLCPOPatches; j++) {
+        for (int j = 0; j < 8; j++) {
           pid8[j] = map->computeData[i].pids[j].pid;
           trans8[j] = map->computeData[i].pids[j].trans;
         }
         c = new ComputeLCPO(i,pid8,trans8,
              computeNonbondedWorkArrays,
              map->partition(i),map->partition(i)+1,
-             map->numPartitions(i), numLCPOPatches);
+             map->numPartitions(i), 8);
         map->registerCompute(i,c);
         c->initialize();
       
