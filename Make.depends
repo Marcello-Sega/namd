@@ -5384,6 +5384,7 @@ obj/ScriptTcl.o: \
 	src/DumpBench.h \
 	src/TclCommands.h \
 	src/Debug.h \
+	plugins/include/molfile_plugin.h \
 	plugins/include/libmolfile_plugin.h \
 	src/ComputeConsForceMsgs.h \
 	inc/ComputeMgr.decl.h
