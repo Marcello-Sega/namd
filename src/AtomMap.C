@@ -79,6 +79,10 @@ void AtomMapper::unregisterIDsCompAtomExt(const CompAtomExt *begin, const CompAt
 #ifdef MEM_OPT_VERSION
   if ( ! map->onlyUseTbl ) {
     int n = end - begin;
+    if ( entries.size() != n ) {
+      CkPrintf("AtomMapper entries.size() %d != %d\n", entries.size(), n);
+      NAMD_bug("AtomMapper::unregisterIDsCompAtomExt size mismatch");
+    }
     AtomMapEntry *e = entries.begin();
     for ( int i=0; i<n; ++i, ++e ) {
       AtomID aid = begin[i].id;
@@ -99,6 +103,10 @@ void AtomMapper::unregisterIDsFullAtom(const FullAtom *begin, const FullAtom *en
 #ifdef MEM_OPT_VERSION
   if ( ! map->onlyUseTbl ) {
     int n = end - begin;
+    if ( entries.size() != n ) {
+      CkPrintf("AtomMapper entries.size() %d != %d\n", entries.size(), n);
+      NAMD_bug("AtomMapper::unregisterIDsFullAtom size mismatch");
+    }
     AtomMapEntry *e = entries.begin();
     for ( int i=0; i<n; ++i, ++e ) {
       AtomID aid = begin[i].id;
