@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2012/02/17 02:13:13 $
- * $Revision: 1.1281 $
+ * $Date: 2012/02/21 18:51:05 $
+ * $Revision: 1.1282 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1853,8 +1853,12 @@ void Controller::compareChecksums(int step, int forgiving) {
     BigReal checksum, checksum_b;
 
     checksum = reduction->item(REDUCTION_ATOM_CHECKSUM);
-    if ( ((int)checksum) != molecule->numAtoms )
-      NAMD_bug("Bad global atom count!\n");
+    if ( ((int)checksum) != molecule->numAtoms ) {
+      char errmsg[256];
+      sprintf(errmsg, "Bad global atom count! (%d vs %d)\n",
+              (int)checksum, molecule->numAtoms);
+      NAMD_bug(errmsg);
+    }
 
     checksum = reduction->item(REDUCTION_COMPUTE_CHECKSUM);
     if ( ((int)checksum) && ((int)checksum) != computeChecksum ) {
