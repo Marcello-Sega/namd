@@ -397,11 +397,10 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
       read_mol_signatures(filename, param, cfgList);
 #else
 	read_psf_file(filename, param);	
-#endif      
-
-  //LCPO
+ //LCPO
   assignLCPOTypes( 0 );
-}
+#endif      
+ }
 
 /************************************************************************/
 /*                                                                      */
@@ -486,10 +485,9 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
 
   numRealBonds = numBonds;
   build_atom_status();
-#endif
-
   //LCPO
   assignLCPOTypes( 2 );
+#endif
 }
 
 /*      END OF FUNCTION Molecule      */
@@ -8960,8 +8958,10 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
 
   read_parm(amber_data);
 
+#ifndef MEM_OPT_VERSION
   //LCPO
   assignLCPOTypes( 1 );
+#endif
 }
 /*      END OF FUNCTION Molecule      */
 
@@ -9295,8 +9295,10 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
 
   read_parm(gromacsTopFile);
 
+#ifndef MEM_OPT_VERSION
   //LCPO
   assignLCPOTypes( 3 );
+#endif
 }
 /*      END OF FUNCTION Molecule      */
 
