@@ -2289,7 +2289,7 @@ inline int getLCPOType(char atomType[11], int numBonds) {
 void Molecule::assignLCPOTypes(int inputType) {
 //CkPrintf("Molecule::assignLCPOTypes() from input type %d\n", inputType);
 
-  int heavyBonds[numAtoms];
+  int *heavyBonds = new int[numAtoms];
   for (int i = 0; i < numAtoms; i++)
     heavyBonds[i] = 0;
   for (int i = 0; i < numBonds; i++ ) {
@@ -2316,6 +2316,8 @@ void Molecule::assignLCPOTypes(int inputType) {
       );*/
     //CkPrintf("VDW_TYPE %02d %4s\n", atoms[i].vdw_type, atomNames[i].atomtype);
   } // for atoms
+
+  delete [] heavyBonds;
 
 } // buildLCPOTable
 
