@@ -83,6 +83,9 @@ protected:
       BigReal electEnergy;
       BigReal electEnergySlow;
       BigReal ljEnergy;
+      BigReal goNativeEnergy;
+      BigReal goNonnativeEnergy;
+      BigReal goTotalEnergy;
 //fepb
       BigReal electEnergy_f;
       BigReal electEnergySlow_f;

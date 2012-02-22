@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2012/02/22 20:40:14 $
- * $Revision: 1.1283 $
+ * $Date: 2012/02/22 21:56:25 $
+ * $Revision: 1.1284 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2060,18 +2060,6 @@ void Controller::printEnergies(int step, int minimize)
     BigReal potentialEnergy;
     BigReal flatEnergy;
     BigReal smoothEnergy;
-    // Ported by JLai
-    BigReal goNativeEnergy;
-    BigReal goNonnativeEnergy;
-    //BigReal relgoNativeEnergy;
-    //BigReal relgoNonnativeEnergy;
-    BigReal goTotal;
-    //BigReal goAvg;
-    //BigReal goSum;
-    //BigReal goIndex;
-    //BigReal goNativeEnergyReference;
-    //BigReal goNonnativeEnergyReference;
-    // End of port -- JLai
 
     Vector momentum;
     Vector angularMomentum;
@@ -2089,18 +2077,11 @@ void Controller::printEnergies(int step, int minimize)
     {
       electEnergy = reduction->item(REDUCTION_ELECT_ENERGY);
       ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
+
       // JLai
-      if( simParameters->goForcesOn) {
-	//goNativeEnergyReference = (molecule)->energyNative;
-	//goNonnativeEnergyReference = (molecule)->energyNonnative;
-	goNativeEnergy = reduction->item(REDUCTION_GO_NATIVE_ENERGY);
-	goNonnativeEnergy = reduction->item(REDUCTION_GO_NONNATIVE_ENERGY);
-	//relgoNativeEnergy = goNativeEnergy - goNativeEnergyReference ;
-	//relgoNonnativeEnergy = goNonnativeEnergy - goNonnativeEnergyReference ;
-	goTotal = goNativeEnergy + goNonnativeEnergy;
-      }
-      //goSum += goTotal;
-      //goIndex ++;
+      goNativeEnergy = reduction->item(REDUCTION_GO_NATIVE_ENERGY);
+      goNonnativeEnergy = reduction->item(REDUCTION_GO_NONNATIVE_ENERGY);
+      goTotalEnergy = goNativeEnergy + goNonnativeEnergy;
 
 //fepb
       electEnergy_f = reduction->item(REDUCTION_ELECT_ENERGY_F);
@@ -2144,7 +2125,7 @@ void Controller::printEnergies(int step, int minimize)
     // Ported by JLai
     potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy +
 	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
-	crosstermEnergy + boundaryEnergy + miscEnergy + goNativeEnergy + goNonnativeEnergy;
+	crosstermEnergy + boundaryEnergy + miscEnergy + goTotalEnergy;
     // End of port
     totalEnergy = potentialEnergy + kineticEnergy;
     flatEnergy = totalEnergy +
@@ -2454,7 +2435,7 @@ void Controller::printEnergies(int step, int minimize)
       iout << FORMAT(goNonnativeEnergy);
       //iout << FORMAT(relgoNativeEnergy);
       //iout << FORMAT(relgoNonnativeEnergy);
-      iout << FORMAT(goTotal);
+      iout << FORMAT(goTotalEnergy);
       //iout << FORMAT("not implemented");
     } // End of port -- JLai
     iout << "\n\n" << endi;
