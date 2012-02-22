@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2012/02/21 18:51:05 $
- * $Revision: 1.1282 $
+ * $Date: 2012/02/22 20:40:14 $
+ * $Revision: 1.1283 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1928,16 +1928,24 @@ void Controller::compareChecksums(int step, int forgiving) {
         iout << iWARN << "High global exclusion count, possible error!\n"
           << iWARN << "This warning is not unusual during minimization.\n"
           << iWARN << "Decreasing pairlistdist or cutoff that is too close to periodic cell size may avoid this.\n" << endi;
-      else
-        NAMD_bug("High global exclusion count!  System unstable or pairlistdist or cutoff too close to periodic cell size.\n");
+      else {
+        char errmsg[256];
+        sprintf(errmsg, "High global exclusion count!  (%d vs %d)  System unstable or pairlistdist or cutoff too close to periodic cell size.\n",
+                (int)checksum, molecule->numCalcExclusions);
+        NAMD_bug(errmsg);
+      }
     }
     if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions ) {
       if ( forgiving )
         iout << iWARN << "Low global exclusion count, possible error!\n"
           << iWARN << "This warning is not unusual during minimization.\n"
           << iWARN << "Increasing pairlistdist or cutoff may avoid this.\n" << endi;
-      else
-        NAMD_bug("Low global exclusion count!  System unstable or pairlistdist or cutoff too small.\n");
+      else {
+        char errmsg[256];
+        sprintf(errmsg, "Low global exclusion count!  (%d vs %d)  System unstable or pairlistdist or cutoff too small.\n",
+                (int)checksum, molecule->numCalcExclusions);
+        NAMD_bug(errmsg);
+      }
     }
 
     checksum = reduction->item(REDUCTION_MARGIN_VIOLATIONS);
