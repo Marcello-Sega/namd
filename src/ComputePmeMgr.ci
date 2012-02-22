@@ -62,24 +62,24 @@ module ComputePmeMgr {
       while ( 1 ) {
         atomic { hasData = 0; }
         for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
-          when recvGrid(PmeGridMsg *msg) atomic {
+          when recvGrid(PmeGridMsg *msg) atomic "recv_grid" {
             if ( msg->hasData ) hasData = 1;
             recv_grid(msg); grid_msgs[imsg] = msg;
           }
         }
 	if ( hasData ) {
-	  atomic { forward_fft(); }
+	  atomic "forward_fft" { forward_fft(); }
 	}
-        atomic { send_trans(); }
+        atomic "send_trans" { send_trans(); }
 	if ( hasData ) {
 	  for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
-	    when recvUntrans(PmeUntransMsg *msg) atomic {
+	    when recvUntrans(PmeUntransMsg *msg) atomic "recv_untrans" {
 	      recv_untrans(msg); delete msg;
 	    }
 	  }
-	  atomic { backward_fft(); }
+	  atomic "backward_fft" { backward_fft(); }
 	}
-	atomic {
+	atomic "send_ungrid" {
 	  int send_evir = 1;
 	  for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
 	    PmeGridMsg *msg = grid_msgs[imsg];
@@ -118,26 +118,26 @@ module ComputePmeMgr {
       while ( 1 ) {
         atomic { hasData = 0; }
         for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
-          when recvTrans(PmeTransMsg *msg) atomic {
+          when recvTrans(PmeTransMsg *msg) atomic "recv_trans" {
             if ( msg->hasData ) hasData = 1;
             needs_reply[msg->sourceNode] = msg->hasData;
             recv_trans(msg); delete msg;
           }
         }
        if ( hasData ) {
-        atomic { forward_fft(); }
+        atomic "forward_fft" { forward_fft(); }
        }
-        atomic { send_trans(); }
+        atomic "send_trans" { send_trans(); }
        if ( hasData ) {
         for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
-          when recvUntrans(PmeUntransMsg *msg) atomic {
+          when recvUntrans(PmeUntransMsg *msg) atomic "recv_untrans" {
             recv_untrans(msg); delete msg;
           }
         }
-        atomic { backward_fft(); }
-        atomic { send_untrans(); }
+        atomic "backward_fft" { backward_fft(); }
+        atomic "send_untrans0" { send_untrans(); }
        } else {
-        atomic { send_untrans(); }
+        atomic "send_untrans1" { send_untrans(); }
         for ( imsg=0; imsg < initdata.yBlocks; ++imsg ) {
 	  when recvAck(PmeAckMsg *msg) atomic { delete msg; }
         }
@@ -159,18 +159,18 @@ module ComputePmeMgr {
       while ( 1 ) {
         atomic { hasData = 0; }
         for ( imsg=0; imsg < initdata.xBlocks; ++imsg ) {
-          when recvTrans(PmeTransMsg *msg) atomic {
+          when recvTrans(PmeTransMsg *msg) atomic "recv_trans" {
             if ( msg->hasData ) hasData = 1;
             needs_reply[msg->sourceNode] = msg->hasData;
             recv_trans(msg); delete msg;
           }
         }
        if ( hasData ) {
-        atomic { forward_fft(); }
-        atomic { pme_kspace(); }
-        atomic { backward_fft(); }
+        atomic "forward_fft" { forward_fft(); }
+        atomic "pme_kspace" { pme_kspace(); }
+        atomic "backward_fft" { backward_fft(); }
        }
-       atomic { send_untrans(); }
+       atomic "send_untrans" { send_untrans(); }
       }
     };
   };
