@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dtanner $
- * $Date: 2012/02/23 16:46:29 $
- * $Revision: 1.1380 $
+ * $Date: 2012/02/23 19:39:49 $
+ * $Revision: 1.1381 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1341,7 +1341,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
       "maximum screened intrinsic radius", &fsMax, 1.728);
 
    opts.optionalB("main", "LCPO", "Use Linear Combination of Pairwise Overlaps for calculating SASA",
-      &LCPOOn, FALSE);
+      &LCPOOn, -1);
    opts.optional("LCPO", "surfaceTension",
       "Surfce Tension for LCPO (kcal/mol/Ang^2)", &surface_tension, 0.005);
 
@@ -2662,6 +2662,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    patchDimension += margin;
 
+    if (LCPOOn == -1 ) {
+      LCPOOn = GBISOn;
+    }
     //ensure patch can handle alpha_cutoff for gbis
     if (GBISOn) {
       //Check compatibility
@@ -2691,19 +2694,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
         NAMD_die("GBIS CUDA not yet compatible with fixed atoms");
 #endif
       }
-      if (LCPOOn) {
-#ifdef MEM_OPT_VERSION
-        NAMD_die("LCPO not yet available for memory optimized builds");
-#endif
-        if ( lattice.volume() > 0 ) {
-          NAMD_die("LCPO does not yet support periodic boundary conditions.");
-        }
-        //LCPO requires patches to be at least 17Ang in each dimension
-        if (patchDimension < 17*2 && (twoAwayX==1 || twoAwayY==1 || twoAwayZ==1)) {
-          iout << "Warning: LCPO with 2-Away may introduce errors\n" << endi;
-          iout << "Warning:      compare BOUNDARY Energy with 1-Away to verify\n" << endi;
-        }
-      }
 
       if (alpha_cutoff > patchDimension) {
         patchDimension = alpha_cutoff; 
@@ -2712,6 +2702,20 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       BigReal tmp = (initialTemp > 0) ? initialTemp : 300;
       kappa = 50.29216*sqrt(ion_concentration/solvent_dielectric/tmp);
       /*magic number = 1/sqrt(eps0*kB/(2*nA*e^2*1000))*/
+    } // GBISOn
+
+    if (LCPOOn) {
+#ifdef MEM_OPT_VERSION
+      NAMD_die("LCPO not yet available for memory optimized builds");
+#endif
+      if ( lattice.volume() > 0 ) {
+        NAMD_die("LCPO does not yet support periodic boundary conditions.");
+      }
+      //LCPO requires patches to be at least 17Ang in each dimension
+      if (patchDimension < 17*2 && (twoAwayX==1 || twoAwayY==1 || twoAwayZ==1)) {
+        iout << "Warning: LCPO with 2-Away may introduce errors due to smaller patch size\n" << endi;
+        iout << "Warning:      compare BOUNDARY Energy with 1-Away to verify\n" << endi;
+      }
     }
 
    //  Turn on global integration if not explicitly specified
