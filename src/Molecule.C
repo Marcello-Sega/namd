@@ -2287,8 +2287,6 @@ inline int getLCPOType(char atomType[11], int numBonds) {
 //2 - Plugin
 //3 - Gromacs
 void Molecule::assignLCPOTypes(int inputType) {
-//CkPrintf("Molecule::assignLCPOTypes() from input type %d\n", inputType);
-
   int *heavyBonds = new int[numAtoms];
   for (int i = 0; i < numAtoms; i++)
     heavyBonds[i] = 0;

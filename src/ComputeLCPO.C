@@ -22,6 +22,14 @@
 #include "common.h"
 #include "time.h"
 
+//#define COUNT_FLOPS
+
+#ifdef COUNT_FLOPS
+#define FLOPS(X) flops += X;
+#else
+#define FLOPS(X)
+#endif
+
 //#define MIN_DEBUG_LEVEL 4
 // #define DEBUGM
 
@@ -31,7 +39,8 @@ ComputeLCPO::ComputeLCPO(ComputeID c, PatchID p[], int t[],
   : Compute(c), workArrays(_workArrays),
     minPart(minPartition), maxPart(maxPartition),
     strideIg(numPartitions), numParts(numPartitions),
-    pairlistsMaxAge(10) {
+    pairlistsMaxAge(10), maxAtomRadius(1.9+1.4)
+  {
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -41,18 +50,14 @@ ComputeLCPO::ComputeLCPO(ComputeID c, PatchID p[], int t[],
   surfTen = simParams->surface_tension;
   pairlistsAge = pairlistsMaxAge;
 
-  //CkPrintf("ComputeLCPO[%d] uses patches ",cid);
   for (int i=0; i<getNumPatches(); i++) {
     patchID[i] = p[i];
-    //CkPrintf("%02d, ",patchID[i]);
     trans[i] = t[i];
     patch[i] = NULL;
     positionBox[i] = NULL;
     forceBox[i] = NULL;
     lcpoTypeBox[i] = NULL;
   } // for all patches
-  //CkPrintf("\n");
-  
 } // constructor
 
 ComputeLCPO::~ComputeLCPO() {
@@ -109,18 +114,7 @@ void ComputeLCPO::initialize() {
 
   basePriority = PATCH_PRIORITY(patchID[0]) + PROXY_RESULTS_PRIORITY;
 
-/*
-  //get offset between patches TODO
-  for (int i=0; i<8; i++) {
-    const Lattice &lattice = patch[i]->lattice;
-    for (int j=0; j<8; j++) {
-      offset[i][j] = lattice.offset(trans[i]) - lattice.offset(trans[j]);
-    }
-  }
-*/
-
   //get bounds of inner rectangular prism in octet
-  //bounds[3][2]; x, y, z; min, max
   bounds[0][0] = 0.5*(patchMap->min_a(patchID[0])+patchMap->max_a(patchID[0]));
   bounds[1][0] = 0.5*(patchMap->min_b(patchID[0])+patchMap->max_b(patchID[0]));
   bounds[2][0] = 0.5*(patchMap->min_c(patchID[0])+patchMap->max_c(patchID[0]));
@@ -133,7 +127,6 @@ void ComputeLCPO::initialize() {
   oob[2] = bounds[2][0] > bounds[2][1] ? 1 : 0;
 
   pairlistsAge = pairlistsMaxAge;
-
 } // initialize
 
 void ComputeLCPO::atomUpdate() {
@@ -147,14 +140,12 @@ void ComputeLCPO::atomUpdate() {
 // doWork
 //---------------------------------------------------------------------
 void ComputeLCPO::doWork() {
-//  CkPrintf("PE%d CID%d doWork()\n", CkMyPe(), cid);
   LdbCoordinator::Object()->startWork(ldObjHandle);
   for (int i=0; i<8; i++) {
     pos[i] = positionBox[i]->open();
     force[i] = forceBox[i]->open();
     posExt[i] = patch[i]->getCompAtomExtInfo();
     lcpoType[i] = lcpoTypeBox[i]->open();
-    //CkPrintf("%d\t\tPatch[%d,%d] lcpoTypeBox opened %d\n", sequence(), i, patchID[i], lcpoType[i]);
   }
 
   doForce();
@@ -227,7 +218,7 @@ int ComputeLCPO::isInBounds(Real x, Real y, Real z ) {
   return 1;
 } // isInBounds
 
-inline BigReal calcOverlap( Real r, Real ri, Real rj ) {
+inline BigReal calcOverlap( BigReal r, Real ri, Real rj ) {
   return PI*ri*(2*ri-r-(ri*ri-rj*rj)/r);
 }
 
@@ -237,9 +228,9 @@ inline BigReal calcOverlap( Real r, Real ri, Real rj ) {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void ComputeLCPO::doForce() {
-//CkPrintf("ComputeLCPO[%d]::doForce(%d) %d/%d\n",cid, sequence(),minPart,numParts);
 
   Real probeRadius = 1.4f;
+  Real cutMargin = 2.0;
 
   Position ngir, ngjr, ngkr;
   Real ri, rj, rk;
@@ -247,32 +238,31 @@ void ComputeLCPO::doForce() {
   BigReal dxik, dyik, dzik, r2ik, rik;
   BigReal dxjk, dyjk, dzjk, r2jk, rjk;
 
-  int numPairs1 = 0;
-  int numPairs2 = 0;
+#ifdef COUNT_FLOPS
+ int flops = 0;
+#endif
 
 //////////////////////////////////////////////////
 // Build Pairlists
 //////////////////////////////////////////////////
 if (pairlistsAge >= pairlistsMaxAge) {
   pairlistsAge = 0;
-  //double t_start = 1.0*clock()/CLOCKS_PER_SEC;
-  //CkPrintf("C%03d Rebuilding Pairlists %d/%d\n",cid,pairlistsAge,pairlistsMaxAge);
+  double t_start = 1.0*clock()/CLOCKS_PER_SEC;
   pairlistsAge = 0;
-  int pairsChecked = 0;
 
   inAtomsPl.reset();
-  for (int pI = 0; pI < 8; pI++) {
-    pairlists[pI].reset();
-    //triplets[pI].reset();
-  }
+  lcpoNeighborList.reset();
+  FLOPS(8);
+  cut2 = 1000+2*maxAtomRadius+cutMargin; cut2 *= cut2;
+  maxAtomRadius = 0;
   //find in-bounds atoms in each patch
   for (int pI = 0; pI < 8; pI++) {
-    //CkPrintf("Patch[%d] %d %d % 7.3f % 7.3f % 7.3f\n",patchID[pI],trans[pI],offset[pI].x,offset[pI].y,offset[pI].z);
     if (numAtoms[pI] == 0) continue;
 
     int minIg = 0;
     for (int s = 0; s < minPart; s++) {
       minIg += pos[pI][minIg].nonbondedGroupSize;
+      FLOPS(1)
     }
     strideIg = numParts;//stride through partitions
     plint *inAtoms = inAtomsPl.newlist(numAtoms[pI]);
@@ -281,101 +271,104 @@ if (pairlistsAge >= pairlistsMaxAge) {
     //iterate over heavy atoms only
     for ( int ngi = minIg; ngi < numAtoms[pI]; /* ngi */) {
       ngir = pos[pI][ngi].position;
-      if ( isInBounds(ngir.x, ngir.y, ngir.z) && 
-          lcpoType[pI][ngi] > 0 ) {
+      if ( isInBounds(ngir.x, ngir.y, ngir.z) && lcpoType[pI][ngi] > 0 ) {
         inAtoms[numAtomsInBounds++] = ngi;
-        int idi = posExt[pI][ngi].id;
-        //CkPrintf("C%03d P%03d ATOM %05d\n", cid, pI, idi);
-
         ri = probeRadius+lcpoParams[ lcpoType[pI][ngi] ][0];
+        maxAtomRadius = (ri > maxAtomRadius) ? ri : maxAtomRadius;
+        FLOPS(1);
 
-        //find pairs in all 8 patches
+        int maxAtoms = 0;
+        for (int pJ = 0; pJ < 8; pJ++) {
+          maxAtoms += numAtoms[pJ];
+        }
+        LCPOAtom *lcpoNeighbors = lcpoNeighborList.newlist(maxAtoms);
+        int numLcpoNeighbors = 0;
+
+        //find pairs of this inAtom from all 8 patches
         for (int pJ = 0; pJ < 8; pJ++) {
           if (numAtoms[pJ] == 0) continue;
 
-          plint *neighbors = pairlists[pJ].newlist(numAtoms[pJ]); // pI
-          int numNeighbors = 0;
-
           // j atom pairs
           for ( int ngj = 0; ngj < numAtoms[pJ]; /* ngj */) {
-            pairsChecked++;
-            rj = probeRadius+lcpoParams[ lcpoType[pJ][ngj] ][0];
-            int idj = posExt[pJ][ngj].id;
-
+            FLOPS(1)
             ngjr = pos[pJ][ngj].position;
             dxij = ngir.x - ngjr.x;
             dyij = ngir.y - ngjr.y;
             dzij = ngir.z - ngjr.z;
+
+            // i-j coarse check if too far apart
             r2ij = dxij*dxij + dyij*dyij + dzij*dzij;
-            rij = sqrt(r2ij);
+            FLOPS(8)
+            if (r2ij < cut2 && r2ij > 0.01) {
 
-            // radii + margin
-            if (rij < (ri+rj+2) && rij > 0.01) {
-              //found atom pair
-              neighbors[numNeighbors] = ngj;
-              //trips[jAtoms]   = ngj;
-              numNeighbors++;
-              //CkPrintf("C%03d P%03d ATOM %05d P%03d PAIR %05d\n",cid,pI,idi,pJ,idj);
-
-              //CkPrintf("AtomPair[%05d,%05d] (% 7.3f,% 7.3f,% 7.3f) (% 7.3f,% 7.3f,% 7.3f) % 7.3f\n",
-              //  posExt[pI][ngi].id,
-              //  posExt[pJ][ngj].id,
-              //  ngir.x, ngir.y, ngir.z,
-              //  ngjr.x, ngjr.y, ngjr.z,
-              //  sqrt(r2)
-              //);
-              numPairs1++;
-            } // pair within cutoff
-
+              // i-j precise check if too far apart
+              rj = probeRadius+lcpoParams[ lcpoType[pJ][ngj] ][0];
+              rij = sqrt(r2ij);
+              FLOPS(5)
+              if (rij < (ri+rj+cutMargin) && rij > 0.01) {
+                lcpoNeighbors[numLcpoNeighbors].x = ngjr.x;
+                lcpoNeighbors[numLcpoNeighbors].y = ngjr.y;
+                lcpoNeighbors[numLcpoNeighbors].z = ngjr.z;
+                lcpoNeighbors[numLcpoNeighbors].r = rj;
+                lcpoNeighbors[numLcpoNeighbors].f =
+                  &force[pJ]->f[Results::nbond][ngj];
+                numLcpoNeighbors++;
+                FLOPS(2)
+                maxAtomRadius = (rj > maxAtomRadius) ? rj : maxAtomRadius;
+              } // precise cutoff
+            } // coarse cutoff
             //jump to next nonbonded group
             ngj += pos[pJ][ngj].nonbondedGroupSize;
-
-          } // for pair atoms
-          pairlists[pJ].newsize(numNeighbors); // pI
-          //CkPrintf("PI%03d PJ%03d numNeighbors = %d\n", pI, pJ, numNeighbors);
-          //CkPrintf("C%03d pairlists[%03d].newsize() %d\n", cid, pJ, numNeighbors);
+            FLOPS(1)
+          } // for j atoms
         } // for patches J
+        lcpoNeighborList.newsize(numLcpoNeighbors);
       } // in bounds
       //jump to next nonbonded group for round-robin
       for (int s = 0; s < strideIg; s++) {
         ngi += pos[pI][ngi].nonbondedGroupSize;
+        FLOPS(1)
       }
-    } // for atoms
+    } // for i atoms
     inAtomsPl.newsize(numAtomsInBounds);
-    //CkPrintf("C%03d inAtomsPl[%03d].newsize() %d\n", cid, pI, numAtomsInBounds);
   } // for patches I
-  //double t_stop = 1.0*clock()/CLOCKS_PER_SEC;
-  //CkPrintf("LCPO_TIME %7.3f pairs/us %d @ %f\n", pairsChecked*1e-6/(t_stop-t_start),pairsChecked,(t_stop-t_start));
-} else {
-  //CkPrintf("C%03d Reusing Pairlists %d/%d\n",cid,pairlistsAge,pairlistsMaxAge);
+#ifdef COUNT_FLOPS
+  double t_stop = 1.0*clock()/CLOCKS_PER_SEC;
+  CkPrintf("LCPO_TIME_P %7.3f Gflops %9d @ %f\n", flops*1e-9/(t_stop-t_start),flops,(t_stop-t_start));
+#endif
 }
+#ifdef COUNT_FLOPS
+  double t_start = 1.0*clock()/CLOCKS_PER_SEC;
+  flops = 0;
+#endif
 
+  //reset pairlists
   inAtomsPl.reset();
+  lcpoNeighborList.reset();
+  cut2 = 1000+maxAtomRadius*2; cut2 *= cut2;
 
-  for (int pI = 0; pI < 8; pI++) {
-    pairlists[pI].reset();
-  }
-
-
-  int numTrips = 0;
+  //init values
+  int numSingles = 0;
+  int numPairs = 0;
+  int numTriplets = 0;
   BigReal totalSurfaceArea = 0;
 
-
-  //double t_start = 1.0*clock()/CLOCKS_PER_SEC;
-  int numTriplets = 0;
-
 //////////////////////////////////////////////////
-// Perform LCPO Calculation
 //////////////////////////////////////////////////
+////
+////   Perform LCPO Calculation
+////
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
+  //for each patch in octet
   for (int pI = 0; pI < 8; pI++) {
     if (numAtoms[pI] == 0) continue;
     plint *inAtoms;
     int numInAtoms;
     inAtomsPl.nextlist( &inAtoms, &numInAtoms );
-    //CkPrintf("C%03d S%d inAtomsPl[%03d].nextlist() %d\n", cid, sequence(), pI, numInAtoms);
+    //for each inAtom in each patch
     for (int i = 0; i < numInAtoms; i++) {
-      int iPairs = 0;
-      int iTrips = 0;
+      numSingles++;
       int iIndex = inAtoms[i];
       int idi = posExt[pI][iIndex].id;
       Real xi = pos[pI][iIndex].position.x;
@@ -383,7 +376,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
       Real zi = pos[pI][iIndex].position.z;
       const Real *lcpoParamI = lcpoParams[ lcpoType[pI][iIndex] ];
       ri = probeRadius+lcpoParamI[0];
-      //CkPrintf("C%03d Atom[%07d](%2d) = % 7.3f, % 7.3f, % 7.3f\n",cid,idi,lcpoType[pI][iIndex],xi,yi,zi);
+      FLOPS(1)
 
       Real P1 = lcpoParamI[1];
       Real P2 = lcpoParamI[2];
@@ -393,15 +386,16 @@ if (pairlistsAge >= pairlistsMaxAge) {
 //////////////////////////////////////////////////
 // S1
 //////////////////////////////////////////////////
-      BigReal S1 = 4.0*PI*ri*ri;
+      BigReal S1 = 4.0*PI*ri*ri; // a
+      FLOPS(3)
 
       //for surface area calculation
-      BigReal AijSum = 0;
-      BigReal AjkSum = 0;
-      BigReal AjkjSum = 0;
-      BigReal AijAjkSum = 0;
+      BigReal AijSum = 0; // b
+      BigReal AjkSum = 0; // c
+      BigReal AjkjSum = 0; // d'
+      BigReal AijAjkSum = 0; // d
 
-      //force
+      //for force calculation
       BigReal dAijdrijdxiSum    = 0.0;
       BigReal dAijdrijdyiSum    = 0.0;
       BigReal dAijdrijdziSum    = 0.0;
@@ -409,234 +403,168 @@ if (pairlistsAge >= pairlistsMaxAge) {
       BigReal dAijdrijdyiAjkSum = 0.0;
       BigReal dAijdrijdziAjkSum = 0.0;
 
-
 //////////////////////////////////////////////////
-// Pairs
+// for J Atoms
 //////////////////////////////////////////////////
-      plint *neighbors[8];
-      int numNeighbors[8];
-      for (int pJ = 0; pJ < 8; pJ++) {
-        if (numAtoms[pJ] == 0) continue;
-        pairlists[pJ].nextlist( &neighbors[pJ], &numNeighbors[pJ] );
-        //CkPrintf("Pi%03d Pj%03d numNeighbors = %d\n", pI, pJ, numNeighbors[pJ]);
-        //CkPrintf("C%03d pairlists[%03d].nextlist() %d\n", cid, pJ, numNeighbors[pJ]);
-      }
-      //  pairlists[pI].nextlist( &jAtoms, &numJAtoms );
-      for (int pJ = 0; pJ < 8; pJ++) {
-        if (numAtoms[pJ] == 0) continue;
-        //CkPrintf("C%03d 2PATCH %03d:%03d %03d:%03d\n",cid,pI,numInAtoms,pJ,numNeighbors[pJ]);
+      LCPOAtom *lcpoNeighbors;
+      int numLcpoNeighbors;
+      lcpoNeighborList.nextlist( &lcpoNeighbors, &numLcpoNeighbors );
 
-        numPairs2 += numNeighbors[pJ];
+      for (int j = 0; j < numLcpoNeighbors; j++) {
+        Real xj = lcpoNeighbors[j].x;
+        Real yj = lcpoNeighbors[j].y;
+        Real zj = lcpoNeighbors[j].z;
+        Real rj = lcpoNeighbors[j].r;
 
-        for (int j = 0; j < numNeighbors[pJ]; j++) {
-          int jIndex = neighbors[pJ][j];
-          int idj = posExt[pJ][jIndex].id;
-          Real xj = pos[pJ][jIndex].position.x;
-          Real yj = pos[pJ][jIndex].position.y;
-          Real zj = pos[pJ][jIndex].position.z;
-          const Real *lcpoParamJ = lcpoParams[ lcpoType[pJ][jIndex] ];
-          rj = probeRadius+lcpoParamJ[0];
+        // i-j coarse check if too far away
+        dxij = xj-xi;
+        dyij = yj-yi;
+        dzij = zj-zi;
+        r2ij = dxij*dxij + dyij*dyij + dzij*dzij;
+        FLOPS(7);
+        if (r2ij >= cut2 || r2ij < 0.01) { continue; }
 
-          dxij = xj-xi;
-          dyij = yj-yi;
-          dzij = zj-zi;
-          r2ij = dxij*dxij + dyij*dyij + dzij*dzij;
-          rij = sqrt(r2ij);
-          BigReal rij_1 = 1.f / rij;
+        // i-j precise check if too far away
+        rij = sqrt(r2ij);
+        FLOPS(5)
+        if ( rij >= (ri+rj) ) { continue; }
 
-          if (rij >= (ri+rj) ||  rij < 0.01) {
-            continue;
-          }
-
-          //CkPrintf("C%03d AtomPair[%07d,%07d] = % 7.3f\n",cid,idi,idj,rij);
+        numPairs++;
+        BigReal rij_1 = 1.f / rij;
           
 //////////////////////////////////////////////////
 // S2
 //////////////////////////////////////////////////
-          BigReal Aij = calcOverlap(rij, ri, rj);
-          AijSum += Aij;
-          iPairs++;
+        BigReal Aij = calcOverlap(rij, ri, rj);
+        AijSum += Aij;
+        FLOPS(12)
 
-          //force
-          BigReal dAijdrij = PI*ri*(rij_1*rij_1*(ri*ri-rj*rj)-1);
-          BigReal dAijdrijdxj = dAijdrij*dxij*rij_1;
-          BigReal dAijdrijdyj = dAijdrij*dyij*rij_1;
-          BigReal dAijdrijdzj = dAijdrij*dzij*rij_1;
+        //for dAi_drj force calculation
+        BigReal dAijdrij = PI*ri*(rij_1*rij_1*(ri*ri-rj*rj)-1);
+        BigReal dAijdrijdxj = dAijdrij*dxij*rij_1; // g k' i' l'
+        BigReal dAijdrijdyj = dAijdrij*dyij*rij_1;
+        BigReal dAijdrijdzj = dAijdrij*dzij*rij_1;
+        FLOPS(14)
 
+        BigReal AjkjSum = 0; // i' l'
+        BigReal dAjkdrjkdxjSum = 0.0;
+        BigReal dAjkdrjkdyjSum = 0.0;
+        BigReal dAjkdrjkdzjSum = 0.0;
 
 //////////////////////////////////////////////////
-// Triplets
+// for K Atoms
 //////////////////////////////////////////////////
-          BigReal AjkjSum = 0;
-          BigReal AjkSum2 = 0;
+        for (int k = 0; k < numLcpoNeighbors; k++) {
+          Real xk = lcpoNeighbors[k].x;
+          Real yk = lcpoNeighbors[k].y;
+          Real zk = lcpoNeighbors[k].z;
+          Real rk = lcpoNeighbors[k].r;
 
-          //force
-          BigReal dAjkdrjkdxjSum = 0.0;
-          BigReal dAjkdrjkdyjSum = 0.0;
-          BigReal dAjkdrjkdzjSum = 0.0;
+          // i-k coarse check if too far away
+          dxik = xk-xi;
+          dyik = yk-yi;
+          dzik = zk-zi;
+          r2ik = dxik*dxik + dyik*dyik + dzik*dzik;
+          FLOPS(8)
+          if (r2ik >= cut2 || r2ik < 0.01) { continue; }
 
-          for (int pK = 0; pK < 8; pK++) {
-            if (numAtoms[pK] == 0) continue;
-            //CkPrintf("C%03d 3PATCH %03d:%03d %03d:%03d %03d:%03d\n",cid,pI,numInAtoms,pJ,numNeighbors[pJ],pK,numNeighbors[pK]);
+          // j-k coarse check if too far away
+          dxjk = xk-xj;
+          dyjk = yk-yj;
+          dzjk = zk-zj;
+          r2jk = dxjk*dxjk + dyjk*dyjk + dzjk*dzjk;
+          FLOPS(8)
+          if (r2jk >= cut2 || r2jk < 0.01) { continue; }
 
-            for (int k = 0; k < numNeighbors[pK]; k++) {
-              int kIndex = neighbors[pK][k];
-              //CkPrintf("C%03d kIndex = %d (%d/%d)\n", cid, kIndex, k, numNeighbors[pK]);
-              int idk = posExt[pK][kIndex].id;
-              Real xk = pos[pK][kIndex].position.x;
-              Real yk = pos[pK][kIndex].position.y;
-              Real zk = pos[pK][kIndex].position.z;
-              const Real *lcpoParamK = lcpoParams[ lcpoType[pK][kIndex] ];
-              rk = probeRadius+lcpoParamK[0];
+          // i-k precise check if too far away
+          rik  = sqrt(r2ik);
+          FLOPS(3)
+          if ( rik >= (ri+rk) ) { continue; }
 
-              //CkPrintf("C%03d P%03d ATOM%05d P%03d PAIR%05d P%03d TRIP%05d\n",cid, pI,idi,pJ,idj,pK,idk);
+          // j-k precise check if too far away
+          rjk  = sqrt(r2jk);
+          FLOPS(2)
+          if ( rjk >= (rj+rk) ) { continue; }
 
-              dxik = xk-xi;
-              dyik = yk-yi;
-              dzik = zk-zi;
-              r2ik = dxik*dxik + dyik*dyik + dzik*dzik;
-              rik  = sqrt(r2ik);
-
-              if (rik >= (ri+rk) ||  rik < 0.01) {
-                continue;
-              }
-
-              dxjk = xk-xj;
-              dyjk = yk-yj;
-              dzjk = zk-zj;
-              r2jk = dxjk*dxjk + dyjk*dyjk + dzjk*dzjk;
-              rjk  = sqrt(r2jk);
-
-              if (rjk >= (rj+rk) ||  rjk < 0.01) {
-                continue;
-              }
-
-              numTriplets++;
-
-              BigReal rjk_1 = 1.0/rjk;
-              BigReal Ajk = calcOverlap(rjk, rj, rk);
 //////////////////////////////////////////////////
 // S3
 //////////////////////////////////////////////////
-              AjkSum  += Ajk;
-              AjkjSum += Ajk;
-              AjkSum2 += Ajk;
-              numTrips++;
-              iTrips++;
+          numTriplets++;
+          BigReal rjk_1 = 1.0/rjk;
+          BigReal Ajk = calcOverlap(rjk, rj, rk);
+          FLOPS(12)
+          AjkSum  += Ajk;
+          AjkjSum += Ajk; // i' l'
+          FLOPS(5)
 
-              //force
-              BigReal dAjkdrjk = PI*rj*rjk_1*(rjk_1*rjk_1*(rj*rj-ri*ri) - 1.f);
+//////////////////////////////////////////////////
+// Force dAi_drk
+//////////////////////////////////////////////////
+          BigReal dAjkdrjk = PI*rj*rjk_1*(rjk_1*rjk_1*(rj*rj-ri*ri) - 1.f);//ef'
+          BigReal dAjkdrjkdxj = -dAjkdrjk*dxjk; // e f h'
+          BigReal dAjkdrjkdyj = -dAjkdrjk*dyjk;
+          BigReal dAjkdrjkdzj = -dAjkdrjk*dzjk;
+          lcpoNeighbors[k].f->x -= -dAjkdrjkdxj*(P3+P4*Aij)*surfTen; // e f
+          lcpoNeighbors[k].f->y -= -dAjkdrjkdyj*(P3+P4*Aij)*surfTen;
+          lcpoNeighbors[k].f->z -= -dAjkdrjkdzj*(P3+P4*Aij)*surfTen;
 
-              BigReal dAjkdrjkdxj = dAjkdrjk*(xj-xk);
-              BigReal dAjkdrjkdyj = dAjkdrjk*(yj-yk);
-              BigReal dAjkdrjkdzj = dAjkdrjk*(zj-zk);
+          dAjkdrjkdxjSum += dAjkdrjkdxj; // h j'
+          dAjkdrjkdyjSum += dAjkdrjkdyj;
+          dAjkdrjkdzjSum += dAjkdrjkdzj;
+          FLOPS(34)
 
-              //f(3*k-2) = f(3*k-2) - dajkddjkdxj*p3p4aij
-              //f(3*k-1) = f(3*k-1) - dajkddjkdyj*p3p4aij
-              //f(3*k  ) = f(3*k  ) - dajkddjkdzj*p3p4aij
-
-              //p3p4aij = -surften*(p3(i) + p4(i)*aij)*frespa
-
-              force[pK]->f[Results::nbond][kIndex].x -= -dAjkdrjkdxj*(P3+P4*Aij)*surfTen;
-              force[pK]->f[Results::nbond][kIndex].y -= -dAjkdrjkdyj*(P3+P4*Aij)*surfTen;
-              force[pK]->f[Results::nbond][kIndex].z -= -dAjkdrjkdzj*(P3+P4*Aij)*surfTen;
-
-              /*CkPrintf("S%03d FK[%05d] = % 7.3f, % 7.3f, % 7.3f\n",
-                sequence(),
-                idk,
-                dAjkdrjkdxj*(P3+P4*Aij)*surfTen,
-                dAjkdrjkdyj*(P3+P4*Aij)*surfTen,
-                dAjkdrjkdzj*(P3+P4*Aij)*surfTen
-                ); */
-
-              dAjkdrjkdxjSum += dAjkdrjkdxj;
-              dAjkdrjkdyjSum += dAjkdrjkdyj;
-              dAjkdrjkdzjSum += dAjkdrjkdzj;
-
-            } // k atoms
+        } // k atoms
 //////////////////////////////////////////////////
 // S4
 //////////////////////////////////////////////////
-          } // for patches K
-          AijAjkSum += Aij*AjkjSum;
+        AijAjkSum += Aij*AjkjSum;
 
-          //force
-          dAijdrijdxiSum -= dAijdrijdxj;
-          dAijdrijdyiSum -= dAijdrijdyj;
-          dAijdrijdziSum -= dAijdrijdzj;
+//////////////////////////////////////////////////
+// Force dAi_drj
+//////////////////////////////////////////////////
+        BigReal lastxj = dAijdrijdxj*AjkjSum + Aij*dAjkdrjkdxjSum; // i j
+        BigReal lastyj = dAijdrijdyj*AjkjSum + Aij*dAjkdrjkdyjSum;
+        BigReal lastzj = dAijdrijdzj*AjkjSum + Aij*dAjkdrjkdzjSum;
+        BigReal dAidxj = (P2*dAijdrijdxj + P3*dAjkdrjkdxjSum + P4*lastxj);//ghij
+        BigReal dAidyj = (P2*dAijdrijdyj + P3*dAjkdrjkdyjSum + P4*lastyj);
+        BigReal dAidzj = (P2*dAijdrijdzj + P3*dAjkdrjkdzjSum + P4*lastzj);
+        lcpoNeighbors[j].f->x -= dAidxj*surfTen;
+        lcpoNeighbors[j].f->y -= dAidyj*surfTen;
+        lcpoNeighbors[j].f->z -= dAidzj*surfTen;
 
-          dAijdrijdxiAjkSum -= dAijdrijdxj*AjkjSum;
-          dAijdrijdyiAjkSum -= dAijdrijdyj*AjkjSum;
-          dAijdrijdziAjkSum -= dAijdrijdzj*AjkjSum;
+        //for dAi_dri force calculation
+        dAijdrijdxiSum -= dAijdrijdxj; // k
+        dAijdrijdyiSum -= dAijdrijdyj;
+        dAijdrijdziSum -= dAijdrijdzj;
+        dAijdrijdxiAjkSum -= dAijdrijdxj*AjkjSum; // l
+        dAijdrijdyiAjkSum -= dAijdrijdyj*AjkjSum;
+        dAijdrijdziAjkSum -= dAijdrijdzj*AjkjSum;
+        FLOPS(41)
+      } // j atoms
 
-          BigReal lastxj = dAijdrijdxj*AjkjSum + Aij*dAjkdrjkdxjSum;
-          BigReal lastyj = dAijdrijdyj*AjkjSum + Aij*dAjkdrjkdyjSum;
-          BigReal lastzj = dAijdrijdzj*AjkjSum + Aij*dAjkdrjkdzjSum;
-
-          BigReal dAidxj = (P2*dAijdrijdxj + P3*dAjkdrjkdxjSum + P4*lastxj);
-          BigReal dAidyj = (P2*dAijdrijdyj + P3*dAjkdrjkdyjSum + P4*lastyj);
-          BigReal dAidzj = (P2*dAijdrijdzj + P3*dAjkdrjkdzjSum + P4*lastzj);
-
-          //f(3*j-2) = f(3*j-2) - daidxj
-          //f(3*j-1) = f(3*j-1) - daidyj
-          //f(3*j  ) = f(3*j  ) - daidzj
-          force[pJ]->f[Results::nbond][jIndex].x -= dAidxj*surfTen;
-          force[pJ]->f[Results::nbond][jIndex].y -= dAidyj*surfTen;
-          force[pJ]->f[Results::nbond][jIndex].z -= dAidzj*surfTen;
-
-          /*CkPrintf("S%03d FJ[%05d] = % 7.3f, % 7.3f, % 7.3f\n",
-            sequence(),
-            idj,
-            -dAidxj*surfTen,
-            -dAidyj*surfTen,
-            -dAidzj*surfTen
-            ); */
-
-        } // for atom j
-      } // for patches J
-
-      // final atomic surface area calculation
-
-      BigReal SAi = P1*S1 + P2*AijSum + P3*AjkSum + P4*AijAjkSum;
-      SAi = (SAi > 0) ? SAi : 0.0;
-      //CkPrintf("SurfaceArea[%05d] = % 7.3f\n", idi, SAi);
-
-//CkPrintf("SA[%05i]=%7.3f (% 7.3e*% 7.3e + % 7.3e*% 7.3e + % 7.3e*% 7.3e + % 7.3e*% 7.3e) P%04i T%05i\n", idi, SAi, P1, S1, P2, AijSum, P3, AjkSum, P4, AijAjkSum, iPairs, iTrips);
-
-
-      //force
-      totalSurfaceArea += SAi;
-
-      BigReal dAidxi = (P2*dAijdrijdxiSum + P4*dAijdrijdxiAjkSum);
+//////////////////////////////////////////////////
+// Force dAi_dri
+//////////////////////////////////////////////////
+      BigReal dAidxi = (P2*dAijdrijdxiSum + P4*dAijdrijdxiAjkSum); // k l
       BigReal dAidyi = (P2*dAijdrijdyiSum + P4*dAijdrijdyiAjkSum);
       BigReal dAidzi = (P2*dAijdrijdziSum + P4*dAijdrijdziAjkSum);
-
       force[pI]->f[Results::nbond][iIndex].x -= dAidxi*surfTen;
       force[pI]->f[Results::nbond][iIndex].y -= dAidyi*surfTen;
       force[pI]->f[Results::nbond][iIndex].z -= dAidzi*surfTen;
-      /*CkPrintf("S%03d FI[%05d] = % 7.3f, % 7.3f, % 7.3f\n",
-        sequence(),
-        idi,
-        -dAidxi*surfTen,
-        -dAidyi*surfTen,
-        -dAidzi*surfTen
-        ); */
 
-      //params.ff[0] = r[a]->f[Results::nbond];
-      //params.ff[1] = r[b]->f[Results::nbond];
-
-
+//////////////////////////////////////////////////
+// Atom I Surface Area
+//////////////////////////////////////////////////
+      BigReal SAi = P1*S1 + P2*AijSum + P3*AjkSum + P4*AijAjkSum;
+      //CkPrintf("SurfArea[%05d] = % 7.3f\n",idi,SAi);
+      totalSurfaceArea += SAi;
+      FLOPS(22)
     } // for inAtoms
   } // for patches I
-  //double t_stop = 1.0*clock()/CLOCKS_PER_SEC;
-  //CkPrintf("LCPO_TIME %7.3f trips/us %d @ %f\n", numTriplets*1e-6/(t_stop-t_start),numTriplets, (t_stop-t_start));
-
-//  CkPrintf("C%03d NUMPAIRS1 %d\n", cid, numPairs1);
-//  CkPrintf("C%03d NUMPAIRS2 %d\n", cid, numPairs2);
-//  CkPrintf("C%03d NUMTRIPS %d\n", cid, numTrips);
-//  CkPrintf("C%03d TOTSURF %f\n",  cid, totalSurfaceArea);
-
-
+#ifdef COUNT_FLOPS
+  double t_stop = 1.0*clock()/CLOCKS_PER_SEC;
+  CkPrintf("LCPO_TIME_F %7.3f Gflops %9d @ %f\n", 1e-9*flops/(t_stop-t_start),flops, (t_stop-t_start));
+#endif
 
 //////////////////////////////////////////////////
 //  end calculation by submitting reduction
@@ -679,7 +607,3 @@ const Real ComputeLCPO::lcpoParams[23][5] = { //                      neigh
     { 1.80, 9.8318e-01, -4.0437e-01,  1.1249e-04, 4.9901e-04 }, // 21 Cl
     { 0.00, 0.0000e+00,  0.0000e+00,  0.0000e+00, 0.0000e+00 }  // 22 Mg
 };
-
-// SASA VMD LCPO gp 50831
-// SASA VMD grid gp 41969
-// SASA NAMDLCPO gp 48798 GREAT!

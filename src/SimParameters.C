@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dtanner $
- * $Date: 2012/02/21 14:43:48 $
- * $Revision: 1.1379 $
+ * $Date: 2012/02/23 16:46:29 $
+ * $Revision: 1.1380 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2692,8 +2692,16 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 #endif
       }
       if (LCPOOn) {
+#ifdef MEM_OPT_VERSION
+        NAMD_die("LCPO not yet available for memory optimized builds");
+#endif
         if ( lattice.volume() > 0 ) {
           NAMD_die("LCPO does not yet support periodic boundary conditions.");
+        }
+        //LCPO requires patches to be at least 17Ang in each dimension
+        if (patchDimension < 17*2 && (twoAwayX==1 || twoAwayY==1 || twoAwayZ==1)) {
+          iout << "Warning: LCPO with 2-Away may introduce errors\n" << endi;
+          iout << "Warning:      compare BOUNDARY Energy with 1-Away to verify\n" << endi;
         }
       }
 
@@ -4252,7 +4260,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
   }
 
   if (LCPOOn) {
-    iout << iINFO << "LCPO SASA SURFACE TENSION: " << surface_tension<< "KCAL/ANG^3\n";
+    iout << iINFO << "LCPO SASA SURFACE TENSION: " << surface_tension<< " kcal/mol/Ang^2\n";
   }
 
    tclBCScript = 0;

@@ -17,6 +17,81 @@
 #include "Box.h"
 #include "OwnerBox.h"
 #include "ComputeNonbondedUtil.h"
+#include "NamdTypes.h"
+
+struct LCPOAtom {
+  float x, y, z, r;
+  Vector *f; // where to write force 
+};
+
+class LCPONeighborList {
+  enum {initsize = 10};
+  int *nnfa; // number of neighbors for atom
+  int curAtom;
+  int maxAtoms;
+  LCPOAtom *neighbors;
+  int curNeighbor;
+  int maxNeighbors;
+  LCPONeighborList(const LCPONeighborList&) { ; }
+  LCPONeighborList& operator=(const LCPONeighborList&) { return *this; }
+public:
+  LCPONeighborList() :
+      maxNeighbors(initsize), maxAtoms(initsize),
+      curNeighbor(0), curAtom(0) {
+    neighbors = new LCPOAtom[initsize];
+    nnfa = new int[initsize];
+  }
+  ~LCPONeighborList() {
+    delete [] neighbors;
+    delete [] nnfa;
+  }
+  LCPOAtom *newlist(int max_size) {  // get a new list w/ room for max_size
+    //do we need to make room for more neighbors
+    int reqNewSize = curNeighbor + max_size;
+    int newSize = maxNeighbors;
+    while ( newSize < reqNewSize ) { newSize += newSize >> 1; }
+    if ( newSize > maxNeighbors ) {
+      LCPOAtom *newNeighbors = new LCPOAtom[newSize];
+      CmiMemcpy(newNeighbors,neighbors,curNeighbor*sizeof(LCPOAtom));
+      delete [] neighbors;
+      neighbors = newNeighbors;
+      maxNeighbors = newSize;
+    }
+    //do we need to make room for more atoms
+    if (curAtom == maxAtoms) {
+      newSize = maxAtoms + (maxAtoms >> 1);
+      int *newNnfa = new int[newSize];
+      CmiMemcpy(newNnfa,nnfa,curAtom*sizeof(int));
+      delete [] nnfa;
+      nnfa = newNnfa;
+      maxAtoms = newSize;
+    }
+    return &neighbors[curNeighbor];
+  }
+  // don't specify size if previous allocation should have extra space
+  LCPOAtom *newlist() {  // get a new list assuming already allocated
+    return &neighbors[curNeighbor];
+  }
+  void newsize(int list_size) {  // set the size of the last list gotten
+    nnfa[curAtom] = list_size;
+    curAtom++;
+    curNeighbor += list_size;
+  }
+  void reset() {  // go back to the beginning
+    curNeighbor = 0;
+    curAtom = 0;
+  }
+  void nextlist(LCPOAtom **list, int *list_size) {  // get next list and size
+    *list = &neighbors[curNeighbor];
+    *list_size = nnfa[curAtom];
+    curNeighbor += nnfa[curAtom];
+    curAtom ++;
+  }
+  int getSize() { return maxNeighbors; }
+};
+
+
+
 
 class Patch;
 class Node;
@@ -38,7 +113,6 @@ public:
 
 protected :
   int numAtoms[8];
-  //int gbisPhase;
   CompAtomExt *posExt[8];
   CompAtom *pos[8];
   Results *force[8];
@@ -64,22 +138,19 @@ protected :
   SubmitReduction *reduction;
 
   private:
-    int octet[8];//maps 0-7 into patchID for invalid patches
-    int pid8[8];
     BigReal bounds[3][2];
     int periodic[3];
     int oob[3];
-    nonbonded params;
     Vector offset[8];
     int minIg[8];
     int strideIg;//stride through partitions
 
     //index "i" is patch; index "j" is valid atoms in patch
     Pairlists inAtomsPl;
-    //a pairlist for each patch
-    Pairlists pairlists[8];
-    //Pairlists triplets[8];
     Real surfTen;
+    Real maxAtomRadius;
+    Real cut2;
+    LCPONeighborList lcpoNeighborList;
 
     static const Real lcpoParams[23][5];
 
