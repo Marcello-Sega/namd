@@ -15,7 +15,7 @@
 #include "UniqueSetIter.h"
 #include "Molecule.h"
 
-#define COLLECT_PERFORMANCE_DATA 1
+#define COLLECT_PERFORMANCE_DATA 0
 
 #ifdef MEM_OPT_VERSION
 class CollectionMgr;
