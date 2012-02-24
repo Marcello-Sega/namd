@@ -3203,7 +3203,7 @@ void PmeXPencil::fft_init() {
   nz = block3;
   if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
 
-  data = (float *) fftwf_malloc( sizeof(float) * K1*block2*block3*2);
+  data = (float *) fftwf_malloc( sizeof(float) * K1*ny*nz*2);
   work = new float[2*K1];
 
   order_init(initdata.xBlocks);
