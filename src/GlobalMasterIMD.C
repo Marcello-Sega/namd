@@ -173,6 +173,7 @@ void GlobalMasterIMD::get_vmd_forces() {
   int32 *vmd_atoms;
   float *vmd_forces;
   int paused = 0;
+  int warned = 0;
   vmdforce *vtest, vnew;
 
   // Loop through each socket one at a time.  By doing this, rather than 
@@ -199,7 +200,10 @@ void GlobalMasterIMD::get_vmd_forces() {
             goto vmdDestroySocket;
           } 
           if (IMDignore) {
-            iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
+            if ( ! warned ) {
+              warned = 1;
+              iout << iWARN << "Ignoring IMD forces due to IMDignore\n" << endi;
+            }
           } else {
             for (int i=0; i<length; i++) {
               vnew.index = vmd_atoms[i];
