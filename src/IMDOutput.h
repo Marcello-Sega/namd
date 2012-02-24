@@ -39,6 +39,7 @@ public:
 private:
   GlobalMasterIMD *imd;
   int transrate;
+  int ignore;
 };
 
 #endif

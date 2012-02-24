@@ -767,7 +767,7 @@ ComputeMgr::createComputes(ComputeMap *map)
         // masterServerObject->addClient(new GlobalMasterTest());
         if (simParams->tclForcesOn)
             masterServerObject->addClient(new GlobalMasterTcl());
-        if (simParams->IMDon)
+        if (simParams->IMDon && ! simParams->IMDignore)
             masterServerObject->addClient(new GlobalMasterIMD());
 
         if (simParams->SMDOn)
@@ -792,6 +792,11 @@ ComputeMgr::createComputes(ComputeMap *map)
 		if ( simParams->colvarsOn )
 			masterServerObject->addClient(new GlobalMasterColvars());
 
+    }
+
+    if ( !myNode && simParams->IMDon && simParams->IMDignore ) {
+      // GlobalMasterIMD constructor saves pointer to node->IMDOutput object
+      new GlobalMasterIMD();
     }
 
 #ifdef NAMD_CUDA

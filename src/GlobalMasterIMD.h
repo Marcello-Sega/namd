@@ -24,6 +24,8 @@ class GlobalMasterIMD : public GlobalMaster {
 
  protected:
 
+  friend class IMDOutput;
+
   virtual void calculate();
 
   // Simple function for getting MDComm-style forces from VMD

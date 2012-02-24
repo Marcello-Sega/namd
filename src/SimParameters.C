@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dtanner $
- * $Date: 2012/02/23 19:39:49 $
- * $Revision: 1.1381 $
+ * $Author: jim $
+ * $Date: 2012/02/24 22:04:13 $
+ * $Revision: 1.1382 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -4282,7 +4282,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    // Global forces configuration
 
    globalForcesOn = ( tclForcesOn || freeEnergyOn || miscForcesOn ||
-                      (IMDon) || SMDOn || TMDOn || colvarsOn || symmetryOn );
+                      (IMDon && ! IMDignore) || SMDOn || TMDOn || colvarsOn || symmetryOn );
 
 
    if (tclForcesOn)

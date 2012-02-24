@@ -10,6 +10,7 @@
 IMDOutput::IMDOutput() {
   imd = NULL;
   transrate = 1;
+  ignore = 0;
 }
 
 IMDOutput::~IMDOutput() {
@@ -17,6 +18,7 @@ IMDOutput::~IMDOutput() {
 
 void IMDOutput::use_imd(GlobalMasterIMD *g) {
   imd = g;
+  ignore = g->IMDignore;
 }
 
 void IMDOutput::gather_energies(IMDEnergies *energies) { 
@@ -25,6 +27,10 @@ void IMDOutput::gather_energies(IMDEnergies *energies) {
 }
 
 void IMDOutput::gather_coordinates(int timestep, int N, FloatVector *coords) {
+  if ( ignore ) {
+    imd->step = timestep;
+    imd->calculate();
+  }
   if (!imd || timestep % transrate) return;
   imd->send_fcoords(N, coords);
 }
