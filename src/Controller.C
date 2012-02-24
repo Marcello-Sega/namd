@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
  * $Author: jim $
- * $Date: 2012/02/22 21:56:25 $
- * $Revision: 1.1284 $
+ * $Date: 2012/02/24 01:25:01 $
+ * $Revision: 1.1285 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -1925,7 +1925,9 @@ void Controller::compareChecksums(int step, int forgiving) {
     if ( ((int)checksum) > molecule->numCalcExclusions &&
          ( ! simParams->mollyOn || step % slowFreq ) ) {
       if ( forgiving )
-        iout << iWARN << "High global exclusion count, possible error!\n"
+        iout << iWARN << "High global exclusion count ("
+                      << ((int)checksum) << " vs "
+                      << molecule->numCalcExclusions << "), possible error!\n"
           << iWARN << "This warning is not unusual during minimization.\n"
           << iWARN << "Decreasing pairlistdist or cutoff that is too close to periodic cell size may avoid this.\n" << endi;
       else {
@@ -1936,11 +1938,18 @@ void Controller::compareChecksums(int step, int forgiving) {
       }
     }
     if ( ((int)checksum) && ((int)checksum) < molecule->numCalcExclusions ) {
-      if ( forgiving )
-        iout << iWARN << "Low global exclusion count, possible error!\n"
-          << iWARN << "This warning is not unusual during minimization.\n"
-          << iWARN << "Increasing pairlistdist or cutoff may avoid this.\n" << endi;
-      else {
+      if ( forgiving || ! simParams->fullElectFrequency ) {
+        iout << iWARN << "Low global exclusion count!  ("
+          << ((int)checksum) << " vs " << molecule->numCalcExclusions << ")";
+        if ( forgiving ) {
+          iout << "\n"
+            << iWARN << "This warning is not unusual during minimization.\n"
+            << iWARN << "Increasing pairlistdist or cutoff may avoid this.\n";
+        } else {
+          iout << "  System unstable or pairlistdist or cutoff too small.\n";
+        }
+        iout << endi;
+      } else {
         char errmsg[256];
         sprintf(errmsg, "Low global exclusion count!  (%d vs %d)  System unstable or pairlistdist or cutoff too small.\n",
                 (int)checksum, molecule->numCalcExclusions);
