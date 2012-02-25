@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dtanner $
- * $Date: 2012/02/21 14:43:49 $
- * $Revision: 1.1237 $
+ * $Author: jim $
+ * $Date: 2012/02/25 02:33:37 $
+ * $Revision: 1.1238 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1261,9 +1261,9 @@ void WorkDistrib::assignPatchesRecursiveBisection()
     delete [] assignedNode; 
     
     iout << iWARN 
-	 << "WorkDistrib: Recursive bisection fails,"
-	 << "invoking least-load algorithm\n";
-    assignPatchesToLowestLoadNode();
+	 << "WorkDistrib: Recursive bisection fails, "
+	 << "invoking space-filling curve algorithm\n";
+    assignPatchesSpaceFillingCurve();
   }
 }
 
