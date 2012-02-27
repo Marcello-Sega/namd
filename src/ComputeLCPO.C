@@ -164,6 +164,8 @@ void ComputeLCPO::doWork() {
 
 int ComputeLCPO::noWork() {
 
+  pairlistsAge++;
+
   if ( patch[0]->flags.doFullElectrostatics ) {
     return 0;  // work to do, enqueue as usual
   } else {
@@ -574,8 +576,6 @@ if (pairlistsAge >= pairlistsMaxAge) {
   reduction->item(REDUCTION_BC_ENERGY) += totalSurfaceArea * surfTen;
   submitReductionData(reductionData,reduction);
   reduction->submit();
-
-  pairlistsAge++;
 
 }//end do Force
 
