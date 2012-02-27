@@ -1859,7 +1859,7 @@ PatchProxyListMsg *PatchProxyListMsg::createPatchProxyListMsg(PatchProxyListMsg 
 void NodeProxyMgr::createSTForHomePatches(PatchMap *pmap){
 	//We use implicit tree construction for all home patches
 	std::vector<int> nodesWithPatches; //record the id of node that has home patches
-	int myNodeIdx; //the index into the above vector of this node
+	int myNodeIdx = -1; //the index into the above vector of this node
 	for(int nodeId=0; nodeId<CkNumNodes(); ++nodeId) {
 		int hpCnt = 0;
                 int firstPe = CkNodeFirst(nodeId);
@@ -1880,6 +1880,15 @@ void NodeProxyMgr::createSTForHomePatches(PatchMap *pmap){
 		}
 	}
 
+	if(myNodeIdx==-1){
+		//there's no home patches on this node
+		//just set to a value that doesn't make sense in spanning tree.
+		parentNode = -2; 
+		numKidNodes = 0;
+		kidRecved = 0;
+		return;
+	}
+	
 	//calculate parent
 	if(myNodeIdx == 0) {
 		parentNode = -1;
