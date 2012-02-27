@@ -198,6 +198,7 @@ Node::Node(GroupInitMsg *msg)
   state = NULL;
   output = NULL;
   imd = new IMDOutput;
+  colvars = 0;
 
 #if USE_HPM
   // assumes that this will be done only on BG/P

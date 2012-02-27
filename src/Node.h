@@ -49,6 +49,7 @@ class LdbCoordinator;
 class ScriptTcl;
 class IMDOutput;
 class Vector;
+class colvarmodule;
 
 #ifdef MEM_OPT_VERSION
 class ParallelIOMgr;
@@ -166,6 +167,7 @@ public:
   NamdState *state;
   Output *output;
   IMDOutput *imd;
+  colvarmodule *colvars;
   Vector *coords;  // Only exists during measure from Tcl
 
   // Remove these calls?

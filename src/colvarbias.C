@@ -155,6 +155,58 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
 }
 
 
+void colvarbias::change_configuration(std::string const &conf)
+{
+  cvm::fatal_error ("Error: change_configuration() not implemented.\n");
+}
+
+
+cvm::real colvarbias::energy_difference(std::string const &conf)
+{
+  cvm::fatal_error ("Error: energy_difference() not implemented.\n");
+  return 0.;
+}
+
+
+void colvarbias_harmonic::change_configuration(std::string const &conf)
+{
+  get_keyval (conf, "forceConstant", force_k, force_k);
+  if (get_keyval (conf, "centers", colvar_centers, colvar_centers)) {
+    for (size_t i = 0; i < colvars.size(); i++) {
+      colvar_centers[i].apply_constraints();
+      colvar_centers_raw[i] = colvar_centers[i];
+    }
+  }
+}
+
+
+cvm::real colvarbias_harmonic::energy_difference(std::string const &conf)
+{
+  std::vector<colvarvalue> alt_colvar_centers;
+  cvm::real alt_force_k;
+  cvm::real alt_bias_energy = 0.0;
+
+  get_keyval (conf, "forceConstant", alt_force_k, force_k);
+
+  alt_colvar_centers.resize (colvars.size());
+  for (size_t i = 0; i < colvars.size(); i++) {
+    alt_colvar_centers[i].type (colvars[i]->type());
+  }
+  if (get_keyval (conf, "centers", alt_colvar_centers, colvar_centers)) {
+    for (size_t i = 0; i < colvars.size(); i++) {
+      colvar_centers[i].apply_constraints();
+    }
+  }
+
+  for (size_t i = 0; i < colvars.size(); i++) {
+    alt_bias_energy += 0.5 * alt_force_k / (colvars[i]->width * colvars[i]->width) *
+              colvars[i]->dist2(colvars[i]->value(), alt_colvar_centers[i]);
+  }
+
+  return alt_bias_energy - bias_energy;
+}
+
+
 cvm::real colvarbias_harmonic::update()
 {
   bias_energy = 0.0;

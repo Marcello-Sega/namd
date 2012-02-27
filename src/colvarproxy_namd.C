@@ -63,6 +63,8 @@ colvarproxy_namd::colvarproxy_namd()
   // initiate the colvarmodule, this object will be the communication
   // proxy
   colvars = new colvarmodule (config->data, this);
+  // save to Node for Tcl script access
+  Node::Object()->colvars = colvars;
 
   if (cvm::debug()) {
     cvm::log ("colvars_atoms = "+cvm::to_str (colvars_atoms)+"\n");

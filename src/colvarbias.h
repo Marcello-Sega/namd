@@ -22,6 +22,12 @@ public:
   /// Return bias energy
   virtual cvm::real update() = 0;
 
+  /// Load new configuration - force constant and/or centers only
+  virtual void change_configuration(std::string const &conf);
+
+  /// Calculate change in energy from using alternate configuration
+  virtual cvm::real energy_difference(std::string const &conf);
+
   /// Perform analysis tasks
   virtual inline void analyse() {}
 
@@ -75,6 +81,12 @@ public:
 
   /// Retrieve colvar values and calculate their biasing forces
   virtual cvm::real update();
+
+  /// Load new configuration - force constant and/or centers only
+  virtual void change_configuration(std::string const &conf);
+
+  /// Calculate change in energy from using alternate configuration
+  virtual cvm::real energy_difference(std::string const &conf);
 
   /// Read the bias configuration from a restart file
   virtual std::istream & read_restart (std::istream &is);

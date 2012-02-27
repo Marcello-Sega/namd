@@ -76,6 +76,7 @@ private:
   static int Tcl_moveallby(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_output(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_measure(ClientData, Tcl_Interp *, int, char **);
+  static int Tcl_colvarbias(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_checkpoint(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_revert(ClientData, Tcl_Interp *, int, char **);
   static int Tcl_callback(ClientData, Tcl_Interp *, int, char **);

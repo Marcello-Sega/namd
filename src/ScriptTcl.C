@@ -23,6 +23,7 @@
 #include "ProcessorPrivate.h"
 #include "PatchMgr.h"
 #include "Measure.h"
+#include "colvarmodule.h"
 #include "DumpBench.h"
 #include <stdio.h>
 #include <ctype.h>  // for isspace
@@ -652,6 +653,45 @@ int ScriptTcl::Tcl_measure(ClientData clientData,
   return script->measure_result;
 }
 
+int ScriptTcl::Tcl_colvarbias(ClientData clientData,
+        Tcl_Interp *interp, int argc, char *argv[]) {
+  ScriptTcl *script = (ScriptTcl *)clientData;
+  script->initcheck();
+  if (argc < 4 || argc % 2) {
+    Tcl_SetResult(interp,"wrong # args",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  colvarmodule *colvars = Node::Object()->colvars;
+  if ( ! colvars ) {
+    Tcl_SetResult(interp,"colvars module not active",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+  if ( ! strcmp(argv[1],"changeconfig") ) {
+    for ( int i=2; i<argc; i+=2 ) {
+      std::string name(argv[i]);
+      std::string conf(argv[i+1]);
+      colvars->change_configuration(name,conf);
+    }
+    return TCL_OK;
+  } else if ( ! strcmp(argv[1],"energydiff") ) {
+    if ( ! script->runWasCalled ) {
+      Tcl_SetResult(interp,"energydiff requires a previous timestep",TCL_VOLATILE);
+      return TCL_ERROR;
+    }
+    double ediff = 0.;
+    for ( int i=2; i<argc; i+=2 ) {
+      std::string name(argv[i]);
+      std::string conf(argv[i+1]);
+      ediff += colvars->energy_difference(name,conf);
+    }
+    Tcl_SetObjResult(interp, Tcl_NewDoubleObj(ediff));
+    return TCL_OK;
+  } else {
+    Tcl_SetResult(interp,"unknown colvarbias operation",TCL_VOLATILE);
+    return TCL_ERROR;
+  }
+}
+
 int ScriptTcl::Tcl_checkpoint(ClientData clientData,
         Tcl_Interp *interp, int argc, char *argv[]) {
   ScriptTcl *script = (ScriptTcl *)clientData;
@@ -1044,6 +1084,8 @@ ScriptTcl::ScriptTcl() : scriptBarrier(scriptBarrierTag) {
   Tcl_CreateCommand(interp, "output", Tcl_output,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "measure", Tcl_measure,
+    (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
+  Tcl_CreateCommand(interp, "colvarbias", Tcl_colvarbias,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
   Tcl_CreateCommand(interp, "checkpoint", Tcl_checkpoint,
     (ClientData) this, (Tcl_CmdDeleteProc *) NULL);
