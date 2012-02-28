@@ -1,5 +1,5 @@
 
-foreach f { fold_alanin.conf restart_1.conf } {
+foreach f { job0.conf job1.conf } {
   source $f
   source ../show_replicas.vmd
 }
