@@ -30,11 +30,14 @@ clone_reps.vmd - provides "clone_reps" commmand to copy graphical
 
 sortreplicas - found in namd2 binary directory, program to un-shuffle
   replica trajectories to place same-temperature frames in the same file.
-  Usage: "sortreplicas <job_output_root> <num_replicas> <runs_per_frame>"
+  Usage: "sortreplicas <job_output_root> <num_replicas> <runs_per_frame> [final_step]"
   where <job_output_root> the job specific output base path, including
   %s or %d for separate directories as in output/%s/fold_alanin.job1
   Will be extended with .%d.dcd .%d.history for input files and
-  .%d.sort.dcd .%d.sort.history for output files.
+  .%d.sort.dcd .%d.sort.history for output files.  The optional final_step
+  parameter will truncate all output files after the specified step,
+  which is useful in dealing with restarts from runs that did not complete.
+  Colvars trajectory files are similarly processed if they are found.
 
 example subdirectory:
 
