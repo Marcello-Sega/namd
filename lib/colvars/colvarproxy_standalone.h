@@ -88,7 +88,7 @@ public:
   virtual inline cvm::rvector position_distance (cvm::atom_pos const &pos1,
                                                  cvm::atom_pos const &pos2)
   {
-    return pos1-pos2;
+    return pos2-pos1;
   }
 
   virtual inline cvm::real position_dist2 (cvm::atom_pos const &pos1,
