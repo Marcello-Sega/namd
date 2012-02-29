@@ -32,6 +32,8 @@ int main(int argc, char **argv) {
   char *filename;
   int num_replicas;
   int runs_per_frame;
+  long long int final_step = -1;
+  long long int checkstep = -1;
   int colvars;
   FILE **hist_in;
   FILE **hist_out;
@@ -45,13 +47,16 @@ int main(int argc, char **argv) {
   molfile_dcdplugin_init();
   molfile_dcdplugin_register(&plugin, register_cb);
 
-  if ( argc < 4 ) {
-    fprintf(stderr, "args: <job_output_root> <num_replicas> <runs_per_frame>\n");
+  if ( argc < 4 || argc > 5 ) {
+    fprintf(stderr, "args: <job_output_root> <num_replicas> <runs_per_frame> [final_step]\n");
     exit(-1);
   }
   output_root = argv[1];
   num_replicas = atoi(argv[2]);
   runs_per_frame = atoi(argv[3]);
+  if ( argc > 4 ) {
+    sscanf(argv[4], "%lld", &final_step);
+  }
 
   filename = (char*) malloc(strlen(output_root)+100);
   hist_in = (FILE**) malloc(num_replicas*sizeof(FILE*));
@@ -163,6 +168,22 @@ int main(int argc, char **argv) {
       rc = sscanf(line, "%lld %n%d%n", &step, &f1, &rep_id, &f2);
       if ( rc != 2 ) {
         fprintf(stderr,"Format error for replica %d at line %d: %s",
+							i, i_run, line);
+        exit(-1);
+      }
+      if ( i == 0 ) {
+        if ( step <= checkstep ) {
+          fprintf(stderr,"Step out of order for replica %d at line %d: %s",
+							i, i_run, line);
+          exit(-1);
+        }
+        checkstep = step;
+        if ( final_step >= 0 && checkstep > final_step ) {
+          printf("Stopping after final step %d.\n", final_step);
+          break;
+        }
+      } else if ( step != checkstep ) {
+        fprintf(stderr,"Step mismatch for replica %d at line %d: %s",
 							i, i_run, line);
         exit(-1);
       }
