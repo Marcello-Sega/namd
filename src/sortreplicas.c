@@ -175,7 +175,9 @@ int main(int argc, char **argv) {
       line[f1] = 0;
       fprintf(hist_out[rep_id],"%s%d%s",line,i,line+f2);
       line[f1] = sav;
-      if ( colvars ) while ( 1 ) {
+      if ( colvars ) {
+       long long int oldcstep = -1;
+       while ( 1 ) {
         long long int cstep;
         char cline[LINE_MAX];
         off_t oldpos = ftello(colv_in[i]);
@@ -191,11 +193,19 @@ int main(int argc, char **argv) {
 							i, cline);
           exit(-1);
         }
+        if ( cstep == oldcstep ) continue;  /* filter out repeats */
+        if ( cstep < oldcstep ) {
+          fprintf(stderr,"Step out of order in colvar trajectory for replica %d: %s",
+							i, cline);
+          exit(-1);
+        }
         if ( cstep > step ) {
           fseeko(colv_in[i], oldpos, SEEK_SET);
           break;
         }
         fprintf(colv_out[rep_id],"%s",cline);
+        oldcstep = cstep;
+       }
       }
       if ( i_run % runs_per_frame ) continue;
       rc = plugin->read_next_timestep(traj_in[i],natoms,&frame);
