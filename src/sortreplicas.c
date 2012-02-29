@@ -201,7 +201,11 @@ int main(int argc, char **argv) {
        while ( 1 ) {
         long long int cstep;
         char cline[LINE_MAX];
+#ifdef WIN32
+        __int64 oldpos = _ftelli64(colv_in[i]);
+#else
         off_t oldpos = ftello(colv_in[i]);
+#endif
         r = fgets(cline, LINE_MAX, colv_in[i]);
         if ( ! r ) { break; }
         if ( cline[0] == '#' ) {
@@ -221,7 +225,11 @@ int main(int argc, char **argv) {
           exit(-1);
         }
         if ( cstep > step ) {
+#ifdef WIN32
+          _fseeki64(colv_in[i], oldpos, SEEK_SET);
+#else
           fseeko(colv_in[i], oldpos, SEEK_SET);
+#endif
           break;
         }
         if ( i_run != 0 || oldcstep != -1 ) {  /* skip first entry */
