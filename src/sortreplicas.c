@@ -179,7 +179,7 @@ int main(int argc, char **argv) {
         }
         checkstep = step;
         if ( final_step >= 0 && checkstep > final_step ) {
-          printf("Stopping after final step %d.\n", final_step);
+          printf("Stopping after final step %lld.\n", final_step);
           break;
         }
       } else if ( step != checkstep ) {
