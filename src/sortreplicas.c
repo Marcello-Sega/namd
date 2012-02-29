@@ -1,4 +1,6 @@
 
+#include "largefiles.h"  /* must be first! */
+
 #include "vmdplugin.h"
 
 extern int molfile_dcdplugin_init(void);
@@ -17,6 +19,7 @@ static int register_cb(void *v, vmdplugin_t *p) {
   return VMDPLUGIN_SUCCESS;
 }
 
+#include <sys/types.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -29,8 +32,11 @@ int main(int argc, char **argv) {
   char *filename;
   int num_replicas;
   int runs_per_frame;
+  int colvars;
   FILE **hist_in;
   FILE **hist_out;
+  FILE **colv_in;
+  FILE **colv_out;
   void **traj_in;
   void **traj_out;
   int natoms=MOLFILE_NUMATOMS_UNKNOWN;
@@ -50,6 +56,8 @@ int main(int argc, char **argv) {
   filename = (char*) malloc(strlen(output_root)+100);
   hist_in = (FILE**) malloc(num_replicas*sizeof(FILE*));
   hist_out = (FILE**) malloc(num_replicas*sizeof(FILE*));
+  colv_in = (FILE**) malloc(num_replicas*sizeof(FILE*));
+  colv_out = (FILE**) malloc(num_replicas*sizeof(FILE*));
   traj_in = (void**) malloc(num_replicas*sizeof(FILE*));
   traj_out = (void**) malloc(num_replicas*sizeof(FILE*));
 
@@ -78,6 +86,38 @@ int main(int argc, char **argv) {
 					filename, strerror(errno));
       exit(-1);
     }
+    sprintf(root_end,".%d.colvars.traj",i);
+    colv_in[i] = fopen(filename,"r");
+    if ( colv_in[i] ) {
+      if ( i == 0 ) {
+        printf("Found first input colvars trajectory file %s.\n", filename);
+        colvars = 1;
+      } else if ( ! colvars ) {
+        fprintf(stderr, "missing input colvars trajectory files before %s\n", filename);
+        exit(-1);
+      }
+    } else {
+      if ( i == 0 ) {
+        colvars = 0;
+      } else if ( colvars ) {
+        fprintf(stderr, "error opening input colvars trajectory file %s: %s\n",
+					filename, strerror(errno));
+        exit(-1);
+      }
+    }
+  }
+
+  for ( i=0; i<num_replicas; ++i ) {
+    char *root_end;
+    if ( strstr(output_root,"%s") ) {
+      char istr[10];
+      sprintf(istr,"%d",i);
+      sprintf(filename,output_root,istr);
+    } else {
+      sprintf(filename,output_root,i);
+    }
+    root_end = filename + strlen(filename);
+
     sprintf(root_end,".%d.sort.history",i);
     hist_out[i] = fopen(filename,"w");
     if ( ! hist_out[i] ) {
@@ -91,6 +131,15 @@ int main(int argc, char **argv) {
       fprintf(stderr, "error opening output file %s: %s\n",
 					filename, strerror(errno));
       exit(-1);
+    }
+    if ( colvars ) {
+      sprintf(root_end,".%d.sort.colvars.traj",i);
+      colv_out[i] = fopen(filename,"w");
+      if ( ! colv_out[i] ) {
+        fprintf(stderr, "error opening output file %s: %s\n",
+					filename, strerror(errno));
+        exit(-1);
+      }
     }
   }
 
@@ -108,9 +157,15 @@ int main(int argc, char **argv) {
       int f1,f2;
       int rc;
       int rep_id = -1;
+      long long int step;
       r = fgets(line, LINE_MAX, hist_in[i]);
       if ( ! r ) { break; }
-      sscanf(line, "%*s %n%d%n", &f1, &rep_id, &f2);
+      rc = sscanf(line, "%lld %n%d%n", &step, &f1, &rep_id, &f2);
+      if ( rc != 2 ) {
+        fprintf(stderr,"Format error for replica %d at line %d: %s",
+							i, i_run, line);
+        exit(-1);
+      }
       if ( rep_id < 0 || rep_id >= num_replicas ) {
         fprintf(stderr,"Invalid replica ID for replica %d at line %d: %s",
 							i, i_run, line);
@@ -120,6 +175,28 @@ int main(int argc, char **argv) {
       line[f1] = 0;
       fprintf(hist_out[rep_id],"%s%d%s",line,i,line+f2);
       line[f1] = sav;
+      if ( colvars ) while ( 1 ) {
+        long long int cstep;
+        char cline[LINE_MAX];
+        off_t oldpos = ftello(colv_in[i]);
+        r = fgets(cline, LINE_MAX, colv_in[i]);
+        if ( ! r ) { break; }
+        if ( cline[0] == '#' ) {
+          fprintf(colv_out[rep_id],"%s",cline);
+          continue;
+        } 
+        rc = sscanf(cline, "%lld", &cstep);
+        if ( rc != 1 ) {
+          fprintf(stderr,"Format error in colvar trajectory for replica %d: %s",
+							i, cline);
+          exit(-1);
+        }
+        if ( cstep > step ) {
+          fseeko(colv_in[i], oldpos, SEEK_SET);
+          break;
+        }
+        fprintf(colv_out[rep_id],"%s",cline);
+      }
       if ( i_run % runs_per_frame ) continue;
       rc = plugin->read_next_timestep(traj_in[i],natoms,&frame);
       if ( rc == MOLFILE_SUCCESS ) {
@@ -141,10 +218,22 @@ int main(int argc, char **argv) {
   free(frame.coords);
 
   for ( i=0; i<num_replicas; ++i ) {
-    fclose(hist_in[i]);
+    if ( fclose(hist_in[i]) ) {
+      fprintf(stderr, "error closing history input file %d: %s\n", i, strerror(errno));
+    }
     plugin->close_file_read(traj_in[i]);
-    fclose(hist_out[i]);
+    if ( fclose(hist_out[i]) ) {
+      fprintf(stderr, "error closing history output file %d: %s\n", i, strerror(errno));
+    }
     plugin->close_file_write(traj_out[i]);
+    if ( colvars ) {
+      if ( fclose(colv_in[i]) ) {
+        fprintf(stderr, "error closing colvars input file %d: %s\n", i, strerror(errno));
+      }
+      if ( fclose(colv_out[i]) ) {
+        fprintf(stderr, "error closing colvars output file %d: %s\n", i, strerror(errno));
+      }
+    }
   }
 
   molfile_dcdplugin_fini();
