@@ -224,7 +224,9 @@ int main(int argc, char **argv) {
           fseeko(colv_in[i], oldpos, SEEK_SET);
           break;
         }
-        fprintf(colv_out[rep_id],"%s",cline);
+        if ( i_run != 0 || oldcstep != -1 ) {  /* skip first entry */
+          fprintf(colv_out[rep_id],"%s",cline);
+        }
         oldcstep = cstep;
        }
       }
