@@ -61,6 +61,7 @@ if {$i_run} { #restart
   bincoordinates $restart_root.$replica_id.coor
   binvelocities $restart_root.$replica_id.vel
   extendedSystem $restart_root.$replica_id.xsc
+  colvarsInput $restart_root.$replica_id.colvars.state
 } elseif { [info exists input_root] } {
   set ir [format $input_root $replica_id $replica_id]
   bincoordinates $ir.coor
@@ -137,7 +138,10 @@ while {$i_run < $num_runs} {
   if { $i_run % ($runs_per_frame * $frames_per_restart) == 0 ||
         $i_run == $num_runs } {  # restart
     set restart_root "$job_output_root.restart$i_run"
-    output [format $restart_root.$replica_id $replica_id]
+    set rroot [format $restart_root.$replica_id $replica_id]
+    output $rroot
+    set oroot [format $job_output_root.$replica_id $replica_id]
+    file rename -force $oroot.colvars.state $rroot.colvars.state
     set rfile [open [format "$restart_root.$replica_id.tcl" $replica_id] "w"]
     puts $rfile [list array set replica [array get replica]]
     close $rfile
@@ -161,6 +165,7 @@ while {$i_run < $num_runs} {
       file delete $oldroot.$replica_id.coor
       file delete $oldroot.$replica_id.vel
       file delete $oldroot.$replica_id.xsc
+      file delete $oldroot.$replica_id.colvars.state
     }
     set old_restart_root $restart_root
   }
