@@ -1,5 +1,5 @@
 NAMD_ARCH = Linux-x86_64
-CHARMARCH = net-linux-x86_64
+CHARMARCH = multicore-linux64
 
 CXX = g++ -m64 -O3
 CXXOPTS = -fexpensive-optimizations -ffast-math 
