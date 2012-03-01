@@ -8,7 +8,7 @@ syntax:
   echo ''
   echo 'Options (most defaults are set in arch subdirectory):'
   echo '  --charm-base <Charm++ base build directory containing src>'
-  echo '      (defaults to ./charm-6.3.2 or ./charm)'
+  echo '      (defaults to ./charm-6.4.0 or ./charm)'
   echo '  --charm-arch <subdirectory of Charm++ base build directory>'
   echo '      (such as mpi-linux-x86_64-mpicxx or multicore-linux64)'
   echo '  --charm-opts <options to pass to charmc (quote list)>'
@@ -331,10 +331,10 @@ begin:
 
   if ( $?CHARM_BASE ) then
     echo "CHARMBASE = $CHARM_BASE" >> Make.config
-  else if ( -d .rootdir/charm-6.3.2 ) then
-    set CHARM_BASE = .rootdir/charm-6.3.2
-    echo "Using Charm++ 6.3.2 build found in main build directory"
-    echo 'CHARMBASE = .rootdir/charm-6.3.2' >> Make.config
+  else if ( -d .rootdir/charm-6.4.0 ) then
+    set CHARM_BASE = .rootdir/charm-6.4.0
+    echo "Using Charm++ 6.4.0 build found in main build directory"
+    echo 'CHARMBASE = .rootdir/charm-6.4.0' >> Make.config
   else if ( -d .rootdir/charm ) then
     set CHARM_BASE = .rootdir/charm
     echo "Using Charm++ build found in main build directory"
