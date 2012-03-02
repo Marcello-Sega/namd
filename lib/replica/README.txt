@@ -5,6 +5,10 @@ separate NAMD process for every replica used in the simulation.
 
 *** NAMD based on a patched MPI build of Charm++ is required! ***
 
+The included charm_replica.patch has already been applied to the
+Charm++ source code included with the NAMD source code.  It is only
+needed if you obtain Charm++ directly from charm.cs.illinois.edu.
+
 Replica exchanges and energies are recorded in the .history files
 written in the output directories.  These can be viewed with, e.g.,
 "xmgrace output/*/*.history" and processed via awk or other tools.
