@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $       $Date: 2012/01/27 01:41:54 $
+ *      $Revision: 1.4 $       $Date: 2012/03/02 19:50:41 $
  *
  ***************************************************************************/
 
@@ -28,6 +28,7 @@
 typedef struct {
   FILE *fp;
   int numatoms;
+  int namdfmt;     /* NAMD-specific PSF file                                */
   int charmmfmt;   /* whether psf was written in charmm format              */
   int charmmcmap;  /* cross-term maps                                       */
   int charmmcheq;  /* stuff used by charmm for polarizable force fields     */
@@ -48,7 +49,7 @@ typedef struct {
    Returns the serial number of the atom. If there is an error, returns -1.*/
 static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
                         char *segname, int *resid, float *q, float *m, 
-                        int charmmext, int charmmdrude) {
+                        int namdfmt, int charmmext, int charmmdrude) {
   char inbuf[PSF_RECORD_LENGTH+2];
   int num;
 
@@ -63,7 +64,19 @@ static int get_psf_atom(FILE *f, char *name, char *atype, char *resname,
 
   num = atoi(inbuf); /* atom index */
 
-  if (charmmdrude == 1) {
+  if (namdfmt == 1) {
+    /* XXX We should add field width limits here so that      */
+    /*     a PSF file with crazy wide fields cannot overwrite */
+    /*     destination buffers.                               */
+    int cnt;
+    cnt = sscanf(inbuf, "%d %s %d %s %s %s %f %f",
+                 &num, segname, resid, resname, name, atype, q, m);
+    if (cnt != 8) {
+      printf("psfplugin) Failed to parse atom line in NAMD PSF file:\n");
+      printf("psfplugin)   '%s'\n", inbuf);
+      return -1;
+    }
+  } else if (charmmdrude == 1) {
     /* CHARMM PSF format is (if DRUDE and CHEQ are enabled):
      *  '(I10,1X,A8,1X,A8,1X,A8,1X,A8,1X,I4,1X,2G14.6,I8,2G14.6)'
      */
@@ -162,30 +175,49 @@ static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int c
         /* early EOF encountered */
         break;
       }
+
       /* Check that there is enough space in the line we are about to read */
       if (nbond-i >= 4) {
-        if(charmmext == 1) minlinesize = 20*4 ; else minlinesize = 16*4;
+        if (charmmext == 1) 
+          minlinesize = 20*4; 
+        else 
+          minlinesize = 16*4;
       } else {
-        if(charmmext == 1) minlinesize = 20*(nbond-i); else minlinesize = 16*(nbond-i);
+        if (charmmext == 1)
+          minlinesize = 20*(nbond-i); 
+        else 
+          minlinesize = 16*(nbond-i);
       }
+
       if (strlen(inbuf) < minlinesize) {
         fprintf(stderr, "Bonds line too short in psf file: \n%s\n", inbuf);
         break;
       }
       bondptr = inbuf;
     }
+
     if ((fromAtom[i] = atoi(bondptr)) < 1) {
       printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
       rc=-1;
       break;
     }
-    if(charmmext == 1) bondptr += 10; else bondptr += 8;
+
+    if (charmmext == 1)
+      bondptr += 10; 
+    else 
+      bondptr += 8;
+
     if ((toAtom[i] = atoi(bondptr)) < 1) {
       printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
       rc=-1;
       break;
     }
-    if(charmmext == 1) bondptr += 10; else bondptr += 8;
+
+    if (charmmext == 1)
+      bondptr += 10; 
+    else
+      bondptr += 8;
+
     i++;
   }
 
@@ -227,6 +259,7 @@ static void *open_psf_read(const char *path, const char *filetype,
   psf = (psfdata *) malloc(sizeof(psfdata));
   memset(psf, 0, sizeof(psfdata));
   psf->fp = fp;
+  psf->namdfmt = 0;   /* off unless we discover otherwise */
   psf->charmmfmt = 0; /* off unless we discover otherwise */
   psf->charmmext = 0; /* off unless we discover otherwise */
 
@@ -244,6 +277,9 @@ static void *open_psf_read(const char *path, const char *filetype,
     if (strlen(inbuf) > 0) {
       if (!strstr(inbuf, "REMARKS")) {
         if (strstr(inbuf, "PSF")) {
+          if (strstr(inbuf, "NAMD")) {
+            psf->namdfmt = 1;      
+          }
           if (strstr(inbuf, "EXT")) {
             psf->charmmfmt = 1; 
             psf->charmmext = 1;      
@@ -295,7 +331,7 @@ static int read_psf(void *v, int *optflags, molfile_atom_t *atoms) {
     if (get_psf_atom(psf->fp, atom->name, atom->type, 
                      atom->resname, atom->segid, 
                      &atom->resid, &atom->charge, &atom->mass, 
-                     psf->charmmext, psf->charmmdrude) < 0) {
+                     psf->namdfmt, psf->charmmext, psf->charmmdrude) < 0) {
       fprintf(stderr, "couldn't read atom %d\n", i);
       fclose(psf->fp);
       psf->fp = NULL;
@@ -598,6 +634,7 @@ static void *open_psf_write(const char *path, const char *filetype,
   memset(psf, 0, sizeof(psfdata));
   psf->fp = fp; 
   psf->numatoms = natoms;
+  psf->namdfmt = 0;     /* initialize to off for now */
   psf->charmmfmt = 0;   /* initialize to off for now */
   psf->charmmext = 0;   /* off unless we discover we need it */
   psf->charmmcmap = 0;  /* off unless we discover we need it */
@@ -610,27 +647,37 @@ static void *open_psf_write(const char *path, const char *filetype,
 }
 
 static int write_psf_structure(void *v, int optflags,
-    const molfile_atom_t *atoms) {
+                               const molfile_atom_t *atoms) {
   psfdata *psf = (psfdata *)v;
   const molfile_atom_t *atom;
   int i, fullrows;
 
-#if 1
   /* determine if we must write out an EXT formatted PSF file */
-  /* check the field width of the PSF atom records */
-  for (i=0; i<psf->numatoms; i++) {
-    const char *atomname; 
-    atom = &atoms[i];
-    atomname = atom->name;
+  /* check the field width of the PSF atom records            */
+  if (psf->numatoms > 99999999) {
+    psf->charmmext = 1; /* force output to EXTended PSF format      */
+  }
+  if (psf->namdfmt == 0 || psf->charmmext == 0) {
+    for (i=0; i<psf->numatoms; i++) {
+      const char *atomname; 
+      atom = &atoms[i];
+      atomname = atom->name;
 
-    if ((strlen(atom->name) > 4) || 
-        (strlen(atom->type) > 4)) {
-      printf("psfplugin) Structure requires the EXTended PSF format\n");
-      psf->charmmext = 1; /* force output to CHARMM EXTended PSF format */
-      break;
-    }
-  }  
-#endif
+      if (strlen(atom->type) > 4) {
+        psf->namdfmt = 1;   /* force output to NAMD PSF variant because */
+                            /* the atom types are also too long...      */
+        psf->charmmext = 1; /* force output to EXTended PSF format      */
+      }
+      if (strlen(atom->name) > 4) {
+        psf->charmmext = 1; /* force output to EXTended PSF format      */
+      }
+    }  
+  }
+  if (psf->namdfmt == 1) {
+    printf("psfplugin) Structure requires EXTended NAMD version of the PSF format\n");
+  } else if (psf->charmmext == 1) {
+    printf("psfplugin) Structure requires EXTended PSF format\n");
+  }
 
   /* check to see if we'll be writing cross-term maps */
   if (psf->numcterms > 0) {
@@ -639,6 +686,8 @@ static int write_psf_structure(void *v, int optflags,
 
   /* write out the PSF header */
   fprintf(psf->fp, "PSF");
+  if (psf->namdfmt == 1) 
+    fprintf(psf->fp, " NAMD");
   if (psf->charmmext == 1)
     fprintf(psf->fp, " EXT");
   if (psf->charmmcmap == 1)
@@ -686,29 +735,23 @@ static int write_psf_structure(void *v, int optflags,
   fprintf(psf->fp, "\n");
 
   /* write out bonds if we have bond information */
+  /* XXX Note: We are generating bond records the same way for both the  */
+  /*           normal and EXT format PSF files, which seems odd, but was */
+  /*           seemingly validated by the CHARMM 31 test files I have.   */
   if (psf->nbonds > 0 && psf->from != NULL && psf->to != NULL) {
-
-    if (psf->charmmext) {
-      fprintf(psf->fp, "%10d !NBOND: bonds\n", psf->nbonds);
-      for (i=0; i<psf->nbonds; i++) {
+    fprintf(psf->fp, "%8d !NBOND: bonds\n", psf->nbonds);
+    for (i=0; i<psf->nbonds; i++) {
+      if (psf->charmmext)
         fprintf(psf->fp, "%10d%10d", psf->from[i], psf->to[i]);
-        if ((i % 4) == 3) 
-          fprintf(psf->fp, "\n");
-      }
-      if ((i % 4) != 0) 
-        fprintf(psf->fp, "\n");
-      fprintf(psf->fp, "\n");
-    } else {
-      fprintf(psf->fp, "%8d !NBOND: bonds\n", psf->nbonds);
-      for (i=0; i<psf->nbonds; i++) {
+      else
         fprintf(psf->fp, "%8d%8d", psf->from[i], psf->to[i]);
-        if ((i % 4) == 3) 
-          fprintf(psf->fp, "\n");
-      }
-      if ((i % 4) != 0) 
+
+      if ((i % 4) == 3) 
         fprintf(psf->fp, "\n");
-      fprintf(psf->fp, "\n");
     }
+    if ((i % 4) != 0) 
+      fprintf(psf->fp, "\n");
+    fprintf(psf->fp, "\n");
   } else {
     fprintf(psf->fp, "%8d !NBOND: bonds\n", 0);
     fprintf(psf->fp, "\n\n");
@@ -909,7 +952,7 @@ VMDPLUGIN_API int VMDPLUGIN_init() {
   plugin.prettyname = "CHARMM,NAMD,XPLOR PSF";
   plugin.author = "Justin Gullingsrud, John Stone";
   plugin.majorv = 1;
-  plugin.minorv = 7;
+  plugin.minorv = 8;
   plugin.is_reentrant = VMDPLUGIN_THREADSAFE;
   plugin.filename_extension = "psf";
   plugin.open_file_read = open_psf_read;
