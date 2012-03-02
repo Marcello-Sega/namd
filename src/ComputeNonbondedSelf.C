@@ -44,16 +44,16 @@ ComputeNonbondedSelf::ComputeNonbondedSelf(ComputeID c, PatchID pid,
 
 void ComputeNonbondedSelf::initialize() {
   ComputePatch::initialize();
-  avgPositionBox = patch->registerAvgPositionPickup(cid);
+  avgPositionBox = patch->registerAvgPositionPickup(this);
   // BEGIN LA
-  velocityBox = patch->registerVelocityPickup(cid);
+  velocityBox = patch->registerVelocityPickup(this);
   // END LA
 
-  psiSumBox = patch->registerPsiSumDeposit(cid);
-  intRadBox = patch->registerIntRadPickup(cid);
-  bornRadBox = patch->registerBornRadPickup(cid);
-  dEdaSumBox = patch->registerDEdaSumDeposit(cid);
-  dHdrPrefixBox = patch->registerDHdrPrefixPickup(cid);
+  psiSumBox = patch->registerPsiSumDeposit(this);
+  intRadBox = patch->registerIntRadPickup(this);
+  bornRadBox = patch->registerBornRadPickup(this);
+  dEdaSumBox = patch->registerDEdaSumDeposit(this);
+  dHdrPrefixBox = patch->registerDHdrPrefixPickup(this);
 
 #ifdef NAMD_CUDA
   register_cuda_compute_self(cid, patchID);
@@ -67,24 +67,24 @@ ComputeNonbondedSelf::~ComputeNonbondedSelf()
   delete pressureProfileReduction;
   delete [] pressureProfileData;
   if (avgPositionBox != NULL) {
-    patch->unregisterAvgPositionPickup(cid,&avgPositionBox);
+    patch->unregisterAvgPositionPickup(this,&avgPositionBox);
   }
   // BEGIN LA
   if (velocityBox != NULL) {
-      patch->unregisterVelocityPickup(cid,&velocityBox);
+      patch->unregisterVelocityPickup(this,&velocityBox);
   }
   // END LA
 
   if (psiSumBox != NULL)
-  patch->unregisterPsiSumDeposit(cid, &psiSumBox);
+  patch->unregisterPsiSumDeposit(this, &psiSumBox);
   if (intRadBox != NULL)
-  patch->unregisterIntRadPickup(cid, &intRadBox);
+  patch->unregisterIntRadPickup(this, &intRadBox);
   if (bornRadBox != NULL)
-  patch->unregisterBornRadPickup(cid, &bornRadBox);
+  patch->unregisterBornRadPickup(this, &bornRadBox);
   if (dEdaSumBox != NULL)
-  patch->unregisterDEdaSumDeposit(cid, &dEdaSumBox);
+  patch->unregisterDEdaSumDeposit(this, &dEdaSumBox);
   if (dHdrPrefixBox != NULL)
-  patch->unregisterDHdrPrefixPickup(cid, &dHdrPrefixBox);
+  patch->unregisterDHdrPrefixPickup(this, &dHdrPrefixBox);
 }
 
 int ComputeNonbondedSelf::noWork() {

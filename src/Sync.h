@@ -20,7 +20,7 @@
 #include "Sync.decl.h"
 #include "ResizeArrayPrimIter.h"
 
-typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
+typedef ResizeArrayPrimIter<Compute*> ComputePtrListIter;
 
 class Sync : public BOCclass
 {
@@ -28,7 +28,7 @@ private:
     struct _clist {
     int pid;
     int step;
-    ComputeIDListIter cid;
+    ComputePtrListIter cid;
     int doneMigration;
     } *clist;
     const int INCREASE;
@@ -51,7 +51,7 @@ public:
     ~Sync(void);
     inline static Sync *Object() { return CkpvAccess(Sync_instance); }
     void openSync(); 
-    int holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration, int seq);
+    int holdComputes(PatchID pid, ComputePtrListIter cid, int doneMigration, int seq);
     void PatchReady(void);
 };
 

@@ -33,11 +33,11 @@ ComputeHomePatch::~ComputeHomePatch() {
   DebugM(4, "~ComputeHomePatch("<<cid<<") numAtoms("<<patchID<<") = " 
     << numAtoms << "\n");
     if (positionBox != NULL) {
-      PatchMap::Object()->patch(patchID)->unregisterPositionPickup(cid,
+      PatchMap::Object()->patch(patchID)->unregisterPositionPickup(this,
 	 &positionBox);
     }
     if (forceBox != NULL) {
-      PatchMap::Object()->patch(patchID)->unregisterForceDeposit(cid,
+      PatchMap::Object()->patch(patchID)->unregisterForceDeposit(this,
 		&forceBox);
     }
 }
@@ -54,8 +54,8 @@ void ComputeHomePatch::initialize() {
 	      NAMD_bug("ComputeHomePatch used with proxy.");
 	    }
 	    DebugM(3, "initialize(" << cid <<")  patchid = "<<patch->getPatchID()<<"\n");
-	    positionBox = patch->registerPositionPickup(cid);
-	    forceBox = patch->registerForceDeposit(cid);
+	    positionBox = patch->registerPositionPickup(this);
+	    forceBox = patch->registerForceDeposit(this);
 	}
 	numAtoms = patch->getNumAtoms();
 

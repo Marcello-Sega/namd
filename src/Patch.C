@@ -18,7 +18,7 @@
 
 #include "Sync.h"
 
-typedef ResizeArrayPrimIter<ComputeID> ComputeIDListIter;
+typedef ResizeArrayPrimIter<Compute*> ComputePtrListIter;
 
 
 //#define  DEBUGM
@@ -70,48 +70,48 @@ Patch::Patch(PatchID pd) :
   atomMapper = new AtomMapper(pd);
 }
 
-Box<Patch,CompAtom>* Patch::registerPositionPickup(ComputeID cid)
+Box<Patch,CompAtom>* Patch::registerPositionPickup(Compute *cid)
 {
-   //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid << "\n");
+   //DebugM(4, "registerPositionPickupa("<<patchID<<") from " << cid->cid << "\n");
    if (positionComputeList.add(cid) < 0)
    {
-     DebugM(7, "registerPositionPickup() failed for cid " << cid << std::endl);
+     DebugM(7, "registerPositionPickup() failed for cid " << cid->cid << std::endl);
      return NULL;
    }
-   return positionBox.checkOut(cid);
+   return positionBox.checkOut(cid->cid);
 }
 
-void Patch::unregisterPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
+void Patch::unregisterPositionPickup(Compute *cid, Box<Patch,CompAtom> **const box)
 {
-   DebugM(4, "UnregisterPositionPickup from " << cid << "\n");
+   DebugM(4, "UnregisterPositionPickup from " << cid->cid << "\n");
    positionComputeList.del(cid);
    positionBox.checkIn(*box);
    *box = 0;
 }
 
-Box<Patch,CompAtom>* Patch::registerAvgPositionPickup(ComputeID cid)
+Box<Patch,CompAtom>* Patch::registerAvgPositionPickup(Compute *cid)
 {
-   //DebugM(4, "registerAvgPositionPickup("<<patchID<<") from " << cid << "\n");
-   return avgPositionBox.checkOut(cid);
+   //DebugM(4, "registerAvgPositionPickup("<<patchID<<") from " << cid->cid << "\n");
+   return avgPositionBox.checkOut(cid->cid);
 }
 
-void Patch::unregisterAvgPositionPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
+void Patch::unregisterAvgPositionPickup(Compute *cid, Box<Patch,CompAtom> **const box)
 {
-   DebugM(4, "UnregisterAvgPositionPickup from " << cid << "\n");
+   DebugM(4, "UnregisterAvgPositionPickup from " << cid->cid << "\n");
    avgPositionBox.checkIn(*box);
    *box = 0;
 }
 
 // BEGIN LA
-Box<Patch,CompAtom>* Patch::registerVelocityPickup(ComputeID cid)
+Box<Patch,CompAtom>* Patch::registerVelocityPickup(Compute *cid)
 {
-   //DebugM(4, "registerVelocityPickup("<<patchID<<") from " << cid << "\n");
-   return velocityBox.checkOut(cid);
+   //DebugM(4, "registerVelocityPickup("<<patchID<<") from " << cid->cid << "\n");
+   return velocityBox.checkOut(cid->cid);
 }
 
-void Patch::unregisterVelocityPickup(ComputeID cid, Box<Patch,CompAtom> **const box)
+void Patch::unregisterVelocityPickup(Compute *cid, Box<Patch,CompAtom> **const box)
 {
-   DebugM(4, "UnregisterVelocityPickup from " << cid << "\n");
+   DebugM(4, "UnregisterVelocityPickup from " << cid->cid << "\n");
    velocityBox.checkIn(*box);
    *box = 0;
 }
@@ -119,82 +119,82 @@ void Patch::unregisterVelocityPickup(ComputeID cid, Box<Patch,CompAtom> **const 
 
 //begin gbis
 //deposit, not pickup
-Box<Patch,GBReal>* Patch::registerPsiSumDeposit(ComputeID cid) {
+Box<Patch,GBReal>* Patch::registerPsiSumDeposit(Compute *cid) {
 
   if (psiSumComputeList.add(cid) < 0) {
-    DebugM(7, "registerPsiSumDeposit() failed for cid " << cid << std::endl);
+    DebugM(7, "registerPsiSumDeposit() failed for cid " << cid->cid << std::endl);
     DebugM(7, "  size of psiSumCompueList " << psiSumComputeList.size() << std::endl);
      return NULL;
   }
-  return psiSumBox.checkOut(cid);
+  return psiSumBox.checkOut(cid->cid);
 }
 
-void Patch::unregisterPsiSumDeposit(ComputeID cid,Box<Patch,GBReal> **const box) {
+void Patch::unregisterPsiSumDeposit(Compute *cid,Box<Patch,GBReal> **const box) {
   psiSumComputeList.del(cid);
   psiSumBox.checkIn(*box);
   *box = 0;
 }
-Box<Patch,Real>* Patch::registerIntRadPickup(ComputeID cid) {
-  return intRadBox.checkOut(cid);
+Box<Patch,Real>* Patch::registerIntRadPickup(Compute *cid) {
+  return intRadBox.checkOut(cid->cid);
 }
-void Patch::unregisterIntRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
+void Patch::unregisterIntRadPickup(Compute *cid,Box<Patch,Real> **const box) {
   intRadBox.checkIn(*box);
   *box = 0;
 }
 
 //LCPO
-Box<Patch,int>* Patch::registerLcpoTypePickup(ComputeID cid) {
-  return lcpoTypeBox.checkOut(cid);
+Box<Patch,int>* Patch::registerLcpoTypePickup(Compute *cid) {
+  return lcpoTypeBox.checkOut(cid->cid);
 }
-void Patch::unregisterLcpoTypePickup(ComputeID cid,Box<Patch,int> **const box) {
+void Patch::unregisterLcpoTypePickup(Compute *cid,Box<Patch,int> **const box) {
   lcpoTypeBox.checkIn(*box);
   *box = 0;
 }
 
-Box<Patch,Real>* Patch::registerBornRadPickup(ComputeID cid) {
-  return bornRadBox.checkOut(cid);
+Box<Patch,Real>* Patch::registerBornRadPickup(Compute *cid) {
+  return bornRadBox.checkOut(cid->cid);
 }
-void Patch::unregisterBornRadPickup(ComputeID cid,Box<Patch,Real> **const box) {
+void Patch::unregisterBornRadPickup(Compute *cid,Box<Patch,Real> **const box) {
   bornRadBox.checkIn(*box);
   *box = 0;
 }
 
-Box<Patch,GBReal>* Patch::registerDEdaSumDeposit(ComputeID cid) {
+Box<Patch,GBReal>* Patch::registerDEdaSumDeposit(Compute *cid) {
   if (dEdaSumComputeList.add(cid) < 0) {
-    DebugM(7, "registerDEdaSumDeposit() failed for cid " << cid << std::endl);
+    DebugM(7, "registerDEdaSumDeposit() failed for cid " << cid->cid << std::endl);
     DebugM(7, "  size of dEdaSumCompueList " << dEdaSumComputeList.size() << std::endl);
      return NULL;
   }
-  return dEdaSumBox.checkOut(cid);
+  return dEdaSumBox.checkOut(cid->cid);
 }
-void Patch::unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,GBReal> **const box){
+void Patch::unregisterDEdaSumDeposit(Compute *cid,Box<Patch,GBReal> **const box){
   dEdaSumComputeList.del(cid);
   dEdaSumBox.checkIn(*box);
   *box = 0;
 }
 
-Box<Patch,Real>* Patch::registerDHdrPrefixPickup(ComputeID cid)
+Box<Patch,Real>* Patch::registerDHdrPrefixPickup(Compute *cid)
 {
-  return dHdrPrefixBox.checkOut(cid);
+  return dHdrPrefixBox.checkOut(cid->cid);
 }
-void Patch::unregisterDHdrPrefixPickup(ComputeID cid,Box<Patch,Real> **const box) {
+void Patch::unregisterDHdrPrefixPickup(Compute *cid,Box<Patch,Real> **const box) {
   dHdrPrefixBox.checkIn(*box);
   *box = 0;
 }
 //end gbis
 
-Box<Patch,Results>* Patch::registerForceDeposit(ComputeID cid)
+Box<Patch,Results>* Patch::registerForceDeposit(Compute *cid)
 {
    if (forceComputeList.add(cid) < 0)
    {
-     DebugM(7, "registerForceDeposit() failed for cid " << cid << std::endl);
+     DebugM(7, "registerForceDeposit() failed for cid " << cid->cid << std::endl);
      DebugM(7, "  size of forceCompueList " << forceComputeList.size() << std::endl);
      return NULL;
    }
-   return forceBox.checkOut(cid);
+   return forceBox.checkOut(cid->cid);
 }
 
-void Patch::unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box)
+void Patch::unregisterForceDeposit(Compute *cid, Box<Patch,Results> **const box)
 {
    DebugM(4, "unregisterForceDeposit() computeID("<<cid<<")"<<std::endl);
    forceComputeList.del(cid);
@@ -265,7 +265,6 @@ void Patch::lcpoTypeBoxClosed(void) {
 void Patch::positionsReady(int doneMigration)
 {
    DebugM(4,"Patch::positionsReady() - patchID(" << patchID <<")"<<std::endl );
-   ComputeMap *computeMap = ComputeMap::Object();
 
    if ( doneMigration ){
 // #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
@@ -351,7 +350,7 @@ void Patch::positionsReady(int doneMigration)
    forceBox.open(&results);
 
    // Iterate over compute objects that need to be informed we are ready
-   ComputeIDListIter cid(positionComputeList);
+   ComputePtrListIter cid(positionComputeList);
    int seq = flags.sequence;
    // gzheng
      if (Sync::Object()->holdComputes(patchID, cid, doneMigration, seq))
@@ -361,7 +360,7 @@ void Patch::positionsReady(int doneMigration)
    for(cid = cid.begin(); cid != cid.end(); cid++)
    {
          compute_count++;
-	 computeMap->compute(*cid)->patchReady(patchID,doneMigration,seq);
+	 (*cid)->patchReady(patchID,doneMigration,seq);
    }
    if (compute_count == 0 && PatchMap::Object()->node(patchID) != CkMyPe()) {
        iout << iINFO << "PATCH_COUNT: Patch " << patchID 
@@ -375,34 +374,32 @@ void Patch::positionsReady(int doneMigration)
 // begin gbis
 
 void Patch::gbisP2Ready() {
- ComputeMap *computeMap = ComputeMap::Object();
- ComputeIDListIter cid(positionComputeList);
+ ComputePtrListIter cid(positionComputeList);
 
   int compute_count = 0;
   int seq = flags.sequence;
   for(cid = cid.begin(); cid != cid.end(); cid++) {
-    if ( computeMap->compute(*cid)->type() == computeNonbondedSelfType ||
-         computeMap->compute(*cid)->type() == computeNonbondedPairType ||
-         computeMap->compute(*cid)->type() == computeNonbondedCUDAType) {
+    if ( (*cid)->type() == computeNonbondedSelfType ||
+         (*cid)->type() == computeNonbondedPairType ||
+         (*cid)->type() == computeNonbondedCUDAType) {
       compute_count++;
-      computeMap->compute(*cid)->gbisP2PatchReady(patchID,seq);
+      (*cid)->gbisP2PatchReady(patchID,seq);
     }
   }
 }
 
 void Patch::gbisP3Ready() {
 
-  ComputeMap *computeMap = ComputeMap::Object();
-  ComputeIDListIter cid(positionComputeList);
+  ComputePtrListIter cid(positionComputeList);
 
   int compute_count = 0;
   int seq = flags.sequence;
   for(cid = cid.begin(); cid != cid.end(); cid++) {
-    if ( computeMap->compute(*cid)->type() == computeNonbondedSelfType ||
-         computeMap->compute(*cid)->type() == computeNonbondedPairType ||
-         computeMap->compute(*cid)->type() == computeNonbondedCUDAType) {
+    if ( (*cid)->type() == computeNonbondedSelfType ||
+         (*cid)->type() == computeNonbondedPairType ||
+         (*cid)->type() == computeNonbondedCUDAType) {
       compute_count++;
-      computeMap->compute(*cid)->gbisP3PatchReady(patchID,seq);
+      (*cid)->gbisP3PatchReady(patchID,seq);
     }
   }
 }

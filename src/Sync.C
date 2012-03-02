@@ -19,7 +19,6 @@
 #include "PatchMap.h"
 #include "ProxyMgr.h"
 #include "Compute.h"
-#include "ComputeMap.h"
 
 #include "Sync.h"
 
@@ -96,7 +95,7 @@ void Sync::openSync(void)
 }    
 
 // called from Patch::positionsReady()
-int Sync::holdComputes(PatchID pid, ComputeIDListIter cid, int doneMigration, int seq)
+int Sync::holdComputes(PatchID pid, ComputePtrListIter cid, int doneMigration, int seq)
 {
   if (!useSync) return 0;
   if (step < 0) step = seq;
@@ -153,7 +152,6 @@ void Sync::PatchReady(void)
 void Sync::releaseComputes()
 {
   PatchMap *patchMap = PatchMap::Object();
-  ComputeMap *computeMap = ComputeMap::Object();
 
   traceUserEvent(eventReleaseComputes);
 
@@ -167,12 +165,12 @@ void Sync::releaseComputes()
     //	 clist[i].pid, clist[i].step,
     //      patchMap->patch(pid)->flags.sequence);
 
-    ComputeIDListIter cid = clist[i].cid;
+    ComputePtrListIter cid = clist[i].cid;
 
     int compute_count = 0;
     for(cid = cid.begin(); cid != cid.end(); cid++) {
       compute_count++;
-      computeMap->compute(*cid)->patchReady(pid,clist[i].doneMigration,step);
+      (*cid)->patchReady(pid,clist[i].doneMigration,step);
     }
     if (compute_count == 0 && patchMap->node(pid) != CkMyPe()) {
 	   iout << iINFO << "PATCH_COUNT-Sync step " << step

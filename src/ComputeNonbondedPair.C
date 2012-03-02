@@ -47,16 +47,16 @@ ComputeNonbondedPair::ComputeNonbondedPair(ComputeID c, PatchID pid[], int trans
 void ComputeNonbondedPair::initialize() {
   ComputePatchPair::initialize();
   for (int i=0; i<2; i++) {
-    avgPositionBox[i] = patch[i]->registerAvgPositionPickup(cid);
+    avgPositionBox[i] = patch[i]->registerAvgPositionPickup(this);
     // BEGIN LA
-    velocityBox[i] = patch[i]->registerVelocityPickup(cid);
+    velocityBox[i] = patch[i]->registerVelocityPickup(this);
     // END LA
 
-    psiSumBox[i] = patch[i]->registerPsiSumDeposit(cid);
-    intRadBox[i] = patch[i]->registerIntRadPickup(cid);
-    bornRadBox[i] = patch[i]->registerBornRadPickup(cid);
-    dEdaSumBox[i] = patch[i]->registerDEdaSumDeposit(cid);
-    dHdrPrefixBox[i] = patch[i]->registerDHdrPrefixPickup(cid);
+    psiSumBox[i] = patch[i]->registerPsiSumDeposit(this);
+    intRadBox[i] = patch[i]->registerIntRadPickup(this);
+    bornRadBox[i] = patch[i]->registerBornRadPickup(this);
+    dEdaSumBox[i] = patch[i]->registerDEdaSumDeposit(this);
+    dHdrPrefixBox[i] = patch[i]->registerDHdrPrefixPickup(this);
   }
 #ifdef NAMD_CUDA
   register_cuda_compute_pair(cid, patchID, trans);
@@ -71,28 +71,28 @@ ComputeNonbondedPair::~ComputeNonbondedPair()
   delete [] pressureProfileData;
   for (int i=0; i<2; i++) {
     if (avgPositionBox[i] != NULL) {
-      patch[i]->unregisterAvgPositionPickup(cid,&avgPositionBox[i]);
+      patch[i]->unregisterAvgPositionPickup(this,&avgPositionBox[i]);
     }
     // BEGIN LA
     if (velocityBox[i] != NULL) {
-      patch[i]->unregisterVelocityPickup(cid,&velocityBox[i]);
+      patch[i]->unregisterVelocityPickup(this,&velocityBox[i]);
     }
     // END LA
 
     if (psiSumBox[i] != NULL) {
-      patch[i]->unregisterPsiSumDeposit(cid,&psiSumBox[i]);
+      patch[i]->unregisterPsiSumDeposit(this,&psiSumBox[i]);
     }
     if (intRadBox[i] != NULL) {
-      patch[i]->unregisterIntRadPickup(cid,&intRadBox[i]);
+      patch[i]->unregisterIntRadPickup(this,&intRadBox[i]);
     }
     if (bornRadBox[i] != NULL) {
-      patch[i]->unregisterBornRadPickup(cid,&bornRadBox[i]);
+      patch[i]->unregisterBornRadPickup(this,&bornRadBox[i]);
     }
     if (dEdaSumBox[i] != NULL) {
-      patch[i]->unregisterDEdaSumDeposit(cid,&dEdaSumBox[i]);
+      patch[i]->unregisterDEdaSumDeposit(this,&dEdaSumBox[i]);
     }
     if (dHdrPrefixBox[i] != NULL) {
-      patch[i]->unregisterDHdrPrefixPickup(cid,&dHdrPrefixBox[i]);
+      patch[i]->unregisterDHdrPrefixPickup(this,&dHdrPrefixBox[i]);
     }
   }
 }

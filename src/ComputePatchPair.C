@@ -41,11 +41,11 @@ ComputePatchPair::~ComputePatchPair() {
     << PatchMap::Object()->patch(patchID[1]) << "\n");
   for (int i=0; i<2; i++) {
     if (positionBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(cid,
+      PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(this,
 	 &positionBox[i]);
     }
     if (forceBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterForceDeposit(cid,
+      PatchMap::Object()->patch(patchID[i])->unregisterForceDeposit(this,
 		&forceBox[i]);
     }
   }
@@ -62,8 +62,8 @@ void ComputePatchPair::initialize() {
 	      DebugM(5,"invalid patch(" << patchID[i] 
 		   << ")  pointer!\n");
 	    }
-	    positionBox[i] = patch[i]->registerPositionPickup(cid);
-	    forceBox[i] = patch[i]->registerForceDeposit(cid);
+	    positionBox[i] = patch[i]->registerPositionPickup(this);
+	    forceBox[i] = patch[i]->registerForceDeposit(this);
 	}
 	numAtoms[i] = patch[i]->getNumAtoms();
     }

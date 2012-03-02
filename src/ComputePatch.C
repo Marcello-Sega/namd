@@ -34,11 +34,11 @@ ComputePatch::~ComputePatch() {
   DebugM(4, "~ComputePatch("<<cid<<") numAtoms("<<patchID<<") = " 
     << numAtoms << "\n");
     if (positionBox != NULL) {
-      PatchMap::Object()->patch(patchID)->unregisterPositionPickup(cid,
+      PatchMap::Object()->patch(patchID)->unregisterPositionPickup(this,
 	 &positionBox);
     }
     if (forceBox != NULL) {
-      PatchMap::Object()->patch(patchID)->unregisterForceDeposit(cid,
+      PatchMap::Object()->patch(patchID)->unregisterForceDeposit(this,
 		&forceBox);
     }
 }
@@ -52,8 +52,8 @@ void ComputePatch::initialize() {
 	      NAMD_bug("ComputePatch used with unknown patch.");
 	    }
 	    DebugM(3, "initialize(" << cid <<")  patchid = "<<patch->getPatchID()<<"\n");
-	    positionBox = patch->registerPositionPickup(cid);
-	    forceBox = patch->registerForceDeposit(cid);
+	    positionBox = patch->registerPositionPickup(this);
+	    forceBox = patch->registerForceDeposit(this);
 	}
 	numAtoms = patch->getNumAtoms();
 

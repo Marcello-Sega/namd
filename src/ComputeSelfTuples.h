@@ -126,9 +126,9 @@ template <class T, class S, class P> class ComputeSelfTuples :
     virtual ~ComputeSelfTuples() {
       UniqueSetIter<TuplePatchElem> ap(this->tuplePatchList);
       for (ap = ap.begin(); ap != ap.end(); ap++) {
-        ap->p->unregisterPositionPickup(this->cid,&(ap->positionBox));
-        ap->p->unregisterAvgPositionPickup(this->cid,&(ap->avgPositionBox));
-        ap->p->unregisterForceDeposit(this->cid,&(ap->forceBox));
+        ap->p->unregisterPositionPickup(this,&(ap->positionBox));
+        ap->p->unregisterAvgPositionPickup(this,&(ap->avgPositionBox));
+        ap->p->unregisterForceDeposit(this,&(ap->forceBox));
       }
     }
 
@@ -142,7 +142,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
       // Start with empty list
       this->tuplePatchList.clear();
     
-      this->tuplePatchList.add(TuplePatchElem(ComputeHomeTuples<T,S,P>::patchMap->patch(patchID), this->cid));
+      this->tuplePatchList.add(TuplePatchElem(ComputeHomeTuples<T,S,P>::patchMap->patch(patchID), this));
     
       setNumPatches(this->tuplePatchList.size());
       this->doLoadTuples = true;

@@ -70,15 +70,15 @@ ComputeLCPO::~ComputeLCPO() {
 
   for (int i=0; i<getNumPatches(); i++) {
     if (positionBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(cid,
+      PatchMap::Object()->patch(patchID[i])->unregisterPositionPickup(this,
 	 &positionBox[i]);
     }
     if (forceBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterForceDeposit(cid,
+      PatchMap::Object()->patch(patchID[i])->unregisterForceDeposit(this,
 		&forceBox[i]);
     }
     if (lcpoTypeBox[i] != NULL) {
-      PatchMap::Object()->patch(patchID[i])->unregisterLcpoTypePickup(cid,
+      PatchMap::Object()->patch(patchID[i])->unregisterLcpoTypePickup(this,
 		&lcpoTypeBox[i]);
     }
   }
@@ -98,9 +98,9 @@ void ComputeLCPO::initialize() {
 	        DebugM(5,"invalid patch(" << patchID[i] 
 		      << ")  pointer!\n");
 	      }
-	      positionBox[i] = patch[i]->registerPositionPickup(cid);
-	      forceBox[i] = patch[i]->registerForceDeposit(cid);
-	      lcpoTypeBox[i] = patch[i]->registerLcpoTypePickup(cid);
+	      positionBox[i] = patch[i]->registerPositionPickup(this);
+	      forceBox[i] = patch[i]->registerForceDeposit(this);
+	      lcpoTypeBox[i] = patch[i]->registerLcpoTypePickup(this);
         // will need to open a box full of lcpo parameters
 	    }
 	    numAtoms[i] = patch[i]->getNumAtoms();

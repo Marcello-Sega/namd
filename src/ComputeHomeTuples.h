@@ -61,7 +61,7 @@ class TuplePatchElem {
     af = NULL;
   }
 
-  TuplePatchElem(Patch *p_param, ComputeID cid) {
+  TuplePatchElem(Patch *p_param, Compute *cid) {
     patchID = p_param->getPatchID();
     p = p_param;
     positionBox = p_param->registerPositionPickup(cid);
@@ -325,7 +325,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       for (pid=0; pid<nPatches; ++pid) {
         if ( isBasePatch[pid] ) {
           Patch *patch = patchMap->patch(pid);
-	  tuplePatchList.add(TuplePatchElem(patch, cid));
+	  tuplePatchList.add(TuplePatchElem(patch, this));
         }
       }
     
@@ -337,7 +337,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
         for ( int i = 0; i < numNeighbors; ++i ) {
           if ( ! tuplePatchList.find(TuplePatchElem(neighbors[i])) ) {
             Patch *patch = patchMap->patch(neighbors[i]);
-	    tuplePatchList.add(TuplePatchElem(patch, cid));
+	    tuplePatchList.add(TuplePatchElem(patch, this));
           }
         }
       }

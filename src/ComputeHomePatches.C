@@ -34,7 +34,7 @@ void ComputeHomePatches::initialize()
   patchList.resize(0);
 
   for ( ai = ai.begin(); ai != ai.end(); ai++ ) {
-    patchList.add(PatchElem((*ai).patch, cid, useAvgPositions));
+    patchList.add(PatchElem((*ai).patch, this, useAvgPositions));
     if ( (*ai).patch->getPatchID() == 0 ) hasPatchZero = 1;
   }
 

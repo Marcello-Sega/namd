@@ -14,7 +14,7 @@
 #include "Lattice.h"
 #include "PatchTypes.h"
 
-typedef SortedArray<ComputeID> ComputeIDList;
+typedef SortedArray<Compute*> ComputePtrList;
 
 class Compute;
 class Sequencer;
@@ -34,41 +34,41 @@ class Patch
      virtual ~Patch();
 
      // methods for use by Compute objects
-     Box<Patch,CompAtom>* registerPositionPickup(ComputeID cid);
-     void unregisterPositionPickup(ComputeID cid,
+     Box<Patch,CompAtom>* registerPositionPickup(Compute *cid);
+     void unregisterPositionPickup(Compute *cid,
 				   Box<Patch,CompAtom>**const box);
-     Box<Patch,CompAtom>* registerAvgPositionPickup(ComputeID cid);
-     void unregisterAvgPositionPickup(ComputeID cid,
+     Box<Patch,CompAtom>* registerAvgPositionPickup(Compute *cid);
+     void unregisterAvgPositionPickup(Compute *cid,
 				   Box<Patch,CompAtom>**const box);
      // BEGIN LA
-     Box<Patch,CompAtom>* registerVelocityPickup(ComputeID cid);
-     void unregisterVelocityPickup(ComputeID cid,
+     Box<Patch,CompAtom>* registerVelocityPickup(Compute *cid);
+     void unregisterVelocityPickup(Compute *cid,
                                   Box<Patch,CompAtom>**const box);
      // END LA
 
     //begin gbis
-    Box<Patch,Real>* registerIntRadPickup(ComputeID cid);
-    void unregisterIntRadPickup(ComputeID cid, Box<Patch,Real>**const box);
+    Box<Patch,Real>* registerIntRadPickup(Compute *cid);
+    void unregisterIntRadPickup(Compute *cid, Box<Patch,Real>**const box);
 
-    Box<Patch,GBReal>* registerPsiSumDeposit(ComputeID cid);
-    void unregisterPsiSumDeposit(ComputeID cid, Box<Patch,GBReal>**const box);
+    Box<Patch,GBReal>* registerPsiSumDeposit(Compute *cid);
+    void unregisterPsiSumDeposit(Compute *cid, Box<Patch,GBReal>**const box);
 
-    Box<Patch,Real>* registerBornRadPickup(ComputeID cid);
-    void unregisterBornRadPickup(ComputeID cid, Box<Patch,Real>**const box);
+    Box<Patch,Real>* registerBornRadPickup(Compute *cid);
+    void unregisterBornRadPickup(Compute *cid, Box<Patch,Real>**const box);
 
-    Box<Patch,GBReal>* registerDEdaSumDeposit(ComputeID cid);
-    void unregisterDEdaSumDeposit(ComputeID cid,Box<Patch,GBReal> **const box);
+    Box<Patch,GBReal>* registerDEdaSumDeposit(Compute *cid);
+    void unregisterDEdaSumDeposit(Compute *cid,Box<Patch,GBReal> **const box);
 
-    Box<Patch,Real>* registerDHdrPrefixPickup(ComputeID cid);
-    void unregisterDHdrPrefixPickup(ComputeID cid, Box<Patch,Real>**const box);
+    Box<Patch,Real>* registerDHdrPrefixPickup(Compute *cid);
+    void unregisterDHdrPrefixPickup(Compute *cid, Box<Patch,Real>**const box);
      //end gbis
 
     //LCPO
-    Box<Patch,int>* registerLcpoTypePickup(ComputeID cid);
-    void unregisterLcpoTypePickup(ComputeID cid, Box<Patch,int>**const box);
+    Box<Patch,int>* registerLcpoTypePickup(Compute *cid);
+    void unregisterLcpoTypePickup(Compute *cid, Box<Patch,int>**const box);
 
-     Box<Patch,Results>* registerForceDeposit(ComputeID cid);
-     void unregisterForceDeposit(ComputeID cid, Box<Patch,Results> **const box);
+     Box<Patch,Results>* registerForceDeposit(Compute *cid);
+     void unregisterForceDeposit(Compute *cid, Box<Patch,Results> **const box);
 
      // methods for use by Sequencer or ProxyManager
      // void positionsReady(void) { positionsReady(0); }
@@ -174,33 +174,33 @@ class Patch
      Results	   results;
 
      OwnerBox<Patch,CompAtom> positionBox;
-     ComputeIDList              positionComputeList;
+     ComputePtrList              positionComputeList;
      OwnerBox<Patch,CompAtom> avgPositionBox;
-     ComputeIDList              avgPositionComputeList;
+     ComputePtrList              avgPositionComputeList;
      // BEGIN LA
      OwnerBox<Patch,CompAtom> velocityBox;
-     ComputeIDList              velocityComputeList;
+     ComputePtrList              velocityComputeList;
      // END LA
 
      //begin gbis
      OwnerBox<Patch,Real>    intRadBox;
-     ComputeIDList           intRadComputeList;
+     ComputePtrList           intRadComputeList;
      OwnerBox<Patch,GBReal>  psiSumBox;
-     ComputeIDList           psiSumComputeList;
+     ComputePtrList           psiSumComputeList;
      OwnerBox<Patch,Real>    bornRadBox;
-     ComputeIDList           bornRadComputeList;
+     ComputePtrList           bornRadComputeList;
      OwnerBox<Patch,GBReal>  dEdaSumBox;
-     ComputeIDList           dEdaSumComputeList;
+     ComputePtrList           dEdaSumComputeList;
      OwnerBox<Patch,Real>    dHdrPrefixBox;
-     ComputeIDList           dHdrPrefixComputeList;
+     ComputePtrList           dHdrPrefixComputeList;
      //end gbis
 
     //LCPO
      OwnerBox<Patch,int>    lcpoTypeBox;
-     ComputeIDList          lcpoTypeComputeList;
+     ComputePtrList          lcpoTypeComputeList;
 
      OwnerBox<Patch,Results>    forceBox;
-     ComputeIDList              forceComputeList;
+     ComputePtrList              forceComputeList;
 
      virtual void boxClosed(int /* box */) = 0;
      int boxesOpen;

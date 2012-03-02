@@ -785,8 +785,8 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
     pr.hostPe = -1;
     // ProxyMgr::Object()->createProxy(pid);
     // pr.p = patchMap->patch(pid);
-    // pr.positionBox = pr.p->registerPositionPickup(cid);
-    // pr.forceBox = pr.p->registerForceDeposit(cid);
+    // pr.positionBox = pr.p->registerPositionPickup(this);
+    // pr.forceBox = pr.p->registerForceDeposit(this);
     pr.x = NULL;
     pr.xExt = NULL;
     pr.r = NULL;
@@ -821,14 +821,14 @@ void ComputeNonbondedCUDA::registerPatches() {
       }
       ProxyMgr::Object()->createProxy(pid);
       pr.p = patchMap->patch(pid);
-      pr.positionBox = pr.p->registerPositionPickup(cid);
-      pr.forceBox = pr.p->registerForceDeposit(cid);
+      pr.positionBox = pr.p->registerPositionPickup(this);
+      pr.forceBox = pr.p->registerForceDeposit(this);
       if (simParams->GBISOn) {
-        pr.intRadBox      = pr.p->registerIntRadPickup(cid);
-        pr.psiSumBox      = pr.p->registerPsiSumDeposit(cid);
-        pr.bornRadBox     = pr.p->registerBornRadPickup(cid);
-        pr.dEdaSumBox     = pr.p->registerDEdaSumDeposit(cid);
-        pr.dHdrPrefixBox  = pr.p->registerDHdrPrefixPickup(cid);
+        pr.intRadBox      = pr.p->registerIntRadPickup(this);
+        pr.psiSumBox      = pr.p->registerPsiSumDeposit(this);
+        pr.bornRadBox     = pr.p->registerBornRadPickup(this);
+        pr.dEdaSumBox     = pr.p->registerDEdaSumDeposit(this);
+        pr.dHdrPrefixBox  = pr.p->registerDHdrPrefixPickup(this);
       }
     }
   }

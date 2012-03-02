@@ -41,7 +41,7 @@ class PatchElem {
     patchID = p_param;
   }
 
-  PatchElem(HomePatch *p_param, ComputeID cid, int useAvgPos) {
+  PatchElem(HomePatch *p_param, Compute *cid, int useAvgPos) {
     patchID = p_param->getPatchID();
     p = p_param;
     positionBox = p_param->registerPositionPickup(cid);
