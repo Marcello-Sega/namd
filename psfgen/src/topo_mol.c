@@ -6,7 +6,7 @@
 #include "topo_defs_struct.h"
 #include "topo_mol_struct.h"
 
-#ifdef WIN32
+#if defined(_MSC_VER)
 #define strcasecmp  stricmp
 #define strncasecmp strnicmp
 #endif

@@ -5,7 +5,7 @@
 #include "pdb_file.h"
 #include "extract_alias.h"
 
-#ifdef WIN32
+#if defined(_MSC_VER)
 #define snprintf _snprintf
 #endif
 

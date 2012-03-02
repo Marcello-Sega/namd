@@ -7,7 +7,7 @@
 #include "topo_defs.h"
 #include "charmm_parse_topo_defs.h"
 
-#ifdef WIN32
+#if defined(_MSC_VER)
 #define strcasecmp  stricmp
 #define strncasecmp strnicmp
 #endif

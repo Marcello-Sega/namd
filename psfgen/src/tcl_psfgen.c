@@ -13,7 +13,7 @@
 #include "topo_mol_struct.h"
 #include "extract_alias.h"
 
-#ifdef WIN32
+#if defined(_MSC_VER)
 #define strcasecmp  stricmp
 #define strncasecmp strnicmp
 #endif
@@ -35,13 +35,49 @@
  */
 void newhandle_msg(void *v, const char *msg) {
   Tcl_Interp *interp = (Tcl_Interp *)v;
-  const char *words[2] = {"puts"};
-  char *script;
+  const char *words[3] = {"puts", "-nonewline", "psfgen) "};
+  char *script = NULL;
+
+  // prepend "psfgen) " to all output
+  script = Tcl_Merge(3, words);
+  Tcl_Eval(interp,script);
+  Tcl_Free(script);
+
+  // emit the output
   words[1] = msg;
-  script = Tcl_Merge(2,words);
+  script = Tcl_Merge(2, words);
   Tcl_Eval(interp,script);
   Tcl_Free(script);
 }
+
+/*
+ * Same as above but allow user control over prepending of "psfgen) "
+ * and newlines.
+ */
+void newhandle_msg_ex(void *v, const char *msg, int prepend, int newline) {
+  Tcl_Interp *interp = (Tcl_Interp *)v;
+  const char *words[3] = {"puts", "-nonewline", "psfgen) "};
+  char *script = NULL;
+
+  if (prepend) {
+    // prepend "psfgen) " to all output
+    script = Tcl_Merge(3, words);
+    Tcl_Eval(interp,script);
+    Tcl_Free(script);
+  }
+
+  // emit the output
+  if (newline) {
+    words[1] = msg;
+    script = Tcl_Merge(2, words);
+  } else {
+    words[2] = msg;
+    script = Tcl_Merge(3, words);
+  }
+  Tcl_Eval(interp,script);
+  Tcl_Free(script);
+}
+
 
 /*
  * Kills molecule to prevent user from saving bogus output.
@@ -240,7 +276,7 @@ int Psfgen_Init(Tcl_Interp *interp) {
   Tcl_CreateCommand(interp,"delatom", tcl_delatom,
 	(ClientData)data, (Tcl_CmdDeleteProc*)NULL);
  
-  Tcl_PkgProvide(interp, "psfgen", "1.5.0");
+  Tcl_PkgProvide(interp, "psfgen", "1.6");
 
 #ifdef NAMD_VERSION
   {
@@ -844,13 +880,14 @@ int tcl_segment(ClientData data, Tcl_Interp *interp,
     return TCL_ERROR;
   }
 
-  newhandle_msg(interp,"Info: generating structure...");
+  newhandle_msg_ex(interp, "Info: generating structure...", 1, 0);
   if ( topo_mol_end(psf->mol) ) {
+    newhandle_msg_ex(interp, "failed!", 0, 1);
     Tcl_AppendResult(interp,"ERROR: failed on end of segment",NULL);
     psfgen_kill_mol(interp,psf);
     return TCL_ERROR;
   }
-  newhandle_msg(interp, "Info: segment complete.");
+  newhandle_msg_ex(interp, "segment complete.", 0, 1);
   return TCL_OK;
 }
 
