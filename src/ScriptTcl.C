@@ -249,15 +249,17 @@ int ScriptTcl::Tcl_replicaSend(ClientData, Tcl_Interp *interp, int argc, char **
 }
 
 int ScriptTcl::Tcl_replicaRecv(ClientData, Tcl_Interp *interp, int argc, char **argv) {
-  if (argc > 2 ) {
-    Tcl_SetResult(interp,"args: ?source?",TCL_VOLATILE);
+  if (argc != 2 ) {
+    Tcl_SetResult(interp,"args: source",TCL_VOLATILE);
     return TCL_ERROR;
   }
   Tcl_DString recvstr;
   Tcl_DStringInit(&recvstr);
   int recvcount = 0;
-  int source = -1;
-  if ( argc > 1 ) source = atoi(argv[1]);
+  int source = atoi(argv[1]);
+  // Source required to avoid race condition when receiving multiple messages.
+  // This could be avoided by adding tags to CmiReplica arguments
+  // to distinguish size messages and including source in size message.
 #if CMK_REPLICAS
   CmiReplicaRecv(&recvcount,sizeof(int),source);
   Tcl_DStringSetLength(&recvstr,recvcount);
