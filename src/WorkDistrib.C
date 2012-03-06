@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/02/25 02:33:37 $
- * $Revision: 1.1238 $
+ * $Date: 2012/03/06 19:46:13 $
+ * $Revision: 1.1239 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -679,7 +679,7 @@ void WorkDistrib::savePatchMap(PatchMapMsg *msg)
 
   if ( patchMapArrived ) {
     if ( CkMyRank() + 1 < CkNodeSize(CkMyNode()) ) {
-      CProxy_WorkDistrib(thisgroup)[CkMyPe()+1].savePatchMap(msg);
+      ((CProxy_WorkDistrib(thisgroup))[CkMyPe()+1]).savePatchMap(msg);
     } else {
       delete msg;
     }
