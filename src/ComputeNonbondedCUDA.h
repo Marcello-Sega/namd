@@ -99,6 +99,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     ComputeNonbondedCUDAKernel *kernel;
 
     ComputeNonbondedCUDA *master;
+    int masterPe;
     int slaveIndex;
     ComputeNonbondedCUDA **slaves;
     int *slavePes;

@@ -1052,14 +1052,7 @@ void ComputeMgr::sendCreateNonbondedCUDASlave(int pe, int index) {
 
 void ComputeMgr::recvCreateNonbondedCUDASlave(NonbondedCUDASlaveMsg *msg) {
 #ifdef NAMD_CUDA
-  ComputeMap *map = ComputeMap::Object();
-  int i;
-  for (i=0; i < map->nComputes; i++) {
-    if ( map->type(i) == computeNonbondedCUDAType
-         && map->computeData[i].node == CkMyPe() ) break;
-  }
-  computeNonbondedCUDAObject = new ComputeNonbondedCUDA(i,this,msg->master,msg->index);
-  map->registerCompute(i,computeNonbondedCUDAObject);
+  new ComputeNonbondedCUDA(msg->master->cid,this,msg->master,msg->index);
 #endif
 }
 

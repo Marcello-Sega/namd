@@ -738,6 +738,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   localWorkMsg2 = new (PRIORITY_SIZE) LocalWorkMsg;
 
   if ( master != this ) { // I am slave
+    masterPe = master->masterPe;
     master->slaves[slaveIndex] = this;
     if ( master->slavePes[slaveIndex] != CkMyPe() ) {
       NAMD_bug("ComputeNonbondedCUDA slavePes[slaveIndex] != CkMyPe");
@@ -745,6 +746,7 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
     registerPatches();
     return;
   }
+  masterPe = CkMyPe();
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
@@ -770,7 +772,8 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
     if ( mergegrids ) {
       pr.isLocal = 0;
     } else if ( CkNumNodes() < 2 ) {
-      pr.isLocal = ( patchMap->node(pid) == CkMyPe() );
+      pr.isLocal = 1 & ( patchMap->index_a(pid) ^
+         patchMap->index_b(pid) ^ patchMap->index_c(pid) );
     } else {
       pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
     }
@@ -834,12 +837,12 @@ void ComputeNonbondedCUDA::registerPatches() {
   }
   if ( master == this ) setNumPatches(activePatches.size());
   else setNumPatches(hostedPatches.size());
-  CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), devicePe);
+  CkPrintf("Pe %d hosts %d local and %d remote patches for pe %d\n", CkMyPe(), localHostedPatches.size(), remoteHostedPatches.size(), masterPe);
 }
 
 void ComputeNonbondedCUDA::assignPatches() {
 
-  int *pesOnNodeSharingDevice = new int[numPesSharingDevice];
+  int *pesOnNodeSharingDevice = new int[CkMyNodeSize()];
   int numPesOnNodeSharingDevice = 0;
   int masterIndex = -1;
   for ( int i=0; i<numPesSharingDevice; ++i ) {
@@ -855,6 +858,8 @@ void ComputeNonbondedCUDA::assignPatches() {
   memset(count, 0, sizeof(int)*npatches);
   int *pcount = new int[numPesOnNodeSharingDevice];
   memset(pcount, 0, sizeof(int)*numPesOnNodeSharingDevice);
+  int *rankpcount = new int[CkMyNodeSize()];
+  memset(rankpcount, 0, sizeof(int)*CkMyNodeSize());
   char *table = new char[npatches*numPesOnNodeSharingDevice];
   memset(table, 0, npatches*numPesOnNodeSharingDevice);
 
@@ -884,6 +889,10 @@ void ComputeNonbondedCUDA::assignPatches() {
       if ( PatchMap::ObjectOnPe(pe)->patch(pid) ) {
         table[i*numPesOnNodeSharingDevice+j] = 1;
       }
+    }
+    if ( pr.hostPe == -1 && CkNodeOf(homePe) == CkMyNode() ) {
+      pr.hostPe = homePe;  --unassignedpatches;
+      rankpcount[CkRankOf(homePe)] += 1;
     }
   }
   // assign if only one pe has a required proxy
@@ -939,12 +948,26 @@ void ComputeNonbondedCUDA::assignPatches() {
     // CkPrintf("Pe %d patch %d hostPe %d\n", CkMyPe(), pid, pr.hostPe);
   }
 
-  slavePes = new int[numPesOnNodeSharingDevice];
-  slaves = new ComputeNonbondedCUDA*[numPesOnNodeSharingDevice];
+  slavePes = new int[CkMyNodeSize()];
+  slaves = new ComputeNonbondedCUDA*[CkMyNodeSize()];
   numSlaves = 0;
   for ( int j=0; j<numPesOnNodeSharingDevice; ++j ) {
-    if ( ! pcount[j] ) continue;
     int pe = pesOnNodeSharingDevice[j];
+    int rank = pe - CkNodeFirst(CkMyNode());
+    // CkPrintf("host %d sharing %d pe %d rank %d pcount %d rankpcount %d\n",
+    //          CkMyPe(),j,pe,rank,pcount[j],rankpcount[rank]);
+    if ( pe == CkMyPe() ) continue;
+    if ( ! pcount[j] && ! rankpcount[rank] ) continue;
+    rankpcount[rank] = 0;  // skip in rank loop below
+    slavePes[numSlaves] = pe;
+    computeMgr->sendCreateNonbondedCUDASlave(pe,numSlaves);
+    ++numSlaves;
+  }
+  for ( int j=0; j<CkMyNodeSize(); ++j ) {
+    int pe = CkNodeFirst(CkMyNode()) + j;
+    // CkPrintf("host %d rank %d pe %d rankpcount %d\n",
+    //          CkMyPe(),j,pe,rankpcount[j]);
+    if ( ! rankpcount[j] ) continue;
     if ( pe == CkMyPe() ) continue;
     slavePes[numSlaves] = pe;
     computeMgr->sendCreateNonbondedCUDASlave(pe,numSlaves);
@@ -955,6 +978,7 @@ void ComputeNonbondedCUDA::assignPatches() {
   delete [] pesOnNodeSharingDevice;
   delete [] count;
   delete [] pcount;
+  delete [] rankpcount;
   delete [] table;
 }
 
@@ -1098,8 +1122,8 @@ GBISP("opened GBIS boxes");
     }
   }
 
-  // message devicePe
-  computeMgr->sendNonbondedCUDASlaveReady(devicePe,
+  // message masterPe
+  computeMgr->sendNonbondedCUDASlaveReady(masterPe,
 			hostedPatches.size(),atomsChanged,sequence());
 
   workStarted = 1;
@@ -1989,7 +2013,7 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
 
   if ( master != this ) {  // finished
     GBISP("finished\n");
-    gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
+    if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
     atomsChanged = 0;
     return 1;
   }
@@ -2047,7 +2071,7 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
 
   // Next GBIS Phase
 GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
-    gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
+    if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
 
   cuda_timer_total += kernel_time;
   if ( simParams->outputCudaTiming &&
