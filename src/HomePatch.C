@@ -36,6 +36,7 @@
 #include "Sync.h"
 #include "Random.h"
 #include "Priorities.h"
+#include "ComputeNonbondedUtil.h"
 #include "ComputeGBIS.inl"
 #include "Priorities.h"
 #include "SortAtoms.h"
@@ -962,6 +963,25 @@ void HomePatch::positionsReady(int doMigration)
     }
     delete [] ao;
   }
+
+  { 
+    const double charge_scaling = sqrt(COULOMB * ComputeNonbondedUtil::scaling * ComputeNonbondedUtil::dielectric_1);
+    const Vector ucenter = lattice.unscale(center);
+    const BigReal ucenter_x = ucenter.x;
+    const BigReal ucenter_y = ucenter.y;
+    const BigReal ucenter_z = ucenter.z;
+    const int n = numAtoms;
+    pCuda.resize(n);
+    CudaAtom *ac = pCuda.begin();
+    const FullAtom *a = atom.begin();
+    for ( int k=0; k<n; ++k ) {
+      int j = a[k].sortOrder;
+      ac[k].x = a[j].position.x - ucenter_x;
+      ac[k].y = a[j].position.y - ucenter_y;
+      ac[k].z = a[j].position.z - ucenter_z;
+      ac[k].q = charge_scaling * a[j].charge;
+    }
+  }
 #endif
 
   doMigration = (doMigration && numNeighbors) || ! patchMapRead;
@@ -1087,8 +1107,14 @@ void HomePatch::positionsReady(int doMigration)
     if(doMigration || isNewProxyAdded) {
         pdMsgPLExtLen = pExt.size();
     }
+
+    int cudaAtomLen = 0;
+#ifdef NAMD_CUDA
+    cudaAtomLen = numAtoms;
+#endif
+
     ProxyDataMsg *nmsg = new (pdMsgPLLen, pdMsgAvgPLLen, pdMsgVLLen, intRadLen,
-      lcpoTypeLen, pdMsgPLExtLen,  PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
+      lcpoTypeLen, pdMsgPLExtLen, cudaAtomLen, PRIORITY_SIZE) ProxyDataMsg; // BEGIN LA, END LA
 
     SET_PRIORITY(nmsg,seq,priority);
     nmsg->patch = patchID;
@@ -1123,6 +1149,10 @@ void HomePatch::positionsReady(int doMigration)
     if(doMigration || isNewProxyAdded){     
         memcpy(nmsg->positionExtList, pExt.begin(), sizeof(CompAtomExt)*pdMsgPLExtLen);
     }
+
+#ifdef NAMD_CUDA
+    memcpy(nmsg->cudaAtomList, pCuda.begin(), sizeof(CudaAtom)*cudaAtomLen);
+#endif
     
 #if NAMD_SeparateWaters != 0
     //DMK - Atom Separation (water vs. non-water)

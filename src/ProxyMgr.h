@@ -112,6 +112,7 @@ public:
   //--Chao Mei
   int plExtLen;
   CompAtomExt *positionExtList;
+  CudaAtom *cudaAtomList;
 
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR) && (CMK_SMP) && defined(NAMDSRC_IMMQD_HACK)
   //In smp layer, the couter for msg creation and process of communication

@@ -1451,6 +1451,11 @@ GBISP("GBIS[%d] doWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
       }
     }
     {
+#if 1
+      const CudaAtom *ac = pr.p->getCudaAtomList();
+      atom *ap = atoms + start;
+      memcpy(ap, ac, sizeof(atom)*n);
+#else
       Vector center =
         pr.p->flags.lattice.unscale(cudaCompute->patchMap->center(pr.patchID));
       atom *ap = atoms + start;
@@ -1461,6 +1466,7 @@ GBISP("GBIS[%d] doWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
         ap[k].position.z = a[j].position.z - center.z;
         ap[k].charge = charge_scaling * a[j].charge;
       }
+#endif
     }
   }
 //GBISP("finished active patches\n")

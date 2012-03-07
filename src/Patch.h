@@ -108,6 +108,7 @@ class Patch
      int getNumComputes() { return positionComputeList.size(); }
 
      CompAtomExt* getCompAtomExtInfo() { return pExt.begin(); }
+     CudaAtom* getCudaAtomList() { return pCuda.begin(); }
 
      Lattice &lattice;
      Flags flags;
@@ -146,6 +147,7 @@ class Patch
      #endif
 
      CompAtomExtList pExt;
+     CudaAtomList pCuda;
 
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
      //1. Those fields are declared for reusing position info

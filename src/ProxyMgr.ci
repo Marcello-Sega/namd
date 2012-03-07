@@ -36,6 +36,7 @@ module ProxyMgr {
     int lcpoTypeList[];
 
     CompAtomExt positionExtList[];
+    CudaAtom cudaAtomList[];
   };
 
   // begin gbis

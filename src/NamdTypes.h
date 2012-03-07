@@ -134,6 +134,11 @@ struct InputAtom: FullAtom{
 	}
 };
 
+struct CudaAtom {
+  float x,y,z,q;
+};
+
+typedef ResizeArray<CudaAtom> CudaAtomList;
 typedef ResizeArray<CompAtom> CompAtomList;
 typedef ResizeArray<CompAtomExt> CompAtomExtList;
 typedef ResizeArray<FullAtom> FullAtomList;
