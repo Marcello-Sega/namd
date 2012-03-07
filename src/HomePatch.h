@@ -186,6 +186,7 @@ private:
   ForceList f_saved[Results::maxNumForces];
   ExtForce *replacementForces;
 
+  CudaAtomList cudaAtomList;
 
   // DMK - Atom Separation (water vs. non-water)
   #if NAMD_SeparateWaters != 0

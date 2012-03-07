@@ -108,7 +108,7 @@ class Patch
      int getNumComputes() { return positionComputeList.size(); }
 
      CompAtomExt* getCompAtomExtInfo() { return pExt.begin(); }
-     CudaAtom* getCudaAtomList() { return pCuda.begin(); }
+     CudaAtom* getCudaAtomList() { return cudaAtomPtr; }
 
      Lattice &lattice;
      Flags flags;
@@ -147,7 +147,6 @@ class Patch
      #endif
 
      CompAtomExtList pExt;
-     CudaAtomList pCuda;
 
 #ifdef REMOVE_PROXYDATAMSG_EXTRACOPY
      //1. Those fields are declared for reusing position info
@@ -171,6 +170,8 @@ class Patch
      CompAtom      *velocityPtrBegin;
      CompAtom      *velocityPtrEnd;
      // END LA
+
+     CudaAtom      *cudaAtomPtr;
 
      ForceList     f[Results::maxNumForces];
      Results	   results;

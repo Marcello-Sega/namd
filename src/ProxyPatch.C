@@ -183,8 +183,7 @@ void ProxyPatch::receiveData(ProxyDataMsg *msg)
 #endif
 
 #ifdef NAMD_CUDA
-  pCuda.resize(msg->plLen);
-  memcpy(pCuda.begin(), msg->cudaAtomList, sizeof(CudaAtom)*msg->plLen);
+  cudaAtomPtr = msg->cudaAtomList;
 #endif
   
   avgPositionPtrBegin = msg->avgPositionList;
@@ -258,8 +257,7 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
 #endif
 
 #ifdef NAMD_CUDA
-  pCuda.resize(msg->plLen);
-  memcpy(pCuda.begin(), msg->cudaAtomList, sizeof(CudaAtom)*msg->plLen);
+  cudaAtomPtr = msg->cudaAtomList;
 #endif
 
   numAtoms = msg->plLen;

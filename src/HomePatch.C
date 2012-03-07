@@ -971,8 +971,8 @@ void HomePatch::positionsReady(int doMigration)
     const BigReal ucenter_y = ucenter.y;
     const BigReal ucenter_z = ucenter.z;
     const int n = numAtoms;
-    pCuda.resize(n);
-    CudaAtom *ac = pCuda.begin();
+    cudaAtomList.resize(n);
+    CudaAtom *ac = cudaAtomPtr = cudaAtomList.begin();
     const FullAtom *a = atom.begin();
     for ( int k=0; k<n; ++k ) {
       int j = a[k].sortOrder;
@@ -1151,7 +1151,7 @@ void HomePatch::positionsReady(int doMigration)
     }
 
 #ifdef NAMD_CUDA
-    memcpy(nmsg->cudaAtomList, pCuda.begin(), sizeof(CudaAtom)*cudaAtomLen);
+    memcpy(nmsg->cudaAtomList, cudaAtomPtr, sizeof(CudaAtom)*cudaAtomLen);
 #endif
     
 #if NAMD_SeparateWaters != 0
