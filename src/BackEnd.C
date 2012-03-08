@@ -16,6 +16,7 @@
 #endif
 
 #include "Lattice.h"
+#include "ComputeMoa.h" 
 #include "ComputeMsm.h"  // needed for MsmData definition
 #include "main.decl.h"
 #include "main.h"
@@ -148,6 +149,9 @@ void master_init(int argc, char **argv){
   group.reductionMgr = CProxy_ReductionMgr::ckNew();
   // group.computePmeMgr set in constructor during startup
   group.nodePmeMgr = CProxy_NodePmeMgr::ckNew();
+#ifdef OPENATOM_VERSION
+  group.computeMoaMgr = CProxy_ComputeMoaMgr::ckNew();
+#endif // OPENATOM_VERSION
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
   group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();

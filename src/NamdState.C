@@ -491,23 +491,30 @@ int NamdState::configListInit(ConfigList *cfgList) {
      //identify the mutant atoms for fep simulation
         if (simParameters->alchOn) {
            molecule->build_fep_flags(configList->find("alchfile"),
-                configList->find("alchcol"), pdb, NULL);
+                configList->find("alchcol"), pdb, NULL, "alch" );
            molecule->delete_alch_bonded();
         }
 //fepe
         if (simParameters->lesOn) {
 	   if (simParameters->alchFepOn || simParameters->alchThermIntOn) NAMD_bug("FEP/TI and LES are incompatible!");
            molecule->build_fep_flags(configList->find("lesfile"),
-                configList->find("lescol"), pdb, NULL);
+                configList->find("lescol"), pdb, NULL, "les");
         }
         if (simParameters->pairInteractionOn) {
            molecule->build_fep_flags(configList->find("pairInteractionFile"),
-                configList->find("pairInteractionCol"), pdb, NULL);
+                configList->find("pairInteractionCol"), pdb, NULL, "pairInteraction");
         }      
         if (simParameters->pressureProfileAtomTypes > 1) {
           molecule->build_fep_flags(configList->find("pressureProfileAtomTypesFile"),
-                configList->find("pressureProfileAtomTypesCol"), pdb, NULL);
+                configList->find("pressureProfileAtomTypesCol"), pdb, NULL, "pressureProfileAtomTypes");
         }
+       
+        #ifdef OPENATOM_VERSION
+        if (simParameters->openatomOn) {
+          molecules->build_qmmm_flags(configList->find("openatomPdbFile",
+                configList->find("openatomPdbCol"), pdb, NULL, "openatomPdb")
+        }
+        #endif // OPENATOM_VERSION
 
 	iout << iINFO << "****************************\n";
 	iout << iINFO << "STRUCTURE SUMMARY:\n";

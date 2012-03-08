@@ -10,15 +10,23 @@
 #include "PmeBase.h"
 #include "Lattice.h"
 
+// #include "ComputeMoaMgr.decl.h" 
+
 class PmeKSpace {
+#ifdef OPENATOM_VERSION
+  friend class ComputeMoaMgr;
+#endif //OPENATOM_VERSION
 
 public:
   PmeKSpace(PmeGrid grid, int K2_start, int K2_end, int K3_start, int K3_end);
+#ifdef OPENATOM_VERSION
+  PmeKSpace(PmeGrid grid, int K2_start, int K2_end, int K3_start, int K3_end, CProxy_ComputeMoaMgr moaProxy);
+#endif //OPENATOM_VERSION
   ~PmeKSpace();
 
-  double compute_energy(float q_arr[], const Lattice &lattice, double ewald,
-                        double virial[]);
+  double compute_energy(float q_arr[], const Lattice &lattice, double ewald, double virial[]);
   
+
 private:
   // b-spline moduli
   double *bm1, *bm2, *bm3; 

@@ -18,6 +18,9 @@ mainmodule main {
   extern module LdbCoordinator;
   extern module ComputeMgr;
   extern module ComputePmeMgr;
+  #ifdef OPENATOM_VERSION
+  extern module ComputeMoaMgr;
+  #endif // OPENATOM_VERSION
   extern module OptPmeMgr;
   extern module ComputeExtMgr;
   extern module ComputeGBISserMgr;

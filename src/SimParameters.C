@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/02/24 22:04:13 $
- * $Revision: 1.1382 $
+ * $Author: char $
+ * $Date: 2012/03/08 22:29:05 $
+ * $Revision: 1.1383 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -293,6 +293,9 @@ void SimParameters::config_parser(ParseOptions &opts) {
    config_parser_fullelect(opts);
    config_parser_methods(opts);
    config_parser_constraints(opts);
+   #ifdef OPENATOM_VERSION
+   config_parser_openatom(opts);
+   #endif // OPENATOM_VERSION
 
    config_parser_gridforce(opts);
    config_parser_mgridforce(opts);
@@ -1458,6 +1461,15 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
 
 }
 
+#ifdef OPENATOM_VERSION
+void SimParameters::config_parser_openatom(ParseOptions &opts) {
+  opts.optionalB("main", "openatom", "OpenAtom active?", &openatomOn, FALSE);
+  opts.require("openatom", "openatomDriverFile", "What config file specifies openatom input parameters", PARSE_STRING);
+  opts.require("openatom", "openatomPhysicsFile", "What structure file specifies openatom input system", PARSE_STRING);
+  opts.require("openatom", "openatomPdbFile", "NAMD input file defining QM and MM regions", PARSE_STRING);
+   opts.optional("openatom", "openatomCol", "Column in the openatomPdb with the QM/MM flag", PARSE_STRING);
+}
+#endif // OPENATOM_VERSION
 
 /* BEGIN gf */
 void SimParameters::config_parser_mgridforce(ParseOptions &opts) {
@@ -3856,6 +3868,17 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    if ( pairlistMinProcs > 1 )
      iout << iINFO << "REQUIRING " << pairlistMinProcs << " PROCESSORS FOR PAIRLISTS\n";
    usePairlists = ( CkNumPes() >= pairlistMinProcs );
+
+#ifdef OPENATOM_VERSION
+if ( openatomOn ) 
+{
+  iout << iINFO << "OPENATOM QM/MM CAR-PARINELLO ACTIVE\n";
+  iout << iINFO << "OPENATOM CONFIG FILE:  " << openatomConfig << "\n";
+  iout << iINFO << "OPENATOM STRUCT FILE:  " << openatomStruct << "\n";
+  iout << iINFO << "OPENATOM PDB FILE:     " << openatomPDB << "\n";
+}
+#endif // OPENATOM_VERSION
+
    // FB - FEP and TI are now dependent on pairlists - disallow usePairlists=0
    if ( (alchOn) && (!usePairlists)) {
      NAMD_die("Sorry, Alchemical simulations require pairlists to be enabled\n");

@@ -8,6 +8,10 @@
 #include <math.h>
 #include <stdlib.h>
 
+ #include "SimParameters.h" 
+ #include "Node.h"  
+ // include "ComputeMoaMgr.decl.h"  
+
 static void dftmod(double *bsp_mod, double *bsp_arr, int nfft) {
   int j, k;
   double twopi, arg, sum1, sum2;
@@ -43,15 +47,14 @@ static void compute_b_moduli(double *bm, int K, int order) {
   dftmod(scratch, bm, K);
   for (i=0; i<K; i++) bm[i] = 1.0/scratch[i];
 
+
   delete [] scratch;
   delete [] dM;
   delete [] M;
 }
 
-PmeKSpace::PmeKSpace(PmeGrid grid,
-		int K2_start, int K2_end, int K3_start, int K3_end) 
-  : myGrid(grid),
-	k2_start(K2_start), k2_end(K2_end),
+PmeKSpace::PmeKSpace(PmeGrid grid, int K2_start, int K2_end, int K3_start, int K3_end) 
+  : myGrid(grid), k2_start(K2_start), k2_end(K2_end),
 	k3_start(K3_start), k3_end(K3_end) {
   int K1, K2, K3, order;
   K1=myGrid.K1; K2=myGrid.K2, K3=myGrid.K3; order=myGrid.order;
@@ -67,7 +70,50 @@ PmeKSpace::PmeKSpace(PmeGrid grid,
   compute_b_moduli(bm1, K1, order);
   compute_b_moduli(bm2, K2, order);
   compute_b_moduli(bm3, K3, order);
+
 }
+
+#ifdef OPENATOM_VERSION
+PmeKSpace::PmeKSpace(PmeGrid grid, int K2_start, int K2_end, int K3_start, int K3_end, CProxy_ComputeMoaMgr moaProxy) 
+  : myGrid(grid), k2_start(K2_start), k2_end(K2_end),
+	k3_start(K3_start), k3_end(K3_end) {
+  int K1, K2, K3, order;
+  K1=myGrid.K1; K2=myGrid.K2, K3=myGrid.K3; order=myGrid.order;
+
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  bm1 = new double[K1];
+  bm2 = new double[K2];
+  bm3 = new double[K3];
+
+  exp1 = new double[K1/2 + 1];
+  exp2 = new double[K2/2 + 1];
+  exp3 = new double[K3/2 + 1];
+
+  compute_b_moduli(bm1, K1, order);
+  compute_b_moduli(bm2, K2, order);
+  compute_b_moduli(bm3, K3, order);
+
+  if ( simParams->openatomOn ) {
+    CkPrintf("######################################################\n");
+    CkPrintf("Entering recvBmX loop on processor %d \n", CkMyPe() );
+    int i;
+    for ( i=0; i<=K1; ++i) {
+    CkPrintf("bm1 value pre-send %d = %d \n", i, bm1[i] );
+    }
+    for ( i=0; i<=K1; ++i) {
+    CkPrintf("bm1 reference pre-send %d = %d \n", i, &bm1[i] );
+    }
+    CkPrintf("bm1: %d \n", *bm1);    
+    moaProxy[CkMyPe()].recvB(K2_start, K2_end, K3_start, K3_end, K1, K2, K3, bm1, bm2, bm3, order);
+//    qmmmcp->recvBm1(bm1, K1, order);
+//    qmmmcp->recvBm2(bm2, K2, order);
+//    qmmmcp->recvBm3(bm3, K3, order);
+  }
+    
+
+}
+#endif // OPENATOM_VERSION
 
 PmeKSpace::~PmeKSpace() {
   delete [] bm1;

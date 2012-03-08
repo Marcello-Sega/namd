@@ -180,7 +180,6 @@ module ComputePmeMgr {
     entry [expedited] void recvTrans(PmeTransMsg *);
     entry [expedited] void recvUntrans(PmeUntransMsg *);
   };
-
   group ComputePmeMgr {
 
     entry ComputePmeMgr(void);
@@ -196,6 +195,7 @@ module ComputePmeMgr {
     entry void recvSharedTrans(PmeSharedTransMsg *);
     entry void recvTrans(PmeTransMsg *);
     entry void gridCalc2(void);
+    entry void gridCalc2R(void);
     entry void sendUntrans(void);
     entry void recvSharedUntrans(PmeSharedUntransMsg *);
     entry void recvUntrans(PmeUntransMsg *);

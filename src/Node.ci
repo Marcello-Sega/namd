@@ -7,6 +7,10 @@
 module Node {
   // Node is on each Pe - 
 
+  #ifdef OPENATOM_VERSION
+    extern module oaSetup
+  #endif
+
   message GroupInitMsg;
   message ScriptParamMsg;  
 

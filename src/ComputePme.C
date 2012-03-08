@@ -46,6 +46,9 @@
 #include "Random.h"
 #include "Priorities.h"
 
+#include "ComputeMoa.h"
+// #include "ComputeMoaMgr.decl.h" 
+
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
@@ -304,6 +307,10 @@ public:
   void recvTrans(PmeTransMsg *);
   void procTrans(PmeTransMsg *);
   void gridCalc2(void);
+  #ifdef OPENATOM_VERSION
+  void gridCalc2Moa(void);
+  #endif // OPENATOM_VERSION
+  void gridCalc2R(void);
   void fwdSharedUntrans(PmeUntransMsg *);
   void recvSharedUntrans(PmeSharedUntransMsg *);
   void sendUntrans(void);
@@ -1051,7 +1058,16 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   if ( myTransPe >= 0 ) {
       int k2_start = localInfo[myTransPe].y_start_after_transpose;
       int k2_end = k2_start + localInfo[myTransPe].ny_after_transpose;
+      #ifdef OPENATOM_VERSION
+      if ( simParams->openatomOn ) { 
+        CProxy_ComputeMoaMgr moaProxy(CkpvAccess(BOCclass_group).computeMoaMgr);
+        myKSpace = new PmeKSpace(myGrid, k2_start, k2_end, 0, myGrid.dim3/2, moaProxy);
+      } else {
+        myKSpace = new PmeKSpace(myGrid, k2_start, k2_end, 0, myGrid.dim3/2);
+      }
+      #else  // OPENATOM_VERSION
       myKSpace = new PmeKSpace(myGrid, k2_start, k2_end, 0, myGrid.dim3/2);
+      #endif // OPENATOM_VERSION
   }
 
   int local_size = myGrid.block1 * myGrid.K2 * myGrid.dim3;
@@ -1584,7 +1600,52 @@ void ComputePmeMgr::gridCalc2(void) {
 	ny * zdim / 2, 1, work, 1, 0);
 #endif
 #endif
+  }
 
+#ifdef OPENATOM_VERSION
+    if ( ! simParams -> openatomOn ) { 
+#endif // OPENATOM_VERSION
+      gridCalc2R();
+#ifdef OPENATOM_VERSION
+    } else {
+      gridCalc2Moa();
+    }
+#endif // OPENATOM_VERSION
+}
+
+#ifdef OPENATOM_VERSION
+void ComputePmeMgr::gridCalc2Moa(void) {
+
+  int zdim = myGrid.dim3;
+  // int y_start = localInfo[myTransPe].y_start_after_transpose;
+  int ny = localInfo[myTransPe].ny_after_transpose;
+
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  CProxy_ComputeMoaMgr moaProxy(CkpvAccess(BOCclass_group).computeMoaMgr);
+
+  for ( int g=0; g<numGrids; ++g ) {
+    #ifdef OPENATOM_VERSION_DEBUG 
+    CkPrintf("Sending recQ on processor %d \n", CkMyPe());
+    for ( int i=0; i<=(ny * zdim / 2); ++i) 
+    {
+      CkPrintf("PE, g,fftw_q,k*q*g, kgrid, qgrid_size value %d pre-send = %d, %d, %f %f, %d, \n", i, CkMyPe(), g, (kgrid+qgrid_size*g)[i], kgrid[i], qgrid_size);
+    }
+    #endif // OPENATOM_VERSION_DEBUG
+//     mqcpProxy[CkMyPe()].recvQ((ny * zdim / 2),((fftw_complex *)(kgrid+qgrid_size*g)));
+    CkCallback resumePme(CkIndex_ComputePmeMgr::gridCalc2R(), thishandle);
+    moaProxy[CkMyPe()].recvQ(g,numGrids,(ny * zdim / 2),(kgrid+qgrid_size*g), resumePme);
+  }
+}
+#endif // OPENATOM_VERSION
+
+void ComputePmeMgr::gridCalc2R(void) {
+
+  int zdim = myGrid.dim3;
+  // int y_start = localInfo[myTransPe].y_start_after_transpose;
+  int ny = localInfo[myTransPe].ny_after_transpose;
+
+  for ( int g=0; g<numGrids; ++g ) {
     // reciprocal space portion of PME
     BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
     recip_evir2[g][0] = myKSpace->compute_energy(kgrid+qgrid_size*g,
@@ -1592,6 +1653,7 @@ void ComputePmeMgr::gridCalc2(void) {
     // CkPrintf("Ewald reciprocal energy = %f\n", recip_evir2[g][0]);
 
     // start backward FFT (x dimension)
+
 #ifdef NAMD_FFTW
 #ifdef NAMD_FFTW_3
     fftwf_execute(backward_plan_x[g]);

@@ -175,9 +175,13 @@ public:
   int numNodes() { return CkNumPes(); }
 
   void setScript(ScriptTcl *s) { script = s; }
-  ScriptTcl *getScript(void) { return script; }
+  ScriptTcl *getScript(void) { return script; } 
 
-protected:
+#ifdef OPENATOM_VERSION
+  doneMoaStart();
+#endif //OPENATOM_VERSION
+
+  protected:
   // Map Databases - they have a singleton this access method ::Object()
   AtomMap    *atomMap;
   PatchMap   *patchMap;

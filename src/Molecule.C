@@ -4971,6 +4971,14 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
   }
   //fepe
+
+  #ifdef OPENATOM_VERSION
+  // needs to be refactored into its own openatom version
+  if (simParams->openatomOn ) {
+    msg->put(numFepInitial);
+    msg->put(numAtoms*sizeof(char), (char*)fepAtomFlags);
+  }
+  #endif //OPENATOM_VERSION
   
   // DRUDE: send data read from PSF
   msg->put(is_lonepairs_psf);
@@ -5327,6 +5335,16 @@ void Molecule::receive_Molecule(MIStream *msg){
         msg->get(numAtoms*sizeof(unsigned char), (char*)fepAtomFlags);
       }
 //fepe
+
+#ifdef OPENATOM_VERSION
+      // This needs to be refactored into its own version
+      if (simParams->openatomOn) {
+        delete [] fepAtomFlags;
+        fepAtomFlags = new unsigned char[numAtoms];
+
+        msg->get(numFepInitial);
+        msg->get(numAtoms*sizeof(unsigned char), (char*)fepAtomFlags);
+#endif //OPENATOM_VERSION
 
       // DRUDE: receive data read from PSF
       msg->get(is_lonepairs_psf);
@@ -7754,13 +7772,14 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
    void Molecule::build_fep_flags(StringList *alchfile,
          StringList *alchcol,
          PDB *initial_pdb,
-         char *cwd)
+         char *cwd, const char *simmethod)
    {
      PDB *bPDB;  //Pointer to PDB object to use
      int bcol = 5;  //Column that the data is in
      Real bval = 0; //flag from PDB file
      int i;         // loop counter
      char filename[129]; // filename
+
 
      // get the pdb object that contains the alch flags.
      // if the user gave another filename, use it, else
@@ -7771,7 +7790,9 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
      }
      else {
        if (alchfile->next != NULL) {
-        NAMD_die("Multiple definitions of alch PDB file in configuration file");
+        char *new_err_msg = new char[24 + strlen(simmethod) + 26];
+        sprintf(new_err_msg,"Multiple definitions of %sFile in configuration file",simmethod);
+        NAMD_die(new_err_msg);
        }
    
        if ((cwd == NULL) || (alchfile->data[0] == '/')) {
@@ -7788,7 +7809,9 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
        }
 
        if (bPDB->num_atoms() != numAtoms) {
-         NAMD_die("Number of atoms in alch PDB doesnt match coordinate PDB");
+        char *new_err_msg = new char[19 + strlen(simmethod) + 38];
+        sprintf(new_err_msg,"Number of atoms in %sFile PDB does not match coordinate PDB",simmethod);
+        NAMD_die(new_err_msg);
        }
     }
    
@@ -7800,7 +7823,9 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
     }
     else {
       if (alchcol->next != NULL) {
-        NAMD_die("Multiple definitions of alch parameter column in config file");
+        char *new_err_msg = new char[24 + strlen(simmethod) + 35];
+        sprintf(new_err_msg,"Multiple definitions of %s parameter column in config file",simmethod);
+        NAMD_die(new_err_msg);
       }
 
       if (strcasecmp(alchcol->data, "X") == 0) {
@@ -7823,8 +7848,8 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       }
     }
 
-   iout << iINFO << "To read alch data from file: " << filename << "\n" << endi;
-   iout << iINFO << "To read alch flag data from column: " << bcol << "\n" << endi;
+   iout << iINFO << "To read " << simmethod << "data from file: " << filename << "\n" << endi;
+   iout << iINFO << "To read " << simmethod << "flag data from column: " << bcol << "\n" << endi;
  
    //  Allocate the array to hold all the alch data
    fepAtomFlags = new unsigned char[numAtoms];
@@ -7898,7 +7923,18 @@ void Molecule::build_extra_bonds(Parameters *parameters, StringList *file) {
       }
     } else if (simParams->pressureProfileAtomTypes > 1) {
       fepAtomFlags[i] = (int) bval;
+    } 
+#ifdef OPENATOM_VERSION
+    // This needs to be refactored into its build_openatom_flags fxn
+    if (simParams->openatomOn) {
+      if (bval != 0) {
+        fepAtomFlags[i] = bval;
+        numFepInitial++;
+      } else {
+        fepAtomFlags[i] = 0;
+      }
     }
+#endif //OPENATOM_VERSION
   }
 
   // if PDB object was created, delete it
@@ -8035,6 +8071,8 @@ void Molecule::delete_alch_bonded(void)  {
 #endif  
 
 //fepe
+
+
 
 void Molecule::build_exPressure_atoms(StringList *fixedfile, 
    StringList *fixedcol, PDB *initial_pdb, char *cwd) {

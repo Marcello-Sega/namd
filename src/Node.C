@@ -160,6 +160,13 @@ static void namdInitPapiCounters(){
 }
 #endif
 
+#ifdef OPENATOM_VERSION
+static void startOA(){(char inDriverFile[1024], char inPhysicsFile[1024], CkCallback doneCB)
+{
+  CProxy_oaSetup moaInstance = CProxy_oaSetup::ckNew(inDriverFile, inPhysicsFile, doneCB);
+}
+#endif //OPENATOM_VERSION
+
 //======================================================================
 // Public Functions
 
@@ -353,6 +360,7 @@ void Node::startup() {
       return;
     }
 
+      
 	#ifdef MEASURE_NAMD_WITH_PAPI
 	if(simParameters->papiMeasure) namdInitPapiCounters();	
 	#endif
@@ -398,7 +406,21 @@ void Node::startup() {
 	CkpvAccess(BOCclass_group).computePmeMgr = CProxy_OptPmeMgr::ckNew();
       else 
 	CkpvAccess(BOCclass_group).computePmeMgr = CProxy_ComputePmeMgr::ckNew();
+        #ifdef OPENATOM_VERSION
+        if ( simParameters->openatomOn ) { 
+          CkpvAccess(BOCclass_group).computeMoaMgr = CProxy_ComputeMoaMgr::ckNew();
+        }
+        #endif // OPENATOM_VERSION
     }
+    
+    #ifdef OPENATOM_VERSION
+    if ( simParameters->openatomOn ) {
+      // if ( ! CkMyPe() ) { 
+        CkCallback doneMoaStart(CkIndexmain::doneMoaSetup(), thishandle); 
+        startOA(simParameters->moaDriverFile, simParameters->moaPhysicsFile, doneMoaStart);
+      // }
+    }
+    #endif // OPENATOM_VERSION
   
     // BEGIN LA
     rand = new Random(simParameters->randomSeed);
@@ -494,6 +516,12 @@ void Node::startup() {
 	pme[CkMyPe()].initialize(new CkQdMsg);
       }
       else {
+        #ifdef OPENATOM_VERSION
+        if ( simParameters->openatomOn ) { 
+          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
+          moa[CkMyPe()].initialize(new CkQdMsg);
+        }
+        #endif // OPENATOM_VERSION
 	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
 	pme[CkMyPe()].initialize(new CkQdMsg);
       }
@@ -522,6 +550,12 @@ void Node::startup() {
 	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
       }
       else {
+        #ifdef OPENATOM_VERSION
+        if ( simParameters->openatomOn ) { 
+          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
+          moa[CkMyPe()].initWorkers(new CkQdMsg);
+        }
+        #endif // OPENATOM_VERSION
 	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
 	pme[CkMyPe()].initialize_pencils(new CkQdMsg);
       }
@@ -551,6 +585,12 @@ void Node::startup() {
 	pme[CkMyPe()].activate_pencils(new CkQdMsg);
       }
       else {
+        #ifdef OPENATOM_VERSION
+        if ( simParameters->openatomOn ) { 
+          CProxy_ComputeMoaMgr moa(CkpvAccess(BOCclass_group).computeMoaMgr); 
+          moa[CkMyPe()].startWorkers(new CkQdMsg);
+        }
+        #endif // OPENATOM_VERSION
 	CProxy_ComputePmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
 	pme[CkMyPe()].activate_pencils(new CkQdMsg);
       }
@@ -628,6 +668,15 @@ void Node::startup() {
     }
   }
 }
+
+#ifdef OPENATOM_VERSION
+void Node::doneMoaStart()
+{
+#ifdef OPENATOM_VERSION_DEBUG
+  CkPrintf("doneMoaStart executed on processor %d.\n", CkMyPe() );
+#endif //OPENATOM_VERSION_DEBUG
+}
+#endif //OPENATOM_VERSION
 
 void Node::namdOneCommInit()
 {

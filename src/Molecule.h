@@ -642,7 +642,7 @@ public:
   void build_extra_bonds(Parameters *parameters, StringList *file);
 
 //fepb
-        void build_fep_flags(StringList *, StringList *, PDB *, char *);
+        void build_fep_flags(StringList *, StringList *, PDB *, char *, const char *);
                                // selection of the mutant atoms
         void delete_alch_bonded(void);
 //fepe

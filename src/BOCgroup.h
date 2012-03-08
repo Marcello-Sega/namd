@@ -18,6 +18,9 @@ public:
   CkGroupID computePmeMgr;
   CkGroupID nodePmeMgr;
   //  CkGroupID delegateMgr;
+#ifdef OPENATOM_VERSION
+  CkGroupID computeMoaMgr;
+#endif // OPENATOM_VERSION
   CkGroupID computeExtMgr;
   CkGroupID computeGBISserMgr;
   CkGroupID computeMsmSerialMgr;

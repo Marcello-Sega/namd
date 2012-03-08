@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dtanner $
- * $Date: 2012/02/21 14:43:49 $
- * $Revision: 1.1202 $
+ * $Author: char $
+ * $Date: 2012/03/08 22:29:06 $
+ * $Revision: 1.1203 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -586,6 +586,10 @@ public:
 	char FFTWWisdomFile[128];
 	char *FFTWWisdomString;
 
+        #ifdef OPENATOM_VERSION
+        Bool openatom;                  // Flag TRUE -> OpenAtom QM/MM active
+        #endif // OPENATOM_VERSION 
+
 	Bool minimizeCGOn;		//  Flag TRUE-> CG minimization active
         Bool minVerbose;                //  Flag TRUE-> print extra minimization data
 	BigReal minTinyStep;		//  Minimization parameter
@@ -821,6 +825,9 @@ private:
 	void config_parser_fullelect(ParseOptions &opts);
 	void config_parser_methods(ParseOptions &opts);
 	void config_parser_constraints(ParseOptions &opts);
+#ifdef OPENATOM_VERSION
+	void config_parser_openatom(ParseOptions &opts);
+#endif //OPENATOM_VERSION
 	/* BEGIN gf */
 	void config_parser_gridforce(ParseOptions &opts);
 	/* END gf */
