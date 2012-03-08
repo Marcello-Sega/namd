@@ -311,6 +311,7 @@ obj/BackEnd.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
+	src/ComputeMoa.h \
 	src/ComputeMsm.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
@@ -2638,6 +2639,7 @@ obj/ComputePme.o: \
 	inc/ComputePmeMgr.decl.h \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h \
+	inc/ComputeMoaMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/Molecule.h \
@@ -2667,6 +2669,7 @@ obj/ComputePme.o: \
 	src/varsizemsg.h \
 	src/Random.h \
 	src/Priorities.h \
+	src/ComputeMoa.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
 obj/OptPme.o: \
@@ -2714,6 +2717,7 @@ obj/OptPme.o: \
 	inc/PmeFFTLib.decl.h \
 	src/OptPmeRealSpace.h \
 	src/PmeKSpace.h \
+	inc/ComputeMoaMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
 	src/Molecule.h \
@@ -3986,6 +3990,7 @@ obj/HomePatch.o: \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \
 	src/Random.h \
+	src/ComputeNonbondedUtil.h \
 	src/ComputeGBIS.inl \
 	src/SortAtoms.h \
 	src/Debug.h
@@ -5059,7 +5064,18 @@ obj/PmeKSpace.o: \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
-	src/Tensor.h
+	src/Tensor.h \
+	inc/ComputeMoaMgr.decl.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/InfoStream.h \
+	src/MStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeKSpace.o $(COPTC) src/PmeKSpace.C
 obj/PmeRealSpace.o: \
 	src/PmeRealSpace.C \
@@ -5381,6 +5397,9 @@ obj/ScriptTcl.o: \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
 	src/Measure.h \
+	src/colvarmodule.h \
+	src/colvartypes.h \
+	src/colvarproxy.h \
 	src/DumpBench.h \
 	src/TclCommands.h \
 	src/Debug.h \
@@ -5555,7 +5574,6 @@ obj/Sync.o: \
 	src/UniqueSetIter.h \
 	inc/ProxyMgr.decl.h \
 	src/Compute.h \
-	src/ComputeMap.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \

@@ -8,9 +8,9 @@
 #include <math.h>
 #include <stdlib.h>
 
- #include "SimParameters.h" 
- #include "Node.h"  
- // include "ComputeMoaMgr.decl.h"  
+#include "SimParameters.h" 
+#include "Node.h"  
+#include "ComputeMoaMgr.decl.h"  
 
 static void dftmod(double *bsp_mod, double *bsp_arr, int nfft) {
   int j, k;

@@ -249,6 +249,8 @@ OBJS = \
 # Add new modules here.
 
 CIFILES = 	\
+		$(INCDIR)/ComputeMoaMgr.decl.h \
+		$(INCDIR)/ComputeMoaMgr.def.h \
 		$(INCDIR)/ComputeMsmMgr.decl.h \
 		$(INCDIR)/ComputeMsmMgr.def.h \
 		$(INCDIR)/ComputeMsmSerialMgr.decl.h \

@@ -47,7 +47,7 @@
 #include "Priorities.h"
 
 #include "ComputeMoa.h"
-// #include "ComputeMoaMgr.decl.h" 
+#include "ComputeMoaMgr.decl.h" 
 
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/

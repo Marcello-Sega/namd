@@ -10,7 +10,7 @@
 #include "PmeBase.h"
 #include "Lattice.h"
 
-// #include "ComputeMoaMgr.decl.h" 
+#include "ComputeMoaMgr.decl.h" 
 
 class PmeKSpace {
 #ifdef OPENATOM_VERSION
