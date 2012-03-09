@@ -56,8 +56,6 @@ ALCHPAIR(
       
       TABENERGY(
       register const int tabtype = -1 - ( lj_pars->A < 0 ? lj_pars->A : 0 );
-      register int eneraddress;
-      register BigReal r1;
       )
       
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
@@ -156,10 +154,16 @@ ALCHPAIR(
       NOT_ALCHPAIR(
       TABENERGY(
         if (tabtype >= 0) {
+          register BigReal r1;
           r1 = sqrt(p_ij_x*p_ij_x + p_ij_y*p_ij_y + p_ij_z*p_ij_z);
           //CkPrintf("%i %i %f %f %i\n", npertype, tabtype, r1, table_spacing, (int) (mynearbyint(r1 / table_spacing)));
+          register int eneraddress;
           eneraddress = 2 * ((npertype * tabtype) + ((int) mynearbyint(r1 / table_spacing)));
           //CkPrintf("Using distance bin %i for distance %f\n", eneraddress, r1);
+          vdw_d = 0.;
+          vdw_c = 0.;
+          vdw_b = table_ener[eneraddress + 1] / r1;
+          vdw_a = (-1/2.) * diffa * vdw_b;
           ENERGY(
             register BigReal vdw_val = table_ener[eneraddress];
             //CkPrintf("Found vdw energy of %f\n", vdw_val);
@@ -186,101 +190,8 @@ ALCHPAIR(
 #endif // FAST
 
 #if ( FAST(1+) 0 )
-      register BigReal vdw_dir;
-#if ( TABENERGY(1+) 0 )
-      if (tabtype >= 0) {
-        //CkPrintf("Getting force from bin %i\n", eneraddress+1);
-        vdw_dir = table_ener[eneraddress + 1];
-        //CkPrintf("Values we're combining: vdw_dir: %f\n", vdw_dir);
-        vdw_dir /= r1;
-        INT(
-        //CkPrintf("Found vdw value of %f\n", vdw_dir);
-        reduction[pairVDWForceIndex_X] -= force_sign * vdw_dir * p_ij_x;
-        //CkPrintf("X component is %f (from %f %f %f %f)\n", force_sign * vdw_dir * p_ij_x, force_sign, vdw_dir, p_ij_x, r1);
-        reduction[pairVDWForceIndex_Y] -= force_sign * vdw_dir * p_ij_y;
-        reduction[pairVDWForceIndex_Z] -= force_sign * vdw_dir * p_ij_z;
-        )
-
-#if ( SHORT(1+) 0 )
-        NORMAL(
-        BigReal fast_d = kqq * table_four_i[8];
-        BigReal fast_c = kqq * table_four_i[9];
-        BigReal fast_b = kqq * table_four_i[10];
-        BigReal fast_a = kqq * table_four_i[11];
-        )
-        MODIFIED(
-        BigReal modfckqq = (1.0-modf_mod) * kqq;
-        BigReal fast_d = modfckqq * table_four_i[8];
-        BigReal fast_c = modfckqq * table_four_i[9];
-        BigReal fast_b = modfckqq * table_four_i[10];
-        BigReal fast_a = modfckqq * table_four_i[11];
-        )
-
-        register BigReal fast_dir =
-        ( diffa * fast_d + fast_c ) * diffa + fast_b;
-        {
-          ENERGY(
-	     register BigReal fast_val =
-	( ( diffa * fast_d * (1/6.)+ fast_c * (1/4.)) * diffa + fast_b *(1/2.)) * diffa + fast_a;
-          electEnergy -=  LAM(lambda_pair *) fast_val;
-          FEP( electEnergy_s -=  d_lambda_pair * fast_val; )
-          )
-
-          INT(
-//      printf("Initial calculation of fast_dir: %f\n", fast_dir);
-          // force_r -= -1.0 * LAM(lambda_pair *) fast_dir;
-          reduction[pairElectForceIndex_X] +=  force_sign * fast_dir * p_ij_x;
-          reduction[pairElectForceIndex_Y] +=  force_sign * fast_dir * p_ij_y;
-          reduction[pairElectForceIndex_Z] +=  force_sign * fast_dir * p_ij_z;
-          )
-        }
-
-//      fast_d += vdw_d;
-//      fast_c += vdw_c;
-//      fast_b += vdw_b;
-//      fast_a += vdw_a;
-      //CkPrintf("Values we're combining: fast_dir: %f vdw_dir: %f\n", fast_dir, vdw_dir);
-        fast_dir -= vdw_dir;
-//	( diffa * fast_d + fast_c ) * diffa + fast_b;
-        BigReal force_r =  LAM(lambda_pair *) fast_dir;
-      register BigReal tmp_x = force_r * p_ij_x;
-      PAIR( virial_xx += tmp_x * p_ij_x; )
-      PAIR( virial_xy += tmp_x * p_ij_y; )
-      PAIR( virial_xz += tmp_x * p_ij_z; )
-
-      f_i_x += tmp_x;
-      f_1[j].x -= tmp_x;
-
-      register BigReal tmp_y = force_r * p_ij_y;
-      PAIR( virial_yy += tmp_y * p_ij_y; )
-      PAIR( virial_yz += tmp_y * p_ij_z; )
-      f_i_y += tmp_y;
-      f_1[j].y -= tmp_y;
-      
-      register BigReal tmp_z = force_r * p_ij_z;
-      PAIR( virial_zz += tmp_z * p_ij_z; )
-      f_i_z += tmp_z;
-      f_1[j].z -= tmp_z;
-      //CkPrintf("Pre-pressure: %f %f %f | %f %f %f | %f %f\n", tmp_x, tmp_y, tmp_z, p_ij_x, p_ij_y, p_ij_z, vdw_dir, fast_dir);
-
-      PPROF(
-        const BigReal p_j_z = p_j->position.z;
-        int n2 = (int)floor((p_j_z-pressureProfileMin)*invThickness);
-        pp_clamp(n2, pressureProfileSlabs);
-        int p_j_partition = p_j->partition;
-
-        //CkPrintf("Pressure stats: %i | %i | %i | %f | %f | %i | %f %f | %f %f | %f %f\n", pressureProfileSlabs, n1, n2, p_i_partition, p_j_partition, pressureProfileAtomTypes, tmp_x, p_ij_x, tmp_y, p_ij_y, tmp_z, p_ij_z);
-
-        pp_reduction(pressureProfileSlabs, n1, n2, 
-                     p_i_partition, p_j_partition, pressureProfileAtomTypes,
-                     tmp_x*p_ij_x, tmp_y * p_ij_y, tmp_z*p_ij_z,
-                     pressureProfileReduction);
-
-      )
-#endif // SHORT
-      } else {
-#endif // TABENERGY
      INT( 
+      register BigReal vdw_dir;
       vdw_dir = ( diffa * vdw_d + vdw_c ) * diffa + vdw_b;
       //BigReal force_r =  LAM(lambda_pair *) vdw_dir;
       reduction[pairVDWForceIndex_X] += force_sign * vdw_dir * p_ij_x;
@@ -429,7 +340,6 @@ ALCHPAIR(
 #endif
 
 #endif // SHORT
-      TABENERGY( } )
 #endif // FAST
 
 #if ( FULL (EXCLUDED( SHORT ( 1+ ) ) ) 0 ) 
@@ -526,33 +436,6 @@ ALCHPAIR(
       } )
 
 
-      TABENERGY(
-        register BigReal slow_dir;
-        if (tabtype < 0) {
-          NOT_ALCHPAIR (
-          FAST(
-          NOSHORT(
-          slow_d += vdw_d;
-          slow_c += vdw_c;
-          slow_b += vdw_b;
-          slow_a += vdw_a; // unused!
-          )
-          )
-          )
-          slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
-        } else {
-          slow_dir =
-            ( diffa * slow_d + slow_c ) * diffa + slow_b;
-          NOT_ALCHPAIR (
-          FAST(
-          NOSHORT(
-          slow_dir = vdw_dir + slow_dir;
-          )
-          )
-          )
-        }
-      )
-      NOTABENERGY(
       NOT_ALCHPAIR (
         FAST(
         NOSHORT(
@@ -564,7 +447,6 @@ ALCHPAIR(
         )
       )
       register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
-      )
       BigReal fullforce_r = slow_dir LAM(* lambda_pair);
       ALCHPAIR (
         fullforce_r *= myElecLambda;
