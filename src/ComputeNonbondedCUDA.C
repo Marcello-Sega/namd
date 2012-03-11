@@ -1092,11 +1092,13 @@ GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
         pr.dHdrPrefixBox->skip();
       }
     }
+    if ( master != this ) {
+      computeMgr->sendNonbondedCUDASlaveReady(masterPe,
+			hostedPatches.size(),atomsChanged,sequence());
+    }
     if ( reduction ) reduction->submit();
     return 1;
   }
-
-  if ( master == this ) return 0; //work to do, enqueue as usual
 
   for ( int i=0; i<hostedPatches.size(); ++i ) {
     patch_record &pr = master->patchRecords[hostedPatches[i]];
@@ -1122,6 +1124,8 @@ GBISP("GBIS[%d] noWork() P3[%d] open()\n",CkMyPe(),pr.patchID);
 GBISP("opened GBIS boxes");
     }
   }
+
+  if ( master == this ) return 0; //work to do, enqueue as usual
 
   // message masterPe
   computeMgr->sendNonbondedCUDASlaveReady(masterPe,
@@ -1163,14 +1167,6 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
 
   //execute only during GBIS phase 1, or if not using GBIS
   if (!simParams->GBISOn || gbisPhase == 1) {
-
-  //open boxes to begin phase
-  for ( int i=0; i<hostedPatches.size(); ++i ) {
-    patch_record &pr = master->patchRecords[hostedPatches[i]];
-GBISP("GBIS[%d] doWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
-    pr.x = pr.positionBox->open();
-    pr.xExt = pr.p->getCompAtomExtInfo();
-  }
 
   //bind new patches to GPU
  if ( atomsChanged || computesChanged ) {
@@ -1611,9 +1607,6 @@ GBISP("GBIS[%d] doWork() P0[%d] open()\n",CkMyPe(), pr.patchID);
 GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
         if (gbisPhase == 1) {
           //Copy GBIS intRadius to Host
-GBISP("GBIS[%d] doWork() P1[%d] open()\n",CkMyPe(), pr.patchID);
-          if (i < hostedPatches.size())
-          pr.intRad = pr.intRadBox->open();
           if (atomsChanged) {
             float *intRad0 = intRad0H + pr.localStart;
             float *intRadS = intRadSH + pr.localStart;
@@ -1623,24 +1616,13 @@ GBISP("GBIS[%d] doWork() P1[%d] open()\n",CkMyPe(), pr.patchID);
               intRadS[k] = pr.intRad[2*j+1];
             }
           }
-
-          if (i < hostedPatches.size())
-          pr.psiSum = pr.psiSumBox->open();
         } else if (gbisPhase == 2) {
-GBISP("GBIS[%d] doWork() P2[%d] open()\n",CkMyPe(), pr.patchID);
-          if (i < hostedPatches.size())
-          pr.bornRad = pr.bornRadBox->open();
           float *bornRad = bornRadH + pr.localStart;
           for ( int k=0; k<pr.numAtoms; ++k ) {
             int j = pr.xExt[k].sortOrder;
             bornRad[k] = pr.bornRad[j];
           }
-          if (i < hostedPatches.size())
-          pr.dEdaSum = pr.dEdaSumBox->open();
         } else if (gbisPhase == 3) {
-GBISP("GBIS[%d] doWork() P3[%d] open()\n",CkMyPe(), pr.patchID);
-          if (i < hostedPatches.size())
-          pr.dHdrPrefix = pr.dHdrPrefixBox->open();
           float *dHdrPrefix = dHdrPrefixH + pr.localStart;
           for ( int k=0; k<pr.numAtoms; ++k ) {
             int j = pr.xExt[k].sortOrder;
