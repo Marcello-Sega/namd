@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2012/03/08 22:29:05 $
- * $Revision: 1.1383 $
+ * $Author: jim $
+ * $Date: 2012/03/11 23:40:50 $
+ * $Revision: 1.1384 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -499,6 +499,8 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.optionalB("main", "outputPatchDetails", "print number of atoms in each patch",
       &outputPatchDetails, FALSE);
+   opts.optionalB("main", "staticAtomAssignment", "never migrate atoms",
+      &staticAtomAssignment, FALSE);
    opts.optionalB("main", "lonePairs", "Enable lone pairs", &lonepairs, FALSE);
    opts.optional("main", "waterModel", "Water model to use", PARSE_STRING);
    opts.optionalB("main", "LJcorrection", "Apply analytical tail corrections for energy and virial", &LJcorrection, FALSE);

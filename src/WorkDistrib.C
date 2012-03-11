@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/03/06 19:46:13 $
- * $Revision: 1.1239 $
+ * $Date: 2012/03/11 23:40:51 $
+ * $Revision: 1.1240 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -43,6 +43,7 @@
 #include "varsizemsg.h"
 #include "ProxyMgr.h"
 #include "Priorities.h"
+#include "SortAtoms.h"
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
@@ -386,19 +387,77 @@ FullAtomList *WorkDistrib::createAtomLists(void)
 
   const Lattice lattice = params->lattice;
 
+    if ( params->staticAtomAssignment ) {
+      FullAtomList sortAtoms;
+      for ( i=0; i < numAtoms; i++ ) {
+        HydrogenGroupID &h = molecule->hydrogenGroup[i];
+        if ( ! h.isMP ) continue;
+        FullAtom a;
+        a.id = i;
+        a.migrationGroupSize = h.isMP ? h.atomsInMigrationGroup : 0;
+        a.position = positions[h.atomID];
+        sortAtoms.add(a);
+      } 
+      int *order = new int[sortAtoms.size()];
+      for ( i=0; i < sortAtoms.size(); i++ ) {
+        order[i] = i;
+      } 
+      int *breaks = new int[numPatches];
+      sortAtomsForPatches(order,breaks,sortAtoms.begin(),
+                        sortAtoms.size(),numAtoms,
+                        patchMap->gridsize_c(),
+                        patchMap->gridsize_b(),
+                        patchMap->gridsize_a());
+
+      i = 0;
+      for ( int pid = 0; pid < numPatches; ++pid ) {
+        int iend = breaks[pid];
+        for ( ; i<iend; ++i ) {
+          FullAtom &sa = sortAtoms[order[i]];
+          int mgs = sa.migrationGroupSize;
+/*
+CkPrintf("patch %d (%d %d %d) has group %d atom %d size %d at %.2f %.2f %.2f\n",
+          pid, patchMap->index_a(pid), patchMap->index_b(pid), 
+          patchMap->index_c(pid), order[i], sa.id, mgs,
+          sa.position.x, sa.position.y, sa.position.z);
+*/
+          for ( int k=0; k<mgs; ++k ) {
+            HydrogenGroupID &h = molecule->hydrogenGroup[sa.id + k];
+            int aid = h.atomID;
+            FullAtom a;
+            a.id = aid;
+            a.position = positions[aid];
+            a.velocity = velocities[aid];
+            a.vdwType = molecule->atomvdwtype(aid);
+            a.status = molecule->getAtoms()[aid].status;
+            a.langevinParam = molecule->langevin_param(aid);
+            a.hydrogenGroupSize = h.isGP ? h.atomsInGroup : 0;
+            a.migrationGroupSize = h.isMP ? h.atomsInMigrationGroup : 0;
+            if(params->rigidBonds != RIGID_NONE) {
+              a.rigidBondLength = molecule->rigid_bond_length(aid);
+            }else{
+              a.rigidBondLength = 0.0;
+            }
+            atoms[pid].add(a);
+          }
+        }
+CkPrintf("patch %d (%d %d %d) has %d atoms\n",
+          pid, patchMap->index_a(pid), patchMap->index_b(pid), 
+          patchMap->index_c(pid), atoms[pid].size());
+      }
+      delete [] order;
+      delete [] breaks;
+    } else
     {
-    // split atoms into patched based on helix-group and position
+    // split atoms into patches based on migration group and position
     int aid, pid=0;
     for(i=0; i < numAtoms; i++)
       {
-      if ( ! ( i % 1000 ) )
-	{
-        DebugM(3,"Assigned " << i << " atoms to patches so far.\n");
-        }
       // Assign atoms to patches without splitting hydrogen groups.
       // We know that the hydrogenGroup array is sorted with group parents
       // listed first.  Thus, only change the pid if an atom is a group parent.
-      aid = molecule->hydrogenGroup[i].atomID;
+      HydrogenGroupID &h = molecule->hydrogenGroup[i];
+      aid = h.atomID;
       FullAtom a;
       a.id = aid;
       a.position = positions[aid];
@@ -406,7 +465,6 @@ FullAtomList *WorkDistrib::createAtomLists(void)
       a.vdwType = molecule->atomvdwtype(aid);
       a.status = molecule->getAtoms()[aid].status;
       a.langevinParam = molecule->langevin_param(aid);
-      HydrogenGroupID &h = molecule->hydrogenGroup[i];
       a.hydrogenGroupSize = h.isGP ? h.atomsInGroup : 0;
       a.migrationGroupSize = h.isMP ? h.atomsInMigrationGroup : 0;
       if(params->rigidBonds != RIGID_NONE) {
@@ -852,24 +910,24 @@ void WorkDistrib::patchMapInit(void)
   // for CUDA be sure there are more patches than pes
 
   int numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   if ( numPatches < numpes && twoAwayX < 0 ) {
     twoAwayX = 1;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
   if ( numPatches < numpes && twoAwayY < 0 ) {
     twoAwayY = 1;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
   if ( numPatches < numpes && twoAwayZ < 0 ) {
     twoAwayZ = 1;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,maxNumPatches,
+	xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
   }
   if ( numPatches < numpes ) {
@@ -878,7 +936,7 @@ void WorkDistrib::patchMapInit(void)
   if ( numPatches <= 1.4 * numpes ) {
     int exactFit = numPatches - numPatches % numpes;
     int newNumPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,exactFit,
+	xmin,xmax,lattice,patchSize,exactFit,params->staticAtomAssignment,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
     if ( newNumPatches == exactFit ) {
       iout << iINFO << "REDUCING NUMBER OF PATCHES TO IMPROVE LOAD BALANCE\n" << endi;
@@ -886,7 +944,7 @@ void WorkDistrib::patchMapInit(void)
     }
   }
 
-  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
+  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
 	twoAwayX>0 ? 2 : 1, twoAwayY>0 ? 2 : 1, twoAwayZ>0 ? 2 : 1);
 
 #else
@@ -899,32 +957,32 @@ void WorkDistrib::patchMapInit(void)
   }
 
   int numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,1.e9,
+	xmin,xmax,lattice,patchSize,1.e9,params->staticAtomAssignment,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   if ( ( numPatches > (0.3*availPes) || numPatches > maxNumPatches
        ) && twoAwayZ < 0 ) {
     twoAwayZ = 0;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,1.e9,
+	xmin,xmax,lattice,patchSize,1.e9,params->staticAtomAssignment,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
   if ( ( numPatches > (0.6*availPes) || numPatches > maxNumPatches
        ) && twoAwayY < 0 ) {
     twoAwayY = 0;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,1.e9,
+	xmin,xmax,lattice,patchSize,1.e9,params->staticAtomAssignment,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
   if ( ( numPatches > availPes || numPatches > maxNumPatches
        ) && twoAwayX < 0 ) {
     twoAwayX = 0;
     numPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,1.e9,
+	xmin,xmax,lattice,patchSize,1.e9,params->staticAtomAssignment,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
   }
   if ( numPatches > availPes && numPatches <= (1.4*availPes) && availPes <= maxNumPatches ) {
     int newNumPatches = patchMap->sizeGrid(
-	xmin,xmax,lattice,patchSize,availPes,
+	xmin,xmax,lattice,patchSize,availPes,params->staticAtomAssignment,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
     if ( newNumPatches <= availPes && numPatches <= (1.4*newNumPatches) ) {
       iout << iINFO << "REDUCING NUMBER OF PATCHES TO IMPROVE LOAD BALANCE\n" << endi;
@@ -932,7 +990,7 @@ void WorkDistrib::patchMapInit(void)
     }
   }
 
-  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,
+  patchMap->makePatches(xmin,xmax,lattice,patchSize,maxNumPatches,params->staticAtomAssignment,
 	twoAwayX ? 2 : 1, twoAwayY ? 2 : 1, twoAwayZ ? 2 : 1);
 
 #endif

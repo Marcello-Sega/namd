@@ -106,4 +106,59 @@ void sortAtomsForCUDA(int *order, const FullAtom *atoms, int nfree, int n) {
 
 }
 
+void sortAtomsForPatches(int *order, int *breaks,
+                         const FullAtom *atoms, int nmgrps, int natoms,
+                         int ni, int nj, int nk) {
+
+//CkPrintf("sorting %d atoms in %d groups to %d x %d x %d\n",
+//    natoms, nmgrps, nk, nj, ni);
+  std::sort(order, order+nmgrps, sortop_z(atoms));
+  int pid = 0;
+  int ibegin = 0;
+  int nai = 0;
+  for ( int ip=0; ip < ni; ++ip ) {
+    int naj = nai;
+    int targi = nai + (natoms - nai - 1) / (ni - ip) + 1;
+    int iend;
+    for ( iend=ibegin; iend<nmgrps; ++iend ) { 
+      int mgs = atoms[order[iend]].migrationGroupSize;
+      if (nai + mgs <= targi) nai += mgs;
+      else break;
+    }
+//CkPrintf("  Z %d %d (%d) %d\n", ibegin, iend, iend-ibegin, nai);
+    std::sort(order+ibegin, order+iend, sortop_y(atoms));
+    int jbegin = ibegin;
+    for ( int jp=0; jp < nj; ++jp ) {
+      int nak = naj;
+      int targj = naj + (nai - naj - 1) / (nj - jp) + 1;
+      int jend;
+      for ( jend=jbegin; jend<iend; ++jend ) { 
+        int mgs = atoms[order[jend]].migrationGroupSize;
+        if (naj + mgs <= targj) naj += mgs;
+        else break;
+      }
+
+//CkPrintf("    Y %d %d (%d) %d\n", jbegin, jend, jend-jbegin, naj);
+      std::sort(order+jbegin, order+jend, sortop_x(atoms));
+      int kbegin = jbegin;
+      for ( int kp=0; kp < nk; ++kp ) {
+        int targk = nak + (naj - nak - 1) / (nk - kp) + 1;
+        int kend;  
+        for ( kend=kbegin; kend<jend; ++kend ) {
+          int mgs = atoms[order[kend]].migrationGroupSize;
+          if (nak + mgs <= targk) nak += mgs;
+          else break;
+//CkPrintf("        atom %d %d %.2f\n", atoms[order[kend]].id, mgs,
+//                  atoms[order[kend]].position.x);
+        }
+//CkPrintf("      X %d %d (%d) %d\n", kbegin, kend, kend-kbegin, nak);
+        breaks[pid++] = kend;
+        kbegin = kend;
+      }
+      jbegin = jend;
+    }
+    ibegin = iend;
+  }
+
+}
 

@@ -60,7 +60,7 @@ PatchMap::PatchMap(void)
 
 int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 				const Lattice &lattice, BigReal patchSize,
-				double maxNumPatches,
+				double maxNumPatches, int staticAtomAssignment,
 				int asplit, int bsplit, int csplit)
 {
   aPeriodic = lattice.a_p();
@@ -109,6 +109,14 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 
   if ( aDim < 0 || bDim < 0 || cDim < 0 ) {
     NAMD_die("Bug in PatchMap::sizeGrid - negative grid dimension.");
+  }
+
+  if ( staticAtomAssignment ) {
+    if ( aPeriodic || bPeriodic || cPeriodic )
+      NAMD_die("Static atom assignment is incompatible with periodic boundary conditions.");
+    aDim = aAway + 1;
+    bDim = bAway + 1;
+    cDim = cAway + 1;
   }
 
   const int amin = (aPeriodic ? aAway : 1);
@@ -161,10 +169,10 @@ int PatchMap::sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 
 void PatchMap::makePatches(ScaledPosition xmin, ScaledPosition xmax,
 				const Lattice &lattice, BigReal patchSize,
-				double maxNumPatches,
+				double maxNumPatches, int staticAtomAssignment,
 				int asplit, int bsplit, int csplit)
 {
-  sizeGrid(xmin,xmax,lattice,patchSize,maxNumPatches,asplit,bsplit,csplit);
+  sizeGrid(xmin,xmax,lattice,patchSize,maxNumPatches,staticAtomAssignment,asplit,bsplit,csplit);
 
   iout << iINFO << "PATCH GRID IS ";
   iout << aDim;

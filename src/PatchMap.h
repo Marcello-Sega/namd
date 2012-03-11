@@ -31,11 +31,11 @@ public:
 
   int sizeGrid(ScaledPosition xmin, ScaledPosition xmax,
 			const Lattice &lattice, BigReal patchSize,
-			double maxNumPatches,
+			double maxNumPatches, int staticAtomAssignment,
 			int asplit, int bsplit, int csplit);
   void makePatches(ScaledPosition xmin, ScaledPosition xmax,
 			const Lattice &lattice, BigReal patchSize,
-			double maxNumPatches,
+			double maxNumPatches, int staticAtomAssignment,
 			int asplit, int bsplit, int csplit);
   void checkMap();
 

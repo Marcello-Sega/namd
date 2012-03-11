@@ -921,11 +921,13 @@ void HomePatch::receiveResults(ProxyCombinedResultRawMsg* msg)
 
 void HomePatch::positionsReady(int doMigration)
 {    
+  SimParameters *simParams = Node::Object()->simParameters;
+
   flags.sequence++;
 
   if (!patchMapRead) { readPatchMap(); }
       
-  if (numNeighbors) {
+  if (numNeighbors && ! simParams->staticAtomAssignment) {
     if (doMigration) {
       doAtomMigration();
     } else {
@@ -939,7 +941,6 @@ void HomePatch::positionsReady(int doMigration)
     FullAtom *a_i = atom.begin();
     int *ao = new int[n];
     int nfree;
-    SimParameters *simParams = Node::Object()->simParameters;
     if ( simParams->fixedAtomsOn && ! simParams->fixedAtomsForces ) {
       int k = 0;
       int k2 = n;

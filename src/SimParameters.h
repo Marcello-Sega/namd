@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2012/03/08 22:29:06 $
- * $Revision: 1.1203 $
+ * $Author: jim $
+ * $Date: 2012/03/11 23:40:50 $
+ * $Revision: 1.1204 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -707,6 +707,7 @@ public:
 	int maxExclusionFlags;		// maximum size of exclusion check list
 					// for any given atom
 	Bool outputPatchDetails;	// print number of atoms per patch
+        Bool staticAtomAssignment;      // never migrate atoms
 
 	//
         // hydrogen bond simulation parameters
