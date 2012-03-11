@@ -145,8 +145,8 @@ static __thread int atoms_alloc;
 
 static __thread int max_atoms_per_patch;
 
-// static cudaStream_t stream;
 __thread cudaStream_t stream;
+__thread cudaStream_t stream2;
  
 void cuda_init() {
   forces = 0;
@@ -185,6 +185,7 @@ void cuda_init() {
   atoms_alloc = 0;
 
   cudaStreamCreate(&stream);
+  cudaStreamCreate(&stream2);
   cuda_errcheck("cudaStreamCreate");
 }
 
@@ -450,7 +451,8 @@ __host__ __device__ static int3 patch_offset_from_neighbor(int neighbor) {
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
 		float cutoff2, float plcutoff2,
 		int cbegin, int ccount, int pbegin, int pcount,
-		int doSlow, int doEnergy, int usePairlists, int savePairlists) {
+		int doSlow, int doEnergy, int usePairlists, int savePairlists,
+		cudaStream_t &strm) {
 
  if ( ccount ) {
    if ( usePairlists ) {
@@ -463,7 +465,7 @@ void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
      if ( grid_dim > ccount - cstart ) grid_dim = ccount - cstart;
      // printf("%d %d %d\n",cbegin+cstart,grid_dim,patch_pairs_size);
 
-#define CALL(X) X<<< grid_dim, BLOCK_SIZE, 0, stream \
+#define CALL(X) X<<< grid_dim, BLOCK_SIZE, 0, strm \
 	>>>(patch_pairs+cbegin+cstart,atoms,atom_params,force_buffers, \
 	     (doSlow?slow_force_buffers:0), block_flags, \
              virial_buffers, (doSlow?slow_virial_buffers:0), \
@@ -528,7 +530,8 @@ void cuda_GBIS_P1(
   float rho_0,
   float3 lata,
   float3 latb,
-  float3 latc
+  float3 latc,
+  cudaStream_t &strm
 ) {
 
   int grid_dim = 65535;  // maximum allowed
@@ -537,7 +540,7 @@ void cuda_GBIS_P1(
       grid_dim = ccount - cstart;
     }
 
-    GBIS_P1_Kernel<<<grid_dim, BLOCK_SIZE, 0, stream>>>(
+    GBIS_P1_Kernel<<<grid_dim, BLOCK_SIZE, 0, strm>>>(
       patch_pairs+cbegin+cstart,
       atoms,
       atom_params,
@@ -576,14 +579,15 @@ void cuda_GBIS_P2(
   float3 latb,
   float3 latc,
   int doEnergy,
-  int doFullElec
+  int doFullElec,
+  cudaStream_t &strm
 ) {
   int grid_dim = 65535;  // maximum allowed
   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
     if (grid_dim > ccount - cstart)
       grid_dim = ccount - cstart;
 
-    GBIS_P2_Kernel<<<grid_dim, BLOCK_SIZE, 0, stream>>>(
+    GBIS_P2_Kernel<<<grid_dim, BLOCK_SIZE, 0, strm>>>(
       patch_pairs+cbegin+cstart,
       atoms,
       atom_params,
@@ -626,14 +630,15 @@ void cuda_GBIS_P3(
   float scaling,
   float3 lata,
   float3 latb,
-  float3 latc
+  float3 latc,
+  cudaStream_t &strm
 ) {
   int grid_dim = 65535;  // maximum allowed
   for ( int cstart = 0; cstart < ccount; cstart += grid_dim ) {
     if (grid_dim > ccount - cstart)
       grid_dim = ccount - cstart;
 
-    GBIS_P3_Kernel<<<grid_dim, BLOCK_SIZE, 0, stream>>>(
+    GBIS_P3_Kernel<<<grid_dim, BLOCK_SIZE, 0, strm>>>(
       patch_pairs+cbegin+cstart,
       atoms,
       atom_params,
@@ -655,9 +660,11 @@ void cuda_GBIS_P3(
   }
 }
 
+#if 0
 int cuda_stream_finished() {
   return ( cudaStreamQuery(stream) == cudaSuccess );
 }
+#endif
 
 
 #else  // NAMD_CUDA

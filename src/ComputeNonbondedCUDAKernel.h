@@ -114,7 +114,8 @@ void cuda_bind_virials(float *v);
 void cuda_nonbonded_forces(float3 lata, float3 latb, float3 latc,
                 float cutoff2, float plcutoff2,
                 int cbegin, int ccount, int pbegin, int pcount,
-                int doSlow, int doEnergy, int usePairlists, int savePairlists);
+                int doSlow, int doEnergy, int usePairlists, int savePairlists,
+		cudaStream_t &strm);
 
 //GBIS methods
 void cuda_GBIS_P1(
@@ -126,7 +127,8 @@ void cuda_GBIS_P1(
   float rho_0,
   float3 lata,
   float3 latb,
-  float3 latc
+  float3 latc,
+  cudaStream_t &strm
   );
 void cuda_GBIS_P2(
   int cbegin,
@@ -144,7 +146,8 @@ void cuda_GBIS_P2(
   float3 latb,
   float3 latc,
   int doEnergy,
-  int doFullElec
+  int doFullElec,
+  cudaStream_t &strm
   );
 void cuda_GBIS_P3(
   int cbegin,
@@ -156,7 +159,8 @@ void cuda_GBIS_P3(
   float scaling,
   float3 lata,
   float3 latb,
-  float3 latc
+  float3 latc,
+  cudaStream_t &strm
   );
 
 void cuda_bind_GBIS_intRad(float *intRad0H, float *intRadSH);

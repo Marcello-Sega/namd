@@ -29,6 +29,7 @@
 #endif
 
 extern __thread cudaStream_t stream;
+extern __thread cudaStream_t stream2;
 
 void cuda_errcheck(const char *msg) {
   cudaError_t err;
@@ -1727,14 +1728,14 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
     cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
 	localComputeRecords.size(),remoteComputeRecords.size(),
 	localActivePatches.size(),remoteActivePatches.size(),
-	doSlow, doEnergy, usePairlists, savePairlists);
+	doSlow, doEnergy, usePairlists, savePairlists, stream);
     if (simParams->GBISOn) {
       cuda_GBIS_P1(
         localComputeRecords.size(),remoteComputeRecords.size(),
         localActivePatches.size(),remoteActivePatches.size(),
         simParams->alpha_cutoff-simParams->fsMax,
         simParams->coulomb_radius_offset,
-        lata, latb, latc );
+        lata, latb, latc, stream);
     }
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    num_local_atom_records,num_remote_atom_records);
@@ -1762,7 +1763,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P2>>>\n", CkMyPe())
           (simParams->switchingActive ? simParams->switchingDist : -1.0),
           simParams->dielectric, simParams->solvent_dielectric,
           lata, latb, latc,
-          doEnergy, doSlow
+          doEnergy, doSlow, stream
           );
         cudaEventRecord(end_remote_download, stream);
         CUDA_POLL(cuda_check_remote_progress,this);
@@ -1777,7 +1778,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P3>>>\n", CkMyPe())
           (simParams->alpha_cutoff-simParams->fsMax),
           simParams->coulomb_radius_offset,
           simParams->nonbondedScaling,
-          lata, latb, latc
+          lata, latb, latc, stream
           );
         cudaEventRecord(end_remote_download, stream);
         CUDA_POLL(cuda_check_remote_progress,this);
@@ -1791,24 +1792,26 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     ++kernel_launch_state;
     gpu_is_mine = 0;
 
+    cudaStreamWaitEvent(stream2, start_calc, 0);
+
     if (!simParams->GBISOn || gbisPhase == 1) {
 
       cuda_nonbonded_forces(lata, latb, latc, cutoff2, plcutoff2,
 	      0,localComputeRecords.size(),
 	      0,localActivePatches.size(),
-	      doSlow, doEnergy, usePairlists, savePairlists);
+	      doSlow, doEnergy, usePairlists, savePairlists, stream2);
       if (simParams->GBISOn) {
         cuda_GBIS_P1(
           0,localComputeRecords.size(),
           0,localActivePatches.size(),
           simParams->alpha_cutoff-simParams->fsMax,
           simParams->coulomb_radius_offset,
-          lata, latb, latc );
+          lata, latb, latc, stream2 );
       }
     //cuda_load_forces(forces, (doSlow ? slow_forces : 0 ),
     //    0,num_local_atom_records);
     //cuda_load_virials(virials, doSlow);  // slow_virials follows virials
-    cudaEventRecord(end_local_download, stream);
+    cudaEventRecord(end_local_download, stream2);
     if ( workStarted == 2 ) {
 GBISP("C.N.CUDA[%d]::recvYieldDeviceL: adding POLL \
 cuda_check_local_progress\n", CkMyPe())
@@ -1835,9 +1838,9 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P2>>>\n", CkMyPe())
           (simParams->switchingActive ? simParams->switchingDist : -1.0),
           simParams->dielectric, simParams->solvent_dielectric,
           lata, latb, latc,
-          doEnergy, doSlow
+          doEnergy, doSlow, stream2
           );
-        cudaEventRecord(end_local_download, stream);
+        cudaEventRecord(end_local_download, stream2);
         if ( workStarted == 2 ) {
           CUDA_POLL(cuda_check_local_progress,this);
         }
@@ -1849,9 +1852,9 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P3>>>\n", CkMyPe())
           (simParams->alpha_cutoff-simParams->fsMax),
           simParams->coulomb_radius_offset,
           simParams->nonbondedScaling,
-          lata, latb, latc
+          lata, latb, latc, stream2
           );
-        cudaEventRecord(end_local_download, stream);
+        cudaEventRecord(end_local_download, stream2);
         if ( workStarted == 2 ) {
           CUDA_POLL(cuda_check_local_progress,this);
         }
