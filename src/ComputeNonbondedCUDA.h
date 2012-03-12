@@ -65,6 +65,7 @@ class ComputeNonbondedCUDA : public Compute, private ComputeNonbondedUtil {
     int workStarted;
     Lattice lattice;
     int doSlow, doEnergy;
+    int step;
     int finishWork();  // returns true when finished, false to continue
     void messageFinishWork();
 

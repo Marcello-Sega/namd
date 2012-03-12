@@ -703,7 +703,7 @@ static __thread int usePairlists = 0;
 static __thread int savePairlists = 0;
 static __thread float plcutoff2 = 0;
 
-static __thread cudaEvent_t start_upload;
+// static __thread cudaEvent_t start_upload;
 static __thread cudaEvent_t start_calc;
 static __thread cudaEvent_t end_remote_download;
 static __thread cudaEvent_t end_local_download;
@@ -753,10 +753,10 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
 
   cuda_init();
   build_exclusions();
-  cudaEventCreate(&start_upload);
-  cudaEventCreate(&start_calc);
-  cudaEventCreate(&end_remote_download);
-  cudaEventCreate(&end_local_download);
+  // cudaEventCreate(&start_upload);
+  cudaEventCreateWithFlags(&start_calc,cudaEventDisableTiming);
+  cudaEventCreateWithFlags(&end_remote_download,cudaEventDisableTiming);
+  cudaEventCreateWithFlags(&end_local_download,cudaEventDisableTiming);
 
   patch_pairs_ptr = new ResizeArray<patch_pair>;
   force_lists_ptr = new ResizeArray<force_list>;
@@ -1077,6 +1077,7 @@ int ComputeNonbondedCUDA::noWork() {
   lattice = flags.lattice;
   doSlow = flags.doFullElectrostatics;
   doEnergy = flags.doEnergy;
+  step = flags.step;
 
   if ( ! flags.doNonbonded ) {
 GBISP("GBIS[%d] noWork() don't do nonbonded\n",CkMyPe());
@@ -1562,41 +1563,6 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
   }
 #endif
 
-  kernel_time = CkWallTimer();
-#if 0
-  kernel_launch_state = 3;
-
-  cudaEventRecord(start_upload, stream);
-
-  if ( atomsChanged ) {
-    cuda_bind_atom_params(atom_params);
-  }
-
-  XXX - THIS PATH NOT UPDATED FOR SLOW FORCES - DO NOT COMPILE
-  cuda_bind_atoms(atoms);
-  cudaEventRecord(start_calc, stream);
-  cuda_nonbonded_forces(cutoff2,
-	localComputeRecords.size(),remoteComputeRecords.size(),
-	localActivePatches.size(),remoteActivePatches.size());
-  cudaEventRecord(end_remote_calc, stream);
-  cuda_load_forces(forces,num_local_atom_records,num_remote_atom_records);
-  cudaEventRecord(end_remote_download, stream);
-  cuda_nonbonded_forces(cutoff2,
-	0,localComputeRecords.size(),
-	0,localActivePatches.size());
-  cudaEventRecord(end_local_calc, stream);
-  cuda_load_forces(forces,0,num_local_atom_records);
-  cudaEventRecord(end_local_download, stream);
-
-  if ( cuda_stream_finished() ) {
-    CkPrintf("CUDA not overlapping with CPU work.\n");
-  }
-
-  // finishWork();
-
-  CUDA_POLL(cuda_check_remote_progress,this);
-#else
-
   } // !GBISOn || gbisPhase == 1
 
   //Do GBIS
@@ -1632,10 +1598,9 @@ GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
     } // end for patches
   } // if GBISOn
 
+  kernel_time = CkWallTimer();
   kernel_launch_state = 1;
   if ( gpu_is_mine ) recvYieldDevice(-1);
-
-#endif
 }
 
 void cuda_check_remote_calc(void *arg, double) {
@@ -1691,7 +1656,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
     remote_submit_time = CkWallTimer();
 
     if (!simParams->GBISOn || gbisPhase == 1) {
-    cudaEventRecord(start_upload, stream);
+    // cudaEventRecord(start_upload, stream);
     if ( atomsChanged ) {
       cuda_bind_atom_params(atom_params);
     }
@@ -1733,7 +1698,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: case 1\n", CkMyPe())
         //GBIS P1 Kernel launched in previous code block
       } else if (gbisPhase == 2) {
 GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P2>>>\n", CkMyPe())
-        cudaEventRecord(start_upload, stream);
+        // cudaEventRecord(start_upload, stream);
         cuda_bind_GBIS_bornRad(bornRadH);
         cuda_bind_GBIS_dEdaSum(dEdaSumH);
         cudaEventRecord(start_calc, stream);
@@ -1751,7 +1716,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P2>>>\n", CkMyPe())
         CUDA_POLL(cuda_check_remote_progress,this);
       } else if (gbisPhase == 3) {
 GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P3>>>\n", CkMyPe())
-        cudaEventRecord(start_upload, stream);
+        // cudaEventRecord(start_upload, stream);
         cuda_bind_GBIS_dHdrPrefix(dHdrPrefixH);
         cudaEventRecord(start_calc, stream);
         cuda_GBIS_P3(
@@ -2009,6 +1974,8 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
     return 1;
   }
 
+  cuda_timer_total += kernel_time;
+
   if ( !simParams->GBISOn || gbisPhase == 3 ) {
 
   {
@@ -2058,15 +2025,10 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
 
   atomsChanged = 0;
   reduction->submit();
-  } // !GBISOn || gbisPhase==3  
 
-  // Next GBIS Phase
-GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
-    if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
-
-  cuda_timer_total += kernel_time;
+  cuda_timer_count++;
   if ( simParams->outputCudaTiming &&
-	cuda_timer_count % simParams->outputCudaTiming == 0 ) {
+	step % simParams->outputCudaTiming == 0 ) {
 
   // int natoms = mol->numAtoms; 
   // double wpa = wcount;  wpa /= natoms;
@@ -2074,6 +2036,7 @@ GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
   // CkPrintf("Pe %d CUDA kernel %f ms, total %f ms, wpa %f\n", CkMyPe(),
 	// 	kernel_time * 1.e3, time * 1.e3, wpa);
 
+#if 0
   float upload_ms, remote_calc_ms;
   float local_calc_ms, total_ms;
   cuda_errcheck("before event timers");
@@ -2087,16 +2050,25 @@ GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
   cuda_errcheck("in event timer 4");
   cuda_errcheck("in event timers");
 
-    cuda_timer_total /= (cuda_timer_count + 1);
     CkPrintf("CUDA EVENT TIMING: %d %f %f %f %f\n",
 	CkMyPe(), upload_ms, remote_calc_ms,
 			local_calc_ms, total_ms);
-    CkPrintf("CUDA TIMING: %f ms/step on node %d\n",
-			cuda_timer_total * 1.e3, CkMyPe());
+#endif
+
+    if ( cuda_timer_count >= simParams->outputCudaTiming ) {
+      cuda_timer_total /= cuda_timer_count;
+      CkPrintf("CUDA TIMING: %d  %f ms/step on node %d\n",
+		step, cuda_timer_total * 1.e3, CkMyPe());
+    }
     cuda_timer_count = 0;
     cuda_timer_total = 0;
   }
-  cuda_timer_count++;
+
+  } // !GBISOn || gbisPhase==3  
+
+  // Next GBIS Phase
+GBISP("C.N.CUDA[%d]::fnWork: incrementing phase\n", CkMyPe())
+    if (simParams->GBISOn) gbisPhase = 1 + (gbisPhase % 3);//1->2->3->1...
 
   GBISP("C.N.CUDA[%d] finished ready for next step\n",CkMyPe());
   return 1;  // finished and ready for next step
