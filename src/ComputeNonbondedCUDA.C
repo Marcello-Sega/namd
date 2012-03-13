@@ -1153,7 +1153,7 @@ CkMyPe(), sequence(), gbisPhase, workStarted);
       workStarted = 2;
       basePriority = PROXY_RESULTS_PRIORITY;  // lower for local
       if ( master == this && kernel_launch_state > 2 ) {
-        CUDA_POLL(cuda_check_local_progress,this);
+        cuda_check_local_progress(this,0.);  // launches polling
       }
     }
     return;
