@@ -1,47 +1,47 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                   NAMD 2.8 Release Announcement                    |
+|                   NAMD 2.9b1 Release Announcement                  |
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                         May 31, 2011
+                                                       March 14, 2012
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
 NAMD, a parallel, object-oriented molecular dynamics code designed for
 high-performance simulation of large biomolecular systems.  NAMD is
 distributed free of charge and includes source code.  NAMD development
-is supported by the NIH National Center for Research Resources.
+is supported by the NIH National Institute of General Medical Sciences.
 
-NAMD 2.8 has many advantages over NAMD 2.7, among these are:
+NAMD 2.9b1 has many advantages over NAMD 2.8, among these are:
 
-- Generalized Born implicit solvent model
+- Improved (temperature/Hamiltonian) replica-exchange implementation
 
-- Accelerated molecular dynamics method
+- Replica-based umbrella sampling via collective variables module
 
-- MARTINI residue-based coarse-grain forcefield
+- Optimized shared-memory single-node and multiple-node CUDA builds
 
-- Non-uniform grids in grid forces
+- CUDA GPU-accelerated generalized Born implicit solvent (GBIS) model
 
-- Symmetry and domain restraints
+- CUDA GPU-accelerated energy evaluation
+
+- Native CRAY XE/XK uGNI network layer implementation
+
+- Faster grid forces and lower-accuracy "lite" implementation
+
+- Hybrid MD with knowledge-based Go forces to drive folding
+
+- Linear combination of pairwise overlaps (LCPO) SASA for GBIS model
+
+- Weeks-Chandler-Anderson decomposition for alchemical FEP simulations
 
 - Collective variables module improvements
 
-- Force output and trajectory files
-
-- Shared-memory single-node and multiple-node builds
-
-- Measurement-based grain-size adjustment in load balancer
-
-- Experimental memory-optimized version with parallel I/O
-
-- Microsoft Windows HPC Server port and released binaries
-
-- Support for NBFIX parameters in CUDA builds
+- Updates to CUDA 4.0 and Tcl 8.5.9, plus option to build with FFTW 3
 
 - Enhanced performance and scalability
 
-Details at http://www.ks.uiuc.edu/Research/namd/2.8/features.html
+Details at http://www.ks.uiuc.edu/Research/namd/2.9/features.html
 
 NAMD is available from http://www.ks.uiuc.edu/Research/namd/
 

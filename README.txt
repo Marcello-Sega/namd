@@ -25,11 +25,11 @@ Full documentation for using NAMD is available from the NAMD web site:
 	http://www.ks.uiuc.edu/Research/namd/
 
 VMD, NAMD, and BioCoRE represent a broad effort by the Theoretical and
-Computational Biophysics Group, an NIH Resource for Macromolecular
+Computational Biophysics Group, an NIH Center for Macromolecular
 Modeling and Bioinformatics, to develop and freely distribute effective
 tools (with source code) for molecular dynamics studies in structural
 biology.  For more information, see http://www.ks.uiuc.edu/
 
 The NAMD project is funded by the National Institutes of Health
-(grant number PHS 5 P41 RR05969).
+National Institute of General Medical Sciences (PHS 5 P41 RR05969).
 

@@ -29,27 +29,34 @@ Precompiled \NAMD\ \NAMDVER\ binaries are available for
 download for the following platforms:  
 
 \begin{itemize}
-\item Windows (XP, etc.) on x86 processors
-\item Mac OS X on PowerPC and Intel processors
-\item Linux on x86, x86-64, and Itanium processors
-\item SGI Altix (with MPI)
-\item AIX on POWER processors (with and without MPI)
-\item Solaris on Sparc and x86-64 processors
+\item Windows (XP, etc.) on x86 or x86-64 processors
+\item Mac OS X on Intel processors
+\item Linux on x86 or x86-64 processors
+\item Linux on x86-64 processors with NVIDIA GPUs (CUDA)
 \end{itemize}
 
-\NAMD\ has been ported to the Cray XT for both Catamount
-and compute-node Linux, but the lack of dynamic linking on this platform
-often results in the need to recompile \NAMD\ after system upgrades so we are
-unable to distribute useful binaries.
+\NAMD\ may be compiled for the following additional platforms:
 
-\NAMD\ has been ported to the IBM Blue Gene L and P, but we do
-not have regular access to these machines.  Binaries provided by
-IBM may be available for download from our website.
+\begin{itemize}
+\item Cray XT/XE/XK
+\item IBM Blue Gene L/P/Q
+\item Linux or AIX on POWER processors
+\item Solaris on x86-64 processors
+\end{itemize}
+
+\subsection{Installing \NAMD}
+
+A NAMD binary distribution need only be untarred or unzipped and can
+be run directly in the resulting directory.  When building from source
+code, ``make release'' will generate a
+self-contained directory and .tar.gz or .zip archive that can be moved
+to the desired installation location.  Windows and CUDA builds include
+Tcl .dll and CUDA .so files that must be in the dynamic library path.
 
 \subsection{Compiling \NAMD}
 
 We provide complete and optimized binaries for all
-platforms to which NAMD has been ported.
+common platforms to which NAMD has been ported.
 It should not be necessary for you to compile
 NAMD unless you wish to add or modify features
 or to improve performance by using an MPI library

@@ -1,7 +1,7 @@
 #####
 # define version
 #####
-NAMD_VERSION = 2.8
+NAMD_VERSION = 2.9b1
 
 #####
 # specific names of programs used in make commands
@@ -42,7 +42,7 @@ html:	$(DOCDIR)/ug.tar.gz
 
 $(DOCDIR)/ug.tar.gz: $(DOCDIR)/ug.pdf
 	latex2html -local_icons -split 5 -toc_depth 4 -toc_stars \
-	-t "NAMD $(NAMD_VERSION) User's Guide" -address "namd@ks.uiuc.edu" \
+	-t "NAMD $(NAMD_VERSION) User's Guide" -address "http://www.ks.uiuc.edu/Research/namd/" \
 	-up_url "../../" -up_title "Main NAMD Page" ug
 	chmod -R a+rX ug
 	gtar czvf ug.tar.gz ug
