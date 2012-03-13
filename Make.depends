@@ -5703,6 +5703,7 @@ obj/WorkDistrib.o: \
 	src/UniqueSetIter.h \
 	inc/ProxyMgr.decl.h \
 	src/Priorities.h \
+	src/SortAtoms.h \
 	src/Debug.h \
 	inc/WorkDistrib.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/WorkDistrib.o $(COPTC) src/WorkDistrib.C
