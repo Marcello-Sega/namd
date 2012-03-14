@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/03/11 23:40:51 $
- * $Revision: 1.1240 $
+ * $Date: 2012/03/14 22:28:04 $
+ * $Revision: 1.1241 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -933,7 +933,7 @@ void WorkDistrib::patchMapInit(void)
   if ( numPatches < numpes ) {
     NAMD_die("CUDA-enabled NAMD requires at least one patch per process.");
   }
-  if ( numPatches <= 1.4 * numpes ) {
+  if ( numPatches % numpes && numPatches <= 1.4 * numpes ) {
     int exactFit = numPatches - numPatches % numpes;
     int newNumPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,exactFit,params->staticAtomAssignment,
