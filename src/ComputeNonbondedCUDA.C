@@ -1988,7 +1988,8 @@ GBISP("C.N.CUDA[%d]::fnWork: pos/force.close()\n", CkMyPe());
   }
 #endif
 
-  if ( workStarted == 1 && ! mergegrids && localHostedPatches.size() ) {
+  if ( workStarted == 1 && ! mergegrids &&
+       ( localHostedPatches.size() || master == this ) ) {
     GBISP("not finished, call again\n");
     return 0;  // not finished, call again
   }
