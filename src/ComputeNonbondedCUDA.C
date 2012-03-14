@@ -1017,12 +1017,25 @@ static __thread double local_submit_time;
 #define GBISP(...)
 #endif
 
+#define count_limit 1000000
+static __thread int check_remote_count;
+static __thread int check_local_count;
+
 void cuda_check_remote_progress(void *arg, double) {
 
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
     local_submit_time = CkWallTimer();
     CUDA_TRACE_REMOTE(remote_submit_time,local_submit_time);
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
+    check_remote_count = 0;
+  } else if ( ++check_remote_count >= count_limit ) {
+    char errmsg[256];
+    sprintf(errmsg,"cuda_check_remote_progress polled %d times over %f s on step %d",
+            check_remote_count, CkWallTimer() - remote_submit_time,
+            ((ComputeNonbondedCUDA *) arg)->step);
+    NAMD_die(errmsg);
+  } else if ( check_local_count ) {
+    NAMD_bug("nonzero check_local_count in cuda_check_remote_progress");
   } else {
     CUDA_POLL(cuda_check_remote_progress, arg);
   }
@@ -1035,6 +1048,15 @@ void cuda_check_local_progress(void *arg, double) {
     CUDA_TRACE_LOCAL(local_submit_time,wall_time);
     kernel_time = wall_time - kernel_time;
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
+    check_local_count = 0;
+  } else if ( ++check_local_count >= count_limit ) {
+    char errmsg[256];
+    sprintf(errmsg,"cuda_check_local_progress polled %d times over %f s on step %d",
+            check_local_count, CkWallTimer() - local_submit_time,
+            ((ComputeNonbondedCUDA *) arg)->step);
+    NAMD_die(errmsg);
+  } else if ( check_remote_count ) {
+    NAMD_bug("nonzero check_remote_count in cuda_check_local_progress");
   } else {
     CUDA_POLL(cuda_check_local_progress, arg);
   }
@@ -1739,7 +1761,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     ++kernel_launch_state;
     gpu_is_mine = 0;
 
-#if 0
+#if 1
     cudaStreamWaitEvent(stream2, start_calc, 0);
 #else
 #define stream2 stream
