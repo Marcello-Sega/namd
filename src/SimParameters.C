@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/03/11 23:40:50 $
- * $Revision: 1.1384 $
+ * $Author: dtanner $
+ * $Date: 2012/03/14 15:44:16 $
+ * $Revision: 1.1385 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3321,7 +3321,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("stepsPerCycle must be a multiple of nonbondedFreq");
    }
 
-   if (!GBISOn && !GBISserOn && !FMAOn && !PMEOn && !MSMOn && !fullDirectOn)
+   if (!LCPOOn && !GBISOn && !GBISserOn && !FMAOn && !PMEOn && !MSMOn && !fullDirectOn)
    {
      fullElectFrequency = 0;
    }

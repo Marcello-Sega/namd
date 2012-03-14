@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: dtanner $
- * $Date: 2012/02/21 14:43:47 $
- * $Revision: 1.113 $
+ * $Date: 2012/03/14 15:44:15 $
+ * $Revision: 1.114 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -168,7 +168,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
 #ifdef NAMD_CUDA
 //split LCPO compute very small, else CUDA compute is delayed
     if (simParams->LCPOOn) {
-      maxParts = 30;
+      maxParts = 20;
     }
 #endif
     int totalAddedParts = 0;

@@ -2139,8 +2139,108 @@ void Molecule::read_anisos(FILE *fd)
 /*      END OF FUNCTION read_anisos     */
 
 //LCPO
+inline int getLCPOTypeAmber(char atomType[11], int numBonds) {
 
-inline int getLCPOType(char atomType[11], int numBonds) {
+  //Hydrogen
+  if (atomType[0] == 'H' || atomType[0] == 'h') {
+    return 0;
+
+  //Carbon
+  } else if (atomType[0] == 'C' || atomType[0] == 'c') {
+    if (//Sp3 Carbon
+      //atomType[1] == 'T')// ||
+      strcmp(atomType, "CT" )==0 )
+      //strcmp(atomType, "CP1" )==0 ||
+      //strcmp(atomType, "CP2" )==0 ||
+      //strcmp(atomType, "CP3" )==0 ||
+      //strcmp(atomType, "CS"  )==0 )
+      {
+      if (numBonds == 1)
+        return 1;
+      else if (numBonds == 2)
+        return 2;
+      else if (numBonds == 3)
+        return 3;
+      else if (numBonds == 4)
+        return 4;
+      else
+        return 1;
+
+    } else {//Sp2 or other
+      if (numBonds == 2)
+        return 5;
+      else if (numBonds == 3)
+        return 6;
+      else
+        return 1;
+    }
+
+  //Nitrogen
+  } else if (atomType[0] == 'N' || atomType[0] == 'n') {
+    if ( strcmp(atomType, "N3"  ) == 0 ) { //Sp3 Nitrogen
+      if (numBonds == 1)
+        return 11;
+      else if (numBonds == 2)
+        return 12;
+      else if (numBonds == 3)
+        return 13;
+      else
+        return 11;
+
+    } else {//SP2 Nitrogen
+      if (numBonds == 1)
+        return 14;
+      else if (numBonds == 2)
+        return 15;
+      else if (numBonds == 3)
+        return 16;
+      else
+        return 11;
+    }
+
+  //Oxygen
+  } else if (atomType[0] == 'O' || atomType[0] == 'o') {
+
+    if ( strcmp(atomType, "O" )==0) {//Sp2 Oxygen
+      return 9;
+    } else if (strcmp(atomType, "O2" )==0) {//Carboxylate Oxygen
+      return 10;
+    } else { // Sp3 Oxygen
+      if (numBonds == 1)
+        return 7;
+      else if (numBonds == 2)
+        return 8;
+      else
+        return 7;
+    }
+
+  //Sulfur
+  } else if (atomType[0] == 'S' || atomType[0] == 's') {
+    if ( strcmp(atomType, "SH" )==0) { //Sulfur 1 neighbor
+      return 17;
+    } else {
+      return 18;
+    }
+
+  //Phosphorus
+  } else if (atomType[0] == 'P' || atomType[0] == 'p') {
+      if (numBonds == 3)
+        return 19;
+      else if (numBonds == 4)
+        return 20;
+      else
+        return 19;
+  } else if (atomType[0] == 'Z') { // ? just to agree with Amber mdread.f
+    return 0;
+  } else  if ( strcmp(atomType, "MG" )==0) { //Mg
+    return 22;
+  } else { // unknown atom type
+    return 5;
+  }
+  return 5;
+} // getLCPOTypeAmber
+
+inline int getLCPOTypeCharmm(char atomType[11], int numBonds) {
 
   //Hydrogen
   if (atomType[0] == 'H') {
@@ -2195,12 +2295,12 @@ inline int getLCPOType(char atomType[11], int numBonds) {
   //Nitrogen
   } else if (atomType[0] == 'N') {
     if (//Sp3 Nitrogen
-      strcmp(atomType, "N"   )==0 ||
-      strcmp(atomType, "NH1" )==0 ||
-      strcmp(atomType, "NH2" )==0 ||
+      //strcmp(atomType, "N"   )==0 ||
+      //strcmp(atomType, "NH1" )==0 ||
+      //strcmp(atomType, "NH2" )==0 ||
       strcmp(atomType, "NH3" )==0 ||
-      strcmp(atomType, "NC2" )==0 ||
-      strcmp(atomType, "NY"  )==0 ||
+      //strcmp(atomType, "NC2" )==0 ||
+      //strcmp(atomType, "NY"  )==0 ||
       strcmp(atomType, "NP"  )==0
       ) {
       if (numBonds == 1)
@@ -2213,6 +2313,11 @@ inline int getLCPOType(char atomType[11], int numBonds) {
         return 11;
 
     } else if (//SP2 Nitrogen
+      strcmp(atomType, "NY"  )==0 || //
+      strcmp(atomType, "NC2" )==0 || //
+      strcmp(atomType, "N"   )==0 || //
+      strcmp(atomType, "NH1" )==0 || //
+      strcmp(atomType, "NH2" )==0 || //
       strcmp(atomType, "NR1" )==0 ||
       strcmp(atomType, "NR2" )==0 ||
       strcmp(atomType, "NR3" )==0 ||
@@ -2236,6 +2341,7 @@ inline int getLCPOType(char atomType[11], int numBonds) {
     if (//Sp3 Oxygen
       strcmp(atomType, "OH1" )==0 ||
       strcmp(atomType, "OS"  )==0 ||
+      strcmp(atomType, "OC"  )==0 || //
       strcmp(atomType, "OT"  )==0
       ) {
       if (numBonds == 1)
@@ -2279,7 +2385,7 @@ inline int getLCPOType(char atomType[11], int numBonds) {
     return 5;
   }
   return 5;
-}
+} // getLCPOTypeCharmm
 
 //input type is Charmm/Amber/other
 //0 - Charmm/Xplor
@@ -2305,13 +2411,23 @@ void Molecule::assignLCPOTypes(int inputType) {
   for (int i = 0; i < numAtoms; i++) {
     //print vdw_type and numbonds
 
-    lcpoParamType[i] = getLCPOType(atomNames[i].atomtype, heavyBonds[i]);
-    /*CkPrintf("MOL: ATOM[%05d] = { %4s %d } : %d\n",
-      i,
+    if (inputType == 1) { // Amber
+      lcpoParamType[i] = getLCPOTypeAmber(atomNames[i].atomtype, heavyBonds[i]);
+    } else { // Charmm
+      lcpoParamType[i] = getLCPOTypeCharmm(atomNames[i].atomtype, heavyBonds[i]);
+    }
+/*
+    CkPrintf("%d MOL: ATOM[%05d] = { %4s %d } : %d\n",
+      inputType,
+      i+1,
       atomNames[i].atomtype,
       heavyBonds[i],
       lcpoParamType[i]
-      );*/
+      );
+*/
+    if ( (atoms[i].mass<1.5) != (lcpoParamType[i]==0) ) {
+      CkPrintf("ERROR\n");
+    }
     //CkPrintf("VDW_TYPE %02d %4s\n", atoms[i].vdw_type, atomNames[i].atomtype);
   } // for atoms
 

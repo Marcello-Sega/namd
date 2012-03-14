@@ -127,6 +127,8 @@ void ComputeLCPO::initialize() {
   oob[2] = bounds[2][0] > bounds[2][1] ? 1 : 0;
 
   pairlistsAge = pairlistsMaxAge;
+  SimParameters *simParams = Node::Object()->simParameters;
+  frequency = simParams->fullElectFrequency;
 } // initialize
 
 void ComputeLCPO::atomUpdate() {
@@ -166,7 +168,7 @@ int ComputeLCPO::noWork() {
 
   pairlistsAge++;
 
-  if ( patch[0]->flags.doFullElectrostatics ) {
+  if ( sequence() % frequency == 0) {
     return 0;  // work to do, enqueue as usual
   } else {
 
@@ -230,6 +232,7 @@ inline BigReal calcOverlap( BigReal r, Real ri, Real rj ) {
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 void ComputeLCPO::doForce() {
+  //CkPrintf("ComputeLCPO::doForce\n");
 
   Real probeRadius = 1.4f;
   Real cutMargin = 2.0;
@@ -307,7 +310,8 @@ if (pairlistsAge >= pairlistsMaxAge) {
               rj = probeRadius+lcpoParams[ lcpoType[pJ][ngj] ][0];
               rij = sqrt(r2ij);
               FLOPS(5)
-              if (rij < (ri+rj+cutMargin) && rij > 0.01) {
+              if (rij < (ri+rj+cutMargin) && rij > 0.01 &&
+                  lcpoType[pJ][ngj] > 0) {
                 lcpoNeighbors[numLcpoNeighbors].x = ngjr.x;
                 lcpoNeighbors[numLcpoNeighbors].y = ngjr.y;
                 lcpoNeighbors[numLcpoNeighbors].z = ngjr.z;
@@ -559,6 +563,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
 //////////////////////////////////////////////////
       BigReal SAi = P1*S1 + P2*AijSum + P3*AjkSum + P4*AijAjkSum;
       //CkPrintf("SurfArea[%05d] = % 7.3f\n",idi,SAi);
+//      SAi = (SAi > 0) ? SAi : 0;
       totalSurfaceArea += SAi;
       FLOPS(22)
     } // for inAtoms
@@ -605,5 +610,5 @@ const Real ComputeLCPO::lcpoParams[23][5] = { //                      neigh
     { 1.90, 3.8650e-01, -1.8249e-01, -3.6598e-03, 4.2640e-04 }, // 19 P     3
     { 1.90, 3.8730e-02, -8.9339e-03,  8.3582e-06, 3.0381e-06 }, // 20 P     4
     { 1.80, 9.8318e-01, -4.0437e-01,  1.1249e-04, 4.9901e-04 }, // 21 Cl
-    { 0.00, 0.0000e+00,  0.0000e+00,  0.0000e+00, 0.0000e+00 }  // 22 Mg
+    { 1.18, 4.9392e-01, -1.6038e-01, -1.5512e-04, 1.6453e-04 }  // 22 Mg
 };
