@@ -843,10 +843,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   
       		int npes = pmeprocs.size();
       		for ( i=0; i<xBlocks*yBlocks; ++i, ++pe ) zprocs[i] = pmeprocs[pe%npes];
+		if ( i>1 && zprocs[0] == zprocs[i-1] ) zprocs[0] = 0;
       		zprocs.sort();
       		for ( i=0; i<xBlocks*zBlocks; ++i, ++pe ) yprocs[i] = pmeprocs[pe%npes];
+		if ( i>1 && yprocs[0] == yprocs[i-1] ) yprocs[0] = 0;
       		yprocs.sort();
       for ( i=0; i<yBlocks*zBlocks; ++i, ++pe ) xprocs[i] = pmeprocs[pe%npes];
+      if ( i>1 && xprocs[0] == xprocs[i-1] ) xprocs[0] = 0;
       xprocs.sort();
 
       pencilPMEProcessors = new char [CkNumPes()];
