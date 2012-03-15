@@ -1023,16 +1023,21 @@ static __thread int check_local_count;
 
 void cuda_check_remote_progress(void *arg, double) {
 
-  if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
+  cudaError_t err = cudaEventQuery(end_remote_download);
+  if ( err == cudaSuccess ) {
     local_submit_time = CkWallTimer();
     CUDA_TRACE_REMOTE(remote_submit_time,local_submit_time);
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
     check_remote_count = 0;
+  } else if ( err != cudaErrorNotReady ) {
+    cuda_errcheck("in cuda_check_remote_progress");
+    NAMD_bug("cuda_errcheck missed error in cuda_check_remote_progress");
   } else if ( ++check_remote_count >= count_limit ) {
     char errmsg[256];
     sprintf(errmsg,"cuda_check_remote_progress polled %d times over %f s on step %d",
             check_remote_count, CkWallTimer() - remote_submit_time,
             ((ComputeNonbondedCUDA *) arg)->step);
+    cuda_errcheck(errmsg);
     NAMD_die(errmsg);
   } else if ( check_local_count ) {
     NAMD_bug("nonzero check_local_count in cuda_check_remote_progress");
@@ -1043,17 +1048,22 @@ void cuda_check_remote_progress(void *arg, double) {
 
 void cuda_check_local_progress(void *arg, double) {
 
-  if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
+  cudaError_t err = cudaEventQuery(end_local_download);
+  if ( err == cudaSuccess ) {
     double wall_time = CkWallTimer();
     CUDA_TRACE_LOCAL(local_submit_time,wall_time);
     kernel_time = wall_time - kernel_time;
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
     check_local_count = 0;
+  } else if ( err != cudaErrorNotReady ) {
+    cuda_errcheck("in cuda_check_local_progress");
+    NAMD_bug("cuda_errcheck missed error in cuda_check_local_progress");
   } else if ( ++check_local_count >= count_limit ) {
     char errmsg[256];
     sprintf(errmsg,"cuda_check_local_progress polled %d times over %f s on step %d",
             check_local_count, CkWallTimer() - local_submit_time,
             ((ComputeNonbondedCUDA *) arg)->step);
+    cuda_errcheck(errmsg);
     NAMD_die(errmsg);
   } else if ( check_remote_count ) {
     NAMD_bug("nonzero check_remote_count in cuda_check_local_progress");
