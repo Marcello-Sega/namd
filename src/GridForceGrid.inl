@@ -428,7 +428,7 @@ inline Position GridforceGrid::wrap_position(const Position &pos, const Lattice 
     // pos_wrapped += lattice.wrap_delta(pos);
     // pos_wrapped += lattice.delta(pos_wrapped, center) - (pos_wrapped - center);
     
-    Position pos_wrapped = pos + lattice.wrap_delta(pos - get_center());
+    Position pos_wrapped = pos + lattice.wrap_delta(pos - get_center() + lattice.origin());
     
     return pos_wrapped;
 }
