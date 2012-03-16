@@ -4,7 +4,7 @@
 |                                                                    |
 +--------------------------------------------------------------------+
 
-                                                       March 14, 2012
+                                                       March 19, 2012
 
 The Theoretical and Computational Biophysics Group at the University of
 Illinois is proud to announce the public release of a new version of
