@@ -86,7 +86,7 @@ void Molecule::goInit() {
 
   delete goPDB;
 
-  build_lists_by_atom();
+  if ( simParams->goForcesOn ) build_lists_by_atom();
 #endif
 }
 
