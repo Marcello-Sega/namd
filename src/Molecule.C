@@ -363,6 +363,8 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   //fields related with pluginIO-based loading molecule structure
   occupancy = NULL;
   bfactor = NULL;
+
+  goInit();
 }
 
 /*      END OF FUNCTION initialize */
@@ -1017,7 +1019,6 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   //  analyze the data and find the status of each atom
   numRealBonds = numBonds;
   build_atom_status();
-  goInit();
   return;
 }
 

@@ -52,9 +52,6 @@
 /*                                                                      */
 /************************************************************************/
 void Molecule::goInit() {
-#ifdef MEM_OPT_VERSION
-  NAMD_die("Go forces are not supported in memory-optimized builds.");
-#else
   numGoAtoms=0;
   energyNative=0;
   energyNonnative=0;
@@ -65,29 +62,6 @@ void Molecule::goInit() {
   goCoordinates=NULL;
   goResids=NULL;
   goPDB=NULL;
-
-  if (atomChainTypes != NULL)
-    delete [] atomChainTypes;
-
-  if (goSigmaIndices != NULL)
-    delete [] goSigmaIndices;
-
-  if (goSigmas != NULL)
-    delete [] goSigmas;
-
-  if (goWithinCutoff != NULL)
-    delete [] goWithinCutoff;
-  
-  if (goCoordinates != NULL)
-    delete [] goCoordinates;
-
-  if (goResids != NULL) 
-    delete [] goResids;
-
-  delete goPDB;
-
-  if ( simParams->goForcesOn ) build_lists_by_atom();
-#endif
 }
 
 
@@ -105,6 +79,11 @@ void Molecule::goInit() {
 // JE - read in a Go parameter file
 void Molecule::build_go_params(StringList *g) {
   iout << iINFO << "Building Go Parameters" << "\n" << endi;
+#ifdef MEM_OPT_VERSION
+  NAMD_die("Go forces are not supported in memory-optimized builds.");
+#else
+  build_lists_by_atom();
+#endif
   int iterator = 0;
     do
     {
