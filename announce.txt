@@ -23,7 +23,7 @@ NAMD 2.9b1 has many advantages over NAMD 2.8, among these are:
 
 - CUDA GPU-accelerated generalized Born implicit solvent (GBIS) model
 
-- CUDA GPU-accelerated energy evaluation
+- CUDA GPU-accelerated energy evaluation and minimization
 
 - Native CRAY XE/XK uGNI network layer implementation
 

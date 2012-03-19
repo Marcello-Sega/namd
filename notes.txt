@@ -362,7 +362,7 @@ idle; threads 0 and 1 split the core if threads 2 and 3 are idle, but
 if either of threads 2 or 3 are active the core is split four ways.  The
 fastest configuration of 32 threads or processes on a 128-thread 32-core 
 is therefore "+setcpuaffinity +pemap 0-127:4".  For 64 threads we need
-cores 0,1,4,5,8,9,... or 0-127:4.2.  Running 4 processes with ++ppn 31
+cores 0,1,4,5,8,9,... or 0-127:4.2.  Running 4 processes with +ppn 31
 would be "+setcpuaffinity +pemap 0-127:32.31 +commap 31-127:32"
 
 For an Altix UV or other machines where the queueing system assigns cores
@@ -376,11 +376,11 @@ to NAMD in order to set thread affinity (which will improve performance):
 
 CUDA GPU Acceleration
 
-NAMD only uses the GPU for nonbonded force evaluation.  Energy evaluation
-is done on the CPU.  To benefit from GPU acceleration you should set
+Energy evaluation is slower than calculating forces alone, and the loss
+is much greater in CUDA-accelerated builds.  Therefore you should set
 outputEnergies to 100 or higher in the simulation config file.  Some
 features are unavailable in CUDA builds, including alchemical free
-energy perturbation.
+energy perturbation and the Lowe-Andersen thermostat.
 
 As this is a new feature you are encouraged to test all simulations
 before beginning production runs.  Forces evaluated on the GPU differ
@@ -395,31 +395,38 @@ are built with CUDA 4.0, but can be built with newer versions as well).
 
 Finally, the libcudart.so.4 included with the binary (the one copied from
 the version of CUDA it was built with) must be in a directory in your
-LD_LIBRARY_PATH before any other libcudart.so libraries.  For example:
+LD_LIBRARY_PATH before any other libcudart.so libraries.  For example,
+when running a multicore binary (recommended for a single machine):
 
   setenv LD_LIBRARY_PATH ".:$LD_LIBRARY_PATH"
   (or LD_LIBRARY_PATH=".:$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH)
-  ./namd2 +idlepoll <configfile>
-  ./charmrun ++local +p4 ./namd2 +idlepoll <configfile>
+  ./namd2 +idlepoll +p4 <configfile>
 
 When running CUDA NAMD always add +idlepoll to the command line.  This
 is needed to poll the GPU for results rather than sleeping while idle.
 
-Each namd2 process can use only one GPU.  Therefore you will need to run
-at least one process for each GPU you want to use.  Multiple processes
+Each namd2 thread can use only one GPU.  Therefore you will need to run
+at least one thread for each GPU you want to use.  Multiple threads
 can share a single GPU, usually with an increase in performance.  NAMD
-will automatically distribute processes equally among the GPUs on a node.
+will automatically distribute threads equally among the GPUs on a node.
 Specific GPU device IDs can be requested via the +devices argument on
 the namd2 command line, for example:
 
-  ./charmrun ++local +p4 ./namd2 +idlepoll +devices 0,2 <configfile>
+  ./namd2 +idlepoll +p4 +devices 0,2 <configfile>
 
-Devices are selected cyclically from those available, so in the above
-example processes 0 and 2 will share device 0 and processes 1 and 3 will
-share device 2.  One could also specify +devices 0,0,2,2 to cause device
-0 to be shared by processes 0 and 1, etc.  GPUs with two or fewer
-multiprocessors are ignored unless specifically requested with +devices.
+Devices are shared by consecutive threads in a process, so in the above
+example processes 0 and 1 will share device 0 and processes 2 and 3 will
+share device 2.  Repeating a device will cause it to be assigned to
+multiple master threads, either in the same or different processes, which
+is advised against in general but may be faster in certain cases.  In the
+above example one could specify +devices 0,2,0,2 to cause device 0 to be
+shared by threads 0 and 2, etc.  When running on multiple nodes the
++devices specification is applied to each physical node separately and
+there is no way to provide a unique list for each node.
+
 GPUs of compute capability 1.0 are no longer supported and are ignored.
+GPUs with two or fewer multiprocessors are ignored unless specifically
+requested with +devices.
 
 While charmrun with ++local will preserve LD_LIBRARY_PATH, normal
 charmrun does not.  You can use charmrun ++runscript to add the namd2
@@ -431,12 +438,15 @@ directory to LD_LIBRARY_PATH with the following executable runscript:
 
 For example:
 
-  ./charmrun ++runscript ./runscript +p8 ./namd2 +idlepoll <configfile>
+  ./charmrun ++runscript ./runscript +p24 ./namd2 +idlepoll +ppn 3 <configfile>
 
 An InfiniBand network is highly recommended when running CUDA-accelerated
 NAMD across multiple nodes.  You will need either an ibverbs NAMD binary
 (available for download) or an MPI NAMD binary (must build Charm++ and
-NAMD as described below) to make use of the InfiniBand network.
+NAMD as described below) to make use of the InfiniBand network.  The use
+of SMP binaries is also recommended when running on multiple nodes, with
+one process per GPU and as many threads as available cores, reserving
+one core per process for the communication thread.
 
 The CUDA (NVIDIA's graphics processor programming platform) code in
 NAMD is completely self-contained and does not use any of the CUDA
