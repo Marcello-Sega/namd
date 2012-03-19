@@ -48,7 +48,6 @@
 
 #ifdef OPENATOM_VERSION
 
-#include "MoaMacros.h"
 
 void MoaData::pup(PUP::er &p)
 {
