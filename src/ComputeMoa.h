@@ -27,14 +27,23 @@
 #include <vector>
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
-#include "msa/msa.h"
 
+#ifdef CHARM_HAS_MSA
+
+#include "msa/msa.h"
 
 typedef MSA::MSA1D<double, DefaultEntry<double>,
         MSA_DEFAULT_ENTRIES_PER_PAGE> Moa1Grid;
 
 typedef MSA::MSA3D<double, DefaultEntry<double>,
         MSA_DEFAULT_ENTRIES_PER_PAGE> Moa3Grid;
+
+#else
+
+typedef int Moa1Grid;
+typedef int Moa3Grid;
+
+#endif // CHARM_HAS_MSA
 
 struct Int2 {
   int nx, ny;
