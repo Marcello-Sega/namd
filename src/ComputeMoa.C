@@ -95,9 +95,9 @@ public:
   void initWorkers(CkQdMsg *);        // entry with message
   void startWorkers(CkQdMsg *);       // entry with message
   
-  void recvQGrid(int g, int numgrids, int nq, float qgrid[nq], CkCallback doneMoa);
+  void recvQ(int g, int numgrids, int nq, float qgrid[nq], CkCallback doneMoa);
   
-  void recvBGrid(int K2_start, int K2_end, int K3_start, int K3_end, int K1_len, int K2_len, int K3_len, double bm1[K1_len], double bm2[K2_len], double bm3[K3_len], int order);     // entry with message
+  void recvB(int K2_start, int K2_end, int K3_start, int K3_end, int K1_len, int K2_len, int K3_len, double bm1[K1_len], double bm2[K2_len], double bm3[K3_len], int order);     // entry with message
   
   const MoaData &getMoaData() const { return moaData; }  // local
 
@@ -261,10 +261,10 @@ void ComputeMoaMgr::initialize(CkQdMsg *msg)
 
 }
 
-void ComputeMoaMgr::recvBGrid(int K2_start, int K2_end, int K3_start, int K3_end, int K1_len, int K2_len, int K3_len, double bm1[K1_len], double bm2[K2_len], double bm3[K3_len], int order)
+void ComputeMoaMgr::recvB(int K2_start, int K2_end, int K3_start, int K3_end, int K1_len, int K2_len, int K3_len, double bm1[K1_len], double bm2[K2_len], double bm3[K3_len], int order)
 {
 #ifdef OPENATOM_VERSION_DEBUG
-  CkPrintf("Started recvBGrid() %d on PE: %d, at %f.\n", thisIndex, CkMyPe(), CkWallTimer() );
+  CkPrintf("Started recvB() %d on PE: %d, at %f.\n", thisIndex, CkMyPe(), CkWallTimer() );
 #endif //OPENATOM_VERSION_DEBUG
 
 //  const MoaData &p = CProxy_ComputeMoaMgr::ckLocalBranch( CkpvAccess(BOCclass_group).computeMoaMgr)->getMoaData();
@@ -299,10 +299,10 @@ void ComputeMoaMgr::recvBGrid(int K2_start, int K2_end, int K3_start, int K3_end
   
 }
 
-void ComputeMoaMgr::recvQGrid(int g, int numgrids, int nq, float qgrid[nq], CkCallback doneMoa)
+void ComputeMoaMgr::recvQ(int g, int numgrids, int nq, float qgrid[nq], CkCallback doneMoa)
 {
 #ifdef OPENATOM_VERSION_DEBUG
-  CkPrintf("Started recvQGrid() %d on PE: %d, at %f.\n", thisIndex, CkMyPe(), CkWallTimer() );
+  CkPrintf("Started recvQ() %d on PE: %d, at %f.\n", thisIndex, CkMyPe(), CkWallTimer() );
 #endif //OPENATOM_VERSION_DEBUG
 
 //  const MoaData &p = CProxy_ComputeMoaMgr::ckLocalBranch( CkpvAccess(BOCclass_group).computeMoaMgr)->getMoaData();
