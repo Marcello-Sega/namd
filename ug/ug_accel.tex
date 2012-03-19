@@ -355,31 +355,48 @@ Any other value should be a positive integer less than {\tt lesFactor}.}
 \index{replica exchange}
 The {\tt lib/replica/}
 directory contains Tcl scripts that implement replica exchange
-for NAMD, using a Tcl server and socket connections to drive a
+both for parallel tempering (temperature exchange) and
+umbrella sampling (exchanging collective variable biases).
+This replaces the old Tcl server and socket connections driving a
 separate NAMD process for every replica used in the simulation.
-Replica exchanges and energies are recorded in the potenergy.dat,
-realtemp.dat, and targtemp.dat files written in the output directory.
-These can be viewed with, e.g., ``{\tt xmgrace -nxy ....potenergy.dat}''
-There is also a script to load the output into VMD and color each
-frame according to target temperature.  An example simulation folds
-a 66-atom model of a deca-alanine helix in about 10\,ns.
 
-This implementation is designed to be modified by the user to implement
+{\bf A NAMD build based on a patched MPI build of Charm++ is required!}
+The included {\tt lib/replica/charm\_replica.patch}
+has already been applied to the
+Charm++ source code included with the NAMD source code.  It is only
+needed if you obtain Charm++ directly from {\tt charm.cs.illinois.edu}.
+
+Only temperature-exchange simulations are described below.
+To employ replicas for umbrella sampling you will need to understand
+this material, collective variable-based calculations (Sec.\ \ref{section:colvars}),
+and basic Tcl programming to adapt the examples in {\tt lib/replica/umbrella/}
+and {\tt lib/replica/umbrella2d/} until further
+documentation and a tutorial are available.
+
+This implementation is designed to be modified to implement
 exchanges of parameters other than temperature or via other temperature
 exchange methods.  The scripts should provide a good starting point for
 any simulation method requiring a number of loosely interacting systems.
 
-{\tt replica\_exchange.tcl}
-is the master Tcl script for replica exchange simulations, it is run in
-{\tt tclsh} {\em outside of NAMD} and takes a replica exchange config
-file as an argument:
+Replica exchanges and energies are recorded in the .history files
+written in the output directories.  These can be viewed with, e.g.,
+``{\tt xmgrace output/*/*.history}'' and processed via awk or other tools.
+There is also a script to load the output into VMD and color each
+frame according to replica index.  An example simulation folds
+a 66-atom model of a deca-alanine helix in about 10\,ns.
+
+{\tt replica.namd}
+is the master script for replica temperature-exchange simulations.  To run:
 \begin{verbatim}
-          tclsh ../replica_exchange.tcl fold_alanin.conf
-          tclsh ../replica_exchange.tcl restart_1.conf
+          cd example
+          mkdir output
+          (cd output; mkdir 0 1 2 3 4 5 6 7)
+          mpirun namd2 +replicas 8 job0.conf +stdout output/%d/job0.%d.log
+          mpirun namd2 +replicas 8 job1.conf +stdout output/%d/job1.%d.log
 \end{verbatim}
-{\tt replica\_exchange.tcl} uses code in
-{\tt namd\_replica\_server.tcl}, a general script for driving NAMD slaves, and
-{\tt spawn\_namd.tcl}, a variety of methods for launching NAMD slaves.
+
+The number of MPI ranks must be a multiple of the number of replicas
+(+replicas).  Be sure to increment jobX for +stdout option on command line.
 
 {\tt show\_replicas.vmd} is a script for loading replicas into VMD;
 first source the replica exchange conf file and then this script, then
@@ -389,6 +406,20 @@ This script will likely destroy anything else you are doing in VMD at the
 time, so it is best to start with a fresh VMD.
 {\tt clone\_reps.vmd} provides the {\tt clone\_reps} commmand to copy graphical
 representation from the top molecule to all other molecules.
+
+{\tt sortreplicas}, found in the namd2 binary directory, is a program to un-shuffle
+replica trajectories to place same-temperature frames in the same file.
+Usage:
+\begin{verbatim}
+  sortreplicas <job_output_root> <num_replicas> <runs_per_frame> [final_step]
+\end{verbatim}
+where job\_output\_root is the job specific output base path, including
+\%s or \%d for separate directories as in output/\%s/fold\_alanin.job1
+This will be extended with .\%d.dcd .\%d.history for input files and
+.\%d.sort.dcd .\%d.sort.history for output files.  The optional final\_step
+parameter will truncate all output files after the specified step,
+which is useful in dealing with restarts from runs that did not complete.
+Colvars trajectory files are similarly processed if they are found.
 
 A replica exchange config file should define the following Tcl variables:
 \begin{itemize}
@@ -403,18 +434,18 @@ A replica exchange config file should define the following Tcl variables:
 
 \item {\tt namd\_config\_file}, the NAMD config file containing all parameters,
 needed for the simulation except {\tt seed}, {\tt langevin}, 
-{\tt langevinDamping}, {\tt langevinTemp}, {\tt outputEnergies},
+{\tt langevinTemp}, {\tt outputEnergies},
 {\tt outputname}, {\tt dcdFreq},
 {\tt temperature}, {\tt bincoordinates}, {\tt binvelocities},
-or {\tt extendedSystem}, which are provided by {\tt replica\_exchange.tcl},
+or {\tt extendedSystem}, which are provided by {\tt replica.namd},
 
 \item {\tt output\_root}, the directory/fileroot for output files,
+optionally including a ``\%s'' that is replaced with the replica index
+to use multiple output directories,
 
 \item {\tt psf\_file}, the psf file for {\tt show\_replicas.vmd}, 
 \item {\tt initial\_pdb\_file}, the initial coordinate pdb file for {\tt show\_replicas.vmd},
 \item {\tt fit\_pdb\_file}, the coodinates that frames are fit to by {\tt show\_replicas.vmd} (e.g., a folded structure),
-\item {\tt server\_port}, the port to connect to the replica server on, and
-\item {\tt spawn\_namd\_command}, a command from {\tt spawn\_namd.tcl} and arguments to launch NAMD jobs.
 \end{itemize}
 
 The {\tt lib/replica/example/} directory contains
@@ -426,8 +457,9 @@ all files needed to fold a 66-atom model of a deca-alanine helix:
 \item {\tt unfolded.pdb}, initial coordinates,
 \item {\tt alanin.pdb}, folded structure for fitting in {\tt show\_replicas.vmd},
 \item {\tt fold\_alanin.conf}, config file for {\tt replica\_exchange.tcl} script,
-\item {\tt restart\_1.conf}, config file to continue alanin folding another 10\,ns, and
-\item {\tt load\_all.vmd}, load all output into VMD and color by target temperature.
+\item {\tt job0.conf}, config file to start alanin folding for 10\,ns,
+\item {\tt job1.conf}, config file to continue alanin folding another 10\,ns, and
+\item {\tt load\_all.vmd}, load all output into VMD and color by replica index.
 \end{itemize}
 
 The {\tt fold\_alanin.conf} config file contains the following settings:
@@ -437,18 +469,16 @@ set min_temp 300
 set max_temp 600
 set steps_per_run 1000
 set num_runs 10000
+# num_runs should be divisible by runs_per_frame * frames_per_restart
 set runs_per_frame 10
 set frames_per_restart 10
 set namd_config_file "alanin_base.namd"
-set output_root "output/fold_alanin" ; # directory must exist
+set output_root "output/%s/fold_alanin" ; # directories must exist
+
+# the following used only by show_replicas.vmd
 set psf_file "alanin.psf"
 set initial_pdb_file "unfolded.pdb"
 set fit_pdb_file "alanin.pdb"
-set namd_bin_dir /Projects/namd2/bin/current/Linux64
-set server_port 3177
-set spawn_namd_command \
-  [list spawn_namd_ssh "cd [pwd]; [file join $namd_bin_dir namd2] +netpoll" \
-  [list beirut belfast] ]
 \end{verbatim}
 
 \subsection{Random acceleration molecular dynamics simulations}
