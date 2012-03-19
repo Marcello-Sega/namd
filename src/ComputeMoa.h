@@ -24,15 +24,10 @@
 #ifndef COMPUTEOA_H
 #define COMPUTEOA_H
 
-#ifdef CHARM_HAS_MSA
-
-#ifdef OPENATOM_VERSION
-
 #include <vector>
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
 #include "msa/msa.h"
-
 
 
 typedef MSA::MSA1D<double, DefaultEntry<double>,
@@ -43,8 +38,8 @@ typedef MSA::MSA3D<double, DefaultEntry<double>,
 
 struct Int2 {
   int nx, ny;
-  Int3() : nx(0), ny(0) { }
-  Int3(int mx, int my) : nx(mx), ny(my) { }
+  Int2() : nx(0), ny(0) { }
+  Int2(int mx, int my) : nx(mx), ny(my) { }
   void pup(PUP::er &p) { p|nx, p|ny; }
 };
 
@@ -106,10 +101,6 @@ struct MoaData {
   void pup(PUP::er &p);  // for parameter marshalling
   void print();          // for debugging
 };
-
-#endif // OPENATOM_VERSION
-
-#endif // CHARM_HAS_MSA
 
 #endif
 

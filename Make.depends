@@ -1,3 +1,67 @@
+obj/ComputeMoa.o: \
+	src/ComputeMoa.C \
+	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PDB.h \
+	src/parm.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/common.h \
+	src/GromacsTopFile.h \
+	src/PDBData.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Tensor.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/ComputeMoa.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	inc/ComputeMoaMgr.decl.h \
+	src/PatchMgr.h \
+	src/Molecule.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
+	src/Debug.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/varsizemsg.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMoa.o $(COPTC) src/ComputeMoa.C
 obj/ComputeMsm.o: \
 	src/ComputeMsm.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsm.o $(COPTC) src/ComputeMsm.C
@@ -312,6 +376,23 @@ obj/BackEnd.o: \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
 	src/ComputeMoa.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	src/ComputeMsm.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
@@ -338,16 +419,10 @@ obj/BackEnd.o: \
 	inc/ParallelIOMgr.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ProxyMgr.decl.h \
-	inc/PatchMgr.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
 	src/CollectionMgr.h \
-	src/PatchMap.h \
-	src/HomePatchList.h \
-	src/SortedArray.h \
-	src/SortableResizeArray.h \
-	src/ResizeArrayIter.h \
 	src/CollectionMaster.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
@@ -358,15 +433,6 @@ obj/BackEnd.o: \
 	src/Hydrogen.h \
 	src/NamdState.h \
 	src/PatchMgr.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/UniqueSortedArray.h \
-	src/PatchTypes.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	src/InfoStream.h \
 	src/UniqueSet.h \
 	src/UniqueSetRaw.h \
 	src/UniqueSetIter.h \
@@ -2639,6 +2705,7 @@ obj/ComputePme.o: \
 	inc/ComputePmeMgr.decl.h \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h \
+	src/ComputeMoa.h \
 	inc/ComputeMoaMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -2669,7 +2736,6 @@ obj/ComputePme.o: \
 	src/varsizemsg.h \
 	src/Random.h \
 	src/Priorities.h \
-	src/ComputeMoa.h \
 	inc/ComputePmeMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
 obj/OptPme.o: \
@@ -2717,6 +2783,7 @@ obj/OptPme.o: \
 	inc/PmeFFTLib.decl.h \
 	src/OptPmeRealSpace.h \
 	src/PmeKSpace.h \
+	src/ComputeMoa.h \
 	inc/ComputeMoaMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -5065,16 +5132,33 @@ obj/PmeKSpace.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
+	src/ComputeMoa.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/main.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/PatchTypes.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/ResizeArrayIter.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	src/InfoStream.h \
+	inc/PatchMgr.decl.h \
 	inc/ComputeMoaMgr.decl.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
-	src/InfoStream.h \
 	src/MStream.h \
 	src/Node.h \
-	src/main.h \
-	src/ProcessorPrivate.h \
-	src/BOCgroup.h \
 	inc/Node.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeKSpace.o $(COPTC) src/PmeKSpace.C
 obj/PmeRealSpace.o: \

@@ -21,10 +21,6 @@
  * =====================================================================================
  */
 
-#ifdef CHARM_HAS_MSA
-
-#ifdef OPENATOM_VERSION
-
 #include "InfoStream.h"
 #include "Node.h"
 #include "PDB.h"
@@ -47,8 +43,12 @@
 #include <stdio.h>
 #include <errno.h>
 #include "pup_stl.h"
-#include "MoaMacros.h"
 
+#ifdef CHARM_HAS_MSA
+
+#ifdef OPENATOM_VERSION
+
+#include "MoaMacros.h"
 
 void MoaData::pup(PUP::er &p)
 {

@@ -69,6 +69,7 @@ include Make.config
 # Add new source files here.
 
 OBJS = \
+	$(DSTDIR)/ComputeMoa.o \
 	$(DSTDIR)/ComputeMsm.o \
 	$(DSTDIR)/ComputeMsmSerial.o \
 	$(DSTDIR)/msm.o \

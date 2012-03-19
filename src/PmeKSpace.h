@@ -10,6 +10,7 @@
 #include "PmeBase.h"
 #include "Lattice.h"
 
+#include "ComputeMoa.h"
 #include "ComputeMoaMgr.decl.h" 
 
 class PmeKSpace {

@@ -32,8 +32,6 @@ module ComputeMoaMgr {
 
     entry void recvMoaData(const MoaData &);
 
-    void ComputeMoaMgr::recvBGrid(int K2_start, int K2_end, int K3_start, int K3_end, int K1_len, int K2_len, int K3_len, double bm1[K1_len], double bm2[K2_len], double bm3[K3_len], int order);
-
     entry void recvQGrid(int nq, double q[nq]);
 
     entry void recvSGrid(int ns, double sg[ns]);
