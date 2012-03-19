@@ -30,7 +30,7 @@
 
 #ifdef CHARM_HAS_MSA
 
-#define MSA_DEFAULT_ENTRIES_PER_PAGE 500;
+#include msa/msa.h
 
 typedef MSA::MSA1D<double, DefaultEntry<double>,
         MSA_DEFAULT_ENTRIES_PER_PAGE> Moa1Grid;
