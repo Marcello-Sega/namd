@@ -1054,14 +1054,14 @@ void HomePatch::positionsReady(int doMigration)
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
     #ifdef USE_NODEPATCHMGR
     npid = numNodeChild;
-	pids = nodeChildren;
+    pids = nodeChildren;
     #else
     npid = nChild;
-	pids = child;
+    pids = child;
     #endif
 #else
     npid = nChild;
-	pidsPreAllocated = 0;
+    pidsPreAllocated = 0;
     pids = new int[proxySpanDim];
     for (int i=0; i<nChild; i++) pids[i] = child[i];
 #endif
@@ -1069,7 +1069,7 @@ void HomePatch::positionsReady(int doMigration)
   if (npid) { //have proxies
 #if CMK_PERSISTENT_COMM
     if (phsReady == 0)
-      {
+    {
 //CmiPrintf("Build on %d phs0:%d\n", CkMyPe(), localphs[0]);
      for (int i=0; i<npid; i++) {
        localphs[i] = CmiCreatePersistent(pids[i], 20000);

@@ -20,7 +20,6 @@
 //#define  DEBUGM
 #include "Debug.h"
 
-
 ProxyPatch::ProxyPatch(PatchID pd) : 
   Patch(pd), proxyMsgBufferStatus(PROXYMSGNOTBUFFERED), 
   curProxyMsg(NULL), prevProxyMsg(NULL)
@@ -64,7 +63,9 @@ ProxyPatch::~ProxyPatch()
 // #else
       atomMapper->unregisterIDsCompAtomExt(pExt.begin(),pExt.end());
 // #endif      
+#if ! CMK_PERSISTENT_COMM
       delete prevProxyMsg;
+#endif
       prevProxyMsg = NULL;
   }
 
@@ -237,7 +238,9 @@ void ProxyPatch::receiveAll(ProxyDataMsg *msg)
 // #endif
   }
   //Now delete the ProxyDataMsg of the previous step
+#if ! CMK_PERSISTENT_COMM
   delete prevProxyMsg;
+#endif
   curProxyMsg = msg;
   prevProxyMsg = curProxyMsg;
 
