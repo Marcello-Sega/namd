@@ -73,7 +73,7 @@ void Sync::openSync(void)
     if (!useProxySync && (proxySendSpanning || proxyRecvSpanning)
         && PatchMap::Object()->numPatches() < 4 * CkNumPes() ) {
       // If on BG/P, useProxySync should not be turned on for better performance
-      #if !CMK_BLUEGENEP
+      #if ! (CMK_BLUEGENEQ || CMK_BLUEGENEP)
       // CmiPrintf("[%d] useProxySync is turned on. \n", CkMyPe());
       useProxySync = 1;
       #endif
