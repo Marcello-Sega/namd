@@ -916,8 +916,8 @@ void Molecule::build_go_arrays(StringList *goCoordFile,
           resid2 = (goPDB->atom(j))->residueseq();
           residDiff = resid2 - resid1;
           if (residDiff < 0) residDiff = -residDiff;
-          if (atomChainTypes[i] && atomChainTypes[j] &&
-              !(this->go_restricted(atomChainTypes[i],atomChainTypes[j],residDiff)) &&
+          if (atomChainTypes[goIndex] && atomChainTypes[goIndx] &&
+              !(this->go_restricted(atomChainTypes[goIndex],atomChainTypes[goIndx],residDiff)) &&
 	      !atoms_1to4(i,j)) {
 	    atomAtomDist = sqrt(pow((goPDB->atom(i))->xcoor() - (goPDB->atom(j))->xcoor(), 2.0) +
 				pow((goPDB->atom(i))->ycoor() - (goPDB->atom(j))->ycoor(), 2.0) +
@@ -928,7 +928,7 @@ void Molecule::build_go_arrays(StringList *goCoordFile,
 	    //if ( (nativeEnergy)*(nativeEnergy) > 0.1 ) {
 	    //  printf("GO: %d %d %f %f",i,j,atomAtomDist,nativeEnergy);
 	    //}	
-            if (atomAtomDist <= this->get_go_cutoff(atomChainTypes[i],atomChainTypes[j]) ) {
+            if (atomAtomDist <= this->get_go_cutoff(atomChainTypes[goIndex],atomChainTypes[goIndx]) ) {
               nativeContacts++;
             } else {
               nonnativeContacts++;
