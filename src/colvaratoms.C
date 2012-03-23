@@ -240,9 +240,10 @@ void cvm::atom_group::parse (std::string const &conf,
       ref_pos_group = new atom_group (group_conf, "refPositionsGroup");
     }
 
+    atom_group *ag = ref_pos_group ? ref_pos_group : this;
+
     if (get_keyval (group_conf, "refPositions", ref_pos, ref_pos, mode)) {
       cvm::log ("Using reference positions from input file.\n");
-      atom_group *ag = ref_pos_group ? ref_pos_group : this;
       if (ref_pos.size() != ag->size()) {
         cvm::fatal_error ("Error: the number of reference positions provided ("+
                           cvm::to_str (ref_pos.size())+
@@ -264,23 +265,22 @@ void cvm::atom_group::parse (std::string const &conf,
       double ref_pos_col_value;
       
       if (get_keyval (group_conf, "refPositionsCol", ref_pos_col, std::string (""), mode)) {
-        // If provided, use PDB column to select coordinates...
+        // if provided, use PDB column to select coordinates
         bool found = get_keyval (group_conf, "refPositionsColValue", ref_pos_col_value, 0.0, mode);
         if (found && !ref_pos_col_value)
           cvm::fatal_error ("Error: refPositionsColValue, "
                             "if provided, must be non-zero.\n");
       } else {
-        // ...if not, rely on existing atom indices for the group
-        this->create_sorted_ids();
+        // if not, rely on existing atom indices for the group
+        ag->create_sorted_ids();
       }
-      cvm::load_coords (ref_pos_file.c_str(), ref_pos, sorted_ids,
+      cvm::load_coords (ref_pos_file.c_str(), ref_pos, ag->sorted_ids,
                         ref_pos_col, ref_pos_col_value);
     }
 
     if (ref_pos.size()) {
 
       if (b_rotate) {
-        atom_group *ag = ref_pos_group ? ref_pos_group : this;
         if (ref_pos.size() != ag->size())
           cvm::fatal_error ("Error: the number of reference positions provided ("+
                             cvm::to_str (ref_pos.size())+

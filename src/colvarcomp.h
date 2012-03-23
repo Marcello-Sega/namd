@@ -878,7 +878,7 @@ public:
 
   alpha_angles (std::string const &conf);
   alpha_angles();
-  virtual inline ~alpha_angles() {}
+  virtual ~alpha_angles();
   void calc_value();
   void calc_gradients();
   void apply_force (colvarvalue const &force);
@@ -892,6 +892,35 @@ public:
                              colvarvalue const &x2) const;
 };
 
+/// \brief Colvar component: dihedPC
+/// Projection of the config onto a dihedral principal component
+/// See e.g. Altis et al., J. Chem. Phys 126, 244111 (2007)
+/// Based on a set of 'dihedral' cvcs
+class colvar::dihedPC
+  : public colvar::cvc
+{
+protected:
+
+  std::vector<dihedral *> theta;
+  std::vector<cvm::real> coeffs;
+
+public:
+
+  dihedPC (std::string const &conf);
+  dihedPC();
+  virtual  ~dihedPC();
+  void calc_value();
+  void calc_gradients();
+  void apply_force (colvarvalue const &force);
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
 
 /// \brief Colvar component: orientation in space of an atom group,
 /// with respect to a set of reference coordinates
@@ -1232,6 +1261,7 @@ inline void colvar::spin_angle::wrap (colvarvalue &x) const
   simple_scalar_dist_functions (eigenvector)
   //  simple_scalar_dist_functions (alpha_dihedrals)
   simple_scalar_dist_functions (alpha_angles)
+  simple_scalar_dist_functions (dihedPC)
 
 
 // Projected distance

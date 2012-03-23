@@ -112,6 +112,7 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
 
   if (get_keyval (conf, "targetCenters", target_centers, colvar_centers)) {
     b_chg_centers = true;
+    target_nstages = 0;
     for (size_t i = 0; i < target_centers.size(); i++) {
       target_centers[i].apply_constraints();
     }
@@ -126,27 +127,41 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
 
     starting_force_k = force_k;
     b_chg_force_k = true;
+
+    get_keyval (conf, "targetEquilSteps", target_equil_steps, 0);
+
+    get_keyval (conf, "lambdaSchedule", lambda_schedule, lambda_schedule);
+    if (lambda_schedule.size()) {
+      // There is one more lambda-point than stages
+      target_nstages = lambda_schedule.size() - 1;
+    } else {
+      target_nstages = 0;
+    }
   } else {
     b_chg_force_k = false;
   }
 
-  target_nstages = 0;
   if (b_chg_centers || b_chg_force_k) {
     get_keyval (conf, "targetNumSteps", target_nsteps, 0);
     if (!target_nsteps)
       cvm::fatal_error ("Error: targetNumSteps must be non-zero.\n");
 
-    get_keyval (conf, "targetNumStages", target_nstages, 0);
+    if (get_keyval (conf, "targetNumStages", target_nstages, target_nstages) &&
+        lambda_schedule.size()) {
+      cvm::fatal_error ("Error: targetNumStages and lambdaSchedule are incompatible.\n");
+    }
 
-    if (target_nstages)
-      stage = 0;
+    if (target_nstages) {
+      // This means that either numStages of lambdaSchedule has been provided
+      stage = -1;
       restraint_FE = 0.0;
+    }
 
     if (get_keyval (conf, "targetForceExponent", force_k_exp, 1.0)) {
       if (! b_chg_force_k)
         cvm::log ("Warning: not changing force constant: targetForceExponent will be ignored\n");
       if (force_k_exp < 1.0)
-        cvm::fatal_error ("Error: targetForceExponent must be 1.0 or greater.\n");
+        cvm::log ("Warning: for all practical purposes, targetForceExponent should be 1.0 or greater.\n");
     }
   }
 
@@ -213,7 +228,24 @@ cvm::real colvarbias_harmonic::update()
 
   if (cvm::debug())
     cvm::log ("Updating the harmonic bias \""+this->name+"\".\n");
+
+  // Setup first stage of staged variable force constant calculation
+  if (b_chg_force_k && target_nstages && stage == -1) {
+    stage = 0;
+    cvm::real lambda;
+    if (lambda_schedule.size()) {
+      lambda = lambda_schedule[0];
+    } else {
+      lambda = 0.0;
+    }
+    force_k = starting_force_k + (target_force_k - starting_force_k)
+              * std::pow (lambda, force_k_exp);
+    cvm::log ("Harmonic restraint " + this->name + ", stage " +
+        cvm::to_str(stage) + " : lambda = " + cvm::to_str(lambda));
+    cvm::log ("Setting force constant to " + cvm::to_str (force_k));
+  }
   
+  // Force and energy calculation
   for (size_t i = 0; i < colvars.size(); i++) {
     colvar_forces[i] =
       (-0.5) * force_k /
@@ -247,7 +279,7 @@ cvm::real colvarbias_harmonic::update()
                                       (target_nsteps - cvm::step_absolute()));
       }
       if (cvm::debug())
-        cvm::log ("Center movements for the harmonic bias \""+
+        cvm::log ("Center increment for the harmonic bias \""+
                   this->name+"\": "+cvm::to_str (centers_incr)+".\n");
     }
 
@@ -285,40 +317,61 @@ cvm::real colvarbias_harmonic::update()
   }
 
   if (b_chg_force_k) {
-    //if (cvm::debug())
-    //  cvm::log ("Current centers for the harmonic bias \""+
-    //            this->name+"\": "+cvm::to_str (colvar_centers)+".\n");
+    // Coupling parameter, between 0 and 1
+    cvm::real lambda;
 
     if (target_nstages) {
-      // coupling parameter, between zero and one
-      cvm::real lambda = cvm::real(stage) / cvm::real(target_nstages);
-
-      // Square distance for restraint energy calculation
-      cvm::real dist_sq = 0.0;
-      for (size_t i = 0; i < colvars.size(); i++) {
-        dist_sq += colvars[i]->dist2 (colvars[i]->value(), target_centers[i]);
+      // TI calculation: estimate free energy derivative
+      // need current lambda
+      if (lambda_schedule.size()) {
+        lambda = lambda_schedule[stage];
+      } else {
+        lambda = cvm::real(stage) / cvm::real(target_nstages);
       }
 
-      // TI calculation: estimate free energy derivative
-      restraint_FE += 0.5 * force_k_exp * std::pow(lambda, force_k_exp - 1.0)
-        * (target_force_k - starting_force_k) * dist_sq;
+      if (target_equil_steps == 0 || cvm::step_absolute() % target_nsteps >= target_equil_steps) {
+        // Start averaging after equilibration period, if requested
+        
+        // Square distance normalized by square colvar width
+        cvm::real dist_sq = 0.0;
+        for (size_t i = 0; i < colvars.size(); i++) {
+          dist_sq += colvars[i]->dist2 (colvars[i]->value(), colvar_centers[i])
+            / (colvars[i]->width * colvars[i]->width);
+        }
 
+        restraint_FE += 0.5 * force_k_exp * std::pow(lambda, force_k_exp - 1.0)
+          * (target_force_k - starting_force_k) * dist_sq;
+      }
+
+      // Finish current stage...
       if (cvm::step_absolute() % target_nsteps == 0 &&
-          cvm::step_absolute() > 0 &&
-          stage < target_nstages) {
+          cvm::step_absolute() > 0) {
 
           cvm::log ("Lambda= " + cvm::to_str (lambda) + " dA/dLambda= "
-              + cvm::to_str (restraint_FE / cvm::real(target_nstages)));
+              + cvm::to_str (restraint_FE / cvm::real(target_nsteps - target_equil_steps)));
+      
+        //  ...and move on to the next one
+        if (stage < target_nstages) {
 
           restraint_FE = 0.0;
           stage++;
+          if (lambda_schedule.size()) {
+            lambda = lambda_schedule[stage];
+          } else {
+            lambda = cvm::real(stage) / cvm::real(target_nstages);
+          }
           force_k = starting_force_k + (target_force_k - starting_force_k)
                     * std::pow (lambda, force_k_exp);
+          cvm::log ("Harmonic restraint " + this->name + ", stage " +
+              cvm::to_str(stage) + " : lambda = " + cvm::to_str(lambda));
+          cvm::log ("Setting force constant to " + cvm::to_str (force_k));
+        }
       }
     } else if (cvm::step_absolute() <= target_nsteps) {
       // update force constant (slow growth)
+      lambda = cvm::real(cvm::step_absolute()) / cvm::real(target_nsteps);
       force_k = starting_force_k + (target_force_k - starting_force_k)
-          * std::pow (cvm::real(cvm::step_absolute()) / cvm::real(target_nsteps), force_k_exp);
+          * std::pow (lambda, force_k_exp);
     }
   }
 

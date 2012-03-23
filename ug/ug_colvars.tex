@@ -1,5 +1,6 @@
 % Note: requires package amssymb for \mathbb
 
+\newcommand{\MDCODE} {\NAMD}
 \section{Collective Variable-based Calculations\footnote{ The features
 described in this section were contributed by Giacomo Fiorin (ICMS,
 Temple University, Philadelphia, PA, USA) and J\'er\^ome H\'enin (LISM,
@@ -105,9 +106,9 @@ run):
     Enable the collective variables module}{%
     boolean}{%
     \texttt{off}}{%
-    If this flag is on, the collective variables module within NAMD is
-    executed at each time step; the module requires a separate
-    configuration file, to be provided with \texttt{colvarsConfig}.}
+    If this flag is on, the collective variables module within
+    \MDCODE{} is enabled; the module requires a separate configuration
+    file, to be provided with \texttt{colvarsConfig}.}
 
 \item %
   \NAMDCONF{%
@@ -119,7 +120,29 @@ run):
     information needed to \emph{begin} a colvars simulation.
     Additional information is needed instead to \emph{continue} a
     previous run, which is read from the file provided by
-    \texttt{colvarsInput}.}
+    \texttt{colvarsInput}.
+\ifx \NAMDVER \undefined
+    % This is NAMD-only 
+\else
+    Parameters within the configuration file can be controlled from
+    a NAMD config file using Tcl variables in the following way:
+
+    {\ttfamily
+    colvars on\\
+    colvarsConfig colvars\_subst.tmp\\
+    set myParameter someValue\\
+    \# Parse template and create specific config file on the fly\\
+    set infile [open colvars\_template.in r] \\
+    set outfile [open colvars\_subst.tmp w+] \\
+    puts \$outfile [subst [read \$infile]] \\
+    close \$infile \\
+    close \$outfile}
+
+    In this example, the string \texttt{\$myParameter} will be replaced
+    with the value \texttt{someValue} wherever it appears in the file
+    \texttt{colvars\_template.in}. This value will then be read in by
+    the colvars module when it parses its input.
+\fi}
 
 \item %
   \NAMDCONF{%
@@ -368,13 +391,13 @@ keyword that identifies the functional form: for example,
 between two atom groups''.
 
 To obtain the value of the colvar, $\xi(\mathbf{r})$, its components
-$q_{i}(\mathbf{r})$ are summed with the formula:
+$q_i(\mathbf{r})$ are summed with the formula:
 \begin{equation}
   \label{eq:colvar_combination}
-  \xi(\mathbf{r}) = \sum_{i} c_{i} [q_{i}(\mathbf{r})]^{n_{i}}
+  \xi(\mathbf{r}) = \sum_i c_i [q_i(\mathbf{r})]^{n_i}
 \end{equation}
-where each component appears with a unique coefficient $c_{i}$ (1.0 by
-default) the positive integer exponent $n_{i}$ (1 by default).
+where each component appears with a unique coefficient $c_i$ (1.0 by
+default) the positive integer exponent $n_i$ (1 by default).
 For information on setting these parameters, see \ref{sec:cvc_superp}.
 
 
@@ -605,6 +628,32 @@ For information on setting these parameters, see \ref{sec:cvc_superp}.
     The fictitious mass is calculated internally as $k_B T (\tau/2 \pi \sigma)^2$,
     where $\tau$ is the period and $\sigma$ is the typical fluctuation (see above).}
 
+\item %
+  \NAMDCONFWDEF{%
+    extendedTemp}{%
+    (\texttt{colvar}) Temperature for the extended degree of freedom (K)}{%
+    positive decimal}{%
+    NAMD thermostat temperature}{%
+    Temperature used for calculating the coupling force constant of the
+    extended coordinate (see \texttt{extendedFluctuation}) and, if needed, as a
+    target temperature for extended Langevin dynamics (see
+    \texttt{extendedLangevinDamping}). This should normally be left at its
+    default value.}
+
+\item %
+  \NAMDCONFWDEF{%
+    extendedLangevinDamping}{%
+    (\texttt{colvar}) Damping factor for extended Langevin dynamics
+    (ps$^{-1}$)}{%
+    positive decimal}{%
+    \texttt{0.0}}{%
+    If this is non-zero, the extended degree of freedom undergoes Langevin dynamics
+    at temperature \texttt{extendedTemp}. The friction force is minus
+    \texttt{extendedLangevinDamping} times the velocity. This might be useful in
+    cases where the extended dynamics tends to become unstable because of resonances
+    with other degrees of freedom. Only use when strictly necessary, as it adds
+    viscous friction (potentially slowing down diffusive sampling) and stochastic
+    noise (increasing the variance of statistical measurements).}
 \end{itemize}
 
 
@@ -643,6 +692,7 @@ one or more instances of the following components:
   from a set of reference coordinates;
 \item \texttt{gyration}: radius of gyration of a group of atoms;
 \item \texttt{alpha}: $\alpha$-helix content of a protein segment.
+\item \texttt{dihedralPC}: projection of protein backbone dihedrals onto a dihedral principal component.
 \end{itemize}
 
 
@@ -923,7 +973,7 @@ boundaries can be defined by using any real number of choice.
 \begin{itemize}
 \item \NAMDCONFWDEF{%
     oneSiteSystemForce}{%
-    (\texttt{dihedral}) Measure system force on group 1 only?}{%
+    (\texttt{angle}, \texttt{dihedral}) Measure system force on group 1 only?}{%
     boolean}{%
     \texttt{no}}{%
     If this is set to \texttt{yes}, the system force is measured along
@@ -1462,6 +1512,50 @@ This component returns positive values, always comprised between 0
 score).
 
 
+\paragraph*{Component \texttt{dihedralPC}: protein dihedral pricipal component}
+The block \texttt{dihedralPC~\{...\}} defines the
+parameters to calculate the projection of backbone dihedral angles within
+a protein segment onto a \emph{dihedral principal component}, following
+the formalism of dihedral principal component analysis (dPCA) proposed by
+Mu et al.\cite{Mu2005} and documented in detail by Altis et
+al.\cite{Altis2007}.
+Given a peptide or protein segment of $N$ residues, each with Ramachandran
+angles $\phi_i$ and $\psi_i$, dPCA rests on a variance/covariance analysis
+of the $4(N-1)$ variables $\cos(\psi_1), \sin(\psi_1), \cos(\phi_2), \sin(\phi_2)
+\cdots \cos(\phi_N), \sin(\phi_N)$. Note that angles $\phi_1$ and $\psi_N$
+have little impact on chain conformation, and are therefore discarded,
+following the implementation of dPCA in the analysis software Carma.\cite{Glykos2006}
+
+For a given principal component (eigenvector) of coefficients
+$(k_i)_{1 \leq i \leq 4(N-1)}$,
+the projection of the current backbone conformation is:
+\begin{equation}
+\xi = \sum_{n=1}^{N-1} k_{4n-3} \cos(\psi_n) + k_{4n-2} \sin (\psi_n)
++ k_{4n-1} \cos (\phi_{n+1}) + k_{4n} \sin(\phi_{n+1})
+\end{equation}
+
+\texttt{dihedralPC} expects the same parameters as the \texttt{alpha}
+component for defining the relevant residues (\texttt{residueRange}
+and \texttt{psfSegID}) in addition to the following:
+
+\begin{itemize}
+\item %
+  \NAMDCONF{%
+    vectorFile}{%
+    (\texttt{dihedralPC}) File containing dihedral PCA eigenvector(s)}{%
+    file name}{%
+    A text file containing the coefficients of dihedral PCA eigenvectors on the
+    cosine and sine coordinates. The vectors should be arranged in columns,
+    as in the files output by Carma.\cite{Glykos2006}}
+
+\item %
+  \NAMDCONF{%
+    vectorNumber}{%
+    (\texttt{dihedralPC}) File containing dihedralPCA eigenvector(s)}{%
+    positive integer}{%
+    Number of the eigenvector to be used for this component.}
+\end{itemize}
+
 \subsubsection{Linear and polynomial combinations of components}
 \label{sec:cvc_superp}
 Any set of components can be combined within a colvar, provided that
@@ -1822,10 +1916,10 @@ deviations are available.
     \texttt{coordinate\_p2}}{%
     \texttt{velocity}}{%
     With \texttt{coordinate} or \texttt{velocity}, the correlation
-    function $C_{i,j}(t)$~= $\left\langle O\left(\xi_{i}(t_{0}),
+    function $C_{i,j}(t)$~= $\left\langle \Pi\left(\xi_{i}(t_{0}),
         \xi_{j}(t_{0}+t)\right) \right\rangle$ is calculated between
     the variables $\xi_{i}$ and $\xi_{j}$, or their velocities.
-    $O(\xi_{i}, \xi_{j})$ is the scalar product when calculated
+    $\Pi(\xi_{i}, \xi_{j})$ is the scalar product when calculated
     between scalar or vector values, whereas for quaternions it is the
     cosine between the two corresponding rotation axes.  With
     \texttt{coordinate\_p2}, the second order Legendre polynomial,
@@ -2053,8 +2147,10 @@ Most commonly, the number of variables is one or two.
  \item \emph{Only linear combinations} of colvar components can be used in ABF calculations.
  \item \emph{Availability of system forces} is necessary. The following colvar components
 can be used in ABF calculations:
-\texttt{distance}, \texttt{distance\_xy}, \texttt{distance\_z}, \texttt{dihedral},
-\texttt{gyration},  \texttt{rmsd} and \texttt{eigenvector}.
+\texttt{distance}, \texttt{distance\_xy}, \texttt{distance\_z}, \texttt{angle},
+\texttt{dihedral}, \texttt{gyration},  \texttt{rmsd} and \texttt{eigenvector}.
+Atom groups may not be replaced by dummy atoms, unless they are excluded
+from the force measurement by specifying \texttt{oneSiteSystemForce}, if available.
  \item \emph{Mutual orthogonality of colvars}. In a multidimensional ABF calculation,
 equation~(\ref{eq:ortho_gradient}) must be satisfied for any two colvars $\xi_{i}$ and $\xi_{j}$.
 Various cases fulfill this orthogonality condition:
@@ -2062,7 +2158,8 @@ Various cases fulfill this orthogonality condition:
  \item $\xi_{i}$ and $\xi_{j}$ are based on non-overlapping sets of atoms.
  \item atoms involved in the force measurement on $\xi_{i}$ do not participate in
 the definition of $\xi_{j}$. This can be obtained using the option \texttt{oneSiteSystemForce}
-of the \texttt{distance} and \texttt{dihedral} components (example: Ramachandran angles $\phi$, $\psi$).
+of the \texttt{distance}, \texttt{angle}, and \texttt{dihedral} components
+(example: Ramachandran angles $\phi$, $\psi$).
  \item $\xi_{i}$ and $\xi_{j}$ are orthogonal by construction. Useful cases are the sum and
 difference of two components, or \texttt{distance\_z} and \texttt{distance\_xy} using the same axis.
 \end{itemize}
@@ -2334,24 +2431,22 @@ N_{\mathrm{s}}(\xi_{N_{\mathrm{cv}}}) \times \delta{}t$.
 
 In metadynamics runs performed with this module, the parameter
 $\delta_{\xi_{i}}$ for each hill (eq.~\ref{eq:colvars_meta_pot}) is
-chosen as half the \texttt{width} of the corresponding colvar
-$\xi_{i}$, while all the other parameters must be provided within the
-\texttt{metadynamics~\{...\}} block.  In addition to the
-\texttt{colvars} option to list the variable to which this bias is
-applied, the block accepts the following options:
+chosen as approximately half the \texttt{width} of the corresponding
+colvar $\xi_{i}$, while all the other parameters must be provided within
+the \texttt{metadynamics~\{...\}} block.
+
+The only mandatory parameter is the \texttt{colvars} option, listing all
+the variables to which this bias is applied.  \textbf{Note: }
+multidimensional PMFs are obtained with one \texttt{metadynamics}
+instance applied to all the colvars, and not with multiple instances
+applied to individual colvars.
+
+The following two options have default values that are reasonable in
+typical situations, but it is strongly recommended that the user chooses
+them according to the above discussion on the diffusion times of the
+variables, $\tau_{\bm{\xi}}$:
 
 \begin{itemize}
-
-\item %
-  \NAMDCONFWDEF{%
-    name}{%
-    (\texttt{metadynamics}) Name of this metadynamics instance}{%
-    string}{%
-    ``\texttt{meta}'' + rank number}{%
-    This option sets the name for this metadynamics instance.  While
-    in general it is not advisable to use more than one metadynamics
-    bias, this allows to distinguish each bias from the others in the
-    output.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -2360,10 +2455,8 @@ applied, the block accepts the following options:
     positive decimal}{%
     \texttt{0.01}}{%
     This option sets the height $W$ of the hills that are added during
-    this run.  \textbf{Note:} \emph{in most applications, this and
-      each colvar's }\texttt{width}\emph{ are the only parameters that
-      the user needs to choose carefully: the following options are
-      meant for the more specific cases}.}
+    this run.  Lower values provide more accurate sampling at the price
+    of longer simulation times to complete a PMF calculation.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -2371,10 +2464,34 @@ applied, the block accepts the following options:
     (\texttt{metadynamics}) Frequency of hill creation}{%
     positive integer}{%
     \texttt{100}}{%
-    This option sets the number of steps (proportional to $\delta{}t$)
-    after which a new hill is added to the history-dependent
-    potential.  Each new hill acts on the colvars $\bm{\xi}$
-    immediately after being added.}
+    This option sets the number of integration steps after which a new
+    hill is added to the metadynamics potential.  Its value determines
+    the parameter $\delta{}t$ in eq.~\ref{eq:colvars_meta_pot}.  Higher
+    values provide more accurate sampling at the price of longer
+    simulation times to complete a PMF calculation.}
+
+\end{itemize}
+
+The following options control the performance of metadynamics
+calculations, but do not affect the results:
+
+\begin{itemize}
+
+\item %
+  \NAMDCONFWDEF{%
+    useGrids}{%
+    (\texttt{metadynamics}) Interpolate the hills with grids}{%
+    boolean}{%
+    \texttt{on}}{%
+    This option discretizes all hills for improved performance,
+    accumulating their energy and their gradients on two separate grids
+    of equal spacing.  Grids are defined by the values of
+    \texttt{lowerBoundary}, \texttt{upperBoundary} and \texttt{width}
+    for each colvar.  Currently, this option is implemented for all
+    types of variables except the non-scalar types (\texttt{distanceDir}
+    or \texttt{orientation}).  If \texttt{expandBoundaries} is defined
+    in one of the colvars, grids are automatically expanded along the
+    direction of that colvar.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -2384,52 +2501,157 @@ applied, the block accepts the following options:
     $\sqrt{2\pi}/2$}{%
     Along each colvar, the width of each Gaussian hill
     ($2\delta_{\xi_{i}}$) is given by the product between this number
-    and the colvar's \texttt{width}.  To get a smoother free energy
-    profile for a given metadynamics configuration, decrease
-    \texttt{width} and increase \texttt{hillWidth} in proportion.
-    \textbf{Note:} \emph{when }\texttt{useGrids}\emph{ is
+    and the colvar's \texttt{width}.  The default value gives hills
+    whose volume is the product of $W$ times the \texttt{width} of all
+    colvars.  For a smoother visualization of the free energy plot,
+    decrease \texttt{width} and increase \texttt{hillWidth} in the same
+    proportion.  \textbf{Note:} \emph{when }\texttt{useGrids}\emph{ is
     }\texttt{on}\emph{ (default in most cases), values smaller than 1
       should be avoided to avoid discretization errors}.}
 
 \item %
   \NAMDCONFWDEF{%
-    useGrids}{%
-    (\texttt{metadynamics}) Interpolate the hills with grids}{%
-    boolean}{%
-    \texttt{on}}{%
-    This option discretizes all hills on two grids (storing their
-    total energy and gradients, respectively).  These grids are
-    defined by \texttt{lowerBoundary}, \texttt{upperBoundary} and
-    \texttt{width} for each colvar, and the aggregated forces
-    are used (as opposed to summing over all the individual hills).
-    Such grids are written to the state file.  Currently, this is not
-    implemented for non-scalar variables (\texttt{distanceDir} or
-    \texttt{orientation}).}
-
-\item %
-  \NAMDCONFWDEF{%
-    gridsUpdateFrequency}{%
-    (\texttt{metadynamics}) Frequency of update of the grids}{%
-    positive integer}{%
-    \texttt{newHillFrequency}}{%
-    When \texttt{useGrids} is \texttt{on}, all the newly created hills
-    are projected onto the two grids every
-    \texttt{gridsUpdateFrequency} steps.}
-
-\item %
-  \NAMDCONFWDEF{%
     dumpFreeEnergyFile}{%
-    (\texttt{metadynamics}) Periodically save the PMF}{%
+    (\texttt{metadynamics}) Periodically write the PMF for visualization}{%
     boolean}{%
     \texttt{on}}{%
     When \texttt{useGrids} and this option are \texttt{on}, the PMF is
     written every \texttt{colvarsRestartFrequency} steps to the file
-    \texttt{$<$outputName$>$.pmf}.  If there is more than one
-    metadynamics bias active, the name of this bias is included in the
-    file name.  \textbf{Note: }\emph{ multidimensional PMFs can only
-      be obtained with one }\texttt{metadynamics}\emph{ instance
-      applied to all the colvars, and not with multiple instances each
-      applied to a single colvar}.}
+    \texttt{$<$outputName$>$.pmf}.}
+
+\item %
+  \NAMDCONFWDEF{%
+    rebinGrids}{%
+    (\texttt{metadynamics}) Recompute the grids when reading a state
+    file}{%
+    boolean}{%
+    \texttt{off}}{%
+    When restarting from a state file, the grid's parameters (boundaries
+    and widths) saved in the state file override those in the
+    configuration file.  Enabling this option forces the grids to match
+    those in the current configuration file.}
+
+\end{itemize}
+
+The following options define metadynamics calculations with more than
+one replica:
+
+\begin{itemize}
+
+\item %
+  \NAMDCONFWDEF{%
+    multipleReplicas}{%
+    (\texttt{metadynamics}) Multiple replicas metadynamics}{%
+    boolean}{%
+    \texttt{off}}{%
+    If this option is \texttt{on}, multiple (independent) replica of the
+    same system can be run at the same time, and their hills will be
+    combined to obtain a single PMF \cite{Raiteri2005}.  Replicas are
+    identified by the value of \texttt{replicaID}.  Communication is
+    done by files: each replica of NAMD must be able to read the files
+    created by the others, whose paths are communicated through the file
+    \texttt{replicasRegistry}.  This file, and the files listed in it,
+    are read every \texttt{replicaUpdateFrequency} steps.  Every time
+    the colvars state file is written
+    (\texttt{colvarsRestartFrequency}), the file
+    ``\texttt{$<$outputName$>$.colvars.%
+      $<$name$>$.$<$replicaID$>$.state}'' is also written, containing
+    the state of the metadynamics bias for \texttt{replicaID}.  In the
+    time steps between \texttt{colvarsRestartFrequency}, new hills are
+    temporarily written to the file ``\texttt{$<$outputName$>$.colvars.%
+      $<$name$>$.$<$replicaID$>$.hills}'', which serves as communication
+    buffer.  These files are only required for communication, and may be
+    deleted after a new NAMD run is started with a different
+    \texttt{outputName}.  }
+  
+\item %
+  \NAMDCONF{%
+    replicaID}{%
+    (\texttt{metadynamics}) Set the identifier for this replica}{%
+    string}{%
+    If \texttt{multipleReplicas} is \texttt{on}, this option sets a
+    unique identifier for this replica.  All replicas should use
+    identical collective variable configurations, except for the value
+    of this option.}
+  
+\item %
+  \NAMDCONFWDEF{%
+    replicasRegistry}{%
+    (\texttt{metadynamics}) Multiple replicas database file}{%
+    UNIX filename}{%
+    ``\texttt{$<$name$>$.replica\_files.txt}''}{%
+    If \texttt{multipleReplicas} is \texttt{on}, this option sets the
+    path to the replicas' database file.
+    % Each line in this file
+    % contains one \texttt{replicaID}, and the absolute path to a file
+    % listing the state file and the hills-file for that replica (see
+    % \texttt{multipleReplicas}).  All these files are generated
+    % automatically, but it is advisable that at least
+    % \texttt{replicasRegistry} is written by hand to avoid race
+    % conditions (multiple replicas writing concurrently to the same
+    % file).
+  }
+
+\item %
+  \NAMDCONFWDEF{%
+    replicaUpdateFrequency}{%
+    (\texttt{metadynamics}) How often hills are communicated between
+    replicas}{%
+    positive integer}{%
+    \texttt{newHillFrequency}}{%
+    If \texttt{multipleReplicas} is \texttt{on}, this option sets the
+    number of steps after which each replica (re)reads the other
+    replicas' files.  The lowest meaningful value of this number is
+    \texttt{newHillFrequency}.  If access to the file system is
+    significantly affecting the simulation performance, this number can
+    be increased, at the price of reduced synchronization between
+    replicas.  Values higher than \texttt{colvarsRestartFrequency} may
+    not improve performance significantly.}
+
+\item %
+  \NAMDCONFWDEF{%
+    dumpPartialFreeEnergyFile}{%
+    (\texttt{metadynamics}) Periodically write the contribution to the
+    PMF from this replica}{%
+    boolean}{%
+    \texttt{on}}{%
+    When \texttt{multipleReplicas} is \texttt{on}, tje file
+    \texttt{$<$outputName$>$.pmf} contains the combined PMF from all
+    replicas.  Enabling this option will produce an additional file
+    \texttt{$<$outputName$>$.partial.pmf}, which can be useful to
+    quickly monitor the contribution of each replica to the PMF.  The
+    requirements for this option are the same as
+    \texttt{dumpFreeEnergyFile}.}
+
+\end{itemize}
+
+The following options may be useful for applications that go beyond the
+direct application of metadynamics for a calculation of a PMF.
+
+\begin{itemize}
+
+\item %
+  \NAMDCONFWDEF{%
+    name}{%
+    (\texttt{metadynamics}) Name of this metadynamics instance}{%
+    string}{%
+    ``\texttt{meta}'' + rank number}{%
+    This option sets the name for this metadynamics instance.  While it
+    is not advisable to use more than one metadynamics instance within
+    the same simulation, this allows to distinguish each instance from
+    the others.  If there is more than one metadynamics instance, the
+    name of this bias is included in the metadynamics output file names
+    such as \texttt{dumpFreeEnergyFile}.}
+
+% \item %
+%   \NAMDCONFWDEF{%
+%     gridsUpdateFrequency}{%
+%     (\texttt{metadynamics}) Frequency of update of the grids}{%
+%     positive integer}{%
+%     \texttt{newHillFrequency}}{%
+%     When \texttt{useGrids} is \texttt{on}, all the newly created hills
+%     are projected onto the two grids every
+%     \texttt{gridsUpdateFrequency} steps.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -2444,84 +2666,16 @@ applied, the block accepts the following options:
 
 \item %
   \NAMDCONFWDEF{%
-    rebinGrids}{%
-    (\texttt{metadynamics}) Recompute the grids when reading a state
-    file}{%
-    boolean}{%
-    \texttt{off}}{%
-    By default, the grid's boundaries and widths are saved in the
-    state file, and override those in the configuration file.  To
-    force a \emph{manual} change of the grid's parameters, this option
-    can be used to project the grids read from a state file onto new
-    grids, and use them in the following.  See instead
-    \texttt{expandBoundaries} in the colvars to have the grid
-    boundaries be \emph{automatically} expanded for certain colvars.}
-
-\item %
-  \NAMDCONFWDEF{%
     keepHills}{%
     (\texttt{metadynamics}) Write each individual hill to the state
     file}{%
     boolean}{%
     \texttt{off}}{%
-    When \texttt{useGrids} and this option are \texttt{on}, newly
-    created hills are also saved to the state file in their analytical
-    form, in addition to the grids.  This makes it possible to use
-    later the analytical Gaussians for \texttt{rebinGrids}.  If only
-    the time history of the hills is of interest, but the grid won't
-    be changed, \texttt{writeHillsTrajectory} gives a much more
-    compact output.}
-
-\item %
-  \NAMDCONFWDEF{%
-    multipleReplicas}{%
-    (\texttt{metadynamics}) Multiple replicas metadynamics}{%
-    boolean}{%
-    \texttt{off}}{%
-    If this option is \texttt{on}, multiple (independent) replica of
-    the same system can be simulated at the same time, and share the
-    same hills \cite{Raiteri2005}.  This is achieved by letting each
-    replica save its newly created hills to the file
-    ``\texttt{$<$outputName$>$.colvars.%
-      $<$name$>$.$<$replicaID$>$.hills}'': its path is communicated to
-    the other replicas through the file \texttt{replicaFilesRegistry},
-    shared by all replicas.  Every \texttt{replicaUpdateFrequency}
-    steps, each replica reads the new hills created by the other
-    replicas and adds them to its own.  \textbf{Note:} \emph{This
-      option cannot be used in conjunction with }\texttt{useGrids}.}
-
-\item %
-  \NAMDCONF{%
-    replicaID}{%
-    (\texttt{metadynamics}) Set the identifier for this replica}{%
-    string}{%
-    If \texttt{multipleReplicas} is \texttt{on}, this option sets a
-    unique identifier for this replica.  Hence, when simulating with
-    more than one replica, different colvars configuration files with
-    different values for this option should be used.}
-  
-\item %
-  \NAMDCONFWDEF{%
-    replicaFilesRegistry}{%
-    (\texttt{metadynamics}) Multiple replicas database file}{%
-    UNIX filename}{%
-    ``\texttt{$<$name$>$.replica\_files.txt}''}{%
-    If \texttt{multipleReplicas} is \texttt{on}, this option sets the
-    path to a replica index file.  The paths to files containing
-    another replica's new hills are appended to this file.  Every
-    \texttt{replicaUpdateFrequency} steps during a simulation, each
-    replica reads the hills stored in each of those files (except
-    those saved by this replica).}
-
-\item %
-  \NAMDCONFWDEF{%
-    replicaUpdateFrequency}{%
-    (\texttt{metadynamics}) Multiple replicas update frequency}{%
-    positive integer}{%
-    \texttt{newHillFrequency}}{%
-    If \texttt{multipleReplicas} is \texttt{on}, this option sets the
-    number of steps between updates of the list of hills created by
-    other replicas.}
+    When \texttt{useGrids} and this option are \texttt{on}, all hills
+    are saved to the state file in their analytic form, alongside their
+    grids.  This makes it possible to later use exact analytic Gaussians
+    for \texttt{rebinGrids}.  To only keep track of the history of the
+    added hills, \texttt{writeHillsTrajectory} is preferable.}
 
 \item %
   \NAMDCONFWDEF{%
@@ -2534,113 +2688,13 @@ applied, the block accepts the following options:
     ``\texttt{$<$outputName$>$.colvars.$<$name$>$.hills.traj}'', which
     can be useful to follow the time series of the hills.  When
     \texttt{multipleReplicas} is \texttt{on}, its name changes to\\
-    ``\texttt{$<$outputName$>$.colvars.$<$name$>$.$<$replicaID$>$.hills.traj}''.}
+    ``\texttt{$<$outputName$>$.colvars.$<$name$>$.$<$replicaID$>$.hills.traj}''.
+    This file can be used to quickly visualize the positions of all
+    added hills, in case \texttt{newHillFrequency} does not coincide
+    with \texttt{colvarsRestartFrequency}.}
 
 \end{itemize}
 
-% When the analysis mode is \texttt{on} (keyword \texttt{analysis} in
-% the global colvars configuration), the following options are
-% recognized:
-
-% \begin{itemize}
-
-% \item %
-%   \NAMDCONF{%
-%     freeEnergyFile}{%
-%     (\texttt{metadynamics}) Free energy surface output}{%
-%     UNIX filename}{%
-%     The free energy surface is calculated on a grid specified by each
-%     colvar's \texttt{lowerBoundary}, \texttt{upperBoundary},
-%     and \texttt{width}, shifted so that the global
-%     minimum is at 0~kcal/mol, and written to this file.}
-
-  % \item %
-  %   \NAMDCONFWDEF{%
-  %     shiftFreeEnergy}{%
-  %     (\texttt{metadynamics}) Make the free energy start from zero}{%
-  %     boolean}{%
-  %     \texttt{on}}{%
-  %   }
-
-  % \item %
-  %   \NAMDCONFWDEF{%
-  %     freeEnergyOffset}{%
-  %     (\texttt{metadynamics}) Free energy offset value}{%
-  %     positive decimal}{%
-  %     \texttt{0.0}}{%
-  %     This number is subtracted to the free energy calculated in
-  %     \texttt{freeEnergyFile} and similar options (after being shifted
-  %     if \texttt{shiftFreeEnergy} is on.}
-
-  % \item %
-  %   \NAMDCONF{%
-  %     boltzmannWeightsFile}{%
-  %     (\texttt{metadynamics}) Boltzmann weights surface output}{%
-  %     UNIX filename}{%
-  %     The free energy surface is calculated on a the same grid used for
-  %     \texttt{freeEnergyFile}, and used to calculate and write a
-  %     Boltzmann probability density
-  %     $\exp(-A(\bm{\xi})/\kappa_{\mathrm{B}}T)$; the physical unit of
-  %     this density is
-  %     $\prod_{i=1}^{N_{\mathrm{cv}}}\left(\mathtt{width}(i)\right)^{-1}$.}
-
-  % \item %
-  %   \NAMDCONFWDEF{%
-  %     boltzmannWeightsScale}{%
-  %     (\texttt{metadynamics}) Boltzmann weights scale factor}{%
-  %     positive decimal}{%
-  %     This number will be multiplied to the Boltzmann probabilities
-  %     before writing them to \texttt{boltzmannWeightsFile}.}
-
-  % \item %
-  %   \NAMDCONFWDEF{%
-  %     boltzmannWeightsTemp}{%
-  %     (\texttt{metadynamics}) Boltzmann weights surface output}{%
-  %     positive decimal}{%
-  %     \texttt{300.0}}{%
-  %     This temperature is used to calculate the Boltzmann probability
-  %     density for \texttt{boltzmannWeightsFile}.}
-
-  % \item %
-  %   \NAMDCONF{%
-  %     boltzmannCountsFile}{%
-  %     (\texttt{metadynamics}) Boltzmann counts surface output}{%
-  %     UNIX filename}{%
-  %     This is the same as \texttt{boltzmannWeightsFile}, except that the
-  %     Boltzmann probabilities will be written as integer numbers.  This
-  %     option can be useful to provide initial samples data to an ABF
-  %     calculation, by using an appropriate combination of
-  %     \texttt{freeEnergyOffset} and \texttt{boltzmannWeightsScale}.}
-
-  % \item %
-  %   \NAMDCONF{%
-  %     freeEnergyGradientsFile}{%
-  %     (\texttt{metadynamics}) Free energy gradient surface output}{%
-  %     UNIX filename}{%
-  %     The free energy gradient is calculated on the same grid used for
-  %     \texttt{freeEnergyFile} and written to this file.  This file can
-  %     also provide initial gradients to an ABF calculation.}
-
-  % \item %
-  %   \NAMDCONFWDEF{%
-  %     freeEnergyBegin}{%
-  %     (\texttt{metadynamics}) Initial step number}{%
-  %     positive integer}{%
-  %     \texttt{0}}{%
-  %     Only hills created at a time step larger than this will be
-  %     considered.}
-
-  % \item %
-  %   \NAMDCONFWDEF{%
-  %     freeEnergyLastStep}{%
-  %     (\texttt{metadynamics}) Final step number}{%
-  %     positive integer}{%
-  %     \texttt{0}}{%
-  %     When larger than 0, only hills created at a time step smaller than
-  %     this will be considered (useful to plot incremental free energy
-  %     surfaces to monitor the calculation).}
-
-% \end{itemize}
 
 
 \subsubsection{Harmonic restraints and Steered Molecular Dynamics}
@@ -2669,7 +2723,7 @@ block, which may contain (in addition to the standard option
     \texttt{1.0}}{%
     This defines a scaled force constant for the harmonic potential.
     To ensure consistency for multidimensional restraints, it is
-    multiplied internally by the square of the specific \texttt{width}
+    divided internally by the square of the specific \texttt{width}
     for each colvar involved (which is 1 by default), so that all colvars
     are effectively dimensionless and of commensurate size.
     For instance, setting a scaled force constant of 10~kcal/mol acting
@@ -2752,11 +2806,15 @@ block, which may contain (in addition to the standard option
     $ k_\lambda = k_0 + \lambda^\alpha (k_1 - k_0)$, where $k_0$,
     $k_\lambda$, and $k_1$ are the initial, current, and final values
     of the force constant. The parameter $\lambda$ evolves linearly from
-    0 to 1, either smoothly or in \texttt{targetNumStages} discrete stages.
+    0 to 1, either smoothly, or in \texttt{targetNumStages} equally spaced
+    discrete stages, or according to an arbitrary schedule set with
+    \texttt{lambdaSchedule}.
     When the initial value of the force constant is zero,
     an exponent greater than 1.0 distributes the effects of introducing the
-    restraint more smoothly over time than a linear dependence.
-    }
+    restraint more smoothly over time than a linear dependence, and
+    ensures that there is no singularity in the derivative of the
+    restraint free energy with respect to lambda. A value of 4 has
+    been found to give good results in some tests.}
 
 \item %
   \NAMDCONF{%
@@ -2770,6 +2828,15 @@ block, which may contain (in addition to the standard option
     constant) are kept fixed.}
 
 \item %
+  \NAMDCONF{%
+    targetEquilSteps}{%
+    (\texttt{harmonic}) Number of steps discarded from TI estimate}{%
+    positive integer}{%
+    Defines the number of steps within each stage that are considered
+    equilibration and discarded from the restraint free energy derivative
+    estimate reported reported in the output.}
+
+\item %
   \NAMDCONFWDEF{%
     targetNumStages}{%
     (\texttt{harmonic}) Number of stages for steering}{%
@@ -2777,8 +2844,17 @@ block, which may contain (in addition to the standard option
     \texttt{0}}{%
     If non-zero, sets the number of stages in which the restraint centers
     or force constant are changed to their target values. If zero, the change
-    is continuous.
-    }
+    is continuous. }
+
+\item %
+  \NAMDCONF{%
+    lambdaSchedule}{%
+    (\texttt{harmonic}) Schedule of lambda-points for changing force constant}{%
+    list of real numbers between 0 and 1}{%
+    If specified together with targetForceConstant, sets the sequence of
+    discrete $\lambda$ values that will be used for different stages.
+  }
+
 \end{itemize}
 
 \textbf{Tip:} A complex set of restraints can be applied to a system,

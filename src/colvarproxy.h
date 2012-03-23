@@ -97,7 +97,7 @@ public:
   virtual void load_atoms (char const *filename,
                            std::vector<cvm::atom> &atoms,
                            std::string const pdb_field,
-                           double const pdb_field_value = 0.0);
+                           double const pdb_field_value = 0.0) = 0;
 
   /// \brief Load the coordinates for a group of atoms from a file
   /// (usually a PDB); if "pos" is already allocated, the number of its
@@ -106,14 +106,14 @@ public:
                             std::vector<cvm::atom_pos> &pos,
                             const std::vector<int> &indices,
                             std::string const pdb_field,
-                            double const pdb_field_value = 0.0);
+                            double const pdb_field_value = 0.0) = 0;
 
   /// \brief Rename the given file, under the convention provided by
   /// the MD program
-  virtual void backup_file (char const *filename);
+  virtual void backup_file (char const *filename) = 0;
 
   /// \brief Pseudo-random number with Gaussian distribution
-  virtual cvm::real rand_gaussian (void);
+  virtual cvm::real rand_gaussian (void) = 0;
 
   virtual inline ~colvarproxy() {}
 };
@@ -127,42 +127,6 @@ inline void colvarproxy::select_closest_images (std::vector<cvm::atom_pos> &pos,
     select_closest_image (*pi, ref_pos);
   }
 }
-
-
-inline void colvarproxy::load_coords (char const *filename,
-                                      std::vector<cvm::atom_pos> &pos,
-                                      const std::vector<int> &indices,
-                                      std::string const pdb_field,
-                                      double const pdb_field_value)
-{
-  cvm::fatal_error ("Error: colvarproxy::load_coords() has not been (re)redefined, "
-                    "__FILE__ at line __LINE__.\n");
-}
-
-
-inline void colvarproxy::load_atoms (char const *filename,
-                                     std::vector<cvm::atom> &atoms,
-                                     std::string const pdb_field,
-                                     double const pdb_field_value)
-{
-  cvm::fatal_error ("Error: colvarproxy::load_atoms() has not been (re)redefined, "
-                    "__FILE__ at line __LINE__.\n");
-}
-
-
-inline void colvarproxy::backup_file (char const *filename)
-{
-//   cvm::fatal_error ("Error: colvarproxy::backup_file() has not been (re)redefined, "
-//                     "__FILE__ at line __LINE__.\n"); 
-}
-
-inline cvm::real colvarproxy::rand_gaussian (void)
-{
-  cvm::fatal_error ("Error: colvarproxy::rand_gaussian() has not been (re)redefined, "
-                    "__FILE__ at line __LINE__.\n");
-  return 999999.;
-}
-
 
 #endif
 

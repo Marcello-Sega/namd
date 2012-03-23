@@ -185,11 +185,6 @@ size_t      colvarparse::dummy_pos = 0;
             cvm::fatal_error ("Error: in parsing \""+                   \
                               std::string (key)+"\".\n");               \
         }                                                               \
-        if (i < values.size()-1) {                                      \
-          cvm::fatal_error ("Error: values from string \""+             \
-                            data+"\" are less than expected ("+         \
-                            cvm::to_str (values.size())+").\n");        \
-        }                                                               \
       }                                                                 \
                                                                         \
       if (parse_mode != parse_silent) {                                 \

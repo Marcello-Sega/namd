@@ -65,7 +65,7 @@ void colvarvalue::inner_opt (colvarvalue                        const &x,
     break;
   case colvarvalue::type_quaternion:
     while (xvi != xv_end) {
-      *(ii++) += ((xvi++)->quaternion_value).inner (x.quaternion_value);
+      *(ii++) += ((xvi++)->quaternion_value).cosine (x.quaternion_value);
     }
     break;
   default:
@@ -98,7 +98,7 @@ void colvarvalue::inner_opt (colvarvalue const                      &x,
     break;
   case colvarvalue::type_quaternion:
     while (xvi != xv_end) {
-      *(ii++) += ((xvi++)->quaternion_value).inner (x.quaternion_value);
+      *(ii++) += ((xvi++)->quaternion_value).cosine (x.quaternion_value);
     }
     break;
   default:
@@ -140,8 +140,8 @@ void colvarvalue::p2leg_opt (colvarvalue const                        &x,
     break;
   case colvarvalue::type_quaternion:
     while (xvi != xv_end) {
-      cvm::real const cos2 = (xvi++)->quaternion_value.cos2 (x.quaternion_value);
-      *(ii++) += 1.5*cos2 - 0.5;
+      cvm::real const cosine = (xvi++)->quaternion_value.cosine (x.quaternion_value);
+      *(ii++) += 1.5*cosine*cosine - 0.5;
     }
     break;
   default:
@@ -182,8 +182,8 @@ void colvarvalue::p2leg_opt (colvarvalue const                        &x,
     break;
   case colvarvalue::type_quaternion:
     while (xvi != xv_end) {
-      cvm::real const cos2 = (xvi++)->quaternion_value.cos2 (x.quaternion_value);
-      *(ii++) += 1.5*cos2 - 0.5;
+      cvm::real const cosine = (xvi++)->quaternion_value.cosine (x.quaternion_value);
+      *(ii++) += 1.5*cosine*cosine - 0.5;
     }
     break;
   default:

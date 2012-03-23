@@ -48,8 +48,8 @@ colvarproxy_namd::colvarproxy_namd()
     thermostat_temperature = simparams->langevinTemp;
   else if (simparams->tCoupleOn)
     thermostat_temperature = simparams->tCoupleTemp;
-  else if (simparams->loweAndersenOn)
-    thermostat_temperature = simparams->loweAndersenTemp;
+  //else if (simparams->loweAndersenOn)
+  //  thermostat_temperature = simparams->loweAndersenTemp;
   else 
     thermostat_temperature = 0.0;
 
@@ -65,6 +65,11 @@ colvarproxy_namd::colvarproxy_namd()
   colvars = new colvarmodule (config->data, this);
   // save to Node for Tcl script access
   Node::Object()->colvars = colvars;
+
+  if (simparams->firstTimestep != 0) {
+    cvm::log ("Initializing step number as firstTimestep.\n");
+    colvars->it = colvars->it_restart = simparams->firstTimestep;
+  }
 
   if (cvm::debug()) {
     cvm::log ("colvars_atoms = "+cvm::to_str (colvars_atoms)+"\n");

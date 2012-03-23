@@ -121,8 +121,14 @@ protected:
   /// \brief Restraint force constant (target value)
   cvm::real target_force_k;
 
+  /// \brief Equilibration steps for restraint FE calculation through TI
+  cvm::real target_equil_steps;
+
   /// \brief Restraint force constant (starting value)
   cvm::real starting_force_k;
+
+  /// \brief Lambda-schedule for custom varying force constant
+  std::vector<cvm::real> lambda_schedule;
 
   /// \brief New restraint centers
   std::vector<colvarvalue> target_centers;

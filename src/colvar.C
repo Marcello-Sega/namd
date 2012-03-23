@@ -113,6 +113,9 @@ colvar::colvar (std::string const &conf)
   //  initialize_components ("alpha helix",      "alphaDihedrals", alpha_dihedrals);
   initialize_components ("alpha helix",      "alpha",          alpha_angles);
 
+  initialize_components ("dihedral principal "
+                         "component",        "dihedralPC",     dihedPC);
+
   initialize_components ("orientation",      "orientation",    orientation);
   initialize_components ("orientation "
                          "angle",            "orientationAngle",orientation_angle);
