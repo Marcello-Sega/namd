@@ -143,6 +143,7 @@ void GlobalMasterTMD::parseAtoms(const char *file, int numTotalAtoms, bool isTwo
         target[3*numTMDatoms+1] = atompos[i].y;
         target[3*numTMDatoms+2] = atompos[i].z;
  //       aidmap[i] = numTMDatoms++;
+        numTMDatoms++;
         // add the atom to the list
         modifyRequestedAtoms().add(i);
         if(!K){ kmap[i] = atom->occupancy();}
