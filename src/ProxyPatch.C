@@ -37,6 +37,12 @@ ProxyPatch::ProxyPatch(PatchID pd) :
 #if CMK_PERSISTENT_COMM
   localphs = 0;
   localphs = CmiCreatePersistent(PatchMap::Object()->node(patchID), 30000);
+  ntreephs = 0;
+#ifdef NODEAWARE_PROXY_SPANNINGTREE
+  treephs = NULL;
+#else
+  treephs = new PersistentHandle[proxySpanDim];
+#endif
 #endif
 
   // DMK - Atom Separation (water vs. non-water)
@@ -85,6 +91,10 @@ ProxyPatch::~ProxyPatch()
 #if CMK_PERSISTENT_COMM
   CmiDestoryPersistent(localphs);
   localphs = 0;
+  if (ntreephs!=0) {
+      for (int i=0; i<nChild; i++)  CmiDestoryPersistent(treephs[i]);
+  }
+  delete [] treephs;
 #endif
 }
 
@@ -355,6 +365,20 @@ void ProxyPatch::sendResults(void)
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
 void ProxyPatch::setSpanningTree(int p, int *c, int n) { 
+#if CMK_PERSISTENT_COMM && ! defined(USE_NODEPATCHMGR)
+  if (nChild!=0) {
+      for (int i=0; i<nChild; i++)  CmiDestoryPersistent(treephs[i]);
+      delete [] treephs;
+  }
+  treephs = NULL;
+  if (n) {
+      treephs = new PersistentHandle[n];
+      for (int i=0; i<n; i++) {
+           treephs[i] = CmiCreatePersistent(c[i], 27000);
+      }
+  }
+  ntreephs = n;
+#endif
   parent=p; nChild = n; nWait = 0;
   delete [] child;
   if(n==0) {
@@ -378,6 +402,20 @@ void ProxyPatch::setSpanningTree(int p, int *c, int n) {
 
 #ifdef USE_NODEPATCHMGR
 void ProxyPatch::setSTNodeChildren(int numNids, int *nids){
+#if CMK_PERSISTENT_COMM
+  if (numNodeChild!=0) {
+      for (int i=0; i<numNodeChild; i++)  CmiDestoryPersistent(treephs[i]);
+      delete [] treephs;
+  }
+  treephs = NULL;
+  if (numNids) {
+      treephs = new PersistentHandle[numNids];
+      for (int i=0; i<numNids; i++) {
+           treephs[i] = CmiCreatePersistent(nids[i], 27000);
+      }
+  }
+  ntreephs = numNids;
+#endif
     numNodeChild = numNids;
     delete [] nodeChildren;
     if(numNids==0) {
@@ -391,6 +429,15 @@ void ProxyPatch::setSTNodeChildren(int numNids, int *nids){
 
 #else //branch for NODEAWARE_PROXY_SPANNINGTREE not defined
 void ProxyPatch::setSpanningTree(int p, int *c, int n) { 
+#if CMK_PERSISTENT_COMM
+  if (nChild!=0) {
+      for (int i=0; i<nChild; i++)  CmiDestoryPersistent(treephs[i]);
+  }
+  for (int i=0; i<n; i++) {
+       treephs[i] = CmiCreatePersistent(c[i], 27000);
+  }
+  ntreephs = n;
+#endif
   parent=p; nChild = n; nWait = 0;
   for (int i=0; i<n; i++) child[i] = c[i];
 //CkPrintf("setSpanningTree: [%d:%d] %d %d:%d %d\n", CkMyPe(), patchID, parent, nChild, child[0], child[1]);

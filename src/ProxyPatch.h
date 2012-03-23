@@ -47,6 +47,10 @@ class ProxyPatch : public Patch
 #if CMK_PERSISTENT_COMM
   private:
      PersistentHandle localphs;
+     PersistentHandle *treephs;
+     int               ntreephs;
+  public:
+     PersistentHandle *getSpanningTreePhs(int &n) { n = ntreephs; return treephs; }
 #endif
   protected:
 
