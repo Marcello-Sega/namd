@@ -1771,7 +1771,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: case 2\n", CkMyPe())
     ++kernel_launch_state;
     gpu_is_mine = 0;
 
-#if 1
+#if 0
     cudaStreamWaitEvent(stream2, start_calc, 0);
 #else
 #define stream2 stream
