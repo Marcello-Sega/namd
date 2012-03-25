@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: dtanner $
- * $Date: 2012/02/21 14:43:46 $
- * $Revision: 1.114 $
+ * $Author: gzheng $
+ * $Date: 2012/03/25 23:33:53 $
+ * $Revision: 1.115 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -110,18 +110,6 @@ void LdbCoordinator::staticResumeFromSync(void* data)
 void LdbCoordinator::ResumeFromSync()
 {
   theLbdb->DoneRegisteringObjects(myHandle);
-#if CMK_PERSISTENT_COMM
-  if (takingLdbData) {
-//CmiPrintf("[%d] CmiDestoryPersistent\n", CkMyPe());
-
-    HomePatchList *hpl = PatchMap::Object()->homePatchList();
-    ResizeArrayIter<HomePatchElem> ai(*hpl);
-    for (ai=ai.begin(); ai != ai.end(); ai++) {
-      HomePatch *patch = (*ai).patch;
-      patch->destoryPersistComm();
-    }
-  }
-#endif
   CkCallback cb(CkIndex_LdbCoordinator::nodeDone(NULL), 0, thisgroup);
   contribute(NULL, 0, CkReduction::random, cb);
 }

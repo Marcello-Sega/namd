@@ -289,12 +289,11 @@ private:
   BigReal r_om, r_ohc;
   void write_tip4_props(void);
 
+  int isProxyChanged;
+
 #if CMK_PERSISTENT_COMM
   PersistentHandle *localphs;
   int nphs;
-public:
-  int phsReady;
-  void destoryPersistComm();
 #endif
 };
 

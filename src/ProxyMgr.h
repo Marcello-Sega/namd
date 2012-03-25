@@ -23,6 +23,10 @@ extern int proxySendSpanning, proxyRecvSpanning;
 extern int proxySpanDim;
 extern int inNodeProxySpanDim;
 
+#if CMK_PERSISTENT_COMM
+#define USE_PERSISTENT_TREE                   1
+#endif
+
 class ProxyGBISP1ResultMsg: public CMessage_ProxyGBISP1ResultMsg {
   public:
     int destPe;

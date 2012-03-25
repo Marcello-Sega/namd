@@ -1583,13 +1583,13 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
     int *pids = (int *)proxy->getSpanningTreeChildPtr();
     if (npid) {        
         ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);     
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
         int ntreephs;
         PersistentHandle *treephs = proxy->getSpanningTreePhs(ntreephs);
         CmiUsePersistentHandle(treephs, ntreephs);
 #endif
         ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
         CmiUsePersistentHandle(NULL, 0);
 #endif
       #if 0
@@ -1626,7 +1626,7 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
         if(pids[npid-1]==CkMyNode()) npid--;
     }    
     CProxy_NodeProxyMgr cnp(thisgroup);
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
     int ntreephs;
     PersistentHandle *treephs = ppatch->getSpanningTreePhs(ntreephs);
     CmiUsePersistentHandle(treephs, ntreephs);
@@ -1635,7 +1635,7 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
         ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
         cnp[pids[i]].recvImmediateProxyData(copymsg);
     }    
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
     CmiUsePersistentHandle(NULL, 0);
 #endif
 
@@ -1702,13 +1702,13 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
     int *pids = (int *)proxy->getSpanningTreeChildPtr();
     if (npid) {
         ProxyDataMsg *newmsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);      
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
         int ntreephs;
         PersistentHandle *treephs = proxy->getSpanningTreePhs(ntreephs);
         CmiUsePersistentHandle(treephs, ntreephs);
 #endif
         ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
         CmiUsePersistentHandle(NULL, 0);
 #endif
     }
@@ -1749,7 +1749,7 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
     }
     
     CProxy_NodeProxyMgr cnp(thisgroup);
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
     int ntreephs;
     PersistentHandle *treephs = ppatch->getSpanningTreePhs(ntreephs);
     CmiUsePersistentHandle(treephs, ntreephs);
@@ -1758,7 +1758,7 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
         ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
         cnp[pids[i]].recvImmediateProxyAll(copymsg);
     }    
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
     CmiUsePersistentHandle(NULL, 0);
 #endif
 
