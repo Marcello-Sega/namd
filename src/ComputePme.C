@@ -923,7 +923,7 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
         yPencil = CProxy_PmeYPencil::ckNew(yo);  // (xBlocks,1,zBlocks);
         xPencil = CProxy_PmeXPencil::ckNew(xo);  // (1,yBlocks,zBlocks);
 #else
-		zPencil = CProxy_PmeZPencil::ckNew();  // (xBlocks,yBlocks,1);
+	zPencil = CProxy_PmeZPencil::ckNew();  // (xBlocks,yBlocks,1);
       	yPencil = CProxy_PmeYPencil::ckNew();  // (xBlocks,1,zBlocks);
       	xPencil = CProxy_PmeXPencil::ckNew();  // (1,yBlocks,zBlocks);
 
@@ -3035,6 +3035,9 @@ public:
     work = 0;
     send_order = 0;
     needs_reply = 0;
+#if USE_PERSISTENT
+    trans_handle = untrans_handle = NULL;
+#endif
   }
   ~PmePencil() {
     fftwf_free(data);
@@ -3062,6 +3065,10 @@ public:
   float *work;
   int *send_order;
   int *needs_reply;
+#if USE_PERSISTENT
+  PersistentHandle *trans_handle;
+  PersistentHandle *untrans_handle;
+#endif
 };
 
 class PmeZPencil : public PmePencil<CBase_PmeZPencil> {
@@ -3085,12 +3092,25 @@ private:
     rfftwnd_plan forward_plan, backward_plan;
 #endif
 #endif
+
     int nx, ny;
 #if USE_PERSISTENT
-    PersistentHandle *trans_handle;
-    PersistentHandle *untrans_handle;
+    void setup_persistent() {
+      int hd = 1;// ( hasData ? 1 : 0 );
+      int zBlocks = initdata.zBlocks;
+      int block3 = initdata.grid.block3;
+      int dim3 = initdata.grid.dim3;
+      CkArray *yPencil_local = initdata.yPencil.ckLocalBranch();
+      CmiAssert(yPencil_local);
+      trans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * zBlocks);
+      for ( int isend=0; isend<zBlocks; ++isend ) {
+          int kb = send_order[isend];
+          int nz = (initdata.grid.block3 > dim3/2 - kb*block3) ? (initdata.grid.block3) : (dim3/2 - kb*block3);
+          int peer = yPencil_local->homePe(CkArrayIndex3D(thisIndex.x, 0, kb));
+          trans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope)+PRIORITY_SIZE/8);
+      }
+    }
 #endif
-
 };
 
 class PmeYPencil : public PmePencil<CBase_PmeYPencil> {
@@ -3116,8 +3136,32 @@ private:
 
     int nx, nz;
 #if USE_PERSISTENT
-    PersistentHandle *trans_handle;
-    PersistentHandle *untrans_handle;
+    void setup_persistent() {
+      int yBlocks = initdata.yBlocks;
+      int block2 = initdata.grid.block2;
+      int K2 = initdata.grid.K2;
+      int hd = 1;
+      CkArray *xPencil_local = initdata.xPencil.ckLocalBranch();
+      trans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * yBlocks);
+      for ( int isend=0; isend<yBlocks; ++isend ) {
+          int jb = send_order[isend];
+          int ny = block2 > (K2 - jb*block2) ? block2 : (K2 - jb*block2);
+          int peer = xPencil_local->homePe(CkArrayIndex3D(0, jb, thisIndex.z));
+          trans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8);
+      }
+
+      CkArray *zPencil_local = initdata.zPencil.ckLocalBranch();
+      untrans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * yBlocks);
+      int send_evir = 1;
+      for ( int isend=0; isend<yBlocks; ++isend ) {
+          int jb = send_order[isend];
+          int ny = block2 > (K2 - jb*block2) ? block2 : (K2 - jb*block2);
+          //if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+          int peer = zPencil_local->homePe(CkArrayIndex3D(thisIndex.x, jb, 0));
+          //iout << "YPencils un_trans[ " << CkMyPe() << "  ==== " << peer <<  "\n" << endi;
+          untrans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeUntransMsg) + sizeof(float)*nx*ny*nz*2 +sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8);
+      }
+    }
 #endif
 };
 
@@ -3142,9 +3186,22 @@ public:
     int ny, nz;
     PmeKSpace *myKSpace;
 #if USE_PERSISTENT
-    PersistentHandle *trans_handle;
-    PersistentHandle *untrans_handle;
+    void  setup_persistent() {
+      int xBlocks = initdata.xBlocks;
+      int block1 = initdata.grid.block1;
+      int K1 = initdata.grid.K1;
+      CkArray *yPencil_local = initdata.yPencil.ckLocalBranch();
+      untrans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * xBlocks);
+      int send_evir = 1;
+      for ( int isend=0; isend<xBlocks; ++isend ) {
+          int ib = send_order[isend];
+          int nx = block1 > (K1 - ib*block1) ? block1 : (K1 - ib*block1);
+          int peer = yPencil_local->procNum(CkArrayIndex3D(ib, 0, thisIndex.z));
+          untrans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof(float)*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8);
+      }
+    }
 #endif
+
 };
 
 void PmeZPencil::fft_init() {
@@ -3205,24 +3262,6 @@ void PmeZPencil::fft_init() {
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
-#if USE_PERSISTENT
-  int hd = 1;// ( hasData ? 1 : 0 );
-  int zBlocks = initdata.zBlocks;
-  int block3 = initdata.grid.block3;
-  CkArray *yPencil_local = initdata.yPencil.ckLocalBranch();
-  trans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * zBlocks);
-  for ( int isend=0; isend<zBlocks; ++isend ) {
-      int kb = send_order[isend];
-      int nz = (initdata.grid.block3 > dim3/2 - kb*block3) ? (initdata.grid.block3) : (dim3/2 - kb*block3);
-      int peer = yPencil_local->homePe(CkArrayIndex3D(thisIndex.x, 0, kb));
-      if(CkMyPe() != peer)
-      {
-          trans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope)+PRIORITY_SIZE/8);
-      
-      }
-  }
-#endif
-
 }
 
 void PmeYPencil::fft_init() {
@@ -3285,38 +3324,6 @@ void PmeYPencil::fft_init() {
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
 
-#if USE_PERSISTENT
-  int yBlocks = initdata.yBlocks;
-  int block2 = initdata.grid.block2;
-  int hd = 1;
-  CkArray *xPencil_local = initdata.xPencil.ckLocalBranch();
-  trans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * yBlocks);
-  for ( int isend=0; isend<yBlocks; ++isend ) {
-      int jb = send_order[isend];
-      int ny = block2 > (K2 - jb*block2) ? block2 : (K2 - jb*block2);
-      int peer = xPencil_local->homePe(CkArrayIndex3D(0, jb, thisIndex.z));
-      if(CkMyPe() != peer)
-      {
-          trans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8);
-      }
-  }
-
-  CkArray *zPencil_local = initdata.zPencil.ckLocalBranch();
-  untrans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * yBlocks);
-  int send_evir = 1;
-  for ( int isend=0; isend<yBlocks; ++isend ) {
-      int jb = send_order[isend];
-      int ny = block2 > (K2 - jb*block2) ? block2 : (K2 - jb*block2);
-      //if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-      int peer = zPencil_local->homePe(CkArrayIndex3D(thisIndex.x, jb, 0));
-      if(CkMyPe() != peer)
-      {
-          //iout << "YPencils un_trans[ " << CkMyPe() << "  ==== " << peer <<  "\n" << endi;
-          untrans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeUntransMsg) + sizeof(float)*nx*ny*nz*2 +sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8);
-      }
-  }
-#endif
-
 }
 
 void PmeXPencil::fft_init() {
@@ -3376,23 +3383,6 @@ void PmeXPencil::fft_init() {
   myKSpace = new PmeKSpace(initdata.grid,
 		thisIndex.y*block2, thisIndex.y*block2 + ny,
 		thisIndex.z*block3, thisIndex.z*block3 + nz);
-#if USE_PERSISTENT
-  int xBlocks = initdata.xBlocks;
-  int block1 = initdata.grid.block1;
-  CkArray *yPencil_local = initdata.yPencil.ckLocalBranch();
-  untrans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * xBlocks);
-  int send_evir = 1;
-  for ( int isend=0; isend<xBlocks; ++isend ) {
-      int ib = send_order[isend];
-      int nx = block1 > (K1 - ib*block1) ? block1 : (K1 - ib*block1);
-      int peer = yPencil_local->homePe(CkArrayIndex3D(ib, 0, thisIndex.z));
-      if(CkMyPe() != peer)
-      {
-          untrans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof(float)*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8);
-      }
-  }
-#endif
-
 
 }
 
@@ -3478,7 +3468,8 @@ void PmeZPencil::send_trans() {
   int block3 = initdata.grid.block3;
   int dim3 = initdata.grid.dim3;
 #if USE_PERSISTENT
-  CkArray *yPencil_local = initdata.yPencil.ckLocalBranch();
+  if (trans_handle == NULL) setup_persistent();
+  CmiUsePersistentHandle(trans_handle, zBlocks);
 #endif
   for ( int isend=0; isend<zBlocks; ++isend ) {
     int kb = send_order[isend];
@@ -3504,16 +3495,11 @@ void PmeZPencil::send_trans() {
    }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS_PRIORITY)
-#if USE_PERSISTENT
-    int peer = yPencil_local->homePe(CkArrayIndex3D(thisIndex.x, 0, kb));
-    if(CkMyPe() != peer)
-        CmiUsePersistentHandle(&trans_handle[isend], 1);
-#endif
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(NULL, 0);
-#endif
   }
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(NULL, 0);
+#endif
 }
 
 void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
@@ -3583,7 +3569,8 @@ void PmeYPencil::send_trans() {
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
 #if USE_PERSISTENT
-  CkArray *xPencil_local = initdata.xPencil.ckLocalBranch();
+  if (trans_handle == NULL) setup_persistent();
+  CmiUsePersistentHandle(trans_handle, yBlocks);
 #endif
   for ( int isend=0; isend<yBlocks; ++isend ) {
     int jb = send_order[isend];
@@ -3615,16 +3602,11 @@ void PmeYPencil::send_trans() {
    }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS2_PRIORITY)
-#if USE_PERSISTENT
-    int peer = xPencil_local->homePe(CkArrayIndex3D(0, jb, thisIndex.z));
-    if(CkMyPe() != peer)
-        CmiUsePersistentHandle(&trans_handle[isend], 1);
-#endif
     initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(NULL, 0);
-#endif
   }
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(NULL, 0);
+#endif
 }
 
 void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
@@ -3726,7 +3708,8 @@ void PmeXPencil::send_untrans() {
   int K1 = initdata.grid.K1;
   int send_evir = 1;
 #if USE_PERSISTENT
-  CkArray *yPencil_local = initdata.yPencil.ckLocalBranch();
+  if (untrans_handle == NULL) setup_persistent();
+  CmiUsePersistentHandle(untrans_handle, xBlocks);
 #endif
   for ( int isend=0; isend<xBlocks; ++isend ) {
     int ib = send_order[isend];
@@ -3759,16 +3742,11 @@ void PmeXPencil::send_untrans() {
      }
     }
     SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
-#if USE_PERSISTENT
-    int peer = yPencil_local->homePe(CkArrayIndex3D(ib,0,thisIndex.z));
-    if(CkMyPe() != peer)
-        CmiUsePersistentHandle(&untrans_handle[isend], 1);
-#endif
     initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(NULL, 0);
-#endif
   }
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(NULL, 0);
+#endif
 }
 
 void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
@@ -3828,7 +3806,8 @@ void PmeYPencil::send_untrans() {
   int K2 = initdata.grid.K2;
   int send_evir = 1;
 #if USE_PERSISTENT
-  CkArray *zPencil_local = initdata.zPencil.ckLocalBranch();
+  if (untrans_handle == NULL) setup_persistent();
+  CmiUsePersistentHandle(untrans_handle, yBlocks);
 #endif
   for ( int isend=0; isend<yBlocks; ++isend ) {
     int jb = send_order[isend];
@@ -3861,16 +3840,11 @@ void PmeYPencil::send_untrans() {
      }
     }
     SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
-#if USE_PERSISTENT
-    int peer = zPencil_local->homePe(CkArrayIndex3D(thisIndex.x,jb,0));
-    if(CkMyPe() != peer)
-        CmiUsePersistentHandle(&untrans_handle[isend], 1);
-#endif
     initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(NULL, 0);
-#endif
   }
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(NULL, 0);
+#endif
 }
 
 void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
