@@ -1,6 +1,6 @@
 +--------------------------------------------------------------------+
 |                                                                    |
-|                      NAMD 2.9b1 Release Notes                      |
+|                      NAMD 2.9b2 Release Notes                      |
 |                                                                    |
 +--------------------------------------------------------------------+
 
@@ -472,8 +472,8 @@ to set the path to TCL and FFTW libraries correctly.
 As an example, here is the build sequence for 64-bit Linux workstations:
 
 Unpack NAMD and matching Charm++ source code and enter directory:
-  tar xzf NAMD_2.9b1_Source.tar.gz
-  cd NAMD_2.9b1_Source
+  tar xzf NAMD_2.9b2_Source.tar.gz
+  cd NAMD_2.9b2_Source
   tar xf charm-6.4.0.tar
   cd charm-6.4.0
 
@@ -492,7 +492,7 @@ Build and test the Charm++/Converse library (MPI version):
   cd ../../../../..
 
 Download and install TCL and FFTW libraries:
-  (cd to NAMD_2.9b1_Source if you're not already there)
+  (cd to NAMD_2.9b2_Source if you're not already there)
   wget http://www.ks.uiuc.edu/Research/namd/libraries/fftw-linux-x86_64.tar.gz
   tar xzf fftw-linux-x86_64.tar.gz
   mv linux-x86_64 fftw
@@ -504,7 +504,7 @@ Download and install TCL and FFTW libraries:
   mv tcl8.5.9-linux-x86_64-threaded tcl-threaded
 
 Optionally edit various configuration files:
-  (not needed if charm-6.4.0, fftw, and tcl are in NAMD_2.9b1_Source)
+  (not needed if charm-6.4.0, fftw, and tcl are in NAMD_2.9b2_Source)
   vi Make.charm  (set CHARMBASE to full path to charm)
   vi arch/Linux-x86_64.fftw     (fix library name and path to files)
   vi arch/Linux-x86_64.tcl      (fix library version and path to TCL files)
