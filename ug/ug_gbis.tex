@@ -277,14 +277,14 @@ the dEda force is calculated every {\tt fullElectFrequency} steps (because dEda 
 \NAMDCONFWDEF{alphaCutoff}{cutoff used in calculating Born radius and derivatives (phases 1 and 3) (\AA)} {positive decimal} {15} {Cutoff used for calculating Born radius. Only atoms within this cutoff de-screen an atom. Though {\tt alphaCutoff} can bet set to be larger or shorter than {\tt cutoff}, since atom forces are more sensitive to changes in position than changes in Born radius, user's should generally set {\tt alphaCutoff} to be shorter than {\tt cutoff}.}
 
 \item
-\NAMDCONFWDEF{lcpo}{whether or not to calculate SASA} {{\tt on} or {\tt off}} {{\tt on} if GBIS is on, otherwise {\tt off}} {The nonpolar / hydrophobic energy contribution from implicit solvent is calculated by the Linear Combination of Pairwise Overlap (LCPO) method~\cite{WEIS99}.}
+\NAMDCONFWDEF{SASA}{whether or not to calculate SASA} {{\tt on} or {\tt off}} {{\tt off}} {The nonpolar / hydrophobic energy contribution from implicit solvent is calculated; it is proportional to the solvent-accessible surface area which is calculated by the Linear Combination of Pairwise Overlap (LCPO) method~\cite{WEIS99}.}
 
 \item
-\NAMDCONFWDEF{surfaceTension}{surface tension of hydrophobic} {positive decimal} {0.005~kcal/mol/\AA$^2$} {Surface tension used when calculating the nonpolar / hydrophobic energy; $E_{nonpolar} = {\rm surfaceTension} \times {\rm surfaceArea}$.}
+\NAMDCONFWDEF{surfaceTension}{surface tension of hydrophobic} {positive decimal} {0.005~kcal/mol/\AA$^2$} {Surface tension used when calculating {\tt SASA}; $E_{\rm nonpolar} = {\rm surfaceTension} \times {\rm surfaceArea}$.}
 
 \end{itemize}
 
-Below is a sample excerpt from a NAMD config file for nonbonded and multistep parameters when using GBIS:
+Below is a sample excerpt from a NAMD config file for nonbonded and multistep parameters when using GBIS and SASA:
 \begin{verbatim}
 #GBIS parameters
 GBIS on
@@ -294,7 +294,10 @@ alphaCutoff 14
 switching on
 switchdist 15
 cutoff 16
-pairlistdist 17.5
+pairlistdist 18
+#hydrophobic energy
+sasa on
+surfaceTension 0.006
 #multistep parameters
 timestep 1
 nonbondedFreq 2
