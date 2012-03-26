@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dtanner $
- * $Date: 2012/03/14 15:44:16 $
- * $Revision: 1.1385 $
+ * $Date: 2012/03/26 14:19:28 $
+ * $Revision: 1.1386 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1345,10 +1345,10 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.optional("GBIS", "fsMax",
       "maximum screened intrinsic radius", &fsMax, 1.728);
 
-   opts.optionalB("main", "LCPO", "Use Linear Combination of Pairwise Overlaps for calculating SASA",
-      &LCPOOn, -1);
-   opts.optional("LCPO", "surfaceTension",
-      "Surfce Tension for LCPO (kcal/mol/Ang^2)", &surface_tension, 0.005);
+   opts.optionalB("main", "SASA", "Use Linear Combination of Pairwise Overlaps (LCPO) for calculating SASA",
+      &LCPOOn, FALSE);
+   opts.optional("SASA", "surfaceTension",
+      "Surfce Tension for SASA (kcal/mol/Ang^2)", &surface_tension, 0.005);
 
    //****** BEGIN SMD constraints changes 
 
@@ -2676,9 +2676,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    patchDimension += margin;
 
-    if (LCPOOn == -1 ) {
-      LCPOOn = GBISOn;
-    }
     //ensure patch can handle alpha_cutoff for gbis
     if (GBISOn) {
       //Check compatibility
