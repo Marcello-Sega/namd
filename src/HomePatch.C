@@ -164,6 +164,7 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
   nphs = 0;
   localphs = NULL;
+  isProxyChanged = 0;
 #endif
 
 
@@ -180,7 +181,6 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   else if (simParams->watmodel == WAT_SWM4) init_swm4();
 
   isNewProxyAdded = 0;
-  isProxyChanged = 0;
 }
 
 HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
@@ -265,6 +265,7 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
   nphs = 0;
   localphs = NULL;
+  isProxyChanged = 0;
 #endif
 
 
@@ -285,7 +286,6 @@ HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
   else if (simParams->watmodel == WAT_SWM4) init_swm4();
 
   isNewProxyAdded = 0;
-  isProxyChanged = 0;
 }
 
 void HomePatch::write_tip4_props() {
@@ -470,7 +470,6 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   forceBox.clientAdd();
 
   isNewProxyAdded = 1;
-  isProxyChanged = 1;
 
   Random((patchID + 37) * 137).reorder(proxy.begin(),proxy.size());
   delete msg;
@@ -482,7 +481,6 @@ void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
   for ( ; *pe != n; ++pe );
   forceBox.clientRemove();
   proxy.del(pe - proxy.begin());
-  isProxyChanged = 1;
   delete msg;
 }
 
@@ -566,6 +564,9 @@ void HomePatch::buildNodeAwareSpanningTree(void){
 }
 
 void HomePatch::setupChildrenFromProxySpanningTree(){
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
+    isProxyChanged = 1;
+#endif
     if(ptnTree.size()==0) {
         nChild = 0;
         delete [] child;
@@ -705,6 +706,10 @@ void HomePatch::recvSpanningTree(int *t, int n)
     child[i-1] = tree[i];
     nChild++;
   }
+
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
+  isProxyChanged = 1;
+#endif
 
   // send down to children
   sendSpanningTree();
@@ -1066,25 +1071,6 @@ void HomePatch::positionsReady(int doMigration)
 #endif
   }
   if (npid) { //have proxies
-#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
-    if (isProxyChanged || localphs == NULL)
-    {
-//CmiPrintf("[%d] Build persistent: isProxyChanged: %d %p\n", CkMyPe(), isProxyChanged, localphs);
-     //CmiAssert(isProxyChanged);
-     if (nphs) {
-     for (int i=0; i<nphs; i++) {
-       CmiDestoryPersistent(localphs[i]);
-     }
-     delete [] localphs;
-     }
-     localphs = new PersistentHandle[npid];
-     for (int i=0; i<npid; i++) {
-       localphs[i] = CmiCreatePersistent(pids[i], 27000);
-     }
-     nphs = npid;
-    }
-    CmiAssert(nphs == npid);
-#endif
     int seq = flags.sequence;
     int priority = PROXY_DATA_PRIORITY + PATCH_PRIORITY(patchID);
     //begin to prepare proxy msg and send it
@@ -1183,6 +1169,27 @@ void HomePatch::positionsReady(int doMigration)
     #endif
 
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
+    if (isProxyChanged || localphs == NULL)
+    {
+//CmiPrintf("[%d] Build persistent: isProxyChanged: %d %p\n", CkMyPe(), isProxyChanged, localphs);
+     //CmiAssert(isProxyChanged);
+     if (nphs) {
+       for (int i=0; i<nphs; i++) {
+         CmiDestoryPersistent(localphs[i]);
+       }
+       delete [] localphs;
+     }
+     localphs = new PersistentHandle[npid];
+     int persist_size = sizeof(envelope) + sizeof(ProxyDataMsg) + sizeof(CompAtom)*(pdMsgPLLen+pdMsgAvgPLLen+pdMsgVLLen) + intRadLen*sizeof(Real) + lcpoTypeLen*sizeof(int) + sizeof(CompAtomExt)*pdMsgPLExtLen + sizeof(CudaAtom)*cudaAtomLen + PRIORITY_SIZE/8 + 1024;
+     for (int i=0; i<npid; i++) {
+#if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
+       localphs[i] = CmiCreateNodePersistent(pids[i], persist_size);
+#else
+       localphs[i] = CmiCreatePersistent(pids[i], persist_size);
+#endif
+     }
+     nphs = npid;
+    }
     CmiAssert(nphs == npid && localphs != NULL);
     CmiUsePersistentHandle(localphs, nphs);
 #endif

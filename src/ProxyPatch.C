@@ -409,7 +409,7 @@ void ProxyPatch::setSTNodeChildren(int numNids, int *nids){
   if (numNids) {
       treephs = new PersistentHandle[numNids];
       for (int i=0; i<numNids; i++) {
-           treephs[i] = CmiCreatePersistent(nids[i], 27000);
+           treephs[i] = CmiCreateNodePersistent(nids[i], 27000);
       }
   }
   ntreephs = numNids;
