@@ -1586,6 +1586,7 @@ ProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
         int ntreephs;
         PersistentHandle *treephs = proxy->getSpanningTreePhs(ntreephs);
+        CmiAssert(ntreephs == npid);
         CmiUsePersistentHandle(treephs, ntreephs);
 #endif
         ProxyMgr::Object()->sendProxyData(newmsg,npid,pids);
@@ -1629,6 +1630,7 @@ void NodeProxyMgr::recvImmediateProxyData(ProxyDataMsg *msg) {
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
     int ntreephs;
     PersistentHandle *treephs = ppatch->getSpanningTreePhs(ntreephs);
+    CmiAssert(ntreephs >= npid);
     CmiUsePersistentHandle(treephs, ntreephs);
 #endif
     for(int i=0; i<npid; i++) {
@@ -1705,6 +1707,7 @@ ProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
         int ntreephs;
         PersistentHandle *treephs = proxy->getSpanningTreePhs(ntreephs);
+        CmiAssert(ntreephs == npid);
         CmiUsePersistentHandle(treephs, ntreephs);
 #endif
         ProxyMgr::Object()->sendProxyAll(newmsg,npid,pids);
@@ -1748,12 +1751,13 @@ void NodeProxyMgr::recvImmediateProxyAll(ProxyDataMsg *msg) {
         if(pids[npid-1]==CkMyNode()) npid--;
     }
     
-    CProxy_NodeProxyMgr cnp(thisgroup);
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
     int ntreephs;
     PersistentHandle *treephs = ppatch->getSpanningTreePhs(ntreephs);
+    CmiAssert(ntreephs >= npid);
     CmiUsePersistentHandle(treephs, ntreephs);
 #endif
+    CProxy_NodeProxyMgr cnp(thisgroup);
     for(int i=0; i<npid; i++) {
         ProxyDataMsg *copymsg = (ProxyDataMsg *)CkCopyMsg((void **)&msg);
         cnp[pids[i]].recvImmediateProxyAll(copymsg);
