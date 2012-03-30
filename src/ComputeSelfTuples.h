@@ -144,7 +144,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
     
       this->tuplePatchList.add(TuplePatchElem(ComputeHomeTuples<T,S,P>::patchMap->patch(patchID), this));
     
-      setNumPatches(this->tuplePatchList.size());
+      this->setNumPatches(this->tuplePatchList.size());
       this->doLoadTuples = true;
 
       int myNode = CkMyPe();
