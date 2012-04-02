@@ -56,6 +56,7 @@
 #if CMK_PERSISTENT_COMM
 #define USE_PERSISTENT      1
 #endif
+
 char *pencilPMEProcessors;
 
 class PmeAckMsg : public CMessage_PmeAckMsg {
@@ -3107,7 +3108,8 @@ private:
           int kb = send_order[isend];
           int nz = (initdata.grid.block3 > dim3/2 - kb*block3) ? (initdata.grid.block3) : (dim3/2 - kb*block3);
           int peer = yPencil_local->homePe(CkArrayIndex3D(thisIndex.x, 0, kb));
-          trans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope)+PRIORITY_SIZE/8);
+          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope)+PRIORITY_SIZE/8;
+          trans_handle[isend] = CmiCreatePersistent(peer, size);
       }
     }
 #endif
@@ -3147,7 +3149,8 @@ private:
           int jb = send_order[isend];
           int ny = block2 > (K2 - jb*block2) ? block2 : (K2 - jb*block2);
           int peer = xPencil_local->homePe(CkArrayIndex3D(0, jb, thisIndex.z));
-          trans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8);
+          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8;
+          trans_handle[isend] = CmiCreatePersistent(peer, size);
       }
 
       CkArray *zPencil_local = initdata.zPencil.ckLocalBranch();
@@ -3469,7 +3472,6 @@ void PmeZPencil::send_trans() {
   int dim3 = initdata.grid.dim3;
 #if USE_PERSISTENT
   if (trans_handle == NULL) setup_persistent();
-  CmiUsePersistentHandle(trans_handle, zBlocks);
 #endif
   for ( int isend=0; isend<zBlocks; ++isend ) {
     int kb = send_order[isend];
@@ -3495,11 +3497,14 @@ void PmeZPencil::send_trans() {
    }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS_PRIORITY)
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
-  }
 #if USE_PERSISTENT
   CmiUsePersistentHandle(NULL, 0);
 #endif
+  }
 }
 
 void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
@@ -3570,7 +3575,6 @@ void PmeYPencil::send_trans() {
   int K2 = initdata.grid.K2;
 #if USE_PERSISTENT
   if (trans_handle == NULL) setup_persistent();
-  CmiUsePersistentHandle(trans_handle, yBlocks);
 #endif
   for ( int isend=0; isend<yBlocks; ++isend ) {
     int jb = send_order[isend];
@@ -3602,11 +3606,14 @@ void PmeYPencil::send_trans() {
    }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS2_PRIORITY)
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
     initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
-  }
 #if USE_PERSISTENT
   CmiUsePersistentHandle(NULL, 0);
 #endif
+  }
 }
 
 void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
@@ -3709,7 +3716,6 @@ void PmeXPencil::send_untrans() {
   int send_evir = 1;
 #if USE_PERSISTENT
   if (untrans_handle == NULL) setup_persistent();
-  CmiUsePersistentHandle(untrans_handle, xBlocks);
 #endif
   for ( int isend=0; isend<xBlocks; ++isend ) {
     int ib = send_order[isend];
@@ -3742,11 +3748,14 @@ void PmeXPencil::send_untrans() {
      }
     }
     SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
     initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
-  }
 #if USE_PERSISTENT
   CmiUsePersistentHandle(NULL, 0);
 #endif
+  }
 }
 
 void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
@@ -3807,7 +3816,6 @@ void PmeYPencil::send_untrans() {
   int send_evir = 1;
 #if USE_PERSISTENT
   if (untrans_handle == NULL) setup_persistent();
-  CmiUsePersistentHandle(untrans_handle, yBlocks);
 #endif
   for ( int isend=0; isend<yBlocks; ++isend ) {
     int jb = send_order[isend];
@@ -3840,11 +3848,14 @@ void PmeYPencil::send_untrans() {
      }
     }
     SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
+#if USE_PERSISTENT
+  CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
     initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
-  }
 #if USE_PERSISTENT
   CmiUsePersistentHandle(NULL, 0);
 #endif
+  }
 }
 
 void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {

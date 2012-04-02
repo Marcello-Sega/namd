@@ -470,12 +470,18 @@ void HomePatch::registerProxy(RegisterProxyMsg *msg) {
   forceBox.clientAdd();
 
   isNewProxyAdded = 1;
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
+  isProxyChanged = 1;
+#endif
 
   Random((patchID + 37) * 137).reorder(proxy.begin(),proxy.size());
   delete msg;
 }
 
 void HomePatch::unregisterProxy(UnregisterProxyMsg *msg) {
+#if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
+  isProxyChanged = 1;
+#endif
   int n = msg->node;
   NodeID *pe = proxy.begin();
   for ( ; *pe != n; ++pe );
@@ -1180,13 +1186,14 @@ void HomePatch::positionsReady(int doMigration)
        delete [] localphs;
      }
      localphs = new PersistentHandle[npid];
-     int persist_size = sizeof(envelope) + sizeof(ProxyDataMsg) + sizeof(CompAtom)*(pdMsgPLLen+pdMsgAvgPLLen+pdMsgVLLen) + intRadLen*sizeof(Real) + lcpoTypeLen*sizeof(int) + sizeof(CompAtomExt)*pdMsgPLExtLen + sizeof(CudaAtom)*cudaAtomLen + PRIORITY_SIZE/8 + 1024;
+     int persist_size = sizeof(envelope) + sizeof(ProxyDataMsg) + sizeof(CompAtom)*(pdMsgPLLen+pdMsgAvgPLLen+pdMsgVLLen) + intRadLen*sizeof(Real) + lcpoTypeLen*sizeof(int) + sizeof(CompAtomExt)*pdMsgPLExtLen + sizeof(CudaAtom)*cudaAtomLen + PRIORITY_SIZE/8 + 2048;
      for (int i=0; i<npid; i++) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
-       localphs[i] = CmiCreateNodePersistent(pids[i], persist_size);
-#else
-       localphs[i] = CmiCreatePersistent(pids[i], persist_size);
+       if (proxySendSpanning)
+           localphs[i] = CmiCreateNodePersistent(pids[i], persist_size);
+       else
 #endif
+       localphs[i] = CmiCreatePersistent(pids[i], persist_size);
      }
      nphs = npid;
     }
