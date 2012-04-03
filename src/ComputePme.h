@@ -28,7 +28,9 @@ public:
   void copyPencils(PmeGridMsg *);
   void ungridForces();
   void setMgr(ComputePmeMgr *mgr) { myMgr = mgr; }
-
+#if CMK_PERSISTENT_COMM
+  void setup_recvgrid_persistent();
+#endif
  private:
   PmeGrid myGrid;
   int qsize, fsize, bsize;
@@ -55,7 +57,9 @@ public:
   int numGridAtoms[PME_MAX_EVALS];
   PmeParticle *localGridData[PME_MAX_EVALS];
   ComputePmeMgr *myMgr;
-
+#if CMK_PERSISTENT_COMM
+  PersistentHandle   *recvGrid_handle;
+#endif
 };
 
 #endif

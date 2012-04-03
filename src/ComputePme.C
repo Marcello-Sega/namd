@@ -1921,7 +1921,6 @@ ComputePme::ComputePme(ComputeID c) :
   ComputeHomePatches(c)
 {
   DebugM(4,"ComputePme created.\n");
-
   basePriority = PME_PRIORITY;
 
   CProxy_ComputePmeMgr::ckLocalBranch(
@@ -2024,7 +2023,9 @@ ComputePme::ComputePme(ComputeID c) :
       }
     }
   }
-
+#if CMK_PERSISTENT_COMM
+  recvGrid_handle = NULL;
+#endif
 }
 
 ComputePme::~ComputePme()
@@ -2039,6 +2040,60 @@ ComputePme::~ComputePme()
   delete [] f_arr;
   delete [] fz_arr;
 }
+
+#if CMK_PERSISTENT_COMM 
+void ComputePme::setup_recvgrid_persistent() 
+{
+    int xBlocks = myMgr->xBlocks;
+    int yBlocks = myMgr->yBlocks;
+    int zBlocks = myMgr->zBlocks;
+    myGrid.block1 = ( myGrid.K1 + xBlocks - 1 ) / xBlocks;
+    myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
+    int K1 = myGrid.K1;
+    int K2 = myGrid.K2;
+    int dim2 = myGrid.dim2;
+    int dim3 = myGrid.dim3;
+    int block1 = myGrid.block1;
+    int block2 = myGrid.block2;
+
+    const char *pencilActive = myMgr->pencilActive;
+    const ijpair *activePencils = myMgr->activePencils;
+    const int numPencilsActive = myMgr->numPencilsActive;
+    int hd = 1 ;  // has data?
+
+    CkArray *zPencil_local = myMgr->zPencil.ckLocalBranch();
+    recvGrid_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * numPencilsActive);
+    for (int ap=0; ap<numPencilsActive; ++ap) {
+        int ib = activePencils[ap].i;
+        int jb = activePencils[ap].j;
+        int ibegin = ib*block1;
+        int iend = ibegin + block1;  if ( iend > K1 ) iend = K1;
+        int jbegin = jb*block2;
+        int jend = jbegin + block2;  if ( jend > K2 ) jend = K2;
+        int flen = numGrids * (iend - ibegin) * (jend - jbegin);
+        // f is changing
+        int fcount = 0;
+        for ( int g=0; g<numGrids; ++g ) {
+            char *f = f_arr + g*fsize;
+            for ( int i=ibegin; i<iend; ++i ) {
+                for ( int j=jbegin; j<jend; ++j ) {
+                    //fcount += f[i*dim2+j];
+                    fcount += (f[i*dim2+j]>3?f[i*dim2+j]:3);
+                }
+            }
+        }
+        int zlistlen = 0;
+        for ( int i=0; i<myGrid.K3; ++i ) {
+            if ( 1 ) ++zlistlen;
+            //if ( fz_arr[i] ) ++zlistlen;
+        }
+        int peer = zPencil_local->homePe(CkArrayIndex3D(ib, jb, 0));
+        recvGrid_handle[ap] =  CmiCreatePersistent(peer, sizeof(PmeGridMsg)  
+            + sizeof(float)*hd*fcount*zlistlen + sizeof(int)*hd*zlistlen + sizeof(char)*hd*flen +sizeof(PmeReduction)*hd*numGrids
+            + sizeof(envelope)+PRIORITY_SIZE/8 );
+    }
+}
+#endif
 
 void ComputePme::doWork()
 {
@@ -2301,6 +2356,9 @@ void ComputePme::sendPencils() {
 
   // int savedMessages = 0;
 
+#if USE_PERSISTENT 
+  if(recvGrid_handle == NULL) setup_recvgrid_persistent();
+#endif
   for (int ap=0; ap<numPencilsActive; ++ap) {
     int ib = activePencils[ap].i;
     int jb = activePencils[ap].j;
@@ -2374,7 +2432,13 @@ void ComputePme::sendPencils() {
 
     msg->sequence = sequence();
     SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
+#if USE_PERSISTENT 
+    CmiUsePersistentHandle(&recvGrid_handle[ap], numPencilsActive);
+#endif
     myMgr->zPencil(ib,jb,0).recvGrid(msg);
+#if USE_PERSISTENT 
+    CmiUsePersistentHandle(NULL, 0);
+#endif
   }
 
   if ( strayChargeErrors ) {
@@ -3037,7 +3101,7 @@ public:
     send_order = 0;
     needs_reply = 0;
 #if USE_PERSISTENT
-    trans_handle = untrans_handle = NULL;
+    trans_handle = untrans_handle = ungrid_handle = NULL;
 #endif
   }
   ~PmePencil() {
@@ -3069,6 +3133,7 @@ public:
 #if USE_PERSISTENT
   PersistentHandle *trans_handle;
   PersistentHandle *untrans_handle;
+  PersistentHandle *ungrid_handle;
 #endif
 };
 
@@ -3084,6 +3149,9 @@ public:
     void recv_untrans(const PmeUntransMsg *);
     void backward_fft();
     void send_ungrid(PmeGridMsg *);
+#if USE_PERSISTENT
+    void send_ungrid_all();
+#endif
 private:
     ResizeArray<PmeGridMsg *> grid_msgs;
 #ifdef NAMD_FFTW
@@ -3111,6 +3179,15 @@ private:
           int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope)+PRIORITY_SIZE/8;
           trans_handle[isend] = CmiCreatePersistent(peer, size);
       }
+    }
+    
+    void setup_ungrid_persistent() 
+    {
+       ungrid_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * grid_msgs.size());
+       for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+           int peer = grid_msgs[imsg]->sourceNode;
+           ungrid_handle[imsg] = CmiCreatePersistent(peer, 0); 
+       }
     }
 #endif
 };
@@ -3933,6 +4010,33 @@ void PmeZPencil::backward_fft() {
 		thisIndex.x, thisIndex.y, maxerr, mi, mj, mk, maxstd);
 #endif
 }
+
+#if USE_PERSISTENT
+void PmeZPencil::send_ungrid_all()
+{
+    int send_evir = 1;
+    
+#if CMK_PERSISTENT_COMM && 0
+    if(ungrid_handle == NULL) setup_ungrid_persistent();
+    CmiUsePersistentHandle(ungrid_handle, grid_msgs.size());
+#endif
+    for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+        PmeGridMsg *msg = grid_msgs[imsg];
+#if CMK_PERSISTENT_COMM && 0 
+        CmiReference(msg);
+#endif
+        if ( msg->hasData ) {
+            if ( send_evir ) {
+                msg->evir[0] = evir;
+                send_evir = 0;
+            } else {
+                msg->evir[0] = 0.;
+            }
+        }
+        send_ungrid(msg);
+    }
+}
+#endif
 
 void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
   int pe = msg->sourceNode;
