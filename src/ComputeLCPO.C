@@ -90,20 +90,23 @@ void ComputeLCPO::initialize() {
     // How can we tell if BoxOwner has packed up and left?  Need a mechanism
     // to handle this or do we assume the Boxes have been dumped?
     PatchMap *patchMap = PatchMap::Object();
-
+    //Check out Boxes
     for (int i=0; i<8; i++) {
+      //invalid patch so don't even checkout boxes
 	    if (positionBox[i] == NULL) { // We have yet to get boxes
         patch[i] = PatchMap::Object()->patch(patchID[i]);
 	      if (!(patch[i] = PatchMap::Object()->patch(patchID[i]))) {
 	        DebugM(5,"invalid patch(" << patchID[i] 
 		      << ")  pointer!\n");
 	      }
-	      positionBox[i] = patch[i]->registerPositionPickup(this);
-	      forceBox[i] = patch[i]->registerForceDeposit(this);
-	      lcpoTypeBox[i] = patch[i]->registerLcpoTypePickup(this);
+        positionBox[i] = patch[i]->registerPositionPickup(this);
+        forceBox[i] = patch[i]->registerForceDeposit(this);
+        lcpoTypeBox[i] = patch[i]->registerLcpoTypePickup(this);
         // will need to open a box full of lcpo parameters
 	    }
-	    numAtoms[i] = patch[i]->getNumAtoms();
+      if (numAtoms[i] >= 0) {
+        numAtoms[i] = patch[i]->getNumAtoms();
+      }
     } // for all patches
 
   DebugM(4, "initialize("<<cid<<") numAtoms("<<patchID[0]<<") = " 
@@ -111,7 +114,6 @@ void ComputeLCPO::initialize() {
     << " numAtoms(" <<patchID[1]<<") = " << numAtoms[1] << "\n" );
 
   // set priority
-
   basePriority = PATCH_PRIORITY(patchID[0]) + PROXY_RESULTS_PRIORITY;
 
   //get bounds of inner rectangular prism in octet
@@ -122,10 +124,71 @@ void ComputeLCPO::initialize() {
   bounds[1][1] = 0.5*(patchMap->min_b(patchID[7])+patchMap->max_b(patchID[7]));
   bounds[2][1] = 0.5*(patchMap->min_c(patchID[7])+patchMap->max_c(patchID[7]));
 
-  oob[0] = bounds[0][0] > bounds[0][1] ? 1 : 0;
-  oob[1] = bounds[1][0] > bounds[1][1] ? 1 : 0;
-  oob[2] = bounds[2][0] > bounds[2][1] ? 1 : 0;
+  //if only 1 patch in a dimenion, invalidate those patches
+  int gsa = patchMap->gridsize_a();
+  int gsb = patchMap->gridsize_b();
+  int gsc = patchMap->gridsize_c();
+  if (gsa==1) {
+    //CkPrintf("ONLY 1 PATCH in A DIMENSION!\n");
+    numAtoms[1] = -1;
+    numAtoms[3] = -1;
+    numAtoms[5] = -1;
+    numAtoms[7] = -1;
+  }
+  if (gsb==1) {
+    //CkPrintf("ONLY 1 PATCH in B DIMENSION!\n");
+    numAtoms[2] = -1;
+    numAtoms[3] = -1;
+    numAtoms[6] = -1;
+    numAtoms[7] = -1;
+  }
+  if (gsc==1) {
+    //CkPrintf("ONLY 1 PATCH in C DIMENSION!\n");
+    numAtoms[4] = -1;
+    numAtoms[5] = -1;
+    numAtoms[6] = -1;
+    numAtoms[7] = -1;
+  }
 
+  //relative a,b,c index for 8 patches in ComputeLCPO
+  int idx[8][3] = {
+    { 0, 0, 0},
+    { 1, 0, 0},
+    { 0, 1, 0},
+    { 1, 1, 0},
+    { 0, 0, 1},
+    { 1, 0, 1},
+    { 0, 1, 1},
+    { 1, 1, 1}    };
+/*
+  int i_a = patchMap->index_a(patchID[0]);
+  int i_b = patchMap->index_b(patchID[0]);
+  int i_c = patchMap->index_c(patchID[0]);
+  CkPrintf("VALID[%d,%d,%d]=\n",i_a,i_b,i_c);
+*/
+  for (int pI = 0; pI < 8; pI++) {
+    int iia = patchMap->index_a(patchID[pI]);
+    int iib = patchMap->index_b(patchID[pI]);
+    int iic = patchMap->index_c(patchID[pI]);
+    for (int pJ = 0; pJ < 8; pJ++) {
+      int jia = patchMap->index_a(patchID[pJ]);
+      int jib = patchMap->index_b(patchID[pJ]);
+      int jic = patchMap->index_c(patchID[pJ]);
+      if (  ( gsa==1 && (jia>iia) != (idx[pJ][0]>idx[pI][0]) ) ||
+            ( gsb==1 && (jib>iib) != (idx[pJ][1]>idx[pI][1]) ) ||
+            ( gsc==1 && (jic>iic) != (idx[pJ][2]>idx[pI][2]) ) ||
+            ( numAtoms[pI] < 0 )                     ||
+            ( numAtoms[pJ] < 0 )                       )
+        valid[pI][pJ] = 0;
+      else
+        valid[pI][pJ] = 1;
+      //CkPrintf("%d ",valid[pI][pJ]);
+    }
+    //CkPrintf("\n");
+  }
+  //CkPrintf("\n");
+
+  //update frequency
   pairlistsAge = pairlistsMaxAge;
   SimParameters *simParams = Node::Object()->simParameters;
   frequency = simParams->fullElectFrequency;
@@ -133,7 +196,9 @@ void ComputeLCPO::initialize() {
 
 void ComputeLCPO::atomUpdate() {
   for (int i=0; i<8; i++) {
-	  numAtoms[i] = patch[i]->getNumAtoms();
+    if (numAtoms[i] >= 0) {
+	    numAtoms[i] = patch[i]->getNumAtoms();
+    }
   }
   pairlistsAge = pairlistsMaxAge;
 }
@@ -234,6 +299,7 @@ inline BigReal calcOverlap( BigReal r, Real ri, Real rj ) {
 void ComputeLCPO::doForce() {
   //CkPrintf("ComputeLCPO::doForce\n");
 
+
   Real probeRadius = 1.4f;
   Real cutMargin = 2.0;
 
@@ -258,15 +324,15 @@ if (pairlistsAge >= pairlistsMaxAge) {
   inAtomsPl.reset();
   lcpoNeighborList.reset();
   FLOPS(8);
-  cut2 = 1000+2*maxAtomRadius+cutMargin; cut2 *= cut2;
+  cut2 = 2*maxAtomRadius+cutMargin; cut2 *= cut2;
   maxAtomRadius = 0;
   //find in-bounds atoms in each patch
   for (int pI = 0; pI < 8; pI++) {
-    if (numAtoms[pI] == 0) continue;
+    if (numAtoms[pI] <= 0) continue;
 
     int minIg = 0;
     for (int s = 0; s < minPart; s++) {
-      minIg += pos[pI][minIg].nonbondedGroupSize;
+      minIg += pos[pI][minIg].hydrogenGroupSize;
       FLOPS(1)
     }
     strideIg = numParts;//stride through partitions
@@ -284,14 +350,17 @@ if (pairlistsAge >= pairlistsMaxAge) {
 
         int maxAtoms = 0;
         for (int pJ = 0; pJ < 8; pJ++) {
-          maxAtoms += numAtoms[pJ];
+          if (numAtoms[pJ] > 0) {
+            maxAtoms += numAtoms[pJ];
+          }
         }
         LCPOAtom *lcpoNeighbors = lcpoNeighborList.newlist(maxAtoms);
         int numLcpoNeighbors = 0;
 
         //find pairs of this inAtom from all 8 patches
         for (int pJ = 0; pJ < 8; pJ++) {
-          if (numAtoms[pJ] == 0) continue;
+          if (numAtoms[pJ] <= 0) continue;
+          if (!valid[pI][pJ]) continue;
 
           // j atom pairs
           for ( int ngj = 0; ngj < numAtoms[pJ]; /* ngj */) {
@@ -324,7 +393,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
               } // precise cutoff
             } // coarse cutoff
             //jump to next nonbonded group
-            ngj += pos[pJ][ngj].nonbondedGroupSize;
+            ngj += pos[pJ][ngj].hydrogenGroupSize;
             FLOPS(1)
           } // for j atoms
         } // for patches J
@@ -332,7 +401,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
       } // in bounds
       //jump to next nonbonded group for round-robin
       for (int s = 0; s < strideIg; s++) {
-        ngi += pos[pI][ngi].nonbondedGroupSize;
+        ngi += pos[pI][ngi].hydrogenGroupSize;
         FLOPS(1)
       }
     } // for i atoms
@@ -359,6 +428,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
   int numTriplets = 0;
   BigReal totalSurfaceArea = 0;
 
+
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
 ////
@@ -368,7 +438,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
 //////////////////////////////////////////////////
   //for each patch in octet
   for (int pI = 0; pI < 8; pI++) {
-    if (numAtoms[pI] == 0) continue;
+    if (numAtoms[pI] <= 0) continue;
     plint *inAtoms;
     int numInAtoms;
     inAtomsPl.nextlist( &inAtoms, &numInAtoms );
@@ -572,6 +642,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
   double t_stop = 1.0*clock()/CLOCKS_PER_SEC;
   CkPrintf("LCPO_TIME_F %7.3f Gflops %9d @ %f\n", 1e-9*flops/(t_stop-t_start),flops, (t_stop-t_start));
 #endif
+
 
 //////////////////////////////////////////////////
 //  end calculation by submitting reduction
