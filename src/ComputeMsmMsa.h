@@ -4,42 +4,45 @@
 ***  All rights reserved.
 **/
 
-#ifndef COMPUTEMSM_H
-#define COMPUTEMSM_H
+#ifndef COMPUTEMSMMSA_H
+#define COMPUTEMSMMSA_H
 
 #ifdef CHARM_HAS_MSA
 
 #include <vector>
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
+#include "ComputeMoa.h"  // needed for Int3 declaration
 #include "msa/msa.h"
 
 typedef MSA::MSA3D<float, DefaultEntry<float>,
-        MSA_DEFAULT_ENTRIES_PER_PAGE> MsmGrid;
+        MSA_DEFAULT_ENTRIES_PER_PAGE> MsmMsaGrid;
 
+#if 0
 struct Int3 {
   int nx, ny, nz;
   Int3() : nx(0), ny(0), nz(0) { }
   Int3(int mx, int my, int mz) : nx(mx), ny(my), nz(mz) { }
   void pup(PUP::er &p) { p|nx, p|ny, p|nz; }
 };
+#endif
 
 class SubmitReduction;
-typedef Force MsmForce;
+typedef Force MsmMsaForce;
 
-class ComputeMsm : public ComputeHomePatches {
+class ComputeMsmMsa : public ComputeHomePatches {
 public:
-  ComputeMsm(ComputeID c);
-  virtual ~ComputeMsm();
+  ComputeMsmMsa(ComputeID c);
+  virtual ~ComputeMsmMsa();
   void doWork();
-  void saveResults(int n, const MsmForce [], double self_energy);
+  void saveResults(int n, const MsmMsaForce [], double self_energy);
 
 private:
   double qscaling;  // charge scaling constant
   SubmitReduction *reduction;
 };
 
-struct MsmData {
+struct MsmMsaData {
   int ispx, ispy, ispz;
   float hx_1, hy_1, hz_1;
   float a;
@@ -51,8 +54,8 @@ struct MsmData {
   int approx;
   int split;
 
-  std::vector<MsmGrid> qh;
-  std::vector<MsmGrid> eh;
+  std::vector<MsmMsaGrid> qh;
+  std::vector<MsmMsaGrid> eh;
   std::vector<Int3> grid_len;  // grid points in each dimension for each level
   std::vector<Int3> grid_idstart;  // starting index for each level
 
@@ -90,5 +93,5 @@ struct MsmData {
 
 #endif // CHARM_HAS_MSA
 
-#endif
+#endif // COMPUTEMSMMSA_H
 
