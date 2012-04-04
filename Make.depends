@@ -62,9 +62,9 @@ obj/ComputeMoa.o: \
 	inc/WorkDistrib.decl.h \
 	src/varsizemsg.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMoa.o $(COPTC) src/ComputeMoa.C
-obj/ComputeMsm.o: \
-	src/ComputeMsm.C
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsm.o $(COPTC) src/ComputeMsm.C
+obj/ComputeMsmMsa.o: \
+	src/ComputeMsmMsa.C
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsmMsa.o $(COPTC) src/ComputeMsmMsa.C
 obj/ComputeMsmSerial.o: \
 	src/ComputeMsmSerial.C \
 	src/InfoStream.h \
@@ -200,7 +200,7 @@ obj/main.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
-	src/ComputeMsm.h \
+	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -393,7 +393,7 @@ obj/BackEnd.o: \
 	src/Migration.h \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
-	src/ComputeMsm.h \
+	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -1932,7 +1932,7 @@ obj/ComputeMgr.o: \
 	src/ComputeGBISser.h \
 	src/ComputeLCPO.h \
 	src/ComputeMsmSerial.h \
-	src/ComputeMsm.h \
+	src/ComputeMsmMsa.h \
 	src/ComputeDPMTA.h \
 	src/ComputeDPME.h \
 	src/ComputeDPMEMsgs.h \
@@ -4752,7 +4752,7 @@ obj/Node.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
-	src/ComputeMsm.h \
+	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -5012,7 +5012,7 @@ obj/PatchMgr.o: \
 	src/Migration.h \
 	src/main.h \
 	src/AtomMap.h \
-	src/ComputeMsm.h \
+	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -5233,7 +5233,7 @@ obj/ProxyPatch.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
-	src/ComputeMsm.h \
+	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \
@@ -5718,7 +5718,7 @@ obj/WorkDistrib.o: \
 	src/ComputeMap.h \
 	src/Lattice.h \
 	src/Tensor.h \
-	src/ComputeMsm.h \
+	src/ComputeMsmMsa.h \
 	inc/main.decl.h \
 	inc/WorkDistrib.decl.h \
 	inc/ReductionMgr.decl.h \

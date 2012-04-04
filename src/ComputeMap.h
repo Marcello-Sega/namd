@@ -51,7 +51,7 @@ enum ComputeType
   computeGBISserType,
   computeLCPOType,
   computeMsmSerialType,
-  computeMsmType,
+  computeMsmMsaType,
   computeEFieldType,
 /* BEGIN gf */
   computeGridForceType,

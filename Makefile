@@ -70,7 +70,7 @@ include Make.config
 
 OBJS = \
 	$(DSTDIR)/ComputeMoa.o \
-	$(DSTDIR)/ComputeMsm.o \
+	$(DSTDIR)/ComputeMsmMsa.o \
 	$(DSTDIR)/ComputeMsmSerial.o \
 	$(DSTDIR)/msm.o \
 	$(DSTDIR)/msm_longrng.o \
@@ -252,8 +252,8 @@ OBJS = \
 CIFILES = 	\
 		$(INCDIR)/ComputeMoaMgr.decl.h \
 		$(INCDIR)/ComputeMoaMgr.def.h \
-		$(INCDIR)/ComputeMsmMgr.decl.h \
-		$(INCDIR)/ComputeMsmMgr.def.h \
+		$(INCDIR)/ComputeMsmMsaMgr.decl.h \
+		$(INCDIR)/ComputeMsmMsaMgr.def.h \
 		$(INCDIR)/ComputeMsmSerialMgr.decl.h \
 		$(INCDIR)/ComputeMsmSerialMgr.def.h \
 		$(INCDIR)/BroadcastMgr.decl.h \

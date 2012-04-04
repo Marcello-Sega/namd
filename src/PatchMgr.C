@@ -14,7 +14,7 @@
 #include "PatchMap.h"
 #include "AtomMap.h"
 
-#include "ComputeMsm.h"  // needed for MsmData definition
+#include "ComputeMsmMsa.h"  // needed for MsmMsaData definition
 #include "main.decl.h"
 #include "main.h"
 

@@ -25,7 +25,7 @@ mainmodule main {
   extern module ComputeExtMgr;
   extern module ComputeGBISserMgr;
   extern module ComputeMsmSerialMgr;
-//  extern module ComputeMsmMgr;
+//  extern module ComputeMsmMsaMgr;
   extern module CollectionMgr;
   extern module CollectionMaster;
   extern module BroadcastMgr;

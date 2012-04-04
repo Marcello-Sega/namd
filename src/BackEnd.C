@@ -17,7 +17,7 @@
 
 #include "Lattice.h"
 #include "ComputeMoa.h" 
-#include "ComputeMsm.h"  // needed for MsmData definition
+#include "ComputeMsmMsa.h"  // needed for MsmMsaData definition
 #include "main.decl.h"
 #include "main.h"
 #include "BOCgroup.h"
@@ -156,7 +156,7 @@ void master_init(int argc, char **argv){
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
   group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();
 #ifdef CHARM_HAS_MSA
-  group.computeMsmMgr = CProxy_ComputeMsmMgr::ckNew();
+  group.computeMsmMsaMgr = CProxy_ComputeMsmMsaMgr::ckNew();
 #endif
 #ifdef MEM_OPT_VERSION
   group.ioMgr=CProxy_ParallelIOMgr::ckNew();

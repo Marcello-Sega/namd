@@ -42,7 +42,7 @@
 #include "ComputeGBISser.h"
 #include "ComputeLCPO.h"
 #include "ComputeMsmSerial.h"
-#include "ComputeMsm.h"
+#include "ComputeMsmMsa.h"
 #include "ComputeDPMTA.h"
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
@@ -530,8 +530,8 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         c->initialize();
         break;
 #ifdef CHARM_HAS_MSA
-    case computeMsmType: // MSM parallel long-range part using MSA
-        c = new ComputeMsm(i);
+    case computeMsmMsaType: // MSM parallel long-range part using MSA
+        c = new ComputeMsmMsa(i);
         map->registerCompute(i,c);
         c->initialize();
         break;

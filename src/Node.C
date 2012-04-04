@@ -30,7 +30,7 @@
 #include "memusage.h"
 #include "IMDOutput.h"
 #include "Lattice.h"
-#include "ComputeMsm.h"  // needed for MsmData definition
+#include "ComputeMsmMsa.h"  // needed for MsmMsaData definition
 #include "main.decl.h"
 #include "main.h"
 #include "WorkDistrib.h"
@@ -528,7 +528,7 @@ void Node::startup() {
     }
 #ifdef CHARM_HAS_MSA
     else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
-      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
       msm[CkMyPe()].initialize(new CkQdMsg);
     }
 #endif
@@ -562,7 +562,7 @@ void Node::startup() {
     }
 #ifdef CHARM_HAS_MSA
     else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
-      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
       msm[CkMyPe()].initWorkers(new CkQdMsg);
     }
 #endif
@@ -597,7 +597,7 @@ void Node::startup() {
     }
 #ifdef CHARM_HAS_MSA
     else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
-      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
       msm[CkMyPe()].startWorkers(new CkQdMsg);
     }
 #endif
