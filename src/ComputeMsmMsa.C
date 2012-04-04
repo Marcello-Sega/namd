@@ -12,8 +12,8 @@
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "AtomMap.h"
-#include "ComputeMsm.h"
-#include "ComputeMsmMgr.decl.h"
+#include "ComputeMsmMsa.h"
+#include "ComputeMsmMsaMgr.decl.h"
 #include "PatchMgr.h"
 #include "Molecule.h"
 #include "ReductionMgr.h"
@@ -32,7 +32,7 @@
 #include "MsmMacros.h"
 
 
-void MsmData::pup(PUP::er &p)
+void MsmMsaData::pup(PUP::er &p)
 {
   p|ispx, p|ispy, p|ispz;
   p|hx_1, p|hy_1, p|hz_1;
@@ -66,7 +66,7 @@ void MsmData::pup(PUP::er &p)
   p|self_energy_const;
 }
 
-void MsmData::print()
+void MsmMsaData::print()
 {
 #if 0
   printf("MSM data:\n");
@@ -79,128 +79,128 @@ void MsmData::print()
 #endif
 }
 
-struct ComputeMsmAtom {
+struct ComputeMsmMsaAtom {
   Position position;
   float msmcharge;    // scaled for MSM
   int id;
 };
 
-class MsmCoordMsg : public CMessage_MsmCoordMsg {
+class MsmMsaCoordMsg : public CMessage_MsmMsaCoordMsg {
 public:
   int numAtoms;
   Lattice lattice;
-  ComputeMsmAtom *coord;
+  ComputeMsmMsaAtom *coord;
 };
 
-class ComputeMsmMgr : public BOCclass {
+class ComputeMsmMsaMgr : public BOCclass {
 public:
-  ComputeMsmMgr();                    // entry
-  ~ComputeMsmMgr();
+  ComputeMsmMsaMgr();                    // entry
+  ~ComputeMsmMsaMgr();
 
   void initialize(CkQdMsg *);         // entry with message
 
-  void setCompute(ComputeMsm *c) { msmCompute = c; }  // local
+  void setCompute(ComputeMsmMsa *c) { msmCompute = c; }  // local
 
-  void recvMsmData(const MsmData &);  // entry with parameter marshalling
+  void recvMsmMsaData(const MsmMsaData &);  // entry with parameter marshalling
 
   void initWorkers(CkQdMsg *);        // entry with message
   void startWorkers(CkQdMsg *);       // entry with message
 
-  void anterpolate(MsmCoordMsg *);    // entry with coordinates message
+  void anterpolate(MsmMsaCoordMsg *);    // entry with coordinates message
   void interpolate(CkQdMsg *);        // entry with message
 
-  const MsmData &getMsmData() const { return msmData; }  // local
+  const MsmMsaData &getMsmMsaData() const { return msmData; }  // local
 
 private:
-  CProxy_ComputeMsmMgr msmProxy;
-  ComputeMsm *msmCompute;
+  CProxy_ComputeMsmMsaMgr msmProxy;
+  ComputeMsmMsa *msmCompute;
 
-  MsmCoordMsg *coordMsg;
+  MsmMsaCoordMsg *coordMsg;
   int numAtoms;
-  MsmForce *force;
+  MsmMsaForce *force;
   int numForces;
 
-  MsmData msmData;
+  MsmMsaData msmData;
 
-  CProxy_MsmLevel msmLevelProxy;   // 1D chare array (number of grid levels)
-  CProxy_MsmEnergy msmEnergyProxy; // 1D chare array
+  CProxy_MsmMsaLevel msmLevelProxy;   // 1D chare array (number of grid levels)
+  CProxy_MsmMsaEnergy msmEnergyProxy; // 1D chare array
 
-  MsmGrid::Accum qhacc;  // accumulate charge grid for anterpolation
-  MsmGrid::Read qhread;  // read charge grid after anterpolation
-  MsmGrid::Accum ehacc;  // accumulate potential grid before interpolation
-  MsmGrid::Read ehread;  // read potential grid for interpolation
+  MsmMsaGrid::Accum qhacc;  // accumulate charge grid for anterpolation
+  MsmMsaGrid::Read qhread;  // read charge grid after anterpolation
+  MsmMsaGrid::Accum ehacc;  // accumulate potential grid before interpolation
+  MsmMsaGrid::Read ehread;  // read potential grid for interpolation
   int msa_setup_anterpolation;   // have MSAs been initially set up?
   int msa_setup_interpolation;   // have MSAs been initially set up?
 };
 
-class MsmLevel : public CBase_MsmLevel {
+class MsmMsaLevel : public CBase_MsmMsaLevel {
 public:
-  MsmLevel(MsmGrid &qh, MsmGrid &eh, MsmGrid &q2h, MsmGrid &e2h);
-  MsmLevel(MsmGrid &qh, MsmGrid &eh);
-  MsmLevel(CkMigrateMessage *m) { }
+  MsmMsaLevel(MsmMsaGrid &qh, MsmMsaGrid &eh, MsmMsaGrid &q2h, MsmMsaGrid &e2h);
+  MsmMsaLevel(MsmMsaGrid &qh, MsmMsaGrid &eh);
+  MsmMsaLevel(CkMigrateMessage *m) { }
   void compute();
 private:
   int lastlevel;
-  CProxy_MsmGridCutoff gridcutoff;
-  CProxy_MsmRestriction restriction;
-  CProxy_MsmProlongation prolongation;
+  CProxy_MsmMsaGridCutoff gridcutoff;
+  CProxy_MsmMsaRestriction restriction;
+  CProxy_MsmMsaProlongation prolongation;
 };
 
-class MsmGridCutoff : public CBase_MsmGridCutoff {
+class MsmMsaGridCutoff : public CBase_MsmMsaGridCutoff {
 public:
-  MsmGridCutoff(int level, MsmGrid &qh, MsmGrid &eh);
-  MsmGridCutoff(CkMigrateMessage *m) { }
+  MsmMsaGridCutoff(int level, MsmMsaGrid &qh, MsmMsaGrid &eh);
+  MsmMsaGridCutoff(CkMigrateMessage *m) { }
   void compute();
 private:
-  MsmGrid qh, eh;    // MSA handles to this level charge and potential grids
-  MsmGrid::Accum qhacc, ehacc;
-  MsmGrid::Read qhread, ehread;
+  MsmMsaGrid qh, eh;    // MSA handles to this level charge and potential grids
+  MsmMsaGrid::Accum qhacc, ehacc;
+  MsmMsaGrid::Read qhread, ehread;
   int msa_setup;
   int mylevel;       // which level am I on?
   int mia, mja, mka; // my lowest grid point index of my sub-cube
   int mib, mjb, mkb; // my highest grid point index of my sub-cube
 };
 
-class MsmRestriction : public CBase_MsmRestriction {
+class MsmMsaRestriction : public CBase_MsmMsaRestriction {
 public:
-  MsmRestriction(int level, MsmGrid &qh, MsmGrid &q2h);
-  MsmRestriction(CkMigrateMessage *m) { }
+  MsmMsaRestriction(int level, MsmMsaGrid &qh, MsmMsaGrid &q2h);
+  MsmMsaRestriction(CkMigrateMessage *m) { }
   void compute();
 private:
-  MsmGrid qh, q2h;   // MSA handles to charge grids mylevel, (mylevel+1)
-  MsmGrid::Accum qhacc, q2hacc;
-  MsmGrid::Read qhread, q2hread;
+  MsmMsaGrid qh, q2h;   // MSA handles to charge grids mylevel, (mylevel+1)
+  MsmMsaGrid::Accum qhacc, q2hacc;
+  MsmMsaGrid::Read qhread, q2hread;
   int msa_setup;
   int mylevel;       // which level am I on?
   int mia, mja, mka; // my lowest grid point index of (mylevel+1) sub-cube
   int mib, mjb, mkb; // my highest grid point index of (mylevel+1) sub-cube
 };
 
-class MsmProlongation : public CBase_MsmProlongation {
+class MsmMsaProlongation : public CBase_MsmMsaProlongation {
 public:
-  MsmProlongation(int level, MsmGrid &eh, MsmGrid &e2h);
-  MsmProlongation(CkMigrateMessage *m) { }
+  MsmMsaProlongation(int level, MsmMsaGrid &eh, MsmMsaGrid &e2h);
+  MsmMsaProlongation(CkMigrateMessage *m) { }
   void compute();
 private:
-  MsmGrid eh, e2h;   // MSA handles to potential grids mylevel, (mylevel+1)
-  MsmGrid::Accum ehacc, e2hacc;
-  MsmGrid::Read ehread, e2hread;
+  MsmMsaGrid eh, e2h;   // MSA handles to potential grids mylevel, (mylevel+1)
+  MsmMsaGrid::Accum ehacc, e2hacc;
+  MsmMsaGrid::Read ehread, e2hread;
   int msa_setup;
   int mylevel;       // which level am I on?
   int mia, mja, mka; // my lowest grid point index of (mylevel+1) sub-cube
   int mib, mjb, mkb; // my highest grid point index of (mylevel+1) sub-cube
 };
 
-class MsmEnergy : public CBase_MsmEnergy {
+class MsmMsaEnergy : public CBase_MsmMsaEnergy {
 public:
-  MsmEnergy(MsmGrid &qh, MsmGrid &eh);
-  MsmEnergy(CkMigrateMessage *m) { }
-  ~MsmEnergy();
+  MsmMsaEnergy(MsmMsaGrid &qh, MsmMsaGrid &eh);
+  MsmMsaEnergy(CkMigrateMessage *m) { }
+  ~MsmMsaEnergy();
   void compute();
 private:
-  MsmGrid qh, eh;
-  MsmGrid::Accum qhacc, ehacc;
-  MsmGrid::Read qhread, ehread;
+  MsmMsaGrid qh, eh;
+  MsmMsaGrid::Accum qhacc, ehacc;
+  MsmMsaGrid::Read qhread, ehread;
   float *qhbuffer;
   int msa_setup;
   int mli, mlj, mlk; // my 3D index within level 0
@@ -210,21 +210,21 @@ private:
 };
 
 
-ComputeMsm::ComputeMsm(ComputeID c) :
+ComputeMsmMsa::ComputeMsmMsa(ComputeID c) :
   ComputeHomePatches(c)
 {
-  CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->setCompute(this);
+  CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->setCompute(this);
   SimParameters *simParams = Node::Object()->simParameters;
   qscaling = sqrt(COULOMB / simParams->dielectric);
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
-ComputeMsm::~ComputeMsm()
+ComputeMsmMsa::~ComputeMsmMsa()
 {
 }
 
-void ComputeMsm::doWork()
+void ComputeMsmMsa::doWork()
 {
   ResizeArrayIter<PatchElem> ap(patchList);
 
@@ -246,10 +246,10 @@ void ComputeMsm::doWork()
     numLocalAtoms += (*ap).p->getNumAtoms();
   }
 
-  MsmCoordMsg *msg = new (numLocalAtoms, 0) MsmCoordMsg;
+  MsmMsaCoordMsg *msg = new (numLocalAtoms, 0) MsmMsaCoordMsg;
   msg->numAtoms = numLocalAtoms;
   msg->lattice = patchList[0].p->flags.lattice;
-  ComputeMsmAtom *data_ptr = msg->coord;
+  ComputeMsmMsaAtom *data_ptr = msg->coord;
 
   // get positions
   for (ap = ap.begin();  ap != ap.end();  ap++) {
@@ -272,14 +272,14 @@ void ComputeMsm::doWork()
     else { (*ap).positionBox->close(&x); }
   }
 
-  CProxy_ComputeMsmMgr msmProxy(
-      CkpvAccess(BOCclass_group).computeMsmMgr);
+  CProxy_ComputeMsmMsaMgr msmProxy(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr);
   msmProxy[CkMyPe()].anterpolate(msg);
   msmProxy[CkMyPe()].interpolate(new CkQdMsg);
 }
 
 
-void ComputeMsm::saveResults(int n, const MsmForce force[], double self_energy)
+void ComputeMsmMsa::saveResults(int n, const MsmMsaForce force[], double self_energy)
 {
   ResizeArrayIter<PatchElem> ap(patchList);
 
@@ -301,15 +301,15 @@ void ComputeMsm::saveResults(int n, const MsmForce force[], double self_energy)
 }
 
 
-ComputeMsmMgr::ComputeMsmMgr() :
+ComputeMsmMsaMgr::ComputeMsmMsaMgr() :
   msmProxy(thisgroup), msmCompute(0),
   coordMsg(0), numAtoms(0), force(0), numForces(0),
   msa_setup_anterpolation(0), msa_setup_interpolation(0)
 {
-  CkpvAccess(BOCclass_group).computeMsmMgr = thisgroup;
+  CkpvAccess(BOCclass_group).computeMsmMsaMgr = thisgroup;
 }
 
-ComputeMsmMgr::~ComputeMsmMgr()
+ComputeMsmMsaMgr::~ComputeMsmMsaMgr()
 {
   delete [] force;
 }
@@ -456,14 +456,14 @@ static void rescale_nonperiodic_cell(
 }
 
 
-struct MsmInterpParams {
+struct MsmMsaInterpParams {
   int nu;
   int stencil;
   int omega;
 };
 
 // ordering must be identical to APPROX enum constants
-static const MsmInterpParams InterpParams[] = {
+static const MsmMsaInterpParams InterpParams[] = {
   { 1, 4, 6 },    // cubic
   { 2, 6, 10 },   // quintic
   { 2, 6, 10 },   // quintic, C2
@@ -525,11 +525,11 @@ static int setup_hgrid_1d(
 }
 
 
-void ComputeMsmMgr::initialize(CkQdMsg *msg)
+void ComputeMsmMsaMgr::initialize(CkQdMsg *msg)
 {
   delete msg;
   //printf("MSM initialize PE=%d\n", CkMyPe());
-  if (CkMyPe() != 0) return;  // initialize only on PE 0, broadcast MsmData
+  if (CkMyPe() != 0) return;  // initialize only on PE 0, broadcast MsmMsaData
 
   // initialize MSM here
   SimParameters *simParams = Node::Object()->simParameters;
@@ -564,7 +564,7 @@ void ComputeMsmMgr::initialize(CkQdMsg *msg)
   }
 
   // setup grids
-  MsmData &p = msmData;  // the MSM data will be broadcast to all PEs
+  MsmMsaData &p = msmData;  // the MSM data will be broadcast to all PEs
 
   const int nu = InterpParams[approx].nu;
   const int omega = InterpParams[approx].omega;
@@ -660,15 +660,15 @@ void ComputeMsmMgr::initialize(CkQdMsg *msg)
   if (pm->maxlevels < maxlevels) {
     void *vqh, *veh, *vgc;
     if (issprec) {
-      vqh = realloc(pm->qh, maxlevels * sizeof(NL_Msmgrid_float));
+      vqh = realloc(pm->qh, maxlevels * sizeof(NL_MsmMsagrid_float));
       if (NULL == vqh) return NL_MSM_ERROR_MALLOC;
-      veh = realloc(pm->eh, maxlevels * sizeof(NL_Msmgrid_float));
+      veh = realloc(pm->eh, maxlevels * sizeof(NL_MsmMsagrid_float));
       if (NULL == veh) return NL_MSM_ERROR_MALLOC;
-      vgc = realloc(pm->gc, maxlevels * sizeof(NL_Msmgrid_float));
+      vgc = realloc(pm->gc, maxlevels * sizeof(NL_MsmMsagrid_float));
       if (NULL == vgc) return NL_MSM_ERROR_MALLOC;
-      pm->qh_f = (NL_Msmgrid_float *) vqh;
-      pm->eh_f = (NL_Msmgrid_float *) veh;
-      pm->gc_f = (NL_Msmgrid_float *) vgc;
+      pm->qh_f = (NL_MsmMsagrid_float *) vqh;
+      pm->eh_f = (NL_MsmMsagrid_float *) veh;
+      pm->gc_f = (NL_MsmMsagrid_float *) vgc;
       /* initialize the newest grids appended to array */
       for (level = pm->maxlevels;  level < maxlevels;  level++) {
         GRID_INIT( &(pm->qh_f[level]) );
@@ -677,15 +677,15 @@ void ComputeMsmMgr::initialize(CkQdMsg *msg)
       }
     }
     else {
-      vqh = realloc(pm->qh, maxlevels * sizeof(NL_Msmgrid_double));
+      vqh = realloc(pm->qh, maxlevels * sizeof(NL_MsmMsagrid_double));
       if (NULL == vqh) return NL_MSM_ERROR_MALLOC;
-      veh = realloc(pm->eh, maxlevels * sizeof(NL_Msmgrid_double));
+      veh = realloc(pm->eh, maxlevels * sizeof(NL_MsmMsagrid_double));
       if (NULL == veh) return NL_MSM_ERROR_MALLOC;
-      vgc = realloc(pm->gc, maxlevels * sizeof(NL_Msmgrid_double));
+      vgc = realloc(pm->gc, maxlevels * sizeof(NL_MsmMsagrid_double));
       if (NULL == vgc) return NL_MSM_ERROR_MALLOC;
-      pm->qh = (NL_Msmgrid_double *) vqh;
-      pm->eh = (NL_Msmgrid_double *) veh;
-      pm->gc = (NL_Msmgrid_double *) vgc;
+      pm->qh = (NL_MsmMsagrid_double *) vqh;
+      pm->eh = (NL_MsmMsagrid_double *) veh;
+      pm->gc = (NL_MsmMsagrid_double *) vgc;
       /* initialize the newest grids appended to array */
       for (level = pm->maxlevels;  level < maxlevels;  level++) {
         GRID_INIT( &(pm->qh[level]) );
@@ -950,10 +950,10 @@ void ComputeMsmMgr::initialize(CkQdMsg *msg)
   if (qh || eh) {
     CkAbort("attempted to reallocate MSAs");
   }
-  char *qh_memory = new char[nlevels * sizeof(MsmGrid)];
-  qh = static_cast<MsmGrid *>((void *)qh_memory);
-  char *eh_memory = new char[nlevels * sizeof(MsmGrid)];
-  eh = static_cast<MsmGrid *>((void *)eh_memory);
+  char *qh_memory = new char[nlevels * sizeof(MsmMsaGrid)];
+  qh = static_cast<MsmMsaGrid *>((void *)qh_memory);
+  char *eh_memory = new char[nlevels * sizeof(MsmMsaGrid)];
+  eh = static_cast<MsmMsaGrid *>((void *)eh_memory);
 #else
   p.qh.resize(nlevels);
   p.eh.resize(nlevels);
@@ -967,23 +967,23 @@ void ComputeMsmMgr::initialize(CkQdMsg *msg)
     kb = p.grid_len[n].nz + ka - 1;
 #if 0
     // using placement new to call non-default constructor
-    // on each MsmGrid element
-    new(qh_memory + n*sizeof(MsmGrid))MsmGrid(ia, ib, ja, jb, ka, kb,
+    // on each MsmMsaGrid element
+    new(qh_memory + n*sizeof(MsmMsaGrid))MsmMsaGrid(ia, ib, ja, jb, ka, kb,
         p.num_clients_qh[n]);
-    new(eh_memory + n*sizeof(MsmGrid))MsmGrid(ia, ib, ja, jb, ka, kb,
+    new(eh_memory + n*sizeof(MsmMsaGrid))MsmMsaGrid(ia, ib, ja, jb, ka, kb,
         p.num_clients_eh[n]);
 #else
-    p.qh[n] = MsmGrid(ia, ib, ja, jb, ka, kb, p.num_clients_qh[n]);
-    p.eh[n] = MsmGrid(ia, ib, ja, jb, ka, kb, p.num_clients_eh[n]);
+    p.qh[n] = MsmMsaGrid(ia, ib, ja, jb, ka, kb, p.num_clients_qh[n]);
+    p.eh[n] = MsmMsaGrid(ia, ib, ja, jb, ka, kb, p.num_clients_eh[n]);
 #endif
   }
-  msmProxy.recvMsmData(msmData);  // broadcast MsmData to chare group
+  msmProxy.recvMsmMsaData(msmData);  // broadcast MsmMsaData to chare group
 }
 
 
-void ComputeMsmMgr::recvMsmData(const MsmData &m)
+void ComputeMsmMsaMgr::recvMsmMsaData(const MsmMsaData &m)
 {
-  //printf("MSM recvMsmData PE=%d\n", CkMyPe());
+  //printf("MSM recvMsmMsaData PE=%d\n", CkMyPe());
   if (CkMyPe() != 0) {
     msmData = m;
   }
@@ -993,33 +993,33 @@ void ComputeMsmMgr::recvMsmData(const MsmData &m)
 }
 
 
-void ComputeMsmMgr::initWorkers(CkQdMsg *msg)
+void ComputeMsmMsaMgr::initWorkers(CkQdMsg *msg)
 {
   delete msg;
   //printf("MSM initWorkers PE=%d\n", CkMyPe());
   if (CkMyPe() != 0) return;
   // PE 0 creates the compute chare arrays
 
-  MsmData &p = msmData;
+  MsmMsaData &p = msmData;
   int n;
-  msmLevelProxy = CProxy_MsmLevel::ckNew();  // create empty chare array
+  msmLevelProxy = CProxy_MsmMsaLevel::ckNew();  // create empty chare array
   for (n = 0;  n < p.nlevels-1;  n++) {
     msmLevelProxy[n].insert(p.qh[n], p.eh[n], p.qh[n+1], p.eh[n+1]);
   }
   msmLevelProxy[n].insert(p.qh[n], p.eh[n]);  // top level
   msmLevelProxy.doneInserting();
 #ifdef MSM_DEBUG
-  CkPrintf("Created %d MsmLevel chares\n", p.nlevels);
+  CkPrintf("Created %d MsmMsaLevel chares\n", p.nlevels);
 #endif
 
-  msmEnergyProxy = CProxy_MsmEnergy::ckNew(p.qh[0], p.eh[0], p.num_energy_chares);
+  msmEnergyProxy = CProxy_MsmMsaEnergy::ckNew(p.qh[0], p.eh[0], p.num_energy_chares);
 #ifdef MSM_DEBUG
-  CkPrintf("Created %d MsmEnergy chares\n", p.num_energy_chares);
+  CkPrintf("Created %d MsmMsaEnergy chares\n", p.num_energy_chares);
 #endif
 }
 
 
-void ComputeMsmMgr::startWorkers(CkQdMsg *msg)
+void ComputeMsmMsaMgr::startWorkers(CkQdMsg *msg)
 {
   delete msg;
   //printf("MSM startWorkers PE=%d\n", CkMyPe());
@@ -1042,15 +1042,15 @@ static const int PolyDegree[APPROX_END] = {
 };
 
 
-void ComputeMsmMgr::anterpolate(MsmCoordMsg *msg)
+void ComputeMsmMsaMgr::anterpolate(MsmMsaCoordMsg *msg)
 {
 #ifdef MSM_DEBUG
   CkPrintf("Anterpolation compute %d starting, PE %d\n", thisIndex, CkMyPe());
 #endif
   coordMsg = msg;  // save message for interpolation
-  ComputeMsmAtom *coord = coordMsg->coord;
+  ComputeMsmMsaAtom *coord = coordMsg->coord;
   int numAtoms = coordMsg->numAtoms;
-  MsmData &p = msmData;
+  MsmMsaData &p = msmData;
   if ( ! msa_setup_anterpolation) {
     p.qh[0].enroll(p.num_clients_qh[0]);
     qhacc = p.qh[0].getInitialAccum();
@@ -1186,20 +1186,20 @@ void ComputeMsmMgr::anterpolate(MsmCoordMsg *msg)
 }
 
 
-void ComputeMsmMgr::interpolate(CkQdMsg *msg)
+void ComputeMsmMsaMgr::interpolate(CkQdMsg *msg)
 {
   delete msg;
 #ifdef MSM_DEBUG
   CkPrintf("Interpolation compute %d starting, PE %d\n", thisIndex, CkMyPe());
 #endif
-  ComputeMsmAtom *coord = coordMsg->coord;
+  ComputeMsmMsaAtom *coord = coordMsg->coord;
   int numAtoms = coordMsg->numAtoms;
   if (numForces < numAtoms) {
     delete [] force;
-    force = new MsmForce[numAtoms];
+    force = new MsmMsaForce[numAtoms];
     numForces = numAtoms;
   }
-  MsmData &p = msmData;
+  MsmMsaData &p = msmData;
   if ( ! msa_setup_interpolation) {
     p.eh[0].enroll(p.num_clients_eh[0]);
     ehacc = p.eh[0].getInitialAccum();
@@ -1380,7 +1380,7 @@ void ComputeMsmMgr::interpolate(CkQdMsg *msg)
   delete coordMsg;  // get rid of earlier coordMsg
   msmCompute->saveResults(numAtoms, force, self_energy);
 #if 0
-  int startAtomID = thisIndex * Msm::NUM_ATOMS_PER_CHARE;
+  int startAtomID = thisIndex * MsmMsa::NUM_ATOMS_PER_CHARE;
   msmProxy.doneForces(startAtomID, nforces, forcebuffer);
 #endif
 #ifdef MSM_DEBUG
@@ -1389,38 +1389,38 @@ void ComputeMsmMgr::interpolate(CkQdMsg *msg)
 }
 
 
-MsmLevel::MsmLevel(MsmGrid &qh, MsmGrid &eh, MsmGrid &q2h, MsmGrid &e2h)
+MsmMsaLevel::MsmMsaLevel(MsmMsaGrid &qh, MsmMsaGrid &eh, MsmMsaGrid &q2h, MsmMsaGrid &e2h)
 {
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   int level = thisIndex;
   lastlevel = -1;  // this is an intermediate level
   const Int3 &dg = p.dim_gridcutoff_chares[level];
-  gridcutoff = CProxy_MsmGridCutoff::ckNew(level, qh, eh, dg.nx, dg.ny, dg.nz);
+  gridcutoff = CProxy_MsmMsaGridCutoff::ckNew(level, qh, eh, dg.nx, dg.ny, dg.nz);
   const Int3 &dt = p.dim_gridtransfer_chares[level];
-  restriction = CProxy_MsmRestriction::ckNew(level, qh, q2h, dt.nx, dt.ny, dt.nz);
-  prolongation =CProxy_MsmProlongation::ckNew(level, eh, e2h, dt.nx, dt.ny, dt.nz);
+  restriction = CProxy_MsmMsaRestriction::ckNew(level, qh, q2h, dt.nx, dt.ny, dt.nz);
+  prolongation =CProxy_MsmMsaProlongation::ckNew(level, eh, e2h, dt.nx, dt.ny, dt.nz);
 #ifdef MSM_DEBUG
   CkPrintf("Created %d grid cutoff chares\n", p.num_gridcutoff_chares[level]);
 #endif
 }
 
 
-MsmLevel::MsmLevel(MsmGrid &qh, MsmGrid &eh)
+MsmMsaLevel::MsmMsaLevel(MsmMsaGrid &qh, MsmMsaGrid &eh)
 {
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   int level = thisIndex;
   lastlevel = level;
   const Int3 &dg = p.dim_gridcutoff_chares[level];
-  gridcutoff = CProxy_MsmGridCutoff::ckNew(level, qh, eh, dg.nx, dg.ny, dg.nz);
+  gridcutoff = CProxy_MsmMsaGridCutoff::ckNew(level, qh, eh, dg.nx, dg.ny, dg.nz);
 #ifdef MSM_DEBUG
   CkPrintf("Created %d grid cutoff chares\n", p.num_gridcutoff_chares[level]);
 #endif
 }
 
 
-void MsmLevel::compute()
+void MsmMsaLevel::compute()
 {
   if (thisIndex != lastlevel) {
     restriction.compute();
@@ -1430,12 +1430,12 @@ void MsmLevel::compute()
 }
 
 
-MsmGridCutoff::MsmGridCutoff(int level, MsmGrid &qh_, MsmGrid &eh_)
+MsmMsaGridCutoff::MsmMsaGridCutoff(int level, MsmMsaGrid &qh_, MsmMsaGrid &eh_)
   : qh(qh_), eh(eh_)
 {
   mylevel = level;
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   // find the points on my part of my level's qh and eh grids
   const Int3 &len = p.grid_len[mylevel];
   const Int3 &idstart = p.grid_idstart[mylevel];
@@ -1458,14 +1458,14 @@ MsmGridCutoff::MsmGridCutoff(int level, MsmGrid &qh_, MsmGrid &eh_)
 }
 
 
-void MsmGridCutoff::compute()
+void MsmMsaGridCutoff::compute()
 {
 #ifdef MSM_DEBUG
   CkPrintf("Grid cutoff compute (%d,%d,%d) PE %d\n",
       thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
 #endif
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   if ( ! msa_setup) {
     qh.enroll(p.num_clients_qh[mylevel]);
     eh.enroll(p.num_clients_eh[mylevel]);
@@ -1753,12 +1753,12 @@ static const float PhiStencil[APPROX_END][MAX_NSTENCIL] = {
 };
 
 
-MsmRestriction::MsmRestriction(int level, MsmGrid &qh_, MsmGrid &q2h_)
+MsmMsaRestriction::MsmMsaRestriction(int level, MsmMsaGrid &qh_, MsmMsaGrid &q2h_)
   : qh(qh_), q2h(q2h_)
 {
   mylevel = level;
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   // find the points on my sub-grid of (mylevel+1) grid
   const Int3 &len = p.grid_len[mylevel+1];
   const Int3 &idstart = p.grid_idstart[mylevel+1];
@@ -1781,13 +1781,13 @@ MsmRestriction::MsmRestriction(int level, MsmGrid &qh_, MsmGrid &q2h_)
 }
 
 
-void MsmRestriction::compute()
+void MsmMsaRestriction::compute()
 {
 #ifdef MSM_DEBUG
   CkPrintf("Restriction compute %d, PE %d\n", thisIndex, CkMyPe());
 #endif
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   if ( ! msa_setup) {
     qh.enroll(p.num_clients_qh[mylevel]);
     q2h.enroll(p.num_clients_qh[mylevel+1]);
@@ -1886,12 +1886,12 @@ for (;;) {  // loop forever
 }
 
 
-MsmProlongation::MsmProlongation(int level, MsmGrid &eh_, MsmGrid &e2h_) 
+MsmMsaProlongation::MsmMsaProlongation(int level, MsmMsaGrid &eh_, MsmMsaGrid &e2h_) 
   : eh(eh_), e2h(e2h_)
 {
   mylevel = level;
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   // find the points on my sub-grid of (mylevel+1) grid
   const Int3 &len = p.grid_len[mylevel+1];
   const Int3 &idstart = p.grid_idstart[mylevel+1];
@@ -1914,13 +1914,13 @@ MsmProlongation::MsmProlongation(int level, MsmGrid &eh_, MsmGrid &e2h_)
 }
 
 
-void MsmProlongation::compute()
+void MsmMsaProlongation::compute()
 {
 #ifdef MSM_DEBUG
   CkPrintf("Prolongation compute %d, PE %d\n", thisIndex, CkMyPe());
 #endif
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   if ( ! msa_setup) {
     eh.enroll(p.num_clients_eh[mylevel]);
     e2h.enroll(p.num_clients_eh[mylevel+1]);
@@ -2018,10 +2018,10 @@ for (;;) {  // loop forever
 }
 
 
-MsmEnergy::MsmEnergy(MsmGrid &qh_, MsmGrid &eh_) : qh(qh_), eh(eh_)
+MsmMsaEnergy::MsmMsaEnergy(MsmMsaGrid &qh_, MsmMsaGrid &eh_) : qh(qh_), eh(eh_)
 {
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   int npoints = p.num_points_per_chare.nx * 
     p.num_points_per_chare.ny * p.num_points_per_chare.nz;
   qhbuffer = new float[npoints];
@@ -2055,19 +2055,19 @@ MsmEnergy::MsmEnergy(MsmGrid &qh_, MsmGrid &eh_) : qh(qh_), eh(eh_)
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
-MsmEnergy::~MsmEnergy()
+MsmMsaEnergy::~MsmMsaEnergy()
 {
   delete[] qhbuffer;
 }
 
 
-void MsmEnergy::compute()
+void MsmMsaEnergy::compute()
 {
 #ifdef MSM_DEBUG
   CkPrintf("Energy compute %d, PE %d\n", thisIndex, CkMyPe());
 #endif
-  const MsmData &p = CProxy_ComputeMsmMgr::ckLocalBranch(
-      CkpvAccess(BOCclass_group).computeMsmMgr)->getMsmData();
+  const MsmMsaData &p = CProxy_ComputeMsmMsaMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMsaMgr)->getMsmMsaData();
   if ( ! msa_setup) {
     qh.enroll(p.num_clients_qh[0]);
     eh.enroll(p.num_clients_eh[0]);
@@ -2124,7 +2124,7 @@ for (;;) {  // loop forever
 }
 
 
-#include "ComputeMsmMgr.def.h"
+#include "ComputeMsmMsaMgr.def.h"
 
 #endif // CHARM_HAS_MSA
 
