@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dtanner $
- * $Date: 2012/04/05 21:11:47 $
- * $Revision: 1.1387 $
+ * $Date: 2012/04/05 21:40:09 $
+ * $Revision: 1.1388 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2722,10 +2722,8 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       if ( lattice.volume() > 0 ) {
         NAMD_die("SASA does not yet support periodic boundary conditions.");
       }
-      //LCPO requires patches to be at least 17Ang in each dimension
-      if (patchDimension < 16.2*2 && (twoAwayX==1 || twoAwayY==1 || twoAwayZ==1)) {
-        iout << "Warning: SASA with 2-Away requires large patch size." << endi;
-      }
+      //LCPO requires patches to be at least 16.2Ang in each dimension
+      // twoAway[XYZ} is ignored for now
     }
 
    //  Turn on global integration if not explicitly specified
