@@ -773,7 +773,7 @@ void ComputeNonbondedCUDA::requirePatch(int pid) {
     if ( mergegrids ) {
       pr.isLocal = 0;
     } else if ( CkNumNodes() < 2 ) {
-      pr.isLocal = 1 & ( patchMap->index_a(pid) ^
+      pr.isLocal = 1 & ( 1 ^ patchMap->index_a(pid) ^
          patchMap->index_b(pid) ^ patchMap->index_c(pid) );
     } else {
       pr.isLocal = ( CkNodeOf(patchMap->node(pid)) == CkMyNode() );
