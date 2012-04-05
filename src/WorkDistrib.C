@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dhardy $
- * $Date: 2012/04/04 19:38:09 $
- * $Revision: 1.1242 $
+ * $Author: jim $
+ * $Date: 2012/04/05 19:04:31 $
+ * $Revision: 1.1243 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -886,6 +886,14 @@ void WorkDistrib::patchMapInit(void)
   int twoAwayX = params->twoAwayX;
   int twoAwayY = params->twoAwayY;
   int twoAwayZ = params->twoAwayZ;
+
+  // SASA implementation is not compatible with twoAway patches
+  if (params->LCPOOn) {
+    if ( twoAwayX > 0 || twoAwayY > 0 || twoAwayZ > 0 ) {
+      iout << iWARN << "Ignoring twoAway[XYZ] due to LCPO SASA implementation.\n" << endi;
+    }
+    twoAwayX = twoAwayY = twoAwayZ = 0;
+  }
 
   // if you think you know what you're doing go right ahead
   if ( twoAwayX > 0 ) maxNumPatches = 1.e9;
