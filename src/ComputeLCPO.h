@@ -112,9 +112,10 @@ public:
   virtual int noWork();
 
 protected :
-  //-1 if patch is invalid due to only 1 patch in that dimension
   int numAtoms[8];
   int valid[8][8];
+  //0 if patch is invalid due to only 1 patch in that dimension
+  int invalidPatch[8];
   CompAtomExt *posExt[8];
   CompAtom *pos[8];
   Results *force[8];

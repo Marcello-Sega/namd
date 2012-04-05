@@ -104,14 +104,8 @@ void ComputeLCPO::initialize() {
         lcpoTypeBox[i] = patch[i]->registerLcpoTypePickup(this);
         // will need to open a box full of lcpo parameters
 	    }
-      if (numAtoms[i] >= 0) {
-        numAtoms[i] = patch[i]->getNumAtoms();
-      }
+      numAtoms[i] = patch[i]->getNumAtoms();
     } // for all patches
-
-  DebugM(4, "initialize("<<cid<<") numAtoms("<<patchID[0]<<") = " 
-    << numAtoms[0] 
-    << " numAtoms(" <<patchID[1]<<") = " << numAtoms[1] << "\n" );
 
   // set priority
   basePriority = PATCH_PRIORITY(patchID[0]) + PROXY_RESULTS_PRIORITY;
@@ -128,28 +122,36 @@ void ComputeLCPO::initialize() {
   int gsa = patchMap->gridsize_a();
   int gsb = patchMap->gridsize_b();
   int gsc = patchMap->gridsize_c();
+  invalidPatch[0] = 0;
+  invalidPatch[1] = 0;
+  invalidPatch[2] = 0;
+  invalidPatch[3] = 0;
+  invalidPatch[4] = 0;
+  invalidPatch[5] = 0;
+  invalidPatch[6] = 0;
+  invalidPatch[7] = 0;
+
   if (gsa==1) {
     //CkPrintf("ONLY 1 PATCH in A DIMENSION!\n");
-    numAtoms[1] = -1;
-    numAtoms[3] = -1;
-    numAtoms[5] = -1;
-    numAtoms[7] = -1;
+    invalidPatch[1] = 1;
+    invalidPatch[3] = 1;
+    invalidPatch[5] = 1;
+    invalidPatch[7] = 1;
   }
   if (gsb==1) {
     //CkPrintf("ONLY 1 PATCH in B DIMENSION!\n");
-    numAtoms[2] = -1;
-    numAtoms[3] = -1;
-    numAtoms[6] = -1;
-    numAtoms[7] = -1;
+    invalidPatch[2] = 1;
+    invalidPatch[3] = 1;
+    invalidPatch[6] = 1;
+    invalidPatch[7] = 1;
   }
   if (gsc==1) {
     //CkPrintf("ONLY 1 PATCH in C DIMENSION!\n");
-    numAtoms[4] = -1;
-    numAtoms[5] = -1;
-    numAtoms[6] = -1;
-    numAtoms[7] = -1;
+    invalidPatch[4] = 1;
+    invalidPatch[5] = 1;
+    invalidPatch[6] = 1;
+    invalidPatch[7] = 1;
   }
-
   //relative a,b,c index for 8 patches in ComputeLCPO
   int idx[8][3] = {
     { 0, 0, 0},
@@ -177,8 +179,8 @@ void ComputeLCPO::initialize() {
       if (  ( gsa==1 && (jia>iia) != (idx[pJ][0]>idx[pI][0]) ) ||
             ( gsb==1 && (jib>iib) != (idx[pJ][1]>idx[pI][1]) ) ||
             ( gsc==1 && (jic>iic) != (idx[pJ][2]>idx[pI][2]) ) ||
-            ( numAtoms[pI] < 0 )                     ||
-            ( numAtoms[pJ] < 0 )                       )
+            ( invalidPatch[pI] ) ||
+            ( invalidPatch[pJ] )   )
         valid[pI][pJ] = 0;
       else
         valid[pI][pJ] = 1;
@@ -196,9 +198,7 @@ void ComputeLCPO::initialize() {
 
 void ComputeLCPO::atomUpdate() {
   for (int i=0; i<8; i++) {
-    if (numAtoms[i] >= 0) {
-	    numAtoms[i] = patch[i]->getNumAtoms();
-    }
+	  numAtoms[i] = patch[i]->getNumAtoms();
   }
   pairlistsAge = pairlistsMaxAge;
 }
@@ -328,7 +328,8 @@ if (pairlistsAge >= pairlistsMaxAge) {
   maxAtomRadius = 0;
   //find in-bounds atoms in each patch
   for (int pI = 0; pI < 8; pI++) {
-    if (numAtoms[pI] <= 0) continue;
+    if (invalidPatch[pI]) continue;
+    if (numAtoms[pI] == 0) continue;
 
     int minIg = 0;
     for (int s = 0; s < minPart; s++) {
@@ -359,7 +360,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
 
         //find pairs of this inAtom from all 8 patches
         for (int pJ = 0; pJ < 8; pJ++) {
-          if (numAtoms[pJ] <= 0) continue;
+          if (invalidPatch[pJ]) continue;
           if (!valid[pI][pJ]) continue;
 
           // j atom pairs
@@ -438,7 +439,8 @@ if (pairlistsAge >= pairlistsMaxAge) {
 //////////////////////////////////////////////////
   //for each patch in octet
   for (int pI = 0; pI < 8; pI++) {
-    if (numAtoms[pI] <= 0) continue;
+    if (invalidPatch[pI]) continue;
+    if (numAtoms[pI] == 0) continue;
     plint *inAtoms;
     int numInAtoms;
     inAtomsPl.nextlist( &inAtoms, &numInAtoms );

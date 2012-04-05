@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dtanner $
- * $Date: 2012/03/26 14:19:28 $
- * $Revision: 1.1386 $
+ * $Date: 2012/04/05 21:11:47 $
+ * $Revision: 1.1387 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -2717,15 +2717,14 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
     if (LCPOOn) {
 #ifdef MEM_OPT_VERSION
-      NAMD_die("LCPO not yet available for memory optimized builds");
+      NAMD_die("SASA not yet available for memory optimized builds");
 #endif
       if ( lattice.volume() > 0 ) {
-        NAMD_die("LCPO does not yet support periodic boundary conditions.");
+        NAMD_die("SASA does not yet support periodic boundary conditions.");
       }
       //LCPO requires patches to be at least 17Ang in each dimension
-      if (patchDimension < 17*2 && (twoAwayX==1 || twoAwayY==1 || twoAwayZ==1)) {
-        iout << "Warning: LCPO with 2-Away may introduce errors due to smaller patch size\n" << endi;
-        iout << "Warning:      compare BOUNDARY Energy with 1-Away to verify\n" << endi;
+      if (patchDimension < 16.2*2 && (twoAwayX==1 || twoAwayY==1 || twoAwayZ==1)) {
+        iout << "Warning: SASA with 2-Away requires large patch size." << endi;
       }
     }
 
@@ -4286,7 +4285,7 @@ if ( openatomOn )
   }
 
   if (LCPOOn) {
-    iout << iINFO << "LCPO SASA SURFACE TENSION: " << surface_tension<< " kcal/mol/Ang^2\n";
+    iout << iINFO << "SASA SURFACE TENSION: " << surface_tension<< " kcal/mol/Ang^2\n";
   }
 
    tclBCScript = 0;
