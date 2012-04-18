@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dtanner $
- * $Date: 2012/04/05 21:40:09 $
- * $Revision: 1.1388 $
+ * $Date: 2012/04/18 16:45:17 $
+ * $Revision: 1.1389 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5038,7 +5038,7 @@ if ( openatomOn )
      }
    }
 
-   if ( FMAOn || PMEOn || MSMOn || fullDirectOn )
+   if ( FMAOn || PMEOn || MSMOn || fullDirectOn || GBISOn)
    {
      iout << iINFO << "FULL ELECTROSTATIC EVALUATION FREQUENCY      "
 	<< fullElectFrequency << "\n";

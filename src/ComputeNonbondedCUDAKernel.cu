@@ -652,8 +652,8 @@ void cuda_GBIS_P3(
       latb,
       latc,
       force_lists,
-      force_buffers,
-      forces,
+      slow_force_buffers,
+      slow_forces,
       GBIS_P3_counters 
       );
     cuda_errcheck("dev_GBIS_P3");
