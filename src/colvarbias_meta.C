@@ -222,6 +222,17 @@ colvarbias_meta::colvarbias_meta (std::string const &conf, char const *key)
                         traj_file_name + "\".\n");
   }
 
+  // for well-tempered metadynamics 
+  get_keyval (conf, "wellTempered", well_tempered, false);
+  get_keyval (conf, "biasTemperature", bias_temperature, -1.0);
+  if ((bias_temperature == -1.0) && well_tempered) {
+	cvm::fatal_error ("Error: biasTemperature is not set.\n");
+  }
+  if (well_tempered) {
+      cvm::log("Well-tempered metadynamics is used.\n");
+      cvm::log("The bias temperature is "+cvm::to_str(bias_temperature)+".\n");
+  }
+  
   if (cvm::debug())
     cvm::log ("Done initializing the metadynamics bias \""+this->name+"\""+
               ((comm != single_replica) ? ", replica \""+replica_id+"\"" : "")+".\n");
@@ -440,12 +451,27 @@ cvm::real colvarbias_meta::update()
 
     switch (comm) {
 
-    case single_replica:
-      create_hill (hill (hill_weight, colvars, hill_width));
+	case single_replica:
+	  if (well_tempered) {
+		std::vector<int> curr_bin = hills_energy->get_colvars_index();
+		cvm::real hills_energy_sum_here = hills_energy->value(curr_bin);
+		cvm::real exp_weight = std::exp(-hills_energy_sum_here/(bias_temperature*cvm::boltzmann()));
+		create_hill (hill ((hill_weight*exp_weight), colvars, hill_width));
+      } else { 
+		create_hill (hill (hill_weight, colvars, hill_width));
+      } 
       break;
 
     case multiple_replicas:
-      create_hill (hill (hill_weight, colvars, hill_width, replica_id));
+	  if (well_tempered) {
+		std::vector<int> curr_bin = hills_energy->get_colvars_index();
+		cvm::real hills_energy_sum_here = hills_energy->value(curr_bin);
+		cvm::real exp_weight = std::exp(-hills_energy_sum_here/(bias_temperature*cvm::boltzmann()));
+		create_hill (hill ((hill_weight*exp_weight), colvars, hill_width, replica_id));
+      } else { 
+		create_hill (hill (hill_weight, colvars, hill_width, replica_id));
+      } 
+
       if (replica_hills_os.good()) {
         replica_hills_os << hills.back();
       } else {
@@ -454,7 +480,7 @@ cvm::real colvarbias_meta::update()
                           " while writing hills for the other replicas.\n");
       }
       break;
-    }
+    }    
   }
 
   // sync with the other replicas (if needed)
@@ -1475,9 +1501,15 @@ void colvarbias_meta::write_pmf()
     // output the PMF from this instance or replica
     pmf->reset();
     pmf->add_grid (*hills_energy);
-    cvm::real const max = pmf->maximum_value();
-    pmf->add_constant (-1.0 * max);
-    pmf->multiply_constant (-1.0);
+	cvm::real const max = pmf->maximum_value();
+	pmf->add_constant (-1.0 * max);
+	if (!well_tempered) {
+	  pmf->multiply_constant (-1.0);
+	} else {
+	  cvm::real well_temper_scale = (bias_temperature + cvm::temperature()) / bias_temperature;
+	  pmf->multiply_constant (-well_temper_scale);
+	}
+
     std::string const fes_file_name (fes_file_name_prefix +
                                      ((comm != single_replica) ? ".partial" : "") +
                                      (dump_fes_save ?

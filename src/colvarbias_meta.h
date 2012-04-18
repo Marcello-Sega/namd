@@ -147,6 +147,12 @@ protected:
   /// time steps, appending the step number to each file
   bool       dump_fes_save;
 
+  /// \brief Whether to use well-tempered metadynamics 
+  bool       well_tempered; 
+
+  /// \brief Bias factor in the well-tempered metadynamics 
+  cvm::real      bias_temperature; 
+
   /// \brief Try to read the restart information by allocating new
   /// grids before replacing the current ones (used e.g. in
   /// multiple_replicas)
