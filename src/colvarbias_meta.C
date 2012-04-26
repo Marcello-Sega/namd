@@ -457,6 +457,9 @@ cvm::real colvarbias_meta::update()
 		cvm::real hills_energy_sum_here = hills_energy->value(curr_bin);
 		cvm::real exp_weight = std::exp(-hills_energy_sum_here/(bias_temperature*cvm::boltzmann()));
 		create_hill (hill ((hill_weight*exp_weight), colvars, hill_width));
+		cvm::log ("Hill_height at step "+cvm::to_str (cvm::step_absolute())+" is "+
+				  cvm::to_str(hill_weight*exp_weight)+".\n");
+				  
       } else { 
 		create_hill (hill (hill_weight, colvars, hill_width));
       } 
@@ -468,6 +471,9 @@ cvm::real colvarbias_meta::update()
 		cvm::real hills_energy_sum_here = hills_energy->value(curr_bin);
 		cvm::real exp_weight = std::exp(-hills_energy_sum_here/(bias_temperature*cvm::boltzmann()));
 		create_hill (hill ((hill_weight*exp_weight), colvars, hill_width, replica_id));
+		cvm::log ("Hill_height at step "+cvm::to_str (cvm::step_absolute())+" is "+
+				  cvm::to_str(hill_weight*exp_weight)+".\n");
+
       } else { 
 		create_hill (hill (hill_weight, colvars, hill_width, replica_id));
       } 
