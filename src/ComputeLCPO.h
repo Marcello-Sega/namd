@@ -147,7 +147,6 @@ protected :
     Vector offset[8];
     int minIg[8];
     int strideIg;//stride through partitions
-    int frequency;
 
     //index "i" is patch; index "j" is valid atoms in patch
     Pairlists inAtomsPl;
