@@ -303,9 +303,9 @@ void ComputeLCPO::doForce() {
 
   Position ngir, ngjr, ngkr;
   Real ri, rj, rk;
-  BigReal dxij, dyij, dzij, r2ij, rij;
-  BigReal dxik, dyik, dzik, r2ik, rik;
-  BigReal dxjk, dyjk, dzjk, r2jk, rjk;
+  BigReal dxij, dyij, dzij, r2ij;
+  BigReal dxik, dyik, dzik, r2ik;
+  BigReal dxjk, dyjk, dzjk, r2jk;
 
 #ifdef COUNT_FLOPS
  int flops = 0;
@@ -376,9 +376,10 @@ if (pairlistsAge >= pairlistsMaxAge) {
 
               // i-j precise check if too far apart
               rj = probeRadius+lcpoParams[ lcpoType[pJ][ngj] ][0];
-              rij = sqrt(r2ij);
               FLOPS(5)
-              if (rij < (ri+rj+cutMargin) && rij > 0.01 &&
+              BigReal rirjcutMargin2 = ri+rj+cutMargin;
+              rirjcutMargin2 *= rirjcutMargin2;
+              if (r2ij < rirjcutMargin2 && r2ij > 0.0001 &&
                   lcpoType[pJ][ngj] > 0) {
                 lcpoNeighbors[numLcpoNeighbors].x = ngjr.x;
                 lcpoNeighbors[numLcpoNeighbors].y = ngjr.y;
@@ -501,11 +502,13 @@ if (pairlistsAge >= pairlistsMaxAge) {
         if (r2ij >= cut2 || r2ij < 0.01) { continue; }
 
         // i-j precise check if too far away
-        rij = sqrt(r2ij);
         FLOPS(5)
-        if ( rij >= (ri+rj) ) { continue; }
+        BigReal rirj2 = ri+rj;
+        rirj2 *= rirj2;
+        if ( r2ij >= rirj2 ) { continue; }
 
         numPairs++;
+        BigReal rij = sqrt(r2ij);
         BigReal rij_1 = 1.f / rij;
           
 //////////////////////////////////////////////////
@@ -553,14 +556,17 @@ if (pairlistsAge >= pairlistsMaxAge) {
           if (r2jk >= cut2 || r2jk < 0.01) { continue; }
 
           // i-k precise check if too far away
-          rik  = sqrt(r2ik);
           FLOPS(3)
-          if ( rik >= (ri+rk) ) { continue; }
+          BigReal rirk2 = ri+rk;
+          rirk2 *= rirk2;
+          if ( r2ik >= rirk2 ) { continue; }
 
           // j-k precise check if too far away
-          rjk  = sqrt(r2jk);
           FLOPS(2)
-          if ( rjk >= (rj+rk) ) { continue; }
+          BigReal rjrk2 = rj+rk;
+          rjrk2 *= rjrk2;
+          if ( r2jk >= rjrk2 ) { continue; }
+          BigReal rjk  = sqrt(r2jk);
 
 //////////////////////////////////////////////////
 // S3
