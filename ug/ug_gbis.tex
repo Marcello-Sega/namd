@@ -277,14 +277,14 @@ the dEda force is calculated every {\tt fullElectFrequency} steps (because dEda 
 \NAMDCONFWDEF{alphaCutoff}{cutoff used in calculating Born radius and derivatives (phases 1 and 3) (\AA)} {positive decimal} {15} {Cutoff used for calculating Born radius. Only atoms within this cutoff de-screen an atom. Though {\tt alphaCutoff} can bet set to be larger or shorter than {\tt cutoff}, since atom forces are more sensitive to changes in position than changes in Born radius, user's should generally set {\tt alphaCutoff} to be shorter than {\tt cutoff}.}
 
 \item
-\NAMDCONFWDEF{SASA}{whether or not to calculate SASA} {{\tt on} or {\tt off}} {{\tt off}} {The nonpolar / hydrophobic energy contribution from implicit solvent is calculated; it is proportional to the solvent-accessible surface area which is calculated by the Linear Combination of Pairwise Overlap (LCPO) method~\cite{WEIS99}.}
+\NAMDCONFWDEF{SASA}{whether or not to calculate SASA} {{\tt on} or {\tt off}} {{\tt off}} {The nonpolar / hydrophobic energy contribution from implicit solvent is calculated; it is proportional to the solvent-accessible surface area (SASA) which is calculated by the Linear Combination of Pairwise Overlap (LCPO) method~\cite{WEIS99}. It evaluated every {\tt nonbondedFreq} steps and its energy is added into the reported {\tt ELECT} energy.}
 
 \item
-\NAMDCONFWDEF{surfaceTension}{surface tension of hydrophobic} {positive decimal} {0.005~kcal/mol/\AA$^2$} {Surface tension used when calculating {\tt SASA}; $E_{\rm nonpolar} = {\rm surfaceTension} \times {\rm surfaceArea}$.}
+\NAMDCONFWDEF{surfaceTension}{surface tension of SASA energy} {positive decimal} {0.005~kcal/mol/\AA$^2$} {Surface tension used when calculating hydrophobic {\tt SASA} energy; $E_{\rm nonpolar} = {\rm surfaceTension} \times {\rm surfaceArea}$.}
 
 \end{itemize}
 
-Below is a sample excerpt from a NAMD config file for nonbonded and multistep parameters when using GBIS and SASA:
+Below is a sample excerpt from a NAMD config file for nonbonded and multistep parameters when using {\tt GBIS} and {\tt SASA}:
 \begin{verbatim}
 #GBIS parameters
 GBIS on
