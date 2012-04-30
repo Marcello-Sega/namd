@@ -231,7 +231,7 @@ int ComputeLCPO::noWork() {
 
   pairlistsAge++;
 
-  if ( patch[0]->flags.doFullElectrostatics ) {
+  if ( patch[0]->flags.doNonbonded) {
     return 0;  // work to do, enqueue as usual
   } else {
 
@@ -386,7 +386,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
                 lcpoNeighbors[numLcpoNeighbors].z = ngjr.z;
                 lcpoNeighbors[numLcpoNeighbors].r = rj;
                 lcpoNeighbors[numLcpoNeighbors].f =
-                  &force[pJ]->f[Results::slow][ngj];
+                  &force[pJ]->f[Results::nbond][ngj];
                 numLcpoNeighbors++;
                 FLOPS(2)
                 maxAtomRadius = (rj > maxAtomRadius) ? rj : maxAtomRadius;
@@ -630,9 +630,9 @@ if (pairlistsAge >= pairlistsMaxAge) {
       BigReal dAidxi = (P2*dAijdrijdxiSum + P4*dAijdrijdxiAjkSum); // k l
       BigReal dAidyi = (P2*dAijdrijdyiSum + P4*dAijdrijdyiAjkSum);
       BigReal dAidzi = (P2*dAijdrijdziSum + P4*dAijdrijdziAjkSum);
-      force[pI]->f[Results::slow][iIndex].x -= dAidxi*surfTen;
-      force[pI]->f[Results::slow][iIndex].y -= dAidyi*surfTen;
-      force[pI]->f[Results::slow][iIndex].z -= dAidzi*surfTen;
+      force[pI]->f[Results::nbond][iIndex].x -= dAidxi*surfTen;
+      force[pI]->f[Results::nbond][iIndex].y -= dAidyi*surfTen;
+      force[pI]->f[Results::nbond][iIndex].z -= dAidzi*surfTen;
 
 //////////////////////////////////////////////////
 // Atom I Surface Area
@@ -655,7 +655,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
 //////////////////////////////////////////////////
   for ( int i = 0; i < reductionDataSize; ++i )
     reductionData[i] = 0;
-  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += totalSurfaceArea * surfTen;
+  reduction->item(REDUCTION_ELECT_ENERGY) += totalSurfaceArea * surfTen;
   submitReductionData(reductionData,reduction);
   reduction->submit();
 

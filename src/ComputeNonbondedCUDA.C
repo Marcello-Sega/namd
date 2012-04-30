@@ -1751,6 +1751,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceR: <<<P3>>>\n", CkMyPe())
         // cudaEventRecord(start_upload, stream);
         cuda_bind_GBIS_dHdrPrefix(dHdrPrefixH);
         cudaEventRecord(start_calc, stream);
+        if (doSlow)
         cuda_GBIS_P3(
           localComputeRecords.size(),remoteComputeRecords.size(),
           localActivePatches.size(),remoteActivePatches.size(),
@@ -1829,6 +1830,7 @@ GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P2>>>\n", CkMyPe())
         }
       } else if (gbisPhase == 3) {
 GBISP("C.N.CUDA[%d]::recvYieldDeviceL: calling <<<P3>>>\n", CkMyPe())
+        if (doSlow)
         cuda_GBIS_P3(
           0,localComputeRecords.size(),
           0,localActivePatches.size(),
