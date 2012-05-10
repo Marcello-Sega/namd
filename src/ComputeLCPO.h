@@ -120,9 +120,6 @@ protected :
   CompAtom *pos[8];
   Results *force[8];
   int *lcpoType[8];
-
-  int pairlistsMaxAge;
-  int pairlistsAge;
   int step;
 
   virtual void doForce();

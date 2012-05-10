@@ -4,6 +4,14 @@
 ***  All rights reserved.
 **/
 
+/*******************************************************************************
+ *******************************************************************************
+  This serial version of GBIS is out of date and hasn't been vetted;
+  it is to be used as a way of testing new implicit solvent models
+  since all atomic coordinates are gathered into a single Compute.
+ *******************************************************************************
+ ******************************************************************************/
+
 /*
   print debug
   1 - once per step

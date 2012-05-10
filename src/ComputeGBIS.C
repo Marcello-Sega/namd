@@ -21,6 +21,23 @@
 #include "ComputeGBIS.inl"
 #include "time.h"
 
+/*******************************************************************************
+  When GBIS is active, the method calcGBIS is called from a nonbonded
+  compute object ::doForce() three times each timestep with
+  gbisPhase = 1, 2, 3.
+
+  At the beginning of the first phase, the pairlists are generated which are
+  used for all three phases; these pairlists are re-generated every timestep.
+  4 mutually exclusive pairlists are used, in an effort to accelerate the
+  iteration over pairs.
+  pairlist 0: atoms fall within interaction domain 2 (largest group)
+  pairlist 1: atoms fall within interaction domain 1 (next largest)
+  pairlist 2: atoms are within the phase 1,3 cutoff (all the rest)
+  pairlist 3: atoms are within the phase 2 cutoff (generally longer than previous cutoff)
+
+  These calculations generate nonbonded forces (and associated energies) which
+  are calculated in addition to Coulomb and van der Waals forces.
+*******************************************************************************/
 
 /*Searches all pair of atoms to create
 largest pairlist lasting all cycle*/

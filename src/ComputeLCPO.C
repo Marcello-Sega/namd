@@ -39,16 +39,14 @@ ComputeLCPO::ComputeLCPO(ComputeID c, PatchID p[], int t[],
   : Compute(c), workArrays(_workArrays),
     minPart(minPartition), maxPart(maxPartition),
     strideIg(numPartitions), numParts(numPartitions),
-    pairlistsMaxAge(10), maxAtomRadius(1.9+1.4)
+    maxAtomRadius(1.9+1.4)
   {
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 
   setNumPatches(8);
   SimParameters *simParams = Node::Object()->simParameters;
-  pairlistsMaxAge = (simParams->stepsPerCycle-1)/simParams->pairlistsPerCycle;
   surfTen = simParams->surface_tension;
-  pairlistsAge = pairlistsMaxAge;
 
   for (int i=0; i<getNumPatches(); i++) {
     patchID[i] = p[i];
@@ -190,15 +188,12 @@ void ComputeLCPO::initialize() {
   }
   //CkPrintf("\n");
 
-  //update frequency
-  pairlistsAge = pairlistsMaxAge;
 } // initialize
 
 void ComputeLCPO::atomUpdate() {
   for (int i=0; i<8; i++) {
 	  numAtoms[i] = patch[i]->getNumAtoms();
   }
-  pairlistsAge = pairlistsMaxAge;
 }
 
 //---------------------------------------------------------------------
@@ -228,8 +223,6 @@ void ComputeLCPO::doWork() {
 
 
 int ComputeLCPO::noWork() {
-
-  pairlistsAge++;
 
   if ( patch[0]->flags.doNonbonded) {
     return 0;  // work to do, enqueue as usual
@@ -296,10 +289,10 @@ inline BigReal calcOverlap( BigReal r, Real ri, Real rj ) {
 //////////////////////////////////////////////////////////////////////
 void ComputeLCPO::doForce() {
   //CkPrintf("ComputeLCPO::doForce\n");
-
+  step = patch[0]->flags.sequence;
 
   Real probeRadius = 1.4f;
-  Real cutMargin = 2.0;
+  Real cutMargin = 0.f;//regenerating pairlists every step
 
   Position ngir, ngjr, ngkr;
   Real ri, rj, rk;
@@ -314,10 +307,9 @@ void ComputeLCPO::doForce() {
 //////////////////////////////////////////////////
 // Build Pairlists
 //////////////////////////////////////////////////
-if (pairlistsAge >= pairlistsMaxAge) {
-  pairlistsAge = 0;
+//generate pairlists every step since contain coordinates
+if ( true ) {
   double t_start = 1.0*clock()/CLOCKS_PER_SEC;
-  pairlistsAge = 0;
 
   inAtomsPl.reset();
   lcpoNeighborList.reset();
@@ -420,14 +412,10 @@ if (pairlistsAge >= pairlistsMaxAge) {
   //reset pairlists
   inAtomsPl.reset();
   lcpoNeighborList.reset();
-  cut2 = 1000+maxAtomRadius*2; cut2 *= cut2;
+  cut2 = maxAtomRadius*2; cut2 *= cut2;
 
   //init values
-  int numSingles = 0;
-  int numPairs = 0;
-  int numTriplets = 0;
   BigReal totalSurfaceArea = 0;
-
 
 //////////////////////////////////////////////////
 //////////////////////////////////////////////////
@@ -445,7 +433,6 @@ if (pairlistsAge >= pairlistsMaxAge) {
     inAtomsPl.nextlist( &inAtoms, &numInAtoms );
     //for each inAtom in each patch
     for (int i = 0; i < numInAtoms; i++) {
-      numSingles++;
       int iIndex = inAtoms[i];
       int idi = posExt[pI][iIndex].id;
       Real xi = pos[pI][iIndex].position.x;
@@ -507,7 +494,6 @@ if (pairlistsAge >= pairlistsMaxAge) {
         rirj2 *= rirj2;
         if ( r2ij >= rirj2 ) { continue; }
 
-        numPairs++;
         BigReal rij = sqrt(r2ij);
         BigReal rij_1 = 1.f / rij;
           
@@ -571,7 +557,6 @@ if (pairlistsAge >= pairlistsMaxAge) {
 //////////////////////////////////////////////////
 // S3
 //////////////////////////////////////////////////
-          numTriplets++;
           BigReal rjk_1 = 1.0/rjk;
           BigReal Ajk = calcOverlap(rjk, rj, rk);
           FLOPS(12)
@@ -639,7 +624,7 @@ if (pairlistsAge >= pairlistsMaxAge) {
 //////////////////////////////////////////////////
       BigReal SAi = P1*S1 + P2*AijSum + P3*AjkSum + P4*AijAjkSum;
       //CkPrintf("SurfArea[%05d] = % 7.3f\n",idi,SAi);
-//      SAi = (SAi > 0) ? SAi : 0;
+      //SAi = (SAi > 0) ? SAi : 0;
       totalSurfaceArea += SAi;
       FLOPS(22)
     } // for inAtoms
@@ -649,10 +634,10 @@ if (pairlistsAge >= pairlistsMaxAge) {
   CkPrintf("LCPO_TIME_F %7.3f Gflops %9d @ %f\n", 1e-9*flops/(t_stop-t_start),flops, (t_stop-t_start));
 #endif
 
-
 //////////////////////////////////////////////////
 //  end calculation by submitting reduction
 //////////////////////////////////////////////////
+
   for ( int i = 0; i < reductionDataSize; ++i )
     reductionData[i] = 0;
   reduction->item(REDUCTION_ELECT_ENERGY) += totalSurfaceArea * surfTen;

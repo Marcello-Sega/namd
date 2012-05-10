@@ -4,6 +4,11 @@
 ***  All rights reserved.
 **/
 
+/*******************************************************************************
+  These are inline functions which define all the atom-pair calculations
+  included in ComputeGBIS.C and ComputeGBISCUDAKernal.h
+*******************************************************************************/
+
 #ifndef COMPUTEGBIS_INL
 #define COMPUTEGBIS_INL
 
