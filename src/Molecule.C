@@ -400,7 +400,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, char *filename, 
 #else
 	read_psf_file(filename, param);	
  //LCPO
-  assignLCPOTypes( 0 );
+  if (simParams->LCPOOn)
+    assignLCPOTypes( 0 );
 #endif      
  }
 
@@ -488,7 +489,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, molfile_plugin_t
   numRealBonds = numBonds;
   build_atom_status();
   //LCPO
-  assignLCPOTypes( 2 );
+  if (simParams->LCPOOn)
+    assignLCPOTypes( 2 );
 #endif
 }
 
@@ -2427,7 +2429,7 @@ void Molecule::assignLCPOTypes(int inputType) {
       );
 */
     if ( (atoms[i].mass<1.5) != (lcpoParamType[i]==0) ) {
-      CkPrintf("ERROR\n");
+      CkPrintf("ERROR in Molecule::assignLCPOTypes(): Light atom given heavy atom LCPO type.\n");
     }
     //CkPrintf("VDW_TYPE %02d %4s\n", atoms[i].vdw_type, atomNames[i].atomtype);
   } // for atoms
@@ -9115,7 +9117,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param, Ambertoppar *amb
 
 #ifndef MEM_OPT_VERSION
   //LCPO
-  assignLCPOTypes( 1 );
+  if (simParams->LCPOOn)
+    assignLCPOTypes( 1 );
 #endif
 }
 /*      END OF FUNCTION Molecule      */
@@ -9452,7 +9455,8 @@ Molecule::Molecule(SimParameters *simParams, Parameters *param,
 
 #ifndef MEM_OPT_VERSION
   //LCPO
-  assignLCPOTypes( 3 );
+  if (simParams->LCPOOn)
+    assignLCPOTypes( 3 );
 #endif
 }
 /*      END OF FUNCTION Molecule      */
