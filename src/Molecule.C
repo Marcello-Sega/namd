@@ -712,8 +712,8 @@ void Molecule::read_psf_file(char *fname, Parameters *params)
   if (NAMD_find_word(buffer, "drude"))
   {
     if ( ! simParams->drudeOn ) {
-      iout << iINFO << "Warning: Reading PSF supporting DRUDE without "
-        "enabling the Drude model in the simulation config file\n";
+      iout << iWARN << "Reading PSF supporting DRUDE without "
+        "enabling the Drude model in the simulation config file\n" << endi;
     }
     is_drude_psf = 1;
     is_lonepairs_psf = 1;
@@ -2411,6 +2411,7 @@ void Molecule::assignLCPOTypes(int inputType) {
 
   lcpoParamType = new int[numAtoms];
 
+  int warning = 0;
   for (int i = 0; i < numAtoms; i++) {
     //print vdw_type and numbonds
 
@@ -2428,11 +2429,30 @@ void Molecule::assignLCPOTypes(int inputType) {
       lcpoParamType[i]
       );
 */
-    if ( (atoms[i].mass<1.5) != (lcpoParamType[i]==0) ) {
-      CkPrintf("ERROR in Molecule::assignLCPOTypes(): Light atom given heavy atom LCPO type.\n");
+    if ( atoms[i].mass < 1.5 && lcpoParamType[i] != 0 ) {
+      if (atoms[i].status & LonepairAtom) {
+        warning |= LonepairAtom;
+        lcpoParamType[i] = 0;  // reset LCPO type for LP
+      }
+      else if (atoms[i].status & DrudeAtom) {
+        warning |= DrudeAtom;
+        lcpoParamType[i] = 0;  // reset LCPO type for Drude
+      }
+      else {
+        CkPrintf("ERROR in Molecule::assignLCPOTypes(): "
+            "Light atom given heavy atom LCPO type.\n");
+      }
     }
+
     //CkPrintf("VDW_TYPE %02d %4s\n", atoms[i].vdw_type, atomNames[i].atomtype);
   } // for atoms
+
+  if (warning & LonepairAtom) {
+    iout << iWARN << "LONE PAIRS TO BE IGNORED BY SASA\n" << endi;
+  }
+  if (warning & DrudeAtom) {
+    iout << iWARN << "DRUDE PARTICLES TO BE IGNORED BY SASA\n" << endi;
+  }
 
   delete [] heavyBonds;
 
@@ -4625,7 +4645,8 @@ void Molecule::build_excl_check_signatures(){
                sigChk->max = sig->modOffset[sig->modExclCnt-1];
            }else{ //both count are 0
                if(CkMyPe()==0)
-                   printf("Warning: an empty exclusion signature with index %d!\n", i);               
+                   iout << iWARN << "an empty exclusion signature with index "
+                     << i << "!\n" << endi;
                continue;
            }
        }           
