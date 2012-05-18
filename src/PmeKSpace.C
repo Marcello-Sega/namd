@@ -8,9 +8,15 @@
 #include <math.h>
 #include <stdlib.h>
 
+#ifndef _NO_ALLOCA_H
+#include <alloca.h>
+#endif
+
 #include "SimParameters.h" 
 #include "Node.h"  
 #include "ComputeMoaMgr.decl.h"  
+
+#define ALLOCA(TYPE,NAME,SIZE) TYPE *NAME = (TYPE *) alloca((SIZE)*sizeof(TYPE))
 
 static void dftmod(double *bsp_mod, double *bsp_arr, int nfft) {
   int j, k;
@@ -260,8 +266,8 @@ double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &
 
     double recips[] = {recipx, recipy, recipz};
     const int NPARTS=CmiMyNodeSize(); //this controls the granularity of loop parallelism
-    double partialEnergy[NPARTS];
-    double partialVirial[6*NPARTS];
+    ALLOCA(double, partialEnergy, NPARTS);
+    ALLOCA(double, partialVirial, 6*NPARTS);
     int unitDist[] = {K1/NPARTS, K1%NPARTS};
     
     //parallelize the following loop using NodeHelper
