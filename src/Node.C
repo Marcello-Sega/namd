@@ -351,6 +351,12 @@ void Node::startup() {
     simParameters = node_simParameters;
     parameters = node_parameters;
     molecule = node_molecule;
+    
+    #if !CMK_SMP || ! USE_NODEHELPER
+    //the NodeHelper library should be only used in SMP mode
+    simParameters->useNodeHelper = 0;
+    #endif
+
 
     if ( simParameters->mallocTest ) {
       if (!CkMyPe()) {
@@ -744,6 +750,7 @@ void Node::namdOneSend() {
   conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
   // Modified by JLai -- 10.21.11
   molecule->send_Molecule(conv_msg);
+  
   if(simParameters->goForcesOn) {
     iout << iINFO <<  "Master Node sending GoMolecule Information" << "\n" << endi;
     conv_msg = CkpvAccess(comm)->newOutputStream(ALLBUTME, MOLECULETAG, bufSize);
@@ -1014,6 +1021,9 @@ void Node::traceBarrier(int turnOnTrace, int step){
 	curTimeStep = step;
 	if(turnOnTrace) traceBegin();
 	else traceEnd();
+
+    if(turnOnTrace) CmiTurnOnStats();
+    else CmiTurnOffStats();
 
 	//CkPrintf("traceBarrier (%d) at step %d called on proc %d\n", turnOnTrace, step, CkMyPe());	
 	CProxy_Node nd(CkpvAccess(BOCclass_group).node);

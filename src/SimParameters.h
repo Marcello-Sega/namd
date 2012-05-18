@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2012/03/11 23:40:50 $
- * $Revision: 1.1204 $
+ * $Author: gzheng $
+ * $Date: 2012/05/18 07:33:49 $
+ * $Revision: 1.1205 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -86,6 +86,17 @@ typedef int GoChoices;
 #define GO_SPARSE 2
 #define GO_LOWMEM 3
 
+// Used for controlling PME parallelization with nodehelper
+// The higher level will include all parallelization for lower ones
+// E.g. If setting useNodeHelper to 3, then xpencil's kspace, all
+// backward ffts and send_untrans/ungrid routines will be parallelized
+#define NDH_CTRL_PME_UNGRIDCALC 6
+#define NDH_CTRL_PME_FORWARDFFT 5
+#define NDH_CTRL_PME_SENDTRANS 4
+#define NDH_CTRL_PME_KSPACE 3
+#define NDH_CTRL_PME_BACKWARDFFT 2
+#define NDH_CTRL_PME_SENDUNTRANS 1
+
 class SimParameters
 {
 private:
@@ -141,6 +152,12 @@ public:
 	int simulatedNodeSize;
 
 	Bool benchTimestep; //only cares about benchmarking the timestep, so no file output to save SUs for large-scale benchmarking
+
+	//whether to use NodeHelper library to parallelize a loop in a function like OpenMP.
+	//It has multiple control levels. The higher the value is (must be positive), the more parallelization will be performed
+	//Currently, it is mainly used for PME computation. The default value is 0, meaning it is disabled
+	//Refer to macros NDH_CTRL_* in this file for the ordering of different levels
+	int useNodeHelper; 
 
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension
@@ -688,6 +705,7 @@ public:
 
 	Bool testOn;			//  Do tests rather than simulation
 	Bool commOnly;			//  Don't do any force evaluations
+	Bool statsOn;			//  Don't do any force evaluations
 
 	int totalAtoms;			//  Total Number of atoms in simulation
         int maxSelfPart;                // maximum number of self partitions

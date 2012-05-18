@@ -166,7 +166,11 @@ void master_init(int argc, char **argv){
 
   #ifdef USE_NODEPATCHMGR
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
-  #endif 
+  #endif
+  
+#if     USE_NODEHELPER
+  group.nodeHelper = NodeHelper_Init();
+#endif
 
   CkChareID collectionMaster = CProxy_CollectionMaster::ckNew(0);  
   SlaveInitMsg *initmsg7 = new SlaveInitMsg;

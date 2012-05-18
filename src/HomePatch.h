@@ -168,6 +168,7 @@ public:
   int findSubroots(int dim, int* subroots, int psize, int* pidscopy);
 #endif
 
+  LDObjHandle ldObjHandle;
 protected:
   virtual void boxClosed(int);
 

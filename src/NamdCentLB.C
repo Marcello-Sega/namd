@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: dtanner $
- * $Date: 2012/03/14 15:44:15 $
- * $Revision: 1.114 $
+ * $Author: gzheng $
+ * $Date: 2012/05/18 07:33:48 $
+ * $Revision: 1.115 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -602,6 +602,9 @@ int NamdCentLB::buildData(LDStats* stats)
 	  processorArray[neighborNodes[k]].proxies.unchecked_insert(&patchArray[pid]);
 	  patchArray[pid].proxiesOn.unchecked_insert(&processorArray[neighborNodes[k]]);
 	}
+	processorArray[stats->from_proc[j]].backgroundLoad += this_obj.wallTime;
+      } else if (this_obj.id().id[1] == -3) { // Its a bonded compute
+	processorArray[stats->from_proc[j]].backgroundLoad += this_obj.wallTime;
       } else if (this_obj.migratable) { // Its a compute
 	const int cid = this_obj.id().id[0];
 	const int p0 = computeMap->pid(cid,0);

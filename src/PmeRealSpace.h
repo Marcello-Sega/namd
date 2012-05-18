@@ -20,13 +20,14 @@ public:
                        int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]); 
   void compute_forces(const double * const *q_arr, const PmeParticle p[], 
                       Vector f[]);
-
+                      
+  void compute_forces_order4_partial(int first, int last, const double * const *q_arr, const PmeParticle p[], 
+                      Vector f[]);                      
 private:
   void fill_charges_order4(double **q_arr, double **q_arr_list, int &q_arr_count,
                        int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]); 
   void compute_forces_order4(const double * const *q_arr, const PmeParticle p[], 
                       Vector f[]);
-
   void fill_b_spline(PmeParticle p[]);
 
   const int N;

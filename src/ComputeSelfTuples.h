@@ -159,7 +159,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
     }
 
     void doWork(void) {
-      LdbCoordinator::Object()->startWork(this->ldObjHandle);
+//      LdbCoordinator::Object()->startWork(this->ldObjHandle);
 
 #ifdef TRACE_COMPUTE_OBJECTS
     double traceObjStartTime = CmiWallTimer();
@@ -171,7 +171,7 @@ template <class T, class S, class P> class ComputeSelfTuples :
     traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+this->cid, traceObjStartTime, CmiWallTimer());
 #endif
 
-      LdbCoordinator::Object()->endWork(this->ldObjHandle);
+//      LdbCoordinator::Object()->endWork(this->ldObjHandle);
     }
 
 };

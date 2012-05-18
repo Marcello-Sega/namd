@@ -30,6 +30,7 @@
 #include "UniqueSet.h"
 #include "UniqueSetIter.h"
 #include "Priorities.h"
+#include "LdbCoordinator.h"
 
 class TuplePatchElem {
   public:
@@ -362,6 +363,8 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
 //-------------------------------------------------------------------
     virtual void doWork(void) {
 
+      LdbCoordinator::Object()->startWork(ldObjHandle);
+
       // Open Boxes - register that we are using Positions
       // and will be depositing Forces.
       UniqueSetIter<TuplePatchElem> ap(tuplePatchList);
@@ -404,6 +407,8 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       tupleCount += ntuple;
       }
  
+    LdbCoordinator::Object()->endWork(ldObjHandle);
+
       T::submitReductionData(reductionData,reduction);
       reduction->item(T::reductionChecksumLabel) += (BigReal)tupleCount;
       reduction->submit();

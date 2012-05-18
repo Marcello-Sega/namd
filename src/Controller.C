@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2012/02/24 01:25:01 $
- * $Revision: 1.1285 $
+ * $Author: gzheng $
+ * $Date: 2012/05/18 07:33:47 $
+ * $Revision: 1.1286 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -388,7 +388,7 @@ void Controller::integrate() {
         cycleBarrier(1, step);
 #endif
 		
-	if(Node::Object()->specialTracing){		
+	if(Node::Object()->specialTracing || simParams->statsOn){		
 		 int bstep = simParams->traceStartStep;
 		 int estep = bstep + simParams->numTraceSteps;		
 		 if(step == bstep){
@@ -2223,7 +2223,7 @@ void Controller::printEnergies(int step, int minimize)
     int stepInRun = step - simParams->firstTimestep;
     if ( stepInRun % simParams->firstLdbStep == 0 ) {
      int benchPhase = stepInRun / simParams->firstLdbStep;
-     if ( benchPhase > 0 && benchPhase < 7 ) {
+     if ( benchPhase > 0 && benchPhase < 10 ) {
 #ifdef NAMD_CUDA
       if ( simParams->outputEnergies < 60 ) {
         iout << iWARN << "Energy evaluation is expensive, increase outputEnergies to improve performance.\n";

@@ -5,7 +5,6 @@
 **/
 
 module ComputePmeMgr {
-
   message PmeGridMsg {
     float qgrid[];
     int zlist[];
@@ -29,6 +28,8 @@ module ComputePmeMgr {
   message PmePencilInitMsg;
 
   message PmeAckMsg;
+
+  initproc void Pme_init();
 
   array [3D] PmeZPencil {
     entry PmeZPencil();
@@ -80,6 +81,7 @@ module ComputePmeMgr {
 	  atomic "backward_fft" { backward_fft(); }
 	}
 	atomic "send_ungrid" {
+	/*
 	  int send_evir = 1;
 	  for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
 	    PmeGridMsg *msg = grid_msgs[imsg];
@@ -93,6 +95,8 @@ module ComputePmeMgr {
 	    }
 	    send_ungrid(msg);
 	  }
+	*/
+	   send_all_ungrid();
 	}
 	if ( ! hasData ) {
 	  for ( imsg=0; imsg < initdata.zBlocks; ++imsg ) {
@@ -177,8 +181,20 @@ module ComputePmeMgr {
 
   nodegroup NodePmeMgr {
     entry NodePmeMgr(void);
+    entry void recvPencilMapProxies(CProxy_PmePencilMap xm, CProxy_PmePencilMap ym, CProxy_PmePencilMap zm);
     entry [expedited] void recvTrans(PmeTransMsg *);
     entry [expedited] void recvUntrans(PmeUntransMsg *);
+    
+    // pencil comm management entries
+
+    //need exclusive segmentation of zpencils to implement recvZGrid optimally
+    entry  void recvZGrid(PmeGridMsg *);
+
+    // these are all mutually exclusive region copy ops, so safely reentrant
+    entry  void recvXTrans(PmeTransMsg *);
+    entry  void recvYTrans(PmeTransMsg *);
+    entry  void recvYUntrans(PmeUntransMsg *);
+    entry  void recvZUntrans(PmeUntransMsg *);    
   };
   group ComputePmeMgr {
 

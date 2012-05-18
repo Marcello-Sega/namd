@@ -57,9 +57,11 @@ public:
   int numGridAtoms[PME_MAX_EVALS];
   PmeParticle *localGridData[PME_MAX_EVALS];
   ComputePmeMgr *myMgr;
+
 #if CMK_PERSISTENT_COMM
   PersistentHandle   *recvGrid_handle;
 #endif
+
 };
 
 #endif

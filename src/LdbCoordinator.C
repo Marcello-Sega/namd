@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
  * $Author: gzheng $
- * $Date: 2012/03/25 23:33:53 $
- * $Revision: 1.115 $
+ * $Date: 2012/05/18 07:33:48 $
+ * $Revision: 1.116 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -289,6 +289,15 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	      || (computeMap->type(i) == computeSelfTholeType)
 	      || (computeMap->type(i) == computeSelfAnisoType)
 	      || (computeMap->type(i) == computeSelfCrosstermsType)
+
+                 || (computeMap->type(i) == computeBondsType)
+                 || (computeMap->type(i) == computeExclsType)
+                 || (computeMap->type(i) == computeAnglesType)
+                 || (computeMap->type(i) == computeDihedralsType)
+                 || (computeMap->type(i) == computeImpropersType)
+                 || (computeMap->type(i) == computeTholeType)
+                 || (computeMap->type(i) == computeAnisoType)
+                 || (computeMap->type(i) == computeCrosstermsType)
 	) ) {
       nLocalComputes++;
     }
@@ -323,17 +332,21 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	       << "LdbCoordinator found too many local patches!" << endi;
 	  CkExit();
 	}
+        HomePatch *p = patchMap->homePatch(i);
+        p->ldObjHandle = 
 	patchHandles[patch_count] 
 	  = theLbdb->RegisterObj(myHandle,elemID,0,0);
 	patch_count++;
+
       }
    }
   
     if ( numComputes > oldNumComputes ) {
       // Register computes
       for(i=oldNumComputes; i<numComputes; i++)  {
-	if ( (computeMap->node(i) == Node::Object()->myid())
-	     && ( 0
+	if ( computeMap->node(i) == Node::Object()->myid())
+        {
+	  if ( 0
 #ifndef NAMD_CUDA
 	          || (computeMap->type(i) == computeNonbondedSelfType)
 	          || (computeMap->type(i) == computeNonbondedPairType)
@@ -347,7 +360,7 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
 	          || (computeMap->type(i) == computeSelfTholeType)
 	          || (computeMap->type(i) == computeSelfAnisoType)
 	          || (computeMap->type(i) == computeSelfCrosstermsType)
-		) ) {
+		)  {
 	  // Register the object with the load balancer
 	  // Store the depended patch IDs in the rest of the element ID
 	  LDObjid elemID;
@@ -369,6 +382,28 @@ void LdbCoordinator::initialize(PatchMap *pMap, ComputeMap *cMap, int reinit)
           if ( ! c ) NAMD_bug("LdbCoordinator::initialize() null compute pointer");
 
           c->ldObjHandle = theLbdb->RegisterObj(myHandle,elemID,0,1);
+          }
+          else if ( (computeMap->type(i) == computeBondsType)
+                 || (computeMap->type(i) == computeExclsType)
+                 || (computeMap->type(i) == computeAnglesType)
+                 || (computeMap->type(i) == computeDihedralsType)
+                 || (computeMap->type(i) == computeImpropersType)
+                 || (computeMap->type(i) == computeTholeType)
+                 || (computeMap->type(i) == computeAnisoType)
+                 || (computeMap->type(i) == computeCrosstermsType)
+               ) {
+	  // Register the object with the load balancer
+	  // Store the depended patch IDs in the rest of the element ID
+	  LDObjid elemID;
+	  elemID.id[0] = i;
+	
+	  elemID.id[1] = elemID.id[2] = elemID.id[3] = -3;
+
+          Compute *c = computeMap->compute(i);
+          if ( ! c ) NAMD_bug("LdbCoordinator::initialize() null compute pointer");
+
+          c->ldObjHandle = theLbdb->RegisterObj(myHandle,elemID,0,0);
+          }
 	}
       }
     }

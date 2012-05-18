@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dtanner $
- * $Date: 2012/04/18 16:45:17 $
- * $Revision: 1.1389 $
+ * $Author: gzheng $
+ * $Date: 2012/05/18 07:33:49 $
+ * $Revision: 1.1390 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1738,6 +1738,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    opts.optionalB("main", "outputMaps", "whether to dump compute map and patch map for analysis just before load balancing", &outputMaps, FALSE);
    opts.optionalB("main", "benchTimestep", "whether to do benchmarking timestep in which case final file output is disabled", &benchTimestep, FALSE);
+   opts.optional("main", "useNodeHelper", "whether to use NodeHelper library to parallelize a loop in a function like OpenMP", &useNodeHelper, 0);
+   opts.range("useNodeHelper", NOT_NEGATIVE);
 
    opts.optionalB("main", "simulateInitialMapping", "whether to study the initial mapping scheme", &simulateInitialMapping, FALSE);
    opts.optional("main", "simulatedPEs", "the number of PEs to be used for studying initial mapping", &simulatedPEs);
@@ -1790,6 +1792,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optionalB("main", "commOnly", "Do not evaluate forces or integrate",
 		&commOnly, FALSE);
 
+   opts.optionalB("main", "statsOn", "counters in machine layer",
+		&statsOn, FALSE);
    ///////////////  hydrogen bond computation options
    opts.optionalB("main", "hbonds", "Use explicit hydrogen bond term",
                  &HydrogenBonds, FALSE);

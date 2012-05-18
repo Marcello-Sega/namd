@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dtanner $
- * $Date: 2012/02/21 14:43:48 $
- * $Revision: 1.1205 $
+ * $Author: gzheng $
+ * $Date: 2012/05/18 07:33:49 $
+ * $Revision: 1.1206 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -293,7 +293,9 @@ void Sequencer::integrate() {
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
-
+#ifndef NAMD_CUDA
+      LdbCoordinator::Object()->startWork(patch->ldObjHandle);
+#endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
       berendsenPressure(step);
@@ -346,7 +348,13 @@ void Sequencer::integrate() {
       doEnergy = ! ( step % energyFrequency );
       if ( accelMDOn && !accelMDdihe ) doEnergy=1;
       if ( adaptTempOn ) doEnergy=1; 
+#ifndef NAMD_CUDA
+      LdbCoordinator::Object()->pauseWork(patch->ldObjHandle);
+#endif
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
+#ifndef NAMD_CUDA
+      LdbCoordinator::Object()->startWork(patch->ldObjHandle);
+#endif
  
       rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
      
@@ -403,6 +411,10 @@ void Sequencer::integrate() {
 	submitCollections(step);
        //Update adaptive tempering temperature
         adaptTempUpdate(step);
+
+#ifndef NAMD_CUDA
+        LdbCoordinator::Object()->pauseWork(patch->ldObjHandle);
+#endif
  
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle), step);
@@ -412,7 +424,7 @@ void Sequencer::integrate() {
         cycleBarrier(1, step);
 #endif
 
-	 if(Node::Object()->specialTracing){
+	 if(Node::Object()->specialTracing || simParams->statsOn){
 		 int bstep = simParams->traceStartStep;
 		 int estep = bstep + simParams->numTraceSteps;
 		 if(step == bstep || step == estep){

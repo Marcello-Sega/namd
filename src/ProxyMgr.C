@@ -1416,7 +1416,9 @@ void ProxyMgr::recvNodeAwareSTParent(int patch, int parent){
 void ProxyMgr::sendResults(ProxyResultVarsizeMsg *msg) {
     CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
     NodeID node = PatchMap::Object()->node(msg->patch);
+    CmiEnableUrgentSend(1);
     cp[node].recvResults(msg);
+    CmiEnableUrgentSend(0);
 }
 
 void ProxyMgr::recvResults(ProxyResultVarsizeMsg *msg) {
@@ -1427,7 +1429,9 @@ void ProxyMgr::recvResults(ProxyResultVarsizeMsg *msg) {
 void ProxyMgr::sendResults(ProxyResultMsg *msg) {
   CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   NodeID node = PatchMap::Object()->node(msg->patch);
+  CmiEnableUrgentSend(1);
   cp[node].recvResults(msg);
+  CmiEnableUrgentSend(0);
 }
 
 void ProxyMgr::recvResults(ProxyResultMsg *msg) {
@@ -1491,7 +1495,9 @@ void ProxyMgr::recvImmediateResults(ProxyCombinedResultRawMsg *omsg) {
   HomePatch *home = PatchMap::Object()->homePatch(omsg->patch);
   if (home) {
     CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);        
+    CmiEnableUrgentSend(1);
     cp[CkMyPe()].recvResults(omsg);
+    CmiEnableUrgentSend(0);
   }
   else {
     ProxyPatch *patch = (ProxyPatch *)PatchMap::Object()->patch(omsg->patch);
@@ -1518,7 +1524,9 @@ void NodeProxyMgr::recvImmediateResults(ProxyCombinedResultRawMsg *omsg){
         msg->isFromImmMsgCall = (CkMyRank()==CkMyNodeSize());
 #endif
         CProxy_ProxyMgr cp(localProxyMgr);
+        CmiEnableUrgentSend(1);
         cp[msg->destPe].recvResults(msg);
+        CmiEnableUrgentSend(0);
 /*
         char *srcfrom = "Isfrom";
         if(CkMyRank()!=CmiMyNodeSize()) srcfrom="Notfrom";
@@ -1831,7 +1839,9 @@ void NodeProxyMgr::registerPatch(int patchID, int numPes, int *pes){
 void ProxyMgr::sendResult(ProxyGBISP1ResultMsg *msg) { //pp -r> hp
   CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   NodeID node = PatchMap::Object()->node(msg->patch);
+  CmiEnableUrgentSend(1);
   cp[node].recvResult(msg);
+  CmiEnableUrgentSend(0);
 }
 void ProxyMgr::recvResult(ProxyGBISP1ResultMsg *msg) { //pp -r> hp
   HomePatch *homePatch = PatchMap::Object()->homePatch(msg->patch);
@@ -1844,7 +1854,9 @@ void ProxyMgr::recvData(  ProxyGBISP2DataMsg *msg) {  //hp -d> pp
 void ProxyMgr::sendResult(ProxyGBISP2ResultMsg *msg) { //pp -r> hp
   CProxy_ProxyMgr cp(CkpvAccess(BOCclass_group).proxyMgr);
   NodeID node = PatchMap::Object()->node(msg->patch);
+  CmiEnableUrgentSend(1);
   cp[node].recvResult(msg);
+  CmiEnableUrgentSend(0);
 }
 void ProxyMgr::recvResult(ProxyGBISP2ResultMsg *msg) { //pp -r> hp
   HomePatch *homePatch = PatchMap::Object()->homePatch(msg->patch);

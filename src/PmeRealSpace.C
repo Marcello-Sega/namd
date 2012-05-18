@@ -6,6 +6,8 @@
 
 #include <string.h>
 #include "PmeRealSpace.h"
+#include "Node.h"
+#include "SimParameters.h"
 
 PmeRealSpace::PmeRealSpace(PmeGrid grid,int natoms)
   : myGrid(grid), N(natoms) {
@@ -301,6 +303,15 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, double **q_arr_list, int 
   }
 }
 
+static inline void compute_forces_order4_helper(int first, int last, void *result, int paraNum, void *param){
+    void **params = (void **)param;
+    PmeRealSpace *rs = (PmeRealSpace *)params[0];
+    const double * const *q_arr = (const double * const *)params[1];
+    const PmeParticle *p = (const PmeParticle *)params[2];
+    Vector *f = (Vector *)params[3];
+    rs->compute_forces_order4_partial(first, last, q_arr, p, f);
+}
+
 void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
 				const PmeParticle p[], Vector f[]) {
   
@@ -309,6 +320,16 @@ void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
   double *Mi, *dMi;
   int K1, K2, K3, dim2;
 
+#if     USE_NODEHELPER
+  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_UNGRIDCALC){          
+      //compute_forces_order4_partial(0, N-1, q_arr, p, f);
+      CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+      void *params[] = {(void *)this, (void *)q_arr, (void *)p, (void *)f};
+      NodeHelper_Parallelize(nodeHelper, compute_forces_order4_helper, 4, (void *)params, CkMyNodeSize(), 0, N-1);
+      return;
+  }
+#endif
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2;
   // order = myGrid.order;
   stride=3*order;
@@ -362,6 +383,74 @@ void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
     }
     Mi += stride;
     dMi += stride;
+    f[i].x = f1;
+    f[i].y = f2;
+    f[i].z = f3;
+  }
+}
+
+void PmeRealSpace::compute_forces_order4_partial(int first, int last, 
+                const double * const *q_arr,
+				const PmeParticle p[], Vector f[]) {
+  
+  int i, j, k, l, stride;
+  double f1, f2, f3;
+  double *Mi, *dMi;
+  int K1, K2, K3, dim2;
+
+  K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2;
+  // order = myGrid.order;
+  stride=3*order;
+  Mi = M; dMi = dM;
+ 
+  for (i=first; i<=last; i++) {
+    Mi = M + i*stride;
+    dMi = dM + i*stride;
+    double q;
+    int u1, u2, u2i, u3i;
+    q = p[i].cg;
+    f1=f2=f3=0.0;
+    u1 = (int)(p[i].x);
+    u2i = (int)(p[i].y);
+    u3i = (int)(p[i].z);
+    u1 -= order;
+    u2i -= order;
+    u3i -= order;
+    u3i += 1;
+    for (j=0; j<order; j++) {
+      double m1, d1;
+      int ind1;
+      m1=Mi[j]*q;
+      d1=K1*dMi[j]*q;
+      u1++;
+      ind1 = (u1 + (u1 < 0 ? K1 : 0))*dim2; 
+      u2 = u2i;
+      for (k=0; k<order; k++) {
+        double m2, d2, m1m2, m1d2, d1m2;
+	int ind2;
+        m2=Mi[order+k];
+	d2=K2*dMi[order+k];
+	m1m2=m1*m2;
+	m1d2=m1*d2;
+	d1m2=d1*m2;
+	u2++;
+	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
+	const double *qline = q_arr[ind2];
+	if ( ! qline ) continue;
+        for (l=0; l<order; l++) {
+	  double term, m3, d3;
+	  int ind;
+	  m3=Mi[2*order+l];
+	  d3=K3*dMi[2*order+l];
+	  int u3 = u3i + l;
+	  ind = u3 + (u3 < 0 ? K3 : 0);
+	  term = qline[ind];
+	  f1 -= d1m2 * m3 * term;
+	  f2 -= m1d2 * m3 * term;
+	  f3 -= m1m2 * d3 * term;
+        }
+      }
+    }
     f[i].x = f1;
     f[i].y = f2;
     f[i].z = f3;

@@ -26,6 +26,8 @@ public:
   ~PmeKSpace();
 
   double compute_energy(float q_arr[], const Lattice &lattice, double ewald, double virial[]);
+  double compute_energy_orthogonal_helper(float q_arr[], const Lattice &lattice, double ewald, double virial[]);
+  void compute_energy_orthogonal_subset(float q_arr[], double *recips, double partialVirial[], double *partialEnergy, int k1from, int k1to);
   
 
 private:

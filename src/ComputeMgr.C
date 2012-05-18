@@ -891,7 +891,9 @@ void ComputeMgr:: recvComputeGlobalResults(ComputeGlobalResultsMsg *msg)
 {
     if ( computeGlobalObject )
     {
+        CmiEnableUrgentSend(1);
         computeGlobalObject->recvResults(msg);
+        CmiEnableUrgentSend(0);
     }
     else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
     else NAMD_die("ComputeMgr::computeGlobalObject is NULL!");
@@ -930,8 +932,11 @@ void ComputeMgr:: sendComputeEwaldResults(ComputeEwaldMsg *msg)
 
 void ComputeMgr::recvComputeEwaldResults(ComputeEwaldMsg *msg)
 {
-    if (computeEwaldObject)
+    if (computeEwaldObject) {
+        CmiEnableUrgentSend(1);
         computeEwaldObject->recvResults(msg);
+        CmiEnableUrgentSend(0);
+    }
     else if ( ! (PatchMap::Object())->numHomePatches() ) delete msg;
     else NAMD_die("ComputeMgr::computeEwaldObject in recvResults is NULL!");
 }

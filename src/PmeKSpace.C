@@ -125,6 +125,190 @@ PmeKSpace::~PmeKSpace() {
   delete [] exp3;
 }
 
+void PmeKSpace::compute_energy_orthogonal_subset(float q_arr[], double *recips, double *partialVirial, double *partialEnergy, int k1from, int k1to){
+
+    double energy = 0.0;
+    double v0 = 0.;
+    double v1 = 0.;
+    double v2 = 0.;
+    double v3 = 0.;
+    double v4 = 0.;
+    double v5 = 0.;
+    
+    int k1, k2, k3;
+    int K1, K2, K3;
+    K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3;
+    
+    double recipx = recips[0];
+    double recipy = recips[1];
+    double recipz = recips[2];
+
+    int ind = k1from*(k2_end-k2_start)*(k3_end-k3_start)*2;
+        
+    for ( k1=k1from; k1<=k1to; ++k1 ) {        
+        double m1, m11, b1, xp1;
+        b1 = bm1[k1];
+        int k1_s = k1<=K1/2 ? k1 : k1-K1;
+        m1 = k1_s*recipx;
+        m11 = m1*m1;
+        xp1 = i_pi_volume*exp1[abs(k1_s)];
+        for ( k2=k2_start; k2<k2_end; ++k2 ) {
+            double m2, m22, b1b2, xp2;
+            b1b2 = b1*bm2[k2];
+            int k2_s = k2<=K2/2 ? k2 : k2-K2;
+            m2 = k2_s*recipy;
+            m22 = m2*m2;
+            xp2 = exp2[abs(k2_s)]*xp1;
+
+            k3 = k3_start;
+            if (k1==0 && k2==0 && k3==0) {
+              q_arr[ind++] = 0.0;
+              q_arr[ind++] = 0.0;
+              ++k3;
+            }
+            for (; k3<k3_end; ++k3 ) {
+              double m3, m33, xp3, msq, imsq, vir, fac;
+              double theta3, theta, q2, qr, qc, C;
+              theta3 = bm3[k3] *b1b2;
+              m3 = k3*recipz;
+              m33 = m3*m3;
+              xp3 = exp3[k3];
+              qr = q_arr[ind]; qc=q_arr[ind+1];
+              q2 = 2*(qr*qr + qc*qc)*theta3;
+              if ( (k3 == 0) || ( k3 == K3/2 && ! (K3 & 1) ) ) q2 *= 0.5;
+              msq = m11 + m22 + m33;
+              imsq = 1.0/msq;
+              C = xp2*xp3*imsq;
+              theta = theta3*C;
+              q_arr[ind] *= theta;
+              q_arr[ind+1] *= theta;
+              vir = -2*(piob+imsq);
+              fac = q2*C;
+              energy += fac;
+              v0 += fac*(1.0+vir*m11);
+              v1 += fac*vir*m1*m2;
+              v2 += fac*vir*m1*m3;
+              v3 += fac*(1.0+vir*m22);
+              v4 += fac*vir*m2*m3;
+              v5 += fac*(1.0+vir*m33);
+              ind += 2;
+            }
+        }
+    }
+    
+    *partialEnergy = 0.5*energy;
+    partialVirial[0] = 0.5*v0;
+    partialVirial[1] = 0.5*v1;
+    partialVirial[2] = 0.5*v2;
+    partialVirial[3] = 0.5*v3;
+    partialVirial[4] = 0.5*v4;
+    partialVirial[5] = 0.5*v5;
+}
+static inline void compute_energy_orthogonal_nodehelper(int first, int last, void *result, int paraNum, void *param){
+    CmiAssert(first==last);
+    void **params = (void **)param;
+    PmeKSpace *kspace = (PmeKSpace *)params[0];
+    float *q_arr = (float *)params[1];
+    double *recips = (double *)params[2];
+    double *partialEnergy = (double *)params[3];
+    double *partialVirial = (double *)params[4];
+    int *unitDist = (int *)params[5];
+    
+    int i = first;
+    int unit = unitDist[0];
+    int remains = unitDist[1];
+    int k1from, k1to;
+    if(i<remains){
+        k1from = i*(unit+1);
+        k1to = k1from+unit;
+    }else{
+        k1from = remains*(unit+1)+(i-remains)*unit;
+        k1to = k1from+unit-1;
+    }
+    double *pEnergy = partialEnergy+i;
+    double *pVirial = partialVirial+i*6;
+    kspace->compute_energy_orthogonal_subset(q_arr, recips, pVirial, pEnergy, k1from, k1to);
+}
+
+double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &lattice, double ewald, double *virial) {
+  double energy = 0.0;
+  double v0 = 0.;
+  double v1 = 0.;
+  double v2 = 0.;
+  double v3 = 0.;
+  double v4 = 0.;
+  double v5 = 0.;
+
+  int n;
+  int k1, k2, k3, ind;
+  int K1, K2, K3;
+
+  K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3;
+
+  i_pi_volume = 1.0/(M_PI * lattice.volume());
+  piob = M_PI/ewald;
+  piob *= piob;
+
+
+    double recipx = lattice.a_r().x;
+    double recipy = lattice.b_r().y;
+    double recipz = lattice.c_r().z;
+        
+    init_exp(exp1, K1, 0, K1, recipx);
+    init_exp(exp2, K2, k2_start, k2_end, recipy);
+    init_exp(exp3, K3, k3_start, k3_end, recipz);
+
+    double recips[] = {recipx, recipy, recipz};
+    const int NPARTS=CmiMyNodeSize(); //this controls the granularity of loop parallelism
+    double partialEnergy[NPARTS];
+    double partialVirial[6*NPARTS];
+    int unitDist[] = {K1/NPARTS, K1%NPARTS};
+    
+    //parallelize the following loop using NodeHelper
+    void *params[] = {this, q_arr, recips, partialEnergy, partialVirial, unitDist};
+
+#if     USE_NODEHELPER
+    CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+    NodeHelper_Parallelize(nodeHelper, compute_energy_orthogonal_nodehelper, 6, (void *)params, NPARTS, 0, NPARTS-1);
+#endif
+/*  
+    //The transformed loop used to compute energy
+    int unit = K1/NPARTS;
+    int remains = K1%NPARTS;  
+    for(int i=0; i<NPARTS; i++){
+        int k1from, k1to;
+        if(i<remains){
+            k1from = i*(unit+1);
+            k1to = k1from+unit;
+        }else{
+            k1from = remains*(unit+1)+(i-remains)*unit;
+            k1to = k1from+unit-1;
+        }
+        double *pEnergy = partialEnergy+i;
+        double *pVirial = partialVirial+i*6;
+        compute_energy_orthogonal_subset(q_arr, recips, pVirial, pEnergy, k1from, k1to);
+    }
+*/    
+    
+    for(int i=0; i<NPARTS; i++){
+        v0 += partialVirial[i*6+0];
+        v1 += partialVirial[i*6+1];
+        v2 += partialVirial[i*6+2];
+        v3 += partialVirial[i*6+3];
+        v4 += partialVirial[i*6+4];
+        v5 += partialVirial[i*6+5];
+        energy += partialEnergy[i];
+    }
+    
+    virial[0] = v0;
+    virial[1] = v1;
+    virial[2] = v2;
+    virial[3] = v3;
+    virial[4] = v4;
+    virial[5] = v5;
+    return energy;
+}
+
 double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ewald, double *virial) {
   double energy = 0.0;
   double v0 = 0.;
@@ -146,10 +330,17 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
 
   if ( lattice.orthogonal() ) {
   // if ( 0 ) { // JCP FOR TESTING
-
+    //This branch is the usual call path.
+#if     USE_NODEHELPER
+    int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+    if(useNodeHelper>=NDH_CTRL_PME_KSPACE){
+        return compute_energy_orthogonal_helper(q_arr, lattice, ewald, virial);
+    }
+#endif    
     double recipx = lattice.a_r().x;
     double recipy = lattice.b_r().y;
     double recipz = lattice.c_r().z;
+        
     init_exp(exp1, K1, 0, K1, recipx);
     init_exp(exp2, K2, k2_start, k2_end, recipy);
     init_exp(exp3, K3, k3_start, k3_end, recipz);
@@ -204,10 +395,9 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
         }
       }
     }
-
+    
   } else if ( cross(lattice.a(),lattice.b()).unit() == lattice.c().unit() ) {
   // } else if ( 0 ) { // JCP FOR TESTING
-
     Vector recip1 = lattice.a_r();
     Vector recip2 = lattice.b_r();
     Vector recip3 = lattice.c_r();
@@ -271,7 +461,6 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
     }
 
   } else {
-
     Vector recip1 = lattice.a_r();
     Vector recip2 = lattice.b_r();
     Vector recip3 = lattice.c_r();

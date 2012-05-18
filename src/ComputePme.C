@@ -22,6 +22,9 @@
 #endif
 #endif
 
+#include <vector>
+using namespace std;
+
 #include "InfoStream.h"
 #include "Node.h"
 #include "PatchMap.h"
@@ -44,10 +47,17 @@
 #include "WorkDistrib.h"
 #include "varsizemsg.h"
 #include "Random.h"
+#include "ckhashtable.h"
 #include "Priorities.h"
 
 #include "ComputeMoa.h"
 #include "ComputeMoaMgr.decl.h" 
+
+//#define     USE_RANDOM_TOPO         1
+
+//#define USE_TOPO_SFC                    1
+//#define     USE_NODEHELPER                1
+#include "TopoManager.h"
 
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
@@ -56,6 +66,8 @@
 #if CMK_PERSISTENT_COMM
 #define USE_PERSISTENT      1
 #endif
+
+//#define USE_NODE_PAR_RECEIVE    1
 
 char *pencilPMEProcessors;
 
@@ -76,6 +88,7 @@ public:
   int *zlist;
   char *fgrid;
   float *qgrid;
+  CkArrayIndex3D destElem;
 };
 
 class PmeTransMsg : public CMessage_PmeTransMsg {
@@ -88,6 +101,7 @@ public:
   int x_start;
   int nx;
   float *qgrid;
+  CkArrayIndex3D destElem;
 };
 
 class PmeSharedTransMsg : public CMessage_PmeSharedTransMsg {
@@ -106,7 +120,7 @@ public:
   int y_start;
   int ny;
   float *qgrid;
-
+  CkArrayIndex3D destElem;
 };
 
 class PmeSharedUntransMsg : public CMessage_PmeSharedUntransMsg {
@@ -164,6 +178,10 @@ struct PmePencilInitMsgData {
   CProxy_PmeYPencil yPencil;
   CProxy_PmeZPencil zPencil;
   CProxy_ComputePmeMgr pmeProxy;
+  CProxy_NodePmeMgr pmeNodeProxy;
+  CProxy_PmePencilMap xm;
+  CProxy_PmePencilMap ym;
+  CProxy_PmePencilMap zm;
 };
 
 class PmePencilInitMsg : public CMessage_PmePencilInitMsg {
@@ -339,6 +357,7 @@ private:
   CProxy_ComputePmeMgr pmeProxy;
   CProxy_ComputePmeMgr pmeProxyDir;
   CProxy_NodePmeMgr pmeNodeProxy;
+  
   ComputePme *pmeCompute;
   PmeGrid myGrid;
   Lattice lattice;
@@ -433,15 +452,36 @@ public:
   void initialize();
   void recvTrans(PmeTransMsg *);
   void recvUntrans(PmeUntransMsg *);
+  void registerXPencil(CkArrayIndex3D, PmeXPencil *);
+  void registerYPencil(CkArrayIndex3D, PmeYPencil *);
+  void registerZPencil(CkArrayIndex3D, PmeZPencil *);
+  void recvXTrans(PmeTransMsg *);
+  void recvYTrans(PmeTransMsg *);
+  void recvYUntrans(PmeUntransMsg *);
+  void recvZGrid(PmeGridMsg *);
+  void recvZUntrans(PmeUntransMsg *);
+
+  void recvPencilMapProxies(CProxy_PmePencilMap _xm, CProxy_PmePencilMap _ym, CProxy_PmePencilMap _zm){
+      xm=_xm; ym=_ym; zm=_zm;
+  }
+  CProxy_PmePencilMap xm;
+  CProxy_PmePencilMap ym;
+  CProxy_PmePencilMap zm;
 
 private:
   CProxy_ComputePmeMgr mgrProxy;
   ComputePmeMgr *mgrObject;
   ComputePmeMgr **mgrObjects;
+  CProxy_PmeXPencil xPencil;
+  CProxy_PmeYPencil yPencil;
+  CProxy_PmeZPencil zPencil;
+  CkHashtableT<CkArrayIndex3D,PmeXPencil*> xPencilObj;
+  CkHashtableT<CkArrayIndex3D,PmeYPencil*> yPencilObj;
+  CkHashtableT<CkArrayIndex3D,PmeZPencil*> zPencilObj;  
 };
 
 NodePmeMgr::NodePmeMgr() {
-  mgrObjects = new ComputePmeMgr*[CkNodeSize(CkMyNode())];
+  mgrObjects = new ComputePmeMgr*[CkMyNodeSize()];
 }
 
 NodePmeMgr::~NodePmeMgr() {
@@ -463,6 +503,25 @@ void NodePmeMgr::recvTrans(PmeTransMsg *msg) {
 
 void NodePmeMgr::recvUntrans(PmeUntransMsg *msg) {
   mgrObject->fwdSharedUntrans(msg);
+}
+
+void NodePmeMgr::registerXPencil(CkArrayIndex3D idx, PmeXPencil *obj)
+{
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+  xPencilObj.put(idx)=obj;
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
+}
+void NodePmeMgr::registerYPencil(CkArrayIndex3D idx, PmeYPencil *obj)
+{
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+  yPencilObj.put(idx)=obj;
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
+}
+void NodePmeMgr::registerZPencil(CkArrayIndex3D idx, PmeZPencil *obj)
+{
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+  zPencilObj.put(idx)=obj;
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
 }
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
@@ -496,6 +555,63 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
 void ComputePmeMgr::recvArrays(
 	CProxy_PmeXPencil x, CProxy_PmeYPencil y, CProxy_PmeZPencil z) {
   xPencil = x;  yPencil = y;  zPencil = z;
+  
+    if(CmiMyRank()==0)
+    {
+      pmeNodeProxy.ckLocalBranch()->xPencil=x;
+      pmeNodeProxy.ckLocalBranch()->yPencil=y;
+      pmeNodeProxy.ckLocalBranch()->zPencil=z;
+    }
+}
+
+#if USE_TOPO_SFC
+ struct Coord
+  {
+    int x, y, z;
+    Coord(): x(0), y(0), z(0) {}
+    Coord(int a, int b, int c): x(a), y(b), z(c) {}
+  };
+  extern void SFC_grid(int xdim, int ydim, int zdim, int xdim1, int ydim1, int zdim1, vector<Coord> &result);
+
+  void sort_sfc(SortableResizeArray<int> &procs, TopoManager &tmgr, vector<Coord> &result)
+  {
+     SortableResizeArray<int> newprocs(procs.size());
+     int num = 0;
+     for (int i=0; i<result.size(); i++) {
+       Coord &c = result[i];
+       for (int j=0; j<procs.size(); j++) {
+         int pe = procs[j];
+         int x,y,z,t;
+         tmgr.rankToCoordinates(pe, x, y, z, t);    
+         if (x==c.x && y==c.y && z==c.z)
+           newprocs[num++] = pe;
+       }
+     } 
+     CmiAssert(newprocs.size() == procs.size());
+     procs = newprocs;
+  }
+
+  int find_level_grid(int x) 
+  {
+     int a = sqrt(x);
+     int b;
+     for (; a>0; a--) {
+       if (x%a == 0) break;
+     }
+     if (a==1) a = x;
+     b = x/a;
+     //return a>b?a:b;
+     return b;
+  }
+  CmiNodeLock tmgr_lock;
+#endif
+
+void Pme_init()
+{
+#if USE_TOPO_SFC
+  if (CkMyRank() == 0) 
+    tmgr_lock = CmiCreateLock();
+#endif
 }
 
 void ComputePmeMgr::initialize(CkQdMsg *msg) {
@@ -827,6 +943,24 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
         		}
       		}
 
+#if USE_RANDOM_TOPO
+            Random rand(CkMyPe());
+            int *tmp = new int[patches.size()];
+            int nn = patches.size();
+            for (i=0;i<nn;i++)  tmp[i] = patches[i];
+            rand.reorder(tmp, nn);
+            patches.resize(0);
+            for (i=0;i<nn;i++)  patches.add(tmp[i]);
+            delete [] tmp;
+            tmp = new int[nopatches.size()];
+            nn = nopatches.size();
+            for (i=0;i<nn;i++)  tmp[i] = nopatches[i];
+            rand.reorder(tmp, nn);
+            nopatches.resize(0);
+            for (i=0;i<nn;i++)  nopatches.add(tmp[i]);
+            delete [] tmp;
+#endif
+
       		// only use zero if it eliminates overloading or has patches
       		int useZero = 0;
       		int npens = xBlocks*yBlocks;
@@ -848,13 +982,41 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       		int npes = pmeprocs.size();
       		for ( i=0; i<xBlocks*yBlocks; ++i, ++pe ) zprocs[i] = pmeprocs[pe%npes];
 		if ( i>1 && zprocs[0] == zprocs[i-1] ) zprocs[0] = 0;
+#if !USE_RANDOM_TOPO
       		zprocs.sort();
+#endif
       		for ( i=0; i<xBlocks*zBlocks; ++i, ++pe ) yprocs[i] = pmeprocs[pe%npes];
 		if ( i>1 && yprocs[0] == yprocs[i-1] ) yprocs[0] = 0;
+#if !USE_RANDOM_TOPO
       		yprocs.sort();
+#endif
       for ( i=0; i<yBlocks*zBlocks; ++i, ++pe ) xprocs[i] = pmeprocs[pe%npes];
       if ( i>1 && xprocs[0] == xprocs[i-1] ) xprocs[0] = 0;
+#if !USE_RANDOM_TOPO
       xprocs.sort();
+#endif
+
+#if USE_TOPO_SFC
+  CmiLock(tmgr_lock);
+  //{
+  TopoManager tmgr;
+  int xdim = tmgr.getDimNX();
+  int ydim = tmgr.getDimNY();
+  int zdim = tmgr.getDimNZ();
+  int xdim1 = find_level_grid(xdim);
+  int ydim1 = find_level_grid(ydim);
+  int zdim1 = find_level_grid(zdim);
+  if(CkMyPe() == 0)
+      printf("xdim: %d %d %d, %d %d %d\n", xdim, ydim, zdim, xdim1, ydim1, zdim1);
+
+  vector<Coord> result;
+  SFC_grid(xdim, ydim, zdim, xdim1, ydim1, zdim1, result);
+  sort_sfc(xprocs, tmgr, result);
+  sort_sfc(yprocs, tmgr, result);
+  sort_sfc(zprocs, tmgr, result);
+  //}
+  CmiUnlock(tmgr_lock);
+#endif
 
       pencilPMEProcessors = new char [CkNumPes()];
       memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
@@ -862,9 +1024,15 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
 		if(CkMyPe() == 0){  
 	      iout << iINFO << "PME Z PENCIL LOCATIONS:";
-	      for ( i=0; i<zprocs.size() && i<10; ++i ) {
-    	    iout << " " << zprocs[i];
-	      }
+          for ( i=0; i<zprocs.size() && i<10; ++i ) {
+#if USE_TOPO_SFC
+              int x,y,z,t;
+              tmgr.rankToCoordinates(zprocs[i], x,y, z, t);
+              iout << " " << zprocs[i] << "(" << x << " " << y << " " << z << ")";
+#else
+              iout << " " << zprocs[i];
+#endif
+          }
     	  if ( i < zprocs.size() ) iout << " ...";
 	      iout << "\n" << endi;
 		}
@@ -877,8 +1045,14 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 		if(CkMyPe() == 0){  
 	      iout << iINFO << "PME Y PENCIL LOCATIONS:";
     	  for ( i=0; i<yprocs.size() && i<10; ++i ) {
-        	iout << " " << yprocs[i];
-	      }
+#if USE_TOPO_SFC
+              int x,y,z,t;
+              tmgr.rankToCoordinates(yprocs[i], x,y, z, t);
+              iout << " " << yprocs[i] << "(" << x << " " << y << " " << z << ")";
+#else
+              iout << " " << yprocs[i];
+#endif
+          }
     	  if ( i < yprocs.size() ) iout << " ...";
 	      iout << "\n" << endi;
 		}
@@ -891,8 +1065,14 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 		if(CkMyPe() == 0){  
       		iout << iINFO << "PME X PENCIL LOCATIONS:";
 		    for ( i=0; i<xprocs.size() && i<10; ++i ) {
-        		iout << " " << xprocs[i];
-      		}
+#if USE_TOPO_SFC
+                int x,y,z,t;
+                tmgr.rankToCoordinates(xprocs[i], x,y, z, t);
+                iout << " " << xprocs[i] << "(" << x << "  " << y << " " << z << ")";
+#else
+                iout << " " << xprocs[i];
+#endif
+            }
       		if ( i < xprocs.size() ) iout << " ...";
       		iout << "\n" << endi;
 		}
@@ -908,10 +1088,10 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	// creating the pencil arrays
 	if ( CkMyPe() == 0 ){
 #if 1
-        CProxy_PmePencilMap xm,ym,zm;
-        zm = CProxy_PmePencilMap::ckNew(0,1,yBlocks,xBlocks*yBlocks,zprocs.begin());
-        ym = CProxy_PmePencilMap::ckNew(2,0,xBlocks,zBlocks*xBlocks,yprocs.begin());
-        xm = CProxy_PmePencilMap::ckNew(1,2,zBlocks,yBlocks*zBlocks,xprocs.begin());
+        CProxy_PmePencilMap zm = CProxy_PmePencilMap::ckNew(0,1,yBlocks,xBlocks*yBlocks,zprocs.begin());
+        CProxy_PmePencilMap ym = CProxy_PmePencilMap::ckNew(2,0,xBlocks,zBlocks*xBlocks,yprocs.begin());
+        CProxy_PmePencilMap xm = CProxy_PmePencilMap::ckNew(1,2,zBlocks,yBlocks*zBlocks,xprocs.begin());
+        pmeNodeProxy.recvPencilMapProxies(xm,ym,zm);
         CkArrayOptions zo(xBlocks,yBlocks,1);  zo.setMap(zm);
         CkArrayOptions yo(xBlocks,1,zBlocks);  yo.setMap(ym);
         CkArrayOptions xo(1,yBlocks,zBlocks);  xo.setMap(xm);
@@ -958,10 +1138,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 		msgdata.yPencil = yPencil;
 		msgdata.zPencil = zPencil;
 		msgdata.pmeProxy = pmeProxyDir;
+        msgdata.pmeNodeProxy = pmeNodeProxy;
+        msgdata.xm = xm;
+        msgdata.ym = ym;
+        msgdata.zm = zm;
 		xPencil.init(new PmePencilInitMsg(msgdata));
 		yPencil.init(new PmePencilInitMsg(msgdata));
 		zPencil.init(new PmePencilInitMsg(msgdata));
- 
 	}
 
     return;  // continue in initialize_pencils() at next startup stage
@@ -1881,7 +2064,9 @@ void ComputePmeMgr::sendUngrid(void) {
     newmsg->sourceNode = myGridPe;
 
     SET_PRIORITY(newmsg,sequence,PME_UNGRID_PRIORITY)
+    CmiEnableUrgentSend(1);
     pmeProxyDir[pe].recvUngrid(newmsg);
+    CmiEnableUrgentSend(0);
   }
   grid_count = numSources;
   memset( (void*) qgrid, 0, qgrid_size * numGrids * sizeof(float) );
@@ -2023,6 +2208,7 @@ ComputePme::ComputePme(ComputeID c) :
       }
     }
   }
+
 #if CMK_PERSISTENT_COMM
   recvGrid_handle = NULL;
 #endif
@@ -2094,6 +2280,7 @@ void ComputePme::setup_recvgrid_persistent()
     }
 }
 #endif
+
 
 void ComputePme::doWork()
 {
@@ -2355,10 +2542,8 @@ void ComputePme::sendPencils() {
   const int numPencilsActive = myMgr->numPencilsActive;
 
   // int savedMessages = 0;
+  NodePmeMgr *npMgr = myMgr->pmeNodeProxy[CkMyNode()].ckLocalBranch();
 
-#if USE_PERSISTENT 
-  if(recvGrid_handle == NULL) setup_recvgrid_persistent();
-#endif
   for (int ap=0; ap<numPencilsActive; ++ap) {
     int ib = activePencils[ap].i;
     int jb = activePencils[ap].j;
@@ -2432,14 +2617,19 @@ void ComputePme::sendPencils() {
 
     msg->sequence = sequence();
     SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
-#if USE_PERSISTENT 
-    CmiUsePersistentHandle(&recvGrid_handle[ap], numPencilsActive);
-#endif
+    CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+    msg->destElem=CkArrayIndex3D(ib,jb,0);
+    CProxy_PmePencilMap lzm = npMgr->zm;
+    int destproc = lzm.ckLocalBranch()->procNum(0, msg->destElem);
+    int destnode = CmiNodeOf(destproc);
+    myMgr->pmeNodeProxy[destnode].recvZGrid(msg);
+#else
     myMgr->zPencil(ib,jb,0).recvGrid(msg);
-#if USE_PERSISTENT 
-    CmiUsePersistentHandle(NULL, 0);
 #endif
+    CmiEnableUrgentSend(0);
   }
+
 
   if ( strayChargeErrors ) {
    iout << iERROR << "Stray PME grid charges detected: "
@@ -2779,7 +2969,7 @@ void ComputePme::ungridForces() {
 
     Vector *results_ptr = localResults;
     ResizeArrayIter<PatchElem> ap(patchList);
-
+    
     // add in forces
     for (ap = ap.begin(); ap != ap.end(); ap++) {
       Results *r = (*ap).forceBox->open();
@@ -2794,7 +2984,6 @@ void ComputePme::ungridForces() {
           ++results_ptr;
         }
       }
-  
       (*ap).forceBox->close(&r);
     }
 
@@ -2911,7 +3100,6 @@ void ComputePme::ungridForces() {
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     reduction->submit();
     if (amd_reduction) amd_reduction->submit();
-
 }
 
 #if USE_TOPOMAP 
@@ -3111,6 +3299,9 @@ public:
     delete [] needs_reply;
   }
   void base_init(PmePencilInitMsg *msg) {
+    imsg=0;
+    imsgb=0;
+    hasData=0;
     initdata = msg->data;
   }
   void order_init(int nBlocks) {
@@ -3125,6 +3316,7 @@ public:
   PmeReduction evir;
   int sequence;  // used for priorities
   int imsg;  // used in sdag code
+  int imsgb;  // Node par uses distinct counter for back path
   int hasData;  // used in message elimination
   float *data;
   float *work;
@@ -3141,22 +3333,36 @@ class PmeZPencil : public PmePencil<CBase_PmeZPencil> {
 public:
     PmeZPencil_SDAG_CODE
     PmeZPencil() { __sdag_init(); setMigratable(false); }
-    PmeZPencil(CkMigrateMessage *) { __sdag_init();  setMigratable (false); }
+    PmeZPencil(CkMigrateMessage *) { __sdag_init();  setMigratable (false); imsg=imsgb=0;}
+	~PmeZPencil() {
+	#ifdef NAMD_FFTW
+	#ifdef NAMD_FFTW_3
+		delete [] forward_plans;
+		delete [] backward_plans;
+	#endif
+	#endif
+	}
     void fft_init();
     void recv_grid(const PmeGridMsg *);
     void forward_fft();
     void send_trans();
+	void send_subset_trans(int fromIdx, int toIdx);
     void recv_untrans(const PmeUntransMsg *);
+    void node_process_untrans(PmeUntransMsg *);
+    void node_process_grid(PmeGridMsg *);
     void backward_fft();
-    void send_ungrid(PmeGridMsg *);
-#if USE_PERSISTENT
-    void send_ungrid_all();
-#endif
+	void send_ungrid(PmeGridMsg *);
+	void send_all_ungrid();
+	void send_subset_ungrid(int fromIdx, int toIdx, int specialIdx);
 private:
     ResizeArray<PmeGridMsg *> grid_msgs;
 #ifdef NAMD_FFTW
 #ifdef NAMD_FFTW_3
     fftwf_plan forward_plan, backward_plan;
+
+	//for nodehelper usage
+	int numPlans;
+	fftwf_plan *forward_plans, *backward_plans;
 #else
     rfftwnd_plan forward_plan, backward_plan;
 #endif
@@ -3195,15 +3401,21 @@ private:
 class PmeYPencil : public PmePencil<CBase_PmeYPencil> {
 public:
     PmeYPencil_SDAG_CODE
-    PmeYPencil() { __sdag_init(); setMigratable(false); }
+    PmeYPencil() { __sdag_init(); setMigratable(false); imsg=imsgb=0;}
     PmeYPencil(CkMigrateMessage *) { __sdag_init(); }
     void fft_init();
     void recv_trans(const PmeTransMsg *);
     void forward_fft();
+	void forward_subset_fft(int fromIdx, int toIdx);
     void send_trans();
-    void recv_untrans(const PmeUntransMsg *);
+	void send_subset_trans(int fromIdx, int toIdx);
+    void recv_untrans(const PmeUntransMsg *);    
+    void node_process_trans(PmeTransMsg *);
+    void node_process_untrans(PmeUntransMsg *);
     void backward_fft();
+	void backward_subset_fft(int fromIdx, int toIdx);
     void send_untrans();
+    void send_subset_untrans(int fromIdx, int toIdx, int evirIdx);
 private:
 #ifdef NAMD_FFTW
 #ifdef NAMD_FFTW_3
@@ -3248,17 +3460,30 @@ private:
 class PmeXPencil : public PmePencil<CBase_PmeXPencil> {
 public:
     PmeXPencil_SDAG_CODE
-    PmeXPencil() { __sdag_init();  myKSpace = 0; setMigratable(false); }
+    PmeXPencil() { __sdag_init();  myKSpace = 0; setMigratable(false); imsg=imsgb=0; }
     PmeXPencil(CkMigrateMessage *) { __sdag_init(); }
+	~PmeXPencil() {
+	#ifdef NAMD_FFTW
+	#ifdef NAMD_FFTW_3
+		delete [] forward_plans;
+		delete [] backward_plans;
+	#endif
+	#endif
+	}
     void fft_init();
     void recv_trans(const PmeTransMsg *);
     void forward_fft();
     void pme_kspace();
     void backward_fft();
     void send_untrans();
+	void send_subset_untrans(int fromIdx, int toIdx, int evirIdx);
+    void node_process_trans(PmeTransMsg *);
 #ifdef NAMD_FFTW
 #ifdef NAMD_FFTW_3
     fftwf_plan forward_plan, backward_plan;
+
+	int numPlans;
+	fftwf_plan *forward_plans, *backward_plans;
 #else
     fftw_plan forward_plan, backward_plan;
 #endif
@@ -3288,6 +3513,10 @@ void PmeZPencil::fft_init() {
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
+
+#if USE_NODE_PAR_RECEIVE
+  ((NodePmeMgr *)CkLocalNodeBranch(initdata.pmeNodeProxy))->registerZPencil(thisIndex,this);
+#endif
 
   int K1 = initdata.grid.K1;
   int K2 = initdata.grid.K2;
@@ -3330,6 +3559,37 @@ void PmeZPencil::fft_init() {
 					  (float *) data, NULL, 1, 
 					  ndim,
 					  fftwFlags);
+#if     USE_NODEHELPER
+  if(simParams->useNodeHelper) {
+	  //How many FFT plans to be created? The grain-size issue!!.
+	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
+	  numPlans = (nx<=ny?nx:ny);
+	  int howmany = sizeLines/numPlans;
+	  forward_plans = new fftwf_plan[numPlans];
+	  backward_plans = new fftwf_plan[numPlans];
+	  for(int i=0; i<numPlans; i++) {
+		  int dimStride = i*ndim*howmany;
+		  int dimHalfStride = i*ndimHalf*howmany;
+		  forward_plans[i] = fftwf_plan_many_dft_r2c(1, planLineSizes, howmany,
+													 ((float *)data)+dimStride, NULL, 1,
+													 ndim,
+													 ((fftwf_complex *)data)+dimHalfStride, NULL, 1,
+													 ndimHalf,
+													 fftwFlags);
+
+		  backward_plans[i] = fftwf_plan_many_dft_c2r(1, planLineSizes, howmany,
+													 ((fftwf_complex *)data)+dimHalfStride, NULL, 1,
+													 ndimHalf,
+													 ((float *)data)+dimStride, NULL, 1,
+													 ndim,
+													 fftwFlags);
+	  }
+  }else 
+#endif 
+  {
+	  forward_plans = NULL;
+	  backward_plans = NULL;
+  }
 #else
   forward_plan = rfftwnd_create_plan_specific(1, &K3, FFTW_REAL_TO_COMPLEX,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
@@ -3342,12 +3602,21 @@ void PmeZPencil::fft_init() {
 #else
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
+
+#if USE_NODE_PAR_RECEIVE
+    evir = 0.;
+    memset(data, 0, sizeof(float) * nx*ny*dim3);
+#endif
 }
 
 void PmeYPencil::fft_init() {
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
+
+#if USE_NODE_PAR_RECEIVE
+  ((NodePmeMgr *)CkLocalNodeBranch(initdata.pmeNodeProxy))->registerYPencil(thisIndex,this);
+#endif
 
   int K1 = initdata.grid.K1;
   int K2 = initdata.grid.K2;
@@ -3404,12 +3673,111 @@ void PmeYPencil::fft_init() {
   NAMD_die("Sorry, FFTW must be compiled in to use PME.");
 #endif
 
+#if USE_NODE_PAR_RECEIVE
+  evir = 0;
+  CmiMemoryWriteFence();
+#endif
+}
+
+void PmeYPencil::node_process_trans(PmeTransMsg *msg)
+{
+  if ( msg->hasData ) hasData = 1;
+  needs_reply[msg->sourceNode] = msg->hasData;
+  recv_trans(msg);
+  int limsg;
+  CmiMemoryAtomicFetchAndInc(imsg,limsg);
+  if(limsg+1 == initdata.yBlocks)
+    {
+      if ( hasData ) {
+        forward_fft();
+      }
+      send_trans();
+      if( ! hasData)
+        {
+          send_untrans(); //todo, what is up with the recvAck in SDAG version?
+        }
+      imsg=0;
+      CmiMemoryWriteFence();
+    }
+}
+
+void PmeYPencil::node_process_untrans(PmeUntransMsg *msg)
+{
+  recv_untrans(msg);
+  int limsg;
+  CmiMemoryAtomicFetchAndInc(imsgb,limsg);
+  if(limsg+1 == initdata.yBlocks)
+    {
+      backward_fft();
+      send_untrans();
+      imsgb=0;
+      CmiMemoryWriteFence();
+    }
+}
+
+#define DEBUG_NODE_PAR_RECV 0
+
+void NodePmeMgr::recvXTrans(PmeTransMsg *msg) {
+  //  CkPrintf("[%d] NodePmeMgr recvXTrans for %d %d %d\n",CkMyPe(),msg->destElem.index[0],msg->destElem.index[1],msg->destElem.index[2]);
+  PmeXPencil *target=xPencilObj.get(msg->destElem);
+#if DEBUG_NODE_PAR_RECV
+  if(target == NULL)
+    CkAbort("xpencil in recvXTrans not found, debug registeration");
+#endif  
+    target->node_process_trans(msg);
+  delete msg;
+}
+
+
+void NodePmeMgr::recvYTrans(PmeTransMsg *msg) {
+  //  CkPrintf("[%d] NodePmeMgr recvYTrans for %d %d %d\n",CkMyPe(),msg->destElem.index[0],msg->destElem.index[1],msg->destElem.index[2]);
+  PmeYPencil *target=yPencilObj.get(msg->destElem);
+#if DEBUG_NODE_PAR_RECV
+  if(target == NULL)
+    CkAbort("ypencil in recvYTrans not found, debug registeration");
+#endif  
+    target->node_process_trans(msg);
+  delete msg;
+ }
+void NodePmeMgr::recvYUntrans(PmeUntransMsg *msg) {
+  //  CkPrintf("[%d] NodePmeMgr recvYUntrans for %d %d %d\n",CkMyPe(),msg->destElem.index[0],msg->destElem.index[1],msg->destElem.index[2]);
+  PmeYPencil *target=yPencilObj.get(msg->destElem);
+#if DEBUG_NODE_PAR_RECV  
+  if(target == NULL)
+    CkAbort("ypencil in recvYUntrans not found, debug registeration");
+#endif  
+    target->node_process_untrans(msg);
+  delete msg;
+ }
+void NodePmeMgr::recvZUntrans(PmeUntransMsg *msg) {
+  //CkPrintf("[%d] NodePmeMgr recvZUntrans for %d %d %d\n",CkMyPe(),msg->destElem.index[0],msg->destElem.index[1],msg->destElem.index[2]);
+  PmeZPencil *target=zPencilObj.get(msg->destElem);
+#if DEBUG_NODE_PAR_RECV
+  if(target == NULL)
+    CkAbort("zpencil in recvZUntrans not found, debug registeration");
+#endif
+  target->node_process_untrans(msg);
+  delete msg;
+}
+
+void NodePmeMgr::recvZGrid(PmeGridMsg *msg) {
+  //CkPrintf("[%d] NodePmeMgr %p recvGrid for %d %d %d\n",CkMyPe(),this,msg->destElem.index[0],msg->destElem.index[1],msg->destElem.index[2]);
+  PmeZPencil *target=zPencilObj.get(msg->destElem);
+#if DEBUG_NODE_PAR_RECV
+  if(target == NULL){
+    CkAbort("zpencil in recvZGrid not found, debug registeration");
+  }
+#endif
+  target->node_process_grid(msg); //msg is stored inside node_proces_grid
 }
 
 void PmeXPencil::fft_init() {
   CProxy_Node nd(CkpvAccess(BOCclass_group).node);
   Node *node = nd.ckLocalBranch();
   SimParameters *simParams = node->simParameters;
+#if USE_NODE_PAR_RECEIVE
+  ((NodePmeMgr *)CkLocalNodeBranch(initdata.pmeNodeProxy))->registerXPencil(thisIndex,this);
+#endif
 
   int K1 = initdata.grid.K1;
   int K2 = initdata.grid.K2;
@@ -3443,8 +3811,37 @@ void PmeXPencil::fft_init() {
   backward_plan = fftwf_plan_many_dft(1, planLineSizes, sizeLines,
 				     (fftwf_complex *) data, NULL, sizeLines, 1,
 				     (fftwf_complex *) data, NULL, sizeLines, 1,
-				   FFTW_BACKWARD,
+					  FFTW_BACKWARD,
 				      fftwFlags);
+
+#if     USE_NODEHELPER
+  if(simParams->useNodeHelper) {
+	  //How many FFT plans to be created? The grain-size issue!!.
+	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
+	  numPlans = (ny<=nz?ny:nz);
+	  int howmany = sizeLines/numPlans;
+	  forward_plans = new fftwf_plan[numPlans];
+	  backward_plans = new fftwf_plan[numPlans];
+	  for(int i=0; i<numPlans; i++) {
+		  int curStride = i*howmany;		  
+		  forward_plans[i] = fftwf_plan_many_dft(1, planLineSizes, howmany,
+													 ((fftwf_complex *)data)+curStride, NULL, sizeLines, 1,
+													 ((fftwf_complex *)data)+curStride, NULL, sizeLines, 1,
+													FFTW_FORWARD,
+													 fftwFlags);
+
+		  backward_plans[i] = fftwf_plan_many_dft(1, planLineSizes, howmany,
+													 ((fftwf_complex *)data)+curStride, NULL, sizeLines, 1,
+													 ((fftwf_complex *)data)+curStride, NULL, sizeLines, 1,
+													  FFTW_BACKWARD,
+													 fftwFlags);
+	  }
+  }else
+#endif
+  {
+	  forward_plans = NULL;
+	  backward_plans = NULL;
+  }
 #else
   forward_plan = fftw_create_plan_specific(K1, FFTW_FORWARD,
 	( simParams->FFTWEstimate ? FFTW_ESTIMATE : FFTW_MEASURE )
@@ -3475,7 +3872,9 @@ void PmeZPencil::recv_grid(const PmeGridMsg *msg) {
   if ( imsg == 0 ) {
     lattice = msg->lattice;
     sequence = msg->sequence;
-    memset(data, 0, sizeof(float) * nx*ny*dim3);
+#if ! USE_NODE_PAR_RECEIVE
+    memset(data, 0, sizeof(float)*nx*ny*dim3);
+#endif
   }
 
   if ( ! msg->hasData ) return;
@@ -3499,7 +3898,17 @@ void PmeZPencil::recv_grid(const PmeGridMsg *msg) {
   }
 }
 
+static inline void PmeXZPencilFFT(int first, int last, void *result, int paraNum, void *param){
+#ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3    
+    fftwf_plan *plans = (fftwf_plan *)param;
+    for(int i=first; i<=last; i++) fftwf_execute(plans[i]);
+#endif
+#endif        
+}
+
 void PmeZPencil::forward_fft() {
+  evir = 0.;
 #ifdef FFTCHECK
   int dim3 = initdata.grid.dim3;
   int K3 = initdata.grid.K3;
@@ -3518,6 +3927,16 @@ void PmeZPencil::forward_fft() {
   dumpMatrixFloat3("fw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 #ifdef NAMD_FFTW_3
+#if     USE_NODEHELPER
+  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_FORWARDFFT) {
+          //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
+          //transform the above loop
+          CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+          NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+          return;
+  }
+#endif
   fftwf_execute(forward_plan);
 #else
   rfftwnd_real_to_complex(forward_plan, nx*ny,
@@ -3543,13 +3962,86 @@ void PmeZPencil::forward_fft() {
 #endif
 }
 
+/* A single task for partitioned PmeZPencil::send_trans work */
+static inline void PmeZPencilSendTrans(int first, int last, void *result, int paraNum, void *param){
+	PmeZPencil *zpencil = (PmeZPencil *)param;
+	zpencil->send_subset_trans(first, last);	
+}
+
+void PmeZPencil::send_subset_trans(int fromIdx, int toIdx){
+	int zBlocks = initdata.zBlocks;
+	int block3 = initdata.grid.block3;
+	int dim3 = initdata.grid.dim3;
+	for ( int isend=fromIdx; isend<=toIdx; ++isend ) {
+	  int kb = send_order[isend];
+	  int nz = block3;
+	  if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
+	  int hd = ( hasData ? 1 : 0 );
+	  PmeTransMsg *msg = new (hd*nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
+	  msg->lattice = lattice;
+	  msg->sourceNode = thisIndex.y;
+	  msg->hasData = hasData;
+	  msg->nx = ny;
+	 if ( hasData ) {
+	  float *md = msg->qgrid;
+	  const float *d = data;
+	  for ( int i=0; i<nx; ++i ) {
+	   for ( int j=0; j<ny; ++j, d += dim3 ) {
+		for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+		  *(md++) = d[2*k];
+		  *(md++) = d[2*k+1];
+		}
+	   }
+	  }
+	 }
+	  msg->sequence = sequence;
+	  SET_PRIORITY(msg,sequence,PME_TRANS_PRIORITY)
+
+    CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+      msg->destElem=CkArrayIndex3D(thisIndex.x,0,kb);
+#if USE_PERSISTENT 
+      CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
+      initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYTrans(msg);
+#if USE_PERSISTENT
+      CmiUsePersistentHandle(NULL, 0);
+#endif    
+#else
+#if USE_PERSISTENT 
+      CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
+      initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
+#if USE_PERSISTENT
+      CmiUsePersistentHandle(NULL, 0);
+#endif    
+#endif
+    CmiEnableUrgentSend(0);
+    }
+}
+
 void PmeZPencil::send_trans() {
+#if USE_PERSISTENT
+    if (trans_handle == NULL) setup_persistent();
+#endif
+#if     USE_NODEHELPER
+	Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+	if(useNodeHelper>=NDH_CTRL_PME_SENDTRANS) {
+		/**
+		 * Basically, this function call could be converted into 
+		 * a for-loop of: 
+		 * for(int i=0; i<=initdata.zBlocks-1; i++) 
+		 * send_subset_trans(i,i); 
+		 */
+		//send_subset_trans(0, initdata.zBlocks-1);
+		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;		
+		NodeHelper_Parallelize(nodeHelper, PmeZPencilSendTrans, 1, (void *)this, CkMyNodeSize(), 0, initdata.zBlocks-1, 1); //not sync
+		return;
+	}
+#endif
   int zBlocks = initdata.zBlocks;
   int block3 = initdata.grid.block3;
   int dim3 = initdata.grid.dim3;
-#if USE_PERSISTENT
-  if (trans_handle == NULL) setup_persistent();
-#endif
   for ( int isend=0; isend<zBlocks; ++isend ) {
     int kb = send_order[isend];
     int nz = block3;
@@ -3574,13 +4066,27 @@ void PmeZPencil::send_trans() {
    }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS_PRIORITY)
+
+    CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+    msg->destElem=CkArrayIndex3D(thisIndex.x,0,kb);
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(&trans_handle[isend], 1);
+    CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
+    initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYTrans(msg);
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(NULL, 0);
+#endif    
+#else
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(NULL, 0);
+    CmiUsePersistentHandle(NULL, 0);
+#endif    
 #endif
+    CmiEnableUrgentSend(0);
   }
 }
 
@@ -3621,38 +4127,142 @@ void PmeYPencil::recv_trans(const PmeTransMsg *msg) {
  }
 }
 
-void PmeYPencil::forward_fft() {
+static inline void PmeYPencilForwardFFT(int first, int last, void *result, int paraNum, void *param){
+        PmeYPencil *ypencil = (PmeYPencil *)param;
+        ypencil->forward_subset_fft(first, last);
+}
+void PmeYPencil::forward_subset_fft(int fromIdx, int toIdx) {
+#ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+	for(int i=fromIdx; i<=toIdx; i++){
+		fftwf_execute_dft(forward_plan, ((fftwf_complex *) data) + i 
+		      * nz * initdata.grid.K2, 	
+		      ((fftwf_complex *) data) + i * nz * initdata.grid.K2);
+	}
+#endif
+#endif
+}
 
+void PmeYPencil::forward_fft() {
+    evir = 0.;
 #ifdef NAMD_FFTW
 #ifdef MANUAL_DEBUG_FFTW3
   dumpMatrixFloat3("fw_y_b", data, nx, initdata.grid.K2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
-  for ( int i=0; i<nx; ++i ) {
-
+  
 #ifdef NAMD_FFTW_3
+#if     USE_NODEHELPER
+  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_FORWARDFFT) {
+	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+	  NodeHelper_Parallelize(nodeHelper, PmeYPencilForwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
+	  return;
+  }
+#endif
+  //the above is a transformation of the following loop using NodeHelper
+  for ( int i=0; i<nx; ++i ) {
     fftwf_execute_dft(forward_plan, ((fftwf_complex *) data) + i 
 		      * nz * initdata.grid.K2, 	
 		      ((fftwf_complex *) data) + i * nz * initdata.grid.K2);
+  }
 #else
+  for ( int i=0; i<nx; ++i ) {
     fftw(forward_plan, nz,
 	((fftw_complex *) data) + i * nz * initdata.grid.K2,
 	nz, 1, (fftw_complex *) work, 1, 0);
+  }
 #endif
 #ifdef MANUAL_DEBUG_FFTW3
   dumpMatrixFloat3("fw_y_a", data, nx, initdata.grid.dim2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 
-  }
 #endif
 }
 
+static inline void PmeYPencilSendTrans(int first, int last, void *result, int paraNum, void *param){
+	PmeYPencil *ypencil = (PmeYPencil *)param;
+	ypencil->send_subset_trans(first, last);
+}
+
+void PmeYPencil::send_subset_trans(int fromIdx, int toIdx){
+	int yBlocks = initdata.yBlocks;
+	int block2 = initdata.grid.block2;
+	int K2 = initdata.grid.K2;
+	for ( int isend=fromIdx; isend<=toIdx; ++isend ) {
+	  int jb = send_order[isend];
+	  int ny = block2;
+	  if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+	  int hd = ( hasData ? 1 : 0 );
+	  PmeTransMsg *msg = new (hd*nx*ny*nz*2,PRIORITY_SIZE) PmeTransMsg;
+	  msg->lattice = lattice;
+	  msg->sourceNode = thisIndex.x;
+	  msg->hasData = hasData;
+	  msg->nx = nx;
+	 if ( hasData ) {
+	  float *md = msg->qgrid;
+	  const float *d = data;
+	  for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+	   for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+		for ( int k=0; k<nz; ++k ) {
+		  *(md++) = d[2*(j*nz+k)];
+		  *(md++) = d[2*(j*nz+k)+1];
+  #ifdef ZEROCHECK
+		  if ( *(md-2) == 0. ) CkPrintf("send 0 in YX at %d %d %d %d %d %d %d %d %d\n",
+	  thisIndex.x, jb, thisIndex.z, i, j, k, nx, ny, nz);
+  #endif
+		}
+	   }
+	  }
+	  if ( md != msg->qgrid + nx*ny*nz*2 ) CkPrintf("error in YX at %d %d %d\n",
+	  thisIndex.x, jb, thisIndex.z);
+	 }
+	  msg->sequence = sequence;
+	  SET_PRIORITY(msg,sequence,PME_TRANS2_PRIORITY)
+      CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+      msg->destElem=CkArrayIndex3D(0,jb,thisIndex.z);
+#if USE_PERSISTENT 
+      CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
+      initdata.pmeNodeProxy[CmiNodeOf(initdata.xm.ckLocalBranch()->procNum(0,msg->destElem))].recvXTrans(msg);   
+#if USE_PERSISTENT
+      CmiUsePersistentHandle(NULL, 0);
+#endif
+#else      
+#if USE_PERSISTENT 
+      CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
+      initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
+#if USE_PERSISTENT
+      CmiUsePersistentHandle(NULL, 0);
+#endif
+#endif
+      CmiEnableUrgentSend(0);
+	}
+}
+
 void PmeYPencil::send_trans() {
+#if USE_PERSISTENT
+    if (trans_handle == NULL) setup_persistent();
+#endif
+#if     USE_NODEHELPER
+	Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+	if(useNodeHelper>=NDH_CTRL_PME_SENDTRANS) {
+		/**
+		 * Basically, this function call could be converted into 
+		 * a for-loop of: 
+		 * for(int i=0; i<=initdata.yBlocks; i++) 
+		 * send_subset_trans(i,i); 
+		 */
+		//send_subset_trans(0, initdata.yBlocks-1);
+		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+		NodeHelper_Parallelize(nodeHelper, PmeYPencilSendTrans, 1, (void *)this, CkMyNodeSize(), 0, initdata.yBlocks-1, 1); //not sync
+		return;
+	}
+#endif
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
-#if USE_PERSISTENT
-  if (trans_handle == NULL) setup_persistent();
-#endif
   for ( int isend=0; isend<yBlocks; ++isend ) {
     int jb = send_order[isend];
     int ny = block2;
@@ -3683,14 +4293,48 @@ void PmeYPencil::send_trans() {
    }
     msg->sequence = sequence;
     SET_PRIORITY(msg,sequence,PME_TRANS2_PRIORITY)
+    CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+    msg->destElem=CkArrayIndex3D(0,jb,thisIndex.z);
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(&trans_handle[isend], 1);
+    CmiUsePersistentHandle(&trans_handle[isend], 1);
+#endif
+    initdata.pmeNodeProxy[CmiNodeOf(initdata.xm.ckLocalBranch()->procNum(0,msg->destElem))].recvXTrans(msg);   
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(NULL, 0);
+#endif
+#else
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
     initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(NULL, 0);
+    CmiUsePersistentHandle(NULL, 0);
 #endif
+    
+#endif
+    CmiEnableUrgentSend(0);
   }
+}
+
+void PmeXPencil::node_process_trans(PmeTransMsg *msg)
+{
+  if(msg->hasData) hasData=1;
+  needs_reply[msg->sourceNode] = msg->hasData;
+  recv_trans(msg);
+  int limsg;
+  CmiMemoryAtomicFetchAndInc(imsg,limsg);
+  if(limsg+1 == initdata.xBlocks)
+    {
+      if(hasData){
+        forward_fft();
+        pme_kspace();
+        backward_fft();
+      }
+      send_untrans();
+      imsg=0;
+      CmiMemoryWriteFence();
+    }
 }
 
 void PmeXPencil::recv_trans(const PmeTransMsg *msg) {
@@ -3738,6 +4382,16 @@ void PmeXPencil::forward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
+#if     USE_NODEHELPER
+  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_FORWARDFFT) {
+	  //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
+	  //transform the above loop
+	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+	  NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+	  return;
+  }
+#endif
   fftwf_execute(forward_plan);
 #else
   fftw(forward_plan, ny*nz,
@@ -3765,7 +4419,10 @@ void PmeXPencil::pme_kspace() {
     evir[0] = myKSpace->compute_energy(data+0*g,
 		lattice, ewaldcof, &(evir[1]));
   }
-
+  
+#if USE_NODE_PAR_RECEIVE
+    CmiMemoryWriteFence();
+#endif
 }
 
 void PmeXPencil::backward_fft() {
@@ -3775,6 +4432,16 @@ void PmeXPencil::backward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
+#if     USE_NODEHELPER
+  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_BACKWARDFFT) {
+          //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
+          //transform the above loop
+          CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+          NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+          return;
+  }
+#endif
   fftwf_execute(backward_plan);
 #else
   fftw(backward_plan, ny*nz,
@@ -3786,20 +4453,166 @@ void PmeXPencil::backward_fft() {
 #endif
 }
 
+static inline void PmeXPencilSendUntrans(int first, int last, void *result, int paraNum, void *param){
+	int evirIdx = paraNum;
+	PmeXPencil *xpencil = (PmeXPencil *)param;
+	xpencil->send_subset_untrans(first, last, evirIdx);
+}
+
+void PmeXPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
+	int xBlocks = initdata.xBlocks;
+	int block1 = initdata.grid.block1;	
+	int K1 = initdata.grid.K1;
+
+	int ackL=0, ackH=-1;
+	int unL=0, unH=-1;
+	int send_evir=0;
+	if(fromIdx >= evirIdx+1) {
+		//send PmeUntransMsg with has_evir=0
+		unL = fromIdx;
+		unH = toIdx;		
+	} else if(toIdx <= evirIdx-1) {
+		//send PmeAckMsg
+		ackL=fromIdx;
+		ackH=toIdx;		
+	} else {
+		//partially send PmeAckMsg and partially send PmeUntransMsg
+		ackL=fromIdx;
+		ackH=evirIdx-1;
+		send_evir=1;
+		unL=evirIdx+1;
+		unH=toIdx;
+	}
+
+	for(int isend=ackL; isend<=ackH; isend++) {
+		//send PmeAckMsg
+        CmiEnableUrgentSend(1);
+		int ib = send_order[isend];
+		PmeAckMsg *msg = new (PRIORITY_SIZE) PmeAckMsg;
+		SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
+		initdata.yPencil(ib,0,thisIndex.z).recvAck(msg);
+        CmiEnableUrgentSend(0);
+    }
+
+    CmiEnableUrgentSend(1);
+	//send PmeUntransMsg with has_evir=1
+	if(send_evir) {
+		int ib = send_order[evirIdx];
+		int nx = block1;
+		if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
+		PmeUntransMsg *msg = new (nx*ny*nz*2,1,PRIORITY_SIZE) PmeUntransMsg;		
+		msg->evir[0] = evir;
+		msg->has_evir = 1;				
+		msg->sourceNode = thisIndex.y;
+		msg->ny = ny;
+		float *md = msg->qgrid;
+		for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+			float *d = data + i*ny*nz*2;
+			for ( int j=0; j<ny; ++j, d += nz*2 ) {
+				for ( int k=0; k<nz; ++k ) {
+					*(md++) = d[2*k];
+					*(md++) = d[2*k+1];
+				}
+			}
+		}
+		SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
+#if USE_NODE_PAR_RECEIVE
+        msg->destElem=CkArrayIndex3D(ib,0, thisIndex.z);
+        initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYUntrans(msg);
+#else
+        initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
+#endif
+	 }
+    CmiEnableUrgentSend(0);
+	
+	//send PmeUntransMsg with has_evir=0
+	for(int isend=unL; isend<=unH; isend++) {
+		int ib = send_order[isend];
+		int nx = block1;
+		if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
+		PmeUntransMsg *msg = new (nx*ny*nz*2,0,PRIORITY_SIZE) PmeUntransMsg;
+		msg->has_evir = 0;		
+		msg->sourceNode = thisIndex.y;
+		msg->ny = ny;
+		float *md = msg->qgrid;
+		for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+			float *d = data + i*ny*nz*2;
+			for ( int j=0; j<ny; ++j, d += nz*2 ) {
+				for ( int k=0; k<nz; ++k ) {
+					*(md++) = d[2*k];
+					*(md++) = d[2*k+1];
+				}
+			}
+		}
+		SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
+        CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+        msg->destElem=CkArrayIndex3D(ib,0, thisIndex.z);
+#if USE_PERSISTENT 
+        CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
+        initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYUntrans(msg);
+#if USE_PERSISTENT
+        CmiUsePersistentHandle(NULL, 0);
+#endif
+#else
+#if USE_PERSISTENT 
+        CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
+        initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
+#if USE_PERSISTENT
+        CmiUsePersistentHandle(NULL, 0);
+#endif
+#endif
+        CmiEnableUrgentSend(0);
+	}
+}
+
 void PmeXPencil::send_untrans() {
+#if USE_PERSISTENT
+  if (untrans_handle == NULL) setup_persistent();
+#endif
+#if     USE_NODEHELPER
+  Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_SENDUNTRANS) {
+	  	int xBlocks = initdata.xBlocks;
+		int evirIdx = 0;
+		for ( int isend=0; isend<xBlocks; ++isend ) {
+			int ib = send_order[isend];
+			if (needs_reply[ib]) {
+				evirIdx = isend;
+				break;
+			}
+		}
+
+		//basically: 
+		//[0,evirIdx-1]->send PmeAckMsg
+		//evirIdx->send PmeUntransMsg with has_evir=1
+		//[evirIdx+1, xBlocks-1]->send PmeUntransMsg with has_evir=0
+		//send_subset_untrans(0, xBlocks-1, evirIdx);
+		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+#if USE_NODE_PAR_RECEIVE
+		//NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, xBlocks-1, 1); //has to sync
+		NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, xBlocks, 0, xBlocks-1, 1); //has to sync
+#else
+        //NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, xBlocks-1, 0); //not sync
+		NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, xBlocks, 0, xBlocks-1, 0); //not sync
+#endif        
+		return;
+  }
+#endif
   int xBlocks = initdata.xBlocks;
   int block1 = initdata.grid.block1;
   int K1 = initdata.grid.K1;
   int send_evir = 1;
-#if USE_PERSISTENT
-  if (untrans_handle == NULL) setup_persistent();
-#endif
   for ( int isend=0; isend<xBlocks; ++isend ) {
     int ib = send_order[isend];
     if ( ! needs_reply[ib] ) {
       PmeAckMsg *msg = new (PRIORITY_SIZE) PmeAckMsg;
+      CmiEnableUrgentSend(1);
       SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
       initdata.yPencil(ib,0,thisIndex.z).recvAck(msg);
+      CmiEnableUrgentSend(0);
       continue;
     }
     int nx = block1;
@@ -3825,18 +4638,31 @@ void PmeXPencil::send_untrans() {
      }
     }
     SET_PRIORITY(msg,sequence,PME_UNTRANS_PRIORITY)
+
+    CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+    msg->destElem=CkArrayIndex3D(ib,0, thisIndex.z);
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(&untrans_handle[isend], 1);
+    CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
+    initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYUntrans(msg);
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(NULL, 0);
+#endif
+#else
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
     initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(NULL, 0);
+    CmiUsePersistentHandle(NULL, 0);
 #endif
+#endif
+    CmiEnableUrgentSend(0);
   }
 }
 
 void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
-  if ( imsg == 0 ) evir = 0.;
   if ( msg->has_evir ) evir += msg->evir[0];
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
@@ -3861,24 +4687,58 @@ void PmeYPencil::recv_untrans(const PmeUntransMsg *msg) {
   }
 }
 
+static inline void PmeYPencilBackwardFFT(int first, int last, void *result, int paraNum, void *param){
+	PmeYPencil *ypencil = (PmeYPencil *)param;
+	ypencil->backward_subset_fft(first, last);
+}
+
+void PmeYPencil::backward_subset_fft(int fromIdx, int toIdx) {
+#ifdef NAMD_FFTW
+#ifdef NAMD_FFTW_3
+	for(int i=fromIdx; i<=toIdx; i++){
+		fftwf_execute_dft(backward_plan, 	
+						  ((fftwf_complex *) data) + i * nz * initdata.grid.K2,    	
+						  ((fftwf_complex *) data) + i * nz * initdata.grid.K2);
+	}
+#endif
+#endif
+}
+
 void PmeYPencil::backward_fft() {
 #ifdef NAMD_FFTW
 #ifdef MANUAL_DEBUG_FFTW3
   dumpMatrixFloat3("bw_y_b", data, nx, initdata.grid.K2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 
+#ifdef NAMD_FFTW_3
+#if     USE_NODEHELPER
+  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_BACKWARDFFT) {
+	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+	  NodeHelper_Parallelize(nodeHelper, PmeYPencilBackwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
+	  return;
+  }
+#endif
+  //the above is a transformation of the following loop using NodeHelper
   for ( int i=0; i<nx; ++i ) {
 #if CMK_BLUEGENEL
-    CmiNetworkProgress();
+	CmiNetworkProgress();
 #endif
-#ifdef NAMD_FFTW_3
-    fftwf_execute_dft(backward_plan, 	((fftwf_complex *) data) + i * nz * initdata.grid.K2,    	((fftwf_complex *) data) + i * nz * initdata.grid.K2);
-#else
-    fftw(backward_plan, nz,
-	((fftw_complex *) data) + i * nz * initdata.grid.K2,
-	nz, 1, (fftw_complex *) work, 1, 0);
-#endif
+    fftwf_execute_dft(backward_plan, 	
+					  ((fftwf_complex *) data) + i * nz * initdata.grid.K2,
+					  ((fftwf_complex *) data) + i * nz * initdata.grid.K2);
   }
+#else
+	for ( int i=0; i<nx; ++i ) {
+#if CMK_BLUEGENEL
+	  CmiNetworkProgress();
+#endif
+		fftw(backward_plan, nz,
+		((fftw_complex *) data) + i * nz * initdata.grid.K2,
+		nz, 1, (fftw_complex *) work, 1, 0);
+	}
+#endif
+
 #ifdef MANUAL_DEBUG_FFTW3
   dumpMatrixFloat3("bw_y_a", data, nx, initdata.grid.K2, nz, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
@@ -3886,20 +4746,170 @@ void PmeYPencil::backward_fft() {
 #endif
 }
 
+static inline void PmeYPencilSendUntrans(int first, int last, void *result, int paraNum, void *param){
+        int evirIdx = paraNum;
+        PmeYPencil *ypencil = (PmeYPencil *)param;
+        ypencil->send_subset_untrans(first, last, evirIdx);
+}
+
+void PmeYPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
+	int yBlocks = initdata.yBlocks;
+	int block2 = initdata.grid.block2;	
+	int K2 = initdata.grid.K2;
+
+	int ackL=0, ackH=-1;
+	int unL=0, unH=-1;
+	int send_evir=0;
+	if(fromIdx >= evirIdx+1) {
+		//send PmeUntransMsg with has_evir=0
+		unL = fromIdx;
+		unH = toIdx;		
+	} else if(toIdx <= evirIdx-1) {
+		//send PmeAckMsg
+		ackL=fromIdx;
+		ackH=toIdx;		
+	} else {
+		//partially send PmeAckMsg and partially send PmeUntransMsg
+		ackL=fromIdx;
+		ackH=evirIdx-1;
+		send_evir=1;
+		unL=evirIdx+1;
+		unH=toIdx;
+	}
+
+	for(int isend=ackL; isend<=ackH; isend++) {
+		//send PmeAckMsg
+        CmiEnableUrgentSend(1);
+		int jb = send_order[isend];
+		PmeAckMsg *msg = new (PRIORITY_SIZE) PmeAckMsg;
+		SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
+		initdata.zPencil(thisIndex.x,jb,0).recvAck(msg);
+        CmiEnableUrgentSend(0);
+	}
+
+    CmiEnableUrgentSend(1);
+	//send PmeUntransMsg with has_evir=1
+	if(send_evir) {
+		int jb = send_order[evirIdx];
+		int ny = block2;
+		if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+		PmeUntransMsg *msg = new (nx*ny*nz*2,1,PRIORITY_SIZE) PmeUntransMsg;		
+		msg->evir[0] = evir;
+		msg->has_evir = 1;				
+		msg->sourceNode = thisIndex.z;
+		msg->ny = nz;
+		float *md = msg->qgrid;
+		const float *d = data;
+		for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+			for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+				for ( int k=0; k<nz; ++k ) {
+					*(md++) = d[2*(j*nz+k)];
+					*(md++) = d[2*(j*nz+k)+1];
+				}
+			}
+		}
+		SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
+#if USE_NODE_PAR_RECEIVE
+        msg->destElem=CkArrayIndex3D( thisIndex.x, jb, 0);
+    //    CkPrintf("[%d] sending to %d %d %d recvZUntrans on node %d\n", CkMyPe(), thisIndex.x, jb, 0, CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem)));
+        initdata.pmeNodeProxy[CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem))].recvZUntrans(msg);
+#else
+        initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
+#endif
+	}
+
+    CmiEnableUrgentSend(0);
+	//send PmeUntransMsg with has_evir=0
+	for(int isend=unL; isend<=unH; isend++) {
+		int jb = send_order[isend];
+		int ny = block2;
+		if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+		PmeUntransMsg *msg = new (nx*ny*nz*2,0,PRIORITY_SIZE) PmeUntransMsg;
+		msg->has_evir = 0;
+		msg->sourceNode = thisIndex.z;
+		msg->ny = nz;
+		float *md = msg->qgrid;
+		const float *d = data;
+		for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+			for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+				for ( int k=0; k<nz; ++k ) {
+					*(md++) = d[2*(j*nz+k)];
+					*(md++) = d[2*(j*nz+k)+1];
+				}
+			}
+		}
+		SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
+            CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+        msg->destElem=CkArrayIndex3D( thisIndex.x, jb, 0);
+        //    CkPrintf("[%d] sending to %d %d %d recvZUntrans on node %d\n", CkMyPe(), thisIndex.x, jb, 0, CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem)));
+#if USE_PERSISTENT 
+        CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
+        initdata.pmeNodeProxy[CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem))].recvZUntrans(msg);
+#if USE_PERSISTENT
+        CmiUsePersistentHandle(NULL, 0);
+#endif
+#else
+#if USE_PERSISTENT 
+        CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
+        initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
+#if USE_PERSISTENT
+        CmiUsePersistentHandle(NULL, 0);
+#endif
+#endif
+    CmiEnableUrgentSend(0);
+	}
+}
+
 void PmeYPencil::send_untrans() {
+#if USE_PERSISTENT
+  if (untrans_handle == NULL) setup_persistent();
+#endif
+#if     USE_NODEHELPER
+  Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_SENDUNTRANS) {
+	  int yBlocks = initdata.yBlocks;
+	  int evirIdx = 0;
+	  for ( int isend=0; isend<yBlocks; ++isend ) {
+		  int jb = send_order[isend];
+		  if (needs_reply[jb]) {
+			  evirIdx = isend;
+			  break;
+		  }
+	  }
+
+	  //basically: 
+	  //[0,evirIdx-1]->send PmeAckMsg
+	  //evirIdx->send PmeUntransMsg with has_evir=1
+	  //[evirIdx+1, yBlocks-1]->send PmeUntransMsg with has_evir=0
+	  //send_subset_untrans(0, yBlocks-1, evirIdx);
+	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+#if USE_NODE_PAR_RECEIVE      
+	  //NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, yBlocks-1, 1); //sync
+	  NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, yBlocks, 0, yBlocks-1, 1);
+      evir = 0.;
+      CmiMemoryWriteFence();
+#else
+      //NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, yBlocks-1, 0); //not sync
+	  NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, yBlocks, 0, yBlocks-1, 0); //not sync
+#endif
+	  return;
+  }
+#endif
   int yBlocks = initdata.yBlocks;
   int block2 = initdata.grid.block2;
   int K2 = initdata.grid.K2;
   int send_evir = 1;
-#if USE_PERSISTENT
-  if (untrans_handle == NULL) setup_persistent();
-#endif
   for ( int isend=0; isend<yBlocks; ++isend ) {
     int jb = send_order[isend];
     if ( ! needs_reply[jb] ) {
       PmeAckMsg *msg = new (PRIORITY_SIZE) PmeAckMsg;
+      CmiEnableUrgentSend(1);
       SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
       initdata.zPencil(thisIndex.x,jb,0).recvAck(msg);
+      CmiEnableUrgentSend(0);
       continue;
     }
     int ny = block2;
@@ -3925,18 +4935,41 @@ void PmeYPencil::send_untrans() {
      }
     }
     SET_PRIORITY(msg,sequence,PME_UNTRANS2_PRIORITY)
+
+    CmiEnableUrgentSend(1);
+#if USE_NODE_PAR_RECEIVE
+    msg->destElem=CkArrayIndex3D( thisIndex.x, jb, 0);
+    //    CkPrintf("[%d] sending to %d %d %d recvZUntrans on node %d\n", CkMyPe(), thisIndex.x, jb, 0, CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem)));
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(&untrans_handle[isend], 1);
+    CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#endif
+    initdata.pmeNodeProxy[CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem))].recvZUntrans(msg);
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(NULL, 0);
+#endif
+#else
+#if USE_PERSISTENT
+    CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
     initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
 #if USE_PERSISTENT
-  CmiUsePersistentHandle(NULL, 0);
+    CmiUsePersistentHandle(NULL, 0);
 #endif
+#endif    
+    CmiEnableUrgentSend(0);
   }
+  
+#if USE_NODE_PAR_RECEIVE
+  evir = 0.;
+  CmiMemoryWriteFence();
+#endif
 }
 
 void PmeZPencil::recv_untrans(const PmeUntransMsg *msg) {
-  if ( imsg == 0 ) evir = 0.;
+#if ! USE_NODE_PAR_RECEIVE
+    if(imsg==0) evir=0.;
+#endif
+
   if ( msg->has_evir ) evir += msg->evir[0];
   int block3 = initdata.grid.block3;
   int dim3 = initdata.grid.dim3;
@@ -3967,6 +5000,16 @@ void PmeZPencil::backward_fft() {
   dumpMatrixFloat3("bw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 #ifdef NAMD_FFTW_3
+#if     USE_NODEHELPER
+  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+  if(useNodeHelper>=NDH_CTRL_PME_BACKWARDFFT) {
+	  //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
+	  //transform the above loop
+	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+	  NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+	  return;
+  }
+#endif
   fftwf_execute(backward_plan);
 #else
   rfftwnd_complex_to_real(backward_plan, nx*ny,
@@ -4009,34 +5052,74 @@ void PmeZPencil::backward_fft() {
   CkPrintf("pencil %d %d max error %f at %d %d %d (should be %f)\n",
 		thisIndex.x, thisIndex.y, maxerr, mi, mj, mk, maxstd);
 #endif
+
 }
 
-#if USE_PERSISTENT
-void PmeZPencil::send_ungrid_all()
-{
-    int send_evir = 1;
-    
-#if CMK_PERSISTENT_COMM && 0
-    if(ungrid_handle == NULL) setup_ungrid_persistent();
-    CmiUsePersistentHandle(ungrid_handle, grid_msgs.size());
-#endif
-    for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
-        PmeGridMsg *msg = grid_msgs[imsg];
-#if CMK_PERSISTENT_COMM && 0 
-        CmiReference(msg);
-#endif
-        if ( msg->hasData ) {
-            if ( send_evir ) {
-                msg->evir[0] = evir;
-                send_evir = 0;
-            } else {
-                msg->evir[0] = 0.;
-            }
-        }
-        send_ungrid(msg);
-    }
+static inline void PmeZPencilSendUngrid(int first, int last, void *result, int paraNum, void *param){
+	//to take advantage of the interface which allows 3 user params at most.
+	//under such situtation, no new parameter list needs to be created!! -Chao Mei
+	int specialIdx = paraNum;
+	PmeZPencil *zpencil = (PmeZPencil *)param;
+	zpencil->send_subset_ungrid(first, last, specialIdx);
 }
+
+void PmeZPencil::send_all_ungrid() {
+/* 
+//Original code: the transformation is to first extract the msg 
+//idx that will has evir value set. -Chao Mei  
+	int send_evir = 1;
+	for (int imsg=0; imsg < grid_msgs.size(); ++imsg ) {
+		PmeGridMsg *msg = grid_msgs[imsg];
+		if ( msg->hasData ) {
+			if ( send_evir ) {
+				msg->evir[0] = evir;
+				send_evir = 0;
+			} else {
+				msg->evir[0] = 0.;
+			}
+		}
+		send_ungrid(msg);
+	}
+*/
+	int evirIdx = 0;
+	for(int imsg=0; imsg<grid_msgs.size(); imsg++) {
+		if(grid_msgs[imsg]->hasData) {
+			evirIdx = imsg;
+			break;
+		}
+	}
+
+#if     USE_NODEHELPER
+	Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
+	if(useNodeHelper>=NDH_CTRL_PME_SENDUNTRANS) {
+		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+		//????What's the best value for numChunks?????
+#if USE_NODE_PAR_RECEIVE        
+		//NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, CkMyNodeSize(), 0, grid_msgs.size()-1, 1); //has to sync
+		NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, grid_msgs.size(), 0, grid_msgs.size()-1, 1); //has to sync
+#else
+        //NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, CkMyNodeSize(), 0, grid_msgs.size()-1, 0); //not sync
+		NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, grid_msgs.size(), 0, grid_msgs.size()-1, 0); //not sync
+#endif        
+		return;
+	}
 #endif
+	send_subset_ungrid(0, grid_msgs.size()-1, evirIdx);
+}
+
+void PmeZPencil::send_subset_ungrid(int fromIdx, int toIdx, int specialIdx){
+	for (int imsg=fromIdx; imsg <=toIdx; ++imsg ) {
+		PmeGridMsg *msg = grid_msgs[imsg];
+		if ( msg->hasData) {
+			if (imsg == specialIdx) {
+				msg->evir[0] = evir;				
+			} else {
+				msg->evir[0] = 0.;
+			}
+		}
+		send_ungrid(msg);
+	}
+}
 
 void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
   int pe = msg->sourceNode;
@@ -4044,7 +5127,9 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
     delete msg;
     PmeAckMsg *ackmsg = new (PRIORITY_SIZE) PmeAckMsg;
     SET_PRIORITY(ackmsg,sequence,PME_UNGRID_PRIORITY)
+    CmiEnableUrgentSend(1);
     initdata.pmeProxy[pe].recvAck(ackmsg);
+    CmiEnableUrgentSend(0);
     return;
   }
   msg->sourceNode = thisIndex.x * initdata.yBlocks + thisIndex.y;
@@ -4069,9 +5154,83 @@ void PmeZPencil::send_ungrid(PmeGridMsg *msg) {
       }
     }
   }
-
   SET_PRIORITY(msg,sequence,PME_UNGRID_PRIORITY)
+    CmiEnableUrgentSend(1);
   initdata.pmeProxy[pe].recvUngrid(msg);
+    CmiEnableUrgentSend(0);
+}
+
+void PmeZPencil::node_process_grid(PmeGridMsg *msg)
+{
+#if USE_NODE_PAR_RECEIVE
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+  CmiMemoryReadFence();
+#endif
+  recv_grid(msg);
+  if(msg->hasData) hasData=msg->hasData;
+  int limsg;
+  CmiMemoryAtomicFetchAndInc(imsg,limsg);
+  grid_msgs[limsg] = msg;
+  //  CkPrintf("[%d] PmeZPencil node_process_grid for %d %d %d has %d of %d imsg %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z, limsg, grid_msgs.size(), imsg);      
+  if(limsg+1 == grid_msgs.size())
+    {
+
+      if (hasData)
+        {
+          forward_fft();
+        }
+      send_trans();
+      imsg=0;
+      CmiMemoryWriteFence();
+      //      CkPrintf("[%d] PmeZPencil grid node_zero imsg for %d %d %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z);
+    }
+#if USE_NODE_PAR_RECEIVE
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
+  CmiMemoryWriteFence();
+#endif
+}
+
+void PmeZPencil::node_process_untrans(PmeUntransMsg *msg)
+{
+#if USE_NODE_PAR_RECEIVE
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+  CmiMemoryReadFence();
+#endif    
+  recv_untrans(msg);
+  int limsg;
+  CmiMemoryAtomicFetchAndInc(imsgb,limsg);
+  if(limsg+1 == initdata.zBlocks)
+    {
+      if(hasData) // maybe this should be an assert
+        {
+          backward_fft();
+        }
+        
+        send_all_ungrid();
+    /*  int send_evir = 1;
+      // TODO: this part should use Chao's output parallelization
+      for ( limsg=0; limsg < grid_msgs.size(); ++limsg ) {
+        PmeGridMsg *omsg = grid_msgs[limsg];
+        if ( omsg->hasData ) {
+          if ( send_evir ) {
+            omsg->evir[0] = evir;
+            send_evir = 0;
+          } else {
+            omsg->evir[0] = 0.;
+          }
+        }
+        send_ungrid(omsg);
+      } */
+      imsgb=0;
+      evir = 0;
+      memset(data, 0, sizeof(float) * nx*ny* initdata.grid.dim3); 
+      CmiMemoryWriteFence();
+      //      CkPrintf("[%d] PmeZPencil untrans node_zero imsg for %d %d %d\n",CkMyPe(),thisIndex.x,thisIndex.y,thisIndex.z);
+    }
+#if USE_NODE_PAR_RECEIVE
+  CmiUnlock(ComputePmeMgr::fftw_plan_lock);
+  CmiMemoryWriteFence();
+#endif
 }
 
 
