@@ -1022,8 +1022,10 @@ void Node::traceBarrier(int turnOnTrace, int step){
 	if(turnOnTrace) traceBegin();
 	else traceEnd();
 
+#if CHARM_VERSION > 60400
     if(turnOnTrace) CmiTurnOnStats();
     else CmiTurnOffStats();
+#endif
 
 	//CkPrintf("traceBarrier (%d) at step %d called on proc %d\n", turnOnTrace, step, CkMyPe());	
 	CProxy_Node nd(CkpvAccess(BOCclass_group).node);
