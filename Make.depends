@@ -2673,7 +2673,6 @@ obj/ComputePatchPair.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePatchPair.o $(COPTC) src/ComputePatchPair.C
 obj/ComputePme.o: \
 	src/ComputePme.C \
-	/opt/fftw/3.3.0.0/interlagos/include/fftw3.h \
 	src/InfoStream.h \
 	src/Node.h \
 	src/main.h \
@@ -2747,7 +2746,6 @@ obj/ComputePme.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputePme.o $(COPTC) src/ComputePme.C
 obj/OptPme.o: \
 	src/OptPme.C \
-	/opt/fftw/3.3.0.0/interlagos/include/fftw3.h \
 	src/InfoStream.h \
 	src/Node.h \
 	src/main.h \
@@ -5505,7 +5503,10 @@ obj/ScriptTcl.o: \
 	src/DumpBench.h \
 	src/TclCommands.h \
 	src/Debug.h \
-	plugins/include/libmolfile_plugin.h
+	plugins/include/molfile_plugin.h \
+	plugins/include/libmolfile_plugin.h \
+	src/ComputeConsForceMsgs.h \
+	inc/ComputeMgr.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ScriptTcl.o $(COPTC) src/ScriptTcl.C
 obj/Sequencer.o: \
 	src/Sequencer.C \
@@ -5633,7 +5634,6 @@ obj/SimParameters.o: \
 	src/ParseOptions.h \
 	src/Communicate.h \
 	src/Output.h \
-	/opt/fftw/3.3.0.0/interlagos/include/fftw3.h \
 	src/Debug.h
 	$(CXX) $(CXXSIMPARAMFLAGS) $(COPTO)obj/SimParameters.o $(COPTC) src/SimParameters.C
 obj/SortAtoms.o: \
@@ -5687,7 +5687,10 @@ obj/TclCommands.o: \
 	src/common.h \
 	src/NamdTypes.h \
 	src/ResizeArray.h \
-	src/ResizeArrayRaw.h
+	src/ResizeArrayRaw.h \
+	src/Matrix4.C \
+	src/Matrix4.h \
+	src/TclVec.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/TclCommands.o $(COPTC) src/TclCommands.C
 obj/TorusLB.o: \
 	src/TorusLB.C \
