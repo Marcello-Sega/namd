@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2012/04/05 19:04:31 $
- * $Revision: 1.1243 $
+ * $Author: dhardy $
+ * $Date: 2012/05/22 20:53:45 $
+ * $Revision: 1.1244 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1491,6 +1491,9 @@ void WorkDistrib::mapComputes(void)
 #ifdef CHARM_HAS_MSA
   else if ( node->simParameters->MSMOn )
     mapComputeHomePatches(computeMsmMsaType);
+#else
+  else if ( node->simParameters->MSMOn )
+    mapComputeHomePatches(computeMsmType);
 #endif
 
 #ifdef NAMD_CUDA

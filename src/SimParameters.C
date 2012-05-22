@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: gzheng $
- * $Date: 2012/05/18 07:33:49 $
- * $Revision: 1.1390 $
+ * $Author: dhardy $
+ * $Date: 2012/05/22 20:53:44 $
+ * $Revision: 1.1391 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5033,7 +5033,7 @@ if ( openatomOn )
      iout << iINFO
        << "MULTILEVEL SUMMATION METHOD (MSM) FOR ELECTROSTATICS ACTIVE\n";
 #if !defined(CHARM_HAS_MSA)
-     if (MSMOn) MsmSerialOn = TRUE;
+     //if (MSMOn) MsmSerialOn = TRUE;
 #endif
      if (MsmSerialOn) {
        iout << iINFO

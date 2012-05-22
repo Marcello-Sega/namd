@@ -1,0 +1,13 @@
+
+module ComputeMsmMgr {
+
+  message MsmInitMsg;
+
+  group ComputeMsmMgr {
+
+    entry ComputeMsmMgr(void);
+    entry void initialize(MsmInitMsg *);
+    entry void update(CkQdMsg *);
+  };
+
+};

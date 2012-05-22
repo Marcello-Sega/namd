@@ -52,6 +52,7 @@ enum ComputeType
   computeLCPOType,
   computeMsmSerialType,
   computeMsmMsaType,
+  computeMsmType,
   computeEFieldType,
 /* BEGIN gf */
   computeGridForceType,

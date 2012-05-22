@@ -31,6 +31,7 @@
 #include "IMDOutput.h"
 #include "Lattice.h"
 #include "ComputeMsmMsa.h"  // needed for MsmMsaData definition
+#include "ComputeMsm.h"     // needed for MsmInitMsg definition
 #include "main.decl.h"
 #include "main.h"
 #include "WorkDistrib.h"
@@ -537,6 +538,34 @@ void Node::startup() {
       CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
       msm[CkMyPe()].initialize(new CkQdMsg);
     }
+#else
+    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      MsmInitMsg *msg = new MsmInitMsg;
+      Lattice lattice = simParameters->lattice;  // system lattice vectors
+      ScaledPosition smin=0, smax=0;
+      if (lattice.a_p() && lattice.b_p() && lattice.c_p()) {
+        msg->smin = smin;
+        msg->smax = smax;
+        msm[CkMyPe()].initialize(msg);  // call from my own PE
+      }
+      else if ( ! CkMyPe() ) {
+        pdb->get_extremes(smin, smax);  // only available on PE 0
+        msg->smin = smin;
+        msg->smax = smax;
+        msm.initialize(msg);  // broadcast to chare group
+      }
+
+      /*
+      CProxy_Node nd(CkpvAccess(BOCclass_group).node);
+      Node *node = nd.ckLocalBranch();
+      ScaledPosition smin, smax;
+      node->pdb->get_extremes(smin, smax);
+      msg->smin = smin;                       // extreme positions in system
+      msg->smax = smax;
+      msm[CkMyPe()].initialize(msg);
+      */
+    }
 #endif
 
     if (!CkMyPe()) {
@@ -570,6 +599,11 @@ void Node::startup() {
     else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
       CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
       msm[CkMyPe()].initWorkers(new CkQdMsg);
+    }
+#else
+    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      msm[CkMyPe()].update(new CkQdMsg);
     }
 #endif
 
@@ -606,6 +640,13 @@ void Node::startup() {
       CProxy_ComputeMsmMsaMgr msm(CkpvAccess(BOCclass_group).computeMsmMsaMgr);
       msm[CkMyPe()].startWorkers(new CkQdMsg);
     }
+#else
+    /*
+    else if ( simParameters->MSMOn && ! simParameters->MsmSerialOn ) {
+      CProxy_ComputeMsmMgr msm(CkpvAccess(BOCclass_group).computeMsmMgr);
+      //msm[CkMyPe()].startWorkers(new CkQdMsg);
+    }
+    */
 #endif
 
     proxyMgr->createProxies();  // need Home patches before this

@@ -158,6 +158,7 @@ void master_init(int argc, char **argv){
 #ifdef CHARM_HAS_MSA
   group.computeMsmMsaMgr = CProxy_ComputeMsmMsaMgr::ckNew();
 #endif
+  group.computeMsmMgr = CProxy_ComputeMsmMgr::ckNew();
 #ifdef MEM_OPT_VERSION
   group.ioMgr=CProxy_ParallelIOMgr::ckNew();
 #endif

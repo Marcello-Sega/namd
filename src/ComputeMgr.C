@@ -43,6 +43,7 @@
 #include "ComputeLCPO.h"
 #include "ComputeMsmSerial.h"
 #include "ComputeMsmMsa.h"
+#include "ComputeMsm.h"
 #include "ComputeDPMTA.h"
 #include "ComputeDPME.h"
 #include "ComputeDPMEMsgs.h"
@@ -536,6 +537,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         c->initialize();
         break;
 #endif
+    case computeMsmType: // MSM parallel
+        c = new ComputeMsm(i);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
     case computeEFieldType:
         c = new ComputeEField(i,map->computeData[i].pids[0].pid); // unknown delete
         map->registerCompute(i,c);
