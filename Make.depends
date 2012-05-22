@@ -62,6 +62,72 @@ obj/ComputeMoa.o: \
 	inc/WorkDistrib.decl.h \
 	src/varsizemsg.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMoa.o $(COPTC) src/ComputeMoa.C
+obj/ComputeMsm.o: \
+	src/ComputeMsm.C \
+	src/InfoStream.h \
+	src/Node.h \
+	src/main.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/Node.decl.h \
+	src/PDB.h \
+	src/parm.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/common.h \
+	src/GromacsTopFile.h \
+	src/PDBData.h \
+	src/Vector.h \
+	src/Lattice.h \
+	src/NamdTypes.h \
+	src/Tensor.h \
+	plugins/include/molfile_plugin.h \
+	plugins/include/vmdplugin.h \
+	src/PatchMap.h \
+	src/HomePatchList.h \
+	src/SortedArray.h \
+	src/SortableResizeArray.h \
+	src/ResizeArrayIter.h \
+	src/PatchMap.inl \
+	src/AtomMap.h \
+	src/ComputeMsm.h \
+	src/ComputeHomePatches.h \
+	src/Compute.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/OwnerBox.h \
+	src/Box.h \
+	src/UniqueSortedArray.h \
+	src/PatchTypes.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
+	inc/ComputeMsmMgr.decl.h \
+	src/PatchMgr.h \
+	src/Molecule.h \
+	src/structures.h \
+	src/ConfigList.h \
+	src/UniqueSet.h \
+	src/UniqueSetRaw.h \
+	src/Hydrogen.h \
+	src/GridForceGrid.h \
+	src/SimParameters.h \
+	src/MGridforceParams.h \
+	src/strlib.h \
+	src/MStream.h \
+	src/ReductionMgr.h \
+	src/ComputeMgr.h \
+	src/GlobalMaster.h \
+	src/GlobalMasterServer.h \
+	inc/ComputeMgr.decl.h \
+	src/Debug.h \
+	src/WorkDistrib.h \
+	src/ComputeMap.h \
+	inc/WorkDistrib.decl.h \
+	src/varsizemsg.h \
+	src/MsmMacros.h \
+	inc/ComputeMsmMgr.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsm.o $(COPTC) src/ComputeMsm.C
 obj/ComputeMsmMsa.o: \
 	src/ComputeMsmMsa.C
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsmMsa.o $(COPTC) src/ComputeMsmMsa.C
