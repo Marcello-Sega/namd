@@ -671,9 +671,9 @@ void ComputeNonbondedUtil::select(void)
         BigReal r12 = (r-COUL_SWITCH)*(r-COUL_SWITCH);
         BigReal r13 = (r-COUL_SWITCH)*(r-COUL_SWITCH)*(r-COUL_SWITCH);
         BigReal shiftVal = -(A1/3.0)*r13 - (B1/4.0)*r12*r12 - X1;
-        BigReal dShiftVal = A1*r12 + B1*r13;
+        BigReal dShiftVal = -A1*r12 - B1*r13;
         fast_energy = (1/r) + shiftVal;
-        fast_gradient = 1/(r2) + dShiftVal;
+        fast_gradient = -1/(r2) + dShiftVal;
         scor_energy = scor_gradient = 0;
         slow_energy = slow_gradient = 0;
         } 
