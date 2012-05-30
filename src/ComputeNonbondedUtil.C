@@ -746,10 +746,9 @@ void ComputeNonbondedUtil::select(void)
     BigReal r12 = (r-switchOn)*(r-switchOn);        BigReal r13 = (r-switchOn)*(r-switchOn)*(r-switchOn);
 
     BigReal p6 = 6;
-    BigReal A6temp = p6 * ((p6+1)*switchOn-(p6+4)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,2));
-    BigReal B6temp = -p6 * ((p6+1)*switchOn-(p6+3)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,3));        
-    BigReal C6temp = 1.0/pow(cutoff,p6)-A6temp/3.0*pow(cutoff-switchOn,3)-B6temp/4.0*pow(cutoff-switchOn,4);        BigReal A6 = -A6temp;
-    BigReal B6 = -B6temp;        BigReal C6 = -C6temp;
+    BigReal A6 = p6 * ((p6+1)*switchOn-(p6+4)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,2));
+    BigReal B6 = -p6 * ((p6+1)*switchOn-(p6+3)*cutoff)/(pow(cutoff,p6+2)*pow(cutoff-switchOn,3));        
+    BigReal C6 = 1.0/pow(cutoff,p6)-A6/3.0*pow(cutoff-switchOn,3)-B6/4.0*pow(cutoff-switchOn,4);
 
     BigReal p12 = 12;
     BigReal A12 = p12 * ((p12+1)*switchOn-(p12+4)*cutoff)/(pow(cutoff,p12+2)*pow(cutoff-switchOn,2));
@@ -763,8 +762,8 @@ void ComputeNonbondedUtil::select(void)
     const BigReal shiftValB =         // used for Lennard-Jones
                         ( r2 > switchOn2 ? LJshifttempB : -C6);
 
-    BigReal LJdshifttempA = A12*r12 + B12*r13;
-    BigReal LJdshifttempB = A6*r12 + B6*r13;
+    BigReal LJdshifttempA = -A12*r12 - B12*r13;
+    BigReal LJdshifttempB = -A6*r12 - B6*r13;
     const BigReal dshiftValA =         // used for Lennard-Jones
                         ( r2 > switchOn2 ? LJdshifttempA*0.5*r_1 : 0 );
     const BigReal dshiftValB =         // used for Lennard-Jones
@@ -778,8 +777,8 @@ void ComputeNonbondedUtil::select(void)
     //  dshiftValA*= 0.5*r_1;
     //  dshiftValB*= 0.5*r_1;
 
-    vdwa_energy = r_12 - shiftValA;
-    vdwb_energy = r_6 - shiftValB;
+    vdwa_energy = r_12 + shiftValA;
+    vdwb_energy = r_6 + shiftValB;
    
     vdwa_gradient = -6/pow(r,14) + dshiftValA ;
     vdwb_gradient = -3/pow(r,8) + dshiftValB;
