@@ -916,11 +916,24 @@ void ComputeNonbondedUtil::select(void)
     BigReal fdgmax = 0;
     BigReal fdvmax_r = 0;
     BigReal fdgmax_r = 0;
+    BigReal dgcdamax = 0;
+    BigReal dgcdimax = 0;
+    BigReal dgcaimax = 0;
+    BigReal dgcdamax_r = 0;
+    BigReal dgcdimax_r = 0;
+    BigReal dgcaimax_r = 0;
+    BigReal fdgcdamax = 0;
+    BigReal fdgcdimax = 0;
+    BigReal fdgcaimax = 0;
+    BigReal fdgcdamax_r = 0;
+    BigReal fdgcdimax_r = 0;
+    BigReal fdgcaimax_r = 0;
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
       const BigReal r2_base = r2_delta * ( 1 << (i/64) );
       const BigReal r2_del = r2_base / 64.0;
       const BigReal r2 = r2_base - r2_delta + r2_del * (i%64);
       const BigReal r = sqrt(r2);
+      if ( r > cutoff ) break;
       BigReal x = r2_del;
       BigReal dv = ( ( t[3] * x + t[2] ) * x + t[1] ) * x + t[0] - t[4];
       BigReal dg = ( 3.0 * t[3] * x + 2.0 * t[2] ) * x + t[1] - t[5];
@@ -936,7 +949,43 @@ void ComputeNonbondedUtil::select(void)
       if ( fabs(dg) > dgmax ) {
         dgmax = fabs(dg); dgmax_r = r;
       }
+      BigReal gcd = (t[4] - t[0]) / x;  // centered difference gradient
+      BigReal gcd_prec = (fabs(t[0]) + fabs(t[4])) * 1.e-15 / x;  // roundoff
+      BigReal gcm = 0.5  * (fabs(t[1]) + fabs(t[5]));  // magnitude
+      BigReal gca = 0.5  * (t[1] + t[5]);  // centered average gradient
+      BigReal gci = ( 0.75 * t[3] * x + t[2] ) * x + t[1];  // interpolated
+      BigReal rc = sqrt(r2 + 0.5 * x);
+      BigReal dgcda = gcd - gca;
+      if ( dgcda != 0. && fabs(dgcda) < gcd_prec ) {
+        // CkPrintf("ERROR %g < PREC %g AT %g AVG VAL %g\n", dgcda, gcd_prec, rc, gca);
+        dgcda = 0.;
+      }
+      BigReal dgcdi = gcd - gci;
+      if ( dgcdi != 0. && fabs(dgcdi) < gcd_prec ) {
+        // CkPrintf("ERROR %g < PREC %g AT %g INT VAL %g\n", dgcdi, gcd_prec, rc, gci);
+        dgcdi = 0.;
+      }
+      BigReal dgcai = gca - gci;
+      if ( t[1]*t[5] > 0. && gcm != 0. && fabs(dgcda/gcm) > fdgcdamax ) {
+        fdgcdamax = fabs(dgcda/gcm); fdgcdamax_r = rc;
+      }
+      if ( fabs(dgcda) > fdgcdamax ) {
+        dgcdamax = fabs(dgcda); dgcdamax_r = rc;
+      }
+      if ( t[1]*t[5] > 0. && gcm != 0. && fabs(dgcdi/gcm) > fdgcdimax ) {
+        fdgcdimax = fabs(dgcdi/gcm); fdgcdimax_r = rc;
+      }
+      if ( fabs(dgcdi) > fdgcdimax ) {
+        dgcdimax = fabs(dgcdi); dgcdimax_r = rc;
+      }
+      if ( t[1]*t[5] > 0. && gcm != 0. && fabs(dgcai/gcm) > fdgcaimax ) {
+        fdgcaimax = fabs(dgcai/gcm); fdgcaimax_r = rc;
+      }
+      if ( fabs(dgcai) > fdgcaimax ) {
+        dgcaimax = fabs(dgcai); dgcaimax_r = rc;
+      }
 #if 0
+      CkPrintf("TABLE %s %g %g %g %g\n",table_name,rc,dgcda/gca,dgcdi/gci,dgcai/gci);
       if (dv != 0.) CkPrintf("TABLE %d ENERGY ERROR %g AT %g (%d)\n",j,dv,r,i);
       if (dg != 0.) CkPrintf("TABLE %d FORCE ERROR %g AT %g (%d)\n",j,dg,r,i);
 #endif
@@ -956,6 +1005,24 @@ void ComputeNonbondedUtil::select(void)
     if ( fdgmax != 0.0 ) {
       iout << iINFO << "RELATIVE IMPRECISION IN " << table_name <<
         " TABLE FORCE: " << fdgmax << " AT " << fdgmax_r << "\n" << endi;
+    }
+    if (fdgcdamax != 0.0 ) {
+      iout << iINFO << "INCONSISTENCY IN " << table_name <<
+        " TABLE ENERGY VS FORCE: " << fdgcdamax << " AT " << fdgcdamax_r << "\n" << endi;
+      if ( fdgcdamax > 0.1 ) {
+        iout << iERROR << "\n";
+        iout << iERROR << "CALCULATED " << table_name <<
+          " FORCE MAY NOT MATCH ENERGY! POSSIBLE BUG!\n";
+        iout << iERROR << "\n";
+      }
+    }
+    if (0 && fdgcdimax != 0.0 ) {
+      iout << iINFO << "INCONSISTENCY IN " << table_name <<
+        " TABLE ENERGY VS FORCE: " << fdgcdimax << " AT " << fdgcdimax_r << "\n" << endi;
+    }
+    if ( 0 && fdgcaimax != 0.0 ) {
+      iout << iINFO << "INCONSISTENCY IN " << table_name <<
+        " TABLE AVG VS INT FORCE: " << fdgcaimax << " AT " << fdgcaimax_r << "\n" << endi;
     }
     }
 
