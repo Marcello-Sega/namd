@@ -928,6 +928,7 @@ void ComputeNonbondedUtil::select(void)
     BigReal fdgcdamax_r = 0;
     BigReal fdgcdimax_r = 0;
     BigReal fdgcaimax_r = 0;
+    BigReal gcm = fabs(t0[1]);  // gradient magnitude running average
     for ( i=0,t=t0; i<(n-1); ++i,t+=4 ) {
       const BigReal r2_base = r2_delta * ( 1 << (i/64) );
       const BigReal r2_del = r2_base / 64.0;
@@ -951,7 +952,7 @@ void ComputeNonbondedUtil::select(void)
       }
       BigReal gcd = (t[4] - t[0]) / x;  // centered difference gradient
       BigReal gcd_prec = (fabs(t[0]) + fabs(t[4])) * 1.e-15 / x;  // roundoff
-      BigReal gcm = 0.5  * (fabs(t[1]) + fabs(t[5]));  // magnitude
+      gcm = 0.9 * gcm + 0.1 * fabs(t[5]);  // magnitude running average
       BigReal gca = 0.5  * (t[1] + t[5]);  // centered average gradient
       BigReal gci = ( 0.75 * t[3] * x + t[2] ) * x + t[1];  // interpolated
       BigReal rc = sqrt(r2 + 0.5 * x);
@@ -985,7 +986,7 @@ void ComputeNonbondedUtil::select(void)
         dgcaimax = fabs(dgcai); dgcaimax_r = rc;
       }
 #if 0
-      CkPrintf("TABLE %s %g %g %g %g\n",table_name,rc,dgcda/gca,dgcdi/gci,dgcai/gci);
+      CkPrintf("TABLE %s %g %g %g %g\n",table_name,rc,dgcda/gcm,dgcda,gci);
       if (dv != 0.) CkPrintf("TABLE %d ENERGY ERROR %g AT %g (%d)\n",j,dv,r,i);
       if (dg != 0.) CkPrintf("TABLE %d FORCE ERROR %g AT %g (%d)\n",j,dg,r,i);
 #endif
