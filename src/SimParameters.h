@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: gzheng $
- * $Date: 2012/05/18 07:33:49 $
- * $Revision: 1.1205 $
+ * $Author: dhardy $
+ * $Date: 2012/06/05 22:21:40 $
+ * $Revision: 1.1206 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -423,6 +423,7 @@ public:
   BigReal surface_tension;        //surface tension (kcal/mol/Ang^2) for LCPO
 
         Bool drudeOn;       // Perform integration of Drude oscillators?
+        Bool drudeHardWallOn;  // Apply maximum Drude bond length restriction?
         BigReal drudeTemp;  // (low) temperature for freezing Drude oscillators
         BigReal drudeDamping;    // Langevin damping coefficient (1/ps)
                                  //   defaults to langevinDamping

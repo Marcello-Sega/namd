@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: gzheng $
- * $Date: 2012/05/18 07:33:49 $
- * $Revision: 1.1206 $
+ * $Author: dhardy $
+ * $Date: 2012/06/05 22:21:39 $
+ * $Revision: 1.1207 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -323,6 +323,9 @@ void Sequencer::integrate() {
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
       langevinPiston(step);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+
+      // impose hard wall potential for Drude bond length
+      hardWallDrude(0.5 * timestep, 1);
 
       minimizationQuenchVelocity();
 
@@ -1219,6 +1222,21 @@ void Sequencer::addVelocityToPosition(BigReal dt)
   CmiNetworkProgressAfter (0);
 #endif
   patch->addVelocityToPosition(dt);
+}
+
+void Sequencer::hardWallDrude(BigReal dt, int pressure)
+{
+  if ( simParams->drudeHardWallOn ) {
+    Tensor virial;
+    Tensor *vp = ( pressure ? &virial : 0 );
+    if ( patch->hardWallDrude(dt, vp, pressureProfileReduction) ) {
+      iout << iERROR << "Constraint failure in HardWallDrude(); "
+        << "simulation may become unstable.\n" << endi;
+      Node::Object()->enableEarlyExit();
+      terminate();
+    }
+    ADD_TENSOR_OBJECT(reduction,REDUCTION_VIRIAL_NORMAL,virial);
+  }
 }
 
 void Sequencer::rattle1(BigReal dt, int pressure)

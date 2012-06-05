@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dhardy $
- * $Date: 2012/05/22 20:53:44 $
- * $Revision: 1.1391 $
+ * $Date: 2012/06/05 22:21:39 $
+ * $Revision: 1.1392 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -969,6 +969,8 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("drude", "drudeNbtholeCut", "Nonbonded Thole interactions "
        "interaction radius", &drudeNbtholeCut);
    opts.range("drudeNbtholeCut", POSITIVE);
+   opts.optionalB("drude", "drudeHardWall", "Apply maximum Drude bond length "
+       "restriction?", &drudeHardWallOn, FALSE);
 
    // Pair interaction calculations
     opts.optionalB("main", "pairInteraction", 

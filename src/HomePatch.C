@@ -1744,6 +1744,184 @@ void HomePatch::addVelocityToPosition(const BigReal timestep)
   }
 }
 
+int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
+    SubmitReduction *ppreduction)
+{
+  Molecule *mol = Node::Object()->molecule;
+  SimParameters *simParams = Node::Object()->simParameters;
+  const int fixedAtomsOn = simParams->fixedAtomsOn;
+  const BigReal dt = timestep / TIMEFACTOR;
+  const BigReal invdt = (dt == 0.) ? 0. : 1.0 / dt; // precalc 1/dt
+  int i, ia, ib, j;
+  int dieOnError = simParams->rigidDie;
+  Tensor wc;  // constraint virial
+  BigReal idz, zmin;
+  int nslabs;
+
+  // start data for hard wall boundary between drude and its host atom
+  // static int Count=0;
+  int Idx;
+  double r_wall, r_wall_SQ, rab, rab_SQ, dr, mass_a, mass_b, mass_sum;
+  Vector v_ab, vb_1, vp_1, vb_2, vp_2, new_vel_a, new_vel_b, new_pos_a, new_pos_b, *new_pos, *new_vel;
+  double dot_v_r_1, dot_v_r_2;
+  double vb_cm, dr_a, dr_b;
+  // end data for hard wall boundary between drude and its host atom
+
+  // start calculation of hard wall boundary between drude and its host atom
+  if (simParams->drudeHardWallOn) {
+    r_wall = simParams->drudeBondLen;
+    r_wall_SQ = r_wall*r_wall;
+    // Count++;
+    for (i=1; i<numAtoms; i++)	{
+      if ( (atom[i].mass > 0.01) && ((atom[i].mass < 1.0)) ) { // drude particle
+        ia = i-1;
+        ib = i;
+
+        v_ab = atom[ib].position - atom[ia].position;
+        rab_SQ = v_ab.x*v_ab.x + v_ab.y*v_ab.y + v_ab.z*v_ab.z;
+
+        if (rab_SQ > r_wall_SQ)	{  // to impose the hard wall constraint
+          rab = sqrt(rab_SQ);
+          if ( (rab > (2.0*r_wall)) && dieOnError ) {  // unexpected situation
+            iout << iERROR << "HardWallDrude> "
+              << "The drude is too far away from atom "
+              << (ia + 1) << " d = " << rab << "!\n" << endi;
+            return -1;  // triggers early exit
+          }
+
+          v_ab.x /= rab;
+          v_ab.y /= rab;
+          v_ab.z /= rab;
+
+          if ( fixedAtomsOn && atom[ia].atomFixed ) {  // the heavy is fixed
+            if (atom[ib].atomFixed) {  // the drude is fixed too
+              continue;
+            }
+            else {  // only the heavy atom is fixed
+              dot_v_r_2 = atom[ib].velocity.x*v_ab.x
+                + atom[ib].velocity.y*v_ab.y + atom[ib].velocity.z*v_ab.z;
+              vb_2 = dot_v_r_2 * v_ab;
+              vp_2 = atom[ib].velocity - vb_2;
+
+              dr = rab - r_wall;
+
+              dr_b = -2.0*dr;
+
+              new_pos_a = atom[ia].position;
+              new_pos_b = atom[ib].position + dr_b*v_ab; // correct the position
+
+              dot_v_r_2 = -dot_v_r_2; // reflect the velocity along bond vector
+
+              vb_2 = dot_v_r_2 * v_ab;
+
+              new_vel_a = atom[ia].velocity;
+              new_vel_b = vp_2 + vb_2;
+            }
+          }
+          else {
+            mass_a = atom[ia].mass;
+            mass_b = atom[ib].mass;
+            mass_sum = mass_a+mass_b;
+
+            dot_v_r_1 = atom[ia].velocity.x*v_ab.x
+              + atom[ia].velocity.y*v_ab.y + atom[ia].velocity.z*v_ab.z;
+            vb_1 = dot_v_r_1 * v_ab;
+            vp_1 = atom[ia].velocity - vb_1;
+
+            dot_v_r_2 = atom[ib].velocity.x*v_ab.x
+              + atom[ib].velocity.y*v_ab.y + atom[ib].velocity.z*v_ab.z;
+            vb_2 = dot_v_r_2 * v_ab;
+            vp_2 = atom[ib].velocity - vb_2;
+
+            vb_cm = (mass_a*dot_v_r_1 + mass_b*dot_v_r_2)/mass_sum;
+
+            dot_v_r_1 -= vb_cm;
+            dot_v_r_2 -= vb_cm;
+            dr = rab - r_wall;
+
+            dr_a = 2.0*dr*mass_b/mass_sum;
+            dr_b = -2.0*dr*mass_a/mass_sum;
+
+            new_pos_a = atom[ia].position + dr_a*v_ab;	// correct the position
+            new_pos_b = atom[ib].position + dr_b*v_ab;
+            // atom[ia].position += (dr_a*v_ab);  // correct the position
+            // atom[ib].position += (dr_b*v_ab);
+
+            dot_v_r_1 = -dot_v_r_1;  // reflect the velocity along bond vector
+            dot_v_r_2 = -dot_v_r_2;
+            dot_v_r_1 += vb_cm;
+            dot_v_r_2 += vb_cm;
+
+            vb_1 = dot_v_r_1 * v_ab;
+            vb_2 = dot_v_r_2 * v_ab;
+
+            new_vel_a = vp_1 + vb_1;
+            new_vel_b = vp_2 + vb_2;
+          }
+
+          int ppoffset, partition;
+          if ( invdt == 0 ) {
+            atom[ia].position = new_pos_a;
+            atom[ib].position = new_pos_b;
+          }
+          else if ( virial == 0 ) {
+            atom[ia].velocity = new_vel_a;
+            atom[ib].velocity = new_vel_b;
+          }
+          else {
+            for ( j = 0; j < 2; j++ ) {
+              if (j==0) {  // atom ia, heavy atom
+                Idx = ia;
+                new_pos = &new_pos_a;
+                new_vel = &new_vel_a;
+              }
+              else if (j==1) {  // atom ib, drude
+                Idx = ib;
+                new_pos = &new_pos_b;
+                new_vel = &new_vel_b;
+              }
+              Force df = (*new_vel - atom[Idx].velocity) *
+                ( atom[Idx].mass * invdt );
+              Tensor vir = outer(df, atom[Idx].position);
+              wc += vir;
+              atom[Idx].velocity = *new_vel;
+              atom[Idx].position = *new_pos;
+
+              if (ppreduction) {
+                if (!i) {
+                  BigReal z = new_pos->z;
+                  int partition = atom[Idx].partition;
+                  int slab = (int)floor((z-zmin)*idz);
+                  if (slab < 0) slab += nslabs;
+                  else if (slab >= nslabs) slab -= nslabs;
+                  ppoffset = 3*(slab + nslabs*partition);
+                }
+                ppreduction->item(ppoffset  ) += vir.xx;
+                ppreduction->item(ppoffset+1) += vir.yy;
+                ppreduction->item(ppoffset+2) += vir.zz;
+              }
+
+            }
+          }
+        }				
+      }
+    }
+
+    // if ( (Count>10000) && (Count%10==0) ) {
+    //   v_ab = atom[1].position - atom[0].position;
+    //   rab_SQ = v_ab.x*v_ab.x + v_ab.y*v_ab.y + v_ab.z*v_ab.z;
+    //   iout << "DBG_R: " << Count << "  " << sqrt(rab_SQ) << "\n" << endi;
+    // }
+
+  }
+
+  // end calculation of hard wall boundary between drude and its host atom
+
+  if ( dt && virial ) *virial += wc;
+
+  return 0;
+}
+
 //  RATTLE algorithm from Allen & Tildesley
 int HomePatch::rattle1(const BigReal timestep, Tensor *virial, 
     SubmitReduction *ppreduction)

@@ -62,6 +62,8 @@ protected:
     void newMinimizePosition(BigReal);
     void quenchVelocities();
 
+    void hardWallDrude(BigReal,int);
+
     void rattle1(BigReal,int);
     void rattle2(BigReal,int);
 

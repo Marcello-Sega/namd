@@ -70,7 +70,8 @@ void BondElem::computeForce(BigReal *reduction,
     scal = -2.0*k;    // bond interaction for equilibrium length 0
     energy = k * r2;
 
-    if (drudeBondConst > 0 && r2 > drudeBondLen*drudeBondLen) {
+    if ( (drudeBondConst > 0) && ( ! simParams->drudeHardWallOn ) &&
+        (r2 > drudeBondLen*drudeBondLen) ) {
       // add a quartic restraining potential to keep Drude bond short
       BigReal r = sqrt(r2);
       BigReal diff = r - drudeBondLen;

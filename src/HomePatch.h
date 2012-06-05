@@ -105,6 +105,9 @@ public:
 				const int useSaved = 0);
   void addVelocityToPosition(const BigReal);
 
+  // impose hard wall constraint on Drude bond length
+  int hardWallDrude(const BigReal, Tensor *virial, SubmitReduction *);
+
   // methods for rigidBonds
   int rattle1(const BigReal, Tensor *virial, SubmitReduction *);
   void rattle2(const BigReal, Tensor *virial);
