@@ -285,13 +285,13 @@ const BigReal ComputeMsmMgr::PhiStencil[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO] = {
 ComputeMsmMgr::ComputeMsmMgr() :
   msmProxy(thisgroup), msmCompute(0)
 {
-  printf("ComputeMsmMgr:  (constructor) PE %d\n", CkMyPe());
+  //printf("ComputeMsmMgr:  (constructor) PE %d\n", CkMyPe());
   CkpvAccess(BOCclass_group).computeMsmMgr = thisgroup;
 }
 
 ComputeMsmMgr::~ComputeMsmMgr()
 {
-  printf("ComputeMsmMgr:  (destructor) PE %d\n", CkMyPe());
+  //printf("ComputeMsmMgr:  (destructor) PE %d\n", CkMyPe());
   // free memory
 }
 
