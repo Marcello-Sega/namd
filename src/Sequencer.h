@@ -29,7 +29,7 @@ public:
     void awaken(void) {
       CthAwakenPrio(thread, CK_QUEUEING_IFIFO, PRIORITY_SIZE, &priority);
     }
-    void suspend(void) { CthSuspend(); }
+    void suspend(void);
 
 protected:
     virtual void algorithm(void);	// subclasses redefine this method

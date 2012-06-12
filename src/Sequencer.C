@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dhardy $
- * $Date: 2012/06/05 22:21:39 $
- * $Revision: 1.1207 $
+ * $Author: jim $
+ * $Date: 2012/06/12 21:06:38 $
+ * $Revision: 1.1208 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -49,7 +49,7 @@ Sequencer::Sequencer(HomePatch *p) :
 	collection(CollectionMgr::Object()),
 	ldbSteps(0)
 {
-    broadcast = new ControllerBroadcasts;
+    broadcast = new ControllerBroadcasts(& patch->ldObjHandle);
     reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
     if (simParams->pressureProfileOn) {
       int ntypes = simParams->pressureProfileAtomTypes;
@@ -80,6 +80,7 @@ Sequencer::~Sequencer(void)
 // Invoked by thread
 void Sequencer::threadRun(Sequencer* arg)
 {
+    LdbCoordinator::Object()->startWork(arg->patch->ldObjHandle);
     arg->algorithm();
 }
 
@@ -92,6 +93,13 @@ void Sequencer::run(void)
     CthSetStrategyDefault(thread);
     priority = PATCH_PRIORITY(patch->getPatchID());
     awaken();
+}
+
+void Sequencer::suspend(void)
+{
+    LdbCoordinator::Object()->pauseWork(patch->ldObjHandle);
+    CthSuspend();
+    LdbCoordinator::Object()->startWork(patch->ldObjHandle);
 }
 
 // Defines sequence of operations on a patch.  e.g. when
@@ -293,9 +301,6 @@ void Sequencer::integrate() {
 
     for ( ++step; step <= numberOfSteps; ++step )
     {
-#ifndef NAMD_CUDA
-      LdbCoordinator::Object()->startWork(patch->ldObjHandle);
-#endif
       rescaleVelocities(step);
       tcoupleVelocities(timestep,step);
       berendsenPressure(step);
@@ -351,13 +356,7 @@ void Sequencer::integrate() {
       doEnergy = ! ( step % energyFrequency );
       if ( accelMDOn && !accelMDdihe ) doEnergy=1;
       if ( adaptTempOn ) doEnergy=1; 
-#ifndef NAMD_CUDA
-      LdbCoordinator::Object()->pauseWork(patch->ldObjHandle);
-#endif
       runComputeObjects(!(step%stepsPerCycle),step<numberOfSteps);
-#ifndef NAMD_CUDA
-      LdbCoordinator::Object()->startWork(patch->ldObjHandle);
-#endif
  
       rescaleaccelMD(step, doNonbonded, doFullElectrostatics); // for accelMD
      
@@ -415,10 +414,6 @@ void Sequencer::integrate() {
        //Update adaptive tempering temperature
         adaptTempUpdate(step);
 
-#ifndef NAMD_CUDA
-        LdbCoordinator::Object()->pauseWork(patch->ldObjHandle);
-#endif
- 
 #if CYCLE_BARRIER
         cycleBarrier(!((step+1) % stepsPerCycle), step);
 #elif PME_BARRIER
@@ -2019,6 +2014,7 @@ void Sequencer::papiMeasureBarrier(int step){
 #endif
 
 void Sequencer::terminate() {
+  LdbCoordinator::Object()->pauseWork(patch->ldObjHandle);
   CthFree(thread);
   CthSuspend();
 }

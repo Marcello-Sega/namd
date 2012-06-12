@@ -15,13 +15,16 @@
 
 #include "BroadcastMgr.h"
 #include "BroadcastClient.h"
+#include "LdbCoordinator.h"
 #include "common.h"
 
 template <class T> class SimpleBroadcastObject : public BroadcastClient {
 
   public:
 
-    SimpleBroadcastObject(int id) : BroadcastClient(id) { 
+    const LDObjHandle *ldObjPtr;
+
+    SimpleBroadcastObject(int id, const LDObjHandle *h = 0) : BroadcastClient(id), ldObjPtr(h) {
       if ( sizeof(T) > BCASTMSGSIZE ) {
         NAMD_bug("SimpleBroadcastObject instantiated on class larger than BCASTMSGSIZE");
       }
@@ -30,9 +33,11 @@ template <class T> class SimpleBroadcastObject : public BroadcastClient {
 
     T get(int tag) {
       T tmp;
+      if ( ldObjPtr ) LdbCoordinator::Object()->pauseWork(*ldObjPtr);
       while ( BroadcastMgr::Object()->getbuf(*this, tag, (void*)(&tmp)) < 0 ) {
         suspendFor(tag);
       }
+      if ( ldObjPtr ) LdbCoordinator::Object()->startWork(*ldObjPtr);
       return tmp;
     }
     
