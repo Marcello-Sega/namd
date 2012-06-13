@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2011/04/29 13:58:53 $
- * $Revision: 1.31 $
+ * $Date: 2012/06/13 17:31:51 $
+ * $Revision: 1.32 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -622,7 +622,10 @@ int NamdHybridLB::buildData(LDStats* stats) {
 
       	if (this_obj.id().id[1] == -2) { // Its a patch
 		// handled above to get required proxies from all patches
-      	} else if (this_obj.migratable) { // Its a compute
+		processorArray[frompe].backgroundLoad += this_obj.wallTime;
+	} else if (this_obj.id().id[1] == -3) { // Its a bonded compute
+		processorArray[frompe].backgroundLoad += this_obj.wallTime;
+	} else if (this_obj.migratable) { // Its a compute
 
 		const int cid = this_obj.id().id[0];
 		const int p0 = computeMap->pid(cid,0);
