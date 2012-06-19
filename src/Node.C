@@ -380,10 +380,22 @@ void Node::startup() {
 
     //Step 1: initialize the parallel IO manager per Node
     ioMgr->initialize(this);
+    #endif
 
+  break;
+
+  case 3:
+
+    #ifdef MEM_OPT_VERSION
     //Step 2: read the binary per-atom files (signater index, coordinates etc.)
     ioMgr->readPerAtomInfo();
+    #endif
 
+  break;
+
+  case 4:
+
+    #ifdef MEM_OPT_VERSION
     //Step 3: update counters of tuples and exclusions inside Molecule object
     ioMgr->updateMolInfo();
 
@@ -436,7 +448,7 @@ void Node::startup() {
 
   break;
 
-  case 3:
+  case 5:
     #ifdef MEM_OPT_VERSION
     //Now, every input proc has received all the atoms necessary
     //to decide the patches those atoms belong to
@@ -459,7 +471,7 @@ void Node::startup() {
     workDistrib->setPatchMapArrived(false);
     #endif
     break;
-  case 4:     
+  case 6:     
     if(simParameters->isSendSpanningTreeOn()) {				
 			ProxyMgr::Object()->setSendSpanning();
 			ProxyMgr::Object()->setProxyTreeBranchFactor(simParameters->proxyTreeBranchFactor);				
@@ -516,7 +528,7 @@ void Node::startup() {
     }
   break;
 
-  case 5:
+  case 7:
     if ( simParameters->PMEOn ) {
       if ( simParameters->useOptPME ) {
 	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
@@ -578,7 +590,7 @@ void Node::startup() {
     #endif
     break;
     
-  case 6:
+  case 8:
     if ( simParameters->PMEOn ) {
       if ( simParameters->useOptPME ) {
 	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
@@ -618,7 +630,7 @@ void Node::startup() {
     #endif
   break;
 
-  case 7:
+  case 9:
     if ( simParameters->PMEOn ) {
       if ( simParameters->useOptPME ) {
 	CProxy_OptPmeMgr pme(CkpvAccess(BOCclass_group).computePmeMgr);
@@ -665,7 +677,7 @@ void Node::startup() {
 
   break;
 
-  case 8:
+  case 10:
     if (!CkMyPe()) {
       iout << iINFO << "CREATING " << ComputeMap::Object()->numComputes()
            << " COMPUTE OBJECTS\n" << endi;
@@ -678,13 +690,13 @@ void Node::startup() {
     LdbCoordinator::Object()->initialize(PatchMap::Object(),ComputeMap::Object());
   break;
 
-  case 9:
+  case 11:
     // computes may create proxies on the fly so put these in separate phase
     Sync::Object()->openSync();  // decide if to open local Sync 
     if (proxySendSpanning || proxyRecvSpanning ) proxyMgr->buildProxySpanningTree();
   break;
 
-  case 10:
+  case 12:
     {
 	//For debugging
 	/*if(!CkMyPe()){
