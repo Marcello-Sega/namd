@@ -1749,13 +1749,14 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
 {
   Molecule *mol = Node::Object()->molecule;
   SimParameters *simParams = Node::Object()->simParameters;
+  const BigReal kbt=BOLTZMANN*simParams->drudeTemp;
   const int fixedAtomsOn = simParams->fixedAtomsOn;
   const BigReal dt = timestep / TIMEFACTOR;
   const BigReal invdt = (dt == 0.) ? 0. : 1.0 / dt; // precalc 1/dt
   int i, ia, ib, j;
   int dieOnError = simParams->rigidDie;
   Tensor wc;  // constraint virial
-  BigReal idz, zmin;
+  BigReal idz, zmin, delta_T, maxtime=timestep*2.0,v_Bond;
   int nslabs;
 
   // start data for hard wall boundary between drude and its host atom
@@ -1793,7 +1794,7 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
           v_ab.y /= rab;
           v_ab.z /= rab;
 
-          if ( fixedAtomsOn && atom[ia].atomFixed ) {  // the heavy is fixed
+          if ( fixedAtomsOn && atom[ia].atomFixed ) {  // the heavy atom is fixed
             if (atom[ib].atomFixed) {  // the drude is fixed too
               continue;
             }
@@ -1804,18 +1805,25 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
               vp_2 = atom[ib].velocity - vb_2;
 
               dr = rab - r_wall;
+              if(dot_v_r_2 == 0.0) {
+              	delta_T = maxtime;
+              }
+              else {
+                delta_T = dr/fabs(dot_v_r_2); // the time since the collision occurs
+                if(delta_T > maxtime ) delta_T = maxtime; // make sure it is not crazy
+              }
 
-              dr_b = -2.0*dr;
-
-              new_pos_a = atom[ia].position;
-              new_pos_b = atom[ib].position + dr_b*v_ab; // correct the position
-
-              dot_v_r_2 = -dot_v_r_2; // reflect the velocity along bond vector
+              dot_v_r_2 = -dot_v_r_2*sqrt(kbt/atom[ib].mass)/fabs(dot_v_r_2);
 
               vb_2 = dot_v_r_2 * v_ab;
 
               new_vel_a = atom[ia].velocity;
               new_vel_b = vp_2 + vb_2;
+
+              dr_b = -dr + delta_T*dot_v_r_2;  // L = L_0 + dT *v_new, v was flipped
+
+              new_pos_a = atom[ia].position;
+              new_pos_b = atom[ib].position + dr_b*v_ab; // correct the position
             }
           }
           else {
@@ -1837,18 +1845,32 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
 
             dot_v_r_1 -= vb_cm;
             dot_v_r_2 -= vb_cm;
+
             dr = rab - r_wall;
 
-            dr_a = 2.0*dr*mass_b/mass_sum;
-            dr_b = -2.0*dr*mass_a/mass_sum;
+            if(dot_v_r_2 == dot_v_r_1) {
+            	delta_T = maxtime;
+            }
+            else {
+              delta_T = dr/fabs(dot_v_r_2 - dot_v_r_1);  // the time since the collision occurs
+              if(delta_T > maxtime ) delta_T = maxtime; // make sure it is not crazy
+            }
+            
+            // the relative velocity between ia and ib. Drawn according to T_Drude
+            v_Bond = sqrt(kbt/mass_b);
+
+            // reflect the velocity along bond vector and scale down
+            dot_v_r_1 = -dot_v_r_1*v_Bond*mass_b/(fabs(dot_v_r_1)*mass_sum);
+            dot_v_r_2 = -dot_v_r_2*v_Bond*mass_a/(fabs(dot_v_r_2)*mass_sum);
+
+            dr_a = dr*mass_b/mass_sum + delta_T*dot_v_r_1;
+            dr_b = -dr*mass_a/mass_sum + delta_T*dot_v_r_2;
 
             new_pos_a = atom[ia].position + dr_a*v_ab;	// correct the position
             new_pos_b = atom[ib].position + dr_b*v_ab;
             // atom[ia].position += (dr_a*v_ab);  // correct the position
             // atom[ib].position += (dr_b*v_ab);
-
-            dot_v_r_1 = -dot_v_r_1;  // reflect the velocity along bond vector
-            dot_v_r_2 = -dot_v_r_2;
+            
             dot_v_r_1 += vb_cm;
             dot_v_r_2 += vb_cm;
 
