@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2012/06/05 22:21:39 $
- * $Revision: 1.1392 $
+ * $Author: jim $
+ * $Date: 2012/06/28 22:20:25 $
+ * $Revision: 1.1393 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -61,6 +61,7 @@
 #include <sys/stat.h>
 #ifdef WIN32
 #include <io.h>
+#define access(PATH,MODE) _access(PATH,00)
 #endif
 #include <fstream>
 using namespace std;
@@ -5615,8 +5616,7 @@ void SimParameters::create_output_directories(const char *dirname){
 	char *filename = new char[baselen+32];
 	memset(filename, 0, baselen+32);
 	strcpy(filename, outputFilename);
-	struct stat st;
-	if(stat(filename, &st)!=0) {
+	if(access(filename, F_OK)!=0) {
 		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
@@ -5629,7 +5629,7 @@ void SimParameters::create_output_directories(const char *dirname){
 	strcat(filename, PATHSEPSTR);
 	strcat(filename, dirname);
 	//check if the directory exists or not	
-	if(stat(filename, &st)!=0) {
+	if(access(filename, F_OK)!=0) {
 		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
@@ -5643,7 +5643,7 @@ void SimParameters::create_output_directories(const char *dirname){
 	for(int i=0; i<numoutputprocs; i++) {
 		memset(tmpstr, 0, 256);
 		sprintf(tmpstr, "%s%s%d", filename, PATHSEPSTR, i);
-		if(stat(tmpstr, &st)!=0) {
+		if(access(tmpstr, F_OK)!=0) {
 			int ret = MKDIR(tmpstr);
 			if(ret!=0) {
 				char errmsg[512];

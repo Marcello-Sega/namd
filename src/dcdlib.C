@@ -12,6 +12,9 @@
 
 #include "dcdlib.h"
 #include "Output.h"
+#ifdef WIN32
+#define access(PATH,MODE) _access(PATH,00)
+#endif
 
 #define NAMD_write NAMD_write64
 // same as write, only does error checking internally
@@ -115,11 +118,10 @@ void pad(char *s, int len)
 int open_dcd_read(char *filename)
 
 {
-	struct stat stbuf;	/*  Stat structure to check file	*/
 	int dcdfd;		/*  file descriptor for dcd file	*/
 
 	/*  Do a stat just to see if the file really exists	*/
-	if (stat(filename, &stbuf) != 0)
+	if (access(filename, F_OK) != 0)
 	{
 		if (errno == ENOENT)
 		{
@@ -629,11 +631,10 @@ int read_dcdstep(int fd, int N, float *X, float *Y, float *Z, int num_fixed,
 int open_dcd_write(char *dcdname)
 
 {
-	struct stat sbuf;
 	int dcdfd;
         char *newdcdname = 0;
 
-	if (stat(dcdname, &sbuf) == 0) 
+	if (access(dcdname, F_OK) == 0) 
 	{
            newdcdname = new char[strlen(dcdname)+5];
            if(newdcdname == (char *) 0)
@@ -742,6 +743,7 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 	NAMD_write(fd, (char *) &out_integer, sizeof(int32));
 
 	/* don't update header until after write succeeds */
+        off_t end = LSEEK(fd,0,SEEK_CUR);
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
 	LSEEK(fd,NSTEP_POS,SEEK_SET);
@@ -754,7 +756,7 @@ int write_dcdstep(int fd, int N, float *X, float *Y, float *Z, double *cell)
 	NAMD_write(fd,(char*) &NSTEP,sizeof(int32));
 	LSEEK(fd,NFILE_POS,SEEK_SET);
 	NAMD_write(fd,(char*) &NFILE,sizeof(int32));
-	LSEEK(fd,0,SEEK_END);
+	LSEEK(fd,end,SEEK_SET);
 
 	return(0);
 }
@@ -812,6 +814,7 @@ int update_dcdstep_par_header(int fd)
 {
 	int32 NSAVC,NSTEP,NFILE;
 	/* don't update header until after write succeeds */
+        off_t end = LSEEK(fd,0,SEEK_CUR);
 	LSEEK(fd,NSAVC_POS,SEEK_SET);
 	READ(fd,(void*) &NSAVC,sizeof(int32));
 	LSEEK(fd,NSTEP_POS,SEEK_SET);
@@ -824,7 +827,7 @@ int update_dcdstep_par_header(int fd)
 	NAMD_write(fd,(char*) &NSTEP,sizeof(int32));
 	LSEEK(fd,NFILE_POS,SEEK_SET);
 	NAMD_write(fd,(char*) &NFILE,sizeof(int32));
-	LSEEK(fd,0,SEEK_END);
+	LSEEK(fd,end,SEEK_SET);
 
 	return(0);
 }

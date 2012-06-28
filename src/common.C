@@ -23,6 +23,7 @@
 
 #ifdef WIN32
 #include <io.h>
+#define access(PATH,MODE) _access(PATH,00)
 #define NOCOMPRESSED
 #endif
 
@@ -116,8 +117,7 @@ void NAMD_bug(const char *err_msg)
 // move filename to filename.BAK
 void NAMD_backup_file(const char *filename, const char *extension)
 {
-  struct stat sbuf;
-  if (stat(filename, &sbuf) == 0) {
+  if (access(filename, F_OK) == 0) {
     if ( ! extension ) extension = ".BAK";
     char *backup = new char[strlen(filename)+strlen(extension)+1];
     strcpy(backup, filename);

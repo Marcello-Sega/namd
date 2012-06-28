@@ -35,6 +35,7 @@
 #include <sys/stat.h>
 #ifdef WIN32
 #include <io.h>
+#define access(PATH,MODE) _access(PATH,00)
 #endif
 
 #if defined(WIN32) && !defined(__CYGWIN__)
@@ -1313,13 +1314,6 @@ void ParOutput::output_veldcdfile_master(int timestep, int n){
 	//the new dcd file has also changed! -Chao Mei 
 
 #if OUTPUT_SINGLE_FILE
-    //The following seek will set the stream position to the
-    //beginning of the place where a new timestep output should
-    //be performed.
-    seek_dcdfile(veldcdFileID, 0, SEEK_END);
-
-    // Write out the Cell data which is not necessary right now
-    
     //write X,Y,Z headers
     int totalAtoms = namdMyNode->molecule->numAtoms;
     write_dcdstep_par_XYZUnits(veldcdFileID, totalAtoms);
@@ -1754,13 +1748,6 @@ void ParOutput::output_forcedcdfile_master(int timestep, int n){
 	//the new dcd file has also changed! -Chao Mei 
 
 #if OUTPUT_SINGLE_FILE
-    //The following seek will set the stream position to the
-    //beginning of the place where a new timestep output should
-    //be performed.
-    seek_dcdfile(forcedcdFileID, 0, SEEK_END);
-
-    // Write out the Cell data which is not necessary right now
-    
     //write X,Y,Z headers
     int totalAtoms = namdMyNode->molecule->numAtoms;
     write_dcdstep_par_XYZUnits(forcedcdFileID, totalAtoms);
@@ -2105,13 +2092,6 @@ void ParOutput::output_dcdfile_master(int timestep, int n, const Lattice *lattic
 	//needs to be written if necessary. Note that the format of	
 	//the new dcd file has also changed! -Chao Mei
 
-#if OUTPUT_SINGLE_FILE
-    //The following seek will set the stream position to the
-    //beginning of the place where a new timestep output should
-    //be performed.
-    seek_dcdfile(dcdFileID, 0, SEEK_END);
-#endif
-
     // Write out the Cell data
     if (lattice) {
       double unitcell[6];
@@ -2381,8 +2361,7 @@ char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
 	strcpy(filename, namdMyNode->simParams->outputFilename);
 
 	//check if the directory exists or not
-	struct stat st;
-	if(stat(filename, &st)!=0) {
+	if(access(filename, F_OK)!=0) {
 		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
@@ -2395,7 +2374,7 @@ char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
 	strcat(filename, typeName);
 
 	//check if the directory exists or not	
-	if(stat(filename, &st)!=0) {
+	if(access(filename, F_OK)!=0) {
 		int ret = MKDIR(filename);
 		if(ret!=0) {
 			char errmsg[512];
@@ -2421,7 +2400,7 @@ char *ParOutput::buildFileName(OUTPUTFILETYPE type, int timestep){
 		sprintf(tmpstr, "%s%d", PATHSEPSTR, outputID);
 		strcat(filename, tmpstr);
 		#if 0
-		if(stat(filename, &st)!=0) {
+		if(access(filename, F_OK)!=0) {
 			int ret = MKDIR(filename);
 			if(ret!=0) {
 				char errmsg[512];
