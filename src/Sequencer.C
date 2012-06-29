@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: dhardy $
- * $Date: 2012/06/29 18:56:34 $
- * $Revision: 1.1209 $
+ * $Author: cmatthews $
+ * $Date: 2012/06/29 21:46:05 $
+ * $Revision: 1.1210 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -326,7 +326,10 @@ void Sequencer::integrate() {
 
       maximumMove(timestep);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
-      if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep); //[!!]
+
+      // We add an Ornstein-Uhlenbeck integration step for the case of BAOAB (Langevin)
+      if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep);
+
       langevinPiston(step);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
@@ -713,6 +716,11 @@ if ( simParams->zeroMomentumAlt ) {
 
 void Sequencer::langevinVelocities(BigReal dt_fs)
 {
+// This routine is used for the BAOAB integrator,
+// Ornstein-Uhlenbeck exact solve for the O-part.
+// See B. Leimkuhler and C. Matthews, AMRX (2012)
+// Routine originally written by JPhillips, with fresh errors by CMatthews June2012
+
   if ( simParams->langevinOn )
   {
     FullAtom *a = patch->atom.begin();
@@ -742,7 +750,7 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
 
 void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
 {
-  if ( simParams->langevinOn && !simParams->langevin_useBAOAB ) //[!!]
+  if ( simParams->langevinOn && !simParams->langevin_useBAOAB )
   {
     FullAtom *a = patch->atom.begin();
     int numAtoms = patch->numAtoms;
@@ -809,7 +817,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
 
 void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 {
-  if ( simParams->langevinOn && !simParams->langevin_useBAOAB ) //[!!]
+  if ( simParams->langevinOn && !simParams->langevin_useBAOAB ) 
   {
     rattle1(dt_fs,1);  // conserve momentum if gammas differ
 
