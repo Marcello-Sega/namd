@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/06/28 22:20:25 $
- * $Revision: 1.1393 $
+ * $Author: dhardy $
+ * $Date: 2012/06/29 18:56:34 $
+ * $Revision: 1.1394 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -155,6 +155,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   // SCRIPT_PARSE_BOOL("Langevin",langevinOn)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
+  SCRIPT_PARSE_BOOL("langevinBAOAB",langevin_useBAOAB) // [!!] Use the BAOAB integrator or not
   SCRIPT_PARSE_FLOAT("loweAndersenTemp",loweAndersenTemp) // BEGIN LA, END LA
   SCRIPT_PARSE_FLOAT("initialTemp",initialTemp)
   SCRIPT_PARSE_BOOL("useGroupPressure",useGroupPressure)
@@ -4547,6 +4548,8 @@ if ( openatomOn )
       iout << iINFO << "LANGEVIN DYNAMICS ACTIVE\n";
       iout << iINFO << "LANGEVIN TEMPERATURE   "
          << langevinTemp << "\n";
+      if (! langevin_useBAOAB) iout << iINFO << "LANGEVIN USING BBK INTEGRATOR\n";
+      else  iout << iINFO << "LANGEVIN USING BAOAB INTEGRATOR\n"; // [!!] Info file
       if (langevinDamping > 0.0) {
 	iout << iINFO << "LANGEVIN DAMPING COEFFICIENT IS "
 		<< langevinDamping << " INVERSE PS\n";

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: dhardy $
- * $Date: 2012/06/05 22:21:40 $
- * $Revision: 1.1206 $
+ * $Date: 2012/06/29 18:56:34 $
+ * $Revision: 1.1207 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -457,6 +457,7 @@ public:
 	BigReal langevinTemp;		//  Temperature for Langevin dynamics
 	BigReal langevinDamping;	//  Damping coefficient (1/ps)
 	Bool langevinHydrogen;		//  Flag TRUE-> apply to hydrogens
+	Bool langevin_useBAOAB;		//  [!!] Whether to use the BAOAB integrator instead of the BBK one
 	
 	// BEGIN LA
 	Bool loweAndersenOn;		//  Flag TRUE-> Lowe-Andersen dynamics active

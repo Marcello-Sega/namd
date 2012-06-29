@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: jim $
- * $Date: 2012/06/12 21:06:38 $
- * $Revision: 1.1208 $
+ * $Author: dhardy $
+ * $Date: 2012/06/29 18:56:34 $
+ * $Revision: 1.1209 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom
@@ -326,6 +326,7 @@ void Sequencer::integrate() {
 
       maximumMove(timestep);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
+      if ( simParams->langevinOn && simParams->langevin_useBAOAB ) langevinVelocities(timestep); //[!!]
       langevinPiston(step);
       if ( ! commOnly ) addVelocityToPosition(0.5*timestep);
 
@@ -741,7 +742,7 @@ void Sequencer::langevinVelocities(BigReal dt_fs)
 
 void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
 {
-  if ( simParams->langevinOn )
+  if ( simParams->langevinOn && !simParams->langevin_useBAOAB ) //[!!]
   {
     FullAtom *a = patch->atom.begin();
     int numAtoms = patch->numAtoms;
@@ -808,7 +809,7 @@ void Sequencer::langevinVelocitiesBBK1(BigReal dt_fs)
 
 void Sequencer::langevinVelocitiesBBK2(BigReal dt_fs)
 {
-  if ( simParams->langevinOn )
+  if ( simParams->langevinOn && !simParams->langevin_useBAOAB ) //[!!]
   {
     rattle1(dt_fs,1);  // conserve momentum if gammas differ
 
