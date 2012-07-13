@@ -928,20 +928,22 @@ void buildBondData()
         int curClusterID=eachAtomClusterID[i];
         //if the atom's cluster id is not -1, the atom has been visited
         if(curClusterID!=-1) continue;
-                
+
         curClusterID=i;
         deque<int> toVisitAtoms;
+	eachAtomClusterID[i] = curClusterID;
         toVisitAtoms.push_back(i);
         while(!toVisitAtoms.empty())
         {
             int visAtomID = toVisitAtoms.front();
             toVisitAtoms.pop_front();
-            eachAtomClusterID[visAtomID] = curClusterID;
             for(int j=0; j<atomListOfBonded[visAtomID].size(); j++)
             {
                 int otherAtom = atomListOfBonded[visAtomID][j];
-                if(eachAtomClusterID[otherAtom]!=curClusterID)
+                if(eachAtomClusterID[otherAtom]!=curClusterID){
+                    eachAtomClusterID[otherAtom]=curClusterID;
                     toVisitAtoms.push_back(otherAtom);
+		}
             }
         }
     }
