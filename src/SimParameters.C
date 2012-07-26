@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dhardy $
- * $Date: 2012/06/29 18:56:34 $
- * $Revision: 1.1394 $
+ * $Date: 2012/07/26 19:25:00 $
+ * $Revision: 1.1395 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -849,6 +849,11 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optional("Langevin", "langevinCol", "Column in the langevinFile "
      "containing the temperature coupling term B(i);\n"
      "default is 'O'", PARSE_STRING);
+
+   // use BAOAB integration instead of BBK
+   opts.optionalB("Langevin", "langevinBAOAB",
+       "Should Langevin dynamics be performed using BAOAB integration?",
+       &langevin_useBAOAB, FALSE);
 
 // BEGIN LA
    opts.optionalB("main", "LoweAndersen", "Should Lowe-Andersen dynamics be performed?",
