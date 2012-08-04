@@ -132,7 +132,7 @@ public:
          << iWARN << "          ***  UNRELEASED EXPERIMENTAL VERSION  ***\n"
          << iWARN << "\n"
 #endif
-#ifdef SCYLD_NOTICE
+#ifdef SPEC_DISABLED_VERSION
 
          << iINFO << "\n"
          << iINFO << "NAMD is a parallel, object-oriented molecular dynamics\n"
@@ -141,9 +141,9 @@ public:
          << iINFO << "charge and includes source code.  For more information\n" 
          << iINFO << "please visit http://www.ks.uiuc.edu/Research/namd/\n"
          << iINFO << "\n"
-         << iINFO << "******************************************************\n"
-         << iINFO << "This version of NAMD may be distributed only as a part\n"
-         << iINFO << "of the Scyld Beowulf CDROM and all other distribution\n"
+         << iINFO << "*********************************************************\n"
+         << iINFO << "This version of NAMD may be distributed only as a part of\n"
+         << iINFO << "the SPEC Workstation Benchmark and all other distribution\n"
          << iINFO << "is prohibited.  Any use of this software is bound by\n"
          << iINFO << "the terms of the NAMD License, which is available at\n"
          << iINFO << "http://www.ks.uiuc.edu/Research/namd/license.html\n"
@@ -151,7 +151,7 @@ public:
          << iINFO << "any version of NAMD unless you have first registered\n"
          << iINFO << "and downloaded the latest version of NAMD available at\n"
          << iINFO << "http://www.ks.uiuc.edu/Research/namd/\n"
-         << iINFO << "******************************************************\n"
+         << iINFO << "*********************************************************\n"
 #else
          << iINFO << "\n"
          << iINFO << "Please visit http://www.ks.uiuc.edu/Research/namd/\n"

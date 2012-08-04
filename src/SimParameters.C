@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2012/07/26 19:25:00 $
- * $Revision: 1.1395 $
+ * $Author: jim $
+ * $Date: 2012/08/04 22:36:01 $
+ * $Revision: 1.1396 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3749,6 +3749,13 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
    } else {
      iout << iWARN << "MODIFIED 1-4 VDW PARAMETERS WILL BE IGNORED\n" << endi;
    }
+
+#ifdef SPEC_DISABLED_VERSION
+   if (dcdFrequency > 0) {
+     dcdFrequency = 0;
+     iout << iWARN << "DCD TRAJECTORY OUTPUT IS DISABLED IN SPEC RELEASE\n";
+   }
+#endif
 
    if (dcdFrequency > 0)
    {

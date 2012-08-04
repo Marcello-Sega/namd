@@ -13,7 +13,7 @@ include Make.config
 default: all
 
 # pass version/platform information to compile
-RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\" $(SCYLDFLAGS)
+RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\" $(RELEASEFLAGS)
 
 # directories
 SRCDIR = src

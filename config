@@ -101,6 +101,7 @@ begin:
   set use_fftw3 = 0
   set use_cuda = 0
   set use_memopt = 0
+  set use_spec = 0
 
   if ($#argv < 1) then
     set PRINT_ARCH_LIST
@@ -239,6 +240,10 @@ begin:
 
       case --with-memopt:
         set use_memopt = 1
+      breaksw
+
+      case --with-spec:
+        set use_spec = 1
       breaksw
 
       case --charm-base:
@@ -390,6 +395,7 @@ begin:
     set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
   endif
   if ( $use_memopt ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-memopt
+  if ( $use_spec ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-SPEC
   echo NAMD_PLATFORM = \$\(NAMD_ARCH\)${ARCH_SUFFIX} >> Make.config
 
   echo 'include .rootdir/arch/$(NAMD_ARCH).base' >> Make.config
@@ -401,6 +407,8 @@ begin:
   if ( $use_cuda ) echo 'include .rootdir/arch/$(NAMD_ARCH).cuda' >> Make.config
 
   if ( $use_memopt ) echo 'MEMOPT=-DMEM_OPT_VERSION' >> Make.config
+
+  if ( $use_spec ) echo 'RELEASEFLAGS=-DSPEC_DISABLED_VERSION' >> Make.config
 
   set threaded = 0
   if ( $CHARM_ARCH =~ *-smp* ) set threaded = 1
