@@ -7,8 +7,9 @@
 #include "ComputeHomePatches.h"
 #include "NamdTypes.h"
 
+
+class ComputeMsmMgr;
 class SubmitReduction;
-typedef Force MsmForce;
 
 class MsmInitMsg : public CMessage_MsmInitMsg {
   public:
@@ -21,18 +22,24 @@ public:
   ComputeMsm(ComputeID c);
   virtual ~ComputeMsm();
   void doWork();
-  void saveResults(int n, const MsmForce [], double self_energy);
+  void saveResults(/* int n, const Force [], double self_energy */);
+
+  void setMgr(ComputeMsmMgr *mgr) { myMgr = mgr; }
 
 private:
   double qscaling;  // charge scaling constant
   SubmitReduction *reduction;
+
+  ComputeMsmMgr *myMgr;
 };
 
+#if 0
 struct MsmData {
   int ispx, ispy, ispz;
   void pup(PUP::er &p);  // for parameter marshalling
   void print();          // for debugging
 };
+#endif
 
 
 #endif // COMPUTEMSM_H

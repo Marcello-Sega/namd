@@ -125,7 +125,7 @@ obj/ComputeMsm.o: \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
 	src/varsizemsg.h \
-	src/MsmMacros.h \
+	src/MsmMap.h \
 	inc/ComputeMsmMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/ComputeMsm.o $(COPTC) src/ComputeMsm.C
 obj/ComputeMsmMsa.o: \
@@ -317,6 +317,12 @@ obj/mainfunc.o: \
 	src/BOCgroup.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/NamdState.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -533,7 +539,17 @@ obj/BroadcastMgr.o: \
 	src/BOCgroup.h \
 	src/BroadcastClient.h \
 	src/BroadcastObject.h \
+	src/LdbCoordinator.h \
+	src/NamdTypes.h \
 	src/common.h \
+	src/Vector.h \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/Debug.h \
 	inc/BroadcastMgr.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/BroadcastMgr.o $(COPTC) src/BroadcastMgr.C
@@ -3217,14 +3233,14 @@ obj/Controller.o: \
 	src/BroadcastMgr.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
-	src/ScriptTcl.h \
-	src/Broadcasts.h \
 	src/LdbCoordinator.h \
 	inc/LdbCoordinator.decl.h \
 	inc/NamdCentLB.decl.h \
 	inc/NamdNborLB.decl.h \
 	inc/NamdHybridLB.decl.h \
 	inc/NamdDummyLB.decl.h \
+	src/ScriptTcl.h \
+	src/Broadcasts.h \
 	src/Thread.h \
 	src/NamdOneTools.h \
 	src/PDB.h \
@@ -3539,6 +3555,12 @@ obj/GlobalMasterTcl.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/GlobalMaster.h \
 	src/GlobalMasterTcl.h \
 	src/Debug.h
@@ -4773,6 +4795,12 @@ obj/NamdState.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/Debug.h \
 	src/CompressPsf.h \
 	src/PluginIOMgr.h \
@@ -4982,7 +5010,13 @@ obj/Output.o: \
 	src/BroadcastMgr.h \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
-	src/BroadcastClient.h
+	src/BroadcastClient.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Output.o $(COPTC) src/Output.C
 obj/Parameters.o: \
 	src/Parameters.C \
@@ -5538,6 +5572,12 @@ obj/ScriptTcl.o: \
 	src/BOCgroup.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/ConfigList.h \
 	src/Node.h \
 	inc/Node.decl.h \
@@ -5629,6 +5669,12 @@ obj/Sequencer.o: \
 	src/UniqueSetIter.h \
 	inc/BroadcastMgr.decl.h \
 	src/BroadcastClient.h \
+	src/LdbCoordinator.h \
+	inc/LdbCoordinator.decl.h \
+	inc/NamdCentLB.decl.h \
+	inc/NamdNborLB.decl.h \
+	inc/NamdHybridLB.decl.h \
+	inc/NamdDummyLB.decl.h \
 	src/Output.h \
 	src/Controller.h \
 	src/Broadcasts.h \
@@ -5644,12 +5690,6 @@ obj/Sequencer.o: \
 	src/NamdOneTools.h \
 	src/PDB.h \
 	src/PDBData.h \
-	src/LdbCoordinator.h \
-	inc/LdbCoordinator.decl.h \
-	inc/NamdCentLB.decl.h \
-	inc/NamdNborLB.decl.h \
-	inc/NamdHybridLB.decl.h \
-	inc/NamdDummyLB.decl.h \
 	src/Thread.h \
 	src/Random.h \
 	src/PatchMap.inl \
