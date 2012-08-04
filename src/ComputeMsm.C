@@ -11,34 +11,12 @@
 #include "ReductionMgr.h"
 #include "ComputeMgr.h"
 #include "ComputeMgr.decl.h"
-// #define DEBUGM
-#define MIN_DEBUG_LEVEL 3
 #include "Debug.h"
 #include "SimParameters.h"
 #include "WorkDistrib.h"
 #include "varsizemsg.h"
-//#include <stdlib.h>
 #include <stdio.h>
-//#include <errno.h>
-//#include "pup_stl.h"
-//#include "MsmMacros.h"
 #include "MsmMap.h"
-
-
-//using namespace msm;
-
-
-#if 0
-void MsmData::pup(PUP::er &p)
-{
-  p|ispx, p|ispy, p|ispz;
-}
-
-void MsmData::print()
-{
-  // print something here
-}
-#endif
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -1723,32 +1701,6 @@ void ComputeMsmMgr::update(CkQdMsg *msg)
   // calculate constants for grid cutoff, broadcast
 }
 
-#if 1
-static void printGridDim(const msm::Grid<int>& g) {
-  printf("[%d..%d] x [%d..%d] x [%d..%d]\n",
-      g.ia(), g.ib(), g.ja(), g.jb(), g.ka(), g.kb()
-      );
-}
-static void printIntGrid(const msm::Grid<int>& g) {
-  int gia = g.ia();
-  int gib = g.ib();
-  int gja = g.ja();
-  int gjb = g.jb();
-  int gka = g.ka();
-  int gkb = g.kb();
-  for (int k = gka;  k <= gkb;  k++) {
-    for (int j = gja;  j <= gjb;  j++) {
-      if (j==gja) printf("k=%2d: ", k);
-      else        printf("      ");
-      for (int i = gia;  i <= gib;  i++) {
-        printf(" %d", g(i,j,k));
-      }
-      printf("\n");
-    }
-  }
-}
-#endif
-
 
 void ComputeMsmMgr::compute()
 {
@@ -1784,40 +1736,6 @@ void ComputeMsmMgr::compute()
   for (pid = 0;  pid < patch.len();  pid++) {
     ASSERT(patch[pid].cntRecvs == map.patchList[pid].numRecvs);
   }
-
-#if 0
-  {
-    msm::Grid<int> g;
-    g.set(0,2,0,2,0,2);
-    msm::IndexRange m;
-    m.set(1,1,1,1,1,1);
-    int isit = (m <= msm::IndexRange(g));
-    printf("isit = %d\n", isit);
-
-    g.reset(1);
-    msm::Grid<int> h;
-    h.init(m);
-    h.reset(2);
-
-    printf("\nIntGrid g:  ");
-    printGridDim(g);
-    printIntGrid(g);
-    printf("\nIntGrid h:  ");
-    printGridDim(h);
-    printIntGrid(h);
-
-    g += h;
-    printf("\nAfter g+=h, IntGrid g:  ");
-    printGridDim(g);
-    printIntGrid(g);
-
-    h.updateLower(msm::Ivec(0,1,1));
-    g += h;
-    printf("\nAfter updateLower() and g+=h, IntGrid g:  ");
-    printGridDim(g);
-    printIntGrid(g);
-  }
-#endif
 
   return;
 }
@@ -1898,26 +1816,6 @@ void ComputeMsm::doWork()
     }
   }
 
-#if 0
-  for (n = 0;  n < patchArray.len();  n++) {
-    printf("Atom coordinates, Patch %d:\n", patchArray[n].patchID);
-    for (int i = 0;  i < patchArray[n].coord.len();  i++) {
-      Vector& p = patchArray[n].coord[i].position;
-      BigReal q = patchArray[n].coord[i].charge;
-      int id = patchArray[n].coord[i].id;
-      printf("%d   %g %g %g   %g\n", id, p.x, p.y, p.z, q);
-    }
-  }
-#endif
-
-#if 0
-  for (ap = ap.begin();  ap != ap.end();  ap++) {
-    Results *r = (*ap).forceBox->open();
-    (*ap).forceBox->close(&r);
-    reduction->submit();
-  }
-#endif
-
   myMgr->compute();
 
   // XXX for now
@@ -1935,11 +1833,6 @@ void ComputeMsm::saveResults(/* int n, const Force force[], double self_energy *
   printf("ComputeMsm:  saveResults() PE=%d\n", CkMyPe());
   // store force updates
   // submit reductions
-#if 0
-  BigReal sum = 0;
-  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += 0.5*sum;
-  reduction->submit();
-#endif
 
   // add in forces
   int cnt=0, n;

@@ -22,24 +22,16 @@ public:
   ComputeMsm(ComputeID c);
   virtual ~ComputeMsm();
   void doWork();
-  void saveResults(/* int n, const Force [], double self_energy */);
+  void saveResults();
 
   void setMgr(ComputeMsmMgr *mgr) { myMgr = mgr; }
 
 private:
-  double qscaling;  // charge scaling constant
+  BigReal qscaling;  // charge scaling constant
   SubmitReduction *reduction;
 
-  ComputeMsmMgr *myMgr;
+  ComputeMsmMgr *myMgr;  // points to the local MSM manager
 };
-
-#if 0
-struct MsmData {
-  int ispx, ispy, ispz;
-  void pup(PUP::er &p);  // for parameter marshalling
-  void print();          // for debugging
-};
-#endif
 
 
 #endif // COMPUTEMSM_H
