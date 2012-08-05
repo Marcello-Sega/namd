@@ -561,6 +561,7 @@ namespace msm {
 
   struct PatchData;
   typedef Array<PatchData> PatchDataArray;
+  typedef Array<PatchData *> PatchPtrArray;
 
   struct BlockData;
   typedef Array<Grid<BlockData> > BlockDataGrids;

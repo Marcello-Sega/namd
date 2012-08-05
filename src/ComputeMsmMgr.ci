@@ -3,11 +3,21 @@ module ComputeMsmMgr {
 
   message MsmInitMsg;
 
-  group ComputeMsmMgr {
+  message GridDoubleMsg {
+    double gdata[];
+  };
 
+  group ComputeMsmMgr {
     entry ComputeMsmMgr(void);
     entry void initialize(MsmInitMsg *);
     entry void update(CkQdMsg *);
+    entry void addPotential(GridDoubleMsg *);
+  };
+
+  array [3D] MsmBlock {
+    entry MsmBlock(int level);
+    entry void addCharge(int foo);
+    entry void addPotential(int foo);
   };
 
 };

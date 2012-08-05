@@ -19,6 +19,45 @@
 #include "MsmMap.h"
 
 
+class GridDoubleMsg : public CMessage_GridDoubleMsg {
+  public:
+    int idnum;
+    int nlower_i;
+    int nlower_j;
+    int nlower_k;
+    int nextent_i;
+    int nextent_j;
+    int nextent_k;
+    int nelems;
+    double *gdata;
+    // put a grid into an allocated message
+    void put(const msm::Grid<BigReal>& g, int id) {
+      idnum = id;
+      nlower_i = g.lower().i;
+      nlower_j = g.lower().j;
+      nlower_k = g.lower().k;
+      nextent_i = g.extent().i;
+      nextent_j = g.extent().j;
+      nextent_k = g.extent().k;
+      nelems = g.data().len();
+      const double *p = g.data().buffer();
+      for (int i = 0;  i < nelems;  i++) {
+        gdata[i] = p[i];
+      }
+    }
+    // get the grid from an initialized method
+    void get(msm::Grid<BigReal>& g, int& id) {
+      id = idnum;
+      g.set(nlower_i, nextent_i, nlower_j, nextent_j,
+          nlower_k, nextent_k);
+      ASSERT(g.data().len() == nelems);
+      double *p = g.data().buffer();
+      for (int i = 0;  i < nelems;  i++) {
+        p[i] = gdata[i];
+      }
+    }
+};
+
 //////////////////////////////////////////////////////////////////////////////
 //
 //  ComputeMsmMgr
@@ -39,10 +78,15 @@ public:
 
   void compute();  // called by local ComputeMsm object
 
+  void addPotential(GridDoubleMsg *);  // entry with message
+  void doneCompute();  // called by each local patch
+
   void setCompute(ComputeMsm *c) { msmCompute = c;  c->setMgr(this); } // local
 
-  msm::PatchDataArray& patchDataArray() { return patch; }
+  //msm::PatchDataArray& patchDataArray() { return patch; }
   msm::BlockDataGrids& blockDataGrids() { return block; }
+
+  msm::PatchPtrArray& patchPtrArray() { return patchPtr; }
 
   msm::Map& mapData() { return map; }
 
@@ -54,9 +98,16 @@ private:
   CProxy_ComputeMsmMgr msmProxy;
   ComputeMsm *msmCompute;
 
+  CProxy_MsmBlock msmBlock;
+
   msm::Map map;
-  msm::PatchDataArray patch;  // local patch data
+  //msm::PatchDataArray patch;  // local patch data
   msm::BlockDataGrids block;  // XXX
+
+  // find patch by patchID
+  // array is length number of patches, initialized to NULL
+  // allocate PatchData for only those patches on this PE
+  msm::PatchPtrArray patchPtr;
 
   Vector c, u, v, w;    // rescaled center and lattice vectors
   Vector ru, rv, rw;    // row vectors to transform to unit space
@@ -827,6 +878,62 @@ namespace msm {
 
 } // namespace msm
 
+/////////////////
+//
+// MsmBlock
+
+class MsmBlock : public CBase_MsmBlock {
+  public:
+    ComputeMsmMgr *mgr;
+    msm::Map *map;
+    msm::BlockDiagram *bd;
+    msm::Grid<BigReal> qh;
+    msm::Grid<BigReal> eh;
+    msm::Grid<BigReal> ehCutoff;
+    msm::Grid<BigReal> qhRestricted;
+    msm::Grid<BigReal> ehProlongated;
+    int cntRecvsCharge;
+    int cntRecvsPotential;
+    msm::BlockIndex blockIndex;
+
+    MsmBlock(int level);
+    MsmBlock(CkMigrateMessage *m) { }
+
+    //void addCharge(const Grid<BigReal>& qpart);
+    void addCharge(int foo);  // entry
+
+    void restriction();
+    void sendUpCharge();
+    void gridCutoff();
+    void sendAcrossPotential();
+
+    //void addPotential(const Grid<BigReal>& epart);
+    void addPotential(int foo);  // entry
+
+    void prolongation();
+    void sendDownPotential();
+    void sendPatch();
+};
+
+MsmBlock::MsmBlock(int level) {
+  blockIndex.level = level;
+  blockIndex.n = msm::Ivec(thisIndex.x, thisIndex.y, thisIndex.z);
+  printf("MsmBlock level=%d n=%d %d %d\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+}
+void MsmBlock::addCharge(int foo) { }
+void MsmBlock::restriction() { }
+void MsmBlock::sendUpCharge() { }
+void MsmBlock::gridCutoff() { }
+void MsmBlock::sendAcrossPotential() { }
+void MsmBlock::addPotential(int foo) { }
+void MsmBlock::prolongation() { }
+void MsmBlock::sendDownPotential() { }
+void MsmBlock::sendPatch() { }
+
+// MsmBlock
+//
+//////////////////
 
 ComputeMsmMgr::ComputeMsmMgr() :
   msmProxy(thisgroup), msmCompute(0)
@@ -1643,11 +1750,32 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     NAMD_die("Unable to run MSM on more than one processor.");
   }
 
+  if (1) {
+    PatchMap *pm = PatchMap::Object();
+    patchPtr.resize( pm->numPatches() );
+    for (int i = 0;  i < pm->numPatches();  i++) {
+      patchPtr[i] = NULL;
+    }
+    printf("Allocating patchPtr array length %d\n", pm->numPatches());
+  }
+
   // XXX these aren't chare arrays yet
   block.resize(nlevels);
   for (level = 0;  level < nlevels;  level++) {
     block[level].init( msm::IndexRange(map.blockLevel[level]) );
   }
+
+  // allocate 3D chare array of MsmBlock
+  // XXX start with level 0
+  if (1) {
+    int level = 0;
+    int ni = map.blockLevel[level].ni();
+    int nj = map.blockLevel[level].nj();
+    int nk = map.blockLevel[level].nk();
+    msmBlock = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
+    printf("Create MsmBlock 3D chare array ( %d x %d x %d )\n", ni, nj, nk);
+  }
+
 
   //CkExit();
 }
@@ -1657,6 +1785,7 @@ void ComputeMsmMgr::update(CkQdMsg *msg)
   printf("ComputeMsmMgr:  update() PE %d\n", CkMyPe());
   delete msg;
 
+#if 0
 //  if (CkMyPe() != 0) return;  // update() is called on all PEs
                               // but want only PE 0 to do the update
 
@@ -1699,6 +1828,7 @@ void ComputeMsmMgr::update(CkQdMsg *msg)
 
 
   // calculate constants for grid cutoff, broadcast
+#endif
 }
 
 
@@ -1728,6 +1858,7 @@ void ComputeMsmMgr::compute()
     }
   }
 
+#if 0
   int pid;
   for (pid = 0;  pid < patch.len();  pid++) {
     patch[pid].anterpolation();
@@ -1736,8 +1867,45 @@ void ComputeMsmMgr::compute()
   for (pid = 0;  pid < patch.len();  pid++) {
     ASSERT(patch[pid].cntRecvs == map.patchList[pid].numRecvs);
   }
+#endif
+  int patchID;
+  for (patchID = 0;  patchID < patchPtr.len();  patchID++) {
+    if (patchPtr[patchID] == NULL) {
+      char msg[100];
+      snprintf(msg, sizeof(msg), "Patch %d does not exist on PE %d",
+          patchID, CkMyPe());
+      NAMD_die(msg);
+    }
+    patchPtr[patchID]->anterpolation();
+    // all else should follow from here
+  }
+  for (patchID = 0;  patchID < patchPtr.len();  patchID++) {
+    ASSERT(patchPtr[patchID]->cntRecvs == map.patchList[patchID].numRecvs);
+  }
 
   return;
+}
+
+
+void ComputeMsmMgr::addPotential(GridDoubleMsg *gm)
+{
+  msm::Grid<BigReal> subgrid;
+  int pid;
+  gm->get(subgrid, pid);
+  delete gm;
+  if (patchPtr[pid] == NULL) {
+    char msg[100];
+    snprintf(msg, sizeof(msg), "Expecting patch %d to exist on PE %d",
+        pid, CkMyPe());
+    NAMD_die(msg);
+  }
+  patchPtr[pid]->addPotential(subgrid);
+}
+
+
+void ComputeMsmMgr::doneCompute()
+{
+  msmCompute->saveResults();
 }
 
 
@@ -1768,6 +1936,9 @@ void ComputeMsm::doWork()
 {
   // patchList is inherited from ComputeHomePatches
   ResizeArrayIter<PatchElem> ap(patchList);
+  numLocalPatches = patchList.size();
+  cntLocalPatches = 0;
+  ASSERT(cntLocalPatches < numLocalPatches);
 
   // for each patch do stuff
   printf("ComputeMsm:  doWork() PE=%d\n", CkMyPe());
@@ -1785,10 +1956,10 @@ void ComputeMsm::doWork()
     reduction->submit();
     return;
   }
-
   msm::Map& map = myMgr->mapData();
-  msm::PatchDataArray& patchArray = myMgr->patchDataArray();
-  patchArray.resize( patchList.size() );
+  //msm::PatchDataArray& patchArray = myMgr->patchDataArray();
+  //patchArray.resize( patchList.size() );
+  msm::PatchPtrArray& patchPtr = myMgr->patchPtrArray();
   int cnt=0, n;
   for (ap = ap.begin();  ap != ap.end();  ap++) {
     CompAtom *x = (*ap).positionBox->open();
@@ -1799,7 +1970,11 @@ void ComputeMsm::doWork()
     }
     int numAtoms = (*ap).p->getNumAtoms();
     int patchID = (*ap).patchID;
-    msm::PatchData& patch = patchArray[cnt++];
+    if (patchPtr[patchID] == NULL) {
+      // create PatchData if it doesn't exist for this patchID
+      patchPtr[patchID] = new msm::PatchData;
+    }
+    msm::PatchData& patch = *(patchPtr[patchID]);
     patch.init(myMgr, patchID, numAtoms);
     msm::AtomCoordArray& coord = patch.coordArray();
     ASSERT(coord.len() == numAtoms);
@@ -1819,16 +1994,19 @@ void ComputeMsm::doWork()
   myMgr->compute();
 
   // XXX for now
-  saveResults();
+  //saveResults();
 }
 
-void ComputeMsm::saveResults(/* int n, const Force force[], double self_energy */)
+void ComputeMsm::saveResults()
 {
+  if (++cntLocalPatches != numLocalPatches) return;
+
   // NAMD patches
   ResizeArrayIter<PatchElem> ap(patchList);
 
   // get results from ComputeMsmMgr
-  msm::PatchDataArray& patchArray = myMgr->patchDataArray();
+  //msm::PatchDataArray& patchArray = myMgr->patchDataArray();
+  msm::PatchPtrArray& patchPtr = myMgr->patchPtrArray();
 
   printf("ComputeMsm:  saveResults() PE=%d\n", CkMyPe());
   // store force updates
@@ -1840,7 +2018,15 @@ void ComputeMsm::saveResults(/* int n, const Force force[], double self_energy *
     Results *r = (*ap).forceBox->open();
     Force *f = r->f[Results::slow];
     int numAtoms = (*ap).p->getNumAtoms();
-    msm::PatchData& patch = patchArray[cnt++];
+    int patchID = (*ap).patchID;
+    if (patchPtr[patchID] == NULL) {
+      char msg[100];
+      snprintf(msg, sizeof(msg), "Expecting patch %d to exist on PE %d",
+          patchID, CkMyPe());
+      NAMD_die(msg);
+    }
+    //msm::PatchData& patch = patchArray[cnt++];
+    msm::PatchData& patch = *(patchPtr[patchID]);
     ASSERT(numAtoms == patch.force.len() );
     for (n = 0;  n < numAtoms;  n++) {
       f[n] += patch.force[n];
@@ -2159,7 +2345,8 @@ namespace msm {
   }
 
   void BlockData::sendPatch() {
-    PatchDataArray& patch = mgr->patchDataArray();
+    //PatchDataArray& patch = mgr->patchDataArray();
+    //PatchPtrArray& patchPtr = mgr->patchPtrArray();
     int lnext = blockIndex.level;
     ASSERT(lnext == 0);
     // buffer portions of grid to send to Blocks on next level
@@ -2175,7 +2362,20 @@ namespace msm {
       subgrid.updateLower( bd->sendPatch[n].nrange_unwrap.lower() );
       // add the subgrid charges into the block
       int pid = bd->sendPatch[n].patchID;
-      patch[pid].addPotential(subgrid);
+#if 0
+      //patch[pid].addPotential(subgrid);
+      if (patchPtr[pid] == NULL) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Expecting patch %d to exist on PE %d",
+            pid, CkMyPe());
+        NAMD_die(msg);
+      }
+      patchPtr[pid]->addPotential(subgrid);
+#endif
+      int nelems = subgrid.data().len();
+      GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+      gm->put(subgrid, pid);
+      mgr->addPotential(gm);
     }
   }
 
@@ -2390,6 +2590,8 @@ namespace msm {
     energy_self *= mgr->gzero;
     energy -= energy_self;
     energy *= 0.5;
+
+    mgr->doneCompute();
   }
 
 } // namespace msm
