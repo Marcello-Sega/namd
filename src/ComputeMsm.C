@@ -58,6 +58,7 @@ class GridDoubleMsg : public CMessage_GridDoubleMsg {
     }
 };
 
+
 //////////////////////////////////////////////////////////////////////////////
 //
 //  ComputeMsmMgr
@@ -69,6 +70,8 @@ class ComputeMsmMgr : public BOCclass {
   friend struct msm::PatchData;
   friend struct msm::BlockData;
 
+  friend class MsmBlock;
+
 public:
   ComputeMsmMgr();                    // entry
   ~ComputeMsmMgr();
@@ -76,7 +79,8 @@ public:
   void initialize(MsmInitMsg *);      // entry with message
   void update(CkQdMsg *);             // entry with message
 
-  void compute();  // called by local ComputeMsm object
+  void compute(msm::Array<int>& patchIDList);
+                                      // called by local ComputeMsm object
 
   void addPotential(GridDoubleMsg *);  // entry with message
   void doneCompute();  // called by each local patch
@@ -90,6 +94,8 @@ public:
 
   msm::Map& mapData() { return map; }
 
+  int numLevels() const { return nlevels; }
+
 private:
   void setup_hgrid_1d(BigReal len, BigReal& hh, int& nn,
       int& ia, int& ib, int isperiodic);
@@ -98,7 +104,9 @@ private:
   CProxy_ComputeMsmMgr msmProxy;
   ComputeMsm *msmCompute;
 
-  CProxy_MsmBlock msmBlock;
+  //CProxy_MsmBlock msmBlock;
+
+  msm::Array<CProxy_MsmBlock> msmBlock;
 
   msm::Map map;
   //msm::PatchDataArray patch;  // local patch data
@@ -884,7 +892,8 @@ namespace msm {
 
 class MsmBlock : public CBase_MsmBlock {
   public:
-    ComputeMsmMgr *mgr;
+    CProxy_ComputeMsmMgr mgrProxy;
+    ComputeMsmMgr *mgrLocal;  // for quick access to data
     msm::Map *map;
     msm::BlockDiagram *bd;
     msm::Grid<BigReal> qh;
@@ -899,8 +908,10 @@ class MsmBlock : public CBase_MsmBlock {
     MsmBlock(int level);
     MsmBlock(CkMigrateMessage *m) { }
 
+    void init(int level);
+
     //void addCharge(const Grid<BigReal>& qpart);
-    void addCharge(int foo);  // entry
+    void addCharge(GridDoubleMsg *);  // entry
 
     void restriction();
     void sendUpCharge();
@@ -908,7 +919,7 @@ class MsmBlock : public CBase_MsmBlock {
     void sendAcrossPotential();
 
     //void addPotential(const Grid<BigReal>& epart);
-    void addPotential(int foo);  // entry
+    void addPotential(GridDoubleMsg *);  // entry
 
     void prolongation();
     void sendDownPotential();
@@ -916,20 +927,400 @@ class MsmBlock : public CBase_MsmBlock {
 };
 
 MsmBlock::MsmBlock(int level) {
+  init(level);
+#ifdef DEBUG_MSM_GRID
+  printf("MsmBlock level=%d, n=%d %d %d:  constructor\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+#endif
+}
+
+void MsmBlock::init(int level) {
   blockIndex.level = level;
   blockIndex.n = msm::Ivec(thisIndex.x, thisIndex.y, thisIndex.z);
-  printf("MsmBlock level=%d n=%d %d %d\n",
-      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+  mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
+  mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
+      CkpvAccess(BOCclass_group).computeMsmMgr);
+  map = &(mgrLocal->mapData());
+  bd = &(map->blockLevel[blockIndex.level](blockIndex.n));
+  qh.init( bd->nrange );
+  qh.reset(0);
+  eh.init( bd->nrange );
+  eh.reset(0);
+  ehCutoff.init( bd->nrangeCutoff );
+  ehCutoff.reset(0);
+  qhRestricted.init( bd->nrangeRestricted );
+  qhRestricted.reset(0);
+  ehProlongated.init( bd->nrangeProlongated );
+  ehProlongated.reset(0);
+  cntRecvsCharge = 0;
+  cntRecvsPotential = 0;
 }
-void MsmBlock::addCharge(int foo) { }
-void MsmBlock::restriction() { }
-void MsmBlock::sendUpCharge() { }
-void MsmBlock::gridCutoff() { }
-void MsmBlock::sendAcrossPotential() { }
-void MsmBlock::addPotential(int foo) { }
-void MsmBlock::prolongation() { }
-void MsmBlock::sendDownPotential() { }
-void MsmBlock::sendPatch() { }
+
+void MsmBlock::addCharge(GridDoubleMsg *gm)
+{
+  msm::Grid<BigReal> qpart;
+  int pid;
+  gm->get(qpart, pid);
+  delete gm;
+  qh += qpart;
+  if (++cntRecvsCharge == bd->numRecvsCharge) {
+    int nlevels = mgrLocal->numLevels();
+    if (blockIndex.level < nlevels-1) {
+      restriction();
+    }
+    gridCutoff();
+  }
+}
+
+void MsmBlock::restriction()
+{
+#ifdef DEBUG_MSM_GRID
+  printf("MsmBlock level=%d, id=%d %d %d:  restriction\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+#endif
+
+  // stencil data for approximating charge on restricted grid
+  const int approx = mgrLocal->approx;
+  const int nstencil = ComputeMsmMgr::Nstencil[approx];
+  const int *offset = ComputeMsmMgr::IndexOffset[approx];
+  const BigReal *phi = ComputeMsmMgr::PhiStencil[approx];
+
+  // index range for h grid charges
+  int ia1 = qh.ia();
+  int ib1 = qh.ib();
+  int ja1 = qh.ja();
+  int jb1 = qh.jb();
+  int ka1 = qh.ka();
+  int kb1 = qh.kb();
+
+  // index range for restricted (2h) grid charges
+  int ia2 = qhRestricted.ia();
+  int ib2 = qhRestricted.ib();
+  int ja2 = qhRestricted.ja();
+  int jb2 = qhRestricted.jb();
+  int ka2 = qhRestricted.ka();
+  int kb2 = qhRestricted.kb();
+
+  // loop over restricted (2h) grid
+  for (int k2 = ka2;  k2 <= kb2;  k2++) {
+    int k1 = 2 * k2;
+    for (int j2 = ja2;  j2 <= jb2;  j2++) {
+      int j1 = 2 * j2;
+      for (int i2 = ia2;  i2 <= ib2;  i2++) {
+        int i1 = 2 * i2;
+
+        // loop over stencils on h grid
+        BigReal q2hsum = 0;  // sum charge to restricted (2h) grid point
+        for (int k = 0;  k < nstencil;  k++) {
+          int kn = k1 + offset[k];
+          if      (kn < ka1) continue;
+          else if (kn > kb1) break;
+
+          for (int j = 0;  j < nstencil;  j++) {
+            int jn = j1 + offset[j];
+            if      (jn < ja1) continue;
+            else if (jn > jb1) break;
+
+            for (int i = 0;  i < nstencil;  i++) {
+              int in = i1 + offset[i];
+              if      (in < ia1) continue;
+              else if (in > ib1) break;
+
+              q2hsum += qh(in,jn,kn) * phi[i] * phi[j] * phi[k];
+            }
+          }
+        } // end loop over stencils on h grid
+
+        qhRestricted(i2,j2,k2) = q2hsum;
+      }
+    }
+  } // end loop over restricted (2h) grid
+
+  sendUpCharge();
+}
+
+void MsmBlock::sendUpCharge()
+{
+  //BlockDataGrids& block = mgr->blockDataGrids();
+  int lnext = blockIndex.level + 1;
+  // buffer portions of grid to send to Blocks on next level
+  // allocate the largest buffer space we'll need
+  msm::Grid<BigReal> subgrid;
+  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  for (int n = 0;  n < bd->sendUp.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendUp[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    qhRestricted.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendUp[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendUp[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    //block[bindex.level](bindex.n).addCharge(subgrid);
+    // place subgrid into message
+    int nelems = subgrid.data().len();
+    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    gm->put(subgrid, bindex.level);
+#if 0
+    // XXX just to compile, need to get proxy from array of grid levels
+    CProxy_MsmBlock mbProxy(thisArrayID);
+    mbProxy(bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
+#endif
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
+  } // for
+}
+
+void MsmBlock::gridCutoff()
+{
+#ifdef DEBUG_MSM_GRID
+  printf("MsmBlock level=%d, id=%d %d %d:  grid cutoff\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+#endif
+  // need grid of weights for this level
+  msm::Grid<BigReal>& gc = map->gc[blockIndex.level];
+  // index range of weights
+  int gia = gc.ia();
+  int gib = gc.ib();
+  int gja = gc.ja();
+  int gjb = gc.jb();
+  int gka = gc.ka();
+  int gkb = gc.kb();
+  // index range of charge grid
+  int qia = qh.ia();
+  int qib = qh.ib();
+  int qja = qh.ja();
+  int qjb = qh.jb();
+  int qka = qh.ka();
+  int qkb = qh.kb();
+  // index range of potentials
+  int ia = ehCutoff.ia();
+  int ib = ehCutoff.ib();
+  int ja = ehCutoff.ja();
+  int jb = ehCutoff.jb();
+  int ka = ehCutoff.ka();
+  int kb = ehCutoff.kb();
+  // loop over potentials
+  for (int k = ka;  k <= kb;  k++) {
+    for (int j = ja;  j <= jb;  j++) {
+      for (int i = ia;  i <= ib;  i++) {
+        // clip charges to weights
+        int mia = ( qia >= gia + i ? qia : gia + i );
+        int mib = ( qib <= gib + i ? qib : gib + i );
+        int mja = ( qja >= gja + j ? qja : gja + j );
+        int mjb = ( qjb <= gjb + j ? qjb : gjb + j );
+        int mka = ( qka >= gka + k ? qka : gka + k );
+        int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
+        // accumulate sum to this eh point
+        BigReal ehsum = 0;
+        // loop over smaller charge grid
+        for (int qk = mka;  qk <= mkb;  qk++) {
+          for (int qj = mja;  qj <= mjb;  qj++) {
+            for (int qi = mia;  qi <= mib;  qi++) {
+              ehsum += gc(qi-i, qj-j, qk-k) * qh(qi,qj,qk);
+            }
+          }
+        } // end loop over smaller charge grid
+        ehCutoff(i,j,k) = ehsum;
+      }
+    }
+  } // end loop over potentials
+
+  sendAcrossPotential();
+}
+
+void MsmBlock::sendAcrossPotential()
+{
+  //BlockDataGrids& block = mgr->blockDataGrids();
+  int lnext = blockIndex.level;
+  // buffer portions of grid to send to Blocks on this level
+  // allocate the largest buffer space we'll need
+  msm::Grid<BigReal> subgrid;
+  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  for (int n = 0;  n < bd->sendAcross.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendAcross[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    ehCutoff.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendAcross[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendAcross[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    //block[bindex.level](bindex.n).addPotential(subgrid);
+    // place subgrid into message
+    int nelems = subgrid.data().len();
+    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    gm->put(subgrid, bindex.level);
+#if 0
+    // this is correct, sendAcross stays in this array
+    CProxy_MsmBlock mbProxy(thisArrayID);
+    mbProxy(bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+#endif
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+  } // for
+}
+
+void MsmBlock::addPotential(GridDoubleMsg *gm)
+{
+  msm::Grid<BigReal> epart;
+  int pid;
+  gm->get(epart, pid);
+  delete gm;
+  eh += epart;
+  if (++cntRecvsPotential == bd->numRecvsPotential) {
+    if (blockIndex.level > 0) {
+      prolongation();
+    }
+    else {
+      sendPatch();
+    }
+  }
+}
+
+void MsmBlock::prolongation()
+{
+#ifdef DEBUG_MSM_GRID
+  printf("MsmBlock level=%d, id=%d %d %d:  prolongation\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+#endif
+
+  // stencil data for approximating potential on prolongated grid
+  const int approx = mgrLocal->approx;
+  const int nstencil = ComputeMsmMgr::Nstencil[approx];
+  const int *offset = ComputeMsmMgr::IndexOffset[approx];
+  const BigReal *phi = ComputeMsmMgr::PhiStencil[approx];
+
+  // index range for prolongated h grid potentials
+  int ia1 = ehProlongated.ia();
+  int ib1 = ehProlongated.ib();
+  int ja1 = ehProlongated.ja();
+  int jb1 = ehProlongated.jb();
+  int ka1 = ehProlongated.ka();
+  int kb1 = ehProlongated.kb();
+
+  // index range for 2h grid potentials
+  int ia2 = eh.ia();
+  int ib2 = eh.ib();
+  int ja2 = eh.ja();
+  int jb2 = eh.jb();
+  int ka2 = eh.ka();
+  int kb2 = eh.kb();
+
+  // loop over 2h grid
+  for (int k2 = ka2;  k2 <= kb2;  k2++) {
+    int k1 = 2 * k2;
+    for (int j2 = ja2;  j2 <= jb2;  j2++) {
+      int j1 = 2 * j2;
+      for (int i2 = ia2;  i2 <= ib2;  i2++) {
+        int i1 = 2 * i2;
+
+        // loop over stencils on prolongated h grid
+        for (int k = 0;  k < nstencil;  k++) {
+          int kn = k1 + offset[k];
+          if      (kn < ka1) continue;
+          else if (kn > kb1) break;
+
+          for (int j = 0;  j < nstencil;  j++) {
+            int jn = j1 + offset[j];
+            if      (jn < ja1) continue;
+            else if (jn > jb1) break;
+
+            for (int i = 0;  i < nstencil;  i++) {
+              int in = i1 + offset[i];
+              if      (in < ia1) continue;
+              else if (in > ib1) break;
+
+              ehProlongated(in,jn,kn) +=
+                eh(i2,j2,k2) * phi[i] * phi[j] * phi[k];
+            }
+          }
+        } // end loop over stencils on prolongated h grid
+
+      }
+    }
+  } // end loop over 2h grid
+
+  sendDownPotential();
+}
+
+void MsmBlock::sendDownPotential()
+{
+  //BlockDataGrids& block = mgr->blockDataGrids();
+  int lnext = blockIndex.level - 1;
+  // buffer portions of grid to send to Blocks on next level
+  // allocate the largest buffer space we'll need
+  msm::Grid<BigReal> subgrid;
+  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  for (int n = 0;  n < bd->sendDown.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendDown[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    ehProlongated.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendDown[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendDown[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    //block[bindex.level](bindex.n).addPotential(subgrid);
+    // place subgrid into message
+    int nelems = subgrid.data().len();
+    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    gm->put(subgrid, bindex.level);
+#if 0
+    // XXX just to compile, need to get proxy from array of grid levels
+    CProxy_MsmBlock mbProxy(thisArrayID);
+    mbProxy(bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+#endif
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+  } // for
+  init(blockIndex.level);  // reinitialize for next computation
+}
+
+void MsmBlock::sendPatch()
+{
+  //PatchDataArray& patch = mgr->patchDataArray();
+  //PatchPtrArray& patchPtr = mgr->patchPtrArray();
+  int lnext = blockIndex.level;
+  ASSERT(lnext == 0);
+  // buffer portions of grid to send to Blocks on next level
+  // allocate the largest buffer space we'll need
+  msm::Grid<BigReal> subgrid;
+  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  for (int n = 0;  n < bd->sendPatch.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendPatch[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    eh.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendPatch[n].nrange_unwrap.lower() );
+    // add the subgrid charges into the block
+    int pid = bd->sendPatch[n].patchID;
+#if 0
+    //patch[pid].addPotential(subgrid);
+    if (patchPtr[pid] == NULL) {
+      char msg[100];
+      snprintf(msg, sizeof(msg), "Expecting patch %d to exist on PE %d",
+          pid, CkMyPe());
+      NAMD_die(msg);
+    }
+    patchPtr[pid]->addPotential(subgrid);
+#endif
+    int nelems = subgrid.data().len();
+    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    gm->put(subgrid, pid);
+    PatchMap *pm = PatchMap::Object();
+    int pe = pm->node(pid);
+    mgrProxy[pe].addPotential(gm);
+  }
+  init(blockIndex.level);  // reinitialize for next computation
+}
 
 // MsmBlock
 //
@@ -1766,16 +2157,15 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
 
   // allocate 3D chare array of MsmBlock
-  // XXX start with level 0
-  if (1) {
-    int level = 0;
+  msmBlock.resize(nlevels);
+  for (level = 0;  level < nlevels;  level++) {
     int ni = map.blockLevel[level].ni();
     int nj = map.blockLevel[level].nj();
     int nk = map.blockLevel[level].nk();
-    msmBlock = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
-    printf("Create MsmBlock 3D chare array ( %d x %d x %d )\n", ni, nj, nk);
+    msmBlock[level] = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
+    printf("Create MsmBlock[%d] 3D chare array ( %d x %d x %d )\n",
+        level, ni, nj, nk);
   }
-
 
   //CkExit();
 }
@@ -1832,7 +2222,7 @@ void ComputeMsmMgr::update(CkQdMsg *msg)
 }
 
 
-void ComputeMsmMgr::compute()
+void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
 {
   printf("ComputeMsmMgr:  compute() PE=%d\n", CkMyPe());
 
@@ -1868,18 +2258,22 @@ void ComputeMsmMgr::compute()
     ASSERT(patch[pid].cntRecvs == map.patchList[pid].numRecvs);
   }
 #endif
-  int patchID;
-  for (patchID = 0;  patchID < patchPtr.len();  patchID++) {
+
+  int n; 
+  for (n = 0;  n < patchIDList.len();  n++) {
+    int patchID = patchIDList[n];
     if (patchPtr[patchID] == NULL) {
       char msg[100];
-      snprintf(msg, sizeof(msg), "Patch %d does not exist on PE %d",
+      snprintf(msg, sizeof(msg),
+          "Expected MSM data for patch %d does not exist on PE %d",
           patchID, CkMyPe());
       NAMD_die(msg);
     }
     patchPtr[patchID]->anterpolation();
     // all else should follow from here
   }
-  for (patchID = 0;  patchID < patchPtr.len();  patchID++) {
+  for (n = 0;  n < patchIDList.len();  n++) {
+    int patchID = patchIDList[n];
     ASSERT(patchPtr[patchID]->cntRecvs == map.patchList[patchID].numRecvs);
   }
 
@@ -1959,7 +2353,12 @@ void ComputeMsm::doWork()
   msm::Map& map = myMgr->mapData();
   //msm::PatchDataArray& patchArray = myMgr->patchDataArray();
   //patchArray.resize( patchList.size() );
+  // This is the patchPtr array for MSM; any local patch will be set up
+  // with a non-NULL pointer to its supporting data structure.
   msm::PatchPtrArray& patchPtr = myMgr->patchPtrArray();
+  // also store just a list of IDs for the local patches
+  msm::Array<int> patchIDList(numLocalPatches);
+  patchIDList.resize(0);  // to use append on pre-allocated array buffer
   int cnt=0, n;
   for (ap = ap.begin();  ap != ap.end();  ap++) {
     CompAtom *x = (*ap).positionBox->open();
@@ -1970,6 +2369,7 @@ void ComputeMsm::doWork()
     }
     int numAtoms = (*ap).p->getNumAtoms();
     int patchID = (*ap).patchID;
+    patchIDList.append(patchID);
     if (patchPtr[patchID] == NULL) {
       // create PatchData if it doesn't exist for this patchID
       patchPtr[patchID] = new msm::PatchData;
@@ -1991,7 +2391,7 @@ void ComputeMsm::doWork()
     }
   }
 
-  myMgr->compute();
+  myMgr->compute(patchIDList);
 
   // XXX for now
   //saveResults();
@@ -2083,7 +2483,7 @@ namespace msm {
 
   void BlockData::restriction() {
 #ifdef DEBUG_MSM_GRID
-    printf("block level=%d, id=%d %d %d:  restriction\n",
+    printf("MsmBlock level=%d, id=%d %d %d:  restriction\n",
         blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
 
@@ -2473,7 +2873,7 @@ namespace msm {
   }
 
   void PatchData::sendCharge() {
-    BlockDataGrids& block = mgr->blockDataGrids();
+    //BlockDataGrids& block = mgr->blockDataGrids();
     // buffer portions of grid to send to Blocks on level 0
     // allocate the largest buffer space we'll need
     Grid<BigReal> subgrid;
@@ -2487,7 +2887,15 @@ namespace msm {
       subgrid.updateLower( pd->send[n].nrange_wrap.lower() );
       // add the subgrid charges into the block
       BlockIndex& bindex = pd->send[n].nblock_wrap;
+#if 0
       block[bindex.level](bindex.n).addCharge(subgrid);
+#endif
+      // place subgrid into message
+      int nelems = subgrid.data().len();
+      GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+      gm->put(subgrid, bindex.level);
+      mgr->msmBlock[bindex.level](
+          bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
     }
   }
 

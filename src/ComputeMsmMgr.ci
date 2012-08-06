@@ -16,8 +16,8 @@ module ComputeMsmMgr {
 
   array [3D] MsmBlock {
     entry MsmBlock(int level);
-    entry void addCharge(int foo);
-    entry void addPotential(int foo);
+    entry void addCharge(GridDoubleMsg *);
+    entry void addPotential(GridDoubleMsg *);
   };
 
 };
