@@ -4,6 +4,9 @@
 #define DEBUG_MSM
 #undef DEBUG_MSM
 
+#define DEBUG_MSM_VERBOSE
+#undef DEBUG_MSM_VERBOSE
+
 #define DEBUG_MSM_GRID
 #undef DEBUG_MSM_GRID
 

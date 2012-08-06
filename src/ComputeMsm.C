@@ -1360,14 +1360,18 @@ void MsmBlock::sendPatch()
 ComputeMsmMgr::ComputeMsmMgr() :
   msmProxy(thisgroup), msmCompute(0)
 {
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsmMgr:  (constructor) PE %d\n", CkMyPe());
+#endif
   CkpvAccess(BOCclass_group).computeMsmMgr = thisgroup;
 }
 
 ComputeMsmMgr::~ComputeMsmMgr()
 {
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsmMgr:  (destructor) PE %d\n", CkMyPe());
-  // free memory
+#endif
+  // free memory?
 }
 
 
@@ -1437,14 +1441,18 @@ void ComputeMsmMgr::setup_periodic_blocksize(int& bsize, int n)
 
 void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 {
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsmMgr:  initialize() PE %d\n", CkMyPe());
+#endif
 
   smin = msg->smin;
   smax = msg->smax;
   delete msg;
 
+#ifdef DEBUG_MSM_VERBOSE
   printf("smin = %g %g %g  smax = %g %g %g\n",
       smin.x, smin.y, smin.z, smax.x, smax.y, smax.z);
+#endif
 
 //  if (CkMyPe() != 0) return;  // initialize() is called on all PEs
                               // but want only PE 0 to do the initialization
@@ -1487,7 +1495,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     sgmin.x = 2*gridspacing*mlower;
     xlen = sgmax.x - sgmin.x;
   }
+#ifdef DEBUG_MSM_VERBOSE
   printf("xlen = %g   sgmin.x = %g   sgmax.x = %g\n", xlen, sgmin.x, sgmax.x);
+#endif
 
   if (ispy) {  // periodic along basis vector
     ylen = lattice.b().length();
@@ -1505,7 +1515,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     sgmin.y = 2*gridspacing*mlower;
     ylen = sgmax.y - sgmin.y;
   }
+#ifdef DEBUG_MSM_VERBOSE
   printf("ylen = %g   sgmin.y = %g   sgmax.y = %g\n", ylen, sgmin.y, sgmax.y);
+#endif
 
   if (ispz) {  // periodic along basis vector
     zlen = lattice.c().length();
@@ -1523,7 +1535,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     sgmin.z = 2*gridspacing*mlower;
     zlen = sgmax.z - sgmin.z;
   }
+#ifdef DEBUG_MSM_VERBOSE
   printf("zlen = %g   sgmin.z = %g   sgmax.z = %g\n", zlen, sgmin.z, sgmax.z);
+#endif
   sglower = sgmin;
 
   BigReal hxlen, hylen, hzlen;
@@ -1550,7 +1564,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   int isclamped = 0;
   int maxlevels = nlevels;  // user-defined number of levels
 
+#ifdef DEBUG_MSM_VERBOSE
   printf("maxlevels = %d\n", maxlevels);
+#endif
   if (nlevels <= 0) {  // instead we set number of levels
     n = ni;
     if (n < nj) n = nj;
@@ -1568,7 +1584,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       isclamped = 1;
     }
   }
+#ifdef DEBUG_MSM_VERBOSE
   printf("maxlevels = %d\n", maxlevels);
+#endif
 
   // allocate space for storing grid dimensions for each level
   map.gridrange.resize(maxlevels);
@@ -1650,12 +1668,18 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   map.gridrange.resize(nlevels);
   map.gc.resize(nlevels);
 
-  printf("nlevels = %d\n", nlevels);
-  for (n = 0;  n < nlevels;  n++) {
-    printf("level %d:  [%d..%d] x [%d..%d] x [%d..%d]\n", n,
-        map.gridrange[n].ia(), map.gridrange[n].ib(),
-        map.gridrange[n].ja(), map.gridrange[n].jb(),
-        map.gridrange[n].ka(), map.gridrange[n].kb());
+  // print out some information about MSM
+  if (CkMyPe() == 0) {
+    iout << iINFO << "MSM levels = " << nlevels << "\n" << endi;
+    for (n = 0;  n < nlevels;  n++) {
+      char s[100];
+      snprintf(s, sizeof(s), "    level %d:  "
+          "[%d..%d] x [%d..%d] x [%d..%d]\n", n,
+          map.gridrange[n].ia(), map.gridrange[n].ib(),
+          map.gridrange[n].ja(), map.gridrange[n].jb(),
+          map.gridrange[n].ka(), map.gridrange[n].kb());
+      iout << iINFO << s << endi;
+    }
   }
 
   // find grid spacing basis vectors
@@ -1797,7 +1821,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   PatchMap *pm = PatchMap::Object();
   int numpatches = pm->numPatches();
   map.patchList.resize(numpatches);
+#ifdef DEBUG_MSM_VERBOSE
   printf("numPatches = %d\n", numpatches);
+#endif
 
   // allocate map for blocks for each grid level
   map.blockLevel.resize(nlevels);
@@ -1873,6 +1899,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #endif
     }
   }
+#ifdef DEBUG_MSM_VERBOSE
   printf("Done allocating map for grid levels\n");
   printf("Grid level decomposition:\n");
   for (level = 0;  level < nlevels;  level++) {
@@ -1898,6 +1925,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       }
     }
   }
+#endif
 
   // initialize grid of PatchDiagram
   // a = cutoff
@@ -1967,6 +1995,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
         ia, ib, ja, jb, ka, kb);
 #endif
   }
+#ifdef DEBUG_MSM_VERBOSE
   printf("Done allocating map for patches\n");
   printf("Patch level decomposition:\n");
   for (pid = 0;  pid < numpatches;  pid++) {
@@ -1980,6 +2009,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     printf("patch id=%d  [%d..%d] x [%d..%d] x [%d..%d]\n",
         pid, ia, ib, ja, jb, ka, kb);
   }
+#endif
 
   // initialize grid of BlockDiagram for each level
   //printf("+++ initializing BlockDiagram +++\n");
@@ -2180,7 +2210,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     for (int i = 0;  i < pm->numPatches();  i++) {
       patchPtr[i] = NULL;
     }
+#ifdef DEBUG_MSM_VERBOSE
     printf("Allocating patchPtr array length %d\n", pm->numPatches());
+#endif
   }
 
 #if 0
@@ -2200,18 +2232,22 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       int nj = map.blockLevel[level].nj();
       int nk = map.blockLevel[level].nk();
       msmBlock[level] = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
+#ifdef DEBUG_MSM_VERBOSE
       printf("Create MsmBlock[%d] 3D chare array ( %d x %d x %d )\n",
           level, ni, nj, nk);
+#endif
     }
-    printf("attempt to new msg nlevels=%d\n", nlevels);
+    //printf("attempt to new msg nlevels=%d\n", nlevels);
     MsmBlockProxyMsg *msg =
       new(nlevels*sizeof(CProxy_MsmBlock), 0) MsmBlockProxyMsg;
-    printf("attempt to put into msg\n");
+    //printf("attempt to put into msg\n");
     msg->put(msmBlock);
-    printf("attempt to broadcast msg\n");
+    //printf("attempt to broadcast msg\n");
     msmProxy.recvMsmBlockProxy(msg);  // broadcast
   }
+#ifdef DEBUG_MSM_VERBOSE
   printf("end of initialization\n");
+#endif
   //CkExit();
 }
 
@@ -2223,7 +2259,9 @@ void ComputeMsmMgr::recvMsmBlockProxy(MsmBlockProxyMsg *msg)
 
 void ComputeMsmMgr::update(CkQdMsg *msg)
 {
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsmMgr:  update() PE %d\n", CkMyPe());
+#endif
   delete msg;
 
 #if 0
@@ -2275,7 +2313,9 @@ void ComputeMsmMgr::update(CkQdMsg *msg)
 
 void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
 {
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsmMgr:  compute() PE=%d\n", CkMyPe());
+#endif
 
 #if 0
   if (CkMyPe() != 0) {
@@ -2372,13 +2412,17 @@ ComputeMsm::ComputeMsm(ComputeID c) : ComputeHomePatches(c)
   SimParameters *simParams = Node::Object()->simParameters;
   qscaling = sqrt(COULOMB / simParams->dielectric);
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsm:  (constructor) PE=%d\n", CkMyPe());
+#endif
 }
 
 ComputeMsm::~ComputeMsm()
 {
   // free memory
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsm:  (destructor) PE=%d\n", CkMyPe());
+#endif
 }
 
 void ComputeMsm::doWork()
@@ -2390,9 +2434,13 @@ void ComputeMsm::doWork()
   ASSERT(cntLocalPatches < numLocalPatches);
 
   // for each patch do stuff
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsm:  doWork() PE=%d\n", CkMyPe());
+#endif
 
+#ifdef DEBUG_MSM_VERBOSE
   printf("patchList size = %d\n", patchList.size() );
+#endif
 
   // Skip computations if nothing to do.
   if ( ! patchList[0].p->flags.doFullElectrostatics ) {
@@ -2463,7 +2511,9 @@ void ComputeMsm::saveResults()
   //msm::PatchDataArray& patchArray = myMgr->patchDataArray();
   msm::PatchPtrArray& patchPtr = myMgr->patchPtrArray();
 
+#ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsm:  saveResults() PE=%d\n", CkMyPe());
+#endif
   // store force updates
   // submit reductions
 
