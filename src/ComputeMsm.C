@@ -30,7 +30,7 @@ class GridDoubleMsg : public CMessage_GridDoubleMsg {
     int nextent_k;
     int nelems;
     double *gdata;
-    // put a grid into an allocated message
+    // put a grid into an allocated message to be sent
     void put(const msm::Grid<BigReal>& g, int id) {
       idnum = id;
       nlower_i = g.lower().i;
@@ -45,7 +45,7 @@ class GridDoubleMsg : public CMessage_GridDoubleMsg {
         gdata[i] = p[i];
       }
     }
-    // get the grid from an initialized method
+    // get the grid from a received message
     void get(msm::Grid<BigReal>& g, int& id) {
       id = idnum;
       g.set(nlower_i, nextent_i, nlower_j, nextent_j,
@@ -55,6 +55,33 @@ class GridDoubleMsg : public CMessage_GridDoubleMsg {
       for (int i = 0;  i < nelems;  i++) {
         p[i] = gdata[i];
       }
+    }
+};
+
+
+class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {
+  public:
+    int len;
+    char *msmBlockProxyData;
+    // put an array into an allocated message to be sent
+    void put(const msm::Array<CProxy_MsmBlock>& a) {
+      len = a.len();
+      memcpy(msmBlockProxyData, a.buffer(), len*sizeof(CProxy_MsmBlock));
+#if 0
+      for (int i = 0;  i < len;  i++) {
+        msmBlock[i] = a[i];
+      }
+#endif
+    }
+    // get the array from a received message
+    void get(msm::Array<CProxy_MsmBlock>& a) {
+      a.resize(len);
+      memcpy(a.buffer(), msmBlockProxyData, len*sizeof(CProxy_MsmBlock));
+#if 0
+      for (int i = 0;  i < len;  i++) {
+        a[i] = msmBlock[i];
+      }
+#endif
     }
 };
 
@@ -77,6 +104,8 @@ public:
   ~ComputeMsmMgr();
 
   void initialize(MsmInitMsg *);      // entry with message
+  void recvMsmBlockProxy(MsmBlockProxyMsg *);  // entry with message
+
   void update(CkQdMsg *);             // entry with message
 
   void compute(msm::Array<int>& patchIDList);
@@ -2137,11 +2166,13 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   // end of Map setup
 
   // allocate chare arrays
-  //
+
+#if 0
   // XXX protect from trying to execute in parallel
   if (CkMyPe() != 0) {
     NAMD_die("Unable to run MSM on more than one processor.");
   }
+#endif
 
   if (1) {
     PatchMap *pm = PatchMap::Object();
@@ -2160,18 +2191,34 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
 #endif
 
-  // allocate 3D chare array of MsmBlock
-  msmBlock.resize(nlevels);
-  for (level = 0;  level < nlevels;  level++) {
-    int ni = map.blockLevel[level].ni();
-    int nj = map.blockLevel[level].nj();
-    int nk = map.blockLevel[level].nk();
-    msmBlock[level] = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
-    printf("Create MsmBlock[%d] 3D chare array ( %d x %d x %d )\n",
-        level, ni, nj, nk);
+  if (CkMyPe() == 0) {
+    // on PE 0, create 3D chare array of MsmBlock for each level;
+    // broadcast this array of proxies to the rest of the group
+    msmBlock.resize(nlevels);
+    for (level = 0;  level < nlevels;  level++) {
+      int ni = map.blockLevel[level].ni();
+      int nj = map.blockLevel[level].nj();
+      int nk = map.blockLevel[level].nk();
+      msmBlock[level] = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
+      printf("Create MsmBlock[%d] 3D chare array ( %d x %d x %d )\n",
+          level, ni, nj, nk);
+    }
+    printf("attempt to new msg nlevels=%d\n", nlevels);
+    MsmBlockProxyMsg *msg =
+      new(nlevels*sizeof(CProxy_MsmBlock), 0) MsmBlockProxyMsg;
+    printf("attempt to put into msg\n");
+    msg->put(msmBlock);
+    printf("attempt to broadcast msg\n");
+    msmProxy.recvMsmBlockProxy(msg);  // broadcast
   }
-
+  printf("end of initialization\n");
   //CkExit();
+}
+
+void ComputeMsmMgr::recvMsmBlockProxy(MsmBlockProxyMsg *msg)
+{
+  msg->get(msmBlock);
+  delete(msg);
 }
 
 void ComputeMsmMgr::update(CkQdMsg *msg)
@@ -2230,9 +2277,11 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
 {
   printf("ComputeMsmMgr:  compute() PE=%d\n", CkMyPe());
 
+#if 0
   if (CkMyPe() != 0) {
     NAMD_die("Unable to run MSM on more than one processor.");
   }
+#endif
 
 #if 0
   // XXX have to re-initialize all blocks to zero counters and grids

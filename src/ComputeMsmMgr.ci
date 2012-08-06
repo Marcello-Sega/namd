@@ -7,9 +7,14 @@ module ComputeMsmMgr {
     double gdata[];
   };
 
+  message MsmBlockProxyMsg {
+    char msmBlockProxyData[];
+  };
+
   group ComputeMsmMgr {
     entry ComputeMsmMgr(void);
     entry void initialize(MsmInitMsg *);
+    entry void recvMsmBlockProxy(MsmBlockProxyMsg *);
     entry void update(CkQdMsg *);
     entry void addPotential(GridDoubleMsg *);
   };
