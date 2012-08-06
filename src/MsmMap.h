@@ -1,3 +1,9 @@
+/**
+***  Copyright (c) 1995, 1996, 1997, 1998, 1999, 2000 by
+***  The Board of Trustees of the University of Illinois.
+***  All rights reserved.
+**/
+
 #ifndef MSMMAP_H
 #define MSMMAP_H
 
@@ -549,8 +555,7 @@ namespace msm {
       bs.nblock_wrap = nb;
       bs.nrange_wrap = nr;
     }
-
-  };
+  }; // Map
 
 
   struct AtomCoord {
