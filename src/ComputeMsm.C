@@ -68,7 +68,7 @@ class GridDoubleMsg : public CMessage_GridDoubleMsg {
 
 class ComputeMsmMgr : public BOCclass {
   friend struct msm::PatchData;
-  friend struct msm::BlockData;
+  //friend struct msm::BlockData;
 
   friend class MsmBlock;
 
@@ -88,7 +88,7 @@ public:
   void setCompute(ComputeMsm *c) { msmCompute = c;  c->setMgr(this); } // local
 
   //msm::PatchDataArray& patchDataArray() { return patch; }
-  msm::BlockDataGrids& blockDataGrids() { return block; }
+  //msm::BlockDataGrids& blockDataGrids() { return block; }
 
   msm::PatchPtrArray& patchPtrArray() { return patchPtr; }
 
@@ -110,7 +110,7 @@ private:
 
   msm::Map map;
   //msm::PatchDataArray patch;  // local patch data
-  msm::BlockDataGrids block;  // XXX
+  //msm::BlockDataGrids block;  // XXX
 
   // find patch by patchID
   // array is length number of patches, initialized to NULL
@@ -855,6 +855,7 @@ namespace msm {
     void interpolation();
   };
 
+#if 0
   //
   // BlockData
   //
@@ -883,6 +884,7 @@ namespace msm {
     void sendDownPotential();
     void sendPatch();
   };
+#endif
 
 } // namespace msm
 
@@ -2150,11 +2152,13 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     printf("Allocating patchPtr array length %d\n", pm->numPatches());
   }
 
+#if 0
   // XXX these aren't chare arrays yet
   block.resize(nlevels);
   for (level = 0;  level < nlevels;  level++) {
     block[level].init( msm::IndexRange(map.blockLevel[level]) );
   }
+#endif
 
   // allocate 3D chare array of MsmBlock
   msmBlock.resize(nlevels);
@@ -2230,6 +2234,7 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
     NAMD_die("Unable to run MSM on more than one processor.");
   }
 
+#if 0
   // XXX have to re-initialize all blocks to zero counters and grids
   for (int level = 0;  level < nlevels;  level++) {
     int ia = block[level].ia();
@@ -2247,6 +2252,7 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
       }
     }
   }
+#endif
 
 #if 0
   int pid;
@@ -2450,6 +2456,7 @@ void ComputeMsm::saveResults()
 // method definitions for PatchData
 namespace msm {
 
+#if 0
   void BlockData::init(ComputeMsmMgr *pmgr, const BlockIndex& bindex) {
     mgr = pmgr;
     map = &(mgr->mapData());
@@ -2778,6 +2785,7 @@ namespace msm {
       mgr->addPotential(gm);
     }
   }
+#endif
 
 
   void PatchData::init(ComputeMsmMgr *pmgr, int pid, int natoms) {
