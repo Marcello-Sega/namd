@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/08/04 22:36:01 $
- * $Revision: 1.1396 $
+ * $Date: 2012/08/07 17:25:16 $
+ * $Revision: 1.1397 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1262,6 +1262,7 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.require("constraints", "consexp", "Exponent for harmonic potential",
     &constraintExp, 2);
    opts.range("consexp", POSITIVE);
+#ifndef MEM_OPT_VERSION
    opts.require("constraints", "consref", "PDB file containing reference "
     "positions",
     PARSE_STRING);
@@ -1269,6 +1270,10 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
     "constaints in one of the columns", PARSE_STRING);
    opts.require("constraints", "conskcol", "Column of conskfile to use "
     "for the force constants", PARSE_STRING);
+#else
+   opts.require("constraints", "consAtomListFile", "the text input file for constrained atoms "
+                 "used for parallel input IO", PARSE_STRING);
+#endif
    opts.require("constraints", "constraintScaling", "constraint scaling factor",
      &constraintScaling, 1.0);
    opts.range("constraintScaling", NOT_NEGATIVE);

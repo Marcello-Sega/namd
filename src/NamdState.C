@@ -300,6 +300,12 @@ int NamdState::configListInit(ConfigList *cfgList) {
       molecule->load_fixed_atoms(configList->find("fixedAtomListFile"));
       iout << iINFO << "TIME FOR READING FIXED ATOMS FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
   }
+
+  if (simParameters->constraintsOn){
+      double fileReadTime = CmiWallTimer();
+      molecule->load_constrained_atoms(configList->find("consAtomListFile"));
+      iout << iINFO << "TIME FOR READING CONSTRAINED ATOMS FILE: " << CmiWallTimer() - fileReadTime << "\n" << endi;
+  }
 #else
   if (simParameters->extraBondsOn) {        
     //The extra bonds building will be executed in read_compressed_psf in

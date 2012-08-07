@@ -177,6 +177,10 @@ struct AtomSet{
 	}
 };
 typedef ResizeArray<AtomSet> AtomSetList;
+
+  void load_atom_set(StringList *setfile, const char *setname,
+        int *numAtomsInSet, Molecule::AtomSetList **atomsSet) const;
+
 #endif
 
 friend class ExclElem;
@@ -249,6 +253,7 @@ private:
 	ExclSigID *eachAtomExclSig;
 
     AtomSetList *fixedAtomsSet;    
+    AtomSetList *constrainedAtomsSet;    
 #endif
  
   ResidueLookupElem *resLookup; // find residues by name
@@ -631,6 +636,7 @@ public:
 
 #ifdef MEM_OPT_VERSION
   void load_fixed_atoms(StringList *fixedFile);
+  void load_constrained_atoms(StringList *constrainedFile);
 #endif
 
   void build_fixed_atoms(StringList *, StringList *, PDB *, char *);
@@ -860,6 +866,7 @@ public:
   }
 /* END gf */
 
+#ifndef MEM_OPT_VERSION
   //  Return true or false based on whether the specified atom
   //  is constrained or not.
   Bool is_atom_constrained(int atomnum) const
@@ -875,6 +882,7 @@ public:
       return(FALSE);
     }
   }
+#endif
 
   //  Return true or false based on whether the specified atom
   //  is moving-dragged or not.
@@ -924,12 +932,14 @@ public:
     }
   }
 
+#ifndef MEM_OPT_VERSION
   //  Get the harmonic constraints for a specific atom
   void get_cons_params(Real &k, Vector &refPos, int atomnum) const
   {
     k = consParams[consIndexes[atomnum]].k;
     refPos = consParams[consIndexes[atomnum]].refPos;
   }
+#endif
 
 /* BEGIN gf */
   void get_gridfrc_params(Real &k, Charge &q, int atomnum, int gridnum) const
@@ -1026,7 +1036,13 @@ public:
   //If the atom aid is not fixed, then aid1 indicates the smallest fixed atom
   //id that is larger than aid; so the listIdx could be equal the size of
   //fixedAtomsSet. --Chao Mei
-  Bool is_atom_fixed(int aid, int *listIdx=NULL) const;
+  Bool is_atom_in_set(AtomSetList *localAtomsSet, int aid, int *listIdx) const;
+  inline Bool is_atom_fixed(int aid, int *listIdx=NULL) const {
+    return is_atom_in_set(fixedAtomsSet,aid,listIdx);
+  }
+  inline Bool is_atom_constrained(int aid, int *listIdx=NULL) const {
+    return is_atom_in_set(constrainedAtomsSet,aid,listIdx);
+  }
 #endif
         
   Bool is_atom_stirred(int atomnum) const

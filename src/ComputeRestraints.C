@@ -109,7 +109,12 @@ void ComputeRestraints::doForce(FullAtom* p, Results* res)
 	{
 	  if (molecule->is_atom_constrained(p[localID].id))
 	  {
+#ifndef MEM_OPT_VERSION
 	    molecule->get_cons_params(k, refPos, p[localID].id);
+#else
+	    k = 1.0;
+	    refPos = p[localID].fixedPosition;
+#endif
 
 	    k *= scaling;
 

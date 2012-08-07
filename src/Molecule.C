@@ -262,6 +262,7 @@ void Molecule::initialize(SimParameters *simParams, Parameters *param)
   eachAtomExclSig = NULL;
 
   fixedAtomsSet = NULL;
+  constrainedAtomsSet = NULL;
   #else
   exclusionsByAtom=NULL;
   fullExclusionsByAtom=NULL;
@@ -568,6 +569,7 @@ Molecule::~Molecule()
   if(exclChkSigPool) delete [] exclChkSigPool;
   if(eachAtomExclSig) delete [] eachAtomExclSig;
   if(fixedAtomsSet) delete fixedAtomsSet;
+  if(constrainedAtomsSet) delete constrainedAtomsSet;
   #else
   if (bondsByAtom != NULL)
        delete [] bondsByAtom;
@@ -4672,20 +4674,26 @@ void Molecule::build_excl_check_signatures(){
  * the master proc. 
  * -Chao Mei
  */
-void Molecule::load_fixed_atoms(StringList *fixedfile){
-  if(fixedfile == NULL) NAMD_die("The text input file for fixed atoms is not found!");
-  FILE *ifp = fopen(fixedfile->data, "r");
+
+void Molecule::load_atom_set(StringList *setfile, const char *setname,
+	int *numAtomsInSet, AtomSetList **atomsSet) const {
+  if(setfile == NULL) {
+    char errmsg[128];
+    sprintf(errmsg,"The text input file for %s atoms is not found!", setname);
+    NAMD_die(errmsg);
+  }
+  FILE *ifp = fopen(setfile->data, "r");
   
   if(ifp==NULL){
       char errmsg[128];
-      sprintf(errmsg, "ERROR IN OPENING FIXED ATOMS FILE: %s\n", fixedfile->data);
+      sprintf(errmsg, "ERROR IN OPENING %s ATOMS FILE: %s\n", setname, setfile->data);
       NAMD_die(errmsg);
   }
 
   char oneline[128];
-  numFixedAtoms = 0;
+  int numLocalAtoms = 0;
   AtomSet one;
-  fixedAtomsSet = new AtomSetList();  
+  AtomSetList *localAtomsSet = new AtomSetList();  
   while(1) {
     int ret = NAMD_read_line(ifp, oneline, 128);
     if(ret!=0) break;
@@ -4701,35 +4709,46 @@ void Molecule::load_fixed_atoms(StringList *fixedfile){
       sscanf(oneline,"%d-%d", &(one.aid1), &(one.aid2));
       if(one.aid1>one.aid2 || one.aid1<0 || one.aid2<0) {
         char errmsg[512];
-        sprintf(errmsg, "The input for fixed atoms is wrong: %s\n", oneline);
+        sprintf(errmsg, "The input for %s atoms is wrong: %s\n", setname, oneline);
         NAMD_die(errmsg);
       }
-      numFixedAtoms += (one.aid2-one.aid1+1);
+      numLocalAtoms += (one.aid2-one.aid1+1);
     }else{
       sscanf(oneline, "%d", &(one.aid1));
       if(one.aid1<0) {
         char errmsg[512];
-        sprintf(errmsg, "The input for fixed atoms is wrong: %s\n", oneline);
+        sprintf(errmsg, "The input for %s atoms is wrong: %s\n", setname, oneline);
         NAMD_die(errmsg);      
       }
       one.aid2 = one.aid1;
-      numFixedAtoms++;
+      numLocalAtoms++;
     }
-    fixedAtomsSet->add(one);
+    localAtomsSet->add(one);
   }
-  //sort the fixedAtomsSet for binary search to decide 
-  //whether an atom is fixed or not
-  std::sort(fixedAtomsSet->begin(), fixedAtomsSet->end());  
+  //sort the localAtomsSet for binary search to decide 
+  //whether an atom is in the set or not
+  std::sort(localAtomsSet->begin(), localAtomsSet->end());  
+
+  *numAtomsInSet = numLocalAtoms;
+  *atomsSet = localAtomsSet;
 }
 
-Bool Molecule::is_atom_fixed(int aid, int *listIdx) const{
-  int idx = fixedAtomsSet->size();
+void Molecule::load_fixed_atoms(StringList *fixedfile){
+  load_atom_set(fixedfile, "FIXED", &numFixedAtoms, &fixedAtomsSet);
+}
+
+void Molecule::load_constrained_atoms(StringList *constrainedfile){
+  load_atom_set(constrainedfile, "CONSTRAINED", &numConstraints, &constrainedAtomsSet);
+}
+
+Bool Molecule::is_atom_in_set(AtomSetList *localAtomsSet, int aid, int *listIdx) const {
+  int idx = localAtomsSet->size();
   int rIdx = 0;
-  int lIdx = fixedAtomsSet->size()-1;
+  int lIdx = localAtomsSet->size()-1;
   
   while(rIdx <= lIdx){
     int mIdx = (rIdx+lIdx)/2;
-    const AtomSet one = fixedAtomsSet->item(mIdx);
+    const AtomSet one = localAtomsSet->item(mIdx);
 
     if(aid < one.aid1){
       //aid could be in [rIdx, mIdx);
@@ -4755,6 +4774,7 @@ Bool Molecule::is_atom_fixed(int aid, int *listIdx) const{
   if(listIdx) *listIdx = idx;
   return 0;
 }
+
 #endif
 
 
@@ -4921,6 +4941,13 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(numFixedAtoms);
     msg->put(numFixedAtomsSet);
     msg->put(numFixedAtomsSet*sizeof(AtomSet), (char *)(fixedAtomsSet->begin()));
+  }
+
+  if (simParams->constraintsOn) {
+    int numConstrainedAtomsSet = constrainedAtomsSet->size();
+    msg->put(numConstraints);
+    msg->put(numConstrainedAtomsSet);
+    msg->put(numConstrainedAtomsSet*sizeof(AtomSet), (char *)(constrainedAtomsSet->begin()));
   }
     
   // Broadcast the message to the other nodes
@@ -5214,6 +5241,14 @@ void Molecule::receive_Molecule(MIStream *msg){
     msg->get(numFixedAtomsSet);
     fixedAtomsSet = new AtomSetList(numFixedAtomsSet);
     msg->get(numFixedAtomsSet*sizeof(AtomSet), (char *)(fixedAtomsSet->begin()));
+  } 
+
+  if(simParams->constraintsOn){
+    int numConstrainedAtomsSet;
+    msg->get(numConstraints);
+    msg->get(numConstrainedAtomsSet);
+    constrainedAtomsSet = new AtomSetList(numConstrainedAtomsSet);
+    msg->get(numConstrainedAtomsSet*sizeof(AtomSet), (char *)(constrainedAtomsSet->begin()));
   } 
 
       //  Now free the message 
