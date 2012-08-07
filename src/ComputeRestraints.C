@@ -78,7 +78,8 @@ void ComputeRestraints::doForce(FullAtom* p, Results* res)
 {
 	Molecule *molecule = Node::Object()->molecule;
 	Real k;			//  Force constant
-	BigReal scaling = Node::Object()->simParameters->constraintScaling;
+	SimParameters *simParams = Node::Object()->simParameters;
+	BigReal scaling = simParams->constraintScaling;
 	Vector refPos;		//  Reference position
 	BigReal r, r2; 	//  r=distance between atom position and the
 			//  reference position, r2 = r^2
@@ -128,6 +129,12 @@ void ComputeRestraints::doForce(FullAtom* p, Results* res)
 	    }
 
 	    // END moving and rotating constraint changes *******
+
+	    if (simParams->sphericalConstraintsOn) {
+	      BigReal refRad = (refPos - simParams->sphericalConstrCenter).length();
+	      Vector relPos = patch->lattice.delta(p[localID].position, simParams->sphericalConstrCenter);
+	      refPos = simParams->sphericalConstrCenter + relPos * (refRad/relPos.length());
+            }
 
 	    Rij = patch->lattice.delta(refPos,p[localID].position);
 	    Vector vpos = refPos - Rij;

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/08/07 17:25:16 $
- * $Revision: 1.1397 $
+ * $Date: 2012/08/07 18:58:22 $
+ * $Revision: 1.1398 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1293,8 +1293,14 @@ void SimParameters::config_parser_constraints(ParseOptions &opts) {
    opts.optionalB("selectConstraints", "selectConstrZ",  
    "Restrain Z components of coordinates ", &constrZOn, FALSE);
    //****** END selective restraints (X,Y,Z) changes
- 
 
+   // spherical constraints
+   opts.optionalB("constraints", "sphericalConstraints", 
+   "Restrain only radial spherical component of the coordinates?",
+     &sphericalConstraintsOn, FALSE);
+   opts.optional("sphericalConstraints", "sphericalConstrCenter",
+   "Center of spherical constraints", &sphericalConstrCenter);
+ 
    //****** BEGIN moving constraints changes 
 
    //// Moving Harmonic Constraints
@@ -4005,8 +4011,13 @@ if ( openatomOn )
         if (constrZOn)
 	iout << iINFO << "RESTRAINING Z-COMPONENTS OF CARTESIAN COORDINATES!\n";
       }
-      iout << endi;
       //****** END selective restraints (X,Y,Z) changes 
+
+      if (sphericalConstraintsOn) {
+	iout << iINFO << "SPHERICAL HARMONIC CONSTRAINTS ACTIVE\n";
+	iout << iINFO << "RESTRAINING DISTANCE TO " << sphericalConstrCenter <<"\n";
+      }
+      iout << endi;
 
       //****** BEGIN moving constraints changes 
 

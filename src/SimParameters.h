@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: cmatthews $
- * $Date: 2012/06/29 21:46:05 $
- * $Revision: 1.1208 $
+ * $Author: jim $
+ * $Date: 2012/08/07 18:58:22 $
+ * $Revision: 1.1209 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -266,6 +266,11 @@ public:
              constrZOn;                 //  Flag TRUE-> select which Cartesian 
                                         //  component to restrain
         //****** END selective restraints (X,Y,Z) changes 
+
+	// spherical constraints
+	Bool sphericalConstraintsOn;
+	zVector sphericalConstrCenter;
+
 	BigReal constraintScaling;	//  Scaling factor for constraint forces
 
         //****** BEGIN CHARMM/XPLOR type changes
