@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2012/08/07 18:58:22 $
- * $Revision: 1.1209 $
+ * $Author: chaomei2 $
+ * $Date: 2012/08/07 20:37:08 $
+ * $Revision: 1.1210 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -86,16 +86,16 @@ typedef int GoChoices;
 #define GO_SPARSE 2
 #define GO_LOWMEM 3
 
-// Used for controlling PME parallelization with nodehelper
+// Used for controlling PME parallelization with ckloop
 // The higher level will include all parallelization for lower ones
-// E.g. If setting useNodeHelper to 3, then xpencil's kspace, all
+// E.g. If setting useCkLoop to 3, then xpencil's kspace, all
 // backward ffts and send_untrans/ungrid routines will be parallelized
-#define NDH_CTRL_PME_UNGRIDCALC 6
-#define NDH_CTRL_PME_FORWARDFFT 5
-#define NDH_CTRL_PME_SENDTRANS 4
-#define NDH_CTRL_PME_KSPACE 3
-#define NDH_CTRL_PME_BACKWARDFFT 2
-#define NDH_CTRL_PME_SENDUNTRANS 1
+#define CKLOOP_CTRL_PME_UNGRIDCALC 6
+#define CKLOOP_CTRL_PME_FORWARDFFT 5
+#define CKLOOP_CTRL_PME_SENDTRANS 4
+#define CKLOOP_CTRL_PME_KSPACE 3
+#define CKLOOP_CTRL_PME_BACKWARDFFT 2
+#define CKLOOP_CTRL_PME_SENDUNTRANS 1
 
 class SimParameters
 {
@@ -153,11 +153,11 @@ public:
 
 	Bool benchTimestep; //only cares about benchmarking the timestep, so no file output to save SUs for large-scale benchmarking
 
-	//whether to use NodeHelper library to parallelize a loop in a function like OpenMP.
+	//whether to use CkLoop library to parallelize a loop in a function like OpenMP.
 	//It has multiple control levels. The higher the value is (must be positive), the more parallelization will be performed
 	//Currently, it is mainly used for PME computation. The default value is 0, meaning it is disabled
-	//Refer to macros NDH_CTRL_* in this file for the ordering of different levels
-	int useNodeHelper; 
+	//Refer to macros CKLOOP_CTRL_* in this file for the ordering of different levels
+	int useCkLoop; 
 
 	int twoAwayX;			//  half-size patches in X dimension
 	int twoAwayY;			//  half-size patches in Y dimension

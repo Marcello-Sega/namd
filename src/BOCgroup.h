@@ -8,8 +8,8 @@
 #define BOCGROUP_H
 
 #include "charm++.h"
-#if     USE_NODEHELPER
-#include "NodeHelperAPI.h"
+#if     USE_CKLOOP
+#include "CkLoopAPI.h"
 #endif
 class BOCgroup {
 public:
@@ -39,8 +39,8 @@ public:
   CkGroupID nodeProxyMgr;
   #endif
   
-#if     USE_NODEHELPER
-  CProxy_FuncNodeHelper nodeHelper;
+#if     USE_CKLOOP
+  CProxy_FuncCkLoop ckLoop;
 #endif
 };
 

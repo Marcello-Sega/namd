@@ -56,7 +56,7 @@ using namespace std;
 //#define     USE_RANDOM_TOPO         1
 
 //#define USE_TOPO_SFC                    1
-//#define     USE_NODEHELPER                1
+//#define     USE_CKLOOP                1
 #include "TopoManager.h"
 
 #ifndef SQRT_PI
@@ -3360,7 +3360,7 @@ private:
 #ifdef NAMD_FFTW_3
     fftwf_plan forward_plan, backward_plan;
 
-	//for nodehelper usage
+	//for ckloop usage
 	int numPlans;
 	fftwf_plan *forward_plans, *backward_plans;
 #else
@@ -3559,8 +3559,8 @@ void PmeZPencil::fft_init() {
 					  (float *) data, NULL, 1, 
 					  ndim,
 					  fftwFlags);
-#if     USE_NODEHELPER
-  if(simParams->useNodeHelper) {
+#if     USE_CKLOOP
+  if(simParams->useCkLoop) {
 	  //How many FFT plans to be created? The grain-size issue!!.
 	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
 	  numPlans = (nx<=ny?nx:ny);
@@ -3814,8 +3814,8 @@ void PmeXPencil::fft_init() {
 					  FFTW_BACKWARD,
 				      fftwFlags);
 
-#if     USE_NODEHELPER
-  if(simParams->useNodeHelper) {
+#if     USE_CKLOOP
+  if(simParams->useCkLoop) {
 	  //How many FFT plans to be created? The grain-size issue!!.
 	  //Currently, I am choosing the min(nx, ny) to be coarse-grain
 	  numPlans = (ny<=nz?ny:nz);
@@ -3927,13 +3927,13 @@ void PmeZPencil::forward_fft() {
   dumpMatrixFloat3("fw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 #ifdef NAMD_FFTW_3
-#if     USE_NODEHELPER
-  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_FORWARDFFT) {
+#if     USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
           //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
           //transform the above loop
-          CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-          NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+          CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+          CkLoop_Parallelize(ckLoop, PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
           return;
   }
 #endif
@@ -4024,9 +4024,9 @@ void PmeZPencil::send_trans() {
 #if USE_PERSISTENT
     if (trans_handle == NULL) setup_persistent();
 #endif
-#if     USE_NODEHELPER
-	Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-	if(useNodeHelper>=NDH_CTRL_PME_SENDTRANS) {
+#if     USE_CKLOOP
+	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS) {
 		/**
 		 * Basically, this function call could be converted into 
 		 * a for-loop of: 
@@ -4034,8 +4034,8 @@ void PmeZPencil::send_trans() {
 		 * send_subset_trans(i,i); 
 		 */
 		//send_subset_trans(0, initdata.zBlocks-1);
-		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;		
-		NodeHelper_Parallelize(nodeHelper, PmeZPencilSendTrans, 1, (void *)this, CkMyNodeSize(), 0, initdata.zBlocks-1, 1); //not sync
+		CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;		
+		CkLoop_Parallelize(ckLoop, PmeZPencilSendTrans, 1, (void *)this, CkMyNodeSize(), 0, initdata.zBlocks-1, 1); //not sync
 		return;
 	}
 #endif
@@ -4151,15 +4151,15 @@ void PmeYPencil::forward_fft() {
 #endif
   
 #ifdef NAMD_FFTW_3
-#if     USE_NODEHELPER
-  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_FORWARDFFT) {
-	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-	  NodeHelper_Parallelize(nodeHelper, PmeYPencilForwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
+#if     USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
+	  CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+	  CkLoop_Parallelize(ckLoop, PmeYPencilForwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
 	  return;
   }
 #endif
-  //the above is a transformation of the following loop using NodeHelper
+  //the above is a transformation of the following loop using CkLoop
   for ( int i=0; i<nx; ++i ) {
     fftwf_execute_dft(forward_plan, ((fftwf_complex *) data) + i 
 		      * nz * initdata.grid.K2, 	
@@ -4245,9 +4245,9 @@ void PmeYPencil::send_trans() {
 #if USE_PERSISTENT
     if (trans_handle == NULL) setup_persistent();
 #endif
-#if     USE_NODEHELPER
-	Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-	if(useNodeHelper>=NDH_CTRL_PME_SENDTRANS) {
+#if     USE_CKLOOP
+	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+	if(useCkLoop>=CKLOOP_CTRL_PME_SENDTRANS) {
 		/**
 		 * Basically, this function call could be converted into 
 		 * a for-loop of: 
@@ -4255,8 +4255,8 @@ void PmeYPencil::send_trans() {
 		 * send_subset_trans(i,i); 
 		 */
 		//send_subset_trans(0, initdata.yBlocks-1);
-		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-		NodeHelper_Parallelize(nodeHelper, PmeYPencilSendTrans, 1, (void *)this, CkMyNodeSize(), 0, initdata.yBlocks-1, 1); //not sync
+		CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+		CkLoop_Parallelize(ckLoop, PmeYPencilSendTrans, 1, (void *)this, CkMyNodeSize(), 0, initdata.yBlocks-1, 1); //not sync
 		return;
 	}
 #endif
@@ -4382,13 +4382,13 @@ void PmeXPencil::forward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
-#if     USE_NODEHELPER
-  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_FORWARDFFT) {
+#if     USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_FORWARDFFT) {
 	  //for(int i=0; i<numPlans; i++) fftwf_execute(forward_plans[i]);
 	  //transform the above loop
-	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-	  NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+	  CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+	  CkLoop_Parallelize(ckLoop, PmeXZPencilFFT, 1, (void *)forward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
 	  return;
   }
 #endif
@@ -4432,13 +4432,13 @@ void PmeXPencil::backward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
-#if     USE_NODEHELPER
-  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_BACKWARDFFT) {
+#if     USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
           //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
           //transform the above loop
-          CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-          NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+          CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+          CkLoop_Parallelize(ckLoop, PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
           return;
   }
 #endif
@@ -4572,9 +4572,9 @@ void PmeXPencil::send_untrans() {
 #if USE_PERSISTENT
   if (untrans_handle == NULL) setup_persistent();
 #endif
-#if     USE_NODEHELPER
-  Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_SENDUNTRANS) {
+#if     USE_CKLOOP
+  Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
 	  	int xBlocks = initdata.xBlocks;
 		int evirIdx = 0;
 		for ( int isend=0; isend<xBlocks; ++isend ) {
@@ -4590,13 +4590,13 @@ void PmeXPencil::send_untrans() {
 		//evirIdx->send PmeUntransMsg with has_evir=1
 		//[evirIdx+1, xBlocks-1]->send PmeUntransMsg with has_evir=0
 		//send_subset_untrans(0, xBlocks-1, evirIdx);
-		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+		CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
 #if USE_NODE_PAR_RECEIVE
-		//NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, xBlocks-1, 1); //has to sync
-		NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, xBlocks, 0, xBlocks-1, 1); //has to sync
+		//CkLoop_Parallelize(ckLoop, PmeXPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, xBlocks-1, 1); //has to sync
+		CkLoop_Parallelize(ckLoop, PmeXPencilSendUntrans, evirIdx, (void *)this, xBlocks, 0, xBlocks-1, 1); //has to sync
 #else
-        //NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, xBlocks-1, 0); //not sync
-		NodeHelper_Parallelize(nodeHelper, PmeXPencilSendUntrans, evirIdx, (void *)this, xBlocks, 0, xBlocks-1, 0); //not sync
+        //CkLoop_Parallelize(ckLoop, PmeXPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, xBlocks-1, 0); //not sync
+		CkLoop_Parallelize(ckLoop, PmeXPencilSendUntrans, evirIdx, (void *)this, xBlocks, 0, xBlocks-1, 0); //not sync
 #endif        
 		return;
   }
@@ -4711,15 +4711,15 @@ void PmeYPencil::backward_fft() {
 #endif
 
 #ifdef NAMD_FFTW_3
-#if     USE_NODEHELPER
-  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_BACKWARDFFT) {
-	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-	  NodeHelper_Parallelize(nodeHelper, PmeYPencilBackwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
+#if     USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
+	  CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+	  CkLoop_Parallelize(ckLoop, PmeYPencilBackwardFFT, 1, (void *)this, CkMyNodeSize(), 0, nx-1); //sync
 	  return;
   }
 #endif
-  //the above is a transformation of the following loop using NodeHelper
+  //the above is a transformation of the following loop using CkLoop
   for ( int i=0; i<nx; ++i ) {
 #if CMK_BLUEGENEL
 	CmiNetworkProgress();
@@ -4867,9 +4867,9 @@ void PmeYPencil::send_untrans() {
 #if USE_PERSISTENT
   if (untrans_handle == NULL) setup_persistent();
 #endif
-#if     USE_NODEHELPER
-  Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_SENDUNTRANS) {
+#if     USE_CKLOOP
+  Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
 	  int yBlocks = initdata.yBlocks;
 	  int evirIdx = 0;
 	  for ( int isend=0; isend<yBlocks; ++isend ) {
@@ -4885,15 +4885,15 @@ void PmeYPencil::send_untrans() {
 	  //evirIdx->send PmeUntransMsg with has_evir=1
 	  //[evirIdx+1, yBlocks-1]->send PmeUntransMsg with has_evir=0
 	  //send_subset_untrans(0, yBlocks-1, evirIdx);
-	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+	  CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
 #if USE_NODE_PAR_RECEIVE      
-	  //NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, yBlocks-1, 1); //sync
-	  NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, yBlocks, 0, yBlocks-1, 1);
+	  //CkLoop_Parallelize(ckLoop, PmeYPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, yBlocks-1, 1); //sync
+	  CkLoop_Parallelize(ckLoop, PmeYPencilSendUntrans, evirIdx, (void *)this, yBlocks, 0, yBlocks-1, 1);
       evir = 0.;
       CmiMemoryWriteFence();
 #else
-      //NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, yBlocks-1, 0); //not sync
-	  NodeHelper_Parallelize(nodeHelper, PmeYPencilSendUntrans, evirIdx, (void *)this, yBlocks, 0, yBlocks-1, 0); //not sync
+      //CkLoop_Parallelize(ckLoop, PmeYPencilSendUntrans, evirIdx, (void *)this, CkMyNodeSize(), 0, yBlocks-1, 0); //not sync
+	  CkLoop_Parallelize(ckLoop, PmeYPencilSendUntrans, evirIdx, (void *)this, yBlocks, 0, yBlocks-1, 0); //not sync
 #endif
 	  return;
   }
@@ -5000,13 +5000,13 @@ void PmeZPencil::backward_fft() {
   dumpMatrixFloat3("bw_z_b", data, nx, ny, initdata.grid.dim3, thisIndex.x, thisIndex.y, thisIndex.z);
 #endif
 #ifdef NAMD_FFTW_3
-#if     USE_NODEHELPER
-  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_BACKWARDFFT) {
+#if     USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_BACKWARDFFT) {
 	  //for(int i=0; i<numPlans; i++) fftwf_execute(backward_plans[i]);
 	  //transform the above loop
-	  CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-	  NodeHelper_Parallelize(nodeHelper, PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
+	  CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+	  CkLoop_Parallelize(ckLoop, PmeXZPencilFFT, 1, (void *)backward_plans, CkMyNodeSize(), 0, numPlans-1); //sync
 	  return;
   }
 #endif
@@ -5089,17 +5089,17 @@ void PmeZPencil::send_all_ungrid() {
 		}
 	}
 
-#if     USE_NODEHELPER
-	Bool useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-	if(useNodeHelper>=NDH_CTRL_PME_SENDUNTRANS) {
-		CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+#if     USE_CKLOOP
+	Bool useCkLoop = Node::Object()->simParameters->useCkLoop;
+	if(useCkLoop>=CKLOOP_CTRL_PME_SENDUNTRANS) {
+		CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
 		//????What's the best value for numChunks?????
 #if USE_NODE_PAR_RECEIVE        
-		//NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, CkMyNodeSize(), 0, grid_msgs.size()-1, 1); //has to sync
-		NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, grid_msgs.size(), 0, grid_msgs.size()-1, 1); //has to sync
+		//CkLoop_Parallelize(ckLoop, PmeZPencilSendUngrid, evirIdx, (void *)this, CkMyNodeSize(), 0, grid_msgs.size()-1, 1); //has to sync
+		CkLoop_Parallelize(ckLoop, PmeZPencilSendUngrid, evirIdx, (void *)this, grid_msgs.size(), 0, grid_msgs.size()-1, 1); //has to sync
 #else
-        //NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, CkMyNodeSize(), 0, grid_msgs.size()-1, 0); //not sync
-		NodeHelper_Parallelize(nodeHelper, PmeZPencilSendUngrid, evirIdx, (void *)this, grid_msgs.size(), 0, grid_msgs.size()-1, 0); //not sync
+        //CkLoop_Parallelize(ckLoop, PmeZPencilSendUngrid, evirIdx, (void *)this, CkMyNodeSize(), 0, grid_msgs.size()-1, 0); //not sync
+		CkLoop_Parallelize(ckLoop, PmeZPencilSendUngrid, evirIdx, (void *)this, grid_msgs.size(), 0, grid_msgs.size()-1, 0); //not sync
 #endif        
 		return;
 	}

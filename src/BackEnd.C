@@ -169,8 +169,8 @@ void master_init(int argc, char **argv){
   group.nodeProxyMgr = CProxy_NodeProxyMgr::ckNew();
   #endif
   
-#if     USE_NODEHELPER
-  group.nodeHelper = NodeHelper_Init();
+#if     USE_CKLOOP
+  group.ckLoop = CkLoop_Init();
 #endif
 
   CkChareID collectionMaster = CProxy_CollectionMaster::ckNew(0);  

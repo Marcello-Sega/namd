@@ -320,13 +320,13 @@ void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
   double *Mi, *dMi;
   int K1, K2, K3, dim2;
 
-#if     USE_NODEHELPER
-  int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-  if(useNodeHelper>=NDH_CTRL_PME_UNGRIDCALC){          
+#if     USE_CKLOOP
+  int useCkLoop = Node::Object()->simParameters->useCkLoop;
+  if(useCkLoop>=CKLOOP_CTRL_PME_UNGRIDCALC){          
       //compute_forces_order4_partial(0, N-1, q_arr, p, f);
-      CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
+      CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
       void *params[] = {(void *)this, (void *)q_arr, (void *)p, (void *)f};
-      NodeHelper_Parallelize(nodeHelper, compute_forces_order4_helper, 4, (void *)params, CkMyNodeSize(), 0, N-1);
+      CkLoop_Parallelize(ckLoop, compute_forces_order4_helper, 4, (void *)params, CkMyNodeSize(), 0, N-1);
       return;
   }
 #endif

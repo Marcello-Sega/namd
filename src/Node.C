@@ -353,9 +353,9 @@ void Node::startup() {
     parameters = node_parameters;
     molecule = node_molecule;
     
-    #if !CMK_SMP || ! USE_NODEHELPER
-    //the NodeHelper library should be only used in SMP mode
-    simParameters->useNodeHelper = 0;
+    #if !CMK_SMP || ! USE_CKLOOP
+    //the CkLoop library should be only used in SMP mode
+    simParameters->useCkLoop = 0;
     #endif
 
 

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/08/07 18:58:22 $
- * $Revision: 1.1398 $
+ * $Author: chaomei2 $
+ * $Date: 2012/08/07 20:37:07 $
+ * $Revision: 1.1399 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1758,8 +1758,8 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
 
    opts.optionalB("main", "outputMaps", "whether to dump compute map and patch map for analysis just before load balancing", &outputMaps, FALSE);
    opts.optionalB("main", "benchTimestep", "whether to do benchmarking timestep in which case final file output is disabled", &benchTimestep, FALSE);
-   opts.optional("main", "useNodeHelper", "whether to use NodeHelper library to parallelize a loop in a function like OpenMP", &useNodeHelper, 0);
-   opts.range("useNodeHelper", NOT_NEGATIVE);
+   opts.optional("main", "useCkLoop", "whether to use CkLoop library to parallelize a loop in a function like OpenMP", &useCkLoop, 0);
+   opts.range("useCkLoop", NOT_NEGATIVE);
 
    opts.optionalB("main", "simulateInitialMapping", "whether to study the initial mapping scheme", &simulateInitialMapping, FALSE);
    opts.optional("main", "simulatedPEs", "the number of PEs to be used for studying initial mapping", &simulatedPEs);

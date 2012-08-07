@@ -210,7 +210,7 @@ void PmeKSpace::compute_energy_orthogonal_subset(float q_arr[], double *recips, 
     partialVirial[4] = 0.5*v4;
     partialVirial[5] = 0.5*v5;
 }
-static inline void compute_energy_orthogonal_nodehelper(int first, int last, void *result, int paraNum, void *param){
+static inline void compute_energy_orthogonal_ckloop(int first, int last, void *result, int paraNum, void *param){
     CmiAssert(first==last);
     void **params = (void **)param;
     PmeKSpace *kspace = (PmeKSpace *)params[0];
@@ -270,12 +270,12 @@ double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &
     ALLOCA(double, partialVirial, 6*NPARTS);
     int unitDist[] = {K1/NPARTS, K1%NPARTS};
     
-    //parallelize the following loop using NodeHelper
+    //parallelize the following loop using CkLoop
     void *params[] = {this, q_arr, recips, partialEnergy, partialVirial, unitDist};
 
-#if     USE_NODEHELPER
-    CProxy_FuncNodeHelper nodeHelper = CkpvAccess(BOCclass_group).nodeHelper;
-    NodeHelper_Parallelize(nodeHelper, compute_energy_orthogonal_nodehelper, 6, (void *)params, NPARTS, 0, NPARTS-1);
+#if     USE_CKLOOP
+    CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
+    CkLoop_Parallelize(ckLoop, compute_energy_orthogonal_ckloop, 6, (void *)params, NPARTS, 0, NPARTS-1);
 #endif
 /*  
     //The transformed loop used to compute energy
@@ -337,9 +337,9 @@ double PmeKSpace::compute_energy(float *q_arr, const Lattice &lattice, double ew
   if ( lattice.orthogonal() ) {
   // if ( 0 ) { // JCP FOR TESTING
     //This branch is the usual call path.
-#if     USE_NODEHELPER
-    int useNodeHelper = Node::Object()->simParameters->useNodeHelper;
-    if(useNodeHelper>=NDH_CTRL_PME_KSPACE){
+#if     USE_CKLOOP
+    int useCkLoop = Node::Object()->simParameters->useCkLoop;
+    if(useCkLoop>=CKLOOP_CTRL_PME_KSPACE){
         return compute_energy_orthogonal_helper(q_arr, lattice, ewald, virial);
     }
 #endif    
