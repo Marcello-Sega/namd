@@ -354,6 +354,8 @@ CHARMLIB = $(CHARM)/lib
 CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB
 #CHARM_MODULES = -module msa -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB
 #MSA = -DCHARM_HAS_MSA
+#If using the CkLoop library from Charm++ for PME calculation, first define macro
+# USE_CKLOOP=1 for compiling the code, and then add "-module CkLoop" for linking.
 
 # Libraries we may have changed
 LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
