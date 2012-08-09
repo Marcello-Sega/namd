@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: chaomei2 $
- * $Date: 2012/08/07 20:37:08 $
- * $Revision: 1.1210 $
+ * $Author: jim $
+ * $Date: 2012/08/09 15:27:49 $
+ * $Revision: 1.1211 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -807,6 +807,7 @@ public:
     char *binAtomFile;
     char *binCoorFile;
     char *binVelFile; 
+    char *binRefFile; 
     
     //fields needed for Parallel IO Output
     int numoutputprocs; 

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dhardy $
- * $Date: 2012/05/22 20:53:45 $
- * $Revision: 1.1244 $
+ * $Author: jim $
+ * $Date: 2012/08/09 15:27:49 $
+ * $Revision: 1.1245 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -178,7 +178,7 @@ void WorkDistrib::fillAtomListForOnePatch(int pid, FullAtomList &alist){
       int aid = a[j].id;
       a[j].nonbondedGroupSize = 0;  // must be set based on coordinates
       
-      a[j].fixedPosition = a[j].position;
+      // a[j].fixedPosition = a[j].position;  ParallelIOMgr stores ref coord here.
 
       if ( a[j].migrationGroupSize ) {
        if ( a[j].migrationGroupSize != a[j].hydrogenGroupSize ) {

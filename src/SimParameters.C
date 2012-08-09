@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: chaomei2 $
- * $Date: 2012/08/07 20:37:07 $
- * $Revision: 1.1399 $
+ * $Author: jim $
+ * $Date: 2012/08/09 15:27:48 $
+ * $Revision: 1.1400 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -529,6 +529,10 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
      "initial velocities, given as a binary restart", PARSE_STRING);
    opts.optional("main", "bincoordinates",
      "initial coordinates in a binary restart file", PARSE_STRING);
+#ifdef MEM_OPT_VERSION
+   opts.optional("main", "binrefcoords",
+     "reference coordinates in a binary restart file", PARSE_STRING);
+#endif
 
 //   opts.require("main", "structure", "initial PSF structure file",
 //    PARSE_STRING);
@@ -2013,6 +2017,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    binAtomFile = NULL;
    binCoorFile = NULL;
    binVelFile = NULL;   
+   binRefFile = NULL;
 
    char *curfile = NULL;
    dirlen = strlen(namdWorkDir);
@@ -2064,6 +2069,22 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        memcpy(binVelFile, namdWorkDir, dirlen);
        memcpy(binVelFile+dirlen, curfile, filelen);
        binVelFile[dirlen+filelen] = 0;
+     }
+   }
+
+   if(opts.defined("binrefcoords")){
+     current = config->find("binrefcoords");
+     curfile = current->data;
+     filelen = strlen(curfile);
+     if(*curfile == '/' || *curfile=='~') {
+       binRefFile = new char[filelen+1];
+       memcpy(binRefFile, curfile, filelen);
+       binRefFile[filelen] = 0;
+     }else{
+       binRefFile = new char[dirlen+filelen+1];
+       memcpy(binRefFile, namdWorkDir, dirlen);
+       memcpy(binRefFile+dirlen, curfile, filelen);
+       binRefFile[dirlen+filelen] = 0;
      }
    }
 
@@ -5255,6 +5276,15 @@ if ( openatomOn )
               << current->data << "\n";
    }
 
+#ifdef MEM_OPT_VERSION
+   if (opts.defined("binrefcoords"))
+   {
+     current = config->find("binrefcoords");
+
+     iout << iINFO << "BINARY REF COORDS      " 
+              << current->data << "\n";
+   }
+#endif
 
    if (firstTimestep)
    {
@@ -5783,6 +5813,12 @@ void SimParameters::send_SimParameters(MOStream *msg)
     msg->put(filelen);
     msg->put(filelen, binVelFile);
   }
+
+  if(binRefFile) {
+    filelen = strlen(binRefFile)+1;
+    msg->put(filelen);
+    msg->put(filelen, binRefFile);
+  }
 #endif
 
   mgridforcelist.pack_data(msg);
@@ -5838,6 +5874,12 @@ void SimParameters::receive_SimParameters(MIStream *msg)
     msg->get(filelen);
     binVelFile = new char[filelen];
     msg->get(filelen, binVelFile);
+  }
+
+  if(binRefFile) {    
+    msg->get(filelen);
+    binRefFile = new char[filelen];
+    msg->get(filelen, binRefFile);
   }
 #endif
 

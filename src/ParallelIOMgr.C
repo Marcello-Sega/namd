@@ -268,7 +268,7 @@ void ParallelIOMgr::readCoordinatesAndVelocity()
         ifp = fopen(simParameters->binVelFile, "rb");
         if(!ifp) {
             char s[256];
-            sprintf(s, "The binary velocity file %s cannot be opened on proc %d\n", simParameters->binCoorFile, CkMyPe());
+            sprintf(s, "The binary velocity file %s cannot be opened on proc %d\n", simParameters->binVelFile, CkMyPe());
             NAMD_err(s);
         }
         //step2: check whether flip is needed
@@ -310,6 +310,58 @@ void ParallelIOMgr::readCoordinatesAndVelocity()
         if(needFlip) flipNum((char *)tmpData, sizeof(BigReal), myNumAtoms*3);
         fclose(ifp);
         for(int i=0; i<myNumAtoms; i++) initAtoms[i].velocity = tmpData[i];
+    }
+
+    //begin to read reference coordinates
+    //step1: use initial positions or open the file
+    if(!simParameters->binRefFile) {
+        for(int i=0; i<myNumAtoms; i++) initAtoms[i].fixedPosition = initAtoms[i].position;
+    } else {
+        ifp = fopen(simParameters->binRefFile, "rb");
+        if(!ifp) {
+            char s[256];
+            sprintf(s, "The binary reference coordinate file %s cannot be opened on proc %d\n", simParameters->binRefFile, CkMyPe());
+            NAMD_err(s);
+        }
+        //step2: check whether flip is needed
+        fread(&filelen, sizeof(int32),1,ifp);
+        memcpy(lenbuf, (const char *)&filelen, sizeof(int32));
+        flipNum(lenbuf, sizeof(int32), 1);
+        if(!memcmp(lenbuf, (const char *)&filelen, sizeof(int32))) {
+            iout << iWARN << "Number of atoms in binary file " << simParameters->binRefFile
+                 <<" is palindromic, assuming same endian.\n" << endi;
+        }
+        if(filelen!=molecule->numAtoms) {
+            needFlip = 1;
+            memcpy((void *)&filelen, lenbuf,sizeof(int32));
+        }
+        if(filelen!=molecule->numAtoms) {
+            char s[256];
+            sprintf(s, "Incorrect atom count in binary file %s", simParameters->binRefFile);
+            NAMD_die(s);
+        }
+
+        //step3: read the file specified by the range
+        int64 offsetPos = ((int64)myAtomLIdx)*sizeof(Position);
+#ifdef WIN32
+        if ( _fseeki64(ifp, offsetPos, SEEK_CUR) )
+#else
+        if ( fseeko(ifp, offsetPos, SEEK_CUR) )
+#endif
+        {
+            char s[256];
+            sprintf(s, "Error in seeking binary file %s on proc %d",  simParameters->binRefFile, CkMyPe());
+            NAMD_err(s);
+        }
+        totalRead = fread(tmpData, sizeof(Vector), myNumAtoms, ifp);
+        if(totalRead!=myNumAtoms) {
+            char s[256];
+            sprintf(s, "Error in reading binary file %s on proc %d",  simParameters->binRefFile, CkMyPe());
+            NAMD_err(s);
+        }
+        if(needFlip) flipNum((char *)tmpData, sizeof(BigReal), myNumAtoms*3);
+        fclose(ifp);
+        for(int i=0; i<myNumAtoms; i++) initAtoms[i].fixedPosition = tmpData[i];
     }
 
     delete [] tmpData;
