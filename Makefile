@@ -375,7 +375,7 @@ SBGCCFLAGS = $(COPTI)$(SBSRCDIR) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN -
 
 # Add new executables here.
 
-BINARIES = namd2 psfgen sortreplicas charmrun flipdcd flipbinpdb
+BINARIES = namd2 psfgen sortreplicas flipdcd flipbinpdb charmrun
 
 # This should be rebuilt at every compile, but not on Win32.
 BUILDINFO = $(DSTDIR)/buildinfo

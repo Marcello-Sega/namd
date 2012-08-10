@@ -57,7 +57,7 @@ using namespace std;
 
 //#define USE_TOPO_SFC                    1
 //#define     USE_CKLOOP                1
-#include "TopoManager.h"
+//#include "TopoManager.h"
 
 #ifndef SQRT_PI
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
