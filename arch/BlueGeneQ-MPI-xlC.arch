@@ -3,10 +3,10 @@ CHARMARCH = mpi-bluegeneq-xlc
 
 CXX = bgxlC -qstaticinline -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID -DARCH_POWERPC 
 
-CXXOPTS = -O3 -Q -qhot -DFFTW_ENABLE_FLOAT
-CXXNOALIASOPTS = -O3 -Q -qalias=noallptrs:notypeptr -qdebug=plst3:cycles -DFFTW_ENABLE_FLOAT -tb -B$(PWD)/
+CXXOPTS = -O3 -Q -qhot
+CXXNOALIASOPTS = -O3 -Q -qalias=noallptrs:notypeptr -qdebug=plst3:cycles -tb -B$(PWD)/
 
-CXXTHREADOPTS = -O3 -Q -DFFTW_ENABLE_FLOAT
+CXXTHREADOPTS = -O3 -Q
 
 CC = bgxlc 
 COPTS = -O3 -qhot
