@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/08/09 15:27:48 $
- * $Revision: 1.1400 $
+ * $Date: 2012/08/13 16:22:19 $
+ * $Revision: 1.1401 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1130,6 +1130,9 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
    opts.optionalB("main", "LangevinPiston",
       "Should Langevin piston pressure control be used?",
       &langevinPistonOn, FALSE);
+   opts.optionalB("LangevinPiston", "LangevinPistonBarrier",
+      "Should Langevin piston barrier be used?",
+      &langevinPistonBarrier, TRUE);
    opts.require("LangevinPiston", "LangevinPistonTarget",
       "Target pressure for pressure control",
       &langevinPistonTarget);

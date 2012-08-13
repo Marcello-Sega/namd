@@ -146,6 +146,8 @@ protected:
     void langevinPiston1(int);
     void langevinPiston2(int);
       Tensor langevinPiston_strainRate;
+      Tensor strainRate_old;  // for langevinPistonBarrier no
+      Tensor positionRescaleFactor;  // for langevinPistonBarrier no
 
     int ldbSteps;
     void rebalanceLoad(int);

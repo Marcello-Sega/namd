@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: gzheng $
- * $Date: 2012/05/18 07:33:47 $
- * $Revision: 1.1286 $
+ * $Author: jim $
+ * $Date: 2012/08/13 16:22:19 $
+ * $Revision: 1.1287 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -744,6 +744,7 @@ void Controller::langevinPiston1(int step)
     iout << iINFO << "integrating half step, strain rate: " << strainRate << "\n";
 #endif
 
+    if ( simParams->langevinPistonBarrier ) {
     if ( ! ( (step-1-slowFreq/2) % slowFreq ) )
     {
       // We only use on-diagonal terms (for now)
@@ -760,6 +761,44 @@ void Controller::langevinPiston1(int step)
 #ifdef DEBUG_PRESSURE
       iout << iINFO << "rescaling by: " << factor << "\n";
 #endif
+    }
+    } else { // langevinPistonBarrier
+    if ( ! ( (step-1-slowFreq/2) % slowFreq ) )
+    {
+      if ( ! positionRescaleFactor.xx ) {  // first pass without MTS
+      // We only use on-diagonal terms (for now)
+      Tensor factor;
+      if ( !simParams->useConstantArea ) {
+        factor.xx = exp( dt_long * strainRate.xx );
+        factor.yy = exp( dt_long * strainRate.yy );
+      } else {
+        factor.xx = factor.yy = 1;
+      }
+      factor.zz = exp( dt_long * strainRate.zz );
+      broadcast->positionRescaleFactor.publish(step,factor);
+      positionRescaleFactor = factor;
+      strainRate_old = strainRate;
+      }
+      state->lattice.rescale(positionRescaleFactor);
+#ifdef DEBUG_PRESSURE
+      iout << iINFO << "rescaling by: " << factor << "\n";
+#endif
+    }
+    if ( ! ( (step-slowFreq/2) % slowFreq ) )
+    {
+      // We only use on-diagonal terms (for now)
+      Tensor factor;
+      if ( !simParams->useConstantArea ) {
+        factor.xx = exp( (dt+dt_long) * strainRate.xx - dt * strainRate_old.xx );
+        factor.yy = exp( (dt+dt_long) * strainRate.yy - dt * strainRate_old.yy );
+      } else {
+        factor.xx = factor.yy = 1;
+      }
+      factor.zz = exp( (dt+dt_long) * strainRate.zz - dt * strainRate_old.zz );
+      broadcast->positionRescaleFactor.publish(step+1,factor);
+      positionRescaleFactor = factor;
+      strainRate_old = strainRate;
+    }
     }
 
     // corrections to integrator

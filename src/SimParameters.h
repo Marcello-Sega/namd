@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2012/08/09 15:27:49 $
- * $Revision: 1.1211 $
+ * $Date: 2012/08/13 16:22:20 $
+ * $Revision: 1.1212 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -545,6 +545,7 @@ public:
 	int berendsenPressureFreq;
 
 	Bool langevinPistonOn;		//  Langevin piston pressure control
+	Bool langevinPistonBarrier;	//  Turn off to extrapolate cell
 	BigReal langevinPistonTarget;
 	BigReal langevinPistonPeriod;
 	BigReal langevinPistonDecay;
