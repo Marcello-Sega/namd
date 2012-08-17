@@ -35,9 +35,25 @@ Communicate::Communicate(void)
   CsmHandlerIndex = CmiRegisterHandler((CmiHandler) CsmHandler);
   CsmAckHandlerIndex = CmiRegisterHandler((CmiHandler) CsmAckHandler);
   CkpvAccess(CsmMessages) = CmmNew();
-  if ( CmiMyNode() * 2 + 2 < CmiNumNodes() ) nchildren = 2;
-  else if ( CmiMyNode() * 2 + 1 < CmiNumNodes() ) nchildren = 1;
-  else nchildren = 0;
+
+  int parent_node = 0;
+  int self = CkMyNode();
+  int range_begin = 0;
+  int range_end = CkNumNodes();
+  while ( self != range_begin ) {
+    parent_node = range_begin;
+    int split = range_begin + ( range_end - range_begin ) / 2;
+    if ( self < split ) { ++range_begin; range_end = split; }
+    else { range_begin = split; }
+  }
+  int send_near = self + 1;
+  int send_far = self + ( range_end - self ) / 2;
+
+  parent = CkNodeFirst(parent_node);
+  nchildren = 0;
+  if ( send_far > self ) children[nchildren++] = CkNodeFirst(send_far);
+  if ( send_near < send_far ) children[nchildren++] = CkNodeFirst(send_near);
+
   CkpvInitialize(int, CsmAcks);
   CkpvAccess(CsmAcks) = nchildren;
 }
@@ -75,7 +91,7 @@ void *Communicate::getMessage(int PE, int tag)
 
   char *ackmsg = (char *) CmiAlloc(CmiMsgHeaderSizeBytes);
   CmiSetHandler(ackmsg, CsmAckHandlerIndex);
-  CmiSyncSend(CmiNodeFirst((CmiMyNode()-1)/2), CmiMsgHeaderSizeBytes, ackmsg);
+  CmiSyncSend(parent, CmiMsgHeaderSizeBytes, ackmsg);
 
   while ( CkpvAccess(CsmAcks) < nchildren ) {
     CmiDeliverMsgs(0);
@@ -83,11 +99,8 @@ void *Communicate::getMessage(int PE, int tag)
   CkpvAccess(CsmAcks) = 0;
 
   int size = SIZEFIELD(msg);
-  for ( int i = 2; i >= 1; --i ) {
-    int node = CmiMyNode() * 2 + i;
-    if ( node < CmiNumNodes() ) {
-      CmiSyncSend(CmiNodeFirst(node),size,(char*)msg);
-    }
+  for ( int i = 0; i < nchildren; ++i ) {
+    CmiSyncSend(children[i],size,(char*)msg);
   }
 
   return msg;
@@ -110,11 +123,8 @@ void Communicate::sendMessage(int PE, void *msg, int size)
       break;
     case ALLBUTME:
       //CmiSyncBroadcast(size, (char *)msg);
-      if ( CmiNumNodes() > 2 ) {
-        CmiSyncSend(CmiNodeFirst(2),size,(char*)msg);
-      }
-      if ( CmiNumNodes() > 1 ) {
-        CmiSyncSend(CmiNodeFirst(1),size,(char*)msg);
+      for ( int i = 0; i < nchildren; ++i ) {
+        CmiSyncSend(children[i],size,(char*)msg);
       }
       break;
     default:

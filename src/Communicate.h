@@ -20,7 +20,9 @@ class Communicate {
 private:
   int CsmHandlerIndex;
   int CsmAckHandlerIndex;
+  int parent;
   int nchildren;
+  int children[2];
 
 public:
   Communicate(void);
