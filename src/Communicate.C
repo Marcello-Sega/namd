@@ -42,16 +42,17 @@ Communicate::Communicate(void)
   int range_end = CkNumNodes();
   while ( self != range_begin ) {
     parent_node = range_begin;
+    ++range_begin;
     int split = range_begin + ( range_end - range_begin ) / 2;
-    if ( self < split ) { ++range_begin; range_end = split; }
+    if ( self < split ) { range_end = split; }
     else { range_begin = split; }
   }
   int send_near = self + 1;
-  int send_far = self + ( range_end - self ) / 2;
+  int send_far = send_near + ( range_end - send_near ) / 2;
 
   parent = CkNodeFirst(parent_node);
   nchildren = 0;
-  if ( send_far > self ) children[nchildren++] = CkNodeFirst(send_far);
+  if ( send_far < range_end ) children[nchildren++] = CkNodeFirst(send_far);
   if ( send_near < send_far ) children[nchildren++] = CkNodeFirst(send_near);
 
   CkpvInitialize(int, CsmAcks);

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/08/17 21:04:18 $
- * $Revision: 1.1246 $
+ * $Date: 2012/08/20 16:58:36 $
+ * $Revision: 1.1247 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -750,16 +750,17 @@ void WorkDistrib::savePatchMap(PatchMapMsg *msg)
   int range_begin = 0;
   int range_end = CkNumNodes();
   while ( self != range_begin ) {
+    ++range_begin;
     int split = range_begin + ( range_end - range_begin ) / 2;
-    if ( self < split ) { ++range_begin; range_end = split; }
+    if ( self < split ) { range_end = split; }
     else { range_begin = split; }
   }
   int send_near = self + 1;
-  int send_far = self + ( range_end - self ) / 2;
+  int send_far = send_near + ( range_end - send_near ) / 2;
 
   int pids[3];
   int npid = 0;
-  if ( send_far > self ) pids[npid++] = CkNodeFirst(send_far);
+  if ( send_far < range_end ) pids[npid++] = CkNodeFirst(send_far);
   if ( send_near < send_far ) pids[npid++] = CkNodeFirst(send_near);
   pids[npid++] = CkMyPe();  // always send the message to ourselves
   CProxy_WorkDistrib(thisgroup).savePatchMap(msg,npid,pids);
@@ -820,16 +821,17 @@ void WorkDistrib::saveComputeMap(ComputeMapMsg *msg)
   int range_begin = 0;
   int range_end = CkNumNodes();
   while ( self != range_begin ) {
+    ++range_begin;
     int split = range_begin + ( range_end - range_begin ) / 2;
-    if ( self < split ) { ++range_begin; range_end = split; }
+    if ( self < split ) { range_end = split; }
     else { range_begin = split; }
   }
   int send_near = self + 1;
-  int send_far = self + ( range_end - self ) / 2;
+  int send_far = send_near + ( range_end - send_near ) / 2;
 
   int pids[3];
   int npid = 0;
-  if ( send_far > self ) pids[npid++] = CkNodeFirst(send_far);
+  if ( send_far < range_end ) pids[npid++] = CkNodeFirst(send_far);
   if ( send_near < send_far ) pids[npid++] = CkNodeFirst(send_near);
   pids[npid++] = CkMyPe();  // always send the message to ourselves
   CProxy_WorkDistrib(thisgroup).saveComputeMap(msg,npid,pids);
