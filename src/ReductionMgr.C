@@ -210,6 +210,8 @@ void ReductionMgr::buildSpanTree(const int pe,
   
   int first_rem_child_index = num_nodes;
   int last_rem_child_index = num_nodes;
+  int rem_children=0;
+  int *rem_child_index = new int[max_internode_children];
   
   if (first_pe != pe) {
     // I'm not a first_pe, so I have no more children, and my parent
@@ -224,23 +226,30 @@ void ReductionMgr::buildSpanTree(const int pe,
       my_parent_index = -1;
       *parent = -1;
     } else {
-      my_parent_index = (first_pe_index-1)/max_internode_children;
+      my_parent_index = 0;
+      int range_begin = 0;
+      int range_end = num_nodes;
+      while ( first_pe_index != range_begin ) {
+        my_parent_index = range_begin;
+        ++range_begin;
+        for ( int i = 0; i < max_internode_children; ++i ) {
+          int split = range_begin + ( range_end - range_begin ) / ( max_internode_children - i );
+          if ( first_pe_index < split ) { range_end = split; break; } 
+          else { range_begin = split; }
+        }
+      }
+      // now we know parent and need only repeat calculation of children
       *parent = node_ids[my_parent_index];
-//      CkPrintf("[%d] my_parent_index=%d parent=%d\n",
-//               pe,my_parent_index,*parent);
+      int prev_child_index = range_begin;
+      ++range_begin;
+      for ( int i = 0; i < max_internode_children; ++i ) {
+        if ( range_begin >= num_nodes ) break;
+        if ( range_begin > prev_child_index ) {
+          rem_child_index[rem_children++] = prev_child_index = range_begin;
+        }
+        range_begin += ( range_end - range_begin ) / ( max_internode_children - i );
+      }
     }
-    first_rem_child_index = first_pe_index * max_internode_children + 1;
-    last_rem_child_index  = first_rem_child_index + max_internode_children -1;
-    if (first_rem_child_index > num_nodes) {
-      first_rem_child_index = num_nodes;
-      last_rem_child_index = num_nodes;
-    } else {
-      if (last_rem_child_index >= num_nodes)
-        last_rem_child_index = num_nodes-1;
-    }
-//    CkPrintf("Remote [%d] firstpe %d max %d num %d firstrem %d lastrem %d\n",
-//             pe,first_pe_index,max_internode_children,num_nodes,
-//             first_rem_child_index,last_rem_child_index);
   }
 
   *num_children = 0;
@@ -255,9 +264,7 @@ void ReductionMgr::buildSpanTree(const int pe,
 //    CkPrintf("TREE pe %d No local children\n",pe);
   }
 
-  int rem_children=0;
-  if (first_rem_child_index != num_nodes) {
-    rem_children = last_rem_child_index - first_rem_child_index + 1;
+  if (rem_children) {
     *num_children += rem_children;
 //    CkPrintf("TREE pe %d %d rem children\n",pe,rem_children);
 //  } else {
@@ -277,12 +284,13 @@ void ReductionMgr::buildSpanTree(const int pe,
       }
     }
     if (rem_children > 0) {
-      for(k=first_rem_child_index; k <= last_rem_child_index; k++)  {
+      for(k=0; k < rem_children; k++)  {
 //        CkPrintf("TREE pe %d rem child[%d,%d] %d\n",pe,child,k,node_ids[k]);
-        (*children)[child++]=node_ids[k];
+        (*children)[child++]=node_ids[rem_child_index[k]];
       }
     }
   }
+  delete [] rem_child_index;
   delete [] node_ids;
   delete [] node_pes;
 }
