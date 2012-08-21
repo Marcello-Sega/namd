@@ -7,10 +7,14 @@ COPTC = -c
 COPTD = -D
 COPTO = -o $(SPACE)
 
-include Make.config
+# Unix commands
 
-# define below Make.config so Win32 can change default target to winall
-default: all
+ECHO = echo
+MOVE = mv
+MKDIR = mkdir -p
+COPY = cp
+RM = rm -f
+LDD = ldd
 
 # pass version/platform information to compile
 RELEASE=$(COPTD)NAMD_VERSION=\"$(NAMD_VERSION)\" $(COPTD)NAMD_PLATFORM=\"$(NAMD_PLATFORM)\" $(RELEASEFLAGS)
@@ -65,6 +69,9 @@ CUDAOBJS =
 NATIVEPATH = echo
 
 include Make.config
+
+# define below Make.config so Win32 can change default target to winall
+default: all
 
 # Add new source files here.
 
@@ -551,17 +558,6 @@ $(DPMTADIR)/src/libdpmta2.a:
 
 $(DPMEDIR)/libdpme.a:
 	cd $(DPMEDIR) ; $(MAKE) ; cd ..
-
-# Unix commands
-
-ECHO = echo
-MOVE = mv
-MKDIR = mkdir -p
-COPY = cp
-RM = rm -f
-LDD = ldd
-
-include Make.config
 
 
 # Implicit rules for modules.
