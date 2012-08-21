@@ -9771,7 +9771,7 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
   }
   */
   //  analyze the data and find the status of each atom
-
+  numRealBonds = numBonds;
   build_atom_status();
 #endif
 }
