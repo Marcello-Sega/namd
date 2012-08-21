@@ -3135,6 +3135,9 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
 
        // 1-4 exclusions which are also fully excluded were eliminated by hash table
        numTotalExclusions = exclusionSet.size();
+       if ( ! CkMyPe() ) {
+         iout << iINFO << "ADDED " << (numTotalExclusions - numExclusions) << " IMPLICIT EXCLUSIONS\n" << endi;
+       }
        exclusions = new Exclusion[numTotalExclusions];
        UniqueSetIter<Exclusion> exclIter(exclusionSet);
        for ( exclIter=exclIter.begin(),i=0; exclIter != exclIter.end(); exclIter++,i++ )
