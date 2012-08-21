@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/08/13 16:22:19 $
- * $Revision: 1.1401 $
+ * $Date: 2012/08/21 20:50:01 $
+ * $Revision: 1.1402 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -457,6 +457,9 @@ void SimParameters::config_parser_basic(ParseOptions &opts) {
 
    opts.optional("main", "longSplitting", "Long range force splitting option",
     PARSE_STRING);
+
+   opts.optionalB("main", "ignoreMass", "Do not use masses to find hydrogen atoms",
+    &ignoreMass, FALSE);
 
    opts.optional("main", "splitPatch", "Atom into patch splitting option",
     PARSE_STRING);

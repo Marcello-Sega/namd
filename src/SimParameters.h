@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2012/08/13 16:22:20 $
- * $Revision: 1.1212 $
+ * $Date: 2012/08/21 20:50:01 $
+ * $Revision: 1.1213 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -695,6 +695,8 @@ public:
 
 	int longSplitting;		//  What electrostatic splitting 	
 					//  to use
+
+	Bool ignoreMass;		//  Mass < 3.5 does not indicate hydrogen, etc.
 
 	int splitPatch;			// How are patches determined?
 	BigReal hgroupCutoff;		// what is the added hydrogen margin?

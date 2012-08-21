@@ -1189,7 +1189,8 @@ void Molecule::read_atoms(FILE *fd, Parameters *params)
     }
 
     /*  Determine the type of the atom (H or O) */
-    if (atoms[atom_number-1].mass <= 0.05) {
+    if ( simParams->ignoreMass ) {
+    } else if (atoms[atom_number-1].mass <= 0.05) {
       atoms[atom_number-1].status |= LonepairAtom;
     } else if (atoms[atom_number-1].mass < 1.0) {
       atoms[atom_number-1].status |= DrudeAtom;
@@ -2496,7 +2497,8 @@ void Molecule::plgLoadAtomBasics(molfile_atom_t *atomarray){
             one->resid = atomarray[i].resid;
         }
         //Determine the type of the atom
-        if(atoms[i].mass <= 0.05) {
+        if ( simParams->ignoreMass ) {
+        }else if(atoms[i].mass <= 0.05) {
             atoms[i].status |= LonepairAtom;
         }else if(atoms[i].mass < 1.0) {
             atoms[i].status |= DrudeAtom;
@@ -4596,7 +4598,8 @@ void Molecule::load_one_inputatom(int aid, OutputAtomRecord *one, InputAtom *fAt
   
   Real thisAtomMass = fAtom->mass;
   
-  if (thisAtomMass <= 0.05) {
+  if ( simParams->ignoreMass ) {
+  } else if (thisAtomMass <= 0.05) {
       fAtom->status |= LonepairAtom;
   } else if (thisAtomMass < 1.0) {
       fAtom->status |= DrudeAtom;
@@ -9251,7 +9254,8 @@ void Molecule::read_parm(Ambertoppar *amber_data)
 
     /*  Determine the type of the atom (H or O) */
     atoms[i].status = UnknownAtom; // the default
-    if (atoms[i].mass <= 0.05) {
+    if ( simParams->ignoreMass ) {
+    } else if (atoms[i].mass <= 0.05) {
       atoms[i].status |= LonepairAtom;
     } else if (atoms[i].mass < 1.0) {
       atoms[i].status |= DrudeAtom;
@@ -9590,7 +9594,8 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     // For example, in dppc LO2 appears to be an oxygen.
     // And how do the hydrogens in CH3 etc factor in to this?
     atoms[i].status = UnknownAtom; // the default
-    if (atoms[i].mass <= 0.05) {
+    if ( simParams->ignoreMass ) {
+    } else if (atoms[i].mass <= 0.05) {
       atoms[i].status |= LonepairAtom;
     } else if (atoms[i].mass < 1.0) {
       atoms[i].status |= DrudeAtom;
