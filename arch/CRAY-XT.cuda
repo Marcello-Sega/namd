@@ -9,3 +9,13 @@ CUDAOBJS=$(CUDAOBJSRAW)
 CUDA=$(CUDAFLAGS) -I. $(CUDAINCL)
 CUDACC=$(CUDADIR)/bin/nvcc -O3 -ftz=true --maxrregcount 32 -arch sm_20 -Xcompiler "-m64" $(CUDA)
 
+
+loaded_modules := $(subst :, ,$(LOADEDMODULES))
+
+module := $(filter cudatoolkit/%,$(loaded_modules))
+ifeq (,$(module))
+  $(error module cudatoolkit is not loaded)
+else
+  $(info found module $(module))
+endif
+
