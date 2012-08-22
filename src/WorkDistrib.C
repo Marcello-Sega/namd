@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/08/20 16:58:36 $
- * $Revision: 1.1247 $
+ * $Date: 2012/08/22 21:18:47 $
+ * $Revision: 1.1248 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -136,7 +136,7 @@ void WorkDistrib::recvComputeMapChanges(ComputeMapChangeMsg *msg) {
   delete msg;
 
   CkCallback cb(CkIndex_WorkDistrib::doneSaveComputeMap(NULL), 0, thisgroup);
-  contribute(NULL, 0, CkReduction::random, cb);
+  contribute(0, NULL, CkReduction::random, cb);
 }
 
 void WorkDistrib::doneSaveComputeMap(CkReductionMsg *msg) {

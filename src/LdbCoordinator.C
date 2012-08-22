@@ -6,9 +6,9 @@
  
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/LdbCoordinator.C,v $
- * $Author: gzheng $
- * $Date: 2012/05/18 07:33:48 $
- * $Revision: 1.116 $
+ * $Author: jim $
+ * $Date: 2012/08/22 21:18:46 $
+ * $Revision: 1.117 $
  *****************************************************************************/
 
 #include <stdlib.h>
@@ -111,7 +111,7 @@ void LdbCoordinator::ResumeFromSync()
 {
   theLbdb->DoneRegisteringObjects(myHandle);
   CkCallback cb(CkIndex_LdbCoordinator::nodeDone(NULL), 0, thisgroup);
-  contribute(NULL, 0, CkReduction::random, cb);
+  contribute(0, NULL, CkReduction::random, cb);
 }
 
 LdbCoordinator::LdbCoordinator()
