@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: gzheng $
- * $Date: 2012/05/18 07:33:48 $
- * $Revision: 1.115 $
+ * $Author: jim $
+ * $Date: 2012/08/23 19:29:45 $
+ * $Revision: 1.116 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -568,6 +568,7 @@ int NamdCentLB::buildData(LDStats* stats)
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies
+  int nIdleComputes = 0;
 
   int j;
   for (j=0; j < stats->n_objs; j++) {
@@ -606,6 +607,9 @@ int NamdCentLB::buildData(LDStats* stats)
       } else if (this_obj.id().id[1] == -3) { // Its a bonded compute
 	processorArray[stats->from_proc[j]].backgroundLoad += this_obj.wallTime;
       } else if (this_obj.migratable) { // Its a compute
+       if ( this_obj.wallTime == 0. ) { // don't migrate idle computes
+         ++nIdleComputes;
+       } else {
 	const int cid = this_obj.id().id[0];
 	const int p0 = computeMap->pid(cid,0);
 
@@ -623,10 +627,14 @@ int NamdCentLB::buildData(LDStats* stats)
 	computeArray[nMoveableComputes].handle = this_obj.handle;
 	computeArray[nMoveableComputes].load = this_obj.wallTime;
 	nMoveableComputes++;
+       }
       } else {
 	processorArray[stats->from_proc[j]].backgroundLoad += this_obj.wallTime;
       }
     }
+
+   if ( nIdleComputes )
+     CkPrintf("LDB: %d computes have load of zero\n", nIdleComputes);
 
 /* *********** this code is defunct *****************
 #if 0
