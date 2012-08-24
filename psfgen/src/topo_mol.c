@@ -2153,6 +2153,9 @@ int topo_mol_guess_xyz(topo_mol *mol) {
       r23 = sqrt(r23x*r23x + r23y*r23y + r23z*r23z);
       /* assume wrong if angle is less than 45 degrees */
       if ( r12x*r23x + r12y*r23y + r12z*r23z < r12 * r23 * -0.7 ) {
+        sprintf(msg, "Warning: failed to guess coordinate due to bad angle %s %s %s",
+            a1->name, a2->name, atom->name);
+        topo_mol_log_error(mol, msg);
         if ( atom->xyz_state == TOPO_MOL_XYZ_BADGUESS ) {
           --wcount;
           if ( atom->mass > 2.5 ) --hcount;
