@@ -10,7 +10,7 @@
  *
  *      $RCSfile: fastio.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.5 $       $Date: 2012/01/27 01:41:53 $
+ *      $Revision: 1.6 $       $Date: 2012/08/24 14:14:50 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -347,6 +347,7 @@ typedef off_t fio_size_t;      /* off_t is 64-bits with LFS builds */
 typedef void * fio_caddr_t;
 
 #if defined(USE_KERNEL_READV)
+#include <errno.h>
 #include <sys/uio.h>
 typedef struct iovec fio_iovec;
 #else
@@ -411,11 +412,15 @@ static fio_size_t fio_fread(void *ptr, fio_size_t size,
 }
 
 static fio_size_t fio_readv(fio_fd fd, const fio_iovec * iov, int iovcnt) {
+  fio_size_t len;
+
 #if defined(USE_KERNEL_READV)
-  return readv(fd, iov, iovcnt);
-#else
+  len = readv(fd, iov, iovcnt);
+  if ( len < 0 && errno == ENOSYS )
+#endif
+ {
   int i;
-  fio_size_t len = 0; 
+  len = 0; 
 
   for (i=0; i<iovcnt; i++) {
     fio_size_t rc = read(fd, iov[i].iov_base, iov[i].iov_len);
@@ -423,9 +428,9 @@ static fio_size_t fio_readv(fio_fd fd, const fio_iovec * iov, int iovcnt) {
       break;
     len += iov[i].iov_len;
   }
+ }
 
   return len;
-#endif
 }
 
 static fio_size_t fio_fwrite(void *ptr, fio_size_t size, 
