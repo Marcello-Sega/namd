@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
  * $Author: jim $
- * $Date: 2012/06/13 17:31:51 $
- * $Revision: 1.32 $
+ * $Date: 2012/08/24 21:30:37 $
+ * $Revision: 1.33 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -50,12 +50,12 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
   lbname = (char *)"NamdHybridLB";
 
   delete tree;        // delete the tree built from the base class
-  if (CkNumPes() <= 128)  {
+  const SimParameters* simParams = Node::Object()->simParameters;
+  if (CkNumPes() <= simParams->hybridGroupSize)  {
     tree = new TwoLevelTree;   // similar to centralized load balancing
   }
   else {
 #if CHARM_VERSION > 60304
-    const SimParameters* simParams = Node::Object()->simParameters;
     tree = new ThreeLevelTree(simParams->hybridGroupSize);
     initTree();
 #else
@@ -625,7 +625,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
 		processorArray[frompe].backgroundLoad += this_obj.wallTime;
 	} else if (this_obj.id().id[1] == -3) { // Its a bonded compute
 		processorArray[frompe].backgroundLoad += this_obj.wallTime;
-	} else if (this_obj.migratable) { // Its a compute
+	} else if (this_obj.migratable && this_obj.wallTime != 0.) { // Its a compute
 
 		const int cid = this_obj.id().id[0];
 		const int p0 = computeMap->pid(cid,0);
