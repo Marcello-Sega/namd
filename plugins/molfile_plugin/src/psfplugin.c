@@ -11,7 +11,7 @@
  *
  *      $RCSfile: psfplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.4 $       $Date: 2012/03/02 19:50:41 $
+ *      $Revision: 1.5 $       $Date: 2012/08/24 14:15:02 $
  *
  ***************************************************************************/
 
@@ -161,7 +161,7 @@ static int psf_start_block(FILE *file, const char *blockname) {
 /* Read in the bond info into the given integer arrays, one for 'from' and
    one for 'to' atoms; remember that .psf files use 1-based indices,
    not 0-based.  Returns 1 if all nbond bonds found; 0 otherwise.  */
-static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int charmmext) {
+static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int charmmext, int namdfmt) {
   char *bondptr=NULL;
   char inbuf[PSF_RECORD_LENGTH+2];
   int i=0;
@@ -169,54 +169,63 @@ static int psf_get_bonds(FILE *f, int nbond, int fromAtom[], int toAtom[], int c
   int rc=0;
 
   while (i < nbond) {
-    if ((i % 4) == 0) {
-      /* must read next line */
-      if (!fgets(inbuf, PSF_RECORD_LENGTH+2, f)) {
-        /* early EOF encountered */
+    if (namdfmt) {
+      // NAMD assumes a space-delimited variant of the PSF file format
+      int cnt = fscanf(f, "%d %d", &fromAtom[i], &toAtom[i]);
+      if (cnt < 2) {
+        fprintf(stderr, "Bonds line too short in NAMD psf file.\n");
+        break;
+      }
+    } else {
+      if ((i % 4) == 0) {
+        /* must read next line */
+        if (!fgets(inbuf, PSF_RECORD_LENGTH+2, f)) {
+          /* early EOF encountered */
+          break;
+        }
+
+        /* Check that there is enough space in the line we are about to read */
+        if (nbond-i >= 4) {
+          if (charmmext == 1) 
+            minlinesize = 20*4; 
+          else 
+            minlinesize = 16*4;
+        } else {
+          if (charmmext == 1)
+            minlinesize = 20*(nbond-i); 
+          else 
+            minlinesize = 16*(nbond-i);
+        }
+
+        if (strlen(inbuf) < minlinesize) {
+          fprintf(stderr, "Bonds line too short in psf file: \n%s\n", inbuf);
+          break;
+        }
+        bondptr = inbuf;
+      }
+
+      if ((fromAtom[i] = atoi(bondptr)) < 1) {
+        printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
+        rc=-1;
+        break;
+      }
+  
+      if (charmmext == 1)
+        bondptr += 10; 
+      else 
+        bondptr += 8;
+  
+      if ((toAtom[i] = atoi(bondptr)) < 1) {
+        printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
+        rc=-1;
         break;
       }
 
-      /* Check that there is enough space in the line we are about to read */
-      if (nbond-i >= 4) {
-        if (charmmext == 1) 
-          minlinesize = 20*4; 
-        else 
-          minlinesize = 16*4;
-      } else {
-        if (charmmext == 1)
-          minlinesize = 20*(nbond-i); 
-        else 
-          minlinesize = 16*(nbond-i);
-      }
-
-      if (strlen(inbuf) < minlinesize) {
-        fprintf(stderr, "Bonds line too short in psf file: \n%s\n", inbuf);
-        break;
-      }
-      bondptr = inbuf;
+      if (charmmext == 1)
+        bondptr += 10; 
+      else
+        bondptr += 8;
     }
-
-    if ((fromAtom[i] = atoi(bondptr)) < 1) {
-      printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
-      rc=-1;
-      break;
-    }
-
-    if (charmmext == 1)
-      bondptr += 10; 
-    else 
-      bondptr += 8;
-
-    if ((toAtom[i] = atoi(bondptr)) < 1) {
-      printf("psfplugin) ERROR: Bond %d references atom with index < 1!\n", i);
-      rc=-1;
-      break;
-    }
-
-    if (charmmext == 1)
-      bondptr += 10; 
-    else
-      bondptr += 8;
 
     i++;
   }
@@ -241,6 +250,7 @@ static void *open_psf_read(const char *path, const char *filetype,
   FILE *fp;
   char inbuf[PSF_RECORD_LENGTH*8+2];
   psfdata *psf;
+  const char *progname = "Charmm";
   
   /* Open the .psf file and skip past the remarks to the first data section.
    * Returns the file pointer, or NULL if error.  Also puts the number of
@@ -303,14 +313,19 @@ static void *open_psf_read(const char *path, const char *filetype,
     }
   } while (*natoms == MOLFILE_NUMATOMS_NONE);
 
+  if (psf->namdfmt) {
+    progname = "NAMD";
+  } else {
+    progname = "Charmm";
+  }
   if (psf->charmmcheq || psf->charmmcmap) {
-    printf("psfplugin) Detected a Charmm31 PSF file\n");
+    printf("psfplugin) Detected a %s PSF file\n", progname);
   }
   if (psf->charmmext) {
-    printf("psfplugin) Detected a Charmm31 PSF EXTEnded file\n");
+    printf("psfplugin) Detected a %s PSF EXTEnded file\n", progname);
   }
   if (psf->charmmdrude) {
-    printf("psfplugin) Detected a Charmm36 Drude polarizable force field file\n");
+    printf("psfplugin) Detected a %s Drude polarizable force field file\n", progname);
     printf("psfplugin) WARNING: Support for Drude FF is currently experimental\n");
   }
 
@@ -356,7 +371,8 @@ static int read_bonds(void *v, int *nbonds, int **fromptr, int **toptr,
     psf->from = (int *) malloc(*nbonds*sizeof(int));
     psf->to = (int *) malloc(*nbonds*sizeof(int));
 
-    if (!psf_get_bonds(psf->fp, *nbonds, psf->from, psf->to, psf->charmmext)) {
+    if (!psf_get_bonds(psf->fp, *nbonds, psf->from, psf->to, 
+                       psf->charmmext, psf->namdfmt)) {
       fclose(psf->fp);
       psf->fp = NULL;
       return MOLFILE_ERROR;
@@ -952,7 +968,7 @@ VMDPLUGIN_API int VMDPLUGIN_init() {
   plugin.prettyname = "CHARMM,NAMD,XPLOR PSF";
   plugin.author = "Justin Gullingsrud, John Stone";
   plugin.majorv = 1;
-  plugin.minorv = 8;
+  plugin.minorv = 9;
   plugin.is_reentrant = VMDPLUGIN_THREADSAFE;
   plugin.filename_extension = "psf";
   plugin.open_file_read = open_psf_read;
