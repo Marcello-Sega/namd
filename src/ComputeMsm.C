@@ -171,6 +171,8 @@ private:
 
   int s_edge;
   int omega;
+
+  enum Quality { LO=0, MED, MEDHI, HI };
  
   enum Approx { CUBIC=0, QUINTIC, QUINTIC2,
     SEPTIC, SEPTIC3, NONIC, NONIC4, NUM_APPROX };
@@ -1380,15 +1382,104 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
   SimParameters *simParams = Node::Object()->simParameters;
 
-  // get required sim params
+  // get required sim params, check validity
   lattice = simParams->lattice;
+
   a = simParams->cutoff;
+
   gridspacing = simParams->MSMGridSpacing;
+  if (gridspacing <= 0 || gridspacing >= a) {
+    NAMD_die("MSM: illegal grid spacing requested (MSMGridSpacing)");
+  }
+
   padding = simParams->MSMPadding;
-  approx = simParams->MSMApprox;   // XXX needs to be more user friendly
-  split = simParams->MSMSplit;     // XXX needs to be more user friendly
+  if (padding < 0) {
+    NAMD_die("MSM: illegal padding requested (MSMPadding)");
+  }
+
+  if (simParams->MSMApprox || simParams->MSMSplit) {
+    approx = simParams->MSMApprox;
+    if (approx < 0 || approx >= NUM_APPROX) {
+      NAMD_die("MSM: unknown approximation requested (MSMApprox)");
+    }
+    split = simParams->MSMSplit;
+    if (split < 0 || split >= NUM_SPLIT) {
+      NAMD_die("MSM: unknown splitting requested (MSMSplit)");
+    }
+  }
+  else {
+    switch (simParams->MSMQuality) {
+      case LO:
+        approx = CUBIC;
+        split = TAYLOR2;
+        break;
+      case MED:
+        approx = QUINTIC;
+        split = TAYLOR3;
+        break;
+      case MEDHI:
+        approx = SEPTIC;
+        split = TAYLOR4;
+        break;
+      case HI:
+        approx = NONIC;
+        split = TAYLOR5;
+        break;
+      default:
+        NAMD_die("MSM: unknown quality requested (MSMQuality)");
+    }
+  }
+  if (1) {
+    char *approx_str, *split_str;
+    switch (approx) {
+      case CUBIC:    approx_str = "C1 cubic";   break;
+      case QUINTIC:  approx_str = "C1 quintic"; break;
+      case QUINTIC2: approx_str = "C2 quintic"; break;
+      case SEPTIC:   approx_str = "C1 septic";  break;
+      case SEPTIC3:  approx_str = "C3 septic";  break;
+      case NONIC:    approx_str = "C1 nonic";   break;
+      case NONIC4:   approx_str = "C4 nonic";   break;
+      default:       approx_str = "unknown";    break;
+    }
+    switch (split) {
+      case TAYLOR2:  split_str = "C2 Taylor";   break;
+      case TAYLOR3:  split_str = "C3 Taylor";   break;
+      case TAYLOR4:  split_str = "C4 Taylor";   break;
+      case TAYLOR5:  split_str = "C5 Taylor";   break;
+      case TAYLOR6:  split_str = "C6 Taylor";   break;
+      case TAYLOR7:  split_str = "C7 Taylor";   break;
+      case TAYLOR8:  split_str = "C8 Taylor";   break;
+      default:       split_str = "unknown";     break;
+    }
+    iout << iINFO << "MSM using "
+                  << approx_str << " interpolation\n" << endi;
+    iout << iINFO << "MSM using "
+                  << split_str << " splitting function\n" << endi;
+  }
+
+  // set maximum number of levels (default 0 adapts levels to system)
   nlevels = simParams->MSMLevels;
-  dispersion = 0;                  // XXX unused for now
+
+  // XXX dispersion unused for now
+  dispersion = 0;
+  if ( ! dispersion && split >= TAYLOR2_DISP) {
+    NAMD_die("MSM: requested splitting for long-range dispersion "
+        "(not implemented)");
+  }
+
+  // set block sizes for grid decomposition
+  int bsx = simParams->MSMBlockSizeX;
+  int bsy = simParams->MSMBlockSizeY;
+  int bsz = simParams->MSMBlockSizeZ;
+  if (bsx <= 0 || bsy <= 0 || bsz <= 0) {
+    NAMD_die("MSM: invalid block size requested (MSMBlockSize[XYZ])");
+  }
+  iout << iINFO << "MSM block size decomposition along X is "
+                << bsx << " grid points\n";
+  iout << iINFO << "MSM block size decomposition along Y is "
+                << bsy << " grid points\n";
+  iout << iINFO << "MSM block size decomposition along Z is "
+                << bsz << " grid points\n";
 
   s_edge = (PolyDegree[approx] - 1) / 2;  // stencil edge size
   omega = 2 * PolyDegree[approx];         // smallest non-periodic grid length
@@ -1466,6 +1557,17 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   setup_hgrid_1d(xlen, hxlen, nhx, ia, ib, ispx);
   setup_hgrid_1d(ylen, hylen, nhy, ja, jb, ispy);
   setup_hgrid_1d(zlen, hzlen, nhz, ka, kb, ispz);
+  if (ispx || ispy || ispz) {
+    iout << iINFO << "MSM grid spacing along X is " << hxlen << " A\n" << endi;
+    iout << iINFO << "MSM grid spacing along Y is " << hxlen << " A\n" << endi;
+    iout << iINFO << "MSM grid spacing along Z is " << hxlen << " A\n" << endi;
+  }
+  else {
+    iout << iINFO << "MSM grid spacing is " << gridspacing << " A\n" << endi;
+  }
+  if ( ! ispx || ! ispy || ! ispz ) {
+    iout << iINFO << "MSM non-periodic padding is "<< padding << " A\n" << endi;
+  }
 
   int ni = ib - ia + 1;
   int nj = jb - ja + 1;
@@ -1511,11 +1613,6 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
   // allocate space for storing grid dimensions for each level
   map.gridrange.resize(maxlevels);
-
-  // set block sizes for grid decomposition
-  int bsx = 8;  // XXX from simParams?
-  int bsy = 8;
-  int bsz = 8;
 
   // set periodicity flags
   map.ispx = ispx;
@@ -1591,7 +1688,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
   // print out some information about MSM
   if (CkMyPe() == 0) {
-    iout << iINFO << "MSM levels = " << nlevels << "\n" << endi;
+    iout << iINFO << "MSM using " << nlevels << " levels\n" << endi;
     for (n = 0;  n < nlevels;  n++) {
       char s[100];
       snprintf(s, sizeof(s), "    level %d:  "
@@ -2087,6 +2184,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #ifdef DEBUG_MSM_VERBOSE
     printf("Allocating patchPtr array length %d\n", pm->numPatches());
 #endif
+    iout << iINFO << "MSM has " << pm->numPatches()
+                  << " interpolation / anterpolation objects"
+                  << " (one per patch)\n" << endi;
   }
 
   if (CkMyPe() == 0) {
@@ -2102,6 +2202,10 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       printf("Create MsmBlock[%d] 3D chare array ( %d x %d x %d )\n",
           level, ni, nj, nk);
 #endif
+      char msg[128];
+      sprintf(msg, "MSM grid level %d has %d work objects ( %d x %d x %d )\n",
+          level, ni*nj*nk, ni, nj, nk);
+      iout << iINFO << msg << endi;
     }
     MsmBlockProxyMsg *msg =
       new(nlevels*sizeof(CProxy_MsmBlock), 0) MsmBlockProxyMsg;
