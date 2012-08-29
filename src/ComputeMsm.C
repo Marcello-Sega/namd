@@ -1429,7 +1429,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
         NAMD_die("MSM: unknown quality requested (MSMQuality)");
     }
   }
-  if (1) {
+  if (CkMyPe() == 0) {
     char *approx_str, *split_str;
     switch (approx) {
       case CUBIC:    approx_str = "C1 cubic";   break;
@@ -1474,12 +1474,14 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   if (bsx <= 0 || bsy <= 0 || bsz <= 0) {
     NAMD_die("MSM: invalid block size requested (MSMBlockSize[XYZ])");
   }
-  iout << iINFO << "MSM block size decomposition along X is "
-                << bsx << " grid points\n";
-  iout << iINFO << "MSM block size decomposition along Y is "
-                << bsy << " grid points\n";
-  iout << iINFO << "MSM block size decomposition along Z is "
-                << bsz << " grid points\n";
+  if (CkMyPe() == 0) {
+    iout << iINFO << "MSM block size decomposition along X is "
+                  << bsx << " grid points\n";
+    iout << iINFO << "MSM block size decomposition along Y is "
+                  << bsy << " grid points\n";
+    iout << iINFO << "MSM block size decomposition along Z is "
+                  << bsz << " grid points\n";
+  }
 
   s_edge = (PolyDegree[approx] - 1) / 2;  // stencil edge size
   omega = 2 * PolyDegree[approx];         // smallest non-periodic grid length
@@ -1557,16 +1559,18 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   setup_hgrid_1d(xlen, hxlen, nhx, ia, ib, ispx);
   setup_hgrid_1d(ylen, hylen, nhy, ja, jb, ispy);
   setup_hgrid_1d(zlen, hzlen, nhz, ka, kb, ispz);
-  if (ispx || ispy || ispz) {
-    iout << iINFO << "MSM grid spacing along X is " << hxlen << " A\n" << endi;
-    iout << iINFO << "MSM grid spacing along Y is " << hxlen << " A\n" << endi;
-    iout << iINFO << "MSM grid spacing along Z is " << hxlen << " A\n" << endi;
-  }
-  else {
-    iout << iINFO << "MSM grid spacing is " << gridspacing << " A\n" << endi;
-  }
-  if ( ! ispx || ! ispy || ! ispz ) {
-    iout << iINFO << "MSM non-periodic padding is "<< padding << " A\n" << endi;
+  if (CkMyPe() == 0) {
+    if (ispx || ispy || ispz) {
+      iout << iINFO << "MSM grid spacing along X is "<< hxlen << " A\n" << endi;
+      iout << iINFO << "MSM grid spacing along Y is "<< hxlen << " A\n" << endi;
+      iout << iINFO << "MSM grid spacing along Z is "<< hxlen << " A\n" << endi;
+    }
+    else {
+      iout << iINFO << "MSM grid spacing is " << gridspacing << " A\n" << endi;
+    }
+    if ( ! ispx || ! ispy || ! ispz ) {
+      iout << iINFO<<"MSM non-periodic padding is "<< padding << " A\n" << endi;
+    }
   }
 
   int ni = ib - ia + 1;
@@ -2184,9 +2188,11 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #ifdef DEBUG_MSM_VERBOSE
     printf("Allocating patchPtr array length %d\n", pm->numPatches());
 #endif
-    iout << iINFO << "MSM has " << pm->numPatches()
-                  << " interpolation / anterpolation objects"
-                  << " (one per patch)\n" << endi;
+    if (CkMyPe() == 0) {
+      iout << iINFO << "MSM has " << pm->numPatches()
+                    << " interpolation / anterpolation objects"
+                    << " (one per patch)\n" << endi;
+    }
   }
 
   if (CkMyPe() == 0) {
