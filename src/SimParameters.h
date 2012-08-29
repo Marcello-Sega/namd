@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2012/08/21 20:50:01 $
- * $Revision: 1.1213 $
+ * $Author: dhardy $
+ * $Date: 2012/08/29 21:07:44 $
+ * $Revision: 1.1214 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -576,16 +576,36 @@ public:
 	Bool fullDirectOn;		//  Should direct calculations of
 					//  full electrostatics be performed?
 
-        Bool MSMOn;
-        int MSMApprox;
-        int MSMSplit;
-        int MSMLevels;
-        int MSMBlockSizeX;
-        int MSMBlockSizeY;
-        int MSMBlockSizeZ;
-        BigReal MSMGridSpacing;
-        BigReal MSMPadding;
-        Bool MsmSerialOn;
+        Bool MSMOn;      // enable MSM (multilevel summation method)
+                         // for long-range electrostatics
+
+        int MSMQuality;  // choose MSM quality 0 (low) - 3 (high), using
+                         // optimal combination of approximation and splitting
+                         // defaults to "low" for fastest performance
+
+        int MSMApprox;   // choose MSM approximation
+                         // defaults to "cubic" (low) for fastest performance
+
+        int MSMSplit;    // choose MSM splitting function
+                         // defaults to "Taylor2" (low) for fastest performance
+
+        int MSMLevels;   // select number of MSM levels
+                         // default (0) adapts number of levels to the
+                         // system for fastest performance
+
+        int MSMBlockSizeX;  // controls size of parallel work decomposition
+        int MSMBlockSizeY;  // controls size of parallel work decomposition
+        int MSMBlockSizeZ;  // controls size of parallel work decomposition
+
+        BigReal MSMGridSpacing;  // defaults to 2.5 A, best for atomic systems
+
+        BigReal MSMPadding;      // pad grid along non-periodic boundaries
+                                 // defaults to 2.5 A
+                                 // increase if atoms are drifting beyond
+                                 // edge of grid, which will terminate 
+                                 // simulation prematurely
+
+        Bool MsmSerialOn;   // use serial MSM solver for testing
 
 	Bool PMEOn;			//  Flag TRUE -> PME active
 	BigReal PMETolerance;		//  Direct space tolerance

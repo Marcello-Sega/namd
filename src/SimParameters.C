@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/08/21 20:50:01 $
- * $Revision: 1.1402 $
+ * $Author: dhardy $
+ * $Date: 2012/08/29 21:07:44 $
+ * $Revision: 1.1403 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -726,6 +726,8 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.optionalB("main", "MSM",
        "Use multilevel summation method for electrostatics?",
        &MSMOn, FALSE);
+   opts.optional("MSM", "MSMQuality", "MSM quality",
+       &MSMQuality, 0);
    opts.optional("MSM", "MSMApprox", "MSM approximation",
        &MSMApprox, 0);
    opts.optional("MSM", "MSMSplit", "MSM splitting",
@@ -738,13 +740,13 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
        &MSMPadding, 2.5);
    opts.optional("MSM", "MSMBlockSizeX",
        "MSM grid block size along X direction (for decomposing parallel work)",
-       &MSMBlockSizeX, 4);
+       &MSMBlockSizeX, 8);
    opts.optional("MSM", "MSMBlockSizeY",
        "MSM grid block size along Y direction (for decomposing parallel work)",
-       &MSMBlockSizeY, 4);
+       &MSMBlockSizeY, 8);
    opts.optional("MSM", "MSMBlockSizeZ",
        "MSM grid block size along Z direction (for decomposing parallel work)",
-       &MSMBlockSizeZ, 4);
+       &MSMBlockSizeZ, 8);
 
    opts.optionalB("MSM", "MsmSerial",
        "Use MSM serial version for long-range calculation?",
