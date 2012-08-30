@@ -1601,9 +1601,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     for (maxlevels = 1;  n > 0;  n >>= 1)  maxlevels++;
     if (ispany == 0) {  // no periodicity
       // use rule of thumb 3/4 diameter of grid cutoff sphere
-      int ngci = (int) ceil(3*a / h.x) - 1;
-      int ngcj = (int) ceil(3*a / h.y) - 1;
-      int ngck = (int) ceil(3*a / h.z) - 1;
+      int ngci = (int) ceil(3*a / hxlen) - 1;
+      int ngcj = (int) ceil(3*a / hylen) - 1;
+      int ngck = (int) ceil(3*a / hzlen) - 1;
       int omega3 = omega * omega * omega;
       int nhalf = (int) sqrt(ni * nj * nk);
       lastnelems = (nhalf > omega3 ? nhalf : omega3);
@@ -2015,7 +2015,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #endif
 
   // initialize grid of BlockDiagram for each level
-  int polydeg = PolyDegree[split];
+  int polydeg = PolyDegree[approx];
   for (level = 0;  level < nlevels;  level++) {
     msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
     int bni = b.ni();
