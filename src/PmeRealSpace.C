@@ -324,9 +324,8 @@ void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
   int useCkLoop = Node::Object()->simParameters->useCkLoop;
   if(useCkLoop>=CKLOOP_CTRL_PME_UNGRIDCALC){          
       //compute_forces_order4_partial(0, N-1, q_arr, p, f);
-      CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
       void *params[] = {(void *)this, (void *)q_arr, (void *)p, (void *)f};
-      CkLoop_Parallelize(ckLoop, compute_forces_order4_helper, 4, (void *)params, CkMyNodeSize(), 0, N-1);
+      CkLoop_Parallelize(compute_forces_order4_helper, 4, (void *)params, CkMyNodeSize(), 0, N-1);
       return;
   }
 #endif

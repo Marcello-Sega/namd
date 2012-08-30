@@ -274,8 +274,7 @@ double PmeKSpace::compute_energy_orthogonal_helper(float *q_arr, const Lattice &
     void *params[] = {this, q_arr, recips, partialEnergy, partialVirial, unitDist};
 
 #if     USE_CKLOOP
-    CProxy_FuncCkLoop ckLoop = CkpvAccess(BOCclass_group).ckLoop;
-    CkLoop_Parallelize(ckLoop, compute_energy_orthogonal_ckloop, 6, (void *)params, NPARTS, 0, NPARTS-1);
+    CkLoop_Parallelize(compute_energy_orthogonal_ckloop, 6, (void *)params, NPARTS, 0, NPARTS-1);
 #endif
 /*  
     //The transformed loop used to compute energy
