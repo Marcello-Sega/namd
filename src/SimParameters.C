@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: dhardy $
- * $Date: 2012/08/29 21:07:44 $
- * $Revision: 1.1403 $
+ * $Date: 2012/08/30 21:56:02 $
+ * $Revision: 1.1404 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5091,19 +5091,85 @@ if ( openatomOn )
      iout << iINFO << "DIRECT FULL ELECTROSTATIC CALCULATIONS ACTIVE\n";
      iout << endi;
    }
+
+   // MSM configure
    if (MSMOn)
    {
+     // check MSMQuality
+     enum { LO=0, MED, MEDHI, HI };
+
+     // MSMApprox
+     enum { CUBIC=0, QUINTIC, QUINTIC2,
+       SEPTIC, SEPTIC3, NONIC, NONIC4, NUM_APPROX };
+
+     // MSMSplit
+     enum { TAYLOR2=0, TAYLOR3, TAYLOR4,
+       TAYLOR5, TAYLOR6, TAYLOR7, TAYLOR8, NUM_SPLIT };
+
+     if (MSMApprox || MSMSplit) {  // take these definitions
+       if (MSMApprox < 0 || MSMApprox >= NUM_APPROX) {
+         NAMD_die("MSM: unknown approximation requested (MSMApprox)");
+       }
+       if (MSMSplit < 0 || MSMSplit >= NUM_SPLIT) {
+         NAMD_die("MSM: unknown splitting requested (MSMSplit)");
+       }
+     }
+     else {  // otherwise use MSMQuality to set MSMApprox and MSMSplit
+       switch (MSMQuality) {
+         case LO:
+           MSMApprox = CUBIC;
+           MSMSplit = TAYLOR2;
+           break;
+         case MED:
+           MSMApprox = QUINTIC;
+           MSMSplit = TAYLOR3;
+           break;
+         case MEDHI:
+           MSMApprox = SEPTIC;
+           MSMSplit = TAYLOR4;
+           break;
+         case HI:
+           MSMApprox = NONIC;
+           MSMSplit = TAYLOR5;
+           break;
+         default:
+           NAMD_die("MSM: unknown quality requested (MSMQuality)");
+       }
+     }
+
      iout << iINFO
        << "MULTILEVEL SUMMATION METHOD (MSM) FOR ELECTROSTATICS ACTIVE\n";
-#if !defined(CHARM_HAS_MSA)
-     //if (MSMOn) MsmSerialOn = TRUE;
-#endif
      if (MsmSerialOn) {
        iout << iINFO
          << "PERFORMING SERIAL MSM CALCULATION FOR LONG-RANGE PART\n";
-       iout << endi;
      }
-   }
+     char *approx_str, *split_str;
+     switch (MSMApprox) {
+       case CUBIC:    approx_str = "C1 CUBIC";   break;
+       case QUINTIC:  approx_str = "C1 QUINTIC"; break;
+       case QUINTIC2: approx_str = "C2 QUINTIC"; break;
+       case SEPTIC:   approx_str = "C1 SEPTIC";  break;
+       case SEPTIC3:  approx_str = "C3 SEPTIC";  break;
+       case NONIC:    approx_str = "C1 NONIC";   break;
+       case NONIC4:   approx_str = "C4 NONIC";   break;
+       default:       approx_str = "UNKNOWN";    break;
+     }
+     switch (MSMSplit) {
+       case TAYLOR2:  split_str = "C2 TAYLOR";   break;
+       case TAYLOR3:  split_str = "C3 TAYLOR";   break;
+       case TAYLOR4:  split_str = "C4 TAYLOR";   break;
+       case TAYLOR5:  split_str = "C5 TAYLOR";   break;
+       case TAYLOR6:  split_str = "C6 TAYLOR";   break;
+       case TAYLOR7:  split_str = "C7 TAYLOR";   break;
+       case TAYLOR8:  split_str = "C8 TAYLOR";   break;
+       default:       split_str = "UNKNOWN";     break;
+     }
+     iout << iINFO
+       << "MSM WITH " << approx_str << " INTERPOLATION "
+       << "AND " << split_str << " SPLITTING\n"
+       << endi;
+
+   } // end MSM configure
 
    if ( FMAOn || PMEOn || MSMOn || fullDirectOn || GBISOn)
    {

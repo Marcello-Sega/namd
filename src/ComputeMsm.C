@@ -172,8 +172,6 @@ private:
   int s_edge;
   int omega;
 
-  enum Quality { LO=0, MED, MEDHI, HI };
- 
   enum Approx { CUBIC=0, QUINTIC, QUINTIC2,
     SEPTIC, SEPTIC3, NONIC, NONIC4, NUM_APPROX };
 
@@ -1397,37 +1395,13 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     NAMD_die("MSM: illegal padding requested (MSMPadding)");
   }
 
-  if (simParams->MSMApprox || simParams->MSMSplit) {
-    approx = simParams->MSMApprox;
-    if (approx < 0 || approx >= NUM_APPROX) {
-      NAMD_die("MSM: unknown approximation requested (MSMApprox)");
-    }
-    split = simParams->MSMSplit;
-    if (split < 0 || split >= NUM_SPLIT) {
-      NAMD_die("MSM: unknown splitting requested (MSMSplit)");
-    }
+  approx = simParams->MSMApprox;
+  if (approx < 0 || approx >= NUM_APPROX) {
+    NAMD_die("MSM: unknown approximation requested (MSMApprox)");
   }
-  else {
-    switch (simParams->MSMQuality) {
-      case LO:
-        approx = CUBIC;
-        split = TAYLOR2;
-        break;
-      case MED:
-        approx = QUINTIC;
-        split = TAYLOR3;
-        break;
-      case MEDHI:
-        approx = SEPTIC;
-        split = TAYLOR4;
-        break;
-      case HI:
-        approx = NONIC;
-        split = TAYLOR5;
-        break;
-      default:
-        NAMD_die("MSM: unknown quality requested (MSMQuality)");
-    }
+  split = simParams->MSMSplit;
+  if (split < 0 || split >= NUM_SPLIT) {
+    NAMD_die("MSM: unknown splitting requested (MSMSplit)");
   }
   if (CkMyPe() == 0) {
     char *approx_str, *split_str;
