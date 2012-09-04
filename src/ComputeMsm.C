@@ -91,6 +91,12 @@ class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {
 };
 
 
+class MsmBlockSendMsg : public CMessage_MsmBlockSendMsg {
+  public:
+    msm::BlockSend bs;
+};
+
+
 //////////////////////////////////////////////////////////////////////////////
 //
 //  ComputeMsmMgr
@@ -874,6 +880,26 @@ namespace msm {
 
 } // namespace msm
 
+
+/////////////////
+//
+// MsmGridCutoff
+
+class MsmGridCutoff : public CBase_MsmGridCutoff {
+  public:
+    CProxy_ComputeMsmMgr mgrProxy;
+
+    MsmGridCutoff() { }
+    MsmGridCutoff(CkMigrateMessage *m) { }
+    void initialize(MsmBlockSendMsg *msg) {
+      delete msg;
+    }
+    void compute(GridDoubleMsg *msg) {
+      delete msg;
+    }
+};
+
+
 /////////////////
 //
 // MsmBlock
@@ -1536,8 +1562,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   if (CkMyPe() == 0) {
     if (ispx || ispy || ispz) {
       iout << iINFO << "MSM grid spacing along X is "<< hxlen << " A\n" << endi;
-      iout << iINFO << "MSM grid spacing along Y is "<< hxlen << " A\n" << endi;
-      iout << iINFO << "MSM grid spacing along Z is "<< hxlen << " A\n" << endi;
+      iout << iINFO << "MSM grid spacing along Y is "<< hylen << " A\n" << endi;
+      iout << iINFO << "MSM grid spacing along Z is "<< hzlen << " A\n" << endi;
     }
     else {
       iout << iINFO << "MSM grid spacing is " << gridspacing << " A\n" << endi;
@@ -1990,6 +2016,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
   // initialize grid of BlockDiagram for each level
   int polydeg = PolyDegree[approx];
+  int cntGridCutoff = 0;
   for (level = 0;  level < nlevels;  level++) {
     msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
     int bni = b.ni();
@@ -2014,6 +2041,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           int maxarrlen = (bupper.n.i - blower.n.i + 1) *
             (bupper.n.j - blower.n.j + 1) * (bupper.n.k - blower.n.k + 1);
           b(i,j,k).sendAcross.setmax(maxarrlen);  // allocate send array
+          b(i,j,k).indexGridCutoff.setmax(maxarrlen);  // alloc indexing
           // loop over sendAcross blocks
           int ii, jj, kk;
           for (kk = blower.n.k;  kk <= bupper.n.k;  kk++) {
@@ -2027,6 +2055,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
                     b(i,j,k).nrangeCutoff);
                 map.wrapBlockSend(bs);  // wrap to true block index
                 b(i,j,k).sendAcross.append(bs);
+                b(i,j,k).indexGridCutoff.append(cntGridCutoff);
+                cntGridCutoff++;  // one MsmGridCutoff for each send across
                 // increment counter for receive block
                 b(bs.nblock_wrap.n).numRecvsPotential++;
               }
@@ -2151,6 +2181,29 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
   // end of Map setup
 
+#if 1
+#if 0
+  // XXX count total over all sendAcross arrays
+  int numSendAcross = 0;
+  for (level = 0;  level < nlevels;  level++) {
+    msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
+    int bni = b.ni();
+    int bnj = b.nj();
+    int bnk = b.nk();
+    for (k = 0;  k < bnk;  k++) {
+      for (j = 0;  j < bnj;  j++) {
+        for (i = 0;  i < bni;  i++) {
+          numSendAcross += b(i,j,k).sendAcross.len();
+        }
+      }
+    }
+  }
+#endif
+  if (CkMyPe() == 0) {
+    printf("cntGridCutoff = %d\n", cntGridCutoff);
+  }
+#endif
+
   // allocate chare arrays
 
   if (1) {
@@ -2233,11 +2286,6 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
     patchPtr[patchID]->anterpolation();
     // all else should follow from here
   }
-  for (n = 0;  n < patchIDList.len();  n++) {
-    int patchID = patchIDList[n];
-    ASSERT(patchPtr[patchID]->cntRecvs == map.patchList[patchID].numRecvs);
-  }
-
   return;
 }
 
@@ -2367,6 +2415,13 @@ void ComputeMsm::saveResults()
 
   // NAMD patches
   ResizeArrayIter<PatchElem> ap(patchList);
+#ifdef DEBUG_MSM
+  for (ap = ap.begin();  ap != ap.end();  ap++) {
+    int patchID = (*ap).patchID;
+    ASSERT(myMgr->patchPtrArray()[patchID]->cntRecvs ==
+        myMgr->mapData().patchList[patchID].numRecvs);
+  }
+#endif
 
   // get results from ComputeMsmMgr
   msm::PatchPtrArray& patchPtr = myMgr->patchPtrArray();
