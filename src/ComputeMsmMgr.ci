@@ -16,6 +16,8 @@ module ComputeMsmMgr {
     char msmBlockProxyData[];
   };
 
+  message MsmBlockSendMsg;
+
   group ComputeMsmMgr {
     entry ComputeMsmMgr(void);
     entry void initialize(MsmInitMsg *);
@@ -28,6 +30,18 @@ module ComputeMsmMgr {
     entry MsmBlock(int level);
     entry void addCharge(GridDoubleMsg *);
     entry void addPotential(GridDoubleMsg *);
+  };
+
+  // MsmGridCutoff calculates a charge -> potential interaction pair
+  // between blocks.
+  array [1D] MsmGridCutoff {
+    entry MsmGridCutoff(void);
+
+    // initialize() passes in the block index and range for potentials
+    entry void initialize(MsmBlockSendMsg *);
+
+    // compute() passes in the charge block
+    entry void compute(GridDoubleMsg *);
   };
 
 };
