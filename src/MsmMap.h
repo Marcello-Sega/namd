@@ -396,6 +396,8 @@ namespace msm {
     IndexRange nrangeProlongated; // (level-1) subgrid for prolongation
     Array<BlockSend> sendUp;      // send up charge to blocks on (level+1)
     Array<BlockSend> sendAcross;  // send across potential to blocks on (level)
+    Array<int> indexGridCutoff;   // index of MsmGridCutoff chare to calculate
+                                  // each charge -> potential block interaction
     Array<BlockSend> sendDown;    // send down potential to blocks on (level-1)
     Array<PatchSend> sendPatch;   // send my (level=0) potential block to patch
     int numRecvsCharge;           // number of expected receives of charge
