@@ -52,7 +52,7 @@ namespace msm {
       Array() : abuffer(0), alen(0), amax(0) { }
       Array(int n) : abuffer(0), alen(0), amax(0) { resize(n); }
       Array(const Array& a) : abuffer(0), alen(0), amax(0) { copy(a); }
-      ~Array() { resize(0); }
+      ~Array() { setmax(0); }
       Array& operator=(const Array& a) {
         if (this != &a) copy(a);  // don't allow self-assignment
         return(*this);
