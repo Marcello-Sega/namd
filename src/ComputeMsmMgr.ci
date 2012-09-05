@@ -16,12 +16,17 @@ module ComputeMsmMgr {
     char msmBlockProxyData[];
   };
 
+  message MsmGridCutoffProxyMsg {
+    char msmGridCutoffProxyData[];
+  };
+
   message MsmBlockSendMsg;
 
   group ComputeMsmMgr {
     entry ComputeMsmMgr(void);
     entry void initialize(MsmInitMsg *);
     entry void recvMsmBlockProxy(MsmBlockProxyMsg *);
+    entry void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);
     entry void update(CkQdMsg *);
     entry void addPotential(GridDoubleMsg *);
   };
