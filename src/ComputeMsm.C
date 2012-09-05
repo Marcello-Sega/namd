@@ -24,6 +24,11 @@
 #include "MsmMap.h"
 
 
+// use the decomposition of grid cutoff to create more work units
+#define MSM_GRID_CUTOFF_DECOMP
+//#undef MSM_GRID_CUTOFF_DECOMP
+
+
 class GridDoubleMsg : public CMessage_GridDoubleMsg {
   public:
     int idnum;
@@ -91,9 +96,24 @@ class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {
 };
 
 
+class MsmGridCutoffProxyMsg : public CMessage_MsmGridCutoffProxyMsg {
+  public:
+    char *msmGridCutoffProxyData;
+    // put proxy into an allocated message to be sent
+    void put(const CProxy_MsmGridCutoff *p) {
+      memcpy(msmGridCutoffProxyData, p, sizeof(CProxy_MsmGridCutoff));
+    }
+    // get the proxy from a received message
+    void get(CProxy_MsmGridCutoff *p) {
+      memcpy(p, msmGridCutoffProxyData, sizeof(CProxy_MsmGridCutoff));
+    }
+};
+
+
 class MsmBlockSendMsg : public CMessage_MsmBlockSendMsg {
   public:
-    msm::BlockSend bs;
+    msm::BlockSend blockSend;
+    MsmBlockSendMsg(msm::BlockSend& b) : blockSend(b) { }
 };
 
 
@@ -107,6 +127,7 @@ class MsmBlockSendMsg : public CMessage_MsmBlockSendMsg {
 class ComputeMsmMgr : public BOCclass {
   friend struct msm::PatchData;
   friend class MsmBlock;
+  friend class MsmGridCutoff;
 
 public:
   ComputeMsmMgr();                    // entry
@@ -114,6 +135,7 @@ public:
 
   void initialize(MsmInitMsg *);      // entry with message
   void recvMsmBlockProxy(MsmBlockProxyMsg *);  // entry with message
+  void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);  // entry with message
 
   void update(CkQdMsg *);             // entry with message
 
@@ -140,6 +162,9 @@ private:
   ComputeMsm *msmCompute;
 
   msm::Array<CProxy_MsmBlock> msmBlock;
+
+  CProxy_MsmGridCutoff msmGridCutoff;
+  int numGridCutoff;  // length of msmGridCutoff chare array
 
   msm::Map map;
 
@@ -888,16 +913,121 @@ namespace msm {
 class MsmGridCutoff : public CBase_MsmGridCutoff {
   public:
     CProxy_ComputeMsmMgr mgrProxy;
+    ComputeMsmMgr *mgrLocal;   // for quick access to data
+    msm::Map *map;
+    msm::BlockSend blockSend;  // destination for potentials
+    msm::Grid<BigReal> qh;
+    msm::Grid<BigReal> eh;
 
-    MsmGridCutoff() { }
+    MsmGridCutoff() {
+      mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
+      mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
+          CkpvAccess(BOCclass_group).computeMsmMgr);
+      map = &(mgrLocal->mapData());
+    }
+
     MsmGridCutoff(CkMigrateMessage *m) { }
-    void initialize(MsmBlockSendMsg *msg) {
-      delete msg;
+
+    void initialize(MsmBlockSendMsg *bmsg) {
+      blockSend = bmsg->blockSend;
+      delete bmsg;
+#ifdef DEBUG_MSM_GRID
+      printf("MsmGridCutoff[%d]:  initialize()"
+          " send to level=%d block=(%d,%d,%d)\n",
+          thisIndex, blockSend.nblock_wrap.level,
+          blockSend.nblock_wrap.n.i,
+          blockSend.nblock_wrap.n.j,
+          blockSend.nblock_wrap.n.k);
+#endif
     }
-    void compute(GridDoubleMsg *msg) {
-      delete msg;
-    }
-};
+
+    void compute(GridDoubleMsg *gmsg) {
+#ifdef DEBUG_MSM_GRID
+      printf("MsmGridCutoff %d:  compute()\n", thisIndex);
+#endif
+      //
+      // receive block of charges
+      //
+      int pid;
+      gmsg->get(qh, pid);
+      delete gmsg;
+
+      //
+      // grid cutoff calculation
+      // this charge block -> this potential block
+      //
+
+      // resets indexing on block
+      // resizes memory (only the first time, memory allocation persists)
+      eh.init(blockSend.nrange);
+      eh.reset(0);
+      // destination block index for potentials
+      const msm::BlockIndex& bindex = blockSend.nblock_wrap;
+      // need grid of weights for this level
+      msm::Grid<BigReal>& gc = map->gc[bindex.level];
+      // index range of weights
+      int gia = gc.ia();
+      int gib = gc.ib();
+      int gja = gc.ja();
+      int gjb = gc.jb();
+      int gka = gc.ka();
+      int gkb = gc.kb();
+      // index range of charge grid
+      int qia = qh.ia();
+      int qib = qh.ib();
+      int qja = qh.ja();
+      int qjb = qh.jb();
+      int qka = qh.ka();
+      int qkb = qh.kb();
+      // index range of potentials
+      int ia = eh.ia();
+      int ib = eh.ib();
+      int ja = eh.ja();
+      int jb = eh.jb();
+      int ka = eh.ka();
+      int kb = eh.kb();
+      // loop over potentials
+      for (int k = ka;  k <= kb;  k++) {
+        for (int j = ja;  j <= jb;  j++) {
+          for (int i = ia;  i <= ib;  i++) {
+            // clip charges to weights
+            int mia = ( qia >= gia + i ? qia : gia + i );
+            int mib = ( qib <= gib + i ? qib : gib + i );
+            int mja = ( qja >= gja + j ? qja : gja + j );
+            int mjb = ( qjb <= gjb + j ? qjb : gjb + j );
+            int mka = ( qka >= gka + k ? qka : gka + k );
+            int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
+            // accumulate sum to this eh point
+            BigReal ehsum = 0;
+            // loop over charge grid
+            for (int qk = mka;  qk <= mkb;  qk++) {
+              for (int qj = mja;  qj <= mjb;  qj++) {
+                for (int qi = mia;  qi <= mib;  qi++) {
+                  ehsum += gc(qi-i, qj-j, qk-k) * qh(qi,qj,qk);
+                }
+              }
+            } // end loop over charge grid
+            eh(i,j,k) = ehsum;
+          }
+        }
+      } // end loop over potentials
+
+      //
+      // send block of potentials
+      //
+
+      // shift grid index range to its true (wrapped) values
+      eh.updateLower( blockSend.nrange_wrap.lower() );
+      // place eh into message
+      int nelems = eh.data().len();
+      GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+      gm->put(eh, bindex.level);
+      // lookup in ComputeMsmMgr proxy array by level
+      mgrLocal->msmBlock[bindex.level](
+          bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+    } // compute()
+
+}; // MsmGridCutoff
 
 
 /////////////////
@@ -1084,6 +1214,7 @@ void MsmBlock::gridCutoff()
   printf("MsmBlock level=%d, id=%d %d %d:  grid cutoff\n",
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
+#ifndef MSM_GRID_CUTOFF_DECOMP
   // need grid of weights for this level
   msm::Grid<BigReal>& gc = map->gc[blockIndex.level];
   // index range of weights
@@ -1134,6 +1265,17 @@ void MsmBlock::gridCutoff()
   } // end loop over potentials
 
   sendAcrossPotential();
+#else
+  // send charge block to MsmGridCutoff compute objects
+  int nelems = qh.data().len();
+  int len = bd->indexGridCutoff.len();
+  for (int n = 0;  n < len;  n++) {
+    int index = bd->indexGridCutoff[n];
+    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    gm->put(qh, blockIndex.level);
+    mgrLocal->msmGridCutoff[index].compute(gm);
+  }
+#endif
 }
 
 void MsmBlock::sendAcrossPotential()
@@ -1452,9 +1594,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       default:       split_str = "unknown";     break;
     }
     iout << iINFO << "MSM using "
-                  << approx_str << " interpolation\n" << endi;
+                  << approx_str << " interpolation\n";
     iout << iINFO << "MSM using "
-                  << split_str << " splitting function\n" << endi;
+                  << split_str << " splitting function\n";
   }
 
   // set maximum number of levels (default 0 adapts levels to system)
@@ -1561,15 +1703,15 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   setup_hgrid_1d(zlen, hzlen, nhz, ka, kb, ispz);
   if (CkMyPe() == 0) {
     if (ispx || ispy || ispz) {
-      iout << iINFO << "MSM grid spacing along X is "<< hxlen << " A\n" << endi;
-      iout << iINFO << "MSM grid spacing along Y is "<< hylen << " A\n" << endi;
-      iout << iINFO << "MSM grid spacing along Z is "<< hzlen << " A\n" << endi;
+      iout << iINFO << "MSM grid spacing along X is "<< hxlen << " A\n";
+      iout << iINFO << "MSM grid spacing along Y is "<< hylen << " A\n";
+      iout << iINFO << "MSM grid spacing along Z is "<< hzlen << " A\n";
     }
     else {
-      iout << iINFO << "MSM grid spacing is " << gridspacing << " A\n" << endi;
+      iout << iINFO << "MSM grid spacing is " << gridspacing << " A\n";
     }
     if ( ! ispx || ! ispy || ! ispz ) {
-      iout << iINFO<<"MSM non-periodic padding is "<< padding << " A\n" << endi;
+      iout << iINFO<<"MSM non-periodic padding is "<< padding << " A\n";
     }
   }
 
@@ -1692,7 +1834,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
   // print out some information about MSM
   if (CkMyPe() == 0) {
-    iout << iINFO << "MSM using " << nlevels << " levels\n" << endi;
+    iout << iINFO << "MSM using " << nlevels << " levels\n";
     for (n = 0;  n < nlevels;  n++) {
       char s[100];
       snprintf(s, sizeof(s), "    level %d:  "
@@ -1700,7 +1842,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           map.gridrange[n].ia(), map.gridrange[n].ib(),
           map.gridrange[n].ja(), map.gridrange[n].jb(),
           map.gridrange[n].ka(), map.gridrange[n].kb());
-      iout << iINFO << s << endi;
+      iout << iINFO << s;
     }
   }
 
@@ -2016,7 +2158,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
   // initialize grid of BlockDiagram for each level
   int polydeg = PolyDegree[approx];
-  int cntGridCutoff = 0;
+  numGridCutoff = 0;
   for (level = 0;  level < nlevels;  level++) {
     msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
     int bni = b.ni();
@@ -2055,8 +2197,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
                     b(i,j,k).nrangeCutoff);
                 map.wrapBlockSend(bs);  // wrap to true block index
                 b(i,j,k).sendAcross.append(bs);
-                b(i,j,k).indexGridCutoff.append(cntGridCutoff);
-                cntGridCutoff++;  // one MsmGridCutoff for each send across
+                b(i,j,k).indexGridCutoff.append(numGridCutoff);
+                numGridCutoff++;  // one MsmGridCutoff for each send across
                 // increment counter for receive block
                 b(bs.nblock_wrap.n).numRecvsPotential++;
               }
@@ -2181,29 +2323,6 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
   // end of Map setup
 
-#if 1
-#if 0
-  // XXX count total over all sendAcross arrays
-  int numSendAcross = 0;
-  for (level = 0;  level < nlevels;  level++) {
-    msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
-    int bni = b.ni();
-    int bnj = b.nj();
-    int bnk = b.nk();
-    for (k = 0;  k < bnk;  k++) {
-      for (j = 0;  j < bnj;  j++) {
-        for (i = 0;  i < bni;  i++) {
-          numSendAcross += b(i,j,k).sendAcross.len();
-        }
-      }
-    }
-  }
-#endif
-  if (CkMyPe() == 0) {
-    printf("cntGridCutoff = %d\n", cntGridCutoff);
-  }
-#endif
-
   // allocate chare arrays
 
   if (1) {
@@ -2218,7 +2337,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     if (CkMyPe() == 0) {
       iout << iINFO << "MSM has " << pm->numPatches()
                     << " interpolation / anterpolation objects"
-                    << " (one per patch)\n" << endi;
+                    << " (one per patch)\n";
     }
   }
 
@@ -2236,15 +2355,58 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           level, ni, nj, nk);
 #endif
       char msg[128];
-      sprintf(msg, "MSM grid level %d has %d work objects ( %d x %d x %d )\n",
-          level, ni*nj*nk, ni, nj, nk);
-      iout << iINFO << msg << endi;
+      int nijk = ni * nj * nk;
+      sprintf(msg, "MSM grid level %d decomposed into %d block%s"
+          " ( %d x %d x %d )\n",
+          level, nijk, (nijk==1 ? "" : "s"), ni, nj, nk);
+      iout << iINFO << msg;
     }
     MsmBlockProxyMsg *msg =
       new(nlevels*sizeof(CProxy_MsmBlock), 0) MsmBlockProxyMsg;
     msg->put(msmBlock);
     msmProxy.recvMsmBlockProxy(msg);  // broadcast
+
+#ifdef MSM_GRID_CUTOFF_DECOMP
+    // on PE 0, create 1D chare array of MsmGridCutoff
+    // broadcast this array proxy to the rest of the group
+    msmGridCutoff = CProxy_MsmGridCutoff::ckNew(numGridCutoff);
+    MsmGridCutoffProxyMsg *gcmsg =
+      new(sizeof(CProxy_MsmGridCutoff), 0) MsmGridCutoffProxyMsg;
+    gcmsg->put(&msmGridCutoff);
+    msmProxy.recvMsmGridCutoffProxy(gcmsg);
+
+    // XXX PE 0 initializes each MsmGridCutoff
+    // one-to-many
+    // for M length chare array, better for each PE to initialize M/P?
+    for (level = 0;  level < nlevels;  level++) { // for all levels
+      msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
+      int bni = b.ni();
+      int bnj = b.nj();
+      int bnk = b.nk();
+      for (k = 0;  k < bnk;  k++) { // for all blocks
+        for (j = 0;  j < bnj;  j++) {
+          for (i = 0;  i < bni;  i++) {
+            int numSendAcross = b(i,j,k).sendAcross.len();
+            ASSERT( numSendAcross == b(i,j,k).indexGridCutoff.len() );
+            for (n = 0;  n < numSendAcross;  n++) {
+              msm::BlockSend &bs = b(i,j,k).sendAcross[n];
+              int index = b(i,j,k).indexGridCutoff[n];
+              MsmBlockSendMsg *bsmsg = new MsmBlockSendMsg(bs);
+              msmGridCutoff[index].initialize(bsmsg);
+            } // traverse sendAcross, indexGridCutoff arrays
+
+          }
+        }
+      } // end for all blocks
+
+    } // end for all levels
+
+    iout << iINFO << "MSM grid cutoff calculation decomposed into "
+      << numGridCutoff << " work objects\n";
+#endif
+    iout << endi;
   }
+
 #ifdef DEBUG_MSM_VERBOSE
   printf("end of initialization\n");
 #endif
@@ -2253,6 +2415,12 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 void ComputeMsmMgr::recvMsmBlockProxy(MsmBlockProxyMsg *msg)
 {
   msg->get(msmBlock);
+  delete(msg);
+}
+
+void ComputeMsmMgr::recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *msg)
+{
+  msg->get(&msmGridCutoff);
   delete(msg);
 }
 
@@ -2388,6 +2556,10 @@ void ComputeMsm::doWork()
     if (patchPtr[patchID] == NULL) {
       // create PatchData if it doesn't exist for this patchID
       patchPtr[patchID] = new msm::PatchData;
+      /*
+      printf("Creating new PatchData:  patchID=%d  PE=%d\n",
+          patchID, CkMyPe());
+          */
     }
     msm::PatchData& patch = *(patchPtr[patchID]);
     patch.init(myMgr, patchID, numAtoms);
