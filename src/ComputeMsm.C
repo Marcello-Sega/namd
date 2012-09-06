@@ -957,6 +957,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // receive block of charges
       //
       int pid;
+      // qh is resized only the first time, memory allocation persists
       gmsg->get(qh, pid);
       delete gmsg;
 
@@ -966,7 +967,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       //
 
       // resets indexing on block
-      // resizes memory (only the first time, memory allocation persists)
+      // eh is resized only the first time, memory allocation persists
       eh.init(blockSend.nrange);
       eh.reset(0);
       // destination block index for potentials
@@ -1035,7 +1036,11 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
           bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
     } // compute()
 
-}; // MsmGridCutoff
+};
+
+// MsmGridCutoff
+//
+/////////////////
 
 
 /////////////////
@@ -1050,12 +1055,17 @@ class MsmBlock : public CBase_MsmBlock {
     msm::BlockDiagram *bd;
     msm::Grid<BigReal> qh;
     msm::Grid<BigReal> eh;
+#ifndef MSM_GRID_CUTOFF_DECOMP
     msm::Grid<BigReal> ehCutoff;
+#endif
     msm::Grid<BigReal> qhRestricted;
     msm::Grid<BigReal> ehProlongated;
     int cntRecvsCharge;
     int cntRecvsPotential;
     msm::BlockIndex blockIndex;
+ 
+    //msm::Grid<BigReal> qpart, epart;
+    msm::Grid<BigReal> subgrid;
 
     MsmBlock(int level);
     MsmBlock(CkMigrateMessage *m) { }
@@ -1067,7 +1077,9 @@ class MsmBlock : public CBase_MsmBlock {
     void restriction();
     void sendUpCharge();
     void gridCutoff();
+#ifndef MSM_GRID_CUTOFF_DECOMP
     void sendAcrossPotential();
+#endif
 
     void addPotential(GridDoubleMsg *);  // entry
 
@@ -1096,8 +1108,10 @@ void MsmBlock::init(int level) {
   qh.reset(0);
   eh.init( bd->nrange );
   eh.reset(0);
+#ifndef MSM_GRID_CUTOFF_DECOMP
   ehCutoff.init( bd->nrangeCutoff );
   ehCutoff.reset(0);
+#endif
   qhRestricted.init( bd->nrangeRestricted );
   qhRestricted.reset(0);
   ehProlongated.init( bd->nrangeProlongated );
@@ -1108,11 +1122,11 @@ void MsmBlock::init(int level) {
 
 void MsmBlock::addCharge(GridDoubleMsg *gm)
 {
-  msm::Grid<BigReal> qpart;
+  //msm::Grid<BigReal> qpart;
   int pid;
-  gm->get(qpart, pid);
+  gm->get(subgrid, pid);
   delete gm;
-  qh += qpart;
+  qh += subgrid;
   if (++cntRecvsCharge == bd->numRecvsCharge) {
     int nlevels = mgrLocal->numLevels();
     if (blockIndex.level < nlevels-1) {
@@ -1194,8 +1208,8 @@ void MsmBlock::sendUpCharge()
   int lnext = blockIndex.level + 1;
   // buffer portions of grid to send to Blocks on next level
   // allocate the largest buffer space we'll need
-  msm::Grid<BigReal> subgrid;
-  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  //msm::Grid<BigReal> subgrid;
+  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendUp.len();  n++) {
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendUp[n].nrange );
@@ -1286,13 +1300,14 @@ void MsmBlock::gridCutoff()
 #endif
 }
 
+#ifndef MSM_GRID_CUTOFF_DECOMP
 void MsmBlock::sendAcrossPotential()
 {
   int lnext = blockIndex.level;
   // buffer portions of grid to send to Blocks on this level
   // allocate the largest buffer space we'll need
-  msm::Grid<BigReal> subgrid;
-  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  //msm::Grid<BigReal> subgrid;
+  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendAcross.len();  n++) {
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendAcross[n].nrange );
@@ -1312,14 +1327,15 @@ void MsmBlock::sendAcrossPotential()
         bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
   } // for
 }
+#endif
 
 void MsmBlock::addPotential(GridDoubleMsg *gm)
 {
-  msm::Grid<BigReal> epart;
+  //msm::Grid<BigReal> epart;
   int pid;
-  gm->get(epart, pid);
+  gm->get(subgrid, pid);
   delete gm;
-  eh += epart;
+  eh += subgrid;
   if (++cntRecvsPotential == bd->numRecvsPotential) {
     if (blockIndex.level > 0) {
       prolongation();
@@ -1401,8 +1417,8 @@ void MsmBlock::sendDownPotential()
   int lnext = blockIndex.level - 1;
   // buffer portions of grid to send to Blocks on next level
   // allocate the largest buffer space we'll need
-  msm::Grid<BigReal> subgrid;
-  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  //msm::Grid<BigReal> subgrid;
+  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendDown.len();  n++) {
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendDown[n].nrange );
@@ -1430,8 +1446,8 @@ void MsmBlock::sendPatch()
   ASSERT(lnext == 0);
   // buffer portions of grid to send to Blocks on next level
   // allocate the largest buffer space we'll need
-  msm::Grid<BigReal> subgrid;
-  subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
+  //msm::Grid<BigReal> subgrid;
+  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendPatch.len();  n++) {
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendPatch[n].nrange );
@@ -1456,6 +1472,7 @@ void MsmBlock::sendPatch()
 // MsmBlock
 //
 //////////////////
+
 
 ComputeMsmMgr::ComputeMsmMgr() :
   msmProxy(thisgroup), msmCompute(0)
