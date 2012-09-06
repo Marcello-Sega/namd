@@ -29,8 +29,8 @@
 //#undef MSM_GRID_CUTOFF_DECOMP
 
 // skip over pairs of blocks that do not actually interact
-#define MSM_SKIP_DISTANT_BLOCKS
-//#undef MSM_SKIP_DISTANT_BLOCKS
+#define MSM_SKIP_TOO_DISTANT_BLOCKS
+//#undef MSM_SKIP_TOO_DISTANT_BLOCKS
 
 
 class GridDoubleMsg : public CMessage_GridDoubleMsg {
@@ -2172,6 +2172,11 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     int bni = b.ni();
     int bnj = b.nj();
     int bnk = b.nk();
+#ifdef MSM_SKIP_TOO_DISTANT_BLOCKS
+    int bsx = map.bsx[level];
+    int bsy = map.bsy[level];
+    int bsz = map.bsz[level];
+#endif
     for (k = 0;  k < bnk;  k++) {
       for (j = 0;  j < bnj;  j++) {
         for (i = 0;  i < bni;  i++) {
@@ -2197,16 +2202,16 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           for (kk = blower.n.k;  kk <= bupper.n.k;  kk++) {
             for (jj = blower.n.j;  jj <= bupper.n.j;  jj++) {
               for (ii = blower.n.i;  ii <= bupper.n.i;  ii++) {
-#ifdef MSM_SKIP_DISTANT_BLOCKS
+#ifdef MSM_SKIP_TOO_DISTANT_BLOCKS
                 // make sure that block (ii,jj,kk) interacts with (i,j,k)
                 int si = sign(ii-i);
                 int sj = sign(jj-j);
                 int sk = sign(kk-k);
-                int di = (ii-i)*map.bsx[level] + si*(1 - map.bsx[level]);
-                int dj = (jj-j)*map.bsy[level] + sj*(1 - map.bsy[level]);
-                int dk = (kk-k)*map.bsz[level] + sk*(1 - map.bsz[level]);
+                int di = (ii-i)*bsx + si*(1-bsx);
+                int dj = (jj-j)*bsy + sj*(1-bsy);
+                int dk = (kk-k)*bsz + sk*(1-bsz);
                 Vector d = di*hu + dj*hv + dk*hw;
-                if (d.length2() > 4*a*a) continue;
+                if (d.length2() >= 4*a*a) continue;
 #endif
                 // determine actual block and range to send to
                 msm::BlockSend bs;
