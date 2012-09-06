@@ -28,6 +28,10 @@
 #define MSM_GRID_CUTOFF_DECOMP
 //#undef MSM_GRID_CUTOFF_DECOMP
 
+// skip over pairs of blocks that do not actually interact
+#define MSM_SKIP_DISTANT_BLOCKS
+//#undef MSM_SKIP_DISTANT_BLOCKS
+
 
 class GridDoubleMsg : public CMessage_GridDoubleMsg {
   public:
@@ -153,6 +157,10 @@ public:
 
   int numLevels() const { return nlevels; }
 
+  // sign(n) = -1 if n < 0,  0 if n == 0,  or  1 if n > 0
+  static inline int sign(int n) {
+    return (n < 0 ? -1 : (n > 0 ? 1 : 0));
+  }
 private:
   void setup_hgrid_1d(BigReal len, BigReal& hh, int& nn,
       int& ia, int& ib, int isperiodic);
@@ -2189,6 +2197,17 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           for (kk = blower.n.k;  kk <= bupper.n.k;  kk++) {
             for (jj = blower.n.j;  jj <= bupper.n.j;  jj++) {
               for (ii = blower.n.i;  ii <= bupper.n.i;  ii++) {
+#ifdef MSM_SKIP_DISTANT_BLOCKS
+                // make sure that block (ii,jj,kk) interacts with (i,j,k)
+                int si = sign(ii-i);
+                int sj = sign(jj-j);
+                int sk = sign(kk-k);
+                int di = (ii-i)*map.bsx[level] + si*(1 - map.bsx[level]);
+                int dj = (jj-j)*map.bsy[level] + sj*(1 - map.bsy[level]);
+                int dk = (kk-k)*map.bsz[level] + sk*(1 - map.bsz[level]);
+                Vector d = di*hu + dj*hv + dk*hw;
+                if (d.length2() > 4*a*a) continue;
+#endif
                 // determine actual block and range to send to
                 msm::BlockSend bs;
                 bs.nblock.n = msm::Ivec(ii,jj,kk);
