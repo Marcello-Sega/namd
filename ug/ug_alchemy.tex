@@ -458,7 +458,7 @@ all vdW interactions are fully enabled for exnihilated particles.
 
 For an exnihilated particle, vdW interactions are fully decoupled at $\lambda$=0.  The coupling of vdW interactions to the simulation is then increased with increasing values of $\lambda$ such that at values of $\lambda$ greater than or equal to {\tt alchVdwLambdaEnd} the vdW interactions of the exnihilated particle are fully coupled to the simulation.
 
-For an annihilated particle, vdW interactions are completely coupled to the simulation at $\lambda$=0.  This coupling linearly decreases for $\lambda$ values between 1.0 and (1 - {\tt alchVdwLambdaEnd}).  For $\lambda$ values greater than or equal to (1 - {\tt alchVdwLambdaEnd}), vdW interactions of the annihilated particle are fully decoupled from the simulation.  
+For an annihilated particle, vdW interactions are completely coupled to the simulation for $\lambda$ values between 0 and (1 - {\tt alchVdwLambdaEnd}). Then, vdW interactions of the annihilated particle are linearly decoupled over the range of $\lambda$ values between (1 - {\tt alchVdwLambdaEnd}) and 1.0. VdW interactions are only fully decoupled when $\lambda$ reaches 1.0.  
 }
 
 
