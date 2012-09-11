@@ -32,6 +32,9 @@
 #define MSM_SKIP_TOO_DISTANT_BLOCKS
 //#undef MSM_SKIP_TOO_DISTANT_BLOCKS
 
+// report timings for compute routines
+#define MSM_TIMING
+#undef MSM_TIMING
 
 class GridDoubleMsg : public CMessage_GridDoubleMsg {
   public:
@@ -121,6 +124,31 @@ class MsmBlockSendMsg : public CMessage_MsmBlockSendMsg {
 };
 
 
+class MsmTimer : public CBase_MsmTimer {
+  public:
+    enum { ANTERP=0, INTERP, RESTRICT, PROLONGATE, GRIDCUTOFF, COMM, MAX };
+
+    MsmTimer() {
+      for (int i = 0;  i < MAX;  i++)  timing[i] = 0;
+    }
+    void done(double tm[], int n) {
+      for (int i = 0;  i < MAX;  i++)  timing[i] = tm[i];
+      print();
+    }
+    void print() {
+      printf("MSM timings:\n");
+      printf("   anterpolation   %8.6f sec\n", timing[ANTERP]);
+      printf("   interpolation   %8.6f sec\n", timing[INTERP]);
+      printf("   restriction     %8.6f sec\n", timing[RESTRICT]);
+      printf("   prolongation    %8.6f sec\n", timing[PROLONGATE]);
+      printf("   grid cutoff     %8.6f sec\n", timing[GRIDCUTOFF]);
+      printf("   communication   %8.6f sec\n", timing[COMM]);
+    }
+
+    double timing[MAX];
+};
+
+
 //////////////////////////////////////////////////////////////////////////////
 //
 //  ComputeMsmMgr
@@ -148,6 +176,18 @@ public:
 
   void addPotential(GridDoubleMsg *);  // entry with message
   void doneCompute();  // called by each local patch
+
+#ifdef MSM_TIMING
+  void initTiming() {
+    for (int i = 0;  i < MsmTimer::MAX;  i++)  msmTiming[i] = 0;
+  }
+#endif
+  void doneTiming();   // called at end by the compute object
+#ifdef MSM_TIMING
+  void broadcastTiming() {  // to be called only by PE=0
+    msmProxy.doneTiming();
+  }
+#endif
 
   void setCompute(ComputeMsm *c) { msmCompute = c;  c->setMgr(this); } // local
 
@@ -180,6 +220,11 @@ private:
   // array is length number of patches, initialized to NULL
   // allocate PatchData for only those patches on this PE
   msm::PatchPtrArray patchPtr;
+
+#ifdef MSM_TIMING
+  CProxy_MsmTimer msmTimer;
+  double msmTiming[MsmTimer::MAX];
+#endif
 
   Vector c, u, v, w;    // rescaled center and lattice vectors
   Vector ru, rv, rw;    // row vectors to transform to unit space
@@ -953,6 +998,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #ifdef DEBUG_MSM_GRID
       printf("MsmGridCutoff %d:  compute()\n", thisIndex);
 #endif
+#ifdef MSM_TIMING
+      double startTime, stopTime;
+      startTime = CkWallTimer();
+#endif
       //
       // receive block of charges
       //
@@ -960,12 +1009,19 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // qh is resized only the first time, memory allocation persists
       gmsg->get(qh, pid);
       delete gmsg;
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
 
       //
       // grid cutoff calculation
       // this charge block -> this potential block
       //
 
+#ifdef MSM_TIMING
+      startTime = stopTime;
+#endif
       // resets indexing on block
       // eh is resized only the first time, memory allocation persists
       eh.init(blockSend.nrange);
@@ -1020,17 +1076,28 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
           }
         }
       } // end loop over potentials
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
+#endif
 
       //
       // send block of potentials
       //
 
+#ifdef MSM_TIMING
+      startTime = stopTime;
+#endif
       // shift grid index range to its true (wrapped) values
       eh.updateLower( blockSend.nrange_wrap.lower() );
       // place eh into message
       int nelems = eh.data().len();
       GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
       gm->put(eh, bindex.level);
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
       // lookup in ComputeMsmMgr proxy array by level
       mgrLocal->msmBlock[bindex.level](
           bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
@@ -1122,11 +1189,19 @@ void MsmBlock::init(int level) {
 
 void MsmBlock::addCharge(GridDoubleMsg *gm)
 {
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
   //msm::Grid<BigReal> qpart;
   int pid;
   gm->get(subgrid, pid);
   delete gm;
   qh += subgrid;
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
   if (++cntRecvsCharge == bd->numRecvsCharge) {
     int nlevels = mgrLocal->numLevels();
     if (blockIndex.level < nlevels-1) {
@@ -1143,6 +1218,10 @@ void MsmBlock::restriction()
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
 
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
   // stencil data for approximating charge on restricted grid
   const int approx = mgrLocal->approx;
   const int nstencil = ComputeMsmMgr::Nstencil[approx];
@@ -1199,18 +1278,28 @@ void MsmBlock::restriction()
       }
     }
   } // end loop over restricted (2h) grid
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::RESTRICT] += stopTime - startTime;
+#endif
 
   sendUpCharge();
 }
 
 void MsmBlock::sendUpCharge()
 {
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+#endif
   int lnext = blockIndex.level + 1;
   // buffer portions of grid to send to Blocks on next level
   // allocate the largest buffer space we'll need
   //msm::Grid<BigReal> subgrid;
   //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendUp.len();  n++) {
+#ifdef MSM_TIMING
+    startTime = CkWallTimer();
+#endif
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendUp[n].nrange );
     // extract the values from the larger grid into the subgrid
@@ -1224,6 +1313,10 @@ void MsmBlock::sendUpCharge()
     int nelems = subgrid.data().len();
     GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
     gm->put(subgrid, bindex.level);
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
     // lookup in ComputeMsmMgr proxy array by level
     mgrLocal->msmBlock[lnext](
         bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
@@ -1237,6 +1330,10 @@ void MsmBlock::gridCutoff()
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
 #ifndef MSM_GRID_CUTOFF_DECOMP
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
   // need grid of weights for this level
   msm::Grid<BigReal>& gc = map->gc[blockIndex.level];
   // index range of weights
@@ -1285,16 +1382,32 @@ void MsmBlock::gridCutoff()
       }
     }
   } // end loop over potentials
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
+#endif
 
   sendAcrossPotential();
+
 #else
+
   // send charge block to MsmGridCutoff compute objects
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+#endif
   int nelems = qh.data().len();
   int len = bd->indexGridCutoff.len();
   for (int n = 0;  n < len;  n++) {
+#ifdef MSM_TIMING
+    startTime = CkWallTimer();
+#endif
     int index = bd->indexGridCutoff[n];
     GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
     gm->put(qh, blockIndex.level);
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
     mgrLocal->msmGridCutoff[index].compute(gm);
   }
 #endif
@@ -1303,12 +1416,18 @@ void MsmBlock::gridCutoff()
 #ifndef MSM_GRID_CUTOFF_DECOMP
 void MsmBlock::sendAcrossPotential()
 {
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+#endif
   int lnext = blockIndex.level;
   // buffer portions of grid to send to Blocks on this level
   // allocate the largest buffer space we'll need
   //msm::Grid<BigReal> subgrid;
   //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendAcross.len();  n++) {
+#ifdef MSM_TIMING
+    startTime = CkWallTimer();
+#endif
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendAcross[n].nrange );
     // extract the values from the larger grid into the subgrid
@@ -1322,6 +1441,10 @@ void MsmBlock::sendAcrossPotential()
     int nelems = subgrid.data().len();
     GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
     gm->put(subgrid, bindex.level);
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
     // lookup in ComputeMsmMgr proxy array by level
     mgrLocal->msmBlock[lnext](
         bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
@@ -1331,11 +1454,19 @@ void MsmBlock::sendAcrossPotential()
 
 void MsmBlock::addPotential(GridDoubleMsg *gm)
 {
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
   //msm::Grid<BigReal> epart;
   int pid;
   gm->get(subgrid, pid);
   delete gm;
   eh += subgrid;
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
   if (++cntRecvsPotential == bd->numRecvsPotential) {
     if (blockIndex.level > 0) {
       prolongation();
@@ -1353,6 +1484,10 @@ void MsmBlock::prolongation()
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
 
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
   // stencil data for approximating potential on prolongated grid
   const int approx = mgrLocal->approx;
   const int nstencil = ComputeMsmMgr::Nstencil[approx];
@@ -1408,18 +1543,28 @@ void MsmBlock::prolongation()
       }
     }
   } // end loop over 2h grid
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::PROLONGATE] += stopTime - startTime;
+#endif
 
   sendDownPotential();
 }
 
 void MsmBlock::sendDownPotential()
 {
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+#endif
   int lnext = blockIndex.level - 1;
   // buffer portions of grid to send to Blocks on next level
   // allocate the largest buffer space we'll need
   //msm::Grid<BigReal> subgrid;
   //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendDown.len();  n++) {
+#ifdef MSM_TIMING
+    startTime = CkWallTimer();
+#endif
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendDown[n].nrange );
     // extract the values from the larger grid into the subgrid
@@ -1433,6 +1578,10 @@ void MsmBlock::sendDownPotential()
     int nelems = subgrid.data().len();
     GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
     gm->put(subgrid, bindex.level);
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
     // lookup in ComputeMsmMgr proxy array by level
     mgrLocal->msmBlock[lnext](
         bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
@@ -1442,6 +1591,9 @@ void MsmBlock::sendDownPotential()
 
 void MsmBlock::sendPatch()
 {
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+#endif
   int lnext = blockIndex.level;
   ASSERT(lnext == 0);
   // buffer portions of grid to send to Blocks on next level
@@ -1449,6 +1601,9 @@ void MsmBlock::sendPatch()
   //msm::Grid<BigReal> subgrid;
   //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendPatch.len();  n++) {
+#ifdef MSM_TIMING
+    startTime = CkWallTimer();
+#endif
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendPatch[n].nrange );
     // extract the values from the larger grid into the subgrid
@@ -1461,6 +1616,10 @@ void MsmBlock::sendPatch()
     int nelems = subgrid.data().len();
     GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
     gm->put(subgrid, pid);
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
     // lookup which PE has this patch
     PatchMap *pm = PatchMap::Object();
     int pe = pm->node(pid);
@@ -1481,6 +1640,16 @@ ComputeMsmMgr::ComputeMsmMgr() :
   printf("ComputeMsmMgr:  (constructor) PE %d\n", CkMyPe());
 #endif
   CkpvAccess(BOCclass_group).computeMsmMgr = thisgroup;
+
+#ifdef MSM_TIMING
+  if (CkMyPe() == 0) {
+    msmTimer = CProxy_MsmTimer::ckNew();
+    CkCallback *cb = new CkCallback(
+        CkReductionTarget(MsmTimer, done), msmTimer);
+    msmProxy.ckSetReductionClient(cb);
+  }
+  initTiming();
+#endif
 }
 
 ComputeMsmMgr::~ComputeMsmMgr()
@@ -2521,6 +2690,14 @@ void ComputeMsmMgr::doneCompute()
 }
 
 
+void ComputeMsmMgr::doneTiming()
+{
+#ifdef MSM_TIMING
+  contribute(MsmTimer::MAX*sizeof(double), msmTiming, CkReduction::sum_double);
+#endif
+}
+
+
 //////////////////////////////////////////////////////////////////////////////
 //
 //  ComputeMsm
@@ -2550,6 +2727,10 @@ ComputeMsm::~ComputeMsm()
 
 void ComputeMsm::doWork()
 {
+#ifdef MSM_TIMING
+  myMgr->initTiming();
+#endif
+
   // patchList is inherited from ComputeHomePatches
   ResizeArrayIter<PatchElem> ap(patchList);
   numLocalPatches = patchList.size();
@@ -2625,6 +2806,17 @@ void ComputeMsm::doWork()
 void ComputeMsm::saveResults()
 {
   if (++cntLocalPatches != numLocalPatches) return;
+
+#ifdef MSM_TIMING
+  if (PatchMap::Object()->numNodesWithPatches() < CkNumPes()) {
+    // need to broadcast across group to get everyone to contribute timings
+    if (CkMyPe() == 0)  myMgr->broadcastTiming();
+  }
+  else {
+    // every PE contributes timings
+    myMgr->doneTiming();
+  }
+#endif
 
   // NAMD patches
   ResizeArrayIter<PatchElem> ap(patchList);
@@ -2705,6 +2897,10 @@ namespace msm {
     printf("patchID %d:  anterpolation\n", patchID);
 #endif
 
+#ifdef MSM_TIMING
+    double startTime, stopTime;
+    startTime = CkWallTimer();
+#endif
     BigReal xphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
     BigReal yphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
     BigReal zphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
@@ -2770,16 +2966,26 @@ namespace msm {
       }
 
     } // end loop over atoms
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgr->msmTiming[MsmTimer::ANTERP] += stopTime - startTime;
+#endif
 
     sendCharge();
   }
 
   void PatchData::sendCharge() {
+#ifdef MSM_TIMING
+    double startTime, stopTime;
+#endif
     // buffer portions of grid to send to Blocks on level 0
     // allocate the largest buffer space we'll need
     Grid<BigReal> subgrid;
     subgrid.resize(map->bsx[0] * map->bsy[0] * map->bsz[0]);
     for (int n = 0;  n < pd->send.len();  n++) {
+#ifdef MSM_TIMING
+      startTime = CkWallTimer();
+#endif
       // initialize the proper subgrid indexing range
       subgrid.init( pd->send[n].nrange );
       // extract the values from the larger grid into the subgrid
@@ -2792,13 +2998,25 @@ namespace msm {
       int nelems = subgrid.data().len();
       GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
       gm->put(subgrid, bindex.level);
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgr->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
       mgr->msmBlock[bindex.level](
           bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
     }
   }
 
   void PatchData::addPotential(const Grid<BigReal>& epart) {
+#ifdef MSM_TIMING
+    double startTime, stopTime;
+    startTime = CkWallTimer();
+#endif
     eh += epart;
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgr->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
     if (++cntRecvs == pd->numRecvs) {
       interpolation();
     }
@@ -2809,6 +3027,10 @@ namespace msm {
     printf("patchID %d:  interpolation\n", patchID);
 #endif
 
+#ifdef MSM_TIMING
+    double startTime, stopTime;
+    startTime = CkWallTimer();
+#endif
     BigReal energy_self = 0;
 
     BigReal xphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
@@ -2896,6 +3118,10 @@ namespace msm {
     energy_self *= mgr->gzero;
     energy -= energy_self;
     energy *= 0.5;
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgr->msmTiming[MsmTimer::INTERP] += stopTime - startTime;
+#endif
 
     mgr->doneCompute();
   }

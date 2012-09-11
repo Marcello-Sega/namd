@@ -29,6 +29,7 @@ module ComputeMsmMgr {
     entry void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);
     entry void update(CkQdMsg *);
     entry void addPotential(GridDoubleMsg *);
+    entry void doneTiming(void);
   };
 
   array [3D] MsmBlock {
@@ -47,6 +48,11 @@ module ComputeMsmMgr {
 
     // compute() passes in the charge block
     entry void compute(GridDoubleMsg *);
+  };
+
+  chare MsmTimer {
+    entry MsmTimer(void);
+    entry [reductiontarget] void done(double tm[n], int n);
   };
 
 };
