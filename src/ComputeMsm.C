@@ -34,7 +34,7 @@
 
 // report timings for compute routines
 #define MSM_TIMING
-#undef MSM_TIMING
+//#undef MSM_TIMING
 
 // use fixed size grid message
 #define MSM_FIXED_SIZE_GRID_MSG
@@ -1077,6 +1077,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int gjb = gc.jb();
       int gka = gc.ka();
       int gkb = gc.kb();
+      int gni = gc.ni();
+      int gnj = gc.nj();
       // index range of charge grid
       int qia = qh.ia();
       int qib = qh.ib();
@@ -1084,6 +1086,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int qjb = qh.jb();
       int qka = qh.ka();
       int qkb = qh.kb();
+      int qni = qh.ni();
+      int qnj = qh.nj();
       // index range of potentials
       int ia = eh.ia();
       int ib = eh.ib();
@@ -1091,28 +1095,49 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int jb = eh.jb();
       int ka = eh.ka();
       int kb = eh.kb();
+      // access buffers directly
+      double *gcbuffer = gc.data().buffer();
+      double *qhbuffer = qh.data().buffer();
+      double *ehbuffer = eh.data().buffer();
+      int index = 0;
+
       // loop over potentials
       for (int k = ka;  k <= kb;  k++) {
+        // clip charges to weights along k
+        int mka = ( qka >= gka + k ? qka : gka + k );
+        int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
+
         for (int j = ja;  j <= jb;  j++) {
-          for (int i = ia;  i <= ib;  i++) {
-            // clip charges to weights
+          // clip charges to weights along j
+          int mja = ( qja >= gja + j ? qja : gja + j );
+          int mjb = ( qjb <= gjb + j ? qjb : gjb + j );
+
+          for (int i = ia;  i <= ib;  i++, index++) {
+            // clip charges to weights along i
             int mia = ( qia >= gia + i ? qia : gia + i );
             int mib = ( qib <= gib + i ? qib : gib + i );
-            int mja = ( qja >= gja + j ? qja : gja + j );
-            int mjb = ( qjb <= gjb + j ? qjb : gjb + j );
-            int mka = ( qka >= gka + k ? qka : gka + k );
-            int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
+
             // accumulate sum to this eh point
             BigReal ehsum = 0;
+
             // loop over charge grid
             for (int qk = mka;  qk <= mkb;  qk++) {
+              int qkoff = (qk - qka) * qnj;
+              int gkoff = ((qk-k) - gka) * gnj;
+
               for (int qj = mja;  qj <= mjb;  qj++) {
+                int qjkoff = (qkoff + qj - qja) * qni;
+                int gjkoff = (gkoff + (qj-j) - gja) * gni;
+
                 for (int qi = mia;  qi <= mib;  qi++) {
-                  ehsum += gc(qi-i, qj-j, qk-k) * qh(qi,qj,qk);
+                  int qijkoff = qjkoff + qi - qia;
+                  int gijkoff = gjkoff + (qi-i) - gia;
+
+                  ehsum += gcbuffer[gijkoff] * qhbuffer[qijkoff];
                 }
               }
             } // end loop over charge grid
-            eh(i,j,k) = ehsum;
+            ehbuffer[index] = ehsum;
           }
         }
       } // end loop over potentials
