@@ -34,7 +34,15 @@
 
 // report timings for compute routines
 #define MSM_TIMING
-#undef MSM_TIMING
+//#undef MSM_TIMING
+
+// use fixed size grid message
+#define MSM_FIXED_SIZE_GRID_MSG
+//#undef MSM_FIXED_SIZE_GRID_MSG
+
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+#define MSM_MAX_BLOCK_SIZE 8
+#endif
 
 //
 // This is the main message that gets passed between compute chares.
@@ -67,7 +75,11 @@ class GridDoubleMsg : public CMessage_GridDoubleMsg {
     int nextent_j;
     int nextent_k;
     int nelems;
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+    double gdata[MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE];
+#else
     double *gdata;
+#endif
     // put a grid into an allocated message to be sent
     void put(const msm::Grid<BigReal>& g, int id) {
       idnum = id;
@@ -1115,7 +1127,11 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       eh.updateLower( blockSend.nrange_wrap.lower() );
       // place eh into message
       int nelems = eh.data().len();
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+      GridDoubleMsg *gm = new(sizeof(int)) GridDoubleMsg;
+#else
       GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+#endif
       *(int *)CkPriorityPtr(gm) = priority;
       CkSetQueueing(gm, CK_QUEUEING_IFIFO);
       gm->put(eh, bindex.level);
@@ -1337,7 +1353,11 @@ void MsmBlock::sendUpCharge()
     // place subgrid into message
     // SET MESSAGE PRIORITY
     int nelems = subgrid.data().len();
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+    GridDoubleMsg *gm = new(sizeof(int)) GridDoubleMsg;
+#else
     GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+#endif
     *(int *)CkPriorityPtr(gm) = lnext;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, bindex.level);
@@ -1431,7 +1451,11 @@ void MsmBlock::gridCutoff()
     startTime = CkWallTimer();
 #endif
     int index = bd->indexGridCutoff[n];
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+    GridDoubleMsg *gm = new(sizeof(int)) GridDoubleMsg;
+#else
     GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+#endif
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(qh, blockIndex.level);
@@ -1471,7 +1495,11 @@ void MsmBlock::sendAcrossPotential()
     ASSERT(bindex.level == lnext);
     // place subgrid into message
     int nelems = subgrid.data().len();
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+    GridDoubleMsg *gm = new(sizeof(int)) GridDoubleMsg;
+#else
     GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+#endif
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, bindex.level);
@@ -1611,7 +1639,11 @@ void MsmBlock::sendDownPotential()
     ASSERT(bindex.level == lnext);
     // place subgrid into message
     int nelems = subgrid.data().len();
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+    GridDoubleMsg *gm = new(sizeof(int)) GridDoubleMsg;
+#else
     GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+#endif
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, bindex.level);
@@ -1652,7 +1684,11 @@ void MsmBlock::sendPatch()
     int pid = bd->sendPatch[n].patchID;
     // place subgrid into message
     int nelems = subgrid.data().len();
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+    GridDoubleMsg *gm = new(sizeof(int)) GridDoubleMsg;
+#else
     GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+#endif
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, pid);
@@ -1755,10 +1791,12 @@ void ComputeMsmMgr::setup_periodic_blocksize(int& bsize, int n)
     int newbsize = 1;
     if (n % 3 == 0) newbsize = 3;
     while (newbsize < bsize && newbsize < n) newbsize *= 2;
+    if (bsize < newbsize) newbsize /= 2;
     if (n % newbsize != 0) {
       NAMD_die("MSM grid size for periodic dimensions must be "
           "a power of 2 times at most one power of 3");
     }
+    printf("newbsize = %d\n", newbsize);
     bsize = newbsize;
   }
   return;
@@ -1850,6 +1888,12 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   if (bsx <= 0 || bsy <= 0 || bsz <= 0) {
     NAMD_die("MSM: invalid block size requested (MSMBlockSize[XYZ])");
   }
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+  else if (bsx * bsy * bsz >
+      MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE) {
+    NAMD_die("MSM: requested block size (MSMBlockSize[XYZ]) too big");
+  }
+#endif
   if (CkMyPe() == 0) {
     iout << iINFO << "MSM block size decomposition along X is "
                   << bsx << " grid points\n";
@@ -3037,7 +3081,11 @@ namespace msm {
       BlockIndex& bindex = pd->send[n].nblock_wrap;
       // place subgrid into message
       int nelems = subgrid.data().len();
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+      GridDoubleMsg *gm = new(sizeof(int)) GridDoubleMsg;
+#else
       GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+#endif
       *(int *)CkPriorityPtr(gm) = priority;
       CkSetQueueing(gm, CK_QUEUEING_IFIFO);
       gm->put(subgrid, bindex.level);

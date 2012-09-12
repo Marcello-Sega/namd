@@ -8,9 +8,14 @@ module ComputeMsmMgr {
 
   message MsmInitMsg;
 
+  // fixed size message 
+  message GridDoubleMsg;
+/*
+  // variable size message
   message GridDoubleMsg {
     double gdata[];
   };
+*/
 
   message MsmBlockProxyMsg {
     char msmBlockProxyData[];
