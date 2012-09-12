@@ -1026,7 +1026,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       //
       // receive block of charges
       //
-      int priority = *(int *)CkPriorityPtr(gmsg);  // save and use again
+      int priority = mgrLocal->nlevels
+        + 2*(mgrLocal->nlevels - blockSend.nblock_wrap.level) - 1;
       int pid;
       // qh is resized only the first time, memory allocation persists
       gmsg->get(qh, pid);
