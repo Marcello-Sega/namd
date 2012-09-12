@@ -1096,9 +1096,9 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int ka = eh.ka();
       int kb = eh.kb();
       // access buffers directly
-      double *gcbuffer = gc.data().buffer();
-      double *qhbuffer = qh.data().buffer();
-      double *ehbuffer = eh.data().buffer();
+      BigReal *gcbuffer = gc.data().buffer();
+      BigReal *qhbuffer = qh.data().buffer();
+      BigReal *ehbuffer = eh.data().buffer();
       int index = 0;
 
       // loop over potentials
@@ -3028,6 +3028,9 @@ namespace msm {
     const int jb = qh.jb();
     const int ka = qh.ka();
     const int kb = qh.kb();
+    const int ni = qh.ni();
+    const int nj = qh.nj();
+    BigReal *qhbuffer = qh.data().buffer();
 
     // loop over atoms
     for (int n = 0;  n < coord.len();  n++) {
@@ -3070,11 +3073,14 @@ namespace msm {
 
       // determine charge on cube of grid points around atom
       for (int k = 0;  k < s_size;  k++) {
+        int koff = ((k+klo) - ka) * nj;
         BigReal ck = zphi[k] * q;
         for (int j = 0;  j < s_size;  j++) {
+          int jkoff = (koff + (j+jlo) - ja) * ni;
           BigReal cjk = yphi[j] * ck;
           for (int i = 0;  i < s_size;  i++) {
-            qh(i+ilo, j+jlo, k+klo) += xphi[i] * cjk;
+            int ijkoff = jkoff + (i+ilo) - ia;
+            qhbuffer[ijkoff] += xphi[i] * cjk;
           }
         }
       }
@@ -3164,12 +3170,15 @@ namespace msm {
     const BigReal rs_edge = BigReal( mgr->s_edge );
     const int s_size = ComputeMsmMgr::PolyDegree[mgr->approx] + 1;
 
-    const int ia = qh.ia();
-    const int ib = qh.ib();
-    const int ja = qh.ja();
-    const int jb = qh.jb();
-    const int ka = qh.ka();
-    const int kb = qh.kb();
+    const int ia = eh.ia();
+    const int ib = eh.ib();
+    const int ja = eh.ja();
+    const int jb = eh.jb();
+    const int ka = eh.ka();
+    const int kb = eh.kb();
+    const int ni = eh.ni();
+    const int nj = eh.nj();
+    BigReal *ehbuffer = eh.data().buffer();
 
     // loop over atoms
     for (int n = 0;  n < coord.len();  n++) {
@@ -3198,6 +3207,9 @@ namespace msm {
       int jlo = int(ylo);
       int klo = int(zlo);
 
+#if 0
+      // XXX don't need to test twice!
+
       // test to see if stencil is within edges of grid
       int iswithin = ( ia <= ilo && (ilo+(s_size-1)) <= ib &&
                        ja <= jlo && (jlo+(s_size-1)) <= jb &&
@@ -3209,17 +3221,21 @@ namespace msm {
             coord[n].id);
         NAMD_die(msg);
       }
+#endif
 
       // determine force on atom from surrounding potential grid points
       Force f = 0;
       BigReal e = 0;
       for (int k = 0;  k < s_size;  k++) {
+        int koff = ((k+klo) - ka) * nj;
         for (int j = 0;  j < s_size;  j++) {
+          int jkoff = (koff + (j+jlo) - ja) * ni;
           BigReal cx = yphi[j] * zphi[k];
           BigReal cy = dyphi[j] * zphi[k];
           BigReal cz = yphi[j] * dzphi[k];
           for (int i = 0;  i < s_size;  i++) {
-            BigReal ec = eh(i+ilo, j+jlo, k+klo);
+            int ijkoff = jkoff + (i+ilo) - ia;
+            BigReal ec = ehbuffer[ijkoff];
             f.x += ec * dxphi[i] * cx;
             f.y += ec * xphi[i] * cy;
             f.z += ec * xphi[i] * cz;
