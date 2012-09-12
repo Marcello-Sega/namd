@@ -34,7 +34,7 @@
 
 // report timings for compute routines
 #define MSM_TIMING
-//#undef MSM_TIMING
+#undef MSM_TIMING
 
 // use fixed size grid message
 #define MSM_FIXED_SIZE_GRID_MSG
@@ -253,6 +253,10 @@ private:
   // array is length number of patches, initialized to NULL
   // allocate PatchData for only those patches on this PE
   msm::PatchPtrArray patchPtr;
+
+  // allocate subgrid used for receiving message data in addPotential()
+  // and sending on to PatchData::addPotential()
+  msm::Grid<BigReal> subgrid;
 
 #ifdef MSM_TIMING
   CProxy_MsmTimer msmTimer;
@@ -974,6 +978,7 @@ namespace msm {
     ForceArray force;
     Grid<BigReal> qh;
     Grid<BigReal> eh;
+    Grid<BigReal> subgrid;
     BigReal energy;
     BigReal virial[3][3];
     int cntRecvs;
@@ -2754,7 +2759,7 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
 
 void ComputeMsmMgr::addPotential(GridDoubleMsg *gm)
 {
-  msm::Grid<BigReal> subgrid;
+  //msm::Grid<BigReal> subgrid;
   int pid;
   gm->get(subgrid, pid);
   delete gm;
@@ -2974,6 +2979,7 @@ namespace msm {
     qh.reset(0);
     eh.init(pd->nrange);
     eh.reset(0);
+    subgrid.resize(map->bsx[0] * map->bsy[0] * map->bsz[0]);
   }
 
   void PatchData::anterpolation() {
@@ -3065,8 +3071,8 @@ namespace msm {
     int priority = 1;
     // buffer portions of grid to send to Blocks on level 0
     // allocate the largest buffer space we'll need
-    Grid<BigReal> subgrid;
-    subgrid.resize(map->bsx[0] * map->bsy[0] * map->bsz[0]);
+    //Grid<BigReal> subgrid;
+    //subgrid.resize(map->bsx[0] * map->bsy[0] * map->bsz[0]);
     for (int n = 0;  n < pd->send.len();  n++) {
 #ifdef MSM_TIMING
       startTime = CkWallTimer();
