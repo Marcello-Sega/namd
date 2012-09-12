@@ -36,6 +36,27 @@
 #define MSM_TIMING
 #undef MSM_TIMING
 
+//
+// This is the main message that gets passed between compute chares.
+// It is used to bundle blocks of charge (sendUp and send to MsmGridCutoff) 
+// and blocks of potential (sendAcross, sendDown, and sendPatch).  
+//
+// Higher priority has a numerically lower value.  
+//
+// The priorities are set as follows:
+//
+//   sendUp priority = level+1
+//
+//   (send to MsmGridCutoff) and sendAcross priority
+//       = nlevels + 2*(nlevels - level) - 1
+//
+//   sendDown and sendPatch priority
+//       = nlevels + 2*(nlevels - level)
+//
+// This puts the priority on going up the hierarchy before going across 
+// and puts the priority on finishing the top levels and down before 
+// finishing the lower levels.
+//
 class GridDoubleMsg : public CMessage_GridDoubleMsg {
   public:
     int idnum;
@@ -1005,6 +1026,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       //
       // receive block of charges
       //
+      int priority = *(int *)CkPriorityPtr(gmsg);  // save and use again
       int pid;
       // qh is resized only the first time, memory allocation persists
       gmsg->get(qh, pid);
@@ -1092,7 +1114,9 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       eh.updateLower( blockSend.nrange_wrap.lower() );
       // place eh into message
       int nelems = eh.data().len();
-      GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+      GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+      *(int *)CkPriorityPtr(gm) = priority;
+      CkSetQueueing(gm, CK_QUEUEING_IFIFO);
       gm->put(eh, bindex.level);
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
@@ -1310,8 +1334,11 @@ void MsmBlock::sendUpCharge()
     msm::BlockIndex& bindex = bd->sendUp[n].nblock_wrap;
     ASSERT(bindex.level == lnext);
     // place subgrid into message
+    // SET MESSAGE PRIORITY
     int nelems = subgrid.data().len();
-    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+    *(int *)CkPriorityPtr(gm) = lnext;
+    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, bindex.level);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -1395,6 +1422,7 @@ void MsmBlock::gridCutoff()
 #ifdef MSM_TIMING
   double startTime, stopTime;
 #endif
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
   int nelems = qh.data().len();
   int len = bd->indexGridCutoff.len();
   for (int n = 0;  n < len;  n++) {
@@ -1402,7 +1430,9 @@ void MsmBlock::gridCutoff()
     startTime = CkWallTimer();
 #endif
     int index = bd->indexGridCutoff[n];
-    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+    *(int *)CkPriorityPtr(gm) = priority;
+    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(qh, blockIndex.level);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -1420,6 +1450,7 @@ void MsmBlock::sendAcrossPotential()
   double startTime, stopTime;
 #endif
   int lnext = blockIndex.level;
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
   // buffer portions of grid to send to Blocks on this level
   // allocate the largest buffer space we'll need
   //msm::Grid<BigReal> subgrid;
@@ -1439,7 +1470,9 @@ void MsmBlock::sendAcrossPotential()
     ASSERT(bindex.level == lnext);
     // place subgrid into message
     int nelems = subgrid.data().len();
-    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+    *(int *)CkPriorityPtr(gm) = priority;
+    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, bindex.level);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -1557,6 +1590,7 @@ void MsmBlock::sendDownPotential()
   double startTime, stopTime;
 #endif
   int lnext = blockIndex.level - 1;
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level);
   // buffer portions of grid to send to Blocks on next level
   // allocate the largest buffer space we'll need
   //msm::Grid<BigReal> subgrid;
@@ -1576,7 +1610,9 @@ void MsmBlock::sendDownPotential()
     ASSERT(bindex.level == lnext);
     // place subgrid into message
     int nelems = subgrid.data().len();
-    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+    *(int *)CkPriorityPtr(gm) = priority;
+    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, bindex.level);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -1595,6 +1631,7 @@ void MsmBlock::sendPatch()
   double startTime, stopTime;
 #endif
   int lnext = blockIndex.level;
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level);
   ASSERT(lnext == 0);
   // buffer portions of grid to send to Blocks on next level
   // allocate the largest buffer space we'll need
@@ -1614,7 +1651,9 @@ void MsmBlock::sendPatch()
     int pid = bd->sendPatch[n].patchID;
     // place subgrid into message
     int nelems = subgrid.data().len();
-    GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+    GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+    *(int *)CkPriorityPtr(gm) = priority;
+    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
     gm->put(subgrid, pid);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -2978,6 +3017,7 @@ namespace msm {
 #ifdef MSM_TIMING
     double startTime, stopTime;
 #endif
+    int priority = 1;
     // buffer portions of grid to send to Blocks on level 0
     // allocate the largest buffer space we'll need
     Grid<BigReal> subgrid;
@@ -2996,7 +3036,9 @@ namespace msm {
       BlockIndex& bindex = pd->send[n].nblock_wrap;
       // place subgrid into message
       int nelems = subgrid.data().len();
-      GridDoubleMsg *gm = new(nelems, 0) GridDoubleMsg;
+      GridDoubleMsg *gm = new(nelems, sizeof(int)) GridDoubleMsg;
+      *(int *)CkPriorityPtr(gm) = priority;
+      CkSetQueueing(gm, CK_QUEUEING_IFIFO);
       gm->put(subgrid, bindex.level);
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
