@@ -34,7 +34,7 @@
 
 // report timings for compute routines
 #define MSM_TIMING
-//#undef MSM_TIMING
+#undef MSM_TIMING
 
 // use fixed size grid message
 #define MSM_FIXED_SIZE_GRID_MSG
@@ -1826,7 +1826,6 @@ void ComputeMsmMgr::setup_periodic_blocksize(int& bsize, int n)
       NAMD_die("MSM grid size for periodic dimensions must be "
           "a power of 2 times at most one power of 3");
     }
-    printf("newbsize = %d\n", newbsize);
     bsize = newbsize;
   }
   return;
