@@ -33,6 +33,12 @@
 #endif 
 
 
+// employ mixed precision
+// (but allow easy change to all double precision for comparison)
+typedef float Float;
+typedef double Double;
+
+
 namespace msm {
 
   ///////////////////////////////////////////////////////////////////////////
@@ -420,7 +426,7 @@ namespace msm {
   struct Map {
     Array<IndexRange> gridrange;  // dimensions for each MSM grid level
 
-    Array<Grid<BigReal> > gc;     // grid constant weights for each level
+    Array<Grid<Float> > gc;     // grid constant weights for each level
 
     Array<PatchDiagram> patchList;
     Array<Grid<BlockDiagram> > blockLevel;
@@ -562,7 +568,7 @@ namespace msm {
 
   struct AtomCoord {
     Position position;
-    float charge;
+    Real charge;
     int id;
   };
 

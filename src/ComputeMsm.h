@@ -32,10 +32,10 @@ public:
   void setMgr(ComputeMsmMgr *mgr) { myMgr = mgr; }
 
 private:
-  BigReal qscaling;  // charge scaling constant
   SubmitReduction *reduction;
-
   ComputeMsmMgr *myMgr;  // points to the local MSM manager
+
+  Real qscaling;  // charge scaling constant
 
   int numLocalPatches;   // total number of local patches to expect
   int cntLocalPatches;   // count local patches into saveResults()

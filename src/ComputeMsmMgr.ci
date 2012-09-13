@@ -9,11 +9,11 @@ module ComputeMsmMgr {
   message MsmInitMsg;
 
   // fixed size message 
-  message GridDoubleMsg;
+  message GridFloatMsg;
 /*
   // variable size message
-  message GridDoubleMsg {
-    double gdata[];
+  message GridFloatMsg {
+    float gdata[];
   };
 */
 
@@ -33,14 +33,14 @@ module ComputeMsmMgr {
     entry void recvMsmBlockProxy(MsmBlockProxyMsg *);
     entry void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);
     entry void update(CkQdMsg *);
-    entry void addPotential(GridDoubleMsg *);
+    entry void addPotential(GridFloatMsg *);
     entry void doneTiming(void);
   };
 
   array [3D] MsmBlock {
     entry MsmBlock(int level);
-    entry void addCharge(GridDoubleMsg *);
-    entry void addPotential(GridDoubleMsg *);
+    entry void addCharge(GridFloatMsg *);
+    entry void addPotential(GridFloatMsg *);
   };
 
   // MsmGridCutoff calculates a charge -> potential interaction pair
@@ -52,7 +52,7 @@ module ComputeMsmMgr {
     entry void initialize(MsmBlockSendMsg *);
 
     // compute() passes in the charge block
-    entry void compute(GridDoubleMsg *);
+    entry void compute(GridFloatMsg *);
   };
 
   chare MsmTimer {
