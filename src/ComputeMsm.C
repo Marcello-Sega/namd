@@ -34,7 +34,7 @@
 
 // report timings for compute routines
 #define MSM_TIMING
-//#undef MSM_TIMING
+#undef MSM_TIMING
 
 // use fixed size grid message
 #define MSM_FIXED_SIZE_GRID_MSG
@@ -1099,8 +1099,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int ka = eh.ka();
       int kb = eh.kb();
       // access buffers directly
-      Float *gcbuffer = gc.data().buffer();
-      Float *qhbuffer = qh.data().buffer();
+      const Float *gcbuffer = gc.data().buffer();
+      const Float *qhbuffer = qh.data().buffer();
       Float *ehbuffer = eh.data().buffer();
       int index = 0;
 
@@ -1123,6 +1123,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
             // accumulate sum to this eh point
             Float ehsum = 0;
 
+#if 0
             // loop over charge grid
             for (int qk = mka;  qk <= mkb;  qk++) {
               int qkoff = (qk - qka) * qnj;
@@ -1132,6 +1133,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
                 int qjkoff = (qkoff + qj - qja) * qni;
                 int gjkoff = (gkoff + (qj-j) - gja) * gni;
 
+// help the vectorizer make reasonable decisions
+#if defined(__INTEL_COMPILER)
+#pragma vector always 
+#endif
                 for (int qi = mia;  qi <= mib;  qi++) {
                   int qijkoff = qjkoff + qi - qia;
                   int gijkoff = gjkoff + (qi-i) - gia;
@@ -1140,6 +1145,29 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
                 }
               }
             } // end loop over charge grid
+#else
+            // loop over charge grid
+            for (int qk = mka;  qk <= mkb;  qk++) {
+              int qkoff = (qk - qka) * qnj;
+              int gkoff = ((qk-k) - gka) * gnj;
+
+              for (int qj = mja;  qj <= mjb;  qj++) {
+                int qjkoff = (qkoff + qj - qja) * qni;
+                int gjkoff = (gkoff + (qj-j) - gja) * gni;
+
+                const Float *qbuf = qhbuffer + (qjkoff - qia + mia);
+                const Float *gbuf = gcbuffer + (gjkoff - i - gia + mia);
+                int nn = mib - mia + 1;
+// help the vectorizer make reasonable decisions
+#if defined(__INTEL_COMPILER)
+#pragma vector always 
+#endif
+                for (int ii = 0;  ii < nn;  ii++) {
+                  ehsum += gbuf[ii] * qbuf[ii];
+                }
+              }
+            } // end loop over charge grid
+#endif
             ehbuffer[index] = ehsum;
           }
         }
