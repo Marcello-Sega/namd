@@ -34,7 +34,7 @@
 
 // report timings for compute routines
 #define MSM_TIMING
-#undef MSM_TIMING
+//#undef MSM_TIMING
 
 // use fixed size grid message
 #define MSM_FIXED_SIZE_GRID_MSG
@@ -42,6 +42,7 @@
 
 #ifdef MSM_FIXED_SIZE_GRID_MSG
 #define MSM_MAX_BLOCK_SIZE 8
+#define MSM_MAX_BLOCK_VOLUME 512
 #endif
 
 //
@@ -76,7 +77,7 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
     int nextent_k;
     int nelems;
 #ifdef MSM_FIXED_SIZE_GRID_MSG
-    Float gdata[MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE];
+    Float gdata[MSM_MAX_BLOCK_VOLUME];
 #else
     Float *gdata;
 #endif
@@ -1904,7 +1905,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     NAMD_die("MSM: unknown splitting requested (MSMSplit)");
   }
   if (CkMyPe() == 0) {
-    char *approx_str, *split_str;
+    const char *approx_str, *split_str;
     switch (approx) {
       case CUBIC:    approx_str = "C1 cubic";   break;
       case QUINTIC:  approx_str = "C1 quintic"; break;
@@ -1949,8 +1950,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     NAMD_die("MSM: invalid block size requested (MSMBlockSize[XYZ])");
   }
 #ifdef MSM_FIXED_SIZE_GRID_MSG
-  else if (bsx * bsy * bsz >
-      MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE) {
+  else if (bsx * bsy * bsz > MSM_MAX_BLOCK_VOLUME) {
     NAMD_die("MSM: requested block size (MSMBlockSize[XYZ]) too big");
   }
 #endif
