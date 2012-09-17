@@ -34,7 +34,7 @@
 
 // report timings for compute routines
 #define MSM_TIMING
-//#undef MSM_TIMING
+#undef MSM_TIMING
 
 // use fixed size grid message
 #define MSM_FIXED_SIZE_GRID_MSG
