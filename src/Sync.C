@@ -19,6 +19,7 @@
 #include "PatchMap.h"
 #include "ProxyMgr.h"
 #include "Compute.h"
+#include "ComputeMap.h"
 
 #include "Sync.h"
 
@@ -170,6 +171,7 @@ void Sync::releaseComputes()
     int compute_count = 0;
     for(cid = cid.begin(); cid != cid.end(); cid++) {
       compute_count++;
+      if ( (*cid)->type() != computePmeType )  // PME not held
       (*cid)->patchReady(pid,clist[i].doneMigration,step);
     }
     if (compute_count == 0 && patchMap->node(pid) != CkMyPe()) {

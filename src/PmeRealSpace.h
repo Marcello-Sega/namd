@@ -9,12 +9,15 @@
 
 #include "PmeBase.h"
 #include "Vector.h"
+#include "ResizeArray.h"
 
 class PmeRealSpace {
   
 public:
-  PmeRealSpace(PmeGrid grid, int natoms);
+  PmeRealSpace(PmeGrid grid);
   ~PmeRealSpace();
+
+  void set_num_atoms(int natoms);
 
   void fill_charges(double **q_arr, double **q_arr_list, int &q_arr_count,
                        int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]); 
@@ -30,9 +33,10 @@ private:
                       Vector f[]);
   void fill_b_spline(PmeParticle p[]);
 
-  const int N;
   const PmeGrid myGrid;
+  int N;
   double *M, *dM;
+  ResizeArray<double> M_alloc, dM_alloc;
 };
 
 

@@ -353,8 +353,15 @@ void Patch::positionsReady(int doneMigration)
    ComputePtrListIter cid(positionComputeList);
    int seq = flags.sequence;
    // gzheng
-     if (Sync::Object()->holdComputes(patchID, cid, doneMigration, seq))
+     if (Sync::Object()->holdComputes(patchID, cid, doneMigration, seq)) {
+       for(cid = cid.begin(); cid != cid.end(); cid++) {
+         if ( (*cid)->type() == computePmeType ) {
+	   (*cid)->patchReady(patchID,doneMigration,seq);
+           break;  // should only be one
+         }
+       }
        return;
+     }
 
    int compute_count = 0;
    for(cid = cid.begin(); cid != cid.end(); cid++)

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2012/08/22 21:18:47 $
- * $Revision: 1.1248 $
+ * $Date: 2012/09/18 18:41:50 $
+ * $Revision: 1.1249 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1490,7 +1490,7 @@ void WorkDistrib::mapComputes(void)
 	mapComputeHomePatches(computeEwaldType);
     }
     else {      
-      mapComputeHomePatches(computePmeType);
+      mapComputePatch(computePmeType);
       if ( node->simParameters->pressureProfileEwaldOn )
 	mapComputeHomePatches(computeEwaldType);
     }
@@ -2020,11 +2020,7 @@ void WorkDistrib::messageEnqueueWork(Compute *compute) {
     break;
   case computePmeType:
     // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());
-#ifdef NAMD_CUDA
     wdProxy[CkMyPe()].enqueuePme(msg);
-#else
-    msg->compute->doWork();  traceUserEvent(eventMachineProgress);  CmiMachineProgressImpl();
-#endif
     break;
   case optPmeType:
     // CkPrintf("PME %d %d %x\n", CkMyPe(), seq, compute->priority());

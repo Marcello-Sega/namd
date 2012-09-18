@@ -491,7 +491,7 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         c->initialize();
         break;
     case computePmeType:
-        c = new ComputePme(i); // unknown delete
+        c = new ComputePme(i,map->computeData[i].pids[0].pid); // unknown delete
         map->registerCompute(i,c);
         c->initialize();
         break;

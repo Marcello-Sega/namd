@@ -9,18 +9,21 @@
 #include "Node.h"
 #include "SimParameters.h"
 
-PmeRealSpace::PmeRealSpace(PmeGrid grid,int natoms)
-  : myGrid(grid), N(natoms) {
-  int order = myGrid.order;
-  M = new double[3*N*order];
-  dM = new double[3*N*order];
+PmeRealSpace::PmeRealSpace(PmeGrid grid)
+  : myGrid(grid) {
 }
 
 PmeRealSpace::~PmeRealSpace() {
-  delete [] M;
-  delete [] dM;
 }
 
+void PmeRealSpace::set_num_atoms(int natoms) {
+  N = natoms;
+  int order = myGrid.order;
+  M_alloc.resize(3*N*order);
+  M = M_alloc.begin();
+  dM_alloc.resize(3*N*order);
+  dM = dM_alloc.begin();
+}
 
 void PmeRealSpace::fill_b_spline(PmeParticle p[]) {
   double fr[3]; 

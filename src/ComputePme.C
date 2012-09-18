@@ -318,8 +318,10 @@ public:
   void initialize_pencils(CkQdMsg*);
   void activate_pencils(CkQdMsg*);
   void recvArrays(CProxy_PmeXPencil, CProxy_PmeYPencil, CProxy_PmeZPencil);
+  void initialize_computes();
 
-  void sendGrid(void);
+  void sendData(Lattice &, int sequence);
+  void sendPencils(Lattice &, int sequence);
   void recvGrid(PmeGridMsg *);
   void gridCalc1(void);
   void sendTransBarrier(void);
@@ -342,9 +344,14 @@ public:
   void sendUngrid(void);
   void recvUngrid(PmeGridMsg *);
   void recvAck(PmeAckMsg *);
+  void copyResults(PmeGridMsg *);
+  void copyPencils(PmeGridMsg *);
   void ungridCalc(void);
+  void submitReductions();
 
-  void setCompute(ComputePme *c) { pmeCompute = c; c->setMgr(this); }
+#if CMK_PERSISTENT_COMM
+  void setup_recvgrid_persistent();
+#endif
 
   //Tells if the current processor is a PME processor or not. Called by NamdCentralLB
   int isPmeProcessor(int p);  
@@ -354,11 +361,23 @@ public:
 #endif
 
 private:
+
+#if CMK_PERSISTENT_COMM
+  PersistentHandle   *recvGrid_handle;
+#endif
+
   CProxy_ComputePmeMgr pmeProxy;
   CProxy_ComputePmeMgr pmeProxyDir;
   CProxy_NodePmeMgr pmeNodeProxy;
   
-  ComputePme *pmeCompute;
+  void addCompute(ComputePme *c) {
+    if ( ! pmeComputes.size() ) initialize_computes();
+    pmeComputes.add(c);
+    c->setMgr(this);
+  }
+
+  ResizeArray<ComputePme*> pmeComputes;
+  ResizeArray<ComputePme*> heldComputes;
   PmeGrid myGrid;
   Lattice lattice;
   PmeKSpace *myKSpace;
@@ -379,12 +398,25 @@ private:
   float *work;
 #endif
 
+  int qsize, fsize, bsize;
   int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
   BigReal alchElecLambdaStart;
   BigReal elecLambdaUp;
   BigReal elecLambdaDown;
 
+  double **q_arr;
+  double **q_list;
+  int q_count;
+  char *f_arr;
+  char *fz_arr;
+  PmeReduction evir[PME_MAX_EVALS];
+  SubmitReduction *reduction;
+  SubmitReduction *amd_reduction;
+
+  int noWorkCount;
+  int doWorkCount;
+  int ungridForcesCount;
   
   LocalPmeInfo *localInfo;
   NodePmeInfo *gridNodeInfo;
@@ -418,7 +450,8 @@ private:
   PmeReduction recip_evir[PME_MAX_EVALS];
   PmeReduction recip_evir2[PME_MAX_EVALS];
 
-  int sequence;  // used for priorities
+  int compute_sequence;  // set from patch computes, used for priorities
+  int grid_sequence;  // set from grid messages, used for priorities
   int useBarrier;
   int sendTransBarrier_received;
 
@@ -430,6 +463,7 @@ private:
   char *pencilActive;
   ijpair *activePencils;
   int numPencilsActive;
+  int strayChargeErrors;
 };
 
 #ifdef NAMD_FFTW
@@ -525,7 +559,7 @@ void NodePmeMgr::registerZPencil(CkArrayIndex3D idx, PmeZPencil *obj)
 }
 
 ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup), 
-				 pmeProxyDir(thisgroup), pmeCompute(0) {
+				 pmeProxyDir(thisgroup) {
 
   CkpvAccess(BOCclass_group).computePmeMgr = thisgroup;
   pmeNodeProxy = CkpvAccess(BOCclass_group).nodePmeMgr;
@@ -1526,10 +1560,16 @@ ComputePmeMgr::~ComputePmeMgr() {
   if ( kgrid != qgrid ) delete [] kgrid;
   delete [] work;
   delete [] gridmsg_reuse;
-}
 
-void ComputePmeMgr::sendGrid(void) {
-  pmeCompute->sendData(numGridPes,gridPeOrder,recipPeDest,gridPeMap);
+  for (int i=0; i<fsize*numGrids; ++i) {
+    if ( q_arr[i] ) {
+      delete [] q_arr[i];
+    }
+  }
+  delete [] q_arr;
+  delete [] q_list;
+  delete [] f_arr;
+  delete [] fz_arr;
 }
 
 void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
@@ -1539,7 +1579,7 @@ void ComputePmeMgr::recvGrid(PmeGridMsg *msg) {
   }
   if ( grid_count == numSources ) {
     lattice = msg->lattice;
-    sequence = msg->sequence;
+    grid_sequence = msg->sequence;
   }
 
   int zdim = myGrid.dim3;
@@ -1688,8 +1728,8 @@ void ComputePmeMgr::sendTrans(void) {
         }
       }
     }
-    newmsg->sequence = sequence;
-    SET_PRIORITY(newmsg,sequence,PME_TRANS_PRIORITY)
+    newmsg->sequence = grid_sequence;
+    SET_PRIORITY(newmsg,grid_sequence,PME_TRANS_PRIORITY)
     if ( node == myTransNode ) newmsg->nx = 0;
     if ( npe > 1 ) {
       if ( node == myTransNode ) fwdSharedTrans(newmsg);
@@ -1739,7 +1779,7 @@ void ComputePmeMgr::procTrans(PmeTransMsg *msg) {
   // CkPrintf("procTrans on Pe(%d)\n",CkMyPe());
   if ( trans_count == numGridPes ) {
     lattice = msg->lattice;
-    sequence = msg->sequence;
+    grid_sequence = msg->sequence;
   }
 
  if ( msg->nx ) {
@@ -1914,7 +1954,7 @@ void ComputePmeMgr::sendUntrans(void) {
         }
       }
     }
-    SET_PRIORITY(newmsg,sequence,PME_UNTRANS_PRIORITY)
+    SET_PRIORITY(newmsg,grid_sequence,PME_UNTRANS_PRIORITY)
     if ( node == myGridNode ) newmsg->ny = 0;
     if ( npe > 1 ) {
       if ( node == myGridNode ) fwdSharedUntrans(newmsg);
@@ -2063,7 +2103,7 @@ void ComputePmeMgr::sendUngrid(void) {
     }
     newmsg->sourceNode = myGridPe;
 
-    SET_PRIORITY(newmsg,sequence,PME_UNGRID_PRIORITY)
+    SET_PRIORITY(newmsg,grid_sequence,PME_UNGRID_PRIORITY)
     CmiEnableUrgentSend(1);
     pmeProxyDir[pe].recvUngrid(newmsg);
     CmiEnableUrgentSend(0);
@@ -2078,8 +2118,8 @@ void ComputePmeMgr::recvUngrid(PmeGridMsg *msg) {
     NAMD_bug("Message order failure in ComputePmeMgr::recvUngrid\n");
   }
 
-  if ( usePencils ) pmeCompute->copyPencils(msg);
-  else pmeCompute->copyResults(msg);
+  if ( usePencils ) copyPencils(msg);
+  else copyResults(msg);
   delete msg;
   recvAck(0);
 }
@@ -2096,32 +2136,28 @@ void ComputePmeMgr::recvAck(PmeAckMsg *msg) {
 void ComputePmeMgr::ungridCalc(void) {
   // CkPrintf("ungridCalc on Pe(%d)\n",CkMyPe());
 
-  pmeCompute->ungridForces();
+  ungridForcesCount = pmeComputes.size();
+
+  for ( int i=0; i<pmeComputes.size(); ++i ) {
+    WorkDistrib::messageEnqueueWork(pmeComputes[i]);
+    // pmeComputes[i]->ungridForces();
+  }
+  // submitReductions();  // must follow all ungridForces()
 
   ungrid_count = (usePencils ? numPencilsActive : numDestRecipPes );
 }
 
 
-ComputePme::ComputePme(ComputeID c) :
-  ComputeHomePatches(c)
+ComputePme::ComputePme(ComputeID c, PatchID pid) : Compute(c), patchID(pid)
 {
   DebugM(4,"ComputePme created.\n");
   basePriority = PME_PRIORITY;
+  setNumPatches(1);
 
   CProxy_ComputePmeMgr::ckLocalBranch(
-	CkpvAccess(BOCclass_group).computePmeMgr)->setCompute(this);
-
-  useAvgPositions = 1;
-
-  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+	CkpvAccess(BOCclass_group).computePmeMgr)->addCompute(this);
 
   SimParameters *simParams = Node::Object()->simParameters;
-
-  if (simParams->accelMDOn) {
-     amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
-  } else {
-     amd_reduction = NULL;
-  }
 
   alchFepOn = simParams->alchFepOn;
   alchThermIntOn = simParams->alchThermIntOn;
@@ -2154,6 +2190,37 @@ ComputePme::ComputePme(ComputeID c) :
   myGrid.order = simParams->PMEInterpOrder;
   myGrid.dim2 = myGrid.K2;
   myGrid.dim3 = 2 * (myGrid.K3/2 + 1);
+
+  for ( int g=0; g<numGrids; ++g ) myRealSpace[g] = new PmeRealSpace(myGrid);
+}
+
+void ComputePme::initialize() {
+  if (!(patch = PatchMap::Object()->patch(patchID))) {
+    NAMD_bug("ComputePme used with unknown patch.");
+  }
+  positionBox = patch->registerPositionPickup(this);
+  avgPositionBox = patch->registerAvgPositionPickup(this);
+  forceBox = patch->registerForceDeposit(this);
+}
+
+void ComputePmeMgr::initialize_computes() {
+
+  noWorkCount = 0;
+  doWorkCount = 0;
+  ungridForcesCount = 0;
+
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+
+  SimParameters *simParams = Node::Object()->simParameters;
+
+  strayChargeErrors = 0;
+
+  if (simParams->accelMDOn) {
+     amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+  } else {
+     amd_reduction = NULL;
+  }
+
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   fsize = myGrid.K1 * myGrid.dim2;
   q_arr = new double*[fsize*numGrids];
@@ -2167,16 +2234,12 @@ ComputePme::ComputePme(ComputeID c) :
 
   for ( int g=0; g<numGrids; ++g ) {
     char *f = f_arr + g*fsize;
-    if ( myMgr->usePencils ) {
-      int xBlocks = myMgr->xBlocks;
-      int yBlocks = myMgr->yBlocks;
+    if ( usePencils ) {
       int K1 = myGrid.K1;
       int K2 = myGrid.K2;
       int block1 = ( K1 + xBlocks - 1 ) / xBlocks;
       int block2 = ( K2 + yBlocks - 1 ) / yBlocks;
       int dim2 = myGrid.dim2;
-      const ijpair *activePencils = myMgr->activePencils;
-      const int numPencilsActive = myMgr->numPencilsActive;
       for (int ap=0; ap<numPencilsActive; ++ap) {
         int ib = activePencils[ap].i;
         int jb = activePencils[ap].j;
@@ -2192,11 +2255,10 @@ ComputePme::ComputePme(ComputeID c) :
         }
       }
     } else {
-      int numRecipPes = myMgr->numGridPes;
-      int block1 = ( myGrid.K1 + numRecipPes - 1 ) / numRecipPes;
+      int block1 = ( myGrid.K1 + numGridPes - 1 ) / numGridPes;
       bsize = block1 * myGrid.dim2 * myGrid.dim3;
-      for (int pe=0; pe<numRecipPes; pe++) {
-        if ( ! myMgr->recipPeDest[pe] ) continue;
+      for (int pe=0; pe<numGridPes; pe++) {
+        if ( ! recipPeDest[pe] ) continue;
         int start = pe * bsize;
         int len = bsize;
         if ( start >= qsize ) { start = 0; len = 0; }
@@ -2216,25 +2278,12 @@ ComputePme::ComputePme(ComputeID c) :
 
 ComputePme::~ComputePme()
 {
-  for (int i=0; i<fsize*numGrids; ++i) {
-    if ( q_arr[i] ) {
-      delete [] q_arr[i];
-    }
-  }
-  delete [] q_arr;
-  delete [] q_list;
-  delete [] f_arr;
-  delete [] fz_arr;
+    for ( int g=0; g<numGrids; ++g ) delete myRealSpace[g];
 }
 
 #if CMK_PERSISTENT_COMM 
-void ComputePme::setup_recvgrid_persistent() 
+void ComputePmeMgr::setup_recvgrid_persistent() 
 {
-    int xBlocks = myMgr->xBlocks;
-    int yBlocks = myMgr->yBlocks;
-    int zBlocks = myMgr->zBlocks;
-    myGrid.block1 = ( myGrid.K1 + xBlocks - 1 ) / xBlocks;
-    myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
     int K1 = myGrid.K1;
     int K2 = myGrid.K2;
     int dim2 = myGrid.dim2;
@@ -2242,12 +2291,9 @@ void ComputePme::setup_recvgrid_persistent()
     int block1 = myGrid.block1;
     int block2 = myGrid.block2;
 
-    const char *pencilActive = myMgr->pencilActive;
-    const ijpair *activePencils = myMgr->activePencils;
-    const int numPencilsActive = myMgr->numPencilsActive;
     int hd = 1 ;  // has data?
 
-    CkArray *zPencil_local = myMgr->zPencil.ckLocalBranch();
+    CkArray *zPencil_local = zPencil.ckLocalBranch();
     recvGrid_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * numPencilsActive);
     for (int ap=0; ap<numPencilsActive; ++ap) {
         int ib = activePencils[ap].i;
@@ -2281,42 +2327,51 @@ void ComputePme::setup_recvgrid_persistent()
 }
 #endif
 
+int ComputePme::noWork() {
+
+  if ( patch->flags.doFullElectrostatics ) {
+    if ( ! myMgr->ungridForcesCount ) return 0;  // work to do, enqueue as usual
+    myMgr->heldComputes.add(this);
+    return 1;  // don't enqueue yet
+  }
+
+  positionBox->skip();
+  forceBox->skip();
+
+  if ( ++(myMgr->noWorkCount) == myMgr->pmeComputes.size() ) {
+    myMgr->noWorkCount = 0;
+    myMgr->reduction->submit();
+    if (myMgr->amd_reduction) myMgr->amd_reduction->submit();
+  }
+
+  return 1;  // no work for this step
+}
 
 void ComputePme::doWork()
 {
   DebugM(4,"Entering ComputePme::doWork().\n");
 
+  if ( basePriority >= COMPUTE_HOME_PRIORITY ) {
+    basePriority = PME_PRIORITY;
+    ungridForces();
+    if ( ! --(myMgr->ungridForcesCount) ) myMgr->submitReductions();
+    return;
+  }
+  basePriority = COMPUTE_HOME_PRIORITY + PATCH_PRIORITY(patchID);
+
 #ifdef TRACE_COMPUTE_OBJECTS
     double traceObjStartTime = CmiWallTimer();
 #endif
 
-  ResizeArrayIter<PatchElem> ap(patchList);
-
-  // Skip computations if nothing to do.
-  if ( ! patchList[0].p->flags.doFullElectrostatics )
-  {
-    for (ap = ap.begin(); ap != ap.end(); ap++) {
-      CompAtom *x = (*ap).positionBox->open();
-      Results *r = (*ap).forceBox->open();
-      (*ap).positionBox->close(&x);
-      (*ap).forceBox->close(&r);
-    }
-    reduction->submit();
-    if (amd_reduction) amd_reduction->submit();
-    return;
-  }
-
   // allocate storage
-  numLocalAtoms = 0;
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-    numLocalAtoms += (*ap).p->getNumAtoms();
-  }
+  numLocalAtoms = patch->getNumAtoms();
 
-  Lattice lattice = patchList[0].p->flags.lattice;
+  Lattice &lattice = patch->flags.lattice;
 
-  localData = new PmeParticle[numLocalAtoms*(numGrids+
-					((numGrids>1 || selfOn)?1:0))];
-  localPartition = new unsigned char[numLocalAtoms];
+  localData_alloc.resize(numLocalAtoms*(numGrids+ ((numGrids>1 || selfOn)?1:0)));
+  localData = localData_alloc.begin();
+  localPartition_alloc.resize(numLocalAtoms);
+  localPartition = localPartition_alloc.begin();
 
   int g;
   for ( g=0; g<numGrids; ++g ) {
@@ -2329,18 +2384,14 @@ void ComputePme::doWork()
   const BigReal coulomb_sqrt = sqrt( COULOMB * ComputeNonbondedUtil::scaling
 				* ComputeNonbondedUtil::dielectric_1 );
 
-  for (ap = ap.begin(); ap != ap.end(); ap++) {
-#ifdef NETWORK_PROGRESS
-    CmiNetworkProgress();
-#endif
-
-    CompAtom *x = (*ap).positionBox->open();
-    // CompAtomExt *xExt = (*ap).p->getCompAtomExtInfo();
-    if ( patchList[0].p->flags.doMolly ) {
-      (*ap).positionBox->close(&x);
-      x = (*ap).avgPositionBox->open();
+  {
+    CompAtom *x = positionBox->open();
+    // CompAtomExt *xExt = patch->getCompAtomExtInfo();
+    if ( patch->flags.doMolly ) {
+      positionBox->close(&x);
+      x = avgPositionBox->open();
     }
-    int numAtoms = (*ap).p->getNumAtoms();
+    int numAtoms = patch->getNumAtoms();
 
     for(int i=0; i<numAtoms; ++i)
     {
@@ -2353,17 +2404,13 @@ void ComputePme::doWork()
       ++part_ptr;
     }
 
-    if ( patchList[0].p->flags.doMolly ) { (*ap).avgPositionBox->close(&x); }
-    else { (*ap).positionBox->close(&x); }
+    if ( patch->flags.doMolly ) { avgPositionBox->close(&x); }
+    else { positionBox->close(&x); }
   }
 
   // copy to other grids if needed
   if ( ((alchFepOn || alchThermIntOn) && (!alchDecouple)) || lesOn ) {
     for ( g=0; g<numGrids; ++g ) {
-#ifdef NETWORK_PROGRESS
-      CmiNetworkProgress();
-#endif
-
       PmeParticle *lgd = localGridData[g];
       int nga = 0;
       for(int i=0; i<numLocalAtoms; ++i) {
@@ -2384,10 +2431,6 @@ void ComputePme::doWork()
     // g=3: only partition 2 atoms
     // plus one grid g=4, only partition 0, if numGrids=5
     for ( g=0; g<2; ++g ) {  // same as before for first 2
-#ifdef NETWORK_PROGRESS
-      CmiNetworkProgress();
-#endif
-
       PmeParticle *lgd = localGridData[g];
       int nga = 0;
       for(int i=0; i<numLocalAtoms; ++i) {
@@ -2398,10 +2441,6 @@ void ComputePme::doWork()
       numGridAtoms[g] = nga;
     }
     for (g=2 ; g<4 ; ++g ) {  // only alchemical atoms for these 2
-#ifdef NETWORK_PROGRESS
-      CmiNetworkProgress();
-#endif
-
       PmeParticle *lgd = localGridData[g];
       int nga = 0;
       for(int i=0; i<numLocalAtoms; ++i) {
@@ -2413,10 +2452,6 @@ void ComputePme::doWork()
     }
     for (g=4 ; g<numGrids ; ++g ) {  // only non-alchemical atoms 
       // numGrids=5 only if alchElecLambdaStart > 0
-#ifdef NETWORK_PROGRESS
-      CmiNetworkProgress();
-#endif
-
       PmeParticle *lgd = localGridData[g];
       int nga = 0;
       for(int i=0; i<numLocalAtoms; ++i) {
@@ -2464,22 +2499,31 @@ void ComputePme::doWork()
     numGridAtoms[0] = numLocalAtoms;
   }
 
-  memset( (void*) fz_arr, 0, myGrid.K3 * sizeof(char) );
+ if ( ! myMgr->doWorkCount ) {
+  myMgr->doWorkCount = myMgr->pmeComputes.size();
 
-  for (int i=0; i<q_count; ++i) {
-    memset( (void*) (q_list[i]), 0, myGrid.dim3 * sizeof(double) );
+  memset( (void*) myMgr->fz_arr, 0, myGrid.K3 * sizeof(char) );
+
+  for (int i=0; i<myMgr->q_count; ++i) {
+    memset( (void*) (myMgr->q_list[i]), 0, myGrid.dim3 * sizeof(double) );
   }
 
-  strayChargeErrors = 0;
+  for ( g=0; g<numGrids; ++g ) {
+    myMgr->evir[g] = 0;
+  }
+
+  myMgr->strayChargeErrors = 0;
+
+  myMgr->compute_sequence = sequence();
+ }
+
+  if ( sequence() != myMgr->compute_sequence ) NAMD_bug("ComputePme sequence mismatch in doWork()");
+
+  int strayChargeErrors = 0;
 
   // calculate self energy
   BigReal ewaldcof = ComputeNonbondedUtil::ewaldcof;
   for ( g=0; g<numGrids; ++g ) {
-#ifdef NETWORK_PROGRESS
-    CmiNetworkProgress();
-#endif
-
-    evir[g] = 0;
     BigReal selfEnergy = 0;
     data_ptr = localGridData[g];
     int i;
@@ -2489,44 +2533,36 @@ void ComputePme::doWork()
       ++data_ptr;
     }
     selfEnergy *= -1. * ewaldcof / SQRT_PI;
-    evir[g][0] += selfEnergy;
+    myMgr->evir[g][0] += selfEnergy;
 
-    double **q = q_arr + g*fsize;
-    char *f = f_arr + g*fsize;
+    double **q = myMgr->q_arr + g*myMgr->fsize;
+    char *f = myMgr->f_arr + g*myMgr->fsize;
 
-    myRealSpace[g] = new PmeRealSpace(myGrid,numGridAtoms[g]);
+    myRealSpace[g]->set_num_atoms(numGridAtoms[g]);
     scale_coordinates(localGridData[g], numGridAtoms[g], lattice, myGrid);
-    myRealSpace[g]->fill_charges(q, q_list, q_count, strayChargeErrors, f, fz_arr, localGridData[g]);
+    myRealSpace[g]->fill_charges(q, myMgr->q_list, myMgr->q_count, strayChargeErrors, f, myMgr->fz_arr, localGridData[g]);
   }
+  myMgr->strayChargeErrors += strayChargeErrors;
 
 #ifdef TRACE_COMPUTE_OBJECTS
     traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+this->cid, traceObjStartTime, CmiWallTimer());
 #endif
 
+ if ( --(myMgr->doWorkCount) == 0 ) {
   if ( myMgr->usePencils ) {
-    sendPencils();
+    myMgr->sendPencils(lattice,sequence());
   } else {
-#if 0
-  CProxy_ComputePmeMgr pmeProxy(CkpvAccess(BOCclass_group).computePmeMgr);
-  pmeProxy[CkMyPe()].sendGrid();
-#else
-  sendData(myMgr->numGridPes,myMgr->gridPeOrder,
-		myMgr->recipPeDest,myMgr->gridPeMap);
-#endif
+    myMgr->sendData(lattice,sequence());
   }
+ }
 
 }
 
 
-void ComputePme::sendPencils() {
+void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
-  int xBlocks = myMgr->xBlocks;
-  int yBlocks = myMgr->yBlocks;
-  int zBlocks = myMgr->zBlocks;
-  myGrid.block1 = ( myGrid.K1 + xBlocks - 1 ) / xBlocks;
-  myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
   int K1 = myGrid.K1;
   int K2 = myGrid.K2;
   int dim2 = myGrid.dim2;
@@ -2534,15 +2570,8 @@ void ComputePme::sendPencils() {
   int block1 = myGrid.block1;
   int block2 = myGrid.block2;
 
-  Lattice lattice = patchList[0].p->flags.lattice;
-
-  resultsRemaining = myMgr->numPencilsActive;
-  const char *pencilActive = myMgr->pencilActive;
-  const ijpair *activePencils = myMgr->activePencils;
-  const int numPencilsActive = myMgr->numPencilsActive;
-
   // int savedMessages = 0;
-  NodePmeMgr *npMgr = myMgr->pmeNodeProxy[CkMyNode()].ckLocalBranch();
+  NodePmeMgr *npMgr = pmeNodeProxy[CkMyNode()].ckLocalBranch();
 
   for (int ap=0; ap<numPencilsActive; ++ap) {
     int ib = activePencils[ap].i;
@@ -2615,23 +2644,24 @@ void ComputePme::sendPencils() {
     }
    }
 
-    msg->sequence = sequence();
-    SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
+    msg->sequence = compute_sequence;
+    SET_PRIORITY(msg,compute_sequence,PME_GRID_PRIORITY)
     CmiEnableUrgentSend(1);
 #if USE_NODE_PAR_RECEIVE
     msg->destElem=CkArrayIndex3D(ib,jb,0);
     CProxy_PmePencilMap lzm = npMgr->zm;
     int destproc = lzm.ckLocalBranch()->procNum(0, msg->destElem);
     int destnode = CmiNodeOf(destproc);
-    myMgr->pmeNodeProxy[destnode].recvZGrid(msg);
+    pmeNodeProxy[destnode].recvZGrid(msg);
 #else
-    myMgr->zPencil(ib,jb,0).recvGrid(msg);
+    zPencil(ib,jb,0).recvGrid(msg);
 #endif
     CmiEnableUrgentSend(0);
   }
 
 
   if ( strayChargeErrors ) {
+   strayChargeErrors = 0;
    iout << iERROR << "Stray PME grid charges detected: "
  	<< CkMyPe() << " sending to (x,y)";
    for (int ib=0; ib<xBlocks; ++ib) {
@@ -2667,13 +2697,8 @@ void ComputePme::sendPencils() {
 }
 
 
-void ComputePme::copyPencils(PmeGridMsg *msg) {
+void ComputePmeMgr::copyPencils(PmeGridMsg *msg) {
 
-  int xBlocks = myMgr->xBlocks;
-  int yBlocks = myMgr->yBlocks;
-  int zBlocks = myMgr->zBlocks;
-  myGrid.block1 = ( myGrid.K1 + xBlocks - 1 ) / xBlocks;
-  myGrid.block2 = ( myGrid.K2 + yBlocks - 1 ) / yBlocks;
   int K1 = myGrid.K1;
   int K2 = myGrid.K2;
   int dim2 = myGrid.dim2;
@@ -2712,22 +2737,15 @@ void ComputePme::copyPencils(PmeGridMsg *msg) {
 }
 
 
-void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
-				int *recipPeDest, int *gridPeMap) {
+void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
-  myGrid.block1 = ( myGrid.K1 + numRecipPes - 1 ) / numRecipPes;
-  myGrid.block2 = ( myGrid.K2 + numRecipPes - 1 ) / numRecipPes;
   bsize = myGrid.block1 * myGrid.dim2 * myGrid.dim3;
 
-  Lattice lattice = patchList[0].p->flags.lattice;
-
-  resultsRemaining = numRecipPes;
-
   CProxy_ComputePmeMgr pmeProxy(CkpvAccess(BOCclass_group).computePmeMgr);
-  for (int j=0; j<numRecipPes; j++) {
-    int pe = recipPeOrder[j];  // different order
+  for (int j=0; j<numGridPes; j++) {
+    int pe = gridPeOrder[j];  // different order
     if ( ! recipPeDest[pe] && ! strayChargeErrors ) continue;
     int start = pe * bsize;
     int len = bsize;
@@ -2806,14 +2824,16 @@ void ComputePme::sendData(int numRecipPes, int *recipPeOrder,
       }
     }
 
-    msg->sequence = sequence();
-    SET_PRIORITY(msg,sequence(),PME_GRID_PRIORITY)
+    msg->sequence = compute_sequence;
+    SET_PRIORITY(msg,compute_sequence,PME_GRID_PRIORITY)
     pmeProxy[gridPeMap[pe]].recvGrid(msg);
   }
+ 
+  strayChargeErrors = 0;
 
 }
 
-void ComputePme::copyResults(PmeGridMsg *msg) {
+void ComputePmeMgr::copyResults(PmeGridMsg *msg) {
 
   int zdim = myGrid.dim3;
   int flen = msg->len;
@@ -2839,10 +2859,12 @@ void ComputePme::copyResults(PmeGridMsg *msg) {
 
 void ComputePme::ungridForces() {
 
+    if ( sequence() != myMgr->compute_sequence ) NAMD_bug("ComputePme sequence mismatch in ungridForces()");
+ 
     SimParameters *simParams = Node::Object()->simParameters;
 
-    Vector *localResults = new Vector[numLocalAtoms*
-					((numGrids>1 || selfOn)?2:1)];
+    localResults_alloc.resize(numLocalAtoms* ((numGrids>1 || selfOn)?2:1));
+    Vector *localResults = localResults_alloc.begin();
     Vector *gridResults;
     if ( alchFepOn || alchThermIntOn || lesOn || selfOn || pairOn ) {
       for(int i=0; i<numLocalAtoms; ++i) { localResults[i] = 0.; }
@@ -2852,7 +2874,7 @@ void ComputePme::ungridForces() {
     }
 
     Vector pairForce = 0.;
-    Lattice lattice = patchList[0].p->flags.lattice;
+    Lattice &lattice = patch->flags.lattice;
     int g = 0;
     if(!simParams->commOnly) {
     for ( g=0; g<numGrids; ++g ) {
@@ -2860,8 +2882,7 @@ void ComputePme::ungridForces() {
       CmiNetworkProgress();
 #endif
 
-      myRealSpace[g]->compute_forces(q_arr+g*fsize, localGridData[g], gridResults);
-      delete myRealSpace[g];
+      myRealSpace[g]->compute_forces(myMgr->q_arr+g*myMgr->fsize, localGridData[g], gridResults);
       scale_forces(gridResults, numGridAtoms[g], lattice);
 
       if ( alchFepOn || alchThermIntOn ) {
@@ -2955,28 +2976,21 @@ void ComputePme::ungridForces() {
             if ( localPartition[i] == g ) {
               localResults[i] -= gridResults[nga++];
             }
-          }
+         }
         }
       }
     }
     }
-    else
-    {// cleanup for commOnly to avoid leaking
-      for ( g=0; g<numGrids; ++g ) {delete myRealSpace[g];}
-    }
-    delete [] localData;
-    delete [] localPartition;
 
     Vector *results_ptr = localResults;
-    ResizeArrayIter<PatchElem> ap(patchList);
     
     // add in forces
-    for (ap = ap.begin(); ap != ap.end(); ap++) {
-      Results *r = (*ap).forceBox->open();
+    {
+      Results *r = forceBox->open();
       Force *f = r->f[Results::slow];
-      int numAtoms = (*ap).p->getNumAtoms();
+      int numAtoms = patch->getNumAtoms();
 
-      if ( ! strayChargeErrors && ! simParams->commOnly ) {
+      if ( ! myMgr->strayChargeErrors && ! simParams->commOnly ) {
         for(int i=0; i<numAtoms; ++i) {
           f[i].x += results_ptr->x;
           f[i].y += results_ptr->y;
@@ -2984,16 +2998,18 @@ void ComputePme::ungridForces() {
           ++results_ptr;
         }
       }
-      (*ap).forceBox->close(&r);
+      forceBox->close(&r);
     }
 
-    delete [] localResults;
-   
     if ( pairOn || selfOn ) {
-        ADD_VECTOR_OBJECT(reduction,REDUCTION_PAIR_ELECT_FORCE,pairForce);
+        ADD_VECTOR_OBJECT(myMgr->reduction,REDUCTION_PAIR_ELECT_FORCE,pairForce);
     }
 
-    for ( g=0; g<numGrids; ++g ) {
+}
+
+void ComputePmeMgr::submitReductions() {
+
+    for ( int g=0; g<numGrids; ++g ) {
       double scale = 1.;
       if ( alchFepOn || alchThermIntOn ) {
         if ( g == 0 ) scale = elecLambdaUp;
@@ -3038,6 +3054,7 @@ void ComputePme::ungridForces() {
       //alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? simParams->alchElecLambdaStart : 0;
 
       if (alchFepOn) {
+        SimParameters *simParams = Node::Object()->simParameters;
         BigReal elecLambda2Up =  (simParams->alchLambda2 <= alchElecLambdaStart)? 0. : \
               (simParams->alchLambda2 - alchElecLambdaStart) / (1. - alchElecLambdaStart);
         BigReal elecLambda2Down =  ((1-simParams->alchLambda2) <= alchElecLambdaStart)? 0. : \
@@ -3100,6 +3117,12 @@ void ComputePme::ungridForces() {
     reduction->item(REDUCTION_STRAY_CHARGE_ERRORS) += strayChargeErrors;
     reduction->submit();
     if (amd_reduction) amd_reduction->submit();
+
+
+  for ( int i=0; i<heldComputes.size(); ++i ) {
+    WorkDistrib::messageEnqueueWork(heldComputes[i]);
+  }
+  heldComputes.resize(0);
 }
 
 #if USE_TOPOMAP 

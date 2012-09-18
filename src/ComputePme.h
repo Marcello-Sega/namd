@@ -7,60 +7,54 @@
 #ifndef COMPUTEPME_H
 #define COMPUTEPME_H
 
-#include "ComputeHomePatches.h"
+#include "Compute.h"
 #include "PmeBase.h"
 #include "NamdTypes.h"
+#include "PatchTypes.h"
+#include "Box.h"
+#include "OwnerBox.h"
 
 class PmeRealSpace;
 class ComputeMgr;
 class SubmitReduction;
 class PmeGridMsg;
 class ComputePmeMgr;
+class Patch;
 
-class ComputePme : public ComputeHomePatches {
+class ComputePme : public Compute {
 public:
-  ComputePme(ComputeID c);
+  ComputePme(ComputeID c, PatchID pid);
   virtual ~ComputePme();
+  void initialize();
+  int noWork();
   void doWork();
-  void sendData(int, int*, int*, int*);
-  void sendPencils();
-  void copyResults(PmeGridMsg *);
-  void copyPencils(PmeGridMsg *);
   void ungridForces();
   void setMgr(ComputePmeMgr *mgr) { myMgr = mgr; }
-#if CMK_PERSISTENT_COMM
-  void setup_recvgrid_persistent();
-#endif
+
  private:
+  PatchID patchID;
+  Patch *patch;
+  Box<Patch,CompAtom> *positionBox;
+  Box<Patch,CompAtom> *avgPositionBox;
+  Box<Patch,Results> *forceBox;
+
   PmeGrid myGrid;
-  int qsize, fsize, bsize;
   int alchFepOn, alchThermIntOn, lesOn, lesFactor, pairOn, selfOn, numGrids;
   int alchDecouple;
   BigReal alchElecLambdaStart;
   BigReal elecLambdaUp;
   BigReal elecLambdaDown;
   
-  double **q_arr;
-  double **q_list;
-  int q_count;
-  char *f_arr;
-  char *fz_arr;
-  PmeReduction evir[PME_MAX_EVALS];
-  SubmitReduction *reduction;
-  SubmitReduction *amd_reduction;
-  int strayChargeErrors;
-  int resultsRemaining;
   PmeRealSpace *myRealSpace[PME_MAX_EVALS];
   int numLocalAtoms;
   PmeParticle *localData;
+  ResizeArray<PmeParticle> localData_alloc;
   unsigned char *localPartition;
+  ResizeArray<unsigned char> localPartition_alloc;
+  ResizeArray<Vector> localResults_alloc;
   int numGridAtoms[PME_MAX_EVALS];
   PmeParticle *localGridData[PME_MAX_EVALS];
   ComputePmeMgr *myMgr;
-
-#if CMK_PERSISTENT_COMM
-  PersistentHandle   *recvGrid_handle;
-#endif
 
 };
 
