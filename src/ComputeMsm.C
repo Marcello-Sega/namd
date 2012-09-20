@@ -36,6 +36,10 @@
 #define MSM_TIMING
 #undef MSM_TIMING
 
+// report profiling for compute routines
+#define MSM_PROFILING
+#undef MSM_PROFILING
+
 // use fixed size grid message
 #define MSM_FIXED_SIZE_GRID_MSG
 //#undef MSM_FIXED_SIZE_GRID_MSG
@@ -151,10 +155,12 @@ class MsmGridCutoffProxyMsg : public CMessage_MsmGridCutoffProxyMsg {
 };
 
 
-class MsmBlockSendMsg : public CMessage_MsmBlockSendMsg {
+class MsmGridCutoffInitMsg : public CMessage_MsmGridCutoffInitMsg {
   public:
-    msm::BlockSend blockSend;
-    MsmBlockSendMsg(msm::BlockSend& b) : blockSend(b) { }
+    msm::BlockIndex qhBlockIndex;  // charge block index
+    msm::BlockSend ehBlockSend;    // potential block sending address
+    MsmGridCutoffInitMsg(const msm::BlockIndex& i, const msm::BlockSend& b)
+      : qhBlockIndex(i), ehBlockSend(b) { }
 };
 
 
@@ -180,6 +186,32 @@ class MsmTimer : public CBase_MsmTimer {
     }
 
     double timing[MAX];
+};
+
+
+class MsmProfiler : public CBase_MsmProfiler {
+  public:
+    enum { MAX = MSM_MAX_BLOCK_SIZE+1 };
+
+    MsmProfiler() {
+      for (int i = 0;  i < MAX;  i++)  xloopcnt[i] = 0;
+    }
+    void done(int lc[], int n) {
+      for (int i = 0;  i < MAX;  i++)  xloopcnt[i] = lc[i];
+      print();
+    }
+    void print() {
+      int sum = 0;
+      for (int i = 0;  i < MAX;  i++)  sum += xloopcnt[i];
+      printf("MSM profiling:\n");
+      printf("   total executions of inner loop:   %d\n", sum);
+      for (int i = 0;  i < MAX;  i++) {
+        printf("   executing %d times:   %d  (%5.2f%%)\n",
+            i, xloopcnt[i], 100*double(xloopcnt[i])/sum);
+      }
+    }
+
+    int xloopcnt[MAX];
 };
 
 
@@ -214,12 +246,46 @@ public:
 #ifdef MSM_TIMING
   void initTiming() {
     for (int i = 0;  i < MsmTimer::MAX;  i++)  msmTiming[i] = 0;
+    cntTiming = 0;
+  }
+  // every local object being timed should call this during initialization
+  void addTiming() {
+    numTiming++;
+  }
+  void doneTiming() {
+    if (++cntTiming >= numTiming) {
+#if 1
+      contribute(MsmTimer::MAX*sizeof(double), msmTiming,
+          CkReduction::sum_double);
+#else
+      contribute(MsmTimer::MAX*sizeof(double), msmTiming,
+          CkReduction::sum_double, cbTiming);
+#endif
+      initTiming();
+    }
   }
 #endif
-  void doneTiming();   // called at end by the compute object
-#ifdef MSM_TIMING
-  void broadcastTiming() {  // to be called only by PE=0
-    msmProxy.doneTiming();
+
+#ifdef MSM_PROFILING
+  void initProfiling() {
+    for (int i = 0;  i < MsmProfiler::MAX;  i++)  xLoopCnt[i] = 0;
+    cntProfiling = 0;
+  }
+  // every local object being profiled should call this during initialization
+  void addProfiling() {
+    numProfiling++;
+  }
+  void doneProfiling() {
+    if (++cntProfiling >= numProfiling) {
+#if 1
+      contribute(MsmProfiler::MAX*sizeof(int), xLoopCnt,
+          CkReduction::sum_int);
+#else
+      contribute(MsmProfiler::MAX*sizeof(int), xLoopCnt,
+          CkReduction::sum_int, cbProfiling);
+#endif
+      initProfiling();  // reset accumulators for next visit
+    }
   }
 #endif
 
@@ -262,6 +328,17 @@ private:
 #ifdef MSM_TIMING
   CProxy_MsmTimer msmTimer;
   double msmTiming[MsmTimer::MAX];
+  int numTiming;  // total number of objects being timed
+  int cntTiming;  // count the objects as they provide timing results
+  CkCallback *cbTiming;
+#endif
+
+#ifdef MSM_PROFILING
+  CProxy_MsmProfiler msmProfiler;
+  int xLoopCnt[MsmProfiler::MAX];
+  int numProfiling;  // total number of objects being profiled
+  int cntProfiling;  // count the objects as they provide profiling results
+  CkCallback *cbProfiling;
 #endif
 
   Vector c, u, v, w;    // rescaled center and lattice vectors
@@ -991,7 +1068,8 @@ namespace msm {
     AtomCoordArray& coordArray() { return coord; }
     ForceArray& forceArray() { return force; }
 
-    void init(ComputeMsmMgr *pmgr, int pid, int natoms);
+    PatchData(ComputeMsmMgr *pmgr, int pid);
+    void init(int natoms);
     void anterpolation();
     void sendCharge();
     void addPotential(const Grid<Float>& epart);
@@ -1008,9 +1086,10 @@ namespace msm {
 class MsmGridCutoff : public CBase_MsmGridCutoff {
   public:
     CProxy_ComputeMsmMgr mgrProxy;
-    ComputeMsmMgr *mgrLocal;   // for quick access to data
+    ComputeMsmMgr *mgrLocal;     // for quick access to data
     msm::Map *map;
-    msm::BlockSend blockSend;  // destination for potentials
+    msm::BlockIndex qhblockIndex;  // source of charges
+    msm::BlockSend ehblockSend;    // destination for potentials
     msm::Grid<Float> qh;
     msm::Grid<Float> eh;
 
@@ -1019,22 +1098,32 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
           CkpvAccess(BOCclass_group).computeMsmMgr);
       map = &(mgrLocal->mapData());
+#ifdef MSM_TIMING
+      mgrLocal->addTiming();
+#endif
+#ifdef MSM_PROFILING
+      mgrLocal->addProfiling();
+#endif
     }
 
     MsmGridCutoff(CkMigrateMessage *m) { }
 
-    void initialize(MsmBlockSendMsg *bmsg) {
-      blockSend = bmsg->blockSend;
+    void initialize(MsmGridCutoffInitMsg *bmsg) {
+      qhblockIndex = bmsg->qhBlockIndex;
+      ehblockSend = bmsg->ehBlockSend;
       delete bmsg;
 #ifdef DEBUG_MSM_GRID
       printf("MsmGridCutoff[%d]:  initialize()"
           " send to level=%d block=(%d,%d,%d)\n",
-          thisIndex, blockSend.nblock_wrap.level,
-          blockSend.nblock_wrap.n.i,
-          blockSend.nblock_wrap.n.j,
-          blockSend.nblock_wrap.n.k);
+          thisIndex, ehblockSend.nblock_wrap.level,
+          ehblockSend.nblock_wrap.n.i,
+          ehblockSend.nblock_wrap.n.j,
+          ehblockSend.nblock_wrap.n.k);
 #endif
     }
+
+#define CLIP_POTENTIAL_GRID
+#undef CLIP_POTENTIAL_GRID
 
     void compute(GridFloatMsg *gmsg) {
 #ifdef DEBUG_MSM_GRID
@@ -1048,7 +1137,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // receive block of charges
       //
       int priority = mgrLocal->nlevels
-        + 2*(mgrLocal->nlevels - blockSend.nblock_wrap.level) - 1;
+        + 2*(mgrLocal->nlevels - ehblockSend.nblock_wrap.level) - 1;
       int pid;
       // qh is resized only the first time, memory allocation persists
       gmsg->get(qh, pid);
@@ -1068,10 +1157,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #endif
       // resets indexing on block
       // eh is resized only the first time, memory allocation persists
-      eh.init(blockSend.nrange);
+      eh.init(ehblockSend.nrange);
       eh.reset(0);
       // destination block index for potentials
-      const msm::BlockIndex& bindex = blockSend.nblock_wrap;
+      const msm::BlockIndex& bindex = ehblockSend.nblock_wrap;
       // need grid of weights for this level
       msm::Grid<Float>& gc = map->gc[bindex.level];
       // index range of weights
@@ -1099,27 +1188,58 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int jb = eh.jb();
       int ka = eh.ka();
       int kb = eh.kb();
+#ifdef CLIP_POTENTIAL_GRID
+      int eni = eh.ni();
+      int enj = eh.nj();
+#endif
       // access buffers directly
       const Float *gcbuffer = gc.data().buffer();
       const Float *qhbuffer = qh.data().buffer();
       Float *ehbuffer = eh.data().buffer();
+
+#ifdef CLIP_POTENTIAL_GRID
+      // clip potential grid
+      int eia = (qia + gia < ia ? ia : qia + gia);
+      int eib = (qib + gib > ib ? ib : qib + gib);
+      int eja = (qja + gja < ja ? ja : qja + gja);
+      int ejb = (qjb + gjb > jb ? jb : qjb + gjb);
+      int eka = (qka + gka < ka ? ka : qka + gka);
+      int ekb = (qkb + gkb > kb ? kb : qkb + gkb);
+#else
+      int eia = ia;
+      int eib = ib;
+      int eja = ja;
+      int ejb = jb;
+      int eka = ka;
+      int ekb = kb;
+
       int index = 0;
+#endif
 
       // loop over potentials
-      for (int k = ka;  k <= kb;  k++) {
+      for (int k = eka;  k <= ekb;  k++) {
         // clip charges to weights along k
         int mka = ( qka >= gka + k ? qka : gka + k );
         int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
+#ifdef CLIP_POTENTIAL_GRID
+        int ekoff = (k - eka) * enj;
+#endif
 
-        for (int j = ja;  j <= jb;  j++) {
+        for (int j = eja;  j <= ejb;  j++) {
           // clip charges to weights along j
           int mja = ( qja >= gja + j ? qja : gja + j );
           int mjb = ( qjb <= gjb + j ? qjb : gjb + j );
+#ifdef CLIP_POTENTIAL_GRID
+          int ejkoff = (ekoff + (j - eja)) * eni;
+#endif
 
-          for (int i = ia;  i <= ib;  i++, index++) {
+          for (int i = eia;  i <= eib;  i++) {
             // clip charges to weights along i
             int mia = ( qia >= gia + i ? qia : gia + i );
             int mib = ( qib <= gib + i ? qib : gib + i );
+#ifdef CLIP_POTENTIAL_GRID
+            int eijkoff = ejkoff + (i - eia);
+#endif
 
             // accumulate sum to this eh point
             Float ehsum = 0;
@@ -1147,7 +1267,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
               }
             } // end loop over charge grid
 #else
+
+#if 0
             // loop over charge grid
+            int nn = mib - mia + 1;
             for (int qk = mka;  qk <= mkb;  qk++) {
               int qkoff = (qk - qka) * qnj;
               int gkoff = ((qk-k) - gka) * gnj;
@@ -1158,7 +1281,9 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 
                 const Float *qbuf = qhbuffer + (qjkoff - qia + mia);
                 const Float *gbuf = gcbuffer + (gjkoff - i - gia + mia);
-                int nn = mib - mia + 1;
+#ifdef MSM_PROFILING
+                mgrLocal->xLoopCnt[nn]++;
+#endif
 // help the vectorizer make reasonable decisions
 #if defined(__INTEL_COMPILER)
 #pragma vector always 
@@ -1168,11 +1293,78 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
                 }
               }
             } // end loop over charge grid
+#else
+            // loop over charge grid
+            int nn = mib - mia + 1;
+            if (nn == 8) {  // hard coded inner loop = 8
+              int qnji = qnj * qni;
+              int qkoff = -qka*qnji - qja*qni - qia + mia;
+              int gnji = gnj * gni;
+              int gkoff = (-k-gka)*gnji + (-j-gja)*gni - i - gia + mia;
+
+              for (int qk = mka;  qk <= mkb;  qk++) {
+                int qjkoff = qkoff + qk*qnji;
+                int gjkoff = gkoff + qk*gnji;
+
+                for (int qj = mja;  qj <= mjb;  qj++) {
+                  const Float *qbuf = qhbuffer + (qjkoff + qj*qni);
+                  const Float *gbuf = gcbuffer + (gjkoff + qj*gni);
+#ifdef MSM_PROFILING
+                  mgrLocal->xLoopCnt[nn]++;
 #endif
+// help the vectorizer make reasonable decisions
+#if defined(__INTEL_COMPILER)
+#pragma vector always 
+#endif
+                  for (int ii = 0;  ii < 8;  ii++) {
+                    ehsum += gbuf[ii] * qbuf[ii];
+                  }
+                }
+              } // end loop over charge grid
+            }
+            else {  // variable length inner loop < 8
+              int qnji = qnj * qni;
+              int qkoff = -qka*qnji - qja*qni - qia + mia;
+              int gnji = gnj * gni;
+              int gkoff = (-k-gka)*gnji + (-j-gja)*gni - i - gia + mia;
+
+              for (int qk = mka;  qk <= mkb;  qk++) {
+                int qjkoff = qkoff + qk*qnji;
+                int gjkoff = gkoff + qk*gnji;
+
+                for (int qj = mja;  qj <= mjb;  qj++) {
+                  const Float *qbuf = qhbuffer + (qjkoff + qj*qni);
+                  const Float *gbuf = gcbuffer + (gjkoff + qj*gni);
+#ifdef MSM_PROFILING
+                  mgrLocal->xLoopCnt[nn]++;
+#endif
+// help the vectorizer make reasonable decisions
+#if defined(__INTEL_COMPILER)
+#pragma vector always 
+#endif
+                  for (int ii = 0;  ii < nn;  ii++) {
+                    ehsum += gbuf[ii] * qbuf[ii];
+                  }
+                }
+              } // end loop over charge grid
+            }
+#endif
+
+#endif
+
+#ifdef CLIP_POTENTIAL_GRID
+            ehbuffer[eijkoff] = ehsum;
+#else
             ehbuffer[index] = ehsum;
+            index++;
+#endif
           }
         }
       } // end loop over potentials
+#ifdef MSM_PROFILING
+      mgrLocal->doneProfiling();
+#endif
+
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
       mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
@@ -1186,7 +1378,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       startTime = stopTime;
 #endif
       // shift grid index range to its true (wrapped) values
-      eh.updateLower( blockSend.nrange_wrap.lower() );
+      eh.updateLower( ehblockSend.nrange_wrap.lower() );
       // place eh into message
       int nelems = eh.data().len();
 #ifdef MSM_FIXED_SIZE_GRID_MSG
@@ -1204,6 +1396,9 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // lookup in ComputeMsmMgr proxy array by level
       mgrLocal->msmBlock[bindex.level](
           bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+#ifdef MSM_TIMING
+      mgrLocal->doneTiming();
+#endif
     } // compute()
 
 };
@@ -1240,7 +1435,7 @@ class MsmBlock : public CBase_MsmBlock {
     MsmBlock(int level);
     MsmBlock(CkMigrateMessage *m) { }
 
-    void init(int level);
+    void init();
 
     void addCharge(GridFloatMsg *);  // entry
 
@@ -1259,14 +1454,6 @@ class MsmBlock : public CBase_MsmBlock {
 };
 
 MsmBlock::MsmBlock(int level) {
-  init(level);
-#ifdef DEBUG_MSM_GRID
-  printf("MsmBlock level=%d, n=%d %d %d:  constructor\n",
-      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
-#endif
-}
-
-void MsmBlock::init(int level) {
   blockIndex.level = level;
   blockIndex.n = msm::Ivec(thisIndex.x, thisIndex.y, thisIndex.z);
   mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
@@ -1275,16 +1462,29 @@ void MsmBlock::init(int level) {
   map = &(mgrLocal->mapData());
   bd = &(map->blockLevel[blockIndex.level](blockIndex.n));
   qh.init( bd->nrange );
-  qh.reset(0);
   eh.init( bd->nrange );
-  eh.reset(0);
 #ifndef MSM_GRID_CUTOFF_DECOMP
   ehCutoff.init( bd->nrangeCutoff );
-  ehCutoff.reset(0);
 #endif
   qhRestricted.init( bd->nrangeRestricted );
-  qhRestricted.reset(0);
   ehProlongated.init( bd->nrangeProlongated );
+#ifdef DEBUG_MSM_GRID
+  printf("MsmBlock level=%d, n=%d %d %d:  constructor\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+#endif
+#ifdef MSM_TIMING
+  mgrLocal->addTiming();
+#endif
+  init();
+}
+
+void MsmBlock::init() {
+  qh.reset(0);
+  eh.reset(0);
+#ifndef MSM_GRID_CUTOFF_DECOMP
+  ehCutoff.reset(0);
+#endif
+  qhRestricted.reset(0);
   ehProlongated.reset(0);
   cntRecvsCharge = 0;
   cntRecvsPotential = 0;
@@ -1717,7 +1917,10 @@ void MsmBlock::sendDownPotential()
     mgrLocal->msmBlock[lnext](
         bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
   } // for
-  init(blockIndex.level);  // reinitialize for next computation
+#ifdef MSM_TIMING
+  mgrLocal->doneTiming();
+#endif
+  init();  // reinitialize for next computation
 }
 
 void MsmBlock::sendPatch()
@@ -1763,7 +1966,10 @@ void MsmBlock::sendPatch()
     int pe = pm->node(pid);
     mgrProxy[pe].addPotential(gm);
   }
-  init(blockIndex.level);  // reinitialize for next computation
+#ifdef MSM_TIMING
+  mgrLocal->doneTiming();
+#endif
+  init();  // reinitialize for next computation
 }
 
 // MsmBlock
@@ -1780,6 +1986,7 @@ ComputeMsmMgr::ComputeMsmMgr() :
   CkpvAccess(BOCclass_group).computeMsmMgr = thisgroup;
 
 #ifdef MSM_TIMING
+#if 1
   if (CkMyPe() == 0) {
     msmTimer = CProxy_MsmTimer::ckNew();
     CkCallback *cb = new CkCallback(
@@ -1787,7 +1994,32 @@ ComputeMsmMgr::ComputeMsmMgr() :
     msmProxy.ckSetReductionClient(cb);
   }
   initTiming();
+#else
+  if (CkMyPe() == 0) {
+    msmTimer = CProxy_MsmTimer::ckNew();
+  }
+  cbTiming = new CkCallback(CkReductionTarget(MsmTimer, done), msmTimer);
+  initTiming();
 #endif
+#endif // MSM_TIMING
+#ifdef MSM_PROFILING
+#if 1
+  if (CkMyPe() == 0) {
+    msmProfiler = CProxy_MsmProfiler::ckNew();
+    CkCallback *cb = new CkCallback(
+        CkReductionTarget(MsmProfiler, done), msmProfiler);
+    msmProxy.ckSetReductionClient(cb);
+  }
+  initProfiling();
+#else
+  if (CkMyPe() == 0) {
+    msmProfiler = CProxy_MsmProfiler::ckNew();
+  }
+  cbProfiling = new CkCallback(
+      CkReductionTarget(MsmProfiler, done), msmProfiler);
+  initProfiling();
+#endif
+#endif // MSM_PROFILING
 }
 
 ComputeMsmMgr::~ComputeMsmMgr()
@@ -2752,9 +2984,10 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
             int numSendAcross = b(i,j,k).sendAcross.len();
             ASSERT( numSendAcross == b(i,j,k).indexGridCutoff.len() );
             for (n = 0;  n < numSendAcross;  n++) {
+              msm::BlockIndex bi = msm::BlockIndex(level, msm::Ivec(i,j,k));
               msm::BlockSend &bs = b(i,j,k).sendAcross[n];
               int index = b(i,j,k).indexGridCutoff[n];
-              MsmBlockSendMsg *bsmsg = new MsmBlockSendMsg(bs);
+              MsmGridCutoffInitMsg *bsmsg = new MsmGridCutoffInitMsg(bi, bs);
               msmGridCutoff[index].initialize(bsmsg);
             } // traverse sendAcross, indexGridCutoff arrays
 
@@ -2843,14 +3076,6 @@ void ComputeMsmMgr::doneCompute()
 }
 
 
-void ComputeMsmMgr::doneTiming()
-{
-#ifdef MSM_TIMING
-  contribute(MsmTimer::MAX*sizeof(double), msmTiming, CkReduction::sum_double);
-#endif
-}
-
-
 //////////////////////////////////////////////////////////////////////////////
 //
 //  ComputeMsm
@@ -2880,8 +3105,13 @@ ComputeMsm::~ComputeMsm()
 
 void ComputeMsm::doWork()
 {
+#if 0
 #ifdef MSM_TIMING
   myMgr->initTiming();
+#endif
+#ifdef MSM_PROFILING
+  myMgr->initProfiling();
+#endif
 #endif
 
   // patchList is inherited from ComputeHomePatches
@@ -2930,14 +3160,14 @@ void ComputeMsm::doWork()
     patchIDList.append(patchID);
     if (patchPtr[patchID] == NULL) {
       // create PatchData if it doesn't exist for this patchID
-      patchPtr[patchID] = new msm::PatchData;
+      patchPtr[patchID] = new msm::PatchData(myMgr, patchID);
       /*
       printf("Creating new PatchData:  patchID=%d  PE=%d\n",
           patchID, CkMyPe());
           */
     }
     msm::PatchData& patch = *(patchPtr[patchID]);
-    patch.init(myMgr, patchID, numAtoms);
+    patch.init(numAtoms);
     msm::AtomCoordArray& coord = patch.coordArray();
     ASSERT(coord.len() == numAtoms);
     for (n = 0;  n < numAtoms;  n++) {
@@ -2959,17 +3189,6 @@ void ComputeMsm::doWork()
 void ComputeMsm::saveResults()
 {
   if (++cntLocalPatches != numLocalPatches) return;
-
-#ifdef MSM_TIMING
-  if (PatchMap::Object()->numNodesWithPatches() < CkNumPes()) {
-    // need to broadcast across group to get everyone to contribute timings
-    if (CkMyPe() == 0)  myMgr->broadcastTiming();
-  }
-  else {
-    // every PE contributes timings
-    myMgr->doneTiming();
-  }
-#endif
 
   // NAMD patches
   ResizeArrayIter<PatchElem> ap(patchList);
@@ -3027,23 +3246,29 @@ void ComputeMsm::saveResults()
 // method definitions for PatchData
 namespace msm {
 
-  void PatchData::init(ComputeMsmMgr *pmgr, int pid, int natoms) {
+  PatchData::PatchData(ComputeMsmMgr *pmgr, int pid) {
     mgr = pmgr;
     map = &(mgr->mapData());
     patchID = pid;
-    PatchMap *pm = PatchMap::Object();
+    //PatchMap *pm = PatchMap::Object();
     pd = &(map->patchList[pid]);
+    qh.init(pd->nrange);
+    eh.init(pd->nrange);
+    subgrid.resize(map->bsx[0] * map->bsy[0] * map->bsz[0]);
+#ifdef MSM_TIMING
+    mgr->addTiming();
+#endif
+  }
+
+  void PatchData::init(int natoms) {
     coord.resize(natoms);
     force.resize(natoms);
     cntRecvs = 0;
     energy = 0;
     memset(virial, 0, 3*3*sizeof(BigReal));
     for (int i = 0;  i < natoms;  i++)  force[i] = 0;
-    qh.init(pd->nrange);
     qh.reset(0);
-    eh.init(pd->nrange);
     eh.reset(0);
-    subgrid.resize(map->bsx[0] * map->bsy[0] * map->bsz[0]);
   }
 
   void PatchData::anterpolation() {
@@ -3301,6 +3526,9 @@ namespace msm {
     mgr->msmTiming[MsmTimer::INTERP] += stopTime - startTime;
 #endif
 
+#ifdef MSM_TIMING
+    mgr->doneTiming();
+#endif
     mgr->doneCompute();
   }
 

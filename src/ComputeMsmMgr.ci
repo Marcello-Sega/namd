@@ -25,7 +25,7 @@ module ComputeMsmMgr {
     char msmGridCutoffProxyData[];
   };
 
-  message MsmBlockSendMsg;
+  message MsmGridCutoffInitMsg;
 
   group ComputeMsmMgr {
     entry ComputeMsmMgr(void);
@@ -34,7 +34,6 @@ module ComputeMsmMgr {
     entry void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);
     entry void update(CkQdMsg *);
     entry void addPotential(GridFloatMsg *);
-    entry void doneTiming(void);
   };
 
   array [3D] MsmBlock {
@@ -49,7 +48,7 @@ module ComputeMsmMgr {
     entry MsmGridCutoff(void);
 
     // initialize() passes in the block index and range for potentials
-    entry void initialize(MsmBlockSendMsg *);
+    entry void initialize(MsmGridCutoffInitMsg *);
 
     // compute() passes in the charge block
     entry void compute(GridFloatMsg *);
@@ -58,6 +57,11 @@ module ComputeMsmMgr {
   chare MsmTimer {
     entry MsmTimer(void);
     entry [reductiontarget] void done(double tm[n], int n);
+  };
+
+  chare MsmProfiler {
+    entry MsmProfiler(void);
+    entry [reductiontarget] void done(int tm[n], int n);
   };
 
 };
