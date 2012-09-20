@@ -25,6 +25,7 @@
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "AtomMap.h"
+#include "PmeBase.inl"
 #include "OptPme.h"
 #include "OptPmeMgr.decl.h"
 #include "OptPmeRealSpace.h"

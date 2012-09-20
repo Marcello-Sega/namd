@@ -5,6 +5,7 @@
 **/
 
 #include <string.h>
+#include "PmeBase.inl"
 #include "PmeRealSpace.h"
 #include "Node.h"
 #include "SimParameters.h"
@@ -25,11 +26,11 @@ void PmeRealSpace::set_num_atoms(int natoms) {
   dM = dM_alloc.begin();
 }
 
+template <int order>
 void PmeRealSpace::fill_b_spline(PmeParticle p[]) {
   double fr[3]; 
   double *Mi, *dMi;
   int i, stride;
-  int order = myGrid.order;
 
   stride = 3*order;
   Mi = M; dMi = dM;
@@ -45,23 +46,46 @@ void PmeRealSpace::fill_b_spline(PmeParticle p[]) {
 
 void PmeRealSpace::fill_charges(double **q_arr, double **q_arr_list, int &q_arr_count, 
                        int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]) {
+
+  switch (myGrid.order) {
+  case 4:
+    fill_charges_order4(q_arr, q_arr_list, q_arr_count, stray_count, f_arr, fz_arr, p);
+    break;
+  case 6:
+    fill_charges_order<6>(q_arr, q_arr_list, q_arr_count, stray_count, f_arr, fz_arr, p);
+    break;
+  case 8:
+    fill_charges_order<8>(q_arr, q_arr_list, q_arr_count, stray_count, f_arr, fz_arr, p);
+    break;
+  case 10:
+    fill_charges_order<10>(q_arr, q_arr_list, q_arr_count, stray_count, f_arr, fz_arr, p);
+    break;
+  default: NAMD_die("unsupported PMEInterpOrder");
+  }
+
+}
+  
+template <int order>
+void PmeRealSpace::fill_charges_order(double **q_arr, double **q_arr_list, int &q_arr_count, 
+                       int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]) {
   
   int i, j, k, l;
   int stride;
-  int K1, K2, K3, dim2, dim3, order;
-  order = myGrid.order;
+  int K1, K2, K3, dim2, dim3;
+
+  if ( order != myGrid.order ) NAMD_bug("fill_charges_order template mismatch");
 
   if ( order == 4 ) {
     fill_charges_order4(q_arr, q_arr_list, q_arr_count, stray_count, f_arr, fz_arr, p);
     return;
   }
 
-  double *Mi;
+  double * __restrict Mi;
   Mi = M;
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2; dim3=myGrid.dim3;
   stride = 3*order;
 
-  fill_b_spline(p);
+  fill_b_spline<order>(p);
 
   for (i=0; i<N; i++) {
     double q;
@@ -74,6 +98,7 @@ void PmeRealSpace::fill_charges(double **q_arr, double **q_arr_list, int &q_arr_
     u2i -= order;
     u3i -= order;
     u3i += 1;
+    if ( u3i < 0 ) u3i += K3;
     for (j=0; j<order; j++) {
       double m1;
       int ind1;
@@ -87,25 +112,20 @@ void PmeRealSpace::fill_charges(double **q_arr, double **q_arr_list, int &q_arr_
         m1m2 = m1*Mi[order+k];
 	u2++;
 	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
-	double *qline = q_arr[ind2];
+	double * __restrict qline = q_arr[ind2];
 	if ( ! qline ) {
           if ( f_arr[ind2] ) {
 	    f_arr[ind2] = 3;
             ++stray_count;
             continue;
           }
-	  q_arr[ind2] = qline = new double[dim3];
+	  q_arr[ind2] = qline = new double[K3+order-1];
           q_arr_list[q_arr_count++] = qline;
-	  memset( (void*) qline, 0, dim3 * sizeof(double) );
+	  memset( (void*) qline, 0, (K3+order-1) * sizeof(double) );
 	}
 	f_arr[ind2] = 1;
         for (l=0; l<order; l++) {
-	  double m3;
-	  int ind;
-	  m3 = Mi[2*order + l];
-	  int u3 = u3i + l;
-          ind = u3 + (u3 < 0 ? K3 : 0);
-          qline[ind] += m1m2*m3; 
+          qline[u3i+l] += m1m2 * Mi[2*order + l];
         }
       }
     }
@@ -120,12 +140,35 @@ void PmeRealSpace::fill_charges(double **q_arr, double **q_arr_list, int &q_arr_
 
 void PmeRealSpace::compute_forces(const double * const *q_arr,
 				const PmeParticle p[], Vector f[]) {
+
+  switch (myGrid.order) {
+  case 4:
+    compute_forces_order4(q_arr, p, f);
+    break;
+  case 6:
+    compute_forces_order<6>(q_arr, p, f);
+    break;
+  case 8:
+    compute_forces_order<8>(q_arr, p, f);
+    break;
+  case 10:
+    compute_forces_order<10>(q_arr, p, f);
+    break;
+  default: NAMD_die("unsupported PMEInterpOrder");
+  }
+
+}
+  
+template <int order>
+void PmeRealSpace::compute_forces_order(const double * const *q_arr,
+				const PmeParticle p[], Vector f[]) {
   
   int i, j, k, l, stride;
   double f1, f2, f3;
   double *Mi, *dMi;
-  int K1, K2, K3, dim2, order;
-  order = myGrid.order;
+  int K1, K2, K3, dim2;
+
+  if ( order != myGrid.order ) NAMD_bug("compute_forces_order template mismatch");
 
   if ( order == 4 ) {
     compute_forces_order4(q_arr, p, f);
@@ -148,6 +191,7 @@ void PmeRealSpace::compute_forces(const double * const *q_arr,
     u2i -= order;
     u3i -= order;
     u3i += 1;
+    if ( u3i < 0 ) u3i += K3;
     for (j=0; j<order; j++) {
       double m1, d1;
       int ind1;
@@ -170,12 +214,9 @@ void PmeRealSpace::compute_forces(const double * const *q_arr,
 	if ( ! qline ) continue;
         for (l=0; l<order; l++) {
 	  double term, m3, d3;
-	  int ind;
 	  m3=Mi[2*order+l];
 	  d3=K3*dMi[2*order+l];
-	  int u3 = u3i + l;
-	  ind = u3 + (u3 < 0 ? K3 : 0);
-	  term = qline[ind];
+	  term = qline[u3i+l];
 	  f1 -= d1m2 * m3 * term;
 	  f2 -= m1d2 * m3 * term;
 	  f3 -= m1m2 * d3 * term;
@@ -199,7 +240,7 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, double **q_arr_list, int 
   int i, j, k, l;
   int stride;
   int K1, K2, K3, dim2, dim3;
-  double *Mi, *dMi;
+  double * __restrict Mi, * __restrict dMi;
   Mi = M; dMi = dM;
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2; dim3=myGrid.dim3;
   // order = myGrid.order;
@@ -260,6 +301,7 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, double **q_arr_list, int 
     u2i -= order;
     u3i -= order;
     u3i += 1;
+    if ( u3i < 0 ) u3i += K3;
     for (j=0; j<order; j++) {
       double m1;
       int ind1;
@@ -273,25 +315,20 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, double **q_arr_list, int 
         m1m2 = m1*Mi[order+k];
 	u2++;
 	ind2 = ind1 + (u2 + (u2 < 0 ? K2 : 0));
-	double *qline = q_arr[ind2];
+	double * __restrict qline = q_arr[ind2];
 	if ( ! qline ) {
           if ( f_arr[ind2] ) {
 	    f_arr[ind2] = 3;
             ++stray_count;
             continue;
           }
-	  q_arr[ind2] = qline = new double[dim3];
+	  q_arr[ind2] = qline = new double[K3+order-1];
           q_arr_list[q_arr_count++] = qline;
-	  memset( (void*) qline, 0, dim3 * sizeof(double) );
+	  memset( (void*) qline, 0, (K3+order-1) * sizeof(double) );
 	}
 	f_arr[ind2] = 1;
         for (l=0; l<order; l++) {
-	  double m3;
-	  int ind;
-	  m3 = Mi[2*order + l];
-	  int u3 = u3i + l;
-          ind = u3 + (u3 < 0 ? K3 : 0);
-          qline[ind] += m1m2*m3; 
+          qline[u3i+l] += m1m2 * Mi[2*order + l];
         }
       }
     }
@@ -349,6 +386,7 @@ void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
     u2i -= order;
     u3i -= order;
     u3i += 1;
+    if ( u3i < 0 ) u3i += K3;
     for (j=0; j<order; j++) {
       double m1, d1;
       int ind1;
@@ -371,12 +409,9 @@ void PmeRealSpace::compute_forces_order4(const double * const *q_arr,
 	if ( ! qline ) continue;
         for (l=0; l<order; l++) {
 	  double term, m3, d3;
-	  int ind;
 	  m3=Mi[2*order+l];
 	  d3=K3*dMi[2*order+l];
-	  int u3 = u3i + l;
-	  ind = u3 + (u3 < 0 ? K3 : 0);
-	  term = qline[ind];
+	  term = qline[u3i+l];
 	  f1 -= d1m2 * m3 * term;
 	  f2 -= m1d2 * m3 * term;
 	  f3 -= m1m2 * d3 * term;
@@ -419,6 +454,7 @@ void PmeRealSpace::compute_forces_order4_partial(int first, int last,
     u2i -= order;
     u3i -= order;
     u3i += 1;
+    if ( u3i < 0 ) u3i += K3;
     for (j=0; j<order; j++) {
       double m1, d1;
       int ind1;
@@ -441,12 +477,9 @@ void PmeRealSpace::compute_forces_order4_partial(int first, int last,
 	if ( ! qline ) continue;
         for (l=0; l<order; l++) {
 	  double term, m3, d3;
-	  int ind;
 	  m3=Mi[2*order+l];
 	  d3=K3*dMi[2*order+l];
-	  int u3 = u3i + l;
-	  ind = u3 + (u3 < 0 ? K3 : 0);
-	  term = qline[ind];
+	  term = qline[u3i+l];
 	  f1 -= d1m2 * m3 * term;
 	  f2 -= m1d2 * m3 * term;
 	  f3 -= m1m2 * d3 * term;

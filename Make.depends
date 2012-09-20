@@ -2780,24 +2780,25 @@ obj/ComputePme.o: \
 	src/PatchMap.inl \
 	src/AtomMap.h \
 	src/ComputePme.h \
-	src/ComputeHomePatches.h \
 	src/Compute.h \
-	src/HomePatch.h \
-	src/Patch.h \
-	src/OwnerBox.h \
-	src/Box.h \
-	src/UniqueSortedArray.h \
-	src/PatchTypes.h \
-	src/MigrateAtomsMsg.h \
-	src/Migration.h \
-	inc/PatchMgr.decl.h \
 	src/PmeBase.h \
 	src/MathArray.h \
 	src/Array.h \
+	src/PatchTypes.h \
+	src/Box.h \
+	src/OwnerBox.h \
 	inc/ComputePmeMgr.decl.h \
+	src/PmeBase.inl \
 	src/PmeRealSpace.h \
 	src/PmeKSpace.h \
 	src/ComputeMoa.h \
+	src/ComputeHomePatches.h \
+	src/HomePatch.h \
+	src/Patch.h \
+	src/UniqueSortedArray.h \
+	src/MigrateAtomsMsg.h \
+	src/Migration.h \
+	inc/PatchMgr.decl.h \
 	inc/ComputeMoaMgr.decl.h \
 	src/ComputeNonbondedUtil.h \
 	src/ReductionMgr.h \
@@ -2852,6 +2853,10 @@ obj/OptPme.o: \
 	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
+	src/PmeBase.inl \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
 	src/OptPme.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
@@ -2864,9 +2869,6 @@ obj/OptPme.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
-	src/PmeBase.h \
-	src/MathArray.h \
-	src/Array.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
@@ -2914,12 +2916,7 @@ obj/OptPmeRealSpace.o: \
 	src/MathArray.h \
 	src/Array.h \
 	src/Vector.h \
-	src/common.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Tensor.h
+	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/OptPmeRealSpace.o $(COPTC) src/OptPmeRealSpace.C
 obj/ComputeRestraints.o: \
 	src/ComputeRestraints.C \
@@ -5221,29 +5218,16 @@ obj/PDBData.o: \
 	src/PDBData.h \
 	src/common.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PDBData.o $(COPTC) src/PDBData.C
-obj/PmeBase.o: \
-	src/PmeBase.C \
-	src/PmeBase.h \
-	src/MathArray.h \
-	src/Array.h \
-	src/Vector.h \
-	src/common.h \
-	src/Lattice.h \
-	src/NamdTypes.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
-	src/Tensor.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeBase.o $(COPTC) src/PmeBase.C
 obj/PmeKSpace.o: \
 	src/PmeKSpace.C \
 	src/PmeKSpace.h \
 	src/PmeBase.h \
 	src/MathArray.h \
 	src/Array.h \
-	src/Vector.h \
-	src/common.h \
 	src/Lattice.h \
 	src/NamdTypes.h \
+	src/common.h \
+	src/Vector.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
@@ -5269,6 +5253,7 @@ obj/PmeKSpace.o: \
 	src/InfoStream.h \
 	inc/PatchMgr.decl.h \
 	inc/ComputeMoaMgr.decl.h \
+	src/PmeBase.inl \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
@@ -5278,7 +5263,7 @@ obj/PmeKSpace.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PmeKSpace.o $(COPTC) src/PmeKSpace.C
 obj/PmeRealSpace.o: \
 	src/PmeRealSpace.C \
-	src/PmeRealSpace.h \
+	src/PmeBase.inl \
 	src/PmeBase.h \
 	src/MathArray.h \
 	src/Array.h \
@@ -5289,6 +5274,7 @@ obj/PmeRealSpace.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/Tensor.h \
+	src/PmeRealSpace.h \
 	src/Node.h \
 	src/main.h \
 	src/ProcessorPrivate.h \
@@ -5790,6 +5776,7 @@ obj/Sync.o: \
 	src/UniqueSetIter.h \
 	inc/ProxyMgr.decl.h \
 	src/Compute.h \
+	src/ComputeMap.h \
 	src/Sync.h \
 	inc/Sync.decl.h \
 	src/ResizeArrayPrimIter.h \

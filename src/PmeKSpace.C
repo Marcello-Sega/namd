@@ -12,6 +12,7 @@
 #include <alloca.h>
 #endif
 
+#include "PmeBase.inl"
 #include "SimParameters.h" 
 #include "Node.h"  
 #include "ComputeMoaMgr.decl.h"  

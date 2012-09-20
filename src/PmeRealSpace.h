@@ -29,9 +29,15 @@ public:
 private:
   void fill_charges_order4(double **q_arr, double **q_arr_list, int &q_arr_count,
                        int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]); 
+  template <int order>
+  void fill_charges_order(double **q_arr, double **q_arr_list, int &q_arr_count,
+                       int &stray_count, char *f_arr, char *fz_arr, PmeParticle p[]); 
   void compute_forces_order4(const double * const *q_arr, const PmeParticle p[], 
                       Vector f[]);
-  void fill_b_spline(PmeParticle p[]);
+  template <int order>
+  void compute_forces_order(const double * const *q_arr, const PmeParticle p[], 
+                      Vector f[]);
+  template <int order> void fill_b_spline(PmeParticle p[]);
 
   const PmeGrid myGrid;
   int N;

@@ -32,6 +32,7 @@ using namespace std;
 #include "AtomMap.h"
 #include "ComputePme.h"
 #include "ComputePmeMgr.decl.h"
+#include "PmeBase.inl"
 #include "PmeRealSpace.h"
 #include "PmeKSpace.h"
 #include "ComputeNonbondedUtil.h"
@@ -2136,6 +2137,15 @@ void ComputePmeMgr::recvAck(PmeAckMsg *msg) {
 void ComputePmeMgr::ungridCalc(void) {
   // CkPrintf("ungridCalc on Pe(%d)\n",CkMyPe());
 
+  // for (int j=0; j<myGrid.order-1; ++j) {
+  //   fz_arr[myGrid.K3+j] = fz_arr[j];
+  // }
+  for (int i=0; i<q_count; ++i) {
+    for (int j=0; j<myGrid.order-1; ++j) {
+      q_list[i][myGrid.K3+j] = q_list[i][j];
+    }
+  }
+
   ungridForcesCount = pmeComputes.size();
 
   for ( int i=0; i<pmeComputes.size(); ++i ) {
@@ -2230,7 +2240,7 @@ void ComputePmeMgr::initialize_computes() {
   q_count = 0;
   f_arr = new char[fsize*numGrids];
   memset( (void*) f_arr, 2, fsize*numGrids * sizeof(char) );
-  fz_arr = new char[myGrid.K3];
+  fz_arr = new char[myGrid.K3+myGrid.order-1];
 
   for ( int g=0; g<numGrids; ++g ) {
     char *f = f_arr + g*fsize;
@@ -2502,10 +2512,10 @@ void ComputePme::doWork()
  if ( ! myMgr->doWorkCount ) {
   myMgr->doWorkCount = myMgr->pmeComputes.size();
 
-  memset( (void*) myMgr->fz_arr, 0, myGrid.K3 * sizeof(char) );
+  memset( (void*) myMgr->fz_arr, 0, (myGrid.K3+myGrid.order-1) * sizeof(char) );
 
   for (int i=0; i<myMgr->q_count; ++i) {
-    memset( (void*) (myMgr->q_list[i]), 0, myGrid.dim3 * sizeof(double) );
+    memset( (void*) (myMgr->q_list[i]), 0, (myGrid.K3+myGrid.order-1) * sizeof(double) );
   }
 
   for ( g=0; g<numGrids; ++g ) {
@@ -2549,6 +2559,15 @@ void ComputePme::doWork()
 #endif
 
  if ( --(myMgr->doWorkCount) == 0 ) {
+  for (int j=0; j<myGrid.order-1; ++j) {
+    myMgr->fz_arr[j] |= myMgr->fz_arr[myGrid.K3+j];
+  }
+  for (int i=0; i<myMgr->q_count; ++i) {
+    for (int j=0; j<myGrid.order-1; ++j) {
+      myMgr->q_list[i][j] += myMgr->q_list[i][myGrid.K3+j];
+    }
+  }
+
   if ( myMgr->usePencils ) {
     myMgr->sendPencils(lattice,sequence());
   } else {

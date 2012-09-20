@@ -225,7 +225,6 @@ OBJS = \
 	$(DSTDIR)/PatchMap.o \
 	$(DSTDIR)/PDB.o \
 	$(DSTDIR)/PDBData.o \
-	$(DSTDIR)/PmeBase.o \
 	$(DSTDIR)/PmeKSpace.o \
 	$(DSTDIR)/PmeRealSpace.o \
 	$(DSTDIR)/ProcessorPrivate.o \
