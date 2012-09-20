@@ -5,6 +5,7 @@
 #include "common.h"
 #include "ResizeArray.h"
 #include "GromacsTopFile.h"
+#include "InfoStream.h"
 
 #define JOULES_PER_CALORIE 4.184
 
@@ -41,6 +42,7 @@
 #define PAIR
 
 GromacsTopFile::GromacsTopFile(char *filename) {
+  fudgeLJ = fudgeQQ = 1.0;
   /* open the file */
   FILE *f = fopen(filename,"r");
   char buf[LINESIZE];
@@ -1247,6 +1249,11 @@ void GromacsTopFile::getVDWParams(int numa, int numb,
   i = vdwTable.getParams(typea,typeb,c6,c12,c6pair,c12pair);
 
   if(i==-1) {
+    if ( !genPairs && numa != numb ) {
+      iout << iWARN << "VDW table using combining rule for types "
+      << typea << " " << typeb << "\n" << endi;
+    }
+
     /* fallback - use the individual atom's parameters */
     ret = atomTable.getParams(typea, &mjunk, &qjunk, &c6a, &c12a);
     if(ret==-1) {
@@ -1261,20 +1268,11 @@ void GromacsTopFile::getVDWParams(int numa, int numb,
     
     *c6  = (float)(sqrt(c6a * c6b));
     *c12 = (float)(sqrt(c12a*c12b));
+
+    /*  this is the only reasonable option  */
+    *c6pair  = *c6  * fudgeLJ;
+    *c12pair = *c12 * fudgeLJ;
   }
 
-  /* XXX we need to put exclusions in here, including those implied by
-     the use of RB. This may be a  little tricky because we will not
-     be able to support any other kinds of dihedral bonds with the
-     same end pair as any RB dihedral.  OR else, maybe NAMD will
-     support the exclusions directly? */
-
-  if(!genPairs) {
-    return; /* we're done */
-  }    
-
-  *c6pair  = *c6  * fudgeLJ;
-  *c12pair = *c12 * fudgeLJ;
-  /* now we're really done */
 }
     
