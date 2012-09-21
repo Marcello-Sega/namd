@@ -2906,6 +2906,78 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
 
   if (CkMyPe() == 0) {
+#if 0
+    // Create map object for each 3D chare array of MsmBlock and the
+    // 1D chare array of MsmGridCutoff.  Design map to equally distribute
+    // blocks across nodes, assigned to node PEs in round robin manner.  
+    // Attempt to reduce internode communication bandwidth by assigning 
+    // each MsmGridCutoff element to either its source node or its 
+    // destination node, again assigned to node PEs in round robin manner.
+    int M = 0;  // find total number of blocks
+    for (level = 0;  level < nlevels;  level++) {
+      M += map.blockLevel[level].nn();
+    }
+    int N = CkNumNodes();
+    int P = CkNumPes();
+    //N = 32;
+    //P = 32;
+    msm::Array<int> blockassign(M); // PE for each block
+    msm::Array<int> procassign(P);  // number of objects assigned to each PE
+    msm::Array<int> nodeassign(N);  // number of objects assigned to each node
+    int ppn = P / N;  // assume that N divides P
+    int r = M % N;
+    int q;
+    if (r == 0) {
+      q = M / N;
+      for (int n = 0;  n < N;  n++) {
+        int peoffset = n * ppn;
+        int moffset = n * q;
+        for (int p = 0, m = 0;  m < q;  m++, p = (p+1) % ppn) {
+          blockassign[moffset + m] = peoffset + p;
+          procassign[peoffset + p]++;
+        }
+        nodeassign[n] = q;
+      }
+      printf("%d objects each assigned to %d nodes\n", q, N);
+      printf("%d  =?  %d\n", N*q, M);
+    }
+    else {  // M % N != 0
+      q = M / (N-1);
+      r = M % (N-1);
+      int rcnt, qp;
+      if (r <= q) {
+        rcnt = q - r;  // # of procs to assign q-1 objects
+        qp = q - 1;
+      }
+      else {
+        rcnt = r - q;  // # of procs to assign q+1 objects
+        qp = q + 1;
+      }
+      // (N-rcnt) gets q objs, rcnt gets qp objects
+      printf("%d objects to %d nodes\n", q, N-rcnt);
+      printf("%d objects to %d nodes\n", qp, rcnt);
+      printf("%d  =?  %d\n", (N-rcnt)*q + rcnt*qp, M);
+      for (int n = 0;  n < N-rcnt;  n++) {
+        int peoffset = n * ppn;
+        int moffset = n * q;
+        for (int p = 0, m = 0;  m < q;  m++, p = (p+1) % ppn) {
+          blockassign[moffset + m] = peoffset + p;
+          procassign[peoffset + p]++;
+        }
+        nodeassign[n] = q;
+      }
+      for (int n = N-rcnt;  n < N;  n++) {
+        int peoffset = n * ppn;
+        int moffset = (N-rcnt)*q + (n-(N-rcnt)) * qp;
+        for (int p = 0, m = 0;  m < qp;  m++, p = (p+1) % ppn) {
+          blockassign[moffset + m] = peoffset + p;
+          procassign[peoffset + p]++;
+        }
+        nodeassign[n] = qp;
+      }
+    }
+    //CkExit();
+#endif
     // on PE 0, create 3D chare array of MsmBlock for each level;
     // broadcast this array of proxies to the rest of the group
     msmBlock.resize(nlevels);
