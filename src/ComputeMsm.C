@@ -176,13 +176,13 @@ class MsmTimer : public CBase_MsmTimer {
       print();
     }
     void print() {
-      printf("MSM timings:\n");
-      printf("   anterpolation   %8.6f sec\n", timing[ANTERP]);
-      printf("   interpolation   %8.6f sec\n", timing[INTERP]);
-      printf("   restriction     %8.6f sec\n", timing[RESTRICT]);
-      printf("   prolongation    %8.6f sec\n", timing[PROLONGATE]);
-      printf("   grid cutoff     %8.6f sec\n", timing[GRIDCUTOFF]);
-      printf("   communication   %8.6f sec\n", timing[COMM]);
+      CkPrintf("MSM timings:\n");
+      CkPrintf("   anterpolation   %8.6f sec\n", timing[ANTERP]);
+      CkPrintf("   interpolation   %8.6f sec\n", timing[INTERP]);
+      CkPrintf("   restriction     %8.6f sec\n", timing[RESTRICT]);
+      CkPrintf("   prolongation    %8.6f sec\n", timing[PROLONGATE]);
+      CkPrintf("   grid cutoff     %8.6f sec\n", timing[GRIDCUTOFF]);
+      CkPrintf("   communication   %8.6f sec\n", timing[COMM]);
     }
 
     double timing[MAX];
@@ -203,10 +203,10 @@ class MsmProfiler : public CBase_MsmProfiler {
     void print() {
       int sum = 0;
       for (int i = 0;  i < MAX;  i++)  sum += xloopcnt[i];
-      printf("MSM profiling:\n");
-      printf("   total executions of inner loop:   %d\n", sum);
+      CkPrintf("MSM profiling:\n");
+      CkPrintf("   total executions of inner loop:   %d\n", sum);
       for (int i = 0;  i < MAX;  i++) {
-        printf("   executing %d times:   %d  (%5.2f%%)\n",
+        CkPrintf("   executing %d times:   %d  (%5.2f%%)\n",
             i, xloopcnt[i], 100*double(xloopcnt[i])/sum);
       }
     }
@@ -254,13 +254,9 @@ public:
   }
   void doneTiming() {
     if (++cntTiming >= numTiming) {
-#if 1
+      CkCallback cb(CkReductionTarget(MsmTimer, done), msmTimer);
       contribute(MsmTimer::MAX*sizeof(double), msmTiming,
-          CkReduction::sum_double);
-#else
-      contribute(MsmTimer::MAX*sizeof(double), msmTiming,
-          CkReduction::sum_double, cbTiming);
-#endif
+          CkReduction::sum_double, cb);
       initTiming();
     }
   }
@@ -277,13 +273,9 @@ public:
   }
   void doneProfiling() {
     if (++cntProfiling >= numProfiling) {
-#if 1
+      CkCallback cb(CkReductionTarget(MsmProfiler, done), msmProfiler);
       contribute(MsmProfiler::MAX*sizeof(int), xLoopCnt,
-          CkReduction::sum_int);
-#else
-      contribute(MsmProfiler::MAX*sizeof(int), xLoopCnt,
-          CkReduction::sum_int, cbProfiling);
-#endif
+          CkReduction::sum_int, cb);
       initProfiling();  // reset accumulators for next visit
     }
   }
@@ -1986,40 +1978,17 @@ ComputeMsmMgr::ComputeMsmMgr() :
   CkpvAccess(BOCclass_group).computeMsmMgr = thisgroup;
 
 #ifdef MSM_TIMING
-#if 1
-  if (CkMyPe() == 0) {
-    msmTimer = CProxy_MsmTimer::ckNew();
-    CkCallback *cb = new CkCallback(
-        CkReductionTarget(MsmTimer, done), msmTimer);
-    msmProxy.ckSetReductionClient(cb);
-  }
-  initTiming();
-#else
   if (CkMyPe() == 0) {
     msmTimer = CProxy_MsmTimer::ckNew();
   }
-  cbTiming = new CkCallback(CkReductionTarget(MsmTimer, done), msmTimer);
   initTiming();
 #endif
-#endif // MSM_TIMING
 #ifdef MSM_PROFILING
-#if 1
-  if (CkMyPe() == 0) {
-    msmProfiler = CProxy_MsmProfiler::ckNew();
-    CkCallback *cb = new CkCallback(
-        CkReductionTarget(MsmProfiler, done), msmProfiler);
-    msmProxy.ckSetReductionClient(cb);
-  }
-  initProfiling();
-#else
   if (CkMyPe() == 0) {
     msmProfiler = CProxy_MsmProfiler::ckNew();
   }
-  cbProfiling = new CkCallback(
-      CkReductionTarget(MsmProfiler, done), msmProfiler);
   initProfiling();
 #endif
-#endif // MSM_PROFILING
 }
 
 ComputeMsmMgr::~ComputeMsmMgr()
@@ -3161,10 +3130,10 @@ void ComputeMsm::doWork()
     if (patchPtr[patchID] == NULL) {
       // create PatchData if it doesn't exist for this patchID
       patchPtr[patchID] = new msm::PatchData(myMgr, patchID);
-      /*
+#ifdef DEBUG_MSM_VERBOSE
       printf("Creating new PatchData:  patchID=%d  PE=%d\n",
           patchID, CkMyPe());
-          */
+#endif
     }
     msm::PatchData& patch = *(patchPtr[patchID]);
     patch.init(numAtoms);
