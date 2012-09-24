@@ -32,6 +32,10 @@
 #define MSM_SKIP_TOO_DISTANT_BLOCKS
 //#undef MSM_SKIP_TOO_DISTANT_BLOCKS
 
+// node aware mapping of chare arrays
+#define MSM_NODE_MAPPING
+#undef MSM_NODE_MAPPING
+
 // report timings for compute routines
 #define MSM_TIMING
 #undef MSM_TIMING
@@ -316,6 +320,19 @@ private:
   // allocate subgrid used for receiving message data in addPotential()
   // and sending on to PatchData::addPotential()
   msm::Grid<Float> subgrid;
+
+#ifdef MSM_NODE_MAPPING
+  msm::Array<int> blockAssign;
+  msm::Array<int> gcutAssign;
+  msm::Array<int> nodecnt;
+  int blockFlatIndex(int level, int i, int j, int k) {
+    int n = 0;
+    for (int l = 0;  l < level;  l++) {
+      n += map.blockLevel[l].nn();
+    }
+    return (n + map.blockLevel[level].flatindex(i,j,k));
+  }
+#endif
 
 #ifdef MSM_TIMING
   CProxy_MsmTimer msmTimer;
@@ -2905,79 +2922,158 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     }
   }
 
-  if (CkMyPe() == 0) {
-#if 0
+#ifdef MSM_NODE_MAPPING
+  if (1) {
+    // Node aware initial assignment of chares
+    //
     // Create map object for each 3D chare array of MsmBlock and the
     // 1D chare array of MsmGridCutoff.  Design map to equally distribute
     // blocks across nodes, assigned to node PEs in round robin manner.  
     // Attempt to reduce internode communication bandwidth by assigning 
     // each MsmGridCutoff element to either its source node or its 
     // destination node, again assigned to node PEs in round robin manner.
-    int M = 0;  // find total number of blocks
+#if 0
+    int numNodes = 32;
+    int numPes = 1024;
+#else
+    int numNodes = CkNumNodes();
+    int numPes = CkNumPes();
+#endif
+    int numBlocks = 0;  // find total number of blocks
     for (level = 0;  level < nlevels;  level++) {
-      M += map.blockLevel[level].nn();
+      numBlocks += map.blockLevel[level].nn();
     }
-    int N = CkNumNodes();
-    int P = CkNumPes();
-    //N = 32;
-    //P = 32;
-    msm::Array<int> blockassign(M); // PE for each block
-    msm::Array<int> procassign(P);  // number of objects assigned to each PE
-    msm::Array<int> nodeassign(N);  // number of objects assigned to each node
-    int ppn = P / N;  // assume that N divides P
-    int r = M % N;
-    int q;
+    blockAssign.resize(numBlocks);
+    gcutAssign.resize(numGridCutoff);
+    nodecnt.resize(numNodes);
+
+    // assign blocks to nodes
+    // the following algorithm divides as evenly as possible the 
+    // blocks across the nodes
+    int r = numBlocks % numNodes;
     if (r == 0) {
-      q = M / N;
-      for (int n = 0;  n < N;  n++) {
-        int peoffset = n * ppn;
+      int q = numBlocks / numNodes;
+      for (n = 0;  n < numNodes;  n++) {
         int moffset = n * q;
-        for (int p = 0, m = 0;  m < q;  m++, p = (p+1) % ppn) {
-          blockassign[moffset + m] = peoffset + p;
-          procassign[peoffset + p]++;
+        for (int m = 0;  m < q;  m++) {
+          blockAssign[moffset + m] = n;
         }
-        nodeassign[n] = q;
+        nodecnt[n] = q;
       }
-      printf("%d objects each assigned to %d nodes\n", q, N);
-      printf("%d  =?  %d\n", N*q, M);
+#if 0
+      if (CkMyPe() == 0) {
+        CkPrintf("%d objects each assigned to %d nodes\n", q, numNodes);
+        CkPrintf("%d  =?  %d\n", numNodes * q, numBlocks);
+      }
+#endif
     }
-    else {  // M % N != 0
-      q = M / (N-1);
-      r = M % (N-1);
-      int rcnt, qp;
+    else {  // numNodes does not evenly divide numBlocks
+      r = numBlocks % (numNodes-1);
+      int q = numBlocks / (numNodes-1);
+      int qp, ncnt;
       if (r <= q) {
-        rcnt = q - r;  // # of procs to assign q-1 objects
+        ncnt = q - r;  // # of procs to assign q-1 objects
         qp = q - 1;
       }
       else {
-        rcnt = r - q;  // # of procs to assign q+1 objects
+        ncnt = r - q;  // # of procs to assign q+1 objects
         qp = q + 1;
       }
-      // (N-rcnt) gets q objs, rcnt gets qp objects
-      printf("%d objects to %d nodes\n", q, N-rcnt);
-      printf("%d objects to %d nodes\n", qp, rcnt);
-      printf("%d  =?  %d\n", (N-rcnt)*q + rcnt*qp, M);
-      for (int n = 0;  n < N-rcnt;  n++) {
-        int peoffset = n * ppn;
-        int moffset = n * q;
-        for (int p = 0, m = 0;  m < q;  m++, p = (p+1) % ppn) {
-          blockassign[moffset + m] = peoffset + p;
-          procassign[peoffset + p]++;
-        }
-        nodeassign[n] = q;
+      // (numNodes - ncnt) gets q objs, ncnt gets qp objects
+#if 0
+      if (CkMyPe() == 0) {
+        CkPrintf("%d objects to %d nodes\n", q, numNodes-ncnt);
+        CkPrintf("%d objects to %d nodes\n", qp, ncnt);
+        CkPrintf("%d  =?  %d\n", (numNodes-ncnt)*q + ncnt*qp, numBlocks);
       }
-      for (int n = N-rcnt;  n < N;  n++) {
-        int peoffset = n * ppn;
-        int moffset = (N-rcnt)*q + (n-(N-rcnt)) * qp;
-        for (int p = 0, m = 0;  m < qp;  m++, p = (p+1) % ppn) {
-          blockassign[moffset + m] = peoffset + p;
-          procassign[peoffset + p]++;
+#endif
+      for (n = 0;  n < numNodes - ncnt;  n++) {
+        int moffset = n * q;
+        for (int m = 0;  m < q;  m++) {
+          blockAssign[moffset + m] = n;
         }
-        nodeassign[n] = qp;
+        nodecnt[n] = q;
+      }
+      for ( ;  n < numNodes;  n++) {
+        int moffset = (numNodes - ncnt)*q + (n - (numNodes - ncnt))*qp;
+        for (int m = 0;  m < qp;  m++) {
+          blockAssign[moffset + m] = n;
+        }
+        nodecnt[n] = qp;
       }
     }
-    //CkExit();
+
+    // assign grid cutoff objects to nodes (gcutAssign)
+    // choose whichever of source or destination node has less work
+    int gindex = 0;  // index for grid cutoff array
+    for (level = 0;  level < nlevels;  level++) { // for all levels
+      msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
+      int bni = b.ni();
+      int bnj = b.nj();
+      int bnk = b.nk();
+      for (k = 0;  k < bnk;  k++) { // for all blocks
+        for (j = 0;  j < bnj;  j++) {
+          for (i = 0;  i < bni;  i++) {
+            int isrc = blockFlatIndex(level, i, j, k);
+            int nsrc = blockAssign[isrc];  // node block isrc is assigned
+            int numSendAcross = b(i,j,k).sendAcross.len();
+            ASSERT( numSendAcross == b(i,j,k).indexGridCutoff.len() );
+            for (n = 0;  n < numSendAcross;  n++) {
+              msm::BlockIndex &bn = b(i,j,k).sendAcross[n].nblock_wrap;
+              int idest = blockFlatIndex(level, bn.n.i, bn.n.j, bn.n.k);
+              int ndest = blockAssign[idest];  // node block idest is assigned
+              // assign this grid cutoff work to least subscribed node
+              if (nodecnt[nsrc] <= nodecnt[ndest]) {
+                gcutAssign[gindex] = nsrc;
+                nodecnt[nsrc]++;
+              }
+              else {
+                gcutAssign[gindex] = ndest;
+                nodecnt[ndest]++;
+              }
+              gindex++;
+            } // end for numSendAcross
+          }
+        }
+      } // end for all blocks
+    } // end for all levels
+
+    // now change the node assignments into PE assignments
+    // use round robin assignment to PEs within each node
+    int ppn = numPes / numNodes;  // num PEs per node
+    // reset nodecnt - this array will now store PE offset for that node
+    for (n = 0;  n < numNodes;  n++)  nodecnt[n] = 0;
+    for (n = 0;  n < numBlocks;  n++) {
+      int node = blockAssign[n];
+      blockAssign[n] = node * ppn + nodecnt[node];  // PE number within node
+      nodecnt[node]++;  // increment to next PE
+      if (nodecnt[node] >= ppn)  nodecnt[node] = 0;  // with wrap around
+    }
+    for (n = 0;  n < numGridCutoff;  n++) {
+      int node = gcutAssign[n];
+      gcutAssign[n] = node * ppn + nodecnt[node];  // PE number within node
+      nodecnt[node]++;  // increment to next PE
+      if (nodecnt[node] >= ppn)  nodecnt[node] = 0;  // with wrap around
+    }
+
+    // print mapping
+#if 0
+    if (CkMyPe() == 0) {
+      for (n = 0;  n < numBlocks;  n++) {
+        CkPrintf("block %d:   node=%d  pe=%d\n",
+            n, blockAssign[n]/ppn, blockAssign[n]);
+      }
+      for (n = 0;  n < numGridCutoff;  n++) {
+        CkPrintf("grid cutoff %d:   node=%d  pe=%d\n",
+            n, gcutAssign[n]/ppn, gcutAssign[n]);
+      }
+    }
 #endif
+
+  } // end node aware initial assignment of chares
+#endif // MSM_NODE_MAPPING
+
+  if (CkMyPe() == 0) {
     // on PE 0, create 3D chare array of MsmBlock for each level;
     // broadcast this array of proxies to the rest of the group
     msmBlock.resize(nlevels);
