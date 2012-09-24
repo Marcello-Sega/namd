@@ -2933,8 +2933,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     // each MsmGridCutoff element to either its source node or its 
     // destination node, again assigned to node PEs in round robin manner.
 #if 0
-    int numNodes = 32;
-    int numPes = 1024;
+    int numNodes = 16;
+    int numPes = 512;
 #else
     int numNodes = CkNumNodes();
     int numPes = CkNumPes();
@@ -2948,60 +2948,34 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     nodecnt.resize(numNodes);
 
     // assign blocks to nodes
-    // the following algorithm divides as evenly as possible the 
+    // the following algorithm divides as evenly as possible the
     // blocks across the nodes
     int r = numBlocks % numNodes;
-    if (r == 0) {
-      int q = numBlocks / numNodes;
-      for (n = 0;  n < numNodes;  n++) {
-        int moffset = n * q;
-        for (int m = 0;  m < q;  m++) {
-          blockAssign[moffset + m] = n;
-        }
-        nodecnt[n] = q;
+    int q = numBlocks / numNodes;
+    int qp = q + 1;
+    for (n = 0;  n < numNodes - r;  n++) {
+      int moffset = n * q;
+      for (int m = 0;  m < q;  m++) {
+        blockAssign[moffset + m] = n;
       }
-#if 0
-      if (CkMyPe() == 0) {
-        CkPrintf("%d objects each assigned to %d nodes\n", q, numNodes);
-        CkPrintf("%d  =?  %d\n", numNodes * q, numBlocks);
-      }
-#endif
+      nodecnt[n] = q;
     }
-    else {  // numNodes does not evenly divide numBlocks
-      r = numBlocks % (numNodes-1);
-      int q = numBlocks / (numNodes-1);
-      int qp, ncnt;
-      if (r <= q) {
-        ncnt = q - r;  // # of procs to assign q-1 objects
-        qp = q - 1;
+    for ( ;  n < numNodes;  n++) {
+      int moffset = (numNodes - r)*q + (n - (numNodes - r))*qp;
+      for (int m = 0;  m < qp;  m++) {
+        blockAssign[moffset + m] = n;
       }
-      else {
-        ncnt = r - q;  // # of procs to assign q+1 objects
-        qp = q + 1;
-      }
-      // (numNodes - ncnt) gets q objs, ncnt gets qp objects
-#if 0
-      if (CkMyPe() == 0) {
-        CkPrintf("%d objects to %d nodes\n", q, numNodes-ncnt);
-        CkPrintf("%d objects to %d nodes\n", qp, ncnt);
-        CkPrintf("%d  =?  %d\n", (numNodes-ncnt)*q + ncnt*qp, numBlocks);
-      }
-#endif
-      for (n = 0;  n < numNodes - ncnt;  n++) {
-        int moffset = n * q;
-        for (int m = 0;  m < q;  m++) {
-          blockAssign[moffset + m] = n;
-        }
-        nodecnt[n] = q;
-      }
-      for ( ;  n < numNodes;  n++) {
-        int moffset = (numNodes - ncnt)*q + (n - (numNodes - ncnt))*qp;
-        for (int m = 0;  m < qp;  m++) {
-          blockAssign[moffset + m] = n;
-        }
-        nodecnt[n] = qp;
-      }
+      nodecnt[n] = qp;
     }
+#if 0
+    if (CkMyPe() == 0) {
+      CkPrintf("%d objects to %d nodes\n", q, numNodes-r);
+      if (r != 0) {
+        CkPrintf("%d objects to %d nodes\n", qp, r);
+      }
+      CkPrintf("%d  =?  %d\n", (numNodes-r)*q + r*qp, numBlocks);
+    }
+#endif
 
     // assign grid cutoff objects to nodes (gcutAssign)
     // choose whichever of source or destination node has less work
@@ -3063,10 +3037,12 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
         CkPrintf("block %d:   node=%d  pe=%d\n",
             n, blockAssign[n]/ppn, blockAssign[n]);
       }
+#if 0
       for (n = 0;  n < numGridCutoff;  n++) {
         CkPrintf("grid cutoff %d:   node=%d  pe=%d\n",
             n, gcutAssign[n]/ppn, gcutAssign[n]);
       }
+#endif
     }
 #endif
 
