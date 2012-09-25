@@ -36,10 +36,18 @@ module ComputeMsmMgr {
     entry void addPotential(GridFloatMsg *);
   };
 
+  group MsmBlockMap : CkArrayMap {
+    entry MsmBlockMap(int level);
+  };
+
   array [3D] MsmBlock {
     entry MsmBlock(int level);
     entry void addCharge(GridFloatMsg *);
     entry void addPotential(GridFloatMsg *);
+  };
+
+  group MsmGridCutoffMap : CkArrayMap {
+    entry MsmGridCutoffMap(void);
   };
 
   // MsmGridCutoff calculates a charge -> potential interaction pair

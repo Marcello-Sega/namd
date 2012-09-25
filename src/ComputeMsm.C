@@ -230,6 +230,8 @@ class ComputeMsmMgr : public BOCclass {
   friend struct msm::PatchData;
   friend class MsmBlock;
   friend class MsmGridCutoff;
+  friend class MsmBlockMap;
+  friend class MsmGridCutoffMap;
 
 public:
   ComputeMsmMgr();                    // entry
@@ -1051,6 +1053,65 @@ const Float ComputeMsmMgr::PhiStencil[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO] = {
   { 35.f/65536, -405.f/65536, 567.f/16384, -2205.f/16384, 
     19845.f/32768, 1, 19845.f/32768, -2205.f/16384, 567.f/16384, 
     -405.f/65536, 35.f/65536 },
+};
+
+
+class MsmBlockMap : public CkArrayMap {
+  private:
+    ComputeMsmMgr *mgrLocal;
+    int *penum;
+    int level;
+  public:
+    MsmBlockMap(int lvl) {
+      mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
+          CkpvAccess(BOCclass_group).computeMsmMgr);
+#ifdef MSM_NODE_MAPPING
+      penum = mgrLocal->blockAssign.buffer();
+#else
+      penum = 0;
+#endif
+      level = lvl;
+    }
+    MsmBlockMap(CkMigrateMessage *m) { }
+    int registerArray(CkArrayIndex& numElements, CkArrayID aid) {
+      return 0;
+    }
+    int procNum(int /*arrayHdl*/, const CkArrayIndex &idx) {
+      int *pn = (int *)idx.data();
+#ifdef MSM_NODE_MAPPING
+      int n = mgrLocal->blockFlatIndex(level, pn[0], pn[1], pn[2]);
+      return penum[n];
+#else
+      return 0;
+#endif
+    }
+};
+
+
+class MsmGridCutoffMap : public CkArrayMap {
+  private:
+    int *penum;
+  public:
+    MsmGridCutoffMap() {
+      ComputeMsmMgr *mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
+          CkpvAccess(BOCclass_group).computeMsmMgr);
+#ifdef MSM_NODE_MAPPING
+      penum = mgrLocal->gcutAssign.buffer();
+#else
+      penum = 0;
+#endif
+    }
+    int registerArray(CkArrayIndex& numElements, CkArrayID aid) {
+      return 0;
+    }
+    int procNum(int /*arrayHdl*/, const CkArrayIndex &idx) {
+      int n = *((int *)idx.data());
+#ifdef MSM_NODE_MAPPING
+      return penum[n];
+#else
+      return 0;
+#endif
+    }
 };
 
 
@@ -3057,7 +3118,15 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       int ni = map.blockLevel[level].ni();
       int nj = map.blockLevel[level].nj();
       int nk = map.blockLevel[level].nk();
+#ifdef MSM_NODE_MAPPING
+      CkPrintf("Using MsmBlockMap for level %d\n", level);
+      CProxy_MsmBlockMap blockMap = CProxy_MsmBlockMap::ckNew(level);
+      CkArrayOptions opts(ni, nj, nk);
+      opts.setMap(blockMap);
+      msmBlock[level] = CProxy_MsmBlock::ckNew(level, opts);
+#else
       msmBlock[level] = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
+#endif
 #ifdef DEBUG_MSM_VERBOSE
       printf("Create MsmBlock[%d] 3D chare array ( %d x %d x %d )\n",
           level, ni, nj, nk);
@@ -3077,7 +3146,15 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #ifdef MSM_GRID_CUTOFF_DECOMP
     // on PE 0, create 1D chare array of MsmGridCutoff
     // broadcast this array proxy to the rest of the group
+#ifdef MSM_NODE_MAPPING
+    CkPrintf("Using MsmGridCutoffMap\n");
+    CProxy_MsmGridCutoffMap gcutMap = CProxy_MsmGridCutoffMap::ckNew();
+    CkArrayOptions optsgcut(numGridCutoff);
+    optsgcut.setMap(gcutMap);
+    msmGridCutoff = CProxy_MsmGridCutoff::ckNew(optsgcut);
+#else
     msmGridCutoff = CProxy_MsmGridCutoff::ckNew(numGridCutoff);
+#endif
     MsmGridCutoffProxyMsg *gcmsg =
       new(sizeof(CProxy_MsmGridCutoff), 0) MsmGridCutoffProxyMsg;
     gcmsg->put(&msmGridCutoff);
