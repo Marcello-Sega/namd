@@ -34,7 +34,7 @@
 
 // node aware mapping of chare arrays
 #define MSM_NODE_MAPPING
-#undef MSM_NODE_MAPPING
+//#undef MSM_NODE_MAPPING
 
 // report timings for compute routines
 #define MSM_TIMING
