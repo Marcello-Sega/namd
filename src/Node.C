@@ -664,6 +664,11 @@ void Node::startup() {
     proxyMgr->createProxies();  // need Home patches before this
     if (!CkMyPe()) LdbCoordinator::Object()->createLoadBalancer();
 
+#ifdef NAMD_TCL
+    // TclInitSubsystems() has a race condition so we create one interp per node here
+    if (CkMyPe() && ! CkMyRank()) Tcl_DeleteInterp(Tcl_CreateInterp());
+#endif
+
 #ifdef USE_NODEPATCHMGR
 	//at this point, PatchMap info has been recved on PEs. It is time to create
 	//the home patch spanning tree for receiving proxy list info
