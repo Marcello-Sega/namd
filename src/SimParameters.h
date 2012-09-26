@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: dhardy $
- * $Date: 2012/08/29 21:07:44 $
- * $Revision: 1.1214 $
+ * $Author: jim $
+ * $Date: 2012/09/26 18:39:14 $
+ * $Revision: 1.1215 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -620,6 +620,9 @@ public:
 	int PMEMinPoints;		//  Min points per PME pencil
 	Bool PMEBarrier;		//  Use barrier before sendTrans
 	int PMEPencils;			//  Size of pencil grid in each dim
+	int PMEPencilsX;		//  Size of pencil grid in X dim
+	int PMEPencilsY;		//  Size of pencil grid in Y dim
+	int PMEPencilsZ;		//  Size of pencil grid in Z dim
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
 	Bool useOptPME;                 //  Flag TRUE -> use the scalable version of PME

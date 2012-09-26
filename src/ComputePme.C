@@ -724,6 +724,20 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       yBlocks = nb2 / nb;
     }
 
+    if ( simParams->PMEPencilsX > 0 ) xBlocks = simParams->PMEPencilsX;
+    if ( simParams->PMEPencilsY > 0 ) yBlocks = simParams->PMEPencilsY;
+    if ( simParams->PMEPencilsZ > 0 ) zBlocks = simParams->PMEPencilsZ;
+
+    if ( xBlocks * yBlocks > CkNumPes() ) {
+      NAMD_die("PME pencils xBlocks * yBlocks > numPes");
+    }
+    if ( xBlocks * zBlocks > CkNumPes() ) {
+      NAMD_die("PME pencils xBlocks * zBlocks > numPes");
+    }
+    if ( yBlocks * zBlocks > CkNumPes() ) {
+      NAMD_die("PME pencils yBlocks * zBlocks > numPes");
+    }
+
     int dimx = simParams->PMEGridSizeX;
     int bx = 1 + ( dimx - 1 ) / xBlocks;
     xBlocks = 1 + ( dimx - 1 ) / bx;

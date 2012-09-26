@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2012/08/30 21:56:02 $
- * $Revision: 1.1404 $
+ * $Author: jim $
+ * $Date: 2012/09/26 18:39:14 $
+ * $Revision: 1.1405 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -777,6 +777,15 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.range("PMEMinSlices", NOT_NEGATIVE);
    opts.optional("PME", "PMEPencils",
 	"PME FFT and reciprocal sum pencil grid size", &PMEPencils, -1);
+   opts.optional("PME", "PMEPencilsX",
+	"PME FFT and reciprocal sum pencil grid size X", &PMEPencilsX, 0);
+   opts.optional("PME", "PMEPencilsY",
+	"PME FFT and reciprocal sum pencil grid size Y", &PMEPencilsY, 0);
+   opts.optional("PME", "PMEPencilsZ",
+	"PME FFT and reciprocal sum pencil grid size Z", &PMEPencilsZ, 0);
+   opts.range("PMEPencilsX", NOT_NEGATIVE);
+   opts.range("PMEPencilsY", NOT_NEGATIVE);
+   opts.range("PMEPencilsZ", NOT_NEGATIVE);
    opts.optional("PME", "PMEMinPoints",
 	"minimum points per PME reciprocal sum pencil", &PMEMinPoints, 10000);
    opts.range("PMEMinPoints", NOT_NEGATIVE);
