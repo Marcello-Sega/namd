@@ -74,8 +74,14 @@
 // and puts the priority on finishing the top levels and down before 
 // finishing the lower levels.
 //
+// XXX
 class GridFloatMsg : public CMessage_GridFloatMsg {
   public:
+#ifdef MSM_FIXED_SIZE_GRID_MSG
+    Float gdata[MSM_MAX_BLOCK_VOLUME];
+#else
+    Float *gdata;
+#endif
     int idnum;
     int nlower_i;
     int nlower_j;
@@ -84,11 +90,7 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
     int nextent_j;
     int nextent_k;
     int nelems;
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-    Float gdata[MSM_MAX_BLOCK_VOLUME];
-#else
-    Float *gdata;
-#endif
+
     // put a grid into an allocated message to be sent
     void put(const msm::Grid<Float>& g, int id) {
       idnum = id;
@@ -321,7 +323,7 @@ private:
 
   // allocate subgrid used for receiving message data in addPotential()
   // and sending on to PatchData::addPotential()
-  msm::Grid<Float> subgrid;
+  msm::Grid<Float> subgrid; // XXX
 
 #ifdef MSM_NODE_MAPPING
   msm::Array<int> blockAssign;
@@ -1129,7 +1131,7 @@ namespace msm {
     ForceArray force;
     Grid<Float> qh;
     Grid<Float> eh;
-    Grid<Float> subgrid;
+    Grid<Float> subgrid; // XXX
     BigReal energy;
     BigReal virial[3][3];
     int cntRecvs;
@@ -1142,7 +1144,7 @@ namespace msm {
     void init(int natoms);
     void anterpolation();
     void sendCharge();
-    void addPotential(const Grid<Float>& epart);
+    void addPotential(const Grid<Float>& epart); // XXX
     void interpolation();
   };
 
@@ -1160,8 +1162,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
     msm::Map *map;
     msm::BlockIndex qhblockIndex;  // source of charges
     msm::BlockSend ehblockSend;    // destination for potentials
-    msm::Grid<Float> qh;
-    msm::Grid<Float> eh;
+    msm::Grid<Float> qh; // XXX
+    msm::Grid<Float> eh; // XXX
 
     MsmGridCutoff() {
       mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
@@ -1195,6 +1197,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #define CLIP_POTENTIAL_GRID
 #undef CLIP_POTENTIAL_GRID
 
+    // XXX
     void compute(GridFloatMsg *gmsg) {
 #ifdef DEBUG_MSM_GRID
       printf("MsmGridCutoff %d:  compute()\n", thisIndex);
@@ -1488,8 +1491,8 @@ class MsmBlock : public CBase_MsmBlock {
     ComputeMsmMgr *mgrLocal;  // for quick access to data
     msm::Map *map;
     msm::BlockDiagram *bd;
-    msm::Grid<Float> qh;
-    msm::Grid<Float> eh;
+    msm::Grid<Float> qh; // XXX
+    msm::Grid<Float> eh; // XXX
 #ifndef MSM_GRID_CUTOFF_DECOMP
     msm::Grid<Float> ehCutoff;
 #endif
@@ -1500,14 +1503,14 @@ class MsmBlock : public CBase_MsmBlock {
     msm::BlockIndex blockIndex;
  
     //msm::Grid<Float> qpart, epart;
-    msm::Grid<Float> subgrid;
+    msm::Grid<Float> subgrid; // XXX
 
     MsmBlock(int level);
     MsmBlock(CkMigrateMessage *m) { }
 
     void init();
 
-    void addCharge(GridFloatMsg *);  // entry
+    void addCharge(GridFloatMsg *);  // entry // XXX
 
     void restriction();
     void sendUpCharge();
@@ -1516,7 +1519,7 @@ class MsmBlock : public CBase_MsmBlock {
     void sendAcrossPotential();
 #endif
 
-    void addPotential(GridFloatMsg *);  // entry
+    void addPotential(GridFloatMsg *);  // entry // XXX
 
     void prolongation();
     void sendDownPotential();
