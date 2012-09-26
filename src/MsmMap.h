@@ -301,16 +301,22 @@ namespace msm {
       // the grid to be added must fit within this grid's index range
       Grid<T>& operator+=(const Grid<T>& g) {
         ASSERT(IndexRange(g) <= IndexRange(*this));
-        int gia = g.ia();
-        int gib = g.ib();
-        int gja = g.ja();
-        int gjb = g.jb();
-        int gka = g.ka();
-        int gkb = g.kb();
-        for (int k = gka;  k <= gkb;  k++) {
-          for (int j = gja;  j <= gjb;  j++) {
-            for (int i = gia;  i <= gib;  i++) {
-              (*this)(i,j,k) += g(i,j,k);
+        int gni = g.nextent.i;
+        int gnj = g.nextent.j;
+        int gnk = g.nextent.k;
+        int index = 0;
+        int ni = nextent.i;
+        int nij = nextent.i * nextent.j;
+        int koff = (g.nlower.k - nlower.k) * nij
+          + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
+        const T *gbuf = g.gdata.buffer();
+        T *buf = gdata.buffer();
+        for (int k = 0;  k < gnk;  k++) {
+          int jkoff = k * nij + koff;
+          for (int j = 0;  j < gnj;  j++) {
+            int ijkoff = j * ni + jkoff;
+            for (int i = 0;  i < gni;  i++, index++) {
+              buf[i + ijkoff] += gbuf[index];
             }
           }
         }
@@ -321,16 +327,22 @@ namespace msm {
       // subgrid must fit within this grid's index range
       void extract(Grid<T>& g) {
         ASSERT(IndexRange(g) <= IndexRange(*this));
-        int gia = g.ia();
-        int gib = g.ib();
-        int gja = g.ja();
-        int gjb = g.jb();
-        int gka = g.ka();
-        int gkb = g.kb();
-        for (int k = gka;  k <= gkb;  k++) {
-          for (int j = gja;  j <= gjb;  j++) {
-            for (int i = gia;  i <= gib;  i++) {
-              g(i,j,k) = (*this)(i,j,k);
+        int gni = g.nextent.i;
+        int gnj = g.nextent.j;
+        int gnk = g.nextent.k;
+        int index = 0;
+        int ni = nextent.i;
+        int nij = nextent.i * nextent.j;
+        int koff = (g.nlower.k - nlower.k) * nij
+          + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
+        T *gbuf = g.gdata.buffer();
+        const T *buf = gdata.buffer();
+        for (int k = 0;  k < gnk;  k++) {
+          int jkoff = k * nij + koff;
+          for (int j = 0;  j < gnj;  j++) {
+            int ijkoff = j * ni + jkoff;
+            for (int i = 0;  i < gni;  i++, index++) {
+              gbuf[index] = buf[i + ijkoff];
             }
           }
         }
