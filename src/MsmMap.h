@@ -218,6 +218,142 @@ namespace msm {
       Ivec nextent;  // extent of lattice along each dimension
   };
 
+#define MSM_MAX_BLOCK_SIZE 8
+#define MSM_MAX_BLOCK_VOLUME 512
+
+  // storage and indexing for 3D lattice of grid points
+  // with fixed buffer storage no larger than size of block
+  template <class T>
+  class GridFixed : public IndexRange {
+    public:
+      GridFixed() { }
+      void init(const IndexRange& n) {
+        nlower = n.lower();
+        nextent = n.extent();
+        ASSERT(nlower.i * nlower.j * nlower.k < MSM_MAX_BLOCK_VOLUME);
+      }
+      void set(int pia, int pni, int pja, int pnj, int pka, int pnk) {
+        IndexRange::set(pia, pni, pja, pnj, pka, pnk);
+        ASSERT(nlower.i * nlower.j * nlower.k < MSM_MAX_BLOCK_VOLUME);
+      }
+      void setbounds(int pia, int pib, int pja, int pjb, int pka, int pkb) {
+        IndexRange::setbounds(pia, pib, pja, pjb, pka, pkb);
+        ASSERT(nlower.i * nlower.j * nlower.k < MSM_MAX_BLOCK_VOLUME);
+      }
+      const T& operator()(int i, int j, int k) const {
+#ifdef DEBUG_MSM
+        return elem(i,j,k);
+#else
+        return gdata[flatindex(i,j,k)];
+#endif
+      }
+      const T& operator()(const Ivec& n) const {
+        return this->operator()(n.i, n.j, n.k);
+      }
+      const T& elem(int i, int j, int k) const {
+        if (i<ia() || i>ib() || j<ja() || j>jb() || k<ka() || k>kb()) {
+          char msg[200];
+          snprintf(msg, sizeof(msg), "Grid indexing:\n"
+              "ia=%d, ib=%d, i=%d\n"
+              "ja=%d, jb=%d, j=%d\n"
+              "ka=%d, kb=%d, k=%d\n",
+              ia(), ib(), i, ja(), jb(), j, ka(), kb(), k);
+          NAMD_die(msg);
+        }
+        return gdata[flatindex(i,j,k)];
+      }
+      T& operator()(int i, int j, int k) {
+#ifdef DEBUG_MSM
+        return elem(i,j,k);
+#else
+        return gdata[flatindex(i,j,k)];
+#endif
+      }
+      T& operator()(const Ivec& n) {
+        return this->operator()(n.i, n.j, n.k);
+      }
+      T& elem(int i, int j, int k) {
+        if (i<ia() || i>ib() || j<ja() || j>jb() || k<ka() || k>kb()) {
+          char msg[200];
+          snprintf(msg, sizeof(msg), "Grid indexing:\n"
+              "ia=%d, ib=%d, i=%d\n"
+              "ja=%d, jb=%d, j=%d\n"
+              "ka=%d, kb=%d, k=%d\n",
+              ia(), ib(), i, ja(), jb(), j, ka(), kb(), k);
+          NAMD_die(msg);
+        }
+        return gdata[flatindex(i,j,k)];
+      }
+      int flatindex(int i, int j, int k) const {
+        return ((k-ka())*nj() + (j-ja()))*ni() + (i-ia());
+      }
+      const T *buffer() const { return gdata; }
+      T *buffer() { return gdata; }
+
+      // use to zero out grid
+      void reset(const T& t) {
+        int len = nn();
+        for (int n = 0;  n < len;  n++) { gdata[n] = t; }
+      }
+
+      // use to modify the indexing by changing lower corner
+      void updateLower(const Ivec& n) { nlower = n; }
+
+      // accumulate another grid into this grid
+      // the grid to be added must fit within this grid's index range
+      GridFixed<T>& operator+=(const GridFixed<T>& g) {
+        ASSERT(IndexRange(g) <= IndexRange(*this));
+        int gni = g.nextent.i;
+        int gnj = g.nextent.j;
+        int gnk = g.nextent.k;
+        int index = 0;
+        int ni = nextent.i;
+        int nij = nextent.i * nextent.j;
+        int koff = (g.nlower.k - nlower.k) * nij
+          + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
+        const T *gbuf = g.gdata.buffer();
+        T *buf = gdata.buffer();
+        for (int k = 0;  k < gnk;  k++) {
+          int jkoff = k * nij + koff;
+          for (int j = 0;  j < gnj;  j++) {
+            int ijkoff = j * ni + jkoff;
+            for (int i = 0;  i < gni;  i++, index++) {
+              buf[i + ijkoff] += gbuf[index];
+            }
+          }
+        }
+        return(*this);
+      }
+
+      // extract a subgrid from this grid
+      // subgrid must fit within this grid's index range
+      void extract(GridFixed<T>& g) {
+        ASSERT(IndexRange(g) <= IndexRange(*this));
+        int gni = g.nextent.i;
+        int gnj = g.nextent.j;
+        int gnk = g.nextent.k;
+        int index = 0;
+        int ni = nextent.i;
+        int nij = nextent.i * nextent.j;
+        int koff = (g.nlower.k - nlower.k) * nij
+          + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
+        T *gbuf = g.gdata.buffer();
+        const T *buf = gdata.buffer();
+        for (int k = 0;  k < gnk;  k++) {
+          int jkoff = k * nij + koff;
+          for (int j = 0;  j < gnj;  j++) {
+            int ijkoff = j * ni + jkoff;
+            for (int i = 0;  i < gni;  i++, index++) {
+              gbuf[index] = buf[i + ijkoff];
+            }
+          }
+        }
+      }
+
+    private:
+      T gdata[MSM_MAX_BLOCK_VOLUME];
+  };
+
   // storage and indexing for 3D lattice of grid points
   template <class T>
   class Grid : public IndexRange {
@@ -291,7 +427,9 @@ namespace msm {
 
       // use to zero out grid
       void reset(const T& t) {
-        for (int n = 0;  n < gdata.len();  n++) { gdata[n] = t; }
+        T *buf = gdata.buffer();
+        int len = nn();
+        for (int n = 0;  n < len;  n++) { buf[n] = t; }
       }
 
       // use to modify the indexing by changing lower corner
@@ -326,6 +464,57 @@ namespace msm {
       // extract a subgrid from this grid
       // subgrid must fit within this grid's index range
       void extract(Grid<T>& g) {
+        ASSERT(IndexRange(g) <= IndexRange(*this));
+        int gni = g.nextent.i;
+        int gnj = g.nextent.j;
+        int gnk = g.nextent.k;
+        int index = 0;
+        int ni = nextent.i;
+        int nij = nextent.i * nextent.j;
+        int koff = (g.nlower.k - nlower.k) * nij
+          + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
+        T *gbuf = g.gdata.buffer();
+        const T *buf = gdata.buffer();
+        for (int k = 0;  k < gnk;  k++) {
+          int jkoff = k * nij + koff;
+          for (int j = 0;  j < gnj;  j++) {
+            int ijkoff = j * ni + jkoff;
+            for (int i = 0;  i < gni;  i++, index++) {
+              gbuf[index] = buf[i + ijkoff];
+            }
+          }
+        }
+      }
+
+      // accumulate a fixed size grid into this grid
+      // the grid to be added must fit within this grid's index range
+      Grid<T>& operator+=(const GridFixed<T>& g) {
+        ASSERT(IndexRange(g) <= IndexRange(*this));
+        int gni = g.nextent.i;
+        int gnj = g.nextent.j;
+        int gnk = g.nextent.k;
+        int index = 0;
+        int ni = nextent.i;
+        int nij = nextent.i * nextent.j;
+        int koff = (g.nlower.k - nlower.k) * nij
+          + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
+        const T *gbuf = g.gdata.buffer();
+        T *buf = gdata.buffer();
+        for (int k = 0;  k < gnk;  k++) {
+          int jkoff = k * nij + koff;
+          for (int j = 0;  j < gnj;  j++) {
+            int ijkoff = j * ni + jkoff;
+            for (int i = 0;  i < gni;  i++, index++) {
+              buf[i + ijkoff] += gbuf[index];
+            }
+          }
+        }
+        return(*this);
+      }
+
+      // extract a subgrid from this grid
+      // subgrid must fit within this grid's index range
+      void extract(GridFixed<T>& g) {
         ASSERT(IndexRange(g) <= IndexRange(*this));
         int gni = g.nextent.i;
         int gnj = g.nextent.j;
