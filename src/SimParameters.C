@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/09/26 18:39:14 $
- * $Revision: 1.1405 $
+ * $Date: 2012/09/26 21:15:21 $
+ * $Revision: 1.1406 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3703,10 +3703,6 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
           CkNumPes() > 64 || ( IMDon && CkNumPes() > 8 ) ) {
      noPatchesOnZero = TRUE;
    }
-#ifdef NAMD_CUDA
-   noPatchesOnZero = FALSE;
-   noPatchesOnOne = FALSE;
-#endif
    if ( noPatchesOnZero ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 0\n";
    if ( noPatchesOnOne ) iout << iINFO << "REMOVING PATCHES FROM PROCESSOR 1\n";     
    iout << endi;

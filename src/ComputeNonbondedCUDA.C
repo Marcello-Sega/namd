@@ -749,8 +749,6 @@ ComputeNonbondedCUDA::ComputeNonbondedCUDA(ComputeID c, ComputeMgr *mgr,
   }
   masterPe = CkMyPe();
 
-  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
-
   cuda_init();
   build_exclusions();
   // cudaEventCreate(&start_upload);
@@ -855,6 +853,11 @@ void ComputeNonbondedCUDA::assignPatches() {
   }
 
   int npatches = activePatches.size();
+
+  if ( npatches ) {
+    reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  }
+
   int *count = new int[npatches];
   memset(count, 0, sizeof(int)*npatches);
   int *pcount = new int[numPesOnNodeSharingDevice];
