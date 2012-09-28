@@ -745,7 +745,7 @@ void ParallelIOMgr::updateMolInfo()
     }
 
     //deal with numCalc* which is related with fixed atoms!
-    if(molecule->numFixedAtoms>0) {
+    if(molecule->numFixedAtoms>0 && ! simParameters->fixedAtomsForces) {
         //if there's fixed atoms, calcExclusions needs to be calculated
         //Since it's possible the atom inside the this exclusion set is on
         //another input processor, we have to resort to the global fixed atoms
