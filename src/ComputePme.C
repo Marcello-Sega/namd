@@ -23,6 +23,7 @@
 #endif
 
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 #include "InfoStream.h"
