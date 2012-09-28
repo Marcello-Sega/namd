@@ -302,10 +302,42 @@ bool generateBGLORBPmePeList(int *pemap, int numPes, int *block_pes=0,
 			     int nbpes=0);
 #endif
 
+
+int compare_bit_reversed(int a, int b) {
+  int d = a ^ b;
+  int c = 1;
+  if ( d ) while ( ! (d & c) ) {
+    c = c << 1;
+  }
+  return (a & c) - (b & c);
+}
+
+inline bool less_than_bit_reversed(int a, int b) {
+  int d = a ^ b;
+  int c = 1;
+  if ( d ) while ( ! (d & c) ) {
+    c = c << 1;
+  }
+  return d && (b & c);
+}
+
+struct sortop_bit_reversed {
+  inline bool operator() (int a, int b) const {
+    return less_than_bit_reversed(a,b);
+  }
+};
+
 struct ijpair {
   int i,j;
   ijpair() {;}
   ijpair(int I, int J) : i(I), j(J) {;}
+};
+
+struct ijpair_sortop_bit_reversed {
+  inline bool operator() (const ijpair &a, const ijpair &b) const {
+    return ( less_than_bit_reversed(a.i,b.i)
+             || ( (a.i == b.i) && less_than_bit_reversed(a.j,b.j) ) );
+  }
 };
 
 class ComputePmeMgr : public BOCclass {
@@ -1536,8 +1568,12 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
       }
     }
   }
-  Random rand(CkMyPe());
-  rand.reorder(activePencils,numPencilsActive);
+  if ( simParams->PMESendOrder ) {
+    std::sort(activePencils,activePencils+numPencilsActive,ijpair_sortop_bit_reversed());
+  } else {
+    Random rand(CkMyPe());
+    rand.reorder(activePencils,numPencilsActive);
+  }
   //if ( numPencilsActive ) {
   //  CkPrintf("node %d sending to %d pencils\n", CkMyPe(), numPencilsActive);
   //}
@@ -3363,8 +3399,12 @@ public:
   void order_init(int nBlocks) {
     send_order = new int[nBlocks];
     for ( int i=0; i<nBlocks; ++i ) send_order[i] = i;
-    Random rand(CkMyPe());
-    rand.reorder(send_order,nBlocks);
+    if ( Node::Object()->simParameters->PMESendOrder ) {
+      std::sort(send_order,send_order+nBlocks,sortop_bit_reversed());
+    } else {
+      Random rand(CkMyPe());
+      rand.reorder(send_order,nBlocks);
+    }
     needs_reply = new int[nBlocks];
   }
   PmePencilInitMsgData initdata;
