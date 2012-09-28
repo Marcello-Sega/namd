@@ -4705,7 +4705,7 @@ void Molecule::load_atom_set(StringList *setfile, const char *setname,
     if(ret!=0) break;
     if(NAMD_blank_string(oneline)) continue;
     bool hasDash = false;
-    for(int i=0; i<512; i++){
+    for(int i=0; oneline[i] && i<128; i++){
       if(oneline[i]=='-') {
         hasDash = true;
         break;
