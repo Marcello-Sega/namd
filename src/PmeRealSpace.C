@@ -119,8 +119,8 @@ void PmeRealSpace::fill_charges_order(double **q_arr, double **q_arr_list, int &
             ++stray_count;
             continue;
           }
-	  q_arr[ind2] = qline = new double[K3+order-1];
-          q_arr_list[q_arr_count++] = qline;
+	  qline = q_arr[ind2] = q_arr_list[q_arr_count++]
+					= new double[K3+order-1];
 	  memset( (void*) qline, 0, (K3+order-1) * sizeof(double) );
 	}
 	f_arr[ind2] = 1;
@@ -322,8 +322,8 @@ void PmeRealSpace::fill_charges_order4(double **q_arr, double **q_arr_list, int 
             ++stray_count;
             continue;
           }
-	  q_arr[ind2] = qline = new double[K3+order-1];
-          q_arr_list[q_arr_count++] = qline;
+	  qline = q_arr[ind2] = q_arr_list[q_arr_count++]
+					= new double[K3+order-1];
 	  memset( (void*) qline, 0, (K3+order-1) * sizeof(double) );
 	}
 	f_arr[ind2] = 1;
