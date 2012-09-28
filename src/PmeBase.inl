@@ -79,7 +79,7 @@ static inline void scale_forces(Vector f[], int N, Lattice &lattice) {
 }
 
 
-static inline void compute_b_spline(double * __restrict frac, double * __restrict M, double * __restrict dM, int order) {
+static inline void compute_b_spline(double * __restrict frac, double *M, double *dM, int order) {
   int j, n;
   double x,y,z,x1,y1,z1, div;
   double * __restrict Mx, * __restrict My, * __restrict Mz, * __restrict dMx, * __restrict dMy, * __restrict dMz;
