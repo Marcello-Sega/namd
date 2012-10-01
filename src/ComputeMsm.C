@@ -19,6 +19,7 @@
 #include "Debug.h"
 #include "SimParameters.h"
 #include "WorkDistrib.h"
+#include "Priorities.h"
 #include "varsizemsg.h"
 #include <stdio.h>
 #include "MsmMap.h"
@@ -89,6 +90,7 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
 #else
     msm::GridFixed<Float> gdata;
     int idnum;
+    int seqnum;  // sequence number is used for message priority
 #endif
 
 #if 0
@@ -120,32 +122,36 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
     }
 #else
     // put a fixed size grid into a message
-    void put(const msm::GridFixed<Float>& g, int id) {
+    void put(const msm::GridFixed<Float>& g, int id, int seq) {
       gdata = g;
       idnum = id;
+      seqnum = seq;
     }
     // put a variable size grid into a message
-    void put(const msm::Grid<Float>& g, int id) {
+    void put(const msm::Grid<Float>& g, int id, int seq) {
       gdata.init(g);
       const Float *gbuf = g.data().buffer();
       Float *buf = gdata.buffer();
       int len = g.nn();
       for (int n = 0;  n < len;  n++) { buf[n] = gbuf[n]; }
       idnum = id;
+      seqnum = seq;
     }
     // get the fixed size grid from a received message
-    void get(msm::GridFixed<Float>& g, int& id) {
+    void get(msm::GridFixed<Float>& g, int& id, int& seq) {
       g = gdata;
       id = idnum;
+      seq = seqnum;
     }
     // get the variable size grid from a received message
-    void get(msm::Grid<Float>& g, int& id) {
+    void get(msm::Grid<Float>& g, int& id, int& seq) {
       g.init(gdata);
       Float *gbuf = g.data().buffer();
       const Float *buf = gdata.buffer();
       int len = g.nn();
       for (int n = 0;  n < len;  n++) { gbuf[n] = buf[n]; }
       id = idnum;
+      seq = seqnum;
     }
 #endif
 };
@@ -1167,6 +1173,7 @@ namespace msm {
     BigReal virial[3][3];
     int cntRecvs;
     int patchID;
+    int sequence;  // from Compute object for message priority
 
     AtomCoordArray& coordArray() { return coord; }
     ForceArray& forceArray() { return force; }
@@ -1551,6 +1558,8 @@ class MsmBlock : public CBase_MsmBlock {
     //msm::Grid<Float> qpart, epart;
     msm::Grid<Float> subgrid; // XXX
 
+    int sequence;  // from incoming message for message priority
+
     MsmBlock(int level);
     MsmBlock(CkMigrateMessage *m) { }
 
@@ -1570,7 +1579,7 @@ class MsmBlock : public CBase_MsmBlock {
     void prolongation();
     void sendDownPotential();
     void sendPatch();
-};
+}; // class MsmBlock
 
 MsmBlock::MsmBlock(int level) {
   blockIndex.level = level;
@@ -1595,7 +1604,7 @@ MsmBlock::MsmBlock(int level) {
   mgrLocal->addTiming();
 #endif
   init();
-}
+} // MsmBlock::MsmBlock()
 
 void MsmBlock::init() {
   qh.reset(0);
@@ -1607,7 +1616,7 @@ void MsmBlock::init() {
   ehProlongated.reset(0);
   cntRecvsCharge = 0;
   cntRecvsPotential = 0;
-}
+} // MsmBlock::init()
 
 void MsmBlock::addCharge(GridFloatMsg *gm)
 {
@@ -1617,7 +1626,7 @@ void MsmBlock::addCharge(GridFloatMsg *gm)
 #endif
   //msm::Grid<BigReal> qpart;
   int pid;
-  gm->get(subgrid, pid);
+  gm->get(subgrid, pid, sequence);
   delete gm;
   qh += subgrid;
 #ifdef MSM_TIMING
@@ -1631,7 +1640,7 @@ void MsmBlock::addCharge(GridFloatMsg *gm)
     }
     gridCutoff();
   }
-}
+} // MsmBlock::addCharge()
 
 void MsmBlock::restriction()
 {
@@ -1706,7 +1715,7 @@ void MsmBlock::restriction()
 #endif
 
   sendUpCharge();
-}
+} // MsmBlock::restriction()
 
 void MsmBlock::sendUpCharge()
 {
@@ -1739,9 +1748,13 @@ void MsmBlock::sendUpCharge()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
+#if 0
     *(int *)CkPriorityPtr(gm) = lnext;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-    gm->put(subgrid, bindex.level);
+#else
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + lnext);
+#endif
+    gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -1750,7 +1763,7 @@ void MsmBlock::sendUpCharge()
     mgrLocal->msmBlock[lnext](
         bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
   } // for
-}
+} // MsmBlock::sendUpCharge()
 
 void MsmBlock::gridCutoff()
 {
@@ -1837,9 +1850,13 @@ void MsmBlock::gridCutoff()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
+#if 0
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-    gm->put(qh, blockIndex.level);
+#else
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+#endif
+    gm->put(qh, blockIndex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -1847,7 +1864,7 @@ void MsmBlock::gridCutoff()
     mgrLocal->msmGridCutoff[index].compute(gm);
   }
 #endif
-}
+} // MsmBlock::gridCutoff()
 
 #ifndef MSM_GRID_CUTOFF_DECOMP
 void MsmBlock::sendAcrossPotential()
@@ -1881,9 +1898,13 @@ void MsmBlock::sendAcrossPotential()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
+#if 0
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-    gm->put(subgrid, bindex.level);
+#else
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+#endif
+    gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -1892,7 +1913,7 @@ void MsmBlock::sendAcrossPotential()
     mgrLocal->msmBlock[lnext](
         bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
   } // for
-}
+} // MsmBlock::sendAcrossPotential()
 #endif
 
 void MsmBlock::addPotential(GridFloatMsg *gm)
@@ -1903,7 +1924,8 @@ void MsmBlock::addPotential(GridFloatMsg *gm)
 #endif
   //msm::Grid<Float> epart;
   int pid;
-  gm->get(subgrid, pid);
+  int pseq;
+  gm->get(subgrid, pid, pseq);
   delete gm;
   eh += subgrid;
 #ifdef MSM_TIMING
@@ -1918,7 +1940,7 @@ void MsmBlock::addPotential(GridFloatMsg *gm)
       sendPatch();
     }
   }
-}
+} // MsmBlock::addPotential()
 
 void MsmBlock::prolongation()
 {
@@ -1992,7 +2014,7 @@ void MsmBlock::prolongation()
 #endif
 
   sendDownPotential();
-}
+} // MsmBlock::prolongation()
 
 void MsmBlock::sendDownPotential()
 {
@@ -2025,9 +2047,13 @@ void MsmBlock::sendDownPotential()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
+#if 0
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-    gm->put(subgrid, bindex.level);
+#else
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+#endif
+    gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -2040,7 +2066,7 @@ void MsmBlock::sendDownPotential()
   mgrLocal->doneTiming();
 #endif
   init();  // reinitialize for next computation
-}
+} // MsmBlock::sendDownPotential()
 
 void MsmBlock::sendPatch()
 {
@@ -2073,9 +2099,13 @@ void MsmBlock::sendPatch()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
+#if 0
     *(int *)CkPriorityPtr(gm) = priority;
     CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-    gm->put(subgrid, pid);
+#else
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+#endif
+    gm->put(subgrid, pid, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -2089,7 +2119,7 @@ void MsmBlock::sendPatch()
   mgrLocal->doneTiming();
 #endif
   init();  // reinitialize for next computation
-}
+} // MsmBlock::sendPatch()
 
 // MsmBlock
 //
@@ -2169,7 +2199,7 @@ void ComputeMsmMgr::setup_hgrid_1d(BigReal len, BigReal& hh, int& nn,
     ia = -s_edge;
     ib = nn + s_edge;
   }
-}
+} // ComputeMsmMgr::setup_hgrid_1d()
 
 
 // make sure that block sizes divide evenly into periodic dimensions
@@ -3245,7 +3275,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #ifdef DEBUG_MSM_VERBOSE
   printf("end of initialization\n");
 #endif
-}
+} // ComputeMsmMgr::initialize()
 
 void ComputeMsmMgr::recvMsmBlockProxy(MsmBlockProxyMsg *msg)
 {
@@ -3297,7 +3327,8 @@ void ComputeMsmMgr::addPotential(GridFloatMsg *gm)
 {
   //msm::Grid<BigReal> subgrid;
   int pid;
-  gm->get(subgrid, pid);
+  int pseq;
+  gm->get(subgrid, pid, pseq);
   delete gm;
   if (patchPtr[pid] == NULL) {
     char msg[100];
@@ -3420,6 +3451,7 @@ void ComputeMsm::doWork()
     else {
       (*ap).positionBox->close(&x);
     }
+    patch.sequence = sequence();
   }
 
   myMgr->compute(patchIDList);
@@ -3626,9 +3658,13 @@ namespace msm {
 #else
       GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
+#if 0
       *(int *)CkPriorityPtr(gm) = priority;
       CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-      gm->put(subgrid, bindex.level);
+#else
+      SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+#endif
+      gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
       mgr->msmTiming[MsmTimer::COMM] += stopTime - startTime;
