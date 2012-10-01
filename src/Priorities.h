@@ -32,6 +32,8 @@
 #define PME_TRANS2_PRIORITY (PME_PRIORITY+3)
 #define PME_UNTRANS_PRIORITY (PME_PRIORITY+4)
 #define PME_UNTRANS2_PRIORITY (PME_PRIORITY+5)
+
+#define MSM_PRIORITY PME_PRIORITY
  
 #ifdef NAMD_CUDA
 // higher priority so offloaded work can overlap
