@@ -1748,12 +1748,7 @@ void MsmBlock::sendUpCharge()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
-#if 0
-    *(int *)CkPriorityPtr(gm) = lnext;
-    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-#else
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + lnext);
-#endif
     gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -1850,12 +1845,7 @@ void MsmBlock::gridCutoff()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
-#if 0
-    *(int *)CkPriorityPtr(gm) = priority;
-    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-#else
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-#endif
     gm->put(qh, blockIndex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -1898,12 +1888,7 @@ void MsmBlock::sendAcrossPotential()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
-#if 0
-    *(int *)CkPriorityPtr(gm) = priority;
-    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-#else
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-#endif
     gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -2047,12 +2032,7 @@ void MsmBlock::sendDownPotential()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
-#if 0
-    *(int *)CkPriorityPtr(gm) = priority;
-    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-#else
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-#endif
     gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -2099,12 +2079,7 @@ void MsmBlock::sendPatch()
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
-#if 0
-    *(int *)CkPriorityPtr(gm) = priority;
-    CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-#else
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-#endif
     gm->put(subgrid, pid, sequence);
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
@@ -3658,12 +3633,7 @@ namespace msm {
 #else
       GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
-#if 0
-      *(int *)CkPriorityPtr(gm) = priority;
-      CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-#else
       SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-#endif
       gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
