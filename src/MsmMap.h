@@ -230,15 +230,15 @@ namespace msm {
       void init(const IndexRange& n) {
         nlower = n.lower();
         nextent = n.extent();
-        ASSERT(nlower.i * nlower.j * nlower.k < MSM_MAX_BLOCK_VOLUME);
+        ASSERT(nextent.i * nextent.j * nextent.k <= MSM_MAX_BLOCK_VOLUME);
       }
       void set(int pia, int pni, int pja, int pnj, int pka, int pnk) {
         IndexRange::set(pia, pni, pja, pnj, pka, pnk);
-        ASSERT(nlower.i * nlower.j * nlower.k < MSM_MAX_BLOCK_VOLUME);
+        ASSERT(nextent.i * nextent.j * nextent.k <= MSM_MAX_BLOCK_VOLUME);
       }
       void setbounds(int pia, int pib, int pja, int pjb, int pka, int pkb) {
         IndexRange::setbounds(pia, pib, pja, pjb, pka, pkb);
-        ASSERT(nlower.i * nlower.j * nlower.k < MSM_MAX_BLOCK_VOLUME);
+        ASSERT(nextent.i * nextent.j * nextent.k <= MSM_MAX_BLOCK_VOLUME);
       }
       const T& operator()(int i, int j, int k) const {
 #ifdef DEBUG_MSM
