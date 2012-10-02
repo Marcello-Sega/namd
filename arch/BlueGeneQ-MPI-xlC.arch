@@ -1,12 +1,3 @@
-NAMD_ARCH = BlueGeneQ
+include .rootdir/arch/BlueGeneQ-xlC.arch
 CHARMARCH = mpi-bluegeneq-xlc
 
-CXX = bgxlC -qstaticinline -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID -DARCH_POWERPC 
-
-CXXOPTS = -O3 -Q -qhot
-CXXNOALIASOPTS = -O3 -Q -qalias=noallptrs:notypeptr -qdebug=plst3:cycles
-
-CXXTHREADOPTS = -O3 -Q
-
-CC = bgxlc 
-COPTS = -O3 -qhot
