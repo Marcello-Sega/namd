@@ -2686,7 +2686,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     map.bsx[level] = bsx;
     map.bsy[level] = bsy;
     map.bsz[level] = bsz;
-    if (level < nlevels-1 &&
+    if (/* level < nlevels-1 && */
         (map.bsx[level] < gni ||
          map.bsy[level] < gnj ||
          map.bsz[level] < gnk)) {
@@ -3350,6 +3350,11 @@ ComputeMsm::~ComputeMsm()
 
 void ComputeMsm::doWork()
 {
+  // for each patch do stuff
+#ifdef DEBUG_MSM_VERBOSE
+  printf("ComputeMsm:  doWork() PE=%d\n", CkMyPe());
+#endif
+
 #if 0
 #ifdef MSM_TIMING
   myMgr->initTiming();
@@ -3364,11 +3369,6 @@ void ComputeMsm::doWork()
   numLocalPatches = patchList.size();
   cntLocalPatches = 0;
   ASSERT(cntLocalPatches < numLocalPatches);
-
-  // for each patch do stuff
-#ifdef DEBUG_MSM_VERBOSE
-  printf("ComputeMsm:  doWork() PE=%d\n", CkMyPe());
-#endif
 
 #ifdef DEBUG_MSM_VERBOSE
   printf("patchList size = %d\n", patchList.size() );
