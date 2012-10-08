@@ -37,6 +37,9 @@
 #define MSM_NODE_MAPPING
 //#undef MSM_NODE_MAPPING
 
+#define MSM_FOLD_FACTOR
+//#undef MSM_FOLD_FACTOR
+
 // report timings for compute routines
 #define MSM_TIMING
 #undef MSM_TIMING
@@ -360,7 +363,7 @@ private:
 
   // allocate subgrid used for receiving message data in addPotential()
   // and sending on to PatchData::addPotential()
-  msm::Grid<Float> subgrid; // XXX
+  //msm::GridFixed<Float> subgrid;
 
 #ifdef MSM_NODE_MAPPING
   msm::Array<int> blockAssign;
@@ -1182,7 +1185,7 @@ namespace msm {
     void init(int natoms);
     void anterpolation();
     void sendCharge();
-    void addPotential(const Grid<Float>& epart); // XXX
+    void addPotential(const GridFixed<Float>& epart);
     void interpolation();
   };
 
@@ -1201,9 +1204,6 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
     msm::BlockIndex qhblockIndex;  // source of charges
     msm::BlockSend ehblockSend;    // destination for potentials
     msm::GridFixed<Float> qh;
-#if 0
-    msm::GridFixed<Float> eh;
-#endif
 
     MsmGridCutoff() {
       mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
@@ -1496,8 +1496,57 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #ifdef MSM_TIMING
       startTime = stopTime;
 #endif
+#ifdef MSM_FOLD_FACTOR
+      // if "fold factor" is active for this level,
+      // need to sum unfolded potential grid back into periodic grid
+      if (map->foldfactor[qhblockIndex.level].active) {
+        msm::GridFixed<Float> ehfold = eh;  // copy unfolded grid
+        // for indexing eh:  ia, ib, ja, jb, ka, kb
+        int eni = eh.ni();
+        int enj = eh.nj();
+        int enk = eh.nk();
+        int eia = ia;
+        int eib = ib;
+        int eja = ja;
+        int ejb = jb;
+        int eka = ka;
+        int ekb = kb;
+        if (map->ispx) { eia = qia;  eib = qib;  eni = qni; }
+        if (map->ispy) { eja = qja;  ejb = qjb;  enj = qnj; }
+        if (map->ispz) { eka = qka;  ekb = qkb;  enk = qh.nk(); }
+        eh.set(eia, eni, eja, enj, eka, enk);
+        eh.reset(0);
+        const Float *ehfoldbuf = ehfold.buffer();
+        Float *ehbuf = eh.buffer();
+        int index = 0;
+        for (int k = ka;  k <= kb;  k++) {
+          int kk = k;
+          if      (kk < eka)  do { kk += enk; } while (kk < eka);
+          else if (kk > ekb)  do { kk -= enk; } while (kk > ekb);
+          int koff = (kk - eka) * enj;
+          for (int j = ja;  j <= jb;  j++) {
+            int jj = j;
+            if      (jj < eja)  do { jj += enj; } while (jj < eja);
+            else if (jj > ejb)  do { jj -= enj; } while (jj > ejb);
+            int jkoff = (koff + (jj - eja)) * eni;
+            for (int i = ia;  i <= ib;  i++, index++) {
+              int ii = i;
+              if      (ii < eia)  do { ii += eni; } while (ii < eia);
+              else if (ii > eib)  do { ii -= eni; } while (ii > eib);
+              int ijkoff = jkoff + (ii - eia);
+              ehbuf[ijkoff] += ehfoldbuf[index];
+            }
+          }
+        }
+      }
+      else {
+        // shift grid index range to its true (wrapped) values
+        eh.updateLower( ehblockSend.nrange_wrap.lower() );
+      }
+#else
       // shift grid index range to its true (wrapped) values
       eh.updateLower( ehblockSend.nrange_wrap.lower() );
+#endif
 #if 0
       // place eh into message
 #ifdef MSM_FIXED_SIZE_GRID_MSG
@@ -1556,7 +1605,7 @@ class MsmBlock : public CBase_MsmBlock {
     msm::BlockIndex blockIndex;
  
     //msm::Grid<Float> qpart, epart;
-    msm::Grid<Float> subgrid; // XXX
+    msm::GridFixed<Float> subgrid; // XXX
 
     int sequence;  // from incoming message for message priority
 
@@ -1580,6 +1629,7 @@ class MsmBlock : public CBase_MsmBlock {
     void sendDownPotential();
     void sendPatch();
 }; // class MsmBlock
+
 
 MsmBlock::MsmBlock(int level) {
   blockIndex.level = level;
@@ -1606,6 +1656,7 @@ MsmBlock::MsmBlock(int level) {
   init();
 } // MsmBlock::MsmBlock()
 
+
 void MsmBlock::init() {
   qh.reset(0);
   eh.reset(0);
@@ -1617,6 +1668,7 @@ void MsmBlock::init() {
   cntRecvsCharge = 0;
   cntRecvsPotential = 0;
 } // MsmBlock::init()
+
 
 void MsmBlock::addCharge(GridFloatMsg *gm)
 {
@@ -1641,6 +1693,7 @@ void MsmBlock::addCharge(GridFloatMsg *gm)
     gridCutoff();
   }
 } // MsmBlock::addCharge()
+
 
 void MsmBlock::restriction()
 {
@@ -1717,6 +1770,7 @@ void MsmBlock::restriction()
   sendUpCharge();
 } // MsmBlock::restriction()
 
+
 void MsmBlock::sendUpCharge()
 {
 #ifdef MSM_TIMING
@@ -1742,14 +1796,14 @@ void MsmBlock::sendUpCharge()
     ASSERT(bindex.level == lnext);
     // place subgrid into message
     // SET MESSAGE PRIORITY
-    int nelems = subgrid.data().len();
+    int nelems = subgrid.nn();
 #ifdef MSM_FIXED_SIZE_GRID_MSG
     GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + lnext);
-    gm->put(subgrid, bindex.level, sequence);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -1759,6 +1813,7 @@ void MsmBlock::sendUpCharge()
         bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
   } // for
 } // MsmBlock::sendUpCharge()
+
 
 void MsmBlock::gridCutoff()
 {
@@ -1835,6 +1890,7 @@ void MsmBlock::gridCutoff()
   int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
   int nelems = qh.data().len();
   int len = bd->indexGridCutoff.len();
+
   for (int n = 0;  n < len;  n++) {
 #ifdef MSM_TIMING
     startTime = CkWallTimer();
@@ -1846,15 +1902,18 @@ void MsmBlock::gridCutoff()
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-    gm->put(qh, blockIndex.level, sequence);
+    gm->put(qh, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
 #endif
     mgrLocal->msmGridCutoff[index].compute(gm);
   }
-#endif
+
+#endif // MSM_GRID_CUTOFF_DECOMP
+
 } // MsmBlock::gridCutoff()
+
 
 #ifndef MSM_GRID_CUTOFF_DECOMP
 void MsmBlock::sendAcrossPotential()
@@ -1882,14 +1941,14 @@ void MsmBlock::sendAcrossPotential()
     msm::BlockIndex& bindex = bd->sendAcross[n].nblock_wrap;
     ASSERT(bindex.level == lnext);
     // place subgrid into message
-    int nelems = subgrid.data().len();
+    int nelems = subgrid.nn();
 #ifdef MSM_FIXED_SIZE_GRID_MSG
     GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-    gm->put(subgrid, bindex.level, sequence);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -1901,16 +1960,16 @@ void MsmBlock::sendAcrossPotential()
 } // MsmBlock::sendAcrossPotential()
 #endif
 
+
 void MsmBlock::addPotential(GridFloatMsg *gm)
 {
 #ifdef MSM_TIMING
   double startTime, stopTime;
   startTime = CkWallTimer();
 #endif
-  //msm::Grid<Float> epart;
   int pid;
   int pseq;
-  gm->get(subgrid, pid, pseq);
+  gm->get(subgrid, pid, pseq);  // receive sender's level
   delete gm;
   eh += subgrid;
 #ifdef MSM_TIMING
@@ -1926,6 +1985,7 @@ void MsmBlock::addPotential(GridFloatMsg *gm)
     }
   }
 } // MsmBlock::addPotential()
+
 
 void MsmBlock::prolongation()
 {
@@ -2001,6 +2061,7 @@ void MsmBlock::prolongation()
   sendDownPotential();
 } // MsmBlock::prolongation()
 
+
 void MsmBlock::sendDownPotential()
 {
 #ifdef MSM_TIMING
@@ -2026,14 +2087,14 @@ void MsmBlock::sendDownPotential()
     msm::BlockIndex& bindex = bd->sendDown[n].nblock_wrap;
     ASSERT(bindex.level == lnext);
     // place subgrid into message
-    int nelems = subgrid.data().len();
+    int nelems = subgrid.nn();
 #ifdef MSM_FIXED_SIZE_GRID_MSG
     GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-    gm->put(subgrid, bindex.level, sequence);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -2047,6 +2108,7 @@ void MsmBlock::sendDownPotential()
 #endif
   init();  // reinitialize for next computation
 } // MsmBlock::sendDownPotential()
+
 
 void MsmBlock::sendPatch()
 {
@@ -2073,14 +2135,14 @@ void MsmBlock::sendPatch()
     // add the subgrid charges into the block, need its patch ID
     int pid = bd->sendPatch[n].patchID;
     // place subgrid into message
-    int nelems = subgrid.data().len();
+    int nelems = subgrid.nn();
 #ifdef MSM_FIXED_SIZE_GRID_MSG
     GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
 #else
     GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
 #endif
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-    gm->put(subgrid, pid, sequence);
+    gm->put(subgrid, pid, sequence);  // send patch ID
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -2674,6 +2736,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   map.bsx.resize(nlevels);
   map.bsy.resize(nlevels);
   map.bsz.resize(nlevels);
+#ifdef MSM_FOLD_FACTOR
+  map.foldfactor.resize(nlevels);
+#endif
   for (level = 0;  level < nlevels;  level++) {
     msm::IndexRange& g = map.gridrange[level];
     msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
@@ -2686,19 +2751,35 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     map.bsx[level] = bsx;
     map.bsy[level] = bsy;
     map.bsz[level] = bsz;
-    if (/* level < nlevels-1 && */
-        (map.bsx[level] < gni ||
-         map.bsy[level] < gnj ||
-         map.bsz[level] < gnk)) {
+    if (/* map.bsx[level] < gni ||
+        map.bsy[level] < gnj ||
+        map.bsz[level] < gnk */ 1) {
       // make sure that block sizes divide evenly into periodic dimensions
       if (ispx) setup_periodic_blocksize(map.bsx[level], gni);
       if (ispy) setup_periodic_blocksize(map.bsy[level], gnj);
       if (ispz) setup_periodic_blocksize(map.bsz[level], gnk);
+#ifdef MSM_DEBUG_VERBOSE
+      if (CkMyPe() == 0) {
+        printf("level = %d\n  map.bs* = %d %d %d  gn* = %d %d %d\n",
+            level, map.bsx[level], map.bsy[level], map.bsz[level],gni,gnj,gnk);
+      }
+#endif
       // subdivide grid into multiple blocks
       //   == ceil(gni / bsx), etc.
       int bni = (gni / map.bsx[level]) + (gni % map.bsx[level] != 0);
       int bnj = (gnj / map.bsy[level]) + (gnj % map.bsy[level] != 0);
       int bnk = (gnk / map.bsz[level]) + (gnk % map.bsz[level] != 0);
+#ifdef MSM_FOLD_FACTOR
+      if (bni == 1 || bnj == 1 || bnk == 1) {
+        map.foldfactor[level].set(bsx / gni, bsy / gnj, bsz / gnk);
+#if 0
+        if (CkMyPe() == 0) {
+          printf("Setting MSM FoldFactor level %d:  %d %d %d\n",
+              level, bsx / gni, bsy / gnj, bsz / gnk);
+        }
+#endif
+      }
+#endif
       b.set(0, bni, 0, bnj, 0, bnk);
       for (k = 0;  k < bnk;  k++) {
         for (j = 0;  j < bnj;  j++) {
@@ -2718,6 +2799,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
         }
       }
     }
+    /*
     else {
       // make entire grid into single block
       b.set(0, 1, 0, 1, 0, 1);
@@ -2728,7 +2810,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       map.bsy[level] = gnj;
       map.bsz[level] = gnk;
     }
+    */
   }
+  //CkExit();
 #ifdef DEBUG_MSM_VERBOSE
   printf("Done allocating map for grid levels\n");
   printf("Grid level decomposition:\n");
@@ -2849,9 +2933,17 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     int bsy = map.bsy[level];
     int bsz = map.bsz[level];
 #endif
+#ifdef MSM_FOLD_FACTOR
+    if (map.foldfactor[level].active) {
+      bsx *= map.foldfactor[level].numrep.i;
+      bsy *= map.foldfactor[level].numrep.j;
+      bsz *= map.foldfactor[level].numrep.k;
+    }
+#endif
     for (k = 0;  k < bnk;  k++) {
       for (j = 0;  j < bnj;  j++) {
         for (i = 0;  i < bni;  i++) {
+
           // Grid cutoff calculation, sendAcross
           int ia = b(i,j,k).nrange.ia() + map.gc[level].ia();
           int ib = b(i,j,k).nrange.ib() + map.gc[level].ib();
@@ -2863,8 +2955,13 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           msm::Ivec nb = map.clipIndexToLevel(msm::Ivec(ib,jb,kb), level);
           b(i,j,k).nrangeCutoff.setbounds(na.i, nb.i, na.j, nb.j, na.k, nb.k);
           // determine sendAcross blocks
+#ifdef MSM_FOLD_FACTOR
+          msm::BlockIndex blower = map.blockOfGridIndexFold(na, level);
+          msm::BlockIndex bupper = map.blockOfGridIndexFold(nb, level);
+#else
           msm::BlockIndex blower = map.blockOfGridIndex(na, level);
           msm::BlockIndex bupper = map.blockOfGridIndex(nb, level);
+#endif
           int maxarrlen = (bupper.n.i - blower.n.i + 1) *
             (bupper.n.j - blower.n.j + 1) * (bupper.n.k - blower.n.k + 1);
           b(i,j,k).sendAcross.setmax(maxarrlen);  // allocate send array
@@ -2889,9 +2986,15 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
                 msm::BlockSend bs;
                 bs.nblock.n = msm::Ivec(ii,jj,kk);
                 bs.nblock.level = level;
+#ifdef MSM_FOLD_FACTOR
+                bs.nrange = map.clipBlockToIndexRangeFold(bs.nblock,
+                    b(i,j,k).nrangeCutoff);
+                map.wrapBlockSendFold(bs);  // wrap to true block index
+#else
                 bs.nrange = map.clipBlockToIndexRange(bs.nblock,
                     b(i,j,k).nrangeCutoff);
                 map.wrapBlockSend(bs);  // wrap to true block index
+#endif
                 b(i,j,k).sendAcross.append(bs);
                 b(i,j,k).indexGridCutoff.append(numGridCutoff);
                 numGridCutoff++;  // one MsmGridCutoff for each send across
@@ -3015,8 +3118,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
         }
       }
-    }
-  }
+    } // end loop over block diagram
+
+  } // end loop over levels
   // end of Map setup
 
   // allocate chare arrays
@@ -3225,10 +3329,12 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       for (k = 0;  k < bnk;  k++) { // for all blocks
         for (j = 0;  j < bnj;  j++) {
           for (i = 0;  i < bni;  i++) {
+            // source for charges
+            msm::BlockIndex bi = msm::BlockIndex(level, msm::Ivec(i,j,k));
             int numSendAcross = b(i,j,k).sendAcross.len();
             ASSERT( numSendAcross == b(i,j,k).indexGridCutoff.len() );
+            // for this source, loop over destinations for potentials
             for (n = 0;  n < numSendAcross;  n++) {
-              msm::BlockIndex bi = msm::BlockIndex(level, msm::Ivec(i,j,k));
               msm::BlockSend &bs = b(i,j,k).sendAcross[n];
               int index = b(i,j,k).indexGridCutoff[n];
               MsmGridCutoffInitMsg *bsmsg = new MsmGridCutoffInitMsg(bi, bs);
@@ -3300,10 +3406,10 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
 
 void ComputeMsmMgr::addPotential(GridFloatMsg *gm)
 {
-  //msm::Grid<BigReal> subgrid;
+#if 0
   int pid;
   int pseq;
-  gm->get(subgrid, pid, pseq);
+  gm->get(subgrid, pid, pseq);  // receive patch ID
   delete gm;
   if (patchPtr[pid] == NULL) {
     char msg[100];
@@ -3312,6 +3418,19 @@ void ComputeMsmMgr::addPotential(GridFloatMsg *gm)
     NAMD_die(msg);
   }
   patchPtr[pid]->addPotential(subgrid);
+#else
+  // don't copy grid from message
+  // instead use it directly from message, then delete message
+  int pid = gm->idnum;  // receive patch ID
+  if (patchPtr[pid] == NULL) {
+    char msg[100];
+    snprintf(msg, sizeof(msg), "Expecting patch %d to exist on PE %d",
+        pid, CkMyPe());
+    NAMD_die(msg);
+  }
+  patchPtr[pid]->addPotential(gm->gdata);
+  delete gm;
+#endif
 }
 
 
@@ -3644,7 +3763,7 @@ namespace msm {
     }
   }
 
-  void PatchData::addPotential(const Grid<Float>& epart) {
+  void PatchData::addPotential(const GridFixed<Float>& epart) {
 #ifdef MSM_TIMING
     double startTime, stopTime;
     startTime = CkWallTimer();

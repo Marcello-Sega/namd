@@ -7,6 +7,10 @@
 #ifndef MSMMAP_H
 #define MSMMAP_H
 
+#define MSM_MAX_BLOCK_SIZE 8
+#define MSM_MAX_BLOCK_VOLUME \
+  (MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE)
+
 #define DEBUG_MSM
 #undef DEBUG_MSM
 
@@ -218,13 +222,13 @@ namespace msm {
       Ivec nextent;  // extent of lattice along each dimension
   };
 
-#define MSM_MAX_BLOCK_SIZE 8
-#define MSM_MAX_BLOCK_VOLUME 512
-
   // storage and indexing for 3D lattice of grid points
   // with fixed buffer storage no larger than size of block
+  template <class T> class Grid;
+
   template <class T>
   class GridFixed : public IndexRange {
+    friend class Grid<T>;
     public:
       GridFixed() { }
       void init(const IndexRange& n) {
@@ -498,7 +502,7 @@ namespace msm {
         int nij = nextent.i * nextent.j;
         int koff = (g.nlower.k - nlower.k) * nij
           + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
-        const T *gbuf = g.gdata.buffer();
+        const T *gbuf = g.buffer();
         T *buf = gdata.buffer();
         for (int k = 0;  k < gnk;  k++) {
           int jkoff = k * nij + koff;
@@ -524,7 +528,7 @@ namespace msm {
         int nij = nextent.i * nextent.j;
         int koff = (g.nlower.k - nlower.k) * nij
           + (g.nlower.j - nlower.j) * ni + (g.nlower.i - nlower.i);
-        T *gbuf = g.gdata.buffer();
+        T *gbuf = g.buffer();
         const T *buf = gdata.buffer();
         for (int k = 0;  k < gnk;  k++) {
           int jkoff = k * nij + koff;
@@ -554,6 +558,23 @@ namespace msm {
     Ivec n;
     BlockIndex() : level(0), n(0) { }
     BlockIndex(int ll, const Ivec& nn) : level(ll), n(nn) { }
+  };
+
+  // for uppermost levels of hierarchy
+  // fold out image charges along periodic boundaries
+  // to fill up desired block size
+  struct FoldFactor {
+    int active;   // is some numrep dimension > 1?
+    Ivec numrep;  // number of replications along each dimension
+    FoldFactor() : active(0), numrep(1) { }
+    FoldFactor(int i, int j, int k) { set(i,j,k); }
+    void set(int i, int j, int k) {
+      if (i <= 0) i = 1;
+      if (j <= 0) j = 1;
+      if (k <= 0) k = 1;
+      if (i > 1 || j > 1 || k > 1) active = 1;
+      numrep = Ivec(i, j, k);
+    }
   };
 
   // sending part of an extended grid calculation to another block
@@ -609,6 +630,7 @@ namespace msm {
     Array<PatchSend> sendPatch;   // send my (level=0) potential block to patch
     int numRecvsCharge;           // number of expected receives of charge
     int numRecvsPotential;        // number of expected receives of potential
+
     void reset() {
       nrange = IndexRange();
       nrangeCutoff = IndexRange();
@@ -635,6 +657,9 @@ namespace msm {
     int ispx, ispy, ispz;         // is periodic in x, y, z?
 
     Array<int> bsx, bsy, bsz;     // block size in x, y, z for each level
+
+    Array<FoldFactor> foldfactor; // for uppermost grid levels
+      // replicate periodic dimensions in order to fill up block size
 
     // clip index to grid level, using periodicity flags
     Ivec clipIndexToLevel(const Ivec& n, int level) const {
@@ -677,6 +702,26 @@ namespace msm {
       return bn;
     }
 
+    // determine relative (unwrapped) block index for the given grid index
+    // for unfolded replication of image charges
+    BlockIndex blockOfGridIndexFold(const Ivec& n, int level) const {
+      ASSERT(level >= 0 && level < gridrange.len());
+      BlockIndex bn;
+      int bsi = foldfactor[level].numrep.i * bsx[level];
+      int bsj = foldfactor[level].numrep.j * bsy[level];
+      int bsk = foldfactor[level].numrep.k * bsz[level];
+      // we want floor((i - ia) / bsx), etc.
+      // modify case i < ia to avoid integer division of negative numbers
+      int d = n.i - gridrange[level].ia();
+      bn.n.i = (d >= 0 ? d / bsi : -((-d+bsi-1) / bsi));
+      d = n.j - gridrange[level].ja();
+      bn.n.j = (d >= 0 ? d / bsj : -((-d+bsj-1) / bsj));
+      d = n.k - gridrange[level].ka();
+      bn.n.k = (d >= 0 ? d / bsk : -((-d+bsk-1) / bsk));
+      bn.level = level;
+      return bn;
+    }
+
     // find the natural index range of the given relative block number
     IndexRange indexRangeOfBlock(const BlockIndex& nb) const {
       ASSERT(nb.level >= 0 && nb.level < gridrange.len());
@@ -688,10 +733,52 @@ namespace msm {
       return nr;
     }
 
+    // find the natural index range of the given relative block number
+    // for unfolded replication of image charges
+    IndexRange indexRangeOfBlockFold(const BlockIndex& nb) const {
+      ASSERT(nb.level >= 0 && nb.level < gridrange.len());
+      int bsi = foldfactor[nb.level].numrep.i * bsx[nb.level];
+      int bsj = foldfactor[nb.level].numrep.j * bsy[nb.level];
+      int bsk = foldfactor[nb.level].numrep.k * bsz[nb.level];
+      IndexRange nr;
+      int ia = nb.n.i * bsi + gridrange[nb.level].ia();
+      int ja = nb.n.j * bsj + gridrange[nb.level].ja();
+      int ka = nb.n.k * bsk + gridrange[nb.level].ka();
+      nr.set(ia, bsi, ja, bsj, ka, bsk);
+      return nr;
+    }
+
     // clip the natural block index range to not exceed the given index range
     IndexRange clipBlockToIndexRange(const BlockIndex& nb,
         const IndexRange& nrange) const {
       IndexRange nr = indexRangeOfBlock(nb);
+      int nia = nrange.ia();
+      int nib = nrange.ib();
+      int nja = nrange.ja();
+      int njb = nrange.jb();
+      int nka = nrange.ka();
+      int nkb = nrange.kb();
+      int ia = nr.ia();
+      if (ia < nia) ia = nia;
+      int ib = nr.ib();
+      if (ib > nib) ib = nib;
+      int ja = nr.ja();
+      if (ja < nja) ja = nja;
+      int jb = nr.jb();
+      if (jb > njb) jb = njb;
+      int ka = nr.ka();
+      if (ka < nka) ka = nka;
+      int kb = nr.kb();
+      if (kb > nkb) kb = nkb;
+      nr.setbounds(ia, ib, ja, jb, ka, kb);
+      return nr;
+    }
+
+    // clip the natural block index range to not exceed the given index range
+    // for unfolded replication of image charges
+    IndexRange clipBlockToIndexRangeFold(const BlockIndex& nb,
+        const IndexRange& nrange) const {
+      IndexRange nr = indexRangeOfBlockFold(nb);
       int nia = nrange.ia();
       int nib = nrange.ib();
       int nja = nrange.ja();
@@ -752,6 +839,64 @@ namespace msm {
         while (nb.n.k >= nk) {
           nb.n.k -= nk;
           dk -= nk * bsz[level];
+        }
+      }
+      int ia = nr.ia();
+      int ib = nr.ib();
+      int ja = nr.ja();
+      int jb = nr.jb();
+      int ka = nr.ka();
+      int kb = nr.kb();
+      nr.setbounds(ia + di, ib + di, ja + dj, jb + dj, ka + dk, kb + dk);
+      bs.nblock_wrap = nb;
+      bs.nrange_wrap = nr;
+    }
+
+    // set the nblock_wrap and nrange_wrap fields based on periodicity
+    // for unfolded replication of image charges
+    void wrapBlockSendFold(BlockSend& bs) const {
+      BlockIndex nb = bs.nblock;
+      IndexRange nr = bs.nrange;
+      int level = bs.nblock.level;
+      ASSERT(level >= 0 && level < blockLevel.len());
+      int foldi = foldfactor[level].numrep.i;
+      int foldj = foldfactor[level].numrep.j;
+      int foldk = foldfactor[level].numrep.k;
+      int ni = blockLevel[level].ni();
+      int nj = blockLevel[level].nj();
+      int nk = blockLevel[level].nk();
+      int bsi = foldi * bsx[level];
+      int bsj = foldj * bsy[level];
+      int bsk = foldk * bsz[level];
+      int di=0, dj=0, dk=0;
+      if (ispx) {
+        while (nb.n.i < 0) {
+          nb.n.i += ni;
+          di += ni * bsi;
+        }
+        while (nb.n.i >= ni) {
+          nb.n.i -= ni;
+          di -= ni * bsi;
+        }
+      }
+      if (ispy) {
+        while (nb.n.j < 0) {
+          nb.n.j += nj;
+          dj += nj * bsj;
+        }
+        while (nb.n.j >= nj) {
+          nb.n.j -= nj;
+          dj -= nj * bsj;
+        }
+      }
+      if (ispz) {
+        while (nb.n.k < 0) {
+          nb.n.k += nk;
+          dk += nk * bsk;
+        }
+        while (nb.n.k >= nk) {
+          nb.n.k -= nk;
+          dk -= nk * bsk;
         }
       }
       int ia = nr.ia();
