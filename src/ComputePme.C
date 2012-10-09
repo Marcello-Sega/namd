@@ -1171,8 +1171,16 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	if ( CkMyPe() == 0 ){
 #if 1
         CProxy_PmePencilMap zm = CProxy_PmePencilMap::ckNew(0,1,yBlocks,xBlocks*yBlocks,zprocs.begin());
-        CProxy_PmePencilMap ym = CProxy_PmePencilMap::ckNew(0,2,zBlocks,zBlocks*xBlocks,yprocs.begin());
-        CProxy_PmePencilMap xm = CProxy_PmePencilMap::ckNew(1,2,zBlocks,yBlocks*zBlocks,xprocs.begin());
+        CProxy_PmePencilMap ym;
+        if ( simParams->PMEPencilsYLayout )
+          ym = CProxy_PmePencilMap::ckNew(0,2,zBlocks,zBlocks*xBlocks,yprocs.begin()); // new
+        else
+          ym = CProxy_PmePencilMap::ckNew(2,0,xBlocks,zBlocks*xBlocks,yprocs.begin()); // old
+        CProxy_PmePencilMap xm;
+        if ( simParams->PMEPencilsXLayout )
+          xm = CProxy_PmePencilMap::ckNew(2,1,yBlocks,yBlocks*zBlocks,xprocs.begin()); // new
+        else
+          xm = CProxy_PmePencilMap::ckNew(1,2,zBlocks,yBlocks*zBlocks,xprocs.begin()); // old
         pmeNodeProxy.recvPencilMapProxies(xm,ym,zm);
         CkArrayOptions zo(xBlocks,yBlocks,1);  zo.setMap(zm);
         CkArrayOptions yo(xBlocks,1,zBlocks);  yo.setMap(ym);

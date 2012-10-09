@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/09/28 03:17:53 $
- * $Revision: 1.1407 $
+ * $Date: 2012/10/09 19:26:53 $
+ * $Revision: 1.1408 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -786,6 +786,12 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.range("PMEPencilsX", NOT_NEGATIVE);
    opts.range("PMEPencilsY", NOT_NEGATIVE);
    opts.range("PMEPencilsZ", NOT_NEGATIVE);
+   opts.optional("PME", "PMEPencilsYLayout",
+	"PME FFT and reciprocal sum Y pencil layout strategy", &PMEPencilsYLayout, 0);
+   opts.optional("PME", "PMEPencilsXLayout",
+	"PME FFT and reciprocal sum X pencil layout strategy", &PMEPencilsXLayout, 0);
+   opts.range("PMEPencilsYLayout", NOT_NEGATIVE);
+   opts.range("PMEPencilsXLayout", NOT_NEGATIVE);
    opts.optional("PME", "PMESendOrder",
 	"PME message ordering control", &PMESendOrder, 0);
    opts.range("PMESendOrder", NOT_NEGATIVE);

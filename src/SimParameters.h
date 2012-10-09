@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
  * $Author: jim $
- * $Date: 2012/09/28 03:17:53 $
- * $Revision: 1.1216 $
+ * $Date: 2012/10/09 19:26:53 $
+ * $Revision: 1.1217 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -623,6 +623,8 @@ public:
 	int PMEPencilsX;		//  Size of pencil grid in X dim
 	int PMEPencilsY;		//  Size of pencil grid in Y dim
 	int PMEPencilsZ;		//  Size of pencil grid in Z dim
+	int PMEPencilsYLayout;		//  Y pencil layout strategy
+	int PMEPencilsXLayout;		//  X pencil layout strategy
         int PMESendOrder;		//  Message ordering strategy
 
 	Bool useDPME;			//  Flag TRUE -> old DPME code
