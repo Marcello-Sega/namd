@@ -300,6 +300,10 @@ public:
   void addTiming() {
     numTiming++;
   }
+  // object calls before being migrated
+  void subtractTiming() {
+    numTiming--;
+  }
   void doneTiming() {
     if (++cntTiming >= numTiming) {
       CkCallback cb(CkReductionTarget(MsmTimer, done), msmTimer);
@@ -318,6 +322,10 @@ public:
   // every local object being profiled should call this during initialization
   void addProfiling() {
     numProfiling++;
+  }
+  // object calls before being migrated
+  void subtractProfiling() {
+    numProfiling--;
   }
   void doneProfiling() {
     if (++cntProfiling >= numProfiling) {
@@ -1147,11 +1155,15 @@ class MsmGridCutoffMap : public CkArrayMap {
       return 0;
     }
     int procNum(int /*arrayHdl*/, const CkArrayIndex &idx) {
+#if 1
       int n = *((int *)idx.data());
 #ifdef MSM_NODE_MAPPING
       return penum[n];
 #else
       return 0;
+#endif
+#else
+      return 0;  // XXX to test load balancing
 #endif
     }
 };
@@ -1218,7 +1230,39 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #endif
     }
 
-    MsmGridCutoff(CkMigrateMessage *m) { }
+    MsmGridCutoff(CkMigrateMessage *m)
+#ifndef MSM_MIGRATION
+    { }
+#else
+      : CBase_MsmGridCutoff(m) {
+//#ifdef MSM_DEBUG
+      printf("MsmGridCutoff element %d migrated to processor %d\n",
+          thisIndex, CkMyPe());
+//#endif
+      mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
+      mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
+          CkpvAccess(BOCclass_group).computeMsmMgr);
+      map = &(mgrLocal->mapData());
+#ifdef MSM_TIMING
+      mgrLocal->addTiming();
+#endif
+#ifdef MSM_PROFILING
+      mgrLocal->addProfiling();
+#endif
+    }
+
+    virtual void pup(PUP::er& p) {
+#ifdef MSM_TIMING
+      mgrLocal->subtractTiming();
+#endif
+#ifdef MSM_PROFILING
+      mgrLocal->subtractProfiling();
+#endif
+      CBase_MsmGridCutoff::pup(p);  // pack our superclass
+      p | qhblockIndex;
+      p | ehblockSend;
+    }
+#endif // MSM_MIGRATION
 
     void initialize(MsmGridCutoffInitMsg *bmsg) {
       qhblockIndex = bmsg->qhBlockIndex;

@@ -7,6 +7,9 @@
 #ifndef MSMMAP_H
 #define MSMMAP_H
 
+#define MSM_MIGRATION
+#undef MSM_MIGRATION
+
 #define MSM_MAX_BLOCK_SIZE 8
 #define MSM_MAX_BLOCK_VOLUME \
   (MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE)
@@ -181,10 +184,15 @@ namespace msm {
 
   // 3-integer vector, used for indexing from a 3D grid
   struct Ivec {
+    int i, j, k;
     Ivec(int n=0) : i(n), j(n), k(n) { }
     Ivec(int ni, int nj, int nk) : i(ni), j(nj), k(nk) { }
     int operator==(const Ivec& n) { return(i==n.i && j==n.j && k==n.k); }
-    int i, j, k;
+#ifdef MSM_MIGRATION
+    virtual void pup(PUP::er& p) {
+      p|i, p|j, p|k;
+    }
+#endif
   };
 
   // index range for 3D lattice of grid points
@@ -217,6 +225,11 @@ namespace msm {
                  ja() >= n.ja() && jb() <= n.jb() &&
                  ka() >= n.ka() && kb() <= n.kb() );
       }
+#ifdef MSM_MIGRATION
+      virtual void pup(PUP::er& p) {
+        p|nlower, p|nextent;
+      }
+#endif
     protected:
       Ivec nlower;   // index for lowest corner of rectangular lattice
       Ivec nextent;  // extent of lattice along each dimension
@@ -558,6 +571,11 @@ namespace msm {
     Ivec n;
     BlockIndex() : level(0), n(0) { }
     BlockIndex(int ll, const Ivec& nn) : level(ll), n(nn) { }
+#ifdef MSM_MIGRATION
+    virtual void pup(PUP::er& p) {
+      p|level, p|n;
+    }
+#endif
   };
 
   // for uppermost levels of hierarchy
@@ -589,6 +607,11 @@ namespace msm {
       nblock_wrap = BlockIndex();
       nrange_wrap = IndexRange();
     } // reset
+#ifdef MSM_MIGRATION
+    virtual void pup(PUP::er& p) {
+      p|nblock, p|nrange, p|nblock_wrap, p|nrange_wrap;
+    }
+#endif
   };
 
   struct PatchSend {
