@@ -1235,10 +1235,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
     { }
 #else
       : CBase_MsmGridCutoff(m) {
-//#ifdef MSM_DEBUG
+#ifdef DEBUG_MSM_MIGRATE
       printf("MsmGridCutoff element %d migrated to processor %d\n",
           thisIndex, CkMyPe());
-//#endif
+#endif
       mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
       mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
           CkpvAccess(BOCclass_group).computeMsmMgr);
@@ -1252,6 +1252,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
     }
 
     virtual void pup(PUP::er& p) {
+#ifdef DEBUG_MSM_MIGRATE
+      printf("MsmGridCutoff element %d pupped on processor %d\n",
+          thisIndex, CkMyPe());
+#endif
 #ifdef MSM_TIMING
       mgrLocal->subtractTiming();
 #endif

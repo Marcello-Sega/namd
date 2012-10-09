@@ -7,8 +7,13 @@
 #ifndef MSMMAP_H
 #define MSMMAP_H
 
+// migration of MSM computes not currently enabled
 #define MSM_MIGRATION
 #undef MSM_MIGRATION
+
+// for debugging MSM migration
+#define DEBUG_MSM_MIGRATE
+#undef DEBUG_MSM_MIGRATE
 
 #define MSM_MAX_BLOCK_SIZE 8
 #define MSM_MAX_BLOCK_VOLUME \
