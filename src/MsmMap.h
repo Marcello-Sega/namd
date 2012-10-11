@@ -258,6 +258,30 @@ namespace msm {
       Array<T> a;
   };
 
+
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  // Vector and matrix elements for C1 Hermite interpolation.
+  //
+  ///////////////////////////////////////////////////////////////////////////
+
+  enum {
+    C1_VECTOR_SIZE = 8,
+    C1_MATRIX_SIZE = 8*8
+  };
+
+  struct C1Vector {
+    Float velem[C1_VECTOR_SIZE];
+  };
+
+  struct C1Matrix {
+    Float melem[C1_MATRIX_SIZE];
+  };
+
+  // index vector based on mixed partial derivatives in x,y,z
+  enum { D000=0, D100, D010, D001, D110, D101, D011, D111 };
+
+
   ///////////////////////////////////////////////////////////////////////////
   //
   // Grid is 3D lattice of grid points with user-definable index ranges.
@@ -321,7 +345,7 @@ namespace msm {
   // with fixed buffer storage no larger than size of block
   template <class T> class Grid;
 
-  template <class T>
+  template <class T, int N>
   class GridFixed : public IndexRange {
     friend class Grid<T>;
     public:
@@ -329,15 +353,15 @@ namespace msm {
       void init(const IndexRange& n) {
         nlower = n.lower();
         nextent = n.extent();
-        ASSERT(nextent.i * nextent.j * nextent.k <= MSM_MAX_BLOCK_VOLUME);
+        ASSERT(nextent.i * nextent.j * nextent.k <= N);
       }
       void set(int pia, int pni, int pja, int pnj, int pka, int pnk) {
         IndexRange::set(pia, pni, pja, pnj, pka, pnk);
-        ASSERT(nextent.i * nextent.j * nextent.k <= MSM_MAX_BLOCK_VOLUME);
+        ASSERT(nextent.i * nextent.j * nextent.k <= N);
       }
       void setbounds(int pia, int pib, int pja, int pjb, int pka, int pkb) {
         IndexRange::setbounds(pia, pib, pja, pjb, pka, pkb);
-        ASSERT(nextent.i * nextent.j * nextent.k <= MSM_MAX_BLOCK_VOLUME);
+        ASSERT(nextent.i * nextent.j * nextent.k <= N);
       }
       const T& operator()(int i, int j, int k) const {
 #ifdef DEBUG_MSM
@@ -400,7 +424,7 @@ namespace msm {
 
       // accumulate another grid into this grid
       // the grid to be added must fit within this grid's index range
-      GridFixed<T>& operator+=(const GridFixed<T>& g) {
+      GridFixed<T,N>& operator+=(const GridFixed<T,N>& g) {
         ASSERT(IndexRange(g) <= IndexRange(*this));
         int gni = g.nextent.i;
         int gnj = g.nextent.j;
@@ -426,7 +450,7 @@ namespace msm {
 
       // extract a subgrid from this grid
       // subgrid must fit within this grid's index range
-      void extract(GridFixed<T>& g) {
+      void extract(GridFixed<T,N>& g) {
         ASSERT(IndexRange(g) <= IndexRange(*this));
         int gni = g.nextent.i;
         int gnj = g.nextent.j;
@@ -450,7 +474,7 @@ namespace msm {
       }
 
     private:
-      T gdata[MSM_MAX_BLOCK_VOLUME];
+      T gdata[N];
   };
 
   // storage and indexing for 3D lattice of grid points
@@ -587,7 +611,8 @@ namespace msm {
 
       // accumulate a fixed size grid into this grid
       // the grid to be added must fit within this grid's index range
-      Grid<T>& operator+=(const GridFixed<T>& g) {
+      template <int N>
+      Grid<T>& operator+=(const GridFixed<T,N>& g) {
         ASSERT(IndexRange(g) <= IndexRange(*this));
         int gni = g.nextent.i;
         int gnj = g.nextent.j;
@@ -613,7 +638,8 @@ namespace msm {
 
       // extract a subgrid from this grid
       // subgrid must fit within this grid's index range
-      void extract(GridFixed<T>& g) {
+      template <int N>
+      void extract(GridFixed<T,N>& g) {
         ASSERT(IndexRange(g) <= IndexRange(*this));
         int gni = g.nextent.i;
         int gnj = g.nextent.j;

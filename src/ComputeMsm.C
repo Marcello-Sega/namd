@@ -94,7 +94,7 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
     int nextent_k;
     int nelems;
 #else
-    msm::GridFixed<Float> gdata;
+    msm::GridFixed<Float, MSM_MAX_BLOCK_VOLUME> gdata;
     int idnum;
     int seqnum;  // sequence number is used for message priority
 #endif
@@ -128,6 +128,53 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
     }
 #else
     // put a fixed size grid into a message
+    void put(const msm::GridFixed<Float, MSM_MAX_BLOCK_VOLUME>& g,
+        int id, int seq) {
+      gdata = g;
+      idnum = id;
+      seqnum = seq;
+    }
+    // put a variable size grid into a message
+    void put(const msm::Grid<Float>& g,
+        int id, int seq) {
+      gdata.init(g);
+      const Float *gbuf = g.data().buffer();
+      Float *buf = gdata.buffer();
+      int len = g.nn();
+      for (int n = 0;  n < len;  n++) { buf[n] = gbuf[n]; }
+      idnum = id;
+      seqnum = seq;
+    }
+    // get the fixed size grid from a received message
+    void get(msm::GridFixed<Float, MSM_MAX_BLOCK_VOLUME>& g,
+        int& id, int& seq) {
+      g = gdata;
+      id = idnum;
+      seq = seqnum;
+    }
+    // get the variable size grid from a received message
+    void get(msm::Grid<Float>& g,
+        int& id, int& seq) {
+      g.init(gdata);
+      Float *gbuf = g.data().buffer();
+      const Float *buf = gdata.buffer();
+      int len = g.nn();
+      for (int n = 0;  n < len;  n++) { gbuf[n] = buf[n]; }
+      id = idnum;
+      seq = seqnum;
+    }
+#endif
+};
+
+
+#if 0
+class GridC1VectorMsg : public CMessage_GridC1VectorMsg {
+  public:
+    msm::GridFixed<Float> gdata;
+    int idnum;
+    int seqnum;  // sequence number is used for message priority
+
+    // put a fixed size grid into a message
     void put(const msm::GridFixed<Float>& g, int id, int seq) {
       gdata = g;
       idnum = id;
@@ -159,8 +206,8 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
       id = idnum;
       seq = seqnum;
     }
-#endif
 };
+#endif
 
 
 class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {
@@ -471,7 +518,7 @@ private:
   int omega;
 
   enum Approx { CUBIC=0, QUINTIC, QUINTIC2,
-    SEPTIC, SEPTIC3, NONIC, NONIC4, NUM_APPROX };
+    SEPTIC, SEPTIC3, NONIC, NONIC4, C1HERMITE, NUM_APPROX };
 
   enum Split { TAYLOR2=0, TAYLOR3, TAYLOR4,
     TAYLOR5, TAYLOR6, TAYLOR7, TAYLOR8,
@@ -487,22 +534,25 @@ private:
 
     // Max stencil length when skipping zeros
     // (almost half entries are zero for interpolating polynomials).
-    MAX_NSTENCIL_SKIP_ZERO = (MAX_POLY_DEGREE + 2)
+    MAX_NSTENCIL_SKIP_ZERO = (MAX_POLY_DEGREE + 2),
+
+    // Number of scalar approximation formulaes
+    NUM_APPROX_FORMS = (NONIC4 - CUBIC) + 1
   };
 
   // Degree of polynomial basis function Phi.
   static const int PolyDegree[NUM_APPROX];
 
   // The stencil array lengths below.
-  static const int Nstencil[NUM_APPROX];
+  static const int Nstencil[NUM_APPROX_FORMS];
 
   // Index offsets from the stencil-centered grid element, to get
   // to the correct contributing grid element.
-  static const int IndexOffset[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO];
+  static const int IndexOffset[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO];
 
   // The grid transfer stencils for the non-factored restriction and
   // prolongation procedures.
-  static const Float PhiStencil[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO];
+  static const Float PhiStencil[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO];
 
   // Calculate the smoothing function and its derivative:
   // g(R) and (d/dR)g(R), where R=r/a.
@@ -1075,18 +1125,21 @@ private:
 
 
 // Degree of polynomial basis function Phi.
+// For the purpose of finding the stencil width, Hermite interpolation 
+// sets this value to 1.
 const int ComputeMsmMgr::PolyDegree[NUM_APPROX] = {
-  3, 5, 5, 7, 7, 9, 9,
+  3, 5, 5, 7, 7, 9, 9, 1,
 };
 
 // The stencil array lengths below.
-const int ComputeMsmMgr::Nstencil[NUM_APPROX] = {
+const int ComputeMsmMgr::Nstencil[NUM_APPROX_FORMS] = {
   5, 7, 7, 9, 9, 11, 11,
 };
 
 // Index offsets from the stencil-centered grid element, to get
 // to the correct contributing grid element.
-const int ComputeMsmMgr::IndexOffset[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO] = {
+const int
+ComputeMsmMgr::IndexOffset[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO] = {
   // cubic
   {-3, -1, 0, 1, 3},
 
@@ -1111,7 +1164,8 @@ const int ComputeMsmMgr::IndexOffset[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO] = {
 
 // The grid transfer stencils for the non-factored restriction and
 // prolongation procedures.
-const Float ComputeMsmMgr::PhiStencil[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO] = {
+const Float
+ComputeMsmMgr::PhiStencil[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO] = {
   // cubic
   {-1.f/16, 9.f/16, 1, 9.f/16, -1.f/16},
 
@@ -1232,7 +1286,7 @@ namespace msm {
     void init(int natoms);
     void anterpolation();
     void sendCharge();
-    void addPotential(const GridFixed<Float>& epart);
+    void addPotential(const GridFixed<Float,MSM_MAX_BLOCK_VOLUME>& epart);
     void interpolation();
   };
 
@@ -1250,7 +1304,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
     msm::Map *map;
     msm::BlockIndex qhblockIndex;  // source of charges
     msm::BlockSend ehblockSend;    // destination for potentials
-    msm::GridFixed<Float> qh;
+    msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> qh;
 
     MsmGridCutoff() {
       mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
@@ -1342,7 +1396,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // copy message into charges buffer
       // and reference message buffer as potentials
       qh = gmsg->gdata;
-      msm::GridFixed<Float>& eh = gmsg->gdata;
+      msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME>& eh = gmsg->gdata;
 #endif
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
@@ -1583,7 +1637,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // if "fold factor" is active for this level,
       // need to sum unfolded potential grid back into periodic grid
       if (map->foldfactor[qhblockIndex.level].active) {
-        msm::GridFixed<Float> ehfold = eh;  // copy unfolded grid
+        // copy unfolded grid
+        msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> ehfold = eh;
         // for indexing eh:  ia, ib, ja, jb, ka, kb
         int eni = eh.ni();
         int enj = eh.nj();
@@ -1688,7 +1743,7 @@ class MsmBlock : public CBase_MsmBlock {
     msm::BlockIndex blockIndex;
  
     //msm::Grid<Float> qpart, epart;
-    msm::GridFixed<Float> subgrid; // XXX
+    msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> subgrid;
 
     int sequence;  // from incoming message for message priority
 
@@ -2385,14 +2440,15 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   if (CkMyPe() == 0) {
     const char *approx_str, *split_str;
     switch (approx) {
-      case CUBIC:    approx_str = "C1 cubic";   break;
-      case QUINTIC:  approx_str = "C1 quintic"; break;
-      case QUINTIC2: approx_str = "C2 quintic"; break;
-      case SEPTIC:   approx_str = "C1 septic";  break;
-      case SEPTIC3:  approx_str = "C3 septic";  break;
-      case NONIC:    approx_str = "C1 nonic";   break;
-      case NONIC4:   approx_str = "C4 nonic";   break;
-      default:       approx_str = "unknown";    break;
+      case CUBIC:      approx_str = "C1 cubic";    break;
+      case QUINTIC:    approx_str = "C1 quintic";  break;
+      case QUINTIC2:   approx_str = "C2 quintic";  break;
+      case SEPTIC:     approx_str = "C1 septic";   break;
+      case SEPTIC3:    approx_str = "C3 septic";   break;
+      case NONIC:      approx_str = "C1 nonic";    break;
+      case NONIC4:     approx_str = "C4 nonic";    break;
+      case C1HERMITE:  approx_str = "C1 Hermite";  break;
+      default:         approx_str = "unknown";     break;
     }
     switch (split) {
       case TAYLOR2:  split_str = "C2 Taylor";   break;
@@ -4000,7 +4056,8 @@ namespace msm {
     }
   }
 
-  void PatchData::addPotential(const GridFixed<Float>& epart) {
+  void PatchData::addPotential(
+      const GridFixed<Float,MSM_MAX_BLOCK_VOLUME>& epart) {
 #ifdef MSM_TIMING
     double startTime, stopTime;
     startTime = CkWallTimer();
