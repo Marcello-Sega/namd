@@ -37,6 +37,9 @@
 #define MSM_NODE_MAPPING
 //#undef MSM_NODE_MAPPING
 
+#define MSM_NODE_MAPPING_STATS
+#undef MSM_NODE_MAPPING_STATS
+
 #define MSM_FOLD_FACTOR
 //#undef MSM_FOLD_FACTOR
 
@@ -261,6 +264,19 @@ class MsmProfiler : public CBase_MsmProfiler {
 };
 
 
+// used with PriorityQueue
+// when determining work mapped to node or PE
+struct WorkIndex {
+  float work;
+  int index;
+  WorkIndex() : work(0), index(0) { }
+  WorkIndex(float w, int i) : work(w), index(i) { }
+  int operator<=(const WorkIndex& wn) {
+    return (work <= wn.work);
+  }
+};
+
+
 //////////////////////////////////////////////////////////////////////////////
 //
 //  ComputeMsmMgr
@@ -376,13 +392,32 @@ private:
 #ifdef MSM_NODE_MAPPING
   msm::Array<int> blockAssign;
   msm::Array<int> gcutAssign;
-  msm::Array<int> nodecnt;
+  //msm::Array<int> nodecnt;
   int blockFlatIndex(int level, int i, int j, int k) {
     int n = 0;
     for (int l = 0;  l < level;  l++) {
       n += map.blockLevel[l].nn();
     }
     return (n + map.blockLevel[level].flatindex(i,j,k));
+  }
+  float calcBlockWork(const msm::BlockDiagram& b) {
+    const float scalingFactor = 3;
+    const int volumeFullBlock = map.bsx[0] * map.bsy[0] * map.bsz[0];
+    msm::Ivec gn = map.gc[0].extent();
+    const int volumeFullCutoff = (map.bsx[0] + gn.i - 1) *
+      (map.bsy[0] + gn.j - 1) * (map.bsz[0] + gn.k - 1);
+    msm::Ivec n = b.nrange.extent();
+    int volumeBlock = n.i * n.j * n.k;
+    msm::Ivec nc = b.nrangeCutoff.extent();
+    int volumeCutoff = nc.i * nc.j * nc.k;
+    return( scalingFactor * (float(volumeBlock) / volumeFullBlock) *
+        (float(volumeCutoff) / volumeFullCutoff) );
+  }
+  float calcGcutWork(const msm::BlockSend& bs) {
+    const int volumeFullBlock = map.bsx[0] * map.bsy[0] * map.bsz[0];
+    msm::Ivec n = bs.nrange_wrap.extent();;
+    int volumeBlock = n.i * n.j * n.k;
+    return( float(volumeBlock) / volumeFullBlock );
   }
 #endif
 
@@ -3206,12 +3241,158 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     int numNodes = CkNumNodes();
     int numPes = CkNumPes();
 #endif
+    int numPesPerNode = numPes / numNodes;
     int numBlocks = 0;  // find total number of blocks
     for (level = 0;  level < nlevels;  level++) {
       numBlocks += map.blockLevel[level].nn();
     }
+
+    // final result is arrays for blocks and gcuts, each with pe number
     blockAssign.resize(numBlocks);
     gcutAssign.resize(numGridCutoff);
+
+    msm::Array<float> blockWork(numBlocks);
+    msm::Array<float> gcutWork(numGridCutoff);
+
+    msm::Array<float> nodeWork(numNodes);
+    nodeWork.reset(0);
+#ifdef MSM_NODE_MAPPING_STATS
+    msm::Array<float> peWork(numPes);
+    peWork.reset(0);
+#endif
+
+    msm::PriorityQueue<WorkIndex> nodeQueue(numNodes);
+    for (n = 0;  n < numNodes;  n++) {
+      nodeQueue.insert(WorkIndex(0, n));
+    }
+
+    int bindex = 0;  // index for block array
+    for (level = 0;  level < nlevels;  level++) {
+      msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
+      int bni = b.ni();
+      int bnj = b.nj();
+      int bnk = b.nk();
+      for (k = 0;  k < bnk;  k++) { // for all blocks
+        for (j = 0;  j < bnj;  j++) {
+          for (i = 0;  i < bni;  i++) {
+            WorkIndex wn;
+            nodeQueue.remove(wn);
+            float bw = calcBlockWork(b(i,j,k));
+            blockAssign[bindex] = wn.index;
+            nodeWork[wn.index] += bw;
+            wn.work += bw;
+            blockWork[bindex] = bw;
+            nodeQueue.insert(wn);
+            bindex++;
+          }
+        }
+      } // end for all blocks
+    } // end for all levels
+
+#if 0
+    for (n = 0;  n < numBlocks;  n++) {
+      WorkIndex wn;
+      nodeQueue.remove(wn);
+      float bw = calcBlockWork(n);
+      blockAssign[n] = wn.index;
+      nodeWork[wn.index] += bw;
+      wn.work += bw;
+      blockWork[n] = bw;
+      nodeQueue.insert(wn);
+    }
+#endif
+
+    // assign grid cutoff objects to nodes (gcutAssign)
+    // choose whichever of source or destination node has less work
+    int gindex = 0;  // index for grid cutoff array
+    for (level = 0;  level < nlevels;  level++) { // for all levels
+      msm::Grid<msm::BlockDiagram>& b = map.blockLevel[level];
+      int bni = b.ni();
+      int bnj = b.nj();
+      int bnk = b.nk();
+      for (k = 0;  k < bnk;  k++) { // for all blocks
+        for (j = 0;  j < bnj;  j++) {
+          for (i = 0;  i < bni;  i++) {
+            int isrc = blockFlatIndex(level, i, j, k);
+            int nsrc = blockAssign[isrc];  // node block isrc is assigned
+            int numSendAcross = b(i,j,k).sendAcross.len();
+            ASSERT( numSendAcross == b(i,j,k).indexGridCutoff.len() );
+            for (n = 0;  n < numSendAcross;  n++) {
+              msm::BlockSend& bs = b(i,j,k).sendAcross[n];
+              msm::BlockIndex& bn = bs.nblock_wrap;
+              int idest = blockFlatIndex(level, bn.n.i, bn.n.j, bn.n.k);
+              int ndest = blockAssign[idest];  // node block idest is assigned
+              gcutWork[gindex] = calcGcutWork(bs);
+              if (nodeWork[nsrc] <= nodeWork[ndest]) {
+                gcutAssign[gindex] = nsrc;
+                nodeWork[nsrc] += gcutWork[gindex];
+              }
+              else {
+                gcutAssign[gindex] = ndest;
+                nodeWork[ndest] += gcutWork[gindex];
+              }
+              gindex++;
+            } // end for numSendAcross
+          }
+        }
+      } // end for all blocks
+    } // end for all levels
+
+    msm::Array< msm::PriorityQueue<WorkIndex> > peQueue(numNodes);
+    for (n = 0;  n < numNodes;  n++) {
+      peQueue[n].init(numPesPerNode);
+      for (int poff = 0;  poff < numPesPerNode;  poff++) {
+        peQueue[n].insert(WorkIndex(0, n*numPesPerNode + poff));
+      }
+    }
+
+    for (n = 0;  n < numBlocks;  n++) {
+      WorkIndex wn;
+      int node = blockAssign[n];
+      peQueue[node].remove(wn);
+      blockAssign[n] = wn.index;
+      wn.work += blockWork[n];
+      peQueue[node].insert(wn);
+#ifdef MSM_NODE_MAPPING_STATS
+      peWork[wn.index] += blockWork[n];
+#endif
+    }
+
+    for (n = 0;  n < numGridCutoff;  n++) {
+      WorkIndex wn;
+      int node = gcutAssign[n];
+      peQueue[node].remove(wn);
+      gcutAssign[n] = wn.index;
+      wn.work += gcutWork[n];
+      peQueue[node].insert(wn);
+#ifdef MSM_NODE_MAPPING_STATS
+      peWork[wn.index] += gcutWork[n];
+#endif
+    }
+
+#ifdef MSM_NODE_MAPPING_STATS
+    if (CkMyPe() == 0) {
+      printf("Mapping of MSM work (showing scaled estimated work units):\n");
+      for (n = 0;  n < numNodes;  n++) {
+        printf("    node %d   work %8.3f\n", n, nodeWork[n]);
+        for (int poff = 0;  poff < numPesPerNode;  poff++) {
+          int p = n*numPesPerNode + poff;
+          printf("        pe %d     work %8.3f\n", p, peWork[p]);
+        }
+      }
+    }
+#endif
+
+#if 0
+    int numBlocks = 0;  // find total number of blocks
+    for (level = 0;  level < nlevels;  level++) {
+      numBlocks += map.blockLevel[level].nn();
+    }
+
+    // final result is arrays for blocks and gcuts, each with pe number
+    blockAssign.resize(numBlocks);
+    gcutAssign.resize(numGridCutoff);
+
     nodecnt.resize(numNodes);
 
     // assign blocks to nodes
@@ -3312,6 +3493,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #endif
     }
 #endif
+
+#endif // 0
 
   } // end node aware initial assignment of chares
 #endif // MSM_NODE_MAPPING

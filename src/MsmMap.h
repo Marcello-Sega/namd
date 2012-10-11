@@ -120,6 +120,9 @@ namespace msm {
       T *buffer() { return abuffer; }
       const T *buffer(int& n) const { n = alen; return abuffer; }
       T *buffer(int& n) { n = alen; return abuffer; }
+      void reset(const T& t) {
+        for (int n = 0;  n < alen;  n++)  abuffer[n] = t;
+      }
       friend void swap<T>(Array&, Array&);
 #ifdef DEBUG_MSM
       void print(const char *s=0) const {
@@ -180,6 +183,80 @@ namespace msm {
     tmpn = s.astate;  s.astate = t.astate;  t.astate = tmpn;
   }
 
+
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  // Priority queue for static load balancing of work
+  //
+  ///////////////////////////////////////////////////////////////////////////
+
+  // smallest value has priority
+  // T must have partial ordering operator<=() defined along with assignment
+  template <class T>
+  class PriorityQueue {
+    public:
+      PriorityQueue(int nelems=0) {
+        if (nelems > 0)  init(nelems);
+      }
+      void init(int nelems) {
+        a.resize(nelems);  // pre-allocate space
+        a.resize(0);       // nothing stored yet (does not free memory)
+      }
+      void clear() {
+        a.resize(0);
+      }
+      void insert(const T& t) {
+        a.append(t);
+        upheap();
+      }
+      void remove(T& t) {
+        int last = a.len() - 1;
+        if (last < 0) return;
+        t = a[0];
+        if (last > 0) a[0] = a[last];
+        a.resize(last);  // remove last element from array
+        downheap();
+      }
+    private:
+      // bubble up last element to a correct position
+      void upheap() {
+        int n = a.len() - 1;
+        while (n > 0) {
+          int parent = (n-1) / 2;
+          if (a[parent] <= a[n]) break;
+          T tmp = a[parent];
+          a[parent] = a[n];
+          a[n] = tmp;
+          n = parent;
+        }
+      }
+      // trickle down first element to a correct position
+      void downheap() {
+        int n = 0;
+        int len = a.len();
+        int left = 2*n + 1;
+        int right = left + 1;
+        while (left < len) {
+          if (right < len && a[right] <= a[left]) {
+            if (a[n] <= a[right]) break;
+            T tmp = a[right];
+            a[right] = a[n];
+            a[n] = tmp;
+            n = right;
+          }
+          else {
+            if (a[n] <= a[left]) break;
+            T tmp = a[left];
+            a[left] = a[n];
+            a[n] = tmp;
+            n = left;
+          }
+          left = 2*n + 1;
+          right = left + 1;
+        }
+      }
+      Array<T> a;
+  };
 
   ///////////////////////////////////////////////////////////////////////////
   //
