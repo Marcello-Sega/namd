@@ -167,47 +167,47 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
 };
 
 
-#if 0
 class GridC1VectorMsg : public CMessage_GridC1VectorMsg {
   public:
-    msm::GridFixed<Float> gdata;
+    msm::GridFixed<C1Vector, MSM_C1VECTOR_MAX_BLOCK_VOLUME> gdata;
     int idnum;
     int seqnum;  // sequence number is used for message priority
 
     // put a fixed size grid into a message
-    void put(const msm::GridFixed<Float>& g, int id, int seq) {
+    void put(const msm::GridFixed<C1Vector,MSM_C1VECTOR_MAX_BLOCK_VOLUME>& g,
+        int id, int seq) {
       gdata = g;
       idnum = id;
       seqnum = seq;
     }
     // put a variable size grid into a message
-    void put(const msm::Grid<Float>& g, int id, int seq) {
+    void put(const msm::Grid<C1Vector>& g, int id, int seq) {
       gdata.init(g);
-      const Float *gbuf = g.data().buffer();
-      Float *buf = gdata.buffer();
+      const C1Vector *gbuf = g.data().buffer();
+      C1Vector *buf = gdata.buffer();
       int len = g.nn();
       for (int n = 0;  n < len;  n++) { buf[n] = gbuf[n]; }
       idnum = id;
       seqnum = seq;
     }
     // get the fixed size grid from a received message
-    void get(msm::GridFixed<Float>& g, int& id, int& seq) {
+    void get(msm::GridFixed<C1Vector,MSM_C1VECTOR_MAX_BLOCK_VOLUME>& g,
+        int& id, int& seq) {
       g = gdata;
       id = idnum;
       seq = seqnum;
     }
     // get the variable size grid from a received message
-    void get(msm::Grid<Float>& g, int& id, int& seq) {
+    void get(msm::Grid<C1Vector>& g, int& id, int& seq) {
       g.init(gdata);
-      Float *gbuf = g.data().buffer();
-      const Float *buf = gdata.buffer();
+      C1Vector *gbuf = g.data().buffer();
+      const C1Vector *buf = gdata.buffer();
       int len = g.nn();
       for (int n = 0;  n < len;  n++) { gbuf[n] = buf[n]; }
       id = idnum;
       seq = seqnum;
     }
 };
-#endif
 
 
 class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {

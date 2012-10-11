@@ -19,6 +19,12 @@
 #define MSM_MAX_BLOCK_VOLUME \
   (MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE * MSM_MAX_BLOCK_SIZE)
 
+#define MSM_C1VECTOR_MAX_BLOCK_SIZE (MSM_MAX_BLOCK_SIZE / 2)
+#define MSM_C1VECTOR_MAX_BLOCK_VOLUME \
+  (MSM_C1VECTOR_MAX_BLOCK_SIZE * \
+   MSM_C1VECTOR_MAX_BLOCK_SIZE * \
+   MSM_C1VECTOR_MAX_BLOCK_SIZE)
+
 #define DEBUG_MSM
 #undef DEBUG_MSM
 
@@ -49,6 +55,61 @@
 // (but allow easy change to all double precision for comparison)
 typedef float Float;
 typedef double Double;
+
+
+  ///////////////////////////////////////////////////////////////////////////
+  //
+  // Vector and matrix elements for C1 Hermite interpolation.
+  //
+  ///////////////////////////////////////////////////////////////////////////
+
+  enum { C1_VECTOR_SIZE = 8, C1_MATRIX_SIZE = 8*8 };
+
+  struct C1Vector {
+    Float velem[C1_VECTOR_SIZE];
+    C1Vector() {
+      for (int n=0;  n < C1_VECTOR_SIZE;  n++)  velem[n] = 0;
+    }
+    C1Vector& operator+=(const C1Vector& v) {
+      for (int n=0;  n < C1_VECTOR_SIZE;  n++)  velem[n] += v.velem[n];
+      return(*this);
+    }
+    friend Float operator*(const C1Vector& u, const C1Vector& v) {
+      Float r=0;
+      for (int n=0;  n < C1_VECTOR_SIZE;  n++)  r += u.velem[n] * v.velem[n];
+      return r;
+    }
+    friend C1Vector operator+(const C1Vector& u, const C1Vector& v) {
+      C1Vector w;
+      for (int n=0;  n < C1_VECTOR_SIZE;  n++) {
+        w.velem[n] = u.velem[n] + v.velem[n];
+      }
+      return w;
+    }
+  };
+
+  struct C1Matrix {
+    Float melem[C1_MATRIX_SIZE];
+    C1Matrix() {
+      for (int n=0;  n < C1_MATRIX_SIZE;  n++)  melem[n] = 0;
+    }
+    friend C1Vector operator*(const C1Matrix& m, const C1Vector& u) {
+      C1Vector v;
+      for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
+        for (int i = 0;  i < C1_VECTOR_SIZE;  i++, k++) {
+          v.velem[j] += m.melem[k] * u.velem[i];
+        }
+      }
+      return v;
+    }
+  };
+
+  // index vector based on mixed partial derivatives in x,y,z
+  enum { D000=0, D100, D010, D001, D110, D101, D011, D111 };
+
+  // index matrix using 2 vector indexes, row-major column ordering,
+  // defining partial derivatives of g(xj,yj,zj,xi,yi,zi)
+#define C1INDEX(drj,dri)  ((drj)*C1_VECTOR_SIZE + (dri))
 
 
 namespace msm {
@@ -257,29 +318,6 @@ namespace msm {
       }
       Array<T> a;
   };
-
-
-  ///////////////////////////////////////////////////////////////////////////
-  //
-  // Vector and matrix elements for C1 Hermite interpolation.
-  //
-  ///////////////////////////////////////////////////////////////////////////
-
-  enum {
-    C1_VECTOR_SIZE = 8,
-    C1_MATRIX_SIZE = 8*8
-  };
-
-  struct C1Vector {
-    Float velem[C1_VECTOR_SIZE];
-  };
-
-  struct C1Matrix {
-    Float melem[C1_MATRIX_SIZE];
-  };
-
-  // index vector based on mixed partial derivatives in x,y,z
-  enum { D000=0, D100, D010, D001, D110, D101, D011, D111 };
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -781,6 +819,8 @@ namespace msm {
     Array<IndexRange> gridrange;  // dimensions for each MSM grid level
 
     Array<Grid<Float> > gc;     // grid constant weights for each level
+
+    Array<Grid<C1Matrix> > c1_gc;
 
     Array<PatchDiagram> patchList;
     Array<Grid<BlockDiagram> > blockLevel;
