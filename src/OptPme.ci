@@ -7,6 +7,7 @@
 module OptPmeMgr {
 
   extern module PmeFFTLib;
+  message OptPmeSubComputeMsg;
 
   group OptPmeMgr {
 
@@ -17,7 +18,10 @@ module OptPmeMgr {
     entry void activate_pencils(CkQdMsg *);
     entry void recvUngrid(OptPmeGridMsg *);
     entry void ungridCalc(OptPmeDummyMsg *msg);
+    entry void ungridCalc_subcompute(OptPmeSubComputeMsg *msg);
+    entry void ungridCalc_subcompute_done(OptPmeSubComputeMsg *msg);
     entry void recvEvir (CkReductionMsg *msg);
+    entry void doWorkOnPeer(OptPmeSubComputeMsg *msg);
  
     entry void recvArrays(
 		CProxy_OptPmeXPencil, CProxy_OptPmeYPencil, CProxy_OptPmeZPencil);

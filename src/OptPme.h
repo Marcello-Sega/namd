@@ -38,16 +38,32 @@ struct PatchGridElem {
   float          * data;
 };
 
+#define SUBCOMPUTE_NPAR  4
+
+//Message to split the PME computation
+class OptPmeSubComputeMsg : public CMessage_OptPmeSubComputeMsg {
+ public:
+  int     start;
+  int     end;
+  int     src_pe; //src node rank
+  int     dest;   //dst node rank
+  void  * compute;
+};
 
 class OptPmeCompute : public ComputeHomePatches {
 public:
   OptPmeCompute(ComputeID c);
   virtual ~OptPmeCompute();
   void doWork();
+  void doWorkOnPeer();
   void sendPencils();
   void copyPencils(OptPmeGridMsg *);
-  void ungridForces();
+  void ungridForces_init();
+  void ungridForces_compute(int istart, int iend);
+  void ungridForces_finalize();
   void setMgr(OptPmeMgr *mgr) { myMgr = mgr; }
+
+  int getNumLocalAtoms () { return numLocalAtoms; }
 
   double  *zline_storage;   //Make it private later
   float   *sp_zstorage;
@@ -72,6 +88,8 @@ public:
 
   ResizeArray <PencilElement>   pencilVec;
 
+  Vector    * localResults;
+  
   bool _initialized;
   void initializeOptPmeCompute();
   void resetPatchCoordinates (const Lattice &lattice);

@@ -41,6 +41,8 @@ public:
 
 
 class OptPmeDummyMsg : public CMessage_OptPmeDummyMsg {
+ public:
+  int   to_pe;
 };
 
 // use this idiom since messages don't have copy constructors
@@ -65,6 +67,7 @@ public:
 struct CkCallbackWrapper {
   CkCallback    cb;
   void        * msg;
+  void        * array;
 };
 
 
@@ -100,6 +103,7 @@ public:
   float *work;
   int *send_order;
   void *handle;
+  bool single_pencil;
 };
 
 
@@ -180,6 +184,7 @@ public:
     void backward_fft();
     void send_untrans();
     void many_to_many_send_untrans();
+    void submit_evir();
 #ifdef NAMD_FFTW
 #ifdef NAMD_FFTW_3
     fftwf_plan  forward_plan, backward_plan;
@@ -191,6 +196,9 @@ public:
     PmeKSpace *myKSpace;
     CkCallbackWrapper  cbw_recvtrans;
     bool               constant_pressure;
+
+    SubmitReduction *reduction;
+    SubmitReduction *amd_reduction;
 
     void initialize_manytomany ();
 };

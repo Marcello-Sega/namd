@@ -153,6 +153,7 @@ module PmeFFTLib {
           atomic { pme_kspace(); }
           atomic { backward_fft(); }
           atomic { send_untrans(); }
+	  atomic { submit_evir(); }
         }
 	else {
 	  when many_to_manyRecvTrans(OptPmeDummyMsg *msg) atomic { many_to_many_recv_trans(); }
@@ -160,6 +161,7 @@ module PmeFFTLib {
           atomic { pme_kspace(); }
           atomic { backward_fft(); }
 	  atomic { many_to_many_send_untrans(); }
+	  atomic { submit_evir(); }
 	}
       }
     };

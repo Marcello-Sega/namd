@@ -8,6 +8,41 @@ void call_ck_cb (void *arg) {
   cw->cb.send (cw->msg);
 }
 
+void call_ck_cb_recv_grid (void *arg) {
+  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+  OptPmeZPencil *zp = (OptPmeZPencil *)cw->array;
+  zp->many_to_manyRecvGrid(msg);
+}
+
+void call_ck_cb_recv_trans_y (void *arg) {
+  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+  OptPmeYPencil *yp = (OptPmeYPencil *)cw->array;
+  yp->many_to_manyRecvTrans(msg);
+}
+
+void call_ck_cb_recv_trans_x (void *arg) {
+  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+  OptPmeXPencil *xp = (OptPmeXPencil *)cw->array;
+  xp->many_to_manyRecvTrans(msg);
+}
+
+void call_ck_cb_recv_untrans_y (void *arg) {
+  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+  OptPmeYPencil *yp = (OptPmeYPencil *)cw->array;
+  yp->many_to_manyRecvUntrans(msg);
+}
+
+void call_ck_cb_recv_untrans_z (void *arg) {
+  CkCallbackWrapper *cw = (CkCallbackWrapper *)arg;
+  OptPmeDummyMsg *msg = (OptPmeDummyMsg *)cw->msg;
+  OptPmeZPencil *zp = (OptPmeZPencil *)cw->array;
+  zp->many_to_manyRecvUntrans(msg);
+}
+
 void OptPmeZPencil::fft_init() {
   
   //printf ("Initialize zpencil [%d,%d], on pd %d\n", thisIndex.x, thisIndex.y, CkMyPe());
@@ -226,6 +261,13 @@ void OptPmeXPencil::fft_init() {
   initialize_manytomany();
 
   constant_pressure = initdata.constant_pressure;
+
+  reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
+  if (simParams->accelMDOn) {
+    amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
+  } else {
+    amd_reduction = NULL;
+  }  
 }
 
 //#define FFTCHECK   // run a grid of integers through the fft
@@ -340,8 +382,7 @@ void OptPmeZPencil::send_trans() {
 	  *(md++) = d[2*k+1];
 	}
       }
-    }
-    
+    }          
     //    printf ("%d, %d: Zpencil Sending trans to %d, %d\n", thisIndex.x, thisIndex.y, thisIndex.x, kb);
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
   }
@@ -445,8 +486,7 @@ void OptPmeXPencil::forward_fft() {
 }
 
 void OptPmeXPencil::pme_kspace() {
-
-  evir = 0.;
+  evir = 0.;  //set evir to 0
 
 #ifdef FFTCHECK
   return;
@@ -456,8 +496,41 @@ void OptPmeXPencil::pme_kspace() {
   evir[0] = myKSpace->compute_energy(data,
 				     lattice, ewaldcof, &(evir[1]));
 
-  contribute (7*sizeof(double), evir.begin(), CkReduction::sum_double, initdata.cb_energy);
-  
+  //contribute (7*sizeof(double), evir.begin(), CkReduction::sum_double, initdata.cb_energy);
+}
+
+void OptPmeXPencil::submit_evir() {
+  double * cdata = (double *) evir.begin();
+  reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += cdata[0];
+  reduction->item(REDUCTION_VIRIAL_SLOW_XX) += cdata[1];
+  reduction->item(REDUCTION_VIRIAL_SLOW_XY) += cdata[2];
+  reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += cdata[3];
+  reduction->item(REDUCTION_VIRIAL_SLOW_YX) += cdata[2];
+  reduction->item(REDUCTION_VIRIAL_SLOW_YY) += cdata[4];
+  reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += cdata[5];
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += cdata[3];
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += cdata[5];
+  reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += cdata[6];   
+
+  if (amd_reduction) {
+    amd_reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += cdata[0];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XX) += cdata[1];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XY) += cdata[2];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += cdata[3];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YX) += cdata[2];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YY) += cdata[4];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += cdata[5];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += cdata[3];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += cdata[5];
+    amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += cdata[6];
+  }
+
+  SimParameters *simParams = Node::Object()->simParameters;
+  int fef = simParams->fullElectFrequency;
+  for (int i = 0; i < fef; i++) {
+    reduction->submit();
+    if (amd_reduction) amd_reduction->submit();
+  }
 }
 
 void OptPmeXPencil::backward_fft() {
@@ -722,22 +795,31 @@ void OptPmeZPencil::many_to_many_send_trans() {
   int dim3 = initdata.grid.dim3;
 
   float *md = many_to_many_data;
-  int nz = block3;
-  for ( int kb=0; kb<zBlocks; ++kb ) {
-    nz = block3;
-    if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
-    
+  if (single_pencil) {
     const float *d = data;
-    for ( int i=0; i<nx; ++i ) {
-      for ( int j=0; j<ny; ++j, d += dim3 ) {
-        for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
-          *(md++) = d[2*k];
-          *(md++) = d[2*k+1];
-        }
+    for ( int kb=0; kb<zBlocks; ++kb ) {
+      *(md++) = d[2*kb];
+      *(md++) = d[2*kb+1];
+    }
+  }
+  else {
+    int nz = block3;
+    for ( int kb=0; kb<zBlocks; ++kb ) {
+      nz = block3;
+      if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
+      
+      const float *d = data;
+      for ( int i=0; i<nx; ++i ) {
+	for ( int j=0; j<ny; ++j, d += dim3 ) {
+	  for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+	    *(md++) = d[2*k];
+	    *(md++) = d[2*k+1];
+	  }
+	}
       }
     }
   }
-  
+
 #if CHARM_VERSION > 60000
   CmiDirect_manytomany_start (handle, PHASE_YF);
 #endif
@@ -748,14 +830,23 @@ void OptPmeYPencil::many_to_many_recv_trans () {
   int K2 = initdata.grid.K2;
   
   const float *md = many_to_many_data;
-  for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
-    int ny = many_to_many_nb[jb];  
+  if (single_pencil) {
     float *d = data;
-    for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
-      for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
-	for ( int k=0; k<nz; ++k ) {
-	  d[2*(j*nz+k)] = *(md++);
-	  d[2*(j*nz+k)+1] = *(md++);
+    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
+      d[2*jb]    = *(md++);
+      d[2*jb +1] = *(md++);
+    }
+  }
+  else {
+    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
+      int ny = many_to_many_nb[jb];  
+      float *d = data;
+      for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+	for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+	  for ( int k=0; k<nz; ++k ) {
+	    d[2*(j*nz+k)] = *(md++);
+	    d[2*(j*nz+k)+1] = *(md++);
+	  }
 	}
       }
     }
@@ -769,16 +860,25 @@ void OptPmeYPencil::many_to_many_send(int phase) {
   
   float *md = many_to_many_data;
   int ny = block2;
-  for ( int jb=0; jb<yBlocks; ++jb ) {
-    ny = block2;
-    if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    
+  if (single_pencil) {
     const float *d = data;
-    for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
-      for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
-	for ( int k=0; k<nz; ++k ) {
-	  *(md++) = d[2*(j*nz+k)];
-	  *(md++) = d[2*(j*nz+k)+1];
+    for ( int jb=0; jb<yBlocks; ++jb ) {
+      *(md++) = d[2*jb];
+      *(md++) = d[2*jb+1];
+    }
+  }
+  else {
+    for ( int jb=0; jb<yBlocks; ++jb ) {
+      ny = block2;
+      if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+      
+      const float *d = data;
+      for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+	for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+	  for ( int k=0; k<nz; ++k ) {
+	    *(md++) = d[2*(j*nz+k)];
+	    *(md++) = d[2*(j*nz+k)+1];
+	  }
 	}
       }
     }
@@ -795,14 +895,22 @@ void OptPmeXPencil::many_to_many_recv_trans () {
   int K1 = initdata.grid.K1;
   
   const float *md = many_to_many_data;
-  for (int ib =0; ib < initdata.xBlocks; ib++ ) {
-    int nx = many_to_many_nb[ib];    
-    for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
-      float *d = data + i*ny*nz*2;
-      for ( int j=0; j<ny; ++j, d += nz*2 ) {
-	for ( int k=0; k<nz; ++k ) {
-	  d[2*k] = *(md++);
-	  d[2*k+1] = *(md++);
+  if (single_pencil) {
+    for (int ib =0; ib < initdata.xBlocks; ib++ ) {
+      data[2*ib]   = *(md++);
+      data[2*ib+1] = *(md++);
+    }
+  }
+  else {
+    for (int ib =0; ib < initdata.xBlocks; ib++ ) {
+      int nx = many_to_many_nb[ib];    
+      for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+	float *d = data + i*ny*nz*2;
+	for ( int j=0; j<ny; ++j, d += nz*2 ) {
+	  for ( int k=0; k<nz; ++k ) {
+	    d[2*k] = *(md++);
+	    d[2*k+1] = *(md++);
+	  }
 	}
       }
     }
@@ -813,19 +921,28 @@ void OptPmeXPencil::many_to_many_send_untrans() {
   int xBlocks = initdata.xBlocks;
   int block1 = initdata.grid.block1;
   int K1 = initdata.grid.K1;
-
+  
   int     nx = block1;
   float * md = many_to_many_data;
-  for ( int ib=0; ib<xBlocks; ++ib ) {
-    nx = block1;
-    if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-    
-    for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
-      float *d = data + i*ny*nz*2;
-      for ( int j=0; j<ny; ++j, d += nz*2 ) {
-	for ( int k=0; k<nz; ++k ) {
-	  *(md++) = d[2*k];
-	  *(md++) = d[2*k+1];
+  if (single_pencil) {
+    float *d = data;
+    for ( int ib=0; ib<xBlocks; ++ib ) {
+      *(md++) = d[2*ib];
+      *(md++) = d[2*ib+1];
+    }
+  }
+  else {
+    for ( int ib=0; ib<xBlocks; ++ib ) {
+      nx = block1;
+      if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
+      
+      for ( int i=ib*block1; i<(ib*block1+nx); ++i ) {
+	float *d = data + i*ny*nz*2;
+	for ( int j=0; j<ny; ++j, d += nz*2 ) {
+	  for ( int k=0; k<nz; ++k ) {
+	    *(md++) = d[2*k];
+	    *(md++) = d[2*k+1];
+	  }
 	}
       }
     }
@@ -840,14 +957,23 @@ void OptPmeYPencil::many_to_many_recv_untrans () {
   int K2 = initdata.grid.K2;
   
   const float *md = many_to_many_data;
-  for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
-    int ny = many_to_many_nb[jb];  
+  if (single_pencil) {
     float *d = data;
-    for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
-      for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
-	for ( int k=0; k<nz; ++k ) {
-	  d[2*(j*nz+k)] = *(md++);
-	  d[2*(j*nz+k)+1] = *(md++);
+    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {        
+      d[2*jb]   = *(md++);
+      d[2*jb+1] = *(md++);
+    }
+  }
+  else {
+    for (int jb = 0; jb < initdata.yBlocks; jb++ ) {
+      int ny = many_to_many_nb[jb];  
+      float *d = data;
+      for ( int i=0; i<nx; ++i, d += K2*nz*2 ) {
+	for ( int j=jb*block2; j<(jb*block2+ny); ++j ) {
+	  for ( int k=0; k<nz; ++k ) {
+	    d[2*(j*nz+k)] = *(md++);
+	    d[2*(j*nz+k)+1] = *(md++);
+	  }
 	}
       }
     }
@@ -860,14 +986,23 @@ void OptPmeZPencil::many_to_many_recv_untrans() {
   int dim3 = initdata.grid.dim3;
   
   const float *md = many_to_many_data;
-  for (int kb = 0; kb < initdata.zBlocks; kb++ ) {
-    int nz = many_to_many_nb[kb];
+  if (single_pencil) {
     float *d = data;
-    for ( int i=0; i<nx; ++i ) {
-      for ( int j=0; j<ny; ++j, d += dim3 ) {
-	for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
-	  d[2*k] = *(md++);
-	  d[2*k+1] = *(md++);
+    for (int kb = 0; kb < initdata.zBlocks; kb++ ) {
+      d[2*kb]   = *(md++);
+      d[2*kb+1] = *(md++);
+    }
+  }
+  else {
+    for (int kb = 0; kb < initdata.zBlocks; kb++ ) {
+      int nz = many_to_many_nb[kb];
+      float *d = data;
+      for ( int i=0; i<nx; ++i ) {
+	for ( int j=0; j<ny; ++j, d += dim3 ) {
+	  for ( int k=kb*block3; k<(kb*block3+nz); ++k ) {
+	    d[2*k] = *(md++);
+	    d[2*k+1] = *(md++);
+	  }
 	}
       }
     }
@@ -924,10 +1059,13 @@ void  OptPmeZPencil::initialize_manytomany () {
   CkArrayIndex3D aidx (thisIndex.x, thisIndex.y, thisIndex.z);
   cbw_recvgrid.cb = CkCallback (CkIndex_OptPmeZPencil::many_to_manyRecvGrid(NULL), aidx, thisProxy.ckGetArrayID());
   cbw_recvgrid.msg = new (PRIORITY_SIZE) OptPmeDummyMsg;
+  cbw_recvgrid.array = this;
   PatchMap *patchMap = PatchMap::Object();
   CmiDirect_manytomany_initialize_recvbase (handle, PHASE_GR, 
-					    call_ck_cb, &cbw_recvgrid, 
-					    (char *)many_to_many_gr_data, patchMap->numPatches(), -1);
+					    call_ck_cb_recv_grid, 
+					    &cbw_recvgrid, 
+					    (char *)many_to_many_gr_data, 
+					    patchMap->numPatches(), -1);
   
   CmiDirect_manytomany_initialize_sendbase (handle, PHASE_UG, NULL, NULL, (char *)many_to_many_gr_data, 
 					    grid_msgs.size(), thisIndex.x *initdata.yBlocks + thisIndex.y);
@@ -952,13 +1090,23 @@ void  OptPmeZPencil::initialize_manytomany () {
 
   //Initialize recv untrans
   cbw_recvuntrans.cb = CkCallback(CkIndex_OptPmeZPencil::many_to_manyRecvUntrans(NULL), aidx, thisProxy.ckGetArrayID());
-  cbw_recvuntrans.msg = new (PRIORITY_SIZE) OptPmeDummyMsg;
-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_ZB, call_ck_cb, &cbw_recvuntrans, 
-					    (char *)many_to_many_data, initdata.zBlocks, -1);
-
+  cbw_recvuntrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+  cbw_recvuntrans.array  = this;
+  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_ZB, 
+					    call_ck_cb_recv_untrans_z, 
+					    &cbw_recvuntrans, 
+					    (char *)many_to_many_data, 
+					    initdata.zBlocks, -1);
+  single_pencil = false;
+  if (nx == 1 && ny == 1 && zBlocks <= dim3/2 && block3==1)
+    single_pencil = true;
+  
   for ( int kb=0; kb<zBlocks; ++kb ) {
     int nz = block3;
-    if ( (kb+1)*block3 > dim3/2 ) nz = dim3/2 - kb*block3;
+    if ( (kb+1)*block3 > dim3/2 ) {
+      single_pencil = false;
+      nz = dim3/2 - kb*block3;
+    }
     
     //Initialize send trans
     CkArrayIndex3D index (thisIndex.x,0,kb);
@@ -970,6 +1118,7 @@ void  OptPmeZPencil::initialize_manytomany () {
     CmiDirect_manytomany_initialize_recv (handle, PHASE_ZB, kb, kb*nx*ny*block3*2*sizeof(float), nx*ny*nz*2*sizeof(float), pe);
     many_to_many_nb [kb] = nz;
   }
+
 #endif
 }
 
@@ -987,19 +1136,34 @@ void  OptPmeYPencil::initialize_manytomany () {
   //recv trans
   CkArrayIndex3D idx (thisIndex.x, thisIndex.y, thisIndex.z);
   cbw_recvtrans.cb = CkCallback (CkIndex_OptPmeYPencil::many_to_manyRecvTrans(NULL), idx, thisProxy.ckGetArrayID());
-  cbw_recvtrans.msg = new (PRIORITY_SIZE) OptPmeDummyMsg;
-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_YF, call_ck_cb, &cbw_recvtrans, 
-					    (char *)many_to_many_data, initdata.yBlocks, -1);
+  cbw_recvtrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+  cbw_recvtrans.array  = this;
+  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_YF, 
+					    call_ck_cb_recv_trans_y, 
+					    &cbw_recvtrans, 
+					    (char *)many_to_many_data, 
+					    initdata.yBlocks, -1);
 
   //recv untrans
   cbw_recvuntrans.cb = CkCallback(CkIndex_OptPmeYPencil::many_to_manyRecvUntrans(NULL), idx, thisProxy.ckGetArrayID());
-  cbw_recvuntrans.msg = new (PRIORITY_SIZE) OptPmeDummyMsg;
-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_YB, call_ck_cb, 
-					    &cbw_recvuntrans, (char *)many_to_many_data, initdata.yBlocks, -1);
+  cbw_recvuntrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+  cbw_recvuntrans.array  = this;
+  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_YB, 
+					    call_ck_cb_recv_untrans_y, 
+					    &cbw_recvuntrans, 
+					    (char *)many_to_many_data, 
+					    initdata.yBlocks, -1);
+
+  single_pencil = false;
+  if (nz == 1 && nx == 1 && yBlocks <= K2 && block2==1)
+    single_pencil = true;
   
   for ( int jb=0; jb<yBlocks; ++jb ) {
     int ny = block2;
-    if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+    if ( (jb+1)*block2 > K2 ) {
+      single_pencil = false;
+      ny = K2 - jb*block2;
+    }
 
     //send untrans
     CkArrayIndex3D index (thisIndex.x,jb,0);
@@ -1033,14 +1197,24 @@ void  OptPmeXPencil::initialize_manytomany () {
   CmiDirect_manytomany_initialize_sendbase (handle, PHASE_YB, NULL, NULL, (char *)many_to_many_data, xBlocks, thisIndex.y);
   CkArrayIndex3D idx (thisIndex.x, thisIndex.y, thisIndex.z);
   cbw_recvtrans.cb = CkCallback(CkIndex_OptPmeXPencil::many_to_manyRecvTrans(NULL), idx, thisProxy.ckGetArrayID());
-  cbw_recvtrans.msg = new (PRIORITY_SIZE) OptPmeDummyMsg;
-  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_XF, call_ck_cb, 
-					    &cbw_recvtrans,  (char *)many_to_many_data, 
+  cbw_recvtrans.msg    = new (PRIORITY_SIZE) OptPmeDummyMsg;
+  cbw_recvtrans.array  = this;
+  CmiDirect_manytomany_initialize_recvbase (handle, PHASE_XF, 
+					    call_ck_cb_recv_trans_x, 
+					    &cbw_recvtrans,  
+					    (char *)many_to_many_data, 
 					    initdata.xBlocks, -1);
-  
+
+  single_pencil = false;
+  if (ny == 1 && nz == 1 && xBlocks <= K1 && block1==1)
+    single_pencil = true;
+
   for ( int ib=0; ib<xBlocks; ++ib ) {
     int nx = block1;
-    if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
+    if ( (ib+1)*block1 > K1 ) {
+      single_pencil = false;
+      nx = K1 - ib*block1;
+    }
     
     CkArrayIndex3D index (ib,0,thisIndex.z);
     CProxy_OptPmePencilMapY yproxy (global_map_y);

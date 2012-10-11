@@ -134,7 +134,7 @@ class OptPmePencilMapX : public CBase_OptPmePencilMapX
 	int pe = xprocs[index];
 	_mapcache[index] = pe;
         
-	if(CkMyPe() == 0) 
+	if(CkMyRank() == 0) 
 	  pencilPMEProcessors[pe] = 1;
       }
     }

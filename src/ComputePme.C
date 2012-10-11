@@ -509,7 +509,8 @@ int isPmeProcessor(int p){
 }
 
 int ComputePmeMgr::isPmeProcessor(int p){ 
-  return ( usePencils ? pencilPMEProcessors[p] : isPmeFlag[p] );
+  SimParameters *simParams = Node::Object()->simParameters;
+  return ( usePencils || (simParams->PMEPencils>0) ? pencilPMEProcessors[p] : isPmeFlag[p] );
 }
 
 class NodePmeMgr : public CBase_NodePmeMgr {

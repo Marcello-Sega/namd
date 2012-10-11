@@ -103,7 +103,7 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
 	//if (qline == NULL)
 	//printf ("qline [%d, %d] = NULL\n", (u1 + (u1 < 0 ? K1 : 0)), (u2 + (u2 < 0 ? K2 : 0)));
 	
-	//	assert (qline != NULL);
+	//assert (qline != NULL);
         for (l=0; l<order; l++) {
 	  double m3;
 	  int32 ind;
@@ -115,8 +115,7 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
 
 	  //if (ind < 0 || ind >= zlen) printf ("ind >= zlen  (%d,%d,%d)\n", ind, zlen, zstart); 
 	  
-	  //assert (ind < zlen);
-	  //assert (ind >= 0);
+	  //assert (ind < zlen && ind >= 0);
           qline[ind] += m1m2*m3; 
         }
       }
@@ -126,9 +125,13 @@ void OptPmeRealSpace::fill_charges(double **q_arr, PmeParticle p[], int zstart, 
   }
 }
 
-void OptPmeRealSpace::compute_forces(const double * const *q_arr,
-				  const PmeParticle p[], Vector f[],
-				  int zstart, int zlen) {
+void OptPmeRealSpace::compute_forces(const double * const  * q_arr,
+				     const PmeParticle       p[], 
+				     Vector                  f[],
+				     int                     zstart, 
+				     int                     zlen,
+				     int                     istart,
+				     int                     iend) {
   
   int i, j, k, l, stride;
   double f1, f2, f3;
@@ -136,13 +139,16 @@ void OptPmeRealSpace::compute_forces(const double * const *q_arr,
   int K1, K2, K3, dim2;
   int32 K3_1;
 
+  if (iend == 0)
+    iend = N;
+
   K1=myGrid.K1; K2=myGrid.K2; K3=myGrid.K3; dim2=myGrid.dim2;
   K3_1 = K3 - 1;
   // order = myGrid.order;
   stride=3*order;
   Mi = M; dMi = dM;
  
-  for (i=0; i<N; i++) {
+  for (i=istart; i<iend; i++) {
     double q;
     int32 u1, u2, u2i, u3i;
     q = p[i].cg;
@@ -186,8 +192,7 @@ void OptPmeRealSpace::compute_forces(const double * const *q_arr,
 	  ind = ind - ((unsigned)(K3_1 -ind) >>31)*K3;
 	  
 	  //if (ind < 0 || ind >= zlen) printf ("ind >= zlen  (%d,%d,%d)\n", ind, zlen, zstart); 	  
-	  //	  assert (ind < zlen);
-	  //assert (ind >= 0);
+	  //assert (ind < zlen && ind >= 0);
 
 	  term = qline[ind];
 	  f1 -= d1m2 * m3 * term;

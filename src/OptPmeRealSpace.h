@@ -17,7 +17,7 @@ public:
   ~OptPmeRealSpace();
   
   void fill_charges(double **q_arr, PmeParticle p[], int zstart, int zlen); 
-  void compute_forces(const double * const *q_arr, const PmeParticle p[], Vector f[], int zstart, int zlen);
+  void compute_forces(const double * const *q_arr, const PmeParticle p[], Vector f[], int zstart, int zlen, int start=0, int end=0);
 
   const int N;
   const PmeGrid myGrid;

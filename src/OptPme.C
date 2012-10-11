@@ -25,7 +25,6 @@
 #include "PatchMap.h"
 #include "PatchMap.inl"
 #include "AtomMap.h"
-#include "PmeBase.inl"
 #include "OptPme.h"
 #include "OptPmeMgr.decl.h"
 #include "OptPmeRealSpace.h"
@@ -44,7 +43,7 @@
 #include "varsizemsg.h"
 #include "Random.h"
 #include "Priorities.h"
-
+#include "PmeBase.inl"
 
 extern char *pencilPMEProcessors;
 
@@ -67,6 +66,9 @@ public:
 
   void recvUngrid(OptPmeGridMsg *);
   void ungridCalc(OptPmeDummyMsg *);
+  void ungridCalc_subcompute(OptPmeSubComputeMsg *);
+  void ungridCalc_subcompute_done(OptPmeSubComputeMsg *);
+  void doWorkOnPeer(OptPmeSubComputeMsg *);
   void recvEvir (CkReductionMsg *msg);
 
   void setCompute(OptPmeCompute *c) { pmeCompute = c; c->setMgr(this); }
@@ -88,6 +90,11 @@ private:
   int    _iter;
   void   *handle;
   bool   constant_pressure;    //Does the simulation need constant pressure
+  int    subcompute_count;
+
+  int peersAllocated;
+  int peers [SUBCOMPUTE_NPAR];
+  OptPmeSubComputeMsg *subcompute_msgs[SUBCOMPUTE_NPAR];
 };
 
 
@@ -184,12 +191,15 @@ static inline void scale_n_copy_coordinates(CompAtom *x, PmeParticle p[],
     p[natoms].x = K1 * ( sx - floor(sx) );
     p[natoms].y = K2 * ( sy - floor(sy) );
     p[natoms].z = K3 * ( sz - floor(sz) );
+#ifndef ARCH_POWERPC
     //  Check for rare rounding condition where K * ( 1 - epsilon ) == K      
     //  which was observed with g++ on Intel x86 architecture. 
     if ( p[natoms].x == K1 ) p[natoms].x = 0;
     if ( p[natoms].y == K2 ) p[natoms].y = 0;
     if ( p[natoms].z == K3 ) p[natoms].z = 0;
+#endif
 
+#if 1 //stray charge detection
     BigReal u1,u2,u3;
     u1 = (int) (p[natoms].x - xmin);
     if (u1 >= grid.K1) u1 -= grid.K1;    
@@ -204,6 +214,7 @@ static inline void scale_n_copy_coordinates(CompAtom *x, PmeParticle p[],
       scg ++;
       continue;
     }
+#endif
     
     p[natoms].cg = coulomb_sqrt * x[i].charge;
     natoms ++;
@@ -220,6 +231,7 @@ OptPmeMgr::OptPmeMgr() : pmeProxy(thisgroup),
   myKSpace = 0;
   ungrid_count = 0;
   usePencils = 0;
+  peersAllocated = 0;
 
 #ifdef NAMD_FFTW
   if ( CmiMyRank() == 0 ) {
@@ -258,12 +270,20 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
 
     bool useManyToMany = simParams->useManyToMany;
     //Many-to-many requires that patches and pmepencils are all on different processors
-    int npes = patchMap->numPatches() + 
-               myGrid.xBlocks *  myGrid.yBlocks + 
-               myGrid.zBlocks *  myGrid.xBlocks +
-               myGrid.yBlocks *  myGrid.zBlocks;
-
-    if (npes >= CkNumPes()) {
+    //int npes = patchMap->numPatches() + 
+    //         myGrid.xBlocks *  myGrid.yBlocks + 
+    //         myGrid.zBlocks *  myGrid.xBlocks +
+    //         myGrid.yBlocks *  myGrid.zBlocks;
+    
+    int npes = patchMap->numPatches();
+    if (npes < myGrid.xBlocks *  myGrid.yBlocks)
+      npes = myGrid.xBlocks *  myGrid.yBlocks;
+    if (npes <  myGrid.zBlocks *  myGrid.xBlocks)
+      npes = myGrid.zBlocks *  myGrid.xBlocks;
+    if (npes < myGrid.yBlocks *  myGrid.zBlocks)
+      npes = myGrid.yBlocks *  myGrid.zBlocks;
+    
+   if (npes >= CkNumPes()) {
       if (CkMyPe() == 0)
 	printf ("Warning : Not enough processors for the many-to-many optimization \n");      
       useManyToMany = false;
@@ -278,13 +298,15 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
     }
 #endif
 
+    if (CkMyRank() == 0) { //create the pencil pme processor map
+      pencilPMEProcessors = new char [CkNumPes()];
+      memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
+    }
+
     if ( CkMyPe() == 0) {
       iout << iINFO << "PME using " << myGrid.xBlocks << " x " <<
         myGrid.yBlocks << " x " << myGrid.zBlocks <<
         " pencil grid for FFT and reciprocal sum.\n" << endi;
-
-      pencilPMEProcessors = new char [CkNumPes()];
-      memset (pencilPMEProcessors, 0, sizeof(char) * CkNumPes());
       
       CProxy_OptPmePencilMapZ   mapz;      
       CProxy_OptPmePencilMapY   mapy;
@@ -342,13 +364,15 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
       xPencil.init(new OptPmePencilInitMsg(msgdata));
       yPencil.init(new OptPmePencilInitMsg(msgdata));
       zPencil.init(new OptPmePencilInitMsg(msgdata));
-      
+     
+#if 0 
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
       if (simParams->accelMDOn) {
          amd_reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_AMD);
       } else {
          amd_reduction = NULL;
       }
+#endif
 
 #ifndef NAMD_FFTW
       NAMD_die("Sorry, FFTW must be compiled in to use PME.");
@@ -369,6 +393,8 @@ void OptPmeMgr::initialize_pencils(CkQdMsg *msg) {
   BigReal cutoff = simParams->cutoff;
   BigReal patchdim = simParams->patchDimension;
   int numPatches = patchMap->numPatches();
+
+  //fprintf(stderr, "Node %d PE %d trying to allocate %d bytes\n", CmiMyNode(), CmiMyPe(), myGrid.xBlocks*myGrid.yBlocks);
 
   char *pencilActive = new char[myGrid.xBlocks*myGrid.yBlocks];
   for ( int i=0; i<myGrid.xBlocks; ++i ) {
@@ -422,7 +448,7 @@ void OptPmeMgr::initialize_pencils(CkQdMsg *msg) {
   }
 
   ungrid_count = numPencilsActive;
-  delete [] pencilActive;
+  delete [] pencilActive;  
 }
 
 
@@ -451,11 +477,98 @@ void OptPmeMgr::recvUngrid(OptPmeGridMsg *msg) {
   }
 }
 
-void OptPmeMgr::ungridCalc(OptPmeDummyMsg *msg) {    
-  pmeCompute->ungridForces();
-  ungrid_count = numPencilsActive;
+void OptPmeMgr::ungridCalc(OptPmeDummyMsg *dmsg) {    
+  pmeCompute->ungridForces_init();
+  if ( CmiMyNodeSize() >= SUBCOMPUTE_NPAR ) {
+    int npar = SUBCOMPUTE_NPAR;
+    OptPmeSubComputeMsg *smsg = NULL;
+
+    if (!peersAllocated) {
+      peersAllocated = 1;
+      int next_rank = CmiMyRank();   
+      PatchMap *patchMap = PatchMap::Object();          
+
+      for (int i = 1; i < npar; ++i) {      
+	smsg = new (PRIORITY_SIZE) OptPmeSubComputeMsg;
+	subcompute_msgs[i] = smsg;
+	smsg->src_pe  = CkMyPe();
+	smsg->compute = pmeCompute;
+
+	next_rank ++;
+	if (next_rank >= CmiMyNodeSize())
+	  next_rank = 0;
+	int n = 0;
+	int nr = next_rank;
+	while(n < CmiMyNodeSize() &&
+	      patchMap->numPatchesOnNode(CmiNodeFirst(CmiMyNode())+nr) > 0)
+	{
+	  nr ++;
+	  if (nr >= CmiMyNodeSize())
+	    nr = 0;
+	  n++;
+	}
+	if (n < CmiMyNodeSize()) 
+	  next_rank = nr;  //we are successful, so save this rank
+	
+	smsg->dest = next_rank;
+      }
+
+      //Local subcompute msg
+      smsg = new (PRIORITY_SIZE) OptPmeSubComputeMsg;
+      subcompute_msgs[0] = smsg;
+      smsg->src_pe  = CkMyPe();
+      smsg->compute = pmeCompute;
+      smsg->dest    = CmiMyRank();
+    }
+
+    int start  = 0;
+    int nlocal = pmeCompute->getNumLocalAtoms();
+    //CmiAssert (npar <= nlocal);
+    if (nlocal < npar)
+      npar = nlocal;
+    if (npar == 0)
+      npar = 1;
+    int n_per_iter = nlocal / npar;
+    //We dont handle the case where there are very few atoms
+    subcompute_count = npar;
+
+    for (int i = 0; i < npar; ++i) {      
+      smsg = subcompute_msgs[i];
+      smsg->start   = start;
+      smsg->end     = start + n_per_iter;
+      start += n_per_iter;
+      if (i == npar - 1)
+	smsg->end = nlocal;
+      pmeProxy[CmiNodeFirst(CmiMyNode())+smsg->dest].ungridCalc_subcompute(smsg);
+    }    
+  }
+  else {
+    pmeCompute->ungridForces_compute(0, 0);
+    pmeCompute->ungridForces_finalize();
+    ungrid_count = numPencilsActive; 
+  }
 }
 
+void OptPmeMgr::ungridCalc_subcompute(OptPmeSubComputeMsg *msg){ 
+  OptPmeCompute *compute = (OptPmeCompute *) msg->compute;
+  compute->ungridForces_compute(msg->start, msg->end);
+  pmeProxy[msg->src_pe].ungridCalc_subcompute_done(msg);
+}
+
+void OptPmeMgr::ungridCalc_subcompute_done(OptPmeSubComputeMsg *msg){  
+  subcompute_count --;
+  //delete msg; //message pointers saved
+  if (subcompute_count == 0) {
+    pmeCompute->ungridForces_finalize();
+    ungrid_count = numPencilsActive; 
+  }
+}
+
+void OptPmeMgr::doWorkOnPeer(OptPmeSubComputeMsg *msg) {
+  OptPmeCompute *compute = (OptPmeCompute *) msg->compute;
+  compute->doWorkOnPeer();
+  //  delete msg; //saved in compute
+}
 
 void OptPmeMgr::recvEvir (CkReductionMsg *msg) {
 
@@ -512,6 +625,7 @@ OptPmeCompute::OptPmeCompute(ComputeID c) :
   _initialized = false;
 
   useAvgPositions = 1;
+  localResults = NULL;
 
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
   SimParameters *simParams = Node::Object()->simParameters;
@@ -525,7 +639,7 @@ OptPmeCompute::OptPmeCompute(ComputeID c) :
 void recv_ungrid_done (void *m) {
   OptPmeDummyMsg *msg =  (OptPmeDummyMsg *) m;  
   CProxy_OptPmeMgr pmeProxy (CkpvAccess(BOCclass_group).computePmeMgr);
-  pmeProxy[CkMyPe()].ungridCalc (msg);
+  pmeProxy[msg->to_pe].ungridCalc (msg);
 }  
 
 
@@ -684,10 +798,11 @@ void OptPmeCompute::initializeOptPmeCompute () {
 
   //We dont need the sparse array anymore
   delete [] pencilActive;
-
+  
 #if CHARM_VERSION > 60000
   /******************************* Initialize Many to Many ***********************************/
   OptPmeDummyMsg *m = new (PRIORITY_SIZE) OptPmeDummyMsg;
+  m->to_pe = CkMyPe();
   CmiDirect_manytomany_initialize_recvbase (myMgr->handle, PHASE_UG, 
 					    recv_ungrid_done, m, (char *)sp_zstorage, 
 					    myGrid.xBlocks*myGrid.yBlocks, -1); 
@@ -724,6 +839,7 @@ void OptPmeCompute::initializeOptPmeCompute () {
 OptPmeCompute::~OptPmeCompute()
 {
   delete [] zline_storage;
+  delete [] sp_zstorage;
   delete [] q_arr;
 }
 
@@ -769,8 +885,8 @@ void OptPmeCompute::doWork()
   PmeParticle * data_ptr = localData;
 
   int natoms = 0;
-  if (myMgr->constant_pressure)
-    resetPatchCoordinates(lattice);  //Update patch coordinates with new lattice
+  //  if (myMgr->constant_pressure)
+  //resetPatchCoordinates(lattice);  //Update patch coordinates with new lattice
 
   for (ap = ap.begin(); ap != ap.end(); ap++) {
 #ifdef NETWORK_PROGRESS
@@ -812,27 +928,41 @@ void OptPmeCompute::doWork()
   selfEnergy *= -1. * ewaldcof / SQRT_PI;
   evir[0] += selfEnergy;
 
-  double **q = q_arr;
-  memset( (void*) zline_storage, 0, zlen * nzlines * sizeof(double) );
-
-  myRealSpace = new OptPmeRealSpace(myGrid,numLocalAtoms);
-  //scale_coordinates(localData, numLocalAtoms, lattice, myGrid);
-  if (!strayChargeErrors)
-    myRealSpace->fill_charges(q, localData, zstart, zlen);
+#if 0
+  if (myMgr->_iter > many_to_many_start) {
+    OptPmeSubComputeMsg *smsg = myMgr->subcompute_msgs[1]; //not self
+    CProxy_OptPmeMgr pmeProxy (CkpvAccess(BOCclass_group).computePmeMgr);
+    pmeProxy[CmiNodeFirst(CmiMyNode())+smsg->dest].doWorkOnPeer(smsg);
+  }
+  else
+#endif
+    doWorkOnPeer();
 
 #ifdef TRACE_COMPUTE_OBJECTS
   traceUserBracketEvent(TRACE_COMPOBJ_IDOFFSET+this->cid, traceObjStartTime, CmiWallTimer());
 #endif
 
+}
+
+void OptPmeCompute::doWorkOnPeer()
+{
+  Lattice &lattice = patchList[0].p->flags.lattice;
+  double **q = q_arr;
+  memset( (void*) zline_storage, 0, zlen * nzlines * sizeof(double) );
+
+  myRealSpace = new OptPmeRealSpace(myGrid,numLocalAtoms);
+  if (!strayChargeErrors)
+    myRealSpace->fill_charges(q, localData, zstart, zlen);
+
   if (myMgr->constant_pressure && patchList[0].patchID == 0)
     myMgr->xPencil.recvLattice (lattice);
   
   if (myMgr->_iter <= many_to_many_start)
-      sendPencils();
+    sendPencils();
 #if CHARM_VERSION > 60000
   else {
-      pme_d2f (sp_zstorage, zline_storage, nzlines * zlen);
-      CmiDirect_manytomany_start (myMgr->handle, PHASE_GR);
+    pme_d2f (sp_zstorage, zline_storage, nzlines * zlen);
+    CmiDirect_manytomany_start (myMgr->handle, PHASE_GR);
   }
 #endif
 }
@@ -909,33 +1039,45 @@ void OptPmeCompute::copyPencils(OptPmeGridMsg *msg) {
     data[k] = *(qmsg++);
 }
 
-void OptPmeCompute::ungridForces() {
+void OptPmeCompute::ungridForces_init() {
 
-    //printf ("%d: In OptPMECompute::ungridforces\n", CkMyPe());
+    //printf ("%d: In OptPMECompute::ungridforces_init\n", CkMyPe());
 
     if (myMgr->_iter > many_to_many_start)
       pme_f2d (zline_storage, sp_zstorage, nzlines * zlen);
 
-    SimParameters *simParams = Node::Object()->simParameters;
-    Vector *localResults = new Vector[numLocalAtoms];
+    localResults = new Vector[numLocalAtoms];
     //memset (localResults, 0, sizeof (Vector) * numLocalAtoms);
+}
 
+void OptPmeCompute::ungridForces_compute(int    istart,
+					 int    iend) 
+{
     Vector *gridResults;
     gridResults = localResults;
 
+    if (iend == 0)
+      iend = numLocalAtoms;
+    
+    SimParameters *simParams = Node::Object()->simParameters;
     Vector pairForce = 0.;
-    Lattice lattice = patchList[0].p->flags.lattice;
+    Lattice &lattice = patchList[0].p->flags.lattice;
     if(!simParams->commOnly) {
 #ifdef NETWORK_PROGRESS
       CmiNetworkProgress();
-#endif
-      
+#endif      
       if (!strayChargeErrors) {
-	myRealSpace->compute_forces(q_arr, localData, gridResults, zstart, zlen);
-	scale_forces(gridResults, numLocalAtoms, lattice);
+	myRealSpace->compute_forces(q_arr, localData, gridResults, 
+				    zstart, zlen, istart, iend);
+	scale_forces(gridResults + istart, iend - istart, lattice);
       }
-      delete myRealSpace;
     }
+}
+
+void OptPmeCompute::ungridForces_finalize() {
+    SimParameters *simParams = Node::Object()->simParameters;
+    delete myRealSpace;
+    
     delete [] localData;
     //    delete [] localPartition;
     
