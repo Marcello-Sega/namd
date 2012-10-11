@@ -3235,8 +3235,13 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     // each MsmGridCutoff element to either its source node or its 
     // destination node, again assigned to node PEs in round robin manner.
 #if 0
+#if 0
     int numNodes = 16;
     int numPes = 512;
+#else
+    int numNodes = 32;
+    int numPes = 1024;
+#endif
 #else
     int numNodes = CkNumNodes();
     int numPes = CkNumPes();
@@ -3380,6 +3385,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           printf("        pe %d     work %8.3f\n", p, peWork[p]);
         }
       }
+      //CkExit();
     }
 #endif
 
