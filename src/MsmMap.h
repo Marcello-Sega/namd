@@ -67,8 +67,9 @@ typedef double Double;
 
   struct C1Vector {
     Float velem[C1_VECTOR_SIZE];
-    C1Vector() {
-      for (int n=0;  n < C1_VECTOR_SIZE;  n++)  velem[n] = 0;
+    C1Vector() { set(0); }
+    void set(Float r) {
+      for (int n=0;  n < C1_VECTOR_SIZE;  n++)  velem[n] = r;
     }
     C1Vector& operator+=(const C1Vector& v) {
       for (int n=0;  n < C1_VECTOR_SIZE;  n++)  velem[n] += v.velem[n];
@@ -90,7 +91,8 @@ typedef double Double;
 
   struct C1Matrix {
     Float melem[C1_MATRIX_SIZE];
-    C1Matrix() {
+    C1Matrix() { set(0); }
+    void set(Float r) {
       for (int n=0;  n < C1_MATRIX_SIZE;  n++)  melem[n] = 0;
     }
     friend C1Vector operator*(const C1Matrix& m, const C1Vector& u) {
@@ -820,7 +822,9 @@ namespace msm {
 
     Array<Grid<Float> > gc;     // grid constant weights for each level
 
-    Array<Grid<C1Matrix> > c1_gc;
+    Array<Grid<C1Matrix> > gc_c1hermite;    // grid constant weights C1 Hermite
+    Array<Grid<C1Matrix> > gres_c1hermite;  // restriction weights C1 Hermite
+    Array<Grid<C1Matrix> > gpro_c1hermite;  // prolongation weights C1 Hermite
 
     Array<PatchDiagram> patchList;
     Array<Grid<BlockDiagram> > blockLevel;

@@ -493,6 +493,7 @@ private:
   ScaledPosition smax;  // keep max values for non-periodic dimensions
   BigReal gridspacing;  // preferred grid spacing
   BigReal padding;      // padding for non-periodic boundaries
+  BigReal gridScalingFactor;  // scaling for Hermite interpolation
   Vector h;             // finest level grid spacings
   BigReal a;            // cutoff distance
   int nhx, nhy, nhz;    // number of h spacings that cover cell
@@ -556,7 +557,7 @@ private:
 
   // Calculate the smoothing function and its derivative:
   // g(R) and (d/dR)g(R), where R=r/a.
-  static int splitting(BigReal& g, BigReal& dg, BigReal r_a, int _split) {
+  static void splitting(BigReal& g, BigReal& dg, BigReal r_a, int _split) {
     BigReal s = r_a * r_a;  // s = (r/a)^2, assuming 0 <= s <= 1
     switch (_split) {
       case TAYLOR2:
@@ -646,10 +647,9 @@ private:
                       + (s-1)*(-252 + (s-1)*(360))))))));
         break;
       default:
-        return -1;
-    }
-    return 0;
-  }
+        NAMD_die("Unknown MSM splitting.");
+    } // switch
+  } // splitting()
 
   void stencil_1d(Float phi[], Float t) {
     switch (approx) {
@@ -818,7 +818,7 @@ private:
       default:
         NAMD_die("Unknown MSM approximation.");
     } // switch
-  }
+  } // stencil_1d()
 
   void d_stencil_1d(Float dphi[], Float phi[], Float t) {
     switch (approx) {
@@ -1119,7 +1119,321 @@ private:
       default:
         NAMD_die("Unknown MSM approximation.");
     } // switch
-  }
+  } // d_stencil_1d()
+
+
+  static void ndsplitting(BigReal pg[], BigReal s, int n, int _split) {
+    int k = 0;
+    if (k == n) return;
+    if (s <= 1) {
+      // compute derivatives of smoothed part
+      switch (_split) {
+        case TAYLOR2:
+          pg[k++] = 1 + (s-1)*(-1./2 + (s-1)*(3./8));
+          if (k == n) break;
+          pg[k++] = -1./2 + (s-1)*(3./4);
+          if (k == n) break;
+          pg[k++] = 3./4;
+          break;
+        case TAYLOR3:
+          pg[k++] = 1 + (s-1)*(-1./2 + (s-1)*(3./8 + (s-1)*(-5./16)));
+          if (k == n) break;
+          pg[k++] = -1./2 + (s-1)*(3./4 + (s-1)*(-15./16));
+          if (k == n) break;
+          pg[k++] = 3./4 + (s-1)*(-15./8);
+          if (k == n) break;
+          pg[k++] = -15./8;
+          break;
+        case TAYLOR4:
+          pg[k++] = 1 + (s-1)*(-1./2 + (s-1)*(3./8 + (s-1)*(-5./16
+                  + (s-1)*(35./128))));
+          if (k == n) break;
+          pg[k++] = -1./2 + (s-1)*(3./4 + (s-1)*(-15./16 + (s-1)*(35./32)));
+          if (k == n) break;
+          pg[k++] = 3./4 + (s-1)*(-15./8 + (s-1)*(105./32));
+          if (k == n) break;
+          pg[k++] = -15./8 + (s-1)*(105./16);
+          if (k == n) break;
+          pg[k++] = 105./16;
+          break;
+        case TAYLOR5:
+          pg[k++] = 1 + (s-1)*(-1./2 + (s-1)*(3./8 + (s-1)*(-5./16
+                  + (s-1)*(35./128 + (s-1)*(-63./256)))));
+          if (k == n) break;
+          pg[k++] = -1./2 + (s-1)*(3./4 + (s-1)*(-15./16 + (s-1)*(35./32
+                  + (s-1)*(-315./256))));
+          if (k == n) break;
+          pg[k++] = 3./4 + (s-1)*(-15./8 + (s-1)*(105./32 + (s-1)*(-315./64)));
+          if (k == n) break;
+          pg[k++] = -15./8 + (s-1)*(105./16 + (s-1)*(-945./64));
+          if (k == n) break;
+          pg[k++] = 105./16 + (s-1)*(-945./32);
+          if (k == n) break;
+          pg[k++] = -945./32;
+          break;
+        case TAYLOR6:
+          pg[k++] = 1 + (s-1)*(-1./2 + (s-1)*(3./8 + (s-1)*(-5./16
+                  + (s-1)*(35./128 + (s-1)*(-63./256 + (s-1)*(231./1024))))));
+          if (k == n) break;
+          pg[k++] = -1./2 + (s-1)*(3./4 + (s-1)*(-15./16 + (s-1)*(35./32
+                  + (s-1)*(-315./256 + (s-1)*(693./512)))));
+          if (k == n) break;
+          pg[k++] = 3./4 + (s-1)*(-15./8 + (s-1)*(105./32 + (s-1)*(-315./64
+                  + (s-1)*(3465./512))));
+          if (k == n) break;
+          pg[k++] = -15./8 + (s-1)*(105./16 + (s-1)*(-945./64
+                + (s-1)*(3465./128)));
+          if (k == n) break;
+          pg[k++] = 105./16 + (s-1)*(-945./32 + (s-1)*(10395./128));
+          if (k == n) break;
+          pg[k++] = -945./32 + (s-1)*(10395./64);
+          if (k == n) break;
+          pg[k++] = 10395./64;
+          break;
+        case TAYLOR7:
+          pg[k++] = 1 + (s-1)*(-1./2 + (s-1)*(3./8 + (s-1)*(-5./16
+                  + (s-1)*(35./128 + (s-1)*(-63./256
+                      + (s-1)*(231./1024 + (s-1)*(-429./2048)))))));
+          if (k == n) break;
+          pg[k++] = -1./2 + (s-1)*(3./4 + (s-1)*(-15./16 + (s-1)*(35./32
+                  + (s-1)*(-315./256 + (s-1)*(693./512
+                      + (s-1)*(-3003./2048))))));
+          if (k == n) break;
+          pg[k++] = 3./4 + (s-1)*(-15./8 + (s-1)*(105./32 + (s-1)*(-315./64
+                  + (s-1)*(3465./512 + (s-1)*(-9009./1024)))));
+          if (k == n) break;
+          pg[k++] = -15./8 + (s-1)*(105./16 + (s-1)*(-945./64 + (s-1)*(3465./128
+                  + (s-1)*(-45045./1024))));
+          if (k == n) break;
+          pg[k++] = 105./16 + (s-1)*(-945./32 + (s-1)*(10395./128
+                + (s-1)*(-45045./256)));
+          if (k == n) break;
+          pg[k++] = -945./32 + (s-1)*(10395./64 + (s-1)*(-135135./256));
+          if (k == n) break;
+          pg[k++] = 10395./64 + (s-1)*(-135135./128);
+          if (k == n) break;
+          pg[k++] = -135135./128;
+          break;
+        case TAYLOR8:
+          pg[k++] = 1 + (s-1)*(-1./2 + (s-1)*(3./8 + (s-1)*(-5./16
+                  + (s-1)*(35./128 + (s-1)*(-63./256
+                      + (s-1)*(231./1024 + (s-1)*(-429./2048
+                          + (s-1)*(6435./32768))))))));
+          if (k == n) break;
+          pg[k++] = -1./2 + (s-1)*(3./4 + (s-1)*(-15./16 + (s-1)*(35./32
+                  + (s-1)*(-315./256 + (s-1)*(693./512
+                      + (s-1)*(-3003./2048 + (s-1)*(6435./4096)))))));
+          if (k == n) break;
+          pg[k++] = 3./4 + (s-1)*(-15./8 + (s-1)*(105./32 + (s-1)*(-315./64
+                  + (s-1)*(3465./512 + (s-1)*(-9009./1024
+                      + (s-1)*(45045./4096))))));
+          if (k == n) break;
+          pg[k++] = -15./8 + (s-1)*(105./16 + (s-1)*(-945./64 + (s-1)*(3465./128
+                  + (s-1)*(-45045./1024 + (s-1)*(135135./2048)))));
+          if (k == n) break;
+          pg[k++] = 105./16 + (s-1)*(-945./32 + (s-1)*(10395./128
+                + (s-1)*(-45045./256 + (s-1)*(675675./2048))));
+          if (k == n) break;
+          pg[k++] = -945./32 + (s-1)*(10395./64 + (s-1)*(-135135./256
+                + (s-1)*(675675./512)));
+          if (k == n) break;
+          pg[k++] = 10395./64 + (s-1)*(-135135./128 + (s-1)*(2027025./512));
+          if (k == n) break;
+          pg[k++] = -135135./128 + (s-1)*(2027025./256);
+          if (k == n) break;
+          pg[k++] = 2027025./256;
+          break;
+        default:
+          NAMD_die("Unknown MSM splitting.");
+      }
+    } // if (s <= 1)
+    else { // (s > 1)
+      // compute derivatives of s^(-1/2)
+      const BigReal s_1 = 1./s;
+      BigReal s_p = sqrt(s_1);
+      BigReal p = -0.5;
+      BigReal _c = 1;
+      pg[k++] = _c * s_p;
+      while (k < n) {
+        s_p *= s_1;
+        _c *= p;
+        p -= 1;
+        pg[k++] = _c * s_p;
+      }
+    } // else (s > 1)
+    // higher derivatives are zero
+    while (k < n) pg[k++] = 0;
+  } // ndsplitting()
+
+
+  static void gc_c1hermite_elem_accum(C1Matrix& matrix, BigReal _c,
+      Vector rv, BigReal _a, int _split) {
+    const BigReal a_1 = 1./_a;
+    const BigReal a_2 = a_1 * a_1;
+    const BigReal s = (rv * rv) * a_2;
+    const BigReal dx = -2 * rv.x * a_2;  // ds/dx
+    const BigReal dy = -2 * rv.y * a_2;  // ds/dy
+    const BigReal dz = -2 * rv.z * a_2;  // ds/dz
+    const BigReal dd = 2 * a_2;  // d^2s/dx^2 = d^2s/dy^2 = d^2s/dz^2
+    BigReal tmp;
+    enum { nderiv = C1_VECTOR_SIZE-1 };
+    BigReal p[nderiv];
+    Float *g = matrix.melem;
+
+    // multiply entire matrix by this coefficient
+    _c = _c * a_1;
+
+    // compute derivatives (d/ds)^k of splitting g(s), s=r^2
+    ndsplitting(p, s, nderiv, _split);
+
+    // weight 0
+    tmp = _c * p[0];
+    g[C1INDEX(D000,D000)] += tmp;
+
+    // weight 1
+    tmp = _c * p[1] * dx;
+    g[C1INDEX(D100,D000)] += tmp;
+    g[C1INDEX(D000,D100)] -= tmp;
+
+    tmp = _c * p[1] * dy;
+    g[C1INDEX(D010,D000)] += tmp;
+    g[C1INDEX(D000,D010)] -= tmp;
+
+    tmp = _c * p[1] * dz;
+    g[C1INDEX(D001,D000)] += tmp;
+    g[C1INDEX(D000,D001)] -= tmp;
+
+    // C1 splitting returns here
+
+    // weight 2
+    tmp = _c * p[2] * dx * dy;
+    g[C1INDEX(D110,D000)] += tmp;
+    g[C1INDEX(D000,D110)] += tmp;
+    g[C1INDEX(D100,D010)] -= tmp;
+    g[C1INDEX(D010,D100)] -= tmp;
+
+    tmp = _c * p[2] * dx * dz;
+    g[C1INDEX(D101,D000)] += tmp;
+    g[C1INDEX(D000,D101)] += tmp;
+    g[C1INDEX(D100,D001)] -= tmp;
+    g[C1INDEX(D001,D100)] -= tmp;
+
+    tmp = _c * p[2] * dy * dz;
+    g[C1INDEX(D011,D000)] += tmp;
+    g[C1INDEX(D000,D011)] += tmp;
+    g[C1INDEX(D010,D001)] -= tmp;
+    g[C1INDEX(D001,D010)] -= tmp;
+
+    tmp = _c * (p[2] * dx*dx + p[1] * dd);
+    g[C1INDEX(D100,D100)] -= tmp;
+    tmp = _c * (p[2] * dy*dy + p[1] * dd);
+    g[C1INDEX(D010,D010)] -= tmp;
+    tmp = _c * (p[2] * dz*dz + p[1] * dd);
+    g[C1INDEX(D001,D001)] -= tmp;
+
+    // C2 splitting returns here
+    if (_split == TAYLOR2) return;
+
+    // weight 3
+    tmp = _c * p[3] * dx * dy * dz;
+    g[C1INDEX(D111,D000)] += tmp;
+    g[C1INDEX(D110,D001)] -= tmp;
+    g[C1INDEX(D101,D010)] -= tmp;
+    g[C1INDEX(D011,D100)] -= tmp;
+    g[C1INDEX(D100,D011)] += tmp;
+    g[C1INDEX(D010,D101)] += tmp;
+    g[C1INDEX(D001,D110)] += tmp;
+    g[C1INDEX(D000,D111)] -= tmp;
+
+    tmp = _c * (p[3] * dx*dx * dy + p[2] * dd * dy);
+    g[C1INDEX(D110,D100)] -= tmp;
+    g[C1INDEX(D100,D110)] += tmp;
+
+    tmp = _c * (p[3] * dx*dx * dz + p[2] * dd * dz);
+    g[C1INDEX(D101,D100)] -= tmp;
+    g[C1INDEX(D100,D101)] += tmp;
+
+    tmp = _c * (p[3] * dy*dy * dx + p[2] * dd * dx);
+    g[C1INDEX(D110,D010)] -= tmp;
+    g[C1INDEX(D010,D110)] += tmp;
+
+    tmp = _c * (p[3] * dy*dy * dz + p[2] * dd * dz);
+    g[C1INDEX(D011,D010)] -= tmp;
+    g[C1INDEX(D010,D011)] += tmp;
+
+    tmp = _c * (p[3] * dz*dz * dx + p[2] * dd * dx);
+    g[C1INDEX(D101,D001)] -= tmp;
+    g[C1INDEX(D001,D101)] += tmp;
+
+    tmp = _c * (p[3] * dz*dz * dy + p[2] * dd * dy);
+    g[C1INDEX(D011,D001)] -= tmp;
+    g[C1INDEX(D001,D011)] += tmp;
+
+    // C3 splitting returns here
+    if (_split == TAYLOR3) return;
+
+    // weight 4
+    tmp = _c * (p[4] * dx*dx * dy * dz + p[3] * dd * dy * dz);
+    g[C1INDEX(D111,D100)] -= tmp;
+    g[C1INDEX(D100,D111)] -= tmp;
+    g[C1INDEX(D110,D101)] += tmp;
+    g[C1INDEX(D101,D110)] += tmp;
+
+    tmp = _c * (p[4] * dy*dy * dx * dz + p[3] * dd * dx * dz);
+    g[C1INDEX(D111,D010)] -= tmp;
+    g[C1INDEX(D010,D111)] -= tmp;
+    g[C1INDEX(D110,D011)] += tmp;
+    g[C1INDEX(D011,D110)] += tmp;
+
+    tmp = _c * (p[4] * dz*dz * dx * dy + p[3] * dd * dx * dy);
+    g[C1INDEX(D111,D001)] -= tmp;
+    g[C1INDEX(D001,D111)] -= tmp;
+    g[C1INDEX(D101,D011)] += tmp;
+    g[C1INDEX(D011,D101)] += tmp;
+
+    tmp = _c * (p[4] * dx*dx * dy*dy + p[3] * dx*dx * dd
+        + p[3] * dd * dy*dy + p[2] * dd * dd);
+    g[C1INDEX(D110,D110)] += tmp;
+    tmp = _c * (p[4] * dx*dx * dz*dz + p[3] * dx*dx * dd
+        + p[3] * dd * dz*dz + p[2] * dd * dd);
+    g[C1INDEX(D101,D101)] += tmp;
+    tmp = _c * (p[4] * dy*dy * dz*dz + p[3] * dy*dy * dd
+        + p[3] * dd * dz*dz + p[2] * dd * dd);
+    g[C1INDEX(D011,D011)] += tmp;
+
+    // C4 splitting returns here
+    if (_split == TAYLOR4) return;
+
+    // weight 5
+    tmp = _c * (p[5] * dx*dx * dy*dy * dz + p[4] * dx*dx * dd * dz
+        + p[4] * dd * dy*dy * dz + p[3] * dd * dd * dz);
+    g[C1INDEX(D111,D110)] += tmp;
+    g[C1INDEX(D110,D111)] -= tmp;
+
+    tmp = _c * (p[5] * dx*dx * dz*dz * dy + p[4] * dx*dx * dd * dy
+        + p[4] * dd * dz*dz * dy + p[3] * dd * dd * dy);
+    g[C1INDEX(D111,D101)] += tmp;
+    g[C1INDEX(D101,D111)] -= tmp;
+
+    tmp = _c * (p[5] * dy*dy * dz*dz * dx + p[4] * dy*dy * dd * dx
+        + p[4] * dd * dz*dz * dx + p[3] * dd * dd * dx);
+    g[C1INDEX(D111,D011)] += tmp;
+    g[C1INDEX(D011,D111)] -= tmp;
+
+    // C5 splitting returns here
+    if (_split == TAYLOR5) return;
+
+    // weight 6
+    tmp = _c * (p[6] * dx*dx * dy*dy * dz*dz + p[5] * dx*dx * dy*dy * dd
+        + p[5] * dx*dx * dd * dz*dz + p[5] * dd * dy*dy * dz*dz
+        + p[4] * dx*dx * dd * dd + p[4] * dd * dy*dy * dd
+        + p[4] * dd * dd * dz*dz + p[3] * dd * dd * dd);
+    g[C1INDEX(D111,D111)] -= tmp;
+
+    // calculate full matrix for C6 or higher splitting
+
+  } // gc_c1hermite_elem_accum()
+
 
 }; // ComputeMsmMgr
 
@@ -2417,26 +2731,16 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   // get required sim params, check validity
   lattice = simParams->lattice;
 
-  a = simParams->cutoff;
-
-  gridspacing = simParams->MSMGridSpacing;
-  if (gridspacing <= 0 || gridspacing >= a) {
-    NAMD_die("MSM: illegal grid spacing requested (MSMGridSpacing)");
-  }
-
-  padding = simParams->MSMPadding;
-  if (padding < 0) {
-    NAMD_die("MSM: illegal padding requested (MSMPadding)");
-  }
-
   approx = simParams->MSMApprox;
   if (approx < 0 || approx >= NUM_APPROX) {
     NAMD_die("MSM: unknown approximation requested (MSMApprox)");
   }
+
   split = simParams->MSMSplit;
   if (split < 0 || split >= NUM_SPLIT) {
     NAMD_die("MSM: unknown splitting requested (MSMSplit)");
   }
+
   if (CkMyPe() == 0) {
     const char *approx_str, *split_str;
     switch (approx) {
@@ -2464,6 +2768,28 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
                   << approx_str << " interpolation\n";
     iout << iINFO << "MSM using "
                   << split_str << " splitting function\n";
+  }
+
+  a = simParams->cutoff;
+
+  if (approx == C1HERMITE) {
+    gridScalingFactor = 2;
+  }
+  else {
+    gridScalingFactor = 1;
+  }
+
+  gridspacing = gridScalingFactor * simParams->MSMGridSpacing;
+  if (gridspacing <= 0) {
+    NAMD_die("MSM: grid spacing must be greater than 0 (MSMGridSpacing)");
+  }
+  else if (gridspacing >= a) {
+    NAMD_die("MSM: grid spacing must be less than cutoff (MSMGridSpacing)");
+  }
+
+  padding = gridScalingFactor * simParams->MSMPadding;
+  if (padding < 0) {
+    NAMD_die("MSM: padding must be non-negative (MSMPadding)");
   }
 
   // set maximum number of levels (default 0 adapts levels to system)
@@ -2702,7 +3028,6 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
   // resize down to the actual number of levels (does not change alloc)
   map.gridrange.resize(nlevels);
-  map.gc.resize(nlevels);
 
   // print out some information about MSM
   if (CkMyPe() == 0) {
@@ -2776,86 +3101,412 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     scaling_factor = 1.f/64;  // = 1/2^6
   }
   int i, j, k;
-  for (level = 0;  level < toplevel;  level++) {
-    map.gc[level].setbounds(-ni, ni, -nj, nj, -nk, nk);
+  if (approx < C1HERMITE) {
+    // resize gc constants for number of levels
+    map.gc.resize(nlevels);
 
-    for (k = -nk;  k <= nk;  k++) {
-      for (j = -nj;  j <= nj;  j++) {
-        for (i = -ni;  i <= ni;  i++) {
-          if (level == 0) {
-            BigReal s, t, gs=0, gt=0, g=0, d=0;
-            s = (i*hu + j*hv + k*hw).length() * a_1;
-            t = 0.5 * s;
-            if (t >= 1) {
-              g = 0;
-            }
-            else {
-              splitting(gt, d, t, split);
-              if (s >= 1) {
-                if (dispersion) {
-                  BigReal s_1 = 1/s;
-                  gs = s_1 * s_1 * s_1;  // = 1/s^3
-                  gs = gs * gs;  // = 1/s^6
-                }
-                else {
-                  gs = 1/s;
-                }
+    for (level = 0;  level < toplevel;  level++) {
+      map.gc[level].setbounds(-ni, ni, -nj, nj, -nk, nk);
+
+      for (k = -nk;  k <= nk;  k++) {
+        for (j = -nj;  j <= nj;  j++) {
+          for (i = -ni;  i <= ni;  i++) {
+            if (level == 0) {
+              BigReal s, t, gs=0, gt=0, g=0, d=0;
+              s = (i*hu + j*hv + k*hw).length() * a_1;
+              t = 0.5 * s;
+              if (t >= 1) {
+                g = 0;
               }
               else {
-                splitting(gs, d, s, split);
+                splitting(gt, d, t, split);
+                if (s >= 1) {
+                  if (dispersion) {
+                    BigReal s_1 = 1/s;
+                    gs = s_1 * s_1 * s_1;  // = 1/s^3
+                    gs = gs * gs;  // = 1/s^6
+                  }
+                  else {
+                    gs = 1/s;
+                  }
+                }
+                else {
+                  splitting(gs, d, s, split);
+                }
+                g = (gs - scaling_factor * gt) * a_p;
+
+                // Msm index?
+
               }
-              g = (gs - scaling_factor * gt) * a_p;
-
-              // Msm index?
-
+              map.gc[0](i,j,k) = Float(g);
+            } // if level 0
+            else {
+              map.gc[level](i,j,k) = scaling * map.gc[0](i,j,k);
             }
-            map.gc[0](i,j,k) = Float(g);
-          } // if level 0
-          else {
-            map.gc[level](i,j,k) = scaling * map.gc[0](i,j,k);
-          }
 
-        } // for i
-      } // for j
-    } // for k
-    scaling *= scaling_factor;
+          } // for i
+        } // for j
+      } // for k
+      scaling *= scaling_factor;
 
-  } // for level
+    } // for level
 
-  if (toplevel < nlevels) {
-    // nonperiodic along all basis vector directions
-    // calculate top level weights where all grid points
-    // interact with each other
-    ni = map.gridrange[toplevel].ni();
-    nj = map.gridrange[toplevel].nj();
-    nk = map.gridrange[toplevel].nk();
-    map.gc[toplevel].setbounds(-ni, ni, -nj, nj, -nk, nk);
+    if (toplevel < nlevels) {
+      // nonperiodic along all basis vector directions
+      // calculate top level weights where all grid points
+      // interact with each other
+      ni = map.gridrange[toplevel].ni();
+      nj = map.gridrange[toplevel].nj();
+      nk = map.gridrange[toplevel].nk();
+      map.gc[toplevel].setbounds(-ni, ni, -nj, nj, -nk, nk);
 
-    // Msm index?
+      // Msm index?
 
-    for (k = -nk;  k <= nk;  k++) {
-      for (j = -nj;  j <= nj;  j++) {
-        for (i = -ni;  i <= ni;  i++) {
-          BigReal s, gs, d;
-          s = (i*hu + j*hv + k*hw).length() * a_1;
-          if (s >= 1) {
-            if (dispersion) {
-              BigReal s_1 = 1/s;
-              gs = s_1 * s_1 * s_1;  // = 1/s^3
-              gs = gs * gs;  // = 1/s^6
+      for (k = -nk;  k <= nk;  k++) {
+        for (j = -nj;  j <= nj;  j++) {
+          for (i = -ni;  i <= ni;  i++) {
+            BigReal s, gs, d;
+            s = (i*hu + j*hv + k*hw).length() * a_1;
+            if (s >= 1) {
+              if (dispersion) {
+                BigReal s_1 = 1/s;
+                gs = s_1 * s_1 * s_1;  // = 1/s^3
+                gs = gs * gs;  // = 1/s^6
+              }
+              else {
+                gs = 1/s;
+              }
             }
             else {
-              gs = 1/s;
+              splitting(gs, d, s, split);
             }
+            map.gc[toplevel](i,j,k) = scaling * Float(gs * a_p);
+          } // for i
+        } // for j
+      } // for k
+    } // if toplevel
+  } // end if approx < C1HERMITE
+  else {
+    // C1HERMITE
+    // resize gc_c1hermite constants for number of levels
+    map.gc_c1hermite.resize(nlevels);
+    scaling = 1;
+
+    for (level = 0;  level < toplevel;  level++) {
+
+      Vector hmu = scaling * hu;
+      Vector hmv = scaling * hv;
+      Vector hmw = scaling * hw;
+      BigReal am = scaling * a;
+
+      map.gc_c1hermite[level].setbounds(-ni, ni, -nj, nj, -nk, nk);
+
+      for (k = -nk;  k <= nk;  k++) {
+        for (j = -nj;  j <= nj;  j++) {
+          for (i = -ni;  i <= ni;  i++) {
+            C1Matrix& m = map.gc_c1hermite[level](i,j,k);
+            Vector rv = i*hmu + j*hmv + k*hmw;
+            BigReal r2 = rv * rv;
+            m.set(0);
+            if (r2 < 4*am*am) {
+              // accumulate D( g_{a}(0,r) ) term for this level
+              gc_c1hermite_elem_accum(m, 1, rv, am, split);
+              // accumulate D( -g_{2a}(0,r) ) term for this level
+              gc_c1hermite_elem_accum(m, -1, rv, 2*am, split);
+            }
+
           }
-          else {
-            splitting(gs, d, s, split);
+        }
+      } // end loop over gc_c1hermite elements for this level
+      scaling *= 2;  // double grid spacing and cutoff at each iteration
+
+    } // end loop over levels
+
+    if (toplevel < nlevels) {
+      Vector hmu = scaling * hu;
+      Vector hmv = scaling * hv;
+      Vector hmw = scaling * hw;
+      BigReal am = scaling * a;
+
+      // nonperiodic along all basis vector directions
+      // calculate top level weights where all grid points
+      // interact with each other
+      ni = map.gridrange[toplevel].ni();
+      nj = map.gridrange[toplevel].nj();
+      nk = map.gridrange[toplevel].nk();
+      map.gc_c1hermite[toplevel].setbounds(-ni, ni, -nj, nj, -nk, nk);
+
+      for (k = -nk;  k <= nk;  k++) {
+        for (j = -nj;  j <= nj;  j++) {
+          for (i = -ni;  i <= ni;  i++) {
+            C1Matrix& m = map.gc_c1hermite[level](i,j,k);
+            Vector rv = i*hmu + j*hmv + k*hmw;
+            m.set(0);
+            // accumulate D( g_{a}(0,r) ) term for this level
+            gc_c1hermite_elem_accum(m, 1, rv, am, split);
           }
-          map.gc[toplevel](i,j,k) = scaling * Float(gs * a_p);
-        } // for i
-      } // for j
-    } // for k
-  } // if toplevel
+        }
+      } // end loop over gc_c1hermite elements for top level
+
+    } // end if top level
+
+    // C1 Hermite restriction and prolongation stencils
+    map.gres_c1hermite.resize(nlevels-1);
+    map.gpro_c1hermite.resize(nlevels-1);
+
+    enum {
+      ND = 3,    // stencil diameter
+      NR = ND/2  // stencil radius
+    };
+
+    // the master basis functions PHI0 and PHI1 for the 3-point stencil
+    // and their derivatives DPHI0 and DPHI1
+    const double  PHI0[ND] = { 0.5, 1, 0.5 };
+    const double DPHI0[ND] = { 1.5, 0, -1.5 };
+    const double  PHI1[ND] = { -0.125, 0, 0.125 };
+    const double DPHI1[ND] = { -0.25, 1, -0.25 };
+
+    // for intermediate calculations
+    double  xphi0_base_array[ND];
+    double dxphi0_base_array[ND];
+    double  yphi0_base_array[ND];
+    double dyphi0_base_array[ND];
+    double  zphi0_base_array[ND];
+    double dzphi0_base_array[ND];
+    double  xphi1_base_array[ND];
+    double dxphi1_base_array[ND];
+    double  yphi1_base_array[ND];
+    double dyphi1_base_array[ND];
+    double  zphi1_base_array[ND];
+    double dzphi1_base_array[ND];
+    // will point to center of stencil arrays
+    double *xphi0, *dxphi0, *xphi1, *dxphi1;
+    double *yphi0, *dyphi0, *yphi1, *dyphi1;
+    double *zphi0, *dzphi0, *zphi1, *dzphi1;
+
+    for (n = 0;  n < ND;  n++) {
+      xphi0_base_array[n]  = PHI0[n];
+      dxphi0_base_array[n] = shx_1 * DPHI0[n];  // scale by grid spacing
+      xphi1_base_array[n]  = shx * PHI1[n];     // scale by grid spacing
+      dxphi1_base_array[n] = DPHI1[n];
+      yphi0_base_array[n]  = PHI0[n];
+      dyphi0_base_array[n] = shy_1 * DPHI0[n];  // scale by grid spacing
+      yphi1_base_array[n]  = shy * PHI1[n];     // scale by grid spacing
+      dyphi1_base_array[n] = DPHI1[n];
+      zphi0_base_array[n]  = PHI0[n];
+      dzphi0_base_array[n] = shz_1 * DPHI0[n];  // scale by grid spacing
+      zphi1_base_array[n]  = shz * PHI1[n];     // scale by grid spacing
+      dzphi1_base_array[n] = DPHI1[n];
+    }
+    xphi0  =  xphi0_base_array + NR;  // point into center of arrays
+    dxphi0 = dxphi0_base_array + NR;
+    xphi1  =  xphi1_base_array + NR;
+    dxphi1 = dxphi1_base_array + NR;
+    yphi0  =  yphi0_base_array + NR;
+    dyphi0 = dyphi0_base_array + NR;
+    yphi1  =  yphi1_base_array + NR;
+    dyphi1 = dyphi1_base_array + NR;
+    zphi0  =  zphi0_base_array + NR;
+    dzphi0 = dzphi0_base_array + NR;
+    zphi1  =  zphi1_base_array + NR;
+    dzphi1 = dzphi1_base_array + NR;
+
+    for (level = 0;  level < nlevels-1;  level++) {
+      // allocate space for restriction and prolongation stencils
+      map.gres_c1hermite[level].setbounds(-NR, NR, -NR, NR, -NR, NR);
+      map.gpro_c1hermite[level].setbounds(-NR, NR, -NR, NR, -NR, NR);
+
+      // scale up to next level grid spacing
+      //
+      // have to determine for each dimension whether or not 
+      // a periodic grid spacing has increased 
+      // (equivalent to if there are fewer grid points)
+      for (n = -NR;  n <= NR;  n++) {
+        if ( ! ispx || (level > 0 &&
+              map.gridrange[level].ni() < map.gridrange[level-1].ni()) ) {
+          dxphi0[n] *= 0.5;
+          xphi1[n] *= 2;
+        }
+        if ( ! ispy || (level > 0 &&
+              map.gridrange[level].nj() < map.gridrange[level-1].nj()) ) {
+          dyphi0[n] *= 0.5;
+          yphi1[n] *= 2;
+        }
+        if ( ! ispz || (level > 0 &&
+              map.gridrange[level].nk() < map.gridrange[level-1].nk()) ) {
+          dzphi0[n] *= 0.5;
+          zphi1[n] *= 2;
+        }
+      }
+
+      // loop over restriction stencil matrices
+      // calculate from partial derivatives
+      for (k = -NR;  k <= NR;  k++) {
+        for (j = -NR;  j <= NR;  j++) {
+          for (i = -NR;  i <= NR;  i++) {
+            Float *t = map.gres_c1hermite[level](i,j,k).melem;
+
+            t[C1INDEX(D000,D000)] =  xphi0[i] *  yphi0[j]  *  zphi0[k];
+            t[C1INDEX(D000,D100)] = dxphi0[i] *  yphi0[j]  *  zphi0[k];
+            t[C1INDEX(D000,D010)] =  xphi0[i] * dyphi0[j]  *  zphi0[k];
+            t[C1INDEX(D000,D001)] =  xphi0[i] *  yphi0[j]  * dzphi0[k];
+            t[C1INDEX(D000,D110)] = dxphi0[i] * dyphi0[j]  *  zphi0[k];
+            t[C1INDEX(D000,D101)] = dxphi0[i] *  yphi0[j]  * dzphi0[k];
+            t[C1INDEX(D000,D011)] =  xphi0[i] * dyphi0[j]  * dzphi0[k];
+            t[C1INDEX(D000,D111)] = dxphi0[i] * dyphi0[j]  * dzphi0[k];
+
+            t[C1INDEX(D100,D000)] =  xphi1[i] *  yphi0[j]  *  zphi0[k];
+            t[C1INDEX(D100,D100)] = dxphi1[i] *  yphi0[j]  *  zphi0[k];
+            t[C1INDEX(D100,D010)] =  xphi1[i] * dyphi0[j]  *  zphi0[k];
+            t[C1INDEX(D100,D001)] =  xphi1[i] *  yphi0[j]  * dzphi0[k];
+            t[C1INDEX(D100,D110)] = dxphi1[i] * dyphi0[j]  *  zphi0[k];
+            t[C1INDEX(D100,D101)] = dxphi1[i] *  yphi0[j]  * dzphi0[k];
+            t[C1INDEX(D100,D011)] =  xphi1[i] * dyphi0[j]  * dzphi0[k];
+            t[C1INDEX(D100,D111)] = dxphi1[i] * dyphi0[j]  * dzphi0[k];
+
+            t[C1INDEX(D010,D000)] =  xphi0[i] *  yphi1[j]  *  zphi0[k];
+            t[C1INDEX(D010,D100)] = dxphi0[i] *  yphi1[j]  *  zphi0[k];
+            t[C1INDEX(D010,D010)] =  xphi0[i] * dyphi1[j]  *  zphi0[k];
+            t[C1INDEX(D010,D001)] =  xphi0[i] *  yphi1[j]  * dzphi0[k];
+            t[C1INDEX(D010,D110)] = dxphi0[i] * dyphi1[j]  *  zphi0[k];
+            t[C1INDEX(D010,D101)] = dxphi0[i] *  yphi1[j]  * dzphi0[k];
+            t[C1INDEX(D010,D011)] =  xphi0[i] * dyphi1[j]  * dzphi0[k];
+            t[C1INDEX(D010,D111)] = dxphi0[i] * dyphi1[j]  * dzphi0[k];
+
+            t[C1INDEX(D001,D000)] =  xphi0[i] *  yphi0[j]  *  zphi1[k];
+            t[C1INDEX(D001,D100)] = dxphi0[i] *  yphi0[j]  *  zphi1[k];
+            t[C1INDEX(D001,D010)] =  xphi0[i] * dyphi0[j]  *  zphi1[k];
+            t[C1INDEX(D001,D001)] =  xphi0[i] *  yphi0[j]  * dzphi1[k];
+            t[C1INDEX(D001,D110)] = dxphi0[i] * dyphi0[j]  *  zphi1[k];
+            t[C1INDEX(D001,D101)] = dxphi0[i] *  yphi0[j]  * dzphi1[k];
+            t[C1INDEX(D001,D011)] =  xphi0[i] * dyphi0[j]  * dzphi1[k];
+            t[C1INDEX(D001,D111)] = dxphi0[i] * dyphi0[j]  * dzphi1[k];
+
+            t[C1INDEX(D110,D000)] =  xphi1[i] *  yphi1[j]  *  zphi0[k];
+            t[C1INDEX(D110,D100)] = dxphi1[i] *  yphi1[j]  *  zphi0[k];
+            t[C1INDEX(D110,D010)] =  xphi1[i] * dyphi1[j]  *  zphi0[k];
+            t[C1INDEX(D110,D001)] =  xphi1[i] *  yphi1[j]  * dzphi0[k];
+            t[C1INDEX(D110,D110)] = dxphi1[i] * dyphi1[j]  *  zphi0[k];
+            t[C1INDEX(D110,D101)] = dxphi1[i] *  yphi1[j]  * dzphi0[k];
+            t[C1INDEX(D110,D011)] =  xphi1[i] * dyphi1[j]  * dzphi0[k];
+            t[C1INDEX(D110,D111)] = dxphi1[i] * dyphi1[j]  * dzphi0[k];
+
+            t[C1INDEX(D101,D000)] =  xphi1[i] *  yphi0[j]  *  zphi1[k];
+            t[C1INDEX(D101,D100)] = dxphi1[i] *  yphi0[j]  *  zphi1[k];
+            t[C1INDEX(D101,D010)] =  xphi1[i] * dyphi0[j]  *  zphi1[k];
+            t[C1INDEX(D101,D001)] =  xphi1[i] *  yphi0[j]  * dzphi1[k];
+            t[C1INDEX(D101,D110)] = dxphi1[i] * dyphi0[j]  *  zphi1[k];
+            t[C1INDEX(D101,D101)] = dxphi1[i] *  yphi0[j]  * dzphi1[k];
+            t[C1INDEX(D101,D011)] =  xphi1[i] * dyphi0[j]  * dzphi1[k];
+            t[C1INDEX(D101,D111)] = dxphi1[i] * dyphi0[j]  * dzphi1[k];
+
+            t[C1INDEX(D011,D000)] =  xphi0[i] *  yphi1[j]  *  zphi1[k];
+            t[C1INDEX(D011,D100)] = dxphi0[i] *  yphi1[j]  *  zphi1[k];
+            t[C1INDEX(D011,D010)] =  xphi0[i] * dyphi1[j]  *  zphi1[k];
+            t[C1INDEX(D011,D001)] =  xphi0[i] *  yphi1[j]  * dzphi1[k];
+            t[C1INDEX(D011,D110)] = dxphi0[i] * dyphi1[j]  *  zphi1[k];
+            t[C1INDEX(D011,D101)] = dxphi0[i] *  yphi1[j]  * dzphi1[k];
+            t[C1INDEX(D011,D011)] =  xphi0[i] * dyphi1[j]  * dzphi1[k];
+            t[C1INDEX(D011,D111)] = dxphi0[i] * dyphi1[j]  * dzphi1[k];
+
+            t[C1INDEX(D111,D000)] =  xphi1[i] *  yphi1[j]  *  zphi1[k];
+            t[C1INDEX(D111,D100)] = dxphi1[i] *  yphi1[j]  *  zphi1[k];
+            t[C1INDEX(D111,D010)] =  xphi1[i] * dyphi1[j]  *  zphi1[k];
+            t[C1INDEX(D111,D001)] =  xphi1[i] *  yphi1[j]  * dzphi1[k];
+            t[C1INDEX(D111,D110)] = dxphi1[i] * dyphi1[j]  *  zphi1[k];
+            t[C1INDEX(D111,D101)] = dxphi1[i] *  yphi1[j]  * dzphi1[k];
+            t[C1INDEX(D111,D011)] =  xphi1[i] * dyphi1[j]  * dzphi1[k];
+            t[C1INDEX(D111,D111)] = dxphi1[i] * dyphi1[j]  * dzphi1[k];
+          }
+        }
+      } // end loops over restriction stencil matrices
+
+      // loop over prolongation stencil matrices
+      // prolongation stencil matrices are the transpose of restriction
+      for (k = -NR;  k <= NR;  k++) {
+        for (j = -NR;  j <= NR;  j++) {
+          for (i = -NR;  i <= NR;  i++) {
+            Float *t = map.gres_c1hermite[level](i,j,k).melem;
+            Float *tt = map.gpro_c1hermite[level](i,j,k).melem;
+
+            tt[C1INDEX(D000,D000)] = t[C1INDEX(D000,D000)];
+            tt[C1INDEX(D000,D100)] = t[C1INDEX(D100,D000)];
+            tt[C1INDEX(D000,D010)] = t[C1INDEX(D010,D000)];
+            tt[C1INDEX(D000,D001)] = t[C1INDEX(D001,D000)];
+            tt[C1INDEX(D000,D110)] = t[C1INDEX(D110,D000)];
+            tt[C1INDEX(D000,D101)] = t[C1INDEX(D101,D000)];
+            tt[C1INDEX(D000,D011)] = t[C1INDEX(D011,D000)];
+            tt[C1INDEX(D000,D111)] = t[C1INDEX(D111,D000)];
+
+            tt[C1INDEX(D100,D000)] = t[C1INDEX(D000,D100)];
+            tt[C1INDEX(D100,D100)] = t[C1INDEX(D100,D100)];
+            tt[C1INDEX(D100,D010)] = t[C1INDEX(D010,D100)];
+            tt[C1INDEX(D100,D001)] = t[C1INDEX(D001,D100)];
+            tt[C1INDEX(D100,D110)] = t[C1INDEX(D110,D100)];
+            tt[C1INDEX(D100,D101)] = t[C1INDEX(D101,D100)];
+            tt[C1INDEX(D100,D011)] = t[C1INDEX(D011,D100)];
+            tt[C1INDEX(D100,D111)] = t[C1INDEX(D111,D100)];
+
+            tt[C1INDEX(D010,D000)] = t[C1INDEX(D000,D010)];
+            tt[C1INDEX(D010,D100)] = t[C1INDEX(D100,D010)];
+            tt[C1INDEX(D010,D010)] = t[C1INDEX(D010,D010)];
+            tt[C1INDEX(D010,D001)] = t[C1INDEX(D001,D010)];
+            tt[C1INDEX(D010,D110)] = t[C1INDEX(D110,D010)];
+            tt[C1INDEX(D010,D101)] = t[C1INDEX(D101,D010)];
+            tt[C1INDEX(D010,D011)] = t[C1INDEX(D011,D010)];
+            tt[C1INDEX(D010,D111)] = t[C1INDEX(D111,D010)];
+
+            tt[C1INDEX(D001,D000)] = t[C1INDEX(D000,D001)];
+            tt[C1INDEX(D001,D100)] = t[C1INDEX(D100,D001)];
+            tt[C1INDEX(D001,D010)] = t[C1INDEX(D010,D001)];
+            tt[C1INDEX(D001,D001)] = t[C1INDEX(D001,D001)];
+            tt[C1INDEX(D001,D110)] = t[C1INDEX(D110,D001)];
+            tt[C1INDEX(D001,D101)] = t[C1INDEX(D101,D001)];
+            tt[C1INDEX(D001,D011)] = t[C1INDEX(D011,D001)];
+            tt[C1INDEX(D001,D111)] = t[C1INDEX(D111,D001)];
+
+            tt[C1INDEX(D110,D000)] = t[C1INDEX(D000,D110)];
+            tt[C1INDEX(D110,D100)] = t[C1INDEX(D100,D110)];
+            tt[C1INDEX(D110,D010)] = t[C1INDEX(D010,D110)];
+            tt[C1INDEX(D110,D001)] = t[C1INDEX(D001,D110)];
+            tt[C1INDEX(D110,D110)] = t[C1INDEX(D110,D110)];
+            tt[C1INDEX(D110,D101)] = t[C1INDEX(D101,D110)];
+            tt[C1INDEX(D110,D011)] = t[C1INDEX(D011,D110)];
+            tt[C1INDEX(D110,D111)] = t[C1INDEX(D111,D110)];
+
+            tt[C1INDEX(D101,D000)] = t[C1INDEX(D000,D101)];
+            tt[C1INDEX(D101,D100)] = t[C1INDEX(D100,D101)];
+            tt[C1INDEX(D101,D010)] = t[C1INDEX(D010,D101)];
+            tt[C1INDEX(D101,D001)] = t[C1INDEX(D001,D101)];
+            tt[C1INDEX(D101,D110)] = t[C1INDEX(D110,D101)];
+            tt[C1INDEX(D101,D101)] = t[C1INDEX(D101,D101)];
+            tt[C1INDEX(D101,D011)] = t[C1INDEX(D011,D101)];
+            tt[C1INDEX(D101,D111)] = t[C1INDEX(D111,D101)];
+
+            tt[C1INDEX(D011,D000)] = t[C1INDEX(D000,D011)];
+            tt[C1INDEX(D011,D100)] = t[C1INDEX(D100,D011)];
+            tt[C1INDEX(D011,D010)] = t[C1INDEX(D010,D011)];
+            tt[C1INDEX(D011,D001)] = t[C1INDEX(D001,D011)];
+            tt[C1INDEX(D011,D110)] = t[C1INDEX(D110,D011)];
+            tt[C1INDEX(D011,D101)] = t[C1INDEX(D101,D011)];
+            tt[C1INDEX(D011,D011)] = t[C1INDEX(D011,D011)];
+            tt[C1INDEX(D011,D111)] = t[C1INDEX(D111,D011)];
+
+            tt[C1INDEX(D111,D000)] = t[C1INDEX(D000,D111)];
+            tt[C1INDEX(D111,D100)] = t[C1INDEX(D100,D111)];
+            tt[C1INDEX(D111,D010)] = t[C1INDEX(D010,D111)];
+            tt[C1INDEX(D111,D001)] = t[C1INDEX(D001,D111)];
+            tt[C1INDEX(D111,D110)] = t[C1INDEX(D110,D111)];
+            tt[C1INDEX(D111,D101)] = t[C1INDEX(D101,D111)];
+            tt[C1INDEX(D111,D011)] = t[C1INDEX(D011,D111)];
+            tt[C1INDEX(D111,D111)] = t[C1INDEX(D111,D111)];
+          }
+        }
+      } // end loops over prolongation stencil matrices
+
+    } // end loop over levels
+
+  } // end if C1HERMITE
 
   // calculate self energy factor for splitting
   BigReal gs=0, d=0;
