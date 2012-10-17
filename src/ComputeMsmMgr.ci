@@ -8,15 +8,15 @@ module ComputeMsmMgr {
 
   message MsmInitMsg;
 
-/*
   // variable size message
   message GridFloatMsg {
     float gdata[];
   };
-*/
 
+/*
   // fixed size message 
   message GridFloatMsg;
+*/
 
   // fixed size message 
   message GridC1VectorMsg;
