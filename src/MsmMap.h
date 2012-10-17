@@ -67,7 +67,7 @@ typedef double Double;
 
   struct C1Vector {
     Float velem[C1_VECTOR_SIZE];
-    C1Vector() { set(0); }
+    C1Vector(Float r=0) { set(r); }
     void set(Float r) {
       for (int n=0;  n < C1_VECTOR_SIZE;  n++)  velem[n] = r;
     }
@@ -91,7 +91,7 @@ typedef double Double;
 
   struct C1Matrix {
     Float melem[C1_MATRIX_SIZE];
-    C1Matrix() { set(0); }
+    C1Matrix(Float r=0) { set(r); }
     void set(Float r) {
       for (int n=0;  n < C1_MATRIX_SIZE;  n++)  melem[n] = 0;
     }
