@@ -55,6 +55,8 @@
 #define MSM_FIXED_SIZE_GRID_MSG
 #undef MSM_FIXED_SIZE_GRID_MSG
 
+// turn off computation
+//#define MSM_COMM_ONLY
 
 //
 // This is the main message that gets passed between compute chares.
@@ -1803,6 +1805,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int index = 0;
 #endif
 
+#ifndef MSM_COMM_ONLY
       // loop over potentials
       for (int k = eka;  k <= ekb;  k++) {
         // clip charges to weights along k
@@ -1948,6 +1951,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
           }
         }
       } // end loop over potentials
+#endif // !MSM_COMM_ONLY
+
 #ifdef MSM_PROFILING
       mgrLocal->doneProfiling();
 #endif
@@ -2234,6 +2239,8 @@ void MsmBlock::restriction()
   double startTime, stopTime;
   startTime = CkWallTimer();
 #endif
+
+#ifndef MSM_COMM_ONLY
   // stencil data for approximating charge on restricted grid
   const int approx = mgrLocal->approx;
   const int nstencil = ComputeMsmMgr::Nstencil[approx];
@@ -2290,6 +2297,10 @@ void MsmBlock::restriction()
       }
     }
   } // end loop over restricted (2h) grid
+#else
+  qhRestricted.reset(0);
+#endif // !MSM_COMM_ONLY
+
 #ifdef MSM_TIMING
   stopTime = CkWallTimer();
   mgrLocal->msmTiming[MsmTimer::RESTRICT] += stopTime - startTime;
@@ -2354,6 +2365,7 @@ void MsmBlock::gridCutoff()
   double startTime, stopTime;
   startTime = CkWallTimer();
 #endif
+#ifndef MSM_COMM_ONLY
   // need grid of weights for this level
   msm::Grid<Float>& gc = map->gc[blockIndex.level];
   // index range of weights
@@ -2402,6 +2414,9 @@ void MsmBlock::gridCutoff()
       }
     }
   } // end loop over potentials
+#else
+  ehCutoff.reset(0);
+#endif // !MSM_COMM_ONLY
 #ifdef MSM_TIMING
   stopTime = CkWallTimer();
   mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
@@ -2526,6 +2541,7 @@ void MsmBlock::prolongation()
   double startTime, stopTime;
   startTime = CkWallTimer();
 #endif
+#ifndef MSM_COMM_ONLY
   // stencil data for approximating potential on prolongated grid
   const int approx = mgrLocal->approx;
   const int nstencil = ComputeMsmMgr::Nstencil[approx];
@@ -2581,6 +2597,9 @@ void MsmBlock::prolongation()
       }
     }
   } // end loop over 2h grid
+#else
+  ehProlongated.reset(0);
+#endif // !MSM_COMM_ONLY
 #ifdef MSM_TIMING
   stopTime = CkWallTimer();
   mgrLocal->msmTiming[MsmTimer::PROLONGATE] += stopTime - startTime;
@@ -4678,6 +4697,7 @@ namespace msm {
     double startTime, stopTime;
     startTime = CkWallTimer();
 #endif
+#ifndef MSM_COMM_ONLY
     Float xphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
     Float yphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
     Float zphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
@@ -4749,6 +4769,7 @@ namespace msm {
       }
 
     } // end loop over atoms
+#endif // !MSM_COMM_ONLY
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgr->msmTiming[MsmTimer::ANTERP] += stopTime - startTime;
@@ -4826,6 +4847,7 @@ namespace msm {
     double startTime, stopTime;
     startTime = CkWallTimer();
 #endif
+#ifndef MSM_COMM_ONLY
     BigReal energy_self = 0;
 
     Float xphi[ComputeMsmMgr::MAX_POLY_DEGREE+1];
@@ -4924,6 +4946,7 @@ namespace msm {
     energy_self *= mgr->gzero;
     energy -= energy_self;
     energy *= 0.5;
+#endif // !MSM_COMM_ONLY
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgr->msmTiming[MsmTimer::INTERP] += stopTime - startTime;
