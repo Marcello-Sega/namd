@@ -56,6 +56,7 @@ module ComputeMsmMgr {
 
   // MsmGridCutoff calculates a charge -> potential interaction pair
   // between blocks.
+  template <class T>
   array [1D] MsmGridCutoff {
     entry MsmGridCutoff(void);
 
@@ -75,5 +76,7 @@ module ComputeMsmMgr {
     entry MsmProfiler(void);
     entry [reductiontarget] void done(int tm[n], int n);
   };
+
+  array [1D] MsmGridCutoff<float>;
 
 };

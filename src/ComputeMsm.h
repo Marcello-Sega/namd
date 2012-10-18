@@ -41,5 +41,9 @@ private:
   int cntLocalPatches;   // count local patches into saveResults()
 };
 
+// required for templated chares
+#define CK_TEMPLATES_ONLY
+#include "ComputeMsmMgr.def.h"
+#undef CK_TEMPLATES_ONLY
 
 #endif // COMPUTEMSM_H
