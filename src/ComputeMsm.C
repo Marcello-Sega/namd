@@ -246,12 +246,12 @@ class MsmGridCutoffProxyMsg : public CMessage_MsmGridCutoffProxyMsg {
   public:
     char *msmGridCutoffProxyData;
     // put proxy into an allocated message to be sent
-    void put(const CProxy_MsmGridCutoff<Float> *p) {
-      memcpy(msmGridCutoffProxyData, p, sizeof(CProxy_MsmGridCutoff<Float>));
+    void put(const CProxy_MsmGridCutoff *p) {
+      memcpy(msmGridCutoffProxyData, p, sizeof(CProxy_MsmGridCutoff));
     }
     // get the proxy from a received message
-    void get(CProxy_MsmGridCutoff<Float> *p) {
-      memcpy(p, msmGridCutoffProxyData, sizeof(CProxy_MsmGridCutoff<Float>));
+    void get(CProxy_MsmGridCutoff *p) {
+      memcpy(p, msmGridCutoffProxyData, sizeof(CProxy_MsmGridCutoff));
     }
 };
 
@@ -339,7 +339,7 @@ struct WorkIndex {
 class ComputeMsmMgr : public BOCclass {
   friend struct msm::PatchData;
   friend class MsmBlock;
-  friend class MsmGridCutoff<Float>;
+  friend class MsmGridCutoff;
   friend class MsmBlockMap;
   friend class MsmGridCutoffMap;
 
@@ -427,7 +427,7 @@ private:
 
   msm::Array<CProxy_MsmBlock> msmBlock;
 
-  CProxy_MsmGridCutoff<Float> msmGridCutoff;
+  CProxy_MsmGridCutoff msmGridCutoff;
   int numGridCutoff;  // length of msmGridCutoff chare array
 
   msm::Map map;
@@ -1622,8 +1622,7 @@ namespace msm {
 //
 // MsmGridCutoff
 
-template <class T>
-class MsmGridCutoff : public CBase_MsmGridCutoff<T> {
+class MsmGridCutoff : public CBase_MsmGridCutoff {
   public:
     CProxy_ComputeMsmMgr mgrProxy;
     ComputeMsmMgr *mgrLocal;     // for quick access to data
@@ -1631,8 +1630,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff<T> {
     msm::BlockIndex qhblockIndex;  // source of charges
     msm::BlockSend ehblockSend;    // destination for potentials
     //msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> qh;
-    msm::Grid<T> qh;
-    msm::Grid<T> eh;
+    msm::Grid<Float> qh;
+    msm::Grid<Float> eh;
 
     MsmGridCutoff() {
       mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
@@ -1747,7 +1746,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff<T> {
       // destination block index for potentials
       const msm::BlockIndex& bindex = ehblockSend.nblock_wrap;
       // need grid of weights for this level
-      msm::Grid<T>& gc = map->gc[bindex.level];
+      msm::Grid<Float>& gc = map->gc[bindex.level];
       // index range of weights
       int gia = gc.ia();
       int gib = gc.ib();
@@ -1778,10 +1777,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff<T> {
       int enj = eh.nj();
 #endif
       // access buffers directly
-      const T *gcbuffer = gc.data().buffer();
+      const Float *gcbuffer = gc.data().buffer();
 #if 1
-      const T *qhbuffer = qh.data().buffer();
-      T *ehbuffer = eh.data().buffer();
+      const Float *qhbuffer = qh.data().buffer();
+      Float *ehbuffer = eh.data().buffer();
 #else
       const Float *qhbuffer = qh.buffer();
       Float *ehbuffer = eh.buffer();
@@ -1976,7 +1975,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff<T> {
       if (map->foldfactor[qhblockIndex.level].active) {
         // copy unfolded grid
 #if 1
-        msm::Grid<T> ehfold = eh;
+        msm::Grid<Float> ehfold = eh;
 #else
         msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> ehfold = eh;
 #endif
@@ -2039,8 +2038,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff<T> {
             );
             */
 #if 1
-        const T *ehfoldbuf = ehfold.data().buffer();
-        T *ehbuf = eh.data().buffer();
+        const Float *ehfoldbuf = ehfold.data().buffer();
+        Float *ehbuf = eh.data().buffer();
 #else
         const Float *ehfoldbuf = ehfold.buffer();
         Float *ehbuf = eh.buffer();
@@ -4349,12 +4348,12 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     CProxy_MsmGridCutoffMap gcutMap = CProxy_MsmGridCutoffMap::ckNew();
     CkArrayOptions optsgcut(numGridCutoff);
     optsgcut.setMap(gcutMap);
-    msmGridCutoff = CProxy_MsmGridCutoff<Float>::ckNew(optsgcut);
+    msmGridCutoff = CProxy_MsmGridCutoff::ckNew(optsgcut);
 #else
-    msmGridCutoff = CProxy_MsmGridCutoff<Float>::ckNew(numGridCutoff);
+    msmGridCutoff = CProxy_MsmGridCutoff::ckNew(numGridCutoff);
 #endif
     MsmGridCutoffProxyMsg *gcmsg =
-      new(sizeof(CProxy_MsmGridCutoff<Float>), 0) MsmGridCutoffProxyMsg;
+      new(sizeof(CProxy_MsmGridCutoff), 0) MsmGridCutoffProxyMsg;
     gcmsg->put(&msmGridCutoff);
     msmProxy.recvMsmGridCutoffProxy(gcmsg);
 
