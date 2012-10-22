@@ -262,6 +262,7 @@ void Node::bindBocVars(){
     CProxy_ParallelIOMgr io(CkpvAccess(BOCclass_group).ioMgr);
     ioMgr = io.ckLocalBranch();
   #endif
+
 }
 
 //----------------------------------------------------------------------
@@ -430,6 +431,7 @@ void Node::startup() {
           CkpvAccess(BOCclass_group).computeMoaMgr = CProxy_ComputeMoaMgr::ckNew();
         }
         #endif // OPENATOM_VERSION
+
     }
     
     #ifdef OPENATOM_VERSION

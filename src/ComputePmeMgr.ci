@@ -184,7 +184,7 @@ module ComputePmeMgr {
     entry void recvPencilMapProxies(CProxy_PmePencilMap xm, CProxy_PmePencilMap ym, CProxy_PmePencilMap zm);
     entry [expedited] void recvTrans(PmeTransMsg *);
     entry [expedited] void recvUntrans(PmeUntransMsg *);
-    
+
     // pencil comm management entries
 
     //need exclusive segmentation of zpencils to implement recvZGrid optimally
@@ -195,6 +195,7 @@ module ComputePmeMgr {
     entry  void recvYTrans(PmeTransMsg *);
     entry  void recvYUntrans(PmeUntransMsg *);
     entry  void recvZUntrans(PmeUntransMsg *);    
+
   };
   group ComputePmeMgr {
 

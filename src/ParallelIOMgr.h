@@ -367,6 +367,7 @@ public:
 
     //used in parallel IO output
     int getNumOutputProcs() { return numOutputProcs; }
+    bool isOutputProcessor(int pe);
 
     void recvClusterSize(ClusterSizeMsg *msg);
     void integrateClusterSize();

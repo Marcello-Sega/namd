@@ -161,6 +161,19 @@ void ParallelIOMgr::initialize(Node *node)
 #endif
 }
 
+bool ParallelIOMgr::isOutputProcessor(int pe) {
+    // if the method used to distribute output processors changes, this needs to update with it.
+   int stride = CkNumPes()/numOutputProcs;
+   int startpe = 0;
+   return ((pe+startpe)%stride==0);
+}
+
+int isOutputProcessor(int pe){ 
+  return CProxy_ParallelIOMgr::ckLocalBranch(CkpvAccess(BOCclass_group).ioMgr)->isOutputProcessor(pe);
+}
+
+
+
 void ParallelIOMgr::readPerAtomInfo()
 {
 #ifdef MEM_OPT_VERSION

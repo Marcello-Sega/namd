@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: jim $
- * $Date: 2012/08/23 19:29:45 $
- * $Revision: 1.116 $
+ * $Author: bohm $
+ * $Date: 2012/10/22 23:33:55 $
+ * $Revision: 1.117 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -467,6 +467,9 @@ void NamdCentLB::loadDataASCII(char *file, int &numProcessors,
 #endif
 
 extern int isPmeProcessor(int); 
+#ifdef MEM_OPT_VERSION
+extern int isOutputProcessor(int); 
+#endif
 
 int NamdCentLB::buildData(LDStats* stats)
 {
@@ -488,7 +491,7 @@ int NamdCentLB::buildData(LDStats* stats)
   int pmeBarrier = simParams->PMEBarrier;
   int unLoadZero = simParams->ldbUnloadZero;
   int unLoadOne = simParams->ldbUnloadOne;
-
+  int unLoadIO= simParams->ldbUnloadOutputPEs;
   int i;
   for (i=0; i<n_pes; ++i) {
     processorArray[i].Id = i;
@@ -565,6 +568,30 @@ int NamdCentLB::buildData(LDStats* stats)
 	processorArray[i].available = CmiFalse;
     }
   }
+  // if all pes are output, disable this flag
+#ifdef MEM_OPT_VERSION
+
+  if (unLoadIO) {
+      if (simParams->numoutputprocs == n_pes) {
+	  iout << iINFO << "Turned off unLoadIO flag!\n"  << endi;
+	  unLoadIO = 0;
+      }
+  }
+  if (unLoadIO){
+    iout << iINFO << "Testing for output processors!\n"  << endi;
+      for (i=0; i<n_pes; i++) {
+	  if (isOutputProcessor(stats->procs[i].pe)) 
+	    {
+	      //	      iout << iINFO << "Removed output PE "<< stats->procs[i].pe <<" from available list!\n"  << endi;
+	      processorArray[i].available = CmiFalse;
+	    }
+	  else
+	    {
+	      //	      iout << iINFO << "Nonoutput PE "<< stats->procs[i].pe <<" is in available list!\n"  << endi;
+	    }
+      }
+  }
+#endif
 
   int nMoveableComputes=0;
   int nProxies = 0;		// total number of estimated proxies

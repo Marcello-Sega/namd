@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: jim $
- * $Date: 2012/08/24 21:30:37 $
- * $Revision: 1.33 $
+ * $Author: bohm $
+ * $Date: 2012/10/22 23:33:55 $
+ * $Revision: 1.34 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -22,7 +22,9 @@
 // #define LOAD_LDBDATA 1
 
 extern int isPmeProcessor(int); 
-
+#ifdef MEM_OPT_VERSION
+extern int isOutputProcessor(int); 
+#endif
 // Load array defined in NamdCentLB.C
 extern double *cpuloads;
 
@@ -514,7 +516,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
   int pmeBarrier = simParams->PMEBarrier;
   int unLoadZero = simParams->ldbUnloadZero;
   int unLoadOne = simParams->ldbUnloadOne;
-
+  int unLoadIO= simParams->ldbUnloadOutputPEs;
   // traversing the list of processors and getting their load information
   int i, pe_no;
   for (i=0; i<n_pes; ++i) {
@@ -559,6 +561,22 @@ int NamdHybridLB::buildData(LDStats* stats) {
 	processorArray[i].available = CmiFalse;
     }
   }
+
+  // if all pes are output, disable this flag
+#ifdef MEM_OPT_VERSION
+  if (unLoadIO) {
+      if (simParams->numoutputprocs == n_pes) {
+	  iout << iINFO << "Turned off unLoadIO flag!\n"  << endi;
+	  unLoadIO = 0;
+      }
+  }
+  if (unLoadIO){
+      for (i=0; i<n_pes; i++) {
+	  if (isOutputProcessor(stats->procs[i].pe)) 
+	      processorArray[i].available = CmiFalse;
+      }
+  }
+#endif
 
   // need to go over all patches to get all required proxies
   int numPatches = patchMap->numPatches();

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2012/09/18 18:41:50 $
- * $Revision: 1.1249 $
+ * $Author: bohm $
+ * $Date: 2012/10/22 23:33:56 $
+ * $Revision: 1.1250 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -48,7 +48,9 @@
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
 #include "Debug.h"
-
+#ifdef MEM_OPT_VERSION
+extern int isOutputProcessor(int); 
+#endif
 class ComputeMapChangeMsg : public CMessage_ComputeMapChangeMsg
 {
 public:
@@ -985,6 +987,18 @@ void WorkDistrib::patchMapInit(void)
       if(params->noPatchesOnOne && numpes > 2)
         availPes -= 1;
   }
+#ifdef MEM_OPT_VERSION
+  if(params->noPatchesOnOutputPEs && numpes - params->numoutputprocs >2)
+    {
+      availPes -= params->numoutputprocs;
+      if ( params->noPatchesOnZero && numpes > 1 && isOutputProcessor(0)){
+	availPes++;
+      }
+      if ( params->noPatchesOnOne && numpes > 2 && isOutputProcessor(1)){
+	availPes++;
+      }
+    }
+#endif
 
   int numPatches = patchMap->sizeGrid(
 	xmin,xmax,lattice,patchSize,1.e9,params->staticAtomAssignment,
@@ -1146,7 +1160,7 @@ void WorkDistrib::assignPatchesToLowestLoadNode()
   for (int i=0; i<ncpus; i++) {
     load[i] = 0;
   }
-
+  CkPrintf("assignPatchesToLowestLoadNode\n");
   int defaultNode = 0;
   if ( simParams->noPatchesOnZero && ncpus > 1 ){
     defaultNode = 1;
@@ -1327,11 +1341,12 @@ void WorkDistrib::assignPatchesRecursiveBisection()
   
   int usedNodes = numNodes;
   int unusedNodes = 0;
+  CkPrintf("assignPatchesRecursiveBisection\n");
   if ( simParams->noPatchesOnZero && numNodes > 1 ){
     usedNodes -= 1;
     if(simParams->noPatchesOnOne && numNodes > 2)
       usedNodes -= 1;
-  }  
+  }
   unusedNodes = numNodes - usedNodes;
   RecBisection recBisec(usedNodes,PatchMap::Object());
   if ( recBisec.partition(assignedNode) ) {
@@ -1367,11 +1382,26 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   }
   int usedNodes = numNodes;
   int unusedNodes = 0;
+  // make exclusion list
   if ( simParams->noPatchesOnZero && numNodes > 1 ){
     usedNodes -= 1;
     if(simParams->noPatchesOnOne && numNodes > 2)
-      usedNodes -= 1;
+      {
+	usedNodes -= 1;
+      }
   }  
+#ifdef MEM_OPT_VERSION
+  if(simParams->noPatchesOnOutputPEs && numNodes-simParams->numoutputprocs >2)
+    {
+      usedNodes -= simParams->numoutputprocs;
+      if ( simParams->noPatchesOnZero && numNodes > 1 && isOutputProcessor(0)){
+	usedNodes++;
+      }
+      if ( simParams->noPatchesOnOne && numNodes > 2 && isOutputProcessor(1)){
+	usedNodes++;
+      }
+    }
+#endif
   unusedNodes = numNodes - usedNodes;
 
   int numPatches = patchMap->numPatches();
@@ -1412,6 +1442,7 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   // walk through patches in space-filling curve
   sumLoad = 0;
   int node = 0;
+  int skipIndex =0;
   int adim = patchMap->gridsize_a();
   int bdim = patchMap->gridsize_b();
   int cdim = patchMap->gridsize_c();
@@ -1422,24 +1453,34 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   for ( int a = 0; a < adim; ++a ) {
     while ( b >= 0 && b < bdim ) {
       while ( c >= 0 && c < cdim ) {
+	if ( simParams->noPatchesOnZero && numNodes > 1 && node==0) ++node;
+	if ( simParams->noPatchesOnOne && numNodes > 2 && node==1) ++node;
+#ifdef MEM_OPT_VERSION
+	if(simParams->noPatchesOnOutputPEs)
+	  { //advance through reserved pe list and skip output PEs
+	    if(isOutputProcessor(node))
+	      {
+		if ( node+1 < numNodes )
+		  {
+		    CkPrintf("Patch Map Skipping %d to avoid Output PE\n",node);
+		    ++node;
+		  }
+	      }
+	  }
+#endif
         int pid = patchMap->pid(a,b,c);
         assignedNode[pid] = node;
         sumLoad += patchLoads[pid];
-        double targetLoad = (double)(node+1) / (double)usedNodes;
+        double targetLoad = (double)(node+1) / (double)numNodes;
         targetLoad *= totalLoad;
-        if ( node+1 < usedNodes && sumLoad >= targetLoad ) ++node;
+	//	CkPrintf("Patch Map Using node+1 %d numNodes %d sumload %f targetLoad %f\n",node+1, numNodes, sumLoad, targetLoad);
+        if ( node+1 < numNodes && sumLoad >= targetLoad ) ++node;
         c += cinc;
       }
       cinc *= -1;  c += cinc;
       b += binc;
     }
     binc *= -1;  b += binc;
-  }
-
-  if(unusedNodes>0) {
-	  for ( int i=0; i<patchMap->numPatches(); ++i ) {
-		assignedNode[i] += unusedNodes;
-	  }
   }
 
   sortNodesAndAssign(assignedNode);
@@ -2391,7 +2432,7 @@ int WorkDistrib::assignPatchesTopoGridRecBisection() {
   }
 
   int usedNodes = numNodes;
-  
+  CkPrintf("assignPatchesTopoGridRecBisection\n");
   if ( simParams->noPatchesOnZero && numNodes > 1 ) {
     usedNodes -= 1;
     if ( simParams->noPatchesOnOne && numNodes > 2 )

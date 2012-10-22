@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/10/09 19:26:53 $
- * $Revision: 1.1408 $
+ * $Author: bohm $
+ * $Date: 2012/10/22 23:33:56 $
+ * $Revision: 1.1409 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1803,8 +1803,12 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
      &ldbUnloadZero, FALSE);
    opts.optionalB("main", "ldbUnloadOne", "no load on pe one",
      &ldbUnloadOne, FALSE);
+   opts.optionalB("main", "ldbUnloadOutputPEs", "no load on output PEs",
+     &ldbUnloadOutputPEs, FALSE);
    opts.optionalB("main", "noPatchesOnZero", "no patches on pe zero",
      &noPatchesOnZero, FALSE);
+   opts.optionalB("main", "noPatchesOnOutputPEs", "no patches on Output PEs",
+     &noPatchesOnOutputPEs, FALSE);
    opts.optionalB("main", "noPatchesOnOne", "no patches on pe one",
      &noPatchesOnOne, FALSE);
    opts.optionalB("main", "useCompressedPsf", "The structure file psf is in the compressed format",
@@ -3704,6 +3708,7 @@ void SimParameters::print_config(ParseOptions &opts, ConfigList *config, char *&
      }
      if ( ldbUnloadZero ) iout << iINFO << "REMOVING LOAD FROM NODE 0\n";
      if ( ldbUnloadOne ) iout << iINFO << "REMOVING LOAD FROM NODE 1\n";
+     if ( ldbUnloadOutputPEs ) iout << iINFO << "REMOVING LOAD FROM OUTPUT PES\n";
      iout << endi;
    }
 

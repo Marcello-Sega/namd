@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jim $
- * $Date: 2012/10/09 19:26:53 $
- * $Revision: 1.1217 $
+ * $Author: bohm $
+ * $Date: 2012/10/22 23:33:56 $
+ * $Revision: 1.1218 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -166,7 +166,9 @@ public:
 	Bool ldbUnloadPME;		//  unload processors doing PME
 	Bool ldbUnloadZero;		//  unload processor 0
 	Bool ldbUnloadOne;		//  unload processor 1 
+	Bool ldbUnloadOutputPEs;	//  unload output processors
 	Bool noPatchesOnZero;		//  no patches on processor 0
+	Bool noPatchesOnOutputPEs;	//  no patches on output PEs
 	Bool noPatchesOnOne;		//  no patches on processor 1
 	
 	BigReal initialTemp;   		//  Initial temperature for the 
