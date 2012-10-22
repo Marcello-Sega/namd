@@ -1597,8 +1597,6 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #endif
     }
 
-#define CLIP_POTENTIAL_GRID
-#undef CLIP_POTENTIAL_GRID
 
     void compute(GridMsg *gmsg) {
 #ifdef DEBUG_MSM_GRID
@@ -1664,59 +1662,30 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int jb = eh.jb();
       int ka = eh.ka();
       int kb = eh.kb();
-#ifdef CLIP_POTENTIAL_GRID
-      int eni = eh.ni();
-      int enj = eh.nj();
-#endif
+
+      int index = 0;
+
       // access buffers directly
       const Float *gcbuffer = gc.data().buffer();
       const Float *qhbuffer = qh.data().buffer();
       Float *ehbuffer = eh.data().buffer();
 
-#ifdef CLIP_POTENTIAL_GRID
-      // clip potential grid
-      int eia = (qia + gia < ia ? ia : qia + gia);
-      int eib = (qib + gib > ib ? ib : qib + gib);
-      int eja = (qja + gja < ja ? ja : qja + gja);
-      int ejb = (qjb + gjb > jb ? jb : qjb + gjb);
-      int eka = (qka + gka < ka ? ka : qka + gka);
-      int ekb = (qkb + gkb > kb ? kb : qkb + gkb);
-#else
-      int eia = ia;
-      int eib = ib;
-      int eja = ja;
-      int ejb = jb;
-      int eka = ka;
-      int ekb = kb;
-
-      int index = 0;
-#endif
-
 #ifndef MSM_COMM_ONLY
       // loop over potentials
-      for (int k = eka;  k <= ekb;  k++) {
+      for (int k = ka;  k <= kb;  k++) {
         // clip charges to weights along k
         int mka = ( qka >= gka + k ? qka : gka + k );
         int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
-#ifdef CLIP_POTENTIAL_GRID
-        int ekoff = (k - eka) * enj;
-#endif
 
-        for (int j = eja;  j <= ejb;  j++) {
+        for (int j = ja;  j <= jb;  j++) {
           // clip charges to weights along j
           int mja = ( qja >= gja + j ? qja : gja + j );
           int mjb = ( qjb <= gjb + j ? qjb : gjb + j );
-#ifdef CLIP_POTENTIAL_GRID
-          int ejkoff = (ekoff + (j - eja)) * eni;
-#endif
 
-          for (int i = eia;  i <= eib;  i++) {
+          for (int i = ia;  i <= ib;  i++) {
             // clip charges to weights along i
             int mia = ( qia >= gia + i ? qia : gia + i );
             int mib = ( qib <= gib + i ? qib : gib + i );
-#ifdef CLIP_POTENTIAL_GRID
-            int eijkoff = ejkoff + (i - eia);
-#endif
 
             // accumulate sum to this eh point
             Float ehsum = 0;
@@ -1825,16 +1794,12 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
                 }
               } // end loop over charge grid
             }
-#endif
+#endif // 0
 
-#endif
+#endif // 0
 
-#ifdef CLIP_POTENTIAL_GRID
-            ehbuffer[eijkoff] = ehsum;
-#else
             ehbuffer[index] = ehsum;
             index++;
-#endif
           }
         }
       } // end loop over potentials
@@ -1872,6 +1837,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
         int ejb = jb;
         int eka = ka;
         int ekb = kb;
+
         if (map->blockLevel[qhblockIndex.level].nn() == 1) {
           if (map->ispx) { eia = qia;  eib = qib;  eni = qni; }
           if (map->ispy) { eja = qja;  ejb = qjb;  enj = qnj; }
