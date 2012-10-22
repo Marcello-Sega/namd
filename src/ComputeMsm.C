@@ -58,6 +58,7 @@
 // turn off computation
 //#define MSM_COMM_ONLY
 
+
 //
 // This is the main message that gets passed between compute chares.
 // It is used to bundle blocks of charge (sendUp and send to MsmGridCutoff) 
@@ -79,14 +80,10 @@
 // and puts the priority on finishing the top levels and down before 
 // finishing the lower levels.
 //
-class GridFloatMsg : public CMessage_GridFloatMsg {
+
+class GridMsg : public CMessage_GridMsg {
   public:
-#if 1
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-    Float gdata[MSM_MAX_BLOCK_VOLUME];
-#else
-    Float *gdata;
-#endif
+    char *gdata;
     int idnum;
     int nlower_i;
     int nlower_j;
@@ -96,15 +93,10 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
     int nextent_k;
     int nelems;
     int seqnum;  // sequence number is used for message priority
-#else
-    msm::GridFixed<Float, MSM_MAX_BLOCK_VOLUME> gdata;
-    int idnum;
-    int seqnum;  // sequence number is used for message priority
-#endif
 
-#if 1
     // put a grid into an allocated message to be sent
-    void put(const msm::Grid<Float>& g, int id, int seq) {
+    template <class T>
+    void put(const msm::Grid<T>& g, int id, int seq) {
       idnum = id;
       nlower_i = g.lower().i;
       nlower_j = g.lower().j;
@@ -114,103 +106,18 @@ class GridFloatMsg : public CMessage_GridFloatMsg {
       nextent_k = g.extent().k;
       nelems = g.data().len();
       seqnum = seq;
-      const Float *p = g.data().buffer();
-      for (int i = 0;  i < nelems;  i++) {
-        gdata[i] = p[i];
-      }
+      memcpy(gdata, g.data().buffer(), nelems*sizeof(T));
     }
+
     // get the grid from a received message
-    void get(msm::Grid<Float>& g, int& id, int& seq) {
+    template <class T>
+    void get(msm::Grid<T>& g, int& id, int& seq) {
       id = idnum;
       g.set(nlower_i, nextent_i, nlower_j, nextent_j,
           nlower_k, nextent_k);
       seq = seqnum;
       ASSERT(g.data().len() == nelems);
-      Float *p = g.data().buffer();
-      for (int i = 0;  i < nelems;  i++) {
-        p[i] = gdata[i];
-      }
-    }
-#else
-    // put a fixed size grid into a message
-    void put(const msm::GridFixed<Float, MSM_MAX_BLOCK_VOLUME>& g,
-        int id, int seq) {
-      gdata = g;
-      idnum = id;
-      seqnum = seq;
-    }
-    // put a variable size grid into a message
-    void put(const msm::Grid<Float>& g,
-        int id, int seq) {
-      gdata.init(g);
-      const Float *gbuf = g.data().buffer();
-      Float *buf = gdata.buffer();
-      int len = g.nn();
-      for (int n = 0;  n < len;  n++) { buf[n] = gbuf[n]; }
-      idnum = id;
-      seqnum = seq;
-    }
-    // get the fixed size grid from a received message
-    void get(msm::GridFixed<Float, MSM_MAX_BLOCK_VOLUME>& g,
-        int& id, int& seq) {
-      g = gdata;
-      id = idnum;
-      seq = seqnum;
-    }
-    // get the variable size grid from a received message
-    void get(msm::Grid<Float>& g,
-        int& id, int& seq) {
-      g.init(gdata);
-      Float *gbuf = g.data().buffer();
-      const Float *buf = gdata.buffer();
-      int len = g.nn();
-      for (int n = 0;  n < len;  n++) { gbuf[n] = buf[n]; }
-      id = idnum;
-      seq = seqnum;
-    }
-#endif
-};
-
-
-class GridC1VectorMsg : public CMessage_GridC1VectorMsg {
-  public:
-    msm::GridFixed<C1Vector, MSM_C1VECTOR_MAX_BLOCK_VOLUME> gdata;
-    int idnum;
-    int seqnum;  // sequence number is used for message priority
-
-    // put a fixed size grid into a message
-    void put(const msm::GridFixed<C1Vector,MSM_C1VECTOR_MAX_BLOCK_VOLUME>& g,
-        int id, int seq) {
-      gdata = g;
-      idnum = id;
-      seqnum = seq;
-    }
-    // put a variable size grid into a message
-    void put(const msm::Grid<C1Vector>& g, int id, int seq) {
-      gdata.init(g);
-      const C1Vector *gbuf = g.data().buffer();
-      C1Vector *buf = gdata.buffer();
-      int len = g.nn();
-      for (int n = 0;  n < len;  n++) { buf[n] = gbuf[n]; }
-      idnum = id;
-      seqnum = seq;
-    }
-    // get the fixed size grid from a received message
-    void get(msm::GridFixed<C1Vector,MSM_C1VECTOR_MAX_BLOCK_VOLUME>& g,
-        int& id, int& seq) {
-      g = gdata;
-      id = idnum;
-      seq = seqnum;
-    }
-    // get the variable size grid from a received message
-    void get(msm::Grid<C1Vector>& g, int& id, int& seq) {
-      g.init(gdata);
-      C1Vector *gbuf = g.data().buffer();
-      const C1Vector *buf = gdata.buffer();
-      int len = g.nn();
-      for (int n = 0;  n < len;  n++) { gbuf[n] = buf[n]; }
-      id = idnum;
-      seq = seqnum;
+      memcpy(g.data().buffer(), gdata, nelems*sizeof(T));
     }
 };
 
@@ -219,25 +126,17 @@ class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {
   public:
     int len;
     char *msmBlockProxyData;
+
     // put an array into an allocated message to be sent
     void put(const msm::Array<CProxy_MsmBlock>& a) {
       len = a.len();
       memcpy(msmBlockProxyData, a.buffer(), len*sizeof(CProxy_MsmBlock));
-#if 0
-      for (int i = 0;  i < len;  i++) {
-        msmBlock[i] = a[i];
-      }
-#endif
     }
+
     // get the array from a received message
     void get(msm::Array<CProxy_MsmBlock>& a) {
       a.resize(len);
       memcpy(a.buffer(), msmBlockProxyData, len*sizeof(CProxy_MsmBlock));
-#if 0
-      for (int i = 0;  i < len;  i++) {
-        a[i] = msmBlock[i];
-      }
-#endif
     }
 };
 
@@ -245,10 +144,12 @@ class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {
 class MsmGridCutoffProxyMsg : public CMessage_MsmGridCutoffProxyMsg {
   public:
     char *msmGridCutoffProxyData;
+
     // put proxy into an allocated message to be sent
     void put(const CProxy_MsmGridCutoff *p) {
       memcpy(msmGridCutoffProxyData, p, sizeof(CProxy_MsmGridCutoff));
     }
+
     // get the proxy from a received message
     void get(CProxy_MsmGridCutoff *p) {
       memcpy(p, msmGridCutoffProxyData, sizeof(CProxy_MsmGridCutoff));
@@ -356,7 +257,7 @@ public:
   void compute(msm::Array<int>& patchIDList);
                                       // called by local ComputeMsm object
 
-  void addPotential(GridFloatMsg *);  // entry with message
+  void addPotential(GridMsg *);  // entry with message
   void doneCompute();  // called by each local patch
 
 #ifdef MSM_TIMING
@@ -1593,7 +1494,7 @@ namespace msm {
     ForceArray force;
     Grid<Float> qh;
     Grid<Float> eh;
-    Grid<Float> subgrid; // XXX
+    Grid<Float> subgrid;
     Grid<C1Vector> qh_c1hermite;
     Grid<C1Vector> eh_c1hermite;
     Grid<C1Vector> subgrid_c1hermite;
@@ -1610,7 +1511,6 @@ namespace msm {
     void init(int natoms);
     void anterpolation();
     void sendCharge();
-    //void addPotential(const GridFixed<Float,MSM_MAX_BLOCK_VOLUME>& epart);
     void addPotential(const Grid<Float>& epart);
     void interpolation();
   };
@@ -1629,7 +1529,6 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
     msm::Map *map;
     msm::BlockIndex qhblockIndex;  // source of charges
     msm::BlockSend ehblockSend;    // destination for potentials
-    //msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> qh;
     msm::Grid<Float> qh;
     msm::Grid<Float> eh;
 
@@ -1701,7 +1600,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #define CLIP_POTENTIAL_GRID
 #undef CLIP_POTENTIAL_GRID
 
-    void compute(GridFloatMsg *gmsg) {
+    void compute(GridMsg *gmsg) {
 #ifdef DEBUG_MSM_GRID
       printf("MsmGridCutoff %d:  compute()\n", thisIndex);
 #endif
@@ -1712,7 +1611,6 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       //
       // receive block of charges
       //
-#if 1
       int priority = mgrLocal->nlevels
         + 2*(mgrLocal->nlevels - ehblockSend.nblock_wrap.level) - 1;
       int pid;
@@ -1720,12 +1618,6 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // qh is resized only the first time, memory allocation persists
       gmsg->get(qh, pid, seq);
       delete gmsg;
-#else
-      // copy message into charges buffer
-      // and reference message buffer as potentials
-      qh = gmsg->gdata;
-      msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME>& eh = gmsg->gdata;
-#endif
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
       mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
@@ -1778,13 +1670,8 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #endif
       // access buffers directly
       const Float *gcbuffer = gc.data().buffer();
-#if 1
       const Float *qhbuffer = qh.data().buffer();
       Float *ehbuffer = eh.data().buffer();
-#else
-      const Float *qhbuffer = qh.buffer();
-      Float *ehbuffer = eh.buffer();
-#endif
 
 #ifdef CLIP_POTENTIAL_GRID
       // clip potential grid
@@ -1974,11 +1861,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       // need to sum unfolded potential grid back into periodic grid
       if (map->foldfactor[qhblockIndex.level].active) {
         // copy unfolded grid
-#if 1
         msm::Grid<Float> ehfold = eh;
-#else
-        msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> ehfold = eh;
-#endif
         // for indexing eh:  ia, ib, ja, jb, ka, kb
         int eni = eh.ni();
         int enj = eh.nj();
@@ -2017,7 +1900,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
         }
         eh.set(eia, eni, eja, enj, eka, enk);
         eh.reset(0);
-        /*
+#ifdef DEBUG_MSM_GRID
         printf("level=%d   ehfold:  [%d..%d] x [%d..%d] x [%d..%d]  "
             "(%d x %d x %d)\n"
                 "              eh:  [%d..%d] x [%d..%d] x [%d..%d]  "
@@ -2036,14 +1919,9 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
             ehblockSend.nrange_wrap.lower().j,
             ehblockSend.nrange_wrap.lower().k
             );
-            */
-#if 1
+#endif
         const Float *ehfoldbuf = ehfold.data().buffer();
         Float *ehbuf = eh.data().buffer();
-#else
-        const Float *ehfoldbuf = ehfold.buffer();
-        Float *ehbuf = eh.buffer();
-#endif
         int index = 0;
         for (int k = ka;  k <= kb;  k++) {
           int kk = k;
@@ -2069,37 +1947,22 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
         // shift grid index range to its true (wrapped) values
         eh.updateLower( ehblockSend.nrange_wrap.lower() );
       }
-#else
+#else    // MSM_FOLD_FACTOR
       // shift grid index range to its true (wrapped) values
       eh.updateLower( ehblockSend.nrange_wrap.lower() );
-#endif
-#if 1
+#endif   // MSM_FOLD_FACTOR
       // place eh into message
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-      GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
-#else
-      int nelems = eh.data().len();
-      GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
-#endif
-#if 0
-      *(int *)CkPriorityPtr(gm) = priority;
-      CkSetQueueing(gm, CK_QUEUEING_IFIFO);
-#endif
+      int msgsz = eh.data().len() * sizeof(Float);
+      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
       SET_PRIORITY(gm, seq, priority);
       gm->put(eh, bindex.level, seq);
-#endif
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
       mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
 #endif
       // lookup in ComputeMsmMgr proxy array by level
-#if 1
       mgrLocal->msmBlock[bindex.level](
           bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
-#else
-      mgrLocal->msmBlock[bindex.level](
-          bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gmsg);
-#endif
 #ifdef MSM_TIMING
       mgrLocal->doneTiming();
 #endif
@@ -2122,8 +1985,8 @@ class MsmBlock : public CBase_MsmBlock {
     ComputeMsmMgr *mgrLocal;  // for quick access to data
     msm::Map *map;
     msm::BlockDiagram *bd;
-    msm::Grid<Float> qh; // XXX
-    msm::Grid<Float> eh; // XXX
+    msm::Grid<Float> qh;
+    msm::Grid<Float> eh;
 #ifndef MSM_GRID_CUTOFF_DECOMP
     msm::Grid<Float> ehCutoff;
 #endif
@@ -2133,12 +1996,7 @@ class MsmBlock : public CBase_MsmBlock {
     int cntRecvsPotential;
     msm::BlockIndex blockIndex;
  
-    //msm::Grid<Float> qpart, epart;
-#if 1
     msm::Grid<Float> subgrid;
-#else
-    msm::GridFixed<Float,MSM_MAX_BLOCK_VOLUME> subgrid;
-#endif
 
     int sequence;  // from incoming message for message priority
 
@@ -2147,7 +2005,7 @@ class MsmBlock : public CBase_MsmBlock {
 
     void init();
 
-    void addCharge(GridFloatMsg *);  // entry // XXX
+    void addCharge(GridMsg *);  // entry
 
     void restriction();
     void sendUpCharge();
@@ -2156,7 +2014,7 @@ class MsmBlock : public CBase_MsmBlock {
     void sendAcrossPotential();
 #endif
 
-    void addPotential(GridFloatMsg *);  // entry // XXX
+    void addPotential(GridMsg *);  // entry
 
     void prolongation();
     void sendDownPotential();
@@ -2203,7 +2061,7 @@ void MsmBlock::init() {
 } // MsmBlock::init()
 
 
-void MsmBlock::addCharge(GridFloatMsg *gm)
+void MsmBlock::addCharge(GridMsg *gm)
 {
 #ifdef MSM_TIMING
   double startTime, stopTime;
@@ -2335,12 +2193,8 @@ void MsmBlock::sendUpCharge()
     ASSERT(bindex.level == lnext);
     // place subgrid into message
     // SET MESSAGE PRIORITY
-    int nelems = subgrid.nn();
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-    GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
-#else
-    GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
-#endif
+    int msgsz = subgrid.nn() * sizeof(Float);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + lnext);
     gm->put(subgrid, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
@@ -2431,7 +2285,7 @@ void MsmBlock::gridCutoff()
   double startTime, stopTime;
 #endif
   int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
-  int nelems = qh.data().len();
+  int msgsz = qh.data().len() * sizeof(Float);
   int len = bd->indexGridCutoff.len();
 
   for (int n = 0;  n < len;  n++) {
@@ -2439,11 +2293,7 @@ void MsmBlock::gridCutoff()
     startTime = CkWallTimer();
 #endif
     int index = bd->indexGridCutoff[n];
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-    GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
-#else
-    GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
-#endif
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
     gm->put(qh, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
@@ -2484,12 +2334,8 @@ void MsmBlock::sendAcrossPotential()
     msm::BlockIndex& bindex = bd->sendAcross[n].nblock_wrap;
     ASSERT(bindex.level == lnext);
     // place subgrid into message
-    int nelems = subgrid.nn();
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-    GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
-#else
-    GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
-#endif
+    int msgsz = subgrid.nn() * sizeof(Float);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
     gm->put(subgrid, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
@@ -2504,7 +2350,7 @@ void MsmBlock::sendAcrossPotential()
 #endif
 
 
-void MsmBlock::addPotential(GridFloatMsg *gm)
+void MsmBlock::addPotential(GridMsg *gm)
 {
 #ifdef MSM_TIMING
   double startTime, stopTime;
@@ -2634,12 +2480,8 @@ void MsmBlock::sendDownPotential()
     msm::BlockIndex& bindex = bd->sendDown[n].nblock_wrap;
     ASSERT(bindex.level == lnext);
     // place subgrid into message
-    int nelems = subgrid.nn();
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-    GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
-#else
-    GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
-#endif
+    int msgsz = subgrid.nn() * sizeof(Float);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
     gm->put(subgrid, blockIndex.level, sequence);  // send my level
 #ifdef MSM_TIMING
@@ -2682,12 +2524,8 @@ void MsmBlock::sendPatch()
     // add the subgrid charges into the block, need its patch ID
     int pid = bd->sendPatch[n].patchID;
     // place subgrid into message
-    int nelems = subgrid.nn();
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-    GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
-#else
-    GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
-#endif
+    int msgsz = subgrid.nn() * sizeof(Float);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
     gm->put(subgrid, pid, sequence);  // send patch ID
 #ifdef MSM_TIMING
@@ -4443,7 +4281,7 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
 }
 
 
-void ComputeMsmMgr::addPotential(GridFloatMsg *gm)
+void ComputeMsmMgr::addPotential(GridMsg *gm)
 {
 #if 1
   int pid;
@@ -4800,12 +4638,8 @@ namespace msm {
       // add the subgrid charges into the block
       BlockIndex& bindex = pd->send[n].nblock_wrap;
       // place subgrid into message
-      int nelems = subgrid.data().len();
-#ifdef MSM_FIXED_SIZE_GRID_MSG
-      GridFloatMsg *gm = new(sizeof(int)) GridFloatMsg;
-#else
-      GridFloatMsg *gm = new(nelems, sizeof(int)) GridFloatMsg;
-#endif
+      int msgsz = subgrid.data().len() * sizeof(Float);
+      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
       SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
       gm->put(subgrid, bindex.level, sequence);
 #ifdef MSM_TIMING
@@ -4817,13 +4651,7 @@ namespace msm {
     }
   }
 
-  void PatchData::addPotential(
-#if 1
-      const Grid<Float>& epart
-#else
-      const GridFixed<Float,MSM_MAX_BLOCK_VOLUME>& epart
-#endif
-      ) {
+  void PatchData::addPotential(const Grid<Float>& epart) {
 #ifdef MSM_TIMING
     double startTime, stopTime;
     startTime = CkWallTimer();

@@ -9,17 +9,9 @@ module ComputeMsmMgr {
   message MsmInitMsg;
 
   // variable size message
-  message GridFloatMsg {
-    float gdata[];
+  message GridMsg {
+    char gdata[];
   };
-
-/*
-  // fixed size message 
-  message GridFloatMsg;
-*/
-
-  // fixed size message 
-  message GridC1VectorMsg;
 
   message MsmBlockProxyMsg {
     char msmBlockProxyData[];
@@ -37,7 +29,7 @@ module ComputeMsmMgr {
     entry void recvMsmBlockProxy(MsmBlockProxyMsg *);
     entry void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);
     entry void update(CkQdMsg *);
-    entry void addPotential(GridFloatMsg *);
+    entry void addPotential(GridMsg *);
   };
 
   group MsmBlockMap : CkArrayMap {
@@ -46,8 +38,8 @@ module ComputeMsmMgr {
 
   array [3D] MsmBlock {
     entry MsmBlock(int level);
-    entry void addCharge(GridFloatMsg *);
-    entry void addPotential(GridFloatMsg *);
+    entry void addCharge(GridMsg *);
+    entry void addPotential(GridMsg *);
   };
 
   group MsmGridCutoffMap : CkArrayMap {
@@ -63,7 +55,7 @@ module ComputeMsmMgr {
     entry void initialize(MsmGridCutoffInitMsg *);
 
     // compute() passes in the charge block
-    entry void compute(GridFloatMsg *);
+    entry void compute(GridMsg *);
   };
 
   chare MsmTimer {
