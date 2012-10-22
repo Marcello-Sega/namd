@@ -1524,7 +1524,6 @@ namespace msm {
 
 class MsmGridCutoff : public CBase_MsmGridCutoff {
   public:
-    CProxy_ComputeMsmMgr mgrProxy;
     ComputeMsmMgr *mgrLocal;     // for quick access to data
     msm::Map *map;
     msm::BlockIndex qhblockIndex;  // source of charges
@@ -1533,7 +1532,6 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
     msm::Grid<Float> eh;
 
     MsmGridCutoff() {
-      mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
       mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
           CkpvAccess(BOCclass_group).computeMsmMgr);
       map = &(mgrLocal->mapData());
@@ -1554,7 +1552,6 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       printf("MsmGridCutoff element %d migrated to processor %d\n",
           thisIndex, CkMyPe());
 #endif
-      mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
       mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
           CkpvAccess(BOCclass_group).computeMsmMgr);
       map = &(mgrLocal->mapData());
