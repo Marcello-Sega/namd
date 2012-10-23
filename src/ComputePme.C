@@ -762,16 +762,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     if ( simParams->PMEPencilsY > 0 ) yBlocks = simParams->PMEPencilsY;
     if ( simParams->PMEPencilsZ > 0 ) zBlocks = simParams->PMEPencilsZ;
 
-    if ( xBlocks * yBlocks > CkNumPes() ) {
-      NAMD_die("PME pencils xBlocks * yBlocks > numPes");
-    }
-    if ( xBlocks * zBlocks > CkNumPes() ) {
-      NAMD_die("PME pencils xBlocks * zBlocks > numPes");
-    }
-    if ( yBlocks * zBlocks > CkNumPes() ) {
-      NAMD_die("PME pencils yBlocks * zBlocks > numPes");
-    }
-
     int dimx = simParams->PMEGridSizeX;
     int bx = 1 + ( dimx - 1 ) / xBlocks;
     xBlocks = 1 + ( dimx - 1 ) / bx;
@@ -783,6 +773,16 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
     int dimz = simParams->PMEGridSizeZ / 2 + 1;  // complex
     int bz = 1 + ( dimz - 1 ) / zBlocks;
     zBlocks = 1 + ( dimz - 1 ) / bz;
+
+    if ( xBlocks * yBlocks > CkNumPes() ) {
+      NAMD_die("PME pencils xBlocks * yBlocks > numPes");
+    }
+    if ( xBlocks * zBlocks > CkNumPes() ) {
+      NAMD_die("PME pencils xBlocks * zBlocks > numPes");
+    }
+    if ( yBlocks * zBlocks > CkNumPes() ) {
+      NAMD_die("PME pencils yBlocks * zBlocks > numPes");
+    }
 
     if ( ! CkMyPe() ) {
       iout << iINFO << "PME using " << xBlocks << " x " <<
