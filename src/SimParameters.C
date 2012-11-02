@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: bohm $
- * $Date: 2012/10/22 23:33:56 $
- * $Revision: 1.1409 $
+ * $Author: jim $
+ * $Date: 2012/11/02 23:38:54 $
+ * $Revision: 1.1410 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -153,6 +153,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_INT("firsttimestep",firstTimestep)
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
+  SCRIPT_PARSE_BOOL("velocityQuenching",minimizeOn)
   // SCRIPT_PARSE_BOOL("Langevin",langevinOn)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
   SCRIPT_PARSE_BOOL("langevinBAOAB",langevin_useBAOAB) // [!!] Use the BAOAB integrator or not
@@ -2805,22 +2806,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
    if ( dihedralOn ) globalOn = TRUE;
 
-   //  Make sure modes don't conflict
-   if ((minimizeOn||minimizeCGOn) && langevinOn) 
-   {
-      NAMD_die("Minimization and Langevin dynamics are mutually exclusive dynamics modes");
-   }
-
-   if ((minimizeOn||minimizeCGOn) && tCoupleOn) 
-   {
-      NAMD_die("Minimization and temperature coupling are mutually exclusive dynamics modes");
-   }
-   
-   // BEGIN LA
-   if ((minimizeOn||minimizeCGOn) && loweAndersenOn) 
-   {
-      NAMD_die("Minimization and Lowe-Andersen dynamics are mutually exclusive dynamics modes");
-   }
 #ifdef NAMD_CUDA
    if (loweAndersenOn) {
        NAMD_die("Lowe-Andersen dynamics not compatible with CUDA at this time");
@@ -2828,11 +2813,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 #endif
    // END LA
 
-   if (langevinOn && tCoupleOn)
-   {
-      NAMD_die("Langevin dynamics and temperature coupling are mutually exclusive dynamics modes");
-   }
-   
    // BEGIN LA
    if (loweAndersenOn && (langevinOn || tCoupleOn))
    {
@@ -2940,11 +2920,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
   }
    }
 
-   if ((minimizeOn||minimizeCGOn) && rescaleFreq > 0) 
-   {
-    NAMD_die("Minimization and temperature rescaling are mutually exclusive dynamics modes");
-   }
-
    if (opts.defined("reassignFreq"))
    {
   if (!opts.defined("reassignTemp"))
@@ -2995,11 +2970,6 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
    else
    {
   reassignHold = 0.0;
-   }
-
-   if ((minimizeOn||minimizeCGOn) && reassignFreq > 0) 
-   {
-    NAMD_die("Minimization and temperature reassignment are mutually exclusive dynamics modes");
    }
 
    if (!opts.defined("seed")) 
