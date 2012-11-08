@@ -976,6 +976,7 @@ void ParallelIOMgr::bcastMolInfo(MolInfoMsg *msg)
     delete msg;
 
     if(!CkMyPe()) {
+        iout << iINFO << "LOADED " << molecule->numTotalExclusions << " TOTAL EXCLUSIONS\n" << endi;
         if(!simParameters->comMove) {
             iout << iINFO << "REMOVING COM VELOCITY "
                  << (PDBVELFACTOR * (msg->totalMV / msg->totalMass))<< "\n" <<endi;
