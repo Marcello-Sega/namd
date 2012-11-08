@@ -1272,6 +1272,7 @@ void buildExclusions()
     delete [] eachAtomNeighbors;
 
     //2. Build each atom's list of exclusions
+    iout << iINFO << "ADDED " << allExclusions.size() << " IMPLICIT EXCLUSIONS\n" << endi;
     UniqueSetIter<Exclusion> exclIter(allExclusions);
     eachAtomExclSigs = new ExclSigInfo[g_mol->numAtoms];
     for(exclIter=exclIter.begin(); exclIter!=exclIter.end(); exclIter++)
@@ -1370,7 +1371,7 @@ void build14Excls(UniqueSet<Exclusion>& allExcls, vector<int> *eachAtomNeighbors
                 {
                     int atom4 = atom3List->at(l);
                     //atom1-atom2, so atom2List contains atom1 which should not be considered
-                    if(atom4 == atom2)
+                    if(atom4 == atom2 || atom4 == atom1)
                         continue;
                     if(atom1<atom4)
                         allExcls.add(Exclusion(atom1, atom4, modified));
