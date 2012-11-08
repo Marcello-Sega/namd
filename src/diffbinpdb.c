@@ -16,6 +16,7 @@ int fd1, fd2;
 struct stat statbuf;
 int i, j, n1, n2;
 off_t s1, s2;
+int imax;
 double dmax;
 
 if ( argc != 3 ) {
@@ -78,6 +79,7 @@ if ( n1 != n2 ) {
   exit(-1);
 }
 
+imax = 0;
 dmax = 0;
 
 for ( i=0; i<n1; ++i ) {
@@ -93,12 +95,12 @@ for ( i=0; i<n1; ++i ) {
     dj = c1[j] - c2[j];
     d += dj*dj;
   }
-  if ( d > dmax ) dmax = d;
+  if ( d > dmax ) { imax = i; dmax = d; }
 }
 
 dmax = sqrt(dmax);
 
-printf("%lg\n",dmax);
+printf("%lg at %d\n",dmax,imax);
 
 exit(0);
 
