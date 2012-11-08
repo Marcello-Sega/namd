@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
  * $Author: jim $
- * $Date: 2012/11/02 23:38:54 $
- * $Revision: 1.1410 $
+ * $Date: 2012/11/08 19:55:47 $
+ * $Revision: 1.1411 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -154,6 +154,7 @@ void SimParameters::scriptSet(const char *param, const char *value) {
   SCRIPT_PARSE_FLOAT("reassignTemp",reassignTemp)
   SCRIPT_PARSE_FLOAT("rescaleTemp",rescaleTemp)
   SCRIPT_PARSE_BOOL("velocityQuenching",minimizeOn)
+  SCRIPT_PARSE_BOOL("maximumMove",maximumMove)
   // SCRIPT_PARSE_BOOL("Langevin",langevinOn)
   SCRIPT_PARSE_FLOAT("langevinTemp",langevinTemp)
   SCRIPT_PARSE_BOOL("langevinBAOAB",langevin_useBAOAB) // [!!] Use the BAOAB integrator or not
