@@ -8,7 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
-
+#include "ResizeArray.h"
 #include "InfoStream.h"
 #include "Molecule.h"
 #include "strlib.h"
@@ -63,7 +63,6 @@ void Molecule::goInit() {
   goResids=NULL;
   goPDB=NULL;
 }
-
 
 /************************************************************************/
 /*                                                                      */
@@ -401,9 +400,6 @@ Real Molecule::get_go_epsilonRep(int chain1, int chain2)
 Real Molecule::get_go_sigmaRep(int chain1, int chain2)
 {
   return go_array[MAX_GO_CHAINS*chain1 + chain2].sigmaRep;
-  #if CODE_REDUNDANT
-  return go_array[MAX_GO_CHAINS*go_indices[chain1] + go_indices[chain2]].sigmaRep;
-  #endif
 }
 /*             END OF FUNCTION get_go_sigmaRep        */
 
@@ -520,17 +516,7 @@ int Molecule::get_go_exp_rep(int chain1, int chain2)
 Bool Molecule::go_restricted(int chain1, int chain2, int rDiff)
 {
   int i;      //  Loop counter
-
   for(i=0; i<MAX_RESTRICTIONS; i++) {
-#if CODE_REDUNDANT
-    if (go_array[go_indices[chain1]*MAX_GO_CHAINS +
-		 go_indices[chain2]].restrictions[i] == rDiff) {
-      return TRUE;
-    } else if (go_array[go_indices[chain1]*MAX_GO_CHAINS +
-			go_indices[chain2]].restrictions[i] == -1) {
-      return FALSE;
-    }
-#endif
     if (go_array[(MAX_GO_CHAINS*chain1) + chain2].restrictions[i]  == rDiff) {
       return TRUE;
     } else if (go_array[(MAX_GO_CHAINS*chain1) + chain2].restrictions[i] == -1) {
@@ -724,16 +710,10 @@ void Molecule::build_go_sigmas(StringList *goCoordFile,
 	    goWithinCutoff[goSigmaIndices[i]*numGoAtoms + goSigmaIndices[j]] = true;
 	    goWithinCutoff[goSigmaIndices[j]*numGoAtoms + goSigmaIndices[i]] = true;
 	    nativeContacts++;
-	    //get_go_force(atomAtomDist, i, j, native, nonnative);
-	    //energyNative += nativeEnergy;
-	    //energyNonnative += nonnativeEnergy;
 	  } else {
 	    goSigmas[goSigmaIndices[i]*numGoAtoms + goSigmaIndices[j]] = 0.0;
 	    goSigmas[goSigmaIndices[j]*numGoAtoms + goSigmaIndices[i]] = 0.0;
 	    nonnativeContacts++;
-	    //get_go_force(atomAtomDist, i, j, native, nonnative);
-	    //energyNative += nativeEnergy;
-	    //energyNonnative += nonnativeEnergy;    
 	  }
 	} else {
 	  goSigmas[goSigmaIndices[i]*numGoAtoms + goSigmaIndices[j]] = -1.0;
@@ -755,6 +735,194 @@ void Molecule::build_go_sigmas(StringList *goCoordFile,
 }
 /*      END OF FUNCTION build_go_sigmas    */
 
+void Molecule::build_go_sigmas2(StringList *goCoordFile, 
+			       char *cwd)
+{
+  DebugM(3,"->build_go_sigmas2" << std::endl);
+  PDB *goPDB;      //  Pointer to PDB object to use
+  int bcol = 4;      //  Column that data is in
+  int32 chainType = 0;      //  b value from PDB file
+  int32 residType = 0;      //  resid value from PDB file
+  int i;         //  Loop counter
+  int j;         //  Loop counter
+  int resid1;    //  Residue ID for first atom
+  int resid2;    //  Residue ID for second atom
+  int residDiff;     //  Difference between resid1 and resid2
+  Real sigma;    //  Sigma calculated for a Go atom pair
+  Real atomAtomDist;     //  Distance between two atoms
+  Real exp_a;            //  First exponent in L-J like formula
+  Real exp_b;            //  Second exponent in L-J like formula
+  char filename[129];    //  Filename
+  
+  //JLai
+  int numLJPair = 0;
+  long nativeContacts = 0;
+  long nonnativeContacts = 0;
+
+  //  Get the PDB object that contains the Go coordinates.  If
+  //  the user gave another file name, use it.  Otherwise, just use
+  //  the PDB file that has the initial coordinates.  
+  if (goCoordFile == NULL)
+    {
+      //goPDB = initial_pdb;
+      NAMD_die("Error: goCoordFile is NULL - build_go_sigmas2");
+    }
+  else
+  {
+    if (goCoordFile->next != NULL)
+      {
+	NAMD_die("Multiple definitions of Go atoms PDB file in configuration file");
+      }
+    
+    if ( (cwd == NULL) || (goCoordFile->data[0] == '/') )
+      {
+	strcpy(filename, goCoordFile->data);
+      }
+    else
+      {
+	strcpy(filename, cwd);
+	strcat(filename, goCoordFile->data);
+      }
+    
+    goPDB = new PDB(filename);
+    if ( goPDB == NULL )
+      {
+	NAMD_die("Memory allocation failed in Molecule::build_go_sigmas2");
+      }
+    
+    if (goPDB->num_atoms() != numAtoms)
+      {
+	NAMD_die("Number of atoms in fixed atoms PDB doesn't match coordinate PDB");
+      }
+  }
+  //  Allocate the array to hold the chain types
+  atomChainTypes = new int32[numAtoms];
+  //  Allocate the array to hold Go atom indices into the sigma array
+  goSigmaIndices = new int32[numAtoms];
+  //  Allocate the array to hold resid 
+  goResidIndices = new int32[numAtoms];
+
+  if (atomChainTypes == NULL) {
+    NAMD_die("memory allocation failed in Molecule::build_go_sigmas2");
+  }
+  
+  numGoAtoms = 0;
+  
+  //  Loop through all the atoms and get the Go chain types
+  for (i=0; i<numAtoms; i++) {
+    //  Get the chainType from the occupancy field
+    chainType = (int32)(goPDB->atom(i))->occupancy();
+    //  Get the resid from the resid field
+    residType = (int32)(goPDB->atom(i))->residueseq();
+    //  Assign the chainType value
+    if ( chainType != 0 ) {
+      //DebugM(3,"build_go_sigmas2 - atom:" << i << ", chainType:" << chainType << std::endl);
+      atomChainTypes[i] = chainType;
+      goSigmaIndices[i] = numGoAtoms;
+      goResidIndices[i] = residType;
+      numGoAtoms++;
+    }
+    else {
+      atomChainTypes[i] = 0;
+      goSigmaIndices[i] = -1;
+      goResidIndices[i] = -1;
+    }
+  }
+
+  //Define:
+  ResizeArray<GoPair> tmpGoPair;
+  
+  //  Loop through all atom pairs and calculate sigmas
+  // Store sigmas into sorted array
+  DebugM(3,"    numAtoms=" << numAtoms << std::endl);
+  for (i=0; i<numAtoms; i++) {
+    resid1 = (goPDB->atom(i))->residueseq();
+     for (j=i+1; j<numAtoms; j++) {
+      resid2 = (goPDB->atom(j))->residueseq();
+      if ( goSigmaIndices[i] != -1 && goSigmaIndices[j] != -1 && !atoms_1to4(i,j) ) {
+	residDiff = resid2 - resid1;
+	if (residDiff < 0) residDiff = -residDiff;
+	if ( atomChainTypes[i] && atomChainTypes[j] &&
+	     !(this->go_restricted(atomChainTypes[i],atomChainTypes[j],residDiff)) ) {
+	  atomAtomDist = sqrt(pow((goPDB->atom(i))->xcoor() - (goPDB->atom(j))->xcoor(), 2.0) +
+			      pow((goPDB->atom(i))->ycoor() - (goPDB->atom(j))->ycoor(), 2.0) +
+			      pow((goPDB->atom(i))->zcoor() - (goPDB->atom(j))->zcoor(), 2.0));
+	  if ( atomAtomDist <= this->get_go_cutoff(atomChainTypes[i],atomChainTypes[j]) ) {
+	    exp_a = this->get_go_exp_a(atomChainTypes[i],atomChainTypes[j]);
+	    exp_b = this->get_go_exp_b(atomChainTypes[i],atomChainTypes[j]);
+	    sigma = pow(static_cast<double>(exp_b/exp_a),(1.0/(exp_a-exp_b))) * atomAtomDist;
+	    double tmpA = pow(sigma,exp_a);
+	    double tmpB = pow(sigma,exp_b);
+	    GoPair gp;
+	    GoPair gp2;
+	    gp.goIndxA = i;
+	    gp.goIndxB = j;
+	    gp.A = tmpA;
+	    gp.B = tmpB;
+	    tmpGoPair.add(gp);
+	    gp2.goIndxA = j;
+	    gp2.goIndxB = i;
+	    gp2.A = tmpA;
+	    gp2.B = tmpB;
+	    tmpGoPair.add(gp2);
+	    nativeContacts++;
+	  } else {
+	    nonnativeContacts++;
+	  }
+	} 
+      } 
+    }
+  }
+
+  iout << iINFO << "Number of UNIQUE    native contacts: " << nativeContacts << "\n" << endi;
+  iout << iINFO << "Number of UNIQUE nonnative contacts: " << nonnativeContacts << "\n" << endi;
+
+  // Copies the resizeArray into a block of continuous memory
+  std::sort(tmpGoPair.begin(),tmpGoPair.end(),goPairCompare);
+  goNumLJPair = 2*nativeContacts;
+  goIndxLJA = new int[goNumLJPair];
+  goIndxLJB = new int[goNumLJPair];
+  goSigmaPairA = new double[goNumLJPair];
+  goSigmaPairB = new double[goNumLJPair];
+  for(i=0; i< goNumLJPair; i++) {
+    goIndxLJA[i] = tmpGoPair[i].goIndxA;
+    goIndxLJB[i] = tmpGoPair[i].goIndxB;
+    goSigmaPairA[i] = tmpGoPair[i].A;
+    goSigmaPairB[i] = tmpGoPair[i].B;
+  }
+
+  pointerToGoBeg = new int[numAtoms];
+  pointerToGoEnd = new int[numAtoms];
+  int oldIndex = -1;
+  for(i=0; i<numAtoms; i++) {
+    pointerToGoBeg[i] = -1;
+    pointerToGoEnd[i] = -2;
+  }
+  for(i=0; i < goNumLJPair; i++) {
+    if(pointerToGoBeg[goIndxLJA[i]] == -1) {
+      pointerToGoBeg[goIndxLJA[i]] = i;
+      oldIndex = goIndxLJA[i];
+    }
+    pointerToGoEnd[oldIndex] = i;
+  }
+
+  //  If we had to create a PDB object, delete it now
+  if (goCoordFile != NULL) {
+    delete goPDB;
+  }
+    
+  return;
+}
+/*      END OF FUNCTION build_go_sigmas2    */
+
+bool Molecule::goPairCompare(GoPair first, GoPair second) {
+  if(first.goIndxA < second.goIndxA) {
+    return true;
+  } else if(first.goIndxA == second.goIndxA) {
+    return (first.goIndxB == second.goIndxB);
+  } 
+  return false;
+}
 
     /************************************************************************/
     /*                                                                      */
@@ -922,12 +1090,6 @@ void Molecule::build_go_arrays(StringList *goCoordFile,
 	    atomAtomDist = sqrt(pow((goPDB->atom(i))->xcoor() - (goPDB->atom(j))->xcoor(), 2.0) +
 				pow((goPDB->atom(i))->ycoor() - (goPDB->atom(j))->ycoor(), 2.0) +
 				pow((goPDB->atom(i))->zcoor() - (goPDB->atom(j))->zcoor(), 2.0));
-	    //get_go_force_new(atomAtomDist, i, j, native, nonnative);
-	    //energyNative += nativeEnergy;
-	    //energyNonnative += nonnativeEnergy;
-	    //if ( (nativeEnergy)*(nativeEnergy) > 0.1 ) {
-	    //  printf("GO: %d %d %f %f",i,j,atomAtomDist,nativeEnergy);
-	    //}	
             if (atomAtomDist <= this->get_go_cutoff(atomChainTypes[goIndex],atomChainTypes[goIndx]) ) {
               nativeContacts++;
             } else {
@@ -998,6 +1160,101 @@ void Molecule::print_go_sigmas()
 }
 /*      END OF FUNCTION print_go_sigmas     */
 
+/*
+int globalCounter = 0;
+int histogramNum = 0;
+int *globalArrayCounter;
+double *globalArrayCounterREF;
+bool globalFlag = false;
+*/
+
+// JLai
+BigReal Molecule::get_gro_force2(BigReal x,
+				 BigReal y,
+				 BigReal z,
+				 int atom1,
+				 int atom2,
+				 BigReal* pairLJEnergy,
+				 BigReal* pairGaussEnergy) const
+{
+  //Initialize return energies to zero
+  *pairLJEnergy = 0.0;
+  *pairGaussEnergy = 0.0;
+
+  // Linear search for LJ data
+  int LJIndex = -1;
+  int LJbegin = pointerToLJBeg[atom1];
+  int LJend = pointerToLJEnd[atom1];
+  for(int i = LJbegin; i <= LJend; i++) {
+    if(indxLJB[i] == atom2) {
+      LJIndex = i;
+      break;
+    }
+  }
+
+  // Linear search for Gaussian data
+  int GaussIndex = -1;
+  int Gaussbegin = pointerToGaussBeg[atom1];
+  int Gaussend = pointerToGaussEnd[atom1];
+  for(int i = Gaussbegin; i <= Gaussend; i++) {
+    if(indxGaussB[i] == atom2) {
+      GaussIndex = i;
+      break;
+    }
+  }
+
+  if( LJIndex == -1 && GaussIndex == -1) {
+    return 0;
+  } else {
+    // Code to calculate distances because the pair was found in one of the lists
+    BigReal r2 = x*x + y*y + z*z;
+    BigReal r = sqrt(r2);
+    BigReal ri = 1/r;
+    BigReal ri6 = (ri*ri*ri*ri*ri*ri);
+    BigReal ri12 = ri6*ri6;
+    BigReal ri13 = ri12*ri;
+    BigReal LJ = 0;
+    BigReal Gauss = 0;
+    // Code to calculate LJ 
+    if (LJIndex != -1) {
+      BigReal ri7 = ri6*ri;
+      LJ = (12*(pairC12[LJIndex]*ri13) - 6*(pairC6[LJIndex]*ri7));
+      *pairLJEnergy = (pairC12[LJIndex]*ri12 - pairC6[LJIndex]*ri6);
+      //std::cout << pairC12[LJIndex] << " " << pairC6[LJIndex] << " " << ri13 << " " << ri7 << " " << LJ << " " << r << "\n";
+    }
+    // Code to calculate Gaussian
+    if (GaussIndex != -1) {
+      BigReal gr = 12*gRepulsive[GaussIndex]*ri13;
+      BigReal r1prime = r - gMu1[GaussIndex];
+      BigReal tmp1 = r1prime * r1prime;
+      BigReal r2prime = r - gMu2[GaussIndex];
+      BigReal tmp2 = r2prime * r2prime;
+      BigReal tmp_gauss1 = 0;
+      BigReal one_gauss1 = 1;
+      BigReal tmp_gauss2 = 0;
+      BigReal one_gauss2 = 1;
+      if (giSigma1[GaussIndex] != 0) {
+	tmp_gauss1 = exp(-tmp1*giSigma1[GaussIndex]);
+	one_gauss1 = 1 - tmp_gauss1;
+      }
+      if (giSigma2[GaussIndex] != 0) {
+	tmp_gauss2 = exp(-tmp2*giSigma2[GaussIndex]);
+	one_gauss2 = 1 - tmp_gauss2;
+      } 
+      BigReal A = gA[GaussIndex];
+      Gauss = gr*one_gauss1*one_gauss2 - 2*A*tmp_gauss1*one_gauss2*r1prime*giSigma1[GaussIndex] \
+	- 2*tmp_gauss1*one_gauss2*r1prime*giSigma1[GaussIndex]*gRepulsive[GaussIndex]*ri12 - 2*A*tmp_gauss2*one_gauss1*r2prime*giSigma2[GaussIndex] \
+	- 2*tmp_gauss2*one_gauss1*r2prime*giSigma2[GaussIndex]*gRepulsive[GaussIndex]*ri12;
+      *pairGaussEnergy = A*(-1+(one_gauss1)*(one_gauss2)*(1+gRepulsive[GaussIndex]*ri12/A));
+    }
+    //std::cout << "Net force: " << (LJ + Gauss) << " with ri " << (LJ + Gauss)*ri << "\n";
+    return (LJ + Gauss)*ri;
+  }
+  return 0;
+}
+// End of get_gro_force2
+// JLai
+
 // JE
 BigReal Molecule::get_go_force(BigReal r, 
 			       int atom1,
@@ -1005,7 +1262,6 @@ BigReal Molecule::get_go_force(BigReal r,
 			       BigReal* goNative,
 			       BigReal* goNonnative) const
 {
-  //BigReal scaleFactor = 1.0/r;
   BigReal goForce = 0.0;
   Real pow1;
   Real pow2;
@@ -1030,10 +1286,9 @@ BigReal Molecule::get_go_force(BigReal r,
       Real sigmaRep = const_cast<Molecule*>(this)->get_go_sigmaRep(chain1,chain2);
       int exp_rep = const_cast<Molecule*>(this)->get_go_exp_rep(chain1,chain2);
       pow1 = pow(sigmaRep/r,exp_rep);
-      goForce = ((12.0/r) * epsilonRep * pow1);
-      *goNative = 0;
+      goForce = 4*((exp_rep/(r*r)) * epsilonRep * pow1);
+      *goNative = 0.0;
       *goNonnative = (4 * epsilonRep * pow1 );
-      //printf("ATOM " + atom1 + " " +  atom2);
       //DebugM(3,"get_go_force - (" << atom1 << "," << atom2 << ") chain1:" << chain1 << ", chain2:" << chain2 << ", epsilonRep:" << epsilonRep << ", sigmaRep:" << sigmaRep << ", r:" << r << ", goForce:" << goForce << std::endl);
     }
     //  if attractive then calculate attractive
@@ -1045,16 +1300,13 @@ BigReal Molecule::get_go_force(BigReal r,
 	int exp_a = const_cast<Molecule*>(this)->get_go_exp_a(chain1,chain2);
 	int exp_b = const_cast<Molecule*>(this)->get_go_exp_b(chain1,chain2);
 	Real sigma_ij = goSigmas[goSigmaIndices[atom1]*numGoAtoms + goSigmaIndices[atom2]];
-	//goEnergy = (4 * epsilon * ( pow(sigma_ij/r,exp_a) - pow(sigma_ij/r,exp_b) )) / (r * scaleFactor);
 	// Positive gradient of potential, not negative gradient of potential
         pow1 = pow(sigma_ij/r,exp_a);
         pow2 = pow(sigma_ij/r,exp_b);
-	goForce = ((4/r) * epsilon * (exp_a * pow1 - exp_b * pow2));
-	//Real sigmaRep = this->get_go_sigmaRep(chain1,chain2);
-	//goForce = ((4/r) * epsilon * (exp_a * pow(sigmaRep/r,exp_a) - exp_b * pow(sigmaRep/r,exp_b)));
+	goForce = ((4/(r*r)) * epsilon * (exp_a * pow1 - exp_b * pow2));
 	//DebugM(3,"get_go_force - (" << atom1 << "," << atom2 << ") chain1:" << chain1 << ", chain2:" << chain2 << ", sigma_ij:" << sigma_ij << ", r:" << r << ", goForce:" << goForce << std::endl);
 	*goNative = (4 * epsilon * ( pow1 -  pow2 ) );
-        *goNonnative = 0;
+        *goNonnative = 0.0;
       }
     }
   }
@@ -1097,6 +1349,7 @@ BigReal Molecule::get_go_force_new(BigReal r,
   Real epsilon;
   Real epsilonRep;
   Real sigmaRep;
+  Real expRep;
   Real pow1;
   Real pow2;
   
@@ -1154,7 +1407,7 @@ BigReal Molecule::get_go_force_new(BigReal r,
 	pow1 = pow(sigma_ij/r,static_cast<double>(exp_a));
 	pow2 = pow(sigma_ij/r,static_cast<double>(exp_b));
 	//goForce = ((4/r) * epsilon * (exp_a * pow(sigma_ij/r,exp_a) - exp_b * pow(sigma_ij/r,exp_b)));
-	goForce = ((4/r) * epsilon * (exp_a * pow1 - exp_b * pow2));
+	goForce = ((4/(r*r)) * epsilon * (exp_a * pow1 - exp_b * pow2));
 	DebugM(3,"get_go_force - (" << atom1 << "," << atom2 << ") chain1:" << chain1 << ", chain2:" << chain2 << ", exp_a:" << exp_a << ", exp_b:" << exp_b << ", sigma_ij:" << sigma_ij << ", r:" << r << ", goForce:" << goForce << std::endl);
 	//goEnergy = (4 * epsilon * ( pow(sigma_ij/r,exp_a) -  pow(sigma_ij/r,exp_b) ) ); // JLai I changed some of the expressions
 	*goNative = (4 * epsilon * ( pow1 -  pow2 ) ); 
@@ -1165,9 +1418,10 @@ BigReal Molecule::get_go_force_new(BigReal r,
       else {
 	epsilonRep = const_cast<Molecule*>(this)->get_go_epsilonRep(chain1,chain2);
 	sigmaRep = const_cast<Molecule*>(this)->get_go_sigmaRep(chain1,chain2);
-	pow1 = pow(sigmaRep/r,12.0);
+	expRep = const_cast<Molecule*>(this)->get_go_exp_rep(chain1,chain2);
+	pow1 = pow(sigmaRep/r,expRep);
 	//goForce = ((12.0/r) * epsilonRep * pow(sigmaRep/r,12.0));
-	goForce = ((12.0/r) * epsilonRep * pow1);
+	goForce = (4*(expRep/(r*r)) * epsilonRep * pow1);
 	DebugM(3,"get_go_force - (" << atom1 << "," << atom2 << ") chain1:" << chain1 << ", chain2:" << chain2 << ", epsilonRep:" << epsilonRep << ", sigmaRep:" << sigmaRep << ", r:" << r << ", goForce:" << goForce << std::endl);
 	//goEnergy = (4 * epsilonRep * pow(sigmaRep/r,12.0)); // JLai I changed some of the expressions
 	*goNonnative = (4 * epsilonRep * pow1); 
@@ -1181,103 +1435,89 @@ BigReal Molecule::get_go_force_new(BigReal r,
 }
 /*      END OF FUNCTION get_go_force_new   */
 
+
     /************************************************************************/
     /*                                                                      */
-    /*      JLai - FUNCTION get_go_energy_new                                 */
+    /*   JLai - FUNCTION get_go_force2                                      */
     /*                                                                      */
     /*   INPUTS:                                                            */
-    /*  r - distance between the two atoms                                  */
-    /*  atom1 - the ID of the first atom                                    */
+    /*  x - the x distance between p_i and p_j                              */
+    /*  y - the y distance between p_i and p_j                              */
+    /*  z - the z distance between p_i and p_j                              */
+    /*  atom1 - the ID of the second atom                                   */
     /*  atom2 - the ID of the second atom                                   */
     /*                                                                      */
-    /*  This function calculates the Go energy between two atoms.  If the    */
-    /*   atoms do not have Go parameters or sigmas, 0 is returned.          */
+    /*  This function returns the force between two input atoms give their  */
+/*  distance and their atom indices.                                        */
     /*                                                                      */
     /************************************************************************/
 // JLai
-BigReal Molecule::get_go_energy_new(BigReal r,
-			    int atom1,
-			    int atom2) const
+BigReal Molecule::get_go_force2(BigReal x,
+				BigReal y,
+				BigReal z,
+				int atom1,
+				int atom2,
+				BigReal *goNative,
+				BigReal *goNonnative) const
 {
-  int resid1;
-  int resid2;
-  int residDiff;
-  Real xcoorDiff;
-  Real ycoorDiff;
-  Real zcoorDiff;
-  Real atomAtomDist;
-  Real exp_a;
-  Real exp_b;
-  Real sigma_ij;
-  Real epsilon;
-  Real epsilonRep;
-  Real sigmaRep;
-    
-  BigReal goEnergy= 0.0;
+ 
+  // Check to see if restricted.  If so, escape function early
+  int32 chain1 = atomChainTypes[atom1];
+  int32 chain2 = atomChainTypes[atom2];
 
-  //  determine which Go chain pair we are working with
-  DebugM(3,"get_go_energy - (" << atom1 << "," << atom2 << ")" << std::endl);
-  int goIndex1 = goSigmaIndices[atom1];
-  int goIndex2 = goSigmaIndices[atom2];
+  if(chain1 == 0 || chain2 == 0) return 0.0;
+  Molecule *mol = const_cast<Molecule*>(this);
+  Real goCutoff = mol->get_go_cutoff(chain1,chain2);
+  if(goCutoff == 0) return 0.0;
 
-  int32 chain1 = atomChainTypes[goIndex1];
-  int32 chain2 = atomChainTypes[goIndex2];
+  int resid1 = goResidIndices[atom1];
+  int resid2 = goResidIndices[atom2];
+  int residDiff = abs(resid1 - resid2);
+  if((mol->go_restricted(chain1,chain2,residDiff))) {
+    return 0.0;
+  }
 
-  DebugM(3,"  chain1:" << chain1 << ", chain2:" << chain2 << std::endl);
-  if (chain1 == 0 || chain2 == 0)  return 0.0;
-
-  //  retrieve Go cutoff for this chain pair
-  Real goCutoff = const_cast<Molecule*>(this)->get_go_cutoff(chain1,chain2);
-  DebugM(3,"  goCutoff:" << goCutoff << std::endl);
-  if (goCutoff == 0)  return 0.0;
-
-  //  sigmas are initially set to -1.0 if the atom pair fails go_restricted
-  //  no goSigmas array anymore
-  //Real sigma_ij = goSigmas[goSigmaIndices[atom1]*numGoAtoms + goSigmaIndices[atom2]];
-
-  // XXX - used to be a condition for the following if
-  //if the atoms are within 4 of each other
-  //if ( !atoms_1to4(atom1,atom2) ) {
-
-  //  if goSigmaIndices aren't defined, don't calculate energies
-  if ( goIndex1 != -1 && goIndex2 != -1 ) {
-    resid1 = goResids[goIndex1];
-    resid2 = goResids[goIndex2];
-    residDiff = resid2 - resid1;
-    if (residDiff < 0) residDiff = -residDiff;
-    //  if this is a Go atom pair that is not restricted
-    if ( !(const_cast<Molecule*>(this)->go_restricted(chain1,chain2,residDiff)) ) {
-      xcoorDiff = goCoordinates[goIndex1*3] - goCoordinates[goIndex2*3];
-      ycoorDiff = goCoordinates[goIndex1*3 + 1] - goCoordinates[goIndex2*3 + 1];
-      zcoorDiff = goCoordinates[goIndex1*3 + 2] - goCoordinates[goIndex2*3 + 2];
-      atomAtomDist = sqrt(xcoorDiff*xcoorDiff + ycoorDiff*ycoorDiff + zcoorDiff*zcoorDiff);
-
-      //  if attractive then calculate attractive
-      if ( atomAtomDist <= const_cast<Molecule*>(this)->get_go_cutoff(chain1,chain2) ) {
-	exp_a = const_cast<Molecule*>(this)->get_go_exp_a(chain1,chain2);
-	exp_b = const_cast<Molecule*>(this)->get_go_exp_b(chain1,chain2);
-	sigma_ij = pow(static_cast<double>(exp_b/exp_a),(1.0/(exp_a-exp_b))) * atomAtomDist;
-	
-	epsilon = const_cast<Molecule*>(this)->get_go_epsilon(chain1,chain2);
-	goEnergy = (4 * epsilon * ( pow(sigma_ij/r,static_cast<double>(exp_a)) -  pow(sigma_ij/r,static_cast<double>(exp_b)) ) ); // JLai I changed some of the expressions
-	DebugM(3,"get_go_energy - (" << atom1 << "," << atom2 << ") chain1:" << chain1 << ", chain2:" << chain2 << ", exp_a:" << exp_a << ", exp_b:" << exp_b << ", sigma_ij:" << sigma_ij << ", r:" << r << ", goForce:" << goForce << std::endl);
-      }
-      
-      //  if repulsive then calculate repulsive
-      else {
-	epsilonRep = const_cast<Molecule*>(this)->get_go_epsilonRep(chain1,chain2);
-	sigmaRep = const_cast<Molecule*>(this)->get_go_sigmaRep(chain1,chain2);
-	goEnergy = (4 * epsilonRep * pow(sigmaRep/r,12.0)); // JLai I changed some of the expressions
-	DebugM(3,"get_go_energy - (" << atom1 << "," << atom2 << ") chain1:" << chain1 << ", chain2:" << chain2 << ", epsilonRep:" << epsilonRep << ", sigmaRep:" << sigmaRep << ", r:" << r << ", goForce:" << goForce << std::endl);
-      }
+  int LJIndex = -1;
+  int LJbegin = pointerToGoBeg[atom1];
+  int LJend = pointerToGoEnd[atom1];
+  for(int i = LJbegin; i <= LJend; i++) {
+    if(goIndxLJB[i] == atom2) {
+      LJIndex = i;
     }
   }
   
-  //DebugM(3,"goForce:" << goForce << std::endl);
-  return goEnergy;
-}
-/*      END OF FUNCTION get_go_energy_new   */
+  BigReal r2 = x*x + y*y + z*z;
+  BigReal r = sqrt(r2);
 
+  if (LJIndex == -1) {
+    int exp_rep = const_cast<Molecule*>(this)->get_go_exp_rep(chain1,chain2);
+    BigReal epsilonRep = const_cast<Molecule*>(this)->get_go_epsilonRep(chain1, chain2);
+    BigReal sigmaRep = const_cast<Molecule*>(this)->get_go_sigmaRep(chain1, chain2);
+    double sigmaRepPow = pow(sigmaRep,exp_rep);
+    BigReal LJ = (4*epsilonRep*exp_rep*sigmaRepPow*pow(r,-(exp_rep+1)));
+    *goNative = 0;
+    *goNonnative = (4*epsilonRep*sigmaRepPow*pow(r,-exp_rep));
+    //*goNonnative = (4*epsilonRep * pow(sigmaRep/r,exp_rep));
+    return (LJ/r);
+  } else {
+    // Code to calculate distances because the pair was found in one of the lists
+    int exp_a = const_cast<Molecule*>(this)->get_go_exp_a(chain1,chain2);
+    int exp_b = const_cast<Molecule*>(this)->get_go_exp_b(chain1,chain2);
+    // We want the force, so we have to take the n+1 derivative
+    BigReal powA = pow(r,-(exp_a + 1));
+    BigReal powB = pow(r,-(exp_b + 1));
+    BigReal powaa = pow(r,-exp_a);
+    BigReal powbb = pow(r,-exp_b);
+    BigReal epsilon = const_cast<Molecule*>(this)->get_go_epsilon(chain1,chain2);
+    BigReal LJ = 4 * epsilon * (exp_a*goSigmaPairA[LJIndex]*powA - exp_b*goSigmaPairB[LJIndex]*powB);
+    *goNative =  4 * epsilon * (goSigmaPairA[LJIndex]*powaa - goSigmaPairB[LJIndex]*powbb);
+    *goNonnative = 0;
+    return (LJ/r);
+  }
+  return 0;
+}
+// JLai
+/*      END OF FUNCTION get_go_force2   */
 
 #ifndef MEM_OPT_VERSION
     /************************************************************************/
@@ -1450,7 +1690,6 @@ void Molecule::send_GoMolecule(MOStream *msg) {
   }
 
   //Ported JLai
-  //print_go_sigmas();
   if (simParams->goForcesOn) {
     switch(simParams->goMethod) {
     case 1:
@@ -1462,6 +1701,17 @@ void Molecule::send_GoMolecule(MOStream *msg) {
       // printf("Molecule.C sending atomChainTypes %d %d \n", numGoAtoms, atomChainTypes);
       break;
     case 2: //GSS
+      msg->put(numGoAtoms);
+      msg->put(numAtoms,pointerToGoBeg);
+      msg->put(numAtoms,pointerToGoEnd);
+      msg->put(numAtoms,goSigmaIndices);
+      msg->put(numAtoms,goResidIndices);
+      msg->put(numGoAtoms,atomChainTypes);
+      msg->put(goNumLJPair);
+      msg->put(goNumLJPair,goIndxLJA);
+      msg->put(goNumLJPair,goIndxLJB);
+      msg->put(goNumLJPair,goSigmaPairA);
+      msg->put(goNumLJPair,goSigmaPairB);
       break;
     case 3:
       msg->put(numGoAtoms);
@@ -1565,7 +1815,6 @@ void Molecule::receive_GoMolecule(MIStream *msg) {
 	  }*/
       }
 
-      // Go code
       if (simParams->goForcesOn) {
 	switch(simParams->goMethod) {
 	case 1:
@@ -1588,6 +1837,35 @@ void Molecule::receive_GoMolecule(MIStream *msg) {
           msg->get(numGoAtoms*numGoAtoms*sizeof(bool), (char*)goWithinCutoff);
           break;	  
 	case 2: //GSR
+	  msg->get(numGoAtoms);
+	  delete [] pointerToGoBeg;
+	  pointerToGoBeg = new int[numAtoms];
+	  msg->get(numAtoms,pointerToGoBeg);
+	  delete [] pointerToGoEnd;
+	  pointerToGoEnd = new int[numAtoms];
+	  msg->get(numAtoms,pointerToGoEnd);
+	  delete [] goSigmaIndices;
+	  goSigmaIndices = new int32[numAtoms];
+	  msg->get(numAtoms,goSigmaIndices);
+	  delete [] goResidIndices;
+	  goResidIndices = new int32[numAtoms];
+	  msg->get(numAtoms,goResidIndices);	  
+	  delete [] atomChainTypes;
+	  atomChainTypes = new int32[numGoAtoms];
+	  msg->get(numGoAtoms,atomChainTypes);
+	  msg->get(goNumLJPair);
+	  delete [] goIndxLJA;
+	  goIndxLJA = new int[goNumLJPair];
+	  msg->get(goNumLJPair,goIndxLJA);
+	  delete [] goIndxLJB;
+	  goIndxLJB = new int[goNumLJPair];
+	  msg->get(goNumLJPair,goIndxLJB);
+	  delete [] goSigmaPairA;
+	  goSigmaPairA = new double[goNumLJPair];
+	  msg->get(goNumLJPair,goSigmaPairA);
+	  delete [] goSigmaPairB;
+	  goSigmaPairB = new double[goNumLJPair];
+	  msg->get(goNumLJPair,goSigmaPairB);  
 	  break;
 	case 3:
 	  msg->get(numGoAtoms);

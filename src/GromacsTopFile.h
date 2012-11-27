@@ -411,6 +411,67 @@ class VDWTable {
 		 Real *c6, Real *c12, Real *c6pair, Real *c12pair) const;
 };
 
+/* this stores the pair interaction parameters as a function of the
+   atom types. 
+   JLai August 16th, 2012
+*/
+struct GroLJPair {
+  int indxLJA;
+  int indxLJB;
+  Real c6pair;
+  Real c12pair;
+};
+  
+struct GroGaussPair {
+  int indxGaussA;
+  int indxGaussB;
+  Real gA;
+  Real gMu1;
+  Real giSigma1;
+  Real gMu2;
+  Real giSigma2;
+  Real gRepulsive;
+};
+
+class PairTable {
+  private:
+  // Data structure for LJ Structure-based potential
+  ResizeArray<int> indxLJA;
+  ResizeArray<int> indxLJB;
+  ResizeArray<Real> c6pair;
+  ResizeArray<Real> c12pair;
+  ResizeArray<GroLJPair> pairlistLJ;
+
+  // Data structure for Gaussian Structure-based potential
+  ResizeArray<int> indxGaussA;
+  ResizeArray<int> indxGaussB;
+  ResizeArray<Real> gA;
+  ResizeArray<Real> gMu1;
+  ResizeArray<Real> giSigma1;
+  ResizeArray<Real> gMu2;
+  ResizeArray<Real> giSigma2;
+  ResizeArray<Real> gRepulsive;
+  ResizeArray<GroGaussPair> pairlistGauss;
+
+ public:
+  /* these add pair parameters to the list */
+  int addPairLJType2(int typea, int typeb, Real c6, Real c12);
+  int addPairGaussType2(int typea, int typeb, Real gA,
+			Real gMu1, Real gSigma1);
+  int addPairGaussType2(int typea, int typeb, Real gA,
+			Real gMu1, Real gSigma1, Real gRepulsive);
+  int addPairGaussType2(int typea, int typeb, Real gA, 
+			Real gMu1, Real gSigma1, Real gMu2, Real gSigma2, Real gRepulsive);
+  void getPairLJArrays2(int *indexA, int *indexB, Real *pairC6, Real *pairC12);
+  void getPairGaussArrays2(int *indexA, int *indexB, Real *gaussA, Real *gaussMu1,
+			  Real *gaussSigma1, Real *gaussMu2, Real *gaussSigma2,
+			   Real *gaussRepulsive);
+
+  static bool GroLJCompare (GroLJPair, GroLJPair);
+  static bool GroGaussCompare (GroGaussPair, GroGaussPair);
+  
+};
+
 /* A GromacsTopFile represents the information stored in a GROMACS
    topology file.  This is an immutable type. */
 class GromacsTopFile {
@@ -436,7 +497,8 @@ class GromacsTopFile {
   AngleTable angleTable;
   DihedralTable dihedralTable;
   VDWTable vdwTable;
- 
+  PairTable pairTable;
+
  public:
 
   /* initializes this to represent the data stored in the topology
@@ -480,6 +542,14 @@ class GromacsTopFile {
   void getAtomParams(int num, char *type) const {
     atomTable.getType(num,type);
   }
+
+  // JLai
+  int getNumPair() const;
+  int getNumLJPair() const;
+  int getNumGaussPair() const;
+  int getNumExclusions() const;
+  void getExclusions(int *, int *) const;
+  // End of JLai
 
   /* getBond puts the information about bond number <num> into the
      spaces pointed to by the other arguments.  Bond number 0 is the
@@ -529,6 +599,12 @@ class GromacsTopFile {
      c0-c5 - C0-C5 (kcal/mol) 
   */
   void getDihedralParams(int num, Real *c, int *mult, int *funct) const;
+
+  // JLai
+  void getPairLJArrays2(int *indexA, int *indexB, Real *pairC6, Real *pairC12);
+  void getPairGaussArrays2(int *indexA, int *indexB, Real *gaussA, Real *gaussMu1,
+  			  Real *gaussSigma1, Real *gaussMu2, Real *gaussSigma2,
+  			   Real *gaussRepulsive);
 
   /* getVDWParams returs the Lennard-Jones bonding parameters for the
      specified two atom types, and the modified bonding parameters

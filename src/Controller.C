@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jim $
- * $Date: 2012/08/13 16:22:19 $
- * $Revision: 1.1287 $
+ * $Author: jlai7 $
+ * $Date: 2012/11/27 21:13:17 $
+ * $Revision: 1.1288 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2127,6 +2127,9 @@ void Controller::printEnergies(int step, int minimize)
       ljEnergy = reduction->item(REDUCTION_LJ_ENERGY);
 
       // JLai
+      groLJEnergy = reduction->item(REDUCTION_GRO_LJ_ENERGY);
+      groGaussEnergy = reduction->item(REDUCTION_GRO_GAUSS_ENERGY);
+
       goNativeEnergy = reduction->item(REDUCTION_GO_NATIVE_ENERGY);
       goNonnativeEnergy = reduction->item(REDUCTION_GO_NONNATIVE_ENERGY);
       goTotalEnergy = goNativeEnergy + goNonnativeEnergy;
@@ -2173,7 +2176,7 @@ void Controller::printEnergies(int step, int minimize)
     // Ported by JLai
     potentialEnergy = bondEnergy + angleEnergy + dihedralEnergy +
 	improperEnergy + electEnergy + electEnergySlow + ljEnergy +
-	crosstermEnergy + boundaryEnergy + miscEnergy + goTotalEnergy;
+	crosstermEnergy + boundaryEnergy + miscEnergy + goTotalEnergy + groLJEnergy + groGaussEnergy;
     // End of port
     totalEnergy = potentialEnergy + kineticEnergy;
     flatEnergy = totalEnergy +
@@ -2421,6 +2424,12 @@ void Controller::printEnergies(int step, int minimize)
 	  iout << FORMAT("DRBONDAVG");
         }
 	// Ported by JLai
+	if (simParameters->goGroPair) {
+	  iout << "     ";
+	  iout << FORMAT("GRO_PAIR_LJ");
+	  iout << FORMAT("GRO_PAIR_GAUSS");
+	}
+
 	if (simParameters->goForcesOn) {
           iout << "     ";
 	  iout << FORMAT("NATIVE");
@@ -2477,6 +2486,12 @@ void Controller::printEnergies(int step, int minimize)
 	iout << FORMAT(drudeBondTempAvg/avg_count);
     }
     // Ported by JLai
+    if (simParameters->goGroPair) {
+      iout << "     ";
+      iout << FORMAT(groLJEnergy);
+      iout << FORMAT(groGaussEnergy);
+    }
+
     if (simParameters->goForcesOn) {
       iout << "     ";
       iout << FORMAT(goNativeEnergy);

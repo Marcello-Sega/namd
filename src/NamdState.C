@@ -509,9 +509,8 @@ int NamdState::configListInit(ConfigList *cfgList) {
 	    iout << iINFO << "Using Go method matrix\n" << endi;
 	    molecule->build_go_sigmas(goStructureFilename, NULL);
 	  } else if (goMethod == 2) {
-	    iout << iINFO << "Using Go method sparse matrix\n" << endi;
-	    NAMD_die("Go method sparse not yet implemented.  Crashing");
-	    // Insert code to build sparse matrix
+	    iout << iINFO << "Using Go method jump table\n" << endi;
+	    molecule->build_go_sigmas2(goStructureFilename, NULL);
 	  } else if (goMethod == 3) {
 	    iout << iINFO << "Using Go method lowmem\n" << endi;
 	    molecule->build_go_arrays(goStructureFilename, NULL);

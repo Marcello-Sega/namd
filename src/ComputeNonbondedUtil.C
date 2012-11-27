@@ -109,6 +109,7 @@ BigReal		ComputeNonbondedUtil::ewaldcof;
 BigReal		ComputeNonbondedUtil::pi_ewaldcof;
 
 // Ported by JLai -- JE - Go
+Bool            ComputeNonbondedUtil::goGroPair;
 Bool            ComputeNonbondedUtil::goForcesOn;
 int             ComputeNonbondedUtil::goMethod; //6.3.11
 // End of port -- JLai
@@ -149,6 +150,8 @@ void ComputeNonbondedUtil::submitReductionData(BigReal *data, SubmitReduction *r
   reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += data[fullElectEnergyIndex];
   reduction->item(REDUCTION_LJ_ENERGY) += data[vdwEnergyIndex];
   // Ported by JLai
+  reduction->item(REDUCTION_GRO_LJ_ENERGY) += data[groLJEnergyIndex];
+  reduction->item(REDUCTION_GRO_GAUSS_ENERGY) += data[groGaussEnergyIndex];
   reduction->item(REDUCTION_GO_NATIVE_ENERGY) += data[goNativeEnergyIndex];
   reduction->item(REDUCTION_GO_NONNATIVE_ENERGY) += data[goNonnativeEnergyIndex];
   // End of port -- JLai
@@ -266,6 +269,7 @@ void ComputeNonbondedUtil::select(void)
   pressureProfileOn = simParams->pressureProfileOn;
 
   // Ported by JLai -- Original JE - Go
+  goGroPair = simParams->goGroPair;
   goForcesOn = simParams->goForcesOn;
   goMethod = simParams->goMethod; 
   // End of port

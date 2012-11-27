@@ -4,10 +4,12 @@
 #include <math.h>
 #include "common.h"
 #include "ResizeArray.h"
+#include "InfoStream.h"
 #include "GromacsTopFile.h"
 #include "InfoStream.h"
 
 #define JOULES_PER_CALORIE 4.184
+#define ANGSTROMS_PER_NM 10
 
 /* A GromacsTopFile represents the information stored in a GROMACS
    topolgy file.  This is an immutable type. */
@@ -39,7 +41,22 @@
 #define DIHEDRALTYPES 11
 #define DEFAULTS 12
 #define NONBOND 13
-#define PAIR
+#define PAIRS 14
+#define EXCLUSIONS 15
+#ifndef CODE_REDUNDANT
+#define CODE_REDUNDANT 0
+#endif
+
+/* Initialize variables for exclusion calculation */
+/* JLai */
+ResizeArray<int> exclusions_atom_i;
+ResizeArray<int> exclusions_atom_j;
+int numExclusion = 0;
+int numLJPair = 0;
+int numGaussPair = 0;
+bool bool_negative_number_warning_flag = false;
+
+
 
 GromacsTopFile::GromacsTopFile(char *filename) {
   fudgeLJ = fudgeQQ = 1.0;
@@ -117,6 +134,9 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       else if(0==strcmp(modename,"dihedraltypes")) mode = DIHEDRALTYPES;
       else if(0==strcmp(modename,"defaults"))      mode = DEFAULTS;
       else if(0==strcmp(modename,"nonbond_params")) mode = NONBOND;
+      // JLai
+      else if(0==strcmp(modename,"pairs")) mode = PAIRS;
+      else if(0==strcmp(modename,"exclusions")) mode = EXCLUSIONS;
       else {	
 	fprintf(stderr,"Warning: unknown mode %s\n",modename);
 	mode = UNKNOWN;
@@ -188,7 +208,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       }
       else if(i==5) {
 	/* first set the values of b0 and kB correctly */
-	b0 = c0*10; /* convert nm to A */
+	b0 = c0*ANGSTROMS_PER_NM; /* convert nm to A */
 	if(funct==1) { /* harmonic potential */
 	  /* convert kJ/nm2 to kcal/A2 and use E=kx2 instead of half that. */
 	  kB = c1/JOULES_PER_CALORIE/100/2;
@@ -340,7 +360,7 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	    exit(1);
 	  }
 	  c[0] = c[0]; /* both in deg */
-	  c[1] = c[1]/JOULES_PER_CALORIE; /* convert kJ to kcal and still use E=kx2*/
+	  c[1] = c[1]/(2*JOULES_PER_CALORIE); /* convert kJ to kcal and still use E=kx2*/
 	  /* for funct==1 these are both divided by rad^2 */
 	  if(funct==1) {
 	    mult=(int)(c[2]+0.5); /* round to nearest integer :p */
@@ -435,8 +455,8 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	 c6  - kJ/mol nm6  -> kcal/mol A6
 	 c12 - kJ/mol nm12 -> kcal/mol A12 */
       atomTable.addType(type,mass,charge,
-			    c6/JOULES_PER_CALORIE*1E6,
-			    c12/JOULES_PER_CALORIE*1E12);
+			c6/(JOULES_PER_CALORIE)*1E6,
+			c12/(JOULES_PER_CALORIE)*1E12);
       break;
 
     case MOLECULETYPE:
@@ -473,6 +493,114 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       molInsts.add(moleculeinstance);
 
       break;
+    case PAIRS:
+      int indexA;
+      int indexB;
+      int pairFunction;
+      Real fA;
+      Real fB;
+      Real fC;
+      Real fD;
+      Real fE;
+      Real fF;
+      
+      int countVariables;
+      countVariables = sscanf(buf," %d %d %d %f %f %f %f %f %f",&indexA,&indexB,&pairFunction,&fA,&fB,&fC,&fD,&fE,&fF);
+
+      if ((countVariables >= 4 && countVariables >= 10)) {
+	fprintf(stderr,"Syntax error in PAIRS: %s\n",buf);
+	exit(1);
+      }
+      
+      // Shift the atom indices to be zero-based
+      indexA--;
+      indexB--;
+
+      if (pairFunction == 1) {
+	
+	// LJ code
+	fA = (fA/JOULES_PER_CALORIE)*1E6;
+	fB= (fB/JOULES_PER_CALORIE)*1E12;
+	pairTable.addPairLJType2(indexA,indexB,fA,fB);
+      } else if (pairFunction == 5){
+	
+	// Bare Gaussian potential
+	fA = (fA/JOULES_PER_CALORIE); //-->gaussA
+	fB = (fB*ANGSTROMS_PER_NM); //-->gaussMu1
+	if(fC == 0) {
+	  char buff[100];
+	  sprintf(buff,"GromacsTopFile.C::Attempting to load zero into gaussSigma.  Please check the pair: %s\n",buf);
+	  NAMD_die(buff);
+	}
+	if(fC < 0 && !bool_negative_number_warning_flag) {
+	  iout << iWARN << "Attempting to load a negative standard deviation into the gaussSigma.  Taking the absolute value of the standard deviation.";
+	  bool_negative_number_warning_flag = true;
+	}
+	fC = (fC*ANGSTROMS_PER_NM); //-->gaussSigma1
+	fC = 1.0/(2 * fC * fC); // Normalizes sigma
+	pairTable.addPairGaussType2(indexA,indexB,fA,fB,fC);
+      } else if (pairFunction == 6) {
+	
+	// Combined Gaussian + repulsive r^-12 potential
+	fA = (fA/JOULES_PER_CALORIE); //-->gaussA
+	fB = (fB*ANGSTROMS_PER_NM); //-->gaussMu1
+	if(fC == 0) {
+	  char buff[100];
+	  sprintf(buff,"GromacsTopFile.C::Attempting to load zero into gaussSigma.  Please check the pair: %s\n",buf);
+	  NAMD_die(buff);
+	}
+	if(fC < 0 && !bool_negative_number_warning_flag) {
+	  iout << iWARN << "Attempting to load a negative standard deviation into the gaussSigma.  Taking the absolute value of the standard deviation.";
+	  bool_negative_number_warning_flag = true;
+	}
+	fC = (fC*ANGSTROMS_PER_NM); //-->gaussSigma1
+	fC = 1.0/(2 * fC * fC); // Normalizes sigma
+	fD = (fD*ANGSTROMS_PER_NM); //-->gaussRepulsive
+	pairTable.addPairGaussType2(indexA,indexB,fA,fB,fC,fD);
+      } else if (pairFunction == 7) {
+	
+	// Double well Guassian function
+	fA = (fA/JOULES_PER_CALORIE); //-->gaussA
+	fB = (fB*ANGSTROMS_PER_NM); //-->gaussMu1
+        if(fC == 0 || fE == 0) {
+	  char buff[100];
+	  sprintf(buff,"GromacsTopFile.C::Attempting to load zero into gaussSigma.  Please check the pair: %s\n",buf);
+	  NAMD_die(buff);
+	}
+	if((fC < 0 || fE < 0)&& !bool_negative_number_warning_flag) {
+	  iout << iWARN << "Attempting to load a negative standard deviation into the gaussSigma.  Taking the absolute value of the standard deviation.";
+	  bool_negative_number_warning_flag = true;
+	}
+	fC = (fC*ANGSTROMS_PER_NM); //-->gaussSigma1
+	fC = 1.0/(2 * fC * fC); // Normalizes sigma
+        fD = (fD*ANGSTROMS_PER_NM); //-->gaussMu2
+	fE = (fE*ANGSTROMS_PER_NM); //-->gaussSigma2
+	fE = 1.0/(2 * fE * fE); // Normalizes sigma
+	fF = (fE*ANGSTROMS_PER_NM); //-->gaussRepulsive
+	pairTable.addPairGaussType2(indexA,indexB,fA,fB,fC,fD,fE,fF);
+      } else {
+	
+	// Generic error statement
+	fprintf(stderr,"Unknown pairFunction in GromacsTopFile.C under the PAIRS section: %d\n",pairFunction);
+      }
+      break;
+    case EXCLUSIONS:
+      /* Start of JLai modifications August 16th, 2012 */
+      if(2 != sscanf(buf," %d %d ",&atomi,&atomj)) {
+	fprintf(stderr,"Syntax error in EXCLUSIONS: %s\n",buf);
+	exit(1);
+      }
+      
+      // Shift the atom indices to be zero-based
+      atomi--;
+      atomj--;
+
+      /*Load exclusion information into file*/
+      exclusions_atom_i.add(atomi);
+      exclusions_atom_j.add(atomj);
+      numExclusion++;
+      break;
+      // End of JLai modifications August 16th, 2012
     }
   }
 
@@ -508,6 +636,35 @@ int GromacsTopFile::getNumDihedrals() const {
   }
   return n;
 }
+
+/* JLai -- August 16th, 2012 modifications*/
+/* returns the number of pair interactions in the file */
+int GromacsTopFile::getNumPair() const {
+  int numPair = 0;
+  numPair = numLJPair + numGaussPair;
+  return numPair;
+}
+
+int GromacsTopFile::getNumLJPair() const {
+  return numLJPair;
+}
+
+int GromacsTopFile::getNumGaussPair() const {
+  return numGaussPair;
+}
+
+/* return the number of exclusions in the file */
+int GromacsTopFile::getNumExclusions() const {
+  return numExclusion;
+}
+
+/* return the list of exclusions from the file */
+void GromacsTopFile::getExclusions(int *atomi, int *atomj) const {
+  atomi = exclusions_atom_i.begin();
+  atomj = exclusions_atom_j.begin();
+  return;
+}
+/* End of JLai modifications */
 
 /* getBond puts the information about bond number <num> into the
    spaces pointed to by the other arguments.  Bond number 0 is the
@@ -914,6 +1071,16 @@ void GromacsTopFile::getDihedralParams(int num, float *c, int *mult, int *funct)
   dihedralTable.getParams(num,c,mult,funct);
 }
 
+void GromacsTopFile::getPairLJArrays2(int *indexA, int *indexB, Real *pairC6, Real *pairC12) {
+  pairTable.getPairLJArrays2(indexA, indexB, pairC6, pairC12);
+}
+
+void GromacsTopFile::getPairGaussArrays2(int *indexA, int *indexB, Real *gaussA, Real *gaussMu1,
+				    Real *gaussSigma1, Real *gaussMu2, Real *gaussSigma2,
+				    Real *gaussRepulsive) {
+  pairTable.getPairGaussArrays2(indexA, indexB, gaussA, gaussMu1, gaussSigma1, gaussMu2, gaussSigma2, gaussRepulsive);
+}
+
 /* getParams puts the parameters for bond-type <num> into the
    spaces pointed to by the other arguments. 
    b0 - natural length in A
@@ -1275,4 +1442,110 @@ void GromacsTopFile::getVDWParams(int numa, int numb,
   }
 
 }
-    
+
+/* Start of JLai modifications August 16th, 2012 */
+int PairTable::addPairLJType2(int indexA, int indexB, Real pairC6, Real pairC12) {
+  GroLJPair glp;
+  glp.indxLJA = indexA;
+  glp.indxLJB = indexB;
+  glp.c6pair = pairC6;
+  glp.c12pair = pairC12;
+  pairlistLJ.add(glp);
+  numLJPair++;
+
+
+  // Insert the second copy
+  GroLJPair glp2;
+  glp2.indxLJA = indexB;
+  glp2.indxLJB = indexA;
+  glp2.c6pair = pairC6;
+  glp2.c12pair = pairC12;
+  pairlistLJ.add(glp2);
+  numLJPair++;
+  return 0;
+}
+
+int PairTable::addPairGaussType2(int indexA, int indexB, Real gaussA, Real gaussMu1,
+				Real gaussSigma1) {
+  return addPairGaussType2(indexA, indexB, gaussA, gaussMu1, gaussSigma1, 0.0, 0.0, 0.0);
+}
+
+int PairTable::addPairGaussType2(int indexA, int indexB, Real gaussA, Real gaussMu1,
+			     Real gaussSigma1, Real gaussRepulsive) {
+  return addPairGaussType2(indexA, indexB, gaussA, gaussMu1, gaussSigma1, 0.0, 0.0, gaussRepulsive);
+}
+
+int PairTable::addPairGaussType2(int indexA, int indexB, Real gaussA, Real gaussMu1,
+			     Real gaussSigma1, Real gaussMu2, Real gaussSigma2, 
+			     Real gaussRepulsive) {
+  GroGaussPair ggp;
+  ggp.indxGaussA = indexA;
+  ggp.indxGaussB = indexB;
+  ggp.gA = gaussA;
+  ggp.gMu1 = gaussMu1;
+  ggp.giSigma1 = gaussSigma1;
+  ggp.gMu2 = 0.0;
+  ggp.giSigma2 = 0.0;
+  ggp.gRepulsive = 0.0;
+  pairlistGauss.add(ggp);
+  numGaussPair++;
+  GroGaussPair ggp2;
+  ggp2.indxGaussA = indexB;
+  ggp2.indxGaussB = indexA;
+  ggp2.gA = gaussA;
+  ggp2.gMu1 = gaussMu1;
+  ggp2.giSigma1 = gaussSigma1;
+  ggp2.gMu2 = 0.0;
+  ggp2.giSigma2 = 0.0;
+  ggp2.gRepulsive = 0.0;
+  numGaussPair++;
+  pairlistGauss.add(ggp2);
+  return 0;
+}
+
+void PairTable::getPairLJArrays2(int *indexA, int *indexB, Real *pairC6, Real *pairC12) {
+
+  std::sort(pairlistLJ.begin(),pairlistLJ.end(),GroLJCompare);
+  ResizeArray<GroLJPair>::iterator it;
+  for(int i = 0; i < numLJPair; i++) {  
+    indexA[i] = pairlistLJ[i].indxLJA;
+    indexB[i] = pairlistLJ[i].indxLJB;
+    pairC6[i] = pairlistLJ[i].c6pair;
+    pairC12[i] = pairlistLJ[i].c12pair;
+    }
+}
+
+void PairTable::getPairGaussArrays2(int *indexA, int *indexB, Real *gaussA, Real *gaussMu1,
+				   Real *gaussSigma1, Real *gaussMu2, Real *gaussSigma2,
+				   Real *gaussRepulsive) {
+  std::sort(pairlistGauss.begin(),pairlistGauss.end(),GroGaussCompare);
+  for(int i = 0; i < numGaussPair; i++) {
+    indexA[i] = pairlistGauss[i].indxGaussA;
+    indexB[i] = pairlistGauss[i].indxGaussB;
+    gaussA[i] = pairlistGauss[i].gA;
+    gaussMu1[i] = pairlistGauss[i].gMu1;
+    gaussSigma1[i] = pairlistGauss[i].giSigma1;
+    gaussMu2[i] = pairlistGauss[i].gMu2;
+    gaussSigma2[i] = pairlistGauss[i].giSigma2;
+    gaussRepulsive[i] = pairlistGauss[i].gRepulsive;
+  }
+}
+
+bool PairTable::GroLJCompare (GroLJPair A, GroLJPair B) {
+  if(A.indxLJA < B.indxLJA) {
+    return true;
+  } else if(A.indxLJA == B.indxLJA) {
+    return (A.indxLJB < B.indxLJB);
+  } 
+  return false;
+}
+
+bool PairTable::GroGaussCompare (GroGaussPair A, GroGaussPair B) {
+  if(A.indxGaussA < B.indxGaussA) {
+    return true;
+  } else if(A.indxGaussA == B.indxGaussA) {
+    return (A.indxGaussB < B.indxGaussB);
+  } 
+  return false;
+}
+/* End of JLai Modifications */

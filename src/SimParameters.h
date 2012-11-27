@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: bohm $
- * $Date: 2012/10/22 23:33:56 $
- * $Revision: 1.1218 $
+ * $Author: jlai7 $
+ * $Date: 2012/11/27 21:13:20 $
+ * $Revision: 1.1219 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -281,6 +281,7 @@ public:
         //****** END CHARMM/XPLOR type changes
 
 	// Ported by JLai -- JE - Go
+        Bool goGroPair;           //  FLAG FALSE->Explicit Gromacs pairs will be calculated
         Bool goForcesOn;          //  FLAG TRUE-> Go forces will be calculated
         char goParameters[128];   //  File for Go parameters
         char goCoordinates[128];  //  File for Go structure and atom chain types

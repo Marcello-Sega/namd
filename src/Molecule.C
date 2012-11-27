@@ -56,6 +56,14 @@
 #define M_PI 3.14159265358979323846
 #endif
 
+#ifndef GROMACS_PAIR
+#define GROMACS_PAIR 1
+#endif
+
+#ifndef GROMACS_EXCLUSIONS
+#define GROMACS_EXCLUSIONS 1
+#endif
+
 using namespace std;
 
 class ResidueLookupElem
@@ -2048,6 +2056,58 @@ void Molecule::read_exclusions(FILE *fd)
   delete [] exclusion_atoms;
 
   return;
+}
+/*      END OF FUNCTION read_exclusions      */
+
+/************************************************************************/
+/*      FUNCTION read_exclusions      */
+/*                  */
+/*   INPUTS:                */
+/*   int* atom_i - array of atom i indices    */
+/*   int* atom_j - array of atom j indices    */
+/*   int num_exclusion - length of array           */
+/*                  */
+/* JLai August 16th, 2012 */
+/************************************************************************/
+void Molecule::read_exclusions(int *atom_i, int *atom_j, int num_exclusion)
+{
+    /*  Allocate the array of exclusion structures and the array of */
+  /*  exlcuded atom indexes          */
+  exclusions       = new Exclusion[num_exclusion];
+  int loop_counter = 0;  
+  int a=0;
+  int b=0;
+
+  if ( (exclusions == NULL) )
+  {
+    NAMD_die("memory allocation failed in Molecule::read_exclusions");
+  }
+
+  /* The following code only guarantees that exclusion.atom1 is < exclusion.atom2 */
+  for (loop_counter = 0; loop_counter < num_exclusion; loop_counter++) {
+	
+	if ( (atom_i == NULL) || (atom_j == NULL) ) {
+	  NAMD_die("null pointer expection in Molecule::read_exclusions");
+	}
+
+	a = *atom_i;
+	b = *atom_j;
+	if(a < b) {
+		exclusions[loop_counter].atom1 = a;
+		exclusions[loop_counter].atom2 = b;
+	} else {
+		exclusions[loop_counter].atom1 = b;
+		exclusions[loop_counter].atom2 = a;
+	}
+	atom_i++;
+	atom_j++;
+  }
+
+  if ( ! CkMyPe() ) {
+    iout << iINFO << "ADDED " << num_exclusion << " EXPLICIT EXCLUSIONS: THIS VALUE WILL *NOT* BE ADDED TO THE STRUCTURE SUMMARY\n" << endi;
+  }
+
+   return;
 }
 /*      END OF FUNCTION read_exclusions      */
 
@@ -5172,6 +5232,28 @@ void Molecule::send_Molecule(MOStream *msg){
     msg->put(numAtoms, (int*)lcpoParamType);
   }
   
+  //Send GromacsPairStuff -- JLai
+  if (simParams->goGroPair) {
+    msg->put(numLJPair);
+    msg->put(numLJPair,indxLJA);
+    msg->put(numLJPair,indxLJB);
+    msg->put(numLJPair,pairC6);
+    msg->put(numLJPair,pairC12);
+    msg->put((numAtoms),pointerToLJBeg);
+    msg->put((numAtoms),pointerToLJEnd);
+    msg->put(numGaussPair);
+    msg->put(numGaussPair,indxGaussA);
+    msg->put(numGaussPair,indxGaussB);
+    msg->put(numGaussPair,gA);
+    msg->put(numGaussPair,gMu1);
+    msg->put(numGaussPair,giSigma1);
+    msg->put(numGaussPair,gMu2);
+    msg->put(numGaussPair,giSigma2);
+    msg->put(numGaussPair,gRepulsive);
+    msg->put((numAtoms),pointerToGaussBeg);
+    msg->put((numAtoms),pointerToGaussEnd);
+  }
+
   // Broadcast the message to the other nodes
   msg->end();
   delete msg;
@@ -5552,6 +5634,61 @@ void Molecule::receive_Molecule(MIStream *msg){
     delete [] lcpoParamType;
     lcpoParamType = new int[numAtoms];
     msg->get(numAtoms, (int*)lcpoParamType);
+  }
+
+  if (simParams->goGroPair) {
+    msg->get(numLJPair);
+    delete [] indxLJA;
+    indxLJA = new int[numLJPair];
+    msg->get(numLJPair,indxLJA);
+    delete [] indxLJB;
+    indxLJB = new int[numLJPair];
+    msg->get(numLJPair,indxLJB);
+    delete [] pairC6;
+    pairC6 = new Real[numLJPair];    
+    msg->get(numLJPair,pairC6);
+    delete [] pairC12;
+    pairC12 = new Real[numLJPair];
+    msg->get(numLJPair,pairC12);
+    delete [] pointerToLJBeg;
+    pointerToLJBeg = new int[numAtoms];
+    msg->get((numAtoms),pointerToLJBeg);
+    delete [] pointerToLJEnd;
+    pointerToLJEnd = new int[numAtoms];
+    msg->get((numAtoms),pointerToLJEnd);
+    //
+    msg->get(numGaussPair);
+    delete [] indxGaussA;
+    indxGaussA = new int[numGaussPair];
+    msg->get(numGaussPair,indxGaussA);
+    delete [] indxGaussB;
+    indxGaussB = new int[numGaussPair];
+    msg->get(numGaussPair,indxGaussB);
+    delete [] gA;
+    gA = new Real[numGaussPair];
+    msg->get(numGaussPair,gA);
+    delete [] gMu1;
+    gMu1 = new Real[numGaussPair];
+    msg->get(numGaussPair,gMu1);
+    delete [] giSigma1;
+    giSigma1 = new Real[numGaussPair];
+    msg->get(numGaussPair,giSigma1);
+    delete [] gMu2;
+    gMu2 = new Real[numGaussPair];
+    msg->get(numGaussPair,gMu2);
+    delete [] giSigma2;
+    giSigma2 = new Real[numGaussPair];
+    msg->get(numGaussPair,giSigma2);
+    delete [] gRepulsive;
+    gRepulsive = new Real[numGaussPair];
+    msg->get(numGaussPair,gRepulsive);
+    delete [] pointerToGaussBeg;
+    pointerToGaussBeg = new int[numAtoms];
+    msg->get((numAtoms),pointerToGaussBeg);
+    delete [] pointerToGaussEnd;
+    pointerToGaussEnd = new int[numAtoms];
+    msg->get((numAtoms),pointerToGaussEnd);
+    //
   }
 
       //  Now free the message 
@@ -9718,6 +9855,78 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     dihedrals[i].dihedral_type = type;
   }
 
+#if GROMACS_PAIR
+  // JLai modifications on August 16th, 2012
+  numPair = gf->getNumPair();
+  numLJPair = gf->getNumLJPair();
+  indxLJA = new int[numLJPair];
+  indxLJB = new int[numLJPair];
+  pairC6 = new Real[numLJPair];
+  pairC12 = new Real[numLJPair];
+  const_cast<GromacsTopFile*>(gf)->getPairLJArrays2(indxLJA, indxLJB, pairC6, pairC12);
+  
+  pointerToLJBeg = new int[numAtoms];
+  pointerToLJEnd = new int[numAtoms];
+  int oldIndex = -1;
+  for(int i=0; i < numAtoms; i++) {
+    pointerToLJBeg[i] = -1;
+    pointerToLJEnd[i] = -2;
+  }
+  for(int i=0; i < numLJPair; i++) {
+    if(pointerToLJBeg[indxLJA[i]] == -1) {
+      pointerToLJBeg[indxLJA[i]] = i;
+      oldIndex = indxLJA[i];
+    }
+    pointerToLJEnd[oldIndex] = i; 
+  }
+  numGaussPair = gf->getNumGaussPair();
+  indxGaussA = new int[numGaussPair];
+  indxGaussB = new int[numGaussPair];
+  gA = new Real[numGaussPair];
+  gMu1 = new Real[numGaussPair];
+  giSigma1 = new Real[numGaussPair];
+  gMu2 = new Real[numGaussPair];
+  giSigma2 = new Real[numGaussPair];
+  gRepulsive = new Real[numGaussPair];
+  //(const_cast<GromacsTopFile*>(gf))->getPairGaussArrays2(indxGaussA, indxGaussB, gA, gMu1, giSigma1, gMu2, giSigma2, gRepulsive);
+  
+  // Create an array of pointers to index indxGaussA
+  pointerToGaussBeg = new int[numAtoms];
+  pointerToGaussEnd = new int[numAtoms];
+  for(int i=0; i < numAtoms; i++) {
+    pointerToGaussBeg[i] = -1;
+    pointerToGaussEnd[i] = -2;
+  }
+  oldIndex = -1;
+  for(int i=0; i < numGaussPair; i++) {
+    if(pointerToGaussBeg[indxGaussA[i]] == -1) { 
+      pointerToGaussBeg[indxGaussA[i]] = i;
+      oldIndex = indxGaussA[i];
+    }
+    pointerToGaussEnd[oldIndex] = i;
+  }
+  
+  iout << "Finished reading explicit pair from Gromacs file:\n" << 
+    "Found a total of: " << numPair << " explicit pairs--of which: " <<
+    numLJPair << " are LJ style pairs and " << numGaussPair << 
+    " are Gaussian style pairs. (Note: A->B is counted twice as A->B and B->A)\n" << endi;
+#endif
+
+  // Start of JLai Modifications August 16th, 2012 
+#if GROMACS_EXCLUSIONS
+  // Copy exclusion information
+  for(i=0; i<1;i++) {
+    int numExclusions = gf->getNumExclusions();
+    int atom1[numExclusions];
+    int atom2[numExclusions];
+    for(int j=0; j<numExclusions;j++) {
+      atom1[j] = 0;
+      atom2[j] = 0;
+    }
+    gf->getExclusions(atom1,atom2);
+    read_exclusions(atom1,atom2,numExclusions);
+  }
+#endif
   /*
   // In AMBER parm file, dihedrals contain 1-4 exclusion infomation:
   // the 1st and 4th atoms have 1-4 nonbond interation. So we should

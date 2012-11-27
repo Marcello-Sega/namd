@@ -260,6 +260,8 @@ void ComputeNonbondedUtil :: NAME
   (
    // JLai
   ENERGY( BigReal vdwEnergy = 0;
+	  BigReal groLJEnergy = 0;
+	  BigReal groGaussEnergy = 0;
 	  GO( BigReal goEnergyNative = 0;
 	      BigReal goEnergyNonnative = 0; ) )
   SHORT
@@ -1978,6 +1980,8 @@ PAIR(
   (
    // JLai
   ENERGY( reduction[vdwEnergyIndex] += vdwEnergy;
+	  reduction[groLJEnergyIndex] += groLJEnergy;
+	  reduction[groGaussEnergyIndex] += groGaussEnergy;
 	  GO( reduction[goNativeEnergyIndex] += goEnergyNative;
 	      reduction[goNonnativeEnergyIndex] += goEnergyNonnative; ) )
   SHORT

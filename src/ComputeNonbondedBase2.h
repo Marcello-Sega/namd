@@ -248,24 +248,52 @@ ALCHPAIR(
      /*****  JE - Go  *****/
      // Now Go energy should appear in VDW place -- put vdw_b back into place
      NORMAL (
+
+	 // Explicit goGroPair calculation; only calculates goGroPair if goGroPair is turned on
+	 //
+	 // get_gro_force has an internal checklist that sees if atom_i and atom_j are
+	 // in the explicit pairlist.  This is done because there is no guarantee that a 
+	 // processor will have atom_i and atom_j so we cannot loop over the explict atom pairs.
+	 // We can only loop over all pairs.
+	 //
+	 // NOTE: It does not look like fast_b is not normalized by the r vector.
+	 //
+	 // JLai
+	 BigReal groLJe = 0.0;
+	 BigReal groGausse = 0.0;
+	 const CompAtomExt *pExt_z = pExt_1 + j;
+	 if (ComputeNonbondedUtil::goGroPair) {
+	     fast_b += mol->get_gro_force2(p_ij_x, p_ij_y, p_ij_z,pExt_i.id,pExt_z->id,&groLJe,&groGausse);
+	 }
+	 ENERGY(
+	     NOT_ALCHPAIR (
+		 // JLai
+		 groLJEnergy += groLJe;
+		 groGaussEnergy += groGausse;
+		 )
+	     ) //ENERGY                                                                                                                                             	   
      GO (
        BigReal goNative = 0;
        BigReal goNonnative = 0;
        BigReal goForce = 0;
-       //  Ported by JLai -- JE - added (
-       const BigReal r2go = square(p_ij_x, p_ij_y, p_ij_z);
-       const BigReal rgo = sqrt(r2go);
        register const CompAtomExt *pExt_j = pExt_1 + j;
+       if (ComputeNonbondedUtil::goMethod == 2) {
+	 goForce = mol->get_go_force2(p_ij_x, p_ij_y, p_ij_z, pExt_i.id, pExt_j->id,&goNative,&goNonnative);
+       } else {
+	 //  Ported by JLai -- JE - added (
+	 const BigReal r2go = square(p_ij_x, p_ij_y, p_ij_z);
+	 const BigReal rgo = sqrt(r2go);
        
-       if (ComputeNonbondedUtil::goMethod == 1) {
-	 goForce = mol->get_go_force(rgo, pExt_i.id, pExt_j->id, &goNative, &goNonnative);
-       } else {  // goMethod == 3
-	 goForce = mol->get_go_force_new(rgo, pExt_i.id, pExt_j->id, &goNative, &goNonnative);
+	 if (ComputeNonbondedUtil::goMethod == 1) {
+	   goForce = mol->get_go_force(rgo, pExt_i.id, pExt_j->id, &goNative, &goNonnative);
+	 } else if (ComputeNonbondedUtil::goMethod == 3) {  
+	   goForce = mol->get_go_force_new(rgo, pExt_i.id, pExt_j->id, &goNative, &goNonnative);
+	 } else {
+	   NAMD_die("I SHOULDN'T BE HERE.  DYING MELODRAMATICALLY.\n");
+	 }
        }
        
        fast_b += goForce;
-       //       printf("FORCE: \t%4.2f\t%4.2f\t%4.2f\t%4.2f\n", goForce, p_ij_x, p_ij_y, p_ij_z);
-       //BigReal goEnergy = mol->get_go_energy_new(rgo, pExt_i.id, pExt_j->id);
        {
        ENERGY(
 	 NOT_ALCHPAIR (

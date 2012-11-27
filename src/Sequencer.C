@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Sequencer.C,v $
- * $Author: cmatthews $
- * $Date: 2012/06/29 21:46:05 $
- * $Revision: 1.1210 $
+ * $Author: jlai7 $
+ * $Date: 2012/11/27 21:13:19 $
+ * $Revision: 1.1211 $
  *****************************************************************************/
 
 //for gbis debugging; print net force on each atom

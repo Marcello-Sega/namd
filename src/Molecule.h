@@ -110,6 +110,14 @@ typedef struct go_val
   Real cutoff;       // Cutoff distance for Go calculation
   int  restrictions[MAX_RESTRICTIONS];  //  List of residue ID differences to be excluded from Go calculation
 } GoValue;
+
+typedef struct go_pair
+{
+  int goIndxA;       // indexA
+  int goIndxB;       // indexB
+  double A;          // double A for the LJ pair
+  double B;          // double B for the LJ pair
+} GoPair;
 // End of port - JL
 
 //only used for compressing the molecule information
@@ -347,6 +355,12 @@ private:
         //  Read in hydrogen bond acceptors from .psf
   void read_exclusions(FILE *);
         //  Read in exclusion info from .psf
+  // JLai August 16th, 2012 Modifications
+  void read_exclusions(int*, int*, int);
+  /* Read in exclusion array and sort entries */
+  static bool goPairCompare (GoPair, GoPair);
+  // End of JLai August 16th, 2012 Modifications
+
 
   // DRUDE: PSF reading
   void read_lphosts(FILE *);
@@ -571,11 +585,42 @@ public:
   int numGoAtoms;         //  Number of atoms subject to Go forces -- ported by JLai/ Original by JE
   int32 *atomChainTypes;  //  Go chain type for each atom; from 1 to MAX_GO_CHAINS
   int32 *goSigmaIndices;  //  Indices into goSigmas
+  int32 *goResidIndices;  //  Indices into goSigmas
   Real  *goSigmas;        //  Sigma values for Go forces L-J type formula
   bool *goWithinCutoff;   //  Whether the reference atom-atom distance is within the Go cutoff
   Real  *goCoordinates;   //  Coordinates (x,y,z) for Go atoms in the native structure
   int *goResids;          //  Residue ID from PDB
   PDB *goPDB;             //  Pointer to PDB object to use
+  // NAMD-Go2 calculation code
+  int goNumLJPair;        //  Integer storing the total number of explicit pairs (LJ)
+  int *goIndxLJA;         //  Pointer to the array of atom indices for LJ atom A
+  int *goIndxLJB;         //  Pointer to the array of atom indices for LJ atom B
+  double *goSigmaPairA;  //  Pointer to the array of A LJ parameters
+  double *goSigmaPairB;  //  Pointer to the array of B LJ parameters
+  int *pointerToGoBeg;    //  Array of pointers to array
+  int *pointerToGoEnd;    //  Array of pointers to array
+  // Gromacs LJ Pair list calculation code
+  int numPair;            //  Integer storing the total number of explicit pairs (LJ + Gaussian)
+  int numLJPair;          //  Integer storing the number of explicit LJ pairs
+  int *pointerToLJBeg;       //  Array of pointers to array 
+  int *pointerToLJEnd;       //  Array of pointers to array B
+  int *indxLJA;           //  Pointer to the array of atom indices for LJ atom A
+  int *indxLJB;           //  Pointer to the array of atom indices for LJ atom B
+  Real *pairC6;           //  Pointer to the array of C6 LJ parameters
+  Real *pairC12;          //  Pointer to the array of C12 LJ parameters
+  // Gromacs Gauss Pair list calculation code
+  int *pointerToGaussBeg;    //  Array of pointers to array B
+  int *pointerToGaussEnd;    //  Array of pointers to array B
+  int numGaussPair;       //  Integer storing the number of explicit Gaussian pairs  
+  int *indxGaussA;        //  Pointer to the array of atom indices for Gaussian atom A 
+  int *indxGaussB;        //  Pointer to the array of atom indices for Gaussian atom B 
+  Real *gA;               //  Pointer to the array of force constants to the Gaussian potential
+  Real *gMu1;             //  Pointer to the array of mu (shifts Gaussian)
+  Real *giSigma1;          //  Pointer to the array of sigma (controls spread of Gaussian)
+  Real *gMu2;             //  Pointer to the array of mu (shifts Gaussian 2)
+  Real *giSigma2;          //  Pointer to the array of sigma (controls spread of Gaussian 2)
+  Real *gRepulsive;       //  Pointer to the a LJ-12 repulsive parameter that adds to the Gaussian
+
   // GO ENERGY CALCULATION CODE
   BigReal energyNative;    // Holds the energy value of the native structure
   BigReal energyNonnative; // Holds the energy value of the nonnative structure
@@ -659,18 +704,23 @@ public:
 
   // Ported by JLai -- Original JE - Go -- Change the unsigned int to ints
   void print_go_sigmas(); //  Print out Go sigma parameters
-    void build_go_sigmas(StringList *, char *);
+  void build_go_sigmas(StringList *, char *);
+        //  Determine which atoms have Go forces applied
+        //  calculate sigmas from distances between Go atom pairs
+  void build_go_sigmas2(StringList *, char *);
         //  Determine which atoms have Go forces applied
         //  calculate sigmas from distances between Go atom pairs
   void build_go_arrays(StringList *, char *);
         //  Determine which atoms have Go forces applied
+  BigReal get_gro_force(BigReal, BigReal, BigReal, int, int) const;
+  BigReal get_gro_force2(BigReal, BigReal, BigReal, int, int, BigReal *, BigReal *) const;
   BigReal get_go_force(BigReal, int, int, BigReal *, BigReal *) const;
         //  Calculate the go force between a pair of atoms -- Modified to 
         //  output Go energies
   BigReal get_go_force_new(BigReal, int, int, BigReal *, BigReal *) const;
         //  Calculate the go force between a pair of atoms
-  BigReal get_go_energy_new(BigReal, int, int) const;
-        //  Calculate the go energy between a pair of atoms
+  BigReal get_go_force2(BigReal, BigReal, BigReal, int, int, BigReal *, BigReal *) const;
+        //  Calculate the go force between a pair of atoms
   Bool atoms_1to4(unsigned int, unsigned int);
 // End of port -- JL  
 
@@ -1207,6 +1257,9 @@ int NumGoChains;                        //  Number of Go chain types -- JLai
 
 // Declares and initializes Go variables
 void goInit();
+
+// Builds explicit Gromacs pairs
+void build_gro_pair();
 
 // Builds the initial Go parameters 
 void build_go_params(StringList *);

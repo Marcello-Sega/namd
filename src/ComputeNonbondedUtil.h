@@ -235,7 +235,7 @@ public:
   // Below modified by JLai -- Look at bottom 3rd line
   enum { exclChecksumIndex, pairlistWarningIndex,
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
-	 goNativeEnergyIndex, goNonnativeEnergyIndex,
+	 goNativeEnergyIndex, goNonnativeEnergyIndex, groLJEnergyIndex, groGaussEnergyIndex,
 //sd-db
 	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s,
 	 electEnergyIndex_ti_1, fullElectEnergyIndex_ti_1, vdwEnergyIndex_ti_1,
@@ -327,6 +327,7 @@ public:
   static BigReal pi_ewaldcof;
 
   // Ported by JLai -- JE - Go
+  static Bool goGroPair;
   static Bool goForcesOn;
   static int goMethod; //6.3.11
   // End of port -- JL

@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2012/11/08 19:55:47 $
- * $Revision: 1.1411 $
+ * $Author: jlai7 $
+ * $Date: 2012/11/27 21:13:19 $
+ * $Revision: 1.1412 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -559,6 +559,7 @@ void SimParameters::config_parser_fileio(ParseOptions &opts) {
    //****** END CHARMM/XPLOR type changes
 
    // Ported by JLai -- JE - Go parameters
+   opts.optionalB("main", "GromacsPair", "Separately calculate pair interactions", &goGroPair, FALSE);
    opts.optionalB("main", "GoForcesOn", "Go forces will be calculated", &goForcesOn, FALSE);
    opts.require("GoForcesOn", "GoParameters", "Go parameter file", goParameters);
    opts.require("GoForcesOn", "GoCoordinates", "target coordinates for Go forces", goCoordinates);
@@ -2555,18 +2556,12 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if (!strcasecmp(s, "matrix")) {
        goMethod = 1;
        //GoMethod = GO_MATRIX;
-     } else if (!strcasecmp(s, "sparse")) {
+     } else if (!strcasecmp(s, "faster")) {
        goMethod = 2;
-       //GoMethod = GO_SPARSE;
+       //GoMethod = GO_FASTER;
      } else if (!strcasecmp(s, "lowmem")) {
        goMethod = 3;
        //GoMethod = GO_LOWMEM;
-       //} else if (!strcasecmp(s, "1")) {
-       //goMethod = 1;
-       //} else if (!strcasecmp(s, "2")) {
-       // goMethod = 2;
-       //} else if (!strcasecmp(s, "3")) {
-       //  goMethod = 3;
      }
      else {
        char err_msg[129];     
