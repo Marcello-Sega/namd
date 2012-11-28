@@ -270,9 +270,18 @@ void Molecule::read_go_file(char *fname)
 	    {
 	      read_count=sscanf(buffer, "%s %d\n", first_word, &int1);
 	      if (read_count != 2) {}
-	      goValue1->exp_b = int1;
+	      goValue1->exp_rep = int1;
 	      if (!sameGoChain) {
-		goValue2->exp_b = int1;
+		goValue2->exp_rep = int1;
+	      }
+	    }
+          else if (strncasecmp(first_word, "exp_Rep", 5)==0)
+	    {
+	      read_count=sscanf(buffer, "%s %d\n", first_word, &int1);
+	      if (read_count != 2) {}
+	      goValue1->exp_rep = int1;
+	      if (!sameGoChain) {
+	      goValue2->exp_rep = int1;
 	      }
 	    }
 	  else if (strncasecmp(first_word, "sigmaRep", 8)==0)
