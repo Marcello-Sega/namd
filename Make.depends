@@ -124,6 +124,7 @@ obj/ComputeMsm.o: \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
+	src/Priorities.h \
 	src/varsizemsg.h \
 	src/MsmMap.h \
 	inc/ComputeMsmMgr.def.h
@@ -2853,10 +2854,6 @@ obj/OptPme.o: \
 	src/Tensor.h \
 	src/PatchMap.inl \
 	src/AtomMap.h \
-	src/PmeBase.inl \
-	src/PmeBase.h \
-	src/MathArray.h \
-	src/Array.h \
 	src/OptPme.h \
 	src/ComputeHomePatches.h \
 	src/Compute.h \
@@ -2869,6 +2866,9 @@ obj/OptPme.o: \
 	src/MigrateAtomsMsg.h \
 	src/Migration.h \
 	inc/PatchMgr.decl.h \
+	src/PmeBase.h \
+	src/MathArray.h \
+	src/Array.h \
 	src/SimParameters.h \
 	src/MGridforceParams.h \
 	src/strlib.h \
@@ -2901,6 +2901,7 @@ obj/OptPme.o: \
 	src/varsizemsg.h \
 	src/Random.h \
 	src/Priorities.h \
+	src/PmeBase.inl \
 	src/fftlib.h \
 	src/fftmap.h \
 	src/PatchMap.h \
@@ -4080,6 +4081,7 @@ obj/GromacsTopFile.o: \
 	src/common.h \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
+	src/InfoStream.h \
 	src/GromacsTopFile.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GromacsTopFile.o $(COPTC) src/GromacsTopFile.C
 obj/heap.o: \
@@ -4490,14 +4492,14 @@ obj/Molecule2.o: \
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/Molecule2.o $(COPTC) src/Molecule2.C
 obj/GoMolecule.o: \
 	src/GoMolecule.C \
+	src/ResizeArray.h \
+	src/ResizeArrayRaw.h \
+	src/common.h \
 	src/InfoStream.h \
 	src/Molecule.h \
 	src/parm.h \
-	src/common.h \
 	src/NamdTypes.h \
 	src/Vector.h \
-	src/ResizeArray.h \
-	src/ResizeArrayRaw.h \
 	src/structures.h \
 	src/ConfigList.h \
 	src/UniqueSet.h \

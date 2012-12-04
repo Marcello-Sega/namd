@@ -357,7 +357,8 @@ CHARMC = $(CHARM)/bin/charmc
 CHARMXI = $(CHARM)/bin/charmc
 CHARMINC = $(CHARM)/include $(COPTD)CMK_OPTIMIZE=1
 CHARMLIB = $(CHARM)/lib
-CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB
+CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB -module CkMulticast
+#CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB
 #CHARM_MODULES = -module msa -module NeighborLB -module HybridLB -module RefineLB -module GreedyLB
 #MSA = -DCHARM_HAS_MSA
 #If using the CkLoop library from Charm++ for PME calculation, first define macro
@@ -426,7 +427,7 @@ windowsbinaries: $(WINDOWSBINARIES)
 namd2.exe:  $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose \
-	-module NeighborLB -language charm++ \
+	-module NeighborLB -module CkMulticast -language charm++ \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
@@ -497,7 +498,7 @@ tracecomputes: updatefiles $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -language charm++ \
+	-module NeighborLB -module CkMulticast -language charm++ \
 	-tracemode projections \
 	$(BUILDINFO).o \
 	$(OBJS) \
@@ -516,7 +517,7 @@ projections: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -language charm++ \
+	-module NeighborLB -module CkMulticast -language charm++ \
 	-tracemode projections -tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
@@ -535,7 +536,7 @@ summary: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(MAKEBUILDINFO)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
-	-module NeighborLB -language charm++ \
+	-module NeighborLB -module CkMulticast -language charm++ \
 	-tracemode summary \
 	$(BUILDINFO).o \
 	$(OBJS) \
