@@ -8,6 +8,7 @@
 #define BOCGROUP_H
 
 #include "charm++.h"
+#include "ckmulticast.h"
 #if     USE_CKLOOP
 #include "CkLoopAPI.h"
 #endif
@@ -28,6 +29,7 @@ public:
   CkGroupID computeMsmSerialMgr;
   CkGroupID computeMsmMsaMgr;
   CkGroupID computeMsmMgr;
+  CkGroupID multicastMgr;  // Charm CkMulticast library module
   CkGroupID reductionMgr;
   CkGroupID collectionMgr;
   CkGroupID broadcastMgr;

@@ -159,6 +159,8 @@ void master_init(int argc, char **argv){
   group.computeMsmMsaMgr = CProxy_ComputeMsmMsaMgr::ckNew();
 #endif
   group.computeMsmMgr = CProxy_ComputeMsmMgr::ckNew();
+  // Charm CkMulticast library module
+  group.multicastMgr = CProxy_CkMulticastMgr::ckNew();
 #ifdef MEM_OPT_VERSION
   group.ioMgr=CProxy_ParallelIOMgr::ckNew();
 #endif

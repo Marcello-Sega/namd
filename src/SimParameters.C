@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:19 $
- * $Revision: 1.1412 $
+ * $Author: dhardy $
+ * $Date: 2012/12/04 21:57:34 $
+ * $Revision: 1.1413 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -5085,7 +5085,7 @@ if ( openatomOn )
 
      // MSMApprox
      enum { CUBIC=0, QUINTIC, QUINTIC2,
-       SEPTIC, SEPTIC3, NONIC, NONIC4, NUM_APPROX };
+       SEPTIC, SEPTIC3, NONIC, NONIC4, C1HERMITE, NUM_APPROX };
 
      // MSMSplit
      enum { TAYLOR2=0, TAYLOR3, TAYLOR4,

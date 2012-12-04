@@ -97,6 +97,9 @@ typedef double Double;
     }
     friend C1Vector operator*(const C1Matrix& m, const C1Vector& u) {
       C1Vector v;
+#if defined(__INTEL_COMPILER)
+#pragma vector always
+#endif
       for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
         for (int i = 0;  i < C1_VECTOR_SIZE;  i++, k++) {
           v.velem[j] += m.melem[k] * u.velem[i];
@@ -207,7 +210,8 @@ namespace msm {
       T *newbuffer = new T[m];
       if ( ! newbuffer) {
         char msg[100];
-        snprintf(msg, sizeof(msg), "Can't allocate %lu KB\n",
+        snprintf(msg, sizeof(msg),
+            "Can't allocate %lu KB for msm::Array\n",
             (unsigned long)(m * sizeof(T) / 1024));
         NAMD_die(msg);
       }
@@ -335,7 +339,7 @@ namespace msm {
     Ivec(int ni, int nj, int nk) : i(ni), j(nj), k(nk) { }
     int operator==(const Ivec& n) { return(i==n.i && j==n.j && k==n.k); }
 #ifdef MSM_MIGRATION
-    virtual void pup(PUP::er& p) {
+    void pup(PUP::er& p) {
       p|i, p|j, p|k;
     }
 #endif
@@ -372,7 +376,7 @@ namespace msm {
                  ka() >= n.ka() && kb() <= n.kb() );
       }
 #ifdef MSM_MIGRATION
-      virtual void pup(PUP::er& p) {
+      void pup(PUP::er& p) {
         p|nlower, p|nextent;
       }
 #endif
@@ -601,7 +605,48 @@ namespace msm {
       // accumulate another grid into this grid
       // the grid to be added must fit within this grid's index range
       Grid<T>& operator+=(const Grid<T>& g) {
+#if 1
         ASSERT(IndexRange(g) <= IndexRange(*this));
+#else
+        if ( ! (IndexRange(g) <= IndexRange(*this)) ) {
+          Grid<T> tmp = *this;
+          // expand myself to hold sum
+          int ia = nlower.i;
+          if (ia > g.nlower.i) ia = g.nlower.i;
+          int ja = nlower.j;
+          if (ja > g.nlower.j) ja = g.nlower.j;
+          int ka = nlower.k;
+          if (ka > g.nlower.k) ka = g.nlower.k;
+          int ib1 = nlower.i + nextent.i;
+          int gib1 = g.nlower.i + g.nextent.i;
+          if (ib1 < gib1) ib1 = gib1;
+          int jb1 = nlower.j + nextent.j;
+          int gjb1 = g.nlower.j + g.nextent.j;
+          if (jb1 < gjb1) jb1 = gjb1;
+          int kb1 = nlower.k + nextent.k;
+          int gkb1 = g.nlower.k + g.nextent.k;
+          if (kb1 < gkb1) kb1 = gkb1;
+          setbounds(ia, ib1-1, ja, jb1-1, ka, kb1-1);
+          reset(0);  // make sure constructor for T accepts "0" as its zero
+          // now copy "tmp" grid elements into my expanded self
+          int index = 0;
+          int ni = nextent.i;
+          int nij = nextent.i * nextent.j;
+          int koff = (tmp.nlower.k - nlower.k) * nij
+            + (tmp.nlower.j - nlower.j) * ni + (tmp.nlower.i - nlower.i);
+          const T *gbuf = tmp.gdata.buffer();
+          T *buf = gdata.buffer();
+          for (int k = 0;  k < tmp.nextent.k;  k++) {
+            int jkoff = k * nij + koff;
+            for (int j = 0;  j < tmp.nextent.j;  j++) {
+              int ijkoff = j * ni + jkoff;
+              for (int i = 0;  i < tmp.nextent.i;  i++, index++) {
+                buf[i + ijkoff] = gbuf[index];
+              }
+            }
+          }
+        }
+#endif
         int gni = g.nextent.i;
         int gnj = g.nextent.j;
         int gnk = g.nextent.k;
@@ -706,6 +751,70 @@ namespace msm {
       Array<T> gdata;
   };
 
+  // serialized Grid storage for reduction
+  class SerializedGrid {
+    public:
+      SerializedGrid() : buffer(0), nbytes(0), needToFree(0) { }
+      SerializedGrid(int n, void *p)
+        : buffer(0), nbytes(0), needToFree(0) { put(n,p); }
+      template <class T> SerializedGrid(const Grid<T>& g)
+        : buffer(0), nbytes(0), needToFree(0) { put(g); }
+      ~SerializedGrid() { cleanup(); }
+      void put(int n, void *p) {
+        cleanup();
+        //buffer = (char *) p;
+        //nbytes = n;
+        int headerlen = sizeof(IndexRange);
+        ASSERT(n <= headerlen + MSM_MAX_BLOCK_VOLUME * sizeof(Float));
+        nbytes = headerlen + MSM_MAX_BLOCK_VOLUME * sizeof(Float);
+        buffer = new char[MSM_MAX_BLOCK_VOLUME * sizeof(Float)];
+        needToFree = 1;
+        memcpy(buffer, p, n);  // copy buffer
+      }
+      template <class T> void put(const Grid<T>& g) {
+        cleanup();
+        int headerlen = sizeof(IndexRange);
+        int datalen = g.data().len()*sizeof(T);
+        //nbytes = headerlen + datalen;
+        //buffer = new char[nbytes];
+        ASSERT(datalen <= MSM_MAX_BLOCK_VOLUME * sizeof(T));
+        nbytes = headerlen + MSM_MAX_BLOCK_VOLUME * sizeof(T);
+        buffer = new char[MSM_MAX_BLOCK_VOLUME * sizeof(T)];
+        if ( ! buffer) {
+          char msg[100];
+          snprintf(msg, sizeof(msg),
+              "Can't allocate %lu KB for msm::SerializedGrid\n",
+              (unsigned long)(nbytes / 1024));
+          NAMD_die(msg);
+        } 
+        needToFree = 1;
+        memcpy(buffer, &g, headerlen);  // copy the IndexRange
+        memcpy(buffer + headerlen, g.data().buffer(), datalen);  // copy buffer
+      }
+      template <class T> void get(Grid<T>& g) const {
+        int headerlen = sizeof(IndexRange);
+        int datalen = nbytes - headerlen;
+        g.init(*(IndexRange *)buffer);
+        ASSERT(g.data().len()*sizeof(T) == datalen);
+        memcpy(g.data().buffer(), buffer + headerlen, datalen);  // copy buffer
+      }
+      int size() const { 
+        //return nbytes;
+        return sizeof(int);
+      }
+      void *data() const { return buffer; }
+    private:
+      void cleanup() {
+        if (needToFree) delete[] buffer;
+        needToFree = 0;
+        nbytes = 0;
+      }
+      char *buffer;
+      int nbytes;
+      int needToFree;
+  };
+
+
 
   ///////////////////////////////////////////////////////////////////////////
   //
@@ -720,7 +829,7 @@ namespace msm {
     BlockIndex() : level(0), n(0) { }
     BlockIndex(int ll, const Ivec& nn) : level(ll), n(nn) { }
 #ifdef MSM_MIGRATION
-    virtual void pup(PUP::er& p) {
+    void pup(PUP::er& p) {
       p|level, p|n;
     }
 #endif
@@ -756,7 +865,7 @@ namespace msm {
       nrange_wrap = IndexRange();
     } // reset
 #ifdef MSM_MIGRATION
-    virtual void pup(PUP::er& p) {
+    void pup(PUP::er& p) {
       p|nblock, p|nrange, p|nblock_wrap, p|nrange_wrap;
     }
 #endif
@@ -795,8 +904,10 @@ namespace msm {
     IndexRange nrangeProlongated; // (level-1) subgrid for prolongation
     Array<BlockSend> sendUp;      // send up charge to blocks on (level+1)
     Array<BlockSend> sendAcross;  // send across potential to blocks on (level)
-    Array<int> indexGridCutoff;   // index of MsmGridCutoff chare to calculate
+    Array<int> indexGridCutoff;   // index of MsmGridCutoff chares to calculate
                                   // each charge -> potential block interaction
+    Array<int> recvGridCutoff;    // index of MsmGridCutoff chares contributing
+                                  // back into my potential block
     Array<BlockSend> sendDown;    // send down potential to blocks on (level-1)
     Array<PatchSend> sendPatch;   // send my (level=0) potential block to patch
     int numRecvsCharge;           // number of expected receives of charge
@@ -820,11 +931,16 @@ namespace msm {
   struct Map {
     Array<IndexRange> gridrange;  // dimensions for each MSM grid level
 
-    Array<Grid<Float> > gc;     // grid constant weights for each level
+    Array<Grid<Float> > gc;       // grid constant weights for each level
+    Array<Grid<Float> > gvc;      // virial grid weights for each level
+    Grid<Float> grespro;          // restriction / prolongation nonzero stencil
+                                  // requires correct IndexOffset array
 
     Array<Grid<C1Matrix> > gc_c1hermite;    // grid constant weights C1 Hermite
-    Array<Grid<C1Matrix> > gres_c1hermite;  // restriction weights C1 Hermite
-    Array<Grid<C1Matrix> > gpro_c1hermite;  // prolongation weights C1 Hermite
+    Array<Grid<C1Matrix> > gvc_c1hermite;   // virial grid weights C1 Hermite
+    Array<Grid<C1Matrix> > gres_c1hermite;  // restriction stencil C1 Hermite
+    Array<Grid<C1Matrix> > gpro_c1hermite;  // prolongation stencil C1 Hermite
+                                            // requires index offsets
 
     Array<PatchDiagram> patchList;
     Array<Grid<BlockDiagram> > blockLevel;
@@ -1084,6 +1200,38 @@ namespace msm {
       bs.nblock_wrap = nb;
       bs.nrange_wrap = nr;
     }
+
+    void wrapBlockIndex(BlockIndex& bn) const {
+      int level = bn.level;
+      int ni = blockLevel[level].ni();
+      int nj = blockLevel[level].nj();
+      int nk = blockLevel[level].nk();
+      if (ispx) {
+        while (bn.n.i < 0) {
+          bn.n.i += ni;
+        }
+        while (bn.n.i >= ni) {
+          bn.n.i -= ni;
+        }
+      }
+      if (ispy) {
+        while (bn.n.j < 0) {
+          bn.n.j += nj;
+        }
+        while (bn.n.j >= nj) {
+          bn.n.j -= nj;
+        }
+      }
+      if (ispz) {
+        while (bn.n.k < 0) {
+          bn.n.k += nk;
+        }
+        while (bn.n.k >= nk) {
+          bn.n.k -= nk;
+        }
+      }
+    }
+
   }; // Map
 
 

@@ -21,9 +21,13 @@
 #include "WorkDistrib.h"
 #include "Priorities.h"
 #include "varsizemsg.h"
+//#include "ckmulticast.h"
 #include <stdio.h>
 #include "MsmMap.h"
 
+// use multicast reduction of grids from sections of MsmGridCutoff
+#define MSM_REDUCE_GRID
+//#undef MSM_REDUCE_GRID
 
 // use the decomposition of grid cutoff to create more work units
 #define MSM_GRID_CUTOFF_DECOMP
@@ -32,6 +36,10 @@
 // skip over pairs of blocks that do not actually interact
 #define MSM_SKIP_TOO_DISTANT_BLOCKS
 //#undef MSM_SKIP_TOO_DISTANT_BLOCKS
+
+// skip over pairs of blocks whose overlap is beyond nonzero gc sphere
+#define MSM_SKIP_BEYOND_SPHERE
+//#undef MSM_SKIP_BEYOND_SPHERE
 
 // node aware mapping of chare arrays
 #define MSM_NODE_MAPPING
@@ -58,6 +66,56 @@
 // turn off computation
 //#define MSM_COMM_ONLY
 
+// print diagnostics for memory alignment (for grid cutoff calculation)
+#define DEBUG_MEMORY_ALIGNMENT
+#undef DEBUG_MEMORY_ALIGNMENT
+
+#if 0
+// custom reduction
+CkReductionMsg *sumInts(int nMsgs, CkReductionMsg **msg) {
+  int sum = 0;
+  for (int i = 0;  i < nMsgs;  i++) {
+    // Sanity check
+    CkAssert(msg[i]->getSize() == sizeof(int));
+    // Extract this message's datum
+    int m = *((int *)msg[i]->getData());
+    sum += m;
+  }
+  return CkReductionMsg::buildNew(sizeof(int), &sum);
+}
+
+// register my custom reduction function
+// access using its type ID "sumIntsType"
+/*global*/ CkReduction::reducerType sumIntsType;
+/*initnode*/ void registerSumInts(void) {
+  sumIntsType = CkReduction::addReducer(sumInts);
+}
+
+
+// custom reduction
+CkReductionMsg *sumFloatGrids(int nMsgs, CkReductionMsg **msg) {
+  CkError("Entering sumFloatGrids()\n");
+  msm::Grid<Float> sumgrid;
+  for (int i = 0;  i < nMsgs;  i++) {
+    msm::SerializedGrid sg(msg[i]->getSize(), msg[i]->getData());
+    msm::Grid<Float> g;
+    sg.get(g);
+    sumgrid += g;
+  }
+  msm::SerializedGrid sg(sumgrid);
+  CkError("sumFloatGrids():  sg.size() = %d   sg.data() = %p\n",
+      sg.size(), sg.data());
+  return CkReductionMsg::buildNew(sg.size(), sg.data());
+}
+
+// register my custom reduction function
+// access using its type ID "sumFloatGridsType"
+/*global*/ CkReduction::reducerType sumFloatGridsType;
+/*initnode*/ void registerSumFloatGrids(void) {
+  sumFloatGridsType = CkReduction::addReducer(sumFloatGrids);
+}
+#endif
+
 
 //
 // This is the main message that gets passed between compute chares.
@@ -81,7 +139,7 @@
 // finishing the lower levels.
 //
 
-class GridMsg : public CMessage_GridMsg {
+class GridMsg : public CkMcastBaseMsg, public CMessage_GridMsg {
   public:
     char *gdata;
     int idnum;
@@ -91,7 +149,7 @@ class GridMsg : public CMessage_GridMsg {
     int nextent_i;
     int nextent_j;
     int nextent_k;
-    int nelems;
+    int nbytes;
     int seqnum;  // sequence number is used for message priority
 
     // put a grid into an allocated message to be sent
@@ -104,9 +162,9 @@ class GridMsg : public CMessage_GridMsg {
       nextent_i = g.extent().i;
       nextent_j = g.extent().j;
       nextent_k = g.extent().k;
-      nelems = g.data().len();
+      nbytes = g.data().len()*sizeof(T);
       seqnum = seq;
-      memcpy(gdata, g.data().buffer(), nelems*sizeof(T));
+      memcpy(gdata, g.data().buffer(), nbytes);
     }
 
     // get the grid from a received message
@@ -116,34 +174,63 @@ class GridMsg : public CMessage_GridMsg {
       g.set(nlower_i, nextent_i, nlower_j, nextent_j,
           nlower_k, nextent_k);
       seq = seqnum;
-      ASSERT(g.data().len() == nelems);
-      memcpy(g.data().buffer(), gdata, nelems*sizeof(T));
+      ASSERT(g.data().len()*sizeof(T) == nbytes);
+      memcpy(g.data().buffer(), gdata, nbytes);
     }
 };
 
 
 class MsmBlockProxyMsg : public CMessage_MsmBlockProxyMsg {
   public:
-    int len;
-    char *msmBlockProxyData;
+    enum { maxlevels = 32 };
+    char msmBlockProxyData[maxlevels*sizeof(CProxy_MsmBlock)];
+    int nlevels;
 
     // put an array into an allocated message to be sent
     void put(const msm::Array<CProxy_MsmBlock>& a) {
-      len = a.len();
-      memcpy(msmBlockProxyData, a.buffer(), len*sizeof(CProxy_MsmBlock));
+      nlevels = a.len();
+      if (nlevels > maxlevels) {
+        NAMD_die("Exceeded maximum number of MSM levels\n");
+      }
+      memcpy(msmBlockProxyData, a.buffer(), nlevels*sizeof(CProxy_MsmBlock));
     }
 
     // get the array from a received message
     void get(msm::Array<CProxy_MsmBlock>& a) {
-      a.resize(len);
-      memcpy(a.buffer(), msmBlockProxyData, len*sizeof(CProxy_MsmBlock));
+      a.resize(nlevels);
+      memcpy(a.buffer(), msmBlockProxyData, nlevels*sizeof(CProxy_MsmBlock));
+    }
+};
+
+
+class MsmC1HermiteBlockProxyMsg : public CMessage_MsmC1HermiteBlockProxyMsg {
+  public:
+    enum { maxlevels = 32 };
+    char msmBlockProxyData[maxlevels*sizeof(CProxy_MsmC1HermiteBlock)];
+    int nlevels;
+
+    // put an array into an allocated message to be sent
+    void put(const msm::Array<CProxy_MsmC1HermiteBlock>& a) {
+      nlevels = a.len();
+      if (nlevels > maxlevels) {
+        NAMD_die("Exceeded maximum number of MSM levels\n");
+      }
+      memcpy(msmBlockProxyData, a.buffer(),
+          nlevels*sizeof(CProxy_MsmC1HermiteBlock));
+    }
+
+    // get the array from a received message
+    void get(msm::Array<CProxy_MsmC1HermiteBlock>& a) {
+      a.resize(nlevels);
+      memcpy(a.buffer(), msmBlockProxyData,
+          nlevels*sizeof(CProxy_MsmC1HermiteBlock));
     }
 };
 
 
 class MsmGridCutoffProxyMsg : public CMessage_MsmGridCutoffProxyMsg {
   public:
-    char *msmGridCutoffProxyData;
+    char msmGridCutoffProxyData[sizeof(CProxy_MsmGridCutoff)];
 
     // put proxy into an allocated message to be sent
     void put(const CProxy_MsmGridCutoff *p) {
@@ -157,12 +244,78 @@ class MsmGridCutoffProxyMsg : public CMessage_MsmGridCutoffProxyMsg {
 };
 
 
+class MsmC1HermiteGridCutoffProxyMsg :
+  public CMessage_MsmC1HermiteGridCutoffProxyMsg
+{
+  public:
+    char msmGridCutoffProxyData[sizeof(CProxy_MsmC1HermiteGridCutoff)];
+
+    // put proxy into an allocated message to be sent
+    void put(const CProxy_MsmC1HermiteGridCutoff *p) {
+      memcpy(msmGridCutoffProxyData, p,
+          sizeof(CProxy_MsmC1HermiteGridCutoff));
+    }
+
+    // get the proxy from a received message
+    void get(CProxy_MsmC1HermiteGridCutoff *p) {
+      memcpy(p, msmGridCutoffProxyData,
+          sizeof(CProxy_MsmC1HermiteGridCutoff));
+    }
+};
+
+
 class MsmGridCutoffInitMsg : public CMessage_MsmGridCutoffInitMsg {
   public:
     msm::BlockIndex qhBlockIndex;  // charge block index
     msm::BlockSend ehBlockSend;    // potential block sending address
     MsmGridCutoffInitMsg(const msm::BlockIndex& i, const msm::BlockSend& b)
       : qhBlockIndex(i), ehBlockSend(b) { }
+};
+
+
+class MsmGridCutoffSetupMsg :
+  public CkMcastBaseMsg, public CMessage_MsmGridCutoffSetupMsg
+{
+  public:
+    char msmBlockElementProxyData[sizeof(CProxyElement_MsmBlock)];
+
+    // put proxy into an allocated message to be sent
+    void put(
+        const CProxyElement_MsmBlock *q //,
+        ) {
+      memcpy(msmBlockElementProxyData, q, sizeof(CProxyElement_MsmBlock));
+    }
+
+    // get the proxy from a received message
+    void get(
+        CProxyElement_MsmBlock *q //,
+        ) {
+      memcpy(q, msmBlockElementProxyData, sizeof(CProxyElement_MsmBlock));
+    }
+};
+
+
+class MsmC1HermiteGridCutoffSetupMsg :
+  public CkMcastBaseMsg, public CMessage_MsmC1HermiteGridCutoffSetupMsg
+{
+  public:
+    char msmBlockElementProxyData[sizeof(CProxyElement_MsmC1HermiteBlock)];
+
+    // put proxy into an allocated message to be sent
+    void put(
+        const CProxyElement_MsmC1HermiteBlock *q //,
+        ) {
+      memcpy(msmBlockElementProxyData, q,
+          sizeof(CProxyElement_MsmC1HermiteBlock));
+    }
+
+    // get the proxy from a received message
+    void get(
+        CProxyElement_MsmC1HermiteBlock *q //,
+        ) {
+      memcpy(q, msmBlockElementProxyData,
+          sizeof(CProxyElement_MsmC1HermiteBlock));
+    }
 };
 
 
@@ -240,7 +393,7 @@ struct WorkIndex {
 class ComputeMsmMgr : public BOCclass {
   friend struct msm::PatchData;
   friend class MsmBlock;
-  friend class MsmGridCutoff;
+  //friend class MsmGridCutoff;
   friend class MsmBlockMap;
   friend class MsmGridCutoffMap;
 
@@ -249,8 +402,14 @@ public:
   ~ComputeMsmMgr();
 
   void initialize(MsmInitMsg *);      // entry with message
+
   void recvMsmBlockProxy(MsmBlockProxyMsg *);  // entry with message
   void recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *);  // entry with message
+
+  void recvMsmC1HermiteBlockProxy(MsmC1HermiteBlockProxyMsg *);
+    // entry with message
+  void recvMsmC1HermiteGridCutoffProxy(MsmC1HermiteGridCutoffProxyMsg *);
+    // entry with message
 
   void update(CkQdMsg *);             // entry with message
 
@@ -318,7 +477,8 @@ public:
   static inline int sign(int n) {
     return (n < 0 ? -1 : (n > 0 ? 1 : 0));
   }
-private:
+
+//private:
   void setup_hgrid_1d(BigReal len, BigReal& hh, int& nn,
       int& ia, int& ib, int isperiodic);
   void setup_periodic_blocksize(int& bsize, int n);
@@ -327,8 +487,10 @@ private:
   ComputeMsm *msmCompute;
 
   msm::Array<CProxy_MsmBlock> msmBlock;
+  msm::Array<CProxy_MsmC1HermiteBlock> msmC1HermiteBlock;
 
   CProxy_MsmGridCutoff msmGridCutoff;
+  CProxy_MsmC1HermiteGridCutoff msmC1HermiteGridCutoff;
   int numGridCutoff;  // length of msmGridCutoff chare array
 
   msm::Map map;
@@ -340,9 +502,8 @@ private:
 
   // allocate subgrid used for receiving message data in addPotential()
   // and sending on to PatchData::addPotential()
-#if 1
   msm::Grid<Float> subgrid;
-#endif
+  msm::Grid<C1Vector> subgrid_c1hermite;
 
 #ifdef MSM_NODE_MAPPING
   msm::Array<int> blockAssign;
@@ -356,9 +517,16 @@ private:
     return (n + map.blockLevel[level].flatindex(i,j,k));
   }
   float calcBlockWork(const msm::BlockDiagram& b) {
+    // XXX ratio of work for MsmBlock to MsmGridCutoff?
     const float scalingFactor = 3;
     const int volumeFullBlock = map.bsx[0] * map.bsy[0] * map.bsz[0];
-    msm::Ivec gn = map.gc[0].extent();
+    msm::Ivec gn;
+    if (approx == C1HERMITE) {
+      gn = map.gc_c1hermite[0].extent();
+    }
+    else {
+      gn = map.gc[0].extent();
+    }
     const int volumeFullCutoff = (map.bsx[0] + gn.i - 1) *
       (map.bsy[0] + gn.j - 1) * (map.bsz[0] + gn.k - 1);
     msm::Ivec n = b.nrange.extent();
@@ -375,6 +543,56 @@ private:
     return( float(volumeBlock) / volumeFullBlock );
   }
 #endif
+
+  // sum local virial factors
+  msm::Grid<Float> gvsum;
+  int numVirialContrib;
+  int cntVirialContrib;
+  enum { VXX=0, VXY, VXZ, VYY, VYZ, VZZ, VMAX };
+  Float virial[VMAX];
+
+  void initVirialContrib() {
+    gvsum.reset(0);
+    cntVirialContrib = 0;
+  }
+  void addVirialContrib() {
+    numVirialContrib++;
+  }
+  void subtractVirialContrib() {
+    numVirialContrib--;
+  }
+  void doneVirialContrib() {
+    if (++cntVirialContrib >= numVirialContrib) {
+      // reduce all gvsum contributions into virial tensor
+      for (int n = 0;  n < VMAX;  n++) { virial[n] = 0; }
+      int ia = gvsum.ia();
+      int ib = gvsum.ib();
+      int ja = gvsum.ja();
+      int jb = gvsum.jb();
+      int ka = gvsum.ka();
+      int kb = gvsum.kb();
+      for (int k = ka;  k <= kb;  k++) {
+        for (int j = ja;  j <= jb;  j++) {
+          for (int i = ia;  i <= ib;  i++) {
+            Float cu = Float(i);
+            Float cv = Float(j);
+            Float cw = Float(k);
+            Float c = gvsum(i,j,k);
+            Float vx = cu*hufx + cv*hvfx + cw*hwfx;
+            Float vy = cu*hufy + cv*hvfy + cw*hwfy;
+            Float vz = cu*hufz + cv*hvfz + cw*hwfz;
+            virial[VXX] -= c * vx * vx;
+            virial[VXY] -= c * vx * vy;
+            virial[VXZ] -= c * vx * vz;
+            virial[VYY] -= c * vy * vy;
+            virial[VYZ] -= c * vy * vz;
+            virial[VZZ] -= c * vz * vz;
+          }
+        }
+      }
+      initVirialContrib();
+    }
+  }
 
 #ifdef MSM_TIMING
   CProxy_MsmTimer msmTimer;
@@ -402,8 +620,11 @@ private:
   BigReal gridspacing;  // preferred grid spacing
   BigReal padding;      // padding for non-periodic boundaries
   BigReal gridScalingFactor;  // scaling for Hermite interpolation
-  Vector h;             // finest level grid spacings
   BigReal a;            // cutoff distance
+  BigReal hxlen, hylen, hzlen;  // first level grid spacings along basis vectors
+  BigReal hxlen_1, hylen_1, hzlen_1;  // inverses of grid spacings
+  Vector hu, hv, hw;    // first level grid spacing vectors
+  Float hufx, hufy, hufz, hvfx, hvfy, hvfz, hwfx, hwfy, hwfz;
   int nhx, nhy, nhz;    // number of h spacings that cover cell
   int approx;           // ID for approximation
   int split;            // ID for splitting
@@ -453,11 +674,11 @@ private:
   static const int PolyDegree[NUM_APPROX];
 
   // The stencil array lengths below.
-  static const int Nstencil[NUM_APPROX_FORMS];
+  static const int Nstencil[NUM_APPROX];
 
   // Index offsets from the stencil-centered grid element, to get
   // to the correct contributing grid element.
-  static const int IndexOffset[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO];
+  static const int IndexOffset[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO];
 
   // The grid transfer stencils for the non-factored restriction and
   // prolongation procedures.
@@ -728,109 +949,109 @@ private:
     } // switch
   } // stencil_1d()
 
-  void d_stencil_1d(Float dphi[], Float phi[], Float t) {
+  void d_stencil_1d(Float dphi[], Float phi[], Float t, Float h_1) {
     switch (approx) {
       case CUBIC:
         phi[0] = 0.5f * (1 - t) * (2 - t) * (2 - t);
-        dphi[0] = (1.5f * t - 2) * (2 - t);
+        dphi[0] = (1.5f * t - 2) * (2 - t) * h_1;
         t--;
         phi[1] = (1 - t) * (1 + t - 1.5f * t * t);
-        dphi[1] = (-5 + 4.5f * t) * t;
+        dphi[1] = (-5 + 4.5f * t) * t * h_1;
         t--;
         phi[2] = (1 + t) * (1 - t - 1.5f * t * t);
-        dphi[2] = (-5 - 4.5f * t) * t;
+        dphi[2] = (-5 - 4.5f * t) * t * h_1;
         t--;
         phi[3] = 0.5f * (1 + t) * (2 + t) * (2 + t);
-        dphi[3] = (1.5f * t + 2) * (2 + t);
+        dphi[3] = (1.5f * t + 2) * (2 + t) * h_1;
         break;
       case QUINTIC:
         phi[0] = (1.f/24) * (1-t) * (2-t) * (3-t) * (3-t) * (4-t);
         dphi[0] = ((-1.f/24) * ((3-t) * (3-t) * (14 + t * (-14 + 3*t))
-              + 2 * (1-t) * (2-t) * (3-t) * (4-t)));
+              + 2 * (1-t) * (2-t) * (3-t) * (4-t))) * h_1;
         t--;
         phi[1] = (1-t) * (2-t) * (3-t) * ((1.f/6)
             + t * (0.375f - (5.f/24)*t));
         dphi[1] = (-((1.f/6) + t * (0.375f - (5.f/24)*t)) *
             (11 + t * (-12 + 3*t)) + (1-t) * (2-t) * (3-t) *
-            (0.375f - (5.f/12)*t));
+            (0.375f - (5.f/12)*t)) * h_1;
         t--;
         phi[2] = (1-t*t) * (2-t) * (0.5f + t * (0.25f - (5.f/12)*t));
         dphi[2] = (-(0.5f + t * (0.25f - (5.f/12)*t)) * (1 + t * (4 - 3*t))
-            + (1-t*t) * (2-t) * (0.25f - (5.f/6)*t));
+            + (1-t*t) * (2-t) * (0.25f - (5.f/6)*t)) * h_1;
         t--;
         phi[3] = (1-t*t) * (2+t) * (0.5f - t * (0.25f + (5.f/12)*t));
         dphi[3] = ((0.5f + t * (-0.25f - (5.f/12)*t)) * (1 + t * (-4 - 3*t))
-            - (1-t*t) * (2+t) * (0.25f + (5.f/6)*t));
+            - (1-t*t) * (2+t) * (0.25f + (5.f/6)*t)) * h_1;
         t--;
         phi[4] = (1+t) * (2+t) * (3+t) * ((1.f/6)
             - t * (0.375f + (5.f/24)*t));
         dphi[4] = (((1.f/6) + t * (-0.375f - (5.f/24)*t)) *
             (11 + t * (12 + 3*t)) - (1+t) * (2+t) * (3+t) *
-            (0.375f + (5.f/12)*t));
+            (0.375f + (5.f/12)*t)) * h_1;
         t--;
         phi[5] = (1.f/24) * (1+t) * (2+t) * (3+t) * (3+t) * (4+t);
         dphi[5] = ((1.f/24) * ((3+t) * (3+t) * (14 + t * (14 + 3*t))
-              + 2 * (1+t) * (2+t) * (3+t) * (4+t)));
+              + 2 * (1+t) * (2+t) * (3+t) * (4+t))) * h_1;
         break;
       case QUINTIC2:
         phi[0] = (1.f/24) * (3-t) * (3-t) * (3-t) * (t-2) * (5*t-8);
         dphi[0] = ((1.f/24) * (3-t) * (3-t) * ((3-t)*(5*t-8)
-              - 3*(t-2)*(5*t-8) + 5*(t-2)*(3-t)));
+              - 3*(t-2)*(5*t-8) + 5*(t-2)*(3-t))) * h_1;
         t--;
         phi[1] = (-1.f/24) * (2-t) * (t-1) * (-48+t*(153+t*(-114+t*25)));
         dphi[1] = ((-1.f/24) * ((2-t)*(-48+t*(153+t*(-114+t*25)))
               - (t-1)* (-48+t*(153+t*(-114+t*25)))
-              + (2-t)*(t-1)*(153+t*(-228+t*75))));
+              + (2-t)*(t-1)*(153+t*(-228+t*75)))) * h_1;
         t--;
         phi[2] = (1.f/12) * (1-t) * (12+t*(12+t*(-3+t*(-38+t*25))));
         dphi[2] = ((1.f/12) * (-(12+t*(12+t*(-3+t*(-38+t*25))))
-              + (1-t)*(12+t*(-6+t*(-114+t*100)))));
+              + (1-t)*(12+t*(-6+t*(-114+t*100))))) * h_1;
         t--;
         phi[3] = (1.f/12) * (1+t) * (12+t*(-12+t*(-3+t*(38+t*25))));
         dphi[3] = ((1.f/12) * ((12+t*(-12+t*(-3+t*(38+t*25))))
-              + (1+t)*(-12+t*(-6+t*(114+t*100)))));
+              + (1+t)*(-12+t*(-6+t*(114+t*100))))) * h_1;
         t--;
         phi[4] = (-1.f/24) * (2+t) * (t+1) * (48+t*(153+t*(114+t*25)));
         dphi[4] = ((-1.f/24) * ((2+t)*(48+t*(153+t*(114+t*25)))
               + (t+1)* (48+t*(153+t*(114+t*25)))
-              + (2+t)*(t+1)*(153+t*(228+t*75))));
+              + (2+t)*(t+1)*(153+t*(228+t*75)))) * h_1;
         t--;
         phi[5] = (1.f/24) * (3+t) * (3+t) * (3+t) * (t+2) * (5*t+8);
         dphi[5] = ((1.f/24) * (3+t) * (3+t) * ((3+t)*(5*t+8)
-              + 3*(t+2)*(5*t+8) + 5*(t+2)*(3+t)));
+              + 3*(t+2)*(5*t+8) + 5*(t+2)*(3+t))) * h_1;
         break;
       case SEPTIC:
         phi[0] = (-1.f/720)*(t-1)*(t-2)*(t-3)*(t-4)*(t-4)*(t-5)*(t-6);
         dphi[0] = (-1.f/720)*(t-4)*(-1944+t*(3644+t*(-2512+t*(807
-                  +t*(-122+t*7)))));
+                  +t*(-122+t*7))))) * h_1;
         t--;
         phi[1] = (1.f/720)*(t-1)*(t-2)*(t-3)*(t-4)*(t-5)*(-6+t*(-20+7*t));
         dphi[1] = (1.f/720)*(756+t*(-9940+t*(17724+t*(-12740+t*(4445
-                    +t*(-750+t*49))))));
+                    +t*(-750+t*49)))))) * h_1;
         t--;
         phi[2] = (-1.f/240)*(t*t-1)*(t-2)*(t-3)*(t-4)*(-10+t*(-12+7*t));
         dphi[2] = (-1.f/240)*(-28+t*(1260+t*(-756+t*(-1260+t*(1365
-                    +t*(-450+t*49))))));
+                    +t*(-450+t*49)))))) * h_1;
         t--;
         phi[3] = (1.f/144)*(t*t-1)*(t*t-4)*(t-3)*(-12+t*(-4+7*t));
         dphi[3] = (1.f/144)*t*(-560+t*(84+t*(644+t*(-175
-                  +t*(-150+t*49)))));
+                  +t*(-150+t*49))))) * h_1;
         t--;
         phi[4] = (-1.f/144)*(t*t-1)*(t*t-4)*(t+3)*(-12+t*(4+7*t));
         dphi[4] = (-1.f/144)*t*(560+t*(84+t*(-644+t*(-175
-                  +t*(150+t*49)))));
+                  +t*(150+t*49))))) * h_1;
         t--;
         phi[5] = (1.f/240)*(t*t-1)*(t+2)*(t+3)*(t+4)*(-10+t*(12+7*t));
         dphi[5] = (1.f/240)*(-28+t*(-1260+t*(-756+t*(1260+t*(1365
-                    +t*(450+t*49))))));
+                    +t*(450+t*49)))))) * h_1;
         t--;
         phi[6] = (-1.f/720)*(t+1)*(t+2)*(t+3)*(t+4)*(t+5)*(-6+t*(20+7*t));
         dphi[6] = (-1.f/720)*(756+t*(9940+t*(17724+t*(12740+t*(4445
-                    +t*(750+t*49))))));
+                    +t*(750+t*49)))))) * h_1;
         t--;
         phi[7] = (1.f/720)*(t+1)*(t+2)*(t+3)*(t+4)*(t+4)*(t+5)*(t+6);
         dphi[7] = (1.f/720)*(t+4)*(1944+t*(3644+t*(2512+t*(807
-                  +t*(122+t*7)))));
+                  +t*(122+t*7))))) * h_1;
         break;
       case SEPTIC3:
         phi[0] = (3632.f/5) + t*((-7456.f/5) + t*((58786.f/45) + t*(-633
@@ -838,75 +1059,75 @@ private:
                       + t*(-89.f/720)))))));
         dphi[0] = ((-7456.f/5) + t*((117572.f/45) + t*(-1899
                 + t*((26383.f/36) + t*((-22807.f/144) + t*((727.f/40)
-                      + t*(-623.f/720)))))));
+                      + t*(-623.f/720))))))) * h_1;
         t--;
         phi[1] = -440 + t*((25949.f/20) + t*((-117131.f/72) + t*((2247.f/2)
                 + t*((-66437.f/144) + t*((81109.f/720) + t*((-727.f/48)
                       + t*(623.f/720)))))));
         dphi[1] = ((25949.f/20) + t*((-117131.f/36) + t*((6741.f/2)
                 + t*((-66437.f/36) + t*((81109.f/144) + t*((-727.f/8)
-                      + t*(4361.f/720)))))));
+                      + t*(4361.f/720))))))) * h_1;
         t--;
         phi[2] = (138.f/5) + t*((-8617.f/60) + t*((12873.f/40) + t*((-791.f/2)
                 + t*((4557.f/16) + t*((-9583.f/80) + t*((2181.f/80)
                       + t*(-623.f/240)))))));
         dphi[2] = ((-8617.f/60) + t*((12873.f/20) + t*((-2373.f/2)
                 + t*((4557.f/4) + t*((-9583.f/16) + t*((6543.f/40)
-                      + t*(-4361.f/240)))))));
+                      + t*(-4361.f/240))))))) * h_1;
         t--;
         phi[3] = 1 + t*t*((-49.f/36) + t*t*((-959.f/144) + t*((2569.f/144)
                 + t*((-727.f/48) + t*(623.f/144)))));
         dphi[3] = (t*((-49.f/18) + t*t*((-959.f/36) + t*((12845.f/144)
-                  + t*((-727.f/8) + t*(4361.f/144))))));
+                  + t*((-727.f/8) + t*(4361.f/144)))))) * h_1;
         t--;
         phi[4] = 1 + t*t*((-49.f/36) + t*t*((-959.f/144) + t*((-2569.f/144)
                 + t*((-727.f/48) + t*(-623.f/144)))));
         dphi[4] = (t*((-49.f/18) + t*t*((-959.f/36) + t*((-12845.f/144)
-                  + t*((-727.f/8) + t*(-4361.f/144))))));
+                  + t*((-727.f/8) + t*(-4361.f/144)))))) * h_1;
         t--;
         phi[5] = (138.f/5) + t*((8617.f/60) + t*((12873.f/40) + t*((791.f/2)
                 + t*((4557.f/16) + t*((9583.f/80) + t*((2181.f/80)
                       + t*(623.f/240)))))));
         dphi[5] = ((8617.f/60) + t*((12873.f/20) + t*((2373.f/2)
                 + t*((4557.f/4) + t*((9583.f/16) + t*((6543.f/40)
-                      + t*(4361.f/240)))))));
+                      + t*(4361.f/240))))))) * h_1;
         t--;
         phi[6] = -440 + t*((-25949.f/20) + t*((-117131.f/72) + t*((-2247.f/2)
                 + t*((-66437.f/144) + t*((-81109.f/720) + t*((-727.f/48)
                       + t*(-623.f/720)))))));
         dphi[6] = ((-25949.f/20) + t*((-117131.f/36) + t*((-6741.f/2)
                 + t*((-66437.f/36) + t*((-81109.f/144) + t*((-727.f/8)
-                      + t*(-4361.f/720)))))));
+                      + t*(-4361.f/720))))))) * h_1;
         t--;
         phi[7] = (3632.f/5) + t*((7456.f/5) + t*((58786.f/45) + t*(633
                 + t*((26383.f/144) + t*((22807.f/720) + t*((727.f/240)
                       + t*(89.f/720)))))));
         dphi[7] = ((7456.f/5) + t*((117572.f/45) + t*(1899
                 + t*((26383.f/36) + t*((22807.f/144) + t*((727.f/40)
-                      + t*(623.f/720)))))));
+                      + t*(623.f/720))))))) * h_1;
         break;
       case NONIC:
         phi[0] = (-1.f/40320)*(t-8)*(t-7)*(t-6)*(t-5)*(t-5)*(t-4)*(t-3)*
           (t-2)*(t-1);
         dphi[0] = (-1.f/40320)*(t-5)*(-117648+t*(256552+t*(-221416
-                +t*(99340+t*(-25261+t*(3667+t*(-283+t*9)))))));
+                +t*(99340+t*(-25261+t*(3667+t*(-283+t*9))))))) * h_1;
         t--;
         phi[1] = (1.f/40320)*(t-7)*(t-6)*(t-5)*(t-4)*(t-3)*(t-2)*(t-1)*
           (-8+t*(-35+9*t));
         dphi[1] = (1.f/40320)*(71856+t*(-795368+t*(1569240+t*(-1357692
                   +t*(634725+t*(-172116+t*(27090+t*(-2296
-                          +t*81))))))));
+                          +t*81)))))))) * h_1;
         t--;
         phi[2] = (-1.f/10080)*(t-6)*(t-5)*(t-4)*(t-3)*(t-2)*(t-1)*(t+1)*
           (-14+t*(-25+9*t));
         dphi[2] = (1.f/10080)*(3384+t*(-69080+t*(55026+t*(62580
                   +t*(-99225+t*(51660+t*(-13104+t*(1640
-                          +t*(-81)))))))));
+                          +t*(-81))))))))) * h_1;
         t--;
         phi[3] = (1.f/1440)*(t-5)*(t-4)*(t-3)*(t-2)*(t-1)*(t+1)*(t+2)*
           (-6+t*(-5+3*t));
         dphi[3] = (1.f/1440)*(72+t*(-6344+t*(2070+t*(7644
-                  +t*(-4725+t*(-828+t*(1260+t*(-328+t*27))))))));
+                  +t*(-4725+t*(-828+t*(1260+t*(-328+t*27)))))))) * h_1;
         t--;
         phi[4] = (-1.f/2880)*(t-4)*(t-3)*(t-2)*(t-1)*(t+1)*(t+2)*(t+3)*
           (-20+t*(-5+9*t));
@@ -916,29 +1137,29 @@ private:
         phi[5] = (1.f/2880)*(t-3)*(t-2)*(t-1)*(t+1)*(t+2)*(t+3)*(t+4)*
           (-20+t*(5+9*t));
         dphi[5] = (1.f/2880)*t*(-10792+t*(-972+t*(12516
-                +t*(2205+t*(-3924+t*(-882+t*(328+t*81)))))));
+                +t*(2205+t*(-3924+t*(-882+t*(328+t*81))))))) * h_1;
         t--;
         phi[6] = (-1.f/1440)*(t-2)*(t-1)*(t+1)*(t+2)*(t+3)*(t+4)*(t+5)*
           (-6+t*(5+3*t));
         dphi[6] = (1.f/1440)*(-72+t*(-6344+t*(-2070+t*(7644
-                  +t*(4725+t*(-828+t*(-1260+t*(-328+t*(-27)))))))));
+                  +t*(4725+t*(-828+t*(-1260+t*(-328+t*(-27))))))))) * h_1;
         t--;
         phi[7] = (1.f/10080)*(t-1)*(t+1)*(t+2)*(t+3)*(t+4)*(t+5)*(t+6)*
           (-14+t*(25+9*t));
         dphi[7] = (1.f/10080)*(-3384+t*(-69080+t*(-55026+t*(62580
                   +t*(99225+t*(51660+t*(13104+t*(1640
-                          +t*81))))))));
+                          +t*81)))))))) * h_1;
         t--;
         phi[8] = (-1.f/40320)*(t+1)*(t+2)*(t+3)*(t+4)*(t+5)*(t+6)*(t+7)*
           (-8+t*(35+9*t));
         dphi[8] = (-1.f/40320)*(71856+t*(795368+t*(1569240
                 +t*(1357692+t*(634725+t*(172116+t*(27090+t*(2296
-                          +t*81))))))));
+                          +t*81)))))))) * h_1;
         t--;
         phi[9] = (1.f/40320)*(t+1)*(t+2)*(t+3)*(t+4)*(t+5)*(t+5)*(t+6)*
           (t+7)*(t+8);
         dphi[9] = (1.f/40320)*(t+5)*(117648+t*(256552+t*(221416
-                +t*(99340+t*(25261+t*(3667+t*(283+t*9)))))));
+                +t*(99340+t*(25261+t*(3667+t*(283+t*9))))))) * h_1;
         break;
       case NONIC4:
         phi[0] = 439375.f/7+t*(-64188125.f/504+t*(231125375.f/2016
@@ -948,7 +1169,7 @@ private:
         dphi[0] = (-64188125.f/504+t*(231125375.f/1008
               +t*(-17306975.f/96+t*(7761805.f/96+t*(-2895587.f/128
                     +t*(129391.f/32+t*(-259715.f/576+t*(28909.f/1008
-                          +t*(-3569.f/4480)))))))));
+                          +t*(-3569.f/4480))))))))) * h_1;
         t--;
         phi[1] = -56375+t*(8314091.f/56+t*(-49901303.f/288+t*(3763529.f/32
                 +t*(-19648027.f/384+t*(9469163.f/640+t*(-545977.f/192
@@ -957,7 +1178,7 @@ private:
         dphi[1] = (8314091.f/56+t*(-49901303.f/144+t*(11290587.f/32
                 +t*(-19648027.f/96+t*(9469163.f/128+t*(-545977.f/32
                       +t*(156927.f/64+t*(-28909.f/144
-                          +t*(32121.f/4480)))))))));
+                          +t*(32121.f/4480))))))))) * h_1;
         t--;
         phi[2] = 68776.f/7+t*(-1038011.f/28+t*(31157515.f/504+t*(-956669.f/16
                 +t*(3548009.f/96+t*(-2422263.f/160+t*(197255.f/48
@@ -966,7 +1187,7 @@ private:
         dphi[2] = (-1038011.f/28+t*(31157515.f/252+t*(-2870007.f/16
                 +t*(3548009.f/24+t*(-2422263.f/32+t*(197255.f/8
                       +t*(-19959.f/4+t*(144545.f/252
-                          +t*(-32121.f/1120)))))))));
+                          +t*(-32121.f/1120))))))))) * h_1;
         t--;
         phi[3] = -154+t*(12757.f/12+t*(-230123.f/72+t*(264481.f/48
                 +t*(-576499.f/96+t*(686147.f/160+t*(-96277.f/48
@@ -974,21 +1195,21 @@ private:
         dphi[3] = (12757.f/12+t*(-230123.f/36+t*(264481.f/16
                 +t*(-576499.f/24+t*(686147.f/32+t*(-96277.f/8
                       +t*(99547.f/24+t*(-28909.f/36
-                          +t*(10707.f/160)))))))));
+                          +t*(10707.f/160))))))))) * h_1;
         t--;
         phi[4] = 1+t*t*(-205.f/144+t*t*(91.f/192+t*(-6181.f/320
                 +t*(6337.f/96+t*(-2745.f/32+t*(28909.f/576
                       +t*(-3569.f/320)))))));
         dphi[4] = t*(-205.f/72+t*t*(91.f/48+t*(-6181.f/64
                 +t*(6337.f/16+t*(-19215.f/32+t*(28909.f/72
-                      +t*(-32121.f/320)))))));
+                      +t*(-32121.f/320))))))) * h_1;
         t--;
         phi[5] = 1+t*t*(-205.f/144+t*t*(91.f/192+t*(6181.f/320
                 +t*(6337.f/96+t*(2745.f/32+t*(28909.f/576
                       +t*(3569.f/320)))))));
         dphi[5] = t*(-205.f/72+t*t*(91.f/48+t*(6181.f/64
                 +t*(6337.f/16+t*(19215.f/32+t*(28909.f/72
-                      +t*(32121.f/320)))))));
+                      +t*(32121.f/320))))))) * h_1;
         t--;
         phi[6] = -154+t*(-12757.f/12+t*(-230123.f/72+t*(-264481.f/48
                 +t*(-576499.f/96+t*(-686147.f/160+t*(-96277.f/48
@@ -996,7 +1217,7 @@ private:
         dphi[6] = (-12757.f/12+t*(-230123.f/36+t*(-264481.f/16
                 +t*(-576499.f/24+t*(-686147.f/32+t*(-96277.f/8
                       +t*(-99547.f/24+t*(-28909.f/36
-                          +t*(-10707.f/160)))))))));
+                          +t*(-10707.f/160))))))))) * h_1;
         t--;
         phi[7] = 68776.f/7+t*(1038011.f/28+t*(31157515.f/504+t*(956669.f/16
                 +t*(3548009.f/96+t*(2422263.f/160+t*(197255.f/48
@@ -1004,7 +1225,7 @@ private:
         dphi[7] = (1038011.f/28+t*(31157515.f/252+t*(2870007.f/16
                 +t*(3548009.f/24+t*(2422263.f/32+t*(197255.f/8
                       +t*(19959.f/4+t*(144545.f/252
-                          +t*(32121.f/1120)))))))));
+                          +t*(32121.f/1120))))))))) * h_1;
         t--;
         phi[8] = -56375+t*(-8314091.f/56+t*(-49901303.f/288+t*(-3763529.f/32
                 +t*(-19648027.f/384+t*(-9469163.f/640+t*(-545977.f/192
@@ -1013,7 +1234,7 @@ private:
         dphi[8] = (-8314091.f/56+t*(-49901303.f/144+t*(-11290587.f/32
                 +t*(-19648027.f/96+t*(-9469163.f/128+t*(-545977.f/32
                       +t*(-156927.f/64+t*(-28909.f/144
-                          +t*(-32121.f/4480)))))))));
+                          +t*(-32121.f/4480))))))))) * h_1;
         t--;
         phi[9] = 439375.f/7+t*(64188125.f/504+t*(231125375.f/2016
               +t*(17306975.f/288+t*(7761805.f/384+t*(2895587.f/640
@@ -1022,13 +1243,34 @@ private:
         dphi[9] = (64188125.f/504+t*(231125375.f/1008
               +t*(17306975.f/96+t*(7761805.f/96+t*(2895587.f/128
                     +t*(129391.f/32+t*(259715.f/576+t*(28909.f/1008
-                          +t*(3569.f/4480)))))))));
+                          +t*(3569.f/4480))))))))) * h_1;
         break;
       default:
         NAMD_die("Unknown MSM approximation.");
     } // switch
   } // d_stencil_1d()
 
+  void stencil_1d_c1hermite(Float phi[], Float psi[], Float t, Float h) {
+    phi[0] = (1 - t) * (1 - t) * (1 + 2*t);
+    psi[0] = h * t * (1 - t) * (1 - t);
+    t--;
+    phi[1] = (1 + t) * (1 + t) * (1 - 2*t);
+    psi[1] = h * t * (1 + t) * (1 + t);
+  }
+
+  void d_stencil_1d_c1hermite(
+      Float dphi[], Float phi[], Float dpsi[], Float psi[],
+      Float t, Float h, Float h_1) {
+    phi[0] = (1 - t) * (1 - t) * (1 + 2*t);
+    dphi[0] = -6 * t * (1 - t) * h_1;
+    psi[0] = h * t * (1 - t) * (1 - t);
+    dpsi[0] = (1 - t) * (1 - 3*t);
+    t--;
+    phi[1] = (1 + t) * (1 + t) * (1 - 2*t);
+    dphi[1] = -6 * t * (1 + t) * h_1;
+    psi[1] = h * t * (1 + t) * (1 + t);
+    dpsi[1] = (1 + t) * (1 + 3*t);
+  }
 
   static void ndsplitting(BigReal pg[], BigReal s, int n, int _split) {
     int k = 0;
@@ -1354,14 +1596,14 @@ const int ComputeMsmMgr::PolyDegree[NUM_APPROX] = {
 };
 
 // The stencil array lengths below.
-const int ComputeMsmMgr::Nstencil[NUM_APPROX_FORMS] = {
-  5, 7, 7, 9, 9, 11, 11,
+const int ComputeMsmMgr::Nstencil[NUM_APPROX] = {
+  5, 7, 7, 9, 9, 11, 11, 3,
 };
 
 // Index offsets from the stencil-centered grid element, to get
 // to the correct contributing grid element.
 const int
-ComputeMsmMgr::IndexOffset[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO] = {
+ComputeMsmMgr::IndexOffset[NUM_APPROX][MAX_NSTENCIL_SKIP_ZERO] = {
   // cubic
   {-3, -1, 0, 1, 3},
 
@@ -1382,6 +1624,9 @@ ComputeMsmMgr::IndexOffset[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO] = {
 
   // nonic C4  (same as nonic C1)
   {-9, -7, -5, -3, -1, 0, 1, 3, 5, 7, 9},
+
+  // C1 Hermite
+  {-1, 0, 1},
 };
 
 // The grid transfer stencils for the non-factored restriction and
@@ -1499,7 +1744,7 @@ namespace msm {
     Grid<C1Vector> eh_c1hermite;
     Grid<C1Vector> subgrid_c1hermite;
     BigReal energy;
-    BigReal virial[3][3];
+    //BigReal virial[3][3];
     int cntRecvs;
     int patchID;
     int sequence;  // from Compute object for message priority
@@ -1509,10 +1754,16 @@ namespace msm {
 
     PatchData(ComputeMsmMgr *pmgr, int pid);
     void init(int natoms);
+
     void anterpolation();
     void sendCharge();
     void addPotential(const Grid<Float>& epart);
     void interpolation();
+
+    void anterpolationC1Hermite();
+    void sendChargeC1Hermite();
+    void addPotentialC1Hermite(const Grid<C1Vector>& epart);
+    void interpolationC1Hermite();
   };
 
 } // namespace msm
@@ -1522,19 +1773,31 @@ namespace msm {
 //
 // MsmGridCutoff
 
-class MsmGridCutoff : public CBase_MsmGridCutoff {
+template <class Vtype, class Mtype>
+class MsmGridCutoffKernel {
   public:
     ComputeMsmMgr *mgrLocal;     // for quick access to data
     msm::Map *map;
     msm::BlockIndex qhblockIndex;  // source of charges
     msm::BlockSend ehblockSend;    // destination for potentials
-    msm::Grid<Float> qh;
-    msm::Grid<Float> eh;
+    int eia, eib, eja, ejb, eka, ekb, eni, enj, enk;  // for "fold factor"
+    int isfold;  // for "fold factor"
+    msm::Grid<Vtype> qh;
+    msm::Grid<Vtype> eh;
+    msm::Grid<Vtype> ehfold;  // for "fold factor"
+    const msm::Grid<Mtype> *pgc;
+    const msm::Grid<Mtype> *pgvc;
+    int priority;
+    int sequence;
 
-    MsmGridCutoff() {
+    MsmGridCutoffKernel() { init(); }
+
+    void init() {
+      isfold = 0;
       mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
           CkpvAccess(BOCclass_group).computeMsmMgr);
       map = &(mgrLocal->mapData());
+      mgrLocal->addVirialContrib();
 #ifdef MSM_TIMING
       mgrLocal->addTiming();
 #endif
@@ -1543,62 +1806,108 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #endif
     }
 
-    MsmGridCutoff(CkMigrateMessage *m)
-#ifndef MSM_MIGRATION
-    { }
-#else
-      : CBase_MsmGridCutoff(m) {
-#ifdef DEBUG_MSM_MIGRATE
-      printf("MsmGridCutoff element %d migrated to processor %d\n",
-          thisIndex, CkMyPe());
-#endif
-      mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
-          CkpvAccess(BOCclass_group).computeMsmMgr);
-      map = &(mgrLocal->mapData());
-#ifdef MSM_TIMING
-      mgrLocal->addTiming();
-#endif
-#ifdef MSM_PROFILING
-      mgrLocal->addProfiling();
-#endif
-    }
-
-    virtual void pup(PUP::er& p) {
-#ifdef DEBUG_MSM_MIGRATE
-      printf("MsmGridCutoff element %d pupped on processor %d\n",
-          thisIndex, CkMyPe());
-#endif
+#ifdef MSM_MIGRATION
+    void pup(PUP::er& p) {
 #ifdef MSM_TIMING
       mgrLocal->subtractTiming();
 #endif
 #ifdef MSM_PROFILING
       mgrLocal->subtractProfiling();
 #endif
-      CBase_MsmGridCutoff::pup(p);  // pack our superclass
       p | qhblockIndex;
       p | ehblockSend;
+      p | eia, p | eib, p | eja, p | ejb, p | eka, p | ekb;
+      p | eni, p | enj, p | enk;
+      p | isfold;
     }
 #endif // MSM_MIGRATION
 
-    void initialize(MsmGridCutoffInitMsg *bmsg) {
+    void setup(MsmGridCutoffInitMsg *bmsg) {
       qhblockIndex = bmsg->qhBlockIndex;
       ehblockSend = bmsg->ehBlockSend;
       delete bmsg;
-#ifdef DEBUG_MSM_GRID
-      printf("MsmGridCutoff[%d]:  initialize()"
-          " send to level=%d block=(%d,%d,%d)\n",
-          thisIndex, ehblockSend.nblock_wrap.level,
-          ehblockSend.nblock_wrap.n.i,
-          ehblockSend.nblock_wrap.n.j,
-          ehblockSend.nblock_wrap.n.k);
+#if 0
+      // XXX
+      if (ehblockSend.nblock.level == 2) {
+        msm::BlockIndex& nb = ehblockSend.nblock;
+        msm::IndexRange& nr = ehblockSend.nrange;
+        msm::BlockIndex& nbw = ehblockSend.nblock_wrap;
+        msm::IndexRange& nrw = ehblockSend.nrange_wrap;
+        printf("MsmGridCutoffKernel::ehblockSend:\n"
+            "  nblock:  level=%d  i=%d j=%d k=%d\n"
+            "  nrange:  [%d..%d] x [%d..%d] x [%d..%d]\n"
+            "  nblock_wrap:  level=%d  i=%d j=%d k=%d\n"
+            "  nrange_wrap:  [%d..%d] x [%d..%d] x [%d..%d]\n",
+            nb.level, nb.n.i, nb.n.j, nb.n.k,
+            nr.ia(), nr.ib(), nr.ja(), nr.jb(), nr.ka(), nr.kb(),
+            nbw.level, nbw.n.i, nbw.n.j, nbw.n.k,
+            nrw.ia(), nrw.ib(), nrw.ja(), nrw.jb(), nrw.ka(), nrw.kb());
+      }
+      // XXX
 #endif
-    }
+
+      // set message priority
+      priority = mgrLocal->nlevels
+        + 2*(mgrLocal->nlevels - ehblockSend.nblock_wrap.level) - 1;
+      // allocate qh buffer
+      qh.init(map->blockLevel[qhblockIndex.level](qhblockIndex.n).nrange);
+      // allocate eh buffer
+      eh.init(ehblockSend.nrange);
+      // preprocess "fold factor" if active for this level
+      if (map->foldfactor[qhblockIndex.level].active) {
+        // allocate ehfold buffer
+        ehfold = eh;
+        // set index range of potentials
+        eia = eh.ia();
+        eib = eh.ib();
+        eja = eh.ja();
+        ejb = eh.jb();
+        eka = eh.ka();
+        ekb = eh.kb();
+        eni = eh.ni();
+        enj = eh.nj();
+        enk = eh.nk();
+        if (map->blockLevel[qhblockIndex.level].nn() == 1) {
+          if (map->ispx) { eia = qh.ia();  eib = qh.ib();  eni = qh.ni(); }
+          if (map->ispy) { eja = qh.ja();  ejb = qh.jb();  enj = qh.nj(); }
+          if (map->ispz) { eka = qh.ka();  ekb = qh.kb();  enk = qh.nk(); }
+        }
+        else {
+          // find destination block index
+          int level = qhblockIndex.level;
+          msm::BlockIndex bn = map->blockOfGridIndex(
+              ehblockSend.nrange_wrap.lower(), level);
+          map->wrapBlockIndex(bn);
+          if (map->ispx) {
+            eia = bn.n.i * map->bsx[level];
+            eib = eia + qh.ni() - 1;
+            eni = qh.ni();
+          }
+          if (map->ispy) {
+            eja = bn.n.j * map->bsy[level];
+            ejb = eja + qh.nj() - 1;
+            enj = qh.nj();
+          }
+          if (map->ispz) {
+            eka = bn.n.k * map->bsz[level];
+            ekb = eka + qh.nk() - 1;
+            enk = qh.nk();
+          }
+        }
+        isfold = 1;
+      } // if fold factor
+    } // setup()
+
+    void setupWeights(
+        const msm::Grid<Mtype> *ptrgc,
+        const msm::Grid<Mtype> *ptrgvc
+        ) {
+      pgc = ptrgc;
+      pgvc = ptrgvc;
+    } // setupWeights()
 
 
     void compute(GridMsg *gmsg) {
-#ifdef DEBUG_MSM_GRID
-      printf("MsmGridCutoff %d:  compute()\n", thisIndex);
-#endif
 #ifdef MSM_TIMING
       double startTime, stopTime;
       startTime = CkWallTimer();
@@ -1606,12 +1915,9 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       //
       // receive block of charges
       //
-      int priority = mgrLocal->nlevels
-        + 2*(mgrLocal->nlevels - ehblockSend.nblock_wrap.level) - 1;
       int pid;
-      int seq;
       // qh is resized only the first time, memory allocation persists
-      gmsg->get(qh, pid, seq);
+      gmsg->get(qh, pid, sequence);
       delete gmsg;
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
@@ -1627,22 +1933,17 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       startTime = stopTime;
 #endif
       // resets indexing on block
-      // eh is resized only the first time, memory allocation persists
-      eh.init(ehblockSend.nrange);
+      eh.init(ehblockSend.nrange);  // (always have to re-init nrange for eh)
       eh.reset(0);
-      // destination block index for potentials
-      const msm::BlockIndex& bindex = ehblockSend.nblock_wrap;
-      // need grid of weights for this level
-      msm::Grid<Float>& gc = map->gc[bindex.level];
       // index range of weights
-      int gia = gc.ia();
-      int gib = gc.ib();
-      int gja = gc.ja();
-      int gjb = gc.jb();
-      int gka = gc.ka();
-      int gkb = gc.kb();
-      int gni = gc.ni();
-      int gnj = gc.nj();
+      int gia = pgc->ia();
+      int gib = pgc->ib();
+      int gja = pgc->ja();
+      int gjb = pgc->jb();
+      int gka = pgc->ka();
+      int gkb = pgc->kb();
+      int gni = pgc->ni();
+      int gnj = pgc->nj();
       // index range of charge grid
       int qia = qh.ia();
       int qib = qh.ib();
@@ -1663,9 +1964,11 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       int index = 0;
 
       // access buffers directly
-      const Float *gcbuffer = gc.data().buffer();
-      const Float *qhbuffer = qh.data().buffer();
-      Float *ehbuffer = eh.data().buffer();
+      const Mtype *gcbuffer = pgc->data().buffer();
+      //const Mtype *gvcbuffer = pgvc->data().buffer();
+      const Vtype *qhbuffer = qh.data().buffer();
+      Vtype *ehbuffer = eh.data().buffer();
+      //Vtype *gvsumbuffer = mgrLocal->gvsum.data().buffer();
 
 #ifndef MSM_COMM_ONLY
       // loop over potentials
@@ -1685,7 +1988,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
             int mib = ( qib <= gib + i ? qib : gib + i );
 
             // accumulate sum to this eh point
-            Float ehsum = 0;
+            Vtype ehsum = 0;
 
 #if 0
             // loop over charge grid
@@ -1750,8 +2053,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
                 int gjkoff = gkoff + qk*gnji;
 
                 for (int qj = mja;  qj <= mjb;  qj++) {
-                  const Float *qbuf = qhbuffer + (qjkoff + qj*qni);
-                  const Float *gbuf = gcbuffer + (gjkoff + qj*gni);
+                  const Vtype *qbuf = qhbuffer + (qjkoff + qj*qni);
+                  const Mtype *gbuf = gcbuffer + (gjkoff + qj*gni);
+                  //const Mtype *gvcbuf = gvcbuffer + (gjkoff + qj*gni);
+                  //Vtype *gvsumbuf = gvsumbuffer + (gjkoff + qj*gni);
 #ifdef MSM_PROFILING
                   mgrLocal->xLoopCnt[nn]++;
 #endif
@@ -1761,6 +2066,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #endif
                   for (int ii = 0;  ii < 8;  ii++) {
                     ehsum += gbuf[ii] * qbuf[ii];
+                    //gvsumbuf[ii] += qbuf[ii] * qbuf[ii] * gvcbuf[ii];
                   }
                 }
               } // end loop over charge grid
@@ -1776,8 +2082,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
                 int gjkoff = gkoff + qk*gnji;
 
                 for (int qj = mja;  qj <= mjb;  qj++) {
-                  const Float *qbuf = qhbuffer + (qjkoff + qj*qni);
-                  const Float *gbuf = gcbuffer + (gjkoff + qj*gni);
+                  const Vtype *qbuf = qhbuffer + (qjkoff + qj*qni);
+                  const Mtype *gbuf = gcbuffer + (gjkoff + qj*gni);
+                  //const Mtype *gvcbuf = gvcbuffer + (gjkoff + qj*gni);
+                  //Vtype *gvsumbuf = gvsumbuffer + (gjkoff + qj*gni);
 #ifdef MSM_PROFILING
                   mgrLocal->xLoopCnt[nn]++;
 #endif
@@ -1787,6 +2095,7 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 #endif
                   for (int ii = 0;  ii < nn;  ii++) {
                     ehsum += gbuf[ii] * qbuf[ii];
+                    //gvsumbuf[ii] += qbuf[ii] * qbuf[ii] * gvcbuf[ii];
                   }
                 }
               } // end loop over charge grid
@@ -1806,61 +2115,17 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
       mgrLocal->doneProfiling();
 #endif
 
-#ifdef MSM_TIMING
-      stopTime = CkWallTimer();
-      mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
-#endif
-
       //
       // send block of potentials
       //
 
-#ifdef MSM_TIMING
-      startTime = stopTime;
-#endif
 #ifdef MSM_FOLD_FACTOR
       // if "fold factor" is active for this level,
       // need to sum unfolded potential grid back into periodic grid
-      if (map->foldfactor[qhblockIndex.level].active) {
+      if (isfold) {
         // copy unfolded grid
-        msm::Grid<Float> ehfold = eh;
-        // for indexing eh:  ia, ib, ja, jb, ka, kb
-        int eni = eh.ni();
-        int enj = eh.nj();
-        int enk = eh.nk();
-        int eia = ia;
-        int eib = ib;
-        int eja = ja;
-        int ejb = jb;
-        int eka = ka;
-        int ekb = kb;
-
-        if (map->blockLevel[qhblockIndex.level].nn() == 1) {
-          if (map->ispx) { eia = qia;  eib = qib;  eni = qni; }
-          if (map->ispy) { eja = qja;  ejb = qjb;  enj = qnj; }
-          if (map->ispz) { eka = qka;  ekb = qkb;  enk = qh.nk(); }
-        }
-        else {
-          // find destination block index
-          int level = qhblockIndex.level;
-          msm::BlockIndex bn = map->blockOfGridIndex(
-              ehblockSend.nrange_wrap.lower(), level);
-          if (map->ispx) {
-            eia = bn.n.i * map->bsx[level];
-            eib = eia + qni - 1;
-            eni = qni;
-          }
-          if (map->ispy) {
-            eja = bn.n.j * map->bsy[level];
-            ejb = eja + qnj - 1;
-            enj = qnj;
-          }
-          if (map->ispz) {
-            eka = bn.n.k * map->bsz[level];
-            ekb = eka + qh.nk() - 1;
-            enk = qh.nk();
-          }
-        }
+        ehfold = eh;
+        // reset eh indexing to correctly folded size
         eh.set(eia, eni, eja, enj, eka, enk);
         eh.reset(0);
 #ifdef DEBUG_MSM_GRID
@@ -1883,8 +2148,10 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
             ehblockSend.nrange_wrap.lower().k
             );
 #endif
-        const Float *ehfoldbuf = ehfold.data().buffer();
-        Float *ehbuf = eh.data().buffer();
+        const Vtype *ehfoldbuf = ehfold.data().buffer();
+        Vtype *ehbuf = eh.data().buffer();
+        // now we "fold" eh by calculating the
+        // wrap around sum of ehfold into correctly sized eh
         int index = 0;
         for (int k = ka;  k <= kb;  k++) {
           int kk = k;
@@ -1910,28 +2177,621 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
         // shift grid index range to its true (wrapped) values
         eh.updateLower( ehblockSend.nrange_wrap.lower() );
       }
-#else    // MSM_FOLD_FACTOR
+#else    // !MSM_FOLD_FACTOR
       // shift grid index range to its true (wrapped) values
       eh.updateLower( ehblockSend.nrange_wrap.lower() );
 #endif   // MSM_FOLD_FACTOR
-      // place eh into message
-      int msgsz = eh.data().len() * sizeof(Float);
-      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
-      SET_PRIORITY(gm, seq, priority);
-      gm->put(eh, bindex.level, seq);
+
 #ifdef MSM_TIMING
       stopTime = CkWallTimer();
-      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
-      // lookup in ComputeMsmMgr proxy array by level
-      mgrLocal->msmBlock[bindex.level](
-          bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
-#ifdef MSM_TIMING
-      mgrLocal->doneTiming();
+      mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
 #endif
     } // compute()
 
 };
+
+class MsmGridCutoff :
+  public CBase_MsmGridCutoff,
+  public MsmGridCutoffKernel<Float,Float>
+{
+  public:
+    CProxyElement_MsmBlock msmBlockElementProxy;  // root of reduction
+    CkSectionInfo cookie;  // need to save cookie for section reduction
+#ifdef MSM_REDUCE_GRID
+    msm::Grid<Float> ehfull;
+#endif // MSM_REDUCE_GRID
+
+    MsmGridCutoff() { }
+
+    MsmGridCutoff(CkMigrateMessage *m)
+#if  ! defined(MSM_MIGRATION)
+    { }
+#else // MSM_MIGRATION
+      : CBase_MsmGridCutoff(m) {
+#ifdef DEBUG_MSM_MIGRATE
+      printf("MsmGridCutoff element %d migrated to processor %d\n",
+          thisIndex, CkMyPe());
+#endif
+      init();
+      // access type dependent constants from map
+      MsmGridCutoffKernel<Float,Float>::setupWeights(
+          &(map->gc[ehblockSend.nblock_wrap.level]),
+          &(map->gvc[ehblockSend.nblock_wrap.level])
+          );
+    }
+
+    virtual void pup(PUP::er& p) {
+#ifdef DEBUG_MSM_MIGRATE
+      printf("MsmGridCutoff element %d pupped on processor %d\n",
+          thisIndex, CkMyPe());
+#endif
+      CBase_MsmGridCutoff::pup(p);  // pack our superclass
+      MsmGridCutoffKernel<Float,Float>::pup(p);
+    }
+#endif // MSM_MIGRATION
+
+    void init() {
+      MsmGridCutoffKernel<Float,Float>::init();
+    }
+
+    void setup(MsmGridCutoffInitMsg *bmsg) {
+      // base class consumes this init proxy  message
+      MsmGridCutoffKernel<Float,Float>::setup(bmsg);
+      // access type dependent constants from map
+      MsmGridCutoffKernel<Float,Float>::setupWeights(
+          &(map->gc[ehblockSend.nblock_wrap.level]),
+          &(map->gvc[ehblockSend.nblock_wrap.level])
+          );
+#ifdef MSM_REDUCE_GRID
+      // allocate full buffer space needed for section reduction
+      int level = ehblockSend.nblock_wrap.level;
+      int i = ehblockSend.nblock_wrap.n.i;
+      int j = ehblockSend.nblock_wrap.n.j;
+      int k = ehblockSend.nblock_wrap.n.k;
+      ehfull.init( map->blockLevel[level](i,j,k).nrange );
+#endif // MSM_REDUCE_GRID
+#ifdef DEBUG_MSM_GRID
+      printf("MsmGridCutoff[%d]:  setup()"
+          " send to level=%d block=(%d,%d,%d)\n",
+          thisIndex, ehblockSend.nblock_wrap.level,
+          ehblockSend.nblock_wrap.n.i,
+          ehblockSend.nblock_wrap.n.j,
+          ehblockSend.nblock_wrap.n.k);
+#endif
+    }
+
+    void setupSections(MsmGridCutoffSetupMsg *msg) {
+#ifdef DEBUG_MSM_GRID
+      CkPrintf("MSM GRID CUTOFF %d setup section on PE %d\n",
+          thisIndex, CkMyPe());
+#endif
+      CkGetSectionInfo(cookie, msg);  // init the cookie
+      msg->get(&msmBlockElementProxy);  // get proxy to MsmBlock
+      delete msg;
+    }
+
+    void compute(GridMsg *gmsg) {
+#ifdef DEBUG_MSM_GRID
+      printf("MsmGridCutoff %d:  compute()\n", thisIndex);
+#endif
+      // base class consumes this grid message
+      MsmGridCutoffKernel<Float,Float>::compute(gmsg);
+
+#ifdef MSM_TIMING
+      double startTime, stopTime;
+      startTime = CkWallTimer();
+#endif
+#ifdef MSM_REDUCE_GRID
+
+      // perform section reduction over potential grids
+      CProxy_CkMulticastMgr mcastProxy =
+        CkpvAccess(BOCclass_group).multicastMgr;
+      CkMulticastMgr *mcastPtr =
+        CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
+      CkCallback cb(CkIndex_MsmBlock::sumReducedPotential(NULL),
+          msmBlockElementProxy);
+      // sum into "full" sized buffer needed for contribute
+      ehfull.reset(0);
+      ehfull += eh;
+      mcastPtr->contribute(
+          ehfull.nn() * sizeof(Float), ehfull.data().buffer(), 
+          CkReduction::sum_float, cookie, cb);
+
+#if 0
+      // serialize eh for contribute
+      msm::SerializedGrid sg(eh);
+      CkError("compute():  sg.size() = %d   sg.data() = %p\n",
+          sg.size(), sg.data());
+      mcastPtr->contribute(sg.size(), sg.data(), sumFloatGridsType,
+          cookie, cb);
+#endif
+
+#else
+      // place eh into message
+      const msm::BlockIndex& bindex = ehblockSend.nblock_wrap;
+      int msgsz = eh.data().len() * sizeof(Float);
+      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+      SET_PRIORITY(gm, sequence, priority);
+      gm->put(eh, bindex.level, sequence);
+      // lookup in ComputeMsmMgr proxy array by level
+      mgrLocal->msmBlock[bindex.level](
+          bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+
+#if 0
+      {
+        int intData = 1;
+        CProxy_CkMulticastMgr mcastProxy =
+          CkpvAccess(BOCclass_group).multicastMgr;
+        CkMulticastMgr *mcastPtr =
+          CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
+        CkCallback cb(CkIndex_MsmBlock::myReductionEntry(NULL),
+            msmBlockElementProxy);
+#if 0
+        mcastPtr->contribute(sizeof(int), &intData, CkReduction::sum_int,
+            cookie, cb);
+#else
+        mcastPtr->contribute(sizeof(int), &intData, sumIntsType,
+            cookie, cb);
+#endif
+      }
+#endif
+
+#endif // MSM_REDUCE_GRID
+
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+      mgrLocal->doneTiming();
+#endif
+
+    } // compute()
+
+}; // MsmGridCutoff
+
+
+class MsmC1HermiteGridCutoff :
+  public CBase_MsmC1HermiteGridCutoff,
+  public MsmGridCutoffKernel<C1Vector,C1Matrix>
+{
+  public:
+    CProxyElement_MsmC1HermiteBlock msmBlockElementProxy;  // root of reduction
+    CkSectionInfo cookie;  // need to save cookie for section reduction
+#ifdef MSM_REDUCE_GRID
+    msm::Grid<C1Vector> ehfull;
+#endif // MSM_REDUCE_GRID
+
+    MsmC1HermiteGridCutoff() { }
+
+    MsmC1HermiteGridCutoff(CkMigrateMessage *m)
+#if  ! defined(MSM_MIGRATION)
+    { }
+#else // MSM_MIGRATION
+      : CBase_MsmC1HermiteGridCutoff(m) {
+#ifdef DEBUG_MSM_MIGRATE
+      printf("MsmC1HermiteGridCutoff element %d migrated to processor %d\n",
+          thisIndex, CkMyPe());
+#endif
+      init();
+      // access type dependent constants from map
+      MsmGridCutoffKernel<C1Vector,C1Matrix>::setupWeights(
+          &(map->gc_c1hermite[ehblockSend.nblock_wrap.level]),
+          NULL
+          );
+    }
+
+    virtual void pup(PUP::er& p) {
+#ifdef DEBUG_MSM_MIGRATE
+      printf("MsmC1HermiteGridCutoff element %d pupped on processor %d\n",
+          thisIndex, CkMyPe());
+#endif
+      CBase_MsmC1HermiteGridCutoff::pup(p);  // pack our superclass
+      MsmGridCutoffKernel<C1Vector,C1Matrix>::pup(p);
+    }
+#endif // MSM_MIGRATION
+
+    void init() {
+      MsmGridCutoffKernel<C1Vector,C1Matrix>::init();
+    }
+
+    void setup(MsmGridCutoffInitMsg *bmsg) {
+      // base class consumes this init proxy  message
+      MsmGridCutoffKernel<C1Vector,C1Matrix>::setup(bmsg);
+      // access type dependent constants from map
+      MsmGridCutoffKernel<C1Vector,C1Matrix>::setupWeights(
+          &(map->gc_c1hermite[ehblockSend.nblock_wrap.level]),
+          NULL
+          );
+#ifdef DEBUG_MSM_GRID
+      printf("MsmC1HermiteGridCutoff[%d]:  setup()"
+          " send to level=%d block=(%d,%d,%d)\n",
+          thisIndex, ehblockSend.nblock_wrap.level,
+          ehblockSend.nblock_wrap.n.i,
+          ehblockSend.nblock_wrap.n.j,
+          ehblockSend.nblock_wrap.n.k);
+#endif
+#ifdef MSM_REDUCE_GRID
+      // allocate full buffer space needed for section reduction
+      int level = ehblockSend.nblock_wrap.level;
+      int i = ehblockSend.nblock_wrap.n.i;
+      int j = ehblockSend.nblock_wrap.n.j;
+      int k = ehblockSend.nblock_wrap.n.k;
+      ehfull.init( map->blockLevel[level](i,j,k).nrange );
+#if 0
+      printf("XXX init level=%d block=%d %d %d thisIndex=%d  ehfull: ni=%d nj=%d nk=%d nn=%d\n",
+          level, i, j, k, thisIndex,
+          map->blockLevel[level](i,j,k).nrange.ni(),
+          map->blockLevel[level](i,j,k).nrange.nj(),
+          map->blockLevel[level](i,j,k).nrange.nk(),
+          map->blockLevel[level](i,j,k).nrange.nn()
+          );
+#endif // 0
+#endif // MSM_REDUCE_GRID
+    }
+
+    void setupSections(MsmC1HermiteGridCutoffSetupMsg *msg) {
+#ifdef DEBUG_MSM_GRID
+      //CkPrintf("MSM C1 HERMITE GRID CUTOFF %d setup section on PE %d\n",
+      //    thisIndex, CkMyPe());
+#endif
+      CkGetSectionInfo(cookie, msg);  // init the cookie
+      msg->get(&msmBlockElementProxy);  // get proxy to MsmC1HermiteBlock
+      delete msg;
+    }
+
+    void compute(GridMsg *gmsg) {
+#ifdef DEBUG_MSM_GRID
+      printf("MsmC1HermiteGridCutoff %d:  compute()\n", thisIndex);
+#endif
+#if 0
+      // base class consumes this grid message
+      MsmGridCutoffKernel<C1Vector,C1Matrix>::compute(gmsg);
+#else
+      compute_specialized(gmsg);
+#endif
+
+#ifdef MSM_TIMING
+      double startTime, stopTime;
+      startTime = CkWallTimer();
+#endif
+#ifdef MSM_REDUCE_GRID
+
+      // perform section reduction over potential grids
+      CProxy_CkMulticastMgr mcastProxy =
+        CkpvAccess(BOCclass_group).multicastMgr;
+      CkMulticastMgr *mcastPtr =
+        CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
+      CkCallback cb(CkIndex_MsmC1HermiteBlock::sumReducedPotential(NULL),
+          msmBlockElementProxy);
+      // sum into "full" sized buffer needed for contribute
+#if 0
+      int padit = 1536; // XXX pad it
+      ehfull.resize(padit); // XXX pad it
+#endif
+      ehfull.reset(0);
+#if 0
+      printf("ehfull:  [%d..%d] x [%d..%d] x [%d..%d]\n",
+          ehfull.ia(), ehfull.ib(),
+          ehfull.ja(), ehfull.jb(),
+          ehfull.ka(), ehfull.kb());
+      printf("eh:  [%d..%d] x [%d..%d] x [%d..%d]\n",
+          eh.ia(), eh.ib(),
+          eh.ja(), eh.jb(),
+          eh.ka(), eh.kb());
+#endif
+#ifdef DEBUG_MSM_GRID
+      printf("MsmC1HermiteGridCutoff %d:  ehfull.nn() = %d\n",
+          thisIndex, ehfull.nn());
+#endif
+      ehfull += eh;
+#if 0
+      // XXX
+      int level = ehblockSend.nblock_wrap.level;
+      int i = ehblockSend.nblock_wrap.n.i;
+      int j = ehblockSend.nblock_wrap.n.j;
+      int k = ehblockSend.nblock_wrap.n.k;
+      printf("XXX send level=%d block=%d %d %d thisIndex=%d  efull: ni=%d nj=%d nk=%d nn=%d\n",
+          level, i, j, k, thisIndex,
+          map->blockLevel[level](i,j,k).nrange.ni(),
+          map->blockLevel[level](i,j,k).nrange.nj(),
+          map->blockLevel[level](i,j,k).nrange.nk(),
+          map->blockLevel[level](i,j,k).nrange.nn()
+          );
+#endif // 0
+#if 0
+      // XXX pad it
+      mcastPtr->contribute(
+          padit * sizeof(C1Vector), ehfull.data().buffer(), 
+          CkReduction::sum_float, cookie, cb);
+#else
+#ifdef DEBUG_MSM_GRID
+      printf("MsmC1HermiteGridCutoff %d:  after add ehfull.nn() = %d\n",
+          thisIndex, ehfull.nn());
+#endif
+      mcastPtr->contribute(
+          ehfull.nn() * sizeof(C1Vector), ehfull.data().buffer(), 
+          CkReduction::sum_float, cookie, cb);
+#endif
+
+#if 0
+      // serialize eh for contribute
+      msm::SerializedGrid sg(eh);
+      CkError("compute():  sg.size() = %d   sg.data() = %p\n",
+          sg.size(), sg.data());
+      mcastPtr->contribute(sg.size(), sg.data(), sumFloatGridsType,
+          cookie, cb);
+#endif
+
+#else
+      // place eh into message
+      const msm::BlockIndex& bindex = ehblockSend.nblock_wrap;
+      int msgsz = eh.data().len() * sizeof(C1Vector);
+      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+      SET_PRIORITY(gm, sequence, priority);
+      gm->put(eh, bindex.level, sequence);
+      // lookup in ComputeMsmMgr proxy array by level
+      mgrLocal->msmC1HermiteBlock[bindex.level](
+          bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+
+#if 0
+      {
+        int intData = 1;
+        CProxy_CkMulticastMgr mcastProxy =
+          CkpvAccess(BOCclass_group).multicastMgr;
+        CkMulticastMgr *mcastPtr =
+          CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
+        CkCallback cb(CkIndex_MsmC1HermiteBlock::myReductionEntry(NULL),
+            msmBlockElementProxy);
+#if 0
+        mcastPtr->contribute(sizeof(int), &intData, CkReduction::sum_int,
+            cookie, cb);
+#else
+        mcastPtr->contribute(sizeof(int), &intData, sumIntsType,
+            cookie, cb);
+#endif
+      }
+#endif
+
+#endif // MSM_REDUCE_GRID
+
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+      mgrLocal->doneTiming();
+#endif
+    } // compute()
+
+    // try to improve performance of the major computational part
+    void compute_specialized(GridMsg *gmsg);
+
+}; // MsmC1HermiteGridCutoff
+
+void MsmC1HermiteGridCutoff::compute_specialized(GridMsg *gmsg) {
+#ifdef MSM_TIMING
+      double startTime, stopTime;
+      startTime = CkWallTimer();
+#endif
+      //
+      // receive block of charges
+      //
+      int pid;
+      // qh is resized only the first time, memory allocation persists
+      gmsg->get(qh, pid, sequence);
+      delete gmsg;
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+
+      //
+      // grid cutoff calculation
+      // this charge block -> this potential block
+      //
+
+#ifdef MSM_TIMING
+      startTime = stopTime;
+#endif
+      // resets indexing on block
+      eh.init(ehblockSend.nrange);  // (always have to re-init nrange for eh)
+      eh.reset(0);
+      // index range of weights
+      int gia = pgc->ia();
+      int gib = pgc->ib();
+      int gja = pgc->ja();
+      int gjb = pgc->jb();
+      int gka = pgc->ka();
+      int gkb = pgc->kb();
+      int gni = pgc->ni();
+      int gnj = pgc->nj();
+      // index range of charge grid
+      int qia = qh.ia();
+      int qib = qh.ib();
+      int qja = qh.ja();
+      int qjb = qh.jb();
+      int qka = qh.ka();
+      int qkb = qh.kb();
+      int qni = qh.ni();
+      int qnj = qh.nj();
+      // index range of potentials
+      int ia = eh.ia();
+      int ib = eh.ib();
+      int ja = eh.ja();
+      int jb = eh.jb();
+      int ka = eh.ka();
+      int kb = eh.kb();
+
+      int index = 0;
+
+      // access buffers directly
+      const C1Matrix *gcbuffer = pgc->data().buffer();
+      const C1Vector *qhbuffer = qh.data().buffer();
+      C1Vector *ehbuffer = eh.data().buffer();
+#ifdef DEBUG_MEMORY_ALIGNMENT
+      printf("gcbuffer mem:  addr=%p  div32=%lu  mod32=%lu\n",
+          gcbuffer,
+          (unsigned long)(gcbuffer)/32,
+          (unsigned long)(gcbuffer)%32);
+      printf("qhbuffer mem:  addr=%p  div32=%lu  mod32=%lu\n",
+          qhbuffer,
+          (unsigned long)(qhbuffer)/32,
+          (unsigned long)(qhbuffer)%32);
+      printf("ehbuffer mem:  addr=%p  div32=%lu  mod32=%lu\n",
+          ehbuffer,
+          (unsigned long)(ehbuffer)/32,
+          (unsigned long)(ehbuffer)%32);
+#endif
+
+#ifndef MSM_COMM_ONLY
+      // loop over potentials
+      for (int k = ka;  k <= kb;  k++) {
+        // clip charges to weights along k
+        int mka = ( qka >= gka + k ? qka : gka + k );
+        int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
+
+        for (int j = ja;  j <= jb;  j++) {
+          // clip charges to weights along j
+          int mja = ( qja >= gja + j ? qja : gja + j );
+          int mjb = ( qjb <= gjb + j ? qjb : gjb + j );
+
+          for (int i = ia;  i <= ib;  i++) {
+            // clip charges to weights along i
+            int mia = ( qia >= gia + i ? qia : gia + i );
+            int mib = ( qib <= gib + i ? qib : gib + i );
+
+            // accumulate sum to this eh point
+            C1Vector ehsum = 0;
+
+            // loop over charge grid
+            int nn = mib - mia + 1;
+
+            {
+              int qnji = qnj * qni;
+              int qkoff = -qka*qnji - qja*qni - qia + mia;
+              int gnji = gnj * gni;
+              int gkoff = (-k-gka)*gnji + (-j-gja)*gni - i - gia + mia;
+
+              for (int qk = mka;  qk <= mkb;  qk++) {
+                int qjkoff = qkoff + qk*qnji;
+                int gjkoff = gkoff + qk*gnji;
+
+                for (int qj = mja;  qj <= mjb;  qj++) {
+                  const C1Vector *qbuf = qhbuffer + (qjkoff + qj*qni);
+                  const C1Matrix *gbuf = gcbuffer + (gjkoff + qj*gni);
+#ifdef MSM_PROFILING
+                  mgrLocal->xLoopCnt[nn]++;
+#endif
+// help the vectorizer make reasonable decisions
+#if defined(__INTEL_COMPILER)
+#pragma vector always 
+#endif
+                  for (int ii = 0;  ii < nn;  ii++) {
+
+#if 0
+                    ehsum += gbuf[ii] * qbuf[ii];
+#else
+                    if ( *((int *)(gbuf)) != 0) {
+
+                      // expand matrix-vector multiply
+#if defined(__INTEL_COMPILER)
+#pragma vector always
+#endif
+                      for (int km=0, jm=0;  jm < C1_VECTOR_SIZE;  jm++) {
+                        for (int im=0;  im < C1_VECTOR_SIZE;  im++, km++) {
+                          ehsum.velem[jm] += gbuf->melem[km] * qbuf->velem[im];
+                        }
+                      }
+                    } // if
+                    gbuf++;
+                    qbuf++;
+#endif
+                  }
+                }
+              } // end loop over charge grid
+
+            }
+
+            ehbuffer[index] = ehsum;
+            index++;
+          }
+        }
+      } // end loop over potentials
+#endif // !MSM_COMM_ONLY
+
+#ifdef MSM_PROFILING
+      mgrLocal->doneProfiling();
+#endif
+
+      //
+      // send block of potentials
+      //
+
+#ifdef MSM_FOLD_FACTOR
+      // if "fold factor" is active for this level,
+      // need to sum unfolded potential grid back into periodic grid
+      if (isfold) {
+        // copy unfolded grid
+        ehfold = eh;
+        // reset eh indexing to correctly folded size
+        eh.set(eia, eni, eja, enj, eka, enk);
+        eh.reset(0);
+#ifdef DEBUG_MSM_GRID
+        printf("level=%d   ehfold:  [%d..%d] x [%d..%d] x [%d..%d]  "
+            "(%d x %d x %d)\n"
+                "              eh:  [%d..%d] x [%d..%d] x [%d..%d]  "
+            "(%d x %d x %d)\n"
+               "         eh lower:  %d %d %d\n",
+            qhblockIndex.level,
+            ehfold.ia(), ehfold.ib(), 
+            ehfold.ja(), ehfold.jb(),
+            ehfold.ka(), ehfold.kb(),
+            ehfold.ni(), ehfold.nj(), ehfold.nk(),
+            eh.ia(), eh.ib(), 
+            eh.ja(), eh.jb(),
+            eh.ka(), eh.kb(),
+            eh.ni(), eh.nj(), eh.nk(),
+            ehblockSend.nrange_wrap.lower().i,
+            ehblockSend.nrange_wrap.lower().j,
+            ehblockSend.nrange_wrap.lower().k
+            );
+#endif
+        const C1Vector *ehfoldbuf = ehfold.data().buffer();
+        C1Vector *ehbuf = eh.data().buffer();
+        // now we "fold" eh by calculating the
+        // wrap around sum of ehfold into correctly sized eh
+        int index = 0;
+        for (int k = ka;  k <= kb;  k++) {
+          int kk = k;
+          if      (kk < eka)  do { kk += enk; } while (kk < eka);
+          else if (kk > ekb)  do { kk -= enk; } while (kk > ekb);
+          int koff = (kk - eka) * enj;
+          for (int j = ja;  j <= jb;  j++) {
+            int jj = j;
+            if      (jj < eja)  do { jj += enj; } while (jj < eja);
+            else if (jj > ejb)  do { jj -= enj; } while (jj > ejb);
+            int jkoff = (koff + (jj - eja)) * eni;
+            for (int i = ia;  i <= ib;  i++, index++) {
+              int ii = i;
+              if      (ii < eia)  do { ii += eni; } while (ii < eia);
+              else if (ii > eib)  do { ii -= eni; } while (ii > eib);
+              int ijkoff = jkoff + (ii - eia);
+              ehbuf[ijkoff] += ehfoldbuf[index];
+            }
+          }
+        }
+      }
+      else {
+        // shift grid index range to its true (wrapped) values
+        eh.updateLower( ehblockSend.nrange_wrap.lower() );
+      }
+#else    // !MSM_FOLD_FACTOR
+      // shift grid index range to its true (wrapped) values
+      eh.updateLower( ehblockSend.nrange_wrap.lower() );
+#endif   // MSM_FOLD_FACTOR
+
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
+#endif
+} // MsmC1HermiteGridCutoff::compute_specialized()
 
 // MsmGridCutoff
 //
@@ -1942,52 +2802,70 @@ class MsmGridCutoff : public CBase_MsmGridCutoff {
 //
 // MsmBlock
 
-class MsmBlock : public CBase_MsmBlock {
+
+template <class Vtype, class Mtype>
+class MsmBlockKernel {
   public:
     CProxy_ComputeMsmMgr mgrProxy;
     ComputeMsmMgr *mgrLocal;  // for quick access to data
     msm::Map *map;
     msm::BlockDiagram *bd;
-    msm::Grid<Float> qh;
-    msm::Grid<Float> eh;
+    msm::Grid<Vtype> qh;
+    msm::Grid<Vtype> eh;
 #ifndef MSM_GRID_CUTOFF_DECOMP
-    msm::Grid<Float> ehCutoff;
+    const msm::Grid<Mtype> *gcWeights;
+    msm::Grid<Vtype> ehCutoff;
 #endif
-    msm::Grid<Float> qhRestricted;
-    msm::Grid<Float> ehProlongated;
+    const msm::Grid<Mtype> *resStencil;
+    const msm::Grid<Mtype> *proStencil;
+    msm::Grid<Vtype> qhRestricted;
+    msm::Grid<Vtype> ehProlongated;
     int cntRecvsCharge;
     int cntRecvsPotential;
     msm::BlockIndex blockIndex;
  
-    msm::Grid<Float> subgrid;
+    msm::Grid<Vtype> subgrid;
 
     int sequence;  // from incoming message for message priority
 
-    MsmBlock(int level);
-    MsmBlock(CkMigrateMessage *m) { }
+    MsmBlockKernel(const msm::BlockIndex&);
+    MsmBlockKernel(CkMigrateMessage *m) { }
 
     void init();
 
-    void addCharge(GridMsg *);  // entry
-
-    void restriction();
-    void sendUpCharge();
-    void gridCutoff();
 #ifndef MSM_GRID_CUTOFF_DECOMP
-    void sendAcrossPotential();
+    void setupStencils(
+        const msm::Grid<Mtype> *res,
+        const msm::Grid<Mtype> *pro,
+        const msm::Grid<Mtype> *gc
+        )
+    {
+      resStencil = res;
+      proStencil = pro;
+      gcWeights = gc;
+    }
+#else
+    void setupStencils(
+        const msm::Grid<Mtype> *res,
+        const msm::Grid<Mtype> *pro
+        )
+    {
+      resStencil = res;
+      proStencil = pro;
+    }
 #endif
 
-    void addPotential(GridMsg *);  // entry
+    void restrictionKernel();
+#ifndef MSM_GRID_CUTOFF_DECOMP
+    void gridCutoffKernel();
+#endif
+    void prolongationKernel();
 
-    void prolongation();
-    void sendDownPotential();
-    void sendPatch();
-}; // class MsmBlock
+}; // class MsmBlockKernel<Vtype,Mtype>
 
-
-MsmBlock::MsmBlock(int level) {
-  blockIndex.level = level;
-  blockIndex.n = msm::Ivec(thisIndex.x, thisIndex.y, thisIndex.z);
+template <class Vtype, class Mtype>
+MsmBlockKernel<Vtype,Mtype>::MsmBlockKernel(const msm::BlockIndex& bindex) {
+  blockIndex = bindex;
   mgrProxy = CProxy_ComputeMsmMgr(CkpvAccess(BOCclass_group).computeMsmMgr);
   mgrLocal = CProxy_ComputeMsmMgr::ckLocalBranch(
       CkpvAccess(BOCclass_group).computeMsmMgr);
@@ -2001,17 +2879,18 @@ MsmBlock::MsmBlock(int level) {
   qhRestricted.init( bd->nrangeRestricted );
   ehProlongated.init( bd->nrangeProlongated );
 #ifdef DEBUG_MSM_GRID
-  printf("MsmBlock level=%d, n=%d %d %d:  constructor\n",
+  printf("MsmBlockKernel level=%d, n=%d %d %d:  constructor\n",
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
 #ifdef MSM_TIMING
   mgrLocal->addTiming();
 #endif
   init();
-} // MsmBlock::MsmBlock()
+} // MsmBlockKernel<Vtype,Mtype>::MsmBlockKernel()
 
 
-void MsmBlock::init() {
+template <class Vtype, class Mtype>
+void MsmBlockKernel<Vtype,Mtype>::init() {
   qh.reset(0);
   eh.reset(0);
 #ifndef MSM_GRID_CUTOFF_DECOMP
@@ -2021,38 +2900,14 @@ void MsmBlock::init() {
   ehProlongated.reset(0);
   cntRecvsCharge = 0;
   cntRecvsPotential = 0;
-} // MsmBlock::init()
+} // MsmBlockKernel<Vtype,Mtype>::init()
 
 
-void MsmBlock::addCharge(GridMsg *gm)
-{
-#ifdef MSM_TIMING
-  double startTime, stopTime;
-  startTime = CkWallTimer();
-#endif
-  //msm::Grid<BigReal> qpart;
-  int pid;
-  gm->get(subgrid, pid, sequence);
-  delete gm;
-  qh += subgrid;
-#ifdef MSM_TIMING
-  stopTime = CkWallTimer();
-  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
-  if (++cntRecvsCharge == bd->numRecvsCharge) {
-    int nlevels = mgrLocal->numLevels();
-    if (blockIndex.level < nlevels-1) {
-      restriction();
-    }
-    gridCutoff();
-  }
-} // MsmBlock::addCharge()
-
-
-void MsmBlock::restriction()
+template <class Vtype, class Mtype>
+void MsmBlockKernel<Vtype,Mtype>::restrictionKernel()
 {
 #ifdef DEBUG_MSM_GRID
-  printf("MsmBlock level=%d, id=%d %d %d:  restriction\n",
+  printf("MsmBlockKernel level=%d, id=%d %d %d:  restriction\n",
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
 
@@ -2066,7 +2921,7 @@ void MsmBlock::restriction()
   const int approx = mgrLocal->approx;
   const int nstencil = ComputeMsmMgr::Nstencil[approx];
   const int *offset = ComputeMsmMgr::IndexOffset[approx];
-  const Float *phi = ComputeMsmMgr::PhiStencil[approx];
+  const msm::Grid<Mtype>& res = *resStencil;
 
   // index range for h grid charges
   int ia1 = qh.ia();
@@ -2084,6 +2939,9 @@ void MsmBlock::restriction()
   int ka2 = qhRestricted.ka();
   int kb2 = qhRestricted.kb();
 
+  // reset grid
+  qhRestricted.reset(0);
+
   // loop over restricted (2h) grid
   for (int k2 = ka2;  k2 <= kb2;  k2++) {
     int k1 = 2 * k2;
@@ -2093,7 +2951,8 @@ void MsmBlock::restriction()
         int i1 = 2 * i2;
 
         // loop over stencils on h grid
-        Float q2hsum = 0;  // sum charge to restricted (2h) grid point
+        Vtype& q2hsum = qhRestricted(i2,j2,k2);
+
         for (int k = 0;  k < nstencil;  k++) {
           int kn = k1 + offset[k];
           if      (kn < ka1) continue;
@@ -2109,12 +2968,11 @@ void MsmBlock::restriction()
               if      (in < ia1) continue;
               else if (in > ib1) break;
 
-              q2hsum += qh(in,jn,kn) * phi[i] * phi[j] * phi[k];
+              q2hsum += res(i,j,k) * qh(in,jn,kn);
             }
           }
         } // end loop over stencils on h grid
 
-        qhRestricted(i2,j2,k2) = q2hsum;
       }
     }
   } // end loop over restricted (2h) grid
@@ -2126,65 +2984,24 @@ void MsmBlock::restriction()
   stopTime = CkWallTimer();
   mgrLocal->msmTiming[MsmTimer::RESTRICT] += stopTime - startTime;
 #endif
-
-  sendUpCharge();
-} // MsmBlock::restriction()
+} // MsmBlockKernel<Vtype,Mtype>::restrictionKernel()
 
 
-void MsmBlock::sendUpCharge()
-{
-#ifdef MSM_TIMING
-  double startTime, stopTime;
-#endif
-  int lnext = blockIndex.level + 1;
-  // buffer portions of grid to send to Blocks on next level
-  // allocate the largest buffer space we'll need
-  //msm::Grid<BigReal> subgrid;
-  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
-  for (int n = 0;  n < bd->sendUp.len();  n++) {
-#ifdef MSM_TIMING
-    startTime = CkWallTimer();
-#endif
-    // initialize the proper subgrid indexing range
-    subgrid.init( bd->sendUp[n].nrange );
-    // extract the values from the larger grid into the subgrid
-    qhRestricted.extract(subgrid);
-    // translate the subgrid indexing range to match the MSM block
-    subgrid.updateLower( bd->sendUp[n].nrange_wrap.lower() );
-    // add the subgrid charges into the block
-    msm::BlockIndex& bindex = bd->sendUp[n].nblock_wrap;
-    ASSERT(bindex.level == lnext);
-    // place subgrid into message
-    // SET MESSAGE PRIORITY
-    int msgsz = subgrid.nn() * sizeof(Float);
-    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
-    SET_PRIORITY(gm, sequence, MSM_PRIORITY + lnext);
-    gm->put(subgrid, blockIndex.level, sequence);  // send my level
-#ifdef MSM_TIMING
-    stopTime = CkWallTimer();
-    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
-    // lookup in ComputeMsmMgr proxy array by level
-    mgrLocal->msmBlock[lnext](
-        bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
-  } // for
-} // MsmBlock::sendUpCharge()
-
-
-void MsmBlock::gridCutoff()
+#ifndef MSM_GRID_CUTOFF_DECOMP
+template <class Vtype, class Mtype>
+void MsmBlockKernel<Vtype,Mtype>::gridCutoffKernel()
 {
 #ifdef DEBUG_MSM_GRID
-  printf("MsmBlock level=%d, id=%d %d %d:  grid cutoff\n",
+  printf("MsmBlockKernel level=%d, id=%d %d %d:  grid cutoff\n",
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
-#ifndef MSM_GRID_CUTOFF_DECOMP
 #ifdef MSM_TIMING
   double startTime, stopTime;
   startTime = CkWallTimer();
 #endif
 #ifndef MSM_COMM_ONLY
   // need grid of weights for this level
-  msm::Grid<Float>& gc = map->gc[blockIndex.level];
+  msm::Grid<Mtype>& gc = *gcWeights;
   // index range of weights
   int gia = gc.ia();
   int gib = gc.ib();
@@ -2206,6 +3023,8 @@ void MsmBlock::gridCutoff()
   int jb = ehCutoff.jb();
   int ka = ehCutoff.ka();
   int kb = ehCutoff.kb();
+  // reset grid
+  ehCutoff.reset(0);
   // loop over potentials
   for (int k = ka;  k <= kb;  k++) {
     for (int j = ja;  j <= jb;  j++) {
@@ -2218,7 +3037,7 @@ void MsmBlock::gridCutoff()
         int mka = ( qka >= gka + k ? qka : gka + k );
         int mkb = ( qkb <= gkb + k ? qkb : gkb + k );
         // accumulate sum to this eh point
-        Float ehsum = 0;
+        Vtype& ehsum = ehCutoff(i,j,k);
         // loop over smaller charge grid
         for (int qk = mka;  qk <= mkb;  qk++) {
           for (int qj = mja;  qj <= mjb;  qj++) {
@@ -2227,7 +3046,7 @@ void MsmBlock::gridCutoff()
             }
           }
         } // end loop over smaller charge grid
-        ehCutoff(i,j,k) = ehsum;
+
       }
     }
   } // end loop over potentials
@@ -2238,111 +3057,15 @@ void MsmBlock::gridCutoff()
   stopTime = CkWallTimer();
   mgrLocal->msmTiming[MsmTimer::GRIDCUTOFF] += stopTime - startTime;
 #endif
-
-  sendAcrossPotential();
-
-#else
-
-  // send charge block to MsmGridCutoff compute objects
-#ifdef MSM_TIMING
-  double startTime, stopTime;
-#endif
-  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
-  int msgsz = qh.data().len() * sizeof(Float);
-  int len = bd->indexGridCutoff.len();
-
-  for (int n = 0;  n < len;  n++) {
-#ifdef MSM_TIMING
-    startTime = CkWallTimer();
-#endif
-    int index = bd->indexGridCutoff[n];
-    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
-    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-    gm->put(qh, blockIndex.level, sequence);  // send my level
-#ifdef MSM_TIMING
-    stopTime = CkWallTimer();
-    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
-    mgrLocal->msmGridCutoff[index].compute(gm);
-  }
-
+} // MsmBlockKernel<Vtype,Mtype>::gridCutoffKernel()
 #endif // MSM_GRID_CUTOFF_DECOMP
 
-} // MsmBlock::gridCutoff()
 
-
-#ifndef MSM_GRID_CUTOFF_DECOMP
-void MsmBlock::sendAcrossPotential()
-{
-#ifdef MSM_TIMING
-  double startTime, stopTime;
-#endif
-  int lnext = blockIndex.level;
-  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
-  // buffer portions of grid to send to Blocks on this level
-  // allocate the largest buffer space we'll need
-  //msm::Grid<BigReal> subgrid;
-  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
-  for (int n = 0;  n < bd->sendAcross.len();  n++) {
-#ifdef MSM_TIMING
-    startTime = CkWallTimer();
-#endif
-    // initialize the proper subgrid indexing range
-    subgrid.init( bd->sendAcross[n].nrange );
-    // extract the values from the larger grid into the subgrid
-    ehCutoff.extract(subgrid);
-    // translate the subgrid indexing range to match the MSM block
-    subgrid.updateLower( bd->sendAcross[n].nrange_wrap.lower() );
-    // add the subgrid charges into the block
-    msm::BlockIndex& bindex = bd->sendAcross[n].nblock_wrap;
-    ASSERT(bindex.level == lnext);
-    // place subgrid into message
-    int msgsz = subgrid.nn() * sizeof(Float);
-    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
-    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
-    gm->put(subgrid, blockIndex.level, sequence);  // send my level
-#ifdef MSM_TIMING
-    stopTime = CkWallTimer();
-    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
-    // lookup in ComputeMsmMgr proxy array by level
-    mgrLocal->msmBlock[lnext](
-        bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
-  } // for
-} // MsmBlock::sendAcrossPotential()
-#endif
-
-
-void MsmBlock::addPotential(GridMsg *gm)
-{
-#ifdef MSM_TIMING
-  double startTime, stopTime;
-  startTime = CkWallTimer();
-#endif
-  int pid;
-  int pseq;
-  gm->get(subgrid, pid, pseq);  // receive sender's level
-  delete gm;
-  eh += subgrid;
-#ifdef MSM_TIMING
-  stopTime = CkWallTimer();
-  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
-  if (++cntRecvsPotential == bd->numRecvsPotential) {
-    if (blockIndex.level > 0) {
-      prolongation();
-    }
-    else {
-      sendPatch();
-    }
-  }
-} // MsmBlock::addPotential()
-
-
-void MsmBlock::prolongation()
+template <class Vtype, class Mtype>
+void MsmBlockKernel<Vtype,Mtype>::prolongationKernel()
 {
 #ifdef DEBUG_MSM_GRID
-  printf("MsmBlock level=%d, id=%d %d %d:  prolongation\n",
+  printf("MsmBlockKernel level=%d, id=%d %d %d:  prolongation\n",
       blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
 #endif
 
@@ -2355,7 +3078,7 @@ void MsmBlock::prolongation()
   const int approx = mgrLocal->approx;
   const int nstencil = ComputeMsmMgr::Nstencil[approx];
   const int *offset = ComputeMsmMgr::IndexOffset[approx];
-  const Float *phi = ComputeMsmMgr::PhiStencil[approx];
+  const msm::Grid<Mtype>& pro = *proStencil;
 
   // index range for prolongated h grid potentials
   int ia1 = ehProlongated.ia();
@@ -2397,8 +3120,7 @@ void MsmBlock::prolongation()
               if      (in < ia1) continue;
               else if (in > ib1) break;
 
-              ehProlongated(in,jn,kn) +=
-                eh(i2,j2,k2) * phi[i] * phi[j] * phi[k];
+              ehProlongated(in,jn,kn) += pro(i,j,k) * eh(i2,j2,k2);
             }
           }
         } // end loop over stencils on prolongated h grid
@@ -2413,26 +3135,325 @@ void MsmBlock::prolongation()
   stopTime = CkWallTimer();
   mgrLocal->msmTiming[MsmTimer::PROLONGATE] += stopTime - startTime;
 #endif
+} // MsmBlockKernel<Vtype,Mtype>::prolongationKernel()
 
-  sendDownPotential();
-} // MsmBlock::prolongation()
+
+class MsmBlock :
+  public CBase_MsmBlock,
+  public MsmBlockKernel<Float,Float>
+{
+  public:
+    CProxySection_MsmGridCutoff msmGridCutoffBroadcast;
+    CProxySection_MsmGridCutoff msmGridCutoffReduction;
+ 
+    MsmBlock(int level) :
+      MsmBlockKernel<Float,Float>(
+          msm::BlockIndex(level,
+            msm::Ivec(thisIndex.x, thisIndex.y, thisIndex.z))
+          )
+    {
+#ifndef MSM_GRID_CUTOFF_DECOMP
+      setupStencils(&(map->grespro), &(map->grespro), &(map->gc[level]));
+#else
+      setupStencils(&(map->grespro), &(map->grespro));
+#endif
+    }
+    MsmBlock(CkMigrateMessage *m) : MsmBlockKernel<Float,Float>(m) { }
+
+    void setupSections();
+
+    void sumReducedPotential(CkReductionMsg *msg) {
+#ifdef MSM_TIMING
+      double startTime, stopTime;
+      startTime = CkWallTimer();
+#endif
+      msm::Grid<Float> ehfull;
+      ehfull.init( msm::IndexRange(eh) );
+      memcpy(ehfull.data().buffer(), msg->getData(), msg->getSize());
+      delete msg;
+      int priority = mgrLocal->nlevels
+        + 2*(mgrLocal->nlevels - blockIndex.level)-1;
+      int msgsz = ehfull.data().len() * sizeof(Float);
+      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+      SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+      gm->put(ehfull, blockIndex.level, sequence);  // send my level
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+      addPotential(gm);
+    }
+
+    void addCharge(GridMsg *);  // entry
+
+    void restriction() {
+      restrictionKernel();
+      sendUpCharge();
+    }
+    void sendUpCharge();
+    void gridCutoff();
+#ifndef MSM_GRID_CUTOFF_DECOMP
+    void sendAcrossPotential();
+#endif
+
+    void addPotential(GridMsg *);  // entry
+
+    void prolongation() {
+      prolongationKernel();
+      sendDownPotential();
+    }
+    void sendDownPotential();
+    void sendPatch();
+}; // class MsmBlock
+
+
+void MsmBlock::setupSections()
+{
+#ifdef DEBUG_MSM_GRID
+  CkPrintf("LEVEL %d MSM BLOCK (%d,%d,%d):  "
+      "creating broadcast section on PE %d\n",
+      blockIndex.level, thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+#endif
+  CkVec<CkArrayIndex1D> elems;
+  for (int n = 0;  n < bd->indexGridCutoff.len();  n++) {
+    elems.push_back(CkArrayIndex1D( bd->indexGridCutoff[n] ));
+  }
+  msmGridCutoffBroadcast = CProxySection_MsmGridCutoff::ckNew(
+      mgrLocal->msmGridCutoff, elems.getVec(), elems.size()
+      );
+  CProxy_CkMulticastMgr mcastProxy = CkpvAccess(BOCclass_group).multicastMgr;
+  CkMulticastMgr *mcastPtr = CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
+  msmGridCutoffBroadcast.ckSectionDelegate(mcastPtr);
+  
+#ifdef DEBUG_MSM_GRID
+  char s[1024];
+  sprintf(s, "LEVEL %d MSM BLOCK (%d,%d,%d):  "
+      "creating reduction section on PE %d\n",
+      blockIndex.level, thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+#endif
+  CkVec<CkArrayIndex1D> elems2;
+#ifdef DEBUG_MSM_GRID
+  strcat(s, "receiving from MsmGridCutoff ID:");
+#endif
+  for (int n = 0;  n < bd->recvGridCutoff.len();  n++) {
+#ifdef DEBUG_MSM_GRID
+    char t[20];
+    sprintf(t, "  %d", bd->recvGridCutoff[n]);
+    strcat(s, t);
+#endif
+    elems2.push_back(CkArrayIndex1D( bd->recvGridCutoff[n] ));
+  }
+#ifdef DEBUG_MSM_GRID
+  strcat(s, "\n");
+  CkPrintf(s);
+#endif
+  msmGridCutoffReduction = CProxySection_MsmGridCutoff::ckNew(
+      mgrLocal->msmGridCutoff, elems2.getVec(), elems2.size()
+      );
+  msmGridCutoffReduction.ckSectionDelegate(mcastPtr);
+  MsmGridCutoffSetupMsg *msg = new MsmGridCutoffSetupMsg;
+  CProxyElement_MsmBlock thisElementProxy = thisProxy(thisIndex);
+  msg->put(&thisElementProxy);
+
+  msmGridCutoffReduction.setupSections(msg);  // broadcast to entire section
+
+  /* XXX alternatively, setup default reduction client
+   *
+  mcastPtr->setReductionClient(msmGridCutoffReduction,
+      new CkCallback(CkIndex_MsmBlock::myReductionEntry(NULL),
+        thisElementProxy));
+   *
+   */
+}
+
+
+void MsmBlock::addCharge(GridMsg *gm)
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int pid;
+  gm->get(subgrid, pid, sequence);
+  delete gm;
+  qh += subgrid;
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+  if (++cntRecvsCharge == bd->numRecvsCharge) {
+    int nlevels = mgrLocal->numLevels();
+    if (blockIndex.level < nlevels-1) {
+      restriction();
+    }
+    gridCutoff();
+  }
+} // MsmBlock::addCharge()
+
+
+void MsmBlock::sendUpCharge()
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int lnext = blockIndex.level + 1;
+  // buffer portions of grid to send to Blocks on next level
+  for (int n = 0;  n < bd->sendUp.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendUp[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    qhRestricted.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendUp[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendUp[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    // place subgrid into message
+    // SET MESSAGE PRIORITY
+    int msgsz = subgrid.nn() * sizeof(Float);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + lnext);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
+  } // for
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+} // MsmBlock::sendUpCharge()
+
+
+void MsmBlock::gridCutoff()
+{
+#ifdef DEBUG_MSM_GRID
+  printf("MsmBlock level=%d, id=%d %d %d:  grid cutoff\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+#endif
+#ifndef MSM_GRID_CUTOFF_DECOMP
+  gridCutoffKernel();
+  sendAcrossPotential();
+#else // MSM_GRID_CUTOFF_DECOMP
+
+  // send charge block to MsmGridCutoff compute objects
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
+  int msgsz = qh.data().len() * sizeof(Float);
+  int len = bd->indexGridCutoff.len();
+
+#if 0
+  // send charge message to each MsmGridCutoff compute element in list
+  for (int n = 0;  n < len;  n++) {
+#ifdef MSM_TIMING
+    startTime = CkWallTimer();
+#endif
+    int index = bd->indexGridCutoff[n];
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+    gm->put(qh, blockIndex.level, sequence);  // send my level
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+    mgrLocal->msmGridCutoff[index].compute(gm);
+  }
+#else
+
+  // broadcast charge message to section
+  GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+  SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+  gm->put(qh, blockIndex.level, sequence);  // send my level
+  msmGridCutoffBroadcast.compute(gm);
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+
+#endif // 0
+
+#endif // MSM_GRID_CUTOFF_DECOMP
+
+} // MsmBlock::gridCutoff()
+
+
+#ifndef MSM_GRID_CUTOFF_DECOMP
+void MsmBlock::sendAcrossPotential()
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int lnext = blockIndex.level;
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
+  // buffer portions of grid to send to Blocks on this level
+  for (int n = 0;  n < bd->sendAcross.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendAcross[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    ehCutoff.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendAcross[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendAcross[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    // place subgrid into message
+    int msgsz = subgrid.nn() * sizeof(Float);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+  } // for
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+} // MsmBlock::sendAcrossPotential()
+#endif
+
+
+void MsmBlock::addPotential(GridMsg *gm)
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int pid;
+  int pseq;
+  gm->get(subgrid, pid, pseq);  // receive sender's level
+  delete gm;
+  eh += subgrid;
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+  if (++cntRecvsPotential == bd->numRecvsPotential) {
+    if (blockIndex.level > 0) {
+      prolongation();
+    }
+    else {
+      sendPatch();
+    }
+  }
+} // MsmBlock::addPotential()
 
 
 void MsmBlock::sendDownPotential()
 {
 #ifdef MSM_TIMING
   double startTime, stopTime;
+  startTime = CkWallTimer();
 #endif
   int lnext = blockIndex.level - 1;
   int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level);
   // buffer portions of grid to send to Blocks on next level
-  // allocate the largest buffer space we'll need
-  //msm::Grid<BigReal> subgrid;
-  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendDown.len();  n++) {
-#ifdef MSM_TIMING
-    startTime = CkWallTimer();
-#endif
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendDown[n].nrange );
     // extract the values from the larger grid into the subgrid
@@ -2447,15 +3468,13 @@ void MsmBlock::sendDownPotential()
     GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
     gm->put(subgrid, blockIndex.level, sequence);  // send my level
-#ifdef MSM_TIMING
-    stopTime = CkWallTimer();
-    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
     // lookup in ComputeMsmMgr proxy array by level
     mgrLocal->msmBlock[lnext](
         bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
   } // for
 #ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
   mgrLocal->doneTiming();
 #endif
   init();  // reinitialize for next computation
@@ -2466,18 +3485,13 @@ void MsmBlock::sendPatch()
 {
 #ifdef MSM_TIMING
   double startTime, stopTime;
+  startTime = CkWallTimer();
 #endif
   int lnext = blockIndex.level;
   int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level);
   ASSERT(lnext == 0);
   // buffer portions of grid to send to Blocks on next level
-  // allocate the largest buffer space we'll need
-  //msm::Grid<Float> subgrid;
-  //subgrid.resize(map->bsx[lnext] * map->bsy[lnext] * map->bsz[lnext]);
   for (int n = 0;  n < bd->sendPatch.len();  n++) {
-#ifdef MSM_TIMING
-    startTime = CkWallTimer();
-#endif
     // initialize the proper subgrid indexing range
     subgrid.init( bd->sendPatch[n].nrange );
     // extract the values from the larger grid into the subgrid
@@ -2491,20 +3505,408 @@ void MsmBlock::sendPatch()
     GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
     SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
     gm->put(subgrid, pid, sequence);  // send patch ID
-#ifdef MSM_TIMING
-    stopTime = CkWallTimer();
-    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
-#endif
     // lookup which PE has this patch
     PatchMap *pm = PatchMap::Object();
     int pe = pm->node(pid);
     mgrProxy[pe].addPotential(gm);
   }
 #ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
   mgrLocal->doneTiming();
 #endif
   init();  // reinitialize for next computation
 } // MsmBlock::sendPatch()
+
+
+class MsmC1HermiteBlock :
+  public CBase_MsmC1HermiteBlock,
+  public MsmBlockKernel<C1Vector,C1Matrix>
+{
+  public:
+    CProxySection_MsmC1HermiteGridCutoff msmGridCutoffBroadcast;
+    CProxySection_MsmC1HermiteGridCutoff msmGridCutoffReduction;
+ 
+    MsmC1HermiteBlock(int level) :
+      MsmBlockKernel<C1Vector,C1Matrix>(
+          msm::BlockIndex(level,
+            msm::Ivec(thisIndex.x, thisIndex.y, thisIndex.z))
+          )
+    {
+      int isfirstlevel = (level == 0);
+      int istoplevel = (level == map->gridrange.len()-1);
+      const msm::Grid<C1Matrix> *res =
+        (istoplevel ? NULL : &(map->gres_c1hermite[level]));
+      const msm::Grid<C1Matrix> *pro =
+        (isfirstlevel ? NULL : &(map->gpro_c1hermite[level-1]));
+#ifndef MSM_GRID_CUTOFF_DECOMP
+      const msm::Grid<C1Matrix> *gc = &(map->gc_c1hermite[level]);
+      setupStencils(res, pro, gc);
+#else
+      setupStencils(res, pro);
+#endif
+    }
+    MsmC1HermiteBlock(CkMigrateMessage *m) :
+      MsmBlockKernel<C1Vector,C1Matrix>(m) { }
+
+    void setupSections();
+
+    void sumReducedPotential(CkReductionMsg *msg) {
+#ifdef MSM_TIMING
+      double startTime, stopTime;
+      startTime = CkWallTimer();
+#endif
+      msm::Grid<C1Vector> ehfull;
+      ehfull.init( msm::IndexRange(eh) );
+      memcpy(ehfull.data().buffer(), msg->getData(), msg->getSize());
+      delete msg;
+      int priority = mgrLocal->nlevels
+        + 2*(mgrLocal->nlevels - blockIndex.level)-1;
+      int msgsz = ehfull.data().len() * sizeof(C1Vector);
+      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+      SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+      gm->put(ehfull, blockIndex.level, sequence);  // send my level
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+      addPotential(gm);
+    }
+
+    void addCharge(GridMsg *);  // entry
+
+    void restriction() {
+      restrictionKernel();
+      sendUpCharge();
+    }
+    void sendUpCharge();
+    void gridCutoff();
+#ifndef MSM_GRID_CUTOFF_DECOMP
+    void sendAcrossPotential();
+#endif
+
+    void addPotential(GridMsg *);  // entry
+
+    void prolongation() {
+      prolongationKernel();
+      sendDownPotential();
+    }
+    void sendDownPotential();
+    void sendPatch();
+}; // class MsmC1HermiteBlock
+
+
+void MsmC1HermiteBlock::setupSections()
+{
+#ifdef DEBUG_MSM_GRID
+  CkPrintf("LEVEL %d MSM C1 HERMITE BLOCK (%d,%d,%d):  "
+      "creating broadcast section on PE %d\n",
+      blockIndex.level, thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+#endif
+  CkVec<CkArrayIndex1D> elems;
+  for (int n = 0;  n < bd->indexGridCutoff.len();  n++) {
+    elems.push_back(CkArrayIndex1D( bd->indexGridCutoff[n] ));
+  }
+  msmGridCutoffBroadcast = CProxySection_MsmC1HermiteGridCutoff::ckNew(
+      mgrLocal->msmC1HermiteGridCutoff, elems.getVec(), elems.size()
+      );
+  CProxy_CkMulticastMgr mcastProxy = CkpvAccess(BOCclass_group).multicastMgr;
+  CkMulticastMgr *mcastPtr = CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
+  msmGridCutoffBroadcast.ckSectionDelegate(mcastPtr);
+  
+#ifdef DEBUG_MSM_GRID
+  char s[1024];
+  sprintf(s, "LEVEL %d MSM C1 HERMITE BLOCK (%d,%d,%d):  "
+      "creating reduction section on PE %d\n",
+      blockIndex.level, thisIndex.x, thisIndex.y, thisIndex.z, CkMyPe());
+#endif
+  CkVec<CkArrayIndex1D> elems2;
+#ifdef DEBUG_MSM_GRID
+  strcat(s, "receiving from MsmC1HermiteGridCutoff ID:");
+#endif
+  for (int n = 0;  n < bd->recvGridCutoff.len();  n++) {
+#ifdef DEBUG_MSM_GRID
+    char t[20];
+    sprintf(t, "  %d", bd->recvGridCutoff[n]);
+    strcat(s, t);
+#endif
+    elems2.push_back(CkArrayIndex1D( bd->recvGridCutoff[n] ));
+  }
+#ifdef DEBUG_MSM_GRID
+  strcat(s, "\n");
+  CkPrintf(s);
+#endif
+  msmGridCutoffReduction = CProxySection_MsmC1HermiteGridCutoff::ckNew(
+      mgrLocal->msmC1HermiteGridCutoff, elems2.getVec(), elems2.size()
+      );
+  msmGridCutoffReduction.ckSectionDelegate(mcastPtr);
+  MsmC1HermiteGridCutoffSetupMsg *msg = new MsmC1HermiteGridCutoffSetupMsg;
+  CProxyElement_MsmC1HermiteBlock thisElementProxy = thisProxy(thisIndex);
+  msg->put(&thisElementProxy);
+
+  msmGridCutoffReduction.setupSections(msg);  // broadcast to entire section
+
+  /* XXX alternatively, setup default reduction client
+   *
+  mcastPtr->setReductionClient(msmGridCutoffReduction,
+      new CkCallback(CkIndex_MsmC1HermiteBlock::myReductionEntry(NULL),
+        thisElementProxy));
+   *
+   */
+} // MsmC1HermiteBlock::setupSections()
+
+
+void MsmC1HermiteBlock::addCharge(GridMsg *gm)
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int pid;
+  gm->get(subgrid, pid, sequence);
+  delete gm;
+  qh += subgrid;
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+  if (++cntRecvsCharge == bd->numRecvsCharge) {
+    int nlevels = mgrLocal->numLevels();
+    if (blockIndex.level < nlevels-1) {
+      restriction();
+    }
+    gridCutoff();
+  }
+} // MsmC1HermiteBlock::addCharge()
+
+
+void MsmC1HermiteBlock::sendUpCharge()
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int lnext = blockIndex.level + 1;
+  // buffer portions of grid to send to Blocks on next level
+  for (int n = 0;  n < bd->sendUp.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendUp[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    qhRestricted.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendUp[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendUp[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    // place subgrid into message
+    // SET MESSAGE PRIORITY
+    int msgsz = subgrid.nn() * sizeof(C1Vector);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + lnext);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmC1HermiteBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
+  } // for
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+} // MsmC1HermiteBlock::sendUpCharge()
+
+
+void MsmC1HermiteBlock::gridCutoff()
+{
+#ifdef DEBUG_MSM_GRID
+  printf("MsmC1HermiteBlock level=%d, id=%d %d %d:  grid cutoff\n",
+      blockIndex.level, blockIndex.n.i, blockIndex.n.j, blockIndex.n.k);
+#endif
+#ifndef MSM_GRID_CUTOFF_DECOMP
+  gridCutoffKernel();
+  sendAcrossPotential();
+#else // MSM_GRID_CUTOFF_DECOMP
+
+  // send charge block to MsmGridCutoff compute objects
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
+  int msgsz = qh.data().len() * sizeof(C1Vector);
+  int len = bd->indexGridCutoff.len();
+
+#if 0
+  // send charge message to each MsmGridCutoff compute element in list
+  for (int n = 0;  n < len;  n++) {
+#ifdef MSM_TIMING
+    startTime = CkWallTimer();
+#endif
+    int index = bd->indexGridCutoff[n];
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+    gm->put(qh, blockIndex.level, sequence);  // send my level
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+    mgrLocal->msmGridCutoff[index].compute(gm);
+  }
+#else
+
+  // broadcast charge message to section
+  GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+  SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+  gm->put(qh, blockIndex.level, sequence);  // send my level
+  msmGridCutoffBroadcast.compute(gm);
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+
+#endif // 0
+
+#endif // MSM_GRID_CUTOFF_DECOMP
+
+} // MsmC1HermiteBlock::gridCutoff()
+
+
+#ifndef MSM_GRID_CUTOFF_DECOMP
+void MsmC1HermiteBlock::sendAcrossPotential()
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int lnext = blockIndex.level;
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level)-1;
+  // buffer portions of grid to send to Blocks on this level
+  for (int n = 0;  n < bd->sendAcross.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendAcross[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    ehCutoff.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendAcross[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendAcross[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    // place subgrid into message
+    int msgsz = subgrid.nn() * sizeof(C1Vector);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmC1HermiteBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+  } // for
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+} // MsmC1HermiteBlock::sendAcrossPotential()
+#endif
+
+
+void MsmC1HermiteBlock::addPotential(GridMsg *gm)
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int pid;
+  int pseq;
+  gm->get(subgrid, pid, pseq);  // receive sender's level
+  delete gm;
+  eh += subgrid;
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+  if (++cntRecvsPotential == bd->numRecvsPotential) {
+    if (blockIndex.level > 0) {
+      prolongation();
+    }
+    else {
+      sendPatch();
+    }
+  }
+} // MsmC1HermiteBlock::addPotential()
+
+
+void MsmC1HermiteBlock::sendDownPotential()
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int lnext = blockIndex.level - 1;
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level);
+  // buffer portions of grid to send to Blocks on next level
+  for (int n = 0;  n < bd->sendDown.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendDown[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    ehProlongated.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendDown[n].nrange_wrap.lower() );
+    // add the subgrid charges into the block
+    msm::BlockIndex& bindex = bd->sendDown[n].nblock_wrap;
+    ASSERT(bindex.level == lnext);
+    // place subgrid into message
+    int msgsz = subgrid.nn() * sizeof(C1Vector);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+    gm->put(subgrid, blockIndex.level, sequence);  // send my level
+    // lookup in ComputeMsmMgr proxy array by level
+    mgrLocal->msmC1HermiteBlock[lnext](
+        bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
+  } // for
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+  mgrLocal->doneTiming();
+#endif
+  init();  // reinitialize for next computation
+} // MsmC1HermiteBlock::sendDownPotential()
+
+
+void MsmC1HermiteBlock::sendPatch()
+{
+#ifdef MSM_TIMING
+  double startTime, stopTime;
+  startTime = CkWallTimer();
+#endif
+  int lnext = blockIndex.level;
+  int priority = mgrLocal->nlevels + 2*(mgrLocal->nlevels - blockIndex.level);
+  ASSERT(lnext == 0);
+  // buffer portions of grid to send to Blocks on next level
+  for (int n = 0;  n < bd->sendPatch.len();  n++) {
+    // initialize the proper subgrid indexing range
+    subgrid.init( bd->sendPatch[n].nrange );
+    // extract the values from the larger grid into the subgrid
+    eh.extract(subgrid);
+    // translate the subgrid indexing range to match the MSM block
+    subgrid.updateLower( bd->sendPatch[n].nrange_unwrap.lower() );
+    // add the subgrid charges into the block, need its patch ID
+    int pid = bd->sendPatch[n].patchID;
+    // place subgrid into message
+    int msgsz = subgrid.nn() * sizeof(C1Vector);
+    GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+    SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+    gm->put(subgrid, pid, sequence);  // send patch ID
+    // lookup which PE has this patch
+    PatchMap *pm = PatchMap::Object();
+    int pe = pm->node(pid);
+    mgrProxy[pe].addPotential(gm);
+  }
+#ifdef MSM_TIMING
+  stopTime = CkWallTimer();
+  mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+  mgrLocal->doneTiming();
+#endif
+  init();  // reinitialize for next computation
+} // MsmC1HermiteBlock::sendPatch()
+
 
 // MsmBlock
 //
@@ -2699,9 +4101,9 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
 
   // set block sizes for grid decomposition
-  int bsx = simParams->MSMBlockSizeX;
-  int bsy = simParams->MSMBlockSizeY;
-  int bsz = simParams->MSMBlockSizeZ;
+  int bsx = simParams->MSMBlockSizeX / int(gridScalingFactor);
+  int bsy = simParams->MSMBlockSizeY / int(gridScalingFactor);
+  int bsz = simParams->MSMBlockSizeZ / int(gridScalingFactor);
   if (bsx <= 0 || bsy <= 0 || bsz <= 0) {
     NAMD_die("MSM: invalid block size requested (MSMBlockSize[XYZ])");
   }
@@ -2790,11 +4192,13 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #endif
   sglower = sgmin;
 
-  BigReal hxlen, hylen, hzlen;
   int ia, ib, ja, jb, ka, kb;
   setup_hgrid_1d(xlen, hxlen, nhx, ia, ib, ispx);
   setup_hgrid_1d(ylen, hylen, nhy, ja, jb, ispy);
   setup_hgrid_1d(zlen, hzlen, nhz, ka, kb, ispz);
+  hxlen_1 = 1 / hxlen;
+  hylen_1 = 1 / hylen;
+  hzlen_1 = 1 / hzlen;
   if (CkMyPe() == 0) {
     if (ispx || ispy || ispz) {
       iout << iINFO << "MSM grid spacing along X is "<< hxlen << " A\n";
@@ -2940,13 +4344,22 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
 
   // find grid spacing basis vectors
-  Vector hu = hxlen * lattice.a().unit();
-  Vector hv = hylen * lattice.b().unit();
-  Vector hw = hzlen * lattice.c().unit();
+  hu = hxlen * lattice.a().unit();
+  hv = hylen * lattice.b().unit();
+  hw = hzlen * lattice.c().unit();
+  hufx = Float(hu.x);
+  hufy = Float(hu.y);
+  hufz = Float(hu.z);
+  hvfx = Float(hv.x);
+  hvfy = Float(hv.y);
+  hvfz = Float(hv.z);
+  hwfx = Float(hw.x);
+  hwfy = Float(hw.y);
+  hwfz = Float(hw.z);
 
-  const Vector& ru = lattice.a_r();
-  const Vector& rv = lattice.b_r();
-  const Vector& rw = lattice.c_r();
+  ru = lattice.a_r();
+  rv = lattice.b_r();
+  rw = lattice.c_r();
 
   // determine grid spacings in scaled space
   shx = ru * hu;
@@ -2957,6 +4370,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   shz_1 = 1 / shz;
 
   // row vectors to transform interpolated force back to real space
+  // XXX Is not needed.
   sx_shx = shx_1 * Vector(ru.x, rv.x, rw.x);
   sy_shy = shy_1 * Vector(ru.y, rv.y, rw.y);
   sz_shz = shz_1 * Vector(ru.z, rv.z, rw.z);
@@ -2998,46 +4412,59 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   }
   int i, j, k;
   if (approx < C1HERMITE) {
-    // resize gc constants for number of levels
+    // resize gc and gvc constants for number of levels
     map.gc.resize(nlevels);
+    map.gvc.resize(nlevels);
 
     for (level = 0;  level < toplevel;  level++) {
       map.gc[level].setbounds(-ni, ni, -nj, nj, -nk, nk);
+      map.gvc[level].setbounds(-ni, ni, -nj, nj, -nk, nk);
 
       for (k = -nk;  k <= nk;  k++) {
         for (j = -nj;  j <= nj;  j++) {
           for (i = -ni;  i <= ni;  i++) {
             if (level == 0) {
-              BigReal s, t, gs=0, gt=0, g=0, d=0;
-              s = (i*hu + j*hv + k*hw).length() * a_1;
+              BigReal s, t, gs=0, gt=0, g=0, dgs=0, dgt=0, dg=0;
+              BigReal vlen = (i*hu + j*hv + k*hw).length();
+              s = vlen * a_1;
               t = 0.5 * s;
               if (t >= 1) {
                 g = 0;
+                dg = 0;
               }
               else {
-                splitting(gt, d, t, split);
+                splitting(gt, dgt, t, split);
                 if (s >= 1) {
+                  BigReal s_1 = 1/s;
                   if (dispersion) {
-                    BigReal s_1 = 1/s;
                     gs = s_1 * s_1 * s_1;  // = 1/s^3
                     gs = gs * gs;  // = 1/s^6
+                    dgs = -6 * gs * s_1;
                   }
                   else {
-                    gs = 1/s;
+                    gs = s_1;
+                    dgs = -gs * s_1;
                   }
                 }
                 else {
-                  splitting(gs, d, s, split);
+                  splitting(gs, dgs, s, split);
                 }
                 g = (gs - scaling_factor * gt) * a_p;
+                BigReal c=0;
+                if (i || j || k) {
+                  c = a_p * a_1 / vlen;
+                }
+                dg = 0.5 * (dgs - 0.5*scaling_factor * dgt) * c;
 
                 // Msm index?
 
               }
               map.gc[0](i,j,k) = Float(g);
+              map.gvc[0](i,j,k) = Float(dg);
             } // if level 0
             else {
               map.gc[level](i,j,k) = scaling * map.gc[0](i,j,k);
+              map.gvc[level](i,j,k) = scaling * map.gvc[0](i,j,k);
             }
 
           } // for i
@@ -3046,6 +4473,11 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       scaling *= scaling_factor;
 
     } // for level
+
+    // for summed virial factors
+    gvsum.setbounds(-ni, ni, -nj, nj, -nk, nk);
+    // make sure final virial sum is initialized to 0
+    for (i = 0;  i < VMAX;  i++) { virial[i] = 0; }
 
     if (toplevel < nlevels) {
       // nonperiodic along all basis vector directions
@@ -3062,15 +4494,16 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
         for (j = -nj;  j <= nj;  j++) {
           for (i = -ni;  i <= ni;  i++) {
             BigReal s, gs, d;
-            s = (i*hu + j*hv + k*hw).length() * a_1;
+            BigReal vlen = (i*hu + j*hv + k*hw).length();
+            s = vlen * a_1;
             if (s >= 1) {
+              BigReal s_1 = 1/s;
               if (dispersion) {
-                BigReal s_1 = 1/s;
                 gs = s_1 * s_1 * s_1;  // = 1/s^3
                 gs = gs * gs;  // = 1/s^6
               }
               else {
-                gs = 1/s;
+                gs = s_1;
               }
             }
             else {
@@ -3081,6 +4514,19 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
         } // for j
       } // for k
     } // if toplevel
+
+    // generate grespro stencil
+    const int nstencil = Nstencil[approx];
+    const Float *phi = PhiStencil[approx];
+    map.grespro.set(0, nstencil, 0, nstencil, 0, nstencil);
+    for (k = 0;  k < nstencil;  k++) {
+      for (j = 0;  j < nstencil;  j++) {
+        for (i = 0;  i < nstencil;  i++) {
+          map.grespro(i,j,k) = phi[i] * phi[j] * phi[k];
+        }
+      }
+    }
+
   } // end if approx < C1HERMITE
   else {
     // C1HERMITE
@@ -3109,8 +4555,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
               gc_c1hermite_elem_accum(m, 1, rv, am, split);
               // accumulate D( -g_{2a}(0,r) ) term for this level
               gc_c1hermite_elem_accum(m, -1, rv, 2*am, split);
-            }
-
+            } // if within cutoff
           }
         }
       } // end loop over gc_c1hermite elements for this level
@@ -3182,16 +4627,16 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
     for (n = 0;  n < ND;  n++) {
       xphi0_base_array[n]  = PHI0[n];
-      dxphi0_base_array[n] = shx_1 * DPHI0[n];  // scale by grid spacing
-      xphi1_base_array[n]  = shx * PHI1[n];     // scale by grid spacing
+      dxphi0_base_array[n] = hxlen_1 * DPHI0[n];  // scale by grid spacing
+      xphi1_base_array[n]  = hxlen * PHI1[n];     // scale by grid spacing
       dxphi1_base_array[n] = DPHI1[n];
       yphi0_base_array[n]  = PHI0[n];
-      dyphi0_base_array[n] = shy_1 * DPHI0[n];  // scale by grid spacing
-      yphi1_base_array[n]  = shy * PHI1[n];     // scale by grid spacing
+      dyphi0_base_array[n] = hylen_1 * DPHI0[n];  // scale by grid spacing
+      yphi1_base_array[n]  = hylen * PHI1[n];     // scale by grid spacing
       dyphi1_base_array[n] = DPHI1[n];
       zphi0_base_array[n]  = PHI0[n];
-      dzphi0_base_array[n] = shz_1 * DPHI0[n];  // scale by grid spacing
-      zphi1_base_array[n]  = shz * PHI1[n];     // scale by grid spacing
+      dzphi0_base_array[n] = hzlen_1 * DPHI0[n];  // scale by grid spacing
+      zphi1_base_array[n]  = hzlen * PHI1[n];     // scale by grid spacing
       dzphi1_base_array[n] = DPHI1[n];
     }
     xphi0  =  xphi0_base_array + NR;  // point into center of arrays
@@ -3209,8 +4654,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
     for (level = 0;  level < nlevels-1;  level++) {
       // allocate space for restriction and prolongation stencils
-      map.gres_c1hermite[level].setbounds(-NR, NR, -NR, NR, -NR, NR);
-      map.gpro_c1hermite[level].setbounds(-NR, NR, -NR, NR, -NR, NR);
+      map.gres_c1hermite[level].set(0, ND, 0, ND, 0, ND);
+      map.gpro_c1hermite[level].set(0, ND, 0, ND, 0, ND);
 
       // scale up to next level grid spacing
       //
@@ -3218,18 +4663,18 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       // a periodic grid spacing has increased 
       // (equivalent to if there are fewer grid points)
       for (n = -NR;  n <= NR;  n++) {
-        if ( ! ispx || (level > 0 &&
-              map.gridrange[level].ni() < map.gridrange[level-1].ni()) ) {
+        if ( ! ispx ||
+              map.gridrange[level+1].ni() < map.gridrange[level].ni() ) {
           dxphi0[n] *= 0.5;
           xphi1[n] *= 2;
         }
-        if ( ! ispy || (level > 0 &&
-              map.gridrange[level].nj() < map.gridrange[level-1].nj()) ) {
+        if ( ! ispy ||
+              map.gridrange[level+1].nj() < map.gridrange[level].nj() ) {
           dyphi0[n] *= 0.5;
           yphi1[n] *= 2;
         }
-        if ( ! ispz || (level > 0 &&
-              map.gridrange[level].nk() < map.gridrange[level-1].nk()) ) {
+        if ( ! ispz ||
+              map.gridrange[level+1].nk() < map.gridrange[level].nk() ) {
           dzphi0[n] *= 0.5;
           zphi1[n] *= 2;
         }
@@ -3240,7 +4685,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       for (k = -NR;  k <= NR;  k++) {
         for (j = -NR;  j <= NR;  j++) {
           for (i = -NR;  i <= NR;  i++) {
-            Float *t = map.gres_c1hermite[level](i,j,k).melem;
+            Float *t = map.gres_c1hermite[level](i+NR,j+NR,k+NR).melem;
 
             t[C1INDEX(D000,D000)] =  xphi0[i] *  yphi0[j]  *  zphi0[k];
             t[C1INDEX(D000,D100)] = dxphi0[i] *  yphi0[j]  *  zphi0[k];
@@ -3322,8 +4767,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       for (k = -NR;  k <= NR;  k++) {
         for (j = -NR;  j <= NR;  j++) {
           for (i = -NR;  i <= NR;  i++) {
-            Float *t = map.gres_c1hermite[level](i,j,k).melem;
-            Float *tt = map.gpro_c1hermite[level](i,j,k).melem;
+            Float *t = map.gres_c1hermite[level](i+NR,j+NR,k+NR).melem;
+            Float *tt = map.gpro_c1hermite[level](i+NR,j+NR,k+NR).melem;
 
             tt[C1INDEX(D000,D000)] = t[C1INDEX(D000,D000)];
             tt[C1INDEX(D000,D100)] = t[C1INDEX(D100,D000)];
@@ -3519,8 +4964,10 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           int jb = b(i,j,k).nrange.jb();
           int ka = b(i,j,k).nrange.ka();
           int kb = b(i,j,k).nrange.kb();
-          printf("level=%d  id=%d %d %d  [%d..%d] x [%d..%d] x [%d..%d]\n",
-              level, i, j, k, ia, ib, ja, jb, ka, kb);
+          printf("level=%d  id=%d %d %d  [%d..%d] x [%d..%d] x [%d..%d]"
+              " --> %d\n",
+              level, i, j, k, ia, ib, ja, jb, ka, kb,
+              b(i,j,k).nrange.nn());
         }
       }
     }
@@ -3614,6 +5061,25 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     int bni = b.ni();
     int bnj = b.nj();
     int bnk = b.nk();
+#ifdef MSM_SKIP_BEYOND_SPHERE
+    int gia, gib, gja, gjb, gka, gkb;
+    if (approx == C1HERMITE) {
+      gia = map.gc_c1hermite[level].ia();
+      gib = map.gc_c1hermite[level].ib();
+      gja = map.gc_c1hermite[level].ja();
+      gjb = map.gc_c1hermite[level].jb();
+      gka = map.gc_c1hermite[level].ka();
+      gkb = map.gc_c1hermite[level].kb();
+    }
+    else {
+      gia = map.gc[level].ia();
+      gib = map.gc[level].ib();
+      gja = map.gc[level].ja();
+      gjb = map.gc[level].jb();
+      gka = map.gc[level].ka();
+      gkb = map.gc[level].kb();
+    }
+#endif
 #ifdef MSM_SKIP_TOO_DISTANT_BLOCKS
     int bsx = map.bsx[level];
     int bsy = map.bsy[level];
@@ -3631,12 +5097,28 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
         for (i = 0;  i < bni;  i++) {
 
           // Grid cutoff calculation, sendAcross
-          int ia = b(i,j,k).nrange.ia() + map.gc[level].ia();
-          int ib = b(i,j,k).nrange.ib() + map.gc[level].ib();
-          int ja = b(i,j,k).nrange.ja() + map.gc[level].ja();
-          int jb = b(i,j,k).nrange.jb() + map.gc[level].jb();
-          int ka = b(i,j,k).nrange.ka() + map.gc[level].ka();
-          int kb = b(i,j,k).nrange.kb() + map.gc[level].kb();
+          int ia = b(i,j,k).nrange.ia();
+          int ib = b(i,j,k).nrange.ib();
+          int ja = b(i,j,k).nrange.ja();
+          int jb = b(i,j,k).nrange.jb();
+          int ka = b(i,j,k).nrange.ka();
+          int kb = b(i,j,k).nrange.kb();
+          if (approx == C1HERMITE) {
+            ia += map.gc_c1hermite[level].ia();
+            ib += map.gc_c1hermite[level].ib();
+            ja += map.gc_c1hermite[level].ja();
+            jb += map.gc_c1hermite[level].jb();
+            ka += map.gc_c1hermite[level].ka();
+            kb += map.gc_c1hermite[level].kb();
+          }
+          else {
+            ia += map.gc[level].ia();
+            ib += map.gc[level].ib();
+            ja += map.gc[level].ja();
+            jb += map.gc[level].jb();
+            ka += map.gc[level].ka();
+            kb += map.gc[level].kb();
+          }
           msm::Ivec na = map.clipIndexToLevel(msm::Ivec(ia,ja,ka), level);
           msm::Ivec nb = map.clipIndexToLevel(msm::Ivec(ib,jb,kb), level);
           b(i,j,k).nrangeCutoff.setbounds(na.i, nb.i, na.j, nb.j, na.k, nb.k);
@@ -3652,8 +5134,19 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
             (bupper.n.j - blower.n.j + 1) * (bupper.n.k - blower.n.k + 1);
           b(i,j,k).sendAcross.setmax(maxarrlen);  // allocate send array
           b(i,j,k).indexGridCutoff.setmax(maxarrlen);  // alloc indexing
+          b(i,j,k).recvGridCutoff.setmax(maxarrlen);  // alloc indexing
           // loop over sendAcross blocks
           int ii, jj, kk;
+#if 0
+          {
+            msm::IndexRange& bn = b(i,j,k).nrange;
+            printf("ME %4d   [%d..%d] x [%d..%d] x [%d..%d]\n",
+                bn.nn(),
+                bn.ia(), bn.ib(),
+                bn.ja(), bn.jb(),
+                bn.ka(), bn.kb());
+          }
+#endif
           for (kk = blower.n.k;  kk <= bupper.n.k;  kk++) {
             for (jj = blower.n.j;  jj <= bupper.n.j;  jj++) {
               for (ii = blower.n.i;  ii <= bupper.n.i;  ii++) {
@@ -3681,11 +5174,93 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
                     b(i,j,k).nrangeCutoff);
                 map.wrapBlockSend(bs);  // wrap to true block index
 #endif
+#ifdef MSM_SKIP_BEYOND_SPHERE
+#if 0
+                printf("send to volume %4d   [%d..%d] x [%d..%d] x [%d..%d]\n",
+                    bs.nrange.nn(),
+                    bs.nrange.ia(), bs.nrange.ib(),
+                    bs.nrange.ja(), bs.nrange.jb(),
+                    bs.nrange.ka(), bs.nrange.kb());
+#endif
+                msm::IndexRange& bm = b(i,j,k).nrange;
+                msm::IndexRange& bn = bs.nrange;
+                int qia = bm.ia();
+                int qib = bm.ib();
+                int qja = bm.ja();
+                int qjb = bm.jb();
+                int qka = bm.ka();
+                int qkb = bm.kb();
+                int inc_in = (bn.ni() > 1 ? bn.ni()-1 : 1);
+                int inc_jn = (bn.nj() > 1 ? bn.nj()-1 : 1);
+                int inc_kn = (bn.nk() > 1 ? bn.nk()-1 : 1);
+                // loop over corner points of potential grid
+                int iscalc = 0;
+                for (int kn = bn.ka();  kn <= bn.kb();  kn += inc_kn) {
+                  for (int jn = bn.ja();  jn <= bn.jb();  jn += inc_jn) {
+                    for (int in = bn.ia();  in <= bn.ib();  in += inc_in) {
+                      // clip charges to weights
+                      int mia = ( qia >= gia + in ? qia : gia + in );
+                      int mib = ( qib <= gib + in ? qib : gib + in );
+                      int mja = ( qja >= gja + jn ? qja : gja + jn );
+                      int mjb = ( qjb <= gjb + jn ? qjb : gjb + jn );
+                      int mka = ( qka >= gka + kn ? qka : gka + kn );
+                      int mkb = ( qkb <= gkb + kn ? qkb : gkb + kn );
+                      int inc_im = (mib-mia > 0 ? mib-mia : 1);
+                      int inc_jm = (mjb-mja > 0 ? mjb-mja : 1);
+                      int inc_km = (mkb-mka > 0 ? mkb-mka : 1);
+
+                      // loop over corner points of charge grid
+                      for (int km = mka;  km <= mkb;  km += inc_km) {
+                        for (int jm = mja;  jm <= mjb;  jm += inc_jm) {
+                          for (int im = mia;  im <= mib;  im += inc_im) {
+
+                            Float g;
+                            if (approx == C1HERMITE) {
+                              g = map.gc_c1hermite[level](im-in,jm-jn,km-kn).melem[0];
+                            }
+                            else {
+                              g = map.gc[level](im-in,jm-jn,km-kn);
+                            }
+                            iscalc |= (g != 0);
+                          }
+                        }
+                      }
+
+                    }
+                  }
+                }
+                if ( ! iscalc) {
+                  //printf("SKIPPING\n");  // XXX
+                  continue;  // skip because overlap is beyond nonzero gc sphere
+                }
+#endif
+#if 0
+                // XXX
+                if (level == 2) {
+                  msm::BlockIndex& nb = bs.nblock;
+                  msm::IndexRange& nr = bs.nrange;
+                  msm::BlockIndex& nbw = bs.nblock_wrap;
+                  msm::IndexRange& nrw = bs.nrange_wrap;
+                  printf("BLOCK SEND ACROSS\n"
+                    "  bs.nblock:  level=%d  n=%d %d %d\n"
+                    "  bs.nrange:  [%d..%d] x [%d..%d] x [%d..%d]\n"
+                    "  bs.nblock_wrap:  level=%d  n=%d %d %d\n"
+                    "  bs.nrange_wrap:  [%d..%d] x [%d..%d] x [%d..%d]\n",
+                    nb.level, nb.n.i, nb.n.j, nb.n.k,
+                    nr.ia(), nr.ib(), nr.ja(), nr.jb(), nr.ka(), nr.kb(),
+                    nbw.level, nbw.n.i, nbw.n.j, nbw.n.k,
+                    nrw.ia(), nrw.ib(), nrw.ja(), nrw.jb(), nrw.ka(), nrw.kb());
+                }
+                // XXX
+#endif
                 b(i,j,k).sendAcross.append(bs);
                 b(i,j,k).indexGridCutoff.append(numGridCutoff);
-                numGridCutoff++;  // one MsmGridCutoff for each send across
+                // receiving block records this grid cutoff ID
+                b(bs.nblock_wrap.n).recvGridCutoff.append(numGridCutoff);
                 // increment counter for receive block
                 b(bs.nblock_wrap.n).numRecvsPotential++;
+
+                numGridCutoff++;  // one MsmGridCutoff for each send across
               }
             }
           } // end loop over sendAcross blocks
@@ -3802,6 +5377,12 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 
           } // end if prolongation
 
+#ifdef MSM_REDUCE_GRID
+          // using a reduction decreases the number of messages
+          // from MsmGridCutoff elements to just 1
+          b(i,j,k).numRecvsPotential -= ( b(i,j,k).indexGridCutoff.len() - 1 );
+#endif
+
         }
       }
     } // end loop over block diagram
@@ -3809,6 +5390,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   } // end loop over levels
   // end of Map setup
 
+  //printf("XXX reached end of Map setup\n");
   // allocate chare arrays
 
   if (1) {
@@ -3858,6 +5440,8 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     // final result is arrays for blocks and gcuts, each with pe number
     blockAssign.resize(numBlocks);
     gcutAssign.resize(numGridCutoff);
+    //printf("XXX numBlocks = %d\n", numBlocks);
+    //printf("XXX numGridCutoff = %d\n", numGridCutoff);
 
     msm::Array<float> blockWork(numBlocks);
     msm::Array<float> gcutWork(numGridCutoff);
@@ -4109,9 +5693,15 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 #endif // MSM_NODE_MAPPING
 
   if (CkMyPe() == 0) {
+
     // on PE 0, create 3D chare array of MsmBlock for each level;
     // broadcast this array of proxies to the rest of the group
-    msmBlock.resize(nlevels);
+    if (approx == C1HERMITE) {
+      msmC1HermiteBlock.resize(nlevels);
+    }
+    else {
+      msmBlock.resize(nlevels);
+    }
     for (level = 0;  level < nlevels;  level++) {
       int ni = map.blockLevel[level].ni();
       int nj = map.blockLevel[level].nj();
@@ -4121,9 +5711,21 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       CProxy_MsmBlockMap blockMap = CProxy_MsmBlockMap::ckNew(level);
       CkArrayOptions opts(ni, nj, nk);
       opts.setMap(blockMap);
-      msmBlock[level] = CProxy_MsmBlock::ckNew(level, opts);
+      if (approx == C1HERMITE) {
+        msmC1HermiteBlock[level] =
+          CProxy_MsmC1HermiteBlock::ckNew(level, opts);
+      }
+      else {
+        msmBlock[level] = CProxy_MsmBlock::ckNew(level, opts);
+      }
 #else
-      msmBlock[level] = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
+      if (approx == C1HERMITE) {
+        msmC1HermiteBlock[level] =
+          CProxy_MsmC1HermiteBlock::ckNew(level, ni, nj, nk);
+      }
+      else {
+        msmBlock[level] = CProxy_MsmBlock::ckNew(level, ni, nj, nk);
+      }
 #endif
 #ifdef DEBUG_MSM_VERBOSE
       printf("Create MsmBlock[%d] 3D chare array ( %d x %d x %d )\n",
@@ -4136,10 +5738,16 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
           level, nijk, (nijk==1 ? "" : "s"), ni, nj, nk);
       iout << iINFO << msg;
     }
-    MsmBlockProxyMsg *msg =
-      new(nlevels*sizeof(CProxy_MsmBlock), 0) MsmBlockProxyMsg;
-    msg->put(msmBlock);
-    msmProxy.recvMsmBlockProxy(msg);  // broadcast
+    if (approx == C1HERMITE) {
+      MsmC1HermiteBlockProxyMsg *msg = new MsmC1HermiteBlockProxyMsg;
+      msg->put(msmC1HermiteBlock);
+      msmProxy.recvMsmC1HermiteBlockProxy(msg);  // broadcast
+    }
+    else {
+      MsmBlockProxyMsg *msg = new MsmBlockProxyMsg;
+      msg->put(msmBlock);
+      msmProxy.recvMsmBlockProxy(msg);  // broadcast
+    }
 
 #ifdef MSM_GRID_CUTOFF_DECOMP
     // on PE 0, create 1D chare array of MsmGridCutoff
@@ -4149,14 +5757,32 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     CProxy_MsmGridCutoffMap gcutMap = CProxy_MsmGridCutoffMap::ckNew();
     CkArrayOptions optsgcut(numGridCutoff);
     optsgcut.setMap(gcutMap);
-    msmGridCutoff = CProxy_MsmGridCutoff::ckNew(optsgcut);
+    if (approx == C1HERMITE) {
+      msmC1HermiteGridCutoff = CProxy_MsmC1HermiteGridCutoff::ckNew(optsgcut);
+    }
+    else {
+      msmGridCutoff = CProxy_MsmGridCutoff::ckNew(optsgcut);
+    }
 #else
-    msmGridCutoff = CProxy_MsmGridCutoff::ckNew(numGridCutoff);
+    if (approx == C1HERMITE) {
+      msmC1HermiteGridCutoff =
+        CProxy_MsmC1HermiteGridCutoff::ckNew(numGridCutoff);
+    }
+    else {
+      msmGridCutoff = CProxy_MsmGridCutoff::ckNew(numGridCutoff);
+    }
 #endif
-    MsmGridCutoffProxyMsg *gcmsg =
-      new(sizeof(CProxy_MsmGridCutoff), 0) MsmGridCutoffProxyMsg;
-    gcmsg->put(&msmGridCutoff);
-    msmProxy.recvMsmGridCutoffProxy(gcmsg);
+    if (approx == C1HERMITE) {
+      MsmC1HermiteGridCutoffProxyMsg *gcmsg =
+        new MsmC1HermiteGridCutoffProxyMsg;
+      gcmsg->put(&msmC1HermiteGridCutoff);
+      msmProxy.recvMsmC1HermiteGridCutoffProxy(gcmsg);
+    }
+    else {
+      MsmGridCutoffProxyMsg *gcmsg = new MsmGridCutoffProxyMsg;
+      gcmsg->put(&msmGridCutoff);
+      msmProxy.recvMsmGridCutoffProxy(gcmsg);
+    }
 
     // XXX PE 0 initializes each MsmGridCutoff
     // one-to-many
@@ -4178,7 +5804,12 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
               msm::BlockSend &bs = b(i,j,k).sendAcross[n];
               int index = b(i,j,k).indexGridCutoff[n];
               MsmGridCutoffInitMsg *bsmsg = new MsmGridCutoffInitMsg(bi, bs);
-              msmGridCutoff[index].initialize(bsmsg);
+              if (approx == C1HERMITE) {
+                msmC1HermiteGridCutoff[index].setup(bsmsg);
+              }
+              else {
+                msmGridCutoff[index].setup(bsmsg);
+              }
             } // traverse sendAcross, indexGridCutoff arrays
 
           }
@@ -4210,12 +5841,39 @@ void ComputeMsmMgr::recvMsmGridCutoffProxy(MsmGridCutoffProxyMsg *msg)
   delete(msg);
 }
 
+void ComputeMsmMgr::recvMsmC1HermiteBlockProxy(
+    MsmC1HermiteBlockProxyMsg *msg
+    )
+{
+  msg->get(msmC1HermiteBlock);
+  delete(msg);
+}
+
+void ComputeMsmMgr::recvMsmC1HermiteGridCutoffProxy(
+    MsmC1HermiteGridCutoffProxyMsg *msg
+    )
+{
+  msg->get(&msmC1HermiteGridCutoff);
+  delete(msg);
+}
+
 void ComputeMsmMgr::update(CkQdMsg *msg)
 {
 #ifdef DEBUG_MSM_VERBOSE
   printf("ComputeMsmMgr:  update() PE %d\n", CkMyPe());
 #endif
   delete msg;
+
+  if (CkMyPe() == 0) {
+    for (int level = 0;  level < nlevels;  level++) {
+      if (approx == C1HERMITE) {
+        msmC1HermiteBlock[level].setupSections();
+      }
+      else {
+        msmBlock[level].setupSections();
+      }
+    }
+  }
 
   // XXX how do update for constant pressure simulation?
 }
@@ -4237,7 +5895,12 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
           patchID, CkMyPe());
       NAMD_die(msg);
     }
-    patchPtr[patchID]->anterpolation();
+    if (approx == C1HERMITE) {
+      patchPtr[patchID]->anterpolationC1Hermite();
+    }
+    else {
+      patchPtr[patchID]->anterpolation();
+    }
     // all else should follow from here
   }
   return;
@@ -4246,10 +5909,14 @@ void ComputeMsmMgr::compute(msm::Array<int>& patchIDList)
 
 void ComputeMsmMgr::addPotential(GridMsg *gm)
 {
-#if 1
-  int pid;
+  int pid;  // receive patch ID
   int pseq;
-  gm->get(subgrid, pid, pseq);  // receive patch ID
+  if (approx == C1HERMITE) {
+    gm->get(subgrid_c1hermite, pid, pseq);
+  }
+  else {
+    gm->get(subgrid, pid, pseq);
+  }
   delete gm;
   if (patchPtr[pid] == NULL) {
     char msg[100];
@@ -4257,20 +5924,12 @@ void ComputeMsmMgr::addPotential(GridMsg *gm)
         pid, CkMyPe());
     NAMD_die(msg);
   }
-  patchPtr[pid]->addPotential(subgrid);
-#else
-  // don't copy grid from message
-  // instead use it directly from message, then delete message
-  int pid = gm->idnum;  // receive patch ID
-  if (patchPtr[pid] == NULL) {
-    char msg[100];
-    snprintf(msg, sizeof(msg), "Expecting patch %d to exist on PE %d",
-        pid, CkMyPe());
-    NAMD_die(msg);
+  if (approx == C1HERMITE) {
+    patchPtr[pid]->addPotentialC1Hermite(subgrid_c1hermite);
   }
-  patchPtr[pid]->addPotential(gm->gdata);
-  delete gm;
-#endif
+  else {
+    patchPtr[pid]->addPotential(subgrid);
+  }
 }
 
 
@@ -4435,15 +6094,25 @@ void ComputeMsm::saveResults()
     (*ap).forceBox->close(&r);
 
     reduction->item(REDUCTION_ELECT_ENERGY_SLOW) += patch.energy;
-    reduction->item(REDUCTION_VIRIAL_SLOW_XX) += patch.virial[0][0];
-    reduction->item(REDUCTION_VIRIAL_SLOW_XY) += patch.virial[0][1];
-    reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += patch.virial[0][2];
-    reduction->item(REDUCTION_VIRIAL_SLOW_YX) += patch.virial[1][0];
-    reduction->item(REDUCTION_VIRIAL_SLOW_YY) += patch.virial[1][1];
-    reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += patch.virial[1][2];
-    reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += patch.virial[2][0];
-    reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += patch.virial[2][1];
-    reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += patch.virial[2][2];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_XX) += patch.virial[0][0];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_XY) += patch.virial[0][1];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += patch.virial[0][2];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_YX) += patch.virial[1][0];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_YY) += patch.virial[1][1];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += patch.virial[1][2];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += patch.virial[2][0];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += patch.virial[2][1];
+//    reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += patch.virial[2][2];
+    Float *virial = myMgr->virial;
+    reduction->item(REDUCTION_VIRIAL_SLOW_XX) += virial[ComputeMsmMgr::VXX];
+    reduction->item(REDUCTION_VIRIAL_SLOW_XY) += virial[ComputeMsmMgr::VXY];
+    reduction->item(REDUCTION_VIRIAL_SLOW_XZ) += virial[ComputeMsmMgr::VXZ];
+    reduction->item(REDUCTION_VIRIAL_SLOW_YX) += virial[ComputeMsmMgr::VXY];
+    reduction->item(REDUCTION_VIRIAL_SLOW_YY) += virial[ComputeMsmMgr::VYY];
+    reduction->item(REDUCTION_VIRIAL_SLOW_YZ) += virial[ComputeMsmMgr::VYZ];
+    reduction->item(REDUCTION_VIRIAL_SLOW_ZX) += virial[ComputeMsmMgr::VXZ];
+    reduction->item(REDUCTION_VIRIAL_SLOW_ZY) += virial[ComputeMsmMgr::VYZ];
+    reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += virial[ComputeMsmMgr::VZZ];
   }
   reduction->submit();
 }
@@ -4477,7 +6146,7 @@ namespace msm {
     force.resize(natoms);
     cntRecvs = 0;
     energy = 0;
-    memset(virial, 0, 3*3*sizeof(BigReal));
+    //memset(virial, 0, 3*3*sizeof(BigReal));
     for (int i = 0;  i < natoms;  i++)  force[i] = 0;
     if (mgr->approx == ComputeMsmMgr::C1HERMITE) {
       qh_c1hermite.reset(0);
@@ -4651,6 +6320,10 @@ namespace msm {
     const Double rs_edge = Double( mgr->s_edge );
     const int s_size = ComputeMsmMgr::PolyDegree[mgr->approx] + 1;
 
+    const Float hx_1 = Float(mgr->hxlen_1);  // real space inverse grid spacing
+    const Float hy_1 = Float(mgr->hylen_1);
+    const Float hz_1 = Float(mgr->hzlen_1);
+
     const int ia = eh.ia();
     const int ib = eh.ib();
     const int ja = eh.ja();
@@ -4678,11 +6351,11 @@ namespace msm {
 
       // calculate Phi stencils along each dimension
       Float xdelta = Float(sx_hx - xlo);
-      mgr->d_stencil_1d(dxphi, xphi, xdelta);
+      mgr->d_stencil_1d(dxphi, xphi, xdelta, hx_1);
       Float ydelta = Float(sy_hy - ylo);
-      mgr->d_stencil_1d(dyphi, yphi, ydelta);
+      mgr->d_stencil_1d(dyphi, yphi, ydelta, hy_1);
       Float zdelta = Float(sz_hz - zlo);
-      mgr->d_stencil_1d(dzphi, zphi, zdelta);
+      mgr->d_stencil_1d(dzphi, zphi, zdelta, hz_1);
 
       int ilo = int(xlo);
       int jlo = int(ylo);
@@ -4726,9 +6399,14 @@ namespace msm {
         }
       }
 
+#if 0
       force[n].x -= q * (mgr->srx_x * fx + mgr->srx_y * fy + mgr->srx_z * fz);
       force[n].y -= q * (mgr->sry_x * fx + mgr->sry_y * fy + mgr->sry_z * fz);
       force[n].z -= q * (mgr->srz_x * fx + mgr->srz_y * fy + mgr->srz_z * fz);
+#endif
+      force[n].x -= q * fx;
+      force[n].y -= q * fy;
+      force[n].z -= q * fz;
       energy += q * e;
       energy_self += q * q;
 
@@ -4741,9 +6419,317 @@ namespace msm {
 #ifdef MSM_TIMING
     stopTime = CkWallTimer();
     mgr->msmTiming[MsmTimer::INTERP] += stopTime - startTime;
+    mgr->doneTiming();
+#endif
+    mgr->doneCompute();
+  }
+
+  void PatchData::anterpolationC1Hermite() {
+#ifdef DEBUG_MSM_GRID
+    printf("patchID %d:  anterpolationC1Hermite\n", patchID);
 #endif
 
 #ifdef MSM_TIMING
+    double startTime, stopTime;
+    startTime = CkWallTimer();
+#endif
+#ifndef MSM_COMM_ONLY
+    Float xphi[2], xpsi[2];
+    Float yphi[2], ypsi[2];
+    Float zphi[2], zpsi[2];
+
+    const Float hx = Float(mgr->hxlen);  // real space grid spacing
+    const Float hy = Float(mgr->hylen);
+    const Float hz = Float(mgr->hzlen);
+
+    const int ia = qh_c1hermite.ia();
+    const int ib = qh_c1hermite.ib();
+    const int ja = qh_c1hermite.ja();
+    const int jb = qh_c1hermite.jb();
+    const int ka = qh_c1hermite.ka();
+    const int kb = qh_c1hermite.kb();
+    const int ni = qh_c1hermite.ni();
+    const int nj = qh_c1hermite.nj();
+    C1Vector *qhbuffer = qh_c1hermite.data().buffer();
+
+    // loop over atoms
+    for (int n = 0;  n < coord.len();  n++) {
+      Float q = coord[n].charge;
+      if (0==q) continue;
+
+      ScaledPosition s = mgr->lattice.scale(coord[n].position);
+
+      BigReal sx_hx = (s.x - mgr->sglower.x) * mgr->shx_1;
+      BigReal sy_hy = (s.y - mgr->sglower.y) * mgr->shy_1;
+      BigReal sz_hz = (s.z - mgr->sglower.z) * mgr->shz_1;
+
+      BigReal xlo = floor(sx_hx);
+      BigReal ylo = floor(sy_hy);
+      BigReal zlo = floor(sz_hz);
+
+      // calculate Phi stencils along each dimension
+      Float xdelta = Float(sx_hx - xlo);
+      mgr->stencil_1d_c1hermite(xphi, xpsi, xdelta, hx);
+      Float ydelta = Float(sy_hy - ylo);
+      mgr->stencil_1d_c1hermite(yphi, ypsi, ydelta, hy);
+      Float zdelta = Float(sz_hz - zlo);
+      mgr->stencil_1d_c1hermite(zphi, zpsi, zdelta, hz);
+
+      int ilo = int(xlo);
+      int jlo = int(ylo);
+      int klo = int(zlo);
+
+      // test to see if stencil is within edges of grid
+      int iswithin = ( ia <= ilo && ilo < ib &&
+                       ja <= jlo && jlo < jb &&
+                       ka <= klo && klo < kb );
+
+      if ( ! iswithin ) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Atom %d is outside of the MSM grid.",
+            coord[n].id);
+        NAMD_die(msg);
+      }
+
+      // determine charge on cube of grid points around atom
+      for (int k = 0;  k < 2;  k++) {
+        int koff = ((k+klo) - ka) * nj;
+        Float c_zphi = zphi[k] * q;
+        Float c_zpsi = zpsi[k] * q;
+        for (int j = 0;  j < 2;  j++) {
+          int jkoff = (koff + (j+jlo) - ja) * ni;
+          Float c_yphi_zphi = yphi[j] * c_zphi;
+          Float c_ypsi_zphi = ypsi[j] * c_zphi;
+          Float c_yphi_zpsi = yphi[j] * c_zpsi;
+          Float c_ypsi_zpsi = ypsi[j] * c_zpsi;
+          for (int i = 0;  i < 2;  i++) {
+            int ijkoff = jkoff + (i+ilo) - ia;
+            qhbuffer[ijkoff].velem[D000] += xphi[i] * c_yphi_zphi;
+            qhbuffer[ijkoff].velem[D100] += xpsi[i] * c_yphi_zphi;
+            qhbuffer[ijkoff].velem[D010] += xphi[i] * c_ypsi_zphi;
+            qhbuffer[ijkoff].velem[D001] += xphi[i] * c_yphi_zpsi;
+            qhbuffer[ijkoff].velem[D110] += xpsi[i] * c_ypsi_zphi;
+            qhbuffer[ijkoff].velem[D101] += xpsi[i] * c_yphi_zpsi;
+            qhbuffer[ijkoff].velem[D011] += xphi[i] * c_ypsi_zpsi;
+            qhbuffer[ijkoff].velem[D111] += xpsi[i] * c_ypsi_zpsi;
+          }
+        }
+      }
+
+    } // end loop over atoms
+
+#endif // !MSM_COMM_ONLY
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgr->msmTiming[MsmTimer::ANTERP] += stopTime - startTime;
+#endif
+
+    sendChargeC1Hermite();
+  }
+
+  void PatchData::sendChargeC1Hermite() {
+#ifdef MSM_TIMING
+    double startTime, stopTime;
+#endif
+    int priority = 1;
+    // buffer portions of grid to send to Blocks on level 0
+    for (int n = 0;  n < pd->send.len();  n++) {
+#ifdef MSM_TIMING
+      startTime = CkWallTimer();
+#endif
+      // initialize the proper subgrid indexing range
+      subgrid_c1hermite.init( pd->send[n].nrange );
+      // extract the values from the larger grid into the subgrid
+      qh_c1hermite.extract(subgrid_c1hermite);
+      // translate the subgrid indexing range to match the MSM block
+      subgrid_c1hermite.updateLower( pd->send[n].nrange_wrap.lower() );
+      // add the subgrid charges into the block
+      BlockIndex& bindex = pd->send[n].nblock_wrap;
+      // place subgrid into message
+      int msgsz = subgrid_c1hermite.data().len() * sizeof(C1Vector);
+      GridMsg *gm = new(msgsz, sizeof(int)) GridMsg;
+      SET_PRIORITY(gm, sequence, MSM_PRIORITY + priority);
+      gm->put(subgrid_c1hermite, bindex.level, sequence);
+#ifdef MSM_TIMING
+      stopTime = CkWallTimer();
+      mgr->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+      mgr->msmC1HermiteBlock[bindex.level](
+          bindex.n.i, bindex.n.j, bindex.n.k).addCharge(gm);
+    }
+  }
+
+  void PatchData::addPotentialC1Hermite(const Grid<C1Vector>& epart) {
+#ifdef MSM_TIMING
+    double startTime, stopTime;
+    startTime = CkWallTimer();
+#endif
+    eh_c1hermite += epart;
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgr->msmTiming[MsmTimer::COMM] += stopTime - startTime;
+#endif
+    if (++cntRecvs == pd->numRecvs) {
+      interpolationC1Hermite();
+    }
+  }
+
+  void PatchData::interpolationC1Hermite() {
+#ifdef DEBUG_MSM_GRID
+    printf("patchID %d:  interpolation\n", patchID);
+#endif
+
+#ifdef MSM_TIMING
+    double startTime, stopTime;
+    startTime = CkWallTimer();
+#endif
+#ifndef MSM_COMM_ONLY
+    BigReal energy_self = 0;
+
+    Float xphi[2], dxphi[2], xpsi[2], dxpsi[2];
+    Float yphi[2], dyphi[2], ypsi[2], dypsi[2];
+    Float zphi[2], dzphi[2], zpsi[2], dzpsi[2];
+
+    const Float hx = Float(mgr->hxlen);      // real space grid spacing
+    const Float hy = Float(mgr->hylen);
+    const Float hz = Float(mgr->hzlen);
+
+    const Float hx_1 = Float(mgr->hxlen_1);  // real space inverse grid spacing
+    const Float hy_1 = Float(mgr->hylen_1);
+    const Float hz_1 = Float(mgr->hzlen_1);
+
+    const int ia = eh_c1hermite.ia();
+    const int ib = eh_c1hermite.ib();
+    const int ja = eh_c1hermite.ja();
+    const int jb = eh_c1hermite.jb();
+    const int ka = eh_c1hermite.ka();
+    const int kb = eh_c1hermite.kb();
+    const int ni = eh_c1hermite.ni();
+    const int nj = eh_c1hermite.nj();
+    C1Vector *ehbuffer = eh_c1hermite.data().buffer();
+
+    // loop over atoms
+    for (int n = 0;  n < coord.len();  n++) {
+      Float q = coord[n].charge;
+      if (0==q) continue;
+
+      ScaledPosition s = mgr->lattice.scale(coord[n].position);
+
+      BigReal sx_hx = (s.x - mgr->sglower.x) * mgr->shx_1;
+      BigReal sy_hy = (s.y - mgr->sglower.y) * mgr->shy_1;
+      BigReal sz_hz = (s.z - mgr->sglower.z) * mgr->shz_1;
+
+      BigReal xlo = floor(sx_hx);
+      BigReal ylo = floor(sy_hy);
+      BigReal zlo = floor(sz_hz);
+
+      // calculate Phi stencils along each dimension
+      Float xdelta = Float(sx_hx - xlo);
+      mgr->d_stencil_1d_c1hermite(dxphi, xphi, dxpsi, xpsi,
+          xdelta, hx, hx_1);
+      Float ydelta = Float(sy_hy - ylo);
+      mgr->d_stencil_1d_c1hermite(dyphi, yphi, dypsi, ypsi,
+          ydelta, hy, hy_1);
+      Float zdelta = Float(sz_hz - zlo);
+      mgr->d_stencil_1d_c1hermite(dzphi, zphi, dzpsi, zpsi,
+          zdelta, hz, hz_1);
+
+      int ilo = int(xlo);
+      int jlo = int(ylo);
+      int klo = int(zlo);
+
+#if 0
+      // XXX don't need to test twice!
+
+      // test to see if stencil is within edges of grid
+      int iswithin = ( ia <= ilo && ilo < ib &&
+                       ja <= jlo && jlo < jb &&
+                       ka <= klo && klo < kb );
+
+      if ( ! iswithin ) {
+        char msg[100];
+        snprintf(msg, sizeof(msg), "Atom %d is outside of the MSM grid.",
+            coord[n].id);
+        NAMD_die(msg);
+      }
+#endif
+
+      // determine force on atom from surrounding potential grid points
+      Float fx=0, fy=0, fz=0, e=0;
+      for (int k = 0;  k < 2;  k++) {
+        int koff = ((k+klo) - ka) * nj;
+        for (int j = 0;  j < 2;  j++) {
+          int jkoff = (koff + (j+jlo) - ja) * ni;
+          Float c_yphi_zphi = yphi[j] * zphi[k];
+          Float c_ypsi_zphi = ypsi[j] * zphi[k];
+          Float c_yphi_zpsi = yphi[j] * zpsi[k];
+          Float c_ypsi_zpsi = ypsi[j] * zpsi[k];
+          Float c_yphi_dzphi = yphi[j] * dzphi[k];
+          Float c_ypsi_dzphi = ypsi[j] * dzphi[k];
+          Float c_yphi_dzpsi = yphi[j] * dzpsi[k];
+          Float c_ypsi_dzpsi = ypsi[j] * dzpsi[k];
+          Float c_dyphi_zphi = dyphi[j] * zphi[k];
+          Float c_dypsi_zphi = dypsi[j] * zphi[k];
+          Float c_dyphi_zpsi = dyphi[j] * zpsi[k];
+          Float c_dypsi_zpsi = dypsi[j] * zpsi[k];
+          for (int i = 0;  i < 2;  i++) {
+            int ijkoff = jkoff + (i+ilo) - ia;
+            fx += dxphi[i] * (c_yphi_zphi * ehbuffer[ijkoff].velem[D000]
+                + c_ypsi_zphi * ehbuffer[ijkoff].velem[D010]
+                + c_yphi_zpsi * ehbuffer[ijkoff].velem[D001]
+                + c_ypsi_zpsi * ehbuffer[ijkoff].velem[D011])
+              + dxpsi[i] * (c_yphi_zphi * ehbuffer[ijkoff].velem[D100]
+                  + c_ypsi_zphi * ehbuffer[ijkoff].velem[D110]
+                  + c_yphi_zpsi * ehbuffer[ijkoff].velem[D101]
+                  + c_ypsi_zpsi * ehbuffer[ijkoff].velem[D111]);
+            fy += xphi[i] * (c_dyphi_zphi * ehbuffer[ijkoff].velem[D000]
+                + c_dypsi_zphi * ehbuffer[ijkoff].velem[D010]
+                + c_dyphi_zpsi * ehbuffer[ijkoff].velem[D001]
+                + c_dypsi_zpsi * ehbuffer[ijkoff].velem[D011])
+              + xpsi[i] * (c_dyphi_zphi * ehbuffer[ijkoff].velem[D100]
+                  + c_dypsi_zphi * ehbuffer[ijkoff].velem[D110]
+                  + c_dyphi_zpsi * ehbuffer[ijkoff].velem[D101]
+                  + c_dypsi_zpsi * ehbuffer[ijkoff].velem[D111]);
+            fz += xphi[i] * (c_yphi_dzphi * ehbuffer[ijkoff].velem[D000]
+                + c_ypsi_dzphi * ehbuffer[ijkoff].velem[D010]
+                + c_yphi_dzpsi * ehbuffer[ijkoff].velem[D001]
+                + c_ypsi_dzpsi * ehbuffer[ijkoff].velem[D011])
+              + xpsi[i] * (c_yphi_dzphi * ehbuffer[ijkoff].velem[D100]
+                  + c_ypsi_dzphi * ehbuffer[ijkoff].velem[D110]
+                  + c_yphi_dzpsi * ehbuffer[ijkoff].velem[D101]
+                  + c_ypsi_dzpsi * ehbuffer[ijkoff].velem[D111]);
+            e += xphi[i] * (c_yphi_zphi * ehbuffer[ijkoff].velem[D000]
+                + c_ypsi_zphi * ehbuffer[ijkoff].velem[D010]
+                + c_yphi_zpsi * ehbuffer[ijkoff].velem[D001]
+                + c_ypsi_zpsi * ehbuffer[ijkoff].velem[D011])
+              + xpsi[i] * (c_yphi_zphi * ehbuffer[ijkoff].velem[D100]
+                  + c_ypsi_zphi * ehbuffer[ijkoff].velem[D110]
+                  + c_yphi_zpsi * ehbuffer[ijkoff].velem[D101]
+                  + c_ypsi_zpsi * ehbuffer[ijkoff].velem[D111]);
+          }
+        }
+      }
+
+#if 0
+      force[n].x -= q * (mgr->srx_x * fx + mgr->srx_y * fy + mgr->srx_z * fz);
+      force[n].y -= q * (mgr->sry_x * fx + mgr->sry_y * fy + mgr->sry_z * fz);
+      force[n].z -= q * (mgr->srz_x * fx + mgr->srz_y * fy + mgr->srz_z * fz);
+#endif
+      force[n].x -= q * fx;
+      force[n].y -= q * fy;
+      force[n].z -= q * fz;
+      energy += q * e;
+      energy_self += q * q;
+
+    } // end loop over atoms
+
+    energy_self *= mgr->gzero;
+    energy -= energy_self;
+    energy *= 0.5;
+#endif // !MSM_COMM_ONLY
+#ifdef MSM_TIMING
+    stopTime = CkWallTimer();
+    mgr->msmTiming[MsmTimer::INTERP] += stopTime - startTime;
     mgr->doneTiming();
 #endif
     mgr->doneCompute();
