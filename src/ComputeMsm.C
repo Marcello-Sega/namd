@@ -38,6 +38,8 @@
 //#undef MSM_SKIP_TOO_DISTANT_BLOCKS
 
 // skip over pairs of blocks whose overlap is beyond nonzero gc sphere
+// this search is more expensive than MSM_SKIP_TOO_DISTANT_BLOCKS
+// and does not eliminate many block pairs
 #define MSM_SKIP_BEYOND_SPHERE
 //#undef MSM_SKIP_BEYOND_SPHERE
 
@@ -48,73 +50,37 @@
 #define MSM_NODE_MAPPING_STATS
 #undef MSM_NODE_MAPPING_STATS
 
+// top of hierarchy calculates smaller blocks of charge to 
+// unfolded image blocks of potential, up to the desired block size,
+// then sums the unfolded images of potential back into the 
+// actual potential block, thereby greatly reducing the number of 
+// block pairs that would otherwise be scheduled
 #define MSM_FOLD_FACTOR
 //#undef MSM_FOLD_FACTOR
 
 // report timings for compute routines
+// for diagnostic purposes only
 #define MSM_TIMING
 #undef MSM_TIMING
 
 // report profiling for compute routines
+// for diagnostic purposes only
 #define MSM_PROFILING
 #undef MSM_PROFILING
 
 // use fixed size grid message
+// XXX probably does not work anymore
 #define MSM_FIXED_SIZE_GRID_MSG
 #undef MSM_FIXED_SIZE_GRID_MSG
 
 // turn off computation
+// for diagnostic purposes only
 //#define MSM_COMM_ONLY
 
 // print diagnostics for memory alignment (for grid cutoff calculation)
+// for diagnostic purposes only
 #define DEBUG_MEMORY_ALIGNMENT
 #undef DEBUG_MEMORY_ALIGNMENT
-
-#if 0
-// custom reduction
-CkReductionMsg *sumInts(int nMsgs, CkReductionMsg **msg) {
-  int sum = 0;
-  for (int i = 0;  i < nMsgs;  i++) {
-    // Sanity check
-    CkAssert(msg[i]->getSize() == sizeof(int));
-    // Extract this message's datum
-    int m = *((int *)msg[i]->getData());
-    sum += m;
-  }
-  return CkReductionMsg::buildNew(sizeof(int), &sum);
-}
-
-// register my custom reduction function
-// access using its type ID "sumIntsType"
-/*global*/ CkReduction::reducerType sumIntsType;
-/*initnode*/ void registerSumInts(void) {
-  sumIntsType = CkReduction::addReducer(sumInts);
-}
-
-
-// custom reduction
-CkReductionMsg *sumFloatGrids(int nMsgs, CkReductionMsg **msg) {
-  CkError("Entering sumFloatGrids()\n");
-  msm::Grid<Float> sumgrid;
-  for (int i = 0;  i < nMsgs;  i++) {
-    msm::SerializedGrid sg(msg[i]->getSize(), msg[i]->getData());
-    msm::Grid<Float> g;
-    sg.get(g);
-    sumgrid += g;
-  }
-  msm::SerializedGrid sg(sumgrid);
-  CkError("sumFloatGrids():  sg.size() = %d   sg.data() = %p\n",
-      sg.size(), sg.data());
-  return CkReductionMsg::buildNew(sg.size(), sg.data());
-}
-
-// register my custom reduction function
-// access using its type ID "sumFloatGridsType"
-/*global*/ CkReduction::reducerType sumFloatGridsType;
-/*initnode*/ void registerSumFloatGrids(void) {
-  sumFloatGridsType = CkReduction::addReducer(sumFloatGrids);
-}
-#endif
 
 
 //
@@ -319,6 +285,7 @@ class MsmC1HermiteGridCutoffSetupMsg :
 };
 
 
+// Used only when MSM_TIMING is defined
 class MsmTimer : public CBase_MsmTimer {
   public:
     enum { ANTERP=0, INTERP, RESTRICT, PROLONGATE, GRIDCUTOFF, COMM, MAX };
@@ -344,6 +311,7 @@ class MsmTimer : public CBase_MsmTimer {
 };
 
 
+// Used only when MSM_PROFILING is defined
 class MsmProfiler : public CBase_MsmProfiler {
   public:
     enum { MAX = MSM_MAX_BLOCK_SIZE+1 };
@@ -686,6 +654,9 @@ public:
 
   // Calculate the smoothing function and its derivative:
   // g(R) and (d/dR)g(R), where R=r/a.
+  // Use double precision for calculating the MSM constant weights 
+  // and coefficients.  The resulting coefficents to be used in 
+  // the repeatedly called algorithm are stored in single precision.
   static void splitting(BigReal& g, BigReal& dg, BigReal r_a, int _split) {
     BigReal s = r_a * r_a;  // s = (r/a)^2, assuming 0 <= s <= 1
     switch (_split) {
@@ -1662,6 +1633,8 @@ ComputeMsmMgr::PhiStencil[NUM_APPROX_FORMS][MAX_NSTENCIL_SKIP_ZERO] = {
 };
 
 
+// Designates PE assignment for static load balancing of 
+// MsmBlock-related arrays
 class MsmBlockMap : public CkArrayMap {
   private:
     ComputeMsmMgr *mgrLocal;
@@ -1694,6 +1667,8 @@ class MsmBlockMap : public CkArrayMap {
 };
 
 
+// Designates PE assignment for static load balancing of 
+// MsmGridCutoff-related arrays
 class MsmGridCutoffMap : public CkArrayMap {
   private:
     int *penum;
@@ -1729,6 +1704,15 @@ namespace msm {
 
   //
   // PatchData
+  //
+  // Performs anterpolation and interpolation algorithms.
+  //
+  // Surround each NAMD patch with enough grid points to perform 
+  // anterpolation and interpolation without having to do any 
+  // grid wrapping.  This does not give a partitioning of the 
+  // MSM finest level grid --- rather, the edges of adjacent 
+  // PatchData grids will overlap or contain image points along 
+  // the periodic boundaries.  
   //
  
   struct PatchData {
@@ -1772,6 +1756,15 @@ namespace msm {
 /////////////////
 //
 // MsmGridCutoff
+//
+// Performs grid cutoff part of the computation.
+//
+// The grid cutoff part is the most computationally intensive part 
+// of MSM.  The templated MsmGridCutoffKernel class takes Vtype 
+// for charge and potential data (generalizes to vector for Hermite
+// interpolation) and takes Mtype for the pre-computed grid coefficient 
+// weights (generalizes to matrix for Hermite interpolation).
+//
 
 template <class Vtype, class Mtype>
 class MsmGridCutoffKernel {
@@ -1826,25 +1819,6 @@ class MsmGridCutoffKernel {
       qhblockIndex = bmsg->qhBlockIndex;
       ehblockSend = bmsg->ehBlockSend;
       delete bmsg;
-#if 0
-      // XXX
-      if (ehblockSend.nblock.level == 2) {
-        msm::BlockIndex& nb = ehblockSend.nblock;
-        msm::IndexRange& nr = ehblockSend.nrange;
-        msm::BlockIndex& nbw = ehblockSend.nblock_wrap;
-        msm::IndexRange& nrw = ehblockSend.nrange_wrap;
-        printf("MsmGridCutoffKernel::ehblockSend:\n"
-            "  nblock:  level=%d  i=%d j=%d k=%d\n"
-            "  nrange:  [%d..%d] x [%d..%d] x [%d..%d]\n"
-            "  nblock_wrap:  level=%d  i=%d j=%d k=%d\n"
-            "  nrange_wrap:  [%d..%d] x [%d..%d] x [%d..%d]\n",
-            nb.level, nb.n.i, nb.n.j, nb.n.k,
-            nr.ia(), nr.ib(), nr.ja(), nr.jb(), nr.ka(), nr.kb(),
-            nbw.level, nbw.n.i, nbw.n.j, nbw.n.k,
-            nrw.ia(), nrw.ib(), nrw.ja(), nrw.jb(), nrw.ka(), nrw.kb());
-      }
-      // XXX
-#endif
 
       // set message priority
       priority = mgrLocal->nlevels
@@ -2190,6 +2164,12 @@ class MsmGridCutoffKernel {
 
 };
 
+
+//
+// MsmGridCutoff wraps kernel template for approximations 
+// that involve only function values (e.g., CUBIC, QUINTIC).
+// Elements of 1D chare array.
+//
 class MsmGridCutoff :
   public CBase_MsmGridCutoff,
   public MsmGridCutoffKernel<Float,Float>
@@ -2349,6 +2329,10 @@ class MsmGridCutoff :
 }; // MsmGridCutoff
 
 
+//
+// MsmC1HermiteGridCutoff wraps kernel template for
+// C1 Hermite approximation.  Elements of 1D chare array.
+//
 class MsmC1HermiteGridCutoff :
   public CBase_MsmC1HermiteGridCutoff,
   public MsmGridCutoffKernel<C1Vector,C1Matrix>
@@ -2688,6 +2672,8 @@ void MsmC1HermiteGridCutoff::compute_specialized(GridMsg *gmsg) {
 #if 0
                     ehsum += gbuf[ii] * qbuf[ii];
 #else
+                    // skip matvec when matrix is 0
+                    // first matrix element tells us if this is the case
                     if ( *((int *)(gbuf)) != 0) {
 
                       // expand matrix-vector multiply
@@ -2801,7 +2787,36 @@ void MsmC1HermiteGridCutoff::compute_specialized(GridMsg *gmsg) {
 /////////////////
 //
 // MsmBlock
-
+//
+// Performs restriction and prolongation.
+//
+// Each level of the MSM grid hierarchy is partitioned into MsmBlocks,
+// holding both charge and potential grid blocks.
+//
+// The MsmBlockKernel provides templated routines for the MSM 
+// restriction and prolongation algorithms.  Overall is very small 
+// part of computational work (less than 2% total for C1 Hermite, 
+// less than 4% total for cubic).
+// XXX Could be made faster with factored restriction and prolongation 
+// algorithms --- especially important for higher order or for 
+// generalizing to coarser grid spacing that is not 2h.
+// XXX Haven't yet determined factorization for C1 Hermite.
+//
+// The classes that inherit from MsmBlockKernel provide 
+// 3D chare array elements for each level with significant management:
+// - receive and sum charges from below
+//   (either PatchData or lower level MsmBlock)
+// - calculate restriction to 2h grid
+// - send up (if not on highest level)
+// - section broadcast to MsmGridCutoff
+// - receive and sum potentials from above and from 
+//   section reduction of MsmGridCutoff
+// - calculate prolongation to (1/2)h grid and send down,
+//   OR send to PatchData
+//
+// XXX Grid cutoff calculation below is now replaced with 
+// MsmGridCutoff to provide enough parallel work units.
+// 
 
 template <class Vtype, class Mtype>
 class MsmBlockKernel {
@@ -3138,6 +3153,10 @@ void MsmBlockKernel<Vtype,Mtype>::prolongationKernel()
 } // MsmBlockKernel<Vtype,Mtype>::prolongationKernel()
 
 
+//
+// MsmBlock handles grids of function values only
+// (for cubic, quintic, etc., approximation)
+//
 class MsmBlock :
   public CBase_MsmBlock,
   public MsmBlockKernel<Float,Float>
@@ -3519,6 +3538,10 @@ void MsmBlock::sendPatch()
 } // MsmBlock::sendPatch()
 
 
+//
+// MsmC1HermiteBlock handles grids of vector elements
+// for C1 Hermite approximation
+//
 class MsmC1HermiteBlock :
   public CBase_MsmC1HermiteBlock,
   public MsmBlockKernel<C1Vector,C1Matrix>
@@ -4009,6 +4032,25 @@ void ComputeMsmMgr::setup_periodic_blocksize(int& bsize, int n)
 }
 
 
+//
+// This is the major routine that sets everything up for MSM based on 
+// 1. cell basis vectors and/or max and min coordinates plus padding
+// 2. cutoff and MSM-related parameters from SimParameter
+// Includes determining grid spacings along periodic dimensions, 
+// determining grid dimensions and number of levels for system,
+// then calculating all needed coefficients for grid cutoff part
+// and grid transfer parts (restriction and prolongation).
+//
+// Then sets up Map for parallel decomposition based on 
+// MSM block size parameters from SimParameter.
+//
+// Then determines chare array element placement of MsmBlock and 
+// MsmGridCutoff arrays based on number of PEs and number of nodes.
+//
+// Then allocates (on PE 0) MsmBlock (3D chare arrays, one per level) 
+// and MsmGridCutoff (one 1D chare array for all block-block interactions)
+// and then broadcasts array proxies across group.
+//
 void ComputeMsmMgr::initialize(MsmInitMsg *msg)
 {
 #ifdef DEBUG_MSM_VERBOSE
@@ -5234,25 +5276,6 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
                   continue;  // skip because overlap is beyond nonzero gc sphere
                 }
 #endif
-#if 0
-                // XXX
-                if (level == 2) {
-                  msm::BlockIndex& nb = bs.nblock;
-                  msm::IndexRange& nr = bs.nrange;
-                  msm::BlockIndex& nbw = bs.nblock_wrap;
-                  msm::IndexRange& nrw = bs.nrange_wrap;
-                  printf("BLOCK SEND ACROSS\n"
-                    "  bs.nblock:  level=%d  n=%d %d %d\n"
-                    "  bs.nrange:  [%d..%d] x [%d..%d] x [%d..%d]\n"
-                    "  bs.nblock_wrap:  level=%d  n=%d %d %d\n"
-                    "  bs.nrange_wrap:  [%d..%d] x [%d..%d] x [%d..%d]\n",
-                    nb.level, nb.n.i, nb.n.j, nb.n.k,
-                    nr.ia(), nr.ib(), nr.ja(), nr.jb(), nr.ka(), nr.kb(),
-                    nbw.level, nbw.n.i, nbw.n.j, nbw.n.k,
-                    nrw.ia(), nrw.ib(), nrw.ja(), nrw.jb(), nrw.ka(), nrw.kb());
-                }
-                // XXX
-#endif
                 b(i,j,k).sendAcross.append(bs);
                 b(i,j,k).indexGridCutoff.append(numGridCutoff);
                 // receiving block records this grid cutoff ID
@@ -5390,7 +5413,6 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
   } // end loop over levels
   // end of Map setup
 
-  //printf("XXX reached end of Map setup\n");
   // allocate chare arrays
 
   if (1) {
@@ -5420,6 +5442,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
     // each MsmGridCutoff element to either its source node or its 
     // destination node, again assigned to node PEs in round robin manner.
 #if 0
+    // for testing
 #if 0
     int numNodes = 16;
     int numPes = 512;
@@ -5864,6 +5887,7 @@ void ComputeMsmMgr::update(CkQdMsg *msg)
 #endif
   delete msg;
 
+  // have to setup sections AFTER initialization is finished
   if (CkMyPe() == 0) {
     for (int level = 0;  level < nlevels;  level++) {
       if (approx == C1HERMITE) {

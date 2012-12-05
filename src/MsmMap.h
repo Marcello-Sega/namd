@@ -749,71 +749,7 @@ namespace msm {
 
     private:
       Array<T> gdata;
-  };
-
-  // serialized Grid storage for reduction
-  class SerializedGrid {
-    public:
-      SerializedGrid() : buffer(0), nbytes(0), needToFree(0) { }
-      SerializedGrid(int n, void *p)
-        : buffer(0), nbytes(0), needToFree(0) { put(n,p); }
-      template <class T> SerializedGrid(const Grid<T>& g)
-        : buffer(0), nbytes(0), needToFree(0) { put(g); }
-      ~SerializedGrid() { cleanup(); }
-      void put(int n, void *p) {
-        cleanup();
-        //buffer = (char *) p;
-        //nbytes = n;
-        int headerlen = sizeof(IndexRange);
-        ASSERT(n <= headerlen + MSM_MAX_BLOCK_VOLUME * sizeof(Float));
-        nbytes = headerlen + MSM_MAX_BLOCK_VOLUME * sizeof(Float);
-        buffer = new char[MSM_MAX_BLOCK_VOLUME * sizeof(Float)];
-        needToFree = 1;
-        memcpy(buffer, p, n);  // copy buffer
-      }
-      template <class T> void put(const Grid<T>& g) {
-        cleanup();
-        int headerlen = sizeof(IndexRange);
-        int datalen = g.data().len()*sizeof(T);
-        //nbytes = headerlen + datalen;
-        //buffer = new char[nbytes];
-        ASSERT(datalen <= MSM_MAX_BLOCK_VOLUME * sizeof(T));
-        nbytes = headerlen + MSM_MAX_BLOCK_VOLUME * sizeof(T);
-        buffer = new char[MSM_MAX_BLOCK_VOLUME * sizeof(T)];
-        if ( ! buffer) {
-          char msg[100];
-          snprintf(msg, sizeof(msg),
-              "Can't allocate %lu KB for msm::SerializedGrid\n",
-              (unsigned long)(nbytes / 1024));
-          NAMD_die(msg);
-        } 
-        needToFree = 1;
-        memcpy(buffer, &g, headerlen);  // copy the IndexRange
-        memcpy(buffer + headerlen, g.data().buffer(), datalen);  // copy buffer
-      }
-      template <class T> void get(Grid<T>& g) const {
-        int headerlen = sizeof(IndexRange);
-        int datalen = nbytes - headerlen;
-        g.init(*(IndexRange *)buffer);
-        ASSERT(g.data().len()*sizeof(T) == datalen);
-        memcpy(g.data().buffer(), buffer + headerlen, datalen);  // copy buffer
-      }
-      int size() const { 
-        //return nbytes;
-        return sizeof(int);
-      }
-      void *data() const { return buffer; }
-    private:
-      void cleanup() {
-        if (needToFree) delete[] buffer;
-        needToFree = 0;
-        nbytes = 0;
-      }
-      char *buffer;
-      int nbytes;
-      int needToFree;
-  };
-
+  }; // Grid
 
 
   ///////////////////////////////////////////////////////////////////////////
@@ -1245,11 +1181,7 @@ namespace msm {
   typedef Array<Force> ForceArray;
 
   struct PatchData;
-  typedef Array<PatchData> PatchDataArray;
   typedef Array<PatchData *> PatchPtrArray;
-
-  struct BlockData;
-  typedef Array<Grid<BlockData> > BlockDataGrids;
 
 } // namespace msm
 
