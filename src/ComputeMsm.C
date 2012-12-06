@@ -2277,15 +2277,6 @@ class MsmGridCutoff :
           ehfull.nn() * sizeof(Float), ehfull.data().buffer(), 
           CkReduction::sum_float, cookie, cb);
 
-#if 0
-      // serialize eh for contribute
-      msm::SerializedGrid sg(eh);
-      CkError("compute():  sg.size() = %d   sg.data() = %p\n",
-          sg.size(), sg.data());
-      mcastPtr->contribute(sg.size(), sg.data(), sumFloatGridsType,
-          cookie, cb);
-#endif
-
 #else
       // place eh into message
       const msm::BlockIndex& bindex = ehblockSend.nblock_wrap;
@@ -2297,25 +2288,6 @@ class MsmGridCutoff :
       mgrLocal->msmBlock[bindex.level](
           bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
 
-#if 0
-      {
-        int intData = 1;
-        CProxy_CkMulticastMgr mcastProxy =
-          CkpvAccess(BOCclass_group).multicastMgr;
-        CkMulticastMgr *mcastPtr =
-          CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
-        CkCallback cb(CkIndex_MsmBlock::myReductionEntry(NULL),
-            msmBlockElementProxy);
-#if 0
-        mcastPtr->contribute(sizeof(int), &intData, CkReduction::sum_int,
-            cookie, cb);
-#else
-        mcastPtr->contribute(sizeof(int), &intData, sumIntsType,
-            cookie, cb);
-#endif
-      }
-#endif
-
 #endif // MSM_REDUCE_GRID
 
 #ifdef MSM_TIMING
@@ -2323,7 +2295,6 @@ class MsmGridCutoff :
       mgrLocal->msmTiming[MsmTimer::COMM] += stopTime - startTime;
       mgrLocal->doneTiming();
 #endif
-
     } // compute()
 
 }; // MsmGridCutoff
@@ -2400,22 +2371,13 @@ class MsmC1HermiteGridCutoff :
       int j = ehblockSend.nblock_wrap.n.j;
       int k = ehblockSend.nblock_wrap.n.k;
       ehfull.init( map->blockLevel[level](i,j,k).nrange );
-#if 0
-      printf("XXX init level=%d block=%d %d %d thisIndex=%d  ehfull: ni=%d nj=%d nk=%d nn=%d\n",
-          level, i, j, k, thisIndex,
-          map->blockLevel[level](i,j,k).nrange.ni(),
-          map->blockLevel[level](i,j,k).nrange.nj(),
-          map->blockLevel[level](i,j,k).nrange.nk(),
-          map->blockLevel[level](i,j,k).nrange.nn()
-          );
-#endif // 0
 #endif // MSM_REDUCE_GRID
     }
 
     void setupSections(MsmC1HermiteGridCutoffSetupMsg *msg) {
 #ifdef DEBUG_MSM_GRID
-      //CkPrintf("MSM C1 HERMITE GRID CUTOFF %d setup section on PE %d\n",
-      //    thisIndex, CkMyPe());
+      CkPrintf("MSM C1 HERMITE GRID CUTOFF %d setup section on PE %d\n",
+          thisIndex, CkMyPe());
 #endif
       CkGetSectionInfo(cookie, msg);  // init the cookie
       msg->get(&msmBlockElementProxy);  // get proxy to MsmC1HermiteBlock
@@ -2447,63 +2409,11 @@ class MsmC1HermiteGridCutoff :
       CkCallback cb(CkIndex_MsmC1HermiteBlock::sumReducedPotential(NULL),
           msmBlockElementProxy);
       // sum into "full" sized buffer needed for contribute
-#if 0
-      int padit = 1536; // XXX pad it
-      ehfull.resize(padit); // XXX pad it
-#endif
       ehfull.reset(0);
-#if 0
-      printf("ehfull:  [%d..%d] x [%d..%d] x [%d..%d]\n",
-          ehfull.ia(), ehfull.ib(),
-          ehfull.ja(), ehfull.jb(),
-          ehfull.ka(), ehfull.kb());
-      printf("eh:  [%d..%d] x [%d..%d] x [%d..%d]\n",
-          eh.ia(), eh.ib(),
-          eh.ja(), eh.jb(),
-          eh.ka(), eh.kb());
-#endif
-#ifdef DEBUG_MSM_GRID
-      printf("MsmC1HermiteGridCutoff %d:  ehfull.nn() = %d\n",
-          thisIndex, ehfull.nn());
-#endif
       ehfull += eh;
-#if 0
-      // XXX
-      int level = ehblockSend.nblock_wrap.level;
-      int i = ehblockSend.nblock_wrap.n.i;
-      int j = ehblockSend.nblock_wrap.n.j;
-      int k = ehblockSend.nblock_wrap.n.k;
-      printf("XXX send level=%d block=%d %d %d thisIndex=%d  efull: ni=%d nj=%d nk=%d nn=%d\n",
-          level, i, j, k, thisIndex,
-          map->blockLevel[level](i,j,k).nrange.ni(),
-          map->blockLevel[level](i,j,k).nrange.nj(),
-          map->blockLevel[level](i,j,k).nrange.nk(),
-          map->blockLevel[level](i,j,k).nrange.nn()
-          );
-#endif // 0
-#if 0
-      // XXX pad it
-      mcastPtr->contribute(
-          padit * sizeof(C1Vector), ehfull.data().buffer(), 
-          CkReduction::sum_float, cookie, cb);
-#else
-#ifdef DEBUG_MSM_GRID
-      printf("MsmC1HermiteGridCutoff %d:  after add ehfull.nn() = %d\n",
-          thisIndex, ehfull.nn());
-#endif
       mcastPtr->contribute(
           ehfull.nn() * sizeof(C1Vector), ehfull.data().buffer(), 
           CkReduction::sum_float, cookie, cb);
-#endif
-
-#if 0
-      // serialize eh for contribute
-      msm::SerializedGrid sg(eh);
-      CkError("compute():  sg.size() = %d   sg.data() = %p\n",
-          sg.size(), sg.data());
-      mcastPtr->contribute(sg.size(), sg.data(), sumFloatGridsType,
-          cookie, cb);
-#endif
 
 #else
       // place eh into message
@@ -2515,25 +2425,6 @@ class MsmC1HermiteGridCutoff :
       // lookup in ComputeMsmMgr proxy array by level
       mgrLocal->msmC1HermiteBlock[bindex.level](
           bindex.n.i, bindex.n.j, bindex.n.k).addPotential(gm);
-
-#if 0
-      {
-        int intData = 1;
-        CProxy_CkMulticastMgr mcastProxy =
-          CkpvAccess(BOCclass_group).multicastMgr;
-        CkMulticastMgr *mcastPtr =
-          CProxy_CkMulticastMgr(mcastProxy).ckLocalBranch();
-        CkCallback cb(CkIndex_MsmC1HermiteBlock::myReductionEntry(NULL),
-            msmBlockElementProxy);
-#if 0
-        mcastPtr->contribute(sizeof(int), &intData, CkReduction::sum_int,
-            cookie, cb);
-#else
-        mcastPtr->contribute(sizeof(int), &intData, sumIntsType,
-            cookie, cb);
-#endif
-      }
-#endif
 
 #endif // MSM_REDUCE_GRID
 
