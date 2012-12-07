@@ -65,8 +65,14 @@ using namespace std;
 #define SQRT_PI 1.7724538509055160273 /* mathematica 15 digits*/
 #endif
 
-#if CMK_PERSISTENT_COMM
+#if CMK_PERSISTENT_COMM 
 #define USE_PERSISTENT      1
+#endif
+
+#if USE_PERSISTENT
+#define Z_PERSIST 1
+#define Y_PERSIST 1
+#define X_PERSIST 1
 #endif
 
 //#define USE_NODE_PAR_RECEIVE    1
@@ -383,7 +389,7 @@ public:
   void ungridCalc(void);
   void submitReductions();
 
-#if CMK_PERSISTENT_COMM
+#if USE_PERSISTENT
   void setup_recvgrid_persistent();
 #endif
 
@@ -396,7 +402,7 @@ public:
 
 private:
 
-#if CMK_PERSISTENT_COMM
+#if USE_PERSISTENT
   PersistentHandle   *recvGrid_handle;
 #endif
 
@@ -1982,8 +1988,7 @@ void ComputePmeMgr::sendUntrans(void) {
       int cpylen = li.nx * zdim;
       totlen += cpylen;
     }
-    PmeUntransMsg *newmsg = new (ny * totlen * numGrids,numGrids,
-				PRIORITY_SIZE) PmeUntransMsg;
+    PmeUntransMsg *newmsg = new (numGrids, ny * totlen * numGrids, PRIORITY_SIZE) PmeUntransMsg;
     newmsg->sourceNode = myTransPe;
     newmsg->y_start = y_start;
     newmsg->ny = ny;
@@ -2341,7 +2346,7 @@ void ComputePmeMgr::initialize_computes() {
     }
   }
 
-#if CMK_PERSISTENT_COMM
+#if USE_PERSISTENT
   recvGrid_handle = NULL;
 #endif
 }
@@ -2351,7 +2356,7 @@ ComputePme::~ComputePme()
     for ( int g=0; g<numGrids; ++g ) delete myRealSpace[g];
 }
 
-#if CMK_PERSISTENT_COMM 
+#if USE_PERSISTENT 
 void ComputePmeMgr::setup_recvgrid_persistent() 
 {
     int K1 = myGrid.K1;
@@ -2360,8 +2365,6 @@ void ComputePmeMgr::setup_recvgrid_persistent()
     int dim3 = myGrid.dim3;
     int block1 = myGrid.block1;
     int block2 = myGrid.block2;
-
-    int hd = 1 ;  // has data?
 
     CkArray *zPencil_local = zPencil.ckLocalBranch();
     recvGrid_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * numPencilsActive);
@@ -2379,20 +2382,22 @@ void ComputePmeMgr::setup_recvgrid_persistent()
             char *f = f_arr + g*fsize;
             for ( int i=ibegin; i<iend; ++i ) {
                 for ( int j=jbegin; j<jend; ++j ) {
-                    //fcount += f[i*dim2+j];
-                    fcount += (f[i*dim2+j]>3?f[i*dim2+j]:3);
+                    fcount += f[i*dim2+j];
                 }
             }
         }
         int zlistlen = 0;
         for ( int i=0; i<myGrid.K3; ++i ) {
-            if ( 1 ) ++zlistlen;
-            //if ( fz_arr[i] ) ++zlistlen;
+            if ( fz_arr[i] ) ++zlistlen;
         }
+
+        int hd = ( fcount? 1 : 0 );  // has data?
         int peer = zPencil_local->homePe(CkArrayIndex3D(ib, jb, 0));
-        recvGrid_handle[ap] =  CmiCreatePersistent(peer, sizeof(PmeGridMsg)  
-            + sizeof(float)*hd*fcount*zlistlen + sizeof(int)*hd*zlistlen + sizeof(char)*hd*flen +sizeof(PmeReduction)*hd*numGrids
-            + sizeof(envelope)+PRIORITY_SIZE/8 );
+        int compress_start = sizeof(PmeGridMsg ) + sizeof(envelope) + sizeof(int)*hd*zlistlen + sizeof(char)*hd*flen +sizeof(PmeReduction)*hd*numGrids ;
+        int compress_size = sizeof(float)*hd*fcount*zlistlen;
+        int size = compress_start +  compress_size  + PRIORITY_SIZE/8+6;
+        //recvGrid_handle[ap] =  CmiCreateCompressPersistent(peer, size, compress_start, compress_size); 
+        recvGrid_handle[ap] =  CmiCreatePersistent(peer, size, sizeof(PmeGridMsg ) + sizeof(envelope));
     }
 }
 #endif
@@ -2642,6 +2647,9 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
 
   // iout << "Sending charge grid for " << numLocalAtoms << " atoms to FFT on " << iPE << ".\n" << endi;
 
+#if  USE_PERSISTENT
+    if (recvGrid_handle== NULL) setup_recvgrid_persistent();
+#endif
   int K1 = myGrid.K1;
   int K2 = myGrid.K2;
   int dim2 = myGrid.dim2;
@@ -2686,8 +2694,9 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
     int hd = ( fcount? 1 : 0 );  // has data?
     // if ( ! hd ) ++savedMessages;
 
-    PmeGridMsg *msg = new (hd*fcount*zlistlen, hd*zlistlen, hd*flen,
-	hd*numGrids, PRIORITY_SIZE) PmeGridMsg;
+    
+    PmeGridMsg *msg = new ( hd*numGrids, hd*zlistlen, hd*flen,
+	hd*fcount*zlistlen, PRIORITY_SIZE) PmeGridMsg;
     msg->sourceNode = CkMyPe();
     msg->hasData = hd;
     msg->lattice = lattice;
@@ -2731,9 +2740,22 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
     CProxy_PmePencilMap lzm = npMgr->zm;
     int destproc = lzm.ckLocalBranch()->procNum(0, msg->destElem);
     int destnode = CmiNodeOf(destproc);
+    
+#if  0 
+    CmiUsePersistentHandle(&recvGrid_handle[ap], 1);
+#endif
     pmeNodeProxy[destnode].recvZGrid(msg);
+#if 0 
+    CmiUsePersistentHandle(NULL, 0);
+#endif
 #else
+#if 0 
+    CmiUsePersistentHandle(&recvGrid_handle[ap], 1);
+#endif
     zPencil(ib,jb,0).recvGrid(msg);
+#if 0 
+    CmiUsePersistentHandle(NULL, 0);
+#endif
 #endif
     CmiEnableUrgentSend(0);
   }
@@ -2879,6 +2901,7 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
 
     PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen*numGrids,
 				numGrids, PRIORITY_SIZE) PmeGridMsg;
+
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
     msg->start = fstart;
@@ -3486,10 +3509,13 @@ private:
       trans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * zBlocks);
       for ( int isend=0; isend<zBlocks; ++isend ) {
           int kb = send_order[isend];
-          int nz = (initdata.grid.block3 > dim3/2 - kb*block3) ? (initdata.grid.block3) : (dim3/2 - kb*block3);
+          int nz1 = block3;
+          if ( (kb+1)*block3 > dim3/2 ) nz1 = dim3/2 - kb*block3;
           int peer = yPencil_local->homePe(CkArrayIndex3D(thisIndex.x, 0, kb));
-          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope)+PRIORITY_SIZE/8;
-          trans_handle[isend] = CmiCreatePersistent(peer, size);
+          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz1*2 +sizeof( envelope)+PRIORITY_SIZE/8;
+          int compress_start = sizeof(PmeTransMsg)+sizeof(envelope);
+          //trans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*hd*nx*ny*nz1*2);
+          trans_handle[isend] = CmiCreatePersistent(peer, size, sizeof( envelope)+sizeof(PmeTransMsg));
       }
     }
     
@@ -3498,7 +3524,7 @@ private:
        ungrid_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * grid_msgs.size());
        for ( imsg=0; imsg < grid_msgs.size(); ++imsg ) {
            int peer = grid_msgs[imsg]->sourceNode;
-           ungrid_handle[imsg] = CmiCreatePersistent(peer, 0); 
+           //ungrid_handle[imsg] = CmiCreatePersistent(peer, 0); 
        }
     }
 #endif
@@ -3542,10 +3568,14 @@ private:
       trans_handle = (PersistentHandle*) malloc( sizeof(PersistentHandle) * yBlocks);
       for ( int isend=0; isend<yBlocks; ++isend ) {
           int jb = send_order[isend];
-          int ny = block2 > (K2 - jb*block2) ? block2 : (K2 - jb*block2);
+          int ny1 = block2;
+          if ( (jb+1)*block2 > K2 ) ny1 = K2 - jb*block2;
           int peer = xPencil_local->homePe(CkArrayIndex3D(0, jb, thisIndex.z));
-          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8;
-          trans_handle[isend] = CmiCreatePersistent(peer, size);
+          int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny1*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8;
+          int compress_start = sizeof(PmeTransMsg)+sizeof( envelope);
+          trans_handle[isend] = CmiCreatePersistent(peer, size, sizeof( envelope)+sizeof(PmeTransMsg));
+          //trans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*hd*nx*ny1*nz*2);
+
       }
 
       CkArray *zPencil_local = initdata.zPencil.ckLocalBranch();
@@ -3553,11 +3583,16 @@ private:
       int send_evir = 1;
       for ( int isend=0; isend<yBlocks; ++isend ) {
           int jb = send_order[isend];
-          int ny = block2 > (K2 - jb*block2) ? block2 : (K2 - jb*block2);
-          //if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
+          int ny1 = block2;
+          if ( (jb+1)*block2 > K2 ) ny1 = K2 - jb*block2;
           int peer = zPencil_local->homePe(CkArrayIndex3D(thisIndex.x, jb, 0));
-          //iout << "YPencils un_trans[ " << CkMyPe() << "  ==== " << peer <<  "\n" << endi;
-          untrans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeUntransMsg) + sizeof(float)*nx*ny*nz*2 +sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8);
+          int size= sizeof(PmeUntransMsg) + sizeof(float)*nx*ny1*nz*2 + sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8;
+          int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
+          untrans_handle[isend] = CmiCreatePersistent(peer, size,  sizeof(PmeUntransMsg)+sizeof( envelope));
+          //untrans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*nx*ny1*nz*2);
+          if ( send_evir ) {
+              send_evir = 0;
+          } 
       }
     }
 #endif
@@ -3606,9 +3641,18 @@ public:
       int send_evir = 1;
       for ( int isend=0; isend<xBlocks; ++isend ) {
           int ib = send_order[isend];
-          int nx = block1 > (K1 - ib*block1) ? block1 : (K1 - ib*block1);
+          int nx1 = block1;
+          if ( (ib+1)*block1 > K1 ) nx1 = K1 - ib*block1;
           int peer = yPencil_local->procNum(CkArrayIndex3D(ib, 0, thisIndex.z));
-          untrans_handle[isend] = CmiCreatePersistent(peer, sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof(float)*nx*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8);
+          int size = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir +       
+              sizeof(float)*nx1*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8; 
+          int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
+          untrans_handle[isend] = CmiCreatePersistent(peer, size, sizeof( envelope)+sizeof(PmeUntransMsg));
+          //untrans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*nx1*ny*nz*2);
+          if ( send_evir ) {
+              send_evir = 0;
+          }
+
       }
     }
 #endif
@@ -4105,19 +4149,19 @@ void PmeZPencil::send_subset_trans(int fromIdx, int toIdx){
     CmiEnableUrgentSend(1);
 #if USE_NODE_PAR_RECEIVE
       msg->destElem=CkArrayIndex3D(thisIndex.x,0,kb);
-#if USE_PERSISTENT 
+#if Y_PERSIST 
       CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
       initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYTrans(msg);
-#if USE_PERSISTENT
+#if Y_PERSIST 
       CmiUsePersistentHandle(NULL, 0);
 #endif    
 #else
-#if USE_PERSISTENT 
+#if Y_PERSIST 
       CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
       initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
-#if USE_PERSISTENT
+#if Y_PERSIST 
       CmiUsePersistentHandle(NULL, 0);
 #endif    
 #endif
@@ -4174,19 +4218,19 @@ void PmeZPencil::send_trans() {
     CmiEnableUrgentSend(1);
 #if USE_NODE_PAR_RECEIVE
     msg->destElem=CkArrayIndex3D(thisIndex.x,0,kb);
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
     initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYTrans(msg);
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(NULL, 0);
 #endif    
 #else
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
     initdata.yPencil(thisIndex.x,0,kb).recvTrans(msg);
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(NULL, 0);
 #endif    
 #endif
@@ -4291,7 +4335,7 @@ void PmeYPencil::send_subset_trans(int fromIdx, int toIdx){
 	int yBlocks = initdata.yBlocks;
 	int block2 = initdata.grid.block2;
 	int K2 = initdata.grid.K2;
-	for ( int isend=fromIdx; isend<=toIdx; ++isend ) {
+    for ( int isend=fromIdx; isend<=toIdx; ++isend ) {
 	  int jb = send_order[isend];
 	  int ny = block2;
 	  if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
@@ -4324,19 +4368,19 @@ void PmeYPencil::send_subset_trans(int fromIdx, int toIdx){
       CmiEnableUrgentSend(1);
 #if USE_NODE_PAR_RECEIVE
       msg->destElem=CkArrayIndex3D(0,jb,thisIndex.z);
-#if USE_PERSISTENT 
+#if X_PERSIST 
       CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
       initdata.pmeNodeProxy[CmiNodeOf(initdata.xm.ckLocalBranch()->procNum(0,msg->destElem))].recvXTrans(msg);   
-#if USE_PERSISTENT
+#if X_PERSIST 
       CmiUsePersistentHandle(NULL, 0);
 #endif
 #else      
-#if USE_PERSISTENT 
+#if X_PERSIST 
       CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
       initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
-#if USE_PERSISTENT
+#if X_PERSIST 
       CmiUsePersistentHandle(NULL, 0);
 #endif
 #endif
@@ -4398,20 +4442,20 @@ void PmeYPencil::send_trans() {
     CmiEnableUrgentSend(1);
 #if USE_NODE_PAR_RECEIVE
     msg->destElem=CkArrayIndex3D(0,jb,thisIndex.z);
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(&trans_handle[isend], 1);
+#if X_PERSIST 
+        CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
     initdata.pmeNodeProxy[CmiNodeOf(initdata.xm.ckLocalBranch()->procNum(0,msg->destElem))].recvXTrans(msg);   
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(NULL, 0);
+#if X_PERSIST 
+        CmiUsePersistentHandle(NULL, 0);
 #endif
 #else
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(&trans_handle[isend], 1);
+#if X_PERSIST 
+        CmiUsePersistentHandle(&trans_handle[isend], 1);
 #endif
     initdata.xPencil(0,jb,thisIndex.z).recvTrans(msg);
-#if USE_PERSISTENT
-    CmiUsePersistentHandle(NULL, 0);
+#if X_PERSIST 
+        CmiUsePersistentHandle(NULL, 0);
 #endif
     
 #endif
@@ -4600,7 +4644,7 @@ void PmeXPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int ib = send_order[evirIdx];
 		int nx = block1;
 		if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-		PmeUntransMsg *msg = new (nx*ny*nz*2,1,PRIORITY_SIZE) PmeUntransMsg;		
+		PmeUntransMsg *msg = new (1,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;		
 		msg->evir[0] = evir;
 		msg->has_evir = 1;				
 		msg->sourceNode = thisIndex.y;
@@ -4630,7 +4674,7 @@ void PmeXPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int ib = send_order[isend];
 		int nx = block1;
 		if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-		PmeUntransMsg *msg = new (nx*ny*nz*2,0,PRIORITY_SIZE) PmeUntransMsg;
+		PmeUntransMsg *msg = new (0,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
 		msg->has_evir = 0;		
 		msg->sourceNode = thisIndex.y;
 		msg->ny = ny;
@@ -4648,20 +4692,20 @@ void PmeXPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
         CmiEnableUrgentSend(1);
 #if USE_NODE_PAR_RECEIVE
         msg->destElem=CkArrayIndex3D(ib,0, thisIndex.z);
-#if USE_PERSISTENT 
+#if Y_PERSIST 
         CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
         initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYUntrans(msg);
-#if USE_PERSISTENT
+#if Y_PERSIST 
         CmiUsePersistentHandle(NULL, 0);
 #endif
 #else
-#if USE_PERSISTENT 
-        CmiUsePersistentHandle(&untrans_handle[isend], 1);
+#if Y_PERSIST 
+  //      CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
         initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
-#if USE_PERSISTENT
-        CmiUsePersistentHandle(NULL, 0);
+#if Y_PERSIST 
+   //     CmiUsePersistentHandle(NULL, 0);
 #endif
 #endif
         CmiEnableUrgentSend(0);
@@ -4716,7 +4760,7 @@ void PmeXPencil::send_untrans() {
     }
     int nx = block1;
     if ( (ib+1)*block1 > K1 ) nx = K1 - ib*block1;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,send_evir,PRIORITY_SIZE) PmeUntransMsg;
+    PmeUntransMsg *msg = new (send_evir, nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
     if ( send_evir ) {
       msg->evir[0] = evir;
       msg->has_evir = 1;
@@ -4741,19 +4785,19 @@ void PmeXPencil::send_untrans() {
     CmiEnableUrgentSend(1);
 #if USE_NODE_PAR_RECEIVE
     msg->destElem=CkArrayIndex3D(ib,0, thisIndex.z);
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
     initdata.pmeNodeProxy[CmiNodeOf(initdata.ym.ckLocalBranch()->procNum(0,msg->destElem))].recvYUntrans(msg);
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(NULL, 0);
 #endif
 #else
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
     initdata.yPencil(ib,0,thisIndex.z).recvUntrans(msg);
-#if USE_PERSISTENT
+#if Y_PERSIST 
     CmiUsePersistentHandle(NULL, 0);
 #endif
 #endif
@@ -4891,7 +4935,7 @@ void PmeYPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int jb = send_order[evirIdx];
 		int ny = block2;
 		if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-		PmeUntransMsg *msg = new (nx*ny*nz*2,1,PRIORITY_SIZE) PmeUntransMsg;		
+		PmeUntransMsg *msg = new (1,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;		
 		msg->evir[0] = evir;
 		msg->has_evir = 1;				
 		msg->sourceNode = thisIndex.z;
@@ -4922,7 +4966,7 @@ void PmeYPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 		int jb = send_order[isend];
 		int ny = block2;
 		if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-		PmeUntransMsg *msg = new (nx*ny*nz*2,0,PRIORITY_SIZE) PmeUntransMsg;
+		PmeUntransMsg *msg = new (0,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
 		msg->has_evir = 0;
 		msg->sourceNode = thisIndex.z;
 		msg->ny = nz;
@@ -4941,19 +4985,19 @@ void PmeYPencil::send_subset_untrans(int fromIdx, int toIdx, int evirIdx){
 #if USE_NODE_PAR_RECEIVE
         msg->destElem=CkArrayIndex3D( thisIndex.x, jb, 0);
         //    CkPrintf("[%d] sending to %d %d %d recvZUntrans on node %d\n", CkMyPe(), thisIndex.x, jb, 0, CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem)));
-#if USE_PERSISTENT 
+#if Z_PERSIST 
         CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
         initdata.pmeNodeProxy[CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem))].recvZUntrans(msg);
-#if USE_PERSISTENT
+#if Z_PERSIST 
         CmiUsePersistentHandle(NULL, 0);
 #endif
 #else
-#if USE_PERSISTENT 
+#if Z_PERSIST 
         CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
         initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
-#if USE_PERSISTENT
+#if Z_PERSIST 
         CmiUsePersistentHandle(NULL, 0);
 #endif
 #endif
@@ -5011,7 +5055,7 @@ void PmeYPencil::send_untrans() {
     }
     int ny = block2;
     if ( (jb+1)*block2 > K2 ) ny = K2 - jb*block2;
-    PmeUntransMsg *msg = new (nx*ny*nz*2,send_evir,PRIORITY_SIZE) PmeUntransMsg;
+    PmeUntransMsg *msg = new (send_evir,nx*ny*nz*2,PRIORITY_SIZE) PmeUntransMsg;
     if ( send_evir ) {
       msg->evir[0] = evir;
       msg->has_evir = 1;
@@ -5037,19 +5081,19 @@ void PmeYPencil::send_untrans() {
 #if USE_NODE_PAR_RECEIVE
     msg->destElem=CkArrayIndex3D( thisIndex.x, jb, 0);
     //    CkPrintf("[%d] sending to %d %d %d recvZUntrans on node %d\n", CkMyPe(), thisIndex.x, jb, 0, CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem)));
-#if USE_PERSISTENT
+#if Z_PERSIST 
     CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
     initdata.pmeNodeProxy[CmiNodeOf(initdata.zm.ckLocalBranch()->procNum(0,msg->destElem))].recvZUntrans(msg);
-#if USE_PERSISTENT
+#if Z_PERSIST
     CmiUsePersistentHandle(NULL, 0);
 #endif
 #else
-#if USE_PERSISTENT
+#if Z_PERSIST 
     CmiUsePersistentHandle(&untrans_handle[isend], 1);
 #endif
     initdata.zPencil(thisIndex.x,jb,0).recvUntrans(msg);
-#if USE_PERSISTENT
+#if Z_PERSIST 
     CmiUsePersistentHandle(NULL, 0);
 #endif
 #endif    

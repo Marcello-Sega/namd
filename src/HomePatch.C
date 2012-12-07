@@ -1190,10 +1190,10 @@ void HomePatch::positionsReady(int doMigration)
      for (int i=0; i<npid; i++) {
 #if defined(NODEAWARE_PROXY_SPANNINGTREE) && defined(USE_NODEPATCHMGR)
        if (proxySendSpanning)
-           localphs[i] = CmiCreateNodePersistent(pids[i], persist_size);
+           localphs[i] = CmiCreateNodePersistent(pids[i], persist_size, sizeof(envelope)+sizeof(ProxyDataMsg));
        else
 #endif
-       localphs[i] = CmiCreatePersistent(pids[i], persist_size);
+       localphs[i] = CmiCreatePersistent(pids[i], persist_size, sizeof(envelope)+sizeof(ProxyDataMsg));
      }
      nphs = npid;
     }

@@ -6,18 +6,18 @@
 
 module ComputePmeMgr {
   message PmeGridMsg {
-    float qgrid[];
+    PmeReduction evir[];
     int zlist[];
     char fgrid[];
-    PmeReduction evir[];
+    float qgrid[];
   };
   message PmeTransMsg {
     float qgrid[];
   };
   message PmeSharedTransMsg;
   message PmeUntransMsg{
-    float qgrid[];
     PmeReduction evir[];
+    float qgrid[];
   };
   message PmeSharedUntransMsg;
 

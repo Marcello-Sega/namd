@@ -36,7 +36,12 @@ ProxyPatch::ProxyPatch(PatchID pd) :
 
 #if CMK_PERSISTENT_COMM && USE_PERSISTENT_TREE
   localphs = 0;
-  localphs = CmiCreatePersistent(PatchMap::Object()->node(patchID), 30000);
+#ifdef REMOVE_PROXYRESULTMSG_EXTRACOPY
+  int msgstart = sizeof(envelope)+sizeof(ProxyResultVarsizeMsg);
+#else
+  int msgstart = sizeof(envelope)+sizeof(ProxyResultMsg);
+#endif
+  localphs = CmiCreatePersistent(PatchMap::Object()->node(patchID), 30000, msgstart);
   ntreephs = 0;
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   treephs = NULL;
@@ -372,7 +377,7 @@ void ProxyPatch::setSpanningTree(int p, int *c, int n) {
   if (n) {
       treephs = new PersistentHandle[n];
       for (int i=0; i<n; i++) {
-           treephs[i] = CmiCreatePersistent(c[i], 27000);
+           treephs[i] = CmiCreatePersistent(c[i], 27000, sizeof(envelope)+sizeof(ProxyDataMsg));
       }
   }
   ntreephs = n;
@@ -409,7 +414,7 @@ void ProxyPatch::setSTNodeChildren(int numNids, int *nids){
   if (numNids) {
       treephs = new PersistentHandle[numNids];
       for (int i=0; i<numNids; i++) {
-           treephs[i] = CmiCreateNodePersistent(nids[i], 27000);
+           treephs[i] = CmiCreateNodePersistent(nids[i], 27000, sizeof(envelope)+sizeof(ProxyDataMsg));
       }
   }
   ntreephs = numNids;
@@ -432,7 +437,7 @@ void ProxyPatch::setSpanningTree(int p, int *c, int n) {
       for (int i=0; i<ntreephs; i++)  CmiDestoryPersistent(treephs[i]);
   }
   for (int i=0; i<n; i++) {
-       treephs[i] = CmiCreatePersistent(c[i], 27000);
+       treephs[i] = CmiCreatePersistent(c[i], 27000, sizeof(envelope)+sizeof(ProxyDataMsg));
   }
   ntreephs = n;
 #endif
