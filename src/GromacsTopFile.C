@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include <algorithm>
 #include "common.h"
 #include "ResizeArray.h"
 #include "InfoStream.h"
