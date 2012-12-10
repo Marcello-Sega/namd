@@ -2899,8 +2899,8 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
       if ( fz_arr[i] ) ++zlistlen;
     }
 
-    PmeGridMsg *msg = new (fcount*zlistlen, zlistlen, flen*numGrids,
-				numGrids, PRIORITY_SIZE) PmeGridMsg;
+    PmeGridMsg *msg = new (numGrids, zlistlen, flen*numGrids,
+				fcount*zlistlen, PRIORITY_SIZE) PmeGridMsg;
 
     msg->sourceNode = CkMyPe();
     msg->lattice = lattice;
