@@ -9917,14 +9917,16 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
   // Copy exclusion information
   for(i=0; i<1;i++) {
     int numExclusions = gf->getNumExclusions();
-    int atom1[numExclusions];
-    int atom2[numExclusions];
+    int *atom1 = new int[numExclusions];
+    int *atom2 = new int[numExclusions];
     for(int j=0; j<numExclusions;j++) {
       atom1[j] = 0;
       atom2[j] = 0;
     }
     gf->getExclusions(atom1,atom2);
     read_exclusions(atom1,atom2,numExclusions);
+    delete [] atom1;
+    delete [] atom2;
   }
 #endif
   /*
