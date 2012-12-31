@@ -1428,7 +1428,7 @@ BigReal Molecule::get_go_force_new(BigReal r,
 	epsilonRep = const_cast<Molecule*>(this)->get_go_epsilonRep(chain1,chain2);
 	sigmaRep = const_cast<Molecule*>(this)->get_go_sigmaRep(chain1,chain2);
 	expRep = const_cast<Molecule*>(this)->get_go_exp_rep(chain1,chain2);
-	pow1 = pow(sigmaRep/r,expRep);
+	pow1 = pow(sigmaRep/r,(BigReal)expRep);
 	//goForce = ((12.0/r) * epsilonRep * pow(sigmaRep/r,12.0));
 	goForce = (4*(expRep/(r*r)) * epsilonRep * pow1);
 	DebugM(3,"get_go_force - (" << atom1 << "," << atom2 << ") chain1:" << chain1 << ", chain2:" << chain2 << ", epsilonRep:" << epsilonRep << ", sigmaRep:" << sigmaRep << ", r:" << r << ", goForce:" << goForce << std::endl);
