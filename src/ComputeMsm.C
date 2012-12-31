@@ -4178,7 +4178,7 @@ void ComputeMsmMgr::initialize(MsmInitMsg *msg)
       int ngcj = (int) ceil(3*a / hylen) - 1;
       int ngck = (int) ceil(3*a / hzlen) - 1;
       int omega3 = omega * omega * omega;
-      int nhalf = (int) sqrt(ni * nj * nk);
+      int nhalf = (int) sqrt((double)ni * nj * nk);
       lastnelems = (nhalf > omega3 ? nhalf : omega3);
       smallestnbox = ngci * ngcj * ngck;  // smaller grids don't reduce work
       isclamped = 1;
