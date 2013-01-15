@@ -2390,14 +2390,12 @@ void ComputePmeMgr::setup_recvgrid_persistent()
         for ( int i=0; i<myGrid.K3; ++i ) {
             if ( fz_arr[i] ) ++zlistlen;
         }
-
         int hd = ( fcount? 1 : 0 );  // has data?
         int peer = zPencil_local->homePe(CkArrayIndex3D(ib, jb, 0));
         int compress_start = sizeof(PmeGridMsg ) + sizeof(envelope) + sizeof(int)*hd*zlistlen + sizeof(char)*hd*flen +sizeof(PmeReduction)*hd*numGrids ;
         int compress_size = sizeof(float)*hd*fcount*zlistlen;
         int size = compress_start +  compress_size  + PRIORITY_SIZE/8+6;
-        //recvGrid_handle[ap] =  CmiCreateCompressPersistent(peer, size, compress_start, compress_size); 
-        recvGrid_handle[ap] =  CmiCreatePersistent(peer, size, sizeof(PmeGridMsg ) + sizeof(envelope));
+        recvGrid_handle[ap] =  CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
     }
 }
 #endif
@@ -3514,8 +3512,8 @@ private:
           int peer = yPencil_local->homePe(CkArrayIndex3D(thisIndex.x, 0, kb));
           int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny*nz1*2 +sizeof( envelope)+PRIORITY_SIZE/8;
           int compress_start = sizeof(PmeTransMsg)+sizeof(envelope);
-          //trans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*hd*nx*ny*nz1*2);
-          trans_handle[isend] = CmiCreatePersistent(peer, size, sizeof( envelope)+sizeof(PmeTransMsg));
+          int compress_size = sizeof(float)*hd*nx*ny*nz1*2;
+          trans_handle[isend] = CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
       }
     }
     
@@ -3573,9 +3571,8 @@ private:
           int peer = xPencil_local->homePe(CkArrayIndex3D(0, jb, thisIndex.z));
           int size = sizeof(PmeTransMsg) + sizeof(float)*hd*nx*ny1*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8;
           int compress_start = sizeof(PmeTransMsg)+sizeof( envelope);
-          trans_handle[isend] = CmiCreatePersistent(peer, size, sizeof( envelope)+sizeof(PmeTransMsg));
-          //trans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*hd*nx*ny1*nz*2);
-
+          int compress_size = sizeof(float)*hd*nx*ny1*nz*2; 
+          trans_handle[isend] = CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
       }
 
       CkArray *zPencil_local = initdata.zPencil.ckLocalBranch();
@@ -3588,8 +3585,8 @@ private:
           int peer = zPencil_local->homePe(CkArrayIndex3D(thisIndex.x, jb, 0));
           int size= sizeof(PmeUntransMsg) + sizeof(float)*nx*ny1*nz*2 + sizeof(PmeReduction)*send_evir +sizeof( envelope) + PRIORITY_SIZE/8;
           int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
-          untrans_handle[isend] = CmiCreatePersistent(peer, size,  sizeof(PmeUntransMsg)+sizeof( envelope));
-          //untrans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*nx*ny1*nz*2);
+          int compress_size = sizeof(float)*nx*ny1*nz*2;
+          untrans_handle[isend] = CmiCreateCompressPersistentSize(peer, size,  compress_start, compress_size, CMI_FLOATING);
           if ( send_evir ) {
               send_evir = 0;
           } 
@@ -3647,8 +3644,8 @@ public:
           int size = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir +       
               sizeof(float)*nx1*ny*nz*2 +sizeof( envelope) + PRIORITY_SIZE/8; 
           int compress_start = sizeof(PmeUntransMsg) + sizeof(PmeReduction)*send_evir + sizeof( envelope); 
-          untrans_handle[isend] = CmiCreatePersistent(peer, size, sizeof( envelope)+sizeof(PmeUntransMsg));
-          //untrans_handle[isend] = CmiCreateCompressPersistent(peer, size, compress_start, sizeof(float)*nx1*ny*nz*2);
+          int compress_size = sizeof(float)*nx1*ny*nz*2;
+          untrans_handle[isend] = CmiCreateCompressPersistentSize(peer, size, compress_start, compress_size, CMI_FLOATING);
           if ( send_evir ) {
               send_evir = 0;
           }
