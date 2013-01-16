@@ -48,6 +48,9 @@
 #define CODE_REDUNDANT 0
 #endif
 
+#define MIN_DEBUG_LEVEL 3
+#include "Debug.h"
+
 /* Initialize variables for exclusion calculation */
 /* JLai */
 ResizeArray<int> exclusions_atom_i;
@@ -361,7 +364,12 @@ GromacsTopFile::GromacsTopFile(char *filename) {
 	    exit(1);
 	  }
 	  c[0] = c[0]; /* both in deg */
-	  c[1] = c[1]/(2*JOULES_PER_CALORIE); /* convert kJ to kcal and still use E=kx2*/
+	  if(i==7) {
+	      c[1] = c[1]/(2*JOULES_PER_CALORIE); /* convert kJ to kcal and still use E=kx2*/
+	  } else if (i==8 || i==11) {
+	      c[1] = c[1]/(1*JOULES_PER_CALORIE); /* convert kJ to kcal and still use E=kx2*/
+	  } 
+	  //c[1] = c[1]/(2*JOULES_PER_CALORIE); /* convert kJ to kcal and still use E=kx2*/
 	  /* for funct==1 these are both divided by rad^2 */
 	  if(funct==1) {
 	    mult=(int)(c[2]+0.5); /* round to nearest integer :p */
@@ -600,6 +608,8 @@ GromacsTopFile::GromacsTopFile(char *filename) {
       exclusions_atom_i.add(atomi);
       exclusions_atom_j.add(atomj);
       numExclusion++;
+
+      /* Reading in exclusions information from file and loading */
       break;
       // End of JLai modifications August 16th, 2012
     }
@@ -660,9 +670,11 @@ int GromacsTopFile::getNumExclusions() const {
 }
 
 /* return the list of exclusions from the file */
-void GromacsTopFile::getExclusions(int *atomi, int *atomj) const {
-  atomi = exclusions_atom_i.begin();
-  atomj = exclusions_atom_j.begin();
+void GromacsTopFile::getExclusions(int* atomi, int* atomj) const {
+    for(int i =0; i < exclusions_atom_i.size(); i++) {
+	atomi[i] = exclusions_atom_i[i];
+	atomj[i] = exclusions_atom_j[i];
+    }
   return;
 }
 /* End of JLai modifications */
@@ -1440,6 +1452,7 @@ void GromacsTopFile::getVDWParams(int numa, int numb,
     /*  this is the only reasonable option  */
     *c6pair  = *c6  * fudgeLJ;
     *c12pair = *c12 * fudgeLJ;
+
   }
 
 }

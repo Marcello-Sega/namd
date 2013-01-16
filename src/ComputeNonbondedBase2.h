@@ -160,11 +160,11 @@ ALCHPAIR(
           register int eneraddress;
           eneraddress = 2 * ((npertype * tabtype) + ((int) mynearbyint(r1 / table_spacing)));
           //CkPrintf("Using distance bin %i for distance %f\n", eneraddress, r1);
-          vdw_d = 0.;
-          vdw_c = 0.;
-          vdw_b = table_ener[eneraddress + 1] / r1;
-          vdw_a = (-1/2.) * diffa * vdw_b;
-          ENERGY(
+	  vdw_d = 0.;
+	  vdw_c = 0.;
+	  vdw_b = table_ener[eneraddress + 1] / r1;
+	  vdw_a = (-1/2.) * diffa * vdw_b;
+	  ENERGY(
             register BigReal vdw_val = table_ener[eneraddress];
             //CkPrintf("Found vdw energy of %f\n", vdw_val);
             vdwEnergy += LAM(lambda_pair *) vdw_val;

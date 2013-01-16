@@ -2022,7 +2022,7 @@ void Molecule::read_exclusions(FILE *fd)
     /*  we have to build some exclusions      */
     if (current_index != last_index)
     {
-      /*  This atom has some exlcusions.  Loop from   */
+      /*  This atom has some exclusions.  Loop from   */
       /*  the last_index to the current index.  This  */
       /*  will include how ever many exclusions this  */
       /*  atom has          */
@@ -2069,7 +2069,7 @@ void Molecule::read_exclusions(FILE *fd)
 /*                  */
 /* JLai August 16th, 2012 */
 /************************************************************************/
-void Molecule::read_exclusions(int *atom_i, int *atom_j, int num_exclusion)
+void Molecule::read_exclusions(int* atom_i, int* atom_j, int num_exclusion)
 {
     /*  Allocate the array of exclusion structures and the array of */
   /*  exlcuded atom indexes          */
@@ -2090,8 +2090,8 @@ void Molecule::read_exclusions(int *atom_i, int *atom_j, int num_exclusion)
 	  NAMD_die("null pointer expection in Molecule::read_exclusions");
 	}
 
-	a = *atom_i;
-	b = *atom_j;
+	a = atom_i[loop_counter];
+	b = atom_j[loop_counter];
 	if(a < b) {
 		exclusions[loop_counter].atom1 = a;
 		exclusions[loop_counter].atom2 = b;
@@ -2099,8 +2099,7 @@ void Molecule::read_exclusions(int *atom_i, int *atom_j, int num_exclusion)
 		exclusions[loop_counter].atom1 = b;
 		exclusions[loop_counter].atom2 = a;
 	}
-	atom_i++;
-	atom_j++;
+	exclusionSet.add(Exclusion(exclusions[loop_counter].atom1,exclusions[loop_counter].atom2));
   }
 
   if ( ! CkMyPe() ) {
@@ -3791,7 +3790,7 @@ void Molecule::setBFactorData(molfile_atom_t *atomarray){
                       bond4++;
                       continue;
                     }
-                    
+
                     // (mid1,mid4) is an existing heavy atom exclusion
                     // if we have modified 1-4 exclusions, make sure
                     // that (mid1,mid4) is modified 1-4 exclusion
@@ -9879,6 +9878,8 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
     }
     pointerToLJEnd[oldIndex] = i; 
   }
+
+  // Initialize Gaussian arrays
   numGaussPair = gf->getNumGaussPair();
   indxGaussA = new int[numGaussPair];
   indxGaussB = new int[numGaussPair];
@@ -9888,7 +9889,7 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
   gMu2 = new Real[numGaussPair];
   giSigma2 = new Real[numGaussPair];
   gRepulsive = new Real[numGaussPair];
-  //(const_cast<GromacsTopFile*>(gf))->getPairGaussArrays2(indxGaussA, indxGaussB, gA, gMu1, giSigma1, gMu2, giSigma2, gRepulsive);
+  const_cast<GromacsTopFile*>(gf)->getPairGaussArrays2(indxGaussA, indxGaussB, gA, gMu1, giSigma1, gMu2, giSigma2, gRepulsive);
   
   // Create an array of pointers to index indxGaussA
   pointerToGaussBeg = new int[numAtoms];
@@ -9914,20 +9915,21 @@ void Molecule::read_parm(const GromacsTopFile *gf) {
 
   // Start of JLai Modifications August 16th, 2012 
 #if GROMACS_EXCLUSIONS
-  // Copy exclusion information
-  for(i=0; i<1;i++) {
-    int numExclusions = gf->getNumExclusions();
-    int *atom1 = new int[numExclusions];
-    int *atom2 = new int[numExclusions];
-    for(int j=0; j<numExclusions;j++) {
+  // Initialize exclusion information
+  int numExclusions = gf->getNumExclusions();
+  int* atom1 = new int[numExclusions];
+  int* atom2 = new int[numExclusions];
+  for(int j=0; j<numExclusions;j++) {
       atom1[j] = 0;
       atom2[j] = 0;
-    }
-    gf->getExclusions(atom1,atom2);
-    read_exclusions(atom1,atom2,numExclusions);
-    delete [] atom1;
-    delete [] atom2;
   }
+  // Get exclusion arrays from gf module 
+  const_cast<GromacsTopFile*>(gf)->getExclusions(atom1,atom2);
+  read_exclusions(atom1,atom2,numExclusions);
+
+  // Dump array 
+  delete [] atom1;
+  delete [] atom2;
 #endif
   /*
   // In AMBER parm file, dihedrals contain 1-4 exclusion infomation:
