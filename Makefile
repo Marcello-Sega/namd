@@ -421,8 +421,8 @@ $(LIBCUDARTSO):
 	$(COPY) $(CUDASODIR)/$(LIBCUDARTSO) $@;
 
 WINDOWSBINARIES = namd2.exe psfgen.exe sortreplicas.exe
-# WINDOWSBINARIES = namd2.exe psfgen.exe charmd.exe charmd_faceless.exe charmrun.exe
-windowsbinaries: $(WINDOWSBINARIES)
+
+winall: $(WINDOWSBINARIES) $(LIBCUDARTSO)
 
 namd2.exe:  $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(MAKEBUILDINFO)

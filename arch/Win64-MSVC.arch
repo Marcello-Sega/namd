@@ -8,5 +8,5 @@ CXXOPTS = -O
 CXXTHREADOPTS = 
 COPTS = -O
 
-winall: windowsbinaries $(LIBCUDARTSO)
+windefault: winall
 
