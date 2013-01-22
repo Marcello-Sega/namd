@@ -101,12 +101,12 @@ inline unsigned long memusage_ps() {
 #endif
 }
 
-#if CMK_BLUEGENEP
-/* Report the memusage according to the wiki page:
- * https://wiki.alcf.anl.gov/index.php/Debugging#How_do_I_get_information_on_used.2Favailable_memory_in_my_code.3F
+#if CMK_BLUEGENEP || CMK_BLUEGENEQ
+/* Report the memusage according to
+ * http://www.alcf.anl.gov/resource-guides/determining-memory-use
  */
 #include <malloc.h>
-inline long long memusage_bgp(){
+inline long long memusage_bg(){
     struct mallinfo m = mallinfo();
     return m.hblkhd + m.uordblks;
 }
@@ -148,6 +148,10 @@ unsigned long memusage(const char **source) {
     memtotal = CmiMemoryUsage();  s = "CmiMemoryUsage";
   }
 
+#if CMK_BLUEGENEP || CMK_BLUEGENEQ
+  if( ! memtotal) { memtotal = memusage_bg(); s="mallinfo on BG"; }
+#endif
+
 #if defined(WIN32) && !defined(__CYGWIN__) && CHARM_VERSION > 60102
   if ( ! memtotal ) {
     memtotal = CmiMemoryUsage();  s = "GetProcessMemoryInfo";
@@ -157,10 +161,6 @@ unsigned long memusage(const char **source) {
   if ( ! memtotal ) {
     memtotal = memusage_proc_self_stat();  s = "/proc/self/stat";
   }
-
-#if CMK_BLUEGENEP
-  if( ! memtotal) { memtotal = memusage_bgp(); s="mallinfo on BG/P"; }
-#endif
 
   if ( ! memtotal ) { memtotal = memusage_mstats(); s = "mstats"; }
 
