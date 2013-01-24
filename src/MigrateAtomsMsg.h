@@ -34,7 +34,6 @@ public:
   PatchID destPatchID;
   MigrationList migrationList;
 
-  MigrateAtomsMsg(PatchID source, PatchID destination, MigrationList &m);
   MigrateAtomsMsg(void) { ; }
 
   // pack and unpack functions

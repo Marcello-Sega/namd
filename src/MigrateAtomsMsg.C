@@ -22,13 +22,6 @@
 #include "packmsg.h"
 
 
-MigrateAtomsMsg::MigrateAtomsMsg(PatchID src, PatchID dest, MigrationList &m) : 
-      srcPatchID(src), destPatchID(dest), migrationList(m) 
-{
-    fromNodeID = CkMyPe();
-}
-
-
 PACK_MSG(MigrateAtomsMsg,
   PACK(fromNodeID);
   PACK(srcPatchID);
