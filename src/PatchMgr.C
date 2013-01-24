@@ -98,6 +98,8 @@ void PatchMgr::sendOneHomePatch(int patchId, int nodeId){
     delete p;
     homePatches.del(HomePatchElem(patchId)); 
 
+    if ( msg->atom.shared() ) NAMD_bug("shared message array in PatchMgr::sendOneHomePatch");
+
     // Sending to PatchMgr::recvMovePatches on remote node
     CProxy_PatchMgr cp(thisgroup);
     cp[nodeId].recvMovePatches(msg);
@@ -122,6 +124,8 @@ void PatchMgr::sendMovePatches()
       // that uses ref counting.
       delete p;
       homePatches.del(HomePatchElem(m->pid)); 
+
+      if ( msg->atom.shared() ) NAMD_bug("shared message array in PatchMgr::sendMovePatches");
 
       // Sending to PatchMgr::recvMovePatches on remote node
       CProxy_PatchMgr cp(thisgroup);
@@ -156,6 +160,8 @@ void PatchMgr::sendAtoms(PatchID pid, FullAtomList &a) {
 
       FullAtomList empty;
       a = empty;  // eliminate reference in sender
+
+      if ( msg->atom.shared() ) NAMD_bug("shared message array in PatchMgr::sendAtoms");
 
       CProxy_PatchMgr cp(thisgroup);
       cp[patchMap->node(pid)].recvAtoms(msg);
