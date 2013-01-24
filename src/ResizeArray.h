@@ -62,6 +62,25 @@ template <class Elem> class ResizeArray {
       rep->refCount = 1;
     }
 
+    // Make copy of ResizeArrayRaw (for use in messages)
+    void copy(ResizeArray<Elem> &ra) {
+      if (!--rep->refCount) delete rep;
+      rep = new ResizeArrayRaw<Elem>(*(ra.rep));
+      rep->refCount = 1;
+    }
+
+    // Swap ResizeArrayRaw (for use in messages to avoid copy)
+    void swap(ResizeArray<Elem> &ra) {
+      ResizeArrayRaw<Elem> *tmp = rep;
+      rep = ra.rep;
+      ra.rep = tmp;
+    }
+
+    // does some other ResizeArray have a handle to our data
+    bool shared() const {
+      return ( rep->refCount > 1 );
+    }
+
     // Constructor to take-in pre-existing array
     ResizeArray(Elem * * array, int arraySize, int allocSize=0) {
       rep = new ResizeArrayRaw<Elem>(array, arraySize, allocSize);
