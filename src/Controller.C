@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:17 $
- * $Revision: 1.1288 $
+ * $Author: char $
+ * $Date: 2013/01/24 17:42:05 $
+ * $Revision: 1.1289 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2137,6 +2137,7 @@ void Controller::printEnergies(int step, int minimize)
 //fepb
       electEnergy_f = reduction->item(REDUCTION_ELECT_ENERGY_F);
       ljEnergy_f = reduction->item(REDUCTION_LJ_ENERGY_F);
+      ljEnergy_f_left = reduction->item(REDUCTION_LJ_ENERGY_F_LEFT);
 
       electEnergy_ti_1 = reduction->item(REDUCTION_ELECT_ENERGY_TI_1);
       ljEnergy_ti_1 = reduction->item(REDUCTION_LJ_ENERGY_TI_1);
@@ -2603,6 +2604,8 @@ void Controller::outputFepEnergy(int step) {
   const BigReal alchLambda = simParams->alchLambda;
   const BigReal alchLambda2 = simParams->alchLambda2;
   const bool alchEnsembleAvg = simParams->alchEnsembleAvg; 
+  const bool FepWhamOn = simParams->alchFepWhamOn;
+
   if (alchEnsembleAvg && (stepInRun == 0 || stepInRun == alchEquilSteps)) {
     FepNo = 0;
     exp_dE_ByRT = 0.0;
@@ -2631,16 +2634,20 @@ void Controller::outputFepEnergy(int step) {
               << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
       }
       else{
-      fepFile << "#            STEP                 Elec                            "
-              << "vdW                    dE         Temp\n"
-              << "#                           l             l+dl      "
-              << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
-      } 
+					if(!FepWhamOn){ 
+            fepFile << "#            STEP                 Elec                            "
+                    << "vdW                    dE         Temp\n"
+                    << "#                           l             l+dl      "
+                    << "       l            l+dl         E(l+dl)-E(l)" << std::endl;
+          } 
+      }
     }
     if(!step){
-    fepFile << "#NEW FEP WINDOW: "
-            << "LAMBDA SET TO " << alchLambda << " LAMBDA2 " 
-            << alchLambda2 << std::endl;
+  		if(!FepWhamOn){ 
+        fepFile << "#NEW FEP WINDOW: "
+                << "LAMBDA SET TO " << alchLambda << " LAMBDA2 " 
+                << alchLambda2 << std::endl;
+      }
     }
   }
   if ((alchEquilSteps) && (stepInRun == alchEquilSteps)) {
@@ -2739,26 +2746,73 @@ void Controller::writeFepEnergyData(int step, std::ofstream &file) {
   BigReal eeng = electEnergy+electEnergySlow;
   BigReal eeng_f = electEnergy_f + electEnergySlow_f;
   BigReal dE = eeng_f + ljEnergy_f - eeng - ljEnergy;
+  BigReal dE_Left = eeng_f + ljEnergy_f_left - eeng - ljEnergy;
   BigReal RT = BOLTZMANN * simParams->alchTemp;
   const bool alchEnsembleAvg = simParams->alchEnsembleAvg;
   const int stepInRun = step - simParams->firstTimestep;
+	const bool FepWhamOn = simParams->alchFepWhamOn;
+	const bool WCARepuOn = simParams->alchFepWCARepuOn;
+	const BigReal WCArcut1 = simParams->alchFepWCArcut1;
+	const BigReal WCArcut2 = simParams->alchFepWCArcut2;
+	const BigReal WCArcut3 = simParams->alchFepWCArcut3;
+	const BigReal alchLambda = simParams->alchLambda;
+	
+	const BigReal alchRepLambda = simParams->alchRepLambda;
+	const BigReal alchDispLambda = simParams->alchDispLambda;
+	const BigReal alchElecLambda = simParams->alchElecLambda;
   if(stepInRun){
-  fepFile << FEPTITLE(step);
-  fepFile << FORMAT(eeng);
-  fepFile << FORMAT(eeng_f);
-  fepFile << FORMAT(ljEnergy);
-  fepFile << FORMAT(ljEnergy_f);
-  fepFile << FORMAT(dE);
-  if(alchEnsembleAvg){
-  BigReal dE_avg = net_dE/FepNo;
-    fepFile << FORMAT(dE_avg);
-  }
-  fepFile << FORMAT(temperature);
-  if(alchEnsembleAvg){
-  dG = -(RT * log(exp_dE_ByRT/FepNo));
-    fepFile << FORMAT(dG);
-  } 
-  fepFile << std::endl;
+		if(!FepWhamOn){
+			fepFile << FEPTITLE(step);
+			fepFile << FORMAT(eeng);
+			fepFile << FORMAT(eeng_f);
+			fepFile << FORMAT(ljEnergy);
+			fepFile << FORMAT(ljEnergy_f);
+		}
+		else{	// FepWhamOn = ON
+			if(WCARepuOn){
+				if(WCArcut1<WCArcut2) {	// [s1,s2]
+ 					fepFile << "FEP_WCA_REP  ";
+					fepFile << FORMAT(WCArcut1);
+					fepFile << FORMAT(WCArcut2);
+					fepFile << FORMAT(1.0);
+		      fepFile << FORMAT(dE_Left);
+				}
+				if(WCArcut2<WCArcut3) {	// [s2,s3]
+					if(WCArcut1<WCArcut2) fepFile << " BREAK ";
+ 					fepFile << "FEP_WCA_REP  ";
+					fepFile << FORMAT(WCArcut2);
+					fepFile << FORMAT(WCArcut3);
+					fepFile << FORMAT(0.0);
+		      fepFile << FORMAT(dE);
+				}
+        fepFile << std::endl;
+			}
+			else if(simParams->alchFepWCADispOn)	{
+				fepFile << "FEP_WCA_DISP ";
+				fepFile << FORMAT(alchDispLambda);
+			}
+			else if(simParams->alchFepElecOn)	{
+				fepFile << "FEP_ELEC     ";
+				fepFile << FORMAT(alchElecLambda);
+			}
+		}
+		if( ! WCARepuOn ) {
+      fepFile << FORMAT(dE);
+		}
+    if(alchEnsembleAvg){
+      BigReal dE_avg = net_dE/FepNo;
+      fepFile << FORMAT(dE_avg);
+    }
+		if(!FepWhamOn){ 
+			fepFile << FORMAT(temperature);
+		}
+    if(alchEnsembleAvg){
+      dG = -(RT * log(exp_dE_ByRT/FepNo));
+      fepFile << FORMAT(dG);
+    } 
+		if( ! WCARepuOn ) {
+      fepFile << std::endl;
+		}
   }
 }
 //fepe

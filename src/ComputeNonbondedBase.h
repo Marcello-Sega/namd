@@ -271,7 +271,7 @@ void ComputeNonbondedUtil :: NAME
 
   FEP
   (
-  ENERGY( BigReal vdwEnergy_s = 0; )
+  ENERGY( BigReal vdwEnergy_s = 0; BigReal vdwEnergy_s_Left = 0; )
   SHORT
   (
   ENERGY( BigReal electEnergy_s = 0; )
@@ -359,8 +359,11 @@ void ComputeNonbondedUtil :: NAME
     const BigReal alchVdwShiftCoeff = ComputeNonbondedUtil::alchVdwShiftCoeff;
     const Bool Fep_WCA_repuOn = ComputeNonbondedUtil::Fep_WCA_repuOn;
     const Bool Fep_WCA_dispOn = ComputeNonbondedUtil::Fep_WCA_dispOn;
+    const Bool Fep_ElecOn = ComputeNonbondedUtil::Fep_ElecOn;
+    const Bool Fep_Wham = ComputeNonbondedUtil::Fep_Wham;
     const BigReal WCA_rcut1 = ComputeNonbondedUtil::WCA_rcut1;
     const BigReal WCA_rcut2 = ComputeNonbondedUtil::WCA_rcut2;
+    const BigReal WCA_rcut3 = ComputeNonbondedUtil::WCA_rcut3;
 
     /*lambda values 'up' are for atoms scaled up with lambda (partition 1)*/
     BigReal lambdaUp = ComputeNonbondedUtil::alchLambda;
@@ -376,6 +379,22 @@ void ComputeNonbondedUtil :: NAME
         (lambda2Up >= alchVdwLambdaEnd)? 1. : lambda2Up / alchVdwLambdaEnd;) 
     FEP(BigReal vdwShift2Up = ComputeNonbondedUtil::alchVdwShiftCoeff * (1-vdwLambda2Up);)
 
+
+    FEP( if( (Fep_Wham) && (Fep_WCA_repuOn) ) {
+    	elecLambdaUp=0.0; 
+    	vdwLambdaUp=ComputeNonbondedUtil::alchRepLambda;
+    })
+    FEP( if( (Fep_Wham) && (Fep_WCA_dispOn) ) {
+    	elecLambdaUp=0.0; 
+    	vdwLambdaUp=ComputeNonbondedUtil::alchDispLambda;
+    })
+    FEP( if( (Fep_Wham) && (Fep_ElecOn) ) {
+    	elecLambdaUp=ComputeNonbondedUtil::alchElecLambda; 
+    	vdwLambdaUp=1.0;
+    	vdwLambda2Up=1.0;
+	    vdwShiftUp = 0.0;
+	    vdwShift2Up = 0.0;
+    })
         
     /*lambda values 'down' are for atoms scaled down with lambda (partition 2)*/
     BigReal lambdaDown = 1 - ComputeNonbondedUtil::alchLambda;
@@ -391,6 +410,22 @@ void ComputeNonbondedUtil :: NAME
         (lambda2Down >= alchVdwLambdaEnd)? 1. : lambda2Down / alchVdwLambdaEnd; )
     FEP(BigReal vdwShift2Down = ComputeNonbondedUtil::alchVdwShiftCoeff * (1-vdwLambda2Down);)
 
+
+    FEP( if( (Fep_Wham) && (Fep_WCA_repuOn) ) {
+    	elecLambdaDown=0.0; 
+    	vdwLambdaDown = 1.0 - ComputeNonbondedUtil::alchRepLambda;
+    })
+    FEP( if( (Fep_Wham) && (Fep_WCA_dispOn) ) {
+    	elecLambdaDown=0.0; 
+    	vdwLambdaDown = 1.0 - ComputeNonbondedUtil::alchDispLambda;
+    })
+    FEP( if( (Fep_Wham) && (Fep_ElecOn) ) {
+    	elecLambdaDown = 1.0 - ComputeNonbondedUtil::alchElecLambda; 
+    	vdwLambdaDown = 1.0;
+    	vdwLambda2Down = 1.0;
+	    vdwShiftDown = 0.0;
+	    vdwShift2Down = 0.0;
+    })
   
   // Thermodynamic Integration Notes: 
   // Separation of atom pairs into different pairlist according to lambda
@@ -1774,7 +1809,7 @@ void ComputeNonbondedUtil :: NAME
     BigReal myVdwLambda; FEP(BigReal myVdwLambda2;)
     BigReal myVdwShift; FEP(BigReal myVdwShift2;)
     BigReal alch_vdw_energy; BigReal alch_vdw_force;
-    FEP(BigReal alch_vdw_energy_2;) TI(BigReal alch_vdw_dUdl;)
+    FEP(BigReal alch_vdw_energy_2; BigReal alch_vdw_energy_2_Left;) TI(BigReal alch_vdw_dUdl;)
     BigReal shiftedElec; BigReal shiftedElecForce;
     
     /********************************************************************/
@@ -1993,6 +2028,7 @@ PAIR(
     TI(reduction[vdwEnergyIndex_ti_1] += vdwEnergy_ti_1;) 
     TI(reduction[vdwEnergyIndex_ti_2] += vdwEnergy_ti_2;) 
     FEP( reduction[vdwEnergyIndex_s] += vdwEnergy_s; )
+    FEP( reduction[vdwEnergyIndex_s_Left] += vdwEnergy_s_Left; )
   SHORT
   (
     FEP( reduction[electEnergyIndex_s] += electEnergy_s; )

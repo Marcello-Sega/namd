@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2012/12/04 21:57:34 $
- * $Revision: 1.1413 $
+ * $Author: char $
+ * $Date: 2013/01/24 17:42:06 $
+ * $Revision: 1.1414 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -217,6 +217,34 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 //Modifications for alchemical fep
   SCRIPT_PARSE_INT("alchEquilSteps",alchEquilSteps)
 
+  if ( ! strncasecmp(param,"alchRepLambda",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchRepLambda = atof(value);
+    alchFepWCARepuOn = true;
+    alchFepWCADispOn = false;
+    alchFepElecOn    = false;
+    ComputeNonbondedUtil::select();
+    return;
+  }
+
+  if ( ! strncasecmp(param,"alchDispLambda",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchDispLambda = atof(value);
+    alchFepWCARepuOn = false;
+    alchFepWCADispOn = true;
+    alchFepElecOn    = false;
+    ComputeNonbondedUtil::select();
+    return;
+  }
+
+  if ( ! strncasecmp(param,"alchElecLambda",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchElecLambda = atof(value);
+    alchFepWCARepuOn = false;
+    alchFepWCADispOn = false;
+    alchFepElecOn    = true;
+    ComputeNonbondedUtil::select();
+    return;
+  }
+
+
   if ( ! strncasecmp(param,"alchFepWCArcut1",MAX_SCRIPT_PARAM_SIZE) ) {
     alchFepWCArcut1 = atof(value);
     ComputeNonbondedUtil::select();
@@ -225,6 +253,12 @@ void SimParameters::scriptSet(const char *param, const char *value) {
 
   if ( ! strncasecmp(param,"alchFepWCArcut2",MAX_SCRIPT_PARAM_SIZE) ) {
     alchFepWCArcut2 = atof(value);
+    ComputeNonbondedUtil::select();
+    return;
+  }
+
+  if ( ! strncasecmp(param,"alchFepWCArcut3",MAX_SCRIPT_PARAM_SIZE) ) {
+    alchFepWCArcut3 = atof(value);
     ComputeNonbondedUtil::select();
     return;
   }
@@ -913,16 +947,29 @@ void SimParameters::config_parser_methods(ParseOptions &opts) {
      &alchFepWCADispOn, FALSE);
    opts.optionalB("alch", "alchEnsembleAvg", "Ensemble Average in use?",
      &alchEnsembleAvg, TRUE);
+   opts.optionalB("alch", "alchFepWhamOn", "Energy output for Wham postprocessing in use?",
+     &alchFepWhamOn, FALSE);   
    opts.optional("alch", "alchFepWCArcut1", "WCA repulsion Coeff1 used for generating"
      "the altered alchemical vDW interactions", &alchFepWCArcut1, 0.0);
    opts.optional("alch", "alchFepWCArcut2", "WCA repulsion Coeff2 used for generating"
      "the altered alchemical vDW interactions", &alchFepWCArcut2, 1.0);
+   opts.optional("alch", "alchFepWCArcut3", "WCA repulsion Coeff3 used for generating"
+     "the altered alchemical vDW interactions", &alchFepWCArcut3, 1.0);
    opts.range("alchFepWCArcut1", NOT_NEGATIVE); 
    opts.range("alchFepWCArcut2", NOT_NEGATIVE);
-   opts.require("alch", "alchLambda", "Coupling parameter value", 
-       &alchLambda);
-   opts.require("alch", "alchLambda2", "Coupling comparison value",
-       &alchLambda2);
+   opts.range("alchFepWCArcut3", NOT_NEGATIVE);
+
+   opts.optional("alch", "alchRepLambda", "Lambda of WCA repulsion"
+     "Coupling parameter value for WCA repulsion", &alchRepLambda, -1.0);	// an invalid lambda value
+   opts.optional("alch", "alchDispLambda", "Lambda of WCA dispersion"
+     "Coupling parameter value for WCA dispersion", &alchDispLambda, -1.0);	// an invalid lambda value
+   opts.optional("alch", "alchElecLambda", "Lambda of electrostatic perturbation"
+     "Coupling parameter value for electrostatic perturbation", &alchElecLambda, -1.0);	// an invalid lambda value
+
+//   opts.require("alch", "alchLambda", "Coupling parameter value", 
+//       &alchLambda);
+//   opts.require("alch", "alchLambda2", "Coupling comparison value",
+//       &alchLambda2);
    opts.optional("alch", "alchFile", "PDB file with perturbation flags "
      "default is the input PDB file", PARSE_STRING); 
    opts.optional("alch", "alchCol", "Column in the alchFile with the "
@@ -3025,14 +3072,44 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
        strcpy(alchOutFile, outputFilename);
        strcat(alchOutFile, ".fep");
        }
+
+  	   if( (!alchFepWhamOn) && ( (!opts.defined("alchLambda")) || (!opts.defined("alchLambda2"))) )	{
+	  	   NAMD_die("alchFepOn is on, but alchLambda or alchLambda2 is not set.");
+	     }
+       
+       if(alchRepLambda > 1.0)	NAMD_die("alchRepLambda should be in the range [0.0, 1.0].");
+       else if(alchRepLambda >= 0.0)	alchFepWCARepuOn = true;
+       else	alchFepWCARepuOn = false;
+ 
+       if(alchDispLambda > 1.0)	NAMD_die("alchDispLambda should be in the range [0.0, 1.0].");
+       else if(alchDispLambda >= 0.0)	alchFepWCADispOn = true;
+       else	alchFepWCADispOn = false;
+ 
+       if(alchElecLambda > 1.0)	NAMD_die("alchElecLambda should be in the range [0.0, 1.0].");
+       else if(alchElecLambda >= 0.0)	alchFepElecOn = true;
+       else	alchFepElecOn = false;
+       
+       if( (alchFepWCARepuOn || alchFepWCADispOn || alchFepElecOn) && (!alchFepWhamOn))
+       	  NAMD_die("alchFepWhamOn has to be on if one of alchFepWCARepuOn/alchFepWCADispOn/alchFepElecOn is set.");
        if (alchFepWCARepuOn && alchFepWCADispOn)
           NAMD_die("With WCA decomposition, repulsion and dispersion can NOT be in the same FEP stage");
-       if (alchFepWCARepuOn && (!opts.defined("alchFepWCArcut1")||!opts.defined("alchFepWCArcut2")))
-          NAMD_die("When using WCA repulsion,  alchFepWCArcut1 and alchFepWCArcut2 must be defined!");
-       if (alchFepWCARepuOn && (alchFepWCArcut1 >= alchFepWCArcut2))
-           NAMD_die("When using WCA repulsion,  alchFepWCArcut2 must be larger than alchFEPWCArcut1!");
-       if ((alchFepWCARepuOn || alchFepWCADispOn) && (alchElecLambdaStart < 1.0))
-           NAMD_die("When using WCA decomposition,  repulsion, dispersion and electrostatic must be in 3 different stages!");
+       if (alchFepWCARepuOn && alchFepElecOn)
+          NAMD_die("With WCA decomposition, repulsion and electrostatic perturbation can NOT be in the same FEP stage");
+       if (alchFepWCADispOn && alchFepElecOn)
+          NAMD_die("With WCA decomposition, dispersion and electrostatic perturbation can NOT be in the same FEP stage");
+       if (alchFepWCARepuOn && (!opts.defined("alchFepWCArcut1")||!opts.defined("alchFepWCArcut2")||!opts.defined("alchFepWCArcut3")))
+          NAMD_die("When using WCA repulsion,  alchFepWCArcut1, alchFepWCArcut2, and alchFepWCArcut3 must be defined!");
+       if (alchFepWCARepuOn && ((alchFepWCArcut1 > alchFepWCArcut2) || (alchFepWCArcut2 > alchFepWCArcut3) ))
+           NAMD_die("When using WCA repulsion,  alchFepWCArcut2 must be larger than alchFEPWCArcut1, alchFepWCArcut3 must be larger than alchFEPWCArcut2!");
+//       if ((alchFepWCARepuOn || alchFepWCADispOn) && (alchElecLambdaStart < 1.0) )
+//           NAMD_die("When using WCA decomposition,  repulsion, dispersion and electrostatic must be in 3 different stages!");
+       if(alchFepWhamOn && (alchRepLambda < 0.0) && (alchDispLambda < 0.0) && (alchElecLambda < 0.0) )	
+       	   NAMD_die("One of alchRepLambda, alchDispLambda and alchElecLambda should be set up when alchFepWhamOn is true!");
+       if(alchFepWhamOn && (!alchFepElecOn) )	{
+       	 alchElecLambda = 0.0;
+       	 ComputeNonbondedUtil::alchElecLambda = alchElecLambda;
+//       	 ComputeNonbondedUtil::select();
+       }
      }
      else if (alchThermIntOn)
      {
@@ -4241,7 +4318,9 @@ if ( openatomOn )
      if (alchFepWCARepuOn)
      {
        iout << iINFO << "FEP WEEKS-CHANDLER-ANDERSEN DECOMPOSITION (REPULSION) ON\n";
-       iout << iINFO << "FEP WEEKS-CHANDLER-ANDERSEN RCUT1 = " << alchFepWCArcut1 << " AND RCUT2 = " << alchFepWCArcut2 << "\n";
+       iout << iINFO << "FEP WEEKS-CHANDLER-ANDERSEN RCUT1 = " 
+            << alchFepWCArcut1 << " , RCUT2 = " 
+            << alchFepWCArcut2  << " AND RCUT3 = " << alchFepWCArcut3 << "\n";
      }
    }
 //fepe

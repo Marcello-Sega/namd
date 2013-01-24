@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:20 $
- * $Revision: 1.1219 $
+ * $Author: char $
+ * $Date: 2013/01/24 17:42:06 $
+ * $Revision: 1.1220 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -375,11 +375,17 @@ public:
   Bool alchThermIntOn;      //  Doing thermodynamic integration?
   Bool alchFepWCARepuOn;    //  Doing WCA decomposition repulsion interaction?
   Bool alchFepWCADispOn;    //  Doing WCA decomposition dispersion interaction?
+  Bool alchFepElecOn;       //  Doing electrostatic interaction perturbation?
+  Bool alchFepWhamOn;       //  Doing Wham postprocessing for FEP?
   int alchMethod;           //  Which alchemical method to use? fep or ti
   BigReal alchLambda;       //  lambda for dynamics
   BigReal alchLambda2;      //  lambda for comparison
+  BigReal alchRepLambda;    //  lambda for WCA repulsive interaction
+  BigReal alchDispLambda;   //  lambda for WCA dispersion interaction
+  BigReal alchElecLambda;   //  lambda for electrostatic perturbation
   BigReal alchFepWCArcut1;  //  rcut1 of WCA decompistion repulsion
   BigReal alchFepWCArcut2;  //  rcut2 of WCA decomposition repulsion
+  BigReal alchFepWCArcut3;  //  rcut3 of WCA decomposition repulsion
   BigReal alchTemp;         //  temperature for alchemical calculation
   int alchOutFreq;          //  freq. of alchemical output
   Bool alchEnsembleAvg;      //if do ensemble average for the net free energy difference 

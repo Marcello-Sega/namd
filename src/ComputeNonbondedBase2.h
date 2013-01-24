@@ -143,9 +143,9 @@ ALCHPAIR(
         // tidy the code
 
         FEP(fep_vdw_forceandenergies(A,B,r2,myVdwShift,myVdwShift2,switchdist2,
-          cutoff2, myVdwLambda, myVdwLambda2, Fep_WCA_repuOn, Fep_WCA_dispOn,
-          WCA_rcut1, WCA_rcut2, switchfactor, &alch_vdw_energy, 
-          &alch_vdw_force,&alch_vdw_energy_2);)
+          cutoff2, myVdwLambda, myVdwLambda2, Fep_WCA_repuOn, Fep_WCA_dispOn, Fep_Wham,
+          WCA_rcut1, WCA_rcut2, WCA_rcut3, switchfactor, &alch_vdw_energy, 
+          &alch_vdw_force,&alch_vdw_energy_2,&alch_vdw_energy_2_Left);)
         TI(ti_vdw_force_energy_dUdl(A,B,r2,myVdwShift,switchdist2,
           cutoff2, myVdwLambda, alchVdwShiftCoeff, switchfactor, 
           &alch_vdw_energy, &alch_vdw_force, &alch_vdw_dUdl);)
@@ -169,6 +169,7 @@ ALCHPAIR(
             //CkPrintf("Found vdw energy of %f\n", vdw_val);
             vdwEnergy += LAM(lambda_pair *) vdw_val;
             FEP( vdwEnergy_s += d_lambda_pair * vdw_val; )
+            FEP( vdwEnergy_s_Left += d_lambda_pair * vdw_val; )
           )
         }  else {
       )
@@ -177,6 +178,7 @@ ALCHPAIR(
           ( ( diffa * vdw_d * (1/6.)+ vdw_c * (1/4.)) * diffa + vdw_b *(1/2.)) * diffa + vdw_a;
         vdwEnergy -= LAM(lambda_pair *) vdw_val;
         FEP(vdwEnergy_s -= vdw_val;)
+        FEP(vdwEnergy_s_Left -= vdw_val;)
       )
       TABENERGY( } ) /* endif (tabtype >= 0) */
       ) // NOT_ALCHPAIR
@@ -184,6 +186,7 @@ ALCHPAIR(
       ALCHPAIR(
         ENERGY(vdwEnergy   += alch_vdw_energy;)
         FEP(vdwEnergy_s += alch_vdw_energy_2;)
+        FEP(vdwEnergy_s_Left += alch_vdw_energy_2_Left;)
         TI(ALCH1(vdwEnergy_ti_1) ALCH2(vdwEnergy_ti_2) += alch_vdw_dUdl;)
       ) // ALCHPAIR
       
@@ -226,7 +229,17 @@ ALCHPAIR(
       ) //ENERGY
       ALCHPAIR(
         ENERGY(electEnergy   -= myElecLambda * fast_val;)
-        FEP(electEnergy_s -= myElecLambda2 * fast_val;)
+        if( Fep_Wham ) {
+        	if( Fep_ElecOn ) {
+            FEP(electEnergy_s -= (myElecLambda * fast_val + fast_val);)
+        	}
+        	else {	// repulsive or dispersive, no constribution from charges
+            FEP(electEnergy_s -= (myElecLambda * fast_val);)
+        	}
+        }
+        else{ // the default (orginal) FEP
+          FEP(electEnergy_s -= myElecLambda2 * fast_val;)
+        } 
         TI(
           NOENERGY(register BigReal fast_val = 
             ( ( diffa * fast_d * (1/6.)+ fast_c * (1/4.)) * diffa + fast_b *(1/2.)) * diffa + fast_a;)
@@ -447,7 +460,17 @@ ALCHPAIR(
           
       ALCHPAIR(
         ENERGY(fullElectEnergy   -= myElecLambda * slow_val;)
-        FEP(fullElectEnergy_s -= myElecLambda2 * slow_val;)
+        if( Fep_Wham ) {
+        	if(Fep_ElecOn)	{
+        		FEP(fullElectEnergy_s -= (myElecLambda * slow_val + slow_val);)
+        	}
+        	else	{
+            FEP(fullElectEnergy_s -= myElecLambda * slow_val;)
+        	}
+        }
+        else{ // orignal FEP
+          FEP(fullElectEnergy_s -= myElecLambda2 * slow_val;)
+        }
         TI(
           NOENERGY(register BigReal slow_val =
 	        ( ( diffa * slow_d *(1/6.)+ slow_c * (1/4.)) * diffa + slow_b *(1/2.)) * diffa + slow_a;)

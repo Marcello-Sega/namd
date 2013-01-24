@@ -92,6 +92,7 @@ protected:
       BigReal electEnergy_f;
       BigReal electEnergySlow_f;
       BigReal ljEnergy_f;
+      BigReal ljEnergy_f_left;	// used by WCA repulsive, [s1,s2]
       BigReal exp_dE_ByRT;
       BigReal net_dE;
       BigReal dG;

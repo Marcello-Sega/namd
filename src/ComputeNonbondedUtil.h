@@ -237,7 +237,7 @@ public:
 	 electEnergyIndex, fullElectEnergyIndex, vdwEnergyIndex,
 	 goNativeEnergyIndex, goNonnativeEnergyIndex, groLJEnergyIndex, groGaussEnergyIndex,
 //sd-db
-	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s,
+	 electEnergyIndex_s, fullElectEnergyIndex_s, vdwEnergyIndex_s, vdwEnergyIndex_s_Left,
 	 electEnergyIndex_ti_1, fullElectEnergyIndex_ti_1, vdwEnergyIndex_ti_1,
 	 electEnergyIndex_ti_2, fullElectEnergyIndex_ti_2, vdwEnergyIndex_ti_2,
 //sd-de
@@ -299,9 +299,15 @@ public:
   static BigReal alchVdwLambdaEnd;
   static Bool Fep_WCA_repuOn;
   static Bool Fep_WCA_dispOn;
+  static Bool Fep_ElecOn;
+  static Bool Fep_Wham;
   static BigReal WCA_rcut1;
   static BigReal WCA_rcut2; 
+  static BigReal WCA_rcut3; 
   static Bool alchDecouple;
+  static BigReal alchRepLambda;
+  static BigReal alchDispLambda;
+  static BigReal alchElecLambda;
 //sd-de
   static Bool lesOn;
   static int lesFactor;
