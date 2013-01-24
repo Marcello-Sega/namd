@@ -727,7 +727,7 @@ void HomePatch::sendSpanningTree()
   ProxySpanningTreeMsg *msg = new ProxySpanningTreeMsg;
   msg->patch = patchID;
   msg->node = CkMyPe();
-  msg->tree = tree;
+  msg->tree.copy(tree);  // copy data for thread safety
   ProxyMgr::Object()->sendSpanningTree(msg);  
 }
 #else

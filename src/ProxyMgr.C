@@ -1202,7 +1202,7 @@ ProxyMgr::recvSpanningTree(ProxySpanningTreeMsg *msg) {
       ProxySpanningTreeMsg *cmsg = new ProxySpanningTreeMsg;
       cmsg->patch = msg->patch;
       cmsg->node = CkMyPe();
-      cmsg->tree = tree[i];
+      cmsg->tree.copy(tree[i]);  // copy data for thread safety
       proxyMgr->sendSpanningTree(cmsg);
     }
   }
