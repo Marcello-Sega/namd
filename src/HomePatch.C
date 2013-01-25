@@ -1770,6 +1770,12 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
 
   // start calculation of hard wall boundary between drude and its host atom
   if (simParams->drudeHardWallOn) {
+    if (ppreduction) {
+      nslabs = simParams->pressureProfileSlabs;
+      idz = nslabs/lattice.c().z;
+      zmin = lattice.origin().z - 0.5*lattice.c().z;
+    }
+
     r_wall = simParams->drudeBondLen;
     r_wall_SQ = r_wall*r_wall;
     // Count++;
@@ -1910,7 +1916,7 @@ int HomePatch::hardWallDrude(const BigReal timestep, Tensor *virial,
               atom[Idx].position = *new_pos;
 
               if (ppreduction) {
-                if (!i) {
+                if (!j) {
                   BigReal z = new_pos->z;
                   int partition = atom[Idx].partition;
                   int slab = (int)floor((z-zmin)*idz);
