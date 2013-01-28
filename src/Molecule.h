@@ -434,6 +434,10 @@ public:
     return lcpoParamType;
   }
 
+  BigReal GetAtomAlpha(int i) const {
+    return drudeConsts[i].alpha;
+  }
+
 #ifdef MEM_OPT_VERSION
   AtomCstInfo *getAtoms() const { return atoms; }
   AtomNameIdx *getAtomNames() const { return atomNames; }

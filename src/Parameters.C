@@ -2662,8 +2662,6 @@ void Parameters::add_nbthole_pair_param(char *buf)
 {
   char atom1name[11];      //  Atom 1 name
   char atom2name[11];      //  Atom 2 name
-  Real alphai;            //  nonbonded thole pair alpha
-  Real alphaj;            //  nonbonded thole pair alpha
   Real tholeij;            //  nonbonded thole pair thole
   int read_count;        //  count from sscanf
   struct nbthole_pair_params *new_node;  //  new node
@@ -2672,12 +2670,12 @@ void Parameters::add_nbthole_pair_param(char *buf)
   if (paramType == paraCharmm)
   {
     /* read CHARMM format */
-    read_count=sscanf(buf, "%s %s %f %f %f\n", atom1name,
-       atom2name, &tholeij, &alphai, &alphaj);
+    read_count=sscanf(buf, "%s %s %f\n", atom1name,
+       atom2name, &tholeij);
   }
 
   /*  Check to make sure we got what we expected      */
-  if ((read_count != 5) && (paramType == paraCharmm))
+  if ((read_count != 3) && (paramType == paraCharmm))
   {
     char err_msg[512];
 
@@ -2698,8 +2696,6 @@ void Parameters::add_nbthole_pair_param(char *buf)
   strcpy(new_node->atom2name, atom2name);
 
   /*  Assign values to this node          */
-  new_node->alphai = alphai;
-  new_node->alphaj = alphaj;
   new_node->tholeij = tholeij;
 
   new_node->next = NULL;
