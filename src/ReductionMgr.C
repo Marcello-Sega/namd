@@ -138,11 +138,11 @@ void ReductionMgr::buildSpanTree(const int pe,
   const int num_pes = CkNumPes();
   const int num_node_pes = CmiNumPesOnPhysicalNode(CmiPhysicalNodeID(pe)); 
   int *node_pes = new int[num_node_pes];
-  int pe_index;
+  int pe_index = -1;
   const int first_pe = CmiGetFirstPeOnPhysicalNode(CmiPhysicalNodeID(pe));
   int num_nodes = 0;
   int *node_ids = new int[num_pes];
-  int first_pe_index;
+  int first_pe_index = -1;
   int my_parent_index;
   
   // Make sure PE 0 is a first-node
@@ -164,12 +164,16 @@ void ReductionMgr::buildSpanTree(const int pe,
     // Also, find pes on my node
     const int i1 = (i + first_pe) % num_pes;
     if (CmiPeOnSamePhysicalNode(first_pe,i1)) {
+      if ( node_pe_count == num_node_pes )
+        NAMD_bug("ReductionMgr::buildSpanTree found inconsistent physical node data from Charm++ runtime");
       node_pes[node_pe_count] = i1;
       if (pe == i1)
         pe_index = node_pe_count;
       node_pe_count++;
     }
   }
+  if ( pe_index < 0 || first_pe_index < 0 )
+    NAMD_bug("ReductionMgr::buildSpanTree found inconsistent physical node data from Charm++ runtime");
   
   // Any PE might have children on the same node, plus, if its a first-node,
   // it may have several children on other nodes
@@ -202,13 +206,14 @@ void ReductionMgr::buildSpanTree(const int pe,
     // I am a first_pe, so I may have additional children
     // on other nodes, and my parent will be on another node
 
+    int range_begin = 0;
+    int range_end = num_nodes;
+
     if (pe == 0) {
       my_parent_index = -1;
       *parent = -1;
     } else {
       my_parent_index = 0;
-      int range_begin = 0;
-      int range_end = num_nodes;
       while ( first_pe_index != range_begin ) {
         my_parent_index = range_begin;
         ++range_begin;
@@ -218,17 +223,18 @@ void ReductionMgr::buildSpanTree(const int pe,
           else { range_begin = split; }
         }
       }
-      // now we know parent and need only repeat calculation of children
       *parent = node_ids[my_parent_index];
-      int prev_child_index = range_begin;
-      ++range_begin;
-      for ( int i = 0; i < max_internode_children; ++i ) {
-        if ( range_begin >= num_nodes ) break;
-        if ( range_begin > prev_child_index ) {
-          rem_child_index[rem_children++] = prev_child_index = range_begin;
-        }
-        range_begin += ( range_end - range_begin ) / ( max_internode_children - i );
+    }
+
+    // now we know parent and need only repeat calculation of children
+    int prev_child_index = range_begin;
+    ++range_begin;
+    for ( int i = 0; i < max_internode_children; ++i ) {
+      if ( range_begin >= range_end ) break;
+      if ( range_begin > prev_child_index ) {
+        rem_child_index[rem_children++] = prev_child_index = range_begin;
       }
+      range_begin += ( range_end - range_begin ) / ( max_internode_children - i );
     }
   }
 
@@ -265,7 +271,7 @@ void ReductionMgr::buildSpanTree(const int pe,
     }
     if (rem_children > 0) {
       for(k=0; k < rem_children; k++)  {
-//        CkPrintf("TREE pe %d rem child[%d,%d] %d\n",pe,child,k,node_ids[k]);
+//        CkPrintf("TREE pe %d rem child[%d,%d] %d\n",pe,child,k,node_ids[rem_child_index[k]]);
         (*children)[child++]=node_ids[rem_child_index[k]];
       }
     }
