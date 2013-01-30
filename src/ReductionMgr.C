@@ -51,27 +51,7 @@ public:
   int sourceNode;
   int sequenceNumber;
   int dataSize;
-  BigReal data[1];
-
-  static void *alloc(int msgnum, int size, int *array, int priobits) {
-    int totalsize = size + array[0]*sizeof(BigReal);
-    ReductionSubmitMsg *newMsg = (ReductionSubmitMsg*)
-				CkAllocMsg(msgnum,totalsize,priobits);
-    // newMsg->data = (BigReal*) ((char*)newMsg + size);
-    return (void*)newMsg;
-  }
-
-  static void *pack(ReductionSubmitMsg *in) {
-    // in->data = (BigReal*) ((char*)in->data - (char*)&(in->data));
-    return (void*)in;
-  }
-
-  static ReductionSubmitMsg *unpack(void *in) {
-    ReductionSubmitMsg *me = (ReductionSubmitMsg*)in;
-    // me->data = (BigReal*) ((char*)&(me->data) + (size_t)(me->data));
-    return me;
-  }
-
+  BigReal *data;
 };
 
 ReductionSet::ReductionSet(int setID, int size, int numChildren) {
@@ -357,6 +337,10 @@ ReductionSet* ReductionMgr::getSet(int setID, int size) {
       CProxy_ReductionMgr reductionProxy(thisgroup);
       reductionProxy[myParent].remoteRegister(msg);
     }
+  } else if ( setID == REDUCTIONS_BASIC || setID == REDUCTIONS_AMD ) {
+    if ( size != -1 ) NAMD_bug("ReductionMgr::getSet size set");
+  } else if ( size < 0 || reductionSets[setID]->dataSize != size ) {
+    NAMD_bug("ReductionMgr::getSet size mismatch");
   }
   return reductionSets[setID];
 }
@@ -515,8 +499,7 @@ void ReductionMgr::mergeAndDeliver(ReductionSet *set, int seqNum) {
       }
     } else {
       // send data to parent
-      int size = set->dataSize;
-      ReductionSubmitMsg *msg = new(&size,1) ReductionSubmitMsg;
+      ReductionSubmitMsg *msg = new(set->dataSize) ReductionSubmitMsg;
       msg->reductionSetID = set->reductionSetID;
       msg->sourceNode = CkMyPe();
       msg->sequenceNumber = seqNum;
