@@ -15,14 +15,16 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
   private:
 
     inline void swap(int offset, int i, int j) {
+      char tmp[sizeof(Elem)];
       register Elem *r = (this->rep->array+offset);
-      memcpy((char *)&obj, (char *)&r[i], sizeof(Elem));
+      memcpy(tmp, (char *)&r[i], sizeof(Elem));
       memcpy((char *)&(r[i]), (char *)&(r[j]), sizeof(Elem));
-      memcpy((char *)&r[j], (char *)&obj, sizeof(Elem));
+      memcpy((char *)&r[j], tmp, sizeof(Elem));
     }
 
 
     inline void siftup(int offset, int i, int size) {
+      char tmp[sizeof(Elem)];
       register int j;
       register Elem *r = (this->rep->array+offset);
     
@@ -32,17 +34,15 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
             j = j+1;
           }
           if (r[i] < r[j]) {
-            memcpy((char *)&obj, (char *)&r[i], sizeof(Elem));
+            memcpy(tmp, (char *)&r[i], sizeof(Elem));
             memcpy((char *)&(r[i]), (char *)&(r[j]), sizeof(Elem));
-            memcpy((char *)&r[j], (char *)&obj, sizeof(Elem));
+            memcpy((char *)&r[j], tmp, sizeof(Elem));
             i = j;
           } else {
             break;
           }
       }
     }
-
-    Elem obj;
 
   public:
 
