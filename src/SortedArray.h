@@ -13,38 +13,37 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
 
   protected:
 
-    int found;
     int isSorted;
 
   public:
 
     SortedArray(void) : SortableResizeArray<Elem>() { 
-      found = -1; isSorted = 1;
+      isSorted = 1;
     }
 
     SortedArray(int s) : SortableResizeArray<Elem>(s) { 
-      found = -1; isSorted = 1;
+      isSorted = 1;
     }
 
     SortedArray(SortedArray<Elem> &sa) : SortableResizeArray<Elem>(sa) { 
-      found = -1; if(!(isSorted = sa.isSorted)) sort();
+      if(!(isSorted = sa.isSorted)) sort();
       isSorted = 1;
     }
 
     SortedArray(SortableResizeArray<Elem> &ra) : 
         SortableResizeArray<Elem>(ra) {
-      found = -1; sort(); isSorted = 1;
+      sort(); isSorted = 1;
     }
 
     SortedArray<Elem>& operator =(SortedArray<Elem> & sa) {
       SortableResizeArray<Elem>::operator=(sa);
-      found = -1; isSorted = sa.isSorted;
+      isSorted = sa.isSorted;
       return(*this);
     }
 
     SortedArray<Elem>& operator =(SortableResizeArray<Elem> &ra) {
       SortableResizeArray<Elem>::operator=(ra);
-      found = -1; sort(); isSorted = 1;
+      sort(); isSorted = 1;
       return(*this);
     }
 
@@ -58,11 +57,10 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
     }
 
     int del(const Elem & elem) {
-      found = bsearch(elem);
+      int found = bsearch(elem);
       if (this->size() != 0 && (*(this->rep))[found] == elem) {
         return(SortableResizeArray<Elem>::del(found,1));
       } else {
-        found = -1;
         return(-1);
       }
     }
@@ -79,22 +77,11 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
     int index(const Elem& elem) { return(found = bsearch(elem)); }
 
     inline Elem *find(const Elem& elem);
-
-    Elem * find(void) {
-      if (found < 0 || ++found >= this->size()) {
-        return((Elem *)NULL);
-      }
-      else if ((*(this->rep))[found] == (*(this->rep))[found-1]) {
-         return (&(*(this->rep))[found]);
-      } else {
-        return ((Elem *)NULL);
-      }
-    }
 };
 
 template <class Elem>
 inline int SortedArray<Elem>::insert(const Elem& elem) {
-  found = bsearch(elem);
+  int found = bsearch(elem);
   if (found == -1) {
     return (ResizeArray<Elem>::insert(elem, 0));
   }
@@ -107,12 +94,12 @@ inline int SortedArray<Elem>::insert(const Elem& elem) {
 
 template <class Elem>
 inline Elem * SortedArray<Elem>::find(const Elem& elem) {
-  if ( (found = bsearch(elem)) < 0) 
+  int found = bsearch(elem);
+  if ( found < 0) 
     return ((Elem *)NULL);
   if ((*(this->rep))[found] == elem) {
     return (&(*(this->rep))[found]);
   } else {
-    found = -1;
     return ((Elem *)NULL);
   }
 }

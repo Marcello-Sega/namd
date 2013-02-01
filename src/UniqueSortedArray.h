@@ -56,17 +56,17 @@ template <class Elem> class UniqueSortedArray : public SortedArray<Elem> {
 template <class Elem>
 inline int 
 UniqueSortedArray<Elem>::insert(const Elem& elem) {
-  this->found = this->bsearch(elem);
-  if (this->found == -1) {
+  int found = this->bsearch(elem);
+  if (found == -1) {
     return ResizeArray<Elem>::insert(elem, 0);
   }
-  if (this->found < this->size() && (*(this->rep))[this->found] == elem) {
+  if (found < this->size() && (*(this->rep))[found] == elem) {
     return -2;
   }
-  if (this->found == (this->size()-1) && (*(this->rep))[this->found] < elem) {
+  if (found == (this->size()-1) && (*(this->rep))[found] < elem) {
     return ResizeArray<Elem>::insert(elem, this->size());
   } else {
-    return ResizeArray<Elem>::insert(elem, this->found);
+    return ResizeArray<Elem>::insert(elem, found);
   }
 }
 #endif
