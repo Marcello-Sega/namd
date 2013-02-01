@@ -16,7 +16,7 @@ template <class Elem, int Size> class Array {
     Array(void) { ; }
 
     // destructor
-    virtual ~Array(void) { ; }
+    ~Array(void) { ; }
 
     // copy constructor
     Array(const Array<Elem,Size> &a2) {

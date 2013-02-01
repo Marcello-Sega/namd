@@ -87,7 +87,7 @@ template <class Elem> class ResizeArray {
       rep->refCount = 1;
     }
 
-    virtual ~ResizeArray(void) {
+    ~ResizeArray(void) {
       if (!--rep->refCount) delete rep;
     }
 

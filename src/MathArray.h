@@ -16,7 +16,7 @@ template <class Elem, int Size> class MathArray : public Array<Elem,Size> {
     MathArray(void) : Array<Elem,Size>(0) { ; }
 
     // destructor
-    virtual ~MathArray(void) { ; }
+    ~MathArray(void) { ; }
 
     // copy constructor
     MathArray(const Array<Elem,Size> &a2) : Array<Elem,Size>(a2) { ; }
