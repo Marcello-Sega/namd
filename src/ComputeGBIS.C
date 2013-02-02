@@ -338,7 +338,6 @@ if (gbisParams->gbisPhase == 1) {
     rhois = gbisParams->intRad[0][2*i+1];
     rhois2 = rhois*rhois;
     psiI = ZERO;
-    numPairs;
     plint *pairs;
     gbisParams->gbisStepPairlists[c]->nextlist(&pairs,&numPairs);
     for (register int jj = 0; jj < numPairs; jj++) {
@@ -442,7 +441,6 @@ nops = 0;
     rhoi0 = gbisParams->intRad[0][2*i+0];
     rhois = gbisParams->intRad[0][2*i+1];
     psiI = ZERO;
-    numPairs;
     plint *pairs;
     gbisParams->gbisStepPairlists[c]->nextlist(&pairs,&numPairs);
     for (register int jj = 0; jj < numPairs; jj++) {
@@ -551,7 +549,6 @@ nops = 0;
     rhoi0 = gbisParams->intRad[0][2*i+0];
     rhois = gbisParams->intRad[0][2*i+1];
     psiI = ZERO;
-    numPairs;
     plint *pairs;
     gbisParams->gbisStepPairlists[c]->nextlist(&pairs,&numPairs);
     for (register int jj = 0; jj < numPairs; jj++) {
