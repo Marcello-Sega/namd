@@ -60,7 +60,7 @@ template <class Elem> class ResizeArrayRaw {
       //Elem *tmpa = (Elem *)((((long)tmpv)+31L)&(-32L));
       // Someday we might need this alternate form.
       Elem *tmpa = (Elem *)(tmpv+31 - (((long)(tmpv+31))&(31L)));
-      CmiMemcpy((void *)tmpa, (void *)array, sizeof(Elem)*arraySize);
+      if (arraySize) CmiMemcpy((void *)tmpa, (void *)array, sizeof(Elem)*arraySize);
   
       if (allocSize) delete[] varray;
       varray = tmpv;
