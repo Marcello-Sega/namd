@@ -74,7 +74,7 @@ template <class Elem> class SortedArray: public SortableResizeArray<Elem> {
 
     inline int insert(const Elem& elem);
 
-    int index(const Elem& elem) { return(found = bsearch(elem)); }
+    int index(const Elem& elem) { return bsearch(elem); }
 
     inline Elem *find(const Elem& elem);
 };
