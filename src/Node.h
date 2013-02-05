@@ -205,6 +205,9 @@ private:
   // Startup phase
   int startupPhase;
   int localRankOnNode;
+#ifdef CMK_CONVERSE_GEMINI_UGNI
+  int balancedInjectionLevel;
+#endif
 };
 
 #endif /* _NODE_H */

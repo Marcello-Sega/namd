@@ -75,6 +75,10 @@ extern "C" void CApplicationInit();
 
 #include "DumpBench.h"
 
+#ifdef CMK_CONVERSE_GEMINI_UGNI
+#include "ckBIconfig.h"
+#endif
+
 #ifdef MEM_OPT_VERSION
 #include "CollectionMgr.h"
 #include "CollectionMaster.h"
@@ -94,10 +98,11 @@ extern "C" void HPM_Print(int, int);
 #if CMK_SMP
 #include <pthread.h>
 #endif
-#define NUM_PAPI_EVENTS 2
+#define NUM_PAPI_EVENTS 6
 CkpvDeclare(int *, papiEvents);
 
-#define MEASURE_PAPI_CACHE 1
+#define MEASURE_PAPI_SPP 1
+#define MEASURE_PAPI_CACHE 0
 #define MEASURE_PAPI_FLOPS 0
 
 static void namdInitPapiCounters(){
@@ -121,7 +126,7 @@ static void namdInitPapiCounters(){
 	#endif
 	}
 	CkpvInitialize(int *, papiEvents);
-	CkpvAccess(papiEvents) = new int[NUM_PAPI_EVENTS];
+	CkpvAccess(papiEvents) = new int[NUM_PAPI_EVENTS+1];
 
 #if MEASURE_PAPI_CACHE
 	if(PAPI_query_event(PAPI_L1_DCM)==PAPI_OK) {
@@ -157,6 +162,90 @@ static void namdInitPapiCounters(){
 		//if not default to PAPI_TOT_CYC
 		CkpvAccess(papiEvents)[1] = PAPI_TOT_CYC;
 	}
+#elif MEASURE_PAPI_SPP
+/* for SPP we record these
+1) PAPI_FP_OPS
+2) PAPI_TOT_INS
+3) perf::PERF_COUNT_HW_CACHE_LL:MISS
+4) DATA_PREFETCHER:ALL
+5) PAPI_L1_DCA
+6) INSTRUCTION_FETCH_STALL
+7) PAPI_TOT_CYC, and 
+8) real (wall) time
+*/
+	int papiEventSet = PAPI_NULL; 
+	if (PAPI_create_eventset(&papiEventSet) != PAPI_OK) {
+	  CmiAbort("PAPI failed to create event set!\n");
+	}
+
+	if(PAPI_query_event(PAPI_FP_OPS)==PAPI_OK) {
+		CkpvAccess(papiEvents)[0] = PAPI_FP_OPS;
+	}else{
+		if(CkMyPe()==0){
+			CkAbort("WARNING: PAPI_FP_OPS doesn't exist on this platform!");
+		}
+	}
+	if(PAPI_query_event(PAPI_TOT_INS)==PAPI_OK) {
+		CkpvAccess(papiEvents)[1] = PAPI_TOT_INS;
+	}else{
+		if(CkMyPe()==0){
+			CkAbort("WARNING: PAPI_TOT_INS doesn't exist on this platform!");
+		}
+	}
+	int EventCode;
+	int ret;
+	ret=PAPI_event_name_to_code("perf::PERF_COUNT_HW_CACHE_LL:MISS",&EventCode);
+	if(ret==PAPI_OK && PAPI_query_event(EventCode)==PAPI_OK) {
+	  CkpvAccess(papiEvents)[2] = EventCode;
+	}else{
+		if(CkMyPe()==0){
+			CkAbort("WARNING: perf::PERF_COUNT_HW_CACHE_LL:MISS doesn't exist on this platform!");
+		}
+	}
+	ret=PAPI_event_name_to_code("DATA_PREFETCHER:ALL",&EventCode);
+	if(ret==PAPI_OK && PAPI_query_event(EventCode)==PAPI_OK) {
+	  CkpvAccess(papiEvents)[3] = EventCode;
+	}else{
+		if(CkMyPe()==0){
+			CkAbort("WARNING: DATA_PREFETCHER:ALL doesn't exist on this platform!");
+		}
+	}
+	if(PAPI_query_event(PAPI_L1_DCA)==PAPI_OK) {
+		CkpvAccess(papiEvents)[4] = PAPI_L1_DCA;
+	}else{
+		if(CkMyPe()==0){
+			CkAbort("WARNING: PAPI_L1_DCA doesn't exist on this platform!");
+		}
+	}
+	/*	ret=PAPI_event_name_to_code("INSTRUCTION_FETCH_STALL",&EventCode);
+	if(ret==PAPI_OK && PAPI_query_event(EventCode)==PAPI_OK) {
+	  CkpvAccess(papiEvents)[5] = EventCode;
+	}else{
+		if(CkMyPe()==0){
+			CkAbort("WARNING: INSTRUCTION_FETCH_STALL doesn't exist on this platform!");
+		}
+	}
+	*/
+	if(PAPI_query_event(PAPI_TOT_CYC)==PAPI_OK) {
+		CkpvAccess(papiEvents)[5] = PAPI_TOT_CYC;
+	}else{
+		if(CkMyPe()==0){
+			CkAbort("WARNING: PAPI_TOT_CYC doesn't exist on this platform!");
+		}
+	}
+	for(int i=0;i<NUM_PAPI_EVENTS;i++)
+	  {
+	    int papiRetValue=PAPI_add_events(papiEventSet, &CkpvAccess(papiEvents)[i],1);
+	    if (papiRetValue != PAPI_OK) {
+	      CkPrintf("failure for event %d\n",i);
+	      if (papiRetValue == PAPI_ECNFLCT) {
+		CmiAbort("PAPI events conflict! Please re-assign event types!\n");
+	      } else {
+		CmiAbort("PAPI failed to add designated events!\n");
+	      }
+	    }
+	    
+	  }
 #endif
 }
 #endif
@@ -226,6 +315,15 @@ Node::Node(GroupInitMsg *msg)
   //Note: Binding BOC vars such as workDistrib has been moved
   //to the 1st phase of startup because the in-order message delivery
   //is not always guaranteed --Chao Mei
+#ifdef CMK_BALANCED_INJECTION_API
+  if(CkMyRank() == 0){
+    balancedInjectionLevel=ck_get_GNI_BIConfig();
+    // CkPrintf("[%d] get retrieved BI=%d\n",CkMyPe(),balancedInjectionLevel);
+    ck_set_GNI_BIConfig(20);
+    // CkPrintf("[%d] set retrieved BI=%d\n",CkMyPe(),ck_get_GNI_BIConfig());
+  }
+#endif
+
 }
 
 //----------------------------------------------------------------------
@@ -328,12 +426,10 @@ void Node::startup() {
     iout << memusage_MB() << " MB of memory in use\n" << endi;
     fflush(stdout);
   }
-  
   switch (startupPhase) {
 
   case 0:
     computeMap = ComputeMap::Object();
-
     namdOneCommInit(); // Namd1.X style
   break;
 
@@ -701,6 +797,14 @@ void Node::startup() {
     // computes may create proxies on the fly so put these in separate phase
     Sync::Object()->openSync();  // decide if to open local Sync 
     if (proxySendSpanning || proxyRecvSpanning ) proxyMgr->buildProxySpanningTree();
+#ifdef CMK_BALANCED_INJECTION_API
+    if(CkMyRank() == 0){
+      // CkPrintf("[%d] get retrieved BI=%d\n",CkMyPe(),balancedInjectionLevel);
+      ck_set_GNI_BIConfig(balancedInjectionLevel);
+      // CkPrintf("[%d] set retrieved BI=%d\n",CkMyPe(),ck_get_GNI_BIConfig());
+    }
+#endif
+
   break;
 
   case 12:
@@ -1103,30 +1207,75 @@ void Node::resumeAfterTraceBarrier(CkReductionMsg *msg){
 void Node::papiMeasureBarrier(int turnOnMeasure, int step){
 #ifdef MEASURE_NAMD_WITH_PAPI
 	curMFlopStep = step;
-	double results[NUM_PAPI_EVENTS];
+	double results[NUM_PAPI_EVENTS+1];
 
 	if(turnOnMeasure){		
-		PAPI_start_counters(CkpvAccess(papiEvents), NUM_PAPI_EVENTS);
+	  CkpvAccess(papiEvents)[NUM_PAPI_EVENTS]=CmiWallTimer();
+
+	  long long counters[NUM_PAPI_EVENTS+1];
+	  int ret=PAPI_start_counters(CkpvAccess(papiEvents), NUM_PAPI_EVENTS);
+	  if(ret==PAPI_OK)
+	    {
+	      //	      CkPrintf("traceBarrier start counters (%d) at step %d called on proc %d\n", turnOnMeasure, step, CkMyPe());
+	    }
+	  else
+	    {
+	      CkPrintf("error PAPI_start_counters (%d) at step %d called on proc %d\n",ret , step, CkMyPe());
+	    }
+	  if(PAPI_read_counters(counters, NUM_PAPI_EVENTS)!=PAPI_OK)
+	    {
+	      CkPrintf("error PAPI_read_counters %d\n",PAPI_read_counters(counters, NUM_PAPI_EVENTS));
+	    };
 	}else{
-		long long counters[NUM_PAPI_EVENTS];
-		PAPI_read_counters(counters, NUM_PAPI_EVENTS);
-		results[0] = (double)counters[0]/1e6;
-		results[1] = (double)counters[1]/1e6;
-		PAPI_stop_counters(counters, NUM_PAPI_EVENTS);	
+	  long long counters[NUM_PAPI_EVENTS+1];
+	  for(int i=0;i<NUM_PAPI_EVENTS;i++)  counters[i]=0LL;
+	  if(PAPI_read_counters(counters, NUM_PAPI_EVENTS)==PAPI_OK)
+	    {
+#if !MEASURE_PAPI_SPP
+	      results[0] = (double)counters[0]/1e6;
+	      results[1] = (double)counters[1]/1e6;
+#else
+	      for(int i=0;i<NUM_PAPI_EVENTS;i++)  results[i] = counters[i]/1e6;
+#endif
+	      //	      for(int i=0;i<NUM_PAPI_EVENTS;i++) CkPrintf("[%d] counter %d is %ld\n",CkMyPe(),i,counters[i]);
+	    }
+	  else
+	    {
+	      //	      CkPrintf("error PAPI_read_counters %d\n",PAPI_read_counters(counters, NUM_PAPI_EVENTS));
+	    }
+	  //	  CkPrintf("traceBarrier stop counters (%d) at step %d called on proc %d\n", turnOnMeasure, step, CkMyPe());
+		
+	  PAPI_stop_counters(counters, NUM_PAPI_EVENTS);	
 	}
-	//CkPrintf("traceBarrier (%d) at step %d called on proc %d\n", turnOnTrace, step, CkMyPe());
+	if(CkMyPe()==0)
+	  //	    CkPrintf("traceBarrier (%d) at step %d called on proc %d\n", turnOnMeasure, step, CkMyPe());
+	results[NUM_PAPI_EVENTS]=CkpvAccess(papiEvents)[NUM_PAPI_EVENTS]; //starttime
 	CProxy_Node nd(CkpvAccess(BOCclass_group).node);
 	CkCallback cb(CkIndex_Node::resumeAfterPapiMeasureBarrier(NULL), nd[0]);
-	contribute(sizeof(double)*NUM_PAPI_EVENTS, &results, CkReduction::sum_double, cb);	
+	contribute(sizeof(double)*(NUM_PAPI_EVENTS+1), &results, CkReduction::sum_double, cb);	
 #endif
 }
 
 void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
 #ifdef MEASURE_NAMD_WITH_PAPI
+  
 	if(simParameters->papiMeasureStartStep != curMFlopStep) {
 		double *results = (double *)msg->getData();
+		double endtime=CmiWallTimer();
 		int bstep = simParameters->papiMeasureStartStep;
 		int estep = bstep + simParameters->numPapiMeasureSteps;
+#if MEASURE_PAPI_SPP
+		CkPrintf("SPP INFO: PAPI_FP_OPS timestep %d to %d is %lf(1e6)\n", bstep,estep,results[0]);
+		CkPrintf("SPP INFO: PAPI_TOT_INS timestep %d to %d is %lf(1e6)\n", bstep,estep,results[1]);
+		CkPrintf("SPP INFO: perf::PERF_COUNT_HW_CACHE_LL:MISS timestep %d to %d is %lf(1e6)\n", bstep,estep,results[2]);
+		CkPrintf("SPP INFO: DATA_PREFETCHER:ALL timestep %d to %d is %lf(1e6)\n", bstep,estep,results[3]);
+		CkPrintf("SPP INFO: PAPI_L1_DCA timestep %d to %d is %lf(1e6)\n", bstep,estep,results[4]);
+		CkPrintf("SPP INFO: PAPI_TOT_CYC timestep %d to % is %lf(1e6)\n", bstep,estep,results[5]);
+		//		CkPrintf("SPP INFO: INSTRUCTION_FETCH_STALL timestep %d to %d is %lf(1e6)\n", bstep,estep,results[6]);
+		//		CkPrintf("SPP INFO: WALLtime timestep %d to %d is %lf\n", bstep,estep,endtime-results[NUM_PAPI_EVENTS]/CkNumPes());
+		CkPrintf("SPP INFO: WALLtime timestep %d to %d is %lf\n", bstep,estep,endtime-results[NUM_PAPI_EVENTS]);
+		CkPrintf("SPP INFO: endtime %lf avgtime %lf tottime %lf\n", endtime,results[NUM_PAPI_EVENTS]/CkNumPes(),results[NUM_PAPI_EVENTS] );
+#else
 		if(CkpvAccess(papiEvents)[0] == PAPI_FP_INS){
 			double totalFPIns = results[0];
 			if(CkpvAccess(papiEvents)[1] == PAPI_FMA_INS) totalFPIns += (results[1]*2);
@@ -1142,6 +1291,7 @@ void Node::resumeAfterPapiMeasureBarrier(CkReductionMsg *msg){
 			}
 			CkPrintf("per processor\n");
 		}		
+#endif
 	}
 	delete msg;	
 	state->controller->resumeAfterPapiMeasureBarrier(curMFlopStep);
@@ -1191,7 +1341,6 @@ void Node::outputPatchComputeMaps(const char *filename, int tag){
 
 //======================================================================
 // Private functions
-
 
 #include "Node.def.h"
 
