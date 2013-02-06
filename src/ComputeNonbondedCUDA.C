@@ -235,7 +235,7 @@ void cuda_initialize() {
   }
 
   if ( ! ndevices ) {
-    cuda_die("All CUDA devices are in prohibited mode, of compute capability 1.0, or otherwise unusable.");
+    cuda_die("All CUDA devices are in prohibited mode, of compute capability 1.0, unable to map host memory, too small, or otherwise unusable.");
   }
 
   shared_gpu = 0;
