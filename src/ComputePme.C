@@ -2304,7 +2304,9 @@ void ComputePmeMgr::initialize_computes() {
   memset( (void*) q_list, 0, fsize*numGrids * sizeof(double*) );
   q_count = 0;
   f_arr = new char[fsize*numGrids];
-  memset( (void*) f_arr, 2, fsize*numGrids * sizeof(char) );
+  // memset to non-zero value has race condition on BlueGene/Q
+  // memset( (void*) f_arr, 2, fsize*numGrids * sizeof(char) );
+  for ( int n=fsize*numGrids, i=0; i<n; ++i ) f_arr[i] = 2;
   fz_arr = new char[myGrid.K3+myGrid.order-1];
 
   for ( int g=0; g<numGrids; ++g ) {
