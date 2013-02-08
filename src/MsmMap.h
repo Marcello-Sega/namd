@@ -157,11 +157,11 @@ typedef double Double;
         // XXX this still needs to be rewritten a bit for AVX
         // do an 8-element reduction and accumulate result
         __m256 sum8 = tmp8;
-        sum8 = _mm_shuffle_ps(sum8, sum8, _MM_SHUFFLE(2, 3, 0, 1));
-        sum8 = _mm_add_ps(sum8, tmp8);
+        sum8 = _mm256_hadd_ps(sum8, sum8);
+        sum8 = _mm256_hadd_ps(sum8, sum8);
         tmp8 = sum8;
-        sum8 = _mm_shuffle_ps(sum8, sum8, _MM_SHUFFLE(1, 0, 3, 2));
-        sum8 = _mm_add_ps(sum8, tmp8);
+        tmp8 = _mm256_permute2f128_ps(tmp8, tmp8, 1);
+        sum8 = _mm256_hadd_ps(tmp8, sum8);
 
         // all 8 elements are now set to the sum
         float sum;
