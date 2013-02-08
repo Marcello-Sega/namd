@@ -100,6 +100,8 @@ typedef double Double;
 #if defined(__INTEL_COMPILER)
 #pragma vector always
 #endif
+
+      // XXX this is where we will insert SSE/AVX vectorization
       for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
         for (int i = 0;  i < C1_VECTOR_SIZE;  i++, k++) {
           v.velem[j] += m.melem[k] * u.velem[i];
