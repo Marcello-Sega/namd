@@ -136,11 +136,12 @@ typedef double Double;
         __m128 sum4 = tmp4;
         sum4 = _mm_shuffle_ps(sum4, sum4, _MM_SHUFFLE(2, 3, 0, 1));
         sum4 = _mm_add_ps(sum4, tmp4);
+        tmp4 = sum4;
         sum4 = _mm_shuffle_ps(sum4, sum4, _MM_SHUFFLE(1, 0, 3, 2));
         sum4 = _mm_add_ps(sum4, tmp4);
-        tmp4 = sum4; // all 4 elements are now set to the sum
 
-        _mm_store_ss(tmp, tmp4);
+        // all 4 elements are now set to the sum
+        _mm_store_ss(&tmp, sum4); // store lowest element to tmp
         v.velem[j] += tmp;
         k+=8;
       }
