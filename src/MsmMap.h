@@ -117,16 +117,16 @@ typedef double Double;
       C1Vector v;
 
       // XXX not tested yet
-#if 0 && (defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE))
+#if 1 && (defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE))
       // Hand-coded SSE2 vectorization
       // This loop requires that the single-precision input arrays be 
       // aligned on 16-byte boundaries, such that array[index % 4 == 0] 
       // can be safely accessed with aligned load/store operations
       for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
-        __m128 melem4 = _mm_load_ps(&v.melem[k]);
+        __m128 melem4 = _mm_load_ps(&m.melem[k]);
         __m128 uelem4 = _mm_load_ps(&u.velem[0]);
         __m128 tmp4 = _mm_mul_ps(melem4, uelem4); 
-        melem4 = _mm_load_ps(&v.melem[k+4]);
+        melem4 = _mm_load_ps(&m.melem[k+4]);
         uelem4 = _mm_load_ps(&u.velem[4]);
         tmp4 = _mm_add_ps(tmp4, _mm_mul_ps(melem4, uelem4)); 
 
@@ -154,7 +154,6 @@ typedef double Double;
         }
       }
 #endif
-      }
       return v;
     }
   };
