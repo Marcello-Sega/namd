@@ -140,7 +140,31 @@ typedef double Double;
 
         // all 4 elements are now set to the sum
         float sum;
-        _mm_store_ss(&sum, sum4); // store lowest element to tmp
+        _mm_store_ss(&sum, sum4); // store lowest element
+        v.velem[j] += sum;
+        k+=8;
+      }
+#elif 0 && (defined(__AVX__) && ! defined(NAMD_DISABLE_SSE))
+      // Hand-coded AVX vectorization
+      // This loop requires that the single-precision input arrays be 
+      // aligned on 32-byte boundaries, such that array[index % 8 == 0] 
+      // can be safely accessed with aligned load/store operations
+        __m256 melem8 = _mm256_load_ps(&m.melem[k]);
+        __m256 uelem8 = _mm256_load_ps(&u.velem[0]);
+        __m256 tmp8 = _mm256_mul_ps(melem8, uelem8); 
+
+        // XXX this still needs to be rewritten a bit for AVX
+        // do an 8-element reduction and accumulate result
+        __m256 sum8 = tmp8;
+        sum8 = _mm_shuffle_ps(sum8, sum8, _MM_SHUFFLE(2, 3, 0, 1));
+        sum8 = _mm_add_ps(sum8, tmp8);
+        tmp8 = sum8;
+        sum8 = _mm_shuffle_ps(sum8, sum8, _MM_SHUFFLE(1, 0, 3, 2));
+        sum8 = _mm_add_ps(sum8, tmp8);
+
+        // all 8 elements are now set to the sum
+        float sum;
+        _mm_store_ss(&sum, sum8); // store lowest element
         v.velem[j] += sum;
         k+=8;
       }
