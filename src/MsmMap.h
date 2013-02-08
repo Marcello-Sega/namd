@@ -149,6 +149,7 @@ typedef double Double;
       // This loop requires that the single-precision input arrays be 
       // aligned on 32-byte boundaries, such that array[index % 8 == 0] 
       // can be safely accessed with aligned load/store operations
+      for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
         __m256 melem8 = _mm256_load_ps(&m.melem[k]);
         __m256 uelem8 = _mm256_load_ps(&u.velem[0]);
         __m256 tmp8 = _mm256_mul_ps(melem8, uelem8); 
