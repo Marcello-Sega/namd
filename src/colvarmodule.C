@@ -46,12 +46,11 @@ colvarmodule::colvarmodule (char const  *config_filename,
 
   parse->get_keyval (conf, "analysis", b_analysis, false);
 
-  if (cvm::debug())
-    parse->get_keyval (conf, "debugGradientsStepSize", debug_gradients_step_size, 1.0e-03,
-                       colvarparse::parse_silent);
+  parse->get_keyval (conf, "debugGradientsStepSize", debug_gradients_step_size, 1.0e-07,
+                     colvarparse::parse_silent);
 
   parse->get_keyval (conf, "eigenvalueCrossingThreshold",
-                     colvarmodule::rotation::crossing_threshold, 1.0e-04,
+                     colvarmodule::rotation::crossing_threshold, 1.0e-02,
                      colvarparse::parse_silent);
 
   parse->get_keyval (conf, "colvarsTrajFrequency", cv_traj_freq, 100);
@@ -88,16 +87,18 @@ colvarmodule::colvarmodule (char const  *config_filename,
   cvm::log ("The trajectory file will be \""+
             cv_traj_name+"\".\n");
 
-  // open trajectory file
-  if (cv_traj_append) {
-    cvm::log ("Appending to colvar trajectory file \""+cv_traj_name+
-              "\".\n");
-    cv_traj_os.open (cv_traj_name.c_str(), std::ios::app);
-  } else {
-    proxy->backup_file (cv_traj_name.c_str());
-    cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
+  if (cv_traj_freq) {
+    // open trajectory file
+    if (cv_traj_append) {
+      cvm::log ("Appending to colvar trajectory file \""+cv_traj_name+
+                "\".\n");
+      cv_traj_os.open (cv_traj_name.c_str(), std::ios::app);
+    } else {
+      proxy->backup_file (cv_traj_name.c_str());
+      cv_traj_os.open (cv_traj_name.c_str(), std::ios::out);
+    }
+    cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
   }
-  cv_traj_os.setf (std::ios::scientific, std::ios::floatfield);
 
   // parse the options for collective variables
   init_colvars (conf);
@@ -296,26 +297,26 @@ void colvarmodule::init_biases (std::string const &conf)
 }
 
 
-void colvarmodule::change_configuration(
-  std::string const &name, std::string const &conf)
+void colvarmodule::change_configuration (std::string const &bias_name,
+                                         std::string const &conf)
 {
   cvm::increase_depth();
   int found = 0;
   for (std::vector<colvarbias *>::iterator bi = biases.begin();
        bi != biases.end();
        bi++) {
-    if ( (*bi)->name == name ) {
+    if ( (*bi)->name == bias_name ) {
       ++found;
-      (*bi)->change_configuration(conf);
+      (*bi)->change_configuration (conf);
     }
   }
-  if ( found < 1 ) cvm::fatal_error ("Error: bias not found");
-  if ( found > 1 ) cvm::fatal_error ("Error: duplicate bias name");
+  if (found < 1) cvm::fatal_error ("Error: bias not found.\n");
+  if (found > 1) cvm::fatal_error ("Error: duplicate bias name.\n");
   cvm::decrease_depth();
 }
 
-cvm::real colvarmodule::energy_difference(
-  std::string const &name, std::string const &conf)
+cvm::real colvarmodule::energy_difference (std::string const &bias_name,
+                                           std::string const &conf)
 {
   cvm::increase_depth();
   cvm::real energy_diff = 0.;
@@ -323,13 +324,13 @@ cvm::real colvarmodule::energy_difference(
   for (std::vector<colvarbias *>::iterator bi = biases.begin();
        bi != biases.end();
        bi++) {
-    if ( (*bi)->name == name ) {
+    if ( (*bi)->name == bias_name ) {
       ++found;
-      energy_diff = (*bi)->energy_difference(conf);
+      energy_diff = (*bi)->energy_difference (conf);
     }
   }
-  if ( found < 1 ) cvm::fatal_error ("Error: bias not found");
-  if ( found > 1 ) cvm::fatal_error ("Error: duplicate bias name");
+  if (found < 1) cvm::fatal_error ("Error: bias not found.\n");
+  if (found > 1) cvm::fatal_error ("Error: duplicate bias name.\n");
   cvm::decrease_depth();
   return energy_diff;
 }
@@ -430,7 +431,7 @@ void colvarmodule::calc() {
   cvm::decrease_depth();
 
   // write restart file, if needed
-  if (restart_out_freq && !cvm::b_analysis) {
+  if (restart_out_freq && restart_out_name.size() && !cvm::b_analysis) {
     if ( (cvm::step_relative() > 0) &&
          ((cvm::step_absolute() % restart_out_freq) == 0) ) {
       cvm::log ("Writing the state file \""+
@@ -580,6 +581,14 @@ void colvarmodule::write_output_files()
   out.setf (std::ios::scientific, std::ios::floatfield);
   this->write_restart (out);
   out.close();
+
+  cvm::increase_depth();
+  for (std::vector<colvar *>::iterator cvi = colvars.begin();
+       cvi != colvars.end();
+       cvi++) {
+    (*cvi)->write_output_files();
+  }
+  cvm::decrease_depth();
   
   // do not close to avoid problems with multiple NAMD runs
   cv_traj_os.flush();

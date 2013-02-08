@@ -391,16 +391,12 @@ void colvarproxy_namd::load_coords (char const *pdb_filename,
         break;
     }
 
-    if (ipos < pos.size())
-      cvm::fatal_error ("Error: the PDB file \""+
+    if ((ipos < pos.size()) || (current_index != indices.end()))
+      cvm::fatal_error ("Error: the number of records in the PDB file \""+
                         std::string (pdb_filename)+
-                        "\" contains coordinates for only "+
-                        cvm::to_str (ipos)+
-                        " atoms, but "+cvm::to_str (pos.size())+
-                        " are needed.\n");
-
-    if (current_index != indices.end())
-      cvm::fatal_error ("Error: not all atoms found in PDB file.\n");
+                        "\" does not appear to match either the total number of atoms,"+
+                        " or the number of coordinates requested at this point ("+
+                        cvm::to_str (pos.size())+").\n");
 
   } else {
 

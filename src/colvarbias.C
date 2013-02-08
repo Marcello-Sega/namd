@@ -26,6 +26,14 @@ colvarbias::colvarbias (std::string const &conf, char const *key)
 
   get_keyval (conf, "name", name, key_str+cvm::to_str (rank));
 
+  for (std::vector<colvarbias *>::iterator bi = cvm::biases.begin();
+       bi != cvm::biases.end();
+       bi++) {
+    if ((*bi)->name == this->name)
+      cvm::fatal_error ("Error: this bias cannot have the same name, \""+this->name+
+                        "\", of another bias.\n");
+  }
+
   // lookup the associated colvars
   std::vector<std::string> colvars_str;
   if (get_keyval (conf, "colvars", colvars_str)) {
@@ -78,7 +86,8 @@ void colvarbias::communicate_forces()
 colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
                                           char const *key)
   : colvarbias (conf, key), 
-    target_nsteps (0)
+    target_nsteps (0),
+    target_nstages (0)
 {
   get_keyval (conf, "forceConstant", force_k, 1.0);
   for (size_t i = 0; i < colvars.size(); i++) {
@@ -112,7 +121,6 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
 
   if (get_keyval (conf, "targetCenters", target_centers, colvar_centers)) {
     b_chg_centers = true;
-    target_nstages = 0;
     for (size_t i = 0; i < target_centers.size(); i++) {
       target_centers[i].apply_constraints();
     }
@@ -134,8 +142,6 @@ colvarbias_harmonic::colvarbias_harmonic (std::string const &conf,
     if (lambda_schedule.size()) {
       // There is one more lambda-point than stages
       target_nstages = lambda_schedule.size() - 1;
-    } else {
-      target_nstages = 0;
     }
   } else {
     b_chg_force_k = false;
@@ -195,7 +201,7 @@ void colvarbias_harmonic::change_configuration(std::string const &conf)
 }
 
 
-cvm::real colvarbias_harmonic::energy_difference(std::string const &conf)
+cvm::real colvarbias_harmonic::energy_difference (std::string const &conf)
 {
   std::vector<colvarvalue> alt_colvar_centers;
   cvm::real alt_force_k;
@@ -215,7 +221,7 @@ cvm::real colvarbias_harmonic::energy_difference(std::string const &conf)
 
   for (size_t i = 0; i < colvars.size(); i++) {
     alt_bias_energy += 0.5 * alt_force_k / (colvars[i]->width * colvars[i]->width) *
-              colvars[i]->dist2(colvars[i]->value(), alt_colvar_centers[i]);
+      colvars[i]->dist2 (colvars[i]->value(), alt_colvar_centers[i]);
   }
 
   return alt_bias_energy - bias_energy;

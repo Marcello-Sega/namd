@@ -22,7 +22,7 @@ colvar::colvar (std::string const &conf)
        cvi < cvm::colvars.end();
        cvi++) {
     if ((*cvi)->name == this->name)
-      cvm::fatal_error ("Error: this colvar has the same name, \""+this->name+
+      cvm::fatal_error ("Error: this colvar cannot have the same name, \""+this->name+
                         "\", as another colvar.\n");
   }
 
@@ -98,7 +98,8 @@ colvar::colvar (std::string const &conf)
                          "on an axis",       "distanceZ",      distance_z);
   initialize_components ("distance projection "
                          "on a plane",       "distanceXY",     distance_xy);
-  initialize_components ("minimum distance", "minDistance",    min_distance);
+  initialize_components ("average distance weighted by inverse power",
+                         "distanceInv", distance_inv);
 
   initialize_components ("coordination "
                          "number",           "coordNum",       coordnum);
@@ -128,6 +129,10 @@ colvar::colvar (std::string const &conf)
 
   initialize_components ("radius of "
                          "gyration",         "gyration",       gyration);
+  initialize_components ("moment of "
+                         "inertia",          "inertia",        inertia);
+  initialize_components ("moment of inertia around an axis",
+                                             "inertiaZ",       inertia_z);
   initialize_components ("eigenvector",      "eigenvector",    eigenvector);
 
   if (!cvcs.size())
@@ -249,6 +254,13 @@ colvar::colvar (std::string const &conf)
     }
   }
 
+  if (tasks[task_lower_boundary]) {
+    get_keyval (conf, "hardLowerBoundary", hard_lower_boundary, false);
+  }
+  if (tasks[task_upper_boundary]) {
+    get_keyval (conf, "hardUpperBoundary", hard_upper_boundary, false);
+  }
+
   // consistency checks for boundaries and walls
   if (tasks[task_lower_boundary] && tasks[task_upper_boundary]) {
     if (lower_boundary >= upper_boundary) {
@@ -280,6 +292,11 @@ colvar::colvar (std::string const &conf)
     cvm::fatal_error ("Error: trying to expand boundaries that already "
                       "cover a whole period of a periodic colvar.\n");
   }
+  if (expand_boundaries && hard_lower_boundary && hard_upper_boundary) {
+    cvm::fatal_error ("Error: inconsistent configuration "
+                      "(trying to expand boundaries with both "
+                      "hardLowerBoundary and hardUpperBoundary enabled).\n");
+  }
 
   {
     bool b_extended_lagrangian;
@@ -306,13 +323,13 @@ colvar::colvar (std::string const &conf)
                             "by enabling a thermostat, or through \"extendedTemp\".\n");
       }
 
-      get_keyval (conf, "extendedFluctuation", tolerance, 0.2*width);
+      get_keyval (conf, "extendedFluctuation", tolerance, width);
       if (tolerance <= 0.0)
         cvm::fatal_error ("Error: \"extendedFluctuation\" must be positive.\n");
       ext_force_k = cvm::boltzmann() * temp / (tolerance * tolerance);
       cvm::log ("Computed extended system force constant: " + cvm::to_str(ext_force_k) + " kcal/mol/U^2");
 
-      get_keyval (conf, "extendedTimeConstant", period, 40.0 * cvm::dt());
+      get_keyval (conf, "extendedTimeConstant", period, 200.0);
       if (period <= 0.0)
         cvm::fatal_error ("Error: \"extendedTimeConstant\" must be positive.\n");
       ext_mass = (cvm::boltzmann() * temp * period * period)
@@ -327,7 +344,7 @@ colvar::colvar (std::string const &conf)
         }
       }
 
-      get_keyval (conf, "extendedLangevinDamping", ext_gamma, 0.0);
+      get_keyval (conf, "extendedLangevinDamping", ext_gamma, 1.0);
       if (ext_gamma < 0.0)
         cvm::fatal_error ("Error: \"extendedLangevinDamping\" may not be negative.\n");
       if (ext_gamma != 0.0) {
@@ -649,23 +666,6 @@ void colvar::disable (colvar::task const &t)
 
 colvar::~colvar()
 {
-  if (cvm::b_analysis) {
-
-    if (acf.size()) {
-      cvm::log ("Writing acf to file \""+acf_outfile+"\".\n");
-
-      std::ofstream acf_os (acf_outfile.c_str());
-      if (! acf_os.good())
-        cvm::fatal_error ("Cannot open file \""+acf_outfile+"\".\n");
-      write_acf (acf_os);
-      acf_os.close();
-    }
-
-    if (runave_os.good()) {
-      runave_os.close();
-    }
-  }
-
   for (size_t i = 0; i < cvcs.size(); i++) {
     delete cvcs[i];
   }
@@ -681,12 +681,39 @@ void colvar::calc()
   if (cvm::debug())
     cvm::log ("Calculating colvar \""+this->name+"\".\n");
 
+  // prepare atom groups for calculation
+  for (size_t i = 0; i < cvcs.size(); i++) {
+    for (size_t ig = 0; ig < cvcs[i]->atom_groups.size(); ig++) {
+      cvm::atom_group &atoms = *(cvcs[i]->atom_groups[ig]);
+      atoms.reset_atoms_data();
+      atoms.read_positions();
+      if (atoms.b_center || atoms.b_rotate) {
+        atoms.calc_apply_roto_translation();
+      }
+      // each atom group will take care of its own ref_pos_group, if defined
+    }
+  }
+  if (tasks[task_output_velocity]) {
+    for (size_t i = 0; i < cvcs.size(); i++) {
+      for (size_t ig = 0; ig < cvcs[i]->atom_groups.size(); ig++) {
+        cvcs[i]->atom_groups[ig]->read_velocities();
+      }   
+    }
+  }
+  if (tasks[task_system_force]) {
+    for (size_t i = 0; i < cvcs.size(); i++) {
+      for (size_t ig = 0; ig < cvcs[i]->atom_groups.size(); ig++) {
+        cvcs[i]->atom_groups[ig]->read_system_forces();
+      }   
+    }
+  }
+
   // calculate the value of the colvar
 
   x.reset();
   if (x.type() == colvarvalue::type_scalar) {
+    // polynomial combination allowed
 
-    // scalar variable, polynomial combination allowed
     for (size_t i = 0; i < cvcs.size(); i++) {
       cvm::increase_depth();
       (cvcs[i])->calc_value();
@@ -702,6 +729,7 @@ void colvar::calc()
           (cvcs[i])->value().real_value );
     } 
   } else {
+    // only linear combination allowed
 
     for (size_t i = 0; i < cvcs.size(); i++) {
       cvm::increase_depth();
@@ -721,12 +749,29 @@ void colvar::calc()
               cvm::to_str (x, cvm::cv_width, cvm::cv_prec)+".\n");
 
   if (tasks[task_gradients]) {
-    // calculate the gradients
+
+    if (cvm::debug())
+      cvm::log ("Calculating gradients of colvar \""+this->name+"\".\n");
+
     for (size_t i = 0; i < cvcs.size(); i++) {
+      // calculate the gradients of each component
       cvm::increase_depth();
+
       (cvcs[i])->calc_gradients();
+
+      // if requested, propagate (via chain rule) the gradients above
+      // to the atoms used to define the roto-translation
+      for (size_t ig = 0; ig < cvcs[i]->atom_groups.size(); ig++) {
+        if (cvcs[i]->atom_groups[ig]->b_fit_gradients) 
+          cvcs[i]->atom_groups[ig]->calc_fit_gradients();
+      }   
+
       cvm::decrease_depth();
     }
+
+    if (cvm::debug())
+      cvm::log ("Done calculating gradients of colvar \""+this->name+"\".\n");
+
     if (tasks[task_collect_gradients]) {
       // Collect the atomic gradients inside colvar object
       for (int a = 0; a < atomic_gradients.size(); a++) {
@@ -765,6 +810,10 @@ void colvar::calc()
   }
 
   if (tasks[task_system_force]) {
+
+    if (cvm::debug())
+      cvm::log ("Calculating system force of colvar \""+this->name+"\".\n");
+
     ft.reset();
 
     if(!tasks[task_extended_lagrangian] && (cvm::step_relative() > 0)) {
@@ -783,6 +832,9 @@ void colvar::calc()
       // correction internally: biases such as colvarbias_abf will handle it
       ft += fj;
     }
+
+    if (cvm::debug())
+      cvm::log ("Done calculating system force of colvar \""+this->name+"\".\n");
   }
 
   if (tasks[task_fdiff_velocity]) {
@@ -1316,6 +1368,26 @@ std::ostream & colvar::write_traj (std::ostream &os)
   }
 
   return os;
+}
+
+void colvar::write_output_files()
+{
+  if (cvm::b_analysis) {
+
+    if (acf.size()) {
+      cvm::log ("Writing acf to file \""+acf_outfile+"\".\n");
+
+      std::ofstream acf_os (acf_outfile.c_str());
+      if (! acf_os.good())
+        cvm::fatal_error ("Cannot open file \""+acf_outfile+"\".\n");
+      write_acf (acf_os);
+      acf_os.close();
+    }
+
+    if (runave_os.good()) {
+      runave_os.close();
+    }
+  }
 }
 
 

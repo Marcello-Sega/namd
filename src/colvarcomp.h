@@ -1,5 +1,5 @@
-#ifndef COLVARDEF_H
-#define COLVARDEF_H
+#ifndef COLVARCOMP_H
+#define COLVARCOMP_H
 
 #include <fstream>
 #include <cmath>
@@ -106,15 +106,6 @@ public:
   /// Destructor
   virtual ~cvc();
 
-  /// \brief If true, calc_gradients() will calculate
-  /// finite-difference gradients alongside the analytical ones and
-  /// report their differences
-  bool b_debug_gradients;
-
-  /// \brief When b_debug_gradients is true, this function can be used
-  /// to calculate the estimated change in the value using the change
-  /// in the atomic coordinates times the atomic gradients
-  colvarvalue fdiff_change (cvm::atom_group &group);
 
   /// \brief If this flag is false (default), inverse gradients
   /// (derivatives of atom coordinates with respect to x) are
@@ -134,6 +125,12 @@ public:
   /// \brief Calculate the atomic gradients, to be reused later in
   /// order to apply forces
   virtual void calc_gradients() = 0;
+
+  /// \brief If true, calc_gradients() will call debug_gradients() for every group needed
+  bool b_debug_gradients;
+
+  /// \brief Calculate finite-difference gradients alongside the analytical ones, for each Cartesian component
+  virtual void debug_gradients (cvm::atom_group &group);
 
   /// \brief Calculate the total force from the system using the
   /// inverse atomic gradients
@@ -473,18 +470,18 @@ public:
 };
 
 
-/// \brief Colvar component: projection of the distance vector along
-/// a fixed axis (colvarvalue::type_scalar type, range (-*:*))
-class colvar::min_distance
+/// \brief Colvar component: average distance between two groups of atoms, weighted as the sixth power,
+/// as in NMR refinements (colvarvalue::type_scalar type, range (0:*))
+class colvar::distance_inv
   : public colvar::distance
 {
 protected:
   /// Components of the distance vector orthogonal to the axis
-  cvm::real smoothing;
+  int exponent;
 public:
-  min_distance (std::string const &conf);
-  min_distance();
-  virtual inline ~min_distance() {}
+  distance_inv (std::string const &conf);
+  distance_inv();
+  virtual inline ~distance_inv() {}
   virtual void calc_value();
   virtual void calc_gradients();
   virtual void apply_force (colvarvalue const &force);
@@ -497,7 +494,6 @@ public:
   virtual cvm::real compare (colvarvalue const &x1,
                              colvarvalue const &x2) const;
 };
-
 
 
 
@@ -530,6 +526,57 @@ public:
 };
 
 
+/// \brief Colvar component: moment of inertia of an atom group
+/// (colvarvalue::type_scalar type, range [0:*))
+class colvar::inertia
+  : public colvar::gyration
+{
+public:
+  /// Constructor
+  inertia (std::string const &conf);
+  inertia();
+  virtual inline ~inertia() {}
+  virtual void calc_value();
+  virtual void calc_gradients();
+  virtual void apply_force (colvarvalue const &force);
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
+
+
+/// \brief Colvar component: moment of inertia of an atom group
+/// around a user-defined axis (colvarvalue::type_scalar type, range [0:*))
+class colvar::inertia_z
+  : public colvar::inertia
+{
+protected:
+  /// Vector on which the inertia tensor is projected
+  cvm::rvector axis;
+public:
+  /// Constructor
+  inertia_z (std::string const &conf);
+  inertia_z();
+  virtual inline ~inertia_z() {}
+  virtual void calc_value();
+  virtual void calc_gradients();
+  virtual void apply_force (colvarvalue const &force);
+  virtual cvm::real dist2 (colvarvalue const &x1,
+                           colvarvalue const &x2) const;
+  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
+                                   colvarvalue const &x2) const;
+  virtual cvm::real compare (colvarvalue const &x1,
+                             colvarvalue const &x2) const;
+};
+
+
 /// \brief Colvar component: projection of 3N coordinates onto an
 /// eigenvector (colvarvalue::type_scalar type, range (-*:*))
 class colvar::eigenvector
@@ -543,7 +590,10 @@ protected:
   /// Reference coordinates
   std::vector<cvm::atom_pos>  ref_pos;
 
-  /// Eigenvector (of a normal or essential mode)
+  /// Geometric center of the reference coordinates
+  cvm::rvector                ref_pos_center;
+
+  /// Eigenvector (of a normal or essential mode): will always have zero center
   std::vector<cvm::rvector>   eigenvec;
 
   /// Inverse square norm of the eigenvector
@@ -1059,51 +1109,21 @@ public:
 /// colvar::orientation \endlink to calculate the rotation matrix
 /// (colvarvalue::type_scalar type, range [0:*))
 class colvar::rmsd
-  : public colvar::orientation
+  : public colvar::cvc
 {
 protected:
-  /// Sum of the squares of ref_coords
-  cvm::real ref_pos_sum2;
+
+  /// Atom group
+  cvm::atom_group             atoms;
+
+  /// Reference coordinates (for RMSD calculation only)
+  std::vector<cvm::atom_pos>  ref_pos;
 
 public:
 
   /// Constructor
   rmsd (std::string const &conf);
   virtual inline ~rmsd() {}
-  virtual void calc_value();
-  virtual void calc_gradients();
-  virtual void calc_force_invgrads();
-  virtual void calc_Jacobian_derivative();
-  virtual void apply_force (colvarvalue const &force);
-  virtual cvm::real dist2 (colvarvalue const &x1,
-                           colvarvalue const &x2) const;
-  virtual colvarvalue dist2_lgrad (colvarvalue const &x1,
-                                   colvarvalue const &x2) const;
-  virtual colvarvalue dist2_rgrad (colvarvalue const &x1,
-                                   colvarvalue const &x2) const;
-  virtual cvm::real compare (colvarvalue const &x1,
-                             colvarvalue const &x2) const;
-};
-
-
-/// \brief Colvar component:  mean square deviation (RMSD) of a
-/// group with respect to a set of reference coordinates; uses \link
-/// colvar::orientation \endlink to calculate the rotation matrix
-/// (colvarvalue::type_scalar type, range [0:*))
-class colvar::logmsd
-  : public colvar::orientation
-{
-protected:
-
-  /// Sum of the squares of ref_coords
-  cvm::real                 ref_pos_sum2;
-  cvm::real                 MSD;
-
-public:
-
-  /// Constructor
-  logmsd (std::string const &conf);
-  virtual inline ~logmsd() {}
   virtual void calc_value();
   virtual void calc_gradients();
   virtual void calc_force_invgrads();
@@ -1223,7 +1243,7 @@ inline void colvar::spin_angle::wrap (colvarvalue &x) const
   inline cvm::real colvar::TYPE::dist2 (colvarvalue const &x1,          \
                                         colvarvalue const &x2) const    \
   {                                                                     \
-    return std::pow (x1.real_value - x2.real_value, int (2));              \
+    return (x1.real_value - x2.real_value)*(x1.real_value - x2.real_value); \
   }                                                                     \
                                                                         \
   inline colvarvalue colvar::TYPE::dist2_lgrad (colvarvalue const &x1,  \
@@ -1248,14 +1268,15 @@ inline void colvar::spin_angle::wrap (colvarvalue &x) const
   simple_scalar_dist_functions (distance)
   // NOTE: distance_z has explicit functions, see below 
   simple_scalar_dist_functions (distance_xy)
-  simple_scalar_dist_functions (min_distance)
+  simple_scalar_dist_functions (distance_inv)
   simple_scalar_dist_functions (angle)
   simple_scalar_dist_functions (coordnum)
   simple_scalar_dist_functions (selfcoordnum)
   simple_scalar_dist_functions (h_bond)
   simple_scalar_dist_functions (gyration)
+  simple_scalar_dist_functions (inertia)
+  simple_scalar_dist_functions (inertia_z)
   simple_scalar_dist_functions (rmsd)
-  simple_scalar_dist_functions (logmsd)
   simple_scalar_dist_functions (orientation_angle)
   simple_scalar_dist_functions (tilt)
   simple_scalar_dist_functions (eigenvector)
