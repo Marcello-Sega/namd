@@ -118,18 +118,16 @@ typedef double Double;
 
       // XXX not tested yet
 #if 0 && (defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE))
-      // Hand-coded SSE/AVX vectorization
+      // Hand-coded SSE2 vectorization
       // This loop requires that the single-precision input arrays be 
       // aligned on 16-byte boundaries, such that array[index % 4 == 0] 
       // can be safely accessed with aligned load/store operations
       for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
-        float tmp;
-        __m128 tmp4   = _mm_set1_ps(0.0f); 
         __m128 melem4 = _mm_load_ps(&v.melem[k]);
         __m128 uelem4 = _mm_load_ps(&u.velem[0]);
-        tmp4 = _mm_add_ps(tmp4, _mm_mul_ps(melem4, uelem4)); 
-        __m128 melem4 = _mm_load_ps(&v.melem[k+4]);
-        __m128 uelem4 = _mm_load_ps(&u.velem[4]);
+        __m128 tmp4 = _mm_mul_ps(melem4, uelem4); 
+        melem4 = _mm_load_ps(&v.melem[k+4]);
+        uelem4 = _mm_load_ps(&u.velem[4]);
         tmp4 = _mm_add_ps(tmp4, _mm_mul_ps(melem4, uelem4)); 
 
         // do a 4-element reduction and accumulate result
@@ -141,8 +139,9 @@ typedef double Double;
         sum4 = _mm_add_ps(sum4, tmp4);
 
         // all 4 elements are now set to the sum
-        _mm_store_ss(&tmp, sum4); // store lowest element to tmp
-        v.velem[j] += tmp;
+        float sum;
+        _mm_store_ss(&sum, sum4); // store lowest element to tmp
+        v.velem[j] += sum;
         k+=8;
       }
 #else
