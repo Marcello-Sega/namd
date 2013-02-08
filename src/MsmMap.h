@@ -7,6 +7,24 @@
 #ifndef MSMMAP_H
 #define MSMMAP_H
 
+// SSE and AVX vector intrinsics and memory alignment macros
+#if defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE)
+#include <emmintrin.h>  // SSE2
+#if defined(__INTEL_COMPILER)
+#define __align(X) __declspec(align(X) )
+#elif defined(__PGI)
+#define __align(X)  __attribute__((aligned(X) ))
+#define MISSING_mm_cvtsd_f64
+#elif defined(__GNUC__)
+#define __align(X)  __attribute__((aligned(X) ))
+#if (__GNUC__ < 4)
+#define MISSING_mm_cvtsd_f64
+#endif
+#else
+#define __align(X) __declspec(align(X) )
+#endif
+#endif
+
 // migration of MSM computes not currently enabled
 #define MSM_MIGRATION
 #undef MSM_MIGRATION
@@ -97,15 +115,45 @@ typedef double Double;
     }
     friend C1Vector operator*(const C1Matrix& m, const C1Vector& u) {
       C1Vector v;
+
+      // XXX not tested yet
+#if 0 && (defined(__SSE2__) && ! defined(NAMD_DISABLE_SSE))
+      // Hand-coded SSE/AVX vectorization
+      // This loop requires that the single-precision input arrays be 
+      // aligned on 16-byte boundaries, such that array[index % 4 == 0] 
+      // can be safely accessed with aligned load/store operations
+      for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
+        float tmp;
+        __m128 tmp4   = _mm_set1_ps(0.0f); 
+        __m128 melem4 = _mm_load_ps(&v.melem[k]);
+        __m128 uelem4 = _mm_load_ps(&u.velem[0]);
+        tmp4 = _mm_add_ps(tmp4, _mm_mul_ps(melem4, uelem4)); 
+        __m128 melem4 = _mm_load_ps(&v.melem[k+4]);
+        __m128 uelem4 = _mm_load_ps(&u.velem[4]);
+        tmp4 = _mm_add_ps(tmp4, _mm_mul_ps(melem4, uelem4)); 
+
+        // do a 4-element reduction and accumulate result
+        __m128 sum4 = tmp4;
+        sum4 = _mm_shuffle_ps(sum4, sum4, _MM_SHUFFLE(2, 3, 0, 1));
+        sum4 = _mm_add_ps(sum4, tmp4);
+        sum4 = _mm_shuffle_ps(sum4, sum4, _MM_SHUFFLE(1, 0, 3, 2));
+        sum4 = _mm_add_ps(sum4, tmp4);
+        tmp4 = sum4; // all 4 elements are now set to the sum
+
+        _mm_store_ss(tmp, tmp4);
+        v.velem[j] += tmp;
+        k+=8;
+      }
+#else
 #if defined(__INTEL_COMPILER)
 #pragma vector always
 #endif
-
-      // XXX this is where we will insert SSE/AVX vectorization
       for (int k=0, j=0;  j < C1_VECTOR_SIZE;  j++) {
         for (int i = 0;  i < C1_VECTOR_SIZE;  i++, k++) {
           v.velem[j] += m.melem[k] * u.velem[i];
         }
+      }
+#endif
       }
       return v;
     }
