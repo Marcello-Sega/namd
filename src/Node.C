@@ -75,7 +75,8 @@ extern "C" void CApplicationInit();
 
 #include "DumpBench.h"
 
-#ifdef CMK_CONVERSE_GEMINI_UGNI
+
+#ifdef CMK_BALANCED_INJECTION_API
 #include "ckBIconfig.h"
 #endif
 
