@@ -71,7 +71,7 @@ void PatchMgr::preCreateHomePatch(PatchID pid, int atomCnt){
     patchMap->registerPatch(pid, patch);
 }
 
-void PatchMgr::createHomePatch(PatchID pid, FullAtomList a) 
+void PatchMgr::createHomePatch(PatchID pid, FullAtomList &a) 
 {
     HomePatch *patch = new HomePatch(pid, a);
     homePatches.load(HomePatchElem(pid, patch));
@@ -157,9 +157,6 @@ void PatchMgr::recvMovePatches(MovePatchesMsg *msg) {
 void PatchMgr::sendAtoms(PatchID pid, FullAtomList &a) {
 
       MovePatchesMsg *msg = new MovePatchesMsg(pid, a);
-
-      FullAtomList empty;
-      a = empty;  // eliminate reference in sender
 
       if ( msg->atom.shared() ) NAMD_bug("shared message array in PatchMgr::sendAtoms");
 

@@ -60,10 +60,10 @@ UniqueSortedArray<Elem>::insert(const Elem& elem) {
   if (found == -1) {
     return ResizeArray<Elem>::insert(elem, 0);
   }
-  if (found < this->size() && (*(this->rep))[found] == elem) {
+  if (found < this->size() && this->rep[found] == elem) {
     return -2;
   }
-  if (found == (this->size()-1) && (*(this->rep))[found] < elem) {
+  if (found == (this->size()-1) && this->rep[found] < elem) {
     return ResizeArray<Elem>::insert(elem, this->size());
   } else {
     return ResizeArray<Elem>::insert(elem, found);

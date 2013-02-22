@@ -5,11 +5,9 @@
 **/
 
 /*
-   ResizeArrayRaw template
-   Object Requirements: new
-                        Elem(Elem &)
-  			~Elem()
-                        Elem & operator= (Elem &)
+  Data storage class for ResizeArray and related container classes.
+  Copy and assignment copy raw pointers, use copy() to copy data.
+  Destructor does not delete data, call free first.
 */
 
 
@@ -20,12 +18,14 @@
 #include <string.h>
 #include "common.h"
 
-#define GrowthFactor 1.5
-#define MinSize 8
+#define ResizeArrayGrowthFactor 1.5
+#define ResizeArrayMinSize 8
 
 // Need this juju to use templated friend below
 template <class Type> class ResizeArray;
 template <class Type> class SortableResizeArray;
+template <class Type> class SortedArray;
+template <class Type> class UniqueSortedArray;
 template <class Type> class ResizeArrayIter;
 
 // Class assumes that one can bit move objects
@@ -40,20 +40,15 @@ template <class Elem> class ResizeArrayRaw {
     int arraySize;
     int allocSize;
 
-    int refCount;
-
-    float growthFactor;
-    int minSize;
-
     // No constructor run on new elements
     // arraySize is not adjusted, only allocSize
     void resizeRaw(int size) {
       if (size <= allocSize) return;
   
-      if (size < (int)(allocSize*growthFactor)) 
-        size = (int)(allocSize*growthFactor);
-      if ( (size-allocSize) < minSize) 
-        size = allocSize+minSize;
+      if (size < (int)(allocSize*ResizeArrayGrowthFactor)) 
+        size = (int)(allocSize*ResizeArrayGrowthFactor);
+      if ( (size-allocSize) < ResizeArrayMinSize) 
+        size = allocSize+ResizeArrayMinSize;
 
       // align everything to 32-byte boundaries (if possible)
       unsigned char *tmpv = new unsigned char[size*sizeof(Elem)+31];
@@ -68,13 +63,10 @@ template <class Elem> class ResizeArrayRaw {
       allocSize = size;
     }
 
-    // Empty function for now.
-    // eventually, this should get smaller storage and free
-    // void reduce(void) {}; 
-
-  public:
     friend class ResizeArray<Elem>;
     friend class SortableResizeArray<Elem>;
+    friend class SortedArray<Elem>;
+    friend class UniqueSortedArray<Elem>;
     friend class ResizeArrayIter<Elem>;
 
     inline int size(void) const { return arraySize; }
@@ -82,22 +74,8 @@ template <class Elem> class ResizeArrayRaw {
 
     // Default constructor 
     ResizeArrayRaw(void) : 
-      array((Elem *)0), varray((unsigned char *)0), arraySize(0), allocSize(0) { 
-      growthFactor = GrowthFactor;
-      minSize = MinSize;
-    }
+      array((Elem *)0), varray((unsigned char *)0), arraySize(0), allocSize(0) { }
 
-    // Copy constructor - true copy on construction.
-    ResizeArrayRaw(const ResizeArrayRaw<Elem> &rar ) : 
-      array((Elem *)0), varray((unsigned char *)0), arraySize(0), allocSize(0) {
-      growthFactor = rar.growthFactor;
-      minSize = rar.minSize;
-      // We want rar.size() slots, but no constructor run on the elements
-      resizeRaw(rar.size());
-      CmiMemcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
-      arraySize = rar.size();
-    }
-  
     // Encap a pre-existing array
     ResizeArrayRaw( Elem * * const array, int arraySize, int allocSize) {
       if (allocSize < arraySize) allocSize = arraySize;
@@ -106,29 +84,10 @@ template <class Elem> class ResizeArrayRaw {
       varray = (unsigned char *)*array;
       this->array = (Elem *)*array;
       *array = 0;
-      growthFactor = GrowthFactor;
-      minSize = MinSize;
     }
   
-    ~ResizeArrayRaw(void) {
-      for (int i=0; i < arraySize; i++) {
-        array[i].~Elem();
-      }
-      delete[] varray;
-    }
-  
-    // minSize = minimum growth size - (also initial size of array)
-    // growthFactor = mulplicative factor by which to grow array.
-    void setResizeParams(int min, float growth) {
-      minSize = min;
-      growthFactor = growth;
-    }
-  
-  
-    // True copy made on assignment.
-    ResizeArrayRaw<Elem> & operator=(const ResizeArrayRaw<Elem> &rar ) {
-      growthFactor = rar.growthFactor;
-      minSize = rar.minSize;
+    // copy data
+    void copy(const ResizeArrayRaw<Elem> &rar ) {
   
       // Clean up this array
       resize(0);
@@ -136,7 +95,6 @@ template <class Elem> class ResizeArrayRaw {
   
       CmiMemcpy((void*)array, (void*)rar.array, sizeof(Elem)*rar.size());
       arraySize = rar.size();
-      return *this;
     }
   
     // Properly constructs default object on new elements
@@ -158,12 +116,17 @@ template <class Elem> class ResizeArrayRaw {
       arraySize = size;
     }
   
-    // resize to 0 and free storage
-    void clear(void) {
-      for (int i=0; i<arraySize; i++) {
+    // needed for ResizeArray destructor
+    void free(void) {
+      for (int i=0; i < arraySize; i++) {
         array[i].~Elem();
       }
-      delete [] varray;
+      delete[] varray;
+    }
+  
+    // resize to 0 and free storage
+    void clear(void) {
+      free();
       array = 0;
       varray = 0;
       arraySize = 0;

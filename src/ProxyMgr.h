@@ -174,9 +174,11 @@ class ProxyResultMsg : public CMessage_ProxyResultMsg {
 public:
   NodeID node;
   PatchID patch;
-  ForceList forceList[Results::maxNumForces];
+  ForceList *forceList[Results::maxNumForces];
   static void* pack(ProxyResultMsg *msg);
   static ProxyResultMsg* unpack(void *ptr);
+private:
+  ForceList forceListInternal[Results::maxNumForces];
 };
 
 class ProxyResultVarsizeMsg: public CMessage_ProxyResultVarsizeMsg{
@@ -253,9 +255,11 @@ public:
   #endif
   PatchID patch;
   NodeIDList nodes;
-  ForceList forceList[Results::maxNumForces];
+  ForceList *forceList[Results::maxNumForces];
   static ProxyCombinedResultRawMsg* toRaw(ProxyCombinedResultMsg *msg);
   static ProxyCombinedResultMsg* fromRaw(ProxyCombinedResultRawMsg *msg);
+private:
+  ForceList forceListInternal[Results::maxNumForces];
 };
 
 class ProxySpanningTreeMsg : public CMessage_ProxySpanningTreeMsg {

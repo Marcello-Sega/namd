@@ -183,12 +183,13 @@ HomePatch::HomePatch(PatchID pd, int atomCnt) : Patch(pd)
   isNewProxyAdded = 0;
 }
 
-HomePatch::HomePatch(PatchID pd, FullAtomList al) : Patch(pd), atom(al)
+HomePatch::HomePatch(PatchID pd, FullAtomList &al) : Patch(pd)
 // DMK - Atom Separation (water vs. non-water)
 #if NAMD_SeparateWaters != 0
   ,tempAtom()
 #endif
 { 
+  atom.swap(al);
   settle_initialized = 0;
 
   numGBISP1Arrived = 0;
@@ -308,10 +309,10 @@ void ::HomePatch::init_swm4() {
 }
 
 
-void HomePatch::reinitAtoms(FullAtomList al) {
+void HomePatch::reinitAtoms(FullAtomList &al) {
   atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
 
-  atom = al;
+  atom.swap(al);
   numAtoms = atom.size();
 
   // DMK - Atom Separation (water vs. non-water)
@@ -891,8 +892,8 @@ void HomePatch::receiveResults(ProxyResultMsg *msg) {
   {
     Force *f = r->f[k];
     register ForceList::iterator f_i, f_e;
-    f_i = msg->forceList[k].begin();
-    f_e = msg->forceList[k].end();
+    f_i = msg->forceList[k]->begin();
+    f_e = msg->forceList[k]->end();
     for ( ; f_i != f_e; ++f_i, ++f ) *f += *f_i;
   }
   forceBox.clientClose();
@@ -2684,7 +2685,7 @@ void HomePatch::mollyMollify(Tensor *virial)
 }
 
 void HomePatch::checkpoint(void) {
-  FullAtomList tmp_a(&atom); checkpoint_atom = tmp_a;
+  checkpoint_atom.copy(atom);
   checkpoint_lattice = lattice;
 
   // DMK - Atom Separation (water vs. non-water)
@@ -2696,7 +2697,7 @@ void HomePatch::checkpoint(void) {
 void HomePatch::revert(void) {
   atomMapper->unregisterIDsFullAtom(atom.begin(),atom.end());
 
-  FullAtomList tmp_a(&checkpoint_atom); atom = tmp_a;
+  atom.copy(checkpoint_atom);
   numAtoms = atom.size();
   lattice = checkpoint_lattice;
 

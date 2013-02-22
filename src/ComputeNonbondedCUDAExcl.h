@@ -67,7 +67,7 @@ class ComputeExcls : public ComputeHomeTuples<ExclElem,Exclusion,int>
 {
 public:
 
-  ComputeExcls(ComputeID c, PatchIDList p) : ComputeHomeTuples<ExclElem,Exclusion,int>(c,p) { ; }
+  ComputeExcls(ComputeID c, PatchIDList &p) : ComputeHomeTuples<ExclElem,Exclusion,int>(c,p) { ; }
 
 };
 

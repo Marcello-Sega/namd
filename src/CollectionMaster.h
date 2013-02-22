@@ -364,11 +364,7 @@ class CollectMidVectorInstance{
       if ( s == -10 ) NAMD_bug("seq == free in CollectionMidMaster");
       seq = s;
       remaining = toAtomID-fromAtomID+1;
-      //set the array min size to be remaining, so when it's first expanded, it will
-      //grow up to the full capacity
-      data.setParams(remaining, 1.2f);
       data.resize(0);
-      fdata.setParams(remaining, 1.2f);
       fdata.resize(0);
     }
 

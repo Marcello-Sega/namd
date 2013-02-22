@@ -34,7 +34,7 @@ private:
   ComputeMgr *comm;
 
   void sendData();
-  void configure(AtomIDList newaid, AtomIDList newgdef);
+  void configure(AtomIDList &newaid, AtomIDList &newgdef);
 
   AtomIDList aid;
   AtomIDList gdef;  // definitions of groups
@@ -44,8 +44,8 @@ private:
   // The atom IDs and forces of the requested atoms on the node
   // after force evaluation. "fid" could be slightly different
   // from "aid", since the latter is after atom migration.
-  AtomIDList *fid;
-  ForceList *totalForce;
+  AtomIDList fid;
+  ForceList totalForce;
   
   int *isRequested;  // whether this atom is requested by the TCL script
   int dofull;  // whether "Results::slow" force will exist

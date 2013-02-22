@@ -16,7 +16,7 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
 
     inline void swap(int offset, int i, int j) {
       char tmp[sizeof(Elem)];
-      register Elem *r = (this->rep->array+offset);
+      register Elem *r = (this->rep.array+offset);
       memcpy(tmp, (char *)&r[i], sizeof(Elem));
       memcpy((char *)&(r[i]), (char *)&(r[j]), sizeof(Elem));
       memcpy((char *)&r[j], tmp, sizeof(Elem));
@@ -26,7 +26,7 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
     inline void siftup(int offset, int i, int size) {
       char tmp[sizeof(Elem)];
       register int j;
-      register Elem *r = (this->rep->array+offset);
+      register Elem *r = (this->rep.array+offset);
     
       while ((j = 2*i+1) < size) {
         if (j+1 < size) {
@@ -74,14 +74,14 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
   
     void init(void) { }
   
-    void sort(void) { sort(0, this->rep->size()-1); }
+    void sort(void) { sort(0, this->rep.size()-1); }
 
     // Heap Sort - worst case is O(n log n)
     //      bot = bottom element of sort range
     //      top = top element of sort range
     void sort(int bot, int top) {
       int index, size;
-      if (top > this->rep->size()) top = this->rep->size();
+      if (top > this->rep.size()) top = this->rep.size();
       size = top - bot + 1;
     
       // Make all sub-heaps
@@ -109,7 +109,7 @@ template <class Elem> class SortableResizeArray : public ResizeArray<Elem> {
       int top = this->size();
       if (this->size() == 0) return (-1);
       while (top - bot > 1) {
-        if ( this->rep->array[test = (bot+top)/2] < elem )
+        if ( this->rep.array[test = (bot+top)/2] < elem )
           bot = test;
         else
           top = test;
@@ -125,16 +125,16 @@ inline void SortableResizeArray<Elem>::uniq(void) {
     int oldIndex=0;
     int newIndex=0;
     while (++oldIndex < this->size()) {
-      if ( ! ( this->rep->array[oldIndex] == this->rep->array[newIndex] ) ) {
+      if ( ! ( this->rep.array[oldIndex] == this->rep.array[newIndex] ) ) {
         if (++newIndex != oldIndex)
-          memcpy((void *)&(this->rep->array[newIndex]),
-                 (void *)&(this->rep->array[oldIndex]),
+          memcpy((void *)&(this->rep.array[newIndex]),
+                 (void *)&(this->rep.array[oldIndex]),
                  sizeof(Elem));
       } else {
-        this->rep->array[oldIndex].~Elem();
+        this->rep.array[oldIndex].~Elem();
       }
     }
-    this->rep->arraySize = ++newIndex;
+    this->rep.arraySize = ++newIndex;
   }
 }
 

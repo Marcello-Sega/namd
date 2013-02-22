@@ -64,7 +64,7 @@ class ComputeAniso : public ComputeHomeTuples<AnisoElem,Aniso,AnisoValue>
 {
 public:
 
-  ComputeAniso(ComputeID c, PatchIDList p) : ComputeHomeTuples<AnisoElem,Aniso,AnisoValue>(c,p) { ; }
+  ComputeAniso(ComputeID c, PatchIDList &p) : ComputeHomeTuples<AnisoElem,Aniso,AnisoValue>(c,p) { ; }
 
 };
 

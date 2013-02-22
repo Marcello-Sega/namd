@@ -271,7 +271,7 @@ template <class T, class S, class P> class ComputeHomeTuples : public Compute {
       isBasePatch = 0;
     }
 
-    ComputeHomeTuples(ComputeID c, PatchIDList pids) : Compute(c) {
+    ComputeHomeTuples(ComputeID c, PatchIDList &pids) : Compute(c) {
       patchMap = PatchMap::Object();
       atomMap = AtomMap::Object();
       reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);

@@ -119,8 +119,7 @@ void ParallelIOMgr::initialize(Node *node)
         //NOTE: this could further be optimized by pre-allocate the memory
         //for incoming atoms --Chao Mei
         int numMyAtoms = numInitMyAtomsOnInput();
-        float growthRate = 100.0f/numMyAtoms;
-        initAtoms.setParams(numMyAtoms+100, growthRate);
+        initAtoms.resize(numMyAtoms+100);  // extra space for orphan hydrogens
         initAtoms.resize(numMyAtoms);
         tmpRecvAtoms.resize(0);
     } else {
@@ -1606,8 +1605,8 @@ void ParallelIOMgr::wrapCoor(int seq, Lattice lat)
     int toAtomID = coorInstance->toAtomID;
 
     //only reference copies
-    ResizeArray<Vector> data = coorInstance->data;
-    ResizeArray<FloatVector> fdata = coorInstance->fdata;
+    ResizeArray<Vector> &data = coorInstance->data;
+    ResizeArray<FloatVector> &fdata = coorInstance->fdata;
     //if both data and fdata are not empty, they contain exact values, the only
     //difference lies in their precisions. Therefore, we only need to compute 
     //the higher precision coordinate array. -Chao Mei
@@ -1717,8 +1716,8 @@ void ParallelIOMgr::integrateClusterCoor(){
         //this output proc is ready has the sum of coordinates of each cluster
         //on it, so it is ready to do the final wrap coor computation        
         int numMyAtoms = toIdx-fromIdx+1;
-        ResizeArray<Vector> data = coorInstance->data;
-        ResizeArray<FloatVector> fdata = coorInstance->fdata;
+        ResizeArray<Vector> &data = coorInstance->data;
+        ResizeArray<FloatVector> &fdata = coorInstance->fdata;
         for(int i=0; i<numMyAtoms; i++){
             if(!simParameters->wrapAll && !isWater[i]) continue;
             int lidx = clusterID[i]-fromIdx;
@@ -1757,8 +1756,8 @@ void ParallelIOMgr::recvFinalClusterCoor(ClusterCoorMsg *msg){
         int fromIdx = coorInstance->fromAtomID;
         int toIdx = coorInstance->toAtomID;
         int numMyAtoms = toIdx-fromIdx+1;
-        ResizeArray<Vector> data = coorInstance->data;
-        ResizeArray<FloatVector> fdata = coorInstance->fdata;
+        ResizeArray<Vector> &data = coorInstance->data;
+        ResizeArray<FloatVector> &fdata = coorInstance->fdata;
         ClusterCoorElem tmp;
         for(int i=0; i<numMyAtoms; i++){
             if(!simParameters->wrapAll && !isWater[i]) continue;

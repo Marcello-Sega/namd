@@ -74,16 +74,16 @@ class GlobalMasterServer {
   void callClients();
 
   /* puts all the info requested by the clients into a single list */
-  void resetAtomList(AtomIDList atomsRequested);
-  void resetForceList(AtomIDList atomsForced, ForceList forces,
-		      ForceList groupforces);
+  void resetAtomList(AtomIDList &atomsRequested);
+  void resetForceList(AtomIDList &atomsForced, ForceList &forces,
+		      ForceList &groupforces);
 
   /* the group list is ugly - it is, as far as I can tell, a list of
      the atoms in each group, separated by -1s.  So if the Masters
      request groups {1,2,3} and {2,3,4}, <groupsRequested> will be set
      to the list (1,2,3,-1,2,3,4,-1).  The number of groups sent is
      stored in the variable <numGroups>*/
-  void resetGroupList(AtomIDList groupsRequested, int *numGroups);
+  void resetGroupList(AtomIDList &groupsRequested, int *numGroups);
 
   /* stores the version of forces that was found by resetForceList */
   AtomIDList lastAtomsForced;

@@ -44,11 +44,11 @@ private:
 
   HomePatch(PatchID, int atomCnt);
   // for PatchMgr to use only
-  HomePatch(PatchID, FullAtomList);
+  HomePatch(PatchID, FullAtomList&);
 
 //  HomePatch(PatchID, int atomCnt);
 
-  void reinitAtoms(FullAtomList);
+  void reinitAtoms(FullAtomList&);
   ScaledPosition min, max, center;
   BigReal aAwayDist, bAwayDist, cAwayDist;
 
@@ -144,10 +144,6 @@ public:
 
   // for ComputeHomePatches
   FullAtomList &getAtomList() { return (atom); }
-  // set home patch's atom list
-  void setAtomList(FullAtomList *al) {
-      atom = *al;
-  }
 
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
   // build spanning tree for proxy nodes

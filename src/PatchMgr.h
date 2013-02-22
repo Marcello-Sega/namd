@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/PatchMgr.h,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:19 $
- * $Revision: 1.1028 $
+ * $Author: jim $
+ * $Date: 2013/02/22 18:22:18 $
+ * $Revision: 1.1029 $
  *****************************************************************************/
 
 #ifndef PATCHMGR_H
@@ -39,8 +39,9 @@ public:
 
     MovePatchesMsg(void) { ; }
 
-    MovePatchesMsg(PatchID n, FullAtomList a) : pid(n), atom(a)
+    MovePatchesMsg(PatchID n, FullAtomList &a) : pid(n)
     {
+      atom.swap(a);
       fromNodeID = CkMyPe();
     }
 
@@ -100,7 +101,7 @@ public:
 
   static PatchMgr* Object() { return CkpvAccess(PatchMgr_instance); }
   
-  void createHomePatch(PatchID pid, FullAtomList a);
+  void createHomePatch(PatchID pid, FullAtomList &a);
 
   //atomCnt is the number of atoms patch pid has
   void preCreateHomePatch(PatchID pid, int atomCnt);
@@ -148,10 +149,6 @@ private:
   int migrationCountdown;
 
 public:
-  void fillHomePatchAtomList(int patchId, FullAtomList *al){
-      HomePatch *thisHomePatch = patchMap->homePatch(patchId);
-      thisHomePatch->setAtomList(al);
-  }
   void setHomePatchFixedAtomNum(int patchId, int numFixed){
       HomePatch *thisHomePatch = patchMap->homePatch(patchId);
       thisHomePatch->setNumFixedAtoms(numFixed);

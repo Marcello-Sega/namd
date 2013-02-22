@@ -43,20 +43,18 @@ ComputeGlobal::ComputeGlobal(ComputeID c, ComputeMgr *m)
     isRequested[i] = 0;
   SimParameters *sp = Node::Object()->simParameters;
   dofull = (sp->GBISserOn || sp->GBISOn || sp->fullDirectOn || sp->FMAOn || sp->PMEOn);
-  fid = new AtomIDList;
-  totalForce = new ForceList;
+  fid.resize(0);
+  totalForce.resize(0);
   reduction = ReductionMgr::Object()->willSubmit(REDUCTIONS_BASIC);
 }
 
 ComputeGlobal::~ComputeGlobal()
 {
   delete[] isRequested;
-  delete fid;
-  delete totalForce;
   delete reduction;
 }
 
-void ComputeGlobal::configure(AtomIDList newaid, AtomIDList newgdef) {
+void ComputeGlobal::configure(AtomIDList &newaid, AtomIDList &newgdef) {
   DebugM(4,"Receiving configuration (" << newaid.size() <<
 	" atoms and " << newgdef.size() << " atoms/groups) on client\n");
 
@@ -66,8 +64,8 @@ void ComputeGlobal::configure(AtomIDList newaid, AtomIDList newgdef) {
     isRequested[*a] = 0;
 
   // store data
-  aid = newaid;
-  gdef = newgdef;
+  aid.swap(newaid);
+  gdef.swap(newgdef);
   
   for (a=aid.begin(),a_e=aid.end(); a!=a_e; ++a)
     isRequested[*a] = 1;
@@ -261,12 +259,10 @@ void ComputeGlobal::sendData()
     (*ap).positionBox->close(&(x[(*ap).patchID]));
   }
   
-  msg->fid = *fid;
-  msg->tf = *totalForce;
-  delete fid;
-  delete totalForce;
-  fid = new AtomIDList;
-  totalForce = new ForceList;
+  msg->fid.swap(fid);
+  msg->tf.swap(totalForce);
+  fid.resize(0);
+  totalForce.resize(0);
 
   delete [] x;
   delete [] t;
@@ -288,22 +284,22 @@ void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
 {
   if ( Node::Object()->simParameters->accelMDOn && Node::Object()->simParameters->accelMDDebugOn && Node::Object()->simParameters->accelMDdihe ) {
     int i, index, num=homePatch->numAtoms;
-    FullAtomList atoms = homePatch->atom;
-    ForceList af=homePatch->f[Results::amdf];
+    FullAtomList &atoms = homePatch->atom;
+    ForceList &af=homePatch->f[Results::amdf];
 
     for (i=0; i<num; ++i)
       if (isRequested[index=atoms[i].id]) {
-        fid->add(index);
-        totalForce->add(af[i]);
+        fid.add(index);
+        totalForce.add(af[i]);
       }
     return;
   }
 
   int fixedAtomsOn = Node::Object()->simParameters->fixedAtomsOn;
   int i, index, num=homePatch->numAtoms;
-  FullAtomList atoms = homePatch->atom;
-  ForceList f1=homePatch->f[Results::normal], f2=homePatch->f_saved[Results::nbond],
-            f3=homePatch->f_saved[Results::slow];
+  FullAtomList &atoms = homePatch->atom;
+  ForceList &f1=homePatch->f[Results::normal], &f2=homePatch->f_saved[Results::nbond],
+            &f3=homePatch->f_saved[Results::slow];
   Force f_sum;
   
   for (i=0; i<num; ++i)
@@ -312,7 +308,7 @@ void ComputeGlobal::saveTotalForces(HomePatch *homePatch)
       if (dofull)
         f_sum += f3[i];
       if ( fixedAtomsOn && atoms[i].atomFixed ) f_sum = 0.;
-      fid->add(index);
-      totalForce->add(f_sum);
+      fid.add(index);
+      totalForce.add(f_sum);
     }
 }

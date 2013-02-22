@@ -9,8 +9,10 @@
    Uses simple contingous array allocation in a hidden manner
    so that array object can have items added without limit
    Suffers from memory fragmentation during resizing
-   Fast access, safe and efficient passing of encapsulated array thru
-   function arguments.
+
+   Copy construction and assignment are forbidden to avoid
+   confusion with old reference-counted implementation.
+   Use copy() and swap() to explicitly transfer storage.
 */
 
 #ifndef RESIZEARRAY_H
@@ -26,92 +28,63 @@ template <class Elem> class ResizeArray {
   friend class ResizeArrayIter<Elem>;
 
   protected:
-    ResizeArrayRaw<Elem> *rep;
+    ResizeArrayRaw<Elem> rep;
 
   public:
     // STL style iterators
     typedef Elem* iterator;
-    iterator begin(void) { return rep->array; }
-    iterator end(void) { return rep->array + rep->arraySize; }
+    iterator begin(void) { return rep.array; }
+    iterator end(void) { return rep.array + rep.arraySize; }
     typedef const Elem* const_iterator;
-    const_iterator const_begin(void) const { return rep->array; }
-    const_iterator const_end(void) const { return rep->array + rep->arraySize; }
+    const_iterator const_begin(void) const { return rep.array; }
+    const_iterator const_end(void) const { return rep.array + rep.arraySize; }
 
     // Various Constructors
-    ResizeArray(void) {
-      rep = new ResizeArrayRaw<Elem>();
-      rep->refCount = 1;
-    }
+    ResizeArray(void) { }
 
     // Constructor make ResizeArray of predefined size
     ResizeArray(int s) {
-      rep = new ResizeArrayRaw<Elem>();
-      rep->resize(s);
-      rep->refCount = 1;
+      rep.resize(s);
     }
 
-    // Contructor makes ResizeArray which points to same ResizeArrayRaw
-    ResizeArray(ResizeArray<Elem> &ra) {
-      rep = ra.rep;
-      rep->refCount++;
-    }
+private:
+    inline ResizeArray(ResizeArray<Elem> &ra);
 
-    // Constructor makes a copy of ResizeArrayRaw
-    ResizeArray(const ResizeArray<Elem>* ra) {
-      rep = new ResizeArrayRaw<Elem>(*(ra->rep));
-      rep->refCount = 1;
-    }
+    inline ResizeArray(const ResizeArray<Elem>* ra);
 
+    inline ResizeArray<Elem> & operator= (ResizeArray<Elem> &ra);
+
+public:
     // Make copy of ResizeArrayRaw (for use in messages)
     void copy(ResizeArray<Elem> &ra) {
-      if (!--rep->refCount) delete rep;
-      rep = new ResizeArrayRaw<Elem>(*(ra.rep));
-      rep->refCount = 1;
+      rep.copy(ra.rep);
     }
 
     // Swap ResizeArrayRaw (for use in messages to avoid copy)
     void swap(ResizeArray<Elem> &ra) {
-      ResizeArrayRaw<Elem> *tmp = rep;
+      // uses synthesized copy constructor and assignment operator
+      ResizeArrayRaw<Elem> tmp = rep;
       rep = ra.rep;
       ra.rep = tmp;
     }
 
     // does some other ResizeArray have a handle to our data
     bool shared() const {
-      return ( rep->refCount > 1 );
+      return 0;
     }
 
     // Constructor to take-in pre-existing array
-    ResizeArray(Elem * * array, int arraySize, int allocSize=0) {
-      rep = new ResizeArrayRaw<Elem>(array, arraySize, allocSize);
-      rep->refCount = 1;
-    }
+    ResizeArray(Elem * * array, int arraySize, int allocSize=0) :
+      rep(array, arraySize, allocSize) { }
 
-    ~ResizeArray(void) {
-      if (!--rep->refCount) delete rep;
-    }
-
-    // We copy reference to ResizeArrayRaw
-    ResizeArray<Elem> & operator= (ResizeArray<Elem> &ra) {
-      if ( !(--rep->refCount) )
-        delete rep;
-      rep = ra.rep;
-      rep->refCount++;
-      return (*this);
-    }
-
-    // Set the initial allocation size to s with growth factor as growthFactor
-    void setParams(int s, float growthFactor) {      
-      rep->setResizeParams(s, growthFactor);
-    }
-
+    ~ResizeArray(void) { rep.free(); }
 
     // If array is expanded - new elements are default constructed
     // if array is reduced, removed elements have ~Elem() run
-    void resize(int i) { rep->resize(i); }
+    void resize(int i) { rep.resize(i); }
 
     // destruct elements, free storage, set size to 0
-    void clear() { rep->clear(); }
+    void clear() { rep.clear(); }
 
     // Set all elements to a given value (like 0).
     void setall(const Elem &elem) {
@@ -122,19 +95,19 @@ template <class Elem> class ResizeArray {
   
     // Add element to end of array
     int add (const Elem &elem) {
-      int end=rep->size();
-      rep->ins(elem, end);
+      int end=rep.size();
+      rep.ins(elem, end);
       return(end);
     }
   
     // delete num elements from current index
     int del(int index, int num=1) {
-      return(rep->del(index,num));
+      return(rep.del(index,num));
     }
 
     // insert element at index
     int insert (const Elem& elem, int index) {
-      rep->ins(elem,index);
+      rep.ins(elem,index);
       return (index);
     }
 
@@ -143,20 +116,20 @@ template <class Elem> class ResizeArray {
       i = ( i < 0 ? 0 : i );
       if ((i+1) > size())
           resize(i+1);
-      return rep->array[i];
+      return rep.array[i];
     }
 
     // array member access (can be lvalue) no checks.
-    inline Elem & operator[](int index) { return rep->array[index]; }
-    inline const Elem & operator[](int index) const { return rep->array[index]; }
+    inline Elem & operator[](int index) { return rep.array[index]; }
+    inline const Elem & operator[](int index) const { return rep.array[index]; }
 
     // returns size of ResizeArray
-    inline int size(void) const { return rep->size(); }
+    inline int size(void) const { return rep.size(); }
 
     // reduce storage size
-    // void reduce(void) { rep->reduce(); }
+    // void reduce(void) { rep.reduce(); }
 
-    inline int find(const Elem &e) const { return rep->find(e); }
+    inline int find(const Elem &e) const { return rep.find(e); }
 
 };
 

@@ -98,7 +98,7 @@ class ComputeImpropers : public ComputeHomeTuples<ImproperElem,Improper,Improper
 {
 public:
 
-  ComputeImpropers(ComputeID c, PatchIDList p) : ComputeHomeTuples<ImproperElem,Improper,ImproperValue>(c,p) { ; }
+  ComputeImpropers(ComputeID c, PatchIDList &p) : ComputeHomeTuples<ImproperElem,Improper,ImproperValue>(c,p) { ; }
 
 };
 

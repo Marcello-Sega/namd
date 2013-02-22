@@ -344,7 +344,7 @@ void ProxyPatch::sendResults(void)
     msg->node = CkMyPe();
     msg->patch = patchID;
     for ( i = 0; i < Results::maxNumForces; ++i ) 
-      msg->forceList[i] = f[i];
+      msg->forceList[i] = &(f[i]);
 #endif
     SET_PRIORITY(msg,flags.sequence,PROXY_RESULTS_PRIORITY + PATCH_PRIORITY(patchID));
     //sending results to HomePatch
@@ -357,7 +357,7 @@ void ProxyPatch::sendResults(void)
     msg->nodes.add(CkMyPe());
     msg->patch = patchID;
     for ( i = 0; i < Results::maxNumForces; ++i ) 
-      msg->forceList[i] = f[i];
+      msg->forceList[i] = &(f[i]);
     //sending results to HomePatch
     ProxyMgr::Object()->sendResults(msg);
   }
@@ -466,10 +466,10 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultMsg(ProxyCombinedResult
     for ( int k = 0; k < Results::maxNumForces; ++k )
     {
     register ForceList::iterator r_i;
-    r_i = msgCBuffer->forceList[k].begin();
+    r_i = msgCBuffer->forceList[k]->begin();
     register ForceList::iterator f_i, f_e;
-    f_i = msg->forceList[k].begin();
-    f_e = msg->forceList[k].end();
+    f_i = msg->forceList[k]->begin();
+    f_e = msg->forceList[k]->end();
     //    for ( ; f_i != f_e; ++f_i, ++r_i ) *r_i += *f_i;
 
     int nf = f_e - f_i;
@@ -530,7 +530,7 @@ ProxyCombinedResultMsg *ProxyPatch::depositCombinedResultRawMsg(ProxyCombinedRes
 	for ( int k = 0; k < Results::maxNumForces; ++k )
     {
 		register ForceList::iterator r_i;
-		r_i = msgCBuffer->forceList[k].begin();
+		r_i = msgCBuffer->forceList[k]->begin();
         int nf = msg->flLen[k];
 
 #ifdef ARCH_POWERPC

@@ -20,7 +20,7 @@ template <class T> class ResizeArrayIter {
 
   public:
 
-    T *operator->(void) { return ((array->rep->array)+currentIndex); }
+    T *operator->(void) { return ((array->rep.array)+currentIndex); }
 
     ResizeArrayIter(void) {
       array = NULL;
@@ -79,7 +79,7 @@ template <class T> class ResizeArrayIter {
     }
 
     T& operator* (void) const {
-      return array->rep->array[currentIndex];
+      return array->rep.array[currentIndex];
     }
 };
 

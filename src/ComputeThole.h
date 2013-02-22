@@ -64,7 +64,7 @@ class ComputeThole : public ComputeHomeTuples<TholeElem,Thole,TholeValue>
 {
 public:
 
-  ComputeThole(ComputeID c, PatchIDList p) : ComputeHomeTuples<TholeElem,Thole,TholeValue>(c,p) { ; }
+  ComputeThole(ComputeID c, PatchIDList &p) : ComputeHomeTuples<TholeElem,Thole,TholeValue>(c,p) { ; }
 
 };
 

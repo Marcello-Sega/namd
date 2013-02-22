@@ -58,11 +58,11 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
 
   int j;
   for ( j = 0; j < Results::maxNumForces; ++j ) {
-    int array_size = msg->forceList[j].size();
+    int array_size = msg->forceList[j]->size();
     msg_size += sizeof(array_size);
     msg_size += array_size * sizeof(char);    
     msg_size = ALIGN_8 (msg_size);
-    Force* f = msg->forceList[j].begin();
+    Force* f = msg->forceList[j]->begin();
     int nonzero_count = 0;
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) { ++nonzero_count; }
@@ -78,14 +78,14 @@ void* ProxyResultMsg::pack(ProxyResultMsg *msg) {
   CmiMemcpy((void*)msg_cur,(void*)(&(msg->patch)),sizeof(msg->patch));
   msg_cur += sizeof(msg->patch);
   for ( j = 0; j < Results::maxNumForces; ++j ) {
-    int array_size = msg->forceList[j].size();
+    int array_size = msg->forceList[j]->size();
     *(int *) msg_cur = array_size;
     msg_cur += sizeof(int);
     char *nonzero = msg_cur;
     msg_cur += array_size * sizeof(char);
     msg_cur = (char *)ALIGN_8 (msg_cur);
     Vector *farr = (Vector *)msg_cur;
-    Force* f = msg->forceList[j].begin();
+    Force* f = msg->forceList[j]->begin();
 
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
@@ -119,12 +119,13 @@ ProxyResultMsg* ProxyResultMsg::unpack(void *ptr) {
   for ( j = 0; j < Results::maxNumForces; ++j ) {
     int array_size = *(int *) msg_cur;
     msg_cur += sizeof(array_size);
-    msg->forceList[j].resize(array_size);
+    msg->forceList[j] = &(msg->forceListInternal[j]);
+    msg->forceList[j]->resize(array_size);
     char *nonzero = msg_cur;
     msg_cur += array_size * sizeof(char);    
     msg_cur = (char *)ALIGN_8 (msg_cur);
     Vector* farr = (Vector *) msg_cur;
-    Force* f = msg->forceList[j].begin();
+    Force* f = msg->forceList[j]->begin();
     for ( int i = 0; i < array_size; ++i ) {
       if ( nonzero[i] ) {
 	f[i].x = farr->x;
@@ -245,9 +246,9 @@ ProxyCombinedResultRawMsg* ProxyCombinedResultMsg::toRaw(ProxyCombinedResultMsg 
   int nonzero_count = 0;
   int nodeSize = msg->nodes.size();
   for (int j = 0; j < Results::maxNumForces; ++j ) {
-        int array_size = msg->forceList[j].size();
+        int array_size = msg->forceList[j]->size();
     totalFLLen +=  array_size;
-    Force* f = msg->forceList[j].begin();
+    Force* f = msg->forceList[j]->begin();
     for ( int i = 0; i < array_size; ++i ) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) { ++nonzero_count; }
     }
@@ -276,9 +277,9 @@ ProxyCombinedResultRawMsg* ProxyCombinedResultMsg::toRaw(ProxyCombinedResultMsg 
   Force *farr = msg_buf->forceArr;
   char *isNonZeroPtr = msg_buf->isForceNonZero;
   for ( int j = 0; j < Results::maxNumForces; ++j ) {
-        int array_size = msg->forceList[j].size();
+        int array_size = msg->forceList[j]->size();
     msg_buf->flLen[j] = array_size;
-    Force* f = msg->forceList[j].begin();
+    Force* f = msg->forceList[j]->begin();
     for ( int i = 0; i < array_size; ++i , isNonZeroPtr++) {
       if ( f[i].x != 0. || f[i].y != 0. || f[i].z != 0. ) {
         *isNonZeroPtr = 1;
@@ -317,8 +318,9 @@ ProxyCombinedResultMsg* ProxyCombinedResultMsg::fromRaw(ProxyCombinedResultRawMs
 
   for ( int j = 0; j < Results::maxNumForces; ++j ) {
     int array_size = ptr->flLen[j];
-    msg->forceList[j].resize(array_size);
-    Force* f = msg->forceList[j].begin();
+    msg->forceList[j] = &(msg->forceListInternal[j]);
+    msg->forceList[j]->resize(array_size);
+    Force* f = msg->forceList[j]->begin();
 
     for ( int i = 0; i < array_size; ++i, nonzero++ ) {
       if ( *nonzero ) {
@@ -770,7 +772,8 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
     }
     int *proxyNodeMap = new int[CkNumNodes()];
     memset(proxyNodeMap, 0, sizeof(int)*CkNumNodes());
-    proxyTreeNodeList onePatchT = ptree.naTrees[pid];
+   {
+    proxyTreeNodeList &onePatchT = ptree.naTrees[pid];
     //If a node is an intermediate node, then its idx should satisfy
     //idx*proxySpanDim + 1 < onePatchT.size()
     int lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
@@ -778,6 +781,7 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
         int nid = onePatchT.item(i).nodeID;
         proxyNodeMap[nid]++;
     }
+   }
     //Step2: iterate over each patch's proxy spanning tree to adjust
     //the tree node positions. The bad thing here is that it may involve
     //many memory allocations and deallocation for small-size (~100bytes)
@@ -785,8 +789,8 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
     pid++; //advance to the next patch
     for(; pid<numPatches; pid++) {
         if(ptree.proxylist[pid].size()==0) continue;
-        onePatchT = ptree.naTrees[pid];
-        lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
+        proxyTreeNodeList &onePatchT = ptree.naTrees[pid];
+        int lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
         for(int i=1; i<=lastInterNodeIdx; i++) {
             int nid = onePatchT.item(i).nodeID;
             if(proxyNodeMap[nid]<MAX_INTERNODE) {
@@ -861,21 +865,23 @@ void ProxyMgr::buildNodeAwareSpanningTree0(){
     }
     int *proxyCoreMap = new int[CkNumPes()];
     memset(proxyCoreMap, 0, sizeof(int)*CkNumPes());
-    onePatchT = ptree.naTrees[pid];
+   {
+    proxyTreeNodeList &onePatchT = ptree.naTrees[pid];
     //If a node is an intermediate node, then its idx should satisfy
     //idx*proxySpanDim + 1 < onePatchT.size()
-    lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
+    int lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
     for(int i=1; i<lastInterNodeIdx; i++) { //excluding the root node
         int rootProcID = onePatchT.item(i).peIDs[0];
         proxyCoreMap[rootProcID]++;
     }
+   }
     //Step2: iterate over each patch's proxy spanning tree to adjust
     //the root's position of intermediate proxies.
     pid++; //advance to the next patch
     for(; pid<numPatches; pid++) {
         if(ptree.proxylist[pid].size()==0) continue;
-        onePatchT = ptree.naTrees[pid];
-        lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
+        proxyTreeNodeList &onePatchT = ptree.naTrees[pid];
+        int lastInterNodeIdx = (onePatchT.size()-2)/proxySpanDim;
         for(int i=1; i<=lastInterNodeIdx; i++) {
             proxyTreeNode *curNode = &onePatchT.item(i);
             int rootProcID = curNode->peIDs[0];
@@ -1027,7 +1033,7 @@ ProxyMgr::buildSpanningTree0()
       return;
     }
     NodeIDList &tree = ptree.trees[pid];   // spanning tree
-    NodeIDList oldtree = tree;
+    NodeIDList oldtree;  oldtree.swap(tree);
     tree.resize(numProxies+1);
     tree.setall(-1);
     tree[0] = PatchMap::Object()->node(pid);
@@ -1792,7 +1798,7 @@ void ProxyMgr::printProxySpanningTree(){
 #ifdef NODEAWARE_PROXY_SPANNINGTREE
     int numPatches = PatchMap::Object()->numPatches();
     for(int i=0; i<numPatches; i++) {
-        proxyTreeNodeList oneList = ptree.naTrees[i];
+        proxyTreeNodeList &oneList = ptree.naTrees[i];
         printf("ST tree for HomePatch[%d]: #nodes = %d\n", i, oneList.size()); 
         if(ptree.proxylist[i].size()==0) continue;
         printf("===%d=== pes/node: ", i);
@@ -1812,7 +1818,7 @@ void ProxyMgr::printProxySpanningTree(){
 #else
     int numPatches = PatchMap::Object()->numPatches();
     for(int i=0; i<numPatches; i++) {
-        NodeIDList oneList = ptree.trees[i];
+        NodeIDList &oneList = ptree.trees[i];
         printf("ST tree for HomePatch[%d]: #nodes = %d\n", i, oneList.size()); 
         if(ptree.proxylist[i].size()==0) continue;        
         printf("===%d=== pe ids: ", i);

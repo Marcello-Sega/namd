@@ -87,7 +87,7 @@ void GlobalMasterServer::recvData(ComputeGlobalDataMsg *msg) {
   }
 }
 
-void GlobalMasterServer::resetAtomList(AtomIDList atomsRequested) {
+void GlobalMasterServer::resetAtomList(AtomIDList &atomsRequested) {
   atomsRequested.resize(0);
 
   /* iterate over all of the masters */
@@ -105,7 +105,7 @@ void GlobalMasterServer::resetAtomList(AtomIDList atomsRequested) {
   }
 }
 
-void GlobalMasterServer::resetGroupList(AtomIDList groupsRequested,
+void GlobalMasterServer::resetGroupList(AtomIDList &groupsRequested,
 					int *numGroups) {
   DebugM(3,"Rebuilding the group list\n");
   groupsRequested.resize(0);
@@ -137,9 +137,9 @@ void GlobalMasterServer::resetGroupList(AtomIDList groupsRequested,
   }
 }
 
-void GlobalMasterServer::resetForceList(AtomIDList atomsForced,
-					ForceList forces,
-					ForceList groupForces) {
+void GlobalMasterServer::resetForceList(AtomIDList &atomsForced,
+					ForceList &forces,
+					ForceList &groupForces) {
   DebugM(1,"Restting forces\n");
   atomsForced.resize(0);
   forces.resize(0);

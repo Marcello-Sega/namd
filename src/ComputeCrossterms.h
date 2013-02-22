@@ -118,7 +118,7 @@ class ComputeCrossterms : public ComputeHomeTuples<CrosstermElem,Crossterm,Cross
 {
 public:
 
-  ComputeCrossterms(ComputeID c, PatchIDList p) : ComputeHomeTuples<CrosstermElem,Crossterm,CrosstermValue>(c,p) { ; }
+  ComputeCrossterms(ComputeID c, PatchIDList &p) : ComputeHomeTuples<CrosstermElem,Crossterm,CrosstermValue>(c,p) { ; }
 
 };
 

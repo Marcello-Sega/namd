@@ -62,7 +62,7 @@ class ComputeDihedrals : public ComputeHomeTuples<DihedralElem,Dihedral,Dihedral
 {
 public:
 
-  ComputeDihedrals(ComputeID c, PatchIDList p) : ComputeHomeTuples<DihedralElem,Dihedral,DihedralValue>(c,p) { ; }
+  ComputeDihedrals(ComputeID c, PatchIDList &p) : ComputeHomeTuples<DihedralElem,Dihedral,DihedralValue>(c,p) { ; }
 
 };
 
