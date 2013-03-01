@@ -377,9 +377,10 @@ begin:
     if ( "$ARCH_SUFFIX_ARG" =~ *-OpenMPI* ) set SUF = ""
     set ARCH_SUFFIX = ${ARCH_SUFFIX}${SUF}
   endif
-  if ( $CHARM_ARCH =~ gemini_gni* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ugni
-  if ( $CHARM_ARCH =~ lapi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-lapi
-  if ( $CHARM_ARCH =~ pami* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-pami
+  if ( $CHARM_ARCH =~ gemini_gni-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-ugni
+  if ( $CHARM_ARCH =~ lapi-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-lapi
+  if ( $CHARM_ARCH =~ pami-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-pami
+  if ( $CHARM_ARCH =~ pamilrts-* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-pamilrts
   if ( $CHARM_ARCH =~ *-vmi* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-vmi
   if ( $CHARM_ARCH =~ *-tcp* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-TCP
   if ( $CHARM_ARCH =~ *-gm* ) set ARCH_SUFFIX = ${ARCH_SUFFIX}-gm
