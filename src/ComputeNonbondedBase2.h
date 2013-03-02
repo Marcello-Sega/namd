@@ -22,10 +22,38 @@ ALCHPAIR(
   FEP(myVdwShift2 =  ALCH1(vdwShift2Up) ALCH2(vdwShift2Down);) 
 )
 
+#ifdef  A2_QPX
+#if ( SHORT(1+) 0 )
+NORMAL(kq_iv    = vec_splats(kq_i); )
+MODIFIED(kq_iv    = vec_splats((1.0-modf_mod) *kq_i); )
+#endif
+
+#if ( FULL( 1+ ) 0 )
+EXCLUDED(
+	 SHORT(
+	       full_cnst = (vector4double)(6., 4., 2., 1.);
+	       ) 
+	 NOSHORT(
+		 full_cnst = (vector4double)(1., 1., 1., 1.);
+		 )
+	 )
+MODIFIED(
+	 SHORT(
+	       full_cnst = (vector4double)(6., 4., 2., 1.);
+	       full_cnst = vec_mul (full_cnst, vec_splats(modf_mod));          
+	       ) 
+	 NOSHORT(
+		 full_cnst = vec_splats(modf_mod);
+		 )
+	 )      
+#endif
+#endif
+
 #ifdef ARCH_POWERPC
-     __alignx(16, table_four);
-     __alignx(16, p_1);
+     __alignx(64, table_four);
+     __alignx(32, p_1);
 #pragma unroll(1)
+#pragma ibm independent_loop
 #endif
 
 #ifndef ARCH_POWERPC
@@ -44,14 +72,24 @@ ALCHPAIR(
       int table_i = (r2iilist[2*k] >> 14) + r2_delta_expc;  // table_i >= 0 
       const int j = pairlisti[k];
       register const CompAtom *p_j = p_1 + j;
+#ifdef  A2_QPX
+      register double *p_j_d = (double *) p_j;
+#endif
       // const CompAtomExt *pExt_j = pExt_1 + j;
       
       BigReal diffa = r2list[k] - r2_table[table_i];
+#ifdef  A2_QPX
+      BigReal* table_four_i = (BigReal *)(table_four + 16*table_i);
+#else
       const BigReal* const table_four_i = table_four + 16*table_i;
+#endif
 
 #if  ( FAST( 1 + ) TABENERGY( 1 + ) 0 ) // FAST or TABENERGY
       const LJTable::TableEntry * lj_pars = 
               lj_row + 2 * p_j->vdwType MODIFIED(+ 1);
+#ifdef  A2_QPX
+      double *lj_pars_d = (double *) lj_pars;
+#endif
 #endif
       
       TABENERGY(
@@ -67,29 +105,37 @@ ALCHPAIR(
 #endif
 
       //Power PC aliasing and alignment constraints
-#ifdef ARCH_POWERPC
-      __alignx(16, table_four_i);
-      FAST (
-      __alignx(16, lj_pars);
-      )
-      __alignx(16, p_j);
-      
+#ifdef ARCH_POWERPC      
 #if ( FULL( 1+ ) 0 )
 #pragma disjoint (*table_four_i, *fullf_j)
 #pragma disjoint (*p_j,          *fullf_j)
+#ifdef  A2_QPX
+#pragma disjoint (*p_j_d,        *fullf_j)
+#endif
+#pragma disjoint (*r2_table,     *fullf_j)
+#pragma disjoint (*r2list,       *fullf_j)
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
-#pragma disjoint (*f_j    , *fullf_j)
-#pragma disjoint (*fullf_j, *f_j)
+#pragma disjoint (*f_j    ,      *fullf_j)
+#pragma disjoint (*fullf_j,      *f_j)
 #endif   //Short + fast
 #endif   //Full
 
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
 #pragma disjoint (*table_four_i, *f_j)
 #pragma disjoint (*p_j,          *f_j)
+#pragma disjoint (*r2_table,     *f_j)
+#pragma disjoint (*r2list,       *f_j)
 #pragma disjoint (*lj_pars,      *f_j)
-      __prefetch_by_load ((void *)&f_j->x);
+#ifdef  A2_QPX
+#pragma disjoint (*p_j_d,        *f_j)
+#endif
 #endif //Short + Fast
 
+      __alignx(64, table_four_i);
+      FAST (
+      __alignx(32, lj_pars);
+      )
+      __alignx(32, p_j);
 #endif   //ARCH_POWERPC
 
       /*
@@ -112,20 +158,49 @@ ALCHPAIR(
 
       BigReal kqq = kq_i * p_j->charge;
 
+#ifdef  A2_QPX
+      float * cg = (float *)&p_j->charge;
+#if ( FULL( 1+ ) 0 )
+#pragma disjoint (*cg, *fullf_j)
+#endif   //Full
+
+#if ( SHORT( FAST( 1+ ) ) 0 ) 
+#pragma disjoint (*cg, *f_j)
+#endif   //Short + fast
+#endif
+
       LES( BigReal lambda_pair = lambda_table_i[p_j->partition]; )
 
+#ifndef  A2_QPX
       register const BigReal p_ij_x = p_i_x - p_j->position.x;
       register const BigReal p_ij_y = p_i_y - p_j->position.y;
       register const BigReal p_ij_z = p_i_z - p_j->position.z;
-      
+#else
+      vector4double charge_v = vec_lds(0, cg);
+      vector4double kqqv = vec_mul(kq_iv, charge_v );
+      vector4double p_ij_v = vec_sub(p_i_v, vec_ld (0, p_j_d));
+#define p_ij_x     vec_extract(p_i_v, 0)
+#define p_ij_y     vec_extract(p_i_v, 1)
+#define p_ij_z     vec_extract(p_i_v, 2)
+#endif  
+
 #if ( FAST(1+) 0 )
       const BigReal A = scaling * lj_pars->A;
       const BigReal B = scaling * lj_pars->B;
-
-      BigReal vdw_d = A * table_four_i[0] - B * table_four_i[2];
-      BigReal vdw_c = A * table_four_i[1] - B * table_four_i[3];
-      BigReal vdw_b = A * table_four_i[4] - B * table_four_i[6];
-      BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
+#ifndef  A2_QPX
+      BigReal vdw_d = A * table_four_i[0] - B * table_four_i[4];
+      BigReal vdw_c = A * table_four_i[1] - B * table_four_i[5];
+      BigReal vdw_b = A * table_four_i[2] - B * table_four_i[6];
+      BigReal vdw_a = A * table_four_i[3] - B * table_four_i[7];
+#else
+      const vector4double Av = vec_mul(scalingv, vec_lds(0, lj_pars_d));
+      const vector4double Bv = vec_mul(scalingv, vec_lds(8, lj_pars_d));
+      vector4double vdw_v = vec_msub( Av, vec_ld(0, table_four_i), vec_mul(Bv, vec_ld(4*sizeof(BigReal), table_four_i)) );
+#define   vdw_d  vec_extract(vdw_v, 0)
+#define   vdw_c  vec_extract(vdw_v, 1)
+#define   vdw_b  vec_extract(vdw_v, 2)
+#define   vdw_a  vec_extract(vdw_v, 3)
+#endif
 
       ALCHPAIR (
         // Alchemical free energy calculation
@@ -151,19 +226,29 @@ ALCHPAIR(
           &alch_vdw_energy, &alch_vdw_force, &alch_vdw_dUdl);)
       )
       
-      NOT_ALCHPAIR(
-      TABENERGY(
+	//NOT_ALCHPAIR(
+	//TABENERGY(
+#if (NOT_ALCHPAIR(1+) 0)
+#if (TABENERGY(1+) 0)
         if (tabtype >= 0) {
           register BigReal r1;
           r1 = sqrt(p_ij_x*p_ij_x + p_ij_y*p_ij_y + p_ij_z*p_ij_z);
+
           //CkPrintf("%i %i %f %f %i\n", npertype, tabtype, r1, table_spacing, (int) (mynearbyint(r1 / table_spacing)));
           register int eneraddress;
           eneraddress = 2 * ((npertype * tabtype) + ((int) mynearbyint(r1 / table_spacing)));
           //CkPrintf("Using distance bin %i for distance %f\n", eneraddress, r1);
+#ifndef A2_QPX
 	  vdw_d = 0.;
 	  vdw_c = 0.;
 	  vdw_b = table_ener[eneraddress + 1] / r1;
 	  vdw_a = (-1/2.) * diffa * vdw_b;
+#else
+	  vec_insert(0.,                               vdw_v, 0);
+	  vec_insert(0.,                               vdw_v, 1);
+	  vec_insert(table_ener[eneraddress + 1] / r1, vdw_v, 2);
+	  vec_insert((-1/2.) * diffa * vdw_b,          vdw_v, 3);
+#endif
 	  ENERGY(
             register BigReal vdw_val = table_ener[eneraddress];
             //CkPrintf("Found vdw energy of %f\n", vdw_val);
@@ -172,16 +257,23 @@ ALCHPAIR(
             FEP( vdwEnergy_s_Left += d_lambda_pair * vdw_val; )
           )
         }  else {
-      )
+	  //)
+#endif
       ENERGY(
         register BigReal vdw_val =
           ( ( diffa * vdw_d * (1/6.)+ vdw_c * (1/4.)) * diffa + vdw_b *(1/2.)) * diffa + vdw_a;
+
         vdwEnergy -= LAM(lambda_pair *) vdw_val;
+
         FEP(vdwEnergy_s -= vdw_val;)
         FEP(vdwEnergy_s_Left -= vdw_val;)
       )
-      TABENERGY( } ) /* endif (tabtype >= 0) */
-      ) // NOT_ALCHPAIR
+	//TABENERGY( } ) /* endif (tabtype >= 0) */
+#if (TABENERGY (1+) 0)
+	}
+#endif
+      //) // NOT_ALCHPAIR
+#endif
 
       ALCHPAIR(
         ENERGY(vdwEnergy   += alch_vdw_energy;)
@@ -204,6 +296,7 @@ ALCHPAIR(
 
 #if ( SHORT(1+) 0 ) // Short-range electrostatics
 
+#ifndef  A2_QPX
       NORMAL(
       BigReal fast_d = kqq * table_four_i[8];
       BigReal fast_c = kqq * table_four_i[9];
@@ -217,6 +310,13 @@ ALCHPAIR(
       BigReal fast_b = modfckqq * table_four_i[10];
       BigReal fast_a = modfckqq * table_four_i[11];
       )
+#else
+      vector4double fastv = vec_mul(kqqv, vec_ld(8 * sizeof(BigReal), table_four_i));
+#define fast_d   vec_extract(fastv, 0)
+#define fast_c   vec_extract(fastv, 1)
+#define fast_b   vec_extract(fastv, 2)
+#define fast_a   vec_extract(fastv, 3)
+#endif
     
       {
       ENERGY(
@@ -260,7 +360,8 @@ ALCHPAIR(
 
      /*****  JE - Go  *****/
      // Now Go energy should appear in VDW place -- put vdw_b back into place
-     NORMAL (
+#if    ( NORMAL (1+) 0)
+#if    ( GO (1+) 0)
 
 	 // Explicit goGroPair calculation; only calculates goGroPair if goGroPair is turned on
 	 //
@@ -276,7 +377,12 @@ ALCHPAIR(
 	 BigReal groGausse = 0.0;
 	 const CompAtomExt *pExt_z = pExt_1 + j;
 	 if (ComputeNonbondedUtil::goGroPair) {
-	     fast_b += mol->get_gro_force2(p_ij_x, p_ij_y, p_ij_z,pExt_i.id,pExt_z->id,&groLJe,&groGausse);
+             BigReal groForce = mol->get_gro_force2(p_ij_x, p_ij_y, p_ij_z,pExt_i.id,pExt_z->id,&groLJe,&groGausse);
+#ifndef A2_QPX
+             fast_b += groForce;
+#else 
+             vec_insert(fast_b + groForce, fastv, 2);
+#endif
 	 }
 	 ENERGY(
 	     NOT_ALCHPAIR (
@@ -285,7 +391,6 @@ ALCHPAIR(
 		 groGaussEnergy += groGausse;
 		 )
 	     ) //ENERGY                                                                                                                                             	   
-     GO (
        BigReal goNative = 0;
        BigReal goNonnative = 0;
        BigReal goForce = 0;
@@ -306,7 +411,11 @@ ALCHPAIR(
 	 }
        }
        
+#ifndef A2_QPX
        fast_b += goForce;
+#else 
+       vec_insert(fast_b + goForce, fastv, 2);
+#endif
        {
        ENERGY(
 	 NOT_ALCHPAIR (
@@ -325,20 +434,26 @@ ALCHPAIR(
 
        //DebugM(3,"rgo:" << rgo << ", pExt_i.id:" << pExt_i.id << ", pExt_j->id:" << pExt_j->id << \
 	 //      ", goForce:" << goForce << ", fast_b:" << fast_b << std::endl);
-     ) // End of GO macro 
-     /*****  JE - End Go  *****/
-     // End of port JL
-     ) // End of Normal MACRO
+#endif       //     ) // End of GO macro 
+       /*****  JE - End Go  *****/
+       // End of port JL
+#endif      //) // End of Normal MACRO
 
       // Combined short-range electrostatics and VdW force:
-      NOT_ALCHPAIR(
+#if    (  NOT_ALCHPAIR(1+) 0)
+#ifndef A2_QPX
         fast_d += vdw_d;
         fast_c += vdw_c;
         fast_b += vdw_b;
         fast_a += vdw_a;  // not used!
-      )
+#else
+	fastv = vec_add(fastv, vdw_v);
+#endif
+#endif
+
       register BigReal fast_dir =
                   (diffa * fast_d + fast_c) * diffa + fast_b;
+
       BigReal force_r =  LAM(lambda_pair *) fast_dir;
       ALCHPAIR(
         force_r *= myElecLambda; 
@@ -347,6 +462,7 @@ ALCHPAIR(
       )
           
 #ifndef NAMD_CUDA
+#ifndef  A2_QPX
       register BigReal tmp_x = force_r * p_ij_x;
       PAIR( virial_xx += tmp_x * p_ij_x; )
       PAIR( virial_xy += tmp_x * p_ij_y; )
@@ -365,6 +481,27 @@ ALCHPAIR(
       PAIR( virial_zz += tmp_z * p_ij_z; )
       f_i_z += tmp_z;
       f_j->z -= tmp_z;
+#else
+      vector4double force_rv = vec_splats (force_r);
+      vector4double tmp_v = vec_mul(force_rv, p_ij_v);
+      f_i_v = vec_add(f_i_v, tmp_v);
+
+      PAIR (
+	    vector4double tmp_xv = vec_splat(tmp_v, 0);
+	    vector4double tmp_yv = vec_splat(tmp_v, 1);
+	    virial_v0 = vec_madd(tmp_xv, p_ij_v, virial_v0);
+	    virial_v1 = vec_madd(tmp_yv, p_ij_v, virial_v1);
+	    virial_v2 = vec_madd(tmp_v,  p_ij_v, virial_v2);
+	    )
+
+#define tmp_x   vec_extract(tmp_v, 0)
+#define tmp_y   vec_extract(tmp_v, 1)
+#define tmp_z   vec_extract(tmp_v, 2)
+
+      f_j->x -= tmp_x;
+      f_j->y -= tmp_y;
+      f_j->z -= tmp_z;
+#endif
 
       PPROF(
         const BigReal p_j_z = p_j->position.z;
@@ -376,7 +513,6 @@ ALCHPAIR(
                      p_i_partition, p_j_partition, pressureProfileAtomTypes,
                      tmp_x*p_ij_x, tmp_y * p_ij_y, tmp_z*p_ij_z,
                      pressureProfileReduction);
-
       )
 #endif
 
@@ -384,10 +520,14 @@ ALCHPAIR(
 #endif // FAST
 
 #if ( FULL (EXCLUDED( SHORT ( 1+ ) ) ) 0 ) 
+#ifndef A2_QPX
       const BigReal* const slow_i = slow_table + 4*table_i;
+#else
+      BigReal* slow_i = (BigReal *)(slow_table + 4*table_i);
+#endif
 
 #ifdef ARCH_POWERPC  //Alignment and aliasing constraints
-      __alignx (16, slow_i);
+      __alignx (32, slow_i);
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
 #pragma disjoint (*slow_i, *f_j)
 #endif
@@ -398,10 +538,14 @@ ALCHPAIR(
 
 
 #if ( FULL (MODIFIED( SHORT ( 1+ ) ) ) 0 ) 
+#ifndef A2_QPX
       const BigReal* const slow_i = slow_table + 4*table_i;
+#else
+      BigReal* slow_i = (BigReal *)(slow_table + 4*table_i);
+#endif
 
 #ifdef ARCH_POWERPC //Alignment and aliasing constraints
-      __alignx (16, slow_i);
+      __alignx (32, slow_i);
 #if ( SHORT( FAST( 1+ ) ) 0 ) 
 #pragma disjoint (*slow_i, *f_j)
 #endif
@@ -411,16 +555,17 @@ ALCHPAIR(
 #endif //FULL
       
 #if ( FULL( 1+ ) 0 )
+#ifndef  A2_QPX
       BigReal slow_d = table_four_i[8 SHORT(+ 4)];
       BigReal slow_c = table_four_i[9 SHORT(+ 4)];
       BigReal slow_b = table_four_i[10 SHORT(+ 4)];
       BigReal slow_a = table_four_i[11 SHORT(+ 4)];
       EXCLUDED(
       SHORT(
-      slow_a +=    slow_i[0];
-      slow_b += 2.*slow_i[1];
-      slow_c += 4.*slow_i[2];
-      slow_d += 6.*slow_i[3];
+      slow_a +=    slow_i[3];
+      slow_b += 2.*slow_i[2];
+      slow_c += 4.*slow_i[1];
+      slow_d += 6.*slow_i[0];
       )
       NOSHORT(
       slow_d -= table_four_i[12];
@@ -431,10 +576,10 @@ ALCHPAIR(
       )
       MODIFIED(
       SHORT(
-      slow_a +=    modf_mod * slow_i[0];
-      slow_b += 2.*modf_mod * slow_i[1];
-      slow_c += 4.*modf_mod * slow_i[2];
-      slow_d += 6.*modf_mod * slow_i[3];
+      slow_a +=    modf_mod * slow_i[3];
+      slow_b += 2.*modf_mod * slow_i[2];
+      slow_c += 4.*modf_mod * slow_i[1];
+      slow_d += 6.*modf_mod * slow_i[0];
       )
       NOSHORT(
       slow_d -= modf_mod * table_four_i[12];
@@ -447,6 +592,32 @@ ALCHPAIR(
       slow_c *= kqq;
       slow_b *= kqq;
       slow_a *= kqq;
+#else
+      vector4double slow_v = vec_ld((8 SHORT(+ 4)) * sizeof(BigReal), table_four_i);
+      EXCLUDED(
+	       SHORT(
+		     slow_v = vec_madd(full_cnst, vec_ld(0, slow_i), slow_v);
+		     )
+	       NOSHORT(
+		       slow_v = vec_sub(slow_v, vec_ld(12*sizeof(BigReal), table_four_i));
+		       )
+	       );
+      MODIFIED(
+	       SHORT(
+		     slow_v = vec_madd(full_cnst,  vec_ld(0, slow_i), slow_v);
+		     )
+	       NOSHORT(
+		       slow_v = vec_nmsub(full_cnst, vec_ld(12*sizeof(BigReal), table_four_i), slow_v);
+		       )
+	       );
+      slow_v = vec_mul (slow_v, vec_splats(kqq));
+
+#define slow_d   vec_extract(slow_v, 0)
+#define slow_c   vec_extract(slow_v, 1)
+#define slow_b   vec_extract(slow_v, 2)
+#define slow_a   vec_extract(slow_v, 3)
+
+#endif
 
       ENERGY(
       register BigReal slow_val =
@@ -487,16 +658,21 @@ ALCHPAIR(
       } )
 
 
-      NOT_ALCHPAIR (
-        FAST(
-        NOSHORT(
+#if     (NOT_ALCHPAIR (1+) 0)
+#if     (FAST(1+) 0)
+#if     (NOSHORT(1+) 0)
+#ifndef A2_QPX
         slow_d += vdw_d;
         slow_c += vdw_c;
         slow_b += vdw_b;
         slow_a += vdw_a; // unused!
-        )
-        )
-      )
+#else
+	slow_v = vec_add (slow_v, vdw_v);
+#endif
+#endif
+#endif
+#endif
+
       register BigReal slow_dir = (diffa * slow_d + slow_c) * diffa + slow_b;
       BigReal fullforce_r = slow_dir LAM(* lambda_pair);
       ALCHPAIR (
@@ -508,21 +684,44 @@ ALCHPAIR(
           
 #ifndef NAMD_CUDA
       {
-      register BigReal tmp_x = fullforce_r * p_ij_x;
-      PAIR( fullElectVirial_xx += tmp_x * p_ij_x; )
-      PAIR( fullElectVirial_xy += tmp_x * p_ij_y; )
-      PAIR( fullElectVirial_xz += tmp_x * p_ij_z; )
-      fullf_i_x += tmp_x;
-      fullf_j->x -= tmp_x;
-      register BigReal tmp_y = fullforce_r * p_ij_y;
-      PAIR( fullElectVirial_yy += tmp_y * p_ij_y; )
-      PAIR( fullElectVirial_yz += tmp_y * p_ij_z; )
-      fullf_i_y += tmp_y;
-      fullf_j->y -= tmp_y;
-      register BigReal tmp_z = fullforce_r * p_ij_z;
-      PAIR( fullElectVirial_zz += tmp_z * p_ij_z; )
-      fullf_i_z += tmp_z;
-      fullf_j->z -= tmp_z;
+#ifndef  A2_QPX
+      register BigReal ftmp_x = fullforce_r * p_ij_x;
+      PAIR( fullElectVirial_xx += ftmp_x * p_ij_x; )
+      PAIR( fullElectVirial_xy += ftmp_x * p_ij_y; )
+      PAIR( fullElectVirial_xz += ftmp_x * p_ij_z; )
+      fullf_i_x += ftmp_x;
+      fullf_j->x -= ftmp_x;
+      register BigReal ftmp_y = fullforce_r * p_ij_y;
+      PAIR( fullElectVirial_yy += ftmp_y * p_ij_y; )
+      PAIR( fullElectVirial_yz += ftmp_y * p_ij_z; )
+      fullf_i_y += ftmp_y;
+      fullf_j->y -= ftmp_y;
+      register BigReal ftmp_z = fullforce_r * p_ij_z;
+      PAIR( fullElectVirial_zz += ftmp_z * p_ij_z; )
+      fullf_i_z += ftmp_z;
+      fullf_j->z -= ftmp_z;
+#else
+      vector4double fforce_rv = vec_splats (fullforce_r);
+      vector4double ftmp_v = vec_mul(fforce_rv, p_ij_v);
+      fullf_i_v = vec_add(fullf_i_v, ftmp_v);
+      
+      PAIR (
+	    vector4double ftmp_xv = vec_splat(ftmp_v, 0);
+	    vector4double ftmp_yv = vec_splat(ftmp_v, 1);
+	    fullvirial_v0 = vec_madd(ftmp_xv, p_ij_v, fullvirial_v0);
+	    fullvirial_v1 = vec_madd(ftmp_yv, p_ij_v, fullvirial_v1);
+	    fullvirial_v2 = vec_madd(ftmp_v,  p_ij_v, fullvirial_v2);
+	    )
+	
+#define ftmp_x  vec_extract(ftmp_v, 0)
+#define ftmp_y  vec_extract(ftmp_v, 1)
+#define ftmp_z  vec_extract(ftmp_v, 2)
+
+      fullf_j->x -= ftmp_x;
+      fullf_j->y -= ftmp_y;
+      fullf_j->z -= ftmp_z;
+
+#endif
 
       PPROF(
         const BigReal p_j_z = p_j->position.z;
@@ -532,11 +731,10 @@ ALCHPAIR(
 
         pp_reduction(pressureProfileSlabs, n1, n2, 
                      p_i_partition, p_j_partition, pressureProfileAtomTypes,
-                     tmp_x*p_ij_x, tmp_y * p_ij_y, tmp_z*p_ij_z,
+                     ftmp_x*p_ij_x, ftmp_y * p_ij_y, ftmp_z*p_ij_z,
                      pressureProfileReduction);
 
       )
-
       }
 #endif
 #endif //FULL

@@ -1066,13 +1066,13 @@ void ComputeNonbondedUtil::select(void)
 
   for ( i=0; i<n; ++i ) {
     table_short[16*i+ 0] = table_noshort[16*i+0] = -6.*vdwa_table[4*i+3];
-    table_short[16*i+ 2] = table_noshort[16*i+2] = -6.*vdwb_table[4*i+3];
-    table_short[16*i+ 4] = table_noshort[16*i+4] = -2.*vdwa_table[4*i+1];
+    table_short[16*i+ 4] = table_noshort[16*i+4] = -6.*vdwb_table[4*i+3];
+    table_short[16*i+ 2] = table_noshort[16*i+2] = -2.*vdwa_table[4*i+1];
     table_short[16*i+ 6] = table_noshort[16*i+6] = -2.*vdwb_table[4*i+1];
     
     table_short[16*i+1] = table_noshort[16*i+1] = -4.*vdwa_table[4*i+2];
-    table_short[16*i+3] = table_noshort[16*i+3] = -4.*vdwb_table[4*i+2];
-    table_short[16*i+5] = table_noshort[16*i+5] = -1.*vdwa_table[4*i+0];
+    table_short[16*i+5] = table_noshort[16*i+5] = -4.*vdwb_table[4*i+2];
+    table_short[16*i+3] = table_noshort[16*i+3] = -1.*vdwa_table[4*i+0];
     table_short[16*i+7] = table_noshort[16*i+7] = -1.*vdwb_table[4*i+0];
     
     table_short[16*i+8]  = -6.*fast_table[4*i+3];
@@ -1125,6 +1125,20 @@ void ComputeNonbondedUtil::select(void)
   }
   fclose(f);
 #endif
+
+  //Flip slow table to match table_four_i
+  for ( i=0; i<n; ++i ) {
+    BigReal tmp0, tmp1, tmp2, tmp3;
+    tmp0 = slow_table [i*4 + 0];
+    tmp1 = slow_table [i*4 + 1];
+    tmp2 = slow_table [i*4 + 2];
+    tmp3 = slow_table [i*4 + 3];
+
+    slow_table [i*4 + 0] = tmp3;
+    slow_table [i*4 + 1] = tmp2;
+    slow_table [i*4 + 2] = tmp1;
+    slow_table [i*4 + 3] = tmp0;
+  }
 
 #ifdef NAMD_CUDA
   send_build_cuda_force_table();

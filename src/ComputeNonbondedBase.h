@@ -277,7 +277,11 @@ void ComputeNonbondedUtil :: NAME
   ENERGY( BigReal electEnergy_s = 0; )
   )
   )
-  
+  )
+    
+#ifndef A2_QPX
+  FAST 
+  (
   SHORT
   (
   BigReal virial_xx = 0;
@@ -302,9 +306,18 @@ void ComputeNonbondedUtil :: NAME
   BigReal fullElectVirial_yz = 0;
   BigReal fullElectVirial_zz = 0;
   )
+#else 
+  vector4double virial_v0   = (vector4double)(0.0);
+  vector4double virial_v1   = (vector4double)(0.0);
+  vector4double virial_v2   = (vector4double)(0.0);
+  vector4double fullvirial_v0   = (vector4double) (0.0);
+  vector4double fullvirial_v1   = (vector4double) (0.0);
+  vector4double fullvirial_v2   = (vector4double) (0.0);
+  BigReal fullElectEnergy = 0;
+  BigReal fullElectEnergy_s = 0;
+#endif
 
   // Bringing stuff into local namespace for speed.
-
   const BigReal offset_x = params->offset.x;
   const BigReal offset_y = params->offset.y;
   const BigReal offset_z = params->offset.z;
@@ -337,7 +350,10 @@ void ComputeNonbondedUtil :: NAME
 //#endif
   )
   )
-  const BigReal scaling = ComputeNonbondedUtil:: scaling;
+  BigReal scaling = ComputeNonbondedUtil:: scaling;
+#ifdef  A2_QPX
+  vector4double scalingv = vec_splats(scaling);
+#endif
   const BigReal modf_mod = 1.0 - scale14;
   FAST
   (
@@ -814,6 +830,9 @@ void ComputeNonbondedUtil :: NAME
     register const BigReal p_i_x = p_i.position.x + offset_x;
     register const BigReal p_i_y = p_i.position.y + offset_y;
     register const BigReal p_i_z = p_i.position.z + offset_z;
+#ifdef A2_QPX
+    vector4double p_i_v = {p_i_x, p_i_y, p_i_z, 0.0};
+#endif
 
     ALCH(const int p_i_partition = p_i.partition;)
 
@@ -1003,6 +1022,67 @@ void ComputeNonbondedUtil :: NAME
 	  }
 	  g-=2;
 	}
+#elif defined (A2_QPX)
+	if ( gu - g  >  6 ) { 
+#if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+	  register SortEntry* sortEntry0 = sortValues + g;
+	  register SortEntry* sortEntry1 = sortValues + g + 1;
+	  register int jprev0 = sortEntry0->index;
+	  register int jprev1 = sortEntry1->index;
+          #else
+	  register int jprev0 = glist[g    ];
+	  register int jprev1 = glist[g + 1];
+          #endif
+          
+	  __dcbt ((void*)(p_1 + jprev0));
+          register  int j0; 
+          register  int j1;           
+          vector4double    pj_v_0, pj_v_1; 
+          vector4double    v_0, v_1;
+          register BigReal r2_0, r2_1;
+          
+          pj_v_0 = vec_ld(jprev0 * sizeof(CompAtom), (BigReal *)p_1);
+          pj_v_1 = vec_ld(jprev1 * sizeof(CompAtom), (BigReal *)p_1);  
+          
+          g += 2;
+          for ( ; g < gu - 2; g +=2 ) {
+            // compute 1d distance, 2-way parallel       
+            j0     =  jprev0;
+            j1     =  jprev1;
+
+#if NAMD_ComputeNonbonded_SortAtoms != 0 && ( 0 PAIR ( + 1 ) )
+	    sortEntry0 = sortValues + g;
+	    sortEntry1 = sortValues + g + 1;
+	    jprev0 = sortEntry0->index;
+	    jprev1 = sortEntry1->index;
+            #else
+	    jprev0     =  glist[g  ];
+	    jprev1     =  glist[g+1];
+            #endif
+
+            v_0 = vec_sub (p_i_v, pj_v_0);
+            v_1 = vec_sub (p_i_v, pj_v_1);
+            v_0 = vec_mul (v_0, v_0);
+            v_1 = vec_mul (v_1, v_1);
+
+            r2_0 = vec_extract(v_0, 0) + vec_extract(v_0, 1) + vec_extract(v_0, 2);
+            r2_1 = vec_extract(v_1, 0) + vec_extract(v_1, 1) + vec_extract(v_1, 2);
+            
+            pj_v_0 = vec_ld(jprev0 * sizeof(CompAtom), (BigReal *)p_1);
+            pj_v_1 = vec_ld(jprev1 * sizeof(CompAtom), (BigReal *)p_1);  
+            
+            size_t test0 = ( groupplcutoff2 >  r2_0 );
+            size_t test1 = ( groupplcutoff2 >  r2_1 ); 
+            
+            //removing ifs benefits on many architectures
+            //as the extra stores will only warm the cache up
+            goodglist [ hu         ] = j0;
+            goodglist [ hu + test0 ] = j1;
+            
+            hu += test0 + test1;
+          }
+          g-=2;
+        }
 #else
 	if ( gu - g  >  6 ) { 
 
@@ -1275,6 +1355,61 @@ void ComputeNonbondedUtil :: NAME
 	  }
 	  k-=2;
 	}       
+#elif defined(A2_QPX)
+        if ( ku - k  >  6 ) {      
+          register  int jprev0 = pairlist [k];
+          register  int jprev1 = pairlist [k + 1];
+          
+          register  int j0; 
+          register  int j1; 
+          vector4double    pj_v_0, pj_v_1; 
+          vector4double    v_0, v_1;
+          BigReal          r2_0, r2_1;
+
+          pj_v_0 = vec_ld(jprev0 * sizeof(CompAtom), (BigReal *)p_1);
+          pj_v_1 = vec_ld(jprev1 * sizeof(CompAtom), (BigReal *)p_1);  
+          
+          int atom2_0 = pExt_1[jprev0].id;
+          int atom2_1 = pExt_1[jprev1].id;
+          
+          k += 2;
+          for ( ; k < ku - 2; k +=2 ) {
+            // compute 1d distance, 2-way parallel       
+            j0     =  jprev0;
+            j1     =  jprev1;
+          
+            v_0 = vec_sub (p_i_v, pj_v_0);
+            v_1 = vec_sub (p_i_v, pj_v_1);
+            v_0 = vec_mul (v_0, v_0);
+            v_1 = vec_mul (v_1, v_1);
+
+            r2_0 = vec_extract(v_0, 0) + vec_extract(v_0, 1) + vec_extract(v_0, 2);
+            r2_1 = vec_extract(v_1, 0) + vec_extract(v_1, 1) + vec_extract(v_1, 2);
+
+            jprev0     =  pairlist[k];
+            jprev1     =  pairlist[k+1];
+            
+            pj_v_0 = vec_ld(jprev0 * sizeof(CompAtom), (BigReal *)p_1);
+            pj_v_1 = vec_ld(jprev1 * sizeof(CompAtom), (BigReal *)p_1);  
+                    
+            if (r2_0 <= plcutoff2) {
+              if ( atom2_0 >= excl_min && atom2_0 <= excl_max ) 
+                *(pli++) = j0;
+              else 
+                *(plin++) = j0;
+            }
+            atom2_0 = pExt_1[jprev0].id;
+            
+            if (r2_1 <= plcutoff2) {
+              if ( atom2_1 >= excl_min && atom2_1 <= excl_max ) 
+                *(pli++) = j1;
+              else 
+                *(plin++) = j1;
+	    }
+            atom2_1 = pExt_1[jprev1].id;            
+          }
+          k-=2;
+        }      
 #else
 	if ( ku - k  >  6 ) { 	   
 	  register  int jprev0 = pairlist [k];
@@ -1513,12 +1648,25 @@ void ComputeNonbondedUtil :: NAME
     const LJTable::TableEntry * const lj_row =
 		ljTable->table_row(p_i.vdwType);
 
+#ifdef A2_QPX
+    vector4double kq_iv = (vector4double)(0.0);
+    vector4double f_i_v = (vector4double)(0.0);
+    vector4double fullf_i_v = (vector4double)(0.0);
+    vector4double full_cnst = (vector4double)(0.);
+#define f_i_x       vec_extract(f_i_v, 0)
+#define f_i_y       vec_extract(f_i_v, 1)
+#define f_i_z       vec_extract(f_i_v, 2)
+#define fullf_i_x   vec_extract(fullf_i_v, 0)
+#define fullf_i_y   vec_extract(fullf_i_v, 1)
+#define fullf_i_z   vec_extract(fullf_i_v, 2)
+#else
     SHORT( FAST( BigReal f_i_x = 0.; ) )
     SHORT( FAST( BigReal f_i_y = 0.; ) )
     SHORT( FAST( BigReal f_i_z = 0.; ) )
     FULL( BigReal fullf_i_x = 0.; )
     FULL( BigReal fullf_i_y = 0.; )
     FULL( BigReal fullf_i_z = 0.; )
+#endif
 
     int npairi;
     int k;
@@ -1929,7 +2077,7 @@ void ComputeNonbondedUtil :: NAME
 #ifdef ARCH_POWERPC
     //data cache block touch the position structure
     __dcbt ((void *) &(p_0[i+1]));
-    __prefetch_by_load ((void *)&(groupCount));
+    //__prefetch_by_load ((void *)&(groupCount));
 #endif
 
 #ifndef NAMD_CUDA
@@ -1954,6 +2102,14 @@ PAIR(
   // PAIR(iout << "++++++++\n" << endi;)
   PAIR( if ( savePairlists ) { pairlists.setIndexValue(i); } )
 
+#ifdef A2_QPX
+    BigReal  virial_xx   =  vec_extract (virial_v0, 0);
+    BigReal  virial_xy   =  vec_extract (virial_v0, 1);
+    BigReal  virial_xz   =  vec_extract (virial_v0, 2);
+    BigReal  virial_yy   =  vec_extract (virial_v1, 1);
+    BigReal  virial_yz   =  vec_extract (virial_v1, 2);
+    BigReal  virial_zz   =  vec_extract (virial_v2, 2);
+#endif
 #ifdef f_1
 #undef f_1
 #endif
@@ -1961,7 +2117,6 @@ PAIR(
 #if ( SELF( 1+ ) 0 )
   {
     Force *patch_f_0 = params->ff[0];
-
 #ifndef NAMD_CUDA
 #ifndef ARCH_POWERPC 
 #pragma ivdep
@@ -1980,6 +2135,15 @@ PAIR(
 #endif
   }
 #endif
+#endif
+
+#ifdef A2_QPX
+    BigReal  fullElectVirial_xx  =  vec_extract(fullvirial_v0, 0);
+    BigReal  fullElectVirial_xy  =  vec_extract(fullvirial_v0, 1);
+    BigReal  fullElectVirial_xz  =  vec_extract(fullvirial_v0, 2);    
+    BigReal  fullElectVirial_yy  =  vec_extract(fullvirial_v1, 1);
+    BigReal  fullElectVirial_yz  =  vec_extract(fullvirial_v1, 2);
+    BigReal  fullElectVirial_zz  =  vec_extract(fullvirial_v2, 2);
 #endif
 #ifdef fullf_1
 #undef fullf_1

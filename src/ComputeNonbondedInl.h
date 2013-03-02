@@ -44,6 +44,92 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
   int g = 0;
 
 #ifndef SIMPLE_PAIRLIST
+#ifdef  A2_QPX
+  //***************************************************************
+  //* 4-way unrolled and software-pipelined and optiized via QPX
+  //***************************************************************  
+
+  int jout = 0;
+  if ( list_size > 16) {
+    // prefetch
+    int jcur0 = list[g];
+    int jcur1 = list[g + 1];
+    int jcur2 = list[g + 2];
+    int jcur3 = list[g + 3];
+    
+    int j0, j1, j2, j3;
+    
+    vector4double    pj_v_0, pj_v_1, pj_v_2, pj_v_3; 
+    vector4double    v_0, v_1, v_2, v_3;
+    register BigReal r2_0, r2_1, r2_2, r2_3;
+    
+    vector4double p_i_v = {p_i_x, p_i_y, p_i_z, 0.};
+    vector4double r2_delta_v = {r2_delta};
+
+    pj_v_0 = vec_ld(jcur0 * sizeof(CompAtom), (BigReal *)p_j);
+    pj_v_1 = vec_ld(jcur1 * sizeof(CompAtom), (BigReal *)p_j);  
+    pj_v_2 = vec_ld(jcur2 * sizeof(CompAtom), (BigReal *)p_j);  
+    pj_v_3 = vec_ld(jcur3 * sizeof(CompAtom), (BigReal *)p_j);  
+    
+    for ( g = 4 ; g < list_size - 4; g += 4 ) {
+      // compute 1d distance, 4-way parallel      
+      //Save the previous iterations values, gives more flexibility 
+      //to the compiler to schedule the loads and the computation
+      j0   =   jcur0;           j1   =   jcur1;
+      j2   =   jcur2;           j3   =   jcur3;
+      
+      jcur0  =  list[g    ];    jcur1  =  list[g + 1];
+      jcur2  =  list[g + 2];    jcur3  =  list[g + 3];
+
+      __dcbt((void*)(p_j + jcur0));
+
+      v_0 = vec_sub (p_i_v, pj_v_0);
+      v_1 = vec_sub (p_i_v, pj_v_1);
+      v_2 = vec_sub (p_i_v, pj_v_2);
+      v_3 = vec_sub (p_i_v, pj_v_3);
+      
+      v_0 = vec_madd (v_0, v_0, r2_delta_v);
+      v_1 = vec_madd (v_1, v_1, r2_delta_v);
+      v_2 = vec_madd (v_2, v_2, r2_delta_v);
+      v_3 = vec_madd (v_3, v_3, r2_delta_v);
+
+      pj_v_0 = vec_ld(jcur0 * sizeof(CompAtom), (BigReal *)p_j);
+      pj_v_1 = vec_ld(jcur1 * sizeof(CompAtom), (BigReal *)p_j);  
+      pj_v_2 = vec_ld(jcur2 * sizeof(CompAtom), (BigReal *)p_j);  
+      pj_v_3 = vec_ld(jcur3 * sizeof(CompAtom), (BigReal *)p_j);  
+
+      r2_0 = vec_extract(v_0, 0) + vec_extract(v_0, 1) + vec_extract(v_0, 2);
+      r2_1 = vec_extract(v_1, 0) + vec_extract(v_1, 1) + vec_extract(v_1, 2);
+      r2_2 = vec_extract(v_2, 0) + vec_extract(v_2, 1) + vec_extract(v_2, 2);
+      r2_3 = vec_extract(v_3, 0) + vec_extract(v_3, 1) + vec_extract(v_3, 2);
+      
+      size_t test0, test1, test2, test3;
+      size_t jout0, jout1, jout2, jout3;
+      
+      test0 = ( r2_0   <   cutoff2_delta );
+      test1 = ( r2_1   <   cutoff2_delta );
+      test2 = ( r2_2   <   cutoff2_delta );
+      test3 = ( r2_3   <   cutoff2_delta );
+      
+      jout0 = jout;
+      nli[ jout0 ]  = j0;         r2i[ jout0 ] = r2_0;
+      jout += test0;              jout1 = jout;
+
+      nli[ jout1 ]  = j1;         r2i[ jout1 ] = r2_1;
+      jout += test1;              jout2 = jout;
+
+      nli[ jout2 ]  = j2;         r2i[ jout2 ] = r2_2;
+      jout += test2;              jout3 = jout;
+
+      nli[ jout3 ]  = j3;         r2i[ jout3 ] = r2_3;
+      jout += test3;
+    }
+    g -= 4;
+  }
+
+  nli += jout;
+  r2i += jout;  
+#else
   //***************************************************************
   //* 4-way unrolled and software-pipelined 
   //***************************************************************
@@ -151,6 +237,7 @@ inline int pairlist_from_pairlist(BigReal cutoff2,
 
   nli += jout;
   r2i += jout;  
+#endif
 #endif
 
   int j2 = list[g];

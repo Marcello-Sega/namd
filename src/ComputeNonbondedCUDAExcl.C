@@ -94,10 +94,10 @@ void ExclElem::computeForce(BigReal *reduction,
     fast_d = 6. * kqq * fast_table[4*table_i+3];
 
     if ( doFull ) {
-      slow_a =      kqq * slow_table[4*table_i+0];  // not used!
-      slow_b = 2. * kqq * slow_table[4*table_i+1];
-      slow_c = 4. * kqq * slow_table[4*table_i+2];
-      slow_d = 6. * kqq * slow_table[4*table_i+3];
+      slow_a =      kqq * slow_table[4*table_i+3];  // not used!
+      slow_b = 2. * kqq * slow_table[4*table_i+2];
+      slow_c = 4. * kqq * slow_table[4*table_i+1];
+      slow_d = 6. * kqq * slow_table[4*table_i+0];
     }
 
     if ( doEnergy ) {
