@@ -24,6 +24,7 @@
 #include "WorkDistrib.decl.h"
 #include "ProxyMgr.decl.h"
 #include "PatchMgr.decl.h"
+#include "DataExchanger.decl.h"
 #ifdef CHARM_HAS_MSA
 #include "ComputeMgr.decl.h"
 #endif
@@ -182,6 +183,9 @@ void master_init(int argc, char **argv){
 
   group.broadcastMgr = CProxy_BroadcastMgr::ckNew();
   group.ldbCoordinator = CProxy_LdbCoordinator::ckNew();
+
+  group.dataExchanger = CProxy_DataExchanger::ckNew();
+
   GroupInitMsg *msg = new GroupInitMsg;
   msg->group = group;
   CProxy_Node::ckNew(msg);

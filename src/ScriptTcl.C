@@ -37,6 +37,9 @@
 #endif
 #include "TclCommands.h"
 
+#include "ProcessorPrivate.h"
+#include "DataExchanger.h"
+
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 4
 #include "Debug.h"
@@ -175,27 +178,12 @@ int ScriptTcl::Tcl_numPhysicalNodes(ClientData, Tcl_Interp *interp, int argc, ch
   return TCL_OK;
 }
 
-#if CMK_REPLICAS
-extern "C" {
-int CmiNumReplicas();
-int CmiMyReplica();
-void CmiReplicaSendrecv(void *sendbuf, int sendcount, int dest, void *recvbuf, int recvcount, int source);
-void CmiReplicaSend(void *buf, int count, int dest);
-void CmiReplicaRecv(void *buf, int count, int source);
-void CmiReplicaBarrier();
-}
-#endif
-
 int ScriptTcl::Tcl_numReplicas(ClientData, Tcl_Interp *interp, int argc, char **) {
   if ( argc > 1 ) {
     Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
     return TCL_ERROR;
   }
-#if CMK_REPLICAS
-  Tcl_SetObjResult(interp, Tcl_NewIntObj(CmiNumReplicas()));
-#else
-  Tcl_SetObjResult(interp, Tcl_NewIntObj(1));
-#endif
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(CmiNumPartitions()));
   return TCL_OK;
 }
 
@@ -204,13 +192,10 @@ int ScriptTcl::Tcl_myReplica(ClientData, Tcl_Interp *interp, int argc, char **) 
     Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
     return TCL_ERROR;
   }
-#if CMK_REPLICAS
-  Tcl_SetObjResult(interp, Tcl_NewIntObj(CmiMyReplica()));
-#else
-  Tcl_SetObjResult(interp, Tcl_NewIntObj(0));
-#endif
+  Tcl_SetObjResult(interp, Tcl_NewIntObj(CmiMyPartition()));
   return TCL_OK;
 }
+
 
 int ScriptTcl::Tcl_replicaSendrecv(ClientData, Tcl_Interp *interp, int argc, char **argv) {
   if ( argc < 3 || argc > 4 ) {
@@ -224,10 +209,17 @@ int ScriptTcl::Tcl_replicaSendrecv(ClientData, Tcl_Interp *interp, int argc, cha
   int dest = atoi(argv[2]);
   int source = -1;
   if ( argc > 3 ) source = atoi(argv[3]);
-#if CMK_REPLICAS
-  CmiReplicaSendrecv(&sendcount,sizeof(int),dest,&recvcount,sizeof(int),source);
-  Tcl_DStringSetLength(&recvstr,recvcount);
-  CmiReplicaSendrecv(argv[1],sendcount,dest,Tcl_DStringValue(&recvstr),recvcount,source);
+#if CMK_HAS_PARTITION
+  if(dest == CmiMyPartition()) {
+    Tcl_DStringSetLength(&recvstr,sendcount);
+    memcpy(Tcl_DStringValue(&recvstr),argv[1],sendcount);
+  } else {
+    DataMessage *recvMsg = NULL;
+    replica_sendRecv(argv[1], sendcount, dest, CkMyPe(), (char*)&recvMsg, source, CkMyPe());
+    CmiAssert(recvMsg != NULL);
+    Tcl_DStringAppend(&recvstr, recvMsg->data, recvMsg->size);
+    CmiFree(recvMsg);
+  }
 #endif
   Tcl_DStringResult(interp, &recvstr);
   Tcl_DStringFree(&recvstr);
@@ -241,9 +233,8 @@ int ScriptTcl::Tcl_replicaSend(ClientData, Tcl_Interp *interp, int argc, char **
   }
   int sendcount = strlen(argv[1]);
   int dest = atoi(argv[2]);
-#if CMK_REPLICAS
-  CmiReplicaSend(&sendcount,sizeof(int),dest);
-  CmiReplicaSend(argv[1],sendcount,dest);
+#if CMK_HAS_PARTITION
+  replica_send(argv[1], sendcount, dest, CkMyPe());
 #endif
   return TCL_OK;
 }
@@ -257,13 +248,12 @@ int ScriptTcl::Tcl_replicaRecv(ClientData, Tcl_Interp *interp, int argc, char **
   Tcl_DStringInit(&recvstr);
   int recvcount = 0;
   int source = atoi(argv[1]);
-  // Source required to avoid race condition when receiving multiple messages.
-  // This could be avoided by adding tags to CmiReplica arguments
-  // to distinguish size messages and including source in size message.
-#if CMK_REPLICAS
-  CmiReplicaRecv(&recvcount,sizeof(int),source);
-  Tcl_DStringSetLength(&recvstr,recvcount);
-  CmiReplicaRecv(Tcl_DStringValue(&recvstr),recvcount,source);
+#if CMK_HAS_PARTITION
+  DataMessage *recvMsg = NULL;
+  replica_recv((char*)&recvMsg, source, CkMyPe());
+  CmiAssert(recvMsg != NULL);
+  Tcl_DStringAppend(&recvstr, recvMsg->data, recvMsg->size);
+  CmiFree(recvMsg);
 #endif
   Tcl_DStringResult(interp, &recvstr);
   Tcl_DStringFree(&recvstr);
@@ -275,8 +265,8 @@ int ScriptTcl::Tcl_replicaBarrier(ClientData, Tcl_Interp *interp, int argc, char
     Tcl_SetResult(interp,"no arguments needed",TCL_VOLATILE);
     return TCL_ERROR;
   }
-#if CMK_REPLICAS
-  CmiReplicaBarrier();
+#if CMK_HAS_PARTITION
+  replica_barrier();
 #endif
   return TCL_OK;
 }

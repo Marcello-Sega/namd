@@ -32,5 +32,6 @@ mainmodule main {
   extern module BroadcastMgr;
   extern module Sync;
   extern module ParallelIOMgr;
+  extern module DataExchanger;
 }
 

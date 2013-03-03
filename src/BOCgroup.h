@@ -12,6 +12,7 @@
 #if     USE_CKLOOP
 #include "CkLoopAPI.h"
 #endif
+
 class BOCgroup {
 public:
   CkGroupID workDistrib;
@@ -44,6 +45,8 @@ public:
 #if     USE_CKLOOP
   CProxy_FuncCkLoop ckLoop;
 #endif
+
+  CkGroupID dataExchanger;
 };
 
 class BOCclass : public Group {

@@ -292,6 +292,8 @@ obj/main.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/ParallelIOMgr.decl.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
 	src/main.h \
 	inc/main.def.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/main.o $(COPTC) src/main.C
@@ -492,8 +494,11 @@ obj/BackEnd.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/ParallelIOMgr.decl.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
 	inc/WorkDistrib.decl.h \
 	inc/ProxyMgr.decl.h \
+	inc/DataExchanger.decl.h \
 	inc/ReductionMgr.decl.h \
 	inc/CollectionMgr.decl.h \
 	inc/CollectionMaster.decl.h \
@@ -4082,7 +4087,8 @@ obj/GromacsTopFile.o: \
 	src/ResizeArray.h \
 	src/ResizeArrayRaw.h \
 	src/InfoStream.h \
-	src/GromacsTopFile.h
+	src/GromacsTopFile.h \
+	src/Debug.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/GromacsTopFile.o $(COPTC) src/GromacsTopFile.C
 obj/heap.o: \
 	src/heap.C \
@@ -4898,6 +4904,8 @@ obj/Node.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/ParallelIOMgr.decl.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
 	inc/WorkDistrib.decl.h \
@@ -5150,6 +5158,8 @@ obj/PatchMgr.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/ParallelIOMgr.decl.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
 	inc/WorkDistrib.decl.h \
 	src/WorkDistrib.h \
 	src/ComputeMap.h \
@@ -5371,6 +5381,8 @@ obj/ProxyPatch.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/ParallelIOMgr.decl.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
 	src/main.h \
 	src/ProxyPatch.h \
 	src/Patch.h \
@@ -5606,6 +5618,9 @@ obj/ScriptTcl.o: \
 	src/colvarproxy.h \
 	src/DumpBench.h \
 	src/TclCommands.h \
+	src/DataExchanger.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
 	src/Debug.h \
 	plugins/include/molfile_plugin.h \
 	plugins/include/libmolfile_plugin.h \
@@ -5864,6 +5879,8 @@ obj/WorkDistrib.o: \
 	inc/BroadcastMgr.decl.h \
 	inc/Sync.decl.h \
 	inc/ParallelIOMgr.decl.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
 	src/Node.h \
 	inc/Node.decl.h \
 	src/PatchMgr.h \
@@ -5970,6 +5987,16 @@ obj/PluginIOMgr.o: \
 	plugins/include/vmdplugin.h \
 	plugins/include/libmolfile_plugin.h
 	$(CXX) $(CXXFLAGS) $(COPTO)obj/PluginIOMgr.o $(COPTC) src/PluginIOMgr.C
+obj/DataExchanger.o: \
+	src/DataExchanger.C \
+	src/DataExchanger.h \
+	src/main.h \
+	inc/DataExchanger.decl.h \
+	src/Pointer.h \
+	src/ProcessorPrivate.h \
+	src/BOCgroup.h \
+	inc/DataExchanger.def.h
+	$(CXX) $(CXXFLAGS) $(COPTO)obj/DataExchanger.o $(COPTC) src/DataExchanger.C
 obj/ParallelIOMgr.o: \
 	src/ParallelIOMgr.C \
 	src/largefiles.h \

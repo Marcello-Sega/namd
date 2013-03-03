@@ -251,6 +251,7 @@ OBJS = \
 	$(DSTDIR)/imd.o \
 	$(DSTDIR)/CompressPsf.o \
 	$(DSTDIR)/PluginIOMgr.o \
+	$(DSTDIR)/DataExchanger.o \
 	$(DSTDIR)/ParallelIOMgr.o 
 
 
@@ -309,6 +310,8 @@ CIFILES = 	\
 		$(INCDIR)/WorkDistrib.def.h \
 		$(INCDIR)/ParallelIOMgr.decl.h \
 		$(INCDIR)/ParallelIOMgr.def.h \
+		$(INCDIR)/DataExchanger.decl.h \
+		$(INCDIR)/DataExchanger.def.h \
 		$(INCDIR)/main.decl.h \
 		$(INCDIR)/main.def.h 
 
