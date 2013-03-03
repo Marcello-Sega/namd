@@ -363,6 +363,7 @@ MODIFIED(
 #if    ( NORMAL (1+) 0)
 #if    ( GO (1+) 0)
 
+       if (ComputeNonbondedUtil::goGroPair) {
 	 // Explicit goGroPair calculation; only calculates goGroPair if goGroPair is turned on
 	 //
 	 // get_gro_force has an internal checklist that sees if atom_i and atom_j are
@@ -376,21 +377,20 @@ MODIFIED(
 	 BigReal groLJe = 0.0;
 	 BigReal groGausse = 0.0;
 	 const CompAtomExt *pExt_z = pExt_1 + j;
-	 if (ComputeNonbondedUtil::goGroPair) {
              BigReal groForce = mol->get_gro_force2(p_ij_x, p_ij_y, p_ij_z,pExt_i.id,pExt_z->id,&groLJe,&groGausse);
 #ifndef A2_QPX
              fast_b += groForce;
 #else 
              vec_insert(fast_b + groForce, fastv, 2);
 #endif
-	 }
 	 ENERGY(
 	     NOT_ALCHPAIR (
 		 // JLai
 		 groLJEnergy += groLJe;
 		 groGaussEnergy += groGausse;
 		 )
-	     ) //ENERGY                                                                                                                                             	   
+	     ) //ENERGY
+       }
        BigReal goNative = 0;
        BigReal goNonnative = 0;
        BigReal goForce = 0;
