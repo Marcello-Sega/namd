@@ -3,11 +3,12 @@ This directory contains Tcl scripts that implement replica exchange.
 This replaces the old Tcl server and socket connections driving a
 separate NAMD process for every replica used in the simulation.
 
-*** NAMD based on a patched MPI build of Charm++ is required! ***
+*** NET, IBVERBS, AND MULTICORE BUILDS ARE CURRENTLY NOT SUPPORTED. ***
 
-The included charm_replica.patch has already been applied to the
-Charm++ source code included with the NAMD source code.  It is only
-needed if you obtain Charm++ directly from charm.cs.illinois.edu.
+Charm++ 6.5.0 or newer for mpi, gemini_gni, pamilrts, or other 
+machine layers based on the lrts low-level runtime implementation
+are required for replica functionality based on Charm++ partitions.
+A patched version of Charm++ is no longer required.
 
 Replica exchanges and energies are recorded in the .history files
 written in the output directories.  These can be viewed with, e.g.,
@@ -24,6 +25,9 @@ replica.namd - master script for replica exchange simulations
 
 The number of MPI ranks must be a multiple of the number of replicas
 (+replicas).  Be sure to increment jobX for +stdout option on command line.
+
+replica_util.namd - functions for reduction, broadcast, and timing,
+    useful for user-developed scripts and performance analysis
 
 show_replicas.vmd - script for loading replicas into VMD, first source
     the replica exchange conf file and then this script, repeat for
