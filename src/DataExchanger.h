@@ -52,8 +52,8 @@ void recvData(DataMessage *dmsg);
 void recvAck(DataMessage *dmsg); 
 
 void replica_send(char *sndbuf, int sendcount, int destPart, int destPE);
-void replica_sendRecv(char *sndbuf, int sendcount, int destPart, int destPE, char *precvMsg, int srcPart, int srcPE);
-void replica_recv(char *precvMsg, int srcPart, int srcPE);
+void replica_sendRecv(char *sndbuf, int sendcount, int destPart, int destPE, DataMessage **precvMsg, int srcPart, int srcPE);
+void replica_recv(DataMessage **precvMsg, int srcPart, int srcPE);
 void replica_barrier();
 }
 #endif

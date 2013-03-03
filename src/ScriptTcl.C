@@ -215,7 +215,7 @@ int ScriptTcl::Tcl_replicaSendrecv(ClientData, Tcl_Interp *interp, int argc, cha
     memcpy(Tcl_DStringValue(&recvstr),argv[1],sendcount);
   } else {
     DataMessage *recvMsg = NULL;
-    replica_sendRecv(argv[1], sendcount, dest, CkMyPe(), (char*)&recvMsg, source, CkMyPe());
+    replica_sendRecv(argv[1], sendcount, dest, CkMyPe(), &recvMsg, source, CkMyPe());
     CmiAssert(recvMsg != NULL);
     Tcl_DStringAppend(&recvstr, recvMsg->data, recvMsg->size);
     CmiFree(recvMsg);
@@ -250,7 +250,7 @@ int ScriptTcl::Tcl_replicaRecv(ClientData, Tcl_Interp *interp, int argc, char **
   int source = atoi(argv[1]);
 #if CMK_HAS_PARTITION
   DataMessage *recvMsg = NULL;
-  replica_recv((char*)&recvMsg, source, CkMyPe());
+  replica_recv(&recvMsg, source, CkMyPe());
   CmiAssert(recvMsg != NULL);
   Tcl_DStringAppend(&recvstr, recvMsg->data, recvMsg->size);
   CmiFree(recvMsg);

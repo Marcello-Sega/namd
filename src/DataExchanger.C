@@ -46,15 +46,15 @@ extern "C" {
     CsdScheduler(-1);
   }
 
-  void replica_recv(char *precvMsg, int srcPart, int srcPE) {
-    Pointer recvPointer(precvMsg);
+  void replica_recv(DataMessage **precvMsg, int srcPart, int srcPE) {
+    Pointer recvPointer((char *) precvMsg);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].recv(recvPointer,srcPart,srcPE);
     CsdScheduler(-1);
   }
 
-  void replica_sendRecv(char *sndbuf, int sendcount, int destPart, int destPE, char *precvMsg, int srcPart, int srcPE)  {
+  void replica_sendRecv(char *sndbuf, int sendcount, int destPart, int destPE, DataMessage **precvMsg, int srcPart, int srcPE)  {
     Pointer sendPointer(sndbuf);
-    Pointer recvPointer(precvMsg);
+    Pointer recvPointer((char *) precvMsg);
     CPROXY_DE(CkpvAccess(BOCclass_group).dataExchanger)[CkMyPe()].sendRecv(sendPointer,sendcount,destPart,destPE,recvPointer,srcPart,srcPE);
     CsdScheduler(-1);
   }
