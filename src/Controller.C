@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Controller.C,v $
- * $Author: char $
- * $Date: 2013/01/24 17:42:05 $
- * $Revision: 1.1289 $
+ * $Author: jim $
+ * $Date: 2013/03/04 13:43:03 $
+ * $Revision: 1.1290 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -2334,6 +2334,9 @@ void Controller::printEnergies(int step, int minimize)
       CALLBACKLIST("CELL_O",lattice.origin());
       labels << "PERIODIC "; values << "{" << lattice.a_p() << " "
 		<< lattice.b_p() << " " << lattice.c_p() << "} ";
+      if (simParameters->drudeOn) {
+        CALLBACKDATA("DRUDECOM",drudeComTemp);
+      }
       if ( simParameters->pairInteractionOn ) {
         CALLBACKLIST("VDW_FORCE",pairVDWForce);
         CALLBACKLIST("ELECT_FORCE",pairElectForce);
