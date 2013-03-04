@@ -80,10 +80,10 @@ void ExclElem::computeForce(BigReal *reduction,
     const BigReal A = scaling * ( (lj_pars+1)->A - lj_pars->A );
     const BigReal B = scaling * ( (lj_pars+1)->B - lj_pars->B );
 
-    BigReal vdw_d = A * table_four_i[0] - B * table_four_i[2];
-    BigReal vdw_c = A * table_four_i[1] - B * table_four_i[3];
-    BigReal vdw_b = A * table_four_i[4] - B * table_four_i[6];
-    BigReal vdw_a = A * table_four_i[5] - B * table_four_i[7];
+    BigReal vdw_d = A * table_four_i[0] - B * table_four_i[4];
+    BigReal vdw_c = A * table_four_i[1] - B * table_four_i[5];
+    BigReal vdw_b = A * table_four_i[2] - B * table_four_i[6];
+    BigReal vdw_a = A * table_four_i[3] - B * table_four_i[7];
 
     const BigReal kqq = (1.0 - scale14) *
             COULOMB * p_i.charge * p_j.charge * scaling * dielectric_1;
