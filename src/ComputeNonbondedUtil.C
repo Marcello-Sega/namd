@@ -1065,14 +1065,14 @@ void ComputeNonbondedUtil::select(void)
 #endif 
 
   for ( i=0; i<n; ++i ) {
-    table_short[16*i+ 0] = table_noshort[16*i+0] = -6.*vdwa_table[4*i+3];
-    table_short[16*i+ 4] = table_noshort[16*i+4] = -6.*vdwb_table[4*i+3];
-    table_short[16*i+ 2] = table_noshort[16*i+2] = -2.*vdwa_table[4*i+1];
-    table_short[16*i+ 6] = table_noshort[16*i+6] = -2.*vdwb_table[4*i+1];
-    
+    table_short[16*i+0] = table_noshort[16*i+0] = -6.*vdwa_table[4*i+3];
     table_short[16*i+1] = table_noshort[16*i+1] = -4.*vdwa_table[4*i+2];
-    table_short[16*i+5] = table_noshort[16*i+5] = -4.*vdwb_table[4*i+2];
+    table_short[16*i+2] = table_noshort[16*i+2] = -2.*vdwa_table[4*i+1];
     table_short[16*i+3] = table_noshort[16*i+3] = -1.*vdwa_table[4*i+0];
+    
+    table_short[16*i+4] = table_noshort[16*i+4] = -6.*vdwb_table[4*i+3];
+    table_short[16*i+5] = table_noshort[16*i+5] = -4.*vdwb_table[4*i+2];
+    table_short[16*i+6] = table_noshort[16*i+6] = -2.*vdwb_table[4*i+1];
     table_short[16*i+7] = table_noshort[16*i+7] = -1.*vdwb_table[4*i+0];
     
     table_short[16*i+8]  = -6.*fast_table[4*i+3];
