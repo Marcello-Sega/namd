@@ -114,6 +114,12 @@ BASE
 3 phases (1, 2, 3)
 */
 
+#define CUDA_EVENT_ID_POLL_REMOTE 98
+#define CUDA_TRACE_POLL_REMOTE \
+  traceUserEvent(CUDA_EVENT_ID_POLL_REMOTE)
+#define CUDA_EVENT_ID_POLL_LOCAL 99
+#define CUDA_TRACE_POLL_LOCAL \
+  traceUserEvent(CUDA_EVENT_ID_POLL_LOCAL)
 #define CUDA_EVENT_ID_BASE 100
 #define CUDA_TRACE_REMOTE(START,END) \
   do { int dev; cudaGetDevice(&dev); traceUserBracketEvent( \
@@ -123,6 +129,9 @@ BASE
        CUDA_EVENT_ID_BASE + 2 * dev + 1, START, END); } while (0)
 
 void cuda_register_user_events() {
+
+  traceRegisterUserEvent("CUDA poll remote", CUDA_EVENT_ID_POLL_REMOTE);
+  traceRegisterUserEvent("CUDA poll local", CUDA_EVENT_ID_POLL_LOCAL);
 
 #define REGISTER_DEVICE_EVENTS(DEV) \
   traceRegisterUserEvent("CUDA device " #DEV " remote", CUDA_EVENT_ID_BASE + 2 * DEV); \
@@ -1026,6 +1035,7 @@ static __thread int check_local_count;
 
 void cuda_check_remote_progress(void *arg, double) {
 
+  CUDA_TRACE_POLL_REMOTE;
   cudaError_t err = cudaEventQuery(end_remote_download);
   if ( err == cudaSuccess ) {
     local_submit_time = CkWallTimer();
@@ -1054,6 +1064,7 @@ void cuda_check_remote_progress(void *arg, double) {
 
 void cuda_check_local_progress(void *arg, double) {
 
+  CUDA_TRACE_POLL_LOCAL;
   cudaError_t err = cudaEventQuery(end_local_download);
   if ( err == cudaSuccess ) {
     double wall_time = CkWallTimer();
