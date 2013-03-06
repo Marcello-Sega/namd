@@ -1030,6 +1030,9 @@ void cuda_check_remote_progress(void *arg, double) {
   if ( err == cudaSuccess ) {
     local_submit_time = CkWallTimer();
     CUDA_TRACE_REMOTE(remote_submit_time,local_submit_time);
+    if ( mergegrids ) {  // no local
+      kernel_time = local_submit_time - kernel_time;
+    }
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
     check_remote_count = 0;
   } else if ( err != cudaErrorNotReady ) {
