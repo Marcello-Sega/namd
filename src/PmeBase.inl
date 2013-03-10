@@ -79,10 +79,11 @@ static inline void scale_forces(Vector f[], int N, Lattice &lattice) {
 }
 
 
-static inline void compute_b_spline(double * __restrict frac, double *M, double *dM, int order) {
+template <class REAL>
+static inline void compute_b_spline(REAL * __restrict frac, REAL *M, REAL *dM, int order) {
   int j, n;
-  double x,y,z,x1,y1,z1, div;
-  double * __restrict Mx, * __restrict My, * __restrict Mz, * __restrict dMx, * __restrict dMy, * __restrict dMz;
+  REAL x,y,z,x1,y1,z1, div;
+  REAL * __restrict Mx, * __restrict My, * __restrict Mz, * __restrict dMx, * __restrict dMy, * __restrict dMz;
   Mx=M-1; My=M+order-1; Mz=M+2*order-1;
   dMx=dM-1; dMy =dM+order-1; dMz=dM+2*order-1;
   x=frac[0];
@@ -105,7 +106,7 @@ static inline void compute_b_spline(double * __restrict frac, double *M, double 
 
   /* Recursively fill in the rest.  */
   for (n=4; n<=order-1; n++) {
-    double div=1.0/(n-1);
+    REAL div=1.0/(n-1);
     int j;
     Mx[n] = x*div*Mx[n-1];
     My[n] = y*div*My[n-1];

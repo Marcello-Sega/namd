@@ -445,8 +445,8 @@ private:
   BigReal elecLambdaUp;
   BigReal elecLambdaDown;
 
-  double **q_arr;
-  double **q_list;
+  float **q_arr;
+  float **q_list;
   int q_count;
   char *f_arr;
   char *fz_arr;
@@ -2298,10 +2298,10 @@ void ComputePmeMgr::initialize_computes() {
 
   qsize = myGrid.K1 * myGrid.dim2 * myGrid.dim3;
   fsize = myGrid.K1 * myGrid.dim2;
-  q_arr = new double*[fsize*numGrids];
-  memset( (void*) q_arr, 0, fsize*numGrids * sizeof(double*) );
-  q_list = new double*[fsize*numGrids];
-  memset( (void*) q_list, 0, fsize*numGrids * sizeof(double*) );
+  q_arr = new float*[fsize*numGrids];
+  memset( (void*) q_arr, 0, fsize*numGrids * sizeof(float*) );
+  q_list = new float*[fsize*numGrids];
+  memset( (void*) q_list, 0, fsize*numGrids * sizeof(float*) );
   q_count = 0;
   f_arr = new char[fsize*numGrids];
   // memset to non-zero value has race condition on BlueGene/Q
@@ -2580,7 +2580,7 @@ void ComputePme::doWork()
   memset( (void*) myMgr->fz_arr, 0, (myGrid.K3+myGrid.order-1) * sizeof(char) );
 
   for (int i=0; i<myMgr->q_count; ++i) {
-    memset( (void*) (myMgr->q_list[i]), 0, (myGrid.K3+myGrid.order-1) * sizeof(double) );
+    memset( (void*) (myMgr->q_list[i]), 0, (myGrid.K3+myGrid.order-1) * sizeof(float) );
   }
 
   for ( g=0; g<numGrids; ++g ) {
@@ -2610,7 +2610,7 @@ void ComputePme::doWork()
     selfEnergy *= -1. * ewaldcof / SQRT_PI;
     myMgr->evir[g][0] += selfEnergy;
 
-    double **q = myMgr->q_arr + g*myMgr->fsize;
+    float **q = myMgr->q_arr + g*myMgr->fsize;
     char *f = myMgr->f_arr + g*myMgr->fsize;
 
     myRealSpace[g]->set_num_atoms(numGridAtoms[g]);
@@ -2718,7 +2718,7 @@ void ComputePmeMgr::sendPencils(Lattice &lattice, int sequence) {
     float *qmsg = msg->qgrid;
     for ( int g=0; g<numGrids; ++g ) {
       char *f = f_arr + g*fsize;
-      double **q = q_arr + g*fsize;
+      float **q = q_arr + g*fsize;
       for ( int i=ibegin; i<iend; ++i ) {
        for ( int j=jbegin; j<jend; ++j ) {
         *(fmsg++) = f[i*dim2+j];
@@ -2823,7 +2823,7 @@ void ComputePmeMgr::copyPencils(PmeGridMsg *msg) {
   for ( g=0; g<numGrids; ++g ) {
     evir[g] += msg->evir[g];
     char *f = f_arr + g*fsize;
-    double **q = q_arr + g*fsize;
+    float **q = q_arr + g*fsize;
     for ( int i=ibegin; i<iend; ++i ) {
      for ( int j=jbegin; j<jend; ++j ) {
       if( f[i*dim2+j] ) {
@@ -2916,7 +2916,7 @@ void ComputePmeMgr::sendData(Lattice &lattice, int sequence) {
     for ( g=0; g<numGrids; ++g ) {
       char *f = f_arr + fstart + g*fsize;
       CmiMemcpy((void*)(msg->fgrid+g*flen),(void*)f,flen*sizeof(char));
-      double **q = q_arr + fstart + g*fsize;
+      float **q = q_arr + fstart + g*fsize;
       for ( i=0; i<flen; ++i ) {
         if ( f[i] ) {
           for ( int k=0; k<zlistlen; ++k ) {
@@ -2947,7 +2947,7 @@ void ComputePmeMgr::copyResults(PmeGridMsg *msg) {
   for ( g=0; g<numGrids; ++g ) {
     evir[g] += msg->evir[g];
     char *f = msg->fgrid + g*flen;
-    double **q = q_arr + fstart + g*fsize;
+    float **q = q_arr + fstart + g*fsize;
     for ( int i=0; i<flen; ++i ) {
       if ( f[i] ) {
         f[i] = 0;
@@ -2988,7 +2988,7 @@ void ComputePme::ungridForces() {
       scale_forces(gridResults, numGridAtoms[g], lattice);
 
       if ( alchFepOn || alchThermIntOn ) {
-        double scale = 1.;
+        float scale = 1.;
         if(simParams->alchFepWhamOn)	{
         	if(simParams->alchFepElecOn)	{
             elecLambdaUp = simParams->alchElecLambda;
@@ -3044,7 +3044,7 @@ void ComputePme::ungridForces() {
           }
         }
       } else if ( lesOn ) {
-        double scale = 1.;
+        float scale = 1.;
         if ( alchFepOn ) {
 	        if(simParams->alchFepWhamOn)	{
 	        	if(simParams->alchFepElecOn) {
@@ -3061,7 +3061,7 @@ void ComputePme::ungridForces() {
 	          else if ( g == 1 ) scale = 1. - simParams->alchLambda;
 	        }
         } else if ( lesOn ) {
-          scale = 1.0 / (double)lesFactor;
+          scale = 1.0 / (float)lesFactor;
         }
         int nga = 0;
         for(int i=0; i<numLocalAtoms; ++i) {
@@ -3137,7 +3137,7 @@ void ComputePme::ungridForces() {
 void ComputePmeMgr::submitReductions() {
 
     for ( int g=0; g<numGrids; ++g ) {
-      double scale = 1.;
+      float scale = 1.;
       if ( alchFepOn || alchThermIntOn ) {
         if ( g == 0 ) scale = elecLambdaUp;
         else if ( g == 1 ) scale = elecLambdaDown;
@@ -3148,7 +3148,7 @@ void ComputePmeMgr::submitReductions() {
           else if ( g == 4 ) scale = (elecLambdaUp + elecLambdaDown - 1)*(-1);
         }
       } else if ( lesOn ) {
-        scale = 1.0 / (double)lesFactor;
+        scale = 1.0 / lesFactor;
       } else if ( pairOn ) {
         scale = ( g == 0 ? 1. : -1. );
       }
@@ -3176,7 +3176,7 @@ void ComputePmeMgr::submitReductions() {
       amd_reduction->item(REDUCTION_VIRIAL_SLOW_ZZ) += evir[g][6] * scale;
       }
 
-      double scale2 = 0.;
+      float scale2 = 0.;
 
       //alchElecLambdaStart = (alchFepOn || alchThermIntOn) ? simParams->alchElecLambdaStart : 0;
       SimParameters *simParams = Node::Object()->simParameters;
