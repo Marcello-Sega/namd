@@ -1033,12 +1033,12 @@ static __thread double local_submit_time;
 static __thread int check_remote_count;
 static __thread int check_local_count;
 
-void cuda_check_remote_progress(void *arg, double) {
+void cuda_check_remote_progress(void *arg, double walltime) {
 
   CUDA_TRACE_POLL_REMOTE;
   cudaError_t err = cudaEventQuery(end_remote_download);
   if ( err == cudaSuccess ) {
-    local_submit_time = CkWallTimer();
+    local_submit_time = walltime;
     CUDA_TRACE_REMOTE(remote_submit_time,local_submit_time);
     if ( mergegrids ) {  // no local
       kernel_time = local_submit_time - kernel_time;
@@ -1051,7 +1051,7 @@ void cuda_check_remote_progress(void *arg, double) {
   } else if ( ++check_remote_count >= count_limit ) {
     char errmsg[256];
     sprintf(errmsg,"cuda_check_remote_progress polled %d times over %f s on step %d",
-            check_remote_count, CkWallTimer() - remote_submit_time,
+            check_remote_count, walltime - remote_submit_time,
             ((ComputeNonbondedCUDA *) arg)->step);
     cuda_errcheck(errmsg);
     NAMD_die(errmsg);
@@ -1062,14 +1062,13 @@ void cuda_check_remote_progress(void *arg, double) {
   }
 }
 
-void cuda_check_local_progress(void *arg, double) {
+void cuda_check_local_progress(void *arg, double walltime) {
 
   CUDA_TRACE_POLL_LOCAL;
   cudaError_t err = cudaEventQuery(end_local_download);
   if ( err == cudaSuccess ) {
-    double wall_time = CkWallTimer();
-    CUDA_TRACE_LOCAL(local_submit_time,wall_time);
-    kernel_time = wall_time - kernel_time;
+    CUDA_TRACE_LOCAL(local_submit_time,walltime);
+    kernel_time = walltime - kernel_time;
     ((ComputeNonbondedCUDA *) arg)->messageFinishWork();
     check_local_count = 0;
   } else if ( err != cudaErrorNotReady ) {
@@ -1078,7 +1077,7 @@ void cuda_check_local_progress(void *arg, double) {
   } else if ( ++check_local_count >= count_limit ) {
     char errmsg[256];
     sprintf(errmsg,"cuda_check_local_progress polled %d times over %f s on step %d",
-            check_local_count, CkWallTimer() - local_submit_time,
+            check_local_count, walltime - local_submit_time,
             ((ComputeNonbondedCUDA *) arg)->step);
     cuda_errcheck(errmsg);
     NAMD_die(errmsg);
@@ -1091,9 +1090,9 @@ void cuda_check_local_progress(void *arg, double) {
 
 #if 0
 // don't use this one unless timer is part of stream, above is better
-void cuda_check_progress(void *arg, double) {
+void cuda_check_progress(void *arg, double walltime) {
   if ( cuda_stream_finished() ) {
-    kernel_time = CkWallTimer() - kernel_time;
+    kernel_time = walltime - kernel_time;
     CUDA_POLL(ccd_index);
     // ((ComputeNonbondedCUDA *) arg)->finishWork();
     WorkDistrib::messageEnqueueWork((ComputeNonbondedCUDA *) arg);
@@ -1652,7 +1651,7 @@ GBISP("doWork[%d] accessing arrays for P%d\n",CkMyPe(),gbisPhase);
   if ( gpu_is_mine ) recvYieldDevice(-1);
 }
 
-void cuda_check_remote_calc(void *arg, double) {
+void cuda_check_remote_calc(void *arg, double /* walltime */) {
   // in theory we only need end_remote_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_remote_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_remote_download) == cudaSuccess ) {
@@ -1664,7 +1663,7 @@ void cuda_check_remote_calc(void *arg, double) {
   }
 }
 
-void cuda_check_local_calc(void *arg, double) {
+void cuda_check_local_calc(void *arg, double /* walltime */) {
   // in theory we only need end_local_calc, but overlap isn't reliable
   // if ( cudaEventQuery(end_local_calc) == cudaSuccess ) {
   if ( cudaEventQuery(end_local_download) == cudaSuccess ) {
