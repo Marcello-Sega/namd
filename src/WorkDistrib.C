@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:20 $
- * $Revision: 1.1251 $
+ * $Author: jim $
+ * $Date: 2013/03/17 20:04:20 $
+ * $Revision: 1.1252 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1442,7 +1442,7 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   // walk through patches in space-filling curve
   sumLoad = 0;
   int node = 0;
-  int skipIndex =0;
+  int usedNode = 0;
   int adim = patchMap->gridsize_a();
   int bdim = patchMap->gridsize_b();
   int cdim = patchMap->gridsize_c();
@@ -1471,10 +1471,10 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
         int pid = patchMap->pid(a,b,c);
         assignedNode[pid] = node;
         sumLoad += patchLoads[pid];
-        double targetLoad = (double)(node+1) / (double)numNodes;
+        double targetLoad = (double)(usedNode+1) / (double)usedNodes;
         targetLoad *= totalLoad;
 	//	CkPrintf("Patch Map Using node+1 %d numNodes %d sumload %f targetLoad %f\n",node+1, numNodes, sumLoad, targetLoad);
-        if ( node+1 < numNodes && sumLoad >= targetLoad ) ++node;
+        if ( node+1 < numNodes && usedNode+1 < usedNodes && sumLoad >= targetLoad ) { ++node; ++usedNode; }
         c += cinc;
       }
       cinc *= -1;  c += cinc;
