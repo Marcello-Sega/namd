@@ -93,8 +93,8 @@ void all_init(int argc, char **argv)
 #endif
   ProcessorPrivateInit();
   register_exit_sched();
-#ifdef NAMD_CUDA
   CmiGetArgFlag(argv, "+idlepoll");  // remove +idlepoll if it's still there
+#ifdef NAMD_CUDA
   cuda_getargs(argv);
   argc = CmiGetArgc(argv);
 #endif
@@ -218,7 +218,8 @@ void BackEnd::init(int argc, char **argv) {
 
   ConverseInit(argc, argv, slave_init, 1, 1);  // calls slave_init on others
 
-#if defined(NAMD_CUDA) && CMK_NET_VERSION
+// idlepoll only matters for non-smp UDP layer
+#if defined(NAMD_CUDA) && CMK_NET_VERSION && CMK_SHARED_VARS_UNAVAILABLE && CMK_WHEN_PROCESSOR_IDLE_USLEEP && ! CMK_USE_IBVERBS && ! CMK_USE_TCP
   if ( ! idlepoll ) {
     NAMD_die("Please add +idlepoll to command line for proper performance.");
   }
