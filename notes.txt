@@ -400,10 +400,7 @@ when running a multicore binary (recommended for a single machine):
 
   setenv LD_LIBRARY_PATH ".:$LD_LIBRARY_PATH"
   (or LD_LIBRARY_PATH=".:$LD_LIBRARY_PATH"; export LD_LIBRARY_PATH)
-  ./namd2 +idlepoll +p4 <configfile>
-
-When running CUDA NAMD always add +idlepoll to the command line.  This
-is needed to poll the GPU for results rather than sleeping while idle.
+  ./namd2 +p4 <configfile>
 
 Each namd2 thread can use only one GPU.  Therefore you will need to run
 at least one thread for each GPU you want to use.  Multiple threads
@@ -412,7 +409,7 @@ will automatically distribute threads equally among the GPUs on a node.
 Specific GPU device IDs can be requested via the +devices argument on
 the namd2 command line, for example:
 
-  ./namd2 +idlepoll +p4 +devices 0,2 <configfile>
+  ./namd2 +p4 +devices 0,2 <configfile>
 
 Devices are shared by consecutive threads in a process, so in the above
 example processes 0 and 1 will share device 0 and processes 2 and 3 will
@@ -438,7 +435,7 @@ directory to LD_LIBRARY_PATH with the following executable runscript:
 
 For example:
 
-  ./charmrun ++runscript ./runscript +p24 ./namd2 +idlepoll +ppn 3 <configfile>
+  ./charmrun ++runscript ./runscript +p24 ./namd2 +ppn 3 <configfile>
 
 An InfiniBand network is highly recommended when running CUDA-accelerated
 NAMD across multiple nodes.  You will need either an ibverbs NAMD binary
