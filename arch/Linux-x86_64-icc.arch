@@ -1,7 +1,7 @@
 NAMD_ARCH = Linux-x86_64
 CHARMARCH = multicore-linux64-iccstatic
 
-FLOATOPTS = -ip -fno-rtti -no-vec
+FLOATOPTS = -ip -no-vec
 
 CXX = icpc
 CXXOPTS = -i-static -O2 $(FLOATOPTS)
