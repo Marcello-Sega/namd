@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/04/03 16:29:34 $
- * $Revision: 1.1253 $
+ * $Date: 2013/04/05 19:28:42 $
+ * $Revision: 1.1254 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -741,6 +741,12 @@ void WorkDistrib::savePatchMap(PatchMapMsg *msg)
 #endif
       ) && params->isSendSpanningTreeUnset() )
       ProxyMgr::Object()->setSendSpanning();
+
+#ifdef NODEAWARE_PROXY_SPANNINGTREE 
+    if ( CkNumPes() > CkNumNodes() && CkNumNodes() > 1
+          && params->isRecvSpanningTreeUnset() )
+      ProxyMgr::Object()->setRecvSpanning();
+#endif
   }
 
   if ( patchMapArrived ) {
