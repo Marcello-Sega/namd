@@ -392,7 +392,7 @@ void cvm::atom_group::parse (std::string const &conf,
   this->check_keywords (group_conf, key);
 
   cvm::log ("Atom group \""+std::string (key)+"\" defined, "+
-            cvm::to_str (this->size())+" initialized: total mass = "+
+            cvm::to_str (this->size())+" atoms initialized: total mass = "+
             cvm::to_str (this->total_mass)+".\n");
 
   cvm::decrease_depth();
