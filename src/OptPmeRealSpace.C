@@ -146,7 +146,8 @@ void OptPmeRealSpace::compute_forces(const double * const  * q_arr,
   K3_1 = K3 - 1;
   // order = myGrid.order;
   stride=3*order;
-  Mi = M; dMi = dM;
+  Mi = M + stride*istart;
+  dMi = dM + stride*istart;
  
   for (i=istart; i<iend; i++) {
     double q;
