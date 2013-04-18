@@ -84,7 +84,7 @@ private:
   CProxy_OptPmeYPencil yPencil;
   CProxy_OptPmeZPencil zPencil;
   int    numPencilsActive;
-  int    ungrid_count, usePencils;
+  int    ungrid_count;
   SubmitReduction *reduction;
   SubmitReduction *amd_reduction;
   int    _iter;
@@ -110,7 +110,9 @@ static inline void initializePmeGrid (SimParameters *simParams, PmeGrid &grid) {
       int nb2 = ( simParams->PMEGridSizeX * simParams->PMEGridSizeY
 		  * simParams->PMEGridSizeZ ) / simParams->PMEMinPoints;
       if ( nb2 > CkNumPes() ) nb2 = CkNumPes();
+      if ( nb2 < 1 ) nb2 = 1;
       int nb = (int) sqrt((float)nb2);
+      if ( nb < 1 ) nb = 1;
       xBlocks = zBlocks = nb;
       yBlocks = nb2 / nb;
     }
@@ -230,7 +232,6 @@ OptPmeMgr::OptPmeMgr() : pmeProxy(thisgroup),
 
   myKSpace = 0;
   ungrid_count = 0;
-  usePencils = 0;
   peersAllocated = 0;
 
 #ifdef NAMD_FFTW
@@ -257,10 +258,6 @@ void OptPmeMgr::initialize(CkQdMsg *msg) {
     SimParameters *simParams = Node::Object()->simParameters;
     PatchMap *patchMap = PatchMap::Object();
     
-    if (simParams->PMEPencils > 0)
-      usePencils = 1;
-    else return;
-
     initializePmeGrid (simParams, myGrid);    
 
     if (simParams->langevinPistonOn || simParams->berendsenPressureOn)	
@@ -453,7 +450,6 @@ void OptPmeMgr::initialize_pencils(CkQdMsg *msg) {
 
 
 void OptPmeMgr::activate_pencils(CkQdMsg *msg) {
-  if ( ! usePencils ) return;
   if ( CkMyPe() == 0 ) zPencil.dummyRecvGrid(CkMyPe(),1);
 }
 
@@ -970,8 +966,6 @@ void OptPmeCompute::doWorkOnPeer()
 
 
 void OptPmeCompute::sendPencils() {  
-
-  assert ( myMgr->usePencils );
 
   //iout << iPE << " Sending charge grid for " << numLocalAtoms << " atoms to FFT with " << myMgr->numPencilsActive << " messages" <<".\n" << endi;
 

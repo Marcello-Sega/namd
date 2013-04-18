@@ -759,7 +759,9 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       int nb2 = ( simParams->PMEGridSizeX * simParams->PMEGridSizeY
 		* simParams->PMEGridSizeZ ) / simParams->PMEMinPoints;
       if ( nb2 > nrps ) nb2 = nrps;
+      if ( nb2 < 1 ) nb2 = 1;
       int nb = (int) sqrt((float)nb2);
+      if ( nb < 1 ) nb = 1;
       xBlocks = zBlocks = nb;
       yBlocks = nb2 / nb;
     }
