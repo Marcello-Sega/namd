@@ -103,15 +103,25 @@ void ParallelIOMgr::initialize(Node *node)
    {
     inputProcArray = new int[numInputProcs];
     myInputRank = -1;
-    int stride = (numInputProcs > 1) ? (CkNumPes()-1)/(numInputProcs-1) : 1;
-    int startpe = 0;
-    for(int i=0; i<numInputProcs; i++) {
-        int pe = inputProcArray[i] = startpe + i*stride;
-        if ( pe < 0 || pe >= CkNumPes() ) NAMD_bug("Input proc out of range");
-        if ( pe == CkMyPe() ) {
-          if ( myInputRank != -1 ) NAMD_bug("Duplicate input proc");
-          myInputRank = i;
-        }
+    for(int i=0; i<numInputProcs; ++i) {
+      inputProcArray[i] = WorkDistrib::peDiffuseOrdering[(i+1)%CkNumPes()];
+    }
+    std::sort(inputProcArray, inputProcArray+numInputProcs);
+    for(int i=0; i<numInputProcs; ++i) {
+      if ( CkMyPe() == inputProcArray[i] ) {
+        if ( myInputRank != -1 ) NAMD_bug("Duplicate input proc");
+        myInputRank = i;
+      }
+    }
+
+    if(!CkMyPe()) {
+      iout << iINFO << "INPUT PROC LOCATIONS:";
+      int i;
+      for ( i=0; i<numInputProcs && i < 10; ++i ) {
+        iout << " " << inputProcArray[i];
+      }
+      if ( i<numInputProcs ) iout << " ... " << inputProcArray[numInputProcs-1];
+      iout << "\n" << endi;
     }
    }
 
@@ -132,19 +142,27 @@ void ParallelIOMgr::initialize(Node *node)
     //spread the output processors across all the processors
    {
     outputProcArray = new int[numOutputProcs];
-    int stride = CkNumPes()/numOutputProcs;
-    int startpe = 0;
-    for(int i=0; i<numOutputProcs; i++) {
-        outputProcArray[i] = startpe + i*stride;
+    myOutputRank = -1;
+    for(int i=0; i<numOutputProcs; ++i) {
+      outputProcArray[i] = WorkDistrib::peDiffuseOrdering[CkNumPes()-1-i];
     }
-    //The special setting because of the current otputProcArray initialization    
-    int residue = (CkMyPe()-startpe)%stride;
-    if(residue==0) {
-        int rank = (CkMyPe()-startpe)/stride;
-        myOutputRank = rank<numOutputProcs ? rank : -1;
-    } else {
-        myOutputRank = -1;
-    }   
+    std::sort(outputProcArray, outputProcArray+numOutputProcs);
+    for(int i=0; i<numOutputProcs; ++i) {
+      if ( CkMyPe() == outputProcArray[i] ) {
+        if ( myOutputRank != -1 ) NAMD_bug("Duplicate output proc");
+        myOutputRank = i;
+      }
+    }
+
+    if(!CkMyPe()) {
+      iout << iINFO << "OUTPUT PROC LOCATIONS:";
+      int i;
+      for ( i=0; i<numOutputProcs && i < 10; ++i ) {
+        iout << " " << outputProcArray[i];
+      }
+      if ( i<numOutputProcs ) iout << " ... " << outputProcArray[numOutputProcs-1];
+      iout << "\n" << endi;
+    }
    }
 
 #ifdef MEM_OPT_VERSION
@@ -162,9 +180,8 @@ void ParallelIOMgr::initialize(Node *node)
 
 bool ParallelIOMgr::isOutputProcessor(int pe) {
     // if the method used to distribute output processors changes, this needs to update with it.
-   int stride = CkNumPes()/numOutputProcs;
-   int startpe = 0;
-   return ((pe+startpe)%stride==0);
+   const int index = WorkDistrib::peDiffuseOrderingIndex[pe];
+   return ( index >= ( CkNumPes() - numOutputProcs ) );
 }
 
 int isOutputProcessor(int pe){ 
