@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/04/05 19:28:42 $
- * $Revision: 1.1254 $
+ * $Date: 2013/04/19 19:56:46 $
+ * $Revision: 1.1255 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -44,6 +44,7 @@
 #include "ProxyMgr.h"
 #include "Priorities.h"
 #include "SortAtoms.h"
+#include <algorithm>
 
 //#define DEBUGM
 #define MIN_DEBUG_LEVEL 2
@@ -80,11 +81,101 @@ WorkDistrib::WorkDistrib()
   patchMapArrived = false;
   computeMapArrived = false;
   eventMachineProgress = traceRegisterUserEvent("CmiMachineProgressImpl",233);
+  buildNodeAwarePeOrdering();
 }
 
 //----------------------------------------------------------------------
 WorkDistrib::~WorkDistrib(void)
 { }
+
+static int compare_bit_reversed(int a, int b) {
+  int d = a ^ b;
+  int c = 1;
+  if ( d ) while ( ! (d & c) ) {
+    c = c << 1;
+  }
+  return (a & c) - (b & c);
+}
+
+static bool less_than_bit_reversed(int a, int b) {
+  int d = a ^ b;
+  int c = 1;
+  if ( d ) while ( ! (d & c) ) {
+    c = c << 1;
+  }
+  return d && (b & c);
+}
+
+struct pe_sortop_bit_reversed {
+  int *rankInPhysOfNode;
+  pe_sortop_bit_reversed(int *r) : rankInPhysOfNode(r) {}
+  inline bool operator() (int a, int b) const {
+    int c = compare_bit_reversed(CmiRankOf(a),CmiRankOf(b));
+    if ( c < 0 ) return true;
+    if ( c > 0 ) return false;
+    c = compare_bit_reversed(
+        rankInPhysOfNode[CmiNodeOf(a)],rankInPhysOfNode[CmiNodeOf(b)]);
+    if ( c < 0 ) return true;
+    if ( c > 0 ) return false;
+    c = compare_bit_reversed(CmiPhysicalNodeID(a),CmiPhysicalNodeID(b));
+    return ( c < 0 );
+  }
+};
+
+int* WorkDistrib::peDiffuseOrdering;
+int* WorkDistrib::peDiffuseOrderingIndex;
+int* WorkDistrib::peCompactOrdering;
+int* WorkDistrib::peCompactOrderingIndex;
+
+void WorkDistrib::buildNodeAwarePeOrdering() {
+
+  if ( CmiMyRank() ) return;
+
+  const int numPhys = CmiNumPhysicalNodes();
+  const int numNode = CmiNumNodes();
+  const int numPe = CmiNumPes();
+  ResizeArray<int> numNodeInPhys(numPhys);
+  ResizeArray<int> rankInPhysOfNode(numNode);
+
+  peDiffuseOrdering = new int[numPe];
+  peDiffuseOrderingIndex = new int[numPe];
+  peCompactOrdering = new int[numPe];
+  peCompactOrderingIndex = new int[numPe];
+
+  int k = 0;
+  for ( int ph=0; ph<numPhys; ++ph ) {
+    int *pes, npes;
+    CmiGetPesOnPhysicalNode(ph, &pes, &npes);
+    for ( int i=0; i<npes; ++i, ++k ) {
+      peCompactOrdering[k] = pes[i];
+    }
+    numNodeInPhys[ph] = 0;
+    for ( int i=0, j=0; i<npes; i += CmiNodeSize(CmiNodeOf(pes[i])), ++j ) {
+      rankInPhysOfNode[CmiNodeOf(pes[i])] = j;
+      numNodeInPhys[ph] += 1;
+    }
+  }
+
+  for ( int i=0; i<numPe; ++i ) {
+    peDiffuseOrdering[i] = i;
+  }
+  std::sort(peDiffuseOrdering, peDiffuseOrdering+numPe,
+    pe_sortop_bit_reversed(rankInPhysOfNode.begin()));
+
+  for ( int i=0; i<numPe; ++i ) {
+    peDiffuseOrderingIndex[peDiffuseOrdering[i]] = i;
+    peCompactOrderingIndex[peCompactOrdering[i]] = i;
+  }
+
+  if ( 0 && CmiMyPe() == 0 ) for ( int i=0; i<numPe; ++i ) {
+    CkPrintf("order %5d %5d %5d %5d %5d\n", i,
+      peDiffuseOrdering[i],
+      peDiffuseOrderingIndex[i],
+      peCompactOrdering[i],
+      peCompactOrderingIndex[i]);
+  }
+
+}
 
 
 //----------------------------------------------------------------------

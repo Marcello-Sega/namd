@@ -95,7 +95,27 @@ public:
   void random_velocities_parallel(BigReal Temp,InputAtomList &inAtoms);
 #endif
 
+  static int *peDiffuseOrdering;       // pes in diffuse order
+  static int *peDiffuseOrderingIndex;  // index of pe in diffuse order
+  static int *peCompactOrdering;       // pes in compact order
+  static int *peCompactOrderingIndex;  // index of pe in compact order
+
+  struct pe_sortop_diffuse {
+    inline bool operator() (int a, int b) const {
+      const int *index = WorkDistrib::peDiffuseOrderingIndex;
+      return ( index[a] < index[b] );
+    }
+  };
+  struct pe_sortop_compact {
+    inline bool operator() (int a, int b) const {
+      const int *index = WorkDistrib::peCompactOrderingIndex;
+      return ( index[a] < index[b] );
+    }
+  };
+
 private:
+  void buildNodeAwarePeOrdering(void);
+
   void mapComputeNonbonded(void);
   void mapComputeLCPO(void);
   void mapComputeNode(ComputeType);
