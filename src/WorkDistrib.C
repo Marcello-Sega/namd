@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/04/20 18:38:07 $
- * $Revision: 1.1256 $
+ * $Date: 2013/04/20 21:34:24 $
+ * $Revision: 1.1257 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1457,16 +1457,95 @@ void WorkDistrib::assignPatchesRecursiveBisection()
   }
 }
 
+struct patch_sortop_curve_a {
+  PatchMap *pmap;
+  patch_sortop_curve_a(PatchMap *m) : pmap(m) {}
+  inline bool operator() (int p1, int p2) const {
+    int a1 = pmap->index_a(p1);
+    int a2 = pmap->index_a(p2);
+    if ( a1 < a2 ) return true;
+    if ( a1 > a2 ) return false;
+    int dir = ( (a1 & 1) ? -1 : 1 );
+    int b1 = pmap->index_b(p1);
+    int b2 = pmap->index_b(p2);
+    if ( b1 * dir < b2 * dir ) return true;
+    if ( b1 * dir > b2 * dir ) return false;
+    dir *= ( (b1 & 1) ? -1 : 1 );
+    int c1 = pmap->index_c(p1);
+    int c2 = pmap->index_c(p2);
+    if ( c1 * dir < c2 * dir ) return true;
+    return false;
+  }
+};
+
+struct patch_sortop_curve_b {
+  PatchMap *pmap;
+  patch_sortop_curve_b(PatchMap *m) : pmap(m) {}
+  inline bool operator() (int p1, int p2) const {
+    int a1 = pmap->index_b(p1);
+    int a2 = pmap->index_b(p2);
+    if ( a1 < a2 ) return true;
+    if ( a1 > a2 ) return false;
+    int dir = ( (a1 & 1) ? -1 : 1 );
+    int b1 = pmap->index_a(p1);
+    int b2 = pmap->index_a(p2);
+    if ( b1 * dir < b2 * dir ) return true;
+    if ( b1 * dir > b2 * dir ) return false;
+    dir *= ( (b1 & 1) ? -1 : 1 );
+    int c1 = pmap->index_c(p1);
+    int c2 = pmap->index_c(p2);
+    if ( c1 * dir < c2 * dir ) return true;
+    return false;
+  }
+};
+
+struct patch_sortop_curve_c {
+  PatchMap *pmap;
+  patch_sortop_curve_c(PatchMap *m) : pmap(m) {}
+  inline bool operator() (int p1, int p2) const {
+    int a1 = pmap->index_c(p1);
+    int a2 = pmap->index_c(p2);
+    if ( a1 < a2 ) return true;
+    if ( a1 > a2 ) return false;
+    int dir = ( (a1 & 1) ? -1 : 1 );
+    int b1 = pmap->index_a(p1);
+    int b2 = pmap->index_a(p2);
+    if ( b1 * dir < b2 * dir ) return true;
+    if ( b1 * dir > b2 * dir ) return false;
+    dir *= ( (b1 & 1) ? -1 : 1 );
+    int c1 = pmap->index_b(p1);
+    int c2 = pmap->index_b(p2);
+    if ( c1 * dir < c2 * dir ) return true;
+    return false;
+  }
+};
+
 //----------------------------------------------------------------------
 void WorkDistrib::assignPatchesSpaceFillingCurve() 
 {
   PatchMap *patchMap = PatchMap::Object();
-  int *assignedNode = new int[patchMap->numPatches()];
+  const int numPatches = patchMap->numPatches();
+  int *assignedNode = new int[numPatches];
   int numNodes = Node::Object()->numNodes();
   SimParameters *simParams = Node::Object()->simParameters;
   if(simParams->simulateInitialMapping) {
 	  numNodes = simParams->simulatedPEs;
   }
+
+  ResizeArray<int> patchOrdering(numPatches);
+  for ( int i=0; i<numPatches; ++i ) {
+    patchOrdering[i] = i;
+  }
+  std::sort(patchOrdering.begin(), patchOrdering.end(),
+            patch_sortop_curve_a(patchMap));
+  if ( 0 ) for ( int i=0; i<numPatches; ++i ) {
+    int pid = patchOrdering[i];
+    CkPrintf("order %6d %6d (%4d %4d %4d)\n", i, pid,
+              patchMap->index_a(pid),
+              patchMap->index_b(pid),
+              patchMap->index_c(pid));
+  }
+
   int usedNodes = numNodes;
   int unusedNodes = 0;
   // make exclusion list
@@ -1491,7 +1570,6 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
 #endif
   unusedNodes = numNodes - usedNodes;
 
-  int numPatches = patchMap->numPatches();
   if ( numPatches < usedNodes )
     NAMD_bug("WorkDistrib::assignPatchesSpaceFillingCurve() called with more nodes than patches");
 
@@ -1530,16 +1608,7 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   sumLoad = 0;
   int node = 0;
   int usedNode = 0;
-  int adim = patchMap->gridsize_a();
-  int bdim = patchMap->gridsize_b();
-  int cdim = patchMap->gridsize_c();
-  int b = 0;
-  int c = 0;
-  int binc = 1;
-  int cinc = 1;
-  for ( int a = 0; a < adim; ++a ) {
-    while ( b >= 0 && b < bdim ) {
-      while ( c >= 0 && c < cdim ) {
+  for ( int i=0; i < numPatches; ++i ) {
 	if ( simParams->noPatchesOnZero && numNodes > 1 && node==0) ++node;
 	if ( simParams->noPatchesOnOne && numNodes > 2 && node==1) ++node;
 #ifdef MEM_OPT_VERSION
@@ -1555,19 +1624,13 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
 	      }
 	  }
 #endif
-        int pid = patchMap->pid(a,b,c);
+        int pid = patchOrdering[i];
         assignedNode[pid] = node;
         sumLoad += patchLoads[pid];
         double targetLoad = (double)(usedNode+1) / (double)usedNodes;
         targetLoad *= totalLoad;
 	//	CkPrintf("Patch Map Using node+1 %d numNodes %d sumload %f targetLoad %f\n",node+1, numNodes, sumLoad, targetLoad);
         if ( node+1 < numNodes && usedNode+1 < usedNodes && sumLoad >= targetLoad ) { ++node; ++usedNode; }
-        c += cinc;
-      }
-      cinc *= -1;  c += cinc;
-      b += binc;
-    }
-    binc *= -1;  b += binc;
   }
 
   sortNodesAndAssign(assignedNode);
