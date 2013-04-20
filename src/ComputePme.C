@@ -322,9 +322,7 @@ public:
   //Tells if the current processor is a PME processor or not. Called by NamdCentralLB
   int isPmeProcessor(int p);  
 
-#ifdef NAMD_FFTW
   static CmiNodeLock fftw_plan_lock;
-#endif
 
 private:
 
@@ -432,9 +430,7 @@ private:
   int strayChargeErrors;
 };
 
-#ifdef NAMD_FFTW
   CmiNodeLock ComputePmeMgr::fftw_plan_lock;
-#endif
 
 int isPmeProcessor(int p){ 
   return CProxy_ComputePmeMgr::ckLocalBranch(CkpvAccess(BOCclass_group).computePmeMgr)->isPmeProcessor(p);
@@ -533,11 +529,9 @@ ComputePmeMgr::ComputePmeMgr() : pmeProxy(thisgroup),
 
   pmeNodeProxy.ckLocalBranch()->initialize();
 
-#ifdef NAMD_FFTW
   if ( CmiMyRank() == 0 ) {
     fftw_plan_lock = CmiCreateLock();
   }
-#endif
 
   myKSpace = 0;
   kgrid = 0;
@@ -1517,11 +1511,9 @@ void ComputePmeMgr::activate_pencils(CkQdMsg *msg) {
 
 ComputePmeMgr::~ComputePmeMgr() {
 
-#ifdef NAMD_FFTW
   if ( CmiMyRank() == 0 ) {
     CmiDestroyLock(fftw_plan_lock);
   }
-#endif
 
   delete myKSpace;
   delete [] localInfo;
@@ -3372,7 +3364,9 @@ public:
 #endif
   }
   ~PmePencil() {
+#ifdef NAMD_FFTW
     fftwf_free(data);
+#endif
     delete [] work;
     delete [] send_order;
     delete [] needs_reply;
@@ -3633,13 +3627,14 @@ void PmeZPencil::fft_init() {
   ny = block2;
   if ( (thisIndex.y + 1) * block2 > K2 ) ny = K2 - thisIndex.y * block2;
 
+#ifdef NAMD_FFTW
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+
   data = (float *) fftwf_malloc( sizeof(float) *nx*ny*dim3);
   work = new float[dim3];
 
   order_init(initdata.zBlocks);
 
-#ifdef NAMD_FFTW
-  CmiLock(ComputePmeMgr::fftw_plan_lock);
 #ifdef NAMD_FFTW_3
   /* need array of sizes for the how many */
 
@@ -3733,13 +3728,14 @@ void PmeYPencil::fft_init() {
   nz = block3;
   if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
 
+#ifdef NAMD_FFTW
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+
   data = (float *) fftwf_malloc( sizeof(float) * nx*dim2*nz*2);
   work = new float[2*K2];
 
   order_init(initdata.yBlocks);
 
-#ifdef NAMD_FFTW
-  CmiLock(ComputePmeMgr::fftw_plan_lock);
 #ifdef NAMD_FFTW_3
   /* need array of sizes for the dimensions */
   /* ideally this should be implementable as a single multidimensional
@@ -3893,13 +3889,14 @@ void PmeXPencil::fft_init() {
   nz = block3;
   if ( (thisIndex.z+1)*block3 > dim3/2 ) nz = dim3/2 - thisIndex.z*block3;
 
+#ifdef NAMD_FFTW
+  CmiLock(ComputePmeMgr::fftw_plan_lock);
+
   data = (float *) fftwf_malloc( sizeof(float) * K1*ny*nz*2);
   work = new float[2*K1];
 
   order_init(initdata.xBlocks);
 
-#ifdef NAMD_FFTW
-  CmiLock(ComputePmeMgr::fftw_plan_lock);
 #ifdef NAMD_FFTW_3
   /* need array of sizes for the how many */
   int fftwFlags = simParams->FFTWPatient ? FFTW_PATIENT  : simParams->FFTWEstimate ? FFTW_ESTIMATE  : FFTW_MEASURE ;
