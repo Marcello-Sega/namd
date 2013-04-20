@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/04/19 19:56:46 $
- * $Revision: 1.1255 $
+ * $Date: 2013/04/20 18:38:07 $
+ * $Revision: 1.1256 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1306,26 +1306,10 @@ void WorkDistrib::assignPatchesBitReversal()
   if ( ncpus <= npatches )
     NAMD_bug("WorkDistrib::assignPatchesBitReversal called improperly");
 
-  // find next highest power of two
-  int npow2 = 1;  int nbits = 0;
-  while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
-
-  // build bit reversal sequence
   SortableResizeArray<int> seq(ncpus);
   // avoid using node 0 (reverse of 0 is 0 so start at 1)
-  int i = 1;
-  for ( int icpu=0; icpu<(ncpus-1); ++icpu ) {
-    int ri;
-    for ( ri = ncpus; ri >= ncpus; ++i ) {
-      ri = 0;
-      int pow2 = 1;
-      int rpow2 = npow2 / 2;
-      for ( int j=0; j<nbits; ++j ) {
-        ri += rpow2 * ( ( i / pow2 ) % 2 );
-        pow2 *= 2;  rpow2 /= 2;
-      }
-    }
-    seq[icpu] = ri;
+  for ( int i = 1; i < ncpus; ++i ) {
+    seq[i-1] = peDiffuseOrdering[i];
   }
 
   // extract and sort patch locations

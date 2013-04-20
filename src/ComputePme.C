@@ -209,98 +209,24 @@ struct NodePmeInfo {
 };
 
 
-//Assigns gridPeMap and transPeMap to the same set of processors.
-void generatePmePeList(int *peMap, int numPes){
-  // decide which pes to use by bit reversal
-  int i;
-  int ncpus = CkNumPes();
-  
-  // find next highest power of two
-  int npow2 = 1;  int nbits = 0;
-  while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
-  
-  // build bit reversal sequence
-  SortableResizeArray<int> seq(ncpus);
-  i = 0;
-  for ( int icpu=0; icpu<ncpus; ++icpu ) {
-    int ri;
-    for ( ri = ncpus; ri >= ncpus; ++i ) {
-      ri = 0;
-      int pow2 = 1;
-      int rpow2 = npow2 / 2;
-      for ( int j=0; j<nbits; ++j ) {
-        ri += rpow2 * ( ( i / pow2 ) % 2 );
-        pow2 *= 2;  rpow2 /= 2;
-      }
-    }
-    seq[icpu] = ri;
-  }
-  
-  // extract and sort PME locations
-  for ( i=0; i<numPes; ++i ) {
-    seq[i] = seq[ncpus - numPes + i];
-  }
-  seq.resize(numPes);
-  seq.sort();
-  
-  for ( i=0; i<numPes; ++i ) 
-      peMap[i] = seq[i];
-
-  //peMap[0] = 0;
-}
-
 //Assigns gridPeMap and transPeMap to different set of processors.
 void generatePmePeList2(int *gridPeMap, int numGridPes, int *transPeMap, int numTransPes){
-  // decide which pes to use by bit reversal
-  int i;
   int ncpus = CkNumPes();
   
-  // find next highest power of two
-  int npow2 = 1;  int nbits = 0;
-  while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
-  
-  // build bit reversal sequence
-  SortableResizeArray<int> seq(ncpus);
-  SortableResizeArray<int> seq2(ncpus);
-  i = 0;
-  for ( int icpu=0; icpu<ncpus; ++icpu ) {
-    int ri;
-    for ( ri = ncpus; ri >= ncpus; ++i ) {
-      ri = 0;
-      int pow2 = 1;
-      int rpow2 = npow2 / 2;
-      for ( int j=0; j<nbits; ++j ) {
-        ri += rpow2 * ( ( i / pow2 ) % 2 );
-        pow2 *= 2;  rpow2 /= 2;
-      }
-    }
-    seq[icpu] = ri;
-    seq2[icpu] = ri;
+  for ( int i=0; i<numGridPes; ++i ) {
+    gridPeMap[i] = WorkDistrib::peDiffuseOrdering[ncpus - numGridPes + i];
   }
-  
-  // extract and sort PME locations
-  for ( i=0; i<numGridPes; ++i ) {
-    seq[i] = seq[ncpus - numGridPes + i];
-  }
-  seq.resize(numGridPes);
-  seq.sort();
+  std::sort(gridPeMap,gridPeMap+numGridPes);
   int firstTransPe = ncpus - numGridPes - numTransPes;
   if ( firstTransPe < 0 ) {
     firstTransPe = 0;
     // 0 should be first in list, skip if possible
     if ( ncpus > numTransPes ) firstTransPe = 1;
   }
-  for ( i=0; i<numTransPes; ++i ) {
-    seq2[i] = seq2[firstTransPe + i];
+  for ( int i=0; i<numTransPes; ++i ) {
+    transPeMap[i] = WorkDistrib::peDiffuseOrdering[firstTransPe + i];
   }
-  seq2.resize(numTransPes);
-  seq2.sort();
-  
-  for ( i=0; i<numGridPes; ++i ) 
-    gridPeMap[i] = seq[i];
-
-  for ( i=0; i<numTransPes; ++i ) 
-    transPeMap[i] = seq2[i];
+  std::sort(transPeMap,transPeMap+numTransPes);
 }
 
 #if USE_TOPOMAP 
@@ -1007,27 +933,10 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
       		// decide which pes to use by bit reversal and patch use
       		int i;
       		int ncpus = CkNumPes();
-  
-      		// find next highest power of two
-      		int npow2 = 1;  int nbits = 0;
-      		while ( npow2 < ncpus ) { npow2 *= 2; nbits += 1; }
-  
-      		// build bit reversal sequence
       		SortableResizeArray<int> patches, nopatches, pmeprocs;
       		PatchMap *pmap = PatchMap::Object();
-      		i = 0;
       		for ( int icpu=0; icpu<ncpus; ++icpu ) {
-        		int ri;
-        		for ( ri = ncpus; ri >= ncpus; ++i ) {
-          			ri = 0;
-          			int pow2 = 1;
-          			int rpow2 = npow2 / 2;
-          			for ( int j=0; j<nbits; ++j ) {
-            			ri += rpow2 * ( ( i / pow2 ) % 2 );
-            			pow2 *= 2;  rpow2 /= 2;
-          			}
-        		}
-        		// seq[icpu] = ri;
+        		int ri = WorkDistrib::peDiffuseOrdering[icpu];
         		if ( ri ) { // keep 0 for special case
           			if ( pmap->numPatchesOnNode(ri) ) patches.add(ri);
           			else nopatches.add(ri);
