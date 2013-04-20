@@ -104,7 +104,7 @@ void ParallelIOMgr::initialize(Node *node)
     inputProcArray = new int[numInputProcs];
     myInputRank = -1;
     for(int i=0; i<numInputProcs; ++i) {
-      inputProcArray[i] = WorkDistrib::peDiffuseOrdering[(i+1)%CkNumPes()];
+      inputProcArray[i] = WorkDistrib::peDiffuseOrdering[(1+numOutputProcs+i)%CkNumPes()];
     }
     std::sort(inputProcArray, inputProcArray+numInputProcs);
     for(int i=0; i<numInputProcs; ++i) {
@@ -142,12 +142,17 @@ void ParallelIOMgr::initialize(Node *node)
     //spread the output processors across all the processors
    {
     outputProcArray = new int[numOutputProcs];
+    outputProcFlags = new char[CkNumPes()];
     myOutputRank = -1;
     for(int i=0; i<numOutputProcs; ++i) {
-      outputProcArray[i] = WorkDistrib::peDiffuseOrdering[CkNumPes()-1-i];
+      outputProcArray[i] = WorkDistrib::peDiffuseOrdering[(1+i)%CkNumPes()];
     }
     std::sort(outputProcArray, outputProcArray+numOutputProcs);
+    for(int i=0; i<CkNumPes(); ++i) {
+      outputProcFlags[i] = 0;
+    }
     for(int i=0; i<numOutputProcs; ++i) {
+      outputProcFlags[outputProcArray[i]] = 1;
       if ( CkMyPe() == outputProcArray[i] ) {
         if ( myOutputRank != -1 ) NAMD_bug("Duplicate output proc");
         myOutputRank = i;
@@ -179,9 +184,7 @@ void ParallelIOMgr::initialize(Node *node)
 }
 
 bool ParallelIOMgr::isOutputProcessor(int pe) {
-    // if the method used to distribute output processors changes, this needs to update with it.
-   const int index = WorkDistrib::peDiffuseOrderingIndex[pe];
-   return ( index >= ( CkNumPes() - numOutputProcs ) );
+   return outputProcFlags[pe];
 }
 
 int isOutputProcessor(int pe){ 

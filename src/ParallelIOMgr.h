@@ -197,6 +197,7 @@ private:
 ///////Beginning of fields related to parallel output////////
     int numOutputProcs;
     int *outputProcArray;
+    char *outputProcFlags;
     //the index to the outputProcArray i.e.
     //outputProcArray[myOutputRank] == CkMyPe();
     //if it is not a output proc, the rank is -1;
