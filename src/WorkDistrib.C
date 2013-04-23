@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/04/20 21:34:24 $
- * $Revision: 1.1257 $
+ * $Date: 2013/04/23 15:29:12 $
+ * $Revision: 1.1258 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1377,11 +1377,10 @@ void WorkDistrib::sortNodesAndAssign(int *assignedNode, int baseNodes) {
     if ( allnodes[i].npatches ) usednodes.add(allnodes[i]);
   }
   usednodes.sort();
-  int nused = usednodes.size();
-  int i2 = nused/2;
+  int i2 = 0;
   for ( i=0; i < nnodes; ++i ) {
-    if ( allnodes[i].npatches ) allnodes[usednodes[i2++].node].node = i;
-    if ( i2 == nused ) i2 = 0;
+    int pe = peCompactOrdering[i];
+    if ( allnodes[pe].npatches ) allnodes[usednodes[i2++].node].node = pe;
   }
 
   for ( pid=0; pid<npatches; ++pid ) {
@@ -1520,12 +1519,175 @@ struct patch_sortop_curve_c {
   }
 };
 
+static void recursive_bisect_with_curve(
+  int *patch_begin, int *patch_end,
+  int *node_begin, int *node_end,
+  double *patchLoads,
+  double *sortedLoads,
+  int *assignedNode
+  ) {
+
+  PatchMap *patchMap = PatchMap::Object();
+  int *patches = patch_begin;
+  int npatches = patch_end - patch_begin;
+  int *nodes = node_begin;
+  int nnodes = node_end - node_begin;
+
+  // assign patch loads
+  double totalRawLoad = 0;
+  for ( int i=0; i<npatches; ++i ) {
+    int pid=patches[i];
+#ifdef MEM_OPT_VERSION
+    double load = patchMap->numAtoms(pid) + 10;      
+#else
+    double load = patchMap->patch(pid)->getNumAtoms() + 10;
+#endif
+    patchLoads[pid] = load;
+    sortedLoads[i] = load;
+    totalRawLoad += load;
+  }
+  std::sort(sortedLoads,sortedLoads+npatches);
+
+  // limit maxPatchLoad to adjusted average load per node
+  double sumLoad = 0;
+  double maxPatchLoad = 1;
+  for ( int i=0; i<npatches; ++i ) {
+    double load = sortedLoads[i];
+    double total = sumLoad + (npatches-i) * load;
+    if ( nnodes * load > total ) break;
+    sumLoad += load;
+    maxPatchLoad = load;
+  }
+  double totalLoad = 0;
+  for ( int i=0; i<npatches; ++i ) {
+    int pid=patches[i];
+    if ( patchLoads[pid] > maxPatchLoad ) patchLoads[pid] = maxPatchLoad;
+    totalLoad += patchLoads[pid];
+  }
+  if ( nnodes * maxPatchLoad > totalLoad )
+    NAMD_bug("algorithm failure in WorkDistrib recursive_bisect_with_curve()");
+
+  int node = 0;
+  // find physical node boundary to split on
+  int i_split = 0;
+  for ( int i=0; i<nnodes; ++i ) {
+    if ( ! CmiPeOnSamePhysicalNode(nodes[i_split],nodes[i]) ) {
+      int mid = (nnodes+1)/2;
+      if ( abs(i-mid) < abs(i_split-mid) ) i_split = i;
+      else break;
+    }
+  }
+  int *node_split = node_begin + i_split;
+
+  int a_len, b_len, c_len;
+  { // find dimensions
+    int a_min = patchMap->index_a(patches[0]);
+    int b_min = patchMap->index_b(patches[0]);
+    int c_min = patchMap->index_c(patches[0]);
+    int a_max = a_min;
+    int b_max = b_min;
+    int c_max = c_min;
+    for ( int i=1; i<npatches; ++i ) {
+      int a = patchMap->index_a(patches[i]);
+      int b = patchMap->index_b(patches[i]);
+      int c = patchMap->index_c(patches[i]);
+      if ( a < a_min ) a_min = a;
+      if ( b < b_min ) b_min = b;
+      if ( c < c_min ) c_min = c;
+      if ( a > a_max ) a_max = a;
+      if ( b > b_max ) b_max = b;
+      if ( c > c_max ) c_max = c;
+    }
+    a_len = a_max - a_min;
+    b_len = b_max - b_min;
+    c_len = c_max - c_min;
+  }
+
+  if ( node_split == node_begin ) {
+    if ( 0 ) CkPrintf("WorkDistrib: physnode %5d has %5d patches %5d x %5d x %5d load %7f pes %5d\n",
+               CmiPhysicalNodeID(*node_begin), npatches,
+               a_len+1, b_len+1, c_len+1, totalRawLoad, nnodes);
+
+    // final sort along a to minimize pme message count
+    std::sort(patch_begin,patch_end,patch_sortop_curve_a(patchMap));
+
+    // walk through patches in sorted order
+    int *node = node_begin;
+    sumLoad = 0;
+    for ( int i=0; i < npatches; ++i ) {
+      int pid = patches[i];
+      assignedNode[pid] = *node;
+      sumLoad += patchLoads[pid];
+      double targetLoad = totalLoad *
+        ((double)(node-node_begin+1) / (double)nnodes);
+      if ( 0 ) CkPrintf("assign %5d node %5d patch %5d %5d %5d load %7f target %7f\n",
+                i, *node,
+                patchMap->index_a(pid),
+                patchMap->index_b(pid),
+                patchMap->index_c(pid),
+                sumLoad, targetLoad);
+      double extra = ( i+1 < npatches ? 0.5 * patchLoads[patches[i+1]] : 0 );
+      if ( node+1 < node_end && sumLoad + extra >= targetLoad ) { ++node; }
+    }
+
+    return;
+  }
+
+  if ( a_len >= b_len && a_len >= c_len ) {
+    if ( 0 ) CkPrintf("sort a\n");
+    std::sort(patch_begin,patch_end,patch_sortop_curve_a(patchMap));
+  } else if ( b_len >= a_len && b_len >= c_len ) {
+    if ( 0 ) CkPrintf("sort b\n");
+    std::sort(patch_begin,patch_end,patch_sortop_curve_b(patchMap));
+  } else if ( c_len >= a_len && c_len >= b_len ) {
+    if ( 0 ) CkPrintf("sort c\n");
+    std::sort(patch_begin,patch_end,patch_sortop_curve_c(patchMap));
+  }
+
+  int *patch_split;
+  { // walk through patches in sorted order
+    int *node = node_begin;
+    sumLoad = 0;
+    for ( patch_split = patch_begin;
+          patch_split != patch_end && node != node_split;
+          ++patch_split ) {
+      sumLoad += patchLoads[*patch_split];
+      double targetLoad = totalLoad *
+        ((double)(node-node_begin+1) / (double)nnodes);
+      if ( 0 ) CkPrintf("test %5d node %5d patch %5d %5d %5d load %7f target %7f\n",
+                patch_split - patch_begin, *node,
+                patchMap->index_a(*patch_split),
+                patchMap->index_b(*patch_split),
+                patchMap->index_c(*patch_split),
+                sumLoad, targetLoad);
+      double extra = ( patch_split+1 != patch_end ? 0.5 * patchLoads[*(patch_split+1)] : 0 );
+      if ( node+1 < node_end && sumLoad + extra >= targetLoad ) { ++node; }
+    }
+    double targetLoad = totalLoad *
+      ((double)(node_split-node_begin) / (double)nnodes);
+    if ( 0 ) CkPrintf("split node %5d/%5d patch %5d/%5d load %7f target %7f\n",
+              node_split-node_begin, nnodes,
+              patch_split-patch_begin, npatches,
+              sumLoad, targetLoad);
+  }
+
+  // recurse
+  recursive_bisect_with_curve(
+    patch_begin, patch_split, node_begin, node_split,
+    patchLoads, sortedLoads, assignedNode);
+  recursive_bisect_with_curve(
+    patch_split, patch_end, node_split, node_end,
+    patchLoads, sortedLoads, assignedNode);
+}
+
 //----------------------------------------------------------------------
 void WorkDistrib::assignPatchesSpaceFillingCurve() 
 {
   PatchMap *patchMap = PatchMap::Object();
   const int numPatches = patchMap->numPatches();
   int *assignedNode = new int[numPatches];
+  ResizeArray<double> patchLoads(numPatches);
+  SortableResizeArray<double> sortedLoads(numPatches);
   int numNodes = Node::Object()->numNodes();
   SimParameters *simParams = Node::Object()->simParameters;
   if(simParams->simulateInitialMapping) {
@@ -1536,104 +1698,40 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   for ( int i=0; i<numPatches; ++i ) {
     patchOrdering[i] = i;
   }
-  std::sort(patchOrdering.begin(), patchOrdering.end(),
-            patch_sortop_curve_a(patchMap));
-  if ( 0 ) for ( int i=0; i<numPatches; ++i ) {
-    int pid = patchOrdering[i];
-    CkPrintf("order %6d %6d (%4d %4d %4d)\n", i, pid,
-              patchMap->index_a(pid),
-              patchMap->index_b(pid),
-              patchMap->index_c(pid));
-  }
 
-  int usedNodes = numNodes;
-  int unusedNodes = 0;
-  // make exclusion list
-  if ( simParams->noPatchesOnZero && numNodes > 1 ){
-    usedNodes -= 1;
-    if(simParams->noPatchesOnOne && numNodes > 2)
-      {
-	usedNodes -= 1;
+  ResizeArray<int> nodeOrdering(numNodes);
+  nodeOrdering.resize(0);
+  for ( int i=0; i<numNodes; ++i ) {
+    int pe = peCompactOrdering[i];
+    if ( simParams->noPatchesOnZero && numNodes > 1 ) {
+      if ( pe == 0 ) continue;
+      if(simParams->noPatchesOnOne && numNodes > 2) {
+        if ( pe == 1 ) continue;
       }
-  }  
+    }  
 #ifdef MEM_OPT_VERSION
-  if(simParams->noPatchesOnOutputPEs && numNodes-simParams->numoutputprocs >2)
-    {
-      usedNodes -= simParams->numoutputprocs;
-      if ( simParams->noPatchesOnZero && numNodes > 1 && isOutputProcessor(0)){
-	usedNodes++;
-      }
-      if ( simParams->noPatchesOnOne && numNodes > 2 && isOutputProcessor(1)){
-	usedNodes++;
-      }
+    if(simParams->noPatchesOnOutputPEs && numNodes-simParams->numoutputprocs >2) {
+      if ( isOutputProcessor(pe) ) continue;
     }
 #endif
-  unusedNodes = numNodes - usedNodes;
+    nodeOrdering.add(pe);
+    if ( 0 ) CkPrintf("using pe %5d\n", pe);
+  }
+  int usedNodes = nodeOrdering.size();
 
   if ( numPatches < usedNodes )
     NAMD_bug("WorkDistrib::assignPatchesSpaceFillingCurve() called with more nodes than patches");
 
-  ResizeArray<double> patchLoads(numPatches);
-  SortableResizeArray<double> sortedLoads(numPatches);
-  for ( int i=0; i<numPatches; ++i ) {
-#ifdef MEM_OPT_VERSION
-    double load = patchMap->numAtoms(i) + 10;      
-#else
-    double load = patchMap->patch(i)->getNumAtoms() + 10;
-#endif
-    patchLoads[i] = load;
-    sortedLoads[i] = load;
-  }
-  sortedLoads.sort();
+  recursive_bisect_with_curve(
+    patchOrdering.begin(), patchOrdering.end(),
+    nodeOrdering.begin(), nodeOrdering.end(),
+    patchLoads.begin(), sortedLoads.begin(), assignedNode);
 
-  // limit maxPatchLoad to adjusted average load per node
-  double sumLoad = 0;
-  double maxPatchLoad = 1;
-  for ( int i=0; i<numPatches; ++i ) {
-    double load = sortedLoads[i];
-    double total = sumLoad + (numPatches-i) * load;
-    if ( usedNodes * load > total ) break;
-    sumLoad += load;
-    maxPatchLoad = load;
-  }
-  double totalLoad = 0;
-  for ( int i=0; i<numPatches; ++i ) {
-    if ( patchLoads[i] > maxPatchLoad ) patchLoads[i] = maxPatchLoad;
-    totalLoad += patchLoads[i];
-  }
-  if ( usedNodes * maxPatchLoad > totalLoad )
-    NAMD_bug("algorithm failure in WorkDistrib::assignPatchesSpaceFillingCurve()");
-
-  // walk through patches in space-filling curve
-  sumLoad = 0;
-  int node = 0;
-  int usedNode = 0;
-  for ( int i=0; i < numPatches; ++i ) {
-	if ( simParams->noPatchesOnZero && numNodes > 1 && node==0) ++node;
-	if ( simParams->noPatchesOnOne && numNodes > 2 && node==1) ++node;
-#ifdef MEM_OPT_VERSION
-	if(simParams->noPatchesOnOutputPEs)
-	  { //advance through reserved pe list and skip output PEs
-	    if(isOutputProcessor(node))
-	      {
-		if ( node+1 < numNodes )
-		  {
-		    CkPrintf("Patch Map Skipping %d to avoid Output PE\n",node);
-		    ++node;
-		  }
-	      }
-	  }
-#endif
-        int pid = patchOrdering[i];
-        assignedNode[pid] = node;
-        sumLoad += patchLoads[pid];
-        double targetLoad = (double)(usedNode+1) / (double)usedNodes;
-        targetLoad *= totalLoad;
-	//	CkPrintf("Patch Map Using node+1 %d numNodes %d sumload %f targetLoad %f\n",node+1, numNodes, sumLoad, targetLoad);
-        if ( node+1 < numNodes && usedNode+1 < usedNodes && sumLoad >= targetLoad ) { ++node; ++usedNode; }
+  for ( int pid=0; pid<numPatches; ++pid ) {
+    patchMap->assignNode(pid, assignedNode[pid]);	
+    patchMap->assignBaseNode(pid, assignedNode[pid]);	
   }
 
-  sortNodesAndAssign(assignedNode);
   delete [] assignedNode; 
 }
 
