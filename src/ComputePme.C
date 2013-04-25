@@ -1088,7 +1088,8 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	// creating the pencil arrays
 	if ( CkMyPe() == 0 ){
 #if !USE_RANDOM_TOPO
-	std::sort(zprocs.begin(),zprocs.end(),WorkDistrib::pe_sortop_compact());
+	// std::sort(zprocs.begin(),zprocs.end(),WorkDistrib::pe_sortop_compact());
+	WorkDistrib::sortPmePes(zprocs.begin(),xBlocks,yBlocks);
 	std::sort(yprocs.begin(),yprocs.end(),WorkDistrib::pe_sortop_compact());
 	std::sort(xprocs.begin(),xprocs.end(),WorkDistrib::pe_sortop_compact());
 #endif

@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/04/23 15:29:12 $
- * $Revision: 1.1258 $
+ * $Date: 2013/04/25 21:37:24 $
+ * $Revision: 1.1259 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -175,6 +175,104 @@ void WorkDistrib::buildNodeAwarePeOrdering() {
       peCompactOrderingIndex[i]);
   }
 
+}
+
+struct pe_sortop_coord_x {
+  ScaledPosition *spos;
+  pe_sortop_coord_x(ScaledPosition *s) : spos(s) {}
+  inline bool operator() (int a, int b) const {
+    return ( spos[a].x < spos[b].x );
+  }
+};
+
+struct pe_sortop_coord_y {
+  ScaledPosition *spos;
+  pe_sortop_coord_y(ScaledPosition *s) : spos(s) {}
+  inline bool operator() (int a, int b) const {
+    return ( spos[a].y < spos[b].y );
+  }
+};
+
+static void recursive_bisect_coord(
+    int x_begin, int x_end, int y_begin, int y_end,
+    int *pe_begin, ScaledPosition *coord,
+    int *result, int ydim
+  ) {
+  int x_len = x_end - x_begin;
+  int y_len = y_end - y_begin;
+  if ( x_len == 1 && y_len == 1 ) {
+    // done, now put this pe in the right place
+    if ( 0 ) CkPrintf("pme %5d %5d on pe %5d at %f %f\n", x_begin, y_begin, *pe_begin,
+      coord[*pe_begin].x, coord[*pe_begin].y);
+    result[x_begin*ydim + y_begin] = *pe_begin;
+    return;
+  }
+  int *pe_end = pe_begin + x_len * y_len;
+  if ( x_len >= y_len ) {
+    std::sort(pe_begin, pe_end, pe_sortop_coord_x(coord));
+    int x_split = x_begin + x_len / 2;
+    int* pe_split = pe_begin + (x_split - x_begin) * y_len;
+    //CkPrintf("x_split %5d %5d %5d\n", x_begin, x_split, x_end);
+    recursive_bisect_coord(x_begin, x_split, y_begin, y_end, pe_begin, coord, result, ydim);
+    recursive_bisect_coord(x_split, x_end, y_begin, y_end, pe_split, coord, result, ydim);
+  } else {
+    std::sort(pe_begin, pe_end, pe_sortop_coord_y(coord));
+    int y_split = y_begin + y_len / 2;
+    int* pe_split = pe_begin + (y_split - y_begin) * x_len;
+    //CkPrintf("y_split %5d %5d %5d\n", y_begin, y_split, y_end);
+    recursive_bisect_coord(x_begin, x_end, y_begin, y_split, pe_begin, coord, result, ydim);
+    recursive_bisect_coord(x_begin, x_end, y_split, y_end, pe_split, coord, result, ydim);
+  }
+}
+
+void WorkDistrib::sortPmePes(int *pmepes, int xdim, int ydim) {
+  int numpes = CkNumPes();
+  ResizeArray<int> count(numpes);
+  ResizeArray<ScaledPosition> sumPos(numpes);
+  ResizeArray<ScaledPosition> avgPos(numpes);
+  for ( int i=0; i<numpes; ++i ) {
+    count[i] = 0;
+    sumPos[i] = 0;
+    avgPos[i] = 0;
+  }
+  PatchMap *patchMap = PatchMap::Object();
+  for ( int i=0, npatches=patchMap->numPatches(); i<npatches; ++i ) {
+    int pe = patchMap->node(i);
+    count[pe] += 1;
+    sumPos[pe] += patchMap->center(i);
+  }
+  const int npmepes = xdim*ydim;
+  ResizeArray<int> sortpes(npmepes);
+  for ( int i=0; i<npmepes; ++i ) {
+    int pe = sortpes[i] = pmepes[i];
+    int cnt = count[pe];
+    ScaledPosition sum = sumPos[pe];
+    if ( cnt == 0 ) {
+      // average over node
+      int node = CkNodeOf(pe);
+      int nsize = CkNodeSize(node);
+      int pe2 = CkNodeFirst(node);
+      for ( int j=0; j<nsize; ++j, ++pe2 )  {
+        cnt += count[pe2];
+        sum += avgPos[pe2];
+      }
+    }
+    if ( cnt == 0 ) {
+      // average over physical node
+      int node = CmiPhysicalNodeID(pe);
+      int nsize, *nlist;
+      CmiGetPesOnPhysicalNode(node, &nlist, &nsize);
+      for ( int j=0; j<nsize; ++j )  {
+        int pe2 = nlist[j];
+        cnt += count[pe2];
+        sum += avgPos[pe2];
+      }
+    }
+    if ( cnt ) {
+      avgPos[pe] = sum / cnt;
+    }
+  }
+  recursive_bisect_coord(0, xdim, 0, ydim, sortpes.begin(), avgPos.begin(), pmepes, ydim);
 }
 
 

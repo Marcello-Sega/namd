@@ -113,6 +113,8 @@ public:
     }
   };
 
+  static void sortPmePes(int *pmepes, int xdim, int ydim);
+
 private:
   void buildNodeAwarePeOrdering(void);
 
