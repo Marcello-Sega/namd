@@ -808,28 +808,6 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
   // sort based on nodes and physical nodes
   std::sort(gridPeMap,gridPeMap+numGridPes,WorkDistrib::pe_sortop_compact());
 
-  { // rotate on node boundary to match patch placement
-    int split = 0;
-    int center = numGridPes/2;
-    int oldnode = CkNodeOf(gridPeMap[0]);
-    for ( int i=0; i<numGridPes; ++i ) {
-      if ( CkNodeOf(gridPeMap[i]) != oldnode ) {
-        oldnode = CkNodeOf(gridPeMap[i]);
-        if ( abs(i-center) > abs(split-center) ) break;
-        else split = i;
-      }
-    }
-    int *mapcopy = new int[numGridPes];
-    for ( int i=0; i<numGridPes; ++i ) {
-      mapcopy[i] = gridPeMap[i];
-    }
-    for ( int i=0; i<numGridPes; ++i ) {
-      gridPeMap[i] = mapcopy[(split+i)%numGridPes];
-      if ( 0 && ! CkMyPe() ) CkPrintf("shifted %5d node %5d\n", gridPeMap[i], CkNodeOf(gridPeMap[i]));
-    }
-    delete [] mapcopy;
-  }
-
   myGridPe = -1;
   myGridNode = -1;
   int i = 0;
@@ -1111,30 +1089,15 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 	if ( CkMyPe() == 0 ){
 #if !USE_RANDOM_TOPO
 	std::sort(zprocs.begin(),zprocs.end(),WorkDistrib::pe_sortop_compact());
-        { // rotate to match patch placement
-          int nz = xBlocks*yBlocks;
-          int split = (xBlocks/2)*yBlocks;
-          int *pcopy = new int[nz];
-          for ( int i=0; i<nz; ++i ) pcopy[i] = zprocs[i];
-          for ( int i=0; i<nz; ++i ) zprocs[i] = pcopy[(split+i)%nz];
-          delete [] pcopy;
-        }
 	std::sort(yprocs.begin(),yprocs.end(),WorkDistrib::pe_sortop_compact());
 	std::sort(xprocs.begin(),xprocs.end(),WorkDistrib::pe_sortop_compact());
 #endif
 #if 1
         CProxy_PmePencilMap zm = CProxy_PmePencilMap::ckNew(0,1,yBlocks,xBlocks*yBlocks,zprocs.begin());
         CProxy_PmePencilMap ym;
-        if ( simParams->PMEPencilsYLayout ) {
-          // rotate to match z placement
-          int ny = xBlocks*zBlocks;
-          int split = (xBlocks/2)*zBlocks;
-          int *pcopy = new int[ny];
-          for ( int i=0; i<ny; ++i ) pcopy[i] = yprocs[i];
-          for ( int i=0; i<ny; ++i ) yprocs[i] = pcopy[(split+i)%ny];
-          delete [] pcopy;
+        if ( simParams->PMEPencilsYLayout )
           ym = CProxy_PmePencilMap::ckNew(0,2,zBlocks,zBlocks*xBlocks,yprocs.begin()); // new
-        } else
+        else
           ym = CProxy_PmePencilMap::ckNew(2,0,xBlocks,zBlocks*xBlocks,yprocs.begin()); // old
         CProxy_PmePencilMap xm;
         if ( simParams->PMEPencilsXLayout )
@@ -1242,12 +1205,13 @@ void ComputePmeMgr::initialize(CkQdMsg *msg) {
 
   for ( int pid=0; pid < numPatches; ++pid ) {
     int pnode = patchMap->node(pid);
+    int shift1 = (myGrid.K1 + myGrid.order - 1)/2;
     BigReal minx = patchMap->min_a(pid);
     BigReal maxx = patchMap->max_a(pid);
     BigReal margina = 0.5 * ( patchdim - cutoff ) / sysdima;
     // min1 (max1) is smallest (largest) grid line for this patch
-    int min1 = ((int) floor(myGrid.K1 * (minx - margina))) - myGrid.order + 1;
-    int max1 = ((int) floor(myGrid.K1 * (maxx + margina)));
+    int min1 = ((int) floor(myGrid.K1 * (minx - margina))) + shift1 - myGrid.order + 1;
+    int max1 = ((int) floor(myGrid.K1 * (maxx + margina))) + shift1;
     for ( int i=min1; i<=max1; ++i ) {
       int ix = i;
       while ( ix >= myGrid.K1 ) ix -= myGrid.K1;
@@ -1496,19 +1460,22 @@ void ComputePmeMgr::initialize_pencils(CkQdMsg *msg) {
     int pnode = patchMap->node(pid);
     if ( pnode != CkMyPe() ) continue;
 
+    int shift1 = (myGrid.K1 + myGrid.order - 1)/2;
+    int shift2 = (myGrid.K2 + myGrid.order - 1)/2;
+
     BigReal minx = patchMap->min_a(pid);
     BigReal maxx = patchMap->max_a(pid);
     BigReal margina = 0.5 * ( patchdim - cutoff ) / sysdima;
     // min1 (max1) is smallest (largest) grid line for this patch
-    int min1 = ((int) floor(myGrid.K1 * (minx - margina))) - myGrid.order + 1;
-    int max1 = ((int) floor(myGrid.K1 * (maxx + margina)));
+    int min1 = ((int) floor(myGrid.K1 * (minx - margina))) + shift1 - myGrid.order + 1;
+    int max1 = ((int) floor(myGrid.K1 * (maxx + margina))) + shift1;
 
     BigReal miny = patchMap->min_b(pid);
     BigReal maxy = patchMap->max_b(pid);
     BigReal marginb = 0.5 * ( patchdim - cutoff ) / sysdimb;
     // min2 (max2) is smallest (largest) grid line for this patch
-    int min2 = ((int) floor(myGrid.K2 * (miny - marginb))) - myGrid.order + 1;
-    int max2 = ((int) floor(myGrid.K2 * (maxy + marginb)));
+    int min2 = ((int) floor(myGrid.K2 * (miny - marginb))) + shift2 - myGrid.order + 1;
+    int max2 = ((int) floor(myGrid.K2 * (maxy + marginb))) + shift2;
 
     for ( int i=min1; i<=max1; ++i ) {
       int ix = i;

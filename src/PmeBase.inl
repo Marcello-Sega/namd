@@ -34,14 +34,17 @@ static inline void scale_coordinates(PmeParticle p[], int N, Lattice lattice, Pm
   int K1 = grid.K1;
   int K2 = grid.K2;
   int K3 = grid.K3;
+  double shift1 = ((K1 + grid.order - 1)/2)/(double)K1;
+  double shift2 = ((K2 + grid.order - 1)/2)/(double)K2;
+  double shift3 = ((K3 + grid.order - 1)/2)/(double)K3;
 
   for (int i=0; i<N; i++) {
     double px = p[i].x - ox;
     double py = p[i].y - oy;
     double pz = p[i].z - oz;
-    double sx = px*r1x + py*r1y + pz*r1z;
-    double sy = px*r2x + py*r2y + pz*r2z;
-    double sz = px*r3x + py*r3y + pz*r3z;
+    double sx = shift1 + px*r1x + py*r1y + pz*r1z;
+    double sy = shift2 + px*r2x + py*r2y + pz*r2z;
+    double sz = shift3 + px*r3x + py*r3y + pz*r3z;
     p[i].x = K1 * ( sx - floor(sx) );
     p[i].y = K2 * ( sy - floor(sy) );
     p[i].z = K3 * ( sz - floor(sz) );
