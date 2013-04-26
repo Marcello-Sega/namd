@@ -521,7 +521,7 @@ projections: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(CHARMC) -verbose -ld++-option \
 	"$(COPTI)$(CHARMINC) $(COPTI)$(INCDIR) $(COPTI)$(SRCDIR) $(CXXOPTS)" \
 	-module NeighborLB -module CkMulticast -language charm++ \
-	-tracemode projections -tracemode summary \
+	-tracemode projections \
 	$(BUILDINFO).o \
 	$(OBJS) \
 	$(CUDAOBJS) \
