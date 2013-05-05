@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: char $
- * $Date: 2013/01/24 17:42:06 $
- * $Revision: 1.1414 $
+ * $Author: jim $
+ * $Date: 2013/05/05 22:43:30 $
+ * $Revision: 1.1415 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -1874,7 +1874,7 @@ void SimParameters::config_parser_misc(ParseOptions &opts) {
    opts.optional("main", "proxySendSpanningTree", "using spanning tree to send proxies",
                   &proxySendSpanningTree, -1);
    opts.optional("main", "proxyRecvSpanningTree", "using spanning tree to receive proxies",
-                  &proxyRecvSpanningTree, -1);
+                  &proxyRecvSpanningTree, 0);  // default off due to memory leak -1);
    opts.optional("main", "proxyTreeBranchFactor", "the branch factor when building a spanning tree",
                   &proxyTreeBranchFactor, 4);
    opts.optionalB("main", "twoAwayX", "half-size patches in 1st dimension",
