@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.h,v $
- * $Author: char $
- * $Date: 2013/01/24 17:42:06 $
- * $Revision: 1.1220 $
+ * $Author: dhardy $
+ * $Date: 2013/05/21 17:27:11 $
+ * $Revision: 1.1221 $
  *****************************************************************************/
 
 #ifndef SIMPARAMETERS_H
@@ -615,6 +615,10 @@ public:
                                  // simulation prematurely
 
         Bool MsmSerialOn;   // use serial MSM solver for testing
+
+        Bool FMMOn;
+        int FMMLevels;
+        BigReal FMMPadding;
 
 	Bool PMEOn;			//  Flag TRUE -> PME active
 	BigReal PMETolerance;		//  Direct space tolerance

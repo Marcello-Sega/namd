@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: jim $
- * $Date: 2013/04/25 21:37:24 $
- * $Revision: 1.1259 $
+ * $Author: dhardy $
+ * $Date: 2013/05/21 17:27:11 $
+ * $Revision: 1.1260 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1066,7 +1066,7 @@ void WorkDistrib::patchMapInit(void)
   if ( lattice.a_p() && lattice.b_p() && lattice.c_p() ) {
     xmin = 0.;  xmax = 0.;
   }
-  else if ( params->FMAOn || params->MSMOn ) {
+  else if ( params->FMAOn || params->MSMOn || params->FMMOn ) {
   // Need to use full box for FMA to match NAMD 1.X results.
 #if 0
     node->pdb->find_extremes(&(xmin.x),&(xmax.x),lattice.a_r());
@@ -1904,6 +1904,9 @@ void WorkDistrib::mapComputes(void)
   else if ( node->simParameters->MSMOn )
     mapComputeHomePatches(computeMsmType);
 #endif
+
+  if ( node->simParameters->FMMOn )
+    mapComputeHomePatches(computeFmmType);
 
 #ifdef NAMD_CUDA
   mapComputeNode(computeNonbondedCUDAType);

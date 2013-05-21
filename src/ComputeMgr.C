@@ -41,6 +41,7 @@
 #include "ComputeExt.h"
 #include "ComputeGBISser.h"
 #include "ComputeLCPO.h"
+#include "ComputeFmmSerial.h"
 #include "ComputeMsmSerial.h"
 #include "ComputeMsmMsa.h"
 #include "ComputeMsm.h"
@@ -522,6 +523,11 @@ ComputeMgr::createCompute(ComputeID i, ComputeMap *map)
         break;
     case computeGBISserType: //gbis serial
         c = new ComputeGBISser(i);
+        map->registerCompute(i,c);
+        c->initialize();
+        break;
+    case computeFmmType: // FMM serial
+        c = new ComputeFmmSerial(i);
         map->registerCompute(i,c);
         c->initialize();
         break;

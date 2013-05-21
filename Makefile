@@ -46,6 +46,21 @@ MKINCDIR = $(INCDIR)/.exists
 #DPME=$(DPMEINCL) $(DPMEFLAGS)
 #DPMELIBS= $(DPMEDIR)/libdpme.a
 
+# comment/uncomment these lines for FMM routines
+#
+# ufmmlap library from J. Huang - http://fastmultipole.org/Main/FMMSuite/
+#   (ufmmlap = Uniform FMM Laplace Solver)
+#
+# Options below assume building with Gnu compilers.
+# Define FMMDIR in Make.config file.
+#
+#FMMNAME=ufmmlap
+#FMMINCL=$(COPTI)$(FMMDIR)/src
+#FMMLIB=-L$(FMMDIR)/src -l$(FMMNAME) -lgfortran
+#FMMFLAGS=$(COPTD)FMM_SOLVER
+#FMM=$(FMMINCL) $(FMMFLAGS)
+#FMMLIBS=$(FMMDIR)/src/lib$(FMMNAME).a
+
 # to compile a memory optimized version, uncomment or config --with-memopt
 #MEMOPT=-DMEM_OPT_VERSION
 # to compile version that uses node-aware proxy send/recv spanning tree,
@@ -80,6 +95,7 @@ OBJS = \
 	$(DSTDIR)/ComputeMsm.o \
 	$(DSTDIR)/ComputeMsmMsa.o \
 	$(DSTDIR)/ComputeMsmSerial.o \
+        $(DSTDIR)/ComputeFmmSerial.o \
 	$(DSTDIR)/msm.o \
 	$(DSTDIR)/msm_longrng.o \
 	$(DSTDIR)/msm_longrng_sprec.o \
@@ -266,6 +282,8 @@ CIFILES = 	\
 		$(INCDIR)/ComputeMsmMsaMgr.def.h \
 		$(INCDIR)/ComputeMsmSerialMgr.decl.h \
 		$(INCDIR)/ComputeMsmSerialMgr.def.h \
+		$(INCDIR)/ComputeFmmSerialMgr.decl.h \
+		$(INCDIR)/ComputeFmmSerialMgr.def.h \
 		$(INCDIR)/BroadcastMgr.decl.h \
 		$(INCDIR)/BroadcastMgr.def.h \
 		$(INCDIR)/CollectionMaster.decl.h \
@@ -368,10 +386,10 @@ CHARM_MODULES = -module NeighborLB -module HybridLB -module RefineLB -module Gre
 # USE_CKLOOP=1 for compiling the code, and then add "-module CkLoop" for linking.
 
 # Libraries we may have changed
-LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(TCLDLL)
+LIBS = $(CUDAOBJS) $(PLUGINLIB) $(DPMTALIBS) $(DPMELIBS) $(FMMLIBS) $(TCLDLL)
 
 # CXX is platform dependent
-CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA)
+CXXBASEFLAGS = $(COPTI)$(CHARMINC) $(COPTI)$(SRCDIR) $(COPTI)$(INCDIR) $(DPMTA) $(DPME) $(FMM) $(COPTI)$(PLUGININCDIR) $(COPTD)STATIC_PLUGIN $(TCL) $(FFT) $(CUDA) $(MEMOPT) $(CCS) $(RELEASE) $(EXTRADEFINES) $(TRACEOBJDEF) $(EXTRAINCS) $(MSA)
 CXXFLAGS = $(CXXBASEFLAGS) $(CXXOPTS)
 CXXTHREADFLAGS = $(CXXBASEFLAGS) $(CXXTHREADOPTS)
 CXXSIMPARAMFLAGS = $(CXXBASEFLAGS) $(CXXSIMPARAMOPTS)
@@ -410,6 +428,7 @@ namd2:	$(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	$(FMMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
@@ -437,6 +456,7 @@ namd2.exe:  $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS) $(TCLDLL)
 	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	$(FMMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
@@ -509,6 +529,7 @@ tracecomputes: updatefiles $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	$(FMMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
@@ -528,6 +549,7 @@ projections: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	$(FMMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
@@ -547,6 +569,7 @@ summary: $(MKINCDIR) $(MKDSTDIR) $(OBJS) $(LIBS)
 	$(CUDALIB) \
 	$(DPMTALIB) \
 	$(DPMELIB) \
+	$(FMMLIB) \
 	$(TCLLIB) \
 	$(FFTLIB) \
 	$(PLUGINLIB) \
@@ -561,6 +584,9 @@ $(DPMTADIR)/src/libdpmta2.a:
 
 $(DPMEDIR)/libdpme.a:
 	cd $(DPMEDIR) ; $(MAKE) ; cd ..
+
+$(FMMDIR)/src/lib$(FMMNAME).a:
+	cd $(FMMDIR) ; $(MAKE) ; cd ..
 
 
 # Implicit rules for modules.

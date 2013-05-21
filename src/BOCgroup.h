@@ -27,6 +27,7 @@ public:
 #endif // OPENATOM_VERSION
   CkGroupID computeExtMgr;
   CkGroupID computeGBISserMgr;
+  CkGroupID computeFmmSerialMgr;
   CkGroupID computeMsmSerialMgr;
   CkGroupID computeMsmMsaMgr;
   CkGroupID computeMsmMgr;

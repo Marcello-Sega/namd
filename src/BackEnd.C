@@ -155,6 +155,7 @@ void master_init(int argc, char **argv){
 #endif // OPENATOM_VERSION
   group.computeExtMgr = CProxy_ComputeExtMgr::ckNew();
   group.computeGBISserMgr = CProxy_ComputeGBISserMgr::ckNew();
+  group.computeFmmSerialMgr = CProxy_ComputeFmmSerialMgr::ckNew();
   group.computeMsmSerialMgr = CProxy_ComputeMsmSerialMgr::ckNew();
 #ifdef CHARM_HAS_MSA
   group.computeMsmMsaMgr = CProxy_ComputeMsmMsaMgr::ckNew();

@@ -542,7 +542,8 @@ void ComputeNonbondedUtil::select(void)
   int splitType = SPLIT_NONE;
   if ( simParams->switchingActive ) splitType = SPLIT_SHIFT;
   if ( simParams->martiniSwitching ) splitType = SPLIT_MARTINI;
-  if ( simParams->fullDirectOn || simParams->FMAOn || PMEOn || MSMOn ) {
+  if ( simParams->fullDirectOn || simParams->FMAOn || PMEOn || MSMOn ||
+      simParams->FMMOn ) {
     switch ( simParams->longSplitting ) {
       case C2:
       splitType = SPLIT_C2;

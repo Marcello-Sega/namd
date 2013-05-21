@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: jim $
- * $Date: 2013/05/05 22:43:30 $
- * $Revision: 1.1415 $
+ * $Author: dhardy $
+ * $Date: 2013/05/21 17:27:10 $
+ * $Revision: 1.1416 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -788,6 +788,17 @@ void SimParameters::config_parser_fullelect(ParseOptions &opts) {
    opts.optionalB("MSM", "MsmSerial",
        "Use MSM serial version for long-range calculation?",
        &MsmSerialOn, FALSE);
+
+
+   ///////////  Fast Multipole Method
+
+   opts.optionalB("main", "FMM",
+       "Use fast multipole method for electrostatics?",
+       &FMMOn, FALSE);
+   opts.optional("FMM", "FMMLevels", "FMM number of levels",
+       &FMMLevels, 0);
+   opts.optional("FMM", "FMMPadding", "FMM padding margin (Angstroms)",
+       &FMMPadding, 0);
 
 
    ///////////  Particle Mesh Ewald
@@ -2762,6 +2773,11 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      {
        NAMD_die("Do not use Multilevel Summation Method with Martini.  Set: MSM off");
      }
+     if ( FMMOn )
+     {
+       NAMD_die("Do not use Fast Multipole Method with Martini.  Set: FMM off");
+     }
+
    }
 
 
@@ -2806,6 +2822,9 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
       }
       if (MSMOn) {
         NAMD_die("GBIS not compatible with MSM");
+      }
+      if (FMMOn) {
+        NAMD_die("GBIS not compatible with FMM");
       }
       if (alchOn) {
         NAMD_die("GBIS not compatible with Alchemical Transformations");
@@ -3291,6 +3310,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      if ( FMAOn ) ++i;
      if ( PMEOn ) ++i;
      if ( MSMOn ) ++i;
+     if ( FMMOn ) ++i;
      if ( fullDirectOn ) ++i;
      if ( i > 1 )
 	NAMD_die("More than one full electrostatics algorithm selected!!!");
@@ -3433,7 +3453,7 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
      NAMD_die("stepsPerCycle must be a multiple of nonbondedFreq");
    }
 
-   if (!LCPOOn && !GBISOn && !GBISserOn && !FMAOn && !PMEOn && !MSMOn && !fullDirectOn)
+   if (!LCPOOn && !GBISOn && !GBISserOn && !FMAOn && !PMEOn && !MSMOn && !fullDirectOn && !FMMOn)
    {
      fullElectFrequency = 0;
    }
@@ -5234,8 +5254,20 @@ if ( openatomOn )
        << endi;
 
    } // end MSM configure
+   if (FMMOn)
+   {
+#ifdef FMM_SOLVER
+     iout << iINFO << "FAST MULTIPOLE METHOD (FMM) FOR ELECTROSTATICS ACTIVE\n";
+     iout << iINFO << "PERFORMING SERIAL FMM CALCULATION\n";
+     iout << iINFO << "FMM LEVELS = " << FMMLevels << "\n";
+     iout << iINFO << "FMM PADDING = " << FMMPadding << " ANGSTROMS\n";
+     iout << endi;
+#else
+     NAMD_die("Must link to FMM library to use FMM\n");
+#endif
+   }
 
-   if ( FMAOn || PMEOn || MSMOn || fullDirectOn || GBISOn)
+   if ( FMAOn || PMEOn || MSMOn || fullDirectOn || GBISOn || FMMOn )
    {
      iout << iINFO << "FULL ELECTROSTATIC EVALUATION FREQUENCY      "
 	<< fullElectFrequency << "\n";

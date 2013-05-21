@@ -50,6 +50,7 @@ enum ComputeType
   computeExtType,
   computeGBISserType,
   computeLCPOType,
+  computeFmmType,
   computeMsmSerialType,
   computeMsmMsaType,
   computeMsmType,
