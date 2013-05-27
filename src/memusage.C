@@ -108,7 +108,9 @@ inline unsigned long memusage_ps() {
 #include <malloc.h>
 inline long long memusage_bg(){
     struct mallinfo m = mallinfo();
-    return m.hblkhd + m.uordblks;
+    long long hblkhd = (unsigned int) m.hblkhd;
+    long long uordblks = (unsigned int) m.uordblks;
+    return hblkhd + uordblks;
 }
 #endif
 
