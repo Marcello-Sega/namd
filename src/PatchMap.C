@@ -299,12 +299,12 @@ int PatchMap::packSize(void)
   for(i=0;i<nPatches;++i)
   {
     size += sizeof(PatchData);
-    size += patchData[i].numCidsAllocated * sizeof(ComputeID);
+    size += patchData[i].numCids * sizeof(ComputeID);
   }
   return size;
 }
 
-void PatchMap::pack (char *buffer)
+void PatchMap::pack (char *buffer, int size)
 {
   DebugM(4,"Packing PatchMap on node " << CkMyPe() << std::endl);
   int i,j;
@@ -329,6 +329,9 @@ void PatchMap::pack (char *buffer)
     DebugM(3,"Packing Patch " << i << " is on node " << patchData[i].node << 
 	" with " << patchData[i].numCids << " cids.\n");
     PACKN(ComputeID,patchData[i].cids,patchData[i].numCids);
+  }
+  if ( buffer + size != b ) {
+    NAMD_bug("PatchMap::pack does not match PatchMap::packSize");
   }
   //DebugM(3,buffer + size - b << " == 0 ?" << std::endl);
 }

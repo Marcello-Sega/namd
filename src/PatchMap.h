@@ -168,7 +168,7 @@ public:
 protected:
   friend class WorkDistrib;
   int packSize(void);
-  void pack(char *buf);
+  void pack(char *buf, int size);
   void unpack(char *buf);
   
   PatchMap(void);

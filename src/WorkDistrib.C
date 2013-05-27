@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
- * $Author: dhardy $
- * $Date: 2013/05/21 17:27:11 $
- * $Revision: 1.1260 $
+ * $Author: jim $
+ * $Date: 2013/05/27 20:57:53 $
+ * $Revision: 1.1261 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -899,7 +899,7 @@ void WorkDistrib::sendPatchMap(void)
 
   PatchMapMsg *mapMsg = new (size, 0) PatchMapMsg;
 
-  PatchMap::Object()->pack(mapMsg->patchMapData);
+  PatchMap::Object()->pack(mapMsg->patchMapData, size);
 
   CProxy_WorkDistrib workProxy(thisgroup);
   workProxy[0].savePatchMap(mapMsg);
