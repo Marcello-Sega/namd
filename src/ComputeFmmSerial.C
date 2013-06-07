@@ -245,7 +245,7 @@ void ComputeFmmSerialMgr::recvCoord(FmmSerialCoordMsg *msg) {
     }
     else {
       // otherwise estimate number of levels as round(log_8(numAtoms))
-      nlevels = (int) floor(log(numAtoms) / log(8) + 0.5);
+      nlevels = (int) floor(log((double)numAtoms) / log(8.) + 0.5);
     }
 
     // find bounding cube length
