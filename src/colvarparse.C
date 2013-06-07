@@ -102,11 +102,18 @@ size_t      colvarparse::dummy_pos = 0;
                                                                         \
     if (data.size()) {                                                  \
       std::istringstream is (data);                                     \
+      size_t data_count = 0;                                            \
       TYPE x (def_value);                                               \
-      if (is >> x)                                                      \
+      while (is >> x) {                                                 \
         value = x;                                                      \
-      else                                                              \
+        data_count++;                                                   \
+      }                                                                 \
+      if (data_count == 0)                                              \
         cvm::fatal_error ("Error: in parsing \""+                       \
+                          std::string (key)+"\".\n");                   \
+      if (data_count > 1)                                               \
+        cvm::fatal_error ("Error: multiple values "                     \
+                          "are not allowed for keyword \""+             \
                           std::string (key)+"\".\n");                   \
       if (parse_mode != parse_silent) {                                 \
         cvm::log ("# "+std::string (key)+" = "+                         \
@@ -364,8 +371,8 @@ void colvarparse::check_keywords (std::string &conf, char const *key)
     std::string uk;
     std::istringstream line_is (line);
     line_is >> uk;
-    if (cvm::debug())
-      cvm::log ("Checking the validity of \""+uk+"\" from line:\n" + line);
+    // if (cvm::debug())
+    //   cvm::log ("Checking the validity of \""+uk+"\" from line:\n" + line);
     uk = to_lower_cppstr (uk);
 
     bool found_keyword = false;
@@ -533,7 +540,7 @@ bool colvarparse::key_lookup (std::string const &conf,
         if (line[brace] == '}') brace_count--;
       }
 
-      // set data_begin afterthe opening brace
+      // set data_begin after the opening brace
       data_begin = line.find_first_of ('{', data_begin) + 1;
       data_begin = line.find_first_not_of (white_space,
                                            data_begin);
