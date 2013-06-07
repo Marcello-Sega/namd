@@ -41,7 +41,7 @@ public:
    double computeLoad;    //load due to computes. The total load is computed
                           // by adding these two.		     
    // Added 10/22/01:  indicate if this processor will migrate its objs.   
-   CmiBool  available;
+   bool  available;
    LargeIRSet patchSet;   // caller to ReBalancer should leave this field NULL.
    LargeIRSet proxies;    // caller to ReBalancer should fill in the forced proxies
    LargeIRSet computeSet; // caller to ReBalancer should leave this field NULL.
@@ -50,7 +50,7 @@ public:
    // each proxy on a processor
    // unsigned char *proxyUsage;
 public:
-   processorInfo(): backgroundLoad(0.), idleTime(0.), computeLoad(0.), available(CmiTrue) {}
+   processorInfo(): backgroundLoad(0.), idleTime(0.), computeLoad(0.), available(true) {}
 };
 
 #endif

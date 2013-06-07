@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:18 $
- * $Revision: 1.35 $
+ * $Author: jim $
+ * $Date: 2013/06/07 22:34:37 $
+ * $Revision: 1.36 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -92,20 +92,20 @@ NamdHybridLB::NamdHybridLB(): HybridBaseLB(CkLBOptions(-1))
  *
  * It is called from HybridBase every time AtSync method is called.
  */
-CmiBool NamdHybridLB::QueryBalanceNow(int _step){ 
+bool NamdHybridLB::QueryBalanceNow(int _step){ 
   if ( LdbCoordinator::Object()->takingLdbData ) {
-	  return CmiTrue;
+	  return true;
   } else {
-	  return CmiFalse;
+	  return false;
   } 
 }
 
-CmiBool NamdHybridLB::QueryDumpData() {
+bool NamdHybridLB::QueryDumpData() {
 #if 0                                                                                             
-  if (LdbCoordinator::Object()->ldbCycleNum == 1)  return CmiTrue;                                
-  if (LdbCoordinator::Object()->ldbCycleNum == 2)  return CmiTrue;                                
+  if (LdbCoordinator::Object()->ldbCycleNum == 1)  return true;                                
+  if (LdbCoordinator::Object()->ldbCycleNum == 2)  return true;                                
 #endif                                                                                            
-  return CmiFalse;                                                                                
+  return false;                                                                                
 }
 
 #if 0
@@ -524,7 +524,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
 
     // BACKUP processorArray[i].Id = i; 
     processorArray[i].Id = pe_no;               // absolute pe number
-    processorArray[i].available = CmiTrue;
+    processorArray[i].available = true;
     // BACKUP if ( pmeOn && isPmeProcessor(i) )
     if ( pmeOn && isPmeProcessor(pe_no) ) {
       processorArray[i].backgroundLoad = pmebgfactor * stats->procs[i].bg_walltime;
@@ -540,8 +540,8 @@ int NamdHybridLB::buildData(LDStats* stats) {
 
   // If I am group zero, then offload processor 0 and 1 in my group
   if(stats->procs[0].pe == 0) {
-    if(unLoadZero) processorArray[0].available = CmiFalse;
-    if(unLoadOne) processorArray[1].available = CmiFalse;
+    if(unLoadZero) processorArray[0].available = false;
+    if(unLoadOne) processorArray[1].available = false;
   }
 
   // if all pes are Pme, disable this flag
@@ -558,7 +558,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
   if (pmeOn && unLoadPme) {
     for (i=0; i<n_pes; i++) {
       if ((pmeBarrier && i==0) || isPmeProcessor(stats->procs[i].pe)) 
-	processorArray[i].available = CmiFalse;
+	processorArray[i].available = false;
     }
   }
 
@@ -573,7 +573,7 @@ int NamdHybridLB::buildData(LDStats* stats) {
   if (unLoadIO){
       for (i=0; i<n_pes; i++) {
 	  if (isOutputProcessor(stats->procs[i].pe)) 
-	      processorArray[i].available = CmiFalse;
+	      processorArray[i].available = false;
       }
   }
 #endif

@@ -32,8 +32,8 @@ public:
 #endif
 
 private:
-  CmiBool QueryBalanceNow(int step);
-  CmiBool QueryDumpData();
+  bool QueryBalanceNow(int step);
+  bool QueryDumpData();
 
 };
 

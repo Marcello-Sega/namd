@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdHybridLB.h,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:18 $
- * $Revision: 1.11 $
+ * $Author: jim $
+ * $Date: 2013/06/07 22:34:37 $
+ * $Revision: 1.12 $
  *****************************************************************************/
 
 #ifndef _NAMDHYBRIDLB_H_
@@ -80,8 +80,8 @@ private:
 	int startPE;
 	int endPE;
 
-  CmiBool QueryBalanceNow(int step);
-  CmiBool QueryDumpData();
+  bool QueryBalanceNow(int step);
+  bool QueryDumpData();
   // LBVectorMigrateMsg* VectorStrategy(LDStats* stats);
 
 #if CHARM_VERSION > 60301

@@ -36,7 +36,7 @@ void AlgNbor::strategy()
   }
 
   // black-red mode balancing
-  if (processors[mype].available == CmiFalse) return;
+  if (processors[mype].available == false) return;
 
   // calculate avarage load for neighbors
   double myload = processors[mype].load;
@@ -143,7 +143,7 @@ void AlgNbor::strategy()
 
     p = (processorInfo *)procs.deleteMin();
     if (p == NULL) break;
-    CmiBool objfound = CmiFalse;
+    bool objfound = false;
     do {
       c = (computeInfo *)objs.deleteMax();
       if (c == NULL) break;
@@ -152,7 +152,7 @@ void AlgNbor::strategy()
       double my_new_load = myload - c->load;
 //CmiPrintf("new load: new_p_load:%e my_new_load:%e c:%e\n", new_p_load, my_new_load, c->load);
       if (new_p_load < my_new_load) {
-	objfound = CmiTrue;
+	objfound = true;
       } 
     } while (!objfound);
     if (!objfound) break;

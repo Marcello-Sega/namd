@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/AlgSeven.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:16 $
- * $Revision: 1.59 $
+ * $Author: jim $
+ * $Date: 2013/06/07 22:34:36 $
+ * $Revision: 1.60 $
  *****************************************************************************/
 
 #include "common.h"
@@ -33,7 +33,7 @@ extern int isPmeProcessor(int);
 
 void Alg7::togrid(processorInfo* goodP[3][3][2], processorInfo* poorP[3][3][2],
 			processorInfo *p, computeInfo *c) {
-      if(p->available == CmiFalse) return;
+      if(p->available == false) return;
 
       int nPatches, nProxies, badForComm;
       numAvailable(c,p,&nPatches,&nProxies,&badForComm);

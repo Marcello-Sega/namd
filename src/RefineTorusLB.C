@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/RefineTorusLB.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:19 $
- * $Revision: 1.37 $
+ * $Author: jim $
+ * $Date: 2013/06/07 22:34:38 $
+ * $Revision: 1.38 $
  *****************************************************************************/
 
 /** \file RefineTorusLB.C
@@ -575,7 +575,7 @@ int RefineTorusLB::newRefine() {
 }
 
 void RefineTorusLB::selectPes(processorInfo *p, computeInfo *c) {
-  if (p->available == CmiFalse)
+  if (p->available == false)
     return;
 
   // find the position in bestPe/goodPe to place this pair

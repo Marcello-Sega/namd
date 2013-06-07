@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:18 $
- * $Revision: 1.118 $
+ * $Author: jim $
+ * $Date: 2013/06/07 22:34:37 $
+ * $Revision: 1.119 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -65,23 +65,23 @@ NamdCentLB::~NamdCentLB()
 }
 */
 
-CmiBool NamdCentLB::QueryBalanceNow(int _step)
+bool NamdCentLB::QueryBalanceNow(int _step)
 {
   //  CkPrintf("[%d] Balancing on step %d\n",CkMyPe(),_step);
   if ( LdbCoordinator::Object()->takingLdbData ) {
-    return CmiTrue;
+    return true;
   } else {
-    return CmiFalse;
+    return false;
   }
 }
 
-CmiBool NamdCentLB::QueryDumpData()
+bool NamdCentLB::QueryDumpData()
 {
 #if 0
-  if (LdbCoordinator::Object()->ldbCycleNum == 1)  return CmiTrue;
-  if (LdbCoordinator::Object()->ldbCycleNum == 2)  return CmiTrue;
+  if (LdbCoordinator::Object()->ldbCycleNum == 1)  return true;
+  if (LdbCoordinator::Object()->ldbCycleNum == 2)  return true;
 #endif
-  return CmiFalse;
+  return false;
 }
 
 #if CHARM_VERSION > 60301
@@ -495,7 +495,7 @@ int NamdCentLB::buildData(LDStats* stats)
   int i;
   for (i=0; i<n_pes; ++i) {
     processorArray[i].Id = i;
-    processorArray[i].available = CmiTrue;
+    processorArray[i].available = true;
     if ( pmeOn && isPmeProcessor(i) ) {
       processorArray[i].backgroundLoad = pmebgfactor * stats->procs[i].bg_walltime;
     } else if (patchMap->numPatchesOnNode(i) > 0) {
@@ -548,8 +548,8 @@ int NamdCentLB::buildData(LDStats* stats)
 #endif  
 *********** end of defunct code *********** */
 
-  if (unLoadZero) processorArray[0].available = CmiFalse;
-  if (unLoadOne) processorArray[1].available = CmiFalse;
+  if (unLoadZero) processorArray[0].available = false;
+  if (unLoadOne) processorArray[1].available = false;
 
   // if all pes are Pme, disable this flag
   if (pmeOn && unLoadPme) {
@@ -565,7 +565,7 @@ int NamdCentLB::buildData(LDStats* stats)
   if (pmeOn && unLoadPme) {
     for (i=0; i<n_pes; i++) {
       if ((pmeBarrier && i==0) || isPmeProcessor(i)) 
-	processorArray[i].available = CmiFalse;
+	processorArray[i].available = false;
     }
   }
   // if all pes are output, disable this flag
@@ -583,7 +583,7 @@ int NamdCentLB::buildData(LDStats* stats)
 	  if (isOutputProcessor(stats->procs[i].pe)) 
 	    {
 	      //	      iout << iINFO << "Removed output PE "<< stats->procs[i].pe <<" from available list!\n"  << endi;
-	      processorArray[i].available = CmiFalse;
+	      processorArray[i].available = false;
 	    }
 	  else
 	    {
@@ -842,7 +842,7 @@ int NamdCentLB::requiredProxiesOnProcGrid(PatchID id, int neighborNodes[])
   // Small Flag chooses between different loadbalancing schemes.
   // Small Flag == true, patches are close to each other
   // false, patches are far from each other
-  CmiBool smallFlag = CmiFalse;
+  bool smallFlag = false;
   double pnodes = CkNumPes();
   pnodes *= 0.25;    
   smallFlag = (patchMap->numPatches() > pnodes )?1:0;

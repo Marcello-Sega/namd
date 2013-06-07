@@ -30,12 +30,12 @@ NamdDummyLB::NamdDummyLB(): CentralLB(CkLBOptions(-1)) {
     CkPrintf("[%d] DummyLB created\n",CkMyPe());
 }
 
-CmiBool NamdDummyLB::QueryBalanceNow(int _step) {
-  return CmiTrue;
+bool NamdDummyLB::QueryBalanceNow(int _step) {
+  return true;
 }
 
-CmiBool NamdDummyLB::QueryDumpData() {
-  return CmiFalse;
+bool NamdDummyLB::QueryDumpData() {
+  return false;
 }
 
 // Dummy work function

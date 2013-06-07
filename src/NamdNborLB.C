@@ -120,17 +120,17 @@ void NamdNborLB::neighbors(int* _n) {
 
 };
 
-CmiBool NamdNborLB::QueryBalanceNow(int _step)
+bool NamdNborLB::QueryBalanceNow(int _step)
 {
   // CkPrintf("[%d] QueryBalanceNow on step %d: %d\n",CkMyPe(),_step, LdbCoordinator::Object()->takingLdbData);
   if ( LdbCoordinator::Object()->takingLdbData ) {
-    return CmiTrue;
+    return true;
   } else {
-    return CmiFalse;
+    return false;
   }
 }
 
-CmiBool NamdNborLB::QueryMigrateStep(int _step)
+bool NamdNborLB::QueryMigrateStep(int _step)
 {
   // CmiPrintf("[%d] QueryMigrateStep %d %d.\n", CkMyPe(), _step, act);
   return (act+ldbNum)%2 == 0;
@@ -223,7 +223,7 @@ int NamdNborLB::buildData(NborBaseLB::LDStats* stats, int count)
   for (i=0; i<CkNumPes(); i++) {
     processorArray[i].load = 0.0;
     processorArray[i].backgroundLoad = 0.0;
-    processorArray[i].available = CmiFalse;
+    processorArray[i].available = false;
     if (i == CkMyPe()) {
       processorArray[i].Id = i;
       processorArray[i].available = myStats.move;

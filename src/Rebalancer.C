@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/Rebalancer.C,v $
- * $Author: jlai7 $
- * $Date: 2012/11/27 21:13:19 $
- * $Revision: 1.97 $
+ * $Author: jim $
+ * $Date: 2013/06/07 22:34:38 $
+ * $Revision: 1.98 $
  *****************************************************************************/
 
 #include "InfoStream.h"
@@ -526,7 +526,7 @@ void  Rebalancer::deAssign(computeInfo *c, processorInfo *p)
 void Rebalancer::refine_togrid(pcgrid &grid, double thresholdLoad,
 			processorInfo *p, computeInfo *c) {
 
-  if(p->available == CmiFalse) return;
+  if(p->available == false) return;
 
   if ( c->load + p->load < thresholdLoad) {
     int nPatches, nProxies, badForComm;
