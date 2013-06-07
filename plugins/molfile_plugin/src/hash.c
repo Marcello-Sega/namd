@@ -11,7 +11,7 @@
  *
  *      $RCSfile: hash.c,v $
  *      $Author: jim $        $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $      $Date: 2012/01/27 01:41:53 $
+ *      $Revision: 1.4 $      $Date: 2013/06/07 21:43:26 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -214,6 +214,16 @@ VMDEXTERNSTATIC int hash_delete(hash_t *tptr, const char *key) {
 
   return(data);
 }
+
+
+/*
+ * inthash_entries() - return the number of hash table entries.
+ *
+ */
+VMDEXTERNSTATIC int hash_entries(hash_t *tptr) {
+  return tptr->entries;
+}
+
 
 
 

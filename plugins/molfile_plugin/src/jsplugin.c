@@ -11,7 +11,7 @@
  *
  *      $RCSfile: jsplugin.c,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $       $Date: 2012/01/27 01:41:53 $
+ *      $Revision: 1.4 $       $Date: 2013/06/07 21:43:26 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -64,6 +64,8 @@
  *
  ***************************************************************************/
 
+#define INFOMSGS  1
+
 #if 1
 #define ENABLEJSSHORTREADS 1
 #endif
@@ -94,6 +96,10 @@
 #else
 #define myintptrtype uintptr_t  /* C99 */
 #endif
+/*
+ * XXX On MSVC we get warnings about type conversions for 
+ *     size_t vs. fio_size_t
+ */
 static void *alloc_aligned_ptr(size_t sz, size_t blocksz, void **unalignedptr) {
   /* pad the allocation to an even multiple of the block size */
   size_t padsz = (sz + (blocksz - 1)) & (~(blocksz - 1));
@@ -112,7 +118,7 @@ static void *alloc_aligned_ptr(size_t sz, size_t blocksz, void **unalignedptr) {
 #define JSENDIANISM      0x12345678
 
 #define JSMAJORVERSION   2
-#define JSMINORVERSION   9
+#define JSMINORVERSION   12
 
 #define JSNFRAMESOFFSET  (strlen(JSHEADERSTRING) + 20)
 
@@ -148,7 +154,9 @@ static void *alloc_aligned_ptr(size_t sz, size_t blocksz, void **unalignedptr) {
 
 typedef struct {
   fio_fd fd;
-  int natoms;
+  long natoms;                 /* handle uses a long type for natoms to */
+                               /* help force promotion of file offset   */
+                               /* arithmetic to long types              */
 
 #if JSMAJORVERSION > 1
   int parsed_structure;        /* flag indicating structure is parsed   */
@@ -200,7 +208,7 @@ static void *open_js_read(const char *path, const char *filetype, int *natoms) {
   int jsmagicnumber, jsendianism, jsmajorversion, jsminorversion;
   struct stat stbuf;
   char strbuf[1024];
-  int rc = 0;
+  int tmpnatoms=0;
 
   if (!path) return NULL;
 
@@ -249,23 +257,26 @@ static void *open_js_read(const char *path, const char *filetype, int *natoms) {
   fio_read_int32(js->fd, &jsendianism);
   fio_read_int32(js->fd, &jsmajorversion);
   fio_read_int32(js->fd, &jsminorversion);
-  fio_read_int32(js->fd, &js->natoms);
+  fio_read_int32(js->fd, &tmpnatoms); /* handle-internal natoms is a long */
   fio_read_int32(js->fd, &js->nframes);
   if ((jsmagicnumber != JSMAGICNUMBER) || (jsendianism != JSENDIANISM)) {
+#if defined(INFOMSGS)
     printf("jsplugin) opposite endianism file, enabling byte swapping\n");
+#endif
     js->reverseendian = 1;
     swap4_aligned(&jsmagicnumber, 1);
     swap4_aligned(&jsendianism, 1);
     swap4_aligned(&jsmajorversion, 1);
     swap4_aligned(&jsminorversion, 1);
-    swap4_aligned(&js->natoms, 1);
+    swap4_aligned(&tmpnatoms, 1); /* handle-internal natoms is a long */
     swap4_aligned(&js->nframes, 1);
   } else {
+#if defined(INFOMSGS)
     printf("jsplugin) native endianism file\n");
+#endif
   }
 
   if ((jsmagicnumber != JSMAGICNUMBER) || (jsendianism != JSENDIANISM)) {
-    printf("jsplugin) read_jsreader returned %d\n", rc);
     fio_fclose(js->fd);
     free(js);
     return NULL;
@@ -279,8 +290,12 @@ static void *open_js_read(const char *path, const char *filetype, int *natoms) {
     free(js);
     return NULL;
   }
- 
-  *natoms = js->natoms;
+
+  /* Copy integer natoms to handle natoms, which is a long. */
+  /* The handle natoms uses long to help force promotion of */
+  /* integer file offset calculations to long types...      */
+  js->natoms = tmpnatoms;
+  *natoms = tmpnatoms;
 
   /* copy path if we succeeded in opening the file */
   js->path = (char *) calloc(strlen(path)+1, 1);
@@ -297,8 +312,7 @@ static void *open_js_read(const char *path, const char *filetype, int *natoms) {
 /* the first timestep.  Takes care of block alignment when */
 /* needed.                                                 */ 
 static int js_calc_timestep_blocking_info(void *mydata) {
-  fio_size_t ts_block_offset;
-  fio_size_t bszmask;
+  fio_size_t ts_block_offset, bszmask;
   jshandle *js = (jshandle *) mydata;
   int iorc=0;
 
@@ -310,10 +324,12 @@ static int js_calc_timestep_blocking_info(void *mydata) {
   bszmask = js->directio_block_size - 1;
   ts_block_offset = (js->ts_file_offset + bszmask) & (~bszmask);
 
-  printf("jsplugin) TS block size %d  curpos: %d  blockpos: %d\n", 
-         (int) js->directio_block_size, 
-         (int) js->ts_file_offset, 
-         (int) ts_block_offset);
+#if defined(INFOMSGS)
+  printf("jsplugin) TS block size %ld  curpos: %ld  blockpos: %ld\n", 
+         (long) js->directio_block_size, 
+         (long) js->ts_file_offset, 
+         (long) ts_block_offset);
+#endif
 
   /* seek to the first block of the first timestep */
   js->ts_file_offset = ts_block_offset;
@@ -327,10 +343,10 @@ static int js_calc_timestep_blocking_info(void *mydata) {
 
   /* compute timestep block padding/skipping for both */
   /* coordinate blocks and unit cell blocks           */
-  js->ts_crd_sz = js->natoms * 3 * sizeof(float);
+  js->ts_crd_sz = js->natoms * 3L * sizeof(float);
   js->ts_crd_padsz = (js->ts_crd_sz + bszmask) & (~bszmask);
 
-  js->ts_ucell_sz = 6 * sizeof(double);
+  js->ts_ucell_sz = 6L * sizeof(double);
   js->ts_ucell_padsz = (js->ts_ucell_sz + bszmask) & (~bszmask);
 
   /* allocate TS unit cell buffer in an aligned, block-size-multiple buffer */
@@ -348,11 +364,13 @@ static int js_calc_timestep_blocking_info(void *mydata) {
                       (void**) &js->directio_ucell_ptr);
 #endif
 
+#if defined(INFOMSGS)
   printf("jsplugin) TS crds sz: %ld psz: %ld  ucell sz: %ld psz: %ld\n",
          (long) js->ts_crd_sz,
          (long) js->ts_crd_padsz, 
          (long) js->ts_ucell_sz, 
          (long) js->ts_ucell_padsz);
+#endif
 
   return MOLFILE_SUCCESS;
 }
@@ -361,7 +379,7 @@ static int js_calc_timestep_blocking_info(void *mydata) {
 static int read_js_structure(void *mydata, int *optflags,
                              molfile_atom_t *atoms) {
   jshandle *js = (jshandle *) mydata;
-  int i;
+  long i;
 
   if (optflags != NULL)
     *optflags = MOLFILE_NOOPTIONS; /* set to no options until we read them */
@@ -370,7 +388,10 @@ static int read_js_structure(void *mydata, int *optflags,
   fio_read_int32(js->fd, &js->optflags); 
   if (js->reverseendian)
     swap4_aligned(&js->optflags, 1);
-printf("jsplugin) read option flags: %0x08x\n", js->optflags);
+
+#if defined(INFOMSGS)
+  printf("jsplugin) read option flags: %0x08x\n", js->optflags);
+#endif
 
   /* Check to see if block-based trajectory I/O is used  */
   /* and read in the block size for this file.           */
@@ -379,15 +400,29 @@ printf("jsplugin) read option flags: %0x08x\n", js->optflags);
     if (js->reverseendian)
       swap4_aligned(&js->directio_block_size, 1);
 
+#if defined(INFOMSGS)
     printf("jsplugin) Block-based I/O enabled: block size %d bytes\n", 
            js->directio_block_size);
+#endif
 
-    if (fio_open(js->path, FIO_READ | FIO_DIRECT, &js->directio_fd) < 0) {
+    /* Check to ensure that we can handle the block size used by the */
+    /* file we are reading.  We may use variable block sizes in      */
+    /* the future as more high-end filesystems begin to support      */
+    /* 8KB, 16KB, or larger block sizes for enhanced sequential I/O  */
+    /* performance on very large files.                              */
+    if (js->directio_block_size > MOLFILE_DIRECTIO_MAX_BLOCK_SIZE) {
+      printf("jsplugin) File block size exceeds jsplugin block size limit.\n");
       printf("jsplugin) Direct I/O unavailable for file '%s'\n", js->path);
     } else {
-      js->directio_enabled = 1;
-      printf("jsplugin) Direct I/O enabled for file '%s'\n", js->path);
-    } 
+      if (fio_open(js->path, FIO_READ | FIO_DIRECT, &js->directio_fd) < 0) {
+        printf("jsplugin) Direct I/O unavailable for file '%s'\n", js->path);
+      } else {
+        js->directio_enabled = 1;
+#if defined(INFOMSGS)
+        printf("jsplugin) Direct I/O enabled for file '%s'\n", js->path);
+#endif
+      } 
+    }
   }
 
 #if defined(ENABLEJSSHORTREADS)
@@ -395,16 +430,14 @@ printf("jsplugin) read option flags: %0x08x\n", js->optflags);
   /* skip bulk solvent, useful for faster loading of very large */
   /* structures                                                 */
   if (getenv("VMDJSMAXATOMIDX") != NULL) {
-    fio_size_t bszmask;
-
-    int maxatomidx = atoi(getenv("VMDJSMAXATOMIDX"));
+    long maxatomidx = atoi(getenv("VMDJSMAXATOMIDX"));
     if (maxatomidx < 0)
       maxatomidx = 0;
     if (maxatomidx >= js->natoms)
       maxatomidx = js->natoms - 1;
 
-    printf("jsplugin) Short-reads of timesteps enabled: %d / %d atoms (%.2f%%)\n",
-           maxatomidx, js->natoms, 100.0*(maxatomidx+1) / ((float) js->natoms));
+    printf("jsplugin) Short-reads of timesteps enabled: %ld / %ld atoms (%.2f%%)\n",
+           maxatomidx, js->natoms, 100.0*(maxatomidx+1) / ((double) js->natoms));
   }
 #endif
 
@@ -438,9 +471,11 @@ printf("jsplugin) read option flags: %0x08x\n", js->optflags);
       swap4_aligned(&numchains, 1);
     }
 
-printf("jsplugin) reading string tables...\n");
-printf("jsplugin) %d %d %d %d %d\n",
-       numatomnames, numatomtypes, numresnames, numsegids, numchains);
+#if defined(INFOMSGS)
+    printf("jsplugin) reading string tables...\n");
+    printf("jsplugin) %d %d %d %d %d\n",
+           numatomnames, numatomtypes, numresnames, numsegids, numchains);
+#endif
 
     /* skip forward to first TS if the caller gives us NULL ptrs */
     if (optflags == NULL && atoms == NULL) {
@@ -479,7 +514,9 @@ printf("jsplugin) %d %d %d %d %d\n",
         fio_fread(&js->nbonds, sizeof(int), 1, js->fd);
         if (js->reverseendian)
           swap4_aligned(&js->nbonds, 1);
-printf("jsplugin)   %d bonds...\n", js->nbonds);
+#if defined(INFOMSGS)
+        printf("jsplugin)   %d bonds...\n", js->nbonds);
+#endif
 
         offset += 2 * js->nbonds * sizeof(int);
         if (js->optflags & JSOPT_BONDORDERS)
@@ -493,28 +530,36 @@ printf("jsplugin)   %d bonds...\n", js->nbonds);
         fio_fread(&js->numangles, sizeof(int), 1, js->fd);
         if (js->reverseendian)
           swap4_aligned(&js->numangles, 1);
-printf("jsplugin)   %d angles...\n", js->numangles);
-        fio_fseek(js->fd, sizeof(int)*3*js->numangles, FIO_SEEK_CUR);
+#if defined(INFOMSGS)
+        printf("jsplugin)   %d angles...\n", js->numangles);
+#endif
+        fio_fseek(js->fd, sizeof(int)*3L*js->numangles, FIO_SEEK_CUR);
 
         fio_fread(&js->numdihedrals, sizeof(int), 1, js->fd);
         if (js->reverseendian)
           swap4_aligned(&js->numdihedrals, 1);
-printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
-        fio_fseek(js->fd, sizeof(int)*4*js->numdihedrals, FIO_SEEK_CUR);
+#if defined(INFOMSGS)
+        printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
+#endif
+        fio_fseek(js->fd, sizeof(int)*4L*js->numdihedrals, FIO_SEEK_CUR);
 
         fio_fread(&js->numimpropers, sizeof(int), 1, js->fd);
         if (js->reverseendian)
           swap4_aligned(&js->numimpropers, 1);
-printf("jsplugin)   %d impropers...\n", js->numimpropers);
-        fio_fseek(js->fd, sizeof(int)*4*js->numimpropers, FIO_SEEK_CUR);
+#if defined(INFOMSGS)
+        printf("jsplugin)   %d impropers...\n", js->numimpropers);
+#endif
+        fio_fseek(js->fd, sizeof(int)*4L*js->numimpropers, FIO_SEEK_CUR);
       }
 
       if (js->optflags & JSOPT_CTERMS) {
         fio_fread(&js->numcterms, sizeof(int), 1, js->fd);
         if (js->reverseendian)
           swap4_aligned(&js->numcterms, 1);
- printf("jsplugin)   %d cterms...\n", js->numcterms);
-        fio_fseek(js->fd, sizeof(int)*8*js->numcterms, FIO_SEEK_CUR);
+#if defined(INFOMSGS)
+        printf("jsplugin)   %d cterms...\n", js->numcterms);
+#endif
+        fio_fseek(js->fd, sizeof(int)*8L*js->numcterms, FIO_SEEK_CUR);
       }
   
       /* record the file offset for the first timestep */
@@ -531,42 +576,57 @@ printf("jsplugin)   %d impropers...\n", js->numimpropers);
     segids    = (char **) malloc(numsegids    * sizeof(char *));
     chains    = (char **) malloc(numchains    * sizeof(char *));
 
-printf("jsplugin)   atom names...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   atom names...\n");
+#endif
+
     /* read in the string tables */
     for (i=0; i<numatomnames; i++) {
       atomnames[i] = (char *) malloc(16 * sizeof(char));
       fio_fread(atomnames[i], 16 * sizeof(char), 1, js->fd);
     }
 
-printf("jsplugin)   atom types...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   atom types...\n");
+#endif
     for (i=0; i<numatomtypes; i++) {
       atomtypes[i] = (char *) malloc(16 * sizeof(char));
       fio_fread(atomtypes[i], 16 * sizeof(char), 1, js->fd);
     }
 
-printf("jsplugin)   residue names...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   residue names...\n");
+#endif
     for (i=0; i<numresnames; i++) {
       resnames[i] = (char *) malloc(8 * sizeof(char));
       fio_fread(resnames[i], 8 * sizeof(char), 1, js->fd);
     }
 
-printf("jsplugin)   segment names...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   segment names...\n");
+#endif
     for (i=0; i<numsegids; i++) {
       segids[i] = (char *) malloc(8 * sizeof(char));
       fio_fread(segids[i], 8 * sizeof(char), 1, js->fd);
     }
 
-printf("jsplugin)   chain names...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   chain names...\n");
+#endif
     for (i=0; i<numchains; i++) {
       chains[i] = (char *) malloc(2 * sizeof(char));
       fio_fread(chains[i], 2 * sizeof(char), 1, js->fd);
     }
 
-printf("jsplugin) reading numeric field tables...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin) reading numeric field tables...\n");
+#endif
     /* read in all of the atom fields */
     shortbuf = (short *) malloc(js->natoms * sizeof(short));
 
-printf("jsplugin)   atom name indices...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   atom name indices...\n");
+#endif
     /* read in atom names */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
     if (js->reverseendian)
@@ -578,7 +638,9 @@ printf("jsplugin)   atom name indices...\n");
       free(atomnames[i]);
     free(atomnames);
 
-printf("jsplugin)   atom type indices...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   atom type indices...\n");
+#endif
     /* read in atom types */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
     if (js->reverseendian)
@@ -590,7 +652,9 @@ printf("jsplugin)   atom type indices...\n");
       free(atomtypes[i]);
     free(atomtypes);
 
-printf("jsplugin)   residue name indices...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   residue name indices...\n");
+#endif
     /* read in resnames */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
     if (js->reverseendian)
@@ -602,7 +666,9 @@ printf("jsplugin)   residue name indices...\n");
       free(resnames[i]);
     free(resnames);
     
-printf("jsplugin)   segment name indices...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   segment name indices...\n");
+#endif
     /* read in segids */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
     if (js->reverseendian)
@@ -614,7 +680,9 @@ printf("jsplugin)   segment name indices...\n");
       free(segids[i]);
     free(segids);
 
-printf("jsplugin)   chain name indices...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   chain name indices...\n");
+#endif
     /* read in chains */
     fio_fread(shortbuf, js->natoms * sizeof(short), 1, js->fd);
     if (js->reverseendian)
@@ -636,7 +704,9 @@ printf("jsplugin)   chain name indices...\n");
      */
     intbuf = (int *) malloc(js->natoms * sizeof(int));
 
-printf("jsplugin)   residue indices...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin)   residue indices...\n");
+#endif
     /* read in resid */
     fio_fread(intbuf, js->natoms * sizeof(int), 1, js->fd);
     if (js->reverseendian)
@@ -651,7 +721,9 @@ printf("jsplugin)   residue indices...\n");
     }
 
 
-printf("jsplugin) reading optional per-atom tables...\n");
+#if defined(INFOMSGS)
+    printf("jsplugin) reading optional per-atom tables...\n");
+#endif
     /*
      * read in optional single-precision float data blocks
      */ 
@@ -661,7 +733,9 @@ printf("jsplugin) reading optional per-atom tables...\n");
 
     /* read in optional data if it exists */
     if (js->optflags & JSOPT_OCCUPANCY) {
-printf("jsplugin)   occupancy...\n");
+#if defined(INFOMSGS)
+      printf("jsplugin)   occupancy...\n");
+#endif
       *optflags |= MOLFILE_OCCUPANCY;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
       if (js->reverseendian)
@@ -672,7 +746,9 @@ printf("jsplugin)   occupancy...\n");
     }
 
     if (js->optflags & JSOPT_BFACTOR) {
-printf("jsplugin)   bfactor...\n");
+#if defined(INFOMSGS)
+      printf("jsplugin)   bfactor...\n");
+#endif
       *optflags |= MOLFILE_BFACTOR;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
       if (js->reverseendian)
@@ -683,7 +759,9 @@ printf("jsplugin)   bfactor...\n");
     }
 
     if (js->optflags & JSOPT_MASS) { 
-printf("jsplugin)   mass...\n");
+#if defined(INFOMSGS)
+      printf("jsplugin)   mass...\n");
+#endif
       *optflags |= MOLFILE_MASS;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
       if (js->reverseendian)
@@ -694,7 +772,9 @@ printf("jsplugin)   mass...\n");
     }
 
     if (js->optflags & JSOPT_CHARGE) { 
-printf("jsplugin)   charge...\n");
+#if defined(INFOMSGS)
+      printf("jsplugin)   charge...\n");
+#endif
       *optflags |= MOLFILE_CHARGE;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
       if (js->reverseendian)
@@ -705,7 +785,9 @@ printf("jsplugin)   charge...\n");
     }
 
     if (js->optflags & JSOPT_RADIUS) { 
-printf("jsplugin)   radius...\n");
+#if defined(INFOMSGS)
+      printf("jsplugin)   radius...\n");
+#endif
       *optflags |= MOLFILE_RADIUS;
       fio_fread(fltbuf, js->natoms * sizeof(float), 1, js->fd);
       if (js->reverseendian)
@@ -727,7 +809,9 @@ printf("jsplugin)   radius...\n");
       intbuf = (int *) malloc(js->natoms * sizeof(int));
 
     if (js->optflags & JSOPT_ATOMICNUMBER) { 
-printf("jsplugin)   atomic number...\n");
+#if defined(INFOMSGS)
+      printf("jsplugin)   atomic number...\n");
+#endif
       *optflags |= MOLFILE_ATOMICNUMBER;
       fio_fread(intbuf, js->natoms * sizeof(int), 1, js->fd);
       if (js->reverseendian)
@@ -750,7 +834,9 @@ printf("jsplugin)   atomic number...\n");
       fio_fread(&js->nbonds, sizeof(int), 1, js->fd);
       if (js->reverseendian)
         swap4_aligned(&js->nbonds, 1);
-printf("jsplugin)   %d bonds...\n", js->nbonds);
+#if defined(INFOMSGS)
+      printf("jsplugin)   %d bonds...\n", js->nbonds);
+#endif
 
       js->bondfrom = (int *) malloc(js->nbonds * sizeof(int));
       js->bondto = (int *) malloc(js->nbonds * sizeof(int));
@@ -762,7 +848,9 @@ printf("jsplugin)   %d bonds...\n", js->nbonds);
       }
 
       if (js->optflags & JSOPT_BONDORDERS) {
-printf("jsplugin)   bond orders...\n");
+#if defined(INFOMSGS)
+        printf("jsplugin)   bond orders...\n");
+#endif
         js->bondorders = (float *) malloc(js->nbonds * sizeof(float));
         fio_fread(js->bondorders, js->nbonds * sizeof(float), 1, js->fd);
         if (js->reverseendian)
@@ -774,43 +862,53 @@ printf("jsplugin)   bond orders...\n");
       fio_fread(&js->numangles, sizeof(int), 1, js->fd);
       if (js->reverseendian)
         swap4_aligned(&js->numangles, 1);
-printf("jsplugin)   %d angles...\n", js->numangles);
-      js->angles = (int *) malloc(3 * js->numangles * sizeof(int));
-      fio_fread(js->angles, sizeof(int)*3*js->numangles, 1, js->fd);
+#if defined(INFOMSGS)
+      printf("jsplugin)   %d angles...\n", js->numangles);
+#endif
+      js->angles = (int *) malloc(3L * js->numangles * sizeof(int));
+      fio_fread(js->angles, sizeof(int)*3L*js->numangles, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(js->angles, 3*js->numangles);
+        swap4_aligned(js->angles, 3L*js->numangles);
 
       fio_fread(&js->numdihedrals, sizeof(int), 1, js->fd);
       if (js->reverseendian)
         swap4_aligned(&js->numdihedrals, 1);
-printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
-      js->dihedrals = (int *) malloc(4 * js->numdihedrals * sizeof(int));
-      fio_fread(js->dihedrals, sizeof(int)*4*js->numdihedrals, 1, js->fd);
+#if defined(INFOMSGS)
+      printf("jsplugin)   %d dihedrals...\n", js->numdihedrals);
+#endif
+      js->dihedrals = (int *) malloc(4L * js->numdihedrals * sizeof(int));
+      fio_fread(js->dihedrals, sizeof(int)*4L*js->numdihedrals, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(js->dihedrals, 4*js->numdihedrals);
+        swap4_aligned(js->dihedrals, 4L*js->numdihedrals);
 
       fio_fread(&js->numimpropers, sizeof(int), 1, js->fd);
       if (js->reverseendian)
         swap4_aligned(&js->numimpropers, 1);
-      js->impropers = (int *) malloc(4 * js->numimpropers * sizeof(int));
-printf("jsplugin)   %d impropers...\n", js->numimpropers);
-      fio_fread(js->impropers, sizeof(int)*4*js->numimpropers, 1, js->fd);
+      js->impropers = (int *) malloc(4L * js->numimpropers * sizeof(int));
+#if defined(INFOMSGS)
+      printf("jsplugin)   %d impropers...\n", js->numimpropers);
+#endif
+      fio_fread(js->impropers, sizeof(int)*4L*js->numimpropers, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(js->impropers, 4*js->numimpropers);
+        swap4_aligned(js->impropers, 4L*js->numimpropers);
     }
     if (js->optflags & JSOPT_CTERMS) {
       fio_fread(&js->numcterms, sizeof(int), 1, js->fd);
       if (js->reverseendian)
         swap4_aligned(&js->numcterms, 1);
-      js->cterms = (int *) malloc(8 * js->numcterms * sizeof(int));
-printf("jsplugin)   %d cterms...\n", js->numcterms);
-      fio_fread(js->cterms, sizeof(int)*8*js->numcterms, 1, js->fd);
+      js->cterms = (int *) malloc(8L * js->numcterms * sizeof(int));
+#if defined(INFOMSGS)
+      printf("jsplugin)   %d cterms...\n", js->numcterms);
+#endif
+      fio_fread(js->cterms, sizeof(int)*8L*js->numcterms, 1, js->fd);
       if (js->reverseendian)
-        swap4_aligned(js->cterms, 8*js->numcterms);
+        swap4_aligned(js->cterms, 8L*js->numcterms);
     }
 
-printf("jsplugin) final optflags: %08x\n", *optflags);
-printf("jsplugin) structure information complete\n");
+#if defined(INFOMSGS)
+    printf("jsplugin) final optflags: %08x\n", *optflags);
+    printf("jsplugin) structure information complete\n");
+#endif
 
     /* record the file offset for the first timestep */
     js_calc_timestep_blocking_info(js);
@@ -818,7 +916,9 @@ printf("jsplugin) structure information complete\n");
     return MOLFILE_SUCCESS;
   }
 
-printf("jsplugin) no structure information available\n");
+#if defined(INFOMSGS)
+  printf("jsplugin) no structure information available\n");
+#endif
 
   /* record the file offset for the first timestep */
   js_calc_timestep_blocking_info(js);
@@ -971,9 +1071,9 @@ static int read_js_timestep(void *v, int natoms, molfile_timestep_t *ts) {
     /* structures                                                 */
     if (getenv("VMDJSMAXATOMIDX") != NULL) {
       fio_size_t bszmask;
-      int maxatompadsz, skipatompadsz;
+      long maxatompadsz, skipatompadsz;
 
-      int maxatomidx = atoi(getenv("VMDJSMAXATOMIDX"));
+      long maxatomidx = atoi(getenv("VMDJSMAXATOMIDX"));
       if (maxatomidx < 0)
         maxatomidx = 0;
       if (maxatomidx >= js->natoms)
@@ -981,7 +1081,7 @@ static int read_js_timestep(void *v, int natoms, molfile_timestep_t *ts) {
 
       /* pad max read to the start of the next block  */
       bszmask = js->directio_block_size - 1;
-      maxatompadsz = ((maxatomidx*3*sizeof(float)) + bszmask) & (~bszmask);
+      maxatompadsz = ((maxatomidx*3L*sizeof(float)) + bszmask) & (~bszmask);
       skipatompadsz = js->ts_crd_padsz - maxatompadsz;
 
       readlen=0;
@@ -1003,7 +1103,7 @@ static int read_js_timestep(void *v, int natoms, molfile_timestep_t *ts) {
 
 #if 0
       /* clear all non-read atom coords to zeros */
-      memset(ts->coords+3*maxatomidx,0,3*sizeof(float)*(js->natoms-maxatomidx));
+      memset(ts->coords+3L*maxatomidx,0,3L*sizeof(float)*(js->natoms-maxatomidx));
 #endif
 
     }  else {
@@ -1015,13 +1115,38 @@ static int read_js_timestep(void *v, int natoms, molfile_timestep_t *ts) {
     iov[1].iov_base = (fio_caddr_t) unitcell;     /* read PBC unit cell  */
     iov[1].iov_len  = js->ts_ucell_padsz;
 
-    /* Do all of the reads with a single syscall, for peak efficiency. */
-    /* On smart kernels, readv() causes only one context switch, and   */
-    /* can effeciently scatter the reads to the various buffers.       */
+#if 1
+    /* Use fall-back code instead of readv():
+    /*  Some platforms implement readv() as user level code in libc,     */
+    /*  and due to POSIX atomicity requirements for readv()/writev(),    */
+    /*  they may copy data to internal temp buffers, which can kill      */
+    /*  performance, and in cases when doing single I/O ops on large,    */
+    /*  buffers, e.g. > 2GB, can fail with shorts reads or writes...     */
+    /*  On such platforms it is best to avoid using readv()/writev()...  */
+    {
+      int readcnt = 0;
+      readlen = 0;
+      if (js->directio_enabled) {
+        readcnt =  fio_fread(iov[0].iov_base, iov[0].iov_len, 1, js->directio_fd);
+        readcnt += fio_fread(iov[1].iov_base, iov[1].iov_len, 1, js->directio_fd);
+      } else {
+        readcnt =  fio_fread(iov[0].iov_base, iov[0].iov_len, 1, js->fd);
+        readcnt += fio_fread(iov[1].iov_base, iov[1].iov_len, 1, js->fd);
+      }
+
+      /* if both records read correctly, then the reads are okay */
+      if (readcnt == 2)
+        readlen = framelen;
+    }
+#else
+    /* Do all of the reads with a single syscall, for peak efficiency.   */
+    /* On smart kernels, readv() causes only one context switch, and     */
+    /* can effeciently scatter the reads to the various buffers.         */
     if (js->directio_enabled)
       readlen = fio_readv(js->directio_fd, &iov[0], 2); 
     else
       readlen = fio_readv(js->fd, &iov[0], 2); 
+#endif
 
 #if defined(ENABLEJSSHORTREADS)
    }
@@ -1031,7 +1156,7 @@ static int read_js_timestep(void *v, int natoms, molfile_timestep_t *ts) {
     if (readlen != framelen) {
       if (readlen < 0) {
         perror("jsplugin) fio_readv(): ");
-      } else {
+      } else if (readlen != 0) {
         printf("jsplugin) mismatched read: %ld, expected %ld\n", 
                (long) readlen, (long) framelen);
       }
@@ -1041,7 +1166,7 @@ static int read_js_timestep(void *v, int natoms, molfile_timestep_t *ts) {
 
     /* perform byte swapping if necessary */
     if (js->reverseendian) {
-      swap4_aligned(ts->coords, natoms * 3);
+      swap4_aligned(ts->coords, js->natoms * 3L);
       swap8_aligned(unitcell, 6);
     }
 
@@ -1154,12 +1279,12 @@ static void *open_js_write(const char *path, const char *filetype, int natoms) {
 static int write_js_structure(void *mydata, int optflags,
                               const molfile_atom_t *atoms) {
   jshandle *js = (jshandle *) mydata;
-  int i;
+  long i;
 
 #if 1
   if (getenv("VMDJSBLOCKIO")) {
     js->optflags |= JSOPT_TS_BLOCKIO;
-    js->directio_block_size = 4096; 
+    js->directio_block_size = MOLFILE_DIRECTIO_MIN_BLOCK_SIZE; 
   }
 #endif
 
@@ -1191,7 +1316,7 @@ static int write_js_structure(void *mydata, int optflags,
 printf("jsplugin) writing option flags: %0x08x\n", js->optflags);
 
   /* Check to see if block-based trajectory I/O is used  */
-  /* and read in the block size for this file.           */
+  /* and write out the block size for this file.         */
   if (js->optflags & JSOPT_TS_BLOCKIO) {
     fio_fwrite(&js->directio_block_size, sizeof(int), 1, js->fd);
     printf("jsplugin) Block-based I/O enabled: block size %d bytes\n", 
@@ -1225,31 +1350,31 @@ printf("jsplugin) counting atom names, types, etc...\n");
     hash_init(&tmphash, 127);
     for (i=0; i<js->natoms; i++)
       hash_insert(&tmphash, atoms[i].name, 0);
-    numatomnames = tmphash.entries; /* XXX need a query API for this... */
+    numatomnames = hash_entries(&tmphash);
     hash_destroy(&tmphash);
 
     hash_init(&tmphash, 127);
     for (i=0; i<js->natoms; i++)
       hash_insert(&tmphash, atoms[i].type, 0);
-    numatomtypes = tmphash.entries; /* XXX need a query API for this... */
+    numatomtypes = hash_entries(&tmphash);
     hash_destroy(&tmphash);
 
     hash_init(&tmphash, 127);
     for (i=0; i<js->natoms; i++)
       hash_insert(&tmphash, atoms[i].resname, 0);
-    numresnames = tmphash.entries; /* XXX need a query API for this... */
+    numresnames = hash_entries(&tmphash);
     hash_destroy(&tmphash);
 
     hash_init(&tmphash, 127);
     for (i=0; i<js->natoms; i++)
       hash_insert(&tmphash, atoms[i].segid, 0);
-    numsegids = tmphash.entries; /* XXX need a query API for this... */
+    numsegids = hash_entries(&tmphash);
     hash_destroy(&tmphash);
 
     hash_init(&tmphash, 127);
     for (i=0; i<js->natoms; i++)
       hash_insert(&tmphash, atoms[i].chain, 0);
-    numchains = tmphash.entries; /* XXX need a query API for this... */
+    numchains = hash_entries(&tmphash);
     hash_destroy(&tmphash);
  
 printf("jsplugin) writing unique string counts...\n");
@@ -1508,18 +1633,18 @@ printf("jsplugin) writing bond orders...\n");
     if (js->optflags & JSOPT_ANGLES) {
 printf("jsplugin) writing angles/dihedrals/impropers...\n");
       fio_fwrite(&js->numangles, sizeof(int), 1, js->fd);
-      fio_fwrite(js->angles, sizeof(int)*3*js->numangles, 1, js->fd);
+      fio_fwrite(js->angles, sizeof(int)*3L*js->numangles, 1, js->fd);
 
       fio_fwrite(&js->numdihedrals, sizeof(int), 1, js->fd);
-      fio_fwrite(js->dihedrals, sizeof(int)*4*js->numdihedrals, 1, js->fd);
+      fio_fwrite(js->dihedrals, sizeof(int)*4L*js->numdihedrals, 1, js->fd);
 
       fio_fwrite(&js->numimpropers, sizeof(int), 1, js->fd);
-      fio_fwrite(js->impropers, sizeof(int)*4*js->numimpropers, 1, js->fd);
+      fio_fwrite(js->impropers, sizeof(int)*4L*js->numimpropers, 1, js->fd);
     }
     if (js->optflags & JSOPT_CTERMS) {
 printf("jsplugin) writing cross-terms\n");
       fio_fwrite(&js->numcterms, sizeof(int), 1, js->fd);
-      fio_fwrite(js->cterms, sizeof(int)*8*js->numcterms, 1, js->fd);
+      fio_fwrite(js->cterms, sizeof(int)*8L*js->numcterms, 1, js->fd);
     }
 
     /* update the file offset for the first timestep */
@@ -1582,18 +1707,18 @@ static int write_js_angles(void * v, int numangles, const int *angles,
   if (js->numangles > 0 || js->numdihedrals > 0 || js->numimpropers > 0) {
     js->optflags |= JSOPT_ANGLES;
 
-    js->angles = (int *) malloc(3*js->numangles*sizeof(int));
-    memcpy(js->angles, angles, 3*js->numangles*sizeof(int));
-    js->dihedrals = (int *) malloc(4*js->numdihedrals*sizeof(int));
-    memcpy(js->dihedrals, dihedrals, 4*js->numdihedrals*sizeof(int));
-    js->impropers = (int *) malloc(4*js->numimpropers*sizeof(int));
-    memcpy(js->impropers, impropers, 4*js->numimpropers*sizeof(int));
+    js->angles = (int *) malloc(3L*js->numangles*sizeof(int));
+    memcpy(js->angles, angles, 3L*js->numangles*sizeof(int));
+    js->dihedrals = (int *) malloc(4L*js->numdihedrals*sizeof(int));
+    memcpy(js->dihedrals, dihedrals, 4L*js->numdihedrals*sizeof(int));
+    js->impropers = (int *) malloc(4L*js->numimpropers*sizeof(int));
+    memcpy(js->impropers, impropers, 4L*js->numimpropers*sizeof(int));
   }
   if (js->numcterms > 0) {
     js->optflags |= JSOPT_CTERMS;
 
-    js->cterms = (int *) malloc(8*js->numcterms*sizeof(int));
-    memcpy(js->cterms, cterms, 8*js->numcterms*sizeof(int));
+    js->cterms = (int *) malloc(8L*js->numcterms*sizeof(int));
+    memcpy(js->cterms, cterms, 8L*js->numcterms*sizeof(int));
   }
 
   return MOLFILE_SUCCESS;
@@ -1616,18 +1741,18 @@ static int write_js_angles(void * v,
   if (js->numangles > 0 || js->numdihedrals > 0 || js->numimpropers > 0) {
     js->optflags |= JSOPT_ANGLES;
 
-    js->angles = (int *) malloc(3*js->numangles*sizeof(int));
-    memcpy(js->angles, angles, 3*js->numangles*sizeof(int));
-    js->dihedrals = (int *) malloc(4*js->numdihedrals*sizeof(int));
-    memcpy(js->dihedrals, dihedrals, 4*js->numdihedrals*sizeof(int));
-    js->impropers = (int *) malloc(4*js->numimpropers*sizeof(int));
-    memcpy(js->impropers, impropers, 4*js->numimpropers*sizeof(int));
+    js->angles = (int *) malloc(3L*js->numangles*sizeof(int));
+    memcpy(js->angles, angles, 3L*js->numangles*sizeof(int));
+    js->dihedrals = (int *) malloc(4L*js->numdihedrals*sizeof(int));
+    memcpy(js->dihedrals, dihedrals, 4L*js->numdihedrals*sizeof(int));
+    js->impropers = (int *) malloc(4L*js->numimpropers*sizeof(int));
+    memcpy(js->impropers, impropers, 4L*js->numimpropers*sizeof(int));
   }
   if (js->numcterms > 0) {
     js->optflags |= JSOPT_CTERMS;
 
-    js->cterms = (int *) malloc(8*js->numcterms*sizeof(int));
-    memcpy(js->cterms, cterms, 8*js->numcterms*sizeof(int));
+    js->cterms = (int *) malloc(8L*js->numcterms*sizeof(int));
+    memcpy(js->cterms, cterms, 8L*js->numcterms*sizeof(int));
   }
 
   return MOLFILE_SUCCESS;
@@ -1652,10 +1777,16 @@ static int write_js_timestep(void *v, const molfile_timestep_t *ts) {
   unitcell[5] = sin((M_PI_2 / 90.0) * (90.0 - ts->gamma));
 
   /* coordinates for all atoms */
-  fio_fwrite(ts->coords, js->ts_crd_padsz, 1, js->fd);
+  if (fio_fwrite(ts->coords, js->ts_crd_padsz, 1, js->fd) != 1) {
+    printf("jsplugin) Error writing timestep coords!\n");;
+    return MOLFILE_ERROR;
+  }
 
   /* PBC unit cell info */ 
-  fio_fwrite(unitcell, js->ts_ucell_padsz, 1, js->fd);
+  if (fio_fwrite(unitcell, js->ts_ucell_padsz, 1, js->fd) != 1) {
+    printf("jsplugin) Error writing timestep unit cell!\n");;
+    return MOLFILE_ERROR;
+  }
 
   return MOLFILE_SUCCESS;
 }
@@ -1773,7 +1904,7 @@ int main(int argc, char *argv[]) {
   float *aligncoords=NULL;
   void *v;
   jshandle *js;
-  int i, natoms, sz, blocksz;
+  long i, natoms, sz, blocksz;
   float sizeMB =0.0, totalMB = 0.0;
   double starttime, endtime, totaltime = 0.0;
   int do_io = 1;
@@ -1850,8 +1981,8 @@ int main(int argc, char *argv[]) {
 
     /* ensure we have a large enough allocation so we can align */
     /* the starting pointer to a blocksz page boundary          */
-    blocksz = 4096;
-    sz = 3*sizeof(float)*natoms + blocksz;
+    blocksz = MOLFILE_DIRECTIO_MIN_BLOCK_SIZE;
+    sz = 3L*sizeof(float)*natoms + blocksz;
     aligncoords = (float *) alloc_aligned_ptr(sz, blocksz, (void**) &coords);
     timestep.coords = aligncoords;
 
@@ -1879,7 +2010,7 @@ int main(int argc, char *argv[]) {
 #if defined(ENABLECUDATESTS)
       if (crc == cudaSuccess && devcount > 0) {
         size_t bsz = (maxatomidx >= 0) ? (maxatomidx+1) : natoms;
-        bsz *= 3*sizeof(float);
+        bsz *= 3L*sizeof(float);
         crc = cudaMemcpy(devptr, timestep.coords, bsz, cudaMemcpyHostToDevice);
       }
 #endif

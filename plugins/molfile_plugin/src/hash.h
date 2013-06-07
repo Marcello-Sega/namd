@@ -11,7 +11,7 @@
  *
  *      $RCSfile: hash.h,v $
  *      $Author: jim $        $Locker:  $             $State: Exp $
- *      $Revision: 1.3 $      $Date: 2012/01/27 01:41:53 $
+ *      $Revision: 1.4 $      $Date: 2013/06/07 21:43:26 $
  *
  ***************************************************************************
  * DESCRIPTION:
@@ -54,6 +54,9 @@ int hash_insert (hash_t *, const char *, int);
 
 /** delete an string from the hash table, given its string name */
 int hash_delete (hash_t *, const char *);
+
+/** return the number of entries in the has table */
+int hash_entries(hash_t *);
 
 /** destroy the hash table completely, deallocate memory */
 void hash_destroy(hash_t *);

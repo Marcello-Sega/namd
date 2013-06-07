@@ -11,7 +11,7 @@
  *
  *      $RCSfile: molfile_plugin.h,v $
  *      $Author: jim $       $Locker:  $             $State: Exp $
- *      $Revision: 1.5 $       $Date: 2012/01/27 01:41:43 $
+ *      $Revision: 1.6 $       $Date: 2013/06/07 21:42:44 $
  *
  ***************************************************************************/
 
@@ -60,6 +60,21 @@ typedef ssize_t molfile_ssize_t;      /**< for frame counts */
 #define MOLFILE_MAXWAVEPERTS     25   /**< maximum number of wavefunctions
                                        *   per timestep */
 
+/**
+ * Hard-coded direct-I/O page size constants for use by both VMD
+ * and the plugins that want to use direct, unbuffered I/O for high
+ * performance with SSDs etc.  We use two constants to define the 
+ * range of hardware page sizes that we can support, so that we can 
+ * add support for larger 8KB or 16KB page sizes in the future 
+ * as they become more prevalent in high-end storage systems.
+ *
+ * At present, VMD uses a hard-coded 4KB page size to reduce memory
+ * fragmentation, but these constants will make it easier to enable the
+ * use of larger page sizes in the future if it becomes necessary.
+ */
+#define MOLFILE_DIRECTIO_MIN_BLOCK_SIZE 4096
+#define MOLFILE_DIRECTIO_MAX_BLOCK_SIZE 4096
+
 
 /**
  * File level comments, origin information, and annotations.
@@ -107,6 +122,23 @@ typedef struct {
   float charge;       /**< optional charge value                 */
   float radius;       /**< optional radius value                 */
   int atomicnumber;   /**< optional element atomic number        */
+
+#if 0
+  char complex[16];
+  char assembly[16];
+  int qmregion;
+  int qmregionlink;
+  int qmlayer;
+  int qmlayerlink;
+  int qmfrag;
+  int qmfraglink;
+  string qmecp;
+  int qmadapt;
+  int qmect;          /**< boolean */
+  int qmparam;
+  int autoparam;
+#endif
+
 #if defined(DESRES_CTNUMBER)
   int ctnumber;       /**< mae ct block, 0-based, including meta */
 #endif
