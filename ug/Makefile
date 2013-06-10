@@ -45,7 +45,7 @@ $(DOCDIR)/ug.tar.gz: $(DOCDIR)/ug.pdf
 	-t "NAMD $(NAMD_VERSION) User's Guide" -address "http://www.ks.uiuc.edu/Research/namd/" \
 	-up_url "../../" -up_title "Main NAMD Page" ug
 	chmod -R a+rX ug
-	gtar czvf ug.tar.gz ug
+	tar czvf ug.tar.gz ug
 
 $(DOCDIR)/ug.pdf: $(SRCFILES) $(PDFFIGS)
 	$(ECHO) "Creating NAMD $(NAMD_VERSION) User's Guide ..." ; \
