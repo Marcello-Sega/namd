@@ -360,11 +360,10 @@ umbrella sampling (exchanging collective variable biases).
 This replaces the old Tcl server and socket connections driving a
 separate NAMD process for every replica used in the simulation.
 
-{\bf A NAMD build based on a patched MPI build of Charm++ is required!}
-The included {\tt lib/replica/charm\_replica.patch}
-has already been applied to the
-Charm++ source code included with the NAMD source code.  It is only
-needed if you obtain Charm++ directly from {\tt charm.cs.illinois.edu}.
+{\bf A NAMD build based on Charm++ 6.5.0 or later using one of the
+``LRTS'' (low-level runtime system) machine layers is required!}
+Current LRTS machine layers include
+gemini\_gni-crayxe, pamilrts-bluegeneq, and mpi.
 
 Only temperature-exchange simulations are described below.
 To employ replicas for umbrella sampling you will need to understand
