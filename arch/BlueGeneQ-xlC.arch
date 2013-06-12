@@ -1,5 +1,5 @@
 NAMD_ARCH = BlueGeneQ
-CHARMARCH = pami-bluegeneq-xlc
+CHARMARCH = pamilrts-bluegeneq-async-smp-xlc
 
 CXX = bgxlC_r -qstaticinline -qsuppress=1540-0448:1500-036 -DNO_SOCKET  -DDUMMY_VMDSOCK -DNOHOSTNAME -DNO_CHDIR -DNO_STRSTREAM_H -DNO_GETPWUID -DARCH_POWERPC 
 
