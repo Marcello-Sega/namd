@@ -399,7 +399,7 @@ obj/mainfunc.o: \
 obj/memusage.o: \
 	src/memusage.C \
 	src/memusage.h
-	$(CXX) $(CXXFLAGS) $(COPTO)obj/memusage.o $(COPTC) src/memusage.C
+	$(CHARMC) $(CXXFLAGS) $(COPTO)obj/memusage.o $(COPTC) src/memusage.C
 obj/strlib.o: \
 	src/strlib.C \
 	src/strlib.h \

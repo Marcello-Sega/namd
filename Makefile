@@ -669,6 +669,7 @@ depends: $(MKINCDIR) $(CIFILES) $(MKDSTDIR) $(DEPENDFILE)
 	    -e "/obj\/ComputeNonbondedLES.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    -e "/obj\/ComputeNonbondedPProf.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    -e "/obj\/ComputeNonbondedTabEnergies.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
+	    -e "/obj\/memusage.o/ s/CXX/CHARMC/" \
 	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
 	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 
