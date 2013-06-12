@@ -101,12 +101,24 @@ inline unsigned long memusage_ps() {
 #endif
 }
 
-#if CMK_BLUEGENEP || CMK_BLUEGENEQ
+#if CMK_BLUEGENEQ
+/* Report the memusage according to
+ * https://wiki.alcf.anl.gov/parts/index.php/Blue_Gene/Q#CNK_Memory_Information
+ */
+#include <spi/include/kernel/memory.h>
+inline long long memusage_bgq(){
+    uint64_t heap;
+    Kernel_GetMemorySize(KERNEL_MEMSIZE_HEAP, &heap);
+    return heap;
+}
+#endif
+
+#if CMK_BLUEGENEP
 /* Report the memusage according to
  * http://www.alcf.anl.gov/resource-guides/determining-memory-use
  */
 #include <malloc.h>
-inline long long memusage_bg(){
+inline long long memusage_bgp(){
     struct mallinfo m = mallinfo();
     long long hblkhd = (unsigned int) m.hblkhd;
     long long uordblks = (unsigned int) m.uordblks;
@@ -150,8 +162,12 @@ unsigned long memusage(const char **source) {
     memtotal = CmiMemoryUsage();  s = "CmiMemoryUsage";
   }
 
-#if CMK_BLUEGENEP || CMK_BLUEGENEQ
-  if( ! memtotal) { memtotal = memusage_bg(); s="mallinfo on BG"; }
+#if CMK_BLUEGENEQ
+  if( ! memtotal) { memtotal = memusage_bgq(); s="Kernel_GetMemorySize on BG/Q"; }
+#endif
+
+#if CMK_BLUEGENEP
+  if( ! memtotal) { memtotal = memusage_bgp(); s="mallinfo on BG/P"; }
 #endif
 
 #if defined(WIN32) && !defined(__CYGWIN__) && CHARM_VERSION > 60102
