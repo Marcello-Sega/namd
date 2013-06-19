@@ -79,6 +79,7 @@ EXTRALINKLIBS=
 CXXTHREADOPTS = $(CXXOPTS) 
 CXXSIMPARAMOPTS = $(CXXOPTS) 
 CXXNOALIASOPTS = $(CXXOPTS) 
+CXXMEMUSAGE = $(CXX)
 CUDACC = $(CXX)
 CUDAOBJS =
 NATIVEPATH = echo
@@ -669,7 +670,7 @@ depends: $(MKINCDIR) $(CIFILES) $(MKDSTDIR) $(DEPENDFILE)
 	    -e "/obj\/ComputeNonbondedLES.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    -e "/obj\/ComputeNonbondedPProf.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
 	    -e "/obj\/ComputeNonbondedTabEnergies.o/ s/CXXFLAGS/CXXNOALIASFLAGS/" \
-	    -e "/obj\/memusage.o/ s/CXX/CHARMC/" \
+	    -e "/obj\/memusage.o/ s/CXX/CXXMEMUSAGE/" \
 	    $(DEPENDFILE) > $(DEPENDFILE).sed; \
 	$(MOVE) -f $(DEPENDFILE).sed $(DEPENDFILE);
 
