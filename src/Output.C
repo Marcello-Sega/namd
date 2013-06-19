@@ -63,6 +63,8 @@ void NAMD_write(int fd, const char *buf, size_t count, const char *errmsg="NAMD_
   }
 }
 
+#define seek_dcdfile NAMD_seek
+
 #ifndef O_LARGEFILE
 #define O_LARGEFILE 0x0
 #endif

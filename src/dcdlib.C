@@ -33,6 +33,28 @@ void NAMD_write(int fd, const char *buf, size_t count) {
   }
 }
 
+#ifdef WIN32
+#define LSEEK _lseek
+#define READ _read
+#else
+#define LSEEK lseek
+#define READ read
+#endif
+
+off_t NAMD_seek(int file, off_t offset, int whence) {
+  off_t retval = LSEEK(file, offset, whence);
+  if ( retval < 0 ) NAMD_err("seek failed while writing DCD file");
+  if ( whence == SEEK_SET && retval != offset ) {
+    char buf[256];
+    sprintf(buf, "seek failed while writing DCD file: SEEK_SET %lld returned %lld\n", offset, retval);
+    NAMD_die(buf);
+  }
+  return retval;
+}
+
+#undef LSEEK
+#define LSEEK NAMD_seek
+
 #ifndef O_LARGEFILE
 #define O_LARGEFILE 0x0
 #endif

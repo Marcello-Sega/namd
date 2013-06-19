@@ -45,14 +45,6 @@
 #define DCD_FILEEXISTS  -7	/*  output file already exists		*/
 #define DCD_BADMALLOC   -8	/*  malloc failed			*/
 
-#ifdef WIN32
-#define LSEEK _lseek
-#define READ _read
-#else
-#define LSEEK lseek
-#define READ read
-#endif
-
 /*			FUNCTION ALLUSIONS				*/
 int open_dcd_read(char *);      /*  Open a DCD file for reading 	*/
 int read_dcdheader(int, int*, int*, int*, int*, double*, int*, int**);	
@@ -83,9 +75,7 @@ int update_dcdstep_par_header(int fd);
 int write_dcdstep_par_slave(int fd, int parL, int parU, int N, float *X, float *Y, float *Z);
     
 /* wrapper for seeking the dcd file */
-inline int seek_dcdfile(int fd, off_t offset, int whence){
-    return LSEEK(fd, offset, whence);
-}
+off_t NAMD_seek(int file, off_t offset, int whence);
 
 #endif /* ! DCDLIB_H */
 
