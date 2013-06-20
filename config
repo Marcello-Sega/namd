@@ -1,4 +1,5 @@
 #!/bin/csh -f
+set CHARM_VERSION = 6.5.1
 goto begin
 syntax:
   echo ''
@@ -8,7 +9,7 @@ syntax:
   echo ''
   echo 'Options (most defaults are set in arch subdirectory):'
   echo '  --charm-base <Charm++ base build directory containing src>'
-  echo '      (defaults to ./charm-6.5.0 or ./charm)'
+  echo "      (defaults to ./charm-$CHARM_VERSION or ./charm)"
   echo '  --charm-arch <subdirectory of Charm++ base build directory>'
   echo '      (such as mpi-linux-x86_64-mpicxx or multicore-linux64)'
   echo '  --charm-opts <options to pass to charmc (quote list)>'
@@ -336,10 +337,10 @@ begin:
 
   if ( $?CHARM_BASE ) then
     echo "CHARMBASE = $CHARM_BASE" >> Make.config
-  else if ( -d .rootdir/charm-6.5.0 ) then
-    set CHARM_BASE = .rootdir/charm-6.5.0
-    echo "Using Charm++ 6.5.0 build found in main build directory"
-    echo 'CHARMBASE = .rootdir/charm-6.5.0' >> Make.config
+  else if ( -d .rootdir/charm-$CHARM_VERSION ) then
+    set CHARM_BASE = .rootdir/charm-$CHARM_VERSION
+    echo "Using Charm++ $CHARM_VERSION build found in main build directory"
+    echo "CHARMBASE = .rootdir/charm-$CHARM_VERSION" >> Make.config
   else if ( -d .rootdir/charm ) then
     set CHARM_BASE = .rootdir/charm
     echo "Using Charm++ build found in main build directory"
