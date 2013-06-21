@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/05/27 20:57:53 $
- * $Revision: 1.1261 $
+ * $Date: 2013/06/21 15:28:41 $
+ * $Revision: 1.1262 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -1253,7 +1253,7 @@ void WorkDistrib::assignNodeToPatch()
 	  nNodes = simparam->simulatedPEs;
   }
 
-#if USE_TOPOMAP 
+#if (CMK_BLUEGENEP | CMK_BLUEGENEL) && USE_TOPOMAP 
   TopoManager tmgr;
   int numPes = tmgr.getDimNX() * tmgr.getDimNY() * tmgr.getDimNZ();
   if (numPes > patchMap->numPatches() && (assignPatchesTopoGridRecBisection() > 0)) {
@@ -1261,17 +1261,7 @@ void WorkDistrib::assignNodeToPatch()
   }
   else
 #endif
-    if (nNodes > patchMap->numPatches())
-      assignPatchesBitReversal();
-    else
-#if ! (CMK_BLUEGENEP | CMK_BLUEGENEL)
-    if ( simparam->PMEOn )
-      assignPatchesSpaceFillingCurve();	  
-    else
-#endif
-      assignPatchesRecursiveBisection();
-      // assignPatchesRoundRobin();
-      // assignPatchesToLowestLoadNode();
+  assignPatchesSpaceFillingCurve();	  
   
   int *nAtoms = new int[nNodes];
   int numAtoms=0;
@@ -1789,6 +1779,7 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   int numNodes = Node::Object()->numNodes();
   SimParameters *simParams = Node::Object()->simParameters;
   if(simParams->simulateInitialMapping) {
+          NAMD_die("simulateInitialMapping not supported by assignPatchesSpaceFillingCurve()");
 	  numNodes = simParams->simulatedPEs;
   }
 
@@ -1800,7 +1791,7 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
   ResizeArray<int> nodeOrdering(numNodes);
   nodeOrdering.resize(0);
   for ( int i=0; i<numNodes; ++i ) {
-    int pe = peCompactOrdering[i];
+    int pe = peDiffuseOrdering[(i+1)%numNodes];  // avoid 0 if possible
     if ( simParams->noPatchesOnZero && numNodes > 1 ) {
       if ( pe == 0 ) continue;
       if(simParams->noPatchesOnOne && numNodes > 2) {
@@ -1815,20 +1806,40 @@ void WorkDistrib::assignPatchesSpaceFillingCurve()
     nodeOrdering.add(pe);
     if ( 0 ) CkPrintf("using pe %5d\n", pe);
   }
-  int usedNodes = nodeOrdering.size();
 
-  if ( numPatches < usedNodes )
-    NAMD_bug("WorkDistrib::assignPatchesSpaceFillingCurve() called with more nodes than patches");
+  int *node_begin = nodeOrdering.begin();
+  int *node_end = nodeOrdering.end();
+  if ( nodeOrdering.size() > numPatches ) {
+    node_end = node_begin + numPatches;
+  }
+  std::sort(node_begin, node_end, pe_sortop_compact());
+
+  int *basenode_begin = node_begin;
+  int *basenode_end = node_end;
+  if ( nodeOrdering.size() > 2*numPatches ) {
+    basenode_begin = node_end;
+    basenode_end = basenode_begin + numPatches;
+    std::sort(basenode_begin, basenode_end, pe_sortop_compact());
+  }
 
   recursive_bisect_with_curve(
     patchOrdering.begin(), patchOrdering.end(),
-    nodeOrdering.begin(), nodeOrdering.end(),
+    node_begin, node_end,
     patchLoads.begin(), sortedLoads.begin(), assignedNode);
 
+  int samenodecount = 0;
+
   for ( int pid=0; pid<numPatches; ++pid ) {
-    patchMap->assignNode(pid, assignedNode[pid]);	
-    patchMap->assignBaseNode(pid, assignedNode[pid]);	
+    int node = assignedNode[pid];
+    patchMap->assignNode(pid, node);
+    int nodeidx = std::lower_bound(node_begin, node_end, node,
+                                   pe_sortop_compact()) - node_begin;
+    int basenode = basenode_begin[nodeidx];
+    patchMap->assignBaseNode(pid, basenode);
+    if ( CmiPeOnSamePhysicalNode(node,basenode) ) ++samenodecount;
   }
+
+  iout << iINFO << "Placed " << (samenodecount*100./numPatches) << "% of base nodes on same physical node as patch\n" << endi;
 
   delete [] assignedNode; 
 }
