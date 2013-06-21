@@ -7,8 +7,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/WorkDistrib.C,v $
  * $Author: jim $
- * $Date: 2013/06/21 15:28:41 $
- * $Revision: 1.1262 $
+ * $Date: 2013/06/21 22:24:32 $
+ * $Revision: 1.1263 $
  *****************************************************************************/
 
 /** \file WorkDistrib.C
@@ -254,7 +254,7 @@ void WorkDistrib::sortPmePes(int *pmepes, int xdim, int ydim) {
       int pe2 = CkNodeFirst(node);
       for ( int j=0; j<nsize; ++j, ++pe2 )  {
         cnt += count[pe2];
-        sum += avgPos[pe2];
+        sum += sumPos[pe2];
       }
     }
     if ( cnt == 0 ) {
@@ -265,7 +265,7 @@ void WorkDistrib::sortPmePes(int *pmepes, int xdim, int ydim) {
       for ( int j=0; j<nsize; ++j )  {
         int pe2 = nlist[j];
         cnt += count[pe2];
-        sum += avgPos[pe2];
+        sum += sumPos[pe2];
       }
     }
     if ( cnt ) {
