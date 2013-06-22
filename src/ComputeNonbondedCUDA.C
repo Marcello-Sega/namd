@@ -388,7 +388,7 @@ void ComputeNonbondedCUDA::build_lj_table() {  // static
   cuda_bind_lj_table(t,tsize);
   delete [] t;
 
-  if ( ! CkMyPe() ) {
+  if ( ! CmiPhysicalNodeID(CkMyPe()) ) {
     CkPrintf("Info: Updated CUDA LJ table with %d x %d elements.\n", dim, dim);
   }
 }
@@ -520,7 +520,7 @@ void ComputeNonbondedCUDA::build_force_table() {  // static
 
   cuda_bind_force_table(t,et);
 
-  if ( ! CkMyPe() ) {
+  if ( ! CmiPhysicalNodeID(CkMyPe()) ) {
     CkPrintf("Info: Updated CUDA force table with %d elements.\n", FORCE_TABLE_SIZE);
   }
 }
@@ -606,17 +606,19 @@ void ComputeNonbondedCUDA::build_exclusions() {
 
   if ( totalbits & 31 ) totalbits += ( 32 - ( totalbits & 31 ) );
 
-  if ( ! CkMyPe() ) {
+  {
     long int bytesneeded = totalbits / 8;
+    if ( ! CmiPhysicalNodeID(CkMyPe()) ) {
     CkPrintf("Info: Found %d unique exclusion lists needing %ld bytes\n",
 		unique_lists.size(), bytesneeded);
+    }
 
     long int bytesavail = MAX_EXCLUSIONS * sizeof(unsigned int);
     if ( bytesneeded > bytesavail ) {
       char errmsg[512];
-      sprintf(errmsg,"%ld bytes of CUDA memory needed for exclusions "
+      sprintf(errmsg,"Found %d unique exclusion lists needing %ld bytes "
                      "but only %ld bytes can be addressed with 32-bit int.",
-                     bytesneeded, bytesavail);
+                     unique_lists.size(), bytesneeded, bytesavail);
       NAMD_die(errmsg);
     }
   }
@@ -630,7 +632,7 @@ void ComputeNonbondedCUDA::build_exclusions() {
   long int base = 0;
   for ( int i=0; i<unique_lists.size(); ++i ) {
     base += unique_lists[i][1];
-    if ( base != unique_lists[i][2] ) {
+    if ( unique_lists[i][2] != (int32)base ) {
       NAMD_bug("ComputeNonbondedCUDA::build_exclusions base != stored");
     }
     int n = unique_lists[i][0];
