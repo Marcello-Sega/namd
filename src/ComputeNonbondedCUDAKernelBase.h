@@ -253,7 +253,7 @@ __global__ static void NAME(dev_nonbonded)(
         int indexdiff = (int)(iap.index) - (int)(japs[j].index);
         if ( abs(indexdiff) <= (int) japs[j].excl_maxdiff ) {
           indexdiff += japs[j].excl_index;
-          int indexword = indexdiff >> 5;
+          int indexword = ((unsigned int) indexdiff) >> 5;
           if ( indexword < MAX_CONST_EXCLUSIONS )
                indexword = const_exclusions[indexword];
           else indexword = overflow_exclusions[indexword];

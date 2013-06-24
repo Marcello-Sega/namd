@@ -80,8 +80,8 @@ struct __align__(16) atom_param {  // must be multiple of 16!
   }
 
 // 2^11 ints * 2^5 bits = 2^16 bits = range of unsigned short excl_index
-// 2^26 ints * 2^5 bits = 2^32 bits = range of int excl_index
-#define MAX_EXCLUSIONS (1<<26)
+// 2^27 ints * 2^5 bits = 2^32 bits = range of unsigned int excl_index
+#define MAX_EXCLUSIONS (1<<27)
 #define MAX_CONST_EXCLUSIONS 2048  // cache size is 8k
 
 void cuda_bind_exclusions(const unsigned int *t, int n);
