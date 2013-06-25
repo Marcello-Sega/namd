@@ -6,9 +6,9 @@
 
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/SimParameters.C,v $
- * $Author: dhardy $
- * $Date: 2013/05/21 17:27:10 $
- * $Revision: 1.1416 $
+ * $Author: jim $
+ * $Date: 2013/06/25 16:58:04 $
+ * $Revision: 1.1417 $
  *****************************************************************************/
 
 /** \file SimParameters.C
@@ -3237,6 +3237,25 @@ void SimParameters::check_config(ParseOptions &opts, ConfigList *config, char *&
 
   if (!opts.defined("hybridGroupSize")) {
     hybridGroupSize = 512;
+  }
+  if ( hybridGroupSize < CkNumPes() ) {
+    // match load balancer boundaries to physical nodes if possible
+    int groupsize = hybridGroupSize;
+    int *rpelist;
+    int nodesize;
+    CmiGetPesOnPhysicalNode(CmiPhysicalNodeID(0), &rpelist, &nodesize);
+    if ( CkNumPes() % nodesize ) nodesize = CmiNodeSize(CmiNodeOf(0));
+    if ( CkNumPes() % nodesize ) nodesize = 1;
+    groupsize += nodesize - 1;
+    while ( 2 * groupsize > CkNumPes() ) --groupsize;
+    if ( groupsize < nodesize ) groupsize = nodesize;
+    while ( groupsize % nodesize ) --groupsize;
+    while ( groupsize && CkNumPes() % groupsize ) groupsize -= nodesize;
+    if ( 2 * groupsize < hybridGroupSize ) {
+      groupsize += nodesize;
+      while ( CkNumPes() % groupsize ) groupsize += nodesize;
+    }
+    if ( 2 * groupsize <= CkNumPes() ) hybridGroupSize = groupsize;
   }
 
   // tracing will be done if trace is available and user says +traceOff
