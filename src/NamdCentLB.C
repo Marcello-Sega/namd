@@ -1,8 +1,8 @@
 /*****************************************************************************
  * $Source: /home/cvs/namd/cvsroot/namd2/src/NamdCentLB.C,v $
  * $Author: jim $
- * $Date: 2013/06/07 22:34:37 $
- * $Revision: 1.119 $
+ * $Date: 2013/06/26 18:23:11 $
+ * $Revision: 1.120 $
  *****************************************************************************/
 
 #if !defined(WIN32) || defined(__CYGWIN__)
@@ -190,7 +190,7 @@ CLBMigrateMsg* NamdCentLB::Strategy(LDStats* stats, int n_pes)
       int nparts = (int) ceil(load / maxCompute);
       if ( nparts > maxParts ) nparts = maxParts;
       if ( nparts < 1 ) nparts = 1;
-      if ( nparts > 1 ) {
+      if ( 0 && nparts > 1 ) {
         CkPrintf("LDB: Partitioning compute %d with load %f by %d\n",
                   cid, load, nparts);
       }
